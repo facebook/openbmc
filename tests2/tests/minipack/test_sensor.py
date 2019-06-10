@@ -40,7 +40,7 @@ from tests.minipack.test_data.sensors.sensors import (
 
 class ScmSensorTest(SensorUtilTest):
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensor-util scm"]
+        self.sensors_cmd = ["/usr/local/bin/sensor-util scm"]
 
     def test_scm_sensor_keys(self):
         result = self.get_parsed_result()
@@ -116,7 +116,7 @@ class PimSensorTest(SensorUtilTest):
 
 class Pim1SensorTest(PimSensorTest):
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensor-util pim1"]
+        self.sensors_cmd = ["/usr/local/bin/sensor-util pim1"]
         self._pim_id = 1
 
     def get_pim_sensors(self):
@@ -131,7 +131,7 @@ class Pim1SensorTest(PimSensorTest):
 
 class Pim2SensorTest(PimSensorTest):
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensor-util pim2"]
+        self.sensors_cmd = ["/usr/local/bin/sensor-util pim2"]
         self._pim_id = 2
 
     def get_pim_sensors(self):
@@ -146,7 +146,7 @@ class Pim2SensorTest(PimSensorTest):
 
 class Pim3SensorTest(PimSensorTest):
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensor-util pim3"]
+        self.sensors_cmd = ["/usr/local/bin/sensor-util pim3"]
         self._pim_id = 3
 
     def get_pim_sensors(self):
@@ -161,7 +161,7 @@ class Pim3SensorTest(PimSensorTest):
 
 class Pim4SensorTest(PimSensorTest):
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensor-util pim4"]
+        self.sensors_cmd = ["/usr/local/bin/sensor-util pim4"]
         self._pim_id = 4
 
     def get_pim_sensors(self):
@@ -176,7 +176,7 @@ class Pim4SensorTest(PimSensorTest):
 
 class Pim5SensorTest(PimSensorTest):
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensor-util pim5"]
+        self.sensors_cmd = ["/usr/local/bin/sensor-util pim5"]
         self._pim_id = 5
 
     def get_pim_sensors(self):
@@ -191,7 +191,7 @@ class Pim5SensorTest(PimSensorTest):
 
 class Pim6SensorTest(PimSensorTest):
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensor-util pim6"]
+        self.sensors_cmd = ["/usr/local/bin/sensor-util pim6"]
         self._pim_id = 6
 
     def get_pim_sensors(self):
@@ -206,7 +206,7 @@ class Pim6SensorTest(PimSensorTest):
 
 class Pim7SensorTest(PimSensorTest):
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensor-util pim7"]
+        self.sensors_cmd = ["/usr/local/bin/sensor-util pim7"]
         self._pim_id = 7
 
     def get_pim_sensors(self):
@@ -221,7 +221,7 @@ class Pim7SensorTest(PimSensorTest):
 
 class Pim8SensorTest(PimSensorTest):
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensor-util pim8"]
+        self.sensors_cmd = ["/usr/local/bin/sensor-util pim8"]
         self._pim_id = 8
 
     def get_pim_sensors(self):
@@ -253,7 +253,7 @@ class PsuSensorTest(SensorUtilTest):
 
 class Psu1SensorTest(PsuSensorTest):
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensor-util psu1"]
+        self.sensors_cmd = ["/usr/local/bin/sensor-util psu1"]
         self._psu_id = 1
 
     def get_psu_sensors(self):
@@ -265,7 +265,7 @@ class Psu1SensorTest(PsuSensorTest):
 
 class Psu2SensorTest(PsuSensorTest):
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensor-util psu2"]
+        self.sensors_cmd = ["/usr/local/bin/sensor-util psu2"]
         self._psu_id = 2
 
     def get_psu_sensors(self):
@@ -277,7 +277,7 @@ class Psu2SensorTest(PsuSensorTest):
 
 class Psu3SensorTest(PsuSensorTest):
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensor-util psu3"]
+        self.sensors_cmd = ["/usr/local/bin/sensor-util psu3"]
         self._psu_id = 3
 
     def get_psu_sensors(self):
@@ -289,7 +289,7 @@ class Psu3SensorTest(PsuSensorTest):
 
 class Psu4SensorTest(PsuSensorTest):
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensor-util psu4"]
+        self.sensors_cmd = ["/usr/local/bin/sensor-util psu4"]
         self._psu_id = 4
 
     def get_psu_sensors(self):
@@ -301,7 +301,7 @@ class Psu4SensorTest(PsuSensorTest):
 
 class SmbSensorTest(SensorUtilTest):
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensor-util smb"]
+        self.sensors_cmd = ["/usr/local/bin/sensor-util smb"]
 
     def test_smb_sensor_keys(self):
         result = self.get_parsed_result()

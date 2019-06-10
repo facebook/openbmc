@@ -12,7 +12,6 @@ parsed with the address_scale option.
 import binascii
 import pickle
 import pickletools
-from typing import Iterable
 
 
 def hx(bs):
@@ -93,7 +92,7 @@ class Image:
         return result
 
     @classmethod
-    def from_recs(cls, recs: Iterable[SRecord]):
+    def from_recs(cls, recs):
         sections = []
         section = None
         for sr in recs:

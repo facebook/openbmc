@@ -178,7 +178,7 @@ int sendPldmCmdAndCheckResp(NCSI_NL_MSG_T *nl_msg)
   return ret;
 }
 
-int pldm_test(char *path)
+int pldm_update_fw(char *path, int pldm_bufsize)
 {
   NCSI_NL_MSG_T *nl_msg = NULL;
   NCSI_NL_RSP_T *nl_resp = NULL;
@@ -207,7 +207,7 @@ int pldm_test(char *path)
   pkgHdr = pldm_parse_fw_pkg(path);
 
 
-  pldmCreateReqUpdateCmd(pkgHdr, &pldmReq);
+  pldmCreateReqUpdateCmd(pkgHdr, &pldmReq, pldm_bufsize);
   printf("\n01 PldmRequestUpdateOp: payload_size=%d\n", pldmReq.payload_size);
   ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_PLDM_REQUEST, pldmReq.payload_size,
                        &(pldmReq.common[0]));
@@ -339,7 +339,9 @@ showUsage(void) {
   printf("       -n netdev      Specifies the net device to send command to [default=\"eth0\"]\n");
   printf("       -c channel     Specifies the NC-SI channel on the net device [default=0]\n");
   printf("       -S             show adapter statistics\n");
-  printf("       -p [file]      Parse and display PLDM package information\n");
+  printf("       -p [file]      Update NIC firmware via PLDM\n");
+  printf("           -b [n]     (optional) buffer size for PLDM FW update [default=1024]\n");
+  printf("       -z             send \"PLDM Cancel Update\" cmd \n");
   printf("       -s [n]         socket test\n\n");
   printf("Sample debug commands: \n");
   printf("       ncsi-util -n eth0 -c 0 0x50 0 0 0x81 0x19 0 0 0x1b 0\n");
@@ -360,7 +362,10 @@ main(int argc, char **argv) {
   char * netdev = NULL;
   int channel = 0;
   int fshowethstats = 0;
-  int bufSize;
+  int cancelUpdate = 0;
+  int bufSize = 0;
+  char *pfile = 0;
+
 
   if (argc < 2)
     goto err_exit;
@@ -371,7 +376,7 @@ main(int argc, char **argv) {
     return -1;
   }
   memset(msg, 0, sizeof(NCSI_NL_MSG_T));
-  while ((argflag = getopt(argc, (char **)argv, "s:p:hSn:c:?")) != -1)
+  while ((argflag = getopt(argc, (char **)argv, "s:p:hSzn:c:?")) != -1)
   {
     switch(argflag) {
     case 's':
@@ -414,9 +419,19 @@ main(int argc, char **argv) {
             fshowethstats = 1;
             break;
     case 'p':
-            printf ("Input file: \"%s\"\n", optarg);
-            pldm_test(optarg);
+            pfile = optarg;
+            printf ("Input file: \"%s\"\n", pfile);
+            argflag = getopt(argc, (char **)argv, "b:");
+            if (argflag == 'b') {
+               bufSize = (int)strtoul(optarg, NULL, 0);
+            }
+            printf("bufSize = %d\n", bufSize);
+            pldm_update_fw(pfile, bufSize);
             goto ok_exit;
+    case 'z':
+            cancelUpdate = 1;
+            printf ("Cancel firmware update...\n");
+            break;
     case 'h':
     default :
             goto free_exit;
@@ -433,6 +448,13 @@ main(int argc, char **argv) {
   if (fshowethstats) {
     msg->cmd = NCSI_GET_CONTROLLER_PACKET_STATISTICS;
     msg->payload_length =0;
+  } else if (cancelUpdate) {
+    msg->cmd = NCSI_PLDM_REQUEST;
+    // hard code "PLDM cancel update" for debug purpose
+    msg->payload_length = 3;
+    msg->msg_payload[0] = 0x84;  // Cmd req, iid 1
+    msg->msg_payload[1] = PLDM_TYPE_FIRMWARE_UPDATE;
+    msg->msg_payload[2] = CMD_CANCEL_UPDATE;
   } else {
     msg->cmd = (int)strtoul(argv[optind++], NULL, 0);
     msg->payload_length = argc - optind;

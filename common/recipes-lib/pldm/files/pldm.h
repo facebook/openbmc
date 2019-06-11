@@ -33,19 +33,18 @@ typedef enum pldm_type {
 } PldmType;
 
 
-#define MAX_PLDM_PAYLOAD_SIZE  (512+64)
-#define MAX_PLDM_RESPONSE_SIZE (512+64)
+#define MAX_PLDM_MSG_SIZE  (NCSI_MAX_PAYLOAD)
 
 typedef struct {
   uint16_t payload_size;
   unsigned char  common[PLDM_COMMON_REQ_LEN];
-  unsigned char  payload[MAX_PLDM_PAYLOAD_SIZE];
+  unsigned char  payload[MAX_PLDM_MSG_SIZE - PLDM_COMMON_REQ_LEN];
 } __attribute__((packed)) pldm_cmd_req;
 
 typedef struct {
   uint16_t resp_size;
   unsigned char  common[PLDM_COMMON_RES_LEN];
-  unsigned char  response[MAX_PLDM_RESPONSE_SIZE];
+  unsigned char  response[MAX_PLDM_MSG_SIZE - PLDM_COMMON_RES_LEN];
 } __attribute__((packed)) pldm_response;
 
 
@@ -55,7 +54,8 @@ const char *pldm_fw_cmd_cc_to_name(uint8_t comp_code);
 
 void free_pldm_pkg_data           (pldm_fw_pkg_hdr_t **pFwPkgHdr);
 void pldmCreateReqUpdateCmd       (pldm_fw_pkg_hdr_t *pFwPkgHdr,
-                                   pldm_cmd_req *pPldmCdb);
+                                   pldm_cmd_req *pPldmCdb,
+                                   int pldm_bufsize);
 void pldmCreatePassComponentTblCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx,
                                    pldm_cmd_req *pPldmCdb);
 void pldmCreateUpdateComponentCmd (pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx,

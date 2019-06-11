@@ -203,7 +203,7 @@ typedef struct {
   uint32_t pkgHdrChksum;
 } __attribute__((packed)) pldm_fw_pkg_hdr_t;
 
-#define PLDM_MAX_XFER_SIZE 512
+#define PLDM_MAX_XFER_SIZE (MAX_PLDM_MSG_SIZE - PLDM_COMMON_RES_LEN)
 #define PLDM_MAX_XFER_CNT  1
 
 

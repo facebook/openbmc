@@ -219,7 +219,8 @@ void genReqCommonFields(PldmType type, PldmFWCmds cmd, uint8_t *common)
 
 // Given a PLDM package pointed by pFwPkgHdr
 // Generate command cdb for PLDM  RequestUpdate command (Type 0x05, cmd 0x10)
-void pldmCreateReqUpdateCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, pldm_cmd_req *pPldmCdb)
+void pldmCreateReqUpdateCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, pldm_cmd_req *pPldmCdb,
+                            int pldm_bufsize)
 {
   PLDM_RequestUpdate_t *pCmdPayload = (PLDM_RequestUpdate_t *)&(pPldmCdb->payload);
 
@@ -227,8 +228,11 @@ void pldmCreateReqUpdateCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, pldm_cmd_req *pPldmCdb
 
   genReqCommonFields(PLDM_TYPE_FIRMWARE_UPDATE, CMD_REQUEST_UPDATE, &(pPldmCdb->common[0]));
 
-
-  pCmdPayload->maxTransferSize = gPldm_transfer_size;
+  if ((pldm_bufsize == 0) || (pldm_bufsize > gPldm_transfer_size)) {
+    pldm_bufsize = gPldm_transfer_size;
+  }
+  printf("      Request_update buffer size=%d\n", pldm_bufsize);
+  pCmdPayload->maxTransferSize = pldm_bufsize;
   pCmdPayload->numComponents = pFwPkgHdr->componentImageCnt;
   pCmdPayload->maxOutstandingTransferRequests = gPldm_max_transfer_cnt;
   pCmdPayload->packageDataLength =
@@ -946,7 +950,7 @@ int ncsiDecodePldmCmd(NCSI_NL_RSP_T *nl_resp,  pldm_cmd_req *pldmReq)
     return -1;
   }
 
-  pldmReq->payload_size = nl_resp->hdr.payload_length - 4; // accout for response and reason code
+  pldmReq->payload_size = nl_resp->hdr.payload_length - 4; // account for response and reason code
   memcpy((char *)&(pldmReq->common[0]), (char *)&(nl_resp->msg_payload[4]),
          pldmReq->payload_size);
 

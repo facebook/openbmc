@@ -23,8 +23,15 @@
 #define NCSI_IF_REINIT 0xEF
 
 
+/* This field below needs to be consistent with buffer size specified
+   by kernel driver, in
+   meta-aspeed/recipes-kernel/linux/files/linux-aspeed-4.1/drivers/net/ethernet/faraday/ftgmac100.c
+*/
+#define NCSI_MAX_PAYLOAD 1480 /* maximum payload size*/
+/* max ethernet frame size = 1518 */
+/* ethernet headr (14) + nc-si header (16) + nc-si payload (1480) + nc-si checksum (4) + 4 (FCS) = 1518*/
 
-#define NCSI_MAX_PAYLOAD 1088 /* maximum payload size*/
+
 #define NCSI_MAX_RESPONSE 1024 /* maximum payload size*/
 
 // NCSI Reset time. NCSI Spec specfies NIC to finish reset within 2second max,

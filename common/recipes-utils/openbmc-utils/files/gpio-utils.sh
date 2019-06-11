@@ -163,6 +163,31 @@ gpio_get_value() {
 }
 
 #
+# Set the GPIO pin with given direction.
+# $1 - GPIO pin shadow name
+# $2 - GPIO pin direction: "in" or "out"
+#
+gpio_set_direction() {
+    local shadow="$1"
+    local direction="$2"
+
+    "${GPIOCLI_CMD}" --shadow "${shadow}" set-direction "${direction}"
+}
+
+#
+# Get the direction of given GPIO pin.
+# $1 - GPIO pin shadow name
+#
+gpio_get_direction() {
+    local shadow="$1"
+
+    dir=$("${GPIOCLI_CMD}" --shadow "${shadow}" get-direction)
+    if [ "$?" == "0" ]; then
+        echo "${dir}" | cut -d'=' -f2
+    fi
+}
+
+#
 # Lookup sysfs "gpiochip###" directory based on chip label.
 # $1 - gpiochip label
 #

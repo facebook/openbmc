@@ -22,6 +22,8 @@
 #define __PAL_H__
 
 #include <openbmc/obmc-pal.h>
+#include "pal_sensors.h"
+#include "pal_health.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +31,10 @@ extern "C" {
 
 #define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle"
 #define FRU_EEPROM_MB    "/sys/class/i2c-dev/i2c-4/device/4-0054/eeprom"
+#define LARGEST_DEVICE_NAME (120)
+#define UNIT_DIV            (1000)
+#define ERR_NOT_READY       (-2)
+
 
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
@@ -43,15 +49,18 @@ enum {
 };
 
 enum {
-  FRU_ALL   = 0,
+  FRU_ALL = 0,
   FRU_MB = 1,
   FRU_PDB = 2,
   FRU_NIC0 = 3,
   FRU_NIC1 = 4,
 };
 
-#define MAX_NUM_FRUS 4
-#define MAX_NODES    1
+#define MAX_NUM_FRUS    (4)
+#define MAX_NODES       (1)
+#define READING_SKIP    (1)
+#define READING_NA      (-2)
+
 
 // Sensors Under Side Plane
 enum {
@@ -85,8 +94,11 @@ int pal_get_key_value(char *key, char *value);
 int pal_set_key_value(char *key, char *value);
 int pal_get_last_pwr_state(uint8_t fru, char *state);
 int pal_set_last_pwr_state(uint8_t fru, char *state);
+bool is_server_off(void);
 void pal_update_ts_sled();
 void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
+int read_device(const char *device, int *value);
+
 
 #ifdef __cplusplus
 } // extern "C"

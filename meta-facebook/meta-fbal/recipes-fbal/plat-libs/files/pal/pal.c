@@ -27,10 +27,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
-#include "pal.h"
 #include <stdlib.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
+#include "pal.h"
+
 
 #define FBAL_PLATFORM_NAME "angelslanding"
 #define LAST_KEY "last_key"
@@ -44,7 +45,6 @@
 #define DELAY_POWER_OFF 6
 #define DELAY_POWER_CYCLE 10
 
-#define LARGEST_DEVICE_NAME 120
 
 const char pal_fru_list[] = "all, mb, nic0, nic1";
 const char pal_server_list[] = "mb";
@@ -168,6 +168,27 @@ static void fw_setenv(char *key, char *value)
     snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv %s %s", key, value);
     system(cmd);
   }
+}
+
+//Overwrite the one in obmc-pal.c without systme call of flashcp check
+bool
+pal_is_fw_update_ongoing(uint8_t fruid) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  int ret;
+  struct timespec ts;
+
+  sprintf(key, "fru%d_fwupd", fruid);
+  ret = kv_get(key, value, NULL, 0);
+  if (ret < 0) {
+     return false;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec)
+     return true;
+
+  return false;
 }
 
 static int
@@ -388,7 +409,7 @@ error:
   return ret;
 }
 
-static bool
+bool
 is_server_off(void) {
   int ret;
   uint8_t status;
@@ -718,3 +739,74 @@ pal_channel_to_bus(int channel) {
 
   return channel;
 }
+
+
+int
+read_device(const char *device, int *value) {
+  FILE *fp;
+  int rc;
+
+  fp = fopen(device, "r");
+  if (!fp) {
+    int err = errno;
+    syslog(LOG_INFO, "failed to open device %s", device);
+    return err;
+  }
+
+  rc = fscanf(fp, "%d", value);
+
+  fclose(fp);
+  if (rc != 1) {
+    syslog(LOG_INFO, "failed to read device %s", device);
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
+
+int
+pal_get_fru_sdr_path(uint8_t fru, char *path) {
+  return -1;
+}
+
+int
+pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
+  return -1;
+}
+
+int
+pal_set_def_key_value() {
+  int i;
+  char key[MAX_KEY_LEN] = {0};
+
+  for(i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; i++) {
+    if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed.");
+#endif
+    }
+    if (key_cfg[i].function) {
+      key_cfg[i].function(KEY_AFTER_INI, key_cfg[i].name);
+    }
+  }
+
+  /* Actions to be taken on Power On Reset */
+  if (pal_is_bmc_por()) {
+    /* Clear all the SEL errors */
+    memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, "server_sel_error");
+
+    /* Write the value "1" which means FRU_STATUS_GOOD */
+    pal_set_key_value(key, "1");
+
+    /* Clear all the sensor health files*/
+    memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, "server_sensor_health");
+
+    /* Write the value "1" which means FRU_STATUS_GOOD */
+    pal_set_key_value(key, "1");
+  }
+
+  return 0;
+}
+

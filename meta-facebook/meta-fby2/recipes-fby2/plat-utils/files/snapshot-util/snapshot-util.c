@@ -27,8 +27,8 @@
 #include <sys/stat.h>
 #include <openbmc/pal.h>
 
-#define MAX_REC_NUM 3
-#define MAX_RI_NUM  2
+#define MAX_REC_NUM 4
+#define MAX_RI_NUM  3
 #define MAX_MFI_NUM 1
 #define BLOCK_SIZE  16
 
@@ -40,6 +40,10 @@
 #define MFIH_MAGIC_TAG "/@MFG_ss"
 
 #define MAX_REASON_DESC 1024
+#define DEFAULT_REASON_FILE_NAME "/tmp/snapshot-reason-dft"
+
+// extra pw to prevent accidental clear of RMA data
+#define CLEAR_PW      "571932"
 
 #define TMP_SS_PATH   "/tmp/_snapshot"
 #define TMP_LOG_FILE  TMP_SS_PATH"/log.txt"
@@ -68,20 +72,23 @@ typedef struct _info_rec {
 static info_rec m_info_rec[MAX_REC_NUM] = {
   {0x0400, 0x0C00},
   {0x1000, 0x0C00},
-  {0x1C00, 0x0C00}
+  {0x1C00, 0x0C00},
+  {0x2800, 0x0C00},
 };
 
 
 static void
 print_usage_help(void) {
   printf("Usage: snapshot-util [fru] --set <type> <reason_file>\n");
+  printf("       snapshot-util [fru] --set <type> \"<inline reason string>\"\n");
   printf("       snapshot-util [fru] --get <type> <info_num> <dump_file>\n");
+  printf("       snapshot-util [fru] --get --all <dump_file>\n");
   printf("       snapshot-util [fru] --clear <type> <info_num>\n\n");
   printf("       [fru]: slot1, slot2, slot3, slot4\n");
   printf("       <type>:\n");
   printf("         --rma  RMA information\n");
   printf("         --mfg  MFG failure information\n");
-  printf("       <info_num>: 1 ~ 2 for RMA information; 1 for MFG failure information\n");
+  printf("       <info_num>: 1 ~ 3 for RMA information; 1 for MFG failure information\n");
 }
 
 static int
@@ -208,18 +215,42 @@ is_ih_exist(uint8_t slot_id, uint8_t info_type, uint8_t idx, uint16_t *checksum,
 }
 
 static int
-util_store_snapshot(uint8_t slot_id, uint8_t info_type, char *reason_file) {
+util_create_default_reason(char *buf_data) {
+  FILE *f = fopen(DEFAULT_REASON_FILE_NAME, "w");
+  if (f == NULL) {
+      printf("Error creating default reason file!\n");
+      return -1;
+  }
+
+  // store at most MAX_REASON_DESC characters to file
+  fprintf(f, "%.*s\n", MAX_REASON_DESC, buf_data);
+
+  fclose(f);
+  return 0;
+}
+
+
+static int
+util_store_snapshot(uint8_t slot_id, uint8_t info_type, char *cmdline_opt) {
   uint8_t wbuf[64], rbuf[64], ih_buf[IH_SIZE], ih_offs, idx, max_idx;
   uint16_t sum;
   char cmd[256], *magic_tag;
   int ret, fsize, offset, len, i;
   info_hdr *ih = (info_hdr *)ih_buf;
-  struct stat st;
+  struct stat st = {0};
   FILE *fp;
+  char *reason_file = cmdline_opt;
 
-  if (stat(reason_file, &st) != 0) {
-    printf("unable to access %s\n", reason_file);
-    return -1;
+  // check if user specified a file containing "reason string"
+  if (stat(cmdline_opt, &st) != 0) {
+    // file doesn't exist, treat it as stdin and create a file instead
+    printf("Reason file doesn't exist, assume stdin\n");
+    ret = util_create_default_reason(reason_file);
+    if (!ret) {
+      reason_file = DEFAULT_REASON_FILE_NAME;
+    } else {
+      return ret;
+    }
   }
 
   if (st.st_size > MAX_REASON_DESC) {
@@ -393,6 +424,32 @@ util_dump_snapshot(uint8_t slot_id, uint8_t info_type, uint8_t idx, char *dump_f
   return 0;
 }
 
+
+
+static int
+util_dump_snapshot_all(uint8_t slot_id, char *dump_file) {
+  int idx, ret;
+  #define MAX_FILE_PATH  255
+  char dump_file_name[MAX_FILE_PATH];
+
+  // dump all rma data into dump_file-rmaX
+  for (idx = 0; idx < MAX_RI_NUM; ++idx) {
+    snprintf(dump_file_name, sizeof(dump_file_name), "%s-rma%d", dump_file, idx+1);
+    ret = util_dump_snapshot(slot_id, TYPE_RMA, idx, dump_file_name);
+  }
+
+  // dump all mfi data into dump_file-mfgX
+  for (idx = 0; idx < MAX_MFI_NUM; ++idx) {
+    snprintf(dump_file_name, sizeof(dump_file_name), "%s-mfg%d", dump_file, idx+1);
+    ret = util_dump_snapshot(slot_id, TYPE_MFG, idx, dump_file_name);
+  }
+
+  // in "dump all" case, there may be unexisted RMA or MFG data, or checksum
+  // error in certain files. Code will continue and just return success for now
+  (void) ret;
+  return 0;
+}
+
 static int
 util_clear_snapshot(uint8_t slot_id, uint8_t idx) {
   uint8_t wbuf[64], rbuf[64], ih_buf[IH_SIZE], ih_offs;
@@ -427,10 +484,11 @@ util_clear_snapshot(uint8_t slot_id, uint8_t idx) {
 
 int
 main(int argc, char **argv) {
-  uint8_t slot_id, info_type;
-  int ret = 0, idx, max_idx;
+  uint8_t slot_id, info_type = TYPE_RMA;
+  int ret = 0, idx, max_idx = 0;
 
   if (argc < 5) {
+    printf("Error: invalid number of arguments\n");
     goto err_exit;
   }
 
@@ -443,6 +501,7 @@ main(int argc, char **argv) {
   } else if (!strcmp(argv[1] , "slot4")) {
     slot_id = 4;
   } else {
+    printf("Error: invalid FRU/slot number\n");
     goto err_exit;
   }
 
@@ -452,35 +511,66 @@ main(int argc, char **argv) {
   } else if (!strcmp(argv[3], "--mfg")) {
     info_type = TYPE_MFG;
     max_idx = MAX_MFI_NUM;
-  } else {
+  } else if (!(!strcmp(argv[2], "--get") && !strcmp(argv[3], "--all"))) {
+    printf("Error: invalid <type>\n");
     goto err_exit;
   }
 
   check_info_rec(slot_id);
 
   if (!strcmp(argv[2], "--set")) {
+    // snapshot-util treats argv[4] as either "reason file" or "reason string"
+    // and ignores everything after that.
+    // A wrong command line can lead to  incorrect reason being stored
+    //
+    // Here we perform a basic check to ensure command line is valid, e.g
+    // Good:
+    //     snapshot-util slot1 --set --rma /tmp/reason.txt
+    //     snapshot-util slot1 --set --rma "cpu malfunction"
+    // Bad:
+    //     snapshot-util slot1 --set --rma 3 "cpu malfunction"
+    //     snapshot-util slot1 --set --rma 1  /tmp/reason.txt
+    //     snapshot-util slot1 --set --rma cpu malfunction
+    if (argc != 5) {
+      printf("Error: invalid number of arguments for --set <type> <reason>\n");
+      goto err_exit;
+    }
     ret = util_store_snapshot(slot_id, info_type, argv[4]);
   } else if (!strcmp(argv[2], "--get")) {
-    if (argc < 6) {
-      goto err_exit;
-    }
+    if (!strcmp(argv[3], "--all")) {
+      ret = util_dump_snapshot_all(slot_id, argv[4]);
+    } else {
+      if (argc < 6) {
+        printf("Error: invalid number of arguments for --get <type>\n");
+        goto err_exit;
+      }
 
-    idx = atoi(argv[4]);
-    if ((idx < 1) || (idx > max_idx)) {
-      goto err_exit;
-    }
+      idx = atoi(argv[4]);
+      if ((idx < 1) || (idx > max_idx)) {
+        printf("Error: invalid <info_num>\n");
+        goto err_exit;
+      }
 
-    idx = (info_type == TYPE_MFG) ? MAX_RI_NUM : (idx-1);
-    ret = util_dump_snapshot(slot_id, info_type, idx, argv[5]);
+      idx = (info_type == TYPE_MFG) ? MAX_RI_NUM : (idx-1);
+      ret = util_dump_snapshot(slot_id, info_type, idx, argv[5]);
+    }
   } else if (!strcmp(argv[2], "--clear")) {
     idx = atoi(argv[4]);
     if ((idx < 1) || (idx > max_idx)) {
+      printf("Error: invalid <info_num>\n");
+      goto err_exit;
+    }
+
+    // check for clear pw
+    if ((argc < 6) || (strcmp(argv[5], CLEAR_PW) != 0)) {
+      printf("Error: incorrect --clear command\n");
       goto err_exit;
     }
 
     idx = (info_type == TYPE_MFG) ? MAX_RI_NUM : (idx-1);
     ret = util_clear_snapshot(slot_id, idx);
   } else {
+    printf("Error: invalid command\n");
     goto err_exit;
   }
 

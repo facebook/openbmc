@@ -157,6 +157,7 @@ enum {
 
 enum {
   UNIFIED_PCIE_ERR = 0x0,
+  UNIFIED_MEM_ERR  = 0x1,
 };
 
 // Enum for get the event sensor name in processing SEL

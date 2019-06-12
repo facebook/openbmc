@@ -26,6 +26,9 @@ IMAGE_INSTALL += " \
   ipmitool \
   vboot-utils \
   libswitchtec \
+  plat-utils \
+  ipmbd \
+  ipmb-util \
   "
 
 IMAGE_FEATURES += " \

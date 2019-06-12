@@ -172,3 +172,28 @@ pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
 
   return 0;
 }
+
+int
+pal_channel_to_bus(int channel)
+{
+  switch (channel) {
+    case 0:
+      return 14; // USB (LCD Debug Board)
+    case 1:
+      return 1; // MB#1
+    case 2:
+      return 2; // MB#2
+    case 3:
+      return 3; // MB#3
+    case 4:
+      return 4; // MB#4
+  }
+
+  // Debug purpose, map to real bus number
+  if (channel & 0x80) {
+    return (channel & 0x7f);
+  }
+
+  return channel;
+}
+

@@ -136,7 +136,7 @@ class CommonShellBasedFansTest(BaseFansTest):
         """
         Test if all fan dump is returning sane data
         """
-        Logger.log_testname(name=__name__)
+        Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         data = self.get_fan_speed()
         Logger.info("Fans dump:\n" + data)
@@ -261,7 +261,7 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
         """
         Test if all fan dump is returning sane data
         """
-        Logger.log_testname(name=__name__)
+        Logger.log_testname(self._testMethodName)
         data = self.get_fan_speed()
         Logger.info("Fans dump:\n" + data)
         self.assertTrue(self.verify_get_fan_speed_output(data), "Get fan speeds failed")
@@ -334,7 +334,7 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
         """
         For each fan read and test speed
         """
-        Logger.log_testname(name=__name__)
+        Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.fans, None, "Fans must be defined")
         for fan in self.fans:
             self.fan_read(fan=fan)
@@ -343,7 +343,7 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
         """
         For each fan read and test speed
         """
-        Logger.log_testname(name=__name__)
+        Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.fans, None, "Fans must be defined")
         for fan in self.pwms:
             self.fan_set_and_read(fan_id=fan, pwm=40)

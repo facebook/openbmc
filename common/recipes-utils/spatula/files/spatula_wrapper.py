@@ -76,7 +76,7 @@ class SpatulaWrapper(object):
                     raise Exception("timed out waiting for LLDP packet")
                 # dedupe before returning since we may get multiple packets
                 # from the same device
-                return [dict(t) for t in set([tuple(d.items()) for d in found])]
+                return [dict(t) for t in {tuple(d.items()) for d in found}]
             else:
                 raise Exception("missing lldp-util: {}".format(LLDP_UTIL))
         except Exception as err:
@@ -101,14 +101,18 @@ class SpatulaWrapper(object):
                         endpoint=endpoint,
                     )
                 )
+        errorsDict = {}
         for url in urls:
             try:
                 request = urllib.request.Request(url)
                 response = urllib.request.urlopen(request)
                 return response.read()
             except Exception as err:
+                errorsDict[url] = err
                 continue
-        raise Exception("failed getting Spatula {}: {}".format(urls, err))
+        raise Exception(
+            "failed getting Spatula for the following: {}".format(errorsDict)
+        )
 
     def _success(self, endpoint="/success"):
         """

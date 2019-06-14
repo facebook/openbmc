@@ -766,7 +766,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
       else
         strcat(error_log, "Unknown");
 
-      sprintf(temp_log,  "CRITICAL_IRQ, %s", error_log);
+      sprintf(temp_log,  "CRITICAL_IRQ, %s,FRU:%u", error_log, fru);
       pal_add_cri_sel(temp_log);
 
       break;
@@ -804,15 +804,15 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
     case MACHINE_CHK_ERR:
       if ((ed[0] & 0x0F) == 0x0B) {
         strcat(error_log, "Uncorrectable");
-        sprintf(temp_log, "MACHINE_CHK_ERR, %s bank Number %d", error_log, ed[1]);
+        sprintf(temp_log, "MACHINE_CHK_ERR, %s bank Number %d,FRU:%u", error_log, ed[1], fru);
         pal_add_cri_sel(temp_log);
       } else if ((ed[0] & 0x0F) == 0x0C) {
         strcat(error_log, "Correctable");
-        sprintf(temp_log, "MACHINE_CHK_ERR, %s bank Number %d", error_log, ed[1]);
+        sprintf(temp_log, "MACHINE_CHK_ERR, %s bank Number %d,FRU:%u", error_log, ed[1], fru);
         pal_add_cri_sel(temp_log);
       } else {
         strcat(error_log, "Unknown");
-        sprintf(temp_log, "MACHINE_CHK_ERR, %s bank Number %d", error_log, ed[1]);
+        sprintf(temp_log, "MACHINE_CHK_ERR, %s bank Number %d,FRU:%u", error_log, ed[1], fru);
         pal_add_cri_sel(temp_log);
       }
 
@@ -847,7 +847,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
         strcat(error_log, "Unknown");
       }
 
-      sprintf(temp_log, "PCI_ERR %s", error_log);
+      sprintf(temp_log, "PCI_ERR %s,FRU:%u", error_log, fru);
       pal_add_cri_sel(temp_log);
 
       break;
@@ -884,7 +884,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
           strcat(error_log, " - Reserved");
       } else
         strcat(error_log, "Unknown");
-      sprintf(temp_log, "IIO_ERR %s", error_log);
+      sprintf(temp_log, "IIO_ERR %s,FRU:%u", error_log, fru);
       pal_add_cri_sel(temp_log);
       break;
 
@@ -895,13 +895,13 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
         if ((ed[0] & 0x0F) == 0x0) {
           if (sen_type == 0x0C) {
             strcat(error_log, "Correctable");
-            sprintf(temp_log, "DIMM%02X ECC err", ed[2]);
+            sprintf(temp_log, "DIMM%02X ECC err,FRU:%u", ed[2], fru);
             pal_add_cri_sel(temp_log);
           } else if (sen_type == 0x10)
             strcat(error_log, "Correctable ECC error Logging Disabled");
         } else if ((ed[0] & 0x0F) == 0x1) {
           strcat(error_log, "Uncorrectable");
-          sprintf(temp_log, "DIMM%02X UECC err", ed[2]);
+          sprintf(temp_log, "DIMM%02X UECC err,FRU:%u", ed[2], fru);
           pal_add_cri_sel(temp_log);
         } else if ((ed[0] & 0x0F) == 0x5)
           strcat(error_log, "Correctable ECC error Logging Limit Reached");
@@ -1012,7 +1012,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
         strcat(error_log, "SOC MEMHOT");
       else
         strcat(error_log, "Unknown");
-      sprintf(temp_log, "CPU_DIMM_HOT %s", error_log);
+      sprintf(temp_log, "CPU_DIMM_HOT %s,FRU:%u", error_log, fru);
       pal_add_cri_sel(temp_log);
       break;
 

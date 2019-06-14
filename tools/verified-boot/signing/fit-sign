@@ -49,7 +49,7 @@ def update_spl_checksum(operation):
         curr_desc = curr_info[curr_info.keys()[0]]
         desc = curr_desc + ' ' + desc
     info = json.dumps({curr_checksum: desc}).encode('ascii')
-    
+
     with open(args.output, 'w') as fh:
         fh.seek(0)
         fh.write(data1)
@@ -264,10 +264,12 @@ def main():
 
     rom_fit = None
     rom_fit_offset = 0
+    rom_fit_space = args.rom_fit_size
     for i in range(args.rom_size / 4):
         if data[i * 4:(i * 4) + 4] == "\xd0\x0d\xfe\xed":
-            rom_fit = rom[i * 4:(i * 4) + args.rom_fit_size]
             rom_fit_offset = i * 4
+            rom_fit_space = min(rom_fit_space, args.rom_size - rom_fit_offset)
+            rom_fit = rom[rom_fit_offset : rom_fit_offset + rom_fit_space]
             break
     if rom_fit is None:
         print("Cannot find FIT region within ROM")
@@ -279,12 +281,13 @@ def main():
         rom_fit = inject_lock(rom_fit)
     else:
         rom_fit = inject_kek(rom_fit, args.kek)
-    if len(rom_fit) > args.rom_fit_size:
+
+    if len(rom_fit) > rom_fit_space:
         print("KEK cannot fit within ROM FIT")
         sys.exit(1)
 
-    rom_fit += '\x00' * (args.rom_fit_size - len(rom_fit))
-    rom_content_post = data[rom_fit_offset + args.rom_fit_size:args.rom_size]
+    rom_fit += '\x00' * (rom_fit_space - len(rom_fit))
+    rom_content_post = data[rom_fit_offset + rom_fit_space : args.rom_size]
     data = rom_content_pre + rom_fit + rom_content_post + data[args.rom_size:]
 
     if args.lock:
@@ -378,9 +381,9 @@ if __name__ == '__main__':
     parser.add_argument('output', help="Output firmware")
     parser.add_argument('--kek', default=None, metavar="PATH",
         help="Location to ROM kek certificate store DTS")
-    parser.add_argument('--rom-size', default=84 * 1024,
+    parser.add_argument('--rom-size', default=84 * 1024, type=int,
         help="Size of ROM region")
-    parser.add_argument('--rom-fit-size', default=5120,
+    parser.add_argument('--rom-fit-size', default=5120, type=int,
         help="Size of the ROM FIT region")
     parser.add_argument('--offset', default=0x080000, type=int,
         help="Location within filename to find firmware FIT DTB")

@@ -31,6 +31,7 @@ extern "C" {
 #endif
 
 #define MAX_GPIO_PINS     64
+#define MAX_POSTCODE_NUM  1024
 
 // GPIO PINS
 enum {
@@ -438,6 +439,7 @@ int bic_get_sys_guid(uint8_t slot_id, uint8_t *guid);
 int bic_set_sys_guid(uint8_t slot_id, uint8_t *guid);
 
 int bic_request_post_buffer_data(uint8_t slot_id, uint8_t *port_buff, uint8_t *len);
+int bic_request_post_buffer_dword_data(uint8_t slot_id, uint32_t *port_buff, uint32_t input_len, uint32_t *output_len);
 
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 

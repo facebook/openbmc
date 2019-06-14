@@ -44,7 +44,6 @@
 #define NUM_SLOTS 4
 #define JTAG_TOTAL_API 1
 
-
 enum cmd_profile_type {
   CMD_AVG_DURATION=0,
   CMD_MIN_DURATION,
@@ -441,6 +440,43 @@ util_get_post_buf(uint8_t slot_id) {
   return ret;
 }
 
+#if defined(CONFIG_FBY2_ND)
+static int
+util_print_dword_postcode_buf(uint8_t slot_id) {
+  int ret = 0;
+  uint32_t len;
+  uint32_t intput_len = 0;
+  int i;
+  uint32_t * dw_postcode_buf = malloc( MAX_POSTCODE_NUM * sizeof(uint32_t));
+  if (dw_postcode_buf) {
+    intput_len = MAX_POSTCODE_NUM;
+  } else {
+    syslog(LOG_ERR, "%s Error, failed to allocate dw_postcode buffer", __func__);
+    intput_len = 0;
+    return -1;
+  }
+  
+  ret = bic_request_post_buffer_dword_data(slot_id, dw_postcode_buf, intput_len, &len);
+  if (ret) {
+    printf("bic_request_post_buffer_dword_data: returns %d\n", ret);
+    free(dw_postcode_buf);
+    return ret;
+  }
+  printf("util_get_post_buf: returns %d dword\n", len);
+  for (i = 0; i < len; i++) {
+    if (!(i % 4) && i)
+      printf("\n");
+
+    printf("[%08X] ", dw_postcode_buf[i]);
+  }
+  printf("\n");
+  if(dw_postcode_buf)
+    free(dw_postcode_buf);
+
+  return ret;
+  
+}
+#endif
 
 static int
 util_read_fruid(uint8_t slot_id) {
@@ -774,7 +810,25 @@ main(int argc, char **argv) {
   } else if (!strcmp(argv[2], "--get_post_code")) {
     if (argc != 3)
       goto err_exit;
+#if defined(CONFIG_FBY2_ND)
+  uint8_t server_type = 0xFF;
+  ret = fby2_get_server_type(slot_id, &server_type);
+  if (ret < 0) {
+    printf("Cannot get server type. 0x%x\n", server_type);
+    return -1;
+  }
+
+  switch (server_type) {
+    case SERVER_TYPE_ND:
+      ret = util_print_dword_postcode_buf(slot_id);
+      break;
+    case SERVER_TYPE_TL:   
+    default:
+      ret = util_get_post_buf(slot_id);
+  }
+#else
     ret = util_get_post_buf(slot_id);
+#endif
   } else if (!strcmp(argv[2], "--read_fruid")) {
     if (argc != 3)
       goto err_exit;

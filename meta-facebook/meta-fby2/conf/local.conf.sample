@@ -4,6 +4,8 @@
 
 # Machine Selection
 MACHINE ??= "fby2"
+# select uncomment the following line to use pliot uboot upgrade 
+# MACHINE = "fby2-ubu"
 
 # OpenBMC distro settings
 DISTRO ?= "openbmc-fb"

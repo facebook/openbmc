@@ -66,8 +66,26 @@ enum {
 
 enum {
   DEV_TYPE_UNKNOWN,
-  DEV_TYPE_POC,
   DEV_TYPE_SSD,
+  DEV_TYPE_VSI_ACC,
+  DEV_TYPE_BRCM_ACC,
+  DEV_TYPE_OTHER_ACC,
+  DEV_TYPE_DUAL_M2,
+};
+
+enum {
+  FFI_STORAGE,
+  FFI_ACCELERATOR,
+};
+
+enum {
+  MEFF_M2_22110 = 0x35,
+  MEFF_DUAL_M2 = 0xF0,
+};
+
+enum {
+  VENDOR_VSI = 0x5043,
+  VENDOR_BRCM = 0x875E,
 };
 
 enum {
@@ -139,6 +157,7 @@ int pal_is_slot_server(uint8_t fru);
 int pal_is_slot_support_update(uint8_t fru);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type);
+int pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type);
 void pal_power_policy_control(uint8_t slot_id, char *last_ps);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd);

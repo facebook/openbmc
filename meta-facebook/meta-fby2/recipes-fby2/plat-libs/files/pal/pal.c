@@ -2493,6 +2493,8 @@ int
 pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type) {
   int ret;
   uint8_t retry = MAX_READ_RETRY;
+  uint16_t vendor_id = 0;
+  uint8_t ffi = 0 ,meff = 0, nvme_ready = 0;
 
   if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
     /* Check whether the system is 12V off or on */
@@ -2510,14 +2512,93 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
     }
 
     while (retry) {
-      ret = bic_get_dev_power_status(slot_id,dev_id, status,type);
+      ret = bic_get_dev_power_status(slot_id, dev_id, &nvme_ready, status, &ffi, &meff, &vendor_id);
       if (!ret)
         break;
       msleep(50);
       retry--;
     }
+
+    if (nvme_ready) {
+      if ( meff == MEFF_DUAL_M2 ) {
+        *type = DEV_TYPE_DUAL_M2;
+      } else{
+        if (ffi == FFI_ACCELERATOR) {
+          if (vendor_id == VENDOR_VSI) {
+            *type = DEV_TYPE_VSI_ACC;
+          } else if (vendor_id == VENDOR_BRCM) {
+            *type = DEV_TYPE_BRCM_ACC;
+          } else {
+            *type = DEV_TYPE_OTHER_ACC;
+          }
+        } else {
+          *type = DEV_TYPE_SSD;
+        }
+      }
+    } else {
+      *type = DEV_TYPE_UNKNOWN;
+    }
     return 0;
   }
+
+  *type = DEV_TYPE_UNKNOWN;
+
+  return -1;
+}
+
+int
+pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type) {
+  int ret;
+  uint8_t retry = MAX_READ_RETRY;
+  uint16_t vendor_id = 0;
+  uint8_t ffi = 0 ,meff = 0;
+
+  if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
+    /* Check whether the system is 12V off or on */
+    ret = pal_is_server_12v_on(slot_id, status);
+    if (ret < 0) {
+      syslog(LOG_ERR, "pal_get_dev_info: pal_is_server_12v_on failed");
+      return -1;
+    }
+
+    /* If 12V-off, return */
+    if (!(*status)) {
+      *status = DEVICE_POWER_OFF;
+      syslog(LOG_WARNING, "pal_get_dev_info: pal_is_server_12v_on 12V-off");
+      return 0;
+    }
+
+    while (retry) {
+      ret = bic_get_dev_power_status(slot_id,dev_id, nvme_ready, status, &ffi, &meff, &vendor_id);
+      if (!ret)
+        break;
+      msleep(50);
+      retry--;
+    }
+
+    if (*nvme_ready) {
+      if ( meff == MEFF_DUAL_M2 ) {
+        *type = DEV_TYPE_DUAL_M2;
+      } else{
+        if (ffi == FFI_ACCELERATOR) {
+          if (vendor_id == VENDOR_VSI) {
+            *type = DEV_TYPE_VSI_ACC;
+          } else if (vendor_id == VENDOR_BRCM) {
+            *type = DEV_TYPE_BRCM_ACC;
+          } else {
+            *type = DEV_TYPE_OTHER_ACC;
+          }
+        } else {
+          *type = DEV_TYPE_SSD;
+        }
+      }
+    } else {
+      *type = DEV_TYPE_UNKNOWN;
+    }
+    return 0;
+  }
+
+  *type = DEV_TYPE_UNKNOWN;
 
   return -1;
 }

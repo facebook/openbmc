@@ -36,6 +36,7 @@
 #include <openbmc/pal.h>
 #include <openbmc/gpio.h>
 #include <openbmc/fruid.h>
+#include <openbmc/obmc-sensor.h>
 #include <facebook/bic.h>
 #include <facebook/fby2_gpio.h>
 #include <facebook/fby2_sensor.h>
@@ -79,6 +80,9 @@ char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
 const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
 
 const static uint8_t gpio_slot_latch[] = { 0, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N };
+
+const static uint8_t gpv2_dev_nvme_temp[] = { 0, GPV2_SENSOR_DEV0_Temp, GPV2_SENSOR_DEV1_Temp, GPV2_SENSOR_DEV2_Temp, GPV2_SENSOR_DEV3_Temp, GPV2_SENSOR_DEV4_Temp, GPV2_SENSOR_DEV5_Temp,
+                                                 GPV2_SENSOR_DEV6_Temp, GPV2_SENSOR_DEV7_Temp, GPV2_SENSOR_DEV8_Temp, GPV2_SENSOR_DEV9_Temp, GPV2_SENSOR_DEV10_Temp, GPV2_SENSOR_DEV11_Temp};
 
 struct threadinfo {
   uint8_t is_running;
@@ -265,11 +269,14 @@ fru_cache_dump(void *arg) {
   char buf[MAX_VALUE_LEN];
   int ret;
   int retry;
-  uint8_t status = DEVICE_POWER_OFF;
+  uint8_t status[MAX_NUM_DEVS+1] = {DEVICE_POWER_OFF};
   uint8_t type = DEV_TYPE_UNKNOWN;
+  uint8_t nvme_ready = 0;
   uint8_t dev_id;
   const int max_retry = 3;
   int oldstate;
+  int finish_count = 0; // fru finish
+  float value;
   fruid_info_t fruid;
 
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -291,17 +298,18 @@ fru_cache_dump(void *arg) {
 
   // Get GPV2 devices' FRU
   for (dev_id = 1; dev_id <= MAX_NUM_DEVS; dev_id++) {
-    if (dev_fru_complete[fru][dev_id] != DEV_FRU_NOT_COMPLETE)
-      continue;
 
     //check for power status
-    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
-    ret = pal_get_device_power(fru, dev_id, &status, &type);
-    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
-    syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u type=%u", fru, dev_id-1, status, type);
+    ret = pal_get_dev_info(fru, dev_id, &nvme_ready ,&status[dev_id], &type);
+    syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u nvme_ready=%u type=%u", fru, dev_id-1, status[dev_id], nvme_ready, type);
+
+    if (dev_fru_complete[fru][dev_id] != DEV_FRU_NOT_COMPLETE) {
+      finish_count++;
+      continue;
+    }
 
     if (ret == 0) {
-      if (status == DEVICE_POWER_ON) {
+      if (status[dev_id] == DEVICE_POWER_ON) {
         retry = 0;
         while (1) {
           pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
@@ -327,23 +335,84 @@ fru_cache_dump(void *arg) {
           } else { // Success
             free_fruid_info(&fruid);
             dev_fru_complete[fru][dev_id] = DEV_FRU_COMPLETE;
+            finish_count++;
             syslog(LOG_WARNING, "fru_cache_dump: Finish getting Slot%u Dev%d FRU", fru, dev_id-1);
           }
           pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
         }
+      } else { // DEVICE_POWER_OFF
+        finish_count++;
       }
 
       sprintf(key, "slot%u_dev%u_pres", fru, dev_id-1);
-      sprintf(buf, "%u", status);
+      sprintf(buf, "%u", status[dev_id]);
       pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
       if (kv_set(key, buf, 0, 0) < 0) {
         syslog(LOG_WARNING, "fru_cache_dump: kv_set Slot%u Dev%d present status failed", fru, dev_id-1);
       }
       pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
     } else { // Device Status Unknown
+      finish_count++;
       syslog(LOG_WARNING, "fru_cache_dump: Fail to access Slot%u Dev%d power status", fru, dev_id-1);
     }
   }
+
+  // If NVMe is ready, try to get the FRU which was failed to get and
+  // update the fan speed control table according to the device type
+  do {
+    for (dev_id = 1; dev_id <= MAX_NUM_DEVS; dev_id++) {
+      if (status[dev_id] == DEVICE_POWER_OFF) {// M.2 device is present or not
+        continue;
+      }
+
+      // check for device type
+      ret = pal_get_dev_info(fru, dev_id, &nvme_ready, &status[dev_id], &type);
+      syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u nvme_ready=%u type=%u", fru, dev_id-1, status[dev_id], nvme_ready, type);
+
+      if (ret || (!nvme_ready))
+        continue;
+
+      if (dev_fru_complete[fru][dev_id] == DEV_FRU_NOT_COMPLETE) { // try to get fru or not
+        if ((type == DEV_TYPE_VSI_ACC) || (type == DEV_TYPE_BRCM_ACC) || (type == DEV_TYPE_OTHER_ACC)) { // device type has FRU
+          retry = 0;
+          while (1) {
+            pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+            ret = fruid_cache_init(fru, dev_id);
+            pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+            retry++;
+
+            if ((ret == 0) || (retry == max_retry))
+              break;
+
+            msleep(50);
+          }
+
+          if (retry >= max_retry) {
+            syslog(LOG_WARNING, "fru_cache_dump: Fail on getting Slot%u Dev%d FRU", fru, dev_id-1);
+          } else {
+            pal_get_dev_fruid_path(fru, dev_id, buf);
+            // check file's checksum
+            pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+            ret = fruid_parse(buf, &fruid);
+            if (ret != 0) { // Fail
+              syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d FRU data checksum is invalid", fru, dev_id-1);
+            } else { // Success
+              free_fruid_info(&fruid);
+              dev_fru_complete[fru][dev_id] = DEV_FRU_COMPLETE;
+              finish_count++;
+              syslog(LOG_WARNING, "fru_cache_dump: Finish getting Slot%u Dev%d FRU", fru, dev_id-1);
+            }
+            pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+          }
+        } else {
+          dev_fru_complete[fru][dev_id] = DEV_FRU_IGNORE;
+          finish_count++;
+          syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d ignore FRU", fru, dev_id-1);
+        }
+      }
+    }
+    sleep(10);
+  } while (finish_count < MAX_NUM_DEVS);
 
   t_fru_cache[fru-1].is_running = 0;
   syslog(LOG_INFO, "%s: FRU %d cache is finished.", __func__, fru);

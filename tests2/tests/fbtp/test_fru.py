@@ -22,13 +22,15 @@ import unittest
 from common.base_fru_test import CommonFruTest
 
 
-class FruSpbTest(CommonFruTest):
+class FruMbTest(CommonFruTest):
     def setUp(self):
-        self.fru_cmd = ["/usr/local/bin/fruid-util", "spb"]
+        self.fru_cmd = ["/usr/local/bin/fruid-util", "mb"]
         self.fru_fields = (
             "Chassis Type",
             "Chassis Part Number",
             "Chassis Serial Number",
+            "Chassis Custom Data 1",
+            "Chassis Custom Data 2",
             "Board Mfg Date",
             "Board Mfg",
             "Board Product",
@@ -36,6 +38,7 @@ class FruSpbTest(CommonFruTest):
             "Board Part Number",
             "Board FRU ID",
             "Board Custom Data 1",
+            "Board Custom Data 2",
             "Product Manufacturer",
             "Product Name",
             "Product Part Number",

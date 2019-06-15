@@ -36,14 +36,6 @@ class BaseFruTest(unittest.TestCase):
         Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
 
-    @abstractmethod
-    def set_fru_cmd(self):
-        pass
-
-    @abstractmethod
-    def set_fru_fields(self):
-        pass
-
     def run_fru_cmd(self):
         self.assertNotEqual(self.fru_cmd, None, "FRU command not set")
 
@@ -54,13 +46,7 @@ class BaseFruTest(unittest.TestCase):
 
 
 class CommonFruTest(BaseFruTest):
-    def log_check(self):
-        self.set_fru_cmd()
-        self.set_fru_fields()
-        if not self.fru_info:
-            self.fru_info = self.run_fru_cmd()
-
     def test_fru_fields(self):
-        self.set_fru_fields()
+        fru_info = self.run_fru_cmd()
         for fru_field in self.fru_fields:
-            self.assertIn(fru_field, self.fru_info)
+            self.assertIn(fru_field, fru_info)

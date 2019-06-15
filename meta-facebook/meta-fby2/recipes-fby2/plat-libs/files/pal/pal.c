@@ -127,6 +127,7 @@
 #define REINIT_TYPE_HOST_RESOURCE   1
 
 #define POST_TIMEOUT  300
+#define OS_TIMEOUT  600
 //declare for clearing TPM presence flag
 #define TPM_Timeout 600
 
@@ -182,7 +183,10 @@ enum {
   POST_END_COUNTER_SHOW_LOG = -1,
 };
 
+#define NVME_READY_COUNTER_NOT_READY -1
+
 static long post_end_counter = POST_END_COUNTER_IGNORE_LOG;
+static long nvme_ready_counter = NVME_READY_COUNTER_NOT_READY;
 
 typedef struct {
   uint16_t flag;
@@ -3871,8 +3875,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   long current_counter = 0;
   static uint8_t last_post = 0;
   uint8_t current_post = 0;
-  static uint8_t is_last_post_time_out = 0;
-  uint8_t is_post_time_out = 0;
+  static uint8_t is_last_time_out = 0;
+  uint8_t is_time_out = 0;
+  static uint8_t check_flag = POST_END_CHECK;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -3958,10 +3963,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           is_sled_out = 1; // default sled out
         }
 
-        is_post_time_out = pal_is_post_time_out();
-        if (is_post_time_out || is_sled_out) {
-          if (is_post_time_out && !is_last_post_time_out) {
-            syslog(LOG_WARNING, "Fans' UNC masks removed: slot%d host POST hangs up",is_post_time_out);
+        is_time_out = pal_is_post_time_out() || pal_is_os_time_out();
+        if (is_time_out || is_sled_out) {
+          if (is_time_out && !is_last_time_out) {
+            syslog(LOG_WARNING, "Fans' UNC masks removed: slot%d host POST hangs up",is_time_out);
           }
           ignore_thresh = 0;
         } else {
@@ -3984,6 +3989,17 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
               } else {
                 fscd_watchdog_counter = 0;
               }
+              // Check all NVMe
+              if (pal_is_nvme_ready()) {
+                //If all NVMe is ready, remove fan UNC mask after 4 fscd cycle
+                syslog(LOG_WARNING, "Fans' UNC masks: NVMe ready");
+                check_flag = POST_END_CHECK;
+              } else {
+                //If one of NVMe is not ready, wait for NVMe ready first
+                syslog(LOG_WARNING, "Fans' UNC masks: NVMe not ready");
+                check_flag = NVME_READY_CHECK;
+                nvme_ready_counter = NVME_READY_COUNTER_NOT_READY;
+              }
             } else {
               ignore_thresh = 1;
             }
@@ -3996,31 +4012,60 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
             ignore_thresh = 1;
           } else {
             // POST is not ongoing
-            if (post_end_counter > 0) {
-              // check counter change
-              current_counter = pal_get_fscd_counter();
-              if (last_counter != current_counter) {
-                // fscd counter update
-                fscd_watchdog_counter = 0;
-                last_counter = current_counter;
-                if (current_counter-post_end_counter >= 4) { //after 4 fscd cycle
-                  syslog(LOG_WARNING, "Fans' UNC masks removed: after 4 fscd cycle");
-                  post_end_counter = 0;
-                  ignore_thresh = 0;
-                } else { //before 4 fscd cycle
-                  ignore_thresh = 1;
+            if (check_flag == POST_END_CHECK) {
+              if (post_end_counter > 0) {
+                // check counter change
+                current_counter = pal_get_fscd_counter();
+                if (last_counter != current_counter) {
+                  // fscd counter update
+                  fscd_watchdog_counter = 0;
+                  last_counter = current_counter;
+                  if (current_counter-post_end_counter >= 4) { //after 4 fscd cycle
+                    syslog(LOG_WARNING, "Fans' UNC masks removed: after 4 fscd cycle");
+                    post_end_counter = 0;
+                    ignore_thresh = 0;
+                  } else { //before 4 fscd cycle
+                    ignore_thresh = 1;
+                  }
+                } else {
+                  // fscd watchdog counter update
+                  pal_check_fscd_watchdog();
                 }
-              } else {
-                // fscd watchdog counter update
+              } else if (post_end_counter < 0) {
+                // fscd not start yet or fscd hangs up at the first run
                 pal_check_fscd_watchdog();
               }
-            } else if (post_end_counter < 0) {
-              // fscd not start yet or fscd hangs up at the first run
-              pal_check_fscd_watchdog();
+            } else if (check_flag == NVME_READY_CHECK) {
+              if (nvme_ready_counter < 0) {
+                // NVMe is not ready before, check NVMe is ready or not now
+                if (pal_is_nvme_ready()) {
+                  syslog(LOG_WARNING, "All M.2 Device NVMe interfaces are ready");
+                  nvme_ready_counter = pal_get_fscd_counter();
+                }
+                ignore_thresh = 1;
+              } else if (nvme_ready_counter > 0) {
+                // NVMe is ready, remove fan UNC mask after 4 fscd cycle
+                current_counter = pal_get_fscd_counter();
+                if (last_counter != current_counter) {
+                  // fscd counter update
+                  fscd_watchdog_counter = 0;
+                  last_counter = current_counter;
+                  if (current_counter-nvme_ready_counter >= 4) { //after 4 fscd cycle
+                    syslog(LOG_WARNING, "Fans' UNC masks removed: after 4 fscd cycle");
+                    nvme_ready_counter = 0;
+                    ignore_thresh = 0;
+                  } else { //before 4 fscd cycle
+                    ignore_thresh = 1;
+                  }
+                } else {
+                  // fscd watchdog counter update
+                  pal_check_fscd_watchdog();
+                }
+              }
             }
           }
         }
-        is_last_post_time_out = is_post_time_out;
+        is_last_time_out = is_time_out;
         pal_set_ignore_thresh(ignore_thresh);
       }
     }
@@ -5710,7 +5755,7 @@ int
 pal_set_fru_post(uint8_t fru, uint8_t value) {
   if (value == 0) {
     syslog(LOG_WARNING, "FRU: %d, POST END", fru);
-    return pal_set_post_start_timestamp(fru,POST_RESET);
+    return pal_set_post_end_timestamp(fru);
   } else {
     syslog(LOG_WARNING, "FRU: %d, POST Start", fru);
     return pal_set_post_start_timestamp(fru,POST_SET);
@@ -5863,6 +5908,110 @@ pal_get_post_end_timestamp(uint8_t fru, long *value) {
   return 0;
 }
 
+int
+pal_set_nvme_ready_timestamp(uint8_t fru) {
+
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC,&ts);
+  long value = ts.tv_sec;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_nvme_ready_timestamp", fru);
+      break;
+
+    default:
+      return -1;
+  }
+
+  sprintf(cvalue,"%ld",value);
+
+  return kv_set(key,cvalue,0,0);
+}
+
+int
+pal_get_nvme_ready_timestamp(uint8_t fru, long *value) {
+
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  int ret;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_nvme_ready_timestamp", fru);
+      break;
+
+    default:
+      return -1;
+  }
+
+  ret = kv_get(key, cvalue, NULL, 0);
+  if (ret) {
+    return ret;
+  }
+  *value = strtol(cvalue,NULL,10);
+  return 0;
+}
+
+int
+pal_set_nvme_ready(uint8_t fru, uint8_t value) {
+
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_nvme_ready", fru);
+      break;
+
+    default:
+      return -1;
+  }
+
+  sprintf(cvalue, (value > 0) ? "1": "0");
+
+  return kv_set(key,cvalue,0,0);
+}
+
+int
+pal_get_nvme_ready(uint8_t fru, uint8_t *value) {
+
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  int ret;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      sprintf(key, "slot%d_nvme_ready", fru);
+      break;
+
+    default:
+      return -1;
+  }
+
+  ret = kv_get(key, cvalue, NULL, 0);
+  if (ret) {
+    *value = 0;
+    return ret;
+  }
+  *value = strtol(cvalue,NULL,10);
+  return 0;
+}
+
 uint8_t
 pal_is_post_time_out() {
   long post_start_timestamp,post_end_timestamp,current_timestamp;
@@ -5894,6 +6043,41 @@ pal_is_post_time_out() {
 }
 
 uint8_t
+pal_is_os_time_out() {
+  long post_start_timestamp,current_timestamp,nvme_ready_timestamp;
+  struct timespec ts;
+  int ret;
+
+
+  clock_gettime(CLOCK_MONOTONIC,&ts);
+  current_timestamp = ts.tv_sec;
+
+  for (int fru=1;fru <= 4;fru+=2) {
+    if (pal_get_pair_slot_type(fru) != TYPE_GPV2_A_SV) // only check if GPV2 + TL
+      continue;
+
+    ret = pal_get_post_start_timestamp(fru+1, &post_start_timestamp); // TL
+    if (ret != 0) {
+      //default value
+      post_start_timestamp = -1;
+    }
+    ret = pal_get_nvme_ready_timestamp(fru, &nvme_ready_timestamp);   // GPv2
+    if (ret != 0) {
+      //default value
+      nvme_ready_timestamp = -1;
+    }
+    if (post_start_timestamp != -1) {
+      if (post_start_timestamp > nvme_ready_timestamp) {
+        if (current_timestamp-post_start_timestamp > OS_TIMEOUT) {
+          return fru;
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+uint8_t
 pal_is_post_ongoing() {
   uint8_t is_post_ongoing = 0;
   uint8_t value = 0;
@@ -5903,6 +6087,20 @@ pal_is_post_ongoing() {
     is_post_ongoing |= value;
   }
   return is_post_ongoing;
+}
+
+uint8_t
+pal_is_nvme_ready() {
+  uint8_t is_nvme_ready = 1;
+  uint8_t value = 0;
+  for (int fru=1;fru <= 4;fru+=2) {
+    // get nvme ready from kv_store
+    if (pal_get_pair_slot_type(fru) == TYPE_GPV2_A_SV) {
+      pal_get_nvme_ready(fru, &value);
+      is_nvme_ready &= value;
+    }
+  }
+  return is_nvme_ready;
 }
 
 int

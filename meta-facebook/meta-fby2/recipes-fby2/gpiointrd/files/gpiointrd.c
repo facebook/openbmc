@@ -276,11 +276,16 @@ fru_cache_dump(void *arg) {
   const int max_retry = 3;
   int oldstate;
   int finish_count = 0; // fru finish
+  int nvme_ready_count = 0;
   float value;
   fruid_info_t fruid;
 
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+  pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+  pal_set_nvme_ready(fru,0);
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
 
   // Check BIC Self Test Result
   do {
@@ -360,8 +365,10 @@ fru_cache_dump(void *arg) {
   // If NVMe is ready, try to get the FRU which was failed to get and
   // update the fan speed control table according to the device type
   do {
+    nvme_ready_count = 0;
     for (dev_id = 1; dev_id <= MAX_NUM_DEVS; dev_id++) {
       if (status[dev_id] == DEVICE_POWER_OFF) {// M.2 device is present or not
+        nvme_ready_count++;
         continue;
       }
 
@@ -371,6 +378,8 @@ fru_cache_dump(void *arg) {
 
       if (ret || (!nvme_ready))
         continue;
+
+      nvme_ready_count++;
 
       if (dev_fru_complete[fru][dev_id] == DEV_FRU_NOT_COMPLETE) { // try to get fru or not
         if ((type == DEV_TYPE_VSI_ACC) || (type == DEV_TYPE_BRCM_ACC) || (type == DEV_TYPE_OTHER_ACC)) { // device type has FRU
@@ -411,8 +420,17 @@ fru_cache_dump(void *arg) {
         }
       }
     }
+
+    if (nvme_ready_count == MAX_NUM_DEVS) {
+      //set nvme is ready
+      pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+      pal_set_nvme_ready(fru,1);
+      pal_set_nvme_ready_timestamp(fru);
+      pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+    }
     sleep(10);
-  } while (finish_count < MAX_NUM_DEVS);
+
+  } while ((finish_count < MAX_NUM_DEVS) || (nvme_ready_count < MAX_NUM_DEVS));
 
   t_fru_cache[fru-1].is_running = 0;
   syslog(LOG_INFO, "%s: FRU %d cache is finished.", __func__, fru);

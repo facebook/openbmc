@@ -229,7 +229,7 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
                 attrs = line.split(": ")
                 self.assertIn(
                     attrs[0],
-                    ["Fan Mode", "Sensor Fail", "Fan Fail"],
+                    ["Fan Mode", "Sensor Fail", "Fan Fail", "Sled Fan Latch Open"],
                     "Accepted printed attributes",
                 )
                 if attrs[0] == "Sensor Fail" and attrs[1] != "None":

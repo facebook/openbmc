@@ -337,7 +337,8 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.fans, None, "Fans must be defined")
         for fan in self.fans:
-            self.fan_read(fan=fan)
+            with self.subTest(fan=fan):
+                self.fan_read(fan=fan)
 
     def test_fan_pwm_set(self):
         """
@@ -346,4 +347,5 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.fans, None, "Fans must be defined")
         for fan in self.pwms:
-            self.fan_set_and_read(fan_id=fan, pwm=40)
+            with self.subTest(fan=fan):
+                self.fan_set_and_read(fan_id=fan, pwm=40)

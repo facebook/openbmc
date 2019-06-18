@@ -33,6 +33,11 @@ class RestEndpointTest(FbossRestEndpointTest):
     MB_SEUTIL_ENDPOINT = "/api/sys/mb/seutil"
     PIM_INFO_ENDPOINT = "/api/sys/piminfo"
     PIM_SERIAL_ENDPOINT = "/api/sys/pimserial"
+    PIM_FIRMWARE_INFO = "/api/sys/firmware_info_pim"
+    SCM_FIRMWARE_INFO = "/api/sys/firmware_info_scm"
+    ALL_FIRMWARE_INFO = (
+        "/api/sys/firmware_info_all"
+    )  # duplicate endpoint to firmware_info/all
 
     # /api/sys
     def set_endpoint_sys_attributes(self):
@@ -144,4 +149,70 @@ class RestEndpointTest(FbossRestEndpointTest):
         self.set_endpoint_seutil_fruid_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.MB_SEUTIL_ENDPOINT, self.endpoint_seutil_fruid_attrb
+        )
+
+    def set_endpoint_firmware_info_all_attributes(self):
+        self.endpoint_firmware_info_all_attrb = [
+            "PIM1_TYPE",
+            "Right PDBCPLD",
+            "PIM2_TYPE",
+            "PIM5_TYPE",
+            "PIM7",
+            "PIM6",
+            "PIM5",
+            "PIM4",
+            "PIM3",
+            "PIM2",
+            "PIM1",
+            "PIM4_TYPE",
+            "Bottom FCMCPLD",
+            "PIM6_TYPE",
+            "PIM8",
+            "PIM3_TYPE",
+            "SCMCPLD",
+            "Left PDBCPLD",
+            "PIM7_TYPE",
+            "Top FCMCPLD",
+            "SMBCPLD",
+            "PIM8_TYPE",
+        ]
+
+    # "/api/sys/firmware_info_pim"
+    def set_endpoint_firmware_info_pim_attributes(self):
+        # pim attribute <-> version map.
+        self.endpoint_firmware_info_pim_attributes = [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+        ]
+
+    def test_endpoint_api_sys_firmware_info_pim(self):
+        self.set_endpoint_firmware_info_pim_attributes()
+        self.verify_endpoint_attributes(
+            RestEndpointTest.PIM_FIRMWARE_INFO,
+            self.endpoint_firmware_info_pim_attributes,
+        )
+
+    # "/api/sys/firmware_info_scm"
+    def set_endpoint_firmware_info_scm_attributes(self):
+        # scm attribute <-> version map.
+        self.endpoint_firmware_info_scm_attributes = ["1"]
+
+    def test_endpoint_api_sys_firmware_info_scm(self):
+        self.set_endpoint_firmware_info_scm_attributes()
+        self.verify_endpoint_attributes(
+            RestEndpointTest.SCM_FIRMWARE_INFO,
+            self.endpoint_firmware_info_scm_attributes,
+        )
+
+    # "/api/sys/firmware_info_all"
+    def test_endpoint_api_sys_firmware_all(self):
+        self.set_endpoint_firmware_info_all_attributes()
+        self.verify_endpoint_attributes(
+            RestEndpointTest.ALL_FIRMWARE_INFO, self.endpoint_firmware_info_all_attrb
         )

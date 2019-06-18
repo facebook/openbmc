@@ -39,14 +39,15 @@ class Tests:
         ],  # So yamp can import minipack tests and run them only one time
     }
 
-    def __init__(self, platform, start_dir=BMC_START_DIR):
+    def __init__(self, platform, start_dir=BMC_START_DIR, pattern="test*.py"):
         self.platform = platform
         self.tests_set = []
         self.formatted_tests_set = []
         self.start_dir = start_dir + args.platform + "/"
+        self.pattern = pattern
 
     def discover_tests(self):
-        suite = unittest.defaultTestLoader.discover(self.start_dir)
+        suite = unittest.defaultTestLoader.discover(self.start_dir, self.pattern)
         return suite
 
     def filter_based_on_pattern(self, test_string):
@@ -129,6 +130,8 @@ def arg_parser():
         default=BMC_START_DIR,
     )
 
+    parser.add_argument("--stress", help="run all stress tests", action="store_true")
+
     return parser.parse_args()
 
 
@@ -140,7 +143,12 @@ if __name__ == "__main__":
         rc = 0 if test_result.wasSuccessful() else 1
         exit(rc)
     elif args.platform:
-        test_paths = Tests(args.platform, args.start_dir).get_all_platform_tests()
+        if args.stress:
+            test_paths = Tests(
+                args.platform, args.start_dir, "stress*.py"
+            ).get_all_platform_tests()
+        else:
+            test_paths = Tests(args.platform, args.start_dir).get_all_platform_tests()
         if args.list_tests:
             for item in test_paths:
                 print(item)

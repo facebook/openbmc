@@ -17,12 +17,27 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import unittest
 
-from common.base_fru_test import CommonFruTest
+from common.base_process_running_test import BaseProcessRunningTest
 
 
-class FruMbTest(CommonFruTest):
-    def setUp(self):
-        self.fru_cmd = ["/usr/local/bin/fruid-util", "mb"]
-        self.fru_fields = {"product": 2, "board": 2, "chassis": 2}
+class ProcessRunningTest(BaseProcessRunningTest):
+    def set_processes(self):
+        self.expected_process = [
+            "fscd",
+            "sshd",
+            "rsyslogd",
+            "dhclient -6 -d -D LL -pf /var/run/dhclient6.eth0.pid eth0",
+            "mTerm_server",
+            "sensord",
+            "healthd",
+            "gpiod",
+            "ntpd",
+            "ipmid",
+            "ncsid",
+            "front-paneld",
+            "rest.py",
+            "/usr/local/bin/ipmbd 9 4",
+            "/usr/local/bin/ipmbd 11 11",
+            "/usr/local/bin/ipmbd 3 1",
+        ]

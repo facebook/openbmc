@@ -17,12 +17,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import unittest
-
 from common.base_fru_test import CommonFruTest
 
 
-class FruMbTest(CommonFruTest):
+class FruIOMTest(CommonFruTest):
     def setUp(self):
-        self.fru_cmd = ["/usr/local/bin/fruid-util", "mb"]
-        self.fru_fields = {"product": 2, "board": 2, "chassis": 2}
+        self.fru_cmd = ["/usr/local/bin/fruid-util", "iom"]
+        self.fru_fields = {"product": 4, "board": 0}

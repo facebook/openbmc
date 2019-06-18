@@ -25,24 +25,4 @@ from common.base_fru_test import CommonFruTest
 class FruSpbTest(CommonFruTest):
     def setUp(self):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "spb"]
-        self.fru_fields = (
-            "Chassis Type",
-            "Chassis Part Number",
-            "Chassis Serial Number",
-            "Board Mfg Date",
-            "Board Mfg",
-            "Board Product",
-            "Board Serial",
-            "Board Part Number",
-            "Board FRU ID",
-            "Board Custom Data 1",
-            "Product Manufacturer",
-            "Product Name",
-            "Product Part Number",
-            "Product Version",
-            "Product Serial",
-            "Product Asset Tag",
-            "Product FRU ID",
-            "Product Custom Data 1",
-            "Product Custom Data 2",
-        )
+        self.fru_fields = {"product": 2, "board": 1, "chassis": 0}

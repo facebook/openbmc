@@ -83,3 +83,12 @@ class boardApp_Handler:
     # Handler for sys/mb/seutil resource endpoint
     async def rest_seutil_hdl(self, request):
         return web.json_response(rest_seutil.get_seutil(), dumps=dumps_bytestr)
+
+    # /api/sys/firmware_info
+    async def rest_firmware_info_hdl(self, request):
+        details = {
+            "Information": {"Description": "Firmware versions"},
+            "Actions": [],
+            "Resources": ["all"],
+        }
+        return web.json_response(details, dumps=dumps_bytestr)

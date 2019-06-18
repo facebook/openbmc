@@ -6,6 +6,10 @@ from typing import Dict
 from rest_utils import DEFAULT_TIMEOUT_SEC
 
 
+def get_all_fw_ver() -> Dict:
+    return {"Information": _get_all_fw_ver(), "Actions": [], "Resources": []}
+
+
 def _parse_all_cpld_ver(data) -> Dict:
     result = {}
     for line in data.splitlines():
@@ -40,7 +44,7 @@ def _parse_all_fpga_ver(data) -> Dict:
     return result
 
 
-def get_all_fw_ver() -> Dict:
+def _get_all_fw_ver() -> Dict:
     #
     # First, get all cpld version
     #

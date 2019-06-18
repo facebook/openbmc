@@ -33,4 +33,6 @@ board_routes = [
     "/api/sys/mb/pim7",
     "/api/sys/mb/pim8",
     "/api/sys/mb/seutil",
+    "/api/sys/firmware_info",
+    "/api/sys/firmware_info/all",
 ]

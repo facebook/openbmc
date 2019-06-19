@@ -135,6 +135,14 @@
 
 #define NON_DEBUG_MODE 0xff
 
+#if defined CONFIG_FBY2_ND
+#define CPER_CRASHDUMP_FILE "/mnt/data/cper_crashdump_slot"
+#define CPER_HEADER_SIZE 13
+#define CPER_TOTAL_PAGE_INDEX 11
+#define CPER_CURRENT_PAGE_INDEX 12
+#define CPER_COMMAND_TIME_RANGE 60
+#endif
+
 #ifndef max
 #define max(a, b) ((a) > (b)) ? (a) : (b)
 #endif
@@ -357,6 +365,15 @@ static const char *imc_log_path[MAX_NODES+1] = {
   IMC_LOG_FILE "3",
   IMC_LOG_FILE "4"
 };
+
+#if defined CONFIG_FBY2_ND
+static const char *cper_dump_path[MAX_NODES] = {
+  CPER_CRASHDUMP_FILE "1",
+  CPER_CRASHDUMP_FILE "2",
+  CPER_CRASHDUMP_FILE "3",
+  CPER_CRASHDUMP_FILE "4"
+};
+#endif
 
 struct ras_pcie_aer_info {
   char *name;
@@ -9667,9 +9684,52 @@ memory_error_sec_sel_parse(uint8_t slot, uint8_t *req_data, uint8_t req_len)
   return completion_code;
 }
 
+#if defined(CONFIG_FBY2_ND)
+uint8_t
+save_cper_to_binary_file(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+  uint8_t total_page_num = 0;
+  uint8_t current_page_num = 0;
+  static uint32_t last_dump_ts[MAX_NODES] = {0};
+  struct timespec ts;
+  FILE *pFile;
+
+  if(req_len > CPER_HEADER_SIZE) {
+    total_page_num = req_data[CPER_TOTAL_PAGE_INDEX];
+    current_page_num = req_data[CPER_CURRENT_PAGE_INDEX];
+    //check page number is vaild
+    if(total_page_num >= current_page_num) {
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      pFile = fopen(cper_dump_path[slot], (ts.tv_sec > last_dump_ts[slot])?"w":"a+");
+      last_dump_ts[slot] = ts.tv_sec + CPER_COMMAND_TIME_RANGE;
+      if( NULL == pFile ) {
+          return completion_code;
+      } else {
+          //Remove 0~12 byte define Header
+          fwrite((req_data + CPER_HEADER_SIZE),1, (req_len - CPER_HEADER_SIZE), pFile);
+      }
+      fclose(pFile);
+    }
+  }
+
+  completion_code = CC_SUCCESS;
+  return completion_code;
+}
+#endif
+
 uint8_t
 pal_add_cper_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+
+#if defined(CONFIG_FBY2_ND)
+  if ( (slot > 0) && (slot <= MAX_NODES) ) {
+      // slot is 1 based
+      save_cper_to_binary_file(slot - 1 , req_data, req_len, res_data, res_len);
+      return CC_SUCCESS;
+   } else {
+       return CC_PARAM_OUT_OF_RANGE; 
+   }  
+#endif
 
   if(memcmp(Memory_Error_Section, req_data+8, sizeof(Memory_Error_Section)) == 0) {
     //Memory Error Section

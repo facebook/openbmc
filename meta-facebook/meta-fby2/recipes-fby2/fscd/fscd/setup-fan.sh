@@ -151,7 +151,7 @@ esac
 
 /usr/local/bin/init_pwm.sh
 /usr/local/bin/check_fan_config.sh
-/usr/local/bin/fan-util --set 50
+/usr/local/bin/fan-util --set 70
 runsv /etc/sv/fscd > /dev/null 2>&1 &
 logger -p user.info "fscd started"
 

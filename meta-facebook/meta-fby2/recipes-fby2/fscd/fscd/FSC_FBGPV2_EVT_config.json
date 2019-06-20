@@ -133,8 +133,7 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [ 20, 50 ],
-        [ 74, 70 ]
+        [ 0, 70 ]
       ]
     }
   },

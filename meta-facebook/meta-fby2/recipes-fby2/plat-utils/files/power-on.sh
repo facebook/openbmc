@@ -70,8 +70,11 @@ check_por_config()
   fi
 }
 
-if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then 
-  date -s "2018-01-01 00:00:00"
+if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
+  # If BMC reboot and all slot empty or 12V-off
+  if [[ $(is_slot_12v_on 1) == "0" && $(is_slot_12v_on 2) == "0" && $(is_slot_12v_on 3) == "0" && $(is_slot_12v_on 4) == "0" ]]; then
+    date -s "2018-01-01 00:00:00"
+  fi
 fi
 
 /usr/local/bin/sync_date.sh

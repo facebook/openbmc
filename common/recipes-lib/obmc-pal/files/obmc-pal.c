@@ -662,7 +662,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data)
  * A Function to parse common SEL message, a helper funciton
  * for pal_parse_sel.
  *
- * Note that this fuction __CANNOT__ be overriden.
+ * Note that this function __CANNOT__ be overriden.
  * To add board specific routine, please override pal_parse_sel.
  */
 
@@ -2331,7 +2331,7 @@ pal_get_pair_fru(uint8_t slot_id, uint8_t *pair_fru)
 }
 
 char * __attribute__((weak))
-pal_get_pwn_list(void) 
+pal_get_pwn_list(void)
 {
   return pal_pwm_list;
 }
@@ -2343,7 +2343,7 @@ pal_get_tach_list(void)
 }
 
 int __attribute__((weak))
-pal_get_pwm_cnt(void) 
+pal_get_pwm_cnt(void)
 {
   return pal_pwm_cnt;
 }
@@ -2352,5 +2352,11 @@ int __attribute__((weak))
 pal_get_tach_cnt(void)
 {
   return pal_tach_cnt;
+}
+
+int __attribute__((weak))
+pal_set_time_sync(uint8_t *req_data, uint8_t req_len)
+{
+  return PAL_ENOTSUP;
 }
 

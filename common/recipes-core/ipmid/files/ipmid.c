@@ -1552,6 +1552,32 @@ storage_get_sel_time (unsigned char *response, unsigned char *res_len)
 }
 #endif
 
+#if defined(CONFIG_FBY2_ND)
+static void
+storage_set_sel_time (unsigned char *request, unsigned char *response, unsigned char req_len)
+{
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  static uint8_t time_sync = 0;
+
+  if (req_len != 7) { // payload_id netfn_lun cmd data[4];
+    res->cc = CC_INVALID_LENGTH;
+  }
+
+  if (!time_sync) {
+    if (pal_set_time_sync(req->data,req_len-3)) {
+      res->cc = CC_UNSPECIFIED_ERROR;
+      return;
+    }
+    res->cc = CC_SUCCESS;
+    time_sync = 1;
+  } else {
+    res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+  }
+  return;
+}
+#endif
+
 static void
 storage_get_sel_utc (unsigned char *response, unsigned char *res_len)
 {
@@ -1609,6 +1635,11 @@ ipmi_handle_storage (unsigned char *request, unsigned char req_len,
      // TBD: Respond only if BMC's time has synced with NTP
     case CMD_STORAGE_GET_SEL_TIME:
       storage_get_sel_time (response, res_len);
+      break;
+#endif
+#if defined(CONFIG_FBY2_ND)
+    case CMD_STORAGE_SET_SEL_TIME:
+      storage_set_sel_time (request, response, req_len);
       break;
 #endif
     case CMD_STORAGE_GET_SEL_UTC:

@@ -142,6 +142,8 @@
 #define CPER_CURRENT_PAGE_INDEX 12
 #define CPER_COMMAND_TIME_RANGE 60
 #endif
+#define TIME_SYNC_KEY "time_sync"
+#define SYNC_DATE_SCRIPT "/usr/local/bin/sync_date.sh"
 
 #ifndef max
 #define max(a, b) ((a) > (b)) ? (a) : (b)
@@ -914,7 +916,7 @@ pal_get_pwn_list(void) {
 
   spb_type = fby2_common_get_spb_type();
   fan_type = fby2_common_get_fan_type();
-  
+
   if (spb_type == TYPE_SPB_YV250) {
     if (fan_type == TYPE_DUAL_R_FAN) {
       strncpy(pal_pwm_list, "0, 2, 1, 3", 16);
@@ -6396,7 +6398,7 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
    ret = sensor_cache_read(FRU_SPB, SP_SENSOR_FAN0_TACH + fan, &value);
    if (ret != 0)  // Read sensor value
       ret = sensor_raw_read(FRU_SPB, SP_SENSOR_FAN0_TACH + fan, &value);
-   
+
 
    if (0 == ret)
       *rpm = (int) value;
@@ -8089,7 +8091,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
         *res_len = rsp->hdr.payload_length;
         completion_code = CC_SUCCESS;
       } else {
-        completion_code = CC_UNSPECIFIED_ERROR; 
+        completion_code = CC_UNSPECIFIED_ERROR;
       }
 
       free(msg);
@@ -9727,8 +9729,8 @@ pal_add_cper_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
       save_cper_to_binary_file(slot - 1 , req_data, req_len, res_data, res_len);
       return CC_SUCCESS;
    } else {
-       return CC_PARAM_OUT_OF_RANGE; 
-   }  
+       return CC_PARAM_OUT_OF_RANGE;
+   }
 #endif
 
   if(memcmp(Memory_Error_Section, req_data+8, sizeof(Memory_Error_Section)) == 0) {
@@ -10144,4 +10146,18 @@ pal_get_pair_fru(uint8_t slot_id, uint8_t *pair_fru) {
 
   *pair_fru = 0;
   return false;
+}
+
+int
+pal_set_time_sync(uint8_t *req_data, uint8_t req_len)
+{
+  char value[MAX_VALUE_LEN];
+  if (req_len != 4)
+    return -1;
+  sprintf(value, "%02X %02X %02X %02X", req_data[0],req_data[1],req_data[2],req_data[3]);
+  if (kv_set(TIME_SYNC_KEY, value, 0, 0) < 0)
+    return -1;
+  if (system(SYNC_DATE_SCRIPT) < 0)
+    return -1;
+  return 0;
 }

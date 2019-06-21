@@ -34,6 +34,7 @@ class BaseFansTest(unittest.TestCase):
         self.kill_fan_ctrl_cmd = None
         self.start_fan_ctrl_cmd = None
         self.fans = None
+        self.names = None
         self.pwms = None
 
     def tearDown(self):
@@ -192,11 +193,11 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
         ret = run_shell_cmd(cmd)
         return ret
 
-    def set_fan_speed(self, fan_id, pwm):
+    def set_fan_speed(self, pwm_id, pwm):
         """
         Helper function to set fan speed
         """
-        cmd = "/usr/local/bin/fan-util --set " + str(pwm) + " " + str(fan_id)
+        cmd = "/usr/local/bin/fan-util --set " + str(pwm) + " " + str(pwm_id)
         Logger.debug("Executing: {}".format(cmd))
         run_shell_cmd(cmd)
         time.sleep(10)  # allow time for fans to be properly set
@@ -218,11 +219,12 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
         """
         self.assertNotEqual(self.fans, None, "Number of fans undefined")
         self.assertNotEqual(self.pwms, None, "Number of PWM undefined")
+        self.assertNotEqual(self.names, None, "Names of fans not set")
         Logger.info("Parsing Fans dump: {}".format(info))
         info = info.split("\n")
         num = 0
         for line in info:
-            m = re.match(r"Fan (\d+) Speed: (\d+) RPM \((\d+)%\)", line)
+            m = re.match(r"(.+) Speed: (\d+) RPM \((\d+)%\)", line)
             if not m:
                 if re.match(r"^\s*$", line):
                     continue
@@ -235,9 +237,13 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
                 if attrs[0] == "Sensor Fail" and attrs[1] != "None":
                     self.assertEqual(attrs[1], "None", "Sensor failure")
                 continue
-            read_fan = int(m.group(1))
+            fan_name = m.group(1)
+            self.assertIn(fan_name, self.names, "Unknown Fan")
+            read_fan = self.names[fan_name]
             if fan is not None:
                 self.assertEqual(read_fan, fan, "Incorrect fan read")
+            else:
+                self.assertEqual(read_fan, num, "Incorrect index of fan")
             num += 1
         self.assertLessEqual(num, len(self.fans), "Number of fans")
         self.assertGreater(num, 0, "At least one fan")
@@ -245,16 +251,23 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
             self.assertEqual(num, len(self.fans), "Exact number of fans")
         return True
 
-    def get_speed(self, info):
+    def get_speed(self, info, fan_id=None):
         """
         Given a dump of 1 fan rpm read extract speed
         """
         out = info.splitlines()
         ret = []
+        num = 0
         for line in out:
-            m = re.match(r"Fan (\d+) Speed: (\d+) RPM \((\d+)%\)", line)
+            m = re.match(r"(.+) Speed: (\d+) RPM \((\d+)%\)", line)
             if m is not None:
+                self.assertIn(m.group(1), self.names, "Unknown fan name")
+                if fan_id is not None:
+                    self.assertEquals(fan_id, self.names[m.group(1)], "Bad fan index")
+                else:
+                    self.assertEquals(num, self.names[m.group(1)], "Bad fan index")
                 ret.append(int(m.group(3)))
+                num += 1
         return ret
 
     def test_all_fans_read(self):
@@ -276,7 +289,7 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
             self.verify_get_fan_speed_output(data, fan), "Get fan speed failed"
         )
 
-    def fan_set_and_read(self, fan_id=None, pwm=None):
+    def fan_set_and_read(self, pwm_id=None, fan_id=None, pwm=None):
         """
         Test if fan set is setting pwm as expected to 0
         """
@@ -290,21 +303,25 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
         self.kill_fan_controller()
 
         # set fan speed
-        self.set_fan_speed(fan_id=fan_id, pwm=pwm)
+        self.set_fan_speed(pwm_id=pwm_id, pwm=pwm)
 
-        # read fan speed
-        data = self.get_fan_speed(fan_id=fan_id)
-        Logger.info("Fans dump:\n" + data)
+        for fan in fan_id:
+            with self.subTest(pwm_id=pwm_id, fan_id=fan):
+                # read fan speed
+                data = self.get_fan_speed(fan_id=fan)
+                Logger.info("Fans dump:\n" + data)
 
-        # parse fan data and get pwm only
-        speed = self.get_speed(data)
-        self.assertEqual(len(speed), 1, msg="More than one fan speed was returned")
-        self.assertAlmostEqual(
-            speed[0],
-            pwm,
-            delta=5,
-            msg="Speed was not set to {} pwm [FAILED]".format(pwm),
-        )
+                # parse fan data and get pwm only
+                speed = self.get_speed(data, fan_id=fan)
+                self.assertEqual(
+                    len(speed), 1, msg="More than one fan speed was returned"
+                )
+                self.assertAlmostEqual(
+                    speed[0],
+                    pwm,
+                    delta=5,
+                    msg="Speed was not set to {} pwm [FAILED]".format(pwm),
+                )
 
     def test_set_all_fans_and_read(self):
         """
@@ -324,7 +341,7 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
         Logger.info("Fans dump:\n" + data)
         # parse fan data and get pwm only
         speed = self.get_speed(data)
-        self.assertEqual(len(speed), len(self.pwms), msg="Expected number of PWMs")
+        self.assertEqual(len(speed), len(self.fans), msg="Expected number of Fans")
         for s in speed:
             self.assertAlmostEqual(
                 s, pwm, delta=5, msg="Speed was not set to {} pwm [FAILED]".format(pwm)
@@ -346,6 +363,6 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.fans, None, "Fans must be defined")
-        for fan in self.pwms:
-            with self.subTest(fan=fan):
-                self.fan_set_and_read(fan_id=fan, pwm=40)
+        for pwm_id in self.pwms:
+            with self.subTest(pwm_id=pwm_id):
+                self.fan_set_and_read(pwm_id=pwm_id, fan_id=self.pwms[pwm_id], pwm=40)

@@ -25,9 +25,18 @@ from utils.cit_logger import Logger
 class FansTest(CommonFanUtilBasedFansTest):
     def setUp(self):
         Logger.start(name=self._testMethodName)
-        self.fans = [0, 1]
-        self.pwms = {0: [0], 1: [1]}
-        self.names = {"Fan 0": 0, "Fan 1": 1}
+        self.fans = [0, 1, 2, 3, 4, 5, 6, 7]
+        self.pwms = {0: [2, 3, 4, 5], 1: [0, 1, 6, 7]}
+        self.names = {
+            "Fan 1 Front": 0,
+            "Fan 1 Rear": 1,
+            "Fan 2 Front": 2,
+            "Fan 2 Rear": 3,
+            "Fan 3 Front": 4,
+            "Fan 3 Rear": 5,
+            "Fan 4 Front": 6,
+            "Fan 4 Rear": 7,
+        }
         self.kill_fan_ctrl_cmd = ["/usr/bin/sv stop fscd"]
         self.start_fan_ctrl_cmd = ["/usr/bin/sv start fscd"]
 

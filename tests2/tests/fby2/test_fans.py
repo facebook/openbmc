@@ -26,7 +26,8 @@ class FansTest(CommonFanUtilBasedFansTest):
     def setUp(self):
         Logger.start(name=self._testMethodName)
         self.fans = [0, 1]
-        self.pwms = [0, 1]
+        self.pwms = {0: [0], 1: [1]}
+        self.names = {"Fan 0": 0, "Fan 1": 1}
         self.kill_fan_ctrl_cmd = ["/usr/bin/sv stop fscd"]
         self.start_fan_ctrl_cmd = ["/usr/bin/sv start fscd"]
 

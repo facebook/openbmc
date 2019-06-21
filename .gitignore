@@ -9,3 +9,7 @@ ID
 
 # Local shared state cache
 /.sstate/
+
+#ignore buck-out
+/buck-out*/
+.buckd/

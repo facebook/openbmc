@@ -3,11 +3,14 @@ lib: libpldm.so
 
 CFLAGS += -Wall -Werror
 
-libpldm.so: pldm.o
-	$(CC) -shared -o libpldm.so pldm.o -lc -lrt -lncsi $(LDFLAGS)
+libpldm.so: pldm.o pldm_pmc.o
+	$(CC) -shared -o libpldm.so pldm.o pldm_pmc.o -lc -lrt -lncsi $(LDFLAGS)
 
 pldm.o: pldm.c
 	$(CC) $(CFLAGS) -fPIC -c -o pldm.o pldm.c
+
+pldm_pmc.o: pldm_pmc.c
+	$(CC) $(CFLAGS) -fPIC -c -o pldm_pmc.o pldm_pmc.c
 
 .PHONY: clean
 

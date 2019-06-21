@@ -34,14 +34,23 @@
 // PLDM Common fields
 #define PLDM_CM_RQ             0x80000000
 #define PLDM_CM_D              0x40000000
-#define PLDM_CM_IID_MASK       0x1f000000
+#define PLDM_CM_IID_MASK       0x1f
 #define PLDM_CM_HDR_VER_MASK   0x00a00000
-#define PLDM_CM_PLDM_TYPE_MASK 0x003f0000
+#define PLDM_CM_PLDM_TYPE_MASK 0x3f
 #define PLDM_CM_CMD_MASK       0x0000ff00
 #define PLDM_CM_COMP_MASK      0x000000ff
 
 #define PLDM_COMMON_REQ_LEN   3  // 3 bytes common field for PLDM requests
 #define PLDM_COMMON_RES_LEN   4  // 4 bytes for PLDM Responses
+
+#define PLDM_MAX_IID         32  // 5 bits for IID field, max 32 IIDs
+
+// some offsets in PLDM Common fields
+#define PLDM_IID_OFFSET       0  // offset for command IID
+#define PLDM_TYPE_OFFSET      1  // pldm type
+#define PLDM_CMD_OFFSET       2  // offset of PLDM cmd in request/response
+#define PLDM_CC_OFFSET        3  // offset of completion code in PLDM response
+                                 //   Indicates the start of response payload
 
 // PLDM supported command type bitfields
 typedef enum pldm_types {

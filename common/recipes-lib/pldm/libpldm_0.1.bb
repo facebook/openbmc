@@ -12,6 +12,8 @@ SRC_URI = "file://Makefile \
            file://pldm.h \
            file://pldm_base.h \
            file://pldm_fw_update.h \
+           file://pldm_pmc.h \
+           file://pldm_pmc.c \
           "
 
 S = "${WORKDIR}"
@@ -24,6 +26,7 @@ do_install() {
     install -m 0644 pldm.h ${D}${includedir}/openbmc/pldm.h
     install -m 0644 pldm_base.h ${D}${includedir}/openbmc/pldm_base.h
     install -m 0644 pldm_fw_update.h ${D}${includedir}/openbmc/pldm_fw_update.h
+    install -m 0644 pldm_pmc.h ${D}${includedir}/openbmc/pldm_pmc.h
 }
 
 DEPENDS =+ "libncsi"

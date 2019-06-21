@@ -130,7 +130,7 @@ close_and_exit:
   return ret_buf;
 }
 
-void print_pldm_response(NCSI_NL_RSP_T *nl_resp)
+void print_pldm_resp_raw(NCSI_NL_RSP_T *nl_resp)
 {
   int i;
   printf("PLDM Payload\n");
@@ -267,7 +267,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
     }
     print_pldm_cmd_status(nl_resp);
 
-    pldmCmd = ncsiDecodePldmCmd(nl_resp, &pldmReq);
+    pldmCmd = ncsiGetPldmCmd(nl_resp, &pldmReq);
     free(nl_resp);
 
     if (pldmCmd == -1) {
@@ -285,7 +285,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
          (pldmCmd == CMD_APPLY_COMPLETE)) {
       loopCount++;
       int cmdStatus = 0;
-      cmdStatus = pldmCmdHandler(pkgHdr, &pldmReq, pldmRes);
+      cmdStatus = pldmFwUpdateCmdHandler(pkgHdr, &pldmReq, pldmRes);
       ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_SEND_NC_PLDM_REPLY,
                                  pldmRes->resp_size, pldmRes->common);
       if (ret) {
@@ -485,8 +485,21 @@ main(int argc, char **argv) {
         // command failed, likely due to device not supporting PLDM over NCSI
         print_ncsi_completion_codes(rsp);
       } else {
+        // debug prints
         print_pldm_cmd_status(rsp);
-        print_pldm_response(rsp);
+        print_pldm_resp_raw(rsp);
+
+        pldm_response *pldmRes = NULL;
+        pldmRes = calloc(1, sizeof(pldm_response));
+        if (!pldmRes) {
+          printf("%s, Error: failed pldmRes buffer allocation(%d)\n",
+                 __FUNCTION__, sizeof(pldm_response));
+        }
+        pldmRes->resp_size = rsp->hdr.payload_length - 4;
+        memcpy(&(pldmRes->common[0]), &(rsp->msg_payload[4]), pldmRes->resp_size);
+
+        // handle command response
+        pldmRespHandler(pldmRes);
       }
     } else {
       print_ncsi_resp(rsp);

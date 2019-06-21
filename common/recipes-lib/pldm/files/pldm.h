@@ -52,6 +52,9 @@ typedef struct {
 pldm_fw_pkg_hdr_t *pldm_parse_fw_pkg(char *path);
 const char *pldm_fw_cmd_cc_to_name(uint8_t comp_code);
 
+void genReqCommonFields(PldmType type, PldmFWCmds cmd, uint8_t *common);
+void dbgPrintCdb(pldm_cmd_req *cdb);
+
 void free_pldm_pkg_data           (pldm_fw_pkg_hdr_t **pFwPkgHdr);
 void pldmCreateReqUpdateCmd       (pldm_fw_pkg_hdr_t *pFwPkgHdr,
                                    pldm_cmd_req *pPldmCdb,
@@ -69,7 +72,14 @@ void pldmHandleGetVersionResp(PLDM_GetPldmVersion_Response_t *pPldmResp,
 void pldmCreateGetPldmTypesCmd(pldm_cmd_req *pPldmCdb);
 uint64_t pldmHandleGetPldmTypesResp(PLDM_GetPldmTypes_Response_t *pPldmResp);
 
-int pldmCmdHandler(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_response *pldmRes);
-int ncsiDecodePldmCmd(NCSI_NL_RSP_T *nl_resp,  pldm_cmd_req *pCmd);
+int pldmFwUpdateCmdHandler(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd,
+                           pldm_response *pldmRes);
+int pldmRespHandler(pldm_response *pResp);
+int ncsiGetPldmCmd(NCSI_NL_RSP_T *nl_resp,  pldm_cmd_req *pCmd);
 int ncsiDecodePldmCompCode(NCSI_NL_RSP_T *nl_resp);
+int ncsiDecodePldmIID(NCSI_Response_Packet *ncsi_resp);
+int ncsiDecodePldmType(NCSI_Response_Packet *ncsi_resp);
+int ncsiDecodePldmCmd(NCSI_Response_Packet *ncsi_resp);
+unsigned char *get_pldm_response_payload(unsigned char *buf);
+
 #endif

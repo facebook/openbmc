@@ -325,9 +325,6 @@ typedef struct {
 } __attribute__((packed)) PLDM_ActivateFirmware_Response_t;
 
 // UUID signature specifying package supports PLDM FW Update
-const char PLDM_FW_UUID[PLDM_FW_UUID_LEN] = {
-            0xf0, 0x18, 0x87, 0x8c, 0xcb, 0x7d, 0x49, 0x43,
-            0x98, 0x00, 0xa0, 0x2f, 0x05, 0x9a, 0xca, 0x02
-        };
+extern const char PLDM_FW_UUID[PLDM_FW_UUID_LEN];
 
 #endif

@@ -35,7 +35,7 @@
 #include "pldm_base.h"
 #include "pldm_fw_update.h"
 #include "pldm.h"
-
+#include "pldm_pmc.h"
 
 #define DEBUG_PLDM
 
@@ -131,6 +131,12 @@ const char *pldm_str_type_name[NUM_PLDM_FW_STR_TYPES] = {
   "UTF16BE",
 };
 
+// UUID signature specifying package supports PLDM FW Update
+const char PLDM_FW_UUID[PLDM_FW_UUID_LEN] = {
+            0xf0, 0x18, 0x87, 0x8c, 0xcb, 0x7d, 0x49, 0x43,
+            0x98, 0x00, 0xa0, 0x2f, 0x05, 0x9a, 0xca, 0x02
+        };
+
 const char *
 pldm_str_type_to_name(fwStrType strType)
 {
@@ -197,9 +203,9 @@ void dbgPrintCdb(pldm_cmd_req *cdb)
   DBG_PRINT("\n");
 
   DBG_PRINT("\n   iid=%d, cmd=0x%x (%s)\n\n",
-             (cdb->common[0]) & 0x1f,
-             cdb->common[2],
-             pldm_fw_cmd_to_name(cdb->common[2]));
+             (cdb->common[PLDM_IID_OFFSET]) & 0x1f,
+             cdb->common[PLDM_CMD_OFFSET],
+             pldm_fw_cmd_to_name(cdb->common[PLDM_CMD_OFFSET]));
 }
 
 
@@ -210,9 +216,9 @@ void genReqCommonFields(PldmType type, PldmFWCmds cmd, uint8_t *common)
   gPldm_iid = (gPldm_iid + 1) & 0x1f;;
   iid = gPldm_iid;
 
-  common[0] = 0x80 | (iid & 0x1f);
-  common[1] = type;
-  common[2] = cmd;
+  common[PLDM_IID_OFFSET]  = 0x80 | (iid & 0x1f);
+  common[PLDM_TYPE_OFFSET] = type;
+  common[PLDM_CMD_OFFSET]  = cmd;
 }
 
 
@@ -766,7 +772,8 @@ int handlePldmReqFwData(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_resp
          __FUNCTION__, pReqDataCmd->offset, pReqDataCmd->length, compBytesLeft,
          numPaddingNeeded);
   memcpy(pldmRes->common, pCmd->common, PLDM_COMMON_REQ_LEN);
-  pldmRes->common[3] = CC_SUCCESS;  // hard code success for now, need to check length in the future
+  // hard code success for now, need to check length in the future
+  pldmRes->common[PLDM_CC_OFFSET] = CC_SUCCESS;
 
 
   if (numPaddingNeeded > 0) {
@@ -793,7 +800,7 @@ int handlePldmFwTransferComplete(pldm_cmd_req *pCmd, pldm_response *pRes)
   }
 
   memcpy(pRes->common, pCmd->common, PLDM_COMMON_REQ_LEN);
-  pRes->common[3] = CC_SUCCESS;
+  pRes->common[PLDM_CC_OFFSET] = CC_SUCCESS;
   pRes->resp_size = PLDM_COMMON_RES_LEN;
   return ret;
 }
@@ -811,7 +818,7 @@ int handlePldmVerifyComplete(pldm_cmd_req *pCmd, pldm_response *pRes)
   }
 
   memcpy(pRes->common, pCmd->common, PLDM_COMMON_REQ_LEN);
-  pRes->common[3] = CC_SUCCESS;
+  pRes->common[PLDM_CC_OFFSET] = CC_SUCCESS;
   pRes->resp_size = PLDM_COMMON_RES_LEN;
   return ret;
 }
@@ -830,14 +837,14 @@ int handlePldmFwApplyComplete(pldm_cmd_req *pCmd, pldm_response *pRes)
           pReqDataCmd->applyResult, pReqDataCmd->compActivationMethodsModification);
 
   memcpy(pRes->common, pCmd->common, PLDM_COMMON_REQ_LEN);
-  pRes->common[3] = CC_SUCCESS;
+  pRes->common[PLDM_CC_OFFSET] = CC_SUCCESS;
   pRes->resp_size = PLDM_COMMON_RES_LEN;
   return ret;
 }
 
-int pldmCmdHandler(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_response *pRes)
+int pldmFwUpdateCmdHandler(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_response *pRes)
 {
-  int cmd = pCmd->common[2];
+  int cmd = pCmd->common[PLDM_CMD_OFFSET];
   int ret = 0;
 
   // need to check cmd validity
@@ -936,12 +943,31 @@ uint64_t pldmHandleGetPldmTypesResp(PLDM_GetPldmTypes_Response_t *pPldmResp)
 }
 
 
+int pldmRespHandler(pldm_response *pResp)
+{
+  int pldmType = pResp->common[PLDM_TYPE_OFFSET] & 0x3f;
+  int compCode = pResp->common[PLDM_CC_OFFSET];
+  int ret = 0;
 
+  // if error occurred, do not decode response payload
+  if (compCode != 0)
+    return ret;
+
+  printf("pldmRespHandler, pldmType=%d\n", pldmType);
+  switch (pldmType) {
+    case PLDM_MONITORING:
+      return pldmHandlePmcResp(pResp);
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
 
 
 // takes NCSI cmd 0x56 response and returns
-// PLDM opcode
-int ncsiDecodePldmCmd(NCSI_NL_RSP_T *nl_resp,  pldm_cmd_req *pldmReq)
+// PLDM opcode, as well as the entire cmd field in pldmReq
+int ncsiGetPldmCmd(NCSI_NL_RSP_T *nl_resp,  pldm_cmd_req *pldmReq)
 {
   // NCSI response contains at least 4 bytes of Reason code and
   //   Response code.
@@ -955,9 +981,11 @@ int ncsiDecodePldmCmd(NCSI_NL_RSP_T *nl_resp,  pldm_cmd_req *pldmReq)
          pldmReq->payload_size);
 
   // PLDM cmd byte is the 3rd byte of PLDM header
-  return pldmReq->common[2];
+  return pldmReq->common[PLDM_CMD_OFFSET];
 }
 
+
+// take an NCSI response carry PLDM response, extract PLDM Completion code
 int ncsiDecodePldmCompCode(NCSI_NL_RSP_T *nl_resp)
 {
   // NCSI response contains at least 4 bytes of Reason code and
@@ -969,4 +997,48 @@ int ncsiDecodePldmCompCode(NCSI_NL_RSP_T *nl_resp)
 
   // Completion Code is in 4th byte of PLDM header
   return nl_resp->msg_payload[7];
+}
+
+
+// takes an NCSI response carrying PLDM payload, and extract PLDM IID
+int ncsiDecodePldmIID(NCSI_Response_Packet *ncsi_resp)
+{
+  // if NCSI command failed, do not proceed to extract payload
+  if (ncsi_resp->Response_Code != REASON_NO_ERROR) {
+    return -1;
+  }
+
+  return (ncsi_resp->Payload_Data[PLDM_IID_OFFSET] & PLDM_CM_IID_MASK);
+}
+
+// takes an NCSI response carrying PLDM response, and extract PLDM Type
+int ncsiDecodePldmType(NCSI_Response_Packet *ncsi_resp)
+{
+  // if NCSI command failed, do not proceed to extract payload
+  if (ncsi_resp->Response_Code != REASON_NO_ERROR) {
+    return -1;
+  }
+
+  return (ncsi_resp->Payload_Data[PLDM_TYPE_OFFSET] & PLDM_CM_PLDM_TYPE_MASK);
+}
+
+
+// takes an NCSI response carrying PLDM response, and extract PLDM cmd
+int ncsiDecodePldmCmd(NCSI_Response_Packet *ncsi_resp)
+{
+  // if NCSI command failed, do not proceed to extract payload
+  if (ncsi_resp->Response_Code != REASON_NO_ERROR) {
+    return -1;
+  }
+  // PLDM CMD is the first byte of PLDM header
+  return (ncsi_resp->Payload_Data[PLDM_CMD_OFFSET]);
+}
+
+// takes a PLDM response (table 6.1 of DSP0240)
+// https://www.dmtf.org/sites/default/files/standards/documents/DSP0240_1.0.0.pdf
+// Returns the response payload, start with completion code
+unsigned char *
+get_pldm_response_payload(unsigned char *buf)
+{
+  return (buf + 3);
 }

@@ -7,6 +7,6 @@ SRC_URI += "file://pal.c \
 
 SOURCES += "machine_config.c"
 
-DEPENDS += "plat-utils libme libvr libgpio libsensor-correction libobmc-i2c"
-RDEPENDS_${PN} += " libme libvr libsensor-correction libobmc-i2c"
-LDFLAGS += " -lme -lvr -lgpio -lsensor-correction -lobmc-i2c"
+DEPENDS += "plat-utils libme libvr libgpio-ctrl libsensor-correction libobmc-i2c libmisc-utils"
+RDEPENDS_${PN} += " libme libvr libgpio-ctrl libsensor-correction libobmc-i2c libmisc-utils"
+LDFLAGS += " -lme -lvr -lgpio-ctrl -lsensor-correction -lobmc-i2c -lmisc-utils"

@@ -32,11 +32,12 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include "pal.h"
+#include <openbmc/misc-utils.h>
 #include <openbmc/vr.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensor.h>
 #include <sys/stat.h>
-#include <openbmc/gpio.h>
+#include <openbmc/libgpio.h>
 #include <openbmc/kv.h>
 #include <openbmc/sensor-correction.h>
 
@@ -45,45 +46,6 @@
 #define FBTP_PLATFORM_NAME "fbtp"
 #define LAST_KEY "last_key"
 #define FBTP_MAX_NUM_SLOTS 1
-#define GPIO_VAL "/sys/class/gpio/gpio%d/value"
-#define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
-
-#define GPIO_POWER 35
-#define GPIO_POWER_GOOD 14
-#define GPIO_POWER_LED 210
-#define GPIO_POWER_RESET 33
-
-#define GPIO_RST_BTN 144
-
-#define GPIO_HB_LED 165
-
-#define GPIO_DBG_CARD_PRSNT 134
-
-#define GPIO_BMC_READY_N  28
-
-#define GPIO_BAT_SENSE_EN_N 46
-
-#define GPIO_BOARD_SKU_ID0 120
-#define GPIO_BOARD_SKU_ID1 121
-#define GPIO_BOARD_SKU_ID2 122
-#define GPIO_BOARD_SKU_ID3 123
-#define GPIO_BOARD_SKU_ID4 124
-#define GPIO_MB_SLOT_ID0 125
-#define GPIO_MB_SLOT_ID1 126
-#define GPIO_MB_SLOT_ID2 127
-#define GPIO_BOARD_REV_ID0 25
-#define GPIO_BOARD_REV_ID1 27
-#define GPIO_BOARD_REV_ID2 29
-#define GPIO_SLT_CFG0 142
-#define GPIO_SLT_CFG1 143
-#define GPIO_FM_CPU0_SKTOCC_LVT3_N 51
-#define GPIO_FM_CPU1_SKTOCC_LVT3_N 208
-#define GPIO_FM_BIOS_POST_CMPLT_N 215
-#define GPIO_FM_SLPS4_N 193
-#define GPIO_FM_FORCE_ADR_N 66
-#define GPIO_FM_OCP_MEZZA_PRES 217
-#define GPIO_UARTSW_LSB_N 132
-#define GPIO_UARTSW_MSB_N 133
 
 #define PAGE_SIZE  0x1000
 #define AST_SCU_BASE 0x1e6e2000
@@ -164,7 +126,6 @@
 #define CPLD_BUS_ID 0x6
 #define CPLD_ADDR 0xA0
 
-static uint8_t gpio_rst_btn[] = { 0, GPIO_POWER_RESET};
 const char pal_fru_list[] = "all, mb, nic, riser_slot2, riser_slot3, riser_slot4";
 const char pal_server_list[] = "mb";
 
@@ -783,8 +744,7 @@ struct dimm_map {
   char *label;
 };
 
-static bool is_cpu0_socket_occupy(void);
-static bool is_cpu1_socket_occupy(void);
+static bool is_cpu_socket_occupy(unsigned int cpu_id);
 static void _print_sensor_discrete_log(uint8_t fru, uint8_t snr_num, char *snr_name,
     uint8_t val, char *event);
 
@@ -1345,14 +1305,17 @@ read_hsc_current_value(float *value) {
   float hsc_b = 20475;
   float Rsence;
   ipmb_req_t *req;
-  char path[64] = {0};
-  int val=0;
   int ret = 0;
   static int retry = 0;
-  unsigned char revision_id;
+  uint8_t revision_id;
+  uint8_t sku_id;
+
+  if (pal_get_platform_id(&sku_id) ||
+      pal_get_board_rev_id(&revision_id)) {
+    return -1;
+  }
 
   req = ipmb_txb();
-
   req->res_slave_addr = 0x2C; //ME's Slave Address
   req->netfn_lun = NETFN_NM_REQ<<2;
   req->cmd = CMD_NM_SEND_RAW_PMBUS;
@@ -1360,12 +1323,9 @@ read_hsc_current_value(float *value) {
   req->data[1] = 0x01;
   req->data[2] = 0x00;
   req->data[3] = 0x86;
-  pal_get_board_rev_id(&revision_id);
   if (revision_id < BOARD_REV_PVT) { //DVT
     //HSC slave addr check for SS and DS
-    sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID4);
-    read_device(path, &val);
-    if (val){ //DS
+    if ((sku_id & (1 << 4))) { // DS
       req->data[4] = 0x8A;
       Rsence = 0.265;
     }else{    //SS
@@ -1424,11 +1384,15 @@ read_hsc_temp_value(float *value) {
   float hsc_b = 31880;
   float hsc_m = 42;
   ipmb_req_t *req;
-  char path[64] = {0};
-  int val=0;
   int ret = 0;
   static int retry = 0;
-  unsigned char revision_id;
+  uint8_t revision_id;
+  uint8_t sku_id;
+
+  if (pal_get_platform_id(&sku_id) ||
+      pal_get_board_rev_id(&revision_id)) {
+    return -1;
+  }
 
   req = (ipmb_req_t*)tbuf;
 
@@ -1445,12 +1409,9 @@ read_hsc_temp_value(float *value) {
   req->data[1] = 0x01;
   req->data[2] = 0x00;
   req->data[3] = 0x86;
-  pal_get_board_rev_id(&revision_id);
   if (revision_id < BOARD_REV_PVT) { //DVT
     //HSC slave addr check for SS and DS
-    sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID4);
-    read_device(path, &val);
-    if (val){ //DS
+    if ((sku_id & (1 << 4))) { // DS
       req->data[4] = 0x8A;
     }else{    //SS
       req->data[4] = 0x22;
@@ -1731,22 +1692,23 @@ read_cpu_temp(uint8_t snr_num, float *value) {
 bool 
 pal_is_BIOS_completed(uint8_t fru)
 {
-  char path[64] = {0};
-  int val;
+  gpio_desc_t *desc;
+  gpio_value_t value;
+  bool ret = false;
 
   if ( FRU_MB != fru )
   {
     syslog(LOG_WARNING, "[%s]incorrect fru id: %d", __func__, fru);
     return false;
   }
-
-  sprintf(path, GPIO_VAL, GPIO_FM_BIOS_POST_CMPLT_N);
-  if (read_device(path, &val) || val) 
-  {
+  desc = gpio_open_by_shadow("FM_BIOS_POST_CMPLT_N");
+  if (!desc)
     return false;
-  }
 
-  return true;
+  if (gpio_get_value(desc, &value) == 0 && value == GPIO_VALUE_LOW)
+    ret = true;
+  gpio_close(desc);
+  return ret;
 }
 
 void
@@ -2864,6 +2826,20 @@ exit:
   return ret;
 }
 
+static bool is_slps4_deassert(void)
+{
+  gpio_value_t value;
+  gpio_desc_t *desc = gpio_open_by_shadow("FM_SLPS4_N");
+  if (!desc)
+    return false;
+  if (gpio_get_value(desc, &value)) {
+    gpio_close(desc);
+    return false;
+  }
+  gpio_close(desc);
+  return value == GPIO_VALUE_HIGH ? true : false;
+}
+
 static int
 read_CPLD_power_fail_sts (uint8_t fru, uint8_t sensor_num, float *value, int pot) {
   static uint8_t power_fail = 0;
@@ -2877,7 +2853,7 @@ read_CPLD_power_fail_sts (uint8_t fru, uint8_t sensor_num, float *value, int pot
   char sensor_name[32] = {0}, event_str[30] = {0};
 
   // Check SLPS4 is high before start monitor CPLD power fail
-  if (gpio_get(GPIO_FM_SLPS4_N) != GPIO_VALUE_HIGH) {
+  if (!is_slps4_deassert()) {
     // Reset
     power_fail = 0;
     power_fail_log = 0;
@@ -3233,16 +3209,19 @@ FORCE_ADR() {
   if(value[12] == 0 || value[12] > 32)
     return;
 #if 0 /*disable the force ADR*/
-  sprintf(vpath, GPIO_VAL, GPIO_FM_FORCE_ADR_N);
-  if (write_device(vpath, "1")) {
-    return;
-  }
-  if (write_device(vpath, "0")) {
-    return;
-  }
-  msleep(10);
-  if (write_device(vpath, "1")) {
-    return;
+  {
+    gpio_desc_t *desc = gpio_open_by_shadow("FM_FORCE_ADR_N");
+    if (!desc)
+      return;
+    if (gpio_set_value(desc, GPIO_VALUE_HIGH))
+      goto bail;
+    if (gpio_set_value(desc, GPIO_VALUE_LOW))
+      goto bail;
+    msleep(10);
+    if (gpio_set_value(desc, GPIO_VALUE_HIGH))
+      goto bail;
+bail:
+    gpio_close(desc);
   }
 #endif
 }
@@ -3250,81 +3229,89 @@ FORCE_ADR() {
 // Power Button Override
 int
 pal_PBO(void) {
-  char vpath[64] = {0};
-
-  sprintf(vpath, GPIO_VAL, GPIO_POWER);
-  if (write_device(vpath, "1")) {
+  int ret = -1;
+  gpio_desc_t *gpio = gpio_open_by_shadow("FM_BMC_PWRBTN_OUT_N");
+  if (!gpio) {
     return -1;
   }
-  if (write_device(vpath, "0")) {
-    return -1;
+  if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
+    goto bail;
+  }
+  if (gpio_set_value(gpio, GPIO_VALUE_LOW)) {
+    goto bail;
   }
   sleep(6);
-  if (write_device(vpath, "1")) {
-    return -1;
+  if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
+    goto bail;
   }
-  return 0;
+  ret = 0;
+bail:
+  gpio_close(gpio);
+  return ret;
 }
 
 // Power On the server in a given slot
 static int
 server_power_on(void) {
-  char vpath[64] = {0};
+  int ret = -1;
+  gpio_desc_t *gpio = gpio_open_by_shadow("FM_BMC_PWRBTN_OUT_N");
 
-  sprintf(vpath, GPIO_VAL, GPIO_POWER);
-
-  if (write_device(vpath, "1")) {
+  if (!gpio) {
     return -1;
   }
-
-  if (write_device(vpath, "0")) {
-    return -1;
+  if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
+    goto bail;
   }
-
+  if (gpio_set_value(gpio, GPIO_VALUE_LOW)) {
+    goto bail;
+  }
   sleep(1);
-
-  if (write_device(vpath, "1")) {
-    return -1;
+  if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
+    goto bail;
   }
-
+  ret = 0;
   sleep(2);
-
   system("/usr/bin/sv restart fscd >> /dev/null");
-
-  return 0;
+bail:
+  gpio_close(gpio);
+  return ret;
 }
 
 // Power Off the server in given slot
 static int
 server_power_off(bool gs_flag) {
-  char vpath[64] = {0};
+  int ret = -1;
+  gpio_desc_t *gpio = gpio_open_by_shadow("FM_BMC_PWRBTN_OUT_N");
 
-  sprintf(vpath, GPIO_VAL, GPIO_POWER);
+  if (!gpio) {
+    return -1;
+  }
 
   system("/usr/bin/sv stop fscd >> /dev/null");
+
   if (!gs_flag)
     FORCE_ADR();
-  if (write_device(vpath, "1")) {
-    return -1;
-  }
 
+  if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
+    goto bail;
+  }
   sleep(1);
 
-  if (write_device(vpath, "0")) {
-    return -1;
+  if (gpio_set_value(gpio, GPIO_VALUE_LOW)) {
+    goto bail;
   }
-
   if (gs_flag) {
     sleep(DELAY_GRACEFUL_SHUTDOWN);
   } else {
     sleep(DELAY_POWER_OFF);
   }
-
-  if (write_device(vpath, "1")) {
-    return -1;
+  if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
+    goto bail;
   }
-
-  return 0;
+  ret = 0;
+bail:
+  gpio_close(gpio);
+  return ret;
 }
 
 // Debug Card's UART and BMC/SoL port share UART port and need to enable only one
@@ -3432,45 +3419,40 @@ pal_is_slot_server(uint8_t fru) {
 
 int
 pal_is_debug_card_prsnt(uint8_t *status) {
-  int val;
-  char path[64] = {0};
+  gpio_desc_t *desc = gpio_open_by_shadow("FM_POST_CARD_PRES_BMC_N");
+  gpio_value_t value;
+  int ret = -1;
 
-  sprintf(path, GPIO_VAL, GPIO_DBG_CARD_PRSNT);
-
-  if (read_device(path, &val)) {
+  if (!desc) {
     return -1;
   }
-
-  if (val == 0x0) {
-    *status = 1;
-  } else {
-    *status = 0;
+  if (gpio_get_value(desc, &value) == 0) {
+    *status = value == GPIO_VALUE_LOW ? 1 : 0;
+    ret = 0;
   }
-
-  return 0;
+  gpio_close(desc);
+  return ret;
 }
 
 int
 pal_get_server_power(uint8_t fru, uint8_t *status) {
-  int val;
-  char path[64] = {0};
+  gpio_desc_t *gpio;
+  gpio_value_t val;
+  int ret = -1;
 
   if ( fru != FRU_MB)
     return -1;
 
-  sprintf(path, GPIO_VAL, GPIO_POWER_GOOD);
-
-  if (read_device(path, &val)) {
+  gpio = gpio_open_by_shadow("PWRGD_SYS_PWROK");
+  if (!gpio) {
     return -1;
   }
-
-  if (val == 0x0) {
-    *status = 0;
-  } else {
-    *status = 1;
+  if (gpio_get_value(gpio, &val) == 0)  {
+    ret = 0;
+    *status = val == GPIO_VALUE_LOW ? 0 : 1;
   }
-
-  return 0;
+  gpio_close(gpio);
+  return ret;
 }
 
 static bool
@@ -3574,68 +3556,55 @@ pal_sled_cycle(void) {
 // Return the front panel's Reset Button status
 int
 pal_get_rst_btn(uint8_t *status) {
-  char path[64] = {0};
-  int val;
-
-  sprintf(path, GPIO_VAL, GPIO_RST_BTN);
-  if (read_device(path, &val)) {
+  int ret = -1;
+  gpio_value_t value;
+  gpio_desc_t *desc = gpio_open_by_shadow("FM_THROTTLE_N");
+  if (!desc) {
     return -1;
   }
-
-  if (val) {
-    *status = 0x0;
-  } else {
-    *status = 0x1;
+  if (0 == gpio_get_value(desc, &value)) {
+    *status = value == GPIO_VALUE_HIGH ? 0 : 1;
+    ret = 0;
   }
-
-  return 0;
+  gpio_close(desc);
+  return ret;
 }
 
 // Update the Reset button input to the server at given slot
 int
 pal_set_rst_btn(uint8_t slot, uint8_t status) {
-  char path[64] = {0};
-  char *val;
+  gpio_desc_t *desc;
+  int ret = -1;
 
-  if (slot < 1 || slot > 4) {
+  if (slot != FRU_MB) {
     return -1;
   }
-
-  if (status) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  sprintf(path, GPIO_VAL, gpio_rst_btn[slot]);
-  if (write_device(path, val)) {
+  desc = gpio_open_by_shadow("RST_BMC_SYSRST_BTN_OUT_N");
+  if (!desc) {
     return -1;
   }
-
-  return 0;
+  if (gpio_set_value(desc, status ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW) == 0) {
+    ret = 0;
+  }
+  gpio_close(desc);
+  return ret;
 }
 
 // Update the LED for the given slot with the status
 int
 pal_set_led(uint8_t fru, uint8_t status) {
-  char path[64] = {0};
-  char *val;
+  int ret = -1;
 
-//TODO: Need to check power LED control from CPLD
-  return 0;
-
-  if (status) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POWER_LED);
-  if (write_device(path, val)) {
+  gpio_desc_t *gpio = gpio_open_by_shadow("SERVER_POWER_LED");
+  if (!gpio) {
     return -1;
   }
-
-  return 0;
+  //TODO: Need to check power LED control from CPLD
+  if (gpio_set_value(gpio, status ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW) == 0) {
+    ret = 0;
+  }
+  gpio_close(gpio);
+  return ret;
 }
 
 // Update Heartbeet LED
@@ -3660,22 +3629,7 @@ pal_set_hb_led(uint8_t status) {
 // Update the Identification LED for the given fru with the status
 int
 pal_set_id_led(uint8_t fru, uint8_t status) {
-  char path[64] = {0};
-  char *val;
-
-  if (status) {
-    val = "1";
-  } else {
-    val = "0";
-  }
-
-  sprintf(path, GPIO_VAL, GPIO_POWER_LED);
-
-  if (write_device(path, val)) {
-    return -1;
-  }
-
-  return 0;
+  return pal_set_led(fru, status);
 }
 
 // Switch the UART mux to the given fru
@@ -3838,7 +3792,7 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
     }
 
     // BIOS POST COMPLT, in case BMC reboot when system idle in OS
-    if (gpio_get(GPIO_FM_BIOS_POST_CMPLT_N) == GPIO_VALUE_LOW)
+    if (pal_is_BIOS_completed(FRU_MB))
       frb3_fail = 0;
   }
 
@@ -4120,6 +4074,26 @@ pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value)
   return PAL_EOK;
 }
 
+static int
+read_battery_status(float *value)
+{
+  int ret = -1;
+  gpio_desc_t *gp_batt = gpio_open_by_shadow("FM_BATTERY_SENSE_EN_N");
+  if (!gp_batt) {
+    return -1;
+  }
+  if (gpio_set_value(gp_batt, GPIO_VALUE_LOW)) {
+    goto bail;
+  }
+  msleep(10);
+  ret = read_adc_value(ADC_PIN7, ADC_VALUE, value);
+  gpio_set_value(gp_batt, GPIO_VALUE_HIGH);
+bail:
+  gpio_close(gp_batt);
+  return ret;
+}
+
+
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
@@ -4172,10 +4146,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
         break;
       case MB_SENSOR_P3V_BAT:
-        gpio_set(GPIO_BAT_SENSE_EN_N, 0);
-        msleep(10);
-        ret = read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
-        gpio_set(GPIO_BAT_SENSE_EN_N, 1);
+        ret = read_battery_status((float *)value);
         break;
 
       // Hot Swap Controller
@@ -4255,10 +4226,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
         break;
       case MB_SENSOR_P3V_BAT:
-        gpio_set(GPIO_BAT_SENSE_EN_N, 0);
-        msleep(10);
-        ret = read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
-        gpio_set(GPIO_BAT_SENSE_EN_N, 1);
+        ret = read_battery_status((float *)value);
         break;
 
       // Hot Swap Controller
@@ -4354,121 +4322,121 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         ret = vr_read_power(g_vr_cpu0_vddq_def, VR_LOOP_PAGE_0, (float*) value);
         break;
       case MB_SENSOR_VR_CPU1_VCCIN_TEMP:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_temp(VR_CPU1_VCCIN, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VCCIN_CURR:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_curr(VR_CPU1_VCCIN, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VCCIN_VOLT:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_volt(VR_CPU1_VCCIN, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VCCIN_POWER:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_power(VR_CPU1_VCCIN, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VSA_TEMP:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_temp(VR_CPU1_VSA, VR_LOOP_PAGE_1, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VSA_CURR:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_curr(VR_CPU1_VSA, VR_LOOP_PAGE_1, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VSA_VOLT:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_volt(VR_CPU1_VSA, VR_LOOP_PAGE_1, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VSA_POWER:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_power(VR_CPU1_VSA, VR_LOOP_PAGE_1, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VCCIO_TEMP:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_temp(VR_CPU1_VCCIO, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VCCIO_CURR:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_curr(VR_CPU1_VCCIO, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VCCIO_VOLT:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_volt(VR_CPU1_VCCIO, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VCCIO_POWER:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_power(VR_CPU1_VCCIO, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_GRPC_TEMP:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_temp(g_vr_cpu1_vddq_ghj, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_GRPC_CURR:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_curr(g_vr_cpu1_vddq_ghj, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_GRPC_VOLT:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_volt(g_vr_cpu1_vddq_ghj, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_GRPC_POWER:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_power(g_vr_cpu1_vddq_ghj, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_GRPD_TEMP:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_temp(g_vr_cpu1_vddq_klm, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_GRPD_CURR:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_curr(g_vr_cpu1_vddq_klm, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_GRPD_VOLT:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_volt(g_vr_cpu1_vddq_klm, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
         break;
       case MB_SENSOR_VR_CPU1_VDDQ_GRPD_POWER:
-        if (is_cpu1_socket_occupy())
+        if (is_cpu_socket_occupy(1))
           ret = vr_read_power(g_vr_cpu1_vddq_klm, VR_LOOP_PAGE_0, (float*) value);
         else
           ret = READING_NA;
@@ -5989,67 +5957,67 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   return completion_code;
 }
 
+static int
+get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask)
+{
+  int i;
+  *mask = 0;
+  for (i = 0; i < num; i++) {
+    int ret;
+    gpio_value_t value;
+    gpio_desc_t *gpio = gpio_open_by_shadow(shadows[i]);
+    if (!gpio) {
+      return -1;
+    }
+    ret = gpio_get_value(gpio, &value);
+    gpio_close(gpio);
+    if (ret != 0) {
+      return -1;
+    }
+    *mask |= (value == GPIO_VALUE_HIGH ? 1 : 0) << i;
+  }
+  return 0;
+}
+
 int
 pal_get_platform_id(uint8_t *id) {
-  int val;
-  char path[64] = {0};
+  static bool cached = false;
+  static uint8_t cached_id = 0;
 
-  sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID0);
-  if (read_device(path, &val)) {
-    return -1;
+  if (!cached) {
+    const char *shadows[] = {
+      "FM_BOARD_SKU_ID0",
+      "FM_BOARD_SKU_ID1",
+      "FM_BOARD_SKU_ID2",
+      "FM_BOARD_SKU_ID3",
+      "FM_BOARD_SKU_ID4"
+    };
+    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+      return -1;
+    }
+    cached = true;
   }
-  *id = val&0x01;
-
-  sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID1);
-  if (read_device(path, &val)) {
-    return -1;
-  }
-  *id = *id | (val<<1);
-
-  sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID2);
-  if (read_device(path, &val)) {
-    return -1;
-  }
-  *id = *id | (val<<2);
-
-  sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID3);
-  if (read_device(path, &val)) {
-    return -1;
-  }
-  *id = *id | (val<<3);
-
-  sprintf(path, GPIO_VAL, GPIO_BOARD_SKU_ID4);
-  if (read_device(path, &val)) {
-    return -1;
-  }
-  *id = *id | (val<<4);
-
+  *id = cached_id;
   return 0;
 }
 
 int
 pal_get_board_rev_id(uint8_t *id) {
-  int val;
-  char path[64] = {0};
+  static bool cached = false;
+  static uint8_t cached_id = 0;
 
-  sprintf(path, GPIO_VAL, GPIO_BOARD_REV_ID0);
-  if (read_device(path, &val)) {
-    return -1;
+  if (!cached) {
+    const char *shadows[] = {
+      "FM_BOARD_REV_ID0",
+      "FM_BOARD_REV_ID1",
+      "FM_BOARD_REV_ID2"
+    };
+    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+      return -1;
+    }
+    cached = true;
   }
-  *id = val&0x01;
-
-  sprintf(path, GPIO_VAL, GPIO_BOARD_REV_ID1);
-  if (read_device(path, &val)) {
-    return -1;
-  }
-  *id = *id | (val<<1);
-
-  sprintf(path, GPIO_VAL, GPIO_BOARD_REV_ID2);
-  if (read_device(path, &val)) {
-    return -1;
-  }
-  *id = *id | (val<<2);
-
+  *id = cached_id;
   return 0;
 }
 
@@ -6093,22 +6061,21 @@ pal_get_mb_slot_id(uint8_t *id) {
 
 int
 pal_get_slot_cfg_id(uint8_t *id) {
-  int val;
-  char path[64] = {0};
+  static bool cached = false;
+  static uint8_t cached_id = 0;
 
-  sprintf(path, GPIO_VAL, GPIO_SLT_CFG0);
-  if (read_device(path, &val)) {
-    return -1;
+  if (!cached) {
+    const char *shadows[] = {
+      "FM_BOARD_SKU_ID5",
+      "FM_BOARD_SKU_ID6"
+    };
+    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+      return -1;
+    }
+    cached = true;
   }
-  *id = val&0x01;
-
-  sprintf(path, GPIO_VAL, GPIO_SLT_CFG1);
-  if (read_device(path, &val)) {
-    return -1;
-  }
-  *id = *id | (val<<1);
-
-   return 0;
+  *id = cached_id;
+  return 0;
 }
 
 void
@@ -6192,39 +6159,26 @@ pal_fan_recovered_handle(int fan_num) {
 }
 
 static bool
-is_cpu0_socket_occupy(void) {
-  char path[64] = {0};
-  int val;
+is_cpu_socket_occupy(unsigned int cpu_idx) {
+  static bool cached = false;
+  static uint8_t cached_id = 0;
 
-  sprintf(path, GPIO_VAL, GPIO_FM_CPU0_SKTOCC_LVT3_N);
-  if (read_device(path, &val)) {
-    return false;
+  if (!cached) {
+    const char *shadows[] = {
+      "FM_CPU0_SKTOCC_LVT3_N",
+      "FM_CPU1_SKTOCC_LVT3_N"
+    };
+    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+      return false;
+    }
+    cached = true;
   }
 
-  if (val) {
-    return false;
-  } else {
-    return true;
-  }
-
-}
-
-static bool
-is_cpu1_socket_occupy(void) {
-  char path[64] = {0};
-  int val;
-
-  sprintf(path, GPIO_VAL, GPIO_FM_CPU1_SKTOCC_LVT3_N);
-  if (read_device(path, &val)) {
+  // bit == 1 implies CPU is absent.
+  if (cached_id & (1 << cpu_idx)) {
     return false;
   }
-
-  if (val) {
-    return false;
-  } else {
-    return true;
-  }
-
+  return true;
 }
 
 void
@@ -6717,16 +6671,8 @@ pal_get_syscfg_text (char *text) {
 
   // CPU information
   for (index = 0; index < num_cpu; index++) {
-    switch (index) {
-      case 0:
-        if( !is_cpu0_socket_occupy())
-          continue;
-        break;
-      case 1:
-        if( !is_cpu1_socket_occupy())
-          continue;
-        break;
-    }
+    if (!is_cpu_socket_occupy((unsigned int)index))
+      continue;
     sprintf(entry, "CPU%d:", index);
 
     // Processor#
@@ -7259,29 +7205,30 @@ pal_mmap (uint32_t base, uint8_t offset, int option, uint32_t para)
 int
 pal_uart_switch_for_led_ctrl (void)
 {
-  char path[64] = {0};
-  int val = 0;
-  static uint8_t pre_local = 0xff, pre_mid = 0xff;
-  uint8_t local = 0, mid = 0;
+  static uint32_t pre_channel = 0xffffffff;
+  uint8_t vals;
   uint32_t channel = 0;
+  const char *shadows[] = {
+    "FM_UARTSW_LSB_N",
+    "FM_UARTSW_MSB_N"
+  };
 
   //UART Switch control by bmc
   pal_mmap (AST_GPIO_BASE, UARTSW_OFFSET, UARTSW_BY_BMC, 0);
 
-  sprintf(path, GPIO_VAL, GPIO_UARTSW_MSB_N);
-  local = (read_device(path, &val))? -1: val;
-  sprintf(path, GPIO_VAL, GPIO_UARTSW_LSB_N);
-  mid = (read_device(path, &val))? -1: val;
-  if (local == -1 || mid == -1)
+  if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &vals)) {
     return -1;
-  else
-    channel =  channel | ((~local&0x01) << 25) | ((~mid&0x01) <<24);
+  }
+  // The GPIOs are active-low. So, invert it.
+  channel = (uint32_t)(~vals & 0x3);
+  // Shift to get to the bit position of the led.
+  channel = channel << 24;
 
-  if (local == pre_local && mid == pre_mid)
+  // If the requested channel is the same as the previous, do nothing.
+  if (channel == pre_channel) {
     return -1;
-
-  pre_local = local;
-  pre_mid = mid;
+  }
+  pre_channel = channel;
 
   //show channel on 7-segment display
   pal_mmap (AST_GPIO_BASE, SEVEN_SEGMENT_OFFSET, SET_SEVEN_SEGMENT, channel);

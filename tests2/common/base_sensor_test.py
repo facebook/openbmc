@@ -101,8 +101,7 @@ class SensorUtilTest(BaseSensorsTest):
                 if value == "NA":
                     value = 0
                 value = float(value)
-                if value >= 0.0:
-                    result[key] = str(value)
+                result[key] = str(value)
             except Exception:
                 pass
         return result

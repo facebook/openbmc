@@ -364,6 +364,8 @@ char *pal_get_pwn_list(void);
 char *pal_get_tach_list(void);
 int pal_get_pwm_cnt(void);
 int pal_get_tach_cnt(void);
+int pal_get_nic_fru_id(void);
+
 int pal_set_time_sync(uint8_t *req_data, uint8_t req_len);
 #ifdef __cplusplus
 }

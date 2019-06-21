@@ -2360,3 +2360,8 @@ pal_set_time_sync(uint8_t *req_data, uint8_t req_len)
   return PAL_ENOTSUP;
 }
 
+int __attribute__((weak))
+pal_get_nic_fru_id(void)
+{
+  return -1;
+}

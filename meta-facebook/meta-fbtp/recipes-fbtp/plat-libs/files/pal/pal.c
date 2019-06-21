@@ -179,13 +179,13 @@ pal_control_mux_to_target_ch(uint8_t channel, uint8_t bus, uint8_t mux_addr)
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
   fd = open(fn, O_RDWR);
-  if (fd < 0) 
+  if (fd < 0)
   {
     syslog(LOG_WARNING,"[%s]Cannot open bus %d", __func__, bus);
     ret = PAL_ENOTSUP;
     goto error_exit;
-  } 
- 
+  }
+
   if (channel < 4)
   {
     tbuf[0] = 0x04 + channel;
@@ -196,14 +196,14 @@ pal_control_mux_to_target_ch(uint8_t channel, uint8_t bus, uint8_t mux_addr)
   }
 
   retry = MAX_READ_RETRY;
-  while ( retry > 0 ) 
+  while ( retry > 0 )
   {
     ret = i2c_rdwr_msg_transfer(fd, mux_addr, tbuf, 1, rbuf, 0);
     if ( PAL_EOK == ret )
     {
       break;
     }
-    
+
     msleep(50);
     retry--;
   }
@@ -1689,7 +1689,7 @@ read_cpu_temp(uint8_t snr_num, float *value) {
   return ret;
 }
 
-bool 
+bool
 pal_is_BIOS_completed(uint8_t fru)
 {
   gpio_desc_t *desc;
@@ -1730,13 +1730,13 @@ pal_is_dimm_present_check(uint8_t fru, bool *dimm_sts_list)
       return;
     }
 
-#ifdef FSC_DEBUG    
+#ifdef FSC_DEBUG
     syslog(LOG_WARNING,"[%s]0=%x 1=%x 2=%x 3=%x", __func__, value[0], value[1], value[2], value[3]);
 #endif
-    
+
     if ( 0xff == value[0] )
     {
-      dimm_sts_list[i] = false; 
+      dimm_sts_list[i] = false;
 #ifdef FSC_DEBUG
       syslog(LOG_WARNING,"[%s]dimm_slot%d is not present", __func__, i);
 #endif
@@ -1751,14 +1751,14 @@ pal_is_dimm_present_check(uint8_t fru, bool *dimm_sts_list)
   }
 }
 
-bool 
+bool
 pal_is_dimm_present(uint8_t sensor_num)
 {
   static bool is_check = false;
-  static bool dimm_sts_list[12] = {0};  
+  static bool dimm_sts_list[12] = {0};
   int i = 0,j;
   uint8_t fru = FRU_MB;
-  
+
   if ( false == pal_is_BIOS_completed(fru) )
   {
     return false;
@@ -1792,7 +1792,7 @@ pal_is_dimm_present(uint8_t sensor_num)
       syslog(LOG_WARNING, "[%s]Unknown sensor num: 0x%x", __func__, sensor_num);
     break;
   }
- 
+
   j = i + 3;
 
   for ( ; i<j; i++ )
@@ -1837,7 +1837,7 @@ read_dimm_temp(uint8_t snr_num, float *value) {
   {
     return ret;
   }
-  
+
   switch (snr_num) {
     case MB_SENSOR_CPU0_DIMM_GRPA_TEMP:
       dimm_index = 0;
@@ -2168,7 +2168,7 @@ read_ava_temp(uint8_t sensor_num, float *value) {
 
 //if the channel is locked, unlock it and then exit
 release_mux_and_exit:
-  
+
   mux_release(&riser_mux);
 
 //if the channel is busy, exit the function
@@ -2267,7 +2267,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
     ret = READING_NA;
     goto error_exit;
   }
-  
+
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", RISER_BUS_ID);
   fd = open(fn, O_RDWR);
   if (fd < 0) {
@@ -2438,7 +2438,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
           syslog(LOG_WARNING, "read_INA230: undefined sensor number") ;
         break;
     }
-   
+
     ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 2);
     if (ret < 0)
     {
@@ -2450,7 +2450,7 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
     if ( bus_volt_addr == tbuf[1] )
     {
       tbuf[0] = tbuf[1];
-      
+
       //use the rbuf[2] and rbuf[3] to store data
       ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, &rbuf[2], 2);
       if (ret < 0)
@@ -2491,10 +2491,10 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
         {
           float shunt_volt = 0;
           float current = 0;
-          float bus_volt = ((rbuf[3] + rbuf[2]*256) * 0.00125);//use rbuf[2] and rbuf[3] to get the bus voltage  
-     
+          float bus_volt = ((rbuf[3] + rbuf[2]*256) * 0.00125);//use rbuf[2] and rbuf[3] to get the bus voltage
+
           //check the sign bit. If it is a negative value, show 0
-          if ( 1 != BIT(rbuf[0], 7) )       
+          if ( 1 != BIT(rbuf[0], 7) )
           {
             //calculate the shunt voltage
             shunt_volt = ((rbuf[1] + rbuf[0]*256) * 0.0000025);
@@ -2510,17 +2510,17 @@ read_INA230 (uint8_t sensor_num, float *value, int pot) {
       default:
           syslog(LOG_WARNING, "read_INA230: undefined sensor number") ;
         break;
-    } 
-  }  
+    }
+  }
     ret = 0;
     retry[i_retry] = 0;
 
 //if the channel is locked, unlock it and then exit
 release_mux_and_exit:
-  
-  mux_release(&riser_mux);   
 
-//if the channel is busy, exit the function 
+  mux_release(&riser_mux);
+
+//if the channel is busy, exit the function
 error_exit:
 
   if (fd > 0) {
@@ -4006,7 +4006,7 @@ pal_fruid_write(uint8_t fru, char *path)
 
   switch (device_type)
   {
-    case FOUND_AVA_DEVICE:       
+    case FOUND_AVA_DEVICE:
       ret = mux_lock(&riser_mux, acutal_riser_slot, 5);
       if ( PAL_EOK == ret )
       {
@@ -4020,12 +4020,12 @@ pal_fruid_write(uint8_t fru, char *path)
           system("i2cdetect -y -q 1 > /tmp/AVA_FRU_FAIL.log");
           syslog(LOG_ERR, "[%s] AVA FRU Write Fail", __func__);
         }
-            
+
         pal_del_i2c_device(bus, device_addr);
         mux_release(&riser_mux);
       }
     break;
-   
+
     case FOUND_RETIMER_DEVICE:
       ret = pal_control_mux_to_target_ch(acutal_riser_slot, 0x3/*bus number*/, 0xe2/*mux address*/);
       if ( PAL_EOK == ret )
@@ -4037,11 +4037,11 @@ pal_fruid_write(uint8_t fru, char *path)
         {
           ret = PAL_ENOTSUP;
           system("i2cdetect -y -q 3 > /tmp/RETIMER_FRU_FAIL.log");
-          syslog(LOG_ERR, "[%s] RETIMER FRU Write Fail", __func__);       
+          syslog(LOG_ERR, "[%s] RETIMER FRU Write Fail", __func__);
         }
         pal_del_i2c_device(bus, device_addr);
       }
-      ret = PAL_EOK; 
+      ret = PAL_EOK;
     break;
 
   }
@@ -6942,7 +6942,7 @@ bool pal_is_retimer_card ( uint8_t riser_slot )
 
   // control I2C multiplexer to target channel.
   val = mux_lock(&riser_mux, riser_slot, 2);
-  if ( val < 0 ) 
+  if ( val < 0 )
   {
     syslog(LOG_WARNING, "[%s]Cannot switch the riser card channel", __func__);
     ret = false;
@@ -6961,7 +6961,7 @@ bool pal_is_retimer_card ( uint8_t riser_slot )
   tcount = 1;
   rcount = 1;
   val = i2c_rdwr_msg_transfer(fd, re_timer_present_chk_addr, &tbuf, tcount, &rbuf, rcount);
-  if( val < 0 ) 
+  if( val < 0 )
   {
     ret = false;
     goto release_mux_and_exit;
@@ -6973,7 +6973,7 @@ release_mux_and_exit:
   mux_release(&riser_mux);
 
 error_exit:
-  if (fd > 0) 
+  if (fd > 0)
   {
     close(fd);
   }
@@ -7063,7 +7063,7 @@ pal_is_fru_on_riser_card(uint8_t riser_slot, uint8_t *device_type)
     //riser_slot start from 2
     syslog(LOG_WARNING, "Unknown or no device on the riser slot %d", riser_slot+2);
   }
-  
+
   return ret;
 }
 
@@ -7319,7 +7319,7 @@ int pal_fsc_get_target_snr(char *sname, struct fsc_monitor *fsc_fru_list, int fs
       return i;
     }
   }
-  
+
   syslog(LOG_WARNING,"[%s]Unknown sensor name:%s", __func__, sname);
   return PAL_ENOTSUP;
 }
@@ -7376,14 +7376,14 @@ pal_init_fsc_snr_sts(uint8_t fru_id, struct fsc_monitor *curr_snr)
     {
       //if the fru is exist, check the reading
       //if the reading is N/A, we assume the sensor is not present
-      //if the reading is the numerical value, we assume the sensor is present 
+      //if the reading is the numerical value, we assume the sensor is present
       ret = sensor_cache_read(fru_id, curr_snr->sensor_num, &value);
 
 #ifdef FSC_DEBUG
       syslog(LOG_WARNING,"[%s]Check snr reading. fru_id:%d, snum:%x, ret=%d", __func__, fru_id, curr_snr->sensor_num, ret);
 #endif
 
-      if ( PAL_EOK == ret ) 
+      if ( PAL_EOK == ret )
       {
 #ifdef FSC_DEBUG
         syslog(LOG_WARNING,"[%s] snr num %x is found. ret=%d", __func__, curr_snr->sensor_num, ret);
@@ -7407,7 +7407,7 @@ pal_init_fsc_snr_sts(uint8_t fru_id, struct fsc_monitor *curr_snr)
   return ret;
 }
 
-void 
+void
 pal_reinit_fsc_monitor_list()
 {
   int i;
@@ -7419,7 +7419,7 @@ pal_reinit_fsc_monitor_list()
     fsc_monitor_basic_snr_list[i].is_alive = false;
     fsc_monitor_basic_snr_list[i].retry = 5;
 
-    if ( (MB_SENSOR_CPU0_DIMM_GRPA_TEMP == fsc_monitor_basic_snr_list[i].sensor_num) || 
+    if ( (MB_SENSOR_CPU0_DIMM_GRPA_TEMP == fsc_monitor_basic_snr_list[i].sensor_num) ||
          (MB_SENSOR_CPU0_DIMM_GRPB_TEMP == fsc_monitor_basic_snr_list[i].sensor_num) ||
          (MB_SENSOR_CPU1_DIMM_GRPC_TEMP == fsc_monitor_basic_snr_list[i].sensor_num) ||
          (MB_SENSOR_CPU1_DIMM_GRPD_TEMP == fsc_monitor_basic_snr_list[i].sensor_num) )
@@ -7453,7 +7453,7 @@ bool pal_sensor_is_valid(char *fru_name, char *sensor_name)
   }
 
   //if power reset is executed, re-init the list
-  if ( (stat("/tmp/rst_touch", &file_stat) == 0) && (file_stat.st_mtime > rst_time) ) 
+  if ( (stat("/tmp/rst_touch", &file_stat) == 0) && (file_stat.st_mtime > rst_time) )
   {
     rst_time = file_stat.st_mtime;
     //in order to record rst_time, the function will be executed at first time
@@ -7479,7 +7479,7 @@ bool pal_sensor_is_valid(char *fru_name, char *sensor_name)
     syslog(LOG_WARNING,"[%s] undefined sensor: %s", __func__, sensor_name);
     return false;
   }
-  
+
   index = ret;
 
   //init the snr list before checking snr fail
@@ -7510,6 +7510,12 @@ bool pal_sensor_is_valid(char *fru_name, char *sensor_name)
     fsc_fru_list[index].retry--;
     return false;
   }
-  
+
   return true;
+}
+
+int
+pal_get_nic_fru_id(void)
+{
+  return FRU_NIC;
 }

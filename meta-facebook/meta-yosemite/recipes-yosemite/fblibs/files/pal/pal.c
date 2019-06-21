@@ -2813,3 +2813,8 @@ pal_force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
 }
 
 
+int
+pal_get_nic_fru_id(void)
+{
+  return FRU_NIC;
+}

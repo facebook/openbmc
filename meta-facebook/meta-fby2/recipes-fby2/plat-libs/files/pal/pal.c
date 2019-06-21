@@ -10161,3 +10161,9 @@ pal_set_time_sync(uint8_t *req_data, uint8_t req_len)
     return -1;
   return 0;
 }
+
+int
+pal_get_nic_fru_id(void)
+{
+  return FRU_NIC;
+}

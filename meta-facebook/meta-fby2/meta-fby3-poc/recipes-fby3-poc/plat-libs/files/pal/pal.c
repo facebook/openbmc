@@ -1287,7 +1287,7 @@ pal_system_config_check(uint8_t slot_id) {
   // 0(Server), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
   slot_type = fby2_get_slot_type(slot_id);
   switch (slot_type) {
-     case SLOT_TYPE_SERVER: 
+     case SLOT_TYPE_SERVER:
        sprintf(slot_str,"1S Server");
        break;
      case SLOT_TYPE_CF:
@@ -1375,7 +1375,7 @@ server_12v_on(uint8_t slot_id) {
 
   _set_slot_12v_en_time(slot_id);
   sprintf(vpath, GPIO_VAL, gpio_server_stby_power_en[slot_id]);
-  if (write_device(vpath, "1")) 
+  if (write_device(vpath, "1"))
   {
     syslog(LOG_WARNING,"%s: Failed to write 1 for enabling 12V-on", __func__);
     return PAL_ENOTSUP;
@@ -3059,8 +3059,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         apply_inlet_correction((float *)value);
       }
 
-      if ((sensor_num == SP_SENSOR_FAN0_TACH) || (sensor_num == SP_SENSOR_FAN1_TACH) || 
-          (sensor_num == SP_SENSOR_FAN2_TACH) || (sensor_num == SP_SENSOR_FAN3_TACH) || 
+      if ((sensor_num == SP_SENSOR_FAN0_TACH) || (sensor_num == SP_SENSOR_FAN1_TACH) ||
+          (sensor_num == SP_SENSOR_FAN2_TACH) || (sensor_num == SP_SENSOR_FAN3_TACH) ||
           (sensor_num == SP_SENSOR_FAN4_TACH) || (sensor_num == SP_SENSOR_FAN5_TACH) ||
           (sensor_num == SP_SENSOR_FAN6_TACH) || (sensor_num == SP_SENSOR_FAN7_TACH) ) {
         uint8_t is_sled_out = 1;
@@ -6627,7 +6627,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
         *res_len = rsp->hdr.payload_length;
         completion_code = CC_SUCCESS;
       } else {
-        completion_code = CC_UNSPECIFIED_ERROR; 
+        completion_code = CC_UNSPECIFIED_ERROR;
       }
 
       free(msg);
@@ -6683,7 +6683,7 @@ pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
   int sock;
   int err;
   struct sockaddr_un server;
-  uint8_t PLTRST_N = 0x12; 
+  uint8_t PLTRST_N = 0x12;
 
   if ((data[0] == PLTRST_N) && (data[1] == 0x01)) {
     syslog(LOG_ERR, "[%s] fby3-poc doesnt have PLTRST pin!\n", __func__);
@@ -8538,4 +8538,10 @@ pal_get_pair_fru(uint8_t slot_id, uint8_t *pair_fru) {
 
   *pair_fru = 0;
   return false;
+}
+
+int
+pal_get_nic_fru_id(void)
+{
+  return FRU_NIC;
 }

@@ -2057,7 +2057,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   /* For every SEL event received from the BIC except the below, set the critical LED on
   1. OS_BOOT: (1) Base OS/Hypervisor Installation started
               (2) Base OS/Hypervisor Installation completed
-  2. CATERR_B: Cause of Time change - <"NTP" | "Host RTL" | "Set SEL time cmd" | "Set SEL time UTC offset cmd" | "Unknown"> - 
+  2. CATERR_B: Cause of Time change - <"NTP" | "Host RTL" | "Set SEL time cmd" | "Set SEL time UTC offset cmd" | "Unknown"> -
                <"First" | "Second"> Time
   3. ME_POWER_STATE: RUNNING
   4. SPS_FW_HEALTH: (1) Flash state information
@@ -2088,7 +2088,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
         case SYSTEM_EVENT:
           if (ed[0] == 0xE5) {
-            /* Cause of Time change - <"NTP" | "Host RTL" | "Set SEL time cmd" | "Set SEL time UTC offset cmd" | "Unknown"> - 
+            /* Cause of Time change - <"NTP" | "Host RTL" | "Set SEL time cmd" | "Set SEL time UTC offset cmd" | "Unknown"> -
             <"First" | "Second"> Time */
             is_err_server_sel = false;
           }
@@ -2303,7 +2303,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
                 sprintf(err_str, "ECC err");
               } else if ((ed[0] & 0x0F) == 0x1) {
                 sprintf(err_str, "UECC err");
-              }              
+              }
               switch (map_of_dimm_num) {
                 case 0x00:
                   sprintf(temp_log, "DIMMA0(%02X) %s, FRU: %u", map_of_dimm_num, err_str, fru);
@@ -4480,4 +4480,10 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
     }
 
     return completion_code;
+}
+
+int
+pal_get_nic_fru_id(void)
+{
+  return FRU_NIC;
 }

@@ -2,12 +2,9 @@ import os
 import sys
 import tempfile
 import unittest
-import unittest.mock as mock
 
-import rest_config as sut
+from .. import rest_config as sut
 
-
-sys.path.append("../")
 
 valid_config = [
     (

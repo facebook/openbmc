@@ -130,12 +130,12 @@ class BmcComponentMock : public BmcComponent {
 TEST(BmcComponentTest, MTDFlash) {
   stringstream out, err;
   SystemMock mock(out, err);
-  string dummy_dev("/dev/mtdblah");
   string dummy_mtd("flash123");
   string dummy_image("blahimage");
   string name("fbtp");
   string version = name + "-4.9";
-  string exp_flashcp_call("flashcp -v " + dummy_image + " " + dummy_dev);
+  TmpFile mtd("U-Boot 2016.07 fbtp-v11.0");
+  string exp_flashcp_call("flashcp -v " + dummy_image + " " + mtd.name);
 
   EXPECT_CALL(mock, version())
     .Times(1)
@@ -144,8 +144,8 @@ TEST(BmcComponentTest, MTDFlash) {
   EXPECT_CALL(mock, get_mtd_name(dummy_mtd, _))
     .Times(3)
     .WillOnce(Return(false))
-    .WillOnce(DoAll(SetArgReferee<1>(dummy_dev), Return(true)))
-    .WillOnce(DoAll(SetArgReferee<1>(dummy_dev), Return(true)));
+    .WillOnce(DoAll(SetArgReferee<1>(mtd.name), Return(true)))
+    .WillOnce(DoAll(SetArgReferee<1>(mtd.name), Return(true)));
 
   EXPECT_CALL(mock, runcmd(string(exp_flashcp_call)))
     .Times(2)

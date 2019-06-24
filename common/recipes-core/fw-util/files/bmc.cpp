@@ -106,7 +106,7 @@ int BmcComponent::update(string image_path)
 
   // If flashcp cmd was successful, keep historical info that BMC fw was upgraded
   if (ret == 0) {
-    syslog(LOG_CRIT, "BMC fw upgrade completed. Version: %s", get_bmc_version().c_str());
+    syslog(LOG_CRIT, "BMC fw upgrade completed. Version: %s", get_bmc_version(dev).c_str());
   }
 
   return ret;
@@ -114,15 +114,20 @@ int BmcComponent::update(string image_path)
 
 std::string BmcComponent::get_bmc_version()
 {
-  // parsering the image to get the version string
   std::string bmc_ver = "NA";
   std::string mtd;
-  char cmd[128];
-  FILE *fp;
-
   if (!system.get_mtd_name(_vers_mtd, mtd)) {
     return bmc_ver;
   }
+  return get_bmc_version(mtd);
+}
+
+std::string BmcComponent::get_bmc_version(const std::string &mtd)
+{
+  // parsering the image to get the version string
+  std::string bmc_ver = "NA";
+  char cmd[128];
+  FILE *fp;
 
   snprintf(cmd, sizeof(cmd),
       "strings %s | grep -E 'U-Boot 20[[:digit:]]{2}\\.[[:digit:]]{2}'", mtd.c_str());

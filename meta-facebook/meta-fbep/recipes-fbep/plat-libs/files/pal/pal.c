@@ -24,10 +24,11 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <syslog.h>
+#include <string.h>
 #include "pal.h"
 
-const char pal_fru_list[] = "all, mb";
-const char pal_server_list[] = "mb";
+const char pal_fru_list[] = "all, fru";
+const char pal_server_list[] = "";
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0..3";
@@ -195,5 +196,47 @@ pal_channel_to_bus(int channel)
   }
 
   return channel;
+}
+
+int
+pal_get_fruid_path(uint8_t fru, char *path) {
+
+  sprintf(path, FRU_BIN);
+  return 0;
+}
+
+int
+pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
+
+  sprintf(path, FRU_EEPROM);
+  return 0;
+}
+
+int
+pal_get_fru_id(char *str, uint8_t *fru) {
+  if (!strcmp(str, "all")) {
+    *fru = FRU_ALL;
+  } else if (!strcmp(str, "fru")) {
+    *fru = FRU_BASE;
+  } else {
+    syslog(LOG_WARNING, "pal_get_fru_id: Wrong fru#%s", str);
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+pal_get_fruid_name(uint8_t fru, char *name) {
+
+  sprintf(name, "Base Board");
+  return 0;
+}
+
+int
+pal_is_fru_ready(uint8_t fru, uint8_t *status) {
+
+  *status = 1;
+  return 0;
 }
 

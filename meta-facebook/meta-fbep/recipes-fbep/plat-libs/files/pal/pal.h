@@ -28,6 +28,8 @@ extern "C" {
 #endif
 
 #define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle"
+#define FRU_BIN "/tmp/fruid.bin"
+#define FRU_EEPROM "/sys/class/i2c-dev/i2c-7/device/7-0054/eeprom"
 
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
@@ -49,7 +51,7 @@ enum {
 
 enum {
   FRU_ALL   = 0,
-  FRU_MB = 1,
+  FRU_BASE = 1,
 };
 
 #define MAX_NUM_FRUS 1

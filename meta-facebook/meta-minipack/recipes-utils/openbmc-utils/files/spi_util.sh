@@ -133,26 +133,6 @@ function set_spi2_to_spi_cs(){
     dump_gpio_config SPI2
 }
 
-# currently no use
-function set_spi2_to_gpio(){
-    devmem_clear_bit $(scu_addr 88) 26
-    devmem_clear_bit $(scu_addr 88) 27
-    devmem_clear_bit $(scu_addr 88) 28
-    devmem_clear_bit $(scu_addr 88) 29
-    devmem_clear_bit $(scu_addr 8C) 0
-    CLK="/tmp/gpionames/BMC_SPI2_CLK"
-    CS0="/tmp/gpionames/BMC_SPI2_CS0"
-    CS1="/tmp/gpionames/BMC_SPI2_CS1"
-    MISO="/tmp/gpionames/BMC_SPI2_MISO"
-    MOSI="/tmp/gpionames/BMC_SPI2_MOSI"
-    echo out > $CLK/direction
-    echo out > $CS0/direction
-    echo out > $CS1/direction
-    echo out > $MISO/direction
-    echo out > $MOSI/direction
-    dump_gpio_config SPI2
-}
-
 function read_flash_to_file()
 {
     spi_no=$1

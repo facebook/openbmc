@@ -18,37 +18,39 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __PAL_H__
-#define __PAL_H__
 
-#include <openbmc/obmc-pal.h>
-#include "pal_sensors.h"
+#ifndef __PAL_SENSORS_H__
+#define __PAL_SENSORS_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle"
-#define FRU_BIN "/tmp/fruid.bin"
-#define FRU_EEPROM "/sys/class/i2c-dev/i2c-7/device/7-0054/eeprom"
-
-extern size_t pal_pwm_cnt;
-extern size_t pal_tach_cnt;
-extern const char pal_pwm_list[];
-extern const char pal_tach_list[];
-extern const char pal_fru_list[];
-extern const char pal_server_list[];
-
 enum {
-  FRU_ALL   = 0,
-  FRU_BASE = 1,
+  FAN_0 = 1,
+  FAN_1,
+  FAN_2,
+  FAN_3,
+  FAN_4,
+  FAN_5,
+  FAN_6,
+  FAN_7,
 };
 
-#define MAX_NUM_FRUS 1
-#define MAX_NODES    1
+// Total sensors list
+enum {
+  FRU_SENSOR_FAN0_TACH = 0x0,
+  FRU_SENSOR_FAN2_TACH,
+  FRU_SENSOR_MAX,  //keep this at the tail
+};
+
+int pal_set_fan_speed(uint8_t fan, uint8_t pwm);
+int pal_get_fan_speed(uint8_t fan, int *rpm);
+int pal_get_fan_name(uint8_t num, char *name);
+int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-#endif /* __PAL_H__ */
+#endif /* __PAL_SENSORS_H__ */

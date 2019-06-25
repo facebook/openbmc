@@ -2360,6 +2360,15 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
     return ret;
   }
 
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "rsv_id: 0x%x, rec_id: 0x%x, offset: 0x%x, nbytes: %d\n", req->rsv_id, req->rec_id, req->offset, req->nbytes);
+#endif
+  if ((tlen - 2) != req->nbytes) {  // subtract the first two bytes(rsv_id) length from tlen and we will have the expected data length
+    syslog(LOG_WARNING, "%s: SLOT%u SDR rsv_id: 0x%x, record_id: 0x%x, offset: 0x%x. Received Data Length does not match (expectative: 0x%x, actual: 0x%x)",
+          __func__, slot_id, req->rsv_id, req->rec_id, req->offset, req->nbytes, tlen - 2);
+    return -1;
+  }
+
   // Copy the next record id to response
   res->next_rec_id = tres->next_rec_id;
 
@@ -2390,6 +2399,15 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
       return ret;
     }
 
+#ifdef DEBUG
+    syslog(LOG_DEBUG, "rsv_id: 0x%x, rec_id: 0x%x, offset: 0x%x, nbytes: %d\n", req->rsv_id, req->rec_id, req->offset, req->nbytes);
+#endif
+    if ((tlen - 2) != req->nbytes) {
+      syslog(LOG_WARNING, "%s: SLOT%u SDR rsv_id: 0x%x, record_id: 0x%x, offset: 0x%x. Received Data Length does not match (expectative: 0x%x, actual: 0x%x)",
+            __func__, slot_id, req->rsv_id, req->rec_id, req->offset, req->nbytes, tlen - 2);
+      continue;
+    }
+
     // Copy the data excluding the first two bytes(next_rec_id)
     memcpy(&res->data[req->offset], tres->data, tlen-2);
 
@@ -2397,6 +2415,10 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
     *rlen += tlen-2;
     req->offset += tlen-2;
     len -= tlen-2;
+  }
+
+  if (*rlen == 0) {
+    syslog(LOG_ERR, "%s: SLOT%u - SDR size is zero\n", __func__, slot_id);
   }
 
   return 0;

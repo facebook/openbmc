@@ -35,7 +35,6 @@ extern "C" {
 #define UNIT_DIV            (1000)
 #define ERR_NOT_READY       (-2)
 
-
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
 extern const char pal_pwm_list[];

@@ -238,10 +238,8 @@ static ssize_t psu_vout_show(struct device *dev,
 
   switch (model) {
     case DELTA_1500:
-      result = linear_convert(LINEAR_11, result, 0);
-      break;
     case LITEON_1500:
-      result = linear_convert(LINEAR_16, result, -9);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     case BELPOWER_1100_NA:
     case BELPOWER_1500_NAC:
@@ -384,10 +382,8 @@ static ssize_t psu_vstby_show(struct device *dev,
 
   switch (model) {
     case DELTA_1500:
-      result = linear_convert(LINEAR_11, result, 0);
-      break;
     case LITEON_1500:
-      result = linear_convert(LINEAR_16, result, -9);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     case BELPOWER_1100_NA:
     case BELPOWER_1500_NAC:

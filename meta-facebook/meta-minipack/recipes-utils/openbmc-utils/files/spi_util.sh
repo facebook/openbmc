@@ -9,6 +9,8 @@ mode_reg=0x3
 debug=0
 m95m02_page_size=256
 m95m02_page_count=1024
+SPI_PIN_ARGS="--cs BMC_SPI1_CS0 --clk BMC_SPI1_CLK \
+              --mosi BMC_SPI1_MOSI --miso BMC_SPI1_MISO"
 
 trap cleanup_spi INT TERM QUIT EXIT
 
@@ -238,7 +240,7 @@ function read_spi1_dev(){
         ;;
         "BCM5396_EE")
             echo "Reading bcm5396 eeprom to $file..."
-            at93cx6_util_py3.py chip read --file $file
+            at93cx6_util_py3.py $SPI_PIN_ARGS chip read --file $file
         ;;
     esac
 }
@@ -254,7 +256,7 @@ function write_spi1_dev(){
         ;;
         "BCM5396_EE")
             echo "Writing bcm5396 eeprom to $file..."
-            at93cx6_util_py3.py chip write --file $file
+            at93cx6_util_py3.py $SPI_PIN_ARGS chip write --file $file
         ;;
     esac
 }
@@ -270,7 +272,7 @@ function erase_spi1_dev(){
         ;;
         "BCM5396_EE")
             echo "Erasing bcm5396 eeprom..."
-            at93cx6_util_py3.py chip erase
+            at93cx6_util_py3.py $SPI_PIN_ARGS chip erase
         ;;
     esac
 }

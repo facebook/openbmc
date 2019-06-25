@@ -21,18 +21,54 @@
 from argparse import ArgumentParser
 import at93cx6
 import sys
+import os
 
+GPIO_SHADOW_DIR = '/tmp/gpionames'
+
+def gpio_name_to_num(name):
+    shadowdir = os.path.join(GPIO_SHADOW_DIR, name)
+    if os.path.islink(shadowdir):
+        num = int(os.path.realpath(shadowdir).split('/')[-1].split('gpio')[-1])
+    else:
+        if name.isdigit():
+            num = int(name)
+        else:
+            num = -1
+    return num
+
+def is_gpio_valid(cs, clk, mosi, miso):
+    if cs is -1:
+        raise Exception("CS value is invalid!")
+    if clk is -1:
+        raise Exception("CLK value is invalid!")
+    if mosi is -1:
+        raise Exception("MOSI value is invalid!")
+    if miso is -1:
+        raise Exception("MISO value is invalid!")
+
+    return True
 
 def get_raw(args):
-    return at93cx6.AT93CX6SPI(
-        args.bus_width, args.cs, args.clk, args.mosi, args.miso,
-        args.model, args.verbose)
+    cs_num = gpio_name_to_num(args.cs)
+    clk_num = gpio_name_to_num(args.clk)
+    mosi_num = gpio_name_to_num(args.mosi)
+    miso_num = gpio_name_to_num(args.miso)
+
+    if is_gpio_valid(cs_num, clk_num, mosi_num, miso_num):
+        return at93cx6.AT93CX6SPI(args.bus_width, cs_num, clk_num, mosi_num,
+                      miso_num, args.model, args.verbose)
 
 def get_chip(args):
-    return at93cx6.AT93CX6(
-        args.bus_width, args.cs, args.clk, args.mosi, args.miso,
-        args.byte_swap if hasattr(args, 'byte_swap') else None,
-        args.model, args.verbose)
+    cs_num = gpio_name_to_num(args.cs)
+    clk_num = gpio_name_to_num(args.clk)
+    mosi_num = gpio_name_to_num(args.mosi)
+    miso_num = gpio_name_to_num(args.miso)
+
+    if is_gpio_valid(cs_num, clk_num, mosi_num, miso_num):
+        return at93cx6.AT93CX6(
+                      args.bus_width, cs_num, clk_num, mosi_num, miso_num,
+                      args.byte_swap if hasattr(args, 'byte_swap') else None,
+                      args.model, args.verbose)
 
 def model_parser(ap):
     # Default, based on currenct HW configuration
@@ -45,24 +81,24 @@ def model_parser(ap):
 
 def access_parser(ap):
     # Default, based on currenct HW configuration
-    SPI_CS_DEFAULT = 68
-    SPI_CLK_DEFAULT = 69
-    SPI_MOSI_DEFAULT = 70
-    SPI_MISO_DEFAULT = 71
+    SPI_CS_DEFAULT = '68'
+    SPI_CLK_DEFAULT = '69'
+    SPI_MOSI_DEFAULT = '70'
+    SPI_MISO_DEFAULT = '71'
 
     spi_group = ap.add_argument_group('SPI Access')
-    spi_group.add_argument('--cs', type=int, default=SPI_CS_DEFAULT,
-                           help='The GPIO number for SPI CS pin '
-                                 '(default: %(default)s)')
-    spi_group.add_argument('--clk', type=int, default=SPI_CLK_DEFAULT,
-                           help='The GPIO number for SPI CLK pin '
-                                 '(default: %(default)s)')
-    spi_group.add_argument('--mosi', type=int, default=SPI_MOSI_DEFAULT,
-                           help='The GPIO number for SPI MOSI pin '
-                                 '(default: %(default)s)')
-    spi_group.add_argument('--miso', type=int, default=SPI_MISO_DEFAULT,
-                           help='The GPIO number for SPI MISO pin '
-                                 '(default: %(default)s)')
+    spi_group.add_argument('--cs', type=str, default=SPI_CS_DEFAULT,
+                           help='The GPIO number/shadow name '
+                           'for SPI CS pin (default: %(default)s)')
+    spi_group.add_argument('--clk', type=str, default=SPI_CLK_DEFAULT,
+                           help='The GPIO number/shadow name '
+                           'for SPI CLK pin (default: %(default)s)')
+    spi_group.add_argument('--mosi', type=str, default=SPI_MOSI_DEFAULT,
+                           help='The GPIO number/shadow name '
+                           'for SPI MOSI pin (default: %(default)s)')
+    spi_group.add_argument('--miso', type=str, default=SPI_MISO_DEFAULT,
+                           help='The GPIO number/shadow name '
+                           'for SPI MISO pin (default: %(default)s)')
 
 def bus_width_parser(ap):
     # Default, based on currenct HW configuration

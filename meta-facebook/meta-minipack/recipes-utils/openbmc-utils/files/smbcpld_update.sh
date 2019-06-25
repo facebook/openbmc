@@ -27,10 +27,11 @@ img="$1"
 
 source /usr/local/bin/openbmc-utils.sh
 
-trap 'gpio_set BMC_SYSCPLD_JTAG_MUX_SEL 0; rm -rf /tmp/smbcpld_update' INT TERM QUIT EXIT
+trap 'gpio_set_value BMC_SYSCPLD_JTAG_MUX_SEL 0; \
+      rm -rf /tmp/smbcpld_update' INT TERM QUIT EXIT
 
 # change BMC_SYSCPLD_JTAG_MUX_SEL to 1 to connect BMC to SMB CPLD pins
-gpio_set BMC_SYSCPLD_JTAG_MUX_SEL 1
+gpio_set_value BMC_SYSCPLD_JTAG_MUX_SEL 1
 
 echo 1 > /tmp/smbcpld_update
 

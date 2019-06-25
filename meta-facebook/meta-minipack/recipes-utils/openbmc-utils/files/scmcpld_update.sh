@@ -27,10 +27,11 @@ img="$1"
 
 source /usr/local/bin/openbmc-utils.sh
 
-trap 'gpio_set BMC_SCM_CPLD_EN 1; rm -rf /tmp/scmcpld_update' INT TERM QUIT EXIT
+trap 'gpio_set_value BMC_SCM_CPLD_EN 1; \
+      rm -rf /tmp/scmcpld_update' INT TERM QUIT EXIT
 
 # change BMC_SCM_CPLD_EN to 0 to connect BMC to SCM CPLD pins
-gpio_set BMC_SCM_CPLD_EN 0
+gpio_set_value BMC_SCM_CPLD_EN 0
 
 echo 1 > /tmp/scmcpld_update
 

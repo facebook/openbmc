@@ -102,16 +102,10 @@ function set_spi1_to_gpio(){
     devmem_set_bit $(scu_addr 7C) 12
     devmem_set_bit $(scu_addr 7C) 13
     devmem_set_bit $(scu_addr 80) 15
-    CLK="/tmp/gpionames/BMC_SPI1_CLK"
-    CS0="/tmp/gpionames/BMC_SPI1_CS0"
-    CS1="/tmp/gpionames/BMC_SPI1_CS1"
-    MISO="/tmp/gpionames/BMC_SPI1_MISO"
-    MOSI="/tmp/gpionames/BMC_SPI1_MOSI"
-    echo out > $CLK/direction
-    echo out > $CS0/direction
-    echo out > $CS1/direction
-    echo out > $MISO/direction
-    echo out > $MOSI/direction
+    gpio_set_direction BMC_SPI1_CLK out
+    gpio_set_direction BMC_SPI1_CS0 out
+    gpio_set_direction BMC_SPI1_MISO in
+    gpio_set_direction BMC_SPI1_MOSI out
     dump_gpio_config SPI1
 }
 
@@ -319,7 +313,7 @@ function config_spi1_pin_and_path(){
             set_spi1_to_gpio
             set_smb_cpld_spi_1b 0 1 0
             echo 1 > $SMBCPLD_SYSFS_DIR/cpld_bcm5396_mux_sel
-            gpio_set BMC_BCM5396_MUX_SEL 1
+            gpio_set_value BMC_BCM5396_MUX_SEL 1
         ;;
         *)
             echo "Please enter {IOB_FPGA_FLASH, TH3_FLASH, BCM5396_EE, BACKUP_BIOS}"

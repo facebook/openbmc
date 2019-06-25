@@ -72,7 +72,7 @@ pca9534_gpio_add()
     usleep 100000
 
     gpio_export_by_offset ${IO_BUS}-0021 ${HITLESS_OFFSET} ${HITLESS_SHADOW}
-    gpio_set ${HITLESS_SHADOW} 0
+    gpio_set_value ${HITLESS_SHADOW} 0
 
     if [ "$interface" = "jtag" ]; then
         for i in {0..3}; do
@@ -87,7 +87,7 @@ pca9534_gpio_delete()
         exit -1
     fi
 
-    gpio_set ${HITLESS_SHADOW} 1
+    gpio_set_value ${HITLESS_SHADOW} 1
     gpio_unexport ${HITLESS_SHADOW}
 
     if [ "$interface" = "jtag" ]; then

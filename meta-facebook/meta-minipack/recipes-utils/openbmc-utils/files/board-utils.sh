@@ -59,9 +59,9 @@ wedge_slot_id() {
 
 wedge_board_rev() {
     local val0 val1 val2
-    val0=$(gpio_get BMC_CPLD_BOARD_REV_ID0)
-    val1=$(gpio_get BMC_CPLD_BOARD_REV_ID1)
-    val2=$(gpio_get BMC_CPLD_BOARD_REV_ID2)
+    val0=$(gpio_get_value BMC_CPLD_BOARD_REV_ID0)
+    val1=$(gpio_get_value BMC_CPLD_BOARD_REV_ID1)
+    val2=$(gpio_get_value BMC_CPLD_BOARD_REV_ID2)
     echo $((val0 | (val1 << 1) | (val2 << 2)))
 }
 

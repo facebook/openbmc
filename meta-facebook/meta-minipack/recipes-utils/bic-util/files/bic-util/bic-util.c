@@ -498,7 +498,7 @@ util_read_mac(uint8_t slot_id) {
   uint8_t mbuf[8] = {0};
 
 
-  ret = bic_read_mac(slot_id, mbuf);
+  ret = bic_read_mac(slot_id, mbuf, sizeof(mbuf));
   if (ret) {
     printf("Cannot get MAC address from Minilake.\n");
     return;
@@ -514,14 +514,15 @@ process_command(uint8_t slot_id, int argc, char **argv) {
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
   uint8_t tlen = 0;
-  uint8_t rlen = 0;
+  uint8_t rlen = sizeof(rbuf);
 
   for (i = 0; i < argc; i++) {
     tbuf[tlen++] = (uint8_t)strtoul(argv[i], NULL, 0);
   }
 
   while (retry >= 0) {
-    ret = bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+    ret = bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1],
+                           &tbuf[2], tlen-2, rbuf, &rlen);
     if (ret == 0)
       break;
 

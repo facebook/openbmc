@@ -9,9 +9,10 @@ LIC_FILES_CHKSUM = "file://bic.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 
 SRC_URI = "file://bic \
           "
-LDFLAGS += "-lobmc-i2c"
-DEPENDS += " libipmi libipmb libkv libobmc-i2c "
-RDEPENDS_${PN} += " libipmi libipmb libkv libobmc-i2c "
+CFLAGS += "-Werror"
+LDFLAGS += "-lobmc-i2c -llog -lipmb -lkv"
+DEPENDS += " libipmi libipmb libkv libobmc-i2c liblog"
+RDEPENDS_${PN} += " libipmi libipmb libkv libobmc-i2c liblog"
 
 S = "${WORKDIR}/bic"
 

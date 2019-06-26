@@ -625,3 +625,13 @@ create_ncsi_ctrl_pkt(NCSI_NL_MSG_T *nl_msg, uint8_t ch, uint8_t cmd,
 
   return 0;
 }
+
+
+// Takes a NCSI_Response_Packet message, returns the NCSI payload
+// (minus any NCSI header, which is
+//    2 byte response code + 2 byte reason code)
+unsigned char *
+get_ncsi_resp_payload(NCSI_Response_Packet *ncsi_resp)
+{
+  return ncsi_resp->Payload_Data;
+}

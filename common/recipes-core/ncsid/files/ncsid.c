@@ -28,6 +28,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <syslog.h>
+#include <sys/mman.h>
 #include <sys/un.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -50,8 +51,11 @@
 #include <openbmc/pldm.h>
 #include <openbmc/pldm_base.h>
 #include <openbmc/pldm_fw_update.h>
+#include <openbmc/pldm_pmc.h>
+#include <openbmc/obmc-sensor.h>
 #include <inttypes.h>
 //#define DEBUG 0
+//#define PLDM_SNR_DBG 0
 
 // special  channel/cmd  used for register AEN handler with kernel
 #define REG_AEN_CH  0xfa
@@ -60,7 +64,6 @@
 #ifndef MAX
 #define MAX(a, b) ((a) > (b)) ? (a) : (b)
 #endif
-
 /*
    Default config:
       - poll NIC status once every 60 seconds
@@ -79,7 +82,28 @@ static struct timespec last_config_ts;
 static NCSI_Get_Capabilities_Response gNicCapability = {0};
 static uint32_t vendor_IANA = 0;
 static uint32_t aen_enable_mask = AEN_ENABLE_DEFAULT;
+static uint8_t gEnablePldmMonitoring = 0;
+static pldm_sensor_t sensors_mlx[NUM_PLDM_SENSORS] = {
+  {PLDM_NUMERIC_SENSOR_START,   MLX_PRIMARY_TEMP_SENSOR_ID, PLDM_SENSOR_TYPE_NUMERIC},
+  {PLDM_NUMERIC_SENSOR_START+1, MLX_PORT_0_TEMP_SENSOR_ID, PLDM_SENSOR_TYPE_NUMERIC},
+  {PLDM_NUMERIC_SENSOR_START+2, MLX_PORT_0_LINK_SPEED_SENSOR_ID, PLDM_SENSOR_TYPE_NUMERIC},
+  {PLDM_STATE_SENSOR_START,     MLX_HEALTH_STATE_SENSOR_ID, PLDM_SENSOR_TYPE_STATE},
+  {PLDM_STATE_SENSOR_START+1,   MLX_PORT_0_LINK_STATE_SENSOR_ID, PLDM_SENSOR_TYPE_STATE},
+};
 
+static pldm_sensor_t sensors_brcm[NUM_PLDM_SENSORS] = {
+  {PLDM_NUMERIC_SENSOR_START,   BRCM_THERMAL_SENSOR_ONCHIP_ID, PLDM_SENSOR_TYPE_NUMERIC},
+  {PLDM_NUMERIC_SENSOR_START+1, BRCM_THERMAL_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_NUMERIC},
+  {PLDM_NUMERIC_SENSOR_START+2, BRCM_LINK_SPEED_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_NUMERIC},
+  {PLDM_STATE_SENSOR_START,     BRCM_DEVICE_STATE_SENSORS_ID, PLDM_SENSOR_TYPE_STATE},
+  {PLDM_STATE_SENSOR_START+1,   BRCM_LINK_STATE_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_STATE},
+};
+
+
+// maps each PLDM IID (hence cmd) to a sensor being read
+uint8_t sensor_lookup_table[PLDM_MAX_IID] = {0};
+
+static pldm_sensor_t *pldm_sensors = sensors_mlx;
 
 static int
 prepare_ncsi_req_msg(struct msghdr *msg, uint8_t ch, uint8_t cmd,
@@ -283,10 +307,12 @@ init_version_data(Get_Version_ID_Response *buf)
     aen_enable_mask = AEN_ENABLE_DEFAULT;
     nwrite = snprintf(logbuf+i, nleft, "Mellanox ");
     get_mlx_fw_version(buf->fw_ver, version);
+    pldm_sensors = sensors_mlx;
   } else if (vendor_IANA == BCM_IANA)  {
     aen_enable_mask = AEN_ENABLE_MASK_BCM;
     nwrite = snprintf(logbuf+i, nleft, "Broadcom ");
     get_bcm_fw_version(buf->fw_name, version);
+    pldm_sensors = sensors_brcm;
   } else {
     aen_enable_mask = AEN_ENABLE_DEFAULT;
     nwrite = snprintf(logbuf+i, nleft, "Unknown Vendor(IANA 0x%x) ", vendor_IANA);
@@ -374,6 +400,124 @@ free_exit:
 }
 
 
+static void
+init_pldm_sensor_thresh(PLDM_SensorThresh_Response_t *pResp, uint8_t sensor_id)
+{
+  pldm_sensor_t *pSensor = &(pldm_sensors[sensor_id]);
+
+  // interpret sensor threshold data based on size
+  if (pResp->dataSize <= 1) { // uint8/sint8
+    PLDM_SensorThresh_int8_t *thresh = (void *)pResp->rawdata;
+    pSensor->unr = thresh->upperFatal;
+    pSensor->ucr = thresh->upperCrit;
+    pSensor->unc = thresh->upperWarning;
+    pSensor->lnc = thresh->lowerWarning;
+    pSensor->lcr = thresh->lowerCrit;
+    pSensor->lnr = thresh->lowerFatal;
+  } else if (pResp->dataSize <= 3) { // uint16/sint16
+    PLDM_SensorThresh_int16_t *thresh = (void *)pResp->rawdata;
+    pSensor->unr = thresh->upperFatal;
+    pSensor->ucr = thresh->upperCrit;
+    pSensor->unc = thresh->upperWarning;
+    pSensor->lnc = thresh->lowerWarning;
+    pSensor->lcr = thresh->lowerCrit;
+    pSensor->lnr = thresh->lowerFatal;
+  } else { // uint32/sint32
+    PLDM_SensorThresh_int32_t *thresh = (void *)pResp->rawdata;
+    pSensor->unr = thresh->upperFatal;
+    pSensor->ucr = thresh->upperCrit;
+    pSensor->unc = thresh->upperWarning;
+    pSensor->lnc = thresh->lowerWarning;
+    pSensor->lcr = thresh->lowerCrit;
+    pSensor->lnr = thresh->lowerFatal;
+  }
+
+  return;
+}
+
+
+// write PLDM sensor threshold into shared memory for other programs to access
+static void
+write_pldm_sensor_info()
+{
+  int fd;
+  char *shm;
+  int share_size = sizeof(pldm_sensor_t) * NUM_PLDM_SENSORS;
+
+  fd = shm_open(PLDM_SNR_INFO, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+    return;
+  }
+  if (flock(fd, LOCK_EX) < 0) {
+    syslog(LOG_INFO, "%s: file-lock %s failed errno = %d\n",
+           __FUNCTION__, PLDM_SNR_INFO, errno);
+    goto close_bail;
+  }
+
+  ftruncate(fd, share_size);
+
+  shm = (char *)mmap(NULL, share_size, PROT_WRITE, MAP_SHARED, fd, 0);
+
+  if (shm == MAP_FAILED) {
+    syslog(LOG_INFO, "%s: mmap %s failed, errno = %d",
+           __FUNCTION__, PLDM_SNR_INFO, errno);
+    goto unlock_bail;
+  }
+  memcpy(shm, pldm_sensors, share_size);
+
+  if (munmap(shm, share_size) != 0) {
+    syslog(LOG_INFO, "%s: munmap %s failed, errno = %d",
+           __FUNCTION__, PLDM_SNR_INFO, errno);
+  }
+unlock_bail:
+  if (flock(fd, LOCK_UN) < 0) {
+    syslog(LOG_INFO, "%s: file-unlock %s failed errno = %d\n",
+           __FUNCTION__, PLDM_SNR_INFO, errno);
+  }
+close_bail:
+  close(fd);
+  return;
+}
+
+
+// send PLDM "get threshold command" for each numeric sensors and store result in
+//   global pldm_sensors structure. Save this to shared memory object for
+//   other programs (e.g. sensor-util) to access
+static void
+do_pldm_sensor_thresh_init(nl_sfd_t *sfd, pldm_cmd_req *pldmReq, NCSI_NL_RSP_T *resp_buf)
+{
+  uint8_t sensor = 0;
+  int ret = 0, pldmStatus = 0;
+
+  for ( sensor = 0; sensor < NUM_PLDM_SENSORS; ++sensor ) {
+    if (pldm_sensors[sensor].sensor_type == PLDM_SENSOR_TYPE_NUMERIC) {
+      pldmCreateGetSensorThreshCmd(pldmReq, pldm_sensors[sensor].pldm_sensor_id);
+      ret = send_cmd_and_get_resp(sfd, NCSI_PLDM_REQUEST,
+              (PLDM_COMMON_REQ_LEN + sizeof(PLDM_Get_Sensor_Thresh_t)),
+              (unsigned char *)&(pldmReq->common), resp_buf);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s: failed get sensor (%d) thresh", __FUNCTION__, sensor);
+      }
+      pldmStatus = ncsiDecodePldmCompCode(resp_buf);
+      if (pldmStatus == CC_SUCCESS) {
+        unsigned char *pPldmResp =
+          get_pldm_response_payload(get_ncsi_resp_payload((NCSI_Response_Packet *)(resp_buf->msg_payload)));
+
+        init_pldm_sensor_thresh((PLDM_SensorThresh_Response_t *)pPldmResp, sensor);
+      } else {
+        syslog(LOG_ERR, "%s: pldm get threshhold failed (snr %d, NIC snr %d)",
+               __FUNCTION__, sensor, pldm_sensors[sensor].pldm_sensor_id);
+      }
+    } // if (pldm_sensors[sensor].sensor_type == PLDM_SENSOR_TYPE_NUMERIC)
+  } // for ( sensor = 0; sensor < NUM_PLDM_SENSORS; ++sensor )
+
+  // all numeric sensor threshold has been retrieved. Save it to shm
+  //   for other programs (e.g. sensor-util)
+  write_pldm_sensor_info();
+
+  return;
+}
+
 // do_pldm_discovery
 //
 // Queries NIC to discover its PLDM capabilities, including
@@ -406,7 +550,7 @@ do_pldm_discovery(nl_sfd_t *sfd, NCSI_NL_RSP_T *resp_buf)
   syslog(LOG_CRIT, "PLDM type spported = 0x%" PRIx64, pldmType);
 
   // Query  version for each supported type
-  for (i = 0; i<PLDM_RSV; ++i) {
+  for (i = 0; i < PLDM_RSV; ++i) {
     if (((1<<i) & pldmType) == 0) {
        // this type is not supported
        continue;
@@ -418,16 +562,25 @@ do_pldm_discovery(nl_sfd_t *sfd, NCSI_NL_RSP_T *resp_buf)
             (unsigned char *)&(pldmReq.common), resp_buf);
     if (ret < 0) {
       syslog(LOG_ERR, "do_pldm_discovery: failed get PLDM (%d) version", i);
-      return ret;
+      continue;
     }
     pldmStatus = ncsiDecodePldmCompCode(resp_buf);
     if (pldmStatus == CC_SUCCESS) {
       pldmHandleGetVersionResp((PLDM_GetPldmVersion_Response_t *)&(resp_buf->msg_payload[7]),
                                          &pldm_version);
+      syslog(LOG_CRIT, "    PLDM type %d version = %d.%d.%d.%d", i,
+               pldm_version.major, pldm_version.minor, pldm_version.update,
+               pldm_version.alpha);
+
+      // if device supports "Platform Control & Monitoring", then discovery sensors and
+      //   initialize sensor threshold
+      if (i == PLDM_MONITORING) {
+        do_pldm_sensor_thresh_init(sfd, &pldmReq, resp_buf);
+
+        // Enable PLDM sensor monitoring
+        gEnablePldmMonitoring = 1;
+      }
     }
-    syslog(LOG_CRIT, "    PLDM type %d version = %d.%d.%d.%d", i,
-             pldm_version.major, pldm_version.minor, pldm_version.update,
-             pldm_version.alpha);
   }
   return 0;
 }
@@ -483,14 +636,101 @@ init_nic_config(nl_sfd_t *sfd)
   syslog(LOG_CRIT, "NIC AEN Supported: 0x%x, AEN Enable Mask=0x%x",
           gNicCapability.aen_control_support, aen_enable_mask);
 
-
   // PLDM discovery
   do_pldm_discovery(sfd, resp_buf);
   // PLDM support is optional, so ignore return value for now
 
+  if (gEnablePldmMonitoring) {
+    syslog(LOG_CRIT, "    PLDM sensor monitoring enabled");
+  }
+
+
+
 free_exit:
   if (resp_buf)
     free(resp_buf);
+  return ret;
+}
+
+// handles PLDM_Read_Numeric_SENSOR  and PLDM_Read_State_SENSOR cmd
+static int
+handle_pldm_snr_read(NCSI_Response_Packet *resp)
+{
+  int pldm_iid = 0, pltf_id = 0, sensor_id = 0, sensor_val = 0;
+  unsigned char *pPldmResp = 0;
+  int nic_fru_id = -1;  // each platform has a different FRU ID defined for NIC
+
+  // Since there are multiple numeric and state sensors being read,
+  //   use PLDM cmd IID to look up which sensor this current response
+  //   corresponds to
+  pldm_iid = ncsiDecodePldmIID(resp);
+  sensor_id = sensor_lookup_table[pldm_iid];
+  pltf_id = pldm_sensors[sensor_id].pltf_sensor_id;
+
+#ifdef PLDM_SNR_DBG
+  syslog(LOG_INFO, "%s iid %d, sensor_id %d, pltf_id 0x%x",
+         __FUNCTION__, pldm_iid, sensor_id, pltf_id);
+#endif
+
+  // take a NC-SI response packet,
+  //   - remove NCSI header to get PLDM data,
+  //   - then remove PLDM header to get PLDM payload
+  pPldmResp = get_pldm_response_payload(get_ncsi_resp_payload(resp));
+
+  // depending on sensor type (numeric vs state), interpret the response
+  //  accordingly
+  if (pldm_sensors[sensor_id].sensor_type == PLDM_SENSOR_TYPE_NUMERIC) {
+    sensor_val = pldm_get_num_snr_val(
+                   (PLDM_SensorReading_Response_t *) pPldmResp);
+  } else if (pldm_sensors[sensor_id].sensor_type == PLDM_SENSOR_TYPE_STATE) {
+    sensor_val = pldm_get_state_snr_val(
+                  (PLDM_StateSensorReading_Response_t *) pPldmResp);
+  } else {
+    syslog(LOG_WARNING, "%s unknown sensor type, snr 0x%x, type %d",
+           __FUNCTION__, pltf_id, pldm_sensors[sensor_id].sensor_type);
+  }
+
+  // Write the sensor reading to sensor cache
+  nic_fru_id = pal_get_nic_fru_id();
+  if (nic_fru_id != -1) {
+    // IF platform doesn't have a NIC FRU, or hasn't overwrite the obmc-pal lib
+    //   don't save this information
+    if (sensor_cache_write(nic_fru_id, pltf_id, true, (float)sensor_val)) {
+      syslog(LOG_WARNING, "%s sensor cache write failed", __FUNCTION__);
+    }
+  }
+  return 0;
+}
+
+
+// handles any PLDM response that was received over NCSI
+static int
+handle_pldm_resp_over_ncsi(NCSI_Response_Packet *resp)
+{
+  int pldmType = ncsiDecodePldmType(resp);
+  int pldmCmd  = ncsiDecodePldmCmd(resp);
+  int ret = 0;
+
+  // for now this function only handles Type 2 (Control & Monitoring), Sensor
+  // read comamnds (numeric and state sensor)
+  if (pldmType != PLDM_MONITORING) {
+    syslog(LOG_WARNING, "%s unexpected PLDM type 0x%x, cmd 0x%x",
+           __FUNCTION__, pldmType, pldmCmd);
+    return -1;
+  }
+
+  switch (pldmCmd) {
+    case CMD_GET_SENSOR_READING:
+    case CMD_GET_STATE_SENSOR_READINGS:
+      // generic command to handle both numeric and state sensor reading
+      ret = handle_pldm_snr_read(resp);
+      break;
+    default:
+      syslog(LOG_WARNING, "%s unexpected PLDM response, cmd 0x%x",
+             __FUNCTION__, pldmCmd);
+      break;
+  }
+
   return ret;
 }
 
@@ -544,7 +784,9 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
       case NCSI_AEN_ENABLE:
         // ignore the response from this command, as it contains no payload
         break;
-
+      case NCSI_PLDM_REQUEST:
+        ret = handle_pldm_resp_over_ncsi(resp);
+        break;
       // TBD: handle other command response here
       default:
         syslog(LOG_WARNING, "unknown or unexpected command response, cmd 0x%x(%s)",
@@ -577,6 +819,7 @@ enable_aens(void *sfd, uint32_t aen_enable_mask) {
 
   return;
 }
+
 
 
 // Thread to handle the incoming responses
@@ -636,6 +879,52 @@ ncsi_rx_handler(void *sfd) {
 }
 
 
+// Main PLDM monitoring function
+// For every sensor that needs monitoring,
+//   Generate PLDM-over-NC-SI sensor read commands, and sends it over netlink
+// Sensor read Response will be handled by the RX thread
+static int pldm_monitoring(int sock_fd)
+{
+  struct msghdr pldm_msg;
+  pldm_cmd_req pldmReq = {0};
+  int ret = 0, i=0, iid=0;
+
+  for (i = 0; i < NUM_PLDM_SENSORS; ++i) {
+    memset(&pldm_msg, 0, sizeof(pldm_msg));
+
+    if ((pldm_sensors[i].sensor_type == PLDM_SENSOR_TYPE_NUMERIC) ||
+        (pldm_sensors[i].sensor_type == PLDM_SENSOR_TYPE_STATE))
+    {
+      if (pldm_sensors[i].sensor_type == PLDM_SENSOR_TYPE_NUMERIC) {
+        pldmCreateGetSensorReadingCmd(&pldmReq, pldm_sensors[i].pldm_sensor_id);
+        ret = prepare_ncsi_req_msg(&pldm_msg, 0, NCSI_PLDM_REQUEST,
+              (PLDM_COMMON_REQ_LEN + sizeof(PLDM_Get_Sensor_Reading_t)),
+              (unsigned char *)&(pldmReq.common), 0);
+      } else if (pldm_sensors[i].sensor_type == PLDM_SENSOR_TYPE_STATE) {
+        pldmCreateGetStateSensorReadingCmd(&pldmReq, pldm_sensors[i].pldm_sensor_id);
+        ret = prepare_ncsi_req_msg(&pldm_msg, 0, NCSI_PLDM_REQUEST,
+              (PLDM_COMMON_REQ_LEN + sizeof(PLDM_Get_StateSensor_Reading_t)),
+              (unsigned char *)&(pldmReq.common), 0);
+      }
+      // fill in the look up table, store in the sensor index to IID table
+      //  so when we received the PLDM response, we can map the response back
+      //  to sensor
+      iid = pldmReq.common[PLDM_IID_OFFSET] & PLDM_CM_IID_MASK;
+      sensor_lookup_table[iid] = i;
+    } else {
+      syslog(LOG_ERR, "tx: unknown sensor type %d, pldm sensor %d\n",
+             pldm_sensors[i].sensor_type, pldm_sensors[i].pldm_sensor_id);
+    }
+
+    ret = sendmsg(sock_fd, &pldm_msg, 0);
+    if (ret < 0) {
+      syslog(LOG_ERR, "tx: failed to send pldm_msg, status ret = %d, errno=%d\n",
+             ret, errno);
+    }
+  }
+  return ret;
+}
+
 // Thread to send periodic NC-SI cmmands to check NIC status
 static void*
 ncsi_tx_handler(void *sfd) {
@@ -664,11 +953,17 @@ ncsi_tx_handler(void *sfd) {
              ret, errno);
     }
 
+    if (gEnablePldmMonitoring) {
+      // read any PLDM sensors that's available
+      ret = pldm_monitoring(sock_fd);
+    }
+
     ret = check_valid_mac_addr();
     if (ret == NCSI_IF_REINIT) {
       send_registration_msg(sfd);
       enable_aens(sfd, aen_enable_mask);
     }
+
     sleep(NIC_STATUS_SAMPLING_DELAY);
   }
 
@@ -680,7 +975,7 @@ ncsi_tx_handler(void *sfd) {
 }
 
 
-// Thread to setup netlink and recieve AEN
+// Thread to setup netlink and receive AEN
 static void*
 ncsi_aen_handler(void *unused) {
   int sock_fd;
@@ -746,14 +1041,11 @@ int
 main(int argc, char * const argv[]) {
   pthread_t tid_ncsi_aen_handler;
 
-  syslog(LOG_INFO, "started\n");
-
   // Create thread to handle AEN registration and Responses
   if (pthread_create(&tid_ncsi_aen_handler, NULL, ncsi_aen_handler, (void*) NULL) < 0) {
     syslog(LOG_ERR, "pthread_create failed on ncsi_handler\n");
     goto cleanup;
   }
-
 
 cleanup:
   if (tid_ncsi_aen_handler > 0) {

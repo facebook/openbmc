@@ -317,6 +317,7 @@ int handle_get_version_id(NCSI_Response_Packet *resp);
 
 int create_ncsi_ctrl_pkt(NCSI_NL_MSG_T *nl_msg, uint8_t ch, uint8_t cmd,
                      uint16_t payload_len, unsigned char *payload);
+unsigned char * get_ncsi_resp_payload(NCSI_Response_Packet *ncsi_resp);
 
 
 #endif

@@ -18,15 +18,16 @@
 # Boston, MA 02110-1301 USA
 #
 
-from tests.minipack.test_rest_endpoint import RestEndpointTest
-
-
-class YampRestEndpointTest(RestEndpointTest):
-    """
-    Input data to the test needs to be a list like below.
-    User can choose to sends these lists from jsons too.
-    """
-
-    # /api/sys/sensors
-    def set_endpoint_sensors_attributes(self):
-        self.endpoint_sensors_attrb = ["dummy-data"]
+# Disable Restapi test until we have the complete working test
+# from tests.minipack.test_rest_endpoint import RestEndpointTest
+#
+#
+# class YampRestEndpointTest(RestEndpointTest):
+#     """
+#     Input data to the test needs to be a list like below.
+#     User can choose to sends these lists from jsons too.
+#     """
+#
+#     # /api/sys/sensors
+#     def set_endpoint_sensors_attributes(self):
+#         self.endpoint_sensors_attrb = ["dummy-data"]

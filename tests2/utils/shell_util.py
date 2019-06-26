@@ -28,7 +28,7 @@ def run_cmd(cmd=None):
     return info
 
 
-def run_shell_cmd(cmd=None):
+def run_shell_cmd(cmd=None, ignore_err=False):
     if not cmd:
         raise Exception("cmd not set")
     try:
@@ -36,10 +36,11 @@ def run_shell_cmd(cmd=None):
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         data, err = f.communicate()
-        err = err.decode("utf-8")
-        if len(err) > 0:
-            raise Exception(err + " [FAILED]")
+        if not ignore_err:
+            err = err.decode("utf-8")
+            if len(err) > 0:
+                raise Exception(err + " [FAILED]")
         info = data.decode("utf-8")
-    except:
-        raise Exception("Failed to run command = {}".format(cmd))
+    except Exception as e:
+        raise Exception("Failed to run command = {} and exception {}".format(cmd), e)
     return info

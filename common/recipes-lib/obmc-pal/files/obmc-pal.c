@@ -795,6 +795,10 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
             sprintf(temp_log, ", System Firmware Corruption Detected");
             strcat(error_log, temp_log);
             break;
+          case 0xA10B:
+            sprintf(temp_log, ", TPM Self-Test FAIL Detected");
+            strcat(error_log, temp_log);
+            break;
           default:
             break;
         }

@@ -18,6 +18,8 @@
 # Boston, MA 02110-1301 USA
 #
 
+import time
+
 from common.base_fans_test import CommonShellBasedFansTest
 from utils.cit_logger import Logger
 
@@ -41,6 +43,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_read(fan=1)
 
     def test_fan2_read(self):
@@ -49,6 +54,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_read(fan=2)
 
     def test_fan3_read(self):
@@ -57,6 +65,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_read(fan=3)
 
     def test_fan4_read(self):
@@ -65,6 +76,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_read(fan=4)
 
     def test_fan5_read(self):
@@ -73,6 +87,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_read(fan=5)
 
     def test_fan6_read(self):
@@ -81,6 +98,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_read(fan=6)
 
     def test_fan7_read(self):
@@ -89,6 +109,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_read(fan=7)
 
     def test_fan8_read(self):
@@ -97,6 +120,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_read(fan=8)
 
     def test_fan1_pwm_set(self):
@@ -105,6 +131,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_set_and_read(fan_id=1, pwm=0)
 
     def test_fan2_pwm_set(self):
@@ -113,6 +142,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_set_and_read(fan_id=2, pwm=30)
 
     def test_fan3_pwm_set(self):
@@ -121,6 +153,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_set_and_read(fan_id=3, pwm=50)
 
     def test_fan4_pwm_set(self):
@@ -129,6 +164,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_set_and_read(fan_id=4, pwm=70)
 
     def test_fan5_pwm_set(self):
@@ -137,6 +175,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_set_and_read(fan_id=4, pwm=80)
 
     def test_fan6_pwm_set(self):
@@ -145,6 +186,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_set_and_read(fan_id=4, pwm=50)
 
     def test_fan7_pwm_set(self):
@@ -153,6 +197,9 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_set_and_read(fan_id=4, pwm=40)
 
     def test_fan8_pwm_set(self):
@@ -161,4 +208,7 @@ class FansTest(CommonShellBasedFansTest):
         """
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.write_fans_cmd, None, "Set Fan cmd not set")
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         super().fan_set_and_read(fan_id=4, pwm=30)

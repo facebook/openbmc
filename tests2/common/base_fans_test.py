@@ -137,6 +137,9 @@ class CommonShellBasedFansTest(BaseFansTest):
         """
         Test if all fan dump is returning sane data
         """
+        # Sleep needed to test and make sure that we won't run
+        # into accessing sysfs path issue causing test to fail
+        time.sleep(2)
         Logger.log_testname(self._testMethodName)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
         data = self.get_fan_speed()

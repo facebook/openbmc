@@ -3544,10 +3544,6 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 int
 pal_sled_cycle(void) {
   // Send command to HSC power cycle
-  // Single Side
-  system("i2cset -y 7 0x11 0xd9 c &> /dev/null");
-
-  // Double Side
   system("i2cset -y 7 0x45 0xd9 c &> /dev/null");
 
   return 0;

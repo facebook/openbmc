@@ -22,7 +22,7 @@ if [ -r /mnt/data/kv_store/ntp_server ]; then
   NTP_SERVER=$(cat /mnt/data/kv_store/ntp_server)
 fi
 if [ ! -z "${NTP_SERVER}" ]; then
-  echo "server ${NTP_SERVER}" >> /etc/ntp.conf
+  echo "server ${NTP_SERVER} iburst" >> /etc/ntp.conf
 fi
 unset NTP_SERVER
 

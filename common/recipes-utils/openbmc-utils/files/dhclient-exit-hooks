@@ -23,7 +23,7 @@ for ntp in $new_ntp_servers $new_dhcp6_sntp_servers; do
   if [ ! -z "$ntp" ]; then
     echo NTP Server: $ntp
     if ! grep "^server.*$ntp" /etc/ntp.conf > /dev/null; then
-      echo "server $ntp" >> /etc/ntp.conf
+      echo "server $ntp iburst" >> /etc/ntp.conf
       RESTART_NTPD=1
     fi
   fi

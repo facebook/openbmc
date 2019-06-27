@@ -144,8 +144,8 @@ const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
-char pal_pwm_list[16] = "0, 1, 2, 3";
-char pal_tach_list[32] = "0, 1, 2, 3, 4, 5, 6, 7";
+char pal_pwm_list[16] = "0,1,2,3";
+char pal_tach_list[32] = "0,1,2,3,4,5,6,7";
 
 uint8_t g_dev_guid[GUID_SIZE] = {0};
 
@@ -5039,7 +5039,7 @@ pal_get_fan_name(uint8_t num, char *name) {
       break;
 
     case FAN_4:
-      sprintf(name, "Fan 5");
+      sprintf(name, "Fan 4");
       break;
 
     case FAN_5:
@@ -5214,6 +5214,36 @@ pal_log_clear(char *fru) {
     pal_set_key_value("nic_sensor_health", "1");
   }
 }
+
+uint8_t
+pal_get_fan_source(uint8_t fan_num) {
+
+  switch (fan_num)
+  {
+    case FAN_0:
+    case FAN_1:
+      return 0;
+
+    case FAN_2:
+    case FAN_3:
+      return 1;
+
+    case FAN_4:
+    case FAN_5:
+      return 2;
+
+    case FAN_6:
+    case FAN_7:
+      return 3;
+
+    default:
+      syslog(LOG_WARNING, "[%s] Catch unknown fan number - %d\n", __func__, fan_num);
+      break;
+  }
+
+  return 0xff;
+}
+
 int
 pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
   char path[LARGEST_DEVICE_NAME] = {0};
@@ -5221,6 +5251,7 @@ pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
   int val = 0;
   int pwm_enable = 0;
   int tach_cnt = 0;
+  int fan_source = 0;
 
   tach_cnt = pal_get_tach_cnt();
   if( fan_num < 0 || fan_num >= tach_cnt ) {
@@ -5228,8 +5259,10 @@ pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
     return -1;
   }
 
+  fan_source = pal_get_fan_source(fan_num);
+
   // Need check pwmX_en to determine the PWM is 0 or 100.
-  snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_en", fan_num);
+  snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_en", fan_source);
   snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
   if (read_device(path, &pwm_enable)) {
     syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
@@ -5237,7 +5270,7 @@ pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
   }
 
   if(pwm_enable) {
-    snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_falling", fan_num);
+    snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_falling", fan_source);
     snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
     if (read_device_hex(path, &val)) {
       syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);

@@ -251,6 +251,8 @@ const uint8_t spb_sensor_list[] = {
   SP_SENSOR_P1V2_BMC_STBY,
   SP_SENSOR_P2V5_BMC_STBY,
   SP_SENSOR_P3V3_STBY,
+  SP_SENSOR_P12V_MEDUSA,
+  SP_SENSOR_IMON_VTEMP,
   SP_SENSOR_HSC_IN_VOLT,
   SP_SENSOR_HSC_OUT_CURR,
   SP_SENSOR_HSC_TEMP,
@@ -1223,21 +1225,13 @@ fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
           strcpy(units, "");
           break;
         case SP_SENSOR_P5V:
-          sprintf(units, "Volts");
-          break;
         case SP_SENSOR_P12V:
-          sprintf(units, "Volts");
-          break;
         case SP_SENSOR_P3V3_STBY:
-          sprintf(units, "Volts");
-          break;
         case SP_SENSOR_P1V15_BMC_STBY:
-          sprintf(units, "Volts");
-          break;
         case SP_SENSOR_P1V2_BMC_STBY:
-          sprintf(units, "Volts");
-          break;
         case SP_SENSOR_P2V5_BMC_STBY:
+        case SP_SENSOR_P12V_MEDUSA:
+        case SP_SENSOR_IMON_VTEMP:
           sprintf(units, "Volts");
           break;
         case SP_SENSOR_HSC_IN_VOLT:
@@ -1390,6 +1384,12 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case SP_SENSOR_P2V5_BMC_STBY:
           sprintf(name, "SP_SENSOR_P2V5_BMC_STBY");
           break;
+        case SP_SENSOR_P12V_MEDUSA:
+          sprintf(name, "SP_SENSOR_P12V_MEDUSA");
+          break;
+        case SP_SENSOR_IMON_VTEMP:
+          sprintf(name, "SP_SENSOR_IMON_VTEMP");
+          break;
         case SP_SENSOR_HSC_IN_VOLT:
           sprintf(name, "SP_HSC_IN_VOLT");
           break;
@@ -1502,7 +1502,12 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
         case SP_SENSOR_P2V5_BMC_STBY:
           return read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
-
+        case SP_SENSOR_P12V_MEDUSA:
+          ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
+          *(float *)value *=  1.47;
+          return ret;
+        case SP_SENSOR_IMON_VTEMP:
+          return read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
 
         // Hot Swap Controller
         case SP_SENSOR_HSC_IN_VOLT:

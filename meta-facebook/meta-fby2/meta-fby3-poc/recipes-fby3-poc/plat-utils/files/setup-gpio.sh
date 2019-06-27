@@ -196,10 +196,10 @@ gpio_export AC_ON_OFF_BTN_BMC_SLOT4_N_R GPIOL3
 devmem_clear_bit $(scu_addr 84) 20
 gpio_export FAST_PROCHOT_BMC_N_R GPIOL4
 
-# GPIOL5-USB_CPLD_EN_N_R
+# GPIOL5-USB_BMC_EN_R
 devmem_clear_bit $(scu_addr 84) 21
-gpio_export USB_BMC_EN_N_R GPIOL5
-gpio_set USB_BMC_EN_N_R 0
+gpio_export USB_BMC_EN_R GPIOL5
+gpio_set USB_BMC_EN_R 1
 
 # GPIOM0-HSC_FAULT_SLOT1_N
 # GPIOM1-HSC_FAULT_BMC_SLOT2_N_R
@@ -224,6 +224,15 @@ gpio_set FM_PWRBRK_PRIMARY_R 0
 gpio_export FM_PWRBRK_SECONDARY_R GPIOM5
 gpio_set FM_PWRBRK_SECONDARY_R 0
 
+# GPION0-FAN_BMC_PWM_0
+# GPION1-FAN_BMC_PWM_1
+# GPION3-FAN_BMC_PWM_2
+# GPION4-FAN_BMC_PWM_3
+devmem_set_bit $(scu_addr 88) 0
+devmem_set_bit $(scu_addr 88) 1
+devmem_set_bit $(scu_addr 88) 2
+devmem_set_bit $(scu_addr 88) 3
+
 # GPION4-DUAL_FAN0_DETECT_BMC_N_R
 # GPION5-DUAL_FAN1_DETECT_BMC_N_R
 devmem_clear_bit $(scu_addr 88) 4
@@ -240,6 +249,27 @@ gpio_set DISABLE_BMC_FAN_0_N_R 1
 devmem_clear_bit $(scu_addr 88) 7
 gpio_export DISABLE_BMC_FAN_1_N_R GPION7
 gpio_set DISABLE_BMC_FAN_1_N_R 1
+
+# Make sure the setting is correct.
+# GPIOO0-FAN_BMC_TACH_0
+# GPIOO1-FAN_BMC_TACH_1
+# GPIOO2-FAN_BMC_TACH_2
+# GPIOO3-FAN_BMC_TACH_3
+# GPIOO4-FAN_BMC_TACH_4
+# GPIOO5-FAN_BMC_TACH_5
+# GPIOO6-FAN_BMC_TACH_6
+# GPIOO7-FAN_BMC_TACH_7
+devmem_clear_bit $(scu_addr 88) 8
+devmem_clear_bit $(scu_addr 88) 9
+devmem_clear_bit $(scu_addr 88) 10
+devmem_clear_bit $(scu_addr 88) 11
+devmem_clear_bit $(scu_addr 88) 12
+devmem_clear_bit $(scu_addr 88) 13
+devmem_clear_bit $(scu_addr 88) 14
+devmem_clear_bit $(scu_addr 88) 15
+val=$(/sbin/devmem 0x1e78007c)
+val=$((val & ~(0xf << 20)))
+/sbin/devmem 0x1e78007c 32 $val
 
 # GPIOQ6-USB_OC_N
 devmem_clear_bit $(scu_addr 2C) 1

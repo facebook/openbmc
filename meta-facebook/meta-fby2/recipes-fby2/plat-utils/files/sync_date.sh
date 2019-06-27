@@ -25,7 +25,6 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 sync_date()
 {
   if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
-
     if [ -f /tmp/cache_store/time_sync ] ; then
       # ND Server Time Sync by IPMI command
       output=$(cat /tmp/cache_store/time_sync)
@@ -56,6 +55,9 @@ sync_date()
         fi
       done
     fi
+  else
+    test -x /etc/init.d/hwclock.sh && /etc/init.d/hwclock.sh stop
+    echo 1 > /tmp/sync_date
   fi
 }
 

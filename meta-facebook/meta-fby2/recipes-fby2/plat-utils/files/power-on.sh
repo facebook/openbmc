@@ -70,17 +70,9 @@ check_por_config()
   fi
 }
 
-if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
-  # If BMC reboot and all slot empty or 12V-off
-  if [[ $(is_slot_12v_on 1) == "0" && $(is_slot_12v_on 2) == "0" && $(is_slot_12v_on 3) == "0" && $(is_slot_12v_on 4) == "0" ]]; then
-    date -s "2018-01-01 00:00:00"
-  fi
-fi
-
-/usr/local/bin/sync_date.sh
-
 # Check whether it is fresh power on reset
 if [ $(is_bmc_por) -eq 1 ]; then
+  /usr/local/bin/sync_date.sh
 
   # Disable clearing of PWM block on WDT SoC Reset
   devmem_clear_bit $(scu_addr 9c) 17
@@ -104,10 +96,10 @@ if [ $(is_bmc_por) -eq 1 ]; then
   if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 4) == "1" ] && [ $(get_slot_type 4) == "0" ] ; then
     power-util slot4 on
   fi
-fi
 
-if [ $(is_date_synced) == "0" ]; then
-   # Time sync with RC Server
-   echo "Start time sync with server"
-   sh /usr/local/bin/time-sync.sh &
+  if [ $(is_date_synced) == "0" ]; then
+    # Time sync with RC Server
+    echo "Start time sync with server"
+    sh /usr/local/bin/time-sync.sh &
+  fi
 fi

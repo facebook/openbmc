@@ -705,7 +705,7 @@ key_func_por_cfg(int event, void *arg) {
 
 static int
 key_func_ntp(int event, void *arg) {
-  char cmd[MAX_VALUE_LEN] = {0};
+  char cmd[128] = {0};
   char ntp_server_new[MAX_VALUE_LEN] = {0};
   char ntp_server_old[MAX_VALUE_LEN] = {0};
 
@@ -713,21 +713,17 @@ key_func_ntp(int event, void *arg) {
     // Remove old NTP server
     kv_get("ntp_server", ntp_server_old, NULL, KV_FPERSIST);
     if (strlen(ntp_server_old) > 2) {
-      snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^restrict %s$/d' /etc/ntp.conf", ntp_server_old);
-      system(cmd);
-      snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^server %s$/d' /etc/ntp.conf", ntp_server_old);
+      snprintf(cmd, sizeof(cmd), "sed -i '/^server %s/d' /etc/ntp.conf", ntp_server_old);
       system(cmd);
     }
     // Add new NTP server
     snprintf(ntp_server_new, MAX_VALUE_LEN, "%s", (char *)arg);
     if (strlen(ntp_server_new) > 2) {
-      snprintf(cmd, MAX_VALUE_LEN, "echo \"restrict %s\" >> /etc/ntp.conf", ntp_server_new);
-      system(cmd);
-      snprintf(cmd, MAX_VALUE_LEN, "echo \"server %s\" >> /etc/ntp.conf", ntp_server_new);
+      snprintf(cmd, sizeof(cmd), "echo \"server %s iburst\" >> /etc/ntp.conf", ntp_server_new);
       system(cmd);
     }
     // Restart NTP server
-    snprintf(cmd, MAX_VALUE_LEN, "/etc/init.d/ntpd restart > /dev/null &");
+    snprintf(cmd, sizeof(cmd), "/etc/init.d/ntpd restart > /dev/null &");
     system(cmd);
   }
 
@@ -10152,13 +10148,19 @@ int
 pal_set_time_sync(uint8_t *req_data, uint8_t req_len)
 {
   char value[MAX_VALUE_LEN];
+
   if (req_len != 4)
     return -1;
-  sprintf(value, "%02X %02X %02X %02X", req_data[0],req_data[1],req_data[2],req_data[3]);
+
+  sprintf(value, "%02X %02X %02X %02X", req_data[0], req_data[1], req_data[2], req_data[3]);
   if (kv_set(TIME_SYNC_KEY, value, 0, 0) < 0)
     return -1;
-  if (system(SYNC_DATE_SCRIPT) < 0)
-    return -1;
+
+  if (pal_is_bmc_por()) {
+    if (system(SYNC_DATE_SCRIPT) < 0)
+      return -1;
+  }
+
   return 0;
 }
 

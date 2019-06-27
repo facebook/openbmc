@@ -9726,7 +9726,7 @@ pal_add_cper_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 #if defined(CONFIG_FBY2_ND)
   if ( (slot > 0) && (slot <= MAX_NODES) ) {
       // slot is 1 based
-      save_cper_to_binary_file(slot - 1 , req_data, req_len, res_data, res_len);
+      save_cper_to_binary_file(slot - 1 , req_data, req_len - IPMI_MN_REQ_HDR_SIZE, res_data, res_len);
       return CC_SUCCESS;
    } else {
        return CC_PARAM_OUT_OF_RANGE;

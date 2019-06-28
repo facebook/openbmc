@@ -14,6 +14,48 @@ SPI_PIN_ARGS="--cs BMC_SPI1_CS0 --clk BMC_SPI1_CLK \
 
 trap cleanup_spi INT TERM QUIT EXIT
 
+# $1: sysfs path, $2: value
+function set_sysfs_value() {
+    local path=$1
+    local val=$(printf 0x%x $2)
+    local ret=-1
+    local retry=3
+
+    while [ $ret != $val ] && [ $retry -gt 0 ];
+    do
+        echo $val > $path
+        usleep 100
+        ret=$(head -n1 $path 2> /dev/null)
+        ((retry--))
+    done
+    if [ $ret != $val ]; then
+        echo "debug cmd: set_sysfs_value fail, val=$val, ret=$ret"
+        return -1
+    fi
+}
+
+# $1: bus number, $2: device sddress, $3: register, $4: value
+function set_i2c_dev_value() {
+    local bus=$1
+    local addr=$2
+    local reg=$3
+    local val=$(printf 0x%x $4)
+    local ret_val=-1
+    local retry=3
+
+    while [ $ret_val != $val ] && [ $retry -gt 0 ];
+    do
+        exec_and_print "i2cset -y $bus $addr $reg $val"
+        usleep 100
+        ret_val=$(i2cget -y $bus $addr $reg 2> /dev/null)
+        ((retry--))
+    done
+    if [ $ret_val != $val ]; then
+        echo "debug cmd: i2cset -y $bus $addr $reg $val, ret_val: $ret_val"
+        return -1
+    fi
+}
+
 function check_flash_info()
 {
     spi_no=$1
@@ -251,18 +293,11 @@ function erase_spi1_dev(){
     esac
 }
 
-function get_smb_cpld_spi_1b(){
-    b0=`cat $SMBCPLD_SYSFS_DIR/spi_1_b0`
-    b1=`cat $SMBCPLD_SYSFS_DIR/spi_1_b1`
-    b2=`cat $SMBCPLD_SYSFS_DIR/spi_1_b2`
-    echo "spi_1b [ $b2 $b1 $b0 ]"
-}
-
 function set_smb_cpld_spi_1b(){
     if [ $# = 3 ]; then
-        echo $3 > $SMBCPLD_SYSFS_DIR/spi_1_b0
-        echo $2 > $SMBCPLD_SYSFS_DIR/spi_1_b1
-        echo $1 > $SMBCPLD_SYSFS_DIR/spi_1_b2
+        set_sysfs_value $SMBCPLD_SYSFS_DIR/spi_1_b0 $3
+        set_sysfs_value $SMBCPLD_SYSFS_DIR/spi_1_b1 $2
+        set_sysfs_value $SMBCPLD_SYSFS_DIR/spi_1_b2 $1
     else
         echo "Set SPI1 BIT FAILED"
     fi
@@ -275,24 +310,24 @@ function config_spi1_pin_and_path(){
         "BACKUP_BIOS")
             set_spi1_to_spi
             set_smb_cpld_spi_1b 0 1 1
-            echo 0 > $SCMCPLD_SYSFS_DIR/iso_spi_en
-            echo 0 > $SCMCPLD_SYSFS_DIR/com_spi_oe_n
-            echo 1 > $SCMCPLD_SYSFS_DIR/com_spi_sel
+            set_sysfs_value $SCMCPLD_SYSFS_DIR/iso_spi_en 0
+            set_sysfs_value $SCMCPLD_SYSFS_DIR/com_spi_oe_n 0
+            set_sysfs_value $SCMCPLD_SYSFS_DIR/com_spi_sel 1
         ;;
         "IOB_FPGA_FLASH")
             set_spi1_to_spi
             set_smb_cpld_spi_1b 0 0 0
-            echo 1 > $SMBCPLD_SYSFS_DIR/fpga_spi_mux_sel
+            set_sysfs_value $SMBCPLD_SYSFS_DIR/fpga_spi_mux_sel 1
         ;;
         "TH3_FLASH")
             set_spi1_to_spi
             set_smb_cpld_spi_1b 0 0 1
-            echo 1 > $SMBCPLD_SYSFS_DIR/th3_spi_mux_sel
+            set_sysfs_value $SMBCPLD_SYSFS_DIR/th3_spi_mux_sel 1
         ;;
         "BCM5396_EE")
             set_spi1_to_gpio
             set_smb_cpld_spi_1b 0 1 0
-            echo 1 > $SMBCPLD_SYSFS_DIR/cpld_bcm5396_mux_sel
+            set_sysfs_value $SMBCPLD_SYSFS_DIR/cpld_bcm5396_mux_sel 1
             gpio_set_value BMC_BCM5396_MUX_SEL 1
         ;;
         *)
@@ -314,20 +349,12 @@ function config_spi2_pin_and_path(){
     echo "Config SPI2 Done."
 }
 
-function get_smb_cpld_spi_2b(){
-    b0=`cat $SMBCPLD_SYSFS_DIR/spi_2_b0`
-    b1=`cat $SMBCPLD_SYSFS_DIR/spi_2_b1`
-    b2=`cat $SMBCPLD_SYSFS_DIR/spi_2_b2`
-    b3=`cat $SMBCPLD_SYSFS_DIR/spi_2_b3`
-    echo "spi_2b [ $b3 $b2 $b1 $b0 ]"
-}
-
 function set_smb_cpld_spi_2b(){
     if [ $# = 4 ]; then
-        echo $4 > $SMBCPLD_SYSFS_DIR/spi_2_b0
-        echo $3 > $SMBCPLD_SYSFS_DIR/spi_2_b1
-        echo $2 > $SMBCPLD_SYSFS_DIR/spi_2_b2
-        echo $1 > $SMBCPLD_SYSFS_DIR/spi_2_b3
+        set_sysfs_value $SMBCPLD_SYSFS_DIR/spi_2_b0 $4
+        set_sysfs_value $SMBCPLD_SYSFS_DIR/spi_2_b1 $3
+        set_sysfs_value $SMBCPLD_SYSFS_DIR/spi_2_b2 $2
+        set_sysfs_value $SMBCPLD_SYSFS_DIR/spi_2_b3 $1
     else
         echo "Set SPI2 BIT FAILED"
     fi
@@ -443,7 +470,7 @@ function config_spi2_pim_dev_path(){
     fi
     # Current value and with 0xf8
     config_val=$(printf "0x%x" $(($spi_sel_output_bit & $i2c_ret)))
-    exec_and_print "i2cset -y $bus $pca9534_spi_sel $mode_reg $config_val"
+    set_i2c_dev_value $bus $pca9534_spi_sel $mode_reg $config_val
 
     i2c_ret=$(i2cget -y $bus $pca9534_ee_sel $mode_reg)
     if [ $i2c_ret = "" ];then
@@ -451,7 +478,7 @@ function config_spi2_pim_dev_path(){
         exit -1
     fi
     config_val=$(printf "0x%x" $(($ee_sel_output_bit & $i2c_ret)))
-    exec_and_print "i2cset -y $bus $pca9534_ee_sel $mode_reg $config_val"
+    set_i2c_dev_value $bus $pca9534_ee_sel $mode_reg $config_val
 
     read_spi_sel_val=$(i2cget -y $bus $pca9534_spi_sel $output_reg)
     read_spi_sel_val=$(($read_spi_sel_val | 0x7))
@@ -464,37 +491,37 @@ function config_spi2_pim_dev_path(){
         "PHY1_EE")
             set_spi2_to_spi_cs 1
             write_val=$(printf "0x%x" $(($read_spi_sel_val & 0xf8)))
-            exec_and_print "i2cset -y $bus $pca9534_spi_sel $output_reg $write_val"
+            set_i2c_dev_value $bus $pca9534_spi_sel $output_reg $write_val
             write_val=$(printf "0x%x" $((read_spi_ee_val & 0xfb)))
-            exec_and_print "i2cset -y $bus $pca9534_ee_sel $output_reg $write_val"
+            set_i2c_dev_value $bus $pca9534_ee_sel $output_reg $write_val
         ;;
         "PHY2_EE")
             set_spi2_to_spi_cs 1
             write_val=$(printf "0x%x" $(($read_spi_sel_val & 0xf9)))
-            exec_and_print "i2cset -y $bus $pca9534_spi_sel $output_reg $write_val"
+            set_i2c_dev_value $bus $pca9534_spi_sel $output_reg $write_val
             write_val=$(printf "0x%x" $((read_spi_ee_val & 0xf7)))
-            exec_and_print "i2cset -y $bus $pca9534_ee_sel $output_reg $write_val"
+            set_i2c_dev_value $bus $pca9534_ee_sel $output_reg $write_val
         ;;
         "PHY3_EE")
             set_spi2_to_spi_cs 1
             write_val=$(printf "0x%x" $(($read_spi_sel_val & 0xfa)))
-            exec_and_print "i2cset -y $bus $pca9534_spi_sel $output_reg $write_val"
+            set_i2c_dev_value $bus $pca9534_spi_sel $output_reg $write_val
             write_val=$(printf "0x%x" $((read_spi_ee_val & 0xef)))
-            exec_and_print "i2cset -y $bus $pca9534_ee_sel $output_reg $write_val"
+            set_i2c_dev_value $bus $pca9534_ee_sel $output_reg $write_val
         ;;
         "PHY4_EE")
             set_spi2_to_spi_cs 1
             write_val=$(printf "0x%x" $(($read_spi_sel_val & 0xfb)))
-            exec_and_print "i2cset -y $bus $pca9534_spi_sel $output_reg $write_val"
+            set_i2c_dev_value $bus $pca9534_spi_sel $output_reg $write_val
             write_val=$(printf "0x%x" $((read_spi_ee_val & 0xdf)))
-            exec_and_print "i2cset -y $bus $pca9534_ee_sel $output_reg $write_val"
+            set_i2c_dev_value $bus $pca9534_ee_sel $output_reg $write_val
         ;;
         "DOM_FPGA_FLASH")
             set_spi2_to_spi_cs 0
             write_val=$(printf "0x%x" $(($read_spi_sel_val & 0xfc)))
-            exec_and_print "i2cset -y $bus $pca9534_spi_sel $output_reg $write_val"
+            set_i2c_dev_value $bus $pca9534_spi_sel $output_reg $write_val
             write_val=$(printf "0x%x" $((read_spi_ee_val & 0xfd)))
-            exec_and_print "i2cset -y $bus $pca9534_ee_sel $output_reg $write_val"
+            set_i2c_dev_value $bus $pca9534_ee_sel $output_reg $write_val
         ;;
         *)
             echo "Please enter with {PHY#_EE, DOM_FPGA_FLASH}"
@@ -603,10 +630,10 @@ function operate_spi2_dev(){
 
 function cleanup_spi(){
     #echo "Caught Signal: reset spi selecth"
-    echo 0 > $SMBCPLD_SYSFS_DIR/fpga_spi_mux_sel
-    echo 0 > $SMBCPLD_SYSFS_DIR/th3_spi_mux_sel
-    echo 0 > $SMBCPLD_SYSFS_DIR/cpld_bcm5396_mux_sel
-    echo 0 > $SCMCPLD_SYSFS_DIR/com_spi_sel
+    set_sysfs_value $SMBCPLD_SYSFS_DIR/fpga_spi_mux_sel 0
+    set_sysfs_value $SMBCPLD_SYSFS_DIR/th3_spi_mux_sel 0
+    set_sysfs_value $SMBCPLD_SYSFS_DIR/cpld_bcm5396_mux_sel 0
+    set_sysfs_value $SCMCPLD_SYSFS_DIR/com_spi_sel 0
 
     for i in {1..8}
     do
@@ -615,7 +642,7 @@ function cleanup_spi(){
         if [ $? = 0 ]; then
             read_spi_ee_val=$(i2cget -y $bus $pca9534_ee_sel $output_reg)
             write_ee_val=$(($read_spi_ee_val | 0x3e))
-            i2cset -y $bus $pca9534_ee_sel $output_reg $write_ee_val 2> /dev/null
+            set_i2c_dev_value $bus $pca9534_ee_sel $output_reg $write_ee_val
         fi
     done
 	rm -rf /tmp/*_spi*_tmp

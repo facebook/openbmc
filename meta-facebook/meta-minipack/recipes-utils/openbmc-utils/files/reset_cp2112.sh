@@ -20,7 +20,7 @@
 
 . /usr/local/bin/openbmc-utils.sh
 
-CMD="/sys/bus/i2c/drivers/smbcpld/12-003e/cpld_usb2112a_brdg_rst"
+CMD="${SMBCPLD_SYSFS_DIR}/cpld_usb2112a_brdg_rst"
 
 echo -n "Reset CP2112 Switch ... "
 echo 0 > $CMD

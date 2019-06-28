@@ -69,7 +69,8 @@ elif [ "$2" == "load" ]; then
         i2c_device_add $(($bus + 2)) 0x48 tmp75 2> /dev/null
         i2c_device_add $(($bus + 3)) 0x4b tmp75 2> /dev/null
 
-        pim_type=`head -n1 /sys/bus/i2c/devices/$bus-0060/board_ver 2> /dev/null`
+        dev_sysfs_dir=$(i2c_device_sysfs_abspath $bus-0060)
+        pim_type=$(head -n1 "${dev_sysfs_dir}"/board_ver 2> /dev/null)
         if [ "${pim_type}" == "0x0" ]; then   #PIM16Q
             i2c_device_add $(($bus + 6)) 0x74 max34461 2> /dev/null
         elif [ "${pim_type}" == "0xf0" ]; then #PIM16O

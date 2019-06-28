@@ -29,7 +29,9 @@
 #include <errno.h>
 #include <syslog.h>
 #include <dirent.h>
+#include <sys/mman.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/obmc-sensor.h>
 #include "yosemite_sensor.h"
 
 #define LARGEST_DEVICE_NAME 120
@@ -148,10 +150,71 @@ const uint8_t spb_sensor_list[] = {
 // List of NIC sensors to be monitored
 const uint8_t nic_sensor_list[] = {
   MEZZ_SENSOR_TEMP,
+
+  // PLDM numeric sensors
+  NIC_SOC_TEMP,
+  PORT_0_TEMP,
+  PORT_0_LINK_SPEED,
+
+  // PLDM state sensors
+  NIC_HEALTH_STATE,
+  PORT_0_LINK_STATE,
 };
 
 float spb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+
+
+/*
+PLDM sensor threshold are populated in shared memory object by ncsid
+Retrieve these value and initialize global init_pldm_sensors
+*/
+static void
+init_pldm_sensors() {
+  int shm_fd = 0, i = 0;
+  int shm_size = sizeof(pldm_sensor_t) * NUM_PLDM_SENSORS;
+  pldm_sensor_t *pldm_sensors;
+
+  /* open the shared memory object */
+  shm_fd = shm_open(PLDM_SNR_INFO, O_RDONLY, 0666);
+  if (shm_fd < 0) {
+    return;
+  }
+
+  /* memory map the shared memory object */
+  pldm_sensors = mmap(0, shm_size, PROT_READ, MAP_SHARED, shm_fd, 0);
+  if (pldm_sensors < 0) {
+    syslog(LOG_INFO, "init_pldm_sensors sensor read failed");
+    close(shm_fd);
+    return;
+  }
+
+  for ( i = 0; i < NUM_PLDM_SENSORS; ++i) {
+    if (pldm_sensors[i].sensor_type == PLDM_SENSOR_TYPE_NUMERIC) {
+
+      int pft_id = pldm_sensors[i].pltf_sensor_id;
+
+      // make sure data is in range
+      if (pft_id < PLDM_NUMERIC_SENSOR_START || pft_id > PLDM_SENSOR_END) {
+        syslog(LOG_INFO, "init_pldm_sensors: invalid PLDM sensor 0x%x", pft_id);
+        continue;
+      }
+      nic_sensor_threshold[pft_id][UNR_THRESH] = pldm_sensors[i].unr;
+      nic_sensor_threshold[pft_id][UCR_THRESH] = pldm_sensors[i].ucr;
+      nic_sensor_threshold[pft_id][UNC_THRESH] = pldm_sensors[i].unc;
+      nic_sensor_threshold[pft_id][LNC_THRESH] = pldm_sensors[i].lnc;
+      nic_sensor_threshold[pft_id][LCR_THRESH] = pldm_sensors[i].lcr;
+      nic_sensor_threshold[pft_id][LNR_THRESH] = pldm_sensors[i].lnr;
+    }
+  }
+
+  if (munmap(pldm_sensors, shm_size) != 0) {
+    syslog(LOG_INFO, "init_pldm_sensors munmap failed");
+  }
+  close(shm_fd);
+  return;
+}
+
 
 static void
 sensor_thresh_array_init() {
@@ -192,7 +255,7 @@ sensor_thresh_array_init() {
   spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 525;
 
   nic_sensor_threshold[MEZZ_SENSOR_TEMP][UCR_THRESH] = 95;
-
+  init_pldm_sensors();
   init_done = true;
 }
 
@@ -740,6 +803,21 @@ yosemite_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case MEZZ_SENSOR_TEMP:
           sprintf(units, "C");
           break;
+        case NIC_SOC_TEMP:
+          sprintf(units, "C");
+          break;
+        case PORT_0_TEMP:
+          sprintf(units, "C");
+          break;
+        case PORT_0_LINK_SPEED:
+          sprintf(units, "100Mbps");
+          break;
+        case NIC_HEALTH_STATE:
+          strcpy(units, "");
+          break;
+        case PORT_0_LINK_STATE:
+          strcpy(units, "");
+          break;
       }
       break;
   }
@@ -860,6 +938,21 @@ yosemite_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       switch(sensor_num) {
         case MEZZ_SENSOR_TEMP:
           sprintf(name, "MEZZ_SENSOR_TEMP");
+          break;
+        case NIC_SOC_TEMP:
+          sprintf(name, "NIC_SOC_TEMP (PLDM)");
+          break;
+        case PORT_0_TEMP:
+          sprintf(name, "PORT_0_TEMP (PLDM)");
+          break;
+        case PORT_0_LINK_SPEED:
+          sprintf(name, "PORT_0_LINK_SPEED (PLDM)");
+          break;
+        case NIC_HEALTH_STATE:
+          sprintf(name, "NIC_HEALTH_STATE (PLDM)");
+          break;
+        case PORT_0_LINK_STATE:
+          sprintf(name, "PORT_0_LINK_STATE (PLDM)");
           break;
       }
       break;

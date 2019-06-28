@@ -25,6 +25,7 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/obmc-pal.h>
+#include <openbmc/obmc-sensor.h>
 #include <facebook/bic.h>
 #include <facebook/fby2_common.h>
 
@@ -277,6 +278,14 @@ enum {
 
 enum{
   MEZZ_SENSOR_TEMP = 0x82,
+  // PLDM numeric sensors
+  NIC_SOC_TEMP = PLDM_NUMERIC_SENSOR_START,
+  PORT_0_TEMP,
+  PORT_0_LINK_SPEED,
+
+  // PLDM state sensors
+  NIC_HEALTH_STATE = PLDM_STATE_SENSOR_START,
+  PORT_0_LINK_STATE,
 };
 
 enum {

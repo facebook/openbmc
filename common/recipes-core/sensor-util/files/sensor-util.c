@@ -66,6 +66,20 @@ typedef struct {
   uint8_t sensor_list[];
 } get_sensor_reading_struct;
 
+const char *sensor_state_str[] = {
+    "Unknown",
+    "Normal",
+    "Warning",
+    "Critical",
+    "Fatal",
+    "LowerWarning",
+    "LowerCritical",
+    "LowerFatal",
+    "UpperWarning",
+    "Critical",
+    "UpperFatal",
+};
+
 static void
 print_usage() {
   printf("Usage: sensor-util [fru] <sensor num> <option> ..\n");
@@ -125,14 +139,51 @@ static int convert_period(char *str, long *val) {
   return rc;
 }
 
+static int
+is_pldm_sensor(uint8_t snr_num, uint8_t fru)
+{
+  if (fru == pal_get_nic_fru_id() &&
+      (snr_num >= PLDM_SENSOR_START && snr_num <= PLDM_SENSOR_END)) {
+    return 1;
+  }
+  return 0;
+}
+
+static int
+is_pldm_state_sensor(uint8_t snr_num, uint8_t fru)
+{
+  if (fru == pal_get_nic_fru_id() &&
+      (snr_num >= PLDM_STATE_SENSOR_START && snr_num <= PLDM_SENSOR_END)) {
+    return 1;
+  }
+  return 0;
+}
+
+const char *
+numeric_state_to_name(unsigned int state, const char *name_str[], size_t n)
+{
+  if (state < 0 || state >= n  || name_str[state] == NULL) {
+      return "unknown_str_type";
+  }
+  return name_str[state];
+}
+
 static void
 print_sensor_reading(float fvalue, uint16_t snr_num, thresh_sensor_t *thresh,
-    bool threshold, char *status) {
+       get_sensor_reading_struct *sensor_info, char *status) {
 
-  printf("%-28s (0x%X) : %7.2f %-5s | (%s)",
-      thresh->name, snr_num, fvalue, thresh->units, status);
+  bool threshold = sensor_info->threshold;
+
+  if (is_pldm_state_sensor(snr_num, sensor_info->fru)) {
+    printf("%-28s (0x%X) : %10s    | (%s)",
+        thresh->name, snr_num,
+        numeric_state_to_name((int)fvalue, sensor_state_str,
+             sizeof(sensor_state_str)/sizeof(sensor_state_str[0])), status);
+  } else {
+    printf("%-28s (0x%X) : %7.2f %-5s | (%s)",
+        thresh->name, snr_num, fvalue, thresh->units, status);
+  }
   if (threshold) {
-
     printf(" | UCR: ");
     thresh->flag & GETMASK(UCR_THRESH) ?
       printf("%.2f", thresh->ucr_thresh) : printf("NA");
@@ -240,12 +291,15 @@ get_sensor_reading(void *sensor_data) {
       ret = sensor_cache_read(sensor_info->fru, snr_num, &fvalue);
 
     if (ret < 0) {
-      printf("%-28s (0x%X) : NA | (na)\n", thresh.name, sensor_info->sensor_list[i]);
+      // do not print unavaiable PLDM sensors
+      if (!is_pldm_sensor(snr_num, sensor_info->fru)) {
+        printf("%-28s (0x%X) : NA | (na)\n", thresh.name, sensor_info->sensor_list[i]);
+      }
       continue;
     }
     else {
       get_sensor_status(fvalue, &thresh, status);
-      print_sensor_reading(fvalue, (uint16_t)snr_num, &thresh, sensor_info->threshold, status);
+      print_sensor_reading(fvalue, (uint16_t)snr_num, &thresh, sensor_info, status);
     }
   }
 

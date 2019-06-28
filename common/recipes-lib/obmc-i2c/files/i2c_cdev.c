@@ -41,9 +41,10 @@ char* i2c_cdev_master_abspath(char *buf, size_t size, int bus)
 	return buf;
 }
 
-int i2c_cdev_slave_open(int bus, uint16_t addr)
+int i2c_cdev_slave_open(int bus, uint16_t addr, int flags)
 {
 	int fd;
+	unsigned long request;
 	char cdev_path[PATH_MAX];
 
 	i2c_cdev_master_abspath(cdev_path, sizeof(cdev_path), bus);
@@ -51,7 +52,12 @@ int i2c_cdev_slave_open(int bus, uint16_t addr)
 	if (fd < 0)
 		return -1;
 
-	if (ioctl(fd, I2C_SLAVE, addr) < 0) {
+	if (flags & I2C_SLAVE_FORCE_CLAIM) {
+		request = I2C_SLAVE_FORCE;
+	} else {
+		request = I2C_SLAVE;
+	}
+	if (ioctl(fd, request, addr) < 0) {
 		int save_errno = errno;
 		close(fd); /* ignore errors */
 		errno = save_errno;

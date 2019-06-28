@@ -53,6 +53,11 @@ extern "C" {
 #define I2C_BUS_STATUS		0x0799 /* Get Bus Status */
 
 /*
+ * Flags for slave open function.
+ */
+#define I2C_SLAVE_FORCE_CLAIM	0x1
+
+/*
  * Get absolute pathname of i2c master character device.
  *
  * Return:
@@ -66,7 +71,7 @@ char* i2c_cdev_master_abspath(char *buf, size_t size, int bus);
  * Return:
  *   file descriptor for smbus or plain i2c transactions, or -1 on failures.
  */
-int i2c_cdev_slave_open(int bus, uint16_t addr);
+int i2c_cdev_slave_open(int bus, uint16_t addr, int flags);
 
 /*
  * close the file descriptor.

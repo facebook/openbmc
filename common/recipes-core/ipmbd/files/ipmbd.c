@@ -318,7 +318,7 @@ ipmb_req_handler(void *args) {
   }
 
   // Open the i2c bus for sending response
-  fd = i2c_cdev_slave_open(bus_num, BRIDGE_SLAVE_ADDR);
+  fd = i2c_cdev_slave_open(bus_num, BRIDGE_SLAVE_ADDR, 0);
   if (fd < 0) {
     mq_close(mq);
     return NULL;
@@ -711,7 +711,7 @@ start_ipmb_lib_handler(int bus_num) {
   }
 
   // Open the i2c bus for sending request
-  svc->i2c_fd = i2c_cdev_slave_open(bus_num, BRIDGE_SLAVE_ADDR);
+  svc->i2c_fd = i2c_cdev_slave_open(bus_num, BRIDGE_SLAVE_ADDR, 0);
   if (svc->i2c_fd < 0) {
     free(svc);
     return -1;

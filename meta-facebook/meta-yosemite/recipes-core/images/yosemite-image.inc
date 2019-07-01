@@ -38,7 +38,7 @@ IMAGE_INSTALL += " \
   fw-util \
   fpc-util \
   me-util \
-  log-util \
+  log-util-v2 \
   lldp-util \
   spatula \
   openbmc-utils \

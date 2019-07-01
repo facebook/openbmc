@@ -44,7 +44,7 @@ const char *kv_store    = "/mnt/data/kv_store/%s";
 #define KV_DEBUG(fmt, ...)
 #endif
 
-void mkdir_recurse(char *dir, mode_t mode)
+static void mkdir_recurse(char *dir, mode_t mode)
 {
   if (access(dir, F_OK) == -1) {
     char curr[MAX_KEY_PATH_LEN];
@@ -56,7 +56,7 @@ void mkdir_recurse(char *dir, mode_t mode)
   }
 }
 
-void key_path_setup(char *kpath, char *key, unsigned int flags)
+static void key_path_setup(char *kpath, const char *key, unsigned int flags)
 {
   char path[MAX_KEY_PATH_LEN];
   /* Create the path if they dont already exist */
@@ -78,12 +78,17 @@ void key_path_setup(char *kpath, char *key, unsigned int flags)
 *  return 0 on success, negative error code on failure.
 */
 int
-kv_set(char *key, char *value, size_t len, unsigned int flags) {
+kv_set(const char *key, const char *value, size_t len, unsigned int flags) {
   FILE *fp;
   int rc, ret = -1;
   char kpath[MAX_KEY_PATH_LEN] = {0};
   bool present = true;
   char curr_value[MAX_VALUE_LEN] = {0};
+
+  if (key == NULL || value == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
 
   key_path_setup(kpath, key, flags);
 
@@ -163,10 +168,15 @@ close_bail:
 *  return 0 on success, negative error code on failure.
 */
 int
-kv_get(char *key, char *value, size_t *len, unsigned int flags) {
+kv_get(const char *key, char *value, size_t *len, unsigned int flags) {
   FILE *fp;
   int rc, ret=-1;
   char kpath[MAX_KEY_PATH_LEN] = {0};
+
+  if (key == NULL || value == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
 
   key_path_setup(kpath, key, flags);
 

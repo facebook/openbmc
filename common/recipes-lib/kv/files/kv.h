@@ -41,8 +41,8 @@ extern "C" {
 /* Will set the key:value only if the key does not already exist */
 #define KV_FCREATE        (1 << 1)
 
-int kv_get(char *key, char *value, size_t *len, unsigned int flags);
-int kv_set(char *key, char *value, size_t len, unsigned int flags);
+int kv_get(const char *key, char *value, size_t *len, unsigned int flags);
+int kv_set(const char *key, const char *value, size_t len, unsigned int flags);
 
 #ifdef __cplusplus
 }

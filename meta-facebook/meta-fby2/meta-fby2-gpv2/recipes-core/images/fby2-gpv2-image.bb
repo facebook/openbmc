@@ -39,7 +39,7 @@ IMAGE_INSTALL += " \
   fpc-util \
   me-util \
   crashdump \
-  log-util \
+  log-util-v2 \
   lldp-util \
   spatula \
   openbmc-utils \
@@ -56,6 +56,7 @@ IMAGE_INSTALL += " \
   libpldm \
   nvme-util \
   slot-util \
+  snapshot-util \
   "
 
 IMAGE_FEATURES += " \

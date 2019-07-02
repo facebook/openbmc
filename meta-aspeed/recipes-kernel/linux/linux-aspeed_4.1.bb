@@ -1,7 +1,7 @@
-SRCBRANCH = "openbmc/helium/4.1"
+SRCBRANCH = "dev-4.1"
 SRCREV = "AUTOINC"
 
-SRC_URI = "git://github.com/theopolis/linux.git;branch=${SRCBRANCH};protocol=https \
+SRC_URI = "git://github.com/facebook/openbmc-linux.git;branch=${SRCBRANCH};protocol=https \
           "
 
 LINUX_VERSION ?= "4.1.51"

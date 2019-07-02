@@ -27,3 +27,6 @@ FILES_${PN} = "${libdir}/libbic.so"
 FILES_${PN}-dev = "${includedir}/facebook/bic.h"
 
 RDEPENDS_${PN} += " libipmb libkv libobmc-i2c"
+
+
+CFLAGS_append = " -Wno-unused-result"

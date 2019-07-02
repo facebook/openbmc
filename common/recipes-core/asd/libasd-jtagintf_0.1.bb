@@ -26,3 +26,5 @@ do_install() {
 
 FILES_${PN} = "${libdir}/libasd-jtagintf.so"
 FILES_${PN}-dev = "${includedir}/asd"
+
+CFLAGS_append = " -Wno-unused-result"

@@ -39,3 +39,4 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "
 
+CFLAGS_append = " -Wno-cpp -Wno-unused-result"

@@ -19,3 +19,5 @@ do_install() {
 DEPENDS += " libbic libpal "
 RDEPENDS_${PN} += " libbic libpal "
 FILES_${PN} = "${bindir}"
+
+CFLAGS_append = " -Wno-unused-result"

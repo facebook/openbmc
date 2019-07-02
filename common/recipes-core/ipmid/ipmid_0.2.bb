@@ -80,3 +80,5 @@ RDEPENDS_${PN} += " libpal libsdr libfruid libipc libkv libipmi libipmb libfruid
 binfiles = "ipmid"
 
 pkgdir = "ipmid"
+
+CFLAGS_append = " -Wno-unused-result -Wno-format-truncation -Wno-array-bounds -Wno-restrict"

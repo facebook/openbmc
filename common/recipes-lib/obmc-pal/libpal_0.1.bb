@@ -39,3 +39,7 @@ RDEPENDS_${PN} += " libkv "
 
 FILES_${PN} = "${libdir}/libpal.so"
 FILES_${PN}-dev = "${includedir}/openbmc"
+
+CFLAGS_append = " -Wno-format-truncation -Wno-unused-result -Wno-stringop-overflow -Wno-stringop-truncation -Wno-format-overflow -Wno-restrict"
+
+SECURITY_CFLAGS = ""

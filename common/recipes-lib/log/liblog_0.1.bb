@@ -39,3 +39,6 @@ do_install() {
 
 FILES_${PN} = "${libdir}/liblog.so"
 FILES_${PN}-dev = "${includedir}/openbmc/log.h"
+
+
+CFLAGS_append = " -Wno-format-security"

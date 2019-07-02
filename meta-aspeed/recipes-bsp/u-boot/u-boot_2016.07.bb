@@ -37,7 +37,7 @@ EXTRA_OEMAKE = 'CROSS_COMPILE=${TARGET_PREFIX} CC="${TARGET_PREFIX}gcc ${TOOLCHA
 EXTRA_OEMAKE += 'HOSTCC="${BUILD_CC} ${BUILD_CFLAGS} ${BUILD_LDFLAGS}"'
 
 # Improve code quality.
-EXTRA_OEMAKE += 'KCFLAGS="-Werror"'
+EXTRA_OEMAKE += 'KCFLAGS="-Werror -Wno-attributes"'
 
 PACKAGECONFIG ??= "openssl"
 # u-boot will compile its own tools during the build, with specific

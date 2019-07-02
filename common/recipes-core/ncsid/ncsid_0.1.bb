@@ -49,3 +49,5 @@ RDEPENDS_${PN} = "libpal libncsi libpldm libkv"
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/ncsid ${prefix}/local/bin ${sysconfdir}"
+
+CFLAGS_append = " -Wno-unused-result"

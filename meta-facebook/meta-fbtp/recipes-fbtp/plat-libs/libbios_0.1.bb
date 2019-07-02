@@ -25,3 +25,5 @@ do_install() {
 
 FILES_${PN} = "${libdir}/libbios.so"
 FILES_${PN}-dev = "${includedir}/openbmc/bios.h"
+
+CFLAGS_append = " -Wno-unused-result"

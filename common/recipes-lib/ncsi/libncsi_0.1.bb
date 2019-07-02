@@ -33,3 +33,5 @@ RDEPENDS_${PN} = "libkv"
 
 FILES_${PN} = "${libdir}/libncsi.so"
 FILES_${PN}-dev = "${includedir}/openbmc/*"
+
+CFLAGS_append = " -Wno-unused-result"

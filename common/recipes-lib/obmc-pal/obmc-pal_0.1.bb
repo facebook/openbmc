@@ -24,3 +24,6 @@ inherit cmake
 S = "${WORKDIR}"
 
 RDEPENDS_${PN} += " libkv"
+
+CFLAGS_append = " -Wno-unused-result -Wno-format-overflow -Wno-restrict"
+SECURITY_CFLAGS = ""

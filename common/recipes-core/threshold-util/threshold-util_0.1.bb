@@ -30,3 +30,5 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/threshold-util ${prefix}/local/bin"
+
+CFLAGS_append = " -Wno-unused-result"

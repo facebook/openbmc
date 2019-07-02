@@ -29,3 +29,5 @@ LDFLAGS += " -llog"
 RDEPENDS_${PN} += " liblog"
 
 include libgpio.inc
+
+CFLAGS_append = " -Wno-unused-result"

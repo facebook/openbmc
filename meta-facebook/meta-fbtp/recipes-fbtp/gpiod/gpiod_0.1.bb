@@ -56,3 +56,4 @@ FILES_${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
 
 RDEPENDS_${PN} = "libpal libgpio-ctrl libocpdbg-lcd"
 
+CFLAGS_append = " -Wno-unused-result -Wno-format-security"

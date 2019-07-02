@@ -50,3 +50,4 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/log-util-v2 ${prefix}/local/bin"
 
+CFLAGS_append = " -Wno-error -Wno-unused-result -Wno-format-overflow"

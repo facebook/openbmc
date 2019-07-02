@@ -24,7 +24,7 @@ LIC_FILES_CHKSUM = "file://minipack-psu.c;beginline=4;endline=16;md5=da35978751a
 
 SRC_URI = "file://minipack_psu \
           "
-
+CFLAGS += "-Wall -Werror"
 LDFLAGS = "-lfruid -lpal -lobmc-i2c"
 
 DEPENDS += "libfruid libpal libobmc-i2c"
@@ -42,3 +42,5 @@ do_install() {
 
 FILES_${PN} = "${libdir}/libminipack-psu.so"
 FILES_${PN}-dev = "${includedir}/facebook/minipack-psu.h"
+
+CFLAGS_append = " -Wno-unused-result"

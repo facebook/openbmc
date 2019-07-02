@@ -42,3 +42,5 @@ do_install() {
 
 FILES_${PN} = "${libdir}/libfby2_fruid.so"
 FILES_${PN}-dev = "${includedir}/facebook/fby2_fruid.h"
+
+CFLAGS_append = " -Wno-unused-result"

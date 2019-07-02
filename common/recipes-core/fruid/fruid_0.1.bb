@@ -54,3 +54,5 @@ FILES_${PN} = "${FBPACKAGEDIR}/fruid ${prefix}/local/bin"
 
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INHIBIT_PACKAGE_STRIP = "1"
+
+CFLAGS_append = " -Wno-unused-result"

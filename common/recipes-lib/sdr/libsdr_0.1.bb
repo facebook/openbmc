@@ -29,3 +29,5 @@ do_install() {
 
 FILES_${PN} = "${libdir}/libsdr.so"
 FILES_${PN}-dev = "${includedir}/openbmc/sdr.h"
+
+CFLAGS_append = " -Wno-format-security -Wno-implicit-function-declaration"

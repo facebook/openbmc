@@ -19,3 +19,5 @@ do_install() {
 }
 
 FILES_${PN} = " ${bindir} "
+
+CFLAGS_append = " -Wno-format-security"

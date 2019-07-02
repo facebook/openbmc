@@ -26,3 +26,5 @@ FILES_${PN} = "${libdir}/libfby2_sensor.so"
 FILES_${PN}-dev = "${includedir}/facebook/fby2_sensor.h"
 
 RDEPENDS_${PN} += " libnvme-mi fby2-sensors libobmc-i2c"
+
+CFLAGS_append = " -Wno-format-truncation -Wno-unused-result"

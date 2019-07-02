@@ -46,3 +46,6 @@ RDEPENDS_${PN} =+ " libpal jansson libwatchdog libvbs libobmc-i2c "
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/healthd ${prefix}/local/bin ${sysconfdir} "
+
+
+CFLAGS_append = " -Wno-unused-result"

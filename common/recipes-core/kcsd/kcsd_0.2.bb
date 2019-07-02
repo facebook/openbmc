@@ -40,3 +40,5 @@ RDEPENDS_${PN} = "libipmi libgpio-ctrl"
 
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INHIBIT_PACKAGE_STRIP = "1"
+
+CFLAGS_append = " -Wno-restrict -Wno-unused-result -Wno-format-overflow"

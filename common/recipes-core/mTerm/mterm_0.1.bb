@@ -74,3 +74,5 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN}-dbg += "${FBPACKAGEDIR}/mTerm/.debug"
 FILES_${PN} += "${FBPACKAGEDIR}/mTerm ${prefix}/local/bin ${sysconfdir}"
+
+CFLAGS_append = " -Wno-stringop-truncation -Wno-unused-result"

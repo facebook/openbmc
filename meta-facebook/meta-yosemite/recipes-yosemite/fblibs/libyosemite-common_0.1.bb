@@ -27,3 +27,5 @@ FILES_${PN} = "${libdir}/libyosemite_common.so"
 FILES_${PN}-dev = "${includedir}/facebook/yosemite_common.h"
 
 RDEPENDS_${PN} += " libkv"
+
+CFLAGS_append = " -Wno-unused-result"

@@ -28,3 +28,5 @@ do_install() {
 FILES_${PN} = "${libdir}/libocpdbg-lcd.so"
 FILES_${PN}-dev = "${includedir}/openbmc/ocp-dbg-lcd.h"
 RDEPENDS_${PN} = "libipmb libipmi libobmc-i2c"
+
+CFLAGS_append = " -Wno-unused-result"

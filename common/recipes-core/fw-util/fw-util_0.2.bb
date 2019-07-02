@@ -47,3 +47,5 @@ do_install() {
 
 FILES_${PN} = "${prefix}/bin"
 FILES_${PN} += "${sysconfdir}/image_parts.json"
+
+CXXFLAGS_append = " -Wno-format-security -Wno-unused-result"

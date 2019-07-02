@@ -23,3 +23,5 @@ do_install() {
 
 FILES_${PN} = "${libdir}/libme.so"
 FILES_${PN}-dev = "${includedir}/openbmc/me.h"
+
+CFLAGS_append = " -Wno-unused-result"

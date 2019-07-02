@@ -26,3 +26,5 @@ do_install() {
 FILES_${PN} = "${libdir}/liblightning_sensor.so"
 FILES_${PN}-dev = "${includedir}/facebook/lightning_sensor.h"
 RDEPENDS_${PN} += " libipmi liblightning-common liblightning-flash liblightning-gpio libobmc-i2c"
+
+CFLAGS_append = "-Wno-format-truncation"

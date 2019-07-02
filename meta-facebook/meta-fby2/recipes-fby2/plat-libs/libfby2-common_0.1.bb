@@ -25,3 +25,5 @@ FILES_${PN} = "${libdir}/libfby2_common.so"
 FILES_${PN}-dev = "${includedir}/facebook/fby2_common.h"
 
 DEPENDS_append = "libkv"
+
+CFLAGS_append = " -Wno-format-overflow -Wno-unused-result"

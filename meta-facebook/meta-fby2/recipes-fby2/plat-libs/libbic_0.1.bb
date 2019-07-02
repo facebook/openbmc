@@ -27,3 +27,5 @@ do_install() {
 
 FILES_${PN} = "${libdir}/libbic.so"
 FILES_${PN}-dev = "${includedir}/facebook/bic.h"
+
+CFLAGS_append = " -Wno-unused-result"

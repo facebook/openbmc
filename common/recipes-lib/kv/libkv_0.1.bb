@@ -42,6 +42,10 @@ python() {
     d.setVar('INHERIT', 'python-dir')
 }
 
+distutils3_do_configure(){
+    :
+}
+
 do_compile() {
   make
 }

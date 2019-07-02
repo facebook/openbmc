@@ -82,13 +82,6 @@ GPIOS = {
         "edge": "none",
         "value": "0",
     },
-    "BMC_SPI2_CLK": {
-        "active_low": "0",
-        "direction": "in",
-        "uevent": "",
-        "edge": "none",
-        "value": "1",
-    },
     "BMC_UART_SEL2": {
         "active_low": "0",
         "direction": "in",
@@ -110,26 +103,12 @@ GPIOS = {
         "edge": "none",
         "value": "0",
     },
-    "BMC_SPI2_MOSI": {
-        "active_low": "0",
-        "direction": "in",
-        "uevent": "",
-        "edge": "none",
-        "value": "1",
-    },
     "SCM_USB_PRSNT": {
         "active_low": "0",
         "direction": "in",
         "uevent": "",
         "edge": "none",
         "value": "0",
-    },
-    "BMC_SPI2_CS1": {
-        "active_low": "0",
-        "direction": "in",
-        "uevent": "",
-        "edge": "none",
-        "value": "1",
     },
     "BMC_eMMC_RST_N": {
         "active_low": "0",
@@ -208,13 +187,6 @@ GPIOS = {
         "edge": "none",
         "value": "0",
     },
-    "BMC_SPI2_CS0": {
-        "active_low": "0",
-        "direction": "in",
-        "uevent": "",
-        "edge": "none",
-        "value": "1",
-    },
     "BMC9_9548_0_RST": {
         "active_low": "0",
         "direction": "out",
@@ -251,13 +223,6 @@ GPIOS = {
         "value": "1",
     },
     "BMC_SPI1_CS0": {
-        "active_low": "0",
-        "direction": "in",
-        "uevent": "",
-        "edge": "none",
-        "value": "1",
-    },
-    "BMC_SPI2_MISO": {
         "active_low": "0",
         "direction": "in",
         "uevent": "",

@@ -7,7 +7,6 @@ COMPATIBLE_MACHINE = "aspeed"
 do_compile[depends] = "libgcc:do_populate_sysroot"
 
 inherit kernel
-require recipes-kernel/linux/linux-dtb.inc
 
 # Do not install kernel in rootfs
 do_install[postfuncs] += "remove_kernel_image_from_rootfs"

@@ -89,19 +89,25 @@ class SensorUtilTest(BaseSensorsTest):
         self.set_sensors_cmd()
         data = run_shell_cmd(self.sensors_cmd)
         result = {}
+        # VCCGBE VR Vol                (0x54) :    1.05 Volts | (ok)
+        # SOC DIMMA1 Temp              (0xB5) : NA | (na)
+        name_regex = re.compile(r"^(.+)\s+\(0x.+\)\s*")
 
         for edata in data.split("\n"):
-            adata = edata.split()
-            # For each key value pair
-            if len(adata) < 4:
-                continue
-            key = adata[0].strip()
-            value = adata[3].strip()
             try:
-                if value == "NA":
-                    value = 0
-                value = float(value)
-                result[key] = str(value)
+                adata = edata.split(" : ")
+                sensor_name = name_regex.match(adata[0]).group(1).strip()
+                value_group = adata[1].split(" | ")
+                value_units = value_group[0].strip().split(" ")
+                sensor_value = value_units[0].strip()
+                if sensor_value == "NA":
+                    sensor_value = str(0)
+                result[sensor_name] = sensor_value
+                # Save for future use.
+                # sensor_status = value_group[1]
+                # sensor_units = "NA"
+                # if len(value_units) == 2:
+                #     sensor_units = value_units[1].strip()
             except Exception:
-                pass
+                Logger.error("Cannot parse: {}".format(edata))
         return result

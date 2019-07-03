@@ -48,6 +48,15 @@ typedef struct {
   uint8_t dimm_sensor_num;
 } rc_dimm_location_info;
 
+typedef struct {
+  bool is_accuracy;
+  uint8_t int_value;
+  uint8_t dec_value;
+  uint8_t flags;
+  uint8_t status;
+  uint8_t ext_status;
+} ipmi_general_sensor_reading_t;
+
 // Sensors under Bridge IC
 enum {
   BIC_SENSOR_MB_INLET_TEMP = 0x01,
@@ -367,6 +376,13 @@ enum {
   GPV2_SENSOR_DEV11_INA231_VOL = 0xF1,
   GPV2_SENSOR_DEV11_Temp = 0xF6,
   GPV2_SENSOR_DEV11_Ambient_Temp = 0xF7,
+};
+
+enum {
+  GPV2_SENSOR_DEV_INA231_PW = 0,
+  GPV2_SENSOR_DEV_INA231_VOL = 1,
+  GPV2_SENSOR_DEV_Temp = 6,
+  GPV2_SENSOR_DEV_Ambient_Temp = 7,
 };
 
 // Sensors under Bridge IC (NORTHDOME)

@@ -395,6 +395,20 @@ typedef struct _bic_config_t {
   };
 } bic_config_t;
 
+typedef struct
+{
+  uint8_t sensor_num;
+  uint8_t int_value;
+  uint8_t dec_value; // for accuracy sensor
+  uint8_t flags;
+  uint8_t status;
+  uint8_t ext_status;
+} ipmi_device_sensor_t;
+
+typedef struct _ipmi_device_sensor_reading_t {
+  ipmi_device_sensor_t data[MAX_NUM_DEV_SENSORS];
+} ipmi_device_sensor_reading_t;
+
 int bic_is_slot_12v_on(uint8_t slot_id);
 uint8_t is_bic_ready(uint8_t slot_id);
 int bic_is_slot_power_en(uint8_t slot_id);

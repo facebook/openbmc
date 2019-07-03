@@ -813,7 +813,7 @@ rc_dimm_location_info rc_dimm_location_list[] = {
 };
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
-static ipmi_sensor_reading_t g_sread[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static ipmi_general_sensor_reading_t g_sread[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
 void
 msleep(int msec) {
@@ -1381,7 +1381,8 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
   int i;
   int index;
   sdr_full_t *sdr;
-  ipmi_sensor_reading_t *sensor = &g_sread[fru-1][sensor_num];
+  ipmi_sensor_reading_t sensor;
+  ipmi_general_sensor_reading_t *g_sensor = &g_sread[fru-1][sensor_num];
   ipmi_accuracy_sensor_reading_t acsensor;
   bool is_accuracy_sensor = false;
   uint8_t server_type = 0xFF;
@@ -1419,13 +1420,23 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
     // accuracy sensor VCCIN_VR_POUT, INA230_POWER and SOC_PACKAGE_PWR
     if (is_accuracy_sensor) {
       ret = bic_read_accuracy_sensor(fru, sensor_num, &acsensor);
-      sensor->flags = acsensor.flags;
+      if (ret)
+        return ret;
+      g_sread[fru-1][sensor_num].int_value = acsensor.int_value;
+      g_sread[fru-1][sensor_num].dec_value = acsensor.dec_value;
+      g_sread[fru-1][sensor_num].flags = acsensor.flags;
+      g_sread[fru-1][sensor_num].is_accuracy = true;
     } else {
-      ret = bic_read_sensor(fru, sensor_num, sensor);
+      ret = bic_read_sensor(fru, sensor_num, &sensor);
+      if (ret)
+        return ret;
+      g_sread[fru-1][sensor_num].int_value = sensor.value;
+      g_sread[fru-1][sensor_num].dec_value = 0;
+      g_sread[fru-1][sensor_num].flags = sensor.flags;
+      g_sread[fru-1][sensor_num].status = sensor.status;
+      g_sread[fru-1][sensor_num].ext_status = sensor.ext_status;
+      g_sread[fru-1][sensor_num].is_accuracy = false;
     }
-
-    if (ret)
-      return ret;
 
     msleep(1);  // a little delay to reduce CPU utilization
 
@@ -1458,9 +1469,15 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
       case GPV2_SENSOR_0V92_VR_Temp:
       case GPV2_SENSOR_PCIE_SW_TEMP:
         dev_id = DEV_NONE;
-        ret = bic_read_sensor(fru, sensor_num, sensor);
+        ret = bic_read_sensor(fru, sensor_num, &sensor);
         if (ret)
           return ret;
+        g_sread[fru-1][sensor_num].int_value = sensor.value;
+        g_sread[fru-1][sensor_num].dec_value = 0;
+        g_sread[fru-1][sensor_num].flags = sensor.flags;
+        g_sread[fru-1][sensor_num].status = sensor.status;
+        g_sread[fru-1][sensor_num].ext_status = sensor.ext_status;
+        g_sread[fru-1][sensor_num].is_accuracy = false;
         break;
       case GPV2_SENSOR_DEV0_INA231_PW:
         dev_id = 1;
@@ -1530,12 +1547,23 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
         sdata = dev_sensor->data[i];
         dev_sensor_num = sdata.sensor_num;
         exist_flag |= (1 << (dev_sensor_num & 0xf));
-        g_sread[fru-1][dev_sensor_num].value = sdata.value;
+        g_sread[fru-1][dev_sensor_num].int_value = sdata.int_value;
+        g_sread[fru-1][dev_sensor_num].dec_value = sdata.dec_value;
         g_sread[fru-1][dev_sensor_num].flags = sdata.flags;
         g_sread[fru-1][dev_sensor_num].status = sdata.status;
         g_sread[fru-1][dev_sensor_num].ext_status = sdata.ext_status;
+        switch (dev_sensor_num & 0xf) {
+          case GPV2_SENSOR_DEV_INA231_PW:
+            g_sread[fru-1][dev_sensor_num].is_accuracy = true;
+            break;
+          case GPV2_SENSOR_DEV_INA231_VOL:
+          case GPV2_SENSOR_DEV_Temp:
+          case GPV2_SENSOR_DEV_Ambient_Temp:
+          default:
+            g_sread[fru-1][dev_sensor_num].is_accuracy = false;
+            break;
+        }
       }
-
 
       // set NA if device sensor doesn't get from BIC
       // for example, BMC sensor list has sensor removed from newer BIC
@@ -1547,17 +1575,17 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
     }
   }
 
-  if (sensor->flags & BIC_SENSOR_READ_NA) {
+  if (g_sensor->flags & BIC_SENSOR_READ_NA) {
 #ifdef DEBUG
     syslog(LOG_ERR, "bic_read_sensor_wrapper: Reading Not Available");
     syslog(LOG_ERR, "bic_read_sensor_wrapper: sensor_num: 0x%X, flag: 0x%X",
-        sensor_num, sensor.flags);
+        sensor_num, g_sensor->flags);
 #endif
     return EER_READ_NA;
   }
 
   if (discrete) {
-    *(float *) value = (float) sensor->status;
+    *(float *) value = (float) g_sensor->status;
     return 0;
   }
 
@@ -1565,12 +1593,12 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
 
   // If the SDR is not type1, no need for conversion
   if (sdr->type !=1) {
-    *(float *) value = sensor->value;
+    *(float *) value = g_sensor->int_value;
     return 0;
   }
 
-  if (is_accuracy_sensor) {
-    *(float *) value = ((float)(acsensor.int_value*100 + acsensor.dec_value))/100;
+  if (g_sensor->is_accuracy) {
+    *(float *) value = ((float)(g_sensor->int_value*100 + g_sensor->dec_value))/100;
     return 0;
   }
 
@@ -1582,7 +1610,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
   uint16_t b = 0;
   int8_t b_exp, r_exp;
 
-  x = sensor->value;
+  x = g_sensor->int_value;
 
   m_lsb = sdr->m_val;
   m_msb = sdr->m_tolerance >> 6;

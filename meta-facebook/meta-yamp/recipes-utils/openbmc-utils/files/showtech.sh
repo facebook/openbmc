@@ -1,4 +1,21 @@
 #!/bin/bash
+
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
+SUPCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-0043)
+SUP_PWR_ON_SYSFS="${SUPCPLD_SYSFS_DIR}/cpu_control"
+
+echo "=== USERVER PWR STATUS ==="
+if ! val=$(head -n 1 2>/dev/null < "${SUP_PWR_ON_SYSFS}"); then
+  echo "Error when trying to read $SUP_PWR_ON_SYSFS, exiting..."
+  exit 1
+fi
+
+if [ -z "$val" ]; then
+  echo "cpu_control register is 0"
+else
+  echo "cpu_control register is 1"
+fi
 echo "=== BMC SYSTEM TIME ==="
 date
 echo "=== BMC VERSION ==="

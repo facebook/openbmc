@@ -276,7 +276,7 @@ int pal_get_post_end_timestamp(uint8_t fru, long *value);
 int pal_set_nvme_ready_timestamp(uint8_t fru);
 int pal_get_nvme_ready_timestamp(uint8_t fru, long *value);
 uint8_t pal_is_post_time_out();
-uint8_t pal_is_os_time_out();
+uint8_t pal_is_nvme_time_out();
 void pal_check_fscd_watchdog();
 uint8_t pal_get_server_type(uint8_t fru);
 int pal_set_tpm_physical_presence(uint8_t slot, uint8_t presence);

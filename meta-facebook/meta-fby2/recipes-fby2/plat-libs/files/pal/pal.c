@@ -127,7 +127,7 @@
 #define REINIT_TYPE_HOST_RESOURCE   1
 
 #define POST_TIMEOUT  300
-#define OS_TIMEOUT  600
+#define NVME_TIMEOUT  600
 //declare for clearing TPM presence flag
 #define TPM_Timeout 600
 
@@ -3972,16 +3972,22 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       }
       if ((sensor_num == SP_SENSOR_FAN0_TACH) || (sensor_num == SP_SENSOR_FAN1_TACH) || (sensor_num == SP_SENSOR_FAN2_TACH) || (sensor_num == SP_SENSOR_FAN3_TACH)) {
         uint8_t is_sled_out = 1;
+        uint8_t is_post_timeout = 0, is_nvme_timeout = 0;
 
         if (pal_get_fan_latch(&is_sled_out) != 0) {
           syslog(LOG_WARNING, "Fans' UNC masks removed: SLED status (in/out) is unreadable");
           is_sled_out = 1; // default sled out
         }
 
-        is_time_out = pal_is_post_time_out() || pal_is_os_time_out();
+        is_post_timeout = pal_is_post_time_out();
+        is_nvme_timeout = pal_is_nvme_time_out();
+        is_time_out = is_post_timeout || is_nvme_timeout;
         if (is_time_out || is_sled_out) {
           if (is_time_out && !is_last_time_out) {
-            syslog(LOG_WARNING, "Fans' UNC masks removed: slot%d host POST hangs up",is_time_out);
+            if (is_post_timeout)
+              syslog(LOG_WARNING, "Fans' UNC masks removed: slot%d host POST hangs up",is_post_timeout);
+            if (is_nvme_timeout)
+              syslog(LOG_WARNING, "Fans' UNC masks removed: slot%d NVMe not ready after OS Start",is_nvme_timeout);
           }
           ignore_thresh = 0;
         } else {
@@ -6058,11 +6064,11 @@ pal_is_post_time_out() {
 }
 
 uint8_t
-pal_is_os_time_out() {
+pal_is_nvme_time_out() {
   long post_start_timestamp,current_timestamp,nvme_ready_timestamp;
   struct timespec ts;
   int ret;
-
+  uint8_t nvme_ready = 0;
 
   clock_gettime(CLOCK_MONOTONIC,&ts);
   current_timestamp = ts.tv_sec;
@@ -6081,9 +6087,17 @@ pal_is_os_time_out() {
       //default value
       nvme_ready_timestamp = -1;
     }
+    ret = pal_get_nvme_ready(fru, &nvme_ready);
+    if (ret != 0) {
+      nvme_ready = 0;
+    }
+
+    if (nvme_ready) // If NVMe is ready, do not have check NVMe is timeout or not
+      continue;
+
     if (post_start_timestamp != -1) {
       if (post_start_timestamp > nvme_ready_timestamp) {
-        if (current_timestamp-post_start_timestamp > OS_TIMEOUT) {
+        if (current_timestamp-post_start_timestamp > NVME_TIMEOUT) {
           return fru;
         }
       }

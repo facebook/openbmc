@@ -272,6 +272,7 @@ fru_cache_dump(void *arg) {
   uint8_t status[MAX_NUM_DEVS+1] = {DEVICE_POWER_OFF};
   uint8_t type = DEV_TYPE_UNKNOWN;
   uint8_t nvme_ready = 0;
+  uint8_t all_nvme_ready = 0;
   uint8_t dev_id;
   const int max_retry = 3;
   int oldstate;
@@ -284,7 +285,7 @@ fru_cache_dump(void *arg) {
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
-  pal_set_nvme_ready(fru,0);
+  pal_set_nvme_ready(fru,all_nvme_ready);
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
 
   // Check BIC Self Test Result
@@ -421,12 +422,14 @@ fru_cache_dump(void *arg) {
       }
     }
 
-    if (nvme_ready_count == MAX_NUM_DEVS) {
+    if (!all_nvme_ready && (nvme_ready_count == MAX_NUM_DEVS)) {
       //set nvme is ready
+      all_nvme_ready = 1;
       pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
-      pal_set_nvme_ready(fru,1);
+      pal_set_nvme_ready(fru,all_nvme_ready);
       pal_set_nvme_ready_timestamp(fru);
       pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+      syslog(LOG_WARNING, "fru_cache_dump: Slot%u all devices' NVMe are ready", fru);
     }
     sleep(10);
 

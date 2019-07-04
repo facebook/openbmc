@@ -541,11 +541,13 @@ static uint8_t g_ict_count = sizeof(g_ict)/sizeof(inlet_corr_t);
 
 static inlet_corr_t g_ict_gpv2[] = {
   // duty cycle vs delta_t
-  { 10, 3.0 },
+  { 10, 4.0 },
+  { 12, 3.5 },
+  { 14, 3.0 },
   { 16, 2.5 },
   { 20, 2.0 },
   { 24, 1.5 },
-  { 26, 1.0 },
+  { 30, 1.0 },
   { 36, 0.5 },
   { 42, 0.0 },
 };

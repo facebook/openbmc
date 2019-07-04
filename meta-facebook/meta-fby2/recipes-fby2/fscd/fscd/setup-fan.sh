@@ -150,7 +150,11 @@ case "$sku_type" in
 esac
 
 /usr/local/bin/init_pwm.sh
-/usr/local/bin/check_fan_config.sh
+if [ ! -f /tmp/cache_store/setup_fan_config ]; then
+  logger -p user.warning "Setup fan config"
+  /usr/local/bin/check_fan_config.sh
+  echo 1 > /tmp/cache_store/setup_fan_config
+fi
 /usr/local/bin/fan-util --set 70
 runsv /etc/sv/fscd > /dev/null 2>&1 &
 logger -p user.info "fscd started"

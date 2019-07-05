@@ -25,15 +25,15 @@ checksums=${2:?Please specify JSON checksum file as second argument.}
 target=${3:?Please specify target hostname or \"[ip::v6]\" as third argument.}
 
 checksum_steps=("$dir/check_image.py" --checksum "$checksums")
-checksum_steps+=(--append-new-checksums checksums.json)
+checksum_steps+=(--append-new-checksums /tmp/checksums.json) # off target
 
 options=(-o "LogLevel=error" -o "StrictHostKeyChecking=no")
 options+=(-o "UserKnownHostsFile=/dev/null")
 sshpass=(sshpass -p0penBmc)
 
-files=($dir/{virtualcat,partition,system,improve_system}.py checksums.json)
+files=($dir/{virtualcat,partition,system,improve_system}.py /tmp/checksums.json)
 
-upgrade_steps=(/tmp/improve_system.py --checksums /tmp/checksums.json)
+upgrade_steps=(/tmp/improve_system.py --checksums /tmp/checksums.json) # on target
 
 if [[ $image == http* ]]; then
   download=$(mktemp)

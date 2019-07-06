@@ -1,0 +1,113 @@
+From c8b3370c2aa544e097c76b6cff4e50f252fe05a3 Mon Sep 17 00:00:00 2001
+From: OpenEmbedded <oe.patch@oe>
+Date: Sat, 6 Jul 2019 22:18:07 +0000
+
+
+This fixes compatibility with OpenSSL > 1.1.0 for which
+openbmc-uboot master and v2019.01 have a fix already.
+
+Signed-off-by: Alejandro Hernandez <aehs29@gmail.com>
+
+---
+ lib/rsa/rsa-sign.c | 37 +++++++++++++++++++++++++++++--------
+ 1 file changed, 29 insertions(+), 8 deletions(-)
+
+diff --git a/lib/rsa/rsa-sign.c b/lib/rsa/rsa-sign.c
+index a22b2e6..50ecd51 100644
+--- a/lib/rsa/rsa-sign.c
++++ b/lib/rsa/rsa-sign.c
+@@ -16,10 +16,25 @@
+ #include <openssl/evp.h>
+ #include <openssl/engine.h>
+ 
+-#if OPENSSL_VERSION_NUMBER >= 0x10000000L
++#if OPENSSL_VERSION_NUMBER < 0x10000000L
++#define HAVE_ERR_REMOVE_STATE
++#elif OPENSSL_VERSION_NUMBER < 0x10100000L
+ #define HAVE_ERR_REMOVE_THREAD_STATE
+ #endif
+ 
++#if (OPENSSL_VERSION_NUMBER < 0x10100005L) || defined(LIBRESSL_VERSION_NUMBER)
++static void RSA_get0_key(const RSA *r,
++                         const BIGNUM **n, const BIGNUM **e, const BIGNUM **d)
++{
++   if (n != NULL)
++       *n = r->n;
++   if (e != NULL)
++       *e = r->e;
++   if (d != NULL)
++       *d = r->d;
++}
++#endif
++
+ static int rsa_err(const char *msg)
+ {
+ 	unsigned long sslErr = ERR_get_error();
+@@ -343,7 +358,8 @@ static void rsa_remove(void)
+ 	ERR_free_strings();
+ #ifdef HAVE_ERR_REMOVE_THREAD_STATE
+ 	ERR_remove_thread_state(NULL);
+-#else
++#endif
++#ifdef HAVE_ERR_REMOVE_STATE
+ 	ERR_remove_state(0);
+ #endif
+ 	EVP_cleanup();
+@@ -407,7 +423,6 @@ static int rsa_sign_with_key(RSA *rsa, struct checksum_algo *checksum_algo,
+ 		ret = rsa_err("Could not obtain signature");
+ 		goto err_sign;
+ 	}
+-	EVP_MD_CTX_cleanup(context);
+ 	EVP_MD_CTX_destroy(context);
+ 	EVP_PKEY_free(key);
+ 
+@@ -479,23 +494,26 @@ static int rsa_get_exponent(RSA *key, uint64_t *e)
+ 	BIGNUM *bn_te;
+ 	uint64_t te;
+ 
++	const BIGNUM *bn_e;
++	RSA_get0_key(key, NULL, &bn_e, NULL);
++
+ 	ret = -EINVAL;
+ 	bn_te = NULL;
+ 
+ 	if (!e)
+ 		goto cleanup;
+ 
+-	if (BN_num_bits(key->e) > 64)
++	if (BN_num_bits(bn_e) > 64)
+ 		goto cleanup;
+ 
+-	*e = BN_get_word(key->e);
++	*e = BN_get_word(bn_e);
+ 
+-	if (BN_num_bits(key->e) < 33) {
++	if (BN_num_bits(bn_e) < 33) {
+ 		ret = 0;
+ 		goto cleanup;
+ 	}
+ 
+-	bn_te = BN_dup(key->e);
++	bn_te = BN_dup(bn_e);
+ 	if (!bn_te)
+ 		goto cleanup;
+ 
+@@ -528,6 +546,9 @@ int rsa_get_params(RSA *key, uint64_t *exponent, uint32_t *n0_invp,
+ 	BN_CTX *bn_ctx = BN_CTX_new();
+ 	int ret = 0;
+ 
++	const BIGNUM *bn_n;
++	RSA_get0_key(key, &bn_n, NULL, NULL);
++
+ 	/* Initialize BIGNUMs */
+ 	big1 = BN_new();
+ 	big2 = BN_new();
+@@ -546,7 +567,7 @@ int rsa_get_params(RSA *key, uint64_t *exponent, uint32_t *n0_invp,
+ 	if (0 != rsa_get_exponent(key, exponent))
+ 		ret = -1;
+ 
+-	if (!BN_copy(n, key->n) || !BN_set_word(big1, 1L) ||
++	if (!BN_copy(n, bn_n) || !BN_set_word(big1, 1L) ||
+ 	    !BN_set_word(big2, 2L) || !BN_set_word(big32, 32L))
+ 		ret = -1;
+ 

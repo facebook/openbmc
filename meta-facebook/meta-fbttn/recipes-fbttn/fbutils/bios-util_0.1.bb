@@ -4,7 +4,7 @@ DESCRIPTION = "A BIOS Util for BIOS Related IPMI Command Setting"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://bios-util.py;beginline=1;endline=1;md5=d62248ab691cbaba10ec14c16cf8f625"
+LIC_FILES_CHKSUM = "file://bios-util.py;beginline=1;endline=1;md5=1dc92c19be414b0f6315a04de8ff8782"
 
 SRC_URI = "file://bios-util \
           "
@@ -17,3 +17,5 @@ do_install() {
 }
 
 FILES_${PN} = "${bindir}"
+
+RDEPENDS_${PN} = "python3-core"

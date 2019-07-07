@@ -17,7 +17,7 @@
 
 all: log-util-v2
 
-CFLAGS += -Wall -Werror
+#CFLAGS += -Wall -Werror
 
 log-util-v2: log-util-v2.c
 	$(CC) -DJSMN_STRICT=1 $(CFLAGS) -o $@ $^ $(LDFLAGS) -lpthread

@@ -29,7 +29,7 @@ SRC_URI = "file://Makefile \
 S = "${WORKDIR}"
 binfiles = "log-util-v2"
 
-CFLAGS += " -lpal "
+CFLAGS += " -lpal -Wall -Werror"
 
 pkgdir = "log-util-v2"
 

@@ -22,7 +22,6 @@ board_routes = [
     "/api/sys/mb/fruid_scm",
     "/api/sys/mb/chassis_eeprom",
     "/api/sys/mb/seutil",
-    "/api/sys/sol",
     "/api/sys/usb2i2c_reset",
     "/api/sys/firmware_info",
     "/api/sys/i2cflush",

@@ -22,7 +22,6 @@ import rest_firmware
 import rest_fruid_scm
 import rest_i2cflush
 import rest_seutil
-import rest_sol
 import rest_usb2i2c_reset
 from aiohttp import web
 from rest_utils import dumps_bytestr, get_endpoints
@@ -43,11 +42,6 @@ class boardApp_Handler:
     # Handler for sys/mb/seutil resource endpoint
     async def rest_seutil_hdl(self, request):
         return web.json_response(rest_seutil.get_seutil(), dumps=dumps_bytestr)
-
-    # Handler for SOL resource endpoint
-    async def rest_sol_act_hdl(self, request):
-        data = await request.json()
-        return web.json_response(rest_sol.sol_action(data), dumps=dumps_bytestr)
 
     # Handler to reset usb-to-i2c
     async def rest_usb2i2c_reset_hdl(self, request):

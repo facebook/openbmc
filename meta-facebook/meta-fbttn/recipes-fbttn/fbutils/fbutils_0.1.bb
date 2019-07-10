@@ -49,6 +49,7 @@ binfiles = "sol-util power_led.sh post_led.sh \
 DEPENDS_append = "update-rc.d-native"
 RDEPENDS_${PN} += "bash"
 RDEPENDS_${PN} += "python3-core"
+RDEPENDS_${PN} += "gpiocli"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

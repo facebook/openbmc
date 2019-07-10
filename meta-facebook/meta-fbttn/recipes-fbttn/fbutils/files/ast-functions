@@ -1,6 +1,9 @@
 # Copyright 2014-present Facebook. All Rights Reserved.
 DEVMEM=/sbin/devmem
 AST_POR_FLAG=/tmp/ast_por
+GPIOCLI_CMD=/usr/local/bin/gpiocli
+ASPEEDCHIP="aspeed-gpio"
+I2CIOEXPCHIP="i2c-io-expander"
 
 devmem_set_bit() {
     local addr
@@ -34,98 +37,37 @@ gpio_addr() {
     echo $((0x1E780000 + 0x$1))
 }
 
-GPIODIR="/sys/class/gpio"
-GPIOEXPORT="$GPIODIR/export"
-
-gpio_dir() {
-    echo "$GPIODIR/gpio$1"
-}
-
-gpio_name2value() {
-    local first remaining base val
-    remaining=$1
-    val=0
-    while [ -n "$remaining" ]; do
-        first=${remaining:0:1}
-        case "$first" in
-            [[:lower:]])
-                base=$(printf "%d" "'$first'")
-                base=$((base - 96))
-                val=$((val * 26 + base))
-                ;;
-            [[:upper:]])
-                base=$(printf "%d" "'$first'")
-                base=$((base - 64))
-                val=$((val * 26 + base))
-                ;;
-            *)
-                if [ $val -gt 0 ]; then
-                    val=$((val-1))
-                fi
-                val=$((val * 8 + $remaining))
-                break
-                ;;
-        esac
-        remaining=${remaining:1}
-    done
-    echo "$val"
-}
-
 gpio_export() {
-    local gpio
-    gpio=$(gpio_name2value $1)
-    dir=$(gpio_dir $gpio)
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
-    fi
-}
-
-gpio_export_out() {
-    local gpio
-    gpio=$(gpio_name2value $1)
-    dir=$(gpio_dir $gpio)
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
-        echo out > ${dir}/direction
-    fi
+    local shadow name
+    shadow=$1
+    name=$2
+    $GPIOCLI_CMD export --chip $ASPEEDCHIP --pin-name $name --shadow $shadow
 }
 
 pca9555_gpio_export() {
-    local gpio
-    gpio=$1
-    dir=$(gpio_dir $gpio)
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
-    fi
+    local shadow offset
+    shadow=$1
+    offset=$2
+    $GPIOCLI_CMD export --chip $I2CIOEXPCHIP --pin-offset $offset --shadow $shadow
 }
 
 gpio_set() {
-    local gpio
-    local val
-    gpio=$(gpio_name2value $1)
+    local shadow val
+    shadow=$1
     val=$2
-    dir=$(gpio_dir $gpio)
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
-    fi
-    
-    if [ $val == 1 ]; then
-    echo high > ${dir}/direction
-    else 
-    echo low > ${dir}/direction
-    fi
+    $GPIOCLI_CMD set-init-value --shadow $shadow $val
 }
 
 gpio_get() {
-    local gpio
-    local val
-    gpio=$(gpio_name2value $1)
-    dir=$(gpio_dir $gpio)
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
-    fi
-    echo in > ${dir}/direction
-    cat ${dir}/value
+    local shadow
+    shadow=$1
+    $GPIOCLI_CMD get-value --shadow $shadow | awk -F= '{print $2}'
+}
+
+get_ast_gpio_offset() {
+    local name
+    name=$1
+    $GPIOCLI_CMD map-name-to-offset --chip $ASPEEDCHIP --pin-name $name | awk -F= '{print $2}'
 }
 
 # Store and Clear Power On Reset flag (SCU3C[0])
@@ -158,35 +100,11 @@ is_bmc_por() {
 
 # Check to see if server is present in given slot or not
 is_server_prsnt() {
-  prsnt=`cat /sys/devices/platform/ast-i2c.5/i2c-5/5-0024/gpio/gpio472/value`
+  prsnt=$(gpio_get ML_INS_N)
   if [ $prsnt == "0" ]; then
     # Server is prsent
     echo 1
   else                                       
-    echo 0
-  fi
-}
-
-is_scc_prsnt() {
-  local scc_port
-  scc_port=$1
-  prsnt=`cat /sys/devices/platform/ast-i2c.5/i2c-5/5-0024/gpio/gpio$scc_port/value`
-  if [ $prsnt == "0" ]; then
-    # SCC is prsent
-    echo 1
-  else
-    echo 0
-  fi
-}
-
-is_fan_prsnt() {
-  local fan_port
-  fan_port=$1
-  prsnt=`cat /sys/devices/platform/ast-i2c.5/i2c-5/5-0024/gpio/gpio$fan_port/value`
-  if [ $prsnt == "0" ]; then
-    # Fan is prsent
-    echo 1
-  else
     echo 0
   fi
 }
@@ -201,21 +119,10 @@ fbttn_is_server_on() {
     fi
 }
 
-gpio_get_val() {
-    local gpio
-    local val
-    gpio=$(gpio_name2value $1)
-    dir=$(gpio_dir $gpio)
-    if [ ! -d ${dir} ]; then
-        echo $gpio > $GPIOEXPORT
-    fi
-    cat ${dir}/value
-}
-
 gpio_tolerance_fun() {
-    local gpio
+    local gpio def_val
     offset=0
-    gpio=$(gpio_name2value $1)
+    gpio=$(get_ast_gpio_offset $2)
     offset=$((${gpio}/32))
     case "${offset}" in
     "0" ) 
@@ -245,7 +152,7 @@ gpio_tolerance_fun() {
     esac
     set_bit=$((${gpio}%32))
     devmem_set_bit $offset $set_bit
-    def_val=$(gpio_get_val $1)
+    def_val=$(gpio_get $1)
     if [ $def_val == 1 ]; then
     gpio_set $1 1
     else
@@ -255,8 +162,7 @@ gpio_tolerance_fun() {
 
 is_bic_ready() {
   local ready
-  ready=$(gpio_get G7)
-  
+  ready=$(gpio_get BIC_READY_N)
   if [ $ready == "0" ]; then
     echo 1
   else

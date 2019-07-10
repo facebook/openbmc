@@ -31,37 +31,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 KEYDIR=/mnt/data/kv_store
 DEF_PWR_ON=1
-TO_PWR_ON=
-
-BOARD_EVT=0
-BOARD_DVT=1
-BOARD_MP=2
-
-BIC_READY_GPIO=55
-
-# According to different stage to assign the correct IOM_FULL_GOOD GPIO pin
-GPIO_BOARD_REV_0=`cat /sys/class/gpio/gpio72/value`
-GPIO_BOARD_REV_1=`cat /sys/class/gpio/gpio73/value`
-GPIO_BOARD_REV_2=`cat /sys/class/gpio/gpio74/value`
-IOM_BOARD_ID=$(($GPIO_BOARD_REV_0 << 2 | $GPIO_BOARD_REV_1 << 1 | $GPIO_BOARD_REV_2))
-case "$IOM_BOARD_ID" in
-  "$BOARD_EVT")
-    logger -s -p user.info -t power-on "For EVT IOM Setting..."
-    IOM_FULL_GOOD=218
-    ;;
-  "$BOARD_DVT")
-    logger -s -p user.info -t power-on "For DVT IOM Setting..."
-    IOM_FULL_GOOD=217
-    ;;
-  "$BOARD_MP")
-    logger -s -p user.info -t power-on "For MP IOM Setting..."
-    IOM_FULL_GOOD=217
-    ;;
-  *)
-    logger -s -p user.info -t power-on "For MP IOM Setting..."
-    IOM_FULL_GOOD=217
-    ;;
-esac
+TO_PWR_ON=-1
 
 # Check power policy
 # $1: slot number
@@ -109,7 +79,7 @@ check_bic_ready()
   retry=0
   while [ "$retry" != "5" ]
   do
-    if [ "$(gpio_get $BIC_READY_GPIO)" == "0" ]; then
+    if [ "$(gpio_get BIC_READY_N)" == "0" ]; then
       logger -s -p user.warn -t power-on "BIC is Ready!"
       return
     else
@@ -159,8 +129,8 @@ is_server_12v_off="1"
 is_server_12v_off="1"
 if [ "$(is_server_prsnt)" == "0" ]; then
   logger -s -p user.warn -t power-on "The Mono Lake is absent, turn off Mono Lake HSC 12V and IOM 3V3."
-  gpio_set O7 0
-  gpio_set AA7 0
+  gpio_set COMP_PWR_EN 0
+  gpio_set IOM_FULL_PWR_EN 0
   is_server_12v_off="0"
 fi
 
@@ -174,18 +144,18 @@ if [ "$(is_bmc_por)" == "1" ] && [ "$is_server_12v_off" == "1" ]; then
   sh /usr/local/bin/check_pal_sku.sh > /dev/NULL
   PAL_SKU=$(($(($? >> 6)) & 0x1))
   if [ "$PAL_SKU" == "1" ]; then  # type 7, always power-on SCC B
-    gpio_set F1 1
-    gpio_tolerance_fun F1
+    gpio_set SCC_RMT_FULL_PWR_EN 1
+    gpio_tolerance_fun SCC_RMT_FULL_PWR_EN GPIOF1
   fi
 
   # Turn on the IOM_FULL_PWR_EN to power on the M.2 and IOM 3v3 
-  gpio_set AA7 1
+  gpio_set IOM_FULL_PWR_EN 1
   logger -s -p user.warn -t power-on "Turning on IOM 3v3(IOM_FULL_PWR_EN)"
   # For fbttn MonoLake PWR sequence
-  if [ "$(gpio_get $IOM_FULL_GOOD)" == "1" ]; then
+  if [ "$(gpio_get IOM_FULL_PGOOD)" == "1" ]; then
     logger -s -p user.warn -t power-on "BMC full power good is enable"
-    #set ML board power enable (12V on)
-    gpio_set O7 1
+    # set ML board power enable (12V on)
+    gpio_set COMP_PWR_EN 1
     logger -s -p user.warn -t power-on "Turning Server 12V-on"
     sleep 3  # waiting for ME ready
     check_bic_ready    

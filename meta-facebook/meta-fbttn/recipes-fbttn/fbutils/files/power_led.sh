@@ -35,7 +35,7 @@ fi
 
 # Slot#1: GPIOA3(3)
 if [ $1 = "1" ]; then
-    gpio=A3
+    gpio="SYS_PWR_LED"
 else
     usage $0
 fi

@@ -34,10 +34,10 @@ display_lower() {
     local bit3=$(expr $1 / 8 % 2)
     
     # In FBTTN LED is controlled by H0~H7
-    gpio_set H0 $bit0
-    gpio_set H1 $bit1
-    gpio_set H2 $bit2
-    gpio_set H3 $bit3
+    gpio_set LED_POSTCODE_0 $bit0
+    gpio_set LED_POSTCODE_1 $bit1
+    gpio_set LED_POSTCODE_2 $bit2
+    gpio_set LED_POSTCODE_3 $bit3
 }
 
 # Function to set the more significant hex digit
@@ -49,10 +49,10 @@ display_upper() {
 
     # In FBTTN LED is controlled by H0~H7
 
-    gpio_set H4 $bit0
-    gpio_set H5 $bit1
-    gpio_set H6 $bit2
-    gpio_set H7 $bit3
+    gpio_set LED_POSTCODE_4 $bit0
+    gpio_set LED_POSTCODE_5 $bit1
+    gpio_set LED_POSTCODE_6 $bit2
+    gpio_set LED_POSTCODE_7 $bit3
 }
 
 # Check number of parameters

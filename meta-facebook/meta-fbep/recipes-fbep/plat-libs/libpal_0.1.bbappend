@@ -8,6 +8,7 @@ SRC_URI += "file://pal.c \
 
 SOURCES += "pal_sensors.c"
 HEADERS += "pal_sensors.h"
-DEPENDS += ""
-RDEPENDS_${PN} += ""
-LDFLAGS += ""
+
+DEPENDS += "libgpio-ctrl"
+RDEPENDS_${PN} += " libgpio-ctrl"
+LDFLAGS += " -lgpio-ctrl"

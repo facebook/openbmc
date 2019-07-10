@@ -156,6 +156,7 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
         "u-boot version",
         "vboot",
     ]
+
     # /api
     def set_endpoint_api_attributes(self):
         self.endpoint_api_attrb = ["sys"]

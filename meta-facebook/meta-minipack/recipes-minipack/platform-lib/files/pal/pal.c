@@ -773,7 +773,7 @@ pal_get_pim_type(uint8_t fru) {
 
   if (val == 0x0) {
     ret = PIM_TYPE_16Q;
-  } else if (val == 0xf0) {
+  } else if ((val & 0xf0) == 0xf0) {
     ret = PIM_TYPE_16O;
   } else if (val == 0x10) {
     ret = PIM_TYPE_4DD;

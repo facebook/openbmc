@@ -103,6 +103,30 @@ class Galaxy100Ec12c033SensorTest(LmSensorsTest):
             msg="+12V Voltage value is {} not within range".format(value),
         )
 
+    def test_galaxy100_ec_12c_0_33_sensor_data_CPU_Voltage_range(self):
+        result = self.get_parsed_result()
+        value = result["CPU Voltage"]
+        # '+12.23 V' extract 12.23 form it
+        value = value.split("+")[1].split(" V")[0]
+        self.assertAlmostEqual(
+            float(value),
+            1,
+            delta=1,
+            msg="CPU Voltage value is {} not within range".format(value),
+        )
+
+    def test_galaxy100_ec_12c_0_33_sensor_data_DIMM_Voltage_range(self):
+        result = self.get_parsed_result()
+        value = result["DIMM Voltage"]
+        # '+12.23 V' extract 12.23 form it
+        value = value.split("+")[1].split(" V")[0]
+        self.assertAlmostEqual(
+            float(value),
+            1,
+            delta=1,
+            msg="DIMM Voltage value is {} not within range".format(value),
+        )
+
     def test_galaxy100_ec_12c_0_33_sensor_data_CPU_Temp_range(self):
         result = self.get_parsed_result()
         value = result["CPU Temp"]
@@ -122,7 +146,7 @@ class Galaxy100Ec12c033SensorTest(LmSensorsTest):
         value = value.split("+")[1].split(" C")[0]
         self.assertAlmostEqual(
             float(value),
-            30,
+            40,
             delta=20,
             msg="DIMM Temp value is {} not within range".format(value),
         )

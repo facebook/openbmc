@@ -55,7 +55,6 @@ class RestEndpointTest(FbossRestEndpointTest):
             "tmp75-i2c-3-4a",
             "fb_panther_plus-i2c-4-40",
             "max127-i2c-6-28",
-            "pfe1100-i2c-7-59",
             "pfe1100-i2c-7-5a",
             "ncp4200-i2c-8-60",
             "ast_adc-isa-0000",

@@ -25,6 +25,7 @@ LOGFILE_B="/var/log/mTerm_$1_backup.log"
 function show_usage() {
   echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] bic (only for GPv2)"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] pcie_sw (only for GPv2)"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [ device0 | device1 | ... device11 ] (baud rate)"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
 }
@@ -86,6 +87,21 @@ if [ $# -gt 1 ]; then
       exit -1
     fi
 
+    if [ $SLOT_NUM -eq 1 ]; then
+      devmem_set_bit  $(uart1_addr c)  7
+      /sbin/devmem $(uart1_addr 0) 32 0x0000001A
+      /sbin/devmem $(uart1_addr 4) 32 0x00000000
+      devmem_clear_bit  $(uart1_addr c)  7
+    elif [ $SLOT_NUM -eq 3 ]; then
+      devmem_set_bit  $(uart3_addr c)  7
+      /sbin/devmem $(uart3_addr 0) 32 0x0000001A
+      /sbin/devmem $(uart3_addr 4) 32 0x00000000
+      devmem_clear_bit  $(uart3_addr c)  7
+    else
+      show_usage
+      exit -1
+    fi
+
     # set UART clock source 24MHz
     devmem_clear_bit $(scu_addr 4c) $((SLOT_NUM + 23))
 
@@ -121,6 +137,32 @@ if [ $# -gt 1 ]; then
     fi
 
     /usr/bin/bic-util $SLOT 0xe0 0x3a 0x15 0xa0 0x00 0x00 12 >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      show_usage
+      exit -1
+    fi
+
+  elif [[ "$2" == "pcie_sw" ]]; then
+
+    # set UART clock source 192MHz (8 * 24MHz)
+    devmem_set_bit $(scu_addr 4c) $((SLOT_NUM + 23))
+
+    if [ $SLOT_NUM -eq 1 ]; then
+      devmem_set_bit  $(uart1_addr c)  7
+      /sbin/devmem $(uart1_addr 0) 32 0x00000034
+      /sbin/devmem $(uart1_addr 4) 32 0x00000000
+      devmem_clear_bit  $(uart1_addr c)  7
+    elif [ $SLOT_NUM -eq 3 ]; then
+      devmem_set_bit  $(uart3_addr c)  7
+      /sbin/devmem $(uart3_addr 0) 32 0x00000034
+      /sbin/devmem $(uart3_addr 4) 32 0x00000000
+      devmem_clear_bit  $(uart3_addr c)  7
+    else
+      show_usage
+      exit -1
+    fi
+
+    /usr/bin/bic-util $SLOT 0xe0 0x3a 0x15 0xa0 0x00 0x00 14 >/dev/null 2>&1
     if [ $? -ne 0 ]; then
       show_usage
       exit -1

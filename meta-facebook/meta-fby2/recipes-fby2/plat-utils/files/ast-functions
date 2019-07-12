@@ -32,6 +32,14 @@ scu_addr() {
     echo $((0x1E6E2000 + 0x$1))
 }
 
+uart1_addr() {
+    echo $((0x1E783000 + 0x$1))
+}
+
+uart3_addr() {
+    echo $((0x1E78E000 + 0x$1))
+}
+
 #LPC Controller, Base Address = 0x1E78_9000
 lpc_addr() {
     echo $((0x1E789000 + 0x$1))

@@ -28,10 +28,11 @@
 #include <math.h>
 #include <string.h>
 #include <pthread.h>
+#include <assert.h>
 #include <sys/un.h>
 #include <sys/file.h>
 #include <openbmc/pal.h>
-#include <openbmc/gpio.h>
+#include <openbmc/libgpio.h>
 #include <openbmc/ocp-dbg-lcd.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
@@ -59,7 +60,34 @@ static pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool MCERR_IERR_assert = false;
 static int g_uart_switch_count = 0;
 
-static void set_gpio_value(char *pin, uint8_t value);
+static void set_fault_led(bool on)
+{
+  static gpio_desc_t *gpio = NULL;
+  if (!gpio) {
+    gpio = gpio_open_by_shadow("BMC_FAULT_N"); // GPIOU5
+    if (!gpio)
+      return;
+  }
+  gpio_set_value(gpio, on ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH);
+}
+
+static void trigger_ppin(void)
+{
+  static bool is_ppin_triggered = false;
+  static gpio_desc_t *gpio = NULL;
+  if (!gpio) {
+    gpio = gpio_open_by_shadow("BMC_PPIN"); // GPIOB5
+    if (!gpio)
+      return;
+  }
+  if( !is_ppin_triggered )
+  {
+    gpio_set_value(gpio, GPIO_VALUE_LOW);
+    usleep(1000);
+    gpio_set_value(gpio, GPIO_VALUE_HIGH);
+    is_ppin_triggered = true;
+  }
+}
 
 static inline long int reset_timer(long int *val) {
   pthread_mutex_lock(&timer_mutex);
@@ -82,7 +110,7 @@ static inline long int decrease_timer(long int *val) {
 
 struct delayed_log {
   useconds_t usec;
-  char msg[256];
+  char msg[1024];
 };
 // Thread for delay event
 static void *
@@ -102,9 +130,32 @@ delay_log(void *arg)
   pthread_exit(NULL);
 }
 
+static void log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay)
+{
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
+  assert(cfg);
+  if (log_delay == 0) {
+    syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
+  } else {
+    pthread_t tid_delay_log;
+    struct delayed_log *log = (struct delayed_log *)malloc(sizeof(struct delayed_log));
+    if (log) {
+      log->usec = log_delay;
+      snprintf(log->msg, 1024, "%s: %s - %s\n", value ? "DEASSERT" : "ASSERT", cfg->description, cfg->shadow);
+      if (pthread_create(&tid_delay_log, NULL, delay_log, (void *)log)) {
+        free(log);
+        log = NULL;
+      }
+    }
+    if (!log) {
+      syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
+    }
+  }
+}
+
 // On some board versions, we need to reset the IO expander
 // as a software workaround for issues in the CPLD.
-static void usb_debug_card_check_hotfix(gpio_poll_st *gp)
+static void usb_debug_card_check_hotfix(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t value)
 {
   static uint8_t odm_id = 0xff;
   static uint8_t board_rev = 0xff;
@@ -118,114 +169,101 @@ static void usb_debug_card_check_hotfix(gpio_poll_st *gp)
   }
 
   if (odm_id == 0 && board_rev <= BOARD_REV_DVT) {
-    if (gp->gs.gs_gpio == gpio_num("GPIOQ6")) { // FM_POST_CARD_PRES_BMC_N
-      if(gp->value == 1)
-        usb_dbg_reset();
-    }
+    if(value == GPIO_VALUE_HIGH)
+      usb_dbg_reset();
   }
-}
-
-static void log_gpio_change(gpio_poll_st *gp, useconds_t log_delay)
-{
-  if (log_delay == 0) {
-    syslog(LOG_CRIT, "%s: %s - %s\n", gp->value ? "DEASSERT": "ASSERT", gp->name, gp->desc);
-  } else {
-    pthread_t tid_delay_log;
-    struct delayed_log *log = (struct delayed_log *)malloc(sizeof(struct delayed_log));
-    if (log) {
-      log->usec = log_delay;
-      snprintf(log->msg, 256, "%s: %s - %s\n", gp->value ? "DEASSERT" : "ASSERT", gp->name, gp->desc);
-      if (pthread_create(&tid_delay_log, NULL, delay_log, (void *)log)) {
-        free(log);
-        log = NULL;
-      }
-    }
-    if (!log) {
-      syslog(LOG_CRIT, "%s: %s - %s\n", gp->value ? "DEASSERT": "ASSERT", gp->name, gp->desc);
-    }
-  }
+  log_gpio_change(desc, value, 0);
 }
 
 // Event Handler for GPIOR5 platform reset changes
-static void platform_reset_event_handle(gpio_poll_st *gp)
+static void platform_reset_event_handle(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  if (gp->gs.gs_gpio == gpio_num("GPIOR5"))
-  {
-    // Use GPIOR5 to filter some gpio logging
-    reset_timer(&reset_sec);
-    TOUCH("/tmp/rst_touch");
-  }
-
-  log_gpio_change(gp, 0);
+  // Use GPIOR5 to filter some gpio logging
+  reset_timer(&reset_sec);
+  TOUCH("/tmp/rst_touch");
+  log_gpio_change(gp, curr, 0);
   if (MCERR_IERR_assert == true) {
     pal_second_crashdump_chk();
     MCERR_IERR_assert = false;
   }
 }
 
-// Generic Event Handler for GPIO changes
-static void gpio_event_handle(gpio_poll_st *gp)
+static void cpu0_thermtrip(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
-  char cmd[128] = {0};
+  if (curr == GPIO_VALUE_HIGH) {
+    pal_add_cri_sel("CPU0 thermtrip DEASSERT");
+  } else {
+    pal_add_cri_sel("CPU0 thermtrip ASSERT");
+  }
+  log_gpio_change(desc, curr, 0);
+}
 
-  if (gp->gs.gs_gpio == gpio_num("GPIOB6")) { // Power OK
-    reset_timer(&power_on_sec);
+static void cpu1_thermtrip(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  if (curr == GPIO_VALUE_HIGH) {
+    pal_add_cri_sel("CPU1 thermtrip DEASSERT");
+  } else {
+    pal_add_cri_sel("CPU1 thermtrip ASSERT");
   }
-  else if (gp->gs.gs_gpio == gpio_num("GPIOL0")) { // IRQ_UV_DETECT_N
-    log_gpio_change(gp, 20*1000);
-    return;
-  }
-  else if ( gp->gs.gs_gpio == gpio_num("GPIOY1"))//FM_SLPS4_N. falling edge is detected
-  {
-    pal_check_power_sts();
-    return;
-  }
-  else if ( gp->gs.gs_gpio == gpio_num("GPIOQ4") || gp->gs.gs_gpio == gpio_num("GPIOQ5") ) //FM_UARTSW_MSB_N or FM_UARTSW_LSB_N
-  {
-    g_uart_switch_count = 2;
-    pal_uart_switch_for_led_ctrl();
-    return;
-  }
-  else if( gp->gs.gs_gpio == gpio_num("GPIOE2") ) {
-    pal_set_restart_cause(FRU_MB, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
-  }
-  else if( gp->gs.gs_gpio == gpio_num("GPIOE0") ) {
-    pal_set_restart_cause(FRU_MB, RESTART_CAUSE_RESET_PUSH_BUTTON);
-  }
+  log_gpio_change(desc, curr, 0);
+}
 
-  log_gpio_change(gp, 0);
+static void irq_uv_detect(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  log_gpio_change(gp, curr, 20*1000);
+}
 
-  usb_debug_card_check_hotfix(gp);
+static void power_ok(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  reset_timer(&power_on_sec);
+  log_gpio_change(gp, curr, 0);
+}
 
-  //LCD debug card thermal trip critical SEL support
-  if (gp->gs.gs_gpio == gpio_num("GPIOM4") || gp->gs.gs_gpio == gpio_num("GPIOM5")) {
-    if (gp->gs.gs_gpio == gpio_num("GPIOM4"))
-      strcat(cmd, "CPU0 ");
-    else
-      strcat(cmd, "CPU1 ");
-    strcat(cmd, "thermtrip ");
-    if (gp->value) {
-      strcat(cmd, "DEASSERT");
-    } else {
-      strcat(cmd, "ASSERT");
-    }
-    pal_add_cri_sel(cmd);
-  }
+static void slps4(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  pal_check_power_sts();
+}
 
+//FM_UARTSW_MSB_N, FM_UARTSW_LSB_N
+static void uart_switch(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  g_uart_switch_count = 2;
+  pal_uart_switch_for_led_ctrl();
+}
+
+static void pwr_on_push_button(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  pal_set_restart_cause(FRU_MB, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
+  log_gpio_change(gp, curr, 0);
+}
+
+static void pwr_on_reset(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  pal_set_restart_cause(FRU_MB, RESTART_CAUSE_RESET_PUSH_BUTTON);
+  log_gpio_change(desc, curr, 0);
+}
+
+// Generic Event Handler for GPIO changes
+static void gpio_event_handle(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  log_gpio_change(gp, curr, 0);
 }
 
 static void
 *smi_timer()
 {
 
-  char *pin_name="GPIOG7";
-  int pin_num = 0;
   int smi_timeout_count = 1;  
   int smi_timeout_threshold = 90;
   bool is_issue_event = false;
- 
-  pin_num = gpio_num(pin_name);
+  gpio_desc_t *gpio = gpio_open_by_shadow("FM_BIOS_SMI_ACTIVE_N"); // GPIOG7
+  gpio_value_t value;
 
+  if (!gpio) {
+    syslog(LOG_CRIT, "SMI PIN monitoring not functional");
+    return NULL;
+  }
+ 
 #ifdef SMI_DEBUG
   syslog(LOG_WARNING, "[%s][%lu] Timer is started.\n", __func__, pthread_self());
   syslog(LOG_WARNING, "[%s] Get GPIO Num: %d", __func__, pin_num);
@@ -233,11 +271,16 @@ static void
   
   while(1)
   {
-    if ( GPIO_VALUE_LOW == gpio_get(pin_num) ) 
+    if (gpio_get_value(gpio, &value)) {
+      syslog(LOG_WARNING, "Could not get current SMI GPIO value");
+      sleep(1);
+      continue;
+    }
+    if ( GPIO_VALUE_LOW == value) 
     {
       smi_timeout_count++;
     }
-    else if ( GPIO_VALUE_HIGH == gpio_get(pin_num) )
+    else if ( GPIO_VALUE_HIGH == value)
     {
       smi_timeout_count = 0;
     }
@@ -267,221 +310,199 @@ static void
   return NULL;
 }
 
-// Generic Event Handler for GPIO changes, but only logs event when MB is ON
-static void gpio_event_handle_power(gpio_poll_st *gp)
+#define SERVER_POWER_CHECK(power_on_time)  \
+  do {                                     \
+    uint8_t status = 0;                    \
+    pal_get_server_power(FRU_MB, &status); \
+    if (status != SERVER_POWER_ON) {       \
+      return;                              \
+    }                                      \
+    if (power_on_sec < power_on_time) {    \
+      return;                              \
+    }                                      \
+  }while(0)
+
+static gpio_value_t gpio_get(const char *shadow)
 {
-  uint8_t status = 0;
-  char cmd[128] = {0};
-
-  pal_get_server_power(1, &status);
-  if (status != SERVER_POWER_ON) {
-    return;
+  gpio_value_t value = GPIO_VALUE_INVALID;
+  gpio_desc_t *desc = gpio_open_by_shadow(shadow);
+  if (!desc) {
+    syslog(LOG_CRIT, "Open failed for GPIO: %s\n", shadow);
+    return GPIO_VALUE_INVALID;
   }
-
-  //Additional filter condition
-  if (gp->gs.gs_gpio == gpio_num("GPIOS0") ){ //FM_THROTTLE_N filter for ME limitation
-    if (power_on_sec < 5)
-      return;
+  if (gpio_get_value(desc, &value)) {
+    syslog(LOG_CRIT, "Get failed for GPIO: %s\n", shadow);
+    value = GPIO_VALUE_INVALID;
   }
-  if (gp->gs.gs_gpio == gpio_num("GPIOD6") || //FM_CPU_ERR0_LVT3_BMC_N
-      gp->gs.gs_gpio == gpio_num("GPIOD7") || //FM_CPU_ERR1_LVT3_BMC_N
-      gp->gs.gs_gpio == gpio_num("GPIOG0") || //FM_CPU_ERR2_LVT3_N
-      gp->gs.gs_gpio == gpio_num("GPION3") || //FM_CPU_MSMI_LVT3_N
-      gp->gs.gs_gpio == gpio_num("GPIOG1") || //FM_CPU_CATERR_LVT3_N
-      gp->gs.gs_gpio == gpio_num("GPIOE6") || //FM_CPU0_PROCHOT_LVT3_BMC_N
-      gp->gs.gs_gpio == gpio_num("GPIOE7") || //FM_CPU1_PROCHOT_LVT3_BMC_N
-      gp->gs.gs_gpio == gpio_num("GPIOX5") ){ //H_CPU0_MEMDEF_MEMHOT_LVT3_BMC_N
-    if (power_on_sec < 3)
-      return;
-  }
-
-  //Special handle for some GPIO pin
-  if (gp->gs.gs_gpio == gpio_num("GPIOG1") ){ //FM_CPU_CATERR_LVT3_N
-    CATERR_irq++;
-    return;
-  }
-  if (gp->gs.gs_gpio == gpio_num("GPION3") ){ //FM_CPU_MSMI_LVT3_N
-    MSMI_irq++;
-    return;
-  }
-
-  //LCD debug card critical SEL support
-  if (gp->gs.gs_gpio == gpio_num("GPIOE6") || gp->gs.gs_gpio == gpio_num("GPIOE7")) {
-    strcat(cmd, "CPU FPH");
-    if (gp->value) {
-      strcat(cmd, " DEASSERT");
-      syslog(LOG_CRIT, "DEASSERT: %s - %s\n",
-        gp->name, gp->desc);
-    } else {
-      char reason[32] = "";
-      strcat(cmd, " by ");
-      if (gpio_get(gpio_num("GPIOL0")) == GPIO_VALUE_LOW)
-        strcpy(reason, "UV");
-      if (gpio_get(gpio_num("GPIOL1")) == GPIO_VALUE_LOW)
-        strcpy(reason, "OC");
-      if (gpio_get(gpio_num("GPIOL2")) == GPIO_VALUE_LOW)
-        strcpy(reason, "timer exp");
-      if (gpio_get(gpio_num("GPIOAA1")) == GPIO_VALUE_LOW)
-        strcpy(reason, "PMBus alert");
-      strcat(cmd, reason);
-      syslog(LOG_CRIT, "ASSERT: %s - %s (reason: %s)\n",
-        gp->name, gp->desc, reason);
-      strcat(cmd, " ASSERT");
-    }
-    pal_add_cri_sel(cmd);
-    return;
-  }
-
-  log_gpio_change(gp, 0);
-
+  gpio_close(desc);
+  return value;
 }
 
+static void prochot_reason(char *reason)
+{
+  if (gpio_get("IRQ_UV_DETECT_N") == GPIO_VALUE_LOW)
+    strcpy(reason, "UV");
+  if (gpio_get("IRQ_OC_DETECT_N") == GPIO_VALUE_LOW)
+    strcpy(reason, "OC");
+  if (gpio_get("FM_HSC_TIMER_EXP_N") == GPIO_VALUE_LOW)
+    strcpy(reason, "timer exp");
+  if (gpio_get("IRQ_SML1_PMBUS_ALERT_N") == GPIO_VALUE_LOW)
+    strcpy(reason, "PMBus alert");
+}
+
+static void cpu_prochot(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  char cmd[128] = {0};
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+  assert(cfg);
+  SERVER_POWER_CHECK(3);
+  //LCD debug card critical SEL support
+  strcat(cmd, "CPU FPH");
+  if (curr) {
+    strcat(cmd, " DEASSERT");
+    syslog(LOG_CRIT, "DEASSERT: %s - %s\n",
+      cfg->description, cfg->shadow);
+  } else {
+    char reason[32] = "";
+    strcat(cmd, " by ");
+    prochot_reason(reason);
+    strcat(cmd, reason);
+    syslog(LOG_CRIT, "ASSERT: %s - %s (reason: %s)\n",
+      cfg->description, cfg->shadow, reason);
+    strcat(cmd, " ASSERT");
+  }
+  pal_add_cri_sel(cmd);
+}
+
+void caterr(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  SERVER_POWER_CHECK(3);
+  CATERR_irq++;
+}
+
+void msmi(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  SERVER_POWER_CHECK(3);
+  MSMI_irq++;
+}
+
+void server_power_on_errors(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  SERVER_POWER_CHECK(3);
+  log_gpio_change(desc, curr, 0);
+}
+
+void server_power_on_errors_late(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  SERVER_POWER_CHECK(5);
+  log_gpio_change(desc, curr, 0);
+}
+
+// Generic Event Handler for GPIO changes, but only logs event when MB is ON
+static void gpio_event_handle_power(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  SERVER_POWER_CHECK(0);
+  log_gpio_change(gp, curr, 0);
+}
+
+static void gpio_event_handle_thermtrip(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  uint8_t status = 0;
+
+  if (gpio_get("RST_BMC_PLTRST_BUF_N") == GPIO_VALUE_LOW)
+    return;
+  pal_get_server_power(FRU_MB, &status);
+  if (status != SERVER_POWER_ON)
+    return;
+  // Filter false positives during reset.
+  if (reset_sec < 10)
+    return;
+  log_gpio_change(gp, curr, 0);
+}
 
 // Generic Event Handler for GPIO changes, but only logs event when PLTRST_N is high and power on
-static void gpio_event_handle_PLTRST(gpio_poll_st *gp)
+static void gpio_event_handle_PLTRST(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
   uint8_t status = 0;
-  FILE *fp;
-  int rc;
-  int val;
-  char path[64] = {0};
 
-  // check PLTRST
-  sprintf(path, "/sys/class/gpio/gpio%d/value", gpio_num("GPIOR5"));
-  if ((fp = fopen(path, "r")) != NULL) {
-    rc = fscanf(fp, "%d", &val);
-    fclose(fp);
-  }
-  if (!fp || rc != 1) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to read device %s", path);
-#endif
+  if (gpio_get("RST_BMC_PLTRST_BUF_N") == GPIO_VALUE_LOW)
     return;
-  }
-  // If PLTRST is low
-  if (!val) {
+  pal_get_server_power(FRU_MB, &status);
+  if (status != SERVER_POWER_ON)
     return;
-  }
-
-  // Check power
-  pal_get_server_power(1, &status);
-  if (status != SERVER_POWER_ON) {
-    return;
-  }
-
-  if (gp->gs.gs_gpio == gpio_num("GPIOG2") ){ //FM_PCH_BMC_THERMTRIP_N
-    if (reset_sec < 10)
-      return;
-  }
-
-  log_gpio_change(gp, 0);
+  log_gpio_change(gp, curr, 0);
 }
 
-// GPIO table to be monitored when MB is ON
-static gpio_poll_st g_gpios[] = {
-  // {{gpio, fd}, edge, gpioValue, call-back function, GPIO description}
-  {{1, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOB6", "PWRGD_SYS_PWROK" },
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOB7", "IRQ_PVDDQ_GHJ_VRHOT_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOD6", "FM_CPU_ERR0_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOD7", "FM_CPU_ERR1_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOE0", "RST_SYSTEM_BTN_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOE2", "FM_PWR_BTN_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOE4", "FP_NMI_BTN_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOE6", "FM_CPU0_PROCHOT_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOE7", "FM_CPU1_PROCHOT_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOF0", "IRQ_PVDDQ_ABC_VRHOT_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOF2", "IRQ_PVCCIN_CPU0_VRHOT_LVC3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOF3", "IRQ_PVCCIN_CPU1_VRHOT_LVC3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOF4", "IRQ_PVDDQ_KLM_VRHOT_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOG0", "FM_CPU_ERR2_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle_power, "GPIOG1", "FM_CPU_CATERR_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOG2", "FM_PCH_BMC_THERMTRIP_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOG3", "FM_CPU0_SKTOCC_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOI0", "FM_CPU0_FIVR_FAULT_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_PLTRST, "GPIOI1", "FM_CPU1_FIVR_FAULT_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOL0", "IRQ_UV_DETECT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOL1", "IRQ_OC_DETECT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOL2", "FM_HSC_TIMER_EXP_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOL4", "FM_MEM_THERM_EVENT_PCH_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOM0", "FM_CPU0_RC_ERROR_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOM1", "FM_CPU1_RC_ERROR_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOM4", "FM_CPU0_THERMTRIP_LATCH_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOM5", "FM_CPU1_THERMTRIP_LATCH_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle_power, "GPION3", "FM_CPU_MSMI_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOQ6", "FM_POST_CARD_PRES_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, platform_reset_event_handle, "GPIOR5", "RST_BMC_PLTRST_BUF_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOS0", "FM_THROTTLE_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX4", "H_CPU0_MEMABC_MEMHOT_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX5", "H_CPU0_MEMDEF_MEMHOT_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX6", "H_CPU1_MEMGHJ_MEMHOT_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOX7", "H_CPU1_MEMKLM_MEMHOT_LVT3_BMC_N"},
-  {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPIOY1", "FM_SLPS4_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOZ2", "IRQ_PVDDQ_DEF_VRHOT_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOAA0", "FM_CPU1_SKTOCC_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAA1", "IRQ_SML1_PMBUS_ALERT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOAB0", "IRQ_HSC_FAULT_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle_power, "GPIOD4", "IRQ_DIMM_SAVE_LVT3_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOQ4", "FM_UARTSW_LSB_N"},
-  {{0, 0}, GPIO_EDGE_BOTH, 0, gpio_event_handle, "GPIOQ5", "FM_UARTSW_MSB_N"},
-};
+void cpu_present(gpiopoll_pin_t *gpdesc, gpio_value_t value)
+{
+  log_gpio_change(gpdesc, value, 0);
+}
 
-static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);
-
-typedef enum {
-  POWER_OFF = 0,
-  POWER_ON = 1,
-  DONT_CARE = 2,
-} pwr_sts;
-
-typedef struct {
-  char gpio_name[8];
-  uint8_t trigger_pwr_sts;
-  uint8_t trigger_val;
-} gpio_chk;
-
-// GPIO pre-check table
-static gpio_chk pre_check_table[] = {
-  {"GPIOG3", DONT_CARE, GPIO_VALUE_INVALID},  //FM_CPU0_SKTOCC_LVT3_N
-  {"GPIOAA0", DONT_CARE, GPIO_VALUE_INVALID}, //FM_CPU1_SKTOCC_LVT3_N
-  {"GPIOG1", POWER_ON, GPIO_VALUE_LOW}, //FM_CPU_CATERR_LVT3_N
-  {"GPION3", POWER_ON, GPIO_VALUE_LOW}, //FM_CPU_MSMI_LVT3_N
-};
-
-static int chk_table_count = sizeof(pre_check_table) / sizeof(gpio_chk);
-
-// Thread for gpio timer
-static void
-gpio_pre_check() {
-  int i, j;
+void por_caterr(gpiopoll_pin_t *gpdesc, gpio_value_t value)
+{
   uint8_t status = 0;
-  int ret;
-
-  for ( i = 0; i < chk_table_count; i++) {
-    for ( j = 0 ; j < g_count ; j++ ) {
-      if( gpio_num(pre_check_table[i].gpio_name) == g_gpios[j].gs.gs_gpio ) {
-        ret = gpio_get(gpio_num(pre_check_table[i].gpio_name));
-        if(ret == -1) {
-          syslog(LOG_WARNING, "gpio_pre_check:%s fail", pre_check_table[i].gpio_name);
-          continue;
-        }
-        g_gpios[j].value = ret;
-        if (pre_check_table[i].trigger_pwr_sts != DONT_CARE) {
-          pal_get_server_power(1, &status);
-          if ( (status == pre_check_table[i].trigger_pwr_sts) && ( gpio_read(&g_gpios[j].gs) == pre_check_table[i].trigger_val) ) {
-            if( g_gpios[j].gs.gs_gpio == gpio_num("GPIOG1") )
-              CATERR_irq++;
-            else if( g_gpios[j].gs.gs_gpio == gpio_num("GPION3") )
-              MSMI_irq++;
-            else
-              log_gpio_change(&g_gpios[j], 0);
-          }
-        } else {
-          log_gpio_change(&g_gpios[j], 0);
-        }
-      }
-    }
+  pal_get_server_power(FRU_MB, &status);
+  if (status && value == GPIO_VALUE_LOW) {
+    CATERR_irq++;
   }
 }
+
+void por_msmi(gpiopoll_pin_t *gpdesc, gpio_value_t value)
+{
+  uint8_t status = 0;
+  pal_get_server_power(FRU_MB, &status);
+  if (status && value == GPIO_VALUE_LOW) {
+    MSMI_irq++;
+  }
+}
+
+// GPIO table to be monitored
+static struct gpiopoll_config g_gpios[] = {
+  // shadow, description, edge, handler, oneshot
+  {"PWRGD_SYS_PWROK", "GPIOB6", GPIO_EDGE_BOTH, power_ok, NULL},
+  {"IRQ_PVDDQ_GHJ_VRHOT_LVT3_N", "GPIOB7", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
+  {"FM_CPU_ERR0_LVT3_BMC_N", "GPIOD6", GPIO_EDGE_BOTH, server_power_on_errors, NULL},
+  {"FM_CPU_ERR1_LVT3_BMC_N", "GPIOD7", GPIO_EDGE_BOTH, server_power_on_errors, NULL},
+  {"RST_SYSTEM_BTN_N", "GPIOE0", GPIO_EDGE_BOTH, pwr_on_reset, NULL},
+  {"FM_PWR_BTN_N", "GPIOE2", GPIO_EDGE_BOTH, pwr_on_push_button, NULL},
+  {"FP_NMI_BTN_N", "GPIOE4", GPIO_EDGE_BOTH, gpio_event_handle, NULL},
+  {"FM_CPU0_PROCHOT_LVT3_BMC_N", "GPIOE6", GPIO_EDGE_BOTH, cpu_prochot, NULL},
+  {"FM_CPU1_PROCHOT_LVT3_BMC_N", "GPIOE7", GPIO_EDGE_BOTH, cpu_prochot, NULL},
+  {"IRQ_PVDDQ_ABC_VRHOT_LVT3_N", "GPIOF0", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
+  {"IRQ_PVCCIN_CPU0_VRHOT_LVC3_N", "GPIOF2", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
+  {"IRQ_PVCCIN_CPU1_VRHOT_LVC3_N", "GPIOF3", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
+  {"IRQ_PVDDQ_KLM_VRHOT_LVT3_N", "GPIOF4", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
+  {"FM_CPU_ERR2_LVT3_N", "GPIOG0", GPIO_EDGE_BOTH, server_power_on_errors, NULL},
+  {"FM_CPU_CATERR_LVT3_N", "GPIOG1", GPIO_EDGE_FALLING, caterr, por_caterr},
+  {"FM_PCH_BMC_THERMTRIP_N", "GPIOG2", GPIO_EDGE_BOTH, gpio_event_handle_thermtrip, NULL},
+  {"FM_CPU0_SKTOCC_LVT3_N", "GPIOG3", GPIO_EDGE_BOTH, gpio_event_handle_power, cpu_present},
+  {"FM_CPU0_FIVR_FAULT_LVT3_N", "GPIOI0", GPIO_EDGE_BOTH, gpio_event_handle_PLTRST, NULL},
+  {"FM_CPU1_FIVR_FAULT_LVT3_N", "GPIOI1", GPIO_EDGE_BOTH, gpio_event_handle_PLTRST, NULL},
+  {"IRQ_UV_DETECT_N", "GPIOL0", GPIO_EDGE_BOTH, irq_uv_detect, NULL},
+  {"IRQ_OC_DETECT_N", "GPIOL1", GPIO_EDGE_BOTH, gpio_event_handle, NULL},
+  {"FM_HSC_TIMER_EXP_N", "GPIOL2", GPIO_EDGE_BOTH, gpio_event_handle, NULL},
+  {"FM_MEM_THERM_EVENT_PCH_N", "GPIOL4", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
+  {"FM_CPU0_RC_ERROR_N", "GPIOM0", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
+  {"FM_CPU1_RC_ERROR_N", "GPIOM1", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
+  {"FM_CPU0_THERMTRIP_LATCH_LVT3_N", "GPIOM4", GPIO_EDGE_BOTH, cpu0_thermtrip, NULL},
+  {"FM_CPU1_THERMTRIP_LATCH_LVT3_N", "GPIOM5", GPIO_EDGE_BOTH, cpu1_thermtrip, NULL},
+  {"FM_CPU_MSMI_LVT3_N", "GPION3", GPIO_EDGE_FALLING, msmi, por_msmi},
+  {"FM_POST_CARD_PRES_BMC_N", "GPIOQ6", GPIO_EDGE_BOTH, usb_debug_card_check_hotfix, NULL},
+  {"RST_BMC_PLTRST_BUF_N", "GPIOR5", GPIO_EDGE_BOTH, platform_reset_event_handle, NULL},
+  {"FM_THROTTLE_N", "GPIOS0", GPIO_EDGE_BOTH, server_power_on_errors_late, NULL},
+  {"H_CPU0_MEMABC_MEMHOT_LVT3_BMC_N", "GPIOX4", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
+  {"H_CPU0_MEMDEF_MEMHOT_LVT3_BMC_N", "GPIOX5", GPIO_EDGE_BOTH, server_power_on_errors, NULL},
+  {"H_CPU1_MEMGHJ_MEMHOT_LVT3_BMC_N", "GPIOX6", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
+  {"H_CPU1_MEMKLM_MEMHOT_LVT3_BMC_N", "GPIOX7", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
+  {"FM_SLPS4_N", "GPIOY1", GPIO_EDGE_FALLING, slps4, NULL},
+  {"IRQ_PVDDQ_DEF_VRHOT_LVT3_N", "GPIOZ2", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
+  {"FM_CPU1_SKTOCC_LVT3_N", "GPIOAA0", GPIO_EDGE_BOTH, gpio_event_handle_power, cpu_present},
+  {"IRQ_SML1_PMBUS_ALERT_N", "GPIOAA1", GPIO_EDGE_BOTH, gpio_event_handle, NULL},
+  {"IRQ_HSC_FAULT_N", "GPIOAB0", GPIO_EDGE_BOTH, gpio_event_handle, NULL},
+  {"IRQ_DIMM_SAVE_LVT3_N", "GPIOD4", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
+  {"FM_UARTSW_LSB_N", "GPIOQ4", GPIO_EDGE_BOTH, uart_switch, NULL},
+  {"FM_UARTSW_MSB_N", "GPIOQ5", GPIO_EDGE_BOTH, uart_switch, NULL},
+};
 
 // Thread for gpio timer
 static void *
@@ -491,7 +512,6 @@ gpio_timer() {
   long int pot;
   char str[MAX_VALUE_LEN] = {0};
   int tread_time = 0 ;
-  static bool is_ppin_triggered = false;
 
   while (1) {
     sleep(1);
@@ -523,14 +543,7 @@ gpio_timer() {
           syslog(LOG_INFO, "last pwr state updated to off\n");
         }
       }
-      //Trigger PPIN GPIO
-      if( !is_ppin_triggered )
-        {
-        set_gpio_value("GPIOB5", GPIO_VALUE_LOW);
-        usleep(1000);
-        set_gpio_value("GPIOB5", GPIO_VALUE_HIGH);
-        is_ppin_triggered = true;
-        }
+      trigger_ppin();
     }
     if ( g_uart_switch_count > 0) {
       if ( --g_uart_switch_count == 0 )
@@ -539,21 +552,6 @@ gpio_timer() {
   }
 
   return NULL;
-}
-// The function for setting GPIO value
-static void set_gpio_value(char *pin, uint8_t value)
-{
-  int ret = -1;
-  uint8_t pin_number=0;
-
-  pin_number = gpio_num(pin);
-
-  ret = gpio_set(pin_number, value);
-
-  if ( ret < 0 )
-  {
-      syslog(LOG_WARNING, "Fail to set the value %d to %s.\n", value, pin);
-  }
 }
 
 static void ierr_mcerr_event_log(bool is_caterr, const char *err_type)
@@ -579,6 +577,16 @@ static void *
 ierr_mcerr_event_handler() {
   uint8_t CATERR_ierr_time_count = 0;
   uint8_t MSMI_ierr_time_count = 0;
+  gpio_value_t value;
+  gpio_desc_t *caterr = gpio_open_by_shadow("FM_CPU_CATERR_LVT3_N");
+  gpio_desc_t *msmi = gpio_open_by_shadow("FM_CPU_MSMI_LVT3_N");
+  if (!caterr) {
+    return NULL;
+  }
+  if (!msmi) {
+    gpio_close(caterr);
+    return NULL;
+  }
 
   while (1) {
     if (CATERR_irq > 0) {
@@ -587,15 +595,18 @@ ierr_mcerr_event_handler() {
         if (CATERR_irq == 1) {
           //FM_CPU_CATERR_LVT3_N
           MCERR_IERR_assert = true;
-          if (gpio_get(gpio_num("GPIOG1")) == GPIO_VALUE_LOW) {
+          if (gpio_get_value(caterr, &value)) {
+            syslog(LOG_CRIT, "Getting CATERR GPIO failed");
+            break;
+          }
+          if (value == GPIO_VALUE_LOW) {
             ierr_mcerr_event_log(true, "IERR/CATERR");
           } else {
             ierr_mcerr_event_log(true, "MCERR/CATERR");
           }
           CATERR_irq--;
           CATERR_ierr_time_count = 0;
-          //light up the fault LED
-          set_gpio_value("GPIOU5", GPIO_VALUE_LOW);
+          set_fault_led(true);
           system("/usr/local/bin/autodump.sh &");
         } else if (CATERR_irq > 1) {
           while (CATERR_irq > 1) {
@@ -613,15 +624,18 @@ ierr_mcerr_event_handler() {
         if (MSMI_irq == 1) {
           //FM_CPU_MSMI_LVT3_N
           MCERR_IERR_assert = true;
-          if (gpio_get(gpio_num("GPION3")) == GPIO_VALUE_LOW) {
+          if (gpio_get_value(msmi, &value)) {
+            syslog(LOG_CRIT, "Getting MSMI GPIO failed");
+            break;
+          }
+          if (value == GPIO_VALUE_LOW) {
             ierr_mcerr_event_log(false, "IERR/MSMI");
           } else {
             ierr_mcerr_event_log(false, "MCERR/MSMI");
           }
           MSMI_irq--;
           MSMI_ierr_time_count = 0;
-          //light up the fault LED and do autodump
-          set_gpio_value("GPIOU5", GPIO_VALUE_LOW);
+          set_fault_led(true);
           system("/usr/local/bin/autodump.sh &");
         } else if (MSMI_irq > 1) {
           while (MSMI_irq > 1) {
@@ -633,7 +647,9 @@ ierr_mcerr_event_handler() {
       }
     }
     usleep(25000); //25ms
-   }
+  }
+  gpio_close(caterr);
+  gpio_close(msmi);
   return NULL;
 }
 
@@ -643,6 +659,7 @@ main(int argc, char **argv) {
   pthread_t tid_ierr_mcerr_event;
   pthread_t tid_gpio_timer;
   pthread_t tid_smi_timer;
+  gpiopoll_desc_t *polldesc;
 
   pid_file = open("/var/run/gpiod.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
@@ -675,11 +692,15 @@ main(int argc, char **argv) {
       exit(1);
     }   
 
-    gpio_poll_open(g_gpios, g_count);
-    //GPIO status pre check
-    gpio_pre_check();
-    gpio_poll(g_gpios, g_count, POLL_TIMEOUT);
-    gpio_poll_close(g_gpios, g_count);
+    polldesc = gpio_poll_open(g_gpios, sizeof(g_gpios)/sizeof(g_gpios[0]));
+    if (!polldesc) {
+      syslog(LOG_CRIT, "Cannot start poll operation on GPIOs");
+    } else {
+      if (gpio_poll(polldesc, POLL_TIMEOUT)) {
+        syslog(LOG_CRIT, "Poll returned error");
+      }
+      gpio_poll_close(polldesc);
+    }
   }
 
   return 0;

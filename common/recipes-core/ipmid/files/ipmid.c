@@ -561,9 +561,13 @@ app_get_device_id (unsigned char *request, unsigned char req_len,
   fp = fopen("/etc/issue","r");
   if (fp != NULL)
   {
-     if (fgets(buffer, sizeof(buffer), fp))
-         sscanf(buffer, "%*[^-]-v%d.%d", &fv_major, &fv_minor);
-     fclose(fp);
+    if (fgets(buffer, sizeof(buffer), fp)) {
+      char *version = strstr(buffer, "-v");
+      if (version != NULL) {
+        sscanf(version, "-v%d.%d", &fv_major, &fv_minor);
+      }
+    }
+    fclose(fp);
   }
 
   // If we are using date based versioning, return

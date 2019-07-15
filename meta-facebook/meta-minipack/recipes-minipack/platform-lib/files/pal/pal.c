@@ -164,6 +164,15 @@ const uint8_t scm_all_sensor_list[] = {
 
 /* List of SMB sensors to be monitored */
 const uint8_t smb_sensor_list[] = {
+#if 0
+  /*
+   * mikechoi@fb.com : Jul 11 2019,
+   * Temporarily disable the sensor reading of this power chip, as per
+   * FB Network HW team's request. Reading the sensor of this chip rarely
+   * causes this power chip to go to a bad state, and turn off the
+   * power to TH3. Until we have a new revision of HW (with verified HW fix),
+   * we will skip reading these sensors.
+   */
   SMB_SENSOR_1220_VMON1,
   SMB_SENSOR_1220_VMON2,
   SMB_SENSOR_1220_VMON3,
@@ -178,6 +187,7 @@ const uint8_t smb_sensor_list[] = {
   SMB_SENSOR_1220_VMON12,
   SMB_SENSOR_1220_VCCA,
   SMB_SENSOR_1220_VCCINP,
+#endif
   SMB_SENSOR_TH3_SERDES_VOLT,
   SMB_SENSOR_TH3_SERDES_CURR,
   SMB_SENSOR_TH3_SERDES_TEMP,
@@ -1648,7 +1658,7 @@ pal_post_enable(uint8_t slot) {
   ret = bic_get_config(IPMB_BUS, &config);
   if (ret) {
 #ifdef DEBUG
-    syslog(LOG_WARNING, 
+    syslog(LOG_WARNING,
            "post_enable: bic_get_config failed for fru: %d\n", slot);
 #endif
     return ret;
@@ -2388,7 +2398,7 @@ bic_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
     case FRU_SCM:
       if (bic_sensor_sdr_path(fru, path) < 0) {
 #ifdef DEBUG
-        syslog(LOG_WARNING, 
+        syslog(LOG_WARNING,
                "bic_sensor_sdr_path: get_fru_sdr_path failed\n");
 #endif
         return ERR_NOT_READY;
@@ -2397,7 +2407,7 @@ bic_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
         if (sdr_init(path, sinfo) < 0) {
           if (retry == 3) { //if the third retry still failed, return -1
 #ifdef DEBUG
-            syslog(LOG_ERR, 
+            syslog(LOG_ERR,
                    "bic_sensor_sdr_init: sdr_init failed for FRU %d", fru);
 #endif
             return -1;
@@ -5633,7 +5643,7 @@ pal_set_pim_sts_led(uint8_t fru)
     _set_pim_sts_led(fru, FPGA_STS_CLR_BLUE);
   else
     _set_pim_sts_led(fru, FPGA_STS_CLR_YELLOW);
-  
+
   return;
 }
 
@@ -5643,7 +5653,7 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num,
   char crisel[128];
   char thresh_name[10];
   sensor_desc_t *snr_desc;
-  
+
   switch (thresh) {
     case UNR_THRESH:
         sprintf(thresh_name, "UNR");
@@ -5730,7 +5740,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num,
   char crisel[128];
   char thresh_name[8];
   sensor_desc_t *snr_desc;
-  
+
   switch (thresh) {
     case UNR_THRESH:
       sprintf(thresh_name, "UNR");
@@ -6366,15 +6376,15 @@ pal_store_crashdump(uint8_t fru) {
   if (t_dump[fru-1].is_running) {
     ret = pthread_cancel(t_dump[fru-1].pt);
     if (ret == ESRCH) {
-      syslog(LOG_INFO, 
+      syslog(LOG_INFO,
              "pal_store_crashdump: No Crashdump pthread exists");
     } else {
       pthread_join(t_dump[fru-1].pt, NULL);
-      sprintf(cmd, 
+      sprintf(cmd,
               "ps | grep '{dump.sh}' | grep 'scm' "
               "| awk '{print $1}'| xargs kill");
       system(cmd);
-      sprintf(cmd, 
+      sprintf(cmd,
               "ps | grep 'bic-util' | grep 'scm' "
               "| awk '{print $1}'| xargs kill");
       system(cmd);
@@ -6387,7 +6397,7 @@ pal_store_crashdump(uint8_t fru) {
 
   // Start a thread to generate the crashdump
   t_dump[fru-1].fru = fru;
-  if (pthread_create(&(t_dump[fru-1].pt), NULL, generate_dump, 
+  if (pthread_create(&(t_dump[fru-1].pt), NULL, generate_dump,
       (void*) &t_dump[fru-1].fru) < 0) {
     syslog(LOG_WARNING, "pal_store_crashdump: pthread_create for"
         " FRU %d failed\n", fru);
@@ -6446,18 +6456,18 @@ init_led(void)
     syslog(LOG_ERR, "%s: open() failed\n", __func__);
     return;
   }
-  
+
   ret = ioctl(dev, I2C_SLAVE, I2C_ADDR_SIM_LED);
   if(ret < 0) {
     syslog(LOG_ERR, "%s: ioctl() assigned i2c addr failed\n", __func__);
     close(dev);
     return;
   }
-  
+
   i2c_smbus_write_byte_data(dev, 0x06, 0x00);
   i2c_smbus_write_byte_data(dev, 0x07, 0x00);
   close(dev);
-  
+
   return;
 }
 
@@ -6485,16 +6495,16 @@ set_sled(int brd_rev, uint8_t color, int led_name)
     syslog(LOG_ERR, "%s: i2c_smbus_read_byte_data failed\n", __func__);
     return -1;
   }
-  
+
   val_io1 = i2c_smbus_read_byte_data(dev, 0x03);
   if(val_io1 < 0) {
     close(dev);
     syslog(LOG_ERR, "%s: i2c_smbus_read_byte_data failed\n", __func__);
     return -1;
   }
-  
+
   clr_val = color;
-  
+
   if(brd_rev == 0 || brd_rev == 4) {
     if(led_name == SLED_SMB || led_name == SLED_PSU) {
       clr_val = clr_val << 3;
@@ -6505,7 +6515,7 @@ set_sled(int brd_rev, uint8_t color, int led_name)
       val_io0 = (val_io0 & 0x38) | clr_val;
       val_io1 = (val_io1 & 0x38) | clr_val;
     }
-    else 
+    else
       syslog(LOG_WARNING, "%s: unknown led name\n", __func__);
 
     if(led_name == SLED_PSU || led_name == SLED_FAN) {
@@ -6545,7 +6555,7 @@ upgrade_led_blink(int brd_rev,
                 uint8_t sys_ug, uint8_t fan_ug, uint8_t psu_ug, uint8_t smb_ug)
 {
   static uint8_t sys_alter = 0, fan_alter = 0, psu_alter = 0, smb_alter = 0;
-  
+
   if(sys_ug) {
     if(sys_alter == 0) {
       set_sled(brd_rev, SLED_CLR_BLUE, SLED_SYS);
@@ -6586,7 +6596,7 @@ upgrade_led_blink(int brd_rev,
 
 int
 pal_mon_fw_upgrade
-(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug, 
+(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug,
               uint8_t *psu_ug, uint8_t *smb_ug)
 {
   char cmd[5];
@@ -6601,7 +6611,7 @@ pal_mon_fw_upgrade
   fp = popen(cmd, "r");
   if(NULL == fp)
      return -1;
- 
+
   buf_ptr = (char *)malloc(buf_size * sizeof(char) + sizeof(char));
   memset(buf_ptr, 0, sizeof(char));
   tmp_size = str_size;
@@ -6612,7 +6622,7 @@ pal_mon_fw_upgrade
       buf_size *= 2;
     }
     if(!buf_ptr) {
-      syslog(LOG_ERR, 
+      syslog(LOG_ERR,
              "%s realloc() fail, please check memory remaining", __func__);
       goto free_buf;
     }
@@ -6628,20 +6638,20 @@ pal_mon_fw_upgrade
 
   *sys_ug = (strstr(buf_ptr, "scmcpld_update") != NULL) ? 1 : 0;
   if(*sys_ug) goto fan_state;
-  
+
   *sys_ug = (strstr(buf_ptr, "pimcpld_update") != NULL) ? 1 : 0;
   if(*sys_ug) goto fan_state;
-  
-  *sys_ug = (strstr(buf_ptr, "fw-util") != NULL) ? 
+
+  *sys_ug = (strstr(buf_ptr, "fw-util") != NULL) ?
           ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
   if(*sys_ug) goto fan_state;
-  
+
   //check whether fan led need to blink
 fan_state:
   *fan_ug = (strstr(buf_ptr, "fcmcpld_update") != NULL) ? 1 : 0;
-  
+
   //check whether fan led need to blink
-  *psu_ug = (strstr(buf_ptr, "psu-util") != NULL) ? 
+  *psu_ug = (strstr(buf_ptr, "psu-util") != NULL) ?
           ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
 
   //check whether smb led need to blink
@@ -6691,7 +6701,7 @@ void set_sys_led(int brd_rev)
     set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
     return;
   }
-  
+
   for(fru = FRU_PIM1; fru <= FRU_PIM8; fru++){
     ret = pal_is_fru_prsnt(fru, &prsnt);
     if (ret) {
@@ -6712,7 +6722,7 @@ void set_fan_led(int brd_rev)
   int i, val;
   uint8_t fan_num = 16;//rear:8 && front:8
   char path[LARGEST_DEVICE_NAME + 1];
-  int sensor_num[] = {42, 43, 44, 45, 46, 47, 48, 49, 
+  int sensor_num[] = {42, 43, 44, 45, 46, 47, 48, 49,
                              50, 51, 52, 53, 54, 55, 56, 57};
 
   for(i = 0; i < fan_num; i++) {
@@ -6744,7 +6754,7 @@ void set_psu_led(int brd_rev)
   uint8_t prsnt;
   int sensor_num[] = {1, 14, 27, 40};
   char path[LARGEST_DEVICE_NAME + 1];
-  
+
   for(i = FRU_PSU1; i <= FRU_PSU4; i++) {
     pal_is_fru_prsnt(i, &prsnt);
     if(!prsnt) {
@@ -6752,7 +6762,7 @@ void set_psu_led(int brd_rev)
       return;
     }
   }
-  
+
   for(i = 0; i < psu_num; i++) {
 
     snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU, i+1, sensor_num[i]);
@@ -6760,25 +6770,25 @@ void set_psu_led(int brd_rev)
       set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
       return;
     }
-    
+
     if(val_in > vin_max || val_in < vin_min) {
       set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
       return;
     }
 
-    snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU, 
+    snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU,
              i+1, sensor_num[i] + 1);
     if(read_device(path, &val_out12)) {
       set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
       return;
     }
-    
+
     if(val_out12 > vout_12_max || val_out12 < vout_12_min) {
       set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
       return;
     }
 
-    snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU, 
+    snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU,
              i+1, sensor_num[i] + 2);
     if(read_device_float(path, &val_out3)) {
       set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
@@ -6789,11 +6799,11 @@ void set_psu_led(int brd_rev)
       set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
       return;
     }
-    
+
   }
-  
+
   set_sled(brd_rev, SLED_CLR_BLUE, SLED_PSU);
-  
+
   return;
 }
 
@@ -6808,7 +6818,7 @@ pal_light_scm_led(uint8_t led_color)
 {
   int ret;
   char *val;
-  
+
   if(led_color == SCM_LED_BLUE)
     val = "0";
   else
@@ -6826,13 +6836,13 @@ pal_light_scm_led(uint8_t led_color)
 
 int
 pal_set_def_key_value(void) {
-  
+
   int i, ret;
   char path[LARGEST_DEVICE_NAME + 1];
-  
+
   for (i = 0; strcmp(key_list[i], LAST_KEY) != 0; i++) {
     snprintf(path, LARGEST_DEVICE_NAME, KV_PATH, key_list[i]);
-    if ((ret = kv_set(key_list[i], def_val_list[i], 
+    if ((ret = kv_set(key_list[i], def_val_list[i],
 	                  0, KV_FPERSIST | KV_FCREATE)) < 0) {
 #ifdef DEBUG
       syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
@@ -6917,7 +6927,7 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
   }
 
   *value = atoi(cvalue);
-  
+
   *value = *value & atoi(cvalue);
   return 0;
 }

@@ -71,6 +71,7 @@ static const char *option_list[] = {
   "--read_sensor",
   "--perf_test [loop_count]  (0 to run forever)",
   "--reset",
+  "--clear_cmos",
   "--file [path]"
 };
 
@@ -191,8 +192,8 @@ _get_gpio_cnt_name(uint8_t slot_id, uint8_t *gpio_cnt, char ***gpio_name) {
         break;
       case SERVER_TYPE_ND:
         *gpio_cnt = nd_gpio_pin_cnt;
-        *gpio_name = (char **)nd_gpio_pin_name; 
-        break; 
+        *gpio_name = (char **)nd_gpio_pin_name;
+        break;
       default:
         printf("Cannot find corresponding server type. 0x%x\n", server_type);
         return -1;
@@ -455,7 +456,7 @@ util_print_dword_postcode_buf(uint8_t slot_id) {
     intput_len = 0;
     return -1;
   }
-  
+
   ret = bic_request_post_buffer_dword_data(slot_id, dw_postcode_buf, intput_len, &len);
   if (ret) {
     printf("bic_request_post_buffer_dword_data: returns %d\n", ret);
@@ -474,7 +475,7 @@ util_print_dword_postcode_buf(uint8_t slot_id) {
     free(dw_postcode_buf);
 
   return ret;
-  
+
 }
 #endif
 
@@ -629,7 +630,15 @@ util_perf_test(uint8_t slot_id, int loopCount) {
   return ret;
 }
 
-// Test to Get device ID
+static int
+util_bic_clear_cmos(uint8_t slot_id) {
+  int ret = 0;
+  ret = bic_clear_cmos(slot_id);
+  printf("Performing CMOS clear, status %d\n", ret);
+  return ret;
+}
+
+// reset BIC
 static int
 util_bic_reset(uint8_t slot_id) {
   int ret = 0;
@@ -822,7 +831,7 @@ main(int argc, char **argv) {
     case SERVER_TYPE_ND:
       ret = util_print_dword_postcode_buf(slot_id);
       break;
-    case SERVER_TYPE_TL:   
+    case SERVER_TYPE_TL:
     default:
       ret = util_get_post_buf(slot_id);
   }
@@ -845,6 +854,10 @@ main(int argc, char **argv) {
     if (argc != 4)
       goto err_exit;
     ret = util_perf_test(slot_id, atoi(argv[3]));
+  } else if (!strcmp(argv[2], "--clear_cmos")) {
+    if (argc != 3)
+      goto err_exit;
+    ret = util_bic_clear_cmos(slot_id);
   } else if (!strcmp(argv[2], "--file")) {
     if (argc != 4)
       goto err_exit;

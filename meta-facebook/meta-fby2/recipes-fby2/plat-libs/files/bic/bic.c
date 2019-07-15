@@ -2743,6 +2743,16 @@ bic_asd_init(uint8_t slot_id, uint8_t cmd) {
 }
 
 int
+bic_clear_cmos(uint8_t slot_id) {
+  uint8_t tbuf[3] = {0x15, 0xa0, 0x00}; // IANA ID
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen = 0;
+
+  return bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_CLEAR_CMOS, tbuf, 3, rbuf, &rlen);
+}
+
+
+int
 bic_reset(uint8_t slot_id) {
   uint8_t tbuf[3] = {0x00, 0x00, 0x00}; // IANA ID
   uint8_t rbuf[8] = {0x00};

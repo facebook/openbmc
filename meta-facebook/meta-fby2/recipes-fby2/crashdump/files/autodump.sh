@@ -2,6 +2,7 @@
 
 ME_UTIL="/usr/local/bin/me-util"
 FRUID_UTIL="/usr/local/bin/fruid-util"
+FW_UTIL="/usr/bin/fw-util"
 SLOT_NAME=$1
 INTERFACE="PECI_INTERFACE"
 PCIE_INTERFACE="PECI_INTERFACE"
@@ -100,6 +101,11 @@ $DUMP_SCRIPT "time" > $CRASHDUMP_FILE
 strings /dev/mtd0 | grep 2016.07 >> $CRASHDUMP_FILE
 uname -a >> $CRASHDUMP_FILE
 cat /etc/issue >> $CRASHDUMP_FILE
+
+# Get fw info
+echo "Get firmware version info: " >> "$CRASHDUMP_FILE"
+RES=$("$FW_UTIL" "$SLOT_NAME" "--version")
+echo "$RES" >> "$CRASHDUMP_FILE"
 
 # Get FRUID info
 echo "Get FRUID Info:" >> $CRASHDUMP_FILE
@@ -213,7 +219,7 @@ date >> $CRASHDUMP_FILE
 tar zcf $CRASHDUMP_LOG_ARCHIVE -C `dirname $CRASHDUMP_FILE` `basename $CRASHDUMP_FILE` && \
 rm -rf $CRASHDUMP_FILE && \
 logger -t "ipmid" -p daemon.crit "${LOG_MSG_PREFIX}Crashdump for FRU: $SLOT_NUM is generated at $CRASHDUMP_LOG_ARCHIVE"
-
+cp -f "$CRASHDUMP_LOG_ARCHIVE" /tmp
 echo "Auto Dump for $SLOT_NAME Completed"
 
 # Remove current pid file

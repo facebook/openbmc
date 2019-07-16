@@ -1604,6 +1604,28 @@ pal_is_fw_update_ongoing_system(void) {
   return false;
 }
 
+bool __attribute__((weak))
+pal_can_change_power(uint8_t fru)
+{
+  char fruname[32];
+  if (pal_get_fru_name(fru, fruname)) {
+    sprintf(fruname, "fru%d", fru);
+  }
+  if (pal_is_fw_update_ongoing(fru)) {
+    printf("FW update for %s is ongoing, block the power controlling.\n", fruname);
+    return false;
+  }
+  if (pal_is_crashdump_ongoing(fru)) {
+    printf("Crashdump for %s is ongoing, block the power controlling.\n", fruname);
+    return false;
+  }
+  if (pal_is_cplddump_ongoing(fru)) {
+    printf("CPLD dump for %s is ongoing, block the power controlling.\n", fruname);
+    return false;
+  }
+  return true;
+}
+
 int __attribute__((weak))
 pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {

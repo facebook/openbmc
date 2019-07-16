@@ -8367,43 +8367,6 @@ pal_is_cplddump_ongoing_system(void) {
 }
 
 bool
-pal_is_fw_update_ongoing(uint8_t fruid) {
-  char key[MAX_KEY_LEN];
-  char value[MAX_VALUE_LEN] = {0};
-  uint8_t pair_fruid;
-  bool is_fruid_update = false, is_pair_fruid_update = false;
-  struct timespec ts;
-
-  if (0 == fruid%2)
-    pair_fruid = fruid - 1;
-  else
-    pair_fruid = fruid + 1;
-
-  sprintf(key, "fru%d_fwupd", fruid);
-  if (kv_get(key, value, NULL, 0) == 0) {
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    if (strtoul(value, NULL, 10) > ts.tv_sec)
-      is_fruid_update = true;
-  }
-
-  switch(pal_get_pair_slot_type(fruid)) {
-    case TYPE_CF_A_SV:
-    case TYPE_GP_A_SV:
-    case TYPE_GPV2_A_SV:
-      // check pair slot
-      sprintf(key, "fru%d_fwupd", pair_fruid);
-      if (kv_get(key, value, NULL, 0) == 0) {
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-        if (strtoul(value, NULL, 10) > ts.tv_sec)
-          is_pair_fruid_update = true;
-      }
-      break;
-  }
-
-  return (is_fruid_update || is_pair_fruid_update);
-}
-
-bool
 pal_is_fw_update_ongoing_system(void) {
   uint8_t i;
 
@@ -8413,6 +8376,59 @@ pal_is_fw_update_ongoing_system(void) {
   }
 
   return false;
+}
+
+bool
+pal_can_change_power(uint8_t fru)
+{
+  char fruname[32];
+  char pair_fruname[32];
+  uint8_t pair_fru;
+
+  if (pal_get_fru_name(fru, fruname)) {
+    sprintf(fruname, "fru%d", fru);
+  }
+  if (pal_is_fw_update_ongoing(fru)) {
+    printf("FW update for %s is ongoing, block the power controlling.\n", fruname);
+    return false;
+  }
+  if (pal_is_crashdump_ongoing(fru)) {
+    printf("Crashdump for %s is ongoing, block the power controlling.\n", fruname);
+    return false;
+  }
+  if (pal_is_cplddump_ongoing(fru)) {
+    printf("CPLD dump for %s is ongoing, block the power controlling.\n", fruname);
+    return false;
+  }
+
+  // if Device card + Server
+  switch (pal_get_pair_slot_type(fru)) {
+    case TYPE_CF_A_SV:
+    case TYPE_GP_A_SV:
+    case TYPE_GPV2_A_SV:
+      if (0 == fru%2)
+        pair_fru = fru - 1;
+      else
+        pair_fru = fru + 1;
+      if (pal_get_fru_name(pair_fru, pair_fruname)) {
+        sprintf(pair_fruname, "fru%d", pair_fru);
+      }
+      if (pal_is_fw_update_ongoing(pair_fru)) {
+        printf("FW update for %s is ongoing, block the power controlling.\n", pair_fruname);
+        return false;
+      }
+      if (pal_is_crashdump_ongoing(pair_fru)) {
+        printf("Crashdump for %s is ongoing, block the power controlling.\n", pair_fruname);
+        return false;
+      }
+      if (pal_is_cplddump_ongoing(pair_fru)) {
+        printf("CPLD dump for %s is ongoing, block the power controlling.\n", pair_fruname);
+        return false;
+      }
+      return true;
+    default:
+      return true;
+  }
 }
 
 int

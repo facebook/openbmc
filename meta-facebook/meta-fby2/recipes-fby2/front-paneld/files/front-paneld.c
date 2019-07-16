@@ -224,34 +224,65 @@ debug_card_out:
 }
 
 static int
-is_btn_blocked(uint8_t pos) {
+is_btn_blocked(uint8_t fru, uint8_t * ongoing_fru) {
   uint8_t fru_start, fru_end, fru_sys_end;
-  uint8_t i;
+  uint8_t i,pair_fru;
 
-  if (pos == HAND_SW_BMC) {
+  *ongoing_fru = fru;
+  if (fru == HAND_SW_BMC) {
     fru_start = FRU_SLOT1;
     fru_end = FRU_SLOT4;
     fru_sys_end = FRU_BMC;
   } else {
-    fru_start = fru_end = fru_sys_end = pos;
+    fru_start = fru_end = fru_sys_end = fru;
   }
 
   for (i = fru_start; i <= fru_sys_end; i++) {
-    if (pal_is_fw_update_ongoing(i))
+    if (pal_is_fw_update_ongoing(i)) {
+      *ongoing_fru = i;
       return FW_UPDATE_ONGOING;
+    }
   }
 
   for (i = fru_start; i <= fru_end; i++) {
-    if (pal_is_crashdump_ongoing(i))
+    if (pal_is_crashdump_ongoing(i)) {
+      *ongoing_fru = i;
       return CRASHDUMP_ONGOING;
+    }
   }
 
   for (i = fru_start; i <= fru_end; i++) {
-    if (pal_is_cplddump_ongoing(i))
+    if (pal_is_cplddump_ongoing(i)) {
+      *ongoing_fru = i;
       return CPLDDUMP_ONGOING;
+    }
   }
 
-  return 0;
+  // Device Card + Server
+  switch (pal_get_pair_slot_type(fru)) {
+    case TYPE_CF_A_SV:
+    case TYPE_GP_A_SV:
+    case TYPE_GPV2_A_SV:
+      if (0 == fru%2)
+        pair_fru = fru - 1;
+      else
+        pair_fru = fru + 1;
+      if (pal_is_fw_update_ongoing(pair_fru)) {
+        *ongoing_fru = pair_fru;
+        return FW_UPDATE_ONGOING;
+      }
+      if (pal_is_crashdump_ongoing(pair_fru)) {
+        *ongoing_fru = pair_fru;
+        return CRASHDUMP_ONGOING;
+      }
+      if (pal_is_cplddump_ongoing(pair_fru)) {
+        *ongoing_fru = pair_fru;
+        return CPLDDUMP_ONGOING;
+      }
+      return 0;
+    default:
+      return 0;
+  }
 }
 
 // Thread to monitor Reset Button and propagate to selected server
@@ -262,6 +293,7 @@ rst_btn_handler() {
   int i;
   uint8_t btn;
   uint8_t last_btn = 0;
+  uint8_t ongoing_fru;
 
   ret = pal_get_rst_btn(&btn);
   if (0 == ret) {
@@ -286,17 +318,17 @@ rst_btn_handler() {
       goto rst_btn_out;
     }
 
-    if ((ret = is_btn_blocked(pos))) {
+    if ((ret = is_btn_blocked(pos,&ongoing_fru))) {
       if (!last_btn) {
         switch (ret) {
           case FW_UPDATE_ONGOING:
-            syslog(LOG_CRIT, "Reset Button blocked due to FW update is ongoing, FRU: %d", pos);
+            syslog(LOG_CRIT, "Reset Button blocked due to FW update is ongoing, FRU: %d", ongoing_fru);
             break;
           case CRASHDUMP_ONGOING:
-            syslog(LOG_CRIT, "Reset Button blocked due to crashdump is ongoing, FRU: %d", pos);
+            syslog(LOG_CRIT, "Reset Button blocked due to crashdump is ongoing, FRU: %d", ongoing_fru);
             break;
           case CPLDDUMP_ONGOING:
-            syslog(LOG_CRIT, "Reset Button blocked due to CPLD dump is ongoing, FRU: %d", pos);
+            syslog(LOG_CRIT, "Reset Button blocked due to CPLD dump is ongoing, FRU: %d", ongoing_fru);
             break;
         }
       }
@@ -350,6 +382,7 @@ pwr_btn_handler() {
   uint8_t power, st_12v = 0;
   char tstr[64];
   bool release_flag = true;
+  uint8_t ongoing_fru;
 
   while (1) {
     // Check the position of hand switch
@@ -387,16 +420,16 @@ pwr_btn_handler() {
       break;
     }
 
-    if ((ret = is_btn_blocked(pos))) {
+    if ((ret = is_btn_blocked(pos,&ongoing_fru))) {
       switch (ret) {
         case FW_UPDATE_ONGOING:
-          syslog(LOG_CRIT, "Power Button blocked due to FW update is ongoing, FRU: %d", pos);
+          syslog(LOG_CRIT, "Power Button blocked due to FW update is ongoing, FRU: %d", ongoing_fru);
           break;
         case CRASHDUMP_ONGOING:
-          syslog(LOG_CRIT, "Power Button blocked due to crashdump is ongoing, FRU: %d", pos);
+          syslog(LOG_CRIT, "Power Button blocked due to crashdump is ongoing, FRU: %d", ongoing_fru);
           break;
         case CPLDDUMP_ONGOING:
-          syslog(LOG_CRIT, "Power Button blocked due to CPLD dump is ongoing, FRU: %d", pos);
+          syslog(LOG_CRIT, "Power Button blocked due to CPLD dump is ongoing, FRU: %d", ongoing_fru);
           break;
       }
       goto pwr_btn_out;

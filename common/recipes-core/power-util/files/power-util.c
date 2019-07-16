@@ -189,27 +189,6 @@ power_policy_control(uint8_t fru, char *last_ps) {
   }
 }
 
-static bool can_change_power(uint8_t fru)
-{
-  char fruname[32];
-  if (pal_get_fru_name(fru, fruname)) {
-    sprintf(fruname, "fru%d", fru);
-  }
-  if (pal_is_fw_update_ongoing(fru)) {
-    printf("FW update for %s is ongoing, block the power controlling.\n", fruname);
-    exit(-1);
-  }
-  if (pal_is_crashdump_ongoing(fru)) {
-    printf("Crashdump for %s is ongoing, block the power controlling.\n", fruname);
-    exit(-1);
-  }
-  if (pal_is_cplddump_ongoing(fru)) {
-    printf("CPLD dump for %s is ongoing, block the power controlling.\n", fruname);
-    exit(-1);
-  }
-  return true;
-}
-
 static int
 dev_power_util(uint8_t fru, uint8_t dev_id ,uint8_t opt) {
   int ret = 0;
@@ -217,7 +196,7 @@ dev_power_util(uint8_t fru, uint8_t dev_id ,uint8_t opt) {
   int retries;
 
   if (opt != PWR_STATUS) {
-    if (!can_change_power(fru)) {
+    if (!pal_can_change_power(fru)) {
       return -1;
     }
   }
@@ -309,12 +288,12 @@ power_util(uint8_t fru, uint8_t opt) {
 
   if (opt == PWR_SLED_CYCLE) {
     for(fru = 1; fru <= MAX_NUM_FRUS; fru++) {
-      if (!can_change_power(fru)) {
+      if (!pal_can_change_power(fru)) {
         return -1;
       }
     }
   } else if (opt != PWR_STATUS) {
-    if (!can_change_power(fru)) {
+    if (!pal_can_change_power(fru)) {
       return -1;
     }
   }

@@ -326,6 +326,7 @@ bool pal_is_fw_update_ongoing(uint8_t fruid);
 bool pal_is_fw_update_ongoing_system(void);
 bool pal_is_crashdump_ongoing_system(void);
 bool pal_is_cplddump_ongoing_system(void);
+bool pal_can_change_power(uint8_t fru);
 int pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int run_command(const char* cmd);
 int pal_get_restart_cause(uint8_t slot, uint8_t *restart_cause);

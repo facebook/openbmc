@@ -28,6 +28,7 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 time_sync_success=0
+time_sync_with_IMC=0
 
 # Sync BMC's date with one of the four servers
 sync_date()
@@ -41,6 +42,7 @@ sync_date()
     do
       if [[ $(is_server_prsnt $i) == "1" && $(get_slot_type $i) == "0" && $(get_server_type $i) == "1" ]] ; then
         retry_times=0
+        time_sync_with_IMC=1
         while [ ${retry_times} -lt ${max_retry} ]
         do
           # Use IMC command 'get-rtc-time' to read RTC time
@@ -74,7 +76,8 @@ sync_date()
         break
       fi
     done
-    if [ $time_sync_success == 0 ] ; then
+    # This log only appears in the RC system
+    if [[ $time_sync_success == 0 && $time_sync_with_IMC == 1 ]] ; then
       logger -p user.crit "Time sync with IMC failed, using 2018/01/01 as default" 
     fi
   fi

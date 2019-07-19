@@ -19,7 +19,6 @@
 
 import re
 import time
-import unittest
 from abc import abstractmethod
 from typing import Dict
 
@@ -27,7 +26,7 @@ from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
 
 
-class BaseProcessRestartTest(unittest.TestCase):
+class BaseProcessRestartTest(object):
     def setUp(self):
         Logger.start(name=self._testMethodName)
         self.expected_process = None

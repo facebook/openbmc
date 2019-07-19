@@ -17,11 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 from common.base_gpio_test import BaseGpioTest
 from tests.minipack.test_data.gpio.gpio import GPIOS
 
 
-class GpioTest(BaseGpioTest):
+class GpioTest(BaseGpioTest, unittest.TestCase):
     def set_gpios(self):
         self.gpios = GPIOS

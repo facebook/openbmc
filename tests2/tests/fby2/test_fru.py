@@ -22,7 +22,7 @@ import unittest
 from common.base_fru_test import CommonFruTest
 
 
-class FruSpbTest(CommonFruTest):
+class FruSpbTest(CommonFruTest, unittest.TestCase):
     def setUp(self):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "spb"]
         self.fru_fields = {"product": 2, "board": 1, "chassis": 0}

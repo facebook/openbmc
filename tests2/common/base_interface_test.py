@@ -19,12 +19,11 @@
 #
 
 import subprocess
-import unittest
 
 from utils.cit_logger import Logger
 
 
-class BaseInterfaceTest(unittest.TestCase):
+class BaseInterfaceTest(object):
     def setUp(self):
         Logger.start(name=self._testMethodName)
         pass

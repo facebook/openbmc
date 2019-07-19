@@ -17,11 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 from common.base_kernel_abi_test import BaseKernelABITest
 
 
-class KernelABITest(BaseKernelABITest):
+class KernelABITest(BaseKernelABITest, unittest.TestCase):
     def set_platform_specific_paths(self):
         self.platform_dep_list = []
         pass

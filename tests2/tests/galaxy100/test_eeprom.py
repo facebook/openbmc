@@ -23,7 +23,7 @@ from common.base_eeprom_test import CommonEepromTest
 from utils.cit_logger import Logger
 
 
-class EepromTest(CommonEepromTest):
+class EepromTest(CommonEepromTest, unittest.TestCase):
     _FABRIC_CARD_NAMES = ["GALAXY-FC", "GALAXY-FAB"]
     _LC_CARD_NAMES = ["GALAXY-LC"]
 

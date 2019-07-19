@@ -18,14 +18,13 @@
 # Boston, MA 02110-1301 USA
 #
 import re
-import unittest
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
 
 
-class BaseSensorsTest(unittest.TestCase):
+class BaseSensorsTest(object):
     def setUp(self):
         """
         For now the scope if for sensors exposed from lm sensors

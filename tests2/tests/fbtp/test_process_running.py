@@ -17,11 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 from common.base_process_running_test import BaseProcessRunningTest
 
 
-class ProcessRunningTest(BaseProcessRunningTest):
+class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [
             "fscd",

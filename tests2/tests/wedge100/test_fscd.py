@@ -18,13 +18,14 @@
 # Boston, MA 02110-1301 USA
 #
 import time
+import unittest
 
 from common.base_fscd_test import BaseFscdTest
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
 
 
-class FscdTest(BaseFscdTest):
+class FscdTest(BaseFscdTest, unittest.TestCase):
 
     TEST_DATA_PATH = "/usr/local/bin/tests2/tests/wedge100/test_data/fscd"
     DEFAULT_TEMP = 23000

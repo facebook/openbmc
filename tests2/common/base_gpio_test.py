@@ -18,14 +18,13 @@
 # Boston, MA 02110-1301 USA
 #
 import os
-import unittest
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
 
 
-class BaseGpioTest(unittest.TestCase):
+class BaseGpioTest(object):
 
     GPIO_SHADOW_ROOT = "/tmp/gpionames"
 

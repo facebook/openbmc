@@ -18,14 +18,14 @@
 # Boston, MA 02110-1301 USA
 #
 
-import unittest
+
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
 
 
-class BaseProcessRunningTest(unittest.TestCase):
+class BaseProcessRunningTest(object):
     def setUp(self):
         Logger.start(name=self._testMethodName)
         self.process_cmd = None

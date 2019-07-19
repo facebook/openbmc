@@ -17,11 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 from common.base_sensor_test import LmSensorsTest
 
 
-class AstAdcIsa0000SensorTest(LmSensorsTest):
+class AstAdcIsa0000SensorTest(LmSensorsTest, unittest.TestCase):
     AST_ADC_ISA_0000_DRIVER = [
         "+5 Bias Voltage",
         "+6.8 Bias Voltage",
@@ -43,7 +44,7 @@ class AstAdcIsa0000SensorTest(LmSensorsTest):
                 )
 
 
-class Galaxy100Ec12c033SensorTest(LmSensorsTest):
+class Galaxy100Ec12c033SensorTest(LmSensorsTest, unittest.TestCase):
     GALAXY100_EC_12C_0_33_DRIVER = [
         "CPU Voltage",
         "+3 Voltage",
@@ -152,7 +153,7 @@ class Galaxy100Ec12c033SensorTest(LmSensorsTest):
         )
 
 
-class Ir3584I2c172SensorTest(LmSensorsTest):
+class Ir3584I2c172SensorTest(LmSensorsTest, unittest.TestCase):
     IR3584_I2C_1_72_DRIVER = ["in0", "curr1"]
 
     def set_sensors_cmd(self):
@@ -169,7 +170,7 @@ class Ir3584I2c172SensorTest(LmSensorsTest):
                 )
 
 
-class Ir3581I2c170SensorTest(LmSensorsTest):
+class Ir3581I2c170SensorTest(LmSensorsTest, unittest.TestCase):
     IR3581_I2C_1_70_DRIVER = ["in0", "curr1"]
 
     def set_sensors_cmd(self):

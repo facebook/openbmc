@@ -17,11 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 from common.base_eeprom_test import CommonEepromTest
 
 
-class EepromTest(CommonEepromTest):
+class EepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for weutil
     """
@@ -36,7 +37,7 @@ class EepromTest(CommonEepromTest):
         self.location_on_fabric = ["MINIPACK-SMB"]
 
 
-class SCMEepromTest(CommonEepromTest):
+class SCMEepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for seutil
     """
@@ -51,7 +52,7 @@ class SCMEepromTest(CommonEepromTest):
         self.location_on_fabric = ["MINIPACK-SCM"]
 
 
-class PIM1EepromTest(CommonEepromTest):
+class PIM1EepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for peutil 1
     """
@@ -66,7 +67,7 @@ class PIM1EepromTest(CommonEepromTest):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class PIM2EepromTest(CommonEepromTest):
+class PIM2EepromTest(CommonEepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 2"]
 
@@ -77,7 +78,7 @@ class PIM2EepromTest(CommonEepromTest):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class PIM3EepromTest(CommonEepromTest):
+class PIM3EepromTest(CommonEepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 3"]
 
@@ -88,7 +89,7 @@ class PIM3EepromTest(CommonEepromTest):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class PIM4EepromTest(CommonEepromTest):
+class PIM4EepromTest(CommonEepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 4"]
 
@@ -99,7 +100,7 @@ class PIM4EepromTest(CommonEepromTest):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class PIM5EepromTest(CommonEepromTest):
+class PIM5EepromTest(CommonEepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 5"]
 
@@ -110,7 +111,7 @@ class PIM5EepromTest(CommonEepromTest):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class PIM6EepromTest(CommonEepromTest):
+class PIM6EepromTest(CommonEepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 6"]
 
@@ -121,7 +122,7 @@ class PIM6EepromTest(CommonEepromTest):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class PIM7EepromTest(CommonEepromTest):
+class PIM7EepromTest(CommonEepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 7"]
 
@@ -132,7 +133,7 @@ class PIM7EepromTest(CommonEepromTest):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class PIM8EepromTest(CommonEepromTest):
+class PIM8EepromTest(CommonEepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 8"]
 

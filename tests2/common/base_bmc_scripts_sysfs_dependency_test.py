@@ -18,12 +18,11 @@
 # Boston, MA 02110-1301 USA
 #
 import os
-import unittest
 
 from utils.cit_logger import Logger
 
 
-class BaseBmcShellScriptsSysfsDependencyTest(unittest.TestCase):
+class BaseBmcShellScriptsSysfsDependencyTest(object):
     def setUp(self):
         Logger.start(name=self._testMethodName)
 

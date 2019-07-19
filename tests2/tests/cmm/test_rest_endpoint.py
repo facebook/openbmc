@@ -23,7 +23,7 @@ from common.base_rest_endpoint_test import FbossRestEndpointTest
 from tests.cmm.test_data.sensors.sensors import SENSORS
 
 
-class RestEndpointTest(FbossRestEndpointTest):
+class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     """
     Input data to the test needs to be a list like below.
     User can choose to sends these lists from jsons too.

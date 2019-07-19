@@ -18,14 +18,13 @@
 # Boston, MA 02110-1301 USA
 #
 
-import unittest
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
 
 
-class BaseKernelModulePresenceTest(unittest.TestCase):
+class BaseKernelModulePresenceTest(object):
     def setUp(self):
         Logger.start(name=self._testMethodName)
         self.kmod_cmd = None

@@ -20,7 +20,6 @@
 import json
 import re
 import time
-import unittest
 from typing import List
 from urllib.request import urlopen
 
@@ -32,7 +31,7 @@ from .base_rest_endpoint_test import BaseRestEndpointTest
 
 # Tests if for zombie processes at the /api rest endpoint after recursively polling all
 # rest endpoints
-class BaseCheckRestForZombiesTest(unittest.TestCase):
+class BaseCheckRestForZombiesTest(object):
     def setUp(self) -> None:
         Logger.start(name=self._testMethodName)
         # number of minutes between endpoint pollings

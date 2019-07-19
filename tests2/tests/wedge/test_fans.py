@@ -17,14 +17,14 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
 import re
+import unittest
 
 from common.base_fans_test import CommonShellBasedFansTest
 from utils.cit_logger import Logger
 
 
-class FansTest(CommonShellBasedFansTest):
+class FansTest(CommonShellBasedFansTest, unittest.TestCase):
     def setUp(self):
         Logger.start(name=self._testMethodName)
         self.read_fans_cmd = "/usr/local/bin/get_fan_speed.sh"

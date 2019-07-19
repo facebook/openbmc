@@ -17,11 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 from common.base_watchdog_test import WatchdogTest
 
 
-class WatchdogTest(WatchdogTest):
+class WatchdogTest(WatchdogTest, unittest.TestCase):
     def set_kill_watchdog_daemon_cmd(self):
         self.kill_watchdog_daemon_cmd = ["/usr/bin/killall fand"]
 

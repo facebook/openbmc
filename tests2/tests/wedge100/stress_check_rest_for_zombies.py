@@ -17,10 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
+
 from common.base_check_rest_for_zombies import BaseCheckRestForZombiesTest
 
 
 # In the current design, need an empty class that overwrites the base class
 # so the test will rum. Maybe we need a better way to handle?
-class CheckRestForZombiesTest(BaseCheckRestForZombiesTest):
+class CheckRestForZombiesTest(BaseCheckRestForZombiesTest, unittest.TestCase):
     pass

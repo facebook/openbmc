@@ -17,12 +17,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 from common.base_fans_test import CommonFanUtilBasedFansTest
 from utils.cit_logger import Logger
 
 
-class FansTest(CommonFanUtilBasedFansTest):
+class FansTest(CommonFanUtilBasedFansTest, unittest.TestCase):
     def setUp(self):
         Logger.start(name=self._testMethodName)
         self.fans = [0, 1, 2, 3, 4, 5, 6, 7]

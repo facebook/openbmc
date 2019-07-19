@@ -19,14 +19,13 @@
 #
 import re
 import time
-import unittest
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
 
 
-class BaseFansTest(unittest.TestCase):
+class BaseFansTest(object):
     def setUp(self):
         Logger.start(name=self._testMethodName)
         self.read_fans_cmd = None

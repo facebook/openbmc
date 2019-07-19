@@ -29,7 +29,7 @@ from utils.shell_util import run_shell_cmd
 # Note: Fancpld covered under fans_test ; LTC driver covered under psumuxmon
 
 
-class ComESensorTest(LmSensorsTest):
+class ComESensorTest(LmSensorsTest, unittest.TestCase):
     COM_E_DRIVER = [
         "CPU Vcore",
         "+3V Voltage",
@@ -114,7 +114,7 @@ class ComESensorTest(LmSensorsTest):
         )
 
 
-class Tmp75SensorTest(LmSensorsTest):
+class Tmp75SensorTest(LmSensorsTest, unittest.TestCase):
     TMP75_SENSORS = [
         "Outlet Middle Temp",
         "Inlet Middle Temp",

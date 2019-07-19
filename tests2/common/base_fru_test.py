@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import unittest
+
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
@@ -60,7 +60,7 @@ def getBoardFields(num_custom=0):
     return board_fields
 
 
-class BaseFruTest(unittest.TestCase):
+class BaseFruTest(object):
     def setUp(self):
         Logger.start(name=self._testMethodName)
         self.fru_cmd = None

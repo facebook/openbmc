@@ -26,7 +26,9 @@ from common.base_bmc_scripts_sysfs_dependency_test import (
 from utils.cit_logger import Logger
 
 
-class BmcShellScriptsSysfsDependencyTest(BaseBmcShellScriptsSysfsDependencyTest):
+class BmcShellScriptsSysfsDependencyTest(
+    BaseBmcShellScriptsSysfsDependencyTest, unittest.TestCase
+):
     """
     Most of these scripts can reset HW. Verify that the sysfs paths are accessible
     Testing the scripts itself will be disruptive

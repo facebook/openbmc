@@ -17,12 +17,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 from common.base_interface_test import CommonInterfaceTest
 from utils.cit_logger import Logger
 
 
-class InterfaceTest(CommonInterfaceTest):
+class InterfaceTest(CommonInterfaceTest, unittest.TestCase):
     def test_usb0_v6_interface(self):
         """
         Tests eth0 v6 interface

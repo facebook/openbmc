@@ -17,11 +17,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
+
 from common.base_sensor_test import SensorUtilTest
 from tests.fbtp.test_data.sensors.sensors import SENSORS
 
 
-class MBSensorTest(SensorUtilTest):
+class MBSensorTest(SensorUtilTest, unittest.TestCase):
     FRU_NAME = "mb"
 
     def set_sensors_cmd(self):

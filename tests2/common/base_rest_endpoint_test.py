@@ -19,7 +19,6 @@
 #
 import json
 import os
-import unittest
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
@@ -35,7 +34,7 @@ except ImportError:
     from urllib2 import HTTPError
 
 
-class BaseRestEndpointTest(unittest.TestCase):
+class BaseRestEndpointTest(object):
 
     CURL_CMD6 = "http://localhost:8080{}"
 

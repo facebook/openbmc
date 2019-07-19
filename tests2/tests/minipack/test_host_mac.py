@@ -17,10 +17,11 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 from common.base_host_mac_test import BaseHostMacTest
 
 
-class HostMacTest(BaseHostMacTest):
+class HostMacTest(BaseHostMacTest, unittest.TestCase):
     def set_host_mac(self):
         self.host_mac_cmd = ["/usr/local/bin/wedge_us_mac.sh"]

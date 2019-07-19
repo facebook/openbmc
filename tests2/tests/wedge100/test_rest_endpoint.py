@@ -17,11 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
 
 
-class RestEndpointTest(FbossRestEndpointTest):
+class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     """
     Input data to the test needs to be a list like below.
     User can choose to sends these lists from jsons too.

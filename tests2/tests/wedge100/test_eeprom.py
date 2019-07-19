@@ -17,11 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 from common.base_eeprom_test import CommonEepromTest
 
 
-class EepromTest(CommonEepromTest):
+class EepromTest(CommonEepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/bin/weutil"]
 

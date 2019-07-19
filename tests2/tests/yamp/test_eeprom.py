@@ -31,7 +31,7 @@ from utils.shell_util import run_shell_cmd
 # All YAMP Eeprom tests will inherit this class.
 # This class is used for testing Switch Card EEPROM, and is also used as
 # base class of other EEPROMs with eeprom_cmd overridden
-class YAMPEepromTest(CommonEepromTest):
+class YAMPEepromTest(CommonEepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/bin/weutil"]
 

@@ -24,12 +24,11 @@
 #
 
 import os
-import unittest
 
 from utils.cit_logger import Logger
 
 
-class BaseKernelABITest(unittest.TestCase):
+class BaseKernelABITest(object):
     def setUp(self):
         Logger.start(name=self._testMethodName)
         # sysfs dependency list

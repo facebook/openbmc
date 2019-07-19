@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
-import unittest
+
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
@@ -26,7 +26,7 @@ from utils.shell_util import run_shell_cmd
 from utils.test_utils import mac_verify
 
 
-class BaseHostMacTest(unittest.TestCase):
+class BaseHostMacTest(object):
     def setUp(self):
         Logger.start(name=self._testMethodName)
         self.host_mac_cmd = None

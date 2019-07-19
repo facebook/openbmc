@@ -17,11 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 from common.base_kernel_module_presence_test import BaseKernelModulePresenceTest
 
 
-class KernelModulePresenceTest(BaseKernelModulePresenceTest):
+class KernelModulePresenceTest(BaseKernelModulePresenceTest, unittest.TestCase):
     def set_kmods(self):
         self.expected_kmod = [
             "syscpld",

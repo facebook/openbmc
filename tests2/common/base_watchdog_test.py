@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import unittest
+
 from abc import abstractmethod
 from time import sleep
 
@@ -26,7 +26,7 @@ from utils.shell_util import run_shell_cmd
 from utils.watchdog_util import WatchdogUtils
 
 
-class WatchdogTest(unittest.TestCase):
+class WatchdogTest(object):
     def setUp(self):
         Logger.start(name=self._testMethodName)
         self.wdtUtils = WatchdogUtils()

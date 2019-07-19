@@ -19,14 +19,13 @@
 #
 import os
 import time
-import unittest
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
 
 
-class BaseFscdTest(unittest.TestCase):
+class BaseFscdTest(object):
     def setUp(self, config=None, test_data_path=None):
         """
         Series of tests that are driven by changing the temperature sensors

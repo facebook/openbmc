@@ -17,11 +17,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
+
 from common.base_sensor_test import SensorUtilTest
 from tests.fby2.test_data.sensors.sensors import SENSORS
 
 
-class Server1SensorTest(SensorUtilTest):
+class Server1SensorTest(SensorUtilTest, unittest.TestCase):
     FRU_NAME = "slot1"
 
     def set_sensors_cmd(self):

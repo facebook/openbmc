@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 from abc import abstractmethod
 
 from common.base_sensor_test import SensorUtilTest
@@ -38,7 +39,7 @@ from tests.minipack.test_data.sensors.sensors import (
 )
 
 
-class ScmSensorTest(SensorUtilTest):
+class ScmSensorTest(SensorUtilTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util scm"]
 
@@ -76,7 +77,7 @@ class ScmSensorTest(SensorUtilTest):
                 )
 
 
-class PimSensorTest(SensorUtilTest):
+class PimSensorTest(SensorUtilTest, unittest.TestCase):
     @abstractmethod
     def get_pim_sensors(self):
         self._pim_id = 0
@@ -114,7 +115,7 @@ class PimSensorTest(SensorUtilTest):
                 )
 
 
-class Pim1SensorTest(PimSensorTest):
+class Pim1SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim1"]
         self._pim_id = 1
@@ -129,7 +130,7 @@ class Pim1SensorTest(PimSensorTest):
         super().base_test_pim_temp_sensor_range()
 
 
-class Pim2SensorTest(PimSensorTest):
+class Pim2SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim2"]
         self._pim_id = 2
@@ -144,7 +145,7 @@ class Pim2SensorTest(PimSensorTest):
         super().base_test_pim_temp_sensor_range()
 
 
-class Pim3SensorTest(PimSensorTest):
+class Pim3SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim3"]
         self._pim_id = 3
@@ -159,7 +160,7 @@ class Pim3SensorTest(PimSensorTest):
         super().base_test_pim_temp_sensor_range()
 
 
-class Pim4SensorTest(PimSensorTest):
+class Pim4SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim4"]
         self._pim_id = 4
@@ -174,7 +175,7 @@ class Pim4SensorTest(PimSensorTest):
         super().base_test_pim_temp_sensor_range()
 
 
-class Pim5SensorTest(PimSensorTest):
+class Pim5SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim5"]
         self._pim_id = 5
@@ -189,7 +190,7 @@ class Pim5SensorTest(PimSensorTest):
         super().base_test_pim_temp_sensor_range()
 
 
-class Pim6SensorTest(PimSensorTest):
+class Pim6SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim6"]
         self._pim_id = 6
@@ -204,7 +205,7 @@ class Pim6SensorTest(PimSensorTest):
         super().base_test_pim_temp_sensor_range()
 
 
-class Pim7SensorTest(PimSensorTest):
+class Pim7SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim7"]
         self._pim_id = 7
@@ -219,7 +220,7 @@ class Pim7SensorTest(PimSensorTest):
         super().base_test_pim_temp_sensor_range()
 
 
-class Pim8SensorTest(PimSensorTest):
+class Pim8SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util pim8"]
         self._pim_id = 8
@@ -234,7 +235,7 @@ class Pim8SensorTest(PimSensorTest):
         super().base_test_pim_temp_sensor_range()
 
 
-class PsuSensorTest(SensorUtilTest):
+class PsuSensorTest(SensorUtilTest, unittest.TestCase):
     @abstractmethod
     def get_psu_sensors(self):
         self._psu_id = 0
@@ -251,7 +252,7 @@ class PsuSensorTest(SensorUtilTest):
                 )
 
 
-class Psu1SensorTest(PsuSensorTest):
+class Psu1SensorTest(PsuSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util psu1"]
         self._psu_id = 1
@@ -263,7 +264,7 @@ class Psu1SensorTest(PsuSensorTest):
         super().base_test_psu_sensor_keys()
 
 
-class Psu2SensorTest(PsuSensorTest):
+class Psu2SensorTest(PsuSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util psu2"]
         self._psu_id = 2
@@ -275,7 +276,7 @@ class Psu2SensorTest(PsuSensorTest):
         super().base_test_psu_sensor_keys()
 
 
-class Psu3SensorTest(PsuSensorTest):
+class Psu3SensorTest(PsuSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util psu3"]
         self._psu_id = 3
@@ -287,7 +288,7 @@ class Psu3SensorTest(PsuSensorTest):
         super().base_test_psu_sensor_keys()
 
 
-class Psu4SensorTest(PsuSensorTest):
+class Psu4SensorTest(PsuSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util psu4"]
         self._psu_id = 4
@@ -299,7 +300,7 @@ class Psu4SensorTest(PsuSensorTest):
         super().base_test_psu_sensor_keys()
 
 
-class SmbSensorTest(SensorUtilTest):
+class SmbSensorTest(SensorUtilTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util smb"]
 

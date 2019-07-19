@@ -17,10 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
+
 from common.base_process_restart_test import BaseProcessRestartTest
 from tests.wedge100.test_data.process.process import EXPECTED_PROCS
 
 
-class ProcessRestartTest(BaseProcessRestartTest):
+class ProcessRestartTest(BaseProcessRestartTest, unittest.TestCase):
     def set_expected_process(self):
         self.expected_process = EXPECTED_PROCS

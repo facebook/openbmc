@@ -24,6 +24,7 @@ IMAGE_INSTALL += " \
   oob-nic \
   lldp-util \
   wedge-eeprom \
+  weutil-dhcp-id \
   kcsd \
   ipmid \
   po-eeprom \

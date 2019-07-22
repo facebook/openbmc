@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+set -eu -o pipefail
+
+CFG_PATH="/etc/dhcp/dhclient.conf"
+
+DHCP4_OPTION_NAME="vendor-class-identifier"
+
+DHCP6_VENDOR_OPTS_CODE=17  # https://tools.ietf.org/html/rfc3315#page-86
+DHCP6_VENDOR_SUB_OPT=1
+
+# This script should
+# - Output a key2=value1:key2=value[...:keyN=valueN] formatted string to stdout.
+#   For example: model=GALAXY-LC:serial=AA1234567:side=LEFT
+#                model=WEDGE-DC-F:serial=BB85858
+# - Never exit with status != 0
+# - Have a reasonable timeout (5 seconds, for example)
+PLATFORM_UTIL="/usr/local/bin/dhcp-id"
+
+# This script should output the IANA enterprise number to stdout
+ENTERPRISE_NUM_UTIL="/usr/local/bin/enterprise-num"
+
+[ "$IFACE" != "eth0" ] && [ "$IFACE" != "oob" ] && exit 0
+
+[ ! -x "$PLATFORM_UTIL" -o ! -x "$ENTERPRISE_NUM_UTIL" ] && exit 0
+
+grep -q "$DHCP4_OPTION_NAME" "$CFG_PATH" && exit 0
+
+echo "Setting vendor information in $CFG_PATH"
+
+enterprise_num=$("$ENTERPRISE_NUM_UTIL")
+id="OpenBMC:$("$PLATFORM_UTIL")"
+id_len=$(echo -n "$id" | wc -c)
+
+cat >>"$CFG_PATH" <<EOF
+send $DHCP4_OPTION_NAME "$id";
+option dhcp6.openbmc-id code $DHCP6_VENDOR_OPTS_CODE = {
+  integer 32,  # enterprise number
+  integer 16,  # sub option
+  integer 16,  # length
+  string
+};
+send dhcp6.openbmc-id $enterprise_num $DHCP6_VENDOR_SUB_OPT $id_len "$id";
+EOF

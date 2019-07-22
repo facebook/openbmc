@@ -1,7 +1,8 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://dhcpv6_up \
+SRC_URI += "file://dhcp_vendor_info \
+            file://dhcpv6_up \
             file://dhcpv6_down \
             file://setup-dhc6.sh \
             file://run-dhc6.sh \
@@ -20,7 +21,14 @@ do_install_dhcp() {
   update-rc.d -r ${D} setup-dhc6.sh start 03 5 .
 }
 
+do_install_dhcp_vendor_info() {
+  install -d ${D}/${sysconfdir}/network/if-pre-up.d
+  install -m 755 ${WORKDIR}/dhcp_vendor_info \
+    ${D}${sysconfdir}/network/if-pre-up.d/dhcp_vendor_info
+}
+
 do_install_append() {
+  do_install_dhcp_vendor_info
   do_install_dhcp
 }
 

@@ -1,0 +1,57 @@
+#!/bin/bash
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+# This script should:
+# - Output a key2=value1:key2=value[...:keyN=valueN] formatted string to stdout,
+#   to be used in the DHCP vendor class identifier field.
+#   For example: model=GALAXY-LC:serial=AA1234567:side=LEFT
+#                model=WEDGE-DC-F:serial=BB85858
+# - Never exit with status != 0
+# - Have a reasonable timeout (5 seconds, for example)
+
+set -eu -o pipefail
+
+WEUTIL_TIMEOUT="5"
+WEUTIL="/usr/bin/weutil"
+
+set +e  # handle weutil not working
+weutil_out=$(timeout -t "$WEUTIL_TIMEOUT" "$WEUTIL")
+if [ $? -ne 0 ]; then
+  weutil_out=""
+fi
+set -e
+
+get_weutil() {
+  # outputs empty if field not found in $weutil_out
+  field_name="$1"
+  echo "$weutil_out" | sed -n "s/^${field_name}: //p"
+}
+
+serial=$(get_weutil "Product Serial Number")
+model=$(get_weutil "Product Name")
+
+output="model=$model:serial=$serial"
+
+if [ "$model" == "GALAXY-LC" ]; then
+  side=$(get_weutil "Location on Fabric")
+  output="$output:side=$side"
+fi
+
+echo "$output"

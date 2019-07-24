@@ -21,6 +21,7 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   usb-console \
   wedge-eeprom \
+  weutil-dhcp-id \
   fscd \
   led-controld \
   spatula \

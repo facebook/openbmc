@@ -149,11 +149,6 @@ extern "C" {
 
 extern const char pal_fru_list[];
 
-typedef struct _sensor_info_t {
-  bool valid;
-  sdr_full_t sdr;
-} sensor_info_t;
-
 enum {
   BIC_MODE_NORMAL = 0x01,
   BIC_MODE_UPDATE = 0x0F,

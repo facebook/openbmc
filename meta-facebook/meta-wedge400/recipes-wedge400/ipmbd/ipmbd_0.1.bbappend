@@ -4,7 +4,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += " file://setup-ipmbd.sh \
              file://run-ipmbd.sh \
            "
-RDEPENDS_${PN} += "jansson libipmb"
+RDEPENDS_${PN} += " libbic jansson libipmb"
 
 CFLAGS_prepend = " -DCONFIG_WEDGE400 -DUSE_SLAVE_MQUEUE"
 

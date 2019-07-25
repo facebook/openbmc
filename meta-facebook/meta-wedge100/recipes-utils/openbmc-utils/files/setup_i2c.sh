@@ -26,8 +26,12 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # initialized when the child devices are created.
 # 7-0070 is the i2c-switch for ltc power supply in DC deployment, behind
 # which are 2 pfe1100 power supplies (14-005a & 15-0059).
+# Note: this step is only needed in kernel version 4.1: i2c switches are
+# created in device tree in new kernel versions.
 #
-i2c_mux_add_sync 7 0x70 pca9548 15
+if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
+    i2c_mux_add_sync 7 0x70 pca9548 15
+fi
 
 # Bus 2
 i2c_device_add 2 0x3a pwr1014a

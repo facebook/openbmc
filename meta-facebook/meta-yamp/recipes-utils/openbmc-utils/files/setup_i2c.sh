@@ -21,6 +21,16 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 . /usr/local/bin/openbmc-utils.sh
 
+# First, we will Enable write in WRITE_PROTECT(0x10) reg before adding the i2c
+# pmbus device for dps1900. This will prevent some sysfs node from disappearing
+# when we powercycle
+i2c_dsp1900_create(){
+  if ! i2cset -f -y "$1" 0x58 0x10 0; then
+    echo "Fail to clear PSU pmbus WRITE_PROTECT(0x10) register"
+  fi
+  i2c_device_add "$1" 0x58 pmbus
+}
+
 # First, take TPM out of reset, so that we can probe it later
 # Active low - 1 means out of reset, 0 means in reset
 gpio_set TPM_RST_N 1
@@ -60,14 +70,14 @@ i2c_device_add 4 0x50 24c512
 echo 0 > $LC_SMB_MUX_RST
 
 # Bus  5 - SMBus 6 PSU1
-i2c_device_add 5 0x58 pmbus
+i2c_dsp1900_create 5
 
 # For now, we assume that PSU2 and PSU3 are not present
 #i2c_device_add 6 0x58 pmbus
 #i2c_device_add 7 0x58 pmbus
 
 # Bus  8 - SMBus 9 PSU4
-i2c_device_add 8 0x58 pmbus
+i2c_dsp1900_create 8
 
 # Bus  9 - SMBus 10 SUP DPM
 #i2c_device_add 9 0x11 pmbus

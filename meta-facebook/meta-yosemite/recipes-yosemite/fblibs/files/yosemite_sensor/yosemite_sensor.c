@@ -1050,4 +1050,5 @@ yosemite_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       }
       break;
   }
+  return -1;
 }

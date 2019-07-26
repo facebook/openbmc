@@ -23,14 +23,16 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 #
 # Create i2c switches at the beginning so all the channels are properly
-# initialized when the child devices are created.
-# 7-0070 is the i2c-switch for ltc power supply in DC deployment, behind
-# which are 2 pfe1100 power supplies (14-005a & 15-0059).
-# Note: this step is only needed in kernel version 4.1: i2c switches are
-# created in device tree in new kernel versions.
+# initialized when the child devices are created: the step is only needed
+# for kernel 4.1 as i2c switches are handled in device tree for newer
+# kernel versions.
+#
+# 7-0070 is the i2c-switch for ltc power supply in DC deployment. It has
+# 8 child channels which are assigned i2c bus 14-21. 2 PFE1100 power
+# supplies are connected to channel #0 (14-005a) and #1 (15-0059).
 #
 if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
-    i2c_mux_add_sync 7 0x70 pca9548 15
+    i2c_mux_add_sync 7 0x70 pca9548 21
 fi
 
 # Bus 2

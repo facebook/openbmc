@@ -23,7 +23,16 @@ from fsc_util import Logger
 
 
 SensorValue = namedtuple(
-    "SensorValue", ["id", "name", "value", "unit", "status", "read_fail_counter"]
+    "SensorValue",
+    [
+        "id",
+        "name",
+        "value",
+        "unit",
+        "status",
+        "read_fail_counter",
+        "wrong_read_counter",
+    ],
 )
 
 
@@ -125,6 +134,7 @@ def get_sensor_tuples(fru_name, sensor_num, sensor_sources):
                 key,
                 sensor_sources[key].source.read(),
                 sensor_sources[key].source.read_source_fail_counter,
+                sensor_sources[key].source.read_source_wrong_counter,
             )
             result[symbolized_key] = tuple
         else:
@@ -132,7 +142,7 @@ def get_sensor_tuples(fru_name, sensor_num, sensor_sources):
     return result
 
 
-def get_sensor_tuple_sysfs(key, sensor_data, read_fail_counter=0):
+def get_sensor_tuple_sysfs(key, sensor_data, read_fail_counter=0, wrong_read_counter=0):
     """
     Build a sensor tuple from sensor key and data read
 
@@ -149,7 +159,9 @@ def get_sensor_tuple_sysfs(key, sensor_data, read_fail_counter=0):
 
     return (
         symbolize_sensorname_sysfs(key),
-        SensorValue(None, str(key), data, None, None, read_fail_counter),
+        SensorValue(
+            None, str(key), data, None, None, read_fail_counter, wrong_read_counter
+        ),
     )
 
 
@@ -188,7 +200,7 @@ def parse_all_sensors_util(sensor_data):
                 value = None
                 status = m.group(4)
                 symname = symbolize_sensorname(name)
-                result[symname] = SensorValue(sid, name, value, None, status, 0)
+                result[symname] = SensorValue(sid, name, value, None, status, 0, 0)
                 continue
             m = re.match(
                 r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+([^\s]+)\s+.\s+\((.+)\)$", line
@@ -200,7 +212,7 @@ def parse_all_sensors_util(sensor_data):
                 unit = m.group(4)
                 status = m.group(5)
                 symname = symbolize_sensorname(name)
-                result[symname] = SensorValue(sid, name, value, unit, status, 0)
+                result[symname] = SensorValue(sid, name, value, unit, status, 0, 0)
     return result
 
 

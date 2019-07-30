@@ -171,7 +171,8 @@ class Fscd(object):
                 for name in inf["ext_vars"]:
                     sdata = name.split(":")
                     board = sdata[0]
-                    sname = sdata[1]
+                    # sname never used. so comment out (avoid lint error)
+                    # sname = sdata[1]
                     if board not in self.machine.frus:
                         self.machine.nums[board] = []
                     self.machine.frus.add(board)
@@ -236,6 +237,7 @@ class Fscd(object):
                             ]["valid"]
                             valid_read_limit = valid_table["limit"]
                             valid_read_action = valid_table["action"]
+                            valid_read_th = valid_table["threshold"]
                             if isinstance(
                                 self.sensors[tuple.name].source, FscSensorSourceUtil
                             ):
@@ -261,6 +263,21 @@ class Fscd(object):
                                         )
                             else:
                                 if tuple.value > valid_read_limit:
+                                    # The "valid" json field is used only
+                                    # in network platform. Only yamp use
+                                    # inlet_temp to name this temperature
+                                    # So this code will be executed only for yamp.
+                                    # The code below is likely to improve with our
+                                    # FSCD dynamic project.
+                                    if tuple.wrong_read_counter < valid_read_th:
+                                        self.sensors[
+                                            tuple.name
+                                        ].source.read_source_wrong_counter += 1
+                                        Logger.warn(
+                                            "inlet_temp v=%d, and counter=%d"
+                                            % (tuple.value, tuple.wrong_read_counter)
+                                        )
+                                        continue
                                     reason = (
                                         sensor
                                         + "(v="
@@ -272,6 +289,9 @@ class Fscd(object):
                                     self.fsc_host_action(
                                         action=valid_read_action, cause=reason
                                     )
+                                self.sensors[
+                                    tuple.name
+                                ].source.read_source_wrong_counter = 0
 
                         # If temperature read fails
                         if (

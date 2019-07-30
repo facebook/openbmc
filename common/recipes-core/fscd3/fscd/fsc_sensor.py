@@ -39,6 +39,7 @@ class FscSensorBase(object):
             self.write_source = None
         self.read_source_fail_counter = 0
         self.write_source_fail_counter = 0
+        self.read_source_wrong_counter = 0
         self.hwmon_source = None
 
     @abc.abstractmethod

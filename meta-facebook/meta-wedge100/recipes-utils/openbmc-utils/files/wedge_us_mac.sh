@@ -18,6 +18,9 @@
 # Boston, MA 02110-1301 USA
 #
 
+# SAMPLE_SIZE reached by testing in several wedge100 with noisy mac address results
+SAMPLE_SIZE=18
+
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 . /usr/local/bin/openbmc-utils.sh
@@ -27,7 +30,19 @@ if ! wedge_is_us_on; then
     exit -2
 fi
 
-mac=$(cat /sys/class/i2c-adapter/i2c-4/4-0033/mac)
+# Workaround wedge100 noisy mac address hw bug (in which some mac octets sometimes
+# are 'ff') by querying for the mac address several times and getting the min()
+# of each octet
+sample="$(for i in $(seq 1 ${SAMPLE_SIZE}); do
+  cat /sys/class/i2c-adapter/i2c-4/4-0033/mac
+done)"
+
+mac=""
+for i in {1..6}; do
+  min_octet=$(echo "$sample" | cut -f$i -d':' | sort | head -n1)
+  mac+=":$min_octet"
+done
+mac="${mac:1}" # strip leading ':'
 
 if [ -n "$mac" -a "${mac/X/}" = "${mac}" ]; then
     echo $mac

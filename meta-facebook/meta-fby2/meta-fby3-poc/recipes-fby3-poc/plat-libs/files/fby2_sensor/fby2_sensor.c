@@ -644,10 +644,13 @@ static int
 read_fan_value(const int fan, const char *device, float *value) {
   char device_name[LARGEST_DEVICE_NAME];
   char full_name[LARGEST_DEVICE_NAME];
+  int ret;
 
   snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
   snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", TACH_DIR, device_name);
-  return read_device_float(full_name, value);
+  read_device_float(full_name, value);
+  ret = (*value == 0)?ERR_SENSOR_NA:0;
+  return ret;
 }
 
 static int
@@ -1507,8 +1510,10 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           *(float *)value *=  1.47;
           return ret;
         case SP_SENSOR_IMON_VTEMP:
-          return read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
-
+          ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
+          *(float *)value = (*(float *)value - 0.1525) / 0.0087;
+          return ret;
+         
         // Hot Swap Controller
         case SP_SENSOR_HSC_IN_VOLT:
           return read_hsc_value(0x88, 19599, 0, -2, (float *)value);

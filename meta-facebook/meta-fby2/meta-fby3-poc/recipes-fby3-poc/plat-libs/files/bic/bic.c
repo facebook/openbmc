@@ -188,13 +188,15 @@ read_device(const char *device, int *value) {
 
 uint8_t
 is_bic_ready(uint8_t slot_id) {
-  int val;
-  char path[64] = {0};
+//  int val;
+//  char path[64] = {0};
 
   if (slot_id < 1 || slot_id > 4) {
     return 0;
   }
 
+  return 1;
+#if 0
   sprintf(path, GPIO_VAL, gpio_bic_ready[slot_id]);
   if (read_device(path, &val)) {
     return 0;
@@ -205,6 +207,7 @@ is_bic_ready(uint8_t slot_id) {
   } else {
     return 0;
   }
+#endif
 }
 
 int
@@ -216,7 +219,7 @@ bic_is_slot_12v_on(uint8_t slot_id) {
     return 0;
   }
 
-  sprintf(path, GPIO_VAL, gpio_server_power_sts[slot_id]);
+  sprintf(path, GPIO_VAL, gpio_server_hsc_pgood_sts[slot_id]);
   if (read_device(path, &val)) {
     return 0;
   }
@@ -238,7 +241,7 @@ bic_is_slot_power_en(uint8_t slot_id) {
     return 0;
   }
 
-  sprintf(path, GPIO_VAL, gpio_server_stby_power_en[slot_id]);
+  sprintf(path, GPIO_VAL, gpio_server_hsc_en[slot_id]);
   if (read_device(path, &val)) {
     return 0;
   }
@@ -294,9 +297,11 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   uint8_t dataCksum;
   int retry = 0;
 
+#if 0
   if (!is_bic_ready(slot_id)) {
     return -1;
   }
+#endif
 
   ret = get_ipmb_bus_id(slot_id);
   if (ret < 0) {
@@ -330,19 +335,19 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
     lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
 
     if (rlen == 0) {
-      if (!is_bic_ready(slot_id)) {
-        break;
-      }
+      //if (!is_bic_ready(slot_id)) {
+      //  break;
+      //}
 
       retry++;
-      msleep(20);
+      msleep(2000);
     }
     else
       break;
   }
 
   if (rlen == 0) {
-    syslog(LOG_DEBUG, "bic_ipmb_wrapper: Zero bytes received, retry:%d\n", retry);
+    syslog(LOG_DEBUG, "bic_ipmb_wrapper: Zero bytes received, retry:%d, cmd:%x\n", retry, cmd);
     return -1;
   }
 
@@ -392,13 +397,13 @@ bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id) {
   int ret;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_GET_DEVICE_ID, NULL, 0, (uint8_t *) dev_id, &rlen);
-
+  syslog(LOG_WARNING,"%s(): ret=%d", __func__, ret);
   return ret;
 }
 
 int
 bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type) {
-  uint8_t tbuf[5] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[5] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[5] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -417,7 +422,7 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8
 
 int
 bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
-  uint8_t tbuf[5] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[5] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[4] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -433,7 +438,7 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
 // Get GPIO value and configuration
 int
 bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
-  uint8_t tbuf[4] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[12] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -468,7 +473,7 @@ bic_get_gpio_status(uint8_t slot_id, uint8_t pin, uint8_t *status)
 
 int
 bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value) {
-  uint8_t tbuf[16] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[16] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[4] = {0x00};
   uint8_t rlen = 0;
   uint64_t pin;
@@ -497,7 +502,7 @@ bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value) {
 
 int
 bic_set_gpio64(uint8_t slot_id, uint8_t gpio, uint8_t value) {
-  uint8_t tbuf[20] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[20] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[4] = {0x00};
   uint8_t rlen = 0;
   uint64_t pin;
@@ -528,7 +533,7 @@ bic_set_gpio64(uint8_t slot_id, uint8_t gpio, uint8_t value) {
 
 int
 bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config) {
-  uint8_t tbuf[12] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[12] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[8] = {0x00};
   uint8_t rlen = 0;
   uint64_t pin;
@@ -553,7 +558,7 @@ bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_confi
 
 int
 bic_get_gpio64_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config) {
-  uint8_t tbuf[12] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[12] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[8] = {0x00};
   uint8_t rlen = 0;
   uint64_t pin;
@@ -580,7 +585,7 @@ bic_get_gpio64_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_con
 
 int
 bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config) {
-  uint8_t tbuf[12] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[12] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[4] = {0x00};
   uint8_t rlen = 0;
   uint64_t pin;
@@ -603,7 +608,7 @@ bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_confi
 
 int
 bic_set_gpio64_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config) {
-  uint8_t tbuf[12] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[12] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[4] = {0x00};
   uint8_t rlen = 0;
   uint64_t pin;
@@ -629,7 +634,7 @@ bic_set_gpio64_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_con
 // Get BIC Configuration
 int
 bic_get_config(uint8_t slot_id, bic_config_t *cfg) {
-  uint8_t tbuf[3] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[4] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -645,7 +650,7 @@ bic_get_config(uint8_t slot_id, bic_config_t *cfg) {
 // Set BIC Configuration
 int
 bic_set_config(uint8_t slot_id, bic_config_t *cfg) {
-  uint8_t tbuf[4] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rlen = 0;
   uint8_t rbuf[4] = {0};
   int ret;
@@ -660,7 +665,7 @@ bic_set_config(uint8_t slot_id, bic_config_t *cfg) {
 // Read POST Buffer
 int
 bic_get_post_buf(uint8_t slot_id, uint8_t *buf, uint8_t *len) {
-  uint8_t tbuf[3] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[255] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -678,7 +683,7 @@ bic_get_post_buf(uint8_t slot_id, uint8_t *buf, uint8_t *len) {
 // Read Firwmare Versions of various components
 int
 bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
-  uint8_t tbuf[4] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -702,7 +707,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
 // Read checksum of various components
 int
 bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *ver) {
-  uint8_t tbuf[12] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[12] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -747,7 +752,7 @@ bic_send:
 // Read Firwmare Versions of various components
 static int
 _enable_bic_update(uint8_t slot_id) {
-  uint8_t tbuf[4] = {0x15, 0xA0, 0x00};
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00};
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -763,7 +768,7 @@ _enable_bic_update(uint8_t slot_id) {
 // Update firmware for various components
 static int
 _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf) {
-  uint8_t tbuf[256] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[256] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[16] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
@@ -800,7 +805,7 @@ bic_send:
 // Update firmware for various components
 static int
 _update_pcie_sw_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, u_int32_t image_len, uint8_t *buf) {
-  uint8_t tbuf[256] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[256] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[16] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
@@ -842,7 +847,7 @@ bic_send:
 // Get PCIE switch update status
 static int
 _get_pcie_sw_update_status(uint8_t slot_id, uint8_t *status) {
-  uint8_t tbuf[4] = {0x15, 0xA0, 0x00};  // IANA ID
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00};  // IANA ID
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -867,7 +872,7 @@ bic_send:
 // Reset PCIE switch update status
 static int
 _reset_pcie_sw_update_status(uint8_t slot_id) {
-  uint8_t tbuf[4] = {0x15, 0xA0, 0x00};  // IANA ID
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00};  // IANA ID
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -889,7 +894,7 @@ bic_send:
 // Terminate PCIE switch update
 static int
 _terminate_pcie_sw_update(uint8_t slot_id) {
-  uint8_t tbuf[4] = {0x15, 0xA0, 0x00};  // IANA ID
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00};  // IANA ID
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -911,7 +916,7 @@ bic_send:
 // Read firmware for various components
 static int
 _dump_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint8_t len, uint8_t *rbuf, uint8_t *rlen) {
-  uint8_t tbuf[16] = {0x15, 0xA0, 0x00};  // IANA ID
+  uint8_t tbuf[16] = {0x9c, 0x9c, 0x00};  // IANA ID
   int ret;
   int retries = 3;
 
@@ -935,7 +940,7 @@ _dump_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint8_t len, uint8_t 
 // Get CPLD update progress
 static int
 _get_cpld_update_progress(uint8_t slot_id, uint8_t *progress) {
-  uint8_t tbuf[4] = {0x15, 0xA0, 0x00};  // IANA ID
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00};  // IANA ID
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -1084,8 +1089,8 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
        break;
   }
   sleep(1);
-  printf("Stopped ipmbd for this slot %x..\n",slot_id);
-
+  printf("Stopped ipmbd for this slot %x..and sleep 2s...\n",slot_id);
+  sleep(2);
   if (is_bic_ready(slot_id)) {
     mqlim.rlim_cur = RLIM_INFINITY;
     mqlim.rlim_max = RLIM_INFINITY;
@@ -1112,6 +1117,9 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
   }
 
   // Wait for SMB_BMC_3v3SB_ALRT_N
+  printf("wait 5s for bic ready...\n");
+  sleep(5);
+#if 0
   for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
     if (!is_bic_ready(slot_id)) {
       printf("bic ready for update after %d tries\n", i);
@@ -1125,7 +1133,7 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
     syslog(LOG_CRIT, "bic_update_fw: bic is NOT ready for update\n");
     goto error_exit;
   }
-
+#endif
   sleep(1);
 
   // Start Bridge IC update(0x21)
@@ -1313,6 +1321,9 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
   msleep(500);
 
   // Wait for SMB_BMC_3v3SB_ALRT_N
+  printf("wait 5s for bic ready...\n");
+  sleep(5);
+#if 0
   for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
     if (is_bic_ready(slot_id))
       break;
@@ -1323,7 +1334,7 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
     printf("bic is NOT ready\n");
     goto error_exit;
   }
-
+#endif
   ret = 0;
   done = 1;
 
@@ -1869,7 +1880,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
 
 int
 bic_imc_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
-  uint8_t tbuf[256] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[256] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[256] = {0x00};
   uint8_t rlen = 0;
   uint8_t tlen = 0;
@@ -1904,7 +1915,7 @@ bic_imc_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uin
 
 int
 bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
-  uint8_t tbuf[256] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[256] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[256] = {0x00};
   uint8_t rlen = 0;
   uint8_t tlen = 0;
@@ -2241,7 +2252,7 @@ bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sens
 
 int
 bic_read_device_sensors(uint8_t slot_id, uint8_t dev_id, ipmi_device_sensor_reading_t *sensor, uint8_t *len) {
-  uint8_t tbuf[4] = {0x15, 0xA0, 0x00, 0x00}; // IANA ID + Sensor Num
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, 0x00}; // IANA ID + Sensor Num
   uint8_t rbuf[255] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -2262,7 +2273,7 @@ bic_read_device_sensors(uint8_t slot_id, uint8_t dev_id, ipmi_device_sensor_read
 
 int
 bic_read_accuracy_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_accuracy_sensor_reading_t *sensor) {
-  uint8_t tbuf[4] = {0x15, 0xA0, 0x00, 0x00}; // IANA ID + Sensor Num
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, 0x00}; // IANA ID + Sensor Num
   uint8_t rbuf[255] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -2307,7 +2318,7 @@ bic_set_sys_guid(uint8_t slot_id, uint8_t *guid) {
 int
 bic_request_post_buffer_data(uint8_t slot_id, uint8_t *port_buff, uint8_t *len) {
   int ret;
-  uint8_t tbuf[3] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[MAX_IPMB_RES_LEN]={0x00};
   uint8_t rlen = 0;
 
@@ -2445,7 +2456,7 @@ bic_get_server_type(uint8_t fru, uint8_t *type) {
 
 int
 bic_asd_init(uint8_t slot_id, uint8_t cmd) {
-  uint8_t tbuf[8] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[8] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[8] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -2457,8 +2468,17 @@ bic_asd_init(uint8_t slot_id, uint8_t cmd) {
 }
 
 int
+bic_clear_cmos(uint8_t slot_id) {
+  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen = 0;
+
+  return bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_CLEAR_CMOS, tbuf, 3, rbuf, &rlen);
+}
+
+int
 bic_reset(uint8_t slot_id) {
-  uint8_t tbuf[3] = {0x00, 0x00, 0x00}; // IANA ID
+  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[8] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -2470,7 +2490,7 @@ bic_reset(uint8_t slot_id) {
 
 int
 bic_set_pcie_config(uint8_t slot_id, uint8_t config) {
-  uint8_t tbuf[4] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rlen = 0;
   uint8_t rbuf[16] = {0};
   int ret;
@@ -2523,7 +2543,7 @@ bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf,
 
 int
 bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis) {
-  uint8_t tbuf[8] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[8] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[8] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -2536,7 +2556,7 @@ bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis) {
 
 int
 bic_send_jtag_instruction(uint8_t slot_id, uint8_t dev_id, uint8_t *rbuf, uint8_t ir) {
-  uint8_t tbuf[8] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[8] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rlen = 0;
   int ret;
 

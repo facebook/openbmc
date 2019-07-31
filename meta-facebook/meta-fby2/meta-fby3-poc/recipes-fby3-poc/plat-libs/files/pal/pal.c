@@ -1012,7 +1012,7 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
     }
   }
 
-  sprintf(vpath, GPIO_VAL, gpio_server_stby_power_en[slot_id]);
+  sprintf(vpath, GPIO_VAL, gpio_server_hsc_en[slot_id]);
 
   if (write_device(vpath, "1")) {
     return -1;
@@ -1074,17 +1074,13 @@ pal_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
     return -1;
   }
 
-  sprintf(path, GPIO_VAL, gpio_server_power_sts[slot_id]);
+  sprintf(path, GPIO_VAL, gpio_server_hsc_pgood_sts[slot_id]);
   if (read_device(path, &val)) {
     syslog(LOG_WARNING,"read_device fail\n");
     return -1;
   }
 
-  if (val == 0x1) {
-    *status = 1;
-  } else {
-    *status = 0;
-  }
+  *status = (uint8_t) val;
 
   return 0;
 }
@@ -1188,7 +1184,7 @@ pal_hot_service_action(uint8_t slot_id) {
   sprintf(hspath, HOTSERVICE_FILE, slot_id);
   if (access(hspath, F_OK) == 0) {
     _set_slot_12v_en_time(slot_id);
-    sprintf(vpath, GPIO_VAL, gpio_server_power_sts[slot_id]);
+    sprintf(vpath, GPIO_VAL, gpio_server_hsc_pgood_sts[slot_id]);
     if (write_device(vpath, "1")) {
       syslog(LOG_ERR, "%s: write_device failed", __func__);
     }
@@ -1217,7 +1213,7 @@ pal_hot_service_action(uint8_t slot_id) {
 
   if (block_12v) {
     syslog(LOG_CRIT, "12V-on blocked due to pair slot is in hot-service, FRU: %d", slot_id);
-    sprintf(vpath, GPIO_VAL, gpio_server_power_sts[slot_id]);
+    sprintf(vpath, GPIO_VAL, gpio_server_hsc_pgood__sts[slot_id]);
     if (write_device(vpath, "0")) {
       syslog(LOG_ERR, "%s: write_device failed", __func__);
     }
@@ -1255,12 +1251,15 @@ server_12v_off(uint8_t slot_id) {
     return PAL_ENOTSUP;
   }
 
-  sprintf(vpath, GPIO_VAL, gpio_server_stby_power_en[runoff_id]);
+  sprintf(vpath, "sv stop ipmbd_%d > /dev/null 2>&1", slot_id);
+  system(vpath);
+
+  sprintf(vpath, GPIO_VAL, gpio_server_hsc_en[runoff_id]);
   if (write_device(vpath, "0")) {
     return PAL_ENOTSUP;
   }
 
-  sprintf(vpath, GPIO_VAL, gpio_server_resistor_en[slot_id]);
+  sprintf(vpath, GPIO_VAL, gpio_server_i2c_en[slot_id]);
   if (write_device(vpath, "0"))
   {
     syslog(LOG_WARNING,"%s: Failed to write 1 for enabling resistor", __func__);
@@ -1366,22 +1365,25 @@ server_12v_on(uint8_t slot_id) {
     return PAL_ENOTSUP;
   }
 
-  sprintf(vpath, GPIO_VAL, gpio_server_resistor_en[slot_id]);
+  _set_slot_12v_en_time(slot_id);
+  sprintf(vpath, GPIO_VAL, gpio_server_hsc_en[slot_id]);
   if (write_device(vpath, "1"))
   {
-    syslog(LOG_WARNING,"%s: Failed to write 1 for enabling resistor", __func__);
+    syslog(LOG_WARNING,"%s: Failed to write 1 to enable 12V-on", __func__);
     return PAL_ENOTSUP;
   }
 
-  _set_slot_12v_en_time(slot_id);
-  sprintf(vpath, GPIO_VAL, gpio_server_stby_power_en[slot_id]);
+  sprintf(vpath, GPIO_VAL, gpio_server_i2c_en[slot_id]);
   if (write_device(vpath, "1"))
   {
-    syslog(LOG_WARNING,"%s: Failed to write 1 for enabling 12V-on", __func__);
+    syslog(LOG_WARNING,"%s: Failed to write 1 to enable i2c bus", __func__);
     return PAL_ENOTSUP;
   }
 
   sleep(2);
+
+  sprintf(vpath, "sv start ipmbd_%d > /dev/null 2>&1", slot_id);
+  system(vpath);
 
   return PAL_EOK;
 }
@@ -1801,8 +1803,8 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   int ret;
-  uint8_t gpio;
-  uint8_t retry = MAX_READ_RETRY;
+  //uint8_t gpio;
+  //uint8_t retry = MAX_READ_RETRY;
 
   /* Check whether the system is 12V off or on */
   ret = pal_is_server_12v_on(slot_id, status);
@@ -1811,12 +1813,8 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
     return -1;
   }
 
-  /* If 12V-off, return */
-  if (!(*status)) {
-    *status = SERVER_12V_OFF;
-    return 0;
-  }
-
+  return 0;
+#if 0
   if (!pal_is_slot_server(slot_id)) {
     *status = bic_is_slot_power_en(slot_id) ? SERVER_POWER_ON : SERVER_POWER_OFF;
     return 0;
@@ -1843,7 +1841,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   } else {
     *status = SERVER_POWER_OFF;
   }
-
+#endif
   return 0;
 }
 
@@ -2020,30 +2018,34 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
     }
   }
 
-
   switch(cmd) {
     case SERVER_POWER_ON:
-      printf("The power on function is not ready\n");
+      printf("The SERVER_POWER_ON function is not ready\n");
+      printf("Only support 12V-on/off\n");
       return ERR_FAILURE;
       break;
 
     case SERVER_POWER_OFF:
-      printf("The power off function is not ready\n");
+      printf("The SERVER_POWER_OFF function is not ready\n");
+      printf("Only support 12V-on/off/cycle\n");
       return ERR_FAILURE;
       break;
 
     case SERVER_POWER_CYCLE:
-      printf("The power cycle function is not ready\n");
+      printf("The SERVER_POWER_CYCLE function is not ready\n");
+      printf("Only support 12V-on/off/cycle\n");
       return ERR_FAILURE;
       break;
 
     case SERVER_POWER_RESET:
-      printf("The power reset function is not ready\n");
+      printf("The SERVER_POWER_RESET function is not ready\n");
+      printf("Only support 12V-on/off/cycle\n");
       return ERR_FAILURE;
       break;
 
     case SERVER_GRACEFUL_SHUTDOWN:
-      printf("The graceful shutdown function is not ready\n");
+      printf("The SERVER_GRACEFUL_SHUTDOWN function is not ready\n");
+      printf("Only support 12V-on/off/cycle\n");
       return ERR_FAILURE;
       break;
 
@@ -2077,6 +2079,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
 
     case SERVER_GLOBAL_RESET:
       printf("The global reset function is not ready\n");
+      printf("Only support 12V-on/off/cycle\n");
       return 1;
 
     default:
@@ -8550,7 +8553,7 @@ pal_is_ocp30_nic(void) {
     return 1;
   }
 #endif
-  return 0;
+  return 1;
 }
 
 bool

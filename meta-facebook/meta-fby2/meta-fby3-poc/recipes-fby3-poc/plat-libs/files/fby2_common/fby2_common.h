@@ -185,12 +185,12 @@ typedef struct {
 
 #define GPIO_BOARD_ID GPIO_RSVD_VAL
 
-const static uint8_t gpio_server_resistor_en[] =
+const static uint8_t gpio_server_i2c_en[] =
 { 0,
-  GPIOG4_SLOT1_HSC_SET_CPLD_EN_RSVD,
-  GPIOG5_SLOT2_HSC_SET_CPLD_EN_RSVD,
-  GPIOG6_SLOT3_HSC_SET_CPLD_EN_RSVD,
-  GPIOG7_SLOT4_HSC_SET_CPLD_EN_RSVD
+  GPIOZ0_FM_BMC_SLOT1_ISOLATED_EN_R,
+  GPIOZ1_FM_BMC_SLOT2_ISOLATED_EN_R,
+  GPIOZ2_FM_BMC_SLOT3_ISOLATED_EN_R,
+  GPIOZ3_FM_BMC_SLOT4_ISOLATED_EN_R
 };
 
 const static uint8_t gpio_server_prsnt[] =
@@ -209,7 +209,7 @@ const static uint8_t gpio_bic_ready[] =
   GPIOB3_SMB_BMC_SLOT4_ALT_N
 };
 
-const static uint8_t gpio_server_stby_power_en[] =
+const static uint8_t gpio_server_hsc_en[] =
 { 0,
   GPIOF0_HSC_BMC_SLOT1_EN_R,
   GPIOF1_HSC_BMC_SLOT2_EN_R,
@@ -217,7 +217,7 @@ const static uint8_t gpio_server_stby_power_en[] =
   GPIOF3_HSC_BMC_SLOT4_EN_R
 };
 
-const static uint8_t gpio_server_power_sts[] =
+const static uint8_t gpio_server_hsc_pgood_sts[] =
 { 0,
   GPIOS0_PWROK_STBY_BMC_SLOT1,
   GPIOS1_PWROK_STBY_BMC_SLOT2,

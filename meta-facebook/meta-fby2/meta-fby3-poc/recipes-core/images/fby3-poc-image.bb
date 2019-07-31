@@ -47,6 +47,8 @@ IMAGE_INSTALL += " \
   ncsid \
   vboot-utils \
   slot-util \
+  cpldupdate-poc \
+  i2craw \
   "
 
 IMAGE_FEATURES += " \

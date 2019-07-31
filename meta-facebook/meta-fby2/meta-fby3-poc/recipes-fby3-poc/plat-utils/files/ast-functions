@@ -84,6 +84,33 @@ is_bmc_por() {
   /bin/cat /tmp/ast_por
 }
 
+# Enable the I2C on the specified bus
+en_server_i2c() {
+  local pwr_sts
+
+  case $1 in
+    1)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT1)
+      ;;
+    2)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT2)
+      ;;
+    3)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT3)
+      ;;
+    4)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT4)
+      ;;
+    *)
+      pwr_sts="0"
+      ;;
+  esac
+
+  if [ $pwr_sts == "1" ]; then
+    gpio_set FM_BMC_SLOT$1_ISOLATED_EN_R 1
+  fi
+}
+
 # Check to see if server is present in given slot or not
 is_server_prsnt() {
   local prsnt
@@ -107,6 +134,8 @@ is_server_prsnt() {
   esac
 
   if [ $prsnt == "0" ]; then
+    gpio_set HSC_BMC_SLOT$1_EN_R 1
+    en_server_i2c $1
     echo 1
   else
     echo 0

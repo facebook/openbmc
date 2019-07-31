@@ -75,6 +75,9 @@ gpio_export SMB_BMC_SLOT4_ALT_N GPIOB3
 # GPIOB7-PRSNT_MB_BMC_SLOT4_BB_N
 devmem_clear_bit $(scu_addr 80) 13
 devmem_clear_bit $(scu_addr 80) 14
+val=$(/sbin/devmem 0x1e780004)
+val=$((val & ~(0xf << 12)))
+/sbin/devmem 0x1e780004 32 $val
 gpio_export PRSNT_MB_BMC_SLOT1_BB_N GPIOB4
 gpio_export PRSNT_MB_BMC_SLOT2_BB_N GPIOB5
 gpio_export PRSNT_MB_BMC_SLOT3_BB_N GPIOB6
@@ -117,6 +120,11 @@ devmem_clear_bit $(scu_addr 80) 21
 gpio_export EMMC_RST_N_R GPIOE5
 gpio_set EMMC_RST_N_R 0
 
+# GPIOE6-UART_BMC_SLOT3_RX_R
+# GPIOE7-UART_BMC_SLOT3_TX
+devmem_set_bit $(scu_addr 80) 22
+devmem_set_bit $(scu_addr 80) 23
+
 # GPIOF0-HSC_BMC_SLOT1_EN_R
 # GPIOF1-HSC_BMC_SLOT2_EN_R
 # GPIOF2-HSC_BMC_SLOT3_EN_R
@@ -139,6 +147,11 @@ gpio_set HSC_BMC_SLOT4_EN_R 0
 devmem_clear_bit $(scu_addr 80) 28
 gpio_export SMB_RST_PRIMARY_BMC_N_R GPIOF4 
 gpio_set SMB_RST_PRIMARY_BMC_N_R 1
+
+# GPIOF6-UART_BMC_SLOT4_RX_R
+# GPIOF7-UART_BMC_SLOT4_CO_TX
+devmem_set_bit $(scu_addr 80) 30
+devmem_set_bit $(scu_addr 80) 31
 
 # GPIOG0-DISABLE_BMC_FAN_2_N_R
 devmem_clear_bit $(scu_addr 84) 0
@@ -201,6 +214,11 @@ devmem_clear_bit $(scu_addr 84) 21
 gpio_export USB_BMC_EN_R GPIOL5
 gpio_set USB_BMC_EN_R 1
 
+# GPIOL6-UART_BMC_SLOT1_RX_R
+# GPIOL7-UART_BMC_SLOT1_TX
+devmem_set_bit $(scu_addr 84) 22
+devmem_set_bit $(scu_addr 84) 23
+
 # GPIOM0-HSC_FAULT_SLOT1_N
 # GPIOM1-HSC_FAULT_BMC_SLOT2_N_R
 # GPIOM2-HSC_FAULT_SLOT3_N
@@ -223,6 +241,11 @@ gpio_set FM_PWRBRK_PRIMARY_R 0
 
 gpio_export FM_PWRBRK_SECONDARY_R GPIOM5
 gpio_set FM_PWRBRK_SECONDARY_R 0
+
+# GPIOM6-UART_BMC_SLOT2_RX_R
+# GPIOM7-UART_BMC_SLOT2_CO_TX
+devmem_set_bit $(scu_addr 84) 30
+devmem_set_bit $(scu_addr 84) 31
 
 # GPION0-FAN_BMC_PWM_0
 # GPION1-FAN_BMC_PWM_1

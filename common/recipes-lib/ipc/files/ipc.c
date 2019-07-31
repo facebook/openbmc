@@ -114,7 +114,7 @@ int ipc_send_req(const char *endpoint, uint8_t *req, size_t req_len,
     goto error;
   }
   
-  if (send(sockfd, req, req_len, 0) != req_len) {
+  if (send(sockfd, req, req_len, MSG_NOSIGNAL) != req_len) {
     DEBUG("%s(%s) failed to send (%s)", __func__, endpoint, strerror(errno));
     goto error;
   }

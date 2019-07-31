@@ -805,6 +805,10 @@ hsvc_event_handler(void *ptr) {
         sprintf(cmd, "sv start sensord");
         system(cmd);
 
+        // Remove FRU when board has been removed
+        sprintf(cmd, "rm -rf /tmp/fruid_slot%d*", hsvc_info->slot_id);
+        system(cmd);
+
         // Remove post flag file when board has been removed
         sprintf(postpath, POST_FLAG_FILE, hsvc_info->slot_id);
         memset(cmd, 0, sizeof(cmd));

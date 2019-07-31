@@ -2450,7 +2450,7 @@ bic_read_device_sensors(uint8_t slot_id, uint8_t dev_id, ipmi_device_sensor_read
   tbuf[3] = dev_id;
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_DEVICE_SENSOR_READING, tbuf, 0x04, rbuf, &rlen);
 
-  if (rlen >= 8) { // at least one sensor
+  if (rlen >= DEV_SENSOR_INFO_LEN + 3) { // at least one sensor
     memcpy(sensor, &rbuf[3], rlen-3);  // Ignore IANA ID
     *len = rlen - 3;
   } else {

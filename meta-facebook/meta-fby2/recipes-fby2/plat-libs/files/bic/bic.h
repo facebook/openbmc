@@ -32,6 +32,7 @@ extern "C" {
 
 #define MAX_GPIO_PINS     64
 #define MAX_POSTCODE_NUM  1024
+#define DEV_SENSOR_INFO_LEN  6
 
 // GPIO PINS
 enum {

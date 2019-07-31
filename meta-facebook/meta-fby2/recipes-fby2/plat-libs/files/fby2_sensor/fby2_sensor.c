@@ -1540,7 +1540,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
 
       msleep(1);  // a little delay to reduce CPU utilization
 
-      num = rlen/5;
+      num = rlen/DEV_SENSOR_INFO_LEN;
       if (num > MAX_NUM_DEV_SENSORS)
         num = MAX_NUM_DEV_SENSORS;
 

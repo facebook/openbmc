@@ -1759,6 +1759,7 @@ bic_dump_fw(uint8_t slot_id, uint8_t comp, char *path) {
     if (offset >= next_doffset) {
       switch (comp) {
         case DUMP_BIOS:
+          _set_fw_update_ongoing(slot_id, 60);
           printf("\rdumped bios: %d %%", offset/dsize);
           break;
       }
@@ -1768,6 +1769,10 @@ bic_dump_fw(uint8_t slot_id, uint8_t comp, char *path) {
 
     if (offset >= img_size)
       break;
+  }
+
+  if (comp == DUMP_BIOS) {
+    _set_fw_update_ongoing(slot_id, 60 * 2);
   }
 
   ret = 0;
@@ -1923,6 +1928,7 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
            printf("\rupdated vr: %d %%", offset/dsize*20);
            break;
          case UPDATE_PCIE_SWITCH:
+           _set_fw_update_ongoing(slot_id, 60);
            if (st.st_size/100 < 100)
              printf("\rupdated pcie switch: %d %%", offset/dsize*100);
            else

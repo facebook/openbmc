@@ -15,13 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-#
-# XXX this is not the "official" way to update Kconfig file: we need to
-# add some logic to merge common Kconfig file (under meta-aspeed layer)
-# and platform specific Kconfig file by "merge_config.sh".
-#
-do_configure_prepend() {
-    if [ -f "${WORKDIR}/defconfig" ]; then
-        sed -i 's/NET_NCSI_MC_MAC_OFFSET=1/NET_NCSI_MC_MAC_OFFSET=2/g' "${WORKDIR}/defconfig"
-    fi
-}
+FILESEXTRAPATHS_prepend := "${THISDIR}/config_5.0:"
+
+SRC_URI += "file://yamp.cfg \
+           "

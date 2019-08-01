@@ -263,12 +263,6 @@ class Fscd(object):
                                         )
                             else:
                                 if tuple.value > valid_read_limit:
-                                    # The "valid" json field is used only
-                                    # in network platform. Only yamp use
-                                    # inlet_temp to name this temperature
-                                    # So this code will be executed only for yamp.
-                                    # The code below is likely to improve with our
-                                    # FSCD dynamic project.
                                     if tuple.wrong_read_counter < valid_read_th:
                                         self.sensors[
                                             tuple.name

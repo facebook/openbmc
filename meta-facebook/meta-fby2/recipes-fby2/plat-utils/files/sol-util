@@ -30,6 +30,38 @@ function show_usage() {
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
 }
 
+function disable_gpv2_ur() {
+  SLOT_NUM=$1
+  # GPv2 disable uart1 or uart3
+  if [ $SLOT_NUM -eq 1 ]; then
+    # diable uart1
+    devmem_clear_bit $(scu_addr 84) 22
+    devmem_clear_bit $(scu_addr 84) 23
+    usleep 10000
+  elif [ $SLOT_NUM -eq 3 ]; then
+    # diable uart3
+    devmem_clear_bit $(scu_addr 80) 22
+    devmem_clear_bit $(scu_addr 80) 23
+    usleep 10000
+  fi
+}
+
+function enable_gpv2_ur() {
+  SLOT_NUM=$1
+  # GPv2 enable uart1 or uart3
+  if [ $SLOT_NUM -eq 1 ]; then
+    # enable uart1
+    devmem_set_bit $(scu_addr 84) 22
+    devmem_set_bit $(scu_addr 84) 23
+    usleep 10000
+  elif [ $SLOT_NUM -eq 3 ]; then
+    # enable uart3
+    devmem_set_bit $(scu_addr 80) 22
+    devmem_set_bit $(scu_addr 80) 23
+    usleep 10000
+  fi
+}
+
 if [ "$1" == "slot1" ] || [ "$1" == "slot2" ] || [ "$1" == "slot3" ] || [ "$1" == "slot4" ]
 then
   SLOT=$1
@@ -87,6 +119,12 @@ if [ $# -gt 1 ]; then
       exit -1
     fi
 
+    # GPv2 disable uart1 or uart3
+    disable_gpv2_ur $SLOT_NUM
+
+    # set UART clock source 24MHz
+    devmem_clear_bit $(scu_addr 4c) $((SLOT_NUM + 23))
+
     if [ $SLOT_NUM -eq 1 ]; then
       devmem_set_bit  $(uart1_addr c)  7
       /sbin/devmem $(uart1_addr 0) 32 0x0000001A
@@ -102,17 +140,24 @@ if [ $# -gt 1 ]; then
       exit -1
     fi
 
-    # set UART clock source 24MHz
-    devmem_clear_bit $(scu_addr 4c) $((SLOT_NUM + 23))
+    # GPv2 enable uart1 or uart3
+    enable_gpv2_ur $SLOT_NUM
 
-    if [ $# -gt 2 ]; then
-      baud=$3
-    else
-      baud=57600
+    # Set back to default 57600
+    /bin/stty -F /dev/ttyS$SLOT_NUM 57600 >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      show_usage
+      exit -1
     fi
 
-    /bin/stty -F /dev/ttyS$SLOT_NUM $baud >/dev/null 2>&1
-    if [ $? -ne 0 ]; then
+    if [ $# -eq 3 ]; then
+      baud=$3
+      /bin/stty -F /dev/ttyS$SLOT_NUM $baud >/dev/null 2>&1
+      if [ $? -ne 0 ]; then
+        show_usage
+        exit -1
+      fi
+    elif [ $# -gt 3 ]; then
       show_usage
       exit -1
     fi
@@ -125,16 +170,34 @@ if [ $# -gt 1 ]; then
     fi
   elif [[ "$2" == "bic" ]]; then
 
-    # set UART clock source 192MHz (8 * 24MHz)
-    devmem_set_bit $(scu_addr 4c) $((SLOT_NUM + 23))
-
-    baud=115200 # 921600 / 8
-
-    /bin/stty -F /dev/ttyS$SLOT_NUM 115200 >/dev/null 2>&1
-    if [ $? -ne 0 ]; then
+    if [ $# -gt 2 ]; then
       show_usage
       exit -1
     fi
+
+    # GPv2 disable uart1 or uart3
+    disable_gpv2_ur $SLOT_NUM
+
+    # set UART clock source 192MHz (8 * 24MHz)
+    devmem_set_bit $(scu_addr 4c) $((SLOT_NUM + 23))
+
+    if [ $SLOT_NUM -eq 1 ]; then
+      devmem_set_bit  $(uart1_addr c)  7
+      /sbin/devmem $(uart1_addr 0) 32 0x0000000D
+      /sbin/devmem $(uart1_addr 4) 32 0x00000000
+      devmem_clear_bit  $(uart1_addr c)  7
+    elif [ $SLOT_NUM -eq 3 ]; then
+      devmem_set_bit  $(uart3_addr c)  7
+      /sbin/devmem $(uart3_addr 0) 32 0x0000000D
+      /sbin/devmem $(uart3_addr 4) 32 0x00000000
+      devmem_clear_bit  $(uart3_addr c)  7
+    else
+      show_usage
+      exit -1
+    fi
+
+    # GPv2 enable uart1 or uart3
+    enable_gpv2_ur $SLOT_NUM
 
     /usr/bin/bic-util $SLOT 0xe0 0x3a 0x15 0xa0 0x00 0x00 12 >/dev/null 2>&1
     if [ $? -ne 0 ]; then
@@ -143,6 +206,14 @@ if [ $# -gt 1 ]; then
     fi
 
   elif [[ "$2" == "pcie_sw" ]]; then
+
+    if [ $# -gt 2 ]; then
+      show_usage
+      exit -1
+    fi
+
+    # GPv2 disable uart1 or uart3
+    disable_gpv2_ur $SLOT_NUM
 
     # set UART clock source 192MHz (8 * 24MHz)
     devmem_set_bit $(scu_addr 4c) $((SLOT_NUM + 23))
@@ -161,6 +232,9 @@ if [ $# -gt 1 ]; then
       show_usage
       exit -1
     fi
+
+    # GPv2 enable uart1 or uart3
+    enable_gpv2_ur $SLOT_NUM
 
     /usr/bin/bic-util $SLOT 0xe0 0x3a 0x15 0xa0 0x00 0x00 14 >/dev/null 2>&1
     if [ $? -ne 0 ]; then

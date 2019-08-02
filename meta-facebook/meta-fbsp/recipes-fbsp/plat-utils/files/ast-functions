@@ -1,0 +1,79 @@
+# Copyright 2014-present Facebook. All Rights Reserved.
+DEVMEM=/sbin/devmem
+GPIOCLI_CMD=/usr/local/bin/gpiocli
+ASPEEDCHIP="aspeed-gpio"
+
+devmem_set_bit() {
+    local addr
+    local val
+    addr=$1
+    val=$($DEVMEM $addr)
+    val=$((val | (0x1 << $2)))
+    $DEVMEM $addr 32 $val
+}
+
+devmem_clear_bit() {
+    local addr
+    local val
+    addr=$1
+    val=$($DEVMEM $addr)
+    val=$((val & ~(0x1 << $2)))
+    $DEVMEM $addr 32 $val
+}
+
+devmem_clear_scu70_bit() {
+    local val
+    val=$((0x1 << $1))
+    $DEVMEM 0x1E6E207C 32 $val
+}
+
+scu_addr() {
+    echo $((0x1E6E2000 + 0x$1))
+}
+
+jtag_addr() {
+    echo $((0x1E6E4000 + 0x$1))
+}
+
+
+gpio_export() {
+  local name shadow
+  shadow=$1
+  name=$2
+  $GPIOCLI_CMD export --chip $ASPEEDCHIP --pin-name $name --shadow $shadow
+}
+
+gpio_set() {
+  local shadow val
+  shadow=$1
+  val=$2
+  $GPIOCLI_CMD set-init-value --shadow $shadow $val
+}
+
+gpio_get() {
+  local shadow
+  shadow=$1
+  $GPIOCLI_CMD get-value --shadow $shadow | awk -F= '{print $2}'
+}
+
+# Store and Clear POR bit
+store_clear_por()
+{
+  local val
+
+  if [ -f /tmp/ast_por ]; then
+    return
+  fi
+
+  # Read the Watch Dog Flag
+  val=$(devmem 0x1e6e203c 2>/dev/null)
+  if [ "$((val & 0x1))" == "1" ]; then
+      # Power ON Reset
+      echo 1 > /tmp/ast_por
+  else
+      echo 0 > /tmp/ast_por
+  fi
+
+  # Clear Power On Reset bit
+  devmem 0x1e6e203c 32 $((val & 0xfffffffe)) 2>/dev/null
+}

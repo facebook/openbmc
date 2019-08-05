@@ -57,6 +57,7 @@
 #define BIC_UPDATE_RETRIES 12
 #define BIC_UPDATE_TIMEOUT 500
 #define GPV2_BIC_PLAT_STR "F09B"
+#define ND_BIC_PLAT_STR "ND"
 
 #define BIC_FLASH_START 0x8000
 #define BIC_PKT_MAX 252
@@ -1000,9 +1001,10 @@ static int
 check_bic_image(uint8_t slot_id, int fd, long size) {
   int offs, rcnt;
   uint8_t slot_type;
+  uint8_t server_type;
   uint8_t buf[64];
   const uint8_t hdr_common[] = {0x01,0x00,0x4c,0x1c,0x00,0x53,0x4e,0x4f,0x57,0x46,0x4c,0x41,0x4b,0x45};
-  char *plat_str = NULL;
+  const char *plat_str = NULL;
 
   if (size < BIC_SIGN_SIZE) {
     return -1;
@@ -1012,6 +1014,13 @@ check_bic_image(uint8_t slot_id, int fd, long size) {
   switch (slot_type) {
     case SLOT_TYPE_GPV2:
       plat_str = GPV2_BIC_PLAT_STR;
+      break;
+    case SLOT_TYPE_SERVER:
+      bic_get_server_type(slot_id, &server_type);
+      if(server_type == SERVER_TYPE_ND)
+        plat_str = ND_BIC_PLAT_STR;
+      else
+        return 0;
       break;
     default:
       return 0;

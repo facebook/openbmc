@@ -103,6 +103,8 @@ def pcie_config(fru):
         server_name = "RC"
     elif server_type == 2:
         server_name = "EP"
+    elif server_type == 4:
+        server_name = "ND"
     else:
         server_name = "Unknown"
 

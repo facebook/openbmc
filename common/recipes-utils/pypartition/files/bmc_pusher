@@ -59,7 +59,7 @@ rc=0
 # A dropped SSH connection due to shutdown is expected.
 [[ $rc == 0 || $rc == 255 ]] || exit $rc
 
-sleep 4m
+sleep 6m
 
 checks="head -n 1 /etc/issue; uptime"
 "${sshpass[@]}" ssh "${options[@]}" "root@$target" "$checks"

@@ -33,6 +33,7 @@ IMAGE_INSTALL += " \
   stress  \
   usb-console \
   wedge-eeprom \
+  weutil-dhcp-id \
   watchdogd \
   "
 

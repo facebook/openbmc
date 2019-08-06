@@ -24,4 +24,5 @@ IMAGE_INSTALL += " \
   lldp-util \
   openbmc-utils \
   wedge-eeprom \
+  weutil-dhcp-id \
   "

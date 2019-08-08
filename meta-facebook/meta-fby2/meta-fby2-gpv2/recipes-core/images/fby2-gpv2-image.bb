@@ -57,6 +57,7 @@ IMAGE_INSTALL += " \
   nvme-util \
   slot-util \
   snapshot-util \
+  gpv2-util \
   "
 
 IMAGE_FEATURES += " \

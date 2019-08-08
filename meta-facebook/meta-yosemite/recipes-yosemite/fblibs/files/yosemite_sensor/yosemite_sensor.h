@@ -39,6 +39,7 @@ extern "C" {
 #define MAX_RETRIES_SDR_INIT  30
 #define THERMAL_CONSTANT      255
 #define ERR_NOT_READY         -2
+#define EER_UNHANDLED         -4
 
 // Sensors under Bridge IC
 enum {

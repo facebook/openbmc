@@ -1639,13 +1639,16 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   while (retry) {
     ret = yosemite_sensor_read(fru, sensor_num, value);
-    if(ret >= 0)
+    if ((ret >= 0) || (ret == EER_UNHANDLED))
       break;
     msleep(50);
     retry--;
   }
   if(ret < 0) {
     snr_chk->val_valid = 0;
+
+    if (ret == EER_UNHANDLED)
+      return -1;
 
     if(fru == FRU_SPB || fru == FRU_NIC)
       return -1;

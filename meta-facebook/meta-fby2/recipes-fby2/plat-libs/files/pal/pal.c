@@ -5441,6 +5441,119 @@ pal_parse_sel_ep(uint8_t fru, uint8_t *sel, char *error_log)
 
 #if defined(CONFIG_FBY2_ND)
 int
+parse_usb_error_sel_nd(uint8_t fru, uint8_t *event_data, char *error_log) {
+  uint8_t *ed = &event_data[3];
+  char temp_log[512] = {0};
+
+  if ((ed[0] & 0x0F) == 0x1) {
+      strcat(error_log, " Correctable");
+  } else if ((ed[0] & 0x0F) == 0x2) {
+      strcat(error_log, " Uncorrectable");
+  }
+  snprintf(temp_log, sizeof(temp_log), " (Error Source %02X)", ed[1]);
+  strcat(error_log, temp_log);  
+  return 0;
+}
+
+int
+parse_smn_error_sel_nd(uint8_t fru, uint8_t *event_data, char *error_log) {
+  uint8_t *ed = &event_data[3];
+  char temp_log[512] = {0};
+
+  if ((ed[0] & 0x0F) == 0x1) {
+    strcat(error_log, " Correctable");
+  } else if ((ed[0] & 0x0F) == 0x2) {
+    strcat(error_log, " Uncorrectable");
+  }
+  snprintf(temp_log, sizeof(temp_log), " (BUS ID %02X)", ed[1]);
+  strcat(error_log, temp_log);
+  snprintf(temp_log, sizeof(temp_log), " Error Source %02X", ed[2] & 0x0F);
+  strcat(error_log, temp_log);  
+  return 0;
+}
+
+int
+parse_mem_error_sel_nd(uint8_t fru, uint8_t snr_num, uint8_t *event_data, char *error_log) {
+  uint8_t *ed = &event_data[3];
+  char temp_log[512] = {0};
+  uint8_t sen_type = event_data[0];
+  uint8_t chn_num, dimm_num;
+
+  if (snr_num == MEMORY_ECC_ERR) {
+    // SEL from MEMORY_ECC_ERR Sensor
+    if ((ed[0] & 0x0F) == 0x0) {
+      if (sen_type == 0x0C) {
+        strcat(error_log, "Correctable");
+        snprintf(temp_log, sizeof(temp_log), "DIMM%02X ECC err,FRU:%u", ed[2], fru);
+        pal_add_cri_sel(temp_log);
+      } else if (sen_type == 0x10)
+        strcat(error_log, "Correctable ECC error Logging Disabled");
+    } else if ((ed[0] & 0x0F) == 0x1) {
+        strcat(error_log, "Uncorrectable");
+        snprintf(temp_log, sizeof(temp_log), "DIMM%02X UECC err,FRU:%u", ed[2], fru);
+        pal_add_cri_sel(temp_log);
+    } else if ((ed[0] & 0x0F) == 0x5)
+        strcat(error_log, "Correctable ECC error Logging Limit Reached");
+      else
+        strcat(error_log, "Unknown");
+  } else if (snr_num == MEMORY_ERR_LOG_DIS) {
+      // SEL from MEMORY_ERR_LOG_DIS Sensor
+    if ((ed[0] & 0x0F) == 0x0)
+      strcat(error_log, "Correctable Memory Error Logging Disabled");
+    else
+      strcat(error_log, "Unknown");
+  }
+
+  // Common routine for both MEM_ECC_ERR and MEMORY_ERR_LOG_DIS
+  snprintf(temp_log, sizeof(temp_log), " (DIMM %02X)", ed[2]);
+  strcat(error_log, temp_log);
+
+  snprintf(temp_log, sizeof(temp_log), " Logical Rank %d", ed[1] & 0x03);
+  strcat(error_log, temp_log);
+
+  // DIMM number (ed[2]):
+  // Bit[7:5]: Socket number  (Range: 0-7)
+  // Bit[4:2]: Channel number (Range: 0-7)
+  // Bit[1:0]: DIMM number    (Range: 0-3)
+  if (((ed[1] & 0xC) >> 2) == 0x0) {
+    /* All Info Valid */
+    chn_num = (ed[2] & 0x1C) >> 2;
+    dimm_num = ed[2] & 0x3;
+
+    /* If critical SEL logging is available, do it */
+    if (sen_type == 0x0C) {
+      if ((ed[0] & 0x0F) == 0x0) {
+        snprintf(temp_log, sizeof(temp_log), "DIMM%c%d ECC err,FRU:%u", 'A'+chn_num,
+                dimm_num, fru);
+        pal_add_cri_sel(temp_log);
+      } else if ((ed[0] & 0x0F) == 0x1) {
+        snprintf(temp_log, sizeof(temp_log), "DIMM%c%d UECC err,FRU:%u", 'A'+chn_num,
+                dimm_num, fru);
+        pal_add_cri_sel(temp_log);
+      }
+    }
+      /* Then continue parse the error into a string. */
+      /* All Info Valid                               */
+    snprintf(temp_log, sizeof(temp_log), " (CPU# %d, CHN# %d, DIMM# %d)",
+        (ed[2] & 0xE0) >> 5, (ed[2] & 0x1C) >> 2, ed[2] & 0x3);
+  } else if (((ed[1] & 0xC) >> 2) == 0x1) {
+    /* DIMM info not valid */
+    snprintf(temp_log, sizeof(temp_log), " (CPU# %d, CHN# %d)",
+        (ed[2] & 0xE0) >> 5, (ed[2] & 0x1C) >> 2);
+  } else if (((ed[1] & 0xC) >> 2) == 0x2) {
+    /* CHN info not valid */
+    snprintf(temp_log, sizeof(temp_log), " (CPU# %d, DIMM# %d)",
+        (ed[2] & 0xE0) >> 5, ed[2] & 0x3);
+  } else if (((ed[1] & 0xC) >> 2) == 0x3) {
+    /* CPU info not valid */
+    snprintf(temp_log, sizeof(temp_log), " (CHN# %d, DIMM# %d)",
+        (ed[2] & 0x1C) >> 2, ed[2] & 0x3);
+  }
+  strcat(error_log, temp_log);
+  return 0;
+}
+
+int
 pal_parse_sel_nd(uint8_t fru, uint8_t *sel, char *error_log)
 {
   uint8_t snr_num = sel[11];
@@ -5450,6 +5563,19 @@ pal_parse_sel_nd(uint8_t fru, uint8_t *sel, char *error_log)
   error_log[0] = '\0';
 
   switch(snr_num) {
+    case SMN_ERR:
+      parse_smn_error_sel_nd(fru, event_data, error_log);
+      parsed = true;
+      break;
+    case USB_ERR:
+      parse_usb_error_sel_nd(fru, event_data, error_log);
+      parsed = true;
+      break;
+    case MEMORY_ECC_ERR:
+    case MEMORY_ERR_LOG_DIS:
+      parse_mem_error_sel_nd(fru, snr_num, event_data, error_log);
+      parsed = true;
+      break;
     case PROCHOT_EXT:
       //Just show event raw data for now
       parsed = true;

@@ -570,6 +570,12 @@ pal_get_x86_event_sensor_name(uint8_t fru, uint8_t snr_num,
       case IIO_ERR:
         sprintf(name, "IIO_ERR");
         break;
+      case SMN_ERR:
+        sprintf(name, "SMN_ERR");
+        break;
+      case USB_ERR:
+        sprintf(name, "USB_ERR");
+        break;
       case MEMORY_ECC_ERR:
         sprintf(name, "MEMORY_ECC_ERR");
         break;

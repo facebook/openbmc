@@ -2694,6 +2694,7 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
   int ret;
   uint8_t status, type;
   uint8_t debug_mode = NON_DEBUG_MODE;
+  uint8_t retry = MAX_BIC_CHECK_RETRY;
 
   if (slot_id != 1 && slot_id != 3) {
     return -1;
@@ -2728,7 +2729,13 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
       if ((status == SERVER_POWER_OFF) && (debug_mode == NON_DEBUG_MODE))
         return 1;
       else {
-        ret = bic_set_dev_power_status(slot_id, dev_id, 2);
+        while (retry) {
+          ret = bic_set_dev_power_status(slot_id, dev_id, 2);
+          if (ret != BIC_RETRY_ACTION)
+            break;
+          msleep(50);
+          retry--;
+        }
         if (ret == 0) {
           pal_set_m2_prsnt(slot_id, dev_id, 0);
         }
@@ -2738,8 +2745,13 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
 
     case SERVER_POWER_CYCLE:
       if (status == SERVER_POWER_ON) {
-
-        ret = bic_set_dev_power_status(slot_id, dev_id, 2);
+        while (retry) {
+          ret = bic_set_dev_power_status(slot_id, dev_id, 2);
+          if (ret != BIC_RETRY_ACTION)
+            break;
+          msleep(50);
+          retry--;
+        }
         if (ret == 0) {
           pal_set_m2_prsnt(slot_id, dev_id, 0);
         } else {

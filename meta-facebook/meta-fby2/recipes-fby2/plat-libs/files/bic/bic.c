@@ -368,6 +368,10 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 #ifdef DEBUG
     syslog(LOG_ERR, "bic_ipmb_wrapper: Completion Code: 0x%X\n", res->cc);
 #endif
+    if (res->cc == CC_BIC_RETRY) { // Completion Code for BIC retry
+      syslog(LOG_ERR, "bic_ipmb_wrapper: Completion Code: 0x%X for BIC retry\n", res->cc);
+      return BIC_RETRY_ACTION;
+    }
     return -1;
   }
 

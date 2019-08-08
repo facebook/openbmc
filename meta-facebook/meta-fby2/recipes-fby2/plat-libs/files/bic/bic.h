@@ -34,6 +34,9 @@ extern "C" {
 #define MAX_POSTCODE_NUM  1024
 #define DEV_SENSOR_INFO_LEN  6
 
+#define CC_BIC_RETRY 0x70
+#define BIC_RETRY_ACTION  -2
+
 // GPIO PINS
 enum {
   PWRGD_COREPWR = 0x0,

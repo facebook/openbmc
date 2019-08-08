@@ -1,9 +1,9 @@
-all: psp-util
+all: apml-util
 
-psp-util: psp-util.o 
+apml-util: apml-util.o 
 	$(CC) $(CFLAGS) -lbic -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 
 clean:
-	rm -rf *.o psp-util
+	rm -rf *.o apml-util

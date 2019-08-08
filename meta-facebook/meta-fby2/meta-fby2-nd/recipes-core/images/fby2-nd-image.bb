@@ -54,7 +54,7 @@ IMAGE_INSTALL += " \
   vboot-utils \
   slot-util \
   snapshot-util \
-  psp-util \
+  apml-util \
   "
 
 IMAGE_FEATURES += " \

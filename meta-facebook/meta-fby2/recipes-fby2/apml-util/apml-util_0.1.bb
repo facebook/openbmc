@@ -4,18 +4,18 @@ DESCRIPTION = "Util for communicating to SOC PSP"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://psp-util.c;beginline=4;endline=16;md5=eb69e90379b8d03d819049f47e47611f"
+LIC_FILES_CHKSUM = "file://apml-util.c;beginline=4;endline=16;md5=bc1f9dca8274e5d583a00785eeda8f10"
 
-SRC_URI = "file://psp-util.c \
+SRC_URI = "file://apml-util.c \
            file://Makefile \
           "
 
 S = "${WORKDIR}"
 
-binfiles = "psp-util \
+binfiles = "apml-util \
            "
 
-pkgdir = "psp-util"
+pkgdir = "apml-util"
 
 DEPENDS = " libbic "
 RDEPENDS_${PN} += "libbic "
@@ -33,7 +33,7 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/psp-util ${prefix}/local/bin"
+FILES_${PN} = "${FBPACKAGEDIR}/apml-util ${prefix}/local/bin"
 
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INHIBIT_PACKAGE_STRIP = "1"

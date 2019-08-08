@@ -1078,8 +1078,6 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
   struct rlimit mqlim;
   uint8_t done = 0;
 
-  syslog(LOG_CRIT, "bic_update_fw: update bic firmware on slot %d\n", slot_id);
-
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
@@ -1096,6 +1094,8 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
     printf("invalid BIC file!\n");
     goto error_exit2;
   }
+
+  syslog(LOG_CRIT, "bic_update_fw: update bic firmware on slot %d\n", slot_id);
 
   // Open the i2c driver
   ifd = i2c_open(get_ipmb_bus_id(slot_id));

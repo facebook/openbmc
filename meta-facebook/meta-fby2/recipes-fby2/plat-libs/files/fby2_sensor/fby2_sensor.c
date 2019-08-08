@@ -1814,7 +1814,8 @@ fby2_sdr_init(uint8_t fru) {
 
   static bool init_done[MAX_NUM_FRUS] = {false};
 
-  if (!init_done[fru - 1]) {
+  // Sensord's SDR needs update afer BIC update
+  if (!init_done[fru - 1] || bic_get_sdr_update_flag(fru)) {
 
     sensor_info_t *sinfo = g_sinfo[fru-1];
 
@@ -1822,6 +1823,8 @@ fby2_sdr_init(uint8_t fru) {
       return ERR_NOT_READY;
 
     init_done[fru - 1] = true;
+    bic_set_sdr_update_flag(fru, 0);
+    syslog(LOG_DEBUG, "%s : slot%u SDR update successfully", __func__, fru);
   }
 
   return 0;

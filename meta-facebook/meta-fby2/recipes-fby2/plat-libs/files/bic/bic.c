@@ -1415,6 +1415,8 @@ error_exit2:
     memset(cmd, 0, sizeof(cmd));
     snprintf(cmd, MAX_CMD_LEN, "/usr/local/bin/bic-cached %d &", slot_id);   //retrieve SDR data after BIC FW update
     system(cmd);
+    // add SDR update flag
+    bic_set_sdr_update_flag(slot_id, 1);
   }
 
   return ret;
@@ -2875,4 +2877,28 @@ bic_get_debug_mode(uint8_t slot_id, uint8_t *debug_mode) {
   }
 
   return ret;
+}
+
+int
+bic_set_sdr_update_flag(uint8_t slot, uint8_t update) {
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+
+  snprintf(key,MAX_KEY_LEN, "slot%u_sdr_update", slot);
+  snprintf(str,MAX_VALUE_LEN, "%u",update);
+  return kv_set(key, str, 0, 0);
+}
+
+int
+bic_get_sdr_update_flag(uint8_t slot) {
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  sprintf(key, "slot%u_sdr_update", slot);
+
+  ret = kv_get(key, cvalue,NULL,0);
+  if (ret) {
+    return 0;
+  }
+  return atoi(cvalue);
 }

@@ -199,14 +199,6 @@ main(int argc, char **argv) {
           printf("Fail to clear threshold for fru%d\n", fru);
         }
       }
-
-      if (0 == ret) {
-        // sleep 6 seconds to avoid test deassert events
-        sleep(6);
-        memset(cmd, 0, sizeof(cmd));
-        sprintf(cmd,"/usr/local/bin/log-util %s --clear", fru_name);
-        system(cmd);
-      }
     } else {
       ret = clear_thresh_value_setting(fru);
       if (ret < 0) {

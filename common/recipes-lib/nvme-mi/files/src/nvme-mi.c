@@ -52,6 +52,8 @@
 #define VENDOR_ID_SAMSUNG 0x144D
 #define VENDOR_ID_SEAGATE 0x1BB1
 #define VENDOR_ID_TOSHIBA 0x1179
+#define VENDOR_ID_FACEBOOK 0x1D9B
+#define VENDOR_ID_BROARDCOM 0x14E4
 
 // Helper function for msleep
 void
@@ -384,6 +386,12 @@ nvme_vendor_decode(uint16_t value, t_key_value_pair *vendor_decoding) {
       break;
     case VENDOR_ID_TOSHIBA:
       sprintf(vendor_decoding->value, "Toshiba(0x%04X)", value);
+      break;
+    case VENDOR_ID_FACEBOOK:
+      sprintf(vendor_decoding->value, "Facebook(0x%04X)", value);
+      break;
+    case VENDOR_ID_BROARDCOM:
+      sprintf(vendor_decoding->value, "Broadcom(0x%04X)", value);
       break;
     default:
       sprintf(vendor_decoding->value, "Unknown(0x%04X)", value);

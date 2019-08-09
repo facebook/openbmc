@@ -65,7 +65,7 @@ print_slot_version(uint8_t slot_id) {
   }
 
   printf("Bridge-IC Version: v%x.%02x\n", ver[0], ver[1]);
-  
+
   // Print ME Version
   if (bic_get_fw_ver(slot_id, FW_ME, ver)){
     return;
@@ -79,21 +79,21 @@ print_slot_version(uint8_t slot_id) {
   }
 
   printf("Bridge-IC Bootloader Version: v%x.%02x\n", ver[0], ver[1]);
-  
+
   // Print PVCCIN VR Version
   if (bic_get_fw_ver(slot_id, FW_PVCCIN_VR, ver)){
     return;
   }
 
   printf("PVCCIN VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
-  
+
   // Print DDRAB VR Version
   if (bic_get_fw_ver(slot_id, FW_DDRAB_VR, ver)){
     return;
   }
 
   printf("DDRAB VR Version: 0x%02x%02x, 0x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
-  
+
   // Print P1V05 VR Version
   if (bic_get_fw_ver(slot_id, FW_P1V05_VR, ver)){
     return;
@@ -179,13 +179,17 @@ fw_update_slot(char **argv, uint8_t slot_id) {
       return -1;
     }
     ret = bic_update_fw(slot_id, UPDATE_BIOS, argv[4]);
+    if (ret) {
+      printf("Update BIOS failed (%d).\n", ret);
+      return -1;
+    }
     sleep(3);
     ret = pal_set_com_pwr_btn_n("0");//set COM_PWR_BTN_N to low
     if(ret){
       printf("Cannot power off COM-e.\n");
       return -1;
     }
-	sleep(1);
+    sleep(1);
     ret = pal_set_com_pwr_btn_n("1");//set COM_PWR_BTN_N to high
     if(ret){
       printf("Cannot power on COM-e.\n");

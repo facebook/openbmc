@@ -34,6 +34,7 @@ extern "C" {
 #define LARGEST_DEVICE_NAME (120)
 #define UNIT_DIV            (1000)
 #define ERR_NOT_READY       (-2)
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
@@ -77,6 +78,52 @@ enum {
   BOOT_DEVICE_OTHERS   = 0x4,
   BOOT_DEVICE_IPV6     = 0x9,
   BOOT_DEVICE_RESERVED = 0xff,
+};
+
+enum {
+  IPMI_CHANNEL_0 = 0,
+  IPMI_CHANNEL_1,
+  IPMI_CHANNEL_2,
+  IPMI_CHANNEL_3,
+  IPMI_CHANNEL_4,
+  IPMI_CHANNEL_5,
+  IPMI_CHANNEL_6,
+  IPMI_CHANNEL_7,
+  IPMI_CHANNEL_8,
+  IPMI_CHANNEL_9,
+  IPMI_CHANNEL_A,
+  IPMI_CHANNEL_B,
+  IPMI_CHANNEL_C,
+  IPMI_CHANNEL_D,
+  IPMI_CHANNEL_E,
+  IPMI_CHANNEL_F,
+};
+
+enum {
+  I2C_BUS_0 = 0,
+  I2C_BUS_1,
+  I2C_BUS_2,
+  I2C_BUS_3,
+  I2C_BUS_4,
+  I2C_BUS_5,
+  I2C_BUS_6,
+  I2C_BUS_7,
+  I2C_BUS_8,
+  I2C_BUS_9,
+  I2C_BUS_10,
+  I2C_BUS_11,
+  I2C_BUS_12,
+  I2C_BUS_13,
+  I2C_BUS_14,
+  I2C_BUS_15,
+  I2C_BUS_16,
+  I2C_BUS_17,
+  I2C_BUS_18,
+  I2C_BUS_19,
+  I2C_BUS_20,
+  I2C_BUS_21,
+  I2C_BUS_22,
+  I2C_BUS_23,
 };
 
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);

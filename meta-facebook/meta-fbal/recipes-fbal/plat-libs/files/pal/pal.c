@@ -38,8 +38,10 @@
 
 #define GPIO_POWER "FM_BMC_PWRBTN_OUT_R_N"
 #define GPIO_POWER_GOOD "PWRGD_SYS_PWROK"
-#define GPIO_LOCATE_LED "FP_LOCATE_LED"
 #define GPIO_POWER_RESET "RST_BMC_RSTBTN_OUT_R_N"
+#define GPIO_BLADE_ID0 "FM_BLADE_ID_0"
+#define GPIO_BLADE_ID1 "FM_BLADE_ID_1"
+#define GPIO_LOCATE_LED "FP_LOCATE_LED"
 
 #define DELAY_GRACEFUL_SHUTDOWN 1
 #define DELAY_POWER_OFF 6
@@ -720,16 +722,20 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 int
 pal_channel_to_bus(int channel) {
   switch (channel) {
-    case 0:
-      return 0; // USB (LCD Debug Board)
-    case 1:
-      return 5; // ME
-    case 2:
-      return 2; // Slave BMC
-    case 3:
-      return 6; // CM
-    case 9:
-      return 8; // Riser (Big Basin)
+    case IPMI_CHANNEL_0:
+      return I2C_BUS_0; // USB (LCD Debug Board)
+
+    case IPMI_CHANNEL_1:
+      return I2C_BUS_5; // ME
+
+    case IPMI_CHANNEL_2:
+      return I2C_BUS_2; // Slave BMC
+
+    case IPMI_CHANNEL_3:
+      return I2C_BUS_6; // Riser
+
+    case IPMI_CHANNEL_9:
+      return I2C_BUS_8; // CM
   }
 
   // Debug purpose, map to real bus number
@@ -810,3 +816,74 @@ pal_set_def_key_value() {
   return 0;
 }
 
+static int
+get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask)
+{
+  int i;
+  *mask = 0; 
+    
+  for (i = 0; i < num; i++) {
+    int ret; 
+    gpio_value_t value;
+    gpio_desc_t *gpio = gpio_open_by_shadow(shadows[i]);
+    if (!gpio) {
+      return -1;
+    }
+        
+    ret = gpio_get_value(gpio, &value);
+    gpio_close(gpio);
+    
+    if (ret != 0) { 
+      return -1;
+    }    
+    *mask |= (value == GPIO_VALUE_HIGH ? 1 : 0) << i;
+  }
+  return 0;
+}
+
+int
+pal_get_blade_id(uint8_t *id) {
+  static bool cached = false;
+  static uint8_t cached_id = 0;
+
+  if (!cached) {
+    const char *shadows[] = {
+      "FM_BLADE_ID_0",
+      "FM_BLADE_ID_1"
+    };
+    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+      return -1;
+    }  
+    cached = true;
+  }   
+  *id = cached_id;
+  return 0;
+}
+
+int pal_get_bmc_ipmb_slave_addr(uint16_t* slave_addr, uint8_t bus_id)
+{
+	uint8_t val;
+  int ret;
+  static uint16_t addr=0;
+
+  if ((bus_id == I2C_BUS_1) || (bus_id == I2C_BUS_5)) {
+
+    if (addr == 0) {
+      ret = pal_get_blade_id (&val);
+      if (ret != 0) {
+        return -1;
+      }
+      addr = 0x1010 | val; 
+      *slave_addr = addr;
+    } else {
+      *slave_addr = addr;
+    }
+  } else {
+    *slave_addr = 0x10; 
+  }   
+
+  #ifdef DEBUG   
+  syslog(LOG_DEBUG,"%s BMC Slave Addr=%d bus=%d\n\n", __func__, *slave_addr, bus_id);
+  #endif   
+  return 0;
+}

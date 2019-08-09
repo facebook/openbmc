@@ -21,7 +21,7 @@ C_SRCS := $(SOURCES)
 C_OBJS := ${C_SRCS:.c=.o}
 
 libpal.so: $(C_OBJS)
-	$(CC) -shared -o libpal.so $^ -fPIC -lc -Wl,--whole-archive -lobmc-pal -Wl,--no-whole-archive -lrt $(LDFLAGS)
+	$(CC) -shared -o libpal.so $^ -fPIC -lc -Wl,--whole-archive -lm -lobmc-pal -Wl,--no-whole-archive -lrt $(LDFLAGS)
 
 $(C_SRCS:.c=.d):%.d:%.c
 	$(CC) $(CFLAGS) $< >$@

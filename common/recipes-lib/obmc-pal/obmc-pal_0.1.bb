@@ -17,7 +17,7 @@ SRC_URI = "file://obmc-pal.h \
            file://obmc-sensor.h \
            file://CMakeLists.txt \
           "
-DEPENDS += " libkv libipmi"
+DEPENDS += " libkv libipmi libipmb"
 
 inherit cmake
 

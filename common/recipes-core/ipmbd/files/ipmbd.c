@@ -295,6 +295,8 @@ ipmb_req_handler(void *args) {
   uint8_t rlen = 0;
   uint16_t tlen = 0;
   char mq_name_req[NAME_MAX];
+  uint16_t addr=0;
+  int ret=0;
 
   //Buffers for IPMB transport
   uint8_t rxbuf[IPMB_PKT_MAX_SIZE] = {0};
@@ -317,8 +319,16 @@ ipmb_req_handler(void *args) {
     return NULL;
   }
 
+  ret = pal_get_bmc_ipmb_slave_addr(&addr, bus_num);
+  if(ret < 0) {
+    return NULL;
+  }
+#ifdef DEBGU  
+  syslog(LOG_WARNING, "%s ADDR=%x BUS_ID=%x\n", __func__, addr, bus_num);
+#endif
+
   // Open the i2c bus for sending response
-  fd = i2c_cdev_slave_open(bus_num, BRIDGE_SLAVE_ADDR, 0);
+  fd = i2c_cdev_slave_open(bus_num, addr<<1, 0);
   if (fd < 0) {
     mq_close(mq);
     return NULL;
@@ -460,11 +470,21 @@ ipmb_rx_handler(void *args) {
   };
   char mq_name_req[NAME_MAX], mq_name_res[NAME_MAX];
   int bus_num = *((int*)args);
+  uint16_t addr=0;
+  int ret=0;
 
   RX_VERBOSE("thread starts execution");
 
+  ret = pal_get_bmc_ipmb_slave_addr(&addr, bus_num);
+  if (ret < 0) {
+    return NULL;
+  }
+
+#ifdef DEBGU  
+  syslog(LOG_WARNING, "%s ADDR=%x BUS_ID=%x\n", __func__, addr, ipmbd_config.bus_id);
+#endif
   // Open the i2c bus as a slave
-  bmc_slave = i2c_mslave_open(bus_num, BMC_SLAVE_ADDR);
+  bmc_slave = i2c_mslave_open(bus_num, addr);
   if (bmc_slave == NULL) {
     OBMC_ERROR(errno, "%s: failed to open bmc as slave",
                IPMBD_RX_THREAD);
@@ -522,11 +542,11 @@ ipmb_rx_handler(void *args) {
 
     if (buf[2] != calc_cksum(buf, 2)) {
       //handle wrong slave address
-      if (buf[0] != BMC_SLAVE_ADDR<<1) {
+      if (buf[0] != addr<<1) {
         // Store the first byte
         fbyte = buf[0];
         // Update the first byte with correct slave address
-        buf[0] = BMC_SLAVE_ADDR<<1;
+        buf[0] = addr<<1;
         // Check again if the cksum passes
         if (buf[2] != calc_cksum(buf,2)) {
           //handle missing slave address
@@ -535,7 +555,7 @@ ipmb_rx_handler(void *args) {
           //copy the buffer to temporary
           memcpy(tbuf, buf, len);
           // correct the slave address
-          buf[0] = BMC_SLAVE_ADDR<<1;
+          buf[0] = addr<<1;
           // copy back from temp buffer
           memcpy(&buf[1], tbuf, len);
           // increase length as we added slave address byte
@@ -604,6 +624,7 @@ ipmb_handle (int fd, unsigned char *request, unsigned short req_len,
   int i, ret;
   int8_t index;
   struct timespec ts;
+  uint16_t addr=0;
 
   // Allocate right sequence Number
   index = seq_get_new(response);
@@ -612,8 +633,15 @@ ipmb_handle (int fd, unsigned char *request, unsigned short req_len,
     return ;
   }
 
+  ret = pal_get_bmc_ipmb_slave_addr(&addr, ipmbd_config.bus_id); 
+  if (ret < 0) {
+    return ;
+  }
+#ifdef DEBGU  
+  syslog(LOG_WARNING, "%s ADDR=%x BUS_ID=%x\n", __func__, addr, ipmbd_config.bus_id);
+#endif
   req->seq_lun = index << LUN_OFFSET;
-  req->req_slave_addr = BMC_SLAVE_ADDR << 1;
+  req->req_slave_addr = addr << 1;
 
   // Calculate/update header Cksum
   req->hdr_cksum = req->res_slave_addr +
@@ -674,7 +702,7 @@ conn_handler(client_t *cli) {
   unsigned char req_buf[MAX_IPMB_RES_LEN];
   unsigned char res_buf[MAX_IPMB_RES_LEN];
   size_t req_len = MAX_IPMB_RES_LEN;
-  unsigned char res_len;
+  unsigned char res_len=0;
 
   SVC_VERBOSE("entering svc handler");
   if (ipc_recv_req(cli, req_buf, &req_len, TIMEOUT_IPMB)) {

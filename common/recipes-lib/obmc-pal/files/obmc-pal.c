@@ -30,6 +30,7 @@
 #include <sys/wait.h>
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/ipmb.h>
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
@@ -2399,4 +2400,11 @@ int __attribute__((weak))
 pal_get_nic_fru_id(void)
 {
   return -1;
+}
+
+int __attribute__((weak))
+pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id)
+{
+  *slave_addr = BMC_SLAVE_ADDR;
+  return 0; 
 }

@@ -5453,6 +5453,61 @@ pal_parse_sel_ep(uint8_t fru, uint8_t *sel, char *error_log)
 
 #if defined(CONFIG_FBY2_ND)
 int
+parse_psb_error_sel_nd(uint8_t *event_data, char *error_log) {
+  uint8_t *ed = &event_data[3];
+
+  strcpy(error_log, "");
+  switch (ed[1]) {
+    case 0x3E:
+      strcat(error_log, "P0: Error reading fuse info");
+      break;
+    case 0x7B:
+      strcat(error_log, "P0: OEM BIOS Signing Key failed signature verification");
+      break;
+    case 0x6F:
+      strcat(error_log, "P0: OEM BIOS Signing Key Usage flag violation");
+      break;
+    case 0x7C:
+      strcat(error_log, "P0: Platform Vendor ID and/or Model ID binding violation");
+      break;
+    case 0x78:
+      strcat(error_log, "P0: BIOS RTM Signature entry not found");
+      break;
+    case 0x79:
+      strcat(error_log, "P0: BIOS Copy to DRAM failed");
+      break;
+    case 0x7A:
+      strcat(error_log, "P0: BIOS RTM Signature verification failed");
+      break;
+    case 0x7D:
+      strcat(error_log, "P0: BIOS Copy bit is unset for reset image");
+      break;
+    case 0x7E:
+      strcat(error_log, "P0: Requested fuse is already blown, reblow will cause ASIC malfunction");
+      break;
+    case 0x7F:
+      strcat(error_log, "P0: Error with actual fusing operation");
+      break;
+    case 0x80:
+      strcat(error_log, "P1: Error reading fuse info");
+      break;
+    case 0x81:
+      strcat(error_log, "P1: Platform Vendor ID and/or Model ID binding violation");
+      break;
+    case 0x82:
+      strcat(error_log, "P1: Requested fuse is already blown, reblow will cause ASIC malfunction");
+      break;
+    case 0x83:
+      strcat(error_log, "P1: Error with actual fusing operation");
+      break;
+    default:
+      strcat(error_log, "Unknown");
+      break;
+  } 
+  return 0;
+}
+
+int
 parse_usb_error_sel_nd(uint8_t fru, uint8_t *event_data, char *error_log) {
   uint8_t *ed = &event_data[3];
   char temp_log[512] = {0};
@@ -5581,6 +5636,10 @@ pal_parse_sel_nd(uint8_t fru, uint8_t *sel, char *error_log)
       break;
     case USB_ERR:
       parse_usb_error_sel_nd(fru, event_data, error_log);
+      parsed = true;
+      break;
+    case PSB_ERR:
+      parse_psb_error_sel_nd(event_data, error_log);
       parsed = true;
       break;
     case MEMORY_ECC_ERR:

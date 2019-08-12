@@ -23,10 +23,16 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <linux/version.h>
 
 #include <openbmc/cpldupdate_dll.h>
 
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(4,1,51)
 #define JTAG_SYSFS_DIR "/sys/devices/platform/ast-jtag.0/"
+#else
+#define JTAG_SYSFS_DIR "/sys/devices/platform/ahb/ahb:apb/1e6e4000.jtag/"
+#endif
+
 #define JTAG_SYSFS_TDI JTAG_SYSFS_DIR "tdi"
 #define JTAG_SYSFS_TDO JTAG_SYSFS_DIR "tdo"
 #define JTAG_SYSFS_TMS JTAG_SYSFS_DIR "tms"

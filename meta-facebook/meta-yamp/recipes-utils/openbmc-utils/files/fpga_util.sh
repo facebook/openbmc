@@ -123,7 +123,9 @@ if [ $# -ne 3 ]; then
     usage
 fi
 
-modprobe ast_jtag
+if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
+  modprobe ast_jtag
+fi
 
 if [ "$1" == "scd" ]; then
     shift 1

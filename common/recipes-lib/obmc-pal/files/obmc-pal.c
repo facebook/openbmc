@@ -186,6 +186,7 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t general_info = (uint8_t) sel[3];
   uint8_t error_type = general_info & 0x0f;
   uint8_t plat;
+  uint8_t dimm_failure_event = (uint8_t) sel[12];
   char dimm_fail_event[][64] = {"Memory training failure", "Memory correctable error", "Memory uncorrectable error", "Reserved"};
   error_log[0] = '\0';
 
@@ -203,9 +204,17 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
       }
       break;
     case UNIFIED_MEM_ERR:
-      sprintf(error_log, "GeneralInfo: MemErr(0x%02X), DIMM Slot Location: Sled %02X/Socket %02X, Channel %02X, Slot %02X, \
+      plat = (dimm_failure_event & 0x80) >> 7;
+      if (plat == 0) { //Intel
+        sprintf(error_log, "GeneralInfo: MemErr(0x%02X), DIMM Slot Location: Sled %02X/Socket %02X, Channel %02X, Slot %02X, \
                           DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%02X",
               general_info, ((sel[8]>>4) & 0x03), sel[8] & 0x0f, sel[9] & 0x0f, sel[10] & 0x0f, dimm_fail_event[sel[12]&0x03], sel[13], sel[14]);
+      } else { //AMD
+        uint16_t minor_code = sel[15] << 8 | sel[14];
+        sprintf(error_log, "GeneralInfo: MemErr(0x%02X), DIMM Slot Location: Sled %02X/Socket %02X, Channel %02X, Slot %02X, \
+                          DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%04X",
+              general_info, ((sel[8]>>4) & 0x03), sel[8] & 0x0f, sel[9] & 0x0f, sel[10] & 0x0f, dimm_fail_event[sel[12]&0x03], sel[13], minor_code);
+      }
       break;
     default:
       sprintf(error_log, "Undefined Error Type(0x%02X), Raw: %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",

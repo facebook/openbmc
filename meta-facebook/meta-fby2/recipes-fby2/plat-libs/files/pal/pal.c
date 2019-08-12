@@ -3933,7 +3933,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   while (retry) {
     ret = fby2_sensor_read(fru, sensor_num, value);
-    if ((ret >= 0) || (ret == EER_READ_NA))
+    if ((ret >= 0) || (ret == EER_READ_NA) || (ret == EER_UNHANDLED))
       break;
     msleep(50);
     retry--;
@@ -3948,6 +3948,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
     if (ret == EER_READ_NA)
       return ERR_SENSOR_NA;
+
+    if (ret == EER_UNHANDLED)
+      return -1;
 
     if(fru == FRU_SPB || fru == FRU_NIC)
       return -1;

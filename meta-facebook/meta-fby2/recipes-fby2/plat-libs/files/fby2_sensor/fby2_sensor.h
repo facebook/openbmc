@@ -40,6 +40,7 @@ extern "C" {
 #define THERMAL_CONSTANT      256
 #define ERR_NOT_READY         -2
 #define EER_READ_NA           -3
+#define EER_UNHANDLED         -4
 
 #define SYS_CONFIG_PATH "/mnt/data/kv_store/sys_config/"
 

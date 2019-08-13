@@ -49,7 +49,7 @@ def prepare_piminfo():
             if m:
                 pim_type[current_pim] = m.group(1)
                 pim_fpga_ver[current_pim] = m.group(2)
-    except Exception as ex:
+    except Exception:
         pass
 
     return pim_type, pim_fpga_ver
@@ -61,10 +61,24 @@ def prepare_pimver():
         stdout = subprocess.check_output(
             ["/usr/local/bin/peutil", pim], timeout=DEFAULT_TIMEOUT_SEC
         )
+        pim_version_str = None
+        counter = 0
+        # pim_ver[pim] will be represented as:
+        # <Product Production State>.<Product Version>.<Product sub_version>
         for line in stdout.decode().splitlines():
-            if "Version" in line:
+            if "Production" in line:
                 _, version = line.split(":")
-                pim_ver[pim] = version.strip()
+                pim_version_str = version.strip()
+                pim_version_str += "."
+            elif "Version" in line:
+                _, version = line.split(":")
+                if counter == 1:
+                    pim_version_str += version.strip()
+                    pim_version_str += "."
+                elif counter == 2:
+                    pim_version_str += version.strip()
+                counter = counter + 1
+        pim_ver[pim] = pim_version_str
     return pim_ver
 
 

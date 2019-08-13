@@ -323,7 +323,7 @@ ipmb_req_handler(void *args) {
   if(ret < 0) {
     return NULL;
   }
-#ifdef DEBGU  
+#ifdef DEBUG
   syslog(LOG_WARNING, "%s ADDR=%x BUS_ID=%x\n", __func__, addr, bus_num);
 #endif
 
@@ -342,6 +342,10 @@ ipmb_req_handler(void *args) {
       continue;
     }
     REQ_VERBOSE("received %d bytes from message queue", rlen);
+
+    if (ipmbd_config.bic_update_enabled) {
+      continue;
+    }
 
     pal_ipmb_processing(bus_num, rxbuf, rlen);
 
@@ -480,7 +484,7 @@ ipmb_rx_handler(void *args) {
     return NULL;
   }
 
-#ifdef DEBGU  
+#ifdef DEBUG
   syslog(LOG_WARNING, "%s ADDR=%x BUS_ID=%x\n", __func__, addr, ipmbd_config.bus_id);
 #endif
   // Open the i2c bus as a slave
@@ -633,11 +637,11 @@ ipmb_handle (int fd, unsigned char *request, unsigned short req_len,
     return ;
   }
 
-  ret = pal_get_bmc_ipmb_slave_addr(&addr, ipmbd_config.bus_id); 
+  ret = pal_get_bmc_ipmb_slave_addr(&addr, ipmbd_config.bus_id);
   if (ret < 0) {
     return ;
   }
-#ifdef DEBGU  
+#ifdef DEBUG
   syslog(LOG_WARNING, "%s ADDR=%x BUS_ID=%x\n", __func__, addr, ipmbd_config.bus_id);
 #endif
   req->seq_lun = index << LUN_OFFSET;

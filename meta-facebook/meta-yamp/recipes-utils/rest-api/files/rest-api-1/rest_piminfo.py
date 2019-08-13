@@ -60,12 +60,6 @@ def prepare_piminfo():
     )
     try:
         data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
-        text_lines = data.split(b"\n", 1)
-        proc = subprocess.Popen(
-            ["/usr/local/bin/fpga_ver.sh", "-u"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
         for text_line_bytes in data.split(b"\n"):
             text_line = text_line_bytes.decode()
             # Check if this line shows PIM slot number
@@ -80,15 +74,54 @@ def prepare_piminfo():
                 if pim_ver != "0x0" and check_pim_presence(int(current_pim)):
                     pim_type[str(current_pim)] = "16Q"
                     pim_fpga_ver[str(current_pim)] = pim_ver
-    except Exception as ex:
+    except Exception:
         pass
     return pim_type, pim_fpga_ver
+
+
+def prepare_pimver():
+    pim_ver = {str(i): "NA" for i in range(1, 9)}
+    for pim in pim_ver:
+        proc = subprocess.Popen(
+            ["/usr/local/bin/peutil", pim],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        pim_version_str = None
+        counter = 0
+        try:
+            data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
+            # pim_ver[pim] will be represented as:
+            # <Product Production State>.<Product Version>.<Product sub_version>
+            for text_line_bytes in data.split(b"\n"):
+                text_line = text_line_bytes.decode()
+                if "Production" in text_line:
+                    _, version = text_line.split(":")
+                    pim_version_str = version.strip()
+                    pim_version_str += "."
+                elif "Version" in text_line:
+                    _, version = text_line.split(":")
+                    if counter == 1:
+                        pim_version_str += version.strip()
+                        pim_version_str += "."
+                    elif counter == 2:
+                        pim_version_str += version.strip()
+                    counter = counter + 1
+            pim_ver[pim] = pim_version_str
+        except Exception:
+            pass
+    return pim_ver
 
 
 def get_piminfo():
     result = {}
     pim_type, pim_fpga_ver = prepare_piminfo()
+    pim_ver = prepare_pimver()
     for pim_number in range(1, 9):
-        result["PIM" + str(pim_number)] = pim_type[str(pim_number)]
+        result["PIM" + str(pim_number)] = {
+            "type": pim_type[str(pim_number)],
+            "fpga_ver": pim_fpga_ver[str(pim_number)],
+            "ver": pim_ver[str(pim_number)],
+        }
     fresult = {"Information": result, "Actions": [], "Resources": []}
     return fresult

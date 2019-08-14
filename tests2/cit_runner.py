@@ -25,7 +25,7 @@ class RunTest:
         return self.testloader.loadTestsFromNames(test_paths)
 
     def run_multiple_tests(self, test_paths):
-        self.testrunner.run(self.get_multiple_tests(test_paths))
+        return self.testrunner.run(self.get_multiple_tests(test_paths))
 
 
 class Tests:
@@ -208,7 +208,29 @@ def arg_parser():
                         example: hostname/ip of BMC",
     )
 
+    parser.add_argument("--repeat", help="Used to repeat tests many times")
+
     return parser.parse_args()
+
+
+def repeat_test(test, num_iter, single=False):
+    fail_counter = 0
+    fails = []
+    for i in range(int(num_iter)):
+        print("\nTest Iteration #{}".format(i + 1))
+        if single:
+            test_result = RunTest().run_single_test(test)
+        else:
+            test_result = RunTest().run_multiple_tests(test)
+        if not test_result.wasSuccessful():
+            fail_counter = fail_counter + 1
+            fails.append(i + 1)
+    if fail_counter > 0:
+        print("Test failed {} times".format(fail_counter))
+        print("Test failed at these iterations: {}".format(fails))
+        clean_on_exit(1)
+    else:
+        clean_on_exit(0)
 
 
 if __name__ == "__main__":
@@ -223,9 +245,12 @@ if __name__ == "__main__":
         pattern = "stress*.py"
 
     if args.run_test:
-        test_result = RunTest().run_single_test(args.run_test)
-        rc = 0 if test_result.wasSuccessful() else 1
-        clean_on_exit(rc)
+        if args.repeat:
+            repeat_test(args.run_test, args.repeat, single=True)
+        else:
+            test_result = RunTest().run_single_test(args.run_test)
+            rc = 0 if test_result.wasSuccessful() else 1
+            clean_on_exit(rc)
 
     if not args.platform:
         print("Platform needed to run tests, pass --platform arg. Exiting..")
@@ -237,5 +262,8 @@ if __name__ == "__main__":
             print(item)
         clean_on_exit(0)
 
-    RunTest().run_multiple_tests(test_paths)
+    if args.repeat:
+        repeat_test(test_paths, args.repeat)
+    else:
+        RunTest().run_multiple_tests(test_paths)
     clean_on_exit(0)

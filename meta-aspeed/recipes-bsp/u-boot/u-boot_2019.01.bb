@@ -23,7 +23,7 @@ PROVIDES = "virtual/bootloader"
 LICENSE = "GPLv2+"
 LIC_FILES_CHKSUM = "file://Licenses/README;md5=30503fd321432fc713238f582193b78e"
 
-DEPENDS += "dtc-native bc-native"
+DEPENDS += "dtc-native bc-native bison-native"
 
 SRCBRANCH = "openbmc/helium/v2019.01"
 SRCREV = "AUTOINC"

@@ -19,7 +19,7 @@ SUMMARY = "U-Boot bootloader fw_printenv/setenv utilities"
 LICENSE = "GPLv2+"
 LIC_FILES_CHKSUM = "file://Licenses/README;md5=30503fd321432fc713238f582193b78e"
 SECTION = "bootloader"
-DEPENDS = "mtd-utils"
+DEPENDS = "mtd-utils bison-native"
 
 SRCBRANCH = "openbmc/helium/v2019.01"
 SRCREV = "AUTOINC"

@@ -24,15 +24,4 @@ from common.base_kernel_module_presence_test import BaseKernelModulePresenceTest
 
 class KernelModulePresenceTest(BaseKernelModulePresenceTest, unittest.TestCase):
     def set_kmods(self):
-        self.expected_kmod = [
-            "gpio_pca953x",
-            "pfe3000",
-            "fancpld",
-            "cmmcpld",
-            "i2c_dev_sysfs",
-            "i2c_mux_pca954x",
-            "ext4",
-            "mbcache",
-            "jbd2",
-            "crypto_hash",
-        ]
+        self.expected_kmod = ["fancpld", "cmmcpld", "i2c_dev_sysfs", "crypto_hash"]

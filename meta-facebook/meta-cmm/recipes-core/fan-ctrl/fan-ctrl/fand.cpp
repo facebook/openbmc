@@ -61,7 +61,11 @@
 #ifdef CONFIG_GALAXY100
 #include <fcntl.h>
 #endif
+
 #include <openbmc/watchdog.h>
+#include <openbmc/obmc-i2c.h>
+#include <openbmc/misc-utils.h>
+#include <openbmc/obmc-pmbus.h>
 
 /* Sensor definitions */
 #define INTERNAL_TEMPS(x) (x)
@@ -142,6 +146,10 @@
 #define log_warn(fmt, args...) \
   syslog(LOG_WARNING, "%s" fmt ": %s", __func__, ##args, strerror(errno))
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
+#endif
+
 struct sensor_info_sysfs {
   char* prefix;
   char* suffix;
@@ -159,10 +167,13 @@ struct fan_info_stu_sysfs {
   uchar failed;
 };
 
-struct psu_info_sysfs {
-  char* sysfs_path;
-  char* shutdown_path;
-  int value_to_shutdown;
+struct psu_device_info {
+  struct {
+    char *filename;
+    int value;
+  } sysfs_shutdown;
+
+  i2c_id_t devices[GALAXY100_PSUS];
 };
 
 struct galaxy100_board_info_stu_sysfs {
@@ -430,29 +441,30 @@ struct galaxy100_fantray_info_stu_sysfs galaxy100_fantray_info[] = {
   NULL,
 };
 
-struct psu_info_sysfs galaxy100_psu_info[] = {
-  {
-    .sysfs_path = "/sys/bus/i2c/drivers/pfe3000/24-0010",
-    .shutdown_path = "control/shutdown",
-    .value_to_shutdown = 1,
-  },
-  {
-    .sysfs_path = "/sys/bus/i2c/drivers/pfe3000/25-0010",
-    .shutdown_path = "control/shutdown",
-    .value_to_shutdown = 1,
-  },
-  {
-    .sysfs_path = "/sys/bus/i2c/drivers/pfe3000/26-0010",
-    .shutdown_path = "control/shutdown",
-    .value_to_shutdown = 1,
-  },
-  {
-    .sysfs_path = "/sys/bus/i2c/drivers/pfe3000/27-0010",
-    .shutdown_path = "control/shutdown",
-    .value_to_shutdown = 1,
+struct psu_device_info galaxy100_psu_info = {
+  .sysfs_shutdown = {
+    .filename = "control/shutdown",
+    .value = 1,
   },
 
-  NULL,
+  .devices = {
+    [0] = {
+      .bus = 24,
+      .addr = 0x10,
+    },
+    [1] = {
+      .bus = 25,
+      .addr = 0x10,
+    },
+    [2] = {
+      .bus = 26,
+      .addr = 0x10,
+    },
+    [3] = {
+      .bus = 27,
+      .addr = 0x10,
+    },
+  },
 };
 
 
@@ -1232,30 +1244,82 @@ void clear_fancpld_watchdog_timer() {
   }
 }
 
-static int system_shutdown(const char *why)
+/*
+ * Shutdown system via pfe3000's "shutdown" sysfs node.
+ */
+static int system_shutdown_sysfs(void)
 {
-  int ret;
-  int i;
-  char fullpath[PATH_CACHE_SIZE];
+  int i, ret;
+  i2c_id_t *psu_dev;
+  char i2c_suid[NAME_MAX], pathname[PATH_MAX];
 
-  syslog(LOG_EMERG, "Shutting down:  %s", why);
+  for(i = 0; i < ARRAY_SIZE(galaxy100_psu_info.devices); i++) {
+    psu_dev = &galaxy100_psu_info.devices[i];
+    i2c_sysfs_suid_gen(i2c_suid, sizeof(i2c_suid),
+                       psu_dev->bus, psu_dev->addr);
+    path_join(pathname, sizeof(pathname), I2C_SYSFS_DEVICES,
+              i2c_suid, galaxy100_psu_info.sysfs_shutdown.filename, NULL);
 
-  for(i = 0; i < GALAXY100_PSUS; i++) {
+    if (!path_exists(pathname)) {
+        errno = ENOENT;
+        return -1;
+    }
 
-    snprintf(fullpath, PATH_CACHE_SIZE, "%s/%s",
-             galaxy100_psu_info[i].sysfs_path,
-             galaxy100_psu_info[i].shutdown_path);
-
-    ret = write_sysfs_int(fullpath, galaxy100_psu_info[i].value_to_shutdown);
+    ret = write_sysfs_int(pathname, galaxy100_psu_info.sysfs_shutdown.value);
     if(ret < 0) {
-      log_error("failed to set PSU channel %#x, value %#x",
-                GALAXY100_PSU_CHANNEL_I2C_ADDR, 0x1 << i);
+      log_error("failed to turn off psu device %d-00%x via sysfs: %s",
+                psu_dev->bus, psu_dev->addr, strerror(errno));
       return -1;
     }
   }
 
-  stop_watchdog();
+  return 0;
+}
 
+/*
+ * Shutdown system by sending pmbus command.
+ */
+static int system_shutdown_pmbus(void)
+{
+  int i, ret;
+  int page = 0;
+  i2c_id_t *psu_dev;
+  pmbus_dev_t *pmdev;
+
+  for (i = 0; i < ARRAY_SIZE(galaxy100_psu_info.devices); i++) {
+    psu_dev = &galaxy100_psu_info.devices[i];
+
+    pmdev = pmbus_device_open(psu_dev->bus, psu_dev->addr,
+                              PMBUS_FLAG_FORCE_CLAIM);
+    if (pmdev == NULL) {
+      log_error("failed to open psu device %d-00%x: %s",
+                psu_dev->bus, psu_dev->addr, strerror(errno));
+      continue;
+    }
+
+    ret = pmbus_write_byte_data(pmdev, page,
+                                PMBUS_OPERATION, PMBUS_OPERATION_OFF);
+    if (ret != 0) {
+      log_error("failed to turn off psu device %d-00%x via pmbus: %s",
+                psu_dev->bus, psu_dev->addr, strerror(errno));
+      /* fall through */
+    }
+
+    pmbus_device_close(pmdev);
+  }
+
+  return 0;
+}
+
+static void system_shutdown(const char *why)
+{
+  syslog(LOG_EMERG, "Shutting down:  %s", why);
+
+  if (system_shutdown_sysfs() != 0) {
+    system_shutdown_pmbus();
+  }
+
+  stop_watchdog();
   sleep(2);
   exit(2);
 }

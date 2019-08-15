@@ -18,5 +18,5 @@
 # Boston, MA 02110-1301 USA
 #
 
-ARGS="scm smb psu1 psu2"
+ARGS="scm smb pem1 pem2 psu1 psu2"
 exec /usr/local/bin/sensord $ARGS

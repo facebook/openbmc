@@ -38,6 +38,14 @@ extern "C" {
 #define I2C_ADDR_OFFSET_SLAVE	0x1000
 
 /*
+ * Structure to identify an i2c device.
+ */
+typedef struct i2c_device_id {
+	int bus;
+	uint16_t addr;
+} i2c_id_t;
+
+/*
  * Helper function to validate i2c slave address.
  *
  * The logic is similar with i2c_check_addr_validity() function in

@@ -547,7 +547,7 @@ do_pldm_discovery(nl_sfd_t *sfd, NCSI_NL_RSP_T *resp_buf)
   if (pldmStatus == CC_SUCCESS) {
     pldmType = pldmHandleGetPldmTypesResp((PLDM_GetPldmTypes_Response_t *)&(resp_buf->msg_payload[7]));
   }
-  syslog(LOG_CRIT, "PLDM type spported = 0x%" PRIx64, pldmType);
+  syslog(LOG_CRIT, "PLDM type supported = 0x%" PRIx64, pldmType);
 
   // Query  version for each supported type
   for (i = 0; i < PLDM_RSV; ++i) {

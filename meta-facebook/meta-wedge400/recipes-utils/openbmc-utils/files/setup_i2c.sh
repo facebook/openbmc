@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2018-present Facebook. All Rights Reserved.
+# Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -33,13 +33,43 @@ else
     start_of_mux_bus=16
 fi
 
+# get from smb cpld
+get_board_type()
+{
+    reg=$(i2cget -y -f 12 0x3e 0x00)
+    reg=$((reg>>4))
+    if [ $reg -eq 0 ]; then
+        echo 0
+        return
+    elif [ $reg -eq 1 ]; then
+        echo 1
+        return
+    else
+        echo -1
+    fi
+}
+get_board_rev()
+{
+    reg=$(i2cget -y -f 12 0x3e 0x00)
+    reg=$((reg&0x3))
+    if [ $reg -eq 0 ]; then
+        echo 0
+        return
+    elif [ $reg -eq 1 ]; then
+        echo 1
+        return
+    else
+        echo -1
+    fi
+}
+
 get_mux_bus_num()
 {
     echo $((${start_of_mux_bus}+$1))
 }
 
-# # Bus 0
-i2c_device_add 0 0x20 com_e_driver     # COM-e
+brd_type=$(get_board_type)
+brd_rev=$(get_board_rev)
 
 # # Bus 2
 i2c_device_add 2 0x3e scmcpld          # SCMCPLD
@@ -51,37 +81,42 @@ i2c_device_add 12 0x3e smb_syscpld     # SMB_SYSCPLD
 i2c_device_add $(get_mux_bus_num 15) 0x3e smb_pwrcpld # SMB_PWRCPLD
 
 # # Bus 13
-i2c_device_add 13 0x32 domfpga         # DOM FPGA 1
+i2c_device_add 13 0x60 domfpga        # DOM FPGA 1
 
 # # Bus 4
-i2c_device_add 4 0x27 pca9555          # PCA9555
+i2c_device_add 4 0x27 pca9555         # PCA9555
 
 # # Bus 5
-i2c_device_add 5 0x34 domfpga          # DOM FPGA 2
+i2c_device_add 5 0x60 domfpga         # DOM FPGA 2
 
 # # Bus 6
 i2c_device_add 6 0x51 24c64            # SMB EEPROM
-i2c_device_add 6 0x27 pca9534          # PCA9534
-i2c_device_add 6 0x20 pca9535          # PCA9535
+i2c_device_add 6 0x21 pca9534          # PCA9534
 
 # # Bus 9
-i2c_device_add 9 0x68 si5391b          # SI5391B
-i2c_device_add 9 0x2c usb2513          # USB2513
+i2c_device_add 9 0x74 si5391b          # SI5391B
 
 # # Bus 1
 i2c_device_add 1 0x3a powr1220         # SMB power sequencer
-i2c_device_add 1 0x13 ir35215          # TH3 core voltage/current monitor
-i2c_device_add 1 0x14 ir35215          # TH3 core voltage/current monitor
-i2c_device_add 1 0x60 isl68137         # TH3 serdes voltage/current monitor
-
+i2c_device_add 1 0x4d ir35215          # TH3 serdes voltage/current monitor on the left
+i2c_device_add 1 0x47 ir35215          # TH3 serdes voltage/current monitor on the right
+if [ $brd_type -eq 0 ]; then           # Only Wedge400
+i2c_device_add 1 0x60 isl68137         # TH3 core voltage/current monitor
+elif [ $brd_type -eq 1 ]; then         # Only Wedge400-2
+i2c_device_add 1 0x40 xdpe132g5c       # Wedge400-2 GB core voltage/current monitor
+i2c_device_add 1 0x43 ir35215          # Wedge400-2 GB serdes voltage/current monitor
+fi
 
 # # Bus 3
 i2c_device_add 3 0x48 tmp75            # SMB temp. sensor
 i2c_device_add 3 0x49 tmp75            # SMB temp. sensor
 i2c_device_add 3 0x4a tmp75            # SMB temp. sensor
+i2c_device_add 3 0x4b tmp75            # SMB temp. sensor
 i2c_device_add 3 0x4c tmp421           # SMB temp. sensor
-i2c_device_add 3 0x4d tmp421           # SMB temp. sensor
-i2c_device_add 3 0x4f tmp421           # SMB temp. sensor
+i2c_device_add 3 0x4e tmp421           # SMB temp. sensor
+if [ $brd_type -eq 0 ]; then           # Only Wedge400
+i2c_device_add 3 0x4f tmp422           # TH3 temp. sensor
+fi
 
 # # i2c-mux 2, channel 1
 i2c_device_add $(get_mux_bus_num 0) 0x10 adm1278  # SCM Hotswap
@@ -94,37 +129,54 @@ i2c_device_add $(get_mux_bus_num 1) 0x4d tmp75           # SCM temp. sensor
 i2c_device_add $(get_mux_bus_num 3) 0x52 24c64           # EEPROM
 
 # # i2c-mux 2, channel 5
-i2c_device_add $(get_mux_bus_num 4) 0x4d 24c02           # BMC54616S EEPROM
+i2c_device_add $(get_mux_bus_num 4) 0x50 24c02           # BMC54616S EEPROM
 
 # # i2c-mux 2, channel 6
-i2c_device_add $(get_mux_bus_num 5) 0x50 nvme            # NVME
+i2c_device_add $(get_mux_bus_num 5) 0x52 nvme            # NVME
 
 # # i2c-mux 2, channel 8
-i2c_device_add $(get_mux_bus_num 7) 0x5b si53108         # PCIE clock buffer
+i2c_device_add $(get_mux_bus_num 7) 0x6c si53108         # PCIE clock buffer
 
 # # i2c-mux 8, channel 1
+is_pem1=$(i2cget -f -y $(get_mux_bus_num 8) 0x58 0x80 > /dev/null 2>&1; echo $?)
+# # ltc4282 only support registers 0~0x4f
+if [ $is_pem1 -eq 0 ]; then
 i2c_device_add $(get_mux_bus_num 8) 0x58 psu_driver      # PSU1 Driver
+else
+i2c_device_add $(get_mux_bus_num 8) 0x58 ltc4282         # PEM1 Driver
+i2c_device_add $(get_mux_bus_num 8) 0x18 max6615         # PEM1 Driver
+fi
 
 # # i2c-mux 8, channel 2
+is_pem2=$(i2cget -f -y $(get_mux_bus_num 9) 0x58 0x80 > /dev/null 2>&1; echo $?)
+if [ $is_pem2 -eq 0 ]; then
 i2c_device_add $(get_mux_bus_num 9) 0x58 psu_driver      # PSU2 Driver
+else
+i2c_device_add $(get_mux_bus_num 9) 0x58 ltc4282         # PEM2 Driver
+i2c_device_add $(get_mux_bus_num 9) 0x18 max6615         # PEM2 Driver
+fi
 
 # # i2c-mux 8, channel 3
-i2c_device_add $(get_mux_bus_num 10) 0x50 24c02           # BCM54616 EEPROM
+i2c_device_add $(get_mux_bus_num 10) 0x50 24c02          # BCM54616 EEPROM
 
 # # i2c-mux 8, channel 4
-i2c_device_add $(get_mux_bus_num 11) 0x50 24c02           # BCM54616 EEPROM
+i2c_device_add $(get_mux_bus_num 11) 0x50 24c02          # BCM54616 EEPROM
 
 # # i2c-mux 8, channel 5
-i2c_device_add $(get_mux_bus_num 12) 0x54 24c02           # TH3 EEPROM
+i2c_device_add $(get_mux_bus_num 12) 0x54 24c02          # TH3 EEPROM
 
 # # i2c-mux 8, channel 6
-i2c_device_add $(get_mux_bus_num 13) 0x38 pwrcpld_update  # SMB PWRCPLD I2C Programming
+i2c_device_add $(get_mux_bus_num 13) 0x50 pwrcpld_update  # SMB PWRCPLD I2C Programming
 
 # # i2c-mux 11, channel 1
 i2c_device_add $(get_mux_bus_num 16) 0x3e fcbcpld         # FCB CPLD
 
 # # i2c-mux 11, channel 2
-i2c_device_add $(get_mux_bus_num 17) 0x51 24c02           # EEPROM
+if [ $brd_type -eq 0 ] && [ $brd_rev -eq 0 ]; then  # WEDGE400 & EVT1
+    i2c_device_add $(get_mux_bus_num 17) 0x51 24c02           # EEPROM
+else
+    i2c_device_add $(get_mux_bus_num 17) 0x51 24c64           # EEPROM
+fi
 
 # # i2c-mux 11, channel 3
 i2c_device_add $(get_mux_bus_num 18) 0x48 tmp75           # Temp. sensor

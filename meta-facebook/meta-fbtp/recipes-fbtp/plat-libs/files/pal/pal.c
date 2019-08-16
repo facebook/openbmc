@@ -3587,14 +3587,15 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
 }
 
 // Update the LED for the given slot with the status
-int
-pal_set_led(uint8_t fru, uint8_t status) {
+int 
+pal_set_sled_led(uint8_t fru, uint8_t status) {
   int ret = -1;
 
   gpio_desc_t *gpio = gpio_open_by_shadow("SERVER_POWER_LED");
   if (!gpio) {
     return -1;
   }
+
   //TODO: Need to check power LED control from CPLD
   if (gpio_set_value(gpio, status ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW) == 0) {
     ret = 0;
@@ -3625,7 +3626,7 @@ pal_set_hb_led(uint8_t status) {
 // Update the Identification LED for the given fru with the status
 int
 pal_set_id_led(uint8_t fru, uint8_t status) {
-  return pal_set_led(fru, status);
+  return pal_set_sled_led(fru, status);
 }
 
 // Switch the UART mux to the given fru

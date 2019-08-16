@@ -40,6 +40,7 @@ IMAGE_INSTALL += " \
   libpldm \
   ipmbd\
   ipmb-util\
+  e2fsprogs \
   "
 
 IMAGE_FEATURES += " \

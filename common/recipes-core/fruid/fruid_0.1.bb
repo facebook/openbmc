@@ -22,9 +22,9 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://fruid-util.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-LDFLAGS = " -lfruid -lpal "
-DEPENDS = "libfruid libpal "
-RDEPENDS_${PN} = "libfruid libpal"
+LDFLAGS = " -lfruid -lpal -ljansson"
+DEPENDS = "libfruid libpal jansson"
+RDEPENDS_${PN} = "libfruid libpal jansson"
 
 SRC_URI = "file://Makefile \
            file://fruid-util.c \

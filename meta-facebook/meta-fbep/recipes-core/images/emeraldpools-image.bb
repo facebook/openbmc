@@ -29,6 +29,7 @@ IMAGE_INSTALL += " \
   plat-utils \
   ipmbd \
   ipmb-util \
+  gpiod \
   "
 
 IMAGE_FEATURES += " \

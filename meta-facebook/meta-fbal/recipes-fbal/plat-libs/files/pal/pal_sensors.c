@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <fcntl.h>
@@ -8,19 +9,20 @@
 #include <string.h>
 #include <ctype.h>
 #include <openbmc/kv.h>
+#include <openbmc/libgpio.h>
+#include <openbmc/obmc-i2c.h>
+#include <openbmc/ipmb.h>
 #include "pal.h"
 #include "pal_sensors.h"
 
-#define DEBUG
-
+//#define DEBUG
 static int read_adc_val(uint8_t adc_id, float *value);
-static int read_tmp421_val(uint8_t temp_id, float *value);
+static int read_temp421(uint8_t temp_id, float *value);
 
 const uint8_t mb_sensor_list[] = {
   MB_SNR_INLET_TEMP,
-  MB_SNR_OUTLET_TEMP,
-  MB_SNR_P12V,
-  MB_SNR_P12V_SB,
+  MB_SNR_OUTLET_TEMP_R,
+  MB_SNR_OUTLET_TEMP_L,
 };
 
 // List of MB discrete sensors to be monitored
@@ -40,9 +42,11 @@ PAL_ADC_INFO adc_info_list[] = {
   {ADC6, 665, 2000},
 };
 
-PAL_TMP421_INFO tmp421_info_list[] = {
-  {TEMP_INLET, MB_INLET_TEMP_DEVICE},
-  {TEMP_OUTLET, MB_OUTLET_TEMP_DEVICE},
+//TPM421
+PAL_I2C_BUS_INFO tmp421_info_list[] = {
+  {TEMP_INLET, I2C_BUS_19, 0x4C},
+  {TEMP_OUTLET_R, I2C_BUS_19, 0x4E},
+  {TEMP_OUTLET_L, I2C_BUS_19, 0x4F},
 };
 
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNR, UNC, LCR, LNR, LNC, Pos, Neg}
@@ -207,9 +211,9 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x9D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x9E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x9F
-  {"MB_INLET_TEMP",  TEMP_INLET,  read_tmp421_val, true, {40, 0, 0, 20, 0, 0, 0, 0} }, //0xA0
-  {"MB_OUTLET_TEMP", TEMP_OUTLET, read_tmp421_val, true, {80, 0, 0, 20, 0, 0, 0, 0} }, //0xA1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xA2
+  {"MB_INLET_TEMP",    TEMP_INLET,    read_temp421, true, {40, 0, 0, 20, 0, 0, 0, 0} }, //0xA0
+  {"MB_OUTLET_TEMP_R", TEMP_OUTLET_R, read_temp421, true, {80, 0, 0, 20, 0, 0, 0, 0} }, //0xA1
+  {"MB_OUTLET_TEMP_L", TEMP_OUTLET_L, read_temp421, true, {80, 0, 0, 20, 0, 0, 0, 0} }, //0xA2
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xA3
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xA4
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xA5
@@ -348,20 +352,20 @@ read_device_float(const char *device, float *value) {
   int rc;
   char tmp[10];
 
-  fp = fopen(device, "r");
+  fp = popen(device, "r");
   if (!fp) {
     int err = errno;
 #ifdef DEBUG
-    syslog(LOG_INFO, "failed to open device %s", device);
+    syslog(LOG_WARNING, "failed to open device %s", device);
 #endif
     return err;
   }
   rc = fscanf(fp, "%s", tmp);
-  fclose(fp);
+  pclose(fp);
 
   if (rc != 1) {
 #ifdef DEBUG
-    syslog(LOG_INFO, "failed to read device %s", device);
+    syslog(LOG_WARNING, "failed to read device %s", device);
 #endif
     return ENOENT;
   }
@@ -405,16 +409,20 @@ Interface: temp_id: temperature id
            return: error code
 ============================================*/
 static int
-read_tmp421_val(uint8_t temp_id, float *value) {
-  char full_name[MAX_DEVICE_NAME_SIZE];
+read_temp421(uint8_t temp_id, float *value) {
+  char cmd[MAX_DEVICE_NAME_SIZE];
+  char path[MAX_DEVICE_NAME_SIZE];
   float tmp=0;
   int ret=0;
+  uint8_t bus = tmp421_info_list[temp_id].bus;
+  uint8_t addr = tmp421_info_list[temp_id].slv_addr;
   
-  snprintf(full_name, MAX_DEVICE_NAME_SIZE, tmp421_info_list[temp_id].device);
+  snprintf(path, MAX_DEVICE_NAME_SIZE, MB_TEMP_DEVICE, bus, bus, addr);
+  snprintf(cmd, MAX_DEVICE_NAME_SIZE, "cat %s", path);
 #ifdef DEBUG 
-  syslog(LOG_WARNING, "%s %s\n", __func__, full_name);
+  syslog(LOG_WARNING, "%s %s\n", __func__, cmd);
 #endif  
-  ret = read_device_float(full_name, &tmp);
+  ret = read_device_float(cmd, &tmp);
   if (ret != 0) {
     return ret;
   }
@@ -441,21 +449,19 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   switch(fru) {
   case FRU_MB:
     if (server_off) {
+      poweron_10s_flag = 0;
       if (mb_sensor_map[sensor_num].stby_read == true ) {
         ret = mb_sensor_map[sensor_num].read_sensor(id, (float*) value);  
       } else {
         ret = READING_NA;
       }
     } else {
-      if((poweron_10s_flag < 5) && ((sensor_num == MB_SNR_HSC_IN_VOLT) ||
-        (sensor_num == MB_SNR_HSC_OUT_CURR) || (sensor_num == MB_SNR_HSC_IN_POWER) ||
+      if((poweron_10s_flag < 5) && ((sensor_num == MB_SNR_HSC_VIN) ||
+        (sensor_num == MB_SNR_HSC_IOUT) || (sensor_num == MB_SNR_HSC_PIN) ||
         (sensor_num == MB_SNR_HSC_TEMP) ||
         (sensor_num == MB_SNR_FAN0_TACH) || (sensor_num == MB_SNR_FAN1_TACH))) {
   
-        if(sensor_num == MB_SNR_HSC_IN_POWER){
-          poweron_10s_flag++;
-        }
-  
+        poweron_10s_flag++;
         ret = READING_NA;
         break;
       }

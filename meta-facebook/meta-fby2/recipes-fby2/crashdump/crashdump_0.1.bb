@@ -27,6 +27,7 @@ SRC_URI = "file://dump.sh \
             file://crashdump_pcie \
             file://crashdump_pcie_bus \
             file://autodump.sh \
+            file://crashdump_nd.sh \
             file://COPYING \
            "
 
@@ -34,6 +35,7 @@ S = "${WORKDIR}"
 
 binfiles += "dump.sh \
              autodump.sh \
+             crashdump_nd.sh \
             "
 
 pkgdir = "crashdump"

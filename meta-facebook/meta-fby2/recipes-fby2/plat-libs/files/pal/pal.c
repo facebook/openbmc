@@ -2,7 +2,7 @@
  *
  * Copyright 2015-present Facebook. All Rights Reserved.
  *
- * This file contains code to support IPMI2.0 Specificaton available @
+ * This file contains code to support IPMI2.0 Specification available @
  * http://www.intel.com/content/www/us/en/servers/ipmi/ipmi-specifications.html
  *
  * This program is free software; you can redistribute it and/or modify
@@ -136,12 +136,67 @@
 #define NON_DEBUG_MODE 0xff
 
 #if defined CONFIG_FBY2_ND
-#define CPER_CRASHDUMP_FILE "/mnt/data/cper_crashdump_slot"
-#define CPER_HEADER_SIZE 13
-#define CPER_TOTAL_PAGE_INDEX 11
-#define CPER_CURRENT_PAGE_INDEX 12
-#define CPER_COMMAND_TIME_RANGE 60
-#endif
+/* MCA bank data format */
+enum {
+  MAC_BANK_TYPE_UNKNOWN = 0,
+  MCA_BANK_TYPE_NORMAL = 1,
+  MCA_BANK_TYPE_VIRTUAL = 2,
+};
+
+typedef struct {
+  uint8_t bank_id;
+  uint8_t core_id;
+} valid_bank_id;
+
+typedef struct {
+  uint8_t bank_type;
+  uint8_t bank_fmt_ver;
+  union { /* bank data */
+    struct { /* normal mca_bank */
+      uint8_t bank_id;
+      uint8_t core_id;
+      uint32_t mca_ctrl_lf;
+      uint32_t mca_ctrl_hf;
+      uint32_t mca_status_lf;
+      uint32_t mca_status_hf;
+      uint32_t mca_addr_lf;
+      uint32_t mca_addr_hf;
+      uint32_t mca_misc0_lf;
+      uint32_t mca_misc0_hf;
+      uint32_t mca_ctrl_mask_lf;
+      uint32_t mca_ctrl_mask_hf;
+      uint32_t mca_config_lf;
+      uint32_t mca_config_hf;
+      uint32_t mca_ipid_lf;
+      uint32_t mca_ipid_hf;
+      uint32_t mca_synd_lf;
+      uint32_t mca_synd_hf;
+      uint32_t mca_destat_lf;
+      uint32_t mca_destat_hf;
+      uint32_t mca_deaddr_lf;
+      uint32_t mca_deaddr_hf;
+      uint32_t mca_misc1_lf;
+      uint32_t mca_misc1_hf;
+    } __attribute__((packed));
+    struct { /* virtual bank */
+      uint16_t bank_reserved;
+      uint32_t bank_s5_reset_status;
+      uint32_t bank_breakevent;
+      uint16_t valid_bank_num;
+      valid_bank_id valid_bank_list[1];
+    } __attribute__((packed));
+  };
+} __attribute__((packed)) mca_bank;
+
+#define CRASHDUMP_ND_BIN       "/usr/local/bin/crashdump_nd.sh"
+#define MAX_CRASHDUMP_CMD_SIZE 1024
+#define MAX_CRASHDUMP_FILE_NAME_LENGTH 128
+#define MAX_VAILD_LIST_LENGTH 128
+#define MCA_CMD_HEADER_LENGTH 4
+#define MCA_DECODED_LOG_PATH "/mnt/data/crashdump_slot%d_mca"
+
+#endif /* CONFIG_FBY2_ND */
+
 #define TIME_SYNC_KEY "time_sync"
 #define SYNC_DATE_SCRIPT "/usr/local/bin/sync_date.sh"
 
@@ -367,15 +422,6 @@ static const char *imc_log_path[MAX_NODES+1] = {
   IMC_LOG_FILE "3",
   IMC_LOG_FILE "4"
 };
-
-#if defined CONFIG_FBY2_ND
-static const char *cper_dump_path[MAX_NODES] = {
-  CPER_CRASHDUMP_FILE "1",
-  CPER_CRASHDUMP_FILE "2",
-  CPER_CRASHDUMP_FILE "3",
-  CPER_CRASHDUMP_FILE "4"
-};
-#endif
 
 struct ras_pcie_aer_info {
   char *name;
@@ -5506,7 +5552,7 @@ parse_psb_error_sel_nd(uint8_t *event_data, char *error_log) {
     default:
       strcat(error_log, "Unknown");
       break;
-  } 
+  }
   return 0;
 }
 
@@ -5521,7 +5567,7 @@ parse_usb_error_sel_nd(uint8_t fru, uint8_t *event_data, char *error_log) {
       strcat(error_log, " Uncorrectable");
   }
   snprintf(temp_log, sizeof(temp_log), " (Error Source %02X)", ed[1]);
-  strcat(error_log, temp_log);  
+  strcat(error_log, temp_log);
   return 0;
 }
 
@@ -5538,7 +5584,7 @@ parse_smn_error_sel_nd(uint8_t fru, uint8_t *event_data, char *error_log) {
   snprintf(temp_log, sizeof(temp_log), " (BUS ID %02X)", ed[1]);
   strcat(error_log, temp_log);
   snprintf(temp_log, sizeof(temp_log), " Error Source %02X", ed[2] & 0x0F);
-  strcat(error_log, temp_log);  
+  strcat(error_log, temp_log);
   return 0;
 }
 
@@ -9915,30 +9961,171 @@ memory_error_sec_sel_parse(uint8_t slot, uint8_t *req_data, uint8_t req_len)
 }
 
 #if defined(CONFIG_FBY2_ND)
-uint8_t
-save_cper_to_binary_file(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
-  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
-  uint8_t total_page_num = 0;
-  uint8_t current_page_num = 0;
-  static uint32_t last_dump_ts[MAX_NODES] = {0};
-  struct timespec ts;
-  FILE *pFile;
 
-  if(req_len > CPER_HEADER_SIZE) {
-    total_page_num = req_data[CPER_TOTAL_PAGE_INDEX];
-    current_page_num = req_data[CPER_CURRENT_PAGE_INDEX];
-    //check page number is vaild
-    if(total_page_num >= current_page_num) {
-      clock_gettime(CLOCK_MONOTONIC, &ts);
-      pFile = fopen(cper_dump_path[slot], (ts.tv_sec > last_dump_ts[slot])?"w":"a+");
-      last_dump_ts[slot] = ts.tv_sec + CPER_COMMAND_TIME_RANGE;
-      if( NULL == pFile ) {
-          return completion_code;
-      } else {
-          //Remove 0~12 byte define Header
-          fwrite((req_data + CPER_HEADER_SIZE),1, (req_len - CPER_HEADER_SIZE), pFile);
-      }
-      fclose(pFile);
+static void* generate_dump(void* arg) {
+  pthread_detach(pthread_self());
+  char* cmd = malloc(sizeof(char) * MAX_CRASHDUMP_CMD_SIZE);
+  if (arg && cmd) {
+    int slot_id = *(int*)arg;
+    memset(cmd, 0, MAX_CRASHDUMP_CMD_SIZE);
+    snprintf(cmd, MAX_CRASHDUMP_CMD_SIZE, "%s slot%d", CRASHDUMP_ND_BIN, slot_id);
+    system(cmd);
+
+    free(cmd);
+    free(arg);
+  }
+
+  pthread_exit(NULL);
+}
+
+uint8_t save_mca_to_file(
+    uint8_t slot,
+    uint8_t* req_data,
+    uint8_t req_len,
+    uint8_t* res_data,
+    uint8_t* res_len) {
+  static int mca_list_counter[MAX_NODES] = {0};
+  static valid_bank_id list_vaild_pair[MAX_NODES][MAX_VAILD_LIST_LENGTH];
+
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+
+  FILE* pFile;
+  char file_path[MAX_CRASHDUMP_FILE_NAME_LENGTH] = "";
+  bool last_bank = false;
+
+  /* slot is 0 based, slot_id is 1 based */
+  snprintf(
+      file_path, MAX_CRASHDUMP_FILE_NAME_LENGTH, MCA_DECODED_LOG_PATH, slot + 1);
+
+  pFile = fopen(file_path, "a+");
+  if (NULL == pFile)
+    return completion_code;
+
+  mca_bank* pbank = (mca_bank*)req_data;
+  if (MCA_BANK_TYPE_NORMAL == pbank->bank_type) {
+    fprintf(
+        pFile,
+        " %s : 0x%02X, %s : 0x%02X \n",
+        "Bank ID",
+        pbank->bank_id,
+        "Core ID",
+        pbank->core_id);
+    fprintf(
+        pFile,
+        " %-15s : 0x%08X_%08X \n",
+        "MCA_CTRL",
+        pbank->mca_ctrl_hf,
+        pbank->mca_ctrl_lf);
+    fprintf(
+        pFile,
+        " %-15s : 0x%08X_%08X \n",
+        "MCA_STATUS",
+        pbank->mca_status_hf,
+        pbank->mca_status_lf);
+    fprintf(
+        pFile,
+        " %-15s : 0x%08X_%08X \n",
+        "MCA_ADDR",
+        pbank->mca_addr_hf,
+        pbank->mca_addr_lf);
+    fprintf(
+        pFile,
+        " %-15s : 0x%08X_%08X \n",
+        "MCA_MISC0",
+        pbank->mca_misc0_hf,
+        pbank->mca_misc0_lf);
+    fprintf(
+        pFile,
+        " %-15s : 0x%08X_%08X \n",
+        "MCA_CTRL_MASK",
+        pbank->mca_ctrl_mask_hf,
+        pbank->mca_ctrl_mask_lf);
+    fprintf(
+        pFile,
+        " %-15s : 0x%08X_%08X \n",
+        "MCA_CONFIG",
+        pbank->mca_config_hf,
+        pbank->mca_config_lf);
+    fprintf(
+        pFile,
+        " %-15s : 0x%08X_%08X \n",
+        "MCA_IPID",
+        pbank->mca_ipid_hf,
+        pbank->mca_ipid_lf);
+    fprintf(
+        pFile,
+        " %-15s : 0x%08X_%08X \n",
+        "MCA_SYND",
+        pbank->mca_synd_hf,
+        pbank->mca_synd_lf);
+    fprintf(
+        pFile,
+        " %-15s : 0x%08X_%08X \n",
+        "MCA_DESTAT",
+        pbank->mca_destat_hf,
+        pbank->mca_destat_lf);
+    fprintf(
+        pFile,
+        " %-15s : 0x%08X_%08X \n",
+        "MCA_DEADDR",
+        pbank->mca_deaddr_hf,
+        pbank->mca_deaddr_lf);
+    fprintf(
+        pFile,
+        " %-15s : 0x%08X_%08X \n",
+        "MCA_MISC1",
+        pbank->mca_misc1_hf,
+        pbank->mca_misc1_lf);
+
+    list_vaild_pair[slot][mca_list_counter[slot]].bank_id = pbank->bank_id;
+    list_vaild_pair[slot][mca_list_counter[slot]].core_id = pbank->core_id;
+    mca_list_counter[slot]++;
+
+  } else if (MCA_BANK_TYPE_VIRTUAL == pbank->bank_type) {
+    fprintf(pFile, " %s : \n", "Virtual Bank");
+    fprintf(
+        pFile,
+        " %-15s : 0x%08X \n",
+        "S5_RESET_STATUS",
+        pbank->bank_s5_reset_status);
+    fprintf(pFile, " %-15s : 0x%08X \n", "BREAKEVENT", pbank->bank_breakevent);
+    fprintf(pFile, " %-15s : ", "VAILD LIST");
+    for (int i = 0; i < pbank->valid_bank_num; i++) {
+      fprintf(
+          pFile,
+          "(0x%02x,0x%02x) ",
+          pbank->valid_bank_list[i].bank_id,
+          pbank->valid_bank_list[i].core_id);
+    }
+
+    fprintf(pFile, "\n");
+    fprintf(pFile, " %-15s : ", "RECEIVE LIST");
+    for (int i = 0; i < mca_list_counter[slot]; i++) {
+      fprintf(
+          pFile,
+          "(0x%02x,0x%02x) ",
+          list_vaild_pair[slot][i].bank_id,
+          list_vaild_pair[slot][i].core_id);
+    }
+
+    fprintf(pFile, "\n");
+
+    last_bank = true;
+  } else {
+    fprintf(pFile, "unknown MCA bank type: %d \n", pbank->bank_type);
+  }
+
+  fclose(pFile);
+
+  if (last_bank) {
+    mca_list_counter[slot] = 0;
+
+    pthread_t tid_crashdump;
+    int* slot_id = malloc(sizeof(int));
+    *slot_id = slot + 1; // slot_id is 1 based
+    if (pthread_create(&tid_crashdump, NULL, generate_dump, (void*)slot_id)) {
+      free(slot_id);
+      return completion_code;
     }
   }
 
@@ -9952,13 +10139,17 @@ pal_add_cper_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   uint8_t completion_code = CC_UNSPECIFIED_ERROR;
 
 #if defined(CONFIG_FBY2_ND)
-  if ( (slot > 0) && (slot <= MAX_NODES) ) {
-      // slot is 1 based
-      save_cper_to_binary_file(slot - 1 , req_data, req_len - IPMI_MN_REQ_HDR_SIZE, res_data, res_len);
-      return CC_SUCCESS;
-   } else {
-       return CC_PARAM_OUT_OF_RANGE;
-   }
+  if ((slot > 0) && (slot <= MAX_NODES)) {
+    completion_code = save_mca_to_file(
+        slot - 1, /* slot is 1 based */
+        req_data + MCA_CMD_HEADER_LENGTH,
+        req_len - IPMI_MN_REQ_HDR_SIZE - MCA_CMD_HEADER_LENGTH,
+        res_data,
+        res_len);
+    return completion_code;
+  } else {
+    return CC_PARAM_OUT_OF_RANGE;
+  }
 #endif
 
   if(memcmp(Memory_Error_Section, req_data+8, sizeof(Memory_Error_Section)) == 0) {

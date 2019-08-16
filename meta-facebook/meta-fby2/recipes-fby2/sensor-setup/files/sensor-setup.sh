@@ -127,6 +127,8 @@ rev_id2=`cat /sys/class/gpio/gpio194/value`
 
 if [[ $board_id == "1" && $rev_id2 == "1" ]]; then
    spb_type=1
+elif [[ $board_id == "1" && $rev_id2 == "0" ]]; then
+   spb_type=2
 else
    spb_type=0
 fi
@@ -148,6 +150,21 @@ if [ $spb_type == "1" ]; then
    #(3608*10-20475)/ (800*0.3)= 65.0208A
    # 65.0208* 0.92259 = 59.9875A
    i2cset -y -f 10 0x40 0x4a 0x0e18 w
+elif [ $spb_type == "2" ]; then
+   # FBND Platform
+   # Clear PEAK_PIN & PEAK_IOUT register
+   i2cset -y -f 10 0x40 0xd0 0x0000 w
+   i2cset -y -f 10 0x40 0xda 0x0000 w
+
+   #
+   i2cset -y -f 10 0x40 0xd4 0x3f1c w
+   i2cset -y -f 10 0x40 0xd5 0x0400 w
+
+   # calibrtion to get HSC to trigger 63A based on EE team input
+   # 0xe64 = 3686 (dec)
+   #(3684*10-20475)/ (800*0.3)= 68.1875A
+   # 68.1875* 0.92355 = 62.9746A
+   i2cset -y -f 10 0x40 0x4a 0x0e64 w
 else
    # Yosemite V2 Platform
    # Clear PEAK_PIN & PEAK_IOUT register

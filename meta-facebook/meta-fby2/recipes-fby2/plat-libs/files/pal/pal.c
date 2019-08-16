@@ -391,6 +391,60 @@ static const struct power_coeff pwr_cali_table[] = {
   { 0.0,    0.0 }
 };
 
+static const struct power_coeff nd_curr_cali_table[] = {
+  { 5.61,  0.90223 },
+  { 8.86,  0.90839 },
+  { 11.02, 0.91118 },
+  { 14.25, 0.91505 },
+  { 16.42, 0.91578 },
+  { 19.65, 0.91805 },
+  { 21.84, 0.91753 },
+  { 25.08, 0.91916 },
+  { 27.24, 0.91919 },
+  { 30.47, 0.92037 },
+  { 32.63, 0.92073 },
+  { 35.88, 0.92085 },
+  { 38.04, 0.92099 },
+  { 41.27, 0.92170 },
+  { 43.44, 0.92161 },
+  { 46.69, 0.92188 },
+  { 48.84, 0.92204 },
+  { 52.06, 0.92261 },
+  { 54.22, 0.92296 },
+  { 57.47, 0.92291 },
+  { 59.60, 0.92354 },
+  { 64.99, 0.92355 },
+  { 70.36, 0.92427 },
+  { 0.0,   0.0 }
+};
+
+static const struct power_coeff nd_pwr_cali_table[] = {
+  { 67.93,  0.90470 },
+  { 107.03, 0.91098 },
+  { 133.02, 0.91341 },
+  { 171.78, 0.91617 },
+  { 197.46, 0.91742 },
+  { 235.96, 0.91852 },
+  { 261.49, 0.91934 },
+  { 297.14, 0.92767 },
+  { 324.34, 0.92010 },
+  { 361.76, 0.92101 },
+  { 386.67, 0.92129 },
+  { 423.91, 0.92169 },
+  { 448.61, 0.92200 },
+  { 485.48, 0.92252 },
+  { 509.98, 0.92255 },
+  { 546.53, 0.92318 },
+  { 570.71, 0.92309 },
+  { 606.66, 0.92362 },
+  { 630.64, 0.92402 },
+  { 666.14, 0.92407 },
+  { 688.79, 0.92530 },
+  { 748.16, 0.92401 },
+  { 806.35, 0.92557 },
+  { 0.0,    0.0 }
+};
+
 static const char *sock_path_asd_bic[MAX_NODES+1] = {
   "",
   SOCK_PATH_ASD_BIC "_1",
@@ -3937,6 +3991,29 @@ get_sensor_desc(uint8_t fru, uint8_t snr_num) {
 }
 
 int
+pal_check_board_type(uint8_t *status) {
+  char path[64] = {0};
+  int val_board_id, val_rev_id2;
+
+  snprintf(path, sizeof(path), GPIO_VAL, GPIO_BOARD_ID);
+  if (read_device(path, &val_board_id)) {
+    return -1;
+  }
+
+  snprintf(path, sizeof(path), GPIO_VAL, GPIO_BOARD_REV_ID2);
+  if (read_device(path, &val_rev_id2)) {
+    return -1;
+  }
+
+  if ((1 == val_board_id) && (0 == val_rev_id2))
+    *status = 1;
+  else
+    *status = 0;
+
+  return 0;
+}
+
+int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   uint8_t status;
@@ -4011,11 +4088,21 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   else {
     // On successful sensor read
     if (fru == FRU_SPB) {
+      uint8_t is_nd_board = 0;
+      pal_check_board_type(&is_nd_board);
       if (sensor_num == SP_SENSOR_HSC_OUT_CURR || sensor_num == SP_SENSOR_HSC_PEAK_IOUT) {
-        power_value_adjust(curr_cali_table, (float *)value);
+        if (is_nd_board == 1) {
+          power_value_adjust(nd_curr_cali_table, (float *)value);
+        } else {
+          power_value_adjust(curr_cali_table, (float *)value);
+        }
       }
       if (sensor_num == SP_SENSOR_HSC_IN_POWER || sensor_num == SP_SENSOR_HSC_PEAK_PIN) {
-        power_value_adjust(pwr_cali_table, (float *)value);
+        if (is_nd_board == 1) {
+          power_value_adjust(nd_pwr_cali_table, (float *)value);
+        } else {
+          power_value_adjust(pwr_cali_table, (float *)value);
+        }
       }
       if (sensor_num == SP_SENSOR_INLET_TEMP) {
         apply_inlet_correction((float *)value);

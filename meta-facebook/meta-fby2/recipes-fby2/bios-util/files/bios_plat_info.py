@@ -1,11 +1,28 @@
 #!/usr/bin/env python
 import os.path
 import sys
+import ctypes
 from subprocess import PIPE, Popen
 from time import sleep
 
 from bios_ipmi_util import *
 
+libfby2 = '/usr/lib/libfby2_common.so'
+TYPE_SPB_YV250 = 1 # The SPB type of YV2.50 is 1; the SPB type of YV2 is 0
+
+def load_library(path, name):
+    if os.path.isfile(path) :
+        binary = ctypes.cdll.LoadLibrary(path)
+    else:
+        print("Failed to load {0} library".format (name))
+
+    if (binary is None):
+        print("Failed to load {0} library".format (name))
+
+    return binary
+
+def get_fby2_common_library():
+    return load_library(libfby2, "libfby2")
 
 def get_server_type(fru):
     try:
@@ -62,7 +79,12 @@ def plat_info(fru):
     if SKU_ID == 0:
         SKU = "Yosemite"
     elif SKU_ID == 1:
-        SKU = "Yosemite V2"
+        fby2_common_lib = get_fby2_common_library()
+        spb_type = fby2_common_lib.fby2_common_get_spb_type()
+        if spb_type == TYPE_SPB_YV250:
+          SKU = "Yosemite V2.50"
+        else:
+          SKU = "Yosemite V2"
     elif SKU_ID == 2:
         SKU = "Triton-Type 5A (Left sub-system)"
     elif SKU_ID == 3:
@@ -115,7 +137,7 @@ def pcie_config(fru):
         config = "2x GP + 2x " + server_name
     elif result[0] == "0F":
         config = "2x CF + 2x " + server_name
-    elif result[0] == "10":
+    elif result[0] == "11":
         config = "2x GPv2 + 2x " + server_name
     else:
         config = "Unknown"

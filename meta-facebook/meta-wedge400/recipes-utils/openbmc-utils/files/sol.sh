@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2018-present Facebook. All Rights Reserved.
+# Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -17,6 +17,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+. /usr/local/bin/openbmc-utils.sh
+
 CONSOLE_SH=/usr/local/bin/us_console.sh
 FILE=/etc/us_pseudo_tty
 TTY=/dev/ttyS0
@@ -54,7 +56,7 @@ start_sol_session() {
 
 # if mTerm server is running use mTerm_client to connect to userver
 # otherwise fallback to the old method
-echo 0x3 > /sys/bus/i2c/devices/12-003e/uart_selection
+echo 0x3 > $SMBCPLD_SYSFS_DIR/uart_selection
 if mTerm_server_running; then
   exec /usr/local/bin/mTerm_client wedge
 else

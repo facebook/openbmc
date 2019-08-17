@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2018-present Facebook. All Rights Reserved.
+# Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -34,7 +34,7 @@ usage(){
     echo "Usage:"
     echo "     $program <dev> <color>"
     echo ""
-    echo "     <dev>: sys/smb/psu/sts"
+    echo "     <dev>: sts/smb/psu/fan"
     echo "     <color>: off/red/blue/yellow"
 }
 
@@ -59,7 +59,7 @@ esac
 
 if [ "$3" == "0" ] || [ "$3" == "4" ]; then
 
-  if [ "$1" == "smb" ] || [ "$1" == "sys" ]; then
+  if [ "$1" == "smb" ] || [ "$1" == "fan" ]; then
     val=$(($val << 3))
     IO0_VAL=$((($IO0 & 0x7) | $val))
     IO1_VAL=$((($IO1 & 0x7) | $val))
@@ -71,7 +71,7 @@ if [ "$3" == "0" ] || [ "$3" == "4" ]; then
     exit -1
   fi
 
-  if [ "$1" == "sts" ] || [ "$1" == "sys" ]; then
+  if [ "$1" == "sts" ] || [ "$1" == "fan" ]; then
     i2cset -f -y 6 0x20 0x2 $IO0_VAL
   else
     i2cset -f -y 6 0x20 0x3 $IO1_VAL
@@ -79,7 +79,7 @@ if [ "$3" == "0" ] || [ "$3" == "4" ]; then
 
 else 
 
-  if [ "$1" == "sys" ] || [ "$1" == "smb" ]; then
+  if [ "$1" == "fan" ] || [ "$1" == "smb" ]; then
     val=$(($val << 3))
     IO0_VAL=$((($IO0 & 0x7) | $val))
     IO1_VAL=$((($IO1 & 0x7) | $val))
@@ -91,7 +91,7 @@ else
     exit -1
   fi
 
-  if [ "$1" == "sys" ] || [ "$1" == "sts" ]; then
+  if [ "$1" == "fan" ] || [ "$1" == "sts" ]; then
     i2cset -f -y 6 0x20 0x2 $IO0_VAL
   else
     i2cset -f -y 6 0x20 0x3 $IO1_VAL

@@ -20,8 +20,6 @@
 
 . /usr/local/bin/openbmc-utils.sh
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
-
 board_rev=$(wedge_board_rev)
 
 smb_ver=$(cat $SMBCPLD_SYSFS_DIR/cpld_ver | head -n 1)

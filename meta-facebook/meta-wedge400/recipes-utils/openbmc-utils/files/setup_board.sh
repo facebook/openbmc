@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2018-present Facebook. All Rights Reserved.
+# Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -35,6 +35,34 @@ board_rev=$(wedge_board_rev)
 # Enable the isolation buffer between BMC and COMe i2c bus
 echo 0 > ${SCMCPLD_SYSFS_DIR}/com_exp_pwr_enable
 
-# Setup management port LED
-/usr/local/bin/setup_mgmt.sh led &
+# Make the backup BIOS flash connect to COMe instead of BMC
+#echo 0 > ${SCMCPLD_SYSFS_DIR}/com_spi_oe_n
+#echo 0 > ${SCMCPLD_SYSFS_DIR}/com_spi_sel
 
+# Setup management port LED
+#/usr/local/bin/setup_mgmt.sh led &
+
+# Setup USB Serial to RS485
+echo 0 > ${SMBCPLD_SYSFS_DIR}/cpld_usb_mux_sel_0
+echo 0 > ${SMBCPLD_SYSFS_DIR}/cpld_usb_mux_sel_1
+
+# Init server_por_cfg
+#if [ ! -f "/mnt/data/kv_store/server_por_cfg" ]; then
+#    /usr/bin/kv set server_por_cfg on persistent
+#fi
+
+# Force COMe's UART connect to BMC UART-5 and FB USB debug
+# UART connect to BMC UART-2
+echo 0x3 > $SMBCPLD_SYSFS_DIR/uart_selection
+
+# Read board type from SMB CPLD and keep in cache store
+brd_type=$(head -n 1 $SMBCPLD_SYSFS_DIR/board_type)
+mkdir /tmp/cache_store
+echo $brd_type > /tmp/cache_store/board_type
+
+# Check board type to select lmsensor configuration
+if [ $((brd_type)) -eq $((0x00)) ]; then
+  cp /etc/sensors.d/custom/wedge400.conf /etc/sensors.d/wedge400.conf
+elif  [ $((brd_type)) -eq $((0x01)) ]; then
+  cp /etc/sensors.d/custom/wedge400-2.conf /etc/sensors.d/wedge400-2.conf
+fi

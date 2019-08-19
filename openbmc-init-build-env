@@ -59,10 +59,6 @@ done
 unset DISTRO_DEFAULT DISTRO_OVERRIDES
 unset override override_plat override_distro
 
-if [ -d "facebook" ]; then
-  facebook/facebookify.sh "$TEMPLATECONF"
-fi
-
 echo "Init build environment for platform '${platform}' with distro ${_distro}..."
 unset platform
 . yocto/${_distro}/poky/oe-init-build-env $@

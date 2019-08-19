@@ -10,7 +10,7 @@
 # for more details.
 #
 
-obj-m := pwr1014a.o
+obj-m := pwr1014a.o ltc4281.o
 
 ccflags-y += -I$(KERNEL_EXTRA_HEADER_PATH)
 

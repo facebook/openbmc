@@ -19,6 +19,7 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
+# shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
 #
@@ -57,6 +58,7 @@ i2c_device_add 7 0x50 24c02         # BMC PHY EEPROM
 i2c_device_add 7 0x51 24c64         # PFE1100 power supply EEPROM
 i2c_device_add 7 0x52 24c64         # PFE1100 power supply EEPROM
 i2c_device_add 7 0x6f ltc4151
+i2c_device_add 7 0x4a ltc4281
 
 # Bus 8
 i2c_device_add 8 0x33 fancpld

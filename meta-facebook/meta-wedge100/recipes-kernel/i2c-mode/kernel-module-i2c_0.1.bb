@@ -21,6 +21,7 @@ PV = "0.1"
 
 SRC_URI = "file://Makefile \
            file://pwr1014a.c \
+           file://ltc4281.c \
            file://COPYING \
           "
 
@@ -30,4 +31,4 @@ DEPENDS += "kernel-module-i2c-dev-sysfs"
 
 RDEPENDS_${PN} += "kernel-module-i2c-dev-sysfs"
 
-KERNEL_MODULE_AUTOLOAD += "pwr1014a"
+KERNEL_MODULE_AUTOLOAD += "pwr1014a ltc4281"

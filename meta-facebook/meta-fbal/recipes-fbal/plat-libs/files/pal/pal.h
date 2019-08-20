@@ -144,6 +144,7 @@ bool is_server_off(void);
 void pal_update_ts_sled();
 void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 int read_device(const char *device, int *value);
+int pal_get_rst_btn(uint8_t *status);
 
 
 #ifdef __cplusplus

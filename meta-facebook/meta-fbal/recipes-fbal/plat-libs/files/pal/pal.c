@@ -39,6 +39,7 @@
 #define GPIO_POWER "FM_BMC_PWRBTN_OUT_R_N"
 #define GPIO_POWER_GOOD "PWRGD_SYS_PWROK"
 #define GPIO_POWER_RESET "RST_BMC_RSTBTN_OUT_R_N"
+#define GPIO_RESET_BTN_IN "FP_BMC_RST_BTN_N" 
 #define GPIO_BLADE_ID0 "FM_BLADE_ID_0"
 #define GPIO_BLADE_ID1 "FM_BLADE_ID_1"
 #define GPIO_LOCATE_LED "FP_LOCATE_LED"
@@ -524,6 +525,24 @@ error:
   gpio_close(gdesc);
   return ret;
 }
+
+// Return the front panel's Reset Button status
+int
+pal_get_rst_btn(uint8_t *status) {
+  int ret = -1;
+  gpio_value_t value;
+  gpio_desc_t *desc = gpio_open_by_shadow(GPIO_RESET_BTN_IN);
+  if (!desc) {
+     return -1;
+  }
+  if (0 == gpio_get_value(desc, &value)) {
+    *status = value == GPIO_VALUE_HIGH ? 0 : 1;
+    ret = 0;
+  }
+  gpio_close(desc);
+  return ret;
+}  
+
 
 // Update the Identification LED for the given fru with the status
 int

@@ -21,7 +21,7 @@ IMAGE_INSTALL += " \
   fruid \
   sensor-util \
   sensor-mon \
-  log-util \
+  log-util-v2 \
   kcsd \
   healthd \
   fpc-util \
@@ -34,12 +34,9 @@ IMAGE_INSTALL += " \
   ipmitool \
   bios-util \
   vboot-utils \
-  libncsi \
   ncsi-util \
-  ncsid \
-  libpldm \
-  ipmbd\
-  ipmb-util\
+  ipmbd \
+  ipmb-util \
   e2fsprogs \
   "
 

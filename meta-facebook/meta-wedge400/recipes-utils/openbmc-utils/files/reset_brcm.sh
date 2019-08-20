@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2018-present Facebook. All Rights Reserved.
+# Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -31,6 +31,7 @@
 # There is another sysfs file, 'cpld_mac_pcie_perst_l', which can be used
 # to control the PCI reset pin separately. However, we don't use it for now
 # as we depend on the CPLD for the correct reset sequence.
+
 echo 0 > $PWR_TH_RST_SYSFS
 sleep 1
 echo 1 > $PWR_TH_RST_SYSFS

@@ -146,7 +146,7 @@ gpio_set FP_FAULT_LED_N 1
 
 # FP_ID_LED_N, Power LED
 gpio_export FP_ID_LED_N GPIOE7
-gpio_set FP_ID_LED_N 1
+gpio_set FP_ID_LED_N 0
 
 # To enable GPIOF
 #devmem_clear_bit $(scu_addr 80) 24
@@ -192,7 +192,6 @@ gpio_export IRQ_BMC_PRDY_N GPIOF7
 #devmem_clear_bit $(scu_addr 84) 4
 #devmem_clear_bit $(scu_addr 84) 5
 #devmem_clear_bit $(scu_addr 84) 6
-#devmem_clear_bit $(scu_addr 84) 7
 #devmem_clear_bit $(scu_addr 94) 12
 
 # FM_CPU1_DISABLE_COD_N
@@ -219,49 +218,46 @@ gpio_export IRQ_BMC_PCH_SMI_LPC_N GPIOG5
 # IRQ_SMB3_M2_ALERT_N
 gpio_export IRQ_SMB3_M2_ALERT_N GPIOG6
 
-# FM_INA230_7_ALERT
-gpio_export FM_INA230_7_ALERT GPIOG7
-
 # To enable GPIOH
 #devmem_clear_bit $(scu_addr 90) 7
 #devmem_clear_bit $(scu_addr 94) 5
 #devmem_clear_bit $(scu_addr 94) 6
 #devmem_clear_bit $(scu_addr 94) 7
 
-devmem_set_bit 0x1e780068 24
-devmem_clear_bit 0x1e78006c 24
-
 # LED_POSTCODE_0
 gpio_export LED_POSTCODE_0 GPIOH0
-gpio_set LED_POSTCODE_0 1
+gpio_set LED_POSTCODE_0 0
 
 # LED_POSTCODE_1
 gpio_export LED_POSTCODE_1 GPIOH1
-gpio_set LED_POSTCODE_1 1
+gpio_set LED_POSTCODE_1 0
 
 # LED_POSTCODE_2
 gpio_export LED_POSTCODE_2 GPIOH2
-gpio_set LED_POSTCODE_2 1
+gpio_set LED_POSTCODE_2 0
 
 # LED_POSTCODE_3
 gpio_export LED_POSTCODE_3 GPIOH3
-gpio_set LED_POSTCODE_3 1
+gpio_set LED_POSTCODE_3 0
 
 # LED_POSTCODE_4
 gpio_export LED_POSTCODE_4 GPIOH4
-gpio_set LED_POSTCODE_4 1
+gpio_set LED_POSTCODE_4 0
 
 # LED_POSTCODE_5
 gpio_export LED_POSTCODE_5 GPIOH5
-gpio_set LED_POSTCODE_5 1
+gpio_set LED_POSTCODE_5 0
 
 # LED_POSTCODE_6
 gpio_export LED_POSTCODE_6 GPIOH6
-gpio_set LED_POSTCODE_6 1
+gpio_set LED_POSTCODE_6 0
 
 # LED_POSTCODE_7
 gpio_export LED_POSTCODE_7 GPIOH7
-gpio_set LED_POSTCODE_7 1
+gpio_set LED_POSTCODE_7 0
+
+devmem_set_bit 0x1e780068 24
+devmem_clear_bit 0x1e78006c 24
 
 # To enable GPIOI
 #devmem_clear_scu70_bit 13
@@ -271,9 +267,6 @@ gpio_export PRSNT_PCIE_CABLE_1_N GPIOI0
 
 # PRSNT_PCIE_CABLE_2_N
 gpio_export PRSNT_PCIE_CABLE_2_N GPIOI1
-
-# FM_INA230_8_ALERT
-gpio_export FM_INA230_8_ALERT GPIOI2
 
 # FM_PFR_ACTIVE_N
 gpio_export FM_PFR_ACTIVE_N GPIOI3
@@ -351,6 +344,7 @@ gpio_export IRQ_DIMM_SAVE_LVT3_N GPION4
 
 # LED_8S_2S_MODE_N
 gpio_export LED_8S_2S_MODE_N GPION5
+gpio_set LED_8S_2S_MODE_N 1
 
 # Set debounce timer #1 value to 0x12E1FC ~= 100ms
 $DEVMEM 0x1e780050 32 0x12E1FC
@@ -497,7 +491,7 @@ gpio_export IRQ_SML0_ALERT_MUX_N GPIOS3
 
 # FP_LOCATE_LED, ID LED
 gpio_export FP_LOCATE_LED GPIOS4
-gpio_set FP_LOCATE_LED 1
+gpio_set FP_LOCATE_LED 0
 
 # FP_LED_STATUS_AMBER_N
 gpio_export FP_LED_STATUS_AMBER_N GPIOS5
@@ -618,6 +612,7 @@ gpio_set FM_BMC_LED_CATERR_N 1
 
 # P3V_BAT_SCALED_EN
 gpio_export P3V_BAT_SCALED_EN GPIOAA0
+gpio_set P3V_BAT_SCALED_EN 0
 
 # IRQ_SML1_PMBUS_BMC_ALERT_N
 gpio_export IRQ_SML1_PMBUS_BMC_ALERT_N GPIOAA1
@@ -650,6 +645,7 @@ gpio_export FM_BMC_BMCINIT GPIOAB0
 
 # PECI_MUX_SELECT
 gpio_export PECI_MUX_SELECT GPIOAB1
+gpio_set PECI_MUX_SELECT 1
 
 # PWRGD_BMC_PS_PWROK
 gpio_export PWRGD_BMC_PS_PWROK GPIOAB3

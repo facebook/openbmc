@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2018-present Facebook. All Rights Reserved.
+# Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -42,4 +42,5 @@ fi
 # To enable GPIOS5, SCU8C[5] must be 0
 devmem_clear_bit $(scu_addr 8C) 5
 
-gpio_set 149 $VALUE
+gpiocli --shadow BMC_UART_SEL5 set-direction out
+gpiocli --shadow BMC_UART_SEL5 set-value $VALUE

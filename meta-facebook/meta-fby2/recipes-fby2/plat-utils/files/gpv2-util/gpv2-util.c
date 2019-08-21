@@ -26,13 +26,14 @@
 #include <stdint.h>
 #include <facebook/bic.h>
 #include <openbmc/pal.h>
+#include <jansson.h>
 
 #define MAX_READ_RETRY 10
 #define MAX_GPV2_DRIVE_NUM 12
 
 static void
 print_usage_help(void) {
-  printf("Usage: gpv2-util <slot1|slot3> --device-list\n");
+  printf("Usage: gpv2-util <slot1|slot3> --device-list [--json]\n");
 }
 
 int
@@ -49,7 +50,11 @@ main(int argc, char **argv) {
   uint8_t major_ver;
   uint8_t minor_ver;
   uint8_t retry = MAX_READ_RETRY;
-  int ret;
+  uint8_t output_json = 0;
+  json_t *device_object = NULL;
+#define MAX_DEVICE_LEN 16
+  char device[MAX_DEVICE_LEN] = {};
+  int ret = 0;
 
   if (argc < 3) {
     goto err_exit;
@@ -64,9 +69,20 @@ main(int argc, char **argv) {
   }
 
   if (!strcmp(argv[2], "--device-list")) {
-    if (argc != 3) {
-      goto err_exit;
+
+    // check --json option
+    if (argc > 3) {
+      if (argc == 4 && !strcmp(argv[3], "--json")) {
+        output_json = 1;
+        //Returns a new JSON object, or NULL on error
+        device_object = json_object();
+        if (!device_object)
+          goto err_exit;
+      } else
+        goto err_exit;
     }
+
+
     for (dev_id = 1; dev_id <= MAX_GPV2_DRIVE_NUM; dev_id++) {
       status = 0;
       while (retry) {
@@ -76,13 +92,30 @@ main(int argc, char **argv) {
         msleep(50);
         retry--;
       }
-      if (ret)
-        printf("device%d: Unknown\n",dev_id-1);
-      else if (status)
-        printf("device%d: Present\n",dev_id-1);
-      else
-        printf("device%d: Not Present\n",dev_id-1);
+
+      snprintf(device, MAX_DEVICE_LEN, "device%d", dev_id-1);
+      if (ret) {
+        if (output_json)
+          json_object_set_new(device_object, device, json_string("Unknown"));
+        else
+          printf("device%d: Unknown\n",dev_id-1);
+      } else if (status) {
+        if (output_json)
+          json_object_set_new(device_object, device, json_string("Present"));
+        else
+          printf("device%d: Present\n",dev_id-1);
+      } else {
+        if (output_json)
+          json_object_set_new(device_object, device, json_string("Not Present"));
+        else
+          printf("device%d: Not Present\n",dev_id-1);
+      }
     }
+    if (output_json) {
+      json_dumpf(device_object, stdout, 4);
+      json_decref(device_object);
+    }
+    printf("\n");
   } else {
     goto err_exit;
   }

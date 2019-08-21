@@ -8,7 +8,7 @@ LIC_FILES_CHKSUM = "file://gpv2-util.c;beginline=4;endline=16;md5=b395943ba8a071
 
 SRC_URI = "file://gpv2-util \
           "
-
+LDFLAGS = " -ljansson"
 S = "${WORKDIR}/gpv2-util"
 
 do_install() {
@@ -16,7 +16,7 @@ do_install() {
     install -m 0755 gpv2-util ${D}${bindir}/gpv2-util
 }
 
-DEPENDS += "libpal"
-RDEPENDS_${PN} += "libbic libpal"
+DEPENDS += "libpal jansson"
+RDEPENDS_${PN} += "libbic libpal jansson"
 
 FILES_${PN} = "${bindir}"

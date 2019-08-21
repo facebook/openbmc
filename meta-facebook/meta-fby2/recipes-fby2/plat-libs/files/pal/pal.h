@@ -289,6 +289,8 @@ int pal_set_m2_prsnt(uint8_t slot_id, uint8_t dev_id, uint8_t present);
 int pal_is_ocp30_nic(void);
 bool pal_get_pair_fru(uint8_t slot_id, uint8_t *pair_fru);
 bool pal_is_fw_update_ongoing(uint8_t fru);
+int pal_set_sdr_update_flag(uint8_t slot, uint8_t update);
+int pal_get_sdr_update_flag(uint8_t slot);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -483,6 +483,8 @@ int bic_send_jtag_instruction(uint8_t slot_id, uint8_t dev_id, uint8_t *rbuf, ui
 int bic_get_debug_mode(uint8_t slot_id, uint8_t *debug_mode);
 int bic_set_sdr_update_flag(uint8_t slot, uint8_t update);
 int bic_get_sdr_update_flag(uint8_t slot);
+int bic_set_sdr_threshold_update_flag(uint8_t slot, uint8_t update);
+int bic_get_sdr_threshold_update_flag(uint8_t slot);
 
 #ifdef __cplusplus
 } // extern "C"

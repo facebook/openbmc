@@ -10679,3 +10679,13 @@ pal_get_nic_fru_id(void)
 {
   return FRU_NIC;
 }
+
+int
+pal_set_sdr_update_flag(uint8_t slot, uint8_t update) {
+  return bic_set_sdr_threshold_update_flag(slot,update);
+}
+
+int
+pal_get_sdr_update_flag(uint8_t slot) {
+  return bic_get_sdr_threshold_update_flag(slot);
+}

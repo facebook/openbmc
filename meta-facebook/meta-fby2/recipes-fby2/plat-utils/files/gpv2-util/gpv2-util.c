@@ -46,6 +46,8 @@ main(int argc, char **argv) {
   uint8_t ffi;
   uint8_t meff;
   uint16_t vendor_id = 0;
+  uint8_t major_ver;
+  uint8_t minor_ver;
   uint8_t retry = MAX_READ_RETRY;
   int ret;
 
@@ -68,7 +70,7 @@ main(int argc, char **argv) {
     for (dev_id = 1; dev_id <= MAX_GPV2_DRIVE_NUM; dev_id++) {
       status = 0;
       while (retry) {
-        ret = bic_get_dev_power_status(slot_id, dev_id, &nvme_ready, &status, &ffi, &meff, &vendor_id);
+        ret = bic_get_dev_power_status(slot_id, dev_id, &nvme_ready, &status, &ffi, &meff, &vendor_id, &major_ver, &minor_ver);
         if (!ret)
           break;
         msleep(50);

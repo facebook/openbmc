@@ -2615,7 +2615,7 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
   int ret;
   uint8_t retry = MAX_READ_RETRY;
   uint16_t vendor_id = 0;
-  uint8_t ffi = 0 ,meff = 0, nvme_ready = 0;
+  uint8_t ffi = 0 ,meff = 0, nvme_ready = 0, major_ver = 0, minor_ver = 0;
 
   if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
     /* Check whether the system is 12V off or on */
@@ -2633,7 +2633,7 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
     }
 
     while (retry) {
-      ret = bic_get_dev_power_status(slot_id, dev_id, &nvme_ready, status, &ffi, &meff, &vendor_id);
+      ret = bic_get_dev_power_status(slot_id, dev_id, &nvme_ready, status, &ffi, &meff, &vendor_id, &major_ver,&minor_ver);
       if (!ret)
         break;
       msleep(50);
@@ -2672,7 +2672,7 @@ pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
   int ret;
   uint8_t retry = MAX_READ_RETRY;
   uint16_t vendor_id = 0;
-  uint8_t ffi = 0 ,meff = 0;
+  uint8_t ffi = 0 ,meff = 0 ,major_ver = 0, minor_ver = 0;
 
   if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
     /* Check whether the system is 12V off or on */
@@ -2690,7 +2690,7 @@ pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
     }
 
     while (retry) {
-      ret = bic_get_dev_power_status(slot_id,dev_id, nvme_ready, status, &ffi, &meff, &vendor_id);
+      ret = bic_get_dev_power_status(slot_id,dev_id, nvme_ready, status, &ffi, &meff, &vendor_id, &major_ver, &minor_ver);
       if (!ret)
         break;
       msleep(50);

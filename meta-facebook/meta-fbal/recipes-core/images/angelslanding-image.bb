@@ -37,6 +37,7 @@ IMAGE_INSTALL += " \
   ncsi-util \
   ipmbd \
   ipmb-util \
+  me-util \
   e2fsprogs \
   "
 

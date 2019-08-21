@@ -49,11 +49,13 @@ enum {
 };
 
 enum {
-  FRU_ALL = 0,
-  FRU_MB = 1,
-  FRU_PDB = 2,
+  FRU_ALL  = 0,
+  FRU_MB   = 1,
+  FRU_PDB  = 2,
   FRU_NIC0 = 3,
   FRU_NIC1 = 4,
+  FRU_DBG  = 5,
+  FRU_BMC  = 6,
 };
 
 #define MAX_NUM_FRUS    (4)

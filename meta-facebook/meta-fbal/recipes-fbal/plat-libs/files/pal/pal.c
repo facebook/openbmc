@@ -582,6 +582,14 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_ALL;
   } else if (!strcmp(str, "mb")) {
     *fru = FRU_MB;
+  } else if (!strcmp(str, "pdb")) {
+    *fru = FRU_PDB;
+  } else if (!strcmp(str, "nic")) {
+    *fru = FRU_NIC0;
+  } else if (!strcmp(str, "ocpdbg")) {
+    *fru = FRU_DBG;
+  } else if (!strcmp(str, "bmc")) {
+    *fru = FRU_BMC;
   } else {
     syslog(LOG_WARNING, "pal_get_fru_id: Wrong fru#%s", str);
     return -1;
@@ -592,9 +600,21 @@ pal_get_fru_id(char *str, uint8_t *fru) {
 
 int
 pal_get_fru_name(uint8_t fru, char *name) {
-  switch(fru) {
+  switch (fru) {
     case FRU_MB:
       strcpy(name, "mb");
+      break;
+    case FRU_PDB:
+      strcpy(name, "pdb");
+      break;
+    case FRU_NIC0:
+      strcpy(name, "nic");
+      break;
+    case FRU_DBG:
+      strcpy(name, "ocpdbg");
+      break;
+    case FRU_BMC:
+      strcpy(name, "bmc");
       break;
     default:
       if (fru > MAX_NUM_FRUS)
@@ -602,6 +622,7 @@ pal_get_fru_name(uint8_t fru, char *name) {
       sprintf(name, "fru%d", fru);
       break;
   }
+
   return 0;
 }
 
@@ -744,17 +765,17 @@ pal_channel_to_bus(int channel) {
     case IPMI_CHANNEL_0:
       return I2C_BUS_0; // USB (LCD Debug Board)
 
-    case IPMI_CHANNEL_1:
-      return I2C_BUS_5; // ME
-
     case IPMI_CHANNEL_2:
       return I2C_BUS_2; // Slave BMC
 
-    case IPMI_CHANNEL_3:
-      return I2C_BUS_6; // Riser
+    case IPMI_CHANNEL_6:
+      return I2C_BUS_5; // ME
+
+    case IPMI_CHANNEL_8:
+      return I2C_BUS_8; // CM
 
     case IPMI_CHANNEL_9:
-      return I2C_BUS_8; // CM
+      return I2C_BUS_6; // Riser
   }
 
   // Debug purpose, map to real bus number
@@ -839,22 +860,22 @@ static int
 get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask)
 {
   int i;
-  *mask = 0; 
-    
+  *mask = 0;
+
   for (i = 0; i < num; i++) {
-    int ret; 
+    int ret;
     gpio_value_t value;
     gpio_desc_t *gpio = gpio_open_by_shadow(shadows[i]);
     if (!gpio) {
       return -1;
     }
-        
+
     ret = gpio_get_value(gpio, &value);
     gpio_close(gpio);
-    
-    if (ret != 0) { 
+
+    if (ret != 0) {
       return -1;
-    }    
+    }
     *mask |= (value == GPIO_VALUE_HIGH ? 1 : 0) << i;
   }
   return 0;
@@ -872,16 +893,16 @@ pal_get_blade_id(uint8_t *id) {
     };
     if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
       return -1;
-    }  
+    }
     cached = true;
-  }   
+  }
   *id = cached_id;
   return 0;
 }
 
 int pal_get_bmc_ipmb_slave_addr(uint16_t* slave_addr, uint8_t bus_id)
 {
-	uint8_t val;
+  uint8_t val;
   int ret;
   static uint16_t addr=0;
 
@@ -892,17 +913,71 @@ int pal_get_bmc_ipmb_slave_addr(uint16_t* slave_addr, uint8_t bus_id)
       if (ret != 0) {
         return -1;
       }
-      addr = 0x1010 | val; 
+      addr = 0x1010 | val;
       *slave_addr = addr;
     } else {
       *slave_addr = addr;
     }
   } else {
-    *slave_addr = 0x10; 
-  }   
+    *slave_addr = 0x10;
+  }
 
-  #ifdef DEBUG   
-  syslog(LOG_DEBUG,"%s BMC Slave Addr=%d bus=%d\n\n", __func__, *slave_addr, bus_id);
-  #endif   
+#ifdef DEBUG
+  syslog(LOG_DEBUG,"%s BMC Slave Addr=%d bus=%d", __func__, *slave_addr, bus_id);
+#endif
   return 0;
+}
+
+int
+pal_ipmb_processing(int bus, void *buf, uint16_t size) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  struct timespec ts;
+  static time_t last_time = 0;
+
+  switch (bus) {
+    case I2C_BUS_0:
+      if (((uint8_t *)buf)[0] == 0x20) {
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        if (ts.tv_sec >= (last_time + 5)) {
+          last_time = ts.tv_sec;
+          ts.tv_sec += 20;
+
+          sprintf(key, "ocpdbg_lcd");
+          sprintf(value, "%ld", ts.tv_sec);
+          if (kv_set(key, value, 0, 0) < 0) {
+            return -1;
+          }
+        }
+      }
+      break;
+  }
+
+  return 0;
+}
+
+int
+pal_is_mcu_ready(uint8_t bus) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  switch (bus) {
+    case I2C_BUS_0:
+      sprintf(key, "ocpdbg_lcd");
+      if (kv_get(key, value, NULL, 0)) {
+        return false;
+      }
+
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      if (strtoul(value, NULL, 10) > ts.tv_sec) {
+         return true;
+      }
+      break;
+
+    case I2C_BUS_8:
+      return true;
+  }
+
+  return false;
 }

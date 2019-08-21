@@ -16,13 +16,31 @@
 #include "pal_sensors.h"
 
 //#define DEBUG
+#define GPIO_P3V_BAT_SCALED_EN "P3V_BAT_SCALED_EN"
+
 static int read_adc_val(uint8_t adc_id, float *value);
+static int read_battery_val(uint8_t adc_id, float *value);
 static int read_temp421(uint8_t temp_id, float *value);
 
 const uint8_t mb_sensor_list[] = {
   MB_SNR_INLET_TEMP,
   MB_SNR_OUTLET_TEMP_R,
   MB_SNR_OUTLET_TEMP_L,
+  MB_SNR_P5V,  
+  MB_SNR_P5V_STBY,
+  MB_SNR_P3V3_STBY,
+  MB_SNR_P3V3,
+  MB_SNR_P3V_BAT,
+  MB_SNR_CPU_1V8,
+  MB_SNR_PCH_1V8,
+  MB_SNR_CPU0_PVPP_ABC,
+  MB_SNR_CPU0_PVPP_DEF,
+  MB_SNR_CPU0_PVTT_ABC,
+  MB_SNR_CPU0_PVTT_DEF,
+  MB_SNR_CPU1_PVPP_ABC,
+  MB_SNR_CPU1_PVPP_DEF,
+  MB_SNR_CPU1_PVTT_ABC,
+  MB_SNR_CPU1_PVTT_DEF,
 };
 
 // List of MB discrete sensors to be monitored
@@ -32,14 +50,23 @@ const uint8_t mb_discrete_sensor_list[] = {
 //  MB_SENSOR_PROCESSOR_FAIL,
 };
 
+//BMC ADC
 PAL_ADC_INFO adc_info_list[] = {
-  {ADC0, 15800, 2000},
-  {ADC1, 2870, 200},
-  {ADC2, 0, 1},
-  {ADC3, 0, 1},
-  {ADC4, 0, 1},
-  {ADC5, 15800, 2000},
-  {ADC6, 665, 2000},
+  {ADC0,  5360, 2000},
+  {ADC1,  5360, 2000},
+  {ADC2,  2870, 2000},
+  {ADC3,  2870, 2000},
+  {ADC5,  665, 2000},
+  {ADC6,  665, 2000},
+  {ADC7,  2000, 2200},
+  {ADC8,  2000, 2200},
+  {ADC9,  2000, 2200},
+  {ADC10, 2000, 2200},
+  {ADC11, 0, 1},
+  {ADC12, 0, 1},
+  {ADC13, 0, 1},
+  {ADC14, 0, 1},
+  {ADC_BAT, 200, 100},
 };
 
 //TPM421
@@ -259,21 +286,21 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xCD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xCE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xCF
-  {"MB_P12V",      ADC0, read_adc_val, false, {13.2, 0, 0, 11.8, 0, 0, 0, 0}},  //0xD0
-  {"MB_P3V3",      ADC1, read_adc_val, false, {3.60, 0, 0, 3.00, 0, 0, 0, 0}},  //0xD1
-  {"MB_PVNN_STBY", ADC2, read_adc_val, true,  {1.15, 0, 0, 0.94, 0, 0, 0, 0} }, //0xD2
-  {"MB_P1V05",     ADC3, read_adc_val, false, {1.15, 0, 0, 0.94, 0, 0, 0, 0}},  //0xD3
-  {"NULL",         ADC4, read_adc_val, true,  {0, 0, 0, 0, 0, 0, 0, 0}},        //0xD4
-  {"MB_P12V_STBY", ADC5, read_adc_val, true,  {13.2, 0, 0, 11.8, 0, 0, 0, 0}},  //0xD5
-  {"MB_P1V8",      ADC6, read_adc_val, false, {1.98, 0, 0, 1.62, 0, 0, 0, 0}},  //0xD6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xD7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xD8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xD9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xDA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xDB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xDC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xDD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xDE
+  {"MB_P5V",       ADC0, read_adc_val, false, {5.50, 0, 0, 4.50, 0, 0, 0, 0}}, //0xD0
+  {"MB_P5V_STBY",  ADC1, read_adc_val, true,  {5.50, 0, 0, 4.50, 0, 0, 0, 0}}, //0xD1
+  {"MB_P3V3_STBY", ADC2, read_adc_val, true,  {3.63, 0, 0, 2.97, 0, 0, 0, 0}}, //0xD2
+  {"MB_P3V3",      ADC3, read_adc_val, false, {3.63, 0, 0, 2.97, 0, 0, 0, 0}}, //0xD3
+  {"MB_P3V_BAT",   ADC_BAT, read_battery_val, false, {3.3, 0, 0, 2.7, 0, 0, 0, 0}}, //0xD4
+  {"MB_CPU_1V8",   ADC5, read_adc_val, false, {1.98, 0, 0, 1.62, 0, 0, 0, 0}}, //0xD5
+  {"MB_PCH_1V8",   ADC6, read_adc_val, false, {1.98, 0, 0, 1.62, 0, 0, 0, 0}}, //0xD6
+  {"MB_CPU0_PVPP_ABC", ADC7,  read_adc_val, false, {2.84, 0, 0, 2.32, 0, 0, 0, 0}}, //0xD7
+  {"MB_CPU1_PVPP_ABC", ADC8,  read_adc_val, false, {2.84, 0, 0, 2.32, 0, 0, 0, 0}}, //0xD8
+  {"MB_CPU0_PVPP_DEF", ADC9,  read_adc_val, false, {2.84, 0, 0, 2.32, 0, 0, 0, 0}}, //0xD9
+  {"MB_CPU1_PVPP_DEF", ADC10, read_adc_val, false, {2.84, 0, 0, 2.32, 0, 0, 0, 0}}, //0xDA
+  {"MB_CPU0_PVTT_ABC", ADC11, read_adc_val, false, {0.677, 0, 0, 0.554, 0, 0, 0, 0}}, //0xDB
+  {"MB_CPU1_PVTT_ABC", ADC12, read_adc_val, false, {0.677, 0, 0, 0.554, 0, 0, 0, 0}}, //0xDC
+  {"MB_CPU0_PVTT_DEF", ADC13, read_adc_val, false, {0.677, 0, 0, 0.554, 0, 0, 0, 0}}, //0xDD
+  {"MB_CPU1_PVTT_DEF", ADC14, read_adc_val, false, {0.677, 0, 0, 0.554, 0, 0, 0, 0}}, //0xDE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xDF
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xE0
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xE1
@@ -351,8 +378,10 @@ read_device_float(const char *device, float *value) {
   FILE *fp;
   int rc;
   char tmp[10];
+  char cmd[MAX_DEVICE_NAME_SIZE];
 
-  fp = popen(device, "r");
+  snprintf(cmd, MAX_DEVICE_NAME_SIZE, "cat %s", device);
+  fp = popen(cmd, "r");
   if (!fp) {
     int err = errno;
 #ifdef DEBUG
@@ -382,24 +411,67 @@ Read adc voltage sensor value.
 ============================================*/
 static int
 read_adc_val(uint8_t adc_id, float *value) {
-  PAL_ADC_INFO info=adc_info_list[adc_id];
-  char full_name[MAX_DEVICE_NAME_SIZE];
+  PAL_ADC_INFO info=adc_info_list[adc_id-1];
+  char path[MAX_DEVICE_NAME_SIZE];
   int ret=0;
 
-  snprintf(full_name, MAX_DEVICE_NAME_SIZE, MB_ADC_VOLTAGE_DEVICE, adc_id+1);
+  snprintf(path, MAX_DEVICE_NAME_SIZE, MB_ADC_VOLTAGE_DEVICE, adc_id);
+  
 #ifdef DEBUG 
-  syslog(LOG_WARNING, "%s %s\n", __func__, full_name);
+  syslog(LOG_DEBUG, "%s %s\n", __func__, path);
 #endif  
-  ret = read_device_float(full_name, value);
+  ret = read_device_float(path, value);
   if (ret != 0) {
     return ret;
   }
 
   *value = *value / 1000 * ((float)info.r1 + (float)info.r2) / (float)info.r2 ;
 #ifdef DEBUG  
-  syslog(LOG_WARNING, "%s r1=%d r2=%d value=%f\n", __func__, info.r1, info.r2, *value );
+  syslog(LOG_DEBUG, "%s r1=%d r2=%d value=%f\n", __func__, info.r1, info.r2, *value );
 #endif
   return 0;
+}
+
+static int
+read_battery_val(uint8_t adc_id, float *value) {
+  PAL_ADC_INFO info=adc_info_list[adc_id-1];
+  char path[MAX_DEVICE_NAME_SIZE] = MB_ADC_BAT_VOLTAGE_DEVICE;
+  int ret=0;
+
+  gpio_desc_t *gp_batt = gpio_open_by_shadow(GPIO_P3V_BAT_SCALED_EN);
+  if (!gp_batt) {
+    return -1;
+  }
+
+  if(gpio_set_direction(gp_batt, GPIO_DIRECTION_OUT)) {
+    goto bail;
+  }
+
+  if (gpio_set_value(gp_batt, GPIO_VALUE_HIGH)) {
+    goto bail;
+  }
+
+#ifdef DEBUG 
+  syslog(LOG_DEBUG, "%s %s\n", __func__, path);
+#endif  
+  msleep(10);
+  ret = read_device_float(path, value);
+  if (ret != 0) {
+    goto bail;
+  }
+
+  *value = *value / 1000 * ((float)info.r1 + (float)info.r2) / (float)info.r2 ;
+#ifdef DEBUG  
+  syslog(LOG_DEBUG, "%s r1=%d r2=%d value=%f\n", __func__, info.r1, info.r2, *value );
+#endif
+
+  if (gpio_set_value(gp_batt, GPIO_VALUE_LOW)) {
+    goto bail;
+  }
+
+  bail:
+    gpio_close(gp_batt);
+    return ret;
 }
 
 /*==========================================
@@ -410,7 +482,6 @@ Interface: temp_id: temperature id
 ============================================*/
 static int
 read_temp421(uint8_t temp_id, float *value) {
-  char cmd[MAX_DEVICE_NAME_SIZE];
   char path[MAX_DEVICE_NAME_SIZE];
   float tmp=0;
   int ret=0;
@@ -418,11 +489,10 @@ read_temp421(uint8_t temp_id, float *value) {
   uint8_t addr = tmp421_info_list[temp_id].slv_addr;
   
   snprintf(path, MAX_DEVICE_NAME_SIZE, MB_TEMP_DEVICE, bus, bus, addr);
-  snprintf(cmd, MAX_DEVICE_NAME_SIZE, "cat %s", path);
 #ifdef DEBUG 
-  syslog(LOG_WARNING, "%s %s\n", __func__, cmd);
+  syslog(LOG_WARNING, "%s %s\n", __func__, path);
 #endif  
-  ret = read_device_float(cmd, &tmp);
+  ret = read_device_float(path, &tmp);
   if (ret != 0) {
     return ret;
   }

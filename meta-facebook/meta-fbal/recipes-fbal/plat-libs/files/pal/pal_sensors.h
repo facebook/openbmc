@@ -4,7 +4,9 @@
 #define MAX_SENSOR_NUM         (0xFF)
 #define MAX_DEVICE_NAME_SIZE   (128)
 #define MB_TEMP_DEVICE  "/sys/class/i2c-dev/i2c-%d/device/%d-00%x/hwmon/hwmon*/temp1_input"
-#define MB_ADC_VOLTAGE_DEVICE "/sys/class/hwmon/hwmon0/in%d_input"
+#define MB_ADC_VOLTAGE_DEVICE "/sys/devices/platform/iio-hwmon/hwmon/hwmon*/in%d_input"
+#define MB_ADC_BAT_VOLTAGE_DEVICE "/sys/devices/platform/iio-hwmon-battery/hwmon/hwmon*/in1_input"
+
 
 enum {
   MB_SNR_PCH_TEMP = 0x08,
@@ -198,16 +200,23 @@ typedef struct {
   PAL_SENSOR_THRESHOLD snr_thresh;
 } PAL_SENSOR_MAP;
 
+//ADC INFO
 enum {
-  ADC0 = 0,
+  ADC0 = 1,
   ADC1,
   ADC2,
   ADC3,
-  ADC4,
   ADC5,
   ADC6,
   ADC7,
-  ADC8,    
+  ADC8,
+  ADC9,
+  ADC10,
+  ADC11, 
+  ADC12, 
+  ADC13, 
+  ADC14,
+  ADC_BAT,
 };
 
 typedef struct {

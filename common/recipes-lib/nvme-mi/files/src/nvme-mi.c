@@ -27,34 +27,6 @@
 #include <errno.h>
 #include "nvme-mi.h"
 
-#define I2C_NVME_INTF_ADDR 0x6A
-
-#define NVME_SFLGS_REG 0x01
-#define NVME_WARNING_REG 0x02
-#define NVME_TEMP_REG 0x03
-#define NVME_PDLU_REG 0x04
-#define NVME_VENDOR_REG 0x09
-#define NVME_SERIAL_NUM_REG 0x0B
-#define SERIAL_NUM_SIZE 20
-
-/* NVMe-MI Temperature Definition Code */
-#define TEMP_HIGHER_THAN_127 0x7F
-#define TEPM_LOWER_THAN_n60 0xC4
-#define TEMP_NO_UPDATE 0x80
-#define TEMP_SENSOR_FAIL 0x81
-
-/* NVMe-MI Vendor ID Code */
-#define VENDOR_ID_HGST 0x1C58
-#define VENDOR_ID_HYNIX 0x1C5C
-#define VENDOR_ID_INTEL 0x8086
-#define VENDOR_ID_LITEON 0x14A4
-#define VENDOR_ID_MICRON 0x1344
-#define VENDOR_ID_SAMSUNG 0x144D
-#define VENDOR_ID_SEAGATE 0x1BB1
-#define VENDOR_ID_TOSHIBA 0x1179
-#define VENDOR_ID_FACEBOOK 0x1D9B
-#define VENDOR_ID_BROARDCOM 0x14E4
-
 // Helper function for msleep
 void
 msleep(int msec) {
@@ -340,6 +312,42 @@ nvme_temp_decode(uint8_t value, t_key_value_pair *temp_decoding) {
 }
 
 int
+nvme_lower_threshold_temp_decode(uint8_t value, t_key_value_pair *temp_decoding) {
+
+  if (nvme_temp_decode(value,temp_decoding) < 0) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+  sprintf(temp_decoding->key, "Lower Thermal Threshold");
+
+  return 0;
+}
+
+int
+nvme_upper_threshold_temp_decode(uint8_t value, t_key_value_pair *temp_decoding) {
+
+  if (nvme_temp_decode(value,temp_decoding) < 0) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+  sprintf(temp_decoding->key, "Upper Thermal Threshold");
+
+  return 0;
+}
+
+int
+nvme_max_asic_temp_decode(uint8_t value, t_key_value_pair *temp_decoding) {
+
+  if (nvme_temp_decode(value,temp_decoding) < 0) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+  sprintf(temp_decoding->key, "Historical Max ASIC Temperature");
+
+  return 0;
+}
+
+int
 nvme_pdlu_decode(uint8_t value, t_key_value_pair *pdlu_decoding) {
 
   if (!pdlu_decoding) {
@@ -412,6 +420,150 @@ nvme_serial_num_decode(uint8_t *value, t_key_value_pair *sn_decoding) {
   sprintf(sn_decoding->key, "Serial Number");
   memcpy(sn_decoding->value, value, SERIAL_NUM_SIZE);
   sn_decoding->value[SERIAL_NUM_SIZE] = '\0';
+
+  return 0;
+}
+
+int
+nvme_part_num_decode(uint8_t *value, t_key_value_pair *pn_decoding) {
+
+  if (!value || !pn_decoding) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(pn_decoding->key, "Module Product Part Number");
+  if (value[0] == 0xFF) { // RosePeak does not have Module Product Part Number
+    sprintf(pn_decoding->value, "NA");
+  } else {
+    memcpy(pn_decoding->value, value, PART_NUM_SIZE);
+    pn_decoding->value[PART_NUM_SIZE] = '\0';
+  }
+
+  return 0;
+}
+
+int
+nvme_meff_decode (uint8_t value, t_key_value_pair *meff_decoding) {
+
+  if (!value || !meff_decoding) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(meff_decoding->key, "Management End Point Form Factor");
+  switch (value) {
+    case MEFF_M_2_22110:
+      sprintf(meff_decoding->value, "M.2 22110 (0x%02X)", value);
+      break;
+    case MEFF_Dual_M_2:
+      sprintf(meff_decoding->value, "Dual M.2 (0x%02X)", value);
+      break;
+    default:
+      sprintf(meff_decoding->value, "Unknown (0x%02X)", value);
+      break;
+  }
+
+  return 0;
+}
+
+int
+nvme_ffi_0_decode (uint8_t value, t_key_value_pair *ffi_0_decoding) {
+
+  if (!ffi_0_decoding) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(ffi_0_decoding->key, "Form Factor Information 0 Register");
+  switch (value) {
+    case FFI_0_STORAGE:
+      sprintf(ffi_0_decoding->value, "Storage (0x%02X)", value);
+      break;
+    case FFI_0_ACCELERATOR:
+      sprintf(ffi_0_decoding->value, "Accelerator (0x%02X)", value);
+      break;
+    default:
+      sprintf(ffi_0_decoding->value, "Unknown (0x%02X)", value);
+      break;
+  }
+
+  return 0;
+}
+
+int
+nvme_power_state_decode (uint8_t value, t_key_value_pair *power_state_decoding) {
+
+  if (!power_state_decoding) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(power_state_decoding->key, "Power State");
+  switch (value) {
+    case POWER_STATE_FULL_MODE:
+      sprintf(power_state_decoding->value, "Full Power Mode (0x%02X)", value);
+      break;
+    case POWER_STATE_REDUCED_MODE:
+      sprintf(power_state_decoding->value, "Reduced Power Mode (0x%02X)", value);
+      break;
+    case POWER_STATE_LOWER_MODE:
+      sprintf(power_state_decoding->value, "Lower Power Mode (0x%02X)", value);
+      break;
+    default:
+      sprintf(power_state_decoding->value, "Unknown (0x%02X)", value);
+      break;
+  }
+
+  return 0;
+}
+
+int
+nvme_i2c_freq_decode (uint8_t value, t_key_value_pair *i2c_freq_decoding) {
+
+  if (!i2c_freq_decoding) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(i2c_freq_decoding->key, "SMBus/I2C Frquency");
+  switch (value) {
+    case I2C_FREQ_100K:
+      sprintf(i2c_freq_decoding->value, "100 kHz");
+      break;
+    case I2C_FREQ_400K:
+      sprintf(i2c_freq_decoding->value, "400 kHz");
+      break;
+    case I2C_FREQ_1M:
+      sprintf(i2c_freq_decoding->value, "1 MHz");
+      break;
+    default:
+      sprintf(i2c_freq_decoding->value, "Unknown(0x%02X)", value);
+      break;
+  }
+
+  return 0;
+}
+
+int
+nvme_tdp_level_decode (uint8_t value, t_key_value_pair *tdp_level_decoding) {
+
+  if (!tdp_level_decoding) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(tdp_level_decoding->key, "Module Static TDP level setting");
+  switch (value) {
+    case TDP_LEVEL1:
+    case TDP_LEVEL2:
+    case TDP_LEVEL3:
+      sprintf(tdp_level_decoding->value, "level %d", value);
+      break;
+    default:
+      sprintf(tdp_level_decoding->value, "Unknown (0x%02X)", value);
+      break;
+  }
 
   return 0;
 }

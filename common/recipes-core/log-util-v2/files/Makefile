@@ -17,10 +17,10 @@
 
 all: log-util-v2
 
-CFLAGS += -Wall -Werror
+CXXFLAGS += -Wall -Werror
 
-log-util-v2: log-util-v2.c
-	$(CC) -DJSMN_STRICT=1 $(CFLAGS) -o $@ $^ $(LDFLAGS) -lpthread
+log-util-v2: log-util-v2.cpp
+	$(CXX) -DJSMN_STRICT=1 $(CFLAGS) -o $@ $^ $(LDFLAGS) -lpthread
 
 .PHONY: clean
 

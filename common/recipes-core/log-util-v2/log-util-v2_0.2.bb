@@ -19,11 +19,11 @@ DESCRIPTION = "Utility to parse and display logs."
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://log-util-v2.c;beginline=5;endline=18;md5=ff9a2ba58fa5b39d3d3dcb7c42e26496"
+LIC_FILES_CHKSUM = "file://log-util-v2.cpp;beginline=5;endline=18;md5=ff9a2ba58fa5b39d3d3dcb7c42e26496"
 
 
 SRC_URI = "file://Makefile \
-           file://log-util-v2.c \
+           file://log-util-v2.cpp \
           "
 
 S = "${WORKDIR}"

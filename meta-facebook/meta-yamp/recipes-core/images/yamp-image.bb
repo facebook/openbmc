@@ -25,4 +25,5 @@ IMAGE_INSTALL += " \
   fscd \
   led-controld \
   spatula \
+  ncsi-util \
   "

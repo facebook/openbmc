@@ -31,12 +31,14 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <sys/socket.h>
+#include <sys/utsname.h>
 #include <linux/netlink.h>
 #include <openbmc/pal.h>
 #include <openbmc/ncsi.h>
 #include <openbmc/pldm.h>
 #include <openbmc/pldm_base.h>
 #include <openbmc/pldm_fw_update.h>
+#include "libnl-wrapper.h"
 
 #define noDEBUG   /* debug printfs */
 
@@ -45,8 +47,17 @@
 #endif
 
 
+// ncsi-util API for communicating with kernel
+//
+//  Take a NCSI_NL_MSG_T buffer, send it to kernel, and returns reply from kernel
+//   in NCSI_NL_RSP_T format
+NCSI_NL_RSP_T * (*send_nl_msg)(NCSI_NL_MSG_T *nl_msg);
+
+
+// Sending data to kernel via NETLINK_USER  message type
+//    (legacy mode, only used in kernel v4.1)
 NCSI_NL_RSP_T *
-send_nl_msg(NCSI_NL_MSG_T *nl_msg)
+send_nl_msg_netlink_user(NCSI_NL_MSG_T *nl_msg)
 {
   int sock_fd, ret;
   struct sockaddr_nl src_addr, dest_addr;
@@ -126,7 +137,6 @@ free_and_exit:
   free(nlh);
 close_and_exit:
   close(sock_fd);
-
   return ret_buf;
 }
 
@@ -343,6 +353,9 @@ showUsage(void) {
   printf("           -b [n]     (optional) buffer size for PLDM FW update [default=1024]\n");
   printf("       -z             send \"PLDM Cancel Update\" cmd \n");
   printf("       -s [n]         socket test\n\n");
+  printf("       -l [config]    netlink protocol [default=auto-detect]\n");
+  printf("                        0 - use NETLINK_USER (kernel 4.1)\n");
+  printf("                        1 - use libnl (kernel 5.0 and above)\n");
   printf("Sample debug commands: \n");
   printf("       ncsi-util -n eth0 -c 0 0x50 0 0 0x81 0x19 0 0 0x1b 0\n");
   printf("       ncsi-util 0x8   (AEN Enable)\n");
@@ -365,6 +378,9 @@ main(int argc, char **argv) {
   int cancelUpdate = 0;
   int bufSize = 0;
   char *pfile = 0;
+  int nl_conf = -1;  // default value indicating auto-detection
+  struct utsname unamebuf;
+  int ret = 0;
 
 
   if (argc < 2)
@@ -376,7 +392,7 @@ main(int argc, char **argv) {
     return -1;
   }
   memset(msg, 0, sizeof(NCSI_NL_MSG_T));
-  while ((argflag = getopt(argc, (char **)argv, "s:p:hSzn:c:?")) != -1)
+  while ((argflag = getopt(argc, (char **)argv, "l:s:p:hSzn:c:?")) != -1)
   {
     switch(argflag) {
     case 's':
@@ -432,6 +448,13 @@ main(int argc, char **argv) {
             cancelUpdate = 1;
             printf ("Cancel firmware update...\n");
             break;
+    case 'l':
+            nl_conf = (int)strtoul(optarg, NULL, 0);
+            if ((nl_conf < 0) || (nl_conf > 1)) {
+              printf("invalid nl_conf\n");
+              goto free_exit;
+            }
+            break;
     case 'h':
     default :
             goto free_exit;
@@ -462,6 +485,22 @@ main(int argc, char **argv) {
       msg->msg_payload[i] = (int)strtoul(argv[i + optind], NULL, 0);
    }
  }
+
+ // netlink config - auto detection
+ if (nl_conf == -1) {
+   ret = uname(&unamebuf);
+   if (!ret) {
+     if (!strcmp(unamebuf.release, "4.1.51"))
+       nl_conf = 0;
+     else
+       nl_conf = 1;
+   }
+ }
+
+ if (nl_conf == 0)
+    send_nl_msg = send_nl_msg_netlink_user;
+ else
+    send_nl_msg = send_nl_msg_libnl;
 
 #ifdef DEBUG
   printf("debug prints:");

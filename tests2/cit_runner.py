@@ -157,6 +157,7 @@ def arg_parser():
         choices=[
             "wedge",
             "wedge100",
+            "wedge400",
             "galaxy100",
             "cmm",
             "minipack",

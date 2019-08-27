@@ -1,17 +1,17 @@
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://i2cupdate.c;beginline=4;endline=16;md5=83b2e504ba70aadc346736cab822cd4c"
+LIC_FILES_CHKSUM = "file://i2cupdate.c;beginline=4;endline=16;md5=4600fd9f038febc050bcb82abb40d3dd"
 
 SRC_URI  = "file://i2cupdate.c \
             file://max10_i2c_update.c \
             file://max10_i2c_update.h \
             file://Makefile \
            "
-LDFLAGS += " -lobmc-i2c "
+LDFLAGS += " -lobmc-i2c -lbic "
 
 S = "${WORKDIR}"
 
-DEPENDS += " libobmc-i2c "
-RDEPENDS_${PN} += " libobmc-i2c "
+DEPENDS += " libobmc-i2c libbic "
+RDEPENDS_${PN} += " libobmc-i2c libbic "
 
 do_install(){
     install -d ${D}${sbindir}

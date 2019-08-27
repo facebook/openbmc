@@ -104,7 +104,6 @@ board_gpio_table_v2 = [
     BoardGPIO("GPIOQ5", "BMC_CPLD_SPARE7"),
     BoardGPIO("GPIOQ6", "USB_OCS_N1"),
     BoardGPIO("GPIOQ7", "BMC_HEARTBEAT_N"),
-    BoardGPIO("GPIOR0", "SPI_IBMC_BT_CS1_N_R"),
     BoardGPIO("GPIOR6", "SWITCH_MDC"),
     BoardGPIO("GPIOR7", "SWITCH_MDIO"),
     BoardGPIO("GPIOS0", "BMC_SPI_WP_N"),

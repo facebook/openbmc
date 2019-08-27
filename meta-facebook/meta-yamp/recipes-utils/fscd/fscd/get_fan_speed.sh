@@ -36,7 +36,7 @@ show_pwm()
     # Val is [0,255], so let's scale the value down to [0,100]
     float_val=`dc $val 100 mul 255 div p`
     rounded=`printf '%.*f' 0 $float_val`
-    echo $rounded
+    echo "$rounded%"
 }
 
 show_rpm()

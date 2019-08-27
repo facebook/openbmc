@@ -1,7 +1,9 @@
+#!/bin/sh
+
 # Copyright 2018-present Facebook. All Rights Reserved.
 
-SUPCPLD_SYSFS_DIR="/sys/class/i2c-dev/i2c-12/device/12-0043"
-SCDCPLD_SYSFS_DIR="/sys/class/i2c-dev/i2c-4/device/4-0023"
+SUPCPLD_SYSFS_DIR="/sys/bus/i2c/devices/12-0043/12-0043"
+SCDCPLD_SYSFS_DIR="/sys/bus/i2c/devices/i2c-4/device/4-0023"
 SUP_PWR_ON_SYSFS="${SUPCPLD_SYSFS_DIR}/cpu_control"
 PWR_SYSTEM_SYSFS="${SUPCPLD_SYSFS_DIR}/chassis_power_cycle"
 SCD_TH3_RST_ON_SYSFS="${SCDCPLD_SYSFS_DIR}/th3_reset"
@@ -45,7 +47,7 @@ wedge_board_rev() {
 # Should we enable OOB interface or not
 wedge_should_enable_oob() {
     # YAMP uses BMC MAC since beginning
-    return -1
+    return 1
 }
 
 wedge_power_off_asic() {

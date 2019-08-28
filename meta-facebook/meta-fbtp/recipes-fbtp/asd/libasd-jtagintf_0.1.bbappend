@@ -2,7 +2,7 @@
 FILESEXTRAPATHS_append := "${THISDIR}/files:"
 SRC_URI += "file://interface/SoftwareJTAGHandler.c \
            "
-LDFLAGS += "-lgpio -lpal"
-DEPENDS += "libpal libgpio"
-RDEPENDS_${PN} += "libpal libgpio"
+LDFLAGS += "-lgpio-ctrl -lpal"
+DEPENDS += "libpal libgpio-ctrl"
+RDEPENDS_${PN} += "libpal libgpio-ctrl"
 

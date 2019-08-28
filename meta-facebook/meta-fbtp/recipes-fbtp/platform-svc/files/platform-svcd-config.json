@@ -15,7 +15,7 @@
       "hotPlugSupport": "0",
       "fruIdAccess": {
         "type": "I2CEEPROM",
-        "eepromPath": "/sys/devices/platform/ast-i2c.6/i2c-6/6-0054/eeprom"
+        "eepromPath": "/sys/bus/i2c/devices/6-0054/eeprom"
       },
       "childObjects":[
         {
@@ -25,7 +25,7 @@
           "unit": "C",
           "access": {
             "type": "path",
-            "path": "/sys/devices/platform/ast-i2c.6/i2c-6/6-004e/hwmon/hwmon*/temp1_input",
+            "path": "/sys/bus/i2c/devices/6-004e/hwmon/hwmon*/temp1_input",
             "unitDiv": "1000"
           }
         },
@@ -36,7 +36,7 @@
           "unit": "C",
           "access": {
             "type": "path",
-            "path": "/sys/devices/platform/ast-i2c.6/i2c-6/6-004f/hwmon/hwmon*/temp1_input",
+            "path": "/sys/bus/i2c/devices/6-004f/hwmon/hwmon*/temp1_input",
             "unitDiv": "1000"
           }
         },
@@ -47,7 +47,7 @@
           "unit": "C",
           "access": {
             "type": "path",
-            "path": "/sys/devices/platform/ast-i2c.6/i2c-6/6-004e/hwmon/hwmon*/temp2_input",
+            "path": "/sys/bus/i2c/devices/6-004e/hwmon/hwmon*/temp2_input",
             "unitDiv": "1000"
           }
         },
@@ -58,7 +58,7 @@
           "unit": "C",
           "access": {
             "type": "path",
-            "path": "/sys/devices/platform/ast-i2c.6/i2c-6/6-004f/hwmon/hwmon*/temp2_input",
+            "path": "/sys/bus/i2c/devices/6-004f/hwmon/hwmon*/temp2_input",
             "unitDiv": "1000"
           }
         },
@@ -1200,7 +1200,7 @@
       "hotPlugSupport": "0",
       "fruIdAccess": {
         "type": "I2CEEPROM",
-        "eepromPath": "/sys/devices/platform/ast-i2c.3/i2c-3/3-0054/eeprom"
+        "eepromPath": "/sys/bus/i2c/devices/3-0054/eeprom"
       },
       "childObjects":[
         {
@@ -1210,7 +1210,7 @@
           "unit": "C",
           "access": {
             "type": "path",
-            "path": "/sys/devices/platform/ast-i2c.8/i2c-8/8-001f/hwmon/hwmon*/temp2_input",
+            "path": "/sys/bus/i2c/devices/8-001f/hwmon/hwmon*/temp2_input",
             "retry" : "3",
             "unitDiv": "1000"
           }

@@ -35,10 +35,10 @@
 #include "fruid.h"
 #include <openbmc/pal.h>
 
-#define EEPROM_RETIMER "/sys/devices/platform/ast-i2c.3/i2c-3/3-0055/eeprom"
-#define EEPROM_RISER     "/sys/devices/platform/ast-i2c.1/i2c-1/1-0050/eeprom"
-#define EEPROM_NIC      "/sys/devices/platform/ast-i2c.3/i2c-3/3-0054/eeprom"
-#define EEPROM_MB      "/sys/devices/platform/ast-i2c.6/i2c-6/6-0054/eeprom"
+#define EEPROM_RETIMER "/sys/bus/i2c/devices/3-0055/eeprom"
+#define EEPROM_RISER   "/sys/bus/i2c/devices/1-0050/eeprom"
+#define EEPROM_NIC     "/sys/bus/i2c/devices/3-0054/eeprom"
+#define EEPROM_MB      "/sys/bus/i2c/devices/6-0054/eeprom"
 
 #define BIN_MB         "/tmp/fruid_mb.bin"
 #define BIN_NIC         "/tmp/fruid_nic.bin"

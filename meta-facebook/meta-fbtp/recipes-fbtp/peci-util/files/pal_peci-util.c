@@ -19,55 +19,30 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <syslog.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdbool.h>
-#include <fcntl.h>
-#include <openbmc/gpio.h>
-#include <openbmc/pal.h>
-
-#define GPIO_PECI_MUX_SEL 212
-#define GPIO_PECI_MUX_SEL_PREDVT 218
+#include <openbmc/libgpio.h>
 
 int pal_before_peci(void) {
-  gpio_st gpio_peci_mux;
-  uint8_t board_rev;
-  int gpio_peci_mux_num, ret;
+  gpio_desc_t *gpio = gpio_open_by_shadow("PECI_MUX_SELECT");
+  int ret = -1;
 
-  ret = pal_get_board_rev_id(&board_rev);
-  if (ret)
-    board_rev = BOARD_REV_MP;
-
-  if (board_rev <= BOARD_REV_PREDVT)
-    gpio_peci_mux_num = GPIO_PECI_MUX_SEL_PREDVT;
-  else
-    gpio_peci_mux_num = GPIO_PECI_MUX_SEL;
-
-  gpio_open(&gpio_peci_mux,  gpio_peci_mux_num);
-  gpio_write(&gpio_peci_mux, GPIO_VALUE_HIGH);
-  gpio_close(&gpio_peci_mux);
-  return 0;
+  if (gpio) {
+    if (gpio_set_value(gpio, GPIO_VALUE_HIGH) == 0) {
+      ret = 0;
+    }
+    gpio_close(gpio);
+  }
+  return ret;
 }
 
 int pal_after_peci(void) {
-  gpio_st gpio_peci_mux;
-  uint8_t board_rev;
-  int gpio_peci_mux_num, ret;
+  gpio_desc_t *gpio = gpio_open_by_shadow("PECI_MUX_SELECT");
+  int ret = -1;
 
-  ret = pal_get_board_rev_id(&board_rev);
-  if (ret)
-    board_rev = BOARD_REV_MP;
-
-  if (board_rev <= BOARD_REV_PREDVT)
-    gpio_peci_mux_num = GPIO_PECI_MUX_SEL_PREDVT;
-  else
-    gpio_peci_mux_num = GPIO_PECI_MUX_SEL;
-
-  gpio_open(&gpio_peci_mux,  gpio_peci_mux_num);
-  gpio_write(&gpio_peci_mux, GPIO_VALUE_LOW);
-  gpio_close(&gpio_peci_mux);;
-  return 0;
+  if (gpio) {
+    if (gpio_set_value(gpio, GPIO_VALUE_LOW) == 0) {
+      ret = 0;
+    }
+    gpio_close(gpio);
+  }
+  return ret;
 }

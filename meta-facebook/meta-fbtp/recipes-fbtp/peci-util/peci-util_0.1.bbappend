@@ -18,6 +18,6 @@
 FILESEXTRAPATHS_append := "${THISDIR}/files:"
 SRC_URI += "file://pal_peci-util.c \
            "
-DEPENDS += " libgpio"
-
-
+DEPENDS += "libgpio-ctrl"
+RDEPENDS_${PN} += "libgpio-ctrl"
+LDFLAGS += "-lgpio-ctrl"

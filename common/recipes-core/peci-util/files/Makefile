@@ -8,7 +8,7 @@ CFLAGS += -Wall -Werror
 all: peci-util
 
 peci-util: $(C_OBJS)
-	$(CC) $(CFLAGS) -pthread -lgpio -lpal --std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -pthread --std=c99 -o $@ $^ -lpal $(LDFLAGS)
 
 .PHONY: clean
 

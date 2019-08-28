@@ -28,8 +28,6 @@
 #
 ### END INIT INFO
 
-. /usr/local/fbpackages/utils/ast-functions
-
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 DAEMON=/usr/local/bin/kcsd
 NAME=kcsd

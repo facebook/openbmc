@@ -100,7 +100,6 @@ GPIOS = {
     "RMON3_PF": {"active_low": "0", "direction": "in", "edge": "none"},
     "RMON3_RF": {"active_low": "0", "direction": "in", "edge": "none"},
     "SMB_ALERT": {"active_low": "0", "direction": "in", "edge": "none"},
-    "SPI_IBMC_BT_CS1_N_R": {"active_low": "0", "direction": "in", "edge": "none"},
     "SWITCH_EEPROM1_WRT": {"active_low": "0", "direction": "in", "edge": "none"},
     "SWITCH_MDC": {"active_low": "0", "direction": "in", "edge": "none"},
     "SWITCH_MDIO": {"active_low": "0", "direction": "in", "edge": "none"},

@@ -6,6 +6,8 @@ PID=$$
 PID_FILE='/var/run/autodump1.pid'
 DWR_FILE='/tmp/DWR'
 
+. /usr/local/bin/gpio-utils.sh
+
 # check if running auto dump
 [ -r $PID_FILE ] && OLDPID=`cat $PID_FILE` || OLDPID=''
 
@@ -40,8 +42,7 @@ LOG_FILE='/tmp/autodump.log'
 LOG_ARCHIVE='/mnt/data/autodump.tar.gz'
 LOG_MSG_PREFIX=""
 
-CPU0_SKTOCC_N="/sys/class/gpio/gpio51/value"
-CPU1_SKTOCC_N="/sys/class/gpio/gpio208/value"
+CPU1_SKTOCC_N="FM_CPU1_SKTOCC_LVT3_N"
 DWR=0
 SECOND_DUMP=0
 DELAY_SEC=30
@@ -87,7 +88,7 @@ $DUMP_SCRIPT 48 coreid >> $LOG_FILE 2>&1
 $DUMP_SCRIPT 48 msr >> $LOG_FILE 2>&1
 
 # CPU1
-if [ "`cat $CPU1_SKTOCC_N`" -eq "0" ]; then
+if [ "$(gpio_get_value ${CPU1_SKTOCC_N})" -eq "0" ]; then
   $DUMP_SCRIPT 49 coreid >> $LOG_FILE 2>&1
   $DUMP_SCRIPT 49 msr >> $LOG_FILE 2>&1
 else

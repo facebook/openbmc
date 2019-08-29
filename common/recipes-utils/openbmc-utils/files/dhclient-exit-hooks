@@ -18,10 +18,20 @@
 # Boston, MA 02110-1301 USA
 #
 
+# we get a lot of lowercase name variables from environment, this warning is just noise
+# shellcheck disable=SC2154
+
+if [ -n "$new_ip6_address" ] && \
+   [ "$interface" = "eth0" ] && \
+   [ "$reason" = "BOUND6" ]; then
+  # send unsolicited neighbo[u]r advertisement
+  /usr/bin/ndptool send -t na -U -i "$interface" -T "$new_ip6_address"
+fi
+
 RESTART_NTPD=0
 for ntp in $new_ntp_servers $new_dhcp6_sntp_servers; do
-  if [ ! -z "$ntp" ]; then
-    echo NTP Server: $ntp
+  if [ -n "$ntp" ]; then
+    echo "NTP Server: $ntp"
     if ! grep "^server.*$ntp" /etc/ntp.conf > /dev/null; then
       echo "server $ntp iburst" >> /etc/ntp.conf
       RESTART_NTPD=1

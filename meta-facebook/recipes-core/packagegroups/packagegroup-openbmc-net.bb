@@ -10,6 +10,7 @@ RDEPENDS_${PN} += " \
   curl \
   dhcp-client \
   iproute2 \
+  libndp \
   ntp \
   ntp-utils \
   ntpdate \

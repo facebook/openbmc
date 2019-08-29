@@ -23,14 +23,7 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 prog="$0"
-board_rev=$(wedge_board_rev)
-KERNEL_VERSION=`uname -r`
 
-if [[ ${KERNEL_VERSION} != 4.1.* ]]; then
-    PWRCPLD_SYSFS_DIR="/sys/class/i2c-adapter/i2c-29/29-003e"
-else
-    PWRCPLD_SYSFS_DIR="/sys/class/i2c-adapter/i2c-31/31-003e"
-fi
 PWR_USRV_RST_SYSFS="${SCMCPLD_SYSFS_DIR}/iso_com_rst_n"
 PWR_CYCLE_SYSFS="${PWRCPLD_SYSFS_DIR}/power_cycle_go"
 PWR_TIMER_BASE_1S_SYSFS="${PWRCPLD_SYSFS_DIR}/timer_base_1s"
@@ -82,12 +75,8 @@ do_status() {
 
 do_on_com_e() {
     echo 1 > $PWR_USRV_SYSFS
+    echo 1 > $PWR_USRV_FORCE_OFF
     return $?
-}
-
-do_on_main_pwr() {
-    # wedge400 com-e main power is controlled by SCMCPLD
-    return 0
 }
 
 do_on() {
@@ -100,7 +89,7 @@ do_on() {
                 ;;
             *)
                 usage
-                exit -1
+                exit 1
                 ;;
         esac
     done
@@ -114,7 +103,7 @@ do_on() {
     fi
 
     # reset TH
-    reset_brcm.sh
+    # reset_brcm.sh
     # power on sequence
     do_on_com_e
     ret=$?
@@ -129,7 +118,7 @@ do_on() {
 }
 
 do_off_com_e() {
-    echo 0 > $PWR_USRV_SYSFS
+    echo 0 > $PWR_USRV_FORCE_OFF
     return $?
 }
 
@@ -149,11 +138,11 @@ do_off() {
 do_config_reset_timer() {
     # Check numeric
     wake_t=$1
-    echo $wake_t | egrep -q '^[0-9]+$'
+    echo $wake_t | grep -E -q '^[0-9]+$'
     ret=$?
     if [ $ret -ne 0 ]; then
         usage
-        exit -1
+        exit 1
     else
         if [ $wake_t -ge 1 -a $wake_t -lt 250 ];then
             echo 1 > $PWR_TIMER_BASE_1S_SYSFS
@@ -168,7 +157,7 @@ do_config_reset_timer() {
             echo "Waiting $(($wake_t * 10)) seconds for the system boot up"
         else
             usage
-            exit -1
+            exit 1
         fi
         echo $wake_t > $PWR_TIMER_COUNTER_SETTING_SYSFS
         echo 1 > $PWR_TIMER_COUNTER_SETTING_UPDATE_SYSFS
@@ -191,39 +180,33 @@ do_reset() {
                 ;;
             *)
                 usage
-                exit -1
+                exit 1
                 ;;
         esac
     done
 
     if [ $system -eq 1 ]; then
-        if [ $board_rev -eq 4 ]; then
-            logger "EVTA is not supported, running a workaround instead"
-            echo "EVTA is not supported, running a workaround instead"
-            i2cset -f -y 1 0x3a 0x12 0
-        else
-            if [ $timer -eq 1 ]; then
-                do_config_reset_timer $wake_t
-            fi
-            logger "Power reset the whole system ..."y2y
-            echo  "Power reset the whole system ..."
-            echo 1 > $PWR_CYCLE_SYSFS
-            sleep 3
-            # Control should not reach here, but if it failed to reset
-            # the system through PSU, then run a workaround to reset
-            # most of the system instead (if not all)
-            logger "Failed to reset the system. Running a workaround"
-            echo "Failed to reset the system. Running a workaround"
-            i2cset -f -y 1 0x3a 0x12 0
+        if [ $timer -eq 1 ]; then
+            do_config_reset_timer $wake_t
         fi
+        logger "Power reset the whole system ..."
+        echo  "Power reset the whole system ..."
+        echo 1 > $PWR_CYCLE_SYSFS
+        sleep 3
+        # Control should not reach here, but if it failed to reset
+        # the system through PSU, then run a workaround to reset
+        # most of the system instead (if not all)
+        logger "Failed to reset the system. Will sleep for 3 sec then running a workaround"
+        echo "Failed to reset the system. Will sleep for 3 sec then running a workaround"
+        i2cset -f -y 1 0x3a 0x12 0
     else
         if ! wedge_is_us_on; then
             echo "Power resetting microserver that is powered off has no effect."
             echo "Use '$prog on' to power the microserver on"
-            return -1
+            return 1
         fi
         # reset TH first
-        reset_brcm.sh
+        # reset_brcm.sh
         echo -n "Power reset microserver ..."
         echo 0 > $PWR_USRV_RST_SYSFS
         sleep 1
@@ -236,7 +219,7 @@ do_reset() {
 
 if [ $# -lt 1 ]; then
     usage
-    exit -1
+    exit 1
 fi
 
 command="$1"
@@ -257,7 +240,7 @@ case "$command" in
         ;;
     *)
         usage
-        exit -1
+        exit 1
         ;;
 esac
 

@@ -21,7 +21,7 @@ SRC_URI += "file://board-utils.sh \
             file://boot_info.sh \
             file://cpld_ver.sh \
             file://disable_watchdog.sh \
-            file://eth1_mac_fixup.sh \
+            file://eth0_mac_fixup.sh \
             file://fcmcpld_update.sh \
             file://feutil \
             file://fpga_ver.sh \
@@ -105,8 +105,8 @@ do_install_board() {
 
     # networking is done after rcS, any start level within rcS
     # for mac fixup should work
-    install -m 755 eth1_mac_fixup.sh ${D}${sysconfdir}/init.d/eth1_mac_fixup.sh
-    update-rc.d -r ${D} eth1_mac_fixup.sh start 70 S .
+    install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
+    update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
 
     install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .

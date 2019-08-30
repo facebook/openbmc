@@ -23,13 +23,14 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 . /usr/local/bin/openbmc-utils.sh
 
 SMB_DIR=$SMBCPLD_SYSFS_DIR
-SCM_CMD=$SMB_DIR'/scm_present_int_status'
+SCM_CMD=$SMB_DIR"/scm_present_int_status"
 FAN_CMD=$FCMCPLD_SYSFS_DIR
+DEBUG_CARD_PRSNT_GPIO="/tmp/gpionames/DEBUG_PRESENT_N/value"
 
 
 function usage
 {
-  program=`basename "$0"`
+  program=$(basename "$0")
   echo "Usage:"
   echo "     $program "
   echo "     $program <TYPE>"
@@ -41,20 +42,20 @@ function usage
 function get_presence
 {
   local file=$1 key=$2
-  val=$(head -n1 $file | awk '{print substr($0,0,3) }' | sed 's/.x//')
-  if [ $val -eq 0 ]; then
+  val=$(head -n1 "$file" | awk '{print substr($0,0,3) }' | sed "s/.x//")
+  if [ "$val" = "0" ]; then
       val=1
   else
       val=0
   fi
-  echo $key ":" $val
+  echo "$key : $val"
 }
 
 # SCM
 function get_scm_presence
 {
-  key='scm'
-  get_presence $SCM_CMD $key
+  key="scm"
+  get_presence "$SCM_CMD" "$key"
 }
 
 # FANs
@@ -62,9 +63,9 @@ function get_fan_presence
 {
   local num=1
   while [ $num -le 4 ]; do
-      key='fan'$num
-      file=$FAN_CMD'/fan'$num'_present'
-      get_presence $file $key
+      key="fan${num}"
+      file="$FAN_CMD/fan${num}_present"
+      get_presence "$file" "$key"
       (( num++ ))
   done
 }
@@ -73,10 +74,23 @@ function get_fan_presence
 function get_psu_presence
 {
   for i in {1..2}; do
-      key='psu'${i}
-      file=$SMB_DIR'/psu_present_'${i}'_N_int_status'
-      get_presence $file $key
+      key="psu${i}"
+      file="$SMB_DIR/psu_present_${i}_N_int_status"
+      get_presence "$file" "$key"
   done
+}
+
+# Debug card
+function get_debug_card_presence
+{
+  key="debug_card"
+  val=$(head -n1 $DEBUG_CARD_PRSNT_GPIO | awk '{print substr($0,0,3) }' | sed "s/.x//")
+  if [ "$val" = "0" ]; then
+      val=0
+  else
+      val=1
+  fi
+  echo $key ":" $val
 }
 
 # get all info
@@ -90,6 +104,10 @@ if [[ $1 = "" ]]; then
   echo "POWER SUPPLIES"
   get_psu_presence
 
+  echo "DEBUG CARD"
+  get_debug_card_presence
+
+  exit 0
 else
   if [[ $1 = "scm" ]]; then
     get_scm_presence
@@ -97,8 +115,10 @@ else
     get_fan_presence
   elif [[ $1 = "psu" ]]; then
     get_psu_presence
+  elif [[ $1 = "debug_card" ]]; then
+    get_debug_card_presence
   else
     usage
-    exit -1
   fi
+  exit 0
 fi

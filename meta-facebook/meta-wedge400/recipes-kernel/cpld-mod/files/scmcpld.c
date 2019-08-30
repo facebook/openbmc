@@ -122,6 +122,13 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x10, 4, 1,
   },
   {
+    "come_pwr_btn_n",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x10, 5, 1,
+  },
+  {
     "iso_com_sus_s3_n",
     "COMe Module SUS_S3_N Status",
     I2C_DEV_ATTR_SHOW_DEFAULT,

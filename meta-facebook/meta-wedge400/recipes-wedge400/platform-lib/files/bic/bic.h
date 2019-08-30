@@ -84,6 +84,11 @@ enum {
   FW_P1V05_VR,
 };
 
+typedef enum {
+  PROCESS_STOP,
+  PROCESS_RUN,
+} process_operate_t;
+
 // Bridge IC Spec
 typedef struct _bic_gpio_t {
   uint32_t pwrgood_cpu:1;
@@ -154,6 +159,8 @@ int bic_get_sel(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *re
 int bic_get_sdr_info(uint8_t slot_id, ipmi_sel_sdr_info_t *info);
 int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen);
 int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id);
+int bic_get_sys_guid(uint8_t slot_id, uint8_t *guid);
+int bic_set_sys_guid(uint8_t slot_id, uint8_t *guid);
 int bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor);
 int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size);
 int bic_read_mac(uint8_t slot_id, char *rbuf);

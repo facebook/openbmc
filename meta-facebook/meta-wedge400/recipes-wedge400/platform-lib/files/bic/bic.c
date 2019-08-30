@@ -25,19 +25,21 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <syslog.h>
 #include <errno.h>
 #include <time.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "bic.h"
+#include <openbmc/log.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
+#include "bic.h"
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
+#define SIZE_SYS_GUID 16
 #define SIZE_IANA_ID 3
 #define SDR_READ_COUNT_MAX 0x1A
-#define FRUID_WRITE_COUNT_MAX 0x30
 #define GPIO_MAX 31
 
 #define IPMB_WRITE_COUNT_MAX 224
@@ -65,6 +67,9 @@ typedef struct _sdr_rec_hdr_t {
   uint8_t len;
 } sdr_rec_hdr_t;
 #pragma pack(pop)
+
+static int 
+bic_related_process(uint8_t comp, process_operate_t operate);
 
 int
 bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
@@ -107,7 +112,7 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   if (rlen == 0) {
 #ifdef DEBUG
-    syslog(LOG_DEBUG, "bic_ipmb_wrapper: Zero bytes received\n");
+    OBMC_DEBUG("bic_ipmb_wrapper: Zero bytes received\n");
 #endif
     return -1;
   }
@@ -117,7 +122,7 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   if (res->cc) {
 #ifdef DEBUG
-    syslog(LOG_ERR, "bic_ipmb_wrapper: Completion Code: 0x%X\n", res->cc);
+    OBMC_ERROR(-1, "bic_ipmb_wrapper: Completion Code: 0x%X\n", res->cc);
 #endif
     return -1;
   }
@@ -130,7 +135,7 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 }
 
 int
-bic_get_gpio_config(uint8_t slot_id, uint8_t gpio,
+bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, 
                     bic_gpio_config_t *gpio_config) {
   uint8_t tbuf[7] = {0x15, 0xA0, 0x00}; // IANA ID
   uint8_t rbuf[4] = {0x00};
@@ -148,7 +153,7 @@ bic_get_gpio_config(uint8_t slot_id, uint8_t gpio,
 
   tlen = 7;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ,
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, 
                          CMD_OEM_1S_GET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen);
 
   // Ignore IANA ID
@@ -180,8 +185,8 @@ bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info) {
   int ret;
   uint8_t rlen = 0;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ,
-                         CMD_STORAGE_GET_FRUID_INFO, &fru_id, 1,
+  ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, 
+                         CMD_STORAGE_GET_FRUID_INFO, &fru_id, 1, 
                          (uint8_t *) info, &rlen);
 
   return ret;
@@ -279,7 +284,9 @@ bic_get_post_buf(uint8_t slot_id, uint8_t *buf, uint8_t *len) {
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_BUF,
                          tbuf, 0x03, rbuf, &rlen);
-
+  if(ret){
+    return ret;
+  }
   //Ignore IANA ID
   memcpy(buf, &rbuf[3], rlen-3);
 
@@ -301,7 +308,7 @@ bic_get_sel_info(uint8_t slot_id, ipmi_sel_sdr_info_t *info) {
 }
 
 int
-bic_get_sel(uint8_t slot_id, ipmi_sel_sdr_req_t *req,
+bic_get_sel(uint8_t slot_id, ipmi_sel_sdr_req_t *req, 
             ipmi_sel_sdr_res_t *res, uint8_t *rlen) {
 
   int ret;
@@ -410,7 +417,7 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req,
     ret = _get_sdr(slot_id, req, (ipmi_sel_sdr_res_t *)tbuf, &tlen);
     if (ret) {
 #ifdef DEBUG
-      syslog(LOG_ERR, "bic_read_sdr: _get_sdr returns %d\n", ret);
+      OBMC_ERROR(ret, "bic_read_sdr: _get_sdr returns %d\n", ret);
 #endif
       return ret;
     }
@@ -440,20 +447,49 @@ bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id) {
 }
 
 int
-bic_read_sensor(uint8_t slot_id, uint8_t sensor_num,
+bic_get_sys_guid(uint8_t slot_id, uint8_t *guid) {
+  int ret;
+  uint8_t rlen = 0;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_GET_SYSTEM_GUID, NULL, 0, guid, &rlen);
+  if (rlen != SIZE_SYS_GUID) {
+#ifdef DEBUG
+    OBMC_ERROR(ret, "bic_get_sys_guid: returned rlen of %d\n");
+#endif
+    return -1;
+  }
+
+  return ret;
+}
+
+int
+bic_set_sys_guid(uint8_t slot_id, uint8_t *guid) {
+
+  int ret;
+  uint8_t rlen = 0;
+  uint8_t rbuf[MAX_IPMB_RES_LEN]={0x00};
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_REQ, CMD_OEM_SET_SYSTEM_GUID, guid, SIZE_SYS_GUID, rbuf, &rlen);
+
+  return ret;
+
+}
+
+int
+bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, 
                 ipmi_sensor_reading_t *sensor) {
   int ret;
   uint8_t rlen = 0;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_SENSOR_REQ,
-                         CMD_SENSOR_GET_SENSOR_READING,
+  ret = bic_ipmb_wrapper(slot_id, NETFN_SENSOR_REQ, 
+                         CMD_SENSOR_GET_SENSOR_READING, 
                          (uint8_t *)&sensor_num, 1, (uint8_t *)sensor, &rlen);
 
   return ret;
 }
 
 static int
-_read_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset,
+_read_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, 
             uint8_t count, uint8_t *rbuf, uint8_t *rlen) {
   int ret;
   uint8_t tbuf[4] = {0};
@@ -464,14 +500,14 @@ _read_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset,
   tbuf[2] = (offset >> 8) & 0xFF;
   tbuf[3] = count;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ,
+  ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, 
                          CMD_STORAGE_READ_FRUID_DATA, tbuf, 4, rbuf, rlen);
 
   return ret;
 }
 
 int
-bic_read_fruid(uint8_t slot_id, uint8_t fru_id,
+bic_read_fruid(uint8_t slot_id, uint8_t fru_id, 
                const char *path, int *fru_size) {
   int ret = 0;
   uint32_t nread;
@@ -489,7 +525,7 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id,
   fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
   if (fd < 0) {
 #ifdef DEBUG
-    syslog(LOG_ERR, "bic_read_fruid: open fails for path: %s\n", path);
+    OBMC_ERROR(fd, "bic_read_fruid: open fails for path: %s\n", path);
 #endif
     goto error_exit;
   }
@@ -498,7 +534,7 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id,
   ret = bic_get_fruid_info(slot_id, fru_id, &info);
   if (ret) {
 #ifdef DEBUG
-    syslog(LOG_ERR, "bic_read_fruid: bic_read_fruid_info returns %d\n", ret);
+    OBMC_ERROR(ret, "bic_read_fruid: bic_read_fruid_info returns %d\n", ret);
 #endif
     goto error_exit;
   }
@@ -521,7 +557,7 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id,
     ret = _read_fruid(slot_id, fru_id, offset, count, rbuf, &rlen);
     if (ret) {
 #ifdef DEBUG
-      syslog(LOG_ERR, "bic_read_fruid: ipmb_wrapper fails\n");
+      OBMC_ERROR(ret, "bic_read_fruid: ipmb_wrapper fails\n");
 #endif
       goto error_exit;
     }
@@ -547,14 +583,12 @@ error_exit:
 
 int
 bic_read_mac(uint8_t slot_id, char *rbuf) {
-
   uint8_t tbuf[2] = {0x00, 0x01};
   int ret;
   uint8_t rlen = 0;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_REQ,
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_REQ, 
                          CMD_OEM_GET_MAC_ADDR, tbuf, 2, rbuf, &rlen);
-
   if(ret)
     return -1;
 
@@ -657,13 +691,13 @@ i2c_open(uint8_t bus_id) {
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus_id);
   fd = open(fn, O_RDWR);
   if (fd == -1) {
-    syslog(LOG_ERR, "Failed to open i2c device %s", fn);
+    OBMC_ERROR(fd, "Failed to open i2c device %s", fn);
     return -1;
   }
 
   rc = ioctl(fd, I2C_SLAVE, BRIDGE_SLAVE_ADDR);
   if (rc < 0) {
-    syslog(LOG_ERR, "Failed to open slave @ address 0x%x", BRIDGE_SLAVE_ADDR);
+    OBMC_ERROR(rc, "Failed to open slave @ address 0x%x", BRIDGE_SLAVE_ADDR);
     close(fd);
   }
 
@@ -700,7 +734,7 @@ i2c_io(int fd, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount) {
 
   rc = ioctl(fd, I2C_RDWR, &data);
   if (rc < 0) {
-    syslog(LOG_ERR, "Failed to do raw io");
+    OBMC_ERROR(rc, "Failed to do raw io");
     return -1;
   }
 
@@ -724,12 +758,12 @@ _update_bic_main(uint8_t slot_id, char *path) {
   uint8_t xbuf[256] = {0};
   uint32_t offset = 0, last_offset = 0, dsize;
 
-  syslog(LOG_CRIT, "bic_update_fw: update bic firmware on minilake\n");
+  OBMC_CRIT("bic_update_fw: update bic firmware on minilake\n");
 
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
-    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", path);
+    OBMC_ERROR(fd, "bic_update_fw: open fails for path: %s\n", path);
     goto error_exit;
   }
 
@@ -744,6 +778,8 @@ _update_bic_main(uint8_t slot_id, char *path) {
     printf("ifd error\n");
     goto error_exit;
   }
+
+  bic_related_process(UPDATE_BIC, PROCESS_STOP);
 
   // Kill ipmb daemon for this slot
   sprintf(cmd, "sv stop ipmbd");
@@ -855,6 +891,7 @@ _update_bic_main(uint8_t slot_id, char *path) {
         rbuf[2] != 0x03 ||
         rbuf[3] != 0x40 ||
         rbuf[4] != 0x40) {
+
       printf("status resp: %x:%x:%x:%x:%x",
               rbuf[0], rbuf[1], rbuf[2], rbuf[3], rbuf[4]);
       goto error_exit;
@@ -972,9 +1009,10 @@ update_done:
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "sv start ipmbd");
   system(cmd);
+  bic_related_process(UPDATE_BIC, PROCESS_RUN);
 
 error_exit:
-  syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting\n");
+  OBMC_CRIT("bic_update_fw: updating bic firmware is exiting\n");
   if (fd > 0) {
     close(fd);
   }
@@ -1074,7 +1112,7 @@ check_cpld_image(int fd, long size) {
   for (i = 0; i < crc_offs; i++) {
     data = buf[i];
     for (j = 0; j < 8; j++, data >>= 1) {
-      crc_val = ((data ^ crc_val) & 0x1)
+      crc_val = ((data ^ crc_val) & 0x1) 
                 ? ((crc_val >> 1) ^ 0x8408) : (crc_val >> 1);
     }
   }
@@ -1090,7 +1128,7 @@ check_cpld_image(int fd, long size) {
 
 // Read checksum of various components
 int
-bic_get_fw_cksum(uint8_t slot_id, uint8_t comp,
+bic_get_fw_cksum(uint8_t slot_id, uint8_t comp, 
                  uint32_t offset, uint32_t len, uint8_t *ver) {
   uint8_t tbuf[12] = {0x15, 0xA0, 0x00}; // IANA ID
   uint8_t rbuf[16] = {0x00};
@@ -1112,17 +1150,16 @@ bic_get_fw_cksum(uint8_t slot_id, uint8_t comp,
   tbuf[10] = (len >> 16) & 0xFF;
   tbuf[11] = (len >> 24) & 0xFF;
 
-
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ,
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, 
                          CMD_OEM_1S_GET_FW_CKSUM, tbuf, 12, rbuf, &rlen);
   // checksum has to be 4 bytes
   if (ret || (rlen != 4+SIZE_IANA_ID)) {
-    syslog(LOG_ERR, "bic_get_fw_cksum: ret: %d, rlen: %d\n", ret, rlen);
+    OBMC_ERROR(ret, "bic_get_fw_cksum: ret: %d, rlen: %d\n", ret, rlen);
     return -1;
   }
 
 #ifdef DEBUG
-  printf("cksum returns: %x:%x:%x::%x:%x:%x:%x\n",
+  printf("cksum returns: %x:%x:%x::%x:%x:%x:%x\n", 
          rbuf[0], rbuf[1], rbuf[2], rbuf[3], rbuf[4], rbuf[5], rbuf[6]);
 #endif
 
@@ -1150,6 +1187,44 @@ check_vr_image(int fd, long size) {
     return -1;
 
   lseek(fd, 0, SEEK_SET);
+  return 0;
+}
+
+const char *process[] = {
+  "sensord",
+  "gpiod",
+};
+static int 
+bic_related_process(uint8_t comp, process_operate_t operate) {
+  char cmd[64];
+  switch(comp) {
+    case UPDATE_BIOS:
+    case UPDATE_BIC:
+      switch(operate) {
+        case PROCESS_RUN:
+          for(int i = 0; i < ARRAY_SIZE(process); i++) {
+            memset(cmd, 0, sizeof(cmd));
+            sprintf(cmd, "killall %s &> /dev/null; sv start %s &> /dev/nul", process[i], process[i]);
+            system(cmd);
+            OBMC_WARN("Start process %s", process[i]);
+          }
+          break;
+        case PROCESS_STOP:
+          for(int i = 0; i < ARRAY_SIZE(process); i++) {
+            memset(cmd, 0, sizeof(cmd));
+            sprintf(cmd, "sv stop %s &> /dev/null; killall %s &> /dev/null", process[i], process[i]);
+            system(cmd);
+            OBMC_WARN("Stop process %s", process[i]);
+          }
+          system("/usr/local/bin/sensord smb psu1 psu2 > /dev/null 2>&1 &");
+          break;
+        default:
+          break;
+      }
+      break;
+    default:
+      break;
+  }
   return 0;
 }
 
@@ -1181,18 +1256,19 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   if (fd < 0) {
     printf("ERROR: invalid file path!\n");
 #ifdef DEBUG
-    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", path);
+    OBMC_ERROR(fd, "bic_update_fw: open fails for path: %s\n", path);
 #endif
     goto error_exit;
   }
 
   stat(path, &st);
   if (comp == UPDATE_BIOS) {
+    bic_related_process(comp, PROCESS_STOP);
     if (check_bios_image(fd, st.st_size) < 0) {
       printf("invalid BIOS file!\n");
       goto error_exit;
     }
-    syslog(LOG_CRIT,
+    OBMC_CRIT(
            "bic_update_fw: update bios firmware on slot %d\n", slot_id);
     set_fw_update_ongoing(slot_id, 30);
     dsize = st.st_size/100;
@@ -1201,7 +1277,8 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
       printf("invalid VR file!\n");
       goto error_exit;
     }
-    syslog(LOG_CRIT, "Update VR: update vr firmware on slot %d\n", slot_id);
+
+    OBMC_CRIT("Update VR: update vr firmware on slot %d\n", slot_id);
     dsize = st.st_size/5;
   } else {
     if ((comp == UPDATE_CPLD) && (check_cpld_image(fd, st.st_size) < 0)) {
@@ -1210,12 +1287,12 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     }
     switch(comp){
       case UPDATE_CPLD:
-        syslog(LOG_CRIT,
+        OBMC_CRIT(
                "bic_update_fw: update cpld firmware on slot %d\n", slot_id);
         break;
       case UPDATE_BIC_BOOTLOADER:
-        syslog(LOG_CRIT,
-               "bic_update_fw: update bic bootloader firmware on slot %d\n",
+        OBMC_CRIT(
+               "bic_update_fw: update bic bootloader firmware on slot %d\n", 
                slot_id);
         break;
     }
@@ -1228,7 +1305,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
   i = 1;
   while (1) {
     // For BIOS, send packets in blocks of 64K
-    if (comp == UPDATE_BIOS &&
+    if (comp == UPDATE_BIOS && 
         ((offset+IPMB_WRITE_COUNT_MAX) > (i * BIOS_ERASE_PKT_SIZE))) {
       read_count = (i * BIOS_ERASE_PKT_SIZE) - offset;
       i++;
@@ -1302,7 +1379,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
     }
 
     // Get the checksum of binary image
-    rc = bic_get_fw_cksum(slot_id, comp, offset,
+    rc = bic_get_fw_cksum(slot_id, comp, offset, 
                           BIOS_VERIFY_PKT_SIZE, (uint8_t*)&gcksum);
     if (rc) {
       goto error_exit;
@@ -1310,7 +1387,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
 
     // Compare both and see if they match or not
     if (gcksum != tcksum) {
-      printf("checksum does not match offset:0x%x, 0x%x:0x%x\n",
+      printf("checksum does not match offset:0x%x, 0x%x:0x%x\n", 
              offset, tcksum, gcksum);
       goto error_exit;
     }
@@ -1323,17 +1400,17 @@ update_done:
 error_exit:
   switch(comp) {
     case UPDATE_BIOS:
-      syslog(LOG_CRIT, "bic_update_fw: updating bios firmware is exiting\n");
+      bic_related_process(comp, PROCESS_RUN);
+      OBMC_CRIT("bic_update_fw: updating bios firmware is exiting\n");
       break;
     case UPDATE_CPLD:
-      syslog(LOG_CRIT, "bic_update_fw: updating cpld firmware is exiting\n");
+      OBMC_CRIT("bic_update_fw: updating cpld firmware is exiting\n");
       break;
     case UPDATE_VR:
-      syslog(LOG_CRIT, "Update VR: updating vr firmware is exiting\n");
+      OBMC_CRIT("Update VR: updating vr firmware is exiting\n");
       break;
     case UPDATE_BIC_BOOTLOADER:
-      syslog(LOG_CRIT,
-             "bic_update_fw: updating bic bootloader firmware is exiting\n");
+      OBMC_CRIT("bic_update_fw: updating bic bootloader firmware is exiting\n");
       break;
   }
   if (fd > 0 ) {
@@ -1364,12 +1441,12 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   // Fill the component for which firmware is requested
   tbuf[3] = comp;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ,
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, 
                          CMD_OEM_1S_GET_FW_VER, tbuf, 0x04, rbuf, &rlen);
   // fw version has to be between 2 and 5 bytes based on component
   if (ret || (rlen < 2+SIZE_IANA_ID) || (rlen > 5+SIZE_IANA_ID)) {
 #ifdef DEBUG
-    syslog(LOG_ERR, "bic_get_fw_ver: ret: %d, rlen: %d\n", ret, rlen);
+    OBMC_ERROR(ret, "bic_get_fw_ver: ret: %d, rlen: %d\n", ret, rlen);
 #endif
     return -1;
   }
@@ -1409,7 +1486,7 @@ bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen,
   // Send data length includes IANA ID and interface number
   tlen = txlen + 4;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf,
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, 
                          tlen, rbuf, &rlen);
   if (ret ) {
     return -1;

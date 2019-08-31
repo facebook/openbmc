@@ -222,8 +222,23 @@ is_bic_ready() {
 is_slot_12v_on() {
   local pwr_sts
 
-  #always return 1 since the pins are not defined for now
-  pwr_sts="1"
+  case $1 in
+    1)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT1)
+      ;;
+    2)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT2)
+      ;;
+    3)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT3)
+      ;;
+    4)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT4)
+      ;;
+    *)
+      pwr_sts="0"
+      ;;
+  esac
 
   if [ $pwr_sts == "1" ]; then
     echo 1

@@ -186,6 +186,20 @@ read_device(const char *device, int *value) {
   }
 }
 
+static int
+get_bmc_location() {
+  //it's a workaround to check the location of BMC
+  char *bmc_location_path = "/sys/class/gpio/gpio120/value";
+  int bmc_location = 0;
+
+  if ( read_device(bmc_location_path, &bmc_location) != 0 ) {
+    syslog(LOG_INFO, "failed to read gpio120");
+    return -1;
+  }
+
+  return bmc_location;
+}
+
 uint8_t
 is_bic_ready(uint8_t slot_id) {
 //  int val;
@@ -262,7 +276,11 @@ get_ipmb_bus_id(uint8_t slot_id) {
 
   switch(slot_id) {
   case FRU_SLOT1:
-    bus_id = IPMB_BUS_SLOT1;
+      if ( get_bmc_location() == 1 ) {
+        bus_id = IPMB_BUS_NIC_EXP;
+      } else {
+        bus_id = IPMB_BUS_SLOT1;
+      }
     break;
   case FRU_SLOT2:
     bus_id = IPMB_BUS_SLOT2;
@@ -347,7 +365,7 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   }
 
   if (rlen == 0) {
-    syslog(LOG_DEBUG, "bic_ipmb_wrapper: Zero bytes received, retry:%d, cmd:%x\n", retry, cmd);
+    syslog(LOG_ERR, "bic_ipmb_wrapper: Zero bytes received, retry:%d, cmd:%x\n", retry, cmd);
     return -1;
   }
 
@@ -746,6 +764,100 @@ bic_send:
   //Ignore IANA ID
   memcpy(ver, &rbuf[SIZE_IANA_ID], rlen-SIZE_IANA_ID);
 
+  return ret;
+}
+
+static int
+bic_server_power_control(uint8_t slot_id, uint8_t val) {
+  uint8_t tbuf[5] = {0x05, 0x42, 0x01, 0x00};
+  uint8_t rbuf[4] = {0};
+  uint8_t tlen = 5;
+  uint8_t rlen = 0;
+  int ret;
+
+  tbuf[4] = val;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  return ret;
+}
+
+#define POWER_BTN_HIGH 0x3
+#define POWER_BTN_LOW  0x2
+#define RESET_BTN_HIGH 0x3
+#define RESET_BTN_LOW  0x1
+int
+bic_server_power_on(uint8_t slot_id) {
+  int ret;
+
+  ret = bic_server_power_control(slot_id, POWER_BTN_HIGH); //high
+
+  ret = bic_server_power_control(slot_id, POWER_BTN_LOW); //low
+
+  sleep(1);
+
+  ret = bic_server_power_control(slot_id, POWER_BTN_HIGH); //high
+
+  return ret;
+}
+
+int
+bic_server_power_off(uint8_t slot_id, uint8_t gs_flag) {
+#define DELAY_POWER_OFF 6
+#define DELAY_GRACEFUL_SHUTDOWN 1
+  int ret;
+
+  ret = bic_server_power_control(slot_id, POWER_BTN_HIGH); //high
+
+  ret = bic_server_power_control(slot_id, POWER_BTN_LOW); //low
+  if ( 1 == gs_flag ) {
+    sleep(DELAY_GRACEFUL_SHUTDOWN);
+  } else {
+    sleep(DELAY_POWER_OFF);
+  }
+
+  ret = bic_server_power_control(slot_id, POWER_BTN_HIGH); //low
+  return ret;
+}
+
+int
+bic_server_power_cycle(uint8_t slot_id) {
+#define DELAY_POWER_CYCLE 10
+  int ret;
+
+  ret = bic_server_power_off(slot_id, 0);//poweroff
+
+  sleep(DELAY_POWER_CYCLE);
+
+  ret = bic_server_power_on(slot_id);
+  return ret;
+}
+
+int
+bic_server_power_reset(uint8_t slot_id) {
+  int ret;
+
+  ret = bic_server_power_control(slot_id, RESET_BTN_HIGH);
+
+  ret = bic_server_power_control(slot_id, RESET_BTN_LOW);
+  sleep(1);
+
+  ret = bic_server_power_control(slot_id, RESET_BTN_HIGH);
+
+  return ret;
+}
+
+int
+bic_get_server_power_status(uint8_t slot_id, uint8_t *power_status)
+{
+  uint8_t tbuf[3] = {0x9C, 0x9C, 0x00};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 3;
+  uint8_t rlen = 0;
+  int ret;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, tlen, rbuf, &rlen);
+
+  *power_status = (rbuf[8] & 0x40) >> 6;
   return ret;
 }
 

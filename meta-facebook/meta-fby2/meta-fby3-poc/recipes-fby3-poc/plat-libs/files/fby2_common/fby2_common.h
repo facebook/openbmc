@@ -48,10 +48,11 @@ enum {
 };
 
 enum {
-  IPMB_BUS_SLOT1 = 1,
-  IPMB_BUS_SLOT2 = 3,
-  IPMB_BUS_SLOT3 = 5,
-  IPMB_BUS_SLOT4 = 7,
+  IPMB_BUS_NIC_EXP = 0,
+  IPMB_BUS_SLOT1   = 1,
+  IPMB_BUS_SLOT2   = 3,
+  IPMB_BUS_SLOT3   = 5,
+  IPMB_BUS_SLOT4   = 7,
 };
 
 enum {

@@ -113,7 +113,7 @@ gpio_export ADAPTER_BUTTON_BMC_CO_N_R GPIOE3
 devmem_clear_bit $(scu_addr 80) 20
 devmem_clear_bit $(scu_addr 8C) 14
 gpio_export RST_BMC_USB_HUB_N_R GPIOE4
-gpio_set RST_BMC_USB_HUB_N_R 0
+gpio_set RST_BMC_USB_HUB_N_R 1
 
 # GPIOE5-EMMC_RST_N_R
 devmem_clear_bit $(scu_addr 80) 21
@@ -293,6 +293,12 @@ devmem_clear_bit $(scu_addr 88) 15
 val=$(/sbin/devmem 0x1e78007c)
 val=$((val & ~(0xf << 20)))
 /sbin/devmem 0x1e78007c 32 $val
+
+# *NOTICE*
+# We use the pin to identify the location of BMC whether it on Baseboard or Expansion card
+# This is a workaround for now and it will be removed in the future.
+# GPIOP0-BMC_LOCATION(0=basebaord, 1=nic expansion)
+gpio_export BMC_LOCATION GPIOP0
 
 # GPIOQ6-USB_OC_N
 devmem_clear_bit $(scu_addr 2C) 1

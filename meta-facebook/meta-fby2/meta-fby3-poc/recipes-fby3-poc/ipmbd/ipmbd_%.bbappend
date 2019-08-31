@@ -14,14 +14,13 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal/:"
-
-SRC_URI += "file://pal.c \
-            file://pal.h \
-           "
-
-LDFLAGS += " -lbic "
-DEPENDS += " libbic "
-RDEPENDS_${PN} += " libobmc-i2c libbic "
+FILESEXTRAPATHS_prepend := "${THISDIR}/files/:"
+SRC_URI  += " file://setup-ipmbd.sh \
+              file://run-ipmbd_0.sh \
+            "
 CFLAGS_prepend = " -DCONFIG_FBY3_POC "
+
+do_install_append(){
+  install -d ${D}${sysconfdir}/sv/ipmbd_0
+  install -m 755 run-ipmbd_0.sh ${D}${sysconfdir}/sv/ipmbd_0/run
+}

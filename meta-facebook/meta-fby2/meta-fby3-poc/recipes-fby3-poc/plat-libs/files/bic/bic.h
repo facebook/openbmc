@@ -202,6 +202,12 @@ int bic_get_config(uint8_t slot_id, bic_config_t *cfg);
 int bic_set_config(uint8_t slot_id, bic_config_t *cfg);
 int bic_get_post_buf(uint8_t slot_id, uint8_t *buf, uint8_t *len);
 
+int bic_server_power_on(uint8_t slot_id);
+int bic_server_power_off(uint8_t slot_id, uint8_t gs_flag);
+int bic_server_power_cycle(uint8_t slot_id);
+int bic_get_server_power_status(uint8_t slot_id, uint8_t *power_status);
+int bic_server_power_reset(uint8_t slot_id);
+
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info);
 int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size);
 int bic_write_fruid(uint8_t slot_id, uint8_t fru_id, const char *path);

@@ -14,14 +14,7 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal/:"
-
-SRC_URI += "file://pal.c \
-            file://pal.h \
-           "
-
-LDFLAGS += " -lbic "
-DEPENDS += " libbic "
-RDEPENDS_${PN} += " libobmc-i2c libbic "
+FILESEXTRAPATHS_prepend := "${THISDIR}/files/:"
+SRC_URI  += " file://run-sensord.sh \
+            "
 CFLAGS_prepend = " -DCONFIG_FBY3_POC "

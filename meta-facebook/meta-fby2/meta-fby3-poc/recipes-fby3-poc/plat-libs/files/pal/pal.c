@@ -46,7 +46,7 @@
 #include <sys/socket.h>
 #include <linux/netlink.h>
 #include <openbmc/ncsi.h>
-
+#include <facebook/bic.h>
 
 #define BIT(value, index) ((value >> index) & 1)
 
@@ -1803,13 +1803,14 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   int ret;
-  //uint8_t gpio;
-  //uint8_t retry = MAX_READ_RETRY;
+
+  if (slot_id < FRU_SLOT1 || slot_id > FRU_SLOT1) return 0;
 
   /* Check whether the system is 12V off or on */
-  ret = pal_is_server_12v_on(slot_id, status);
+  //ret = pal_is_server_12v_on(slot_id, status);
+  ret = bic_get_server_power_status(slot_id, status);
   if (ret < 0) {
-    syslog(LOG_ERR, "pal_get_server_power: pal_is_server_12v_on failed");
+    syslog(LOG_ERR, "%s: bic_get_server_power_status fails on slot%d\n", __func__, slot_id);
     return -1;
   }
 
@@ -1997,6 +1998,7 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
 
   return 0;
 }
+
 // Power Off, Power On, or Power Reset the server in given slot
 int
 pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
@@ -2020,33 +2022,24 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
 
   switch(cmd) {
     case SERVER_POWER_ON:
-      printf("The SERVER_POWER_ON function is not ready\n");
-      printf("Only support 12V-on/off\n");
-      return ERR_FAILURE;
+      ret = bic_server_power_on(slot_id);
+      return ret;
       break;
 
     case SERVER_POWER_OFF:
-      printf("The SERVER_POWER_OFF function is not ready\n");
-      printf("Only support 12V-on/off/cycle\n");
-      return ERR_FAILURE;
+      return bic_server_power_off(slot_id, 0);
       break;
 
     case SERVER_POWER_CYCLE:
-      printf("The SERVER_POWER_CYCLE function is not ready\n");
-      printf("Only support 12V-on/off/cycle\n");
-      return ERR_FAILURE;
+      return bic_server_power_cycle(slot_id);
       break;
 
     case SERVER_POWER_RESET:
-      printf("The SERVER_POWER_RESET function is not ready\n");
-      printf("Only support 12V-on/off/cycle\n");
-      return ERR_FAILURE;
+      return bic_server_power_reset(slot_id);
       break;
 
     case SERVER_GRACEFUL_SHUTDOWN:
-      printf("The SERVER_GRACEFUL_SHUTDOWN function is not ready\n");
-      printf("Only support 12V-on/off/cycle\n");
-      return ERR_FAILURE;
+      return bic_server_power_off(slot_id, 1);
       break;
 
     case SERVER_12V_ON:
@@ -2808,8 +2801,10 @@ pal_read_nic_fruid(const char *path, int size) {
   uint8_t wbuf[8], rbuf[32];
   uint8_t offs_len, addr;
   char *bus;
+  char *bmc_location_path = "/sys/class/gpio/gpio120/value";
   int offset, count;
   int fd = -1, dev = -1, ret = -1;
+  int bmc_location = 0;
 
   fd = open(path, O_WRONLY | O_CREAT, 0644);
   if (fd < 0) {
@@ -2817,7 +2812,11 @@ pal_read_nic_fruid(const char *path, int size) {
   }
 
   if (pal_is_ocp30_nic()) {
-    bus = "/dev/i2c-11";
+    if ( !read_device(bmc_location_path, &bmc_location) && bmc_location == 1 ) {
+      bus = "/dev/i2c-8";
+    } else {
+      bus = "/dev/i2c-11";
+    }
     addr = 0xA0;
     offs_len = 2;
   } else {
@@ -2825,7 +2824,7 @@ pal_read_nic_fruid(const char *path, int size) {
     addr = 0xA2;
     offs_len = (fby2_get_nic_mfgid() == MFG_BROADCOM) ? 1 : 2;
   }
-
+  syslog(LOG_WARNING, "%s: bmc_location:%d, bus:%s", __func__, bmc_location, bus);
   dev = open(bus, O_RDWR);
   if (dev < 0) {
     goto error_exit;

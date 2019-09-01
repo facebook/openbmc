@@ -87,7 +87,9 @@ class SensorUtilTest(BaseSensorsTest):
     def parse_sensors(self):
         self.set_sensors_cmd()
         data = run_shell_cmd(self.sensors_cmd)
-        result = {}
+        if "not present" in data:
+            return {"present": False}
+        result = {"present": True}
         # VCCGBE VR Vol                (0x54) :    1.05 Volts | (ok)
         # SOC DIMMA1 Temp              (0xB5) : NA | (na)
         name_regex = re.compile(r"^(.+)\s+\(0x.+\)\s*")

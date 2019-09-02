@@ -24,13 +24,6 @@ SRC_URI += "file://board-utils.sh \
             file://eth0_mac_fixup.sh \
             file://fcmcpld_update.sh \
             file://feutil \
-            file://fpga_ver.sh \
-            file://pwrcpld_update.sh \
-            file://power-on.sh \
-            file://presence_util.sh \
-            file://reset_brcm.sh \
-            file://scmcpld_update.sh \
-            file://set_sled.sh \
             file://setup_board.sh \
             file://setup_avs.sh \
             file://setup_default_gpio.sh \
@@ -50,7 +43,13 @@ OPENBMC_UTILS_FILES += " \
     board-utils.sh \
     boot_info.sh \
     cpld_ver.sh \
-    disable_watchdog.sh \
+    feutil \
+    reset_brcm.sh \
+    set_sled.sh \
+    sol.sh \
+    us_console.sh \
+    wedge_us_mac.sh \
+    wedge_power.sh \
     fcmcpld_update.sh \
     feutil \
     fpga_ver.sh \

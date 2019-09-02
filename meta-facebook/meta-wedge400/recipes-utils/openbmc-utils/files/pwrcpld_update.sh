@@ -19,19 +19,30 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-if [ $# -ne 1 ]; then
-    exit -1
-fi
-
-img="$1"
-
 source /usr/local/bin/openbmc-utils.sh
 
-KERNEL_VERSION=`uname -r`
-if [[ ${KERNEL_VERSION} != 4.1.* ]]; then
-    DLL_PATH=/usr/lib/libcpldupdate_dll_jtag.so
-else
-    DLL_PATH=/usr/lib/libcpldupdate_dll_ast_jtag.so
+prog="$0"
+img="$1"
+
+DLL_PATH=/usr/lib/libcpldupdate_dll_jtag.so
+
+
+usage() {
+    echo "Usage: $prog <img_file> <options: hw|sw>"
+    echo
+    echo "img_file: Image file for lattice CPLD"
+    echo "  VME file for software mode"
+    echo "  JED file for hardware mode"
+    echo "options:"
+    echo "  hw: Program the CPLD using JTAG hardware mode"
+    echo "  sw: Program the CPLD using JTAG software mode"
+    echo
+    echo
+}
+
+if [ $# -lt 1 ]; then
+    usage
+    exit 1
 fi
 
 enable_jtag_chain(){
@@ -67,11 +78,25 @@ trap 'rm -rf /tmp/pwrcpld_update' INT TERM QUIT EXIT
 echo 1 > /tmp/pwrcpld_update
 
 enable_jtag_chain
-ispvm -f 1000 dll $DLL_PATH "${img}"
+
+case $2 in
+    hw)
+        cpldprog -p "${img}"
+        ;;
+    sw)
+        ispvm -f 1000 dll $DLL_PATH "${img}"
+        ;;
+    *)
+        # default: sw mode
+        ispvm -f 1000 dll $DLL_PATH "${img}"
+        ;;
+esac
+
 result=$?
+
 disable_jtag_chain
 
-# 1 is returned upon upgrade success
+# 0 is returned upon upgrade success
 if [ $result -eq 1 ]; then
     echo "Upgrade successful."
     exit 0

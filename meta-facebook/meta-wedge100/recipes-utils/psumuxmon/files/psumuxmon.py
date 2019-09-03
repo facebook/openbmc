@@ -371,8 +371,12 @@ class Pcard(object):
                 syslog.LOG_CRIT,
                 "Mux channel %d is pcard with LTC4281(type=%d)" % (ch, val),
             )
-            self.dump_ltc4281_status(ch)
-            self.clear_ltc4281_status(ch)
+            if not self.check_ltc4281_status(ch):
+                syslog.syslog(
+                    syslog.LOG_CRIT, "Mux channel %d fault status is detected" % ch
+                )
+                self.dump_ltc4281_status(ch)
+                self.clear_ltc4281_status(ch)
             self.init_ltc4281(ch)
             self.with_ltc4281[ch] = True
         else:
@@ -593,6 +597,54 @@ class Pcard(object):
                 % (self.ltc4151_pcard_channel, self.ltc4151_check_interval),
             )
             set_mux_channel(self.ltc4151_pcard_channel)
+
+    def check_ltc4281_status(self, ch, delay=0.01) -> bool:
+        """
+        Check LTC4281 status register (0x04, 0x05, 0x24, 0x25, 0x1e)
+        """
+        fault_log = list(LTC4281_FAULT_LOG)
+        fault_log_ee = list(LTC4281_FAULT_LOG_EE)
+        # Skip to check bit7 eeprom_done
+        fault_log.pop(7)
+        fault_log_ee.pop(7)
+        log_status = (
+            fault_log + fault_log_ee + LTC4281_ADC_ALERT_LOG + LTC4281_ADC_ALERT_LOG_EE
+        )
+
+        for status in log_status:
+            val = self.ltc4281_read_channel(ch, os.path.join(LTC4281_PATH, status))
+            if isinstance(val, int) and val is 1:
+                return False
+            # Wait for a while to release cpu usage
+            time.sleep(delay)
+
+        for index in range(len(LTC4281_STATUS1)):
+            val = self.ltc4281_read_channel(
+                ch, os.path.join(LTC4281_PATH, LTC4281_STATUS1[index])
+            )
+            if index == 3 or index == 4 or index == 7:
+                if isinstance(val, int) and val is 0:
+                    return False
+            else:
+                if isinstance(val, int) and val is 1:
+                    return False
+            # Wait for a while to release cpu usage
+            time.sleep(delay)
+
+        for index in range(len(LTC4281_STATUS2)):
+            val = self.ltc4281_read_channel(
+                ch, os.path.join(LTC4281_PATH, LTC4281_STATUS2[index])
+            )
+            if index == 5 or index == 6:
+                if isinstance(val, int) and val is 0:
+                    return False
+            else:
+                if isinstance(val, int) and val is 1:
+                    return False
+            # Wait for a while to release cpu usage
+            time.sleep(delay)
+
+        return True
 
     def dump_ltc4281_status(self, ch, delay=0.01) -> None:
         """

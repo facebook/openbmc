@@ -26,6 +26,8 @@
 #include <string.h>
 #include "pal.h"
 
+#define BMC_IPMB_SLAVE_ADDR 0x16
+
 const char pal_fru_list[] = "all, fru";
 const char pal_server_list[] = "";
 
@@ -33,15 +35,15 @@ int pal_channel_to_bus(int channel)
 {
   switch (channel) {
     case 0:
-      return 14; // USB (LCD Debug Board)
+      return 13; // USB (LCD Debug Board)
     case 1:
-      return 1; // MB#1
+      return 0; // MB#1
     case 2:
-      return 2; // MB#2
+      return 1; // MB#2
     case 3:
-      return 3; // MB#3
+      return 2; // MB#3
     case 4:
-      return 4; // MB#4
+      return 3; // MB#4
   }
 
   // Debug purpose, map to real bus number
@@ -105,3 +107,10 @@ int pal_get_fru_name(uint8_t fru, char *name)
 
   return 0;
 }
+
+int pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id)
+{
+  *slave_addr = BMC_IPMB_SLAVE_ADDR;
+  return 0;
+}
+

@@ -31,18 +31,18 @@
 . /usr/local/fbpackages/utils/ast-functions
 echo -n "Starting IPMB Rx/Tx Daemon.."
 
-echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-14/new_device  #USB DBG
-echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-1/new_device  #MB1
-echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-2/new_device  #MB2
-echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-3/new_device  #MB3
-echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-4/new_device  #MB4
+echo slave-mqueue 0x1016 > /sys/bus/i2c/devices/i2c-13/new_device  #USB DBG
+echo slave-mqueue 0x1016 > /sys/bus/i2c/devices/i2c-0/new_device  #MB1
+echo slave-mqueue 0x1016 > /sys/bus/i2c/devices/i2c-1/new_device  #MB2
+echo slave-mqueue 0x1016 > /sys/bus/i2c/devices/i2c-2/new_device  #MB3
+echo slave-mqueue 0x1016 > /sys/bus/i2c/devices/i2c-3/new_device  #MB4
 
 ulimit -q 1024000
-runsv /etc/sv/ipmbd_14 > /dev/null 2>&1 &
+runsv /etc/sv/ipmbd_13 > /dev/null 2>&1 &
+runsv /etc/sv/ipmbd_0 > /dev/null 2>&1 &
 runsv /etc/sv/ipmbd_1 > /dev/null 2>&1 &
 runsv /etc/sv/ipmbd_2 > /dev/null 2>&1 &
 runsv /etc/sv/ipmbd_3 > /dev/null 2>&1 &
-runsv /etc/sv/ipmbd_4 > /dev/null 2>&1 &
 
 echo "done."
 

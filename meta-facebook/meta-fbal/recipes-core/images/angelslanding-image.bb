@@ -39,6 +39,7 @@ IMAGE_INSTALL += " \
   ipmb-util \
   me-util \
   e2fsprogs \
+  gpiod \
   "
 
 IMAGE_FEATURES += " \

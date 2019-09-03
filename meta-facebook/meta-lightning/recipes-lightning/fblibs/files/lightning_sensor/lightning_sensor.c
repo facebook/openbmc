@@ -147,6 +147,9 @@ enum adc_pins {
 enum nvme_temp_status {
   NVME_NO_TEMP_DATA = 0x80,
   NVME_SENSOR_FAILURE = 0x81,
+  NVME_RESERVED_MIN = 0x82,
+  NVME_RESERVED_MAX = 0xC3,
+  NVME_VALUE_NEGATIVE = 0xC4,
 };
 
 // List of PEB sensors to be monitored (PMC)
@@ -283,6 +286,7 @@ float fcb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 /* flags to record which ssd is abnormal */
 uint8_t ssd_no_temp[NUM_SSD] = {0};
 uint8_t ssd_sensor_fail[NUM_SSD] = {0};
+uint8_t ssd_sensor_reserve[NUM_SSD] = {0};
 
 int
 lightning_sensor_get_airflow(float *airflow_cfm)
@@ -624,6 +628,8 @@ read_device_float(const char *device, float *value) {
 
 int
 nvme_special_case_handling(uint8_t flash_num, float *value) {
+    uint8_t complement_value = ~(uint8_t)(*value);
+
     if ( (uint8_t)(*value) == NVME_NO_TEMP_DATA ) {
       if (!ssd_no_temp[flash_num])
         syslog(LOG_WARNING, "%s(): SSD %d no temperature data or temperature data is more the 5 seconds old", __func__, flash_num);
@@ -634,6 +640,11 @@ nvme_special_case_handling(uint8_t flash_num, float *value) {
         syslog(LOG_CRIT, "%s(): SSD %d temperature sensor failure", __func__, flash_num);
       ssd_sensor_fail[flash_num] = 1;
       return -1;
+    } else if ((uint8_t)(*value) >= NVME_RESERVED_MIN && (uint8_t)(*value) <= NVME_RESERVED_MAX ) {
+      if (!ssd_sensor_reserve[flash_num])
+        syslog(LOG_CRIT, "%s(): SSD %d value is reserved", __func__, flash_num);
+      ssd_sensor_reserve[flash_num] = 1;
+      return -1;
     } else {
       if (ssd_no_temp[flash_num]) {
         syslog(LOG_WARNING, "%s(): SSD %d can get temperature data now, %f C", __func__, flash_num, *value);
@@ -641,6 +652,13 @@ nvme_special_case_handling(uint8_t flash_num, float *value) {
       } else if (ssd_sensor_fail[flash_num]) {
         syslog(LOG_CRIT, "%s(): SSD %d temperature sensor is back from failure mode", __func__, flash_num);
         ssd_sensor_fail[flash_num] = 0;
+      } else if (ssd_sensor_reserve[flash_num]) {
+        syslog(LOG_CRIT, "%s(): SSD %d temperature sensor is back from reserved value", __func__, flash_num);
+        ssd_sensor_reserve[flash_num] = 0;
+      }
+
+      if ( (uint8_t)*value >= NVME_VALUE_NEGATIVE) {
+        *value = -(complement_value+1);
       }
       return 0;
     }

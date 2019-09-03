@@ -43,8 +43,8 @@ enum {
   ADC_2,
   ADC_3,
   ADC_4,
-  ADC_7 = 8,
-  ADC_8,
+  ADC_7,
+  ADC_8 = 1,
 };
 
 // Total sensors list
@@ -64,6 +64,10 @@ enum {
   FRU_SENSOR_P12V_2,
   FRU_SENSOR_P3V3,
   FRU_SENSOR_P3V_BAT,
+  FRU_SENSOR_GPU_INLET,
+  FRU_SENSOR_GPU_OUTLET,
+//  FRU_SENSOR_SW01_THERM,
+//  FRU_SENSOR_SW23_THERM,
   FRU_SENSOR_MAX,  //keep this at the tail
 };
 

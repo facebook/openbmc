@@ -37,10 +37,15 @@ const char pal_tach_list[] = "0..7";
 
 #define FAN_TACH "fan%d_input"
 #define FAN_PWM "pwm%d"
-#define FAN_DIR "/sys/class/hwmon/hwmon0"
+#define FAN_DIR "/sys/devices/platform/ahb/ahb:apb/1e786000.pwm-tacho-controller/hwmon/hwmon*"
 #define PWM_UNIT_MAX 255
-#define ADC_DIR "/sys/class/hwmon/hwmon1"
+
+#define BAT_DIR "/sys/devices/platform/iio-hwmon-battery/hwmon/hwmon*"
+#define ADC_DIR "/sys/devices/platform/iio-hwmon/hwmon/hwmon*"
 #define ADC_VALUE "in%d_input"
+
+#define THERM_DIR "/sys/class/i2c-dev/i2c-6/device/6-00%x/hwmon/hwmon*"
+#define THERM_VALUE "temp1_input"
 
 #define MAX_SENSOR_NUM FRU_SENSOR_MAX+1
 #define MAX_SENSOR_THRESHOLD 8
@@ -66,6 +71,8 @@ const uint8_t fru_sensor_list[] = {
   FRU_SENSOR_P12V_2,
   FRU_SENSOR_P3V3,
   FRU_SENSOR_P3V_BAT,
+  FRU_SENSOR_GPU_INLET,
+  FRU_SENSOR_GPU_OUTLET,
 };
 
 /*
@@ -87,6 +94,8 @@ const char* fru_sensor_name[] = {
   "FRU_SENSOR_P12V_2",
   "FRU_SENSOR_P3V3",
   "FRU_SENSOR_P3V_BAT",
+  "FRU_SENSOR_GPU_INLET",
+  "FRU_SENSOR_GPU_OUTLET",
 };
 
 float fru_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
@@ -94,85 +103,73 @@ size_t fru_sensor_cnt = sizeof(fru_sensor_list)/sizeof(uint8_t);
 
 static int read_device(const char *device, int *value)
 {
+  char command[LARGEST_DEVICE_NAME] = {0};
   FILE *fp;
-  int rc;
+  int err;
 
-  fp = fopen(device, "r");
-  if (!fp) {
-    int err = errno;
+  snprintf(command, LARGEST_DEVICE_NAME, "cat %s", device);
+
+  fp = popen(command, "r");
+  if (fp == NULL) {
+    err = errno;
 #ifdef DEBUG
-    syslog(LOG_WARNING, "failed to open device %s", device);
+    syslog(LOG_WARNING, "failed to read device %s", device);
 #endif
     return err;
   }
 
-  rc = fscanf(fp, "%d", value);
-  fclose(fp);
-  if (rc != 1) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "failed to read device %s", device);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
+  fgets(command, LARGEST_DEVICE_NAME, fp);
+  pclose(fp);
+
+  *value = (int)strtol(command, NULL, 10);
+
+  return 0;
 }
 
 static int read_device_float(const char *device, float *value)
 {
+  char command[LARGEST_DEVICE_NAME] = {0};
   FILE *fp;
-  int rc;
-  char tmp[10];
+  int err;
 
-  fp = fopen(device, "r");
-  if (!fp) {
-    int err = errno;
+  snprintf(command, LARGEST_DEVICE_NAME, "cat %s", device);
+
+  fp = popen(command, "r");
+  if (fp == NULL) {
+    err = errno;
 #ifdef DEBUG
-    syslog(LOG_WARNING, "failed to open device %s", device);
+    syslog(LOG_WARNING, "failed to read device %s", device);
 #endif
     return err;
   }
 
-  rc = fscanf(fp, "%s", tmp);
-  fclose(fp);
+  fgets(command, LARGEST_DEVICE_NAME, fp);
+  pclose(fp);
 
-  if (rc != 1) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "failed to read device %s", device);
-#endif
-    return ENOENT;
-  }
-
-  *value = atof(tmp);
+  *value = strtof(command, NULL);
 
   return 0;
 }
 
 static int write_device(const char *device, const char *value)
 {
+  char command[LARGEST_DEVICE_NAME] = {0};
   FILE *fp;
-  int rc;
+  int err;
 
-  fp = fopen(device, "w");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_WARNING, "failed to open device for write %s", device);
-#endif
-    return err;
-  }
+  snprintf(command, LARGEST_DEVICE_NAME, "echo %s > %s", value, device);
 
-  rc = fputs(value, fp);
-  fclose(fp);
-
-  if (rc < 0) {
+  fp = popen(command, "r");
+  if (fp == NULL) {
+    err = errno;
 #ifdef DEBUG
     syslog(LOG_WARNING, "failed to write device %s", device);
 #endif
-    return ENOENT;
-  } else {
-    return 0;
+    return err;
   }
+  pclose(fp);
+
+  return 0;
 }
 
 static int read_fan_value(const int fan, const char *device, int *value)
@@ -218,22 +215,27 @@ static int read_adc_value(const int adc, const char *device, float r1, float r2,
 {
   char full_name[LARGEST_DEVICE_NAME];
   char device_name[LARGEST_DEVICE_NAME];
-  float val;
   int ret;
+  float val;
 
   snprintf(device_name, LARGEST_DEVICE_NAME, device, adc);
   snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", ADC_DIR, device_name);
+
   ret = read_device_float(full_name, &val);
   if (ret != 0)
     return ret;
 
-  *value = val / 1000.0 * (r1 + r2) / r2 ;
+  *value = val / 1000.0 * (r1 + r2) / r2;
+
   return 0;
 }
 
-static int read_battery_status(float *value)
+static int read_battery_value(const int adc, const char *device, float r1, float r2, float *value)
 {
+  char full_name[LARGEST_DEVICE_NAME];
+  char device_name[LARGEST_DEVICE_NAME];
   int ret = -1;
+
   gpio_desc_t *gp_batt = gpio_open_by_shadow("BATTERY_DETECT");
   if (!gp_batt) {
     return -1;
@@ -242,10 +244,55 @@ static int read_battery_status(float *value)
     goto bail;
   }
   msleep(10);
-  ret = read_adc_value(ADC_8, ADC_VALUE, 200.0, 100.0, value);
+
+  snprintf(device_name, LARGEST_DEVICE_NAME, device, adc);
+  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", BAT_DIR, device_name);
+
+  ret = read_device_float(full_name, value);
+
   gpio_set_value(gp_batt, GPIO_VALUE_HIGH);
+
 bail:
   gpio_close(gp_batt);
+  return ret;
+}
+
+static int read_temp_attr(uint8_t sensor_num, const char *device, const char *attr, float *value)
+{
+  int ret;
+  float temp;
+  char full_name[LARGEST_DEVICE_NAME];
+  char device_name[LARGEST_DEVICE_NAME];
+  uint8_t addr;
+
+  switch (sensor_num)
+  {
+    case FRU_SENSOR_GPU_OUTLET:
+      addr = 0x4f;
+      break;
+    case FRU_SENSOR_GPU_INLET:
+      addr = 0x4c;
+      break;
+//    case FRU_SENSOR_SW01_THERM:
+//      addr = 0x4d;
+//      break;
+//    case FRU_SENSOR_SW23_THERM:
+//      addr = 0x4e;
+//      break;
+    default:
+      return READING_NA;
+      break;
+  }
+
+  snprintf(device_name, LARGEST_DEVICE_NAME, device, addr);
+  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", device_name, attr);
+
+  ret = read_device_float(full_name, &temp);
+  if (ret != 0)
+    return READING_NA;
+
+  *value = temp/1000.0;
+
   return ret;
 }
 
@@ -428,6 +475,12 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
     case FRU_SENSOR_P3V_BAT:
       sprintf(units, "Volts");
       break;
+    case FRU_SENSOR_GPU_INLET:
+    case FRU_SENSOR_GPU_OUTLET:
+//    case FRU_SENSOR_SW01_THERM:
+//    case FRU_SENSOR_SW23_THERM:
+      sprintf(units, "Degree C");
+      break;
     default:
       return -1;
   }
@@ -502,7 +555,14 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
       ret = read_adc_value(ADC_7, ADC_VALUE, 2.87, 2.0, (float*)value);
       break;
     case FRU_SENSOR_P3V_BAT:
-      ret = read_battery_status((float*)value);
+      ret = read_battery_value(ADC_8, ADC_VALUE, 200.0, 100.0, (float*)value);
+      break;
+    // Thermal sensors
+    case FRU_SENSOR_GPU_INLET:
+    case FRU_SENSOR_GPU_OUTLET:
+//    case FRU_SENSOR_SW01_THERM:
+//    case FRU_SENSOR_SW23_THERM:
+      ret = read_temp_attr(sensor_num, THERM_DIR, THERM_VALUE, (float*)value);
       break;
     default:
       ret = READING_NA;

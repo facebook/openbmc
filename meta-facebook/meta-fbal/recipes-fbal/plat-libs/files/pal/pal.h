@@ -24,6 +24,7 @@
 #include <openbmc/obmc-pal.h>
 #include "pal_sensors.h"
 #include "pal_health.h"
+#include "pal_power.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -128,23 +129,8 @@ enum {
   I2C_BUS_23,
 };
 
-int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
-int pal_is_slot_server(uint8_t fru);
-int pal_get_server_power(uint8_t fru, uint8_t *status);
-int pal_set_server_power(uint8_t fru, uint8_t cmd);
-int pal_sled_cycle(void);
-int pal_set_rst_btn(uint8_t slot, uint8_t status);
 int pal_set_led(uint8_t slot, uint8_t status);
 int pal_set_id_led(uint8_t slot, uint8_t status);
-int pal_get_fru_id(char *fru_str, uint8_t *fru);
-int pal_get_fru_name(uint8_t fru, char *name);
-int pal_get_key_value(char *key, char *value);
-int pal_set_key_value(char *key, char *value);
-int pal_get_last_pwr_state(uint8_t fru, char *state);
-int pal_set_last_pwr_state(uint8_t fru, char *state);
-bool is_server_off(void);
-void pal_update_ts_sled();
-void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 int read_device(const char *device, int *value);
 int pal_get_rst_btn(uint8_t *status);
 

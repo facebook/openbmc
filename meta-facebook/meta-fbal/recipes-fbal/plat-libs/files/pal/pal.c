@@ -36,18 +36,7 @@
 #define FBAL_PLATFORM_NAME "angelslanding"
 #define LAST_KEY "last_key"
 
-#define GPIO_POWER "FM_BMC_PWRBTN_OUT_R_N"
-#define GPIO_POWER_GOOD "PWRGD_SYS_PWROK"
-#define GPIO_POWER_RESET "RST_BMC_RSTBTN_OUT_R_N"
-#define GPIO_RESET_BTN_IN "FP_BMC_RST_BTN_N" 
-#define GPIO_BLADE_ID0 "FM_BLADE_ID_0"
-#define GPIO_BLADE_ID1 "FM_BLADE_ID_1"
 #define GPIO_LOCATE_LED "FP_LOCATE_LED"
-
-#define DELAY_GRACEFUL_SHUTDOWN 1
-#define DELAY_POWER_OFF 6
-#define DELAY_POWER_CYCLE 10
-
 
 const char pal_fru_list[] = "all, mb, nic0, nic1";
 const char pal_server_list[] = "mb";
@@ -290,76 +279,6 @@ pal_is_bmc_por(void) {
   return (por)?1:0;
 }
 
-// Power On the server in a given slot
-static int
-server_power_on(void) {
-  int ret;
-  gpio_desc_t *gdesc = NULL;
-
-  gdesc = gpio_open_by_shadow(GPIO_POWER);
-  if (gdesc == NULL)
-    return -1;
-
-  ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
-  if (ret != 0)
-    goto error;
-
-  ret = gpio_set_value(gdesc, GPIO_VALUE_LOW);
-  if (ret != 0)
-    goto error;
-
-  sleep(1);
-
-  ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
-  if (ret != 0)
-    goto error;
-
-  sleep(2);
-
-  system("/usr/bin/sv restart fscd >> /dev/null");
-
-error:
-  gpio_close(gdesc);
-  return ret;
-}
-
-// Power Off the server in given slot
-static int
-server_power_off(bool gs_flag) {
-  int ret;
-  gpio_desc_t *gdesc = NULL;
-
-  gdesc = gpio_open_by_shadow(GPIO_POWER);
-  if (gdesc == NULL)
-    return -1;
-
-  system("/usr/bin/sv stop fscd >> /dev/null");
-
-  ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
-  if (ret != 0)
-    goto error;
-
-  sleep(1);
-
-  ret = gpio_set_value(gdesc, GPIO_VALUE_LOW);
-  if (ret != 0)
-    goto error;
-
-  if (gs_flag) {
-    sleep(DELAY_GRACEFUL_SHUTDOWN);
-  } else {
-    sleep(DELAY_POWER_OFF);
-  }
-
-  ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
-  if (ret != 0)
-    goto error;
-
-error:
-  gpio_close(gdesc);
-  return ret;
-}
-
 int
 pal_get_platform_name(char *name) {
   strcpy(name, FBAL_PLATFORM_NAME);
@@ -387,162 +306,6 @@ pal_is_slot_server(uint8_t fru) {
     return 1;
   return 0;
 }
-
-int
-pal_get_server_power(uint8_t fru, uint8_t *status) {
-  int ret;
-  gpio_desc_t *gdesc = NULL;
-  gpio_value_t val;
-
-  if (fru != FRU_MB)
-    return -1;
-
-  gdesc = gpio_open_by_shadow(GPIO_POWER_GOOD);
-  if (gdesc == NULL)
-    return -1;
-
-  ret = gpio_get_value(gdesc, &val);
-  if (ret != 0)
-    goto error;
-
-  *status = (int)val;
-
-error:
-  gpio_close(gdesc);
-  return ret;
-}
-
-bool
-is_server_off(void) {
-  int ret;
-  uint8_t status;
-  ret = pal_get_server_power(FRU_MB, &status);
-  if (ret) {
-    return false;
-  }
-
-  return status == SERVER_POWER_OFF? true: false;
-}
-
-
-// Power Off, Power On, or Power Reset the server in given slot
-int
-pal_set_server_power(uint8_t fru, uint8_t cmd) {
-  uint8_t status;
-  bool gs_flag = false;
-  uint8_t ret;
-
-  if (pal_get_server_power(fru, &status) < 0) {
-    return -1;
-  }
-
-  switch(cmd) {
-    case SERVER_POWER_ON:
-      if (status == SERVER_POWER_ON)
-        return 1;
-      else
-        return server_power_on();
-      break;
-
-    case SERVER_POWER_OFF:
-      if (status == SERVER_POWER_OFF)
-        return 1;
-      else
-        return server_power_off(gs_flag);
-      break;
-
-    case SERVER_POWER_CYCLE:
-      if (status == SERVER_POWER_ON) {
-        if (server_power_off(gs_flag))
-          return -1;
-
-        sleep(DELAY_POWER_CYCLE);
-
-        return server_power_on();
-
-      } else if (status == SERVER_POWER_OFF) {
-
-        return (server_power_on());
-      }
-      break;
-
-    case SERVER_GRACEFUL_SHUTDOWN:
-      if (status == SERVER_POWER_OFF)
-        return 1;
-      gs_flag = true;
-      return server_power_off(gs_flag);
-      break;
-
-   case SERVER_POWER_RESET:
-      if (status == SERVER_POWER_ON) {
-        ret = pal_set_rst_btn(fru, 0);
-        if (ret < 0)
-          return ret;
-        msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
-        ret = pal_set_rst_btn(fru, 1);
-        if (ret < 0)
-          return ret;
-      } else if (status == SERVER_POWER_OFF)
-        return -1;
-      break;
-
-    default:
-      return -1;
-  }
-
-  return 0;
-}
-
-int
-pal_sled_cycle(void) {
-  // Send command to HSC power cycle
-  system("i2cset -y 7 0x11 0xd9 c &> /dev/null");
-
-  return 0;
-}
-
-// Update the Reset button input to the server at given slot
-int
-pal_set_rst_btn(uint8_t slot, uint8_t status) {
-  int ret;
-  gpio_desc_t *gdesc = NULL;
-  gpio_value_t val;
-
-  if (slot != FRU_MB) {
-    return -1;
-  }
-
-  gdesc = gpio_open_by_shadow(GPIO_POWER_RESET);
-  if (gdesc == NULL)
-    return -1;
-
-  val = status? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
-  ret = gpio_set_value(gdesc, val);
-  if (ret != 0)
-    goto error;
-
-error:
-  gpio_close(gdesc);
-  return ret;
-}
-
-// Return the front panel's Reset Button status
-int
-pal_get_rst_btn(uint8_t *status) {
-  int ret = -1;
-  gpio_value_t value;
-  gpio_desc_t *desc = gpio_open_by_shadow(GPIO_RESET_BTN_IN);
-  if (!desc) {
-     return -1;
-  }
-  if (0 == gpio_get_value(desc, &value)) {
-    *status = value == GPIO_VALUE_HIGH ? 0 : 1;
-    ret = 0;
-  }
-  gpio_close(desc);
-  return ret;
-}  
-
 
 // Update the Identification LED for the given fru with the status
 int
@@ -626,41 +389,22 @@ pal_get_fru_name(uint8_t fru, char *name) {
   return 0;
 }
 
-int
-pal_set_last_pwr_state(uint8_t fru, char *state) {
-
+void
+pal_dump_key_value(void) {
   int ret;
-  char key[MAX_KEY_LEN] = {0};
+  int i = 0;
+  char value[MAX_VALUE_LEN] = {0x0};
 
-  sprintf(key, "%s", "pwr_server_last_state");
-
-  ret = pal_set_key_value(key, state);
-  if (ret < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "pal_set_last_pwr_state: pal_set_key_value failed for "
-        "fru %u", fru);
-#endif
+  while (strcmp(key_cfg[i].name, LAST_KEY)) {
+    printf("%s:", key_cfg[i].name);
+    if ((ret = kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST)) < 0) {
+    printf("\n");
+  } else {
+    printf("%s\n",  value);
   }
-
-  return ret;
-}
-
-int
-pal_get_last_pwr_state(uint8_t fru, char *state) {
-  int ret;
-  char key[MAX_KEY_LEN] = {0};
-
-  sprintf(key, "%s", "pwr_server_last_state");
-
-  ret = pal_get_key_value(key, state);
-  if (ret < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "pal_get_last_pwr_state: pal_get_key_value failed for "
-        "fru %u", fru);
-#endif
+    i++;
+    memset(value, 0, MAX_VALUE_LEN);
   }
-
-  return ret;
 }
 
 void

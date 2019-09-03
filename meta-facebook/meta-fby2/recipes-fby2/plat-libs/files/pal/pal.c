@@ -10689,3 +10689,40 @@ int
 pal_get_sdr_update_flag(uint8_t slot) {
   return bic_get_sdr_threshold_update_flag(slot);
 }
+
+int
+pal_parse_mem_mapping_string(uint8_t channel, bool *support_mem_mapping, char *error_log) {
+  if ( !support_mem_mapping ) {
+    return  PAL_ENOTSUP;
+  }
+  if ( !error_log ) {
+    *support_mem_mapping = false;
+    return PAL_EOK;
+  }
+  error_log[0] = '\0';
+  *support_mem_mapping = false;
+
+#if defined(CONFIG_FBY2_ND)  
+  //uint8_t channel = (sel[9] & 0x0f);
+  *support_mem_mapping = true;
+
+  switch (channel) {
+    case 2:
+      strcpy(error_log, "C0");
+      break;
+    case 3:
+      strcpy(error_log, "D0");
+      break;
+    case 6:
+      strcpy(error_log, "G0");
+      break;
+    case 7:
+      strcpy(error_log, "H0");
+      break;
+    default:
+      *support_mem_mapping = false;
+      break;
+  }
+#endif
+  return 0;
+}

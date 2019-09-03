@@ -187,7 +187,11 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t error_type = general_info & 0x0f;
   uint8_t plat;
   uint8_t dimm_failure_event = (uint8_t) sel[12];
+  uint8_t mem_error_type;
+  uint8_t channel;
+  bool support_mem_mapping = false;
   char dimm_fail_event[][64] = {"Memory training failure", "Memory correctable error", "Memory uncorrectable error", "Reserved"};
+  char mem_mapping_string[32];
   error_log[0] = '\0';
 
   switch (error_type) {
@@ -205,15 +209,53 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
       break;
     case UNIFIED_MEM_ERR:
       plat = (dimm_failure_event & 0x80) >> 7;
-      if (plat == 0) { //Intel
-        sprintf(error_log, "GeneralInfo: MemErr(0x%02X), DIMM Slot Location: Sled %02X/Socket %02X, Channel %02X, Slot %02X, \
-                          DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%02X",
-              general_info, ((sel[8]>>4) & 0x03), sel[8] & 0x0f, sel[9] & 0x0f, sel[10] & 0x0f, dimm_fail_event[sel[12]&0x03], sel[13], sel[14]);
-      } else { //AMD
-        uint16_t minor_code = sel[15] << 8 | sel[14];
-        sprintf(error_log, "GeneralInfo: MemErr(0x%02X), DIMM Slot Location: Sled %02X/Socket %02X, Channel %02X, Slot %02X, \
-                          DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%04X",
-              general_info, ((sel[8]>>4) & 0x03), sel[8] & 0x0f, sel[9] & 0x0f, sel[10] & 0x0f, dimm_fail_event[sel[12]&0x03], sel[13], minor_code);
+      mem_error_type = (dimm_failure_event & 0x03);
+      channel = (sel[9] & 0x0f);
+      pal_parse_mem_mapping_string(channel, &support_mem_mapping, mem_mapping_string);
+
+      switch (mem_error_type) {
+        case MEMORY_TRAINING_ERR:
+          if(support_mem_mapping) {
+            if (plat == 0) { //Intel
+              sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02X/Socket %02X, Channel %02X, Slot %02X, DIMM %s, \
+                                DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%02X",
+                    general_info, ((sel[8]>>4) & 0x03), sel[8] & 0x0f, sel[9] & 0x0f, sel[10] & 0x0f, mem_mapping_string, dimm_fail_event[sel[12]&0x03], sel[13], sel[14]);
+            } else { //AMD
+              int16_t minor_code = sel[15] << 8 | sel[14];
+              sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02X/Socket %02X, Channel %02X, Slot %02X, DIMM %s, \
+                                DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%04X",
+                    general_info, ((sel[8]>>4) & 0x03), sel[8] & 0x0f, sel[9] & 0x0f, sel[10] & 0x0f, mem_mapping_string, dimm_fail_event[sel[12]&0x03], sel[13], minor_code);
+            }
+          } else {
+            if (plat == 0) { //Intel
+              sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02X/Socket %02X, Channel %02X, Slot %02X, \
+                                DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%02X",
+                    general_info, ((sel[8]>>4) & 0x03), sel[8] & 0x0f, sel[9] & 0x0f, sel[10] & 0x0f, dimm_fail_event[sel[12]&0x03], sel[13], sel[14]);
+            } else { //AMD
+              int16_t minor_code = sel[15] << 8 | sel[14];
+              sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02X/Socket %02X, Channel %02X, Slot %02X, \
+                                DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%04X",
+                    general_info, ((sel[8]>>4) & 0x03), sel[8] & 0x0f, sel[9] & 0x0f, sel[10] & 0x0f, dimm_fail_event[sel[12]&0x03], sel[13], minor_code);
+            }
+          }
+          break;
+        case MEMORY_CORRECTABLE_ERR:
+        case MEMORY_UNCORRECTABLE_ERR:
+          if(support_mem_mapping) {
+            sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02X/Socket %02X, Channel %02X, Slot %02X, DIMM %s, \
+                          DIMM Failure Event: %s",
+                general_info, ((sel[8]>>4) & 0x03), sel[8] & 0x0f, sel[9] & 0x0f, sel[10] & 0x0f, mem_mapping_string, dimm_fail_event[sel[12]&0x03]);
+          } else {
+            sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02X/Socket %02X, Channel %02X, Slot %02X, \
+                          DIMM Failure Event: %s",
+                general_info, ((sel[8]>>4) & 0x03), sel[8] & 0x0f, sel[9] & 0x0f, sel[10] & 0x0f, dimm_fail_event[sel[12]&0x03]);
+          }
+          break;
+        default:
+          sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02X/Socket %02X, Channel %02X, Slot %02X, \
+                        DIMM Failure Event: %s",
+              general_info, ((sel[8]>>4) & 0x03), sel[8] & 0x0f, sel[9] & 0x0f, sel[10] & 0x0f, dimm_fail_event[sel[12]&0x03]);
+          break;
       }
       break;
     default:
@@ -223,6 +265,18 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   }
 
   return 0;
+}
+
+int __attribute__((weak))
+pal_parse_mem_mapping_string(uint8_t channel, bool *support_mem_mapping, char *error_log)
+{
+  if ( support_mem_mapping ) {
+    *support_mem_mapping = false;
+  }
+  if (error_log) {
+    error_log[0] = '\0';
+  }
+  return PAL_EOK;
 }
 
 int __attribute__((weak))

@@ -196,6 +196,12 @@ enum {
   HPR_WARNING = 0xC5,
 };
 
+enum {
+  MEMORY_TRAINING_ERR = 0x0,
+  MEMORY_CORRECTABLE_ERR = 0x1,
+  MEMORY_UNCORRECTABLE_ERR = 0x2,
+};
+
 // Helper function needed by some of pal functions
 void msleep(int msec);
 
@@ -376,6 +382,7 @@ int pal_wait_mcu_ready2update(uint8_t bus);
 int pal_set_time_sync(uint8_t *req_data, uint8_t req_len);
 int pal_set_sdr_update_flag(uint8_t slot, uint8_t update);
 int pal_get_sdr_update_flag(uint8_t slot);
+int pal_parse_mem_mapping_string(uint8_t channel, bool *support_mem_mapping, char *error_log);
 #ifdef __cplusplus
 }
 #endif

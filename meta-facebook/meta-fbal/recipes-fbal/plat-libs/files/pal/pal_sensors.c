@@ -11,9 +11,9 @@
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/nm.h>
 #include <openbmc/ipmb.h>
 #include "pal.h"
-#include "pal_sensors.h"
 
 //#define DEBUG
 #define GPIO_P3V_BAT_SCALED_EN "P3V_BAT_SCALED_EN"
@@ -21,6 +21,10 @@
 static int read_adc_val(uint8_t adc_id, float *value);
 static int read_battery_val(uint8_t adc_id, float *value);
 static int read_temp421(uint8_t temp_id, float *value);
+static int read_hsc_iout(uint8_t hsc_id, float *value);
+static int read_hsc_vin(uint8_t hsc_id, float *value);
+static int read_hsc_pin(uint8_t hsc_id, float *value);
+static int read_hsc_temp(uint8_t hsc_id, float *value);
 
 const uint8_t mb_sensor_list[] = {
   MB_SNR_INLET_TEMP,
@@ -41,6 +45,10 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_CPU1_PVPP_DEF,
   MB_SNR_CPU1_PVTT_ABC,
   MB_SNR_CPU1_PVTT_DEF,
+  MB_SNR_HSC_VIN,
+  MB_SNR_HSC_IOUT,
+  MB_SNR_HSC_PIN,
+  MB_SNR_HSC_TEMP,
 };
 
 // List of MB discrete sensors to be monitored
@@ -67,6 +75,24 @@ PAL_ADC_INFO adc_info_list[] = {
   {ADC13, 0, 1},
   {ADC14, 0, 1},
   {ADC_BAT, 200, 100},
+};
+
+//ADM1278
+PAL_ADM1278_INFO adm1278_info_list[] = {
+  {ADM1278_VOLTAGE, 19599, 0, 100},
+  {ADM1278_CURRENT, 800 * ADM1278_RSENSE, 20475, 10},
+  {ADM1278_POWER, 6123 * ADM1278_RSENSE, 0, 100},
+  {ADM1278_TEMP, 42, 31880, 10},
+};
+
+//HSC
+PAL_HSC_INFO hsc_info_list[] = {
+  {HSC_ID0, ADM1278_SLAVE_ADDR, adm1278_info_list},
+};
+
+//NM
+PAL_I2C_BUS_INFO nm_info_list[] = {
+  {NM_ID0, NM_IPMB_BUS_ID, NM_SLAVE_ADDR},
 };
 
 //TPM421
@@ -142,10 +168,10 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x3D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x3E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x3F
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x40
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x41
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x42
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x43
+  {"MB_HSC_VIN",  HSC_ID0, read_hsc_vin,  true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}}, //0x40
+  {"MB_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x41
+  {"MB_HSC_PIN",  HSC_ID0, read_hsc_pin,  true, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x42
+  {"MB_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x43 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x44
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x45
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x46
@@ -472,6 +498,241 @@ read_battery_val(uint8_t adc_id, float *value) {
   bail:
     gpio_close(gp_batt);
     return ret;
+}    
+static int
+get_nm_rw_info(uint8_t nm_id, uint8_t* nm_bus, uint8_t* nm_addr, uint16_t* bmc_addr) {
+  int ret=0;
+
+  *nm_bus= nm_info_list[nm_id].bus;
+  *nm_addr= nm_info_list[nm_id].slv_addr;
+  ret = pal_get_bmc_ipmb_slave_addr(bmc_addr, nm_info_list[nm_id].bus);
+  if (ret != 0) {
+    return ret;
+  }
+ 
+  return 0;
+}
+
+static void
+get_adm1278_info(uint8_t hsc_id, uint8_t type, float* m, float* b, float* r) {
+
+ *m = hsc_info_list[hsc_id].info[type].m;
+ *b = hsc_info_list[hsc_id].info[type].b;
+ *r = hsc_info_list[hsc_id].info[type].r;
+  
+ return;   
+}
+
+//Sensor HSC
+static int
+set_NM_hsc_pmon_config(uint8_t hsc_id, uint8_t value_l, uint8_t value_h) {
+  uint8_t data[2] = {0x00};
+  uint8_t rbuf[20] = {0x00};
+  uint8_t dev_addr = hsc_info_list[hsc_id].slv_addr;
+  NM_RW_INFO info;
+  int ret = 0;
+
+  get_nm_rw_info(NM_ID0, &info.bus, &info.nm_addr, &info.bmc_addr);
+  info.nm_cmd= PMBUS_PMON_CONFIG;
+
+  ret = cmd_NM_pmbus_read_word(info, dev_addr, rbuf);
+  if (ret != 0) {
+    ret = READING_NA;
+    return ret;
+  }
+
+  if (rbuf[6] == 0) {
+    data[0] = rbuf[10];   //PMON data low byte
+    data[1] = rbuf[11];   //PMON data high byte
+
+    data[0] |= value_l;
+    data[1] |= value_h;
+  } else {
+    ret = READING_NA;
+    return ret;
+  }
+  
+  ret = cmd_NM_pmbus_write_word(info, dev_addr, data);
+  if (ret != 0) {
+    return ret;
+  }
+
+  return 0;
+}
+
+static int
+enable_hsc_temp_monitor(uint8_t hsc_id) {
+  int ret=0;
+
+  ret = set_NM_hsc_pmon_config(hsc_id, 0x08, 0x00);
+  if (ret != 0) {
+    return ret;
+  }
+
+  return 0;
+}
+
+static int
+read_hsc_iout(uint8_t hsc_id, float *value) {
+  uint8_t rbuf[32] = {0x00};
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr; 
+  float m, b, r; 
+  static int retry = 0;
+  int ret = 0;
+  NM_RW_INFO info;
+
+  get_nm_rw_info(NM_ID0, &info.bus, &info.nm_addr, &info.bmc_addr);
+  info.nm_cmd = PMBUS_READ_IOUT; 
+
+  ret = cmd_NM_pmbus_read_word(info, addr, rbuf);
+  if (ret != 0) {
+    retry++;
+    if (retry <= 3 ) {
+      ret = READING_SKIP;
+    }
+    ret = READING_NA;
+    return ret;
+  }
+
+  get_adm1278_info(hsc_id, ADM1278_CURRENT, &m, &b, &r);
+
+  if (rbuf[6] == 0) {
+    *value = ((float)(rbuf[11] << 8 | rbuf[10]) * r - b) / m;
+  #ifdef DEBUG  
+    syslog(LOG_DEBUG, "%s Iout value=%f\n", __func__, *value);
+  #endif  
+    retry = 0;
+  } else {
+  #ifdef DEBUG
+    syslog(LOG_DEBUG, "%s cc=%x\n", __func__, rbuf[6]);
+  #endif
+    ret = READING_NA;
+  }
+
+  return ret;
+}
+
+static int
+read_hsc_vin(uint8_t hsc_id, float *value) {
+  uint8_t rbuf[32] = {0x00};
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr; 
+  float m, b, r; 
+  static int retry = 0;
+  int ret = 0;
+  NM_RW_INFO info;
+
+  get_nm_rw_info(NM_ID0, &info.bus, &info.nm_addr, &info.bmc_addr);
+  info.nm_cmd = PMBUS_READ_VIN;
+
+  ret = cmd_NM_pmbus_read_word(info, addr, rbuf);
+  if (ret != 0) {
+    retry++;
+    if (retry <= 3 ) {
+      ret = READING_SKIP;
+    }
+    ret = READING_NA;
+    return ret;
+  }
+
+  
+  get_adm1278_info(hsc_id, ADM1278_VOLTAGE, &m, &b, &r);
+  if (rbuf[6] == 0) {
+    *value = ((float)(rbuf[11] << 8 | rbuf[10]) * r - b) / m;
+  #ifdef DEBUG  
+    syslog(LOG_DEBUG, "%s Vin value=%f\n", __func__, *value);
+  #endif  
+    retry = 0;
+  } else {
+  #ifdef DEBUG
+    syslog(LOG_DEBUG, "%s cc=%x\n", __func__, rbuf[6]);
+  #endif
+    ret = READING_NA;
+  }
+
+  return ret;
+}
+
+static int
+read_hsc_pin(uint8_t hsc_id, float *value) {
+  uint8_t rbuf[32] = {0x00};
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr; 
+  float m, b, r; 
+  static int retry = 0;
+  int ret = 0;
+  NM_RW_INFO info;
+
+  get_nm_rw_info(NM_ID0, &info.bus, &info.nm_addr, &info.bmc_addr);
+  info.nm_cmd = PMBUS_READ_PIN;
+
+  ret = cmd_NM_pmbus_read_word(info, addr, rbuf);
+  if (ret != 0) {
+    retry++;
+    if (retry <= 3 ) {
+      ret = READING_SKIP;
+    }
+    ret = READING_NA;
+    return ret;
+  }
+
+
+  get_adm1278_info(hsc_id, ADM1278_POWER, &m, &b, &r);
+
+  if (rbuf[6] == 0) {
+    *value = ((float)(rbuf[11] << 8 | rbuf[10]) * r - b) / m;
+  #ifdef DEBUG  
+    syslog(LOG_DEBUG, "%s Pin value=%f\n", __func__, *value);
+  #endif  
+    retry = 0;
+  } else {
+  #ifdef DEBUG
+    syslog(LOG_DEBUG, "%s cc=%x\n", __func__, rbuf[6]);
+  #endif
+    ret = READING_NA;
+  }
+
+  return ret;
+}
+
+static int
+read_hsc_temp(uint8_t hsc_id, float *value) {
+  uint8_t rbuf[32] = {0x00};
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr; 
+  float m, b, r; 
+  static int retry = 0;
+  int ret = 0;
+  NM_RW_INFO info;
+
+  enable_hsc_temp_monitor(hsc_id);
+
+  get_nm_rw_info(NM_ID0, &info.bus, &info.nm_addr, &info.bmc_addr);
+  info.nm_cmd = PMBUS_READ_TEMP1;
+
+  ret = cmd_NM_pmbus_read_word(info, addr, rbuf);
+  if (ret != 0) {
+    retry++;
+    if (retry <= 3 ) {
+      ret = READING_SKIP;
+    }
+    ret = READING_NA;
+    return ret;
+  }
+
+  get_adm1278_info(hsc_id, ADM1278_TEMP, &m, &b, &r);
+
+  if (rbuf[6] == 0) {
+    *value = ((float)(rbuf[11] << 8 | rbuf[10]) * r - b) / m;
+  #ifdef DEBUG  
+    syslog(LOG_DEBUG, "%s Temp value=%f\n", __func__, *value);
+  #endif  
+    retry = 0;
+  } else {
+  #ifdef DEBUG
+    syslog(LOG_DEBUG, "%s cc=%x\n", __func__, rbuf[6]);
+  #endif
+    ret = READING_NA;
+  }
+
+  return ret;
 }
 
 /*==========================================

@@ -8,6 +8,24 @@
 #define MB_ADC_BAT_VOLTAGE_DEVICE "/sys/devices/platform/iio-hwmon-battery/hwmon/hwmon*/in1_input"
 
 
+//AMD1278 CMD INFO
+#define PMBUS_PMON_CONFIG  (0xD4)
+#define ADM1278_SLAVE_ADDR (0x22)
+#define ADM1278_RSENSE     (0.15)
+
+#define PMBUS_PAGE         (0x00)
+#define PMBUS_VOUT_MODE    (0x20)
+#define PMBUS_VOUT_COMMAND (0x21)
+#define PMBUS_READ_VIN     (0x88)
+#define PMBUS_READ_IIN     (0x89)
+#define PMBUS_READ_VOUT    (0x8B)
+#define PMBUS_READ_IOUT    (0x8C)
+#define PMBUS_READ_TEMP1   (0x8D)
+#define PMBUS_READ_TEMP2   (0x8E)
+#define PMBUS_READ_POUT    (0x96)
+#define PMBUS_READ_PIN     (0x97)
+
+
 enum {
   MB_SNR_PCH_TEMP = 0x08,
   MB_SNR_CPU0_THERM_MARGIN = 0x09,
@@ -237,4 +255,36 @@ typedef struct {
   uint8_t bus;
   uint8_t slv_addr;
 } PAL_I2C_BUS_INFO;
+
+//ADM1278 INFO
+enum {
+  ADM1278_VOLTAGE = 0,
+  ADM1278_CURRENT,
+  ADM1278_POWER,
+  ADM1278_TEMP,
+};
+
+typedef struct {
+  uint8_t type;
+  float m;
+  float b;
+  float r;
+} PAL_ADM1278_INFO;
+
+//HSC INFO
+enum {
+  HSC_ID0,
+};
+
+typedef struct {
+  uint8_t id;
+  uint8_t slv_addr;
+  PAL_ADM1278_INFO* info;
+} PAL_HSC_INFO;
+
+//NM ID
+enum {
+  NM_ID0,
+};
+
 #endif

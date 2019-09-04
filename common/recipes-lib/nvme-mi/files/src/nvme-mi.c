@@ -568,6 +568,31 @@ nvme_tdp_level_decode (uint8_t value, t_key_value_pair *tdp_level_decoding) {
   return 0;
 }
 
+int
+nvme_sinfo_0_decode (uint8_t value, t_key_value_pair *sinfo_0_decoding) {
+
+  if (!sinfo_0_decoding) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(sinfo_0_decoding->key, "Storage Information 0");
+
+  switch (value & 0x3) {
+    case SINFO_0_PLP_NOT_DEFINED:
+      sprintf(sinfo_0_decoding->value, "Power Loss Protection not defined");
+      break;
+    case SINFO_0_PLP_DEFINED:
+      sprintf(sinfo_0_decoding->value, "Power Loss Protection supported");
+      break;
+    default:
+      sprintf(sinfo_0_decoding->value, "Unknown (0x%02X)", value);
+      break;
+  }
+
+  return 0;
+}
+
 /* Read NVMe-MI Status Flags and decode it. */
 int
 nvme_sflgs_read_decode(const char *i2c_bus_device, uint8_t *value, t_status_flags *status_flag_decoding) {

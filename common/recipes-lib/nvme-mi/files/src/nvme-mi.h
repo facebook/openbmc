@@ -70,6 +70,10 @@
 #define TDP_LEVEL2 0x02
 #define TDP_LEVEL3 0x03
 
+/* NVMe-MI Storage Information 0*/
+#define SINFO_0_PLP_NOT_DEFINED 0x0
+#define SINFO_0_PLP_DEFINED 0x1
+
 #define ASIC_CORE_VOL_UNIT 0.0001   // 100uV
 #define POWER_RAIL_VOL_UNIT 0.0001  // 100uV
 
@@ -87,6 +91,11 @@ typedef struct {
   uint8_t part_num[40];             //Module Product Part Number
   uint8_t meff;                     //Management End Point Form Factor
   uint8_t ffi_0;                    //Form Factor Information 0 Register
+  /* Storage Area             Offset 87 */
+  uint8_t ssd_ver;                  //Storage version
+  uint16_t ssd_capacity;            //Storage Capacity
+  uint8_t ssd_pwr;                  //Storage Power
+  uint8_t ssd_sinfo_0;              //Storage Information 0
   /* Module Status Area       Offset 96 */
   uint8_t module_helath;            //Module health
   uint8_t lower_theshold;           //Lower Thermal Threshold
@@ -164,6 +173,7 @@ int nvme_power_state_decode (uint8_t value, t_key_value_pair *power_state_decodi
 int nvme_i2c_freq_decode (uint8_t value, t_key_value_pair *i2c_freq_decoding);
 int nvme_tdp_level_decode (uint8_t value, t_key_value_pair *tdp_level_decoding);
 int nvme_max_asic_temp_decode(uint8_t value, t_key_value_pair *max_asic_temp_decoding);
+int nvme_sinfo_0_decode (uint8_t value, t_key_value_pair *sinfo_0_decoding);
 
 int nvme_sflgs_read_decode(const char *i2c_bus, uint8_t *value, t_status_flags *status_flag_decoding);
 int nvme_smart_warning_read_decode(const char *i2c_bus, uint8_t *value, t_smart_warning *smart_warning_decoding);

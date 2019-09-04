@@ -2494,3 +2494,18 @@ int __attribute__((weak))
 pal_get_sdr_update_flag(uint8_t slot) {
   return 0;
 }
+
+int __attribute__((weak))
+pal_check_fw_image(uint8_t fru, const char *comp, const char *path) {
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_fw_update_prepare(uint8_t fru, const char *comp) {
+  return 0;
+}
+
+int __attribute__((weak))
+pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
+  return status;
+}

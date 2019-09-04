@@ -51,4 +51,8 @@ if [ ! -f "/mnt/data/kv_store/server_por_cfg" ]; then
     /usr/bin/kv set server_por_cfg on persistent
 fi
 
+# Setup hotswap power monitor averaging for FCM-T and FCM-B
+i2cset -f -y 67 0x10 0xd4 0x3f1e w
+i2cset -f -y 75 0x10 0xd4 0x3f1e w
+
 /usr/bin/kv set smb_board_rev $board_rev

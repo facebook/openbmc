@@ -332,8 +332,19 @@ get_sensor_reading(void *sensor_data) {
       if (!is_pldm_sensor(snr_num, sensor_info->fru)) {
         if (json) {
           json_t *sensor_obj = json_object();
-          json_object_set_new(sensor_obj, "value", json_string("NA"));
-          json_object_set_new(fru_sensor_obj, thresh.name, sensor_obj);
+          json_t *search = json_object();
+          search = json_object_get(fru_sensor_obj, thresh.name);
+          if (search != NULL) {
+            /* in order to match the RESTAPI format */
+            json_t *value_array = json_array();
+            json_array_append(value_array, search);
+            json_object_set_new(sensor_obj, "value", json_string("NA"));
+            json_array_append(value_array, sensor_obj);
+            json_object_set(fru_sensor_obj, thresh.name, value_array);
+          } else {
+            json_object_set_new(sensor_obj, "value", json_string("NA"));
+            json_object_set_new(fru_sensor_obj, thresh.name, sensor_obj);
+          }
           continue;
         }
         printf("%-28s (0x%X) : NA | (na)\n", thresh.name, sensor_info->sensor_list[i]);

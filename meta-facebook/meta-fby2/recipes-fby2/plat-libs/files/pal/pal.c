@@ -46,6 +46,7 @@
 #include <sys/socket.h>
 #include <linux/netlink.h>
 #include <openbmc/ncsi.h>
+#include <sys/sysinfo.h>
 
 
 #define BIT(value, index) ((value >> index) & 1)
@@ -193,7 +194,9 @@ typedef struct {
 #define MAX_CRASHDUMP_FILE_NAME_LENGTH 128
 #define MAX_VAILD_LIST_LENGTH 128
 #define MCA_CMD_HEADER_LENGTH 4
-#define MCA_DECODED_LOG_PATH "/mnt/data/crashdump_slot%d_mca"
+#define MCA_DECODED_LOG_PATH "/tmp/crashdump_slot%d_mca"
+#define CRASHDUMP_PID_PATH "/var/run/autodump%d.pid"
+#define CRASHDUMP_TIMESTAMP_FILE "fru%d_crashdump"
 
 #endif /* CONFIG_FBY2_ND */
 
@@ -10073,6 +10076,35 @@ static void* generate_dump(void* arg) {
   pthread_exit(NULL);
 }
 
+uint8_t crashdump_initial(uint8_t slot) {
+  char fname[128];
+  uint8_t completion_code = CC_UNSPECIFIED_ERROR;
+
+  //check if crashdump is already running
+  if (pal_is_crashdump_ongoing(slot))
+  {
+    syslog(LOG_CRIT, "Another auto crashdump for slot%d is running.", slot);
+    return completion_code;
+  }
+  else {
+    snprintf(fname, sizeof(fname), CRASHDUMP_PID_PATH, slot);
+    FILE *fp;
+    fp = fopen(fname,"w");
+    fclose(fp);
+
+    //Set crashdump timestamp
+    struct sysinfo info;
+    char value[64];
+    sysinfo(&info);
+    snprintf(value, sizeof(value), "%ld", (info.uptime+1200));
+    snprintf(fname, sizeof(fname), CRASHDUMP_TIMESTAMP_FILE, slot);
+    kv_set(fname, value, 0, KV_FCREATE); 
+  }
+
+  completion_code = CC_SUCCESS;
+  return completion_code;
+}
+
 uint8_t save_mca_to_file(
     uint8_t slot,
     uint8_t* req_data,
@@ -10087,6 +10119,12 @@ uint8_t save_mca_to_file(
   FILE* pFile;
   char file_path[MAX_CRASHDUMP_FILE_NAME_LENGTH] = "";
   bool last_bank = false;
+
+  if(mca_list_counter[slot] == 0) {
+    if(crashdump_initial(slot + 1)) {
+      return completion_code;
+    }
+  }
 
   /* slot is 0 based, slot_id is 1 based */
   snprintf(

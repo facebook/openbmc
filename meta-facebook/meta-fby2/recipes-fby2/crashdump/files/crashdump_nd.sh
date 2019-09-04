@@ -29,22 +29,9 @@ esac
 # function definition)
 PID_FILE="/var/run/autodump${SLOT_NUM}.pid"
 
-# check if auto crashdump is already running
-if [ -f "$PID_FILE" ]; then
-  echo "Another auto crashdump for $SLOT_NAME is running"
-  exit 1
-else
-  touch "$PID_FILE"
-fi
-
-# Set crashdump timestamp
-sys_runtime=$(awk '{print $1}' /proc/uptime)
-sys_runtime=$(printf "%0.f" "$sys_runtime")
-echo $((sys_runtime+1200)) > /tmp/cache_store/fru${SLOT_NUM}_crashdump
-
 DUMP_SCRIPT="/usr/local/bin/dump.sh"
-CRASHDUMP_FILE="/mnt/data/crashdump_${SLOT_NAME}"
-CRASHDUMP_DECODED_FILE="/mnt/data/crashdump_${SLOT_NAME}_mca"
+CRASHDUMP_FILE="/tmp/crashdump_${SLOT_NAME}"
+CRASHDUMP_DECODED_FILE="/tmp/crashdump_${SLOT_NAME}_mca"
 CRASHDUMP_LOG_ARCHIVE="/mnt/data/crashdump_${SLOT_NAME}.tar.gz"
 LOG_MSG_PREFIX=""
 

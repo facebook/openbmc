@@ -12,6 +12,9 @@ using namespace std;
 #if defined(CONFIG_FBY2_GPV2)
 
 #define MAX_READ_RETRY 10
+/* NVMe-MI Form Factor Information 0 Register */
+#define FFI_0_STORAGE 0x00
+#define FFI_0_ACCELERATOR 0x01
 
 class M2_DevComponent : public Component {
   uint8_t slot_id = 0;
@@ -45,7 +48,7 @@ class M2_DevComponent : public Component {
       retry--;
     }
 
-    if (ret || !status || !nvme_ready) {
+    if (ret || !status || !nvme_ready || (ffi != FFI_0_ACCELERATOR) ) {
       printf("device%d Version: NA",dev_id);
       if (ret) { // Add Reason for dsiplay NA
         printf("\n");
@@ -53,6 +56,8 @@ class M2_DevComponent : public Component {
         printf("(Not Presnet)\n");
       } else if (!nvme_ready) {
         printf("(NVMe Not Ready)\n");
+      } else if (ffi != FFI_0_ACCELERATOR) {
+        printf("(Not Accelerator)\n");
       }
     } else {
       printf("device%d Version: v%d.%d\n",dev_id,major_ver,minor_ver);

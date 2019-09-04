@@ -5708,7 +5708,15 @@ parse_mem_error_sel_nd(uint8_t fru, uint8_t snr_num, uint8_t *event_data, char *
   }
 
   // Common routine for both MEM_ECC_ERR and MEMORY_ERR_LOG_DIS
-  snprintf(temp_log, sizeof(temp_log), " (DIMM %02X)", ed[2]);
+  chn_num = (ed[2] & 0x1C) >> 2;
+  bool support_mem_mapping = false;
+  char mem_mapping_string[32];
+  pal_parse_mem_mapping_string(chn_num, &support_mem_mapping, mem_mapping_string);
+  if(support_mem_mapping) {
+    snprintf(temp_log, sizeof(temp_log), " (DIMM %s)", mem_mapping_string);
+  } else {
+    snprintf(temp_log, sizeof(temp_log), " (DIMM %02X)", ed[2]);
+  }
   strcat(error_log, temp_log);
 
   snprintf(temp_log, sizeof(temp_log), " Logical Rank %d", ed[1] & 0x03);

@@ -44,6 +44,11 @@
 #define STATUS_LNC  "lnc"
 #define STATUS_LCR  "lcr"
 #define STATUS_LNR  "lnr"
+#define STATUS_NC   "nc"
+#define STATUS_CR   "cr"
+#define STATUS_NR   "nr"
+
+#define UNKNOWN_STATE "Unknown"
 
 #define SENSOR_ALL             -1
 #ifdef CUSTOM_FRU_LIST
@@ -79,8 +84,22 @@ const char *sensor_state_str[] = {
     "LowerCritical",
     "LowerFatal",
     "UpperWarning",
-    "Critical",
+    "UpperCritical",
     "UpperFatal",
+};
+
+const char *sensor_status[] = {
+    STATUS_NS,
+    STATUS_OK,
+    STATUS_NC,
+    STATUS_CR,
+    STATUS_NR,
+    STATUS_LNC,
+    STATUS_LCR,
+    STATUS_LNR,
+    STATUS_UNC,
+    STATUS_UCR,
+    STATUS_UNR
 };
 
 static void
@@ -164,10 +183,10 @@ is_pldm_state_sensor(uint8_t snr_num, uint8_t fru)
 }
 
 const char *
-numeric_state_to_name(unsigned int state, const char *name_str[], size_t n)
+numeric_state_to_name(unsigned int state, const char *name_str[], size_t n, const char* error_str)
 {
   if (state < 0 || state >= n  || name_str[state] == NULL) {
-      return "unknown_str_type";
+      return error_str;
   }
   return name_str[state];
 }
@@ -188,7 +207,7 @@ print_sensor_reading(float fvalue, uint16_t snr_num, thresh_sensor_t *thresh,
     if (is_pldm_state_sensor(snr_num, sensor_info->fru)) {
       json_object_set_new(sensor_obj, "value", 
           json_string(numeric_state_to_name((int)fvalue, sensor_state_str,
-          sizeof(sensor_state_str)/sizeof(sensor_state_str[0]))));
+          sizeof(sensor_state_str)/sizeof(sensor_state_str[0]),UNKNOWN_STATE)));
       json_object_set_new(fru_sensor_obj, thresh->name, sensor_obj);
       return;
     }
@@ -213,7 +232,9 @@ print_sensor_reading(float fvalue, uint16_t snr_num, thresh_sensor_t *thresh,
     printf("%-28s (0x%X) : %10s    | (%s)",
         thresh->name, snr_num,
         numeric_state_to_name((int)fvalue, sensor_state_str,
-             sizeof(sensor_state_str)/sizeof(sensor_state_str[0])), status);
+             sizeof(sensor_state_str)/sizeof(sensor_state_str[0]),UNKNOWN_STATE),
+             numeric_state_to_name((int)fvalue, sensor_status,
+             sizeof(sensor_status)/sizeof(sensor_status[0]),STATUS_NS));
   } else {
     printf("%-28s (0x%X) : %7.2f %-5s | (%s)",
         thresh->name, snr_num, fvalue, thresh->units, status);

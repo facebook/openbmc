@@ -23,7 +23,7 @@ else
 fi
 
 if [ -z "$ZSH_NAME" ] && [ "$0" = "$THIS_SCRIPT" ]; then
-    echo "Error: This script needs to be sourced. Please run as '. $THIS_SCRIPT $@'"
+    echo "Error: This script needs to be sourced. Please run as '. $THIS_SCRIPT $*'"
     exit 1
 fi
 unset THIS_SCRIPT
@@ -61,4 +61,10 @@ unset override override_plat override_distro
 
 echo "Init build environment for platform '${platform}' with distro ${_distro}..."
 unset platform
-. yocto/${_distro}/poky/oe-init-build-env $@
+# shellcheck disable=SC1090
+# distro can vary, so we can't use a shellcheck directive to point to next
+. "yocto/${_distro}/poky/oe-init-build-env" "$@"
+
+if [ -d "../facebook" ]; then
+  ../facebook/facebookify.sh "$(pwd)"
+fi

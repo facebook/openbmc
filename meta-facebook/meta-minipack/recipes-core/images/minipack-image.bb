@@ -33,7 +33,7 @@ IMAGE_INSTALL += " \
   libcpldupdate-dll-echo \
   libcpldupdate-dll-gpio \
   lldp-util \
-  log-util \
+  log-util-v2 \
   mterm \
   openbmc-gpio \
   openbmc-utils \

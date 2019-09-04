@@ -152,6 +152,11 @@ enum {
   MICRO_ARCH_ERROR
 };
 
+enum {
+  DRIVE_NOT_READY = 0,
+  DRIVE_READY
+};
+
 int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_get_num_devs(uint8_t slot, uint8_t *num);

@@ -6168,6 +6168,8 @@ pal_set_post_start_timestamp(uint8_t fru, uint8_t method) {
   char cvalue[MAX_VALUE_LEN] = {0};
   struct timespec ts;
   long value = -1;
+  int ret = 0, spb_type = 0;
+  uint8_t nvme_ready = DRIVE_NOT_READY;
 
   if (method == POST_SET) {
     clock_gettime(CLOCK_MONOTONIC,&ts);
@@ -6192,6 +6194,19 @@ pal_set_post_start_timestamp(uint8_t fru, uint8_t method) {
 
   sprintf(cvalue,"%ld",value);
 
+  spb_type = fby2_common_get_spb_type();
+
+  if (spb_type == TYPE_SPB_YV250) {
+    ret = pal_get_nvme_ready(fru - 1, &nvme_ready);
+    if (ret != 0) {
+      nvme_ready = DRIVE_NOT_READY;
+    }
+    // If NVMe is ready, update the nvme_ready_timestamp.
+    if (nvme_ready == DRIVE_READY) {
+      pal_set_nvme_ready_timestamp(fru - 1);
+    }
+  }
+  
   return kv_set(key,cvalue,0,0);
 }
 

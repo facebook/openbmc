@@ -196,6 +196,14 @@ def arg_parser():
     )  # find better way to represent this ?
 
     parser.add_argument(
+        "--fw-upgrade",
+        help="Firmware upgrade test, these are tests that have \
+                        pattern fw_test*.py, require --host to be set",
+        action="store_true",
+        default=False,
+    )
+
+    parser.add_argument(
         "--host",
         help="Used for running tests\
                         external to BMC and interacting with BMC and main CPU (ONLY) \
@@ -240,6 +248,10 @@ if __name__ == "__main__":
 
     if args.external:
         pattern = "external*.py"
+        set_external(args)
+
+    if args.fw_upgrade:
+        pattern = "fw*.py"
         set_external(args)
 
     if args.stress:

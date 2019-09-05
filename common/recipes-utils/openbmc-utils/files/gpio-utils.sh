@@ -20,6 +20,9 @@ GPIOEXPORT="$GPIODIR/export"
 SHADOW_GPIO=/tmp/gpionames
 GPIOCLI_CMD=/usr/local/bin/gpiocli
 
+# Name of ASPEED GPIO Controller, usually used by gpiocli command.
+ASPEED_GPIO="aspeed-gpio"
+
 gpio_dir() {
     echo "$GPIODIR/gpio$1"
 }

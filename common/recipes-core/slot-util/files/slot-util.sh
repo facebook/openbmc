@@ -104,9 +104,8 @@ if [[ -n $slot4_mac ]]; then
   host4="$(echo "$host_table" | grep -i "${slot4_mac}" | cut  -d " " -f1)"
 fi
 
-
 # check if user asked for a specific slot, either in "slotX", or just "X"
-if [[ $((input)) == "$1" ]]; then
+if [[ "$input" =~ ^[0-9]+$ ]]; then
     slot_num=$input
 elif [[ $1 == "slot"* ]]; then
     slot_num=$(echo "$1" | tr -dc '0-9')

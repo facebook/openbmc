@@ -28,6 +28,7 @@ print_usage() {
     echo "  Usage:      slot-util [ slot1, slot2, slot3, slot4, all ] : shows host for a particular/all slot(s)"
     echo "              slot-util [ 1, 2, 3, 4 ]                      : shows host for a particular slot"
     echo "              slot-util [ hostname ]                        : shows slot number for a host"
+    echo "              slot-util --show-mac                          : shows MAC address assigned for each host"
 }
 
 if [ $# -eq 0 ]; then
@@ -74,6 +75,16 @@ case "$sku_type" in
       slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
    ;;
 esac
+
+if [ "$1" == "--show-mac" ]; then
+  for i in 1 2 3 4
+  do
+    slotmac="slot$i"
+    slotmac="${slotmac}_mac"
+    eval echo slot$i MAC: "${!slotmac}"
+  done
+  exit 1
+fi
 
 # match host name to each slot based on MAC address
 if [[ -n $slot1_mac ]]; then

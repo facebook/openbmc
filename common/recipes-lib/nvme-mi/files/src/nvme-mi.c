@@ -230,6 +230,17 @@ nvme_serial_num_read(const char *i2c_bus_device, uint8_t *value, int size) {
 }
 
 int
+check_nvme_fileds_valid(uint8_t block_len, t_key_value_pair *tmp_decoding) {
+  // If block length is 0xFF, it means this block is non-supported field.
+  if (block_len == 0xFF) {
+    sprintf(tmp_decoding->value, "%s", "NA");
+    return INVALID;
+  } else {
+    return VALID;
+  }
+}
+
+int
 nvme_sflgs_decode(uint8_t value, t_status_flags *status_flag_decoding) {
 
   if (!status_flag_decoding) {
@@ -312,11 +323,18 @@ nvme_temp_decode(uint8_t value, t_key_value_pair *temp_decoding) {
 }
 
 int
-nvme_lower_threshold_temp_decode(uint8_t value, t_key_value_pair *temp_decoding) {
+nvme_lower_threshold_temp_decode(uint8_t block_len, uint8_t value, t_key_value_pair *temp_decoding) {
 
-  if (nvme_temp_decode(value,temp_decoding) < 0) {
+  if (!temp_decoding) {
     syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
     return -1;
+  }
+
+  if (check_nvme_fileds_valid(block_len, temp_decoding) == VALID) {
+    if (nvme_temp_decode(value, temp_decoding) < 0) {
+      syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+      return -1;
+    }
   }
   sprintf(temp_decoding->key, "Lower Thermal Threshold");
 
@@ -324,11 +342,18 @@ nvme_lower_threshold_temp_decode(uint8_t value, t_key_value_pair *temp_decoding)
 }
 
 int
-nvme_upper_threshold_temp_decode(uint8_t value, t_key_value_pair *temp_decoding) {
+nvme_upper_threshold_temp_decode(uint8_t block_len, uint8_t value, t_key_value_pair *temp_decoding) {
 
-  if (nvme_temp_decode(value,temp_decoding) < 0) {
+  if (!temp_decoding) {
     syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
     return -1;
+  }
+
+  if (check_nvme_fileds_valid(block_len, temp_decoding) == VALID) {
+    if (nvme_temp_decode(value, temp_decoding) < 0) {
+      syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+      return -1;
+    }
   }
   sprintf(temp_decoding->key, "Upper Thermal Threshold");
 
@@ -336,11 +361,18 @@ nvme_upper_threshold_temp_decode(uint8_t value, t_key_value_pair *temp_decoding)
 }
 
 int
-nvme_max_asic_temp_decode(uint8_t value, t_key_value_pair *temp_decoding) {
+nvme_max_asic_temp_decode(uint8_t block_len, uint8_t value, t_key_value_pair *temp_decoding) {
 
-  if (nvme_temp_decode(value,temp_decoding) < 0) {
+  if (!temp_decoding) {
     syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
     return -1;
+  }
+
+  if (check_nvme_fileds_valid(block_len, temp_decoding) == VALID) {
+    if (nvme_temp_decode(value, temp_decoding) < 0) {
+      syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+      return -1;
+    }
   }
   sprintf(temp_decoding->key, "Historical Max ASIC Temperature");
 
@@ -425,7 +457,7 @@ nvme_serial_num_decode(uint8_t *value, t_key_value_pair *sn_decoding) {
 }
 
 int
-nvme_part_num_decode(uint8_t *value, t_key_value_pair *pn_decoding) {
+nvme_part_num_decode(uint8_t block_len, uint8_t *value, t_key_value_pair *pn_decoding) {
 
   if (!value || !pn_decoding) {
     syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
@@ -433,18 +465,20 @@ nvme_part_num_decode(uint8_t *value, t_key_value_pair *pn_decoding) {
   }
 
   sprintf(pn_decoding->key, "Module Product Part Number");
-  if (value[0] == 0xFF) { // RosePeak does not have Module Product Part Number
-    sprintf(pn_decoding->value, "NA");
-  } else {
-    memcpy(pn_decoding->value, value, PART_NUM_SIZE);
-    pn_decoding->value[PART_NUM_SIZE] = '\0';
+  if (check_nvme_fileds_valid(block_len, pn_decoding) == VALID) {
+    if (value[0] == 0xFF) { // RosePeak does not have Module Product Part Number
+      sprintf(pn_decoding->value, "NA");
+    } else {
+      memcpy(pn_decoding->value, value, PART_NUM_SIZE);
+      pn_decoding->value[PART_NUM_SIZE] = '\0';
+    }
   }
 
   return 0;
 }
 
 int
-nvme_meff_decode (uint8_t value, t_key_value_pair *meff_decoding) {
+nvme_meff_decode (uint8_t block_len, uint8_t value, t_key_value_pair *meff_decoding) {
 
   if (!value || !meff_decoding) {
     syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
@@ -452,23 +486,25 @@ nvme_meff_decode (uint8_t value, t_key_value_pair *meff_decoding) {
   }
 
   sprintf(meff_decoding->key, "Management End Point Form Factor");
-  switch (value) {
-    case MEFF_M_2_22110:
-      sprintf(meff_decoding->value, "M.2 22110 (0x%02X)", value);
-      break;
-    case MEFF_Dual_M_2:
-      sprintf(meff_decoding->value, "Dual M.2 (0x%02X)", value);
-      break;
-    default:
-      sprintf(meff_decoding->value, "Unknown (0x%02X)", value);
-      break;
+  if (check_nvme_fileds_valid(block_len, meff_decoding) == VALID) {
+    switch (value) {
+      case MEFF_M_2_22110:
+        sprintf(meff_decoding->value, "M.2 22110 (0x%02X)", value);
+        break;
+      case MEFF_Dual_M_2:
+        sprintf(meff_decoding->value, "Dual M.2 (0x%02X)", value);
+        break;
+      default:
+        sprintf(meff_decoding->value, "Unknown (0x%02X)", value);
+        break;
+    }
   }
 
   return 0;
 }
 
 int
-nvme_ffi_0_decode (uint8_t value, t_key_value_pair *ffi_0_decoding) {
+nvme_ffi_0_decode (uint8_t block_len, uint8_t value, t_key_value_pair *ffi_0_decoding) {
 
   if (!ffi_0_decoding) {
     syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
@@ -476,23 +512,25 @@ nvme_ffi_0_decode (uint8_t value, t_key_value_pair *ffi_0_decoding) {
   }
 
   sprintf(ffi_0_decoding->key, "Form Factor Information 0 Register");
-  switch (value) {
-    case FFI_0_STORAGE:
-      sprintf(ffi_0_decoding->value, "Storage (0x%02X)", value);
-      break;
-    case FFI_0_ACCELERATOR:
-      sprintf(ffi_0_decoding->value, "Accelerator (0x%02X)", value);
-      break;
-    default:
-      sprintf(ffi_0_decoding->value, "Unknown (0x%02X)", value);
-      break;
+  if (check_nvme_fileds_valid(block_len, ffi_0_decoding) == VALID) {
+    switch (value) {
+      case FFI_0_STORAGE:
+        sprintf(ffi_0_decoding->value, "Storage (0x%02X)", value);
+        break;
+      case FFI_0_ACCELERATOR:
+        sprintf(ffi_0_decoding->value, "Accelerator (0x%02X)", value);
+        break;
+      default:
+        sprintf(ffi_0_decoding->value, "Unknown (0x%02X)", value);
+        break;
+    }
   }
 
   return 0;
 }
 
 int
-nvme_power_state_decode (uint8_t value, t_key_value_pair *power_state_decoding) {
+nvme_power_state_decode (uint8_t block_len, uint8_t value, t_key_value_pair *power_state_decoding) {
 
   if (!power_state_decoding) {
     syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
@@ -500,26 +538,28 @@ nvme_power_state_decode (uint8_t value, t_key_value_pair *power_state_decoding) 
   }
 
   sprintf(power_state_decoding->key, "Power State");
-  switch (value) {
-    case POWER_STATE_FULL_MODE:
-      sprintf(power_state_decoding->value, "Full Power Mode (0x%02X)", value);
-      break;
-    case POWER_STATE_REDUCED_MODE:
-      sprintf(power_state_decoding->value, "Reduced Power Mode (0x%02X)", value);
-      break;
-    case POWER_STATE_LOWER_MODE:
-      sprintf(power_state_decoding->value, "Lower Power Mode (0x%02X)", value);
-      break;
-    default:
-      sprintf(power_state_decoding->value, "Unknown (0x%02X)", value);
-      break;
+  if (check_nvme_fileds_valid(block_len, power_state_decoding) == VALID) {
+    switch (value) {
+      case POWER_STATE_FULL_MODE:
+        sprintf(power_state_decoding->value, "Full Power Mode (0x%02X)", value);
+        break;
+      case POWER_STATE_REDUCED_MODE:
+        sprintf(power_state_decoding->value, "Reduced Power Mode (0x%02X)", value);
+        break;
+      case POWER_STATE_LOWER_MODE:
+        sprintf(power_state_decoding->value, "Lower Power Mode (0x%02X)", value);
+        break;
+      default:
+        sprintf(power_state_decoding->value, "Unknown (0x%02X)", value);
+        break;
+    }
   }
 
   return 0;
 }
 
 int
-nvme_i2c_freq_decode (uint8_t value, t_key_value_pair *i2c_freq_decoding) {
+nvme_i2c_freq_decode (uint8_t block_len, uint8_t value, t_key_value_pair *i2c_freq_decoding) {
 
   if (!i2c_freq_decoding) {
     syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
@@ -527,26 +567,28 @@ nvme_i2c_freq_decode (uint8_t value, t_key_value_pair *i2c_freq_decoding) {
   }
 
   sprintf(i2c_freq_decoding->key, "SMBus/I2C Frquency");
-  switch (value) {
-    case I2C_FREQ_100K:
-      sprintf(i2c_freq_decoding->value, "100 kHz");
-      break;
-    case I2C_FREQ_400K:
-      sprintf(i2c_freq_decoding->value, "400 kHz");
-      break;
-    case I2C_FREQ_1M:
-      sprintf(i2c_freq_decoding->value, "1 MHz");
-      break;
-    default:
-      sprintf(i2c_freq_decoding->value, "Unknown(0x%02X)", value);
-      break;
+  if (check_nvme_fileds_valid(block_len, i2c_freq_decoding) == VALID) {
+    switch (value) {
+      case I2C_FREQ_100K:
+        sprintf(i2c_freq_decoding->value, "100 kHz");
+        break;
+      case I2C_FREQ_400K:
+        sprintf(i2c_freq_decoding->value, "400 kHz");
+        break;
+      case I2C_FREQ_1M:
+        sprintf(i2c_freq_decoding->value, "1 MHz");
+        break;
+      default:
+        sprintf(i2c_freq_decoding->value, "Unknown(0x%02X)", value);
+        break;
+    }
   }
 
   return 0;
 }
 
 int
-nvme_tdp_level_decode (uint8_t value, t_key_value_pair *tdp_level_decoding) {
+nvme_tdp_level_decode (uint8_t block_len, uint8_t value, t_key_value_pair *tdp_level_decoding) {
 
   if (!tdp_level_decoding) {
     syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
@@ -554,15 +596,126 @@ nvme_tdp_level_decode (uint8_t value, t_key_value_pair *tdp_level_decoding) {
   }
 
   sprintf(tdp_level_decoding->key, "Module Static TDP level setting");
-  switch (value) {
-    case TDP_LEVEL1:
-    case TDP_LEVEL2:
-    case TDP_LEVEL3:
-      sprintf(tdp_level_decoding->value, "level %d", value);
-      break;
-    default:
-      sprintf(tdp_level_decoding->value, "Unknown (0x%02X)", value);
-      break;
+  if (check_nvme_fileds_valid(block_len, tdp_level_decoding) == VALID) {
+    switch (value) {
+      case TDP_LEVEL1:
+      case TDP_LEVEL2:
+      case TDP_LEVEL3:
+        sprintf(tdp_level_decoding->value, "level %d", value);
+        break;
+      default:
+        sprintf(tdp_level_decoding->value, "Unknown (0x%02X)", value);
+        break;
+    }
+  }
+
+  return 0;
+}
+
+int
+nvme_fw_version_decode (uint8_t block_len, uint8_t major_value, uint8_t minor_value, t_key_value_pair *fw_version_decoding) {
+
+  if (!fw_version_decoding) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(fw_version_decoding->key, "%s", "FW version");
+  if (check_nvme_fileds_valid(block_len, fw_version_decoding) == VALID) {
+    sprintf(fw_version_decoding->value, "v%d.%d", major_value, minor_value);
+  }
+
+  return 0;
+}
+
+int
+nvme_monitor_area_decode (char *key, uint8_t block_len, uint16_t value, float unit, t_key_value_pair *monitor_area_decoding) {
+
+  if (!monitor_area_decoding) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(monitor_area_decoding->key, "%s", key);
+  if (check_nvme_fileds_valid(block_len, monitor_area_decoding) == VALID) {
+    sprintf(monitor_area_decoding->value, "%.4f V", (value * unit));
+  }
+
+  return 0;
+}
+
+int
+nvme_total_int_mem_err_count_decode(uint8_t block_len, uint8_t value, t_key_value_pair *total_int_mem_err_count_decoding) {
+
+  if (!total_int_mem_err_count_decoding) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(total_int_mem_err_count_decoding->key, "Total internal memory error count");
+  if (check_nvme_fileds_valid(block_len, total_int_mem_err_count_decoding) == VALID) {
+    if (value == 0xFF) { // SpringHill does not have Total internal memory error count
+      sprintf(total_int_mem_err_count_decoding->value, "NA");
+    } else {
+      sprintf(total_int_mem_err_count_decoding->value, "%d", value);
+    }
+  }
+
+  return 0;
+}
+
+int
+nvme_total_ext_mem_err_count_decode(uint8_t block_len, uint8_t value, t_key_value_pair *total_ext_mem_err_count_decoding) {
+
+  if (!total_ext_mem_err_count_decoding) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(total_ext_mem_err_count_decoding->key, "Total external memory error count");
+  if (check_nvme_fileds_valid(block_len, total_ext_mem_err_count_decoding) == VALID) {
+    if (value == 0xFF) { // SpringHill does not have Total external memory error count
+      sprintf(total_ext_mem_err_count_decoding->value, "NA");
+    } else {
+      sprintf(total_ext_mem_err_count_decoding->value, "%d", value);
+    }
+  }
+
+  return 0;
+}
+
+int
+nvme_smbus_err_decode(uint8_t block_len, uint8_t value, t_key_value_pair *smbus_err_decoding) {
+
+  if (!smbus_err_decoding) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(smbus_err_decoding->key, "SMBus error");
+  if (check_nvme_fileds_valid(block_len, smbus_err_decoding) == VALID) {
+    if (value == 0xFF) { // SpringHill does not have SMBus Error
+      sprintf(smbus_err_decoding->value, "NA");
+    } else {
+      sprintf(smbus_err_decoding->value, "0x%02X", value);
+    }
+  }
+
+  return 0;
+}
+
+
+int
+nvme_raw_data_prase (char *key, uint8_t block_len, uint8_t value, t_key_value_pair *raw_data_prasing) {
+
+  if (!raw_data_prasing) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  sprintf(raw_data_prasing->key, "%s", key);
+  if (check_nvme_fileds_valid(block_len, raw_data_prasing) == VALID) {
+    sprintf(raw_data_prasing->value, "0x%02X", value);
   }
 
   return 0;

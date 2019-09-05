@@ -46,6 +46,7 @@
 /* NVMe-MI SSD SMART Critical Warning */
 #define NVME_SMART_WARNING_MASK_BIT 0x1F  // check bit 0~4
 
+#define SPRINGHILL_M2_OFFSET_BASE 1 // one byte for FBID
 
 static uint8_t m_slot_id = 0;
 static uint8_t m_slot_type = 0xFF;
@@ -67,13 +68,27 @@ drive_status(ssd_data *ssd) {
   t_key_value_pair pn_decoding;
   t_key_value_pair meff_decoding;
   t_key_value_pair ffi_0_decoding;
+  t_key_value_pair sinfo_0_decoding;
+  t_key_value_pair module_helath_decoding;
   t_key_value_pair lower_thermal_temp_decoding;
   t_key_value_pair upper_thermal_temp_decoding;
   t_key_value_pair power_state_decoding;
   t_key_value_pair i2c_freq_decoding;
   t_key_value_pair tdp_level_decoding;
-  t_key_value_pair sinfo_0_decoding;
+  t_key_value_pair asic_version_decoding;
+  t_key_value_pair fw_version_decoding;
+  t_key_value_pair asic_core_vol1_decoding;
+  t_key_value_pair asic_core_vol2_decoding;
+  t_key_value_pair power_rail_vol1_decoding;
+  t_key_value_pair power_rail_vol2_decoding;
+  t_key_value_pair asic_error_type_decoding;
+  t_key_value_pair module_error_type_decoding;
+  t_key_value_pair warning_flag_decoding;
+  t_key_value_pair interrupt_flag_decoding;
   t_key_value_pair max_asic_temp_decoding;
+  t_key_value_pair total_int_mem_err_count_decoding;
+  t_key_value_pair total_ext_mem_err_count_decoding;
+  t_key_value_pair smbus_err_decoding;
 
   nvme_vendor_decode(ssd->vendor, &vendor_decoding);
   printf("%s: %s\n", vendor_decoding.key, vendor_decoding.value);
@@ -105,44 +120,58 @@ drive_status(ssd_data *ssd) {
   printf("    %s: %s\n", smart_warning_decoding.backup_device.key, smart_warning_decoding.backup_device.value);
 
   if (ssd->fb_defined == 0x01) {
-    nvme_part_num_decode(ssd->part_num, &pn_decoding);
+    nvme_part_num_decode(ssd->block_len_module_id_area, ssd->part_num, &pn_decoding);
     printf("%s: %s\n", pn_decoding.key, pn_decoding.value);
-    nvme_meff_decode(ssd->meff, &meff_decoding);
+    nvme_meff_decode(ssd->block_len_module_id_area, ssd->meff, &meff_decoding);
     printf("%s: %s\n", meff_decoding.key, meff_decoding.value);
-    nvme_ffi_0_decode(ssd->ffi_0, &ffi_0_decoding);
+    nvme_ffi_0_decode(ssd->block_len_module_id_area, ssd->ffi_0, &ffi_0_decoding);
     printf("%s: %s\n", ffi_0_decoding.key, ffi_0_decoding.value);
 
     if (ssd->ffi_0 == FFI_0_ACCELERATOR) {
-      printf("%s: 0x%02X\n", "Module health",ssd->module_helath);
-      nvme_lower_threshold_temp_decode(ssd->lower_theshold, &lower_thermal_temp_decoding);
+      nvme_raw_data_prase("Module health", ssd->block_len_module_stat_area, ssd->module_helath, &module_helath_decoding);
+      printf("%s: %s\n", module_helath_decoding.key, module_helath_decoding.value);
+      nvme_lower_threshold_temp_decode(ssd->block_len_module_stat_area, ssd->lower_theshold, &lower_thermal_temp_decoding);
       printf("%s: %s\n", lower_thermal_temp_decoding.key, lower_thermal_temp_decoding.value);
-      nvme_upper_threshold_temp_decode(ssd->upper_threshold, &upper_thermal_temp_decoding);
+      nvme_upper_threshold_temp_decode(ssd->block_len_module_stat_area, ssd->upper_threshold, &upper_thermal_temp_decoding);
       printf("%s: %s\n", upper_thermal_temp_decoding.key, upper_thermal_temp_decoding.value);
 
-      nvme_power_state_decode(ssd->power_state, &power_state_decoding);
+      nvme_power_state_decode(ssd->block_len_module_stat_area, ssd->power_state, &power_state_decoding);
       printf("%s: %s\n", power_state_decoding.key, power_state_decoding.value);
-      nvme_i2c_freq_decode (ssd->i2c_freq, &i2c_freq_decoding);
+      nvme_i2c_freq_decode (ssd->block_len_module_stat_area, ssd->i2c_freq, &i2c_freq_decoding);
       printf("%s: %s\n", i2c_freq_decoding.key, i2c_freq_decoding.value);
-      nvme_tdp_level_decode (ssd->tdp_level, &tdp_level_decoding);
+      nvme_tdp_level_decode (ssd->block_len_module_stat_area, ssd->tdp_level, &tdp_level_decoding);
       printf("%s: %s\n", tdp_level_decoding.key, tdp_level_decoding.value);
 
-      printf("%s: 0x%02X\n", "ASIC version",ssd->asic_version);
-      printf("%s: v%d.%d\n", "FW version",ssd->fw_major_ver,ssd->fw_minor_ver);
+      nvme_raw_data_prase("ASIC version", ssd->block_len_ver_area, ssd->asic_version, &asic_version_decoding);
+      printf("%s: %s\n", asic_version_decoding.key, asic_version_decoding.value);
+      nvme_fw_version_decode(ssd->block_len_ver_area, ssd->fw_major_ver, ssd->fw_minor_ver, &fw_version_decoding);
+      printf("%s: %s\n", fw_version_decoding.key, fw_version_decoding.value);
 
-      printf("%s: %.4f V\n", "ASIC Core1 Voltage", (ssd->asic_core_vol1 * ASIC_CORE_VOL_UNIT));
-      printf("%s: %.4f V\n", "ASIC Core2 Voltage", (ssd->asic_core_vol2 * ASIC_CORE_VOL_UNIT));
-      printf("%s: %.4f V\n", "Module Power Rail1 Voltage", (ssd->power_rail_vol1 * POWER_RAIL_VOL_UNIT));
-      printf("%s: %.4f V\n", "Module Power Rail2 Voltage", (ssd->power_rail_vol2 * POWER_RAIL_VOL_UNIT));
+      nvme_monitor_area_decode("ASIC Core1 Voltage", ssd->block_len_mon_area, ssd->asic_core_vol1, ASIC_CORE_VOL_UNIT, &asic_core_vol1_decoding);
+      printf("%s: %s\n", asic_core_vol1_decoding.key, asic_core_vol1_decoding.value);
+      nvme_monitor_area_decode("ASIC Core2 Voltage", ssd->block_len_mon_area, ssd->asic_core_vol2, ASIC_CORE_VOL_UNIT, &asic_core_vol2_decoding);
+      printf("%s: %s\n", asic_core_vol2_decoding.key, asic_core_vol2_decoding.value);
+      nvme_monitor_area_decode("Module Power Rail1 Voltage", ssd->block_len_mon_area, ssd->power_rail_vol1, POWER_RAIL_VOL_UNIT, &power_rail_vol1_decoding);
+      printf("%s: %s\n", power_rail_vol1_decoding.key, power_rail_vol1_decoding.value);
+      nvme_monitor_area_decode("Module Power Rail2 Voltage", ssd->block_len_mon_area, ssd->power_rail_vol2, POWER_RAIL_VOL_UNIT, &power_rail_vol2_decoding);
+      printf("%s: %s\n", power_rail_vol2_decoding.key, power_rail_vol2_decoding.value);
 
-      printf("%s: 0x%02X\n", "ASIC Error Type Report",ssd->asic_error_type);
-      printf("%s: 0x%02X\n", "Module  Error Type Report",ssd->module_error_type);
-      printf("%s: 0x%02X\n", "Warning flag",ssd->warning_flag);
-      printf("%s: 0x%02X\n", "Interrupt flag",ssd->interrupt_flag);
-      nvme_max_asic_temp_decode(ssd->max_asic_temp, &max_asic_temp_decoding);
+      nvme_raw_data_prase("ASIC Error Type Report", ssd->block_len_err_ret_area, ssd->asic_error_type, &asic_error_type_decoding);
+      printf("%s: %s\n", asic_error_type_decoding.key, asic_error_type_decoding.value);
+      nvme_raw_data_prase("Module Error Type Report", ssd->block_len_err_ret_area, ssd->module_error_type, &module_error_type_decoding);
+      printf("%s: %s\n", module_error_type_decoding.key, module_error_type_decoding.value);
+      nvme_raw_data_prase("Warning Flag", ssd->block_len_err_ret_area, ssd->warning_flag, &warning_flag_decoding);
+      printf("%s: %s\n", warning_flag_decoding.key, warning_flag_decoding.value);
+      nvme_raw_data_prase("Interrupt Flag", ssd->block_len_err_ret_area, ssd->interrupt_flag, &interrupt_flag_decoding);
+      printf("%s: %s\n", interrupt_flag_decoding.key, interrupt_flag_decoding.value);
+      nvme_max_asic_temp_decode(ssd->block_len_err_ret_area, ssd->max_asic_temp, &max_asic_temp_decoding);
       printf("%s: %s\n", max_asic_temp_decoding.key, max_asic_temp_decoding.value);
-      printf("%s: 0x%02X\n", "Total internal memory error count",ssd->total_int_mem_err_count);
-      printf("%s: 0x%02X\n", "Total external memory error count",ssd->total_ext_mem_err_count);
-      printf("%s: 0x%02X\n", "SMBus Error",ssd->smbus_err);
+      nvme_total_int_mem_err_count_decode(ssd->block_len_err_ret_area, ssd->total_int_mem_err_count, &total_int_mem_err_count_decoding);
+      printf("%s: %s\n", total_int_mem_err_count_decoding.key, total_int_mem_err_count_decoding.value);
+      nvme_total_ext_mem_err_count_decode(ssd->block_len_err_ret_area, ssd->total_ext_mem_err_count, &total_ext_mem_err_count_decoding);
+      printf("%s: %s\n", total_ext_mem_err_count_decoding.key, total_ext_mem_err_count_decoding.value);
+      nvme_smbus_err_decode(ssd->block_len_err_ret_area, ssd->smbus_err, &smbus_err_decoding);
+      printf("%s: %s\n", smbus_err_decoding.key, smbus_err_decoding.value);
     } else if (ssd->ffi_0 == FFI_0_STORAGE) {
       printf("%s: 0x%02X\n", "Storage version", ssd->ssd_ver);
       printf("%s: %d GB\n", "Storage Capacity", ssd->ssd_capacity);
@@ -150,7 +179,6 @@ drive_status(ssd_data *ssd) {
       nvme_sinfo_0_decode (ssd->ssd_sinfo_0,&sinfo_0_decoding);
       printf("%s: %s\n", sinfo_0_decoding.key, sinfo_0_decoding.value);
     }
-
   }
 
   return 0;
@@ -169,7 +197,7 @@ drive_health(ssd_data *ssd) {
 
 static int
 read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t cmd) {
-  int ret = 0;
+  int ret = 0, offset_base = 0;
   int rlen = 0;
   uint8_t bus, wbuf[8], rbuf[64];
   char stype_str[32] = {0};
@@ -204,88 +232,99 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t cmd) {
         syslog(LOG_DEBUG, "%s(): bic_master_write_read offset=%d read length=%d failed", __func__,wbuf[0],rlen);
         break;
       }
-      ssd.sflgs = rbuf[1];
-      ssd.warning = rbuf[2];
-      ssd.temp = rbuf[3];
-      ssd.pdlu = rbuf[4];
+
+      // Judge whether this device is SpringHill M.2. via FBID.
+      // TODO: If SpringHill M.2. can follow NVMe-MI I2C transaction, we will remove this judgement.
+      if (rbuf[0] == wbuf[0]) {
+        offset_base = SPRINGHILL_M2_OFFSET_BASE;
+      }
+      ssd.sflgs = rbuf[offset_base + 1];
+      ssd.warning = rbuf[offset_base + 2];
+      ssd.temp = rbuf[offset_base + 3];
+      ssd.pdlu = rbuf[offset_base + 4];
 
       wbuf[0] = 0x08;  // offset 08
-      rlen = 24;
+      rlen = 24 + offset_base;
       ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
       if (ret != 0) {
         syslog(LOG_DEBUG, "%s(): bic_master_write_read offset=%d read length=%d failed", __func__,wbuf[0],rlen);
         break;
       }
-      ssd.vendor = (rbuf[1] << 8) | rbuf[2];
-      memcpy(ssd.serial_num, &rbuf[3], MAX_SERIAL_NUM);
+      ssd.vendor = (rbuf[offset_base + 1] << 8) | rbuf[offset_base + 2];
+      memcpy(ssd.serial_num, &rbuf[offset_base + 3], MAX_SERIAL_NUM);
 
       if (m_slot_type == SLOT_TYPE_GPV2) {
         wbuf[0] = 0x20;  // offset 32
-        rlen = 55;
+        rlen = 55 + offset_base;
         ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
         if (ret != 0) {
           syslog(LOG_DEBUG, "%s(): bic_master_write_read offset=%d read length=%d failed", __func__,wbuf[0],rlen);
           break;
         }
-        ssd.fb_defined = rbuf[1];
-        memcpy(ssd.part_num, &rbuf[2], MAX_PART_NUM);
-        ssd.meff = rbuf[42];
-        ssd.ffi_0 = rbuf[43];
+        ssd.block_len_module_id_area = rbuf[offset_base + 0];
+        ssd.fb_defined = rbuf[offset_base + 1];
+        memcpy(ssd.part_num, &rbuf[offset_base + 2], MAX_PART_NUM);
+        ssd.meff = rbuf[offset_base + 42];
+        ssd.ffi_0 = rbuf[offset_base + 43];
 
         if (ssd.fb_defined == 1) {
           if (ssd.ffi_0 == FFI_0_ACCELERATOR) {
             wbuf[0] = 0x60;  // offset 96
-            rlen = 8;
+            rlen = 8 + offset_base;
             ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
             if (ret != 0) {
               syslog(LOG_DEBUG, "%s(): bic_master_write_read offset=%d read length=%d failed", __func__,wbuf[0],rlen);
               break;
             }
-            ssd.module_helath = rbuf[1];
-            ssd.lower_theshold = rbuf[2];
-            ssd.upper_threshold = rbuf[3];
-            ssd.power_state = rbuf[4];
-            ssd.i2c_freq = rbuf[5];
-            ssd.tdp_level = rbuf[6];
+            ssd.block_len_module_stat_area = rbuf[offset_base + 0];
+            ssd.module_helath = rbuf[offset_base + 1];
+            ssd.lower_theshold = rbuf[offset_base + 2];
+            ssd.upper_threshold = rbuf[offset_base + 3];
+            ssd.power_state = rbuf[offset_base + 4];
+            ssd.i2c_freq = rbuf[offset_base + 5];
+            ssd.tdp_level = rbuf[offset_base + 6];
 
             wbuf[0] = 0x68;  // offset 104
-            rlen = 8;
+            rlen = 8 + offset_base;
             ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
             if (ret != 0) {
               syslog(LOG_DEBUG, "%s(): bic_master_write_read offset=%d read length=%d failed", __func__,wbuf[0],rlen);
               break;
             }
-            ssd.asic_version = rbuf[1];
-            ssd.fw_major_ver = rbuf[2];
-            ssd.fw_minor_ver = rbuf[3];
+            ssd.block_len_ver_area = rbuf[offset_base + 0];
+            ssd.asic_version = rbuf[offset_base + 1];
+            ssd.fw_major_ver = rbuf[offset_base + 2];
+            ssd.fw_minor_ver = rbuf[offset_base + 3];
 
             wbuf[0] = 0x70;  // offset 112
-            rlen = 10;
+            rlen = 10 + offset_base;
             ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
             if (ret != 0) {
               syslog(LOG_DEBUG, "%s(): bic_master_write_read offset=%d read length=%d failed", __func__,wbuf[0],rlen);
               break;
             }
-            ssd.asic_core_vol1 = (rbuf[1] << 8) | rbuf[2];
-            ssd.asic_core_vol2 = (rbuf[3] << 8) | rbuf[4];
-            ssd.power_rail_vol1 = (rbuf[5] << 8) | rbuf[6];
-            ssd.power_rail_vol2 = (rbuf[7] << 8) | rbuf[8];
+            ssd.block_len_mon_area = rbuf[offset_base + 0];
+            ssd.asic_core_vol1 = (rbuf[offset_base + 1] << 8) | rbuf[offset_base + 2];
+            ssd.asic_core_vol2 = (rbuf[offset_base + 3] << 8) | rbuf[offset_base + 4];
+            ssd.power_rail_vol1 = (rbuf[offset_base + 5] << 8) | rbuf[offset_base + 6];
+            ssd.power_rail_vol2 = (rbuf[offset_base + 7] << 8) | rbuf[offset_base + 8];
 
             wbuf[0] = 0x7A;  // offset 122
-            rlen = 10;
+            rlen = 10 + offset_base;
             ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
             if (ret != 0) {
               syslog(LOG_DEBUG, "%s(): bic_master_write_read offset=%d read length=%d failed", __func__,wbuf[0],rlen);
               break;
             }
-            ssd.asic_error_type = rbuf[1];
-            ssd.module_error_type = rbuf[2];
-            ssd.warning_flag = rbuf[3];
-            ssd.interrupt_flag = rbuf[4];
-            ssd.max_asic_temp = rbuf[5];
-            ssd.total_int_mem_err_count = rbuf[6];
-            ssd.total_ext_mem_err_count = rbuf[7];
-            ssd.smbus_err = rbuf[8];
+            ssd.block_len_err_ret_area = rbuf[offset_base + 0];
+            ssd.asic_error_type = rbuf[offset_base + 1];
+            ssd.module_error_type = rbuf[offset_base + 2];
+            ssd.warning_flag = rbuf[offset_base + 3];
+            ssd.interrupt_flag = rbuf[offset_base + 4];
+            ssd.max_asic_temp = rbuf[offset_base + 5];
+            ssd.total_int_mem_err_count = rbuf[offset_base + 6];
+            ssd.total_ext_mem_err_count = rbuf[offset_base + 7];
+            ssd.smbus_err = rbuf[offset_base + 8];
           } else if (ssd.ffi_0 == FFI_0_STORAGE) {
             wbuf[0] = 0x57;  // offset 87
             rlen = 9;
@@ -317,8 +356,13 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t cmd) {
       syslog(LOG_DEBUG, "%s(): bic_master_write_read failed", __func__);
       return ret;
     }
-    ssd.sflgs = rbuf[1];
-    ssd.warning = rbuf[2];
+    // Judge whether this device is SpringHill M.2. via FBID.
+    // TODO: If SpringHill M.2. can follow NVMe-MI I2C transaction, we will remove this judgement.
+    if (rbuf[1] == wbuf[0]) {
+      offset_base = SPRINGHILL_M2_OFFSET_BASE;
+    }
+    ssd.sflgs = rbuf[offset_base + 1];
+    ssd.warning = rbuf[offset_base + 2];
 
     ret = drive_health(&ssd);
     return ret;

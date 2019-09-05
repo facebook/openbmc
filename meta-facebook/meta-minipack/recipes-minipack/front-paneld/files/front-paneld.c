@@ -37,6 +37,7 @@
 #include <openbmc/ipmb.h>
 #include <openbmc/pal.h>
 #include <openbmc/sdr.h>
+#include <openbmc/obmc-i2c.h>
 
 #define TMP75_NAME    "tmp75"
 #define ADM1278_NAME  "adm1278"
@@ -64,6 +65,60 @@
  */
 static uint8_t m_pos = 0xff;
 static pthread_mutex_t pos_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* Dynamic change lmsensors config for different PIM card type */
+static void
+add_adm1278_lmsensor_conf(uint8_t num, uint8_t bus, uint8_t pim_type) {
+  char tstr[64];
+  char cmd[128];
+
+  snprintf(cmd, sizeof(cmd), "cat /etc/sensors.d/custom/adm1278-%s.conf",
+           pim_type == PIM_TYPE_16O ? "PIM16O" : "PIM16Q");
+  snprintf(tstr, sizeof(tstr), " | sed 's/{pimid}/%d/g'", num);
+  strncat(cmd, tstr, sizeof(tstr));
+  snprintf(tstr, sizeof(tstr), " | sed 's/{i2cbus}/%d/g'", bus);
+  strncat(cmd, tstr, sizeof(tstr));
+  snprintf(tstr, sizeof(tstr), " > /etc/sensors.d/pim%d.conf", num);
+  strncat(cmd, tstr, sizeof(tstr));
+
+  run_command(cmd);
+}
+
+static void
+remove_adm1278_lmsensor_conf(uint8_t num) {
+  char path[PATH_MAX];
+
+  snprintf(path, sizeof(path), "/etc/sensors.d/pim%d.conf", num);
+  if (unlink(path))
+    syslog(LOG_ERR, "%s: Failed to remove %s", __func__, path);
+}
+
+static int
+write_adm1278_conf(uint8_t bus, uint8_t addr, uint8_t cmd, uint16_t data) {
+  int dev = -1, read_back = -1;
+
+  dev = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
+  if (dev < 0)
+    return dev;
+
+  i2c_smbus_write_word_data(dev, cmd, data);
+  read_back = i2c_smbus_read_word_data(dev, cmd);
+  if (read_back < 0) {
+    close(dev);
+    syslog(LOG_ERR, "%s: i2c_smbus_read_word_data failed", __func__);
+    return read_back;
+  }
+
+  if (((uint16_t) read_back) != data) {
+    syslog(LOG_WARNING, "%s: data isn't expectd value (%04X, %04X)",
+                        __func__, data, read_back);
+    close(dev);
+    return -1;
+  }
+
+  close(dev);
+  return 0;
+}
 
 static void
 pim_device_detect_log(uint8_t num, uint8_t bus, uint8_t addr,
@@ -119,12 +174,21 @@ pim_driver_add(uint8_t num, uint8_t pim_type) {
   if (state) {
     pim_device_detect_log(num, bus+4, ADM1278_ADDR, ADM1278_NAME, state);
   } else {
+    /* Config ADM1278 power monitor averaging */
+    if (write_adm1278_conf(bus+4, ADM1278_ADDR, 0xD4, 0x3F1E)) {
+      syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
+                       "can't config register",
+                       num, bus+4, ADM1278_ADDR, ADM1278_NAME);
+    }
+
     if (pal_add_i2c_device(bus+4, ADM1278_ADDR, ADM1278_NAME)) {
       syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
                        "driver cannot add.",
                        num, bus+4, ADM1278_ADDR, ADM1278_NAME);
     }
   }
+
+  add_adm1278_lmsensor_conf(num, bus+4, pim_type);
   sleep(1);
 
   if (pim_type == PIM_TYPE_16Q || pim_type == PIM_TYPE_4DD) {
@@ -170,6 +234,7 @@ pim_driver_del(uint8_t num, uint8_t pim_type) {
                       "driver cannot delete.",
                       num, bus+4, ADM1278_ADDR, ADM1278_NAME);
   }
+  remove_adm1278_lmsensor_conf(num);
 
   if (pim_type == PIM_TYPE_16Q || pim_type == PIM_TYPE_4DD) {
     max3446x_addr = MAX34461_ADDR;
@@ -282,6 +347,12 @@ scm_monitor_handler(void *unused) {
           pal_set_server_power(FRU_SCM, SERVER_POWER_ON);
           /* Setup management port LED */
           run_command("/usr/local/bin/setup_mgmt.sh led");
+          /* Config ADM1278 power monitor averaging */
+          if (write_adm1278_conf(16, ADM1278_ADDR, 0xD4, 0x3F1E)) {
+            syslog(LOG_CRIT, "SCM Bus:%d Addr:0x%x Device:%s "
+                             "can't config register",
+                             16, ADM1278_ADDR, ADM1278_NAME);
+          }
           goto scm_mon_out;
         }
       } else {
@@ -393,7 +464,7 @@ pim_monitor_handler(void *unused) {
           }
         } else {
           syslog(LOG_WARNING, "PIM %d is unplugged.", num);
-          clear_pimserial_cache(fru - 2);
+          clear_pimserial_cache(num);
           pal_clear_thresh_value(fru);
           pim_driver_del(num, pim_type_old[num]);
           pim_type_old[num] = PIM_TYPE_UNPLUG;

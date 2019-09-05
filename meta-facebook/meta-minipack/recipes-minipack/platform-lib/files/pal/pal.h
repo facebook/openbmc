@@ -179,6 +179,7 @@ extern "C" {
 
 #define SCM_RSENSE 1.16
 #define PIM_RSENSE 1.42
+#define PIM16O_RSENSE 1.11
 
 #define IPMB_BUS 0
 

@@ -70,38 +70,52 @@ check_por_config()
   fi
 }
 
-if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then 
+function expansion_init() {
+  echo ""
+}
+
+function server_init() {
+  # Check whether it is fresh power on reset
+  if [ $(is_bmc_por) -eq 1 ]; then
+    # Disable clearing of PWM block on WDT SoC Reset
+    devmem_clear_bit $(scu_addr 9c) 17
+
+    check_por_config 1
+    if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 1) == "1" ] ; then
+      power-util slot1 on
+    fi
+
+    check_por_config 2
+    if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 2) == "1" ] ; then
+      power-util slot2 on
+    fi
+
+    check_por_config 3
+    if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 3) == "1" ] ; then
+      power-util slot3 on
+    fi
+
+    check_por_config 4
+    if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 4) == "1" ] ; then
+      power-util slot4 on
+    fi
+  fi
+}
+
+if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
   date -s "2018-01-01 00:00:00"
 fi
 
 /usr/local/bin/sync_date.sh
 
-# Check whether it is fresh power on reset
-if [ $(is_bmc_por) -eq 1 ]; then
-
-  # Disable clearing of PWM block on WDT SoC Reset
-  devmem_clear_bit $(scu_addr 9c) 17
-
-  check_por_config 1
-  if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 1) == "1" ] ; then
-    power-util slot1 on
-  fi
-
-  check_por_config 2
-  if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 2) == "1" ] ; then
-    power-util slot2 on
-  fi
-
-  check_por_config 3
-  if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 3) == "1" ] ; then
-    power-util slot3 on
-  fi
-
-  check_por_config 4
-  if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 4) == "1" ] ; then
-    power-util slot4 on
-  fi
+Location=$(gpio_get BMC_LOCATION)
+#Location: 1 exp; 0 baseboard
+if [ $Location == "1" ]; then
+  expansion_init
+else
+  server_init
 fi
+
 
 if [ $(is_date_synced) == "0" ]; then
    # Time sync with RC Server

@@ -14,7 +14,7 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 function expansion_init() {
-  echo "Do Nothing"
+  /usr/local/bin/bic-cached 1 > /dev/null 2>&1 &
 }
 
 function server_init() {

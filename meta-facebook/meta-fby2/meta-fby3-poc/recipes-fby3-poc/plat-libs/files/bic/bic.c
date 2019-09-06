@@ -186,7 +186,7 @@ read_device(const char *device, int *value) {
   }
 }
 
-static int
+int
 get_bmc_location() {
   //it's a workaround to check the location of BMC
   char *bmc_location_path = "/sys/class/gpio/gpio120/value";
@@ -1148,7 +1148,7 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
   struct rlimit mqlim;
   uint8_t done = 0;
 
-  syslog(LOG_CRIT, "bic_update_fw: update bic firmware on slot %d\n", slot_id);
+  syslog(LOG_CRIT, "bic_update_fw: update bic firmware on slot %d\n", get_ipmb_bus_id(slot_id));
 
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
@@ -1177,14 +1177,18 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
   // Kill ipmb daemon for this slot
   sprintf(cmd, "sv stop ipmbd_%d", get_ipmb_bus_id(slot_id));
   system(cmd);
-  printf("stop ipmbd for slot %x..\n", slot_id);
+  printf("stop ipmbd for slot %x..\n", get_ipmb_bus_id(slot_id));
 
   // The I2C high speed clock (1M) could cause to read BIC data abnormally.
   // So reduce I2C bus clock speed which is a workaround for BIC update.
   switch(slot_id)
   {
      case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF77304");
+       if ( get_bmc_location() == 1 ) {
+         system("devmem 0x1e78a044 w 0xFFF77304");
+       } else {
+         system("devmem 0x1e78a084 w 0xFFF77304");
+       }
        break;
      case FRU_SLOT2:
        system("devmem 0x1e78a104 w 0xFFF77304");
@@ -1196,12 +1200,12 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
        system("devmem 0x1e78a304 w 0xFFF77304");
        break;
      default:
-       syslog(LOG_CRIT, "bic_update_fw: incorrect slot_id %d\n", slot_id);
+       syslog(LOG_CRIT, "bic_update_fw: incorrect slot_id %d\n", get_ipmb_bus_id(slot_id));
        goto error_exit;
        break;
   }
   sleep(1);
-  printf("Stopped ipmbd for this slot %x..and sleep 2s...\n",slot_id);
+  printf("Stopped ipmbd for this slot %x..and sleep 2s...\n", get_ipmb_bus_id(slot_id));
   sleep(2);
   if (is_bic_ready(slot_id)) {
     mqlim.rlim_cur = RLIM_INFINITY;
@@ -1212,9 +1216,9 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
 
     // Restart ipmb daemon with "-u|--enable-bic-update" for bic update
     memset(cmd, 0, sizeof(cmd));
-    sprintf(cmd, "/usr/local/bin/ipmbd -u %d %d > /dev/null 2>&1 &", get_ipmb_bus_id(slot_id), slot_id);
+    sprintf(cmd, "/usr/local/bin/ipmbd -u %d %d > /dev/null 2>&1 &", get_ipmb_bus_id(slot_id), get_ipmb_bus_id(slot_id));
     system(cmd);
-    printf("start ipmbd -u for this slot %x..\n",slot_id);
+    printf("start ipmbd -u for this slot %x..\n",get_ipmb_bus_id(slot_id));
 
     sleep(2);
 
@@ -1225,12 +1229,12 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd, "ps | grep -v 'grep' | grep 'ipmbd -u %d' |awk '{print $1}'| xargs kill", get_ipmb_bus_id(slot_id));
     system(cmd);
-    printf("stop ipmbd for slot %x..\n", slot_id);
+    printf("stop ipmbd for slot %x..\n", get_ipmb_bus_id(slot_id));
   }
 
   // Wait for SMB_BMC_3v3SB_ALRT_N
-  printf("wait 5s for bic ready...\n");
-  sleep(5);
+  printf("wait 2s for bic ready...\n");
+  sleep(2);
 #if 0
   for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
     if (!is_bic_ready(slot_id)) {
@@ -1433,8 +1437,8 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
   msleep(500);
 
   // Wait for SMB_BMC_3v3SB_ALRT_N
-  printf("wait 5s for bic ready...\n");
-  sleep(5);
+  printf("wait 2s for bic ready...\n");
+  sleep(2);
 #if 0
   for (i = 0; i < BIC_UPDATE_RETRIES; i++) {
     if (is_bic_ready(slot_id))
@@ -1455,7 +1459,11 @@ error_exit:
   switch(slot_id)
   {
      case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF5E700");
+       if ( get_bmc_location() == 1 ) {
+         system("devmem 0x1e78a044 w 0xFFF5E700");
+       } else {
+         system("devmem 0x1e78a084 w 0xFFF5E700");
+       }
        break;
      case FRU_SLOT2:
        system("devmem 0x1e78a104 w 0xFFF5E700");
@@ -1467,7 +1475,7 @@ error_exit:
        system("devmem 0x1e78a304 w 0xFFF5E700");
        break;
      default:
-       syslog(LOG_ERR, "bic_update_fw: incorrect slot_id %d\n", slot_id);
+       syslog(LOG_ERR, "bic_update_fw: incorrect slot_id %d\n", get_ipmb_bus_id(slot_id));
        break;
   }
 
@@ -1478,7 +1486,7 @@ error_exit:
   system(cmd);
 
 error_exit2:
-  syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting on slot %d\n", slot_id);
+  syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting on slot %d\n", get_ipmb_bus_id(slot_id));
   if (fd > 0) {
     close(fd);
   }
@@ -1489,7 +1497,7 @@ error_exit2:
 
   if (done == 1) {    //update successfully
     memset(cmd, 0, sizeof(cmd));
-    snprintf(cmd, MAX_CMD_LEN, "/usr/local/bin/bic-cached %d &", slot_id);   //retrieve SDR data after BIC FW update
+    snprintf(cmd, MAX_CMD_LEN, "/usr/local/bin/bic-cached %d &", get_ipmb_bus_id(slot_id));   //retrieve SDR data after BIC FW update
     system(cmd);
   }
 
@@ -2060,6 +2068,31 @@ bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint
   return 0;
 }
 
+// Read FRU from the 2nd BIC
+static int
+bic_get_fruid_info_param(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info, uint8_t intf) {
+  int ret;
+  uint8_t tbuf[7]={0x9c, 0x9c, 0x0, intf, NETFN_STORAGE_REQ << 2, CMD_STORAGE_GET_FRUID_INFO, fru_id};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+
+  tlen = sizeof(tbuf);
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
+  if ( ret < 0 ) {
+    return -1;
+  }
+
+  if (rbuf[3] != tbuf[3]) {
+    return -1;
+  }
+
+  memcpy((uint8_t *)info, &rbuf[7], rlen-7);
+
+  return ret;
+}
+
 // Read 1S server's FRUID
 int
 bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info) {
@@ -2071,19 +2104,120 @@ bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info) {
   return ret;
 }
 
+//tony add
 static int
-_read_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, uint8_t *rbuf, uint8_t *rlen) {
+_read_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, uint8_t *rbuf, uint8_t *rlen, uint8_t remote, uint8_t intf) {
   int ret;
-  uint8_t tbuf[4] = {0};
+  uint8_t tbuf[16] = {0};
+  uint8_t tlen;
 
-  tbuf[0] = fru_id;
-  tbuf[1] = offset & 0xFF;
-  tbuf[2] = (offset >> 8) & 0xFF;
-  tbuf[3] = count;
+  if ( remote == 0 ) {
+    tbuf[0] = fru_id;
+    tbuf[1] = offset & 0xFF;
+    tbuf[2] = (offset >> 8) & 0xFF;
+    tbuf[3] = count;
+    tlen = 4;
+    ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_READ_FRUID_DATA, tbuf, tlen, rbuf, rlen);
+  } else {
+    uint8_t rsp[256] = {0};
+    uint8_t rsp_len = 0;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_READ_FRUID_DATA, tbuf, 4, rbuf, rlen);
+    tbuf[0] = 0x9c;
+    tbuf[1] = 0x9c;
+    tbuf[2] = 0x00;
+    tbuf[3] = intf;
+    tbuf[4] = NETFN_STORAGE_REQ << 2;
+    tbuf[5] = CMD_STORAGE_READ_FRUID_DATA;
+    tbuf[6] = fru_id;
+    tbuf[7] = offset & 0xFF;
+    tbuf[8] = (offset >> 8) & 0xFF;
+    tbuf[9] = count;
+    tlen = 10;
+    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rsp, &rsp_len);
+
+    if (rsp[3] != tbuf[3]) {
+      syslog(LOG_WARNING,"[%s] 0x%x != 0x%x", __func__, rsp[3], tbuf[3]);
+      return -1;
+    }
+
+    *rlen = rsp_len - 7;
+    memcpy(rbuf, &rsp[7], *rlen);
+  }
 
   return ret;
+}
+
+int
+bic_read_fruid_param(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size, uint8_t intf) {
+  int ret = 0;
+  uint32_t nread;
+  uint32_t offset;
+  uint8_t count;
+  uint8_t rbuf[256] = {0};
+  uint8_t rlen = 0;
+  int fd;
+  ipmi_fruid_info_t info;
+
+  unlink(path);
+
+  // Open the file exclusively for write
+  fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
+  if (fd < 0) {
+    syslog(LOG_ERR, "bic_read_fruid: open fails for path: %s\n", path);
+    goto error_exit;
+  }
+
+  // Read the FRUID information
+  ret = bic_get_fruid_info_param(slot_id, fru_id, &info, intf);
+  if (ret) {
+    syslog(LOG_ERR, "bic_read_fruid: bic_read_fruid_info returns %d\n", ret);
+    goto error_exit;
+  }
+
+  // Indicates the size of the FRUID
+  nread = (info.size_msb << 8) | info.size_lsb;
+  if (nread > FRUID_SIZE) {
+    nread = FRUID_SIZE;
+  }
+
+  syslog(LOG_WARNING,"the size of fruid %d is %d\n", fru_id, nread);
+
+  *fru_size = nread;
+  if (*fru_size == 0)
+     goto error_exit;
+
+  // Read chunks of FRUID binary data in a loop
+  offset = 0;
+  while (nread > 0) {
+    if (nread > FRUID_READ_COUNT_MAX) {
+      count = FRUID_READ_COUNT_MAX;
+    } else {
+      count = nread;
+    }
+
+    ret = _read_fruid(slot_id, fru_id, offset, count, rbuf, &rlen, 1, intf);
+    if (ret) {
+      syslog(LOG_ERR, "bic_read_fruid: ipmb_wrapper fails\n");
+      goto error_exit;
+    }
+
+    // Ignore the first byte as it indicates length of response
+    write(fd, &rbuf[1], rlen-1);
+
+    // Update offset
+    offset += (rlen-1);
+    nread -= (rlen-1);
+  }
+
+ close(fd);
+ return ret;
+
+error_exit:
+  if (fd > 0 ) {
+    close(fd);
+  }
+
+  return -1;
 }
 
 int
@@ -2132,7 +2266,7 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size)
       count = nread;
     }
 
-    ret = _read_fruid(slot_id, fru_id, offset, count, rbuf, &rlen);
+    ret = _read_fruid(slot_id, fru_id, offset, count, rbuf, &rlen, 0, 0);
     if (ret) {
       syslog(LOG_ERR, "bic_read_fruid: ipmb_wrapper fails\n");
       goto error_exit;
@@ -2158,32 +2292,89 @@ error_exit:
 }
 
 static int
-_write_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, uint8_t *buf) {
+_write_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, uint8_t *buf, uint8_t remote, uint8_t intf) {
   int ret;
   uint8_t tbuf[64] = {0};
-  uint8_t rbuf[4] = {0};
+  uint8_t rbuf[16] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
 
-  tbuf[0] = fru_id;
-  tbuf[1] = offset & 0xFF;
-  tbuf[2] = (offset >> 8) & 0xFF;
+  if ( remote == 0 ) {
+    tbuf[0] = fru_id;
+    tbuf[1] = offset & 0xFF;
+    tbuf[2] = (offset >> 8) & 0xFF;
+    memcpy(&tbuf[3], buf, count);
+    tlen = count + 3;
+    ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_WRITE_FRUID_DATA, tbuf, tlen, rbuf, &rlen);
+    if ( rbuf[0] != count ) {
+      return -1;
+    }
+  } else {
+    tbuf[0] = 0x9c;
+    tbuf[1] = 0x9c;
+    tbuf[2] = 0x00;
+    tbuf[3] = intf;
+    tbuf[4] = NETFN_STORAGE_REQ << 2;
+    tbuf[5] = CMD_STORAGE_WRITE_FRUID_DATA;
+    tbuf[6] = fru_id;
+    tbuf[7] = offset & 0xFF;
+    tbuf[8] = (offset >> 8) & 0xFF;
+    memcpy(&tbuf[9], buf, count);
+    tlen = count + 9;
+    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
 
-  memcpy(&tbuf[3], buf, count);
-  tlen = count + 3;
+    if ( rbuf[7] != count ) {
+      syslog(LOG_WARNING,"[%s] 0x%x != 0x%x", __func__, rbuf[7], count);
+      return -1;
+    }
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_WRITE_FRUID_DATA, tbuf, tlen, rbuf, &rlen);
-
-  if (ret) {
-    return ret;
-  }
-
-  if (rbuf[0] != count) {
-    return -1;
   }
 
   return ret;
 }
+
+int
+bic_write_fruid_param(uint8_t slot_id, uint8_t fru_id, const char *path, uint8_t intf) {
+  int ret = -1;
+  uint32_t offset;
+  uint8_t count;
+  uint8_t buf[64] = {0};
+  int fd;
+
+  // Open the file exclusively for read
+  fd = open(path, O_RDONLY, 0666);
+  if (fd < 0) {
+    syslog(LOG_ERR, "bic_write_fruid: open fails for path: %s\n", path);
+    goto error_exit;
+  }
+
+  // Write chunks of FRUID binary data in a loop
+  offset = 0;
+  while (1) {
+    // Read from file
+    count = read(fd, buf, FRUID_WRITE_COUNT_MAX);
+    if (count <= 0) {
+      break;
+    }
+
+    // Write to the FRUID
+    ret = _write_fruid(slot_id, fru_id, offset, count, buf, 1, intf);
+    if (ret) {
+      break;
+    }
+
+    // Update counter
+    offset += count;
+  }
+
+error_exit:
+  if (fd > 0 ) {
+    close(fd);
+  }
+
+  return ret;
+}
+
 
 int
 bic_write_fruid(uint8_t slot_id, uint8_t fru_id, const char *path) {
@@ -2210,7 +2401,7 @@ bic_write_fruid(uint8_t slot_id, uint8_t fru_id, const char *path) {
     }
 
     // Write to the FRUID
-    ret = _write_fruid(slot_id, fru_id, offset, count, buf);
+    ret = _write_fruid(slot_id, fru_id, offset, count, buf, 0, 0);
     if (ret) {
       break;
     }
@@ -2260,26 +2451,53 @@ bic_get_sdr_info(uint8_t slot_id, ipmi_sel_sdr_info_t *info) {
 }
 
 static int
-_get_sdr_rsv(uint8_t slot_id, uint8_t *rsv) {
+_get_sdr_rsv(uint8_t slot_id, uint8_t *rsv, uint8_t remote, uint8_t intf) {
   int ret;
+  uint8_t rbuf[16] = {0};
   uint8_t rlen = 0;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_RSV_SDR, NULL, 0, (uint8_t *) rsv, &rlen);
+  if ( remote == 0 ) {
+    ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_RSV_SDR, NULL, 0, (uint8_t *) rsv, &rlen);
+  } else {
+    uint8_t tbuf[6] = {0x9c, 0x9c, 0x0, intf, NETFN_STORAGE_REQ << 2, CMD_STORAGE_RSV_SDR};
+    uint8_t tlen = sizeof(tbuf);
 
+    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
+
+    //TODO: check the completion code
+    //We copy data directly for now
+    memcpy((uint8_t *)rsv, &rbuf[7], rlen - 7);
+  }
   return ret;
 }
 
 static int
-_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen) {
+_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen, uint8_t remote, uint8_t intf) {
   int ret;
+  if ( remote == 0 ) {
+    ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_SDR, (uint8_t *)req, sizeof(ipmi_sel_sdr_req_t), (uint8_t*)res, rlen);
+  } else {
+    uint8_t tbuf[64] = {0x9c, 0x9c, 0x0, intf, NETFN_STORAGE_REQ << 2, CMD_STORAGE_GET_SDR};
+    uint8_t rsp[64] = {0};
+    uint8_t rsp_len = 0;
+    uint8_t sel_sdr_req_size = sizeof(ipmi_sel_sdr_req_t);
+    uint8_t tlen = 6 + sel_sdr_req_size; //IANA + Netfn + Cmd
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_SDR, (uint8_t *)req, sizeof(ipmi_sel_sdr_req_t), (uint8_t*)res, rlen);
+    memcpy(&tbuf[6], (uint8_t *)req, sel_sdr_req_size);
 
+    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rsp, &rsp_len);
+
+    //TODO: check the completion code
+    //We copy data directly for now
+    *rlen = rsp_len - 7;
+    memcpy((uint8_t *)res, &rsp[7], *rlen);
+
+  }
   return ret;
 }
 
 int
-bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen) {
+bic_get_sdr_param(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen, uint8_t remote, uint8_t intf) {
   int ret;
   uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
@@ -2291,7 +2509,7 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
   tres = (ipmi_sel_sdr_res_t *) tbuf;
 
   // Get SDR reservation ID for the given record
-  ret = _get_sdr_rsv(slot_id, rbuf);
+  ret = _get_sdr_rsv(slot_id, rbuf, 1, intf);
   if (ret) {
     syslog(LOG_ERR, "bic_read_sdr: _get_sdr_rsv returns %d\n", ret);
     return ret;
@@ -2306,7 +2524,7 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
   req->offset = 0;
   req->nbytes = sizeof(sdr_rec_hdr_t);
 
-  ret = _get_sdr(slot_id, req, (ipmi_sel_sdr_res_t *)tbuf, &tlen);
+  ret = _get_sdr(slot_id, req, (ipmi_sel_sdr_res_t *)tbuf, &tlen, 1, intf);
   if (ret) {
     syslog(LOG_ERR, "bic_read_sdr: _get_sdr returns %d\n", ret);
     return ret;
@@ -2318,7 +2536,7 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
   // Copy the header excluding first two bytes(next_rec_id)
   memcpy(res->data, tres->data, tlen-2);
 
-  // Update response length and offset for next request
+  // Update response length and offset for next requesdr_rec_hdr_t
   *rlen += tlen-2;
   req->offset = tlen-2;
 
@@ -2334,7 +2552,82 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
       req->nbytes = len;
     }
 
-    ret = _get_sdr(slot_id, req, (ipmi_sel_sdr_res_t *)tbuf, &tlen);
+    ret = _get_sdr(slot_id, req, (ipmi_sel_sdr_res_t *)tbuf, &tlen, 1, intf);
+    if (ret) {
+      syslog(LOG_ERR, "bic_read_sdr: _get_sdr returns %d\n", ret);
+      return ret;
+    }
+
+    // Copy the data excluding the first two bytes(next_rec_id)
+    memcpy(&res->data[req->offset], tres->data, tlen-2);
+
+    // Update response length, offset for next request, and remaining length
+    *rlen += tlen-2;
+    req->offset += tlen-2;
+    len -= tlen-2;
+  }
+
+  return 0;
+
+}
+
+int
+bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen) {
+  int ret;
+  uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t tlen;
+  uint8_t len;
+  ipmi_sel_sdr_res_t *tres;
+  sdr_rec_hdr_t *hdr;
+
+  tres = (ipmi_sel_sdr_res_t *) tbuf;
+
+  // Get SDR reservation ID for the given record
+  ret = _get_sdr_rsv(slot_id, rbuf, 0, 0);
+  if (ret) {
+    syslog(LOG_ERR, "bic_read_sdr: _get_sdr_rsv returns %d\n", ret);
+    return ret;
+  }
+
+  req->rsv_id = (rbuf[1] << 8) | rbuf[0];
+
+  // Initialize the response length to zero
+  *rlen = 0;
+
+  // Read SDR Record Header
+  req->offset = 0;
+  req->nbytes = sizeof(sdr_rec_hdr_t);
+
+  ret = _get_sdr(slot_id, req, (ipmi_sel_sdr_res_t *)tbuf, &tlen, 0, 0);
+  if (ret) {
+    syslog(LOG_ERR, "bic_read_sdr: _get_sdr returns %d\n", ret);
+    return ret;
+  }
+
+  // Copy the next record id to response
+  res->next_rec_id = tres->next_rec_id;
+
+  // Copy the header excluding first two bytes(next_rec_id)
+  memcpy(res->data, tres->data, tlen-2);
+
+  // Update response length and offset for next requesdr_rec_hdr_t
+  *rlen += tlen-2;
+  req->offset = tlen-2;
+
+  // Find length of data from header info
+  hdr = (sdr_rec_hdr_t *) tres->data;
+  len = hdr->len;
+
+  // Keep reading chunks of SDR record in a loop
+  while (len > 0) {
+    if (len > SDR_READ_COUNT_MAX) {
+      req->nbytes = SDR_READ_COUNT_MAX;
+    } else {
+      req->nbytes = len;
+    }
+
+    ret = _get_sdr(slot_id, req, (ipmi_sel_sdr_res_t *)tbuf, &tlen, 0 ,0);
     if (ret) {
       syslog(LOG_ERR, "bic_read_sdr: _get_sdr returns %d\n", ret);
       return ret;

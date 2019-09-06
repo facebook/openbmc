@@ -1427,7 +1427,19 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
   int ret;
   bool discrete;
+  static bool detect_bmc_location = false;
+  uint8_t bmc_location = 0;
   int i;
+
+  if ( false == detect_bmc_location ) {
+    ret = get_bmc_location();
+    if ( ret < 0 ) {
+      syslog(LOG_INFO, "Faild to detect the location of BMC");
+      syslog(LOG_INFO, "Please check the GPIOP0");
+    } else {
+      bmc_location = (uint8_t)ret;
+    }
+  }
 
   switch (fru) {
     case FRU_SLOT1:
@@ -1463,71 +1475,88 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       }
       break;
     case FRU_SPB:
-      switch(sensor_num) {
+      if ( 1 == bmc_location ) {
+        switch(sensor_num) {
+          // Various Voltages
+          case SP_SENSOR_P5V:
+            return read_adc_value(ADC_PIN0, ADC_VALUE, (float*) value);
+          case SP_SENSOR_P12V:
+            return read_adc_value(ADC_PIN1, ADC_VALUE, (float*) value);
+          case SP_SENSOR_P3V3_STBY:
+            return read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
+          case SP_SENSOR_P1V15_BMC_STBY:
+            return read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
+          case SP_SENSOR_P1V2_BMC_STBY:
+            return read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
+          case SP_SENSOR_P2V5_BMC_STBY:
+            return read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
+          default:
+            return ERR_SENSOR_NA;
+        }
+      } else {
+        switch(sensor_num) {
+          // Inlet, Outlet Temp
+          case SP_SENSOR_INLET_TEMP:
+            return read_temp(SP_INLET_TEMP_DEVICE, (float*) value);
+          case SP_SENSOR_OUTLET_TEMP:
+            return read_temp(SP_OUTLET_TEMP_DEVICE, (float*) value);
 
-        // Inlet, Outlet Temp
-        case SP_SENSOR_INLET_TEMP:
-          return read_temp(SP_INLET_TEMP_DEVICE, (float*) value);
-        case SP_SENSOR_OUTLET_TEMP:
-          return read_temp(SP_OUTLET_TEMP_DEVICE, (float*) value);
+          // Fan Tach Values
+          case SP_SENSOR_FAN0_TACH:
+            return read_fan_value(FAN0, FAN_TACH_RPM, (float*) value);
+          case SP_SENSOR_FAN1_TACH:
+            return read_fan_value(FAN1, FAN_TACH_RPM, (float*) value);
+          case SP_SENSOR_FAN2_TACH:
+            return read_fan_value(FAN2, FAN_TACH_RPM, (float*) value);
+          case SP_SENSOR_FAN3_TACH:
+            return read_fan_value(FAN3, FAN_TACH_RPM, (float*) value);
+          case SP_SENSOR_FAN4_TACH:
+            return read_fan_value(FAN4, FAN_TACH_RPM, (float*) value);
+          case SP_SENSOR_FAN5_TACH:
+            return read_fan_value(FAN5, FAN_TACH_RPM, (float*) value);
+          case SP_SENSOR_FAN6_TACH:
+            return read_fan_value(FAN6, FAN_TACH_RPM, (float*) value);
+          case SP_SENSOR_FAN7_TACH:
+            return read_fan_value(FAN7, FAN_TACH_RPM, (float*) value);
 
-        // Fan Tach Values
-        case SP_SENSOR_FAN0_TACH:
-          return read_fan_value(FAN0, FAN_TACH_RPM, (float*) value);
-        case SP_SENSOR_FAN1_TACH:
-          return read_fan_value(FAN1, FAN_TACH_RPM, (float*) value);
-        case SP_SENSOR_FAN2_TACH:
-          return read_fan_value(FAN2, FAN_TACH_RPM, (float*) value);
-        case SP_SENSOR_FAN3_TACH:
-          return read_fan_value(FAN3, FAN_TACH_RPM, (float*) value);
-        case SP_SENSOR_FAN4_TACH:
-          return read_fan_value(FAN4, FAN_TACH_RPM, (float*) value);
-        case SP_SENSOR_FAN5_TACH:
-          return read_fan_value(FAN5, FAN_TACH_RPM, (float*) value);
-        case SP_SENSOR_FAN6_TACH:
-          return read_fan_value(FAN6, FAN_TACH_RPM, (float*) value);
-        case SP_SENSOR_FAN7_TACH:
-          return read_fan_value(FAN7, FAN_TACH_RPM, (float*) value);
-
-
-        // Various Voltages
-        case SP_SENSOR_P5V:
-          return read_adc_value(ADC_PIN0, ADC_VALUE, (float*) value);
-        case SP_SENSOR_P12V:
-          return read_adc_value(ADC_PIN1, ADC_VALUE, (float*) value);
-        case SP_SENSOR_P3V3_STBY:
-          return read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
-        case SP_SENSOR_P1V15_BMC_STBY:
-          return read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
-        case SP_SENSOR_P1V2_BMC_STBY:
-          return read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
-        case SP_SENSOR_P2V5_BMC_STBY:
-          return read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
-        case SP_SENSOR_P12V_MEDUSA:
-          ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
-          *(float *)value *=  1.47;
-          return ret;
-        case SP_SENSOR_IMON_VTEMP:
-          ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
-          *(float *)value = (*(float *)value - 0.1525) / 0.0087;
-          return ret;
+          // Various Voltages
+          case SP_SENSOR_P5V:
+            return read_adc_value(ADC_PIN0, ADC_VALUE, (float*) value);
+          case SP_SENSOR_P12V:
+            return read_adc_value(ADC_PIN1, ADC_VALUE, (float*) value);
+          case SP_SENSOR_P3V3_STBY:
+            return read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
+          case SP_SENSOR_P1V15_BMC_STBY:
+            return read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
+          case SP_SENSOR_P1V2_BMC_STBY:
+            return read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
+          case SP_SENSOR_P2V5_BMC_STBY:
+            return read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
+          case SP_SENSOR_P12V_MEDUSA:
+            ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
+            *(float *)value *=  1.47;
+            return ret;
+          case SP_SENSOR_IMON_VTEMP:
+            ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
+            *(float *)value = (*(float *)value - 0.1525) / 0.0087;
+            return ret;
          
-        // Hot Swap Controller
-        case SP_SENSOR_HSC_IN_VOLT:
-          return read_hsc_value(0x88, 19599, 0, -2, (float *)value);
-        case SP_SENSOR_HSC_OUT_CURR:
-          return read_hsc_value(0x8c, (800*hsc_r_sense), 20475, -1, (float *)value);
-        case SP_SENSOR_HSC_TEMP:
-          return read_hsc_value(0x8d, 42, 31880, -1, (float *)value);
-        case SP_SENSOR_HSC_IN_POWER:
-          return read_hsc_ein(hsc_r_sense, (float *)value);
-        case SP_SENSOR_HSC_PEAK_IOUT:
-          return read_hsc_value(0xd0, (800*hsc_r_sense), 20475, -1, (float *)value);
-        case SP_SENSOR_HSC_PEAK_PIN:
-          return read_hsc_value(0xda, (6123*hsc_r_sense), 0, -2, (float *)value);
-      }
-      break;
-
+          // Hot Swap Controller
+          case SP_SENSOR_HSC_IN_VOLT:
+            return read_hsc_value(0x88, 19599, 0, -2, (float *)value);
+          case SP_SENSOR_HSC_OUT_CURR:
+            return read_hsc_value(0x8c, (800*hsc_r_sense), 20475, -1, (float *)value);
+          case SP_SENSOR_HSC_TEMP:
+            return read_hsc_value(0x8d, 42, 31880, -1, (float *)value);
+          case SP_SENSOR_HSC_IN_POWER:
+            return read_hsc_ein(hsc_r_sense, (float *)value);
+          case SP_SENSOR_HSC_PEAK_IOUT:
+            return read_hsc_value(0xd0, (800*hsc_r_sense), 20475, -1, (float *)value);
+          case SP_SENSOR_HSC_PEAK_PIN:
+            return read_hsc_value(0xda, (6123*hsc_r_sense), 0, -2, (float *)value);
+        }
+        break;
+    }
     case FRU_NIC:
       switch(sensor_num) {
         // Mezz Temp

@@ -2797,14 +2797,17 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 }
 
 int
+pal_get_bmc_location() {
+  return get_bmc_location();
+}
+
+int
 pal_read_nic_fruid(const char *path, int size) {
   uint8_t wbuf[8], rbuf[32];
   uint8_t offs_len, addr;
   char *bus;
-  char *bmc_location_path = "/sys/class/gpio/gpio120/value";
   int offset, count;
   int fd = -1, dev = -1, ret = -1;
-  int bmc_location = 0;
 
   fd = open(path, O_WRONLY | O_CREAT, 0644);
   if (fd < 0) {
@@ -2812,7 +2815,7 @@ pal_read_nic_fruid(const char *path, int size) {
   }
 
   if (pal_is_ocp30_nic()) {
-    if ( !read_device(bmc_location_path, &bmc_location) && bmc_location == 1 ) {
+    if ( get_bmc_location() == 1 ) {
       bus = "/dev/i2c-8";
     } else {
       bus = "/dev/i2c-11";
@@ -2824,7 +2827,7 @@ pal_read_nic_fruid(const char *path, int size) {
     addr = 0xA2;
     offs_len = (fby2_get_nic_mfgid() == MFG_BROADCOM) ? 1 : 2;
   }
-  syslog(LOG_WARNING, "%s: bmc_location:%d, bus:%s", __func__, bmc_location, bus);
+  syslog(LOG_WARNING, "%s: bmc_location:%d, bus:%s", __func__, get_bmc_location(), bus);
   dev = open(bus, O_RDWR);
   if (dev < 0) {
     goto error_exit;

@@ -208,14 +208,20 @@ int bic_server_power_cycle(uint8_t slot_id);
 int bic_get_server_power_status(uint8_t slot_id, uint8_t *power_status);
 int bic_server_power_reset(uint8_t slot_id);
 
+int get_bmc_location();
+
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info);
 int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size);
 int bic_write_fruid(uint8_t slot_id, uint8_t fru_id, const char *path);
+
+int bic_write_fruid_param(uint8_t slot_id, uint8_t fru_id, const char *path, uint8_t intf);
+int bic_read_fruid_param(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size, uint8_t intf);
 
 int bic_get_sel_info(uint8_t slot_id, ipmi_sel_sdr_info_t *info);
 int bic_get_sel_rsv(uint8_t slot_id, uint16_t *rsv);
 int bic_get_sel(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen);
 
+int bic_get_sdr_param(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen, uint8_t remote, uint8_t intf);
 int bic_get_sdr_info(uint8_t slot_id, ipmi_sel_sdr_info_t *info);
 int bic_get_sdr_rsv(uint8_t slot_id, uint16_t *rsv);
 int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen);

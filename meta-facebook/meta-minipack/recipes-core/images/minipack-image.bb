@@ -48,6 +48,7 @@ IMAGE_INSTALL += " \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \
+  mmc-utils \
   "
 IMAGE_FEATURES += " \
   ssh-server-openssh \

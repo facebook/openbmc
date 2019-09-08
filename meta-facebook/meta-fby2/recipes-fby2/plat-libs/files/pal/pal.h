@@ -297,6 +297,7 @@ bool pal_is_fw_update_ongoing(uint8_t fru);
 int pal_set_sdr_update_flag(uint8_t slot, uint8_t update);
 int pal_get_sdr_update_flag(uint8_t slot);
 int pal_parse_mem_mapping_string(uint8_t channel, bool *support_mem_mapping, char *error_log);
+bool pal_is_modify_sel_time(uint8_t *sel, int size);
 #ifdef __cplusplus
 } // extern "C"
 #endif

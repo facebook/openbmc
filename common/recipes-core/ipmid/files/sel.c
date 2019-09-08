@@ -34,6 +34,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <time.h>
 #include <openbmc/pal.h>
 
@@ -259,6 +260,22 @@ parse_ras_sel(uint8_t fru, ras_sel_msg_t *data) {
   pal_update_ts_sled();
 }
 
+static void
+time_stamp_offset(unsigned char *ts, int sec) {
+  unsigned int time;
+  struct timeval tv;
+
+  gettimeofday(&tv, NULL);
+
+  time = tv.tv_sec - sec;
+  ts[0] = time & 0xFF;
+  ts[1] = (time >> 8) & 0xFF;
+  ts[2] = (time >> 16) & 0xFF;
+  ts[3] = (time >> 24) & 0xFF;
+
+  return;
+}
+
 /* Parse SEL Log based on IPMI v2.0 Section 32.1 & 32.2*/
 static void
 parse_sel(uint8_t fru, sel_msg_t *data) {
@@ -275,6 +292,10 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
   char time[64];
   char mfg_id[16];
   char event_data[8];
+
+  if(pal_is_modify_sel_time(sel, RAS_SEL_LENGTH)) {
+    time_stamp_offset(&data->msg[3], 5);
+  }
 
   /* Record Type (Byte 2) */
   record_type = (uint8_t) sel[2];

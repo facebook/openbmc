@@ -10787,3 +10787,35 @@ pal_parse_mem_mapping_string(uint8_t channel, bool *support_mem_mapping, char *e
 #endif
   return 0;
 }
+bool
+pal_is_modify_sel_time(uint8_t *sel, int size) {
+  bool need = false;
+#if defined(CONFIG_FBY2_ND)
+
+  if(sel && (11 < size)) {
+    uint8_t snr_num = sel[11];
+    uint8_t *event_data = &sel[10];
+    uint8_t *ed = &event_data[3];
+
+    if(snr_num == BIC_ND_SENSOR_SYSTEM_STATUS) {
+      switch (ed[0] & 0x0F) {
+        case 0x02:
+        case 0x04:
+        case 0x05:
+        case 0x06:
+          //Throttle event
+          //check Assert or Deassert
+          if ((event_data[2] & 0x80) != 0) { //Deassert
+            need = true;
+          }
+          break;
+        default:
+          need = false;
+          break;
+      }
+    }
+  }
+
+#endif
+  return need;
+}

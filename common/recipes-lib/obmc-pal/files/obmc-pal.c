@@ -2509,3 +2509,9 @@ int __attribute__((weak))
 pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
   return status;
 }
+
+bool __attribute__((weak))
+pal_is_modify_sel_time(uint8_t *sel, int size) {
+
+  return false;
+}

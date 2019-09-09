@@ -1,0 +1,114 @@
+#!/bin/bash
+#
+# Copyright 2019-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+
+. /usr/local/bin/openbmc-utils.sh
+
+MAX_FAN_NUM=8
+
+usage() {
+    program=$(basename "$0")
+    echo "Usage:"
+    echo "  $program <all | fcm-t | fan_number (1..${MAX_FAN_NUM})>"
+}
+
+dump_eeprom() {
+    local i2c_path=$(i2c_device_sysfs_abspath "${1}-00${2:2:3}")
+    weutil "$i2c_path"/eeprom
+    return $?
+}
+
+is_i2cdev_exist() {
+    local i2c_path=$(i2c_device_sysfs_abspath "${1}-00${2:2:3}")
+    weutil "$i2c_path"/eeprom &> /dev/null
+    echo $?
+}
+
+show_fan_fruid() {
+    fan_no=$1
+
+    echo "Fan ${fan_no} eeprom:"
+    if [ $((fan_no % 2)) -eq 0 ]; then
+      bus=$((79 - (fan_no / 2) + 1))
+    else
+      bus=$((71 - (fan_no / 2)))
+    fi
+
+    if [ "$(is_i2cdev_exist "$bus" 0x52)" -eq 0 ]; then
+        dump_eeprom "$bus" 0x52
+        return $?
+    else
+        echo "Fan ${fan_no} not inserted or could not detect eeprom"
+        return 1
+    fi
+}
+
+show_fcm_fruid() {
+    local location=$1
+
+    if [ "$location" = "fcm-t" ]; then
+        bus=65
+    elif [ "$location" = "fcm-b" ]; then
+        bus=73
+    else
+        echo "Wrong eeprom location"
+        return 1
+    fi
+
+    if [ "$(is_i2cdev_exist $bus 0x51)" -eq 0 ]; then
+        echo "Fan ${location^^} eeprom:"
+        dump_eeprom "$bus" 0x51
+        return $?
+    else
+        echo "Cannot detect Fan ${location^^} eeprom"
+        return 1
+    fi
+}
+
+
+
+if [ "$#" -lt 1 ]; then
+    usage
+    exit 1
+fi
+
+case $1 in
+    all)
+        for fcm in fcm-t fcm-b;
+        do
+            show_fcm_fruid "$fcm"
+            ret=$((ret | $?))
+            printf "\r\n"
+        done
+
+        for fan in {1..8};
+        do
+            show_fan_fruid "$fan"
+            ret=$((ret | $?))
+            printf "\r\n"
+        done
+        exit "$ret"
+        ;;
+    fcm-t|fcm-b)
+        show_fcm_fruid "$1"
+        exit $?
+        ;;
+    1|2|3|4|5|6|7|8)
+        show_fan_fruid "$1"
+        exit $?
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac

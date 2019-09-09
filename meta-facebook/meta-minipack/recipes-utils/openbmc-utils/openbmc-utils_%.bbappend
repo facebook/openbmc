@@ -24,6 +24,7 @@ SRC_URI += "file://board-utils.sh \
             file://eth0_mac_fixup.sh \
             file://fcmcpld_update.sh \
             file://fpga_ver.sh \
+            file://feutil \
             file://pdbcpld_update.sh \
             file://peutil \
             file://pimcpld_update.sh \
@@ -57,6 +58,7 @@ OPENBMC_UTILS_FILES += " \
     disable_watchdog.sh \
     fcmcpld_update.sh \
     fpga_ver.sh \
+    feutil \
     presence_util.sh \
     peutil \
     pdbcpld_update.sh \

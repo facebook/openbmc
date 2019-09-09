@@ -52,7 +52,6 @@
 #define BIT(value, index) ((value >> index) & 1)
 
 #define FBY2_PLATFORM_NAME "FBY2"
-#define LAST_KEY "last_key"
 #define FBY2_MAX_NUM_SLOTS 4
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
@@ -304,59 +303,109 @@ enum key_event {
   KEY_AFTER_INI,
 };
 
+typedef enum {
+  SLOT1_LAST_PWR_STATE=0,
+  SLOT2_LAST_PWR_STATE,
+  SLOT3_LAST_PWR_STATE,
+  SLOT4_LAST_PWR_STATE,
+  SLOT1_SYSFW_VER,
+  SLOT2_SYSFW_VER,
+  SLOT3_SYSFW_VER,
+  SLOT4_SYSFW_VER,
+  SLED_IDENTITY,
+  SLOT1_IDENTITY,
+  SLOT2_IDENTITY,
+  SLOT3_IDENTITY,
+  SLOT4_IDENTITY,
+  SLED_TIMESTAMP,
+  SLOT1_POR_CFG,
+  SLOT2_POR_CFG,
+  SLOT3_POR_CFG,
+  SLOT4_POR_CFG,
+  SLOT1_SENSOR_HEALTH,
+  SLOT2_SENSOR_HEALTH,
+  SLOT3_SENSOR_HEALTH,
+  SLOT4_SENSOR_HEALTH,
+  SPB_SENSOR_HEALTH,
+  NIC_SENSOR_HEALTH,
+  SLOT1_SEL_ERROR,
+  SLOT2_SEL_ERROR,
+  SLOT3_SEL_ERROR,
+  SLOT4_SEL_ERROR,
+  SLOT1_BOOT_ORDER,
+  SLOT2_BOOT_ORDER,
+  SLOT3_BOOT_ORDER,
+  SLOT4_BOOT_ORDER,
+  SLOT1_CPU_PPIN,
+  SLOT2_CPU_PPIN,
+  SLOT3_CPU_PPIN,
+  SLOT4_CPU_PPIN,
+  SLOT1_RESTART_CAUSE,
+  SLOT2_RESTART_CAUSE,
+  SLOT3_RESTART_CAUSE,
+  SLOT4_RESTART_CAUSE,
+  SLOT1_TRIGGER_HPR,
+  SLOT2_TRIGGER_HPR,
+  SLOT3_TRIGGER_HPR,
+  SLOT4_TRIGGER_HPR,
+  NTP_SERVER,
+  LAST_ID=255
+} key_cfg_id;
+
 struct pal_key_cfg {
+  key_cfg_id id;
   char *name;
   char *def_val;
   int (*function)(int, void*);
 } key_cfg[] = {
-  /* name, default value, function */
-  {"pwr_server1_last_state", "on", key_func_pwr_last_state},
-  {"pwr_server2_last_state", "on", key_func_pwr_last_state},
-  {"pwr_server3_last_state", "on", key_func_pwr_last_state},
-  {"pwr_server4_last_state", "on", key_func_pwr_last_state},
-  {"sysfw_ver_slot1", "0", NULL},
-  {"sysfw_ver_slot2", "0", NULL},
-  {"sysfw_ver_slot3", "0", NULL},
-  {"sysfw_ver_slot4", "0", NULL},
-  {"identify_sled", "off", key_func_iden_sled},
-  {"identify_slot1", "off", key_func_iden_slot},
-  {"identify_slot2", "off", key_func_iden_slot},
-  {"identify_slot3", "off", key_func_iden_slot},
-  {"identify_slot4", "off", key_func_iden_slot},
-  {"timestamp_sled", "0", NULL},
-  {"slot1_por_cfg", "lps", key_func_por_cfg},
-  {"slot2_por_cfg", "lps", key_func_por_cfg},
-  {"slot3_por_cfg", "lps", key_func_por_cfg},
-  {"slot4_por_cfg", "lps", key_func_por_cfg},
-  {"slot1_sensor_health", "1", NULL},
-  {"slot2_sensor_health", "1", NULL},
-  {"slot3_sensor_health", "1", NULL},
-  {"slot4_sensor_health", "1", NULL},
-  {"spb_sensor_health", "1", NULL},
-  {"nic_sensor_health", "1", NULL},
-  {"slot1_sel_error", "1", NULL},
-  {"slot2_sel_error", "1", NULL},
-  {"slot3_sel_error", "1", NULL},
-  {"slot4_sel_error", "1", NULL},
-  {"slot1_boot_order", "0000000", NULL},
-  {"slot2_boot_order", "0000000", NULL},
-  {"slot3_boot_order", "0000000", NULL},
-  {"slot4_boot_order", "0000000", NULL},
-  {"slot1_cpu_ppin", "0", NULL},
-  {"slot2_cpu_ppin", "0", NULL},
-  {"slot3_cpu_ppin", "0", NULL},
-  {"slot4_cpu_ppin", "0", NULL},
-  {"fru1_restart_cause", "3", NULL},
-  {"fru2_restart_cause", "3", NULL},
-  {"fru3_restart_cause", "3", NULL},
-  {"fru4_restart_cause", "3", NULL},
-  {"slot1_trigger_hpr", "on", NULL},
-  {"slot2_trigger_hpr", "on", NULL},
-  {"slot3_trigger_hpr", "on", NULL},
-  {"slot4_trigger_hpr", "on", NULL},
-  {"ntp_server", "", key_func_ntp},
+  /* id, name, default value, function */
+  { SLOT1_LAST_PWR_STATE,"pwr_server1_last_state", "on", key_func_pwr_last_state},
+  { SLOT2_LAST_PWR_STATE,"pwr_server2_last_state", "on", key_func_pwr_last_state},
+  { SLOT3_LAST_PWR_STATE,"pwr_server3_last_state", "on", key_func_pwr_last_state},
+  { SLOT4_LAST_PWR_STATE,"pwr_server4_last_state", "on", key_func_pwr_last_state},
+  { SLOT1_SYSFW_VER,"sysfw_ver_slot1", "0", NULL},
+  { SLOT2_SYSFW_VER,"sysfw_ver_slot2", "0", NULL},
+  { SLOT3_SYSFW_VER,"sysfw_ver_slot3", "0", NULL},
+  { SLOT4_SYSFW_VER,"sysfw_ver_slot4", "0", NULL},
+  { SLED_IDENTITY,"identify_sled", "off", key_func_iden_sled},
+  { SLOT1_IDENTITY,"identify_slot1", "off", key_func_iden_slot},
+  { SLOT2_IDENTITY,"identify_slot2", "off", key_func_iden_slot},
+  { SLOT3_IDENTITY,"identify_slot3", "off", key_func_iden_slot},
+  { SLOT4_IDENTITY,"identify_slot4", "off", key_func_iden_slot},
+  { SLED_TIMESTAMP,"timestamp_sled", "0", NULL},
+  { SLOT1_POR_CFG,"slot1_por_cfg", "lps", key_func_por_cfg},
+  { SLOT2_POR_CFG,"slot2_por_cfg", "lps", key_func_por_cfg},
+  { SLOT3_POR_CFG,"slot3_por_cfg", "lps", key_func_por_cfg},
+  { SLOT4_POR_CFG,"slot4_por_cfg", "lps", key_func_por_cfg},
+  { SLOT1_SENSOR_HEALTH,"slot1_sensor_health", "1", NULL},
+  { SLOT2_SENSOR_HEALTH,"slot2_sensor_health", "1", NULL},
+  { SLOT3_SENSOR_HEALTH,"slot3_sensor_health", "1", NULL},
+  { SLOT4_SENSOR_HEALTH,"slot4_sensor_health", "1", NULL},
+  { SPB_SENSOR_HEALTH,"spb_sensor_health", "1", NULL},
+  { NIC_SENSOR_HEALTH,"nic_sensor_health", "1", NULL},
+  { SLOT1_SEL_ERROR,"slot1_sel_error", "1", NULL},
+  { SLOT2_SEL_ERROR,"slot2_sel_error", "1", NULL},
+  { SLOT3_SEL_ERROR,"slot3_sel_error", "1", NULL},
+  { SLOT4_SEL_ERROR,"slot4_sel_error", "1", NULL},
+  { SLOT1_BOOT_ORDER,"slot1_boot_order", "0000000", NULL},
+  { SLOT2_BOOT_ORDER,"slot2_boot_order", "0000000", NULL},
+  { SLOT3_BOOT_ORDER,"slot3_boot_order", "0000000", NULL},
+  { SLOT4_BOOT_ORDER,"slot4_boot_order", "0000000", NULL},
+  { SLOT1_CPU_PPIN,"slot1_cpu_ppin", "0", NULL},
+  { SLOT2_CPU_PPIN,"slot2_cpu_ppin", "0", NULL},
+  { SLOT3_CPU_PPIN,"slot3_cpu_ppin", "0", NULL},
+  { SLOT4_CPU_PPIN,"slot4_cpu_ppin", "0", NULL},
+  { SLOT1_RESTART_CAUSE,"fru1_restart_cause", "3", NULL},
+  { SLOT2_RESTART_CAUSE,"fru2_restart_cause", "3", NULL},
+  { SLOT3_RESTART_CAUSE,"fru3_restart_cause", "3", NULL},
+  { SLOT4_RESTART_CAUSE,"fru4_restart_cause", "3", NULL},
+  { SLOT1_TRIGGER_HPR,"slot1_trigger_hpr", "on", NULL},
+  { SLOT2_TRIGGER_HPR,"slot2_trigger_hpr", "on", NULL},
+  { SLOT3_TRIGGER_HPR,"slot3_trigger_hpr", "on", NULL},
+  { SLOT4_TRIGGER_HPR,"slot4_trigger_hpr", "on", NULL},
+  { NTP_SERVER,"ntp_server", "", key_func_ntp},
   /* Add more Keys here */
-  {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
+  { LAST_ID,"", "", NULL} /* This is the last id of the list */
 };
 
 struct power_coeff {
@@ -753,8 +802,7 @@ pal_key_check(char *key) {
   int i;
 
   i = 0;
-  while (strcmp(key_cfg[i].name, LAST_KEY)) {
-
+  while (key_cfg[i].id != LAST_ID) {
     // If Key is valid, return success
     if (!strcmp(key, key_cfg[i].name))
       return i;
@@ -837,10 +885,38 @@ key_func_ntp(int event, void *arg) {
 
 int
 pal_get_key_value(char *key, char *value) {
+  int index;
 
   // Check is key is defined and valid
-  if (pal_key_check(key) < 0)
+  if ((index = pal_key_check(key)) < 0)
     return -1;
+
+  switch (key_cfg[index].id) {
+    case SLOT1_LAST_PWR_STATE:
+    case SLOT1_POR_CFG:
+    case SLOT1_SYSFW_VER:
+    case SLOT1_BOOT_ORDER:
+    case SLOT1_CPU_PPIN:
+    case SLOT1_RESTART_CAUSE:
+    case SLOT1_TRIGGER_HPR:
+      if (!pal_is_slot_server(FRU_SLOT1)) {
+        return -1;
+      }
+      break;
+    case SLOT3_LAST_PWR_STATE:
+    case SLOT3_POR_CFG:
+    case SLOT3_SYSFW_VER:
+    case SLOT3_BOOT_ORDER:
+    case SLOT3_CPU_PPIN:
+    case SLOT3_RESTART_CAUSE:
+    case SLOT3_TRIGGER_HPR:
+      if (!pal_is_slot_server(FRU_SLOT3)) {
+        return -1;
+      }
+      break;
+    default:
+      break;
+  }
 
   return kv_get(key, value, NULL, KV_FPERSIST);
 }
@@ -852,6 +928,33 @@ pal_set_key_value(char *key, char *value) {
   // Check is key is defined and valid
   if ((index = pal_key_check(key)) < 0)
     return -1;
+
+  switch (key_cfg[index].id) {
+    case SLOT1_LAST_PWR_STATE:
+    case SLOT1_POR_CFG:
+    case SLOT1_SYSFW_VER:
+    case SLOT1_BOOT_ORDER:
+    case SLOT1_CPU_PPIN:
+    case SLOT1_RESTART_CAUSE:
+    case SLOT1_TRIGGER_HPR:
+      if (!pal_is_slot_server(FRU_SLOT1)) {
+        return -1;
+      }
+      break;
+    case SLOT3_LAST_PWR_STATE:
+    case SLOT3_POR_CFG:
+    case SLOT3_SYSFW_VER:
+    case SLOT3_BOOT_ORDER:
+    case SLOT3_CPU_PPIN:
+    case SLOT3_RESTART_CAUSE:
+    case SLOT3_TRIGGER_HPR:
+      if (!pal_is_slot_server(FRU_SLOT3)) {
+        return -1;
+      }
+      break;
+    default:
+      break;
+  }
 
   if (key_cfg[index].function) {
     ret = key_cfg[index].function(KEY_BEFORE_SET, value);
@@ -4427,7 +4530,7 @@ pal_set_def_key_value() {
   char key[MAX_KEY_LEN] = {0};
 
   i = 0;
-  for (i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; i++) {
+  for (i = 0; key_cfg[i].id != LAST_ID; i++) {
     if ((ret = kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FPERSIST | KV_FCREATE)) < 0) {
 #ifdef DEBUG
       syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
@@ -4526,13 +4629,39 @@ pal_get_fru_devtty(uint8_t fru, char *devtty) {
 void
 pal_dump_key_value(void) {
   int i = 0;
-  int ret;
-
   char value[MAX_VALUE_LEN] = {0x0};
 
-  while (strcmp(key_cfg[i].name, LAST_KEY)) {
+  while (key_cfg[i].id != LAST_ID) {
+    switch (key_cfg[i].id) {
+      case SLOT1_LAST_PWR_STATE:
+      case SLOT1_POR_CFG:
+      case SLOT1_SYSFW_VER:
+      case SLOT1_BOOT_ORDER:
+      case SLOT1_CPU_PPIN:
+      case SLOT1_RESTART_CAUSE:
+      case SLOT1_TRIGGER_HPR:
+        if (!pal_is_slot_server(FRU_SLOT1)) {
+          i++;
+          continue;
+        }
+        break;
+      case SLOT3_LAST_PWR_STATE:
+      case SLOT3_POR_CFG:
+      case SLOT3_SYSFW_VER:
+      case SLOT3_BOOT_ORDER:
+      case SLOT3_CPU_PPIN:
+      case SLOT3_RESTART_CAUSE:
+      case SLOT3_TRIGGER_HPR:
+        if (!pal_is_slot_server(FRU_SLOT3)){
+          i++;
+          continue;
+        }
+        break;
+      default:
+        break;
+    }
     printf("%s:", key_cfg[i].name);
-    if ((ret = kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST)) < 0) {
+    if ((kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST)) < 0) {
       printf("\n");
     } else {
       printf("%s\n",  value);

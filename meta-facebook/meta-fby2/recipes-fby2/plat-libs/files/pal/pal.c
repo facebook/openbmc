@@ -5721,6 +5721,127 @@ pal_parse_sel_ep(uint8_t fru, uint8_t *sel, char *error_log)
 
 #if defined(CONFIG_FBY2_ND)
 int
+parse_bank_mapping_name(uint8_t bank_num, char *error_log) {
+
+  switch (bank_num) {
+    case 0:
+      strcpy(error_log, "LS");
+      break;
+    case 1:
+      strcpy(error_log, "IF");
+      break;
+    case 2:
+      strcpy(error_log, "L2");
+      break;
+    case 3:
+      strcpy(error_log, "DE");
+      break;
+    case 4:
+      strcpy(error_log, "RAZ");
+      break;
+    case 5:
+      strcpy(error_log, "EX");
+      break;
+    case 6:
+      strcpy(error_log, "FP");
+      break;
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+      strcpy(error_log, "L3");
+      break;
+    case 15:
+      strcpy(error_log, "MP5");
+      break;
+    case 16:
+      strcpy(error_log, "PB");
+      break;
+    case 17:
+    case 18:
+      strcpy(error_log, "UMC");
+      break;
+    case 19:
+    case 20:
+    case 21:
+      strcpy(error_log, "CS");
+      break;
+    case 22:
+      strcpy(error_log, "NBIO");
+      break;
+    case 23:
+      strcpy(error_log, "PCIE");
+      break;
+    case 24:
+      strcpy(error_log, "SMU");
+      break;
+    case 25:
+      strcpy(error_log, "PSP");
+      break;
+    case 26:
+      strcpy(error_log, "PB");
+      break;
+    default:
+      strcpy(error_log, "UNKNOWN");
+      break;
+  }
+
+  return 0;
+}
+
+int
+parse_mce_error_sel_nd(uint8_t fru, uint8_t *event_data, char *error_log) {
+  uint8_t *ed = &event_data[3];
+  uint8_t bank_num;
+  uint8_t error_type = ((ed[1] & 0x60) >> 5);
+  char temp_log[512] = {0};
+  char bank_mapping_name[32] = {0};
+
+  strcpy(error_log, "");
+  if ((ed[0] & 0x0F) == 0x0B) { //Uncorrectable
+    switch (error_type) {
+      case 0x00:
+        strcat(error_log, "Uncorrected Recoverable Error, ");
+        break;
+      case 0x01:
+        strcat(error_log, "Uncorrected Thread Fatal Error, ");
+        break;
+      case 0x02:
+        strcat(error_log, "Uncorrected System Fatal Error, ");
+        break;
+      default:
+        strcat(error_log, "Unknown, ");
+        break;
+    }
+  } else if((ed[0] & 0x0F) == 0x0C) { //Correctable
+    switch (error_type) {
+      case 0x00:
+        strcat(error_log, "Correctable Error, ");
+        break;
+      case 0x01:
+        strcat(error_log, "Deferred Error, ");
+        break;
+      default:
+        strcat(error_log, "Unknown, ");
+        break;
+    }
+  }
+  bank_num = ed[1] & 0x1F;
+  parse_bank_mapping_name(bank_num, bank_mapping_name);
+  snprintf(temp_log, sizeof(temp_log), "Bank Number %d (%s), ", bank_num, bank_mapping_name);
+  strcat(error_log, temp_log);
+
+  snprintf(temp_log, sizeof(temp_log), "CPU %d, Core %d", ((ed[2] & 0xF0) >> 4), (ed[2] & 0x0F));
+  strcat(error_log, temp_log);
+
+  return 0;
+}
+
+int
 parse_psb_error_sel_nd(uint8_t *event_data, char *error_log) {
   uint8_t *ed = &event_data[3];
 
@@ -5921,6 +6042,10 @@ pal_parse_sel_nd(uint8_t fru, uint8_t *sel, char *error_log)
     case MEMORY_ECC_ERR:
     case MEMORY_ERR_LOG_DIS:
       parse_mem_error_sel_nd(fru, snr_num, event_data, error_log);
+      parsed = true;
+      break;
+    case MACHINE_CHK_ERR:
+      parse_mce_error_sel_nd(fru, event_data, error_log);
       parsed = true;
       break;
     case PROCHOT_EXT:

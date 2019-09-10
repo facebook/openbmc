@@ -19,13 +19,20 @@
 #
 
 board_routes = [
-    "/api/sys/usb2i2c_reset",
     "/api/sys/seutil",
     "/api/sys/firmware_info",
     "/api/sys/firmware_info/cpld",
     "/api/sys/firmware_info/fpga",
+    "/api/sys/firmware_info/scm",
     "/api/sys/presence",
     "/api/sys/presence/scm",
     "/api/sys/presence/fan",
     "/api/sys/presence/psu",
+    "/api/sys/feutil",
+    "/api/sys/feutil/all",
+    "/api/sys/feutil/fcm",
+    "/api/sys/feutil/fan1",
+    "/api/sys/feutil/fan2",
+    "/api/sys/feutil/fan3",
+    "/api/sys/feutil/fan4",
 ]

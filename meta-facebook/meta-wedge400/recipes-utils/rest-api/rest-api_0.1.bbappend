@@ -22,7 +22,6 @@ SRC_URI += " \
     file://rest-api-1/rest_presence.py \
     file://rest-api-1/rest_seutil.py \
     file://rest-api-1/rest_sensors.py \
-    file://rest-api-1/rest_usb2i2c_reset.py \
 "
 
 binfiles1 += " \
@@ -30,5 +29,4 @@ binfiles1 += " \
     rest_presence.py \
     rest_sensors.py \
     rest_seutil.py \
-    rest_usb2i2c_reset.py \
 "

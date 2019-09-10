@@ -195,9 +195,11 @@ int pldm_update_fw(char *path, int pldm_bufsize)
   pldm_fw_pkg_hdr_t *pkgHdr;
   pldm_cmd_req pldmReq = {0};
   pldm_response *pldmRes = NULL;
-
   int i = 0;
   int ret = 0;
+  int waitcycle = 0;
+#define MAX_WAIT_CYCLE 1000
+
   nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
   if (!nl_msg) {
     printf("%s, Error: failed nl_msg buffer allocation(%d)\n",
@@ -294,6 +296,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
          (pldmCmd == CMD_VERIFY_COMPLETE) ||
          (pldmCmd == CMD_APPLY_COMPLETE)) {
       loopCount++;
+      waitcycle = 0;
       int cmdStatus = 0;
       cmdStatus = pldmFwUpdateCmdHandler(pkgHdr, &pldmReq, pldmRes);
       ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_SEND_NC_PLDM_REPLY,
@@ -310,8 +313,12 @@ int pldm_update_fw(char *path, int pldm_bufsize)
       if ((pldmCmd == CMD_APPLY_COMPLETE) || (cmdStatus == -1))
         break;
     } else {
-      printf("unknown PLDM cmd 0x%x, exit\n", pldmCmd);
-      break;
+      printf("unknown PLDM cmd 0x%x\n", pldmCmd);
+      waitcycle++;
+      if (waitcycle >= MAX_WAIT_CYCLE) {
+        printf("max wait cycle exceeded, exit\n");
+        break;
+      }
     }
   }
 
@@ -379,6 +386,7 @@ main(int argc, char **argv) {
   int bufSize = 0;
   char *pfile = 0;
   int nl_conf = -1;  // default value indicating auto-detection
+  int fupgrade = 0;
   struct utsname unamebuf;
   int ret = 0;
 
@@ -442,8 +450,8 @@ main(int argc, char **argv) {
                bufSize = (int)strtoul(optarg, NULL, 0);
             }
             printf("bufSize = %d\n", bufSize);
-            pldm_update_fw(pfile, bufSize);
-            goto ok_exit;
+            fupgrade = 1;
+            break;
     case 'z':
             cancelUpdate = 1;
             printf ("Cancel firmware update...\n");
@@ -478,13 +486,13 @@ main(int argc, char **argv) {
     msg->msg_payload[0] = 0x84;  // Cmd req, iid 1
     msg->msg_payload[1] = PLDM_TYPE_FIRMWARE_UPDATE;
     msg->msg_payload[2] = CMD_CANCEL_UPDATE;
-  } else {
+  } else if (!fupgrade) {
     msg->cmd = (int)strtoul(argv[optind++], NULL, 0);
     msg->payload_length = argc - optind;
     for (i=0; i<msg->payload_length; ++i) {
       msg->msg_payload[i] = (int)strtoul(argv[i + optind], NULL, 0);
-   }
- }
+    }
+  }
 
  // netlink config - auto detection
  if (nl_conf == -1) {
@@ -501,6 +509,12 @@ main(int argc, char **argv) {
     send_nl_msg = send_nl_msg_netlink_user;
  else
     send_nl_msg = send_nl_msg_libnl;
+
+ if (fupgrade) {
+    pldm_update_fw(pfile, bufSize);
+    goto ok_exit;
+  }
+
 
 #ifdef DEBUG
   printf("debug prints:");

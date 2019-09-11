@@ -255,7 +255,6 @@ if __name__ == "__main__":
 
     if args.fw_upgrade:
         pattern = "fw*.py"
-        set_external(args)
 
     if args.stress:
         pattern = "stress*.py"

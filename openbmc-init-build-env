@@ -41,8 +41,21 @@ if [ -z "$TEMPLATECONF" ]; then
     elif [ -d "$(pwd)/meta-$1" ]; then
         TEMPLATECONF="$(pwd)/meta-$1/conf"
     else
-        echo "Neither $(pwd)/$1 nor $(pwd)/meta-$1 exists"
-        return 1
+        machines=$(find . -maxdepth 6 -wholename "*/machine/*" -type f)
+        for md in ${machines}; do
+            machine=$(basename "$md" | sed 's/\.conf//')
+            meta=$(dirname "$(dirname "$md")")
+            meta=$(echo "$meta" | sed 's/\.\///')
+            if [ "$machine" == "$platform" ]; then
+                TEMPLATECONF="$(pwd)/$meta"
+                echo "$NTEMPLATECONF"
+                break
+            fi
+        done
+        if [ -z "$TEMPLATECONF" ]; then
+            echo "Neither $(pwd)/$1 nor $(pwd)/meta-$1 exists"
+            return 1
+        fi
     fi
     export TEMPLATECONF
     shift 1

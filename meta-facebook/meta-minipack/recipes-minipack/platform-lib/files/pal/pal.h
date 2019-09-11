@@ -178,7 +178,7 @@ extern "C" {
 #define READING_NA -2
 
 #define SCM_RSENSE 1.16
-#define PIM_RSENSE 1.42
+#define PIM_RSENSE 1.06
 #define PIM16O_RSENSE 1.11
 
 #define IPMB_BUS 0

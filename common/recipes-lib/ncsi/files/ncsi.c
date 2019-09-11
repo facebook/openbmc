@@ -33,6 +33,11 @@
 #include <locale.h>
 #include <fcntl.h>
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
+#endif /* ARRAY_SIZE */
+
+
 #define NIC_FW_VER_PATH "/tmp/cache_store/nic_fw_ver"
 
 // NCSI response code string
@@ -85,6 +90,26 @@ const char *ncsi_cmd_string[NUM_NCSI_CDMS] = {
   "GET_NCSI_PASS_THROUGH_STATISTICS",
 };
 
+
+// Get Link status response
+const char *link_speed_string[] = {
+  "n/a",
+  "10BASE-T half-duplex",
+  "10BASE-T full-duplex",
+  "100BASE-TX half-duplex",
+  "100BASE-T4",
+  "100BASE-TX full-duplex",
+  "1000BASE-T half-duplex",
+  "1000BASE-T full-duplex",
+  "10Gbps",
+  "20Gbps",
+  "25Gbps",
+  "40Gbps",
+  "50Gbps",
+  "100Gbps",
+  "2.5Gbps",
+  "reserved",
+};
 
 // reload kernel NC-SI driver and trigger NC-SI interface initialization
 int
@@ -312,6 +337,9 @@ print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf)
   }
 
   switch (cmd) {
+  case NCSI_GET_LINK_STATUS:
+    print_link_status(rcv_buf);
+    break;
   case NCSI_GET_CAPABILITIES:
     print_get_capabilities(rcv_buf);
     break;
@@ -517,6 +545,40 @@ print_passthrough_stats(NCSI_NL_RSP_T *rcv_buf)
   printf("  Pass-through RX Packet Undersize Errors: %'zu\n", ntohl(pResp->rx_undersize_err));
   printf("  Pass-through RX Packets Oversize Packets: %'zu\n", ntohl(pResp->rx_oversize_err));
   printf("\n");
+}
+
+
+const char *
+link_speed_to_name(int val)
+{
+  // val is 4 bit value
+  if ((val < 0) ||
+      (val >= ARRAY_SIZE(link_speed_string)) ||
+      (link_speed_string[val] == NULL)) {
+    return "unknown";
+  } else {
+    return link_speed_string[val];
+  }
+}
+
+void
+print_link_status(NCSI_NL_RSP_T *rcv_buf)
+{
+  unsigned char *pbuf = rcv_buf->msg_payload;
+  Get_Link_Status_Response *plink =
+    (Get_Link_Status_Response *)((NCSI_Response_Packet *)(pbuf))->Payload_Data;
+  Link_Status linkstatus;
+  linkstatus.all32 = ntohl(plink->link_status.all32);
+
+  printf("\nLink Flag: ");
+  if (linkstatus.bits.link_flag)
+    printf("Up\n");
+  else
+    printf("Down\n");
+
+  printf("Speed and duplex: %s\n", link_speed_to_name(linkstatus.bits.speed_duplex));
+  printf("\n");
+  return;
 }
 
 int

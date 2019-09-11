@@ -312,6 +312,7 @@ void print_get_parameters(NCSI_NL_RSP_T *rcv_buf);
 void print_ncsi_controller_stats(NCSI_NL_RSP_T *rcv_buf);
 void print_ncsi_stats(NCSI_NL_RSP_T *rcv_buf);
 void print_passthrough_stats(NCSI_NL_RSP_T *rcv_buf);
+void print_link_status(NCSI_NL_RSP_T *rcv_buf);
 int handle_get_link_status(NCSI_Response_Packet *resp);
 int handle_get_version_id(NCSI_Response_Packet *resp);
 

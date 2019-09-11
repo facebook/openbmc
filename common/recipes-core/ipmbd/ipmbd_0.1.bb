@@ -11,12 +11,12 @@ SRC_URI = "file://Makefile \
            file://ipmbd.c \
           "
 
-LDFLAGS += "-lobmc-i2c -llog"
+LDFLAGS += "-lobmc-i2c -llog -lmisc-utils"
 
 S = "${WORKDIR}"
-DEPENDS += "libipmi libipmb libobmc-i2c libpal libipc liblog"
+DEPENDS += "libipmi libipmb libobmc-i2c libpal libipc liblog libmisc-utils"
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} = "libipmi libpal libipc libobmc-i2c liblog"
+RDEPENDS_${PN} = "libipmi libpal libipc libobmc-i2c liblog libmisc-utils"
 
 binfiles = "ipmbd"
 

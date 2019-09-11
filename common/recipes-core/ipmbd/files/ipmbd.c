@@ -63,12 +63,15 @@
 #include <assert.h>
 #include <getopt.h>
 #include <linux/limits.h>
+#include <linux/version.h>
+
 #include <openbmc/log.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-pal.h>
 #include <openbmc/ipc.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
+#include <openbmc/misc-utils.h>
 
 /*
  * IPMB packet sizes.
@@ -462,6 +465,34 @@ ipmb_res_handler(void *args) {
   }
 }
 
+/*
+ * Determine poll() timeout value based on kernel versions:
+ * - kernel 4.1:
+ *   poll() cannot return when BMC slave buffer is filled with data (due
+ *   to the implementation BMC slave transfer), thus we need a smaller
+ *   timeout (polling every 10 milliseconds) so ipmbd can obtain ipmi
+ *   messages from its peer timely.
+ * - kernel 5.0 (or higher versions):
+ *   poll() returns when BMC slave buffer is filled with data, so it can
+ *   be a negative value (infinite timeout) technically. Setting it to 3
+ *   seconds is a little conservative, so feel free to adjust the value.
+ */
+static int
+determine_poll_timeout(void)
+{
+  int timeout;
+  k_version_t cur_ver;
+
+  cur_ver = get_kernel_version();
+  if (cur_ver <= KERNEL_VERSION(4, 1, 51)) {
+    timeout = 10;    /* 10 milliseconds */
+  } else {
+    timeout = 3000;  /* 3 seconds */
+  }
+
+  return timeout;
+}
+
 // Thread to receive the IPMB messages over i2c bus as a slave
 static void*
 ipmb_rx_handler(void *args) {
@@ -476,6 +507,7 @@ ipmb_rx_handler(void *args) {
   int bus_num = *((int*)args);
   uint16_t addr=0;
   int ret=0;
+  int poll_timeout = determine_poll_timeout();
 
   RX_VERBOSE("thread starts execution");
 
@@ -526,7 +558,7 @@ ipmb_rx_handler(void *args) {
     // Read messages from i2c driver
     ret = i2c_mslave_read(bmc_slave, buf, sizeof(buf));
     if (ret <= 0) {
-      i2c_mslave_poll(bmc_slave, 10);
+      i2c_mslave_poll(bmc_slave, poll_timeout);
       continue;
     }
     len = (uint8_t)ret;

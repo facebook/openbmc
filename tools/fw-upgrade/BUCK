@@ -1,0 +1,18 @@
+python_library(
+    # libraries can be declared, which allows them to be imported by other targets
+    name = "fw_json_upgrader",
+    srcs = [
+        "fw_json_upgrader.py",
+    ]
+)
+
+python_test(
+    name = "test_fw_json_upgrader",
+    srcs = [
+        "tests/test_fw_upgrade.py",
+    ],
+    platform = 'py3',
+    deps = [
+        ":fw_json_upgrader",
+    ]
+)

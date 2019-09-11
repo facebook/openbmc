@@ -13,3 +13,6 @@ ID
 #ignore buck-out
 /buck-out*/
 .buckd/
+
+# python mypi cache files
+.mypy_cache/

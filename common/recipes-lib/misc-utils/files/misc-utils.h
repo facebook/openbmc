@@ -25,6 +25,7 @@ extern "C" {
 
 #include <unistd.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
@@ -43,6 +44,8 @@ typedef enum {
 	SOC_MODEL_ASPEED_G5,
 	SOC_MODEL_MAX,
 } soc_model_t;
+
+typedef uint32_t k_version_t;
 
 /*
  * String utility functions.
@@ -74,6 +77,7 @@ bool path_islink(const char *path);
  */
 cpu_model_t get_cpu_model(void);
 soc_model_t get_soc_model(void);
+k_version_t get_kernel_version(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

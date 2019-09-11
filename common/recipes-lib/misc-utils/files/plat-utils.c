@@ -23,6 +23,8 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <sys/utsname.h>
+#include <linux/version.h>
 
 #include "misc-utils.h"
 
@@ -138,4 +140,34 @@ soc_model_t get_soc_model(void)
 		soc_model = SOC_MODEL_ASPEED_G5;
 
 	return soc_model;
+}
+
+/*
+ * Read the version of running kernel.
+ *
+ * Return:
+ *   kernel version.
+ */
+k_version_t get_kernel_version(void)
+{
+	int i;
+	char *pos;
+	struct utsname buf;
+	unsigned long versions[3] = {0}; /* major.minor.patch */
+
+	if (uname(&buf) != 0) {
+		return 0;	/* 0 is an invalid kernel version. */
+	}
+
+	i = 0;
+	pos = buf.release;
+	while (*pos != '\0' && i < ARRAY_SIZE(versions)) {
+		if (isdigit(*pos)) {
+			versions[i++] = strtol(pos, &pos, 10);
+		} else {
+			pos++;
+		}
+	}
+
+	return KERNEL_VERSION(versions[0], versions[1], versions[2]);
 }

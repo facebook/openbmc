@@ -1,0 +1,67 @@
+{
+    "16q_eeprom" : {
+        "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"],
+        "get_version" : "NO_VERSION",
+        "priority" : 100
+    },
+    "bic" : {
+        "get_version" : "fw-util scm --version |grep Bri|grep -v Boot| cut -d ' ' -f 3",
+        "priority" : 4,
+        "upgrade_cmd" : "/usr/bin/fw-util scm --update --bic {filename}"
+    },
+    "bios" : {
+        "get_version" : "fw-util scm --version |grep BIOS| cut -d ' ' -f 3",
+        "priority" : 3,
+        "upgrade_cmd" : "/usr/bin/fw-util scm --update --bios {filename}"
+    },
+    "fcm" : {
+        "get_version" : "cpld_ver.sh |grep FCM|grep Top|cut -d ' ' -f 3",
+        "upgrade_cmd" : "usr/local/bin/fcmcpld_update.sh {filename}",
+        "priority": 8
+    },
+    "iob_fpga" : {
+        "get_version" : "fpga_ver.sh|grep IOBFPGA: |cut -d ' ' -f 2",
+        "upgrade_cmd" : "/usr/local/bin/spi_util.sh write spi1 IOB_FPGA_FLASH {}",
+        "priority": 6
+    },
+    "pdb" : {
+        "get_version" : "cpld_ver.sh |grep PDB|grep Left|cut -d ' ' -f 3",
+        "entities"   : ["left", "right"],
+        "upgrade_cmd" : "usr/local/bin/pdbcpld_update.sh i2c {entity} {filename}",
+        "priority": 9
+    },
+    "16q_fpga" : {
+      "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"],
+        "condition" : "fpga_ver.sh | grep DOMFPGA:|head -{entity}|tail -1 |grep 16Q",
+        "get_version" : "fpga_ver.sh|grep 16Q|head -{entity}|tail -1|cut -d ' ' -f 3",
+        "continue_on_error" : true,
+        "upgrade_cmd" : "/usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",
+        "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 30",
+        "priority": 1
+    },
+    "4dd_fpga" : {
+      "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"],
+        "condition" : "fpga_ver.sh | grep DOMFPGA:|head -{entity}|tail -1 |grep 4D",
+        "get_version" : "fpga_ver.sh|grep 4D|head -{entity}|tail -1|cut -d ' ' -f 3",
+        "continue_on_error" : true,
+        "upgrade_cmd" : "/usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",
+        "post_action"    : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 30",
+        "priority": 2
+    },
+    "pim_spi_mux" : {
+      "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"],
+        "get_version" : "NO_VERSION",
+        "upgrade_cmd" : "/usr/local/bin/pimcpld_update.sh {entity} {filename}",
+        "priority": 100
+    },
+    "scm" : {
+        "get_version" : "cpld_ver.sh |grep SCM|grep Top|cut -d ' ' -f 3",
+        "upgrade_cmd" : "/usr/local/bin/scmcpld_update.sh {filename}",
+        "priority": 5
+    },
+    "smb" : {
+        "get_version" : "cpld_ver.sh |grep SMB|grep Top|cut -d ' ' -f 3",
+        "upgrade_cmd" : "/usr/local/bin/smbcpld_update.sh {filename}",
+        "priority": 7
+    }
+}

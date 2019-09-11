@@ -54,11 +54,13 @@ do_install_board() {
   ln -s "/usr/local/bin/openbmc-utils.sh" ${D}${olddir}/ast-functions
 
   # init
-  install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
-  update-rc.d -r ${D} setup-gpio.sh start 59 S .
   # setup i2c and sensors
   install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
-  update-rc.d -r ${D} setup_i2c.sh start 60 S .
+  update-rc.d -r ${D} setup_i2c.sh start 59 S .
+
+  install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
+  update-rc.d -r ${D} setup-gpio.sh start 60 S .
+
   # create VLAN intf automatically
   install -d ${D}/${sysconfdir}/network/if-up.d
   install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
@@ -66,8 +68,10 @@ do_install_board() {
   # for mac fixup should work
   install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
   update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
+
   install -m 755 start_us_monitor.sh ${D}${sysconfdir}/init.d/start_us_monitor.sh
   update-rc.d -r ${D} start_us_monitor.sh start 83 S .
+
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
   update-rc.d -r ${D} power-on.sh start 85 S .
 }

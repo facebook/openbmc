@@ -29,11 +29,14 @@ extern "C" {
 
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/obmc-pal.h>
 #include <stdbool.h>
 #include <math.h>
 #include <facebook/bic.h>
 
 #define PLATFORM_NAME "wedge400"
+
+#define READ_SENSOR_TIMEOUT 30
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
@@ -42,54 +45,85 @@ extern "C" {
 #define FCM_SYSFS "/sys/bus/i2c/devices/i2c-30/30-003e/%s"
 #define SENSORD_FILE_SMB "/tmp/cache_store/smb_sensor%d"
 #define SENSORD_FILE_PSU "/tmp/cache_store/psu%d_sensor%d"
+#define SENSORD_FILE_PEM "/tmp/cache_store/pem%d_sensor%d"
+#define BRD_TYPE_FILE "/tmp/cache_store/board_type"
+
 #define KV_PATH "/mnt/data/kv_store/%s"
 
 #define WEDGE400_SDR_PATH "/tmp/sdr_%s.bin"
 
-#define COM_PWR_BTN_N "com_pwr_btn_n"
+#define COM_PWR_BTN_N "come_pwr_btn_n"
 #define SYS_LED_COLOR "sys_led_color"
+
+#define GB_POWER  "gb_turn_on"
+#define TH3_POWER "th3_turn_on"
+#define TH3_RESET_BTN "mac_reset_n"
 
 #define SMB_MAC_CPLD_ROV "mac_cpld_rov%d"
 #define SMB_MAC_CPLD_ROV_NUM 8
 #define SCM_PRSNT_STATUS "scm_present_int_status"
+#define SCM_SUS_S3_STATUS "iso_com_sus_s3_n"
+#define SCM_SUS_S4_STATUS "iso_com_sus_s4_n"
+#define SCM_SUS_S5_STATUS "iso_com_sus_s5_n"
+#define SCM_SUS_STAT_STATUS "iso_com_sus_stat_n"
 #define FAN_PRSNT_STATUS "fan%d_present"
 #define PSU_PRSNT_STATUS "psu_present_%d_N_int_status"
+#define PEM_PRSNT_STATUS PSU_PRSNT_STATUS
+
 #define CRASHDUMP_BIN    "/usr/local/bin/autodump.sh"
 
 #define LAST_KEY "last_key"
 
+#define I2C_DRIVER_DIR(name, bus, addr) "/sys/bus/i2c/drivers/"#name"/"#bus"-00"#addr"/"
 #define I2C_DEV_DIR(bus, addr) "/sys/bus/i2c/devices/i2c-"#bus"/"#bus"-00"#addr"/"
 #define HW_MON_DIR "hwmon/hwmon*"
 
+// SCM Sensor Devices
 #define SCM_HSC_DEVICE         I2C_DEV_DIR(14, 10)HW_MON_DIR
 #define SCM_OUTLET_TEMP_DEVICE I2C_DEV_DIR(15, 4c)HW_MON_DIR
 #define SCM_INLET_TEMP_DEVICE  I2C_DEV_DIR(15, 4d)HW_MON_DIR
 
-#define SMB_IR_L_DEVICE        I2C_DEV_DIR(1, 47)
-#define SMB_IR_R_DEVICE        I2C_DEV_DIR(1, 4d)
-#define SMB_ISL_DEVICE         I2C_DEV_DIR(1, 60)
-#define SMB_1220_DEVICE        I2C_DEV_DIR(1, 3a)HW_MON_DIR
-#define SMB_TEMP1_DEVICE       I2C_DEV_DIR(3, 48)HW_MON_DIR
-#define SMB_TEMP2_DEVICE       I2C_DEV_DIR(3, 49)HW_MON_DIR
-#define SMB_TEMP3_DEVICE       I2C_DEV_DIR(3, 4a)HW_MON_DIR
-#define SMB_TEMP4_DEVICE       I2C_DEV_DIR(3, 4b)HW_MON_DIR
-#define SMB_TEMP5_DEVICE       I2C_DEV_DIR(3, 4c)HW_MON_DIR
-#define SMB_TEMP6_DEVICE       I2C_DEV_DIR(3, 4e)HW_MON_DIR
-#define SMB_TH3_TEMP_DEVICE    I2C_DEV_DIR(3, 4f)HW_MON_DIR
-#define SMB_DOM_DEVICE         I2C_DEV_DIR(13, 60)
-#define SMB_FCM_TACH_DEVICE    I2C_DEV_DIR(30, 3e)
-#define SMB_FCM_TEMP1_DEVICE   I2C_DEV_DIR(32, 48)HW_MON_DIR
-#define SMB_FCM_TEMP2_DEVICE   I2C_DEV_DIR(32, 49)HW_MON_DIR
-#define SMB_FCM_HSC_DEVICE     I2C_DEV_DIR(33, 10)HW_MON_DIR
+// SMB Sensor Devices
+#define SMB_SW_SERDES_PVDD_DEVICE     I2C_DEV_DIR(1, 47)HW_MON_DIR
+#define SMB_SW_SERDES_TRVDD_DEVICE    I2C_DEV_DIR(1, 4d)HW_MON_DIR
+#define SMB_IR_HMB_DEVICE             I2C_DEV_DIR(1, 43)HW_MON_DIR
+#define SMB_ISL_DEVICE                I2C_DEV_DIR(1, 60)HW_MON_DIR
+#define SMB_XPDE_DEVICE               I2C_DEV_DIR(1, 40)HW_MON_DIR
+#define SMB_1220_DEVICE               I2C_DEV_DIR(1, 3a)HW_MON_DIR
+#define SMB_TEMP1_DEVICE              I2C_DEV_DIR(3, 48)HW_MON_DIR
+#define SMB_TEMP2_DEVICE              I2C_DEV_DIR(3, 49)HW_MON_DIR
+#define SMB_TEMP3_DEVICE              I2C_DEV_DIR(3, 4a)HW_MON_DIR
+#define SMB_TEMP4_DEVICE              I2C_DEV_DIR(3, 4b)HW_MON_DIR
+#define SMB_TEMP5_DEVICE              I2C_DEV_DIR(3, 4c)HW_MON_DIR
+#define SMB_TEMP6_DEVICE              I2C_DEV_DIR(3, 4e)HW_MON_DIR
+#define SMB_SW_TEMP_DEVICE            I2C_DEV_DIR(3, 4f)HW_MON_DIR
+#define SMB_DOM_DEVICE                I2C_DEV_DIR(13, 60)
+#define SMB_FCM_TACH_DEVICE           I2C_DEV_DIR(30, 3e)
+#define SMB_FCM_TEMP1_DEVICE          I2C_DEV_DIR(32, 48)HW_MON_DIR
+#define SMB_FCM_TEMP2_DEVICE          I2C_DEV_DIR(32, 49)HW_MON_DIR
+#define SMB_FCM_HSC_DEVICE            I2C_DEV_DIR(33, 10)HW_MON_DIR
 
+// PSU Sensor Devices
+#define PSU_DRIVER             "psu_driver"
 #define PSU1_DEVICE            I2C_DEV_DIR(22, 58)
 #define PSU2_DEVICE            I2C_DEV_DIR(23, 58)
 
-#define TEMP(x)  "temp"#x"_input"
-#define VOLT(x)  "in"#x"_input"
-#define VOLT_SET(x)  "vo"#x"_input"
-#define CURR(x)  "curr"#x"_input"
-#define POWER(x) "power"#x"_input"
+#define PEM1_LTC4282_DIR       I2C_DRIVER_DIR(ltc4282, 22, 58)
+#define PEM2_LTC4282_DIR       I2C_DRIVER_DIR(ltc4282, 23, 58)
+#define PEM1_MAX6615_DIR       I2C_DRIVER_DIR(max6615, 22, 18)
+#define PEM2_MAX6615_DIR       I2C_DRIVER_DIR(max6615, 23, 18)
+#define PEM_LTC4282_DRIVER     "ltc4282"
+#define PEM_MAX6615_DRIVER     "max6615"
+#define PEM1_DEVICE            I2C_DEV_DIR(22, 58)HW_MON_DIR
+#define PEM2_DEVICE            I2C_DEV_DIR(23, 58)HW_MON_DIR
+#define PEM1_DEVICE_EXT        I2C_DEV_DIR(22, 18)HW_MON_DIR
+#define PEM2_DEVICE_EXT        I2C_DEV_DIR(23, 18)HW_MON_DIR
+
+#define TEMP(x)                "temp"#x"_input"
+#define VOLT(x)                "in"#x"_input"
+#define VOLT_SET(x)            "vo"#x"_input"
+#define CURR(x)                "curr"#x"_input"
+#define POWER(x)               "power"#x"_input"
 
 #define GPIO_SMB_REV_ID_0   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID0/%s"
 #define GPIO_SMB_REV_ID_1   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID1/%s"
@@ -102,13 +136,14 @@ extern "C" {
 #define GPIO_POSTCODE_5     "/tmp/gpionames/GPIOH5/%s"
 #define GPIO_POSTCODE_6     "/tmp/gpionames/GPIOH6/%s"
 #define GPIO_POSTCODE_7     "/tmp/gpionames/GPIOH7/%s"
-#define GPIO_SCM_USB_PRSNT  "/tmp/gpionames/SCM_USB_PRSNT/%s"
+#define GPIO_DEBUG_PRSNT_N  "/tmp/gpionames/DEBUG_PRESENT_N/%s"
 
+#define MAX_NUM_SCM 1
 #define MAX_NUM_FAN 4
 #define MAX_RETRIES_SDR_INIT  30
 #define MAX_READ_RETRY 10
-#define DELAY_POWER_OFF 5
-#define DELAY_POWER_CYCLE 10
+#define DELAY_POWER_BTN 2
+#define DELAY_POWER_CYCLE 5
 
 #define MAX_POS_READING_MARGIN 127
 #define LARGEST_DEVICE_NAME 128
@@ -119,7 +154,7 @@ extern "C" {
 #define READING_SKIP 1
 #define READING_NA -2
 
-#define SCM_RSENSE 1.16
+#define SCM_RSENSE 1
 
 #define IPMB_BUS 0
 
@@ -150,21 +185,41 @@ extern "C" {
 extern const char pal_fru_list[];
 
 enum {
+  BRD_TYPE_WEDGE400 = 0x00,
+  BRD_TYPE_WEDGE400_2 = 0x01,
+};
+
+enum {
   BIC_MODE_NORMAL = 0x01,
   BIC_MODE_UPDATE = 0x0F,
+};
+
+enum {
+  TH3_POWER_ON,
+  TH3_POWER_OFF,
+  TH3_RESET,
+};
+
+enum {
+  PEM_ON,
+  PEM_REBOOT,
+  PEM_OFF,
 };
 
 enum {
   FRU_ALL  = 0,
   FRU_SCM  = 1,
   FRU_SMB  = 2,
-  FRU_PSU1 = 3,
-  FRU_PSU2 = 4,
-  FRU_FAN1 = 5,
-  FRU_FAN2 = 6,
-  FRU_FAN3 = 7,
-  FRU_FAN4 = 8,
-  MAX_NUM_FRUS = 8,
+  FRU_FCM  = 3,
+  FRU_PEM1 = 4,
+  FRU_PEM2 = 5,
+  FRU_PSU1 = 6,
+  FRU_PSU2 = 7,
+  FRU_FAN1 = 8,
+  FRU_FAN2 = 9,
+  FRU_FAN3 = 10,
+  FRU_FAN4 = 11,
+  MAX_NUM_FRUS = 11,
 };
 
 enum {
@@ -178,17 +233,17 @@ enum {
   SCM_SENSOR_HSC_VOLT = 0x0a,
   SCM_SENSOR_HSC_CURR = 0x0b,
   SCM_SENSOR_HSC_POWER = 0x0c,
-  /* Sensors on COM-e */
+  /* Threshold Sensors on COM-e */
   BIC_SENSOR_MB_OUTLET_TEMP = 0x01,
   BIC_SENSOR_MB_INLET_TEMP = 0x07,
   BIC_SENSOR_PCH_TEMP = 0x08,
   BIC_SENSOR_VCCIN_VR_TEMP = 0x80,
-  BIC_SENSOR_1V05MIX_VR_TEMP = 0x81,
+  BIC_SENSOR_1V05COMB_VR_TEMP = 0x81,
   BIC_SENSOR_SOC_TEMP = 0x05,
   BIC_SENSOR_SOC_THERM_MARGIN = 0x09,
   BIC_SENSOR_VDDR_VR_TEMP = 0x82,
-  BIC_SENSOR_SOC_DIMMA0_TEMP = 0xB4,
-  BIC_SENSOR_SOC_DIMMB0_TEMP = 0xB6,
+  BIC_SENSOR_SOC_DIMMA_TEMP = 0xB4,
+  BIC_SENSOR_SOC_DIMMB_TEMP = 0xB6,
   BIC_SENSOR_SOC_PACKAGE_PWR = 0x2C,
   BIC_SENSOR_VCCIN_VR_POUT = 0x8B,
   BIC_SENSOR_VDDR_VR_POUT = 0x8D,
@@ -200,28 +255,30 @@ enum {
   BIC_SENSOR_P5V_STBY_MB = 0xD6,
   BIC_SENSOR_PV_BAT = 0xD7,
   BIC_SENSOR_PVDDR = 0xD8,
-  BIC_SENSOR_P1V05_MIX = 0x8E,
-  BIC_SENSOR_1V05MIX_VR_CURR = 0x84,
+  BIC_SENSOR_P1V05_COMB = 0x8E,
+  BIC_SENSOR_1V05COMB_VR_CURR = 0x84,
   BIC_SENSOR_VDDR_VR_CURR = 0x85,
   BIC_SENSOR_VCCIN_VR_CURR = 0x83,
   BIC_SENSOR_VCCIN_VR_VOL = 0x88,
   BIC_SENSOR_VDDR_VR_VOL = 0x8A,
-  BIC_SENSOR_P1V05MIX_VR_VOL = 0x89,
-  BIC_SENSOR_P1V05MIX_VR_POUT = 0x8C,
+  BIC_SENSOR_P1V05COMB_VR_VOL = 0x89,
+  BIC_SENSOR_P1V05COMB_VR_POUT = 0x8C,
   BIC_SENSOR_INA230_POWER = 0x29,
   BIC_SENSOR_INA230_VOL = 0x2A,
+  /* Discrete sensors on COM-e*/
   BIC_SENSOR_SYSTEM_STATUS = 0x10, //Discrete
   BIC_SENSOR_PROC_FAIL = 0x65, //Discrete
   BIC_SENSOR_SYS_BOOT_STAT = 0x7E, //Discrete
   BIC_SENSOR_VR_HOT = 0xB2, //Discrete
-  BIC_SENSOR_CPU_DIMM_HOT = 0xB3, //Discrete
+  BIC_SENSOR_CPU_DIMM_HOT = 0xB3, //Discrete None in Spec
+  /* Event-only sensors on COM-e */
   BIC_SENSOR_SPS_FW_HLTH = 0x17, //Event-only
   BIC_SENSOR_POST_ERR = 0x2B, //Event-only
   BIC_SENSOR_POWER_THRESH_EVENT = 0x3B, //Event-only
   BIC_SENSOR_MACHINE_CHK_ERR = 0x40, //Event-only
   BIC_SENSOR_PCIE_ERR = 0x41, //Event-only
   BIC_SENSOR_OTHER_IIO_ERR = 0x43, //Event-only
-  BIC_SENSOR_PROC_HOT_EXT = 0x51, //Event-only
+  BIC_SENSOR_PROC_HOT_EXT = 0x51, //Event-only None in Spec
   BIC_SENSOR_POWER_ERR = 0x56, //Event-only
   BIC_SENSOR_MEM_ECC_ERR = 0x63, //Event-only
   BIC_SENSOR_CAT_ERR = 0xEB, //Event-only
@@ -230,48 +287,149 @@ enum {
 /* Sensors on SMB */
 enum {
   SMB_SENSOR_1220_VMON1 = 0x01,
-  SMB_SENSOR_1220_VMON2 = 0x02,
-  SMB_SENSOR_1220_VMON3 = 0x03,
-  SMB_SENSOR_1220_VMON4 = 0x04,
-  SMB_SENSOR_1220_VMON5 = 0x05,
-  SMB_SENSOR_1220_VMON6 = 0x06,
-  SMB_SENSOR_1220_VMON7 = 0x07,
-  SMB_SENSOR_1220_VMON8 = 0x08,
-  SMB_SENSOR_1220_VMON9 = 0x09,
-  SMB_SENSOR_1220_VMON10 = 0x0a,
-  SMB_SENSOR_1220_VMON11 = 0x0b,
-  SMB_SENSOR_1220_VMON12 = 0x0c,
-  SMB_SENSOR_1220_VCCA = 0x0d,
-  SMB_SENSOR_1220_VCCINP = 0x0e,
-  SMB_SENSOR_TH3_SERDES_L_VOLT = 0x0f,
-  SMB_SENSOR_TH3_SERDES_L_CURR = 0x10,
-  SMB_SENSOR_TH3_SERDES_R_VOLT = 0x11,
-  SMB_SENSOR_TH3_SERDES_R_CURR = 0x12,
-  SMB_SENSOR_TH3_CORE_VOLT = 0x13,
-  SMB_SENSOR_TH3_CORE_CURR = 0x14,
-  SMB_SENSOR_TEMP1 = 0x15,
-  SMB_SENSOR_TEMP2 = 0x16,
-  SMB_SENSOR_TEMP3 = 0x17,
-  SMB_SENSOR_TEMP4 = 0x18,
-  SMB_SENSOR_TEMP5 = 0x19,
-  SMB_SENSOR_TEMP6 = 0x1a,
-  SMB_SENSOR_TH3_DIE_TEMP1 = 0x1b,
-  SMB_SENSOR_TH3_DIE_TEMP2 = 0x1c,
+  SMB_SENSOR_1220_VMON2,
+  SMB_SENSOR_1220_VMON3,
+  SMB_SENSOR_1220_VMON4,
+  SMB_SENSOR_1220_VMON5,
+  SMB_SENSOR_1220_VMON6,
+  SMB_SENSOR_1220_VMON7,
+  SMB_SENSOR_1220_VMON8,
+  SMB_SENSOR_1220_VMON9,
+  SMB_SENSOR_1220_VMON10,
+  SMB_SENSOR_1220_VMON11,
+  SMB_SENSOR_1220_VMON12,
+  SMB_SENSOR_1220_VCCA,
+  SMB_SENSOR_1220_VCCINP,
+  SMB_SENSOR_SW_SERDES_PVDD_VOLT,
+  SMB_SENSOR_SW_SERDES_PVDD_CURR,
+  SMB_SENSOR_SW_SERDES_PVDD_POWER,
+  SMB_SENSOR_SW_SERDES_PVDD_TEMP1,
+  SMB_SENSOR_SW_SERDES_TRVDD_VOLT,
+  SMB_SENSOR_SW_SERDES_TRVDD_CURR,
+  SMB_SENSOR_SW_SERDES_TRVDD_POWER,
+  SMB_SENSOR_SW_SERDES_TRVDD_TEMP1,
+  SMB_SENSOR_SW_CORE_VOLT,
+  SMB_SENSOR_SW_CORE_CURR,
+  SMB_SENSOR_SW_CORE_POWER,
+  SMB_SENSOR_SW_CORE_TEMP1,
+  SMB_SENSOR_TEMP1,
+  SMB_SENSOR_TEMP2,
+  SMB_SENSOR_TEMP3,
+  SMB_SENSOR_TEMP4,
+  SMB_SENSOR_TEMP5,
+  SMB_SENSOR_TEMP6,
+  SMB_SENSOR_SW_DIE_TEMP1,
+  SMB_SENSOR_SW_DIE_TEMP2,
   /* Sensors on FCM */
-  SMB_SENSOR_FCM_TEMP1 = 0x20,
-  SMB_SENSOR_FCM_TEMP2 = 0x21,
-  SMB_SENSOR_FCM_HSC_VOLT = 0x24,
-  SMB_SENSOR_FCM_HSC_CURR = 0x25,
-  SMB_SENSOR_FCM_HSC_POWER = 0x26,
-  /* Sensors FAN Speed */
-  SMB_SENSOR_FAN1_FRONT_TACH = 0x2a,
-  SMB_SENSOR_FAN1_REAR_TACH = 0x2b,
-  SMB_SENSOR_FAN2_FRONT_TACH = 0x2c,
-  SMB_SENSOR_FAN2_REAR_TACH = 0x2d,
-  SMB_SENSOR_FAN3_FRONT_TACH = 0x2e,
-  SMB_SENSOR_FAN3_REAR_TACH = 0x2f,
-  SMB_SENSOR_FAN4_FRONT_TACH = 0x30,
-  SMB_SENSOR_FAN4_REAR_TACH = 0x31,
+  SMB_SENSOR_FCM_TEMP1,
+  SMB_SENSOR_FCM_TEMP2,
+  SMB_SENSOR_FCM_HSC_VOLT,
+  SMB_SENSOR_FCM_HSC_CURR,
+  SMB_SENSOR_FCM_HSC_POWER,
+  SMB_SENSOR_FAN1_FRONT_TACH,
+  SMB_SENSOR_FAN1_REAR_TACH,
+  SMB_SENSOR_FAN2_FRONT_TACH,
+  SMB_SENSOR_FAN2_REAR_TACH,
+  SMB_SENSOR_FAN3_FRONT_TACH,
+  SMB_SENSOR_FAN3_REAR_TACH,
+  SMB_SENSOR_FAN4_FRONT_TACH,
+  SMB_SENSOR_FAN4_REAR_TACH,
+};
+
+/* Sensors on PEM */
+enum {
+  /* Threshold Sensors on PEM1 */
+  PEM1_SENSOR_IN_VOLT = 0x01,
+  PEM1_SENSOR_OUT_VOLT,
+  PEM1_SENSOR_CURR,
+  PEM1_SENSOR_POWER,
+  PEM1_SENSOR_FAN1_TACH,
+  PEM1_SENSOR_FAN2_TACH,
+  PEM1_SENSOR_TEMP1,
+  PEM1_SENSOR_TEMP2,
+  PEM1_SENSOR_TEMP3,
+  /* Discrete fault sensors on PEM1 */
+  PEM1_SENSOR_FAULT_OV,
+  PEM1_SENSOR_FAULT_UV,
+  PEM1_SENSOR_FAULT_OC,
+  PEM1_SENSOR_FAULT_POWER,
+  PEM1_SENSOR_ON_FAULT,
+  PEM1_SENSOR_FAULT_FET_SHORT,
+  PEM1_SENSOR_FAULT_FET_BAD,
+  PEM1_SENSOR_EEPROM_DONE,
+  /* Discrete ADC alert sensors on PEM1 */
+  PEM1_SENSOR_POWER_ALARM_HIGH,
+  PEM1_SENSOR_POWER_ALARM_LOW,
+  PEM1_SENSOR_VSENSE_ALARM_HIGH,
+  PEM1_SENSOR_VSENSE_ALARM_LOW,
+  PEM1_SENSOR_VSOURCE_ALARM_HIGH,
+  PEM1_SENSOR_VSOURCE_ALARM_LOW,
+  PEM1_SENSOR_GPIO_ALARM_HIGH,
+  PEM1_SENSOR_GPIO_ALARM_LOW,
+  /* Discrete status sensors on PEM1 */
+  PEM1_SENSOR_ON_STATUS,
+  PEM1_SENSOR_STATUS_FET_BAD,
+  PEM1_SENSOR_STATUS_FET_SHORT,
+  PEM1_SENSOR_STATUS_ON_PIN,
+  PEM1_SENSOR_STATUS_POWER_GOOD,
+  PEM1_SENSOR_STATUS_OC,
+  PEM1_SENSOR_STATUS_UV,
+  PEM1_SENSOR_STATUS_OV,
+  PEM1_SENSOR_STATUS_GPIO3,
+  PEM1_SENSOR_STATUS_GPIO2,
+  PEM1_SENSOR_STATUS_GPIO1,
+  PEM1_SENSOR_STATUS_ALERT,
+  PEM1_SENSOR_STATUS_EEPROM_BUSY,
+  PEM1_SENSOR_STATUS_ADC_IDLE,
+  PEM1_SENSOR_STATUS_TICKER_OVERFLOW,
+  PEM1_SENSOR_STATUS_METER_OVERFLOW,
+  PEM1_SENSOR_CNT = PEM1_SENSOR_STATUS_METER_OVERFLOW,
+
+    /* Threshold Sensors on PEM2 */
+  PEM2_SENSOR_IN_VOLT,
+  PEM2_SENSOR_OUT_VOLT,
+  PEM2_SENSOR_CURR,
+  PEM2_SENSOR_POWER,
+  PEM2_SENSOR_FAN1_TACH,
+  PEM2_SENSOR_FAN2_TACH,
+  PEM2_SENSOR_TEMP1,
+  PEM2_SENSOR_TEMP2,
+  PEM2_SENSOR_TEMP3,
+  /* Discrete fault sensors on PEM2 */
+  PEM2_SENSOR_FAULT_OV,
+  PEM2_SENSOR_FAULT_UV,
+  PEM2_SENSOR_FAULT_OC,
+  PEM2_SENSOR_FAULT_POWER,
+  PEM2_SENSOR_ON_FAULT,
+  PEM2_SENSOR_FAULT_FET_SHORT,
+  PEM2_SENSOR_FAULT_FET_BAD,
+  PEM2_SENSOR_EEPROM_DONE,
+  /* Discrete ADC alert sensors on PEM2 */
+  PEM2_SENSOR_POWER_ALARM_HIGH,
+  PEM2_SENSOR_POWER_ALARM_LOW,
+  PEM2_SENSOR_VSENSE_ALARM_HIGH,
+  PEM2_SENSOR_VSENSE_ALARM_LOW,
+  PEM2_SENSOR_VSOURCE_ALARM_HIGH,
+  PEM2_SENSOR_VSOURCE_ALARM_LOW,
+  PEM2_SENSOR_GPIO_ALARM_HIGH,
+  PEM2_SENSOR_GPIO_ALARM_LOW,
+  /* Discrete status sensors on PEM2 */
+  PEM2_SENSOR_ON_STATUS,
+  PEM2_SENSOR_STATUS_FET_BAD,
+  PEM2_SENSOR_STATUS_FET_SHORT,
+  PEM2_SENSOR_STATUS_ON_PIN,
+  PEM2_SENSOR_STATUS_POWER_GOOD,
+  PEM2_SENSOR_STATUS_OC,
+  PEM2_SENSOR_STATUS_UV,
+  PEM2_SENSOR_STATUS_OV,
+  PEM2_SENSOR_STATUS_GPIO3,
+  PEM2_SENSOR_STATUS_GPIO2,
+  PEM2_SENSOR_STATUS_GPIO1,
+  PEM2_SENSOR_STATUS_ALERT,
+  PEM2_SENSOR_STATUS_EEPROM_BUSY,
+  PEM2_SENSOR_STATUS_ADC_IDLE,
+  PEM2_SENSOR_STATUS_TICKER_OVERFLOW,
+  PEM2_SENSOR_STATUS_METER_OVERFLOW,
 };
 
 /* Sensors on PSU */
@@ -289,6 +447,8 @@ enum {
   PSU1_SENSOR_TEMP1 = 0x0b,
   PSU1_SENSOR_TEMP2 = 0x0c,
   PSU1_SENSOR_TEMP3 = 0x0d,
+  PSU1_SENSOR_CNT = PSU1_SENSOR_TEMP3,
+
   PSU2_SENSOR_IN_VOLT = 0x0e,
   PSU2_SENSOR_12V_VOLT = 0x0f,
   PSU2_SENSOR_STBY_VOLT = 0x10,
@@ -345,17 +505,25 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
 int pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
 int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_post_enable(uint8_t slot);
-int pal_post_disable(uint8_t slot);
 int pal_post_get_last(uint8_t slot, uint8_t *status);
+int pal_post_get_last_and_len(uint8_t slot, uint8_t *data, uint8_t *len);
+int pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_post_handle(uint8_t slot, uint8_t status);
 int pal_set_last_pwr_state(uint8_t fru, char *state);
 int pal_get_last_pwr_state(uint8_t fru, char *state);
+int pal_get_dev_guid(uint8_t slot, char *guid);
+int pal_get_sys_guid(uint8_t slot, char *guid);
+int pal_set_sys_guid(uint8_t slot, char *str);
 int pal_set_com_pwr_btn_n(char *status);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
+int pal_set_th3_power(int option);
 int pal_get_fan_speed(uint8_t fan, int *rpm);
 int pal_get_board_rev(int *rev);
+int pal_get_board_type(uint8_t *brd_type);
+int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
+int pal_sensor_discrete_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
 bool pal_is_fw_update_ongoing(uint8_t fru);
 int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
 void pal_update_ts_sled();
@@ -368,7 +536,6 @@ int pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag);
 int pal_detect_i2c_device(uint8_t bus_num, uint8_t addr);
 int pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name);
 int pal_del_i2c_device(uint8_t bus, uint8_t addr);
-int pal_clear_thresh_value(uint8_t fru);
 void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
@@ -385,6 +552,9 @@ int pal_get_fru_health(uint8_t fru, uint8_t *value);
 int pal_set_def_key_value(void);
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 int wedge400_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
+int pal_get_num_slots(uint8_t *num);
+int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
+int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
 #ifdef __cplusplus
 } // extern "C"
 #endif

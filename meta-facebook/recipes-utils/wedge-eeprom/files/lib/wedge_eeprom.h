@@ -24,6 +24,7 @@ extern "C" {
 
 #include <stdint.h>
 
+#define FBW_EEPROM_PATH_SIZE 200
 #define FBW_EEPROM_F_MAGIC 2
 #define FBW_EEPROM_F_VERSION 1
 #define FBW_EEPROM_F_PRODUCT_NAME 12
@@ -131,6 +132,8 @@ struct wedge_eeprom_st {
 };
 
 int wedge_eeprom_parse(const char *fn, struct wedge_eeprom_st *eeprom);
+
+void wedge_eeprom_path(char *eeprom_path);
 
 #ifdef __cplusplus
 }

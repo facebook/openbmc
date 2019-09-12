@@ -299,6 +299,7 @@ typedef struct _pem_eeprom_reg_t {
 
 int is_pem_prsnt(uint8_t num, uint8_t *status);
 int archive_pem_chips(uint8_t num);
+int log_pem_critical_regs(uint8_t num);
 int get_eeprom_info(uint8_t mum, const char *option);
 int get_pem_info(uint8_t num);
 int get_blackbox_info(uint8_t num, const char *option);

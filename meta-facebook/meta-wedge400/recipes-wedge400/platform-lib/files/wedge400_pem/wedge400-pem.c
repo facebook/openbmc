@@ -743,7 +743,7 @@ static int pem_status_regs(uint8_t num, int option, pem_status_regs_t *status_re
   pem[num].fd = i2c_open(pem[num].bus, pem[num].chip_addr[LTC4282]);
   if (pem[num].fd < 0) {
     ERR_PRINT("Fail to open i2c");
-    return -1;
+    return pem[num].fd;
   }
 
   pem_reg_read(pem[num].fd, FAULT_LOG, &value);
@@ -756,6 +756,27 @@ static int pem_status_regs(uint8_t num, int option, pem_status_regs_t *status_re
   close(pem[num].fd);
 
   return 0;
+}
+
+int log_pem_critical_regs(uint8_t num) {
+  pem_status_regs_t status_regs;
+  int ret = 0;
+
+  ret = pem_status_regs(num, READ, &status_regs);
+
+  if(ret) {
+    OBMC_ERROR(ret, "Failed to read PEM %d FAULT_LOG/ADC_ALERT_LOG/STATUS registers", num + 1);
+    return ret;
+  }
+
+  OBMC_CRIT("PEM %d [FAULT_LOG addr: 0x%02x, value: 0x%02x] " \
+                   "[ADC_ALERT_LOG addr: 0x%02x, value: 0x%02x] " \
+                   "[STATUS addr: 0x%02x, value: 0x%04x]", num + 1,
+                    smbus[FAULT_LOG].reg, status_regs.fault.reg_val.value,
+                    smbus[ADC_ALERT_LOG].reg, status_regs.adc_alert_log.reg_val.value,
+                    smbus[STATUS].reg, status_regs.status.reg_val.value);
+
+  return ret;
 }
 
 /*

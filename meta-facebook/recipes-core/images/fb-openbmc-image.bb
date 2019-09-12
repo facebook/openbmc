@@ -20,4 +20,7 @@ openbmc_rootfs_fixup() {
     echo >> ${IMAGE_ROOTFS}/etc/issue
     echo "OpenBMC Release ${OPENBMC_VERSION} %h" > ${IMAGE_ROOTFS}/etc/issue.net
     echo >> ${IMAGE_ROOTFS}/etc/issue.net
+
+    # Remove all *.pyc files
+    find ${IMAGE_ROOTFS} -type f -name "*.pyc" -exec rm -f {} \;
 }

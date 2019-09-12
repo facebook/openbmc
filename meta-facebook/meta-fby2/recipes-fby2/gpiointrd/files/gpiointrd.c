@@ -77,8 +77,6 @@ char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
  "", "Slot1 Removal Without 12V-OFF", "Slot2 Removal Without 12V-OFF", "Slot3 Removal Without 12V-OFF", "Slot4 Removal Without 12V-OFF",
 };
 
-const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
-
 const static uint8_t gpio_slot_latch[] = { 0, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N };
 
 const static uint8_t gpv2_dev_nvme_temp[] = { 0, GPV2_SENSOR_DEV0_Temp, GPV2_SENSOR_DEV1_Temp, GPV2_SENSOR_DEV2_Temp, GPV2_SENSOR_DEV3_Temp, GPV2_SENSOR_DEV4_Temp, GPV2_SENSOR_DEV5_Temp,
@@ -774,9 +772,8 @@ hsvc_event_handler(void *ptr) {
         if (value) {
           sprintf(event_log, "FRU: %d, %s", hsvc_info->slot_id, fru_prsnt_log_string[2*MAX_NUM_FRUS + hsvc_info->slot_id]);
           syslog(LOG_CRIT, event_log);     //Card removal without 12V-off
-          memset(vpath, 0, sizeof(vpath));
-          sprintf(vpath, GPIO_VAL, gpio_12v[hsvc_info->slot_id]);
-          if (write_device(vpath, "0")) {        /* Turn off 12V to given slot when Server/GP/CF be removed brutally */
+          /* Turn off 12V to given slot when Server/GP/CF be removed brutally */
+          if (bic_set_slot_12v(hsvc_info->slot_id, 0)) {
             break;
           }
           ret = pal_slot_pair_12V_off(hsvc_info->slot_id);  /* Turn off 12V to pair of slots when Server/GP/CF be removed brutally with pair config */

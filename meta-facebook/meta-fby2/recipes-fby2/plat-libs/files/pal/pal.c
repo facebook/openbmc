@@ -216,9 +216,7 @@ const static uint8_t gpio_id_led[] = { 0,  GPIO_SYSTEM_ID1_LED_N, GPIO_SYSTEM_ID
 const static uint8_t gpio_slot_id_led[] = { 0,  GPIO_SLOT1_LED, GPIO_SLOT2_LED, GPIO_SLOT3_LED, GPIO_SLOT4_LED }; // Slot ID LED on each TL card
 const static uint8_t gpio_prsnt_prim[] = { 0, GPIO_SLOT1_PRSNT_N, GPIO_SLOT2_PRSNT_N, GPIO_SLOT3_PRSNT_N, GPIO_SLOT4_PRSNT_N };
 const static uint8_t gpio_prsnt_ext[] = { 0, GPIO_SLOT1_PRSNT_B_N, GPIO_SLOT2_PRSNT_B_N, GPIO_SLOT3_PRSNT_B_N, GPIO_SLOT4_PRSNT_B_N };
-const static uint8_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
 const static uint8_t gpio_power[] = { 0, GPIO_PWR_SLOT1_BTN_N, GPIO_PWR_SLOT2_BTN_N, GPIO_PWR_SLOT3_BTN_N, GPIO_PWR_SLOT4_BTN_N };
-const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
 const static uint8_t gpio_slot_latch[] = { 0, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N};
 
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, spb, nic";
@@ -1455,24 +1453,15 @@ int
 pal_is_server_12v_on(uint8_t slot_id, uint8_t *status) {
 
   int val;
-  char path[64] = {0};
 
   if (slot_id < 1 || slot_id > 4) {
     return -1;
   }
 
-  sprintf(path, GPIO_VAL, gpio_12v[slot_id]);
-
-  if (read_device(path, &val)) {
+  val = bic_is_slot_12v_on(slot_id);
+  if (val < 0)
     return -1;
-  }
-
-  if (val == 0x1) {
-    *status = 1;
-  } else {
-    *status = 0;
-  }
-
+  *status = (uint8_t)val;
   return 0;
 }
 
@@ -1482,7 +1471,6 @@ pal_slot_pair_12V_off(uint8_t slot_id) {
   int pair_set_type=-1;
   uint8_t status=0;
   int ret=-1;
-  char vpath[80]={0};
 
   if (0 == slot_id%2)
     pair_slot_id = slot_id - 1;
@@ -1526,8 +1514,7 @@ pal_slot_pair_12V_off(uint8_t slot_id) {
       // Need to 12V-off pair slot
       // Pair Slot should be 12V-off when pair slots are device
       if (status) {
-        sprintf(vpath, GPIO_VAL, gpio_12v[pair_slot_id]);
-        if (write_device(vpath, "0")) {
+        if(bic_set_slot_12v(pair_slot_id, 0)) {
           return -1;
         }
       }
@@ -1537,8 +1524,7 @@ pal_slot_pair_12V_off(uint8_t slot_id) {
     case TYPE_GPV2_A_SV:
       // Need to 12V-off pair slot
       if (status) {
-        sprintf(vpath, GPIO_VAL, gpio_12v[pair_slot_id]);
-        if (write_device(vpath, "0")) {
+        if (bic_set_slot_12v(pair_slot_id, 0)) {
           return -1;
         }
       }
@@ -1634,8 +1620,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
          // Need to 12V-off self slot
          // Self slot should be 12V-off due to device card is on slot2 or slot4
          if (status) {
-           sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
-           if (write_device(vpath, "0")) {
+           if (bic_set_slot_12v(slot_id, 0)) {
              return -1;
            }
          }
@@ -1657,8 +1642,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
        // Need to 12V-off self slot
        // Self slot should be 12V-off when pair slot is empty
        if (status) {
-         sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
-         if (write_device(vpath, "0")) {
+         if (bic_set_slot_12v(slot_id, 0)) {
            return -1;
          }
        }
@@ -1682,8 +1666,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
        // Need to 12V-off self slot
        // Self slot should be 12V-off when couple of slots are all device card
        if (status) {
-         sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
-         if (write_device(vpath, "0")) {
+         if (bic_set_slot_12v(slot_id, 0)) {
            return -1;
          }
        }
@@ -1710,8 +1693,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
        // Need to 12V-on pair slot
        if (!status) {
          _set_slot_12v_en_time(dc_slot_id);
-         sprintf(vpath, GPIO_VAL, gpio_12v[dc_slot_id]);
-         if (write_device(vpath, "1")) {
+         if (bic_set_slot_12v(dc_slot_id, 1)) {
            return -1;
          }
          pal_set_hsvc_ongoing(dc_slot_id, 0, 1);
@@ -1727,8 +1709,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
        }
        if (!status) {
          _set_slot_12v_en_time(pwr_slot);
-         sprintf(vpath, GPIO_VAL, gpio_12v[pwr_slot]);
-         if (write_device(vpath, "1")) {
+         if (bic_set_slot_12v(pwr_slot, 1)) {
            return -1;
          }
          pal_set_hsvc_ongoing(pwr_slot, 0, 1);
@@ -1838,7 +1819,7 @@ pal_hot_service_action(uint8_t slot_id) {
   uint8_t pair_slot_id;
   uint8_t block_12v;
   char cmd[128];
-  char hspath[80], vpath[80];
+  char hspath[80];
   int ret;
 
   if (0 == slot_id%2)
@@ -1852,8 +1833,7 @@ pal_hot_service_action(uint8_t slot_id) {
   sprintf(hspath, HOTSERVICE_FILE, slot_id);
   if (access(hspath, F_OK) == 0) {
     _set_slot_12v_en_time(slot_id);
-    sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
-    if (write_device(vpath, "1")) {
+    if (bic_set_slot_12v(slot_id, 1)) {
       syslog(LOG_ERR, "%s: write_device failed", __func__);
     }
 
@@ -1881,8 +1861,7 @@ pal_hot_service_action(uint8_t slot_id) {
 
   if (block_12v) {
     syslog(LOG_CRIT, "12V-on blocked due to pair slot is in hot-service, FRU: %d", slot_id);
-    sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
-    if (write_device(vpath, "0")) {
+    if (bic_set_slot_12v(slot_id, 0)) {
       syslog(LOG_ERR, "%s: write_device failed", __func__);
     }
     return -1;
@@ -1906,7 +1885,6 @@ pal_hot_service_action(uint8_t slot_id) {
 // Turn off 12V for the server in given slot
 static int
 server_12v_off(uint8_t slot_id) {
-  char vpath[64] = {0};
   int ret=0;
   int pair_set_type;
   uint8_t pair_slot_id;
@@ -1947,8 +1925,7 @@ server_12v_off(uint8_t slot_id) {
      }
   }
 
-  sprintf(vpath, GPIO_VAL, gpio_12v[runoff_id]);
-  if (write_device(vpath, "0")) {
+  if (bic_set_slot_12v(runoff_id, 0)) {
     return -1;
   }
 
@@ -2083,7 +2060,6 @@ pal_system_config_check(uint8_t slot_id) {
 // Control 12V to the server in a given slot
 static int
 server_12v_on(uint8_t slot_id) {
-  char vpath[64] = {0};
   int ret=-1;
   uint8_t slot_prsnt, slot_latch;
   int rc, pid_file;
@@ -2140,8 +2116,7 @@ server_12v_on(uint8_t slot_id) {
 
   if (!pal_is_device_pair(slot_id)) {  // Write 12V on
     _set_slot_12v_en_time(slot_id);
-    sprintf(vpath, GPIO_VAL, gpio_12v[slot_id]);
-    if (write_device(vpath, "1")) {
+    if (bic_set_slot_12v(slot_id, 1)) {
       return -1;
     }
     pal_set_hsvc_ongoing(slot_id, 0, 1);
@@ -2169,6 +2144,7 @@ server_12v_on(uint8_t slot_id) {
   }
 
   if (pal_is_slot_support_update(slot_id)) {
+    char vpath[128];
     snprintf(vpath, sizeof(vpath), "/usr/local/bin/bic-cached -f %d &", slot_id);  // retrieve FRU data
     system(vpath);
   }
@@ -2193,6 +2169,7 @@ server_12v_on(uint8_t slot_id) {
     }
 
     if (pal_is_slot_support_update(pair_slot_id)) {
+      char vpath[128];
       snprintf(vpath, sizeof(vpath), "/usr/local/bin/bic-cached -f %d &", pair_slot_id);  // retrieve FRU data
       system(vpath);
     }
@@ -2572,7 +2549,6 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
 int
 pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   int val=0;
-  char path[64] = {0};
   int ret=-1;
 
   switch (fru) {
@@ -2584,17 +2560,7 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
       {
         case SLOT_TYPE_SERVER:
         case SLOT_TYPE_GPV2:
-          sprintf(path, GPIO_VAL, gpio_bic_ready[fru]);
-
-          if (read_device(path, &val)) {
-            return -1;
-          }
-
-          if (val == 0x0) {
-            *status = 1;
-          } else {
-            *status = 0;
-          }
+          *status = is_bic_ready(fru) ? 1 : 0;
           break;
        case SLOT_TYPE_CF:
        case SLOT_TYPE_GP:

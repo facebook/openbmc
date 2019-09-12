@@ -69,3 +69,16 @@ ethaddr=$(fw_printenv ethaddr 2>/dev/null | cut -d'=' -f2 2>/dev/null)
 if [ "$ethaddr" != "$mac" ]; then
     fw_setenv "ethaddr" "$mac"
 fi
+
+#
+# Workaround: disable Global Multicast Filtering so lldp-util packets can
+# be processed by NCSI Network Controller properly.
+# We are still investigating if this can be handled in kernel NCSI stack,
+# but it takes time because Global Multicast Filtering may be implemented
+# differently on Broadcom/Mellanox Network Controllers.
+#
+if ncsi-util 0x13 > /dev/null 2>&1; then
+    echo "NCSI Multicast Filter is disabled successfully."
+else
+    echo "failed to disable NCSI Multicast Filter."
+fi

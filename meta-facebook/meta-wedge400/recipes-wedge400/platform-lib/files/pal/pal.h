@@ -47,7 +47,6 @@ extern "C" {
 #define SENSORD_FILE_PSU "/tmp/cache_store/psu%d_sensor%d"
 #define SENSORD_FILE_PEM "/tmp/cache_store/pem%d_sensor%d"
 #define BRD_TYPE_FILE "/tmp/cache_store/board_type"
-
 #define KV_PATH "/mnt/data/kv_store/%s"
 
 #define WEDGE400_SDR_PATH "/tmp/sdr_%s.bin"
@@ -124,6 +123,7 @@ extern "C" {
 #define VOLT_SET(x)            "vo"#x"_input"
 #define CURR(x)                "curr"#x"_input"
 #define POWER(x)               "power"#x"_input"
+
 
 #define GPIO_SMB_REV_ID_0   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID0/%s"
 #define GPIO_SMB_REV_ID_1   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID1/%s"

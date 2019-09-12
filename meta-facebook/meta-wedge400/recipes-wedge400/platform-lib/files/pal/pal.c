@@ -920,6 +920,7 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
       break;
     default:
       *status = 1;
+
       break;
   }
 
@@ -4055,9 +4056,7 @@ sensor_thresh_array_init(uint8_t fru) {
   int i = 0, j;
   float fvalue;
   uint8_t brd_type;
-
   pal_get_board_type(&brd_type);
-
   if (init_done[fru])
     return;
 
@@ -4895,8 +4894,9 @@ set_sled(int brd_rev, uint8_t color, int led_name)
       val_io0 = (val_io0 & 0x38) | clr_val;
       val_io1 = (val_io1 & 0x38) | clr_val;
     }
-    else
+    else {
       OBMC_WARN("%s: unknown led name\n", __func__);
+    }
 
     if(led_name == SLED_SYS || led_name == SLED_FAN) {
       i2c_smbus_write_byte_data(dev, io0_reg, val_io0);
@@ -5083,7 +5083,6 @@ void set_sys_led(int brd_rev)
     OBMC_WARN("%s: SCM isn't presence\n",__func__);
     return;
   }
-
   pal_mon_fw_upgrade(brd_rev, &sys_ug, &fan_ug, &psu_ug, &smb_ug);
   if( sys_ug || fan_ug || psu_ug || smb_ug ){
     OBMC_WARN("firmware upgrading in progress\n");
@@ -5097,7 +5096,6 @@ void set_sys_led(int brd_rev)
       return;
     }
   }
-
   set_sled(brd_rev, SLED_CLR_BLUE, SLED_SYS);
   return;
 }
@@ -5118,6 +5116,7 @@ void set_fan_led(int brd_rev)
                        SMB_SENSOR_FAN3_REAR_TACH ,
                        SMB_SENSOR_FAN4_FRONT_TACH,
                        SMB_SENSOR_FAN4_REAR_TACH };
+
   for(i = FRU_FAN1; i <= FRU_FAN4; i++) {
     pal_is_fru_prsnt(i, &prsnt);
 #ifdef DEBUG
@@ -5172,7 +5171,7 @@ void set_psu_led(int brd_rev)
   int i;
   float value,ucr,lcr;
   uint8_t prsnt,fru,ready[4] = { 0 };
-  char path[LARGEST_DEVICE_NAME+1];
+  char path[LARGEST_DEVICE_NAME + 1];
   int psu1_sensor_num[] = { PSU1_SENSOR_IN_VOLT,
                             PSU1_SENSOR_12V_VOLT,
                             PSU1_SENSOR_12V_VOLT};
@@ -5184,7 +5183,6 @@ void set_psu_led(int brd_rev)
   int pem2_sensor_num[] = { PEM1_SENSOR_IN_VOLT,
                             PEM1_SENSOR_OUT_VOLT};
   char sensor_name[LARGEST_DEVICE_NAME];
-
   for(i = FRU_PSU1; i <= FRU_PSU2; i++) {
     pal_is_fru_prsnt(i, &prsnt);
     if(!prsnt) {
@@ -5193,7 +5191,6 @@ void set_psu_led(int brd_rev)
       return;
     }
   }
-
   for( fru = FRU_PEM1 ; fru <= FRU_PSU2 ; fru++){
     int *sensor_num,sensor_cnt;
     pal_is_fru_ready(fru,&ready[fru-FRU_PEM1]);
@@ -5206,6 +5203,7 @@ void set_psu_led(int brd_rev)
       }
       continue;
     }
+
     switch(fru){
       case FRU_PEM1:
         sensor_cnt = sizeof(pem1_sensor_num)/sizeof(pem1_sensor_num[0]);
@@ -5257,7 +5255,6 @@ void set_psu_led(int brd_rev)
       }
     }
   }
-
   set_sled(brd_rev, SLED_CLR_BLUE, SLED_PSU);
 
   return;

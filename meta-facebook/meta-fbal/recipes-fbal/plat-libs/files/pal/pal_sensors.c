@@ -64,6 +64,7 @@ PAL_ADC_INFO adc_info_list[] = {
   {ADC1,  5360, 2000},
   {ADC2,  2870, 2000},
   {ADC3,  2870, 2000},
+  {ADC4, 200, 100},
   {ADC5,  665, 2000},
   {ADC6,  665, 2000},
   {ADC7,  2000, 2200},
@@ -74,7 +75,6 @@ PAL_ADC_INFO adc_info_list[] = {
   {ADC12, 0, 1},
   {ADC13, 0, 1},
   {ADC14, 0, 1},
-  {ADC_BAT, 200, 100},
 };
 
 //ADM1278
@@ -316,7 +316,7 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {"MB_P5V_STBY",  ADC1, read_adc_val, true,  {5.50, 0, 0, 4.50, 0, 0, 0, 0}}, //0xD1
   {"MB_P3V3_STBY", ADC2, read_adc_val, true,  {3.63, 0, 0, 2.97, 0, 0, 0, 0}}, //0xD2
   {"MB_P3V3",      ADC3, read_adc_val, false, {3.63, 0, 0, 2.97, 0, 0, 0, 0}}, //0xD3
-  {"MB_P3V_BAT",   ADC_BAT, read_battery_val, false, {3.3, 0, 0, 2.7, 0, 0, 0, 0}}, //0xD4
+  {"MB_P3V_BAT",   ADC4, read_battery_val, false, {3.3, 0, 0, 2.7, 0, 0, 0, 0}}, //0xD4
   {"MB_CPU_1V8",   ADC5, read_adc_val, false, {1.98, 0, 0, 1.62, 0, 0, 0, 0}}, //0xD5
   {"MB_PCH_1V8",   ADC6, read_adc_val, false, {1.98, 0, 0, 1.62, 0, 0, 0, 0}}, //0xD6
   {"MB_CPU0_PVPP_ABC", ADC7,  read_adc_val, false, {2.84, 0, 0, 2.32, 0, 0, 0, 0}}, //0xD7
@@ -460,45 +460,28 @@ read_adc_val(uint8_t adc_id, float *value) {
 
 static int
 read_battery_val(uint8_t adc_id, float *value) {
-  PAL_ADC_INFO info=adc_info_list[adc_id-1];
-  char path[MAX_DEVICE_NAME_SIZE] = MB_ADC_BAT_VOLTAGE_DEVICE;
-  int ret=0;
-
+  int ret=-1;
   gpio_desc_t *gp_batt = gpio_open_by_shadow(GPIO_P3V_BAT_SCALED_EN);
   if (!gp_batt) {
     return -1;
-  }
-
-  if(gpio_set_direction(gp_batt, GPIO_DIRECTION_OUT)) {
-    goto bail;
   }
 
   if (gpio_set_value(gp_batt, GPIO_VALUE_HIGH)) {
     goto bail;
   }
 
-#ifdef DEBUG 
-  syslog(LOG_DEBUG, "%s %s\n", __func__, path);
-#endif  
   msleep(10);
-  ret = read_device_float(path, value);
-  if (ret != 0) {
-    goto bail;
-  }
-
-  *value = *value / 1000 * ((float)info.r1 + (float)info.r2) / (float)info.r2 ;
+  ret = read_adc_val(adc_id, value);
 #ifdef DEBUG  
   syslog(LOG_DEBUG, "%s r1=%d r2=%d value=%f\n", __func__, info.r1, info.r2, *value );
 #endif
 
-  if (gpio_set_value(gp_batt, GPIO_VALUE_LOW)) {
-    goto bail;
-  }
+  gpio_set_value(gp_batt, GPIO_VALUE_LOW);
+bail:
+  gpio_close(gp_batt);
+  return ret;
+}
 
-  bail:
-    gpio_close(gp_batt);
-    return ret;
-}    
 static int
 get_nm_rw_info(uint8_t nm_id, uint8_t* nm_bus, uint8_t* nm_addr, uint16_t* bmc_addr) {
   int ret=0;

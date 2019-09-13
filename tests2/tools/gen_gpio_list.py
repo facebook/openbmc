@@ -24,6 +24,7 @@ import sys
 
 
 _GPIO_SHADOW_DIR = "/tmp/gpionames"
+_GPIO_SYSFS_DIR = "/sys/class/gpio"
 
 
 class Log_Simple:
@@ -52,11 +53,19 @@ def read_pin_info(pin_dir):
     return pin_info
 
 
-def load_gpio_list(logger, pin_details=False):
+def load_gpio_list(logger, legacy=False, pin_details=False):
     gpio_info = {}
-    for filename in os.listdir(_GPIO_SHADOW_DIR):
-        pathname = os.path.join(_GPIO_SHADOW_DIR, filename)
-        if not os.path.islink(pathname):
+    if legacy:
+        path = _GPIO_SYSFS_DIR
+    else:
+        path = _GPIO_SHADOW_DIR
+
+    for filename in os.listdir(path):
+        # Ignore non-gpio directories if in legacy mode
+        if legacy is True and ("gpio" not in filename or "gpiochip" in filename):
+            continue
+        pathname = os.path.join(path, filename)
+        if not legacy and not os.path.islink(pathname):
             continue
 
         logger.verbose("parsing gpio pin %s" % filename)
@@ -123,12 +132,19 @@ if __name__ == "__main__":
         default=False,
         help="generate gpio info in json format",
     )
+    parser.add_argument(
+        "-l",
+        "--legacy",
+        action="store_true",
+        default=False,
+        help="Assume platform does not have /tmp/gpionames",
+    )
     parser.add_argument("outfile", action="store")
     args = parser.parse_args()
 
     logger = Log_Simple(verbose=args.verbose)
 
-    gpio_info = load_gpio_list(logger, pin_details=args.pin_details)
+    gpio_info = load_gpio_list(logger, legacy=args.legacy, pin_details=args.pin_details)
 
     if args.json_format:
         dump_gpio_json_format(gpio_info, args.outfile, logger)

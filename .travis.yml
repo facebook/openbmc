@@ -22,7 +22,7 @@ addons:
 stages:
   - lint
   - test # actually, this is the "build" stage
-         # (defined in the job matrix ("env" and "script" root nodes)
+         # (defined in the job matrix ("env.matrix" and "script" root nodes)
          # https://docs.travis-ci.com/user/build-stages/#specifying-stage-order-and-conditions)
 
 # Pre-build jobs (e.g. linting, unit testing)
@@ -42,10 +42,11 @@ jobs:
 # https://docs.travis-ci.com/user/build-stages/matrix-expansion/
 env:
   global:
+    - ORIGIN_BRANCH=git log --format="%d" | grep -m1 -Po 'origin/(helium|master)(?=[^a-z0-9])'
     - CACHE="${HOME}/sstate-cache"
     - CACHE_URI="https://s3-us-west-2.amazonaws.com/openbmc-sstate"
-    - MODIFIED_SH="$(git diff --name-only --diff-filter=d origin | grep -P '[.]sh$')"
-    - MODIFIED_PY="$(git diff --name-only --diff-filter=d origin | grep -P '[.]py$')"
+    - MODIFIED_SH="$(git diff --diff-filter=d --name-only $ORIGIN_BRANCH -- | grep -P '[.]sh$')"
+    - MODIFIED_PY="$(git diff --diff-filter=d --name-only $ORIGIN_BRANCH -- | grep -P '[.]py$')"
   matrix:
     - BOARD=fbtp
     # - BOARD=wedge100

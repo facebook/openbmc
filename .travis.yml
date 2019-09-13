@@ -1,9 +1,16 @@
 dist: bionic # has python3.6 by default (needed by black)
 language: c
 
+git:
+  depth: false
+
 cache:
   directories:
   - ${HOME}/sstate-cache
+
+install:
+  - git config remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
+  - git fetch --tags
 
 addons:
   apt:
@@ -22,7 +29,7 @@ addons:
 stages:
   - lint
   - test # actually, this is the "build" stage
-         # (defined in the job matrix ("env.matrix" and "script" root nodes)
+         # (defined in the job matrix ("env.matrix" and "script" root node)
          # https://docs.travis-ci.com/user/build-stages/#specifying-stage-order-and-conditions)
 
 # Pre-build jobs (e.g. linting, unit testing)
@@ -31,9 +38,15 @@ jobs:
     - stage: lint
       env: BOARD='<BASH LINT>'
       script:
+        - "git log --format='%d' | grep -vP '^ *$'"
+        - "git log | head -n 500"
+        - "git branch"
         - "if [[ $MODIFIED_SH ]]; then shellcheck $MODIFIED_SH; fi"
     - env: BOARD='<PYTHON LINT>'
       script:
+        - "git log --format='%d' | grep -vP '^ *$'"
+        - "git log | head -n 500"
+        - "git branch"
         - "python3 -m pip install black==18.6b4"
         - "python3 -m black --diff --check $MODIFIED_PY"
 
@@ -42,11 +55,18 @@ jobs:
 # https://docs.travis-ci.com/user/build-stages/matrix-expansion/
 env:
   global:
-    - ORIGIN_BRANCH=git log --format="%d" | grep -m1 -Po 'origin/(helium|master)(?=[^a-z0-9])'
+    # ORIGIN_COMMIT has first commit that branched out from master. We want this to lint all
+    # files that were modified since the branch out from master (i.e. all files in a given
+    # pull request).
+    # Initially thought that was achievable using $TRAVIS_COMMIT_RANGE, but that only
+    # gets you the commits that changed since the last _push_, not all commits from a given
+    # pull request (which can lead to lint errors being "fixed" by pushing something
+    # completely unrelated)
+    - ORIGIN_COMMIT=$(git merge-base HEAD helium 2>/dev/null || git merge-base HEAD master)
     - CACHE="${HOME}/sstate-cache"
     - CACHE_URI="https://s3-us-west-2.amazonaws.com/openbmc-sstate"
-    - MODIFIED_SH="$(git diff --diff-filter=d --name-only $ORIGIN_BRANCH -- | grep -P '[.]sh$')"
-    - MODIFIED_PY="$(git diff --diff-filter=d --name-only $ORIGIN_BRANCH -- | grep -P '[.]py$')"
+    - MODIFIED_SH="$(git diff --diff-filter=d --name-only $ORIGIN_COMMIT -- | grep -P '[.]sh$')"
+    - MODIFIED_PY="$(git diff --diff-filter=d --name-only $ORIGIN_COMMIT -- | grep -P '[.]py$')"
   matrix:
     - BOARD=fbtp
     # - BOARD=wedge100

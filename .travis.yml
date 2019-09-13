@@ -44,11 +44,11 @@ env:
   global:
     - CACHE="${HOME}/sstate-cache"
     - CACHE_URI="https://s3-us-west-2.amazonaws.com/openbmc-sstate"
-    - MODIFIED_SH="$(git diff --diff-filter=d --name-only $TRAVIS_COMMIT_RANGE | grep -P '[.]sh$')"
-    - MODIFIED_PY="$(git diff --diff-filter=d --name-only $TRAVIS_COMMIT_RANGE | grep -P '[.]py$')"
+    - MODIFIED_SH="$(git diff --name-only --diff-filter=d origin | grep -P '[.]sh$')"
+    - MODIFIED_PY="$(git diff --name-only --diff-filter=d origin | grep -P '[.]py$')"
   matrix:
     - BOARD=fbtp
-    - BOARD=wedge100
+    # - BOARD=wedge100
     # - BOARD=yosemite
     # - BOARD=fbttn
     # - BOARD=galaxy100
@@ -72,4 +72,3 @@ script:
   - source ./openbmc-init-build-env meta-facebook/meta-${BOARD} build-${BOARD}
   - echo "SSTATE_DIR = \"${CACHE}\"" >> ./conf/local.conf
   - bitbake ${BOARD}-image
-

@@ -16,7 +16,7 @@ DEPENDS += "libmisc-utils libfby2-common libipmi libipmb libkv plat-utils libobm
 RDEPENDS_${PN} += " libmisc-utils libobmc-i2c"
 DEPENDS_append = " libmisc-utils"
 
-S = "${WORKDIR}/bic"
+S = "${WORKDIR}"
 
 do_install() {
 	  install -d ${D}${libdir}

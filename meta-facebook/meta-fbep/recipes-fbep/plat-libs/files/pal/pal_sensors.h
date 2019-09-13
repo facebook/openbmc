@@ -44,7 +44,7 @@ enum {
   ADC_3,
   ADC_4,
   ADC_7,
-  ADC_8 = 1,
+  ADC_8,
 };
 
 // Total sensors list

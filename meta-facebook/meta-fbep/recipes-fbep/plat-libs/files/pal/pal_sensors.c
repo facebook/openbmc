@@ -40,7 +40,6 @@ const char pal_tach_list[] = "0..7";
 #define FAN_DIR "/sys/devices/platform/ahb/ahb:apb/1e786000.pwm-tacho-controller/hwmon/hwmon*"
 #define PWM_UNIT_MAX 255
 
-#define BAT_DIR "/sys/devices/platform/iio-hwmon-battery/hwmon/hwmon*"
 #define ADC_DIR "/sys/devices/platform/iio-hwmon/hwmon/hwmon*"
 #define ADC_VALUE "in%d_input"
 
@@ -232,8 +231,6 @@ static int read_adc_value(const int adc, const char *device, float r1, float r2,
 
 static int read_battery_value(const int adc, const char *device, float r1, float r2, float *value)
 {
-  char full_name[LARGEST_DEVICE_NAME];
-  char device_name[LARGEST_DEVICE_NAME];
   int ret = -1;
 
   gpio_desc_t *gp_batt = gpio_open_by_shadow("BATTERY_DETECT");
@@ -244,11 +241,7 @@ static int read_battery_value(const int adc, const char *device, float r1, float
     goto bail;
   }
   msleep(10);
-
-  snprintf(device_name, LARGEST_DEVICE_NAME, device, adc);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", BAT_DIR, device_name);
-
-  ret = read_device_float(full_name, value);
+  ret = read_adc_value(adc, device, r1, r2, value);
 
   gpio_set_value(gp_batt, GPIO_VALUE_HIGH);
 

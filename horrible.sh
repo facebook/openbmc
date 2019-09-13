@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 GREATER_THAN=3
 
-if [ $a -gt GRATER_THAN ]; then
- echo 'Its grat'
+a=1
+if [ $a -gt $GREATER_THAN ]; then
+ echo 'Its great'
 fi

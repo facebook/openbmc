@@ -31,40 +31,46 @@ extern "C" {
 #define FRUID_READ_COUNT_MAX 0x20
 #define MAX_GPIO_PINS     32
 
+#define BIC_GPIO_LIST                                                       \
+  BIC_GPIO_DEF(PWRGOOD_CPU, "XDP_CPU_SYSPWROK"),  /* 0 */                   \
+  BIC_GPIO_DEF(PWRGD_PCH_PWROK, "PWRGD_PCH_PWROK"),                         \
+  BIC_GPIO_DEF(PVDDR_VRHOT_N, "PVDDR_VRHOT_N"),                             \
+  BIC_GPIO_DEF(PVCCIN_VRHOT_N, "PVCCIN_VRHOT_N"),                           \
+  BIC_GPIO_DEF(FM_FAST_PROCHOT_N, "FM_FAST_PROCHOT_N"),                     \
+  BIC_GPIO_DEF(PCHHOT_CPU_N, "PCHHOT_CPU_N"),                               \
+  BIC_GPIO_DEF(FM_CPLD_CPU_DIMM_EVENT_CO_N, "FM_CPLD_CPU_DIMM_EVENT_CO_N"), \
+  BIC_GPIO_DEF(FM_CPLD_BDXDE_THERMTRIP_N, "FM_CPLD_BDXDE_THERMTRIP_N"),     \
+  BIC_GPIO_DEF(THERMTRIP_PCH_N, "THERMTRIP_PCH_N"),                         \
+  BIC_GPIO_DEF(FM_CPLD_FIVR_FAULT, "FM_CPLD_FIVR_FAULT"),                   \
+  BIC_GPIO_DEF(FM_BDXDE_CATERR_LVT3_N, "FM_BDXDE_CATERR_LVT3_N"), /* 10 */  \
+  BIC_GPIO_DEF(FM_BDXDE_ERR2_LVT3_N, "FM_BDXDE_ERR2_LVT3_N"),               \
+  BIC_GPIO_DEF(FM_BDXDE_ERR1_LVT3_N, "FM_BDXDE_ERR1_LVT3_N"),               \
+  BIC_GPIO_DEF(FM_BDXDE_ERR0_LVT3_N, "FM_BDXDE_ERR0_LVT3_N"),               \
+  BIC_GPIO_DEF(SLP_S4_N, "SLP_S4_N"),                                       \
+  BIC_GPIO_DEF(FM_NMI_EVENT_BMC_N, "FM_NMI_EVENT_BMC_N"),                   \
+  BIC_GPIO_DEF(FM_SMI_BMC_N, "FM_SMI_BMC_N"),                               \
+  BIC_GPIO_DEF(RST_PLTRST_BMC_N, "RST_PLTRST_BMC_N"),                       \
+  BIC_GPIO_DEF(FP_RST_BTN_BUF_N, "FP_RST_BTN_BUF_N"),                       \
+  BIC_GPIO_DEF(BMC_RST_BTN_OUT_N, "BMC_RST_BTN_OUT_N"),                     \
+  BIC_GPIO_DEF(FM_BDE_POST_CMPLT_N, "FM_BDE_POST_CMPLT_N"), /* 20 */        \
+  BIC_GPIO_DEF(FM_BDXDE_SLP3_N, "FM_BDXDE_SLP3_N"),                         \
+  BIC_GPIO_DEF(FM_PWR_LED_N, "FM_PWR_LED_N"),                               \
+  BIC_GPIO_DEF(PWRGD_PVCCIN, "PWRGD_PVCCIN"),                               \
+  BIC_GPIO_DEF(SVR_ID0, "SVR_ID0"),                                         \
+  BIC_GPIO_DEF(SVR_ID1, "SVR_ID1"),                                         \
+  BIC_GPIO_DEF(SVR_ID2, "SVR_ID2"),                                         \
+  BIC_GPIO_DEF(SVR_ID3, "SVR_ID3"),                                         \
+  BIC_GPIO_DEF(BMC_READY_N, "BMC_READY_N"),                                 \
+  BIC_GPIO_DEF(BMC_COM_SW_N, "BMC_COM_SW_N"),                               \
+  BIC_GPIO_DEF(RESERVED_30, "RESERVED_30"), /* 30 */                        \
+  BIC_GPIO_DEF(RESERVED_31, "RESERVED_31")
+
+#define BIC_GPIO_DEF(type, name)   type
 enum {
-  PWRGOOD_CPU = 0x0,
-  PWRGD_PCH_PWROK,
-  PVDDR_VRHOT_N,
-  PVCCIN_VRHOT_N,
-  FM_FAST_PROCHOT_N,
-  PCHHOT_CPU_N,
-  FM_CPLD_CPU_DIMM_EVENT_CO_N,
-  FM_CPLD_BDXDE_THERMTRIP_N,
-  THERMTRIP_PCH_N,
-  FM_CPLD_FIVR_FAULT,
-  FM_BDXDE_CATERR_LVT3_N,
-  FM_BDXDE_ERR2_LVT3_N,
-  FM_BDXDE_ERR1_LVT3_N,
-  FM_BDXDE_ERR0_LVT3_N,
-  SLP_S4_N,
-  FM_NMI_EVENT_BMC_N,
-  FM_SMI_BMC_N,
-  RST_PLTRST_BMC_N,
-  FP_RST_BTN_BUF_N,
-  BMC_RST_BTN_OUT_N,
-  FM_BDE_POST_CMPLT_N,
-  FM_BDXDE_SLP3_N,
-  FM_PWR_LED_N,
-  PWRGD_PVCCIN,
-  SVR_ID0,
-  SVR_ID1,
-  SVR_ID2,
-  SVR_ID3,
-  BMC_READY_N,
-  BMC_COM_SW_N,
-  RESERVED_30,
-  RESERVED_31,
+  BIC_GPIO_LIST,
+  BIC_GPIO_MAX,
 };
+#undef BIC_GPIO_DEF
 
 enum {
   UPDATE_BIOS = 0,

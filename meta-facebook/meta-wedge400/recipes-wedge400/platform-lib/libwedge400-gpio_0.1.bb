@@ -20,7 +20,7 @@ DESCRIPTION = "library for all gpio pins in wedge400"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://wedge400_gpio.c;beginline=6;endline=18;md5=da35978751a9d71b73679307c4d296ec"
+LIC_FILES_CHKSUM = "file://wedge400_gpio.c;beginline=6;endline=18;md5=070623b19848af757119827e6828c575"
 
 
 SRC_URI = "file://wedge400_gpio \

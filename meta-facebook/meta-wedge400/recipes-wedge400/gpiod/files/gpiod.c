@@ -41,10 +41,6 @@
 #define DELAY_GPIOD_READ    500000 // Polls each slot gpio values every 4*x usec
 #define SLOT_NUM_MAX        1
 
-#define SETBIT(x, y)        (x | (1 << y))
-#define GETBIT(x, y)        ((x & (1 << y)) > y)
-#define CLEARBIT(x, y)      (x & (~(1 << y)))
-
 #define MAX_NUM_SLOTS       1
 #define DELAY_GPIOD_READ    500000 // Polls each slot gpio values every 4*x usec
 #define SOCK_PATH_GPIO      "/tmp/gpio_socket"
@@ -138,15 +134,11 @@ populate_gpio_pins(uint8_t fru) {
   // Only monitor the PWRGD_COREPWR pin
   gpios[PWRGOOD_CPU].flag = 1;
 
-  for (i = 0; i < MAX_GPIO_PINS; i++) {
+  for (i = 0; i < BIC_GPIO_MAX; i++) {
     if (gpios[i].flag) {
       gpios[i].ass_val = GETBIT(gpio_ass_val, i);
-      ret = wedge400_get_gpio_name(i, gpios[i].name);
-      if (ret < 0){
-        sprintf(gpios[i].name, "Unknown");
-      }
       GPIOD_VERBOSE("start monitoring '%s', ass_val=%u\n",
-                      gpios[i].name, gpios[i].ass_val);
+                    wedge400_gpio_type_to_name(i), gpios[i].ass_val);
     }
   }
 }
@@ -235,7 +227,7 @@ gpio_monitor_poll(void) {
 
     revised_pins = (n_pin_val ^ o_pin_val[0]);
 
-    for (i = 0; i < MAX_GPIO_PINS; i++) {
+    for (i = 0; i < BIC_GPIO_MAX; i++) {
       if (GETBIT(revised_pins, i) && (gpios[i].flag == 1)) {
         gpios[i].status = GETBIT(n_pin_val, i);
 

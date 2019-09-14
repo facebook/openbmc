@@ -10,7 +10,7 @@
 # for more details.
 #
 
-obj-m := ir35215.o isl68137.o max6615.o ltc4282.o xdpe132g5c.o
+obj-m := max6615.o ltc4282.o
 
 ccflags-y += -I$(KERNEL_EXTRA_HEADER_PATH)
 

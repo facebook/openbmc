@@ -18,5 +18,5 @@
 # Boston, MA 02110-1301 USA
 #
 /usr/local/bin/us_console.sh connect
-exec /usr/local/bin/mTerm_server wedge /dev/ttyS0
+exec /usr/local/bin/mTerm_server wedge /dev/ttyS4
 

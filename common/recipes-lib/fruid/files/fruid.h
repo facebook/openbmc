@@ -230,7 +230,7 @@ typedef struct fruid_eeprom_t {
 } fruid_eeprom_t;
 
 /* List of all the Chassis types. */
-const char * fruid_chassis_type [] = {
+static const char * fruid_chassis_type [] = {
   "Other",                    /* 0x01 */
   "Unknown",                  /* 0x02 */
   "Desktop",                  /* 0x03 */
@@ -265,7 +265,7 @@ const char * fruid_chassis_type [] = {
   "Detachable"                /* 0x20 */
 };
 
-const char * fruid_field_all_opt[] = {
+static const char * fruid_field_all_opt[] = {
   "--CPN",
   "--CSN",
   "--CCD1",

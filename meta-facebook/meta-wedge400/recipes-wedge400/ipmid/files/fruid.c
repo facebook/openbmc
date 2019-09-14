@@ -44,6 +44,18 @@
 #define WEDGE400_FRUID_SIZE 0x100
 #define WEDGE400_FRU_NUM 11
 
+struct fruid_dev
+{
+  /* data */
+  int id;
+  int bus;
+  int addr;
+  unsigned char* mem;
+  char format;
+};
+
+enum { FRU_STD_FORMAT, FRU_FB_FORMAT, FRU_PSU_FORMAT};
+
 // Global structures
 static unsigned char g_fruid[WEDGE400_FRU_NUM * WEDGE400_FRUID_SIZE] = {0};
 

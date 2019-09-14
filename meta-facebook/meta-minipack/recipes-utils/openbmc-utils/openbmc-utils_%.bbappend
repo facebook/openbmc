@@ -41,6 +41,7 @@ SRC_URI += "file://board-utils.sh \
             file://setup_mgmt.sh \
             file://setup_pcie_repeater.sh \
             file://setup_qsfp.sh \
+            file://setup_sensors_conf.sh \
             file://seutil \
             file://smbcpld_update.sh \
             file://sol.sh \
@@ -104,6 +105,10 @@ do_install_board() {
 
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 60 S .
+
+    # the script to setup lm-sensors conf
+    install -m 755 setup_sensors_conf.sh ${D}${sysconfdir}/init.d/setup_sensors_conf.sh
+    update-rc.d -r ${D} setup_sensors_conf.sh start 61 S .
 
     # networking is done after rcS, any start level within rcS
     # for mac fixup should work

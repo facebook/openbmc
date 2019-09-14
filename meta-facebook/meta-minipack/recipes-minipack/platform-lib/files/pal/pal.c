@@ -38,6 +38,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <linux/limits.h>
+#include <linux/version.h>
 #include "pal.h"
 #include <math.h>
 #include <facebook/bic.h>
@@ -45,6 +46,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensor.h>
 #include <openbmc/sensor-correction.h>
+#include <openbmc/misc-utils.h>
 
 typedef struct {
   char name[32];
@@ -525,6 +527,7 @@ size_t psu4_sensor_cnt = sizeof(psu4_sensor_list)/sizeof(uint8_t);
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
 static float hsc_rsense[MAX_NUM_FRUS] = {0};
+static int hsc_power_div = 1;
 
 const char pal_fru_list[] = "all, scm, smb, pim1, pim2, pim3, \
 pim4, pim5, pim6, pim7, pim8, psu1, psu2, psu3, psu4";
@@ -2232,6 +2235,33 @@ read_attr(uint8_t fru, uint8_t snr_num, const char *device,
   return 0;
 }
 
+/*
+ * Determine extra divisor of hotswap power output
+ * - kernel 4.1.x:
+ *   pmbus_core.c use milliwatt for direct format power output,
+ *   thus we keep hsc_power_div equal to 1.
+ * - Higher kernel versions:
+ *   pmbus_core.c use microwatt for direct format power output,
+ *   thus we need to set hsc_power_div equal to 1000.
+ */
+static int
+hsc_power_div_init(void) {
+  k_version_t kernel_ver;
+
+  kernel_ver = get_kernel_version();
+
+  if (kernel_ver != 0) {
+    if (kernel_ver < KERNEL_VERSION(4, 2, 0))
+      hsc_power_div = 1;
+    else
+      hsc_power_div = 1000;
+  } else {
+    return -1;
+  }
+
+  return 0;
+}
+
 static int
 read_hsc_attr(uint8_t fru, uint8_t snr_num, const char *device,
               const char* attr, float r_sense, float *value) {
@@ -2260,7 +2290,18 @@ read_hsc_curr(uint8_t fru, uint8_t snr_num,
 static int
 read_hsc_power(uint8_t fru, uint8_t snr_num,
                const char *device, float r_sense, float *value) {
-  return read_hsc_attr(fru, snr_num, device, POWER(1), r_sense, value);
+  int ret = -1;
+  static bool hsc_power_div_inited = false;
+
+  if (!hsc_power_div_inited && !hsc_power_div_init()) {
+    hsc_power_div_inited = true;
+  }
+
+  ret = read_hsc_attr(fru, snr_num, device, POWER(1), r_sense, value);
+  if (!ret)
+    *value = *value / hsc_power_div;
+
+  return ret;
 }
 
 static int

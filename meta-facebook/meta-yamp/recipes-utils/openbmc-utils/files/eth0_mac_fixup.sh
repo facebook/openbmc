@@ -64,8 +64,8 @@ fi
 
 # set the MAC from ifconfig back to u-boot environment so that u-boot
 # can use it
-mac=$(ifconfig eth0 2>/dev/null |grep HWaddr 2>/dev/null |awk '{ print $5 }')
-ethaddr=$(fw_printenv ethaddr 2>/dev/null | cut -d'=' -f2 2>/dev/null)
+mac=$(ifconfig eth0  |grep HWaddr  |awk '{ print $5 }')
+ethaddr=$(fw_printenv ethaddr  | cut -d'=' -f2 )
 if [ "$ethaddr" != "$mac" ]; then
     fw_setenv "ethaddr" "$mac"
 fi

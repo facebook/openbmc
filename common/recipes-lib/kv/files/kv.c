@@ -122,7 +122,7 @@ kv_set(const char *key, const char *value, size_t len, unsigned int flags) {
 
   // Check if we are writing the same value. If so, exit early
   // to save on number of times flash is updated.
-  if (present && (flags && KV_FPERSIST)) {
+  if (present && (flags & KV_FPERSIST)) {
     rc = (int)fread(curr_value, 1, MAX_VALUE_LEN, fp);
     if (len == rc && !memcmp(value, curr_value, len)) {
       ret = 0;

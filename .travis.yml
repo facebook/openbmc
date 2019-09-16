@@ -1,4 +1,8 @@
+dist: bionic # has python3.6 by default (needed by black)
 language: c
+
+git:
+  depth: false # needed to get common ancestor to master
 
 cache:
   directories:
@@ -8,6 +12,8 @@ addons:
   apt:
     update: true
     packages:
+    - python3-setuptools # needed by pip
+    - python3-pip
     - build-essential
     - wget
     - diffstat
@@ -16,27 +22,54 @@ addons:
     - bzip2
     - libthread-queue-perl
 
+stages:
+  - lint
+  - test # actually, this is the "build" stage
+         # (defined in the job matrix ("env.matrix" and "script" root node)
+         # https://docs.travis-ci.com/user/build-stages/#specifying-stage-order-and-conditions)
+
+# Pre-build jobs (e.g. linting, unit testing)
+jobs:
+  include:
+    - stage: lint
+      env: BOARD='<BASH LINT>'
+      script:
+        - "if [[ $MODIFIED_SH ]]; then shellcheck $MODIFIED_SH; fi"
+    - env: BOARD='<PYTHON LINT>'
+      script:
+        - "python3 -m pip install black==18.6b4"
+        - "python3 -m black --diff --check $MODIFIED_PY"
+
+# Due to travis ci weirdness, we don't include the build job matrix in the "jobs"
+# section above, but do it separately here.
+# https://docs.travis-ci.com/user/build-stages/matrix-expansion/
 env:
   global:
-  - CACHE="${HOME}/sstate-cache"
-  - CACHE_URI="https://s3-us-west-2.amazonaws.com/openbmc-sstate"
-
-before_install:
-  - ./sync_yocto.sh
-
-matrix:
-  include:
-    - env: BOARD=fbtp
-    - env: BOARD=wedge100
-    - env: BOARD=yosemite
-    - env: BOARD=fbttn
-    - env: BOARD=galaxy100
-    - env: BOARD=cmm
-    - env: BOARD=lightning
-    - env: BOARD=fby2
-    - env: BOARD=wedge
+    # ORIGIN_COMMIT has first commit that branched out from master. We want this to find all
+    # files that were modified since the branch out from master (i.e. all files in a given
+    # pull request).
+    # Initially thought that was achievable using $TRAVIS_COMMIT_RANGE, but that only
+    # gets you the commits that changed since the last _push_, not all commits from a given
+    # pull request (which can lead to lint errors disappearing by pushing something
+    # completely unrelated)
+    - ORIGIN_COMMIT=$(git merge-base HEAD origin/helium 2>/dev/null || git merge-base HEAD origin/master)
+    - CACHE="${HOME}/sstate-cache"
+    - CACHE_URI="https://s3-us-west-2.amazonaws.com/openbmc-sstate"
+    - MODIFIED_SH="$(git diff --diff-filter=d --name-only $ORIGIN_COMMIT -- | grep -P '[.]sh$')"
+    - MODIFIED_PY="$(git diff --diff-filter=d --name-only $ORIGIN_COMMIT -- | grep -P '[.]py$')"
+  matrix:
+    - BOARD=fbtp
+    - BOARD=wedge100
+    - BOARD=yosemite
+    - BOARD=fbttn
+    - BOARD=galaxy100
+    - BOARD=cmm
+    - BOARD=lightning
+    - BOARD=fby2
+    - BOARD=wedge
 
 script:
+  - ./sync_yocto.sh
   # This is how we seed the shared-state cache.
   # It is a small hack to allow builds to finish within 50 minutes.
   # Start a powerful machine and build all images using the same sstate serially.
@@ -50,4 +83,3 @@ script:
   - source ./openbmc-init-build-env meta-facebook/meta-${BOARD} build-${BOARD}
   - echo "SSTATE_DIR = \"${CACHE}\"" >> ./conf/local.conf
   - bitbake ${BOARD}-image
-

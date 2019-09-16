@@ -29,12 +29,12 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-mac=$(weutil 2>/dev/null | grep '^Local MAC' 2>/dev/null | cut -d' ' -f3 2>/dev/null)
+mac=$(weutil  | grep '^Local MAC'  | cut -d' ' -f3 )
 
 if [ -n "$mac" ]; then
     ifconfig eth0 hw ether $mac
     # compare the 'ethaddr' from u-boot env
-    ethaddr=$(fw_printenv ethaddr 2>/dev/null | cut -d'=' -f2 2>/dev/null)
+    ethaddr=$(fw_printenv ethaddr  | cut -d'=' -f2 )
     if [ "$ethaddr" != "$mac" ]; then
         fw_setenv "ethaddr" "$mac"
     fi

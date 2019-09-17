@@ -18,6 +18,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
+    file://rest-api-1/rest_feutil.py \
     file://rest-api-1/rest_firmware_info.py \
     file://rest-api-1/rest_presence.py \
     file://rest-api-1/rest_seutil.py \
@@ -25,6 +26,7 @@ SRC_URI += " \
 "
 
 binfiles1 += " \
+    rest_feutil.py \
     rest_firmware_info.py \
     rest_presence.py \
     rest_sensors.py \

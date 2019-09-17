@@ -1,4 +1,6 @@
+#!/bin/sh
 # Copyright 2014-present Facebook. All Rights Reserved.
+
 wedge_iso_buf_enable() {
     # GPIOC2 (18) to low, SCU90[0] and SCU90[24] must be 0
     devmem_clear_bit $(scu_addr 90) 0
@@ -32,7 +34,7 @@ wedge_is_us_on() {
     fi
     n=1
     while true; do
-        val=$(cat /sys/class/i2c-adapter/i2c-4/4-0040/gpio_inputs 2>/dev/null)
+        val=$(cat "${SYSFS_I2C_DEVICES}/4-0040/gpio_inputs" 2>/dev/null)
         if [ -n "$val" ]; then
             break
         fi
@@ -103,11 +105,7 @@ wedge_slot_id() {
     case "$1" in
         FC-LEFT|FC-RIGHT)
             # On FC
-            if [ $board_rev -lt 2 ]; then
-                slot=$(gpio_get U0)
-            else
-                slot=$(gpio_get U6)
-            fi
+            slot=$(gpio_get_value FAB_SLOT_ID)
             if [ "$1" = "FC-LEFT" ]; then
                 # fabric card left
                 slot=$((FC_CARD_BASE * (slot + 1) + 1))
@@ -118,17 +116,10 @@ wedge_slot_id() {
             ;;
         *)
             # either edge or LC
-            if [ $board_rev -lt 3 ]; then
-                id0=$(gpio_get U0)
-                id1=$(gpio_get U1)
-                id2=$(gpio_get U2)
-                id3=$(gpio_get U3)
-            else
-                id0=$(gpio_get U6)
-                id1=$(gpio_get U7)
-                id2=$(gpio_get V0)
-                id3=$(gpio_get V1)
-            fi
+            id0=$(gpio_get_value BP_SLOT_ID0)
+            id1=$(gpio_get_value BP_SLOT_ID1)
+            id2=$(gpio_get_value BP_SLOT_ID2)
+            id3=$(gpio_get_value BP_SLOT_ID3)
             slot=$(((id2 * 4 + id1 * 2 + id0) * 2 + id3 + 1))
     esac
     echo "$slot"
@@ -137,9 +128,9 @@ wedge_slot_id() {
 # wedge_board_rev() is only valid after GPIO Y0, Y1, and Y2 are enabled
 wedge_board_rev() {
     local val0 val1 val2
-    val0=$(cat /sys/class/gpio/gpio192/value 2>/dev/null)
-    val1=$(cat /sys/class/gpio/gpio193/value 2>/dev/null)
-    val2=$(cat /sys/class/gpio/gpio194/value 2>/dev/null)
+    val0=$(gpio_get_value BOARD_REV_ID0)
+    val1=$(gpio_get_value BOARD_REV_ID1)
+    val2=$(gpio_get_value BOARD_REV_ID2)
     echo $((val0 | (val1 << 1) | (val2 << 2)))
 }
 
@@ -159,5 +150,5 @@ wedge_should_enable_oob() {
             fi
             ;;
     esac
-    return -1
+    return 1
 }

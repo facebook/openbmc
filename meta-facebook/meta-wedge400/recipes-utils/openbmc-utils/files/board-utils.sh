@@ -54,7 +54,7 @@ wedge_board_type() {
     if [ $((rev&0x04)) -eq 4 ]; then
         echo 'WEDGE400'
     else
-        echo 'WEDGE400-2'
+        echo 'WEDGE400-C'
     fi
 }
 

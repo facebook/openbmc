@@ -21,8 +21,6 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 . /usr/local/bin/openbmc-utils.sh
 
-board_rev=$(wedge_board_rev)
-
 KERNEL_VERSION=`uname -r`
 if [[ ${KERNEL_VERSION} != 4.1.* ]]; then
 #    i2c-mux 2-0070:  child bus 14-21
@@ -48,6 +46,7 @@ get_board_type()
         echo -1
     fi
 }
+
 get_board_rev()
 {
     reg=$(i2cget -y -f 12 0x3e 0x00)

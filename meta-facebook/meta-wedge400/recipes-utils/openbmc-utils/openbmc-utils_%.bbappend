@@ -95,10 +95,10 @@ do_install_board() {
     update-rc.d -r ${D} setup_emmc.sh start 05 S .
 
     install -m 755 setup_default_gpio.sh ${D}${sysconfdir}/init.d/setup_default_gpio.sh
-    update-rc.d -r ${D} setup_default_gpio.sh start 59 S .
+    update-rc.d -r ${D} setup_default_gpio.sh start 60 S .
 
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
-    update-rc.d -r ${D} setup_i2c.sh start 60 S .
+    update-rc.d -r ${D} setup_i2c.sh start 59 S .
 
     install -m 755 setup_avs.sh ${D}${sysconfdir}/init.d/setup_avs.sh
     update-rc.d -r ${D} setup_avs.sh start 65 S .

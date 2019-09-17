@@ -509,7 +509,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
     syslog(LOG_ERR, "bic_read_sensor_wrapper: sensor_num: 0x%X, flag: 0x%X",
         sensor_num, sensor.flags);
 #endif
-    return -1;
+    return ERR_SENSOR_NA;
   }
 
   if (discrete) {

@@ -398,16 +398,21 @@ gpio_export PRSNT1_N_ASIC4 GPIOY3
 #devmem_clear_bit $(scu_addr a4) 23
 
 # Select USB from MB
+# [S1:S0]
 # 0:0 = MB#1
-# 1:0 = MB#2
-# 0:1 = MB#3
+# 0:1 = MB#2
+# 1:0 = MB#3
 # 1:1 = MB#4
 # PCH
 gpio_export USB2_SEL0_U42 GPIOZ0
+gpio_set USB2_SEL0_U42 0
 gpio_export USB2_SEL1_U42 GPIOZ1
+gpio_set USB2_SEL1_U42 0
 # BMC
 gpio_export USB2_SEL0_U43 GPIOZ2
+gpio_set USB2_SEL0_U43 0
 gpio_export USB2_SEL1_U43 GPIOZ3
+gpio_set USB2_SEL1_U43 0
 
 # To enable GPIOAA
 #devmem_clear_bit $(scu_addr a4) 24
@@ -439,6 +444,7 @@ gpio_set SYSTEM_LOG_LED 0
 # 0: BMC
 # 1: PCH
 gpio_export SEL_USB_MUX GPIOAA3
+gpio_set SEL_USB_MUX 0
 
 # SPI BMC write protection
 gpio_export SPI_BMC_BT_WP0_N GPIOAA4

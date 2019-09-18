@@ -879,6 +879,7 @@ pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
   return ret;
 }
 
+int
 pal_uart_select_led_set(void) {
   static uint32_t pre_channel = 0xffffffff;
   uint8_t vals;

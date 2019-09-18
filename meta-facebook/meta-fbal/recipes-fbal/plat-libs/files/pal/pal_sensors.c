@@ -17,6 +17,9 @@
 
 //#define DEBUG
 #define GPIO_P3V_BAT_SCALED_EN "P3V_BAT_SCALED_EN"
+#define NM_IPMB_BUS_ID   (5)
+#define NM_SLAVE_ADDR    (0x2C)
+
 
 static int read_adc_val(uint8_t adc_id, float *value);
 static int read_battery_val(uint8_t adc_id, float *value);

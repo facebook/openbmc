@@ -154,3 +154,68 @@ cmd_NM_sensor_reading(NM_RW_INFO info, uint8_t snr_num, uint8_t* rbuf, uint8_t* 
   return ret;
 }
 
+int
+cmd_NM_cpu_err_num_get(NM_RW_INFO info, bool is_caterr)
+{
+  int cpu_num = -1;
+  uint8_t tbuf[64] = {0x00};
+  uint8_t rbuf[64] = {0x00};
+  ipmb_req_t *req;
+  ipmb_res_t *res;
+  uint8_t tlen;
+  uint8_t rlen;
+  int ret=0;
+
+  req = (ipmb_req_t*)tbuf;
+  res = (ipmb_res_t*)rbuf;
+  req->res_slave_addr = info.nm_addr; //ME's Slave Address
+  req->netfn_lun = NETFN_NM_REQ<<2;
+  req->cmd = info.nm_cmd;
+  req->req_slave_addr = info.bmc_addr << 1;
+
+  req->data[0] = 0x57;
+  req->data[1] = 0x01;
+  req->data[2] = 0x00;
+  req->data[3] = 0x30;
+  req->data[4] = 0x05;
+  req->data[5] = 0x05;
+  req->data[6] = 0xa1;
+  req->data[7] = 0x00;
+  req->data[8] = 0x00;
+  req->data[9] = 0x05;
+  req->data[10] = 0x00;
+
+  tlen = 11+MIN_IPMB_REQ_LEN; 
+  ret = lib_ipmb_handle(info.bus, tbuf, tlen+1, rbuf, &rlen);
+  if (ret != 0) {
+    return ret;
+  }
+
+  if (rlen == 0) {
+  //ME no response
+#ifdef DEBUG
+    syslog(LOG_DEBUG, "read NM sensor=%x: Zero bytes received\n", snr_num);
+    return -1;
+#endif
+  } 
+
+  if ( ( res->cc == 0 ) && ( res->data[3] == 0x40 ) ) {
+    if( is_caterr ) {
+      if(((res->data[7] & 0xE0) > 0) && ((res->data[7] & 0x1C) > 0))
+        cpu_num = 2; //Both
+      else if((res->data[7] & 0xE0) > 0)
+        cpu_num = 1; //CPU1
+      else if((res->data[7] & 0x1C) > 0)
+        cpu_num = 0; // CPU0
+    } else {
+      if(((res->data[6] & 0xE0) > 0) && ((res->data[6] & 0x1C) > 0))
+        cpu_num = 2; //Both
+      else if((res->data[6] & 0xE0) > 0)
+        cpu_num = 1; //CPU1
+      else if((res->data[6] & 0x1C) > 0)
+        cpu_num = 0; // CPU0
+    }
+  }
+  return cpu_num;
+}
+

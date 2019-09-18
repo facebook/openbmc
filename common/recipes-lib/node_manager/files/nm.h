@@ -19,6 +19,7 @@ typedef struct {
 int cmd_NM_pmbus_read_word(NM_RW_INFO info, uint8_t dev_addr, uint8_t *rbuf);
 int cmd_NM_pmbus_write_word(NM_RW_INFO info, uint8_t dev_addr, uint8_t *data);
 int cmd_NM_sensor_reading(NM_RW_INFO info, uint8_t snr_num, uint8_t* rbuf, uint8_t* rlen);
+int cmd_NM_cpu_err_num_get(NM_RW_INFO info, bool is_caterr);
 #endif
 
 

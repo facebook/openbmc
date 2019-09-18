@@ -37,6 +37,14 @@ extern "C" {
 #define ERR_NOT_READY       (-2)
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
+#define FAULT_LED_ON  (1)
+#define FAULT_LED_OFF (0)
+
+#define PAGE_SIZE  0x1000
+#define AST_GPIO_BASE 0x1e780000
+#define UARTSW_OFFSET 0x68
+#define SEVEN_SEGMENT_OFFSET 0x20
+
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
 extern const char pal_pwm_list[];
@@ -133,6 +141,15 @@ int pal_set_led(uint8_t slot, uint8_t status);
 int pal_set_id_led(uint8_t slot, uint8_t status);
 int read_device(const char *device, int *value);
 int pal_get_rst_btn(uint8_t *status);
+int pal_set_fault_led(uint8_t fru, uint8_t status);
+int pal_uart_select (uint32_t base, uint8_t offset, int option, uint32_t para);
+int pal_uart_select_led_set(void);
+
+enum {
+  UARTSW_BY_BMC,
+  UARTSW_BY_DEBUG,
+  SET_SEVEN_SEGMENT,
+};
 
 
 #ifdef __cplusplus

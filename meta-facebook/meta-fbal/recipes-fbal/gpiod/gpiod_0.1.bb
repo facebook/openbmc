@@ -31,8 +31,9 @@ S = "${WORKDIR}"
 
 binfiles = "gpiod \
            "
-DEPENDS += "libpal libgpio-ctrl update-rc.d-native"
-RDEPENDS_${PN} += "libpal"
+DEPENDS += "libpal libgpio-ctrl update-rc.d-native libnm"
+RDEPENDS_${PN} += "libpal libnm libgpio-ctrl"
+LDFLAGS += "-pthread -lpal -lnm -lgpio-ctrl"
 
 pkgdir = "gpiod"
 
@@ -54,6 +55,4 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
-
-RDEPENDS_${PN} = "libgpio-ctrl"
 

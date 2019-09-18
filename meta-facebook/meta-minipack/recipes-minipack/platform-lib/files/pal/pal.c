@@ -2707,25 +2707,32 @@ hsc_rsense_init(uint8_t hsc_id, const char* device) {
 
   if (!rsense_inited[hsc_id]) {
     int brd_rev = -1;
-
-    switch (hsc_id) {
-      case HSC_FCM_T:
-        pal_get_cpld_board_rev(&brd_rev, device);
-        /* R0D or R0E FCM */
-        if (brd_rev == 0x4 || brd_rev == 0x5) {
-          hsc_rsense[hsc_id] = 1.14;
-        } else {
-          hsc_rsense[hsc_id] = 0.33;
-        }
+    /*
+     * Config FCM Rsense value at different hardware version.
+     * Kernel driver use Rsense equal to 1 milliohm. We need to correct Rsense
+     * value, and all values are from hardware team.
+     */
+    pal_get_cpld_board_rev(&brd_rev, device);
+    switch (brd_rev) {
+      case 0x7:
+      case 0x2:
+        /* R0A, R0B or R0C FCM */
+        hsc_rsense[hsc_id] = 0.33;
         break;
-      case HSC_FCM_B:
-        pal_get_cpld_board_rev(&brd_rev, device);
-        /* R0D or R0E FCM */
-        if (brd_rev == 0x4 || brd_rev == 0x5) {
-          hsc_rsense[hsc_id] = 1.15;
-        } else {
-          hsc_rsense[hsc_id] = 0.33;
-        }
+      case 0x4:
+      case 0x5:
+        /* R0D or R01 FCM */
+        if (hsc_id == HSC_FCM_T)
+          hsc_rsense[hsc_id] = 0.377;
+        else
+          hsc_rsense[hsc_id] = 0.376;
+        break;
+      default:
+        /*
+         * Default, keep Rsense to 1, if we have new FCM version,
+         * we can use default Rsense value as a base to correct real value.
+         */
+        hsc_rsense[hsc_id] = 1;
         break;
     }
     rsense_inited[hsc_id] = true;

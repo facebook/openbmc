@@ -20,6 +20,9 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://mcu_fw.h \
             file://mcu_fw.cpp \
             file://cm.cpp \
+            file://bios.h \
+            file://bios.cpp \
+            file://platform.cpp \
            "
 
 SRC_URI_remove = "file://fscd.cpp"

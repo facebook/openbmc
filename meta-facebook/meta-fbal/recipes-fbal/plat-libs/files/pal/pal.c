@@ -725,3 +725,108 @@ pal_is_mcu_ready(uint8_t bus) {
 
   return false;
 }
+
+int
+pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
+  int i;
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[8] = {0};
+
+  for (i = 0; i < SIZE_SYSFW_VER; i++) {
+    sprintf(tstr, "%02x", ver[i]);
+    strcat(str, tstr);
+  }
+
+  return pal_set_key_value("sysfw_ver_server", str);
+}
+
+int
+pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
+  int ret;
+  int i, j;
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[8] = {0};
+
+  ret = pal_get_key_value("sysfw_ver_server", str);
+  if (ret) {
+    return ret;
+  }
+
+  for (i = 0, j = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
+    sprintf(tstr, "%c%c", str[i], str[i+1]);
+    ver[j++] = strtol(tstr, NULL, 16);
+  }
+
+  return 0;
+}
+
+int
+pal_fw_update_prepare(uint8_t fru, const char *comp) {
+  int ret = 0, retry = 3;
+  uint8_t status;
+  gpio_desc_t *desc;
+
+  if ((fru == FRU_MB) && !strcmp(comp, "bios")) {
+    pal_set_server_power(FRU_MB, SERVER_POWER_OFF);
+    while (retry > 0) {
+      if (!pal_get_server_power(FRU_MB, &status) && (status == SERVER_POWER_OFF)) {
+        break;
+      }
+      if ((--retry) > 0) {
+        sleep(1);
+      }
+    }
+    if (retry <= 0) {
+      printf("Failed to Power Off Server. Stopping the update!\n");
+      return -1;
+    }
+
+    system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null");
+    sleep(1);
+
+    ret = -1;
+    desc = gpio_open_by_shadow("FM_BIOS_SPI_BMC_CTRL");
+    if (desc) {
+      if (!gpio_set_direction(desc, GPIO_DIRECTION_OUT) && !gpio_set_value(desc, GPIO_VALUE_HIGH)) {
+        ret = 0;
+      } else {
+        printf("Failed to switch BIOS ROM to BMC\n");
+      }
+      gpio_close(desc);
+    } else {
+      printf("Failed to open SPI-Switch GPIO\n");
+    }
+
+    system("echo -n 1e630000.spi > /sys/bus/platform/drivers/aspeed-smc/bind");
+  }
+
+  return ret;
+}
+
+int
+pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
+  int ret = 0;
+  gpio_desc_t *desc;
+
+  if ((fru == FRU_MB) && !strcmp(comp, "bios")) {
+    system("echo -n 1e630000.spi > /sys/bus/platform/drivers/aspeed-smc/unbind");
+
+    desc = gpio_open_by_shadow("FM_BIOS_SPI_BMC_CTRL");
+    if (desc) {
+      gpio_set_value(desc, GPIO_VALUE_LOW);
+      gpio_set_direction(desc, GPIO_DIRECTION_IN);
+      gpio_close(desc);
+    }
+
+    ret = status;
+    if (status == 0) {
+      sleep(1);
+      pal_power_button_override();
+      sleep(10);
+      pal_set_server_power(FRU_MB, SERVER_POWER_ON);
+    }
+  }
+
+  return ret;
+}
+

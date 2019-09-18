@@ -58,21 +58,38 @@ bmc_mac_dec="$( printf "%d\\n" "0x$(sed s/://g "/sys/class/net/eth0/address")")"
 # get neighboring devices in {hostname, MAC} format, shows only entries that can resolve to host name
 host_table=$(ip -r neigh show dev eth0 | grep -iE 'com|edu|gov|org' | sort -k 3)
 
+# OCP3 NIC detection
+prsnt_a=$(cat /sys/class/gpio/gpio88/value)
+prsnt_b=$(cat /sys/class/gpio/gpio89/value)
+if ((prsnt_a == 0 && prsnt_b == 1)); then
+  ocp3nic=1
+else
+  ocp3nic=0
+fi
+
 # calculate expected MAC address for each slot, convert it back to hex str
 #
 # MAC address calculation is different for 2xTL+2x carrier
 case "$sku_type" in
    "1028")
-     echo "2server + 2GPv2"
+     echo "2server + 2GPv2, OCP2 NIC"
       slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
       slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
    ;;
    *)
-      echo "4 server"
-      slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      if [ $ocp3nic -eq 1 ]; then
+        echo "4 server, OCP3 NIC"
+        slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-4)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+        slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec-3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+        slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec-2)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+        slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//');
+      else
+        echo "4 server, OCP2 NIC"
+        slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+        slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+        slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+        slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      fi
    ;;
 esac
 

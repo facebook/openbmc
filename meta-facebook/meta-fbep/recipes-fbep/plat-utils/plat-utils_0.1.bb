@@ -25,6 +25,7 @@ SRC_URI = "file://ast-functions \
            file://setup-gpio.sh \
            file://setup-emmc.sh \
            file://setup-usbnet.sh \
+           file://setup-fan.sh \
            file://COPYING \
           "
 
@@ -48,6 +49,8 @@ do_install() {
   # the script to mount /mnt/data
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
+  install -m 755 setup-fan.sh ${D}${sysconfdir}/init.d/setup-fan.sh
+  update-rc.d -r ${D} setup-fan.sh start 60 5 .
   install -m 755 setup-emmc.sh ${D}${sysconfdir}/init.d/setup-emmc.sh
   update-rc.d -r ${D} setup-emmc.sh start 05 S .
   install -m 755 setup-usbnet.sh ${D}${sysconfdir}/init.d/setup-usbnet.sh

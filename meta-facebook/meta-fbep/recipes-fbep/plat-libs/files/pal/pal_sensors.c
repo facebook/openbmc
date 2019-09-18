@@ -37,10 +37,10 @@ const char pal_tach_list[] = "0..7";
 
 #define FAN_TACH "fan%d_input"
 #define FAN_PWM "pwm%d"
-#define FAN_DIR "/sys/devices/platform/ahb/ahb:apb/1e786000.pwm-tacho-controller/hwmon/hwmon*"
+#define FAN_DIR "/sys/bus/platform/devices/1e786000.pwm-tacho-controller/hwmon/hwmon0"
 #define PWM_UNIT_MAX 255
 
-#define ADC_DIR "/sys/devices/platform/iio-hwmon/hwmon/hwmon*"
+#define ADC_DIR "/sys/devices/platform/iio-hwmon/hwmon/hwmon1"
 #define ADC_VALUE "in%d_input"
 
 #define THERM_DIR "/sys/class/i2c-dev/i2c-6/device/6-00%x/hwmon/hwmon*"
@@ -55,14 +55,14 @@ const char pal_tach_list[] = "0..7";
  * List of sensors to be monitored
  */
 const uint8_t fru_sensor_list[] = {
-  FRU_SENSOR_FAN0_TACH,
-  FRU_SENSOR_FAN1_TACH,
-  FRU_SENSOR_FAN2_TACH,
-  FRU_SENSOR_FAN3_TACH,
-  FRU_SENSOR_FAN4_TACH,
-  FRU_SENSOR_FAN5_TACH,
-  FRU_SENSOR_FAN6_TACH,
-  FRU_SENSOR_FAN7_TACH,
+  FRU_FAN0_TACH_I,
+  FRU_FAN0_TACH_O,
+  FRU_FAN1_TACH_I,
+  FRU_FAN1_TACH_O,
+  FRU_FAN2_TACH_I,
+  FRU_FAN2_TACH_O,
+  FRU_FAN3_TACH_I,
+  FRU_FAN3_TACH_O,
   FRU_SENSOR_P12V_AUX,
   FRU_SENSOR_P3V3_STBY,
   FRU_SENSOR_P5V_STBY,
@@ -72,20 +72,22 @@ const uint8_t fru_sensor_list[] = {
   FRU_SENSOR_P3V_BAT,
   FRU_SENSOR_GPU_INLET,
   FRU_SENSOR_GPU_OUTLET,
+  FRU_SENSOR_SW01_THERM,
+  FRU_SENSOR_SW23_THERM,
 };
 
 /*
  * The name of all sensors, each should correspond to the enumeration.
  */
 const char* fru_sensor_name[] = {
-  "FRU_FAN0_TACH",
-  "FRU_FAN1_TACH",
-  "FRU_FAN2_TACH",
-  "FRU_FAN3_TACH",
-  "FRU_FAN4_TACH",
-  "FRU_FAN5_TACH",
-  "FRU_FAN6_TACH",
-  "FRU_FAN7_TACH",
+  "FRU_FAN0_TACH_I",
+  "FRU_FAN0_TACH_O",
+  "FRU_FAN1_TACH_I",
+  "FRU_FAN1_TACH_O",
+  "FRU_FAN2_TACH_I",
+  "FRU_FAN2_TACH_O",
+  "FRU_FAN3_TACH_I",
+  "FRU_FAN3_TACH_O",
   "FRU_SENSOR_P12V_AUX",
   "FRU_SENSOR_P3V3_STBY",
   "FRU_SENSOR_P5V_STBY",
@@ -95,6 +97,8 @@ const char* fru_sensor_name[] = {
   "FRU_SENSOR_P3V_BAT",
   "FRU_SENSOR_GPU_INLET",
   "FRU_SENSOR_GPU_OUTLET",
+  "FRU_SENSOR_SW01_THERM",
+  "FRU_SENSOR_SW23_THERM",
 };
 
 float fru_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
@@ -152,23 +156,29 @@ static int read_device_float(const char *device, float *value)
 
 static int write_device(const char *device, const char *value)
 {
-  char command[LARGEST_DEVICE_NAME] = {0};
   FILE *fp;
-  int err;
+  int rc;
 
-  snprintf(command, LARGEST_DEVICE_NAME, "echo %s > %s", value, device);
-
-  fp = popen(command, "r");
-  if (fp == NULL) {
-    err = errno;
+  fp = fopen(device, "w");
+  if (!fp) {
+    int err = errno;
 #ifdef DEBUG
-    syslog(LOG_WARNING, "failed to write device %s", device);
+    syslog(LOG_INFO, "failed to open device for write %s", device);
 #endif
     return err;
   }
-  pclose(fp);
 
-  return 0;
+  rc = fputs(value, fp);
+  fclose(fp);
+
+  if (rc < 0) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to write device %s", device);
+#endif
+    return ENOENT;
+  } else {
+    return 0;
+  }
 }
 
 static int read_fan_value(const int fan, const char *device, int *value)
@@ -190,7 +200,7 @@ static int read_fan_value_f(const int fan, const char *device, float *value)
   snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
   snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", FAN_DIR, device_name);
   ret = read_device_float(full_name, value);
-  if (*value < 500 || *value > fru_sensor_threshold[FRU_SENSOR_FAN0_TACH][UCR_THRESH]) {
+  if (*value < 500 || *value > fru_sensor_threshold[FRU_FAN0_TACH_I][UCR_THRESH]) {
     sleep(2);
     ret = read_device_float(full_name, value);
   }
@@ -237,13 +247,13 @@ static int read_battery_value(const int adc, const char *device, float r1, float
   if (!gp_batt) {
     return -1;
   }
-  if (gpio_set_value(gp_batt, GPIO_VALUE_LOW)) {
+  if (gpio_set_value(gp_batt, GPIO_VALUE_HIGH)) {
     goto bail;
   }
   msleep(10);
   ret = read_adc_value(adc, device, r1, r2, value);
 
-  gpio_set_value(gp_batt, GPIO_VALUE_HIGH);
+  gpio_set_value(gp_batt, GPIO_VALUE_LOW);
 
 bail:
   gpio_close(gp_batt);
@@ -266,12 +276,12 @@ static int read_temp_attr(uint8_t sensor_num, const char *device, const char *at
     case FRU_SENSOR_GPU_INLET:
       addr = 0x4c;
       break;
-//    case FRU_SENSOR_SW01_THERM:
-//      addr = 0x4d;
-//      break;
-//    case FRU_SENSOR_SW23_THERM:
-//      addr = 0x4e;
-//      break;
+    case FRU_SENSOR_SW01_THERM:
+      addr = 0x4d;
+      break;
+    case FRU_SENSOR_SW23_THERM:
+      addr = 0x4e;
+      break;
     default:
       return READING_NA;
       break;
@@ -301,7 +311,7 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
 
   unit = pwm * PWM_UNIT_MAX / 100;
 
-  ret = write_fan_value(fan/2+1, FAN_PWM, unit);
+  ret = write_fan_value(fan+1, FAN_PWM, unit);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s: write_fan_value failed", __func__);
     return -1;
@@ -327,7 +337,7 @@ int pal_get_fan_name(uint8_t num, char *name)
     return -1;
   }
 
-  sprintf(name, "Fan %d", num);
+  sprintf(name, "Fan %d %s", num/2, num%2==0? "In":"Out");
 
   return 0;
 }
@@ -336,7 +346,7 @@ int pal_get_pwm_value(uint8_t fan_num, uint8_t *value)
 {
   int val = 0;
 
-  if (fan_num >= pal_pwm_cnt) {
+  if (fan_num >= pal_tach_cnt) {
     syslog(LOG_WARNING, "%s: fan number is invalid - %d", __func__, fan_num);
     return -1;
   }
@@ -368,30 +378,30 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 static void sensor_thresh_array_init()
 {
   // Fan Sensors
-  fru_sensor_threshold[FRU_SENSOR_FAN0_TACH][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_SENSOR_FAN0_TACH][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
-  fru_sensor_threshold[FRU_SENSOR_FAN1_TACH][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_SENSOR_FAN1_TACH][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_SENSOR_FAN1_TACH][LCR_THRESH] = 500;
-  fru_sensor_threshold[FRU_SENSOR_FAN2_TACH][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_SENSOR_FAN2_TACH][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_SENSOR_FAN2_TACH][LCR_THRESH] = 500;
-  fru_sensor_threshold[FRU_SENSOR_FAN3_TACH][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_SENSOR_FAN3_TACH][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_SENSOR_FAN3_TACH][LCR_THRESH] = 500;
-  fru_sensor_threshold[FRU_SENSOR_FAN4_TACH][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_SENSOR_FAN4_TACH][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_SENSOR_FAN4_TACH][LCR_THRESH] = 500;
-  fru_sensor_threshold[FRU_SENSOR_FAN5_TACH][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_SENSOR_FAN5_TACH][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_SENSOR_FAN5_TACH][LCR_THRESH] = 500;
-  fru_sensor_threshold[FRU_SENSOR_FAN6_TACH][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_SENSOR_FAN6_TACH][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_SENSOR_FAN6_TACH][LCR_THRESH] = 500;
-  fru_sensor_threshold[FRU_SENSOR_FAN7_TACH][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_SENSOR_FAN7_TACH][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_SENSOR_FAN7_TACH][LCR_THRESH] = 500;
+  fru_sensor_threshold[FRU_FAN0_TACH_I][UNC_THRESH] = 8500;
+  fru_sensor_threshold[FRU_FAN0_TACH_I][UCR_THRESH] = 11500;
+  fru_sensor_threshold[FRU_FAN0_TACH_I][LCR_THRESH] = 500;
+  fru_sensor_threshold[FRU_FAN0_TACH_O][UNC_THRESH] = 8500;
+  fru_sensor_threshold[FRU_FAN0_TACH_O][UCR_THRESH] = 11500;
+  fru_sensor_threshold[FRU_FAN0_TACH_O][LCR_THRESH] = 500;
+  fru_sensor_threshold[FRU_FAN1_TACH_I][UNC_THRESH] = 8500;
+  fru_sensor_threshold[FRU_FAN1_TACH_I][UCR_THRESH] = 11500;
+  fru_sensor_threshold[FRU_FAN1_TACH_I][LCR_THRESH] = 500;
+  fru_sensor_threshold[FRU_FAN1_TACH_O][UNC_THRESH] = 8500;
+  fru_sensor_threshold[FRU_FAN1_TACH_O][UCR_THRESH] = 11500;
+  fru_sensor_threshold[FRU_FAN1_TACH_O][LCR_THRESH] = 500;
+  fru_sensor_threshold[FRU_FAN2_TACH_I][UNC_THRESH] = 8500;
+  fru_sensor_threshold[FRU_FAN2_TACH_I][UCR_THRESH] = 11500;
+  fru_sensor_threshold[FRU_FAN2_TACH_I][LCR_THRESH] = 500;
+  fru_sensor_threshold[FRU_FAN2_TACH_O][UNC_THRESH] = 8500;
+  fru_sensor_threshold[FRU_FAN2_TACH_O][UCR_THRESH] = 11500;
+  fru_sensor_threshold[FRU_FAN2_TACH_O][LCR_THRESH] = 500;
+  fru_sensor_threshold[FRU_FAN3_TACH_I][UNC_THRESH] = 8500;
+  fru_sensor_threshold[FRU_FAN3_TACH_I][UCR_THRESH] = 11500;
+  fru_sensor_threshold[FRU_FAN3_TACH_I][LCR_THRESH] = 500;
+  fru_sensor_threshold[FRU_FAN3_TACH_O][UNC_THRESH] = 8500;
+  fru_sensor_threshold[FRU_FAN3_TACH_O][UCR_THRESH] = 11500;
+  fru_sensor_threshold[FRU_FAN3_TACH_O][LCR_THRESH] = 500;
 
   // ADC Sensors
   fru_sensor_threshold[FRU_SENSOR_P12V_AUX][UCR_THRESH] = 13.23;
@@ -449,14 +459,14 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
     return -1;
 
   switch(sensor_num) {
-    case FRU_SENSOR_FAN0_TACH:
-    case FRU_SENSOR_FAN1_TACH:
-    case FRU_SENSOR_FAN2_TACH:
-    case FRU_SENSOR_FAN3_TACH:
-    case FRU_SENSOR_FAN4_TACH:
-    case FRU_SENSOR_FAN5_TACH:
-    case FRU_SENSOR_FAN6_TACH:
-    case FRU_SENSOR_FAN7_TACH:
+    case FRU_FAN0_TACH_I:
+    case FRU_FAN0_TACH_O:
+    case FRU_FAN1_TACH_I:
+    case FRU_FAN1_TACH_O:
+    case FRU_FAN2_TACH_I:
+    case FRU_FAN2_TACH_O:
+    case FRU_FAN3_TACH_I:
+    case FRU_FAN3_TACH_O:
       sprintf(units, "RPM");
       break;
     case FRU_SENSOR_P12V_AUX:
@@ -470,8 +480,8 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
       break;
     case FRU_SENSOR_GPU_INLET:
     case FRU_SENSOR_GPU_OUTLET:
-//    case FRU_SENSOR_SW01_THERM:
-//    case FRU_SENSOR_SW23_THERM:
+    case FRU_SENSOR_SW01_THERM:
+    case FRU_SENSOR_SW23_THERM:
       sprintf(units, "Degree C");
       break;
     default:
@@ -504,28 +514,28 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
 
   switch(sensor_num) {
     // Fan Sensors
-    case FRU_SENSOR_FAN0_TACH:
+    case FRU_FAN0_TACH_I:
       ret = read_fan_value_f(FAN_0, FAN_TACH, (float*)value);
       break;
-    case FRU_SENSOR_FAN1_TACH:
+    case FRU_FAN0_TACH_O:
       ret = read_fan_value_f(FAN_1, FAN_TACH, (float*)value);
       break;
-    case FRU_SENSOR_FAN2_TACH:
+    case FRU_FAN1_TACH_I:
       ret = read_fan_value_f(FAN_2, FAN_TACH, (float*)value);
       break;
-    case FRU_SENSOR_FAN3_TACH:
+    case FRU_FAN1_TACH_O:
       ret = read_fan_value_f(FAN_3, FAN_TACH, (float*)value);
       break;
-    case FRU_SENSOR_FAN4_TACH:
+    case FRU_FAN2_TACH_I:
       ret = read_fan_value_f(FAN_4, FAN_TACH, (float*)value);
       break;
-    case FRU_SENSOR_FAN5_TACH:
+    case FRU_FAN2_TACH_O:
       ret = read_fan_value_f(FAN_5, FAN_TACH, (float*)value);
       break;
-    case FRU_SENSOR_FAN6_TACH:
+    case FRU_FAN3_TACH_I:
       ret = read_fan_value_f(FAN_6, FAN_TACH, (float*)value);
       break;
-    case FRU_SENSOR_FAN7_TACH:
+    case FRU_FAN3_TACH_O:
       ret = read_fan_value_f(FAN_7, FAN_TACH, (float*)value);
       break;
     // ADC Sensors (Resistance unit = 1K)
@@ -553,8 +563,8 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
     // Thermal sensors
     case FRU_SENSOR_GPU_INLET:
     case FRU_SENSOR_GPU_OUTLET:
-//    case FRU_SENSOR_SW01_THERM:
-//    case FRU_SENSOR_SW23_THERM:
+    case FRU_SENSOR_SW01_THERM:
+    case FRU_SENSOR_SW23_THERM:
       ret = read_temp_attr(sensor_num, THERM_DIR, THERM_VALUE, (float*)value);
       break;
     default:

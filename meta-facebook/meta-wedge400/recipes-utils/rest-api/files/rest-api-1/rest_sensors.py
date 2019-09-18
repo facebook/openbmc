@@ -37,13 +37,9 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 # different from sensors command. So we need a separate REST api handler
 # for this.
 #
-def get_sensors():
-    result = []
-    proc = subprocess.Popen(
-        ["/usr/local/bin/sensor-util", "all"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
+def get_fru_sensor(fru):
+    cmd = "/usr/local/bin/sensor-util"
+    proc = subprocess.Popen([cmd, fru], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
         data = data.decode()
@@ -55,9 +51,14 @@ def get_sensors():
     # We flatten all key value pair into one level
     # We keep the JSON format compatible with other
     # FBOSS chassis, to make bmc_proxy happy
-    sresult = {}
-    sresult["name"] = "util"
-    sresult["Adapter"] = "util"
+    result = {}
+    result["name"] = "util"
+    result["Adapter"] = "util"
+    if "not present" in data:
+        result["present"] = False
+        return result
+
+    result["present"] = True
     for edata in data.split("\n"):
         # Per each line
         adata = edata.split()
@@ -68,11 +69,20 @@ def get_sensors():
         value = adata[3].strip()
         try:
             value = float(value)
-            if value >= 0.0:
-                sresult[key] = str(value)
+            result[key] = str(value)
         except Exception:
-            pass
-    result.append(sresult)
+            result[key] = "NA"
+    return result
+
+
+def get_sensors():
+    result = {}
+    # FRUs of /usr/local/bin/sensor-util commands
+    frus = ["scm", "smb", "psu1", "psu2", "pem1", "pem2"]
+
+    for fru in frus:
+        sresult = get_fru_sensor(fru)
+        result[fru] = sresult
 
     fresult = {"Information": result, "Actions": [], "Resources": []}
     return fresult

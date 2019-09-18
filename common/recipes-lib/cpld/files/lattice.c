@@ -41,7 +41,7 @@ enum
   Both_CF_UFM = 1,
 };
 
-struct cpld_dev_info lattice_device_list[2] = {
+struct cpld_dev_info lattice_device_list[] = {
   [0] = {
     .name = "LC LCMXO2-2000HC",
     .dev_id = 0x012BB043,
@@ -52,6 +52,13 @@ struct cpld_dev_info lattice_device_list[2] = {
   [1] = {
     .name = "LC LCMXO2-4000HC",
     .dev_id = 0x012BC043,
+    .cpld_ver = LCMXO2Family_cpld_Get_Ver,
+    .cpld_program = LCMXO2Family_cpld_update,
+    .cpld_dev_id = LCMXO2Family_cpld_Get_id,
+  },
+  [2] = {
+    .name = "LC LCMXO2-7000HC",
+    .dev_id = 0x012BD043,
     .cpld_ver = LCMXO2Family_cpld_Get_Ver,
     .cpld_program = LCMXO2Family_cpld_update,
     .cpld_dev_id = LCMXO2Family_cpld_Get_id,

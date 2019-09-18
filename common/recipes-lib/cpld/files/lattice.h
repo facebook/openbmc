@@ -58,5 +58,5 @@ int LCMXO2Family_cpld_Get_id(unsigned int *dev_id);
 int cpld_device_open(void);
 int cpld_device_close(void);
 /*************************************************************************************/
-extern struct cpld_dev_info lattice_device_list[2];
+extern struct cpld_dev_info lattice_device_list[3];
 #endif

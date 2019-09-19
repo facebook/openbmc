@@ -200,7 +200,8 @@
                         "^facebook/.*",
                         "^tests2/.*",
                         "^meta-aspeed/.*",
-                        "^meta-facebook/recipes-.*/.*"
+                        "^meta-facebook/recipes-.*/.*",
+                        "^meta-facebook/meta-python3/.*"
                     ]
                 }
             ],

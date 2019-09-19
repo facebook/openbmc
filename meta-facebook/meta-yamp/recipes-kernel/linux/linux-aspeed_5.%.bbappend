@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/config_5.0:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/config_5.x:"
 
 SRC_URI += "file://yamp.cfg \
            "

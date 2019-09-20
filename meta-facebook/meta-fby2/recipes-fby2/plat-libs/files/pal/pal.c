@@ -243,6 +243,8 @@ static void *m_hbled_output = NULL;
 static int ignore_thresh = 0;
 static uint8_t fscd_watchdog_counter = 0;
 
+static uint32_t m_notify_nic[MAX_NODES + 1] = {0};
+
 enum {
   POST_END_COUNTER_IGNORE_LOG  = -2,
   POST_END_COUNTER_SHOW_LOG = -1,
@@ -7180,6 +7182,33 @@ pal_fan_recovered_handle(int fan_num) {
   return 0;
 }
 
+void
+pal_set_post_start(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
+  struct timespec ts;
+
+  syslog(LOG_INFO, "POST Start Event for Payload#%d\n", slot);
+  *res_len = 0;
+
+  if ((slot < 1) || (slot > MAX_NODES)) {
+    return;
+  }
+
+  if (m_notify_nic[slot]) {
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (m_notify_nic[slot] > ts.tv_sec) {
+#ifdef DEBUG
+      syslog(LOG_INFO, "send powerup_prep for slot %u", slot);
+#endif
+      if (nic_powerup_prep(slot, REINIT_TYPE_HOST_RESOURCE) != 0) {
+        syslog(LOG_ERR, "send powerup_prep failed, slot %u", slot);
+      }
+    }
+    m_notify_nic[slot] = 0;
+  }
+
+  return;
+}
+
 int
 pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {
@@ -7294,6 +7323,8 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   char tstr[10] = {0};
+  uint8_t old_boot[16], len, post = 1;
+  struct timespec ts;
   enum {
     BOOT_DEVICE_IPV4 = 0x1,
     BOOT_DEVICE_IPV6 = 0x9,
@@ -7322,6 +7353,16 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
   // not allow having more than 1 network boot device in the boot order
   if (network_dev > 1)
     return CC_INVALID_PARAM;
+
+  if (pal_get_boot_order(slot, NULL, old_boot, &len) == 0) {
+    if (((old_boot[0] & 0x82) == 0x82) && !(boot[0] & 0x02)) {
+      pal_get_fru_post(slot, &post);
+      if (post) {
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        m_notify_nic[slot] = ts.tv_sec + 60;
+      }
+    }
+  }
 
   sprintf(key, "slot%d_boot_order", slot);
   return pal_set_key_value(key, str);

@@ -2461,7 +2461,6 @@ _get_sdr_rsv(uint8_t slot_id, uint8_t *rsv, uint8_t remote, uint8_t intf) {
   } else {
     uint8_t tbuf[6] = {0x9c, 0x9c, 0x0, intf, NETFN_STORAGE_REQ << 2, CMD_STORAGE_RSV_SDR};
     uint8_t tlen = sizeof(tbuf);
-
     ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
 
     //TODO: check the completion code
@@ -2484,7 +2483,6 @@ _get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint
     uint8_t tlen = 6 + sel_sdr_req_size; //IANA + Netfn + Cmd
 
     memcpy(&tbuf[6], (uint8_t *)req, sel_sdr_req_size);
-
     ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rsp, &rsp_len);
 
     //TODO: check the completion code
@@ -2643,6 +2641,20 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
   }
 
   return 0;
+}
+
+int
+bic_read_sensor_param(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor, uint8_t intf) {
+  int ret;
+  uint8_t tbuf[7] = {0x9c, 0x9c, 0x0, intf, NETFN_SENSOR_REQ << 2, CMD_SENSOR_GET_SENSOR_READING, sensor_num};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = sizeof(tbuf);
+  uint8_t rlen = 0;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
+  memcpy((uint8_t *)sensor, &rbuf[7], 3);
+
+  return ret;
 }
 
 int

@@ -16,5 +16,6 @@
 # Boston, MA 02110-1301 USA
 FILESEXTRAPATHS_prepend := "${THISDIR}/files/:"
 SRC_URI  += " file://setup-bic-cached.sh \
+              file://bic-cached.c \
             "
 CFLAGS_prepend = " -DCONFIG_FBY3_POC "

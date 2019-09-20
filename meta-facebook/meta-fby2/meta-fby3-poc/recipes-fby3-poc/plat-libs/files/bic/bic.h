@@ -225,7 +225,7 @@ int bic_get_sdr_param(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res
 int bic_get_sdr_info(uint8_t slot_id, ipmi_sel_sdr_info_t *info);
 int bic_get_sdr_rsv(uint8_t slot_id, uint16_t *rsv);
 int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen);
-
+int bic_read_sensor_param(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor, uint8_t intf);
 int bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor);
 int bic_read_device_sensors(uint8_t slot_id, uint8_t dev_id, ipmi_device_sensor_reading_t *sensor, uint8_t *len);
 

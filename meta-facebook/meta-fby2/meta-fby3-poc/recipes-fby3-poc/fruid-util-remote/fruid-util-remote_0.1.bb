@@ -1,5 +1,5 @@
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://fruid_util_remote.c;beginline=4;endline=5;md5=4fdbf9a39ae8a24355878e535ffc2145"
+LIC_FILES_CHKSUM = "file://fruid_util_remote.c;beginline=4;endline=5;md5=6ece31942da90b165e782ec0832a4a95"
 
 SRC_URI  = "file://fruid_util_remote.c \
             file://Makefile \

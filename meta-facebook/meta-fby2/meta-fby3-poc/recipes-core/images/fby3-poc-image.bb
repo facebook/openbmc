@@ -49,6 +49,10 @@ IMAGE_INSTALL += " \
   slot-util \
   cpldupdate-poc \
   i2craw \
+  libusb1 \
+  vrupdate-poc \
+  fruid-util-remote \
+  fby2-sensors \
   "
 
 IMAGE_FEATURES += " \

@@ -39,12 +39,19 @@
 #define MAX_CMD_RETRY 2
 #define MAX_TOTAL_RETRY 30
 
-static total_retry = 0;
+static int total_retry = 0;
 
 static void
 print_usage_help(void) {
-  printf("Usage: me-util <slot1|slot2|slot3|slot4> <[0..n]data_bytes_to_send>\n");
-  printf("Usage: me-util <slot1|slot2|slot3|slot4> <--file> <path>\n");
+  printf("\nUsage: me-util <slot1|slot2|slot3|slot4|all> <[0..n]data_bytes_to_send>\n");
+  printf("                                             <--file> <path>\n");
+  printf("                                             <cmd>\n");
+  printf("\ncmd list:\n");
+  printf("   --get_dev_id   - get device ID\n");
+  printf("   --cold_reset   - performs cold reset\n");
+  printf("   --warm_reset   - perofrms warm reset\n");
+  printf("   --check_status - reports self-test status\n");
+  printf("   --restore      - restore ME factory default\n");
 }
 
 static int
@@ -146,66 +153,247 @@ process_file(uint8_t slot_id, char *path) {
   return 0;
 }
 
+static int
+util_get_dev_id(uint8_t slot_id) {
+  int i, ret, retry = MAX_CMD_RETRY;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  //int logfd, len;
+  //char log[256];
+  tbuf[0] = NETFN_APP_REQ << 2;
+  tbuf[1] = CMD_APP_GET_DEVICE_ID;
+  tlen = 2;
+
+  while (retry >= 0) {
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret == 0)
+      break;
+
+    total_retry++;
+    retry--;
+  }
+  if (ret) {
+    printf("ME no response!\n");
+    return -1;
+  }
+
+  //log[0] = 0;
+  if (rbuf[0] != 0x00) {
+    printf("Completion Code: %02X, ", rbuf[0]);
+  }
+  if (rlen < 16) {
+    printf("return incomplete len=%d\n", rlen);
+  }
+
+  printf("Device ID:                 %02x\n", rbuf[1]);
+  printf("Device Revision:           %02x\n", rbuf[2]);
+  printf("Firmware Revision:         %02x %02x\n", rbuf[3], rbuf[4]);
+  printf("IPMI Version:              %02x\n", rbuf[5]);
+  printf("Additional Device Support: %02x\n", rbuf[6]);
+  printf("Manufacturer ID:           %02x %02x %02x\n", rbuf[7], rbuf[8], rbuf[9]);
+  printf("Product ID:                %02x %02x\n", rbuf[10], rbuf[11]);
+  printf("Aux Firmware Revision:     %02x %02x %02x\n", rbuf[12], rbuf[13], rbuf[14]);
+
+  return 0;
+}
+
+static int
+util_cold_reset(uint8_t slot_id) {
+  int i, ret, retry = MAX_CMD_RETRY;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  //int logfd, len;
+  //char log[256];
+  tbuf[0] = NETFN_APP_REQ << 2;
+  tbuf[1] = CMD_APP_COLD_RESET;
+  tlen = 2;
+
+  while (retry >= 0) {
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret == 0)
+      break;
+
+    total_retry++;
+    retry--;
+  }
+  if (ret) {
+    printf("ME no response!\n");
+    return -1;
+  }
+
+  //log[0] = 0;
+  if (rbuf[0] != 0x00) {
+    printf("Completion Code: %02X, ", rbuf[0]);
+    return -1;
+  }
+  if (rlen < 3) {
+    printf("return incomplete len=%d\n", rlen);
+  }
+
+  return 0;
+}
+
+static int
+util_warm_reset(uint8_t slot_id) {
+  int i, ret, retry = MAX_CMD_RETRY;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  //int logfd, len;
+  //char log[256];
+  tbuf[0] = NETFN_APP_REQ << 2;
+  tbuf[1] = CMD_APP_WARM_RESET;
+  tlen = 2;
+
+  while (retry >= 0) {
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret == 0)
+      break;
+
+    total_retry++;
+    retry--;
+  }
+  if (ret) {
+    printf("ME no response!\n");
+    return -1;
+  }
+
+  //log[0] = 0;
+  if (rbuf[0] != 0x00) {
+    printf("Completion Code: %02X, ", rbuf[0]);
+    return -1;
+  }
+  if (rlen < 3) {
+    printf("return incomplete len=%d\n", rlen);
+  }
+
+  return 0;
+}
+
+static int
+util_check_status(uint8_t slot_id) {
+  int i, ret, retry = MAX_CMD_RETRY;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  //int logfd, len;
+  //char log[256];
+  tbuf[0] = NETFN_APP_REQ << 2;
+  tbuf[1] = CMD_APP_GET_SELFTEST_RESULTS;
+  tlen = 2;
+
+  while (retry >= 0) {
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret == 0)
+      break;
+
+    total_retry++;
+    retry--;
+  }
+  if (ret) {
+    printf("ME no response!\n");
+    return -1;
+  }
+
+  //log[0] = 0;
+  if (rbuf[0] != 0x00) {
+    printf("Completion Code: %02X, ", rbuf[0]);
+    return -1;
+  }
+  if (rlen < 3) {
+    printf("return incomplete len=%d\n", rlen);
+    return -1;
+  }
+
+  printf("%02x %02x\n", rbuf[1], rbuf[2]);
+  switch (rbuf[1]) {
+    case 0x55:
+      printf("No Error\n");
+      ret = 0;
+      break;
+    case 0x56:
+      printf("Slef test not supported\n");
+      ret = 0;
+      break;
+    case 0x57:
+      printf("Corrupted or inaccessible deivce\n");
+      ret = -1;
+      break;
+    case 0x58:
+      printf("Fatal Hardware Error\n");
+      ret = -1;
+      break;
+    default:
+      printf("Unknown Status\n");
+      ret = 0;
+      break;
+  }
+
+  return ret;
+}
+
+static int
+util_restore_default(uint8_t slot_id) {
+  int i, ret, retry = MAX_CMD_RETRY;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  //int logfd, len;
+  //char log[256];
+  tbuf[0] = NETFN_NM_REQ << 2;
+  tbuf[1] = CMD_NM_FORCE_ME_RECOVERY;
+  tbuf[2] = 0x57;
+  tbuf[3] = 0x01;
+  tbuf[4] = 0x00;
+  tbuf[5] = 0x02;
+  tlen = 6;
+
+  while (retry >= 0) {
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret == 0)
+      break;
+
+    total_retry++;
+    retry--;
+  }
+  if (ret) {
+    printf("ME no response!\n");
+    return -1;
+  }
+
+  //log[0] = 0;
+  if (rbuf[0] != 0x00) {
+    printf("Completion Code: %02X, ", rbuf[0]);
+    return -1;
+  }
+  if (rlen < 3) {
+    printf("return incomplete len=%d\n", rlen);
+    return -1;
+  }
+  for (i = 1; i < rlen; i++) {
+    printf("%02X ", rbuf[i]);
+    //sprintf(log, "%s%02X ", log, rbuf[i]);
+  }
+  printf("\n");
+
+  return ret;
+}
+
 int
 main(int argc, char **argv) {
-  uint8_t slot_id;
-#if defined(CONFIG_FBY2_RC)
-  if (argc < 2) {
-    goto err_exit;
-  }
+#define SLOT_MIN 1
+#define SLOT_MAX 4
+#define SLOT_ALL 5
 
-  uint8_t server_type = 0xFF;
-  uint8_t status;
-  int ret;
+  uint8_t slot_id, i;
 
-  if (!strcmp(argv[1], "slot1")) {
-    slot_id = 1;
-  } else if (!strcmp(argv[1] , "slot2")) {
-    slot_id = 2;
-  } else if (!strcmp(argv[1] , "slot3")) {
-    slot_id = 3;
-  } else if (!strcmp(argv[1] , "slot4")) {
-    slot_id = 4;
-  } else {
-    goto err_exit;
-  }
-
-  ret = pal_is_fru_prsnt(slot_id, &status);
-  if (ret < 0) {
-    printf("Check slot present failed for slot%u\n", slot_id);
-    return ret;
-  }
-  if (status == 0) {
-    printf("slot%u is not present!\n\n", slot_id);
-    return -1;
-  }
-
-  ret = fby2_get_server_type(slot_id, &server_type);
-  if (ret) {
-    printf("Get server type failed for slot%u\n", slot_id);
-    return -1;
-  }
-  switch (server_type) {
-    case SERVER_TYPE_RC:
-      printf("Error: me-util isn't supported on RC platform\n");
-      return -1;
-    case SERVER_TYPE_TL:
-      if (argc < 3) {
-        goto err_exit;
-      }
-      if (!strcmp(argv[2], "--file")) {
-        if (argc < 4) {
-          goto err_exit;
-        }
-        process_file(slot_id, argv[3]);
-        return 0;
-      }
-      return process_command(slot_id, (argc - 2), (argv + 2));
-    default:
-      printf("Error: Block me-util due to unknown server type\n");
-      return -1;
-  }
-#else
   if (argc < 3) {
     goto err_exit;
   }
@@ -218,6 +406,8 @@ main(int argc, char **argv) {
     slot_id = 3;
   } else if (!strcmp(argv[1] , "slot4")) {
     slot_id = 4;
+  } else if (!strcmp(argv[1] , "all")) {
+    slot_id = SLOT_ALL;
   } else {
     goto err_exit;
   }
@@ -227,12 +417,86 @@ main(int argc, char **argv) {
       goto err_exit;
     }
 
-    process_file(slot_id, argv[3]);
-    return 0;
+    if (slot_id == SLOT_ALL) {
+      for (i = SLOT_MIN; i <= SLOT_MAX; ++i) {
+        process_file(i, argv[3]);
+      }
+      return 0;
+    } else {
+      return process_file(slot_id, argv[3]);
+    }
+  } else if (!strcmp(argv[2], "--get_dev_id")) {
+    if (argc < 3) {
+      goto err_exit;
+    }
+    if (slot_id == SLOT_ALL) {
+      for (i = SLOT_MIN; i <= SLOT_MAX; ++i) {
+        util_get_dev_id(i);
+      }
+      return 0;
+    } else {
+      return util_get_dev_id(slot_id);
+    }
+  } else if (!strcmp(argv[2], "--cold_reset")) {
+    if (argc < 3) {
+      goto err_exit;
+    }
+    if (slot_id == SLOT_ALL) {
+      for (i = SLOT_MIN; i <= SLOT_MAX; ++i) {
+        util_cold_reset(i);
+      }
+      return 0;
+    } else {
+      return util_cold_reset(slot_id);
+    }
+  } else if (!strcmp(argv[2], "--warm_reset")) {
+    if (argc < 3) {
+      goto err_exit;
+    }
+
+    if (slot_id == SLOT_ALL) {
+      for (i = SLOT_MIN; i <= SLOT_MAX; ++i) {
+        util_warm_reset(i);
+      }
+      return 0;
+    } else {
+      return util_warm_reset(slot_id);
+    }
+  } else if (!strcmp(argv[2], "--check_status")) {
+    if (argc < 3) {
+      goto err_exit;
+    }
+    if (slot_id == SLOT_ALL) {
+      for (i = SLOT_MIN; i <= SLOT_MAX; ++i) {
+        util_check_status(i);
+      }
+      return 0;
+    } else {
+      return util_check_status(slot_id);
+    }
+  } else if (!strcmp(argv[2], "--restore")) {
+    if (argc < 3) {
+      goto err_exit;
+    }
+    if (slot_id == SLOT_ALL) {
+      for (i = SLOT_MIN; i <= SLOT_MAX; ++i) {
+        util_restore_default(i);
+      }
+      return 0;
+    } else {
+      return util_restore_default(slot_id);
+    }
+  } else {
+    if (slot_id == SLOT_ALL) {
+      for (i = SLOT_MIN; i <= SLOT_MAX; ++i) {
+        process_command(i, (argc - 2), (argv + 2));
+      }
+      return 0;
+    } else {
+      return process_command(slot_id, (argc - 2), (argv + 2));
+    }
   }
 
-  return process_command(slot_id, (argc - 2), (argv + 2));
-#endif
 err_exit:
   print_usage_help();
   return -1;

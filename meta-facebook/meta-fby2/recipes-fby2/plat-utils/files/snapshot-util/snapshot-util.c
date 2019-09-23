@@ -441,7 +441,7 @@ util_dump_snapshot_all(uint8_t slot_id, char *dump_file) {
   // dump all mfi data into dump_file-mfgX
   for (idx = 0; idx < MAX_MFI_NUM; ++idx) {
     snprintf(dump_file_name, sizeof(dump_file_name), "%s-mfg%d", dump_file, idx+1);
-    ret = util_dump_snapshot(slot_id, TYPE_MFG, idx, dump_file_name);
+    ret = util_dump_snapshot(slot_id, TYPE_MFG, idx+MAX_RI_NUM, dump_file_name);
   }
 
   // in "dump all" case, there may be unexisted RMA or MFG data, or checksum

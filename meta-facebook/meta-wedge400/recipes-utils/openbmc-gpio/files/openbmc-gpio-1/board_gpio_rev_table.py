@@ -23,7 +23,7 @@ from openbmc_gpio_table import BoardGPIO
 # Manual modification will be overridden!!!
 
 board_gpio_rev_table = [
-    BoardGPIO('GPIOG4', 'BMC_CPLD_BOARD_REV_ID0'),
-    BoardGPIO('GPIOG5', 'BMC_CPLD_BOARD_REV_ID1'),
-    BoardGPIO('GPIOG6', 'BMC_CPLD_BOARD_REV_ID2'),
+    BoardGPIO("GPIOG4", "BMC_CPLD_BOARD_REV_ID0"),
+    BoardGPIO("GPIOG5", "BMC_CPLD_BOARD_REV_ID1"),
+    BoardGPIO("GPIOG6", "BMC_CPLD_BOARD_REV_ID2"),
 ]

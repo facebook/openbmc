@@ -3265,81 +3265,81 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case SMB_SENSOR_1220_VMON1:
     if(brd_type == BRD_TYPE_WEDGE400){
-        sprintf(name, "XP12R0V (12V)");
+        sprintf(name, "XP12R0V(12V)");
       }else if(brd_type == BRD_TYPE_WEDGE400_2){
-        sprintf(name, "PWR12R0V (12V)");
+        sprintf(name, "PWR12R0V(12V)");
       }
       break;
     case SMB_SENSOR_1220_VMON2:
-      sprintf(name, "XP5R0V (5V)");
+      sprintf(name, "XP5R0V(5V)");
       break;
     case SMB_SENSOR_1220_VMON3:
-      sprintf(name, "XP3R3V_BMC (3.3V)");
+      sprintf(name, "XP3R3V_BMC(3.3V)");
       break;
     case SMB_SENSOR_1220_VMON4:
       if(brd_type == BRD_TYPE_WEDGE400){
-        sprintf(name, "XP2R5V_BMC (2.5V)");
+        sprintf(name, "XP2R5V_BMC(2.5V)");
       }else if(brd_type == BRD_TYPE_WEDGE400_2){
-        sprintf(name, "XP3R3V_FPGA (3.3V)");
+        sprintf(name, "XP3R3V_FPGA(3.3V)");
       }
       break;
     case SMB_SENSOR_1220_VMON5:
-      sprintf(name, "XP1R2V_BMC (1.2V)");
+      sprintf(name, "XP1R2V_BMC(1.2V)");
       break;
     case SMB_SENSOR_1220_VMON6:
       if(brd_type == BRD_TYPE_WEDGE400){
-        sprintf(name, "XP1R15V_BMC (1.15V)");
+        sprintf(name, "XP1R15V_BMC(1.15V)");
       }else if(brd_type == BRD_TYPE_WEDGE400_2){
-        sprintf(name, "XP1R8V_FPGA (1.8V)");
+        sprintf(name, "XP1R8V_FPGA(1.8V)");
       }
       break;
     case SMB_SENSOR_1220_VMON7:
       if(brd_type == BRD_TYPE_WEDGE400){
-        sprintf(name, "XP1R2V_TH3 (1.2V)");
+        sprintf(name, "XP1R2V_TH3(1.2V)");
       }else if(brd_type == BRD_TYPE_WEDGE400_2){
-        sprintf(name, "XP1R8V_IO (1.8V)");
+        sprintf(name, "XP1R8V_IO(1.8V)");
       }
       break;
     case SMB_SENSOR_1220_VMON8:
       if(brd_type == BRD_TYPE_WEDGE400){
-        sprintf(name, "PVDD0P8_TH3 (0.8V)");
+        sprintf(name, "PVDD0P8_TH3(0.8V)");
       }else if(brd_type == BRD_TYPE_WEDGE400_2){
-        sprintf(name, "XP2R5V_HBM (2.5V)");
+        sprintf(name, "XP2R5V_HBM(2.5V)");
       }
       break;
     case SMB_SENSOR_1220_VMON9:
       if(brd_type == BRD_TYPE_WEDGE400){
-        sprintf(name, "XP3R3V_TH3 (3.3V)");
+        sprintf(name, "XP3R3V_TH3(3.3V)");
       }else if(brd_type == BRD_TYPE_WEDGE400_2){
-        sprintf(name, "XP0R94V_VDDA (0.94V)");
+        sprintf(name, "XP0R94V_VDDA(0.94V)");
       }
       break;
     case SMB_SENSOR_1220_VMON10:
       if(brd_type == BRD_TYPE_WEDGE400){
-        sprintf(name, "VDD_CORE_TH3 (0.75~0.9V)");
+        sprintf(name, "VDD_CORE_TH3(0.75~0.9V)");
       }else if(brd_type == BRD_TYPE_WEDGE400_2){
-        sprintf(name, "VDD_CORE_GB (0.85V)");
+        sprintf(name, "VDD_CORE_GB(0.85V)");
       }
       break;
     case SMB_SENSOR_1220_VMON11:
       if(brd_type == BRD_TYPE_WEDGE400){
-        sprintf(name, "TRVDD0P8_TH3 (0.8V)");
+        sprintf(name, "TRVDD0P8_TH3(0.8V)");
       }else if(brd_type == BRD_TYPE_WEDGE400_2){
-        sprintf(name, "XP0R75V_PCIE (0.75V)");
+        sprintf(name, "XP0R75V_PCIE(0.75V)");
       }
       break;
     case SMB_SENSOR_1220_VMON12:
       if(brd_type == BRD_TYPE_WEDGE400){
-        sprintf(name, "XP1R8V_TH3 (1.8V)");
+        sprintf(name, "XP1R8V_TH3(1.8V)");
       }else if(brd_type == BRD_TYPE_WEDGE400_2){
-        sprintf(name, "XP1R15V_VDDCK (1.15V)");
+        sprintf(name, "XP1R15V_VDDCK(1.15V)");
       }
       break;
     case SMB_SENSOR_1220_VCCA:
-      sprintf(name, "POWR1220 VCCA (3.3V)");
+      sprintf(name, "POWR1220_VCCA(3.3V)");
       break;
     case SMB_SENSOR_1220_VCCINP:
-      sprintf(name, "POWR1220 VCCINP (3.3V)");
+      sprintf(name, "POWR1220_VCCINP(3.3V)");
       break;
     case SMB_SENSOR_SW_SERDES_PVDD_VOLT:
       if(brd_type == BRD_TYPE_WEDGE400){

@@ -363,7 +363,6 @@ int bic_get_sel(uint8_t slot_id, ipmi_sel_sdr_req_t* req,
     return -1;
   }
 
-  *rlen = sizeof(*res);
   ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_SEL,
                          (uint8_t*)req, sizeof(*req), (uint8_t*)res, rlen);
   return ret;
@@ -389,7 +388,6 @@ static int _get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t* req,
                     ipmi_sel_sdr_res_t* res, uint8_t* rlen) {
   int ret;
 
-  *rlen = sizeof(*res);
   ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_SDR,
                          (uint8_t*)req, sizeof(*req), (uint8_t*)res, rlen);
   return ret;
@@ -409,7 +407,7 @@ int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t* req,
                 ipmi_sel_sdr_res_t* res, uint8_t* rlen) {
   int ret;
   uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
-  uint8_t tlen;
+  uint8_t tlen = (uint8_t)sizeof(tbuf);
   uint8_t len;
   ipmi_sel_sdr_res_t* tres = (ipmi_sel_sdr_res_t*)tbuf;
   sdr_rec_hdr_t* hdr;
@@ -459,6 +457,7 @@ int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t* req,
       req->nbytes = len;
     }
 
+    tlen = (uint8_t)sizeof(tbuf);
     ret = _get_sdr(slot_id, req, (ipmi_sel_sdr_res_t*)tbuf, &tlen);
     if (ret) {
       return ret;

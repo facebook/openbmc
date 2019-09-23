@@ -371,8 +371,8 @@ util_get_sel(uint8_t slot_id) {
   int ret;
   int i;
   uint16_t rsv;
-  uint8_t rlen;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rlen = (uint8_t)sizeof(rbuf);
 
   ipmi_sel_sdr_req_t req;
   ipmi_sel_sdr_res_t *res = (ipmi_sel_sdr_res_t *) rbuf;

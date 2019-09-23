@@ -435,11 +435,11 @@ static const i2c_dev_attr_st ltc4281_attr_table[] = {
     0x0, 0, 0,
   },
   {
-    "curr1_input",
+    "in2_input",
     NULL,
-    ltc_curr_show,
+    ltc_vgpio_show,
     NULL,
-    LTC4281_VSENSE_MSB, 0, 16,
+    LTC4281_VGPIO_MSB, 0, 16,
   },
   {
     "in2_label",
@@ -449,11 +449,25 @@ static const i2c_dev_attr_st ltc4281_attr_table[] = {
     0x0, 0, 0,
   },
   {
-    "in2_input",
+    "in3_input",
     NULL,
-    ltc_vgpio_show,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
-    LTC4281_VGPIO_MSB, 0, 16,
+    LTC4281_FAULT_LOG, 6, 1,
+  },
+  {
+    "in3_label",
+    "MOSFET Bad",
+    i2c_dev_show_label,
+    NULL,
+    0x0, 0, 0,
+  },
+  {
+    "curr1_input",
+    NULL,
+    ltc_curr_show,
+    NULL,
+    LTC4281_VSENSE_MSB, 0, 16,
   },
   {
     "curr1_label",

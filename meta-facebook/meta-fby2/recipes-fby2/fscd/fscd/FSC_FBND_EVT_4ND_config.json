@@ -1,5 +1,5 @@
 {
-    "version": "fbnd-evt-r01",
+    "version": "fbnd-evt-r02",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -14,6 +14,11 @@
         }
       },
       "nvme": {
+        "attribute": {
+          "type" : "power_status"
+        }
+      },
+      "cpu": {
         "attribute": {
           "type" : "power_status"
         }

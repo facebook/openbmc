@@ -83,12 +83,10 @@ loc_map_ep = {
 }
 
 loc_map_nd = {
-    "a": "_dimm0_location",
-    "c": "_dimm1_location",
-    "d": "_dimm2_location",
-    "e": "_dimm3_location",
-    "g": "_dimm4_location",
-    "h": "_dimm5_location",
+    "c": "_dimm0_location",
+    "d": "_dimm1_location",
+    "g": "_dimm2_location",
+    "h": "_dimm3_location",
 }
 
 

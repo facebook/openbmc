@@ -24,9 +24,10 @@
 #include <string.h>
 
 #include <openbmc/log.h>
+#include <openbmc/obmc-i2c.h>
 
 #ifndef FBW_EEPROM_FILE
-#define FBW_EEPROM_FILE "/sys/class/i2c-adapter/i2c-6/6-0050/eeprom"
+#define FBW_EEPROM_FILE I2C_SYSFS_DEV_ENTRY(6-0050, eeprom)
 #endif
 
 #define FBW_EEPROM_VERSION0 0

@@ -474,6 +474,11 @@ done
 gpio_export_by_name "${ASPEED_GPIO}" GPIOG4 BLOODHOUND_GPIOG4
 gpio_export_by_name "${ASPEED_GPIO}" GPIOY3 BLOODHOUND_GPIOY3
 
+# ISO_BUF_EN, GPIOC2, SCU90[0] and SCU90[24] must be 0
+devmem_cond_clear "$(scu_addr 90)" 0
+devmem_cond_clear "$(scu_addr 90)" 24
+gpio_export_by_name "${ASPEED_GPIO}" GPIOC2 ISO_BUF_EN
+
 # Enable the isolation buffer
 wedge_iso_buf_enable
 

@@ -2,17 +2,11 @@
 # Copyright 2014-present Facebook. All Rights Reserved.
 
 wedge_iso_buf_enable() {
-    # GPIOC2 (18) to low, SCU90[0] and SCU90[24] must be 0
-    devmem_clear_bit $(scu_addr 90) 0
-    devmem_clear_bit $(scu_addr 90) 24
-    gpio_set 18 0
+    gpio_set_value ISO_BUF_EN 0
 }
 
 wedge_iso_buf_disable() {
-    # GPIOC2 (18) to low, SCU90[0] and SCU90[24] must be 0
-    devmem_clear_bit $(scu_addr 90) 0
-    devmem_clear_bit $(scu_addr 90) 24
-    gpio_set 18 1
+    gpio_set_value ISO_BUF_EN 1
 }
 
 wedge_is_us_on() {

@@ -112,6 +112,9 @@ gpio_export ADAPTER_BUTTON_BMC_CO_N_R GPIOE3
 # GPIOE4-RST_BMC_USB_HUB_N_R
 devmem_clear_bit $(scu_addr 80) 20
 devmem_clear_bit $(scu_addr 8C) 14
+val=$(/sbin/devmem 0x1e78003c)
+val=$((val | (0x1 << 4)))
+/sbin/devmem 0x1e78003c 32 $val
 gpio_export RST_BMC_USB_HUB_N_R GPIOE4
 gpio_set RST_BMC_USB_HUB_N_R 1
 
@@ -211,6 +214,9 @@ gpio_export FAST_PROCHOT_BMC_N_R GPIOL4
 
 # GPIOL5-USB_BMC_EN_R
 devmem_clear_bit $(scu_addr 84) 21
+val=$(/sbin/devmem 0x1e7800ac)
+val=$((val | (0x1 << 29)))
+/sbin/devmem 0x1e7800ac 32 $val
 gpio_export USB_BMC_EN_R GPIOL5
 gpio_set USB_BMC_EN_R 1
 

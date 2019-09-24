@@ -52,6 +52,8 @@ IMAGE_INSTALL += " \
   libusb1 \
   vrupdate-poc \
   fruid-util-remote \
+  bic-remote-update-poc \
+  m2cpldupdate-poc \
   fby2-sensors \
   "
 

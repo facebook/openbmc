@@ -134,11 +134,11 @@ populate_gpio_pins(uint8_t fru) {
   // Only monitor the PWRGD_COREPWR pin
   gpios[PWRGOOD_CPU].flag = 1;
 
-  for (i = 0; i < BIC_GPIO_MAX; i++) {
+  for (i = 0; i < MAX_GPIO_PINS; i++) {
     if (gpios[i].flag) {
       gpios[i].ass_val = GETBIT(gpio_ass_val, i);
       GPIOD_VERBOSE("start monitoring '%s', ass_val=%u\n",
-                    wedge400_gpio_type_to_name(i), gpios[i].ass_val);
+                      gpios[i].name, gpios[i].ass_val);
     }
   }
 }
@@ -227,7 +227,7 @@ gpio_monitor_poll(void) {
 
     revised_pins = (n_pin_val ^ o_pin_val[0]);
 
-    for (i = 0; i < BIC_GPIO_MAX; i++) {
+    for (i = 0; i < MAX_GPIO_PINS; i++) {
       if (GETBIT(revised_pins, i) && (gpios[i].flag == 1)) {
         gpios[i].status = GETBIT(n_pin_val, i);
 

@@ -10,6 +10,7 @@ IMAGE_FSTYPES += "cpio.lzma.u-boot"
 # Include modules in rootfs
 IMAGE_INSTALL += " \
   packagegroup-openbmc-base \
+  packagegroup-openbmc-emmc \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
   packagegroup-openbmc-rest3 \
@@ -22,7 +23,6 @@ IMAGE_INSTALL += " \
   cpldupdate \
   cpldupdate-i2c \
   crashdump \
-  e2fsprogs \
   flashrom \
   front-paneld \
   fscd \
@@ -48,7 +48,6 @@ IMAGE_INSTALL += " \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \
-  mmc-utils \
   "
 IMAGE_FEATURES += " \
   ssh-server-openssh \

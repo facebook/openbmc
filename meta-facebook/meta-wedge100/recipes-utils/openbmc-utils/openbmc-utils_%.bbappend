@@ -47,6 +47,10 @@ do_install_board() {
     install -d ${D}${olddir}
     ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
 
+    # create VLAN intf automatically
+    install -d ${D}/${sysconfdir}/network/if-up.d
+    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
+
     # init
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d

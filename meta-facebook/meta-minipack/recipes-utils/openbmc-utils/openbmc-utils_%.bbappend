@@ -36,7 +36,6 @@ SRC_URI += "file://board-utils.sh \
             file://dump_pim_serials.sh \
             file://set_sled.sh \
             file://setup_board.sh \
-            file://setup_emmc.sh \
             file://setup_i2c.sh \
             file://setup_mgmt.sh \
             file://setup_pcie_repeater.sh \

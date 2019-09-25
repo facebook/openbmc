@@ -34,6 +34,7 @@ SRC_URI = " \
     file://dhclient-exit-hooks \
     file://rm_poweroff_cmd.sh \
     file://revise_inittab \
+    file://setup_emmc.sh \
     "
 
 OPENBMC_UTILS_FILES = " \

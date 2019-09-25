@@ -10,6 +10,7 @@ IMAGE_FSTYPES += "cpio.lzma.u-boot"
 # Include modules in rootfs
 IMAGE_INSTALL += " \
   packagegroup-openbmc-base \
+  packagegroup-openbmc-emmc \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
   packagegroup-openbmc-rest3 \

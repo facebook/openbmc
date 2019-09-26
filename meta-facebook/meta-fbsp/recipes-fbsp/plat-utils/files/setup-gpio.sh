@@ -33,3 +33,19 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
+# FM_BMC_PWR_BTN_R_N
+gpio_export FM_BMC_PWR_BTN_R_N GPIOE2
+
+# FP_BMC_RST_BTN_N
+gpio_export FP_BMC_RST_BTN_N GPIOE0
+
+# RST_BMC_RSTBTN_OUT_R_N, power reset to PCH
+gpio_export RST_BMC_RSTBTN_OUT_R_N GPIOE1
+gpio_set RST_BMC_RSTBTN_OUT_R_N 1
+
+# FM_BMC_PWRBTN_OUT_R_N, power button to CPLD
+gpio_export FM_BMC_PWRBTN_OUT_R_N GPIOE3
+gpio_set FM_BMC_PWRBTN_OUT_R_N 1
+
+# PWRGD_SYS_PWROK, power GOOD from CPLD
+gpio_export PWRGD_SYS_PWROK GPIOY2

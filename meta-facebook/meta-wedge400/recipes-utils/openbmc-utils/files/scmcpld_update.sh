@@ -24,7 +24,7 @@ source /usr/local/bin/openbmc-utils.sh
 prog="$0"
 img="$1"
 
-DLL_PATH=/usr/lib/libcpldupdate_dll_jtag.so
+DLL_PATH=/usr/lib/libcpldupdate_dll_ast_jtag.so
 
 usage() {
     echo "Usage: $prog <img_file> <options: hw|sw>"

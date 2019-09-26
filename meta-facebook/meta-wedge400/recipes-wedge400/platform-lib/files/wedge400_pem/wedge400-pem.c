@@ -39,7 +39,7 @@ i2c_info_t pem[] = {
    {PEM_BLACKBOX(2, ltc4282), PEM_BLACKBOX(2, max6615), PEM2_EEPROM}},
 };
 
-smbus_info_t smbus[] = {
+smbus_info_t smbus_ltc4282[] = {
   {"CONTROL", 0x00, 2},
   {"ALERT", 0x02, 2},
   {"FAULT_LOG", 0x04, 1},
@@ -160,15 +160,15 @@ static int pem_reg_read(int fd, uint8_t reg, void *value) {
     case VGPIO_MIN:
     case VGPIO_MAX:
     case VIN:
-      byte = i2c_smbus_read_byte_data(fd, smbus[ILIM_ADJUST].reg);
+      byte = i2c_smbus_read_byte_data(fd, smbus_ltc4282[ILIM_ADJUST].reg);
       byte |= 0x05;
-      byte = i2c_smbus_write_byte_data(fd, smbus[ILIM_ADJUST].reg, byte);
+      byte = i2c_smbus_write_byte_data(fd, smbus_ltc4282[ILIM_ADJUST].reg, byte);
       msleep(1100);
     case VOUT:
-      byte = i2c_smbus_read_byte_data(fd, smbus[ILIM_ADJUST].reg);
+      byte = i2c_smbus_read_byte_data(fd, smbus_ltc4282[ILIM_ADJUST].reg);
       byte |= 0x01;
       byte &= 0x04;
-      byte = i2c_smbus_write_byte_data(fd, smbus[ILIM_ADJUST].reg, byte);
+      byte = i2c_smbus_write_byte_data(fd, smbus_ltc4282[ILIM_ADJUST].reg, byte);
       msleep(1100);
     case VSOURCE_MIN:
     case VSOURCE_MAX:
@@ -180,7 +180,7 @@ static int pem_reg_read(int fd, uint8_t reg, void *value) {
     case POWER_MAX:
     case EE_CONTROL:
     case EE_ALERT:
-      word = i2c_smbus_read_word_data(fd, smbus[reg].reg);
+      word = i2c_smbus_read_word_data(fd, smbus_ltc4282[reg].reg);
       *(uint16_t *)value = ((uint16_t)(word << 8) | word >> 8);
       break;
 
@@ -214,7 +214,7 @@ static int pem_reg_read(int fd, uint8_t reg, void *value) {
     case EE_POWER_ALARM_MAX:
     case EE_CLOCK_DECIMATOR:
     case EE_ILIM_ADJUST:
-      byte = i2c_smbus_read_byte_data(fd, smbus[reg].reg);
+      byte = i2c_smbus_read_byte_data(fd, smbus_ltc4282[reg].reg);
       *(uint8_t *)value = byte;
       break;
     default:
@@ -281,7 +281,7 @@ static int pem_reg_write(int fd, uint8_t reg, int value) {
     case POWER_MIN:
     case POWER_MAX:
       word = value & 0xFFFF;
-      word = i2c_smbus_write_word_data(fd, smbus[reg].reg, word);
+      word = i2c_smbus_write_word_data(fd, smbus_ltc4282[reg].reg, word);
       break;
     case EE_CONTROL:
     case EE_ALERT:
@@ -290,11 +290,11 @@ static int pem_reg_write(int fd, uint8_t reg, int value) {
       if(wait_eeprom_done(fd) == -1)
         return -1;
       byte = (word & 0xFF00) >> 8;
-      byte = i2c_smbus_write_byte_data(fd, smbus[reg].reg, byte);
+      byte = i2c_smbus_write_byte_data(fd, smbus_ltc4282[reg].reg, byte);
       if(wait_eeprom_done(fd) == -1)
         return -1;
       byte = word & 0xFF;
-      byte = i2c_smbus_write_byte_data(fd, smbus[reg].reg + 1, byte);
+      byte = i2c_smbus_write_byte_data(fd, smbus_ltc4282[reg].reg + 1, byte);
       break;
 
     case FAULT_LOG:
@@ -314,7 +314,7 @@ static int pem_reg_write(int fd, uint8_t reg, int value) {
     case ALERT_CONTROL:
     case ADC_CONTROL:
       byte = value & 0xFF;
-      byte = i2c_smbus_write_byte_data(fd, smbus[reg].reg, byte);
+      byte = i2c_smbus_write_byte_data(fd, smbus_ltc4282[reg].reg, byte);
       break;
     case EE_FAULT:
     case EE_ADC_ALERT_LOG:
@@ -333,13 +333,71 @@ static int pem_reg_write(int fd, uint8_t reg, int value) {
       if(wait_eeprom_done(fd) == -1)
         return -1;
       byte = value & 0xFF;
-      byte = i2c_smbus_write_byte_data(fd, smbus[reg].reg, byte);
+      byte = i2c_smbus_write_byte_data(fd, smbus_ltc4282[reg].reg, byte);
       break;
     default:
       break;
   }
 
   return 0;
+}
+
+/* 
+ * ltc4282 Vin/Vout 16 bits adc convert to Volts 
+ * refer to ltc4282 datasheet page 23
+ */
+static inline float ltc4282_vsourve_calculate(int reg_val) {
+  return (reg_val * 16.64 / 65535);
+}
+
+/* 
+ * ltc4282 Current 16 bits adc convert to Amps 
+ * refer to ltc4282 datasheet page 23
+ * Rsense = 0.0001875 ohm
+ */
+static inline float ltc4282_vsense_calculate(int reg_val) {
+  return (reg_val * 0.04 / 65535 / 0.0001875);
+}
+
+/* 
+ * ltc4282 Power 16 bits adc convert to Watts 
+ * refer to ltc4282 datasheet page 23
+ * Rsense = 0.0001875 ohm
+ */
+static inline float ltc4282_power_calculate(int reg_val) {
+  return (reg_val * 16.64 * 0.04 / 65535 / 0.0001875);
+}
+
+/* 
+ * ltc4282 Hot Swap Temp 16 bits adc convert to degree C 
+ * linear correction
+ */
+static inline float ltc4282_temp_calculate(int reg_val) {
+  float temp = ((reg_val * 14412.0 - 15000000) / 10000) / 1000;
+  return temp > 0 ? temp : 0;
+}
+
+/*
+ * From datesheet reg addr 0x1E & 0x1F, 
+ * the temps LSBs(decimal part) are three bits.
+ * So the unit is 1/8C, need to multiply by 125 = 1/8*1000.
+ */
+static inline float max6615_temp_calculate(int reg_val) {
+  return reg_val * 0.125;
+}
+
+/*
+ * formula come from recalibration
+ */
+static inline float max6615_fan_calculate(int reg_val) {
+  return ((reg_val == 0xff || reg_val == 0) ? 0 : 57600.0 / reg_val);
+}
+
+/*
+ * refer to MAX6615 datasheet page 13th
+ */
+static inline float max6615_pwm_calculate(int reg_val) {
+  return reg_val / 240.0 * 100;
 }
 
 int is_pem_prsnt(uint8_t num, uint8_t *status) {
@@ -390,9 +448,9 @@ int file_write(const char *file, char *value, size_t len, unsigned int flags) {
   }
   memset(curr_value, 0, len);
 
-  fp = fopen(file, "r+");
+  fp = fopen(file, "rb+");
   if (!fp && (errno == ENOENT)) {
-    fp = fopen(file, "w");
+    fp = fopen(file, "wb");
     present = false;
   }
   if (!fp) {
@@ -408,7 +466,7 @@ int file_write(const char *file, char *value, size_t len, unsigned int flags) {
   // Check if we are writing the same value. If so, exit early
   // to save on number of times flash is updated.
   if (present && (flags && KV_FPERSIST)) {
-    rc = (int)fread(curr_value, 1, MAX_VALUE_LEN, fp);
+    rc = (int)fread(curr_value, 1, PEM_ARCHIVE_BUFF, fp);
     if (len == rc && !memcmp(value, curr_value, len)) {
       ret = 0;
       goto unlock_bail;
@@ -455,7 +513,7 @@ int file_read(const char *file, char *value, size_t *len) {
   FILE *fp;
   int rc, ret=-1;
 
-  fp = fopen(file, "r");
+  fp = fopen(file, "rb");
   if (!fp) {
     return -1;
   }
@@ -465,7 +523,7 @@ int file_read(const char *file, char *value, size_t *len) {
     goto close_bail;
   }
 
-  rc = (int) fread(value, 1, MAX_VALUE_LEN, fp);
+  rc = (int) fread(value, 1, PEM_ARCHIVE_BUFF, fp);
   if (rc < 0 || ferror(fp)) {
     goto unlock_bail;
   }
@@ -487,7 +545,7 @@ close_bail:
  */
 int archive_pem_chips(uint8_t num) {
   int ret = 0;
-  char *value;
+  char *chip_regs;
   char path[MAX_KEY_PATH_LEN];
 
   for(int chip = LTC4282; chip <= MAX6615; chip++) {
@@ -495,25 +553,145 @@ int archive_pem_chips(uint8_t num) {
     strcpy(path, pem[num].file_path[chip]);
     mkdir_recurse(dirname(path), 0777);
 
-    pem[num].fd = i2c_open(pem[num].bus, pem[num].chip_addr[LTC4282]);
+    pem[num].fd = i2c_open(pem[num].bus, pem[num].chip_addr[chip]);
     if (pem[num].fd < 0) {
       ERR_PRINT("Fail to open i2c");
       ret |= (1 << chip);
       continue;
     }
 
-    value = malloc(pem[num].chip_reg_cnt[chip]);
-    if(value == NULL) {
+    chip_regs = malloc(pem[num].chip_reg_cnt[chip]);
+    if(chip_regs == NULL) {
       close(pem[num].fd);
       ret |= (1 << chip);
       continue;
     }
 
     for(int reg = 0; reg < pem[num].chip_reg_cnt[chip]; reg++) {
-      *(value + reg) = i2c_smbus_read_byte_data(pem[num].fd, reg);
+      *(chip_regs + reg) = i2c_smbus_read_byte_data(pem[num].fd, reg);
     }
 
-    file_write(pem[num].file_path[chip], value, pem[num].chip_reg_cnt[chip], KV_FPERSIST);
+    file_write(pem[num].file_path[chip], chip_regs, pem[num].chip_reg_cnt[chip], KV_FPERSIST);
+    free(chip_regs);
+  }
+
+  return ret;
+}
+
+static void print_pem_status_regs(pem_status_regs_t *status_regs);
+static int print_ltc4282_crit_sensors(char *chip_regs) {
+  int ret = 0;
+  int reg_val;
+  int threshold_sensors[] = { VIN, VOUT, VSENSE, POWER, VGPIO };
+  pem_status_regs_t discrete_sensors;
+  pem_status_regs_t discrete_sensors_ee;
+
+  if(chip_regs == NULL) {
+    return -1;
+  }
+
+  for (int sensor = 0; sensor < sizeof(threshold_sensors) / sizeof(int); sensor++) {
+    int reg = threshold_sensors[sensor];
+    reg_val = 0;
+    reg_val = (*(chip_regs + smbus_ltc4282[reg].reg)) << 8 | 
+              (*(chip_regs + smbus_ltc4282[reg].reg + 1));
+    switch(reg) {
+      case VIN:
+        printf("%-32s: %.2f Volts\n", "IN_VOLT", ltc4282_vsourve_calculate(reg_val));
+        break;
+      case VOUT:
+        printf("%-32s: %.2f Volts\n", "OUT_VOLT", ltc4282_vsourve_calculate(reg_val));
+        break;
+      case VSENSE:
+        printf("%-32s: %.2f Amps\n", "CURR", ltc4282_vsense_calculate(reg_val));
+        break;
+      case POWER:
+        printf("%-32s: %.2f Watts\n", "POWER", ltc4282_power_calculate(reg_val));
+        break;
+      case VGPIO:
+        printf("%-32s: %.2f C\n", "HOT_SWAP_TEMP", ltc4282_temp_calculate(reg_val));
+        break;
+    }
+  }
+
+  discrete_sensors.fault.reg_val.value = *(chip_regs + smbus_ltc4282[FAULT_LOG].reg);
+  discrete_sensors.adc_alert_log.reg_val.value = *(chip_regs + smbus_ltc4282[ADC_ALERT_LOG].reg);
+  discrete_sensors.status.reg_val.value = (*(chip_regs + smbus_ltc4282[STATUS].reg)) << 8 | 
+                                          (*(chip_regs + smbus_ltc4282[STATUS].reg + 1));
+  printf("\nDecode ltc4282 STATUS/FAULT/ADC_ALERT_LOG:");
+  print_pem_status_regs(&discrete_sensors);
+
+  discrete_sensors_ee.fault.reg_val.value = *(chip_regs + smbus_ltc4282[FAULT_LOG].reg);
+  discrete_sensors_ee.adc_alert_log.reg_val.value = *(chip_regs + smbus_ltc4282[ADC_ALERT_LOG].reg);
+  discrete_sensors_ee.status.reg_val.value = (*(chip_regs + smbus_ltc4282[STATUS].reg)) << 8 | 
+                                             (*(chip_regs + smbus_ltc4282[STATUS].reg + 1));
+  printf("\nDecode ltc4282 EE_STATUS/EE_FAULT_LOG/EE_ADC_ALERT_LOG:");
+  print_pem_status_regs(&discrete_sensors_ee);
+
+  return ret;
+}
+
+static int print_max6615_crit_sensors(char *chip_regs) {
+  int ret = 0;
+  int temp;
+  int fan_cnt;
+  int pwm_target;
+  int pwm_output;
+
+  if(chip_regs == NULL)
+    return -1;
+
+  temp = *(chip_regs + MAX6615_REG_TEMP(0)) << 3 | (*(chip_regs + MAX6615_REG_TEMP_EXT(0)) >> 5);
+  fan_cnt = *(chip_regs + MAX6615_REG_FAN_CNT(0));
+  pwm_target = *(chip_regs + MAX6615_REG_TARGT_PWM(0));
+  pwm_output = *(chip_regs + MAX6615_REG_INSTANTANEOUS_PWM(0));
+  printf("%-32s: %.2f C\n", "AIR_INLET_TEMP", max6615_temp_calculate(temp));
+  printf("%-32s: %.2f RPM\n", "FAN1_SPEED", max6615_fan_calculate(fan_cnt));
+  printf("%-32s: %.2f %%\n", "FAN1_TARGET_PWM", max6615_pwm_calculate(pwm_target));
+  printf("%-32s: %.2f %%\n", "FAN1_PWM_OUTPUT", max6615_pwm_calculate(pwm_output));
+
+  temp = *(chip_regs + MAX6615_REG_TEMP(1)) << 3 | (*(chip_regs + MAX6615_REG_TEMP_EXT(1)) >> 5);
+  fan_cnt = *(chip_regs + MAX6615_REG_FAN_CNT(1));
+  pwm_target = *(chip_regs + MAX6615_REG_TARGT_PWM(1));
+  pwm_output = *(chip_regs + MAX6615_REG_INSTANTANEOUS_PWM(1));
+  printf("%-32s: %.2f C\n", "AIR_OUTLET_TEMP", max6615_temp_calculate(temp));
+  printf("%-32s: %.2f RPM\n", "FAN2_SPEED", max6615_fan_calculate(fan_cnt));
+  printf("%-32s: %.2f %%\n", "FAN2_TARGET_PWM", max6615_pwm_calculate(pwm_target));
+  printf("%-32s: %.2f %%\n", "FAN2_PWM_OUTPUT", max6615_pwm_calculate(pwm_output));
+
+  return ret;
+}
+
+static int decode_pem_backup_log(uint8_t num) {
+  int ret = 0;
+  char *chip_regs;
+
+  for(int chip = LTC4282; chip <= MAX6615; chip++) {
+    chip_regs = malloc(pem[num].chip_reg_cnt[chip]);
+    if(chip_regs == NULL) {
+      ret |= (1 << chip);
+      continue;
+    }
+
+    size_t len = 0;
+    if(file_read(pem[num].file_path[chip], chip_regs, &len)) {
+      printf("Failed to read %s\n", pem[num].file_path[chip]);
+      free(chip_regs);
+      ret |= (1 << chip);
+      continue;
+    }
+
+    printf("\nDecode %s: \n", pem[num].file_path[chip]);
+    switch(chip) {
+      case LTC4282:
+        print_ltc4282_crit_sensors(chip_regs);
+        break;
+      case MAX6615:
+        print_max6615_crit_sensors(chip_regs);
+        break;
+    }
+
+    free(chip_regs);
   }
 
   return ret;
@@ -582,26 +760,26 @@ static void print_pem_alert_reg(pem_alert_t *alert) {
 }
 
 static void print_pem_fault_reg(pem_fault_t *fault) {
-  printf("\n%-32s: %d", "EEPROM Done", fault->reg_val.values.eeprom_done);
-  printf("\n%-32s: %d", "FET Bad Fault", fault->reg_val.values.fet_bad_fault);
-  printf("\n%-32s: %d", "FET Short Fault", fault->reg_val.values.fet_short_fault);
-  printf("\n%-32s: %d", "On Fault", fault->reg_val.values.on_fault);
-  printf("\n%-32s: %d", "Power Bad Fault", fault->reg_val.values.power_bad_fault);
-  printf("\n%-32s: %d", "OC Fault", fault->reg_val.values.oc_fault);
-  printf("\n%-32s: %d", "UV Fault", fault->reg_val.values.uv_fault);
-  printf("\n%-32s: %d", "OV Fault", fault->reg_val.values.ov_fault);
+  printf("\n%-32s: %d", "EEPROM_Done", fault->reg_val.values.eeprom_done);
+  printf("\n%-32s: %d", "FET_Bad_Fault", fault->reg_val.values.fet_bad_fault);
+  printf("\n%-32s: %d", "FET_Short_Fault", fault->reg_val.values.fet_short_fault);
+  printf("\n%-32s: %d", "On_Fault", fault->reg_val.values.on_fault);
+  printf("\n%-32s: %d", "Power_Bad_Fault", fault->reg_val.values.power_bad_fault);
+  printf("\n%-32s: %d", "OC_Fault", fault->reg_val.values.oc_fault);
+  printf("\n%-32s: %d", "UV_Fault", fault->reg_val.values.uv_fault);
+  printf("\n%-32s: %d", "OV_Fault", fault->reg_val.values.ov_fault);
   printf("\n");
 }
 
 static void print_pem_adc_alert_reg(pem_adc_alert_t *adc_alert_log) {
-  printf("\n%-32s: %d", "Power Alarm High", adc_alert_log->reg_val.values.power_alarm_high);
-  printf("\n%-32s: %d", "Power Alarm Low", adc_alert_log->reg_val.values.power_alarm_low);
-  printf("\n%-32s: %d", "Vsense Alarm High", adc_alert_log->reg_val.values.vsense_alarm_high);
-  printf("\n%-32s: %d", "Vsense Alarm Low", adc_alert_log->reg_val.values.vsense_alarm_low);
-  printf("\n%-32s: %d", "VSourve Alarm High", adc_alert_log->reg_val.values.vsource_alarm_high);
-  printf("\n%-32s: %d", "VSourve Alarm Low", adc_alert_log->reg_val.values.vsource_alarm_low);
-  printf("\n%-32s: %d", "VGPIO Alarm High", adc_alert_log->reg_val.values.vgpio_alarm_high);
-  printf("\n%-32s: %d", "VGPIO Alarm Low", adc_alert_log->reg_val.values.vgpio_alarm_low);
+  printf("\n%-32s: %d", "Power_Alarm_High", adc_alert_log->reg_val.values.power_alarm_high);
+  printf("\n%-32s: %d", "Power_Alarm_Low", adc_alert_log->reg_val.values.power_alarm_low);
+  printf("\n%-32s: %d", "Vsense_Alarm_High", adc_alert_log->reg_val.values.vsense_alarm_high);
+  printf("\n%-32s: %d", "Vsense_Alarm_Low", adc_alert_log->reg_val.values.vsense_alarm_low);
+  printf("\n%-32s: %d", "VSourve_Alarm_High", adc_alert_log->reg_val.values.vsource_alarm_high);
+  printf("\n%-32s: %d", "VSourve_Alarm_Low", adc_alert_log->reg_val.values.vsource_alarm_low);
+  printf("\n%-32s: %d", "VGPIO_Alarm_High", adc_alert_log->reg_val.values.vgpio_alarm_high);
+  printf("\n%-32s: %d", "VGPIO_Alarm_Low", adc_alert_log->reg_val.values.vgpio_alarm_low);
   printf("\n");
 }
 
@@ -772,9 +950,9 @@ int log_pem_critical_regs(uint8_t num) {
   OBMC_CRIT("PEM %d [FAULT_LOG addr: 0x%02x, value: 0x%02x] " \
                    "[ADC_ALERT_LOG addr: 0x%02x, value: 0x%02x] " \
                    "[STATUS addr: 0x%02x, value: 0x%04x]", num + 1,
-                    smbus[FAULT_LOG].reg, status_regs.fault.reg_val.value,
-                    smbus[ADC_ALERT_LOG].reg, status_regs.adc_alert_log.reg_val.value,
-                    smbus[STATUS].reg, status_regs.status.reg_val.value);
+                    smbus_ltc4282[FAULT_LOG].reg, status_regs.fault.reg_val.value,
+                    smbus_ltc4282[ADC_ALERT_LOG].reg, status_regs.adc_alert_log.reg_val.value,
+                    smbus_ltc4282[STATUS].reg, status_regs.status.reg_val.value);
 
   return ret;
 }
@@ -1023,4 +1201,19 @@ int get_blackbox_info(uint8_t num, const char *option) {
   close(pem[num].fd);
 
   return 0;
+}
+
+int get_archive_log(uint8_t num, const char *option) {
+
+  if ((!strncmp(option, "--print", strlen("--print")))) {
+    return decode_pem_backup_log(num);
+  } else if ((!strncmp(option, "--clear", strlen("--clear")))) {
+    printf("Not support!\n");
+    return 0;
+  } else {
+    printf("Invalid option!\n");
+    close(pem[num].fd);
+    return -1;
+  }
+
 }

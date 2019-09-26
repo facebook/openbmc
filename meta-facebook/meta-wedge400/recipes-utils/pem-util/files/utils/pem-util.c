@@ -30,6 +30,11 @@ static const char *option_list[] = {
   "    options:",
   "      --print",
   "      --clear",
+  "  --get_archive_log",
+  "    options:",
+  "      --print",
+  "      --clear",
+  "  --archive_pem_chips",
 };
 
 static void
@@ -88,6 +93,12 @@ main(int argc, const char *argv[]) {
   }
   else if (!strcmp(argv[2], "--get_eeprom_info") && argv[3] != NULL) {
     ret = get_eeprom_info(pem_num, argv[3]);
+  }
+  else if (!strcmp(argv[2], "--get_archive_log") && argv[3] != NULL) {
+    ret = get_archive_log(pem_num, argv[3]);
+  }
+  else if (!strcmp(argv[2], "--archive_pem_chips")) {
+    ret = archive_pem_chips(pem_num);
   }
   else {
     print_usage(argv[0]);

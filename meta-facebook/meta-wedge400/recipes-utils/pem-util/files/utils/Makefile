@@ -21,7 +21,7 @@ all: pem-util
 
 CFLAGS += -Wall -Werror
 
-psu-util: pem-util.o
+pem-util: pem-util.o
 	$(CC) $(CFLAGS) -std=gnu99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean

@@ -45,6 +45,15 @@ extern "C" {
 #define PEM_BLACKBOX(num, chip) "/mnt/data/pem/pem"#num"_"#chip
 #define PEM_LTC4282_REG_CNT 0x50
 #define PEM_MAX6615_REG_CNT 0x20
+#define PEM_ARCHIVE_BUFF ( PEM_LTC4282_REG_CNT > PEM_MAX6615_REG_CNT ? \
+                          PEM_LTC4282_REG_CNT : PEM_MAX6615_REG_CNT )
+
+/* max6615 sensors registers addr */
+#define MAX6615_REG_TEMP(ch)                (0x00 + (ch))
+#define MAX6615_REG_TEMP_EXT(ch)            (0x1E + (ch))
+#define MAX6615_REG_FAN_CNT(ch)             (0x18 + (ch))
+#define MAX6615_REG_TARGT_PWM(ch)           (0x0B + (ch))
+#define MAX6615_REG_INSTANTANEOUS_PWM(ch)   (0x0D + (ch))
 
 enum pem_chip_t {
   LTC4282,
@@ -303,6 +312,7 @@ int log_pem_critical_regs(uint8_t num);
 int get_eeprom_info(uint8_t mum, const char *option);
 int get_pem_info(uint8_t num);
 int get_blackbox_info(uint8_t num, const char *option);
+int get_archive_log(uint8_t num, const char *option);
 
 #ifdef __cplusplus
 }

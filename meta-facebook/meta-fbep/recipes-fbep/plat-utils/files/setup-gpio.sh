@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -405,12 +405,12 @@ gpio_export PRSNT1_N_ASIC4 GPIOY3
 # 1:1 = MB#4
 # PCH
 gpio_export USB2_SEL0_U42 GPIOZ0
-gpio_set USB2_SEL0_U42 0
+gpio_set USB2_SEL0_U42 1
 gpio_export USB2_SEL1_U42 GPIOZ1
 gpio_set USB2_SEL1_U42 0
 # BMC
 gpio_export USB2_SEL0_U43 GPIOZ2
-gpio_set USB2_SEL0_U43 0
+gpio_set USB2_SEL0_U43 1
 gpio_export USB2_SEL1_U43 GPIOZ3
 gpio_set USB2_SEL1_U43 0
 

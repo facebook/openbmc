@@ -27,6 +27,7 @@ SRC_URI = "file://ast-functions \
            file://sync_date.sh \
            file://setup-por.sh \
            file://setup-emmc.sh \
+           file://setup-usbhub.sh \
            file://COPYING \
           "
 

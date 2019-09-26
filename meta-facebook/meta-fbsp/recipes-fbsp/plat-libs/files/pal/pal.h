@@ -69,6 +69,15 @@ enum {
   BOOT_DEVICE_RESERVED = 0xff,
 };
 
+
+int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
+int pal_is_slot_server(uint8_t fru);
+int pal_get_fru_id(char *fru_str, uint8_t *fru);
+int pal_get_fru_name(uint8_t fru, char *name);
+int pal_set_key_value(char *key, char *value);
+int pal_get_key_value(char *key, char *value);
+void pal_update_ts_sled();
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

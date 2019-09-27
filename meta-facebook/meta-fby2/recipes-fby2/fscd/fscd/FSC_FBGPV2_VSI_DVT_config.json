@@ -1,5 +1,5 @@
 {
-  "version": "fbgpv2-evt-r03",
+  "version": "fbgpv2-vsi-dvt-r01",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
@@ -31,16 +31,16 @@
       "negative_hysteresis": 0,
       "data": [
         [ 25, 20 ],
-        [ 27, 22 ],
-        [ 29, 24 ],
-        [ 31, 26 ],
-        [ 33, 28 ],
-        [ 35, 30 ],
-        [ 37, 32 ],
-        [ 39, 34 ],
-        [ 41, 36 ],
-        [ 43, 38 ],
-        [ 45, 40 ]
+        [ 27, 21 ],
+        [ 29, 23 ],
+        [ 31, 24 ],
+        [ 33, 25 ],
+        [ 35, 27 ],
+        [ 37, 28 ],
+        [ 39, 29 ],
+        [ 41, 31 ],
+        [ 43, 32 ],
+        [ 45, 43 ]
       ]
     },
     "linear_cpu_margin": {
@@ -52,10 +52,10 @@
       "negative_hysteresis": 0,
       "data": [
         [ -34, 20 ],
-        [ -32, 22 ],
-        [ -30, 24 ],
-        [ -28, 26 ],
-        [ -26, 28 ]
+        [ -32, 21 ],
+        [ -30, 23 ],
+        [ -28, 24 ],
+        [ -26, 25 ]
       ]
     },
     "pid_cpu_margin": {
@@ -79,9 +79,9 @@
       "negative_hysteresis": 0,
       "data": [
         [70, 20],
-        [73, 35],
-        [75, 50],
-        [80, 65]
+        [73, 30],
+        [75, 40],
+        [80, 50]
       ]
     },
     "linear_mezz": {
@@ -93,10 +93,10 @@
       "negative_hysteresis": 2,
       "data": [
         [80, 20],
-        [86, 35],
-        [88, 37],
-        [90, 39],
-        [92, 41],
+        [86, 30],
+        [88, 31],
+        [90, 33],
+        [92, 34],
         [97, 70]
       ]
     },
@@ -108,9 +108,9 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [ 56, 28 ],
-        [ 58, 30 ],
-        [ 60, 35 ]
+        [ 56, 25 ],
+        [ 58, 27 ],
+        [ 60, 30 ]
       ]
     },
     "pid_mb_m2": {
@@ -133,8 +133,22 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [ 0, 70 ]
+        [ 56, 25 ],
+        [ 58, 27 ],
+        [ 60, 30 ]
       ]
+    },
+    "pid_gp_m2": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 85,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -1.5,
+      "ki": -0.02,
+      "kd": 0
     }
   },
   "fans": {
@@ -158,7 +172,7 @@
   "zones": {
     "zone_1": {
       "pwm_output": [0, 1],
-      "expr_file": "FSC_FBGPV2_EVT_zone1.fsc"
+      "expr_file": "FSC_FBGPV2_DVT_zone1.fsc"
     }
   }
 }

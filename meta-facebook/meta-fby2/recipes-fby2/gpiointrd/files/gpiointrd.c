@@ -500,7 +500,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
     else { // high to low
       syslog(LOG_CRIT, "DEASSERT: SLED is seated");
       memset(cmd, 0, sizeof(cmd));
-      sprintf(cmd, "/etc/init.d/setup-fan.sh ; sv start fscd");
+      sprintf(cmd, "sv start fscd");
       system(cmd);
     }
   }
@@ -613,6 +613,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
             pthread_cancel(hsvc_action_tid[slot_id]);
           }
 
+          pal_set_dev_config_setup(0); // set up device fan config
           //Create thread for hsvc event detect
           if (pthread_create(&hsvc_action_tid[slot_id], NULL, hsvc_event_handler, &hsvc_info[slot_id]) < 0) {
             syslog(LOG_WARNING, "[%s] Create hsvc_event_handler thread failed for slot%x\n",__func__, slot_id);

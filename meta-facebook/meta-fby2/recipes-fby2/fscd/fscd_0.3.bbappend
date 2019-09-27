@@ -32,8 +32,10 @@ SRC_URI += "file://init_pwm.sh \
             file://FSC_FBEP_DVT_4EP_zone1.fsc \
             file://FSC_FBEP_DVT_2GP_2EP_config.json \
             file://FSC_FBEP_DVT_2GP_2EP_zone1.fsc \
-            file://FSC_FBGPV2_EVT_config.json \
-            file://FSC_FBGPV2_EVT_zone1.fsc \
+            file://FSC_FBGPV2_DVT_config.json \
+            file://FSC_FBGPV2_VSI_DVT_config.json \
+            file://FSC_FBGPV2_BRCM_DVT_config.json \
+            file://FSC_FBGPV2_DVT_zone1.fsc \
             file://FSC_FBND_EVT_4ND_config.json \
             file://FSC_FBND_EVT_4ND_zone1.fsc \
             file://fsc_board.py \
@@ -49,7 +51,9 @@ FSC_CONFIG += "FSC_FBY2_PVT_4TL_config.json \
                FSC_FBRC_DVT_4RC_config.json \
                FSC_FBEP_DVT_4EP_config.json \
                FSC_FBEP_DVT_2GP_2EP_config.json \
-               FSC_FBGPV2_EVT_config.json \
+               FSC_FBGPV2_DVT_config.json \
+               FSC_FBGPV2_VSI_DVT_config.json \
+               FSC_FBGPV2_BRCM_DVT_config.json \
                FSC_FBND_EVT_4ND_config.json \
               "
 
@@ -59,7 +63,7 @@ FSC_ZONE_CONFIG +="FSC_FBY2_PVT_4TL_zone1.fsc \
                    FSC_FBRC_DVT_4RC_zone1.fsc \
                    FSC_FBEP_DVT_4EP_zone1.fsc \
                    FSC_FBEP_DVT_2GP_2EP_zone1.fsc \
-                   FSC_FBGPV2_EVT_zone1.fsc \
+                   FSC_FBGPV2_DVT_zone1.fsc \
                    FSC_FBND_EVT_4ND_zone1.fsc \
                   "
 

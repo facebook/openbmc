@@ -38,6 +38,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <stddef.h>
+#include <jansson.h>
 #include "pal.h"
 #include <facebook/bic.h>
 #include <openbmc/kv.h>
@@ -134,6 +135,8 @@
 #define CHUNK_OF_CRS_HEADER_LEN 2
 
 #define NON_DEBUG_MODE 0xff
+
+#define FSC_CONFIG           "/etc/fsc-config.json"
 
 #if defined CONFIG_FBY2_ND
 /* MCA bank data format */
@@ -4194,9 +4197,20 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           return -1;
         }
       }
-      if ((sensor_num == SP_SENSOR_FAN0_TACH) || (sensor_num == SP_SENSOR_FAN1_TACH) || (sensor_num == SP_SENSOR_FAN2_TACH) || (sensor_num == SP_SENSOR_FAN3_TACH)) {
+      if (sensor_num == SP_SENSOR_FAN0_TACH) { // check NVMe/POST once per cycle is enough
         uint8_t is_sled_out = 1;
         uint8_t is_post_timeout = 0, is_nvme_timeout = 0;
+        static bool initail_check = true;
+
+        if(initail_check) {
+          pal_is_nvme_ready(); // update NVMe status while post is ongoing
+          initail_check = false;
+        }
+
+        current_post = pal_is_post_ongoing();
+        if (current_post) {
+          pal_is_nvme_ready(); // update NVMe status while post is ongoing
+        }
 
         if (pal_get_fan_latch(&is_sled_out) != 0) {
           syslog(LOG_WARNING, "Fans' UNC masks removed: SLED status (in/out) is unreadable");
@@ -4218,7 +4232,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           /* Check whether POST is ongoning or not */
           ignore_thresh = 0;
 
-          current_post = pal_is_post_ongoing();
           if (last_post != current_post) {
             if (current_post == 0) {
               // POST END
@@ -6616,6 +6629,37 @@ pal_get_nvme_ready(uint8_t fru, uint8_t *value) {
   return 0;
 }
 
+int
+pal_get_nvme_ready_from_bic(uint8_t fru, uint8_t *value, uint8_t *dev_type) {
+  uint8_t type = DEV_TYPE_UNKNOWN;
+  uint8_t nvme_ready = 0;
+  uint8_t dev_id;
+  uint8_t status = DEVICE_POWER_OFF;
+  int ret;
+
+  *value = 1;
+  *dev_type = DEV_TYPE_UNKNOWN;
+  for (dev_id=1;dev_id <= MAX_NUM_DEVS;dev_id++) {
+    ret = pal_get_dev_info(fru, dev_id, &nvme_ready, &status, &type);
+    if (ret) {
+      *value = 0;
+      return ret;
+    }
+
+    if ((*dev_type == DEV_TYPE_UNKNOWN) && (status == DEVICE_POWER_ON) && (type != DEV_TYPE_UNKNOWN)) // get the first accessible M.2 device's device type
+      *dev_type = type;
+
+    pal_set_m2_prsnt(fru, dev_id, status);
+
+    if (status == DEVICE_POWER_OFF) {
+      nvme_ready = 1;
+    }
+    *value &= nvme_ready;
+  }
+
+  return 0;
+}
+
 uint8_t
 pal_is_post_time_out() {
   long post_start_timestamp,post_end_timestamp,current_timestamp;
@@ -6701,14 +6745,101 @@ pal_is_post_ongoing() {
   return is_post_ongoing;
 }
 
+int
+pal_set_dev_config_setup(uint8_t value) {
+  char* key = "dev_config_setup";
+  char cvalue[MAX_VALUE_LEN] = {0};
+
+  sprintf(cvalue, (value > 0) ? "1" : "0");
+
+  return kv_set(key,cvalue, 0, 0);
+}
+
+int
+pal_get_dev_config_setup(uint8_t *value) {
+  char* key = "dev_config_setup";
+  char cvalue[MAX_VALUE_LEN] = {0};
+  int ret;
+
+  ret = kv_get(key, cvalue, NULL, 0);
+  if (ret) {
+    *value = 0;
+    return ret;
+  }
+  *value = atoi(cvalue);
+  return 0;
+}
+
+int
+get_fan_ver_dev_type(uint8_t *type) {
+  json_error_t error;
+  json_t *conf, *vers;
+
+  *type = DEV_TYPE_SSD; // default fan type
+
+  conf = json_load_file(FSC_CONFIG, 0, &error);
+  if(!conf) {
+    return -1;
+  }
+  vers = json_object_get(conf, "version");
+  if(!vers || !json_is_string(vers)) {
+    json_decref(conf);
+    return -1;
+  } else {
+    const char * fan_ver = json_string_value(vers);
+    syslog(LOG_WARNING, "get_fan_ver_dev_type: Fan Version: %s", fan_ver);
+    if (strstr(fan_ver, "vsi") != NULL) {
+      *type = DEV_TYPE_VSI_ACC;
+    } else if (strstr(fan_ver, "brcm") != NULL) {
+      *type = DEV_TYPE_BRCM_ACC;
+    } else {
+      *type = DEV_TYPE_SSD;
+    }
+  }
+  json_decref(conf);
+  return 0;
+}
+
 uint8_t
 pal_is_nvme_ready() {
   uint8_t is_nvme_ready = 1;
-  uint8_t value = 0;
-  for (int fru=1;fru <= 4;fru+=2) {
+  uint8_t last_value = 0, value = 0;
+  uint8_t type = DEV_TYPE_UNKNOWN;
+  uint8_t fan_type = DEV_TYPE_UNKNOWN;
+  uint8_t setup = 0;
+  char cmd[128] = {0};
+
+  for (uint8_t fru=1;fru <= 4;fru+=2) {
     // get nvme ready from kv_store
     if (pal_get_pair_slot_type(fru) == TYPE_GPV2_A_SV) {
-      pal_get_nvme_ready(fru, &value);
+      pal_get_nvme_ready(fru, &last_value);
+      pal_get_nvme_ready_from_bic(fru, &value, &type);
+      if (last_value != value) {
+        syslog(LOG_WARNING, "pal_is_nvme_ready: NVMe ready slot%d change to %d",fru ,value);
+        pal_set_nvme_ready(fru,value);
+        if (value) {
+          pal_set_nvme_ready_timestamp(fru);
+        }
+      }
+
+      // fan config update
+      pal_get_dev_config_setup(&setup);
+      if (!setup && value && (type!= DEV_TYPE_UNKNOWN)) {
+        syslog(LOG_WARNING, "pal_is_nvme_ready: device config change (slot%u type=%u)",fru ,type);
+        if (type != DEV_TYPE_VSI_ACC && type != DEV_TYPE_BRCM_ACC) {
+          type = DEV_TYPE_SSD;
+        }
+        get_fan_ver_dev_type(&fan_type);
+        if (fan_type != type) {
+          syslog(LOG_WARNING, "pal_is_nvme_ready: fan config change from type %u to type %u",fan_type ,type);
+          memset(cmd, 0, sizeof(cmd));
+          sprintf(cmd, "sv stop fscd ;/etc/init.d/setup-fan.sh %d;",type);
+          system(cmd);
+        } else {
+          syslog(LOG_WARNING, "pal_is_nvme_ready: fan config deoesn't change (type=%u)",type);
+        }
+        pal_set_dev_config_setup(1);
+      }
       is_nvme_ready &= value;
     }
   }
@@ -10829,7 +10960,6 @@ pal_set_m2_prsnt(uint8_t slot_id, uint8_t dev_id, uint8_t present) {
     //slot: 1 dev_id: 1 -> slot1_dev0_pres
     snprintf(key,MAX_KEY_LEN, "slot%u_dev%u_pres", slot_id, dev_id-1);
     snprintf(str,MAX_VALUE_LEN, "%d",present);
-    syslog(LOG_WARNING, "%s: set %s to %s.", __func__, key, str);
     return kv_set(key, str, 0, 0);
   }
   return -1;

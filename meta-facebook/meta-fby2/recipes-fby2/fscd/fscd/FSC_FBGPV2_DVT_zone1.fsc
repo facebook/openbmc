@@ -58,5 +58,31 @@ max([
     slot3:nvme_temp_dev8,
     slot3:nvme_temp_dev9,
     slot3:nvme_temp_dev10,
+    slot3:nvme_temp_dev11]))+
+  pid_gp_m2(
+   max([
+    slot1:nvme_temp_dev0,
+    slot1:nvme_temp_dev1,
+    slot1:nvme_temp_dev2,
+    slot1:nvme_temp_dev3,
+    slot1:nvme_temp_dev4,
+    slot1:nvme_temp_dev5,
+    slot1:nvme_temp_dev6,
+    slot1:nvme_temp_dev7,
+    slot1:nvme_temp_dev8,
+    slot1:nvme_temp_dev9,
+    slot1:nvme_temp_dev10,
+    slot1:nvme_temp_dev11,
+    slot3:nvme_temp_dev0,
+    slot3:nvme_temp_dev1,
+    slot3:nvme_temp_dev2,
+    slot3:nvme_temp_dev3,
+    slot3:nvme_temp_dev4,
+    slot3:nvme_temp_dev5,
+    slot3:nvme_temp_dev6,
+    slot3:nvme_temp_dev7,
+    slot3:nvme_temp_dev8,
+    slot3:nvme_temp_dev9,
+    slot3:nvme_temp_dev10,
     slot3:nvme_temp_dev11]))
 ])

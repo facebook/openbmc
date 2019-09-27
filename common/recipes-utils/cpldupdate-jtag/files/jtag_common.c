@@ -129,7 +129,7 @@ int jtag_write_instruction_register(jtag_object_t *pobj,
                                     int length)
 {
     int retcode;
-    unsigned long long tdio;
+    unsigned int tdio;
     
     if(pobj == NULL){
         printf("%s(%d) - %s: JTAG object is null!\n", \
@@ -143,7 +143,7 @@ int jtag_write_instruction_register(jtag_object_t *pobj,
         return -1;
     }
 
-    tdio = (unsigned long long)buf;
+    tdio = (unsigned int)buf;
 
     retcode = jtag_interface_xfer(pobj->fd,
               JTAG_SIR_XFER,
@@ -179,7 +179,7 @@ int jtag_write_data_register(jtag_object_t *pobj,
                              int length) 
 {
     int retcode;
-    unsigned long long tdio;
+    unsigned int tdio;
 
     if(pobj == NULL){
         printf("%s(%d) - %s: JTAG object is null!\n", \
@@ -193,7 +193,7 @@ int jtag_write_data_register(jtag_object_t *pobj,
         return -1;
     }
     
-    tdio = (unsigned long long)buf;
+    tdio = (unsigned int)buf;
 
     retcode = jtag_interface_xfer(pobj->fd,
               JTAG_SDR_XFER,
@@ -230,7 +230,7 @@ int jtag_read_data_register(jtag_object_t *pobj,
                             int length) 
 {
     int retcode;
-    unsigned long long tdio;
+    unsigned int tdio;
     
     if(pobj == NULL){
         printf("%s(%d) - %s: JTAG object is null!\n", \
@@ -244,7 +244,7 @@ int jtag_read_data_register(jtag_object_t *pobj,
         return -1;
     }
 
-    tdio = (unsigned long long)buf;
+    tdio = (unsigned int)buf;
     retcode = jtag_interface_xfer(pobj->fd,
               JTAG_SDR_XFER,
               JTAG_READ_XFER,

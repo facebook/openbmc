@@ -130,7 +130,7 @@ int jtag_interface_xfer(int jtag_fd,
                         unsigned char direction,
                         unsigned char endstate,
                         unsigned int length,
-                        unsigned long long tdio)
+                        unsigned int tdio)
 {
 	int retval;
     struct jtag_xfer xfer;

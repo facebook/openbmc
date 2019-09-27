@@ -96,7 +96,7 @@ struct jtag_xfer {
     __u8    direction;
     __u8    endstate;
     __u32   length;
-    __u64   tdio;
+    __u32   tdio;
 };
 
 
@@ -131,7 +131,7 @@ int jtag_interface_xfer(int jtag_fd,
                         unsigned char direction,
                         unsigned char endstate,
                         unsigned int length,
-                        unsigned long long tdio);
+                        unsigned int tdio);
 
 
 

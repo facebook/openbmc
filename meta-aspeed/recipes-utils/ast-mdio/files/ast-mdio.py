@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -121,7 +121,7 @@ if __name__ == "__main__":
         exit(-1)
 
     if args.phy > 0x1F:
-        printf("PHY address must be smaller than 0x1f.")
+        print("PHY address must be smaller than 0x1f.")
         exit(-2)
 
     args.func(args)

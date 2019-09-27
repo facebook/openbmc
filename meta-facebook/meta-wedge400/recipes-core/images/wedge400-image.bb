@@ -20,6 +20,7 @@ IMAGE_INSTALL += " \
   bic-util \
   bitbang \
   cpldupdate \
+  cpldupdate-jtag \
   crashdump \
   e2fsprogs \
   fscd \

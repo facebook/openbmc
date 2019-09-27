@@ -4,10 +4,6 @@ inherit kernel_fitimage
 
 require recipes-core/images/fb-openbmc-image.bb
 
-# The offset must match with the offsets defined in
-# dev-spi-cmm.c. Rootfs starts from 4.5M
-FLASH_ROOTFS_OFFSET = "4608"
-# plat-utils
 # sensor-setup
 # bic-cached
 # bic-util
@@ -36,6 +32,7 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
   packagegroup-openbmc-rest3 \
+  packagegroup-openbmc-emmc \
   fruid \
   ncsi-util \
   sensor-util \

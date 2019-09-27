@@ -811,8 +811,12 @@ rc_dimm_location_info rc_dimm_location_list[] = {
   {SYS_CONFIG_PATH "fru%u_dimm3_location", BIC_RC_SENSOR_SOC_DIMMD_TEMP},
 };
 
+#define GET_DEV_VALID_FALG(flag, dev_id) ((flag>>(dev_id-1)) & 1)
+#define SET_DEV_VALID_FALG(flag, dev_id) (flag |= (1<<(dev_id-1)))
+
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 static ipmi_general_sensor_reading_t g_sread[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static uint16_t dev_valid_flag[MAX_NUM_FRUS] = {0};
 
 void
 msleep(int msec) {
@@ -1449,6 +1453,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
     }
   } else if (slot_type == SLOT_TYPE_GPV2) {
     uint8_t dev_id = DEV_NONE;
+    bool frist_dev_sensor = false;
     switch (sensor_num) {
       case GPV2_SENSOR_INLET_TEMP:
       case GPV2_SENSOR_OUTLET_TEMP:
@@ -1479,39 +1484,87 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
         g_sread[fru-1][sensor_num].is_accuracy = false;
         break;
       case GPV2_SENSOR_DEV0_INA231_PW:
+        frist_dev_sensor = true;
+      case GPV2_SENSOR_DEV0_INA231_VOL:
+      case GPV2_SENSOR_DEV0_Temp:
+      case GPV2_SENSOR_DEV0_Ambient_Temp:
         dev_id = 1;
         break;
       case GPV2_SENSOR_DEV1_INA231_PW:
+        frist_dev_sensor = true;
+      case GPV2_SENSOR_DEV1_INA231_VOL:
+      case GPV2_SENSOR_DEV1_Temp:
+      case GPV2_SENSOR_DEV1_Ambient_Temp:
         dev_id = 2;
         break;
       case GPV2_SENSOR_DEV2_INA231_PW:
+        frist_dev_sensor = true;
+      case GPV2_SENSOR_DEV2_INA231_VOL:
+      case GPV2_SENSOR_DEV2_Temp:
+      case GPV2_SENSOR_DEV2_Ambient_Temp:
         dev_id = 3;
         break;
       case GPV2_SENSOR_DEV3_INA231_PW:
+        frist_dev_sensor = true;
+      case GPV2_SENSOR_DEV3_INA231_VOL:
+      case GPV2_SENSOR_DEV3_Temp:
+      case GPV2_SENSOR_DEV3_Ambient_Temp:
         dev_id = 4;
         break;
       case GPV2_SENSOR_DEV4_INA231_PW:
+        frist_dev_sensor = true;
+      case GPV2_SENSOR_DEV4_INA231_VOL:
+      case GPV2_SENSOR_DEV4_Temp:
+      case GPV2_SENSOR_DEV4_Ambient_Temp:
         dev_id = 5;
         break;
       case GPV2_SENSOR_DEV5_INA231_PW:
+        frist_dev_sensor = true;
+      case GPV2_SENSOR_DEV5_INA231_VOL:
+      case GPV2_SENSOR_DEV5_Temp:
+      case GPV2_SENSOR_DEV5_Ambient_Temp:
         dev_id = 6;
         break;
       case GPV2_SENSOR_DEV6_INA231_PW:
+        frist_dev_sensor = true;
+      case GPV2_SENSOR_DEV6_INA231_VOL:
+      case GPV2_SENSOR_DEV6_Temp:
+      case GPV2_SENSOR_DEV6_Ambient_Temp:
         dev_id = 7;
         break;
       case GPV2_SENSOR_DEV7_INA231_PW:
+        frist_dev_sensor = true;
+      case GPV2_SENSOR_DEV7_INA231_VOL:
+      case GPV2_SENSOR_DEV7_Temp:
+      case GPV2_SENSOR_DEV7_Ambient_Temp:
         dev_id = 8;
         break;
       case GPV2_SENSOR_DEV8_INA231_PW:
+        frist_dev_sensor = true;
+      case GPV2_SENSOR_DEV8_INA231_VOL:
+      case GPV2_SENSOR_DEV8_Temp:
+      case GPV2_SENSOR_DEV8_Ambient_Temp:
         dev_id = 9;
         break;
       case GPV2_SENSOR_DEV9_INA231_PW:
+        frist_dev_sensor = true;
+      case GPV2_SENSOR_DEV9_INA231_VOL:
+      case GPV2_SENSOR_DEV9_Temp:
+      case GPV2_SENSOR_DEV9_Ambient_Temp:
         dev_id = 10;
         break;
       case GPV2_SENSOR_DEV10_INA231_PW:
+        frist_dev_sensor = true;
+      case GPV2_SENSOR_DEV10_INA231_VOL:
+      case GPV2_SENSOR_DEV10_Temp:
+      case GPV2_SENSOR_DEV10_Ambient_Temp:
         dev_id = 11;
         break;
       case GPV2_SENSOR_DEV11_INA231_PW:
+        frist_dev_sensor = true;
+      case GPV2_SENSOR_DEV11_INA231_VOL:
+      case GPV2_SENSOR_DEV11_Temp:
+      case GPV2_SENSOR_DEV11_Ambient_Temp:
         dev_id = 12;
         break;
       default:
@@ -1519,7 +1572,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
         break;
     }
 
-    if (dev_id != DEV_NONE) {
+    if (dev_id != DEV_NONE && (frist_dev_sensor || !GET_DEV_VALID_FALG(dev_valid_flag[fru-1] ,dev_id))) {
       uint8_t rbuf[256] = {0x00};
       uint8_t rlen = 0;
       uint8_t dev_sensor_num = sensor_num;
@@ -1570,6 +1623,10 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
         if (exist_flag & (1 << (i & 0xf)))
           continue;
         g_sread[fru-1][i].flags = BIC_SENSOR_READ_NA;
+      }
+
+      if (!GET_DEV_VALID_FALG(dev_valid_flag[fru-1] ,dev_id)) {
+        SET_DEV_VALID_FALG(dev_valid_flag[fru-1], dev_id);
       }
     }
   }

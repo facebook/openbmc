@@ -17,7 +17,7 @@ SRC_URI += " \
 S = "${WORKDIR}"
 
 DEPENDS = "python3 libvbs"
-RDEPENDS_${PN}-python3 += "python3 python3-argparse"
+RDEPENDS_${PN}-python3 += "python3-core"
 RDEPENDS_${PN} += "libvbs"
 
 PACKAGES += "${PN}-python3"

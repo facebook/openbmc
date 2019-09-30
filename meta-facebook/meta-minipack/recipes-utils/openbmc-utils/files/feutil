@@ -19,7 +19,7 @@ MAX_FAN_NUM=8
 usage() {
     program=$(basename "$0")
     echo "Usage:"
-    echo "  $program <all | fcm-t | fan_number (1..${MAX_FAN_NUM})>"
+    echo "  $program <all | fcm-t | fcm-b | fan_number (1..${MAX_FAN_NUM})>"
 }
 
 dump_eeprom() {

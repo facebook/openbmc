@@ -20,7 +20,6 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://wedge400.conf \
-            file://0001-disable-bus-substitution.patch \
            "
 
 DEPENDS_append = " update-rc.d-native"

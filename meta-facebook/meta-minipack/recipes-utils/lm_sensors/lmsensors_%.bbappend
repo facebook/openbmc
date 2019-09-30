@@ -2,7 +2,6 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://minipack.conf \
-            file://0001-disable-bus-substitution.patch \
             file://adm1278-PIM16O.conf \
             file://adm1278-PIM16Q.conf \
             file://adm1278-FCM-T.conf \

@@ -604,6 +604,22 @@ static ssize_t ltc4282_show_status(struct device *dev,
     return snprintf(buf, PAGE_SIZE, "%d\n", fault?1:0);
 }
 
+static ssize_t ltc4282_show_fet_as_voltage(struct device *dev,
+                                           struct device_attribute *dev_attr, char *buf) {
+    struct sensor_device_attribute * attr = to_sensor_dev_attr(dev_attr);
+    struct ltc4282_data *data = dev_get_drvdata(dev);
+    u16 val = 0;
+    u16 fault = 0;
+
+    if (IS_ERR(data))
+        return PTR_ERR(data);
+
+    val = i2c_smbus_read_word_data(data->client, LTC4282_STATUS);
+    val = (u16)(val << 8) | (val >> 8);
+    fault = val & (1 << attr->index);
+    return snprintf(buf, PAGE_SIZE, "%d\n", fault ? 1000 : 0);
+}
+
 static ssize_t ltc4282_do_reboot(struct device *dev, struct device_attribute *dev_attr,
                                  const char *buf, size_t count){
     struct sensor_device_attribute *attr = to_sensor_dev_attr(dev_attr);
@@ -738,8 +754,14 @@ static SENSOR_DEVICE_ATTR(ticker_overflow, S_IRUGO, ltc4282_show_status, NULL,
 static SENSOR_DEVICE_ATTR(meter_overflow, S_IRUGO, ltc4282_show_status, NULL,
               METER_OVERFLOW);
 
+/* expose fet_bad_status fet_short_status as voltage */
+static SENSOR_DEVICE_ATTR(in3_input, S_IRUGO, ltc4282_show_fet_as_voltage, NULL,
+              FET_BAD);
+static SENSOR_DEVICE_ATTR(in4_input, S_IRUGO, ltc4282_show_fet_as_voltage, NULL,
+              FET_SHORT);
+
 static SENSOR_DEVICE_ATTR(reboot, S_IWUSR, NULL, ltc4282_do_reboot,
-              METER_OVERFLOW);
+              0);
 
 static struct attribute *ltc4282_attrs[] =  {
     &sensor_dev_attr_in1_input.dev_attr.attr,
@@ -792,6 +814,9 @@ static struct attribute *ltc4282_attrs[] =  {
     &sensor_dev_attr_adc_idle.dev_attr.attr,
     &sensor_dev_attr_ticker_overflow.dev_attr.attr,
     &sensor_dev_attr_meter_overflow.dev_attr.attr,
+
+    &sensor_dev_attr_in3_input.dev_attr.attr,
+    &sensor_dev_attr_in4_input.dev_attr.attr,
 
     &sensor_dev_attr_reboot.dev_attr.attr,
     NULL, 

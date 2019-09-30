@@ -2497,7 +2497,7 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_SW_CORE_VOLT:
       if( brd_type == BRD_TYPE_WEDGE400 ){
-        ret = read_attr(SMB_ISL_DEVICE, VOLT(2), value);
+        ret = read_attr(SMB_ISL_DEVICE, VOLT(3), value);
         int board_rev = -1;
         if((pal_get_board_rev(&board_rev) != -1) && (board_rev != 4)) {
           if (bootup_check == 0) {
@@ -2508,7 +2508,7 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
         }
       }
       else if( brd_type == BRD_TYPE_WEDGE400_2 ){
-        ret = read_attr(SMB_XPDE_DEVICE, VOLT(2), value);
+        ret = read_attr(SMB_XPDE_DEVICE, VOLT(3), value);
       }
       break;
     case SMB_SENSOR_FCM_HSC_VOLT:
@@ -2524,10 +2524,10 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_SW_CORE_CURR:
       if( brd_type == BRD_TYPE_WEDGE400 ){
-        ret = read_attr(SMB_ISL_DEVICE,  CURR(2), value);
+        ret = read_attr(SMB_ISL_DEVICE,  CURR(3), value);
       }
       else if( brd_type == BRD_TYPE_WEDGE400_2 ){
-        ret = read_attr(SMB_XPDE_DEVICE, CURR(2), value);
+        ret = read_attr(SMB_XPDE_DEVICE, CURR(3), value);
       }
       break;
     case SMB_SENSOR_FCM_HSC_CURR:
@@ -2545,10 +2545,10 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_SW_CORE_POWER:
       if( brd_type == BRD_TYPE_WEDGE400 ){
-        ret = read_attr(SMB_ISL_DEVICE,  POWER(2), value);
+        ret = read_attr(SMB_ISL_DEVICE,  POWER(3), value);
       }
       else if( brd_type == BRD_TYPE_WEDGE400_2 ){
-        ret = read_attr(SMB_XPDE_DEVICE, POWER(2), value);
+        ret = read_attr(SMB_XPDE_DEVICE, POWER(3), value);
       }
       *value /= 1000;
       break;

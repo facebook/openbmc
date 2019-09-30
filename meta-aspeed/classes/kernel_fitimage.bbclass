@@ -195,7 +195,7 @@ oe_mkimage() {
                 bbwarn "${DTB} contains the full path to the the dts file, but only the dtb name should be used."
                 DTB=`basename ${DTB} | sed 's,\.dts$,.dtb,g'`
             fi
-            DTB_PATH="${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE}-${DTB}"
+            DTB_PATH="${DEPLOY_DIR_IMAGE}/${DTB}"
             fitimage_emit_section_dtb ${FIT_SOURCE} ${dtbcount} ${DTB_PATH}
             dtbcount=`expr ${dtbcount} + 1`
         done

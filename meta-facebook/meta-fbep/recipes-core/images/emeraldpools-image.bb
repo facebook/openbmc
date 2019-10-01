@@ -10,6 +10,7 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
   packagegroup-openbmc-rest3 \
+  packagegroup-openbmc-emmc \
   openbmc-utils \
   fscd \
   fan-util \
@@ -30,7 +31,6 @@ IMAGE_INSTALL += " \
   ipmbd \
   ipmb-util \
   gpiod \
-  e2fsprogs \
   "
 
 IMAGE_FEATURES += " \

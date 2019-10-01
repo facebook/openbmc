@@ -96,11 +96,19 @@ class BaseInterfaceTest(object):
     def ping_v4(self):
         ip = self.get_ipv4_address()
         cmd = "ping -c 1 -q -w 1 " + ip
+        Logger.info("Executing cmd={}".format(cmd))
         return self.run_ping(cmd)
 
     def ping_v6(self):
         ip = self.get_ipv6_address()
         cmd = "ping6 -c 1 -q -w 1 " + ip
+        Logger.info("Executing cmd={}".format(cmd))
+        return self.run_ping(cmd)
+
+    def ping_v6_link_local(self):
+        ip = self.get_ipv6_address()
+        cmd = "ping6 -c 1 -q -w 1 " + ip + "%" + self.ifname
+        Logger.info("Executing cmd={}".format(cmd))
         return self.run_ping(cmd)
 
 

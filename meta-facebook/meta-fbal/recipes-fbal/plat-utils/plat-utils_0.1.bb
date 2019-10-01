@@ -63,6 +63,9 @@ do_install() {
   update-rc.d -r ${D} setup-por.sh start 70 S .
   install -m 755 setup-emmc.sh ${D}${sysconfdir}/init.d/setup-emmc.sh
   update-rc.d -r ${D} setup-emmc.sh start 05 S .
+  install -m 755 setup-usbhub.sh ${D}${sysconfdir}/init.d/setup-usbhub.sh
+  update-rc.d -r ${D} setup-usbhub.sh start 90 S .
+
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

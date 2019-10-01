@@ -87,7 +87,6 @@
 
 #define LARGEST_DEVICE_NAME 120
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
-#define PWM_UNIT_MAX 96
 
 #define GUID_SIZE 16
 #define OFFSET_DEV_GUID 0x1800
@@ -2423,31 +2422,6 @@ post_exit:
   }
 }
 
-static int
-read_device_hex(const char *device, int *value) {
-    FILE *fp;
-    int rc;
-
-    fp = fopen(device, "r");
-    if (!fp) {
-#ifdef DEBUG
-      syslog(LOG_INFO, "failed to open device %s", device);
-#endif
-      return errno;
-    }
-
-    rc = fscanf(fp, "%x", value);
-    fclose(fp);
-    if (rc != 1) {
-#ifdef DEBUG
-      syslog(LOG_INFO, "failed to read device %s", device);
-#endif
-      return ENOENT;
-    } else {
-      return 0;
-    }
-}
-
 // Platform Abstraction Layer (PAL) Functions
 int
 pal_get_platform_name(char *name) {
@@ -4372,7 +4346,11 @@ pal_check_fscd_watchdog() {
 int
 pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
   if (fru== FRU_SPB) {
-    if ((snr_num == SP_SENSOR_FAN0_TACH) || (snr_num == SP_SENSOR_FAN1_TACH) || (snr_num == SP_SENSOR_FAN2_TACH) || (snr_num == SP_SENSOR_FAN3_TACH)) {
+    if ( (snr_num == SP_SENSOR_FAN0_TACH) || (snr_num == SP_SENSOR_FAN1_TACH)
+      || (snr_num == SP_SENSOR_FAN2_TACH) || (snr_num == SP_SENSOR_FAN3_TACH)
+      || (snr_num == SP_SENSOR_FAN0_PWM) || (snr_num == SP_SENSOR_FAN1_PWM)
+      || (snr_num == SP_SENSOR_FAN2_PWM) || (snr_num == SP_SENSOR_FAN3_PWM)
+    ) {
       if (thresh == UNC_THRESH) {
         if (ignore_thresh) {
           return 1;
@@ -4454,7 +4432,11 @@ pal_alter_sensor_thresh_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
       if (!val || !_check_slot_12v_en_time(slot_id)) {
         *flag = GETMASK(SENSOR_VALID);
       }
-    } else if (( snr_num == SP_SENSOR_FAN0_TACH ) || ( snr_num == SP_SENSOR_FAN1_TACH ) || (snr_num == SP_SENSOR_FAN2_TACH) || (snr_num == SP_SENSOR_FAN3_TACH)) {
+    } else if (( snr_num == SP_SENSOR_FAN0_TACH ) || ( snr_num == SP_SENSOR_FAN1_TACH )
+            || (snr_num == SP_SENSOR_FAN2_TACH) || (snr_num == SP_SENSOR_FAN3_TACH)
+            || (snr_num == SP_SENSOR_FAN0_PWM) || (snr_num == SP_SENSOR_FAN1_PWM)
+            || (snr_num == SP_SENSOR_FAN2_PWM) || (snr_num == SP_SENSOR_FAN3_PWM)
+          ) {
       // Check POST status
       int ret = pal_get_ignore_thresh(&ignore_thresh);
       if ((ret == 0) && ignore_thresh) {
@@ -6441,7 +6423,7 @@ pal_set_post_start_timestamp(uint8_t fru, uint8_t method) {
       pal_set_nvme_ready_timestamp(fru - 1);
     }
   }
-  
+
   return kv_set(key,cvalue,0,0);
 }
 
@@ -7212,61 +7194,7 @@ pal_log_clear(char *fru) {
 }
 int
 pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
-  char path[LARGEST_DEVICE_NAME] = {0};
-  char device_name[LARGEST_DEVICE_NAME] = {0};
-  int val = 0;
-  int pwm_enable = 0;
-  int pwm_cnt = 0;
-  int spb_type;
-  int fan_type;
-
-  pwm_cnt = pal_get_pwm_cnt();
-  if(fan_num < 0 || fan_num >= pwm_cnt) {
-    syslog(LOG_INFO, "pal_get_pwm_value: fan number is invalid - %d", fan_num);
-    return -1;
-  }
-
-  spb_type = fby2_common_get_spb_type();
-  fan_type = fby2_common_get_fan_type();
-
-  if (spb_type == TYPE_SPB_YV250 && fan_type == TYPE_DUAL_R_FAN) {
-    switch (fan_num) {
-      case 0:
-      case 2:
-        fan_num = 0;
-        break;
-      case 1:
-      case 3:
-        fan_num = 1;
-        break;
-    }
-  }
-
-// Need check pwmX_en to determine the PWM is 0 or 100.
- snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_en", fan_num);
- snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
- if (read_device(path, &pwm_enable)) {
-    syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
-    return -1;
-  }
-
-  if(pwm_enable) {
-    snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_falling", fan_num);
-    snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
-    if (read_device_hex(path, &val)) {
-      syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
-      return -1;
-    }
-
-    if(val == 0)
-      *value = 100;
-    else
-      *value = (100 * val + (PWM_UNIT_MAX-1)) / PWM_UNIT_MAX;
-    } else {
-    *value = 0;
-    }
-
-    return 0;
+  return read_pwm_value(fan_num, value);
 }
 
 static uint8_t fan_dead_actived_flag = 0; // bit0 : fan 0, bit1 : fan 1
@@ -10505,7 +10433,7 @@ uint8_t crashdump_initial(uint8_t slot) {
     sysinfo(&info);
     snprintf(value, sizeof(value), "%ld", (info.uptime+1200));
     snprintf(fname, sizeof(fname), CRASHDUMP_TIMESTAMP_FILE, slot);
-    kv_set(fname, value, 0, KV_FCREATE); 
+    kv_set(fname, value, 0, KV_FCREATE);
   }
 
   completion_code = CC_SUCCESS;
@@ -11154,7 +11082,7 @@ pal_parse_mem_mapping_string(uint8_t channel, bool *support_mem_mapping, char *e
   error_log[0] = '\0';
   *support_mem_mapping = false;
 
-#if defined(CONFIG_FBY2_ND)  
+#if defined(CONFIG_FBY2_ND)
   //uint8_t channel = (sel[9] & 0x0f);
   *support_mem_mapping = true;
 

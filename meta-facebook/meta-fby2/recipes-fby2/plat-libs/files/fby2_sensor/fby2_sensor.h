@@ -42,6 +42,8 @@ extern "C" {
 #define EER_READ_NA           -3
 #define EER_UNHANDLED         -4
 
+#define PWM_UNIT_MAX 96
+
 #define SYS_CONFIG_PATH "/mnt/data/kv_store/sys_config/"
 
 typedef struct {
@@ -262,6 +264,11 @@ enum {
   SP_SENSOR_HSC_IN_POWER = 0xC3,
   SP_SENSOR_HSC_PEAK_IOUT = 0xC4,
   SP_SENSOR_HSC_PEAK_PIN = 0xC5,
+  SP_SENSOR_FAN0_PWM = 0xD0,
+  SP_SENSOR_FAN1_PWM = 0xD1,
+  SP_SENSOR_FAN2_PWM = 0xD2,
+  SP_SENSOR_FAN3_PWM = 0xD3,
+
 };
 
 //Glacier Point
@@ -515,6 +522,7 @@ extern size_t gpv2_sensor_cnt;
 extern size_t bic_nd_sensor_cnt;
 #endif
 
+int read_pwm_value(uint8_t fan_num, uint8_t *value);
 int fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value);
 int fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 int fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);

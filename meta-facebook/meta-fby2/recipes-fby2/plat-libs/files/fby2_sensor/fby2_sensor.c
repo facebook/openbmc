@@ -57,6 +57,7 @@
 #define DC_SLOT3_INLET_TEMP_DEVICE I2C_BUS_5_DIR "5-004d/hwmon/hwmon*"
 #define DC_SLOT3_OUTLET_TEMP_DEVICE I2C_BUS_5_DIR "5-004e/hwmon/hwmon*"
 
+#define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define FAN_TACH_RPM "tacho%d_rpm"
 #define ADC_VALUE "adc%d_value"
 
@@ -349,7 +350,9 @@ const uint8_t spb_sensor_list[] = {
   SP_SENSOR_OUTLET_TEMP,
   //SP_SENSOR_MEZZ_TEMP
   SP_SENSOR_FAN0_TACH,
+  SP_SENSOR_FAN0_PWM,
   SP_SENSOR_FAN1_TACH,
+  SP_SENSOR_FAN1_PWM,
   //SP_SENSOR_AIR_FLOW,
   SP_SENSOR_P5V,
   SP_SENSOR_P12V,
@@ -377,9 +380,13 @@ const uint8_t spb_sensor_dual_r_fan_list[] = {
   SP_SENSOR_OUTLET_TEMP,
   //SP_SENSOR_MEZZ_TEMP
   SP_SENSOR_FAN0_TACH,
+  SP_SENSOR_FAN0_PWM,
   SP_SENSOR_FAN2_TACH,
+  SP_SENSOR_FAN2_PWM,
   SP_SENSOR_FAN1_TACH,
+  SP_SENSOR_FAN1_PWM,
   SP_SENSOR_FAN3_TACH,
+  SP_SENSOR_FAN3_PWM,
   //SP_SENSOR_AIR_FLOW,
   SP_SENSOR_P5V,
   SP_SENSOR_P12V,
@@ -641,6 +648,19 @@ sensor_thresh_array_init() {
 
   spb_sensor_threshold[SP_SENSOR_INLET_TEMP][UCR_THRESH] = 40;
   spb_sensor_threshold[SP_SENSOR_OUTLET_TEMP][UCR_THRESH] = 70;
+
+  spb_sensor_threshold[SP_SENSOR_FAN0_PWM][UCR_THRESH] = 100;
+  spb_sensor_threshold[SP_SENSOR_FAN1_PWM][UCR_THRESH] = 100;
+  spb_sensor_threshold[SP_SENSOR_FAN2_PWM][UCR_THRESH] = 100;
+  spb_sensor_threshold[SP_SENSOR_FAN3_PWM][UCR_THRESH] = 100;
+  spb_sensor_threshold[SP_SENSOR_FAN0_PWM][UNC_THRESH] = 100;
+  spb_sensor_threshold[SP_SENSOR_FAN1_PWM][UNC_THRESH] = 100;
+  spb_sensor_threshold[SP_SENSOR_FAN2_PWM][UNC_THRESH] = 100;
+  spb_sensor_threshold[SP_SENSOR_FAN3_PWM][UNC_THRESH] = 100;
+  spb_sensor_threshold[SP_SENSOR_FAN0_PWM][LCR_THRESH] = 1;
+  spb_sensor_threshold[SP_SENSOR_FAN1_PWM][LCR_THRESH] = 1;
+  spb_sensor_threshold[SP_SENSOR_FAN2_PWM][LCR_THRESH] = 1;
+  spb_sensor_threshold[SP_SENSOR_FAN3_PWM][LCR_THRESH] = 1;
 
   if (spb_type == TYPE_SPB_YV250) { // YV2.50
     if (fan_type == TYPE_DUAL_R_FAN) {
@@ -1144,6 +1164,106 @@ read_fan_value(const int fan, const char *device, float *value) {
   snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
   snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", TACH_DIR, device_name);
   return read_device_float(full_name, value);
+}
+
+static int
+read_device_hex(const char *device, int *value) {
+    FILE *fp;
+    int rc;
+
+    fp = fopen(device, "r");
+    if (!fp) {
+#ifdef DEBUG
+      syslog(LOG_INFO, "failed to open device %s", device);
+#endif
+      return errno;
+    }
+
+    rc = fscanf(fp, "%x", value);
+    fclose(fp);
+    if (rc != 1) {
+#ifdef DEBUG
+      syslog(LOG_INFO, "failed to read device %s", device);
+#endif
+      return ENOENT;
+    } else {
+      return 0;
+    }
+}
+
+int
+read_pwm_value(uint8_t fan_num, uint8_t* value) {
+  char path[LARGEST_DEVICE_NAME] = {0};
+  char device_name[LARGEST_DEVICE_NAME] = {0};
+  int val = 0;
+  int pwm_enable = 0;
+  int pwm_cnt = 0;
+  int spb_type;
+  int fan_type;
+
+  spb_type = fby2_common_get_spb_type();
+  fan_type = fby2_common_get_fan_type();
+
+  if (spb_type == TYPE_SPB_YV250 && fan_type == TYPE_DUAL_R_FAN) {
+    pwm_cnt = 4;
+  } else {
+    pwm_cnt = 2;
+  }
+
+  if(fan_num < 0 || fan_num >= pwm_cnt) {
+    syslog(LOG_INFO, "%s: fan number is invalid - %d", __FUNCTION__, fan_num);
+    return -1;
+  }
+
+  if (spb_type == TYPE_SPB_YV250 && fan_type == TYPE_DUAL_R_FAN) {
+    switch (fan_num) {
+      case 0:
+      case 2:
+        fan_num = 0;
+        break;
+      case 1:
+      case 3:
+        fan_num = 1;
+        break;
+    }
+  }
+
+  // Need check pwmX_en to determine the PWM is 0 or 100.
+  snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_en", fan_num);
+  snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
+  if (read_device(path, &pwm_enable)) {
+    syslog(LOG_INFO, "%s: read %s failed", __FUNCTION__, path);
+    return -1;
+  }
+
+  if(pwm_enable) {
+    snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_falling", fan_num);
+    snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
+    if (read_device_hex(path, &val)) {
+      syslog(LOG_INFO, "%s: read %s failed", __FUNCTION__, path);
+      return -1;
+    }
+
+    if(val == 0)
+      *value = 100;
+    else
+      *value = (100 * val + (PWM_UNIT_MAX-1)) / PWM_UNIT_MAX;
+  } else {
+    *value = 0;
+  }
+
+  return 0;
+}
+
+static int
+read_pwm_value_float(uint8_t fan_num, float* value) {
+  uint8_t pwm_val = 0;
+  int ret = 0;
+
+  ret = read_pwm_value(fan_num, &pwm_val);
+  *value = pwm_val;
+
+  return ret;
 }
 
 static int
@@ -2017,6 +2137,12 @@ fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case SP_SENSOR_FAN3_TACH:
           sprintf(units, "RPM");
           break;
+        case SP_SENSOR_FAN0_PWM:
+        case SP_SENSOR_FAN1_PWM:
+        case SP_SENSOR_FAN2_PWM:
+        case SP_SENSOR_FAN3_PWM:
+          strcpy(units, "%");
+          break;
         case SP_SENSOR_AIR_FLOW:
           strcpy(units, "");
           break;
@@ -2252,6 +2378,18 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           break;
         case SP_SENSOR_FAN3_TACH:
           sprintf(name, "SP_FAN3_TACH");
+          break;
+        case SP_SENSOR_FAN0_PWM:
+          sprintf(name, "SP_FAN0_PWM");
+          break;
+        case SP_SENSOR_FAN1_PWM:
+          sprintf(name, "SP_FAN1_PWM");
+          break;
+        case SP_SENSOR_FAN2_PWM:
+          sprintf(name, "SP_FAN2_PWM");
+          break;
+        case SP_SENSOR_FAN3_PWM:
+          sprintf(name, "SP_FAN3_PWM");
           break;
         case SP_SENSOR_AIR_FLOW:
           sprintf(name, "SP_AIR_FLOW");
@@ -2568,6 +2706,16 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_fan_value(FAN2, FAN_TACH_RPM, (float*) value);
         case SP_SENSOR_FAN3_TACH:
           return read_fan_value(FAN3, FAN_TACH_RPM, (float*) value);
+
+        // FAN PWM values
+        case SP_SENSOR_FAN0_PWM:
+          return read_pwm_value_float(FAN0, (float *) value);
+        case SP_SENSOR_FAN1_PWM:
+          return read_pwm_value_float(FAN1, (float *) value);
+        case SP_SENSOR_FAN2_PWM:
+          return read_pwm_value_float(FAN2, (float *) value);
+        case SP_SENSOR_FAN3_PWM:
+          return read_pwm_value_float(FAN3, (float *) value);
 
         // Various Voltages
         case SP_SENSOR_P5V:

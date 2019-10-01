@@ -4,12 +4,12 @@ SUMMARY = "Switchtec Library"
 DESCRIPTION = "Library for communicating with Mircosemi PCIe switch"
 SECTION = "libs"
 LICENSE = "MIT"
-PV = "0.9.5"
+PV = "2.0"
 PR = "rc1"
 LIC_FILES_CHKSUM = "file://${S}/LICENSE;md5=3d6b07c89629cff2990d2e8e1f4c2382"
 
-SRC_URI = "git://github.com/Microsemi/switchtec-user.git;branch=devel;protocol=git"
-SRCREV = "8357e463f85682e9798d52ba11b78b5e0f67fdca"
+SRC_URI = "git://github.com/Microsemi/switchtec-user.git;branch=master;protocol=git"
+SRCREV = "cbcad45fe9b2d21c52ff13e810a8bad56f9d4f03"
 
 S = "${WORKDIR}/git"
 

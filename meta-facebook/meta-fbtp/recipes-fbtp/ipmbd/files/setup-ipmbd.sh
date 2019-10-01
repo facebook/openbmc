@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
@@ -28,7 +28,16 @@
 #
 ### END INIT INFO
 
-. /usr/local/fbpackages/utils/ast-functions
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
+. /usr/local/bin/openbmc-utils.sh
+KERNEL_VERSION=$(uname -r)
+if [[ "${KERNEL_VERSION}" != 4.1.* ]]; then
+    i2c_mslave_add 1 0x10
+    i2c_mslave_add 4 0x10
+    i2c_mslave_add 9 0x10
+fi
+
 echo -n "Starting IPMB Rx/Tx Daemon.."
 
 runsv /etc/sv/ipmbd_1 > /dev/null 2>&1 &

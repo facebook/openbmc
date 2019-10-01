@@ -9,4 +9,6 @@ RDEPENDS_${PN} += " \
   e2fsprogs \
   util-linux \
   mmc-utils \
+  blktrace \
+  fio \
   "

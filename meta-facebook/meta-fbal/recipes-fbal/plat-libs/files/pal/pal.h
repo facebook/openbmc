@@ -144,6 +144,8 @@ int pal_get_rst_btn(uint8_t *status);
 int pal_set_fault_led(uint8_t fru, uint8_t status);
 int pal_uart_select (uint32_t base, uint8_t offset, int option, uint32_t para);
 int pal_uart_select_led_set(void);
+int pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver);
+
 
 enum {
   UARTSW_BY_BMC,

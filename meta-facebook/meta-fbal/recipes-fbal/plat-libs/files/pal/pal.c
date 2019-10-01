@@ -31,6 +31,7 @@
 #include <sys/mman.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/nm.h>
 #include "pal.h"
 
 
@@ -974,4 +975,32 @@ pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_
   }
   *res_len = SIZE_BOOT_ORDER;
   return 0;
+}
+
+// Get ME Firmware Version
+int 
+pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver) {
+  ipmi_dev_id_t dev_id;
+  NM_RW_INFO info;
+  int ret;
+
+  info.bus = bus;
+  info.nm_addr = addr;
+  ret = pal_get_bmc_ipmb_slave_addr(&info.bmc_addr, info.bus);
+  if (ret != 0) {
+    return ret;
+  }
+ 
+  ret = cmd_NM_get_dev_id(&info, &dev_id);
+  if (ret != 0) {
+    return ret;
+  }
+ 
+  ver[0] = dev_id.fw_rev1;
+  ver[1] = dev_id.fw_rev2;
+  ver[2] = dev_id.aux_fw_rev[0];
+  ver[3] = dev_id.aux_fw_rev[1];
+  ver[4] = dev_id.aux_fw_rev[2];
+   
+  return ret;
 }

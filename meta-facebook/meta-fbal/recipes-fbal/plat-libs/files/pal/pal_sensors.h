@@ -6,6 +6,10 @@
 #define MB_TEMP_DEVICE  "/sys/class/i2c-dev/i2c-%d/device/%d-00%x/hwmon/hwmon*/temp1_input"
 #define MB_ADC_VOLTAGE_DEVICE "/sys/devices/platform/iio-hwmon/hwmon/hwmon*/in%d_input"
 
+//NM DEVICE INFO
+#define NM_IPMB_BUS_ID   (5)
+#define NM_SLAVE_ADDR    (0x2C)
+
 //AMD1278 CMD INFO
 #define PMBUS_PMON_CONFIG  (0xD4)
 #define ADM1278_SLAVE_ADDR (0x22)

@@ -546,6 +546,12 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
   return PAL_EOK;
 }
 
+bool __attribute__((weak))
+pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id)
+{
+  return false;
+}
+
 int __attribute__((weak))
 pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value)
 {

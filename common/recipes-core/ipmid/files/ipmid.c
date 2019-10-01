@@ -499,8 +499,10 @@ sensor_set_reading(unsigned char *request, unsigned char req_len,
     res->cc = CC_NOT_SUPP_IN_CURR_STATE;
     return;
   }
-  // TODO. Allow BMC to specify the sensors which we allow
-  // to be written from the host.
+  if (!pal_sensor_is_source_host(req->payload_id, sensor_num)) {
+    res->cc = CC_INVALID_PARAM;
+    return;
+  }
   if (sensor_cache_write(req->payload_id, sensor_num, true, (float)value)) {
     res->cc = CC_UNSPECIFIED_ERROR;
     return;

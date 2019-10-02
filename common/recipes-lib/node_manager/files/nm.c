@@ -186,7 +186,7 @@ cmd_NM_sensor_reading(NM_RW_INFO info, uint8_t snr_num, uint8_t* rbuf, uint8_t* 
   int ret = 0;
 
   req = (ipmb_req_t*)tbuf;
-  set_NM_head(&info, NETFN_NM_REQ, req, CMD_SENSOR_GET_SENSOR_READING);
+  set_NM_head(&info, NETFN_SENSOR_REQ, req, CMD_SENSOR_GET_SENSOR_READING);
 
   req->data[0] = snr_num;
   tlen = 1+MIN_IPMB_REQ_LEN;

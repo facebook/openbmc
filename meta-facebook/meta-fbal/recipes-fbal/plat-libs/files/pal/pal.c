@@ -291,12 +291,18 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   *status = 0;
 
   switch (fru) {
-    case FRU_MB:
-      *status = 1;
-      break;
-    default:
-      return -1;
-    }
+  case FRU_MB:
+    *status = 1; 
+    break;
+  case FRU_NIC0:
+    *status = 1; 
+    break;
+  case FRU_NIC1:
+    *status = 1; 
+    break;
+  default:
+    return -1;
+  }    
   return 0;
 }
 
@@ -362,8 +368,10 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_MB;
   } else if (!strcmp(str, "pdb")) {
     *fru = FRU_PDB;
-  } else if (!strcmp(str, "nic")) {
+  } else if (!strcmp(str, "nic0")) {
     *fru = FRU_NIC0;
+  } else if (!strcmp(str, "nic1")) {
+    *fru = FRU_NIC1;
   } else if (!strcmp(str, "ocpdbg")) {
     *fru = FRU_DBG;
   } else if (!strcmp(str, "bmc")) {
@@ -386,7 +394,10 @@ pal_get_fru_name(uint8_t fru, char *name) {
       strcpy(name, "pdb");
       break;
     case FRU_NIC0:
-      strcpy(name, "nic");
+      strcpy(name, "nic0");
+      break;
+    case FRU_NIC1:
+      strcpy(name, "nic1");
       break;
     case FRU_DBG:
       strcpy(name, "ocpdbg");
@@ -474,6 +485,12 @@ pal_get_fruid_path(uint8_t fru, char *path) {
   case FRU_MB:
     sprintf(fname, "mb");
     break;
+  case FRU_NIC0:
+    sprintf(fname, "nic0");
+    break;
+  case FRU_NIC1:
+    sprintf(fname, "nic1");
+    break;
   default:
     return -1;
   }
@@ -501,6 +518,14 @@ pal_get_fruid_name(uint8_t fru, char *name) {
   switch(fru) {
   case FRU_MB:
     sprintf(name, "Mother Board");
+    break;
+
+  case FRU_NIC0:
+    sprintf(name, "Mezz Card 0");
+    break;
+
+  case FRU_NIC1:
+    sprintf(name, "Mezz Card 1");
     break;
 
   default:

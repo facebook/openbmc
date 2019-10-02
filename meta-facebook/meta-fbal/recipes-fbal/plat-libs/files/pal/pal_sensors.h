@@ -6,9 +6,24 @@
 #define MB_TEMP_DEVICE  "/sys/class/i2c-dev/i2c-%d/device/%d-00%x/hwmon/hwmon*/temp1_input"
 #define MB_ADC_VOLTAGE_DEVICE "/sys/devices/platform/iio-hwmon/hwmon/hwmon*/in%d_input"
 
+//PECI CMD INFO
+#define PECI_RETRY_TIMES                        (0)
+#define PECI_CMD_RD_PKG_CONFIG                  (0xA1)
+#define PECI_INDEX_ACCUMULATED_ENERGY_STATUS    (3)
+#define PECI_INDEX_DIMM_THERMAL_RW              (14)
+#define PECI_INDEX_TEMP_TARGET                  (16)
+#define PECI_INDEX_TOTAL_TIME                   (31)
+#define PECI_THERMAL_DIMM0_BYTE                 (1)
+#define PECI_THERMAL_DIMM1_BYTE                 (2)
+
 //NM DEVICE INFO
 #define NM_IPMB_BUS_ID   (5)
 #define NM_SLAVE_ADDR    (0x2C)
+
+//CPU INFO
+#define PECI_CPU0_ADDR    (0x30)
+#define PECI_CPU1_ADDR    (0x31)
+
 
 //AMD1278 CMD INFO
 #define PMBUS_PMON_CONFIG  (0xD4)
@@ -28,19 +43,32 @@
 #define PMBUS_READ_PIN     (0x97)
 
 
+//Sensor Table
 enum {
   MB_SNR_PCH_TEMP = 0x08,
-  MB_SNR_CPU0_THERM_MARGIN = 0x09,
-  MB_SNR_CPU1_THERM_MARGIN = 0x0A,
+//NIC
+  NIC_MEZZ0_SNR_TEMP = 0x10,
+  NIC_MEZZ1_SNR_TEMP = 0x11,
+//PDB HSC
+  PDB_SNR_HSC_VIN = 0x20,
+  PDB_SNR_HSC_VOUT = 0x21,
+  PDB_SNR_HSC_TEMP = 0x22,
+  PDB_SNR_HSC_PIN = 0x23,
+  PDB_SNR_HSC_PEAK_IOUT = 0x24,
+  PDB_SNR_HSC_PEAK_PIN = 0x25,
+  PDB_SNR_HSC_P12V = 0x26,
+  PDB_SNR_HSC_P3V = 0x27,
 
   MB_SNR_FAN0_TACH = 0x2A,
   MB_SNR_FAN1_TACH = 0x2B,
 
-  MB_SNR_CPU0_PKG_POWER = 0x2C,
-  MB_SNR_CPU1_PKG_POWER = 0x2D,
-
   MB_SNR_CPU0_TJMAX = 0x30,
   MB_SNR_CPU1_TJMAX = 0x31,
+  MB_SNR_CPU0_PKG_POWER = 0x32,
+  MB_SNR_CPU1_PKG_POWER = 0x33,
+  MB_SNR_CPU0_THERM_MARGIN = 0x34,
+  MB_SNR_CPU1_THERM_MARGIN = 0x35,
+ 
 //HSC
   MB_SNR_HSC_VIN = 0x40,
   MB_SNR_HSC_IOUT = 0x41,
@@ -59,10 +87,28 @@ enum {
   MB_SNR_CPU1_DIMM_GRPD_TEMP = 0x59,
   MB_SNR_CPU1_DIMM_GRPE_TEMP = 0x5A,
   MB_SNR_CPU1_DIMM_GRPF_TEMP = 0x5B,
+
+//FAN
+  PDB_SNR_FAN0_INLET_SPEED = 0x60,
+  PDB_SNR_FAN1_INLET_SPEED = 0x61,
+  PDB_SNR_FAN2_INLET_SPEED = 0x62,
+  PDB_SNR_FAN3_INLET_SPEED = 0x63,
+  PDB_SNR_FAN0_OUTLET_SPEED = 0x64,
+  PDB_SNR_FAN1_OUTLET_SPEED = 0x65,
+  PDB_SNR_FAN2_OUTLET_SPEED = 0x66,
+  PDB_SNR_FAN3_OUTLET_SPEED = 0x67,
+  PDB_SNR_FAN0_VOLTAGE = 0x68,
+  PDB_SNR_FAN1_VOLTAGE = 0x69,
+  PDB_SNR_FAN2_VOLTAGE = 0x6A,
+  PDB_SNR_FAN3_VOLTAGE = 0x6B,
+  PDB_SNR_FAN0_CURRENT = 0x6C,
+  PDB_SNR_FAN1_CURRENT = 0x6D,
+  PDB_SNR_FAN2_CURRENT = 0x6E,
+  PDB_SNR_FAN3_CURRENT = 0x6F,
 //HARD DISK TEMP
   MB_SNR_BOOT_DRIVER_TEMP = 0x70,
   MB_SNR_DATA0_DRIVER_TEMP = 0x71,
-  MB_SNR_DATA1_DRIVER_TEMP = 0x70,
+  MB_SNR_DATA1_DRIVER_TEMP = 0x72,
 
   MB_SNR_C2_NVME_CTEMP = 0x7B,
   MB_SNR_C3_NVME_CTEMP = 0x7C,
@@ -252,11 +298,48 @@ enum {
   TEMP_OUTLET_R,
 };
 
+//NIC INFO
+enum {
+  MEZZ0 = 0,
+  MEZZ1,
+};
+
+//HARD DISK INFO
+enum {
+  DISK_BOOT = 0,
+  DISK_DATA0,
+  DISK_DATA1,
+};
+
+//PECI CPU INFO
+enum {
+  CPU_ID0 = 0,
+  CPU_ID1 = 1,
+};
+
 typedef struct {
-  uint8_t id;
-  uint8_t bus;
-  uint8_t slv_addr;
-} PAL_I2C_BUS_INFO;
+  uint8_t cpu_id;
+  uint8_t cpu_addr;
+}PAL_CPU_INFO;
+
+enum {
+  DIMM_CRPA = 0,
+  DIMM_CRPB = 1,
+  DIMM_CRPC = 2,
+  DIMM_CRPD = 3,
+  DIMM_CRPE = 4,
+  DIMM_CRPF = 5,
+};
+
+typedef struct {
+  uint8_t cpu_addr;
+  uint8_t index;
+  uint8_t dev_info;
+  uint8_t para_l;
+  uint8_t para_h;
+} PECI_RD_PKG_CONFIG_INFO;
+
+
 
 //ADM1278 INFO
 enum {
@@ -289,4 +372,14 @@ enum {
   NM_ID0,
 };
 
+//PCH SENSOR INFO
+enum {
+  NM_PCH_TEMP = 8,
+};
+
+typedef struct {
+  uint8_t id;
+  uint8_t bus;
+  uint8_t slv_addr;
+} PAL_I2C_BUS_INFO;
 #endif

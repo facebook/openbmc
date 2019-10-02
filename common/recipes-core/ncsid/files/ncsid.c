@@ -656,7 +656,8 @@ free_exit:
 static int
 handle_pldm_snr_read(NCSI_Response_Packet *resp)
 {
-  int pldm_iid = 0, pltf_id = 0, sensor_id = 0, sensor_val = 0;
+  int pldm_iid = 0, pltf_id = 0, sensor_id = 0;
+  float sensor_val = 0;
   unsigned char *pPldmResp = 0;
   int nic_fru_id = -1;  // each platform has a different FRU ID defined for NIC
 
@@ -680,14 +681,18 @@ handle_pldm_snr_read(NCSI_Response_Packet *resp)
   // depending on sensor type (numeric vs state), interpret the response
   //  accordingly
   if (pldm_sensors[sensor_id].sensor_type == PLDM_SENSOR_TYPE_NUMERIC) {
-    sensor_val = pldm_get_num_snr_val(
+    sensor_val = (float)pldm_get_num_snr_val(
                    (PLDM_SensorReading_Response_t *) pPldmResp);
   } else if (pldm_sensors[sensor_id].sensor_type == PLDM_SENSOR_TYPE_STATE) {
-    sensor_val = pldm_get_state_snr_val(
+    sensor_val = (float)pldm_get_state_snr_val(
                   (PLDM_StateSensorReading_Response_t *) pPldmResp);
   } else {
     syslog(LOG_WARNING, "%s unknown sensor type, snr 0x%x, type %d",
            __FUNCTION__, pltf_id, pldm_sensors[sensor_id].sensor_type);
+  }
+
+  if (pltf_id == PLDM_NUMERIC_SENSOR_START+2) { // PORT_0_LINK_SPEED
+    sensor_val = (sensor_val * 100) / 1000.0;
   }
 
   // Write the sensor reading to sensor cache
@@ -695,7 +700,7 @@ handle_pldm_snr_read(NCSI_Response_Packet *resp)
   if (nic_fru_id != -1) {
     // IF platform doesn't have a NIC FRU, or hasn't overwrite the obmc-pal lib
     //   don't save this information
-    if (sensor_cache_write(nic_fru_id, pltf_id, true, (float)sensor_val)) {
+    if (sensor_cache_write(nic_fru_id, pltf_id, true, sensor_val)) {
       syslog(LOG_WARNING, "%s sensor cache write failed", __FUNCTION__);
     }
   }

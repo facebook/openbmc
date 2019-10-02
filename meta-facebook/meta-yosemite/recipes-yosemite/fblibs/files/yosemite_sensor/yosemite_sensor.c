@@ -810,7 +810,7 @@ yosemite_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
           sprintf(units, "C");
           break;
         case PORT_0_LINK_SPEED:
-          sprintf(units, "100Mbps");
+          sprintf(units, "Gbps");
           break;
         case NIC_HEALTH_STATE:
           strcpy(units, "");

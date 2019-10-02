@@ -3,7 +3,7 @@
 # Copyright 2018-present Facebook. All Rights Reserved.
 
 SUPCPLD_SYSFS_DIR="/sys/bus/i2c/devices/12-0043"
-SCDCPLD_SYSFS_DIR="/sys/bus/i2c/devices/i2c-4"
+SCDCPLD_SYSFS_DIR="/sys/bus/i2c/devices/4-0023"
 SUP_PWR_ON_SYSFS="${SUPCPLD_SYSFS_DIR}/cpu_control"
 PWR_SYSTEM_SYSFS="${SUPCPLD_SYSFS_DIR}/chassis_power_cycle"
 SCD_TH3_RST_ON_SYSFS="${SCDCPLD_SYSFS_DIR}/th3_reset"

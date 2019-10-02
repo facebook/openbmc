@@ -134,7 +134,15 @@ case "$sku_type" in
    ;;
    "1028")
      echo "Run FSC 2 GPV2s and 2 TLs Config"
-     if [ "$dev_type" == "$DEV_TYPE_SSD" ] ; then
+     if [ "$dev_type" == "$DEV_TYPE_UNKNOWN" ] ; then
+        fw_ver=$(/usr/bin/fw-util bmc --version fscd)
+        if [[ $fw_ver =~ "fbgpv2" ]] ; then
+          echo "Keep FSC config : $fw_ver"
+        else
+          echo "Run default FSC for M.2 devices"
+          cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
+        fi
+     elif [ "$dev_type" == "$DEV_TYPE_SSD" ] ; then
         echo "Run FSC for SSD"
         cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
      elif [ "$dev_type" == "$DEV_TYPE_VSI_ACC" ] ; then

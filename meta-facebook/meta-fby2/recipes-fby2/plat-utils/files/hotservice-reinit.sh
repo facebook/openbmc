@@ -179,6 +179,9 @@ case $OPTION in
       echo "restart server type recognition for $SLOT"
       /usr/local/bin/check_server_type.sh $SLOT
 
+      # Setup fan config
+      /etc/init.d/setup-fan.sh
+
       echo "restart gpiod for $SLOT $OPTION"
       sv start gpiod
 

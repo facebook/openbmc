@@ -86,12 +86,13 @@ int main(int argc, char **argv) {
       fprintf(stderr, "Modbus command too short!\n");
       exit(1);
     }
-    decode_hex_in_place(modbus_cmd, &cmd_len);
+    
     cmd = malloc(sizeof(rackmond_command) + cmd_len);
     cmd->type = COMMAND_TYPE_RAW_MODBUS;
-    cmd->raw_modbus.length = cmd_len;
     cmd->raw_modbus.custom_timeout = timeout;
     memcpy(cmd->raw_modbus.data, modbus_cmd, cmd_len);
+    decode_hex_in_place(cmd->raw_modbus.data, &cmd_len);
+    cmd->raw_modbus.length = cmd_len;
     cmd->raw_modbus.expected_response_length = expected;
     response = malloc(expected ? expected : 1024);
     uint16_t wire_cmd_len = sizeof(rackmond_command) + cmd_len;

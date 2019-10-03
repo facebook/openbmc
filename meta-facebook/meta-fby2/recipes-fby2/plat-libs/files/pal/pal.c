@@ -4930,6 +4930,41 @@ pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
   return ret;
 }
 
+#if defined(CONFIG_FBY2_ND)
+int
+pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+
+  int ret;
+  uint8_t status;
+
+  if (slot < FRU_SLOT1 || slot > FRU_SLOT4) {
+    return PAL_ENOTSUP;
+  }
+
+  ret = pal_is_fru_prsnt(slot, &status);
+  if (ret < 0) {
+     return -1;
+  }
+  if (status == 0) {
+    return PAL_ENOTREADY;
+  }
+
+  ret = pal_is_server_12v_on(slot, &status);
+  if(ret < 0 || 0 == status) {
+    return PAL_ENOTREADY;
+  }
+
+  if(!pal_is_slot_server(slot)) {
+    return PAL_ENOTSUP;
+  }
+
+  // Send command to get 80 port record from Bridge IC
+  ret = bic_request_post_buffer_page_data(slot, page_num, res_data, res_len);
+
+  return ret;
+}
+#endif
+
 int
 pal_is_bmc_por(void) {
   FILE *fp;

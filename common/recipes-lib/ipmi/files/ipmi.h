@@ -443,6 +443,7 @@ enum
   CMD_OEM_BBV_POWER_CYCLE = 0xE9,
   CMD_OEM_ADD_CPER_LOG = 0x70,
   CMD_OEM_SET_M2_INFO = 0x92,
+  CMD_OEM_GET_80_PORT_DWORD_BUFFER = 0x93,
 };
 
 // OEM Command Codes for Storage (netfn = 0x32/0x33)

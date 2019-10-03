@@ -482,8 +482,6 @@ int bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *w
 int bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis);
 int bic_send_jtag_instruction(uint8_t slot_id, uint8_t dev_id, uint8_t *rbuf, uint8_t ir);
 int bic_get_debug_mode(uint8_t slot_id, uint8_t *debug_mode);
-int bic_set_sdr_update_flag(uint8_t slot, uint8_t update);
-int bic_get_sdr_update_flag(uint8_t slot);
 int bic_set_sdr_threshold_update_flag(uint8_t slot, uint8_t update);
 int bic_get_sdr_threshold_update_flag(uint8_t slot);
 

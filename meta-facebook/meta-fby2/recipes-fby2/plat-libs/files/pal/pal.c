@@ -11138,3 +11138,12 @@ pal_is_modify_sel_time(uint8_t *sel, int size) {
 #endif
   return need;
 }
+
+int
+pal_update_sensor_reading_sdr (uint8_t fru) {
+  if (fru >= FRU_SLOT1 && fru <= FRU_SLOT4) {
+    return fby2_sdr_init(fru, true);
+  } else {
+    return 0; //Not from BIC
+  }
+}

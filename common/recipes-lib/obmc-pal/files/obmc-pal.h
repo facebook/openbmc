@@ -388,6 +388,7 @@ int pal_check_fw_image(uint8_t fru, const char *comp, const char *path);
 int pal_fw_update_prepare(uint8_t fru, const char *comp);
 int pal_fw_update_finished(uint8_t fru, const char *comp, int status);
 bool pal_is_modify_sel_time(uint8_t *sel, int size);
+int pal_update_sensor_reading_sdr (uint8_t fru);
 #ifdef __cplusplus
 }
 #endif

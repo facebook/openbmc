@@ -300,6 +300,7 @@ int pal_parse_mem_mapping_string(uint8_t channel, bool *support_mem_mapping, cha
 bool pal_is_modify_sel_time(uint8_t *sel, int size);
 int pal_set_dev_config_setup(uint8_t value);
 int pal_get_dev_config_setup(uint8_t *value);
+int pal_update_sensor_reading_sdr(uint8_t fru);
 #ifdef __cplusplus
 } // extern "C"
 #endif

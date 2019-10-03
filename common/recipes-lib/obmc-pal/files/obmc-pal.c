@@ -2140,3 +2140,8 @@ pal_is_modify_sel_time(uint8_t *sel, int size) {
 
   return false;
 }
+
+int __attribute__((weak))
+pal_update_sensor_reading_sdr (uint8_t fru) {
+  return 0;
+}

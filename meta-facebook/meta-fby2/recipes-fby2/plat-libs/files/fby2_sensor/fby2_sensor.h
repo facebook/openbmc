@@ -536,6 +536,7 @@ int fby2_mux_control(char *device, uint8_t addr, uint8_t channel);
 int fby2_disable_gp_m2_monior(uint8_t slot_id, uint8_t dis);
 int fby2_check_hsc_sts_iout(uint8_t mask);
 int fby2_check_hsc_fault(void);
+int fby2_sdr_init(uint8_t fru, bool force);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -1984,13 +1984,13 @@ fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   return 0;
 }
 
-static int
-fby2_sdr_init(uint8_t fru) {
+int
+fby2_sdr_init(uint8_t fru, bool force) {
 
   static bool init_done[MAX_NUM_FRUS] = {false};
 
   // Sensord's SDR needs update afer BIC update
-  if (!init_done[fru - 1] || bic_get_sdr_update_flag(fru)) {
+  if (!init_done[fru - 1] || force) {
 
     sensor_info_t *sinfo = g_sinfo[fru-1];
 
@@ -1998,7 +1998,6 @@ fby2_sdr_init(uint8_t fru) {
       return ERR_NOT_READY;
 
     init_done[fru - 1] = true;
-    bic_set_sdr_update_flag(fru, 0);
     syslog(LOG_DEBUG, "%s : slot%u SDR update successfully", __func__, fru);
   }
 
@@ -2073,7 +2072,7 @@ fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
       {
          case SLOT_TYPE_SERVER:
          case SLOT_TYPE_GPV2:
-           if (is_server_prsnt(fru) && (fby2_sdr_init(fru) != 0)) {
+           if (is_server_prsnt(fru) && (fby2_sdr_init(fru,false) != 0)) {
               return -1;
            }
            strcpy(units, "");
@@ -2529,7 +2528,7 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
             return -1;
           }
 
-          ret = fby2_sdr_init(fru);
+          ret = fby2_sdr_init(fru,false);
           if (ret < 0) {
             return ret;
           }
@@ -2581,7 +2580,7 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
             return -1;
           }
 
-          ret = fby2_sdr_init(fru);
+          ret = fby2_sdr_init(fru,false);
           if (ret < 0) {
             return ret;
           }

@@ -5810,6 +5810,9 @@ parse_psb_error_sel_nd(uint8_t *event_data, char *error_log) {
 
   strcpy(error_log, "");
   switch (ed[1]) {
+    case 0x00:
+      strcat(error_log, "PSB Pass");
+      break;
     case 0x3E:
       strcat(error_log, "P0: Error reading fuse info");
       break;

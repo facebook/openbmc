@@ -5748,6 +5748,9 @@ parse_bank_mapping_name(uint8_t bank_num, char *error_log) {
     case 26:
       strcpy(error_log, "PB");
       break;
+    case 27:
+      strcpy(error_log, "PIE");
+      break;
     default:
       strcpy(error_log, "UNKNOWN");
       break;

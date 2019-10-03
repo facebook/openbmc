@@ -36,8 +36,7 @@ I2C_GET_BYTE = "/usr/sbin/i2cget -f -y %d 0x%x"
 LTC4151_VIN_HWMON = LTC4151_PATH + "in1_input"
 LTC4281_TEMP = LTC4281_PATH + "temp1_input"
 LTC4281_FAULT_LOG_EN = LTC4281_PATH + "fault_log_enable"
-LTC4281_ON_FAULT_MASK = LTC4281_PATH + "on_fault_mask"
-LTC4281_ON_FAULT_MASK_EE = LTC4281_PATH + "on_fault_mask_ee"
+LTC4281_ALERT_GENERATED = LTC4281_PATH + "alert_generated"
 USERVER_POWER = SYSCPLD_PATH + "pwr_usrv_en"
 MAIN_POWER = SYSCPLD_PATH + "pwr_main_n"
 PSU_PRESENT = {0x1: SYSCPLD_PATH + "psu2_present", 0x2: SYSCPLD_PATH + "psu1_present"}
@@ -602,13 +601,11 @@ class Pcard(object):
         """
         Check LTC4281 status register (0x04, 0x05, 0x24, 0x25, 0x1e)
         """
-        fault_log = list(LTC4281_FAULT_LOG)
-        fault_log_ee = list(LTC4281_FAULT_LOG_EE)
-        # Skip to check bit7 eeprom_done
-        fault_log.pop(7)
-        fault_log_ee.pop(7)
         log_status = (
-            fault_log + fault_log_ee + LTC4281_ADC_ALERT_LOG + LTC4281_ADC_ALERT_LOG_EE
+            LTC4281_FAULT_LOG
+            + LTC4281_FAULT_LOG_EE
+            + LTC4281_ADC_ALERT_LOG
+            + LTC4281_ADC_ALERT_LOG_EE
         )
 
         for status in log_status:
@@ -635,7 +632,7 @@ class Pcard(object):
             val = self.ltc4281_read_channel(
                 ch, os.path.join(LTC4281_PATH, LTC4281_STATUS2[index])
             )
-            if index == 5 or index == 6:
+            if index == 4 or index == 5 or index == 6:
                 if isinstance(val, int) and val is 0:
                     return False
             else:
@@ -739,10 +736,10 @@ class Pcard(object):
         """
         syslog.syslog(syslog.LOG_CRIT, "Mux channel %d LTC4281 status clean start" % ch)
         log_status = (
-            LTC4281_FAULT_LOG
-            + LTC4281_ADC_ALERT_LOG
-            + LTC4281_FAULT_LOG_EE
+            LTC4281_FAULT_LOG_EE
             + LTC4281_ADC_ALERT_LOG_EE
+            + LTC4281_FAULT_LOG
+            + LTC4281_ADC_ALERT_LOG
         )
         for status in log_status:
             self.ltc4281_write_channel(ch, os.path.join(LTC4281_PATH, status), 0)
@@ -760,6 +757,11 @@ class Pcard(object):
             syslog.LOG_CRIT, "Mux channel %d LTC4281 initialization start" % ch
         )
         self.ltc4281_write_channel(ch, LTC4281_FAULT_LOG_EN, 1)
+        # Wait for a while to make sure command execute done
+        time.sleep(delay)
+        # Clear this bit to default, because it will be set to 1 when we do
+        # clear_ltc4281_status function (triggered by EEPROM_DONE_ALERT).
+        self.ltc4281_write_channel(ch, LTC4281_ALERT_GENERATED, 0)
         syslog.syslog(
             syslog.LOG_CRIT, "Mux channel %d LTC4281 initialization finish" % ch
         )

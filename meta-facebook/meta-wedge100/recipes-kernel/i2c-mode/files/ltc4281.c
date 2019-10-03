@@ -56,6 +56,7 @@
 #define LTC4281_POWER_ALARM_MIN   0x0E
 #define LTC4281_POWER_ALARM_MAX   0x0F
 #define LTC4281_ILIM_ADJUST       0x11
+#define LTC4281_ALERT_CONTROL     0x1C
 #define LTC4281_ADC_CONTROL       0x1D
 #define LTC4281_STATUS_LSB        0x1E
 #define LTC4281_STATUS_MSB        0x1F
@@ -527,6 +528,15 @@ static const i2c_dev_attr_st ltc4281_attr_table[] = {
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     LTC4281_ILIM_ADJUST, 1, 1,
+  },
+  {
+    "alert_generated",
+    "This bit is set to 1 when an alert is generated.\n"
+    "It must be manually cleared by writing a 0 to it via I2C.\n"
+    "This bit can be set via I2C to simulate an alert",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    LTC4281_ALERT_CONTROL, 7, 1,
   },
   {
     "fault_log_enable",

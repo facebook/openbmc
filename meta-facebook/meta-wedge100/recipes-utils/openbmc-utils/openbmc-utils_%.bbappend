@@ -27,6 +27,7 @@ SRC_URI += "file://disable_watchdog.sh \
             file://cp2112_i2c_flush.sh \
             file://reset_qsfp_mux.sh \
             file://setup_i2c.sh \
+            file://setup_sensors_conf.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -73,6 +74,10 @@ do_install_board() {
 
     install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .
+
+    # the script to setup lm-sensors conf
+    install -m 755 setup_sensors_conf.sh ${D}${sysconfdir}/init.d/setup_sensors_conf.sh
+    update-rc.d -r ${D} setup_sensors_conf.sh start 99 S .
 
     install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .

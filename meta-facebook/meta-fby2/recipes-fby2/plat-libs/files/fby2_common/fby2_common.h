@@ -71,6 +71,7 @@ enum {
 enum {
   TYPE_SPB_YV2     = 0,
   TYPE_SPB_YV250   = 1,
+  TYPE_SPB_YV2ND   = 2,
 };
 
 enum {

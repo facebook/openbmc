@@ -728,9 +728,19 @@ sensor_thresh_array_init() {
   spb_sensor_threshold[SP_P1V8_STBY][LCR_THRESH] = 1.62;
   spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][UCR_THRESH] = 13.75;
   spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 52;
   spb_sensor_threshold[SP_SENSOR_HSC_TEMP][UCR_THRESH] = 120;
-  spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 625;
+  if (spb_type == TYPE_SPB_YV2ND) {
+    if ((fby2_get_slot_type(FRU_SLOT1)==SLOT_TYPE_GPV2) || (fby2_get_slot_type(FRU_SLOT3) == SLOT_TYPE_GPV2)) { // For GPv2 case
+      spb_sensor_threshold[SP_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 63;
+      spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 756;
+    } else { // for ND case
+      spb_sensor_threshold[SP_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 52;
+      spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 625;
+    }
+  } else {
+    spb_sensor_threshold[SP_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 52;
+    spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 625;
+  }
 
   //DC
   dc_sensor_threshold[DC_SENSOR_OUTLET_TEMP][UCR_THRESH] = 70;

@@ -241,8 +241,8 @@ _get_spb_rev(void) {
 }
 
 /* Baseboard        Board_ID Rev_ID[2] Rev_ID[1] Rev_ID[0]
-   Test board PoC       1       0         0         0
-   Test board EVT       1       0         0         1
+   YV2 ND PoC           1       0         0         0
+   YV2 ND EVT           1       0         0         1
    YV2 PoC              0       0         0         0
    YV2 EVT              0       0         0         1
    YV2 DVT              0       0         1         0
@@ -268,6 +268,8 @@ fby2_common_get_spb_type() {
 
    if (1 == board_id && BIT(rev, 2)) {
      spb_type = TYPE_SPB_YV250;
+   } else if ((1 == board_id) && (0 == BIT(rev, 2))) {
+     spb_type = TYPE_SPB_YV2ND;
    } else {
      spb_type = TYPE_SPB_YV2;
    }

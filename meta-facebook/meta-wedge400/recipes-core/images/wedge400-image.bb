@@ -51,6 +51,7 @@ IMAGE_INSTALL += " \
   tpm-tools \
   usb-console \
   wedge-eeprom \
+  weutil-dhcp-id \
   "
 IMAGE_FEATURES += " \
   ssh-server-openssh \

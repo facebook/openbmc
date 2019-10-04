@@ -12,12 +12,13 @@ inherit native
 
 SRC_URI = "file://pal.c \
            file://pal.h \
+           file://pal_sensors.h \
            file://Makefile \
           "
 DEPENDS += " libkv-native libipmi-native obmc-pal-native"
 LDFLAGS += ""
 SOURCES = "pal.c"
-HEADERS = "pal.h"
+HEADERS = "pal.h pal_sensors.h"
 
 S = "${WORKDIR}"
 

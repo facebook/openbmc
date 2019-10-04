@@ -13,11 +13,18 @@ CFLAGS += "-D__MACHINE__=${MACHINE}"
 
 SRC_URI = "file://obmc-pal.h \
            file://obmc-pal.c \
-           file://obmc-sensor.c \
-           file://obmc-sensor.h \
+           file://obmc_pal_sensors.c \
+           file://obmc_pal_sensors.h \
            file://CMakeLists.txt \
           "
 DEPENDS += " libkv libipmi libipmb"
+
+# TODO Remove when everyone have moved away from including obmc-sensors.h
+do_install_append() {
+  install -d ${D}${includedir}/openbmc
+  cd ${D}${includedir}/openbmc
+  ln -s obmc_pal_sensors.h obmc-sensor.h
+}
 
 inherit cmake
 

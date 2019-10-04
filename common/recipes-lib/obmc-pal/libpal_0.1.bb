@@ -10,12 +10,13 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/LGPL-2.1;md5=1
 
 SRC_URI = "file://pal.c \
            file://pal.h \
+           file://pal_sensors.h \
            file://Makefile \
           "
 DEPENDS += " libkv libipmi libipmb obmc-pal"
 LDFLAGS += " -lkv -lipmi -lipmb"
 SOURCES = "pal.c"
-HEADERS = "pal.h"
+HEADERS = "pal.h pal_sensors.h"
 
 CFLAGS += "-Wall -Werror -fPIC"
 

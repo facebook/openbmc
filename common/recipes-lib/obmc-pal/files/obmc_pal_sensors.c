@@ -33,7 +33,7 @@
 #include <errno.h>
 #include <openbmc/kv.h>
 #include "obmc-pal.h"
-#include "obmc-sensor.h"
+#include "obmc_pal_sensors.h"
 
 #ifdef DBUS_SENSOR_SVC
 #include <openbmc/sensor-svc-client.h>

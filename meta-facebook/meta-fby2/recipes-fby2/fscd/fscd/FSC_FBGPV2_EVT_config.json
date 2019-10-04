@@ -1,0 +1,164 @@
+{
+  "version": "fbgpv2-evt-r03",
+  "pwm_transition_value": 70,
+  "pwm_boost_value": 100,
+  "sample_interval_ms": 3000,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": true
+  },
+  "sensor_valid_check": {
+    "soc": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)nvme": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    }
+  },
+  "watchdog": false,
+  "min_rpm": 800,
+  "profiles": {
+    "linear_inlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 25, 20 ],
+        [ 27, 22 ],
+        [ 29, 24 ],
+        [ 31, 26 ],
+        [ 33, 28 ],
+        [ 35, 30 ],
+        [ 37, 32 ],
+        [ 39, 34 ],
+        [ 41, 36 ],
+        [ 43, 38 ],
+        [ 45, 40 ]
+      ]
+    },
+    "linear_cpu_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ -34, 20 ],
+        [ -32, 22 ],
+        [ -30, 24 ],
+        [ -28, 26 ],
+        [ -26, 28 ]
+      ]
+    },
+    "pid_cpu_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": -21,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -1.25,
+      "ki": -0.035,
+      "kd": 0
+    },
+    "linear_dimm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [70, 20],
+        [73, 35],
+        [75, 50],
+        [80, 65]
+      ]
+    },
+    "linear_mezz": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [80, 20],
+        [86, 35],
+        [88, 37],
+        [90, 39],
+        [92, 41],
+        [97, 70]
+      ]
+    },
+    "linear_mb_m2": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 56, 28 ],
+        [ 58, 30 ],
+        [ 60, 35 ]
+      ]
+    },
+    "pid_mb_m2": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 68,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -1.5,
+      "ki": -0.02,
+      "kd": 0
+    },
+    "linear_gp_m2": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 70 ]
+      ]
+    }
+  },
+  "fans": {
+    "0": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 0"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 0"
+      }
+    },
+    "1": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 1"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 1"
+      }
+    }
+  },
+  "zones": {
+    "zone_1": {
+      "pwm_output": [0, 1],
+      "expr_file": "FSC_FBGPV2_EVT_zone1.fsc"
+    }
+  }
+}

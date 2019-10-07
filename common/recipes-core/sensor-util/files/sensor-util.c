@@ -33,7 +33,7 @@
 #include <jansson.h>
 #include <openbmc/pal.h>
 #include <openbmc/sdr.h>
-#include <openbmc/obmc-sensor.h>
+#include <openbmc/pal_sensors.h>
 #include <openbmc/aggregate-sensor.h>
 
 #define STATUS_OK   "ok"

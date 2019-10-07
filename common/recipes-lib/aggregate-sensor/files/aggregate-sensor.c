@@ -23,7 +23,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <assert.h>
-#include <openbmc/obmc-sensor.h>
+#include <openbmc/pal_sensors.h>
 #include <openbmc/kv.h>
 #include <jansson.h>
 #include "aggregate-sensor-internal.h"

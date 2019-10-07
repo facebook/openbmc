@@ -33,7 +33,7 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/sdr.h>
 #include <openbmc/pal.h>
-#include <openbmc/obmc-sensor.h>
+#include <openbmc/pal_sensors.h>
 #include <openbmc/aggregate-sensor.h>
 
 #define MIN_POLL_INTERVAL 2

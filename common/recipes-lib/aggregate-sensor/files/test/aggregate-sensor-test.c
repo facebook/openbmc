@@ -26,7 +26,7 @@
 #include <jansson.h>
 #include "aggregate-sensor.h"
 #include <openbmc/kv.h>
-#include <openbmc/obmc-sensor.h>
+#include <openbmc/pal_sensors.h>
 #include <openbmc/cmock.h>
 
 DECLARE_MOCK_FUNC(int, kv_get, char *, char *, size_t *, unsigned int);

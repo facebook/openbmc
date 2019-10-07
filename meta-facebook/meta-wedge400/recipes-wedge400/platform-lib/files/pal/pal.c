@@ -42,11 +42,11 @@
 #include <openbmc/libgpio.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
-#include <openbmc/obmc-sensor.h>
 #include <openbmc/sensor-correction.h>
 #include <openbmc/misc-utils.h>
 #include <facebook/bic.h>
 #include <facebook/wedge_eeprom.h>
+#include "pal_sensors.h"
 #include "pal.h"
 
 #define GUID_SIZE 16

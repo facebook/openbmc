@@ -37,6 +37,7 @@
 #define SENSOR_FAIL_FILE "/tmp/cache_store/sensor_fail_boost"
 #define FAN_FAIL_FILE "/tmp/cache_store/fan_fail_boost"
 #define FAN_MODE_FILE "/tmp/cache_store/fan_mode"
+#define FSCD_DRIVER_FILE "/tmp/cache_store/fscd_driver"
 
 enum {
   CMD_SET_FAN = 0,
@@ -90,8 +91,8 @@ sensor_fail_check(bool status) {
   struct dirent *ptr;
   int cnt = 0;
 
-  if (status) { 
-    printf("Sensor Fail: Not support in manual mode(No fscd running)\n"); 
+  if (status) {
+    printf("Sensor Fail: Not support in manual mode(No fscd running)\n");
     return;
   }
 
@@ -100,24 +101,24 @@ sensor_fail_check(bool status) {
     if (dir != NULL) {
       printf("Sensor Fail: ");
       while((ptr = readdir(dir)) != NULL) {
-        if (strcmp(ptr->d_name, ".") == 0 || strcmp(ptr->d_name, "..") == 0)  
+        if (strcmp(ptr->d_name, ".") == 0 || strcmp(ptr->d_name, "..") == 0)
           continue;
         cnt++;
         if (cnt == 1) {
           printf("\n%s\n", ptr->d_name);
           continue;
         }
-        printf("%s\n", ptr->d_name); 
+        printf("%s\n", ptr->d_name);
       }
       closedir(dir);
       if (cnt == 0)
         printf("None\n");
     } else {
       printf("Sensor Fail: None\n");
-    }    
+    }
   } else {
     printf("Sensor Fail: None\n");
-  } 
+  }
   return;
 }
 
@@ -163,12 +164,12 @@ fan_mode_check(void) {
   FILE* fp;
   char cmd[128];
   char buf[32];
-  int res; 
-  int fd; 
-  uint8_t mode; 
+  int res;
+  int fd;
+  uint8_t mode;
   int cnt;
 
-  sprintf(cmd, "ps | grep /usr/bin/fscd.py | wc -l"); 
+  sprintf(cmd, "ps | grep /usr/bin/fscd.py | wc -l");
   if((fp = popen(cmd, "r")) == NULL) {
     printf("Fan Mode: Unknown\n");
     return false;
@@ -176,7 +177,7 @@ fan_mode_check(void) {
 
   if(fgets(buf, sizeof(buf), fp) != NULL) {
     res = atoi(buf);
-    if(res <= 2) {  
+    if(res <= 2) {
       printf("Fan Mode: Manual(No fscd running)\n");
       pclose(fp);
       return true;
@@ -191,7 +192,7 @@ fan_mode_check(void) {
   }
 
   cnt = read(fd, &mode, sizeof(uint8_t));
-  
+
   if (cnt <= 0) {
     printf("Fan Mode: Unknown\n");
     close(fd);
@@ -202,7 +203,7 @@ fan_mode_check(void) {
   switch(mode) {
     case NORMAL:
       printf("Fan Mode: Normal\n");
-      break;   
+      break;
     case TRANSIT:
       printf("Fan Mode: Transitional\n");
       break;
@@ -216,6 +217,30 @@ fan_mode_check(void) {
 
   close(fd);
   return false;
+}
+
+static int
+fscd_driver_check(bool status) {
+#define MAX_BUF_SIZE 256
+  FILE* fp;
+  char buf[MAX_BUF_SIZE] = {0};
+
+  if (status) {
+    printf("FSCD Driver: Not support in manual mode(No fscd running)\n");
+    return -1;
+  }
+
+  fp = fopen(FSCD_DRIVER_FILE, "r");
+  if (!fp) {
+    printf("FSCD Driver: N/A\n");
+    return -1;
+  }
+
+  fgets(buf, MAX_BUF_SIZE, fp);
+  printf("FSCD Driver: %s\n", buf);
+
+  fclose(fp);
+  return 0;
 }
 
 int
@@ -321,6 +346,7 @@ main(int argc, char **argv) {
 
   if ((cmd == CMD_GET_FAN) && (argc == 2)) {
     manu_flag = fan_mode_check();
+    fscd_driver_check(manu_flag);
     sensor_fail_check(manu_flag);
     fan_fail_check(manu_flag);
     pal_specific_plat_fan_check(manu_flag);

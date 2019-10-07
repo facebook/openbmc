@@ -32,9 +32,9 @@
 #include <sys/stat.h>
 #include <pthread.h>
 #include <openbmc/obmc-i2c.h>
-#include <openbmc/obmc-sensor.h>
 #include <openbmc/kv.h>
 #include "pal.h"
+#include "pal_sensors.h"
 #include <string.h>
 
 #define BIT(value, index) ((value >> index) & 1)

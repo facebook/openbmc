@@ -30,7 +30,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <syslog.h>
-#include <openbmc/obmc-sensor.h>
+#include <openbmc/obmc_pal_sensors.h>
 #include <openbmc/obmc-i2c.h>
 #include "lightning_sensor.h"
 

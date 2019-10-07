@@ -31,7 +31,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <openbmc/pal.h>
-#include <openbmc/obmc-sensor.h>
+#include <openbmc/pal_sensors.h>
 
 #define BTN_MAX_SAMPLES   200
 #define BTN_POWER_OFF     40

@@ -6122,6 +6122,70 @@ pal_parse_sel_nd(uint8_t fru, uint8_t *sel, char *error_log)
 }
 #endif
 
+#if defined(CONFIG_FBY2_GPV2)
+int
+pal_parse_sel_gpv2(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  uint8_t snr_num = sel[11];
+  uint8_t *event_data = &sel[10];
+  uint8_t *ed = &event_data[3];
+  // uint8_t sen_type = event_data[0];
+  char temp_log[512] = {0};
+  bool parsed = false;
+
+  switch(snr_num) {
+    case BIC_SENSOR_SYSTEM_STATUS:
+      strcpy(error_log, "");
+      switch (ed[0] & 0x0F) {
+        case 0x00:
+          strcat(error_log, "SOC_Thermal_Trip");
+          break;
+        case 0x02:
+          strcat(error_log, "SYS_Throttle");
+          break;
+        case 0x03:
+          strcat(error_log, "PCH_Thermal_Trip");
+          break;
+        case 0x04:
+          strcat(error_log, "FM_Throttle");
+          break;
+        case 0x05:
+          strcat(error_log, "HSC_Throttle");
+          break;
+        case 0x06:
+          strcat(error_log, "MB_Throttle");
+          break;
+        case 0x07:
+          strcat(error_log, "Platform_Reset");
+          break;
+        case 0x08:
+          sprintf(temp_log, "Dev%d_INA231", ed[1] & 0x0F);
+          strcat(error_log, temp_log);
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;
+      }
+      parsed = true;
+      break;
+  }
+
+  if (parsed == true) {
+    if ((event_data[2] & 0x80) == 0) {
+      strcat(error_log, " Assertion");
+    } else {
+      strcat(error_log, " Deassertion");
+    }
+    return 0;
+  }
+
+  pal_parse_sel_helper(fru, sel, error_log);
+
+  return 0;
+
+}
+#endif
+
 int
 pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
 {
@@ -6264,45 +6328,58 @@ pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_ND)
+#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_ND) || defined(CONFIG_FBY2_GPV2)
   int ret = -1;
+  uint8_t slot_type = 0xFF;
   uint8_t server_type = 0xFF;
 
-  ret = fby2_get_server_type(fru, &server_type);
-  if (ret) {
-    syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
-  }
+  slot_type = fby2_get_slot_type(fru);
 
-  if (server_type > SERVER_TYPE_EP) {
-    ret = fby2_get_server_type_directly(fru, &server_type);
+  if (slot_type == SLOT_TYPE_SERVER) {
+    ret = fby2_get_server_type(fru, &server_type);
     if (ret) {
-      syslog(LOG_ERR, "%s, Get server type directly failed", __func__);
+      syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
     }
-  }
 
-  switch (server_type) {
-#if defined(CONFIG_FBY2_RC)
-    case SERVER_TYPE_RC:
-      pal_parse_sel_rc(fru, sel, error_log);
-      break;
+    if (server_type > SERVER_TYPE_EP) {
+      ret = fby2_get_server_type_directly(fru, &server_type);
+      if (ret) {
+        syslog(LOG_ERR, "%s, Get server type directly failed", __func__);
+      }
+    }
+
+    switch (server_type) {
+  #if defined(CONFIG_FBY2_RC)
+      case SERVER_TYPE_RC:
+        pal_parse_sel_rc(fru, sel, error_log);
+        break;
+  #endif
+  #if defined(CONFIG_FBY2_EP)
+      case SERVER_TYPE_EP:
+        pal_parse_sel_ep(fru, sel, error_log);
+        break;
+  #endif
+  #if defined(CONFIG_FBY2_ND)
+      case SERVER_TYPE_ND:
+        pal_parse_sel_nd(fru, sel, error_log);
+        break;
+  #endif
+      case SERVER_TYPE_TL:
+        pal_parse_sel_tl(fru, sel, error_log);
+        break;
+      default:
+        syslog(LOG_ERR, "%s, Undefined server type", __func__);
+        pal_parse_sel_helper(fru, sel, error_log);
+        return -1;
+    }
+#if defined(CONFIG_FBY2_GPV2)
+  } else if (slot_type == SLOT_TYPE_GPV2) {
+    pal_parse_sel_gpv2(fru, sel, error_log);
 #endif
-#if defined(CONFIG_FBY2_EP)
-    case SERVER_TYPE_EP:
-      pal_parse_sel_ep(fru, sel, error_log);
-      break;
-#endif
-#if defined(CONFIG_FBY2_ND)
-    case SERVER_TYPE_ND:
-      pal_parse_sel_nd(fru, sel, error_log);
-      break;
-#endif
-    case SERVER_TYPE_TL:
-      pal_parse_sel_tl(fru, sel, error_log);
-      break;
-    default:
-      syslog(LOG_ERR, "%s, Undefined server type", __func__);
-      pal_parse_sel_helper(fru, sel, error_log);
-      return -1;
+  } else {
+    syslog(LOG_ERR, "%s, Undefined slot type", __func__);
+    pal_parse_sel_helper(fru, sel, error_log);
+    return -1;
   }
 #else
   pal_parse_sel_tl(fru, sel, error_log);

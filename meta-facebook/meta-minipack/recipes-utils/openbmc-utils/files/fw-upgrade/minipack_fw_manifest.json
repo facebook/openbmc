@@ -21,7 +21,7 @@
     },
     "iob_fpga" : {
         "get_version" : "fpga_ver.sh|grep IOBFPGA: |cut -d ' ' -f 2",
-        "upgrade_cmd" : "/usr/local/bin/spi_util.sh write spi1 IOB_FPGA_FLASH {}",
+        "upgrade_cmd" : "/usr/local/bin/spi_util.sh write spi1 IOB_FPGA_FLASH {filename}",
         "priority": 6
     },
     "pdb" : {

@@ -40,11 +40,11 @@
 #include <linux/limits.h>
 #include <linux/version.h>
 #include "pal.h"
+#include "pal_sensors.h"
 #include <math.h>
 #include <facebook/bic.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
-#include <openbmc/obmc-sensor.h>
 #include <openbmc/sensor-correction.h>
 #include <openbmc/misc-utils.h>
 

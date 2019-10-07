@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <openbmc/pal.h>
-#include <openbmc/obmc-sensor.h>
+#include <openbmc/pal_sensors.h>
 #include <facebook/bic.h>
 
 #include "usb-dbg-conf.h"

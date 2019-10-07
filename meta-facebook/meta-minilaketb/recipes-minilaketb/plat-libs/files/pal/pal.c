@@ -34,10 +34,10 @@
 #include <pthread.h>
 #include <unistd.h>
 #include "pal.h"
+#include "pal_sensors.h"
 #include <facebook/bic.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
-#include <openbmc/obmc-sensor.h>
 
 #define BIT(value, index) ((value >> index) & 1)
 

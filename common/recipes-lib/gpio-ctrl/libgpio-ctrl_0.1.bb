@@ -32,13 +32,30 @@ SRC_URI = "file://gpio.c \
            file://gpiochip_aspeed.c \
            file://libgpio.h \
            file://Makefile \
+           file://libgpio.py \
           "
 
 CFLAGS += "-Wall -Werror "
 LDFLAGS += " -lmisc-utils -lpthread -lobmc-i2c "
 
 DEPENDS += "libmisc-utils libobmc-i2c"
-RDEPENDS_${PN} += " libmisc-utils libobmc-i2c"
+RDEPENDS_${PN} += " libmisc-utils libobmc-i2c python3-core"
+
+inherit distutils3
+python() {
+  if d.getVar('DISTRO_CODENAME', True) == 'krogoth':
+    d.setVar('INHERIT', 'python-dir')
+  else:
+    d.setVar('INHERIT', 'python3-dir')
+}
+
+distutils3_do_configure(){
+    :
+}
+
+do_compile() {
+  make
+}
 
 do_install() {
     install -d ${D}${libdir}
@@ -46,7 +63,10 @@ do_install() {
 
     install -d ${D}${includedir}/openbmc
     install -m 0644 libgpio.h ${D}${includedir}/openbmc/libgpio.h
+
+    install -d ${D}${PYTHON_SITEPACKAGES_DIR}
+    install -m 644 libgpio.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
 
-FILES_${PN} = "${libdir}/libgpio-ctrl.so"
+FILES_${PN} = "${libdir}/libgpio-ctrl.so ${PYTHON_SITEPACKAGES_DIR}/libgpio.py"
 FILES_${PN}-dev = "${includedir}/openbmc/libgpio.h"

@@ -52,7 +52,7 @@
 #include <openbmc/pldm_base.h>
 #include <openbmc/pldm_fw_update.h>
 #include <openbmc/pldm_pmc.h>
-#include <openbmc/obmc-sensor.h>
+#include <openbmc/pal_sensors.h>
 #include <inttypes.h>
 //#define DEBUG 0
 //#define PLDM_SNR_DBG 0

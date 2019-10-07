@@ -36,7 +36,7 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
-#include <openbmc/obmc-sensor.h>
+#include <openbmc/pal_sensors.h>
 #include <sys/reboot.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/ipc.h>

@@ -33,7 +33,7 @@
 #include <openbmc/pal.h>
 #include <openbmc/sdr.h>
 #include <openbmc/kv.h>
-#include <openbmc/obmc-sensor.h>
+#include <openbmc/pal_sensors.h>
 #include <openbmc/fruid.h>
 #include <arpa/inet.h>
 #include "usb-dbg-conf.h"

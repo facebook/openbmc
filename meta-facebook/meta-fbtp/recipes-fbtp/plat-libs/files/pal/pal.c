@@ -32,10 +32,10 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include "pal.h"
+#include "pal_sensors.h"
 #include <openbmc/misc-utils.h>
 #include <openbmc/vr.h>
 #include <openbmc/obmc-i2c.h>
-#include <openbmc/obmc-sensor.h>
 #include <sys/stat.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/kv.h>

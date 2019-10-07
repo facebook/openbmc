@@ -88,6 +88,25 @@ do_compile () {
         sed -i 's/$(CROSS_COMPILE)ld$/$(CROSS_COMPILE)ld.bfd/g' config.mk
     fi
 
+    #
+    # Customize flash layout so /mnt/data won't be mounted in oss build.
+    # NOTE:
+    #   - "env" must be the second partition because fw-util assumes env
+    #     is located at /dev/mtd1 and writes uboot environment variables
+    #     into the partition.
+    #   - <mtd-id> field is different cross different kernel versions:
+    #     it is "spi0.0/spi0.1" in kernel 4.1 and "bmc/2nd-bmc" in kernel
+    #     4.18 or higher versions.
+    #   - fill-up size tag "-" can only be used for the last partition.
+    #   - Minipack is installed with 64MB instead of 32MB flashes.
+    #
+    sed -i 's/root=\/dev\/ram rw\"/root=\/dev\/ram rw mtdparts=bmc:32M@0x0(flash0),0x20000@0x60000(env);2nd-bmc:-(flash1) dual_flash=1\"/g' include/configs/fbcmm.h
+    sed -i 's/root=\/dev\/ram rw\"/root=\/dev\/ram rw mtdparts=bmc:32M@0x0(flash0),0x20000@0x60000(env);2nd-bmc:-(flash1) dual_flash=1\"/g' include/configs/fbyamp.h
+    sed -i 's/root=\/dev\/ram rw\"/root=\/dev\/ram rw mtdparts=bmc:64M@0x0(flash0),0x20000@0x60000(env);2nd-bmc:-(flash1) dual_flash=1\"/g' include/configs/fbminipack.h
+    sed -i 's/root=\/dev\/ram rw\"/root=\/dev\/ram rw mtdparts=spi0.0:32M@0x0(flash0),0x20000@0x60000(env);spi0.1:-(flash1) dual_flash=1\"/g' include/configs/fbwedge100.h
+    sed -i 's/root=\/dev\/ram rw\"/root=\/dev\/ram rw mtdparts=spi0.0:32M@0x0(flash0),0x20000@0x60000(env);spi0.1:-(flash1) dual_flash=1\"/g' include/configs/fbwedge.h
+    sed -i 's/root=\/dev\/ram rw\"/root=\/dev\/ram rw mtdparts=spi0.0:32M@0x0(flash0),0x20000@0x60000(env);spi0.1:-(flash1) dual_flash=1\"/g' include/configs/fbbackpack.h
+
     unset LDFLAGS
     unset CFLAGS
     unset CPPFLAGS

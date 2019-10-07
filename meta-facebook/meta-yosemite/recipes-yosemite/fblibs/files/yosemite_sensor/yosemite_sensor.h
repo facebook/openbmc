@@ -25,7 +25,7 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/obmc-pal.h>
-#include <openbmc/obmc-sensor.h>
+#include <openbmc/obmc_pal_sensors.h>
 #include <facebook/bic.h>
 #include <facebook/yosemite_common.h>
 

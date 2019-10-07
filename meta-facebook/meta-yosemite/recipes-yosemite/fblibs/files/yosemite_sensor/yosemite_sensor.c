@@ -31,7 +31,7 @@
 #include <dirent.h>
 #include <sys/mman.h>
 #include <openbmc/obmc-i2c.h>
-#include <openbmc/obmc-sensor.h>
+#include <openbmc/obmc_pal_sensors.h>
 #include "yosemite_sensor.h"
 
 #define LARGEST_DEVICE_NAME 120

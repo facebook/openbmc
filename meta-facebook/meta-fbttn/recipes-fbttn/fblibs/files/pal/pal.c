@@ -30,10 +30,10 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <pthread.h>
-#include <openbmc/obmc-sensor.h>
 #include <openbmc/kv.h>
 #include <facebook/bic.h>
 #include "pal.h"
+#include "pal_sensors.h"
 
 #define BIT(value, index) ((value >> index) & 1)
 

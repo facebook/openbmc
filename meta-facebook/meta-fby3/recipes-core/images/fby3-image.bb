@@ -54,6 +54,7 @@ IMAGE_INSTALL += " \
   ncsid \
   vboot-utils \
   libpldm \
+  plat-utils \
   "
 
 IMAGE_FEATURES += " \

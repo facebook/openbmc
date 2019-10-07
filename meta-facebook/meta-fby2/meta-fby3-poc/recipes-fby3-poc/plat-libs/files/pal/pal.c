@@ -39,10 +39,10 @@
 #include <unistd.h>
 #include <stddef.h>
 #include "pal.h"
+#include "pal_sensors.h"
 #include <facebook/bic.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
-#include <openbmc/obmc-sensor.h>
 #include <sys/socket.h>
 #include <linux/netlink.h>
 #include <openbmc/ncsi.h>

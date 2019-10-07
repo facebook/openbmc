@@ -32,7 +32,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <openbmc/obmc-i2c.h>
-#include <openbmc/obmc-sensor.h>
+#include <openbmc/obmc_pal_sensors.h>
 #include "fby2_sensor.h"
 #include <openbmc/nvme-mi.h>
 

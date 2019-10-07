@@ -36,7 +36,7 @@
 #include <openbmc/pal.h>
 #include <openbmc/gpio.h>
 #include <openbmc/fruid.h>
-#include <openbmc/obmc-sensor.h>
+#include <openbmc/pal_sensors.h>
 #include <facebook/bic.h>
 #include <facebook/fby2_gpio.h>
 #include <facebook/fby2_sensor.h>

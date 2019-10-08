@@ -137,6 +137,10 @@
 
 #define FSC_CONFIG           "/etc/fsc-config.json"
 
+#define FAN_CONFIG_FILE "/tmp/fan_config"
+#define FAN_CONFIG_10K 0
+#define FAN_CONFIG_15K 1
+
 #if defined CONFIG_FBY2_ND
 /* MCA bank data format */
 enum {
@@ -693,7 +697,7 @@ static inlet_corr_t g_ict[] = {
 
 static uint8_t g_ict_count = sizeof(g_ict)/sizeof(inlet_corr_t);
 
-static inlet_corr_t g_ict_gpv2[] = {
+static inlet_corr_t g_ict_gpv2_10k[] = {
   // duty cycle vs delta_t
   { 10, 4.0 },
   { 12, 3.5 },
@@ -706,7 +710,19 @@ static inlet_corr_t g_ict_gpv2[] = {
   { 42, 0.0 },
 };
 
-static uint8_t g_ict_gpv2_count = sizeof(g_ict_gpv2)/sizeof(inlet_corr_t);
+static inlet_corr_t g_ict_gpv2_15k[] = {
+  // duty cycle vs delta_t
+  { 10, 3.0 },
+  { 12, 2.5 },
+  { 14, 2.0 },
+  { 16, 1.5 },
+  { 25, 1.0 },
+  { 34, 0.5 },
+  { 35, 0.0 },
+};
+
+static uint8_t g_ict_gpv2_10k_count = sizeof(g_ict_gpv2_10k)/sizeof(inlet_corr_t);
+static uint8_t g_ict_gpv2_15k_count = sizeof(g_ict_gpv2_15k)/sizeof(inlet_corr_t);
 
 static void apply_inlet_correction(float *value) {
   static float dt = 0;
@@ -727,8 +743,13 @@ static void apply_inlet_correction(float *value) {
     ict = g_ict;
     ict_cnt = g_ict_count;
   } else {
-    ict = g_ict_gpv2;
-    ict_cnt = g_ict_gpv2_count;
+    if (pal_get_fan_config()==FAN_CONFIG_15K) {
+      ict = g_ict_gpv2_15k;
+      ict_cnt = g_ict_gpv2_15k_count;
+    } else {
+      ict = g_ict_gpv2_10k;
+      ict_cnt = g_ict_gpv2_10k_count;
+    }
   }
 
   // Scan through the correction table to get correction value for given PWM
@@ -796,6 +817,21 @@ write_device(const char *device, const char *value) {
   } else {
     return 0;
   }
+}
+
+int
+pal_get_fan_config() {
+  int fan_config = FAN_CONFIG_10K;   //set default to 0 (10k fan)
+  int retry = 3;
+
+  do {
+    if (read_device(FAN_CONFIG_FILE, &fan_config) == 0)
+      break;
+    syslog(LOG_WARNING,"pal_get_fan_config failed");
+    msleep(10);
+  } while (--retry);
+
+  return fan_config;
 }
 
 static int

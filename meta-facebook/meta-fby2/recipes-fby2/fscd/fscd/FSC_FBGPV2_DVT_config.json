@@ -40,7 +40,7 @@
         [ 39, 29 ],
         [ 41, 31 ],
         [ 43, 32 ],
-        [ 45, 43 ]
+        [ 45, 33 ]
       ]
     },
     "linear_cpu_margin": {
@@ -143,7 +143,7 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 70,
+      "setpoint": 69,
       "negative_hysteresis": 2,
       "positive_hysteresis": 1,
       "kp": -1.5,

@@ -30,6 +30,7 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 default_fsc_config_path="/etc/fsc-config.json"
+default_aggregate_config_path="/etc/aggregate-sensor-conf.json"
 sku_type=0
 server_type=0
 full_config=1
@@ -41,6 +42,9 @@ DEV_TYPE_VSI_ACC=2
 DEV_TYPE_BRCM_ACC=3
 DEV_TYPE_OTHER_ACC=4
 DEV_TYPE_DUAL_M2=5
+
+FAN_CONFIG_10K=0
+FAN_CONFIG_15K=1
 
 if [ $# -eq 1 ] ; then
   dev_type=$1
@@ -62,6 +66,15 @@ echo "Setup fan speed... "
 #   /usr/local/bin/fan-util --set 70
 #   exit 1
 #fi
+
+/usr/local/bin/init_pwm.sh
+if [ ! -f /tmp/cache_store/setup_fan_config ]; then
+  logger -p user.warning "Setup fan config"
+  /usr/local/bin/check_fan_config.sh
+  echo 1 > /tmp/cache_store/setup_fan_config
+fi
+
+fan_config=$(cat /tmp/fan_config)
 
 for i in `seq 1 1 4`
 do
@@ -134,30 +147,31 @@ case "$sku_type" in
    ;;
    "1028")
      echo "Run FSC 2 GPV2s and 2 TLs Config"
-    #  if [ "$dev_type" == "$DEV_TYPE_UNKNOWN" ] ; then
-    #     fw_ver=$(/usr/bin/fw-util bmc --version fscd)
-    #     if [[ $fw_ver =~ "fbgpv2" ]] ; then
-    #       echo "Keep FSC config : $fw_ver"
-    #     else
-    #       echo "Run default FSC for M.2 devices"
-    #       cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
-    #     fi
-    #  elif [ "$dev_type" == "$DEV_TYPE_SSD" ] ; then
-    #     echo "Run FSC for SSD"
-    #     cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
-    #  elif [ "$dev_type" == "$DEV_TYPE_VSI_ACC" ] ; then
-    #     echo "Run FSC for VSI Accelerator"
-    #     cp /etc/FSC_FBGPV2_VSI_DVT_config.json ${default_fsc_config_path}
-    #  elif [ "$dev_type" == "$DEV_TYPE_BRCM_ACC" ] ; then
-    #     echo "Run FSC for BRCM Accelerator"
-    #     cp /etc/FSC_FBGPV2_BRCM_DVT_config.json ${default_fsc_config_path}
-    #  else
-    #     echo "Run default FSC for M.2 devices"
-    #     cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
-    #  fi
+     if [ "$dev_type" == "$DEV_TYPE_UNKNOWN" ] ; then
+        fw_ver=$(/usr/bin/fw-util bmc --version fscd)
+        if [[ $fw_ver =~ "fbgpv2" ]] ; then
+          echo "Keep FSC config : $fw_ver"
+        else
+          echo "Run default FSC for M.2 devices"
+          cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
+        fi
+     elif [ "$dev_type" == "$DEV_TYPE_SSD" ] ; then
+        echo "Run FSC for SSD"
+        cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
+     elif [ "$dev_type" == "$DEV_TYPE_VSI_ACC" ] ; then
+        echo "Run FSC for VSI Accelerator"
+        cp /etc/FSC_FBGPV2_VSI_DVT_config.json ${default_fsc_config_path}
+     elif [ "$dev_type" == "$DEV_TYPE_BRCM_ACC" ] ; then
+        echo "Run FSC for BRCM Accelerator"
+        cp /etc/FSC_FBGPV2_BRCM_DVT_config.json ${default_fsc_config_path}
+     else
+        echo "Run default FSC for M.2 devices"
+        cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
+     fi
 
-    # Since GPv2 hasn't use 15k fan yet, use 10k fan config now
-     cp /etc/FSC_FBGPV2_EVT_config.json ${default_fsc_config_path}
+     if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
+        cp /etc/aggregate-sensor-gpv2-conf.json ${default_aggregate_config_path}
+     fi
    ;;
    *)
      server_type_tmp="3"
@@ -184,12 +198,6 @@ case "$sku_type" in
    ;;
 esac
 
-/usr/local/bin/init_pwm.sh
-if [ ! -f /tmp/cache_store/setup_fan_config ]; then
-  logger -p user.warning "Setup fan config"
-  /usr/local/bin/check_fan_config.sh
-  echo 1 > /tmp/cache_store/setup_fan_config
-fi
 /usr/local/bin/fan-util --set 70
 runsv /etc/sv/fscd > /dev/null 2>&1 &
 logger -p user.info "fscd started"

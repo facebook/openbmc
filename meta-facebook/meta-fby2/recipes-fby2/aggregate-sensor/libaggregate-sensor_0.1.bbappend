@@ -18,5 +18,10 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://aggregate-sensor-conf.json \
+            file://aggregate-sensor-gpv2-conf.json \
            "
 
+do_install_append() {
+  install -d ${D}${sysconfdir}
+  install -m 644 ${WORKDIR}/aggregate-sensor-gpv2-conf.json ${D}${sysconfdir}/aggregate-sensor-gpv2-conf.json
+}

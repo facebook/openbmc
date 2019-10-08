@@ -25,6 +25,7 @@
 #include <syslog.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/kv.h>
+#include <switchtec/switchtec.h>
 #include "pal.h"
 #include "pal_sensors.h"
 
@@ -45,6 +46,8 @@ const char pal_tach_list[] = "0..7";
 
 #define THERM_DIR "/sys/class/i2c-dev/i2c-6/device/6-00%x/hwmon/hwmon*"
 #define THERM_VALUE "temp1_input"
+
+#define SWITCHTEC_DEV "/dev/i2c-12@0x%x"
 
 #define MAX_SENSOR_NUM FRU_SENSOR_MAX+1
 #define MAX_SENSOR_THRESHOLD 8
@@ -74,6 +77,10 @@ const uint8_t fru_sensor_list[] = {
   FRU_SENSOR_GPU_OUTLET,
   FRU_SENSOR_SW01_THERM,
   FRU_SENSOR_SW23_THERM,
+  FRU_SENSOR_SW0_DIE_TEMP,
+  FRU_SENSOR_SW1_DIE_TEMP,
+  FRU_SENSOR_SW2_DIE_TEMP,
+  FRU_SENSOR_SW3_DIE_TEMP,
 };
 
 /*
@@ -99,6 +106,10 @@ const char* fru_sensor_name[] = {
   "FRU_SENSOR_GPU_OUTLET",
   "FRU_SENSOR_SW01_THERM",
   "FRU_SENSOR_SW23_THERM",
+  "FRU_SENSOR_SW0_DIE_TEMP",
+  "FRU_SENSOR_SW1_DIE_TEMP",
+  "FRU_SENSOR_SW2_DIE_TEMP",
+  "FRU_SENSOR_SW3_DIE_TEMP",
 };
 
 float fru_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
@@ -299,6 +310,53 @@ static int read_temp_attr(uint8_t sensor_num, const char *device, const char *at
   return ret;
 }
 
+int read_switchtec_dietemp(uint8_t sensor_num, float *value)
+{
+  int ret = 0;
+  uint8_t addr;
+  uint32_t temp, sub_cmd_id;
+  char device_name[LARGEST_DEVICE_NAME] = {0};
+  struct switchtec_dev *dev;
+
+  switch (sensor_num)
+  {
+    case FRU_SENSOR_SW0_DIE_TEMP:
+      addr = 0x18;
+      break;
+    case FRU_SENSOR_SW1_DIE_TEMP:
+      addr = 0x19;
+      break;
+    case FRU_SENSOR_SW2_DIE_TEMP:
+      addr = 0x1a;
+      break;
+    case FRU_SENSOR_SW3_DIE_TEMP:
+      addr = 0x1b;
+      break;
+    default:
+      return READING_NA;
+      break;
+  }
+  snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, addr);
+
+  dev = switchtec_open(device_name);
+  if (dev == NULL) {
+    syslog(LOG_WARNING, "%s: switchtec open %s failed", __func__, device_name);
+    return -1;
+  }
+
+  sub_cmd_id = MRPC_DIETEMP_GET_GEN4;
+  ret = switchtec_cmd(dev, MRPC_DIETEMP, &sub_cmd_id,
+                      sizeof(sub_cmd_id), &temp, sizeof(temp));
+  if (ret)
+    ret = READING_NA;
+  else
+    *value = (float) temp / 100.0;
+
+  switchtec_close(dev);
+
+  return ret;
+}
+
 int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
 {
   int unit;
@@ -482,6 +540,10 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
     case FRU_SENSOR_GPU_OUTLET:
     case FRU_SENSOR_SW01_THERM:
     case FRU_SENSOR_SW23_THERM:
+    case FRU_SENSOR_SW0_DIE_TEMP:
+    case FRU_SENSOR_SW1_DIE_TEMP:
+    case FRU_SENSOR_SW2_DIE_TEMP:
+    case FRU_SENSOR_SW3_DIE_TEMP:
       sprintf(units, "Degree C");
       break;
     default:
@@ -503,6 +565,7 @@ int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *valu
 
   return PAL_EOK;
 }
+
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
 {
   char key[MAX_KEY_LEN] = {0};
@@ -566,6 +629,12 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
     case FRU_SENSOR_SW01_THERM:
     case FRU_SENSOR_SW23_THERM:
       ret = read_temp_attr(sensor_num, THERM_DIR, THERM_VALUE, (float*)value);
+      break;
+    case FRU_SENSOR_SW0_DIE_TEMP:
+    case FRU_SENSOR_SW1_DIE_TEMP:
+    case FRU_SENSOR_SW2_DIE_TEMP:
+    case FRU_SENSOR_SW3_DIE_TEMP:
+      ret = read_switchtec_dietemp(sensor_num, (float*)value);
       break;
     default:
       ret = READING_NA;

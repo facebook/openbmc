@@ -22,6 +22,8 @@
 #ifndef __PAL_SENSORS_H__
 #define __PAL_SENSORS_H__
 
+#include <openbmc/obmc_pal_sensors.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -68,6 +70,10 @@ enum {
   FRU_SENSOR_GPU_OUTLET,
   FRU_SENSOR_SW01_THERM,
   FRU_SENSOR_SW23_THERM,
+  FRU_SENSOR_SW0_DIE_TEMP,
+  FRU_SENSOR_SW1_DIE_TEMP,
+  FRU_SENSOR_SW2_DIE_TEMP,
+  FRU_SENSOR_SW3_DIE_TEMP,
   FRU_SENSOR_MAX,  //keep this at the tail
 };
 

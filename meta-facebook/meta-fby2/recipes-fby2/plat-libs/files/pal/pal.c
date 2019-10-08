@@ -4085,7 +4085,7 @@ pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id)
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      if (sensor_id == HOST_BOOT_DRIVE_TEMP) {
+      if ((sensor_id == HOST_BOOT_DRIVE_TEMP) && (fby2_get_slot_type(fru) == SLOT_TYPE_SERVER)) {
         return true;
       }
       break;

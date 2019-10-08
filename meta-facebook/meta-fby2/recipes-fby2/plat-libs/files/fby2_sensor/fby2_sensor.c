@@ -1944,6 +1944,9 @@ host_sensors_sdr_init(uint8_t fru, sensor_info_t *sinfo)
 {
   sdr_full_t *sdr;
 
+  if (fby2_get_slot_type(fru) != SLOT_TYPE_SERVER)
+    return;
+
   sinfo[HOST_BOOT_DRIVE_TEMP].valid = true;
   sdr = &sinfo[HOST_BOOT_DRIVE_TEMP].sdr;
 

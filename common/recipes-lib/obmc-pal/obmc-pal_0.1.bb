@@ -19,13 +19,6 @@ SRC_URI = "file://obmc-pal.h \
           "
 DEPENDS += " libkv libipmi libipmb"
 
-# TODO Remove when everyone have moved away from including obmc-sensors.h
-do_install_append() {
-  install -d ${D}${includedir}/openbmc
-  cd ${D}${includedir}/openbmc
-  ln -s obmc_pal_sensors.h obmc-sensor.h
-}
-
 inherit cmake
 
 S = "${WORKDIR}"

@@ -153,6 +153,7 @@ def arg_parser():
 
     parser.add_argument(
         "--platform",
+        "-p",
         help="Run all tests in platform by platform name",
         choices=[
             "wedge",
@@ -171,16 +172,18 @@ def arg_parser():
     )
     parser.add_argument(
         "--run-test",
+        "-r",
         help="Path to run a single test. Example: \
                         tests.wedge100.test_eeprom.EepromTest.test_odm_pcb",
     )
 
     parser.add_argument(
-        "--list-tests", action="store_true", help="List all available tests"
+        "--list-tests", "-l", action="store_true", help="List all available tests"
     )
 
     parser.add_argument(
         "--start-dir",
+        "-s",
         help="Path for where test discovery should start \
                         default: /usr/local/bin/tests2/tests/",
         default=BMC_START_DIR,

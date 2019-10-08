@@ -4041,6 +4041,24 @@ get_sensor_desc(uint8_t fru, uint8_t snr_num) {
   return &m_snr_desc[fru-1][snr_num];
 }
 
+bool
+pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id)
+{
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      if (sensor_id == HOST_BOOT_DRIVE_TEMP) {
+        return true;
+      }
+      break;
+    default:
+      break;
+  }
+  return false;
+}
+
 int
 pal_check_board_type(uint8_t *status) {
   char path[64] = {0};

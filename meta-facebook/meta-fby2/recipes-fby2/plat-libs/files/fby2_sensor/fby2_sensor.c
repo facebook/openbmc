@@ -237,6 +237,7 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_PVDDR_AB,
   BIC_SENSOR_PVDDR_DE,
   BIC_SENSOR_PVNN_PCH,
+  HOST_BOOT_DRIVE_TEMP,
 };
 
 const uint8_t bic_discrete_list[] = {
@@ -567,6 +568,7 @@ const uint8_t bic_nd_sensor_list[] = {
   BIC_ND_SENSOR_INA230_VOLTAGE,
   BIC_ND_SENSOR_INA260_POWER,
   BIC_ND_SENSOR_INA260_VOLTAGE,
+  HOST_BOOT_DRIVE_TEMP,
 };
 
 const uint8_t bic_nd_discrete_list[] = {
@@ -1937,6 +1939,38 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
   return 0;
 }
 
+static void
+host_sensors_sdr_init(uint8_t fru, sensor_info_t *sinfo)
+{
+  sdr_full_t *sdr;
+
+  sinfo[HOST_BOOT_DRIVE_TEMP].valid = true;
+  sdr = &sinfo[HOST_BOOT_DRIVE_TEMP].sdr;
+
+  memset(sdr, 0, sizeof(*sdr));
+
+  /* Name */
+  strcpy(sdr->str, "HOST_BOOT_TEMP");
+  sdr->str_type_len = strlen(sdr->str) + 1;
+  sdr->str_type_len |= (TYPE_ASCII_8BIT << 6);
+  sdr->sensor_units1 = 0; // No modifiers.
+  sdr->sensor_units2 = 1; // C
+  sdr->sensor_num = HOST_BOOT_DRIVE_TEMP;
+
+  sdr->m_val = 1;
+  sdr->m_tolerance = 0;
+  sdr->b_val = sdr->b_accuracy = 0;
+  sdr->rb_exp = 0;
+  sdr->uc_thresh = 0;
+  sdr->unc_thresh = 0;
+  sdr->unr_thresh = 0;
+  sdr->lc_thresh = 0;
+  sdr->lnc_thresh = 0;
+  sdr->lnr_thresh = 0;
+  sdr->pos_hyst = 0;
+  sdr->neg_hyst = 0;
+}
+
 int
 fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   char path[64] = {0};
@@ -1968,6 +2002,7 @@ fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
                  retry++;
                  sleep(1);
               } else {
+                host_sensors_sdr_init(fru, sinfo);
                 break;
               }
             }

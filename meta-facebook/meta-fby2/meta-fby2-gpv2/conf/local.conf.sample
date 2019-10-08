@@ -3,7 +3,7 @@
 #
 
 # Machine Selection
-MACHINE ??= "fby2"
+MACHINE ??= "fby2-gpv2"
 
 # OpenBMC distro settings
 DISTRO ?= "openbmc-fb"

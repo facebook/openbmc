@@ -53,6 +53,7 @@ IMAGE_INSTALL += " \
   ncsi-util \
   ncsid \
   libpldm \
+  obmc-sensors-test \
   "
 
 IMAGE_FEATURES += " \

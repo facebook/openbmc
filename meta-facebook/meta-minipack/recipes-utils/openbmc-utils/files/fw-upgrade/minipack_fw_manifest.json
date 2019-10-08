@@ -1,9 +1,4 @@
 {
-    "16q_eeprom" : {
-        "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"],
-        "get_version" : "NO_VERSION",
-        "priority" : 100
-    },
     "bic" : {
         "get_version" : "fw-util scm --version |grep Bri|grep -v Boot| cut -d ' ' -f 3",
         "priority" : 4,

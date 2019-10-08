@@ -1,10 +1,4 @@
 {
-    "16q_eeprom" : {
-        "filename"    : "16q_eeprom.bit",
-        "version" : "NO_VERSION",
-        "hash"    : "md5sum",
-        "hash_value" : "958216e26f26ee7d1c2f5ec32b51bade"
-    },
     "bic" : {
         "filename"    : "bic.bin",
         "version" : "v1.09",

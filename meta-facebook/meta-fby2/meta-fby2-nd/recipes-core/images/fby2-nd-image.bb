@@ -55,6 +55,7 @@ IMAGE_INSTALL += " \
   slot-util \
   snapshot-util \
   apml-util \
+  psb-util \
   "
 
 IMAGE_FEATURES += " \

@@ -41,7 +41,7 @@
 #define GPIO_LOCATE_LED "FP_LOCATE_LED"
 #define GPIO_FAULT_LED "FP_FAULT_LED_N"
 
-const char pal_fru_list[] = "all, mb, nic0, nic1";
+const char pal_fru_list[] = "all, mb, nic0, nic1, pdb";
 const char pal_server_list[] = "mb";
 
 size_t pal_pwm_cnt = 2;
@@ -299,6 +299,9 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     break;
   case FRU_NIC1:
     *status = 1; 
+    break;
+  case FRU_PDB:
+    *status = 1;
     break;
   default:
     return -1;

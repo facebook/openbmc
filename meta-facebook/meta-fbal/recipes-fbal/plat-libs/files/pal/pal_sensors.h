@@ -44,6 +44,31 @@
 #define PMBUS_READ_POUT    (0x96)
 #define PMBUS_READ_PIN     (0x97)
 
+//CM SENSOR OFFSET
+#define FAN0_INTLET_SPEED_OFFSET  (9)
+#define FAN0_OUTLET_SPEED_OFFSET  (13)
+#define FAN1_INTLET_SPEED_OFFSET  (17)
+#define FAN1_OUTLET_SPEED_OFFSET  (21)
+#define FAN2_INTLET_SPEED_OFFSET  (25)
+#define FAN2_OUTLET_SPEED_OFFSET  (29)
+#define FAN3_INTLET_SPEED_OFFSET  (33)
+#define FAN3_OUTLET_SPEED_OFFSET  (37)
+#define CM_HSC_VIN_OFFSET         (41)
+#define CM_HSC_IOUT_OFFSET        (45)
+#define CM_HSC_TEMP_OFFSET        (49)
+#define CM_HSC_PIN_OFFSET         (53)
+#define CM_HSC_PEAK_IOUT_OFFSET   (57)
+#define CM_HSC_PEAK_PIN_OFFSET    (61)
+#define CM_P12V_OFFSET            (65)
+#define CM_P3V_OFFSET             (69)
+#define FAN0_VOLT_OFFSET          (73)
+#define FAN0_CURR_OFFSET          (77)
+#define FAN1_VOLT_OFFSET          (81)
+#define FAN1_CURR_OFFSET          (85)
+#define FAN2_VOLT_OFFSET          (89)
+#define FAN2_CURR_OFFSET          (93)
+#define FAN3_VOLT_OFFSET          (97)
+#define FAN3_CURR_OFFSET          (101)
 
 //Sensor Table
 enum {
@@ -51,6 +76,7 @@ enum {
 //NIC
   NIC_MEZZ0_SNR_TEMP = 0x10,
   NIC_MEZZ1_SNR_TEMP = 0x11,
+
 //PDB HSC
   PDB_SNR_HSC_VIN = 0x20,
   PDB_SNR_HSC_VOUT = 0x21,
@@ -384,4 +410,45 @@ typedef struct {
   uint8_t bus;
   uint8_t slv_addr;
 } PAL_I2C_BUS_INFO;
+
+//CM SENSOR INFO
+enum {
+  CM_FAN0_INLET_SPEED,
+  CM_FAN1_INLET_SPEED,
+  CM_FAN2_INLET_SPEED,
+  CM_FAN3_INLET_SPEED,
+  CM_FAN0_OUTLET_SPEED,
+  CM_FAN1_OUTLET_SPEED,
+  CM_FAN2_OUTLET_SPEED,
+  CM_FAN3_OUTLET_SPEED,
+  CM_HSC_VIN,
+  CM_HSC_IOUT,
+  CM_HSC_TEMP,
+  CM_HSC_PIN,
+  CM_HSC_PEAK_IOUT,
+  CM_HSC_PEAK_PIN,
+  CM_P12V,
+  CM_P3V, 
+  CM_FAN0_VOLT,
+  CM_FAN1_VOLT,
+  CM_FAN2_VOLT,
+  CM_FAN3_VOLT,
+  CM_FAN0_CURR,
+  CM_FAN1_CURR,
+  CM_FAN2_CURR,
+  CM_FAN3_CURR,
+};
+
+typedef struct {
+  uint8_t id;
+  uint8_t offset;
+} PAL_CM_SENSOR_HEAD;
+
+typedef struct {
+  uint8_t snr_num;
+  uint8_t available;
+  uint8_t val_h;
+  uint8_t val_l;
+} PAL_CM_SENSOR_INFO;
+
 #endif

@@ -1,6 +1,8 @@
 #ifndef __PAL_SENSORS_H__
 #define __PAL_SENSORS_H__
 
+#include <openbmc/obmc_pal_sensors.h>
+
 #define MAX_SENSOR_NUM         (0xFF)
 #define MAX_DEVICE_NAME_SIZE   (128)
 #define MB_TEMP_DEVICE  "/sys/class/i2c-dev/i2c-%d/device/%d-00%x/hwmon/hwmon*/temp1_input"

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-repos="krogoth rocko warrior"
+repos="rocko warrior"
 
 if [ ! -d ./yocto ]; then
   mkdir ./yocto

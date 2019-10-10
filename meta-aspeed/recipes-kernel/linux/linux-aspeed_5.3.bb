@@ -14,3 +14,11 @@ PV = "${LINUX_VERSION}"
 include linux-aspeed.inc
 
 S = "${WORKDIR}/git"
+
+#
+# Note: below line is needed to bitbake linux kernel 5.2 and higher kernel
+# versions. The fix is already included in the latest yocto releases (refer
+# to meta/classes/kernel.bbclass), thus it's safe to remove the line when we
+# move out of rocko.
+#
+FILES_kernel-base += "${nonarch_base_libdir}/modules/${KERNEL_VERSION}/modules.builtin.modinfo"

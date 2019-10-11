@@ -122,6 +122,15 @@ def is_openbmc():
     return False
 
 
+def is_wedge100():
+    # type: () -> bool
+    if os.path.exists("/etc/issue"):
+        with open("/etc/issue", "rb") as etc_issue:
+            first_line = etc_issue.readline()
+        return b" wedge100-" in first_line
+    return False
+
+
 def run_verbosely(command, logger):
     # type: (List[str], logging.Logger) -> None
     command_string = " ".join(command)

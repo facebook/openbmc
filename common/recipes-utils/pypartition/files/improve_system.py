@@ -17,16 +17,25 @@
 # Boston, MA 02110-1301 USA
 
 # Intended to compatible with both Python 2.7 and Python 3.x.
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import division
+from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
 import signal
 import sys
-import system
 import textwrap
+
+import system
 import virtualcat
+
+
+# For wedge100, there was a bug that caused the CS1 pin to be configured
+# for GPIO instead. Manually configure it for Chip Select before attempting
+# to write to flash1.
+def fix_wedge100_romcs1():
+    has_gpio_util = os.path.exists("/usr/local/bin/openbmc_gpio_util.py")
+    if system.is_wedge100() and has_gpio_util:
+        cmd = ["/usr/local/bin/openbmc_gpio_util.py", "config", "ROMCS1#"]
+        system.run_verbosely(cmd, logger)
 
 
 def improve_system(logger):
@@ -140,6 +149,8 @@ def improve_system(logger):
 
         # Don't let healthd reboot mid-flash (S166329).
         system.remove_healthd_reboot(logger)
+
+        fix_wedge100_romcs1()
 
         attempts = 0 if args.dry_run else 3
         for mtd in full_flash_mtds:

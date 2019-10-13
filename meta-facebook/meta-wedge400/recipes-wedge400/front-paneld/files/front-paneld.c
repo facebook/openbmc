@@ -199,7 +199,7 @@ main (int argc, char * const argv[]) {
   pthread_t tid_debug_card;
   pthread_t tid_simLED_monitor;
   int pid_file;
-  int brd_rev;
+  uint8_t brd_type_rev;
   signal(SIGTERM, exithandler);
   pid_file = open(FRONTPANELD_PID_FILE, O_CREAT | O_RDWR, 0666);
   if (pid_file < 0) {
@@ -232,7 +232,7 @@ main (int argc, char * const argv[]) {
       return -1;
   }
 
-  if (pal_get_board_rev(&brd_rev)) {
+  if (pal_get_board_type_rev(&brd_type_rev)) {
     OBMC_WARN("Get board revision failed\n");
     exit(-1);
   }
@@ -246,7 +246,7 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
-  if (brd_rev != BOARD_REV_EVTA) {
+  if (brd_type_rev != BOARD_WEDGE400_EVT) {
     if (pthread_create(&tid_debug_card, NULL, debug_card_handler, NULL) != 0) {
         OBMC_WARN("pthread_create for debug card error\n");
         exit(1);

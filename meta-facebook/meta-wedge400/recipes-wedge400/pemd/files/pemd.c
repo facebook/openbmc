@@ -490,7 +490,7 @@ static void pem_handler(uint8_t brd_type, uint8_t pem_num, uint8_t sensors_statu
     if(sensors_status & PEM_HANDLER_SHUTDOWN) {
         if(brd_type == BRD_TYPE_WEDGE400)
             OBMC_CRIT("PEM %d do COMe/TH3 shutdown", pem_num + 1);
-        if(brd_type == BRD_TYPE_WEDGE400_2)
+        if(brd_type == BRD_TYPE_WEDGE400C)
             OBMC_CRIT("PEM %d do COMe/GB shutdown", pem_num + 1);
         if (pal_set_server_power(0, SERVER_POWER_OFF)) {
             OBMC_CRIT("PEM %d do COMe shutdown failed", pem_num + 1);
@@ -498,7 +498,7 @@ static void pem_handler(uint8_t brd_type, uint8_t pem_num, uint8_t sensors_statu
         if (pal_set_th3_power(TH3_POWER_OFF)) {
             if(brd_type == BRD_TYPE_WEDGE400)
                 OBMC_CRIT("PEM %d do TH3 shutdown failed", pem_num + 1);
-            if(brd_type == BRD_TYPE_WEDGE400_2)
+            if(brd_type == BRD_TYPE_WEDGE400C)
                 OBMC_CRIT("PEM %d do GB shutdown failed", pem_num + 1);
         }
     }

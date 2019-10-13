@@ -46,7 +46,6 @@ extern "C" {
 #define SENSORD_FILE_SMB "/tmp/cache_store/smb_sensor%d"
 #define SENSORD_FILE_PSU "/tmp/cache_store/psu%d_sensor%d"
 #define SENSORD_FILE_PEM "/tmp/cache_store/pem%d_sensor%d"
-#define BRD_TYPE_FILE "/tmp/cache_store/board_type"
 #define KV_PATH "/mnt/data/kv_store/%s"
 
 #define WEDGE400_SDR_PATH "/tmp/sdr_%s.bin"
@@ -128,6 +127,7 @@ extern "C" {
 #define GPIO_SMB_REV_ID_0   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID0/%s"
 #define GPIO_SMB_REV_ID_1   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID1/%s"
 #define GPIO_SMB_REV_ID_2   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID2/%s"
+#define GPIO_BMC_BRD_TPYE   "/tmp/gpionames/BMC_CPLD_BOARD_TYPE/%s"
 #define GPIO_POSTCODE_0     "/tmp/gpionames/GPIOH0/%s"
 #define GPIO_POSTCODE_1     "/tmp/gpionames/GPIOH1/%s"
 #define GPIO_POSTCODE_2     "/tmp/gpionames/GPIOH2/%s"
@@ -159,8 +159,6 @@ extern "C" {
 #define IPMB_BUS 0
 
 #define BMC_READY_N   28
-#define BOARD_REV_EVTA 4
-#define BOARD_REV_EVTB 0
 #define BIC_SENSOR_READ_NA 0x20
 #define THERMAL_CONSTANT   256
 #define ERR_NOT_READY   -2
@@ -186,7 +184,17 @@ extern const char pal_fru_list[];
 
 enum {
   BRD_TYPE_WEDGE400 = 0x00,
-  BRD_TYPE_WEDGE400_2 = 0x01,
+  BRD_TYPE_WEDGE400C = 0x01,
+};
+
+enum {
+  BOARD_WEDGE400_EVT   = 0x00,
+  BOARD_WEDGE400_EVT3  = 0x01,
+  BOARD_WEDGE400_DVT   = 0x02,
+  BOARD_WEDGE400_DVT2  = 0x03,
+  BOARD_WEDGE400C_EVT  = 0x10,
+  BOARD_WEDGE400C_EVT2 = 0x11,
+  BOARD_UNDEFINED      = 0xFF,
 };
 
 enum {
@@ -521,6 +529,7 @@ int pal_set_th3_power(int option);
 int pal_get_fan_speed(uint8_t fan, int *rpm);
 int pal_get_board_rev(int *rev);
 int pal_get_board_type(uint8_t *brd_type);
+int pal_get_board_type_rev(uint8_t *brd_type_rev);
 int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
 int pal_sensor_discrete_read_raw(uint8_t fru, uint8_t sensor_num, void *value);

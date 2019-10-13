@@ -945,7 +945,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     if(brd_type == BRD_TYPE_WEDGE400){
       *sensor_list = (uint8_t *) w400_smb_sensor_list;
       *cnt = w400_smb_sensor_cnt;
-    }else if(brd_type == BRD_TYPE_WEDGE400_2){
+    }else if(brd_type == BRD_TYPE_WEDGE400C){
       *sensor_list = (uint8_t *) w400c_smb_sensor_list;
       *cnt = w400c_smb_sensor_cnt;
     }
@@ -1445,19 +1445,65 @@ int
 pal_get_board_type(uint8_t *brd_type){
   char path[LARGEST_DEVICE_NAME + 1];
   int val;
-  snprintf(path, LARGEST_DEVICE_NAME, BRD_TYPE_FILE);
+
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_BRD_TPYE, "value");
   if (read_device(path, &val)) {
     return CC_UNSPECIFIED_ERROR;
   }
-  if(val == 0x0){
+
+  if(val == 0x1){
     *brd_type = BRD_TYPE_WEDGE400;
     return CC_SUCCESS;
-  }else if(val == 0x1){
-    *brd_type = BRD_TYPE_WEDGE400_2;
+  }else if(val == 0x0){
+    *brd_type = BRD_TYPE_WEDGE400C;
     return CC_SUCCESS;
   }else{
     return CC_UNSPECIFIED_ERROR;
   }
+}
+
+int
+pal_get_board_type_rev(uint8_t *brd_type_rev){
+  char path[LARGEST_DEVICE_NAME + 1];
+  int brd_rev;
+  uint8_t brd_type;
+  int val;
+  if( pal_get_board_rev(&brd_rev) != 0 ||
+      pal_get_board_type(&brd_type) != 0 ){
+        return CC_UNSPECIFIED_ERROR;
+  } else if ( brd_type == BRD_TYPE_WEDGE400 ){
+    switch ( brd_rev ) {
+      case 0x00:
+        /* For WEDGE400 EVT & EVT3 need to detect from SMBCPLD */
+        snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, "board_ver");
+        if (read_device(path, &val)) {
+          return CC_UNSPECIFIED_ERROR;
+        }
+        if ( val == 0x00 ) {
+          *brd_type_rev = BOARD_WEDGE400_EVT;
+        } else {
+          *brd_type_rev = BOARD_WEDGE400_EVT3;
+        }
+        break;
+      case 0x10: *brd_type_rev = BOARD_WEDGE400_DVT; break;
+      case 0x11: *brd_type_rev = BOARD_WEDGE400_DVT2; break;
+      default:
+        *brd_type_rev = BOARD_UNDEFINED;
+        return CC_UNSPECIFIED_ERROR;
+    }
+  } else if ( brd_type == BRD_TYPE_WEDGE400C ){
+    switch ( brd_rev ) {
+      case 0x00: *brd_type_rev = BOARD_WEDGE400C_EVT; break;
+      case 0x01: *brd_type_rev = BOARD_WEDGE400C_EVT2; break;
+      default:
+        *brd_type_rev = BOARD_UNDEFINED;
+        return CC_UNSPECIFIED_ERROR;
+    }
+  } else {
+    *brd_type_rev = BOARD_UNDEFINED;
+    return CC_UNSPECIFIED_ERROR;
+  }
+  return CC_SUCCESS;
 }
 
 int
@@ -1765,7 +1811,7 @@ pal_set_th3_power(int option) {
 
   if(brd_type == BRD_TYPE_WEDGE400){
     sprintf(sysfs,TH3_POWER);
-  }else if(brd_type == BRD_TYPE_WEDGE400_2){
+  }else if(brd_type == BRD_TYPE_WEDGE400C){
     sprintf(sysfs,GB_POWER);
   }else{
     return -1;
@@ -2481,7 +2527,7 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       if( brd_type == BRD_TYPE_WEDGE400 ){
         ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, VOLT(3), value);
       }
-      if( brd_type == BRD_TYPE_WEDGE400_2 ){
+      if( brd_type == BRD_TYPE_WEDGE400C ){
         ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, VOLT(2), value);
         *value *= 2;
       }
@@ -2490,7 +2536,7 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       if( brd_type == BRD_TYPE_WEDGE400 ){
         ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, VOLT(3), value);
       }
-      if( brd_type == BRD_TYPE_WEDGE400_2 ){
+      if( brd_type == BRD_TYPE_WEDGE400C ){
         ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, VOLT(2), value);
         *value *= 2;
       }
@@ -2499,7 +2545,7 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       if( brd_type == BRD_TYPE_WEDGE400 ){
         ret = read_attr(SMB_ISL_DEVICE, VOLT(3), value);
         int board_rev = -1;
-        if((pal_get_board_rev(&board_rev) != -1) && (board_rev != 4)) {
+        if((pal_get_board_rev(&board_rev) != -1) && (board_rev != 0)) {
           if (bootup_check == 0) {
             th3_ret = cor_th3_volt();
             if (!th3_ret)
@@ -2507,7 +2553,7 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
           }
         }
       }
-      else if( brd_type == BRD_TYPE_WEDGE400_2 ){
+      else if( brd_type == BRD_TYPE_WEDGE400C ){
         ret = read_attr(SMB_XPDE_DEVICE, VOLT(3), value);
       }
       break;
@@ -2526,7 +2572,7 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       if( brd_type == BRD_TYPE_WEDGE400 ){
         ret = read_attr(SMB_ISL_DEVICE,  CURR(3), value);
       }
-      else if( brd_type == BRD_TYPE_WEDGE400_2 ){
+      else if( brd_type == BRD_TYPE_WEDGE400C ){
         ret = read_attr(SMB_XPDE_DEVICE, CURR(3), value);
       }
       break;
@@ -2547,7 +2593,7 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       if( brd_type == BRD_TYPE_WEDGE400 ){
         ret = read_attr(SMB_ISL_DEVICE,  POWER(3), value);
       }
-      else if( brd_type == BRD_TYPE_WEDGE400_2 ){
+      else if( brd_type == BRD_TYPE_WEDGE400C ){
         ret = read_attr(SMB_XPDE_DEVICE, POWER(3), value);
       }
       *value /= 1000;
@@ -3207,21 +3253,21 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_SW_SERDES_PVDD_TEMP1:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_SERDES_TEMP1(PVDD)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "GB_SERDES_TEMP1(PVDD)");
       }
       break;
     case SMB_SENSOR_SW_SERDES_TRVDD_TEMP1:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_SERDES_TEMP1(TRVDD)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "GB_SERDES_TEMP1(TRVDD)");
       }
       break;
     case SMB_SENSOR_SW_CORE_TEMP1:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_CORE_TEMP1");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, SENSOR_NAME_ERR);
       }
       break;
@@ -3246,14 +3292,14 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_SW_DIE_TEMP1:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_DIE_TEMP1");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, SENSOR_NAME_ERR);
       }
       break;
     case SMB_SENSOR_SW_DIE_TEMP2:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_DIE_TEMP2");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, SENSOR_NAME_ERR);
       }
       break;
@@ -3266,7 +3312,7 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_1220_VMON1:
     if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "XP12R0V(12V)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "PWR12R0V(12V)");
       }
       break;
@@ -3279,7 +3325,7 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_1220_VMON4:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "XP2R5V_BMC(2.5V)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "XP3R3V_FPGA(3.3V)");
       }
       break;
@@ -3289,49 +3335,49 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_1220_VMON6:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "XP1R15V_BMC(1.15V)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "XP1R8V_FPGA(1.8V)");
       }
       break;
     case SMB_SENSOR_1220_VMON7:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "XP1R2V_TH3(1.2V)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "XP1R8V_IO(1.8V)");
       }
       break;
     case SMB_SENSOR_1220_VMON8:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "PVDD0P8_TH3(0.8V)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "XP2R5V_HBM(2.5V)");
       }
       break;
     case SMB_SENSOR_1220_VMON9:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "XP3R3V_TH3(3.3V)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "XP0R94V_VDDA(0.94V)");
       }
       break;
     case SMB_SENSOR_1220_VMON10:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "VDD_CORE_TH3(0.75~0.9V)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "VDD_CORE_GB(0.85V)");
       }
       break;
     case SMB_SENSOR_1220_VMON11:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TRVDD0P8_TH3(0.8V)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "XP0R75V_PCIE(0.75V)");
       }
       break;
     case SMB_SENSOR_1220_VMON12:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "XP1R8V_TH3(1.8V)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "XP1R15V_VDDCK(1.15V)");
       }
       break;
@@ -3344,21 +3390,21 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_SW_SERDES_PVDD_VOLT:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_SERDES_VOLT(PVDD)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "XP3R3V_RIGHT_VOLT");
       }
       break;
     case SMB_SENSOR_SW_SERDES_TRVDD_VOLT:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_SERDES_VOLT(TRVDD)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "XP3R3V_LEFT_VOLT");
       }
       break;
     case SMB_SENSOR_SW_CORE_VOLT:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_CORE_VOLT");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "VDD_CORE_VOLT");
       }
       break;
@@ -3368,21 +3414,21 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_SW_SERDES_PVDD_CURR:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_SERDES_CURR(PVDD)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "XP3R3V_RIGHT_CURR");
       }
       break;
     case SMB_SENSOR_SW_SERDES_TRVDD_CURR:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_SERDES_CURR(TRVDD)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "XP3R3V_LEFT_CURR");
       }
       break;
     case SMB_SENSOR_SW_CORE_CURR:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_CORE_CURR");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "VDD_CORE_CURR");
       }
       break;
@@ -3392,21 +3438,21 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_SW_SERDES_PVDD_POWER:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_SERDES_POWER(PVDD)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "XP3R3V_RIGHT_POWER");
       }
       break;
     case SMB_SENSOR_SW_SERDES_TRVDD_POWER:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_SERDES_POWER(TRVDD)");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "XP3R3V_LEFT_POWER");
       }
       break;
     case SMB_SENSOR_SW_CORE_POWER:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_CORE_POWER");
-      }else if(brd_type == BRD_TYPE_WEDGE400_2){
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "VDD_CORE_POWER");
       }
       break;
@@ -4102,7 +4148,7 @@ sensor_thresh_array_init(uint8_t fru) {
         smb_sensor_threshold[SMB_SENSOR_1220_VMON11][LCR_THRESH] = 0.776;
         smb_sensor_threshold[SMB_SENSOR_1220_VMON12][UCR_THRESH] = 1.89;
         smb_sensor_threshold[SMB_SENSOR_1220_VMON12][LCR_THRESH] = 1.71;
-      } else if (brd_type == BRD_TYPE_WEDGE400_2){
+      } else if (brd_type == BRD_TYPE_WEDGE400C){
         smb_sensor_threshold[SMB_SENSOR_1220_VMON1][UCR_THRESH] = 12.6;
         smb_sensor_threshold[SMB_SENSOR_1220_VMON1][LCR_THRESH] = 11.4;
         smb_sensor_threshold[SMB_SENSOR_1220_VMON2][UCR_THRESH] = 5.25;
@@ -4146,7 +4192,7 @@ sensor_thresh_array_init(uint8_t fru) {
         smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_TEMP1][UCR_THRESH] = 125;
         smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][UCR_THRESH] = 0.927;
         smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][LCR_THRESH] =	0.7275;
-      } else if (brd_type == BRD_TYPE_WEDGE400_2){
+      } else if (brd_type == BRD_TYPE_WEDGE400C){
         smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_VOLT][UCR_THRESH] = 3.465;
         smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_VOLT][LCR_THRESH] = 3.135;
         smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_CURR][UCR_THRESH] = 14;
@@ -5311,7 +5357,7 @@ void set_smb_led(int brd_rev)
   pal_get_board_type(&brd_type);
   if ( brd_type == BRD_TYPE_WEDGE400 )
     smb_sensor_list = smb_sensor_list_wedge400;
-  if ( brd_type == BRD_TYPE_WEDGE400_2 )
+  if ( brd_type == BRD_TYPE_WEDGE400C )
     smb_sensor_list = smb_sensor_list_wedge400_2;
   for(uint8_t index = 0 ; index < sizeof(smb_sensor_list); index++)
   {

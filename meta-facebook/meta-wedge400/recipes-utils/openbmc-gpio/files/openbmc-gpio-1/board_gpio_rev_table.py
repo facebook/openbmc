@@ -17,6 +17,7 @@
 
 from openbmc_gpio_table import BoardGPIO
 
+
 # The following table is generated using:
 # python openbmc_gpio_parser.py data/wedge400-bmc-gpio-evta.csv
 # DO NOT MODIFY THE TABLE!!!
@@ -25,5 +26,6 @@ from openbmc_gpio_table import BoardGPIO
 board_gpio_rev_table = [
     BoardGPIO("GPIOG4", "BMC_CPLD_BOARD_REV_ID0"),
     BoardGPIO("GPIOG5", "BMC_CPLD_BOARD_REV_ID1"),
-    BoardGPIO("GPIOG6", "BMC_CPLD_BOARD_REV_ID2"),
+    BoardGPIO("GPIOG6", "BMC_CPLD_BOARD_TYPE"),
+    BoardGPIO("GPIOG7", "BMC_CPLD_BOARD_REV_ID2"),
 ]

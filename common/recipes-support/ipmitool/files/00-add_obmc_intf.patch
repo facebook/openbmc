@@ -1,7 +1,13 @@
-diff -ur ipmitool/configure.ac ipmitool_new/configure.ac
---- ipmitool/configure.ac	2017-07-11 08:51:37.523621035 +0800
-+++ ipmitool_new/configure.ac	2017-07-11 08:51:34.319667289 +0800
-@@ -64,6 +64,7 @@
+
+- Rebased to work on ipmitool > 1.8.18
+
+Signed-off-by: Alejandro Hernandez <aehs29@gmail.com>
+
+Index: ipmitool-master/configure.ac
+===================================================================
+--- ipmitool-master.orig/configure.ac
++++ ipmitool-master/configure.ac
+@@ -86,6 +86,7 @@ xenable_intf_lipmi=yes
  xenable_intf_open=yes
  #xenable_intf_serial=yes
  xenable_intf_usb=no
@@ -9,7 +15,7 @@ diff -ur ipmitool/configure.ac ipmitool_new/configure.ac
  xenable_ipmishell=yes
  
  dnl set some things so we build with GNU tools on Solaris
-@@ -222,6 +223,22 @@
+@@ -252,6 +253,22 @@ if test "x$xenable_intf_usb" = "xyes"; t
  	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB usb/libintf_usb.la"
  fi
  
@@ -32,25 +38,26 @@ diff -ur ipmitool/configure.ac ipmitool_new/configure.ac
  dnl enable IPMIv2.0 RMCP+ LAN interface
  AC_ARG_ENABLE([intf-lanplus],
  	[AC_HELP_STRING([--enable-intf-lanplus],
-@@ -664,6 +681,7 @@
- 		src/plugins/imb/Makefile
+@@ -759,6 +776,7 @@ AC_CONFIG_FILES([Makefile
  		src/plugins/bmc/Makefile
+ 		src/plugins/dbus/Makefile
  		src/plugins/usb/Makefile
 +		src/plugins/obmc/Makefile
  		src/plugins/lipmi/Makefile
  		src/plugins/serial/Makefile
  		src/plugins/dummy/Makefile])
-@@ -681,6 +699,7 @@
- AC_MSG_RESULT([  imb     : $xenable_intf_imb])
+@@ -780,6 +798,7 @@ AC_MSG_RESULT([  imb     : $xenable_intf
  AC_MSG_RESULT([  bmc     : $xenable_intf_bmc])
+ AC_MSG_RESULT([  dbus    : $xenable_intf_dbus])
  AC_MSG_RESULT([  usb     : $xenable_intf_usb])
 +AC_MSG_RESULT([  obmc    : $xenable_intf_obmc])
  AC_MSG_RESULT([  lipmi   : $xenable_intf_lipmi])
  AC_MSG_RESULT([  serial  : $xenable_intf_serial])
  AC_MSG_RESULT([  dummy   : $xenable_intf_dummy])
-diff -ur ipmitool/src/plugins/ipmi_intf.c ipmitool_new/src/plugins/ipmi_intf.c
---- ipmitool/src/plugins/ipmi_intf.c	2017-07-11 08:51:37.531620918 +0800
-+++ ipmitool_new/src/plugins/ipmi_intf.c	2017-07-11 09:43:57.019923569 +0800
+Index: ipmitool-master/src/plugins/ipmi_intf.c
+===================================================================
+--- ipmitool-master.orig/src/plugins/ipmi_intf.c
++++ ipmitool-master/src/plugins/ipmi_intf.c
 @@ -1,21 +1,21 @@
  /*
   * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
@@ -78,9 +85,9 @@ diff -ur ipmitool/src/plugins/ipmi_intf.c ipmitool_new/src/plugins/ipmi_intf.c
   * This software is provided "AS IS," without a warranty of any kind.
   * ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
   * INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
-@@ -89,8 +89,15 @@
- #ifdef IPMI_INTF_USB
- extern struct ipmi_intf ipmi_usb_intf;
+@@ -89,8 +89,15 @@ extern struct ipmi_intf ipmi_usb_intf;
+ #ifdef IPMI_INTF_DBUS
+ extern struct ipmi_intf ipmi_dbus_intf;
  #endif
 +#ifdef IPMI_INTF_OBMC
 +extern struct ipmi_intf ipmi_obmc_intf;
@@ -94,7 +101,7 @@ diff -ur ipmitool/src/plugins/ipmi_intf.c ipmitool_new/src/plugins/ipmi_intf.c
  #ifdef IPMI_INTF_OPEN
  	&ipmi_open_intf,
  #endif
-@@ -482,7 +489,7 @@
+@@ -509,7 +516,7 @@ ipmi_intf_get_max_request_data_size(stru
  	/* check if request size is not specified */
  	if (!size) {
  		/*
@@ -103,7 +110,7 @@ diff -ur ipmitool/src/plugins/ipmi_intf.c ipmitool_new/src/plugins/ipmi_intf.c
  		 * messages is specified as 32 bytes, maximum, including slave
  		 * address. This sets the upper limit for typical IPMI messages.
  		 * With the exception of messages used for bridging messages to
-@@ -539,7 +546,7 @@
+@@ -566,7 +573,7 @@ ipmi_intf_get_max_response_data_size(str
  	/* check if response size is not specified */
  	if (!size) {
  		/*
@@ -112,18 +119,18 @@ diff -ur ipmitool/src/plugins/ipmi_intf.c ipmitool_new/src/plugins/ipmi_intf.c
  		 * messages is specified as 32 bytes, maximum, including slave
  		 * address. This sets the upper limit for typical IPMI messages.
  		 * With the exception of messages used for bridging messages to
-diff -ur ipmitool/src/plugins/Makefile.am ipmitool_new/src/plugins/Makefile.am
---- ipmitool/src/plugins/Makefile.am	2017-07-11 08:51:37.531620918 +0800
-+++ ipmitool_new/src/plugins/Makefile.am	2017-07-11 08:51:34.327667174 +0800
-@@ -32,8 +32,8 @@
+Index: ipmitool-master/src/plugins/Makefile.am
+===================================================================
+--- ipmitool-master.orig/src/plugins/Makefile.am
++++ ipmitool-master/src/plugins/Makefile.am
+@@ -32,8 +32,8 @@ MAINTAINERCLEANFILES		= Makefile.in
  
  AM_CPPFLAGS			= -I$(top_srcdir)/include
  
--SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@ @INTF_DUMMY@ @INTF_USB@
--DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial dummy usb
-+SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@ @INTF_DUMMY@ @INTF_USB@ @INTF_OBMC@
-+DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial dummy usb obmc
+-SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@ @INTF_DUMMY@ @INTF_USB@ @INTF_DBUS@
+-DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial dummy usb dbus
++SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@ @INTF_DUMMY@ @INTF_USB@ @INTF_DBUS@ @INTF_OBMC@
++DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial dummy usb dbus obmc
  
  noinst_LTLIBRARIES		= libintf.la
  libintf_la_SOURCES		= ipmi_intf.c
-Only in ipmitool_new/src/plugins: obmc

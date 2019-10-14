@@ -37,8 +37,8 @@ PWR_TH_RST_SYSFS="${SMBCPLD_SYSFS_DIR}/mac_reset_n"
 wedge_is_us_on() {
     local val0 val1
 
-    val0=$(cat $PWR_USRV_SYSFS 2> /dev/null | head -n 1)
-    val1=$(cat $PWR_USRV_FORCE_OFF 2> /dev/null | head -n 1)
+    val0=$(head -n 1 < "$PWR_USRV_SYSFS" 2> /dev/null)
+    val1=$(head -n 1 < "$PWR_USRV_FORCE_OFF" 2> /dev/null)
     
     if [ "$val0" == "0x1" ] && [ "$val1" == "0x1" ] ; then
         return 0            # powered on
@@ -49,12 +49,47 @@ wedge_is_us_on() {
     return 0
 }
 
-wedge_board_type() {
+wedge_board_type_rev(){
+    type=$(wedge_board_type)
     rev=$(wedge_board_rev)
-    if [ $((rev&0x04)) -eq 4 ]; then
-        echo 'WEDGE400'
+    if [ $((type)) -eq 0 ]; then
+        case $rev in
+            0)
+                echo "WEDGE400_EVT/EVT3"
+                ;;
+            2)
+                echo "WEDGE400_DVT"
+                ;;
+            3)
+                echo "WEDGE400_DVT2"
+                ;;
+            *)
+                echo "WEDGE400 (Undefine $rev)"
+                ;;
+        esac
+    elif [ $((type)) -eq 1 ]; then
+        case $rev in
+            0)
+                echo "WEDGE400-C_EVT"
+                ;;
+            1)
+                echo "WEDGE400-C_EVT2"
+                ;;
+            *)
+                echo "WEDGE400-C_(Undefine $rev)"
+                ;;
+        esac
     else
-        echo 'WEDGE400-C'
+        echo "Undefine_($type,$rev)"
+    fi
+}
+
+wedge_board_type() {
+    rev=$(gpio_get BMC_CPLD_BOARD_TYPE)
+    if [ $((rev)) -eq 0 ]; then
+        echo 1  # Wedge400-C
+    else
+        echo 0  # Wedge400
     fi
 }
 

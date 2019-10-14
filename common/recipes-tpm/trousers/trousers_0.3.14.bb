@@ -1,20 +1,19 @@
 SUMMARY = "TrouSerS - An open-source TCG Software Stack implementation."
 LICENSE = "BSD"
 HOMEPAGE = "http://sourceforge.net/projects/trousers/"
-LIC_FILES_CHKSUM = "file://README;startline=3;endline=4;md5=2af28fbed0832e4d83a9e6dd68bb4413"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=8031b2ae48ededc9b982c08620573426"
 SECTION = "security/tpm"
 
 DEPENDS = "openssl"
 
-SRC_URI = "http://sourceforge.net/projects/trousers/files/${BPN}/${PV}/${BPN}-${PV}.tar.gz \
-    file://07-read_data-not-inline.patch \
+SRC_URI = "http://sourceforge.net/projects/trousers/files/${BPN}/${PV}/${BPN}-${PV}.tar.gz;subdir=${BPN}-${PV} \
     file://trousers.init.sh \
     file://trousers-udev.rules \
     file://tcsd.service \
     "
 
-SRC_URI[md5sum] = "ad508f97b406f6e48cd90e85d78e7ca8"
-SRC_URI[sha256sum] = "bb908e4a3c88a17b247a4fc8e0fff3419d8a13170fe7bdfbe0e2c5c082a276d3"
+SRC_URI[md5sum] = "4a476b4f036dd20a764fb54fc24edbec"
+SRC_URI[sha256sum] = "ce50713a261d14b735ec9ccd97609f0ad5ce69540af560e8c3ce9eb5f2d28f47"
 
 inherit autotools pkgconfig useradd update-rc.d ${@bb.utils.contains('VIRTUAL-RUNTIME_init_manager','systemd','systemd','', d)}
 

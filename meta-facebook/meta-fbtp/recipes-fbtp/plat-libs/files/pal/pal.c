@@ -36,6 +36,7 @@
 #include <openbmc/misc-utils.h>
 #include <openbmc/vr.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/obmc-sensors.h>
 #include <sys/stat.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/kv.h>
@@ -77,30 +78,10 @@
 #define CRASHDUMP_FILE      "/mnt/data/crashdump_"
 
 #define LARGEST_DEVICE_NAME 120
-#define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
-#define PWM_UNIT_MAX 96
 
-#define FAN0_TACH_INPUT 0
-#define FAN1_TACH_INPUT 2
-
-#define TACH_DIR "/sys/devices/platform/ast_pwm_tacho.0"
-#define ADC_DIR "/sys/devices/platform/ast_adc.0"
 
 #define EEPROM_RISER     "/sys/bus/i2c/devices/1-0050/eeprom"
 #define EEPROM_RETIMER   "/sys/bus/i2c/devices/3-0054/eeprom"
-
-#define MB_INLET_TEMP_DEVICE "/sys/bus/i2c/devices/6-004e/hwmon/hwmon*"
-#define MB_OUTLET_TEMP_DEVICE "/sys/bus/i2c/devices/6-004f/hwmon/hwmon*"
-#define MEZZ_TEMP_DEVICE "/sys/bus/i2c/devices/8-001f/hwmon/hwmon*"
-#define HSC_DEVICE "/sys/bus/i2c/devices/7-0011/hwmon/hwmon*"
-
-#define FAN_TACH_RPM "tacho%d_rpm"
-#define ADC_VALUE "adc%d_value"
-#define HSC_IN_VOLT "in1_input"
-#define HSC_OUT_CURR "curr1_input"
-#define HSC_TEMP "temp1_input"
-
-#define UNIT_DIV 1000
 
 #define MAX_SENSOR_NUM 0xFF
 #define ALL_BYTES 0xFF
@@ -1033,267 +1014,31 @@ sensor_thresh_array_init() {
   init_board_sensors();
   init_done = true;
 }
-
 static int
-read_device(const char *device, int *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "r");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to open device %s", device);
-#endif
-    return err;
-  }
-
-  rc = fscanf(fp, "%d", value);
-  fclose(fp);
-  if (rc != 1) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to read device %s", device);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-static int
-read_device_float(const char *device, float *value) {
-  FILE *fp;
-  int rc;
-  char tmp[10];
-
-  fp = fopen(device, "r");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to open device %s", device);
-#endif
-    return err;
-  }
-
-  rc = fscanf(fp, "%s", tmp);
-  fclose(fp);
-
-  if (rc != 1) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to read device %s", device);
-#endif
-    return ENOENT;
-  }
-
-  *value = atof(tmp);
-
-  return 0;
-}
-
-static int
-read_device_hex(const char *device, int *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "r");
-  if (!fp) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to open device %s", device);
-#endif
-    return errno;
-  }
-
-  rc = fscanf(fp, "%x", value);
-  fclose(fp);
-  if (rc != 1) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to read device %s", device);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-static int
-write_device(const char *device, const char *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "w");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to open device for write %s", device);
-#endif
-    return err;
-  }
-
-  rc = fputs(value, fp);
-  fclose(fp);
-
-  if (rc < 0) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to write device %s", device);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-static int
-read_temp_attr(uint8_t sensor_num, const char *device, const char *attr, float *value) {
-  char full_name[LARGEST_DEVICE_NAME + 1];
-  char dir_name[LARGEST_DEVICE_NAME + 1];
-  int tmp;
-  FILE *fp;
-  int size;
-  static unsigned int retry[4] = {0};
-  uint8_t i_retry = -1;
-
-  switch(sensor_num) {
-    case MB_SENSOR_INLET_TEMP:
-      i_retry = 0; break;
-    case MB_SENSOR_OUTLET_TEMP:
-      i_retry = 1; break;
-    case MB_SENSOR_INLET_REMOTE_TEMP:
-      i_retry = 2; break;
-    case MB_SENSOR_OUTLET_REMOTE_TEMP:
-      i_retry = 3; break;
-    default:
-      break;
-  }
-
-  // Get current working directory
-  snprintf(
-      full_name, LARGEST_DEVICE_NAME, "cd %s;pwd", device);
-
-  fp = popen(full_name, "r");
-  fgets(dir_name, LARGEST_DEVICE_NAME, fp);
-  pclose(fp);
-
-  // Remove the newline character at the end
-  size = strlen(dir_name);
-  dir_name[size-1] = '\0';
-
-  snprintf(
-      full_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, attr);
-
-  if (read_device(full_name, &tmp)) {
-    return -1;
-  }
-
-  *value = ((float)tmp)/UNIT_DIV;
-  if( i_retry != -1) {
-    if( ( *value > mb_sensor_threshold[sensor_num][UCR_THRESH]  || *value < 0 ) && retry[i_retry] < 5) {
-      retry[i_retry]++;
-      return READING_SKIP;
-    } else {
-      retry[i_retry] = 0;
-    }
-  }
-
-  return 0;
-}
-
-static int
-read_temp(uint8_t sensor_num, const char *device, float *value) {
-  return read_temp_attr(sensor_num, device, "temp1_input", value);
-}
-
-static int
-read_nic_temp(const char *device, float *value) {
-  char full_name[LARGEST_DEVICE_NAME + 1];
-  char dir_name[LARGEST_DEVICE_NAME + 1];
-  int tmp;
-  FILE *fp;
-  int size;
-  int ret = 0;
+read_nic_temp(float *value)
+{
   static unsigned int retry = 0;
-
-  // Get current working directory
-  snprintf(
-      full_name, LARGEST_DEVICE_NAME, "cd %s;pwd", device);
-
-  fp = popen(full_name, "r");
-  fgets(dir_name, LARGEST_DEVICE_NAME, fp);
-  pclose(fp);
-
-  // Remove the newline character at the end
-  size = strlen(dir_name);
-  dir_name[size-1] = '\0';
-
-  snprintf(
-      full_name, LARGEST_DEVICE_NAME, "%s/temp2_input", dir_name);
-
-  if (read_device(full_name, &tmp)) {
-    ret = READING_NA;
-  }
-
-  *value = ((float)tmp)/UNIT_DIV;
-
+  int ret = sensors_read("tmp421-i2c-8-1f", "MEZZ_SENSOR_TEMP", value);
   // Workaround: handle when NICs wrongly report higher temperatures
-  if (( *value > NIC_MAX_TEMP ) || ( *value < NIC_MIN_TEMP )) {
+  if (ret || ( *value > NIC_MAX_TEMP ) || ( *value < NIC_MIN_TEMP )) {
     ret = READING_NA;
   } else {
     retry = 0;
   }
-
   if (ret == READING_NA && ++retry <= 3)
     ret = READING_SKIP;
-
   return ret;
-
 }
 
 static int
-read_fan_value(const int fan, const char *device, int *value) {
-  char device_name[LARGEST_DEVICE_NAME];
-  char full_name[LARGEST_DEVICE_NAME];
-
-  snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", TACH_DIR, device_name);
-  return read_device(full_name, value);
-}
-
-static int
-read_fan_value_f(const int fan, const char *device, float *value) {
-  char device_name[LARGEST_DEVICE_NAME];
-  char full_name[LARGEST_DEVICE_NAME];
-  int ret;
-
-  snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", TACH_DIR, device_name);
-  ret = read_device_float(full_name, value);
-  if (*value < 500 || *value > mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH]) {
+read_fan_value(const char *fan, float *value)
+{
+  int ret = sensors_read_fan(fan, value);
+  if (ret || *value < 500 || *value > mb_sensor_threshold[MB_SENSOR_FAN0_TACH][UCR_THRESH]) {
     sleep(2);
-    ret = read_device_float(full_name, value);
+    ret = sensors_read_fan(fan, value);
   }
-
   return ret;
-}
-
-static int
-write_fan_value(const int fan, const char *device, const int value) {
-  char full_name[LARGEST_DEVICE_NAME];
-  char device_name[LARGEST_DEVICE_NAME];
-  char output_value[LARGEST_DEVICE_NAME];
-
-  snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
-  snprintf(output_value, LARGEST_DEVICE_NAME, "%d", value);
-  return write_device(full_name, output_value);
-}
-
-static int
-read_adc_value(const int pin, const char *device, float *value) {
-  char device_name[LARGEST_DEVICE_NAME];
-  char full_name[LARGEST_DEVICE_NAME];
-
-  snprintf(device_name, LARGEST_DEVICE_NAME, device, pin);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", ADC_DIR, device_name);
-  return read_device_float(full_name, value);
 }
 
 static int
@@ -4084,7 +3829,7 @@ read_battery_status(float *value)
     goto bail;
   }
   msleep(10);
-  ret = read_adc_value(ADC_PIN7, ADC_VALUE, value);
+  ret = sensors_read_adc("MB_P3V_BAT", value);
   gpio_set_value(gp_batt, GPIO_VALUE_HIGH);
 bail:
   gpio_close(gp_batt);
@@ -4115,33 +3860,33 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       switch(sensor_num) {
       // Temp. Sensors
       case MB_SENSOR_INLET_TEMP:
-        ret = read_temp(MB_SENSOR_INLET_TEMP, MB_INLET_TEMP_DEVICE, (float*) value);
+        ret = sensors_read("tmp421-i2c-6-4e", "MB_INLET_TEMP", (float *)value);
         break;
       case MB_SENSOR_OUTLET_TEMP:
-        ret = read_temp(MB_SENSOR_OUTLET_TEMP, MB_OUTLET_TEMP_DEVICE, (float*) value);
+        ret = sensors_read("tmp421-i2c-6-4f", "MB_OUTLET_TEMP", (float *)value);
         break;
       case MB_SENSOR_INLET_REMOTE_TEMP:
-        ret = read_temp_attr(MB_SENSOR_INLET_REMOTE_TEMP, MB_INLET_TEMP_DEVICE, "temp2_input", (float*) value);
+        ret = sensors_read("tmp421-i2c-6-4e", "MB_INLET_REMOTE_TEMP", (float *)value);
         if (!ret)
           apply_inlet_correction((float *) value);
         break;
       case MB_SENSOR_OUTLET_REMOTE_TEMP:
-        ret = read_temp_attr(MB_SENSOR_OUTLET_REMOTE_TEMP, MB_OUTLET_TEMP_DEVICE, "temp2_input", (float*) value);
+        ret = sensors_read("tmp421-i2c-6-4f", "MB_OUTLET_REMOTE_TEMP", (float *)value);
         break;
       case MB_SENSOR_P12V:
-        ret = read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
+        ret = sensors_read_adc("MB_P12V", (float *)value);
         break;
       case MB_SENSOR_P1V05:
-        ret = read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
+        ret = sensors_read_adc("MB_P1V05", (float *)value);
         break;
       case MB_SENSOR_PVNN_PCH_STBY:
-        ret = read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
+        ret = sensors_read_adc("MB_PVNN_PCH_STBY", (float *)value);
         break;
       case MB_SENSOR_P3V3_STBY:
-        ret = read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
+        ret = sensors_read_adc("MB_P3V3_STBY", (float *)value);
         break;
       case MB_SENSOR_P5V_STBY:
-        ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
+        ret = sensors_read_adc("MB_P5V_STBY", (float *)value);
         break;
       case MB_SENSOR_P3V_BAT:
         ret = read_battery_status((float *)value);
@@ -4181,47 +3926,47 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       switch(sensor_num) {
       // Temp. Sensors
       case MB_SENSOR_INLET_TEMP:
-        ret = read_temp(MB_SENSOR_INLET_TEMP, MB_INLET_TEMP_DEVICE, (float*) value);
+        ret = sensors_read("tmp421-i2c-6-4e", "MB_INLET_TEMP", (float *)value);
         break;
       case MB_SENSOR_OUTLET_TEMP:
-        ret = read_temp(MB_SENSOR_OUTLET_TEMP, MB_OUTLET_TEMP_DEVICE, (float*) value);
+        ret = sensors_read("tmp421-i2c-6-4f", "MB_OUTLET_TEMP", (float *)value);
         break;
       case MB_SENSOR_INLET_REMOTE_TEMP:
-        ret = read_temp_attr(MB_SENSOR_INLET_REMOTE_TEMP, MB_INLET_TEMP_DEVICE, "temp2_input", (float*) value);
+        ret = sensors_read("tmp421-i2c-6-4e", "MB_INLET_REMOTE_TEMP", (float *)value);
         if (!ret)
           apply_inlet_correction((float *) value);
         break;
       case MB_SENSOR_OUTLET_REMOTE_TEMP:
-        ret = read_temp_attr(MB_SENSOR_OUTLET_REMOTE_TEMP, MB_OUTLET_TEMP_DEVICE, "temp2_input", (float*) value);
+        ret = sensors_read("tmp421-i2c-6-4f", "MB_OUTLET_REMOTE_TEMP", (float *)value);
         break;
       // Fan Sensors
       case MB_SENSOR_FAN0_TACH:
-        ret = read_fan_value_f(FAN0, FAN_TACH_RPM, (float*) value);
+        ret = read_fan_value("fan1", (float *)value);
         break;
       case MB_SENSOR_FAN1_TACH:
-        ret = read_fan_value_f(FAN1, FAN_TACH_RPM, (float*) value);
+        ret = read_fan_value("fan3", (float *)value);
         break;
       // Various Voltages
       case MB_SENSOR_P3V3:
-        ret = read_adc_value(ADC_PIN0, ADC_VALUE, (float*) value);
+        ret = sensors_read_adc("MB_P3V3", (float *)value);
         break;
       case MB_SENSOR_P5V:
-        ret = read_adc_value(ADC_PIN1, ADC_VALUE, (float*) value);
+        ret = sensors_read_adc("MB_P5V", (float *)value);
         break;
       case MB_SENSOR_P12V:
-        ret = read_adc_value(ADC_PIN2, ADC_VALUE, (float*) value);
+        ret = sensors_read_adc("MB_P12V", (float *)value);
         break;
       case MB_SENSOR_P1V05:
-        ret = read_adc_value(ADC_PIN3, ADC_VALUE, (float*) value);
+        ret = sensors_read_adc("MB_P1V05", (float *)value);
         break;
       case MB_SENSOR_PVNN_PCH_STBY:
-        ret = read_adc_value(ADC_PIN4, ADC_VALUE, (float*) value);
+        ret = sensors_read_adc("MB_PVNN_PCH_STBY", (float *)value);
         break;
       case MB_SENSOR_P3V3_STBY:
-        ret = read_adc_value(ADC_PIN5, ADC_VALUE, (float*) value);
+        ret = sensors_read_adc("MB_P3V3_STBY", (float *)value);
         break;
       case MB_SENSOR_P5V_STBY:
-        ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
+        ret = sensors_read_adc("MB_P5V_STBY", (float *)value);
         break;
       case MB_SENSOR_P3V_BAT:
         ret = read_battery_status((float *)value);
@@ -4526,7 +4271,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     sprintf(key, "nic_sensor%d", sensor_num);
     switch(sensor_num) {
     case MEZZ_SENSOR_TEMP:
-      ret = read_nic_temp(MEZZ_TEMP_DEVICE, (float*) value);
+      ret = read_nic_temp((float*) value);
       break;
     default:
       return -1;
@@ -5821,8 +5566,7 @@ pal_get_fan_name(uint8_t num, char *name) {
 
 int
 pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
-  int unit;
-  int ret;
+  int ret = -1;
 
   if (fan >= pal_pwm_cnt) {
     syslog(LOG_INFO, "pal_set_fan_speed: fan number is invalid - %d", fan);
@@ -5834,60 +5578,29 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
     return PAL_ENOTREADY;
   }
 
-  // Convert the percentage to our 1/96th unit.
-  unit = pwm * PWM_UNIT_MAX / 100;
-
-  // For 0%, turn off the PWM entirely
-  if (unit == 0) {
-    ret = write_fan_value(fan, "pwm%d_en", 0);
-    if (ret < 0) {
-      syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
-      return -1;
-    }
-    return 0;
-
-  // For 100%, set falling and rising to the same value
-  } else if (unit == PWM_UNIT_MAX) {
-    unit = 0;
+  if (fan == 0) {
+    ret = sensors_write_fan("pwm1", (float)pwm);
+  } else if (fan == 1) {
+    ret = sensors_write_fan("pwm2", (float)pwm);
   }
-
-  ret = write_fan_value(fan, "pwm%d_type", 0);
-  if (ret < 0) {
-    syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
-    return -1;
-  }
-
-  ret = write_fan_value(fan, "pwm%d_rising", 0);
-  if (ret < 0) {
-    syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
-    return -1;
-  }
-
-  ret = write_fan_value(fan, "pwm%d_falling", unit);
-  if (ret < 0) {
-    syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
-    return -1;
-  }
-
-  ret = write_fan_value(fan, "pwm%d_en", 1);
-  if (ret < 0) {
-    syslog(LOG_INFO, "set_fan_speed: write_fan_value failed");
-    return -1;
-  }
-
-  return 0;
+  return ret;
 }
 
 int
 pal_get_fan_speed(uint8_t fan, int *rpm) {
+  int ret;
+  float value = 0.0;
+  
   if (fan == 0) {
-    return read_fan_value(FAN0_TACH_INPUT, "tacho%d_rpm", rpm);
+    ret = sensors_read_fan("fan1", &value);
   } else if (fan == 1) {
-    return read_fan_value(FAN1_TACH_INPUT, "tacho%d_rpm", rpm);
+    ret = sensors_read_fan("fan3", &value);
   } else {
     syslog(LOG_INFO, "get_fan_speed: invalid fan#:%d", fan);
     return -1;
   }
+  *rpm = (int)value;
+  return ret;
 }
 
 void
@@ -6105,41 +5818,18 @@ pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8
 
 int
 pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
-  char path[LARGEST_DEVICE_NAME] = {0};
-  char device_name[LARGEST_DEVICE_NAME] = {0};
-  int val = 0;
-  int pwm_enable = 0;
-
-  if (fan_num < 0 || fan_num >= pal_pwm_cnt) {
-    syslog(LOG_INFO, "pal_get_pwm_value: fan number is invalid - %d", fan_num);
-    return -1;
-  }
-
-  // Need check pwmX_en to determine the PWM is 0 or 100.
-  snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_en", fan_num);
-  snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
-  if (read_device(path, &pwm_enable)) {
-    syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
-    return -1;
-  }
-
-  if(pwm_enable) {
-    snprintf(device_name, LARGEST_DEVICE_NAME, "pwm%d_falling", fan_num);
-    snprintf(path, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
-    if (read_device_hex(path, &val)) {
-      syslog(LOG_INFO, "pal_get_pwm_value: read %s failed", path);
-      return -1;
-    }
-
-    if(val == 0)
-      *value = 100;
-    else
-      *value = (100 * val + (PWM_UNIT_MAX-1)) / PWM_UNIT_MAX;
+  int ret;
+  float val;
+  if (fan_num == 0) {
+    ret = sensors_read_fan("pwm1", &val);
+  } else if (fan_num == 1) {
+    ret = sensors_read_fan("pwm2", &val);
   } else {
-    *value = 0;
+    return -1;
   }
-
-  return 0;
+  if (!ret)
+    *value = (uint8_t)val;
+  return ret;
 }
 
 int

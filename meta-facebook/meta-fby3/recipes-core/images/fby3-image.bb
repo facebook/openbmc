@@ -20,13 +20,13 @@ require recipes-core/images/fb-openbmc-image.bb
 # sensordump
 # enclosure-util
 # nvme-util
-# ipmbd
 
 # Include modules in rootfs
 IMAGE_INSTALL += " \
   healthd \
   fan-util \
   fscd \
+  ipmbd \
   ipmid \
   packagegroup-openbmc-base \
   packagegroup-openbmc-net \

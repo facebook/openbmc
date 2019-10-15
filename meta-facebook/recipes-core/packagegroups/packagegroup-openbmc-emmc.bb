@@ -11,4 +11,5 @@ RDEPENDS_${PN} += " \
   mmc-utils \
   blktrace \
   fio \
+  mmc-raw \
   "

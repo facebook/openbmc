@@ -24,6 +24,7 @@ IMAGE_INSTALL += " \
   log-util \
   kcsd \
   healthd \
+  fpc-util \
   fw-util \
   cfg-util \
   ipmi-util \

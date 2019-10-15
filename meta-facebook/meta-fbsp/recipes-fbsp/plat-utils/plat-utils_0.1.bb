@@ -22,6 +22,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = "file://ast-functions \
+           file://sol-util \
            file://setup-gpio.sh \
            file://COPYING \
           "
@@ -29,6 +30,9 @@ SRC_URI = "file://ast-functions \
 pkgdir = "utils"
 
 S = "${WORKDIR}"
+
+binfiles = "sol-util \
+           "
 
 RDEPENDS_${PN} += "gpiocli"
 DEPENDS_append = "update-rc.d-native"
@@ -39,6 +43,11 @@ do_install() {
   install -m 644 ast-functions ${dst}/ast-functions
   localbindir="${D}/usr/local/bin"
   install -d ${localbindir}
+  for f in ${binfiles}; do
+      install -m 755 $f ${dst}/${f}
+      ln -s ../fbpackages/${pkgdir}/${f} ${localbindir}/${f}
+  done
+
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d

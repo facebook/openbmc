@@ -22,6 +22,7 @@
 #define __PAL_H__
 
 #include <openbmc/obmc-pal.h>
+#include "pal_power.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,6 +73,7 @@ enum {
 
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_is_slot_server(uint8_t fru);
+int pal_set_id_led(uint8_t slot, uint8_t status);
 int pal_get_fru_id(char *fru_str, uint8_t *fru);
 int pal_get_fru_name(uint8_t fru, char *name);
 int pal_set_key_value(char *key, char *value);

@@ -17,6 +17,7 @@ IMAGE_INSTALL += " \
   fan-util \
   power-util \
   mterm \
+  front-paneld \
   ipmid \
   fruid \
   sensor-util \

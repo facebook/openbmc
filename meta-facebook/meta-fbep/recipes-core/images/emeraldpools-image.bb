@@ -30,6 +30,7 @@ IMAGE_INSTALL += " \
   ipmbd \
   ipmb-util \
   gpiod \
+  guid-util \
   "
 
 IMAGE_FEATURES += " \

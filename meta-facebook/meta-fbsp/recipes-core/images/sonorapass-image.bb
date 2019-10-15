@@ -39,6 +39,7 @@ IMAGE_INSTALL += " \
   ncsi-util \
   ncsid \
   libpldm \
+  gpiod \
   "
 
 IMAGE_FEATURES += " \

@@ -9,6 +9,6 @@ SRC_URI += "file://pal_sensors.c \
 
 SOURCES += "pal_sensors.c pal_health.c pal_power.c"
 HEADERS += "pal_health.h pal_power.h"
-DEPENDS += "libgpio-ctrl libnm libpeci"
-RDEPENDS_${PN} += "libgpio-ctrl libnm libpeci"
-LDFLAGS += "-lgpio-ctrl -lnm -lpeci"
+DEPENDS += "libgpio-ctrl libnm libpeci libfbal-fruid"
+RDEPENDS_${PN} += "libgpio-ctrl libnm libpeci libfbal-fruid"
+LDFLAGS += "-lgpio-ctrl -lnm -lpeci -lfbal-fruid"

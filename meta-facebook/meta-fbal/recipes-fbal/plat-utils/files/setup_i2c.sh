@@ -1,4 +1,6 @@
-# Copyright 2014-present Facebook. All Rights Reserved.
+#!/bin/sh
+#
+# Copyright 2018-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,10 +17,14 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS += "libipmi libipmb libfruid libfbal-fruid update-rc.d-native"
-RDEPENDS_${PN} += "libipmb libfruid libfbal-fruid"
-LDFLAGS += "-lipmb -lfruid -lfbal-fruid"
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI += "file://fruid.c \
-          "
+. /usr/local/bin/openbmc-utils.sh
+
+if [ "$(gpio_get HP_LVC3_OCP_V3_1_PRSNT2_N)" == "0" ]; then
+  i2c_device_add 17 0x50 24c32
+fi
+
+if [ "$(gpio_get HP_LVC3_OCP_V3_2_PRSNT2_N)" == "0" ]; then
+  i2c_device_add 18 0x52 24c32
+fi

@@ -24,20 +24,22 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <syslog.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <syslog.h>
-#include <string.h>
-#include <stdint.h>
+#include <pthread.h>
 #include <sys/stat.h>
-#include "fruid.h"
 #include <openbmc/pal.h>
+#include <facebook/fbal_fruid.h>
+#include "fruid.h"
 
-#define BIN_MB         "/tmp/fruid_mb.bin"
-//#define BIN_NIC         "/tmp/fruid_nic.bin"
-//#define BIN_RISER        "/tmp/fruid_riser_slot%d.bin"
+#define BIN_MB        "/tmp/fruid_mb.bin"
+#define BIN_PDB       "/tmp/fruid_pdb.bin"
+#define BIN_NIC0      "/tmp/fruid_nic0.bin"
+#define BIN_NIC1      "/tmp/fruid_nic1.bin"
 
 #define FRUID_SIZE        512
 /*
@@ -50,16 +52,14 @@
  * returns non-zero on file operation errors
  */
 int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
-
   int eeprom;
   int bin;
   uint64_t tmp[FRUID_SIZE];
   ssize_t bytes_rd, bytes_wr;
 
   errno = 0;
-  
-  if (access(eeprom_file, F_OK) != -1) {
 
+  if (access(eeprom_file, F_OK) != -1) {
     eeprom = open(eeprom_file, O_RDONLY);
     if (eeprom == -1) {
       syslog(LOG_ERR, "%s: unable to open the %s file: %s",
@@ -92,18 +92,50 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
     close(bin);
     close(eeprom);
   }
-  
+
   return 0;
+}
+
+static void *pdb_fru_reader(void *arg) {
+  int retry = 3;
+
+  sleep(2);  // wait ipmbd ready
+
+  while (retry > 0) {
+    if (fbal_read_pdb_fruid(0, BIN_PDB, FRUID_SIZE) == 0) {
+      break;
+    }
+
+    retry--;
+    sleep(1);
+  }
+  if (retry <= 0) {
+    syslog(LOG_WARNING, "%s: Read PDB FRU Failed", __func__);
+  }
+
+  pthread_detach(pthread_self());
+  pthread_exit(NULL);
 }
 
 /* Populate the platform specific eeprom for fruid info */
 int plat_fruid_init(void) {
+  pthread_t tid;
 
-  if ( copy_eeprom_to_bin(FRU_EEPROM_MB, BIN_MB))
-    syslog(LOG_WARNING, "[%s]Copy MB EEPROM Failed",__func__);
+  if (copy_eeprom_to_bin(FRU_EEPROM_MB, BIN_MB)) {
+    syslog(LOG_WARNING, "%s: Copy MB EEPROM Failed", __func__);
+  }
 
-//  if ( copy_eeprom_to_bin(EEPROM_NIC, BIN_NIC))
-//    syslog(LOG_WARNING, "[%s]Copy NIC EEPROM Failed",__func__);
+  if (copy_eeprom_to_bin(FRU_EEPROM_NIC0, BIN_NIC0)) {
+    syslog(LOG_WARNING, "%s: Copy NIC0 EEPROM Failed", __func__);
+  }
+
+  if (copy_eeprom_to_bin(FRU_EEPROM_NIC1, BIN_NIC1)) {
+    syslog(LOG_WARNING, "%s: Copy NIC1 EEPROM Failed", __func__);
+  }
+
+  if (pthread_create(&tid, NULL, pdb_fru_reader, NULL) < 0) {
+    syslog(LOG_WARNING, "%s: Create pdb_fru_reader Failed", __func__);
+  }
 
   return 0;
 }

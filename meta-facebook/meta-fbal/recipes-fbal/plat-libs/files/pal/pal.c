@@ -32,6 +32,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/nm.h>
+#include <facebook/fbal_fruid.h>
 #include "pal.h"
 
 
@@ -292,10 +293,10 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
 
   switch (fru) {
   case FRU_MB:
-    *status = 1; 
+    *status = 1;
     break;
   case FRU_NIC0:
-    *status = 1; 
+    *status = 1;
     break;
   case FRU_NIC1:
     *status = 1; 
@@ -305,7 +306,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     break;
   default:
     return -1;
-  }    
+  }
   return 0;
 }
 
@@ -494,12 +495,14 @@ pal_get_fruid_path(uint8_t fru, char *path) {
   case FRU_NIC1:
     sprintf(fname, "nic1");
     break;
+  case FRU_PDB:
+    sprintf(fname, "pdb");
+    break;
   default:
     return -1;
   }
 
   sprintf(path, "/tmp/fruid_%s.bin", fname);
-
   return 0;
 }
 
@@ -508,6 +511,12 @@ pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
   switch(fru) {
   case FRU_MB:
     sprintf(path, FRU_EEPROM_MB);
+    break;
+  case FRU_NIC0:
+    sprintf(path, FRU_EEPROM_NIC0);
+    break;
+  case FRU_NIC1:
+    sprintf(path, FRU_EEPROM_NIC1);
     break;
   default:
     return -1;
@@ -531,10 +540,22 @@ pal_get_fruid_name(uint8_t fru, char *name) {
     sprintf(name, "Mezz Card 1");
     break;
 
+  case FRU_PDB:
+    sprintf(name, "PDB");
+    break;
+
   default:
     return -1;
   }
   return 0;
+}
+
+int
+pal_fruid_write(uint8_t fru, char *path) {
+  if (fru == FRU_PDB) {
+    return fbal_write_pdb_fruid(0, path);
+  }
+  return -1;
 }
 
 int
@@ -593,11 +614,6 @@ read_device(const char *device, int *value) {
   } else {
     return 0;
   }
-}
-
-int
-pal_get_fru_sdr_path(uint8_t fru, char *path) {
-  return -1;
 }
 
 int

@@ -43,6 +43,14 @@ gpio_export() {
   $GPIOCLI_CMD export --chip $ASPEEDCHIP --pin-name $name --shadow $shadow
 }
 
+gpio_export_ioexp() {
+  local chip shadow offset
+  chip=$1
+  shadow=$2
+  offset=$3
+  $GPIOCLI_CMD export --chip $chip --pin-offset $offset --shadow $shadow
+}
+
 gpio_set() {
   local shadow val
   shadow=$1

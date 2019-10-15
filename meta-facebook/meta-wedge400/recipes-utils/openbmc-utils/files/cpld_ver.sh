@@ -20,18 +20,7 @@
 
 . /usr/local/bin/openbmc-utils.sh
 
-board_rev=$(wedge_board_rev)
-
-smb_ver=$(cat $SMBCPLD_SYSFS_DIR/cpld_ver | head -n 1)
-smb_sub_ver=$(cat $SMBCPLD_SYSFS_DIR/cpld_sub_ver | head -n 1)
-pwr_ver=$(cat $PWRCPLD_SYSFS_DIR/cpld_ver | head -n 1)
-pwr_sub_ver=$(cat $PWRCPLD_SYSFS_DIR/cpld_sub_ver | head -n 1)
-scm_ver=$(cat $SCMCPLD_SYSFS_DIR/cpld_ver | head -n 1)
-scm_sub_ver=$(cat $SCMCPLD_SYSFS_DIR/cpld_sub_ver | head -n 1)
-fcm_ver=$(cat $FCMCPLD_SYSFS_DIR/cpld_ver | head -n 1)
-fcm_sub_ver=$(cat $FCMCPLD_SYSFS_DIR/cpld_sub_ver | head -n 1)
-
-echo "SMB_SYSCPLD: $(($smb_ver)).$(($smb_sub_ver))"
-echo "SMB_PWRCPLD: $(($pwr_ver)).$(($pwr_sub_ver))"
-echo "SCMCPLD: $(($scm_ver)).$(($scm_sub_ver))"
-echo "FCMCPLD: $(($fcm_ver)).$(($fcm_sub_ver))"
+echo "SMB_SYSCPLD: $((SMB_CPLD_VER)).$((SMB_CPLD_SUB_VER))"
+echo "SMB_PWRCPLD: $((PWR_CPLD_VER)).$((PWR_CPLD_SUB_VER))"
+echo "SCMCPLD: $((SCM_CPLD_VER)).$((SCM_CPLD_SUB_VER))"
+echo "FCMCPLD: $((FCM_CPLD_VER)).$((FCM_CPLD_SUB_VER))"

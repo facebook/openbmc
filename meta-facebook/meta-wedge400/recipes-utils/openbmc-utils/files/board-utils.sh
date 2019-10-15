@@ -34,6 +34,19 @@ PWR_USRV_SYSFS="${SCMCPLD_SYSFS_DIR}/com_exp_pwr_enable"
 PWR_USRV_FORCE_OFF="${SCMCPLD_SYSFS_DIR}/com_exp_pwr_force_off"
 PWR_TH_RST_SYSFS="${SMBCPLD_SYSFS_DIR}/mac_reset_n"
 
+# CPLD version
+SMB_CPLD_VER=$(head -n 1 "$SMBCPLD_SYSFS_DIR/cpld_ver" 2> /dev/null)
+SMB_CPLD_SUB_VER=$(head -n 1 "$SMBCPLD_SYSFS_DIR/cpld_sub_ver" 2> /dev/null)
+PWR_CPLD_VER=$(head -n 1 "$PWRCPLD_SYSFS_DIR/cpld_ver" 2> /dev/null)
+PWR_CPLD_SUB_VER=$(head -n 1 "$PWRCPLD_SYSFS_DIR/cpld_sub_ver" 2> /dev/null)
+SCM_CPLD_VER=$(head -n 1 "$SCMCPLD_SYSFS_DIR/cpld_ver" 2> /dev/null)
+SCM_CPLD_SUB_VER=$(head -n 1 "$SCMCPLD_SYSFS_DIR/cpld_sub_ver" 2> /dev/null)
+FCM_CPLD_VER=$(head -n 1 "$FCMCPLD_SYSFS_DIR/cpld_ver" 2> /dev/null)
+FCM_CPLD_SUB_VER=$(head -n 1 "$FCMCPLD_SYSFS_DIR/cpld_sub_ver" 2> /dev/null)
+
+# SMB Board Rev
+SMB_CPLD_BOARD_REV=$(head -n 1 "$SMBCPLD_SYSFS_DIR/board_ver" 2> /dev/null)
+
 wedge_is_us_on() {
     local val0 val1
 

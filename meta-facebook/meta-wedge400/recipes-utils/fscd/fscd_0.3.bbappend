@@ -17,6 +17,8 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
+RDEPENDS_${PN} += "bash"
+
 SRC_URI += "file://setup-fan.sh \
             file://get_fan_speed.sh \
             file://set_fan_speed.sh \

@@ -22,15 +22,19 @@
 #define __PAL_H__
 
 #include <openbmc/obmc-pal.h>
+#include <openbmc/kv.h>
 #include "pal_sensors.h"
+#include "pal_health.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle"
+#define PWR_OPTION_LIST "status, off, on, cycle"
 #define FRU_BIN "/tmp/fruid.bin"
 #define FRU_EEPROM "/sys/class/i2c-dev/i2c-6/device/6-0054/eeprom"
+
+#define ERR_NOT_READY -2
 
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;

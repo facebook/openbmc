@@ -34,9 +34,93 @@
 
 #define GUID_SIZE 16
 #define OFFSET_DEV_GUID 0x1800
+#define LAST_KEY "last_key"
 
 const char pal_fru_list[] = "all, fru";
-const char pal_server_list[] = "";
+const char pal_server_list[] = "fru";
+
+enum key_event {
+  KEY_BEFORE_SET,
+  KEY_AFTER_INI,
+};
+
+struct pal_key_cfg {
+  char *name;
+  char *def_val;
+  int (*function)(int, void*);
+} key_cfg[] = {
+  /* name, default value, function */
+  {"identify_sled", "off", NULL},
+  {"timestamp_sled", "0", NULL},
+  {"base_sensor_health", "1", NULL},
+  //{"base_sel_error", "1", NULL},
+  /* Add more Keys here */
+  {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
+};
+
+static int pal_key_index(char *key)
+{
+  int i = 0;
+
+  while (strcmp(key_cfg[i].name, LAST_KEY)) {
+
+    // If Key is valid, return success
+    if (!strcmp(key, key_cfg[i].name))
+      return i;
+
+    i++;
+  }
+
+#ifdef DEBUG
+  syslog(LOG_WARNING, "pal_key_index: invalid key - %s", key);
+#endif
+  return -1;
+}
+
+int pal_get_key_value(char *key, char *value)
+{
+  int index;
+
+  // Check is key is defined and valid
+  if ((index = pal_key_index(key)) < 0)
+    return -1;
+
+  return kv_get(key, value, NULL, KV_FPERSIST);
+}
+
+int pal_set_key_value(char *key, char *value)
+{
+  int index, ret;
+  // Check is key is defined and valid
+  if ((index = pal_key_index(key)) < 0)
+    return -1;
+
+  if (key_cfg[index].function) {
+    ret = key_cfg[index].function(KEY_BEFORE_SET, value);
+    if (ret < 0)
+      return ret;
+  }
+
+  return kv_set(key, value, 0, KV_FPERSIST);
+}
+
+int pal_set_def_key_value()
+{
+  int i;
+
+  for (i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; i++) {
+    if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed.");
+#endif
+    }
+    if (key_cfg[i].function) {
+      key_cfg[i].function(KEY_AFTER_INI, key_cfg[i].name);
+    }
+  }
+
+  return 0;
+}
 
 char g_dev_guid[GUID_SIZE] = {0};
 

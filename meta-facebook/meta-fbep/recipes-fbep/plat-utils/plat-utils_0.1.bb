@@ -26,6 +26,7 @@ SRC_URI = "file://ast-functions \
            file://setup-emmc.sh \
            file://setup-usbnet.sh \
            file://setup-fan.sh \
+           file://setup-por.sh \
            file://COPYING \
           "
 
@@ -55,6 +56,8 @@ do_install() {
   update-rc.d -r ${D} setup-emmc.sh start 05 S .
   install -m 755 setup-usbnet.sh ${D}${sysconfdir}/init.d/setup-usbnet.sh
   update-rc.d -r ${D} setup-usbnet.sh start 90 S .
+  install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
+  update-rc.d -r ${D} setup-por.sh start 70 S .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

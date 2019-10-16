@@ -4,9 +4,11 @@ SRC_URI += "file://pal.c \
             file://pal.h \
             file://pal_sensors.c \
             file://pal_sensors.h \
+            file://pal_health.c \
+            file://pal_health.h \
             "
-
-SOURCES += "pal_sensors.c"
+HEADERS += "pal_health.h"
+SOURCES += "pal_sensors.c pal_health.c"
 
 DEPENDS += "libgpio-ctrl libswitchtec"
 RDEPENDS_${PN} += " libgpio-ctrl libswitchtec"

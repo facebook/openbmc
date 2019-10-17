@@ -134,6 +134,8 @@ static int mmc_wr_blk_count(int fd, __u32 *total_blks)
 	}
 
 	*total_blks = (sectors / blk_size * BLKDEV_SECTOR_SIZE);
+	MMC_INFO("total %u write blocks, write block size %u\n",
+		 *total_blks, blk_size);
 	return 0;
 }
 
@@ -142,6 +144,17 @@ static int mmc_cal_erase_range(struct m_cmd_args *args,
 			       __u32 *end)
 {
 	__u32 total_blks;
+
+	/*
+	 * Get total number of sectors (512 bytes) of the device.
+	 */
+	if (mmc_wr_blk_count(args->dev_fd, &total_blks) != 0) {
+		return -1;
+	}
+	if (total_blks == 0) {
+		*start = *end = 0;
+		return 0;
+	}
 
 	/*
 	 * Set <start> to 0 unless it's specified in command line.
@@ -156,9 +169,6 @@ static int mmc_cal_erase_range(struct m_cmd_args *args,
 	 * Set <end> to be the last block (covering the entire device)
 	 * unless <length> is specified in command line.
 	 */
-	if (mmc_wr_blk_count(args->dev_fd, &total_blks) != 0) {
-		return -1;
-	}
 	if (args->length != BLKDEV_ADDR_INVALID) {
 		if (((UINT32_MAX - args->length) < *start) ||
 		    ((*start + args->length) > total_blks)) {
@@ -230,34 +240,35 @@ static int mmc_issue_erase(int fd, __u32 arg)
 /*
  * TODO: fill in the function.
  */
-static int mmc_do_trim(struct m_cmd_args *args)
-{
-	MMC_ERR("Error: operation not implemented yet!\n");
-	return -1;
-}
-
-static int mmc_do_sec_trim(struct m_cmd_args *args)
+static int mmc_do_trim(struct m_cmd_args *args, __u32 start, __u32 end)
 {
 	int ret;
-	__u32 start, end;
 
-	if (!mmc_is_secure_supported(args->dev_fd)) {
-		MMC_ERR("secure trim failed: feature not supported\n");
-		return -1;
-	}
+	MMC_DEBUG("starting trim, range [%u, %u]\n", start, end);
 
-	/*
-	 * Determine ERASE_GROUP_START|END.
-	 */
-	if (mmc_cal_erase_range(args, &start, &end) != 0) {
+	ret = mmc_set_erase_range(args->dev_fd, MMC_ERASE_GROUP_START, start);
+	if (ret != 0)
+		return ret;
+	ret = mmc_set_erase_range(args->dev_fd, MMC_ERASE_GROUP_END, end);
+	if (ret != 0)
+		return ret;
+	ret = mmc_issue_erase(args->dev_fd, MMC_TRIM_ARG);
+	if (ret != 0)
 		return -1;
-	}
-	MMC_DEBUG("secure erase range: [%u, %u]\n", start, end);
+
+	MMC_DEBUG("trim completed\n");
+	return 0;
+}
+
+static int mmc_do_sec_trim(struct m_cmd_args *args, __u32 start, __u32 end)
+{
+	int ret;
+
+	MMC_DEBUG("starting secure trim, range [%u, %u]\n", start, end);
 
 	/*
 	 * Secure trim step 1.
 	 */
-	MMC_DEBUG("starting secure trim step #1\n");
 	ret = mmc_set_erase_range(args->dev_fd, MMC_ERASE_GROUP_START, start);
 	if (ret != 0)
 		return ret;
@@ -267,11 +278,11 @@ static int mmc_do_sec_trim(struct m_cmd_args *args)
 	ret = mmc_issue_erase(args->dev_fd, MMC_SECURE_TRIM1_ARG);
 	if (ret != 0)
 		return -1;
+	MMC_DEBUG("secure trim step #1 completed\n");
 
 	/*
 	 * Secure trim step 2.
 	 */
-	MMC_DEBUG("starting secure trim step #2\n");
 	ret = mmc_set_erase_range(args->dev_fd, MMC_ERASE_GROUP_START, start);
 	if (ret != 0)
 		return -1;
@@ -281,16 +292,37 @@ static int mmc_do_sec_trim(struct m_cmd_args *args)
 	ret = mmc_issue_erase(args->dev_fd, MMC_SECURE_TRIM2_ARG);
 	if (ret != 0)
 		return ret;
+	MMC_DEBUG("secure trim step #2 completed\n");
 
 	return 0;
 }
 
 static int mmc_trim_cmd(struct m_cmd_args *args)
 {
-	if (mmc_flags.secure)
-		return mmc_do_sec_trim(args);
+	int ret;
+	__u32 start, end;
 
-	return mmc_do_trim(args);
+	if (mmc_flags.secure && !mmc_is_secure_supported(args->dev_fd)) {
+		MMC_ERR("secure trim failed: feature not supported\n");
+		return -1;
+	}
+
+	/*
+	 * Determine the trim range.
+	 */
+	if (mmc_cal_erase_range(args, &start, &end) != 0) {
+		return -1;
+	}
+	if (start >= end) {
+		return 0;	/* Nothing needs to be done. */
+	}
+
+	if (mmc_flags.secure)
+		ret = mmc_do_sec_trim(args, start, end);
+	else
+		ret = mmc_do_trim(args, start, end);
+
+	return ret;
 }
 
 static struct m_cmd_info mmc_cmds[] = {

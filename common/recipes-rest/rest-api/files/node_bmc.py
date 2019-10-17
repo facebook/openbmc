@@ -20,11 +20,12 @@
 
 import os.path
 import re
-from subprocess import *
+from subprocess import PIPE, Popen
 from uuid import getnode as get_mac
 
+import kv
+import pal
 from node import node
-from pal import *
 from vboot import get_vboot_status
 
 
@@ -33,7 +34,7 @@ def read_file_contents(path):
     try:
         with open(path, "r") as proc_file:
             content = proc_file.readlines()
-    except IOError as e:
+    except IOError:
         content = None
 
     return content
@@ -59,18 +60,44 @@ def getSPIVendor(manufacturer_id):
 
 class bmcNode(node):
     def __init__(self, info=None, actions=None):
-        if info == None:
+        if info is None:
             self.info = {}
         else:
             self.info = info
-        if actions == None:
+        if actions is None:
             self.actions = []
         else:
             self.actions = actions
 
-    def getInformation(self, param={}):
+    def _getUbootVer(self):
+        # Get U-boot Version
+        uboot_version = None
+        uboot_ver_regex = r"^U-Boot\W+(?P<uboot_ver>20\d{2}\.\d{2})\W+.*$"
+        uboot_ver_re = re.compile(uboot_ver_regex)
+        mtd0_str_dump_cmd = ["/usr/bin/strings", "/dev/mtd0"]
+        with Popen(mtd0_str_dump_cmd, stdout=PIPE, universal_newlines=True) as proc:
+            for line in proc.stdout:
+                matched = uboot_ver_re.fullmatch(line.strip())
+                if matched:
+                    uboot_version = matched.group("uboot_ver")
+                    break
+        return uboot_version
+
+    def getUbootVer(self):
+        UBOOT_VER_KV_KEY = "u-boot-ver"
+        uboot_version = None
+        try:
+            uboot_version = kv.kv_get(UBOOT_VER_KV_KEY)
+        except kv.KeyOperationFailure:
+            # not cahced, read and cache it
+            uboot_version = self._getUbootVer()
+            if uboot_version:
+                kv.kv_set(UBOOT_VER_KV_KEY, uboot_version, kv.FCREATE)
+        return uboot_version
+
+    def getInformation(self, param=None):
         # Get Platform Name
-        name = pal_get_platform_name()
+        name = pal.pal_get_platform_name()
 
         # Get MAC Address
         mac_path = "/sys/class/net/eth0/address"
@@ -127,22 +154,10 @@ class bmcNode(node):
         if ver:
             obc_version = ver.group(1)
 
-        # Get U-boot Version
-        uboot_version = ""
-        data = (
-            Popen("strings /dev/mtd0 | grep U-Boot | grep 20", shell=True, stdout=PIPE)
-            .stdout.read()
-            .decode()
-        )
-
-        # U-boot Version
-        lines = data.splitlines()
-        data_len = len(lines)
-        for i in range(data_len):
-            if i != data_len - 1:
-                uboot_version += lines[i] + ", "
-            else:
-                uboot_version += lines[i]
+        # U-Boot version
+        uboot_version = self.getUbootVer()
+        if uboot_version is None:
+            uboot_version = "NA"
 
         # Get kernel release and kernel version
         kernel_release = ""
@@ -222,7 +237,7 @@ class bmcNode(node):
 
         return info
 
-    def doAction(self, data, param={}):
+    def doAction(self, data, param=None):
         Popen("sleep 1; /sbin/reboot", shell=True, stdout=PIPE)
         return {"result": "success"}
 

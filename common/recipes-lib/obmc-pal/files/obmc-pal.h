@@ -391,6 +391,7 @@ int pal_fw_update_finished(uint8_t fru, const char *comp, int status);
 int pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 bool pal_is_modify_sel_time(uint8_t *sel, int size);
 int pal_update_sensor_reading_sdr (uint8_t fru);
+int pal_set_usb_path (uint8_t slot, uint8_t endpoint);
 #ifdef __cplusplus
 }
 #endif

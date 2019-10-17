@@ -2156,3 +2156,9 @@ int __attribute__((weak))
 pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   return PAL_ENOTSUP;
 }
+
+int __attribute__((weak))
+pal_set_usb_path (uint8_t slot, uint8_t endpoint) {
+  return PAL_ENOTSUP;
+}
+

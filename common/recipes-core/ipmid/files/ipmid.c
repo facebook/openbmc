@@ -160,6 +160,7 @@ static pthread_mutex_t m_oem_storage;
 static pthread_mutex_t m_oem_1s;
 static pthread_mutex_t m_oem_usb_dbg;
 static pthread_mutex_t m_oem_q;
+static pthread_mutex_t m_oem_zion;
 
 extern int plat_udbg_get_frame_info(uint8_t *num);
 extern int plat_udbg_get_updated_frames(uint8_t *count, uint8_t *buffer);
@@ -3898,6 +3899,42 @@ ipmi_handle_oem_usb_dbg(unsigned char *request, unsigned char req_len,
   pthread_mutex_unlock(&m_oem_usb_dbg);
 }
 
+static void
+oem_zion_set_usb_path(unsigned char *request, unsigned char req_len,
+       unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  uint8_t slot = req->data[0];
+  uint8_t endpoint = req->data[1];
+
+  res-> cc = pal_set_usb_path(slot, endpoint);
+}
+
+static void
+ipmi_handle_oem_zion(unsigned char *request, unsigned char req_len,
+     unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  unsigned char cmd = req->cmd;
+
+  pthread_mutex_lock(&m_oem_zion);
+  switch (cmd)
+  {
+    case CMD_OEM_ZION_SET_USB_PATH:
+      oem_zion_set_usb_path(request, req_len, response, res_len);
+      break;
+    default:
+      res->cc = CC_INVALID_CMD;
+      memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
+      *res_len = 3;
+      break;
+  }
+  pthread_mutex_unlock(&m_oem_zion);
+}
+
 /*
  * Function to handle all IPMI messages
  */
@@ -3962,6 +3999,10 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
     case NETFN_OEM_USB_DBG_REQ:
       res->netfn_lun = NETFN_OEM_USB_DBG_RES << 2;
       ipmi_handle_oem_usb_dbg(request, req_len, response, res_len);
+      break;
+    case NETFN_OEM_ZION_REQ:
+      res->netfn_lun = NETFN_OEM_ZION_RES << 2;
+      ipmi_handle_oem_zion(request, req_len, response, res_len);
       break;
     default:
       res->netfn_lun = (netfn + 1) << 2;
@@ -4114,6 +4155,7 @@ main (void)
   pthread_mutex_init(&m_oem_1s, NULL);
   pthread_mutex_init(&m_oem_usb_dbg, NULL);
   pthread_mutex_init(&m_oem_q, NULL);
+  pthread_mutex_init(&m_oem_zion, NULL);
 
   pal_get_num_slots(&max_slot_num);
   fru = 1;

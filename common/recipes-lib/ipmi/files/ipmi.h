@@ -310,6 +310,8 @@ enum
   NETFN_OEM_Q_RES = 0x37,
   NETFN_OEM_1S_REQ = 0x38,
   NETFN_OEM_1S_RES = 0x39,
+  NETFN_OEM_ZION_REQ = 0x3A,
+  NETFN_OEM_ZION_RES = 0x3B,
   NETFN_OEM_USB_DBG_REQ = 0x3C,
   NETFN_OEM_USB_DBG_RES = 0x3D,
 };
@@ -514,6 +516,12 @@ enum
   CMD_OEM_USB_DBG_GET_GPIO_DESC = 0x4,
   CMD_OEM_USB_DBG_GET_FRAME_DATA = 0x5,
   CMD_OEM_USB_DBG_CTRL_PANEL = 0x6,
+};
+
+// OEM Command Codes for 2S/8S server and GPU baseboard
+enum
+{
+  CMD_OEM_ZION_SET_USB_PATH = 0x20,
 };
 
 // IPMI command Completion Codes (IPMI/Section 5.2)

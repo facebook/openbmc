@@ -28,6 +28,8 @@
 #include <ctype.h>
 #include <time.h>
 #include <sys/time.h>
+#include <openbmc/libgpio.h>
+#include <openbmc/ipmi.h>
 #include "pal.h"
 
 #define BMC_IPMB_SLAVE_ADDR 0x16
@@ -370,3 +372,57 @@ int pal_get_dev_guid(uint8_t fru, char *guid) {
   return 0;
 }
 
+int pal_set_usb_path(uint8_t slot, uint8_t endpoint)
+{
+  int ret = CC_SUCCESS;
+  char gpio_name[16] = {0};
+  gpio_desc_t *desc;
+  gpio_value_t value;
+
+  if (slot > SERVER_4 || endpoint > PCH) {
+    ret = CC_PARAM_OUT_OF_RANGE;
+    goto exit;
+  }
+
+  desc = gpio_open_by_shadow("SEL_USB_MUX");
+  if (!desc) {
+    ret = CC_UNSPECIFIED_ERROR;
+    goto exit;
+  }
+  value = endpoint == BMC? GPIO_VALUE_LOW: GPIO_VALUE_HIGH;
+  if (gpio_set_value(desc, value)) {
+    ret = CC_UNSPECIFIED_ERROR;
+    goto bail;
+  }
+  gpio_close(desc);
+
+  strcpy(gpio_name, endpoint == BMC? "USB2_SEL0_U43": "USB2_SEL0_U42");
+  desc = gpio_open_by_shadow(gpio_name);
+  if (!desc) {
+    ret = CC_UNSPECIFIED_ERROR;
+    goto exit;
+  }
+  value = slot%2 == 0? GPIO_VALUE_LOW: GPIO_VALUE_HIGH;
+  if (gpio_set_value(desc, value)) {
+    ret = CC_UNSPECIFIED_ERROR;
+    goto bail;
+  }
+  gpio_close(desc);
+
+  strcpy(gpio_name, endpoint == BMC? "USB2_SEL1_U43": "USB2_SEL1_U42");
+  desc = gpio_open_by_shadow(gpio_name);
+  if (!desc) {
+    ret = CC_UNSPECIFIED_ERROR;
+    goto exit;
+  }
+  value = slot/2 == 0? GPIO_VALUE_LOW: GPIO_VALUE_HIGH;
+  if (gpio_set_value(desc, value)) {
+    ret = CC_UNSPECIFIED_ERROR;
+    goto bail;
+  }
+
+bail:
+  gpio_close(desc);
+exit:
+  return ret;
+}

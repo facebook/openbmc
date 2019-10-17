@@ -44,8 +44,20 @@ extern const char pal_fru_list[];
 extern const char pal_server_list[];
 
 enum {
-  FRU_ALL   = 0,
+  FRU_ALL  = 0,
   FRU_BASE = 1,
+};
+
+enum {
+  SERVER_1 = 0x0,
+  SERVER_2,
+  SERVER_3,
+  SERVER_4,
+};
+
+enum {
+  BMC = 0x0,
+  PCH,
 };
 
 #define MAX_NUM_FRUS 1

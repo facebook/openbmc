@@ -41,8 +41,8 @@ S = "${WORKDIR}"
 
 inherit distutils3
 
-DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += "python3-syslog python3-ply "
+DEPENDS += "update-rc.d-native libkv"
+RDEPENDS_${PN} += "python3-syslog python3-ply libkv"
 
 FSC_BIN_FILES = ""
 

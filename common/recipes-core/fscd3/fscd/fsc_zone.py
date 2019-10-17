@@ -218,7 +218,7 @@ class Zone:
             (exprout, dxstr) = self.expr.dbgeval(ctx)
             Logger.info(dxstr + " = " + str(exprout))
         else:
-            exprout = self.expr.eval(ctx)
+            exprout = self.expr.eval_driver(ctx)
             Logger.info(self.expr_str + " = " + str(exprout))
         # If *all* sensors in the top level max() report None, the
         # expression will report None

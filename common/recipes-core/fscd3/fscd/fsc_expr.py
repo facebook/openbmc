@@ -1,4 +1,5 @@
 import fsc_parser
+import kv
 
 
 class InfixNode:
@@ -42,6 +43,11 @@ class BindNode:
         self.name = name
         self.bindnode = bindnode
         self.innernode = innernode
+
+    def eval_driver(self, ctx):
+        innerctx = ctx.copy()
+        innerctx[self.name] = self.bindnode.eval(ctx)
+        return self.innernode.eval_driver(innerctx)
 
     def eval(self, ctx):
         innerctx = ctx.copy()
@@ -93,9 +99,35 @@ class ApplyNode:
         self.name = name
         self.op = op
         self.inner = inner
+        self.mxsr = "n/a"
+
+    def eval_driver(self, ctx):
+        """evals which sensor results in maximum RPM for the fan
+           and saves this sensor name as "fscd_driver"
+        """
+        iv = self.inner.eval(ctx)
+        fv = self.op.apply(iv, ctx)
+        it = self.inner.inners[iv.index(fv)]
+        if isinstance(it, InfixNode):
+            res = it.lhs.name + "+" + it.rhs.name
+            it = it.lhs
+        else:
+            res = it.name
+
+        if it.inner.name == "max":
+            mx = it.inner.mxsr
+        else:
+            mx = it.inner
+        res = res + "(" + str(mx) + ")"
+        kv.kv_set("fscd_driver", res)
+        return fv
 
     def eval(self, ctx):
-        return self.op.apply(self.inner.eval(ctx), ctx)
+        iv = self.inner.eval(ctx)
+        fv = self.op.apply(iv, ctx)
+        if self.name == "max" and fv is not None:
+            self.mxsr = self.inner.inners[iv.index(fv)]
+        return fv
 
     def dbgeval(self, ctx):
         (iv, it) = self.inner.dbgeval(ctx)

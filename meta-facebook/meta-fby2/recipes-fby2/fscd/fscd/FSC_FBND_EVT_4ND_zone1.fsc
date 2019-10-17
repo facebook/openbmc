@@ -1,9 +1,9 @@
 max([
   linear_inlet(spb:sp_inlet_temp),
-  linear_cpu_margin(slot1:cpu_temp) + pid_cpu_margin(slot1:cpu_temp),
-  linear_cpu_margin(slot2:cpu_temp) + pid_cpu_margin(slot2:cpu_temp),
-  linear_cpu_margin(slot3:cpu_temp) + pid_cpu_margin(slot3:cpu_temp),
-  linear_cpu_margin(slot4:cpu_temp) + pid_cpu_margin(slot4:cpu_temp),
+  linear_cpu_margin(slot1:soc_temp) + pid_cpu_margin(slot1:soc_temp),
+  linear_cpu_margin(slot2:soc_temp) + pid_cpu_margin(slot2:soc_temp),
+  linear_cpu_margin(slot3:soc_temp) + pid_cpu_margin(slot3:soc_temp),
+  linear_cpu_margin(slot4:soc_temp) + pid_cpu_margin(slot4:soc_temp),
   linear_dimm(
    max([
     slot1:soc_dimmc0_temp,

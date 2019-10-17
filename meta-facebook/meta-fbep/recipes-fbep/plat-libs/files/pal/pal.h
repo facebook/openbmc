@@ -60,6 +60,12 @@ enum {
   PCH,
 };
 
+enum {
+  HSC_1 = 0,
+  HSC_2,
+  HSC_AUX,
+};
+
 #define MAX_NUM_FRUS 1
 #define MAX_NODES    1
 

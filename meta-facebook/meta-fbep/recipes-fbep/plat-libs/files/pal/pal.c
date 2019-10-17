@@ -30,16 +30,28 @@
 #include <sys/time.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/obmc-i2c.h>
 #include "pal.h"
+
+#define REG_STATUS 		0x1E
+#define REG_STATUS_ON		(1 << 7)
+#define REG_STATUS_ON_PIN	(1 << 4)
+#define REG_STATUS_POWER_GOOD 	(1 << 3)
+
+#define DELAY_POWER_CYCLE 3
+#define MAX_RETRY 10
 
 #define BMC_IPMB_SLAVE_ADDR 0x16
 
 #define GUID_SIZE 16
 #define OFFSET_DEV_GUID 0x1800
+
 #define LAST_KEY "last_key"
 
 const char pal_fru_list[] = "all, fru";
 const char pal_server_list[] = "fru";
+
+char g_dev_guid[GUID_SIZE] = {0};
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -123,8 +135,6 @@ int pal_set_def_key_value()
 
   return 0;
 }
-
-char g_dev_guid[GUID_SIZE] = {0};
 
 int pal_channel_to_bus(int channel)
 {
@@ -372,6 +382,154 @@ int pal_get_dev_guid(uint8_t fru, char *guid) {
   return 0;
 }
 
+static int pal_read_hsc_reg(uint8_t id, uint8_t reg, uint8_t bytes, uint32_t *value)
+{
+  int ret;
+  int fd;
+  int retry = MAX_RETRY;
+  uint8_t mux_addr = 0xe0;
+  uint8_t addr, chan;
+  uint8_t tbuf[8] = {0};
+  uint8_t rbuf[8] = {0};
+
+  switch (id) {
+    case HSC_1:
+      addr = 0xa6;
+      chan = 0x4;
+      break;
+    case HSC_2:
+      addr = 0x80;
+      chan = 0x5;
+      break;
+    case HSC_AUX:
+      addr = 0x86;
+      chan = 0x6;
+      break;
+    default:
+      return -1;
+  }
+
+  fd = open("/dev/i2c-5", O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_WARNING,"[%s] Cannot open i2c bus", __func__);
+    return -1;
+  }
+
+  // switch mux to target channel
+  tbuf[0] = 0xa5; tbuf[1] = chan;
+  while (retry > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, mux_addr, tbuf, 2, rbuf, 0);
+    if (PAL_EOK == ret)
+      break;
+
+    msleep(50);
+    retry--;
+  }
+  if (ret < 0) {
+    syslog(LOG_WARNING,"[%s] Failed to switch the mux to target channel", __func__);
+    goto exit;
+  }
+
+  // Read from register of LTC4282
+  memset(tbuf, 0x0, 8);
+  tbuf[0] = reg;
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, bytes);
+  if (ret < 0) {
+    syslog(LOG_WARNING,"[%s] Failed to read 0x%x from addr 0x%x on i2c-5",
+	__func__, reg, addr);
+    goto exit;
+  }
+
+  *value = 0x0;
+  memcpy(value, rbuf, bytes);
+
+exit:
+  close(fd);
+  return ret;
+}
+
+#if 0
+static int pal_write_hsc_reg(uint8_t id, uint8_t reg, uint8_t bytes, uint64_t *value)
+{
+  int i;
+  int ret;
+  int fd;
+  uint8_t addr, chan;
+  uint8_t tbuf[8] = {0};
+  uint8_t rbuf[8] = {0};
+  uint8_t *data = (uint8_t*)value;
+  char cmd[64] = {0};
+
+  switch (id) {
+    case HSC_1:
+      addr = 0xa6;
+      chan = 0x4;
+      break;
+    case HSC_2:
+      addr = 0x80;
+      chan = 0x5;
+      break;
+    case HSC_AUX:
+      addr = 0x86;
+      chan = 0x6;
+      break;
+    default:
+      return -1;
+  }
+
+  fd = open("/dev/i2c-5", O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_WARNING,"[%s] Cannot open i2c-5", __func__);
+    return -1;
+  }
+
+  // switch mux
+  sprintf(cmd, "i2cset -y 5 0x70 0xa5 0x%x", chan);
+  system(cmd);
+
+  // Write register of LTC4282
+  tbuf[0] = reg;
+  for (i = 1; i < bytes+1; i++)
+    tbuf[i] = data[i-1];
+
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, bytes+1, rbuf, 0);
+  if (ret < 0) {
+    syslog(LOG_WARNING,"[%s] Failed to read 0x%x from addr 0x%x on i2c-5",
+	__func__, reg, addr);
+    goto exit;
+  }
+
+exit:
+  close(fd);
+  return ret;
+}
+#endif
+
+int pal_get_server_power(uint8_t fru, uint8_t *status)
+{
+  int ret;
+  uint32_t val;
+  uint32_t POWER_ON = (REG_STATUS_ON | REG_STATUS_ON_PIN | REG_STATUS_POWER_GOOD);
+
+  if (fru != FRU_BASE)
+    return -1;
+
+  ret = pal_read_hsc_reg(HSC_1, REG_STATUS, 1, &val);
+  if (ret < 0)
+    return -1;
+
+  *status = val == POWER_ON? 1: 0;
+
+  ret = pal_read_hsc_reg(HSC_2, REG_STATUS, 1, &val);
+  if (ret < 0)
+    return -1;
+
+  *status &= val == POWER_ON? 1: 0;
+  *status = *status == 1? SERVER_POWER_ON: SERVER_POWER_OFF;
+
+  return 0;
+}
+
 int pal_set_usb_path(uint8_t slot, uint8_t endpoint)
 {
   int ret = CC_SUCCESS;
@@ -426,3 +584,156 @@ bail:
 exit:
   return ret;
 }
+
+static int server_power_on()
+{
+  int ret = -1;
+  gpio_desc_t *gpio = gpio_open_by_shadow("BMC_IPMI_PWR_ON");
+
+  if (!gpio) {
+    return -1;
+  }
+  if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
+    goto bail;
+  }
+  if (gpio_set_value(gpio, GPIO_VALUE_LOW)) {
+    goto bail;
+  }
+  sleep(1);
+  if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
+    goto bail;
+  }
+  sleep(2);
+  system("/usr/bin/sv restart fscd >> /dev/null");
+  ret = 0;
+bail:
+  gpio_close(gpio);
+  return ret;
+}
+
+static int server_power_off()
+{
+  int ret = -1;
+  gpio_desc_t *gpio = gpio_open_by_shadow("BMC_IPMI_PWR_ON");
+
+  if (!gpio) {
+    return -1;
+  }
+
+  system("/usr/bin/sv stop fscd >> /dev/null");
+
+  if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
+    goto bail;
+  }
+  if (gpio_set_value(gpio, GPIO_VALUE_LOW)) {
+    goto bail;
+  }
+  sleep(1);
+  if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
+    goto bail;
+  }
+  ret = 0;
+bail:
+  gpio_close(gpio);
+  return ret;
+}
+
+static bool is_server_off()
+{
+  uint8_t status;
+
+  if (pal_get_server_power(FRU_BASE, &status) < 0)
+    return false;
+
+  return status == SERVER_POWER_OFF? true: false;
+}
+
+// Power Off, Power On, or Power Cycle
+int pal_set_server_power(uint8_t fru, uint8_t cmd)
+{
+  uint8_t status;
+
+  if (pal_get_server_power(fru, &status) < 0) {
+    return -1;
+  }
+
+  switch (cmd) {
+    case SERVER_POWER_ON:
+        return status == SERVER_POWER_ON? 1: server_power_on();
+      break;
+
+    case SERVER_POWER_OFF:
+        return status == SERVER_POWER_OFF? 1: server_power_off();
+      break;
+
+    case SERVER_POWER_CYCLE:
+      if (status == SERVER_POWER_ON) {
+        if (server_power_off())
+          return -1;
+
+        sleep(DELAY_POWER_CYCLE);
+
+        return server_power_on();
+      } else if (status == SERVER_POWER_OFF) {
+        return server_power_on();
+      }
+      break;
+
+    default:
+      return -1;
+  }
+
+  return 0;
+}
+
+int pal_chassis_control(uint8_t fru, uint8_t *req_data, uint8_t req_len)
+{
+  int ret;
+
+  if (req_len != 1) {
+    return CC_INVALID_LENGTH;
+  }
+
+  switch (req_data[0]) {
+    case 0x00:  // power off
+      ret = pal_set_server_power(fru, SERVER_POWER_OFF);
+      break;
+    case 0x01:  // power on
+      ret = pal_set_server_power(fru, SERVER_POWER_ON);
+      break;
+    case 0x02:  // power cycle
+      ret = pal_set_server_power(fru, SERVER_POWER_CYCLE);
+      break;
+    default:
+      return CC_INVALID_DATA_FIELD;
+  }
+
+  return ret < 0? CC_UNSPECIFIED_ERROR: CC_SUCCESS;
+}
+
+void pal_get_chassis_status(uint8_t fru, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)
+{
+   unsigned char *data = res_data;
+
+   *data++ = is_server_off()? 0x00:0x01;
+   *res_len = data - res_data;
+}
+
+int pal_sled_cycle(void)
+{
+  // switch the mux and reboot LTC4282 for 12V
+  system("i2cset -y 5 0x70 0xa5 0x6");
+  system("i2cset -y 5 0x43 0x1d 0x80");
+
+  return 0;
+}
+
+int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
+{
+  if (fru != FRU_BASE)
+    return -1;
+
+  *status = 1;
+  return 0;
+}
+

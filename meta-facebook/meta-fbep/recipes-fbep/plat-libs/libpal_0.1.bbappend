@@ -10,6 +10,6 @@ SRC_URI += "file://pal.c \
 HEADERS += "pal_health.h"
 SOURCES += "pal_sensors.c pal_health.c"
 
-DEPENDS += "libgpio-ctrl libswitchtec"
-RDEPENDS_${PN} += " libgpio-ctrl libswitchtec"
-LDFLAGS += " -lgpio-ctrl -lswitchtec"
+DEPENDS += "libgpio-ctrl libobmc-i2c libswitchtec"
+RDEPENDS_${PN} += " libgpio-ctrl libobmc-i2c libswitchtec"
+LDFLAGS += " -lgpio-ctrl -lobmc-i2c -lswitchtec"

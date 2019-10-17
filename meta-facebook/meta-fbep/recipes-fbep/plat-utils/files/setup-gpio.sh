@@ -60,7 +60,7 @@ gpio_export PAX1_INT2 GPIOB7
 
 # BMC ready
 gpio_export BMC_READY_N GPIOB2
-gpio_set BMC_READY_N 1
+gpio_set BMC_READY_N 0
 
 # System power good
 gpio_export SYS_PWR_READY GPIOB3
@@ -91,8 +91,9 @@ gpio_export SYS_PWR_READY GPIOB3
 # BMC power button (input)
 gpio_export BMC_PWR_BTN_IN_N GPIOE0
 
-# BMC power cycle (output)
+# PDB 12V POWER (output)
 gpio_export BMC_IPMI_PWR_ON GPIOE1
+gpio_set BMC_IPMI_PWR_ON 1
 
 # ASIC warm reset
 gpio_export WARMRST_BMC_N_ASIC0 GPIOE7
@@ -142,11 +143,16 @@ gpio_set LED_POSTCODE_7 1
 #devmem_clear_bit $(scu_addr 84) 7
 #devmem_clear_bit $(scu_addr 94) 12
 
+# JTAG mux, 1 = Altera PFR, 0 = Lattice
+gpio_export SEL_CPLD GPIOG0
+gpio_set SEL_CPLD 0
+
 # TPM presence
 gpio_export FM_BMC_TPM_PRES_N GPIOG1
 
-# BMC heartbeat
-gpio_export BMC_HEARTBEAT_N GPIOG2
+# Enable JTAG mux, 1 = Disbale, 0 = Enable
+gpio_export JTAG_ENABLE GPIOG2
+gpio_set JTAG_ENABLE 0
 
 # OAM test pin (defined by OAM)
 gpio_export BMC_OAM_TEST7 GPIOG3

@@ -31,6 +31,7 @@ SRC_URI += "file://board-utils.sh \
             file://reset_brcm.sh \
             file://scmcpld_update.sh \
             file://set_sled.sh \
+            file://set_vdd.sh \
             file://setup_board.sh \
             file://setup_avs.sh \
             file://setup_default_gpio.sh \
@@ -59,6 +60,7 @@ OPENBMC_UTILS_FILES += " \
     reset_brcm.sh \
     scmcpld_update.sh \
     set_sled.sh \
+    set_vdd.sh \
     setup_avs.sh \
     setup_mgmt.sh \
     seutil \

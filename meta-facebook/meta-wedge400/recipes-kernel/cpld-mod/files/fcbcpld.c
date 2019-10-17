@@ -790,7 +790,7 @@ static const i2c_dev_attr_st fcbcpld_attr_table[] = {
   },
   {
     "fan4_present",
-    "Fan-5 Present\n"
+    "Fan-4 Present\n"
     "0: Present\n"
     "1: Not Present",
     I2C_DEV_ATTR_SHOW_DEFAULT,

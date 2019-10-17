@@ -35,4 +35,12 @@ board_routes = [
     "/api/sys/feutil/fan2",
     "/api/sys/feutil/fan3",
     "/api/sys/feutil/fan4",
+    "/api/sys/sensors/scm",
+    "/api/sys/sensors/smb",
+    "/api/sys/sensors/pem1",
+    "/api/sys/sensors/pem2",
+    "/api/sys/sensors/psu1",
+    "/api/sys/sensors/psu2",
+    "/api/sys/vddcore",
+    "/api/sys/vddcore/{volt}",
 ]

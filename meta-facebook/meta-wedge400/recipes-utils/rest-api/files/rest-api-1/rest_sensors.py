@@ -21,6 +21,7 @@
 import json
 import re
 import subprocess
+import syslog
 
 from rest_utils import DEFAULT_TIMEOUT_SEC
 
@@ -38,20 +39,23 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 # for this.
 #
 def get_fru_sensor(fru):
+    result = {}
     cmd = "/usr/local/bin/sensor-util"
     proc = subprocess.Popen([cmd, fru], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
-        data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
+        data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
         data = data.decode()
     except proc.TimeoutError as ex:
         data = ex.output
         data = data.decode()
-        err = ex.error
+        proc.kill()
+        syslog.syslog(syslog.LOG_CRIT, "rest_sensor fru {} timeout".format(fru))
+        result["result"] = False
+        result["reason"] = "{} {} timeout".format(cmd, fru)
 
     # We flatten all key value pair into one level
     # We keep the JSON format compatible with other
     # FBOSS chassis, to make bmc_proxy happy
-    result = {}
     result["name"] = "util"
     result["Adapter"] = "util"
     if "not present" in data:
@@ -75,7 +79,31 @@ def get_fru_sensor(fru):
     return result
 
 
-def get_sensors():
+def get_scm_sensors():
+    return {"Information": get_fru_sensor("scm"), "Actions": [], "Resources": []}
+
+
+def get_smb_sensors():
+    return {"Information": get_fru_sensor("smb"), "Actions": [], "Resources": []}
+
+
+def get_pem1_sensors():
+    return {"Information": get_fru_sensor("pem1"), "Actions": [], "Resources": []}
+
+
+def get_pem2_sensors():
+    return {"Information": get_fru_sensor("pem2"), "Actions": [], "Resources": []}
+
+
+def get_psu1_sensors():
+    return {"Information": get_fru_sensor("psu1"), "Actions": [], "Resources": []}
+
+
+def get_psu2_sensors():
+    return {"Information": get_fru_sensor("psu2"), "Actions": [], "Resources": []}
+
+
+def get_all_sensors():
     result = {}
     # FRUs of /usr/local/bin/sensor-util commands
     frus = ["scm", "smb", "psu1", "psu2", "pem1", "pem2"]
@@ -84,11 +112,9 @@ def get_sensors():
         sresult = get_fru_sensor(fru)
         result[fru] = sresult
 
-    fresult = {"Information": result, "Actions": [], "Resources": []}
+    fresult = {"Information": result, "Actions": [], "Resources": frus}
     return fresult
 
 
-# This function doesn't seem to be actively used, but I will leave it
-# here for any future compatibility issue if any
-def get_sensors_full():
-    return get_sensors()
+def get_sensors():
+    return get_all_sensors()

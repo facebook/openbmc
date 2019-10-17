@@ -31,6 +31,7 @@
 
 #define CMD_SET_FAN_STR "--set"
 #define CMD_GET_FAN_STR "--get"
+#define CMD_GET_FAN_DRIVER_STR "--get-driver"
 #define ALL_FAN_NUM     0xFF
 #define SENSOR_FAIL_RECORD_DIR "/tmp/sensorfail_record"
 #define FAN_FAIL_RECORD_DIR "/tmp/fanfail_record"
@@ -42,6 +43,7 @@
 enum {
   CMD_SET_FAN = 0,
   CMD_GET_FAN,
+  CMD_GET_DRIVER,
 };
 
 enum {
@@ -59,6 +61,7 @@ print_usage(void) {
   strncpy(tach_list, pal_get_tach_list(),16);
   printf("Usage: fan-util --set <[0..100] %%> < Fan# [%s] >\n", pwm_list);
   printf("       fan-util --get < Fan# [%s] >\n", tach_list);
+  printf("       fan-util --get-driver\n");
 }
 
 static int
@@ -160,7 +163,7 @@ fan_fail_check(bool status) {
 }
 
 static bool
-fan_mode_check(void) {
+fan_mode_check(bool printMode) {
   FILE* fp;
   char cmd[128];
   char buf[32];
@@ -171,51 +174,55 @@ fan_mode_check(void) {
 
   sprintf(cmd, "ps | grep /usr/bin/fscd.py | wc -l");
   if((fp = popen(cmd, "r")) == NULL) {
-    printf("Fan Mode: Unknown\n");
+    if (printMode)
+      printf("Fan Mode: Unknown\n");
     return false;
   }
 
   if(fgets(buf, sizeof(buf), fp) != NULL) {
     res = atoi(buf);
     if(res <= 2) {
-      printf("Fan Mode: Manual(No fscd running)\n");
+      if (printMode)
+        printf("Fan Mode: Manual(No fscd running)\n");
       pclose(fp);
       return true;
     }
   }
   pclose(fp);
 
-  fd = open(FAN_MODE_FILE, O_RDONLY);
-  if (fd < 0) {
-    printf("Fan Mode: Unknown\n");
-    return false;
-  }
-
-  cnt = read(fd, &mode, sizeof(uint8_t));
-
-  if (cnt <= 0) {
-    printf("Fan Mode: Unknown\n");
-    close(fd);
-    return false;
-  }
-
-  mode = mode - '0';
-  switch(mode) {
-    case NORMAL:
-      printf("Fan Mode: Normal\n");
-      break;
-    case TRANSIT:
-      printf("Fan Mode: Transitional\n");
-      break;
-    case BOOST:
-      printf("Fan Mode: Boost\n");
-      break;
-    default:
+  if (printMode) {
+    fd = open(FAN_MODE_FILE, O_RDONLY);
+    if (fd < 0) {
       printf("Fan Mode: Unknown\n");
-      break;
-  }
+      return false;
+    }
 
-  close(fd);
+    cnt = read(fd, &mode, sizeof(uint8_t));
+
+    if (cnt <= 0) {
+      printf("Fan Mode: Unknown\n");
+      close(fd);
+      return false;
+    }
+
+    mode = mode - '0';
+    switch(mode) {
+      case NORMAL:
+        printf("Fan Mode: Normal\n");
+        break;
+      case TRANSIT:
+        printf("Fan Mode: Transitional\n");
+        break;
+      case BOOST:
+        printf("Fan Mode: Boost\n");
+        break;
+      default:
+        printf("Fan Mode: Unknown\n");
+        break;
+    }
+
+    close(fd);
+  }
   return false;
 }
 
@@ -295,6 +302,9 @@ main(int argc, char **argv) {
       }
     }
 
+  } else if (!strcmp(argv[1], CMD_GET_FAN_DRIVER_STR) && (argc == 2)) {
+    /* fan-util --get-driver */
+    cmd = CMD_GET_DRIVER;
   } else {
     print_usage();
     return -1;
@@ -345,11 +355,14 @@ main(int argc, char **argv) {
   }
 
   if ((cmd == CMD_GET_FAN) && (argc == 2)) {
-    manu_flag = fan_mode_check();
+    manu_flag = fan_mode_check(true);
     fscd_driver_check(manu_flag);
     sensor_fail_check(manu_flag);
     fan_fail_check(manu_flag);
     pal_specific_plat_fan_check(manu_flag);
+  } else if ((cmd == CMD_GET_DRIVER) && (argc == 2)) {
+    manu_flag = fan_mode_check(false);
+    fscd_driver_check(manu_flag);
   }
 
   return 0;

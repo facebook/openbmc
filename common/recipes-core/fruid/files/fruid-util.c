@@ -665,7 +665,9 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
           return -1;
         }
         sprintf(command, "dd if=%s of=%s bs=%d count=1", file_path, eeprom_path, fru_size);
-        system(command);
+        if (system(command) != 0) {
+          syslog(LOG_ERR, "Copy of %s to %s failed!\n", file_path, eeprom_path);
+        }
 
         ret = pal_compare_fru_data(eeprom_path, file_path, fru_size);
         if (ret < 0)

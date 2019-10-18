@@ -222,7 +222,9 @@ usb_dbg_update_fw(char *path, uint8_t en_mcu_upd)
   // Kill ipmb daemon
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "sv stop ipmbd_%d", mcu_bus_id);
-  system(cmd);
+  if (system(cmd) != 0) {
+    goto error_exit2;
+  }
   printf("Stopped ipmbd %d..\n",mcu_bus_id);
 
   //Waiting for MCU reset to bootloader for updating
@@ -389,7 +391,9 @@ error_exit:
   // Restart ipmbd daemon
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "sv start ipmbd_%d", mcu_bus_id);
-  system(cmd);
+  if (system(cmd) != 0) {
+    printf("Starting ipbmd_%d failed\n", mcu_bus_id);
+  }
 
 error_exit2:
   if (fd > 0) {

@@ -196,7 +196,7 @@ void *handle_add_sel(void *unused)
 
       for(i=0; i < send_to_ipmi->sel_len; i++)
       {
-        sprintf(data, "%s %02X", data, send_to_ipmi->sel[i]);
+        sprintf(data, "%02X ", send_to_ipmi->sel[i]);
       }
 
       syslog(LOG_WARNING,"[Fail] Add SEL Fail. Completion Code = 0x%02X", sel_res[2]);
@@ -302,7 +302,9 @@ main(int argc, char * const argv[]) {
   uint8_t kcs_channel_num = 2;
   const char *bmc_ready_n_shadow;
 
-  daemon(1, 0);
+  if (daemon(1, 0) != 0) {
+    return -1;
+  }
   openlog("kcsd", LOG_CONS, LOG_DAEMON);
 
   if (argc > 2) {
@@ -320,7 +322,9 @@ main(int argc, char * const argv[]) {
   kcs_fd = open(device, O_RDWR);
   if (kcs_fd < 0) {
     sprintf(cmd, "echo 1 > /sys/devices/platform/ast-kcs.%d/enable", kcs_channel_num);
-    system(cmd);
+    if (system(cmd) != 0) {
+      syslog(LOG_ERR, "KCSD Enabling channel %d failed\n", kcs_channel_num);
+    }
 
     sprintf(device, "/dev/ast-kcs.%d", kcs_channel_num);
     kcs_fd = open(device, O_RDWR);

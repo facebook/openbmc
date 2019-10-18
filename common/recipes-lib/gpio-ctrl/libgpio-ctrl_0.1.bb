@@ -41,14 +41,7 @@ LDFLAGS += " -lmisc-utils -lpthread -lobmc-i2c "
 DEPENDS += "libmisc-utils libobmc-i2c"
 RDEPENDS_${PN} += " libmisc-utils libobmc-i2c python3-core"
 
-inherit distutils3
-python() {
-  if d.getVar('DISTRO_CODENAME', True) == 'krogoth':
-    d.setVar('INHERIT', 'python-dir')
-  else:
-    d.setVar('INHERIT', 'python3-dir')
-}
-
+inherit distutils3 python3-dir
 distutils3_do_configure(){
     :
 }

@@ -243,7 +243,10 @@ fscd_driver_check(bool status) {
     return -1;
   }
 
-  fgets(buf, MAX_BUF_SIZE, fp);
+  if (fgets(buf, MAX_BUF_SIZE, fp) == NULL) {
+    printf("FSCD Driver returned nothing\n");
+    return -1;
+  }
   printf("FSCD Driver: %s\n", buf);
 
   fclose(fp);

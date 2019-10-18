@@ -181,14 +181,14 @@ int obmc_log_by_prio(int prio, const char *fmt, ...)
 		if (LOG_DEVICE_IS_SET(&my_ldesc, LOG_DEV_STD_STREAM)) {
 			FILE *stream = (prio >= LOG_INFO ?
 					stdout : stderr);
-			fprintf(stream, buf);
+			fprintf(stream, "%s", buf);
 			fflush(stream);
 		}
 
 		/* Dump log to file. */
 		if (LOG_DEVICE_IS_SET(&my_ldesc, LOG_DEV_FILE)) {
 			assert(my_ldesc.file_fp != NULL);
-			fprintf(my_ldesc.file_fp, buf);
+			fprintf(my_ldesc.file_fp, "%s", buf);
 			fflush(my_ldesc.file_fp);
 		}
 	}

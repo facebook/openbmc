@@ -111,7 +111,7 @@ pem_eeprom_reg_t pem_default_config = {
   .power_alarm_min = 0,
   .power_alarm_max = 0xff,
   .clock_decimator.reg_val.value = 0x08,
-  .ilim_adjust.reg_val.value = 0x35,
+  .ilim_adjust.reg_val.value = 0x55,
 };
 
 static int
@@ -152,24 +152,43 @@ static int pem_reg_read(int fd, uint8_t reg, void *value) {
     case ENERGY:
     case TIME_COUNTER:
     case EE_SCRATCH:
-        return -1;
+      return -1;
+
+    case VGPIO:
+      byte = i2c_smbus_read_byte_data(fd, smbus_ltc4282[ILIM_ADJUST].reg);
+      /* Select GPIO3 */
+      byte &= (~0x03);
+      byte = i2c_smbus_write_byte_data(fd, smbus_ltc4282[ILIM_ADJUST].reg, byte);
+      msleep(100);
+      word = i2c_smbus_read_word_data(fd, smbus_ltc4282[reg].reg);
+      *(uint16_t *)value = ((uint16_t)(word << 8) | word >> 8);
+      break;
+    case VIN:
+      byte = i2c_smbus_read_byte_data(fd, smbus_ltc4282[ILIM_ADJUST].reg);
+      /* Select Vin, Enable 12-bits mode */
+      byte |= 0x05;
+      byte &= (~0x03);
+      byte = i2c_smbus_write_byte_data(fd, smbus_ltc4282[ILIM_ADJUST].reg, byte);
+      msleep(100);
+      word = i2c_smbus_read_word_data(fd, smbus_ltc4282[reg].reg);
+      *(uint16_t *)value = ((uint16_t)(word << 8) | word >> 8);
+      break;
+    case VOUT:
+      byte = i2c_smbus_read_byte_data(fd, smbus_ltc4282[EE_ILIM_ADJUST].reg);
+      /* Select Vout, Enable 12-bits mode */
+      byte |= 0x01;
+      byte &= (~0x05);
+      byte = i2c_smbus_write_byte_data(fd, smbus_ltc4282[ILIM_ADJUST].reg, byte);
+      msleep(100);
+      word = i2c_smbus_read_word_data(fd, smbus_ltc4282[reg].reg);
+      *(uint16_t *)value = ((uint16_t)(word << 8) | word >> 8);
+      break;
+
     case CONTROL:
     case ALERT:
     case STATUS:
-    case VGPIO:
     case VGPIO_MIN:
     case VGPIO_MAX:
-    case VIN:
-      byte = i2c_smbus_read_byte_data(fd, smbus_ltc4282[ILIM_ADJUST].reg);
-      byte |= 0x05;
-      byte = i2c_smbus_write_byte_data(fd, smbus_ltc4282[ILIM_ADJUST].reg, byte);
-      msleep(1100);
-    case VOUT:
-      byte = i2c_smbus_read_byte_data(fd, smbus_ltc4282[ILIM_ADJUST].reg);
-      byte |= 0x01;
-      byte &= 0x04;
-      byte = i2c_smbus_write_byte_data(fd, smbus_ltc4282[ILIM_ADJUST].reg, byte);
-      msleep(1100);
     case VSOURCE_MIN:
     case VSOURCE_MAX:
     case VSENSE:
@@ -716,6 +735,7 @@ static void print_pem_sensors(uint8_t num) {
       printf("\n%-32s: %s", sensor_name, "NA");
     }
   }
+  printf("\n");
 }
 
 static void print_pem_control_reg(pem_control_t *control) {

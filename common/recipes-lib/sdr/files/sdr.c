@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <string.h>
+#include <unistd.h>
 #include "sdr.h"
 
 #define FIELD_RATE_UNIT(x)  ((x & (0x07 << 3)) >> 3)
@@ -195,7 +196,7 @@ _sdr_get_sensor_units(sdr_full_t *sdr, uint8_t *op, uint8_t *modifier,
     *modifier = sdr->sensor_units3;
 
   if (percent) {
-    sprintf(units, "%");
+    sprintf(units, "%%");
   } else {
     if (base_idx > 0 && base_idx <= MAX_SENSOR_BASE_UNIT) {
       if (rate_idx > 0 && rate_idx < MAX_SENSOR_RATE_UNIT) {
@@ -323,7 +324,7 @@ _sdr_get_sensor_name(sdr_full_t *sdr, char *name) {
     break;
 
   case TYPE_ASCII_8BIT:
-    snprintf(name, field_len, str);
+    snprintf(name, field_len, "%s", str);
     /* Add Null terminator */
     name[field_len] = '\0';
     break;

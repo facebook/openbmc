@@ -85,7 +85,9 @@ gpio_value_en gpio_read(gpio_st *g)
   char buf[32] = {0};
   gpio_value_en v;
   lseek(g->gs_fd, 0, SEEK_SET);
-  read(g->gs_fd, buf, sizeof(buf));
+  if (read(g->gs_fd, buf, sizeof(buf)) < 1) {
+    return GPIO_VALUE_INVALID;
+  }
   v = atoi(buf) ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
   OBMC_DEBUG("read gpio=%d value=%d %d", g->gs_gpio, atoi(buf), v);
   return v;
@@ -94,7 +96,9 @@ gpio_value_en gpio_read(gpio_st *g)
 void gpio_write(gpio_st *g, gpio_value_en v)
 {
   lseek(g->gs_fd, 0, SEEK_SET);
-  write(g->gs_fd, (v == GPIO_VALUE_HIGH) ? "1" : "0", 1);
+  if (write(g->gs_fd, (v == GPIO_VALUE_HIGH) ? "1" : "0", 1) != 1) {
+    return;
+  }
   OBMC_DEBUG("write gpio=%d value=%d", g->gs_gpio, v);
 }
 
@@ -114,7 +118,9 @@ int gpio_change_direction(gpio_st *g, gpio_direction_en dir)
   }
 
   val = (dir == GPIO_DIRECTION_IN) ? "in" : "out";
-  write(fd, val, strlen(val));
+  if (write(fd, val, strlen(val)) != strlen(val)) {
+    return -1;
+  }
 
   OBMC_DEBUG("change gpio=%d direction=%s", g->gs_gpio, val);
 
@@ -138,7 +144,9 @@ int gpio_current_direction(gpio_st *g, gpio_direction_en *dir)
     return -rc;
   }
 
-  read(fd, buf, sizeof(buf));
+  if (read(fd, buf, sizeof(buf)) < 1) {
+    return -1;
+  }
   strip(buf);
   if (!strcmp(buf, "in")) {
     *dir = GPIO_DIRECTION_IN;
@@ -184,7 +192,9 @@ int gpio_change_edge(gpio_st *g, gpio_edge_en edge)
     goto edge_exit;
   }
 
-  write(fd, str, strlen(str) + 1);
+  if (write(fd, str, strlen(str) + 1) != (strlen(str) + 1)) {
+    return -1;
+  }
 
 edge_exit:
   close(fd);
@@ -205,7 +215,9 @@ int gpio_current_edge(gpio_st *g, gpio_edge_en *edge)
     return -rc;
   }
 
-  read(fd, buf, sizeof(buf));
+  if (read(fd, buf, sizeof(buf)) < 1) {
+    return -1;
+  }
   strip(buf);
 
   if (!strcmp(buf, "none")) {
@@ -239,7 +251,9 @@ int gpio_export(int gpio)
   }
 
   len = snprintf(buf, sizeof(buf), "%d", gpio);
-  write(fd, buf, len);
+  if (write(fd, buf, len) != len) {
+    return -1;
+  }
   close(fd);
 
   return rc;
@@ -261,7 +275,9 @@ int gpio_unexport_legacy(int gpio)
   }
 
   len =  snprintf(buf, sizeof(buf), "%d", gpio);
-  write(fd, buf, len);
+  if (write(fd, buf, len) != len) {
+    return -1;
+  }
   close(fd);
 
   return rc;

@@ -21,13 +21,7 @@ RDEPENDS_${PN}-python3 += "python3-core"
 RDEPENDS_${PN} += "libvbs"
 
 PACKAGES += "${PN}-python3"
-inherit distutils3
-python() {
-  if d.getVar('DISTRO_CODENAME', True) == 'rocko':
-    d.setVar('INHERIT', 'python3-dir')
-  else:
-    d.setVar('INHERIT', 'python-dir')
-}
+inherit distutils3 python3-dir
 
 distutils3_do_configure(){
     :

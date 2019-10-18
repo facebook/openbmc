@@ -454,7 +454,11 @@ write_pldm_sensor_info()
     goto close_bail;
   }
 
-  ftruncate(fd, share_size);
+  if (ftruncate(fd, share_size) != 0) {
+    syslog(LOG_ERR, "%s: truncate %s failed errno = %d\n",
+        __FUNCTION__, PLDM_SNR_INFO, errno);
+    goto close_bail;
+  }
 
   shm = (char *)mmap(NULL, share_size, PROT_WRITE, MAP_SHARED, fd, 0);
 

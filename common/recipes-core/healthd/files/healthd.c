@@ -819,6 +819,7 @@ CPU_usage_monitor() {
   float cpu_util_avg, cpu_util_total;
   float cpu_utilization[cpu_window_size];
   FILE *fp;
+  int ret;
 
   sleep(180); //Wait 180s for BMC to idle stage.
 
@@ -838,10 +839,15 @@ CPU_usage_monitor() {
       retry++;
       continue;
     }
-    retry = 0;
 
-    fscanf(fp, "%s %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
+    ret = fscanf(fp, "%s %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
                 cpu, &user, &nice, &system, &idle, &iowait, &irq, &softirq, &steal, &guest, &guest_nice);
+    if (ret != 11) {
+      syslog(LOG_WARNING, "Cannot parse CPU statistic. Stop %s\n", __func__);
+      retry++;
+      continue;
+    }
+    retry = 0;
 
     fclose(fp);
 
@@ -1205,14 +1211,26 @@ crit_proc_ongoing_handle(bool is_crit_proc_updating)
   last_is_crit_proc_updating = is_crit_proc_updating;
 
   if ( true == is_crit_proc_updating ) { // forbid the execution permission
-    system("chmod 666 /sbin/shutdown.sysvinit");
-    system("chmod 666 /sbin/halt.sysvinit");
-    system("chmod 666 /sbin/init");
+    if (system("chmod 666 /sbin/shutdown.sysvinit") != 0) {
+      syslog(LOG_ERR, "Disabling shutdown failed\n");
+    }
+    if (system("chmod 666 /sbin/halt.sysvinit") != 0) {
+      syslog(LOG_ERR, "Disabling halt failed\n");
+    }
+    if (system("chmod 666 /sbin/init") != 0) {
+      syslog(LOG_ERR, "Disabling init failed\n");
+    }
   }
   else {
-    system("chmod 4755 /sbin/shutdown.sysvinit");
-    system("chmod 4755 /sbin/halt.sysvinit");
-    system("chmod 4755 /sbin/init");
+    if (system("chmod 4755 /sbin/shutdown.sysvinit") != 0) {
+      syslog(LOG_ERR, "Enabling shutdown failed\n");
+    }
+    if (system("chmod 4755 /sbin/halt.sysvinit") != 0) {
+      syslog(LOG_ERR, "Enabling halt failed\n");
+    }
+    if (system("chmod 4755 /sbin/init") != 0) {
+      syslog(LOG_ERR, "Enabling init failed\n");
+    }
   }
 }
 

@@ -34,13 +34,7 @@ SRC_URI = "file://Makefile \
 S = "${WORKDIR}"
 
 RDEPENDS_${PN} += "python3-core bash"
-inherit distutils3
-python() {
-  if d.getVar('DISTRO_CODENAME', True) == 'rocko':
-    d.setVar('INHERIT', 'python3-dir')
-  else:
-    d.setVar('INHERIT', 'python-dir')
-}
+inherit distutils3 python3-dir
 
 distutils3_do_configure(){
     :

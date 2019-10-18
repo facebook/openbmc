@@ -4621,8 +4621,6 @@ pal_set_def_key_value() {
       /* Write the value "1" which means FRU_STATUS_GOOD */
       ret = pal_set_key_value(key, "1");
     }
-
-    system("i2cset -y -f 10 0x40 0x03 0");
   }
 
   return 0;

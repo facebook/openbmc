@@ -157,7 +157,7 @@ elif [ $spb_type == "2" ]; then
    i2cset -y -f 10 0x40 0xda 0x0000 w
 
    #
-   i2cset -y -f 10 0x40 0xd4 0x3f1c w
+   i2cset -y -f 10 0x40 0xd4 0x3d1c w
    i2cset -y -f 10 0x40 0xd5 0x0400 w
 
    # calibrtion to get HSC to trigger 63A based on EE team input

@@ -147,7 +147,7 @@ int lldp_open(const char* interface) {
 
     // Look up the interface index
     struct ifreq ifr;
-    snprintf(ifr.ifr_name, IFNAMSIZ, interface);
+    snprintf(ifr.ifr_name, IFNAMSIZ, "%s", interface);
     int rc = ioctl(fd, SIOCGIFINDEX, &ifr);
     CHECK_ERROR(rc, "failed to get interface index for %s", interface);
 

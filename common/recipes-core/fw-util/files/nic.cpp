@@ -5,6 +5,7 @@
 #include "fw-util.h"
 
 #define NCSI_DATA_PAYLOAD 64
+#define NCSI_MIN_DATA_PAYLOAD 36
 #define NIC_FW_VER_PATH "/tmp/cache_store/nic_fw_ver"
 
 using namespace std;
@@ -79,7 +80,10 @@ class NicComponent : public Component {
       if (NULL == file) {
         return FW_STATUS_FAILURE;
       }
-      fread(buf, sizeof(uint8_t), NCSI_DATA_PAYLOAD, file);
+      if (fread(buf, sizeof(uint8_t), NCSI_DATA_PAYLOAD, file) < NCSI_MIN_DATA_PAYLOAD) {
+        fclose(file);
+        return FW_STATUS_FAILURE;
+      }
       fclose(file);
       //get the manufcture id
       nic_mfg_id = (buf[35]<<24) + (buf[34]<<16) + (buf[33]<<8) + buf[32];
@@ -89,7 +93,7 @@ class NicComponent : public Component {
         //check the nic on the system is supported or not
         if ( support_nic_list[current_nic].mfg_id == nic_mfg_id )
         {
-          sprintf(vendor, support_nic_list[current_nic].mfg_name);
+          sprintf(vendor, "%s", support_nic_list[current_nic].mfg_name);
           support_nic_list[current_nic].get_nic_fw(buf, version);
           is_unknown_mfg_id = false;
           break;

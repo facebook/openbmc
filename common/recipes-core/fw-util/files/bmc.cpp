@@ -80,11 +80,16 @@ int BmcComponent::update(string image_path)
         r_b = read(fd_d, buf, to_copy);
         if (r_b != to_copy) {
           close(fd_r);
-          close(fd_d);
+          close(fd_w);
           close(fd_d);
           return FW_STATUS_FAILURE;
         }
-        write(fd_w, buf, to_copy);
+        if (write(fd_w, buf, to_copy) != (int)to_copy) {
+          close(fd_r);
+          close(fd_w);
+          close(fd_d);
+          return FW_STATUS_FAILURE;
+        }
         copy -= to_copy;
       }
       close(fd_d);
@@ -92,7 +97,11 @@ int BmcComponent::update(string image_path)
 
     // Copy from r to w.
     while ((r_b = read(fd_r, buf, 1024)) > 0) {
-      write(fd_w, buf, r_b);
+      if (write(fd_w, buf, r_b) != (int)r_b) {
+        close(fd_r);
+        close(fd_w);
+        return -1;
+      }
     }
     close(fd_r);
     close(fd_w);

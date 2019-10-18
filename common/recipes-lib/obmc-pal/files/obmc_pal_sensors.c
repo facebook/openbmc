@@ -119,7 +119,10 @@ cache_set_coarse_history(char *key, float value) {
     goto close_bail;
   }
 
-  ftruncate(fd, share_size);
+  if (ftruncate(fd, share_size) != 0) {
+    syslog(LOG_INFO, "%s: truncate %s failed errno = %d\n", __FUNCTION__, key, errno);
+    goto close_bail;
+  }
 
   ptr = mmap(NULL, share_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   if (ptr == MAP_FAILED) {
@@ -193,7 +196,10 @@ cache_set_history(char *key, float value) {
     goto close_bail;
   }
 
-  ftruncate(fd, share_size);
+  if (ftruncate(fd, share_size) != 0) {
+    syslog(LOG_INFO, "%s: truncate %s failed errno = %d\n", __FUNCTION__, key, errno);
+    goto close_bail;
+  }
 
   ptr = mmap(NULL, share_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   if (ptr == MAP_FAILED) {
@@ -495,7 +501,10 @@ static int sensor_clear_history_helper(char *shm_name, int share_size)
     goto close_bail;
   }
 
-  ftruncate(fd, share_size);
+  if (ftruncate(fd, share_size) != 0) {
+    syslog(LOG_INFO, "%s: truncate %s failed errno = %d\n", __FUNCTION__, shm_name, errno);
+    goto close_bail;
+  }
 
   shm = (long *)mmap(NULL, share_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   if (shm == MAP_FAILED) {
@@ -649,7 +658,7 @@ pal_copy_all_thresh_to_file(uint8_t fru, thresh_sensor_t *sinfo) {
   char fru_name[32];
   int sensor_cnt;
   uint8_t *sensor_list;
-  char fpath[64] = {0};
+  char fpath[128] = {0};
   int i;
 
   ret = pal_get_fru_name(fru, fru_name);
@@ -664,7 +673,7 @@ pal_copy_all_thresh_to_file(uint8_t fru, thresh_sensor_t *sinfo) {
   }
 
   sprintf(fpath, INIT_THRESHOLD_BIN, fru_name);
-  fd = open(fpath, O_CREAT | O_RDWR);
+  fd = open(fpath, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
   if (fd < 0) {
     syslog(LOG_ERR, "%s: open failed for %s, errno : %d %s\n", __func__, fpath, errno, strerror(errno));
     return -1;
@@ -701,8 +710,8 @@ pal_get_all_thresh_from_file(uint8_t fru, thresh_sensor_t *sinfo, int mode) {
   char fru_name[8];
   int sensor_cnt;
   uint8_t *sensor_list;
-  char fpath[64] = {0};
-  char cmd[128] = {0};
+  char fpath[128] = {0};
+  char cmd[256] = {0};
   int curr_state = 0;
 
   ret = pal_get_fru_name(fru, fru_name);
@@ -761,7 +770,9 @@ pal_get_all_thresh_from_file(uint8_t fru, thresh_sensor_t *sinfo, int mode) {
   sprintf(fpath, THRESHOLD_RE_FLAG, fru_name);
   if (0 == access(fpath, F_OK)) {
     sprintf(cmd,"rm -rf %s",fpath);
-    system(cmd);
+    if (system(cmd) != 0) {
+      syslog(LOG_ERR, "%s failed", cmd);
+    }
   }
 
   return 0;
@@ -838,7 +849,7 @@ pal_copy_thresh_to_file(uint8_t fru, uint8_t snr_num, thresh_sensor_t *sinfo) {
     return ret;
   }
 
-  fd = open(fpath, O_CREAT | O_RDWR);
+  fd = open(fpath, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
   if (fd < 0) {
     syslog(LOG_ERR, "%s: open failed for %s, errno : %d %s\n", __func__, fpath, errno, strerror(errno));
     return -1;
@@ -867,9 +878,9 @@ pal_sensor_thresh_modify(uint8_t fru,  uint8_t sensor_num, uint8_t thresh_type, 
   int ret = -1;
   thresh_sensor_t snr;
   char fru_name[8];
-  char fpath[64] = {0};
-  char initpath[64] = {0};
-  char cmd[128] = {0};
+  char fpath[128] = {0};
+  char initpath[128] = {0};
+  char cmd[512] = {0};
 
   ret = pal_get_fru_name(fru, fru_name);
   if (ret < 0) {
@@ -883,7 +894,9 @@ pal_sensor_thresh_modify(uint8_t fru,  uint8_t sensor_num, uint8_t thresh_type, 
   sprintf(initpath, INIT_THRESHOLD_BIN, fru_name);
   if (0 != access(fpath, F_OK)) {
     sprintf(cmd,"cp -rf %s %s", initpath, fpath);
-    system(cmd);
+    if (system(cmd) != 0) {
+      syslog(LOG_ERR, "%s failed", cmd);
+    }
   }
 
   ret = pal_get_thresh_from_file(fru, sensor_num, &snr);
@@ -974,7 +987,9 @@ pal_sensor_thresh_modify(uint8_t fru,  uint8_t sensor_num, uint8_t thresh_type, 
   memset(fpath, 0, sizeof(fpath));
   sprintf(fpath, THRESHOLD_RE_FLAG, fru_name);
   sprintf(cmd,"touch %s",fpath);
-  system(cmd);
+  if (system(cmd) != 0) {
+    syslog(LOG_ERR, "%s failed", cmd);
+  }
 
   return 0;
 }

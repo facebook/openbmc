@@ -484,10 +484,11 @@ pal_get_fru_name(uint8_t fru, char *name)
 int __attribute__((weak))
 pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
 {
-  int ret = pal_get_fruid_name(fru, name);
+  char fruname[32];
+  int ret = pal_get_fruid_name(fru, fruname);
   if (ret < 0)
     return ret;
-  sprintf(name, "%s Device %u", name ,dev);
+  sprintf(name, "%s Device %u", fruname ,dev);
   return PAL_EOK;
 }
 

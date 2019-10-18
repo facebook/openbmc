@@ -174,7 +174,10 @@ int bios_program(uint8_t slot_id, const char *file, bool check)
   pal_set_server_power(slot_id, SERVER_POWER_OFF);
   sleep(10);
   pal_set_fw_update_ongoing(FRU_MB, 60*15);
-  system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01");
+  if (system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01") != 0) {
+    printf("ERROR: Could not put ME in recovery mode\n");
+    goto bail_export;
+  }
   sleep(1);
 
   if (gpio_export_by_name(GPIO_CHIP_ASPEED, "GPION5", "BMC_BIOS_FLASH_CTRL")) {
@@ -191,7 +194,10 @@ int bios_program(uint8_t slot_id, const char *file, bool check)
     printf("ERROR: Switching BIOS to BMC failed\n");
     goto switch_bail;
   }
-  system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/bind");
+  if (system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/bind") != 0) {
+    printf("ERROR: Could not mount SPI1.0 as MTD\n");
+    goto switch_bail;
+  }
   if (!get_bios_mtd_name(mtddev)) {
     printf("ERROR: Could not get MTD device for the BIOS!\n");
     goto mtd_bail;
@@ -200,7 +206,9 @@ int bios_program(uint8_t slot_id, const char *file, bool check)
   exit_code = system(cmd);
   exit_code = exit_code == -1 ? 127 : WEXITSTATUS(exit_code);
 mtd_bail:
-  system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/unbind");
+  if (system("echo -n \"spi1.0\" > /sys/bus/spi/drivers/m25p80/unbind") != 0) {
+    printf("ERROR: Could not unbind BIOS SPI device\n");
+  }
 switch_bail:
   gpio_set_value(desc, GPIO_VALUE_LOW);
   gpio_close(desc);

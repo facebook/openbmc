@@ -135,7 +135,9 @@ main (int argc, char * const argv[]) {
       exit(-1);
     }
   } else {
-   daemon(0, 1);
+    if (daemon(0, 1) != 0) {
+      syslog(LOG_ERR, "Cannot daemonize front-paneld\n");
+    }
    openlog("front-paneld", LOG_CONS, LOG_DAEMON);
   }
 

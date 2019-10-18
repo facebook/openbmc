@@ -1659,7 +1659,11 @@ get_vr_update_data(const char *update_file, uint8_t **BinData)
         *BinData = (uint8_t*) malloc( FileSize * sizeof(uint8_t));
         //recovery the fp to the beginning
         rewind(fp);
-        fread(*BinData, sizeof(uint8_t), FileSize, fp);
+        if (fread(*BinData, sizeof(uint8_t), FileSize, fp) != FileSize)
+        {
+          fclose(fp);
+          return -1;
+        }
         fclose(fp);
 #ifdef VR_DEBUG
         int i;

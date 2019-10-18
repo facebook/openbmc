@@ -30,7 +30,9 @@ class CpldComponent : public Component {
         cpld_intf_close();
       }
       //Disable JTAG Engine after CPLD access
-      system("devmem 0x1e6e4008 32 0");
+      if (system("devmem 0x1e6e4008 32 0") != 0) {
+        return -1;
+      }
       return 0;
     }
     int update(string image) {

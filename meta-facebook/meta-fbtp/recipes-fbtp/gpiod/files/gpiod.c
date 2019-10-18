@@ -122,7 +122,7 @@ delay_log(void *arg)
 
   if (arg) {
     usleep(log->usec);
-    syslog(LOG_CRIT, log->msg);
+    syslog(LOG_CRIT, "%s", log->msg);
 
     free(arg);
   }
@@ -568,7 +568,7 @@ static void ierr_mcerr_event_log(bool is_caterr, const char *err_type)
 
   sprintf(temp_syslog, "ASSERT: CPU%s %s\n", cpu_str, err_type);
   sprintf(temp_log, "CPU%s %s", cpu_str, err_type);
-  syslog(LOG_CRIT, temp_syslog);
+  syslog(LOG_CRIT, "%s", temp_syslog);
   pal_add_cri_sel(temp_log);
 }
 
@@ -607,7 +607,9 @@ ierr_mcerr_event_handler() {
           CATERR_irq--;
           CATERR_ierr_time_count = 0;
           set_fault_led(true);
-          system("/usr/local/bin/autodump.sh &");
+          if (system("/usr/local/bin/autodump.sh &") != 0) {
+            syslog(LOG_CRIT, "Starting crashdump on CATERR failed\n");
+          }
         } else if (CATERR_irq > 1) {
           while (CATERR_irq > 1) {
             ierr_mcerr_event_log(true, "MCERR/CATERR");
@@ -636,7 +638,9 @@ ierr_mcerr_event_handler() {
           MSMI_irq--;
           MSMI_ierr_time_count = 0;
           set_fault_led(true);
-          system("/usr/local/bin/autodump.sh &");
+          if (system("/usr/local/bin/autodump.sh &") != 0) {
+            syslog(LOG_CRIT, "Starting crashdump on MCERR failed\n");
+          }
         } else if (MSMI_irq > 1) {
           while (MSMI_irq > 1) {
             ierr_mcerr_event_log(false, "MCERR/MSMI");

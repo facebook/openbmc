@@ -214,7 +214,10 @@ me_read_fruid(uint8_t fru_id, const char *path) {
     }
 
     // Ignore the first byte as it indicates length of response
-    write(fd, &rbuf[1], rlen-1);
+    if (write(fd, &rbuf[1], rlen-1) != (rlen-1)) {
+      ret = -1;
+      break;
+    }
 
     // Update offset
     offset += (rlen-1);

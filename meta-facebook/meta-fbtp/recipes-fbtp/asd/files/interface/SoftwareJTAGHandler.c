@@ -205,7 +205,10 @@ static STATUS JTAG_set_target(int target)
 
     if (target == JTAG_TARGET_CPU) {
       // Set internal strap.
-      system("devmem 0x1E6E207C w 0x80000");
+      if (system("devmem 0x1E6E207C w 0x80000") != 0) {
+        syslog(LOG_ERR, "Failed to set Strap\n");
+        goto bail;
+      }
       expected_value = GPIO_VALUE_LOW;
     } else {
       expected_value = GPIO_VALUE_HIGH;

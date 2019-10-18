@@ -274,7 +274,9 @@ static void init_mux_data_riser_mux(void) {
   flock(fd, LOCK_EX);
 
   fstat(fd, &st);
-  ftruncate(fd, sizeof(struct mux_shm));
+  if (ftruncate(fd, sizeof(struct mux_shm)) != 0) {
+    syslog(LOG_ERR, "Setting size of SHM failed!\n");
+  }
   riser_mux.shm = (struct mux_shm *)mmap(NULL, sizeof(struct mux_shm),
     PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
@@ -2841,7 +2843,7 @@ static int fw_getenv(char *key, char *value)
   return 0;
 }
 
-static void fw_setenv(char *key, char *value)
+static int fw_setenv(char *key, char *value)
 {
   char old_value[MAX_VALUE_LEN] = {0};
   if (fw_getenv(key, old_value) != 0 ||
@@ -2851,14 +2853,16 @@ static void fw_setenv(char *key, char *value)
      * what we want set */
     char cmd[MAX_VALUE_LEN] = {0};
     snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv %s %s", key, value);
-    system(cmd);
+    return system(cmd);
   }
+  return 0;
 }
 
 static int
 key_func_por_policy (int event, void *arg)
 {
   char value[MAX_VALUE_LEN] = {0};
+  int ret = -1;
 
   switch (event) {
     case KEY_BEFORE_SET:
@@ -2866,7 +2870,7 @@ key_func_por_policy (int event, void *arg)
         return -1;
       // sync to env
       if ( !strcmp(arg,"lps") || !strcmp(arg,"on") || !strcmp(arg,"off")) {
-        fw_setenv("por_policy", (char *)arg);
+        ret = fw_setenv("por_policy", (char *)arg);
       }
       else
         return -1;
@@ -2874,37 +2878,38 @@ key_func_por_policy (int event, void *arg)
     case KEY_AFTER_INI:
       // sync to env
       kv_get("server_por_cfg", value, NULL, KV_FPERSIST);
-      fw_setenv("por_policy", value);
+      ret = fw_setenv("por_policy", value);
       break;
   }
 
-  return 0;
+  return ret;
 }
 
 static int
 key_func_lps (int event, void *arg)
 {
   char value[MAX_VALUE_LEN] = {0};
+  int ret = -1;
 
   switch (event) {
     case KEY_BEFORE_SET:
       if (pal_is_fw_update_ongoing(FRU_MB))
         return -1;
-      fw_setenv("por_ls", (char *)arg);
+      ret = fw_setenv("por_ls", (char *)arg);
       break;
     case KEY_AFTER_INI:
       kv_get("pwr_server_last_state", value, NULL, KV_FPERSIST);
-      fw_setenv("por_ls", value);
+      ret = fw_setenv("por_ls", value);
       break;
   }
 
-  return 0;
+  return ret;
 }
 
 static int
 key_func_ntp (int event, void *arg)
 {
-  char cmd[MAX_VALUE_LEN] = {0};
+  char cmd[MAX_VALUE_LEN + 64] = {0};
   char ntp_server_new[MAX_VALUE_LEN] = {0};
   char ntp_server_old[MAX_VALUE_LEN] = {0};
 
@@ -2913,22 +2918,33 @@ key_func_ntp (int event, void *arg)
       // Remove old NTP server
       kv_get("ntp_server", ntp_server_old, NULL, KV_FPERSIST);
       if (strlen(ntp_server_old) > 2) {
-        snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^restrict %s$/d' /etc/ntp.conf", ntp_server_old);
-        system(cmd);
-        snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^server %s$/d' /etc/ntp.conf", ntp_server_old);
-        system(cmd);
+        snprintf(cmd, sizeof(cmd), "sed -i '/^restrict %s$/d' /etc/ntp.conf", ntp_server_old);
+        if (system(cmd) != 0) {
+          syslog(LOG_WARNING, "NTP: restrict conf not removed\n");
+        }
+        snprintf(cmd, sizeof(cmd), "sed -i '/^server %s$/d' /etc/ntp.conf", ntp_server_old);
+        if (system(cmd) != 0) {
+          syslog(LOG_WARNING, "NTP: Server conf not removed\n");
+        }
       }
       // Add new NTP server
       snprintf(ntp_server_new, MAX_VALUE_LEN, "%s", (char *)arg);
       if (strlen(ntp_server_new) > 2) {
-        snprintf(cmd, MAX_VALUE_LEN, "echo \"restrict %s\" >> /etc/ntp.conf", ntp_server_new);
-        system(cmd);
-        snprintf(cmd, MAX_VALUE_LEN, "echo \"server %s\" >> /etc/ntp.conf", ntp_server_new);
-        system(cmd);
+        snprintf(cmd, sizeof(cmd), "echo \"restrict %s\" >> /etc/ntp.conf", ntp_server_new);
+        if (system(cmd) != 0) {
+          syslog(LOG_ERR, "NTP: restrict conf not added\n");
+        }
+        snprintf(cmd, sizeof(cmd), "echo \"server %s\" >> /etc/ntp.conf", ntp_server_new);
+        if (system(cmd) != 0) {
+          syslog(LOG_ERR, "NTP: server conf not added\n");
+        }
       }
       // Restart NTP server
-      snprintf(cmd, MAX_VALUE_LEN, "/etc/init.d/ntpd restart > /dev/null &");
-      system(cmd);
+      snprintf(cmd, sizeof(cmd), "/etc/init.d/ntpd restart > /dev/null &");
+      if (system(cmd) != 0) {
+        syslog(LOG_ERR, "NTP server restart failed\n");
+        return -1;
+      }
       break;
     case KEY_AFTER_INI:
       break;
@@ -3014,9 +3030,12 @@ server_power_on(void) {
   if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
     goto bail;
   }
-  ret = 0;
   sleep(2);
-  system("/usr/bin/sv restart fscd >> /dev/null");
+  if (system("/usr/bin/sv restart fscd >> /dev/null") != 0) {
+    syslog(LOG_CRIT, "FSCD Restart failed\n");
+    goto bail;
+  }
+  ret = 0;
 bail:
   gpio_close(gpio);
   return ret;
@@ -3032,7 +3051,10 @@ server_power_off(bool gs_flag) {
     return -1;
   }
 
-  system("/usr/bin/sv stop fscd >> /dev/null");
+  if (system("/usr/bin/sv stop fscd >> /dev/null") != 0) {
+    syslog(LOG_CRIT, "FSCD Stop on server power-off failed\n");
+    // Still go ahead in power-off
+  }
 
   if (!gs_flag)
     FORCE_ADR();
@@ -3290,8 +3312,10 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 int
 pal_sled_cycle(void) {
   // Send command to HSC power cycle
-  system("i2cset -y 7 0x45 0xd9 c &> /dev/null");
-
+  if (system("i2cset -y 7 0x45 0xd9 c &> /dev/null") != 0) {
+    syslog(LOG_CRIT, "SLED Cycle failed\n");
+    return -1;
+  }
   return 0;
 }
 
@@ -3364,7 +3388,10 @@ pal_set_hb_led(uint8_t status) {
 
   sprintf(cmd, "devmem 0x1e6c0064 32 %s", val);
 
-  system(cmd);
+  if (system(cmd) != 0) {
+    syslog(LOG_ERR, "Setting HB LED failed!\n");
+    return -1;
+  }
 
   return 0;
 }
@@ -3754,13 +3781,17 @@ pal_fruid_write(uint8_t fru, char *path)
       if ( PAL_EOK == ret )
       {
         pal_add_i2c_device(bus, device_name, device_addr);
-        system(command);
+        if (system(command) != 0) {
+          syslog(LOG_WARNING, "%s failed\n", command);
+        }
         //compare the in and out data
         ret=pal_compare_fru_data((char*)EEPROM_RISER, path, fru_size);
         if (ret < 0)
         {
           ret = PAL_ENOTSUP;
-          system("i2cdetect -y -q 1 > /tmp/AVA_FRU_FAIL.log");
+          if (system("i2cdetect -y -q 1 > /tmp/AVA_FRU_FAIL.log") != 0) {
+            syslog(LOG_ERR, "Gathering I2C detect failure log failed\n");
+          }
           syslog(LOG_ERR, "[%s] AVA FRU Write Fail", __func__);
         }
 
@@ -3774,12 +3805,16 @@ pal_fruid_write(uint8_t fru, char *path)
       if ( PAL_EOK == ret )
       {
         pal_add_i2c_device(bus, device_name, device_addr);
-        system(command);
+        if (system(command) != 0) {
+          syslog(LOG_ERR, "%s failed", command);
+        }
         ret = pal_compare_fru_data((char*)EEPROM_RETIMER, path, fru_size);
         if ( ret < 0 )
         {
           ret = PAL_ENOTSUP;
-          system("i2cdetect -y -q 3 > /tmp/RETIMER_FRU_FAIL.log");
+          if (system("i2cdetect -y -q 3 > /tmp/RETIMER_FRU_FAIL.log") != 0) {
+            syslog(LOG_ERR, "Gathering I2C detect failure log failed");
+          }
           syslog(LOG_ERR, "[%s] RETIMER FRU Write Fail", __func__);
         }
         pal_del_i2c_device(bus, device_addr);
@@ -5351,7 +5386,9 @@ pal_is_bmc_por(void) {
 
   fp = fopen("/tmp/ast_por", "r");
   if (fp != NULL) {
-    fscanf(fp, "%d", &por);
+    if (fscanf(fp, "%d", &por) != 1) {
+      return 0;
+    }
     fclose(fp);
   }
 
@@ -5434,14 +5471,20 @@ static void *dwr_handler(void *arg) {
     (res->data[7] & 0x04) == 0x04) { // DWR mode
     // System is in DWR mode
     syslog(LOG_WARNING, "Start DWR Autodump");
-    system("/usr/local/bin/autodump.sh --dwr &");
+    if (system("/usr/local/bin/autodump.sh --dwr &") != 0) {
+      syslog(LOG_ERR, "DWR autodump failed!\n");
+    }
   } else {
     syslog(LOG_WARNING, "Start Second Autodump");
-    system("/usr/local/bin/autodump.sh --second &");
+    if (system("/usr/local/bin/autodump.sh --second &") != 0) {
+      syslog(LOG_ERR, "Second autodump failed!\n");
+    }
   }
 #endif
   syslog(LOG_WARNING, "Start Second/DWR Autodump");
-  system("/usr/local/bin/autodump.sh --second &");
+  if (system("/usr/local/bin/autodump.sh --second &") != 0) {
+    syslog(LOG_ERR, "Autodump.sh --second failed!\n");
+  }
 
   tid_dwr = -1;
   pthread_exit(NULL);
@@ -6042,7 +6085,9 @@ pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *re
   syslog (LOG_INFO, "POST End Event for Payload#%d\n", slot);
 
   // Sync time with system
-  system("/usr/local/bin/sync_date.sh &");
+  if (system("/usr/local/bin/sync_date.sh &") != 0) {
+    syslog(LOG_ERR, "Sync date failed!\n");
+  }
 }
 
 int
@@ -6368,7 +6413,9 @@ pal_get_syscfg_text (char *text) {
       key_prefix, index);
     if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 26) {
       // Read 4 bytes Processor#
-      snprintf(&entry[strlen(entry)], 5, "%s", &value[22]);
+      if (snprintf(&entry[strlen(entry)], 5, "%s", &value[22]) > 5) {
+        syslog(LOG_ERR, "%s: CPU processor ID truncation detected!\n", __func__);
+      }
     }
 
     // Frequency & Core Number
@@ -6543,7 +6590,10 @@ int pal_add_i2c_device(uint8_t bus, char *device_name, uint8_t slave_addr)
   syslog(LOG_WARNING, "[%s] Cmd: %s", __func__, cmd);
 #endif
 
-  system(cmd);
+  ret = system(cmd);
+  if (ret != 0) {
+    syslog(LOG_ERR, "Adding I2C device %d:%d:%s failed\n", bus, slave_addr, device_name);
+  }
 
   return ret;
 }
@@ -6560,7 +6610,10 @@ int pal_del_i2c_device(uint8_t bus, uint8_t slave_addr)
   syslog(LOG_WARNING, "[%s] Cmd: %s", __func__, cmd);
 #endif
 
-  system(cmd);
+  ret = system(cmd);
+  if (ret != 0) {
+    syslog(LOG_ERR, "Deleting I2C device %d:%d failed\n", bus, slave_addr);
+  }
 
   return ret;
 }

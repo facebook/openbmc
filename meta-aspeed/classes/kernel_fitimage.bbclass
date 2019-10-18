@@ -2,16 +2,8 @@
 # Also generate an image for the OpenBMC ROM and upgradable flash.
 #
 # Copyright (C) 2016-Present, Facebook, Inc.
-
-def image_types_module(d):
-    distro = d.getVar('DISTRO_CODENAME', True)
-    if distro == 'fido' or distro == 'krogoth':
-        return 'image_types_uboot'
-    return 'image_types'
-
 # Inherit u-boot classes if legacy uboot images are in use.
-IMAGE_TYPE_MODULE = '${@image_types_module(d)}'
-inherit ${IMAGE_TYPE_MODULE}
+inherit image_types
 
 # Make Rocko images work just like they would in krogoth
 # That means, let conversion on u-boot call into oe_mkimage so

@@ -433,7 +433,7 @@ const uint8_t dc_cf_sensor_list[] = {
 // List of NIC sensors to be monitored
 const uint8_t nic_sensor_list[] = {
   MEZZ_SENSOR_TEMP,
-
+#ifndef CONFIG_FBY2_ND
   // PLDM numeric sensors
   NIC_SOC_TEMP,
   PORT_0_TEMP,
@@ -442,6 +442,7 @@ const uint8_t nic_sensor_list[] = {
   // PLDM state sensors
   NIC_HEALTH_STATE,
   PORT_0_LINK_STATE,
+#endif
 };
 
 #ifdef CONFIG_FBY2_GPV2

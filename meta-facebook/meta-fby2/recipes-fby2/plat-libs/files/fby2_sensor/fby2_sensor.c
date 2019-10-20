@@ -126,6 +126,26 @@ const uint8_t bic_neg_reading_sensor_support_list[] = {
   BIC_SENSOR_VNN_PCH_VR_CURR,
 };
 
+#ifdef CONFIG_FBY2_ND
+const uint8_t bic_nd_neg_reading_sensor_support_list[] = {
+  /* Temperature sensors*/
+  BIC_ND_SENSOR_MB_OUTLET_TEMP_T,
+  BIC_ND_SENSOR_MB_OUTLET_TEMP_B,
+  BIC_ND_SENSOR_MB_INLET_TEMP,
+  BIC_ND_SENSOR_NVME1_CTEMP,
+  BIC_ND_SENSOR_PVDDCR_CPU_VR_T,
+  BIC_ND_SENSOR_PVDDIO_ABCD_VR_T,
+  BIC_ND_SENSOR_PVDDIO_EFGH_VR_T,
+  BIC_ND_SENSOR_PVDDCR_SOC_VR_T,
+  BIC_ND_SENSOR_SOC_TEMP,
+  BIC_ND_SENSOR_SOC_DIMMC0_TEMP,
+  BIC_ND_SENSOR_SOC_DIMMD0_TEMP,
+  BIC_ND_SENSOR_SOC_DIMMG0_TEMP,
+  BIC_ND_SENSOR_SOC_DIMMH0_TEMP,
+  HOST_BOOT_DRIVE_TEMP,
+};
+#endif
+
 #ifdef CONFIG_FBY2_GPV2
 const uint8_t bic_gpv2_neg_reading_sensor_support_list[] = {
   GPV2_SENSOR_INLET_TEMP,
@@ -1837,6 +1857,17 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
         }
       }
     }
+#ifdef CONFIG_FBY2_ND
+    if (slot_type == SLOT_TYPE_SERVER) { //Server
+      if (server_type == SERVER_TYPE_ND) {
+        for(i=0;i<sizeof(bic_nd_neg_reading_sensor_support_list)/sizeof(uint8_t);i++) {
+          if (sensor_num == bic_nd_neg_reading_sensor_support_list[i]) {
+            x -= THERMAL_CONSTANT;
+          }
+        }
+      }
+    }
+#endif
 #ifdef CONFIG_FBY2_GPV2
     else if (slot_type == SLOT_TYPE_GPV2) {
       for(i=0;i<sizeof(bic_gpv2_neg_reading_sensor_support_list)/sizeof(uint8_t);i++) {

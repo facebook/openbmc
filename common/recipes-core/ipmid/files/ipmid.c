@@ -3574,15 +3574,13 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
   switch (cmd)
   {
     case CMD_OEM_1S_MSG_IN:
-      // Add unlock-lock mechanism whenever BIC send second NetFn 0x38 to BMC.
-      // Avoid deadlock of the same NetFn.
-      if (req->data[4] == (NETFN_OEM_1S_REQ << 2)) {
-        pthread_mutex_unlock(&m_oem_1s);
-      }
+      // As all bridge in messages are IPMI request
+      // all IPMI request will be process by ipmi_handle
+      // which will "properly" serialize the processing according to netfn
+      // Thus it is not necessary to serialize processing of MSG-IN.
+      pthread_mutex_unlock(&m_oem_1s);
       oem_1s_handle_ipmb_req(request, req_len, response, res_len);
-      if (req->data[4] == (NETFN_OEM_1S_REQ << 2)) {
-        pthread_mutex_lock(&m_oem_1s);
-      }
+      pthread_mutex_lock(&m_oem_1s);
       break;
     case CMD_OEM_1S_INTR:
 #ifdef DEBUG

@@ -5913,6 +5913,9 @@ parse_psb_error_sel_nd(uint8_t *event_data, char *error_log) {
     case 0x00:
       strcat(error_log, "PSB Pass");
       break;
+    case 0x22:
+      strcat(error_log, "PSP directory entry not found");
+      break;
     case 0x3E:
       strcat(error_log, "P0: Error reading fuse info");
       break;

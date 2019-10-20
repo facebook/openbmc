@@ -62,6 +62,7 @@
 #include <poll.h>
 #include <assert.h>
 #include <getopt.h>
+#include <stddef.h>
 #include <linux/limits.h>
 #include <linux/version.h>
 
@@ -364,11 +365,18 @@ ipmb_req_handler(void *args) {
     p_ipmi_mn_req->netfn_lun = p_ipmb_req->netfn_lun;
     p_ipmi_mn_req->cmd = p_ipmb_req->cmd;
 
-    memcpy(p_ipmi_mn_req->data, p_ipmb_req->data,
-           rlen - IPMB_HDR_SIZE - IPMI_REQ_HDR_SIZE);
+    if ( rlen > offsetof(ipmb_req_t, data) ) {
+      // did not copy the checksum
+      memcpy(p_ipmi_mn_req->data, p_ipmb_req->data, rlen - offsetof(ipmb_req_t, data) - 1 );
+    }
+    else {
+      syslog(LOG_ERR, "ignore malformed (len = %d) ipmb request\n", rlen);
+      continue;
+    }
 
     // Send to IPMI stack and get response
     // Additional byte as we are adding and passing payload ID for MN support
+    tlen = 0; // init tlen output incase lib_ipmi_handle did not set this value
     lib_ipmi_handle(rbuf, rlen - IPMB_HDR_SIZE + 1, tbuf, &tlen);
 
     // Populate IPMB response data from IPMB request
@@ -376,12 +384,22 @@ ipmb_req_handler(void *args) {
     p_ipmb_res->res_slave_addr = p_ipmb_req->res_slave_addr;
     p_ipmb_res->cmd = p_ipmb_req->cmd;
     p_ipmb_res->seq_lun = p_ipmb_req->seq_lun;
+    p_ipmb_res->netfn_lun = p_ipmb_req->netfn_lun | (1 << LUN_OFFSET);
 
     // Add IPMI response data
-    p_ipmb_res->netfn_lun = p_ipmi_res->netfn_lun;
-    p_ipmb_res->cc = p_ipmi_res->cc;
-
-    memcpy(p_ipmb_res->data, p_ipmi_res->data, tlen - IPMI_RESP_HDR_SIZE);
+    size_t res_data_len = 0;
+    if (tlen >= offsetof(ipmi_res_t, data)) {
+      // Add IPMI response data
+      p_ipmb_res->cc = p_ipmi_res->cc;
+      res_data_len = tlen - offsetof(ipmi_res_t, data);
+      memcpy(p_ipmb_res->data, p_ipmi_res->data, res_data_len);
+    }
+    else {
+      // malformed response get from ipmid
+      syslog(LOG_ERR, "Req( %02X - %02X ) receive malformed (len = %d) response from ipmid\n",
+        p_ipmb_req->netfn_lun >> 2, p_ipmb_req->cmd, tlen);
+      p_ipmb_res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+    }
 
     // Calculate Header Checksum
     p_ipmb_res->hdr_cksum = p_ipmb_res->req_slave_addr +
@@ -389,29 +407,28 @@ ipmb_req_handler(void *args) {
     p_ipmb_res->hdr_cksum = ZERO_CKSUM_CONST - p_ipmb_res->hdr_cksum;
 
     // Calculate Data Checksum
-    p_ipmb_res->data[tlen-IPMI_RESP_HDR_SIZE] = p_ipmb_res->res_slave_addr +
+    uint8_t data_chk_sum = p_ipmb_res->res_slave_addr +
                             p_ipmb_res->seq_lun +
                             p_ipmb_res->cmd +
                             p_ipmb_res->cc;
 
-    for (i = 0; i < tlen-IPMI_RESP_HDR_SIZE; i++) {
-      p_ipmb_res->data[tlen-IPMI_RESP_HDR_SIZE] += p_ipmb_res->data[i];
+    for (i = 0; i < res_data_len; i++) {
+      data_chk_sum += p_ipmb_res->data[i];
     }
 
-    p_ipmb_res->data[tlen-IPMI_RESP_HDR_SIZE] = ZERO_CKSUM_CONST -
-                                      p_ipmb_res->data[tlen-IPMI_RESP_HDR_SIZE];
+    p_ipmb_res->data[res_data_len] = ZERO_CKSUM_CONST - data_chk_sum;
+    // include data-checksum +1
+    size_t txlen = offsetof(ipmb_res_t, data) + res_data_len + 1;
 
 #ifdef DEBUG
-    syslog(LOG_WARNING, "Sending Response of %d bytes\n", tlen+IPMB_HDR_SIZE-1);
-    for (i = 0; i < tlen+IPMB_HDR_SIZE; i++) {
+    syslog(LOG_WARNING, "Sending Response of %d bytes\n", txlen);
+    for (i = 0; i < txlen; i++) {
       syslog(LOG_WARNING, "0x%X:", txbuf[i]);
     }
 #endif
-
-     // Send response back
-     ipmb_write_satellite(fd, txbuf, tlen+IPMB_HDR_SIZE);
-
-     pal_ipmb_finished(bus_num, txbuf, tlen+IPMB_HDR_SIZE);
+    // Send response back
+    ipmb_write_satellite(fd, txbuf, txlen);
+    pal_ipmb_finished(bus_num, txbuf, txlen);
   }
 }
 

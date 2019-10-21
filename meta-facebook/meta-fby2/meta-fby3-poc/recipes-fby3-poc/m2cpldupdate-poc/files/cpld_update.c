@@ -807,7 +807,7 @@ int main(int argc, char **argv) {
   FILE *fp;
   char fpath[128];
   unsigned char slot_id = 0x1;
-  const unsigned char intf = 0x5;
+  unsigned char intf = 0x5;
   unsigned char addr = 0xe2;
   unsigned char action = 0x0;
 
@@ -820,8 +820,8 @@ int main(int argc, char **argv) {
 
   if ( argc < 3 ) {
     printf("Please check the params\n");
-    printf("%s $slot --show\n", argv[0]);
-    printf("%s $slot $file.jed\n", argv[0]);
+    printf("%s $slot --[1ou|2ou] --show\n", argv[0]);
+    printf("%s $slot --[1ou|2ou] $file.jed\n", argv[0]);
     return 0;
   }
 
@@ -837,19 +837,25 @@ int main(int argc, char **argv) {
     printf("Cannot recognize the unknown slot: %s\n", argv[1]);
     return -1;
   }
+
+  if ( (strcmp(argv[2], "--1ou") == 0) ) {
+    intf = 0x05;
+  } else if ( (strcmp(argv[2], "--2ou") == 0) ) {
+    intf = 0x15;
+  }
  
-  if ( (strcmp(argv[2], "--show") == 0) ) {
+  if ( (strcmp(argv[3], "--show") == 0) ) {
     action = SHOW_VER;
   } else {
     action = UPDATE_FW;
   }
 
-  if ( (argc == 4) && (strcmp(argv[3], "-v") == 0) ) {
+  if ( (argc == 5) && (strcmp(argv[4], "-v") == 0) ) {
     show_verbose = 1;
   }
 
   if ( action == UPDATE_FW ) {
-    strcpy(fpath, argv[2]);
+    strcpy(fpath, argv[3]);
     printf("Input: %s\n", fpath); 
 
     fp = fopen(fpath,"r");

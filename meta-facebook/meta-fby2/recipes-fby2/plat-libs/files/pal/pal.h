@@ -236,6 +236,7 @@ int pal_dev_fruid_write(uint8_t slot, uint8_t dev_id, char *path);
 int pal_is_bmc_por(void);
 int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name, uint8_t o_val, uint8_t n_val);
 int pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name);
+void pal_notify_nic(uint8_t slot);
 int pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log);
 int pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log);
 int pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name);

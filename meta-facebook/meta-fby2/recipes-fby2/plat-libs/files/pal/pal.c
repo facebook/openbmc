@@ -5375,6 +5375,25 @@ pal_store_sboot_cpld_dump(uint8_t fru) {
 }
 #endif
 
+void pal_notify_nic(uint8_t slot) {
+  struct timespec ts;
+
+  if (m_notify_nic[slot]) {
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (m_notify_nic[slot] > ts.tv_sec) {
+#ifdef DEBUG
+      syslog(LOG_INFO, "send powerup_prep for slot %u", slot);
+#endif
+      if (nic_powerup_prep(slot, REINIT_TYPE_HOST_RESOURCE) != 0) {
+        syslog(LOG_ERR, "send powerup_prep failed, slot %u", slot);
+      }
+    }
+    m_notify_nic[slot] = 0;
+  }
+
+  return;
+}
+
 int
 pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
@@ -6258,10 +6277,20 @@ pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t *event_data = &sel[10];
   uint8_t *ed = &event_data[3];
   uint8_t sen_type = event_data[0];
+  uint8_t ver[32] = {0};
   char temp_log[512] = {0};
   bool parsed = false;
 
   switch(snr_num) {
+    case POST_ERROR:
+      pal_get_sysfw_ver(fru, ver);
+      // BIOS ver(YMMxx) only, figure out clear BIOS CMOS SEL to let BMC notify nic
+      if ((ver[3] == 0x59) && (ver[4] == 0x4d) && (ver[5] == 0x4d) &&
+          (ed[0] == 0xA0) && (ed[1] == 0x01) && (ed[2] == 0x00)) {
+          pal_notify_nic(fru);
+      }
+
+      break;
     case MEMORY_ECC_ERR:
     case MEMORY_ERR_LOG_DIS:
       strcpy(error_log, "");
@@ -7426,7 +7455,7 @@ pal_fan_recovered_handle(int fan_num) {
 
 void
 pal_set_post_start(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
-  struct timespec ts;
+  uint8_t ver[32] = {0};
 
   syslog(LOG_INFO, "POST Start Event for Payload#%d\n", slot);
   *res_len = 0;
@@ -7435,17 +7464,10 @@ pal_set_post_start(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *
     return;
   }
 
-  if (m_notify_nic[slot]) {
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    if (m_notify_nic[slot] > ts.tv_sec) {
-#ifdef DEBUG
-      syslog(LOG_INFO, "send powerup_prep for slot %u", slot);
-#endif
-      if (nic_powerup_prep(slot, REINIT_TYPE_HOST_RESOURCE) != 0) {
-        syslog(LOG_ERR, "send powerup_prep failed, slot %u", slot);
-      }
-    }
-    m_notify_nic[slot] = 0;
+  pal_get_sysfw_ver(slot, ver);
+  // BIOS ver(YMMxx) do not need to do this step here
+  if (!((ver[3] == 0x59) && (ver[4] == 0x4d) && (ver[5] == 0x4d))) {
+      pal_notify_nic(slot);
   }
 
   return;
@@ -7566,6 +7588,7 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
   char str[MAX_VALUE_LEN] = {0};
   char tstr[10] = {0};
   uint8_t old_boot[16], len, post = 1;
+  uint8_t ver[32] = {0};
   struct timespec ts;
   enum {
     BOOT_DEVICE_IPV4 = 0x1,
@@ -7598,7 +7621,11 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
 
   if (pal_get_boot_order(slot, NULL, old_boot, &len) == 0) {
     if (((old_boot[0] & 0x82) == 0x82) && !(boot[0] & 0x02)) {
-      pal_get_fru_post(slot, &post);
+      pal_get_sysfw_ver(slot, ver);
+      // BIOS ver(YMMxx) do not need to check post status
+      if (!((ver[3] == 0x59) && (ver[4] == 0x4d) && (ver[5] == 0x4d))) {
+        pal_get_fru_post(slot, &post);
+      }
       if (post) {
         clock_gettime(CLOCK_MONOTONIC, &ts);
         m_notify_nic[slot] = ts.tv_sec + 60;

@@ -667,7 +667,9 @@ app_manufacturing_test_on (unsigned char *request, unsigned char req_len,
 
   if ((!memcmp(req->data, "sled-cycle", strlen("sled-cycle"))) &&
       (req_len - ((void*)req->data - (void*)req)) == strlen("sled-cycle")) {
-    system("/usr/local/bin/power-util sled-cycle");
+    if (system("/usr/local/bin/power-util sled-cycle") != 0) {
+      res->cc = CC_UNSPECIFIED_ERROR;
+    }
   } else {
     res->cc = CC_INVALID_PARAM;
   }
@@ -2564,7 +2566,11 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
         res->cc = CC_NOT_SUPP_IN_CURR_STATE;
         return;
       }
-      fread(res->data, 1, 1, fp);
+      if (fread(res->data, 1, 1, fp) != 1) {
+        fclose(fp);
+        res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+        return;
+      }
       if(res->data[0] == 0) {
         fclose(fp);
         res->cc = CC_NOT_SUPP_IN_CURR_STATE;
@@ -2708,8 +2714,13 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
         sprintf(temp, "%c",0);
         fwrite(temp, sizeof(char), 1, fp);
       }
-      else
-        fread(res->data, 1, 1, fp);
+      else {
+        if (fread(res->data, 1, 1, fp) != 1) {
+          fclose(fp);
+          res->cc = CC_UNSPECIFIED_ERROR;
+          return;
+        }
+      }
       fclose(fp);
       sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_action", req->payload_id);
       fp = fopen(filepath, "r");
@@ -2723,7 +2734,11 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
         return;
       }
       if (res->data[0] != 0 ) {
-        fread(res->data, 1, 1, fp);
+        if (fread(res->data, 1, 1, fp) != 1) {
+          fclose(fp);
+          res->cc = CC_UNSPECIFIED_ERROR;
+          return;
+        }
         if((res->data[0] & 0x80) == 0 )
           res->data[0] = 0;
       }
@@ -2738,8 +2753,13 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
         fwrite(temp, sizeof(char), 1, fp);
         res->data[0] = 0;
       }
-      else
-        fread(res->data, 1, 1, fp);
+      else {
+        if (fread(res->data, 1, 1, fp) != 1) {
+          fclose(fp);
+          res->cc = CC_UNSPECIFIED_ERROR;
+          return;
+        }
+      }
       *res_len = 1;
       break;
     case 3:

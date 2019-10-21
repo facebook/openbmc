@@ -654,7 +654,7 @@ udbg_get_cri_sel(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uin
 
 static int
 udbg_get_cri_sensor (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
-  char str[32], temp_val[16], temp_thresh[8], print_format[32];
+  char str[64], temp_val[16], temp_thresh[8], print_format[32];
   int i, ret;
   float fvalue;
   thresh_sensor_t thresh;

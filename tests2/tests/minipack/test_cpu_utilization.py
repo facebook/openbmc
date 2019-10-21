@@ -31,7 +31,7 @@ class CpuUtilizationTest(BaseCpuUtilizationTest):
             retry of 10 times  will be used to isolate flaky test.
             result_threshold is set to 8 because we will target 80% of failure.
         """
-        self.expected_cpu_utilization = 60
+        self.expected_cpu_utilization = 75
         self.number_of_retry = 10
         self.result_threshold = 8
         self.wait_time = 5
@@ -54,4 +54,6 @@ class CpuUtilizationTest(BaseCpuUtilizationTest):
             "rotor_client",
             "rsyslogd",
             "sensord",
+            "front-paneld",
+            "ipmbd",
         ]

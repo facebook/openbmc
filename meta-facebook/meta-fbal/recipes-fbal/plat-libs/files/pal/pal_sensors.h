@@ -248,33 +248,6 @@ enum {
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_POWER = 0XF3,
 };
 
-//Common Sensor INFO
-typedef struct {
-  uint16_t flag;
-  float ucr;
-  float unc;
-  float unr;
-  float lcr;
-  float lnc;
-  float lnr;
-  float pos_hyst;
-  float neg_hyst;
-  int curr_st;
-  char name[32];
-
-} _sensor_thresh_t;
-
-typedef struct {
-  uint16_t flag;
-  float unr;
-  float ucr;
-  float lcr;
-  uint8_t retry_cnt;
-  uint8_t val_valid;
-  float last_val;
-
-} sensor_check_t;
-
 typedef struct {
   float ucr_thresh;
   float unc_thresh;
@@ -296,7 +269,7 @@ typedef struct {
 
 //ADC INFO
 enum {
-  ADC0 = 1,
+  ADC0 = 0,
   ADC1,
   ADC2,
   ADC3,
@@ -313,13 +286,7 @@ enum {
   ADC14,
 };
 
-typedef struct {
-  uint8_t id;
-  uint16_t r1;
-  uint16_t r2;
-} PAL_ADC_INFO;
-
-//TEMPERATUR INFO
+//GENERIC I2C Sensors
 enum {
   TEMP_INLET = 0,
   TEMP_OUTLET_L,

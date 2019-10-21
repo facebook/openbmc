@@ -14,6 +14,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/nm.h>
 #include <openbmc/ipmb.h>
+#include <openbmc/obmc-sensors.h>
 #include "pal.h"
 
 //#define DEBUG
@@ -21,7 +22,7 @@
 
 static int read_adc_val(uint8_t adc_id, float *value);
 static int read_battery_val(uint8_t adc_id, float *value);
-static int read_temp421(uint8_t temp_id, float *value);
+static int read_sensor(uint8_t snr_id, float *value);
 static int read_nic_temp(uint8_t nic_id, float *value);
 static int read_hd_temp(uint8_t hd_id, float *value);
 static int read_cpu_temp(uint8_t cpu_id, float *value);
@@ -123,25 +124,6 @@ const uint8_t mb_discrete_sensor_list[] = {
 //  MB_SENSOR_POWER_FAIL,
 //  MB_SENSOR_MEMORY_LOOP_FAIL,
 //  MB_SENSOR_PROCESSOR_FAIL,
-};
-
-//BMC ADC
-PAL_ADC_INFO adc_info_list[] = {
-  {ADC0,  5360, 2000},
-  {ADC1,  5360, 2000},
-  {ADC2,  2870, 2000},
-  {ADC3,  2870, 2000},
-  {ADC4,  200, 100},
-  {ADC5,  665, 2000},
-  {ADC6,  665, 2000},
-  {ADC7,  2000, 2200},
-  {ADC8,  2000, 2200},
-  {ADC9,  2000, 2200},
-  {ADC10, 2000, 2200},
-  {ADC11, 0, 1},
-  {ADC12, 0, 1},
-  {ADC13, 0, 1},
-  {ADC14, 0, 1},
 };
 
 //CPU
@@ -386,9 +368,9 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x9E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x9F
 
-  {"MB_INLET_TEMP",    TEMP_INLET,    read_temp421, true, {40, 0, 0, 20, 0, 0, 0, 0} }, //0xA0
-  {"MB_OUTLET_TEMP_R", TEMP_OUTLET_R, read_temp421, true, {80, 0, 0, 20, 0, 0, 0, 0} }, //0xA1
-  {"MB_OUTLET_TEMP_L", TEMP_OUTLET_L, read_temp421, true, {80, 0, 0, 20, 0, 0, 0, 0} }, //0xA2
+  {"MB_INLET_TEMP",    TEMP_INLET,    read_sensor, true, {40, 0, 0, 20, 0, 0, 0, 0} }, //0xA0
+  {"MB_OUTLET_TEMP_R", TEMP_OUTLET_R, read_sensor, true, {80, 0, 0, 20, 0, 0, 0, 0} }, //0xA1
+  {"MB_OUTLET_TEMP_L", TEMP_OUTLET_L, read_sensor, true, {80, 0, 0, 20, 0, 0, 0, 0} }, //0xA2
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xA3
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xA4
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0xA5
@@ -545,36 +527,6 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 }
 
 static int
-read_device_float(const char *device, float *value) {
-  FILE *fp;
-  int rc;
-  char tmp[10];
-  char cmd[MAX_DEVICE_NAME_SIZE];
-
-  snprintf(cmd, MAX_DEVICE_NAME_SIZE, "cat %s", device);
-  fp = popen(cmd, "r");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_WARNING, "failed to open device %s", device);
-#endif
-    return err;
-  }
-  rc = fscanf(fp, "%s", tmp);
-  pclose(fp);
-
-  if (rc != 1) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "failed to read device %s", device);
-#endif
-    return ENOENT;
-  }
-
-  *value = atof(tmp);
-  return 0;
-}
-
-static int
 get_cm_snr_offset(uint8_t cm_snr_id) {
   int offset=0;
 
@@ -709,44 +661,36 @@ Read adc voltage sensor value.
 ============================================*/
 static int
 read_adc_val(uint8_t adc_id, float *value) {
-  PAL_ADC_INFO info=adc_info_list[adc_id-1];
-  char path[MAX_DEVICE_NAME_SIZE];
-  int ret=0;
-
-  snprintf(path, MAX_DEVICE_NAME_SIZE, MB_ADC_VOLTAGE_DEVICE, adc_id);
-  
-#ifdef DEBUG 
-  syslog(LOG_DEBUG, "%s %s\n", __func__, path);
-#endif  
-  ret = read_device_float(path, value);
-  if (ret != 0) {
-    return ret;
+  const char *adc_label[] = {
+    "MB_P5V",
+    "MB_P5V_STBY",
+    "MB_P3V3_STBY",
+    "MB_P3V3",
+    "MB_P3V_BAT",
+    "MB_CPU_1V8",
+    "MB_PCH_1V8",
+    "MB_CPU0_PVPP_ABC",
+    "MB_CPU1_PVPP_ABC",
+    "MB_CPU0_PVPP_DEF",
+    "MB_CPU1_PVPP_DEF",
+    "MB_CPU0_PVTT_ABC",
+    "MB_CPU1_PVTT_ABC",
+    "MB_CPU0_PVTT_DEF",
+    "MB_CPU1_PVTT_DEF",
+  };
+  if (adc_id >= ARRAY_SIZE(adc_label)) {
+    return -1;
   }
-
-  *value = *value / 1000 * ((float)info.r1 + (float)info.r2) / (float)info.r2 ;
-#ifdef DEBUG  
-  syslog(LOG_DEBUG, "%s r1=%d r2=%d value=%f\n", __func__, info.r1, info.r2, *value );
-#endif
-  return 0;
+  return sensors_read_adc(adc_label[adc_id], value);
 }
 
 static int
 read_battery_val(uint8_t adc_id, float *value) {
-  PAL_ADC_INFO info=adc_info_list[adc_id-1];
-  char path[MAX_DEVICE_NAME_SIZE];
-  int ret=0;
-
-  snprintf(path, MAX_DEVICE_NAME_SIZE, MB_ADC_VOLTAGE_DEVICE, adc_id);
-
+  int ret = -1;
   gpio_desc_t *gp_batt = gpio_open_by_shadow(GPIO_P3V_BAT_SCALED_EN);
   if (!gp_batt) {
     return -1;
   }
-
-  if(gpio_set_direction(gp_batt, GPIO_DIRECTION_OUT)) {
-    goto bail;
-  }
-
   if (gpio_set_value(gp_batt, GPIO_VALUE_HIGH)) {
     goto bail;
   }
@@ -755,16 +699,7 @@ read_battery_val(uint8_t adc_id, float *value) {
   syslog(LOG_DEBUG, "%s %s\n", __func__, path);
 #endif  
   msleep(10);
-  ret = read_device_float(path, value);
-  if (ret != 0) {
-    goto bail;
-  }
-
-  *value = *value / 1000 * ((float)info.r1 + (float)info.r2) / (float)info.r2 ;
-#ifdef DEBUG  
-  syslog(LOG_DEBUG, "%s r1=%d r2=%d value=%f\n", __func__, info.r1, info.r2, *value );
-#endif
-
+  ret = read_adc_val(adc_id, value);
   if (gpio_set_value(gp_batt, GPIO_VALUE_LOW)) {
     goto bail;
   }
@@ -772,7 +707,7 @@ read_battery_val(uint8_t adc_id, float *value) {
   bail:
     gpio_close(gp_batt);
     return ret;
-}    
+}
 
 int
 pal_get_peci_val(struct peci_xfer_msg *msg) {
@@ -1364,24 +1299,19 @@ Interface: temp_id: temperature id
            return: error code
 ============================================*/
 static int
-read_temp421(uint8_t temp_id, float *value) {
-  char path[MAX_DEVICE_NAME_SIZE];
-  float tmp=0;
-  int ret=0;
-  uint8_t bus = tmp421_info_list[temp_id].bus;
-  uint8_t addr = tmp421_info_list[temp_id].slv_addr;
-  
-  snprintf(path, MAX_DEVICE_NAME_SIZE, MB_TEMP_DEVICE, bus, bus, addr);
-#ifdef DEBUG 
-  syslog(LOG_WARNING, "%s %s\n", __func__, path);
-#endif  
-  ret = read_device_float(path, &tmp);
-  if (ret != 0) {
-    return ret;
+read_sensor(uint8_t id, float *value) {
+  struct {
+    const char *chip;
+    const char *label;
+  } devs[] = {
+    {"tmp421-i2c-19-4c", "MB_INLET_TEMP"},
+    {"tmp421-i2c-19-4e", "MB_OUTLET_L_TEMP"},
+    {"tmp421-i2c-19-4f", "MB_OUTLET_R_TEMP"},
+  };
+  if (id >= ARRAY_SIZE(devs)) {
+    return -1;
   }
-
-  *value = tmp/UNIT_DIV;
-  return 0;
+  return sensors_read(devs[id].chip, devs[id].label, value);
 }
 
 static int

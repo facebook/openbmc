@@ -11,7 +11,10 @@
 
 #define USAGE_MESSAGE \
     "Usage:\n" \
-    "  %s --bic --[m2|bb] slot[1|2|3|4] $image  \n" 
+    "  %s --bic --[feb|reb|bb] slot[1|2|3|4] $image  \n" \
+    " feb: front expansion board \n" \
+    " reb: riser expansion board \n" \
+    "  bb: baseboard\n"
 
 //define the command and its size here
 #define BIC_CMD_DOWNLOAD 0x21
@@ -28,15 +31,20 @@
 unsigned char show_verbose = 0;
 
 enum {
-  EXP_BIC_I2C_WRITE_IF   = 0x20,
-  EXP_BIC_I2C_READ_IF    = 0x21,
-  EXP_BIC_I2C_UPDATE_IF  = 0x22,
-  EXP_BIC_IPMI_I2C_SW_IF = 0x23,
+  FEXP_BIC_I2C_WRITE   = 0x20,
+  FEXP_BIC_I2C_READ    = 0x21,
+  FEXP_BIC_I2C_UPDATE  = 0x22,
+  FEXP_BIC_IPMI_I2C_SW = 0x23,
 
-  BB_BIC_I2C_WRITE_IF   = 0x24,
-  BB_BIC_I2C_READ_IF    = 0x25,
-  BB_BIC_I2C_UPDATE_IF  = 0x26,
-  BB_BIC_IPMI_I2C_SW_IF = 0x27
+  REXP_BIC_I2C_WRITE   = 0x24,
+  REXP_BIC_I2C_READ    = 0x25,
+  REXP_BIC_I2C_UPDATE  = 0x26,
+  REXP_BIC_IPMI_I2C_SW = 0x27,
+
+  BB_BIC_I2C_WRITE     = 0x28,
+  BB_BIC_I2C_READ      = 0x29,
+  BB_BIC_I2C_UPDATE    = 0x2A,
+  BB_BIC_IPMI_I2C_SW   = 0x2B
 };
 
 enum {
@@ -236,10 +244,10 @@ int main(int argc, char **argv) {
   uint8_t target;
   uint8_t bmc_location = 0;
   uint8_t slot_id = 1;
-  uint8_t write_if  = EXP_BIC_I2C_WRITE_IF;
-  uint8_t read_if   = EXP_BIC_I2C_READ_IF;
-  uint8_t update_if = EXP_BIC_I2C_UPDATE_IF; 
-  uint8_t i2c_if    = EXP_BIC_IPMI_I2C_SW_IF;
+  uint8_t write_if  = 0x0;
+  uint8_t read_if   = 0x0;
+  uint8_t update_if = 0x0; 
+  uint8_t i2c_if    = 0x0;
   uint8_t intf = 0;
   uint16_t read_cnt;
   uint32_t dsize, last_offset, offset;
@@ -262,19 +270,25 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  if ( (strncmp(argv[2], "--m2", strlen(argv[2])) == 0) ) {
+  if ( (strncmp(argv[2], "--feb", strlen(argv[2])) == 0) ) {
     intf = 0x5;
-    write_if  = EXP_BIC_I2C_WRITE_IF;
-    read_if   = EXP_BIC_I2C_READ_IF;
-    update_if = EXP_BIC_I2C_UPDATE_IF;
-    i2c_if    = EXP_BIC_IPMI_I2C_SW_IF;
+    write_if  = FEXP_BIC_I2C_WRITE;
+    read_if   = FEXP_BIC_I2C_READ;
+    update_if = FEXP_BIC_I2C_UPDATE;
+    i2c_if    = FEXP_BIC_IPMI_I2C_SW;
   } else if ( (strncmp(argv[2], "--bb", strlen(argv[2])) == 0) ) {
     intf = 0x10;
-    write_if  = BB_BIC_I2C_WRITE_IF;
-    read_if   = BB_BIC_I2C_READ_IF;
-    update_if = BB_BIC_I2C_UPDATE_IF;
-    i2c_if    = BB_BIC_IPMI_I2C_SW_IF;
-  } else {
+    write_if  = BB_BIC_I2C_WRITE;
+    read_if   = BB_BIC_I2C_READ;
+    update_if = BB_BIC_I2C_UPDATE;
+    i2c_if    = BB_BIC_IPMI_I2C_SW;
+  } else if ( (strncmp(argv[2], "--reb", strlen(argv[2])) == 0) ) {
+    intf = 0x15;
+    write_if  = REXP_BIC_I2C_WRITE; 
+    read_if   = REXP_BIC_I2C_READ;
+    update_if = REXP_BIC_I2C_UPDATE;
+    i2c_if    = REXP_BIC_IPMI_I2C_SW;
+  }else {
     printf("Cannot recognize the target: %s\n", argv[2]);
     return -1;
   }

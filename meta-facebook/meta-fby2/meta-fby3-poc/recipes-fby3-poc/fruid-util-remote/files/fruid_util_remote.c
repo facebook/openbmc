@@ -11,7 +11,7 @@
 
 #define USAGE_MESSAGE \
     "Usage:\n" \
-    "  %s slot[1|2|3|4] --[m2|bb] --[write|read] $image  \n"
+    "  %s slot[1|2|3|4] --[1ou|2ou|bb] --[write|read] $image  \n"
 
 int main(int argc, char **argv) {
   struct timeval start, end;
@@ -45,12 +45,10 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  if ( (strcmp(argv[2], "--m2") == 0) ) {
-    if ( get_bmc_location() == 1 ) {
-      intf = 0x5;
-    } else {
-      intf = 0x10;
-    }
+  if ( (strcmp(argv[2], "--1ou") == 0) ) {
+    intf = 0x05;
+  } else if ( (strcmp(argv[2], "--2ou") == 0) ) {
+    intf = 0x15;
   } else if ( (strcmp(argv[2], "--bb") == 0) ) {
     intf = 0x10;
   } else {

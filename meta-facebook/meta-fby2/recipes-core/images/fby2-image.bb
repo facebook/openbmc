@@ -59,6 +59,7 @@ IMAGE_INSTALL += " \
   nvme-util \
   snapshot-util \
   slot-util \
+  dimm-util \
   "
 
 IMAGE_FEATURES += " \

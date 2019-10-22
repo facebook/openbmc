@@ -58,6 +58,7 @@ IMAGE_INSTALL += " \
   slot-util \
   snapshot-util \
   gpv2-util \
+  dimm-util \
   "
 
 IMAGE_FEATURES += " \

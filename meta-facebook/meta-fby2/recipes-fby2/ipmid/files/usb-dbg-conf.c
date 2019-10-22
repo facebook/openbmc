@@ -362,6 +362,14 @@ static post_phase_desc_t post_phase_desc[] = {
   {2, pdesc_phase2, sizeof(pdesc_phase2)/sizeof(pdesc_phase2[0])},
 };
 
+static post_desc_t nd_pdesc_phase[] = {
+  { 0xFF, "THE_LAST_EVENT" },
+};
+
+static post_phase_desc_t nd_post_phase_desc[] = {
+  {PHASE_ANY, nd_pdesc_phase, sizeof(nd_pdesc_phase)/sizeof(nd_pdesc_phase[0])},
+};
+
 //These postcodes are defined in document "Robinson Creek UEFI Specification" Version: 0.5
 static post_desc_t rc_pdesc_phase[] = {
   { 0x00, "Not used" },
@@ -709,6 +717,10 @@ int plat_get_post_phase(uint8_t fru, post_phase_desc_t **desc, size_t *desc_coun
     case SERVER_TYPE_RC:
       *desc = rc_post_phase_desc;
       *desc_count = sizeof(rc_post_phase_desc) / sizeof(rc_post_phase_desc[0]);
+      break;
+    case SERVER_TYPE_ND:
+      *desc = nd_post_phase_desc;
+      *desc_count = sizeof(nd_post_phase_desc) / sizeof(nd_post_phase_desc[0]);
       break;
     default:
       *desc = post_phase_desc;

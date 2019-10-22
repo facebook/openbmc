@@ -3689,6 +3689,18 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
       memcpy(res->data, req->data, SIZE_IANA_ID);
       *res_len = 3;
       break;
+    case CMD_OEM_1S_4BYTE_POST_BUF:
+      // Skip the first 3 bytes of IANA ID and one byte of length field
+      for(int k = SIZE_IANA_ID + 1; k < req->data[SIZE_IANA_ID]+SIZE_IANA_ID; k+=(sizeof(uint32_t)/sizeof(uint8_t)))
+      {
+        uint32_t port_buff = req->data[k] | (req->data[k+1] << 8) | (req->data[k+2] << 16) | (req->data[k+3] << 24);
+        pal_display_4byte_post_code(req->payload_id, port_buff);
+      }
+
+      res->cc = CC_SUCCESS;
+      memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
+      *res_len = 3;
+      break;
     default:
       res->cc = CC_INVALID_CMD;
       memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID

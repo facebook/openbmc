@@ -392,6 +392,8 @@ int pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *req_data
 bool pal_is_modify_sel_time(uint8_t *sel, int size);
 int pal_update_sensor_reading_sdr (uint8_t fru);
 int pal_set_usb_path (uint8_t slot, uint8_t endpoint);
+int pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw);
+
 #ifdef __cplusplus
 }
 #endif

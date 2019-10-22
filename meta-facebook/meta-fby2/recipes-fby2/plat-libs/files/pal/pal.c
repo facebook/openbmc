@@ -3709,6 +3709,11 @@ pal_post_disable(uint8_t slot) {
 // Get the last post code of the given slot
 int
 pal_post_get_last(uint8_t slot, uint8_t *status) {
+#ifdef CONFIG_FBY2_ND
+  // NorthDome only support display looping post-code, so need not get the last post-code.
+  // when the debug card inserted.
+  return -1;
+#endif
   int ret;
   uint8_t buf[MAX_IPMB_RES_LEN] = {0x0};
   uint8_t len;
@@ -11419,4 +11424,47 @@ pal_update_sensor_reading_sdr (uint8_t fru) {
   } else {
     return 0; //Not from BIC
   }
+}
+
+int 
+pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw) {
+  uint8_t byte1 = postcode_dw & 0xFF;
+  uint8_t byte2 = (postcode_dw >> 8) & 0xFF;
+  uint8_t prsnt, pos;
+  int ret;
+
+  // Check for debug card presence
+  ret = pal_is_debug_card_prsnt(&prsnt);
+  if (ret) {
+    return ret;
+  }
+
+  // No debug card  present, return
+  if (!prsnt) {
+    return -1;
+  }
+
+  // Get the hand switch position
+  ret = pal_get_hand_sw(&pos);
+  if (ret) {
+    return ret;
+  }
+
+  // If the give server is not selected, return
+  if (pos != slot) {
+    return -1;
+  }
+
+  if( (postcode_dw & 0xFFFF0000) != 0xDDEE0000) {
+    return -1;
+  }
+
+  // Display the post code in the debug card
+  if(byte2) {
+    pal_post_display(byte2);
+    msleep(500);
+  }
+  pal_post_display(byte1);
+
+  return 0;
 }

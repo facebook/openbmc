@@ -2163,3 +2163,8 @@ pal_set_usb_path (uint8_t slot, uint8_t endpoint) {
   return PAL_ENOTSUP;
 }
 
+int __attribute__((weak))
+pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw)
+{
+  return 0;
+}

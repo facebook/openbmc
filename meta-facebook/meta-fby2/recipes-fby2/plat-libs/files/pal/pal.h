@@ -303,6 +303,7 @@ int pal_set_dev_config_setup(uint8_t value);
 int pal_get_dev_config_setup(uint8_t *value);
 int pal_update_sensor_reading_sdr(uint8_t fru);
 int pal_get_fan_config();
+int pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw);
 #ifdef __cplusplus
 } // extern "C"
 #endif

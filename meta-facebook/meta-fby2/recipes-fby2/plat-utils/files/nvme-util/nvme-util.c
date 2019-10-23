@@ -101,9 +101,10 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t reg, int rlen, int 
     printf("NVMe I2C Read:\n");
   } else {
     printf("NVMe I2C Write\n");
-    for (i = 0; i < argc; i++) {
-      wbuf[wlen++] = (uint8_t)strtoul(argv[i], NULL, 0);
-    }
+  }
+
+  for (i = 0; i < argc; i++) {
+    wbuf[wlen++] = (uint8_t)strtoul(argv[i], NULL, 0);
   }
 
   while (retry >= 0) {

@@ -280,7 +280,7 @@ util_get_cache(uint8_t slot_id, uint8_t dimm) {
   printf("Slot%d\n", slot_id);
 
   set_dimm_loop(dimm, &startDimm, &endDimm);
-  for (i = startDimm; endDimm < 8; ++i) {
+  for (i = startDimm; i < endDimm; ++i) {
     printf("DIMM %s Serial Number (cached): ", dimm_location[i]);
     snprintf(key, MAX_KEY_SIZE, "sys_config/fru%d_dimm%d_serial_num", slot_id, i);
     if(kv_get(key, (char *)value, &len, KV_FPERSIST) < 0) {

@@ -37,6 +37,15 @@ extern "C" {
 #define CC_BIC_RETRY 0x70
 #define BIC_RETRY_ACTION  -2
 
+// Device fw update
+#define CFM1_START 0x00002000
+#define CFM1_END 0x000127ff
+#define CFM0_START 0x00012800
+#define CFM0_END 0x00022fff
+#define SPRINGHILL_M2_OFFSET_BASE 1 // one byte for FBID
+#define DEV_UPDATE_BATCH_SIZE 192
+#define DEV_UPDATE_IPMI_HEAD_SIZE 6
+
 // GPIO PINS
 enum {
   PWRGD_COREPWR = 0x0,
@@ -352,6 +361,7 @@ enum {
   UPDATE_BIC,
   UPDATE_VR,
   UPDATE_PCIE_SWITCH,
+  UPDATE_DEV_FW,
 };
 
 enum {
@@ -369,6 +379,19 @@ enum {
 enum {
   RECOVERY_MODE = 1,
   RESTORE_FACTORY_DEFAULT,
+};
+
+enum {
+  DEV_TYPE_ASIC = 0,
+  DEV_TYPE_M_2,
+};
+
+//Device update option
+enum {
+  ERASE_DEV_FW = 0x00,
+  PROGRAM_DEV_FW = 0x01,
+  RELOAD_DEV_IMG = 0x02,
+  GET_BOOT_LOCATION = 0x03,
 };
 
 /* Generic GPIO configuration */
@@ -485,6 +508,11 @@ int bic_get_debug_mode(uint8_t slot_id, uint8_t *debug_mode);
 int bic_set_sdr_threshold_update_flag(uint8_t slot, uint8_t update);
 int bic_get_sdr_threshold_update_flag(uint8_t slot);
 int bic_request_post_buffer_page_data(uint8_t slot_id, uint8_t page_num, uint8_t *port_buff, uint8_t *len);
+
+int bic_get_device_type(uint8_t slot_id, uint8_t drv_num);
+int reverse_bit(int raw_val);
+int program_dev_fw(uint8_t slot_id, uint8_t dev_id, int bus, char* image, int start, int end);
+int update_dev_firmware (uint8_t slot_id, uint8_t dev_id, char* image);
 
 #ifdef __cplusplus
 } // extern "C"

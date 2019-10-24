@@ -1852,13 +1852,22 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
   volatile uint16_t count, read_count;
   uint8_t buf[256] = {0};
   uint8_t target;
+  uint8_t slot_num = 0, dev_id = 0;
   int fd;
   int i;
+
+  if (comp == UPDATE_DEV_FW) {
+    slot_num = (slot_id >> 4);
+    dev_id = (slot_id & 0xF);
+    slot_id = slot_num;
+  }
 
   printf("updating fw on slot %d:\n", slot_id);
   // Handle Bridge IC firmware separately as the process differs significantly from others
   if (comp == UPDATE_BIC) {
     return _update_bic_main(slot_id, path, force);
+  } else if (comp == UPDATE_DEV_FW) {
+    return update_dev_firmware(slot_num, dev_id, path);
   }
 
   uint32_t dsize, last_offset, block_offset;
@@ -2077,6 +2086,9 @@ error_exit:
       break;
     case UPDATE_PCIE_SWITCH:
       syslog(LOG_CRIT, "Update PCIE SWITCH: updating pcie switch firmware is exiting on slot %d\n", slot_id);
+      break;
+    case UPDATE_DEV_FW:
+      syslog(LOG_CRIT, "Update DEV FW: updating device firmware is exiting on slot %d\n", slot_id);
       break;
   }
   if (fd > 0 ) {
@@ -2970,4 +2982,240 @@ bic_get_sdr_threshold_update_flag(uint8_t slot) {
     return 0;
   }
   return atoi(cvalue);
+}
+
+int
+bic_get_device_type(uint8_t slot_id, uint8_t dev_num) {
+  int ret = 0;
+  int rlen = 0;
+  uint8_t bus, wbuf[8], rbuf[64], fb_defined, ffi_0, offset_base = 0;
+
+  bus = (2 + (dev_num / 2)) * 2 + 1;
+  wbuf[0] = 1 << (dev_num % 2);
+
+  ret = bic_master_write_read(slot_id, bus, 0xe2, wbuf, 1, rbuf, 0);
+  if (ret != 0) {
+    syslog(LOG_DEBUG, "%s(): bic_master_write_read failed", __func__);
+    return ret;
+  }
+
+  wbuf[0] = 0x20;  // offset 32
+  rlen = 55;
+  ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
+  if (ret != 0) {
+    syslog(LOG_DEBUG, "%s(): bic_master_write_read offset=%d read length=%d failed", __func__,wbuf[0],rlen);
+    return -1;
+  }
+  if (rbuf[0] == wbuf[0]) {
+    offset_base = SPRINGHILL_M2_OFFSET_BASE;
+  }
+  fb_defined = rbuf[offset_base + 1];
+  ffi_0 = rbuf[offset_base + 43];
+
+  if (fb_defined == 1) {
+    if (ffi_0 == 0x01) {
+      return DEV_TYPE_ASIC;
+    } else {
+      return DEV_TYPE_M_2;
+    }
+  } else {
+    return DEV_TYPE_M_2;
+  }
+}
+
+int reverse_bits(int raw_val)
+{
+  int c, reverse_val = 0;
+
+  for (c = 7; c > 0; c--) {
+    if (raw_val & 1) {
+      reverse_val++;
+    }
+    reverse_val = reverse_val << 1;
+    raw_val = raw_val >> 1;
+  }
+  if(raw_val & 1) {
+    reverse_val++;
+  }
+  return reverse_val;
+}
+
+int program_dev_fw(uint8_t slot_id, uint8_t dev_id, int bus, char *image, int start, int end) {
+  uint8_t wbuf[DEV_UPDATE_BATCH_SIZE + DEV_UPDATE_IPMI_HEAD_SIZE + 2]; //2 means buffer for ipmb
+  uint8_t rlen = 0;
+  uint8_t rbuf[DEV_UPDATE_BATCH_SIZE];
+  FILE *fp1 = NULL;
+  unsigned char buffer[DEV_UPDATE_BATCH_SIZE];
+  int addr = 0, tmp, i, ret = 0;
+  float cur_progress = 0.05;
+  float run = 1;
+  int total_run;
+  int fileSize;
+
+  printf("* Reading image...\n");
+  addr = start;
+  wbuf[0] = bus;
+  wbuf[1] = PROGRAM_DEV_FW;
+  fp1 = fopen(image, "rb");
+  if (!fp1){
+    printf("Image %s not found", image);
+    return -1;
+  }
+  fseek(fp1, 0 , SEEK_END);
+  fileSize = ftell(fp1);
+  fseek(fp1, 0 , SEEK_SET);
+  total_run = fileSize / DEV_UPDATE_BATCH_SIZE;
+  if ((fileSize / 4) > (end - start + 1)) {
+    printf("File size too large\n");
+    fclose(fp1);
+    return -1;
+  }
+  while(fread(buffer, DEV_UPDATE_BATCH_SIZE, 1, fp1)) {
+    tmp = addr;
+    for(i = DEV_UPDATE_IPMI_HEAD_SIZE - 1; i > 1; i--) { //offset is 0-based
+      wbuf[i] = (tmp & 0xFF);
+      tmp /= 0x100;
+    }
+    for(i = 0; i < DEV_UPDATE_BATCH_SIZE; i++) {
+      wbuf[i + DEV_UPDATE_IPMI_HEAD_SIZE] = reverse_bits(buffer[i]);
+    }
+    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_STORAGE_REQ, DEV_UPDATE, wbuf,
+                          (DEV_UPDATE_BATCH_SIZE + DEV_UPDATE_IPMI_HEAD_SIZE), rbuf, &rlen);
+    if (ret < 0) {
+      printf("Failed to send IPMB command!\n");
+      goto err_exit;
+    }
+    if (rbuf[0] == CC_CAN_NOT_RESPOND) {
+      printf("Command response could not be provided\n");
+      fclose(fp1);
+      return -1;
+    }
+    addr += DEV_UPDATE_BATCH_SIZE / 4;
+    if (((float)(run/total_run) >= cur_progress) && ((float)((run-1)/total_run) <= cur_progress)) {
+      printf("updated device: %d %%\n", (int)(cur_progress*100));
+      cur_progress += 0.05;
+    }
+    run++;
+  }
+  printf("updated device: 100 %%\n");
+
+err_exit:
+  fclose(fp1);
+  return ret;
+}
+
+/* Below IPMI command support to device fw update
+  Request:
+    Byte 1 – I2C Bus Number (0-based)
+    Byte 2 – Device Upgrade Option
+      00h: Erase device sector
+      01h: Programming the device image
+      02h: Reload device image
+      03h: Get the image location of device booting
+    Byte 3:6 – Image Offset
+      only for Byte 1 = 01h
+      Byte 7:N – Image Raw Data
+      only for Byte 1 = 01h
+
+  Response:
+    Byte 1 – Completion Code
+      00h: Success
+      CEh: Command response could not be provided
+    Byte 2 – device Command Status
+      only for Byte 1 = 00h or 03h
+*/
+int update_dev_firmware (uint8_t slot_id, uint8_t dev_id, char* image) {
+  uint8_t wbuf[2];
+  uint8_t rlen = 0;
+  uint8_t rbuf[DEV_UPDATE_BATCH_SIZE];
+  uint8_t bus = (2 + dev_id/2) * 2 + 1;
+  int ret = 0;
+
+  printf("* Turning off sensor monitor...\n");
+  ret = bic_disable_sensor_monitor(slot_id, 1);
+  if (ret < 0) {
+    printf("Turn off slot%u sensor monitor failed\n", slot_id);
+    return -1;
+  }
+  sleep(2);
+
+  printf("* Mux selecting...\n");
+  wbuf[0] = 1 << (dev_id % 2);
+  ret = bic_master_write_read(slot_id, bus, 0xe2, wbuf, 1, rbuf, 0);
+  if (ret < 0) {
+    printf("Select mux failed\n");
+    return -1;
+  }
+  sleep(2);
+
+  bus = (dev_id / 2) + 2;
+  printf("* Erasing Device CFM1 sector...\n");
+  wbuf[0] = bus;
+  wbuf[1] = ERASE_DEV_FW;
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_STORAGE_REQ, DEV_UPDATE, wbuf, 2, rbuf, &rlen);
+  if (ret < 0) {
+    printf("Failed to send IPMB command!\n");
+    return ret;
+  }
+  if (rbuf[0] == CC_CAN_NOT_RESPOND) {
+    printf("Command response could not be provided\n");
+    return -1;
+  }
+  ret = program_dev_fw(slot_id, dev_id, bus, image, CFM1_START, CFM1_END);
+  if (ret < 0) {
+    return ret;
+  }
+
+  printf("* Reloading device image\n");
+  wbuf[0] = bus;
+  wbuf[1] = RELOAD_DEV_IMG;
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_STORAGE_REQ, DEV_UPDATE, wbuf, 2, rbuf, &rlen);
+  if (ret < 0) {
+    printf("Failed to send IPMB command!\n");
+    return ret;
+  }
+  if (rbuf[0] == CC_CAN_NOT_RESPOND) {
+    printf("Command response could not be provided\n");
+    return -1;
+  }
+  sleep(5);
+
+  printf("* Getting the image location\n");
+  wbuf[0] = bus;
+  wbuf[1] = GET_BOOT_LOCATION;
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_STORAGE_REQ, DEV_UPDATE, wbuf, 2, rbuf, &rlen);
+  if (ret < 0) {
+    printf("Failed to send IPMB command!\n");
+    return ret;
+  }
+  if (rbuf[0] == CC_CAN_NOT_RESPOND) {
+    printf("Command response could not be provided\n");
+    return -1;
+  }
+
+  printf("* Erasing Device CFM0 sector...\n");
+  wbuf[0] = bus;
+  wbuf[1] = ERASE_DEV_FW;
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_STORAGE_REQ, DEV_UPDATE, wbuf, 2, rbuf, &rlen);
+  if (ret < 0 ) {
+    printf("Failed to send IPMB command!\n");
+    return ret;
+  }
+  if (rbuf[0] == CC_CAN_NOT_RESPOND) {
+    printf("Command response could not be provided\n");
+    return -1;
+  }
+
+  ret = program_dev_fw(slot_id, dev_id, bus, image, CFM0_START, CFM0_END);
+  if (ret < 0) {
+    return ret;
+  }
+
+  printf("* Turning on sensor monitor...\n");
+  ret = bic_disable_sensor_monitor(slot_id, 0);
+  if (ret < 0) {
+    printf("Turn on slot%u sensor monitor failed\n", slot_id);
+    return ret;
+  }
+  return ret;
 }

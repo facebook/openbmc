@@ -6,6 +6,7 @@
 #include <syslog.h>
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
+#include <unistd.h>
 
 using namespace std;
 
@@ -66,7 +67,60 @@ class M2_DevComponent : public Component {
   }
 
   int update(string image) {
-    return FW_STATUS_NOT_SUPPORTED;
+    int ret = 0, ret_power = 0;
+    uint16_t slot_dev_id = 0;
+    uint8_t nvme_ready;
+    uint8_t ffi;
+    uint8_t meff;
+    uint16_t vendor_id = 0;
+    uint8_t major_ver;
+    uint8_t minor_ver;
+    uint8_t status;
+    ret = bic_get_dev_power_status(slot_id, dev_id, &nvme_ready, &status, &ffi, &meff, &vendor_id, &major_ver, &minor_ver);
+
+    if (!ret) {
+      if (status != 0) {
+        if (fby2_get_slot_type(slot_id) != SLOT_TYPE_GPV2) {
+          return FW_STATUS_NOT_SUPPORTED;
+        }
+        slot_dev_id = (slot_id << 4) | dev_id;
+        ret = bic_get_device_type(slot_id, dev_id);
+        sleep(1);
+        if (ret == DEV_TYPE_ASIC) {
+          printf("* Power cycling slot %u device %u...\n", slot_id, dev_id);
+          ret_power = pal_set_device_power(slot_id, (dev_id + 1), SERVER_POWER_CYCLE);
+          if (ret_power < 0) {
+            printf("fw_util: pal_set_server_power failed for slot_id %u\n", slot_id);
+            return FW_STATUS_FAILURE;
+          }
+          sleep(1);
+          try {
+            server.ready();
+            ret = bic_update_fw(slot_dev_id, UPDATE_DEV_FW, (char *)image.c_str());
+          } catch(string err) {
+            ret = FW_STATUS_NOT_SUPPORTED;
+          }
+
+          printf("* Slot%u 12V-cycle\n", slot_id);
+          ret_power = pal_set_server_power(slot_id, SERVER_12V_CYCLE);
+          if (ret_power < 0) {
+            printf("Slot%u 12V-cycle failed\n", slot_id);
+          }
+          return ret;
+        } else if (ret == DEV_TYPE_M_2) {
+          return FW_STATUS_NOT_SUPPORTED;
+        } else {
+          printf("Can not get the device type, try again later.\n");
+          return FW_STATUS_FAILURE;
+        }
+      } else {
+        printf("device%d: Not Present\n", dev_id);
+        return FW_STATUS_NOT_SUPPORTED;
+      }
+    } else {
+      printf("Device%d status is unknown.\n", dev_id);
+      return FW_STATUS_FAILURE;
+    }
   }
 };
 

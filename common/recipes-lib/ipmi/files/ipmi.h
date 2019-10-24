@@ -456,6 +456,12 @@ enum
   CMD_OEM_STOR_ADD_STRING_SEL = 0x30,
 };
 
+//Device update
+enum
+{
+  DEV_UPDATE = 0x01,
+};
+
 // OEM Command Codes for QC
 enum
 {
@@ -537,6 +543,7 @@ enum
   CC_INVALID_LENGTH = 0xC7,
   CC_PARAM_OUT_OF_RANGE = 0xC9,
   CC_INVALID_DATA_FIELD = 0xCC,
+  CC_CAN_NOT_RESPOND = 0xCE,
   CC_NOT_SUPP_IN_CURR_STATE = 0xD5,
   CC_UNSPECIFIED_ERROR = 0xFF,
 };

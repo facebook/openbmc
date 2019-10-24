@@ -16,7 +16,7 @@ S = "${WORKDIR}"
 binfiles = "dimm-util"
 
 CFLAGS += " -lpal -lkv -lbic"
-
+LDFLAGS = " -ljansson"
 pkgdir = "dimm-util"
 
 do_install() {
@@ -28,8 +28,8 @@ do_install() {
   ln -snf ../fbpackages/${pkgdir}/dimm-util ${bin}/dimm-util
 }
 
-DEPENDS += "libpal libkv libbic"
-RDEPENDS_${PN} += "libpal libkv libbic"
+DEPENDS += "libpal libkv libbic jansson"
+RDEPENDS_${PN} += "libpal libkv libbic jansson"
 
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

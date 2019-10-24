@@ -25,6 +25,7 @@
 #define MAX_DIMM_NUM 8
 #define OFFSET_SERIAL 0x45
 #define LEN_SERIAL    4
+#define LEN_SERIAL_STRING (LEN_SERIAL * 2) // 2 hex digit per byte
 #define OFFSET_PART_NUMBER 0x49
 #define LEN_PART_NUMBER    20
 
@@ -49,10 +50,10 @@
 #define MANU_INTEL_1  0x01
 #define MANU_INTEL_2  0x00
 
-#define QUANTA_ID_LEN  3
-#define MANU_QUANTA_0  0x15
-#define MANU_QUANTA_1  0xa0
-#define MANU_QUANTA_2  0x00
+#define FACEBOOK_ID_LEN  3
+#define MANU_FACEBOOK_0  0x15
+#define MANU_FACEBOOK_1  0xa0
+#define MANU_FACEBOOK_2  0x00
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))

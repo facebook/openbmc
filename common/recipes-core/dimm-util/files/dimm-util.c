@@ -19,9 +19,11 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <getopt.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
+#include <jansson.h>
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
 #include <facebook/bic.h>
@@ -65,11 +67,11 @@ util_read_spd_byte(uint8_t slot_id, uint8_t cpu, uint8_t addr_msb, uint8_t addr_
 // total valid response length from BIC on  ME SPD bus read
 //  includes  BIC IANA,  BIC Completion code,  ME IANA, ME completion code
 //             NETFN, CMD,   and actual payload
-#define MIN_RESP_LEN INTEL_ID_LEN + 1 /* BIC CC*/ + QUANTA_ID_LEN + 1 /* BIC CC */ \
-      + 1 /*NetFn */ + 1 /*cmd */ + 1 /*payload*/
+#define MIN_RESP_LEN (INTEL_ID_LEN + 1 /* BIC CC*/ + FACEBOOK_ID_LEN + 1 /* BIC CC */ \
+      + 1 /*NetFn */ + 1 /*cmd */ + 1 /*payload*/)
 
   int ret;
-  uint8_t tbuf[256] = {MANU_QUANTA_0, MANU_QUANTA_1, MANU_QUANTA_2}; // IANA ID
+  uint8_t tbuf[256] = {MANU_FACEBOOK_0, MANU_FACEBOOK_1, MANU_FACEBOOK_2}; // IANA ID
   uint8_t rbuf[256] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
@@ -188,59 +190,127 @@ set_dimm_loop(uint8_t dimm, uint8_t *startDimm, uint8_t *endDimm) {
 }
 
 static int
-util_get_serial(uint8_t slot_id, uint8_t dimm) {
+util_get_serial(uint8_t slot_id, uint8_t dimm, bool json) {
   uint8_t i, j, startDimm, endDimm, dimm_present = 0;
   uint8_t dimm_serial[MAX_DIMM_NUM][LEN_SERIAL] = {0};
+  json_t *config_arr = NULL;
+  char   sn[LEN_SERIAL_STRING] = {0};
 
-  printf("Slot%d\n", slot_id);
+  if (json) {
+    config_arr = json_array();
+    if (!config_arr)
+      goto err_exit;
+  } else {
+    printf("Slot%d\n", slot_id);
+  }
 
   set_dimm_loop(dimm, &startDimm, &endDimm);
   for (i = startDimm; i < endDimm; ++i) {
     util_read_spd_with_retry(slot_id, i, OFFSET_SERIAL, LEN_SERIAL, 0,
       dimm_serial[i], &dimm_present);
 
-    printf("DIMM %s Serial Number: ", dimm_location[i]);
-    if (dimm_present) {
-      for (j = 0; j < LEN_SERIAL; ++j) {
-        printf("%X", dimm_serial[i][j]);
-      }
-      printf("\n");
+    if (dimm_present)
+        for (j = 0; j < LEN_SERIAL; ++j)
+          snprintf(sn + (2 * j), LEN_SERIAL_STRING - (2 * j), "%02X", dimm_serial[i][j]);
+
+    if (json) {
+      json_t *sn_obj = json_object();
+      if (!sn_obj)
+        goto err_exit;
+      if (dimm_present)
+        json_object_set_new(sn_obj, "Serial Number", json_string(sn));
+      json_t *dimm_obj = json_object();
+      if (!dimm_obj)
+        goto err_exit;
+      json_object_set_new(dimm_obj, "Slot", json_integer(slot_id));
+      json_object_set_new(dimm_obj, "DIMM", json_string(dimm_location[i]));
+      json_object_set_new(dimm_obj, "config", sn_obj);
+      json_array_append(config_arr, dimm_obj);
     } else {
-      printf("NO DIMM\n");
+      printf("DIMM %s Serial Number: ", dimm_location[i]);
+      if (dimm_present)
+        printf("%s\n", sn);
+      else
+        printf("NO DIMM\n");
     }
   }
-
+  if (json) {
+    json_dumpf(config_arr, stdout, JSON_INDENT(4));
+    json_decref(config_arr);
+    printf("\n");
+  }
   return 0;
+
+err_exit:
+  if (json) {
+    if (config_arr)
+      json_decref(config_arr);
+  }
+  return -1;
 }
 
 static int
-util_get_part(uint8_t slot_id, uint8_t dimm) {
+util_get_part(uint8_t slot_id, uint8_t dimm, bool json) {
   uint8_t i, j, startDimm, endDimm, dimm_present = 0;
   uint8_t dimm_part[MAX_DIMM_NUM][LEN_PART_NUMBER] = {0};
+  json_t *config_arr = NULL;
+  char   pn[LEN_PART_NUMBER] = {0};
 
-  printf("Slot%d\n", slot_id);
+  if (json) {
+    config_arr = json_array();
+    if (!config_arr)
+      goto err_exit;
+  } else {
+    printf("Slot%d\n", slot_id);
+  }
 
   set_dimm_loop(dimm, &startDimm, &endDimm);
   for (i = startDimm; i < endDimm; ++i) {
     util_read_spd_with_retry(slot_id, i, OFFSET_PART_NUMBER, LEN_PART_NUMBER,
       MAX_FAIL_CNT, dimm_part[i], &dimm_present);
 
-    printf("DIMM %s Part Number: ", dimm_location[i]);
-    if (dimm_present) {
-      for (j = 0; j < LEN_PART_NUMBER; ++j) {
-        printf("%c", dimm_part[i][j]);
-      }
-      printf("\n");
+    if (dimm_present)
+        for (j = 0; j < LEN_PART_NUMBER; ++j)
+          snprintf(pn + j, LEN_PART_NUMBER - j, "%c", dimm_part[i][j]);
+
+    if (json) {
+      json_t *part_obj = json_object();
+      if (!part_obj)
+        goto err_exit;
+      if (dimm_present)
+        json_object_set_new(part_obj, "Part Number", json_string(pn));
+      json_t *dimm_obj = json_object();
+      if (!dimm_obj)
+        goto err_exit;
+      json_object_set_new(dimm_obj, "Slot", json_integer(slot_id));
+      json_object_set_new(dimm_obj, "DIMM", json_string(dimm_location[i]));
+      json_object_set_new(dimm_obj, "config", part_obj);
+      json_array_append(config_arr, dimm_obj);
     } else {
-      printf("NO DIMM\n");
+      printf("DIMM %s Part Number: ", dimm_location[i]);
+      if (dimm_present)
+        printf("%s\n", pn);
+      else
+        printf("NO DIMM\n");
     }
   }
-
+  if (json) {
+    json_dumpf(config_arr, stdout, JSON_INDENT(4));
+    json_decref(config_arr);
+    printf("\n");
+  }
   return 0;
+
+err_exit:
+  if (json) {
+    if (config_arr)
+      json_decref(config_arr);
+  }
+  return -1;
 }
 
 static int
-util_get_raw_dump(uint8_t slot_id, uint8_t dimm) {
+util_get_raw_dump(uint8_t slot_id, uint8_t dimm, bool json) {
   uint8_t i, startDimm, endDimm, dimm_present = 0;
   uint16_t j = 0;
   uint16_t offset = DEFAULT_DUMP_OFFSET;
@@ -269,7 +339,7 @@ util_get_raw_dump(uint8_t slot_id, uint8_t dimm) {
 }
 
 static int
-util_get_cache(uint8_t slot_id, uint8_t dimm) {
+util_get_cache(uint8_t slot_id, uint8_t dimm, bool json) {
 #define MAX_KEY_SIZE 100
 #define MAX_VALUE_SIZE 128
   uint8_t i, startDimm, endDimm = 0;
@@ -308,87 +378,161 @@ util_get_cache(uint8_t slot_id, uint8_t dimm) {
 // print DIMM Config
 // PN, SN + vendor, manufacture_date, size, speed, clock speed.
 static int
-util_get_config(uint8_t slot_id, uint8_t dimm) {
+util_get_config(uint8_t slot_id, uint8_t dimm, bool json) {
 #define CONFIG_OFFSET 0x40
 #define CONFIG_LEN    0x30
 #define MANUFACTURER_OFFSET 1
 #define DATE_OFFSET 3
 #define SERIAL_OFFSET 5
 #define PN_OFFSET 9
-
+#define BUF_SIZE 64
   uint8_t i, j, startDimm, endDimm, dimm_present = 0;
   uint16_t offset = CONFIG_OFFSET;
   uint16_t len = CONFIG_LEN;
   uint8_t buf[CONFIG_LEN] = {0};
+  json_t *config_arr = NULL;
+  char   pn[LEN_PART_NUMBER] = {0};
+  char   sn[LEN_SERIAL_STRING] = {0};
+  char   manu[BUF_SIZE] = {0};
+  char   week[BUF_SIZE] = {0};
 
-  printf("CONFIG, slot%d \n", slot_id);
+  if (json) {
+    config_arr = json_array();
+    if (!config_arr)
+      goto err_exit;
+  }
+
   set_dimm_loop(dimm, &startDimm, &endDimm);
   for (i = startDimm; i < endDimm; ++i) {
-    printf("DIMM %s:\n", dimm_location[i]);
-
     memset(buf, 0, CONFIG_LEN);
     util_read_spd_with_retry(slot_id, i, offset, len, 0, buf, &dimm_present);
     if (dimm_present) {
-      printf("\tPart Number: ");
-      for (j = 0; j < LEN_PART_NUMBER; ++j) {
-        printf("%c", buf[PN_OFFSET + j]);
+        for (j = 0; j < LEN_PART_NUMBER; ++j) {
+          snprintf(pn + j, LEN_PART_NUMBER - j, "%c", buf[PN_OFFSET + j]);
+        }
+        for (j = 0; j < LEN_SERIAL; ++j) {
+          snprintf(sn + (2*j), LEN_SERIAL_STRING - (2*j), "%02X", buf[SERIAL_OFFSET + j]);
+        }
+        snprintf(manu, BUF_SIZE, "%s", manu_string(buf[MANUFACTURER_OFFSET]));
+        snprintf(week, BUF_SIZE, "20%02x Week%02x",
+                  buf[DATE_OFFSET], buf[DATE_OFFSET + 1]);
+    }
+
+    if (json) {
+      json_t *config_obj = json_object();
+      if (!config_obj)
+        goto err_exit;
+      if (dimm_present) {
+        json_object_set_new(config_obj, "Part Number", json_string(pn));
+        json_object_set_new(config_obj, "Serial Number", json_string(sn));
+        json_object_set_new(config_obj, "Manufacturer", json_string(manu));
+        json_object_set_new(config_obj, "Manufacturing Date", json_string(week));
       }
-      printf("\n\tSerial Number: ");
-      for (j = 0; j < LEN_SERIAL; ++j) {
-        printf("%X", buf[SERIAL_OFFSET + j]);
-      }
-      printf("\n");
-      printf("\tManufacturer: %s\n", manu_string(buf[MANUFACTURER_OFFSET]));
-      printf("\tManufacture Date: 20%02x Week%02x\n",
-        buf[DATE_OFFSET], buf[DATE_OFFSET + 1]);
+      json_t *dimm_obj = json_object();
+      if (!dimm_obj)
+        goto err_exit;
+      json_object_set_new(dimm_obj, "Slot", json_integer(slot_id));
+      json_object_set_new(dimm_obj, "DIMM", json_string(dimm_location[i]));
+      json_object_set_new(dimm_obj, "config", config_obj);
+      json_array_append(config_arr, dimm_obj);
     } else {
-      printf("\tNO DIMM\n");
+      printf("CONFIG, slot%d\n", slot_id);
+      printf("DIMM %s:\n", dimm_location[i]);
+      if (dimm_present) {
+        printf("\tPart Number: %s\n", pn);
+        printf("\tSerial Number: %s\n", sn);
+        printf("\tManufacturer: %s\n", manu);
+        printf("\tManufacturing Date: %s\n", week);
+      } else {
+        printf("\tNO DIMM\n");
+      }
     }
   }
+  if (json) {
+    json_dumpf(config_arr, stdout, JSON_INDENT(4));
+    json_decref(config_arr);
+    printf("\n");
+  }
+  return 0;
+
+err_exit:
+  if (json) {
+    if (config_arr)
+      json_decref(config_arr);
+  }
+  return -1;
+}
+
+static int parse_cmdline_args(int argc, char **argv,
+			      uint8_t *dimm, bool *json)
+{
+  int ret, opt_index = 0;
+  static const char *optstring = "d:j";
+  struct option long_opts[] = {
+    {"dimm",	required_argument,		NULL,	'd'},
+    {"json",	no_argument,		NULL,	'j'},
+    {NULL,		0,			NULL,	0},
+  };
+
+  *dimm = MAX_DIMM_NUM;
+  *json = false;
+  while (1) {
+    opt_index = 0;
+    ret = getopt_long(argc, argv, optstring,
+          long_opts, &opt_index);
+    if (ret == -1)
+      break;	/* end of arguments */
+
+    switch (ret) {
+    case 'd':
+      *dimm = atoi(optarg);
+      if ((*dimm < 0) || (*dimm > MAX_DIMM_NUM)) {
+        printf("Error: invalid [--dimm]\n");
+        return ERR_INVALID_SYNTAX;
+      }
+      break;
+    case 'j':
+      *json = true;
+      break;
+    default:
+      return ERR_INVALID_SYNTAX;
+    }
+  }
+
   return 0;
 }
 
 static int
-parse_arg_and_exec(int argc, char **argv, uint8_t slot_id, int (*pF)(uint8_t, uint8_t)) {
+parse_arg_and_exec(int argc, char **argv, uint8_t slot_id,
+                  int (*pF)(uint8_t, uint8_t, bool)) {
   uint8_t dimm = MAX_DIMM_NUM;
+  bool    json = false;
   int ret = 0;
 
-  if (argc == 3) {
-    if (slot_id == SLOT_ALL) {
-      for (int i = SLOT_MIN; i <= SLOT_MAX; ++i) {
-        ret = pF(i, dimm);
-      }
-    } else {
-      ret = pF(slot_id, dimm);
-    }
-  } else if (argc == 5) {
-    if (!strcmp(argv[3], "--dimm")) {
-      dimm = atoi(argv[4]);
-      if ((dimm < 0) || (dimm > MAX_DIMM_NUM)) {
-        printf("Error: invalid [--dimm]\n");
-        return ERR_INVALID_SYNTAX;
-      }
-      if (slot_id == SLOT_ALL) {
-        for (int i = SLOT_MIN; i <= SLOT_MAX; ++i) {
-          ret = pF(i, dimm);
-        }
-      } else {
-        ret = pF(slot_id, dimm);
-      }
-    } else {
-      printf("Error: invalid argument\n");
-      return ERR_INVALID_SYNTAX;
-    }
-  } else {
+  if (argc < 3) {
     printf("Error: invalid number of arguments\n");
     return ERR_INVALID_SYNTAX;
+  } else if (argc > 3) {
+    // parse option fields,
+    // skipping first 3 arguments, which will be "dimm-util slotX cmd"
+  	if (parse_cmdline_args(argc - 2, &(argv[2]), &dimm, &json) != 0)
+  		return ERR_INVALID_SYNTAX;
   }
+
+  if (slot_id == SLOT_ALL) {
+    for (int i = SLOT_MIN; i <= SLOT_MAX; ++i) {
+      ret = pF(i, dimm, json);
+    }
+  } else {
+    ret = pF(slot_id, dimm, json);
+  }
+
   return ret;
 }
 
 static void
 print_usage_help(void) {
-  printf("Usage: dimm-util <slot1|slot2|slot3|slot4|all> <cmd> [opt] ...\n");
+  printf("Usage: dimm-util <slot1|slot2|slot3|slot4|all> <cmd> [opt1] [opt2] ...\n");
   printf("\ncmd list:\n");
   printf("   --serial   - get DIMM module serial number\n");
   printf("   --part     - get DIMM module part number\n");
@@ -396,8 +540,9 @@ print_usage_help(void) {
   printf("   --cache    - read from SMBIOS cache\n");
   printf("   --config   - print DIMM configuration info\n");
   printf("\nopt list:\n");
-  printf("  [--dimm] s   - DIMM number (0..%d) [default %d = ALL]\n",
+  printf("  [--dimm N]  - DIMM number (0..%d) [default %d = ALL]\n",
           MAX_DIMM_NUM - 1 , MAX_DIMM_NUM);
+  printf("  [--json]    - output in JSON format\n");
 }
 
 int

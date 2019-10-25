@@ -19,8 +19,8 @@ from constants import (
 
 
 class FwJson(object):
-    _FW_VERSIONS_FILE_PATTERN = "_fw_versions.json"
-    _FW_MANIFEST_FILE_PATTERN = "_fw_manifest.json"
+    _FW_VERSIONS_FILE_PATTERN = "_ufw_versions.json"
+    _FW_MANIFEST_FILE_PATTERN = "_ufw_manifest.json"
 
     def __init__(self, binarypath: str, fw_entity: List[str] = ["all"]):  # noqa B006
         """

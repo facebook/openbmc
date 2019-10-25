@@ -53,13 +53,16 @@ do_install_board() {
   install -d ${D}${olddir}
   ln -s "/usr/local/bin/openbmc-utils.sh" ${D}${olddir}/ast-functions
 
-  # init
-  # setup i2c and sensors
-  install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
-  update-rc.d -r ${D} setup_i2c.sh start 59 S .
-
+  # Export GPIO pins and set initial directions/values.
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
-  update-rc.d -r ${D} setup-gpio.sh start 60 S .
+  update-rc.d -r ${D} setup-gpio.sh start 59 S .
+
+  # Initialize I2C devices.
+  # NOTE: some I2C devices (such as ncp4200) are not accessible until GPIO
+  # pins are configured, so "setup_i2c.sh" needs to be executed after
+  # "setup-gpio.sh".
+  install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
+  update-rc.d -r ${D} setup_i2c.sh start 60 S .
 
   # create VLAN intf automatically
   install -d ${D}/${sysconfdir}/network/if-up.d

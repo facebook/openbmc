@@ -325,11 +325,62 @@ static int mmc_trim_cmd(struct m_cmd_args *args)
 	return ret;
 }
 
+static int mmc_erase_cmd(struct m_cmd_args *args)
+{
+	int ret;
+	const char *erase_type;
+	__u32 start, end, erase_arg;
+
+	if (mmc_flags.secure && !mmc_is_secure_supported(args->dev_fd)) {
+		MMC_ERR("secure erase failed: feature not supported\n");
+		return -1;
+	}
+
+	/*
+	 * Set up erase range.
+	 */
+	if (mmc_cal_erase_range(args, &start, &end) != 0) {
+		return -1;
+	}
+	if (start >= end) {
+		return 0;	/* Nothing needs to be done. */
+	}
+	ret = mmc_set_erase_range(args->dev_fd, MMC_ERASE_GROUP_START, start);
+	if (ret != 0)
+		return ret;
+	ret = mmc_set_erase_range(args->dev_fd, MMC_ERASE_GROUP_END, end);
+	if (ret != 0)
+		return ret;
+
+	/*
+	 * Send erase command to the device.
+	 */
+	if (mmc_flags.secure) {
+		erase_arg = MMC_SECURE_ERASE_ARG;
+		erase_type = "secure erase";
+	} else {
+		erase_arg = MMC_ERASE_ARG;
+		erase_type = "erase";
+	}
+	MMC_DEBUG("start %s: range [%u, %u]\n", erase_type, start, end);
+	ret = mmc_issue_erase(args->dev_fd, erase_arg);
+	if (ret != 0)
+		return -1;
+
+	MMC_DEBUG("%s completed\n", erase_type);
+	return 0;
+}
+
 static struct m_cmd_info mmc_cmds[] = {
 	{
 		"trim",
 		"send trim command to the mmc device",
 		mmc_trim_cmd,
+	},
+	{
+		"erase",
+		"send erase command to the mmc device",
+		mmc_erase_cmd,
 	},
 
 	/* This is the last entry. */

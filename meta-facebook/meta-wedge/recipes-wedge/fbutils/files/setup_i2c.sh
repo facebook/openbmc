@@ -42,7 +42,6 @@ i2c_device_add 6 0x3f pcf8574
 i2c_device_add 6 0x50 24c64
 
 # Bus 7
-i2c_device_add 7 0x10 pfe3000       # 6pack power supply
 i2c_device_add 7 0x50 24c64         # 6pack power supply EEPROM
 i2c_device_add 7 0x51 24c64         # wedge power supply EEPROM
 i2c_device_add 7 0x52 24c64         # wedge power supply EEPROM
@@ -73,3 +72,5 @@ if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
     ast_config_adc 8  1 1 0
     ast_config_adc 9  1 1 0
 fi
+
+i2c_check_driver_binding

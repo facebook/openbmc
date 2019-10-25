@@ -2803,6 +2803,8 @@ pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
             *type = DEV_TYPE_VSI_ACC;
           } else if (vendor_id == VENDOR_BRCM) {
             *type = DEV_TYPE_BRCM_ACC;
+          } else if (vendor_id == VENDOR_SPH) {
+            *type = DEV_TYPE_SPH_ACC;
           } else {
             *type = DEV_TYPE_OTHER_ACC;
           }

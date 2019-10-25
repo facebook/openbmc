@@ -71,6 +71,7 @@ enum {
   DEV_TYPE_BRCM_ACC,
   DEV_TYPE_OTHER_ACC,
   DEV_TYPE_DUAL_M2,
+  DEV_TYPE_SPH_ACC,
 };
 
 enum {
@@ -86,6 +87,7 @@ enum {
 enum {
   VENDOR_VSI = 0x1D9B,
   VENDOR_BRCM = 0x14E4,
+  VENDOR_SPH = 0x8680,
 };
 
 enum {

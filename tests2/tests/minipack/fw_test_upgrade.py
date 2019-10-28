@@ -29,7 +29,7 @@ from utils.cit_logger import Logger
 try:
     # Upgrader and binaries need to be installed in /tmp
     sys.path.append("/tmp/fw-upgrade")
-    import fw_json_upgrader as fw_up
+    import fw_json as fw_up
 except Exception:
     pass
 
@@ -37,16 +37,46 @@ except Exception:
 class FwUpgradeTest(unittest.TestCase):
     # <fw_entity: priority>
     _COMPONENTS = {
-        "16q_fpga": 1,  # priority=1
-        "4dd_fpga": 2,  # priority=2
-        "bios": 3,  # priority=3
-        "bic": 4,  # priority=4
-        "scm": 5,  # priority=5
-        "iob_fpga": 6,  # priority=6
-        "smb": 7,  # priority=7
-        "fcm": 8,  # priority=8
-        "pdb": 9,  # priority=9
-        "pim_spi_mux": 100,  # priority=100
+        "16q_fpga": [
+            1,
+            "/usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",  # noqa B950
+        ],  # priority=1, upgrade_cmd
+        "4dd_fpga": [
+            2,
+            "/usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",  # noqa B950
+        ],  # priority=2, upgrade_cmd
+        "bios": [
+            3,
+            "/usr/bin/fw-util scm --update --bios {filename}",
+        ],  # priority=3, upgrade_cmd
+        "bic": [
+            4,
+            "/usr/bin/fw-util scm --update --bic {filename}",
+        ],  # priority=4, upgrade_cmd
+        "scm": [
+            5,
+            "/usr/local/bin/scmcpld_update.sh {filename}",
+        ],  # priority=5, upgrade_cmd
+        "iob_fpga": [
+            6,
+            "/usr/local/bin/spi_util.sh write spi1 IOB_FPGA_FLASH {filename}",
+        ],  # priority=6, upgrade_cmd
+        "smb": [
+            7,
+            "/usr/local/bin/smbcpld_update.sh {filename}",
+        ],  # priority=7, upgrade_cmd
+        "fcm": [
+            8,
+            "usr/local/bin/fcmcpld_update.sh {filename}",
+        ],  # priority=8, upgrade_cmd
+        "pdb": [
+            9,
+            "usr/local/bin/pdbcpld_update.sh i2c {entity} {filename}",
+        ],  # priority=9, upgrade_cmd
+        "pim_spi_mux": [
+            100,
+            "/usr/local/bin/pimcpld_update.sh {entity} {filename}",
+        ],  # priority=100, upgrade_cmd
     }
 
     def setUp(self):
@@ -60,8 +90,7 @@ class FwUpgradeTest(unittest.TestCase):
 
     def test_fw_entiy_priority_in_ordered_json(self):
         Logger.info("FW Upgrade Ordered json= {}".format(self.json))
-
-        for item, priority in self._COMPONENTS.items():
+        for item, attributes in self._COMPONENTS.items():
             # Test for fw entity presence in json
             with self.subTest(upgradable_component=item):
                 self.assertIn(

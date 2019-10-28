@@ -3,8 +3,8 @@ all: dimm-util
 
 CFLAGS += -Wall -Werror
 
-dimm-util: *.c
-	$(CC) -pthread $(CFLAGS)  -std=gnu11 -o $@ $^ $(LDFLAGS)
+dimm-util: *.cpp
+	$(CXX) -pthread $(CXXFLAGS)  -std=gnu11 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

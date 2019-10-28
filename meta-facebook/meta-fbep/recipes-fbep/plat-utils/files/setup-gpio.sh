@@ -33,6 +33,14 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
+for i in {0..7};
+do
+  for j in {0..4};
+  do
+    gpioexp_export 7-002${i} OAM${i}_LINK_CONFIG${j} ${j}
+  done
+done
+
 # To enable GPIOA
 #devmem_clear_bit $(scu_addr 80) 0
 #devmem_clear_bit $(scu_addr 80) 1

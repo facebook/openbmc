@@ -1,0 +1,67 @@
+#!/bin/sh
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+# TODO:
+# 	Currently we set baudrate to 115200 as default
+# 	This value might be changed if OAM is different
+# FIXME:
+#	mTerm_server set default baudrate to 57600
+#	It messed up the beginning messages of OAM if
+#	the baudrate is not 57600.
+BAUD=115200
+
+usage() {
+  echo "Usage: sol-util [ slot0 | slot1 | slot2 | slot3 |"
+  echo "                  slot4 | slot5 | slot6 | slot7 ]"
+  echo "       sol-util --history"
+  exit -1
+}
+
+switch_mux_to_slot() {
+  local val
+  val=$1
+  for i in {0..3};
+  do
+    echo $((val%2)) > /tmp/gpionames/CPLD_MUX_ID$i/value
+    val=$((val/2))
+  done
+}
+
+SLOT=$1
+SLOT_NAME=${SLOT:0:4}
+SLOT_NUM=${SLOT:4}
+
+if [[ "$1" == "--history" ]]; then
+  LOGFILE="/var/log/mTerm_oam.log"
+  LOGFILE_B="/var/log/mTerm_oam_backup.log"
+  cat $LOGFILE_B $LOGFILE 2>/dev/null
+  exit 0
+elif ! [[ "$SLOT_NUM" =~ ^[0-9]+$ ]]; then
+  usage
+  exit -1
+elif [ ${#SLOT} != 5 ] || [ "$SLOT_NAME" != "slot" ] || [ $SLOT_NUM -gt 7 ]; then
+  usage
+  exit -1
+fi
+
+switch_mux_to_slot $SLOT_NUM
+/bin/stty -F /dev/ttyS1 $BAUD > /dev/null 2>&1
+
+exec /usr/local/bin/mTerm_client oam

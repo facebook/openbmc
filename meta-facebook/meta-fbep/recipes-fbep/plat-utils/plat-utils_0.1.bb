@@ -27,12 +27,16 @@ SRC_URI = "file://ast-functions \
            file://setup-usbnet.sh \
            file://setup-fan.sh \
            file://setup-por.sh \
+           file://sol-util \
            file://COPYING \
           "
 
 pkgdir = "utils"
 
 S = "${WORKDIR}"
+
+binfiles = "sol-util \
+           "
 
 RDEPENDS_${PN} += "gpiocli"
 DEPENDS_append = "update-rc.d-native"
@@ -43,6 +47,10 @@ do_install() {
   install -m 644 ast-functions ${dst}/ast-functions
   localbindir="${D}/usr/local/bin"
   install -d ${localbindir}
+  for f in ${binfiles}; do
+      install -m 755 $f ${dst}/${f}
+      ln -s ../fbpackages/${pkgdir}/${f} ${localbindir}/${f}
+  done
 
   # init
   install -d ${D}${sysconfdir}/init.d

@@ -31,6 +31,7 @@ IMAGE_INSTALL += " \
   ipmb-util \
   gpiod \
   guid-util \
+  mterm \
   "
 
 IMAGE_FEATURES += " \

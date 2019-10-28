@@ -303,7 +303,7 @@ gpio_export PRSNT1_N_ASIC0 GPIOP7
 
 # Battery voltage detect control
 gpio_export BATTERY_DETECT GPIOQ6
-gpio_set BATTERY_DETECT 1
+gpio_set BATTERY_DETECT 0
 
 # To enable GPIOR
 #devmem_clear_bit $(scu_addr 88) 25
@@ -334,6 +334,7 @@ gpio_export HSC2_THROT_N GPIOS1
 
 # Set target OAM for test
 gpio_export CPLD_MUX_ID3 GPIOS2
+gpio_set CPLD_MUX_ID3 0
 
 # PMBUS alert from HSC
 gpio_export PMBUS_BMC_1_ALERT_N GPIOS3
@@ -461,12 +462,15 @@ gpio_export SPI_BMC_BT_WP0_N GPIOAA4
 #devmem_clear_bit $(scu_addr a8) 3
 
 # TPM reset
-gpio_export RST_PLTRST_BUF_N GPIOAB0
+gpio_export RST_PLTRST_BUF_N GPIOAB2
 
 # Set target OAM for test
 gpio_export CPLD_MUX_ID0 GPIOAB1
-gpio_export CPLD_MUX_ID1 GPIOAB2
+gpio_set CPLD_MUX_ID0 0
+gpio_export CPLD_MUX_ID1 GPIOAB0
+gpio_set CPLD_MUX_ID1 0
 gpio_export CPLD_MUX_ID2 GPIOAB3
+gpio_set CPLD_MUX_ID2 0
 
 # To enable GPIOAC
 #devmem_clear_bit $(scu_addr ac) 0

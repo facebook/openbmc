@@ -588,6 +588,12 @@ pal_get_sys_guid(uint8_t slot, char *guid)
 }
 
 int __attribute__((weak))
+pal_set_sys_guid(uint8_t fru, char *guid)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_get_sysfw_ver(uint8_t slot, uint8_t *ver)
 {
   return PAL_EOK;
@@ -1428,6 +1434,12 @@ pal_log_clear(char *fru)
 
 int __attribute__((weak))
 pal_get_dev_guid(uint8_t fru, char *guid)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_set_dev_guid(uint8_t fru, char *guid)
 {
   return PAL_EOK;
 }

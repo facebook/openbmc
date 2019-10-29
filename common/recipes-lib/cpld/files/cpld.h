@@ -25,8 +25,13 @@
 extern "C" {
 #endif
 
-int cpld_intf_open(void);
-int cpld_intf_close(void);
+typedef enum {
+  INTF_I2C,
+  INTF_JTAG
+} cpld_intf_t;
+
+int cpld_intf_open(unsigned int cpld_index, cpld_intf_t intf);
+int cpld_intf_close(cpld_intf_t intf);
 int cpld_get_ver(unsigned int *ver);
 int cpld_get_device_id(unsigned int *dev_id);
 int cpld_erase(void);
@@ -36,14 +41,24 @@ int cpld_verify(char *file);
 struct cpld_dev_info {
 	const char	*name;
 	unsigned int	dev_id;
-	unsigned short	dr_bits;		//row width
-	unsigned int	row_num;		//address length
+	int (*cpld_open)(cpld_intf_t intf, unsigned char id);
+	int (*cpld_close)(cpld_intf_t intf);
 	int (*cpld_ver)(unsigned int *ver);
 	int (*cpld_erase)(void);
 	int (*cpld_program)(FILE *fd);
 	int (*cpld_verify)(FILE *fd);
 	int (*cpld_dev_id)(unsigned int *dev_id);
 };
+
+enum {
+  LCMXO2_2000HC = 0,
+  LCMXO2_4000HC,
+  LCMXO2_7000HC,
+  MAX10_10M16_PFR,
+  MAX10_10M16_MOD, 
+  UNKNOWN_DEV
+};
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -1,5 +1,3 @@
-#ifdef LATTICE_SUPPORT
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -41,29 +39,7 @@ enum
   Both_CF_UFM = 1,
 };
 
-struct cpld_dev_info lattice_device_list[] = {
-  [0] = {
-    .name = "LC LCMXO2-2000HC",
-    .dev_id = 0x012BB043,
-    .cpld_ver = LCMXO2Family_cpld_Get_Ver,
-    .cpld_program = LCMXO2Family_cpld_update,
-    .cpld_dev_id = LCMXO2Family_cpld_Get_id,
-  },
-  [1] = {
-    .name = "LC LCMXO2-4000HC",
-    .dev_id = 0x012BC043,
-    .cpld_ver = LCMXO2Family_cpld_Get_Ver,
-    .cpld_program = LCMXO2Family_cpld_update,
-    .cpld_dev_id = LCMXO2Family_cpld_Get_id,
-  },
-  [2] = {
-    .name = "LC LCMXO2-7000HC",
-    .dev_id = 0x012BD043,
-    .cpld_ver = LCMXO2Family_cpld_Get_Ver,
-    .cpld_program = LCMXO2Family_cpld_update,
-    .cpld_dev_id = LCMXO2Family_cpld_Get_id,
-  }
-};
+
 
 /*search the index of char in string*/
 static int
@@ -778,9 +754,9 @@ LCMXO2Family_cpld_Check_ID()
   printf("[%s] ID Code: %x\n", __func__, dr_data[0]);
 #endif
 
-  for (i = 0; i < ARRAY_SIZE(lattice_device_list); i++)
+  for (i = 0; i < ARRAY_SIZE(lattice_dev_list); i++)
   {
-    if (dr_data[0] == lattice_device_list[i].dev_id)
+    if (dr_data[0] == lattice_dev_list[i].dev_id)
     {
       ret = 0;
       break;
@@ -1102,17 +1078,57 @@ error_exit:
   return ret;
 }
 
-int cpld_device_open()
+static int cpld_dev_open(cpld_intf_t intf, uint8_t id)
 {
-  ast_jtag_set_mode(JTAG_XFER_HW_MODE);
-  return ast_jtag_open();
+  if (intf == INTF_JTAG) {
+    ast_jtag_set_mode(JTAG_XFER_HW_MODE);
+    return ast_jtag_open();
+  } else {
+    printf("[%s] Interface type %d is not supported\n", __func__, intf);
+    return -1;
+  }
 }
 
-int cpld_device_close()
+static int cpld_dev_close(cpld_intf_t intf)
 {
-  ast_jtag_close();
+  if (intf == INTF_JTAG) {
+    ast_jtag_close();
+  } else {
+    printf("[%s] Interface type %d is not supported\n", __func__, intf);
+  }
+
   return 0;
 }
+
+struct cpld_dev_info lattice_dev_list[] = {
+  [0] = {
+    .name = "LCMXO2-2000HC",
+    .dev_id = 0x012BB043,
+    .cpld_open = cpld_dev_open,
+    .cpld_close = cpld_dev_close,
+    .cpld_ver = LCMXO2Family_cpld_Get_Ver,
+    .cpld_program = LCMXO2Family_cpld_update,
+    .cpld_dev_id = LCMXO2Family_cpld_Get_id,
+  },
+  [1] = {
+    .name = "LCMXO2-4000HC",
+    .dev_id = 0x012BC043,
+    .cpld_open = cpld_dev_open,
+    .cpld_close = cpld_dev_close,
+    .cpld_ver = LCMXO2Family_cpld_Get_Ver,
+    .cpld_program = LCMXO2Family_cpld_update,
+    .cpld_dev_id = LCMXO2Family_cpld_Get_id,
+  },
+  [2] = {
+    .name = "LCMXO2-7000HC",
+    .dev_id = 0x012BD043,
+    .cpld_open = cpld_dev_open,
+    .cpld_close = cpld_dev_close,
+    .cpld_ver = LCMXO2Family_cpld_Get_Ver,
+    .cpld_program = LCMXO2Family_cpld_update,
+    .cpld_dev_id = LCMXO2Family_cpld_Get_id,
+  }
+};
 
 /*************************************************************************************/
 void jed_file_parse_header(FILE *jed_fd)
@@ -2295,5 +2311,3 @@ int lcmxo2_2000hc_cpld_erase(void)
 
 }
 #endif
-
-#endif /* LATTICE_SUPPORT */

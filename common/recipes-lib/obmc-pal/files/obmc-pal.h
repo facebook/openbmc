@@ -396,6 +396,10 @@ int pal_update_sensor_reading_sdr (uint8_t fru);
 int pal_set_usb_path (uint8_t slot, uint8_t endpoint);
 int pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw);
 
+void pal_get_altera_i2c_dev_info(uint8_t id, uint8_t* addr, char* path);
+void pal_get_altera_chip_info(uint8_t id, uint32_t* csr_base, uint32_t* data_base, uint32_t* boot_base);
+void pal_get_altera_cfm0_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr);
+void pal_get_altera_cfm1_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr);
 #ifdef __cplusplus
 }
 #endif

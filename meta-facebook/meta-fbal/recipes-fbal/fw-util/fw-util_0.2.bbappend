@@ -23,11 +23,11 @@ SRC_URI += "file://mcu_fw.h \
             file://bios.h \
             file://bios.cpp \
             file://platform.cpp \
-            file://me.cpp \
+            file://cpld.cpp \
            "
 
 SRC_URI_remove = "file://fscd.cpp"
 
-DEPENDS += "libmcu libnm libpal"
-RDEPENDS_${PN} += "libmcu libnm libpal"
-LDFLAGS += "-lmcu -lnm -lpal"
+DEPENDS += "libmcu libnm libpal libfpga libast-jtag"
+RDEPENDS_${PN} += "libmcu libnm libpal libfpga libast-jtag"
+LDFLAGS += "-lmcu -lnm -lpal -lfpga -last-jtag"

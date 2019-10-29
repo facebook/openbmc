@@ -1048,3 +1048,60 @@ pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver) {
    
   return ret;
 }
+
+void
+pal_get_altera_i2c_dev_info(uint8_t id, uint8_t* addr, char* path) {
+  uint8_t bus=ALTERA_CPLD_I2C_BUS;
+
+  switch (id) {
+    case PAL_MAX10_10M16_PFR:
+      *addr = ALTERA_CPLD_I2C_PFR_ADDR;
+      break;
+
+    case PAL_MAX10_10M16_MOD:
+      *addr = ALTERA_CPLD_I2C_MOD_ADDR;
+      break;
+
+    default:
+      break;
+  }
+
+  snprintf(path, MAX_DEVICE_NAME_SIZE, I2C_FILE_NAME, bus);
+  return;
+}
+
+void
+pal_get_altera_chip_info(uint8_t id, uint32_t* csr_base, uint32_t* data_base, uint32_t* boot_base) {
+  switch (id) {
+    case PAL_MAX10_10M16_PFR:
+    case PAL_MAX10_10M16_MOD:
+      *csr_base = ON_CHIP_FLASH_IP_CSR_BASE; 
+      *data_base = ON_CHIP_FLASH_IP_DATA_REG;
+      *boot_base = DUAL_BOOT_IP_BASE;
+      break;
+
+    default:
+      break;
+  }
+  return;
+}
+
+void
+pal_get_altera_cfm0_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr) {
+  return;
+}
+
+void
+pal_get_altera_cfm1_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr) {
+  switch (id) {
+    case PAL_MAX10_10M16_PFR:
+    case PAL_MAX10_10M16_MOD:
+      *start_addr = CFM1_START_ADDR;
+      *end_addr = CFM1_END_ADDR; 
+      break;
+
+    default:
+      break;
+  }
+  return;
+}

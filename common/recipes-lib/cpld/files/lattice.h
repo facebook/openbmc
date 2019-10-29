@@ -50,13 +50,7 @@ int lcmxo2_2000hc_cpld_erase(void);
 int lcmxo2_2000hc_cpld_program(FILE *jed_fd);
 int lcmxo2_2000hc_cpld_verify(FILE *jed_fd);
 #endif
-/*LCMXO2Family*/
-int LCMXO2Family_cpld_update(FILE *jed_fd);
-int LCMXO2Family_cpld_Get_Ver(unsigned int *ver);
-int LCMXO2Family_cpld_Get_id(unsigned int *dev_id);
 
-int cpld_device_open(void);
-int cpld_device_close(void);
 /*************************************************************************************/
-extern struct cpld_dev_info lattice_device_list[3];
+extern struct cpld_dev_info lattice_dev_list[3];
 #endif

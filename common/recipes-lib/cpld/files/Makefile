@@ -2,11 +2,11 @@
 
 CFLAGS += -Wall -Werror
 
-liblattice.so: cpld.c lattice.c
-	$(CC) $(CFLAGS) -fPIC -c -pthread cpld.c lattice.c
-	$(CC) -shared -o $@ cpld.o lattice.o -lc $(LDFLAGS)
+libfpga.so: cpld.c lattice.c altera.c
+	$(CC) $(CFLAGS) -fPIC -c -pthread cpld.c lattice.c altera.c
+	$(CC) -shared -o $@ cpld.o lattice.o altera.o -lc $(LDFLAGS)
 
 .PHONY: clean
 
 clean:
-	rm -rf *.o liblattice.so
+	rm -rf *.o libfpga.so

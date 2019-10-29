@@ -26,19 +26,22 @@
 #include <syslog.h>
 #include <string.h>
 #include <ctype.h>
+#include <pthread.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/obmc-i2c.h>
 #include "pal.h"
 
-#define REG_STATUS 		0x1E
-#define REG_STATUS_ON		(1 << 7)
-#define REG_STATUS_ON_PIN	(1 << 4)
-#define REG_STATUS_POWER_GOOD 	(1 << 3)
+#define LTC4282_REG_STATUS		0x1E
+#define LTC4282_REG_STATUS_ON		(1 << 7)
+#define LTC4282_REG_STATUS_ON_PIN	(1 << 4)
+#define LTC4282_REG_STATUS_POWER_GOOD	(1 << 3)
 
-#define DELAY_POWER_CYCLE 3
+#define DELAY_POWER_CYCLE 10
 #define MAX_RETRY 10
 
 #define BMC_IPMB_SLAVE_ADDR 0x16
@@ -71,6 +74,115 @@ struct pal_key_cfg {
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
+
+// Shared Memory data accrossing processes
+struct mux_shm {
+  pthread_mutex_t mutex;
+  pthread_cond_t unlock;
+  int locked;
+  time_t expiration;
+};
+
+// Data in each process
+struct mux {
+  pthread_once_t init;
+  void (*init_func)(void);
+  int bus_fd, bus_id, addr, wait_time;
+  struct mux_shm *shm;
+};
+
+static void init_mux_data_pdb_mux(void);
+struct mux pdb_mux = {
+  .init = PTHREAD_ONCE_INIT,
+  .init_func = init_mux_data_pdb_mux,
+  .bus_fd = -1,
+  .bus_id = 5,
+  .addr = 0xe0,
+  .wait_time = 3,
+  .shm = NULL,
+};
+
+static struct mux_shm *mux_get_shm(struct mux *mux)
+{
+  pthread_once(&(mux->init), mux->init_func);
+  return mux->shm;
+}
+
+static void shm_lock(struct mux_shm *shm)
+{
+  int rc = pthread_mutex_lock(&shm->mutex);
+  if (rc == EOWNERDEAD) {
+    syslog(LOG_WARNING, "Trying to recover mutex due to dead-owner\n");
+    rc = pthread_mutex_consistent(&shm->mutex);
+    if (rc != 0) {
+      syslog(LOG_ERR, "Failed to recover mutex after dead-owner: %s\n", strerror(rc));
+    } else {
+      // Switch to defaults.
+      shm->locked = 0;
+      shm->expiration = 0;
+      syslog(LOG_ERR, "Successfully recovered mutex after a dead-owner");
+      // Let any other "expired" user's lease expire.
+      sleep(1);
+    }
+  } else if (rc != 0) {
+    syslog(LOG_ERR, "Failed to lock mux: %s\n", strerror(rc));
+  }
+}
+
+static void shm_unlock(struct mux_shm *shm)
+{
+  pthread_mutex_unlock(&shm->mutex);
+}
+
+/*
+ * Release the mux
+ */
+static int mux_release (struct mux *mux)
+{
+  struct mux_shm *shm = mux_get_shm(mux);
+
+  shm_lock(shm);
+  shm->locked = 0;
+  pthread_cond_broadcast(&shm->unlock);
+  shm_unlock(shm);
+
+  return 0;
+}
+
+/*
+ * Request to use the mux
+ */
+static int mux_request (struct mux *mux, int lease_time)
+{
+  struct mux_shm *shm = mux_get_shm(mux);
+  int ret = -1;
+  struct timespec to;
+
+  clock_gettime(CLOCK_REALTIME, &to);
+  to.tv_sec += mux->wait_time;
+
+  shm_lock(shm);
+  if (shm->locked == 1 && time(NULL) > shm->expiration) {
+    mux_release(mux);
+  }
+
+  while(1) {
+    if (shm->locked == 0) {
+      shm->expiration = time(NULL) + lease_time;
+      shm->locked = 1;
+      ret = 0;
+      break;
+    }
+    ret = pthread_cond_timedwait(&shm->unlock, &shm->mutex, &to);
+    if (ret == ETIMEDOUT) {
+      syslog(LOG_WARNING, "%s wait unlock timeout\n", __func__);
+      break;
+    }
+  }
+  shm_unlock(shm);
+
+  return ret;
+}
 
 static int pal_key_index(char *key)
 {
@@ -382,15 +494,54 @@ int pal_get_dev_guid(uint8_t fru, char *guid) {
   return 0;
 }
 
-static int pal_read_hsc_reg(uint8_t id, uint8_t reg, uint8_t bytes, uint32_t *value)
+static void init_mux_data_pdb_mux(void) {
+  int fd;
+  struct stat st;
+  pthread_mutexattr_t mutex_attr;
+  pthread_condattr_t cond_attr;
+  char path[128];
+
+  fd = shm_open("/mux_data_pdb_mux", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+  flock(fd, LOCK_EX);
+
+  fstat(fd, &st);
+  ftruncate(fd, sizeof(struct mux_shm));
+  pdb_mux.shm = (struct mux_shm *)mmap(NULL, sizeof(struct mux_shm),
+    PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+  // Initialize shared memory
+  if (st.st_size < sizeof(struct mux_shm)) {
+    pthread_mutexattr_init(&mutex_attr);
+    pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+    pthread_mutexattr_setrobust(&mutex_attr, PTHREAD_MUTEX_ROBUST);
+    pthread_mutex_init(&pdb_mux.shm->mutex, &mutex_attr);
+    pthread_condattr_init(&cond_attr);
+    pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
+    pthread_cond_init(&pdb_mux.shm->unlock, &cond_attr);
+    pdb_mux.shm->locked = 0;
+    pdb_mux.shm->expiration = 0;
+  }
+
+  flock(fd, LOCK_UN);
+  close(fd);
+
+  snprintf(path, sizeof(path), "/dev/i2c-%d", pdb_mux.bus_id);
+  pdb_mux.bus_fd = open(path, O_RDWR);
+  if (pdb_mux.bus_fd < 0) {
+    syslog(LOG_ERR, "Cannot open %s\n", path);
+  }
+}
+
+int read_hsc_reg(uint8_t id, uint8_t reg, uint8_t bytes, uint32_t *value)
 {
   int ret;
-  int fd;
   int retry = MAX_RETRY;
-  uint8_t mux_addr = 0xe0;
   uint8_t addr, chan;
   uint8_t tbuf[8] = {0};
   uint8_t rbuf[8] = {0};
+
+  mux_request(&pdb_mux, 2);
 
   switch (id) {
     case HSC_1:
@@ -409,16 +560,10 @@ static int pal_read_hsc_reg(uint8_t id, uint8_t reg, uint8_t bytes, uint32_t *va
       return -1;
   }
 
-  fd = open("/dev/i2c-5", O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING,"[%s] Cannot open i2c bus", __func__);
-    return -1;
-  }
-
   // switch mux to target channel
   tbuf[0] = 0xa5; tbuf[1] = chan;
   while (retry > 0) {
-    ret = i2c_rdwr_msg_transfer(fd, mux_addr, tbuf, 2, rbuf, 0);
+    ret = i2c_rdwr_msg_transfer(pdb_mux.bus_fd, pdb_mux.addr, tbuf, 2, rbuf, 0);
     if (PAL_EOK == ret)
       break;
 
@@ -433,10 +578,10 @@ static int pal_read_hsc_reg(uint8_t id, uint8_t reg, uint8_t bytes, uint32_t *va
   // Read from register of LTC4282
   memset(tbuf, 0x0, 8);
   tbuf[0] = reg;
-  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, bytes);
+  ret = i2c_rdwr_msg_transfer(pdb_mux.bus_fd, addr, tbuf, 1, rbuf, bytes);
   if (ret < 0) {
-    syslog(LOG_WARNING,"[%s] Failed to read 0x%x from addr 0x%x on i2c-5",
-	__func__, reg, addr);
+    syslog(LOG_WARNING,"[%s] Failed to read 0x%x from addr 0x%x on i2c-%d",
+	__func__, reg, addr, pdb_mux.bus_id);
     goto exit;
   }
 
@@ -444,7 +589,7 @@ static int pal_read_hsc_reg(uint8_t id, uint8_t reg, uint8_t bytes, uint32_t *va
   memcpy(value, rbuf, bytes);
 
 exit:
-  close(fd);
+  mux_release(&pdb_mux);
   return ret;
 }
 
@@ -509,18 +654,18 @@ int pal_get_server_power(uint8_t fru, uint8_t *status)
 {
   int ret;
   uint32_t val;
-  uint32_t POWER_ON = (REG_STATUS_ON | REG_STATUS_ON_PIN | REG_STATUS_POWER_GOOD);
+  uint32_t POWER_ON = (LTC4282_REG_STATUS_ON | LTC4282_REG_STATUS_ON_PIN | LTC4282_REG_STATUS_POWER_GOOD);
 
   if (fru != FRU_BASE)
     return -1;
 
-  ret = pal_read_hsc_reg(HSC_1, REG_STATUS, 1, &val);
+  ret = read_hsc_reg(HSC_1, LTC4282_REG_STATUS, 1, &val);
   if (ret < 0)
     return -1;
 
   *status = val == POWER_ON? 1: 0;
 
-  ret = pal_read_hsc_reg(HSC_2, REG_STATUS, 1, &val);
+  ret = read_hsc_reg(HSC_2, LTC4282_REG_STATUS, 1, &val);
   if (ret < 0)
     return -1;
 
@@ -722,8 +867,10 @@ void pal_get_chassis_status(uint8_t fru, uint8_t *req_data, uint8_t *res_data, u
 int pal_sled_cycle(void)
 {
   // switch the mux and reboot LTC4282 for 12V
+  mux_request(&pdb_mux, 2);
   system("i2cset -y 5 0x70 0xa5 0x6");
   system("i2cset -y 5 0x43 0x1d 0x80");
+  mux_release(&pdb_mux);
 
   return 0;
 }
@@ -736,4 +883,3 @@ int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
   *status = 1;
   return 0;
 }
-

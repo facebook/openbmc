@@ -69,6 +69,8 @@ enum {
 #define MAX_NUM_FRUS 1
 #define MAX_NODES    1
 
+int read_hsc_reg(uint8_t id, uint8_t reg, uint8_t bytes, uint32_t *value);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

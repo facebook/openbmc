@@ -31,6 +31,7 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <pthread.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/obmc-i2c.h>
@@ -831,9 +832,17 @@ int pal_set_server_power(uint8_t fru, uint8_t cmd)
   return 0;
 }
 
+void* sled_cycle_handler(void* arg)
+{
+  sleep(4);
+  pal_sled_cycle();
+  pthread_exit(0);
+}
+
 int pal_chassis_control(uint8_t fru, uint8_t *req_data, uint8_t req_len)
 {
-  int ret;
+  int ret = 0;
+  pthread_t tid;
 
   if (req_len != 1) {
     return CC_INVALID_LENGTH;
@@ -848,6 +857,12 @@ int pal_chassis_control(uint8_t fru, uint8_t *req_data, uint8_t req_len)
       break;
     case 0x02:  // power cycle
       ret = pal_set_server_power(fru, SERVER_POWER_CYCLE);
+      break;
+    case 0xAC:  // sled-cycle with delay 4 secs
+      if (pthread_create(&tid, NULL, sled_cycle_handler, NULL) < 0) {
+        syslog(LOG_WARNING, "ipmid: bbv_power_cycle_handler pthread_create failed\n");
+	ret = -1;
+      }
       break;
     default:
       return CC_INVALID_DATA_FIELD;

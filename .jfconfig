@@ -72,6 +72,7 @@
                     ]
                 }
             ],
+            "scheduleType": "diff",
             "tags": [
                 "openbmc_git"
             ]
@@ -104,6 +105,7 @@
                     ]
                 }
             ],
+            "scheduleType": "diff",
             "tags": [
                 "openbmc_git"
             ]
@@ -136,6 +138,7 @@
                     ]
                 }
             ],
+            "scheduleType": "diff",
             "tags": [
                 "openbmc_git"
             ]
@@ -168,6 +171,7 @@
                     ]
                 }
             ],
+            "scheduleType": "diff",
             "tags": [
                 "openbmc_git"
             ]
@@ -205,6 +209,7 @@
                     ]
                 }
             ],
+            "scheduleType": "diff",
             "tags": [
                 "openbmc_git"
             ]
@@ -237,6 +242,7 @@
                     ]
                 }
             ],
+            "scheduleType": "diff",
             "tags": [
                 "openbmc_git"
             ]
@@ -269,6 +275,7 @@
                     ]
                 }
             ],
+            "scheduleType": "diff",
             "tags": [
                 "openbmc_git"
             ]
@@ -301,6 +308,7 @@
                     ]
                 }
             ],
+            "scheduleType": "diff",
             "tags": [
                 "openbmc_git"
             ]

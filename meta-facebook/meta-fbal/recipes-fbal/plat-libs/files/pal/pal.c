@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <ctype.h>
 #include <errno.h>
 #include <syslog.h>
 #include <string.h>
@@ -29,18 +30,22 @@
 #include <time.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <sys/time.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/nm.h>
 #include <facebook/fbal_fruid.h>
 #include "pal.h"
 
-
 #define FBAL_PLATFORM_NAME "angelslanding"
 #define LAST_KEY "last_key"
 
 #define GPIO_LOCATE_LED "FP_LOCATE_LED"
 #define GPIO_FAULT_LED "FP_FAULT_LED_N"
+
+#define GUID_SIZE 16
+#define OFFSET_SYS_GUID 0x17F0
+#define OFFSET_DEV_GUID 0x1800
 
 const char pal_fru_list[] = "all, mb, nic0, nic1, pdb";
 const char pal_server_list[] = "mb";
@@ -950,7 +955,7 @@ pal_uart_select_led_set(void) {
      return -1;
   }
   pre_channel = channel;
- 
+
   //show channel on 7-segment display
   pal_uart_select(AST_GPIO_BASE, SEVEN_SEGMENT_OFFSET, SET_SEVEN_SEGMENT, channel); 
   return 0;
@@ -1022,7 +1027,7 @@ pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_
 }
 
 // Get ME Firmware Version
-int 
+int
 pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver) {
   ipmi_dev_id_t dev_id;
   NM_RW_INFO info;
@@ -1034,18 +1039,18 @@ pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver) {
   if (ret != 0) {
     return ret;
   }
- 
+
   ret = cmd_NM_get_dev_id(&info, &dev_id);
   if (ret != 0) {
     return ret;
   }
- 
+
   ver[0] = dev_id.fw_rev1;
   ver[1] = dev_id.fw_rev2;
   ver[2] = dev_id.aux_fw_rev[0];
   ver[3] = dev_id.aux_fw_rev[1];
   ver[4] = dev_id.aux_fw_rev[2];
-   
+
   return ret;
 }
 
@@ -1104,4 +1109,167 @@ pal_get_altera_cfm1_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr) {
       break;
   }
   return;
+}
+// GUID for System and Device
+static int
+pal_get_guid(uint16_t offset, char *guid) {
+  int fd;
+  ssize_t bytes_rd;
+
+  errno = 0;
+
+  // check for file presence
+  if (access(FRU_EEPROM_MB, F_OK)) {
+    syslog(LOG_ERR, "pal_get_guid: unable to access %s: %s", FRU_EEPROM_MB, strerror(errno));
+    return errno;
+  }
+
+  fd = open(FRU_EEPROM_MB, O_RDONLY);
+  if (fd < 0) {
+    syslog(LOG_ERR, "pal_get_guid: unable to open %s: %s", FRU_EEPROM_MB, strerror(errno));
+    return errno;
+  }
+
+  lseek(fd, offset, SEEK_SET);
+
+  bytes_rd = read(fd, guid, GUID_SIZE);
+  if (bytes_rd != GUID_SIZE) {
+    syslog(LOG_ERR, "pal_get_guid: read from %s failed: %s", FRU_EEPROM_MB, strerror(errno));
+  }
+
+  close(fd);
+  return errno;
+}
+
+static int
+pal_set_guid(uint16_t offset, char *guid) {
+  int fd;
+  ssize_t bytes_wr;
+
+  errno = 0;
+
+  // check for file presence
+  if (access(FRU_EEPROM_MB, F_OK)) {
+    syslog(LOG_ERR, "pal_set_guid: unable to access %s: %s", FRU_EEPROM_MB, strerror(errno));
+    return errno;
+  }
+
+  fd = open(FRU_EEPROM_MB, O_WRONLY);
+  if (fd < 0) {
+    syslog(LOG_ERR, "pal_set_guid: unable to open %s: %s", FRU_EEPROM_MB, strerror(errno));
+    return errno;
+  }
+
+  lseek(fd, offset, SEEK_SET);
+
+  bytes_wr = write(fd, guid, GUID_SIZE);
+  if (bytes_wr != GUID_SIZE) {
+    syslog(LOG_ERR, "pal_set_guid: write to %s failed: %s", FRU_EEPROM_MB, strerror(errno));
+  }
+
+  close(fd);
+  return errno;
+}
+
+// GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
+static void
+pal_populate_guid(char *guid, char *str) {
+  unsigned int secs;
+  unsigned int usecs;
+  struct timeval tv;
+  uint8_t count;
+  uint8_t lsb, msb;
+  int i, r;
+
+  // Populate time
+  gettimeofday(&tv, NULL);
+
+  secs = tv.tv_sec;
+  usecs = tv.tv_usec;
+  guid[0] = usecs & 0xFF;
+  guid[1] = (usecs >> 8) & 0xFF;
+  guid[2] = (usecs >> 16) & 0xFF;
+  guid[3] = (usecs >> 24) & 0xFF;
+  guid[4] = secs & 0xFF;
+  guid[5] = (secs >> 8) & 0xFF;
+  guid[6] = (secs >> 16) & 0xFF;
+  guid[7] = (secs >> 24) & 0x0F;
+
+  // Populate version
+  guid[7] |= 0x10;
+
+  // Populate clock seq with randmom number
+  //getrandom(&guid[8], 2, 0);
+  srand(time(NULL));
+  //memcpy(&guid[8], rand(), 2);
+  r = rand();
+  guid[8] = r & 0xFF;
+  guid[9] = (r>>8) & 0xFF;
+
+  // Use string to populate 6 bytes unique
+  // e.g. LSP62100035 => 'S' 'P' 0x62 0x10 0x00 0x35
+  count = 0;
+  for (i = strlen(str)-1; i >= 0; i--) {
+    if (count == 6) {
+      break;
+    }
+
+    // If alphabet use the character as is
+    if (isalpha(str[i])) {
+      guid[15-count] = str[i];
+      count++;
+      continue;
+    }
+
+    // If it is 0-9, use two numbers as BCD
+    lsb = str[i] - '0';
+    if (i > 0) {
+      i--;
+      if (isalpha(str[i])) {
+        i++;
+        msb = 0;
+      } else {
+        msb = str[i] - '0';
+      }
+    } else {
+      msb = 0;
+    }
+    guid[15-count] = (msb << 4) | lsb;
+    count++;
+  }
+
+  // zero the remaining bytes, if any
+  if (count != 6) {
+    memset(&guid[10], 0, 6-count);
+  }
+
+  return;
+}
+
+int
+pal_get_sys_guid(uint8_t fru, char *guid) {
+  pal_get_guid(OFFSET_SYS_GUID, guid);
+  return 0;
+}
+
+int
+pal_set_sys_guid(uint8_t fru, char *str) {
+  char guid[GUID_SIZE] = {0};
+
+  pal_populate_guid(guid, str);
+  return pal_set_guid(OFFSET_SYS_GUID, guid);
+}
+
+int
+pal_get_dev_guid(uint8_t fru, char *guid) {
+  pal_get_guid(OFFSET_DEV_GUID, guid);
+  return 0;
+}
+
+int
+pal_set_dev_guid(uint8_t fru, char *str) {
+  char guid[GUID_SIZE] = {0};
+
+  pal_populate_guid(guid, str);
+  return pal_set_guid(OFFSET_DEV_GUID, guid);
 }

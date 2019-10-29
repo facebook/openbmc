@@ -48,8 +48,8 @@ main(int argc, char **argv) {
   int ret;
   int check_key;
   int mem_fd;
-  uint8_t key[MAX_KEY_LEN] = {0};
-  uint8_t val[MAX_VALUE_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char val[MAX_VALUE_LEN] = {0};
   uint8_t *bmc_reboot_base;
 
   // Handle boundary checks

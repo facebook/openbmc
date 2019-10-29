@@ -3,7 +3,7 @@ all: cfg-util
 
 
 cfg-util: cfg-util.o
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

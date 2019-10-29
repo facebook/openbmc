@@ -268,7 +268,7 @@ print_usage() {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 3) {
+  if (argc != 3 && argc != 4) {
     print_usage();
     exit(1);
   }
@@ -276,6 +276,7 @@ int main(int argc, char **argv) {
   char *stty, *dev;
   dev = argv[1];
   stty = argv[2];
+  baudrate = (argc == 4)? atoi(argv[3]): BAUDRATE;
 
   int ret;
   char file[PATH_SIZE];

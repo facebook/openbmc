@@ -49,7 +49,7 @@ static int setRaw(int tty_fd, struct termios* old_ttytio,
   cfmakeraw(new_ttytio);
 
   if (setBaudRate) {
-    cfsetspeed(new_ttytio, BAUDRATE);
+    cfsetspeed(new_ttytio, baudrate);
   }
   tcflush(tty_fd, TCIFLUSH);
 

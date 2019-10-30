@@ -38,6 +38,12 @@ enum {
   PROTECT_SEC_ID_1 = 0x1<<23,
 };
 
+enum {
+	CFM_IMAGE_NONE = 0,
+	CFM_IMAGE_1,
+	CFM_IMAGE_2,
+};
+
 // According to QSYS setting in FPGA project
 static int g_i2c_file = 0;
 static uint8_t g_i2c_bridge_addr = 0;
@@ -53,9 +59,10 @@ static uint32_t g_flash_data_reg = 0;
 // Dual-boot IP
 static uint32_t g_dual_boot_base = 0;
 
-// CFM1 Info
-static uint32_t g_cfm1_start_addr = 0;
-static uint32_t g_cfm1_end_addr = 0; 
+// CFM Info
+static uint32_t g_cfm_start_addr = 0;
+static uint32_t g_cfm_end_addr = 0;
+static uint32_t g_cfm_image_type = 0;
 
 int set_i2c_register(int file, uint8_t addr, int reg, int value)
 {
@@ -606,9 +613,9 @@ int max10_cpld_cfm_update(FILE *fd)
   readbytes = read(fileno(fd), rpd_file_buff, rpd_filesize);
   printf("read(), ret = %d. \r\n", readbytes);
 
-  cfm_start_addr = g_cfm1_start_addr;
-  cfm_end_addr = g_cfm1_end_addr;
-  image_type = CFM_IMAGE_2;
+  cfm_start_addr = g_cfm_start_addr;
+  cfm_end_addr = g_cfm_end_addr;
+  image_type = g_cfm_image_type;
   max10_update_rpd(rpd_file_buff, image_type, cfm_start_addr, cfm_end_addr);
 
   free(rpd_file_buff);
@@ -628,24 +635,26 @@ static void max10_dev_init(uint8_t id)
   uint32_t data_base;
   uint32_t boot_base;
   uint32_t start_addr;
-  uint32_t end_addr; 
+  uint32_t end_addr;
+  uint8_t img_type;
 
   pal_get_altera_i2c_dev_info(id, &addr, g_i2c_file_dp);
   pal_get_altera_chip_info(id, &csr_base, &data_base, &boot_base);
-  pal_get_altera_cfm1_info(id, &start_addr, &end_addr);
+  pal_get_altera_cfm_info(id, &start_addr, &end_addr, &img_type);
 
   g_i2c_bridge_addr = addr;
   g_flash_csr_base = csr_base;
   g_flash_csr_status_reg = g_flash_csr_base + 0x00;
   g_flash_csr_ctrl_reg = g_flash_csr_base + 0x04;
   g_flash_data_reg = data_base;
-  g_dual_boot_base = DUAL_BOOT_IP_BASE;
-  g_cfm1_start_addr = CFM1_START_ADDR;
-  g_cfm1_end_addr = CFM1_END_ADDR;
+  g_dual_boot_base = boot_base;
+  g_cfm_start_addr = start_addr;
+  g_cfm_end_addr = end_addr;
+  g_cfm_image_type = img_type; 
 
   printf("%s file dp=%s\n", __func__, g_i2c_file_dp); 
   printf("base reg=%x, status_reg=%x, ctrl_reg=%x\n", g_flash_csr_base, g_flash_csr_status_reg, g_flash_csr_ctrl_reg);
-  printf("cfm1 start addr=%x, endaddr=%x\n", g_cfm1_start_addr, g_cfm1_end_addr);
+  printf("cfm start addr=%x, endaddr=%x\n", g_cfm_start_addr, g_cfm_end_addr);
   return;   
 } 
 

@@ -64,6 +64,12 @@ enum key_event {
   KEY_AFTER_INI,
 };
 
+enum {
+  CFM_IMAGE_NONE = 0,
+  CFM_IMAGE_1,
+  CFM_IMAGE_2,
+};
+
 struct pal_key_cfg {
   char *name;
   char *def_val;
@@ -1092,17 +1098,13 @@ pal_get_altera_chip_info(uint8_t id, uint32_t* csr_base, uint32_t* data_base, ui
 }
 
 void
-pal_get_altera_cfm0_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr) {
-  return;
-}
-
-void
-pal_get_altera_cfm1_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr) {
+pal_get_altera_cfm_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr, uint8_t* img_type) {
   switch (id) {
     case PAL_MAX10_10M16_PFR:
     case PAL_MAX10_10M16_MOD:
-      *start_addr = CFM1_START_ADDR;
-      *end_addr = CFM1_END_ADDR; 
+      *start_addr = CFM0_START_ADDR;
+      *end_addr = CFM0_END_ADDR;
+      *img_type = CFM_IMAGE_1; 
       break;
 
     default:

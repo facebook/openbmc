@@ -62,8 +62,11 @@ extern "C" {
 #define ON_CHIP_FLASH_IP_DATA_REG        (0x00000000)
 // Dual-boot IP
 #define DUAL_BOOT_IP_BASE                (0x00100000)
+#define CFM0_START_ADDR                  (0x0004A000)
+#define CFM0_END_ADDR                    (0x0008BFFF)
 #define CFM1_START_ADDR                  (0x00008000)
 #define CFM1_END_ADDR                    (0x00049FFF)
+
 
 
 extern size_t pal_pwm_cnt;

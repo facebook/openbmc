@@ -3,12 +3,6 @@
 
 #define MAX10_RETRY_TIMEOUT  (100)
 
-enum {
-	CFM_IMAGE_NONE = 0,
-	CFM_IMAGE_1,
-	CFM_IMAGE_2,
-};
-
 typedef enum{
 	CONFIG_0,
 	CONFIG_1,

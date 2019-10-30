@@ -181,7 +181,12 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, char *path) {
 
   // Stop ipmbd
   snprintf(cmd, sizeof(cmd), "sv stop ipmbd_%d", bus);
-  system(cmd);
+  if (system(cmd)) {
+    syslog(LOG_ERR, "%s: stop ipmbd for bus#%d", __func__, bus);
+    close(ifd);
+    close(fd);
+    return -1;
+  }
   printf("Stopped ipmbd_%d...\n", bus);
   msleep(500);
 
@@ -207,7 +212,10 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, char *path) {
 
     // Restart IPMB daemon with "-u|--enable-bic-update" for bic update
     snprintf(cmd, sizeof(cmd), "/usr/local/bin/ipmbd -u %d %d > /dev/null 2>&1 &", bus, i);
-    system(cmd);
+    if (system(cmd)) {
+      syslog(LOG_CRIT, "Starting IPMB on bus %d failed!\n", bus);
+      goto error_exit;
+    }
     printf("start ipmbd_%d -u...\n", bus);
     sleep(2);
 
@@ -215,7 +223,10 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, char *path) {
 
     // Kill ipmbd "--enable-bic-update" for this slot
     snprintf(cmd, sizeof(cmd), "ps | grep -v 'grep' | grep 'ipmbd -u %d' |awk '{print $1}'| xargs kill", bus);
-    system(cmd);
+    if (system(cmd)) {
+      syslog(LOG_CRIT, "Stopping IPMB on bus: %d failed\n", bus);
+      goto error_exit;
+    }
     printf("stop ipmbd_%d -u...\n", bus);
 
     // To wait for MCU reset to bootloader for updating
@@ -398,7 +409,9 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, char *path) {
 error_exit:
   // Restart ipmbd
   snprintf(cmd, sizeof(cmd), "sv start ipmbd_%d", bus);
-  system(cmd);
+  if (system(cmd)) {
+    syslog(LOG_CRIT, "Starting ipmbd on bus %d failed\n", bus);
+  }
 
   close(fd);
   close(ifd);

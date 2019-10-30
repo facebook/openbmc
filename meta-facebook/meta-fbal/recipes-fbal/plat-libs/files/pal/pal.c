@@ -57,7 +57,6 @@ const char pal_tach_list[] = "0, 1";
 
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
-static int key_func_ntp (int event, void *arg);
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -85,7 +84,7 @@ struct pal_key_cfg {
   {"nic_sensor_health", "1", NULL},
   {"server_sel_error", "1", NULL},
   {"server_boot_order", "0100090203ff", NULL},
-  {"ntp_server", "", key_func_ntp},
+  {"ntp_server", "", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
@@ -236,41 +235,6 @@ key_func_lps (int event, void *arg) {
     case KEY_AFTER_INI:
       kv_get("pwr_server_last_state", value, NULL, KV_FPERSIST);
       fw_setenv("por_ls", value);
-      break;
-  }
-
-  return 0;
-}
-
-static int
-key_func_ntp (int event, void *arg) {
-  char cmd[MAX_VALUE_LEN] = {0};
-  char ntp_server_new[MAX_VALUE_LEN] = {0};
-  char ntp_server_old[MAX_VALUE_LEN] = {0};
-
-  switch (event) {
-    case KEY_BEFORE_SET:
-      // Remove old NTP server
-      kv_get("ntp_server", ntp_server_old, NULL, KV_FPERSIST);
-      if (strlen(ntp_server_old) > 2) {
-        snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^restrict %s$/d' /etc/ntp.conf", ntp_server_old);
-        system(cmd);
-        snprintf(cmd, MAX_VALUE_LEN, "sed -i '/^server %s$/d' /etc/ntp.conf", ntp_server_old);
-        system(cmd);
-      }
-      // Add new NTP server
-      snprintf(ntp_server_new, MAX_VALUE_LEN, "%s", (char *)arg);
-      if (strlen(ntp_server_new) > 2) {
-        snprintf(cmd, MAX_VALUE_LEN, "echo \"restrict %s\" >> /etc/ntp.conf", ntp_server_new);
-        system(cmd);
-        snprintf(cmd, MAX_VALUE_LEN, "echo \"server %s\" >> /etc/ntp.conf", ntp_server_new);
-        system(cmd);
-      }
-      // Restart NTP server
-      snprintf(cmd, MAX_VALUE_LEN, "/etc/init.d/ntpd restart > /dev/null &");
-      system(cmd);
-      break;
-    case KEY_AFTER_INI:
       break;
   }
 

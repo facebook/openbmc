@@ -120,7 +120,6 @@ static uint8_t postcodes_last[256] = {0};
 
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
-static int key_func_ntp (int event, void *arg);
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -142,7 +141,7 @@ struct pal_key_cfg {
   {"nic_sensor_health", "1", NULL},
   {"server_sel_error", "1", NULL},
   {"server_boot_order", "0100090203ff", NULL},
-  {"ntp_server", "", key_func_ntp},
+  {"ntp_server", "", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
@@ -2904,53 +2903,6 @@ key_func_lps (int event, void *arg)
   }
 
   return ret;
-}
-
-static int
-key_func_ntp (int event, void *arg)
-{
-  char cmd[MAX_VALUE_LEN + 64] = {0};
-  char ntp_server_new[MAX_VALUE_LEN] = {0};
-  char ntp_server_old[MAX_VALUE_LEN] = {0};
-
-  switch (event) {
-    case KEY_BEFORE_SET:
-      // Remove old NTP server
-      kv_get("ntp_server", ntp_server_old, NULL, KV_FPERSIST);
-      if (strlen(ntp_server_old) > 2) {
-        snprintf(cmd, sizeof(cmd), "sed -i '/^restrict %s$/d' /etc/ntp.conf", ntp_server_old);
-        if (system(cmd) != 0) {
-          syslog(LOG_WARNING, "NTP: restrict conf not removed\n");
-        }
-        snprintf(cmd, sizeof(cmd), "sed -i '/^server %s$/d' /etc/ntp.conf", ntp_server_old);
-        if (system(cmd) != 0) {
-          syslog(LOG_WARNING, "NTP: Server conf not removed\n");
-        }
-      }
-      // Add new NTP server
-      snprintf(ntp_server_new, MAX_VALUE_LEN, "%s", (char *)arg);
-      if (strlen(ntp_server_new) > 2) {
-        snprintf(cmd, sizeof(cmd), "echo \"restrict %s\" >> /etc/ntp.conf", ntp_server_new);
-        if (system(cmd) != 0) {
-          syslog(LOG_ERR, "NTP: restrict conf not added\n");
-        }
-        snprintf(cmd, sizeof(cmd), "echo \"server %s\" >> /etc/ntp.conf", ntp_server_new);
-        if (system(cmd) != 0) {
-          syslog(LOG_ERR, "NTP: server conf not added\n");
-        }
-      }
-      // Restart NTP server
-      snprintf(cmd, sizeof(cmd), "/etc/init.d/ntpd restart > /dev/null &");
-      if (system(cmd) != 0) {
-        syslog(LOG_ERR, "NTP server restart failed\n");
-        return -1;
-      }
-      break;
-    case KEY_AFTER_INI:
-      break;
-  }
-
-  return 0;
 }
 
 static void

@@ -4225,28 +4225,20 @@ sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[SMB_SENSOR_FCM_HSC_CURR][UCR_THRESH] = 40;
       smb_sensor_threshold[SMB_SENSOR_FCM_HSC_POWER][UCR_THRESH] = 288;
       smb_sensor_threshold[SMB_SENSOR_FAN1_FRONT_TACH][UCR_THRESH] = 15000;
-      smb_sensor_threshold[SMB_SENSOR_FAN1_FRONT_TACH][UNC_THRESH] = 8500;
       smb_sensor_threshold[SMB_SENSOR_FAN1_FRONT_TACH][LCR_THRESH] = 1000;
       smb_sensor_threshold[SMB_SENSOR_FAN1_REAR_TACH][UCR_THRESH] = 15000;
-      smb_sensor_threshold[SMB_SENSOR_FAN1_REAR_TACH][UNC_THRESH] = 8500;
       smb_sensor_threshold[SMB_SENSOR_FAN1_REAR_TACH][LCR_THRESH] = 1000;
       smb_sensor_threshold[SMB_SENSOR_FAN2_FRONT_TACH][UCR_THRESH] = 15000;
-      smb_sensor_threshold[SMB_SENSOR_FAN2_FRONT_TACH][UNC_THRESH] = 8500;
       smb_sensor_threshold[SMB_SENSOR_FAN2_FRONT_TACH][LCR_THRESH] = 1000;
       smb_sensor_threshold[SMB_SENSOR_FAN2_REAR_TACH][UCR_THRESH] = 15000;
-      smb_sensor_threshold[SMB_SENSOR_FAN2_REAR_TACH][UNC_THRESH] = 8500;
       smb_sensor_threshold[SMB_SENSOR_FAN2_REAR_TACH][LCR_THRESH] = 1000;
       smb_sensor_threshold[SMB_SENSOR_FAN3_FRONT_TACH][UCR_THRESH] = 15000;
-      smb_sensor_threshold[SMB_SENSOR_FAN3_FRONT_TACH][UNC_THRESH] = 8500;
       smb_sensor_threshold[SMB_SENSOR_FAN3_FRONT_TACH][LCR_THRESH] = 1000;
       smb_sensor_threshold[SMB_SENSOR_FAN3_REAR_TACH][UCR_THRESH] = 15000;
-      smb_sensor_threshold[SMB_SENSOR_FAN3_REAR_TACH][UNC_THRESH] = 8500;
       smb_sensor_threshold[SMB_SENSOR_FAN3_REAR_TACH][LCR_THRESH] = 1000;
       smb_sensor_threshold[SMB_SENSOR_FAN4_FRONT_TACH][UCR_THRESH] = 15000;
-      smb_sensor_threshold[SMB_SENSOR_FAN4_FRONT_TACH][UNC_THRESH] = 8500;
       smb_sensor_threshold[SMB_SENSOR_FAN4_FRONT_TACH][LCR_THRESH] = 1000;
       smb_sensor_threshold[SMB_SENSOR_FAN4_REAR_TACH][UCR_THRESH] = 15000;
-      smb_sensor_threshold[SMB_SENSOR_FAN4_REAR_TACH][UNC_THRESH] = 8500;
       smb_sensor_threshold[SMB_SENSOR_FAN4_REAR_TACH][LCR_THRESH] = 1000;
       break;
     case FRU_PEM1:
@@ -4259,10 +4251,8 @@ sensor_thresh_array_init(uint8_t fru) {
       pem_sensor_threshold[PEM1_SENSOR_CURR+(i*PEM1_SENSOR_CNT)][UCR_THRESH] = 83.2;
       pem_sensor_threshold[PEM1_SENSOR_POWER+(i*PEM1_SENSOR_CNT)][UCR_THRESH] = 1144;
       pem_sensor_threshold[PEM1_SENSOR_FAN1_TACH+(i*PEM1_SENSOR_CNT)][UCR_THRESH] = 23000;
-      pem_sensor_threshold[PEM1_SENSOR_FAN1_TACH+(i*PEM1_SENSOR_CNT)][UNC_THRESH] = 23000;
       pem_sensor_threshold[PEM1_SENSOR_FAN1_TACH+(i*PEM1_SENSOR_CNT)][LCR_THRESH] = 1000;
       pem_sensor_threshold[PEM1_SENSOR_FAN2_TACH+(i*PEM1_SENSOR_CNT)][UCR_THRESH] = 23000;
-      pem_sensor_threshold[PEM1_SENSOR_FAN2_TACH+(i*PEM1_SENSOR_CNT)][UNC_THRESH] = 23000;
       pem_sensor_threshold[PEM1_SENSOR_FAN2_TACH+(i*PEM1_SENSOR_CNT)][LCR_THRESH] = 1000;
       pem_sensor_threshold[PEM1_SENSOR_TEMP1+(i*PEM1_SENSOR_CNT)][UCR_THRESH] = 95;
       pem_sensor_threshold[PEM1_SENSOR_TEMP1+(i*PEM1_SENSOR_CNT)][UNC_THRESH] = 85;
@@ -4285,7 +4275,6 @@ sensor_thresh_array_init(uint8_t fru) {
       psu_sensor_threshold[PSU1_SENSOR_12V_POWER+(i*PSU1_SENSOR_CNT)][UCR_THRESH] = 1500;
       psu_sensor_threshold[PSU1_SENSOR_STBY_POWER+(i*PSU1_SENSOR_CNT)][UCR_THRESH] = 16.5;
       psu_sensor_threshold[PSU1_SENSOR_FAN_TACH+(i*PSU1_SENSOR_CNT)][UCR_THRESH] = 26500;
-      psu_sensor_threshold[PSU1_SENSOR_FAN_TACH+(i*PSU1_SENSOR_CNT)][UNC_THRESH] = 8500;
       psu_sensor_threshold[PSU1_SENSOR_FAN_TACH+(i*PSU1_SENSOR_CNT)][LCR_THRESH] = 1000;
       psu_sensor_threshold[PSU1_SENSOR_TEMP1+(i*PSU1_SENSOR_CNT)][UCR_THRESH] = 65;
       psu_sensor_threshold[PSU1_SENSOR_TEMP2+(i*PSU1_SENSOR_CNT)][UCR_THRESH] = 100;

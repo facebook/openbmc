@@ -21,7 +21,6 @@ SRC_URI += "file://nic.cpp \
             file://cpld.cpp \
            "
 
-DEPENDS += "liblattice libast-jtag"
-RDEPENDS_${PN} += "liblattice libast-jtag"
-LDFLAGS += " -llattice -last-jtag"
-CXXFLAGS += " -DLATTICE_SUPPORT"
+DEPENDS += "libfpga libast-jtag"
+RDEPENDS_${PN} += "libfpga libast-jtag"
+LDFLAGS += " -lfpga -last-jtag"

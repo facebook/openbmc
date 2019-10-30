@@ -493,7 +493,7 @@ sensor_thresh_array_init() {
   //DPB HDD Temp
   for(i = 0 ; i < 36 ; i++) {
     assign_sensor_threshold(FRU_DPB, DPB_SENSOR_HDD_0 + i,
-      65, 0, 0, 0, 0, 0, 0, 0);
+      60, 0, 0, 0, 0, 0, 0, 0);
   }
   assign_sensor_threshold(FRU_DPB, AIRFLOW,
       0, 0, 0, 0, 0, 0, 0, 0);

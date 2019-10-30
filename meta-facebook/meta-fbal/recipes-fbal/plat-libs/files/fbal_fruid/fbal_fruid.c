@@ -177,7 +177,10 @@ fbal_read_pdb_fruid(uint8_t fru_id, const char *path, int fru_size) {
 
       // Ignore the first byte as it indicates length of response
       rlen -= 1;
-      write(fd, &rbuf[1], rlen);
+      if (write(fd, &rbuf[1], rlen) != rlen) {
+        ret = -1;
+        break;
+      }
 
       // Update offset
       offset += rlen;

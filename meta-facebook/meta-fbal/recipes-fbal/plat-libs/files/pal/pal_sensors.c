@@ -1481,7 +1481,7 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   case FRU_NIC0:
   case FRU_NIC1:
   case FRU_PDB:
-    sprintf(name, sensor_map[sensor_num].snr_name);
+    sprintf(name, "%s", sensor_map[sensor_num].snr_name);
     break;
     
   default:

@@ -179,7 +179,7 @@ ierr_mcerr_event_log(bool is_caterr, const char *err_type) {
 
   sprintf(temp_syslog, "ASSERT: CPU%s %s\n", cpu_str, err_type);
   sprintf(temp_log, "CPU%s %s", cpu_str, err_type);
-  syslog(LOG_CRIT, temp_syslog);
+  syslog(LOG_CRIT, "%s", temp_syslog);
   pal_add_cri_sel(temp_log);
 
   return ret;
@@ -255,7 +255,9 @@ ierr_mcerr_event_handler() {
           g_msmi_irq--;
           msmi_cnt = 0;
           pal_set_fault_led(FRU_MB, FAULT_LED_ON );
-          system("/usr/local/bin/autodump.sh &");
+          if (system("/usr/local/bin/autodump.sh &")) {
+            syslog(LOG_CRIT, "Failed to start crashdump\n");
+          }
 
         } else if (g_msmi_irq > 1) {
           while (g_msmi_irq > 1) {

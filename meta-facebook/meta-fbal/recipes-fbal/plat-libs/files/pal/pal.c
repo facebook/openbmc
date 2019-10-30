@@ -162,7 +162,7 @@ fw_getenv(char *key, char *value) {
   return 0;
 }
 
-static void 
+static int
 fw_setenv(char *key, char *value) {
   char old_value[MAX_VALUE_LEN] = {0};
   if (fw_getenv(key, old_value) != 0 ||
@@ -172,8 +172,9 @@ fw_setenv(char *key, char *value) {
      * what we want set */
     char cmd[MAX_VALUE_LEN] = {0};
     snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv %s %s", key, value);
-    system(cmd);
+    return system(cmd);
   }
+  return 0;
 }
 
 //Overwrite the one in obmc-pal.c without systme call of flashcp check
@@ -200,6 +201,7 @@ pal_is_fw_update_ongoing(uint8_t fruid) {
 static int
 key_func_por_policy (int event, void *arg) {
   char value[MAX_VALUE_LEN] = {0};
+  int ret = -1;
 
   switch (event) {
     case KEY_BEFORE_SET:
@@ -207,7 +209,7 @@ key_func_por_policy (int event, void *arg) {
         return -1;
       // sync to env
       if ( !strcmp(arg,"lps") || !strcmp(arg,"on") || !strcmp(arg,"off")) {
-        fw_setenv("por_policy", (char *)arg);
+        ret = fw_setenv("por_policy", (char *)arg);
       }
       else
         return -1;
@@ -215,11 +217,11 @@ key_func_por_policy (int event, void *arg) {
     case KEY_AFTER_INI:
       // sync to env
       kv_get("server_por_cfg", value, NULL, KV_FPERSIST);
-      fw_setenv("por_policy", value);
+      ret = fw_setenv("por_policy", value);
       break;
   }
 
-  return 0;
+  return ret;
 }
 
 static int
@@ -248,7 +250,9 @@ pal_is_bmc_por(void) {
 
   fp = fopen("/tmp/ast_por", "r");
   if (fp != NULL) {
-    fscanf(fp, "%d", &por);
+    if (fscanf(fp, "%d", &por) != 1) {
+      por = 0;
+    }
     fclose(fp);
   }
 
@@ -850,7 +854,10 @@ pal_fw_update_prepare(uint8_t fru, const char *comp) {
       return -1;
     }
 
-    system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null");
+    if (system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null")) {
+      syslog(LOG_ERR, "Unable to put ME in recovery mode!\n");
+      return -1;
+    }
     sleep(1);
 
     ret = -1;
@@ -866,7 +873,10 @@ pal_fw_update_prepare(uint8_t fru, const char *comp) {
       printf("Failed to open SPI-Switch GPIO\n");
     }
 
-    system("echo -n 1e630000.spi > /sys/bus/platform/drivers/aspeed-smc/bind");
+    if (system("echo -n 1e630000.spi > /sys/bus/platform/drivers/aspeed-smc/bind")) {
+      syslog(LOG_ERR, "Unable to mount MTD partitions for BIOS SPI-Flash\n");
+      ret = -1;
+    }
   }
 
   return ret;
@@ -878,7 +888,9 @@ pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
   gpio_desc_t *desc;
 
   if ((fru == FRU_MB) && !strcmp(comp, "bios")) {
-    system("echo -n 1e630000.spi > /sys/bus/platform/drivers/aspeed-smc/unbind");
+    if (system("echo -n 1e630000.spi > /sys/bus/platform/drivers/aspeed-smc/unbind")) {
+      syslog(LOG_ERR, "Unable to unmount MTD partitions\n");
+    }
 
     desc = gpio_open_by_shadow("FM_BIOS_SPI_BMC_CTRL");
     if (desc) {

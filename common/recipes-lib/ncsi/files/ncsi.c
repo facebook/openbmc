@@ -652,7 +652,8 @@ handle_get_version_id(NCSI_Response_Packet *resp)
   }
 
   lseek(fd, (long)&((Get_Version_ID_Response *)0)->fw_ver, SEEK_SET);
-  if (read(fd, nic_fw_ver, sizeof(nic_fw_ver)) != sizeof(nic_fw_ver)) {
+  int version_length = read(fd, nic_fw_ver, sizeof(nic_fw_ver)); 
+  if (version_length != 0 && version_length != sizeof(nic_fw_ver)) {
     close(fd);
     return -1;
   }

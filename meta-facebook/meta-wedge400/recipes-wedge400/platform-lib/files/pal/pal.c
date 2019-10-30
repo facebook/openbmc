@@ -178,17 +178,17 @@ const uint8_t w400_smb_sensor_list[] = {
   SMB_SENSOR_SW_CORE_CURR,
   SMB_SENSOR_SW_CORE_POWER,
   SMB_SENSOR_SW_CORE_TEMP1,
-  SMB_SENSOR_TEMP1,
-  SMB_SENSOR_TEMP2,
-  SMB_SENSOR_TEMP3,
-  SMB_SENSOR_TEMP4,
-  SMB_SENSOR_TEMP5,
-  SMB_SENSOR_TEMP6,
+  SMB_SENSOR_LM75B_U28_TEMP,
+  SMB_SENSOR_LM75B_U25_TEMP,
+  SMB_SENSOR_LM75B_U56_TEMP,
+  SMB_SENSOR_LM75B_U55_TEMP,
+  SMB_SENSOR_TMP421_U62_TEMP,
+  SMB_SENSOR_TMP421_U63_TEMP,
   SMB_SENSOR_SW_DIE_TEMP1,
   SMB_SENSOR_SW_DIE_TEMP2,
   /* Sensors on FCM */
-  SMB_SENSOR_FCM_TEMP1,
-  SMB_SENSOR_FCM_TEMP2,
+  SMB_SENSOR_FCM_LM75B_U1_TEMP,
+  SMB_SENSOR_FCM_LM75B_U2_TEMP,
   SMB_SENSOR_FCM_HSC_VOLT,
   SMB_SENSOR_FCM_HSC_CURR,
   SMB_SENSOR_FCM_HSC_POWER,
@@ -229,15 +229,15 @@ const uint8_t w400c_smb_sensor_list[] = {
   SMB_SENSOR_SW_CORE_VOLT,
   SMB_SENSOR_SW_CORE_CURR,
   SMB_SENSOR_SW_CORE_POWER,
-  SMB_SENSOR_TEMP1,
-  SMB_SENSOR_TEMP2,
-  SMB_SENSOR_TEMP3,
-  SMB_SENSOR_TEMP4,
-  SMB_SENSOR_TEMP5,
-  SMB_SENSOR_TEMP6,
+  SMB_SENSOR_LM75B_U28_TEMP,
+  SMB_SENSOR_LM75B_U25_TEMP,
+  SMB_SENSOR_LM75B_U56_TEMP,
+  SMB_SENSOR_LM75B_U55_TEMP,
+  SMB_SENSOR_TMP421_U62_TEMP,
+  SMB_SENSOR_TMP421_U63_TEMP,
   /* Sensors on FCM */
-  SMB_SENSOR_FCM_TEMP1,
-  SMB_SENSOR_FCM_TEMP2,
+  SMB_SENSOR_FCM_LM75B_U1_TEMP,
+  SMB_SENSOR_FCM_LM75B_U2_TEMP,
   SMB_SENSOR_FCM_HSC_VOLT,
   SMB_SENSOR_FCM_HSC_CURR,
   SMB_SENSOR_FCM_HSC_POWER,
@@ -410,25 +410,25 @@ const char pal_fru_list[] = "all, scm, smb, fcm, pem1, pem2, \
 psu1, psu2, fan1, fan2, fan3, fan4 ";
 
 char * key_list[] = {
-"pwr_server_last_state",
-"sysfw_ver_server",
-"timestamp_sled",
-"server_por_cfg",
-"server_sel_error",
-"scm_sensor_health",
-"smb_sensor_health",
-"fcm_sensor_health",
-"pem1_sensor_health",
-"pem2_sensor_health",
-"psu1_sensor_health",
-"psu2_sensor_health",
-"fan1_sensor_health",
-"fan2_sensor_health",
-"fan3_sensor_health",
-"fan4_sensor_health",
-"slot1_boot_order",
-/* Add more Keys here */
-LAST_KEY /* This is the last key of the list */
+  "pwr_server_last_state",
+  "sysfw_ver_server",
+  "timestamp_sled",
+  "server_por_cfg",
+  "server_sel_error",
+  "scm_sensor_health",
+  "smb_sensor_health",
+  "fcm_sensor_health",
+  "pem1_sensor_health",
+  "pem2_sensor_health",
+  "psu1_sensor_health",
+  "psu2_sensor_health",
+  "fan1_sensor_health",
+  "fan2_sensor_health",
+  "fan3_sensor_health",
+  "fan4_sensor_health",
+  "slot1_boot_order",
+  /* Add more Keys here */
+  LAST_KEY /* This is the last key of the list */
 };
 
 char * def_val_list[] = {
@@ -2451,23 +2451,23 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
     case SMB_SENSOR_SW_CORE_TEMP1:
       ret = read_attr(SMB_ISL_DEVICE, TEMP(1), value);
       break;
-    case SMB_SENSOR_TEMP1:
-      ret = read_attr(SMB_TEMP1_DEVICE, TEMP(1), value);
+    case SMB_SENSOR_LM75B_U28_TEMP:
+      ret = read_attr(SMB_LM75B_U28_DEVICE, TEMP(1), value);
       break;
-    case SMB_SENSOR_TEMP2:
-      ret = read_attr(SMB_TEMP2_DEVICE, TEMP(1), value);
+    case SMB_SENSOR_LM75B_U25_TEMP:
+      ret = read_attr(SMB_LM75B_U25_DEVICE, TEMP(1), value);
       break;
-    case SMB_SENSOR_TEMP3:
-      ret = read_attr(SMB_TEMP3_DEVICE, TEMP(1), value);
+    case SMB_SENSOR_LM75B_U56_TEMP:
+      ret = read_attr(SMB_LM75B_U56_DEVICE, TEMP(1), value);
       break;
-    case SMB_SENSOR_TEMP4:
-      ret = read_attr(SMB_TEMP4_DEVICE, TEMP(1), value);
+    case SMB_SENSOR_LM75B_U55_TEMP:
+      ret = read_attr(SMB_LM75B_U55_DEVICE, TEMP(1), value);
       break;
-    case SMB_SENSOR_TEMP5:
-      ret = read_attr(SMB_TEMP5_DEVICE, TEMP(1), value);
+    case SMB_SENSOR_TMP421_U62_TEMP:
+      ret = read_attr(SMB_TMP421_U62_DEVICE, TEMP(1), value);
       break;
-    case SMB_SENSOR_TEMP6:
-      ret = read_attr(SMB_TEMP6_DEVICE, TEMP(1), value);
+    case SMB_SENSOR_TMP421_U63_TEMP:
+      ret = read_attr(SMB_TMP421_U63_DEVICE, TEMP(1), value);
       break;
     case SMB_SENSOR_SW_DIE_TEMP1:
       ret = read_attr(SMB_SW_TEMP_DEVICE, TEMP(2), value);
@@ -2475,11 +2475,11 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
     case SMB_SENSOR_SW_DIE_TEMP2:
       ret = read_attr(SMB_SW_TEMP_DEVICE, TEMP(3), value);
       break;
-    case SMB_SENSOR_FCM_TEMP1:
-      ret = read_attr(SMB_FCM_TEMP1_DEVICE, TEMP(1), value);
+    case SMB_SENSOR_FCM_LM75B_U1_TEMP:
+      ret = read_attr(SMB_FCM_LM75B_U1_DEVICE, TEMP(1), value);
       break;
-    case SMB_SENSOR_FCM_TEMP2:
-      ret = read_attr(SMB_FCM_TEMP2_DEVICE, TEMP(1), value);
+    case SMB_SENSOR_FCM_LM75B_U2_TEMP:
+      ret = read_attr(SMB_FCM_LM75B_U2_DEVICE, TEMP(1), value);
       break;
     case SMB_SENSOR_1220_VMON1:
       ret = read_attr(SMB_1220_DEVICE, VOLT(0), value);
@@ -2611,22 +2611,22 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_fan_rpm_f(SMB_FCM_TACH_DEVICE, 2, value);
       break;
     case SMB_SENSOR_FAN2_FRONT_TACH:
-      ret = read_fan_rpm_f(SMB_FCM_TACH_DEVICE, 1, value);
+      ret = read_fan_rpm_f(SMB_FCM_TACH_DEVICE, 3, value);
       break;
     case SMB_SENSOR_FAN2_REAR_TACH:
-      ret = read_fan_rpm_f(SMB_FCM_TACH_DEVICE, 2, value);
+      ret = read_fan_rpm_f(SMB_FCM_TACH_DEVICE, 4, value);
       break;
     case SMB_SENSOR_FAN3_FRONT_TACH:
-      ret = read_fan_rpm_f(SMB_FCM_TACH_DEVICE, 3, value);
+      ret = read_fan_rpm_f(SMB_FCM_TACH_DEVICE, 5, value);
       break;
     case SMB_SENSOR_FAN3_REAR_TACH:
-      ret = read_fan_rpm_f(SMB_FCM_TACH_DEVICE, 4, value);
+      ret = read_fan_rpm_f(SMB_FCM_TACH_DEVICE, 6, value);
       break;
     case SMB_SENSOR_FAN4_FRONT_TACH:
-      ret = read_fan_rpm_f(SMB_FCM_TACH_DEVICE, 3, value);
+      ret = read_fan_rpm_f(SMB_FCM_TACH_DEVICE, 7, value);
       break;
     case SMB_SENSOR_FAN4_REAR_TACH:
-      ret = read_fan_rpm_f(SMB_FCM_TACH_DEVICE, 4, value);
+      ret = read_fan_rpm_f(SMB_FCM_TACH_DEVICE, 8, value);
       break;
     default:
       ret = READING_NA;
@@ -3272,23 +3272,23 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
         sprintf(name, SENSOR_NAME_ERR);
       }
       break;
-    case SMB_SENSOR_TEMP1:
-      sprintf(name, "SMB_TEMP1");
+    case SMB_SENSOR_LM75B_U28_TEMP:
+      sprintf(name, "SMB_LM75B_U28_TEMP");
       break;
-    case SMB_SENSOR_TEMP2:
-      sprintf(name, "SMB_TEMP2");
+    case SMB_SENSOR_LM75B_U25_TEMP:
+      sprintf(name, "SMB_LM75B_U25_TEMP");
       break;
-    case SMB_SENSOR_TEMP3:
-      sprintf(name, "SMB_TEMP3");
+    case SMB_SENSOR_LM75B_U56_TEMP:
+      sprintf(name, "SMB_LM75B_U56_TEMP");
       break;
-    case SMB_SENSOR_TEMP4:
-      sprintf(name, "SMB_TEMP4");
+    case SMB_SENSOR_LM75B_U55_TEMP:
+      sprintf(name, "SMB_LM75B_U55_TEMP");
       break;
-    case SMB_SENSOR_TEMP5:
-      sprintf(name, "SMB_TEMP5");
+    case SMB_SENSOR_TMP421_U62_TEMP:
+      sprintf(name, "SMB_TMP421_U62_TEMP");
       break;
-    case SMB_SENSOR_TEMP6:
-      sprintf(name, "SMB_TEMP6");
+    case SMB_SENSOR_TMP421_U63_TEMP:
+      sprintf(name, "SMB_TMP421_U63_TEMP");
       break;
     case SMB_SENSOR_SW_DIE_TEMP1:
       if(brd_type == BRD_TYPE_WEDGE400){
@@ -3304,11 +3304,11 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
         sprintf(name, SENSOR_NAME_ERR);
       }
       break;
-    case SMB_SENSOR_FCM_TEMP1:
-      sprintf(name, "FCM_TEMP1");
+    case SMB_SENSOR_FCM_LM75B_U1_TEMP:
+      sprintf(name, "FCM_LM75B_U1_TEMP");
       break;
-    case SMB_SENSOR_FCM_TEMP2:
-      sprintf(name, "FCM_TEMP2");
+    case SMB_SENSOR_FCM_LM75B_U2_TEMP:
+      sprintf(name, "FCM_LM75B_U2_TEMP");
       break;
     case SMB_SENSOR_1220_VMON1:
     if(brd_type == BRD_TYPE_WEDGE400){
@@ -3928,16 +3928,16 @@ get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case SMB_SENSOR_SW_SERDES_PVDD_TEMP1:
     case SMB_SENSOR_SW_SERDES_TRVDD_TEMP1:
     case SMB_SENSOR_SW_CORE_TEMP1:
-    case SMB_SENSOR_TEMP1:
-    case SMB_SENSOR_TEMP2:
-    case SMB_SENSOR_TEMP3:
-    case SMB_SENSOR_TEMP4:
-    case SMB_SENSOR_TEMP5:
-    case SMB_SENSOR_TEMP6:
+    case SMB_SENSOR_LM75B_U28_TEMP:
+    case SMB_SENSOR_LM75B_U25_TEMP:
+    case SMB_SENSOR_LM75B_U56_TEMP:
+    case SMB_SENSOR_LM75B_U55_TEMP:
+    case SMB_SENSOR_TMP421_U62_TEMP:
+    case SMB_SENSOR_TMP421_U63_TEMP:
     case SMB_SENSOR_SW_DIE_TEMP1:
     case SMB_SENSOR_SW_DIE_TEMP2:
-    case SMB_SENSOR_FCM_TEMP1:
-    case SMB_SENSOR_FCM_TEMP2:
+    case SMB_SENSOR_FCM_LM75B_U1_TEMP:
+    case SMB_SENSOR_FCM_LM75B_U2_TEMP:
       sprintf(units, "C");
       break;
     case SMB_SENSOR_1220_VMON1:
@@ -4210,16 +4210,16 @@ sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[SMB_SENSOR_SW_CORE_CURR][UCR_THRESH] = 450;
       smb_sensor_threshold[SMB_SENSOR_SW_CORE_POWER][UCR_THRESH] = 300;
       smb_sensor_threshold[SMB_SENSOR_SW_CORE_TEMP1][UCR_THRESH] = 125;
-      smb_sensor_threshold[SMB_SENSOR_TEMP1][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_TEMP2][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_TEMP3][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_TEMP4][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_TEMP5][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_TEMP6][UCR_THRESH] = 80;
+      smb_sensor_threshold[SMB_SENSOR_LM75B_U28_TEMP][UCR_THRESH] = 80;
+      smb_sensor_threshold[SMB_SENSOR_LM75B_U25_TEMP][UCR_THRESH] = 80;
+      smb_sensor_threshold[SMB_SENSOR_LM75B_U56_TEMP][UCR_THRESH] = 80;
+      smb_sensor_threshold[SMB_SENSOR_LM75B_U55_TEMP][UCR_THRESH] = 80;
+      smb_sensor_threshold[SMB_SENSOR_TMP421_U62_TEMP][UCR_THRESH] = 80;
+      smb_sensor_threshold[SMB_SENSOR_TMP421_U63_TEMP][UCR_THRESH] = 80;
       smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP1][UCR_THRESH] = 125;
       smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP2][UCR_THRESH] = 125;
-      smb_sensor_threshold[SMB_SENSOR_FCM_TEMP1][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_FCM_TEMP2][UCR_THRESH] = 80;
+      smb_sensor_threshold[SMB_SENSOR_FCM_LM75B_U1_TEMP][UCR_THRESH] = 80;
+      smb_sensor_threshold[SMB_SENSOR_FCM_LM75B_U2_TEMP][UCR_THRESH] = 80;
       smb_sensor_threshold[SMB_SENSOR_FCM_HSC_VOLT][UCR_THRESH] = 14.13;
       smb_sensor_threshold[SMB_SENSOR_FCM_HSC_VOLT][LCR_THRESH] = 7.5;
       smb_sensor_threshold[SMB_SENSOR_FCM_HSC_CURR][UCR_THRESH] = 40;
@@ -4521,14 +4521,14 @@ smb_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case SMB_SENSOR_SW_CORE_TEMP1:
     case SMB_SENSOR_SW_SERDES_PVDD_TEMP1:
     case SMB_SENSOR_SW_SERDES_TRVDD_TEMP1:
-    case SMB_SENSOR_TEMP1:
-    case SMB_SENSOR_TEMP2:
-    case SMB_SENSOR_TEMP3:
-    case SMB_SENSOR_TEMP4:
-    case SMB_SENSOR_TEMP5:
-    case SMB_SENSOR_TEMP6:
-    case SMB_SENSOR_FCM_TEMP1:
-    case SMB_SENSOR_FCM_TEMP2:
+    case SMB_SENSOR_LM75B_U28_TEMP:
+    case SMB_SENSOR_LM75B_U25_TEMP:
+    case SMB_SENSOR_LM75B_U56_TEMP:
+    case SMB_SENSOR_LM75B_U55_TEMP:
+    case SMB_SENSOR_TMP421_U62_TEMP:
+    case SMB_SENSOR_TMP421_U63_TEMP:
+    case SMB_SENSOR_FCM_LM75B_U1_TEMP:
+    case SMB_SENSOR_FCM_LM75B_U2_TEMP:
       *value = 30;
       break;
     case SMB_SENSOR_SW_DIE_TEMP1:
@@ -5316,11 +5316,11 @@ void set_smb_led(int brd_rev)
     SMB_SENSOR_SW_SERDES_TRVDD_VOLT,    SMB_SENSOR_SW_SERDES_TRVDD_CURR,
     SMB_SENSOR_SW_SERDES_TRVDD_POWER,   SMB_SENSOR_SW_SERDES_TRVDD_TEMP1,
     SMB_SENSOR_SW_CORE_VOLT,            SMB_SENSOR_SW_CORE_CURR,
-    SMB_SENSOR_TEMP1,                   SMB_SENSOR_TEMP2,
-    SMB_SENSOR_TEMP3,                   SMB_SENSOR_TEMP4,
-    SMB_SENSOR_TEMP5,                   SMB_SENSOR_TEMP6,
+    SMB_SENSOR_LM75B_U28_TEMP,          SMB_SENSOR_LM75B_U25_TEMP,
+    SMB_SENSOR_LM75B_U56_TEMP,          SMB_SENSOR_LM75B_U55_TEMP,
+    SMB_SENSOR_TMP421_U62_TEMP,         SMB_SENSOR_TMP421_U63_TEMP,
     SMB_SENSOR_SW_DIE_TEMP1,            SMB_SENSOR_SW_DIE_TEMP2,
-    SMB_SENSOR_FCM_TEMP1,               SMB_SENSOR_FCM_TEMP2,
+    SMB_SENSOR_FCM_LM75B_U1_TEMP,       SMB_SENSOR_FCM_LM75B_U2_TEMP,
     SMB_SENSOR_FCM_HSC_VOLT,            SMB_SENSOR_FCM_HSC_CURR,
     SMB_SENSOR_FCM_HSC_POWER,
   };
@@ -5337,10 +5337,10 @@ void set_smb_led(int brd_rev)
     SMB_SENSOR_SW_SERDES_TRVDD_VOLT,    SMB_SENSOR_SW_SERDES_TRVDD_CURR,
     SMB_SENSOR_SW_SERDES_TRVDD_POWER,   SMB_SENSOR_SW_SERDES_TRVDD_TEMP1,
     SMB_SENSOR_SW_CORE_VOLT,            SMB_SENSOR_SW_CORE_CURR,
-    SMB_SENSOR_TEMP1,                   SMB_SENSOR_TEMP2,
-    SMB_SENSOR_TEMP3,                   SMB_SENSOR_TEMP4,
-    SMB_SENSOR_TEMP5,                   SMB_SENSOR_TEMP6,
-    SMB_SENSOR_FCM_TEMP1,               SMB_SENSOR_FCM_TEMP2,
+    SMB_SENSOR_LM75B_U28_TEMP,          SMB_SENSOR_LM75B_U25_TEMP,
+    SMB_SENSOR_LM75B_U56_TEMP,          SMB_SENSOR_LM75B_U55_TEMP,
+    SMB_SENSOR_TMP421_U62_TEMP,         SMB_SENSOR_TMP421_U63_TEMP,
+    SMB_SENSOR_FCM_LM75B_U1_TEMP,       SMB_SENSOR_FCM_LM75B_U2_TEMP,
     SMB_SENSOR_FCM_HSC_VOLT,            SMB_SENSOR_FCM_HSC_CURR,
     SMB_SENSOR_FCM_HSC_POWER,
   };

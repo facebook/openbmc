@@ -24,6 +24,7 @@ SRC_URI += "file://mcu_fw.h \
             file://bios.cpp \
             file://platform.cpp \
             file://cpld.cpp \
+            file://me.cpp \
            "
 
 SRC_URI_remove = "file://fscd.cpp"

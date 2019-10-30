@@ -11,7 +11,7 @@ SRC_URI = "file://Makefile \
           "
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpal "
+LDFLAGS =+ " -lpal -lkv"
 CXXFLAGS += '-Wall -Werror'
 
 DEPENDS =+ " libpal libkv "

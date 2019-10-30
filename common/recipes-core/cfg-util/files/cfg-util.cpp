@@ -42,6 +42,50 @@ print_usage(void) {
   printf("       cfg-util --clear\n");
 }
 
+static int
+set_ntp_server(const char *server_name)
+{
+  char cmd[MAX_VALUE_LEN + 64] = {0};
+  char ntp_server_new[MAX_VALUE_LEN] = {0};
+  char ntp_server_old[MAX_VALUE_LEN] = {0};
+
+  // Remove old NTP server
+  if (kv_get("ntp_server", ntp_server_old, NULL, KV_FPERSIST) == 0 &&
+     strlen(ntp_server_old) > 2) {
+    snprintf(cmd, sizeof(cmd), "sed -i '/^restrict %s$/d' /etc/ntp.conf", ntp_server_old);
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "NTP: restrict conf not removed\n");
+    }
+    snprintf(cmd, sizeof(cmd), "sed -i '/^server %s$/d' /etc/ntp.conf", ntp_server_old);
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "NTP: Server conf not removed\n");
+    }
+  }
+  // Add new NTP server
+  snprintf(ntp_server_new, MAX_VALUE_LEN, "%s", server_name);
+  if (strlen(ntp_server_new) > 2) {
+    snprintf(cmd, sizeof(cmd), "echo \"restrict %s\" >> /etc/ntp.conf", ntp_server_new);
+    if (system(cmd) != 0) {
+      syslog(LOG_ERR, "NTP: restrict conf not added\n");
+    }
+    snprintf(cmd, sizeof(cmd), "echo \"server %s\" >> /etc/ntp.conf", ntp_server_new);
+    if (system(cmd) != 0) {
+      syslog(LOG_ERR, "NTP: server conf not added\n");
+    }
+  }
+  // Restart NTP server
+  snprintf(cmd, sizeof(cmd), "/etc/init.d/ntpd restart > /dev/null &");
+  if (system(cmd) != 0) {
+    syslog(LOG_ERR, "NTP server restart failed\n");
+    return -1;
+  }
+  if (kv_set("ntp_server", server_name, 0, KV_FPERSIST)) {
+    return -1;
+  }
+
+  return 0;
+}
+
 int
 main(int argc, char **argv) {
 
@@ -102,21 +146,20 @@ main(int argc, char **argv) {
   snprintf(key, MAX_KEY_LEN, "%s", argv[1]);
   snprintf(val, MAX_VALUE_LEN, "%s", argv[2]);
 
-  // Check the key can be set or not by cfg-util
-  check_key = pal_cfg_key_check(key);
-  if (check_key == 0) {         // check OK
-    ret = pal_set_key_value(key, val);
-    if (ret != 0) {
-      goto err_exit;
+  // Common universal keys
+  if (!strcmp(key, "ntp_server")) {
+    ret = set_ntp_server(val);
+  } else {
+    // Platform specific key handling
+    check_key = pal_cfg_key_check(key);
+    if (check_key == 0) {
+      ret = pal_set_key_value(key, val);
+    } else {
+      printf("cfg-util: %s cannot be set using\n", key);
+      ret = -1;
     }
-  } else if (check_key == 1) {  // the key is valid but unsupported in cfg-util
-    printf("The key does not support to set: %s\n", key);
-  } else {                      // the key is invalid
-    goto err_exit;
   }
-
-  return 0;
-
+  return ret;
 err_exit:
   print_usage();
   exit(-1);

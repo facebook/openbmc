@@ -38,6 +38,17 @@ def fix_wedge100_romcs1():
         system.run_verbosely(cmd, logger)
 
 
+def free_mem_remediation(logger):
+    # purge the logs
+    system.flush_tmpfs_logs(logger)
+    # restart services that are known to consume less memory in early phases
+    system.restart_services(logger)
+    # drop caches
+    system.drop_caches(logger)
+
+    return
+
+
 def improve_system(logger):
     # type: (object) -> None
     if not system.is_openbmc():
@@ -73,6 +84,15 @@ def improve_system(logger):
         )
     )
 
+    # Execute light weight free memory remediation to reduce reboot remediation
+    free_mem_remediation(logger)
+
+    [total_memory_kb, free_memory_kb] = system.get_mem_info()
+    logger.info(
+        "After free memory remediation: {} KiB total memory, {} KiB free memory.".format(
+            total_memory_kb, free_memory_kb
+        )
+    )
     reboot_threshold_pct = system.get_healthd_reboot_threshold()
     reboot_threshold_kb = ((100 - reboot_threshold_pct) / 100) * total_memory_kb
 
@@ -80,7 +100,7 @@ def improve_system(logger):
     # is space for them and a few flashing related processes.
     max_openbmc_img_size = 23
     openbmc_img_size_kb = max_openbmc_img_size * 1024
-    # in the case of no reboot treshold, use a default limit
+    # in the case of no reboot threshold, use a default limit
     default_threshold = 60 * 1024
 
     # for low memory remediation - ensure downloading BMC image will NOT trigger

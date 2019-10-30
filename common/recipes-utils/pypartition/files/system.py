@@ -187,6 +187,48 @@ def get_healthd_reboot_threshold():
         return 100
 
 
+def flush_tmpfs_logs(logger):
+    logfiles = (
+        glob("/var/log/messages.*") + glob("/var/log/*.log.*") + glob("/var/log/*.gz")
+    )
+
+    for logfile in logfiles:
+        if os.path.isfile(logfile):
+            logger.info("Removing `{}`".format(logfile))
+            os.remove(logfile)
+
+    with open("/var/log/messages", "w") as fd:
+        # opening in write mode truncates it anyway, but let's do it two times
+        # just to make sure
+        fd.truncate()
+
+
+def exec_bunch(commands, logger):
+    # best effort, don't raise if command fail, worst case scenario improve_system
+    # will reboot due to not enough memory
+    for cmd in commands:
+        try:
+            run_verbosely(cmd, logger)
+        except Exception:
+            logger.error("Running `{}` failed".format(" ".join(cmd)))
+
+
+def restart_services(logger):
+    commands = (
+        # restart the high memory profile services
+        ["sv", "restart", "/etc/sv/healthd/"],
+        ["sv", "restart", "/etc/sv/restapi/"],
+    )
+    exec_bunch(commands, logger)
+
+
+def drop_caches(logger):
+    with open("/proc/sys/vm/drop_caches", "w") as fd:
+        fd.write("3")
+    # just to give things time to settle
+    time.sleep(1)
+
+
 def get_mem_info():
     # type: () -> [int, int]
     proc_memfree_regex = re.compile("^MemFree: +([0-9]+) kB$", re.MULTILINE)

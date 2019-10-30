@@ -69,7 +69,9 @@ int pal_is_bmc_por(void) {
 
   fp = fopen("/tmp/ast_por", "r");
   if (fp != NULL) {
-    fscanf(fp, "%d", &por);
+    if (fscanf(fp, "%d", &por) != 1) {
+      por = 0;
+    }
     fclose(fp);
   }
 

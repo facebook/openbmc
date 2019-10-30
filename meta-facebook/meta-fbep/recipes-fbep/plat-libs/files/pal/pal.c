@@ -750,7 +750,10 @@ static int server_power_on()
     goto bail;
   }
   sleep(2);
-  system("/usr/bin/sv restart fscd >> /dev/null");
+  if (system("/usr/bin/sv restart fscd >> /dev/null")) {
+    syslog(LOG_CRIT, "Restarting FSCD failed!\n");
+    goto bail;
+  }
   ret = 0;
 bail:
   gpio_close(gpio);
@@ -766,7 +769,11 @@ static int server_power_off()
     return -1;
   }
 
-  system("/usr/bin/sv stop fscd >> /dev/null");
+  if (system("/usr/bin/sv stop fscd >> /dev/null")) {
+    syslog(LOG_CRIT, "Stopping FSCD failed!\n");
+    gpio_close(gpio);
+    return -1;
+  }
 
   if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
     goto bail;
@@ -881,13 +888,16 @@ void pal_get_chassis_status(uint8_t fru, uint8_t *req_data, uint8_t *res_data, u
 
 int pal_sled_cycle(void)
 {
+  int ret;
   // switch the mux and reboot LTC4282 for 12V
   mux_request(&pdb_mux, 2);
-  system("i2cset -y 5 0x70 0xa5 0x6");
-  system("i2cset -y 5 0x43 0x1d 0x80");
+  if (system("i2cset -y 5 0x70 0xa5 0x6")) {
+    syslog(LOG_CRIT, "SLED Cycle failed!\n");
+    return -1;
+  }
+  ret = system("i2cset -y 5 0x43 0x1d 0x80");
   mux_release(&pdb_mux);
-
-  return 0;
+  return ret;
 }
 
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)

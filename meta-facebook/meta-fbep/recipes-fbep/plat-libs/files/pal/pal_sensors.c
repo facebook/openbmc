@@ -466,7 +466,7 @@ int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name)
   if (sensor_num >= FRU_SENSOR_MAX)
     sprintf(name, "INVAILD SENSOR");
   else
-    sprintf(name, fru_sensor_name[sensor_num]);
+    sprintf(name, "%s", fru_sensor_name[sensor_num]);
 
   return 0;
 }

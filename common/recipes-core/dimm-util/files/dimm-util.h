@@ -25,9 +25,10 @@
 #define MAX_DIMM_NUM 8
 #define OFFSET_SERIAL 0x45
 #define LEN_SERIAL    4
-#define LEN_SERIAL_STRING (LEN_SERIAL * 2) // 2 hex digit per byte
+#define LEN_SERIAL_STRING ((LEN_SERIAL * 2) + 1) // 2 hex digit per byte + null
 #define OFFSET_PART_NUMBER 0x49
 #define LEN_PART_NUMBER    20
+#define LEN_PN_STRING      (LEN_PART_NUMBER + 1)
 
 #define DEFAULT_DUMP_OFFSET 0
 #define DEFAULT_DUMP_LEN    0x100

@@ -10,6 +10,7 @@ SRC_URI = "file://Makefile \
            file://dimm-util.cpp \
            file://dimm-util.h \
            file://dimm-vendor.cpp \
+           file://dimm-capacity.cpp \
           "
 
 S = "${WORKDIR}"

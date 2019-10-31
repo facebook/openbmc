@@ -336,12 +336,14 @@ util_get_serial(uint8_t slot_id, uint8_t dimm, bool json) {
       if (dimm_present)
         json_object_set_new(sn_obj, "Serial Number", json_string(sn));
       json_t *dimm_obj = json_object();
-      if (!dimm_obj)
+      if (!dimm_obj) {
+        json_decref(sn_obj);
         goto err_exit;
+      }
       json_object_set_new(dimm_obj, "Slot", json_integer(slot_id));
       json_object_set_new(dimm_obj, "DIMM", json_string(dimm_location[i]));
       json_object_set_new(dimm_obj, "config", sn_obj);
-      json_array_append(config_arr, dimm_obj);
+      json_array_append_new(config_arr, dimm_obj);
     } else {
       printf("DIMM %s Serial Number: ", dimm_location[i]);
       if (dimm_present)
@@ -388,7 +390,7 @@ util_get_part(uint8_t slot_id, uint8_t dimm, bool json) {
 
     if (dimm_present)
         for (j = 0; j < LEN_PART_NUMBER; ++j)
-          snprintf(pn + j, LEN_PART_NUMBER - j, "%c", dimm_part[i][j]);
+          snprintf(pn + j, LEN_PN_STRING - j, "%c", dimm_part[i][j]);
 
     if (json) {
       json_t *part_obj = json_object();
@@ -397,12 +399,14 @@ util_get_part(uint8_t slot_id, uint8_t dimm, bool json) {
       if (dimm_present)
         json_object_set_new(part_obj, "Part Number", json_string(pn));
       json_t *dimm_obj = json_object();
-      if (!dimm_obj)
+      if (!dimm_obj) {
+        json_decref(part_obj);
         goto err_exit;
+      }
       json_object_set_new(dimm_obj, "Slot", json_integer(slot_id));
       json_object_set_new(dimm_obj, "DIMM", json_string(dimm_location[i]));
       json_object_set_new(dimm_obj, "config", part_obj);
-      json_array_append(config_arr, dimm_obj);
+      json_array_append_new(config_arr, dimm_obj);
     } else {
       printf("DIMM %s Part Number: ", dimm_location[i]);
       if (dimm_present)
@@ -492,6 +496,51 @@ util_get_cache(uint8_t slot_id, uint8_t dimm, bool json) {
   return 0;
 }
 
+// calculate total capacity of DIMM module
+// based on SPD info
+//
+//  input:
+//      char *size_str - pre-allocated, 0-filled string for capacity
+//      uint8_t size_str_len - total buffer size of the above string
+//      uint8_t *buf - Page 0 of SPD buffer.
+//                     this function only uses offset0 to 13
+static int
+util_get_size(char *size_str, uint8_t size_str_len, uint8_t *buf) {
+
+#define CAP_OFFSET 0x4
+#define CAP_MASK   0xF
+#define BUS_WIDTH_OFFSET 13
+#define BUS_WIDTH_MASK 0x7
+#define SDRAM_WIDTH_OFFSET 12
+#define SDRAM_WIDTH_MASK 0x7
+#define RANKS_OFFSET 12
+#define RANKS_SHIFT  3
+#define RANKS_MASK   0x7
+
+  uint8_t die_capacity_raw = buf[CAP_OFFSET] & CAP_MASK;
+  uint8_t bus_width_raw    = buf[BUS_WIDTH_OFFSET] & BUS_WIDTH_MASK;
+  uint8_t sdram_width_raw  = buf[SDRAM_WIDTH_OFFSET] & SDRAM_WIDTH_MASK;
+  uint8_t ranks_raw        = (buf[RANKS_OFFSET] >> RANKS_SHIFT) & RANKS_MASK;
+
+  int die_capacity = get_die_capacity(die_capacity_raw);
+  int bus_width    = get_bus_width_bits(bus_width_raw);
+  int sdram_width  = get_device_width_bits(sdram_width_raw);
+  int ranks        = get_package_rank(ranks_raw);
+  uint16_t capacity  = 0;
+
+  // calculate capacity based on formula specified in JEDEC SPD spec
+  //   Annex L: Serial Presence Detect (SPD) for DDR4 SDRAM Modules
+  if (die_capacity > 0 && bus_width > 0 && sdram_width > 0 && ranks > 0)
+    capacity = die_capacity / 8 * bus_width / sdram_width * ranks;
+
+  DBG_PRINT("1 cap %d bus_w %d ram_w %d ranks %d\n", die_capacity_raw, bus_width_raw, sdram_width_raw, ranks_raw);
+  DBG_PRINT("2 cap %d bus_w %d ram_w %d ranks %d\n", die_capacity, bus_width, sdram_width, ranks);
+  DBG_PRINT("3 capacity %d\n", capacity );
+
+  snprintf(size_str, size_str_len, "%d MB", capacity);
+  return 0;
+}
+
 // print DIMM Config
 // PN, SN + vendor, manufacture_date, size, speed, clock speed.
 static int
@@ -535,6 +584,7 @@ util_get_config(uint8_t slot_id, uint8_t dimm, bool json) {
     if (dimm_present) {
       dimm_type = buf[TYPE_OFFSET];
       mincycle  = buf[MIN_CYCLE_TIME_OFFSET];
+      util_get_size(size, BUF_SIZE, buf);
 
       // read page 1 to get pn, sn, manufacturer, manufacturer week
       util_set_EE_page(slot_id, 0, i, 1);
@@ -542,7 +592,7 @@ util_get_config(uint8_t slot_id, uint8_t dimm, bool json) {
       util_read_spd_with_retry(slot_id, i, P1_OFFSET, P1_LEN, 0, buf, &dimm_present);
       if (dimm_present) {
           for (j = 0; j < LEN_PART_NUMBER; ++j) {
-            snprintf(pn + j, LEN_PART_NUMBER - j, "%c", buf[PN_OFFSET + j]);
+            snprintf(pn + j, LEN_PN_STRING - j, "%c", buf[PN_OFFSET + j]);
           }
           for (j = 0; j < LEN_SERIAL; ++j) {
             snprintf(sn + (2 * j), LEN_SERIAL_STRING - (2 * j), "%02X", buf[SERIAL_OFFSET + j]);
@@ -568,12 +618,14 @@ util_get_config(uint8_t slot_id, uint8_t dimm, bool json) {
         json_object_set_new(config_obj, "Manufacturing Date", json_string(week));
       }
       json_t *dimm_obj = json_object();
-      if (!dimm_obj)
+      if (!dimm_obj) {
+        json_decref(config_obj);
         goto err_exit;
+      }
       json_object_set_new(dimm_obj, "Slot", json_integer(slot_id));
       json_object_set_new(dimm_obj, "DIMM", json_string(dimm_location[i]));
       json_object_set_new(dimm_obj, "config", config_obj);
-      json_array_append(config_arr, dimm_obj);
+      json_array_append_new(config_arr, dimm_obj);
     } else {
       printf("CONFIG, slot%d\n", slot_id);
       printf("DIMM %s:\n", dimm_location[i]);
@@ -657,8 +709,8 @@ parse_arg_and_exec(int argc, char **argv, uint8_t slot_id,
   } else if (argc > 3) {
     // parse option fields,
     // skipping first 3 arguments, which will be "dimm-util slotX cmd"
-  	if (parse_cmdline_args(argc - 2, &(argv[2]), &dimm, &json) != 0)
-  		return ERR_INVALID_SYNTAX;
+    if (parse_cmdline_args(argc - 2, &(argv[2]), &dimm, &json) != 0)
+      return ERR_INVALID_SYNTAX;
   }
 
   if (slot_id == SLOT_ALL) {

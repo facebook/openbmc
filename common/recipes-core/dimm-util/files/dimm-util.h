@@ -65,4 +65,8 @@
 extern char *vendor_name[];
 extern const char * manu_string(uint8_t id);
 
+int get_die_capacity(uint8_t data);
+int get_bus_width_bits(uint8_t data);
+int get_device_width_bits(uint8_t data);
+int get_package_rank(uint8_t data);
 #endif

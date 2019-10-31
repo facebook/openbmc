@@ -52,16 +52,16 @@ if [ $on -eq 0 ]; then
             echo "skip. Need new switch setup script!!!"
         else
             # configure MDIO as GPIO output
-            gpio_set A6 1
-            gpio_set A7 1
+            gpio_set_value BMC_MAC2_MDC 1
+            gpio_set_value BMC_MAC2_MDIO 1
             # set the switch to be configured by CPU
-            gpio_set E2 1
+            gpio_set_value SWITCH_EEPROM1_WRT 1
             # set the switch to be configured by CPU, then reset the switch,
             # which also cause T2 reset in the current board
-            gpio_set E2 1
-            gpio_set C0 0
+            gpio_set_value SWITCH_EEPROM1_WRT 1
+            gpio_set_value T2_RESET_N 0
             sleep 1
-            gpio_set C0 1
+            gpio_set_value T2_RESET_N 1
             # configure the switch
             setup_switch.py
             echo "done"

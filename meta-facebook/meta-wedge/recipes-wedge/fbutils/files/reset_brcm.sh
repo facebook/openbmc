@@ -21,12 +21,12 @@
 . /usr/local/bin/openbmc-utils.sh
 
 # Make sure RESET_SEQ0 and RESET_SEQ1 are 0
-gpio_set RESET_SEQ0 0
-gpio_set RESET_SEQ1 0
+gpio_set_value RESET_SEQ0 0
+gpio_set_value RESET_SEQ1 0
 
 # Now toggle T2_RESET_N
-gpio_set T2_RESET_N 0
+gpio_set_value T2_RESET_N 0
 sleep 1
-gpio_set T2_RESET_N 1
+gpio_set_value T2_RESET_N 1
 
 logger "Reset T2 with both SEQ0 and SEQ1 low"

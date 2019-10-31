@@ -2,7 +2,7 @@
  *
  * Copyright 2015-present Facebook. All Rights Reserved.
  *
- * This file contains code to support IPMI2.0 Specificaton available @
+ * This file contains code to support IPMI2.0 Specification available @
  * http://www.intel.com/content/www/us/en/servers/ipmi/ipmi-specifications.html
  *
  * This program is free software; you can redistribute it and/or modify
@@ -2820,4 +2820,90 @@ int
 pal_get_nic_fru_id(void)
 {
   return FRU_NIC;
+}
+
+// OEM Command "CMD_OEM_BYPASS_CMD" 0x34
+int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
+  int ret;
+  int completion_code=CC_UNSPECIFIED_ERROR;
+  uint8_t netfn, cmd, select;
+  uint8_t tlen, rlen;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t status;
+
+  *res_len = 0;
+
+  if (slot < FRU_SLOT1 || slot > FRU_SLOT4) {
+    return CC_PARAM_OUT_OF_RANGE;
+  }
+
+  ret = pal_is_fru_prsnt(slot, &status);
+  if (ret < 0) {
+    return -1;
+  }
+  if (status == 0) {
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  ret = pal_is_server_12v_on(slot, &status);
+  if(ret < 0 || 0 == status) {
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
+
+  if(!pal_is_slot_server(slot)) {
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  select = req_data[0];
+
+  switch (select) {
+    case BYPASS_BIC:
+      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
+      if (tlen < 0) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+
+      netfn = req_data[1];
+      cmd = req_data[2];
+
+      // Bypass command to Bridge IC
+      if (tlen != 0) {
+        ret = bic_ipmb_wrapper(slot, netfn, cmd, &req_data[3], tlen, res_data, res_len);
+      } else {
+        ret = bic_ipmb_wrapper(slot, netfn, cmd, NULL, 0, res_data, res_len);
+      }
+
+      if (0 == ret) {
+        completion_code = CC_SUCCESS;
+      }
+      break;
+    case BYPASS_ME:
+      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
+      if (tlen < 0) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+
+      netfn = req_data[1];
+      cmd = req_data[2];
+
+      tlen += 2;
+      memcpy(tbuf, &req_data[1], tlen);
+      tbuf[0] = tbuf[0] << 2;
+
+      // Bypass command to ME
+      ret = bic_me_xmit(slot, tbuf, tlen, rbuf, &rlen);
+      if (0 == ret) {
+        completion_code = CC_SUCCESS;
+        memcpy(&res_data[0], rbuf, rlen);
+        *res_len = rlen;
+      }
+      break;
+    default:
+      return completion_code;
+  }
+
+  return completion_code;
 }

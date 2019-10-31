@@ -110,7 +110,10 @@ main(int argc, char **argv) {
   // Handle Reset Default factory settings
   if ((argc == 2) && (!strcmp(argv[1], "--clear"))){
       printf("Reset BMC data to default factory settings and BMC will be reset...\n");
-      system("rm /mnt/data/* -rf > /dev/null 2>&1");
+      if(system("rm /mnt/data/* -rf > /dev/null 2>&1") != 0) {
+        printf("Cleaning persistent storage failed!\n");
+        return 1;
+      }
       sync();
 
       // Set the flag to identify the reboot is caused by cfg-util

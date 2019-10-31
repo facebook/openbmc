@@ -22,15 +22,10 @@
 
 echo -n "Reset USB Switch ... "
 
-# To use GPIOD7 (31), SCU90[1], SCU8C[11], and SCU70[21] must be 0
-devmem_clear_bit $(scu_addr 8C) 11
-devmem_clear_bit $(scu_addr 70) 21
-devmem_clear_bit $(scu_addr 90) 1
-
-gpio_set 31 1
+gpio_set_value BMC_USB_RESET_N 1
 sleep 1
-gpio_set 31 0
+gpio_set_value BMC_USB_RESET_N 0
 sleep 1
-gpio_set 31 1
+gpio_set_value BMC_USB_RESET_N 1
 
 echo "Done"

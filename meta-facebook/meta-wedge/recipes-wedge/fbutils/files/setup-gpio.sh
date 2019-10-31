@@ -562,3 +562,12 @@ gpio_export_by_name "${ASPEED_GPIO}" GPIOB4 LED_POSTCODE_4
 gpio_export_by_name "${ASPEED_GPIO}" GPIOB5 LED_POSTCODE_5
 gpio_export_by_name "${ASPEED_GPIO}" GPIOB6 LED_POSTCODE_6
 gpio_export_by_name "${ASPEED_GPIO}" GPIOB7 LED_POSTCODE_7
+
+#
+# Setup BMC_USB_RESET_N, connected to GPIOD7
+#   - GPIOD7: SCU90[1], SCU8C[11], and SCU70[21] must be 0
+#
+devmem_cond_clear $(scu_addr 8C) 11
+devmem_cond_clear $(scu_addr 70) 21
+devmem_cond_clear $(scu_addr 90) 1
+gpio_export_by_name "${ASPEED_GPIO}" GPIOD7 BMC_USB_RESET_N

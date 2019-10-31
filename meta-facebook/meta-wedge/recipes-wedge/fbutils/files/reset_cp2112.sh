@@ -22,8 +22,8 @@ source /usr/local/bin/openbmc-utils.sh
 
 echo -n "Reset CP2112 Switch ... "
 
-gpio_set USB_BRDG_RST 0
+gpio_set_value USB_BRDG_RST 0
 usleep 50000
-gpio_set USB_BRDG_RST 1
+gpio_set_value USB_BRDG_RST 1
 
 echo "Done"

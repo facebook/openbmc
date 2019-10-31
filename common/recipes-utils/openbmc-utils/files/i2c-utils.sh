@@ -106,8 +106,8 @@ i2c_driver_map() {
             echo "pca953x";;
         "pca9548")
             echo "pca954x";;
-        "pfe3000")
-            echo "pfe3000";;
+        "pfe1100" | "pfe3000")
+            echo "bel-pfe";;
         "fancpld")
             echo "fancpld";;
         "cmmcpld")
@@ -122,7 +122,7 @@ i2c_driver_map() {
 # $1 - driver name
 # $2 - device path in <bus>-<addr> format.
 #
-i2c_driver_bind_device() {
+i2c_bind_driver() {
     local retry=0
     local retry_max=2
     local sleep_cnt=0
@@ -155,7 +155,7 @@ i2c_driver_bind_device() {
         retry=$((retry + 1))
     done
 
-    echo "i2c driver ${driver_name} binded to ${i2c_dev} successfully"
+    echo "${i2c_dev} bound to driver ${driver_name} successfully"
     return 0
 }
 
@@ -164,58 +164,62 @@ i2c_driver_bind_device() {
 # are not claimed by drivers (due to scheduling delay, missing drivers,
 # intermittent i2c transaction errors in device_probe() function, and
 # etc.).
-# If callers pass "force_binding" parameter, then the function will
-# trigger manual driver binding for devices without drivers.
-# $1 - force binding driver
+# If callers pass "fix-binding" parameter, then the function will try to
+# manually bind devices (without drivers) to drivers if possible.
+# $1 - fix driver binding
 #
 i2c_check_driver_binding() {
     local total_devs=0
     local errors=0
     local errors_fixed=0
-    local force_binding=$1
-    local sum_info error_info
-    local driver_name dev_name dev_path
+    local fix_binding
+    local sum_info result_info
+    local driver_name dev_name dev_path dev_uid
+
+    if [ "$1" = "fix-binding" ]; then
+        fix_binding=1
+    fi
 
     echo "checking i2c driver binding status"
-    for filename in `ls ${SYSFS_I2C_DEVICES}`; do
-        if [[ ${filename} == *-00* ]]; then
-            total_devs=$((total_devs + 1))
+    for dev_path in "${SYSFS_I2C_DEVICES}"/*-00*; do
+        total_devs=$((total_devs + 1))
 
-            dev_path="${SYSFS_I2C_DEVICES}/${filename}"
-            if [ -L "${dev_path}/driver" ]; then
-                continue # driver binded successfully
-            fi
+        if [ -L "${dev_path}/driver" ]; then
+            continue # bound to driver successfully
+        fi
 
-            errors=$((errors + 1))
-            dev_name=`cat ${dev_path}/name`
-            echo "${filename} (${dev_name}) - no driver binded"
+        errors=$((errors + 1))
+        dev_uid=$(basename "$dev_path")
+        dev_name=$(cat "${dev_path}/name")
+        echo "${dev_uid} (${dev_name}) - no driver bound"
 
-            if [ -z ${force_binding} ] ||
-               [ ${force_binding} != "force_binding" ]; then
+        # Try to manually bind the device.
+        if [ -n "${fix_binding}" ]; then
+            driver_name=$(i2c_driver_map "${dev_name}")
+            if [ -z "${driver_name}" ]; then
+                echo "unable to find driver for ${dev_uid}"
                 continue
             fi
 
-            driver_name=$(i2c_driver_map ${dev_name})
-            if [ -z ${driver_name} ]; then
-                echo "unable to find driver for ${filename}"
-                continue
-            fi
-
-            echo "manually binding ${filename} to driver ${driver_name}"
-            i2c_driver_bind_device ${driver_name} ${filename}
-            if [ "$?" -eq "0" ]; then
+            echo "manually bind ${dev_uid} to driver ${driver_name}"
+            if i2c_bind_driver "${driver_name}" "${dev_uid}"; then
                 errors_fixed=$((errors_fixed + 1))
             fi
         fi
     done
 
+    # Dump driver binding summary.
+    errors=$((errors - errors_fixed))
     sum_info="total ${total_devs} i2c devices checked"
     if [ ${errors} -eq 0 ]; then
-        err_info="no errors found"
+        result_info="all bound to drivers"
     else
-        err_info="${errors} errors found, ${errors_fixed} errors fixed"
+        result_info="${errors} devices without drivers"
     fi
-    echo "${sum_info}: ${err_info}"
+    if [ "$errors_fixed" -gt 0 ]; then
+        result_info="${result_info} ($errors_fixed manually fixed)"
+    fi
+    echo "${sum_info}: ${result_info}"
 }
 
 #

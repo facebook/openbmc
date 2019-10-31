@@ -177,5 +177,5 @@ if [[ ${KERNEL_VERSION} != 4.1.* ]]; then
     # sleep 50 milliseconds just in case driver binding is "delayed".
     usleep 50000
 
-    i2c_check_driver_binding "force_binding"
+    i2c_check_driver_binding "fix-binding"
 fi

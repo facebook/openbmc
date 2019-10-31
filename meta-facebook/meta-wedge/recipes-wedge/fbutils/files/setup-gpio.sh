@@ -534,3 +534,31 @@ gpio_set_value FAN_LED_GPIOG5 0
 gpio_set_value FAN_LED_GPIOG6 0
 gpio_set_value FAN_LED_GPIOG7 0
 gpio_set_value FAN_LED_GPIOJ0 0
+
+#
+# Setup LED_POSTCODE_[0..3], connected to GPIOG[0..3]:
+#   - GPIOG[0..3]: SCU84[0..3] = 0
+#
+devmem_cond_clear $(scu_addr 84) 0
+devmem_cond_clear $(scu_addr 84) 1
+devmem_cond_clear $(scu_addr 84) 2
+devmem_cond_clear $(scu_addr 84) 3
+gpio_export_by_name "${ASPEED_GPIO}" GPIOG0 LED_POSTCODE_0
+gpio_export_by_name "${ASPEED_GPIO}" GPIOG1 LED_POSTCODE_1
+gpio_export_by_name "${ASPEED_GPIO}" GPIOG2 LED_POSTCODE_2
+gpio_export_by_name "${ASPEED_GPIO}" GPIOG3 LED_POSTCODE_3
+
+#
+# Setup LED_POSTCODE_[4..7], connected to GPIOB[4..7]:
+#   - GPIOB4: SCU80[12] = 0 and Strap[14] = 0
+#   - GPIOB[5..7]: SCU80[13..15] = 0
+#
+devmem_cond_clear $(scu_addr 70) 14
+devmem_cond_clear $(scu_addr 80) 12
+devmem_cond_clear $(scu_addr 80) 13
+devmem_cond_clear $(scu_addr 80) 14
+devmem_cond_clear $(scu_addr 80) 15
+gpio_export_by_name "${ASPEED_GPIO}" GPIOB4 LED_POSTCODE_4
+gpio_export_by_name "${ASPEED_GPIO}" GPIOB5 LED_POSTCODE_5
+gpio_export_by_name "${ASPEED_GPIO}" GPIOB6 LED_POSTCODE_6
+gpio_export_by_name "${ASPEED_GPIO}" GPIOB7 LED_POSTCODE_7

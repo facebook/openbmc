@@ -41,9 +41,4 @@ else
     usage $0
 fi
 
-# To use GPIOE5 (37), SCU80[21], SCU8C[14], and SCU70[22] must be 0
-devmem_clear_bit $(scu_addr 80) 21
-devmem_clear_bit $(scu_addr 8C) 14
-devmem_clear_bit $(scu_addr 70) 22
-
-gpio_set 37 $val
+gpio_set_value LED_PWR_BLUE $val

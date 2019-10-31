@@ -4456,7 +4456,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
       return completion_code;
     }
 
-    if (0 == select) { //BIC
+    if (BYPASS_BIC == select) { //BIC
       // Bypass command to Bridge IC
       if (tlen != 0) {
         ret = bic_ipmb_wrapper(slot, netfn, cmd, &req_data[3], tlen, res_data, res_len);
@@ -4468,7 +4468,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
         completion_code = CC_SUCCESS;
       }
 
-    } else if (1 == select) { //ME
+    } else if (BYPASS_ME == select) { //ME
       tlen += 2;
       memcpy(tbuf, &req_data[1], tlen);
       tbuf[0] = tbuf[0] << 2;

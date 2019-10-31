@@ -202,6 +202,15 @@ enum {
   MEMORY_UNCORRECTABLE_ERR = 0x2,
 };
 
+// Enum for BYPASS command selection
+enum {
+  BYPASS_BIC     = 0,
+  BYPASS_ME      = 1,
+  BYPASS_IMC     = 2,
+  BYPASS_NCSI    = 3,
+  BYPASS_NETWORK = 4,
+};
+
 // Helper function needed by some of pal functions
 void msleep(int msec);
 

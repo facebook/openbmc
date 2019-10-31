@@ -55,14 +55,6 @@ enum {
 };
 
 enum {
-  BYPASS_BIC     = 0,
-  BYPASS_ME      = 1,
-  BYPASS_IMC     = 2,
-  BYPASS_NCSI    = 3,
-  BYPASS_NETWORK = 4,
-};
-
-enum {
   PCIE_CONFIG_4xTL      = 0x00,
   PCIE_CONFIG_2xCF_2xTL = 0x11,
   PCIE_CONFIG_2xGP_2xTL = 0x22,

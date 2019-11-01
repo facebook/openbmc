@@ -296,7 +296,7 @@ static const i2c_dev_attr_st syscpld_attr_table[] = {
     0x14, 0, 1,
   },
   {
-    "usb_hub_rst",
+    "usb_hub_rst_n",
     "0x0: reset\n"
 	"0x1: normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,

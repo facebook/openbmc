@@ -224,13 +224,13 @@ main (int argc, char * const argv[]) {
     fprintf(stderr, "%s: failed to initialize logger: %s\n",
             FRONTPANELD_NAME, strerror(errno));
     return -1;
-    }
-  obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
-  obmc_log_unset_std_stream();
-  if (daemon(0, 1) != 0) {
-      OBMC_ERROR(errno, "failed to enter daemon mode");
-      return -1;
   }
+  if ( obmc_log_set_syslog(LOG_CONS, LOG_DAEMON) != 0) {
+    fprintf(stderr, "%s: failed to setup syslog: %s\n",
+            FRONTPANELD_NAME, strerror(errno));
+    return -1;
+  }
+  obmc_log_unset_std_stream();
 
   if (pal_get_board_type_rev(&brd_type_rev)) {
     OBMC_WARN("Get board revision failed\n");

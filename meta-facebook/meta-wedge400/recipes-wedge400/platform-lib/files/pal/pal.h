@@ -57,8 +57,11 @@ extern "C" {
 #define TH3_POWER "th3_turn_on"
 #define TH3_RESET_BTN "mac_reset_n"
 
-#define SMB_MAC_CPLD_ROV "mac_cpld_rov%d"
-#define SMB_MAC_CPLD_ROV_NUM 8
+#define SMB_CPLD_TH3_ROV "th3_rov%d"
+#define SMB_CPLD_TH3_ROV_NUM 8
+#define SMB_CPLD_GB_ROV "gb_rov%d"
+#define SMB_CPLD_GB_ROV_NUM SMB_CPLD_TH3_ROV_NUM
+
 #define SCM_PRSNT_STATUS "scm_present_int_status"
 #define SCM_SUS_S3_STATUS "iso_com_sus_s3_n"
 #define SCM_SUS_S4_STATUS "iso_com_sus_s4_n"

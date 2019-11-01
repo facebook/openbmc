@@ -2401,18 +2401,26 @@ scm_sensor_read(uint8_t sensor_num, float *value) {
 }
 
 static int
-cor_th3_volt(void) {
+cor_th3_volt(uint8_t board_type) {
+  /* 
+   * Currently, skip to set vdd core with sysfs nodes because sysfs node exposed
+   * has no write permission. Laterly we will fix this.
+   */
+  return 0;
   int tmp_volt, i;
   int val_volt = 0;
   char str[32];
-  char tmp[LARGEST_DEVICE_NAME];
+  char tmp[LARGEST_DEVICE_NAME + 1];
   char path[LARGEST_DEVICE_NAME + 1];
-  snprintf(tmp, LARGEST_DEVICE_NAME, SMB_SYSFS, SMB_MAC_CPLD_ROV);
+  int rov_cnt = (board_type == BRD_TYPE_WEDGE400) ? SMB_CPLD_TH3_ROV_NUM : SMB_CPLD_GB_ROV_NUM;
+  snprintf(tmp, LARGEST_DEVICE_NAME, SMB_SYSFS,
+           (board_type == BRD_TYPE_WEDGE400) ? SMB_CPLD_TH3_ROV : SMB_CPLD_GB_ROV);
 
-  for(i = SMB_MAC_CPLD_ROV_NUM - 1; i >= 0; i--) {
+  for(i = rov_cnt - 1; i >= 0; i--) {
+    memset(path, 0, sizeof(path));
     snprintf(path, LARGEST_DEVICE_NAME, tmp, i);
     if(read_device(path, &tmp_volt)) {
-      OBMC_ERROR(-1, "%s, Cannot read th3 voltage from smbcpld\n", __func__);
+      OBMC_ERROR(-1, "%s, Cannot read %s of th3/gb voltage from smbcpld\n", __func__, path);
       return -1;
     }
     val_volt += tmp_volt;
@@ -2425,9 +2433,9 @@ cor_th3_volt(void) {
     return -1;
 
   snprintf(str, sizeof(str), "%d", val_volt);
-  snprintf(path, LARGEST_DEVICE_NAME, SMB_ISL_DEVICE"/%s", VOLT_SET(2));
+  snprintf(path, LARGEST_DEVICE_NAME, SMB_ISL_DEVICE"/%s", VOLT_SET(3));
   if(write_device(path, str)) {
-    OBMC_ERROR(-1, "%s, Cannot write th3 voltage into ISL68127\n", __func__);
+    OBMC_ERROR(-1, "%s, Cannot write th3/gb voltage into ISL68127\n", __func__);
     return -1;
   }
 
@@ -2546,9 +2554,9 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       if( brd_type == BRD_TYPE_WEDGE400 ){
         ret = read_attr(SMB_ISL_DEVICE, VOLT(3), value);
         int board_rev = -1;
-        if((pal_get_board_rev(&board_rev) != -1) && (board_rev != 0)) {
+        if((pal_get_board_rev(&board_rev) != -1)) {
           if (bootup_check == 0) {
-            th3_ret = cor_th3_volt();
+            th3_ret = cor_th3_volt(brd_type);
             if (!th3_ret)
               bootup_check = 1;
           }

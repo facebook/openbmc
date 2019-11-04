@@ -1,7 +1,5 @@
-# Since we are using only python3, let's provide /usr/bin/python as a symlink to python3
-do_install_append() {
-  cd ${D}/${bindir}
-  ln -s python3 python
-}
+inherit update-alternatives
 
-FILES_${PN} += "${bindir}/python*"
+ALTERNATIVE_${PN}-core += "python"
+ALTERNATIVE_LINK_NAME[python] = "${bindir}/python"
+ALTERNATIVE_TARGET[python] = "${bindir}/python3"

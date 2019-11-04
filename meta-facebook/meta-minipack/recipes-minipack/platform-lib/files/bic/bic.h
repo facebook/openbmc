@@ -89,6 +89,13 @@ enum {
   FW_P1V05_VR,
 };
 
+/* Force Intel ME Recovery Command Options */
+enum {
+  RECOVERY_MODE = 1,
+  RESTORE_FACTORY_DEFAULT,
+};
+
+
 // Bridge IC Spec
 typedef struct _bic_gpio_t {
   uint32_t pwrgood_cpu:1;
@@ -162,12 +169,13 @@ int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id);
 int bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor);
 int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size);
 int bic_read_mac(uint8_t slot_id, char *rbuf, uint8_t rlen);
-int bic_update_fw(uint8_t slot_id, uint8_t comp, char *path);
+int bic_update_fw(uint8_t slot_id, uint8_t comp, const char *path);
 int bic_get_fw_cksum(uint8_t slot_id, uint8_t comp, uint32_t offset, uint32_t len, uint8_t *ver);
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 int bic_set_config(uint8_t slot_id, bic_config_t *cfg);
 int bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result);
 int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
+int me_recovery(uint8_t slot_id, uint8_t command);
 
 #ifdef __cplusplus
 } // extern "C"

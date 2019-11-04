@@ -1,4 +1,5 @@
 {
+  "version": "minipack-pwm-32",
   "pwm_transition_value": 16,
   "pwm_boost_value": 20,
   "sample_interval_ms": 3000,

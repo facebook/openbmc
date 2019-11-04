@@ -765,13 +765,17 @@ pal_del_i2c_device(uint8_t bus, uint8_t addr) {
 }
 
 int
-pal_get_pim_type(uint8_t fru) {
-  int retry = 10, ret = -1, val;
+pal_get_pim_type(uint8_t fru, int retry) {
+  int ret = -1, val;
   char path[LARGEST_DEVICE_NAME + 1];
   uint8_t bus = ((fru - FRU_PIM1) * 8) + 80;
 
   snprintf(path, LARGEST_DEVICE_NAME,
            I2C_SYSFS_DEVICES"/%d-0060/board_ver", bus);
+
+  if (retry < 0) {
+    retry = 0;
+  }
 
   while ((ret = read_device(path, &val)) != 0 && retry--) {
     msleep(500);
@@ -1211,7 +1215,7 @@ int
 pal_get_fru_id(char *str, uint8_t *fru) {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;
-  } else if (!strcmp(str, "smb")) {
+  } else if (!strcmp(str, "smb") || !strcmp(str, "bmc")) {
     *fru = FRU_SMB;
   } else if (!strcmp(str, "scm")) {
     *fru = FRU_SCM;
@@ -1916,6 +1920,88 @@ pal_get_cpld_board_rev(int *rev, const char *device) {
 
   snprintf(full_name, LARGEST_DEVICE_NAME, device, "board_ver");
   if (read_device(full_name, rev)) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver) {
+  int val = -1, bus = 0;
+  char ver_path[PATH_MAX];
+  char sub_ver_path[PATH_MAX];
+
+  switch(fru) {
+    case FRU_SCM:
+      if (!(strncmp(device, "scmcpld", strlen("scmcpld")))) {
+        snprintf(ver_path, sizeof(ver_path), SCMCPLD_PATH_FMT, "cpld_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 SCMCPLD_PATH_FMT, "cpld_sub_ver");
+      } else {
+        return -1;
+      }
+      break;
+    case FRU_SMB:
+      if (!(strncmp(device, "left_pdbcpld", strlen("left_pdbcpld")))) {
+        snprintf(ver_path, sizeof(ver_path), LEFT_PDBCPLD_PATH_FMT, "cpld_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 LEFT_PDBCPLD_PATH_FMT, "cpld_sub_ver");
+      } else if (!(strncmp(device, "right_pdbcpld", strlen("right_pdbcpld")))) {
+        snprintf(ver_path, sizeof(ver_path), RIGHT_PDBCPLD_PATH_FMT, "cpld_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 RIGHT_PDBCPLD_PATH_FMT, "cpld_sub_ver");
+      } else if (!(strncmp(device, "top_fcmcpld", strlen("top_fcmcpld")))) {
+        snprintf(ver_path, sizeof(ver_path), TOP_FCMCPLD_PATH_FMT, "cpld_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 TOP_FCMCPLD_PATH_FMT, "cpld_sub_ver");
+      } else if (!(strncmp(device, "bottom_fcmcpld", strlen("bottom_fcmcpld")))) {
+        snprintf(ver_path, sizeof(ver_path), BOTTOM_FCMCPLD_PATH_FMT, "cpld_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 BOTTOM_FCMCPLD_PATH_FMT, "cpld_sub_ver");
+      } else if (!(strncmp(device, "smbcpld", strlen("smbcpld")))) {
+        snprintf(ver_path, sizeof(ver_path), SMBCPLD_PATH_FMT, "cpld_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 SMBCPLD_PATH_FMT, "cpld_sub_ver");
+      } else if (!(strncmp(device, "iobfpga", strlen("iobfpga")))) {
+        snprintf(ver_path, sizeof(ver_path), IOBFPGA_PATH_FMT, "fpga_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                IOBFPGA_PATH_FMT, "fpga_sub_ver");
+      } else {
+        return -1;
+      }
+      break;
+    case FRU_PIM1:
+    case FRU_PIM2:
+    case FRU_PIM3:
+    case FRU_PIM4:
+    case FRU_PIM5:
+    case FRU_PIM6:
+    case FRU_PIM7:
+    case FRU_PIM8:
+      bus = ((fru - FRU_PIM1) * 8) + 80;
+      if (!(strncmp(device, "domfpga", strlen("domfpga")))) {
+        snprintf(ver_path, sizeof(ver_path),
+                 I2C_SYSFS_DEVICES"/%d-0060/fpga_ver", bus);
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 I2C_SYSFS_DEVICES"/%d-0060/fpga_sub_ver", bus);
+      } else {
+        return -1;
+      }
+      break;
+     default:
+      return -1;
+  }
+
+  if (!read_device(ver_path, &val)) {
+    ver[0] = (uint8_t)val;
+  } else {
+    return -1;
+  }
+
+  if (!read_device(sub_ver_path, &val)) {
+    ver[1] = (uint8_t)val;
+  } else {
     return -1;
   }
 
@@ -5707,34 +5793,6 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num,
   return 0;
 }
 
-bool
-pal_is_fw_update_ongoing(uint8_t fru) {
-
-  char key[MAX_KEY_LEN];
-  char value[MAX_VALUE_LEN] = {0};
-  int ret;
-  struct timespec ts;
-
-  switch (fru) {
-    case FRU_SCM:
-      sprintf(key, "slot%d_fwupd", IPMB_BUS);
-      break;
-    default:
-      return false;
-  }
-
-  ret = kv_get(key, value, NULL, 0);
-  if (ret < 0) {
-     return false;
-  }
-
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  if (strtoul(value, NULL, 10) > ts.tv_sec)
-     return true;
-
-  return false;
-}
-
 int
 pal_get_fw_info(uint8_t fru, unsigned char target,
                 unsigned char* res, unsigned char* res_len) {
@@ -7649,4 +7707,12 @@ pal_is_mcu_working(void) {
   }
 
   return false;
+}
+
+int
+pal_is_slot_server(uint8_t fru) {
+  if (fru == FRU_SCM) {
+    return 1;
+  }
+  return 0;
 }

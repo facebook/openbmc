@@ -54,6 +54,7 @@
 #define MAX34461_ADDR 0x74
 
 #define INTERVAL_MAX  5
+#define PIM_RETRY     10
 
 #define FW_UPDATE_ONGOING 1
 #define CRASHDUMP_ONGOING 2
@@ -415,7 +416,7 @@ pim_monitor_handler(void *unused) {
       if (prsnt != prsnt_ori) {
         if (prsnt) {
           syslog(LOG_WARNING, "PIM %d is plugged in.", num);
-          pim_type = pal_get_pim_type(fru);
+          pim_type = pal_get_pim_type(fru, PIM_RETRY);
           pim_driver_add(num, pim_type);
           if (pim_type != pim_type_old[num]) {
             if (pim_type == PIM_TYPE_16Q) {

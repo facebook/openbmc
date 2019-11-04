@@ -64,6 +64,8 @@
 #define CMD_DOWNLOAD_SIZE 11
 #define CMD_STATUS_SIZE 3
 
+#define FRU_SCM 1
+
 #pragma pack(push, 1)
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
@@ -90,11 +92,6 @@ typedef struct _sdr_rec_hdr_t {
       return -1;                                      \
     }                                                 \
   } while (0)
-
-static char* fwutil_lock_file(char* buf, size_t size, uint8_t slot_id) {
-  snprintf(buf, size, "/var/run/fw-util_%u.lock", slot_id);
-  return buf;
-}
 
 /*
  * NOTE:
@@ -608,12 +605,12 @@ int bic_read_mac(uint8_t slot_id, char* rbuf, uint8_t rlen) {
   return 0;
 }
 
-static int set_fw_update_ongoing(uint8_t slot_id, uint16_t timeout) {
+static int set_fw_update_ongoing(uint8_t fru_id, uint16_t timeout) {
   char key[64];
   char value[64];
   struct timespec ts;
 
-  snprintf(key, sizeof(key), "slot%d_fwupd", slot_id);
+  snprintf(key, sizeof(key), "fru%d_fwupd", fru_id);
   clock_gettime(CLOCK_MONOTONIC, &ts);
   ts.tv_sec += timeout;
   snprintf(value, sizeof(value), "%d", (int)ts.tv_sec);
@@ -849,7 +846,7 @@ static int update_bic_status(uint8_t slot_id, int ifd) {
   return 0;
 }
 
-static int _update_bic_main(uint8_t slot_id, char* path) {
+static int _update_bic_main(uint8_t slot_id, const char* path) {
   int fd;
   int ifd = -1;
   char cmd[100] = {0};
@@ -1017,13 +1014,7 @@ error_exit:
   if (ifd > 0) {
     close(ifd);
   }
-  set_fw_update_ongoing(slot_id, 0);
-
-  // Unlock fw-util
-  fwutil_lock_file(cmd, sizeof(cmd), slot_id);
-  if (unlink(cmd) != 0) {
-    OBMC_ERROR(errno, "failed to remove file %s", cmd);
-  }
+  set_fw_update_ongoing(FRU_SCM, 0);
 
   return ret;
 }
@@ -1217,7 +1208,7 @@ static struct {
         },
 };
 
-int bic_update_fw(uint8_t slot_id, uint8_t comp, char* image_file) {
+int bic_update_fw(uint8_t slot_id, uint8_t comp, const char* image_file) {
   uint16_t count, read_count;
   uint8_t buf[MAX_IPMI_MSG_SIZE] = {0};
   char pathname[PATH_MAX];
@@ -1230,7 +1221,7 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, char* image_file) {
   // Handle Bridge IC firmware separately as the process differs significantly
   // from others
   if (comp == UPDATE_BIC) {
-    set_fw_update_ongoing(slot_id, 60);
+    set_fw_update_ongoing(FRU_SCM, 60);
     return _update_bic_main(slot_id, image_file);
   }
 
@@ -1247,7 +1238,7 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, char* image_file) {
   }
   switch (comp) {
     case UPDATE_BIOS:
-      set_fw_update_ongoing(slot_id, 30);
+      set_fw_update_ongoing(FRU_SCM, 30);
       dsize = st.st_size / 100;
       break;
 
@@ -1257,7 +1248,7 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, char* image_file) {
 
     case UPDATE_CPLD:
     case UPDATE_BIC_BOOTLOADER:
-      set_fw_update_ongoing(slot_id, 20);
+      set_fw_update_ongoing(FRU_SCM, 20);
       dsize = st.st_size / 20;
       break;
 
@@ -1315,7 +1306,7 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, char* image_file) {
     if ((last_offset + dsize) <= offset) {
       switch (comp) {
         case UPDATE_BIOS:
-          set_fw_update_ongoing(slot_id, 25);
+          set_fw_update_ongoing(FRU_SCM, 25);
           printf("updated bios: %d %%\n", offset / dsize);
           break;
         case UPDATE_CPLD:
@@ -1335,7 +1326,7 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, char* image_file) {
   if (comp != UPDATE_BIOS) {
     goto update_done;
   }
-  set_fw_update_ongoing(slot_id, 55);
+  set_fw_update_ongoing(FRU_SCM, 55);
 
   // Checksum calculation for BIOS image
   tbuf = malloc(BIOS_VERIFY_PKT_SIZE * sizeof(uint8_t));
@@ -1393,13 +1384,8 @@ error_exit:
     free(tbuf);
   }
 
-  set_fw_update_ongoing(slot_id, 0);
+  set_fw_update_ongoing(FRU_SCM, 0);
 
-  // Unlock fw-util
-  fwutil_lock_file(pathname, sizeof(pathname), slot_id);
-  if (unlink(pathname) != 0) {
-    OBMC_ERROR(errno, "failed to remove file %s", pathname);
-  }
   return ret;
 }
 
@@ -1487,4 +1473,105 @@ int bic_me_xmit(uint8_t slot_id, uint8_t* txbuf, uint8_t txlen, uint8_t* rxbuf,
   *rxlen = rlen - 6;
   memcpy(rxbuf, &rbuf[6], *rxlen);
   return 0;
+}
+
+/*
+ * 0x2E 0xDF: Force Intel ME Recovery
+ * Request
+ *   Byte 1:3 = Intel Manufacturer ID - 000157h, LS byte first.
+ *   Byte 4 - Command
+ *     = 01h Restart using Recovery Firmware
+ *     (Intel ME FW configuration is not restored to factory defaults)
+ *     = 02h Restore Factory Default Variable values and restart the Intel ME FW
+ *     = 03h PTT Initial State Restore
+ *
+ * Response
+ *   Byte 1 - Completion Code
+ *     = 00h - Success
+ *     (Remaining standard Completion Codes are shown in Section 2.12)
+ *     = 81h - Unsupported Command parameter value in the Byte 4 of the request.
+ *
+ *   Byte 2:4 = Intel Manufacturer ID - 000157h, LS byte first.
+ */
+int me_recovery(uint8_t slot_id, uint8_t command) {
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+  int retry = 0;
+
+  while (retry <= 3) {
+    tbuf[0] = 0xB8;
+    tbuf[1] = 0xDF;
+    tbuf[2] = 0x57;
+    tbuf[3] = 0x01;
+    tbuf[4] = 0x00;
+    tbuf[5] = command;
+    tlen = 6;
+
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret) {
+      retry++;
+      sleep(1);
+      continue;
+    } else {
+      break;
+    }
+  }
+  if (retry == 4) { /* if the third retry still failed, return -1 */
+    OBMC_CRIT("%s: Restart using Recovery Firmware failed..., retried: %d",
+              __func__,  retry);
+    return -1;
+  }
+
+  sleep(10);
+  retry = 0;
+  memset(&tbuf, 0, sizeof(tbuf));
+  memset(&rbuf, 0, sizeof(rbuf));
+
+  /*
+  * 0x6 0x4: Get Self-Test Results
+  * Byte 1 - Completion Code
+  * Byte 2
+  *   = 55h - No error. All Self-Tests Passed.
+  *   = 81h - Firmware entered Recovery bootloader mode
+  * Byte 3 For byte 2 = 55h, 56h, FFh:
+  *   =00h
+  *   =02h - recovery mode entered by IPMI command "Force ME Recovery"
+  *
+  * Using ME self-test result to check if the ME Recovery Command Success or not
+  */
+  while (retry <= 3) {
+    tbuf[0] = 0x18;
+    tbuf[1] = 0x04;
+    tlen = 2;
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret) {
+      retry++;
+      sleep(1);
+      continue;
+    }
+
+    /*
+     * If Get Self-Test Results is 0x55 0x00,
+     * means No error, all Self-Tests Passed.
+     *
+     * If Get Self-Test Results is 0x81 0x02,
+     * means Firmware entered Recovery bootloader mode.
+     */
+    if ((command == RECOVERY_MODE) && (rbuf[1] == 0x81) && (rbuf[2] == 0x02)) {
+      return 0;
+    } else if ((command == RESTORE_FACTORY_DEFAULT) &&
+               (rbuf[1] == 0x55) && (rbuf[2] == 0x00)) {
+      return 0;
+    } else {
+      return -1;
+    }
+  }
+  if (retry == 4) { /* if the third retry still failed, return -1 */
+    OBMC_CRIT("%s: Restore Factory Default failed..., retried: %d",
+              __func__,  retry);
+    return -1;
+  }
 }

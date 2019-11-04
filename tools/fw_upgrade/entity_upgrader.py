@@ -166,8 +166,16 @@ class FwEntityUpgrader(object):
                         self._fw_entity
                     )
                 )
-                logging.debug("Package : {}.{}".format(str(pkg_major), str(pkg_minor)))
-                logging.debug("Current : {}.{}".format(str(cur_major), str(cur_minor)))
+                logging.debug(
+                    "JSON Version (after parsing) : {}.{}".format(
+                        str(pkg_major), str(pkg_minor)
+                    )
+                )
+                logging.debug(
+                    "Current Version (after parsing) : {}.{}".format(
+                        str(cur_major), str(cur_minor)
+                    )
+                )
                 need_to_upgrade = (pkg_major, pkg_minor) > (cur_major, cur_minor)
             else:
                 logging.warning("Couldnt parse version, defaulting to upgrade")
@@ -175,8 +183,10 @@ class FwEntityUpgrader(object):
         else:
             # Case 2
             logging.debug("FW Entity   : {}(string comparison)".format(self._fw_entity))
-            logging.debug("Package : {}".format(str(package_ver)))
-            logging.debug("Current : {}".format(str(current_ver)))
+            logging.debug("JSON Version (after parsing) : {}".format(str(package_ver)))
+            logging.debug(
+                "Current Version (after parsing) : {}".format(str(current_ver))
+            )
             need_to_upgrade = package_ver > current_ver
         return need_to_upgrade
 

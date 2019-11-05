@@ -419,18 +419,16 @@ static ssize_t ltc4282_show_value(struct device * dev,
             value = ltc4282_reg_to_value(data, ltc4282_reg_curr_max);
             break;
         case ltc4282_power:
-            data = ltc4282_update_adc(dev, ltc4282_reg_vin);
-            data = ltc4282_update_adc(dev, ltc4282_reg_curr);
-            value = ltc4282_reg_to_value(data, ltc4282_reg_vin) *
-                    ltc4282_reg_to_value(data, ltc4282_reg_curr);
+            data = ltc4282_update_adc(dev, ltc4282_reg_power);
+            value = ltc4282_reg_to_value(data, ltc4282_reg_power);
             break;
         case ltc4282_power_min:
-            value = ltc4282_reg_to_value(data, ltc4282_reg_vin_min) *
-                    ltc4282_reg_to_value(data, ltc4282_reg_curr_min);
+            data = ltc4282_update_adc(dev, ltc4282_reg_power_min);
+            value = ltc4282_reg_to_value(data, ltc4282_reg_power_min);
             break;
         case ltc4282_power_max:
-            value = ltc4282_reg_to_value(data, ltc4282_reg_vin_max) *
-                    ltc4282_reg_to_value(data, ltc4282_reg_curr_max);
+            data = ltc4282_update_adc(dev, ltc4282_reg_power_max);
+            value = ltc4282_reg_to_value(data, ltc4282_reg_power_max);
             break;
         case ltc4282_temp:
             data = ltc4282_update_adc(dev, ltc4282_reg_temp);
@@ -809,10 +807,20 @@ static const struct i2c_device_id ltc4282_id[] = {
 
 MODULE_DEVICE_TABLE(i2c, ltc4282_id);
 
+#ifdef CONFIG_OF
+static const struct of_device_id ltc4282_of_match[] = {
+	{ .compatible = "lltc,ltc4282", },
+	{}
+};
+
+MODULE_DEVICE_TABLE(of, ltc4282_of_match);
+#endif
+
 /* This is the driver that will be inserted */
 static struct i2c_driver ltc4282_driver =  {
     .driver =  {
         .name = "ltc4282",
+	.of_match_table = of_match_ptr(ltc4282_of_match),
     },
     .probe = ltc4282_probe,
     .id_table = ltc4282_id,

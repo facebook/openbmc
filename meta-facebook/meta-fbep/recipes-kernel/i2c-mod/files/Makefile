@@ -10,7 +10,7 @@
 # for more details.
 #
 
-obj-m := ltc4282.o
+obj-m := pca9546i.o ltc4282.o
 
 ccflags-y += -I$(KERNEL_EXTRA_HEADER_PATH)
 

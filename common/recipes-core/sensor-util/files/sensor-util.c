@@ -205,7 +205,7 @@ print_sensor_reading(float fvalue, uint16_t snr_num, thresh_sensor_t *thresh,
     snprintf(svalue, 20, "%.2f", fvalue);
 
     if (is_pldm_state_sensor(snr_num, sensor_info->fru)) {
-      json_object_set_new(sensor_obj, "value", 
+      json_object_set_new(sensor_obj, "value",
           json_string(numeric_state_to_name((int)fvalue, sensor_state_str,
           sizeof(sensor_state_str)/sizeof(sensor_state_str[0]),UNKNOWN_STATE)));
       json_object_set_new(fru_sensor_obj, thresh->name, sensor_obj);
@@ -215,11 +215,23 @@ print_sensor_reading(float fvalue, uint16_t snr_num, thresh_sensor_t *thresh,
     search = json_object_get(fru_sensor_obj, thresh->name);
     if (search != NULL) {
       /* in order to match the RESTAPI format */
-      json_t *value_array = json_array();
-      json_array_append(value_array, search);
-      json_object_set_new(sensor_obj, "value", json_string(svalue));
-      json_array_append(value_array, sensor_obj);
-      json_object_set(fru_sensor_obj, thresh->name, value_array);
+      if (json_is_object(search)) {
+        json_t *value_array = json_array();
+        json_array_append(value_array, search);
+        /*
+        Note : if we use append_new here,
+        the following "json_object_set_new(fru_sensor_obj, thresh->name, value_array)"
+        will free the json_object "search"
+        */
+        json_object_set_new(sensor_obj, "value", json_string(svalue));
+        json_array_append_new(value_array, sensor_obj);
+        json_object_set_new(fru_sensor_obj, thresh->name, value_array);
+      } else if (json_is_array(search)) {
+        json_object_set_new(sensor_obj, "value", json_string(svalue));
+        json_array_append_new(search, sensor_obj);
+      } else {
+        syslog(LOG_ERR, "[%s:%d] get error type of the JSON obj", __FUNCTION__, __LINE__);
+      }
     } else {
       json_object_set_new(sensor_obj, "value", json_string(svalue));
       json_object_set_new(fru_sensor_obj, thresh->name, sensor_obj);
@@ -357,11 +369,23 @@ get_sensor_reading(void *sensor_data) {
           search = json_object_get(fru_sensor_obj, thresh.name);
           if (search != NULL) {
             /* in order to match the RESTAPI format */
-            json_t *value_array = json_array();
-            json_array_append(value_array, search);
-            json_object_set_new(sensor_obj, "value", json_string("NA"));
-            json_array_append(value_array, sensor_obj);
-            json_object_set(fru_sensor_obj, thresh.name, value_array);
+            if (json_is_object(search)) {
+              json_t *value_array = json_array();
+              json_array_append(value_array, search);
+              /*
+              Note : if we use append_new here,
+              the following "json_object_set_new(fru_sensor_obj, thresh->name, value_array)"
+              will free the json_object "search"
+              */
+              json_object_set_new(sensor_obj, "value", json_string("NA"));
+              json_array_append_new(value_array, sensor_obj);
+              json_object_set_new(fru_sensor_obj, thresh.name, value_array);
+            } else if (json_is_array(search)) {
+              json_object_set_new(sensor_obj, "value", json_string("NA"));
+              json_array_append_new(search, sensor_obj);
+            } else {
+              syslog(LOG_ERR, "[%s:%d] get error type of the JSON obj", __FUNCTION__, __LINE__);
+            }
           } else {
             json_object_set_new(sensor_obj, "value", json_string("NA"));
             json_object_set_new(fru_sensor_obj, thresh.name, sensor_obj);

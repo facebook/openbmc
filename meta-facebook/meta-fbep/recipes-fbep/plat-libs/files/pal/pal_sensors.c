@@ -150,7 +150,7 @@ static int read_battery_value(float *value)
     goto bail;
   }
   msleep(10);
-  ret = sensors_read_adc("FRU_SENSOR_P3V_BAT", value);
+  ret = sensors_read_adc("FRU_ADC_P3V_BAT", value);
   gpio_set_value(gp_batt, GPIO_VALUE_LOW);
 bail:
   gpio_close(gp_batt);

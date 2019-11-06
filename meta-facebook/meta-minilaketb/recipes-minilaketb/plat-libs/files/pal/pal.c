@@ -2489,10 +2489,11 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
 }
 
 int
-pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+pal_get_80port_record(uint8_t slot, uint8_t *res_data, size_t max_len, size_t *res_len) {
 
   int ret;
   uint8_t status;
+  uint8_t len;
 
   if (slot != FRU_SLOT1) {
     return PAL_ENOTSUP;
@@ -2516,7 +2517,9 @@ pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
   }
 
   // Send command to get 80 port record from Bridge IC
-  ret = bic_request_post_buffer_data(slot, res_data, res_len);
+  ret = bic_request_post_buffer_data(slot, res_data, &len);
+  if (ret == 0)
+    *res_len = len;
 
   return ret;
 }

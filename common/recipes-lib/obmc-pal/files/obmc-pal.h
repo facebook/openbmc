@@ -18,6 +18,7 @@
 #ifndef __OBMC_PAL_H__
 #define __OBMC_PAL_H__
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <errno.h>
@@ -224,7 +225,7 @@ int pal_get_last_boot_time(uint8_t slot, uint8_t *last_boot_time);
 void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 int pal_chassis_control(uint8_t slot, uint8_t *req_data, uint8_t req_len);
 void pal_get_sys_intf_caps(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
-int pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_get_80port_record(uint8_t slot, uint8_t *buf, size_t max_len, size_t *len);
 int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
 int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
 void pal_set_post_start(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
@@ -399,7 +400,7 @@ int pal_parse_mem_mapping_string(uint8_t channel, bool *support_mem_mapping, cha
 int pal_check_fw_image(uint8_t fru, const char *comp, const char *path);
 int pal_fw_update_prepare(uint8_t fru, const char *comp);
 int pal_fw_update_finished(uint8_t fru, const char *comp, int status);
-int pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *buf, size_t max_len, size_t *len);
 bool pal_is_modify_sel_time(uint8_t *sel, int size);
 int pal_update_sensor_reading_sdr (uint8_t fru);
 int pal_set_usb_path (uint8_t slot, uint8_t endpoint);

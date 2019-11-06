@@ -1190,13 +1190,16 @@ pal_post_get_last_and_len(uint8_t slot, uint8_t *data, uint8_t *len) {
 }
 
 int
-pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+pal_get_80port_record(uint8_t slot, uint8_t *res_data, size_t max_len, size_t *res_len)
 {
   int ret;
+  uint8_t len;
 
-  ret = bic_get_post_buf(IPMB_BUS, res_data, res_len);
+  ret = bic_get_post_buf(IPMB_BUS, res_data, &len);
   if (ret) {
     return ret;
+  } else {
+    *res_len = len;
   }
 
   return 0;

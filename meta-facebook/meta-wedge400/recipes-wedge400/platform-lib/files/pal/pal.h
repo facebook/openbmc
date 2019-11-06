@@ -518,7 +518,6 @@ int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_post_enable(uint8_t slot);
 int pal_post_get_last(uint8_t slot, uint8_t *status);
 int pal_post_get_last_and_len(uint8_t slot, uint8_t *data, uint8_t *len);
-int pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_post_handle(uint8_t slot, uint8_t status);
 int pal_set_last_pwr_state(uint8_t fru, char *state);
 int pal_get_last_pwr_state(uint8_t fru, char *state);

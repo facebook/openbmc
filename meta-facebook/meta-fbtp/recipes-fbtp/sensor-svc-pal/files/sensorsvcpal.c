@@ -1641,7 +1641,8 @@ pal_check_postcodes(uint8_t fru_id, uint8_t sensor_num, float *value) {
   static int log_asserted = 0;
   const int loop_threshold = 3;
   const int longest_loop_code = 4;
-  int i, nearest_00, len, loop_count, check_until;
+  int i, nearest_00, loop_count, check_until;
+  size_t len;
   uint8_t buff[256];
   uint8_t location, maj_err, min_err, mem_train_fail;
   int ret = READING_NA, rc;
@@ -1660,7 +1661,7 @@ pal_check_postcodes(uint8_t fru_id, uint8_t sensor_num, float *value) {
   }
 
   len = 0; // clear higher bits
-  rc = pal_get_80port_record(FRU_MB, NULL, 0, buff, (uint8_t *)&len);
+  rc = pal_get_80port_record(FRU_MB, buff, sizeof(buff), &len);
   if (rc != PAL_EOK)
     goto error_exit;
 
@@ -1761,7 +1762,7 @@ pal_check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
     retry = 0;
     // cache current postcode buffer
     memset(postcodes_last, 0, sizeof(postcodes_last));
-    pal_get_80port_record(FRU_MB, NULL, 0, postcodes_last, (uint8_t *)&len);
+    pal_get_80port_record(FRU_MB, postcodes_last, sizeof(postcodes_last), &len);
   }
 
   if (frb3_fail) {
@@ -1771,7 +1772,7 @@ pal_check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
 
     // Port 80 updated
     memset(postcodes, 0, sizeof(postcodes_last));
-    rc = pal_get_80port_record(FRU_MB, NULL, 0, postcodes, (uint8_t *)&len);
+    rc = pal_get_80port_record(FRU_MB, postcodes, sizeof(postcodes), &len);
     if (rc == PAL_EOK && memcmp(postcodes_last, postcodes, 256) != 0) {
       frb3_fail = 0;
     }

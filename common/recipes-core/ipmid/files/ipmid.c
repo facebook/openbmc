@@ -3012,9 +3012,10 @@ oem_get_80port_record ( unsigned char *request, unsigned char req_len,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   int ret;
-
-  *res_len = 0;
-  ret = pal_get_80port_record (req->payload_id, req->data, req_len, res->data, res_len);
+  // XXX ipmi_handle() defines res_len as a size_t.
+  // The correct change (but a much bigger one) is to replace
+  // all `unsigned char *res_len` with `size_t *res_len`.
+  ret = pal_get_80port_record (req->payload_id, res->data, 256, (size_t *)res_len);
   switch(ret) {
     case PAL_EOK:
       res->cc = CC_SUCCESS;
@@ -3245,7 +3246,7 @@ oem_get_80port_dword_record (unsigned char *request, unsigned char req_len, unsi
   int ret;
 
   *res_len = 0;
-  ret = pal_get_80port_page_record (req->payload_id, req->data[0], req->data, req_len, res->data, res_len);
+  ret = pal_get_80port_page_record (req->payload_id, req->data[0], res->data, 256, (size_t *)res_len);
   switch(ret) {
     case PAL_EOK:
       res->cc = CC_SUCCESS;

@@ -3365,7 +3365,8 @@ check_postcodes(uint8_t fru_id, uint8_t sensor_num, float *value) {
   static int log_asserted = 0;
   const int loop_threshold = 3;
   const int longest_loop_code = 4;
-  int i, len, check_from, check_until;
+  size_t len;
+  int i, check_from, check_until;
   uint8_t buff[256];
   uint8_t location, maj_err, min_err, loop_convention;
   int ret = READING_NA, rc;
@@ -3384,7 +3385,7 @@ check_postcodes(uint8_t fru_id, uint8_t sensor_num, float *value) {
   }
 
   len = 0; // clear higher bits
-  rc = pal_get_80port_record(FRU_MB, NULL, 0, buff, (uint8_t *)&len);
+  rc = pal_get_80port_record(FRU_MB, buff, sizeof(buff), &len);
   if (rc != PAL_EOK)
     goto error_exit;
 
@@ -3480,7 +3481,8 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
   static time_t rst_time = 0;
   uint8_t postcodes[256] = {0};
   struct stat file_stat;
-  int ret = READING_NA, rc, len;
+  int ret = READING_NA, rc;
+  size_t len = 0;
   char sensor_name[32] = {0};
   char error[32] = {0};
 
@@ -3497,7 +3499,7 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
     // cache current postcode buffer
     if (stat("/tmp/DWR", &file_stat) != 0) {
       memset(postcodes_last, 0, sizeof(postcodes_last));
-      pal_get_80port_record(FRU_MB, NULL, 0, postcodes_last, (uint8_t *)&len);
+      pal_get_80port_record(FRU_MB, postcodes_last, sizeof(postcodes_last), &len);
     }
   }
 
@@ -3508,7 +3510,7 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
 
     // Port 80 updated
     memset(postcodes, 0, sizeof(postcodes));
-    rc = pal_get_80port_record(FRU_MB, NULL, 0, postcodes, (uint8_t *)&len);
+    rc = pal_get_80port_record(FRU_MB, postcodes, sizeof(postcodes), &len);
     if (rc == PAL_EOK && memcmp(postcodes_last, postcodes, 256) != 0) {
       frb3_fail = 0;
     }
@@ -5444,14 +5446,15 @@ static void *dwr_handler(void *arg) {
 
 void
 pal_second_crashdump_chk(void) {
-    int fd, len;
+    int fd;
+    size_t len;
 
     if (tid_dwr != -1)
       pthread_cancel(tid_dwr);
 
     if (pthread_create(&tid_dwr, NULL, dwr_handler, NULL) == 0) {
       memset(postcodes_last, 0, sizeof(postcodes_last));
-      pal_get_80port_record(FRU_MB, NULL, 0, postcodes_last, (uint8_t *)&len);
+      pal_get_80port_record(FRU_MB, postcodes_last, sizeof(postcodes_last), &len);
 
       fd =  creat("/tmp/DWR", 0644);
       if (fd)
@@ -6274,7 +6277,7 @@ pal_sensor_sts_check(uint8_t snr_num, float val, uint8_t *thresh) {
 }
 
 int
-pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+pal_get_80port_record(uint8_t slot, uint8_t *res_data, size_t max_len, size_t *res_len)
 {
   FILE *fp=NULL;
   int i;
@@ -6294,7 +6297,7 @@ pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
     return PAL_ENOTSUP;
   }
 
-  for (i=0; i<256; i++) {
+  for (i=0; i<max_len; i++) {
     // %hhx: unsigned char*
     if (fscanf(fp, "%hhx", &postcode) == 1) {
       res_data[i] = postcode;
@@ -6303,7 +6306,7 @@ pal_get_80port_record(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t 
     }
   }
   if (res_len)
-    *(unsigned short *)res_len = i;
+    *res_len = (size_t)i;
 
   fclose(fp);
 

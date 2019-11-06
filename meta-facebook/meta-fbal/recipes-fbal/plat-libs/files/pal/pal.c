@@ -1027,12 +1027,11 @@ pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver) {
     return ret;
   }
   
-  ver[0] = dev_id.fw_rev1; 
-  ver[1] = dev_id.fw_rev2 & 0x0f;
-  ver[2] = dev_id.fw_rev2 >> 4; 
-  ver[3] = dev_id.aux_fw_rev[0];
-  ver[4] = dev_id.aux_fw_rev[1];
-  ver[5] = dev_id.aux_fw_rev[2];
+  ver[0] = dev_id.fw_rev1;
+  ver[1] = dev_id.fw_rev2 >> 4; 
+  ver[2] = dev_id.fw_rev2 & 0x0f;
+  ver[3] = dev_id.aux_fw_rev[1];
+  ver[4] = dev_id.aux_fw_rev[2] >> 4;
   return ret;
 }
 

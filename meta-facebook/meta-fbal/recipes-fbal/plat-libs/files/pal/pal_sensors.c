@@ -27,6 +27,8 @@ static int read_nic_temp(uint8_t nic_id, float *value);
 static int read_hd_temp(uint8_t hd_id, float *value);
 static int read_cpu_temp(uint8_t cpu_id, float *value);
 static int read_cpu_pkg_pwr(uint8_t cpu_id, float *value);
+static int read_cpu_tjmax(uint8_t cpu_id, float *value);
+static int read_cpu_thermal_margin(uint8_t cpu_id, float *value);
 static int read_hsc_iout(uint8_t hsc_id, float *value);
 static int read_hsc_vin(uint8_t hsc_id, float *value);
 static int read_hsc_pin(uint8_t hsc_id, float *value);
@@ -82,6 +84,10 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_DATA1_DRIVER_TEMP,
   MB_SNR_CPU0_PKG_POWER,
   MB_SNR_CPU1_PKG_POWER,
+  MB_SNR_CPU0_TJMAX,
+  MB_SNR_CPU1_TJMAX,
+  MB_SNR_CPU0_THERM_MARGIN,
+  MB_SNR_CPU1_THERM_MARGIN,
 };
 
 const uint8_t nic0_sensor_list[] = {
@@ -249,12 +255,12 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x2E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x2F
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x30
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x31
+  {"MB_CPU0_TJMAX", CPU_ID0, read_cpu_tjmax, false, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x30
+  {"MB_CPU1_TJMAX", CPU_ID1, read_cpu_tjmax, false, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x31
   {"MB_CPU0_PKG_POWER", CPU_ID0, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x32
   {"MB_CPU1_PKG_POWER", CPU_ID1, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x33 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x34
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x35
+  {"MB_CPU0_THERM_MARGIN", CPU_ID0, read_cpu_thermal_margin, false, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x34
+  {"MB_CPU1_THERM_MARGIN", CPU_ID1, read_cpu_thermal_margin, false, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x35
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x36
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x37
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, //0x38
@@ -540,7 +546,9 @@ get_cm_snr_val(uint8_t offset, PAL_CM_SENSOR_INFO* info) {
   char value[MAX_VALUE_LEN] = {0};
   size_t size;
 
+#ifdef DEBUG
   syslog(LOG_DEBUG, "%s sensor offset=%x\n", __func__, offset);
+#endif
 
   sprintf(key, "pdb_cm_info");
   if(kv_get(key, value, &size, KV_FPERSIST) != 0) {
@@ -770,8 +778,10 @@ pal_get_peci_val(struct peci_xfer_msg *msg) {
 static int
 cmd_peci_get_temp(uint8_t cpu_addr, float *dts) {
   struct peci_xfer_msg msg;
-  int ret, dts_int;
-  float dts_fra;
+  int ret;
+  PAL_S10_6_FORMAT margin;
+  uint16_t tmp;
+
 
   msg.addr = cpu_addr;
   msg.tx_len = 0x01;
@@ -783,10 +793,21 @@ cmd_peci_get_temp(uint8_t cpu_addr, float *dts) {
     return -1;
   }
 
-  dts_int = (msg.rx_buf[1] << 8 | msg.rx_buf[0]);
-  dts_fra = (dts_int & 0x003F) * 0.016;
-  dts_int = 0x3FF - (dts_int >> 6) +1;
-  *dts =(float) dts_int + dts_fra;
+  tmp = (msg.rx_buf[1] << 8 | msg.rx_buf[0]);
+  margin.fract = (tmp & 0x003F) * 0.016;
+
+  margin.integer = tmp >> 6;
+  *dts =margin.integer + margin.fract;
+
+  if((0x80 & msg.rx_buf[1]) == 0) {
+   *dts = (float) (margin.integer + margin.fract);
+  } else {
+   *dts = (float) (margin.integer - margin.fract);
+  }
+
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s value=%f\n", __func__, *dts); 
+#endif
 
   return 0;
 }
@@ -813,6 +834,42 @@ cmd_peci_rdpkgconfig(PECI_RD_PKG_CONFIG_INFO* info, uint8_t* rx_buf, uint8_t rx_
   return 0;
 }
 
+int
+cmd_peci_get_thermal_margin(uint8_t cpu_addr, float* value) {
+  PECI_RD_PKG_CONFIG_INFO info;
+  int ret;
+  uint8_t rx_len=5;
+  uint8_t rx_buf[rx_len];
+  PAL_S10_6_FORMAT margin;
+  uint16_t tmp;
+
+  info.cpu_addr= cpu_addr;
+  info.dev_info = 0x00;
+  info.index = PECI_INDEX_THERMAL_MARGIN;
+  info.para_l = 0x00;
+  info.para_h = 0x00;
+
+  ret = cmd_peci_rdpkgconfig(&info, rx_buf, rx_len);
+  if(ret != 0) {
+    return -1;
+  }
+
+  tmp = rx_buf[1] | (rx_buf[2] << 8);
+
+  margin.integer = (int)(tmp >> 6);
+  margin.fract = (0x003F & tmp) * 0.016;
+
+  syslog(LOG_DEBUG, "%s rxbuf[0]=%x, rxbuf[1]=%x tmp=%x\n", __func__, rx_buf[1], rx_buf[2], tmp);
+ 
+  if((0x80 & rx_buf[1]) == 0) {
+   *value = (float) (margin.integer + margin.fract);
+  } else {
+   *value = (float) (margin.integer - margin.fract);
+  }
+
+  syslog(LOG_DEBUG, "%s value=%f\n", __func__, *value); 
+  return 0;
+}
 
 static int
 cmd_peci_get_tjmax(uint8_t cpu_addr, int* tjmax) {
@@ -908,6 +965,50 @@ cmd_peci_total_time(uint8_t cpu_addr, uint32_t* value) {
   return 0;
 } 
 
+static int 
+read_cpu_tjmax(uint8_t cpu_id, float *value) {
+  uint8_t cpu_addr = cpu_info_list[cpu_id].cpu_addr;
+  int ret=0;
+  int tjmax=0;
+  static int retry = 0;
+
+  ret =  cmd_peci_get_tjmax(cpu_addr, &tjmax);
+  if (ret != 0) {
+    retry++;
+    if (retry <= 3 ) {
+      ret = READING_SKIP;
+    }
+    ret = READING_NA;
+    return ret;
+  } else {
+    retry = 0;
+  }
+  *value = (float)tjmax;
+  return 0;
+}
+
+static int 
+read_cpu_thermal_margin(uint8_t cpu_id, float *value) {
+  uint8_t cpu_addr = cpu_info_list[cpu_id].cpu_addr;
+  int ret=0;
+  float margin=0;
+  static int retry = 0;
+
+  ret = cmd_peci_get_temp(cpu_addr, &margin);
+  if (ret != 0) {
+    retry++;
+    if (retry <= 3 ) {
+      ret = READING_SKIP;
+    }
+    ret = READING_NA;
+    return ret;
+  } else {
+    retry = 0;
+  }
+  *value = margin;
+  return 0;
+}
+
 static int
 read_cpu_pkg_pwr(uint8_t cpu_id, float *value) {
   // Energy units: Intel Doc#554767, p37, 2^(-ENERGY UNIT) J, ENERGY UNIT defalut is 14
@@ -979,23 +1080,38 @@ read_cpu_temp(uint8_t cpu_id, float *value) {
   int ret, tjmax;
   float dts;
   uint8_t cpu_addr;
+  static int retry = 0;
   
   cpu_addr = cpu_info_list[cpu_id].cpu_addr; 
 
   ret = cmd_peci_get_temp(cpu_addr, &dts);
-  if (ret < 0) {
-    return -1;
+  if (ret != 0) {
+    retry++;
+    if (retry <= 3 ) {
+      ret = READING_SKIP;
+    }
+    ret = READING_NA;
+    return ret;
+  } else {
+    retry = 0;
   }
 
   ret = cmd_peci_get_tjmax(cpu_addr, &tjmax);
-  if (ret < 0) {
-    return -1;
+  if (ret != 0) {
+    retry++;
+    if (retry <= 3 ) {
+      ret = READING_SKIP;
+    }
+    ret = READING_NA;
+    return ret;
+  } else {
+    retry = 0;
   }
 
-  *value = tjmax - dts; 
-  #ifdef DEBUG
+  *value = tjmax + dts; 
+//  #ifdef DEBUG
     syslog(LOG_DEBUG, "%s value=%f\n", __func__, *value);
-  #endif
+//  #endif
   return 0;  
 }
 
@@ -1003,10 +1119,18 @@ static int
 read_cpu0_dimm_temp(uint8_t dimm_id, float *value) {
   int ret;
   uint8_t temp;
+  static int retry = 0;
 
   ret = cmd_peci_dimm_thermal_reading(PECI_CPU0_ADDR, dimm_id, &temp);
-  if (ret !=0) {
-    return -1;
+  if (ret != 0) {
+    retry++;
+    if (retry <= 3 ) {
+      ret = READING_SKIP;
+    }
+    ret = READING_NA;
+    return ret;
+  } else {
+    retry = 0;
   }
 
   *value = (float)temp;
@@ -1020,10 +1144,18 @@ static int
 read_cpu1_dimm_temp(uint8_t dimm_id, float *value) {
   int ret;
   uint8_t temp;
+  static int retry = 0;
 
   ret = cmd_peci_dimm_thermal_reading(PECI_CPU1_ADDR, dimm_id, &temp);
-  if (ret !=0) {
-    return -1;
+  if (ret != 0) {
+    retry++;
+    if (retry <= 3 ) {
+      ret = READING_SKIP;
+    }
+    ret = READING_NA;
+    return ret;
+  } else {
+    retry = 0 ;
   }
 
   *value = (float)temp;
@@ -1169,7 +1301,6 @@ read_hsc_vin(uint8_t hsc_id, float *value) {
     return ret;
   }
 
-  
   get_adm1278_info(hsc_id, ADM1278_VOLTAGE, &m, &b, &r);
   if (rbuf[6] == 0) {
     *value = ((float)(rbuf[11] << 8 | rbuf[10]) * r - b) / m;
@@ -1344,8 +1475,7 @@ read_nic_temp(uint8_t nic_id, float *value) {
   syslog(LOG_DEBUG, "%s Temp[%d]=%x bus=%x slavaddr=%x\n", __func__, nic_id, rbuf[0], bus, addr);
 #endif
 
-  if (ret < 0) {
-    syslog(LOG_DEBUG, "ret=%d", ret);  
+  if (ret < 0) { 
     goto err_exit;
   }
 
@@ -1388,7 +1518,6 @@ read_hd_temp(uint8_t hd_id, float *value) {
 #endif
 
   if (ret < 0) {
-    syslog(LOG_DEBUG, "ret=%d", ret);  
     goto err_exit;
   }
 

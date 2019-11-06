@@ -12,6 +12,7 @@
 #define PECI_RETRY_TIMES                        (0)
 #define PECI_CMD_RD_PKG_CONFIG                  (0xA1)
 #define PECI_INDEX_ACCUMULATED_ENERGY_STATUS    (3)
+#define PECI_INDEX_THERMAL_MARGIN               (10)
 #define PECI_INDEX_DIMM_THERMAL_RW              (14)
 #define PECI_INDEX_TEMP_TARGET                  (16)
 #define PECI_INDEX_TOTAL_TIME                   (31)
@@ -417,5 +418,11 @@ typedef struct {
   uint8_t val_h;
   uint8_t val_l;
 } PAL_CM_SENSOR_INFO;
+
+
+typedef struct {
+  int integer :10;
+  uint8_t fract :6;
+} PAL_S10_6_FORMAT;
 
 #endif

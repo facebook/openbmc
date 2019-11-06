@@ -34,6 +34,7 @@ extern "C" {
 #define FRU_BIN "/tmp/fruid.bin"
 #define FRU_EEPROM "/sys/class/i2c-dev/i2c-6/device/6-0054/eeprom"
 
+#define LARGEST_DEVICE_NAME 120
 #define ERR_NOT_READY -2
 
 extern size_t pal_pwm_cnt;
@@ -60,16 +61,11 @@ enum {
   PCH,
 };
 
-enum {
-  HSC_1 = 0,
-  HSC_2,
-  HSC_AUX,
-};
-
 #define MAX_NUM_FRUS 1
 #define MAX_NODES    1
 
-int read_hsc_reg(uint8_t id, uint8_t reg, uint8_t bytes, uint32_t *value);
+int read_device(const char *device, int *value);
+int write_device(const char *device, int value);
 
 #ifdef __cplusplus
 } // extern "C"

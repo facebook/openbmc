@@ -35,13 +35,6 @@ size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0..3";
 const char pal_tach_list[] = "0..7";
 
-#define LARGEST_DEVICE_NAME 120
-
-#define LTC4282_REG_VGPIO	0x34
-#define LTC4282_REG_VSOURCE	0x3A
-#define LTC4282_REG_VSENSE	0x40
-#define LTC4282_REG_POWER	0x46
-
 #define SWITCHTEC_DEV "/dev/i2c-12@0x%x"
 
 #define MAX_SENSOR_NUM FRU_SENSOR_MAX+1
@@ -76,13 +69,16 @@ const uint8_t fru_sensor_list[] = {
   FRU_SWITCH_PAX1_DIE_TEMP,
   FRU_SWITCH_PAX2_DIE_TEMP,
   FRU_SWITCH_PAX3_DIE_TEMP,
-  PDB_HSC_P12V_1_VOLT,
+  PDB_HSC_P12V_1_VIN,
+  PDB_HSC_P12V_1_VOUT,
   PDB_HSC_P12V_1_CURR,
   PDB_HSC_P12V_1_PWR,
-  PDB_HSC_P12V_2_VOLT,
+  PDB_HSC_P12V_2_VIN,
+  PDB_HSC_P12V_2_VOUT,
   PDB_HSC_P12V_2_CURR,
   PDB_HSC_P12V_2_PWR,
-  PDB_HSC_P12V_AUX_VOLT,
+  PDB_HSC_P12V_AUX_VIN,
+  PDB_HSC_P12V_AUX_VOUT,
   PDB_HSC_P12V_AUX_CURR,
   PDB_HSC_P12V_AUX_PWR,
 };
@@ -114,29 +110,22 @@ const char* fru_sensor_name[] = {
   "FRU_SWITCH_PAX1_DIE_TEMP",
   "FRU_SWITCH_PAX2_DIE_TEMP",
   "FRU_SWITCH_PAX3_DIE_TEMP",
-  "PDB_HSC_P12V_1_VOLT",
+  "PDB_HSC_P12V_1_VIN",
+  "PDB_HSC_P12V_1_VOUT",
   "PDB_HSC_P12V_1_CURR",
   "PDB_HSC_P12V_1_PWR",
-  "PDB_HSC_P12V_2_VOLT",
+  "PDB_HSC_P12V_2_VIN",
+  "PDB_HSC_P12V_2_VOUT",
   "PDB_HSC_P12V_2_CURR",
   "PDB_HSC_P12V_2_PWR",
-  "PDB_HSC_P12V_AUX_VOLT",
+  "PDB_HSC_P12V_AUX_VIN",
+  "PDB_HSC_P12V_AUX_VOUT",
   "PDB_HSC_P12V_AUX_CURR",
   "PDB_HSC_P12V_AUX_PWR",
 };
 
 float fru_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 size_t fru_sensor_cnt = sizeof(fru_sensor_list)/sizeof(uint8_t);
-
-static int sensors_read_fan_checked(const char *label, float *value)
-{
-  int ret = sensors_read_fan(label, value);
-  if (ret != 0 || *value < 500 || *value > fru_sensor_threshold[FRU_FAN0_TACH_I][UCR_THRESH]) {
-    sleep(2);
-    ret = sensors_read_fan(label, value);
-  }
-  return ret;
-}
 
 static int read_battery_value(float *value)
 {
@@ -201,125 +190,6 @@ int read_switchtec_dietemp(uint8_t sensor_num, float *value)
 
   switchtec_close(dev);
 
-  return ret;
-}
-
-// LTC4282
-static int read_ltc4282_current(uint8_t sensor_num, float *value)
-{
-  int ret;
-  float Rsense;
-  unsigned int val;
-  uint8_t hsc_id;
-
-  switch (sensor_num)
-  {
-    case PDB_HSC_P12V_1_CURR:
-      hsc_id = HSC_1;
-      Rsense = 0.0001;
-      break;
-    case PDB_HSC_P12V_2_CURR:
-      hsc_id = HSC_2;
-      Rsense = 0.0001;
-      break;
-    case PDB_HSC_P12V_AUX_CURR:
-      hsc_id = HSC_AUX;
-      Rsense = 0.0005;
-      break;
-    default:
-      return READING_NA;
-      break;
-  }
-
-  ret = read_hsc_reg(hsc_id, LTC4282_REG_VSENSE, 2, &val);
-  if (ret < 0) {
-    ret = READING_NA;
-    goto exit;
-  }
-  val = (val << 8 | val >> 8) & 0xFFFF;
-
-  // I = CODE(word) * 0.04V / (2^16 -1) * Rsense
-  *value = (float)((val*0.04) / 65535 / Rsense);
-
-exit:
-  return ret;
-}
-
-// LTC4282
-static int read_ltc4282_power(uint8_t sensor_num, float *value)
-{
-  int ret;
-  float Rsense;
-  unsigned int val;
-  uint8_t hsc_id;
-
-  switch (sensor_num)
-  {
-    case PDB_HSC_P12V_1_PWR:
-      hsc_id = HSC_1;
-      Rsense = 0.0001;
-      break;
-    case PDB_HSC_P12V_2_PWR:
-      hsc_id = HSC_2;
-      Rsense = 0.0001;
-      break;
-    case PDB_HSC_P12V_AUX_PWR:
-      hsc_id = HSC_AUX;
-      Rsense = 0.0005;
-      break;
-    default:
-      return READING_NA;
-      break;
-  }
-
-  ret = read_hsc_reg(hsc_id, LTC4282_REG_POWER, 2, &val);
-  if (ret < 0) {
-    ret = READING_NA;
-    goto exit;
-  }
-  val = (val << 8 | val >> 8) & 0xFFFF;
-
-  // P = CODE(word) * 0.04V * Vfs(out) * 2^16 / (2^16 -1)^2 * Rsense
-  *value = (float)((val*0.04*16.64) / 65535 / Rsense);
-
-exit:
-  return ret;
-}
-
-// LTC4282
-static int read_ltc4282_volt(uint8_t sensor_num, float *value)
-{
-  int ret;
-  unsigned int val;
-  uint8_t hsc_id;
-
-  switch (sensor_num)
-  {
-    case PDB_HSC_P12V_1_VOLT:
-      hsc_id = HSC_1;
-      break;
-    case PDB_HSC_P12V_2_VOLT:
-      hsc_id = HSC_2;
-      break;
-    case PDB_HSC_P12V_AUX_VOLT:
-      hsc_id = HSC_AUX;
-      break;
-    default:
-      return READING_NA;
-      break;
-  }
-
-  ret = read_hsc_reg(hsc_id, LTC4282_REG_VSOURCE, 2, &val);
-  if (ret < 0) {
-    ret = READING_NA;
-    goto exit;
-  }
-  val = (val << 8 | val >> 8) & 0xFFFF;
-
-  // V = CODE(word) * Vfs(out) / (2^16 -1)
-  *value = (float)((val*16.64) / 65535);
-
-exit:
   return ret;
 }
 
@@ -494,9 +364,12 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
     case FRU_ADC_P12V_2:
     case FRU_ADC_P3V3:
     case FRU_ADC_P3V_BAT:
-    case PDB_HSC_P12V_1_VOLT:
-    case PDB_HSC_P12V_2_VOLT:
-    case PDB_HSC_P12V_AUX_VOLT:
+    case PDB_HSC_P12V_1_VIN:
+    case PDB_HSC_P12V_2_VIN:
+    case PDB_HSC_P12V_AUX_VIN:
+    case PDB_HSC_P12V_1_VOUT:
+    case PDB_HSC_P12V_2_VOUT:
+    case PDB_HSC_P12V_AUX_VOUT:
       sprintf(units, "Volts");
       break;
     case FRU_SENSOR_GPU_INLET:
@@ -551,28 +424,28 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
   switch(sensor_num) {
     // Fan Sensors
     case FRU_FAN0_TACH_I:
-      ret = sensors_read_fan_checked("fan1", (float *)value);
+      ret = sensors_read_fan("fan1", (float *)value);
       break;
     case FRU_FAN0_TACH_O:
-      ret = sensors_read_fan_checked("fan2", (float *)value);
+      ret = sensors_read_fan("fan2", (float *)value);
       break;
     case FRU_FAN1_TACH_I:
-      ret = sensors_read_fan_checked("fan3", (float *)value);
+      ret = sensors_read_fan("fan3", (float *)value);
       break;
     case FRU_FAN1_TACH_O:
-      ret = sensors_read_fan_checked("fan4", (float *)value);
+      ret = sensors_read_fan("fan4", (float *)value);
       break;
     case FRU_FAN2_TACH_I:
-      ret = sensors_read_fan_checked("fan5", (float *)value);
+      ret = sensors_read_fan("fan5", (float *)value);
       break;
     case FRU_FAN2_TACH_O:
-      ret = sensors_read_fan_checked("fan6", (float *)value);
+      ret = sensors_read_fan("fan6", (float *)value);
       break;
     case FRU_FAN3_TACH_I:
-      ret = sensors_read_fan_checked("fan7", (float *)value);
+      ret = sensors_read_fan("fan7", (float *)value);
       break;
     case FRU_FAN3_TACH_O:
-      ret = sensors_read_fan_checked("fan8", (float *)value);
+      ret = sensors_read_fan("fan8", (float *)value);
       break;
     // ADC Sensors (Resistance unit = 1K)
     case FRU_ADC_P12V_AUX:
@@ -617,19 +490,40 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
       break;
     // HSC reading
     case PDB_HSC_P12V_1_CURR:
+      ret = sensors_read("ltc4282-i2c-16-53", "P12V_1_CURR", (float *)value);
+      break;
     case PDB_HSC_P12V_2_CURR:
+      ret = sensors_read("ltc4282-i2c-17-40", "P12V_2_CURR", (float *)value);
+      break;
     case PDB_HSC_P12V_AUX_CURR:
-      ret = read_ltc4282_current(sensor_num, (float*)value);
+      ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_CURR", (float *)value);
       break;
     case PDB_HSC_P12V_1_PWR:
-    case PDB_HSC_P12V_2_PWR:
-    case PDB_HSC_P12V_AUX_PWR:
-      ret = read_ltc4282_power(sensor_num, (float*)value);
+      ret = sensors_read("ltc4282-i2c-16-53", "P12V_1_PWR", (float *)value);
       break;
-    case PDB_HSC_P12V_1_VOLT:
-    case PDB_HSC_P12V_2_VOLT:
-    case PDB_HSC_P12V_AUX_VOLT:
-      ret = read_ltc4282_volt(sensor_num, (float*)value);
+    case PDB_HSC_P12V_2_PWR:
+      ret = sensors_read("ltc4282-i2c-17-40", "P12V_2_PWR", (float *)value);
+      break;
+    case PDB_HSC_P12V_AUX_PWR:
+      ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_PWR", (float *)value);
+      break;
+    case PDB_HSC_P12V_1_VIN:
+      ret = sensors_read("ltc4282-i2c-16-53", "P12V_1_VIN", (float *)value);
+      break;
+    case PDB_HSC_P12V_2_VIN:
+      ret = sensors_read("ltc4282-i2c-17-40", "P12V_2_VIN", (float *)value);
+      break;
+    case PDB_HSC_P12V_AUX_VIN:
+      ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_VIN", (float *)value);
+      break;
+    case PDB_HSC_P12V_1_VOUT:
+      ret = sensors_read("ltc4282-i2c-16-53", "P12V_1_VOUT", (float *)value);
+      break;
+    case PDB_HSC_P12V_2_VOUT:
+      ret = sensors_read("ltc4282-i2c-17-40", "P12V_2_VOUT", (float *)value);
+      break;
+    case PDB_HSC_P12V_AUX_VOUT:
+      ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_VOUT", (float *)value);
       break;
     default:
       ret = READING_NA;

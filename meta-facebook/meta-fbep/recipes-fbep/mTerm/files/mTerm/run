@@ -18,4 +18,9 @@
 # Boston, MA 02110-1301 USA
 #
 
-exec /usr/local/bin/mTerm_server oam /dev/ttyS1
+# TODO:
+#	We need to identify which OAM is in use here
+#	then set the proper baudrate.
+BAUDRATE=115200
+
+exec /usr/local/bin/mTerm_server oam /dev/ttyS1 $BAUDRATE

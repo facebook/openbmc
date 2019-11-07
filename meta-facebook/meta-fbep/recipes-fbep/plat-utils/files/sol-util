@@ -18,15 +18,6 @@
 # Boston, MA 02110-1301 USA
 #
 
-# TODO:
-# 	Currently we set baudrate to 115200 as default
-# 	This value might be changed if OAM is different
-# FIXME:
-#	mTerm_server set default baudrate to 57600
-#	It messed up the beginning messages of OAM if
-#	the baudrate is not 57600.
-BAUD=115200
-
 usage() {
   echo "Usage: sol-util [ slot0 | slot1 | slot2 | slot3 |"
   echo "                  slot4 | slot5 | slot6 | slot7 ]"
@@ -62,6 +53,5 @@ elif [ ${#SLOT} != 5 ] || [ "$SLOT_NAME" != "slot" ] || [ $SLOT_NUM -gt 7 ]; the
 fi
 
 switch_mux_to_slot $SLOT_NUM
-/bin/stty -F /dev/ttyS1 $BAUD > /dev/null 2>&1
 
 exec /usr/local/bin/mTerm_client oam

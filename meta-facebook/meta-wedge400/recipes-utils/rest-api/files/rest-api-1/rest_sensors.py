@@ -73,7 +73,7 @@ def get_fru_sensor(fru):
         value = adata[3].strip()
         try:
             value = float(value)
-            result[key] = str(value)
+            result[key] = "{:.2f}".format(value)
         except Exception:
             result[key] = "NA"
     return result

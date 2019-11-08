@@ -34,6 +34,7 @@
 #include <openbmc/ipmb.h>
 #include <facebook/bic.h>
 #include <openbmc/pal.h>
+#include <facebook/fby2_common.h>
 
 
 #define LAST_RECORD_ID 0xFFFF
@@ -64,11 +65,27 @@ fruid_cache_init(uint8_t slot_id) {
   return ret;
 }
 
+bool
+is_nvme_temp_dev(uint8_t sensor_num) {
+  uint8_t NVMe_Temp_dev[] = {GPV2_SENSOR_DEV0_Temp, GPV2_SENSOR_DEV1_Temp, GPV2_SENSOR_DEV2_Temp, GPV2_SENSOR_DEV3_Temp, 
+                             GPV2_SENSOR_DEV4_Temp, GPV2_SENSOR_DEV5_Temp, GPV2_SENSOR_DEV6_Temp, GPV2_SENSOR_DEV7_Temp, 
+                             GPV2_SENSOR_DEV8_Temp, GPV2_SENSOR_DEV9_Temp, GPV2_SENSOR_DEV10_Temp, GPV2_SENSOR_DEV11_Temp};
+  int i = 0;
+  while (NVMe_Temp_dev[i]) {
+    if (sensor_num == NVMe_Temp_dev[i]) {
+      return true;
+    }
+    i++;
+  }
+  return false;
+}
+
 int
 sdr_cache_init(uint8_t slot_id) {
   int ret = 0, rc;
   int fd;
   int retry = 0;
+  int spb_type = 0;
   uint8_t rlen;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   char *path = NULL;
@@ -113,6 +130,13 @@ sdr_cache_init(uint8_t slot_id) {
     }
 
     sdr_full_t *sdr = (sdr_full_t *)res->data;
+
+    spb_type = fby2_common_get_spb_type();
+    if (spb_type == TYPE_SPB_YV250) {
+      if (is_nvme_temp_dev(sdr->sensor_num) == true) {
+        sdr->uc_thresh = YV250_NVMe_Temp_Dev_UCR;
+      }
+    }
 
     write(fd, sdr, sizeof(sdr_full_t));
 

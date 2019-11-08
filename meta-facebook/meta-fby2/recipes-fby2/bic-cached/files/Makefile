@@ -4,7 +4,7 @@ all: bic-cached
 CFLAGS += -Wall -Werror
 
 bic-cached: bic-cached.c
-	$(CC) $(CFLAGS) -pthread -lbic -lpal -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -pthread -lfby2_common -lbic -lpal -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

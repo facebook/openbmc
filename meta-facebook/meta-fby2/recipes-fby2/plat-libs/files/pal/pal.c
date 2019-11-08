@@ -4394,7 +4394,7 @@ pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
       || (snr_num == SP_SENSOR_FAN0_PWM) || (snr_num == SP_SENSOR_FAN1_PWM)
       || (snr_num == SP_SENSOR_FAN2_PWM) || (snr_num == SP_SENSOR_FAN3_PWM)
     ) {
-      if (thresh == UNC_THRESH) {
+      if ((thresh == UNC_THRESH) || (thresh == UCR_THRESH)) {
         if (ignore_thresh) {
           return 1;
         }
@@ -4484,6 +4484,7 @@ pal_alter_sensor_thresh_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
       int ret = pal_get_ignore_thresh(&ignore_thresh);
       if ((ret == 0) && ignore_thresh) {
         *flag = CLEARBIT(*flag,UNC_THRESH);
+        *flag = CLEARBIT(*flag,UCR_THRESH);
       }
     }
   }

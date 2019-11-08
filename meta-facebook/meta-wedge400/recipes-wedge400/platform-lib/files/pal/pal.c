@@ -1489,8 +1489,8 @@ pal_get_board_type_rev(uint8_t *brd_type_rev){
           *brd_type_rev = BOARD_WEDGE400_EVT3;
         }
         break;
-      case 0x10: *brd_type_rev = BOARD_WEDGE400_DVT; break;
-      case 0x11: *brd_type_rev = BOARD_WEDGE400_DVT2; break;
+      case 0x02: *brd_type_rev = BOARD_WEDGE400_DVT; break;
+      case 0x03: *brd_type_rev = BOARD_WEDGE400_DVT2; break;
       default:
         *brd_type_rev = BOARD_UNDEFINED;
         return CC_UNSPECIFIED_ERROR;
@@ -5183,12 +5183,12 @@ void set_fan_led(int brd_rev)
       OBMC_WARN("%s: can't access %s\n",__func__,path);
       return;
     }
-    pal_get_sensor_threshold(FRU_SMB, sensor_num[i], UNC_THRESH, &unc);
+    pal_get_sensor_threshold(FRU_SMB, sensor_num[i], UCR_THRESH, &unc);
     pal_get_sensor_threshold(FRU_SMB, sensor_num[i], LCR_THRESH, &lcr);
 #ifdef DEBUG
     OBMC_INFO("fan %d\n",i);
     OBMC_INFO(" val %d\n",value);
-    OBMC_INFO(" unc %f\n",smb_sensor_threshold[sensor_num[i]][UNC_THRESH]);
+    OBMC_INFO(" ucr %f\n",smb_sensor_threshold[sensor_num[i]][UCR_THRESH]);
     OBMC_INFO(" lcr %f\n",smb_sensor_threshold[sensor_num[i]][LCR_THRESH]);
 #endif
     if(value == 0) {

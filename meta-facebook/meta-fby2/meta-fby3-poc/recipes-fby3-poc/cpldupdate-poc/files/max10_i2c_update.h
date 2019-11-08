@@ -12,7 +12,7 @@ typedef enum{
   Sector_NotSet,
 }SectorType_t;
 
-void Max10Update_Init(bool bypass_update, int slot_id);
+void Max10Update_Init(bool bypass_update, int slot_id, unsigned char intf, char *i2cdev);
 
 int Max10_Update_Rpd(unsigned char *rpd_file, SectorType_t sectorType);
 void Max10_Show_Ver(void);

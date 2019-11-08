@@ -1,5 +1,5 @@
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://i2cupdate.c;beginline=4;endline=16;md5=4600fd9f038febc050bcb82abb40d3dd"
+LIC_FILES_CHKSUM = "file://i2cupdate.c;beginline=4;endline=16;md5=e834a57c9d5faae8e36221adbeb46250"
 
 SRC_URI  = "file://i2cupdate.c \
             file://max10_i2c_update.c \

@@ -12,8 +12,9 @@
 
 #define USAGE_MESSAGE \
         "Usage:\n" \
-        "  %s --bb $filename.rpd   \n"\
-        "  %s --sb slot[1|2|3|4] $filename.rpd \n\n"
+        "  %s --bb [$filename.rpd|--show]   \n"\
+        "  %s --sb slot[0|1|2|3] [$filename.rpd|--show] \n" \
+        "  %s --nic_exp [$filename.rpd|--show]\n"
 
 static void usage(char *str )
 {
@@ -50,11 +51,15 @@ int main(int argc, char **argv) {
   struct stat finfo;
   int readbytes;
   struct timeval start, end;
-  int ret;
+  int ret = 0;
   bool bypass_update = false;
   bool show_ver = false;
   char input_file[80];
   int slot_id = 0;
+  char *i2cpath[2] = {"/dev/i2c-9", "/dev/i2c-12"}; //quick way
+  int i2cidx = 0;
+  unsigned char intf = 0xff;
+  unsigned char location;
 
   printf("================================================\n");
   printf("Update MAX10 internal flash via I2C interface,  v1.0\n");
@@ -68,9 +73,39 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  ret = get_bmc_location(&location);
+  if ( ret < 0 ) {
+    printf("Cannot get the board id\n");
+    return 0;
+  }
+
   // extract parameter
-  if ( strcmp(argv[1], "--bb") == 0 ) {
+  if ( (strcmp(argv[1], "--nic_exp") == 0) ) { 
+    if ( location != 9 ) {
+      printf("is the board id correct(id=%d)?\n", ret);
+      return 0;
+    }
+
     bypass_update = false;
+    i2cidx = 0;
+    if ( strcmp(argv[2], "--show") == 0 ) {
+      show_ver = true;
+    } else {
+      strcpy(input_file, argv[2]);
+    }
+  } else if ( strcmp(argv[1], "--bb") == 0 ) {
+    if ( location == 9 ) {
+      slot_id = 1;
+      intf = 0x10;
+      bypass_update = true;
+    } else if ( location == 14 ) {
+      bypass_update = false;
+      i2cidx = 1;
+    } else {
+      printf("is the board id correct(id=%d)?\n", ret);
+      return 0;
+    }
+
     if ( strcmp(argv[2], "--show") == 0 ) {
       show_ver = true;
     } else {
@@ -79,13 +114,13 @@ int main(int argc, char **argv) {
   } else if ( strcmp(argv[1], "--sb") == 0 ) {
     bypass_update = true;
     if ( (strcmp(argv[2], "slot1") == 0) ) {
-      slot_id = 1;
+      slot_id = 0;
     } else if ( (strcmp(argv[2], "slot2") == 0) ) {
-      slot_id = 2;
+      slot_id = 1;
     } else if ( (strcmp(argv[2], "slot3") == 0) ) {
-      slot_id = 3;
+      slot_id = 2;
     } else if ( (strcmp(argv[2], "slot4") == 0) ) {
-      slot_id = 4;
+      slot_id = 3;
     } else {
       printf("Cannot recognize the unknown slot: %s\n", argv[2]);
       return -1;
@@ -97,11 +132,12 @@ int main(int argc, char **argv) {
       strcpy(input_file, argv[3]);
     }
   } else {
-    printf("Cannot recognize the param - %s\n", argv[1]);
+    printf("Cannot recognize the params %s\n", argv[1]);
     return 0;
   }
 
-  Max10Update_Init(bypass_update, slot_id);
+  printf("bypass: %d, slot_id: %d, intf: %d\n", bypass_update, slot_id, intf);
+  Max10Update_Init(bypass_update, slot_id, intf, i2cpath[i2cidx]);
 
 
   if ( show_ver == false) {

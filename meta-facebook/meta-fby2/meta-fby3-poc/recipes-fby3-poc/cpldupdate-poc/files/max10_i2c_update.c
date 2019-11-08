@@ -35,6 +35,7 @@
 #include <time.h>
 static int g_i2c_file = 0;
 static uint8_t g_cpld_addr = 0;
+static uint8_t g_intf = 0;
 static bool g_bypass_update = false;
 
 #define DEBUGMSG(X)
@@ -52,13 +53,14 @@ static bool g_bypass_update = false;
 
 #define MAX_RETRY         3
 
-void Max10Update_Init(bool bypass_update, int slot_id)
+void Max10Update_Init(bool bypass_update, int slot_id, unsigned char intf, char *i2cdev)
 {
   if ( false == bypass_update ) {
-    if ( (g_i2c_file = open("/dev/i2c-9", O_RDWR)) < 0 ) {
+    if ( (g_i2c_file = open(i2cdev, O_RDWR)) < 0 ) {
     }
   } else {
     g_i2c_file = slot_id;
+    g_intf = intf;
   }
 
   g_cpld_addr = 0x80;
@@ -75,17 +77,38 @@ void Max10Update_Init(bool bypass_update, int slot_id)
 int set_register_via_bypass(int file, uint8_t addr, int reg, int val) {
   int ret;
   int retries = MAX_RETRY;
-  uint8_t txbuf[16] = {0x05/*bus*/, 0x00/*addr*/, 0x00/*read cnt*/};
-  uint8_t rxbuf[16] = {0};
-  uint8_t txlen = 3; //start from 3
+  uint8_t txbuf[32] = {0};
+  uint8_t rxbuf[32] = {0};
+  uint8_t txlen = 0;
   uint8_t rxlen = 0;
 
-  txbuf[1] = addr;
-
-  SET_WRITE_DATA(txbuf, reg, val, txlen);
+  if ( g_intf == 0xff ) {
+    txbuf[0] = 0x05;
+    txbuf[1] = addr;
+    txbuf[2] = 0x00;
+    txlen = 3;
+    SET_WRITE_DATA(txbuf, reg, val, txlen);
+  } else {
+    txbuf[0] = 0x9c;
+    txbuf[1] = 0x9c;
+    txbuf[2] = 0x00;
+    txbuf[3] = g_intf;
+    txbuf[4] = NETFN_APP_REQ << 2;
+    txbuf[5] = CMD_APP_MASTER_WRITE_READ;
+    txbuf[6] = 0x03; 
+    txbuf[7] = addr;
+    txbuf[8] = 0x00;
+    txlen = 9;
+    SET_WRITE_DATA(txbuf, reg, val, txlen);
+  }
 
   while ( retries > 0 ) {
-    ret = bic_ipmb_wrapper((uint8_t)file, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen);
+    if ( g_intf == 0xff ) {
+      ret = bic_ipmb_wrapper((uint8_t)file, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen);
+    } else {
+      ret = bic_ipmb_wrapper((uint8_t)file, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, txbuf, txlen, rxbuf, &rxlen);
+    }
+
     if (ret) {
       sleep(1);
       retries--;
@@ -103,17 +126,42 @@ int set_register_via_bypass(int file, uint8_t addr, int reg, int val) {
 int get_register_via_bypass(int file, uint8_t addr, int reg, int *val) {
   int ret;
   int retries = MAX_RETRY;
-  uint8_t txbuf[16] = {0x05/*bus*/, 0x00/*addr*/, 0x04/*read cnt*/};
-  uint8_t rxbuf[16] = {0};
-  uint8_t txlen = 3; //start from 3
+  uint8_t txbuf[32] = {0};
+  uint8_t rxbuf[32] = {0};
+  uint8_t txlen = 0;
   uint8_t rxlen = 0;
 
-  txbuf[1] = addr;
-
-  SET_READ_DATA(txbuf, reg, txlen);
+  if ( g_intf == 0xff ) {
+    txbuf[0] = 0x05;
+    txbuf[1] = addr;
+    txbuf[2] = 0x04;
+    txlen = 3;
+    SET_READ_DATA(txbuf, reg, txlen);
+  } else {
+    txbuf[0] = 0x9c;
+    txbuf[1] = 0x9c;
+    txbuf[2] = 0x00;
+    txbuf[3] = g_intf;
+    txbuf[4] = NETFN_APP_REQ << 2;
+    txbuf[5] = CMD_APP_MASTER_WRITE_READ;
+    txbuf[6] = 0x03;
+    txbuf[7] = addr;
+    txbuf[8] = 0x04;
+    txlen = 9;
+    SET_READ_DATA(txbuf, reg, txlen);
+  }
 
   while ( retries > 0 ) {
-    ret = bic_ipmb_wrapper((uint8_t)file, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen);
+    if ( g_intf == 0xff ) {
+      ret = bic_ipmb_wrapper((uint8_t)file, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen);
+    } else {
+      ret = bic_ipmb_wrapper((uint8_t)file, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, txbuf, txlen, rxbuf, &rxlen);
+      if ( rxbuf[6] != 0x0 ) {
+        ret = -1;
+      } else {
+        memmove(rxbuf, &rxbuf[7], 4);
+      }
+    }
     if (ret) {
       sleep(1);
       retries--;

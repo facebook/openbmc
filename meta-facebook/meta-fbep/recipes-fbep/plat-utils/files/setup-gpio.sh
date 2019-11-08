@@ -101,6 +101,7 @@ gpio_export BMC_PWR_BTN_IN_N GPIOE0
 
 # PDB 12V POWER (output)
 gpio_export BMC_IPMI_PWR_ON GPIOE1
+gpio_set BMC_IPMI_PWR_ON 1
 
 # ASIC warm reset
 gpio_export WARMRST_BMC_N_ASIC0 GPIOE7

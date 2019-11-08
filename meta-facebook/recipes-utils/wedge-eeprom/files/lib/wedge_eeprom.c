@@ -443,5 +443,5 @@ int wedge_eeprom_parse(const char *fn, struct wedge_eeprom_st *eeprom)
 
 void wedge_eeprom_path(char *eeprom_path)
 {
-  *eeprom_path = FBW_EEPROM_FILE;
+  memcpy(eeprom_path, FBW_EEPROM_FILE, FBW_EEPROM_PATH_SIZE);
 }

@@ -522,6 +522,7 @@ int pal_post_handle(uint8_t slot, uint8_t status);
 int pal_set_last_pwr_state(uint8_t fru, char *state);
 int pal_get_last_pwr_state(uint8_t fru, char *state);
 int pal_get_dev_guid(uint8_t slot, char *guid);
+int pal_set_dev_guid(uint8_t slot, char *str);
 int pal_get_sys_guid(uint8_t slot, char *guid);
 int pal_set_sys_guid(uint8_t slot, char *str);
 int pal_set_com_pwr_btn_n(char *status);

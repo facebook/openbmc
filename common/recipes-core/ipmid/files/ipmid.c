@@ -718,6 +718,26 @@ app_get_device_sys_guid (unsigned char *request, unsigned char req_len,
   }
 }
 
+static void
+oem_set_device_sys_guid (unsigned char *request, unsigned char req_len,
+                        unsigned char *response, unsigned char *res_len)
+{
+  int ret;
+
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  // Get the 16 bytes of System GUID from PAL library
+  ret = pal_set_sys_guid(req->payload_id, (char *)req->data);
+  if (ret) {
+      res->cc = CC_UNSPECIFIED_ERROR;
+      *res_len = 0x00;
+  } else {
+      res->cc = CC_SUCCESS;
+      *res_len = 0x00;
+  }
+}
+
 // Reset Watchdog Timer (IPMI/Section 27.5)
 static void
 app_reset_watchdog_timer (unsigned char *request, unsigned char req_len,
@@ -3375,6 +3395,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_GET_PLAT_INFO:
       oem_get_plat_info (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_SYSTEM_GUID:
+      oem_set_device_sys_guid (request, req_len, response, res_len);
       break;
     case CMD_OEM_SLED_AC_CYCLE:
       oem_sled_ac_cycle (request, req_len, response, res_len);

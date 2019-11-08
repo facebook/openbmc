@@ -5719,6 +5719,47 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
   return pal_get_x86_event_sensor_name(fru, snr_num, name);
 }
 
+// Write GUID into EEPROM
+static int
+pal_set_guid(uint16_t offset, char *guid) {
+  int fd = 0;
+  ssize_t bytes_wr;
+  char eeprom_path[FBW_EEPROM_PATH_SIZE];
+  errno = 0;
+
+  wedge_eeprom_path(eeprom_path);
+
+  // Check for file presence
+  if (access(eeprom_path, F_OK) == -1) {
+      OBMC_ERROR(-1, "pal_set_guid: unable to access the %s file: %s",
+          eeprom_path, strerror(errno));
+      return errno;
+  }
+
+  // Open file
+  fd = open(eeprom_path, O_WRONLY);
+  if (fd == -1) {
+    OBMC_ERROR(-1, "pal_set_guid: unable to open the %s file: %s",
+        eeprom_path, strerror(errno));
+    return errno;
+  }
+
+  // Seek the offset
+  lseek(fd, offset, SEEK_SET);
+
+  // Write GUID data
+  bytes_wr = write(fd, guid, GUID_SIZE);
+  if (bytes_wr != GUID_SIZE) {
+    OBMC_ERROR(-1, "pal_set_guid: write to %s file failed: %s",
+        eeprom_path, strerror(errno));
+    goto err_exit;
+  }
+
+err_exit:
+  close(fd);
+  return errno;
+}
+
 // Read GUID from EEPROM
 static int
 pal_get_guid(uint16_t offset, char *guid) {
@@ -5844,9 +5885,17 @@ pal_get_dev_guid(uint8_t fru, char *guid) {
 }
 
 int
+pal_set_dev_guid(uint8_t slot, char *guid) {
+
+  pal_populate_guid(g_dev_guid, guid);
+
+  return pal_set_guid(OFFSET_DEV_GUID, (char *)g_dev_guid);
+}
+
+int
 pal_get_sys_guid(uint8_t slot, char *guid) {
 
-  return bic_get_sys_guid(slot, (uint8_t *)guid);
+  return bic_get_sys_guid(IPMB_BUS, (uint8_t *)guid);
 }
 
 int
@@ -5855,7 +5904,7 @@ pal_set_sys_guid(uint8_t slot, char *str) {
 
   pal_populate_guid(guid, str);
 
-  return bic_set_sys_guid(slot, guid);
+  return bic_set_sys_guid(IPMB_BUS, guid);
 }
 
 int

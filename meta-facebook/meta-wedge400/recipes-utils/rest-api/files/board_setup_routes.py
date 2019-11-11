@@ -48,3 +48,4 @@ def setup_board_routes(app):
     app.router.add_get(board_routes[21], bhandler.rest_sensors_psu2_hdl)
     app.router.add_get(board_routes[22], bhandler.rest_vddcore_get_volt)
     app.router.add_get(board_routes[23], bhandler.rest_vddcore_set_volt)
+    app.router.add_get(board_routes[24], bhandler.rest_switch_reset_hdl)

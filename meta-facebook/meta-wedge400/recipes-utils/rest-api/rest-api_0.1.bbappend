@@ -23,6 +23,7 @@ SRC_URI += " \
     file://rest-api-1/rest_presence.py \
     file://rest-api-1/rest_seutil.py \
     file://rest-api-1/rest_sensors.py \
+    file://rest-api-1/rest_switch_reset.py \
     file://rest-api-1/rest_vddcore.py \
 "
 
@@ -32,5 +33,6 @@ binfiles1 += " \
     rest_presence.py \
     rest_sensors.py \
     rest_seutil.py \
+    rest_switch_reset.py \
     rest_vddcore.py \
 "

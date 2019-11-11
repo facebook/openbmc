@@ -25,6 +25,7 @@ import rest_presence
 import rest_seutil
 import rest_feutil
 import rest_sensors
+import rest_switch_reset
 import rest_vddcore
 from aiohttp import web
 from rest_utils import dumps_bytestr
@@ -61,9 +62,7 @@ class boardApp_Handler:
 
     # Handler for sys/presence resource endpoint
     async def rest_presence_hdl(self, request):
-        return web.json_response(
-            rest_presence.get_presence_info(), dumps=dumps_bytestr
-        )
+        return web.json_response(rest_presence.get_presence_info(), dumps=dumps_bytestr)
 
     # Handler for sys/presence/scm resource endpoint
     async def rest_presence_scm_hdl(self, request):
@@ -85,21 +84,15 @@ class boardApp_Handler:
 
     # Handler for sys/feutil resource endpoint
     async def rest_feutil_hdl(self, request):
-        return web.json_response(
-            rest_feutil.get_feutil(), dumps=dumps_bytestr
-        )
+        return web.json_response(rest_feutil.get_feutil(), dumps=dumps_bytestr)
 
     # Handler for sys/feutil/all resource endpoint
     async def rest_feutil_all_hdl(self, request):
-        return web.json_response(
-            rest_feutil.get_feutil_all_data(), dumps=dumps_bytestr
-        )
+        return web.json_response(rest_feutil.get_feutil_all_data(), dumps=dumps_bytestr)
 
     # Handler for sys/feutil/fcm resource endpoint
     async def rest_feutil_fcm_hdl(self, request):
-        return web.json_response(
-            rest_feutil.get_feutil_fcm_data(), dumps=dumps_bytestr
-        )
+        return web.json_response(rest_feutil.get_feutil_fcm_data(), dumps=dumps_bytestr)
 
     # Handler for sys/feutil/fan1 resource endpoint
     async def rest_feutil_fan1_hdl(self, request):
@@ -127,48 +120,38 @@ class boardApp_Handler:
 
     # Handler for sys/sensors/scm resource endpoint
     async def rest_sensors_scm_hdl(self, request):
-        return web.json_response(
-            rest_sensors.get_scm_sensors(), dumps=dumps_bytestr
-        )
+        return web.json_response(rest_sensors.get_scm_sensors(), dumps=dumps_bytestr)
 
     # Handler for sys/sensors/smb resource endpoint
     async def rest_sensors_smb_hdl(self, request):
-        return web.json_response(
-            rest_sensors.get_smb_sensors(), dumps=dumps_bytestr
-        )
+        return web.json_response(rest_sensors.get_smb_sensors(), dumps=dumps_bytestr)
 
     # Handler for sys/sensors/pem1 resource endpoint
     async def rest_sensors_pem1_hdl(self, request):
-        return web.json_response(
-            rest_sensors.get_pem1_sensors(), dumps=dumps_bytestr
-        )
+        return web.json_response(rest_sensors.get_pem1_sensors(), dumps=dumps_bytestr)
 
     # Handler for sys/sensors/pem2 resource endpoint
     async def rest_sensors_pem2_hdl(self, request):
-        return web.json_response(
-            rest_sensors.get_pem2_sensors(), dumps=dumps_bytestr
-        )
+        return web.json_response(rest_sensors.get_pem2_sensors(), dumps=dumps_bytestr)
 
     # Handler for sys/sensors/psu1 resource endpoint
     async def rest_sensors_psu1_hdl(self, request):
-        return web.json_response(
-            rest_sensors.get_psu1_sensors(), dumps=dumps_bytestr
-        )
+        return web.json_response(rest_sensors.get_psu1_sensors(), dumps=dumps_bytestr)
 
     # Handler for sys/sensors/psu2 resource endpoint
     async def rest_sensors_psu2_hdl(self, request):
-        return web.json_response(
-            rest_sensors.get_psu2_sensors(), dumps=dumps_bytestr
-        )
+        return web.json_response(rest_sensors.get_psu2_sensors(), dumps=dumps_bytestr)
 
     # Handler for sys/vddcore resource endpoint
     async def rest_vddcore_get_volt(self, request):
-        return web.json_response(
-            rest_vddcore.get_vdd_core(), dumps=dumps_bytestr
-        )
+        return web.json_response(rest_vddcore.get_vdd_core(), dumps=dumps_bytestr)
 
     # Handler for sys/vddcore/{voltage} endpoint
     async def rest_vddcore_set_volt(self, request):
         return web.json_response(
-            rest_vddcore.set_vdd_core(request.match_info['volt']), dumps=dumps_bytestr
+            rest_vddcore.set_vdd_core(request.match_info["volt"], dumps=dumps_bytestr)
         )
+
+    # Handler for sys/switch_reset endpoint
+    async def rest_switch_reset_hdl(self, request):
+        return web.json_response(rest_switch_reset.reset_switch(), dumps=dumps_bytestr)

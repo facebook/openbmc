@@ -42,6 +42,7 @@ SRC_URI += "file://board-utils.sh \
             file://smbcpld_update.sh \
             file://sol.sh \
             file://spi_util.sh \
+            file://switch_reset.sh \
             file://us_console.sh \
             file://wedge_power.sh \
             file://wedge_us_mac.sh \
@@ -67,6 +68,7 @@ OPENBMC_UTILS_FILES += " \
     smbcpld_update.sh \
     sol.sh \
     spi_util.sh \
+    switch_reset.sh \
     us_console.sh \
     wedge_power.sh \
     wedge_us_mac.sh \

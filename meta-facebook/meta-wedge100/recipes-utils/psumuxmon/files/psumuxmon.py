@@ -193,6 +193,7 @@ class Pcard(object):
         self.ltc4281_ucr_assert = {0x1: False, 0x2: False}
         self.ltc4281_unr_assert = {0x1: False, 0x2: False}
         self.ltc4281_fet_bad = {0x1: False, 0x2: False}
+        self.ltc4281_fet_bad_cnt = {0x1: 0, 0x2: 0}
         self.ltc4281_temp_no_val_cnt = {0x1: 0, 0x2: 0}
         self.ltc4281_temp_no_val = {0x1: False, 0x2: False}
         self.ltc4281_temp_no_val_power_off = {0x1: False, 0x2: False}
@@ -411,9 +412,13 @@ class Pcard(object):
                         "ASSERT: raised - channel %d temp failed to read "
                         "due to LTC4281 get unknown trouble" % ch,
                     )
+                    self.power_consumption_reduction()
                     self.ltc4281_temp_no_val[ch] = True
             else:
-                if not self.ltc4281_temp_no_val_power_off[ch]:
+                if (
+                    not self.ltc4281_temp_no_val_power_off[ch]
+                    and not self.ltc4281_temp_no_val[ch]
+                ):
                     syslog.syslog(
                         syslog.LOG_CRIT,
                         "ASSERT: raised - channel %d temp failed to read "
@@ -542,8 +547,9 @@ class Pcard(object):
             and isinstance(fet_bad_fault_ee, int)
         ):
             val = fet_short | fet_bad_cool | fet_bad_fault | fet_bad_fault_ee
-            if val is 1:
-                if not self.ltc4281_fet_bad[ch]:
+            if val == 1:
+                self.ltc4281_fet_bad_cnt[ch] += 1
+                if self.ltc4281_fet_bad_cnt[ch] >= 5 and not self.ltc4281_fet_bad[ch]:
                     syslog.syslog(
                         syslog.LOG_CRIT,
                         "ASSERT: raised - channel: " "%d, MOSFET status is bad" % ch,
@@ -560,6 +566,7 @@ class Pcard(object):
                     )
                     self.dump_ltc4281_status(ch)
                     self.ltc4281_fet_bad[ch] = False
+                    self.ltc4281_fet_bad_cnt[ch] = 0
 
     def check_ltc4151_vol(self) -> None:
         """

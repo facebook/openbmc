@@ -56,14 +56,6 @@ enum {
 };
 
 enum {
-  BYPASS_BIC     = 0,
-  BYPASS_ME      = 1,
-  BYPASS_IMC     = 2,
-  BYPASS_NCSI    = 3,
-  BYPASS_NETWORK = 4,
-};
-
-enum {
   TYPE_SPB_YV2     = 0,
   TYPE_SPB_YV250   = 1,
 };

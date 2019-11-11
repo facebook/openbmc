@@ -271,10 +271,10 @@ def get_vboot_enforcement():
         if vboot_util_binary_or_script.read(4) != b"\x7fELF":
             command.insert(0, "bash")
     vboot_util_output = subprocess.check_output(command).decode()
-    if "Flags software_enforce:  0x01" in vboot_util_output:
+    if "Flags hardware_enforce:  0x01" in vboot_util_output:
+        support = "hardware-enforce"
+    elif "Flags software_enforce:  0x01" in vboot_util_output:
         support = "software-enforce"
-        if "Flags hardware_enforce:  0x01" in vboot_util_output:
-            support = "hardware-enforce"
     return support
 
 

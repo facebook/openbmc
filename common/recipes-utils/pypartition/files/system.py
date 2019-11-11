@@ -38,6 +38,12 @@ from partition import (
 from virtualcat import ImageFile, MemoryTechnologyDevice, VirtualCat
 
 
+# keep the timestamp of last healthd restart so we can block and wait at least
+# 30 seconds from when it happened before critical operations (to make sure that
+# watchdog petting works)
+watchdog_timeout = 30.0
+
+
 # The logging module is absent in old images T25745701.
 try:
     import logging
@@ -213,13 +219,22 @@ def exec_bunch(commands, logger):
             logger.error("Running `{}` failed".format(" ".join(cmd)))
 
 
+def restart_healthd(logger, wait=False):
+    run_verbosely(["sv", "restart", "/etc/sv/healthd/"], logger)
+    # healthd is petting watchdog, if something goes wrong and it doesn't do so
+    # after restart it may hard-reboot the system - it's better to be safe
+    # then sorry here, let's wait 30s before proceeding
+    if wait:
+        time.sleep(watchdog_timeout)
+
+
 def restart_services(logger):
     commands = (
         # restart the high memory profile services
-        ["sv", "restart", "/etc/sv/healthd/"],
         ["sv", "restart", "/etc/sv/restapi/"],
     )
     exec_bunch(commands, logger)
+    restart_healthd(logger, wait=False)
 
 
 def drop_caches(logger):
@@ -357,8 +372,7 @@ def remove_healthd_reboot(logger):
         if changed:
             with open("/etc/healthd-config.json", "w") as conf:
                 json.dump(d, conf)
-            run_verbosely(["sv", "restart", "healthd"], logger)
-            time.sleep(10)
+            restart_healthd(logger, wait=True)
     # If /etc/healthd-config.json does not exist, Python 2 raises plain
     # IOError. Python 3 raises FileNotFoundError but that's a sub-class of
     # IOError.

@@ -173,6 +173,7 @@ def improve_system(logger):
         fix_wedge100_romcs1()
 
         attempts = 0 if args.dry_run else 3
+
         for mtd in full_flash_mtds:
             system.flash(attempts, image_file, mtd, logger)
         # One could in theory pre-emptively set mtdparts for images that

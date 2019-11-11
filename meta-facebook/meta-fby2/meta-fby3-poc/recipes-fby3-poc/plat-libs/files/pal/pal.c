@@ -1772,7 +1772,7 @@ int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   int ret;
 
-  if (slot_id < FRU_SLOT1 || slot_id > FRU_SLOT1) return 0;
+  if (slot_id < FRU_SLOT1 || slot_id > FRU_SLOT4) return 0;
 
   /* Check whether the system is 12V off or on */
   //ret = pal_is_server_12v_on(slot_id, status);

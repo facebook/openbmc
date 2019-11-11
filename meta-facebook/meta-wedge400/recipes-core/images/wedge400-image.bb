@@ -50,6 +50,7 @@ IMAGE_INSTALL += " \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \
+  rackmon \
   "
 IMAGE_FEATURES += " \
   ssh-server-openssh \

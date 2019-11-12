@@ -5,4 +5,5 @@ do_install_append(){
     update-rc.d -f -r ${D} setup-sysconfig.sh remove    
     update-rc.d -f -r ${D} setup-server-type.sh remove
     update-rc.d -f -r ${D} setup-platform.sh remove
+    update-rc.d -f -r ${D} power-on.sh remove
 }

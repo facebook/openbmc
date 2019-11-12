@@ -84,11 +84,46 @@ is_bmc_por() {
   /bin/cat /tmp/ast_por
 }
 
+# Get bmc board id
+get_bmc_board_id() {
+  val=$(( $(gpio_get BOARD_BMC_ID0_R) + ($(gpio_get BOARD_BMC_ID1_R)<<1) + ($(gpio_get BOARD_BMC_ID2_R)<<2) + ($(gpio_get BOARD_BMC_ID3_R)<<3) ))
+  echo $val
+}
+
+# Enable 12V for a server board
+en_server_12V_power() {
+  local pwr_sts
+  local offset
+
+  pwr_sts=$(i2cget -y 12 0xf 0x0)
+
+  case $1 in
+    0)
+      offset=0
+      ;;
+    1)
+      offset=1
+      ;;
+    2)
+      offset=2
+      ;;
+    3)
+      offset=3
+      ;;
+  esac
+
+  pwr_sts=$((pwr_sts | (0x1 << $offset)))
+  i2cset -y 12 0xf 0x0 $pwr_sts
+}
+
 # Enable the I2C on the specified bus
-en_server_i2c() {
+en_server_i2c_bus() {
   local pwr_sts
 
   case $1 in
+    0)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT0)
+      ;;
     1)
       pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT1)
       ;;
@@ -97,9 +132,6 @@ en_server_i2c() {
       ;;
     3)
       pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT3)
-      ;;
-    4)
-      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT4)
       ;;
     *)
       pwr_sts="0"
@@ -116,6 +148,9 @@ is_server_prsnt() {
   local prsnt
 
   case $1 in
+    0)
+      prsnt=$(gpio_get PRSNT_MB_BMC_SLOT0_BB_N)
+      ;;
     1)
       prsnt=$(gpio_get PRSNT_MB_BMC_SLOT1_BB_N)
       ;;
@@ -125,24 +160,19 @@ is_server_prsnt() {
     3)
       prsnt=$(gpio_get PRSNT_MB_BMC_SLOT3_BB_N)
       ;;
-    4)
-      prsnt=$(gpio_get PRSNT_MB_BMC_SLOT4_BB_N)
-      ;;
     *)
       prsnt="1"
       ;;
   esac
 
   if [ $prsnt == "0" ]; then
-    gpio_set HSC_BMC_SLOT$1_EN_R 1
-    en_server_i2c $1
     echo 1
   else
     echo 0
   fi
 }
 
-read_file_rertry() {
+read_file_retry() {
   retries=$1
   wait_time=$2
   file=$3
@@ -223,6 +253,9 @@ is_slot_12v_on() {
   local pwr_sts
 
   case $1 in
+    0)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT0)
+      ;;
     1)
       pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT1)
       ;;
@@ -231,9 +264,6 @@ is_slot_12v_on() {
       ;;
     3)
       pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT3)
-      ;;
-    4)
-      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT4)
       ;;
     *)
       pwr_sts="0"
@@ -252,16 +282,16 @@ get_slot_bus() {
 
   case $1 in
     1)
-      bus=1
+      bus=0
       ;;
     2)
-      bus=3
+      bus=1
       ;;
     3)
-      bus=5
+      bus=2
       ;;
     4)
-      bus=7
+      bus=3
       ;;
   esac
 

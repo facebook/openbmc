@@ -8,6 +8,7 @@
 #include <syslog.h>
 #include <stdlib.h>
 #include <openbmc/vbs.h>
+#include <openbmc/kv.h>
 
 bool get_mtd_name(char* mtd_name)
 {
@@ -34,7 +35,7 @@ bool get_mtd_name(char* mtd_name)
     return found;
 }
 
-bool get_rom_ver(char *buf)
+bool get_rom_ver_from_mtd(char *ver_rom, char *ver_uboot)
 {
   char mtd_name[32];
   if (!get_mtd_name(mtd_name)) {
@@ -51,27 +52,42 @@ bool get_rom_ver(char *buf)
   }
 
   char line[256];
-  char *ver = 0;
   bool found = false;
   while (fgets(line, sizeof(line), fp)) {
     int ret;
-    ret = sscanf(line, "U-Boot 20%*2d.%*2d%*[ ]%m[^ \n]%*[ ](%*[^)])\n", &ver);
-    if (ret == 1) {
-      sprintf(buf, "%s", ver);
+    ret = sscanf(line, "U-Boot %[^ \n]%*[ ]%[^ \n]%*[ ](%*[^)])\n",
+                 ver_uboot, ver_rom);
+    if (ret == 2) {
       found = true;
       break;
     }
   }
-  if (ver)
-    free(ver);
 
   pclose(fp);
   return found;
 }
 
+bool get_rom_ver(char *ver_rom, char *ver_uboot)
+{
+  if((0 == kv_get("rom_version", ver_rom, NULL, 0)) &&
+     (0 == kv_get("rom_uboot_version", ver_uboot, NULL, 0))) {
+    return true;
+  }
+
+  if (get_rom_ver_from_mtd(ver_rom, ver_uboot)) {
+    kv_set("rom_version", ver_rom, 0, 0);
+    kv_set("rom_uboot_version", ver_uboot, 0, 0);
+    return true;
+  }
+
+  return false;
+}
+
 int main(int argc, char *argv[])
 {
   char buf[128];
+  char ver_rom[MAX_VALUE_LEN];
+  char ver_uboot[MAX_VALUE_LEN];
   struct vbs *v;
 
   if (!vboot_supported()) {
@@ -108,8 +124,9 @@ int main(int argc, char *argv[])
   printf("Flags recovery_boot:     0x%02x\n", v->recovery_boot);
   printf("Flags recovery_retried:  0x%02x\n", v->recovery_retries);
   printf("\n");
-  if (get_rom_ver(buf)) {
-    printf("ROM U-Boot version:      %s\n", buf);
+  if (get_rom_ver(ver_rom, ver_uboot)) {
+    printf("ROM version:             %s\n", ver_rom);
+    printf("ROM U-Boot version:      %s\n", ver_uboot);
     printf("\n");
   }
   printf("Status CRC: 0x%04x\n", v->crc);

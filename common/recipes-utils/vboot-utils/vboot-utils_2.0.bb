@@ -16,9 +16,9 @@ SRC_URI += " \
 
 S = "${WORKDIR}"
 
-DEPENDS = "python3 libvbs"
+DEPENDS = "python3 libvbs libkv"
 RDEPENDS_${PN}-python3 += "python3-core"
-RDEPENDS_${PN} += "libvbs"
+RDEPENDS_${PN} += "libvbs libkv"
 
 PACKAGES += "${PN}-python3"
 inherit distutils3 python3-dir

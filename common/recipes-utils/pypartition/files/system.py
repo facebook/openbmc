@@ -220,7 +220,7 @@ def exec_bunch(commands, logger):
 
 
 def restart_healthd(logger, wait=False):
-    run_verbosely(["sv", "restart", "/etc/sv/healthd/"], logger)
+    run_verbosely(["sv", "restart", "healthd"], logger)
     # healthd is petting watchdog, if something goes wrong and it doesn't do so
     # after restart it may hard-reboot the system - it's better to be safe
     # then sorry here, let's wait 30s before proceeding
@@ -231,10 +231,16 @@ def restart_healthd(logger, wait=False):
 def restart_services(logger):
     commands = (
         # restart the high memory profile services
-        ["sv", "restart", "/etc/sv/restapi/"],
+        ["sv", "restart", "restapi"],
     )
     exec_bunch(commands, logger)
-    restart_healthd(logger, wait=False)
+
+    # similarly to exec_bunch - make the restart best effort, this is not
+    # critical
+    try:
+        restart_healthd(logger, wait=False)
+    except Exception as e:
+        logger.error("Restarting healthd failed: {}".format(e))
 
 
 def drop_caches(logger):

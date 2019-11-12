@@ -21,7 +21,6 @@ PV = "0.1"
 
 SRC_URI = "file://Makefile \
            file://ltc4282.c \
-           file://pca9546i.c \
            file://COPYING \
           "
 

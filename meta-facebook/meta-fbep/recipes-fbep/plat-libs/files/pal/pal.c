@@ -38,9 +38,9 @@
   "/sys/bus/i2c/drivers/ltc4282/"#bus"-00"#addr"/hwmon/hwmon"#index"/%s"
 #define LTC4282_STATUS_PWR_GOOD	"power_good"
 #define LTC4282_REBOOT		"reboot"
-#define P12V_1_DIR	LTC4282_DIR(16, 53, 4)
-#define P12V_2_DIR	LTC4282_DIR(17, 40, 5)
-#define P12V_AUX_DIR	LTC4282_DIR(18, 43, 6)
+#define P12V_1_DIR	LTC4282_DIR(16, 53, 6)
+#define P12V_2_DIR	LTC4282_DIR(17, 40, 7)
+#define P12V_AUX_DIR	LTC4282_DIR(18, 43, 8)
 
 #define DELAY_POWER_CYCLE 10
 #define MAX_RETRY 10

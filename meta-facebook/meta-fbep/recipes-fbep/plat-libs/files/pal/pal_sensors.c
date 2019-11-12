@@ -35,6 +35,13 @@ size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0..3";
 const char pal_tach_list[] = "0..7";
 
+#define TLA2024_DIR(bus, addr, index) \
+  "/sys/bus/i2c/drivers/tla2024/"#bus"-00"#addr"/iio:device"#index"/%s"
+#define TLA2024_AIN	"in_voltage%d_raw"
+#define TLA2024_FSR	"scale"
+#define ADC_1_DIR	TLA2024_DIR(16, 48, 1)
+#define ADC_2_DIR	TLA2024_DIR(16, 49, 2)
+
 #define SWITCHTEC_DEV "/dev/i2c-12@0x%x"
 
 #define MAX_SENSOR_NUM FRU_SENSOR_MAX+1
@@ -48,12 +55,20 @@ const char pal_tach_list[] = "0..7";
 const uint8_t fru_sensor_list[] = {
   FRU_FAN0_TACH_I,
   FRU_FAN0_TACH_O,
+  FRU_FAN0_VOLT,
+  FRU_FAN0_CURR,
   FRU_FAN1_TACH_I,
   FRU_FAN1_TACH_O,
+  FRU_FAN1_VOLT,
+  FRU_FAN1_CURR,
   FRU_FAN2_TACH_I,
   FRU_FAN2_TACH_O,
+  FRU_FAN2_VOLT,
+  FRU_FAN2_CURR,
   FRU_FAN3_TACH_I,
   FRU_FAN3_TACH_O,
+  FRU_FAN3_VOLT,
+  FRU_FAN3_CURR,
   FRU_ADC_P12V_AUX,
   FRU_ADC_P3V3_STBY,
   FRU_ADC_P5V_STBY,
@@ -81,6 +96,15 @@ const uint8_t fru_sensor_list[] = {
   PDB_HSC_P12V_AUX_VOUT,
   PDB_HSC_P12V_AUX_CURR,
   PDB_HSC_P12V_AUX_PWR,
+  PDB_ADC_1_VICOR0_TEMP,
+  PDB_ADC_1_VICOR1_TEMP,
+  PDB_ADC_1_VICOR2_TEMP,
+  PDB_ADC_1_VICOR3_TEMP,
+  PDB_ADC_2_VICOR0_TEMP,
+  PDB_ADC_2_VICOR1_TEMP,
+  PDB_ADC_2_VICOR2_TEMP,
+  PDB_ADC_2_VICOR3_TEMP,
+  PDB_SENSOR_OUTLET_TEMP,
 };
 
 /*
@@ -89,12 +113,20 @@ const uint8_t fru_sensor_list[] = {
 const char* fru_sensor_name[] = {
   "FRU_FAN0_TACH_I",
   "FRU_FAN0_TACH_O",
+  "FRU_FAN0_VOLT",
+  "FRU_FAN0_CURR",
   "FRU_FAN1_TACH_I",
   "FRU_FAN1_TACH_O",
+  "FRU_FAN1_VOLT",
+  "FRU_FAN1_CURR",
   "FRU_FAN2_TACH_I",
   "FRU_FAN2_TACH_O",
+  "FRU_FAN2_VOLT",
+  "FRU_FAN2_CURR",
   "FRU_FAN3_TACH_I",
   "FRU_FAN3_TACH_O",
+  "FRU_FAN3_VOLT",
+  "FRU_FAN3_CURR",
   "FRU_ADC_P12V_AUX",
   "FRU_ADC_P3V3_STBY",
   "FRU_ADC_P5V_STBY",
@@ -122,6 +154,15 @@ const char* fru_sensor_name[] = {
   "PDB_HSC_P12V_AUX_VOUT",
   "PDB_HSC_P12V_AUX_CURR",
   "PDB_HSC_P12V_AUX_PWR",
+  "PDB_ADC_1_VICOR0_TEMP",
+  "PDB_ADC_1_VICOR1_TEMP",
+  "PDB_ADC_1_VICOR2_TEMP",
+  "PDB_ADC_1_VICOR3_TEMP",
+  "PDB_ADC_2_VICOR0_TEMP",
+  "PDB_ADC_2_VICOR1_TEMP",
+  "PDB_ADC_2_VICOR2_TEMP",
+  "PDB_ADC_2_VICOR3_TEMP",
+  "PDB_SENSOR_OUTLET_TEMP",
 };
 
 float fru_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
@@ -146,7 +187,7 @@ bail:
   return ret;
 }
 
-int read_switchtec_dietemp(uint8_t sensor_num, float *value)
+static int read_switchtec_dietemp(uint8_t sensor_num, float *value)
 {
   int ret = 0;
   uint8_t addr;
@@ -154,24 +195,7 @@ int read_switchtec_dietemp(uint8_t sensor_num, float *value)
   char device_name[LARGEST_DEVICE_NAME] = {0};
   struct switchtec_dev *dev;
 
-  switch (sensor_num)
-  {
-    case FRU_SWITCH_PAX0_DIE_TEMP:
-      addr = 0x18;
-      break;
-    case FRU_SWITCH_PAX1_DIE_TEMP:
-      addr = 0x19;
-      break;
-    case FRU_SWITCH_PAX2_DIE_TEMP:
-      addr = 0x1a;
-      break;
-    case FRU_SWITCH_PAX3_DIE_TEMP:
-      addr = 0x1b;
-      break;
-    default:
-      return READING_NA;
-      break;
-  }
+  addr = 0x18 + (sensor_num - FRU_SWITCH_PAX0_DIE_TEMP);
   snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, addr);
 
   dev = switchtec_open(device_name);
@@ -191,6 +215,35 @@ int read_switchtec_dietemp(uint8_t sensor_num, float *value)
   switchtec_close(dev);
 
   return ret;
+}
+
+static int sensors_read_vicor(uint8_t sensor_num, float *value)
+{
+  int val;
+  int ain, index;
+  char ain_name[LARGEST_DEVICE_NAME] = {0};
+  char device[LARGEST_DEVICE_NAME] = {0};
+
+  index = (sensor_num - PDB_ADC_1_VICOR0_TEMP) / 4 + 1;
+  snprintf(device, LARGEST_DEVICE_NAME, (index == 1)? ADC_1_DIR: ADC_2_DIR, TLA2024_FSR);
+  // Set FSR to 4.096
+  if (write_device(device, 2) < 0)
+    return -1;
+
+  ain = (sensor_num - PDB_ADC_1_VICOR0_TEMP) % 4;
+  snprintf(ain_name, LARGEST_DEVICE_NAME, TLA2024_AIN, ain);
+  snprintf(device, LARGEST_DEVICE_NAME, (index == 1)? ADC_1_DIR: ADC_2_DIR, ain_name);
+  if (read_device(device, &val) < 0)
+    return READING_NA;
+
+  /*
+   * Convert ADC to temperature
+   * Volt = ADC * 4.096 / 2^11
+   * Temp = (Volt - 2.73) * 100.0
+   */
+  *value = (float)(val*0.2-273.0);
+
+  return 0;
 }
 
 int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
@@ -357,6 +410,10 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
     case FRU_FAN3_TACH_O:
       sprintf(units, "RPM");
       break;
+    case FRU_FAN0_VOLT:
+    case FRU_FAN1_VOLT:
+    case FRU_FAN2_VOLT:
+    case FRU_FAN3_VOLT:
     case FRU_ADC_P12V_AUX:
     case FRU_ADC_P3V3_STBY:
     case FRU_ADC_P5V_STBY:
@@ -380,8 +437,21 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
     case FRU_SWITCH_PAX1_DIE_TEMP:
     case FRU_SWITCH_PAX2_DIE_TEMP:
     case FRU_SWITCH_PAX3_DIE_TEMP:
+    case PDB_ADC_1_VICOR0_TEMP:
+    case PDB_ADC_1_VICOR1_TEMP:
+    case PDB_ADC_1_VICOR2_TEMP:
+    case PDB_ADC_1_VICOR3_TEMP:
+    case PDB_ADC_2_VICOR0_TEMP:
+    case PDB_ADC_2_VICOR1_TEMP:
+    case PDB_ADC_2_VICOR2_TEMP:
+    case PDB_ADC_2_VICOR3_TEMP:
+    case PDB_SENSOR_OUTLET_TEMP:
       sprintf(units, "Degree C");
       break;
+    case FRU_FAN0_CURR:
+    case FRU_FAN1_CURR:
+    case FRU_FAN2_CURR:
+    case FRU_FAN3_CURR:
     case PDB_HSC_P12V_1_CURR:
     case PDB_HSC_P12V_2_CURR:
     case PDB_HSC_P12V_AUX_CURR:
@@ -447,6 +517,30 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
     case FRU_FAN3_TACH_O:
       ret = sensors_read_fan("fan8", (float *)value);
       break;
+    case FRU_FAN0_VOLT:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_VOLT", (float *)value);
+      break;
+    case FRU_FAN0_CURR:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_CURR", (float *)value);
+      break;
+    case FRU_FAN1_VOLT:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_VOLT", (float *)value);
+      break;
+    case FRU_FAN1_CURR:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_CURR", (float *)value);
+      break;
+    case FRU_FAN2_VOLT:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_VOLT", (float *)value);
+      break;
+    case FRU_FAN2_CURR:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_CURR", (float *)value);
+      break;
+    case FRU_FAN3_VOLT:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_VOLT", (float *)value);
+      break;
+    case FRU_FAN3_CURR:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_CURR", (float *)value);
+      break;
     // ADC Sensors (Resistance unit = 1K)
     case FRU_ADC_P12V_AUX:
       ret = sensors_read_adc("FRU_ADC_P12V_AUX", (float *)value);
@@ -482,6 +576,10 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
     case FRU_SENSOR_PAX23_THERM:
       ret = sensors_read("tmp422-i2c-6-4e", "PAX23_THERM", (float *)value);
       break;
+    case PDB_SENSOR_OUTLET_TEMP:
+      ret = sensors_read("tmp421-i2c-17-4c", "OUTLET_TEMP", (float *)value);
+      break;
+    // Temperature within PCIe switch
     case FRU_SWITCH_PAX0_DIE_TEMP:
     case FRU_SWITCH_PAX1_DIE_TEMP:
     case FRU_SWITCH_PAX2_DIE_TEMP:
@@ -524,6 +622,17 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
       break;
     case PDB_HSC_P12V_AUX_VOUT:
       ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_VOUT", (float *)value);
+      break;
+    // Vicor temperature
+    case PDB_ADC_1_VICOR0_TEMP:
+    case PDB_ADC_1_VICOR1_TEMP:
+    case PDB_ADC_1_VICOR2_TEMP:
+    case PDB_ADC_1_VICOR3_TEMP:
+    case PDB_ADC_2_VICOR0_TEMP:
+    case PDB_ADC_2_VICOR1_TEMP:
+    case PDB_ADC_2_VICOR2_TEMP:
+    case PDB_ADC_2_VICOR3_TEMP:
+      ret = sensors_read_vicor(sensor_num, (float *)value);
       break;
     default:
       ret = READING_NA;

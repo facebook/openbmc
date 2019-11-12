@@ -293,10 +293,13 @@ main (int argc, char * const argv[])
   }
  
   slot_id = atoi(argv[ret]);
-  if ((slot_id < FRU_SLOT1) || (slot_id > FRU_SLOT4)) {
+
+
+  if ((slot_id < 0) || (slot_id > 3)) {
     printf("slot error %d\n", slot_id);
     return -1;
   }
+
 
   sprintf(path, BIC_CACHED_PID, slot_id);
   pid_file = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);

@@ -318,14 +318,14 @@ int main(int argc, char **argv) {
 
   // extract parameter
   if ( strcmp(argv[1], "--sb") == 0 ) {
-    if ( (strcmp(argv[2], "slot1") == 0) ) {
+    if ( (strcmp(argv[2], "slot0") == 0) ) {
+      slot_id = 0;
+    } else if ( (strcmp(argv[2], "slot1") == 0) ) {
       slot_id = 1;
     } else if ( (strcmp(argv[2], "slot2") == 0) ) {
       slot_id = 2;
     } else if ( (strcmp(argv[2], "slot3") == 0) ) {
       slot_id = 3;
-    } else if ( (strcmp(argv[2], "slot4") == 0) ) {
-      slot_id = 4;
     } else {
       printf("Cannot recognize the unknown slot: %s\n", argv[2]);
       return -1;

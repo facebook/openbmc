@@ -11,7 +11,7 @@
 
 #define USAGE_MESSAGE \
     "Usage:\n" \
-    "  %s --bic --[feb|reb|bb] slot[1|2|3|4] $image  \n" \
+    "  %s --bic --[feb|reb|bb] slot[0|1|2|3] $image  \n" \
     " feb: front expansion board \n" \
     " reb: riser expansion board \n" \
     "  bb: baseboard\n"
@@ -293,14 +293,14 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  if ( (strcmp(argv[3], "slot1") == 0) ) {
+  if ( (strcmp(argv[3], "slot0") == 0) ) {
+    slot_id = 0;
+  } else if ( (strcmp(argv[3], "slot1") == 0) ) {
     slot_id = 1;
   } else if ( (strcmp(argv[3], "slot2") == 0) ) {
     slot_id = 2;
   } else if ( (strcmp(argv[3], "slot3") == 0) ) {
     slot_id = 3;
-  } else if ( (strcmp(argv[3], "slot4") == 0) ) {
-    slot_id = 4;
   } else {
     printf("Cannot recognize the unknown slot: %s\n", argv[3]);
     return -1;

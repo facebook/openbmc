@@ -29,6 +29,7 @@ extern "C" {
 #endif
 
 #define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle"
+#define FRU_EEPROM_MB    "/sys/class/i2c-dev/i2c-4/device/4-0054/eeprom"
 
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;

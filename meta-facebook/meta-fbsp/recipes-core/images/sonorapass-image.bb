@@ -40,6 +40,7 @@ IMAGE_INSTALL += " \
   ncsid \
   libpldm \
   gpiod \
+  guid-util \
   "
 
 IMAGE_FEATURES += " \

@@ -45,7 +45,7 @@
 #define EEPROM_DC       "/sys/class/i2c-adapter/i2c-%d/%d-0051/eeprom"
 
 #if defined(CONFIG_FBY3_POC)
-#define EEPROM_SPB      "/sys/class/i2c-adapter/i2c-10/10-0051/eeprom"
+#define EEPROM_SPB      "/sys/class/i2c-adapter/i2c-11/11-0051/eeprom"
 #else
 #define EEPROM_SPB      "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom"
 #endif

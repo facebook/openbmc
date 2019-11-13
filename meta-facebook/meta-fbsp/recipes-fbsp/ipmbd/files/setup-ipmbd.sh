@@ -1,4 +1,4 @@
-#!/bin/sh
+#! /bin/sh
 #
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
@@ -19,21 +19,24 @@
 #
 
 ### BEGIN INIT INFO
-# Provides:          setup-sensord
+# Provides:          ipmbd
 # Required-Start:
 # Required-Stop:
 # Default-Start:     S
-# Default-Stop:
-# Short-Description: Setup sensor monitoring
+# Default-Stop:      0 6
+# Short-Description: Provides ipmb message tx/rx service
+#
 ### END INIT INFO
 
 . /usr/local/fbpackages/utils/ast-functions
+echo -n "Starting IPMB Rx/Tx Daemon.."
 
-# Call "fw-util mb --version" once before sensor monitoring to store vr information
-echo "Get MB FW version... "
-/usr/bin/fw-util mb --version > /dev/null
+echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-0/new_device  #USB DBG
+echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-5/new_device  #ME
 
-echo -n "Setup sensor monitoring for FBSP... "
-runsv /etc/sv/sensord > /dev/null 2>&1 &
+ulimit -q 1024000
+runsv /etc/sv/ipmbd_0 > /dev/null 2>&1 &
+runsv /etc/sv/ipmbd_5 > /dev/null 2>&1 &
 
 echo "done."
+

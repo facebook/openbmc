@@ -261,6 +261,12 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_MB:
       *status = 1;
       break;
+    case FRU_NIC0:
+      *status = 1;
+      break;
+    case FRU_NIC1:
+      *status = 1;
+      break;
     default:
       return -1;
     }
@@ -304,6 +310,10 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_ALL;
   } else if (!strcmp(str, "mb")) {
     *fru = FRU_MB;
+  } else if (!strcmp(str, "nic0")) {
+    *fru = FRU_NIC0;
+  } else if (!strcmp(str, "nic1")) {
+    *fru = FRU_NIC1;
   } else {
     syslog(LOG_WARNING, "pal_get_fru_id: Wrong fru#%s", str);
     return -1;
@@ -317,6 +327,12 @@ pal_get_fru_name(uint8_t fru, char *name) {
   switch (fru) {
     case FRU_MB:
       strcpy(name, "mb");
+      break;
+    case FRU_NIC0:
+      strcpy(name, "nic0");
+      break;
+    case FRU_NIC1:
+      strcpy(name, "nic1");
       break;
     default:
       if (fru > MAX_NUM_FRUS)
@@ -529,6 +545,46 @@ pal_populate_guid(char *guid, char *str) {
 int
 pal_get_sys_guid(uint8_t fru, char *guid) {
   pal_get_guid(OFFSET_SYS_GUID, guid);
+}
+
+int
+pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
+  return -1;
+}
+
+int
+pal_set_def_key_value() {
+  int i;
+  char key[MAX_KEY_LEN] = {0};
+
+  for(i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; i++) {
+    if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed.");
+#endif
+    }
+    if (key_cfg[i].function) {
+      key_cfg[i].function(KEY_AFTER_INI, key_cfg[i].name);
+    }
+  }
+
+  /* Actions to be taken on Power On Reset */
+  if (pal_is_bmc_por()) {
+    /* Clear all the SEL errors */
+    memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, "server_sel_error");
+
+    /* Write the value "1" which means FRU_STATUS_GOOD */
+    pal_set_key_value(key, "1");
+
+    /* Clear all the sensor health files*/
+    memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, "server_sensor_health");
+
+    /* Write the value "1" which means FRU_STATUS_GOOD */
+    pal_set_key_value(key, "1");
+  }
+
   return 0;
 }
 
@@ -552,4 +608,22 @@ pal_set_dev_guid(uint8_t fru, char *str) {
 
   pal_populate_guid(guid, str);
   return pal_set_guid(OFFSET_DEV_GUID, guid);
+}
+
+int
+pal_channel_to_bus(int channel) {
+  switch (channel) {
+    case IPMI_CHANNEL_0:
+      return I2C_BUS_0; // USB (LCD Debug Board)
+
+    case IPMI_CHANNEL_6:
+      return I2C_BUS_5; // ME
+  }
+
+  // Debug purpose, map to real bus number
+  if (channel & 0x80) {
+    return (channel & 0x7f);
+  }
+
+  return channel;
 }

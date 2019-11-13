@@ -41,6 +41,8 @@ IMAGE_INSTALL += " \
   libpldm \
   gpiod \
   guid-util \
+  ipmbd\
+  ipmb-util\
   "
 
 IMAGE_FEATURES += " \

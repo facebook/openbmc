@@ -13,37 +13,44 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-function expansion_init() {
-  /usr/local/bin/bic-cached 1 > /dev/null 2>&1 &
+function init_class2_sdr() {
+  /usr/local/bin/bic-cached 0 > /dev/null 2>&1 &
+  /usr/local/bin/bic-cached -r 0x15 0 > /dev/null 2>&1 &
+  /usr/local/bin/bic-cached -r 0x10 0 > /dev/null 2>&1 &
 }
 
-function server_init() {
-  #Get slot type (0:TwinLakes, 1:Crace Flat, 2:Glacier Point 3:Empty Slot)
-  #get_slot_type is to get slot type to check if the slot type is server
-  if [[ $(is_server_prsnt 1) == "1" ]] && [[ $(get_slot_type 1) == "0" || $(get_slot_type 1) == "4" ]]; then
+function init_class1_sdr() {
+  if [[ $(is_server_prsnt 0) == "1" ]]; then
+    /usr/local/bin/bic-cached 0 > /dev/null 2>&1 &
+    /usr/local/bin/bic-cached -r 0x05 0 > /dev/null 2>&1 &
+  fi
+
+  if [[ $(is_server_prsnt 1) == "1" ]]; then
     /usr/local/bin/bic-cached 1 > /dev/null 2>&1 &
+    /usr/local/bin/bic-cached -r 0x05 1 > /dev/null 2>&1 &
   fi
 
-  if [[ $(is_server_prsnt 2) == "1" ]] && [[ $(get_slot_type 2) == "0" || $(get_slot_type 2) == "4" ]]; then
+  if [[ $(is_server_prsnt 2) == "1" ]]; then
     /usr/local/bin/bic-cached 2 > /dev/null 2>&1 &
+    /usr/local/bin/bic-cached -r 0x05 2 > /dev/null 2>&1 &
   fi
 
-  if [[ $(is_server_prsnt 3) == "1" ]] && [[ $(get_slot_type 3) == "0" || $(get_slot_type 3) == "4" ]]; then
+  if [[ $(is_server_prsnt 3) == "1" ]]; then
     /usr/local/bin/bic-cached 3 > /dev/null 2>&1 &
-  fi
-
-  if [[ $(is_server_prsnt 4) == "1" ]] && [[ $(get_slot_type 4) == "0" || $(get_slot_type 4) == "4" ]]; then
-    /usr/local/bin/bic-cached 4 > /dev/null 2>&1 &
+    /usr/local/bin/bic-cached -r 0x05 3 > /dev/null 2>&1 &
   fi
 }
 
 echo -n "Setup Caching for Bridge IC info.."
-Location=$(gpio_get BMC_LOCATION)
-#Location: 1 exp; 0 baseboard
-if [ $Location == "1" ]; then
-  expansion_init
+bmc_location=$(get_bmc_board_id)
+if [ $bmc_location -eq 9 ]; then
+  #The BMC of class2
+  init_class2_sdr
+elif [ $bmc_location -eq 14 ]; then
+  #The BMC of class1
+  init_class1_sdr
 else
-  server_init
+  echo -n "Is board id correct(id=$bmc_location)?..."
 fi
 
 echo "done."

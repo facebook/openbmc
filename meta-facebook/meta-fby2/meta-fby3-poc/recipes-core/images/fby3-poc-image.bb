@@ -28,7 +28,6 @@ IMAGE_INSTALL += " \
   ncsi-util \
   sensor-util \
   sensor-mon \
-  front-paneld \
   power-util \
   mterm\
   cfg-util \

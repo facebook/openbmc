@@ -7,9 +7,9 @@ else
 fi
 declare -a DISTRO_OVERRIDES
 # Add overrides here on a per-platform basis.
-#DISTRO_OVERRIDES=(
-#  meta-fbtp:thud
-#)
+DISTRO_OVERRIDES=(
+  meta-fbal:warrior
+)
 
 platform="$1"
 _distro="${DISTRO_DEFAULT}"

@@ -10,6 +10,7 @@ declare -a DISTRO_OVERRIDES
 DISTRO_OVERRIDES=(
   meta-fbal:warrior
   meta-fbep:warrior
+  meta-fbsp:warrior
 )
 
 platform="$1"

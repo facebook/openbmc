@@ -443,11 +443,18 @@ main(int argc, char **argv) {
             fshowethstats = 1;
             break;
     case 'p':
+            bufSize = 1024; // buffer size for PLDM FW update [default=1024]
             pfile = optarg;
             printf ("Input file: \"%s\"\n", pfile);
             argflag = getopt(argc, (char **)argv, "b:");
             if (argflag == 'b') {
-               bufSize = (int)strtoul(optarg, NULL, 0);
+              bufSize = (int)strtoul(optarg, NULL, 0);
+              if (bufSize < 0) {
+                printf("bufSize %d is out of range.\n", bufSize);
+                goto free_exit;
+              }
+            } else {
+              goto free_exit;
             }
             printf("bufSize = %d\n", bufSize);
             fupgrade = 1;
@@ -487,7 +494,12 @@ main(int argc, char **argv) {
     msg->msg_payload[1] = PLDM_TYPE_FIRMWARE_UPDATE;
     msg->msg_payload[2] = CMD_CANCEL_UPDATE;
   } else if (!fupgrade) {
-    msg->cmd = (int)strtoul(argv[optind++], NULL, 0);
+    int tmp_cmd = (int)strtoul(argv[optind++], NULL, 0);
+    if (tmp_cmd <= 0xFF) {
+      msg->cmd = tmp_cmd;
+    } else {
+      goto free_exit;
+    }
     msg->payload_length = argc - optind;
     for (i=0; i<msg->payload_length; ++i) {
       msg->msg_payload[i] = (int)strtoul(argv[i + optind], NULL, 0);

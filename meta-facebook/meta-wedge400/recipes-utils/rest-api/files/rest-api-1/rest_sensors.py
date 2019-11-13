@@ -53,11 +53,8 @@ def get_fru_sensor(fru):
         result["result"] = False
         result["reason"] = "{} {} timeout".format(cmd, fru)
 
-    # We flatten all key value pair into one level
-    # We keep the JSON format compatible with other
-    # FBOSS chassis, to make bmc_proxy happy
-    result["name"] = "util"
-    result["Adapter"] = "util"
+    result["name"] = fru
+    result["Adapter"] = fru
     if "not present" in data:
         result["present"] = False
         return result
@@ -104,13 +101,13 @@ def get_psu2_sensors():
 
 
 def get_all_sensors():
-    result = {}
+    result = []
     # FRUs of /usr/local/bin/sensor-util commands
     frus = ["scm", "smb", "psu1", "psu2", "pem1", "pem2"]
 
     for fru in frus:
         sresult = get_fru_sensor(fru)
-        result[fru] = sresult
+        result.append(sresult)
 
     fresult = {"Information": result, "Actions": [], "Resources": frus}
     return fresult

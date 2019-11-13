@@ -81,7 +81,8 @@ enable_jtag_chain
 
 case $2 in
     hw)
-        cpldprog -p "${img}"
+        # enable CPLD immediately after cpld update done
+        cpldprog -p "${img}" -m
         ;;
     sw)
         ispvm -f 1000 dll $DLL_PATH "${img}"

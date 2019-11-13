@@ -99,6 +99,7 @@ int write_device(const char *device, int value)
 int read_device(const char *device, int *value)
 {
   FILE *fp;
+  int ret = 0;
 
   fp = fopen(device, "r");
   if (fp == NULL) {
@@ -108,9 +109,11 @@ int read_device(const char *device, int *value)
     return -1;
   }
 
-  fscanf(fp, "%d", value);
+  if (fscanf(fp, "%d", value) != 1) {
+    ret = -1;
+  }
   fclose(fp);
-  return 0;
+  return ret;
 }
 
 static int pal_key_index(char *key)

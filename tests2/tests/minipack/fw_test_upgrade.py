@@ -103,9 +103,18 @@ class FwUpgradeTest(unittest.TestCase):
             # Test for fw entity priority set in json
             with self.subTest(upgradable_component=item):
                 self.assertEqual(
-                    priority,
+                    attributes[0],
                     self.json.get(item).get("priority"),
                     "Component {} contains priority expected={} found={} ".format(
-                        item, priority, self.json.get(item).get("priority")
+                        item, attributes[0], self.json.get(item).get("priority")
+                    ),
+                )
+            # Test for correct command in json
+            with self.subTest(upgradable_component=item):
+                self.assertEqual(
+                    attributes[1],
+                    self.json.get(item).get("upgrade_cmd"),
+                    "Component {} contains priority expected={} found={} ".format(
+                        item, attributes[1], self.json.get(item).get("upgrade_cmd")
                     ),
                 )

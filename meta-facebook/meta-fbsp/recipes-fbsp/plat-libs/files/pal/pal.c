@@ -545,6 +545,7 @@ pal_populate_guid(char *guid, char *str) {
 int
 pal_get_sys_guid(uint8_t fru, char *guid) {
   pal_get_guid(OFFSET_SYS_GUID, guid);
+  return 0;
 }
 
 int

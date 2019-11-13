@@ -42,7 +42,11 @@ server_power_off(bool gs_flag) {
   if (gdesc == NULL)
     return -1;
 
-  system("/usr/bin/sv stop fscd >> /dev/null");
+  if (system("/usr/bin/sv stop fscd >> /dev/null") != 0) {
+    gpio_close(gdesc);
+    syslog(LOG_CRIT, "Stopping FSCD for power-off failed");
+    return -1;
+  }
 
   ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
   if (ret != 0)
@@ -95,7 +99,9 @@ server_power_on(void) {
 
   sleep(2);
 
-  system("/usr/bin/sv restart fscd >> /dev/null");
+  if (system("/usr/bin/sv restart fscd >> /dev/null") != 0) {
+    syslog(LOG_CRIT, "Restarting FSCD failed");
+  }
 
 error:
   gpio_close(gdesc);
@@ -197,9 +203,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 int
 pal_sled_cycle(void) {
   // Send command to HSC power cycle
-  system("i2cset -y 7 0x11 0xd9 c &> /dev/null");
-
-  return 0;
+  return system("i2cset -y 7 0x11 0xd9 c &> /dev/null");
 }
 
 // Return the front panel's Reset Button status

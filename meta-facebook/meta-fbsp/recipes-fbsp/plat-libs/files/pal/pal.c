@@ -45,10 +45,6 @@
 
 const char pal_fru_list[] = "all, mb, nic0, nic1";
 const char pal_server_list[] = "mb";
-size_t pal_pwm_cnt = 2;
-size_t pal_tach_cnt = 2;
-const char pal_pwm_list[] = "0, 1";
-const char pal_tach_list[] = "0, 1";
 
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
@@ -151,8 +147,8 @@ static int fw_getenv(char *key, char *value)
   return 0;
 }
 
-static void fw_setenv(char *key, char *value)
-{
+static int
+fw_setenv(char *key, char *value) {
   char old_value[MAX_VALUE_LEN] = {0};
   if (fw_getenv(key, old_value) != 0 ||
       strcmp(old_value, value) != 0) {
@@ -161,8 +157,9 @@ static void fw_setenv(char *key, char *value)
      * what we want set */
     char cmd[MAX_VALUE_LEN] = {0};
     snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv %s %s", key, value);
-    system(cmd);
+    return system(cmd);
   }
+  return 0;
 }
 
 //Overwrite the one in obmc-pal.c without systme call of flashcp check
@@ -187,9 +184,9 @@ pal_is_fw_update_ongoing(uint8_t fruid) {
 }
 
 static int
-key_func_por_policy (int event, void *arg)
-{
+key_func_por_policy (int event, void *arg) {
   char value[MAX_VALUE_LEN] = {0};
+  int ret = -1;
 
   switch (event) {
     case KEY_BEFORE_SET:
@@ -197,7 +194,7 @@ key_func_por_policy (int event, void *arg)
         return -1;
       // sync to env
       if ( !strcmp(arg,"lps") || !strcmp(arg,"on") || !strcmp(arg,"off")) {
-        fw_setenv("por_policy", (char *)arg);
+        ret = fw_setenv("por_policy", (char *)arg);
       }
       else
         return -1;
@@ -205,11 +202,11 @@ key_func_por_policy (int event, void *arg)
     case KEY_AFTER_INI:
       // sync to env
       kv_get("server_por_cfg", value, NULL, KV_FPERSIST);
-      fw_setenv("por_policy", value);
+      ret = fw_setenv("por_policy", value);
       break;
   }
 
-  return 0;
+  return ret;
 }
 
 static int
@@ -239,7 +236,9 @@ pal_is_bmc_por(void) {
 
   fp = fopen("/tmp/ast_por", "r");
   if (fp != NULL) {
-    fscanf(fp, "%d", &por);
+    if (fscanf(fp, "%d", &por) != 1) {
+      por = 0;
+    }
     fclose(fp);
   }
 

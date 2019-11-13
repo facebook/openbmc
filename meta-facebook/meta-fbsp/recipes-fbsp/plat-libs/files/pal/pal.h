@@ -133,6 +133,8 @@ int pal_get_fru_name(uint8_t fru, char *name);
 int pal_set_key_value(char *key, char *value);
 int pal_get_key_value(char *key, char *value);
 void pal_update_ts_sled();
+int read_device(const char *device, int *value);
+int write_device(const char *device, int value);
 
 #ifdef __cplusplus
 } // extern "C"

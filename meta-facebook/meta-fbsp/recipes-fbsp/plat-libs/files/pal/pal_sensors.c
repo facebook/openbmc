@@ -19,6 +19,7 @@
 
 //#define DEBUG
 #define GPIO_P3V_BAT_SCALED_EN "P3V_BAT_SCALED_EN"
+#define FAN_DIR "/sys/bus/platform/devices/1e786000.pwm-tacho-controller/hwmon/hwmon0"
 
 static int read_adc_val(uint8_t adc_id, float *value);
 static int read_battery_val(uint8_t adc_id, float *value);
@@ -34,6 +35,11 @@ static int read_hsc_temp(uint8_t hsc_id, float *value);
 static int read_cpu0_dimm_temp(uint8_t dimm_id, float *value);
 static int read_cpu1_dimm_temp(uint8_t dimm_id, float *value);
 static int read_NM_pch_temp(uint8_t nm_snr_id, float *value);
+
+size_t pal_pwm_cnt = 2;
+size_t pal_tach_cnt = 16;
+const char pal_pwm_list[] = "0, 1";
+const char pal_tach_list[] = "0..16";
 
 const uint8_t mb_sensor_list[] = {
   MB_SNR_INLET_TEMP,
@@ -1201,6 +1207,62 @@ read_hd_temp(uint8_t hd_id, float *value) {
   if (fd > 0) {
     close(fd);
   }
+  return ret;
+}
+
+int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
+{
+  char label[32] = {0};
+
+  if (fan >= pal_pwm_cnt ||
+      snprintf(label, sizeof(label), "pwm%d", fan + 1) > sizeof(label)) {
+    return -1;
+  }
+  return sensors_write_fan(label, (float)pwm);
+}
+
+int pal_get_fan_speed(uint8_t fan, int *rpm)
+{
+  char label[32] = {0};
+  float value;
+  int ret;
+
+  if (fan >= pal_tach_cnt ||
+      snprintf(label, sizeof(label), "fan%d", fan + 1) > sizeof(label)) {
+    syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
+    return -1;
+  }
+  ret = sensors_read_fan(label, &value);
+  *rpm = (int)value;
+  return ret;
+}
+
+int pal_get_fan_name(uint8_t num, char *name)
+{
+  if (num >= pal_tach_cnt) {
+    syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, num);
+    return -1;
+  }
+
+  sprintf(name, "Fan %d %s", num/2, num%2==0? "In":"Out");
+
+  return 0;
+}
+
+int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
+{
+  char label[32] = {0};
+  float value;
+  int ret;
+
+  if (fan >= pal_tach_cnt ||
+      snprintf(label, sizeof(label), "pwm%d", fan/8 + 1) > sizeof(label)) {
+    syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
+    return -1;
+  }
+  ret = sensors_read_fan(label, &value);
+  if (ret == 0)
+    *pwm = (int)value;
   return ret;
 }
 

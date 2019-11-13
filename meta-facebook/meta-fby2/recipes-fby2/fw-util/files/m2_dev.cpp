@@ -55,7 +55,7 @@ class M2_DevComponent : public Component {
       if (ret) { // Add Reason for dsiplay NA
         printf("\n");
       } else if (!status) {
-        printf("(Not Presnet)\n");
+        printf("(Not Present)\n");
       } else if (!nvme_ready) {
         printf("(NVMe Not Ready)\n");
       } else if (ffi != FFI_0_ACCELERATOR) {

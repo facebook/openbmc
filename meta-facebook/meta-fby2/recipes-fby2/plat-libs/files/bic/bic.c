@@ -2174,6 +2174,10 @@ bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *pat
       goto error_exit;
     } else {
       syslog(LOG_DEBUG,"%s(): ASIC inform host: ASIC Rx done offset=%d rbuf[0]=%d", __func__,wbuf[0],rbuf[0]);
+      if (rbuf[0] != 6) {
+        ret = -1;
+        goto error_exit;
+      }
     }
   }
 

@@ -70,19 +70,19 @@ int
 fby2_common_fru_name(uint8_t fru, char *str) {
 
   switch(fru) {
-    case FRU_SLOT1:
+    case 0:
       sprintf(str, "slot1");
       break;
 
-    case FRU_SLOT2:
+    case 1:
       sprintf(str, "slot2");
       break;
 
-    case FRU_SLOT3:
+    case 2:
       sprintf(str, "slot3");
       break;
 
-    case FRU_SLOT4:
+    case 3:
       sprintf(str, "slot4");
       break;
 
@@ -112,13 +112,13 @@ fby2_common_fru_id(char *str, uint8_t *fru) {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;
   } else if (!strcmp(str, "slot1")) {
-    *fru = FRU_SLOT1;
+    *fru = 0;
   } else if (!strcmp(str, "slot2")) {
-    *fru = FRU_SLOT2;
+    *fru = 1;
   } else if (!strcmp(str, "slot3")) {
-    *fru = FRU_SLOT3;
+    *fru = 2;
   } else if (!strcmp(str, "slot4")) {
-    *fru = FRU_SLOT4;
+    *fru = 3;
   } else if (!strcmp(str, "spb")) {
     *fru = FRU_SPB;
   } else if (!strcmp(str, "nic")) {
@@ -132,6 +132,7 @@ fby2_common_fru_id(char *str, uint8_t *fru) {
     return -1;
   }
 
+  syslog(LOG_WARNING, "%s: fru name: %s, id: %d\n", __func__, str, *fru);
   return 0;
 }
 

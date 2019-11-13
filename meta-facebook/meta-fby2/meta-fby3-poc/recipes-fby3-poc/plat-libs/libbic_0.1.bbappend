@@ -17,4 +17,8 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files/:"
 SRC_URI  += "file://bic \
             "
+
+DEPENDS += " libgpio-ctrl "
+RDEPENDS_${PN} += " libgpio-ctrl "
+LDFLAGS += " -lgpio-ctrl "
 CFLAGS_prepend = " -DCONFIG_FBY3_POC "

@@ -39,15 +39,15 @@
 #define MEZZ_TEMP_DEVICE "/sys/class/i2c-adapter/i2c-11/11-001f/hwmon/hwmon*"
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
-#define I2C_BUS_1_DIR "/sys/class/i2c-adapter/i2c-1/"
-#define I2C_BUS_5_DIR "/sys/class/i2c-adapter/i2c-5/"
-#define I2C_BUS_9_DIR "/sys/class/i2c-adapter/i2c-9/"
-
+#define I2C_BUS_1_DIR  "/sys/class/i2c-adapter/i2c-1/"
+#define I2C_BUS_5_DIR  "/sys/class/i2c-adapter/i2c-5/"
+#define I2C_BUS_9_DIR  "/sys/class/i2c-adapter/i2c-9/"
+#define I2C_BUS_12_DIR "/sys/class/i2c-adapter/i2c-12/"
 #define TACH_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define ADC_DIR "/sys/devices/platform/ast_adc.0"
 
-#define SP_INLET_TEMP_DEVICE I2C_BUS_9_DIR "9-004e/hwmon/hwmon*"
-#define SP_OUTLET_TEMP_DEVICE I2C_BUS_9_DIR "9-004f/hwmon/hwmon*"
+#define SP_INLET_TEMP_DEVICE I2C_BUS_12_DIR "12-004e/hwmon/hwmon*"
+#define SP_OUTLET_TEMP_DEVICE I2C_BUS_12_DIR "12-004f/hwmon/hwmon*"
 
 #define DC_SLOT1_INLET_TEMP_DEVICE I2C_BUS_1_DIR "1-004d/hwmon/hwmon*"
 #define DC_SLOT1_OUTLET_TEMP_DEVICE I2C_BUS_1_DIR "1-004e/hwmon/hwmon*"
@@ -75,7 +75,7 @@
 #define PIN_COEF (0.0163318634656214)  // X = 1/m * (Y * 10^(-R) - b) = 1/6123 * (Y * 100)
 #define ADM1278_R_SENSE 0.5
 
-#define I2C_DEV_NIC "/dev/i2c-11"
+#define I2C_DEV_NIC  "/dev/i2c-8"
 #define I2C_NIC_ADDR 0x3e  // 8-bit
 #define I2C_NIC_SENSOR_TEMP_REG 0x01
 
@@ -1428,18 +1428,20 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
   int ret;
   bool discrete;
   static bool detect_bmc_location = false;
-  uint8_t bmc_location = 0;
+  static unsigned char location = 0;
   int i;
 
+
   if ( false == detect_bmc_location ) {
-    ret = get_bmc_location();
+    ret = get_bmc_location(&location);
     if ( ret < 0 ) {
       syslog(LOG_INFO, "Faild to detect the location of BMC");
-      syslog(LOG_INFO, "Please check the GPIOP0");
+      return ERR_SENSOR_NA;
     } else {
-      bmc_location = (uint8_t)ret;
+      detect_bmc_location = true;
     }
   }
+
 
   switch (fru) {
     case FRU_SLOT1:
@@ -1475,7 +1477,7 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       }
       break;
     case FRU_SPB:
-      if ( 1 == bmc_location ) {
+      if ( 9 == location ) {
         switch(sensor_num) {
           // Various Voltages
           case SP_SENSOR_P5V:
@@ -1536,11 +1538,12 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
             ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
             *(float *)value *=  1.47;
             return ret;
+#if 0
           case SP_SENSOR_IMON_VTEMP:
-            ret = read_adc_value(ADC_PIN6, ADC_VALUE, (float*) value);
+            ret = read_adc_value(ADC_PIN7, ADC_VALUE, (float*) value);
             *(float *)value = (*(float *)value - 0.1525) / 0.0087;
             return ret;
-         
+#endif
           // Hot Swap Controller
           case SP_SENSOR_HSC_IN_VOLT:
             return read_hsc_value(0x88, 19599, 0, -2, (float *)value);

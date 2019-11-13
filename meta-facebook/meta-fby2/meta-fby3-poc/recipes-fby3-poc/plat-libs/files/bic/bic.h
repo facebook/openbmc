@@ -208,7 +208,7 @@ int bic_server_power_cycle(uint8_t slot_id);
 int bic_get_server_power_status(uint8_t slot_id, uint8_t *power_status);
 int bic_server_power_reset(uint8_t slot_id);
 
-int get_bmc_location();
+int get_bmc_location(uint8_t *id);
 
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info);
 int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size);

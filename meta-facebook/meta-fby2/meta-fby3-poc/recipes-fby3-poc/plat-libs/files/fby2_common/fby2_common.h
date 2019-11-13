@@ -48,13 +48,11 @@ enum {
 };
 
 enum {
-  IPMB_BUS_NIC_EXP = 0,
-  IPMB_BUS_SLOT1   = 1,
-  IPMB_BUS_SLOT2   = 3,
-  IPMB_BUS_SLOT3   = 5,
-  IPMB_BUS_SLOT4   = 7,
+  IPMB_BUS_SLOT1   = 0,
+  IPMB_BUS_SLOT2   = 1,
+  IPMB_BUS_SLOT3   = 2,
+  IPMB_BUS_SLOT4   = 3,
 };
-
 enum {
   TYPE_SPB_YV2     = 0,
   TYPE_SPB_YV250   = 1,
@@ -202,6 +200,7 @@ const static uint8_t gpio_bic_ready[] =
   GPIOB3_SMB_BMC_SLOT4_ALT_N
 };
 
+#if 0
 const static uint8_t gpio_server_hsc_en[] =
 { 0,
   GPIOF0_HSC_BMC_SLOT1_EN_R,
@@ -209,6 +208,7 @@ const static uint8_t gpio_server_hsc_en[] =
   GPIOF2_HSC_BMC_SLOT3_EN_R,
   GPIOF3_HSC_BMC_SLOT4_EN_R
 };
+#endif
 
 const static uint8_t gpio_server_hsc_pgood_sts[] =
 { 0,

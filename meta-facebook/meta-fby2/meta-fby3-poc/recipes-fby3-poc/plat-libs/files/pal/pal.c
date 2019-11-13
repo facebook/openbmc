@@ -90,7 +90,7 @@
 
 #define GUID_SIZE 16
 #define OFFSET_DEV_GUID 0x1800
-#define FRU_EEPROM "/sys/devices/platform/ast-i2c.8/i2c-8/8-0051/eeprom"
+#define FRU_EEPROM "/sys/devices/platform/ast-i2c.11/i2c-11/11-0051/eeprom"
 
 #define MAX_READ_RETRY 10
 #define MAX_CHECK_RETRY 2
@@ -1222,6 +1222,7 @@ server_12v_off(uint8_t slot_id) {
   sprintf(vpath, "sv stop ipmbd_%d > /dev/null 2>&1", slot_id);
   system(vpath);
 
+#if 0
   sprintf(vpath, GPIO_VAL, gpio_server_hsc_en[runoff_id]);
   if (write_device(vpath, "0")) {
     return PAL_ENOTSUP;
@@ -1233,7 +1234,7 @@ server_12v_off(uint8_t slot_id) {
     syslog(LOG_WARNING,"%s: Failed to write 1 for enabling resistor", __func__);
     return PAL_ENOTSUP;
   }
-
+#endif
   pal_baseboard_clock_control(runoff_id, "1");
 
   ret=pal_slot_pair_12V_off(runoff_id);
@@ -1334,13 +1335,14 @@ server_12v_on(uint8_t slot_id) {
   }
 
   _set_slot_12v_en_time(slot_id);
+#if 0
   sprintf(vpath, GPIO_VAL, gpio_server_hsc_en[slot_id]);
   if (write_device(vpath, "1"))
   {
     syslog(LOG_WARNING,"%s: Failed to write 1 to enable 12V-on", __func__);
     return PAL_ENOTSUP;
   }
-
+#endif
   sprintf(vpath, GPIO_VAL, gpio_server_i2c_en[slot_id]);
   if (write_device(vpath, "1"))
   {
@@ -1663,11 +1665,11 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   char path[64] = {0};
 
   switch (fru) {
-    case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
-      sprintf(path, GPIO_VAL, gpio_server_prsnt[fru]);
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+      sprintf(path, GPIO_VAL, gpio_server_prsnt[fru+1]);
       if (read_device(path, &val)) {
         return -1;
       }
@@ -1695,25 +1697,20 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   char path[64] = {0};
 
   switch (fru) {
-    case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
-      switch(fby2_get_slot_type(fru))
-      {
-        case SLOT_TYPE_SERVER:
-          sprintf(path, GPIO_VAL, gpio_bic_ready[fru]);
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+      sprintf(path, GPIO_VAL, gpio_bic_ready[fru+1]);
 
-          if (read_device(path, &val)) {
-            return -1;
-          }
+      if (read_device(path, &val)) {
+        return -1;
+      }
 
-          if (val == 0x0) {
-            *status = 1;
-          } else {
-            *status = 1;
-          }
-          break;
+      if (val == 0x0) {
+        *status = 1;
+      } else {
+        *status = 1;
       }
       break;
    case FRU_SPB:
@@ -1771,8 +1768,6 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   int ret;
-
-  if (slot_id < FRU_SLOT1 || slot_id > FRU_SLOT4) return 0;
 
   /* Check whether the system is 12V off or on */
   //ret = pal_is_server_12v_on(slot_id, status);
@@ -2075,7 +2070,7 @@ pal_sled_cycle(void) {
   system("rmmod adm1275");
 
   // Send command to HSC power cycle
-  system("i2cset -y 10 0x40 0xd9 c");
+  system("i2cset -y 11 0x40 0xd9 c");
 
   return 0;
 }
@@ -2765,11 +2760,6 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 }
 
 int
-pal_get_bmc_location() {
-  return get_bmc_location();
-}
-
-int
 pal_read_nic_fruid(const char *path, int size) {
   uint8_t wbuf[8], rbuf[32];
   uint8_t offs_len, addr;
@@ -2783,11 +2773,7 @@ pal_read_nic_fruid(const char *path, int size) {
   }
 
   if (pal_is_ocp30_nic()) {
-    if ( get_bmc_location() == 1 ) {
-      bus = "/dev/i2c-8";
-    } else {
-      bus = "/dev/i2c-11";
-    }
+    bus = "/dev/i2c-8";
     addr = 0xA0;
     offs_len = 2;
   } else {
@@ -2795,7 +2781,6 @@ pal_read_nic_fruid(const char *path, int size) {
     addr = 0xA2;
     offs_len = (fby2_get_nic_mfgid() == MFG_BROADCOM) ? 1 : 2;
   }
-  syslog(LOG_WARNING, "%s: bmc_location:%d, bus:%s", __func__, get_bmc_location(), bus);
   dev = open(bus, O_RDWR);
   if (dev < 0) {
     goto error_exit;

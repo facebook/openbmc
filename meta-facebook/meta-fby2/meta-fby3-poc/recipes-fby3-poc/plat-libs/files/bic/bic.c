@@ -35,6 +35,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/misc-utils.h>
+#include <openbmc/libgpio.h>
 
 #define FRUID_READ_COUNT_MAX 0x20
 #define FRUID_WRITE_COUNT_MAX 0x20
@@ -186,18 +187,51 @@ read_device(const char *device, int *value) {
   }
 }
 
-int
-get_bmc_location() {
-  //it's a workaround to check the location of BMC
-  char *bmc_location_path = "/sys/class/gpio/gpio120/value";
-  int bmc_location = 0;
+static int
+get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask)
+{
+  int i;
+  *mask = 0;
+  for (i = 0; i < num; i++) {
+    int ret;
+    gpio_value_t value;
+    gpio_desc_t *gpio = gpio_open_by_shadow(shadows[i]);
+    if (!gpio) {
+      return -1;
+    }
+    ret = gpio_get_value(gpio, &value);
+    gpio_close(gpio);
+    if (ret != 0) {
+      return -1;
+    }
+    *mask |= (value == GPIO_VALUE_HIGH ? 1 : 0) << i;
+  }
+  return 0;
+}
 
-  if ( read_device(bmc_location_path, &bmc_location) != 0 ) {
-    syslog(LOG_INFO, "failed to read gpio120");
-    return -1;
+int
+get_bmc_location(uint8_t *id) {
+  static bool is_cached = false;
+  static uint8_t cached_id = 0;
+
+  if ( is_cached == false ) {
+    const char *shadows[] = {
+      "BOARD_BMC_ID0_R",
+      "BOARD_BMC_ID1_R",
+      "BOARD_BMC_ID2_R",
+      "BOARD_BMC_ID3_R",
+    };
+
+    if ( get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id) ) {
+      return -1;
+    }
+
+    is_cached = true;
   }
 
-  return bmc_location;
+  *id = cached_id;
+
+  return 0;  
 }
 
 uint8_t
@@ -205,9 +239,9 @@ is_bic_ready(uint8_t slot_id) {
 //  int val;
 //  char path[64] = {0};
 
-  if (slot_id < 1 || slot_id > 4) {
-    return 0;
-  }
+//  if (slot_id < 1 || slot_id > 4) {
+//    return 0;
+//  }
 
   return 1;
 #if 0
@@ -255,7 +289,7 @@ bic_is_slot_power_en(uint8_t slot_id) {
     return 0;
   }
 
-  sprintf(path, GPIO_VAL, gpio_server_hsc_en[slot_id]);
+  sprintf(path, GPIO_VAL, gpio_server_hsc_pgood_sts[slot_id]);
   if (read_device(path, &val)) {
     return 0;
   }
@@ -275,21 +309,17 @@ get_ipmb_bus_id(uint8_t slot_id) {
   int bus_id;
 
   switch(slot_id) {
-  case FRU_SLOT1:
-      if ( get_bmc_location() == 1 ) {
-        bus_id = IPMB_BUS_NIC_EXP;
-      } else {
-        bus_id = IPMB_BUS_SLOT1;
-      }
+  case 0:
+    bus_id = 0;
     break;
-  case FRU_SLOT2:
-    bus_id = IPMB_BUS_SLOT2;
+  case 1:
+    bus_id = 1;
     break;
-  case FRU_SLOT3:
-    bus_id = IPMB_BUS_SLOT3;
+  case 2:
+    bus_id = 2;
     break;
-  case FRU_SLOT4:
-    bus_id = IPMB_BUS_SLOT4;
+  case 3:
+    bus_id = 3;
     break;
   default:
     bus_id = -1;
@@ -1159,7 +1189,7 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
 
   fstat(fd, &buf);
   size = buf.st_size;
-  printf("size of file is %d bytes\n", size);
+  printf("size of file is %d bytes, slot_id: %d\n", size, slot_id);
   dsize = size/20;
 
   if (!force && check_bic_image(slot_id, fd, size)) {
@@ -1183,20 +1213,16 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
   // So reduce I2C bus clock speed which is a workaround for BIC update.
   switch(slot_id)
   {
-     case FRU_SLOT1:
-       if ( get_bmc_location() == 1 ) {
-         system("devmem 0x1e78a044 w 0xFFF77304");
-       } else {
-         system("devmem 0x1e78a084 w 0xFFF77304");
-       }
+     case 0:
+       system("devmem 0x1e78a044 w 0xFFF77304");
        break;
-     case FRU_SLOT2:
+     case 1:
        system("devmem 0x1e78a104 w 0xFFF77304");
        break;
-     case FRU_SLOT3:
+     case 2:
        system("devmem 0x1e78a184 w 0xFFF77304");
        break;
-     case FRU_SLOT4:
+     case 3:
        system("devmem 0x1e78a304 w 0xFFF77304");
        break;
      default:
@@ -1458,20 +1484,16 @@ error_exit:
   // Restore the I2C bus clock to 1M.
   switch(slot_id)
   {
-     case FRU_SLOT1:
-       if ( get_bmc_location() == 1 ) {
-         system("devmem 0x1e78a044 w 0xFFF5E700");
-       } else {
-         system("devmem 0x1e78a084 w 0xFFF5E700");
-       }
+     case 0:
+       system("devmem 0x1e78a044 w 0xFFF5E700");
        break;
-     case FRU_SLOT2:
+     case 1:
        system("devmem 0x1e78a104 w 0xFFF5E700");
        break;
-     case FRU_SLOT3:
+     case 2:
        system("devmem 0x1e78a184 w 0xFFF5E700");
        break;
-     case FRU_SLOT4:
+     case 3:
        system("devmem 0x1e78a304 w 0xFFF5E700");
        break;
      default:

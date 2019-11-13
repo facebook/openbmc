@@ -261,7 +261,6 @@ int pal_set_tpm_physical_presence_reset(uint8_t slot, uint8_t reset);
 int pal_get_sensor_util_timeout(uint8_t fru);
 int pal_set_m2_prsnt(uint8_t slot_id, uint8_t dev_id, uint8_t present);
 int pal_is_ocp30_nic(void);
-int pal_get_bmc_location();
 bool pal_get_pair_fru(uint8_t slot_id, uint8_t *pair_fru);
 #ifdef __cplusplus
 } // extern "C"

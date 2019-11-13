@@ -52,7 +52,7 @@
 
 #define LAST_KEY "last_key"
 
-const char pal_fru_list[] = "all, fru";
+const char pal_fru_list[] = "all, fru, pdb";
 const char pal_server_list[] = "fru";
 
 char g_dev_guid[GUID_SIZE] = {0};
@@ -202,15 +202,25 @@ int pal_channel_to_bus(int channel)
 
 int pal_get_fruid_path(uint8_t fru, char *path)
 {
+  if (fru == FRU_BASE)
+    sprintf(path, FRU_BIN);
+  else if (fru == FRU_PDB)
+    sprintf(path, PDB_BIN);
+  else
+    return -1;
 
-  sprintf(path, FRU_BIN);
   return 0;
 }
 
 int pal_get_fruid_eeprom_path(uint8_t fru, char *path)
 {
+  if (fru == FRU_BASE)
+    sprintf(path, FRU_EEPROM);
+  else if (fru == FRU_PDB)
+    sprintf(path, PDB_EEPROM);
+  else
+    return -1;
 
-  sprintf(path, FRU_EEPROM);
   return 0;
 }
 
@@ -220,6 +230,8 @@ int pal_get_fru_id(char *str, uint8_t *fru)
     *fru = FRU_ALL;
   } else if (!strcmp(str, "fru")) {
     *fru = FRU_BASE;
+  } else if (!strcmp(str, "pdb")) {
+    *fru = FRU_PDB;
   } else {
     syslog(LOG_WARNING, "%s: Wrong fru name %s", __func__, str);
     return -1;
@@ -230,26 +242,36 @@ int pal_get_fru_id(char *str, uint8_t *fru)
 
 int pal_get_fruid_name(uint8_t fru, char *name)
 {
+  if (fru == FRU_BASE)
+    sprintf(name, "Base Board");
+  else if (fru == FRU_PDB)
+    sprintf(name, "PDB");
+  else
+    return -1;
 
-  sprintf(name, "Base Board");
   return 0;
 }
 
 int pal_is_fru_ready(uint8_t fru, uint8_t *status)
 {
+  if (fru == FRU_BASE || fru == FRU_PDB)
+    *status = 1;
+  else
+    return -1;
 
-  *status = 1;
   return 0;
 }
 
 int pal_get_fru_name(uint8_t fru, char *name)
 {
-  if (fru != FRU_BASE) {
+  if (fru == FRU_BASE) {
+    strcpy(name, "fru");
+  } else if (fru == FRU_PDB) {
+    strcpy(name, "pdb");
+  } else {
     syslog(LOG_WARNING, "%s: Wrong fruid %d", __func__, fru);
     return -1;
   }
-
-  strcpy(name, "fru");
 
   return 0;
 }
@@ -672,9 +694,10 @@ int pal_sled_cycle(void)
 
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
 {
-  if (fru != FRU_BASE)
+  if (fru == FRU_BASE || fru == FRU_PDB)
+    *status = 1;
+  else
     return -1;
 
-  *status = 1;
   return 0;
 }

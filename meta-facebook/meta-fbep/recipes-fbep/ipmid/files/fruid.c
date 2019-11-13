@@ -94,15 +94,19 @@ err:
 }
 
 /* Populate the platform specific eeprom for fruid info */
-int plat_fruid_init(void) {
+int plat_fruid_init(void)
+{
+  if (copy_eeprom_to_bin(FRU_EEPROM, FRU_BIN))
+    syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, FRU_BIN);
 
-  if ( copy_eeprom_to_bin(FRU_EEPROM, FRU_BIN))
-    syslog(LOG_WARNING, "[%s]Copy EEPROM Failed",__func__);
+  if (copy_eeprom_to_bin(PDB_EEPROM, PDB_BIN))
+    syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, PDB_BIN);
 
   return 0;
 }
 
-int plat_fruid_size(unsigned char payload_id) {
+int plat_fruid_size(unsigned char payload_id)
+{
   struct stat buf;
   int ret;
 
@@ -118,9 +122,17 @@ int plat_fruid_size(unsigned char payload_id) {
 int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count, unsigned char *data) {
   int fd;
   int ret;
+  char fru_dev[LARGEST_DEVICE_NAME] = {0};
+
+  if (fru_id == FRU_BASE)
+    snprintf(fru_dev, LARGEST_DEVICE_NAME, FRU_BIN);
+  else if (fru_id == FRU_PDB)
+    snprintf(fru_dev, LARGEST_DEVICE_NAME, PDB_BIN);
+  else
+    return -1;
 
   // open file for read purpose
-  fd = open(FRU_BIN, O_RDONLY);
+  fd = open(fru_dev, O_RDONLY);
   if (fd < 0) {
     return fd;
   }

@@ -33,6 +33,8 @@ extern "C" {
 #define PWR_OPTION_LIST "status, off, on, cycle"
 #define FRU_BIN "/tmp/fruid.bin"
 #define FRU_EEPROM "/sys/class/i2c-dev/i2c-6/device/6-0054/eeprom"
+#define PDB_BIN "/tmp/pdbid.bin"
+#define PDB_EEPROM "/sys/class/i2c-dev/i2c-16/device/16-0054/eeprom"
 
 #define LARGEST_DEVICE_NAME 120
 #define ERR_NOT_READY -2
@@ -45,8 +47,9 @@ extern const char pal_fru_list[];
 extern const char pal_server_list[];
 
 enum {
-  FRU_ALL  = 0,
-  FRU_BASE = 1,
+  FRU_ALL = 0,
+  FRU_BASE,
+  FRU_PDB,
 };
 
 enum {
@@ -61,7 +64,7 @@ enum {
   PCH,
 };
 
-#define MAX_NUM_FRUS 1
+#define MAX_NUM_FRUS 2
 #define MAX_NODES    1
 
 int read_device(const char *device, int *value);

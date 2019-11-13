@@ -24,11 +24,11 @@
 #include <unistd.h>
 #include <syslog.h>
 #include <openbmc/libgpio.h>
-#include <openbmc/kv.h>
 #include <openbmc/obmc-sensors.h>
 #include <switchtec/switchtec.h>
 #include "pal.h"
 #include "pal_sensors.h"
+#include "pal_calibration.h"
 
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
@@ -167,6 +167,34 @@ const char* fru_sensor_name[] = {
 
 float fru_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 size_t fru_sensor_cnt = sizeof(fru_sensor_list)/sizeof(uint8_t);
+
+static void hsc_value_adjust(struct calibration_table *table, float *value)
+{
+    float x0, x1, y0, y1, x;
+    int i;
+    x = *value;
+    x0 = table[0].ein;
+    y0 = table[0].coeff;
+    if (x0 > *value) {
+      *value = x * y0;
+      return;
+    }
+    for (i = 0; table[i].ein > 0.0; i++) {
+       if (*value < table[i].ein)
+         break;
+      x0 = table[i].ein;
+      y0 = table[i].coeff;
+    }
+    if (table[i].ein <= 0.0) {
+      *value = x * y0;
+      return;
+    }
+   //if value is bwtween x0 and x1, use linear interpolation method.
+   x1 = table[i].ein;
+   y1 = table[i].coeff;
+   *value = (y0 + (((y1 - y0)/(x1 - x0)) * (x - x0))) * x;
+   return;
+}
 
 static int read_battery_value(float *value)
 {
@@ -589,21 +617,33 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
     // HSC reading
     case PDB_HSC_P12V_1_CURR:
       ret = sensors_read("ltc4282-i2c-16-53", "P12V_1_CURR", (float *)value);
+      if (ret == 0)
+	hsc_value_adjust(current_table, (float *)value);
       break;
     case PDB_HSC_P12V_2_CURR:
       ret = sensors_read("ltc4282-i2c-17-40", "P12V_2_CURR", (float *)value);
+      if (ret == 0)
+	hsc_value_adjust(current_table, (float *)value);
       break;
     case PDB_HSC_P12V_AUX_CURR:
       ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_CURR", (float *)value);
+      if (ret == 0)
+	hsc_value_adjust(aux_current_table, (float *)value);
       break;
     case PDB_HSC_P12V_1_PWR:
       ret = sensors_read("ltc4282-i2c-16-53", "P12V_1_PWR", (float *)value);
+      if (ret == 0)
+	hsc_value_adjust(power_table, (float *)value);
       break;
     case PDB_HSC_P12V_2_PWR:
       ret = sensors_read("ltc4282-i2c-17-40", "P12V_2_PWR", (float *)value);
+      if (ret == 0)
+	hsc_value_adjust(power_table, (float *)value);
       break;
     case PDB_HSC_P12V_AUX_PWR:
       ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_PWR", (float *)value);
+      if (ret == 0)
+	hsc_value_adjust(aux_power_table, (float *)value);
       break;
     case PDB_HSC_P12V_1_VIN:
       ret = sensors_read("ltc4282-i2c-16-53", "P12V_1_VIN", (float *)value);

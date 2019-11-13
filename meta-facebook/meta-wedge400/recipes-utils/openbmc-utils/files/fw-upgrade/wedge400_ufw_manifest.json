@@ -31,7 +31,7 @@
     },
     "fpga" : {
         "get_version" : "fpga_ver.sh |grep FPGA|head -1|cut -d ' ' -f 2",
-        "upgrade_cmd" : "/usr/local/bin/spi_util.sh write spi1 DOM_FPGA_FLASH{entity} {filename}",
+        "upgrade_cmd" : "/usr/local/bin/spi_util.sh write spi1 DOM_FPGA_FLASH1 {filename}",
         "priority": 5
     }
 }

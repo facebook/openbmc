@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Copyright 2019-present Facebook. All Rights Reserved.
 #
@@ -17,15 +17,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-### BEGIN INIT INFO
-# Provides:          setup-front-paneld
-# Required-Start:
-# Required-Stop:
-# Default-Start:     S
-# Default-Stop:
-# Short-Description: Start front panel control daemon
-### END INIT INFO
 
-echo -n "Setup Front Panel Daemon.."
-runsv /etc/sv/front-paneld > /dev/null 2>&1 &
-echo "done."
+. /usr/local/bin/openbmc-utils.sh
+if [ -e /sys/bus/i2c/devices/4-1010 ]; then
+    i2c_device_delete 4 0x1010
+fi
+i2c_device_add 4 0x1010 slave-mqueue
+exec /usr/local/bin/ipmbd 4 1

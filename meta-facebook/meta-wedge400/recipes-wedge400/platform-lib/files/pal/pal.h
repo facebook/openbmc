@@ -52,6 +52,7 @@ extern "C" {
 
 #define COM_PWR_BTN_N "come_pwr_btn_n"
 #define SYS_LED_COLOR "sys_led_color"
+#define SCM_COM_RST_BTN "iso_com_rst_n"
 
 #define GB_POWER  "gb_turn_on"
 #define TH3_POWER "th3_turn_on"
@@ -140,6 +141,8 @@ extern "C" {
 #define GPIO_POSTCODE_6     "/tmp/gpionames/GPIOH6/%s"
 #define GPIO_POSTCODE_7     "/tmp/gpionames/GPIOH7/%s"
 #define GPIO_DEBUG_PRSNT_N  "/tmp/gpionames/DEBUG_PRESENT_N/%s"
+/* Add button function for Debug Card */
+#define BMC_UART_SEL        I2C_DEV_DIR(12, 3e)"uart_selection"
 
 #define MAX_NUM_SCM 1
 #define MAX_NUM_FAN 4
@@ -496,6 +499,12 @@ enum
   SCM_LED_BLUE = 0x01,
   SCM_LED_AMBER = 0x05,
 };
+/* Add button function for Debug Card */
+enum {
+  HAND_SW_SERVER = 0,
+  HAND_SW_BMC = 1
+};
+
 
 
 int pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data);
@@ -567,6 +576,17 @@ int wedge400_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
 int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
+int pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id);
+int pal_ipmb_processing(int bus, void *buf, uint16_t size);
+bool pal_is_mcu_working(void);
+int pal_get_hand_sw_physically(uint8_t *pos);
+int pal_get_hand_sw(uint8_t *pos);
+int pal_get_dbg_pwr_btn(uint8_t *status);
+int pal_get_dbg_rst_btn(uint8_t *status);
+int pal_set_rst_btn(uint8_t slot, uint8_t status);
+int pal_get_dbg_uart_btn(uint8_t *status);
+int pal_clr_dbg_uart_btn();
+int pal_switch_uart_mux();
 #ifdef __cplusplus
 } // extern "C"
 #endif

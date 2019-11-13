@@ -1658,22 +1658,6 @@ scm_power_off(uint8_t slot_id) {
   return 0;
 }
 
-// Power Button trigger the server in given slot
-static int
-cpu_power_btn(uint8_t slot_id) {
-  int ret;
-
-  ret = pal_set_com_pwr_btn_n("0");
-  if (ret)
-    return -1;
-  sleep(DELAY_POWER_BTN);
-  ret = pal_set_com_pwr_btn_n("1");
-  if (ret)
-    return -1;
-
-  return 0;
-}
-
 int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
 
@@ -1755,19 +1739,20 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       break;
 
     case SERVER_POWER_RESET:
-      if (status == SERVER_POWER_ON) {
-        ret = cpu_power_btn(slot_id);
-        if (ret != 0)
+    if (status == SERVER_POWER_ON) {
+        ret = pal_set_rst_btn(slot_id, 0);
+        if (ret < 0) {
+          OBMC_CRIT("Micro-server can't power reset");
           return ret;
-
-        sleep(DELAY_POWER_CYCLE);
-
-        ret = cpu_power_btn(slot_id);
-        if (ret != 0)
+        }
+        msleep(100); //some server miss to detect a quick pulse, so delay 100ms between low high
+        ret = pal_set_rst_btn(slot_id, 1);
+        if (ret < 0) {
+          OBMC_CRIT("Micro-server in reset state, can't go back to normal state");
           return ret;
+        }
       } else if (status == SERVER_POWER_OFF) {
-        printf("Ignore to execute power reset action when the \
-                power status of server is off\n");
+          OBMC_CRIT("Micro-server power status is off, ignore power reset action");
         return -2;
       }
       break;
@@ -5977,4 +5962,256 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
 
   sprintf(key, "slot%d_boot_order", slot);
   return pal_set_key_value(key, str);
+}
+
+int pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id)
+{
+  *slave_addr = 0x10;
+  return 0;
+}
+
+int
+pal_ipmb_processing(int bus, void *buf, uint16_t size) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  struct timespec ts;
+  static time_t last_time = 0;
+  if ((bus == 4) && (((uint8_t *)buf)[0] == 0x20)) {  // OCP LCD debug card
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (ts.tv_sec >= (last_time + 5)) {
+      last_time = ts.tv_sec;
+      ts.tv_sec += 30;
+
+      snprintf(key, sizeof(key), "ocpdbg_lcd");
+      snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+      if (kv_set(key, value, 0, 0) < 0) {
+        return -1;
+      }
+    }
+  }
+  return 0;
+}
+
+bool
+pal_is_mcu_working(void) {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  snprintf(key, sizeof(key), "ocpdbg_lcd");
+  if (kv_get(key, value, NULL, 0)) {
+     return false;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec) {
+     return true;
+  }
+
+  return false;
+}
+
+/* Add button function for Debug Card */
+/* Read the Front Panel Hand Switch and return the position */
+int
+pal_get_hand_sw_physically(uint8_t *pos) {
+  char path[LARGEST_DEVICE_NAME + 1];
+  int loc;
+
+  snprintf(path, LARGEST_DEVICE_NAME, BMC_UART_SEL);
+  if (read_device(path, &loc)) {
+    return -1;
+  }
+  *pos = loc;
+
+  return 0;
+}
+
+int
+pal_get_hand_sw(uint8_t *pos) {
+  char value[MAX_VALUE_LEN];
+  uint8_t loc;
+  int ret;
+
+  ret = kv_get("scm_hand_sw", value, NULL, 0);
+  if (!ret) {
+    loc = atoi(value);
+    if (loc > HAND_SW_BMC) {
+      return pal_get_hand_sw_physically(pos);
+    }
+    *pos = loc;
+
+    return 0;
+  }
+
+  return pal_get_hand_sw_physically(pos);
+}
+
+/* Return the Front Panel Power Button */
+int
+pal_get_dbg_pwr_btn(uint8_t *status) {
+   char cmd[MAX_KEY_LEN + 32] = {0};
+  char value[32];
+  char *p;
+  FILE *fp;
+  int val = 0;
+
+  sprintf(cmd, "/usr/sbin/i2cget -f -y 4 0x27 1");
+  fp = popen(cmd, "r");
+  if (!fp) {
+    return -1;
+  }
+
+  if (fgets(value, MAX_VALUE_LEN, fp) == NULL) {
+    pclose(fp);
+    return -1;
+  }
+
+  for (p = value; *p != '\0'; p++) {
+    if (*p == '\n' || *p == '\r') {
+      *p = '\0';
+      break;
+    }
+  }
+
+  sscanf(value, "%x", &val);
+  if ((!(val & 0x2)) && (val & 0x1)) {
+    *status = 1;      /* PWR BTN status pressed */
+    syslog(LOG_WARNING, "%s PWR pressed  0x%x\n", __FUNCTION__, val);
+  } else {
+    *status = 0;      /* PWR BTN status cleared */
+  }
+  pclose(fp);
+  return 0;
+}
+
+/* Return the Debug Card Reset Button status */
+int
+pal_get_dbg_rst_btn(uint8_t *status) {
+  char cmd[MAX_KEY_LEN + 32] = {0};
+  char value[32];
+  char *p;
+  FILE *fp;
+  int val = 0;
+
+  sprintf(cmd, "/usr/sbin/i2cget -f -y 4 0x27 1");
+  fp = popen(cmd, "r");
+  if (!fp) {
+    return -1;
+  }
+
+  if (fgets(value, MAX_VALUE_LEN, fp) == NULL) {
+    pclose(fp);
+    return -1;
+  }
+
+  for (p = value; *p != '\0'; p++) {
+    if (*p == '\n' || *p == '\r') {
+      *p = '\0';
+      break;
+    }
+  }
+
+  sscanf(value, "%x", &val);
+  if ((!(val & 0x1)) && (val & 0x2)) {
+    *status = 1;      /* RST BTN status pressed */
+  } else {
+    *status = 0;      /* RST BTN status cleared */
+  }
+  pclose(fp);
+  return 0;
+}
+
+/* Update the Reset button input to the server at given slot */
+int
+pal_set_rst_btn(uint8_t slot, uint8_t status) {
+  char *val;
+  char path[64];
+  int ret;
+  if (slot != FRU_SCM) {
+    return -1;
+  }
+
+  if (status) {
+    val = "1";
+  } else {
+    val = "0";
+  }
+
+  sprintf(path, SCM_SYSFS, SCM_COM_RST_BTN);
+
+  ret = write_device(path, val);
+  if (ret) {
+    return -1;
+  }
+  return 0;
+}
+
+/* Return the Debug Card UART Sel Button status */
+int
+pal_get_dbg_uart_btn(uint8_t *status) {
+  char cmd[MAX_KEY_LEN + 32] = {0};
+  char value[32];
+  char *p;
+  FILE *fp;
+  int val = 0;
+
+  sprintf(cmd, "/usr/sbin/i2cget -f -y 4 0x27 3");
+  fp = popen(cmd, "r");
+  if (!fp) {
+    return -1;
+  }
+
+  if (fgets(value, MAX_VALUE_LEN, fp) == NULL) {
+    pclose(fp);
+    return -1;
+  }
+  pclose(fp);
+  for (p = value; *p != '\0'; p++) {
+    if (*p == '\n' || *p == '\r') {
+      *p = '\0';
+      break;
+    }
+  }
+  sscanf(value, "%x", &val);
+  if (!(val & 0x80)) {
+    *status = 1;      /* UART BTN status pressed */
+  } else {
+    *status = 0;      /* UART BTN status cleared */
+  }
+  return 0;
+}
+
+/* Clear Debug Card UART Sel Button status */
+int
+pal_clr_dbg_uart_btn() {
+  int ret;
+  ret = run_command("/usr/sbin/i2cset -f -y 4 0x27 3 0xff");
+  if (ret)
+    return -1;
+  return 0;
+}
+
+/* Switch the UART mux to userver or BMC */
+int
+pal_switch_uart_mux() {
+  char path[LARGEST_DEVICE_NAME + 1];
+  char *val;
+  int loc;
+  /* Refer the UART select status */
+  snprintf(path, LARGEST_DEVICE_NAME, BMC_UART_SEL);
+  if (read_device(path, &loc)) {
+    return -1;
+  }
+
+  if (loc == 3) {
+    val = "2";
+  } else {
+    val = "3";
+  }
+
+  if (write_device(path, val)) {
+    return -1;
+  }
+  return 0;
 }

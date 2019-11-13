@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Copyright 2019-present Facebook. All Rights Reserved.
 #
@@ -31,5 +31,6 @@
 echo "Starting IPMB Rx/Tx Daemon"
 
 ulimit -q 1024000
-runsv /etc/sv/ipmbd > /dev/null 2>&1 &
+runsv /etc/sv/ipmbd_0 > /dev/null 2>&1 &
+runsv /etc/sv/ipmbd_4 > /dev/null 2>&1 &
 

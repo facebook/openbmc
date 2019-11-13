@@ -22,15 +22,16 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://ipmid.c;beginline=8;endline=20;md5=da35978751a9d71b73679307c4d296ec"
 
-LDFLAGS_append = " -lwedge_eeprom -lfruid -lpal -lobmc-i2c -llog "
+LDFLAGS_append = " -lwedge_eeprom -lfruid -lpal -lobmc-i2c -llog -lbic"
 
-DEPENDS_append = " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog update-rc.d-native "
-RDEPENDS_${PN} += " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog "
+DEPENDS_append = " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog libbic update-rc.d-native libgpio"
+RDEPENDS_${PN} += " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog libgpio libbic"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://fruid.c \
             file://setup-ipmid.sh \
             file://run-ipmid.sh \
+            file://usb-dbg-conf.c \
            "
 S = "${WORKDIR}"
 

@@ -193,11 +193,105 @@ debug_card_out:
   return 0;
 }
 
+/* Thread to handle Power Button to power on/off userver */
+static void *
+pwr_btn_handler(void *unused) {
+  int i;
+  int ret;
+  uint8_t btn = 0;
+  uint8_t cmd = 0;
+  uint8_t power = 0;
+  while (1) {
+    ret = pal_get_dbg_pwr_btn(&btn);
+    if (ret || !btn) {
+        goto pwr_btn_out;
+    }
+
+    OBMC_INFO("Power button pressed\n");
+    // Wati for the button to be released
+    for (i = 0; i < BTN_POWER_OFF; i++) {
+        ret = pal_get_dbg_pwr_btn(&btn);
+        if (ret || btn) {
+            msleep(100);
+            continue;
+        }
+        OBMC_INFO("Power button released\n");
+        break;
+    }
+
+    // Get the current power state (on or off)
+    ret = pal_get_server_power(FRU_SCM, &power);
+    if (ret) {
+      goto pwr_btn_out;
+    }
+
+    // Set power command should reverse of current power state
+    cmd = !power;
+    
+    // To determine long button press
+    if (i >= BTN_POWER_OFF) {
+      pal_update_ts_sled();
+    } else {
+      // If current power state is ON and it is not a long press,
+      // the power off shoul dbe Graceful Shutdown
+      if (power == SERVER_POWER_ON)
+        cmd = SERVER_GRACEFUL_SHUTDOWN;
+
+      pal_update_ts_sled();
+      OBMC_INFO("Power button pressed for FRU: %d\n", FRU_SCM);
+    }
+
+    // Reverse the power state of the given server.
+    ret = pal_set_server_power(FRU_SCM, cmd);
+pwr_btn_out:
+    msleep(100);
+  }
+  return 0;
+}
+
+/* Thread to handle Reset Button to reset userver */
+static void *
+rst_btn_handler(void *unused) {
+  uint8_t btn;
+  while (1) {
+    /* Check the position of hand switch
+     * and if reset button is pressed */
+    pal_get_dbg_rst_btn(&btn);
+    if (btn) {
+      /* Reset userver */
+      pal_set_server_power(FRU_SCM, SERVER_POWER_RESET);
+    }
+  }
+  return 0;
+}
+
+
+/* Thread to handle Reset Button to reset userver */
+static void *
+uart_sel_btn_handler(void *unused) {
+  uint8_t btn;
+  /* Clear Debug Card reset button at the first time */
+  pal_clr_dbg_uart_btn();
+  while (1) {
+    /* Check the position of hand switch
+     * and if reset button is pressed */
+    pal_get_dbg_uart_btn(&btn);
+    if (btn) {
+      pal_switch_uart_mux();
+      pal_clr_dbg_uart_btn();
+    }
+  }
+  return 0;
+}
+
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_scm_monitor;
   pthread_t tid_debug_card;
   pthread_t tid_simLED_monitor;
+  pthread_t tid_pwr_btn;
+  pthread_t tid_rst_btn;
+  pthread_t tid_uart_sel_btn;
   int pid_file;
   uint8_t brd_type_rev;
   signal(SIGTERM, exithandler);
@@ -254,8 +348,25 @@ main (int argc, char * const argv[]) {
     pthread_join(tid_debug_card, NULL);
   }
 
+  if (pthread_create(&tid_uart_sel_btn, NULL, uart_sel_btn_handler, NULL) < 0) {
+    OBMC_WARN("pthread_create for uart select button error\n");
+    exit(1);
+  }
+
+  if (pthread_create(&tid_pwr_btn, NULL, pwr_btn_handler, NULL) < 0) {
+    OBMC_WARN("pthread_create for power button error\n");
+    exit(1);
+  }
+
+  if (pthread_create(&tid_rst_btn, NULL, rst_btn_handler, NULL) < 0) {
+    OBMC_WARN("pthread_create for reset button error\n");
+    exit(1);
+  }
+
+  pthread_join(tid_rst_btn, NULL);
+  pthread_join(tid_pwr_btn, NULL);
   pthread_join(tid_scm_monitor, NULL);
   pthread_join(tid_simLED_monitor, NULL);
-
+  pthread_join(tid_uart_sel_btn, NULL);
   return 0;
 }

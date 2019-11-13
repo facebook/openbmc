@@ -526,6 +526,11 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
     print_usage();
   }
 
+  if (fru == FRU_ALL) {
+    print_usage();
+    return -1;
+  }
+
   ret = pal_get_fruid_name(fru, name);
   if (ret < 0) {
     return ret;

@@ -50,6 +50,13 @@ class BaseInterfaceTest(object):
                 "Device " + self.ifname.encode("utf-8") + " does not exist [FAILED]"
             )
         out = out.decode("utf-8")
+        if "inet " not in out:
+            raise Exception(
+                "Device "
+                + self.ifname.encode("utf-8")
+                + " does not have an IPv4 address [FAILED]\ncommand output:"
+                + out
+            )
         ipv4 = out.split("inet ")[1].split("/")[0]
         Logger.debug("Got ip address for " + str(self.ifname))
         return ipv4
@@ -76,6 +83,13 @@ class BaseInterfaceTest(object):
             return 1
             # raise Exception("Device " + self.ifname.encode('utf-8') + " does not exist [FAILED]")
         out = out.decode("utf-8")
+        if "inet6 " not in out:
+            raise Exception(
+                "Device "
+                + self.ifname.encode("utf-8")
+                + " does not have an IPv6 address [FAILED]\ncommand output:"
+                + out
+            )
         ipv6 = out.split("inet6 ")[1].split("/")[0]
         Logger.debug("Got ip address for " + str(self.ifname))
         return ipv6

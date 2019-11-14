@@ -19,7 +19,6 @@
 #
 import os
 import sys
-import unittest
 
 from utils.cit_logger import Logger
 
@@ -28,7 +27,7 @@ from utils.cit_logger import Logger
 # catch the import failure
 try:
     # Upgrader and binaries need to be installed in /tmp
-    sys.path.append("/tmp/fw-upgrade")
+    sys.path.append("/tmp/fw_upgrade")
     import fw_json as fw_up
     from entity_upgrader import FwEntityUpgrader
     from constants import UFW_NAME, UFW_HASH, UFW_HASH_VALUE, HashType
@@ -36,7 +35,7 @@ except Exception:
     pass
 
 
-class FwBinariesVersionTest(unittest.TestCase):
+class BaseBinariesHashSumTest(object):
     def setUp(self):
         self.binPath = os.path.dirname(fw_up.__file__)
         FwJsonObj = fw_up.FwJson(self.binPath)
@@ -45,6 +44,9 @@ class FwBinariesVersionTest(unittest.TestCase):
 
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))
+        pass
+
+    def set_binary_paths(self):
         pass
 
     def test_fw_entity_binary_match(self):

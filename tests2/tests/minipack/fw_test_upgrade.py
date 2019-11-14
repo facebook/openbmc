@@ -28,7 +28,7 @@ from utils.cit_logger import Logger
 # catch the import failure
 try:
     # Upgrader and binaries need to be installed in /tmp
-    sys.path.append("/tmp/fw-upgrade")
+    sys.path.append("/tmp/fw_upgrade")
     import fw_json as fw_up
 except Exception:
     pass

@@ -6,8 +6,8 @@ import sys
 import tarfile
 
 from constants import DEFAULT_UPGRADABLE_ENTITIES, ResetMode
+from entity_upgrader import FwUpgrader
 from fw_json import FwJson
-from fw_json_upgrader import FwUpgrader
 
 
 class Main(object):
@@ -15,7 +15,7 @@ class Main(object):
 
     def __init__(self):
         self.zipfile = None  # type: str
-        self.fw_entity_items = None  # type: List[str]
+        self.fw_entity_items = None
         self.check_only = False  # type: bool
         self.list_only = False  # type: bool
         self.reset = ResetMode.NO_RESET  # type: ResetMode

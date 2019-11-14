@@ -37,7 +37,8 @@ class BaseProcessRunningTest(object):
         pass
 
     def set_process_cmd(self):
-        self.process_cmd = ["ps"]
+        # Run ps in "wide" to avoid process name truncation.
+        self.process_cmd = ["ps -w"]
 
     @abstractmethod
     def set_processes(self):

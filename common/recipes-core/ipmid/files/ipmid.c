@@ -3544,7 +3544,7 @@ oem_1s_handle_ipmb_kcs(unsigned char *request, unsigned char req_len,
 
   // Remove OEM IPMI Header (including 1 byte for interface type, 3 bytes for IANA ID)
   // The offset moves by one due to the payload ID
-  memcpy(&req_buf[1], &request[BIC_INTF_HDR_SIZE], req_len - BIC_INTF_HDR_SIZE + 1);
+  memcpy(&req_buf[1], &request[BIC_INTF_HDR_SIZE], req_len - BIC_INTF_HDR_SIZE);
 
   // Send the bridged KCS command along with the payload ID
   // The offset moves by one due to the payload ID

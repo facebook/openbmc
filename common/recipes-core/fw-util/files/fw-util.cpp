@@ -29,6 +29,7 @@
 #include <tuple>
 #include <signal.h>
 #include <syslog.h>
+#include <openbmc/pal.h>
 #ifdef __TEST__
 #include <gtest/gtest.h>
 #endif
@@ -189,6 +190,12 @@ void usage()
     for (auto ckv : fkv.second) {
       string comp_name = ckv.first;
       Component *c = ckv.second;
+      char *c_name = new char[comp_name.length() + 1];
+      strcpy(c_name, comp_name.c_str());
+      if (pal_get_altered_comp_name(c_name) == 0) {
+        comp_name = string(c_name);
+      }
+      delete [] c_name;
       cout << comp_name;
       if (c->is_alias()) {
         AliasComponent *a = (AliasComponent *)c;
@@ -331,7 +338,14 @@ int main(int argc, char *argv[])
       }
 
       for (auto ckv : fkv.second) {
-        if (component == "all" || component == ckv.first) {
+        string comp_name = ckv.first;
+        char *c_name = new char[comp_name.length() + 1];
+        strcpy(c_name, comp_name.c_str());
+        if (pal_get_altered_comp_name(c_name) == 0) {
+          comp_name = string(c_name);
+        }
+        delete [] c_name;
+        if (component == "all" || component == comp_name) {
           find_comp = 1;
           Component *c = ckv.second;
 

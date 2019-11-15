@@ -48,6 +48,8 @@
 
 #define SPRINGHILL_M2_OFFSET_BASE 1 // one byte for FBID
 
+#define NVME_BAD_HEALTH 1
+
 static uint8_t m_slot_id = 0;
 static uint8_t m_slot_type = 0xFF;
 
@@ -186,11 +188,13 @@ drive_status(ssd_data *ssd) {
 
 static int
 drive_health(ssd_data *ssd) {
-  if ((ssd->warning & NVME_SMART_WARNING_MASK_BIT) != NVME_SMART_WARNING_MASK_BIT)
-    return -1;
-
+  if (ssd->fb_defined != 0x01 || ssd->ffi_0 != FFI_0_ACCELERATOR) {
+    // since accelerator doesn't implement SMART WARNING, do not check it.
+    if ((ssd->warning & NVME_SMART_WARNING_MASK_BIT) != NVME_SMART_WARNING_MASK_BIT)
+      return NVME_BAD_HEALTH;
+  }
   if ((ssd->sflgs & NVME_SFLGS_MASK_BIT) != NVME_SFLGS_MASK_BIT)
-    return -1;
+    return NVME_BAD_HEALTH;
 
   return 0;
 }
@@ -363,6 +367,21 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t cmd) {
     }
     ssd.sflgs = rbuf[offset_base + 1];
     ssd.warning = rbuf[offset_base + 2];
+
+    if (m_slot_type == SLOT_TYPE_GPV2) {
+      wbuf[0] = 0x20;  // offset 32
+      rlen = 55 + offset_base;
+      ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
+      if (ret != 0) {
+        syslog(LOG_DEBUG, "%s(): bic_master_write_read offset=%d read length=%d failed", __func__,wbuf[0],rlen);
+        return ret;
+      }
+      ssd.fb_defined = rbuf[offset_base + 1];
+      ssd.ffi_0 = rbuf[offset_base + 43];
+    } else {
+      ssd.fb_defined = 0;
+      ssd.ffi_0 = 0;
+    }
 
     ret = drive_health(&ssd);
     return ret;
@@ -591,7 +610,7 @@ main(int argc, char **argv) {
     ssd_monitor_enable(slot_id, slot_type, 0);
     for (i = drv_start; i <= drv_end; i++) {
       ret = read_nvme_data(slot_id, i, CMD_DRIVE_HEALTH);
-      printf("M.2-%u: %s\n", i, (ret == 0)?"Normal":"Abnormal");
+      printf("M.2-%u: %s\n", i, (ret == 0)?"Normal":((ret == NVME_BAD_HEALTH)?"Abnormal":"NA"));
     }
     ssd_monitor_enable(slot_id, slot_type, 1);
   }

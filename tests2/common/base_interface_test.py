@@ -46,14 +46,12 @@ class BaseInterfaceTest(object):
         )
         out, err = f.communicate()
         if len(out) == 0 or len(err) != 0:
-            raise Exception(
-                "Device " + self.ifname.encode("utf-8") + " does not exist [FAILED]"
-            )
+            raise Exception("Device " + str(self.ifname) + " does not exist [FAILED]")
         out = out.decode("utf-8")
         if "inet " not in out:
             raise Exception(
                 "Device "
-                + self.ifname.encode("utf-8")
+                + str(self.ifname)
                 + " does not have an IPv4 address [FAILED]\ncommand output:"
                 + out
             )
@@ -86,7 +84,7 @@ class BaseInterfaceTest(object):
         if "inet6 " not in out:
             raise Exception(
                 "Device "
-                + self.ifname.encode("utf-8")
+                + str(self.ifname)
                 + " does not have an IPv6 address [FAILED]\ncommand output:"
                 + out
             )

@@ -16,7 +16,7 @@ SRC_URI = "file://Makefile \
 S = "${WORKDIR}"
 binfiles = "dimm-util"
 
-CXXFLAGS += " -lpal -lkv -lbic"
+CXXFLAGS += " -lpal -lkv"
 LDFLAGS = " -ljansson"
 pkgdir = "dimm-util"
 
@@ -29,8 +29,8 @@ do_install() {
   ln -snf ../fbpackages/${pkgdir}/dimm-util ${bin}/dimm-util
 }
 
-DEPENDS += "libpal libkv libbic jansson"
-RDEPENDS_${PN} += "libpal libkv libbic jansson"
+DEPENDS += "libpal libkv jansson"
+RDEPENDS_${PN} += "libpal libkv jansson"
 
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

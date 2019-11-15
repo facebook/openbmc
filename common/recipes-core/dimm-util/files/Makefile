@@ -4,7 +4,7 @@ all: dimm-util
 CFLAGS += -Wall -Werror
 
 dimm-util: *.cpp
-	$(CXX) -pthread $(CXXFLAGS)  -std=gnu11 -o $@ $^ $(LDFLAGS)
+	$(CXX) -pthread $(CXXFLAGS)  -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

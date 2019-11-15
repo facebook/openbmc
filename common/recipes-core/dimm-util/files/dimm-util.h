@@ -21,8 +21,9 @@
 #ifndef __DIMM_UTIL_H__
 #define __DIMM_UTIL_H__
 
-#define NUM_CPU      1  /* TL only has 1 CPU */
-#define MAX_DIMM_NUM 8
+#define MAX_CPU_NUM       2  // max number of CPUs
+#define MAX_DIMM_PER_CPU 12 //  max number of dimms per CPU
+
 #define OFFSET_SERIAL 0x45
 #define LEN_SERIAL    4
 #define LEN_SERIAL_STRING ((LEN_SERIAL * 2) + 1) // 2 hex digit per byte + null
@@ -35,16 +36,7 @@
 #define MAX_RETRY 3
 #define MAX_FAIL_CNT LEN_SERIAL
 
-#define SLOT_MIN 1
-#define SLOT_MAX 4
-#define SLOT_ALL 5
-
 #define ERR_INVALID_SYNTAX -2
-
-#define DIMM0_SPD_ADDR 0xa0
-#define DIMM1_SPD_ADDR 0xa2
-#define DIMM2_SPD_ADDR 0xa4
-#define DIMM3_SPD_ADDR 0xa6
 
 #define INTEL_ID_LEN  3
 #define MANU_INTEL_0  0x57
@@ -64,6 +56,15 @@
 
 extern char *vendor_name[];
 extern const char * manu_string(uint8_t id);
+
+extern int num_frus;
+extern int num_cpus;
+extern int num_dimms_per_cpu;
+extern int total_dimms;
+extern char const **fru_name;
+extern int fru_id_all;
+extern int fru_id_min;
+extern int fru_id_max;
 
 int get_die_capacity(uint8_t data);
 int get_bus_width_bits(uint8_t data);

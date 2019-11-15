@@ -26,7 +26,6 @@
 #include <jansson.h>
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
-#include <facebook/bic.h>
 #include "dimm-util.h"
 
 // #define DEBUG_DIMM_UTIL
@@ -37,23 +36,8 @@
   #define DBG_PRINT(fmt, args...)
 #endif
 
-
-// dimm location constant strings, matching silk screen
-static char *dimm_location[] =
-{
-  "A0",
-  "A1",
-  "B0",
-  "B1",
-  "D0",
-  "D1",
-  "E0",
-  "E1",
-  "All"
-};
-
 // dimm type decode table
-static char *dimm_type[] =
+static char const *dimm_type[] =
 {
   "n/a",
   "Fast Page Mode",
@@ -75,7 +59,7 @@ static char *dimm_type[] =
 };
 
 // dimm speed decode table
-static char *speed_type[] =
+static char const *speed_type[] =
 {
   "n/a",
   "n/a",
@@ -90,10 +74,16 @@ static char *speed_type[] =
   "1600",
 };
 
-/* i2c slave address for DIMMs on the SPD bus*/
-static uint8_t dev_addr[4] = {DIMM0_SPD_ADDR, DIMM1_SPD_ADDR,
-      DIMM2_SPD_ADDR, DIMM3_SPD_ADDR};
-
+// global variables on various platform specific attributes
+//  to be initialized by platform-specific plat_init() function
+int num_frus = 0;
+int num_cpus = 0;
+int num_dimms_per_cpu = 0;
+int total_dimms = 0;
+char const **fru_name = NULL;     // pointer to array of string
+int fru_id_all = 0;
+int fru_id_min = 0;
+int fru_id_max = 0;
 
 static
 const char * dimm_type_string(uint8_t id)
@@ -120,130 +110,38 @@ const char * dimm_speed_string(uint8_t id)
 }
 
 // send ME command to select page 0 or 1 on SPD
-static int
-util_set_EE_page(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t page_num)
+int __attribute__((weak))
+util_set_EE_page(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t page_num)
 {
-#define EEPROM_MAX_PAGE 2
-#define EEPROM_P0_SEL 0x6C
-#define EEPROM_P1_SEL 0x6E
-  uint8_t tbuf[256] = {MANU_FACEBOOK_0, MANU_FACEBOOK_1, MANU_FACEBOOK_2}; // IANA ID
-  uint8_t rbuf[256] = {0};
-  uint8_t page_sel[EEPROM_MAX_PAGE] = {EEPROM_P0_SEL, EEPROM_P1_SEL};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  uint8_t addr_msb = 0;
-  int ret = 0;
-
-  if (page_num >= EEPROM_MAX_PAGE)
-    return -1;
-
-  // calculate DIMM msb_addr
-  //   msb_addr is 0 for dimms 0-3,  1 for 4-7
-  if (dimm >= (MAX_DIMM_NUM/2))
-    addr_msb = 1;
-
-  tlen = 3;
-  tbuf[tlen++] = BIC_INTF_ME;
-
-  /* Intel's IANA */
-  tbuf[tlen++] = NETFN_NM_REQ << 2;  //BIC requires NETFN<<2
-  tbuf[tlen++] = CMD_NM_WRITE_MEM_SM_BUS;
-
-  /* Intel's IANA */
-  tbuf[tlen++] = MANU_INTEL_0;
-  tbuf[tlen++] = MANU_INTEL_1;
-  tbuf[tlen++] = MANU_INTEL_2;
-
-  tbuf[tlen++] = cpu;
-  tbuf[tlen++] = addr_msb;
-  tbuf[tlen++] = page_sel[page_num];
-  tbuf[tlen++] = 0;
-  tbuf[tlen++] = 0;
-  tbuf[tlen++] = 0;
-
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf,
-    tlen, rbuf, &rlen);
-  if (ret) {
-    printf("ME no response!\n");
-    return -1;
-  }
-
-  return ret;
+  return -1;
 }
 
 // read 1 byte off SPD bus,
-// input:  cpu/dimm/addr_msb/addr_lsb/offset
-static int
-util_read_spd_byte(uint8_t slot_id, uint8_t cpu, uint8_t addr_msb, uint8_t addr_lsb,
-              uint8_t offset)
+// input:  fru_id/cpu/dimm/offset
+int __attribute__((weak))
+util_read_spd_byte(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset)
 {
+  return -1;
+}
 
-// cmd goes from BMC -> BIC -> ME  -> BIC -> BMC
-// total valid response length from BIC on  ME SPD bus read
-//  includes  BIC IANA,  BIC Completion code,  ME IANA, ME completion code
-//             NETFN, CMD,   and actual payload
-#define MIN_RESP_LEN (INTEL_ID_LEN + 1 /* BIC CC*/ + FACEBOOK_ID_LEN + 1 /* BIC CC */ \
-      + 1 /*NetFn */ + 1 /*cmd */ + 1 /*payload*/)
+// allows each platform to populate cpu num, dimm num, num frus
+int __attribute__((weak))
+plat_init()
+{
+  return -1;
+}
 
-  int ret;
-  uint8_t tbuf[256] = {MANU_FACEBOOK_0, MANU_FACEBOOK_1, MANU_FACEBOOK_2}; // IANA ID
-  uint8_t rbuf[256] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-
-  tlen = 3;
-  tbuf[tlen++] = BIC_INTF_ME;
-
-  /* Intel's IANA */
-  tbuf[tlen++] = NETFN_NM_REQ << 2;  //BIC requires NETFN<<2
-  tbuf[tlen++] = CMD_NM_READ_MEM_SM_BUS;
-
-  /* Intel's IANA */
-  tbuf[tlen++] = MANU_INTEL_0;
-  tbuf[tlen++] = MANU_INTEL_1;
-  tbuf[tlen++] = MANU_INTEL_2;
-
-  tbuf[tlen++] = cpu;
-  tbuf[tlen++] = addr_msb;
-  tbuf[tlen++] = addr_lsb;
-  tbuf[tlen++] = offset;
-  tbuf[tlen++] = 0;
-
-#ifdef DEBUG_DIMM_UTIL
-  int i;
-  DBG_PRINT("tlen = %d\n",tlen);
-  for (i = 0; i < tlen; ++i)
-    DBG_PRINT("0x%x ",tbuf[i]);
-  DBG_PRINT("\n");
-#endif
-
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf,
-    tlen, rbuf, &rlen);
-  if (ret) {
-    printf("ME no response!\n");
-    return -1;
-  }
-
-#ifdef DEBUG_DIMM_UTIL
-  DBG_PRINT("rlen = %d\n",rlen);
-  for (i = 0; i < rlen; ++i)
-    DBG_PRINT("0x%x ",rbuf[i]);
-  DBG_PRINT("\n");
-#endif
-
-  if (rlen < MIN_RESP_LEN) {
-    return -1;
-  }
-
-  // actual SPD payload will be last byte following all IANA header and
-  //  completion codes
-  return rbuf[MIN_RESP_LEN - 1];
+//  get DIMM label, e.g. DIMMA0,DIMMA1 etc
+const char * __attribute__((weak))
+get_dimm_label(uint8_t cpu, uint8_t dimm)
+{
+  return "N/A";
 }
 
 // read multiple bytes of SPD (offset, len),  with retry on failure
 //
 // input
-//      slot_id, dimm, offset, len
+//      fru_id, dimm, offset, len
 //      early_exit_cnt - value
 //            if more than early_exit_cnt  number of 0 are read,
 //                 do not read whole length and exit
@@ -254,23 +152,17 @@ util_read_spd_byte(uint8_t slot_id, uint8_t cpu, uint8_t addr_msb, uint8_t addr_
 //         1 - if buf contains non zero
 //         0 - if all data in buf are 0
 static int
-util_read_spd_with_retry(uint8_t slot_id, uint8_t dimm, uint16_t offset, uint16_t len,
+util_read_spd_with_retry(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint16_t offset, uint16_t len,
                   uint16_t early_exit_cnt, uint8_t *buf, uint8_t *present) {
   uint16_t j, fail_cnt = 0;
   uint8_t retry = 0;
   int value = 0;
-  int addr_msb = 0;
-
-  // calculate DIMM msb_addr
-  //   msb_addr is 0 for dimms 0-3,  1 for 4-7
-  if (dimm >= (MAX_DIMM_NUM/2))
-    addr_msb = 1;
 
   *present = 0;
   for (j = 0; j < len; ++j) {
     retry = 0;
     while (retry < MAX_RETRY) {
-      value = util_read_spd_byte(slot_id, 0, addr_msb, dev_addr[dimm & 0x03], offset + j);
+      value = util_read_spd_byte(fru_id, cpu, dimm, offset + j);
       if (value >= 0)
         break;
       retry++;
@@ -293,21 +185,39 @@ util_read_spd_with_retry(uint8_t slot_id, uint8_t dimm, uint16_t offset, uint16_
   return 0;
 }
 
+
+// convert system dimm number to  (cpu, dimm) pair
+//     eg.   on a 2-socket system with 24 dimms (0-23)
+//               dimms 0-11 would be on cpu 0
+//               dimms 12-23 would be on cpu 1
+//          so dimm 14 would be (cpu=1, dimm=3)
+//
+//    Special case if user specify max dimm (e.g. 24),
+//       then loop through all CPUs and dimms
 static void
-set_dimm_loop(uint8_t dimm, uint8_t *startDimm, uint8_t *endDimm) {
-  if (dimm == MAX_DIMM_NUM) {
+set_dimm_loop(uint8_t dimm, uint8_t *startCPU, uint8_t *endCPU,
+              uint8_t *startDimm, uint8_t *endDimm) {
+  if (dimm == total_dimms) {
+    // special case, loop through All CPUs and DIMMs
+    *startCPU  = 0;
+    *endCPU    = num_cpus;
     *startDimm = 0;
-    *endDimm   = MAX_DIMM_NUM;
+    *endDimm   = num_dimms_per_cpu;
   } else {
-    *startDimm = dimm;
-    *endDimm   = dimm + 1;
+    // normal case, select a (cpu, dimm) pair
+    *startCPU   = dimm / num_dimms_per_cpu;
+    *endCPU     = *startCPU + 1;
+    *startDimm  = dimm % num_dimms_per_cpu;
+    *endDimm    = *startDimm + 1;
   }
+  DBG_PRINT("%s, %d  %d %d %d %d\n", __FUNCTION__,
+              dimm, *startCPU, *endCPU, *startDimm, *endDimm);
 }
 
 static int
-util_get_serial(uint8_t slot_id, uint8_t dimm, bool json) {
-  uint8_t i, j, startDimm, endDimm, dimm_present = 0;
-  uint8_t dimm_serial[MAX_DIMM_NUM][LEN_SERIAL] = {0};
+util_get_serial(uint8_t fru_id, uint8_t dimm, bool json) {
+  uint8_t i, j, cpu, startCPU, endCPU, startDimm, endDimm, dimm_present = 0;
+  uint8_t dimm_serial[MAX_CPU_NUM][MAX_DIMM_PER_CPU][LEN_SERIAL] = {0};
   json_t *config_arr = NULL;
   char   sn[LEN_SERIAL_STRING] = {0};
 
@@ -315,41 +225,41 @@ util_get_serial(uint8_t slot_id, uint8_t dimm, bool json) {
     config_arr = json_array();
     if (!config_arr)
       goto err_exit;
-  } else {
-    printf("Slot%d\n", slot_id);
   }
 
-  set_dimm_loop(dimm, &startDimm, &endDimm);
-  for (i = startDimm; i < endDimm; ++i) {
-    util_set_EE_page(slot_id, 0, i, 1);
-    util_read_spd_with_retry(slot_id, i, OFFSET_SERIAL, LEN_SERIAL, 0,
-      dimm_serial[i], &dimm_present);
+  set_dimm_loop(dimm, &startCPU, &endCPU, &startDimm, &endDimm);
+  for (cpu = startCPU; cpu < endCPU; cpu++) {
+    for (i = startDimm; i < endDimm; ++i) {
+      util_set_EE_page(fru_id, cpu, i, 1);
+      util_read_spd_with_retry(fru_id, cpu, i, OFFSET_SERIAL, LEN_SERIAL, 0,
+        dimm_serial[cpu][i], &dimm_present);
 
-    if (dimm_present)
-        for (j = 0; j < LEN_SERIAL; ++j)
-          snprintf(sn + (2 * j), LEN_SERIAL_STRING - (2 * j), "%02X", dimm_serial[i][j]);
-
-    if (json) {
-      json_t *sn_obj = json_object();
-      if (!sn_obj)
-        goto err_exit;
       if (dimm_present)
-        json_object_set_new(sn_obj, "Serial Number", json_string(sn));
-      json_t *dimm_obj = json_object();
-      if (!dimm_obj) {
-        json_decref(sn_obj);
-        goto err_exit;
+          for (j = 0; j < LEN_SERIAL; ++j)
+            snprintf(sn + (2 * j), LEN_SERIAL_STRING - (2 * j), "%02X", dimm_serial[cpu][i][j]);
+
+      if (json) {
+        json_t *sn_obj = json_object();
+        if (!sn_obj)
+          goto err_exit;
+        if (dimm_present)
+          json_object_set_new(sn_obj, "Serial Number", json_string(sn));
+        json_t *dimm_obj = json_object();
+        if (!dimm_obj) {
+          json_decref(sn_obj);
+          goto err_exit;
+        }
+        json_object_set_new(dimm_obj, "FRU", json_string(fru_name[fru_id - 1]));
+        json_object_set_new(dimm_obj, "DIMM", json_string(get_dimm_label(cpu,i)));
+        json_object_set_new(dimm_obj, "config", sn_obj);
+        json_array_append_new(config_arr, dimm_obj);
+      } else {
+        printf("DIMM %s Serial Number: ", get_dimm_label(cpu,i));
+        if (dimm_present)
+          printf("%s\n", sn);
+        else
+          printf("NO DIMM\n");
       }
-      json_object_set_new(dimm_obj, "Slot", json_integer(slot_id));
-      json_object_set_new(dimm_obj, "DIMM", json_string(dimm_location[i]));
-      json_object_set_new(dimm_obj, "config", sn_obj);
-      json_array_append_new(config_arr, dimm_obj);
-    } else {
-      printf("DIMM %s Serial Number: ", dimm_location[i]);
-      if (dimm_present)
-        printf("%s\n", sn);
-      else
-        printf("NO DIMM\n");
     }
   }
   if (json) {
@@ -368,9 +278,9 @@ err_exit:
 }
 
 static int
-util_get_part(uint8_t slot_id, uint8_t dimm, bool json) {
-  uint8_t i, j, startDimm, endDimm, dimm_present = 0;
-  uint8_t dimm_part[MAX_DIMM_NUM][LEN_PART_NUMBER] = {0};
+util_get_part(uint8_t fru_id, uint8_t dimm, bool json) {
+  uint8_t i, j, cpu, startCPU, endCPU, startDimm, endDimm, dimm_present = 0;
+  uint8_t dimm_part[MAX_CPU_NUM][MAX_DIMM_PER_CPU][LEN_PART_NUMBER] = {0};
   json_t *config_arr = NULL;
   char   pn[LEN_PN_STRING] = {0};
 
@@ -378,41 +288,41 @@ util_get_part(uint8_t slot_id, uint8_t dimm, bool json) {
     config_arr = json_array();
     if (!config_arr)
       goto err_exit;
-  } else {
-    printf("Slot%d\n", slot_id);
   }
 
-  set_dimm_loop(dimm, &startDimm, &endDimm);
-  for (i = startDimm; i < endDimm; ++i) {
-    util_set_EE_page(slot_id, 0, i, 1);
-    util_read_spd_with_retry(slot_id, i, OFFSET_PART_NUMBER, LEN_PART_NUMBER,
-      MAX_FAIL_CNT, dimm_part[i], &dimm_present);
+  set_dimm_loop(dimm, &startCPU, &endCPU, &startDimm, &endDimm);
+  for (cpu = startCPU; cpu < endCPU; cpu++) {
+    for (i = startDimm; i < endDimm; ++i) {
+      util_set_EE_page(fru_id, cpu, i, 1);
+      util_read_spd_with_retry(fru_id, cpu, i, OFFSET_PART_NUMBER, LEN_PART_NUMBER,
+        MAX_FAIL_CNT, dimm_part[cpu][i], &dimm_present);
 
-    if (dimm_present)
-        for (j = 0; j < LEN_PART_NUMBER; ++j)
-          snprintf(pn + j, LEN_PN_STRING - j, "%c", dimm_part[i][j]);
-
-    if (json) {
-      json_t *part_obj = json_object();
-      if (!part_obj)
-        goto err_exit;
       if (dimm_present)
-        json_object_set_new(part_obj, "Part Number", json_string(pn));
-      json_t *dimm_obj = json_object();
-      if (!dimm_obj) {
-        json_decref(part_obj);
-        goto err_exit;
+          for (j = 0; j < LEN_PART_NUMBER; ++j)
+            snprintf(pn + j, LEN_PN_STRING - j, "%c", dimm_part[cpu][i][j]);
+
+      if (json) {
+        json_t *part_obj = json_object();
+        if (!part_obj)
+          goto err_exit;
+        if (dimm_present)
+          json_object_set_new(part_obj, "Part Number", json_string(pn));
+        json_t *dimm_obj = json_object();
+        if (!dimm_obj) {
+          json_decref(part_obj);
+          goto err_exit;
+        }
+        json_object_set_new(dimm_obj, "FRU", json_string(fru_name[fru_id - 1]));
+        json_object_set_new(dimm_obj, "DIMM", json_string(get_dimm_label(cpu,i)));
+        json_object_set_new(dimm_obj, "config", part_obj);
+        json_array_append_new(config_arr, dimm_obj);
+      } else {
+        printf("DIMM %s Part Number: ", get_dimm_label(cpu,i));
+        if (dimm_present)
+          printf("%s\n", pn);
+        else
+          printf("NO DIMM\n");
       }
-      json_object_set_new(dimm_obj, "Slot", json_integer(slot_id));
-      json_object_set_new(dimm_obj, "DIMM", json_string(dimm_location[i]));
-      json_object_set_new(dimm_obj, "config", part_obj);
-      json_array_append_new(config_arr, dimm_obj);
-    } else {
-      printf("DIMM %s Part Number: ", dimm_location[i]);
-      if (dimm_present)
-        printf("%s\n", pn);
-      else
-        printf("NO DIMM\n");
     }
   }
   if (json) {
@@ -431,28 +341,30 @@ err_exit:
 }
 
 static int
-util_get_raw_dump(uint8_t slot_id, uint8_t dimm, bool json) {
-  uint8_t i, startDimm, endDimm, dimm_present = 0;
+util_get_raw_dump(uint8_t fru_id, uint8_t dimm, bool json) {
+  uint8_t i, cpu, startCPU, endCPU, startDimm, endDimm, dimm_present = 0;
   uint16_t j = 0;
   uint16_t offset = DEFAULT_DUMP_OFFSET;
   uint16_t len = DEFAULT_DUMP_LEN;
   uint8_t buf[DEFAULT_DUMP_LEN] = {0};
 
-  printf("Raw Dump, slot%d dimm=%s, offset=0x%x, len=0x%x\n",
-    slot_id, dimm_location[dimm], offset + 0x100, len);
+  printf("Raw Dump, fru_id %d dimm=%s, offset=0x%x, len=0x%x\n",
+    fru_id, get_dimm_label(cpu,i), offset + 0x100, len);
 
-  set_dimm_loop(dimm, &startDimm, &endDimm);
-  for (i = startDimm; i < endDimm; ++i) {
-    memset(buf, 0, DEFAULT_DUMP_LEN);
-    util_read_spd_with_retry(slot_id, i, DEFAULT_DUMP_OFFSET, DEFAULT_DUMP_LEN,
-      0, buf, &dimm_present);
+  set_dimm_loop(dimm, &startCPU, &endCPU, &startDimm, &endDimm);
+  for (cpu = startCPU; cpu < endCPU; cpu++) {
+    for (i = startDimm; i < endDimm; ++i) {
+      memset(buf, 0, DEFAULT_DUMP_LEN);
+      util_read_spd_with_retry(fru_id, cpu, i, DEFAULT_DUMP_OFFSET, DEFAULT_DUMP_LEN,
+        0, buf, &dimm_present);
 
-    printf("DIMM %s \n", dimm_location[i]);
-    printf("0x%x: ", offset + 0x100);
-    for (j = 0; j < DEFAULT_DUMP_LEN; ++j) {
-      printf("0x%02x ", buf[j]);
-      if (((j & 0x0f) == 0x0f))
-        printf("\n0x%x: ", offset + j + 0x101);
+      printf("DIMM %s \n", get_dimm_label(cpu,i));
+      printf("0x%x: ", offset + 0x100);
+      for (j = 0; j < DEFAULT_DUMP_LEN; ++j) {
+        printf("%02x ", buf[j]);
+        if (((j & 0x0f) == 0x0f))
+          printf("\n0x%x: ", offset + j + 0x101);
+      }
     }
     printf("\n");
   }
@@ -460,20 +372,18 @@ util_get_raw_dump(uint8_t slot_id, uint8_t dimm, bool json) {
 }
 
 static int
-util_get_cache(uint8_t slot_id, uint8_t dimm, bool json) {
+util_get_cache(uint8_t fru_id, uint8_t dimm, bool json) {
 #define MAX_KEY_SIZE 100
 #define MAX_VALUE_SIZE 128
-  uint8_t i, startDimm, endDimm = 0;
+  uint8_t i, startCPU, endCPU, startDimm, endDimm = 0;
   size_t len;
   char key[MAX_KEY_SIZE] = {0};
   char value[MAX_VALUE_SIZE] = {0};
 
-  printf("Slot%d\n", slot_id);
-
-  set_dimm_loop(dimm, &startDimm, &endDimm);
+  set_dimm_loop(dimm, &startCPU, &endCPU, &startDimm, &endDimm);
   for (i = startDimm; i < endDimm; ++i) {
-    printf("DIMM %s Serial Number (cached): ", dimm_location[i]);
-    snprintf(key, MAX_KEY_SIZE, "sys_config/fru%d_dimm%d_serial_num", slot_id, i);
+    printf("DIMM %s Serial Number (cached): ", get_dimm_label(0,i));
+    snprintf(key, MAX_KEY_SIZE, "sys_config/fru%d_dimm%d_serial_num", fru_id, i);
     if(kv_get(key, (char *)value, &len, KV_FPERSIST) < 0) {
       printf("NO DIMM");
     } else {
@@ -482,8 +392,8 @@ util_get_cache(uint8_t slot_id, uint8_t dimm, bool json) {
     }
     printf("\n");
 
-    printf("DIMM %s Part Number   (cached): ", dimm_location[i]);
-    snprintf(key, MAX_KEY_SIZE, "sys_config/fru%d_dimm%d_part_name", slot_id, i);
+    printf("DIMM %s Part Number   (cached): ", get_dimm_label(0,i));
+    snprintf(key, MAX_KEY_SIZE, "sys_config/fru%d_dimm%d_part_name", fru_id, i);
     if(kv_get(key, (char *)value, &len, KV_FPERSIST) < 0) {
       printf("NO DIMM");
     } else {
@@ -544,7 +454,7 @@ util_get_size(char *size_str, uint8_t size_str_len, uint8_t *buf) {
 // print DIMM Config
 // PN, SN + vendor, manufacture_date, size, speed, clock speed.
 static int
-util_get_config(uint8_t slot_id, uint8_t dimm, bool json) {
+util_get_config(uint8_t fru_id, uint8_t dimm, bool json) {
 // page 0 constants
 #define P0_OFFSET   0
 #define P0_LEN      20
@@ -558,7 +468,7 @@ util_get_config(uint8_t slot_id, uint8_t dimm, bool json) {
 #define SERIAL_OFFSET 5
 #define PN_OFFSET 9
 #define BUF_SIZE 64
-  uint8_t i, j, startDimm, endDimm, dimm_present = 0;
+  uint8_t i, j, cpu, startCPU, endCPU, startDimm, endDimm, dimm_present = 0;
   uint8_t buf[BUF_SIZE] = {0};
   json_t *config_arr = NULL;
   char   pn[LEN_PN_STRING] = {0};
@@ -575,70 +485,70 @@ util_get_config(uint8_t slot_id, uint8_t dimm, bool json) {
       goto err_exit;
   }
 
-  set_dimm_loop(dimm, &startDimm, &endDimm);
-  for (i = startDimm; i < endDimm; ++i) {
-    util_set_EE_page(slot_id, 0, i, 0);
-    // read page 0 to get type, speed, capacity
-    memset(buf, 0, BUF_SIZE);
-    util_read_spd_with_retry(slot_id, i, P0_OFFSET, P0_LEN, 0, buf, &dimm_present);
-    if (dimm_present) {
-      dimm_type = buf[TYPE_OFFSET];
-      mincycle  = buf[MIN_CYCLE_TIME_OFFSET];
-      util_get_size(size, BUF_SIZE, buf);
-
-      // read page 1 to get pn, sn, manufacturer, manufacturer week
-      util_set_EE_page(slot_id, 0, i, 1);
+  set_dimm_loop(dimm, &startCPU, &endCPU, &startDimm, &endDimm);
+  for (cpu = startCPU; cpu < endCPU; cpu++) {
+    for (i = startDimm; i < endDimm; ++i) {
+      util_set_EE_page(fru_id, cpu, i, 0);
+      // read page 0 to get type, speed, capacity
       memset(buf, 0, BUF_SIZE);
-      util_read_spd_with_retry(slot_id, i, P1_OFFSET, P1_LEN, 0, buf, &dimm_present);
+      util_read_spd_with_retry(fru_id, cpu, i, P0_OFFSET, P0_LEN, 0, buf, &dimm_present);
       if (dimm_present) {
-          for (j = 0; j < LEN_PART_NUMBER; ++j) {
-            snprintf(pn + j, LEN_PN_STRING - j, "%c", buf[PN_OFFSET + j]);
-          }
-          for (j = 0; j < LEN_SERIAL; ++j) {
-            snprintf(sn + (2 * j), LEN_SERIAL_STRING - (2 * j), "%02X", buf[SERIAL_OFFSET + j]);
-          }
-          snprintf(manu, BUF_SIZE, "%s", manu_string(buf[MANUFACTURER_OFFSET]));
-          snprintf(week, BUF_SIZE, "20%02x Week%02x",
-                    buf[DATE_OFFSET], buf[DATE_OFFSET + 1]);
-      }
-    }
+        dimm_type = buf[TYPE_OFFSET];
+        mincycle  = buf[MIN_CYCLE_TIME_OFFSET];
+        util_get_size(size, BUF_SIZE, buf);
 
+        // read page 1 to get pn, sn, manufacturer, manufacturer week
+        util_set_EE_page(fru_id, cpu, i, 1);
+        memset(buf, 0, BUF_SIZE);
+        util_read_spd_with_retry(fru_id, cpu, i, P1_OFFSET, P1_LEN, 0, buf, &dimm_present);
+        if (dimm_present) {
+            for (j = 0; j < LEN_PART_NUMBER; ++j) {
+              snprintf(pn + j, LEN_PN_STRING - j, "%c", buf[PN_OFFSET + j]);
+            }
+            for (j = 0; j < LEN_SERIAL; ++j) {
+              snprintf(sn + (2 * j), LEN_SERIAL_STRING - (2 * j), "%02X", buf[SERIAL_OFFSET + j]);
+            }
+            snprintf(manu, BUF_SIZE, "%s", manu_string(buf[MANUFACTURER_OFFSET]));
+            snprintf(week, BUF_SIZE, "20%02x Week%02x",
+                      buf[DATE_OFFSET], buf[DATE_OFFSET + 1]);
+        }
+      }
 
-    if (json) {
-      json_t *config_obj = json_object();
-      if (!config_obj)
-        goto err_exit;
-      if (dimm_present) {
-        json_object_set_new(config_obj, "Size", json_string(size));
-        json_object_set_new(config_obj, "Type", json_string(dimm_type_string(dimm_type)));
-        json_object_set_new(config_obj, "Speed", json_string(dimm_speed_string(mincycle)));
-        json_object_set_new(config_obj, "Manufacturer", json_string(manu));
-        json_object_set_new(config_obj, "Serial Number", json_string(sn));
-        json_object_set_new(config_obj, "Part Number", json_string(pn));
-        json_object_set_new(config_obj, "Manufacturing Date", json_string(week));
-      }
-      json_t *dimm_obj = json_object();
-      if (!dimm_obj) {
-        json_decref(config_obj);
-        goto err_exit;
-      }
-      json_object_set_new(dimm_obj, "Slot", json_integer(slot_id));
-      json_object_set_new(dimm_obj, "DIMM", json_string(dimm_location[i]));
-      json_object_set_new(dimm_obj, "config", config_obj);
-      json_array_append_new(config_arr, dimm_obj);
-    } else {
-      printf("CONFIG, slot%d\n", slot_id);
-      printf("DIMM %s:\n", dimm_location[i]);
-      if (dimm_present) {
-        printf("\tSize: %s\n", size);
-        printf("\tType: %s\n", dimm_type_string(dimm_type));
-        printf("\tSpeed: %s\n", dimm_speed_string(mincycle));
-        printf("\tManufacturer: %s\n", manu);
-        printf("\tSerial Number: %s\n", sn);
-        printf("\tPart Number: %s\n", pn);
-        printf("\tManufacturing Date: %s\n", week);
+     if (json) {
+        json_t *config_obj = json_object();
+        if (!config_obj)
+          goto err_exit;
+        if (dimm_present) {
+          json_object_set_new(config_obj, "Size", json_string(size));
+          json_object_set_new(config_obj, "Type", json_string(dimm_type_string(dimm_type)));
+          json_object_set_new(config_obj, "Speed", json_string(dimm_speed_string(mincycle)));
+          json_object_set_new(config_obj, "Manufacturer", json_string(manu));
+          json_object_set_new(config_obj, "Serial Number", json_string(sn));
+          json_object_set_new(config_obj, "Part Number", json_string(pn));
+          json_object_set_new(config_obj, "Manufacturing Date", json_string(week));
+        }
+        json_t *dimm_obj = json_object();
+        if (!dimm_obj) {
+          json_decref(config_obj);
+          goto err_exit;
+        }
+        json_object_set_new(dimm_obj, "FRU", json_string(fru_name[fru_id - 1]));
+        json_object_set_new(dimm_obj, "DIMM", json_string(get_dimm_label(cpu,i)));
+        json_object_set_new(dimm_obj, "config", config_obj);
+        json_array_append_new(config_arr, dimm_obj);
       } else {
-        printf("\tNO DIMM\n");
+        printf("DIMM %s:\n", get_dimm_label(cpu,i));
+        if (dimm_present) {
+          printf("\tSize: %s\n", size);
+          printf("\tType: %s\n", dimm_type_string(dimm_type));
+          printf("\tSpeed: %s\n", dimm_speed_string(mincycle));
+          printf("\tManufacturer: %s\n", manu);
+          printf("\tSerial Number: %s\n", sn);
+          printf("\tPart Number: %s\n", pn);
+          printf("\tManufacturing Date: %s\n", week);
+        } else {
+          printf("\tNO DIMM\n");
+        }
       }
     }
   }
@@ -668,7 +578,7 @@ static int parse_cmdline_args(int argc, char **argv,
     {NULL,		0,			NULL,	0},
   };
 
-  *dimm = MAX_DIMM_NUM;
+  *dimm = total_dimms;
   *json = false;
   while (1) {
     opt_index = 0;
@@ -680,7 +590,7 @@ static int parse_cmdline_args(int argc, char **argv,
     switch (ret) {
     case 'd':
       *dimm = atoi(optarg);
-      if ((*dimm < 0) || (*dimm > MAX_DIMM_NUM)) {
+      if ((*dimm < 0) || (*dimm > total_dimms)) {
         printf("Error: invalid [--dimm]\n");
         return ERR_INVALID_SYNTAX;
       }
@@ -697,9 +607,9 @@ static int parse_cmdline_args(int argc, char **argv,
 }
 
 static int
-parse_arg_and_exec(int argc, char **argv, uint8_t slot_id,
+parse_arg_and_exec(int argc, char **argv, uint8_t fru_id,
                   int (*pF)(uint8_t, uint8_t, bool)) {
-  uint8_t dimm = MAX_DIMM_NUM;
+  uint8_t dimm = total_dimms;
   bool    json = false;
   int ret = 0;
 
@@ -708,17 +618,17 @@ parse_arg_and_exec(int argc, char **argv, uint8_t slot_id,
     return ERR_INVALID_SYNTAX;
   } else if (argc > 3) {
     // parse option fields,
-    // skipping first 3 arguments, which will be "dimm-util slotX cmd"
+    // skipping first 3 arguments, which will be "dimm-util fru cmd"
     if (parse_cmdline_args(argc - 2, &(argv[2]), &dimm, &json) != 0)
       return ERR_INVALID_SYNTAX;
   }
 
-  if (slot_id == SLOT_ALL) {
-    for (int i = SLOT_MIN; i <= SLOT_MAX; ++i) {
+  if (fru_id == fru_id_all) {
+    for (int i = fru_id_min; i <= fru_id_max; ++i) {
       ret = pF(i, dimm, json);
     }
   } else {
-    ret = pF(slot_id, dimm, json);
+    ret = pF(fru_id, dimm, json);
   }
 
   return ret;
@@ -726,51 +636,77 @@ parse_arg_and_exec(int argc, char **argv, uint8_t slot_id,
 
 static void
 print_usage_help(void) {
-  printf("Usage: dimm-util <slot1|slot2|slot3|slot4|all> <cmd> [opt1] [opt2] ...\n");
-  printf("\ncmd list:\n");
+  int i;
+
+  printf("Usage: dimm-util <");
+  for (i = 0; i < num_frus; ++i) {
+    printf("%s", fru_name[i]);
+    if (i < num_frus - 1)
+      printf("|");
+  }
+  printf("> <CMD> [OPT1] [OPT2] ...\n");
+  printf("\nCMD list:\n");
   printf("   --serial   - get DIMM module serial number\n");
   printf("   --part     - get DIMM module part number\n");
   printf("   --raw      - dump raw SPD data\n");
   printf("   --cache    - read from SMBIOS cache\n");
   printf("   --config   - print DIMM configuration info\n");
-  printf("\nopt list:\n");
-  printf("  [--dimm N]  - DIMM number (0..%d) [default %d = ALL]\n",
-          MAX_DIMM_NUM - 1 , MAX_DIMM_NUM);
-  printf("  [--json]    - output in JSON format\n");
+  printf("\nOPT list:\n");
+  printf("   --dimm N  - DIMM number (0..%d) [default %d = ALL]\n",
+          total_dimms - 1, total_dimms);
+  printf("   --json    - output in JSON format\n");
+}
+
+static int
+parse_fru(char* fru_str, uint8_t *fru) {
+  uint8_t i, found = 0;
+
+  for (i = 0; i < num_frus; ++i) {
+    if (!strcmp(fru_str, fru_name[i])) {
+      // fru_name string is 0 based but fru id is 1 based
+      *fru = i + 1;
+      found = 1;
+      break;
+    }
+  }
+
+  if (!found)
+    return -1;
+  else
+    return 0;
 }
 
 int
 main(int argc, char **argv) {
-  uint8_t slot_id;
+  uint8_t fru;
   int ret = 0;
+
+  // init platform-specific variables, e.g. max dimms, max cpu, dimm labels,
+  ret = plat_init();
+  DBG_PRINT("num_frus(%d), num_dimms_per_cpu(%d), num_cpus(%d), total_dimms(%d)\n",
+          num_frus, num_dimms_per_cpu, num_cpus, total_dimms);
+  if (ret != 0) {
+    printf("init failed (%d)\n", ret);
+    return ret;
+  }
 
   if (argc < 3)
     goto err_exit;
 
-  if (!strcmp(argv[1], "slot1")) {
-    slot_id = 1;
-  } else if (!strcmp(argv[1] , "slot2")) {
-    slot_id = 2;
-  } else if (!strcmp(argv[1] , "slot3")) {
-    slot_id = 3;
-  } else if (!strcmp(argv[1] , "slot4")) {
-    slot_id = 4;
-  } else if (!strcmp(argv[1] , "all")) {
-    slot_id = SLOT_ALL;
-  } else {
+  if (parse_fru(argv[1], &fru) == -1) {
     goto err_exit;
   }
 
   if (!strcmp(argv[2], "--serial")) {
-    ret = parse_arg_and_exec(argc, argv, slot_id, &util_get_serial);
+    ret = parse_arg_and_exec(argc, argv, fru, &util_get_serial);
   } else if (!strcmp(argv[2], "--part")) {
-    ret = parse_arg_and_exec(argc, argv, slot_id, &util_get_part);
+    ret = parse_arg_and_exec(argc, argv, fru, &util_get_part);
   } else if (!strcmp(argv[2], "--raw")) {
-    ret = parse_arg_and_exec(argc, argv, slot_id, &util_get_raw_dump);
+    ret = parse_arg_and_exec(argc, argv, fru, &util_get_raw_dump);
   } else if (!strcmp(argv[2], "--cache")) {
-    ret = parse_arg_and_exec(argc, argv, slot_id, &util_get_cache);
+    ret = parse_arg_and_exec(argc, argv, fru, &util_get_cache);
   } else if (!strcmp(argv[2], "--config")) {
-    ret = parse_arg_and_exec(argc, argv, slot_id, &util_get_config);
+    ret = parse_arg_and_exec(argc, argv, fru, &util_get_config);
   } else {
     goto err_exit;
   }

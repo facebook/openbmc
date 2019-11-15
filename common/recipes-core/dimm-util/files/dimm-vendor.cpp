@@ -5,7 +5,7 @@
 // DIMM manufacturer name as defined in JDEC spec JEP106AV
 // https://www.jedec.org/document_search?search_api_views_fulltext=jep106
 //
-char *manufacturer_name[] =
+char const *manufacturer_name[] =
 {
   "AMD",
   "AMI",

@@ -41,6 +41,15 @@
         "continue_on_error" : true,
         "upgrade_cmd" : "/usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",
         "post_action"    : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 30",
+        "priority": 20
+    },
+    "16o_fpga" : {
+      "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"],
+        "condition" : "fpga_ver.sh | grep DOMFPGA:|head -{entity}|tail -1 |grep 16O",
+        "get_version" : "fpga_ver.sh|grep 16O|head -{entity}|tail -1|cut -d ' ' -f 3",
+        "continue_on_error" : true,
+        "upgrade_cmd" : "/usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",
+        "post_action"    : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 30",
         "priority": 2
     },
     "pim_spi_mux" : {

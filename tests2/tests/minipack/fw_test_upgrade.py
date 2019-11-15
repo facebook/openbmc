@@ -41,10 +41,14 @@ class FwUpgradeTest(unittest.TestCase):
             1,
             "/usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",  # noqa B950
         ],  # priority=1, upgrade_cmd
-        "4dd_fpga": [
+        "16o_fpga": [
             2,
             "/usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",  # noqa B950
         ],  # priority=2, upgrade_cmd
+        "4dd_fpga": [
+            20,
+            "/usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",  # noqa B950
+        ],  # priority=20, upgrade_cmd
         "bios": [
             3,
             "/usr/bin/fw-util scm --update --bios {filename}",

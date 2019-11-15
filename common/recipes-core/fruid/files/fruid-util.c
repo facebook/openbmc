@@ -138,6 +138,7 @@ print_json_fruid_info(fruid_info_t *fruid, const char *name)
 {
   json_t *fru_object = json_object();
 
+  json_object_set_new(fru_object, "FRU Information", json_string(name));
   if (fruid->chassis.flag) {
     json_object_set_new(fru_object, "Chassis Type", json_string(fruid->chassis.type_str));
     json_object_set_new(fru_object, "Chassis Part Number", json_string(fruid->chassis.part));

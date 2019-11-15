@@ -11,7 +11,7 @@
 
 #define USAGE_MESSAGE \
     "Usage:\n" \
-    "  %s slot[1|2|3|4] --[1ou|2ou|bb] --[write|read] $image  \n"
+    "  %s slot[0|1|2|3] --[1ou|2ou|bb] --[write|read] $image  \n"
 
 int main(int argc, char **argv) {
   struct timeval start, end;
@@ -32,14 +32,14 @@ int main(int argc, char **argv) {
 
   gettimeofday(&start, NULL);
 
-  if ( (strcmp(argv[1], "slot1") == 0) ) {
+  if ( (strcmp(argv[1], "slot0") == 0) ) {
+    slot_id = 0;
+  } else if ( (strcmp(argv[1], "slot1") == 0) ) {
     slot_id = 1;
   } else if ( (strcmp(argv[1], "slot2") == 0) ) {
     slot_id = 2;
   } else if ( (strcmp(argv[1], "slot3") == 0) ) {
     slot_id = 3;
-  } else if ( (strcmp(argv[1], "slot4") == 0) ) {
-    slot_id = 4;
   } else {
     printf("Cannot recognize the unknown slot: %s\n", argv[1]);
     return -1;

@@ -98,6 +98,8 @@ populate_mgmt_sensors(void) {
   // Device ID string
   // Type - 0xC0: ASCII, Length - <num chars>
   plat_len = get_sensor_platform_name(platform_name);
+  if (plat_len > SENSOR_STR_SIZE)
+    plat_len = SENSOR_STR_SIZE;
   sensor.str_type_len = 0xC0 + plat_len;
   strncpy(sensor.str, platform_name, plat_len);
 

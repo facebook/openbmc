@@ -551,7 +551,8 @@ do_pldm_discovery(nl_sfd_t *sfd, NCSI_NL_RSP_T *resp_buf)
   if (pldmStatus == CC_SUCCESS) {
     pldmType = pldmHandleGetPldmTypesResp((PLDM_GetPldmTypes_Response_t *)&(resp_buf->msg_payload[7]));
   }
-  syslog(LOG_CRIT, "PLDM type supported = 0x%" PRIx64, pldmType);
+  syslog(LOG_CRIT, "FRU: %d PLDM type supported = 0x%" PRIx64,
+            pal_get_nic_fru_id(), pldmType);
 
   // Query  version for each supported type
   for (i = 0; i < PLDM_RSV; ++i) {
@@ -572,7 +573,8 @@ do_pldm_discovery(nl_sfd_t *sfd, NCSI_NL_RSP_T *resp_buf)
     if (pldmStatus == CC_SUCCESS) {
       pldmHandleGetVersionResp((PLDM_GetPldmVersion_Response_t *)&(resp_buf->msg_payload[7]),
                                          &pldm_version);
-      syslog(LOG_CRIT, "    PLDM type %d version = %d.%d.%d.%d", i,
+      syslog(LOG_CRIT, "    FRU: %d PLDM type %d version = %d.%d.%d.%d",
+               pal_get_nic_fru_id(), i,
                pldm_version.major, pldm_version.minor, pldm_version.update,
                pldm_version.alpha);
 
@@ -637,15 +639,17 @@ init_nic_config(nl_sfd_t *sfd)
   init_version_data((Get_Version_ID_Response*)(pNcsiResp->Payload_Data));
 
   aen_enable_mask &= gNicCapability.aen_control_support;
-  syslog(LOG_CRIT, "NIC AEN Supported: 0x%x, AEN Enable Mask=0x%x",
-          gNicCapability.aen_control_support, aen_enable_mask);
+  syslog(LOG_CRIT, "FRU: %d NIC AEN Supported: 0x%x, AEN Enable Mask=0x%x",
+          pal_get_nic_fru_id(), gNicCapability.aen_control_support,
+          aen_enable_mask);
 
   // PLDM discovery
   do_pldm_discovery(sfd, resp_buf);
   // PLDM support is optional, so ignore return value for now
 
   if (gEnablePldmMonitoring) {
-    syslog(LOG_CRIT, "    PLDM sensor monitoring enabled");
+    syslog(LOG_CRIT, "    FRU: %d PLDM sensor monitoring enabled",
+            pal_get_nic_fru_id());
   }
 
 

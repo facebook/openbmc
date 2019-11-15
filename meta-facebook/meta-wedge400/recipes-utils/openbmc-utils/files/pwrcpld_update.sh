@@ -88,8 +88,9 @@ case $2 in
         ispvm -f 1000 dll $DLL_PATH "${img}"
         ;;
     *)
-        # default: sw mode
-        ispvm -f 1000 dll $DLL_PATH "${img}"
+        # default: hw mode
+        # enable CPLD immediately after cpld update done
+        cpldprog -p "${img}" -m
         ;;
 esac
 

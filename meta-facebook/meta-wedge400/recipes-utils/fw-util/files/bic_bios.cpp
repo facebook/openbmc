@@ -38,9 +38,7 @@ int BiosComponent::update(string image) {
     sleep(1);
     ret = bic_update_fw(slot_id, UPDATE_BIOS, (char *)image.c_str());
     sleep(1);
-    pal_set_server_power(slot_id, SERVER_12V_CYCLE);
-    sleep(5);
-    pal_set_server_power(slot_id, SERVER_POWER_ON);
+    pal_set_server_power(slot_id, SERVER_GRACEFUL_POWER_ON);
   } catch(string err) {
     return FW_STATUS_NOT_SUPPORTED;
   }

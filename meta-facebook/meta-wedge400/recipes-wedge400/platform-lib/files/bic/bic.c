@@ -742,7 +742,7 @@ i2c_io(int fd, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount) {
 }
 
 static int
-_update_bic_main(uint8_t slot_id, char *path) {
+_update_bic_main(uint8_t slot_id, const char *path) {
   int fd;
   int ifd = -1;
   char cmd[100] = {0};
@@ -1025,7 +1025,7 @@ error_exit:
 
   //Unlock fw-util
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "rm /var/run/fw-util_%d.lock",slot_id);
+  sprintf(cmd, "rm /var/run/fw-util-scm.lock");
   system(cmd);
 
   return ret;
@@ -1229,7 +1229,7 @@ bic_related_process(uint8_t comp, process_operate_t operate) {
 }
 
 int
-bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
+bic_update_fw(uint8_t slot_id, uint8_t comp, const char *path) {
   int ret = -1, rc;
   uint32_t offset;
   volatile uint16_t count, read_count;
@@ -1344,7 +1344,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
            printf("updated cpld: %d %%\n", offset/dsize*5);
            break;
          case UPDATE_VR:
-           printf("\rupdated vr: %d %%", offset/dsize*20);
+           printf("updated vr: %d %%\n", offset/dsize*20);
            break;
          default:
            printf("updated bic boot loader: %d %%\n", offset/dsize*5);
@@ -1425,7 +1425,7 @@ error_exit:
 
   //Unlock fw-util
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "rm /var/run/fw-util_%d.lock",slot_id);
+  sprintf(cmd, "rm /var/run/fw-util-scm.lock");
   system(cmd);
   return ret;
 }
@@ -1503,4 +1503,105 @@ bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen,
   *rxlen = rlen-6;
 
   return 0;
+}
+
+/*
+ * 0x2E 0xDF: Force Intel ME Recovery
+ * Request
+ *   Byte 1:3 = Intel Manufacturer ID - 000157h, LS byte first.
+ *   Byte 4 - Command
+ *     = 01h Restart using Recovery Firmware
+ *     (Intel ME FW configuration is not restored to factory defaults)
+ *     = 02h Restore Factory Default Variable values and restart the Intel ME FW
+ *     = 03h PTT Initial State Restore
+ *
+ * Response
+ *   Byte 1 - Completion Code
+ *     = 00h - Success
+ *     (Remaining standard Completion Codes are shown in Section 2.12)
+ *     = 81h - Unsupported Command parameter value in the Byte 4 of the request.
+ *
+ *   Byte 2:4 = Intel Manufacturer ID - 000157h, LS byte first.
+ */
+int me_recovery(uint8_t slot_id, uint8_t command) {
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+  int retry = 0;
+
+  while (retry <= 3) {
+    tbuf[0] = 0xB8;
+    tbuf[1] = 0xDF;
+    tbuf[2] = 0x57;
+    tbuf[3] = 0x01;
+    tbuf[4] = 0x00;
+    tbuf[5] = command;
+    tlen = 6;
+
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret) {
+      retry++;
+      sleep(1);
+      continue;
+    } else {
+      break;
+    }
+  }
+  if (retry == 4) { /* if the third retry still failed, return -1 */
+    OBMC_CRIT("%s: Restart using Recovery Firmware failed..., retried: %d",
+              __func__,  retry);
+    return -1;
+  }
+
+  sleep(10);
+  retry = 0;
+  memset(&tbuf, 0, sizeof(tbuf));
+  memset(&rbuf, 0, sizeof(rbuf));
+
+  /*
+  * 0x6 0x4: Get Self-Test Results
+  * Byte 1 - Completion Code
+  * Byte 2
+  *   = 55h - No error. All Self-Tests Passed.
+  *   = 81h - Firmware entered Recovery bootloader mode
+  * Byte 3 For byte 2 = 55h, 56h, FFh:
+  *   =00h
+  *   =02h - recovery mode entered by IPMI command "Force ME Recovery"
+  *
+  * Using ME self-test result to check if the ME Recovery Command Success or not
+  */
+  while (retry <= 3) {
+    tbuf[0] = 0x18;
+    tbuf[1] = 0x04;
+    tlen = 2;
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret) {
+      retry++;
+      sleep(1);
+      continue;
+    }
+
+    /*
+     * If Get Self-Test Results is 0x55 0x00,
+     * means No error, all Self-Tests Passed.
+     *
+     * If Get Self-Test Results is 0x81 0x02,
+     * means Firmware entered Recovery bootloader mode.
+     */
+    if ((command == RECOVERY_MODE) && (rbuf[1] == 0x81) && (rbuf[2] == 0x02)) {
+      return 0;
+    } else if ((command == RESTORE_FACTORY_DEFAULT) &&
+               (rbuf[1] == 0x55) && (rbuf[2] == 0x00)) {
+      return 0;
+    } else {
+      return -1;
+    }
+  }
+  if (retry == 4) { /* if the third retry still failed, return -1 */
+    OBMC_CRIT("%s: Restore Factory Default failed..., retried: %d",
+              __func__,  retry);
+    return -1;
+  }
 }

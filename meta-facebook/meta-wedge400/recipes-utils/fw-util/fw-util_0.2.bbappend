@@ -1,4 +1,3 @@
-#
 # Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -15,14 +14,17 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
 
-all: fw-util
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-fw-util: fw-util.c 
-	$(CC) -lipmi -lipmb -lbic -lpal -std=c99 -o $@ $^ $(LDFLAGS)
-
-.PHONY: clean
-
-clean:
-	rm -rf *.o fw-util
+SRC_URI += "file://bic_bios.cpp \
+            file://cpld_fpga.cpp \
+            file://nic.cpp \
+            file://server.cpp \
+            file://vr.cpp \
+            file://platform.cpp \
+           "
+CXXFLAGS += " -DBIC_SUPPORT "
+DEPENDS += "libipmi libipmb libbic libpal"
+RDEPENDS_${PN} += "libipmi libipmb libbic libpal"
+LDFLAGS += " -lipmi -lipmb -lbic -lpal"

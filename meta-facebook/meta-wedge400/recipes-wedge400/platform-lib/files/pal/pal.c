@@ -752,6 +752,12 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_FAN3;
   } else if (!strcmp(str, "fan4")) {
     *fru = FRU_FAN4;
+  } else if (!strcmp(str, "bmc")) {
+    *fru = FRU_BMC;
+  } else if (!strcmp(str, "cpld")) {
+    *fru = FRU_CPLD;
+  } else if (!strcmp(str, "fpga")) {
+    *fru = FRU_FPGA;
   } else {
     OBMC_WARN("pal_get_fru_id: Wrong fru#%s", str);
     return -1;
@@ -1578,6 +1584,70 @@ pal_get_cpld_board_rev(int *rev, const char *device) {
 }
 
 int
+pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver) {
+  int val = -1;
+  char ver_path[PATH_MAX];
+  char sub_ver_path[PATH_MAX];
+
+  switch(fru) {
+    case FRU_CPLD:
+      if (!(strncmp(device, SCM_CPLD, strlen(SCM_CPLD)))) {
+        snprintf(ver_path, sizeof(ver_path), SCM_SYSFS, "cpld_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 SCM_SYSFS, "cpld_sub_ver");
+      } else if (!(strncmp(device, SMB_CPLD, strlen(SMB_CPLD)))) {
+        snprintf(ver_path, sizeof(ver_path), SMB_SYSFS, "cpld_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 SMB_SYSFS, "cpld_sub_ver");
+      } else if (!(strncmp(device, PWR_CPLD, strlen(PWR_CPLD)))) {
+        snprintf(ver_path, sizeof(ver_path), PWR_SYSFS, "cpld_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 PWR_SYSFS, "cpld_sub_ver");
+      } else if (!(strncmp(device, FCM_CPLD, strlen(FCM_CPLD)))) {
+        snprintf(ver_path, sizeof(ver_path), FCM_SYSFS, "cpld_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 FCM_SYSFS, "cpld_sub_ver");
+      } else {
+        return -1;
+      }
+      break;
+    case FRU_FPGA:
+      if (!(strncmp(device, DOM_FPGA1, strlen(DOM_FPGA1)))) {
+        snprintf(ver_path, sizeof(ver_path), DOMFPGA1_SYSFS, "fpga_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 DOMFPGA1_SYSFS, "fpga_sub_ver");
+      } else if (!(strncmp(device, DOM_FPGA2, strlen(DOM_FPGA2)))) {
+        snprintf(ver_path, sizeof(ver_path), DOMFPGA2_SYSFS, "fpga_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 DOMFPGA2_SYSFS, "fpga_sub_ver");
+      } else {
+        return -1;
+      }
+      break;
+    default:
+      return -1;
+  }
+
+  if (!read_device(ver_path, &val)) {
+    ver[0] = (uint8_t)val;
+  } else {
+    return -1;
+  }
+
+  if (!read_device(sub_ver_path, &val)) {
+    ver[1] = (uint8_t)val;
+  } else {
+    printf("[debug][ver:%s]\n", ver_path);
+    printf("[debug][sub_ver:%s]\n", sub_ver_path);
+    OBMC_INFO("[debug][ver:%s]\n", ver_path);
+    OBMC_INFO("[debug][sub_ver:%s]\n", sub_ver_path);
+    return -1;
+  }
+
+  return 0;
+}
+
+int
 pal_set_last_pwr_state(uint8_t fru, char *state) {
 
   int ret;
@@ -1642,8 +1712,10 @@ scm_power_on(uint8_t slot_id) {
   int ret;
 
   ret = run_command("/usr/local/bin/wedge_power.sh on");
-  if (ret)
+  if (ret) {
+    OBMC_ERROR(ret, "%s failed", __func__);
     return -1;
+  }
   return 0;
 }
 
@@ -1653,8 +1725,43 @@ scm_power_off(uint8_t slot_id) {
   int ret;
 
   ret = run_command("/usr/local/bin/wedge_power.sh off");
+  if (ret) {
+    OBMC_ERROR(ret, "%s failed", __func__);
+    return -1;
+  }
+  return 0;
+}
+
+// Power Button trigger the server in given slot
+static int
+cpu_power_btn(uint8_t slot_id) {
+  int ret;
+
+  ret = pal_set_com_pwr_btn_n("0");
   if (ret)
     return -1;
+  sleep(DELAY_POWER_BTN);
+  ret = pal_set_com_pwr_btn_n("1");
+  if (ret)
+    return -1;
+
+  return 0;
+}
+
+// set CPU power off with power button
+static int
+cpu_power_off(uint8_t slot_id) {
+  int ret = pal_set_com_pwr_btn_n("0");//set COM_PWR_BTN_N to low
+  if(ret){
+    OBMC_ERROR(ret, "%s set COM-e power button low failed.\n", __func__);
+    return -1;
+  }
+  sleep(6);
+  ret = pal_set_com_pwr_btn_n("1");//set COM_PWR_BTN_N to high
+  if(ret){
+    OBMC_ERROR(ret, "%s set COM-e power button high failed.\n", __func__);
+    return -1;
+  }
   return 0;
 }
 
@@ -1677,7 +1784,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
   if (ret) {
     // Check for if the BIC is irresponsive due to 12V_OFF or 12V_CYCLE
     OBMC_INFO("pal_get_server_power: bic_get_gpio returned error hence"
-        " reading the kv_store for last power state  for fru %d", slot_id);
+        " reading the kv_store for last power state  for slot %d", slot_id);
     pal_get_last_pwr_state(slot_id, value);
     if (!(strncmp(value, "off", strlen("off")))) {
       *status = SERVER_POWER_OFF;
@@ -1701,7 +1808,7 @@ pal_get_server_power(uint8_t slot_id, uint8_t *status) {
 // Power Off, Power On, or Power Reset the server in given slot
 int
 pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
-  int ret;
+  int ret = 0;
   uint8_t status;
 
   if (pal_get_server_power(slot_id, &status) < 0) {
@@ -1758,18 +1865,19 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       break;
 
     case SERVER_GRACEFUL_SHUTDOWN:
-      if (status == SERVER_POWER_OFF) {
-        return 1;
-      } else {
-        return scm_power_off(slot_id);
-      }
+      ret = cpu_power_off(slot_id);
+      break;
+    
+    case SERVER_GRACEFUL_POWER_ON:
+      ret = cpu_power_btn(slot_id);
       break;
 
     default:
-      return -1;
+      ret = -1;
+      break;
   }
 
-  return 0;
+  return ret;
 }
 
 static bool

@@ -38,11 +38,25 @@ extern "C" {
 
 #define READ_SENSOR_TIMEOUT 30
 
+#define I2C_DRIVER_DIR(name, bus, addr) "/sys/bus/i2c/drivers/"#name"/"#bus"-00"#addr"/"
+#define I2C_DEV_DIR(bus, addr) "/sys/bus/i2c/devices/i2c-"#bus"/"#bus"-00"#addr"/"
+#define HW_MON_DIR "hwmon/hwmon*"
+
+#define SCM_CPLD       "scmcpld"
+#define SMB_CPLD       "smbcpld"
+#define FCM_CPLD       "fcmcpld"
+#define PWR_CPLD       "pwrcpld"
+#define DOM_FPGA1      "domfpga1"
+#define DOM_FPGA2      "domfpga2"
+
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
-#define SCM_SYSFS "/sys/bus/i2c/devices/i2c-2/2-003e/%s"
-#define SMB_SYSFS "/sys/bus/i2c/devices/i2c-12/12-003e/%s"
-#define FCM_SYSFS "/sys/bus/i2c/devices/i2c-30/30-003e/%s"
+#define SCM_SYSFS        I2C_DEV_DIR(2, 3e)"%s"
+#define SMB_SYSFS        I2C_DEV_DIR(12, 3e)"%s"
+#define PWR_SYSFS        I2C_DEV_DIR(29, 3e)"%s"
+#define FCM_SYSFS        I2C_DEV_DIR(30, 3e)"%s"
+#define DOMFPGA1_SYSFS   I2C_DEV_DIR(13, 60)"%s"
+#define DOMFPGA2_SYSFS   I2C_DEV_DIR(5, 60)"%s"
 #define SENSORD_FILE_SMB "/tmp/cache_store/smb_sensor%d"
 #define SENSORD_FILE_PSU "/tmp/cache_store/psu%d_sensor%d"
 #define SENSORD_FILE_PEM "/tmp/cache_store/pem%d_sensor%d"
@@ -75,10 +89,6 @@ extern "C" {
 #define CRASHDUMP_BIN    "/usr/local/bin/autodump.sh"
 
 #define LAST_KEY "last_key"
-
-#define I2C_DRIVER_DIR(name, bus, addr) "/sys/bus/i2c/drivers/"#name"/"#bus"-00"#addr"/"
-#define I2C_DEV_DIR(bus, addr) "/sys/bus/i2c/devices/i2c-"#bus"/"#bus"-00"#addr"/"
-#define HW_MON_DIR "hwmon/hwmon*"
 
 // SCM Sensor Devices
 #define SCM_HSC_DEVICE         I2C_DEV_DIR(14, 10)HW_MON_DIR
@@ -234,6 +244,10 @@ enum {
   FRU_FAN3 = 10,
   FRU_FAN4 = 11,
   MAX_NUM_FRUS = 11,
+  // virtual FRU ID for fw-util 0.2, make sure they are bigger than MAX_NUM_FRUS
+  FRU_BMC,
+  FRU_CPLD,
+  FRU_FPGA,
 };
 
 enum {
@@ -539,6 +553,7 @@ int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_set_th3_power(int option);
 int pal_get_fan_speed(uint8_t fan, int *rpm);
+int pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver);
 int pal_get_board_rev(int *rev);
 int pal_get_board_type(uint8_t *brd_type);
 int pal_get_board_type_rev(uint8_t *brd_type_rev);

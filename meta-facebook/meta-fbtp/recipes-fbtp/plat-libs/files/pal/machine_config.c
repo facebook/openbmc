@@ -5,8 +5,6 @@
 #include "pal.h"
 #include <openbmc/kv.h>
 
-#define PLAT_ID_SKU_MASK 0x10 // BIT4: 0- Single Side, 1- Double Side
-
 enum {
   SINGLE_SIDE = 0,
   DOUBLE_SIDE = 1

@@ -74,7 +74,6 @@
 #define READING_SKIP 1
 
 #define NIC_MAX_TEMP 125
-#define PLAT_ID_SKU_MASK 0x10 // BIT4: 0- Single Side, 1- Double Side
 
 #define MAX_READ_RETRY 10
 #define POST_CODE_FILE       "/sys/devices/platform/ast-snoop-dma.0/data_history"

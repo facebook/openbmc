@@ -46,6 +46,8 @@ extern "C" {
 #define THERMAL_CONSTANT      255
 #define ERR_NOT_READY         -2
 
+#define PLAT_ID_SKU_MASK 0x10 // BIT4: 0- Single Side, 1- Double Side
+
 #define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle"
 
 #define AST_GPIO_BASE 0x1e780000

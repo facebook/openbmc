@@ -54,6 +54,7 @@ IMAGE_INSTALL += " \
   ncsid \
   libpldm \
   obmc-sensors-test \
+  dimm-util \
   "
 
 IMAGE_FEATURES += " \

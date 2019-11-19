@@ -342,28 +342,31 @@ err_exit:
 
 static int
 util_get_raw_dump(uint8_t fru_id, uint8_t dimm, bool json) {
-  uint8_t i, cpu, startCPU, endCPU, startDimm, endDimm, dimm_present = 0;
+  uint8_t i, page, cpu, startCPU, endCPU, startDimm, endDimm, dimm_present = 0;
   uint16_t j = 0;
   uint16_t offset = DEFAULT_DUMP_OFFSET;
   uint16_t len = DEFAULT_DUMP_LEN;
   uint8_t buf[DEFAULT_DUMP_LEN] = {0};
 
-  printf("Raw Dump, fru_id %d dimm=%s, offset=0x%x, len=0x%x\n",
-    fru_id, get_dimm_label(cpu,i), offset + 0x100, len);
-
+  printf("Fru: %s\n", fru_name[fru_id - 1]);
   set_dimm_loop(dimm, &startCPU, &endCPU, &startDimm, &endDimm);
   for (cpu = startCPU; cpu < endCPU; cpu++) {
     for (i = startDimm; i < endDimm; ++i) {
-      memset(buf, 0, DEFAULT_DUMP_LEN);
-      util_read_spd_with_retry(fru_id, cpu, i, DEFAULT_DUMP_OFFSET, DEFAULT_DUMP_LEN,
-        0, buf, &dimm_present);
-
       printf("DIMM %s \n", get_dimm_label(cpu,i));
-      printf("0x%x: ", offset + 0x100);
-      for (j = 0; j < DEFAULT_DUMP_LEN; ++j) {
-        printf("%02x ", buf[j]);
-        if (((j & 0x0f) == 0x0f))
-          printf("\n0x%x: ", offset + j + 0x101);
+      for (page = 0; page < 2; page++) {
+        memset(buf, 0, DEFAULT_DUMP_LEN);
+        util_set_EE_page(fru_id, cpu, i, page);
+        util_read_spd_with_retry(fru_id, cpu, i, DEFAULT_DUMP_OFFSET, DEFAULT_DUMP_LEN,
+          0, buf, &dimm_present);
+        printf("%03x: ", offset + (page * 0x100));
+        for (j = 0; j < DEFAULT_DUMP_LEN; ++j) {
+          printf("%02x ", buf[j]);
+          if (((j & 0x0f) == 0x0f))
+            if (j == (DEFAULT_DUMP_LEN - 1))
+              printf("\n");
+            else
+              printf("\n%03x: ", offset + j + (page * 0x100) + 1);
+        }
       }
     }
     printf("\n");

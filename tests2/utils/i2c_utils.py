@@ -57,7 +57,7 @@ class I2cSysfsUtils:
         # I2C device part is in hex format.
         try:
             int(filename[pos + 1 :], 16)
-        except:
+        except Exception:
             return False
 
         return True

@@ -166,13 +166,13 @@ gpio_monitor_poll(void) {
 
   ret = bic_set_gpio(IPMB_BUS, BMC_READY_N, 0);
   if (ret) {
-    OBMC_WARN("bic_set_gpio failed for fru %u", IPMB_BUS);
+    OBMC_WARN("bic_set_gpio failed for fru %u", FRU_SCM);
   }
   ret = bic_get_gpio(IPMB_BUS, &gpio);
   if (ret) {
 #ifdef OBMC_DEBUG
     OBMC_WARN("gpio_monitor_poll: bic_get_gpio failed for "
-      " fru %u", IPMB_BUS);
+      " fru %u", FRU_SCM);
 #endif
     goto end;
   }
@@ -206,7 +206,7 @@ gpio_monitor_poll(void) {
     gpios = get_struct_gpio_pin(IPMB_BUS);
     if  (gpios == NULL) {
       OBMC_WARN("gpio_monitor_poll: get_struct_gpio_pin failed for"
-          " fru %u", IPMB_BUS);
+          " fru %u", FRU_SCM);
       break;
     }
 
@@ -236,7 +236,7 @@ gpio_monitor_poll(void) {
           if (strcmp(pwr_state, "off")) {
             pal_set_last_pwr_state(FRU_SCM, "off");
           }
-          OBMC_CRIT("FRU: %d, GPIO: %d, System powered OFF", IPMB_BUS, i);
+          OBMC_CRIT("FRU: %d, GPIO: %d, System powered OFF", FRU_SCM, i);
           pal_light_scm_led(SCM_LED_AMBER);
         } else {
           // Inform BIOS that BMC is ready
@@ -244,7 +244,7 @@ gpio_monitor_poll(void) {
           if (strcmp(pwr_state, "on")) {
             pal_set_last_pwr_state(FRU_SCM, "on");
           }
-          OBMC_CRIT("FRU: %d, GPIO: %d, System powered ON", IPMB_BUS, i);
+          OBMC_CRIT("FRU: %d, GPIO: %d, System powered ON", FRU_SCM, i);
           pal_light_scm_led(SCM_LED_BLUE);
         }
       }

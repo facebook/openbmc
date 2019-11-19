@@ -37,8 +37,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     PIM_FIRMWARE_INFO = "/api/sys/firmware_info_pim"
     SCM_FIRMWARE_INFO = "/api/sys/firmware_info_scm"
     ALL_FIRMWARE_INFO = (
-        "/api/sys/firmware_info_all"
-    )  # duplicate endpoint to firmware_info/all
+        "/api/sys/firmware_info_all"  # duplicate endpoint to firmware_info/all
+    )
 
     # /api/sys
     def set_endpoint_sys_attributes(self):

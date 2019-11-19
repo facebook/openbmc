@@ -52,5 +52,5 @@ class KernelModulePresenceTest(BaseKernelModulePresenceTest, unittest.TestCase):
             "uhci_hcd",
             "udc_core",
             "configfs",
-            "ext4"
+            "ext4",
         ]

@@ -56,63 +56,72 @@ class FCMEepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for feutil fcm
     """
+
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/local/bin/feutil fcm']
+        self.eeprom_cmd = ["/usr/local/bin/feutil fcm"]
 
     def set_product_name(self):
-        self.product_name = ['WEDGE400-FCM']
+        self.product_name = ["WEDGE400-FCM"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['FCM']
+        self.location_on_fabric = ["FCM"]
+
 
 class FAN1EepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for feutil fan 1
     """
+
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/local/bin/feutil 1']
+        self.eeprom_cmd = ["/usr/local/bin/feutil 1"]
 
     def set_product_name(self):
-        self.product_name = ['WEDGE400-FAN']
+        self.product_name = ["WEDGE400-FAN"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['FAN']
+        self.location_on_fabric = ["FAN"]
+
 
 class FAN2EepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for feutil fan 2
     """
+
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/local/bin/feutil 2']
+        self.eeprom_cmd = ["/usr/local/bin/feutil 2"]
 
     def set_product_name(self):
-        self.product_name = ['WEDGE400-FAN']
+        self.product_name = ["WEDGE400-FAN"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['FAN']
+        self.location_on_fabric = ["FAN"]
+
 
 class FAN3EepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for feutil fan 3
     """
+
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/local/bin/feutil 3']
+        self.eeprom_cmd = ["/usr/local/bin/feutil 3"]
 
     def set_product_name(self):
-        self.product_name = ['WEDGE400-FAN']
+        self.product_name = ["WEDGE400-FAN"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['FAN']
+        self.location_on_fabric = ["FAN"]
+
 
 class FAN4EepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for feutil fan 4
     """
+
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ['/usr/local/bin/feutil 4']
+        self.eeprom_cmd = ["/usr/local/bin/feutil 4"]
 
     def set_product_name(self):
-        self.product_name = ['WEDGE400-FAN']
+        self.product_name = ["WEDGE400-FAN"]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ['FAN']
+        self.location_on_fabric = ["FAN"]

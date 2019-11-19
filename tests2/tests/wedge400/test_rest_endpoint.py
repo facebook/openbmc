@@ -189,10 +189,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     # "/api/sys/presence/psu"
     def set_endpoint_psu_presence_attributes(self):
-        self.endpoint_psu_presence = [
-            "psu1",
-            "psu2"
-        ]
+        self.endpoint_psu_presence = ["psu1", "psu2"]
 
     def test_endpoint_api_psu_present(self):
         self.set_endpoint_psu_presence_attributes()
@@ -202,12 +199,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     # "/api/sys/presence/fan"
     def set_endpoint_fan_presence_attributes(self):
-        self.endpoint_fan_presence = [
-            "fan1",
-            "fan2",
-            "fan3",
-            "fan4"
-        ]
+        self.endpoint_fan_presence = ["fan1", "fan2", "fan3", "fan4"]
 
     def test_endpoint_api_fan_present(self):
         self.set_endpoint_fan_presence_attributes()
@@ -233,10 +225,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     # "/api/sys/firmware_info/fpga"
     def set_endpoint_firmware_info_fpga_attributes(self):
-        self.endpoint_firmware_info_fpga_attributes = [
-            "DOMFPGA1",
-            "DOMFPGA2",
-        ]
+        self.endpoint_firmware_info_fpga_attributes = ["DOMFPGA1", "DOMFPGA2"]
 
     def test_endpoint_api_sys_firmware_info_fpga(self):
         self.set_endpoint_firmware_info_fpga_attributes()
@@ -255,7 +244,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "PVCCIN VR Version",
             "DDRAB VR Version",
             "P1V05 VR Version",
-            "BIOS Version"
+            "BIOS Version",
         ]
 
     def test_endpoint_api_sys_firmware_info_scm(self):

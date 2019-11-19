@@ -124,4 +124,3 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         # into accessing sysfs path issue causing test to fail
         time.sleep(2)
         super().fan_set_and_read(fan_id=4, pwm=70)
-

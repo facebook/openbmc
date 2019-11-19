@@ -46,7 +46,7 @@ class CpuUtilizationTest(BaseCpuUtilizationTest):
         self.skip_processes = [
             "rest.py",
             "fscd.py",
-            "rackmond"
+            "rackmond",
             "top",
             "awk",
             "spatula_wrapper",

@@ -60,6 +60,22 @@ char const *fru_name_fbtp[NUM_FRU_FBTP] =
 int
 plat_init()
 {
+  unsigned char board_id;
+  int ret = 0;
+
+  // check if this is FBTP SS.
+  ret = pal_get_platform_id(&board_id);
+  if (ret != 0) {
+    printf("Error: Platform detection failed\n");
+    // failed ot determine platform type, return error
+    return -1;
+  }
+  if (board_id & PLAT_ID_SKU_MASK) {
+    printf("Error: FBTP DS not currently supported\n");
+    // FBTP double side. This config is currently not supported
+    return -1;
+  }
+
   num_frus  = NUM_FRU_FBTP;
   num_dimms_per_cpu = MAX_DIMM_NUM_FBTP;
   num_cpus  = NUM_CPU_FBTP;

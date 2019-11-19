@@ -22,9 +22,7 @@ import subprocess
 from rest_utils import DEFAULT_TIMEOUT_SEC
 
 
-# Handler for switchreset resource endpoint
-def reset_switch():
-    cmd = ["/usr/local/bin/switch_reset.sh"]
+def do_switch_reset(cmd):
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
@@ -34,3 +32,21 @@ def reset_switch():
             return {"result": "failed", "reason": "command {} failed".format(cmd)}
     except (FileNotFoundError, AttributeError) as e:
         return {"result": "failed", "reason": str(e)}
+
+
+# Handler for switchreset/cycle_reset resource endpoint
+def reset_switch_cycle_reset():
+    cmd = ["/usr/local/bin/switch_reset.sh", "cycle"]
+    return do_switch_reset(cmd)
+
+
+# Handler for switchreset/only_reset resource endpoint
+def reset_switch_only_reset():
+    cmd = ["/usr/local/bin/switch_reset.sh"]
+    return do_switch_reset(cmd)
+
+
+# Handler for switchreset resource endpoint
+def reset_switch():
+    sub_endpoint = ["cycle_reset", "only_eset"]
+    return {"Information": "", "Actions": [], "Resources": sub_endpoint}

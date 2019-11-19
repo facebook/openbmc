@@ -44,4 +44,6 @@ board_routes = [
     "/api/sys/vddcore",
     "/api/sys/vddcore/{volt}",
     "/api/sys/switch_reset",
+    "/api/sys/switch_reset/cycle_reset",
+    "/api/sys/switch_reset/only_reset",
 ]

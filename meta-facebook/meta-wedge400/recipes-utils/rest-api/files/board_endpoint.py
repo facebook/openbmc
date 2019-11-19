@@ -149,9 +149,21 @@ class boardApp_Handler:
     # Handler for sys/vddcore/{voltage} endpoint
     async def rest_vddcore_set_volt(self, request):
         return web.json_response(
-            rest_vddcore.set_vdd_core(request.match_info["volt"], dumps=dumps_bytestr)
+            rest_vddcore.set_vdd_core(request.match_info["volt"]), dumps=dumps_bytestr
         )
 
     # Handler for sys/switch_reset endpoint
     async def rest_switch_reset_hdl(self, request):
         return web.json_response(rest_switch_reset.reset_switch(), dumps=dumps_bytestr)
+
+    # Handler for sys/switch_reset/cycle_reset endpoint
+    async def rest_switch_reset_cycle_reset_hdl(self, request):
+        return web.json_response(
+            rest_switch_reset.reset_switch_cycle_reset(), dumps=dumps_bytestr
+        )
+
+    # Handler for sys/switch_reset/only_reset endpoint
+    async def rest_switch_reset_only_reset_hdl(self, request):
+        return web.json_response(
+            rest_switch_reset.reset_switch_only_reset(), dumps=dumps_bytestr
+        )

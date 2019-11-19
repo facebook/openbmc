@@ -26,12 +26,15 @@ i2c_wr() {
 
 # Wedge400-C GB switch reset commands collection
 gb_reset() {
-    # gb power off
-    i2c_wr -f -y $SMB_CPLD_I2C_BUS $SMB_CPLD_I2C_ADDR 0x42 0x0e
-    sleep 0.5
-    # gb power on
-    i2c_wr -f -y $SMB_CPLD_I2C_BUS $SMB_CPLD_I2C_ADDR 0x42 0x0f
-    sleep 0.5
+    if [ "$1" = "cycle" ];then
+        # gb power off
+        i2c_wr -f -y $SMB_CPLD_I2C_BUS $SMB_CPLD_I2C_ADDR 0x42 0x0e
+        sleep 0.5
+        # gb power on
+        i2c_wr -f -y $SMB_CPLD_I2C_BUS $SMB_CPLD_I2C_ADDR 0x42 0x0f
+        sleep 1
+    fi
+
     # [3] mux_ps=1, ps=1, scan=0, tri_l=1
     i2c_wr -f -y $SMB_CPLD_I2C_BUS $SMB_CPLD_I2C_ADDR 0x60 0xd
     # [0] a_rstn=0
@@ -55,14 +58,20 @@ gb_reset() {
     sleep 0.5
     # [0] a_rstn=1
     i2c_wr -f -y $SMB_CPLD_I2C_BUS $SMB_CPLD_I2C_ADDR 0x05 0xff
+    # [3] mux_ps=0
+    i2c_wr -f -y $SMB_CPLD_I2C_BUS $SMB_CPLD_I2C_ADDR 0x60 0x5
 }
 
 case "$1" in
     "--help" | "?" | "-h")
-        echo "switch chip reset command"
+        program=$(basename "$0")
+        echo "Usage: switch chip reset command"
+        echo "  <$program> only reset switch without switch power cycle"
+        echo "  <$program cycle> to reset switch after switch power cycle"
     ;;
 
     *)
-        gb_reset
+        shift
+        gb_reset "$1"
     ;;
 esac

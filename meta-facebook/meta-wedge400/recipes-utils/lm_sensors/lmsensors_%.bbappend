@@ -20,6 +20,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://wedge400.conf \
+            file://wedge400c.conf \
            "
 
 DEPENDS_append = " update-rc.d-native"
@@ -29,5 +30,6 @@ do_install_append() {
     install -d ${D}${sysconfdir}/sensors.d
     install -d ${D}${sysconfdir}/sensors.d/custom
     install -m 644 ${WORKDIR}/wedge400.conf ${D}${sysconfdir}/sensors.d/custom/wedge400.conf
+    install -m 644 ${WORKDIR}/wedge400c.conf ${D}${sysconfdir}/sensors.d/custom/wedge400c.conf
 
 }

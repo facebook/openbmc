@@ -64,5 +64,5 @@ echo "$brd_type" > /tmp/cache_store/board_type
 if [ $((brd_type)) -eq $((0x00)) ]; then
   cp /etc/sensors.d/custom/wedge400.conf /etc/sensors.d/wedge400.conf
 elif  [ $((brd_type)) -eq $((0x01)) ]; then
-  cp /etc/sensors.d/custom/wedge400-2.conf /etc/sensors.d/wedge400-2.conf
+  cp /etc/sensors.d/custom/wedge400c.conf /etc/sensors.d/wedge400c.conf
 fi

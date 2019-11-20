@@ -627,3 +627,68 @@ pal_channel_to_bus(int channel) {
 
   return channel;
 }
+
+int
+pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len) {
+  int i, j, network_dev = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[10] = {0};
+  *res_len = 0;
+  sprintf(key, "server_boot_order");
+
+  for (i = 0; i < SIZE_BOOT_ORDER; i++) {
+    //Byte 0 is boot mode, Byte 1~5 is boot order
+    if ((i > 0) && (boot[i] != 0xFF)) {
+      for (j = i+1; j < SIZE_BOOT_ORDER; j++) {
+        if ( boot[i] == boot[j])
+          return CC_INVALID_PARAM;
+      }
+
+      //If Bit 2:0 is 001b (Network), Bit3 is IPv4/IPv6 order
+      //Bit3=0b: IPv4 first
+      //Bit3=1b: IPv6 first
+      if ( boot[i] == BOOT_DEVICE_IPV4 || boot[i] == BOOT_DEVICE_IPV6)
+        network_dev++;
+    }
+
+    snprintf(tstr, 3, "%02x", boot[i]);
+    strncat(str, tstr, 3);
+  }
+
+  //Not allow having more than 1 network boot device in the boot order.
+  if (network_dev > 1)
+    return CC_INVALID_PARAM;
+
+  return pal_set_key_value(key, str);
+}
+
+int
+pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len) {
+  int i;
+  int j = 0;
+  int ret;
+  int msb, lsb;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[4] = {0};
+
+  sprintf(key, "server_boot_order");
+
+  ret = pal_get_key_value(key, str);
+  if (ret) {
+    *res_len = 0;
+    return ret;
+  }
+
+  for (i = 0; i < 2*SIZE_BOOT_ORDER; i += 2) {
+    sprintf(tstr, "%c\n", str[i]);
+    msb = strtol(tstr, NULL, 16);
+
+    sprintf(tstr, "%c\n", str[i+1]);
+    lsb = strtol(tstr, NULL, 16);
+    boot[j++] = (msb << 4) | lsb;
+  }
+  *res_len = SIZE_BOOT_ORDER;
+  return 0;
+}

@@ -59,7 +59,7 @@ class FwUpgradeTest(unittest.TestCase):
         ],  # priority=3, upgrade_cmd
         "fcm": [
             1,
-            "/usr/local/bin/fcmcpld_update.sh {filename} hw",
+            "/usr/local/bin/fcmcpld_update.sh {filename}",
         ],  # priority=1, upgrade_cmd
         "pwr": [
             4,

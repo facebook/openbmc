@@ -15,7 +15,7 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-
+import traceback
 import argparse
 import datetime
 import hashlib
@@ -28,6 +28,10 @@ else:
     import StringIO
 from pyfdt import pyfdt
 
+def get_fdt_from_file(infile):
+    dtb = pyfdt.FdtBlobParse(infile, blob_limit=0x2000)
+    fdt = dtb.to_fdt()
+    return fdt
 
 def get_fdt(content):
     # Represent the FIT as an IO resource.
@@ -78,6 +82,20 @@ def get_fdt_algo(fdt, path):
 def get_hash(content):
     return hashlib.sha256(content).hexdigest()
 
+def get_hash_from_file(fh, data_pos, data_size):
+    BLKSIZE = 0x1000 # 4K
+    hashobj = hashlib.sha256()
+    remain = data_size
+    fh.seek(data_pos)
+    while remain > BLKSIZE :
+        blk = fh.read(BLKSIZE)
+        remain -= BLKSIZE
+        hashobj.update(blk)
+    if remain > 0:
+        blk = fh.read(remain)
+        remain = 0
+        hashobj.update(blk)
+    return hashobj.hexdigest()
 
 def decode_flash(fh, data):
     # Detect KEK from ROM region
@@ -167,8 +185,9 @@ def decode_flash(fh, data):
 
 
 def decode_os(fh):
-    os = fh.read()
-    os = get_fdt(os)
+    # os = fh.read()
+    # os = get_fdt(os)
+    os = get_fdt_from_file(fh)
 
     # Print Kernel/Ramdisk (OS) information
     os_timestamp = get_date(os)
@@ -182,7 +201,16 @@ def decode_os(fh):
         get_fdt_signer(os, '/configurations/conf@1')))
 
     kernel_hash = get_fdt_hash(os, '/images/kernel@1')
-    kernel_valid = get_hash(os.resolve_path('/images/kernel@1/data').to_raw())
+    # kernel_valid = get_hash(os.resolve_path('/images/kernel@1/data').to_raw()) == kernel_hash
+    kernel_data = os.resolve_path('/images/kernel@1/data')
+    if kernel_data.blob_info:
+        print("kernel get_hash_from_file")
+        kernel_img_hash = get_hash_from_file(fh, kernel_data.blob_info[0],
+                                                 kernel_data.blob_info[1])
+    else:
+        print("kernel get_hash")
+        kernel_img_hash = get_hash(kernel_data.to_raw())
+    kernel_valid = kernel_img_hash == kernel_hash
 
     print("Kernel hash (%s): %s: %s" % (
         get_fdt_algo(os, '/images/kernel@1'),
@@ -190,7 +218,16 @@ def decode_os(fh):
         "OK" if kernel_valid else "BAD"))
 
     ramdisk_hash = get_fdt_hash(os, '/images/ramdisk@1')
-    ramdisk_valid = get_hash(os.resolve_path('/images/ramdisk@1/data').to_raw())
+    # ramdisk_valid = get_hash(os.resolve_path('/images/ramdisk@1/data').to_raw()) == ramdisk_hash
+    ramdisk_data = os.resolve_path('/images/ramdisk@1/data')
+    if ramdisk_data.blob_info:
+        print("ramdisk get_hash_from_file")
+        ramdisk_img_hash = get_hash_from_file(fh, ramdisk_data.blob_info[0],
+                                                  ramdisk_data.blob_info[1])
+    else:
+        print("ramdisk get_hash")
+        ramdisk_img_hash = get_hash(ramdisk_data.to_raw())
+    ramdisk_valid = ramdisk_hash == ramdisk_img_hash
 
     print("Ramdisk hash (%s): %s: %s" % (
         get_fdt_algo(os, '/images/ramdisk@1'),
@@ -203,7 +240,7 @@ def main():
 
         data_size = len(data)
         if data_size < 4:
-            print("Not sure what this file contains: %s" % (filename))
+            print("Not sure what this file contains: %s" % (args.filename))
             return 1
         if data[:4] != b'\x0f\x00\x00\xea':
             print("Non-flash file inputs are not supported")
@@ -227,4 +264,5 @@ if __name__ == '__main__':
         sys.exit(main())
     except Exception as e:
         print("Exception: %s" % (str(e)))
+        traceback.print_exc()
         sys.exit(1)

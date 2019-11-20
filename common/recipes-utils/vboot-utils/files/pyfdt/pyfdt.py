@@ -144,7 +144,9 @@ class FdtProperty(object):
     @staticmethod
     def new_raw_property(name, raw_value):
         """Instantiate property with raw value type"""
-        if FdtProperty.__check_prop_strings(raw_value):
+        if isinstance(raw_value, tuple) and len(raw_value) == 2:
+            return FdtPropertyWords.init_raw(name, [], raw_value)
+        elif FdtProperty.__check_prop_strings(raw_value):
             return FdtPropertyStrings.init_raw(name, raw_value)
         elif len(raw_value) and len(raw_value) % 4 == 0:
             return FdtPropertyWords.init_raw(name, raw_value)
@@ -249,7 +251,7 @@ class FdtPropertyStrings(FdtProperty):
 class FdtPropertyWords(FdtProperty):
     """Property with words as value"""
 
-    def __init__(self, name, words):
+    def __init__(self, name, words, blob_info=None):
         """Init with words"""
         FdtProperty.__init__(self, name)
         for word in words:
@@ -260,10 +262,13 @@ class FdtPropertyWords(FdtProperty):
         if not len(words):
             raise Exception("Invalid Words")
         self.words = words
+        self.blob_info = blob_info
 
     @classmethod
-    def init_raw(cls, name, raw_value):
+    def init_raw(cls, name, raw_value, blob_info=None):
         """Init from raw"""
+        if blob_info:
+            return cls(name, [0], blob_info)
         if len(raw_value) % 4 == 0:
             words = [
                 unpack(">I", raw_value[i : i + 4])[0]
@@ -1019,18 +1024,23 @@ class FdtBlobParse(object):  # pylint: disable-msg=R0903
         pos = self.infile.tell()
         data = self.infile.read(prop.size)
         (prop_size, prop_string_pos) = prop.unpack_from(data)
-
         prop_start = pos + prop.size
         if self.fdt_header["version"] < 16 and prop_size >= 8:
             prop_start = ((prop_start) + ((8) - 1)) & ~((8) - 1)
 
         self.infile.seek(prop_start)
-        value = self.infile.read(prop_size)
+        if self.blob_limit and prop_size > self.blob_limit:
+            # skip read in blob bigger than blob_limit
+            # output the prop_start and prop_size
+            value = (prop_start, prop_size)
+            self.infile.seek(prop_size, 1)
+            print("skip blob", value)
+        else:
+            value = self.infile.read(prop_size)
 
         align_pos = self.infile.tell()
         align_pos = ((align_pos) + ((4) - 1)) & ~((4) - 1)
         self.infile.seek(align_pos)
-
         return (self.__extract_fdt_string(prop_string_pos), value)
 
     def __extract_fdt_dt(self):
@@ -1061,9 +1071,13 @@ class FdtBlobParse(object):  # pylint: disable-msg=R0903
                 print("Unknown Tag %d" % tag)
         return tags
 
-    def __init__(self, infile):
-        """Init with file input"""
+    def __init__(self, infile, blob_limit=None):
+        """Init with file input
+           skip reading the blob in case blob size > blob_limit
+        """
         self.infile = infile
+        self.blob_limit = blob_limit
+        self.pos_offset = infile.tell()
         self.fdt_header = self.__extract_fdt_header()
         if self.fdt_header["magic"] != FDT_MAGIC:
             raise Exception("Invalid Magic")
@@ -1074,6 +1088,10 @@ class FdtBlobParse(object):  # pylint: disable-msg=R0903
                 "Invalid last compatible Version %d"
                 % self.fdt_header["last_comp_version"]
             )
+        # offset the off_xxx value to begin of embedded FIT
+        self.fdt_header["off_dt_strings"] += self.pos_offset
+        self.fdt_header["off_mem_rsvmap"] += self.pos_offset
+        self.fdt_header["off_dt_struct"] += self.pos_offset
         self.fdt_reserve_entries = self.__extract_fdt_reserve_entries()
         self.fdt_dt_tags = self.__extract_fdt_dt()
 

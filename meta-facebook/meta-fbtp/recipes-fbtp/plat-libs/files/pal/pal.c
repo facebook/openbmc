@@ -101,7 +101,6 @@
 #define NIC_MIN_TEMP  0
 
 #define MAX_READ_RETRY 10
-#define POST_CODE_FILE       "/sys/devices/platform/ast-snoop-dma.0/data_history"
 
 #define CPLD_BUS_ID 0x6
 #define CPLD_ADDR 0xA0
@@ -6273,43 +6272,6 @@ pal_sensor_sts_check(uint8_t snr_num, float val, uint8_t *thresh) {
     *thresh = LCR_THRESH;
   else
     *thresh = 0;
-}
-
-int
-pal_get_80port_record(uint8_t slot, uint8_t *res_data, size_t max_len, size_t *res_len)
-{
-  FILE *fp=NULL;
-  int i;
-  unsigned char postcode;
-
-  if (res_data == NULL)
-    return -1;
-
-  if (slot != FRU_MB) {
-    syslog(LOG_WARNING, "pal_get_80port_record: slot %d is not supported", slot);
-    return PAL_ENOTSUP;
-  }
-
-  fp = fopen(POST_CODE_FILE, "r");
-  if (fp == NULL) {
-    syslog(LOG_WARNING, "pal_get_80port_record: Cannot open %s", POST_CODE_FILE);
-    return PAL_ENOTSUP;
-  }
-
-  for (i=0; i<max_len; i++) {
-    // %hhx: unsigned char*
-    if (fscanf(fp, "%hhx", &postcode) == 1) {
-      res_data[i] = postcode;
-    } else {
-      break;
-    }
-  }
-  if (res_len)
-    *res_len = (size_t)i;
-
-  fclose(fp);
-
-  return PAL_EOK;
 }
 
 int

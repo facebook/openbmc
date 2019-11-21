@@ -82,10 +82,107 @@ pal_get_sys_intf_caps(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_
   return;
 }
 
+static int
+pal_lpc_snoop_read_legacy(uint8_t *buf, size_t max_len, size_t *len)
+{
+  FILE *fp = fopen("/sys/devices/platform/ast-snoop-dma.0/data_history", "r");
+  uint8_t postcode;
+  size_t i;
+
+  if (fp == NULL) {
+    syslog(LOG_WARNING, "pal_get_80port_record: Cannot open device");
+    return PAL_ENOTREADY;
+  }
+  for (i=0; i < max_len; i++) {
+    // %hhx: unsigned char*
+    if (fscanf(fp, "%hhx%*s", &postcode) == 1) {
+      buf[i] = postcode;
+    } else {
+      break;
+    }
+  }
+  if (len)
+    *len = i;
+  fclose(fp);
+  return 0;
+}
+
+static int pal_lpc_snoop_read(uint8_t *buf, size_t max_len, size_t *rlen)
+{
+  const char *dev_path = "/dev/aspeed-lpc-snoop0";
+  const char *cache_key = "postcode";
+  uint8_t cache[MAX_VALUE_LEN * 2];
+  size_t len = 0, cache_len = 0;
+  int fd;
+  uint8_t postcode;
+
+  if (kv_get(cache_key, (char *)cache, &len, 0)) {
+    len = cache_len = 0;
+  } else {
+    cache_len = len;
+  }
+
+  /* Open and read as much as we can store. Our in-mem
+   * cache is twice as the file-backed path. */
+  fd = open(dev_path, O_RDONLY | O_NONBLOCK);
+  if (fd < 0) {
+    return PAL_ENOTREADY;
+  }
+  while (len < sizeof(cache) &&
+      read(fd, &postcode, 1) == 1) {
+    cache[len++] = postcode;
+  }
+  close(fd);
+  /* Update the file-backed cache only if something
+   * changed since we read it */
+  if (len > cache_len) {
+    /* Since our in-mem cache can be twice of our file-backed
+     * cache, ensure that we are storing the latest but also
+     * limit the number to MAX_VALUE_LEN */
+    if (len > MAX_VALUE_LEN) {
+      memmove(cache, &cache[len - MAX_VALUE_LEN], MAX_VALUE_LEN);
+      len = MAX_VALUE_LEN;
+    }
+    if (kv_set(cache_key, (char *)cache, len, 0)) {
+      syslog(LOG_CRIT, "%d postcodes dropped\n", len - cache_len);
+    }
+  }
+  len = len > max_len ? max_len : len;
+  memcpy(buf, cache, len);
+  *rlen = len;
+  return PAL_EOK;
+}
+
 int __attribute__((weak))
 pal_get_80port_record(uint8_t slot, uint8_t *buf, size_t max_len, size_t *len)
 {
-  return PAL_ENOTSUP;
+  static bool legacy = false, legacy_checked = false;
+
+  if (buf == NULL || len == NULL || max_len == 0)
+    return -1;
+
+  if (!pal_is_slot_server(slot)) {
+    syslog(LOG_WARNING, "pal_get_80port_record: slot %d is not supported", slot);
+    return PAL_ENOTSUP;
+  }
+
+  if (legacy_checked == false) {
+    if (access("/sys/devices/platform/ast-snoop-dma.0/data_history", F_OK) == 0) {
+      legacy = true;
+      legacy_checked = true;
+    } else if (access("/dev/aspeed-lpc-snoop0", F_OK) == 0) {
+      legacy_checked = true;
+    } else {
+      return PAL_ENOTSUP;
+    }
+  }
+
+  // Support for snoop-dma on 4.1 kernel.
+  if (legacy) {
+    return pal_lpc_snoop_read_legacy(buf, max_len, len);
+  }
+  return pal_lpc_snoop_read(buf, max_len, len);
+  
 }
 
 int __attribute__((weak))

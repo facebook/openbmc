@@ -29,7 +29,7 @@ extern "C" {
 
 #define MAX_KEY_PATH_LEN  96
 #define MAX_KEY_LEN       64
-#define MAX_VALUE_LEN     64
+#define MAX_VALUE_LEN     256
 
 /*=====================================================================
  *                              Flags

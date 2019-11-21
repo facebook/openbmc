@@ -89,7 +89,7 @@ enum {
 enum {
   VENDOR_VSI = 0x1D9B,
   VENDOR_BRCM = 0x14E4,
-  VENDOR_SPH = 0x8680,
+  VENDOR_SPH = 0x8086,
 };
 
 enum {

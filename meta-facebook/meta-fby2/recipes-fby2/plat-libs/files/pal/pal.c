@@ -2740,7 +2740,7 @@ int
 pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type) {
   int ret;
   uint8_t retry = MAX_READ_RETRY;
-  uint16_t vendor_id = 0;
+  uint16_t vendor_id = 0, reversed_vender_sph = 0;
   uint8_t ffi = 0 ,meff = 0 ,major_ver = 0, minor_ver = 0;
 
   if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
@@ -2766,6 +2766,8 @@ pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
       retry--;
     }
 
+    reversed_vender_sph = (((VENDOR_SPH << 8) & 0xFF00) | ((VENDOR_SPH >> 8) & 0x00FF));
+
     if (*nvme_ready) {
       if ( meff == MEFF_DUAL_M2 ) {
         *type = DEV_TYPE_DUAL_M2;
@@ -2775,7 +2777,7 @@ pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
             *type = DEV_TYPE_VSI_ACC;
           } else if (vendor_id == VENDOR_BRCM) {
             *type = DEV_TYPE_BRCM_ACC;
-          } else if (vendor_id == VENDOR_SPH) {
+          } else if (vendor_id == VENDOR_SPH || vendor_id == reversed_vender_sph) {
             *type = DEV_TYPE_SPH_ACC;
           } else {
             *type = DEV_TYPE_OTHER_ACC;

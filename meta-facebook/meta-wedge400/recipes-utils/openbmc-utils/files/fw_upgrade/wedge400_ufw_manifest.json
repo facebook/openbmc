@@ -11,7 +11,7 @@
     },
     "fcm" : {
         "get_version" : "cpld_ver.sh |grep FCM|cut -d ' ' -f 2",
-        "upgrade_cmd" : "usr/local/bin/fcmcpld_update.sh {filename}",
+        "upgrade_cmd" : "/usr/local/bin/fcmcpld_update.sh {filename}",
         "priority": 1
     },
     "scm" : {
@@ -35,4 +35,3 @@
         "priority": 5
     }
 }
-

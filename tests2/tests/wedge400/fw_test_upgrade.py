@@ -51,11 +51,11 @@ class FwUpgradeTest(unittest.TestCase):
         ],  # priority=6, upgrade_cmd
         "scm": [
             2,
-            "/usr/local/bin/scmcpld_update.sh {filename} hw",
+            "/usr/local/bin/scmcpld_update.sh {filename}",
         ],  # priority=2, upgrade_cmd
         "smb": [
             3,
-            "/usr/local/bin/smbcpld_update.sh {filename} hw",
+            "/usr/local/bin/smbcpld_update.sh {filename}",
         ],  # priority=3, upgrade_cmd
         "fcm": [
             1,
@@ -63,7 +63,7 @@ class FwUpgradeTest(unittest.TestCase):
         ],  # priority=1, upgrade_cmd
         "pwr": [
             4,
-            "/usr/local/bin/pwrcpld_update.sh {filename} hw",
+            "/usr/local/bin/pwrcpld_update.sh {filename}",
         ],  # priority=4, upgrade_cmd
     }
 
@@ -76,9 +76,9 @@ class FwUpgradeTest(unittest.TestCase):
         Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
 
-    def test_fw_entiy_priority_in_ordered_json(self):
+    def test_fw_entiy_component_cmd_in_ordered_json(self):
         Logger.info("FW Upgrade Ordered json= {}".format(self.json))
-        for item, attributes in self._COMPONENTS.items():
+        for item, _x in self._COMPONENTS.items():
             # Test for fw entity presence in json
             with self.subTest(upgradable_component=item):
                 self.assertIn(
@@ -88,6 +88,10 @@ class FwUpgradeTest(unittest.TestCase):
                         item, self.json
                     ),
                 )
+
+    def test_fw_entiy_priority_in_ordered_json(self):
+        Logger.info("FW Upgrade Ordered json= {}".format(self.json))
+        for item, attributes in self._COMPONENTS.items():
             # Test for fw entity priority set in json
             with self.subTest(upgradable_component=item):
                 self.assertEqual(
@@ -97,12 +101,16 @@ class FwUpgradeTest(unittest.TestCase):
                         item, attributes[0], self.json.get(item).get("priority")
                     ),
                 )
+
+    def test_fw_entiy_upgrade_cmd_in_ordered_json(self):
+        Logger.info("FW Upgrade Ordered json= {}".format(self.json))
+        for item, attributes in self._COMPONENTS.items():
             # Test for correct command in json
             with self.subTest(upgradable_component=item):
                 self.assertEqual(
                     attributes[1],
                     self.json.get(item).get("upgrade_cmd"),
-                    "Component {} contains priority expected={} found={} ".format(
+                    "Component {} contains upgrade_cmd expected={} found={} ".format(
                         item, attributes[1], self.json.get(item).get("upgrade_cmd")
                     ),
                 )

@@ -280,6 +280,74 @@
             "tags": [
                 "openbmc_git"
             ]
+        },
+        {
+            "alias": "openbmc-fw-cit-default-determinator",
+            "args": {
+                "name": "openbmc-fw-cit-default-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-fw-cit-default-determinator",
+                        "shell": "facebook/sandcastle/job.py fw-cit-diff --platform default"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^tools/fw_upgrade/.*",
+                        "^tests2/common/.*fw.*",
+                        "^tests2/tests/wedge400/.*fw.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-fw-cit-wedge400-determinator",
+            "args": {
+                "name": "openbmc-fw-cit-wedge400-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-fw-cit-wedge400-determinator",
+                        "shell": "facebook/sandcastle/job.py fw-cit-diff --platform wedge400"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-wedge400/recipes-utils/openbmc-utils/files/fw_upgrade/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
         }
     ]
 }

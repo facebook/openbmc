@@ -704,3 +704,111 @@ int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
 
   return 0;
 }
+
+void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
+{
+  gpio_desc_t *fan_ok;
+  gpio_desc_t *fan_fail;
+
+  switch (snr_num) {
+    case FRU_FAN0_TACH_I:
+    case FRU_FAN0_TACH_O:
+    case FRU_FAN0_VOLT:
+    case FRU_FAN0_CURR:
+      fan_ok = gpio_open_by_shadow("FAN0_OK");
+      fan_fail = gpio_open_by_shadow("FAN0_FAIL");
+      break;
+    case FRU_FAN1_TACH_I:
+    case FRU_FAN1_TACH_O:
+    case FRU_FAN1_VOLT:
+    case FRU_FAN1_CURR:
+      fan_ok = gpio_open_by_shadow("FAN1_OK");
+      fan_fail = gpio_open_by_shadow("FAN1_FAIL");
+      break;
+    case FRU_FAN2_TACH_I:
+    case FRU_FAN2_TACH_O:
+    case FRU_FAN2_VOLT:
+    case FRU_FAN2_CURR:
+      fan_ok = gpio_open_by_shadow("FAN2_OK");
+      fan_fail = gpio_open_by_shadow("FAN2_FAIL");
+      break;
+    case FRU_FAN3_TACH_I:
+    case FRU_FAN3_TACH_O:
+    case FRU_FAN3_VOLT:
+    case FRU_FAN3_CURR:
+      fan_ok = gpio_open_by_shadow("FAN3_OK");
+      fan_fail = gpio_open_by_shadow("FAN3_FAIL");
+      break;
+    default:
+      return;
+  }
+
+  if (!fan_ok || !fan_fail) {
+    syslog(LOG_WARNING, "FAN LED open failed\n");
+    goto exit;
+  }
+
+  if (gpio_set_value(fan_fail, GPIO_VALUE_HIGH) ||
+      gpio_set_value(fan_ok, GPIO_VALUE_LOW)) {
+    syslog(LOG_WARNING, "FAN LED control failed\n");
+    goto exit;
+  }
+
+exit:
+  gpio_close(fan_ok);
+  gpio_close(fan_fail);
+}
+
+void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
+{
+  gpio_desc_t *fan_ok;
+  gpio_desc_t *fan_fail;
+
+  switch (snr_num) {
+    case FRU_FAN0_TACH_I:
+    case FRU_FAN0_TACH_O:
+    case FRU_FAN0_VOLT:
+    case FRU_FAN0_CURR:
+      fan_ok = gpio_open_by_shadow("FAN0_OK");
+      fan_fail = gpio_open_by_shadow("FAN0_FAIL");
+      break;
+    case FRU_FAN1_TACH_I:
+    case FRU_FAN1_TACH_O:
+    case FRU_FAN1_VOLT:
+    case FRU_FAN1_CURR:
+      fan_ok = gpio_open_by_shadow("FAN1_OK");
+      fan_fail = gpio_open_by_shadow("FAN1_FAIL");
+      break;
+    case FRU_FAN2_TACH_I:
+    case FRU_FAN2_TACH_O:
+    case FRU_FAN2_VOLT:
+    case FRU_FAN2_CURR:
+      fan_ok = gpio_open_by_shadow("FAN2_OK");
+      fan_fail = gpio_open_by_shadow("FAN2_FAIL");
+      break;
+    case FRU_FAN3_TACH_I:
+    case FRU_FAN3_TACH_O:
+    case FRU_FAN3_VOLT:
+    case FRU_FAN3_CURR:
+      fan_ok = gpio_open_by_shadow("FAN3_OK");
+      fan_fail = gpio_open_by_shadow("FAN3_FAIL");
+      break;
+    default:
+      return;
+  }
+
+  if (!fan_ok || !fan_fail) {
+    syslog(LOG_WARNING, "FAN LED open failed\n");
+    goto exit;
+  }
+
+  if (gpio_set_value(fan_ok, GPIO_VALUE_HIGH) ||
+      gpio_set_value(fan_fail, GPIO_VALUE_LOW)) {
+    syslog(LOG_WARNING, "FAN LED control failed\n");
+    goto exit;
+  }
+
+exit:
+  gpio_close(fan_ok);
+  gpio_close(fan_fail);
+}

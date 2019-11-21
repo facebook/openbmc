@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <assert.h>
+#include <pthread.h>
 #include <sys/types.h>
 #include <sys/file.h>
 #include <openbmc/libgpio.h>
@@ -37,7 +38,6 @@ static void log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t l
   syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
 }
 
-#if 0
 static gpio_value_t gpio_get(const char *shadow)
 {
   gpio_value_t value = GPIO_VALUE_INVALID;
@@ -53,7 +53,6 @@ static gpio_value_t gpio_get(const char *shadow)
   gpio_close(desc);
   return value;
 }
-#endif
 
 // Generic Event Handler for GPIO changes
 static void gpio_event_handle_power_btn(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
@@ -64,11 +63,51 @@ static void gpio_event_handle_power_btn(gpiopoll_pin_t *gp, gpio_value_t last, g
 // GPIO table to be monitored
 static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
-  {"BMC_PWR_BTN_IN_N", "GPIOE0", GPIO_EDGE_BOTH, gpio_event_handle_power_btn, NULL},
+  {"BMC_PWR_BTN_IN_N", "Power button", GPIO_EDGE_BOTH, gpio_event_handle_power_btn, NULL},
 };
+
+// For monitoring GPIOs on IO expender
+struct gpioexppoll_config {
+  char shadow[16];
+  char description[64];
+  gpio_value_t last;
+  gpio_value_t curr;
+};
+
+static void* fan_status_monitor()
+{
+  int i;
+  struct gpioexppoll_config fan_gpios[] = {
+    {"FAN0_PRESENT", "Fan0 not present", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
+    {"FAN1_PRESENT", "Fan1 not present", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
+    {"FAN2_PRESENT", "Fan2 not present", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
+    {"FAN3_PRESENT", "Fan3 not present", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
+    {"FAN0_PWR_GOOD", "Fan0 power", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
+    {"FAN1_PWR_GOOD", "Fan1 power", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
+    {"FAN2_PWR_GOOD", "Fan2 power", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
+    {"FAN3_PWR_GOOD", "Fan3 power", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
+  };
+
+  while (1) {
+    for (i = 0; i < 8; i++) {
+      fan_gpios[i].curr = gpio_get(fan_gpios[i].shadow);
+      if (fan_gpios[i].last != fan_gpios[i].curr) {
+	syslog(LOG_CRIT, "%s: %s - %s\n",
+	    fan_gpios[i].curr ? "ON": "OFF",
+	    fan_gpios[i].description,
+	    fan_gpios[i].shadow);
+      }
+      fan_gpios[i].last = fan_gpios[i].curr;
+    }
+    sleep(1);
+  }
+
+  return NULL;
+}
 
 int main(int argc, char **argv)
 {
+  pthread_t tid_fan_monitor;
   int rc, pid_file;
   gpiopoll_desc_t *polldesc;
 
@@ -82,6 +121,12 @@ int main(int argc, char **argv)
   } else {
     openlog("gpiod", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "gpiod: daemon started");
+
+    if (pthread_create(&tid_fan_monitor, NULL, fan_status_monitor, NULL) < 0) {
+      syslog(LOG_CRIT, "pthread_create for fan monitor error");
+      exit(1);
+    }
+    pthread_join(tid_fan_monitor, NULL);
 
     polldesc = gpio_poll_open(g_gpios, sizeof(g_gpios)/sizeof(g_gpios[0]));
     if (!polldesc) {

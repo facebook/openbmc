@@ -41,6 +41,16 @@ do
   done
 done
 
+for i in {0..3};
+do
+  gpioexp_export 18-0067 FAN${i}_PRESENT ${i}
+  gpioexp_export 18-0067 FAN${i}_PWR_GOOD $((i+4))
+  gpioexp_export 18-0067 FAN${i}_OK $((i+8))
+  gpioexp_export 18-0067 FAN${i}_FAIL $((i+12))
+  gpio_set FAN${i}_OK 1
+  gpio_set FAN${i}_FAIL 0
+done
+
 # To enable GPIOA
 #devmem_clear_bit $(scu_addr 80) 0
 #devmem_clear_bit $(scu_addr 80) 1

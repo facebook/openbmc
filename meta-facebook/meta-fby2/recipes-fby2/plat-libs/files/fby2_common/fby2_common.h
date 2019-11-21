@@ -211,9 +211,6 @@ typedef struct {
 #define GPIO_SLOT4_LED                    227
 #define GPIO_SLED_SEATED_N                231 //GPIOAC7
 
-#define MAX_KEY_LEN       64
-#define MAX_VALUE_LEN     64
-
 #define BIC_CACHED_PID "/var/run/bic-cached_%d.lock"
 
 int fby2_common_fru_name(uint8_t fru, char *str);

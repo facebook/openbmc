@@ -218,9 +218,6 @@ const static uint8_t gpio_server_hsc_pgood_sts[] =
   GPIOS3_PWROK_STBY_BMC_SLOT4
 };
 
-#define MAX_KEY_LEN       64
-#define MAX_VALUE_LEN     64
-
 #define BIC_CACHED_PID "/var/run/bic-cached_%d.lock"
 
 int fby2_common_fru_name(uint8_t fru, char *str);

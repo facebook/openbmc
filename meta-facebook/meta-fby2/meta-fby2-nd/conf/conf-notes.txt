@@ -1,2 +1,2 @@
 Common targets are:
-    fby2-nd-image
+    fbnd-image

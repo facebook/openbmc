@@ -38,7 +38,7 @@ me_ipmb_process(NM_RW_INFO* info, uint8_t ipmi_cmd, uint8_t netfn,
   res = (ipmb_res_t*) rdata;
   req = (ipmb_req_t*) wdata;
 
-  set_NM_head(info, NETFN_APP_REQ, req, ipmi_cmd);
+  set_NM_head(info, netfn, req, ipmi_cmd);
 
   if (txlen) {
     memcpy(req->data, txbuf, txlen);

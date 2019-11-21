@@ -25,6 +25,7 @@
 #include "pal_sensors.h"
 #include "pal_health.h"
 #include "pal_power.h"
+#include "pal_cm.h"
 
 #ifdef __cplusplus
 extern "C" {

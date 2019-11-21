@@ -43,6 +43,7 @@ IMAGE_INSTALL += " \
   guid-util \
   ipmbd\
   ipmb-util\
+  me-util \
   "
 
 IMAGE_FEATURES += " \

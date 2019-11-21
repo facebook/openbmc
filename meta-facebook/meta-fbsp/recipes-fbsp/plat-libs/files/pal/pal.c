@@ -32,6 +32,7 @@
 #include <sys/time.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/nm.h>
 #include "pal.h"
 
 #define PLATFORM_NAME "sonorapass"
@@ -691,4 +692,200 @@ pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_
   }
   *res_len = SIZE_BOOT_ORDER;
   return 0;
+}
+
+int
+pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
+  int i;
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[8] = {0};
+
+  for (i = 0; i < SIZE_SYSFW_VER; i++) {
+    sprintf(tstr, "%02x", ver[i]);
+    strcat(str, tstr);
+  }
+
+  return pal_set_key_value("sysfw_ver_server", str);
+}
+
+int
+pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
+  int ret;
+  int i, j;
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[8] = {0};
+
+  ret = pal_get_key_value("sysfw_ver_server", str);
+  if (ret) {
+    return ret;
+  }
+
+  for (i = 0, j = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
+    sprintf(tstr, "%c%c", str[i], str[i+1]);
+    ver[j++] = strtol(tstr, NULL, 16);
+  }
+  return 0;
+}
+
+int
+pal_fw_update_prepare(uint8_t fru, const char *comp) {
+  int ret = 0, retry = 3;
+  uint8_t status;
+  gpio_desc_t *desc;
+
+  if ((fru == FRU_MB) && !strcmp(comp, "bios")) {
+    pal_set_server_power(FRU_MB, SERVER_POWER_OFF);
+    while (retry > 0) {
+      if (!pal_get_server_power(FRU_MB, &status) && (status == SERVER_POWER_OFF)) {
+        break;
+      }
+      if ((--retry) > 0) {
+        sleep(1);
+      }
+    }
+    if (retry <= 0) {
+      printf("Failed to Power Off Server. Stopping the update!\n");
+      return -1;
+    }
+
+    if (system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null")) {
+      syslog(LOG_ERR, "Unable to put ME in recovery mode!\n");
+      return -1;
+    }
+    sleep(1);
+
+    ret = -1;
+    desc = gpio_open_by_shadow("FM_BIOS_SPI_BMC_CTRL");
+    if (desc) {
+      if (!gpio_set_direction(desc, GPIO_DIRECTION_OUT) && !gpio_set_value(desc, GPIO_VALUE_HIGH)) {
+        ret = 0;
+      } else {
+        printf("Failed to switch BIOS ROM to BMC\n");
+      }
+      gpio_close(desc);
+    } else {
+      printf("Failed to open SPI-Switch GPIO\n");
+    }
+
+    if (system("echo -n 1e630000.spi > /sys/bus/platform/drivers/aspeed-smc/bind")) {
+      syslog(LOG_ERR, "Unable to mount MTD partitions for BIOS SPI-Flash\n");
+      ret = -1;
+    }
+  }
+
+  return ret;
+}
+
+int
+pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
+  int ret = 0;
+  gpio_desc_t *desc;
+
+  if ((fru == FRU_MB) && !strcmp(comp, "bios")) {
+    if (system("echo -n 1e630000.spi > /sys/bus/platform/drivers/aspeed-smc/unbind")) {
+      syslog(LOG_ERR, "Unable to unmount MTD partitions\n");
+    }
+
+    desc = gpio_open_by_shadow("FM_BIOS_SPI_BMC_CTRL");
+    if (desc) {
+      gpio_set_value(desc, GPIO_VALUE_LOW);
+      gpio_set_direction(desc, GPIO_DIRECTION_IN);
+      gpio_close(desc);
+    }
+
+    ret = status;
+    if (status == 0) {
+      sleep(1);
+      pal_power_button_override();
+      sleep(10);
+      pal_set_server_power(FRU_MB, SERVER_POWER_ON);
+    }
+  }
+
+  return ret;
+}
+
+void
+pal_get_altera_i2c_dev_info(uint8_t id, uint8_t* addr, char* path) {
+  uint8_t bus=ALTERA_CPLD_I2C_BUS;
+
+  switch (id) {
+    case PAL_MAX10_10M16_PFR:
+      *addr = ALTERA_CPLD_I2C_PFR_ADDR;
+      break;
+
+    case PAL_MAX10_10M16_MOD:
+      *addr = ALTERA_CPLD_I2C_MOD_ADDR;
+      break;
+
+    default:
+      break;
+  }
+
+  snprintf(path, MAX_DEVICE_NAME_SIZE, I2C_FILE_NAME, bus);
+  return;
+}
+
+void
+pal_get_altera_chip_info(uint8_t id, uint32_t* csr_base, uint32_t* data_base, uint32_t* boot_base) {
+  switch (id) {
+    case PAL_MAX10_10M16_PFR:
+    case PAL_MAX10_10M16_MOD:
+      *csr_base = ON_CHIP_FLASH_IP_CSR_BASE;
+      *data_base = ON_CHIP_FLASH_IP_DATA_REG;
+      *boot_base = DUAL_BOOT_IP_BASE;
+      break;
+
+    default:
+      break;
+  }
+  return;
+}
+
+void
+pal_get_altera_cfm0_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr) {
+  return;
+}
+
+void
+pal_get_altera_cfm1_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr) {
+  switch (id) {
+    case PAL_MAX10_10M16_PFR:
+    case PAL_MAX10_10M16_MOD:
+      *start_addr = CFM1_START_ADDR;
+      *end_addr = CFM1_END_ADDR;
+      break;
+
+    default:
+      break;
+  }
+  return;
+}
+
+// Get ME Firmware Version
+int
+pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver) {
+  ipmi_dev_id_t dev_id;
+  NM_RW_INFO info;
+  int ret;
+
+  info.bus = bus;
+  info.nm_addr = addr;
+  ret = pal_get_bmc_ipmb_slave_addr(&info.bmc_addr, info.bus);
+  if (ret != 0) {
+    return ret;
+  }
+
+  ret = cmd_NM_get_dev_id(&info, &dev_id);
+  if (ret != 0) {
+    return ret;
+  }
+
+  ver[0] = dev_id.fw_rev1;
+  ver[1] = dev_id.fw_rev2 & 0x0f;
+  ver[2] = dev_id.fw_rev2 >> 4;
+  ver[3] = dev_id.aux_fw_rev[0];
+  ver[4] = dev_id.aux_fw_rev[1];
+  ver[5] = dev_id.aux_fw_rev[2];
+  return ret;
 }

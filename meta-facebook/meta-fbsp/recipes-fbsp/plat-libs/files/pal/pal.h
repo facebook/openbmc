@@ -37,6 +37,24 @@ extern "C" {
 #define ERR_NOT_READY       (-2)
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
+#define ALTERA_CPLD_I2C_PFR_ADDR    (0x5A)
+#define ALTERA_CPLD_I2C_MOD_ADDR    (0x55)
+#define ALTERA_CPLD_I2C_BUS         (4)
+#define I2C_FILE_NAME               "/dev/i2c-%d"
+
+// According to QSYS setting in FPGA project
+
+// on-chip Flash IP
+#define ON_CHIP_FLASH_IP_CSR_BASE        (0x00100020)
+#define ON_CHIP_FLASH_IP_CSR_STATUS_REG  (ON_CHIP_FLASH_IP_CSR_BASE + 0x0)
+#define ON_CHIP_FLASH_IP_CSR_CTRL_REG    (ON_CHIP_FLASH_IP_CSR_BASE + 0x4)
+
+#define ON_CHIP_FLASH_IP_DATA_REG        (0x00000000)
+// Dual-boot IP
+#define DUAL_BOOT_IP_BASE                (0x00100000)
+#define CFM1_START_ADDR                  (0x00008000)
+#define CFM1_END_ADDR                    (0x00049FFF)
+
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
 extern const char pal_pwm_list[];
@@ -125,6 +143,15 @@ enum {
   I2C_BUS_23,
 };
 
+enum {
+  PAL_LCMXO2_2000HC = 0,
+  PAL_LCMXO2_4000HC,
+  PAL_LCMXO2_7000HC,
+  PAL_MAX10_10M16_PFR,
+  PAL_MAX10_10M16_MOD,
+  PAL_UNKNOWN_DEV
+};
+
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_is_slot_server(uint8_t fru);
 int pal_set_id_led(uint8_t slot, uint8_t status);
@@ -135,6 +162,7 @@ int pal_get_key_value(char *key, char *value);
 void pal_update_ts_sled();
 int read_device(const char *device, int *value);
 int write_device(const char *device, int value);
+int pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver);
 
 #ifdef __cplusplus
 } // extern "C"

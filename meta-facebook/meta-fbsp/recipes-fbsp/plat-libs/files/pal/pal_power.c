@@ -16,8 +16,9 @@
 #define GPIO_POWER_RESET "RST_BMC_RSTBTN_OUT_R_N"
 #define GPIO_RESET_BTN_IN "FP_BMC_RST_BTN_N"
 
-#define DELAY_GRACEFUL_SHUTDOWN 1
+#define DELAY_POWER_ON 1
 #define DELAY_POWER_OFF 6
+#define DELAY_GRACEFUL_SHUTDOWN 1
 #define DELAY_POWER_CYCLE 10
 
 bool
@@ -32,80 +33,48 @@ is_server_off(void) {
   return status == SERVER_POWER_OFF? true: false;
 }
 
-// Power Off the server in given slot
 static int
-server_power_off(bool gs_flag) {
-  int ret;
-  gpio_desc_t *gdesc = NULL;
+power_btn_out_pulse(uint8_t secs) {
+  int ret = 0;
+  gpio_desc_t *gdesc;
 
   gdesc = gpio_open_by_shadow(GPIO_POWER);
-  if (gdesc == NULL)
+  if (!gdesc)
     return -1;
 
-  if (system("/usr/bin/sv stop fscd >> /dev/null") != 0) {
-    gpio_close(gdesc);
-    syslog(LOG_CRIT, "Stopping FSCD for power-off failed");
-    return -1;
-  }
+  do {
+    ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
+    if (ret)
+      break;
 
-  ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
-  if (ret != 0)
-    goto error;
+    ret = gpio_set_value(gdesc, GPIO_VALUE_LOW);
+    if (ret)
+      break;
 
-  sleep(1);
+    sleep(secs);
 
-  ret = gpio_set_value(gdesc, GPIO_VALUE_LOW);
-  if (ret != 0)
-    goto error;
+    ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
+  } while (0);
 
-  if (gs_flag) {
-    sleep(DELAY_GRACEFUL_SHUTDOWN);
-  } else {
-    sleep(DELAY_POWER_OFF);
-  }
-
-  ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
-  if (ret != 0)
-    goto error;
-
-error:
   gpio_close(gdesc);
   return ret;
 }
 
-// Power On the server in a given slot
+// Power Off the server
+static int
+server_power_off(bool gs_flag) {
+  return power_btn_out_pulse((gs_flag) ? DELAY_GRACEFUL_SHUTDOWN : DELAY_POWER_OFF);
+}
+
+// Power On the server
 static int
 server_power_on(void) {
-  int ret;
-  gpio_desc_t *gdesc = NULL;
+  return power_btn_out_pulse(DELAY_POWER_ON);
+}
 
-  gdesc = gpio_open_by_shadow(GPIO_POWER);
-  if (gdesc == NULL)
-    return -1;
-
-  ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
-  if (ret != 0)
-    goto error;
-
-  ret = gpio_set_value(gdesc, GPIO_VALUE_LOW);
-  if (ret != 0)
-    goto error;
-
-  sleep(1);
-
-  ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
-  if (ret != 0)
-    goto error;
-
-  sleep(2);
-
-  if (system("/usr/bin/sv restart fscd >> /dev/null") != 0) {
-    syslog(LOG_CRIT, "Restarting FSCD failed");
-  }
-
-error:
-  gpio_close(gdesc);
-  return ret;
+int
+pal_power_button_override(void) {
+  return power_btn_out_pulse(DELAY_POWER_OFF);
 }
 
 int

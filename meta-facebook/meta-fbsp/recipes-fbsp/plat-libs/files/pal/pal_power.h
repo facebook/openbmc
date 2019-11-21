@@ -3,5 +3,6 @@
 
 bool is_server_off(void);
 int pal_get_rst_btn(uint8_t *status);
+int pal_power_button_override(void);
 
 #endif

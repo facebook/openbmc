@@ -211,6 +211,13 @@ class Zone:
                     # evaluation tries to ignore the effects of None values
                     # (e.g. acts as 0 in max/+)
                     ctx[v] = None
+            else:
+                if sname in sensors[board]:
+                    if self.sensor_fail == True:
+                        sensor_fail_record_path = SENSOR_FAIL_RECORD_DIR + v
+                        if os.path.isfile(sensor_fail_record_path):
+                            os.remove(sensor_fail_record_path)
+
             self.sensor_valid_pre[sensor_index] = self.sensor_valid_cur[sensor_index]
             sensor_index += 1
 

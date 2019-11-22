@@ -225,6 +225,8 @@ util_get_serial(uint8_t fru_id, uint8_t dimm, bool json) {
     config_arr = json_array();
     if (!config_arr)
       goto err_exit;
+  } else {
+    printf("FRU: %s\n", fru_name[fru_id - 1]);
   }
 
   set_dimm_loop(dimm, &startCPU, &endCPU, &startDimm, &endDimm);
@@ -288,6 +290,8 @@ util_get_part(uint8_t fru_id, uint8_t dimm, bool json) {
     config_arr = json_array();
     if (!config_arr)
       goto err_exit;
+  } else {
+    printf("FRU: %s\n", fru_name[fru_id - 1]);
   }
 
   set_dimm_loop(dimm, &startCPU, &endCPU, &startDimm, &endDimm);
@@ -486,6 +490,8 @@ util_get_config(uint8_t fru_id, uint8_t dimm, bool json) {
     config_arr = json_array();
     if (!config_arr)
       goto err_exit;
+  } else {
+    printf("FRU: %s\n", fru_name[fru_id - 1]);
   }
 
   set_dimm_loop(dimm, &startCPU, &endCPU, &startDimm, &endDimm);
@@ -570,10 +576,28 @@ err_exit:
   return -1;
 }
 
+static int parse_dimm_label(char *label, uint8_t *dimmNum)
+{
+  int cpu, dimm;
+
+  // dimm label to dimm number look up
+  for (int cpu = 0; cpu < num_cpus; ++cpu) {
+    for (int dimm = 0; dimm < num_dimms_per_cpu; ++dimm) {
+      if (strcasecmp(get_dimm_label(cpu, dimm), label) == 0) {
+        *dimmNum = cpu * num_dimms_per_cpu + dimm;
+        return 0;
+      }
+    }
+  }
+  *dimmNum = 0;
+  return -1;
+}
+
 static int parse_cmdline_args(int argc, char **argv,
 			      uint8_t *dimm, bool *json)
 {
   int ret, opt_index = 0;
+  char *endptr = NULL;
   static const char *optstring = "d:j";
   struct option long_opts[] = {
     {"dimm",	required_argument,		NULL,	'd'},
@@ -592,9 +616,14 @@ static int parse_cmdline_args(int argc, char **argv,
 
     switch (ret) {
     case 'd':
-      *dimm = atoi(optarg);
-      if ((*dimm < 0) || (*dimm > total_dimms)) {
-        printf("Error: invalid [--dimm]\n");
+      *dimm = strtol(optarg, &endptr, 10);
+      if ((*endptr != '\0' && *endptr != '%')) {
+        if (parse_dimm_label(optarg, dimm) == -1) {
+          printf("invalid argument \"--dimm %s\"\n", optarg);
+          return ERR_INVALID_SYNTAX;
+        }
+      } else if ((*dimm < 0) || (*dimm > total_dimms)) {
+        printf("Error: invalid \"--dimm %d\"\n", *dimm);
         return ERR_INVALID_SYNTAX;
       }
       break;
@@ -639,7 +668,7 @@ parse_arg_and_exec(int argc, char **argv, uint8_t fru_id,
 
 static void
 print_usage_help(void) {
-  int i;
+  int i, j;
 
   printf("Usage: dimm-util <");
   for (i = 0; i < num_frus; ++i) {
@@ -655,8 +684,18 @@ print_usage_help(void) {
   printf("   --cache    - read from SMBIOS cache\n");
   printf("   --config   - print DIMM configuration info\n");
   printf("\nOPT list:\n");
-  printf("   --dimm N  - DIMM number (0..%d) [default %d = ALL]\n",
-          total_dimms - 1, total_dimms);
+  printf("   --dimm [N/Label] - DIMM number (");
+  for (i = 0; i < total_dimms - 1; ++i)
+    printf("%02d, ", i);
+  printf("%02d) [default %d = ALL]\n", total_dimms - 1, total_dimms);
+  printf("                        or\n");
+  printf("                      DIMM Label  (");
+  for (i = 0; i < num_cpus; ++i)
+    for (j = 0; j < num_dimms_per_cpu; ++ j)
+      if (i == num_cpus - 1 && j == num_dimms_per_cpu - 1)
+        printf("%02s)\n", get_dimm_label(i, j));
+      else
+        printf("%02s, ", get_dimm_label(i, j));
   printf("   --json    - output in JSON format\n");
 }
 

@@ -32,6 +32,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "bic.h"
+#include "bic_platform.h"
+#include <openbmc/libgpio.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/misc-utils.h>
@@ -72,8 +74,6 @@
 #define CMD_STATUS_SIZE 3
 #define CMD_DATA_SIZE 0xFF
 
-#define GPIO_VAL "/sys/class/gpio/gpio%d/value"
-
 #define IMC_VER_SIZE 8
 
 #define SLOT_FILE "/tmp/slot%d.bin"
@@ -96,9 +96,22 @@ typedef struct _sdr_rec_hdr_t {
 } sdr_rec_hdr_t;
 #pragma pack(pop)
 
-const static uint8_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
-const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
-const static uint8_t gpio_power_en[] = { 0, GPIO_SLOT1_POWER_EN, GPIO_SLOT2_POWER_EN, GPIO_SLOT3_POWER_EN, GPIO_SLOT4_POWER_EN };
+static const uint32_t i2c_addr[] = {
+  0x0, // 0, TODO
+  0x1e78a084, // 1
+  0x0, // 2 TODO
+  0x1e78a104, // 3
+  0x0, // 4 TODO
+  0x1e78a184, // 5
+  0x0, // 6 TODO
+  0x1e78a304, // 7
+  0x0, // 8 TODO
+  0x0, // 9 TODO
+  0x0, // 10 TODO
+  0x0, // 11 TODO
+  0x0, // 12 TODO
+  0x0, // 13 TODO
+};
 
 // Helper Functions
 static void
@@ -112,6 +125,44 @@ msleep(int msec) {
     continue;
   }
 }
+
+static bool
+is_slot_valid(uint8_t slot_id)
+{
+  if (slot_id >= ARRAY_SIZE(bic_slot_index) || bic_slot_index[slot_id] < 0)  {
+    return false;
+  }
+  return true;
+}
+
+static int
+i2c_set_low_speed(int bus_id)
+{
+  char cmd[128];
+
+  if (bus_id < 0  || bus_id >= ARRAY_SIZE(i2c_addr)) {
+    return -1;
+  }
+  sprintf(cmd, "devmem 0x%08x w 0xFFF77304", i2c_addr[bus_id]);
+  system(cmd);
+  sleep(1);
+  return 0;
+}
+
+static int
+i2c_set_high_speed(int bus_id)
+{
+  char cmd[128];
+
+  if (bus_id < 0  || bus_id >= ARRAY_SIZE(i2c_addr)) {
+    return -1;
+  }
+  sprintf(cmd, "devmem 0x%08x w 0xFFF5E700", i2c_addr[bus_id]);
+  system(cmd);
+  sleep(1);
+  return 0;
+}
+
 
 static int
 i2c_open(uint8_t bus_id) {
@@ -173,7 +224,8 @@ i2c_io(int fd, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount) {
 }
 
 static int
-read_device(const char *device, int *value) {
+read_device(const char *device, int *value) 
+{
   FILE *fp;
   int rc;
 
@@ -200,65 +252,77 @@ read_device(const char *device, int *value) {
 
 uint8_t
 is_bic_ready(uint8_t slot_id) {
-  int val;
-  char path[64] = {0};
+  int idx;
+  gpio_value_t val;
 
-  if (slot_id < 1 || slot_id > 4) {
+  if (!is_slot_valid(slot_id)) {
     return 0;
   }
+  idx = bic_slot_index[slot_id];
 
-  sprintf(path, GPIO_VAL, gpio_bic_ready[slot_id]);
-  if (read_device(path, &val)) {
+  gpio_desc_t *desc = gpio_open_by_shadow(bic_ready_gpio[idx]);
+  if (!desc) {
     return 0;
   }
-
-  if (val == 0x0) {
+  if (gpio_get_value(desc, &val)) {
+    gpio_close(desc);
+    return 0;
+  }
+  gpio_close(desc);
+  if (val == GPIO_VALUE_LOW) {
     return 1;
-  } else {
-    return 0;
   }
+  return 0;
 }
 
 int
 bic_is_slot_12v_on(uint8_t slot_id) {
-  int val;
-  char path[64] = {0};
+  int idx;
+  gpio_value_t val;
 
-  if (slot_id < 1 || slot_id > 4) {
+  if (!is_slot_valid(slot_id)) {
     return 0;
   }
+  idx = bic_slot_index[slot_id];
 
-  sprintf(path, GPIO_VAL, gpio_12v[slot_id]);
-  if (read_device(path, &val)) {
+  gpio_desc_t *desc = gpio_open_by_shadow(bic_12v_gpio[idx]);
+  if (!desc) {
     return 0;
   }
-
-  if (val == 0x0) {
+  if (gpio_get_value(desc, &val)) {
+    gpio_close(desc);
     return 0;
-  } else {
-    return 1;
   }
+  gpio_close(desc);
+  if (val == GPIO_VALUE_LOW) {
+    return 0;
+  }
+  return 1;
 }
 
 int
 bic_is_slot_power_en(uint8_t slot_id) {
-  int val;
-  char path[64] = {0};
+  int idx;
+  gpio_value_t val;
 
-  if (slot_id < 1 || slot_id > 4) {
+  if (!is_slot_valid(slot_id)) {
     return 0;
   }
+  idx = bic_slot_index[slot_id];
 
-  sprintf(path, GPIO_VAL, gpio_power_en[slot_id]);
-  if (read_device(path, &val)) {
+  gpio_desc_t *desc = gpio_open_by_shadow(bic_power_en_gpio[idx]);
+  if (!desc) {
     return 0;
   }
-
-  if (val == 0x0) {
+  if (gpio_get_value(desc, &val)) {
+    gpio_close(desc);
     return 0;
-  } else {
-    return 1;
   }
+  gpio_close(desc);
+  if (val == GPIO_VALUE_LOW) {
+    return 0;
+  }
+  return 1;
 }
 
 
@@ -266,27 +330,13 @@ bic_is_slot_power_en(uint8_t slot_id) {
 
 static int
 get_ipmb_bus_id(uint8_t slot_id) {
-  int bus_id;
-
-  switch(slot_id) {
-  case FRU_SLOT1:
-    bus_id = IPMB_BUS_SLOT1;
-    break;
-  case FRU_SLOT2:
-    bus_id = IPMB_BUS_SLOT2;
-    break;
-  case FRU_SLOT3:
-    bus_id = IPMB_BUS_SLOT3;
-    break;
-  case FRU_SLOT4:
-    bus_id = IPMB_BUS_SLOT4;
-    break;
-  default:
-    bus_id = -1;
-    break;
+  int idx;
+  
+  if (!is_slot_valid(slot_id)) {
+    return -1;
   }
-
-  return bus_id;
+  idx = bic_slot_index[slot_id];
+  return bic_ipmb_bus_id[idx];
 }
 
 int
@@ -1115,28 +1165,7 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
   system(cmd);
   printf("stop ipmbd for slot %x..\n", slot_id);
 
-  // The I2C high speed clock (1M) could cause to read BIC data abnormally.
-  // So reduce I2C bus clock speed which is a workaround for BIC update.
-  switch(slot_id)
-  {
-     case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF77304");
-       break;
-     case FRU_SLOT2:
-       system("devmem 0x1e78a104 w 0xFFF77304");
-       break;
-     case FRU_SLOT3:
-       system("devmem 0x1e78a184 w 0xFFF77304");
-       break;
-     case FRU_SLOT4:
-       system("devmem 0x1e78a304 w 0xFFF77304");
-       break;
-     default:
-       syslog(LOG_CRIT, "bic_update_fw: incorrect slot_id %d\n", slot_id);
-       goto error_exit;
-       break;
-  }
-  sleep(1);
+  i2c_set_low_speed(get_ipmb_bus_id(slot_id));
   printf("Stopped ipmbd for this slot %x..\n",slot_id);
 
   if (is_bic_ready(slot_id)) {
@@ -1382,27 +1411,7 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
 
 error_exit:
   // Restore the I2C bus clock to 1M.
-  switch(slot_id)
-  {
-     case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF5E700");
-       break;
-     case FRU_SLOT2:
-       system("devmem 0x1e78a104 w 0xFFF5E700");
-       break;
-     case FRU_SLOT3:
-       system("devmem 0x1e78a184 w 0xFFF5E700");
-       break;
-     case FRU_SLOT4:
-       system("devmem 0x1e78a304 w 0xFFF5E700");
-       break;
-     default:
-       syslog(LOG_ERR, "bic_update_fw: incorrect slot_id %d\n", slot_id);
-       break;
-  }
-
-  // Restart ipmbd daemon
-  sleep(1);
+  i2c_set_high_speed(get_ipmb_bus_id(slot_id));
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "sv start ipmbd_%d", get_ipmb_bus_id(slot_id));
   system(cmd);
@@ -2684,8 +2693,9 @@ bic_get_slot_type(uint8_t fru) {
   int retry = 3;
   char key[MAX_KEY_LEN] = {0};
 
-  if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4))
+  if (!is_slot_valid((fru))) {
     return type;
+  }
 
   snprintf(key, sizeof(key), SLOT_FILE, fru);
   do {
@@ -2706,7 +2716,7 @@ bic_get_server_type(uint8_t fru, uint8_t *type) {
   ipmi_dev_id_t id = {0};
   char key[MAX_KEY_LEN] = {0};
 
-  if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+  if (!is_slot_valid(fru)) {
     *type = SERVER_TYPE_NONE;
     return 0;
   }

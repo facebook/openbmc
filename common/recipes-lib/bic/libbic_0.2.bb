@@ -8,13 +8,14 @@ LIC_FILES_CHKSUM = "file://bic.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 
 SRC_URI = "file://bic.h \
            file://bic.c \
+           file://bic_platform.h \
+           file://bic_platform.c \
            file://Makefile \
           "
-LDFLAGS += " -lmisc-utils -lobmc-i2c"
+LDFLAGS += " -lmisc-utils -lobmc-i2c -lgpio-ctrl"
 
-DEPENDS += "libmisc-utils libfby2-common libipmi libipmb libkv plat-utils libobmc-i2c "
-RDEPENDS_${PN} += " libmisc-utils libobmc-i2c"
-DEPENDS_append = " libmisc-utils"
+DEPENDS += "libmisc-utils libipmi libipmb libkv libobmc-i2c libgpio-ctrl"
+RDEPENDS_${PN} += " libmisc-utils libobmc-i2c libgpio-ctrl libkv libipmb libipmi"
 
 S = "${WORKDIR}"
 

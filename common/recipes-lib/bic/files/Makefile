@@ -5,7 +5,8 @@ CFLAGS += -Wall -Werror
 
 libbic.so: bic.c
 	$(CC) $(CFLAGS) -fPIC -c -o bic.o bic.c
-	$(CC) -lipmb -lkv -shared -o libbic.so bic.o -lc $(LDFLAGS)
+	$(CC) $(CFLAGS) -fPIC -c -o bic_platform.o bic_platform.c
+	$(CC) -lipmb -lkv -shared -o libbic.so bic.o bic_platform.o -lc $(LDFLAGS)
 
 .PHONY: clean
 

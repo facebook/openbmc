@@ -136,8 +136,8 @@ if [ $BOARD_ID -eq 9 ]; then
   devmem_clear_bit $(scu_addr A4) 17
   gpio_export FM_BMC_ISOLATED_EN_R GPIOZ0
   gpio_export FM_BMC_ISOLATED_UART_EN_R GPIOZ1
-  gpio_set FM_BMC_ISOLATED_EN_R 0
-  gpio_set FM_BMC_ISOLATED_UART_EN_R 1
+  gpio_set FM_BMC_ISOLATED_EN_R 1
+  gpio_set FM_BMC_ISOLATED_UART_EN_R 0
 
 ###Baseboard BMC###
 elif [ $BOARD_ID -eq 14 ]; then
@@ -240,6 +240,32 @@ elif [ $BOARD_ID -eq 14 ]; then
   gpio_export HSC_FAULT_BMC_SLOT1_N_R GPIOM1
   gpio_export HSC_FAULT_SLOT2_N GPIOM2
   gpio_export HSC_FAULT_BMC_SLOT3_N_R GPIOM3
+
+  # GPION0-FAN_BMC_PWM_0
+  # GPION1-FAN_BMC_PWM_1
+  # GPION3-FAN_BMC_PWM_2
+  # GPION4-FAN_BMC_PWM_3
+  devmem_set_bit $(scu_addr 88) 0
+  devmem_set_bit $(scu_addr 88) 1
+  devmem_set_bit $(scu_addr 88) 2
+  devmem_set_bit $(scu_addr 88) 3
+
+  # GPIOO0-FAN_BMC_TACH_0
+  # GPIOO1-FAN_BMC_TACH_1
+  # GPIOO2-FAN_BMC_TACH_2
+  # GPIOO3-FAN_BMC_TACH_3
+  # GPIOO4-FAN_BMC_TACH_4
+  # GPIOO5-FAN_BMC_TACH_5
+  # GPIOO6-FAN_BMC_TACH_6
+  # GPIOO7-FAN_BMC_TACH_7
+  devmem_clear_bit $(scu_addr 88) 8
+  devmem_clear_bit $(scu_addr 88) 9
+  devmem_clear_bit $(scu_addr 88) 10
+  devmem_clear_bit $(scu_addr 88) 11
+  devmem_clear_bit $(scu_addr 88) 12
+  devmem_clear_bit $(scu_addr 88) 13
+  devmem_clear_bit $(scu_addr 88) 14
+  devmem_clear_bit $(scu_addr 88) 15
 
   # GPION4-DUAL_FAN0_DETECT_BMC_N_R
   # GPION5-DUAL_FAN1_DETECT_BMC_N_R

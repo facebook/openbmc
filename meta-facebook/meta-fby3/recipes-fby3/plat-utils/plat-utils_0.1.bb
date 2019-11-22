@@ -23,6 +23,8 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = "file://ast-functions \
            file://setup-gpio.sh \
+           file://power-on.sh \
+           file://sync_date.sh \
            file://COPYING \
           "
 
@@ -31,7 +33,7 @@ pkgdir = "utils"
 S = "${WORKDIR}"
 
 # the tools for BMC will be installed in the image
-binfiles = " "
+binfiles = " sync_date.sh "
 
 DEPENDS_append = "update-rc.d-native"
 RDEPENDS_${PN} += "bash python3 "
@@ -59,6 +61,10 @@ do_install() {
   # install setup-gpio.sh
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
+
+  # install power-on.sh
+  install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
+  update-rc.d -r ${D} power-on.sh start 70 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

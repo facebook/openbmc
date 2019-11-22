@@ -48,5 +48,5 @@ def reset_switch_only_reset():
 
 # Handler for switchreset resource endpoint
 def reset_switch():
-    sub_endpoint = ["cycle_reset", "only_eset"]
+    sub_endpoint = ["cycle_reset", "only_reset"]
     return {"Information": "", "Actions": [], "Resources": sub_endpoint}

@@ -99,7 +99,7 @@ get_dimm_label(uint8_t cpu, uint8_t dimm)
 
 // send ME command to select page 0 or 1 on SPD
 int
-util_set_EE_page(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t page_num)
+util_set_EE_page(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t page_num)
 {
 #define EEPROM_MAX_PAGE 2
 #define EEPROM_P0_SEL 0x6C
@@ -164,9 +164,8 @@ util_set_EE_page(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t page_num)
 // read 1 byte off SPD bus,
 // input:  cpu/dimm/addr_msb/addr_lsb/offset
 int
-util_read_spd_byte(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t offset)
+util_read_spd_byte(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset)
 {
-
 // 7 bytes IPMB header + 3 bytes INTEL ID + 1 byte payload + 1 byte checksum
 #define MIN_RESP_LEN (7 + INTEL_ID_LEN + 1 + 1 /* payload*/)
 
@@ -229,4 +228,61 @@ util_read_spd_byte(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t offset)
   // actual SPD payload will be last byte following all IANA header and
   //  completion codes
   return rbuf[MIN_RESP_LEN - 2];
+}
+
+int
+util_check_me_status(uint8_t fru_id) {
+// 7 bytes IPMB header + 2 byte payload + 1 byte checksum
+#define MIN_RESP_LEN (7 + 2 + 1 /* payload*/)
+
+  int ret, me_status = 0;
+  uint8_t tbuf[256] = {0};
+  uint8_t rbuf[256] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int addr_msb = 0;
+  int addr_lsb = 0;
+
+  ipmb_req_t *req = (ipmb_req_t*)tbuf;;
+
+
+  req->res_slave_addr = ME_SLAVE_ADDR;
+  req->netfn_lun = NETFN_APP_REQ << 2;
+  req->hdr_cksum = req->res_slave_addr +
+                   req->netfn_lun;
+  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
+
+  req->req_slave_addr = BMC_SLAVE_ADDR;
+  req->seq_lun = 0x00;
+
+  req->cmd = CMD_APP_GET_SELFTEST_RESULTS;
+
+  tlen = 6;  // length so far with all fields above
+
+  // Invoke IPMB library handler
+  lib_ipmb_handle(ME_BUS_ADDR, tbuf, tlen+1, rbuf, &rlen);
+
+#ifdef DEBUG_DIMM_UTIL
+  int i = 0;
+  DBG_PRINT("rlen = %d\n",rlen);
+  for (i = 0; i < rlen; ++i)
+    DBG_PRINT("0x%x ",rbuf[i]);
+  DBG_PRINT("\n");
+#endif
+
+  if (rlen < MIN_RESP_LEN) {
+    return -1;
+  }
+
+  //  payload contains ME status (0x55, 0x00) and checksum
+  //  ME status would be 3rd byte from last
+  me_status = rbuf[MIN_RESP_LEN - 3];
+  DBG_PRINT("me_status 0x%x\n", me_status);
+
+  if (me_status == 0x55) {
+    return 0;
+  } else {
+    // bad ME status
+    return -1;
+  }
 }

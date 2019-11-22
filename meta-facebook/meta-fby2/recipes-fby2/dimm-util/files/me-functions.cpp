@@ -218,3 +218,46 @@ util_read_spd_byte(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t offset)
   //  completion codes
   return rbuf[MIN_RESP_LEN - 1];
 }
+
+int
+util_check_me_status(uint8_t slot_id) {
+#define MAX_CMD_RETRY 2
+  int i, ret, retry = MAX_CMD_RETRY;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+
+  tbuf[0] = NETFN_APP_REQ << 2;
+  tbuf[1] = CMD_APP_GET_SELFTEST_RESULTS;
+  tlen = 2;
+
+  while (retry >= 0) {
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret == 0)
+      break;
+    retry--;
+  }
+  if (ret) {
+    DBG_PRINT("ME no response!\n");
+    return -1;
+  }
+
+  //log[0] = 0;
+  if (rbuf[0] != 0x00) {
+    DBG_PRINT("Completion Code: %02X, ", rbuf[0]);
+    return -1;
+  }
+  if (rlen < 3) {
+    DBG_PRINT("return incomplete len=%d\n", rlen);
+    return -1;
+  }
+
+  DBG_PRINT("%02x %02x\n", rbuf[1], rbuf[2]);
+  if (rbuf[1] == 0x55) {
+    return 0;
+  } else {
+    // bad ME status
+    return -1;
+  }
+}

@@ -161,17 +161,12 @@ ierr_mcerr_event_log(bool is_caterr, const char *err_type) {
   char cpu_str[32] = "";
   int num=0;
   int ret=0;
-  NM_RW_INFO info;
 
-  info.bus = NM_IPMB_BUS_ID;
-  info.nm_addr = NM_SLAVE_ADDR;
-  info.nm_cmd = CMD_NM_SEND_RAW_PECI;
-  ret = pal_get_bmc_ipmb_slave_addr(&info.bmc_addr, info.bus);
-  if(ret != 0 ) {
-    return ret;
+  ret = cmd_peci_get_cpu_err_num(&num, is_caterr);
+  if(ret != 0) {
+    syslog(LOG_ERR, "Can't Read MCA Log\n");
   }
 
-  num = cmd_NM_cpu_err_num_get(info, is_caterr );
   if (num == 2)
     strcpy(cpu_str, "0/1");
   else if (num != -1)
@@ -191,13 +186,14 @@ ierr_mcerr_event_handler() {
   uint8_t msmi_cnt = 0;
   gpio_value_t value;
   gpio_desc_t *caterr = gpio_open_by_shadow("FM_CPU_CATERR_LVT3_N");
-  gpio_desc_t *msmi = gpio_open_by_shadow("FM_CPU_MSMI_CATERR_LVT3_N");
+  gpio_desc_t *msmi = gpio_open_by_shadow("FM_CPU_MSMI_LVT3_N");
 
   if (!caterr) {
+    gpio_close(caterr);
     return NULL;
   }
   if (!msmi) {
-    gpio_close(caterr);
+    gpio_close(msmi);
     return NULL;
   }
 
@@ -255,9 +251,9 @@ ierr_mcerr_event_handler() {
           g_msmi_irq--;
           msmi_cnt = 0;
           pal_set_fault_led(FRU_MB, FAULT_LED_ON );
-          if (system("/usr/local/bin/autodump.sh &")) {
-            syslog(LOG_CRIT, "Failed to start crashdump\n");
-          }
+//          if (system("/usr/local/bin/autodump.sh &")) {
+//            syslog(LOG_CRIT, "Failed to start crashdump\n");
+//          }
 
         } else if (g_msmi_irq > 1) {
           while (g_msmi_irq > 1) {
@@ -342,7 +338,7 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_BMC_PWR_BTN_R_N", "GPIOE2", GPIO_EDGE_BOTH, pwr_button_handler, NULL},
   {"PWRGD_SYS_PWROK", "GPIOY2", GPIO_EDGE_BOTH, pwr_sysok_handler, NULL},
   {"FM_CPU_CATERR_LVT3_N", "GPIOZ0", GPIO_EDGE_FALLING, err_caterr_handler, init_caterr},
-  {"FM_CPU_MSMI_CATERR_LVT3_N", "GPIOZ2", GPIO_EDGE_FALLING, err_msmi_handler, init_msmi},
+  {"FM_CPU_MSMI_LVT3_N", "GPIOZ2", GPIO_EDGE_FALLING, err_msmi_handler, init_msmi},
   {"FM_UARTSW_LSB_N", "GPIOL0", GPIO_EDGE_BOTH, uart_select_handle, NULL},
   {"FM_UARTSW_MSB_N", "GPIOL1", GPIO_EDGE_BOTH, uart_select_handle, NULL},
 

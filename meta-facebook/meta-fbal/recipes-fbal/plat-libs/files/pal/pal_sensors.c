@@ -794,6 +794,7 @@ cmd_peci_rdpkgconfig(PECI_RD_PKG_CONFIG_INFO* info, uint8_t* rx_buf, uint8_t rx_
 
   ret = pal_get_peci_val(&msg);
   if(ret != 0) {
+    syslog(LOG_DEBUG, "peci rdpkg error index=%x\n", info->index);
     return -1;
   }
   memcpy(rx_buf, msg.rx_buf, msg.rx_len);
@@ -939,6 +940,49 @@ cmd_peci_total_time(uint8_t cpu_addr, uint32_t* value) {
   return 0;
 } 
 
+int
+cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr) {
+  PECI_RD_PKG_CONFIG_INFO info;
+  int ret=0;
+  uint8_t rx_len=5;
+  uint8_t rx_buf[rx_len];
+  int cpu_num=-1;
+
+  info.cpu_addr= PECI_CPU0_ADDR;
+  info.dev_info = 0x00;
+  info.index = PECI_INDEX_PKG_IDENTIFIER;
+  info.para_l = 0x05;
+  info.para_h = 0x00;
+
+  ret = cmd_peci_rdpkgconfig(&info, rx_buf, rx_len);
+  if(ret != 0) {
+    return -1;
+  }
+
+//CATERR ERROR
+  if( is_caterr ) {
+    if((rx_buf[3] & BOTH_CPU_ERROR_MASK) == BOTH_CPU_ERROR_MASK)
+      cpu_num = 2; //Both
+    else if((rx_buf[3] & EXTERNAL_CPU_ERROR_MASK) > 0)
+      cpu_num = 1; //CPU1
+    else if((rx_buf[3] & INTERNAL_CPU_ERROR_MASK) > 0)
+      cpu_num = 0; //CPU0
+  } else {
+//MSMI     
+    if(((rx_buf[2] & BOTH_CPU_ERROR_MASK) == BOTH_CPU_ERROR_MASK))
+      cpu_num = 2; //Both
+    else if((rx_buf[2] & EXTERNAL_CPU_ERROR_MASK) > 0)
+      cpu_num = 1; //CPU1
+    else if((rx_buf[2] & INTERNAL_CPU_ERROR_MASK) > 0)
+      cpu_num = 0; //CPU0
+  }
+  *num = cpu_num;
+
+  syslog(LOG_DEBUG,"%s cpu error number=%x\n",__func__, *num);
+
+  return 0;
+} 
+
 static int 
 read_cpu_tjmax(uint8_t cpu_id, float *value) {
   uint8_t cpu_addr = cpu_info_list[cpu_id].cpu_addr;
@@ -946,7 +990,6 @@ read_cpu_tjmax(uint8_t cpu_id, float *value) {
   int tjmax=0;
   static int retry = 0;
   
-
   ret =  cmd_peci_get_tjmax(cpu_addr, &tjmax);
   if (ret != 0) {
     retry++;

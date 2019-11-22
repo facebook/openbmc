@@ -50,6 +50,7 @@ if [ -z "$TEMPLATECONF" ]; then
             meta=$(echo "$meta" | sed 's/\.\///')
             if [ "$machine" == "$platform" ]; then
                 TEMPLATECONF="$(pwd)/$meta"
+                platform=$(basename "$(dirname "$meta")")
                 echo "$NTEMPLATECONF"
                 break
             fi

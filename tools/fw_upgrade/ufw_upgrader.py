@@ -76,7 +76,10 @@ class Main(object):
             action="store_true",
             dest="check_only",
             default=False,
-            help="Do not upgrade and only check if upgrade needed",
+            help=(
+                "Do not upgrade and only check if upgrade needed, "
+                "exits with status 2 if upgrade needed",
+            ),
         )
         parser.add_argument(
             "-l",
@@ -180,8 +183,9 @@ class Main(object):
             reset=self.reset,
         )
         if self.check_only:
-            fw_upgrader_obj.print_if_upgrade_needed()
-            exit(0)
+            needed = fw_upgrader_obj.is_any_upgrade_needed()
+            logging.info("Upgrade Needed : {}".format("YES" if needed else "NO"))
+            exit(2 if needed else 0)
 
         # Check version and upgrade one by one
         rc = fw_upgrader_obj.run_upgrade()

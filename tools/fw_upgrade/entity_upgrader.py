@@ -152,6 +152,7 @@ class FwEntityUpgrader(object):
         re_pattern = self._REGEX_VERSION_PATTERN
         re_result = re.search(re_pattern, current_ver)
         if re_result:
+
             # Case 1
             logging.debug("Current Version : {}".format(current_ver))
             logging.debug("JSON Version    : {}".format(package_ver))
@@ -177,6 +178,7 @@ class FwEntityUpgrader(object):
                     )
                 )
                 need_to_upgrade = (pkg_major, pkg_minor) > (cur_major, cur_minor)
+
             else:
                 logging.warning("Couldnt parse version, defaulting to upgrade")
                 need_to_upgrade = True
@@ -326,12 +328,12 @@ class FwEntityUpgrader(object):
         for instance in instance_list:
             logging.info("\n=== Entity : {} dryrun={}".format(instance, self._dryrun))
             start_time = time.time()
-            if self._is_entity_upgrade_needed(instance_specifier=instance):
+            if (
+                self._is_entity_upgrade_needed(instance_specifier=instance)
+                or self._forced_upgrade
+            ):
                 # Check if "condition" field is set. If so, check that condition
-                if (
-                    self._is_condition_set_in_json(instance_specifier=instance)
-                    or self._forced_upgrade
-                ):
+                if self._is_condition_set_in_json(instance_specifier=instance):
                     return_code, instance_successful = self._upgrade_executor(
                         filename, instance_specifier=instance
                     )
@@ -465,13 +467,11 @@ class FwUpgrader(object):
     # API publically accessible for upgrading all entities
     # =========================================================================
 
-    def print_if_upgrade_needed(self) -> None:
-        upgrade_needed = False
+    def is_any_upgrade_needed(self) -> bool:
         for fw_entity in self._ordered_json:
             if self._entity_upgrade_needed(fw_entity):
-                upgrade_needed = True
-                break  # As long as there is atleast 1 component to upgrade return
-        logging.info("Upgrade Needed : " + "YES" if upgrade_needed else "NO")
+                return True
+        return False
 
     def run_upgrade(self) -> bool:
         """

@@ -28,6 +28,23 @@ connect_spi() {
     echo 0x1 > ${SUPCPLD_SYSFS_DIR}/bios_select
 }
 
+# Arista added a 3rd source, so this function is needed in case we are dealing with the 3rd source
+do_retry(){
+  if [ "$1" = "write" ]; then
+    if ! flashrom --layout /etc/yamp_bios.layout --image header --image payload -p linux_spi:dev=/dev/spidev2.0 -w "$2"; then
+      echo "flashrom without -c failed"
+    fi
+  elif [ "$1" = "erase" ]; then
+    if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -E; then
+       echo "flashrom without -c option failed as well"
+    fi
+  else # reading
+    if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -r "$2"; then
+      echo "flashrom without -c option failed"
+    fi
+  fi
+}
+
 do_erase() {
     # Layout is not supported in Erase. 
     # So we need to manually recover pdr (which include idprom) after erase.
@@ -37,14 +54,21 @@ do_erase() {
 
     # Do the erase
     echo "Erasing the flash"
-    flashrom -p linux_spi:dev=/dev/spidev2.0 -E -c "MX25L12835F/MX25L12845E/MX25L12865E"
+    if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -E -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
+      echo "flashrom failed. Retrying without -c"
+      do_retry "erase" 
+    fi
     
     # Recover header and pdr (which includes the idprom)
     do_recover
 }
 
 do_read() {
-    flashrom -p linux_spi:dev=/dev/spidev2.0 -r "$1" -c "MX25L12835F/MX25L12845E/MX25L12865E"
+    echo "Reading flash content..."
+    if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -r "$1" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
+      echo "flashrom failed. Retrying wihtout -c"
+      do_retry "read" "$1"
+    fi
 }
 
 backup_image(){
@@ -67,8 +91,8 @@ backup_image(){
     header_pdr_file="/mnt/data/header_pdr.data"
 
     if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -r "${tempfile}" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
-      echo "Running flashrom in backup_image failed"
-      exit 1
+      echo "Flashrom failed. Retrying without -c"
+      do_retry "read" "${tempfile}"
     fi
 
     # Make sure data is fully read
@@ -97,7 +121,10 @@ do_write() {
       backup_image
     fi
     echo " writing header and payload ... "
-    flashrom --layout /etc/yamp_bios.layout --image header --image payload -p linux_spi:dev=/dev/spidev2.0 -w "$1" -c "MX25L12835F/MX25L12845E/MX25L12865E"
+    if ! flashrom --layout /etc/yamp_bios.layout --image header --image payload -p linux_spi:dev=/dev/spidev2.0 -w "$1" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
+      echo "flashrom failed. Retrying wihtout -c"
+      do_retry "write" "$1"
+    fi
 }
 
 do_recover() {
@@ -123,8 +150,8 @@ do_recover() {
 
   #Recover pdr region which includes the idprom region
   if ! flashrom --layout /etc/yamp_bios.layout --image header --image pdr -p linux_spi:dev=/dev/spidev2.0 -w "${file}" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
-    echo "Running flashrom in do_recover failed"
-    exit 1
+    echo "flashrom failed. Retrying without the -c"
+    do_retry "write" "${file}"
   fi
   rm "${file}"
 }
@@ -136,7 +163,7 @@ if [ "$1" == "erase" ]; then
 elif [ "$1" == "read" ]; then
         do_read "$2"
 elif [ "$1" == "write" ]; then
-        do_write "$2"
+         do_write "$2"
 elif [ "${1}" == "recover" ]; then
         do_recover
 else

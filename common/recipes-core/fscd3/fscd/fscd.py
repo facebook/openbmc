@@ -31,7 +31,7 @@ from fsc_board import board_callout, board_fan_actions, board_host_actions
 from fsc_profile import Sensor, profile_constructor
 from fsc_sensor import FscSensorSourceUtil
 from fsc_util import Logger, clamp
-from fsc_zone import Fan, Zone
+from fsc_zone import Fan, Zone, fan_mode
 
 
 RECORD_DIR = "/tmp/cache_store/"
@@ -45,8 +45,6 @@ CONFIG_DIR = "/etc/fsc"
 DEFAULT_INIT_BOOST = 100
 DEFAULT_INIT_TRANSITIONAL = 70
 WDTCLI_CMD = "/usr/local/bin/wdtcli"
-
-fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2}
 
 
 def kick_watchdog():
@@ -86,6 +84,7 @@ class Fscd(object):
         self.zone_config = zone_config
         self.fsc_config = self.get_fsc_config(config)  # json dump from config
         self.boost = self.DEFAULT_BOOST
+        self.non_fanfail_limited_boost = None
         self.boost_type = self.DEFAULT_BOOST_TYPE
         self.transitional = self.DEFAULT_TRANSITIONAL
         self.ramp_rate = self.DEFAULT_RAMP_RATE
@@ -108,6 +107,8 @@ class Fscd(object):
     def get_config_params(self):
         self.transitional = self.fsc_config["pwm_transition_value"]
         self.boost = self.fsc_config["pwm_boost_value"]
+        if "non_fanfail_limited_boost_value" in self.fsc_config:
+            self.non_fanfail_limited_boost = self.fsc_config["non_fanfail_limited_boost_value"]
         if "boost" in self.fsc_config and "fan_fail" in self.fsc_config["boost"]:
             self.fan_fail = self.fsc_config["boost"]["fan_fail"]
         if "boost" in self.fsc_config and "progressive" in self.fsc_config["boost"]:
@@ -404,7 +405,10 @@ class Fscd(object):
                     chassis_intrusion_boost_flag = 1
 
             if chassis_intrusion_boost_flag == 0:
-                pwmval = zone.run(sensors=sensors_tuples, dt=time_difference)
+                ignore_fan_mode = False
+                if self.non_fanfail_limited_boost and dead_fans:
+                    ignore_fan_mode = True
+                pwmval = zone.run(sensors=sensors_tuples, dt=time_difference,ignore_mode=ignore_fan_mode)
                 mode = zone.get_set_fan_mode(mode, action="read")
             else:
                 pwmval = self.boost
@@ -477,6 +481,10 @@ class Fscd(object):
                         else:
                             # If atleast 1 fan is working reset the counter
                             self.all_fan_fail_counter = 0
+
+            # if no fan fail, the max of pwm is non_fanfail_limited_boost pwm:
+            if self.non_fanfail_limited_boost and not dead_fans:
+                pwmval = clamp(pwmval, 0, self.non_fanfail_limited_boost)
 
             if abs(zone.last_pwm - pwmval) > self.ramp_rate:
                 if pwmval < zone.last_pwm:

@@ -494,7 +494,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
     if (gp->value == 1) { // low to high
       syslog(LOG_CRIT, "ASSERT: SLED is not seated");
       memset(cmd, 0, sizeof(cmd));
-      sprintf(cmd, "sv stop fscd ; /usr/local/bin/fan-util --set 100");
+      sprintf(cmd, "/usr/local/bin/setup_sled_out_fan.sh");
       system(cmd);
     }
     else { // high to low

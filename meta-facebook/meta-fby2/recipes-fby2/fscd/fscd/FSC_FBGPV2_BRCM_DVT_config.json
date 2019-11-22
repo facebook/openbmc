@@ -2,6 +2,7 @@
   "version": "fbgpv2-brcm-dvt-r01",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
+  "non_fanfail_limited_boost_value": 90,
   "sample_interval_ms": 3000,
   "boost": {
     "fan_fail": true,

@@ -121,7 +121,7 @@ class Zone:
                 fan_mode_record.write(str(mode))
                 fan_mode_record.close()
 
-    def run(self, sensors, dt):
+    def run(self, sensors, dt, ignore_mode):
         ctx = {"dt": dt}
         outmin = 0
         fail_ssd_count = 0
@@ -293,6 +293,7 @@ class Zone:
         else:
             if no_sane_flag != 1:
                 mode = fan_mode["normal_mode"]
-        self.get_set_fan_mode(mode, action="write")
+        if not ignore_mode:
+            self.get_set_fan_mode(mode, action="write")
         exprout = clamp(exprout, 0, 100)
         return exprout

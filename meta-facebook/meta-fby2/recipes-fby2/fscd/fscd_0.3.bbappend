@@ -39,10 +39,12 @@ SRC_URI += "file://init_pwm.sh \
             file://FSC_FBND_DVT_4ND_config.json \
             file://FSC_FBND_DVT_4ND_zone1.fsc \
             file://fsc_board.py \
+            file://setup_sled_out_fan.sh \
            "
 
 FSC_BIN_FILES += "init_pwm.sh \
                   check_fan_config.sh \
+                  setup_sled_out_fan.sh \
                  "
 
 FSC_CONFIG += "FSC_FBY2_PVT_4TL_config.json \

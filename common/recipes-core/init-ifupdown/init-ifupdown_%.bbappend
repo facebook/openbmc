@@ -6,7 +6,15 @@ SRC_URI += "file://dhcp_vendor_info \
             file://dhcpv6_down \
             file://setup-dhc6.sh \
             file://run-dhc6.sh \
+            file://run-dhc6_prefix64.sh \
             "
+
+def dhc6_run(d):
+  distro = d.getVar('DISTRO_CODENAME', True)
+  if distro == 'warrior':
+    return "run-dhc6_prefix64.sh"
+  else:
+    return "run-dhc6.sh"
 
 do_install_dhcp() {
   # rules to request dhcpv6
@@ -17,7 +25,7 @@ do_install_dhcp() {
   install -d ${D}${sysconfdir}/sv
   install -d ${D}${sysconfdir}/sv/dhc6
   install -m 755 setup-dhc6.sh ${D}${sysconfdir}/init.d/setup-dhc6.sh
-  install -m 755 run-dhc6.sh ${D}${sysconfdir}/sv/dhc6/run
+  install -m 755 '${@dhc6_run(d)}' ${D}${sysconfdir}/sv/dhc6/run
   update-rc.d -r ${D} setup-dhc6.sh start 03 5 .
 }
 

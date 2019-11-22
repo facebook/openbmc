@@ -20,12 +20,13 @@
 
 #ifndef __VR_H__
 #define __VR_H__
+#include <openbmc/kv.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define MAX_VER_STR_LEN 80
+#define MAX_VER_STR_LEN (MAX_KEY_LEN + 16)
 
 enum {
   VR_PCH_PVNN      = 0,

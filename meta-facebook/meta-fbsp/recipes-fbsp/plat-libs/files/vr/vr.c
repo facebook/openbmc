@@ -223,7 +223,10 @@ vr_fw_version(uint8_t vr, char *ver_str) {
       return -1;
   }
 
-  snprintf(ver_str, MAX_VER_STR_LEN, "Version: %s", tmp_str);
+  if (snprintf(ver_str, MAX_VER_STR_LEN, "Version: %s", tmp_str) >
+      (MAX_VER_STR_LEN-1))
+    return -1;
+
   return 0;
 }
 

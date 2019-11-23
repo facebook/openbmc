@@ -109,6 +109,14 @@ const char * dimm_speed_string(uint8_t id)
   }
 }
 
+// Check if ME is in operational state (e.g. status 0x55)
+// input:  fru_id
+int __attribute__((weak))
+util_check_me_status(uint8_t fru_id)
+{
+  return -1;
+}
+
 // send ME command to select page 0 or 1 on SPD
 int __attribute__((weak))
 util_set_EE_page(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t page_num)
@@ -382,32 +390,35 @@ static int
 util_get_cache(uint8_t fru_id, uint8_t dimm, bool json) {
 #define MAX_KEY_SIZE 100
 #define MAX_VALUE_SIZE 128
-  uint8_t i, startCPU, endCPU, startDimm, endDimm = 0;
+  uint8_t i, cpu, dimmNum, startCPU, endCPU, startDimm, endDimm = 0;
   size_t len;
   char key[MAX_KEY_SIZE] = {0};
   char value[MAX_VALUE_SIZE] = {0};
 
   set_dimm_loop(dimm, &startCPU, &endCPU, &startDimm, &endDimm);
-  for (i = startDimm; i < endDimm; ++i) {
-    printf("DIMM %s Serial Number (cached): ", get_dimm_label(0,i));
-    snprintf(key, MAX_KEY_SIZE, "sys_config/fru%d_dimm%d_serial_num", fru_id, i);
-    if(kv_get(key, (char *)value, &len, KV_FPERSIST) < 0) {
-      printf("NO DIMM");
-    } else {
-      for (int j = 0; ((j < LEN_SERIAL) && value[j]); ++j)
-        printf("%X", value[j]);
-    }
-    printf("\n");
+  for (cpu = startCPU; cpu < endCPU; cpu++) {
+    for (i = startDimm; i < endDimm; ++i) {
+      dimmNum = cpu * num_dimms_per_cpu + i;
+      printf("DIMM %s Serial Number (cached): ", get_dimm_label(cpu, i));
+      snprintf(key, MAX_KEY_SIZE, "sys_config/fru%d_dimm%d_serial_num", fru_id, dimmNum);
+      if(kv_get(key, (char *)value, &len, KV_FPERSIST) < 0) {
+        printf("NO DIMM");
+      } else {
+        for (int j = 0; ((j < LEN_SERIAL) && value[j]); ++j)
+          printf("%X", value[j]);
+      }
+      printf("\n");
 
-    printf("DIMM %s Part Number   (cached): ", get_dimm_label(0,i));
-    snprintf(key, MAX_KEY_SIZE, "sys_config/fru%d_dimm%d_part_name", fru_id, i);
-    if(kv_get(key, (char *)value, &len, KV_FPERSIST) < 0) {
-      printf("NO DIMM");
-    } else {
-      for (int j = 0; ((j < LEN_PART_NUMBER) && value[j]); ++j)
-        printf("%c", value[j]);
+      printf("DIMM %s Part Number   (cached): ", get_dimm_label(cpu, i));
+      snprintf(key, MAX_KEY_SIZE, "sys_config/fru%d_dimm%d_part_name", fru_id, dimmNum);
+      if(kv_get(key, (char *)value, &len, KV_FPERSIST) < 0) {
+        printf("NO DIMM");
+      } else {
+        for (int j = 0; ((j < LEN_PART_NUMBER) && value[j]); ++j)
+          printf("%c", value[j]);
+      }
+      printf("\n");
     }
-    printf("\n");
   }
 
   return 0;
@@ -594,14 +605,15 @@ static int parse_dimm_label(char *label, uint8_t *dimmNum)
 }
 
 static int parse_cmdline_args(int argc, char **argv,
-			      uint8_t *dimm, bool *json)
+			      uint8_t *dimm, bool *json, bool *force)
 {
   int ret, opt_index = 0;
   char *endptr = NULL;
-  static const char *optstring = "d:j";
+  static const char *optstring = "d:jf";
   struct option long_opts[] = {
     {"dimm",	required_argument,		NULL,	'd'},
     {"json",	no_argument,		NULL,	'j'},
+    {"force",	no_argument,		NULL,	'f'},
     {NULL,		0,			NULL,	0},
   };
 
@@ -630,6 +642,9 @@ static int parse_cmdline_args(int argc, char **argv,
     case 'j':
       *json = true;
       break;
+    case 'f':
+      *force = true;
+      break;
     default:
       return ERR_INVALID_SYNTAX;
     }
@@ -642,7 +657,9 @@ static int
 parse_arg_and_exec(int argc, char **argv, uint8_t fru_id,
                   int (*pF)(uint8_t, uint8_t, bool)) {
   uint8_t dimm = total_dimms;
+  uint8_t i, fru_start, fru_end = 0;
   bool    json = false;
+  bool    force = false;
   int ret = 0;
 
   if (argc < 3) {
@@ -651,16 +668,30 @@ parse_arg_and_exec(int argc, char **argv, uint8_t fru_id,
   } else if (argc > 3) {
     // parse option fields,
     // skipping first 3 arguments, which will be "dimm-util fru cmd"
-    if (parse_cmdline_args(argc - 2, &(argv[2]), &dimm, &json) != 0)
+    if (parse_cmdline_args(argc - 2, &(argv[2]), &dimm, &json, &force) != 0)
       return ERR_INVALID_SYNTAX;
   }
 
   if (fru_id == fru_id_all) {
-    for (int i = fru_id_min; i <= fru_id_max; ++i) {
+    fru_start = fru_id_min;
+    fru_end   = fru_id_max + 1;
+  } else {
+    fru_start = fru_id;
+    fru_end   = fru_id + 1;
+  }
+
+  for (i = fru_start; i < fru_end; ++i) {
+    if (force == false) {
+      ret = util_check_me_status(i);
+      if (ret == 0) {
+        ret = pF(i, dimm, json);
+      } else {
+        printf("Error: ME status check failed for fru:%s\n", fru_name[i - 1]);
+        break;
+      }
+    } else {
       ret = pF(i, dimm, json);
     }
-  } else {
-    ret = pF(fru_id, dimm, json);
   }
 
   return ret;
@@ -697,6 +728,7 @@ print_usage_help(void) {
       else
         printf("%02s, ", get_dimm_label(i, j));
   printf("   --json    - output in JSON format\n");
+  printf("   --force   - skips ME status check\n");
 }
 
 static int

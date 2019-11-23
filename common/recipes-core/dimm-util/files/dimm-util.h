@@ -70,4 +70,13 @@ int get_die_capacity(uint8_t data);
 int get_bus_width_bits(uint8_t data);
 int get_device_width_bits(uint8_t data);
 int get_package_rank(uint8_t data);
+
+
+// util functions to be provided by each platform
+int util_check_me_status(uint8_t fru_id);
+int util_set_EE_page(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t page_num);
+int util_read_spd_byte(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset);
+int plat_init();
+const char * get_dimm_label(uint8_t cpu, uint8_t dimm);
+
 #endif

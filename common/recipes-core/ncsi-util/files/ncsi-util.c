@@ -452,11 +452,21 @@ main(int argc, char **argv) {
               if (bufSize < 0) {
                 printf("bufSize %d is out of range.\n", bufSize);
                 goto free_exit;
+              } else {
+                printf("bufSize = %d\n", bufSize);
               }
+            }
+            // if invalid opt str or missing argument, getopt returns a '?'
+            else if (argflag == '?') {
+              goto free_exit;
+            }
+            // if "b" is not found, getopt returns -1,  in this case, continue,
+            //   and uses default size
+            else if (argflag == -1) {
+              printf("use default buf size %d\n", bufSize);
             } else {
               goto free_exit;
             }
-            printf("bufSize = %d\n", bufSize);
             fupgrade = 1;
             break;
     case 'z':

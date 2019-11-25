@@ -23,12 +23,26 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 # Sync BMC's date with the server
 sync_date()
 {
+  sleep 1
   # if no ntp peer has been declared the system peer
   if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
     echo Syncing up BMC time with server...
     # Use standard IPMI command 'get-sel-time' to read RTC time
-    output=$(/usr/local/bin/me-util 0x28 0x48)
-    [ ${#output} != 12 ] && exit
+    for i in {1..10};
+    do
+      output=$(/usr/local/bin/ipmb-util 5 0x2c 0x28 0x48)
+     # echo Peter DBG $output
+      if [ ${#output} == 12 ] 
+      then
+        break;
+      fi
+      usleep 300
+
+      if [ ${i} == 10 ]
+      then
+        exit
+      fi
+    done
     date -s @$((16#$(echo "$output" | awk '{print $4$3$2$1}')))
     test -x /etc/init.d/hwclock.sh && /etc/init.d/hwclock.sh stop
   fi

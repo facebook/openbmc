@@ -190,6 +190,8 @@ int sendPldmCmdAndCheckResp(NCSI_NL_MSG_T *nl_msg)
 
 int pldm_update_fw(char *path, int pldm_bufsize)
 {
+#define PLDM_STATE_CHANGE_TIMEOUT_S 180  // state change timeout in seconds
+#define SLEEP_TIME_MS               200  // wait time per loop in ms
   NCSI_NL_MSG_T *nl_msg = NULL;
   NCSI_NL_RSP_T *nl_resp = NULL;
   pldm_fw_pkg_hdr_t *pkgHdr;
@@ -267,7 +269,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
   int loopCount = 0;
   int idleCnt = 0;
   int pldmCmd = 0;
-  while (idleCnt < 70) {
+  while (idleCnt < (PLDM_STATE_CHANGE_TIMEOUT_S * 1000 /SLEEP_TIME_MS) ) {
 //    printf("\n04 QueryPendingNcPldmRequestOp, loop=%d\n", loopCount);
     ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_QUERY_PENDING_NC_PLDM_REQ, 0, NULL);
     if (ret) {
@@ -284,7 +286,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
 
     if (pldmCmd == -1) {
   //    printf("No pending command, loop %d\n", idleCnt);
-      msleep(200); // wait some time and try again
+      msleep(SLEEP_TIME_MS); // wait some time and try again
       idleCnt++;
       continue;
     } else {

@@ -51,10 +51,10 @@ IMAGE_INSTALL += " \
   bios-util \
   threshold-util \
   libncsi \
-  ncsid \
   vboot-utils \
   libpldm \
   plat-utils \
+  i2craw \
   "
 
 IMAGE_FEATURES += " \

@@ -772,6 +772,8 @@ int handlePldmReqFwData(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_resp
          __FUNCTION__, pReqDataCmd->offset, pReqDataCmd->length, compBytesLeft,
          numPaddingNeeded);
   memcpy(pldmRes->common, pCmd->common, PLDM_COMMON_REQ_LEN);
+  // clear Req bit in PLDM response header
+  pldmRes->common[PLDM_IID_OFFSET] &= PLDM_RESP_MASK;
   // hard code success for now, need to check length in the future
   pldmRes->common[PLDM_CC_OFFSET] = CC_SUCCESS;
 
@@ -800,6 +802,8 @@ int handlePldmFwTransferComplete(pldm_cmd_req *pCmd, pldm_response *pRes)
   }
 
   memcpy(pRes->common, pCmd->common, PLDM_COMMON_REQ_LEN);
+  // clear Req bit in PLDM response header
+  pRes->common[PLDM_IID_OFFSET] &= PLDM_RESP_MASK;
   pRes->common[PLDM_CC_OFFSET] = CC_SUCCESS;
   pRes->resp_size = PLDM_COMMON_RES_LEN;
   return ret;
@@ -818,6 +822,8 @@ int handlePldmVerifyComplete(pldm_cmd_req *pCmd, pldm_response *pRes)
   }
 
   memcpy(pRes->common, pCmd->common, PLDM_COMMON_REQ_LEN);
+  // clear Req bit in PLDM response header
+  pRes->common[PLDM_IID_OFFSET] &= PLDM_RESP_MASK;
   pRes->common[PLDM_CC_OFFSET] = CC_SUCCESS;
   pRes->resp_size = PLDM_COMMON_RES_LEN;
   return ret;
@@ -837,6 +843,8 @@ int handlePldmFwApplyComplete(pldm_cmd_req *pCmd, pldm_response *pRes)
           pReqDataCmd->applyResult, pReqDataCmd->compActivationMethodsModification);
 
   memcpy(pRes->common, pCmd->common, PLDM_COMMON_REQ_LEN);
+  // clear Req bit in PLDM response header
+  pRes->common[PLDM_IID_OFFSET] &= PLDM_RESP_MASK;
   pRes->common[PLDM_CC_OFFSET] = CC_SUCCESS;
   pRes->resp_size = PLDM_COMMON_RES_LEN;
   return ret;
@@ -868,7 +876,7 @@ int pldmFwUpdateCmdHandler(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_r
       ret = handlePldmFwApplyComplete(pCmd, pRes);
       break;
     default:
-      printf("unkown cmd %d\n",cmd);
+      printf("unknown cmd %d\n",cmd);
       dbgPrintCdb(pCmd);
       ret = -1;
       break;

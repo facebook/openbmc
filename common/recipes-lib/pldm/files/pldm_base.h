@@ -47,6 +47,7 @@
 
 // some offsets in PLDM Common fields
 #define PLDM_IID_OFFSET       0  // offset for command IID
+      #define PLDM_RESP_MASK       0x7f // turn off Req bit in IID byte
 #define PLDM_TYPE_OFFSET      1  // pldm type
 #define PLDM_CMD_OFFSET       2  // offset of PLDM cmd in request/response
 #define PLDM_CC_OFFSET        3  // offset of completion code in PLDM response

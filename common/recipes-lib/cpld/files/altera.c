@@ -182,6 +182,36 @@ int max10_reg_read(int address)
   return data;
 }
 
+int max10_iic_get_fw_version(unsigned char id, unsigned char* ver)
+{
+  int i2c_file;
+  int ret=0;
+  uint8_t addr;
+  char dp[64];
+  static uint8_t cached=0;
+  static int cached_ver=0;
+
+  if (!cached) {
+    pal_get_altera_i2c_dev_info(id, &addr, dp);
+
+    if ((i2c_file = open(dp, O_RDWR)) < 0) {
+      printf("Unable to open %s\n", dp);
+      return -1;
+    }
+    max10_update_init(i2c_file);
+
+    ret = get_i2c_register(i2c_file, addr, 0x00100028, &cached_ver);
+    if (ret != 4) {
+      printf("\r\n\n get_i2c_register() ERROR. ret = %d. \r\n\n", ret);
+      return -1;
+    }
+    cached=1;
+  }
+  memcpy(ver, &cached_ver, 4);
+  return 0;
+}
+
+
 static int max10_protect_sectors(void)
 {
   int ret = 0;

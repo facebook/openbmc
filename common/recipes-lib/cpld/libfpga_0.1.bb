@@ -26,7 +26,8 @@ do_install() {
 
     install -d ${D}${includedir}/openbmc
     install -m 0644 cpld.h ${D}${includedir}/openbmc/cpld.h
+    install -m 0644 altera.h ${D}${includedir}/openbmc/altera.h
 }
 
 FILES_${PN} = "${libdir}/libfpga.so"
-FILES_${PN}-dev = "${includedir}/openbmc/cpld.h"
+FILES_${PN}-dev = "${includedir}/openbmc/cpld.h ${includedir}/openbmc/altera.h"

@@ -222,7 +222,7 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, char *path) {
     mcu_enable_update(bus, addr);
 
     // Kill ipmbd "--enable-bic-update" for this slot
-    snprintf(cmd, sizeof(cmd), "ps | grep -v 'grep' | grep 'ipmbd -u %d' |awk '{print $1}'| xargs kill", bus);
+    snprintf(cmd, sizeof(cmd), "ps -w | grep -v 'grep' | grep 'ipmbd -u %d' |awk '{print $1}'| xargs kill", bus);
     if (system(cmd)) {
       syslog(LOG_CRIT, "Stopping IPMB on bus: %d failed\n", bus);
       goto error_exit;

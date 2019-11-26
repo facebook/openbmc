@@ -753,7 +753,7 @@ static int prepare_update_bic(uint8_t slot_id, int ifd, int size) {
 
   /* Kill ipmb daemon "--enable-bic-update" for this slot */
   run_shell_cmd(
-      "ps | grep -v 'grep' | grep 'ipmbd -u 0' | awk '{print $1}' "
+      "ps -w | grep -v 'grep' | grep 'ipmbd -u 0' | awk '{print $1}' "
       "| xargs kill");
   OBMC_INFO("stopped 'ipmbd -u' for minilake\n", slot_id);
 

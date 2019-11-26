@@ -172,7 +172,7 @@ fan_mode_check(bool printMode) {
   uint8_t mode;
   int cnt;
 
-  sprintf(cmd, "ps | grep /usr/bin/fscd.py | wc -l");
+  sprintf(cmd, "ps -w | grep /usr/bin/fscd.py | wc -l");
   if((fp = popen(cmd, "r")) == NULL) {
     if (printMode)
       printf("Fan Mode: Unknown\n");

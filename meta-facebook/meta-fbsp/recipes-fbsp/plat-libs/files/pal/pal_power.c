@@ -73,7 +73,7 @@ server_power_on(void) {
 }
 
 int
-pal_power_button_override(void) {
+pal_power_button_override(uint8_t fru_id) {
   return power_btn_out_pulse(DELAY_POWER_OFF);
 }
 

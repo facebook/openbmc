@@ -264,6 +264,7 @@ int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type);
 int pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd);
+int pal_power_button_override(uint8_t slot_id);
 int pal_sled_cycle(void);
 int pal_post_handle(uint8_t slot, uint8_t status);
 int pal_set_rst_btn(uint8_t slot, uint8_t status);

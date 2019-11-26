@@ -513,6 +513,12 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd)
 }
 
 int __attribute__((weak))
+pal_power_button_override(uint8_t slot_id)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_sled_cycle(void)
 {
   return PAL_EOK;

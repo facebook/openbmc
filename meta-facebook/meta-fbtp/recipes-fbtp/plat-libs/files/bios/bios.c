@@ -216,7 +216,7 @@ bail_open:
   gpio_unexport("BMC_BIOS_FLASH_CTRL");
 bail_export:
   sleep(1);
-  pal_PBO();
+  pal_power_button_override(slot_id);
   sleep(10);
   pal_set_server_power(slot_id, SERVER_POWER_ON);
   pal_set_fw_update_ongoing(FRU_MB, 0);

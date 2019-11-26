@@ -2939,7 +2939,7 @@ bail:
 
 // Power Button Override
 int
-pal_PBO(void) {
+pal_power_button_override(uint8_t fruid) {
   int ret = -1;
   gpio_desc_t *gpio = gpio_open_by_shadow("FM_BMC_PWRBTN_OUT_N");
   if (!gpio) {

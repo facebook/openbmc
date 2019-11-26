@@ -796,7 +796,7 @@ pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
     ret = status;
     if (status == 0) {
       sleep(1);
-      pal_power_button_override();
+      pal_power_button_override(FRU_MB);
       sleep(10);
       pal_set_server_power(FRU_MB, SERVER_POWER_ON);
     }

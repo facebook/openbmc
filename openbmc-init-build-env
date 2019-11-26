@@ -30,6 +30,11 @@ if [ -z "$ZSH_NAME" ] && [ "$0" = "$THIS_SCRIPT" ]; then
 fi
 unset THIS_SCRIPT
 
+# This script relies on bash-like word splitting, so enable it in zsh.
+if [ -n "$ZSH_NAME" ]; then
+    setopt sh_word_split
+fi
+
 # Make sure specific BSP is set
 if [ -z "$TEMPLATECONF" ]; then
     if [ -z "$1" ]; then
@@ -48,7 +53,7 @@ if [ -z "$TEMPLATECONF" ]; then
             machine=$(basename "$md" | sed 's/\.conf//')
             meta=$(dirname "$(dirname "$md")")
             meta=$(echo "$meta" | sed 's/\.\///')
-            if [ "$machine" == "$platform" ]; then
+            if [ "x$machine" = "x$platform" ]; then
                 TEMPLATECONF="$(pwd)/$meta"
                 platform=$(basename "$(dirname "$meta")")
                 echo "$NTEMPLATECONF"

@@ -36,6 +36,11 @@
 #include "fruid.h"
 
 #define BIN_MB        "/tmp/fruid_mb.bin"
+#define BIN_NIC0      "/tmp/fruid_nic0.bin"
+#define BIN_NIC1      "/tmp/fruid_nic1.bin"
+#define BIN_RISER1    "/tmp/fruid_riser1.bin"
+#define BIN_RISER2    "/tmp/fruid_riser2.bin"
+#define BIN_BMC       "/tmp/fruid_bmc.bin"
 
 #define FRUID_SIZE        512
 /*
@@ -102,6 +107,26 @@ int plat_fruid_init(void) {
     syslog(LOG_WARNING, "%s: Copy MB EEPROM Failed", __func__);
   }
 
+  if (copy_eeprom_to_bin(FRU_EEPROM_NIC0, BIN_NIC0)) {
+    syslog(LOG_WARNING, "%s: Copy NIC1 EEPROM Failed", __func__);
+  }
+
+  if (copy_eeprom_to_bin(FRU_EEPROM_NIC1, BIN_NIC1)) {
+    syslog(LOG_WARNING, "%s: Copy NIC2 EEPROM Failed", __func__);
+  }
+
+  if (copy_eeprom_to_bin(FRU_EEPROM_RISER1, BIN_RISER1)) {
+    syslog(LOG_WARNING, "%s: Copy RISER1 EEPROM Failed", __func__);
+  }
+
+  if (copy_eeprom_to_bin(FRU_EEPROM_RISER2, BIN_RISER2)) {
+    syslog(LOG_WARNING, "%s: Copy RISER2 EEPROM Failed", __func__);
+  }
+
+  if (copy_eeprom_to_bin(FRU_EEPROM_BMC, BIN_BMC)) {
+    syslog(LOG_WARNING, "%s: Copy BMC EEPROM Failed", __func__);
+  }
+
   return 0;
 }
 
@@ -121,9 +146,15 @@ int plat_fruid_size(unsigned char payload_id) {
 int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count, unsigned char *data) {
   int fd;
   int ret;
+  char fname[LARGEST_DEVICE_NAME]={0};
 
   // open file for read purpose
-  fd = open(BIN_MB, O_RDONLY);
+  ret=pal_get_fruid_path(fru_id,fname);
+  if (ret < 0) {
+    return ret;
+  }
+
+  fd = open(fname, O_RDONLY);
   if (fd < 0) {
     return fd;
   }
@@ -144,4 +175,76 @@ int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count,
 
   close(fd);
   return 0;
+}
+
+int
+pal_fruid_write(uint8_t fru, char *path)
+{
+  int fru_size = 0;
+  char command[128]={0};
+  char bin_path[128]={0};
+  char fru_name[20]={0};
+  int ret=PAL_EOK;
+  FILE *fruid_fd;
+
+  if(pal_get_fru_name(fru, fru_name) < 0) {
+	  return PAL_ENOTSUP;
+  }
+
+  fruid_fd = fopen(path, "rb");
+  if ( NULL == fruid_fd ) {
+    syslog(LOG_WARNING, "[%s] unable to open the file: %s", __func__, path);
+    return PAL_ENOTSUP;
+  }
+
+  fseek(fruid_fd, 0, SEEK_END);
+  fru_size = (uint32_t) ftell(fruid_fd);
+  fclose(fruid_fd);
+  printf("[%s]FRU Size: %d\n", __func__, fru_size);
+
+  switch (fru)
+  {
+    case FRU_MB:
+      sprintf(command, "dd if=%s of=%s bs=%d count=1", path, FRU_EEPROM_MB, fru_size);
+      break;
+    case FRU_NIC0:
+      sprintf(command, "dd if=%s of=%s bs=%d count=1", path, FRU_EEPROM_NIC0, fru_size);
+      break;
+    case FRU_NIC1:
+      sprintf(command, "dd if=%s of=%s bs=%d count=1", path, FRU_EEPROM_NIC1,  fru_size);
+      break;
+    case FRU_RISER1:
+      sprintf(command, "dd if=%s of=%s bs=%d count=1", path, FRU_EEPROM_RISER1, fru_size);
+      break;
+    case FRU_RISER2:
+      sprintf(command, "dd if=%s of=%s bs=%d count=1", path, FRU_EEPROM_RISER2, fru_size);
+      break;
+    case FRU_BMC:
+      sprintf(command, "dd if=%s of=%s bs=%d count=1", path, FRU_EEPROM_BMC, fru_size);
+      break;
+    default:
+      //if there is an unknown device on the slot, return
+      syslog(LOG_WARNING, "[%s] Unknown fru: %s", __func__, fru_name);
+      return PAL_ENOTSUP;
+    break;
+  }
+
+  ret=pal_get_fruid_eeprom_path(fru, bin_path);
+  if(ret < 0) {
+      syslog(LOG_WARNING, "[%s] get %s eeprom path failed\n", __func__, fru_name);
+      return PAL_ENOTSUP;
+  }
+
+  if (system(command) != 0) {
+      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, command);
+      return PAL_ENOTSUP;
+  }
+    //compare the in and out data
+  ret=pal_compare_fru_data(bin_path, path, fru_size);
+  if (ret < 0) {
+      syslog(LOG_ERR, "[%s] %s  Write Fail",  __func__, fru_name);
+      return PAL_ENOTSUP;
+  }
+
+  return ret;
 }

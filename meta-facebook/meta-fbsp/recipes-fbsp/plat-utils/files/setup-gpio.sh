@@ -422,3 +422,11 @@ gpio_set PECI_MUX_SELECT 1
 
 # PWRGD_BMC_PS_PWROK
 gpio_export PWRGD_BMC_PS_PWROK GPIOAB3
+
+# I/O Expander TCA9539 0xEC
+gpio_export_ioexp 4-0076 FM_SLOT1_PRSNT_N 0
+gpio_export_ioexp 4-0076 FM_SLOT2_PRSNT_N 1
+
+# I/O Expander TCA9539 0xEE
+gpio_export_ioexp 4-0077 HP_LVC3_OCP_V3_2_PRSNT2_N 8
+gpio_export_ioexp 4-0077 HP_LVC3_OCP_V3_1_PRSNT2_N 9

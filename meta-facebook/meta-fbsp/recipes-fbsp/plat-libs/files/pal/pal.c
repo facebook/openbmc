@@ -44,7 +44,7 @@
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
-const char pal_fru_list[] = "all, mb, nic0, nic1";
+const char pal_fru_list[] = "all, mb, nic0, nic1, riser1, riser2, bmc";
 const char pal_server_list[] = "mb";
 
 static int key_func_por_policy (int event, void *arg);
@@ -267,6 +267,15 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_NIC1:
       *status = 1;
       break;
+    case FRU_RISER1:
+      *status = 1;
+      break;
+    case FRU_RISER2:
+      *status = 1;
+      break;
+    case FRU_BMC:
+      *status = 1;
+      break;
     default:
       return -1;
     }
@@ -314,6 +323,12 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_NIC0;
   } else if (!strcmp(str, "nic1")) {
     *fru = FRU_NIC1;
+  } else if (!strcmp(str, "riser1")) {
+    *fru = FRU_RISER1;
+  } else if (!strcmp(str, "riser2")) {
+    *fru = FRU_RISER2;
+  } else if (!strcmp(str, "bmc")) {
+    *fru = FRU_BMC;
   } else {
     syslog(LOG_WARNING, "pal_get_fru_id: Wrong fru#%s", str);
     return -1;
@@ -334,11 +349,18 @@ pal_get_fru_name(uint8_t fru, char *name) {
     case FRU_NIC1:
       strcpy(name, "nic1");
       break;
-    default:
-      if (fru > MAX_NUM_FRUS)
-        return -1;
-      sprintf(name, "fru%d", fru);
+    case FRU_RISER1:
+      strcpy(name, "riser1");
       break;
+    case FRU_RISER2:
+      strcpy(name, "riser2");
+      break;
+    case FRU_BMC:
+      strcpy(name, "bmc");
+      break;
+    default:
+      syslog(LOG_WARNING, "[%s] unknown fruid %d", __func__, fru);
+      return -1;
   }
 
   return 0;
@@ -367,6 +389,21 @@ pal_get_fruid_path(uint8_t fru, char *path) {
   case FRU_MB:
     sprintf(fname, "mb");
     break;
+  case FRU_NIC0:
+    sprintf(fname, "nic0");
+    break;
+  case FRU_NIC1:
+    sprintf(fname, "nic1");
+    break;
+  case FRU_RISER1:
+    sprintf(fname, "riser1");
+    break;
+  case FRU_RISER2:
+    sprintf(fname, "riser2");
+    break;
+  case FRU_BMC:
+    sprintf(fname, "bmc");
+    break;
   default:
     return -1;
   }
@@ -381,6 +418,21 @@ pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
   case FRU_MB:
     sprintf(path, FRU_EEPROM_MB);
     break;
+  case FRU_NIC0:
+    sprintf(path, FRU_EEPROM_NIC0);
+    break;
+  case FRU_NIC1:
+    sprintf(path, FRU_EEPROM_NIC1);
+    break;
+  case FRU_RISER1:
+    sprintf(path, FRU_EEPROM_RISER1);
+    break;
+  case FRU_RISER2:
+    sprintf(path, FRU_EEPROM_RISER2);
+    break;
+  case FRU_BMC:
+    sprintf(path, FRU_EEPROM_BMC);
+    break;
   default:
     return -1;
   }
@@ -394,7 +446,21 @@ pal_get_fruid_name(uint8_t fru, char *name) {
   case FRU_MB:
     sprintf(name, "Mother Board");
     break;
-
+  case FRU_NIC0:
+    sprintf(name, "Mezz Card 0");
+    break;
+  case FRU_NIC1:
+    sprintf(name, "Mezz Card 1");
+    break;
+  case FRU_RISER1:
+    sprintf(name, "Riser Card 1");
+    break;
+  case FRU_RISER2:
+    sprintf(name, "Riser Card 2");
+    break;
+  case FRU_BMC:
+    sprintf(name, "BMC");
+    break;
   default:
     return -1;
   }

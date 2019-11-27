@@ -24,6 +24,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 SRC_URI = "file://ast-functions \
            file://sol-util \
            file://setup-gpio.sh \
+           file://setup-i2c.sh \
            file://sync_date.sh \
            file://setup-emmc.sh \
            file://COPYING \
@@ -55,6 +56,8 @@ do_install() {
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
+  install -m 755 setup-i2c.sh ${D}${sysconfdir}/init.d/setup-i2c.sh
+  update-rc.d -r ${D} setup-i2c.sh start 60 5 .
   install -m 755 sync_date.sh ${D}${sysconfdir}/init.d/sync_date.sh
   update-rc.d -r ${D} sync_date.sh start 66 5 .
   install -m 755 setup-emmc.sh ${D}${sysconfdir}/init.d/setup-emmc.sh

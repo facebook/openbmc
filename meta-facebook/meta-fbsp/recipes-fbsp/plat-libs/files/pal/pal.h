@@ -32,6 +32,12 @@ extern "C" {
 
 #define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle"
 #define FRU_EEPROM_MB    "/sys/class/i2c-dev/i2c-4/device/4-0054/eeprom"
+#define FRU_EEPROM_NIC0  "/sys/class/i2c-dev/i2c-17/device/17-0050/eeprom"
+#define FRU_EEPROM_NIC1  "/sys/class/i2c-dev/i2c-18/device/18-0052/eeprom"
+#define FRU_EEPROM_RISER1  "/sys/class/i2c-dev/i2c-2/device/2-0050/eeprom"
+#define FRU_EEPROM_RISER2  "/sys/class/i2c-dev/i2c-6/device/6-0050/eeprom"
+#define FRU_EEPROM_BMC  "/sys/class/i2c-dev/i2c-8/device/8-0056/eeprom"
+
 #define LARGEST_DEVICE_NAME (120)
 #define UNIT_DIV            (1000)
 #define ERR_NOT_READY       (-2)
@@ -72,9 +78,12 @@ enum {
   FRU_MB = 1,
   FRU_NIC0 = 2,
   FRU_NIC1 = 3,
+  FRU_RISER1 = 4,
+  FRU_RISER2 = 5,
+  FRU_BMC = 6,
 };
 
-#define MAX_NUM_FRUS 3
+#define MAX_NUM_FRUS 6
 #define MAX_NODES    1
 #define READING_SKIP    (1)
 #define READING_NA      (-2)
@@ -163,6 +172,7 @@ void pal_update_ts_sled();
 int read_device(const char *device, int *value);
 int write_device(const char *device, int value);
 int pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver);
+int pal_get_fruid_eeprom_path(uint8_t fru, char *path);
 
 #ifdef __cplusplus
 } // extern "C"

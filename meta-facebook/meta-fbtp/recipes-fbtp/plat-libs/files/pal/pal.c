@@ -105,6 +105,9 @@
 #define CPLD_BUS_ID 0x6
 #define CPLD_ADDR 0xA0
 
+#define BIOS_VER_REGION_SIZE (4*1024*1024)
+#define BIOS_ERASE_PKT_SIZE  (64*1024)
+
 const char pal_fru_list[] = "all, mb, nic, riser_slot2, riser_slot3, riser_slot4";
 const char pal_server_list[] = "mb";
 
@@ -7175,4 +7178,172 @@ int
 pal_get_nic_fru_id(void)
 {
   return FRU_NIC;
+}
+
+int
+pal_check_fw_image(uint8_t fru, const char *comp, const char *path) {
+  int ret = 0, fd = 0;
+  int offs, rcnt, end;
+  uint8_t board_info, sku;
+  uint8_t *buf;
+  uint8_t ver_sig[] = { 0x46, 0x49, 0x44, 0x04, 0x78, 0x00 };
+  struct stat st;
+  const char *proj_tags[2] = {
+    "F08_",
+    "TP"
+  };
+
+  if ((fru == FRU_MB) && !strcmp(comp, "bios")) {
+    if (pal_get_platform_id(&board_info) < 0) {
+      return -1;
+    }
+    sku = board_info & 0x1;
+
+    if (stat(path, &st) || (st.st_size < BIOS_VER_REGION_SIZE)) {
+      return -1;
+    }
+
+    buf = (uint8_t *)malloc(BIOS_VER_REGION_SIZE);
+    if (!buf) {
+      return -1;
+    }
+
+    ret = -1;
+    do {
+      fd = open(path, O_RDONLY);
+      if (fd < 0) {
+        break;
+      }
+
+      offs = st.st_size - BIOS_VER_REGION_SIZE;
+      if (lseek(fd, offs, SEEK_SET) != (off_t)offs) {
+        printf("%s: lseek to %d failed\n", __func__, offs);
+        break;
+      }
+
+      offs = 0;
+      while (offs < BIOS_VER_REGION_SIZE) {
+        if ((offs + BIOS_ERASE_PKT_SIZE) <= BIOS_VER_REGION_SIZE) {
+          rcnt = BIOS_ERASE_PKT_SIZE;
+        } else {
+          rcnt = (BIOS_VER_REGION_SIZE - offs);
+        }
+        rcnt = read(fd, (buf + offs), rcnt);
+        if (rcnt <= 0) {
+          if (errno == EINTR) {
+            continue;
+          }
+          printf("%s: unexpected rcnt: %d", __func__, rcnt);
+          break;
+        }
+        offs += rcnt;
+      }
+      if (offs < BIOS_VER_REGION_SIZE) {
+        break;
+      }
+
+      end = BIOS_VER_REGION_SIZE - (sizeof(ver_sig) + strlen(proj_tags[sku]));
+      for (offs = 0; offs < end; offs++) {
+        if (!memcmp(buf+offs, ver_sig, sizeof(ver_sig))) {
+          if (memcmp(buf+offs+sizeof(ver_sig), proj_tags[sku], strlen(proj_tags[sku]))) {
+            // Temporary workaround TODO. Remove once no longer required.
+            // If BIOS is for SKU == 1, just make sure that the project
+            // tag does not match sku == 0.
+            if (sku == 1 && memcmp(buf+offs+sizeof(ver_sig), proj_tags[0], strlen(proj_tags[sku]))) {
+              ret = 0;
+            }
+            break;
+          }
+          ret = 0;
+          break;
+        }
+      }
+    } while (0);
+
+    free(buf);
+    if (fd > 0) {
+      close(fd);
+    }
+  }
+
+  return ret;
+}
+
+int
+pal_fw_update_prepare(uint8_t fru, const char *comp) {
+  int ret = 0, retry = 3;
+  uint8_t status;
+  gpio_desc_t *desc;
+
+  if ((fru == FRU_MB) && !strcmp(comp, "bios")) {
+    pal_set_server_power(FRU_MB, SERVER_POWER_OFF);
+    while (retry > 0) {
+      if (!pal_get_server_power(FRU_MB, &status) && (status == SERVER_POWER_OFF)) {
+        break;
+      }
+      if ((--retry) > 0) {
+        sleep(1);
+      }
+    }
+    if (retry <= 0) {
+      printf("Failed to Power Off Server. Stopping the update!\n");
+      return -1;
+    }
+
+    sleep(10);
+    system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null");
+    sleep(1);
+
+    ret = -1;
+    do {
+      if (gpio_export_by_name(GPIO_CHIP_ASPEED, "GPION5", "BMC_BIOS_FLASH_CTRL")) {
+        printf("ERROR: Export of SPI-Switch GPIO failed\n");
+        break;
+      }
+
+      desc = gpio_open_by_shadow("BMC_BIOS_FLASH_CTRL");
+      if (!desc) {
+        printf("ERROR: Opening SPI-Switch GPIO failed\n");
+        break;
+      }
+
+      if (!gpio_set_direction(desc, GPIO_DIRECTION_OUT) && !gpio_set_value(desc, GPIO_VALUE_HIGH)) {
+        system("echo -n spi1.0 > /sys/bus/spi/drivers/m25p80/bind");
+        ret = 0;
+      } else {
+        printf("ERROR: Switching BIOS to BMC failed\n");
+      }
+      gpio_close(desc);
+    } while (0);
+  }
+
+  return ret;
+}
+
+int
+pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
+  int ret = 0;
+  gpio_desc_t *desc;
+
+  if ((fru == FRU_MB) && !strcmp(comp, "bios")) {
+    system("echo -n spi1.0 > /sys/bus/spi/drivers/m25p80/unbind");
+
+    desc = gpio_open_by_shadow("BMC_BIOS_FLASH_CTRL");
+    if (desc) {
+      gpio_set_value(desc, GPIO_VALUE_LOW);
+      gpio_set_direction(desc, GPIO_DIRECTION_IN);
+      gpio_close(desc);
+      gpio_unexport("BMC_BIOS_FLASH_CTRL");
+    }
+
+    ret = status;
+    if (status == 0) {
+      sleep(1);
+      pal_PBO();
+      sleep(10);
+      pal_set_server_power(FRU_MB, SERVER_POWER_ON);
+    }
+  }
+
+  return ret;
 }

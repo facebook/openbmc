@@ -47,7 +47,7 @@
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
-const char pal_fru_list[] = "all, mb, nic0, nic1, pdb";
+const char pal_fru_list[] = "all, mb, nic0, nic1, pdb, bmc";
 const char pal_server_list[] = "mb";
 
 size_t pal_pwm_cnt = 2;
@@ -283,6 +283,9 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   case FRU_PDB:
     *status = 1;
     break;
+  case FRU_BMC:
+    *status = 1;
+    break;
   default:
     return -1;
   }
@@ -477,6 +480,9 @@ pal_get_fruid_path(uint8_t fru, char *path) {
   case FRU_PDB:
     sprintf(fname, "pdb");
     break;
+  case FRU_BMC:
+    sprintf(fname, "bmc");   
+    break;
   default:
     return -1;
   }
@@ -496,6 +502,9 @@ pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
     break;
   case FRU_NIC1:
     sprintf(path, FRU_EEPROM_NIC1);
+    break;
+  case FRU_BMC:
+    sprintf(path, FRU_EEPROM_BMC);
     break;
   default:
     return -1;
@@ -521,6 +530,10 @@ pal_get_fruid_name(uint8_t fru, char *name) {
 
   case FRU_PDB:
     sprintf(name, "PDB");
+    break;
+
+  case FRU_BMC:
+    sprintf(name, "BMC");
     break;
 
   default:

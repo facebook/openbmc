@@ -40,6 +40,8 @@
 #define BIN_PDB       "/tmp/fruid_pdb.bin"
 #define BIN_NIC0      "/tmp/fruid_nic0.bin"
 #define BIN_NIC1      "/tmp/fruid_nic1.bin"
+#define BIN_BMC       "/tmp/fruid_bmc.bin"
+
 
 #define FRUID_SIZE        512
 /*
@@ -131,6 +133,10 @@ int plat_fruid_init(void) {
 
   if (copy_eeprom_to_bin(FRU_EEPROM_NIC1, BIN_NIC1)) {
     syslog(LOG_WARNING, "%s: Copy NIC1 EEPROM Failed", __func__);
+  }
+
+  if (copy_eeprom_to_bin(FRU_EEPROM_BMC, BIN_BMC)) {
+    syslog(LOG_WARNING, "%s: Copy BMC EEPROM Failed", __func__);
   }
 
   if (pthread_create(&tid, NULL, pdb_fru_reader, NULL) < 0) {

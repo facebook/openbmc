@@ -1,0 +1,24 @@
+# Copyright 2015-present Facebook. All Rights Reserved.
+SUMMARY = "Bridge IC Utility"
+DESCRIPTION = "Util for checking with Bridge IC on FBY3"
+SECTION = "base"
+PR = "r1"
+LICENSE = "GPLv2"
+LIC_FILES_CHKSUM = "file://bic-util.c;beginline=4;endline=16;md5=b395943ba8a0717a83e62ca123a8d238"
+
+SRC_URI = "file://bic-util \
+          "
+
+S = "${WORKDIR}/bic-util"
+
+CFLAGS += "-Wall -Werror -lbic -D_XOPEN_SOURCE"
+LDFLAGS = "-lbic -lpal -lfby3_common"
+DEPENDS += "libbic libpal libfby3-common"
+RDEPENDS_${PN} += "libbic libpal libfby3-common"
+
+do_install() {
+  install -d ${D}${bindir}
+  install -m 0755 bic-util ${D}${bindir}/bic-util
+}
+
+FILES_${PN} = "${bindir}"

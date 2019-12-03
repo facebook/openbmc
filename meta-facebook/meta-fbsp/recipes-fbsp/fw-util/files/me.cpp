@@ -14,7 +14,7 @@ class MeComponent : public Component {
       if (pal_get_me_fw_ver(NM_IPMB_BUS_ID, NM_SLAVE_ADDR, (uint8_t *)ver)){
         printf("ME Version: NA\n");
       } else {
-        printf("ME Version: %x.%x.%x.%x%x\n", ver[0], ver[1], ver[2], ver[3], ver[4]);
+        printf("ME Version: %X.%X.%X.%X%X.%X\n", ver[0], ver[1], ver[2], ver[3], ver[4], ver[5]);
       }
       return 0;
     }

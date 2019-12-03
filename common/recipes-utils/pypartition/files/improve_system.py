@@ -196,3 +196,4 @@ if __name__ == "__main__":
         improve_system(logger)
     except Exception:
         logger.exception("Unhandled exception raised.")
+        sys.exit(1)

@@ -38,7 +38,6 @@ IMAGE_INSTALL += " \
   fw-util \
   hsvc-util \
   fpc-util \
-  me-util \
   crashdump \
   log-util-v2 \
   lldp-util \

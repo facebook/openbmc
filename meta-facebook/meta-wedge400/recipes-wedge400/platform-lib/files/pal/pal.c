@@ -2465,6 +2465,8 @@ scm_sensor_read(uint8_t sensor_num, float *value) {
       case SCM_SENSOR_HSC_CURR:
         ret = read_hsc_curr(SCM_HSC_DEVICE, SCM_RSENSE, value);
         *value = *value * 1.0036 - 0.1189;
+        if (*value < 0)
+          *value = 0;
         break;
       case SCM_SENSOR_HSC_POWER:
         ret = read_hsc_power(SCM_HSC_DEVICE, SCM_RSENSE, value);
@@ -2685,6 +2687,8 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       hsc_rsense_init(HSC_FCM, FCM_SYSFS);
       ret = read_hsc_curr(SMB_FCM_HSC_DEVICE, hsc_rsense[HSC_FCM], value);
       *value = *value * 4.4254 - 0.2048;
+      if (*value < 0)
+        *value = 0;
       break;
     case SMB_SENSOR_SW_SERDES_PVDD_POWER:
       ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE,  POWER(3), value);
@@ -3098,7 +3102,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   char key[MAX_KEY_LEN];
   char fru_name[32];
-  int ret , delay = 500;
+  int ret, delay = 500;
   uint8_t prsnt = 0;
   uint8_t status = 0;
 

@@ -4344,20 +4344,35 @@ sensor_thresh_array_init(uint8_t fru) {
         smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_POWER][UCR_THRESH] = 300;
         smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_TEMP1][UCR_THRESH] = 125;
         smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][UCR_THRESH] = 0.927;
-        smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][LCR_THRESH] =	0.7275;
+        smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][LCR_THRESH] = 0.7275;
       } else if (brd_type == BRD_TYPE_WEDGE400C){
-        smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_VOLT][UCR_THRESH] = 3.465;
-        smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_VOLT][LCR_THRESH] = 3.135;
-        smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_CURR][UCR_THRESH] = 14;
-        smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_POWER][UCR_THRESH] = 300;
-        smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_TEMP1][UCR_THRESH] = 125;
-        smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_VOLT][UCR_THRESH] = 3.465;
-        smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_VOLT][LCR_THRESH] = 3.135;
-        smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_CURR][UCR_THRESH] = 90;
-        smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_POWER][UCR_THRESH] = 300;
-        smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_TEMP1][UCR_THRESH] = 125;
-        smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][UCR_THRESH] = 0.8925;
-        smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][LCR_THRESH] =	0.8075;
+        if (brd_type_rev == BOARD_WEDGE400C_EVT){
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_VOLT][UCR_THRESH] = 3.465;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_VOLT][LCR_THRESH] = 3.135;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_CURR][UCR_THRESH] = 14;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_POWER][UCR_THRESH] = 300;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_TEMP1][UCR_THRESH] = 125;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_VOLT][UCR_THRESH] = 3.465;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_VOLT][LCR_THRESH] = 3.135;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_CURR][UCR_THRESH] = 90;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_POWER][UCR_THRESH] = 300;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_TEMP1][UCR_THRESH] = 125;
+          smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][UCR_THRESH] = 0.8925;
+          smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][LCR_THRESH] = 0.8075;
+        } else if (brd_type_rev == BOARD_WEDGE400C_EVT2){
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_VOLT][UCR_THRESH] = 3.465;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_VOLT][LCR_THRESH] = 3.135;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_CURR][UCR_THRESH] = 90;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_POWER][UCR_THRESH] = 300;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_PVDD_TEMP1][UCR_THRESH] = 125;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_VOLT][UCR_THRESH] = 3.465;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_VOLT][LCR_THRESH] = 3.135;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_CURR][UCR_THRESH] = 90;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_POWER][UCR_THRESH] = 300;
+          smb_sensor_threshold[SMB_SENSOR_SW_SERDES_TRVDD_TEMP1][UCR_THRESH] = 125;
+          smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][UCR_THRESH] = 0.825;
+          smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][LCR_THRESH] = 0.675;
+        }
       }
       smb_sensor_threshold[SMB_SENSOR_SW_CORE_CURR][UCR_THRESH] = 450;
       smb_sensor_threshold[SMB_SENSOR_SW_CORE_POWER][UCR_THRESH] = 300;

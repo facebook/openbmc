@@ -19,7 +19,7 @@
 #
 
 LOGFILE="/var/log/mTerm_$1.log"
-LOGFILE="/var/log/mTerm_$1_backup.log"
+LOGFILE_B="/var/log/mTerm_$1_backup.log"
 
 if [ "$1" == "slot1" ] || [ "$1" == "slot2" ] || [ "$1" == "slot3" ] || [ "$1" == "slot4" ]
 then

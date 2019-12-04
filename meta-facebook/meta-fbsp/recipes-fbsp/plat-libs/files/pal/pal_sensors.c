@@ -701,8 +701,8 @@ cmd_peci_rdpkgconfig(PECI_RD_PKG_CONFIG_INFO* info, uint8_t* rx_buf, uint8_t rx_
   return 0;
 }
 
-static int
-cmd_peci_get_tjmax(uint8_t cpu_addr, int* tjmax) {
+int
+cmd_peci_get_thermal_margin(uint8_t cpu_addr, float* value) {
   PECI_RD_PKG_CONFIG_INFO info;
   int ret;
   uint8_t rx_len=5;

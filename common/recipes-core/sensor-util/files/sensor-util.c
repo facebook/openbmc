@@ -455,7 +455,9 @@ get_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num, i
     }
 
     if (sensor_read_history(fru, snr_num, &min, &average, &max, start_time) < 0) {
-      printf("%-18s (0x%X) min = NA, average = NA, max = NA\n", thresh.name, snr_num);
+      if (!is_pldm_sensor(snr_num, fru)) {
+        printf("%-18s (0x%X) min = NA, average = NA, max = NA\n", thresh.name, snr_num);
+      }
       continue;
     }
 

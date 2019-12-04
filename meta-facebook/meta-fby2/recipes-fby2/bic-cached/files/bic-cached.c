@@ -71,11 +71,13 @@ is_nvme_temp_dev(uint8_t sensor_num) {
                              GPV2_SENSOR_DEV4_Temp, GPV2_SENSOR_DEV5_Temp, GPV2_SENSOR_DEV6_Temp, GPV2_SENSOR_DEV7_Temp, 
                              GPV2_SENSOR_DEV8_Temp, GPV2_SENSOR_DEV9_Temp, GPV2_SENSOR_DEV10_Temp, GPV2_SENSOR_DEV11_Temp};
   int i = 0;
-  while (NVMe_Temp_dev[i]) {
+  int sensor_cnt = 0;
+
+  sensor_cnt = sizeof(NVMe_Temp_dev) / sizeof(NVMe_Temp_dev[0]);
+  for (i = 0; i < sensor_cnt; i++) {
     if (sensor_num == NVMe_Temp_dev[i]) {
       return true;
     }
-    i++;
   }
   return false;
 }
@@ -132,7 +134,7 @@ sdr_cache_init(uint8_t slot_id) {
     sdr_full_t *sdr = (sdr_full_t *)res->data;
 
     spb_type = fby2_common_get_spb_type();
-    if (spb_type == TYPE_SPB_YV250) {
+    if ((spb_type == TYPE_SPB_YV250) && ((slot_id == FRU_SLOT1) || (slot_id == FRU_SLOT3))) {
       if (is_nvme_temp_dev(sdr->sensor_num) == true) {
         sdr->uc_thresh = YV250_NVMe_Temp_Dev_UCR;
       }

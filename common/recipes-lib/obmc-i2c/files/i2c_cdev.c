@@ -57,7 +57,15 @@ int i2c_cdev_slave_open(int bus, uint16_t addr, int flags)
 	} else {
 		request = I2C_SLAVE;
 	}
+
 	if (ioctl(fd, request, addr) < 0) {
+		int save_errno = errno;
+		close(fd); /* ignore errors */
+		errno = save_errno;
+		return -1;
+	}
+
+	if ((flags & I2C_CLIENT_PEC) && (ioctl(fd, I2C_PEC, addr) < 0)) {
 		int save_errno = errno;
 		close(fd); /* ignore errors */
 		errno = save_errno;

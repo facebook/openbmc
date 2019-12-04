@@ -32,7 +32,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/libgpio.h>
 #include "bic_xfer.h"
+
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(a)   (sizeof(a) / sizeof((a)[0]))
+#endif
 
 const uint32_t IANA_ID = 0x009C9C;
 
@@ -56,7 +61,7 @@ int i2c_open(uint8_t bus_id) {
   fd = open(fn, O_RDWR);
   if (fd == -1) {
     syslog(LOG_ERR, "Failed to open i2c device %s", fn);
-    return -1;
+    return BIC_STATUS_FAILURE;
   }
 
   rc = ioctl(fd, I2C_SLAVE, BRIDGE_SLAVE_ADDR);
@@ -98,40 +103,16 @@ int i2c_io(int fd, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount)
   rc = ioctl(fd, I2C_RDWR, &data);
   if (rc < 0) {
     syslog(LOG_ERR, "Failed to do raw io");
-    return -1;
+    return BIC_STATUS_FAILURE;
   }
 
-  return 0;
-}
-
-int get_ipmb_bus_id(uint8_t slot_id) {
-  int bus_id;
-
-  //TODO: Use variable instead numerical value
-  switch(slot_id) {
-    case 0:
-      bus_id = 0;
-    break;
-    case 1:
-      bus_id = 1;
-    break;
-    case 2:
-      bus_id = 2;
-    break;
-    case 3:
-      bus_id = 3;
-    break;
-    default:
-      bus_id = -1;
-    break;
-  }
-  return bus_id;
+  return BIC_STATUS_SUCCESS;
 }
 
 int is_bic_ready(uint8_t slot_id, uint8_t intf) {
   //TODO: 1. check the ready pin of server bic by reading GPIO
   //send a command to BIC2 to see if it can be reached
-  return 1;
+  return BIC_STATUS_SUCCESS;
 }
 
 int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
@@ -155,7 +136,7 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   }
 #endif
 
-  ret = get_ipmb_bus_id(slot_id);
+  ret = fby3_common_get_bus_id(slot_id);
   if (ret < 0) {
     syslog(LOG_ERR, "%s: Wrong Slot ID %d\n", __func__, slot_id);
     return ret;
@@ -202,7 +183,7 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   if (rlen == 0) {
     syslog(LOG_ERR, "bic_ipmb_wrapper: Zero bytes received, retry:%d, cmd:%x\n", retry, cmd);
-    return -1;
+    return BIC_STATUS_FAILURE;
   }
 
   // Handle IPMB response
@@ -210,7 +191,7 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   if (res->cc) {
     syslog(LOG_ERR, "bic_ipmb_wrapper: Completion Code: 0x%X\n", res->cc);
-    return -1;
+    return BIC_STATUS_FAILURE;
   }
 
   // copy the received data back to caller
@@ -227,10 +208,10 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   if (dataCksum != rbuf[rlen - 1]) {
     syslog(LOG_ERR, "%s: Receive Data cksum does not match (expectative 0x%x, actual 0x%x)", __func__, dataCksum, rbuf[rlen - 1]);
-    return -1;
+    return BIC_STATUS_FAILURE;
   }
 
-  return 0;
+  return BIC_STATUS_SUCCESS;
 }
 
 int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
@@ -254,12 +235,12 @@ int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, 
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
   if (ret ) {
-    return -1;
+    return BIC_STATUS_FAILURE;
   }
 
   // Make sure the received interface number is same
   if (rbuf[3] != tbuf[3]) {
-    return -1;
+    return BIC_STATUS_FAILURE;
   }
 
   // Copy the received data to caller skipping header
@@ -267,5 +248,5 @@ int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, 
 
   *rxlen = rlen-6;
 
-  return 0;
+  return BIC_STATUS_SUCCESS;
 }

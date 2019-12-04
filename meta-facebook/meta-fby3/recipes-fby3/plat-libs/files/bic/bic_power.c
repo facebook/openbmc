@@ -83,7 +83,7 @@ bic_server_power_on(uint8_t slot_id) {
       return ret;
     }
 
-    if ( POWER_BTN_LOW == pwr_seq[i] ) msleep(1000);    
+    if ( POWER_BTN_LOW == pwr_seq[i] ) sleep(1);    
   }
 
   return ret;
@@ -106,7 +106,7 @@ bic_server_power_off_with_param(uint8_t slot_id, uint8_t gs_flag) {
  
     if ( POWER_BTN_LOW == pwr_seq[i] ) {
       delay = (gs_flag == GRACEFUL_POWER_OFF)?DELAY_GRACEFUL_SHUTDOWN:DELAY_POWER_OFF;
-      msleep(delay * 1000);
+      sleep(delay);
     } 
   }
 
@@ -137,7 +137,7 @@ bic_server_power_reset(uint8_t slot_id) {
       return ret;
     }
 
-    if ( POWER_BTN_LOW == pwr_seq[i] ) msleep(1000);
+    if ( POWER_BTN_LOW == pwr_seq[i] ) sleep(1);
   }
 
   return ret;
@@ -164,7 +164,7 @@ bic_server_power_cycle(uint8_t slot_id) {
       return ret;
     }
 
-    if ( POWER_BTN_LOW == pwr_seq[i].pwr_sts ) msleep( DELAY_POWER_CYCLE * 1000 );
+    if ( POWER_BTN_LOW == pwr_seq[i].pwr_sts ) sleep(DELAY_POWER_CYCLE);
   }
 
   return ret; 

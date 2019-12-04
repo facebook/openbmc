@@ -22,45 +22,57 @@
 #define __PAL_H__
 
 #include <openbmc/obmc-pal.h>
+#include <facebook/fby3_common.h>
+#include <facebook/bic.h>
+#include "pal_power.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define MAX_NUM_FAN     2
+#define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle, 12V-on, 12V-off, 12V-cycle"
 
-#define MAX_NUM_FRUS 6
-#define MAX_NODES 4
+#define LARGEST_DEVICE_NAME (120)
+#define UNIT_DIV            (1000)
+#define ERR_NOT_READY       (-2)
 
-//extern char * key_list[];
+#define CUSTOM_FRU_LIST 1
+extern const char pal_fru_list_print[];
+extern const char pal_fru_list_rw[];
+extern const char pal_fru_list_sensor_history[];
+
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
-extern char pal_pwm_list[];
-extern char pal_tach_list[];
+extern const char pal_pwm_list[];
+extern const char pal_tach_list[];
 extern const char pal_fru_list[];
 extern const char pal_server_list[];
-extern const char pal_dev_list[];
-extern const char pal_dev_pwr_option_list[];
 
 enum {
   FAN_0 = 0,
   FAN_1,
+  FAN_2,
+  FAN_3,
+  FAN_4,
+  FAN_5,
+  FAN_6,
+  FAN_7,
 };
 
+#define MAX_NODES 5
+#define READING_SKIP    (1)
+#define READING_NA      (-2)
 
 enum {
-  FRU_ALL   = 0,
-  FRU_SLOT1 = 1,
-  FRU_SLOT2 = 2,
-  FRU_SLOT3 = 3,
-  FRU_SLOT4 = 4,
-  FRU_SPB   = 5,
-  FRU_NIC   = 6,
-  FRU_BMC   = 7,
+  BOOT_DEVICE_IPV4     = 0x1,
+  BOOT_DEVICE_HDD      = 0x2,
+  BOOT_DEVICE_CDROM    = 0x3,
+  BOOT_DEVICE_OTHERS   = 0x4,
+  BOOT_DEVICE_IPV6     = 0x9,
+  BOOT_DEVICE_RESERVED = 0xff,
 };
 
-
-
+int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 
 #ifdef __cplusplus
 } // extern "C"

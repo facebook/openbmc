@@ -55,11 +55,6 @@ get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask)
   return 0;
 }
 
-static int
-adjust_slot_id(uint8_t fru) {
-  return fru - 1;
-}
-
 int
 is_valid_slot_str(char *str, uint8_t *fru) {
   if (!strcmp(str, "slot0")) {
@@ -74,7 +69,6 @@ is_valid_slot_str(char *str, uint8_t *fru) {
     return -1;
   }
 
-  *fru = adjust_slot_id(*fru);
   return 0;
 }
 
@@ -95,6 +89,29 @@ is_valid_slot_id(uint8_t fru) {
   }
 
   return ret;
+}
+
+int
+fby3_common_get_bus_id(uint8_t slot_id) {
+  int bus_id = 0;
+  switch(slot_id) {
+    case FRU_SLOT0:
+      bus_id = IPMB_SLOT0_I2C_BUS;
+    break;
+    case FRU_SLOT1:
+      bus_id = IPMB_SLOT1_I2C_BUS;
+    break;
+    case FRU_SLOT2:
+      bus_id = IPMB_SLOT2_I2C_BUS;
+    break;
+    case FRU_SLOT3:
+      bus_id = IPMB_SLOT3_I2C_BUS;
+    break;
+    default:
+      bus_id = -1;
+    break;
+  }
+  return bus_id; 
 }
 
 int

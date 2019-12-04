@@ -27,9 +27,13 @@
 extern "C" {
 #endif
 
-int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id);
-
-int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
+int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id, uint8_t intf);
+int bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result, uint8_t intf);
+int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info, uint8_t intf);
+int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size, uint8_t intf);
+int bic_write_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, uint8_t intf);
+int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen, uint8_t intf);
+int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t intf);
 
 #ifdef __cplusplus
 } // extern "C"

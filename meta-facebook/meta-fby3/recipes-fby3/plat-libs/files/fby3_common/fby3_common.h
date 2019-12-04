@@ -31,7 +31,20 @@ extern "C" {
 #define ARRAY_SIZE(a)   (sizeof(a) / sizeof((a)[0]))
 #endif
 
-#define MAX_NUM_FRUS 6
+#define BIC_CACHED_PID "/var/run/bic-cached_%d.lock"
+
+#define FRU_BMC_BIN   "/tmp/fruid_bmc.bin"
+#define FRU_BB_BIN    "/tmp/fruid_bb.bin"
+#define FRU_SLOT1_BIN "/tmp/fruid_slot1.bin"
+
+#define CLASS1_FRU_BUS 11
+#define CLASS2_FRU_BUS 10
+#define BMC_FRU_ADDR 0x54
+#define BB_FRU_ADDR  0x51
+#define I2C_PATH "/sys/class/i2c-dev/i2c-%d/device/new_device"
+#define EEPROM_PATH "/sys/bus/i2c/devices/%d-00%X/eeprom"
+
+#define MAX_NUM_FRUS 7
 enum {
   FRU_ALL   = 0,
   FRU_SLOT0 = 1,
@@ -44,10 +57,10 @@ enum {
 };
 
 enum {
-  IPMB_BUS_SLOT1   = 0,
-  IPMB_BUS_SLOT2   = 1,
-  IPMB_BUS_SLOT3   = 2,
-  IPMB_BUS_SLOT4   = 3,
+  IPMB_SLOT0_I2C_BUS = 0,
+  IPMB_SLOT1_I2C_BUS = 1,
+  IPMB_SLOT2_I2C_BUS = 2,
+  IPMB_SLOT3_I2C_BUS = 3,
 };
 
 enum {
@@ -87,6 +100,7 @@ const static uint8_t gpio_server_hsc_pgood_sts[] =
 int get_bmc_location(uint8_t *id);
 int is_valid_slot_str(char *str, uint8_t *fru);
 int is_valid_slot_id(uint8_t fru);
+int fby3_common_get_bus_id(uint8_t slot_id);
 
 #ifdef __cplusplus
 } // extern "C"

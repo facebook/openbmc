@@ -419,7 +419,7 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
   struct rlimit mqlim;
 
   //step1 -get the bus number and open the dev of i2c
-  bus_num = get_ipmb_bus_id(slot_id);
+  bus_num = fby3_common_get_bus_id(slot_id);
   syslog(LOG_CRIT, "%s: update bic firmware on slot %d\n", __func__, bus_num);
 
   i2cfd = i2c_open(bus_num);
@@ -680,7 +680,7 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t intf, char *path, uint8_t force) 
 
   //get fd and file size
   fd = open_and_get_size(path, &file_size);
-  if ( ret < 0 ) {
+  if ( fd < 0 ) {
     syslog(LOG_WARNING, "%s() cannot open the file: %s, fd=%d\n", __func__, path, fd);
     goto exit;
   }

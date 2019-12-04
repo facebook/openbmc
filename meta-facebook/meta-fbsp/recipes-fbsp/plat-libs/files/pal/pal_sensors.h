@@ -12,6 +12,7 @@
 #define PECI_RETRY_TIMES                        (0)
 #define PECI_CMD_RD_PKG_CONFIG                  (0xA1)
 #define PECI_INDEX_ACCUMULATED_ENERGY_STATUS    (3)
+#define PECI_INDEX_THERMAL_MARGIN               (10)
 #define PECI_INDEX_DIMM_THERMAL_RW              (14)
 #define PECI_INDEX_TEMP_TARGET                  (16)
 #define PECI_INDEX_TOTAL_TIME                   (31)
@@ -30,6 +31,11 @@
 #define PMBUS_PMON_CONFIG  (0xD4)
 #define ADM1278_SLAVE_ADDR (0x22)
 #define ADM1278_RSENSE     (0.15)
+
+//INA260 CMD INFO
+#define INA260_CURRENT   (0x01)
+#define INA260_VOLTAGE   (0x02)
+#define INA260_POWER     (0x03)
 
 #define PMBUS_PAGE         (0x00)
 #define PMBUS_VOUT_MODE    (0x20)
@@ -205,12 +211,21 @@ typedef struct {
   float neg_hyst;
 } PAL_SENSOR_THRESHOLD;
 
+enum {
+  TEMP = 1,
+  CURR,
+  VOLT,
+  FAN,
+  POWER,
+};
+
 typedef struct {
   char* snr_name;
   uint8_t id;
   int (*read_sensor) (uint8_t id, float *value);
   uint8_t stby_read;
   PAL_SENSOR_THRESHOLD snr_thresh;
+  uint8_t units;
 } PAL_SENSOR_MAP;
 
 //ADC INFO
@@ -230,6 +245,14 @@ enum {
   ADC12, 
   ADC13, 
   ADC14,
+};
+
+//INA260 INFO
+enum {
+  INA260_ID0,
+  INA260_ID1,
+  INA260_ID2,
+  INA260_ID3,
 };
 
 //GENERIC I2C Sensors
@@ -321,5 +344,24 @@ typedef struct {
   uint8_t bus;
   uint8_t slv_addr;
 } PAL_I2C_BUS_INFO;
+
+typedef struct {
+  int integer :10;
+  uint8_t fract :6;
+} PAL_S10_6_FORMAT;
+
+//VR TPS53688 INFO
+enum {
+  VR_ID0 = 0,
+  VR_ID1,
+  VR_ID2,
+  VR_ID3,
+  VR_ID4,
+  VR_ID5,
+  VR_ID6,
+  VR_ID7,
+  VR_ID8,
+  VR_ID9,
+};
 
 #endif

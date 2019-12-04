@@ -29,7 +29,7 @@ IMAGE_INSTALL += " \
   fw-util \
   cfg-util \
   ipmi-util \
-  peci-util \
+  peci-util-v2 \
   asd \
   asd-test \
   ipmitool \

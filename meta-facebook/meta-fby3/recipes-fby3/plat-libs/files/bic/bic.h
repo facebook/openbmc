@@ -33,6 +33,7 @@ extern "C" {
 enum {
   FW_CPLD = 1,
   FW_BIC,
+  FW_ME,
   FW_BIC_BOOTLOADER,
 };
 

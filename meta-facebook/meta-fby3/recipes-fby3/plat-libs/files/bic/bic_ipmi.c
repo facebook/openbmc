@@ -377,3 +377,22 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t intf) {
 
   return ret;
 }
+
+// Custom Command for getting cpld version
+int
+bic_get_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf) {
+  uint8_t tbuf[32] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  const uint32_t reg = 0x00200028; //for altera cpld
+
+  tbuf[0] = (bus << 1) + 1;
+  tbuf[1] = addr;
+  tbuf[2] = 0x04; //read back 4 bytes
+  tbuf[3] = (reg >> 24) & 0xff;
+  tbuf[4] = (reg >> 16) & 0xff;
+  tbuf[5] = (reg >> 8) & 0xff;
+  tbuf[6] = (reg >> 0) & 0xff;
+  tlen = 7;
+  return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, ver, &rlen, intf);
+}

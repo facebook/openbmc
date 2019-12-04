@@ -865,11 +865,17 @@ int fruid_parse(const char * bin, fruid_info_t * fruid)
   /* Get the size of the binary file */
   fseek(fruid_fd, 0, SEEK_END);
   fruid_len = (uint32_t) ftell(fruid_fd);
+  if (fruid_len == 0) {
+    fclose(fruid_fd);
+    syslog(LOG_WARNING, "fruid: file %s is empty");
+    return -1;
+  }
 
   fseek(fruid_fd, 0, SEEK_SET);
 
   eeprom = (uint8_t *) malloc(fruid_len);
   if (!eeprom) {
+    fclose(fruid_fd);
 #ifdef DEBUG
     syslog(LOG_WARNING, "fruid: malloc: memory allocation failed\n");
 #endif

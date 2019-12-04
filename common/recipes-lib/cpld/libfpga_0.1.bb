@@ -17,6 +17,7 @@ SRC_URI = "file://cpld.c \
 
 DEPENDS = "libast-jtag libpal"
 RDEPENDS_${PN} = "libast-jtag libpal"
+LDFLAGS += "-lpal -last-jtag"
 
 S = "${WORKDIR}"
 

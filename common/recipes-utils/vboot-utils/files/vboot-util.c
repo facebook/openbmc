@@ -86,8 +86,8 @@ bool get_rom_ver(char *ver_rom, char *ver_uboot)
 int main(int argc, char *argv[])
 {
   char buf[128];
-  char ver_rom[MAX_VALUE_LEN];
-  char ver_uboot[MAX_VALUE_LEN];
+  char ver_rom[MAX_VALUE_LEN] = {0};
+  char ver_uboot[MAX_VALUE_LEN] = {0};
   struct vbs *v;
 
   if (!vboot_supported()) {

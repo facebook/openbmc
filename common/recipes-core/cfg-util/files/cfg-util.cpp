@@ -56,7 +56,7 @@ set_ntp_server(const char *server_name)
     if (system(cmd) != 0) {
       syslog(LOG_WARNING, "NTP: restrict conf not removed\n");
     }
-    snprintf(cmd, sizeof(cmd), "sed -i '/^server %s$/d' /etc/ntp.conf", ntp_server_old);
+    snprintf(cmd, sizeof(cmd), "sed -i '/^server %s iburst$/d' /etc/ntp.conf", ntp_server_old);
     if (system(cmd) != 0) {
       syslog(LOG_WARNING, "NTP: Server conf not removed\n");
     }
@@ -68,7 +68,7 @@ set_ntp_server(const char *server_name)
     if (system(cmd) != 0) {
       syslog(LOG_ERR, "NTP: restrict conf not added\n");
     }
-    snprintf(cmd, sizeof(cmd), "echo \"server %s\" >> /etc/ntp.conf", ntp_server_new);
+    snprintf(cmd, sizeof(cmd), "echo \"server %s iburst\" >> /etc/ntp.conf", ntp_server_new);
     if (system(cmd) != 0) {
       syslog(LOG_ERR, "NTP: server conf not added\n");
     }

@@ -169,24 +169,15 @@ void usage()
   cout << "USAGE: " << exec_name << " all|FRU --version" << endl;
   cout << "       " << exec_name << " FRU BOARD --update [--]COMPONENT IMAGE_PATH" << endl;
   cout << "       " << exec_name << " FRU BOARD --force --update [--]COMPONENT IMAGE_PATH" << endl;
-  cout << left << setw(10) << "FRU" << " : Board "  << "    : Components" << endl;
-  cout << "-----------:-----------:-------------"<< endl;
+  cout << "FRU    : Board        : Components" << endl;
+  cout << "-------:--------------:-------------"<< endl;
+  cout << "bmc    :bmc           :bmc cpld rom "<< endl;
+  cout << "nic    :nic           :nic" << endl;
+  cout << "slot0  :bb sb 1ou 2ou :bic bicbl cpld me" << endl;
+  cout << "slot1  :sb 1ou 2ou    :bic bicbl cpld me" << endl;
+  cout << "slot2  :sb 1ou 2ou    :bic bicbl cpld me" << endl;
+  cout << "slot3  :sb 1ou 2ou    :bic bicbl cpld me" << endl;
 
-  for (auto fkv : *Component::fru_list) {
-    string fru_name = fkv.first;
-    cout << setfill(' ') << setw(10) << fru_name << " : ";
-    for (auto bkv : fkv.second) {
-      string board_name = bkv.first;
-      cout << board_name << setw(10-board_name.length()) << " ";
-      cout << ": ";
-      for (auto ckv : bkv.second) {
-        string component_name = ckv.first;
-        cout << component_name << " ";
-      }
-      cout << " ";
-    }
-    cout << endl;
-  }
   if (plock)
     delete plock;
 }

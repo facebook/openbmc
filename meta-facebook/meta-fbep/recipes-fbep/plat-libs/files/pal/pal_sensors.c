@@ -84,6 +84,9 @@ const uint8_t fru_sensor_list[] = {
   FRU_SWITCH_PAX1_DIE_TEMP,
   FRU_SWITCH_PAX2_DIE_TEMP,
   FRU_SWITCH_PAX3_DIE_TEMP,
+};
+
+const uint8_t pdb_sensor_list[] = {
   PDB_HSC_P12V_1_VIN,
   PDB_HSC_P12V_1_VOUT,
   PDB_HSC_P12V_1_CURR,
@@ -165,8 +168,9 @@ const char* fru_sensor_name[] = {
   "PDB_SENSOR_OUTLET_TEMP",
 };
 
-float fru_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float sensors_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 size_t fru_sensor_cnt = sizeof(fru_sensor_list)/sizeof(uint8_t);
+size_t pdb_sensor_cnt = sizeof(pdb_sensor_list)/sizeof(uint8_t);
 
 static void hsc_value_adjust(struct calibration_table *table, float *value)
 {
@@ -236,7 +240,7 @@ static int read_switchtec_dietemp(uint8_t sensor_num, float *value)
   ret = switchtec_cmd(dev, MRPC_DIETEMP, &sub_cmd_id,
                       sizeof(sub_cmd_id), &temp, sizeof(temp));
   if (ret)
-    ret = READING_NA;
+    ret = -1;
   else
     *value = (float) temp / 100.0;
 
@@ -332,14 +336,17 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
 
 int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 {
-  if (fru != FRU_BASE) {
+  if (fru == FRU_BASE) {
+    *sensor_list = (uint8_t *) fru_sensor_list;
+    *cnt = fru_sensor_cnt;
+  } else if (fru == FRU_PDB) {
+    *sensor_list = (uint8_t *) pdb_sensor_list;
+    *cnt = pdb_sensor_cnt;
+  } else {
     *sensor_list = NULL;
     *cnt = 0;
     return -1;
   }
-
-  *sensor_list = (uint8_t *) fru_sensor_list;
-  *cnt = fru_sensor_cnt;
 
   return 0;
 }
@@ -347,46 +354,46 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 static void sensor_thresh_array_init()
 {
   // Fan Sensors
-  fru_sensor_threshold[FRU_FAN0_TACH_I][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_FAN0_TACH_I][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_FAN0_TACH_I][LCR_THRESH] = 500;
-  fru_sensor_threshold[FRU_FAN0_TACH_O][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_FAN0_TACH_O][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_FAN0_TACH_O][LCR_THRESH] = 500;
-  fru_sensor_threshold[FRU_FAN1_TACH_I][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_FAN1_TACH_I][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_FAN1_TACH_I][LCR_THRESH] = 500;
-  fru_sensor_threshold[FRU_FAN1_TACH_O][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_FAN1_TACH_O][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_FAN1_TACH_O][LCR_THRESH] = 500;
-  fru_sensor_threshold[FRU_FAN2_TACH_I][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_FAN2_TACH_I][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_FAN2_TACH_I][LCR_THRESH] = 500;
-  fru_sensor_threshold[FRU_FAN2_TACH_O][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_FAN2_TACH_O][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_FAN2_TACH_O][LCR_THRESH] = 500;
-  fru_sensor_threshold[FRU_FAN3_TACH_I][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_FAN3_TACH_I][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_FAN3_TACH_I][LCR_THRESH] = 500;
-  fru_sensor_threshold[FRU_FAN3_TACH_O][UNC_THRESH] = 8500;
-  fru_sensor_threshold[FRU_FAN3_TACH_O][UCR_THRESH] = 11500;
-  fru_sensor_threshold[FRU_FAN3_TACH_O][LCR_THRESH] = 500;
+  sensors_threshold[FRU_FAN0_TACH_I][UNC_THRESH] = 8500;
+  sensors_threshold[FRU_FAN0_TACH_I][UCR_THRESH] = 11500;
+  sensors_threshold[FRU_FAN0_TACH_I][LCR_THRESH] = 500;
+  sensors_threshold[FRU_FAN0_TACH_O][UNC_THRESH] = 8500;
+  sensors_threshold[FRU_FAN0_TACH_O][UCR_THRESH] = 11500;
+  sensors_threshold[FRU_FAN0_TACH_O][LCR_THRESH] = 500;
+  sensors_threshold[FRU_FAN1_TACH_I][UNC_THRESH] = 8500;
+  sensors_threshold[FRU_FAN1_TACH_I][UCR_THRESH] = 11500;
+  sensors_threshold[FRU_FAN1_TACH_I][LCR_THRESH] = 500;
+  sensors_threshold[FRU_FAN1_TACH_O][UNC_THRESH] = 8500;
+  sensors_threshold[FRU_FAN1_TACH_O][UCR_THRESH] = 11500;
+  sensors_threshold[FRU_FAN1_TACH_O][LCR_THRESH] = 500;
+  sensors_threshold[FRU_FAN2_TACH_I][UNC_THRESH] = 8500;
+  sensors_threshold[FRU_FAN2_TACH_I][UCR_THRESH] = 11500;
+  sensors_threshold[FRU_FAN2_TACH_I][LCR_THRESH] = 500;
+  sensors_threshold[FRU_FAN2_TACH_O][UNC_THRESH] = 8500;
+  sensors_threshold[FRU_FAN2_TACH_O][UCR_THRESH] = 11500;
+  sensors_threshold[FRU_FAN2_TACH_O][LCR_THRESH] = 500;
+  sensors_threshold[FRU_FAN3_TACH_I][UNC_THRESH] = 8500;
+  sensors_threshold[FRU_FAN3_TACH_I][UCR_THRESH] = 11500;
+  sensors_threshold[FRU_FAN3_TACH_I][LCR_THRESH] = 500;
+  sensors_threshold[FRU_FAN3_TACH_O][UNC_THRESH] = 8500;
+  sensors_threshold[FRU_FAN3_TACH_O][UCR_THRESH] = 11500;
+  sensors_threshold[FRU_FAN3_TACH_O][LCR_THRESH] = 500;
 
   // ADC Sensors
-  fru_sensor_threshold[FRU_ADC_P12V_AUX][UCR_THRESH] = 13.23;
-  fru_sensor_threshold[FRU_ADC_P12V_AUX][LCR_THRESH] = 10.773;
-  fru_sensor_threshold[FRU_ADC_P3V3_STBY][UCR_THRESH] = 3.621;
-  fru_sensor_threshold[FRU_ADC_P3V3_STBY][LCR_THRESH] = 2.975;
-  fru_sensor_threshold[FRU_ADC_P5V_STBY][UCR_THRESH] = 5.486;
-  fru_sensor_threshold[FRU_ADC_P5V_STBY][LCR_THRESH] = 4.524;
-  fru_sensor_threshold[FRU_ADC_P12V_1][UCR_THRESH] = 13.23;
-  fru_sensor_threshold[FRU_ADC_P12V_1][LCR_THRESH] = 10.773;
-  fru_sensor_threshold[FRU_ADC_P12V_2][UCR_THRESH] = 13.23;
-  fru_sensor_threshold[FRU_ADC_P12V_2][LCR_THRESH] = 10.773;
-  fru_sensor_threshold[FRU_ADC_P3V3][UCR_THRESH] = 3.621;
-  fru_sensor_threshold[FRU_ADC_P3V3][LCR_THRESH] = 2.975;
-  fru_sensor_threshold[FRU_ADC_P3V_BAT][UCR_THRESH] = 3.738;
-  fru_sensor_threshold[FRU_ADC_P3V_BAT][LCR_THRESH] = 2.73;
+  sensors_threshold[FRU_ADC_P12V_AUX][UCR_THRESH] = 13.23;
+  sensors_threshold[FRU_ADC_P12V_AUX][LCR_THRESH] = 10.773;
+  sensors_threshold[FRU_ADC_P3V3_STBY][UCR_THRESH] = 3.621;
+  sensors_threshold[FRU_ADC_P3V3_STBY][LCR_THRESH] = 2.975;
+  sensors_threshold[FRU_ADC_P5V_STBY][UCR_THRESH] = 5.486;
+  sensors_threshold[FRU_ADC_P5V_STBY][LCR_THRESH] = 4.524;
+  sensors_threshold[FRU_ADC_P12V_1][UCR_THRESH] = 13.23;
+  sensors_threshold[FRU_ADC_P12V_1][LCR_THRESH] = 10.773;
+  sensors_threshold[FRU_ADC_P12V_2][UCR_THRESH] = 13.23;
+  sensors_threshold[FRU_ADC_P12V_2][LCR_THRESH] = 10.773;
+  sensors_threshold[FRU_ADC_P3V3][UCR_THRESH] = 3.621;
+  sensors_threshold[FRU_ADC_P3V3][LCR_THRESH] = 2.975;
+  sensors_threshold[FRU_ADC_P3V_BAT][UCR_THRESH] = 3.738;
+  sensors_threshold[FRU_ADC_P3V_BAT][LCR_THRESH] = 2.73;
 
   return;
 }
@@ -401,17 +408,17 @@ int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, vo
     is_thresh_init = true;
   }
 
-  if (fru != FRU_BASE || sensor_num >= FRU_SENSOR_MAX)
+  if (fru > FRU_PDB || sensor_num >= FRU_SENSOR_MAX)
     return -1;
 
-  *val = fru_sensor_threshold[sensor_num][thresh];
+  *val = sensors_threshold[sensor_num][thresh];
 
   return 0;
 }
 
 int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name)
 {
-  if (fru != FRU_BASE)
+  if (fru > FRU_PDB)
     return -1;
 
   if (sensor_num >= FRU_SENSOR_MAX)
@@ -424,7 +431,7 @@ int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name)
 
 int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
 {
-  if (fru != FRU_BASE)
+  if (fru > FRU_PDB)
     return -1;
 
   switch(sensor_num) {
@@ -498,7 +505,7 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
 
 int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value)
 {
-  if (fru != FRU_BASE)
+  if (fru > FRU_PDB)
     return -1;
 
   // default poll interval
@@ -515,8 +522,9 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   int ret;
+  uint8_t status;
 
-  if (fru != FRU_BASE)
+  if (fru > FRU_PDB)
     return -1;
 
   switch(sensor_num) {
@@ -612,7 +620,10 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
     case FRU_SWITCH_PAX1_DIE_TEMP:
     case FRU_SWITCH_PAX2_DIE_TEMP:
     case FRU_SWITCH_PAX3_DIE_TEMP:
-      ret = read_switchtec_dietemp(sensor_num, (float*)value);
+      if (pal_get_server_power(FRU_BASE, &status) == 0 && status == SERVER_POWER_ON)
+        ret = read_switchtec_dietemp(sensor_num, (float*)value);
+      else
+        ret = READING_NA;
       break;
     // HSC reading
     case PDB_HSC_P12V_1_CURR:

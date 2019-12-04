@@ -69,6 +69,7 @@ enum {
 
 int read_device(const char *device, int *value);
 int write_device(const char *device, int value);
+int pal_get_server_power(uint8_t fru, uint8_t *status);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -59,9 +59,9 @@ class BaseInterfaceTest(object):
         Logger.debug("Got ip address for " + str(self.ifname))
         return ipv4
 
-    def get_ipv6_address(self):
+    def get_ip_addr_output_inet6(self):
         """
-        Get IPv6 address of a given interface
+        Get list of strings containing ipv6 addresses for a given interface
         """
         f = subprocess.Popen(
             ["ip", "addr", "show", self.ifname.encode("utf-8")],
@@ -88,7 +88,13 @@ class BaseInterfaceTest(object):
                 + " does not have an IPv6 address [FAILED]\ncommand output:"
                 + out
             )
-        ipv6 = out.split("inet6 ")[1].split("/")[0]
+        return out.split("inet6 ")
+
+    def get_ipv6_address(self):
+        """
+        Get IPv6 address of a given interface
+        """
+        ipv6 = self.get_ip_addr_output_inet6()[1].split("/")[0]
         Logger.debug("Got ip address for " + str(self.ifname))
         return ipv6
 

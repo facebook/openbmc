@@ -181,6 +181,8 @@ int bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force
 int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 int bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result);
 
+int bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

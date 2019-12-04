@@ -44,6 +44,7 @@ IMAGE_INSTALL += " \
   ncsid \
   libpldm \
   slot-util \
+  snapshot-util \
   "
 
 IMAGE_FEATURES += " \

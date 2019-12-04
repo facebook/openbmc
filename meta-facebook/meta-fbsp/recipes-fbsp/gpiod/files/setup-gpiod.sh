@@ -27,7 +27,7 @@
 # Short-Description: Setup sensor monitoring
 ### END INIT INFO
 
-echo -n "Setup gpio monitoring for emeraldpools... "
+echo -n "Setup gpio monitoring for Sonorapass... "
 
 /usr/local/bin/gpiod &
 

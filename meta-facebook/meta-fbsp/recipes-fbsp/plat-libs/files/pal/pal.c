@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 #include <sys/time.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
@@ -39,6 +40,7 @@
 #define LAST_KEY "last_key"
 
 #define GPIO_LOCATE_LED "FP_LOCATE_LED"
+#define GPIO_FAULT_LED "FP_FAULT_LED_N"
 
 #define GUID_SIZE 16
 #define OFFSET_SYS_GUID 0x17F0
@@ -269,6 +271,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       break;
     case FRU_RISER1:
       *status = 1;
+
       break;
     case FRU_RISER2:
       *status = 1;
@@ -311,6 +314,29 @@ pal_set_id_led(uint8_t fru, uint8_t status) {
 error:
   gpio_close(gdesc);
   return ret;
+}
+
+int
+pal_set_fault_led(uint8_t fru, uint8_t status) {
+  int ret;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val;
+
+  if (fru != FRU_MB)
+    return -1;
+
+  gdesc = gpio_open_by_shadow(GPIO_FAULT_LED);
+  if (gdesc == NULL)
+    return -1;
+
+  val = status? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
+  ret = gpio_set_value(gdesc, val);
+  if (ret != 0)
+    goto error;
+
+  error:
+    gpio_close(gdesc);
+    return ret;
 }
 
 int
@@ -966,4 +992,99 @@ pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver) {
   ver[5] = dev_id.aux_fw_rev[2] & 0x0F;
 
   return ret;
+}
+
+static int
+get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask) {
+  int i;
+  *mask = 0;
+
+  for (i = 0; i < num; i++) {
+    int ret;
+    gpio_value_t value;
+    gpio_desc_t *gpio = gpio_open_by_shadow(shadows[i]);
+    if (!gpio) {
+      return -1;
+    }
+
+    ret = gpio_get_value(gpio, &value);
+    gpio_close(gpio);
+
+    if (ret != 0) {
+      return -1;
+    }
+    *mask |= (value == GPIO_VALUE_HIGH ? 1 : 0) << i;
+  }
+  return 0;
+}
+
+int
+pal_uart_select (uint32_t base, uint8_t offset, int option, uint32_t para) {
+  uint32_t mmap_fd;
+  uint32_t ctrl;
+  void *reg_base;
+  void *reg_offset;
+
+  mmap_fd = open("/dev/mem", O_RDWR | O_SYNC );
+  if (mmap_fd < 0) {
+    return -1;
+  }
+
+  reg_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmap_fd, base);
+  reg_offset = (char*) reg_base + offset;
+  ctrl = *(volatile uint32_t*) reg_offset;
+
+  switch(option) {
+    case UARTSW_BY_BMC:                //UART Switch control by bmc
+      ctrl &= 0x00ffffff;
+      break;
+    case UARTSW_BY_DEBUG:           //UART Switch control by debug card
+      ctrl |= 0x01000000;
+      break;
+    case SET_SEVEN_SEGMENT:      //set channel on the seven segment display
+      ctrl &= 0x00ffffff;
+      ctrl |= para;
+      break;
+    default:
+      syslog(LOG_WARNING, "pal_mmap: unknown option");
+      break;
+  }
+  *(volatile uint32_t*) reg_offset = ctrl;
+
+  munmap(reg_base, PAGE_SIZE);
+  close(mmap_fd);
+
+  return 0;
+}
+
+int
+pal_uart_select_led_set(void) {
+  static uint32_t pre_channel = 0xffffffff;
+  uint8_t vals;
+  uint32_t channel = 0;
+  const char *shadows[] = {
+    "FM_UARTSW_LSB_N",
+    "FM_UARTSW_MSB_N"
+  };
+
+  //UART Switch control by bmc
+  pal_uart_select(AST_GPIO_BASE, UARTSW_OFFSET, UARTSW_BY_BMC, 0);
+
+  if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &vals)) {
+    return -1;
+  }
+  // The GPIOs are active-low. So, invert it.
+  channel = (uint32_t)(~vals & 0x3);
+  // Shift to get to the bit position of the led.
+  channel = channel << 24;
+
+  // If the requested channel is the same as the previous, do nothing.
+  if (channel == pre_channel) {
+     return -1;
+  }
+  pre_channel = channel;
+
+  //show channel on 7-segment display
+  pal_uart_select(AST_GPIO_BASE, SEVEN_SEGMENT_OFFSET, SET_SEVEN_SEGMENT, channel);
+  return 0;
 }

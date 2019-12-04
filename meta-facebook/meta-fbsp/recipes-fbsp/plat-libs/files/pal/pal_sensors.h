@@ -16,8 +16,12 @@
 #define PECI_INDEX_DIMM_THERMAL_RW              (14)
 #define PECI_INDEX_TEMP_TARGET                  (16)
 #define PECI_INDEX_TOTAL_TIME                   (31)
+#define PECI_INDEX_PKG_IDENTIFIER               (0)
 #define PECI_THERMAL_DIMM0_BYTE                 (1)
 #define PECI_THERMAL_DIMM1_BYTE                 (2)
+#define INTERNAL_CPU_ERROR_MASK                 (0x1C)
+#define EXTERNAL_CPU_ERROR_MASK                 (0xE0)
+#define BOTH_CPU_ERROR_MASK                     (0xFC)
 
 //NM DEVICE INFO
 #define NM_IPMB_BUS_ID   (5)
@@ -364,4 +368,5 @@ enum {
   VR_ID9,
 };
 
+int cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr);
 #endif

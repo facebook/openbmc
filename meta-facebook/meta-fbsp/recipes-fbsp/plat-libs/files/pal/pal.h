@@ -43,6 +43,14 @@ extern "C" {
 #define ERR_NOT_READY       (-2)
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
+#define FAULT_LED_ON  (1)
+#define FAULT_LED_OFF (0)
+
+#define PAGE_SIZE  0x1000
+#define AST_GPIO_BASE 0x1e780000
+#define UARTSW_OFFSET 0x68
+#define SEVEN_SEGMENT_OFFSET 0x20
+
 #define ALTERA_CPLD_I2C_PFR_ADDR    (0x5A)
 #define ALTERA_CPLD_I2C_MOD_ADDR    (0x55)
 #define ALTERA_CPLD_I2C_BUS         (4)
@@ -161,6 +169,12 @@ enum {
   PAL_UNKNOWN_DEV
 };
 
+enum {
+  UARTSW_BY_BMC,
+  UARTSW_BY_DEBUG,
+  SET_SEVEN_SEGMENT,
+};
+
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_is_slot_server(uint8_t fru);
 int pal_set_id_led(uint8_t slot, uint8_t status);
@@ -173,6 +187,9 @@ int read_device(const char *device, int *value);
 int write_device(const char *device, int value);
 int pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver);
 int pal_get_fruid_eeprom_path(uint8_t fru, char *path);
+int pal_set_fault_led(uint8_t fru, uint8_t status);
+int pal_uart_select (uint32_t base, uint8_t offset, int option, uint32_t para);
+int pal_uart_select_led_set(void);
 
 #ifdef __cplusplus
 } // extern "C"

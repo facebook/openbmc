@@ -750,6 +750,7 @@ int pal_ipmb_processing(int bus, void *buf, uint16_t size);
 bool pal_is_mcu_working(void);
 int pal_is_slot_server(uint8_t fru);
 int pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver);
+int pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -7716,3 +7716,20 @@ pal_is_slot_server(uint8_t fru) {
   }
   return 0;
 }
+
+int
+pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  char crisel[128];
+  uint8_t mfg_id[] = {0x4c, 0x1c, 0x00};
+
+  error_log[0] = '\0';
+
+  // Record Type: 0xC0 (OEM)
+  if ((sel[2] == 0xC0) && !memcmp(&sel[7], mfg_id, sizeof(mfg_id))) {
+    snprintf(crisel, sizeof(crisel), "Slot %u PCIe err,FRU:%u", sel[14], fru);
+    pal_add_cri_sel(crisel);
+  }
+
+  return 0;
+}

@@ -151,6 +151,7 @@ extern "C" {
 #define GPIO_POSTCODE_6     "/tmp/gpionames/GPIOH6/%s"
 #define GPIO_POSTCODE_7     "/tmp/gpionames/GPIOH7/%s"
 #define GPIO_DEBUG_PRSNT_N  "/tmp/gpionames/DEBUG_PRESENT_N/%s"
+#define GPIO_COME_PWRGD     "/tmp/gpionames/PWRGD_PCH_PWROK/%s"
 /* Add button function for Debug Card */
 #define BMC_UART_SEL        I2C_DEV_DIR(12, 3e)"uart_selection"
 
@@ -496,6 +497,7 @@ enum
 {
   SLED_CLR_BLUE = 0x3,
   SLED_CLR_YELLOW = 0x4,
+  SLED_CLR_GREEN = 0x5,
   SLED_CLR_RED = 0x6,
   SLED_CLR_OFF = 0x7,
 };
@@ -580,7 +582,7 @@ int pal_mon_fw_upgrade(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug, uint8_t *p
 void set_sys_led(int brd_rev);
 void set_fan_led(int brd_rev);
 void set_psu_led(int brd_rev);
-void set_smb_led(int brd_rev);
+void set_scm_led(int brd_rev);
 int set_sled(int brd_rev, uint8_t color, int led_name);
 void init_led(void);
 int pal_light_scm_led(uint8_t led_color);

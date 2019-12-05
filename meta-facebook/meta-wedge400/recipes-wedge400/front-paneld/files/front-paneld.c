@@ -95,18 +95,15 @@ exithandler(int signum) {
   exit(0);
 }
 
-// Thread for monitoring sim LED
+// Thread for monitoring sys LED
 static void *
-simLED_monitor_handler(void *unused) {
+sysLED_monitor_handler(void *unused) {
   int brd_rev;
-  uint8_t interval = 0;
   struct timeval timeval;
   long curr_time;
   long last_time = 0;
-
   OBMC_INFO("%s: %s started", FRONTPANELD_NAME,__FUNCTION__);
   pal_get_board_rev(&brd_rev);
-  init_led();
   while(1) {
     gettimeofday(&timeval, NULL);
     curr_time = timeval.tv_sec * 1000 + timeval.tv_usec / 1000;
@@ -115,17 +112,33 @@ simLED_monitor_handler(void *unused) {
       // checking FRU Presence and display SYS LED
       set_sys_led(brd_rev);
       last_time = curr_time;
-      if(interval++ > 4){   // check others led every 2 second to reduce message log
-        interval = 0;
-        // checking Sensor and display SMB LED
-        set_smb_led(brd_rev);
-        // checking FAN status and display FAN LED
-        set_fan_led(brd_rev);
-        // checking PSU status and display PSU LED
-        set_psu_led(brd_rev);
-      }
     }
-    usleep(500000);
+    usleep(100000);
+  }
+  return 0;
+}
+
+// Thread for monitoring scm LED, fan LED, psu LED
+static void *
+LED_monitor_handler(void *unused) {
+  int brd_rev;
+  struct timeval timeval;
+  long curr_time;
+  long last_time = 0;
+  OBMC_INFO("%s: %s started", FRONTPANELD_NAME,__FUNCTION__);
+  pal_get_board_rev(&brd_rev);
+  while(1) {
+    gettimeofday(&timeval, NULL);
+    curr_time = timeval.tv_sec * 1000 + timeval.tv_usec / 1000;
+    if ( last_time == 0 || curr_time < last_time ||
+         curr_time - last_time > 2000 ){  // do scm led every 2 second
+      // checking SCM Board and display SCM LED
+      set_scm_led(brd_rev);
+      set_psu_led(brd_rev);
+      set_fan_led(brd_rev);
+      last_time = curr_time;
+    }
+    usleep(100000);
   }
   return 0;
 }
@@ -288,7 +301,8 @@ int
 main (int argc, char * const argv[]) {
   pthread_t tid_scm_monitor;
   pthread_t tid_debug_card;
-  pthread_t tid_simLED_monitor;
+  pthread_t tid_sysLED_monitor;
+  pthread_t tid_LED_monitor;
   pthread_t tid_pwr_btn;
   pthread_t tid_rst_btn;
   pthread_t tid_uart_sel_btn;
@@ -326,6 +340,9 @@ main (int argc, char * const argv[]) {
   }
   obmc_log_unset_std_stream();
 
+  OBMC_INFO("LED Initialize\n");
+  init_led();
+
   if (pal_get_board_type_rev(&brd_type_rev)) {
     OBMC_WARN("Get board revision failed\n");
     exit(-1);
@@ -335,8 +352,12 @@ main (int argc, char * const argv[]) {
     OBMC_WARN("pthread_create for scm monitor error\n");
     exit(1);
   }
-    if (pthread_create(&tid_simLED_monitor, NULL, simLED_monitor_handler, NULL)	  != 0) {
-    OBMC_WARN("pthread_create for simLED monitor error\n");
+  if (pthread_create(&tid_sysLED_monitor, NULL, sysLED_monitor_handler, NULL)	  != 0) {
+    OBMC_WARN("pthread_create for sysLED monitor error\n");
+    exit(1);
+  }
+  if (pthread_create(&tid_LED_monitor, NULL, LED_monitor_handler, NULL)	  != 0) {
+    OBMC_WARN("pthread_create for LED monitor error\n");
     exit(1);
   }
 
@@ -366,7 +387,8 @@ main (int argc, char * const argv[]) {
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_pwr_btn, NULL);
   pthread_join(tid_scm_monitor, NULL);
-  pthread_join(tid_simLED_monitor, NULL);
+  pthread_join(tid_sysLED_monitor, NULL);
+  pthread_join(tid_LED_monitor, NULL);
   pthread_join(tid_uart_sel_btn, NULL);
   return 0;
 }

@@ -5136,51 +5136,6 @@ set_sled(int brd_rev, uint8_t color, int led_name)
   return 0;
 }
 
-
-static void
-upgrade_led_blink(int brd_rev,
-                uint8_t sys_ug, uint8_t fan_ug, uint8_t psu_ug, uint8_t smb_ug)
-{
-  static uint8_t sys_alter = 0, fan_alter = 0, psu_alter = 0, smb_alter = 0;
-
-  if(sys_ug) {
-    if(sys_alter == 0) {
-      set_sled(brd_rev, SLED_CLR_BLUE, SLED_SYS);
-      sys_alter = 1;
-    } else {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
-      sys_alter = 0;
-    }
-  }
-  if(fan_ug) {
-    if(fan_alter == 0) {
-      set_sled(brd_rev, SLED_CLR_BLUE, SLED_FAN);
-      fan_alter = 1;
-    } else {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
-      fan_alter = 0;
-    }
-  }
-  if(psu_ug) {
-    if(psu_alter == 0) {
-      set_sled(brd_rev, SLED_CLR_BLUE, SLED_PSU);
-      psu_alter = 1;
-    } else {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-      psu_alter = 0;
-    }
-  }
-  if(smb_ug) {
-    if(smb_alter == 0) {
-      set_sled(brd_rev, SLED_CLR_BLUE, SLED_SMB);
-      smb_alter = 1;
-    } else {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SMB);
-      smb_alter = 0;
-    }
-  }
-}
-
 int
 pal_mon_fw_upgrade
 (int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug,
@@ -5264,9 +5219,6 @@ close_fp:
   ret = pclose(fp);
   if(-1 == ret)
      OBMC_ERROR(-1, "%s pclose() fail ", __func__);
-
-  if( 0 )
-    upgrade_led_blink(brd_rev, *sys_ug, *fan_ug, *psu_ug, *smb_ug);
 
 free_buf:
   free(buf_ptr);
@@ -5467,88 +5419,50 @@ void set_psu_led(int brd_rev)
   return;
 }
 
-void set_smb_led(int brd_rev)
+void set_scm_led(int brd_rev)
 {
-  char sensor_name[LARGEST_DEVICE_NAME];
-  float ucr, lcr;
-  char path[LARGEST_DEVICE_NAME+1];
-  uint8_t brd_type;
-  uint8_t *smb_sensor_list;
-  uint8_t smb_sensor_list_wedge400[] = {
-    SMB_SENSOR_1220_VMON1,              SMB_SENSOR_1220_VMON2,
-    SMB_SENSOR_1220_VMON3,              SMB_SENSOR_1220_VMON4,
-    SMB_SENSOR_1220_VMON5,              SMB_SENSOR_1220_VMON6,
-    SMB_SENSOR_1220_VMON7,              SMB_SENSOR_1220_VMON8,
-    SMB_SENSOR_1220_VMON9,              SMB_SENSOR_1220_VMON10,
-    SMB_SENSOR_1220_VMON11,             SMB_SENSOR_1220_VMON12,
-    SMB_SENSOR_1220_VCCA,               SMB_SENSOR_1220_VCCINP,
-    SMB_SENSOR_SW_SERDES_PVDD_VOLT,     SMB_SENSOR_SW_SERDES_PVDD_CURR,
-    SMB_SENSOR_SW_SERDES_PVDD_POWER,    SMB_SENSOR_SW_SERDES_PVDD_TEMP1,
-    SMB_SENSOR_SW_SERDES_TRVDD_VOLT,    SMB_SENSOR_SW_SERDES_TRVDD_CURR,
-    SMB_SENSOR_SW_SERDES_TRVDD_POWER,   SMB_SENSOR_SW_SERDES_TRVDD_TEMP1,
-    SMB_SENSOR_SW_CORE_VOLT,            SMB_SENSOR_SW_CORE_CURR,
-    SMB_SENSOR_LM75B_U28_TEMP,          SMB_SENSOR_LM75B_U25_TEMP,
-    SMB_SENSOR_LM75B_U56_TEMP,          SMB_SENSOR_LM75B_U55_TEMP,
-    SMB_SENSOR_TMP421_U62_TEMP,         SMB_SENSOR_TMP421_U63_TEMP,
-    SMB_SENSOR_SW_DIE_TEMP1,            SMB_SENSOR_SW_DIE_TEMP2,
-    SMB_SENSOR_FCM_LM75B_U1_TEMP,       SMB_SENSOR_FCM_LM75B_U2_TEMP,
-    SMB_SENSOR_FCM_HSC_VOLT,            SMB_SENSOR_FCM_HSC_CURR,
-    SMB_SENSOR_FCM_HSC_POWER,
-  };
-  uint8_t smb_sensor_list_wedge400_2[] = {
-    SMB_SENSOR_1220_VMON1,              SMB_SENSOR_1220_VMON2,
-    SMB_SENSOR_1220_VMON3,              SMB_SENSOR_1220_VMON4,
-    SMB_SENSOR_1220_VMON5,              SMB_SENSOR_1220_VMON6,
-    SMB_SENSOR_1220_VMON7,              SMB_SENSOR_1220_VMON8,
-    SMB_SENSOR_1220_VMON9,              SMB_SENSOR_1220_VMON10,
-    SMB_SENSOR_1220_VMON11,             SMB_SENSOR_1220_VMON12,
-    SMB_SENSOR_1220_VCCA,               SMB_SENSOR_1220_VCCINP,
-    SMB_SENSOR_SW_SERDES_PVDD_VOLT,     SMB_SENSOR_SW_SERDES_PVDD_CURR,
-    SMB_SENSOR_SW_SERDES_PVDD_POWER,    SMB_SENSOR_SW_SERDES_PVDD_TEMP1,
-    SMB_SENSOR_SW_SERDES_TRVDD_VOLT,    SMB_SENSOR_SW_SERDES_TRVDD_CURR,
-    SMB_SENSOR_SW_SERDES_TRVDD_POWER,   SMB_SENSOR_SW_SERDES_TRVDD_TEMP1,
-    SMB_SENSOR_SW_CORE_VOLT,            SMB_SENSOR_SW_CORE_CURR,
-    SMB_SENSOR_LM75B_U28_TEMP,          SMB_SENSOR_LM75B_U25_TEMP,
-    SMB_SENSOR_LM75B_U56_TEMP,          SMB_SENSOR_LM75B_U55_TEMP,
-    SMB_SENSOR_TMP421_U62_TEMP,         SMB_SENSOR_TMP421_U63_TEMP,
-    SMB_SENSOR_FCM_LM75B_U1_TEMP,       SMB_SENSOR_FCM_LM75B_U2_TEMP,
-    SMB_SENSOR_FCM_HSC_VOLT,            SMB_SENSOR_FCM_HSC_CURR,
-    SMB_SENSOR_FCM_HSC_POWER,
-  };
-  pal_get_board_type(&brd_type);
-  if ( brd_type == BRD_TYPE_WEDGE400 )
-    smb_sensor_list = smb_sensor_list_wedge400;
-  if ( brd_type == BRD_TYPE_WEDGE400C )
-    smb_sensor_list = smb_sensor_list_wedge400_2;
-  for(uint8_t index = 0 ; index < sizeof(smb_sensor_list); index++)
-  {
-    uint8_t sensor = smb_sensor_list[index];
-    pal_get_sensor_name(FRU_SMB,sensor,sensor_name);
-    float value = 0;
-    pal_get_sensor_threshold(FRU_SMB, sensor, UCR_THRESH, &ucr);
-    pal_get_sensor_threshold(FRU_SMB, sensor, LCR_THRESH, &lcr);
-    snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_SMB, sensor);
-    if(read_device_float(path, &value)) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SMB);
-      OBMC_WARN("%s: can't access %s\n",__func__,path);
-      return;
-    }
+  #define SCM_IP_USB "fe80::2%%usb0"
+  char path[LARGEST_DEVICE_NAME];
+  char cmd[64];
+  char buffer[256];
+  FILE *fp;
+  int power;
+  int ret;
 
-    if( value > ucr ){
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SMB);
-      OBMC_WARN("%s: %s value is over than UCR ( %.2f > %.2f )\n",
-      __func__,sensor_name,value,ucr);
-      return;
-    }else if( lcr != 0 && value < lcr ){
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SMB);
-      OBMC_WARN("%s: %s value is under than LCR ( %.2f < %.2f )\n",
-      __func__,sensor_name,value,lcr);
-      return;
-    }
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_COME_PWRGD, "value");
+  if (read_device(path, &power)) {
+    OBMC_WARN("%s: can't get GPIO value '%s'",__func__,path);
+    return;
   }
 
-  set_sled(brd_rev, SLED_CLR_BLUE, SLED_SMB);
-  return;
+  if(power){
+    // -c count = 1 times
+    // -W timeout = 1 secound
+    sprintf(cmd,"ping -c 1 -W 1 "SCM_IP_USB);
+    fp = popen(cmd,"r");
+    if (!fp) {
+      OBMC_WARN("%s: can't run cmd '%s'",__func__,cmd);
+      set_sled(brd_rev,SLED_CLR_YELLOW,SLED_SMB);
+      return;
+    }
+
+    while (fgets(buffer,256,fp) != NULL){
+    }
+
+    ret = pclose(fp);
+    if(ret == 0){ // PING OK
+      set_sled(brd_rev,SLED_CLR_GREEN,SLED_SMB);
+      return;
+    }else{
+      OBMC_WARN("%s: can't ping to "SCM_IP_USB,__func__);
+      set_sled(brd_rev,SLED_CLR_YELLOW,SLED_SMB);
+      return;
+    }
+  }else{
+    OBMC_WARN("%s: micro server is power off\n",__func__);
+    set_sled(brd_rev,SLED_CLR_RED,SLED_SMB);
+    return;
+  }
 }
 
 int

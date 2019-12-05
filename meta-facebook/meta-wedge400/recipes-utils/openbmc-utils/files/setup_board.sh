@@ -66,3 +66,13 @@ if [ $((brd_type)) -eq $((0x00)) ]; then
 elif  [ $((brd_type)) -eq $((0x01)) ]; then
   cp /etc/sensors.d/custom/wedge400c.conf /etc/sensors.d/wedge400c.conf
 fi
+
+# export_gpio_pin for PCA9555 4-0027
+gpiocli export -c 4-0027 -o 8 --shadow ISO_DEBUG_RST_BTN_N
+gpiocli export -c 4-0027 -o 9 --shadow ISO_PWR_BTN_N
+gpiocli export -c 4-0027 -o 10 --shadow PWRGD_PCH_PWROK
+gpiocli export -c 4-0027 -o 11 --shadow ISO_CB_RESET_N
+gpiocli export -c 4-0027 -o 12 --shadow COM_PWROK
+gpiocli export -c 4-0027 -o 13 --shadow CPU_CATERR_MSMI
+gpiocli export -c 4-0027 -o 14 --shadow ISO_COM_SUS_S3_N
+gpiocli export -c 4-0027 -o 15 --shadow DEBUG_UART_SELECT

@@ -24,18 +24,18 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 i2cset -f -y 6 0x20 0x06 0x00
 i2cset -f -y 6 0x20 0x07 0x00
 
-IO0=`i2cget -f -y 6 0x20 0x2`
-IO1=`i2cget -f -y 6 0x20 0x3`
+IO0=$(i2cget -f -y 6 0x20 0x2)
+IO1=$(i2cget -f -y 6 0x20 0x3)
 
 color=$2
 
 usage(){
-    program=`basename "$0"`
+    program=$(basename "$0")
     echo "Usage:"
     echo "     $program <dev> <color>"
     echo ""
     echo "     <dev>: sts/smb/psu/fan"
-    echo "     <color>: off/red/blue/yellow"
+    echo "     <color>: off/red/blue/yellow/green"
 }
 
 case $color in
@@ -48,30 +48,33 @@ case $color in
     "yellow")
         val=0x4
     ;;
+    "green")
+        val=0x5
+    ;;
     "off")
         val=0x7
     ;;
     *)
     usage
-    exit -1
+    exit 1
     ;;
 esac
 
-if [ "$3" == "0" ] || [ "$3" == "4" ]; then
+if [ "$3" = "0" ] || [ "$3" = "4" ]; then
 
-  if [ "$1" == "smb" ] || [ "$1" == "fan" ]; then
-    val=$(($val << 3))
-    IO0_VAL=$((($IO0 & 0x7) | $val))
-    IO1_VAL=$((($IO1 & 0x7) | $val))
-  elif [ "$1" == "sts" ] || [ "$1" == "psu" ]; then
-    IO0_VAL=$((($IO0 & 0x38) | $val))
-    IO1_VAL=$((($IO1 & 0x38) | $val))
+  if [ "$1" = "smb" ] || [ "$1" = "fan" ]; then
+    val=$((val << 3))
+    IO0_VAL=$(((IO0 & 0x7) | val))
+    IO1_VAL=$(((IO1 & 0x7) | val))
+  elif [ "$1" = "sts" ] || [ "$1" = "psu" ]; then
+    IO0_VAL=$(((IO0 & 0x38) | val))
+    IO1_VAL=$(((IO1 & 0x38) | val))
   else
     usage
-    exit -1
+    exit 1
   fi
 
-  if [ "$1" == "sts" ] || [ "$1" == "fan" ]; then
+  if [ "$1" = "sts" ] || [ "$1" = "fan" ]; then
     i2cset -f -y 6 0x20 0x2 $IO0_VAL
   else
     i2cset -f -y 6 0x20 0x3 $IO1_VAL
@@ -79,19 +82,19 @@ if [ "$3" == "0" ] || [ "$3" == "4" ]; then
 
 else 
 
-  if [ "$1" == "fan" ] || [ "$1" == "smb" ]; then
-    val=$(($val << 3))
-    IO0_VAL=$((($IO0 & 0x7) | $val))
-    IO1_VAL=$((($IO1 & 0x7) | $val))
-  elif [ "$1" == "sts" ] || [ "$1" == "psu" ]; then
-    IO0_VAL=$((($IO0 & 0x38) | $val))
-    IO1_VAL=$((($IO1 & 0x38) | $val))
+  if [ "$1" = "fan" ] || [ "$1" = "smb" ]; then
+    val=$((val << 3))
+    IO0_VAL=$(((IO0 & 0x7) | val))
+    IO1_VAL=$(((IO1 & 0x7) | val))
+  elif [ "$1" = "sts" ] || [ "$1" = "psu" ]; then
+    IO0_VAL=$(((IO0 & 0x38) | val))
+    IO1_VAL=$(((IO1 & 0x38) | val))
   else	
     usage
-    exit -1
+    exit 1
   fi
 
-  if [ "$1" == "fan" ] || [ "$1" == "sts" ]; then
+  if [ "$1" = "fan" ] || [ "$1" = "sts" ]; then
     i2cset -f -y 6 0x20 0x2 $IO0_VAL
   else
     i2cset -f -y 6 0x20 0x3 $IO1_VAL

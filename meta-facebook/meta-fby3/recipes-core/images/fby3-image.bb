@@ -14,7 +14,6 @@ require recipes-core/images/fb-openbmc-image.bb
 # hsvc-util
 # fpc-util
 # imc-util
-# me-util
 # crashdump
 # guid-util
 # sensordump
@@ -55,6 +54,9 @@ IMAGE_INSTALL += " \
   libpldm \
   plat-utils \
   i2craw \
+  bic-util \
+  me-util \
+  bic-cached \
   "
 
 IMAGE_FEATURES += " \

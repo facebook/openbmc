@@ -37,7 +37,6 @@
 #include <openbmc/pal.h>
 
 #define LAST_RECORD_ID 0xFFFF
-#define MAX_SENSOR_NUM 0xFF
 #define BYTES_ENTIRE_RECORD 0xFF
 
 #define MAX_RETRY 6           // 180 secs = 1500 * 6
@@ -82,9 +81,17 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
   char *path = NULL;
   char sdr_temp_path[64] = {0};
   char sdr_path[64] = {0};
+  uint8_t bus_id = 0;
 
-  sprintf(sdr_temp_path, "/tmp/tsdr_slot%d.%d.bin", slot_id, intf);
-  sprintf(sdr_path, "/tmp/sdr_slot%d.%d.bin", slot_id, intf);
+  ret = fby3_common_get_bus_id(slot_id);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to get bus_id: %d\n", __func__, slot_id);
+  }
+
+  bus_id = (uint8_t)ret;
+
+  sprintf(sdr_temp_path, "/tmp/tsdr_slot%d.%d.bin", bus_id, intf);
+  sprintf(sdr_path, "/tmp/sdr_slot%d.%d.bin", bus_id, intf);
 
   ipmi_sel_sdr_req_t req;
   ipmi_sel_sdr_res_t *res = (ipmi_sel_sdr_res_t *) rbuf;
@@ -159,9 +166,17 @@ sdr_cache_init(uint8_t slot_id) {
   char *path = NULL;
   char sdr_temp_path[64] = {0};
   char sdr_path[64] = {0};
+  uint8_t bus_id = 0;
 
-  sprintf(sdr_temp_path, "/tmp/tsdr_slot%d.bin", slot_id);
-  sprintf(sdr_path, "/tmp/sdr_slot%d.bin", slot_id);
+  ret = fby3_common_get_bus_id(slot_id);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to get bus_id: %d\n", __func__, slot_id);
+  }
+
+  bus_id = (uint8_t)ret;
+
+  sprintf(sdr_temp_path, "/tmp/tsdr_slot%d.bin", bus_id);
+  sprintf(sdr_path, "/tmp/sdr_slot%d.bin", bus_id);
 
   ipmi_sel_sdr_req_t req;
   ipmi_sel_sdr_res_t *res = (ipmi_sel_sdr_res_t *) rbuf;

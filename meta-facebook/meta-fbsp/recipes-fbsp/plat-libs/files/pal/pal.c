@@ -1064,3 +1064,120 @@ pal_uart_select_led_set(void) {
   pal_uart_select(AST_GPIO_BASE, SEVEN_SEGMENT_OFFSET, SET_SEVEN_SEGMENT, channel);
   return 0;
 }
+
+int
+parse_mem_error_sel(uint8_t fru, uint8_t snr_num, uint8_t *event_data, char *error_log) {
+  uint8_t *ed = &event_data[3];
+  char temp_log[512] = {0};
+  uint8_t sen_type = event_data[0];
+  uint8_t chn_num, dimm_num;
+
+  if (snr_num == MEMORY_ECC_ERR) {
+    // SEL from MEMORY_ECC_ERR Sensor
+    if ((ed[0] & 0x0F) == 0x0) {
+      if (sen_type == 0x0C) {
+        strcat(error_log, "Correctable");
+        snprintf(temp_log, sizeof(temp_log), "DIMM%02X ECC err,FRU:%u", ed[2], fru);
+        pal_add_cri_sel(temp_log);
+      } else if (sen_type == 0x10)
+        strcat(error_log, "Correctable ECC error Logging Disabled");
+    } else if ((ed[0] & 0x0F) == 0x1) {
+        strcat(error_log, "Uncorrectable");
+        snprintf(temp_log, sizeof(temp_log), "DIMM%02X UECC err,FRU:%u", ed[2], fru);
+        pal_add_cri_sel(temp_log);
+    } else if ((ed[0] & 0x0F) == 0x5)
+        strcat(error_log, "Correctable ECC error Logging Limit Reached");
+      else
+        strcat(error_log, "Unknown");
+  } else if (snr_num == MEMORY_ERR_LOG_DIS) {
+      // SEL from MEMORY_ERR_LOG_DIS Sensor
+    if ((ed[0] & 0x0F) == 0x0)
+      strcat(error_log, "Correctable Memory Error Logging Disabled");
+    else
+      strcat(error_log, "Unknown");
+  }
+
+  // Common routine for both MEM_ECC_ERR and MEMORY_ERR_LOG_DIS
+  chn_num = (ed[2] & 0x1C) >> 2;
+  bool support_mem_mapping = false;
+  char mem_mapping_string[32];
+  pal_parse_mem_mapping_string(chn_num, &support_mem_mapping, mem_mapping_string);
+  if(support_mem_mapping) {
+    snprintf(temp_log, sizeof(temp_log), " (DIMM %s)", mem_mapping_string);
+  } else {
+    snprintf(temp_log, sizeof(temp_log), " (DIMM %02X)", ed[2]);
+  }
+  strcat(error_log, temp_log);
+
+  snprintf(temp_log, sizeof(temp_log), " Logical Rank %d", ed[1] & 0x03);
+  strcat(error_log, temp_log);
+
+  // DIMM number (ed[2]):
+  // Bit[7:5]: Socket number  (Range: 0-7)
+  // Bit[4:2]: Channel number (Range: 0-7)
+  // Bit[1:0]: DIMM number    (Range: 0-3)
+  if (((ed[1] & 0xC) >> 2) == 0x0) {
+    /* All Info Valid */
+    chn_num = (ed[2] & 0x1C) >> 2;
+    dimm_num = ed[2] & 0x3;
+
+    /* If critical SEL logging is available, do it */
+    if (sen_type == 0x0C) {
+      if ((ed[0] & 0x0F) == 0x0) {
+        snprintf(temp_log, sizeof(temp_log), "DIMM%c%d ECC err,FRU:%u", 'A'+chn_num,
+                dimm_num, fru);
+        pal_add_cri_sel(temp_log);
+      } else if ((ed[0] & 0x0F) == 0x1) {
+        snprintf(temp_log, sizeof(temp_log), "DIMM%c%d UECC err,FRU:%u", 'A'+chn_num,
+                dimm_num, fru);
+        pal_add_cri_sel(temp_log);
+      }
+    }
+      /* Then continue parse the error into a string. */
+      /* All Info Valid                               */
+    sprintf(temp_log, " (DIMM %02X) Logical Rank %d", ed[2], ed[1] & 0x03);
+  } else if (((ed[1] & 0xC) >> 2) == 0x1) {
+    /* DIMM info not valid */
+    snprintf(temp_log, sizeof(temp_log), " (CPU# %d, CHN# %d)",
+        (ed[2] & 0xE0) >> 5, (ed[2] & 0x1C) >> 2);
+  } else if (((ed[1] & 0xC) >> 2) == 0x2) {
+    /* CHN info not valid */
+    snprintf(temp_log, sizeof(temp_log), " (CPU# %d, DIMM# %d)",
+        (ed[2] & 0xE0) >> 5, ed[2] & 0x3);
+  } else if (((ed[1] & 0xC) >> 2) == 0x3) {
+    /* CPU info not valid */
+    snprintf(temp_log, sizeof(temp_log), " (CHN# %d, DIMM# %d)",
+        (ed[2] & 0x1C) >> 2, ed[2] & 0x3);
+  }
+  strcat(error_log, temp_log);
+  return 0;
+}
+
+int
+pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
+  uint8_t snr_num = sel[11];
+  uint8_t *event_data = &sel[10];
+  bool parsed = false;
+  error_log[0] = '\0';
+
+  switch(snr_num) {
+    case MEMORY_ECC_ERR:
+    case MEMORY_ERR_LOG_DIS:
+      parse_mem_error_sel(fru, snr_num, event_data, error_log);
+      parsed = true;
+      break;
+  }
+    
+  if (parsed == true) {
+    if ((event_data[2] & 0x80) == 0) {
+      strcat(error_log, " Assertion");
+    } else {
+      strcat(error_log, " Deassertion");
+    }
+    return 0;
+  }
+
+  pal_parse_sel_helper(fru, sel, error_log);
+
+  return 0;
+}

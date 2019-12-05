@@ -3,11 +3,11 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include <syslog.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
-#include <stdint.h>
 #include "cpld.h"
 #include "altera.h"
 #include <openbmc/pal.h>
@@ -70,7 +70,7 @@ int set_i2c_register(int file, uint8_t addr, int reg, int value)
 
   if (ioctl(file, I2C_SLAVE, addr) < 0) {
     /* ERROR HANDLING; you can check errno to see what went wrong */
-    exit(1);
+    return -1;
   }
 
   // write register  4 bytes
@@ -82,11 +82,11 @@ int set_i2c_register(int file, uint8_t addr, int reg, int value)
   outbuf[5] = (value >> 8 ) & 0xFF;
   outbuf[6] = (value >> 16 )  & 0xFF;
   outbuf[7] = (value >> 24 )  & 0xFF;
-  
+
   return write(file, outbuf, 8);
 }
 
-int get_i2c_register(int file, uint8_t addr, int reg, int *val)
+int get_i2c_register(int file, uint8_t addr, uint32_t reg, uint32_t *val)
 {
   int ret = 0;
   uint8_t outbuf[4], inbuf[4];
@@ -94,7 +94,7 @@ int get_i2c_register(int file, uint8_t addr, int reg, int *val)
 
   if (ioctl(file, I2C_SLAVE, addr) < 0) {
     /* ERROR HANDLING; you can check errno to see what went wrong */
-    exit(1);
+    return -1;
   }
 
   // write register  4 bytes
@@ -126,13 +126,13 @@ void max10_update_init(int i2c_file)
   // Set timeout /* set timeout in units of 10 ms */
   if (ioctl(g_i2c_file, I2C_TIMEOUT, 1000) < 0) {
      /* ERROR HANDLING; you can check errno to see what went wrong */
-     printf("\r\n ioctl(file, I2C_TIMEOUT) fail. \r\n");
+     syslog(LOG_WARNING, "ioctl(file, I2C_TIMEOUT) fail.");
   }
 
   // set retry time
   if (ioctl(g_i2c_file, I2C_RETRIES, 100) < 0) {
      /* ERROR HANDLING; you can check errno to see what went wrong */
-     printf("\r\n ioctl(file, I2C_RETRIES) fail. \r\n");
+     syslog(LOG_WARNING, "ioctl(file, I2C_RETRIES) fail.");
   }
 }
 
@@ -153,9 +153,8 @@ int max10_reg_write(int address, int data)
   else
   {
     ret = set_i2c_register(g_i2c_file, g_i2c_bridge_addr, address, data);
-    if(ret != 8)
-    {
-      printf("\r\n\n set_i2c_register() ERROR. ret = %d. \r\n\n", ret);
+    if (ret != 8) {
+      syslog(LOG_WARNING, "set_i2c_register() ERROR. ret = %d.", ret);
     }
   }
 
@@ -163,9 +162,9 @@ int max10_reg_write(int address, int data)
   return ret;
 }
 
-int max10_reg_read(int address)
+int max10_reg_read(uint32_t address)
 {
-  int data;
+  uint32_t data;
   int ret;
 
   if (g_i2c_file == 0) {
@@ -174,43 +173,13 @@ int max10_reg_read(int address)
   } else {
     ret = get_i2c_register(g_i2c_file, g_i2c_bridge_addr, address, &data);
     if (ret != 4) {
-      printf("\r\n\n get_i2c_register() ERROR. ret = %d. \r\n\n", ret);
+      syslog(LOG_WARNING, "get_i2c_register() ERROR. ret = %d.", ret);
     }
   }
 
-//  usleep(1000);
+  //usleep(1000);
   return data;
 }
-
-int max10_iic_get_fw_version(unsigned char id, unsigned char* ver)
-{
-  int i2c_file;
-  int ret=0;
-  uint8_t addr;
-  char dp[64];
-  static uint8_t cached=0;
-  static int cached_ver=0;
-
-  if (!cached) {
-    pal_get_altera_i2c_dev_info(id, &addr, dp);
-
-    if ((i2c_file = open(dp, O_RDWR)) < 0) {
-      printf("Unable to open %s\n", dp);
-      return -1;
-    }
-    max10_update_init(i2c_file);
-
-    ret = get_i2c_register(i2c_file, addr, 0x00100028, &cached_ver);
-    if (ret != 4) {
-      printf("\r\n\n get_i2c_register() ERROR. ret = %d. \r\n\n", ret);
-      return -1;
-    }
-    cached=1;
-  }
-  memcpy(ver, &cached_ver, 4);
-  return 0;
-}
-
 
 static int max10_protect_sectors(void)
 {
@@ -369,12 +338,12 @@ int max10_erase_sector(int sector_id)
       return -1;
     }
 
-    if( status & BUSY_ERASE) {
+    if (status & BUSY_ERASE) {
       usleep(500*1000);
       continue;
     }
 
-    if( status & ERASE_SUCCESS) {
+    if (status & ERASE_SUCCESS) {
       done = 1;
       printf("Erase sector SUCCESS. \r\n");
     } else {
@@ -392,7 +361,6 @@ static int max10_flash_write(int address, int data)
   int ret = 0;
 
   ret = max10_reg_write(g_flash_data_reg + address, data);
-
   return ret;
 }
 
@@ -402,7 +370,6 @@ int max10_flash_read(int address)
   int ret = 0;
 
   ret = max10_reg_read(g_flash_data_reg + address);
-
   return ret;
 }
 
@@ -411,7 +378,6 @@ int max10_status_read(void)
   int ret = 0;
 
   ret = max10_reg_read(g_flash_csr_status_reg);
-
   return ret;
 }
 
@@ -420,14 +386,13 @@ int max10_is_busy(void)
   int value;
 
   value = max10_reg_read(g_flash_csr_status_reg);
-
-  if( value & (BUSY_ERASE|BUSY_READ|BUSY_WRITE) )
+  if (value & (BUSY_ERASE|BUSY_READ|BUSY_WRITE))
     return 1;
   else
     return 0; // timeout
 }
 
-int max10_update_rpd(uint8_t* rpd_file, uint8_t image_type , int cfm_start_addr, int cfm_end_addr )
+int max10_update_rpd(uint8_t* rpd_file, uint8_t image_type, int cfm_start_addr, int cfm_end_addr)
 {
   int ret = 0;
   int address;
@@ -439,8 +404,8 @@ int max10_update_rpd(uint8_t* rpd_file, uint8_t image_type , int cfm_start_addr,
   int offset;
   int cnt;
 
-  printf(" OnChip Flash Status = 0x%X. \r\n", max10_status_read() );
-  printf(" image type = 0x%X. \r\n", image_type);
+  printf("OnChip Flash Status = 0x%X. \r\n", max10_status_read());
+  printf("image type = 0x%X. \r\n", image_type);
 
   switch (image_type)
   {
@@ -525,17 +490,17 @@ int max10_update_rpd(uint8_t* rpd_file, uint8_t image_type , int cfm_start_addr,
       }
     }
 
-    
+
     // show percentage
     {
       static int last_percent = 0;
       int total = cfm_end_addr - cfm_start_addr;
-      int percent = ((address - cfm_start_addr)*100)/total;
+      int percent = ((address+4 - cfm_start_addr)*100)/total;
 
       if(last_percent != percent)
       {
         last_percent = percent;
-        printf(" Prograss  %d %%.  addr: 0x%X \n", percent, address);
+        printf(" Progress  %d %%.  addr: 0x%X \n", percent, address);
       }
     }
 
@@ -581,7 +546,7 @@ int max10_dual_boot_cfg_sel_set(uint8_t img_no)
 {
   int value;
   int address = g_dual_boot_base + 4;  // offset 1
-  int ret ;
+  int ret;
 
   // offset 1 (write only), bit 0, config_sel_overwrite
   value = 0x1;  //config_sel_overwrite = 1
@@ -599,18 +564,16 @@ int max10_dual_boot_cfg_sel_set(uint8_t img_no)
   }
 
   ret = max10_reg_write(address, value);
-
   return ret;
 }
 
 int max10_trig_reconfig(void)
 {
-
   int value = 0x1;
   int address = g_dual_boot_base + 0;  // offset 0
-  int ret ;
+  int ret;
 
-  if( max10_dual_boot_busy() == 0 )
+  if (max10_dual_boot_busy() == 0)
     ret = max10_reg_write(address, value);
   else
     return -1;
@@ -641,7 +604,9 @@ int max10_cpld_cfm_update(FILE *fd)
 
   //read rpt file into memory
   readbytes = read(fileno(fd), rpd_file_buff, rpd_filesize);
-  printf("read(), ret = %d. \r\n", readbytes);
+  if (readbytes != rpd_filesize) {
+    printf("read(), ret = %d. \r\n", readbytes);
+  }
 
   cfm_start_addr = g_cfm_start_addr;
   cfm_end_addr = g_cfm_end_addr;
@@ -658,21 +623,22 @@ int max10_cpld_get_id(uint32_t *dev_id)
   return 0;
 }
 
+void max10_iic_init(uint8_t bus, uint8_t addr)
+{
+  snprintf(g_i2c_file_dp, sizeof(g_i2c_file_dp), "/dev/i2c-%u", bus);
+  g_i2c_bridge_addr = addr;
+  return;
+}
+
 static void max10_dev_init(uint8_t id)
-{  
-  uint8_t addr;
-  uint32_t csr_base;
-  uint32_t data_base;
-  uint32_t boot_base;
-  uint32_t start_addr;
-  uint32_t end_addr;
+{
+  uint32_t csr_base, data_base, boot_base;
+  uint32_t start_addr, end_addr;
   uint8_t img_type;
 
-  pal_get_altera_i2c_dev_info(id, &addr, g_i2c_file_dp);
   pal_get_altera_chip_info(id, &csr_base, &data_base, &boot_base);
   pal_get_altera_cfm_info(id, &start_addr, &end_addr, &img_type);
 
-  g_i2c_bridge_addr = addr;
   g_flash_csr_base = csr_base;
   g_flash_csr_status_reg = g_flash_csr_base + 0x00;
   g_flash_csr_ctrl_reg = g_flash_csr_base + 0x04;
@@ -680,13 +646,13 @@ static void max10_dev_init(uint8_t id)
   g_dual_boot_base = boot_base;
   g_cfm_start_addr = start_addr;
   g_cfm_end_addr = end_addr;
-  g_cfm_image_type = img_type; 
+  g_cfm_image_type = img_type;
 
-  printf("%s file dp=%s\n", __func__, g_i2c_file_dp); 
-  printf("base reg=%x, status_reg=%x, ctrl_reg=%x\n", g_flash_csr_base, g_flash_csr_status_reg, g_flash_csr_ctrl_reg);
-  printf("cfm start addr=%x, endaddr=%x\n", g_cfm_start_addr, g_cfm_end_addr);
-  return;   
-} 
+  DEBUGMSG("%s file dp=%s\n", __func__, g_i2c_file_dp);
+  DEBUGMSG("base reg=%x, status_reg=%x, ctrl_reg=%x\n", g_flash_csr_base, g_flash_csr_status_reg, g_flash_csr_ctrl_reg);
+  DEBUGMSG("cfm start addr=%x, endaddr=%x\n", g_cfm_start_addr, g_cfm_end_addr);
+  return;
+}
 
 static int cpld_dev_open(cpld_intf_t intf, uint8_t id)
 {
@@ -695,7 +661,7 @@ static int cpld_dev_open(cpld_intf_t intf, uint8_t id)
   max10_dev_init(id);
 
   if (intf == INTF_I2C) {
-    // Open a connection to the I2C userspace control file.  
+    // Open a connection to the I2C userspace control file.
     if ((i2c_file = open(g_i2c_file_dp, O_RDWR)) < 0) {
       printf("Unable to open %s\n", g_i2c_file_dp);
       return -1;
@@ -721,20 +687,35 @@ static int cpld_dev_close(cpld_intf_t intf)
   return 0;
 }
 
+static int max10_get_fw_ver(uint32_t *ver)
+{
+  int ret;
+
+  ret = get_i2c_register(g_i2c_file, g_i2c_bridge_addr, 0x00100028, ver);
+  if (ret != 4) {
+    syslog(LOG_WARNING, "get_i2c_register() ERROR. ret = %d.", ret);
+    return -1;
+  }
+
+  return 0;
+}
+
 struct cpld_dev_info altera_dev_list[] = {
   [0] = {
-    .name = "MAX10-10M16-PFR",
+    .name = "MAX10-10M16",
     .dev_id = 0x01234567,
     .cpld_open = cpld_dev_open,
     .cpld_close = cpld_dev_close,
+    .cpld_ver = max10_get_fw_ver,
     .cpld_program = max10_cpld_cfm_update,
     .cpld_dev_id = max10_cpld_get_id,
   },
   [1] = {
-    .name = "MAX10-10M16-MOD",
+    .name = "MAX10-10M25",
     .dev_id = 0x01234567,
     .cpld_open = cpld_dev_open,
     .cpld_close = cpld_dev_close,
+    .cpld_ver = max10_get_fw_ver,
     .cpld_program = max10_cpld_cfm_update,
     .cpld_dev_id = max10_cpld_get_id,
   },

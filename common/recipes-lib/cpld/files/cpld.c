@@ -39,11 +39,11 @@ const char *cpld_list[] = {
   "LCMXO2-2000HC",
   "LCMXO2-4000HC",
   "LCMXO2-7000HC",
-  "MAX10-10M16-PFR",
-  "MAX10-10M16-MOD",
+  "MAX10-10M16",
+  "MAX10-10M25",
 };
 
-static int cpld_probe(cpld_intf_t intf, unsigned char id)
+static int cpld_probe(cpld_intf_t intf, uint8_t id)
 {
   if (cur_dev == NULL)
     return -1;
@@ -87,7 +87,7 @@ static int cpld_malloc_list()
   return dev_cnts;
 }
 
-int cpld_intf_open(unsigned int cpld_index, cpld_intf_t intf )
+int cpld_intf_open(uint8_t cpld_index, cpld_intf_t intf)
 {
   int i;
   int dev_cnts;
@@ -103,11 +103,10 @@ int cpld_intf_open(unsigned int cpld_index, cpld_intf_t intf )
   dev_cnts = cpld_malloc_list();
   for (i = 0; i < dev_cnts; i++) {
     if (!strcmp(cpld_list[cpld_index], cpld_dev_list[i]->name)) {
-	cur_dev = cpld_dev_list[i];
-	break;
-      }
+      cur_dev = cpld_dev_list[i];
+      break;
+    }
   }
-
   if (i == dev_cnts) {
     //No CPLD device match
     printf("Unknown CPLD name = %s\n", cpld_list[cpld_index]);
@@ -120,13 +119,16 @@ int cpld_intf_open(unsigned int cpld_index, cpld_intf_t intf )
 
 int cpld_intf_close(cpld_intf_t intf)
 {
-  cur_dev = NULL;
-  free(cpld_dev_list);
+  int ret;
 
-  return cpld_remove(intf);
+  ret = cpld_remove(intf);
+  free(cpld_dev_list);
+  cur_dev = NULL;
+
+  return ret;
 }
 
-int cpld_get_ver(unsigned int *ver)
+int cpld_get_ver(uint32_t *ver)
 {
   if (cur_dev == NULL)
     return -1;
@@ -139,7 +141,7 @@ int cpld_get_ver(unsigned int *ver)
   return cur_dev->cpld_ver(ver);
 }
 
-int cpld_get_device_id(unsigned int *dev_id)
+int cpld_get_device_id(uint32_t *dev_id)
 {
   if (cur_dev == NULL)
     return -1;
@@ -152,29 +154,17 @@ int cpld_get_device_id(unsigned int *dev_id)
   return cur_dev->cpld_dev_id(dev_id);
 }
 
-int cpld_verify(char *file)
+int cpld_erase(void)
 {
-  int ret;
-  FILE *fp_in = NULL;
-
   if (cur_dev == NULL)
     return -1;
 
-  if (!cur_dev->cpld_verify) {
-    printf("Verify CPLD not supported\n");
+  if (!cur_dev->cpld_erase) {
+    printf("Erase CPLD not supported\n");
     return -1;
   }
 
-  fp_in = fopen(file, "r");
-  if (NULL == fp_in) {
-    printf("[%s] Cannot Open File %s!\n", __func__, file);
-    return -1;
-  }
-
-  cur_dev->cpld_verify(fp_in);
-  fclose(fp_in);
-
-  return ret;
+  return cur_dev->cpld_erase();
 }
 
 int cpld_program(char *file)
@@ -202,15 +192,27 @@ int cpld_program(char *file)
   return ret;
 }
 
-int cpld_erase(void)
+int cpld_verify(char *file)
 {
+  int ret;
+  FILE *fp_in = NULL;
+
   if (cur_dev == NULL)
     return -1;
 
-  if (!cur_dev->cpld_erase) {
-    printf("Erase CPLD not supported\n");
+  if (!cur_dev->cpld_verify) {
+    printf("Verify CPLD not supported\n");
     return -1;
   }
 
-  return cur_dev->cpld_erase();
+  fp_in = fopen(file, "r");
+  if (NULL == fp_in) {
+    printf("[%s] Cannot Open File %s!\n", __func__, file);
+    return -1;
+  }
+
+  cur_dev->cpld_verify(fp_in);
+  fclose(fp_in);
+
+  return ret;
 }

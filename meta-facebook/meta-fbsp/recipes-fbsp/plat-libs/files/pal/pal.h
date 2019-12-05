@@ -51,11 +51,6 @@ extern "C" {
 #define UARTSW_OFFSET 0x68
 #define SEVEN_SEGMENT_OFFSET 0x20
 
-#define ALTERA_CPLD_I2C_PFR_ADDR    (0x5A)
-#define ALTERA_CPLD_I2C_MOD_ADDR    (0x55)
-#define ALTERA_CPLD_I2C_BUS         (4)
-#define I2C_FILE_NAME               "/dev/i2c-%d"
-
 // According to QSYS setting in FPGA project
 
 // on-chip Flash IP
@@ -66,6 +61,8 @@ extern "C" {
 #define ON_CHIP_FLASH_IP_DATA_REG        (0x00000000)
 // Dual-boot IP
 #define DUAL_BOOT_IP_BASE                (0x00100000)
+#define CFM0_START_ADDR                  (0x0004A000)
+#define CFM0_END_ADDR                    (0x0008BFFF)
 #define CFM1_START_ADDR                  (0x00008000)
 #define CFM1_END_ADDR                    (0x00049FFF)
 
@@ -164,8 +161,8 @@ enum {
   PAL_LCMXO2_2000HC = 0,
   PAL_LCMXO2_4000HC,
   PAL_LCMXO2_7000HC,
-  PAL_MAX10_10M16_PFR,
-  PAL_MAX10_10M16_MOD,
+  PAL_MAX10_10M16,
+  PAL_MAX10_10M25,
   PAL_UNKNOWN_DEV
 };
 

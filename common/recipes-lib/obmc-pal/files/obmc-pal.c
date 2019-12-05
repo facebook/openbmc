@@ -2285,11 +2285,6 @@ pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw)
 }
 
 void __attribute__((weak))
-pal_get_altera_i2c_dev_info(uint8_t id, uint8_t* addr, char* path) {
- return;
-}
-
-void __attribute__((weak))
 pal_get_altera_chip_info(uint8_t id, uint32_t* csr_base, uint32_t* data_base, uint32_t* boot_base) {
   return;
 }

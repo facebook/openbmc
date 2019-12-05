@@ -55,18 +55,18 @@ size_t pal_tach_cnt = 2;
 const char pal_pwm_list[] = "0, 1";
 const char pal_tach_list[] = "0, 1";
 
+enum {
+  CFM_IMAGE_NONE = 0,
+  CFM_IMAGE_1,
+  CFM_IMAGE_2,
+};
+
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
 
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
-};
-
-enum {
-  CFM_IMAGE_NONE = 0,
-  CFM_IMAGE_1,
-  CFM_IMAGE_2,
 };
 
 struct pal_key_cfg {
@@ -350,7 +350,7 @@ int
 pal_get_fru_id(char *str, uint8_t *fru) {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;
-  } else if (!strcmp(str, "mb")) {
+  } else if (!strcmp(str, "mb") || !strcmp(str, "cpld")) {
     *fru = FRU_MB;
   } else if (!strcmp(str, "pdb")) {
     *fru = FRU_PDB;
@@ -1039,7 +1039,7 @@ pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver) {
   if (ret != 0) {
     return ret;
   }
-  
+
   ver[0] = dev_id.fw_rev1;
   ver[1] = dev_id.fw_rev2 >> 4; 
   ver[2] = dev_id.fw_rev2 & 0x0f;
@@ -1049,57 +1049,33 @@ pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver) {
 }
 
 void
-pal_get_altera_i2c_dev_info(uint8_t id, uint8_t* addr, char* path) {
-  uint8_t bus=ALTERA_CPLD_I2C_BUS;
-
-  switch (id) {
-    case PAL_MAX10_10M16_PFR:
-      *addr = ALTERA_CPLD_I2C_PFR_ADDR;
-      break;
-
-    case PAL_MAX10_10M16_MOD:
-      *addr = ALTERA_CPLD_I2C_MOD_ADDR;
-      break;
-
-    default:
-      break;
-  }
-
-  snprintf(path, MAX_DEVICE_NAME_SIZE, I2C_FILE_NAME, bus);
-  return;
-}
-
-void
 pal_get_altera_chip_info(uint8_t id, uint32_t* csr_base, uint32_t* data_base, uint32_t* boot_base) {
   switch (id) {
-    case PAL_MAX10_10M16_PFR:
-    case PAL_MAX10_10M16_MOD:
-      *csr_base = ON_CHIP_FLASH_IP_CSR_BASE; 
+    case PAL_MAX10_10M16:
+    case PAL_MAX10_10M25:
+      *csr_base = ON_CHIP_FLASH_IP_CSR_BASE;
       *data_base = ON_CHIP_FLASH_IP_DATA_REG;
       *boot_base = DUAL_BOOT_IP_BASE;
       break;
-
-    default:
-      break;
   }
+
   return;
 }
 
 void
 pal_get_altera_cfm_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr, uint8_t* img_type) {
   switch (id) {
-    case PAL_MAX10_10M16_PFR:
-    case PAL_MAX10_10M16_MOD:
+    case PAL_MAX10_10M16:
+    case PAL_MAX10_10M25:
       *start_addr = CFM0_START_ADDR;
       *end_addr = CFM0_END_ADDR;
-      *img_type = CFM_IMAGE_1; 
-      break;
-
-    default:
+      *img_type = CFM_IMAGE_1;
       break;
   }
+
   return;
 }
+
 // GUID for System and Device
 static int
 pal_get_guid(uint16_t offset, char *guid) {

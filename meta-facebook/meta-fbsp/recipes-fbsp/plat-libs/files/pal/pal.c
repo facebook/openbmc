@@ -49,6 +49,12 @@
 const char pal_fru_list[] = "all, mb, nic0, nic1, riser1, riser2, bmc";
 const char pal_server_list[] = "mb";
 
+enum {
+  CFM_IMAGE_NONE = 0,
+  CFM_IMAGE_1,
+  CFM_IMAGE_2,
+};
+
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
 
@@ -271,7 +277,6 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       break;
     case FRU_RISER1:
       *status = 1;
-
       break;
     case FRU_RISER2:
       *status = 1;
@@ -898,59 +903,30 @@ pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
 }
 
 void
-pal_get_altera_i2c_dev_info(uint8_t id, uint8_t* addr, char* path) {
-  uint8_t bus=ALTERA_CPLD_I2C_BUS;
-
+pal_get_altera_chip_info(uint8_t id, uint32_t *csr_base, uint32_t *data_base, uint32_t *boot_base) {
   switch (id) {
-    case PAL_MAX10_10M16_PFR:
-      *addr = ALTERA_CPLD_I2C_PFR_ADDR;
-      break;
-
-    case PAL_MAX10_10M16_MOD:
-      *addr = ALTERA_CPLD_I2C_MOD_ADDR;
-      break;
-
-    default:
-      break;
-  }
-
-  snprintf(path, MAX_DEVICE_NAME_SIZE, I2C_FILE_NAME, bus);
-  return;
-}
-
-void
-pal_get_altera_chip_info(uint8_t id, uint32_t* csr_base, uint32_t* data_base, uint32_t* boot_base) {
-  switch (id) {
-    case PAL_MAX10_10M16_PFR:
-    case PAL_MAX10_10M16_MOD:
+    case PAL_MAX10_10M16:
+    case PAL_MAX10_10M25:
       *csr_base = ON_CHIP_FLASH_IP_CSR_BASE;
       *data_base = ON_CHIP_FLASH_IP_DATA_REG;
       *boot_base = DUAL_BOOT_IP_BASE;
       break;
-
-    default:
-      break;
   }
+
   return;
 }
 
 void
-pal_get_altera_cfm0_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr) {
-  return;
-}
-
-void
-pal_get_altera_cfm1_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr) {
+pal_get_altera_cfm_info(uint8_t id, uint32_t *start_addr, uint32_t *end_addr, uint8_t *img_type) {
   switch (id) {
-    case PAL_MAX10_10M16_PFR:
-    case PAL_MAX10_10M16_MOD:
-      *start_addr = CFM1_START_ADDR;
-      *end_addr = CFM1_END_ADDR;
-      break;
-
-    default:
+    case PAL_MAX10_10M16:
+    case PAL_MAX10_10M25:
+      *start_addr = CFM0_START_ADDR;
+      *end_addr = CFM0_END_ADDR;
+      *img_type = CFM_IMAGE_1;
       break;
   }
+
   return;
 }
 

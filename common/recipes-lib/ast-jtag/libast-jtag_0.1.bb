@@ -8,6 +8,9 @@ LIC_FILES_CHKSUM = "file://ast-jtag.c;beginline=8;endline=20;md5=435eababecd3f36
 
 SRC_URI = "file://ast-jtag.c \
            file://ast-jtag.h \
+           file://ast-jtag-intf.h \
+           file://ast-jtag-intf.c \
+           file://ast-jtag-legacy.c \
            file://Makefile \
           "
 

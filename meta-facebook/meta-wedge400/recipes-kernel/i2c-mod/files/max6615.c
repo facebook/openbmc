@@ -597,8 +597,8 @@ static int max6615_init_client(struct i2c_client *client,
         if (err)
             goto exit;
 
-        /* PWM 80/240 (i.e. 30%) */
-        data->pwm[i] = 80;
+        /* PWM 72/240 (i.e. 30%) */
+        data->pwm[i] = 72;
         err = i2c_smbus_write_byte_data(client,
                 MAX6615_REG_TARGT_PWM(i), data->pwm[i]);
         if (err)

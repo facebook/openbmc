@@ -34,6 +34,7 @@ IMAGE_INSTALL += " \
   libfruid \
   lldp-util \
   log-util \
+  me-util \
   mterm \
   openbmc-gpio \
   openbmc-utils \

@@ -43,11 +43,14 @@ static int read_vr_iout(uint8_t vr_id, float  *value);
 static int read_vr_pout(uint8_t vr_id, float  *value);
 static int read_cm_sensor(uint8_t id, float *value);
 
+static uint8_t m_TjMax[CPU_ID_NUM] = {0};
+static float m_Dts[CPU_ID_NUM] = {0xFF,0xFF};
+
 const uint8_t mb_sensor_list[] = {
   MB_SNR_INLET_TEMP,
   MB_SNR_OUTLET_TEMP_R,
   MB_SNR_OUTLET_TEMP_L,
-  MB_SNR_P5V,  
+  MB_SNR_P5V,
   MB_SNR_P5V_STBY,
   MB_SNR_P3V3_STBY,
   MB_SNR_P3V3,
@@ -100,7 +103,7 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_VR_CPU0_VSA_VOLT,
   MB_SNR_VR_CPU0_VSA_TEMP,
   MB_SNR_VR_CPU0_VSA_CURR,
-  MB_SNR_VR_CPU0_VSA_POWER, 
+  MB_SNR_VR_CPU0_VSA_POWER,
   MB_SNR_VR_CPU0_VCCIO_VOLT,
   MB_SNR_VR_CPU0_VCCIO_TEMP,
   MB_SNR_VR_CPU0_VCCIO_CURR,
@@ -120,7 +123,7 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_VR_CPU1_VSA_VOLT,
   MB_SNR_VR_CPU1_VSA_TEMP,
   MB_SNR_VR_CPU1_VSA_CURR,
-  MB_SNR_VR_CPU1_VSA_POWER, 
+  MB_SNR_VR_CPU1_VSA_POWER,
   MB_SNR_VR_CPU1_VCCIO_VOLT,
   MB_SNR_VR_CPU1_VCCIO_TEMP,
   MB_SNR_VR_CPU1_VCCIO_CURR,
@@ -182,7 +185,7 @@ PAL_CPU_INFO cpu_info_list[] = {
   {CPU_ID0, PECI_CPU0_ADDR},
   {CPU_ID1, PECI_CPU1_ADDR},
 };
- 
+
 //ADM1278
 PAL_ADM1278_INFO adm1278_info_list[] = {
   {ADM1278_VOLTAGE, 19599, 0, 100},
@@ -311,8 +314,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_CPU0_TJMAX", CPU_ID0, read_cpu_tjmax, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x30
   {"MB_CPU1_TJMAX", CPU_ID1, read_cpu_tjmax, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x31
   {"MB_CPU0_PKG_POWER", CPU_ID0, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x32
-  {"MB_CPU1_PKG_POWER", CPU_ID1, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x33 
-{"MB_CPU0_THERM_MARGIN", CPU_ID0, read_cpu_thermal_margin, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x34
+  {"MB_CPU1_PKG_POWER", CPU_ID1, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x33
+  {"MB_CPU0_THERM_MARGIN", CPU_ID0, read_cpu_thermal_margin, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x34
   {"MB_CPU1_THERM_MARGIN", CPU_ID1, read_cpu_thermal_margin, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x35
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x36
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x37
@@ -328,7 +331,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_HSC_VIN",  HSC_ID0, read_hsc_vin,  true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x40
   {"MB_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x41
   {"MB_HSC_PIN",  HSC_ID0, read_hsc_pin,  true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x42
-  {"MB_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x43 
+  {"MB_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x43
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x44
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x45
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x46
@@ -427,9 +430,9 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9F
 
-  {"MB_INLET_TEMP",    TEMP_INLET,    read_sensor, true, {40, 0, 0, 20, 0, 0, 0, 0}, TEMP}, //0xA0
-  {"MB_OUTLET_TEMP_R", TEMP_OUTLET_R, read_sensor, true, {80, 0, 0, 20, 0, 0, 0, 0}, TEMP}, //0xA1
-  {"MB_OUTLET_TEMP_L", TEMP_OUTLET_L, read_sensor, true, {80, 0, 0, 20, 0, 0, 0, 0}, TEMP}, //0xA2
+  {"MB_INLET_TEMP",    TEMP_INLET,    read_sensor, true, {40, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xA0
+  {"MB_OUTLET_TEMP_R", TEMP_OUTLET_R, read_sensor, true, {80, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xA1
+  {"MB_OUTLET_TEMP_L", TEMP_OUTLET_L, read_sensor, true, {80, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xA2
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA3
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA4
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA5
@@ -437,8 +440,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA7
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA9
-  {"MB_CPU0_TEMP", CPU_ID0, read_cpu_temp, false, {90, 0, 0, 20, 0, 0, 0, 0}, TEMP}, //0xAA
-  {"MB_CPU1_TEMP", CPU_ID1, read_cpu_temp, false, {90, 0, 0, 20, 0, 0, 0, 0}, TEMP}, //0xAB 
+  {"MB_CPU0_TEMP", CPU_ID0, read_cpu_temp, false, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xAA
+  {"MB_CPU1_TEMP", CPU_ID1, read_cpu_temp, false, {90, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xAB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
@@ -590,7 +593,7 @@ get_cm_snr_num(uint8_t id) {
   int snr_num=0;
 
   snr_num = cm_snr_head_list[id].num;
-  return snr_num; 
+  return snr_num;
 }
 
 
@@ -606,20 +609,19 @@ read_cm_sensor(uint8_t id, float *value) {
   ret = cmd_cmc_get_sensor_value(sdr, rbuf, &rlen);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
+    if (retry <= 3) {
+      return READING_SKIP;
     }
-    ret = READING_NA;
-    return ret;
+    return READING_NA;
   } else {
     retry = 0;
   }
-  
+
   *value = (float)(rbuf[0] | rbuf[1]<<8) + (float)(rbuf[2] | rbuf[3]<<8)/1000;
 #ifdef DEBUG
 {
   for(int i=0; i<*rlen, i++) {
-    syslog(LOG_DEBUG, "%s buf[%d]=%d\n", __func__, i, rbuf[i]); 
+    syslog(LOG_DEBUG, "%s buf[%d]=%d\n", __func__, i, rbuf[i]);
   }
 
   syslog(LOG_DEBUG, "%s value=%f\n", __func__, *value);
@@ -671,26 +673,27 @@ read_battery_val(uint8_t adc_id, float *value) {
     goto bail;
   }
 
-#ifdef DEBUG 
+#ifdef DEBUG
   syslog(LOG_DEBUG, "%s %s\n", __func__, path);
-#endif  
+#endif
   msleep(10);
   ret = read_adc_val(adc_id, value);
   if (gpio_set_value(gp_batt, GPIO_VALUE_LOW)) {
     goto bail;
   }
 
-  bail:
-    gpio_close(gp_batt);
-    return ret;
+bail:
+  gpio_close(gp_batt);
+  return ret;
 }
 
-int
+static int
 pal_get_peci_val(struct peci_xfer_msg *msg) {
-  int fd, retry;
+  int fd, ret = -1;
+  int retry;
 
   if ((fd = open(PECI_DEVICE, O_RDWR)) < 0) {
-#ifdef DEBUG   
+#ifdef DEBUG
     syslog(LOG_WARNING, "Failed to open %s\n", PECI_DEVICE);
 #endif
     return -1;
@@ -698,84 +701,50 @@ pal_get_peci_val(struct peci_xfer_msg *msg) {
 
   retry = 0;
   do {
-    if (peci_cmd_xfer_fd(fd, msg) < 0) {
-#ifdef DEBUG     
+    if ((ret = peci_cmd_xfer_fd(fd, msg))) {
+#ifdef DEBUG
       syslog(LOG_WARNING, "peci_cmd_xfer_fd");
 #endif
-      close(fd);
-      return -1;
+      break;
     }
- 
-    if (PECI_RETRY_TIMES) {
-      switch (msg->rx_buf[0]) {
+
+    switch (msg->rx_buf[0]) {
+      case 0x40:  // command passed
+        break;
+
       case 0x80:  // response timeout, Data not ready
       case 0x81:  // response timeout, not able to allocate resource
         if (retry < PECI_RETRY_TIMES) {
-          #ifdef DEBUG
-            syslog(LOG_DEBUG, "CC: %02Xh, retry...\n", msg->rx_buf[0]);
-          #endif
-          retry++;
-          usleep(250*1000);
+#ifdef DEBUG
+          syslog(LOG_DEBUG, "CC: %02Xh, retry %d", msg->rx_buf[0], retry);
+#endif
+          msleep(10);
           continue;
         }
+        ret = -1;
         break;
-      case 0x40:  // command passed
+
       case 0x82:  // low power state
       case 0x90:  // unknown/invalid/illegal request
       case 0x91:  // error
       default:
+        ret = -1;
         break;
-      }
     }
     break;
-  } while (retry <= PECI_RETRY_TIMES);
+  } while (retry++ < PECI_RETRY_TIMES);
 
 #ifdef DEBUG
-{  
+{
   int i;
   for (i = 0; i < msg->rx_len; i++) {
     syslog(LOG_DEBUG, "rx_buf=%02X ", msg->rx_buf[i]);
   }
-  syslog(LOG_DEBUG, "\n");
-}  
-#endif
-  close(fd);
-  return 0;
 }
-
-static int
-cmd_peci_get_temp(uint8_t cpu_addr, float *dts) {
-  struct peci_xfer_msg msg;
-  int ret;
-  PAL_S10_6_FORMAT margin;
-  uint16_t tmp;
-
-
-  msg.addr = cpu_addr;
-  msg.tx_len = 0x01;
-  msg.rx_len = 0x02;
-  msg.tx_buf[0] = 0x01;
-
-  ret = pal_get_peci_val(&msg);
-  if(ret != 0) {
-    return -1;
-  }
-
-  tmp = (msg.rx_buf[1] << 8 | msg.rx_buf[0]);
-  margin.fract = (tmp & 0x003F) * 0.016;
-  margin.integer = tmp >> 6;
-
-  if((0x80 & msg.rx_buf[1]) == 0) {
-   *dts = (float) (margin.integer + margin.fract);
-  } else {
-   *dts = (float) (margin.integer - margin.fract);
-  }
-
-#ifdef DEBUG
-  syslog(LOG_DEBUG, "%s value=%f\n", __func__, *dts); 
 #endif
 
-  return 0;
+  close(fd);
+  return ret;
 }
 
 static int
@@ -793,8 +762,8 @@ cmd_peci_rdpkgconfig(PECI_RD_PKG_CONFIG_INFO* info, uint8_t* rx_buf, uint8_t rx_
   msg.tx_buf[4] = info->para_h;
 
   ret = pal_get_peci_val(&msg);
-  if(ret != 0) {
-    syslog(LOG_DEBUG, "peci rdpkg error index=%x\n", info->index);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "peci rdpkg error index=%x", info->index);
     return -1;
   }
   memcpy(rx_buf, msg.rx_buf, msg.rx_len);
@@ -807,36 +776,28 @@ cmd_peci_get_thermal_margin(uint8_t cpu_addr, float* value) {
   int ret;
   uint8_t rx_len=5;
   uint8_t rx_buf[rx_len];
-  PAL_S10_6_FORMAT margin;
-  uint16_t tmp;
+  int16_t tmp;
 
-  info.cpu_addr= cpu_addr;
+  info.cpu_addr = cpu_addr;
   info.dev_info = 0x00;
-  info.index = PECI_INDEX_THERMAL_MARGIN;
+  info.index = PECI_INDEX_PKG_TEMP;
   info.para_l = 0x00;
   info.para_h = 0x00;
 
   ret = cmd_peci_rdpkgconfig(&info, rx_buf, rx_len);
-  if(ret != 0) {
+  if (ret != 0) {
     return -1;
   }
 
-  tmp = rx_buf[1] | (rx_buf[2] << 8);
-
-  margin.integer = (int)(tmp >> 6);
-  margin.fract = (0x003F & tmp) * 0.016;
-
+  tmp = (rx_buf[2] << 8) | rx_buf[1];
 #ifdef DEBUG
-  syslog(LOG_DEBUG, "%s rxbuf[0]=%x, rxbuf[1]=%x tmp=%x\n", __func__, rx_buf[1], rx_buf[2], tmp);
-#endif 
-  if((0x80 & rx_buf[1]) == 0) {
-   *value = (float) (margin.integer + margin.fract);
-  } else {
-   *value = (float) (margin.integer - margin.fract);
+  syslog(LOG_DEBUG, "%s rxbuf[1]=%x, rxbuf[2]=%x, tmp=%x", __func__, rx_buf[1], rx_buf[2], tmp);
+#endif
+  if (tmp <= (int16_t)0x81ff) {  // 0x8000 ~ 0x81ff for error code
+    return -1;
   }
-#ifdef DEBUG
-  syslog(LOG_DEBUG, "%s value=%f\n", __func__, *value);
-#endif   
+
+  *value = (float)(tmp >> 6);
   return 0;
 }
 
@@ -846,25 +807,19 @@ cmd_peci_get_tjmax(uint8_t cpu_addr, int* tjmax) {
   int ret;
   uint8_t rx_len=5;
   uint8_t rx_buf[rx_len];
-  static uint8_t cached=0;
-  static int tjmax_cached=0;
 
-  if (!cached) {
-    info.cpu_addr= cpu_addr;
-    info.dev_info = 0x00;
-    info.index = PECI_INDEX_TEMP_TARGET;
-    info.para_l = 0x00;
-    info.para_h = 0x00;
+  info.cpu_addr = cpu_addr;
+  info.dev_info = 0x00;
+  info.index = PECI_INDEX_TEMP_TARGET;
+  info.para_l = 0x00;
+  info.para_h = 0x00;
 
-    ret = cmd_peci_rdpkgconfig(&info, rx_buf, rx_len);
-    if(ret != 0) {
-      return -1;
-    }
-    tjmax_cached  = rx_buf[3];
-    cached = 1;
+  ret = cmd_peci_rdpkgconfig(&info, rx_buf, rx_len);
+  if (ret != 0) {
+    return -1;
   }
- 
-  *tjmax = tjmax_cached;
+
+  *tjmax = rx_buf[3];
   return 0;
 }
 
@@ -882,7 +837,7 @@ cmd_peci_dimm_thermal_reading(uint8_t cpu_addr, uint8_t channel, uint8_t* temp) 
   info.para_h = 0x00;
 
   ret = cmd_peci_rdpkgconfig(&info, rx_buf, rx_len);
-  if(ret != 0) {
+  if (ret != 0) {
     return -1;
   }
 
@@ -905,13 +860,13 @@ cmd_peci_accumulated_energy(uint8_t cpu_addr, uint32_t* value) {
   info.para_h = 0x00;
 
   ret = cmd_peci_rdpkgconfig(&info, rx_buf, rx_len);
-  if(ret != 0) {
+  if (ret != 0) {
     return -1;
   }
 
   for (i=0; i<4; i++) {
     *value |= rx_buf[i] << (8*i);
-  }  
+  }
   return 0;
 }
 
@@ -930,15 +885,15 @@ cmd_peci_total_time(uint8_t cpu_addr, uint32_t* value) {
   info.para_h = 0x00;
 
   ret = cmd_peci_rdpkgconfig(&info, rx_buf, rx_len);
-  if(ret != 0) {
+  if (ret != 0) {
     return -1;
   }
 
   for (i=0; i<4; i++) {
     *value |= rx_buf[i] << (8*i);
-  }  
+  }
   return 0;
-} 
+}
 
 int
 cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr) {
@@ -955,25 +910,25 @@ cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr) {
   info.para_h = 0x00;
 
   ret = cmd_peci_rdpkgconfig(&info, rx_buf, rx_len);
-  if(ret != 0) {
+  if (ret != 0) {
     return -1;
   }
 
 //CATERR ERROR
-  if( is_caterr ) {
-    if((rx_buf[3] & BOTH_CPU_ERROR_MASK) == BOTH_CPU_ERROR_MASK)
+  if (is_caterr) {
+    if ((rx_buf[3] & BOTH_CPU_ERROR_MASK) == BOTH_CPU_ERROR_MASK)
       cpu_num = 2; //Both
-    else if((rx_buf[3] & EXTERNAL_CPU_ERROR_MASK) > 0)
+    else if ((rx_buf[3] & EXTERNAL_CPU_ERROR_MASK) > 0)
       cpu_num = 1; //CPU1
-    else if((rx_buf[3] & INTERNAL_CPU_ERROR_MASK) > 0)
+    else if ((rx_buf[3] & INTERNAL_CPU_ERROR_MASK) > 0)
       cpu_num = 0; //CPU0
   } else {
-//MSMI     
-    if(((rx_buf[2] & BOTH_CPU_ERROR_MASK) == BOTH_CPU_ERROR_MASK))
+//MSMI
+    if (((rx_buf[2] & BOTH_CPU_ERROR_MASK) == BOTH_CPU_ERROR_MASK))
       cpu_num = 2; //Both
-    else if((rx_buf[2] & EXTERNAL_CPU_ERROR_MASK) > 0)
+    else if ((rx_buf[2] & EXTERNAL_CPU_ERROR_MASK) > 0)
       cpu_num = 1; //CPU1
-    else if((rx_buf[2] & INTERNAL_CPU_ERROR_MASK) > 0)
+    else if ((rx_buf[2] & INTERNAL_CPU_ERROR_MASK) > 0)
       cpu_num = 0; //CPU0
   }
   *num = cpu_num;
@@ -981,49 +936,25 @@ cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr) {
   syslog(LOG_DEBUG,"%s cpu error number=%x\n",__func__, *num);
 
   return 0;
-} 
+}
 
-static int 
+static int
 read_cpu_tjmax(uint8_t cpu_id, float *value) {
-  uint8_t cpu_addr = cpu_info_list[cpu_id].cpu_addr;
-  int ret=0;
-  int tjmax=0;
-  static int retry = 0;
-  
-  ret =  cmd_peci_get_tjmax(cpu_addr, &tjmax);
-  if (ret != 0) {
-    retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
-    }
-    ret = READING_NA;
-    return ret;
-  } else {
-    retry = 0;
+  if (!m_TjMax[cpu_id]) {
+    return READING_NA;
   }
-  *value = (float)tjmax;
+
+  *value = (float)m_TjMax[cpu_id];
   return 0;
 }
 
-static int 
+static int
 read_cpu_thermal_margin(uint8_t cpu_id, float *value) {
-  uint8_t cpu_addr = cpu_info_list[cpu_id].cpu_addr;
-  int ret=0;
-  float margin=0;
-  static int retry = 0;
-
-  ret = cmd_peci_get_temp(cpu_addr, &margin);
-  if (ret != 0) {
-    retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
-    }
-    ret = READING_NA;
-    return ret;
-  } else {
-    retry = 0;
+  if (m_Dts[cpu_id] > 0) {
+    return READING_NA;
   }
-  *value = margin;
+
+  *value = m_Dts[cpu_id];
   return 0;
 }
 
@@ -1033,19 +964,18 @@ read_cpu_pkg_pwr(uint8_t cpu_id, float *value) {
   // Run Time units: Intel Doc#554767, p33, msec
   float unit = 0.06103515625f; // 2^(-14)*1000 = 0.06103515625
   uint32_t pkg_energy=0, run_time=0, diff_energy=0, diff_time=0;
-  uint8_t cpu_addr;
+  uint8_t cpu_addr = cpu_info_list[cpu_id].cpu_addr;
   static uint32_t last_pkg_energy[2] = {0}, last_run_time[2] = {0};
-  static uint8_t retry[2] = {0x00}; // CPU0 and CPU1
+  static uint8_t retry[CPU_ID_NUM] = {0}; // CPU0 and CPU1
   int ret = READING_NA;
-  cpu_addr = cpu_info_list[cpu_id].cpu_addr; 
 
   ret = cmd_peci_accumulated_energy(cpu_addr, &pkg_energy);
-  if( ret != 0) {
+  if (ret != 0) {
     goto error_exit;
   }
 
   ret =  cmd_peci_total_time(cpu_addr, &run_time);
-  if ( ret != 0) {
+  if (ret != 0) {
     goto error_exit;
   }
 
@@ -1058,80 +988,76 @@ read_cpu_pkg_pwr(uint8_t cpu_id, float *value) {
     ret = READING_NA;
   }
 
-  if(!ret) {
-    if(pkg_energy >= last_pkg_energy[cpu_id]) {
+  if (!ret) {
+    if (pkg_energy >= last_pkg_energy[cpu_id]) {
       diff_energy = pkg_energy - last_pkg_energy[cpu_id];
     } else {
       diff_energy = pkg_energy + (0xffffffff - last_pkg_energy[cpu_id] + 1);
     }
     last_pkg_energy[cpu_id] = pkg_energy;
 
-    if(run_time >= last_run_time[cpu_id]) {
+    if (run_time >= last_run_time[cpu_id]) {
       diff_time = run_time - last_run_time[cpu_id];
     } else {
       diff_time = run_time + (0xffffffff - last_run_time[cpu_id] + 1);
-    }  
+    }
     last_run_time[cpu_id] = run_time;
 
-    if(diff_time == 0) {
+    if (diff_time == 0) {
       ret = READING_NA;
     } else {
       *value = ((float)diff_energy / (float)diff_time * unit);
     }
   }
 
-  error_exit:
-    if (ret != 0) {
-      retry[cpu_id]++;
-      if (retry[cpu_id] <= 3) {
-        ret = READING_SKIP;
-        return ret;
-      }
-    } else {
-      retry[cpu_id] = 0;
+error_exit:
+  if (ret != 0) {
+    retry[cpu_id]++;
+    if (retry[cpu_id] <= 3) {
+      return READING_SKIP;
     }
+  } else {
+    retry[cpu_id] = 0;
+  }
   return ret;
 }
 
 static int
 read_cpu_temp(uint8_t cpu_id, float *value) {
+  uint8_t cpu_addr = cpu_info_list[cpu_id].cpu_addr;
   int ret, tjmax;
   float dts;
-  uint8_t cpu_addr;
-  static int retry = 0;
-  
-  cpu_addr = cpu_info_list[cpu_id].cpu_addr; 
+  static uint8_t retry[CPU_ID_NUM] = {0};
 
-  ret = cmd_peci_get_temp(cpu_addr, &dts);
-  if (ret != 0) {
-    retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
+  if (!m_TjMax[cpu_id]) {
+    ret = cmd_peci_get_tjmax(cpu_addr, &tjmax);
+    if (!ret) {
+      m_TjMax[cpu_id] = tjmax;
     }
-    ret = READING_NA;
-    return ret;
-  } else {
-    retry = 0;
   }
 
-  ret = cmd_peci_get_tjmax(cpu_addr, &tjmax);
+  ret = cmd_peci_get_thermal_margin(cpu_addr, &dts);
   if (ret != 0) {
-    retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
+    retry[cpu_id]++;
+    if (retry[cpu_id] <= 3) {
+      return READING_SKIP;
     }
-    ret = READING_NA;
-    return ret;
+    m_Dts[cpu_id] = 0xFF;
+    return READING_NA;
   } else {
-    retry = 0;
+    retry[cpu_id] = 0;
+    m_Dts[cpu_id] = dts;
   }
 
-  *value = (float)tjmax + dts; 
-  #ifdef DEBUG
-    syslog(LOG_DEBUG, "%s cpu_id=%d value=%f\n", __func__, cpu_id, *value);
-  #endif
+  if (!m_TjMax[cpu_id]) {
+    return READING_NA;
+  }
 
-  return 0;  
+  *value = (float)m_TjMax[cpu_id] + dts;
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s cpu_id=%d value=%f", __func__, cpu_id, *value);
+#endif
+  return 0;
 }
 
 static int
@@ -1143,11 +1069,10 @@ read_cpu0_dimm_temp(uint8_t dimm_id, float *value) {
   ret = cmd_peci_dimm_thermal_reading(PECI_CPU0_ADDR, dimm_id, &temp);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
+    if (retry <= 3) {
+      return READING_SKIP;
     }
-    ret = READING_NA;
-    return ret;
+    return READING_NA;
   } else {
     retry = 0;
   }
@@ -1156,7 +1081,7 @@ read_cpu0_dimm_temp(uint8_t dimm_id, float *value) {
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s CPU0 DIMM Temp=%f id=%d\n", __func__, *value, dimm_id);
 #endif
-  return 0;  
+  return 0;
 }
 
 static int
@@ -1168,11 +1093,10 @@ read_cpu1_dimm_temp(uint8_t dimm_id, float *value) {
   ret = cmd_peci_dimm_thermal_reading(PECI_CPU1_ADDR, dimm_id, &temp);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
+    if (retry <= 3) {
+      return READING_SKIP;
     }
-    ret = READING_NA;
-    return ret;
+    return READING_NA;
   } else {
     retry = 0 ;
   }
@@ -1181,7 +1105,7 @@ read_cpu1_dimm_temp(uint8_t dimm_id, float *value) {
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s CPU1 Dimm Temp=%f id=%d\n", __func__, *value, dimm_id);
 #endif
-  return 0;  
+  return 0;
 }
 
 
@@ -1195,7 +1119,7 @@ get_nm_rw_info(uint8_t nm_id, uint8_t* nm_bus, uint8_t* nm_addr, uint16_t* bmc_a
   if (ret != 0) {
     return ret;
   }
- 
+
   return 0;
 }
 
@@ -1205,8 +1129,8 @@ get_adm1278_info(uint8_t hsc_id, uint8_t type, float* m, float* b, float* r) {
  *m = hsc_info_list[hsc_id].info[type].m;
  *b = hsc_info_list[hsc_id].info[type].b;
  *r = hsc_info_list[hsc_id].info[type].r;
-  
- return;   
+
+ return;
 }
 
 //Sensor HSC
@@ -1223,8 +1147,7 @@ set_NM_hsc_pmon_config(uint8_t hsc_id, uint8_t value_l, uint8_t value_h) {
 
   ret = cmd_NM_pmbus_read_word(info, dev_addr, rbuf);
   if (ret != 0) {
-    ret = READING_NA;
-    return ret;
+    return READING_NA;
   }
 
   if (rbuf[6] == 0) {
@@ -1234,10 +1157,9 @@ set_NM_hsc_pmon_config(uint8_t hsc_id, uint8_t value_l, uint8_t value_h) {
     data[0] |= value_l;
     data[1] |= value_h;
   } else {
-    ret = READING_NA;
-    return ret;
+    return READING_NA;
   }
-  
+
   ret = cmd_NM_pmbus_write_word(info, dev_addr, data);
   if (ret != 0) {
     return ret;
@@ -1261,32 +1183,31 @@ enable_hsc_temp_monitor(uint8_t hsc_id) {
 static int
 read_hsc_iout(uint8_t hsc_id, float *value) {
   uint8_t rbuf[32] = {0x00};
-  uint8_t addr = hsc_info_list[hsc_id].slv_addr; 
-  float m, b, r; 
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr;
+  float m, b, r;
   static int retry = 0;
   int ret = 0;
   NM_RW_INFO info;
 
   get_nm_rw_info(NM_ID0, &info.bus, &info.nm_addr, &info.bmc_addr);
-  info.nm_cmd = PMBUS_READ_IOUT; 
+  info.nm_cmd = PMBUS_READ_IOUT;
 
   ret = cmd_NM_pmbus_read_word(info, addr, rbuf);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
+    if (retry <= 3) {
+      return READING_SKIP;
     }
-    ret = READING_NA;
-    return ret;
+    return READING_NA;
   }
 
   get_adm1278_info(hsc_id, ADM1278_CURRENT, &m, &b, &r);
 
   if (rbuf[6] == 0) {
     *value = ((float)(rbuf[11] << 8 | rbuf[10]) * r - b) / m;
-  #ifdef DEBUG  
+  #ifdef DEBUG
     syslog(LOG_DEBUG, "%s Iout value=%f\n", __func__, *value);
-  #endif  
+  #endif
     retry = 0;
   } else {
   #ifdef DEBUG
@@ -1301,8 +1222,8 @@ read_hsc_iout(uint8_t hsc_id, float *value) {
 static int
 read_hsc_vin(uint8_t hsc_id, float *value) {
   uint8_t rbuf[32] = {0x00};
-  uint8_t addr = hsc_info_list[hsc_id].slv_addr; 
-  float m, b, r; 
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr;
+  float m, b, r;
   static int retry = 0;
   int ret = 0;
   NM_RW_INFO info;
@@ -1313,19 +1234,18 @@ read_hsc_vin(uint8_t hsc_id, float *value) {
   ret = cmd_NM_pmbus_read_word(info, addr, rbuf);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
+    if (retry <= 3) {
+      return READING_SKIP;
     }
-    ret = READING_NA;
-    return ret;
+    return READING_NA;
   }
 
   get_adm1278_info(hsc_id, ADM1278_VOLTAGE, &m, &b, &r);
   if (rbuf[6] == 0) {
     *value = ((float)(rbuf[11] << 8 | rbuf[10]) * r - b) / m;
-  #ifdef DEBUG  
+  #ifdef DEBUG
     syslog(LOG_DEBUG, "%s Vin value=%f\n", __func__, *value);
-  #endif  
+  #endif
     retry = 0;
   } else {
   #ifdef DEBUG
@@ -1340,8 +1260,8 @@ read_hsc_vin(uint8_t hsc_id, float *value) {
 static int
 read_hsc_pin(uint8_t hsc_id, float *value) {
   uint8_t rbuf[32] = {0x00};
-  uint8_t addr = hsc_info_list[hsc_id].slv_addr; 
-  float m, b, r; 
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr;
+  float m, b, r;
   static int retry = 0;
   int ret = 0;
   NM_RW_INFO info;
@@ -1352,11 +1272,10 @@ read_hsc_pin(uint8_t hsc_id, float *value) {
   ret = cmd_NM_pmbus_read_word(info, addr, rbuf);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
+    if (retry <= 3) {
+      return READING_SKIP;
     }
-    ret = READING_NA;
-    return ret;
+    return READING_NA;
   }
 
 
@@ -1364,9 +1283,9 @@ read_hsc_pin(uint8_t hsc_id, float *value) {
 
   if (rbuf[6] == 0) {
     *value = ((float)(rbuf[11] << 8 | rbuf[10]) * r - b) / m;
-  #ifdef DEBUG  
+  #ifdef DEBUG
     syslog(LOG_DEBUG, "%s Pin value=%f\n", __func__, *value);
-  #endif  
+  #endif
     retry = 0;
   } else {
   #ifdef DEBUG
@@ -1381,8 +1300,8 @@ read_hsc_pin(uint8_t hsc_id, float *value) {
 static int
 read_hsc_temp(uint8_t hsc_id, float *value) {
   uint8_t rbuf[32] = {0x00};
-  uint8_t addr = hsc_info_list[hsc_id].slv_addr; 
-  float m, b, r; 
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr;
+  float m, b, r;
   static int retry = 0;
   int ret = 0;
   NM_RW_INFO info;
@@ -1395,20 +1314,19 @@ read_hsc_temp(uint8_t hsc_id, float *value) {
   ret = cmd_NM_pmbus_read_word(info, addr, rbuf);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
+    if (retry <= 3) {
+      return READING_SKIP;
     }
-    ret = READING_NA;
-    return ret;
+    return READING_NA;
   }
 
   get_adm1278_info(hsc_id, ADM1278_TEMP, &m, &b, &r);
 
   if (rbuf[6] == 0) {
     *value = ((float)(rbuf[11] << 8 | rbuf[10]) * r - b) / m;
-  #ifdef DEBUG  
+  #ifdef DEBUG
     syslog(LOG_DEBUG, "%s Temp value=%f\n", __func__, *value);
-  #endif  
+  #endif
     retry = 0;
   } else {
   #ifdef DEBUG
@@ -1444,7 +1362,7 @@ read_NM_pch_temp(uint8_t nm_id, float *value) {
 
 /*==========================================
 Read temperature sensor TMP421 value.
-Interface: temp_id: temperature id 
+Interface: temp_id: temperature id
            *value: real temperature value
            return: error code
 ============================================*/
@@ -1470,23 +1388,23 @@ read_nic_temp(uint8_t nic_id, float *value) {
   char fn[32];
   uint8_t retry = 3, tlen, rlen, addr, bus;
   uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0}; 
+  uint8_t rbuf[16] = {0};
 
   bus = nic_info_list[nic_id].bus;
-  addr = nic_info_list[nic_id].slv_addr; 
+  addr = nic_info_list[nic_id].slv_addr;
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
   fd = open(fn, O_RDWR);
-  if (fd < 0) { 
+  if (fd < 0) {
     goto err_exit;
   }
 
   //Temp Register
   tbuf[0] = 0x01;
-  tlen = 1; 
-  rlen = 1; 
+  tlen = 1;
+  rlen = 1;
 
-  while (ret < 0 && retry-- > 0 ) {
+  while (ret < 0 && retry-- > 0) {
     ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
   }
 
@@ -1494,11 +1412,11 @@ read_nic_temp(uint8_t nic_id, float *value) {
   syslog(LOG_DEBUG, "%s Temp[%d]=%x bus=%x slavaddr=%x\n", __func__, nic_id, rbuf[0], bus, addr);
 #endif
 
-  if (ret < 0) { 
+  if (ret < 0) {
     goto err_exit;
   }
 
-  *value = rbuf[0]; 
+  *value = rbuf[0];
   err_exit:
   if (fd > 0) {
     close(fd);
@@ -1512,23 +1430,23 @@ read_hd_temp(uint8_t hd_id, float *value) {
   char fn[32];
   uint8_t retry = 3, tlen, rlen, addr, bus;
   uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0}; 
+  uint8_t rbuf[16] = {0};
 
   bus = disk_info_list[hd_id].bus;
-  addr = disk_info_list[hd_id].slv_addr; 
+  addr = disk_info_list[hd_id].slv_addr;
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
   fd = open(fn, O_RDWR);
-  if (fd < 0) { 
+  if (fd < 0) {
     goto err_exit;
   }
 
   //Temp Register
   tbuf[0] = 0x03;
-  tlen = 1; 
-  rlen = 1; 
+  tlen = 1;
+  rlen = 1;
 
-  while (ret < 0 && retry-- > 0 ) {
+  while (ret < 0 && retry-- > 0) {
     ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
   }
 
@@ -1540,7 +1458,7 @@ read_hd_temp(uint8_t hd_id, float *value) {
     goto err_exit;
   }
 
-  *value = rbuf[0]; 
+  *value = rbuf[0];
   err_exit:
   if (fd > 0) {
     close(fd);
@@ -1559,21 +1477,21 @@ read_ina260_vol(uint8_t ina260_id, float *value) {
   uint16_t tmp;
 
   bus = ina260_info_list[ina260_id].bus;
-  cmd = INA260_VOLTAGE; 
-  addr = ina260_info_list[ina260_id].slv_addr; 
-  scale = 0.00125; 
+  cmd = INA260_VOLTAGE;
+  addr = ina260_info_list[ina260_id].slv_addr;
+  scale = 0.00125;
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
   fd = open(fn, O_RDWR);
-  if (fd < 0) { 
+  if (fd < 0) {
     goto err_exit;
   }
 
   tbuf[0] = cmd;
-  tlen = 1; 
-  rlen = 2; 
+  tlen = 1;
+  rlen = 2;
 
-  while (ret < 0 && retry-- > 0 ) {
+  while (ret < 0 && retry-- > 0) {
     ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
   }
 
@@ -1582,7 +1500,7 @@ read_ina260_vol(uint8_t ina260_id, float *value) {
 #endif
 
   if (ret < 0) {
-    syslog(LOG_DEBUG, "ret=%d", ret);  
+    syslog(LOG_DEBUG, "ret=%d", ret);
     goto err_exit;
   }
 
@@ -1592,7 +1510,7 @@ read_ina260_vol(uint8_t ina260_id, float *value) {
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s tmp=%x val=%f\n", __func__, tmp, *value);
 #endif
-   
+
   err_exit:
   if (fd > 0) {
     close(fd);
@@ -1638,7 +1556,7 @@ read_vr_temp(uint8_t vr_id, float *value) {
     {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCSA_TEMP"},
     {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_TEMP"},
     {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_TEMP"},
-    {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_TEMP"}, 
+    {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_TEMP"},
   };
   if (vr_id >= ARRAY_SIZE(devs)) {
     return -1;
@@ -1661,7 +1579,7 @@ read_vr_iout(uint8_t vr_id, float *value) {
     {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCSA_IOUT"},
     {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_IOUT"},
     {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_IOUT"},
-    {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_IOUT"}, 
+    {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_IOUT"},
   };
   if (vr_id >= ARRAY_SIZE(devs)) {
     return -1;
@@ -1689,7 +1607,7 @@ read_vr_pout(uint8_t vr_id, float *value) {
     {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCSA_POUT"},
     {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_POUT"},
     {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_POUT"},
-    {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_POUT"}, 
+    {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_POUT"},
   };
   if (vr_id >= ARRAY_SIZE(devs)) {
     return -1;
@@ -1701,8 +1619,8 @@ int
 read_vr_pin(uint8_t vr_id, float *value) {
  // int ret = 0;
  // uint8_t cmd;
- 
- // cmd = PMBUS_READ_PIN; 
+
+ // cmd = PMBUS_READ_PIN;
  // ret = get_tps53688_linear(vr_id, cmd, value);
  // if (ret != 0) {
  //   return ret;
@@ -1732,24 +1650,23 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   case FRU_PDB:
     if (server_off) {
       poweron_10s_flag = 0;
-      if (sensor_map[sensor_num].stby_read == true ) {
-        ret = sensor_map[sensor_num].read_sensor(id, (float*) value);  
+      if (sensor_map[sensor_num].stby_read == true) {
+        ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
       } else {
         ret = READING_NA;
       }
     } else {
-      if((poweron_10s_flag < 5) && ((sensor_num == MB_SNR_HSC_VIN) ||
-        (sensor_num == MB_SNR_HSC_IOUT) || (sensor_num == MB_SNR_HSC_PIN) ||
-        (sensor_num == MB_SNR_HSC_TEMP) ||
-        (sensor_num == MB_SNR_FAN0_TACH) || (sensor_num == MB_SNR_FAN1_TACH))) {
-  
+      if ((poweron_10s_flag < 5) && ((sensor_num == MB_SNR_HSC_VIN) ||
+          (sensor_num == MB_SNR_HSC_IOUT) || (sensor_num == MB_SNR_HSC_PIN) ||
+          (sensor_num == MB_SNR_HSC_TEMP) ||
+          (sensor_num == MB_SNR_FAN0_TACH) || (sensor_num == MB_SNR_FAN1_TACH))) {
         poweron_10s_flag++;
         ret = READING_NA;
         break;
       }
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
     }
- 
+
     if (ret != 0) {
       ret = READING_NA;
     }
@@ -1760,7 +1677,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       return pal_sensor_read_raw(fru, sensor_num, value);
     }
     break;
-      
+
   default:
     return -1;
   }
@@ -1774,7 +1691,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   } else {
     sprintf(str, "%.2f",*((float*)value));
   }
-  if(kv_set(key, str, 0, 0) < 0) {
+  if (kv_set(key, str, 0, 0) < 0) {
     syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);
     return -1;
   } else {
@@ -1793,7 +1710,7 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   case FRU_PDB:
     sprintf(name, "%s", sensor_map[sensor_num].snr_name);
     break;
-    
+
   default:
     return -1;
   }
@@ -1811,7 +1728,7 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
     switch(thresh) {
     case UCR_THRESH:
       *val = sensor_map[sensor_num].snr_thresh.ucr_thresh;
-      break;  
+      break;
     case UNC_THRESH:
       *val = sensor_map[sensor_num].snr_thresh.unc_thresh;
       break;
@@ -1836,7 +1753,7 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
     default:
       syslog(LOG_WARNING, "Threshold type error value=%d\n", thresh);
       return -1;
-    }    
+    }
     break;
   default:
     return -1;
@@ -1857,7 +1774,7 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case TEMP:
           sprintf(units, "C");
           break;
-        case FAN:  
+        case FAN:
           sprintf(units, "RPM");
           break;
         case VOLT:

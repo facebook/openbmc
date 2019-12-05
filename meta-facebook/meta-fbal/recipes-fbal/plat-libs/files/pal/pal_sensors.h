@@ -9,8 +9,9 @@
 #define MB_ADC_VOLTAGE_DEVICE "/sys/devices/platform/iio-hwmon/hwmon/hwmon*/in%d_input"
 
 //PECI CMD INFO
-#define PECI_RETRY_TIMES                        (0)
+#define PECI_RETRY_TIMES                        (10)
 #define PECI_CMD_RD_PKG_CONFIG                  (0xA1)
+#define PECI_INDEX_PKG_TEMP                     (2)
 #define PECI_INDEX_ACCUMULATED_ENERGY_STATUS    (3)
 #define PECI_INDEX_THERMAL_MARGIN               (10)
 #define PECI_INDEX_DIMM_THERMAL_RW              (14)
@@ -80,7 +81,7 @@ enum {
   MB_SNR_CPU1_PKG_POWER = 0x33,
   MB_SNR_CPU0_THERM_MARGIN = 0x34,
   MB_SNR_CPU1_THERM_MARGIN = 0x35,
- 
+
 //HSC
   MB_SNR_HSC_VIN = 0x40,
   MB_SNR_HSC_IOUT = 0x41,
@@ -153,13 +154,13 @@ enum {
 
   MB_SNR_POWER_FAIL = 0x9C,
   MB_SNR_MEMORY_LOOP_FAIL = 0x9D,
-//Board TEMP  
+//Board TEMP
   MB_SNR_INLET_TEMP = 0xA0,
   MB_SNR_OUTLET_TEMP_R = 0xA1,
   MB_SNR_OUTLET_TEMP_L = 0xA2,
   MB_SNR_INLET_REMOTE_TEMP = 0xA3,
   MB_SNR_OUTLET_REMOTE_TEMP = 0xA4,
-//CPU TEMP  
+//CPU TEMP
   MB_SNR_CPU0_TEMP = 0xAA,
   MB_SNR_CPU1_TEMP = 0xAB,
 //CPU VR
@@ -191,9 +192,9 @@ enum {
   MB_SNR_VR_PCH_PVNN_VOLT = 0xC8,
   MB_SNR_VR_PCH_PVNN_TEMP = 0xC9,
   MB_SNR_VR_PCH_PVNN_CURR = 0xCA,
-  MB_SNR_VR_PCH_PVNN_POWER = 0xCB, 
+  MB_SNR_VR_PCH_PVNN_POWER = 0xCB,
 //ADC
-  MB_SNR_P5V = 0xD0,  
+  MB_SNR_P5V = 0xD0,
   MB_SNR_P5V_STBY = 0xD1,
   MB_SNR_P3V3_STBY = 0xD2,
   MB_SNR_P3V3 = 0xD3,
@@ -257,7 +258,7 @@ typedef struct {
   int (*read_sensor) (uint8_t id, float *value);
   uint8_t stby_read;
   PAL_SENSOR_THRESHOLD snr_thresh;
-  uint8_t units; 
+  uint8_t units;
 } PAL_SENSOR_MAP;
 
 //ADC INFO
@@ -273,9 +274,9 @@ enum {
   ADC8,
   ADC9,
   ADC10,
-  ADC11, 
-  ADC12, 
-  ADC13, 
+  ADC11,
+  ADC12,
+  ADC13,
   ADC14,
 };
 
@@ -311,6 +312,7 @@ enum {
 enum {
   CPU_ID0 = 0,
   CPU_ID1 = 1,
+  CPU_ID_NUM
 };
 
 typedef struct {
@@ -394,7 +396,7 @@ enum {
   CM_HSC_PEAK_IOUT,
   CM_HSC_PEAK_PIN,
   CM_P12V,
-  CM_P3V, 
+  CM_P3V,
   CM_FAN0_VOLT,
   CM_FAN1_VOLT,
   CM_FAN2_VOLT,
@@ -417,12 +419,6 @@ typedef struct {
   uint8_t val_l;
 } PAL_CM_SENSOR_INFO;
 
-
-typedef struct {
-  int integer :10;
-  uint8_t fract :6;
-} PAL_S10_6_FORMAT;
-
 //VR TPS53688 INFO
 enum {
   VR_ID0 = 0,
@@ -434,7 +430,7 @@ enum {
   VR_ID6,
   VR_ID7,
   VR_ID8,
-  VR_ID9, 
+  VR_ID9,
 };
 
 int cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr);

@@ -1,2 +1,2 @@
 #!/bin/sh
-exec /usr/local/bin/sensord fru pdb
+exec /usr/local/bin/sensord mb pdb

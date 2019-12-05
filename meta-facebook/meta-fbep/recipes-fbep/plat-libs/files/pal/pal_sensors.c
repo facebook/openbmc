@@ -44,7 +44,7 @@ const char pal_tach_list[] = "0..7";
 
 #define SWITCHTEC_DEV "/dev/i2c-12@0x%x"
 
-#define MAX_SENSOR_NUM FRU_SENSOR_MAX+1
+#define MAX_SENSOR_NUM FBEP_SENSOR_MAX
 #define MAX_SENSOR_THRESHOLD 8
 
 #define READING_NA -2
@@ -52,38 +52,42 @@ const char pal_tach_list[] = "0..7";
 /*
  * List of sensors to be monitored
  */
-const uint8_t fru_sensor_list[] = {
-  FRU_FAN0_TACH_I,
-  FRU_FAN0_TACH_O,
-  FRU_FAN0_VOLT,
-  FRU_FAN0_CURR,
-  FRU_FAN1_TACH_I,
-  FRU_FAN1_TACH_O,
-  FRU_FAN1_VOLT,
-  FRU_FAN1_CURR,
-  FRU_FAN2_TACH_I,
-  FRU_FAN2_TACH_O,
-  FRU_FAN2_VOLT,
-  FRU_FAN2_CURR,
-  FRU_FAN3_TACH_I,
-  FRU_FAN3_TACH_O,
-  FRU_FAN3_VOLT,
-  FRU_FAN3_CURR,
-  FRU_ADC_P12V_AUX,
-  FRU_ADC_P3V3_STBY,
-  FRU_ADC_P5V_STBY,
-  FRU_ADC_P12V_1,
-  FRU_ADC_P12V_2,
-  FRU_ADC_P3V3,
-  FRU_ADC_P3V_BAT,
-  FRU_SENSOR_GPU_INLET,
-  FRU_SENSOR_GPU_OUTLET,
-  FRU_SENSOR_PAX01_THERM,
-  FRU_SENSOR_PAX23_THERM,
-  FRU_SWITCH_PAX0_DIE_TEMP,
-  FRU_SWITCH_PAX1_DIE_TEMP,
-  FRU_SWITCH_PAX2_DIE_TEMP,
-  FRU_SWITCH_PAX3_DIE_TEMP,
+const uint8_t mb_sensor_list[] = {
+  MB_FAN0_TACH_I,
+  MB_FAN0_TACH_O,
+  MB_FAN0_VOLT,
+  MB_FAN0_CURR,
+  MB_FAN1_TACH_I,
+  MB_FAN1_TACH_O,
+  MB_FAN1_VOLT,
+  MB_FAN1_CURR,
+  MB_FAN2_TACH_I,
+  MB_FAN2_TACH_O,
+  MB_FAN2_VOLT,
+  MB_FAN2_CURR,
+  MB_FAN3_TACH_I,
+  MB_FAN3_TACH_O,
+  MB_FAN3_VOLT,
+  MB_FAN3_CURR,
+  MB_ADC_P12V_AUX,
+  MB_ADC_P3V3_STBY,
+  MB_ADC_P5V_STBY,
+  MB_ADC_P12V_1,
+  MB_ADC_P12V_2,
+  MB_ADC_P3V3,
+  MB_ADC_P3V_BAT,
+  MB_SENSOR_GPU_INLET,
+  MB_SENSOR_GPU_INLET_REMOTE,
+  MB_SENSOR_GPU_OUTLET,
+  MB_SENSOR_GPU_OUTLET_REMOTE,
+  MB_SENSOR_PAX01_THERM,
+  MB_SENSOR_PAX01_THERM_REMOTE,
+  MB_SENSOR_PAX23_THERM,
+  MB_SENSOR_PAX23_THERM_REMOTE,
+  MB_SWITCH_PAX0_DIE_TEMP,
+  MB_SWITCH_PAX1_DIE_TEMP,
+  MB_SWITCH_PAX2_DIE_TEMP,
+  MB_SWITCH_PAX3_DIE_TEMP,
 };
 
 const uint8_t pdb_sensor_list[] = {
@@ -108,43 +112,48 @@ const uint8_t pdb_sensor_list[] = {
   PDB_ADC_2_VICOR2_TEMP,
   PDB_ADC_2_VICOR3_TEMP,
   PDB_SENSOR_OUTLET_TEMP,
+  PDB_SENSOR_OUTLET_TEMP_REMOTE,
 };
 
 /*
  * The name of all sensors, each should correspond to the enumeration.
  */
-const char* fru_sensor_name[] = {
-  "FRU_FAN0_TACH_I",
-  "FRU_FAN0_TACH_O",
-  "FRU_FAN0_VOLT",
-  "FRU_FAN0_CURR",
-  "FRU_FAN1_TACH_I",
-  "FRU_FAN1_TACH_O",
-  "FRU_FAN1_VOLT",
-  "FRU_FAN1_CURR",
-  "FRU_FAN2_TACH_I",
-  "FRU_FAN2_TACH_O",
-  "FRU_FAN2_VOLT",
-  "FRU_FAN2_CURR",
-  "FRU_FAN3_TACH_I",
-  "FRU_FAN3_TACH_O",
-  "FRU_FAN3_VOLT",
-  "FRU_FAN3_CURR",
-  "FRU_ADC_P12V_AUX",
-  "FRU_ADC_P3V3_STBY",
-  "FRU_ADC_P5V_STBY",
-  "FRU_ADC_P12V_1",
-  "FRU_ADC_P12V_2",
-  "FRU_ADC_P3V3",
-  "FRU_ADC_P3V_BAT",
-  "FRU_SENSOR_GPU_INLET",
-  "FRU_SENSOR_GPU_OUTLET",
-  "FRU_SENSOR_PAX01_THERM",
-  "FRU_SENSOR_PAX23_THERM",
-  "FRU_SWITCH_PAX0_DIE_TEMP",
-  "FRU_SWITCH_PAX1_DIE_TEMP",
-  "FRU_SWITCH_PAX2_DIE_TEMP",
-  "FRU_SWITCH_PAX3_DIE_TEMP",
+const char* sensors_name[] = {
+  "MB_FAN0_TACH_I",
+  "MB_FAN0_TACH_O",
+  "MB_FAN0_VOLT",
+  "MB_FAN0_CURR",
+  "MB_FAN1_TACH_I",
+  "MB_FAN1_TACH_O",
+  "MB_FAN1_VOLT",
+  "MB_FAN1_CURR",
+  "MB_FAN2_TACH_I",
+  "MB_FAN2_TACH_O",
+  "MB_FAN2_VOLT",
+  "MB_FAN2_CURR",
+  "MB_FAN3_TACH_I",
+  "MB_FAN3_TACH_O",
+  "MB_FAN3_VOLT",
+  "MB_FAN3_CURR",
+  "MB_ADC_P12V_AUX",
+  "MB_ADC_P3V3_STBY",
+  "MB_ADC_P5V_STBY",
+  "MB_ADC_P12V_1",
+  "MB_ADC_P12V_2",
+  "MB_ADC_P3V3",
+  "MB_ADC_P3V_BAT",
+  "MB_SENSOR_GPU_INLET",
+  "MB_SENSOR_GPU_INLET_REMOTE",
+  "MB_SENSOR_GPU_OUTLET",
+  "MB_SENSOR_GPU_OUTLET_REMOTE",
+  "MB_SENSOR_PAX01_THERM",
+  "MB_SENSOR_PAX01_THERM_REMOTE",
+  "MB_SENSOR_PAX23_THERM",
+  "MB_SENSOR_PAX23_THERM_REMOTE",
+  "MB_SWITCH_PAX0_DIE_TEMP",
+  "MB_SWITCH_PAX1_DIE_TEMP",
+  "MB_SWITCH_PAX2_DIE_TEMP",
+  "MB_SWITCH_PAX3_DIE_TEMP",
   "PDB_HSC_P12V_1_VIN",
   "PDB_HSC_P12V_1_VOUT",
   "PDB_HSC_P12V_1_CURR",
@@ -166,10 +175,11 @@ const char* fru_sensor_name[] = {
   "PDB_ADC_2_VICOR2_TEMP",
   "PDB_ADC_2_VICOR3_TEMP",
   "PDB_SENSOR_OUTLET_TEMP",
+  "PDB_SENSOR_OUTLET_TEMP_REMOTE",
 };
 
 float sensors_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-size_t fru_sensor_cnt = sizeof(fru_sensor_list)/sizeof(uint8_t);
+size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
 size_t pdb_sensor_cnt = sizeof(pdb_sensor_list)/sizeof(uint8_t);
 
 static void hsc_value_adjust(struct calibration_table *table, float *value)
@@ -212,7 +222,7 @@ static int read_battery_value(float *value)
     goto bail;
   }
   msleep(10);
-  ret = sensors_read_adc("FRU_ADC_P3V_BAT", value);
+  ret = sensors_read_adc("MB_ADC_P3V_BAT", value);
   gpio_set_value(gp_batt, GPIO_VALUE_LOW);
 bail:
   gpio_close(gp_batt);
@@ -227,7 +237,7 @@ static int read_switchtec_dietemp(uint8_t sensor_num, float *value)
   char device_name[LARGEST_DEVICE_NAME] = {0};
   struct switchtec_dev *dev;
 
-  addr = 0x18 + (sensor_num - FRU_SWITCH_PAX0_DIE_TEMP);
+  addr = 0x18 + (sensor_num - MB_SWITCH_PAX0_DIE_TEMP);
   snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, addr);
 
   dev = switchtec_open(device_name);
@@ -336,9 +346,9 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
 
 int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 {
-  if (fru == FRU_BASE) {
-    *sensor_list = (uint8_t *) fru_sensor_list;
-    *cnt = fru_sensor_cnt;
+  if (fru == FRU_MB) {
+    *sensor_list = (uint8_t *) mb_sensor_list;
+    *cnt = mb_sensor_cnt;
   } else if (fru == FRU_PDB) {
     *sensor_list = (uint8_t *) pdb_sensor_list;
     *cnt = pdb_sensor_cnt;
@@ -354,46 +364,46 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 static void sensor_thresh_array_init()
 {
   // Fan Sensors
-  sensors_threshold[FRU_FAN0_TACH_I][UNC_THRESH] = 8500;
-  sensors_threshold[FRU_FAN0_TACH_I][UCR_THRESH] = 11500;
-  sensors_threshold[FRU_FAN0_TACH_I][LCR_THRESH] = 500;
-  sensors_threshold[FRU_FAN0_TACH_O][UNC_THRESH] = 8500;
-  sensors_threshold[FRU_FAN0_TACH_O][UCR_THRESH] = 11500;
-  sensors_threshold[FRU_FAN0_TACH_O][LCR_THRESH] = 500;
-  sensors_threshold[FRU_FAN1_TACH_I][UNC_THRESH] = 8500;
-  sensors_threshold[FRU_FAN1_TACH_I][UCR_THRESH] = 11500;
-  sensors_threshold[FRU_FAN1_TACH_I][LCR_THRESH] = 500;
-  sensors_threshold[FRU_FAN1_TACH_O][UNC_THRESH] = 8500;
-  sensors_threshold[FRU_FAN1_TACH_O][UCR_THRESH] = 11500;
-  sensors_threshold[FRU_FAN1_TACH_O][LCR_THRESH] = 500;
-  sensors_threshold[FRU_FAN2_TACH_I][UNC_THRESH] = 8500;
-  sensors_threshold[FRU_FAN2_TACH_I][UCR_THRESH] = 11500;
-  sensors_threshold[FRU_FAN2_TACH_I][LCR_THRESH] = 500;
-  sensors_threshold[FRU_FAN2_TACH_O][UNC_THRESH] = 8500;
-  sensors_threshold[FRU_FAN2_TACH_O][UCR_THRESH] = 11500;
-  sensors_threshold[FRU_FAN2_TACH_O][LCR_THRESH] = 500;
-  sensors_threshold[FRU_FAN3_TACH_I][UNC_THRESH] = 8500;
-  sensors_threshold[FRU_FAN3_TACH_I][UCR_THRESH] = 11500;
-  sensors_threshold[FRU_FAN3_TACH_I][LCR_THRESH] = 500;
-  sensors_threshold[FRU_FAN3_TACH_O][UNC_THRESH] = 8500;
-  sensors_threshold[FRU_FAN3_TACH_O][UCR_THRESH] = 11500;
-  sensors_threshold[FRU_FAN3_TACH_O][LCR_THRESH] = 500;
+  sensors_threshold[MB_FAN0_TACH_I][UNC_THRESH] = 8500;
+  sensors_threshold[MB_FAN0_TACH_I][UCR_THRESH] = 11500;
+  sensors_threshold[MB_FAN0_TACH_I][LCR_THRESH] = 500;
+  sensors_threshold[MB_FAN0_TACH_O][UNC_THRESH] = 8500;
+  sensors_threshold[MB_FAN0_TACH_O][UCR_THRESH] = 11500;
+  sensors_threshold[MB_FAN0_TACH_O][LCR_THRESH] = 500;
+  sensors_threshold[MB_FAN1_TACH_I][UNC_THRESH] = 8500;
+  sensors_threshold[MB_FAN1_TACH_I][UCR_THRESH] = 11500;
+  sensors_threshold[MB_FAN1_TACH_I][LCR_THRESH] = 500;
+  sensors_threshold[MB_FAN1_TACH_O][UNC_THRESH] = 8500;
+  sensors_threshold[MB_FAN1_TACH_O][UCR_THRESH] = 11500;
+  sensors_threshold[MB_FAN1_TACH_O][LCR_THRESH] = 500;
+  sensors_threshold[MB_FAN2_TACH_I][UNC_THRESH] = 8500;
+  sensors_threshold[MB_FAN2_TACH_I][UCR_THRESH] = 11500;
+  sensors_threshold[MB_FAN2_TACH_I][LCR_THRESH] = 500;
+  sensors_threshold[MB_FAN2_TACH_O][UNC_THRESH] = 8500;
+  sensors_threshold[MB_FAN2_TACH_O][UCR_THRESH] = 11500;
+  sensors_threshold[MB_FAN2_TACH_O][LCR_THRESH] = 500;
+  sensors_threshold[MB_FAN3_TACH_I][UNC_THRESH] = 8500;
+  sensors_threshold[MB_FAN3_TACH_I][UCR_THRESH] = 11500;
+  sensors_threshold[MB_FAN3_TACH_I][LCR_THRESH] = 500;
+  sensors_threshold[MB_FAN3_TACH_O][UNC_THRESH] = 8500;
+  sensors_threshold[MB_FAN3_TACH_O][UCR_THRESH] = 11500;
+  sensors_threshold[MB_FAN3_TACH_O][LCR_THRESH] = 500;
 
   // ADC Sensors
-  sensors_threshold[FRU_ADC_P12V_AUX][UCR_THRESH] = 13.23;
-  sensors_threshold[FRU_ADC_P12V_AUX][LCR_THRESH] = 10.773;
-  sensors_threshold[FRU_ADC_P3V3_STBY][UCR_THRESH] = 3.621;
-  sensors_threshold[FRU_ADC_P3V3_STBY][LCR_THRESH] = 2.975;
-  sensors_threshold[FRU_ADC_P5V_STBY][UCR_THRESH] = 5.486;
-  sensors_threshold[FRU_ADC_P5V_STBY][LCR_THRESH] = 4.524;
-  sensors_threshold[FRU_ADC_P12V_1][UCR_THRESH] = 13.23;
-  sensors_threshold[FRU_ADC_P12V_1][LCR_THRESH] = 10.773;
-  sensors_threshold[FRU_ADC_P12V_2][UCR_THRESH] = 13.23;
-  sensors_threshold[FRU_ADC_P12V_2][LCR_THRESH] = 10.773;
-  sensors_threshold[FRU_ADC_P3V3][UCR_THRESH] = 3.621;
-  sensors_threshold[FRU_ADC_P3V3][LCR_THRESH] = 2.975;
-  sensors_threshold[FRU_ADC_P3V_BAT][UCR_THRESH] = 3.738;
-  sensors_threshold[FRU_ADC_P3V_BAT][LCR_THRESH] = 2.73;
+  sensors_threshold[MB_ADC_P12V_AUX][UCR_THRESH] = 13.23;
+  sensors_threshold[MB_ADC_P12V_AUX][LCR_THRESH] = 10.773;
+  sensors_threshold[MB_ADC_P3V3_STBY][UCR_THRESH] = 3.621;
+  sensors_threshold[MB_ADC_P3V3_STBY][LCR_THRESH] = 2.975;
+  sensors_threshold[MB_ADC_P5V_STBY][UCR_THRESH] = 5.486;
+  sensors_threshold[MB_ADC_P5V_STBY][LCR_THRESH] = 4.524;
+  sensors_threshold[MB_ADC_P12V_1][UCR_THRESH] = 13.23;
+  sensors_threshold[MB_ADC_P12V_1][LCR_THRESH] = 10.773;
+  sensors_threshold[MB_ADC_P12V_2][UCR_THRESH] = 13.23;
+  sensors_threshold[MB_ADC_P12V_2][LCR_THRESH] = 10.773;
+  sensors_threshold[MB_ADC_P3V3][UCR_THRESH] = 3.621;
+  sensors_threshold[MB_ADC_P3V3][LCR_THRESH] = 2.975;
+  sensors_threshold[MB_ADC_P3V_BAT][UCR_THRESH] = 3.738;
+  sensors_threshold[MB_ADC_P3V_BAT][LCR_THRESH] = 2.73;
 
   return;
 }
@@ -408,7 +418,7 @@ int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, vo
     is_thresh_init = true;
   }
 
-  if (fru > FRU_PDB || sensor_num >= FRU_SENSOR_MAX)
+  if (fru > FRU_PDB || sensor_num >= FBEP_SENSOR_MAX)
     return -1;
 
   *val = sensors_threshold[sensor_num][thresh];
@@ -421,10 +431,10 @@ int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name)
   if (fru > FRU_PDB)
     return -1;
 
-  if (sensor_num >= FRU_SENSOR_MAX)
+  if (sensor_num >= FBEP_SENSOR_MAX)
     sprintf(name, "INVAILD SENSOR");
   else
-    sprintf(name, "%s", fru_sensor_name[sensor_num]);
+    sprintf(name, "%s", sensors_name[sensor_num]);
 
   return 0;
 }
@@ -435,27 +445,27 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
     return -1;
 
   switch(sensor_num) {
-    case FRU_FAN0_TACH_I:
-    case FRU_FAN0_TACH_O:
-    case FRU_FAN1_TACH_I:
-    case FRU_FAN1_TACH_O:
-    case FRU_FAN2_TACH_I:
-    case FRU_FAN2_TACH_O:
-    case FRU_FAN3_TACH_I:
-    case FRU_FAN3_TACH_O:
+    case MB_FAN0_TACH_I:
+    case MB_FAN0_TACH_O:
+    case MB_FAN1_TACH_I:
+    case MB_FAN1_TACH_O:
+    case MB_FAN2_TACH_I:
+    case MB_FAN2_TACH_O:
+    case MB_FAN3_TACH_I:
+    case MB_FAN3_TACH_O:
       sprintf(units, "RPM");
       break;
-    case FRU_FAN0_VOLT:
-    case FRU_FAN1_VOLT:
-    case FRU_FAN2_VOLT:
-    case FRU_FAN3_VOLT:
-    case FRU_ADC_P12V_AUX:
-    case FRU_ADC_P3V3_STBY:
-    case FRU_ADC_P5V_STBY:
-    case FRU_ADC_P12V_1:
-    case FRU_ADC_P12V_2:
-    case FRU_ADC_P3V3:
-    case FRU_ADC_P3V_BAT:
+    case MB_FAN0_VOLT:
+    case MB_FAN1_VOLT:
+    case MB_FAN2_VOLT:
+    case MB_FAN3_VOLT:
+    case MB_ADC_P12V_AUX:
+    case MB_ADC_P3V3_STBY:
+    case MB_ADC_P5V_STBY:
+    case MB_ADC_P12V_1:
+    case MB_ADC_P12V_2:
+    case MB_ADC_P3V3:
+    case MB_ADC_P3V_BAT:
     case PDB_HSC_P12V_1_VIN:
     case PDB_HSC_P12V_2_VIN:
     case PDB_HSC_P12V_AUX_VIN:
@@ -464,14 +474,18 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
     case PDB_HSC_P12V_AUX_VOUT:
       sprintf(units, "Volts");
       break;
-    case FRU_SENSOR_GPU_INLET:
-    case FRU_SENSOR_GPU_OUTLET:
-    case FRU_SENSOR_PAX01_THERM:
-    case FRU_SENSOR_PAX23_THERM:
-    case FRU_SWITCH_PAX0_DIE_TEMP:
-    case FRU_SWITCH_PAX1_DIE_TEMP:
-    case FRU_SWITCH_PAX2_DIE_TEMP:
-    case FRU_SWITCH_PAX3_DIE_TEMP:
+    case MB_SENSOR_GPU_INLET:
+    case MB_SENSOR_GPU_INLET_REMOTE:
+    case MB_SENSOR_GPU_OUTLET:
+    case MB_SENSOR_GPU_OUTLET_REMOTE:
+    case MB_SENSOR_PAX01_THERM:
+    case MB_SENSOR_PAX01_THERM_REMOTE:
+    case MB_SENSOR_PAX23_THERM:
+    case MB_SENSOR_PAX23_THERM_REMOTE:
+    case MB_SWITCH_PAX0_DIE_TEMP:
+    case MB_SWITCH_PAX1_DIE_TEMP:
+    case MB_SWITCH_PAX2_DIE_TEMP:
+    case MB_SWITCH_PAX3_DIE_TEMP:
     case PDB_ADC_1_VICOR0_TEMP:
     case PDB_ADC_1_VICOR1_TEMP:
     case PDB_ADC_1_VICOR2_TEMP:
@@ -481,12 +495,13 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
     case PDB_ADC_2_VICOR2_TEMP:
     case PDB_ADC_2_VICOR3_TEMP:
     case PDB_SENSOR_OUTLET_TEMP:
+    case PDB_SENSOR_OUTLET_TEMP_REMOTE:
       sprintf(units, "Degree C");
       break;
-    case FRU_FAN0_CURR:
-    case FRU_FAN1_CURR:
-    case FRU_FAN2_CURR:
-    case FRU_FAN3_CURR:
+    case MB_FAN0_CURR:
+    case MB_FAN1_CURR:
+    case MB_FAN2_CURR:
+    case MB_FAN3_CURR:
     case PDB_HSC_P12V_1_CURR:
     case PDB_HSC_P12V_2_CURR:
     case PDB_HSC_P12V_AUX_CURR:
@@ -511,7 +526,7 @@ int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *valu
   // default poll interval
   *value = 2;
 
-  if (sensor_num == FRU_ADC_P3V_BAT)
+  if (sensor_num == MB_ADC_P3V_BAT)
     *value = 3600;
 
   return PAL_EOK;
@@ -529,98 +544,113 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
 
   switch(sensor_num) {
     // Fan Sensors
-    case FRU_FAN0_TACH_I:
+    case MB_FAN0_TACH_I:
       ret = sensors_read_fan("fan1", (float *)value);
       break;
-    case FRU_FAN0_TACH_O:
+    case MB_FAN0_TACH_O:
       ret = sensors_read_fan("fan2", (float *)value);
       break;
-    case FRU_FAN1_TACH_I:
+    case MB_FAN1_TACH_I:
       ret = sensors_read_fan("fan3", (float *)value);
       break;
-    case FRU_FAN1_TACH_O:
+    case MB_FAN1_TACH_O:
       ret = sensors_read_fan("fan4", (float *)value);
       break;
-    case FRU_FAN2_TACH_I:
+    case MB_FAN2_TACH_I:
       ret = sensors_read_fan("fan5", (float *)value);
       break;
-    case FRU_FAN2_TACH_O:
+    case MB_FAN2_TACH_O:
       ret = sensors_read_fan("fan6", (float *)value);
       break;
-    case FRU_FAN3_TACH_I:
+    case MB_FAN3_TACH_I:
       ret = sensors_read_fan("fan7", (float *)value);
       break;
-    case FRU_FAN3_TACH_O:
+    case MB_FAN3_TACH_O:
       ret = sensors_read_fan("fan8", (float *)value);
       break;
-    case FRU_FAN0_VOLT:
+    case MB_FAN0_VOLT:
       ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_VOLT", (float *)value);
       break;
-    case FRU_FAN0_CURR:
+    case MB_FAN0_CURR:
       ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_CURR", (float *)value);
       break;
-    case FRU_FAN1_VOLT:
+    case MB_FAN1_VOLT:
       ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_VOLT", (float *)value);
       break;
-    case FRU_FAN1_CURR:
+    case MB_FAN1_CURR:
       ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_CURR", (float *)value);
       break;
-    case FRU_FAN2_VOLT:
+    case MB_FAN2_VOLT:
       ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_VOLT", (float *)value);
       break;
-    case FRU_FAN2_CURR:
+    case MB_FAN2_CURR:
       ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_CURR", (float *)value);
       break;
-    case FRU_FAN3_VOLT:
+    case MB_FAN3_VOLT:
       ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_VOLT", (float *)value);
       break;
-    case FRU_FAN3_CURR:
+    case MB_FAN3_CURR:
       ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_CURR", (float *)value);
       break;
     // ADC Sensors (Resistance unit = 1K)
-    case FRU_ADC_P12V_AUX:
-      ret = sensors_read_adc("FRU_ADC_P12V_AUX", (float *)value);
+    case MB_ADC_P12V_AUX:
+      ret = sensors_read_adc("MB_ADC_P12V_AUX", (float *)value);
       break;
-    case FRU_ADC_P3V3_STBY:
-      ret = sensors_read_adc("FRU_ADC_P3V3_STBY", (float *)value);
+    case MB_ADC_P3V3_STBY:
+      ret = sensors_read_adc("MB_ADC_P3V3_STBY", (float *)value);
       break;
-    case FRU_ADC_P5V_STBY:
-      ret = sensors_read_adc("FRU_ADC_P5V_STBY", (float *)value);
+    case MB_ADC_P5V_STBY:
+      ret = sensors_read_adc("MB_ADC_P5V_STBY", (float *)value);
       break;
-    case FRU_ADC_P12V_1:
-      ret = sensors_read_adc("FRU_ADC_P12V_1", (float *)value);
+    case MB_ADC_P12V_1:
+      ret = sensors_read_adc("MB_ADC_P12V_1", (float *)value);
       break;
-    case FRU_ADC_P12V_2:
-      ret = sensors_read_adc("FRU_ADC_P12V_2", (float *)value);
+    case MB_ADC_P12V_2:
+      ret = sensors_read_adc("MB_ADC_P12V_2", (float *)value);
       break;
-    case FRU_ADC_P3V3:
-      ret = sensors_read_adc("FRU_ADC_P3V3", (float *)value);
+    case MB_ADC_P3V3:
+      ret = sensors_read_adc("MB_ADC_P3V3", (float *)value);
       break;
-    case FRU_ADC_P3V_BAT:
+    case MB_ADC_P3V_BAT:
       ret = read_battery_value((float*)value);
       break;
     // Thermal sensors
-    case FRU_SENSOR_GPU_INLET:
+    case MB_SENSOR_GPU_INLET:
       ret = sensors_read("tmp421-i2c-6-4c", "GPU_INLET", (float *)value);
       break;
-    case FRU_SENSOR_GPU_OUTLET:
+    case MB_SENSOR_GPU_INLET_REMOTE:
+      ret = sensors_read("tmp421-i2c-6-4c", "GPU_INLET_REMOTE", (float *)value);
+      break;
+    case MB_SENSOR_GPU_OUTLET:
       ret = sensors_read("tmp421-i2c-6-4f", "GPU_OUTLET", (float *)value);
       break;
-    case FRU_SENSOR_PAX01_THERM:
+    case MB_SENSOR_GPU_OUTLET_REMOTE:
+      ret = sensors_read("tmp421-i2c-6-4f", "GPU_OUTLET_REMOTE", (float *)value);
+      break;
+    case MB_SENSOR_PAX01_THERM:
       ret = sensors_read("tmp422-i2c-6-4d", "PAX01_THERM", (float *)value);
       break;
-    case FRU_SENSOR_PAX23_THERM:
+    case MB_SENSOR_PAX01_THERM_REMOTE:
+      ret = sensors_read("tmp422-i2c-6-4d", "PAX01_THERM_REMOTE", (float *)value);
+      break;
+    case MB_SENSOR_PAX23_THERM:
       ret = sensors_read("tmp422-i2c-6-4e", "PAX23_THERM", (float *)value);
+      break;
+    case MB_SENSOR_PAX23_THERM_REMOTE:
+      ret = sensors_read("tmp422-i2c-6-4e", "PAX23_THERM_REMOTE", (float *)value);
       break;
     case PDB_SENSOR_OUTLET_TEMP:
       ret = sensors_read("tmp421-i2c-17-4c", "OUTLET_TEMP", (float *)value);
       break;
+    case PDB_SENSOR_OUTLET_TEMP_REMOTE:
+      ret = sensors_read("tmp421-i2c-17-4c", "OUTLET_TEMP_REMOTE", (float *)value);
+      break;
     // Temperature within PCIe switch
-    case FRU_SWITCH_PAX0_DIE_TEMP:
-    case FRU_SWITCH_PAX1_DIE_TEMP:
-    case FRU_SWITCH_PAX2_DIE_TEMP:
-    case FRU_SWITCH_PAX3_DIE_TEMP:
-      if (pal_get_server_power(FRU_BASE, &status) == 0 && status == SERVER_POWER_ON)
+    case MB_SWITCH_PAX0_DIE_TEMP:
+    case MB_SWITCH_PAX1_DIE_TEMP:
+    case MB_SWITCH_PAX2_DIE_TEMP:
+    case MB_SWITCH_PAX3_DIE_TEMP:
+      if (pal_get_server_power(FRU_MB, &status) == 0 && status == SERVER_POWER_ON)
         ret = read_switchtec_dietemp(sensor_num, (float*)value);
       else
         ret = READING_NA;

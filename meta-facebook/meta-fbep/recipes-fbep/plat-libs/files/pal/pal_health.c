@@ -8,7 +8,7 @@
 
 static int pal_get_sensor_health_key(uint8_t fru, char *key)
 {
-  if (fru != FRU_BASE)
+  if (fru != FRU_MB)
       return -1;
 
   sprintf(key, "base_sensor_health");

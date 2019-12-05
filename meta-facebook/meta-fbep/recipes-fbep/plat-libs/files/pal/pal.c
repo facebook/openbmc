@@ -52,8 +52,8 @@
 
 #define LAST_KEY "last_key"
 
-const char pal_fru_list[] = "all, fru, pdb";
-const char pal_server_list[] = "fru";
+const char pal_fru_list[] = "all, mb, pdb";
+const char pal_server_list[] = "mb";
 
 char g_dev_guid[GUID_SIZE] = {0};
 
@@ -205,8 +205,8 @@ int pal_channel_to_bus(int channel)
 
 int pal_get_fruid_path(uint8_t fru, char *path)
 {
-  if (fru == FRU_BASE)
-    sprintf(path, FRU_BIN);
+  if (fru == FRU_MB)
+    sprintf(path, MB_BIN);
   else if (fru == FRU_PDB)
     sprintf(path, PDB_BIN);
   else
@@ -217,8 +217,8 @@ int pal_get_fruid_path(uint8_t fru, char *path)
 
 int pal_get_fruid_eeprom_path(uint8_t fru, char *path)
 {
-  if (fru == FRU_BASE)
-    sprintf(path, FRU_EEPROM);
+  if (fru == FRU_MB)
+    sprintf(path, MB_EEPROM);
   else if (fru == FRU_PDB)
     sprintf(path, PDB_EEPROM);
   else
@@ -231,8 +231,8 @@ int pal_get_fru_id(char *str, uint8_t *fru)
 {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;
-  } else if (!strcmp(str, "fru")) {
-    *fru = FRU_BASE;
+  } else if (!strcmp(str, "mb")) {
+    *fru = FRU_MB;
   } else if (!strcmp(str, "pdb")) {
     *fru = FRU_PDB;
   } else {
@@ -245,7 +245,7 @@ int pal_get_fru_id(char *str, uint8_t *fru)
 
 int pal_get_fruid_name(uint8_t fru, char *name)
 {
-  if (fru == FRU_BASE)
+  if (fru == FRU_MB)
     sprintf(name, "Base Board");
   else if (fru == FRU_PDB)
     sprintf(name, "PDB");
@@ -257,7 +257,7 @@ int pal_get_fruid_name(uint8_t fru, char *name)
 
 int pal_is_fru_ready(uint8_t fru, uint8_t *status)
 {
-  if (fru == FRU_BASE || fru == FRU_PDB)
+  if (fru == FRU_MB || fru == FRU_PDB)
     *status = 1;
   else
     return -1;
@@ -267,8 +267,8 @@ int pal_is_fru_ready(uint8_t fru, uint8_t *status)
 
 int pal_get_fru_name(uint8_t fru, char *name)
 {
-  if (fru == FRU_BASE) {
-    strcpy(name, "fru");
+  if (fru == FRU_MB) {
+    strcpy(name, "mb");
   } else if (fru == FRU_PDB) {
     strcpy(name, "pdb");
   } else {
@@ -293,17 +293,17 @@ static int pal_get_guid(uint16_t offset, char *guid) {
   errno = 0;
 
   // Check if file is present
-  if (access(FRU_EEPROM, F_OK) == -1) {
+  if (access(MB_EEPROM, F_OK) == -1) {
       syslog(LOG_ERR, "pal_get_guid: unable to access the %s file: %s",
-          FRU_EEPROM, strerror(errno));
+          MB_EEPROM, strerror(errno));
       return errno;
   }
 
   // Open the file
-  fd = open(FRU_EEPROM, O_RDONLY);
+  fd = open(MB_EEPROM, O_RDONLY);
   if (fd == -1) {
     syslog(LOG_ERR, "pal_get_guid: unable to open the %s file: %s",
-        FRU_EEPROM, strerror(errno));
+        MB_EEPROM, strerror(errno));
     return errno;
   }
 
@@ -314,7 +314,7 @@ static int pal_get_guid(uint16_t offset, char *guid) {
   bytes_rd = read(fd, guid, GUID_SIZE);
   if (bytes_rd != GUID_SIZE) {
     syslog(LOG_ERR, "pal_get_guid: read to %s file failed: %s",
-        FRU_EEPROM, strerror(errno));
+        MB_EEPROM, strerror(errno));
     goto err_exit;
   }
 
@@ -330,17 +330,17 @@ static int pal_set_guid(uint16_t offset, char *guid) {
   errno = 0;
 
   // Check for file presence
-  if (access(FRU_EEPROM, F_OK) == -1) {
+  if (access(MB_EEPROM, F_OK) == -1) {
       syslog(LOG_ERR, "pal_set_guid: unable to access the %s file: %s",
-          FRU_EEPROM, strerror(errno));
+          MB_EEPROM, strerror(errno));
       return errno;
   }
 
   // Open file
-  fd = open(FRU_EEPROM, O_WRONLY);
+  fd = open(MB_EEPROM, O_WRONLY);
   if (fd == -1) {
     syslog(LOG_ERR, "pal_set_guid: unable to open the %s file: %s",
-        FRU_EEPROM, strerror(errno));
+        MB_EEPROM, strerror(errno));
     return errno;
   }
 
@@ -351,7 +351,7 @@ static int pal_set_guid(uint16_t offset, char *guid) {
   bytes_wr = write(fd, guid, GUID_SIZE);
   if (bytes_wr != GUID_SIZE) {
     syslog(LOG_ERR, "pal_set_guid: write to %s file failed: %s",
-        FRU_EEPROM, strerror(errno));
+        MB_EEPROM, strerror(errno));
     goto err_exit;
   }
 
@@ -453,7 +453,7 @@ int pal_get_server_power(uint8_t fru, uint8_t *status)
   int val;
   char device[LARGEST_DEVICE_NAME] = {0};
 
-  if (fru != FRU_BASE)
+  if (fru != FRU_MB)
     return -1;
 
   snprintf(device, LARGEST_DEVICE_NAME, P12V_1_DIR, LTC4282_STATUS_PWR_GOOD);
@@ -591,7 +591,7 @@ static bool is_server_off()
 {
   uint8_t status;
 
-  if (pal_get_server_power(FRU_BASE, &status) < 0)
+  if (pal_get_server_power(FRU_MB, &status) < 0)
     return false;
 
   return status == SERVER_POWER_OFF? true: false;
@@ -697,7 +697,7 @@ int pal_sled_cycle(void)
 
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
 {
-  if (fru == FRU_BASE || fru == FRU_PDB)
+  if (fru == FRU_MB || fru == FRU_PDB)
     *status = 1;
   else
     return -1;
@@ -711,31 +711,31 @@ void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t t
   gpio_desc_t *fan_fail;
 
   switch (snr_num) {
-    case FRU_FAN0_TACH_I:
-    case FRU_FAN0_TACH_O:
-    case FRU_FAN0_VOLT:
-    case FRU_FAN0_CURR:
+    case MB_FAN0_TACH_I:
+    case MB_FAN0_TACH_O:
+    case MB_FAN0_VOLT:
+    case MB_FAN0_CURR:
       fan_ok = gpio_open_by_shadow("FAN0_OK");
       fan_fail = gpio_open_by_shadow("FAN0_FAIL");
       break;
-    case FRU_FAN1_TACH_I:
-    case FRU_FAN1_TACH_O:
-    case FRU_FAN1_VOLT:
-    case FRU_FAN1_CURR:
+    case MB_FAN1_TACH_I:
+    case MB_FAN1_TACH_O:
+    case MB_FAN1_VOLT:
+    case MB_FAN1_CURR:
       fan_ok = gpio_open_by_shadow("FAN1_OK");
       fan_fail = gpio_open_by_shadow("FAN1_FAIL");
       break;
-    case FRU_FAN2_TACH_I:
-    case FRU_FAN2_TACH_O:
-    case FRU_FAN2_VOLT:
-    case FRU_FAN2_CURR:
+    case MB_FAN2_TACH_I:
+    case MB_FAN2_TACH_O:
+    case MB_FAN2_VOLT:
+    case MB_FAN2_CURR:
       fan_ok = gpio_open_by_shadow("FAN2_OK");
       fan_fail = gpio_open_by_shadow("FAN2_FAIL");
       break;
-    case FRU_FAN3_TACH_I:
-    case FRU_FAN3_TACH_O:
-    case FRU_FAN3_VOLT:
-    case FRU_FAN3_CURR:
+    case MB_FAN3_TACH_I:
+    case MB_FAN3_TACH_O:
+    case MB_FAN3_VOLT:
+    case MB_FAN3_CURR:
       fan_ok = gpio_open_by_shadow("FAN3_OK");
       fan_fail = gpio_open_by_shadow("FAN3_FAIL");
       break;
@@ -765,31 +765,31 @@ void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t
   gpio_desc_t *fan_fail;
 
   switch (snr_num) {
-    case FRU_FAN0_TACH_I:
-    case FRU_FAN0_TACH_O:
-    case FRU_FAN0_VOLT:
-    case FRU_FAN0_CURR:
+    case MB_FAN0_TACH_I:
+    case MB_FAN0_TACH_O:
+    case MB_FAN0_VOLT:
+    case MB_FAN0_CURR:
       fan_ok = gpio_open_by_shadow("FAN0_OK");
       fan_fail = gpio_open_by_shadow("FAN0_FAIL");
       break;
-    case FRU_FAN1_TACH_I:
-    case FRU_FAN1_TACH_O:
-    case FRU_FAN1_VOLT:
-    case FRU_FAN1_CURR:
+    case MB_FAN1_TACH_I:
+    case MB_FAN1_TACH_O:
+    case MB_FAN1_VOLT:
+    case MB_FAN1_CURR:
       fan_ok = gpio_open_by_shadow("FAN1_OK");
       fan_fail = gpio_open_by_shadow("FAN1_FAIL");
       break;
-    case FRU_FAN2_TACH_I:
-    case FRU_FAN2_TACH_O:
-    case FRU_FAN2_VOLT:
-    case FRU_FAN2_CURR:
+    case MB_FAN2_TACH_I:
+    case MB_FAN2_TACH_O:
+    case MB_FAN2_VOLT:
+    case MB_FAN2_CURR:
       fan_ok = gpio_open_by_shadow("FAN2_OK");
       fan_fail = gpio_open_by_shadow("FAN2_FAIL");
       break;
-    case FRU_FAN3_TACH_I:
-    case FRU_FAN3_TACH_O:
-    case FRU_FAN3_VOLT:
-    case FRU_FAN3_CURR:
+    case MB_FAN3_TACH_I:
+    case MB_FAN3_TACH_O:
+    case MB_FAN3_VOLT:
+    case MB_FAN3_CURR:
       fan_ok = gpio_open_by_shadow("FAN3_OK");
       fan_fail = gpio_open_by_shadow("FAN3_FAIL");
       break;

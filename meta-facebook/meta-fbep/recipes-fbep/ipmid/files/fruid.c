@@ -96,8 +96,8 @@ err:
 /* Populate the platform specific eeprom for fruid info */
 int plat_fruid_init(void)
 {
-  if (copy_eeprom_to_bin(FRU_EEPROM, FRU_BIN))
-    syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, FRU_BIN);
+  if (copy_eeprom_to_bin(MB_EEPROM, MB_BIN))
+    syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, MB_BIN);
 
   if (copy_eeprom_to_bin(PDB_EEPROM, PDB_BIN))
     syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, PDB_BIN);
@@ -111,7 +111,7 @@ int plat_fruid_size(unsigned char payload_id)
   int ret;
 
   // check the size of the file and return size
-  ret = stat(FRU_BIN, &buf);
+  ret = stat(MB_BIN, &buf);
   if (ret) {
     return 0;
   }
@@ -124,8 +124,8 @@ int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count,
   int ret;
   char fru_dev[LARGEST_DEVICE_NAME] = {0};
 
-  if (fru_id == FRU_BASE)
-    snprintf(fru_dev, LARGEST_DEVICE_NAME, FRU_BIN);
+  if (fru_id == FRU_MB)
+    snprintf(fru_dev, LARGEST_DEVICE_NAME, MB_BIN);
   else if (fru_id == FRU_PDB)
     snprintf(fru_dev, LARGEST_DEVICE_NAME, PDB_BIN);
   else

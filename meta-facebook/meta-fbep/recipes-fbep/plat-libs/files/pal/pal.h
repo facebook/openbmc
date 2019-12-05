@@ -31,8 +31,8 @@ extern "C" {
 #endif
 
 #define PWR_OPTION_LIST "status, off, on, cycle"
-#define FRU_BIN "/tmp/fruid.bin"
-#define FRU_EEPROM "/sys/class/i2c-dev/i2c-6/device/6-0054/eeprom"
+#define MB_BIN "/tmp/fruid.bin"
+#define MB_EEPROM "/sys/class/i2c-dev/i2c-6/device/6-0054/eeprom"
 #define PDB_BIN "/tmp/pdbid.bin"
 #define PDB_EEPROM "/sys/class/i2c-dev/i2c-16/device/16-0054/eeprom"
 
@@ -48,7 +48,7 @@ extern const char pal_server_list[];
 
 enum {
   FRU_ALL = 0,
-  FRU_BASE,
+  FRU_MB,
   FRU_PDB,
 };
 

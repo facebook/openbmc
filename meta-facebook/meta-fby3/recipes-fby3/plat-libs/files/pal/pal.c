@@ -47,9 +47,6 @@ const char pal_fru_list_sensor_history[] = "all, slot0, slot1, slot2, slot3, bb"
 
 const char pal_fru_list[] = "all, slot0, slot1, slot2, slot3, bmc";
 const char pal_server_list[] = "slot0, slot1, slot2, slot3";
-#if 0
-static int key_func_por_policy (int event, void *arg);
-static int key_func_lps (int event, void *arg);
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -62,16 +59,11 @@ struct pal_key_cfg {
   int (*function)(int, void*);
 } key_cfg[] = {
   /* name, default value, function */
-  {"pwr_server_last_state", "on", key_func_lps},
-  {"sysfw_ver_server", "0", NULL},
-  {"identify_sled", "off", NULL},
-  {"timestamp_sled", "0", NULL},
-  {"server_por_cfg", "lps", key_func_por_policy},
-  {"server_sensor_health", "1", NULL},
-  {"nic_sensor_health", "1", NULL},
-  {"server_sel_error", "1", NULL},
-  {"server_boot_order", "0100090203ff", NULL},
-  {"ntp_server", "", NULL},
+  {"sysfw_ver_server0", "0", NULL},
+  {"sysfw_ver_server1", "0", NULL},
+  {"sysfw_ver_server2", "0", NULL},
+  {"sysfw_ver_server3", "0", NULL},
+
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
@@ -123,6 +115,27 @@ pal_set_key_value(char *key, char *value) {
 
   return kv_set(key, value, 0, KV_FPERSIST);
 }
+
+int
+pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
+  int i;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[10] = {0};
+
+  sprintf(key, "sysfw_ver_slot%d", (int) slot);
+
+  for (i = 0; i < SIZE_SYSFW_VER; i++) {
+    sprintf(tstr, "%02x", ver[i]);
+    strcat(str, tstr);
+  }
+
+  return pal_set_key_value(key, str);
+}
+
+#if 0
+static int key_func_por_policy (int event, void *arg);
+static int key_func_lps (int event, void *arg);
 
 static int fw_getenv(char *key, char *value)
 {
@@ -323,6 +336,9 @@ pal_get_fru_name(uint8_t fru, char *name) {
       break;
     case FRU_BMC:
       sprintf(name, "bmc");
+      break;
+    case FRU_NIC:
+      sprintf(name, "nic");
       break;
     default:
       syslog(LOG_WARNING, "%s() unknown fruid %d", __func__, fru);

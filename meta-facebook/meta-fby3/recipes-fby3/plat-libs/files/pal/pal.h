@@ -25,7 +25,7 @@
 #include <facebook/fby3_common.h>
 #include <facebook/bic.h>
 #include "pal_power.h"
-
+#include "pal_sensors.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,6 +57,13 @@ enum {
   FAN_5,
   FAN_6,
   FAN_7,
+};
+
+enum {
+  PWM_0 = 0,
+  PWM_1,
+  PWM_2,
+  PWM_3,
 };
 
 #define MAX_NODES 5

@@ -44,6 +44,7 @@ class BMCMachine(object):
     def __init__(self):
         self.frus = set()
         self.nums = {}
+        self.last_fan_speed = {}
 
     def read_sensors(self, sensor_sources):
         """
@@ -58,6 +59,25 @@ class BMCMachine(object):
         sensors = {}
         for fru in self.frus:
             sensors[fru] = get_sensor_tuples(fru, self.nums[fru], sensor_sources)
+
+        # Offset the sensor Temp value
+        for key, data in list(sensor_sources.items()):
+            sensorname = key.lower()
+            offset = 0
+            if data.offset != None:
+                offset = data.offset
+            elif data.offset_table != None:
+                # Offset sensor Temp, relate with current fan speed
+                for (fan_speed, offset_temp) in sorted(data.offset_table):
+                    offset = offset_temp
+                    if self.last_fan_speed < fan_speed:
+                        break
+            if offset != 0:
+                for fru in self.frus:
+                    if sensorname in sensors[fru]:
+                        senvalue = sensors[fru][sensorname]
+                        value = senvalue.value + offset
+                        sensors[fru][sensorname] = senvalue._replace(value=value)
         return sensors
 
     def read_fans(self, fans):
@@ -94,6 +114,7 @@ class BMCMachine(object):
         """
         Logger.debug("Set pwm %d to %d" % (int(fan.source.name), pct))
         fan.source.write(pct)
+        self.last_fan_speed = pct
 
     def set_all_pwm(self, fans, pct):
         """

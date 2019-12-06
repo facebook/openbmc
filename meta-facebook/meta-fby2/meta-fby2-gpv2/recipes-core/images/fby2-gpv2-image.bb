@@ -60,16 +60,3 @@ IMAGE_INSTALL += " \
   gpv2-util \
   dimm-util \
   "
-
-IMAGE_FEATURES += " \
-  ssh-server-openssh \
-  tools-debug \
-  "
-
-DISTRO_FEATURES += " \
-  ext2 \
-  ipv6 \
-  nfs \
-  usbgadget \
-  usbhost \
-  "

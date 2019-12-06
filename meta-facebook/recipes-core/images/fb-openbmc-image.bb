@@ -24,3 +24,8 @@ openbmc_rootfs_fixup() {
     # Remove all *.pyc files
     find ${IMAGE_ROOTFS} -type f -name "*.pyc" -exec rm -f {} \;
 }
+
+IMAGE_FEATURES_append = " \
+    ssh-server-openssh \
+    tools-debug \
+    "

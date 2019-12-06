@@ -35,12 +35,19 @@ class FscSensorBase(object):
             self.read_source = kwargs["read_source"]
         if "write_source" in kwargs:
             self.write_source = kwargs["write_source"]
+            if "max_duty_register" in kwargs:
+                self.max_duty_register = kwargs["max_duty_register"]
+            else:
+                self.max_duty_register = 100
         else:
             self.write_source = None
+
         self.read_source_fail_counter = 0
         self.write_source_fail_counter = 0
         self.read_source_wrong_counter = 0
         self.hwmon_source = None
+        self.last_error_time = 0
+        self.last_error_level = None
 
     @abc.abstractmethod
     def read(self, **kwargs):
@@ -133,7 +140,12 @@ class FscSensorSourceSysfs(FscSensorBase):
         """
         if self.write_source is None:
             return
-        cmd = "echo " + str(value) + " > " + self.write_source
+        cmd = (
+            "echo "
+            + str(value * self.max_duty_register / 100)
+            + " > "
+            + self.write_source
+        )
         Logger.debug("Setting value using cmd=%s" % cmd)
         response = ""
         try:
@@ -196,7 +208,7 @@ class FscSensorSourceUtil(FscSensorBase):
         """
         if self.write_source is None:
             return
-        cmd = self.write_source % (int(value))
+        cmd = self.write_source % (int(value * self.max_duty_register / 100))
         Logger.debug("Setting value using cmd=%s" % cmd)
         response = ""
         try:

@@ -71,21 +71,25 @@ class Logger(object):
     def debug(msg):
         # print("DEBUG: " + msg)
         syslog.syslog(syslog.LOG_DEBUG, msg)
+        logging.debug(msg)
 
     @staticmethod
     def warn(msg):
         # print("WARNING: " + msg)
         syslog.syslog(syslog.LOG_WARNING, msg)
+        logging.warning(msg)
 
     @staticmethod
     def error(msg):
         # print("ERROR: " + msg)
         syslog.syslog(syslog.LOG_ERR, msg)
+        logging.error(msg)
 
     @staticmethod
     def crit(msg):
         # print("CRITICAL: " + msg)
         syslog.syslog(syslog.LOG_CRIT, msg)
+        logging.critical(msg)
 
     @staticmethod
     def usbdbg(msg):

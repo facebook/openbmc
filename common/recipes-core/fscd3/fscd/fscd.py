@@ -24,6 +24,7 @@ import subprocess
 import sys
 import time
 import traceback
+import datetime
 
 import fsc_expr
 from fsc_bmcmachine import BMCMachine
@@ -108,7 +109,9 @@ class Fscd(object):
         self.transitional = self.fsc_config["pwm_transition_value"]
         self.boost = self.fsc_config["pwm_boost_value"]
         if "non_fanfail_limited_boost_value" in self.fsc_config:
-            self.non_fanfail_limited_boost = self.fsc_config["non_fanfail_limited_boost_value"]
+            self.non_fanfail_limited_boost = self.fsc_config[
+                "non_fanfail_limited_boost_value"
+            ]
         if "boost" in self.fsc_config and "fan_fail" in self.fsc_config["boost"]:
             self.fan_fail = self.fsc_config["boost"]["fan_fail"]
         if "boost" in self.fsc_config and "progressive" in self.fsc_config["boost"]:
@@ -137,6 +140,10 @@ class Fscd(object):
             self.chassis_intrusion = self.fsc_config["chassis_intrusion"]
         else:
             self.chassis_intrusion = False
+        if "enable_fsc_sensor_check" in self.fsc_config:
+            self.enable_fsc_sensor_check = self.fsc_config["enable_fsc_sensor_check"]
+        else:
+            self.enable_fsc_sensor_check = False
         if "ramp_rate" in self.fsc_config:
             self.ramp_rate = self.fsc_config["ramp_rate"]
         if self.watchdog:
@@ -211,7 +218,7 @@ class Fscd(object):
 
     def fsc_host_action(self, action, cause):
         if "host_shutdown" in action:
-            board_host_actions(action="host_shutdown", cause=cause)
+            return board_host_actions(action="host_shutdown", cause=cause)
             # board_fan_actions(fan, action='led_blue')
 
     def fsc_set_all_fan_led(self, color):
@@ -330,6 +337,134 @@ class Fscd(object):
                                         action=invalid_read_action, cause=reason
                                     )
 
+    def fsc_sensor_check(self, sensors_tuples):
+        """
+            Monitor sensor temperature value
+            This function checks whether any thermal sensor temp is over limit or not
+            if it over limit it will boost the fan to full speed
+
+            return 0 is normal
+                   1 is sensor(s) valus is violate
+        """
+        ret = 0
+        for fru in self.machine.frus:
+            for sensor, tuple in list(sensors_tuples[fru].items()):
+                if tuple.name in self.fsc_config["profiles"]:
+                    last_error_time = self.sensors[tuple.name].source.last_error_time
+                    last_error_level = self.sensors[tuple.name].source.last_error_level
+                    if "read_limit" in self.fsc_config["profiles"][tuple.name]:
+                        # If temperature read exceeds accpetable temperature reading
+                        if (
+                            "alarm_major"
+                            in self.fsc_config["profiles"][tuple.name]["read_limit"]
+                        ):
+                            valid_table = self.fsc_config["profiles"][tuple.name][
+                                "read_limit"
+                            ]["alarm_major"]
+                            valid_read_limit = valid_table["limit"]
+                            if tuple.value > valid_read_limit:
+                                reason = (
+                                    sensor
+                                    + "(alarm_major v="
+                                    + str(tuple.value)
+                                    + ") limit(t="
+                                    + str(valid_read_limit)
+                                    + ") reached"
+                                )
+                                last_error_level = "alarm_major"
+                                self.sensors[tuple.name].source.last_error_time = int(
+                                    datetime.datetime.now().strftime("%s")
+                                )
+                                if "action" in valid_table:
+                                    self.fsc_host_action(
+                                        action=valid_table["action"], cause=reason
+                                    )
+                                Logger.warn(reason)
+                                ret = 1
+                            elif (
+                                "soak_time_s" in valid_table
+                                and last_error_level is "alarm_major"
+                            ):
+                                elapsed_time = (
+                                    int(datetime.datetime.now().strftime("%s"))
+                                    - last_error_time
+                                )
+                                if elapsed_time < valid_table["soak_time_s"]:
+                                    reason = (
+                                        sensor
+                                        + "(alarm_major elapsed_time = "
+                                        + str(elapsed_time)
+                                        + ",soak_time = "
+                                        + str(valid_table["soak_time_s"])
+                                        + ") reached"
+                                    )
+                                    if "action" in valid_table:
+                                        self.fsc_host_action(
+                                            action=valid_table["action"], cause=reason
+                                        )
+                                    Logger.warn(reason)
+                                    ret = 1
+                                else:
+                                    last_error_level = None
+
+                        if (
+                            "alarm_minor"
+                            in self.fsc_config["profiles"][tuple.name]["read_limit"]
+                            and last_error_level != "alarm_major"
+                        ):
+                            valid_table = self.fsc_config["profiles"][tuple.name][
+                                "read_limit"
+                            ]["alarm_minor"]
+                            if tuple.value > valid_read_limit:
+                                reason = (
+                                    sensor
+                                    + "(alarm_minor v="
+                                    + str(tuple.value)
+                                    + ") limit(t="
+                                    + str(valid_read_limit)
+                                    + ") reached"
+                                )
+                                last_error_level = "alarm_minor"
+                                self.sensors[tuple.name].source.last_error_time = int(
+                                    datetime.datetime.now().strftime("%s")
+                                )
+                                if "action" in valid_table:
+                                    self.fsc_host_action(
+                                        action=valid_table["action"], cause=reason
+                                    )
+                                Logger.warn(reason)
+                                ret = 1
+                            elif (
+                                "soak_time_s" in valid_table
+                                and last_error_level == "alarm_minor"
+                            ):
+                                elapsed_time = (
+                                    int(datetime.datetime.now().strftime("%s"))
+                                    - last_error_time
+                                )
+                                if elapsed_time < valid_table["soak_time_s"]:
+                                    reason = (
+                                        sensor
+                                        + "(alarm_minor elapsed_time = "
+                                        + str(elapsed_time)
+                                        + ",soak_time = "
+                                        + str(valid_table["soak_time_s"])
+                                        + ") reached"
+                                    )
+                                    if "action" in valid_table:
+                                        self.fsc_host_action(
+                                            action=valid_table["action"], cause=reason
+                                        )
+                                    Logger.warn(reason)
+                                    ret = 1
+                                else:
+                                    last_error_level = None
+
+                        self.sensors[
+                            tuple.name
+                        ].source.last_error_level = last_error_level
+        return ret
+
     def update_dead_fans(self, dead_fans):
         """
         Check for dead and recovered fans
@@ -392,23 +527,45 @@ class Fscd(object):
                 # Platforms WITHOUT chassis_intrusion mode
                 run normal mode
 
+            # Platforms with enable_fsc_sensor_check mode enabled
+            if enable_fsc_sensor_check:
+                set the sensor_violated_flag to 0
+                and then do necessary checks to set flag to 1
+                if sensor_violated_flag:
+                    run boost mode
+                else:
+                    run normal mode
+            else
+                # Platforms WITHOUT enable_fsc_sensor_check mode
+                run normal mode
+
         """
+        ctx = {}
         sensors_tuples = self.machine.read_sensors(self.sensors)
         self.fsc_safe_guards(sensors_tuples)
         for zone in self.zones:
             Logger.info("PWM: %s" % (json.dumps(zone.pwm_output)))
             mode = 0
             chassis_intrusion_boost_flag = 0
+            sensor_violated_flag = 0
             if self.chassis_intrusion:
                 self_tray_pull_out = board_callout(callout="chassis_intrusion")
                 if self_tray_pull_out == 1:
                     chassis_intrusion_boost_flag = 1
+            if self.enable_fsc_sensor_check:
+                Logger.info("enable_fsc_sensor_check")
+                if self.fsc_sensor_check(sensors_tuples) != 0:
+                    sensor_violated_flag = 1
 
-            if chassis_intrusion_boost_flag == 0:
+            if chassis_intrusion_boost_flag == 0 and sensor_violated_flag == 0:
+                ctx["dt"] = time_difference
+                ctx["dead_fans"] = dead_fans
                 ignore_fan_mode = False
                 if self.non_fanfail_limited_boost and dead_fans:
                     ignore_fan_mode = True
-                pwmval = zone.run(sensors=sensors_tuples, dt=time_difference,ignore_mode=ignore_fan_mode)
+                pwmval = zone.run(
+                    sensors=sensors_tuples, ctx=ctx, ignore_mode=ignore_fan_mode
+                )
                 mode = zone.get_set_fan_mode(mode, action="read")
             else:
                 pwmval = self.boost

@@ -265,7 +265,7 @@ class ApplyProfile:
 
     def apply(self, inp, ctx):
         if inp is not None:
-            out = self.controller.run(inp, ctx["dt"])
+            out = self.controller.run(inp, ctx)
             return out
 
 

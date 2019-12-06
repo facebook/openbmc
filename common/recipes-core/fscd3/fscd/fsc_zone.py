@@ -41,10 +41,15 @@ class Fan(object):
 
             if "sysfs" in pTable["read_source"]:
                 if "write_source" in pTable:
+                    if "max_duty_register" in pTable["write_source"]:
+                        max_duty_register = pTable["write_source"]["max_duty_register"]
+                    else:
+                        max_duty_register = 100
                     self.source = FscSensorSourceSysfs(
                         name=fan_name,
                         read_source=pTable["read_source"]["sysfs"],
                         write_source=pTable["write_source"]["sysfs"],
+                        max_duty_register=max_duty_register,
                     )
                 else:
                     self.source = FscSensorSourceSysfs(
@@ -52,10 +57,15 @@ class Fan(object):
                     )
             if "util" in pTable["read_source"]:
                 if "write_source" in pTable:
+                    if "max_duty_register" in pTable["write_source"]:
+                        max_duty_register = pTable["write_source"]["max_duty_register"]
+                    else:
+                        max_duty_register = 100
                     self.source = FscSensorSourceUtil(
                         name=fan_name,
                         read_source=pTable["read_source"]["util"],
                         write_source=pTable["write_source"]["util"],
+                        max_duty_register=max_duty_register,
                     )
                 else:
                     self.source = FscSensorSourceUtil(
@@ -121,8 +131,7 @@ class Zone:
                 fan_mode_record.write(str(mode))
                 fan_mode_record.close()
 
-    def run(self, sensors, dt, ignore_mode):
-        ctx = {"dt": dt}
+    def run(self, sensors, ctx, ignore_mode):
         outmin = 0
         fail_ssd_count = 0
         sensor_index = 0

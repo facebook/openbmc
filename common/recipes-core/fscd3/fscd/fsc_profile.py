@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from fsc_control import PID, TTable
+from fsc_control import PID, TTable, IncrementPID, TTable4Curve
 from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil
 from fsc_util import Logger
 
@@ -32,6 +32,12 @@ class Sensor(object):
                     self.source = FscSensorSourceUtil(
                         name=sensor_name, read_source=pTable["read_source"]["util"]
                     )
+                self.offset = None
+                self.offset_table = None
+                if "offset" in pTable["read_source"]:
+                    self.offset = pTable["read_source"]["offset"]
+                elif "offset_table" in pTable["read_source"]:
+                    self.offset_table = pTable["read_source"]["offset_table"]
         except Exception:
             Logger.error("Unknown Sensor source type")
 
@@ -50,6 +56,24 @@ def make_controller(pTable):
         return controller
     if pTable["type"] == "pid":
         controller = PID(
+            pTable["setpoint"],
+            pTable["kp"],
+            pTable["ki"],
+            pTable["kd"],
+            pTable["negative_hysteresis"],
+            pTable["positive_hysteresis"],
+        )
+        return controller
+    if pTable["type"] == "linear_4curve":
+        controller = TTable4Curve(
+            pTable["data_normal_up"],
+            pTable["data_normal_down"],
+            pTable["data_onefail_up"],
+            pTable["data_onefail_down"],
+        )
+        return controller
+    if pTable["type"] == "incrementpid":
+        controller = IncrementPID(
             pTable["setpoint"],
             pTable["kp"],
             pTable["ki"],

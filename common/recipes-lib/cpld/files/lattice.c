@@ -1078,7 +1078,7 @@ error_exit:
   return ret;
 }
 
-static int cpld_dev_open(cpld_intf_t intf, uint8_t id)
+static int cpld_dev_open(cpld_intf_t intf, uint8_t id, void *attr)
 {
   if (intf == INTF_JTAG) {
     ast_jtag_set_mode(JTAG_XFER_HW_MODE);

@@ -623,30 +623,23 @@ int max10_cpld_get_id(uint32_t *dev_id)
   return 0;
 }
 
-void max10_iic_init(uint8_t bus, uint8_t addr)
+static void max10_iic_init(uint8_t bus, uint8_t addr)
 {
   snprintf(g_i2c_file_dp, sizeof(g_i2c_file_dp), "/dev/i2c-%u", bus);
   g_i2c_bridge_addr = addr;
   return;
 }
 
-static void max10_dev_init(uint8_t id)
+static void max10_dev_init(altera_max10_attr_t *attr)
 {
-  uint32_t csr_base, data_base, boot_base;
-  uint32_t start_addr, end_addr;
-  uint8_t img_type;
-
-  pal_get_altera_chip_info(id, &csr_base, &data_base, &boot_base);
-  pal_get_altera_cfm_info(id, &start_addr, &end_addr, &img_type);
-
-  g_flash_csr_base = csr_base;
+  g_flash_csr_base = attr->csr_base;
   g_flash_csr_status_reg = g_flash_csr_base + 0x00;
   g_flash_csr_ctrl_reg = g_flash_csr_base + 0x04;
-  g_flash_data_reg = data_base;
-  g_dual_boot_base = boot_base;
-  g_cfm_start_addr = start_addr;
-  g_cfm_end_addr = end_addr;
-  g_cfm_image_type = img_type;
+  g_flash_data_reg = attr->data_base;
+  g_dual_boot_base = attr->boot_base;
+  g_cfm_start_addr = attr->start_addr;
+  g_cfm_end_addr = attr->end_addr;
+  g_cfm_image_type = attr->img_type;
 
   DEBUGMSG("%s file dp=%s\n", __func__, g_i2c_file_dp);
   DEBUGMSG("base reg=%x, status_reg=%x, ctrl_reg=%x\n", g_flash_csr_base, g_flash_csr_status_reg, g_flash_csr_ctrl_reg);
@@ -654,11 +647,16 @@ static void max10_dev_init(uint8_t id)
   return;
 }
 
-static int cpld_dev_open(cpld_intf_t intf, uint8_t id)
+static int cpld_dev_open(cpld_intf_t intf, uint8_t id, void *_attr)
 {
   int i2c_file;
+  altera_max10_attr_t *attr = (altera_max10_attr_t *)_attr;
+  if (!attr) {
+    return -1;
+  }
 
-  max10_dev_init(id);
+  max10_dev_init(attr);
+  max10_iic_init(attr->bus_id, attr->slv_addr);
 
   if (intf == INTF_I2C) {
     // Open a connection to the I2C userspace control file.

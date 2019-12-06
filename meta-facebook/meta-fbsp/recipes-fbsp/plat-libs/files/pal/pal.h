@@ -51,21 +51,6 @@ extern "C" {
 #define UARTSW_OFFSET 0x68
 #define SEVEN_SEGMENT_OFFSET 0x20
 
-// According to QSYS setting in FPGA project
-
-// on-chip Flash IP
-#define ON_CHIP_FLASH_IP_CSR_BASE        (0x00100020)
-#define ON_CHIP_FLASH_IP_CSR_STATUS_REG  (ON_CHIP_FLASH_IP_CSR_BASE + 0x0)
-#define ON_CHIP_FLASH_IP_CSR_CTRL_REG    (ON_CHIP_FLASH_IP_CSR_BASE + 0x4)
-
-#define ON_CHIP_FLASH_IP_DATA_REG        (0x00000000)
-// Dual-boot IP
-#define DUAL_BOOT_IP_BASE                (0x00100000)
-#define CFM0_START_ADDR                  (0x0004A000)
-#define CFM0_END_ADDR                    (0x0008BFFF)
-#define CFM1_START_ADDR                  (0x00008000)
-#define CFM1_END_ADDR                    (0x00049FFF)
-
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
 extern const char pal_pwm_list[];
@@ -155,15 +140,6 @@ enum {
   I2C_BUS_21,
   I2C_BUS_22,
   I2C_BUS_23,
-};
-
-enum {
-  PAL_LCMXO2_2000HC = 0,
-  PAL_LCMXO2_4000HC,
-  PAL_LCMXO2_7000HC,
-  PAL_MAX10_10M16,
-  PAL_MAX10_10M25,
-  PAL_UNKNOWN_DEV
 };
 
 enum {

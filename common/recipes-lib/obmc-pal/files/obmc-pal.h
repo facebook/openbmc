@@ -407,10 +407,8 @@ bool pal_is_modify_sel_time(uint8_t *sel, int size);
 int pal_update_sensor_reading_sdr (uint8_t fru);
 int pal_set_usb_path (uint8_t slot, uint8_t endpoint);
 int pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw);
-
-void pal_get_altera_chip_info(uint8_t id, uint32_t* csr_base, uint32_t* data_base, uint32_t* boot_base);
-void pal_get_altera_cfm_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr, uint8_t* img_type);
 int pal_get_altered_comp_name(char *comp_name);
+
 #ifdef __cplusplus
 }
 #endif

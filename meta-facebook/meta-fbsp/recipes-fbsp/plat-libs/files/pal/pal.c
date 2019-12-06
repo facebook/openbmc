@@ -49,12 +49,6 @@
 const char pal_fru_list[] = "all, mb, nic0, nic1, riser1, riser2, bmc";
 const char pal_server_list[] = "mb";
 
-enum {
-  CFM_IMAGE_NONE = 0,
-  CFM_IMAGE_1,
-  CFM_IMAGE_2,
-};
-
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
 
@@ -900,34 +894,6 @@ pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
   }
 
   return ret;
-}
-
-void
-pal_get_altera_chip_info(uint8_t id, uint32_t *csr_base, uint32_t *data_base, uint32_t *boot_base) {
-  switch (id) {
-    case PAL_MAX10_10M16:
-    case PAL_MAX10_10M25:
-      *csr_base = ON_CHIP_FLASH_IP_CSR_BASE;
-      *data_base = ON_CHIP_FLASH_IP_DATA_REG;
-      *boot_base = DUAL_BOOT_IP_BASE;
-      break;
-  }
-
-  return;
-}
-
-void
-pal_get_altera_cfm_info(uint8_t id, uint32_t *start_addr, uint32_t *end_addr, uint8_t *img_type) {
-  switch (id) {
-    case PAL_MAX10_10M16:
-    case PAL_MAX10_10M25:
-      *start_addr = CFM0_START_ADDR;
-      *end_addr = CFM0_END_ADDR;
-      *img_type = CFM_IMAGE_1;
-      break;
-  }
-
-  return;
 }
 
 // Get ME Firmware Version

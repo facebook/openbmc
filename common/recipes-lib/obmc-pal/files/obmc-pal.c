@@ -2284,16 +2284,6 @@ pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw)
   return 0;
 }
 
-void __attribute__((weak))
-pal_get_altera_chip_info(uint8_t id, uint32_t* csr_base, uint32_t* data_base, uint32_t* boot_base) {
-  return;
-}
-
-void __attribute__((weak))
-pal_get_altera_cfm_info(uint8_t id, uint32_t* start_addr, uint32_t* end_addr, uint8_t* img_type) {
-  return;
-}
-
 int __attribute__((weak))
 pal_get_altered_comp_name(char* comp_name) {
   return PAL_ENOTSUP;

@@ -43,7 +43,7 @@ const char *cpld_list[] = {
   "MAX10-10M25",
 };
 
-static int cpld_probe(cpld_intf_t intf, uint8_t id)
+static int cpld_probe(cpld_intf_t intf, uint8_t id, void *attr)
 {
   if (cur_dev == NULL)
     return -1;
@@ -53,7 +53,7 @@ static int cpld_probe(cpld_intf_t intf, uint8_t id)
     return -1;
   }
 
-  return cur_dev->cpld_open(intf, id);
+  return cur_dev->cpld_open(intf, id, attr);
 }
 
 static int cpld_remove(cpld_intf_t intf)
@@ -87,7 +87,7 @@ static int cpld_malloc_list()
   return dev_cnts;
 }
 
-int cpld_intf_open(uint8_t cpld_index, cpld_intf_t intf)
+int cpld_intf_open(uint8_t cpld_index, cpld_intf_t intf, void *attr)
 {
   int i;
   int dev_cnts;
@@ -114,7 +114,7 @@ int cpld_intf_open(uint8_t cpld_index, cpld_intf_t intf)
     return -1;
   }
 
-  return cpld_probe(intf, cpld_index);
+  return cpld_probe(intf, cpld_index, attr);
 }
 
 int cpld_intf_close(cpld_intf_t intf)

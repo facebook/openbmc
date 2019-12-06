@@ -18,8 +18,6 @@ typedef enum {
 /******************************************************************************/
 extern struct cpld_dev_info altera_dev_list[2];
 
-void max10_iic_init(uint8_t bus, uint8_t addr);
-
 #ifdef __cplusplus
 } // extern "C"
 #endif

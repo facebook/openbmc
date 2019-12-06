@@ -7291,7 +7291,9 @@ pal_fw_update_prepare(uint8_t fru, const char *comp) {
     }
 
     sleep(10);
-    system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null");
+    if (system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null") != 0) {
+      printf("Warning: Could not put ME in recovery mode");
+    }
     sleep(1);
 
     ret = -1;
@@ -7308,8 +7310,7 @@ pal_fw_update_prepare(uint8_t fru, const char *comp) {
       }
 
       if (!gpio_set_direction(desc, GPIO_DIRECTION_OUT) && !gpio_set_value(desc, GPIO_VALUE_HIGH)) {
-        system("echo -n spi1.0 > /sys/bus/spi/drivers/m25p80/bind");
-        ret = 0;
+        ret = system("echo -n spi1.0 > /sys/bus/spi/drivers/m25p80/bind");
       } else {
         printf("ERROR: Switching BIOS to BMC failed\n");
       }
@@ -7326,7 +7327,9 @@ pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
   gpio_desc_t *desc;
 
   if ((fru == FRU_MB) && !strcmp(comp, "bios")) {
-    system("echo -n spi1.0 > /sys/bus/spi/drivers/m25p80/unbind");
+    if (system("echo -n spi1.0 > /sys/bus/spi/drivers/m25p80/unbind") != 0) {
+      printf("WARNING: Could not unbind BIOS SPI device\n");
+    }
 
     desc = gpio_open_by_shadow("BMC_BIOS_FLASH_CTRL");
     if (desc) {

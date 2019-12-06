@@ -42,12 +42,9 @@ fcm_min=$((FCM_CPLD_SUB_VER))
 
 echo -n "Setup fan speed... "
 
-if [ $((fcm_maj)) -eq 0 ]; then
-    echo "Run FSC PWM 32 Levels Config"
-    cp /etc/FSC-PWM-32-config.json ${default_fsc_config}
-else
+if [ "$(wedge_board_type)" = "0" ]; then
     echo "Run FSC PWM 64 Levels Config"
-    cp /etc/FSC-PWM-64-config.json ${default_fsc_config}
+    cp /etc/FSC-W400-config.json ${default_fsc_config}
 fi
 echo "Setting fan speed to 25%..."
 /usr/local/bin/set_fan_speed.sh 25

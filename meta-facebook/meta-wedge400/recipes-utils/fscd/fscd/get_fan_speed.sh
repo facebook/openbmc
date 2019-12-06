@@ -21,8 +21,7 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-fcb_ver=`head -n1 $FCMCPLD_SYSFS_DIR/cpld_ver \
-         2> /dev/null`
+fcb_ver=$(head -n1 "$FCMCPLD_SYSFS_DIR/cpld_ver" 2> /dev/null)
 
 usage() {
     echo "Usage: $0 [Fan Unit (1..4)]" >&2
@@ -32,9 +31,9 @@ usage() {
 show_pwm()
 {
     pwm="$FCMCPLD_SYSFS_DIR/fan$1_pwm"
-    val=$(cat $pwm | head -n 1)
+    val=$(head -n 1 "$pwm")
 
-    if [ "$fcb_ver" == "0x0" ]; then
+    if [ "$fcb_ver" = "0x0" ]; then
         echo "$((val * 100 / 31))%"
     else
         # Convert the percentage to our 1/64th level (0-63) and round.
@@ -46,7 +45,7 @@ show_rpm()
 {
     front_rpm="$FCMCPLD_SYSFS_DIR/fan$((($1 * 2 - 1)))_input"
     rear_rpm="$FCMCPLD_SYSFS_DIR/fan$((($1 * 2)))_input"
-    echo "$(cat $front_rpm), $(cat $rear_rpm)"
+    echo "$(cat "$front_rpm"), $(cat "$rear_rpm")"
 }
 
 set -e
@@ -71,5 +70,5 @@ for fan in $FANS; do
     FAN="${fan}"
     UNIT=${FAN}
 
-    echo "Fan $fan RPMs: $(show_rpm $UNIT), ($(show_pwm $UNIT))"
+    echo "Fan $fan RPMs: $(show_rpm "$UNIT"), ($(show_pwm "$UNIT"))"
 done

@@ -21,8 +21,7 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-fcb_ver=`head -n1 $FCMCPLD_SYSFS_DIR/cpld_ver \
-         2> /dev/null`
+fcb_ver=$(head -n1 "$FCMCPLD_SYSFS_DIR/cpld_ver" 2> /dev/null)
 
 usage() {
     echo "Usage: $0 <PERCENT (0..100)> <Fan Unit (1..4)> " >&2
@@ -45,10 +44,10 @@ else
     fi
 
     FAN="$2"
-    FAN_UNIT=$((${FAN} / 1 ))
+    FAN_UNIT=$((FAN / 1))
 fi
 
-if [ "$fcb_ver" == "0x0" ]; then
+if [ "$fcb_ver" = "0x0" ]; then
     # Convert the percentage to our 1/32th level (0-31).
     step=$((($1 * 31) / 100))
 else
@@ -62,7 +61,7 @@ for unit in ${FAN_UNIT}; do
     echo "$step" > "${pwm}"
     if [ "$#" -eq 1 ]; then
         echo "Successfully set fan $cnt speed to $1%"
-        cnt=$(($cnt+1))
+        cnt=$((cnt + 1))
     else
         echo "Successfully set fan $2 speed to $1%"
     fi

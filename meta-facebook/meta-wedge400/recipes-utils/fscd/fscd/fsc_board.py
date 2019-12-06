@@ -16,6 +16,7 @@
 # Boston, MA 02110-1301 USA
 #
 import time
+import re
 from subprocess import PIPE, Popen
 
 from fsc_util import Logger
@@ -58,6 +59,34 @@ def board_callout(callout="None", **kwargs):
             boost = kwargs["boost"]
         Logger.info("FSC init fans to boost=%s " % str(boost))
         return set_all_pwm(boost)
+    elif "chassis_intrusion" in callout:
+        # fan present
+        cmd = "presence_util.sh fan"
+        lines = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+        fan_presence = 0
+        psu_presence = 0
+        tray_pull_out = 0
+        for line in lines.split("\n"):
+            m = re.match(r"fan.*\s:\s+(\d+)", line)
+            if m is not None:
+                if int(m.group(1)) == 1:
+                    fan_presence += 1
+
+        # psu present
+        cmd = "presence_util.sh psu"
+        lines = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+        for line in lines.split("\n"):
+            m = re.match(r"psu.*\s:\s+(\d+)", line)
+            if m is not None:
+                if int(m.group(1)) == 1:
+                    psu_presence += 1
+
+        if fan_presence < 4:
+            Logger.warn("chassis_intrusion Found Fan absent (%d/4)" % (fan_presence))
+            tray_pull_out = 1
+        if psu_presence < 2:
+            Logger.warn("chassis_intrusion Found PSU absent (%d/2)" % (psu_presence))
+        return tray_pull_out
     else:
         Logger.warn("Need to perform callout action %s" % callout)
     pass
@@ -80,7 +109,6 @@ def set_fan_led(fan, color="led_blue"):
 
     fan = int(fan)
     FAN_LED = "/sys/bus/i2c/drivers/fcbcpld/30-003e/"
-    fan = fan / 2
 
     fan_key = "fan%d_led_ctrl" % fan
     if "red" in color:

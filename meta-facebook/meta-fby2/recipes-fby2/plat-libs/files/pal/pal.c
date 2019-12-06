@@ -4239,18 +4239,18 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         is_post_timeout = pal_is_post_time_out();
         is_nvme_timeout = pal_is_nvme_time_out();
         is_time_out = is_post_timeout || is_nvme_timeout;
-        if (is_time_out || is_sled_out) {
-          if (is_time_out && !is_last_time_out) {
+        ignore_thresh = 0;
+        if (is_time_out) {
+          if (!is_last_time_out) {
             if (is_post_timeout)
               syslog(LOG_WARNING, "Fans' UNC masks removed: slot%d host POST hangs up",is_post_timeout);
             if (is_nvme_timeout)
               syslog(LOG_WARNING, "Fans' UNC masks removed: slot%d NVMe not ready after OS Start",is_nvme_timeout);
           }
-          ignore_thresh = 0;
+        } else if (is_sled_out) {
+          pal_is_nvme_ready(); // check NVMe status while sled out
         } else {
           /* Check whether POST is ongoning or not */
-          ignore_thresh = 0;
-
           if (last_post != current_post) {
             if (current_post == 0) {
               // POST END
@@ -6953,6 +6953,53 @@ pal_get_dev_config_setup(uint8_t *value) {
 }
 
 int
+pal_set_dev_sdr_setup(uint8_t fru, uint8_t value) {
+
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT3:
+      sprintf(key, "slot%d_dev_sdr_setup", fru);
+      break;
+
+    default:
+      return -1;
+  }
+
+  sprintf(cvalue, (value > 0) ? "1": "0");
+
+  return kv_set(key,cvalue,0,0);
+}
+
+int
+pal_get_dev_sdr_setup(uint8_t fru, uint8_t *value) {
+
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  int ret;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT3:
+      sprintf(key, "slot%d_dev_sdr_setup", fru);
+      break;
+
+    default:
+      return -1;
+  }
+
+  ret = kv_get(key, cvalue, NULL, 0);
+  if (ret) {
+    *value = 0;
+    return ret;
+  }
+  *value = strtol(cvalue,NULL,10);
+  return 0;
+}
+
+int
 get_fan_ver_dev_type(uint8_t *type) {
   json_error_t error;
   json_t *conf, *vers;
@@ -7006,7 +7053,7 @@ pal_is_nvme_ready() {
 
       // fan config update
       pal_get_dev_config_setup(&setup);
-      if (!setup && value && (type!= DEV_TYPE_UNKNOWN)) {
+      if (!setup && (type!= DEV_TYPE_UNKNOWN)) { // once a device is recognized via NVMe
         syslog(LOG_WARNING, "pal_is_nvme_ready: device config change (slot%u type=%u)",fru ,type);
         if (type != DEV_TYPE_VSI_ACC && type != DEV_TYPE_BRCM_ACC) {
           type = DEV_TYPE_SSD;
@@ -7022,6 +7069,21 @@ pal_is_nvme_ready() {
         }
         pal_set_dev_config_setup(1);
       }
+
+      // SDR update after NVMe ready
+      pal_get_dev_sdr_setup(fru,&setup);
+      if (!setup && (type!= DEV_TYPE_UNKNOWN)) { // once a device is recognized via NVMe
+        syslog(LOG_WARNING, "pal_is_nvme_ready: device sdr change start (slot%u type=%u)",fru ,type);
+        // do not get sdr during sdr update
+        bic_set_sdr_threshold_update_flag(fru, 0);
+        memset(cmd, 0, sizeof(cmd));
+        snprintf(cmd, sizeof(cmd), "/usr/local/bin/bic-cached -s %d", fru);   //retrieve SDR data after BIC update SDR
+        system(cmd);
+        bic_set_sdr_threshold_update_flag(fru, 1);
+        syslog(LOG_WARNING, "pal_is_nvme_ready: device sdr change finish (slot%u type=%u)",fru ,type);
+        pal_set_dev_sdr_setup(fru,1);
+      }
+
       is_nvme_ready &= value;
     }
   }

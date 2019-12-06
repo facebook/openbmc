@@ -610,6 +610,9 @@ static void gpio_event_handle(gpio_poll_st *gp)
           }
 
           pal_set_dev_config_setup(0); // set up device fan config
+          if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
+            pal_set_dev_sdr_setup(slot_id,0);
+          }
           //Create thread for hsvc event detect
           if (pthread_create(&hsvc_action_tid[slot_id], NULL, hsvc_event_handler, &hsvc_info[slot_id]) < 0) {
             syslog(LOG_WARNING, "[%s] Create hsvc_event_handler thread failed for slot%x\n",__func__, slot_id);

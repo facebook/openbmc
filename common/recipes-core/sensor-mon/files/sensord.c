@@ -413,7 +413,7 @@ thresh_reinit_chk(uint8_t fru) {
   int ret;
   char fpath[64] = {0};
   char initpath[64] = {0};
-  char fru_name[8];
+  char fru_name[32];
 
   ret = pal_get_fru_name(fru, fru_name);
   if (ret < 0) {

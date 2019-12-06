@@ -231,6 +231,12 @@ pal_get_platform_name(char *name) {
 }
 
 int
+pal_get_fru_list(char *list) {
+  strcpy(list, pal_fru_list);
+  return PAL_EOK;
+}
+
+int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   switch (fru) {
     case FRU_SLOT0:

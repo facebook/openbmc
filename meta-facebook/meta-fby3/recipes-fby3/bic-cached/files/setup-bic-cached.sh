@@ -20,18 +20,22 @@ function init_class2_sdr() {
 function init_class1_sdr() {
   # -f means `dump fru` only
   if [[ $(is_server_prsnt 0) == "1" ]]; then
+    /usr/local/bin/bic-cached -s slot0
     /usr/local/bin/bic-cached -f slot0 > /dev/null 2>&1 &
   fi
 
   if [[ $(is_server_prsnt 1) == "1" ]]; then
+    /usr/local/bin/bic-cached -s slot1
     /usr/local/bin/bic-cached -f slot1 > /dev/null 2>&1 &
   fi
 
   if [[ $(is_server_prsnt 2) == "1" ]]; then
+    /usr/local/bin/bic-cached -s slot2
     /usr/local/bin/bic-cached -f slot2 > /dev/null 2>&1 &
   fi
 
   if [[ $(is_server_prsnt 3) == "1" ]]; then
+    /usr/local/bin/bic-cached -s slot3
     /usr/local/bin/bic-cached -f slot3 > /dev/null 2>&1 &
   fi
 }

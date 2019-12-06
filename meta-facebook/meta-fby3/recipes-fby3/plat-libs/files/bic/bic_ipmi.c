@@ -90,6 +90,13 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
   return ret;
 }
 
+// S/E - Get Sensor reading
+// Netfn: 0x04, Cmd: 0x2d
+int
+bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor, uint8_t intf) {
+  uint8_t rlen = 0;
+  return bic_ipmb_send(slot_id, NETFN_SENSOR_REQ, CMD_SENSOR_GET_SENSOR_READING, &sensor_num, 1, (uint8_t *)sensor, &rlen, intf);
+}
 
 // APP - Get Device ID
 // Netfn: 0x06, Cmd: 0x01

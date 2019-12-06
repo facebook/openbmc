@@ -139,7 +139,7 @@ i2c_device_add "$(get_mux_bus_num 7)" 0x6c si53108 # PCIE clock buffer
 
 # # i2c-mux 8, channel 1
 is_pem1=$(
-    i2cget -f -y "$(get_mux_bus_num 8)" 0x58 0x80 >/dev/null 2>&1
+    pem-util pem1 --get_pem_info | grep WEDGE400-PEM
     echo $?
 )
 # # ltc4282 only support registers 0~0x4f
@@ -152,7 +152,7 @@ fi
 
 # # i2c-mux 8, channel 2
 is_pem2=$(
-    i2cget -f -y "$(get_mux_bus_num 9)" 0x58 0x80 >/dev/null 2>&1
+    pem-util pem2 --get_pem_info | grep WEDGE400-PEM
     echo $?
 )
 if [ "$is_pem2" = "0" ]; then

@@ -289,6 +289,7 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   bool support_mem_mapping = false;
   char dimm_fail_event[][64] = {"Memory training failure", "Memory correctable error", "Memory uncorrectable error", "Reserved"};
   char mem_mapping_string[32];
+  char temp_log[128] = {0};
   error_log[0] = '\0';
 
   switch (error_type) {
@@ -303,6 +304,8 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
                             TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
                 general_info, ((sel[9]<<8)|sel[8]),sel[11], sel[10] >> 3, sel[10] & 0x7, ((sel[13]<<8)|sel[12]), sel[14], sel[15]);
       }
+      sprintf(temp_log, "PCIe Error ,FRU:%u", fru);
+      pal_add_cri_sel(temp_log);
       break;
     case UNIFIED_MEM_ERR:
       plat = (dimm_failure_event & 0x80) >> 7;
@@ -342,6 +345,13 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
             sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02X/Socket %02X, Channel %02X, Slot %02X, DIMM %s, \
                           DIMM Failure Event: %s",
                 general_info, ((sel[8]>>4) & 0x03), sel[8] & 0x0f, sel[9] & 0x0f, sel[10] & 0x0f, mem_mapping_string, dimm_fail_event[sel[12]&0x03]);
+            if(mem_error_type == MEMORY_CORRECTABLE_ERR) {
+              sprintf(temp_log, "DIMM%s ECC err,FRU:%u", mem_mapping_string, fru);
+              pal_add_cri_sel(temp_log);
+            } else {
+              sprintf(temp_log, "DIMM%s UECC err,FRU:%u", mem_mapping_string, fru);
+              pal_add_cri_sel(temp_log);
+            }
           } else {
             sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02X/Socket %02X, Channel %02X, Slot %02X, \
                           DIMM Failure Event: %s",

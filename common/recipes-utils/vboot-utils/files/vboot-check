@@ -22,6 +22,16 @@ import hashlib
 import binascii
 import json
 import sys
+
+VBOOT_CHECK_VERSION = "1"
+# Define the exit code
+EC_SUCCESS = 0
+EC_SPLROM_BAD = 1
+EC_UBOOT_BAD = 2
+EC_KERNEL_BAD = 3
+EC_ROOTFS_BAD = 4
+EC_EXCEPTION = 255
+
 if sys.version_info[0] == 3:
     import io
 else:
@@ -108,7 +118,7 @@ def decode_flash(fh, data):
             break
     if rom_fit is None:
         print("Cannot find SPL FIT region")
-        return 1
+        return EC_SPLROM_BAD
 
     # Print SPL information
     rom_fit = get_fdt(rom_fit)
@@ -118,7 +128,7 @@ def decode_flash(fh, data):
         rom_fit,
         "SPL does not contain KEK keys"
     ):
-        return 1
+        return EC_SPLROM_BAD
     print("")
 
     # Read the U-Boot FIT, the U-Boot data area (max)
@@ -131,7 +141,7 @@ def decode_flash(fh, data):
     keys_path = uboot_fit.resolve_path('/keys/fdt@1/data')
     if keys_path is None:
         print("U-Boot FIT does not contain subordinate keys")
-        return 1
+        return EC_SPLROM_BAD
 
     keys = get_fdt(keys_path.to_raw())
     keys_timestamp = get_date(keys)
@@ -140,7 +150,7 @@ def decode_flash(fh, data):
     keys_sig = uboot_fit.resolve_path('/keys/fdt@1/signature@1')
     if keys_sig is None:
         print("Subordinate keys are not signed")
-        return 1
+        return EC_SPLROM_BAD
 
     keys_hash = get_fdt_hash(uboot_fit, '/keys/fdt@1')
     keys_valid = hashlib.sha256(keys_path.to_raw()).hexdigest() == keys_hash
@@ -151,13 +161,15 @@ def decode_flash(fh, data):
         get_fdt_algo(uboot_fit, '/keys/fdt@1'),
         keys_hash,
         "OK" if keys_valid else "BAD"))
+    if not keys_valid:
+        return EC_SPLROM_BAD
 
     if not show_keys(
         "Subordinate",
         keys,
         "Subordinate FIT does not contain keys"
     ):
-        return 1
+        return EC_SPLROM_BAD
     print("")
 
     # Print U-Boot information
@@ -167,7 +179,7 @@ def decode_flash(fh, data):
     uboot_sig = uboot_fit.resolve_path('/configurations/conf@1/signature@1')
     if uboot_sig is None:
         print("U-Boot FIT configuration not signed")
-        return 1
+        return EC_UBOOT_BAD
 
     uboot_size = uboot_fit.resolve_path('/images/firmware@1/data-size')[0]
     uboot_hash = get_fdt_hash(uboot_fit, '/images/firmware@1')
@@ -181,7 +193,9 @@ def decode_flash(fh, data):
         uboot_hash,
         "OK" if uboot_valid else "BAD"))
     print("")
-    return 0
+    if not uboot_valid:
+        return EC_UBOOT_BAD
+    return EC_SUCCESS
 
 
 def decode_os(fh):
@@ -216,6 +230,8 @@ def decode_os(fh):
         get_fdt_algo(os, '/images/kernel@1'),
         kernel_hash,
         "OK" if kernel_valid else "BAD"))
+    if not kernel_valid:
+        return EC_KERNEL_BAD
 
     ramdisk_hash = get_fdt_hash(os, '/images/ramdisk@1')
     # ramdisk_valid = get_hash(os.resolve_path('/images/ramdisk@1/data').to_raw()) == ramdisk_hash
@@ -232,7 +248,10 @@ def decode_os(fh):
     print("Ramdisk hash (%s): %s: %s" % (
         get_fdt_algo(os, '/images/ramdisk@1'),
         ramdisk_hash, "OK" if ramdisk_valid else "BAD"))
+    if not ramdisk_valid:
+        return EC_ROOTFS_BAD
 
+    return EC_SUCCESS
 
 def main():
     with open(args.filename, 'rb') as fh:
@@ -241,13 +260,13 @@ def main():
         data_size = len(data)
         if data_size < 4:
             print("Not sure what this file contains: %s" % (args.filename))
-            return 1
+            return EC_EXCEPTION
         if data[:4] != b'\x0f\x00\x00\xea':
             print("Non-flash file inputs are not supported")
-            return 1
+            return EC_EXCEPTION
 
         ret = decode_flash(fh, data)
-        if ret > 0:
+        if ret != EC_SUCCESS:
             return ret
         return decode_os(fh)
 
@@ -257,7 +276,10 @@ if __name__ == '__main__':
         help="Size of ROM region")
     parser.add_argument('--rom-fit-size', default=5120,
         help="Size of the ROM FIT region")
+    parser.add_argument('--version', action='version',
+                    version='%(prog)s-v{}'.format(VBOOT_CHECK_VERSION) )
     parser.add_argument('filename', help="Input firmware")
+
     args = parser.parse_args()
 
     try:
@@ -265,4 +287,4 @@ if __name__ == '__main__':
     except Exception as e:
         print("Exception: %s" % (str(e)))
         traceback.print_exc()
-        sys.exit(1)
+        sys.exit(EC_EXCEPTION)

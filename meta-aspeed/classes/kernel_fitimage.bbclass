@@ -61,9 +61,9 @@ generate_data_mount_dir() {
 }
 
 flash_image_generate() {
-    FIT_DESTINATION="${DEPLOY_DIR_IMAGE}/${FIT}"
+    FIT_DESTINATION="${DEPLOY_DIR_IMAGE}/${FIT_LINK}"
     FLASH_IMAGE_DESTINATION="${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE}"
-    UBOOT_FIT_DESTINATION="${DEPLOY_DIR_IMAGE}/${UBOOT_FIT}"
+    UBOOT_FIT_DESTINATION="${DEPLOY_DIR_IMAGE}/${UBOOT_FIT_LINK}"
 
     if [ ! -f $UBOOT_SOURCE ]; then
         echo "U-boot file ${UBOOT_SOURCE} does not exist"
@@ -98,7 +98,6 @@ flash_image_generate() {
 
         # Write an intermediate FIT containing only U-Boot.
         dd if=${UBOOT_FIT_DESTINATION} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_UBOOT_OFFSET} conv=notrunc
-        ln -sf ${UBOOT_FIT} ${DEPLOY_DIR_IMAGE}/${UBOOT_FIT_LINK}
     else
         FLASH_UBOOT_OFFSET=0
         FLASH_FIT_OFFSET=512
@@ -133,7 +132,6 @@ flash_image_generate() {
     rm -f ./tmp.md5
 
     ln -sf ${FLASH_IMAGE} ${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE_LINK}
-    ln -sf ${FIT} ${DEPLOY_DIR_IMAGE}/${FIT_LINK}
 }
 
 oe_mkimage() {
@@ -157,6 +155,7 @@ oe_mkimage() {
       fitimage_emit_section_maint ${UBOOT_FIT_SOURCE} fitend
 
       mkimage -f ${UBOOT_FIT_SOURCE} -E -p ${ROM_UBOOT_POSITION} ${UBOOT_FIT_DESTINATION}
+      ln -sf ${UBOOT_FIT} ${DEPLOY_DIR_IMAGE}/${UBOOT_FIT_LINK}
     fi
 
     KERNEL_FILE="${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE}"
@@ -204,4 +203,5 @@ oe_mkimage() {
 
     # Step 5: Assemble the image
     mkimage -f ${FIT_SOURCE} ${FIT_DESTINATION}
+    ln -sf ${FIT} ${DEPLOY_DIR_IMAGE}/${FIT_LINK}
 }

@@ -18,12 +18,13 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
+#include <string.h>
 #include <syslog.h>
-#include <stdint.h>
+#include <unistd.h>
 #include <openbmc/pal.h>
 
 static void

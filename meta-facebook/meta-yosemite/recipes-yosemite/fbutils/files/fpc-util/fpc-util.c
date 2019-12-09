@@ -18,13 +18,14 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <errno.h>
+#include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
+#include <string.h>
 #include <syslog.h>
-#include <stdint.h>
-#include <pthread.h>
+#include <unistd.h>
 #include <facebook/bic.h>
 #include <openbmc/pal.h>
 #include <openbmc/ipmi.h>

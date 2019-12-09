@@ -820,11 +820,12 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
 
 int
 pal_fw_update_prepare(uint8_t fru, const char *comp) {
-  int ret = 0, retry = 3;
+  int ret = 0, retry = 0;
   uint8_t status;
   gpio_desc_t *desc;
 
   if ((fru == FRU_MB) && !strcmp(comp, "bios")) {
+    retry = MAX_RETRY_PWR_CTL;
     pal_set_server_power(FRU_MB, SERVER_POWER_OFF);
     while (retry > 0) {
       if (!pal_get_server_power(FRU_MB, &status) && (status == SERVER_POWER_OFF)) {
@@ -839,11 +840,19 @@ pal_fw_update_prepare(uint8_t fru, const char *comp) {
       return -1;
     }
 
-    if (system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null")) {
+    retry = MAX_RETRY_ME_RECOVERY;
+    while (retry > 0) {
+      if (run_command("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null") == 0) {
+        break;
+      }
+      if ((--retry) > 0) {
+        sleep(1);
+      }
+    }
+    if (retry <= 0) {
       syslog(LOG_ERR, "Unable to put ME in recovery mode!\n");
       return -1;
     }
-    sleep(1);
 
     ret = -1;
     desc = gpio_open_by_shadow("FM_BIOS_SPI_BMC_CTRL");

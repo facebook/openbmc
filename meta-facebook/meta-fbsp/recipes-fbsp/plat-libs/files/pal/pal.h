@@ -51,6 +51,9 @@ extern "C" {
 #define UARTSW_OFFSET 0x68
 #define SEVEN_SEGMENT_OFFSET 0x20
 
+#define MAX_RETRY_PWR_CTL 3
+#define MAX_RETRY_ME_RECOVERY 15
+
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
 extern const char pal_pwm_list[];

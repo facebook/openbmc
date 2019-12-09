@@ -77,3 +77,4 @@ int CpldComponent::update(string image) {
 
 CpldComponent pfr("cpld", "pfr", "PFR", MAX10_10M25, 4, 0x5a);
 CpldComponent mod("cpld", "mod", "Modular", MAX10_10M16, 4, 0x55);
+CpldComponent glb("cpld", "glb", "Global", MAX10_10M16, 23, 0x55);

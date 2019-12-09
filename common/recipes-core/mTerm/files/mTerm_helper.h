@@ -29,9 +29,19 @@
 #define ASCII_CR 015
 #define BUF_SIZE 10
 #define PATH_SIZE 64
-#define SEND_SIZE 256
+/* SEND_SIZE definition:
+ * Serial packet of 8N1 it 10bit.
+ * The current baudrate of mTerm when using sol.sh is
+ * 38400 bps(which COMe console is using now). So we
+ * can get 3840=38400(baudrate)/10(bits). But we think it's
+ * better that add a buffer, so we use 5120.
+ * And if someone wants to change this, it should follow
+ * baudrate/n_bits_of_per_byte_transfer_via_uart (depends
+ * on uart config about the stop bits/parity bits and so on).
+ */
+#define SEND_SIZE 5120
 #define FILE_SIZE_BYTES 300000
-#define MAX_BYTE 255
+#define MAX_BYTE 5120
 
 typedef enum escMode {
   EOL,

@@ -50,11 +50,6 @@
 const char pal_fru_list[] = "all, mb, nic0, nic1, pdb, bmc";
 const char pal_server_list[] = "mb";
 
-size_t pal_pwm_cnt = 2;
-size_t pal_tach_cnt = 2;
-const char pal_pwm_list[] = "0, 1";
-const char pal_tach_list[] = "0, 1";
-
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
 

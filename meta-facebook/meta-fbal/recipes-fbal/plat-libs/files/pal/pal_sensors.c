@@ -20,6 +20,11 @@
 //#define DEBUG
 #define GPIO_P3V_BAT_SCALED_EN "P3V_BAT_SCALED_EN"
 
+size_t pal_pwm_cnt = FAN_PWM_ALL_NUM;
+size_t pal_tach_cnt = FAN_TACH_ALL_NUM;
+const char pal_pwm_list[] = "0,1,2,3";
+const char pal_tach_list[] = "0,1,2,3,4,5,6,7";
+
 static int read_adc_val(uint8_t adc_id, float *value);
 static int read_battery_val(uint8_t adc_id, float *value);
 static int read_sensor(uint8_t snr_id, float *value);
@@ -232,10 +237,10 @@ PAL_I2C_BUS_INFO ina260_info_list[] = {
 
 //CM SENSOR
 PAL_CM_SENSOR_HEAD cm_snr_head_list[] = {
- {CM_FAN0_INLET_SPEED,  CM_SNR_FAN0_INTLET_SPEED},
- {CM_FAN1_INLET_SPEED,  CM_SNR_FAN1_INTLET_SPEED},
- {CM_FAN2_INLET_SPEED,  CM_SNR_FAN2_INTLET_SPEED},
- {CM_FAN3_INLET_SPEED,  CM_SNR_FAN3_INTLET_SPEED},
+ {CM_FAN0_INLET_SPEED,  CM_SNR_FAN0_INLET_SPEED},
+ {CM_FAN1_INLET_SPEED,  CM_SNR_FAN1_INLET_SPEED},
+ {CM_FAN2_INLET_SPEED,  CM_SNR_FAN2_INLET_SPEED},
+ {CM_FAN3_INLET_SPEED,  CM_SNR_FAN3_INLET_SPEED},
  {CM_FAN0_OUTLET_SPEED, CM_SNR_FAN0_OUTLET_SPEED},
  {CM_FAN1_OUTLET_SPEED, CM_SNR_FAN1_OUTLET_SPEED},
  {CM_FAN2_OUTLET_SPEED, CM_SNR_FAN2_OUTLET_SPEED},
@@ -1796,4 +1801,62 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   return 0;
 }
 
+int
+pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
+  int ret = -1;
 
+  if (fan >= pal_pwm_cnt) {
+    syslog(LOG_INFO, "%s: fan number is invalid - %d", __func__, fan);
+    return -1;
+  }
+
+  // Do not allow setting fan when server is off.
+  if (is_server_off()) {
+    return PAL_ENOTREADY;
+  }
+
+  ret = lib_cmc_set_fan_pwm(fan, pwm);
+  return ret;
+}
+
+int
+pal_get_fan_speed(uint8_t fan, int *rpm) {
+  int ret;
+  uint16_t speed = 0;
+
+  if (fan >= pal_tach_cnt) {
+    syslog(LOG_INFO, "%s: fan number is invalid - %d", __func__, fan);
+    return -1;
+  }
+ 
+  ret = lib_cmc_get_fan_speed(fan, &speed);
+  if (ret != 0 ) {
+    syslog(LOG_INFO, "%s: invalid fan#:%d",__func__, fan);
+    return -1;
+  }
+  
+  *rpm = (int)speed;
+  return ret;
+}
+
+int 
+pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
+  int ret;
+  uint8_t pwm = 0;
+  uint8_t fan_id;
+
+  if (fan_num >= pal_tach_cnt) {
+    syslog(LOG_INFO, "%s: fan number is invalid - %d", __func__, fan_num);
+    return -1;
+  }
+ 
+  fan_id = fan_num/2;
+  ret = lib_cmc_get_fan_pwm(fan_id, &pwm);
+  if (ret != 0 ) {
+    syslog(LOG_INFO, "%s: invalid fan#:%d",__func__, fan_id);
+    return -1;
+  }
+  
+  *value = pwm;
+  return ret;
+} 

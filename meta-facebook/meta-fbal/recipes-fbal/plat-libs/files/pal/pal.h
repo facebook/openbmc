@@ -49,19 +49,6 @@ extern "C" {
 #define UARTSW_OFFSET 0x68
 #define SEVEN_SEGMENT_OFFSET 0x20
 
-
-extern size_t pal_pwm_cnt;
-extern size_t pal_tach_cnt;
-extern const char pal_pwm_list[];
-extern const char pal_tach_list[];
-extern const char pal_fru_list[];
-extern const char pal_server_list[];
-
-enum {
-  FAN_0 = 0,
-  FAN_1,
-};
-
 enum {
   FRU_ALL  = 0,
   FRU_MB   = 1,

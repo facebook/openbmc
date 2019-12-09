@@ -55,6 +55,9 @@
 #define PMBUS_READ_POUT    (0x96)
 #define PMBUS_READ_PIN     (0x97)
 
+#define FAN_PWM_ALL_NUM        (4) 
+#define FAN_TACH_ALL_NUM       (8)
+
 //Sensor Table
 enum {
   MB_SNR_PCH_TEMP = 0x08,
@@ -434,4 +437,11 @@ enum {
 };
 
 int cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr);
+
+extern size_t pal_pwm_cnt;
+extern size_t pal_tach_cnt;
+extern const char pal_pwm_list[];
+extern const char pal_tach_list[];
+extern const char pal_fru_list[];
+extern const char pal_server_list[];
 #endif

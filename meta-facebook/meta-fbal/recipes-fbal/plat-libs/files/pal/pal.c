@@ -861,9 +861,9 @@ pal_fw_update_prepare(uint8_t fru, const char *comp) {
       return -1;
     }
 
+    sleep(10);
     if (system("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null")) {
-      syslog(LOG_ERR, "Unable to put ME in recovery mode!\n");
-      return -1;
+      syslog(LOG_WARNING, "Unable to put ME in recovery mode!");
     }
     sleep(1);
 

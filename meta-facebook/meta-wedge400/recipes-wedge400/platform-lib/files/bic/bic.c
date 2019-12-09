@@ -781,8 +781,10 @@ _update_bic_main(uint8_t slot_id, const char *path) {
 
   bic_related_process(UPDATE_BIC, PROCESS_STOP);
 
+  // Set BIC 1MHZ
+  system("bic-util scm 0xe0 0x2a 0x15 0xa0 0x00 0x01 > /dev/null 2>&1");
   // Kill ipmb daemon for this slot
-  sprintf(cmd, "sv stop ipmbd");
+  sprintf(cmd, "sv stop ipmbd_0;sv stop ipmbd_4");
   system(cmd);
   printf("stop ipmbd\n");
 
@@ -802,7 +804,7 @@ _update_bic_main(uint8_t slot_id, const char *path) {
 
   // Kill ipmb daemon "bicup" for this slot
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "killall ipmbd");
+  sprintf(cmd, "ps -w | grep -v 'grep' | grep 'ipmbd 0' | awk '{print $1}' | xargs kill");
   system(cmd);
   printf("stop ipmbd for minilake\n", slot_id);
 
@@ -1007,7 +1009,7 @@ update_done:
   // Restart ipmbd daemon
   sleep(1);
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "sv start ipmbd");
+  sprintf(cmd, "sv start ipmbd_0;sv start ipmbd_4");
   system(cmd);
   bic_related_process(UPDATE_BIC, PROCESS_RUN);
 
@@ -1028,6 +1030,9 @@ error_exit:
   sprintf(cmd, "rm /var/run/fw-util-scm.lock");
   system(cmd);
 
+  sleep(5);
+  // Set BIC 1MHZ
+  system("bic-util scm 0xe0 0x2a 0x15 0xa0 0x00 0x01 > /dev/null 2>&1");
   return ret;
 }
 

@@ -41,6 +41,22 @@
 #define INTERVAL_MAX  5
 
 
+//Debug card presence check interval. Preferred range from ## milliseconds to ## milleseconds.
+#define DBG_CARD_CHECK_INTERVAL 100
+
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
+#endif /* ARRAY_SIZE */
+
+#define FRONT_PANELD_SCM_MONITOR_THREAD     "scm_monitor"
+#define FRONT_PANELD_SYSLED_MONITOR_THREAD  "sysLED_monitor"
+#define FRONT_PANELD_LED_MONITOR_THREAD     "LED_monitor"
+#define FRONT_PANELD_DEBUG_CARD_THREAD      "debug_card"
+#define FRONT_PANELD_UART_SEL_BTN_THREAD    "uart_sel_btn"
+#define FRONT_PANELD_PWR_BTN_THREAD         "pwr_btn"
+#define FRONT_PANELD_RST_BTN_THREAD         "rst_btn"
+
+
 // Thread for monitoring scm plug
 static void *
 scm_monitor_handler(void *unused){
@@ -150,7 +166,6 @@ debug_card_handler(void *unused) {
   int prev = -1;
   int ret;
   uint8_t prsnt = 0;
-  uint8_t lpc;
 
   OBMC_INFO("%s: %s started", FRONTPANELD_NAME,__FUNCTION__);
   while (1) {
@@ -167,40 +182,15 @@ debug_card_handler(void *unused) {
       if (!curr) {
         // Debug Card was removed
         OBMC_WARN("Debug Card Extraction\n");
+
       } else {
         // Debug Card was inserted
         OBMC_WARN("Debug Card Insertion\n");
       }
+      prev = curr;
     }
-
-    // If Debug Card is present
-    if (curr) {
-
-      // Enable POST codes for scm slot
-      ret = pal_post_enable(IPMB_BUS);
-      if (ret) {
-        goto debug_card_done;
-      }
-
-      // Get last post code and display it
-      ret = pal_post_get_last(IPMB_BUS, &lpc);
-      if (ret) {
-        goto debug_card_done;
-      }
-
-      ret = pal_post_handle(IPMB_BUS, lpc);
-      if (ret) {
-        goto debug_card_out;
-      }
-    }
-
-debug_card_done:
-    prev = curr;
 debug_card_out:
-    if (curr == 1)
-      msleep(500);
-    else
-      sleep(1);
+    msleep(DBG_CARD_CHECK_INTERVAL);
   }
 
   return 0;
@@ -299,15 +289,52 @@ uart_sel_btn_handler(void *unused) {
 
 int
 main (int argc, char * const argv[]) {
-  pthread_t tid_scm_monitor;
-  pthread_t tid_debug_card;
-  pthread_t tid_sysLED_monitor;
-  pthread_t tid_LED_monitor;
-  pthread_t tid_pwr_btn;
-  pthread_t tid_rst_btn;
-  pthread_t tid_uart_sel_btn;
   int pid_file;
+  int i, rc = 0;
   uint8_t brd_type_rev;
+    struct {
+    const char *name;
+    void* (*handler)(void *args);
+    bool initialized;
+    pthread_t tid;
+  } front_paneld_threads[7] = {
+    {
+      .name = FRONT_PANELD_SCM_MONITOR_THREAD,
+      .handler = scm_monitor_handler,
+      .initialized = false,
+    },
+    {
+      .name = FRONT_PANELD_SYSLED_MONITOR_THREAD,
+      .handler = sysLED_monitor_handler,
+      .initialized = false,
+    },
+    {
+      .name = FRONT_PANELD_LED_MONITOR_THREAD,
+      .handler = LED_monitor_handler,
+      .initialized = false,
+    },
+    {
+      .name = FRONT_PANELD_DEBUG_CARD_THREAD,
+      .handler = debug_card_handler,
+      .initialized = false,
+    },
+    {
+      .name = FRONT_PANELD_UART_SEL_BTN_THREAD,
+      .handler = uart_sel_btn_handler,
+      .initialized = false,
+    },
+    {
+      .name = FRONT_PANELD_PWR_BTN_THREAD,
+      .handler = pwr_btn_handler,
+      .initialized = false,
+    },
+    {
+      .name = FRONT_PANELD_RST_BTN_THREAD,
+      .handler = rst_btn_handler,
+      .initialized = false,
+    },
+  };
+
   signal(SIGTERM, exithandler);
   pid_file = open(FRONTPANELD_PID_FILE, O_CREAT | O_RDWR, 0666);
   if (pid_file < 0) {
@@ -315,7 +342,8 @@ main (int argc, char * const argv[]) {
             FRONTPANELD_NAME, FRONTPANELD_PID_FILE, strerror(errno));
     return -1;
   }
-    if (flock(pid_file, LOCK_EX | LOCK_NB) != 0) {
+
+  if (flock(pid_file, LOCK_EX | LOCK_NB) != 0) {
     if(EWOULDBLOCK == errno) {
       fprintf(stderr, "%s: another instance is running. Exiting..\n",
               FRONTPANELD_NAME);
@@ -333,6 +361,7 @@ main (int argc, char * const argv[]) {
             FRONTPANELD_NAME, strerror(errno));
     return -1;
   }
+
   if ( obmc_log_set_syslog(LOG_CONS, LOG_DAEMON) != 0) {
     fprintf(stderr, "%s: failed to setup syslog: %s\n",
             FRONTPANELD_NAME, strerror(errno));
@@ -348,47 +377,23 @@ main (int argc, char * const argv[]) {
     exit(-1);
   }
 
-  if (pthread_create(&tid_scm_monitor, NULL, scm_monitor_handler, NULL) != 0) {
-    OBMC_WARN("pthread_create for scm monitor error\n");
-    exit(1);
-  }
-  if (pthread_create(&tid_sysLED_monitor, NULL, sysLED_monitor_handler, NULL)	  != 0) {
-    OBMC_WARN("pthread_create for sysLED monitor error\n");
-    exit(1);
-  }
-  if (pthread_create(&tid_LED_monitor, NULL, LED_monitor_handler, NULL)	  != 0) {
-    OBMC_WARN("pthread_create for LED monitor error\n");
-    exit(1);
-  }
-
-  if (brd_type_rev != BOARD_WEDGE400_EVT) {
-    if (pthread_create(&tid_debug_card, NULL, debug_card_handler, NULL) != 0) {
-        OBMC_WARN("pthread_create for debug card error\n");
-        exit(1);
+  for (i = 0; i < ARRAY_SIZE(front_paneld_threads); i++) {
+    rc = pthread_create(&front_paneld_threads[i].tid, NULL,
+                        front_paneld_threads[i].handler, NULL);
+    if (rc != 0) {
+      OBMC_ERROR(rc, "front_paneld: failed to create %s thread: %s\n",
+                 front_paneld_threads[i].name, strerror(rc));
+      goto cleanup;
     }
-    pthread_join(tid_debug_card, NULL);
+    front_paneld_threads[i].initialized = true;
   }
 
-  if (pthread_create(&tid_uart_sel_btn, NULL, uart_sel_btn_handler, NULL) < 0) {
-    OBMC_WARN("pthread_create for uart select button error\n");
-    exit(1);
+cleanup:
+  for (i = ARRAY_SIZE(front_paneld_threads) - 1; i >= 0; i--) {
+    if (front_paneld_threads[i].initialized) {
+      pthread_join(front_paneld_threads[i].tid, NULL);
+      front_paneld_threads[i].initialized = false;
+    }
   }
-
-  if (pthread_create(&tid_pwr_btn, NULL, pwr_btn_handler, NULL) < 0) {
-    OBMC_WARN("pthread_create for power button error\n");
-    exit(1);
-  }
-
-  if (pthread_create(&tid_rst_btn, NULL, rst_btn_handler, NULL) < 0) {
-    OBMC_WARN("pthread_create for reset button error\n");
-    exit(1);
-  }
-
-  pthread_join(tid_rst_btn, NULL);
-  pthread_join(tid_pwr_btn, NULL);
-  pthread_join(tid_scm_monitor, NULL);
-  pthread_join(tid_sysLED_monitor, NULL);
-  pthread_join(tid_LED_monitor, NULL);
-  pthread_join(tid_uart_sel_btn, NULL);
-  return 0;
+  return rc;
 }

@@ -31,6 +31,7 @@
 #include <openbmc/pal.h>
 
 #define MAX_LEN 64
+#define MAX_PID_LEN 32   // A 64-bit int can be represented in 20 characters.
 #define MAX_LINE 1024
 #define FRU_SYS 0x20
 #define sem_path "/logsem"
@@ -45,7 +46,7 @@ const char logfile_list[][MAX_LEN] = {"/mnt/data/logfile.0", "/mnt/data/logfile"
 
 static int
 rsyslog_hup (void) {
-  char pid[MAX_LEN] = "";
+  char pid[MAX_PID_LEN] = "";
   FILE *fp;
   char cmd[MAX_LEN] = "";
   int ret = -1;
@@ -57,7 +58,9 @@ rsyslog_hup (void) {
     // Ignore restart rsyslogd
     return -1;
   }
-  fgets(pid, MAX_LINE, fp);
+  if (NULL == fgets(pid, sizeof(pid), fp)) {
+    return -1;
+  }
   ret = pclose(fp);
   if(-1 == ret) {
      printf("%s: pclose() fail ", __func__);
@@ -66,7 +69,9 @@ rsyslog_hup (void) {
   if (strspn(pid, "0123456789") == strlen(pid)-1) {
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd, "kill -HUP %s", pid);
-    system(cmd);
+    if (0 != system(cmd)) {
+      return -1;
+    }
   }
 
   return 0;
@@ -77,7 +82,7 @@ print_log (uint8_t fru_id, bool opt_json) {
   FILE *fd = NULL;
   char strline[MAX_LINE] = "";
   int ret = -1;
-  int i,j,k;
+  size_t i,j,k;
   char *pch;
   bool print_pair_flag = false;
   uint8_t pair_slot;
@@ -260,8 +265,8 @@ print_log (uint8_t fru_id, bool opt_json) {
 
 static int
 clear_log (uint8_t fru_id) {
-  FILE *fd_src, *fd_dst;  
-  int i;
+  FILE *fd_src, *fd_dst;
+  size_t i;
   char strline[MAX_LINE] = "";
   int ret = -1;
   char *pch;
@@ -441,7 +446,7 @@ int main(int argc, char * argv[]) {
       goto err_exit;
       break;
   }
-  
+
   if (0 != ret) {
     printf("Unexpected error\n");
   }

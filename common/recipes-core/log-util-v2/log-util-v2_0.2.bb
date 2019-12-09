@@ -30,6 +30,7 @@ S = "${WORKDIR}"
 binfiles = "log-util-v2"
 
 CFLAGS += " -lpal "
+CXXFLAGS += " -lpal "
 
 pkgdir = "log-util-v2"
 

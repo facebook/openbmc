@@ -20,7 +20,7 @@ all: log-util-v2
 CXXFLAGS += -Wall -Werror
 
 log-util-v2: log-util-v2.cpp
-	$(CXX) -DJSMN_STRICT=1 $(CFLAGS) -o $@ $^ $(LDFLAGS) -lpthread
+	$(CXX) -DJSMN_STRICT=1 $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lpthread
 
 .PHONY: clean
 

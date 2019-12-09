@@ -3,14 +3,18 @@ SECTION = "base"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=60dd5a575c9bd4339411bdef4a702d46"
 
-SRC_URI = "https://pypi.python.org/packages/cf/4a/bec3705f07294d9a4057fe5abd93ca89f52149931301674e1e6a9dd66366/aiohttp-2.1.0.tar.gz"
+SRC_URI = "https://pypi.python.org/packages/cf/4a/bec3705f07294d9a4057fe5abd93ca89f52149931301674e1e6a9dd66366/aiohttp-2.1.0.tar.gz \
+           file://0001-Replace-invalid-syntax.patch \
+           "
 SRC_URI[md5sum] = "52c94bf1735485d9e02fd097ff7d7db9"
 SRC_URI[sha256sum] = "3e80d944e9295b1360e422d89746b99e23a99118420f826f990a632d284e21df"
 
 S = "${WORKDIR}/${PN}-${PV}"
 
-dst="/usr/lib/python3.5/site-packages/aiohttp.egg-info"
-dst1="/usr/lib/python3.5/site-packages/aiohttp"
+inherit python3-dir
+
+dst="${PYTHON_SITEPACKAGES_DIR}/aiohttp.egg-info"
+dst1="${PYTHON_SITEPACKAGES_DIR}/aiohttp"
 
 do_install() {
   mkdir -p ${D}/${dst}

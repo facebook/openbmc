@@ -9,8 +9,9 @@ SRC_URI[sha256sum] = "9ec33a1da4d2096949e29ddd66a352aae57fad6b5483087d54566a2f63
 
 S = "${WORKDIR}/${PN}-${PV}"
 
-dst="/usr/lib/python3.5/site-packages/multidict.egg-info"
-dst1="/usr/lib/python3.5/site-packages/multidict"
+inherit python3-dir
+dst="${PYTHON_SITEPACKAGES_DIR}/multidict.egg-info"
+dst1="${PYTHON_SITEPACKAGES_DIR}/multidict"
 
 do_install() {
   mkdir -p ${D}/${dst}

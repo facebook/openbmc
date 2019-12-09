@@ -9,8 +9,9 @@ SRC_URI[sha256sum] = "27b24ba3ef3cb8475aea1a655a1750bb11918ba139278af21db5846ee9
 
 S = "${WORKDIR}/${PN}-${PV}"
 
-dst="/usr/lib/python3.5/site-packages/yarl.egg-info"
-dst1="/usr/lib/python3.5/site-packages/yarl"
+inherit python3-dir
+dst="${PYTHON_SITEPACKAGES_DIR}/yarl.egg-info"
+dst1="${PYTHON_SITEPACKAGES_DIR}/yarl"
 
 do_install () {
   mkdir -p ${D}/${dst}

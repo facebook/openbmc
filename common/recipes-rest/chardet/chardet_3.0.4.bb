@@ -9,8 +9,9 @@ SRC_URI[sha256sum] = "84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2
 
 S = "${WORKDIR}/${PN}-${PV}"
 
-dst="/usr/lib/python3.5/site-packages/chardet.egg-info"
-dst1="/usr/lib/python3.5/site-packages/chardet"
+inherit python3-dir
+dst="${PYTHON_SITEPACKAGES_DIR}/chardet.egg-info"
+dst1="${PYTHON_SITEPACKAGES_DIR}/chardet"
 cli="/cli"
 
 do_install() {

@@ -9,8 +9,9 @@ SRC_URI[sha256sum] = "380e9bfd4c009a14931ffe487499b0906b00b3378bb743542cfd9fbb6d
 
 S = "${WORKDIR}/${PN}-${PV}"
 
-dst="/usr/lib/python3.5/site-packages/async_timeout.egg-info"
-dst1="/usr/lib/python3.5/site-packages/async_timeout"
+inherit python3-dir
+dst="${PYTHON_SITEPACKAGES_DIR}/async_timeout.egg-info"
+dst1="${PYTHON_SITEPACKAGES_DIR}/async_timeout"
 
 do_install() {
   mkdir -p ${D}/${dst}

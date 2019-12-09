@@ -1,0 +1,28 @@
+From c003fe284d255bcf11b101dc7bb1ffb9e9e9b2c4 Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@fb.com>
+Date: Fri, 6 Dec 2019 15:36:57 -0800
+Subject: [PATCH] Replace invalid syntax
+
+---
+ aiohttp/helpers.py | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/aiohttp/helpers.py b/aiohttp/helpers.py
+index e3f0ee4..ddba205 100644
+--- a/aiohttp/helpers.py
++++ b/aiohttp/helpers.py
+@@ -25,10 +25,7 @@ from . import hdrs
+ from .abc import AbstractCookieJar
+ 
+ 
+-try:
+-    from asyncio import ensure_future
+-except ImportError:
+-    ensure_future = asyncio.async
++from asyncio import ensure_future
+ 
+ PY_34 = sys.version_info < (3, 5)
+ PY_35 = sys.version_info >= (3, 5)
+-- 
+2.17.1
+

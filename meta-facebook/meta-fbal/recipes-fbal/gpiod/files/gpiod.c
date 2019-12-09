@@ -54,15 +54,16 @@ static int g_uart_switch_count = 0;
 static long int g_reset_sec = 0;
 static long int g_power_on_sec = 0;
 static pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t caterr_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static void 
+static void
 log_gpio_change(gpiopoll_pin_t *desc, gpio_value_t value, useconds_t log_delay) {
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
   assert(cfg);
   syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
 }
 
-static void 
+static void
 set_smi_trigger(void) {
   static bool triggered = false;
   static gpio_desc_t *gpio = NULL;
@@ -71,8 +72,7 @@ set_smi_trigger(void) {
     if (!gpio)
       return;
   }
-  if( !triggered )
-  {
+  if (!triggered) {
     gpio_set_value(gpio, GPIO_VALUE_LOW);
     usleep(1000);
     gpio_set_value(gpio, GPIO_VALUE_HIGH);
@@ -80,7 +80,7 @@ set_smi_trigger(void) {
   }
 }
 
-static inline long int 
+static inline long int
 reset_timer(long int *val) {
   pthread_mutex_lock(&timer_mutex);
   *val = 0;
@@ -88,7 +88,7 @@ reset_timer(long int *val) {
   return *val;
 }
 
-static inline long int 
+static inline long int
 increase_timer(long int *val) {
   pthread_mutex_lock(&timer_mutex);
   (*val)++;
@@ -96,7 +96,7 @@ increase_timer(long int *val) {
   return *val;
 }
 
-static inline long int 
+static inline long int
 decrease_timer(long int *val) {
   pthread_mutex_lock(&timer_mutex);
   (*val)--;
@@ -105,26 +105,26 @@ decrease_timer(long int *val) {
 }
 
 //Reset Button Event Handler
-static void 
+static void
 pwr_reset_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   log_gpio_change(desc, curr, 0);
 }
 
 //Power Button Event Handler
-static void 
+static void
 pwr_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   log_gpio_change(desc, curr, 0);
 }
 
 //System Power Ok Event Handler
-static void 
+static void
 pwr_sysok_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   reset_timer(&g_power_on_sec);
   log_gpio_change(desc, curr, 0);
 }
 
 //IERR and MCERR Event Handler
-static void 
+static void
 init_caterr(gpiopoll_pin_t *desc, gpio_value_t value) {
   uint8_t status = 0;
   pal_get_server_power(FRU_MB, &status);
@@ -133,7 +133,7 @@ init_caterr(gpiopoll_pin_t *desc, gpio_value_t value) {
   }
 }
 
-static void 
+static void
 init_msmi(gpiopoll_pin_t *desc, gpio_value_t value) {
   uint8_t status = 0;
   pal_get_server_power(FRU_MB, &status);
@@ -142,19 +142,23 @@ init_msmi(gpiopoll_pin_t *desc, gpio_value_t value) {
   }
 }
 
-static void 
+static void
 err_caterr_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   SERVER_POWER_CHECK(3);
+  pthread_mutex_lock(&caterr_mutex);
   g_caterr_irq++;
+  pthread_mutex_unlock(&caterr_mutex);
 }
 
-static void 
+static void
 err_msmi_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   SERVER_POWER_CHECK(3);
+  pthread_mutex_lock(&caterr_mutex);
   g_msmi_irq++;
+  pthread_mutex_unlock(&caterr_mutex);
 }
 
-static int 
+static int
 ierr_mcerr_event_log(bool is_caterr, const char *err_type) {
   char temp_log[128] = {0};
   char temp_syslog[128] = {0};
@@ -163,7 +167,7 @@ ierr_mcerr_event_log(bool is_caterr, const char *err_type) {
   int ret=0;
 
   ret = cmd_peci_get_cpu_err_num(&num, is_caterr);
-  if(ret != 0) {
+  if (ret != 0) {
     syslog(LOG_ERR, "Can't Read MCA Log\n");
   }
 
@@ -215,18 +219,23 @@ ierr_mcerr_event_handler() {
             ierr_mcerr_event_log(true, "MCERR/CATERR");
           }
 
+          pthread_mutex_lock(&caterr_mutex);
           g_caterr_irq--;
+          pthread_mutex_unlock(&caterr_mutex);
           caterr_cnt = 0;
           pal_set_fault_led(FRU_MB, FAULT_LED_ON);
-//          system("/usr/local/bin/autodump.sh &");
+          if (system("/usr/local/bin/autodump.sh &")) {
+            syslog(LOG_WARNING, "Failed to start crashdump\n");
+          }
 
         } else if (g_caterr_irq > 1) {
           while (g_caterr_irq > 1) {
             ierr_mcerr_event_log(true, "MCERR/CATERR");
-            g_caterr_irq -= 1;
+            pthread_mutex_lock(&caterr_mutex);
+            g_caterr_irq--;
+            pthread_mutex_unlock(&caterr_mutex);
           }
           caterr_cnt = 1;
-
         }
       }
     }
@@ -248,17 +257,21 @@ ierr_mcerr_event_handler() {
             ierr_mcerr_event_log(false, "MCERR/MSMI");
           }
 
+          pthread_mutex_lock(&caterr_mutex);
           g_msmi_irq--;
+          pthread_mutex_unlock(&caterr_mutex);
           msmi_cnt = 0;
-          pal_set_fault_led(FRU_MB, FAULT_LED_ON );
-//          if (system("/usr/local/bin/autodump.sh &")) {
-//            syslog(LOG_CRIT, "Failed to start crashdump\n");
-//          }
+          pal_set_fault_led(FRU_MB, FAULT_LED_ON);
+          if (system("/usr/local/bin/autodump.sh &")) {
+            syslog(LOG_WARNING, "Failed to start crashdump\n");
+          }
 
         } else if (g_msmi_irq > 1) {
           while (g_msmi_irq > 1) {
             ierr_mcerr_event_log(false, "MCERR/MSMI");
-            g_msmi_irq -= 1;
+            pthread_mutex_lock(&caterr_mutex);
+            g_msmi_irq--;
+            pthread_mutex_unlock(&caterr_mutex);
           }
           msmi_cnt = 1;
         }
@@ -266,27 +279,28 @@ ierr_mcerr_event_handler() {
     }
     usleep(25000); //25ms
   }
+
   gpio_close(caterr);
   gpio_close(msmi);
   return NULL;
 }
 
 //Uart Select on DEBUG Card Event Handler
-static void 
+static void
 uart_select_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
    g_uart_switch_count = 2;
    log_gpio_change(desc, curr, 0);
    pal_uart_select_led_set();
 }
- 
+
 // Thread for gpio timer
-static void 
+static void
 *gpio_timer() {
   uint8_t status = 0;
   uint8_t fru = 1;
   long int pot;
   char str[MAX_VALUE_LEN] = {0};
-  int tread_time = 0 ;
+  int tread_time = 0;
 
   while (1) {
     sleep(1);
@@ -322,9 +336,9 @@ static void
     }
 
     //Show Uart Debug Select Number 2sec
-    if ( g_uart_switch_count > 0) {
-      if ( --g_uart_switch_count == 0 )
-       pal_uart_select(AST_GPIO_BASE, UARTSW_OFFSET, UARTSW_BY_DEBUG, 0);
+    if (g_uart_switch_count > 0) {
+      if (--g_uart_switch_count == 0)
+        pal_uart_select(AST_GPIO_BASE, UARTSW_OFFSET, UARTSW_BY_DEBUG, 0);
     }
   }
 

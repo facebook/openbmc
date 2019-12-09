@@ -41,4 +41,5 @@ IMAGE_INSTALL += " \
   me-util \
   gpiod \
   guid-util \
+  crashdump \
   "

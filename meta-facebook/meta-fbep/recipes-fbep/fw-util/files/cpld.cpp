@@ -11,7 +11,7 @@ class CpldComponent : public Component {
       : Component(fru, comp) {}
     int print_version() {
       uint8_t cpld_var[4] = {0};
-      if (!cpld_intf_open(LCMXO2_7000HC, INTF_JTAG)) {
+      if (!cpld_intf_open(LCMXO2_7000HC, INTF_JTAG, NULL)) {
         // Print CPLD Version
         if (cpld_get_ver((unsigned int *)&cpld_var)) {
           printf("CPLD Version: NA, ");
@@ -33,7 +33,7 @@ class CpldComponent : public Component {
     }
     int update(string image) {
       int ret;
-      if (!cpld_intf_open(LCMXO2_7000HC, INTF_JTAG)) {
+      if (!cpld_intf_open(LCMXO2_7000HC, INTF_JTAG, NULL)) {
         ret = cpld_program((char *)image.c_str());
         cpld_intf_close(INTF_JTAG);
         if ( ret < 0 ) {
@@ -47,4 +47,4 @@ class CpldComponent : public Component {
     }
 };
 
-CpldComponent cpld("fru", "cpld");
+CpldComponent cpld("mb", "cpld");

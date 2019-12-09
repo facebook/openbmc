@@ -44,4 +44,5 @@ IMAGE_INSTALL += " \
   ipmbd\
   ipmb-util\
   me-util \
+  i2craw \
   "

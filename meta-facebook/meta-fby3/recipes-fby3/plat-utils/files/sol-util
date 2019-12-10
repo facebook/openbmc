@@ -1,0 +1,188 @@
+#!/bin/sh
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+. /usr/local/fbpackages/utils/ast-functions
+LOGFILE="/var/log/mTerm_$1.log"
+LOGFILE_B="/var/log/mTerm_$1_backup.log"
+
+I2CSET="/usr/sbin/i2cset -y "
+
+EXP_M2A_UART=0
+EXP_M2B_UART=1
+EXP_M2C_UART=2
+EXP_M2D_UART=3
+EXP_M2E_UART=4
+EXP_M2F_UART=5
+EXP_BIC_UART=6
+
+SB_CPLD_ADDR="0x0f"
+M2_CPLD_ADDR="0x5d"
+RISER_CPLD_ADDR="0x5c"
+
+SLOT=
+SLOT_NUM=
+I2C_NUM=
+
+function show_usage() {
+  echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [sb, 1ou, 2ou] bic"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [1ou, 2ou] [dev0|dev1|...|devN]"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
+}
+
+select_expansion_uart() {
+  local bus=$1
+  local addr=$2
+  local data=$3
+  
+  curr_sts=$(/usr/sbin/i2cget -y $bus $addr 0)
+  curr_sts=$((curr_sts & 0x0f))
+  curr_sts=$((curr_sts | data << 4))
+  /usr/sbin/i2cset -y $bus $addr 0 $curr_sts
+}
+
+function get_slot_num() {
+  local slot_num=0
+  case $1 in
+    slot1)
+      slot_num=0
+    ;;
+    slot2)
+      slot_num=1
+    ;;
+    slot3)
+      slot_num=2
+    ;;
+    slot4)
+      slot_num=3
+    ;;
+  esac
+
+  echo $slot_num
+}
+
+function get_bus_num() {
+  local bus=0
+  case $1 in
+    slot1)
+      bus=4
+    ;;
+    slot2)
+      bus=5
+    ;;
+    slot3)
+      bus=6
+    ;;
+    slot4)
+      bus=7
+    ;;
+  esac
+
+  echo $bus
+}
+
+function set_uart_src() {
+  local bus=$1
+  local addr=$2
+  local data=$3
+  $I2CSET $bus $addr $data
+}
+
+if [ "$1" == "slot1" ] || [ "$1" == "slot2" ] || [ "$1" == "slot3" ] || [ "$1" == "slot4" ]
+then
+  SLOT=$1
+else
+  show_usage
+  exit -1
+fi
+
+SLOT_NUM=$(get_slot_num $SLOT)
+I2C_NUM=$(get_bus_num $SLOT)
+if [ $(get_slot_type $SLOT_NUM) == "0" ]; then
+  # set UART clock source 24MHz
+  devmem_clear_bit $(scu_addr 4c) $((SLOT_NUM + 23))
+else
+  show_usage
+  exit -1
+fi
+
+
+#Check the board ID and setup the class information
+# reg    val
+#  00 [0x1|0x2]
+# val: 0x1=class1, 0x2=class2
+
+#Setup the uart console to host
+#Class1
+# reg    val
+#  01 [0x1|0x2|0x3|0x4]
+# val: 0x1=1ou, 0x2=2ou, 0x3=Host, 0x4=SB BIC
+#
+#Class2
+# reg    val
+#  01 [0x1|0x2|0x3]
+# val: 0x1=2ou, 0x2=Host, 0x3=SB BIC, 0x4=SB BIC
+
+BOARD_ID=$(get_bmc_board_id)
+if [ $BOARD_ID -eq 9 ]; then
+  set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x02"
+  set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x02"
+elif [ $BOARD_ID -eq 14 ]; then
+  set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x01"
+  set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x03"
+else
+  echo "Is board id correct(id=$BOARD_ID)?"
+  exit -1
+fi
+
+if [ $# -gt 1 ]; then
+  if [[ "$2" == "--history" ]]; then
+    cat $LOGFILE_B $LOGFILE 2>/dev/null
+    exit 0
+  fi
+  
+  if [[ "$2" == "1ou" ]] && [[ "$3" == "bic" ]]; then
+    set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x01"     
+    select_expansion_uart $I2C_NUM $M2_CPLD_ADDR $EXP_BIC_UART 
+  elif [[ "$2" == "2ou" ]] && [[ "$3" == "bic" ]]; then
+    if [ $BOARD_ID -eq 9 ]; then
+      set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x01"
+    else
+      set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x02"
+    fi
+    select_expansion_uart $I2C_NUM $RISER_CPLD_ADDR $EXP_BIC_UART
+  elif [[ "$2" == "sb" ]] && [[ "$3" == "bic" ]]; then
+    if [ $BOARD_ID -eq 9 ]; then
+      set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x03"
+    else
+      set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x04"
+    fi
+  else
+    show_usage
+    exit -1
+  fi
+fi
+
+exec /usr/local/bin/mTerm_client $SLOT
+
+echo
+echo
+echo "-----------------------"
+echo "Exit from SOL session."

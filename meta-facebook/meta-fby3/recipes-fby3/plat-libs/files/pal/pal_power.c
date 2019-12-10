@@ -78,8 +78,10 @@ server_power_12v_on(uint8_t fru) {
   sleep(1);
 
   snprintf(cmd, sizeof(cmd), "sv start ipmbd_%d > /dev/null 2>&1", fru); 
-  system(cmd);
-
+  if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+      return PAL_ENOTSUP;
+  }
   sleep(2);
   
   ret = server_power_on(fru);
@@ -132,8 +134,10 @@ server_power_12v_off(uint8_t fru) {
   }
 
   snprintf(cmd, sizeof(cmd), "sv stop ipmbd_%d > /dev/null 2>&1", fru);
-  system(cmd);
-
+  if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+      return PAL_ENOTSUP;
+  }
   //TODO: need to change the status of FM_BMC_SLOT${num}_ISOLATED_EN
 
 error_exit:

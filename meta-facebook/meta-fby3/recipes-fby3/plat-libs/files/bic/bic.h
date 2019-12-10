@@ -29,12 +29,20 @@ extern "C" {
 #include "bic_power.h"
 #include "bic_fwupdate.h"
 #include "bic_ipmi.h"
+#include "error.h"
 
 enum {
   FW_CPLD = 1,
   FW_BIC,
   FW_ME,
   FW_BIC_BOOTLOADER,
+};
+
+enum {
+  BIC_EOK = 0,
+  BIC_ENOTSUP = -ENOTSUP,
+  BIC_ENOTREADY = -EAGAIN,
+  /* non system errors start from -256 downwards */
 };
 
 #ifdef __cplusplus

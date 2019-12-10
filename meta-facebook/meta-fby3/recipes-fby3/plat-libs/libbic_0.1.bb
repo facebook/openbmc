@@ -13,7 +13,7 @@ SRC_URI = "file://bic \
 SOURCES = "bic_xfer.c bic_power.c bic_ipmi.c bic_fwupdate.c"
 HEADERS = "bic.h bic_xfer.h bic_power.h bic_ipmi.h bic_fwupdate.h"
 
-CFLAGS = "-Wall -Werror -fPIC"
+CFLAGS += " -Wall -Werror -fPIC "
 LDFLAGS = "-lobmc-i2c -lipmb -lgpio-ctrl"
 
 DEPENDS += "libipmi libipmb libobmc-i2c libgpio-ctrl libfby3-common"

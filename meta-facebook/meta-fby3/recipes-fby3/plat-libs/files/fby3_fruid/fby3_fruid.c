@@ -37,7 +37,10 @@ fby3_get_nic_mfgid(void) {
   }
 
   fseek(fp, 32 , SEEK_SET);
-  fread(buf, 1, 4, fp);
+  if (fread(buf, 1, 4, fp)) {
+    fclose(fp);
+    return -1;
+  }
   fclose(fp);
 
   return ((buf[3]<<24)|(buf[2]<<16)|(buf[1]<<8)|buf[0]);

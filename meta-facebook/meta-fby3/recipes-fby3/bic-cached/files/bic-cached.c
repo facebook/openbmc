@@ -82,10 +82,12 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
   char sdr_temp_path[64] = {0};
   char sdr_path[64] = {0};
   uint8_t bus_id = 0;
+  ssize_t bytes_wr;
 
   ret = fby3_common_get_bus_id(slot_id);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to get bus_id: %d\n", __func__, slot_id);
+    return ret;
   }
 
   bus_id = (uint8_t)ret;
@@ -129,7 +131,11 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
 
     sdr_full_t *sdr = (sdr_full_t *)res->data;
 
-    write(fd, sdr, sizeof(sdr_full_t));
+    bytes_wr = write(fd, sdr, sizeof(sdr_full_t));
+    if (bytes_wr != sizeof(sdr_full_t)) {
+      syslog(LOG_ERR, "%s: write sdr failed\n", __func__);
+      return -1;
+    }
 
     req.rec_id = res->next_rec_id;
     if (req.rec_id == LAST_RECORD_ID) {
@@ -167,10 +173,12 @@ sdr_cache_init(uint8_t slot_id) {
   char sdr_temp_path[64] = {0};
   char sdr_path[64] = {0};
   uint8_t bus_id = 0;
+  ssize_t bytes_wr;
 
   ret = fby3_common_get_bus_id(slot_id);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to get bus_id: %d\n", __func__, slot_id);
+    return ret;
   }
 
   bus_id = (uint8_t)ret;
@@ -214,7 +222,11 @@ sdr_cache_init(uint8_t slot_id) {
 
     sdr_full_t *sdr = (sdr_full_t *)res->data;
 
-    write(fd, sdr, sizeof(sdr_full_t));
+    bytes_wr = write(fd, sdr, sizeof(sdr_full_t));
+    if (bytes_wr != sizeof(sdr_full_t)) {
+      syslog(LOG_ERR, "%s: write sdr failed\n", __func__);
+      return -1;
+    }
 
     req.rec_id = res->next_rec_id;
     if (req.rec_id == LAST_RECORD_ID) {

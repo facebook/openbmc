@@ -103,6 +103,7 @@ fruid_init_local_fru() {
   int fd = 0;
   char *dev[2] = {"24c128 0x54\n", "24c128 0x51\n"};
   uint8_t bmc_location = 0;
+  ssize_t bytes_wr;
 
   ret = get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -119,8 +120,16 @@ fruid_init_local_fru() {
     goto error_exit;
   }
     
-  write(fd, dev[0], strlen(dev[0]));
-  write(fd, dev[1], strlen(dev[1]));
+  bytes_wr = write(fd, dev[0], strlen(dev[0]));
+  if (bytes_wr != strlen(dev[0])) {
+    syslog(LOG_ERR, "%s: write to FRU failed\n", __func__);
+    return -1;
+  }  
+  bytes_wr = write(fd, dev[1], strlen(dev[1]));
+  if (bytes_wr != strlen(dev[1])) {
+    syslog(LOG_ERR, "%s: write to FRU failed\n", __func__);
+    return -1;
+  }
 
   //create the binary in /tmp/
   snprintf(path, path_len, EEPROM_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS, BMC_FRU_ADDR);

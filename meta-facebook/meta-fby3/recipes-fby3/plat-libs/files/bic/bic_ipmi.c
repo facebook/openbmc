@@ -231,6 +231,7 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size,
   uint8_t rbuf[256] = {0};
   uint8_t rlen = 0;
   int fd;
+  ssize_t bytes_wr;
   ipmi_fruid_info_t info;
 
   // Remove the file if exists already
@@ -276,7 +277,11 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size,
     }
 
     // Ignore the first byte as it indicates length of response
-    write(fd, &rbuf[1], rlen-1);
+    bytes_wr = write(fd, &rbuf[1], rlen-1);
+    if (bytes_wr != rlen-1) {
+      syslog(LOG_ERR, "bic_read_fruid: write to FRU failed\n");
+      return -1;
+    }
 
     // Update offset
     offset += (rlen-1);

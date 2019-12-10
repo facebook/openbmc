@@ -17,7 +17,7 @@ binfiles = "me-util \
 
 pkgdir = "me-util"
 
-CFLAGS = "-Wall -Werror"
+CFLAGS += " -Wall -Werror "
 LDFLAGS = "-lipmi -lipmb -lbic -lpal -lfby3_common"
 DEPENDS = "libbic libpal libipmi libipmb libfby3-common"
 RDEPENDS_${PN} += "libbic libpal libipmi libipmb libfby3-common"

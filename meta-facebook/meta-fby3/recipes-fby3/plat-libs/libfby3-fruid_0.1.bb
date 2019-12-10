@@ -29,7 +29,7 @@ SRC_URI = "file://fby3_fruid \
 SOURCES = "fby3_fruid.c"
 HEADERS = "fby3_fruid.h"
 
-CFLAGS = "-Wall -Werror -fPIC"
+CFLAGS += " -Wall -Werror -fPIC "
 LDFLAGS = "-lfby3_common"
 DEPENDS += "libfby3-common"
 RDEPENDS_${PN} += "libfby3-common"

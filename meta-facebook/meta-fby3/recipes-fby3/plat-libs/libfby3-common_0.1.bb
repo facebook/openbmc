@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://fby3_common.c;beginline=8;endline=20;md5=da35978751a9
 SRC_URI = "file://fby3_common \
           "
 
-CFLAGS = "-Wall -Werror -fPIC"
+CFLAGS += " -Wall -Werror -fPIC "
 LDFLAGS = "-lobmc-i2c -lgpio-ctrl"
 DEPENDS += "libgpio-ctrl"
 RDEPENDS_${PN} += "libgpio-ctrl"

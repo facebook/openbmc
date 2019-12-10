@@ -12,7 +12,7 @@ SRC_URI = "file://Makefile \
            file://bic-cached.c \
           "
 
-CFLAGS = "-Wall -Werror"
+CFLAGS += " -Wall -Werror "
 LDFLAGS = "-lfby3_common -lbic -lpal"
 DEPENDS = "libipmi libipmb libfby3-common libbic libpal update-rc.d-native"
 RDEPENDS_${PN} = "libipmi libipmb libfby3-common libbic libpal"

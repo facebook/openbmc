@@ -11,6 +11,7 @@ DISTRO_OVERRIDES=(
   meta-fbal:warrior
   meta-fbep:warrior
   meta-fbsp:warrior
+  meta-fby3:warrior
 )
 
 platform="$1"

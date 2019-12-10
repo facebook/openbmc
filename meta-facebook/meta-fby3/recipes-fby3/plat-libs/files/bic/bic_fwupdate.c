@@ -104,7 +104,7 @@ enable_bic_update_with_param(uint8_t slot_id, uint8_t intf) {
   uint8_t rlen = 0;
   uint8_t netfn = 0;
   uint8_t cmd   = 0;
-  int ret;
+  int ret = -1;
 
   memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
 
@@ -167,7 +167,7 @@ setup_remote_bic_i2c_speed(uint8_t slot_id, uint8_t speed, uint8_t intf) {
   uint8_t tbuf[6]  = {0x00};
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
-  int ret;
+  int ret = -1;
 
   memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
   tbuf[3] = intf;
@@ -203,7 +203,7 @@ send_start_bic_update(uint8_t slot_id, int i2cfd, int size, uint8_t intf) {
   uint8_t rbuf[32] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  int ret;
+  int ret = -1;
 
   if ( intf == NONE_INTF ) {
     memcpy(tbuf, data, sizeof(data));
@@ -234,7 +234,7 @@ read_bic_update_ack_status(uint8_t slot_id, int i2cfd, uint8_t intf) {
   uint8_t rbuf[32] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  int ret;
+  int ret = -1;
 
   if ( intf == NONE_INTF ) {
     uint8_t exp_data[2] = {0x00, 0xCC};
@@ -280,7 +280,7 @@ send_complete_signal(uint8_t slot_id, int i2cfd, uint8_t intf) {
   uint8_t rbuf[32] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  int ret;
+  int ret = -1;
 
   if ( intf == NONE_INTF ) {
     memcpy(tbuf, data, sizeof(data));
@@ -320,7 +320,7 @@ read_bic_update_status(int i2cfd) {
   uint8_t rbuf[16] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  int ret;
+  int ret = -1;
 
   tbuf[0] = BIC_CMD_STS_SIZE;
   tbuf[1] = BIC_CMD_STS;
@@ -366,7 +366,7 @@ send_bic_image_data(uint8_t slot_id, int i2cfd, uint16_t len, uint8_t *buf, uint
   uint8_t rbuf[16]  = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  int ret;
+  int ret = -1;
 
   data[0] = len + 3;
   data[1] = get_checksum(buf, len) + BIC_CMD_DATA;
@@ -401,7 +401,6 @@ send_bic_image_data(uint8_t slot_id, int i2cfd, uint16_t len, uint8_t *buf, uint
 
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot send data of the image, slot id:%d, update intf: 0x%X", __func__, slot_id, intf);
-    return ret;
   }
 
   return ret;
@@ -411,7 +410,7 @@ static int
 send_bic_runtime_image_data(uint8_t slot_id, int fd, int i2cfd, int file_size, const uint8_t bytes_per_read, uint8_t intf) {
   uint8_t buf[256] = {0};
   uint8_t read_bytes = 0;
-  int ret;
+  int ret = -1;
   int dsize = 0;
   int last_offset = 0;
   int offset = 0;;
@@ -468,7 +467,7 @@ send_bic_runtime_image_data(uint8_t slot_id, int fd, int i2cfd, int file_size, c
 
 static int
 update_bic(uint8_t slot_id, int fd, int file_size) {
-  int ret;
+  int ret = -1;
   int i2cfd;
   char cmd[100] = {0};
   size_t cmd_size = sizeof(cmd);
@@ -489,13 +488,18 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
 
   //step2 - kill ipmbd
   snprintf(cmd, cmd_size, "sv stop ipmbd_%d", bus_num);
-  system(cmd);
+  if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+      return BIC_ENOTSUP;
+  }
   printf("stop ipmbd for slot %x..\n", bus_num);
 
   //step3 - adjust the i2c speed and set properties of mqlim
   snprintf(cmd, cmd_size, "devmem 0x1e78a%03X w 0xFFF77304", I2CBASE + (I2CBASE * bus_num) + 4);
-  system(cmd);
-
+  if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+      return BIC_ENOTSUP;
+  }
   sleep(1);
   printf("stopped ipmbd for slot %x..\n", bus_num);
 
@@ -511,7 +515,10 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
   }
 
   snprintf(cmd, cmd_size, "/usr/local/bin/ipmbd -u %d %d > /dev/null 2>&1 &", bus_num, bus_num);
-  system(cmd);
+  if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+      return BIC_ENOTSUP;
+  }
   printf("start ipmbd -u for this slot %x..\n", bus_num);
 
   //assume ipmbd that it will be ready in 2s
@@ -526,7 +533,10 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
 
   //step5 - kill ipmbd
   snprintf(cmd, cmd_size, "ps | grep -v 'grep' | grep 'ipmbd -u %d' |awk '{print $1}'| xargs kill", bus_num);
-  system(cmd);
+  if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+      return BIC_ENOTSUP;
+  }
   printf("stop ipmbd for slot %x..\n", bus_num);
 
   //make sure that BIC enters bootloader
@@ -571,12 +581,18 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
 exit:
   //step11 - recover the i2c speed
   snprintf(cmd, cmd_size, "devmem 0x1e78a%03X w 0xFFF5E700", I2CBASE + (I2CBASE * bus_num) + 4);
-  system(cmd);
+  if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+      return BIC_ENOTSUP;
+  }
   msleep(500);
   
   //step12 - restart the ipmbd
   snprintf(cmd, cmd_size, "sv start ipmbd_%d", bus_num);
-  system(cmd);
+  if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+      return BIC_ENOTSUP;
+  }
 
   syslog(LOG_CRIT, "%s: updating bic firmware is exiting on slot %d\n", __func__, bus_num);
 
@@ -732,7 +748,7 @@ open_and_get_size(char *path, int *file_size) {
 static int
 update_bic_runtime_fw(uint8_t slot_id, uint8_t intf, char *path, uint8_t force) {
   int ret;
-  int fd;
+  int fd = 0;
   int file_size;
 
   //check params
@@ -786,7 +802,7 @@ send_image_data_via_bic(uint8_t slot_id, uint8_t comp, uint32_t offset, uint16_t
   uint8_t rbuf[16] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  int ret;
+  int ret = -1;
   int retries = 3;
 
   memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
@@ -820,7 +836,7 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, int fd, int file_size) {
   uint32_t offset = 0; 
   uint32_t last_offset = 0;
   uint32_t dsize = 0;
-  int ret;
+  int ret = -1;
 
   dsize = file_size / 20;
 

@@ -26,6 +26,7 @@ extern "C" {
 #endif
 
 #include "bic_xfer.h"
+#include "bic.h"
 
 enum {
   UPDATE_BIOS = 0,

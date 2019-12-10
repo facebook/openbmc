@@ -24,6 +24,7 @@
 #include <openbmc/ipmb.h>
 #include <openbmc/ipmi.h>
 #include <facebook/fby3_common.h>
+#include "bic.h"
 
 #ifdef __cplusplus
 extern "C" {

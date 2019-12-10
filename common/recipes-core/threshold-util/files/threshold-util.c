@@ -83,7 +83,7 @@ is_fru_valid(uint8_t fru) {
 
 static int
 clear_thresh_value_setting(uint8_t fru) {
-  int ret;
+  int ret = -1;
   char fpath[64] = {0};
   char cmd[128] = {0};
   char fruname[16] = {0};
@@ -97,14 +97,20 @@ clear_thresh_value_setting(uint8_t fru) {
   memset(fpath, 0, sizeof(fpath));
   sprintf(fpath, THRESHOLD_BIN, fruname);
   sprintf(cmd,"rm -rf %s",fpath);
-  system(cmd);
+  if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+      return -ENOTSUP;
+  }
 
   memset(fpath, 0, sizeof(fpath));
   sprintf(fpath, THRESHOLD_RE_FLAG, fruname);
   sprintf(cmd,"touch %s",fpath);
-  system(cmd); 
+  if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+      return -ENOTSUP;
+  }
 
-  return 0;
+  return ret;
 }
 
 int

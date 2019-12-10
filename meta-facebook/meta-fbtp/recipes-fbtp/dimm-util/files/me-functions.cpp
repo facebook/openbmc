@@ -167,9 +167,8 @@ int
 util_read_spd_byte(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset)
 {
 // 7 bytes IPMB header + 3 bytes INTEL ID + 1 byte payload + 1 byte checksum
-#define MIN_RESP_LEN (7 + INTEL_ID_LEN + 1 + 1 /* payload*/)
+  constexpr size_t min_resp_len = (7 + INTEL_ID_LEN + 1 + 1 /* payload*/);
 
-  int ret;
   uint8_t tbuf[256] = {0};
   uint8_t rbuf[256] = {0};
   uint8_t tlen = 0;
@@ -221,27 +220,25 @@ util_read_spd_byte(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset)
   DBG_PRINT("\n");
 #endif
 
-  if (rlen < MIN_RESP_LEN) {
+  if (rlen < min_resp_len) {
     return -1;
   }
 
   // actual SPD payload will be last byte following all IANA header and
   //  completion codes
-  return rbuf[MIN_RESP_LEN - 2];
+  return rbuf[min_resp_len - 2];
 }
 
 int
 util_check_me_status(uint8_t fru_id) {
 // 7 bytes IPMB header + 2 byte payload + 1 byte checksum
-#define MIN_RESP_LEN (7 + 2 + 1 /* payload*/)
+  constexpr size_t min_resp_len = (7 + 2 + 1 /* payload*/);
 
-  int ret, me_status = 0;
+  int me_status = 0;
   uint8_t tbuf[256] = {0};
   uint8_t rbuf[256] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  int addr_msb = 0;
-  int addr_lsb = 0;
 
   ipmb_req_t *req = (ipmb_req_t*)tbuf;;
 
@@ -252,7 +249,7 @@ util_check_me_status(uint8_t fru_id) {
                    req->netfn_lun;
   req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
 
-  req->req_slave_addr = BMC_SLAVE_ADDR;
+  req->req_slave_addr = IPMB_BMC_SLAVE_ADDR;
   req->seq_lun = 0x00;
 
   req->cmd = CMD_APP_GET_SELFTEST_RESULTS;
@@ -270,13 +267,13 @@ util_check_me_status(uint8_t fru_id) {
   DBG_PRINT("\n");
 #endif
 
-  if (rlen < MIN_RESP_LEN) {
+  if (rlen < min_resp_len) {
     return -1;
   }
 
   //  payload contains ME status (0x55, 0x00) and checksum
   //  ME status would be 3rd byte from last
-  me_status = rbuf[MIN_RESP_LEN - 3];
+  me_status = rbuf[min_resp_len - 3];
   DBG_PRINT("me_status 0x%x\n", me_status);
 
   if (me_status == 0x55) {

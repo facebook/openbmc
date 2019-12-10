@@ -2,6 +2,7 @@
 all: dimm-util
 
 CFLAGS += -Wall -Werror
+CXXFLAGS += -Wall -Werror
 
 dimm-util: *.cpp
 	$(CXX) -pthread $(CXXFLAGS)  -o $@ $^ $(LDFLAGS)

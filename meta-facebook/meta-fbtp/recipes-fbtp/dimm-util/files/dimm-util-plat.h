@@ -25,9 +25,9 @@
 #define MAX_DIMM_NUM_FBTP 6  // per CPU,
 #define NUM_FRU_FBTP      1
 
-#define ME_BUS_ADDR    0x04      // ME bus address in FBTP
-#define ME_SLAVE_ADDR  0x2C   // ME slave address in FBTP
-#define BMC_SLAVE_ADDR 0x20
+#define ME_BUS_ADDR         0x04  // ME bus address in FBTP
+#define ME_SLAVE_ADDR       0x2C  // ME slave address in FBTP
+#define IPMB_BMC_SLAVE_ADDR 0x20
 
 #define FRU_ID_MIN_FBTP 1
 #define FRU_ID_MAX_FBTP 1

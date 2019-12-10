@@ -222,7 +222,7 @@ util_read_spd_byte(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t offset)
 int
 util_check_me_status(uint8_t slot_id) {
 #define MAX_CMD_RETRY 2
-  int i, ret, retry = MAX_CMD_RETRY;
+  int ret, retry = MAX_CMD_RETRY;
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
   uint8_t tlen = 0;

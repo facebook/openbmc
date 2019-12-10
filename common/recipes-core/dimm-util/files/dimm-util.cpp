@@ -357,7 +357,6 @@ util_get_raw_dump(uint8_t fru_id, uint8_t dimm, bool json) {
   uint8_t i, page, cpu, startCPU, endCPU, startDimm, endDimm, dimm_present = 0;
   uint16_t j = 0;
   uint16_t offset = DEFAULT_DUMP_OFFSET;
-  uint16_t len = DEFAULT_DUMP_LEN;
   uint8_t buf[DEFAULT_DUMP_LEN] = {0};
 
   printf("Fru: %s\n", fru_name[fru_id - 1]);
@@ -373,11 +372,12 @@ util_get_raw_dump(uint8_t fru_id, uint8_t dimm, bool json) {
         printf("%03x: ", offset + (page * 0x100));
         for (j = 0; j < DEFAULT_DUMP_LEN; ++j) {
           printf("%02x ", buf[j]);
-          if (((j & 0x0f) == 0x0f))
+          if (((j & 0x0f) == 0x0f)) {
             if (j == (DEFAULT_DUMP_LEN - 1))
               printf("\n");
             else
               printf("\n%03x: ", offset + j + (page * 0x100) + 1);
+          }
         }
       }
     }
@@ -589,8 +589,6 @@ err_exit:
 
 static int parse_dimm_label(char *label, uint8_t *dimmNum)
 {
-  int cpu, dimm;
-
   // dimm label to dimm number look up
   for (int cpu = 0; cpu < num_cpus; ++cpu) {
     for (int dimm = 0; dimm < num_dimms_per_cpu; ++dimm) {
@@ -724,9 +722,9 @@ print_usage_help(void) {
   for (i = 0; i < num_cpus; ++i)
     for (j = 0; j < num_dimms_per_cpu; ++ j)
       if (i == num_cpus - 1 && j == num_dimms_per_cpu - 1)
-        printf("%02s)\n", get_dimm_label(i, j));
+        printf("%2s)\n", get_dimm_label(i, j));
       else
-        printf("%02s, ", get_dimm_label(i, j));
+        printf("%2s, ", get_dimm_label(i, j));
   printf("   --json    - output in JSON format\n");
   printf("   --force   - skips ME status check\n");
 }

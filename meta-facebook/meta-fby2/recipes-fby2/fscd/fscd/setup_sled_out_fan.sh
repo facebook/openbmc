@@ -14,14 +14,20 @@ if [ $fan0_rpm -le "500" ] || [ $fan1_rpm -le "500" ]; then
     pwm_value=100
 else
     sku_type=0
+    server_type=0
     for i in `seq 1 1 4`
     do
         tmp_sku=$(get_slot_type $i)
         sku_type=$(($(($tmp_sku << $(($(($i*4)) - 4))))+$sku_type))
+        tmp_server=$(get_server_type $i)
+        server_type=$(($(($tmp_server << $(($(($i*4)) - 4))))+$server_type))
     done
     if [ "$sku_type" == "1028" ] ; then
         # only for GPv2 case
         pwm_value=90
+    elif [ "$sku_type" == "0" ] && [ "$server_type" == "17476" ] ; then
+        # onle for FBND case
+        pwm_value=80
     else
         pwm_value=100
     fi

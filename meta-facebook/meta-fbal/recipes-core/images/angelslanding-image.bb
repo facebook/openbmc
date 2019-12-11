@@ -42,4 +42,5 @@ IMAGE_INSTALL += " \
   gpiod \
   guid-util \
   crashdump \
+  threshold-util \
   "

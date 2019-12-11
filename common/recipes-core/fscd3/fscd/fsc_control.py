@@ -135,10 +135,13 @@ class TTable4Curve:
 
         if self.table == None:
             self.table = self.table_normal_up
-        if self.accelate == 1 and value > self.table[0][0]:
-            self.accelate = 0
-        elif self.accelate == 0 and value < self.table[-1][0]:
+        if self.compare_fsc_value == None:
+            self.compare_fsc_value = value
             self.accelate = 1
+        elif self.compare_fsc_value > value:
+            self.accelate = 1
+        elif self.compare_fsc_value < value:
+            self.accelate = 0
 
         if self.accelate == 1 and dead_fans == 0:
             self.table = self.table_normal_up

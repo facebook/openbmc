@@ -41,12 +41,12 @@
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
-const char pal_fru_list_print[] = "all, slot0, slot1, slot2, slot3, bmc, bb";
-const char pal_fru_list_rw[] = "slot0, slot1, slot2, slot3, bmc, bb";
-const char pal_fru_list_sensor_history[] = "all, slot0, slot1, slot2, slot3, bb";
+const char pal_fru_list_print[] = "all, slot1, slot2, slot3, slot4, bmc, bb";
+const char pal_fru_list_rw[] = "slot1, slot2, slot3, slot4, bmc, bb";
+const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bb";
 
-const char pal_fru_list[] = "all, slot0, slot1, slot2, slot3, bmc";
-const char pal_server_list[] = "slot0, slot1, slot2, slot3";
+const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc";
+const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -239,9 +239,6 @@ pal_get_fru_list(char *list) {
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   switch (fru) {
-    case FRU_SLOT0:
-      *status = 1;
-      break;
     case FRU_SLOT1:
       *status = 1;
       break;
@@ -249,6 +246,9 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       *status = 1;
       break;
     case FRU_SLOT3:
+      *status = 1;
+      break;
+    case FRU_SLOT4:
       *status = 1;
       break;
     case FRU_BB:
@@ -272,20 +272,10 @@ int
 pal_get_fru_id(char *str, uint8_t *fru) {
   int ret = 0;
 
-  if (!strcmp(str, "all")) {
-    *fru = FRU_ALL;
-  } else if (!strcmp(str, "nic")) {
-    *fru = FRU_NIC;
-  } else if (!strcmp(str, "bmc")) {
-    *fru = FRU_BMC;
-  } else if (!strcmp(str, "bb")) {
-    *fru = FRU_BB;
-  } else {
-    ret = is_valid_slot_str(str, fru);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() wrong fru %s", __func__, str);
-      return -1;
-    }
+  ret = fby3_common_get_fru_id(str, fru);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() wrong fru %s", __func__, str);
+    return -1;
   }
 
   return ret;
@@ -295,9 +285,6 @@ int
 pal_get_fruid_name(uint8_t fru, char *name) {
 
   switch(fru) {
-  case FRU_SLOT0:
-    sprintf(name, "Server board 0");
-    break;
   case FRU_SLOT1:
     sprintf(name, "Server board 1");
     break;
@@ -306,6 +293,9 @@ pal_get_fruid_name(uint8_t fru, char *name) {
     break;
   case FRU_SLOT3:
     sprintf(name, "Server board 3");
+    break;
+  case FRU_SLOT4:
+    sprintf(name, "Server board 4");
     break;
   case FRU_BMC:
     sprintf(name, "BMC");
@@ -328,9 +318,6 @@ int
 pal_get_fru_name(uint8_t fru, char *name) {
 
   switch(fru) {
-    case FRU_SLOT0:
-      sprintf(name, "slot0");
-      break;
     case FRU_SLOT1:
       sprintf(name, "slot1");
       break;
@@ -339,6 +326,9 @@ pal_get_fru_name(uint8_t fru, char *name) {
       break;
     case FRU_SLOT3:
       sprintf(name, "slot3");
+      break;
+    case FRU_SLOT4:
+      sprintf(name, "slot4");
       break;
     case FRU_BMC:
       sprintf(name, "bmc");
@@ -359,7 +349,7 @@ pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
   int ret = 0;
   uint8_t bmc_location = 0;
 
-  ret = get_bmc_location(&bmc_location);
+  ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return ret;;
@@ -384,9 +374,6 @@ pal_get_fruid_path(uint8_t fru, char *path) {
   char fname[16] = {0};
 
   switch(fru) {
-  case FRU_SLOT0:
-    sprintf(fname, "slot0");
-    break;
   case FRU_SLOT1:
     sprintf(fname, "slot1");
     break;
@@ -395,6 +382,9 @@ pal_get_fruid_path(uint8_t fru, char *path) {
     break;
   case FRU_SLOT3:
     sprintf(fname, "slot3");
+    break;
+  case FRU_SLOT4:
+    sprintf(fname, "slot4");
     break;
   case FRU_BMC:
     sprintf(fname, "bmc");

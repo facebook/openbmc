@@ -105,7 +105,7 @@ fruid_init_local_fru() {
   uint8_t bmc_location = 0;
   ssize_t bytes_wr;
 
-  ret = get_bmc_location(&bmc_location);
+  ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return ret;;

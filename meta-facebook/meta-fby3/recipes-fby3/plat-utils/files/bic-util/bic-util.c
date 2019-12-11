@@ -44,8 +44,8 @@ static void
 print_usage_help(void) {
   int i;
 
-  printf("Usage: bic-util <slot0|slot1|slot2|slot3> <[0..n]data_bytes_to_send>\n");
-  printf("Usage: bic-util <slot0|slot1|slot2|slot3> <option>\n");
+  printf("Usage: bic-util <%s> <[0..n]data_bytes_to_send>\n", slot_usage);
+  printf("Usage: bic-util <%s> <option>\n", slot_usage);
   printf("       option:\n");
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
     printf("       %s\n", option_list[i]);
@@ -132,7 +132,7 @@ main(int argc, char **argv) {
     goto err_exit;
   }
 
-  ret = is_valid_slot_str(argv[1], &slot_id);
+  ret = fby3_common_get_slot_id(argv[1], &slot_id);
   if ( ret < 0 ) {
     goto err_exit;
   }

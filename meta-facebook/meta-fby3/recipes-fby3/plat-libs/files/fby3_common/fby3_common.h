@@ -44,23 +44,25 @@ extern "C" {
 #define I2C_PATH "/sys/class/i2c-dev/i2c-%d/device/new_device"
 #define EEPROM_PATH "/sys/bus/i2c/devices/%d-00%X/eeprom"
 
+extern const char *slot_usage;
+
 #define MAX_NUM_FRUS 7
 enum {
   FRU_ALL   = 0,
-  FRU_SLOT0 = 1,
-  FRU_SLOT1 = 2,
-  FRU_SLOT2 = 3,
-  FRU_SLOT3 = 4,
+  FRU_SLOT1 = 1,
+  FRU_SLOT2 = 2,
+  FRU_SLOT3 = 3,
+  FRU_SLOT4 = 4,
   FRU_BB    = 5,
   FRU_NIC   = 6,
   FRU_BMC   = 7,
 };
 
 enum {
-  IPMB_SLOT0_I2C_BUS = 0,
-  IPMB_SLOT1_I2C_BUS = 1,
-  IPMB_SLOT2_I2C_BUS = 2,
-  IPMB_SLOT3_I2C_BUS = 3,
+  IPMB_SLOT1_I2C_BUS = 0,
+  IPMB_SLOT2_I2C_BUS = 1,
+  IPMB_SLOT3_I2C_BUS = 2,
+  IPMB_SLOT4_I2C_BUS = 3,
 };
 
 enum {
@@ -97,9 +99,10 @@ const static uint8_t gpio_server_hsc_pgood_sts[] =
 */
 };
 
-int get_bmc_location(uint8_t *id);
-int is_valid_slot_str(char *str, uint8_t *fru);
-int is_valid_slot_id(uint8_t fru);
+int fby3_common_get_bmc_location(uint8_t *id);
+int fby3_common_get_fru_id(char *str, uint8_t *fru);
+int fby3_common_check_slot_id(uint8_t fru);
+int fby3_common_get_slot_id(char *str, uint8_t *fru);
 int fby3_common_get_bus_id(uint8_t slot_id);
 
 #ifdef __cplusplus

@@ -157,7 +157,7 @@ int
 pal_get_server_power(uint8_t fru, uint8_t *status) {
   int ret;
 
-  ret = is_valid_slot_id(fru);
+  ret = fby3_common_check_slot_id(fru);
   if ( ret < 0 ) {
     return POWER_STATUS_FRU_ERR;
   }
@@ -181,7 +181,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
   uint8_t status;
   int ret = 0;
 
-  ret = is_valid_slot_id(fru);
+  ret = fby3_common_check_slot_id(fru);
   if ( ret < 0 ) {
     return POWER_STATUS_FRU_ERR;
   }
@@ -256,7 +256,7 @@ pal_sled_cycle(void) {
   int ret;
   uint8_t bmc_location = 0;
 
-  ret = get_bmc_location(&bmc_location);
+  ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return POWER_STATUS_ERR;

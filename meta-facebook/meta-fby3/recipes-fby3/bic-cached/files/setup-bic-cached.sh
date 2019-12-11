@@ -14,16 +14,11 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 function init_class2_sdr() {
-  /usr/local/bin/bic-cached -f slot0 > /dev/null 2>&1 &
+  /usr/local/bin/bic-cached -f slot1 > /dev/null 2>&1 &
 }
 
 function init_class1_sdr() {
   # -f means `dump fru` only
-  if [[ $(is_server_prsnt 0) == "1" ]]; then
-    /usr/local/bin/bic-cached -s slot0
-    /usr/local/bin/bic-cached -f slot0 > /dev/null 2>&1 &
-  fi
-
   if [[ $(is_server_prsnt 1) == "1" ]]; then
     /usr/local/bin/bic-cached -s slot1
     /usr/local/bin/bic-cached -f slot1 > /dev/null 2>&1 &
@@ -37,6 +32,11 @@ function init_class1_sdr() {
   if [[ $(is_server_prsnt 3) == "1" ]]; then
     /usr/local/bin/bic-cached -s slot3
     /usr/local/bin/bic-cached -f slot3 > /dev/null 2>&1 &
+  fi
+
+  if [[ $(is_server_prsnt 4) == "1" ]]; then
+    /usr/local/bin/bic-cached -s slot4
+    /usr/local/bin/bic-cached -f slot4 > /dev/null 2>&1 &
   fi
 }
 

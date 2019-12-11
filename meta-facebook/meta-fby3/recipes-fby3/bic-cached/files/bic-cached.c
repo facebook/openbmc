@@ -49,17 +49,9 @@ fruid_cache_init(uint8_t slot_id) {
   int fru_size=0;
   char fruid_temp_path[64] = {0};
   char fruid_path[64] = {0};
-  uint8_t bus_id = 0;
 
-  ret = fby3_common_get_bus_id(slot_id);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to get bus_id: %d\n", __func__, slot_id);
-  }
-
-  bus_id = (uint8_t)ret;
-
-  sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.bin", bus_id);
-  sprintf(fruid_path, "/tmp/fruid_slot%d.bin", bus_id);
+  sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.bin", slot_id);
+  sprintf(fruid_path, "/tmp/fruid_slot%d.bin", slot_id);
 
   ret = bic_read_fruid(slot_id, 0, fruid_temp_path, &fru_size, NONE_INTF);
   if (ret) {
@@ -81,19 +73,10 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
   char *path = NULL;
   char sdr_temp_path[64] = {0};
   char sdr_path[64] = {0};
-  uint8_t bus_id = 0;
   ssize_t bytes_wr;
 
-  ret = fby3_common_get_bus_id(slot_id);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to get bus_id: %d\n", __func__, slot_id);
-    return ret;
-  }
-
-  bus_id = (uint8_t)ret;
-
-  sprintf(sdr_temp_path, "/tmp/tsdr_slot%d.%d.bin", bus_id, intf);
-  sprintf(sdr_path, "/tmp/sdr_slot%d.%d.bin", bus_id, intf);
+  sprintf(sdr_temp_path, "/tmp/tsdr_slot%d.%d.bin", slot_id, intf);
+  sprintf(sdr_path, "/tmp/sdr_slot%d.%d.bin", slot_id, intf);
 
   ipmi_sel_sdr_req_t req;
   ipmi_sel_sdr_res_t *res = (ipmi_sel_sdr_res_t *) rbuf;
@@ -172,19 +155,10 @@ sdr_cache_init(uint8_t slot_id) {
   char *path = NULL;
   char sdr_temp_path[64] = {0};
   char sdr_path[64] = {0};
-  uint8_t bus_id = 0;
   ssize_t bytes_wr;
 
-  ret = fby3_common_get_bus_id(slot_id);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to get bus_id: %d\n", __func__, slot_id);
-    return ret;
-  }
-
-  bus_id = (uint8_t)ret;
-
-  sprintf(sdr_temp_path, "/tmp/tsdr_slot%d.bin", bus_id);
-  sprintf(sdr_path, "/tmp/sdr_slot%d.bin", bus_id);
+  sprintf(sdr_temp_path, "/tmp/tsdr_slot%d.bin", slot_id);
+  sprintf(sdr_path, "/tmp/sdr_slot%d.bin", slot_id);
 
   ipmi_sel_sdr_req_t req;
   ipmi_sel_sdr_res_t *res = (ipmi_sel_sdr_res_t *) rbuf;
@@ -329,7 +303,7 @@ main (int argc, char * const argv[])
   }
 
   //get the slot_id
-  ret = is_valid_slot_str(argv[index], &slot_id);
+  ret = fby3_common_get_slot_id(argv[index], &slot_id);
   if ( ret <  0 ) {
     syslog(LOG_WARNING, "%s() slot is incorrect %s\n", __func__, argv[ret]);
   }

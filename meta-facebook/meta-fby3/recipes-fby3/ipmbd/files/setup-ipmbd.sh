@@ -32,12 +32,13 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 function init_class1_ipmb(){
-  for slot_num in $(seq 0 3); do
-    echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-$slot_num/new_device
-    runsv /etc/sv/ipmbd_$slot_num > /dev/null 2>&1 &
-    slot_present=$(gpio_get PRSNT_MB_BMC_SLOT${slot_num}_BB_N)
+  for slot_num in $(seq 1 4); do
+    bus=$((slot_num-1))
+    echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-${bus}/new_device
+    runsv /etc/sv/ipmbd_${bus} > /dev/null 2>&1 &
+    slot_present=$(gpio_get PRSNT_MB_BMC_SLOT${bus}_BB_N)
     if [[ "$slot_present" == "1" ]]; then
-      sv stop ipmbd_${slot_num}
+      sv stop ipmbd_${bus}
     else
       enable_server_12V_power ${slot_num}
       enable_server_i2c_bus ${slot_num}

@@ -33,6 +33,9 @@
 #include <openbmc/libgpio.h>
 #include "fby3_common.h"
 
+const char *slot_usage = "slot1|slot2|slot3|slot4";
+const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc"};
+
 static int
 get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask)
 {
@@ -56,16 +59,19 @@ get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask)
 }
 
 int
-is_valid_slot_str(char *str, uint8_t *fru) {
-  if (!strcmp(str, "slot0")) {
-    *fru = FRU_SLOT0;
-  } else if (!strcmp(str, "slot1")) {
-    *fru = FRU_SLOT1;
-  } else if (!strcmp(str, "slot2")) {
-    *fru = FRU_SLOT2;
-  } else if (!strcmp(str, "slot3")) {
-    *fru = FRU_SLOT3;
-  } else {
+fby3_common_get_fru_id(char *str, uint8_t *fru) {
+  int fru_id = 0;
+  bool found_id = false;
+
+  for (fru_id = FRU_ALL; fru_id <= MAX_NUM_FRUS; fru_id++) {
+    if ( strcmp(str, slot_list[fru_id]) == 0 ) {
+      *fru = fru_id;
+      found_id = true;
+      break;
+    }
+  }
+
+  if ( found_id == false ) {
     return -1;
   }
 
@@ -73,31 +79,43 @@ is_valid_slot_str(char *str, uint8_t *fru) {
 }
 
 int
-is_valid_slot_id(uint8_t fru) {
-  int ret = 0;
+fby3_common_get_slot_id(char *str, uint8_t *fru) {
+  int fru_id = 0;
+  bool found_id = false;
 
-  switch(fru) {
-    case FRU_SLOT0:
+  for (fru_id = FRU_SLOT1; fru_id <= FRU_SLOT4; fru_id++) {
+    if ( strcmp(str, slot_list[fru_id]) == 0 ) {
+      *fru = fru_id;
+      found_id = true;
+      break;
+    }
+  }
+
+  if ( found_id == false ) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int 
+fby3_common_check_slot_id(uint8_t fru) {
+  switch (fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
-      break;
-    default:
-      syslog(LOG_WARNING, "%s() wrong fru id 0x%2X", __func__, fru);
-      ret = -1;
-      break;
+    case FRU_SLOT4:
+      return 0;
+    break;
   }
 
-  return ret;
+  return -1;
 }
 
 int
 fby3_common_get_bus_id(uint8_t slot_id) {
   int bus_id = 0;
   switch(slot_id) {
-    case FRU_SLOT0:
-      bus_id = IPMB_SLOT0_I2C_BUS;
-    break;
     case FRU_SLOT1:
       bus_id = IPMB_SLOT1_I2C_BUS;
     break;
@@ -107,6 +125,9 @@ fby3_common_get_bus_id(uint8_t slot_id) {
     case FRU_SLOT3:
       bus_id = IPMB_SLOT3_I2C_BUS;
     break;
+    case FRU_SLOT4:
+      bus_id = IPMB_SLOT4_I2C_BUS;
+    break;
     default:
       bus_id = -1;
     break;
@@ -115,7 +136,7 @@ fby3_common_get_bus_id(uint8_t slot_id) {
 }
 
 int
-get_bmc_location(uint8_t *id) {
+fby3_common_get_bmc_location(uint8_t *id) {
   static bool is_cached = false;
   static uint8_t cached_id = 0;
 

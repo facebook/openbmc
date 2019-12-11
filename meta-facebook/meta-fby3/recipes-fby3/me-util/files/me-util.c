@@ -49,7 +49,7 @@ static int total_retry = 0;
 
 static void
 print_usage_help(void) {
-  printf("\nUsage: me-util <slot0|slot1|slot2|slot3> <[0..n]data_bytes_to_send>\n");
+  printf("\nUsage: me-util <%s> <[0..n]data_bytes_to_send>\n", slot_usage);
   printf("                                           <cmd>\n");
   printf("\ncmd list:\n");
   printf("   --get_dev_id   - get device ID\n");
@@ -160,7 +160,7 @@ main(int argc, char **argv) {
     goto err_exit;
   }
 
-  ret = is_valid_slot_str(argv[1], &slot_id);
+  ret = fby3_common_get_slot_id(argv[1], &slot_id);
   if ( ret < 0 ) {
     goto err_exit;
   }

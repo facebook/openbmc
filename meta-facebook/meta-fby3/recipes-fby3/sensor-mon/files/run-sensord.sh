@@ -4,17 +4,11 @@ echo -n "Setup sensor monitoring for FBY3... "
 SLOTS=
 
 function init_class2_sensord() {
-  SLOTS="slot0 bmc nic"
+  SLOTS="slot1 bmc nic"
 }
 
 function init_class1_sensord() {
   # Check for the slots present and run sensord for those slots only.
-  if [ $(is_server_prsnt 0) == "1" ]; then
-    if [ $(is_slot_12v_on 0) == "1" ]; then
-      SLOTS="$SLOTS slot0"
-    fi
-  fi
-
   if [ $(is_server_prsnt 1) == "1" ]; then
     if [ $(is_slot_12v_on 1) == "1" ]; then
       SLOTS="$SLOTS slot1"
@@ -33,6 +27,12 @@ function init_class1_sensord() {
     fi
   fi
 
+  if [ $(is_server_prsnt 4) == "1" ]; then
+    if [ $(is_slot_12v_on 4) == "1" ]; then
+      SLOTS="$SLOTS slot4"
+    fi
+  fi
+
   SLOTS="$SLOTS bmc nic"
 }
 
@@ -48,8 +48,3 @@ else
 fi
 
 exec /usr/local/bin/sensord $SLOTS
-
-if [ ! -n "$SLOTS" ]; then
-  echo "sensord is stopped"
-  sv stop sensord
-fi

@@ -48,6 +48,7 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_OUTLET_TEMP,
   BIC_SENSOR_FIO_TEMP,
   BIC_SENSOR_PCH_TEMP,
+  BIC_SENSOR_CPU_THERMAL_MARGIN,
   BIC_SENSOR_CPU_TEMP,
   BIC_SENSOR_DIMMA0_TEMP,
   BIC_SENSOR_DIMMB0_TEMP,
@@ -143,10 +144,10 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) nic_sensor_list;
     *cnt = nic_sensor_cnt;
     break;
-  case FRU_SLOT0:
   case FRU_SLOT1:
   case FRU_SLOT2:
   case FRU_SLOT3:
+  case FRU_SLOT4:
     *sensor_list = (uint8_t *) bic_sensor_list;
     *cnt = bic_sensor_cnt;
     break;
@@ -444,10 +445,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
 
   switch(fru) {
-    case FRU_SLOT0:
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
+    case FRU_SLOT4:
       ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value);
       break;
     case FRU_BMC:
@@ -600,9 +601,6 @@ pal_sensor_sdr_path(uint8_t fru, char *path) {
   char fru_name[16] = {0};
 
   switch(fru) {
-    case FRU_SLOT0:
-      sprintf(fru_name, "%s", "slot0");
-    break;
     case FRU_SLOT1:
       sprintf(fru_name, "%s", "slot1");
     break;
@@ -611,6 +609,9 @@ pal_sensor_sdr_path(uint8_t fru, char *path) {
     break;
     case FRU_SLOT3:
       sprintf(fru_name, "%s", "slot3");
+    break;
+    case FRU_SLOT4:
+      sprintf(fru_name, "%s", "slot4");
     break;
     case FRU_BMC:
       sprintf(fru_name, "%s", "bmc");
@@ -750,8 +751,8 @@ int
 pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   int ret = 0;
 
-  if (fru == FRU_SLOT0 || fru == FRU_SLOT1 || \
-      fru == FRU_SLOT2 || fru == FRU_SLOT3) {
+  if (fru == FRU_SLOT1 || fru == FRU_SLOT2 || \
+      fru == FRU_SLOT3 || fru == FRU_SLOT4) {
     ret = pal_sdr_init(fru);
     strcpy(units, "");
     return ret;

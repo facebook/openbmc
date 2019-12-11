@@ -145,13 +145,10 @@ int max10_reg_write(int address, int data)
 {
   int ret ;
 
-  if (g_i2c_file == 0)
-  {
+  if (g_i2c_file == 0) {
     printf("\n i2c device not specified. \n");
     return -1;
-  }
-  else
-  {
+  } else {
     ret = set_i2c_register(g_i2c_file, g_i2c_bridge_addr, address, data);
     if (ret != 8) {
       syslog(LOG_WARNING, "set_i2c_register() ERROR. ret = %d.", ret);
@@ -497,17 +494,17 @@ int max10_update_rpd(uint8_t* rpd_file, uint8_t image_type, int cfm_start_addr, 
       int total = cfm_end_addr - cfm_start_addr;
       int percent = ((address+4 - cfm_start_addr)*100)/total;
 
-      if(last_percent != percent)
-      {
+      if(last_percent != percent) {
         last_percent = percent;
-        printf(" Progress  %d %%.  addr: 0x%X \n", percent, address);
+        printf("\rProgress: Addr: 0x%X  [%d %%]", address, percent);
+        fflush(stdout);
       }
     }
 
     offset+= 4;
   }
 
-  printf("Done!\n");
+  printf("\n Done!\n");
   max10_protect_sectors();
 
   g_i2c_file = 0;
@@ -588,6 +585,7 @@ int max10_cpld_cfm_update(FILE *fd)
   int rpd_filesize;
   int readbytes;
   int cfm_start_addr, cfm_end_addr;
+  int ret = 0;
   uint8_t image_type;
 
   // Get file size
@@ -611,10 +609,11 @@ int max10_cpld_cfm_update(FILE *fd)
   cfm_start_addr = g_cfm_start_addr;
   cfm_end_addr = g_cfm_end_addr;
   image_type = g_cfm_image_type;
-  max10_update_rpd(rpd_file_buff, image_type, cfm_start_addr, cfm_end_addr);
 
+  ret = max10_update_rpd(rpd_file_buff, image_type, cfm_start_addr, cfm_end_addr);
   free(rpd_file_buff);
-  return 0;
+
+  return ret;
 }
 
 int max10_cpld_get_id(uint32_t *dev_id)

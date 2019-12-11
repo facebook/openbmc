@@ -31,10 +31,12 @@ extern "C" {
 #endif
 
 #define PWR_OPTION_LIST "status, off, on, cycle"
-#define MB_BIN "/tmp/fruid.bin"
+#define MB_BIN "/tmp/fruid_mb.bin"
 #define MB_EEPROM "/sys/class/i2c-dev/i2c-6/device/6-0054/eeprom"
-#define PDB_BIN "/tmp/pdbid.bin"
+#define PDB_BIN "/tmp/fruid_pdb.bin"
 #define PDB_EEPROM "/sys/class/i2c-dev/i2c-16/device/16-0054/eeprom"
+#define BSM_BIN "/tmp/fruid_bsm.bin"
+#define BSM_EEPROM "/sys/class/i2c-dev/i2c-13/device/13-0056/eeprom"
 
 #define LARGEST_DEVICE_NAME 120
 #define ERR_NOT_READY -2
@@ -50,6 +52,7 @@ enum {
   FRU_ALL = 0,
   FRU_MB,
   FRU_PDB,
+  FRU_BSM,
 };
 
 enum {
@@ -64,7 +67,7 @@ enum {
   PCH,
 };
 
-#define MAX_NUM_FRUS 2
+#define MAX_NUM_FRUS 3
 #define MAX_NODES    1
 
 int read_device(const char *device, int *value);

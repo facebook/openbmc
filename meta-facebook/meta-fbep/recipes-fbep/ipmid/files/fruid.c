@@ -102,6 +102,9 @@ int plat_fruid_init(void)
   if (copy_eeprom_to_bin(PDB_EEPROM, PDB_BIN))
     syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, PDB_BIN);
 
+  if (copy_eeprom_to_bin(BSM_EEPROM, BSM_BIN))
+    syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, BSM_BIN);
+
   return 0;
 }
 
@@ -128,6 +131,8 @@ int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count,
     snprintf(fru_dev, LARGEST_DEVICE_NAME, MB_BIN);
   else if (fru_id == FRU_PDB)
     snprintf(fru_dev, LARGEST_DEVICE_NAME, PDB_BIN);
+  else if (fru_id == FRU_BSM)
+    snprintf(fru_dev, LARGEST_DEVICE_NAME, BSM_BIN);
   else
     return -1;
 

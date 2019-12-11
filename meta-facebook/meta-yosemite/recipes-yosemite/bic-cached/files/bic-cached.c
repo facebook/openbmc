@@ -175,7 +175,7 @@ sdr_cache_init(uint8_t slot_id) {
       continue;
     }
 
-    sdr_full_t *sdr = res->data;
+    sdr_full_t *sdr = (sdr_full_t *) res->data;
 
     write(fd, sdr, sizeof(sdr_full_t));
 
@@ -206,7 +206,7 @@ main (int argc, char * const argv[])
 
   // Check BIC Self Test Result
   do {
-    ret = bic_get_self_test_result(slot_id, &self_test_result);
+    ret = bic_get_self_test_result(slot_id, self_test_result);
     if (ret == 0) {
       syslog(LOG_INFO, "bic_get_self_test_result: %X %X\n", self_test_result[0], self_test_result[1]);
       break;

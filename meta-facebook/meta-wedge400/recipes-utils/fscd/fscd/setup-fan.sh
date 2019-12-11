@@ -46,8 +46,8 @@ if [ "$(wedge_board_type)" = "0" ]; then
     echo "Run FSC PWM 64 Levels Config"
     cp /etc/FSC-W400-config.json ${default_fsc_config}
 fi
-echo "Setting fan speed to 25%..."
-/usr/local/bin/set_fan_speed.sh 25
+echo "Setting fan speed to 50%..."
+/usr/local/bin/set_fan_speed.sh 50
 echo "Done setting fan speed"
 # Currently, fcmcpld version 0.xx will cause BMC to 
 # run into crash loop, due to fscd's own logic and 

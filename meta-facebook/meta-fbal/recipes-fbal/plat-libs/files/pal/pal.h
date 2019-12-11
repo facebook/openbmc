@@ -51,15 +51,16 @@ extern "C" {
 
 enum {
   FRU_ALL  = 0,
-  FRU_MB   = 1,
-  FRU_PDB  = 2,
-  FRU_NIC0 = 3,
-  FRU_NIC1 = 4,
-  FRU_DBG  = 5,
-  FRU_BMC  = 6,
+  FRU_MB,
+  FRU_PDB,
+  FRU_NIC0,
+  FRU_NIC1,
+  FRU_DBG,
+  FRU_BMC,
+  FRU_CNT,
 };
 
-#define MAX_NUM_FRUS    (4)
+#define MAX_NUM_FRUS    (FRU_CNT-1)
 #define MAX_NODES       (1)
 #define READING_SKIP    (1)
 #define READING_NA      (-2)

@@ -628,16 +628,28 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
       ret = sensors_read("tmp421-i2c-6-4f", "GPU_OUTLET_REMOTE", (float *)value);
       break;
     case MB_SENSOR_PAX01_THERM:
-      ret = sensors_read("tmp422-i2c-6-4d", "PAX01_THERM", (float *)value);
+      if (pal_get_server_power(FRU_MB, &status) == 0 && status == SERVER_POWER_ON)
+        ret = sensors_read("tmp422-i2c-6-4d", "PAX01_THERM", (float *)value);
+      else
+	ret = READING_NA;
       break;
     case MB_SENSOR_PAX01_THERM_REMOTE:
-      ret = sensors_read("tmp422-i2c-6-4d", "PAX01_THERM_REMOTE", (float *)value);
+      if (pal_get_server_power(FRU_MB, &status) == 0 && status == SERVER_POWER_ON)
+        ret = sensors_read("tmp422-i2c-6-4d", "PAX01_THERM_REMOTE", (float *)value);
+      else
+	ret = READING_NA;
       break;
     case MB_SENSOR_PAX23_THERM:
-      ret = sensors_read("tmp422-i2c-6-4e", "PAX23_THERM", (float *)value);
+      if (pal_get_server_power(FRU_MB, &status) == 0 && status == SERVER_POWER_ON)
+        ret = sensors_read("tmp422-i2c-6-4e", "PAX23_THERM", (float *)value);
+      else
+	ret = READING_NA;
       break;
     case MB_SENSOR_PAX23_THERM_REMOTE:
-      ret = sensors_read("tmp422-i2c-6-4e", "PAX23_THERM_REMOTE", (float *)value);
+      if (pal_get_server_power(FRU_MB, &status) == 0 && status == SERVER_POWER_ON)
+        ret = sensors_read("tmp422-i2c-6-4e", "PAX23_THERM_REMOTE", (float *)value);
+      else
+	ret = READING_NA;
       break;
     case PDB_SENSOR_OUTLET_TEMP:
       ret = sensors_read("tmp421-i2c-17-4c", "OUTLET_TEMP", (float *)value);

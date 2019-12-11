@@ -59,6 +59,11 @@ done
 #devmem_clear_bit $(scu_addr 80) 7
 #devmem_clear_bit $(scu_addr 90) 2
 
+# Reserved
+gpio_export BMC_GPIOA1 GPIOA1
+gpio_export BMC_GPIOA2 GPIOA2
+gpio_export BMC_GPIOA3 GPIOA3
+
 # OAM debug mode enable
 gpio_export SCALE_DEBUG_EN_N_ASIC0 GPIOA7
 gpio_export SCALE_DEBUG_EN_N_ASIC1 GPIOA6
@@ -115,11 +120,17 @@ gpio_set BMC_IPMI_PWR_ON 1
 
 # ASIC warm reset
 gpio_export WARMRST_BMC_N_ASIC0 GPIOE7
+gpio_set WARMRST_BMC_N_ASIC0 1
 gpio_export WARMRST_BMC_N_ASIC1 GPIOE6
+gpio_set WARMRST_BMC_N_ASIC1 1
 gpio_export WARMRST_BMC_N_ASIC2 GPIOE5
+gpio_set WARMRST_BMC_N_ASIC2 1
 gpio_export WARMRST_BMC_N_ASIC3 GPIOE4
+gpio_set WARMRST_BMC_N_ASIC3 1
 gpio_export WARMRST_BMC_N_ASIC4 GPIOE3
+gpio_set WARMRST_BMC_N_ASIC4 1
 gpio_export WARMRST_BMC_N_ASIC5 GPIOE2
+gpio_set WARMRST_BMC_N_ASIC5 1
 
 # To enable GPIOF
 #devmem_clear_bit $(scu_addr 80) 24
@@ -134,21 +145,21 @@ gpio_export WARMRST_BMC_N_ASIC5 GPIOE2
 
 # POST LED 
 gpio_export LED_POSTCODE_0 GPIOF0
-gpio_set LED_POSTCODE_0 1
+gpio_set LED_POSTCODE_0 0
 gpio_export LED_POSTCODE_1 GPIOF1
-gpio_set LED_POSTCODE_1 1
+gpio_set LED_POSTCODE_1 0
 gpio_export LED_POSTCODE_2 GPIOF2
-gpio_set LED_POSTCODE_2 1
+gpio_set LED_POSTCODE_2 0
 gpio_export LED_POSTCODE_3 GPIOF3
-gpio_set LED_POSTCODE_3 1
+gpio_set LED_POSTCODE_3 0
 gpio_export LED_POSTCODE_4 GPIOF4
-gpio_set LED_POSTCODE_4 1
+gpio_set LED_POSTCODE_4 0
 gpio_export LED_POSTCODE_5 GPIOF5
-gpio_set LED_POSTCODE_5 1
+gpio_set LED_POSTCODE_5 0
 gpio_export LED_POSTCODE_6 GPIOF6
-gpio_set LED_POSTCODE_6 1
+gpio_set LED_POSTCODE_6 0
 gpio_export LED_POSTCODE_7 GPIOF7
-gpio_set LED_POSTCODE_7 1
+gpio_set LED_POSTCODE_7 0
 
 # To enable GPIOG
 #devmem_clear_bit $(scu_addr 84) 0
@@ -231,17 +242,22 @@ gpio_export SCALE_DEBUG_EN_N_ASIC4 GPIOJ5
 # 0:1 = MB#3
 # 1:1 = MB#4
 gpio_export SEL0_CLK_MUX GPIOL0
+gpio_set SEL0_CLK_MUX 0
 gpio_export SEL1_CLK_MUX GPIOL1
+gpio_set SEL1_CLK_MUX 1
 
 # Output control for clock source from MB
 # 0 = enable, 1 = high-impedance state
 gpio_export OEA_CLK_MUX_N GPIOL2
 gpio_set OEA_CLK_MUX_N 0
 gpio_export OEB_CLK_MUX_N GPIOL3
+gpio_set OEB_CLK_MUX_N 1
 
 # ASIC warm reset
 gpio_export WARMRST_BMC_N_ASIC7 GPIOL4
+gpio_set WARMRST_BMC_N_ASIC7 1
 gpio_export WARMRST_BMC_N_ASIC6 GPIOL5
+gpio_set WARMRST_BMC_N_ASIC6 1
 
 # To enable GPIOM
 #devmem_clear_bit $(scu_addr 84) 24
@@ -263,6 +279,7 @@ gpio_export PAX3_INT2 GPIOM6
 
 # SLED ID LED
 gpio_export PWR_ID_LED_N GPIOM1
+gpio_set PWR_ID_LED_N 1
 
 # RTC interrupt (PCF85263AT)
 gpio_export BMC_RTC_INT GPIOM7
@@ -323,6 +340,9 @@ gpio_export PRSNT1_N_ASIC0 GPIOP7
 gpio_export BATTERY_DETECT GPIOQ6
 gpio_set BATTERY_DETECT 0
 
+# Reserved
+gpio_export BMC_GPIOQ7 GPIOQ7
+
 # To enable GPIOR
 #devmem_clear_bit $(scu_addr 88) 25
 #devmem_clear_bit $(scu_addr 88) 26
@@ -374,20 +394,37 @@ gpio_export SCALE_DEBUG_EN_N_ASIC7 GPIOT6
 #devmem_set_bit $(scu_addr a0) 11
 #devmem_set_bit $(scu_addr a0) 13
 
-# OAM debug module presence
-gpio_export DEBUG_PORT_PRSNT_N_ASIC7 GPIOU4
-gpio_export DEBUG_PORT_PRSNT_N_ASIC6 GPIOU5
-gpio_export DEBUG_PORT_PRSNT_N_ASIC5 GPIOU6
-gpio_export DEBUG_PORT_PRSNT_N_ASIC4 GPIOU7
+# PCIe switch firmware recovery pin
+gpio_export BMC_BOOT_RCVR_B0_PAX0 GPIOU4
+gpio_set BMC_BOOT_RCVR_B0_PAX0 0
+gpio_export BMC_BOOT_RCVR_B0_PAX1 GPIOU5
+gpio_set BMC_BOOT_RCVR_B0_PAX1 0
+gpio_export BMC_BOOT_RCVR_B0_PAX2 GPIOU6
+gpio_set BMC_BOOT_RCVR_B0_PAX2 0
+gpio_export BMC_BOOT_RCVR_B0_PAX3 GPIOU7
+gpio_set BMC_BOOT_RCVR_B0_PAX3 0
 
 # To enable GPIOV
 #devmem_set_bit $(scu_addr a0) 19
 
-# OAM debug module presence
-gpio_export DEBUG_PORT_PRSNT_N_ASIC3 GPIOV0
-gpio_export DEBUG_PORT_PRSNT_N_ASIC2 GPIOV1
-gpio_export DEBUG_PORT_PRSNT_N_ASIC1 GPIOV2
-gpio_export DEBUG_PORT_PRSNT_N_ASIC0 GPIOV3
+# BSM module presence
+# 0 = present, 1 = not present
+gpio_export BSM_EMMC_PRSNT_R_N GPIOV0
+
+# Debug connector presence
+# 1 = no debug port
+gpio_export JTAG_0_SCR_PRESENT GPIOV1
+
+# OAM JTAG SEL
+gpio_export BMC2OAM_JTAG_PT_EN GPIOV2
+gpio_set BMC2OAM_JTAG_PT_EN 0
+gpio_export BMC2OAM_JTAG_PT_SEL GPIOV3
+gpio_set BMC2OAM_JTAG_PT_SEL 0
+
+# Reset eMMC on BSM
+# 0 = reset, 1 = not reset
+gpio_export BMC_EMMC_RST_R0_N GPIOV4
+gpio_set BMC_EMMC_RST_R0_N 1
 
 # PMBUS alert from HSC
 gpio_export PMBUS_BMC_3_ALERT_N GPIOV5
@@ -474,13 +511,18 @@ gpio_set SEL_USB_MUX 0
 # SPI BMC write protection
 gpio_export SPI_BMC_BT_WP0_N GPIOAA4
 
+# FRU on BSM write protection
+# 0 = writable
+gpio_export FRU_WP GPIOAA7
+
 # To enable GPIOAB
 #devmem_clear_bit $(scu_addr a8) 0
 #devmem_clear_bit $(scu_addr a8) 1
 #devmem_clear_bit $(scu_addr a8) 3
 
-# TPM reset
-gpio_export RST_PLTRST_BUF_N GPIOAB2
+# BMC self-reset
+gpio_export BMC_SELF_HW_RST GPIOAB2
+gpio_set BMC_SELF_HW_RST 0
 
 # Set target OAM for test
 gpio_export CPLD_MUX_ID0 GPIOAB1
@@ -500,4 +542,7 @@ gpio_set CPLD_MUX_ID2 0
 gpio_export PAX0_INT GPIOAC0
 gpio_export PAX0_ALERT GPIOAC1
 gpio_export PAX1_INT GPIOAC2
-gpio_export PAX1_ALERT GPIOAC3
+
+# Reserved
+gpio_export BMC_GPIOAC5 GPIOAC5
+gpio_export BMC_GPIOAC6 GPIOAC6

@@ -46,6 +46,39 @@
             ]
         },
         {
+            "alias": "openbmc-cit-wedge400-determinator",
+            "args": {
+                "name": "openbmc-cit-wedge400-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-wedge400-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform wedge400"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-wedge400/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-wedge-determinator",
             "args": {
                 "name": "openbmc-cit-wedge-determinator",
@@ -103,6 +136,39 @@
                     "type": "every_file_matches_every_regexp",
                     "value": [
                         "^meta-facebook/meta-cmm/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-galaxy100-determinator",
+            "args": {
+                "name": "openbmc-cit-galaxy100-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-galaxy100-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform galaxy100"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-galaxy100/.*"
                     ]
                 }
             ],
@@ -240,39 +306,6 @@
                     "type": "every_file_matches_every_regexp",
                     "value": [
                         "^meta-facebook/meta-yamp/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-cit-galaxy100-determinator",
-            "args": {
-                "name": "openbmc-cit-galaxy100-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-galaxy100-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform galaxy100"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-galaxy100/.*"
                     ]
                 }
             ],

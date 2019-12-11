@@ -19,6 +19,7 @@
 #
 
 import subprocess
+import unittest
 
 from utils.cit_logger import Logger
 
@@ -131,6 +132,7 @@ class BaseInterfaceTest(object):
 
 
 class CommonInterfaceTest(BaseInterfaceTest):
+    @unittest.skip("Test not supported in environment")
     def test_eth0_v4_interface(self):
         """
         Tests eth0 v4 interface

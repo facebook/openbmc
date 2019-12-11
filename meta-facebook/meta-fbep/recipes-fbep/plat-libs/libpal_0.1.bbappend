@@ -13,4 +13,4 @@ SOURCES += "pal_sensors.c pal_health.c"
 
 DEPENDS += "libgpio-ctrl libobmc-i2c switchtec-user libobmc-sensors"
 RDEPENDS_${PN} += " libgpio-ctrl libobmc-i2c switchtec-user libobmc-sensors"
-LDFLAGS += " -lgpio-ctrl -lobmc-i2c -lswitchtec -lobmc-sensors"
+LDFLAGS += " -lgpio-ctrl -lobmc-i2c -lswitchtec -lobmc-sensors -lssl -lcrypto"

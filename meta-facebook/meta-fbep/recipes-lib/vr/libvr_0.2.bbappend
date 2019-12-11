@@ -16,12 +16,5 @@
 # Boston, MA 02110-1301 USA
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-
-SRC_URI += "file://nic.cpp \
-            file://cpld.cpp \
-            file://vr.cpp \
-           "
-
-DEPENDS += "libfpga libast-jtag libvr"
-RDEPENDS_${PN} += "libfpga libast-jtag libvr"
-LDFLAGS += " -lfpga -last-jtag -lvr"
+SRC_URI += "file://platform.c \
+          "

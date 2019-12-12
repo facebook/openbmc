@@ -117,6 +117,9 @@ i2c_device_add 3 0x4e tmp421           # SMB temp. sensor
 if [ "$brd_type" = "0" ]; then         # Only Wedge400
 i2c_device_add 3 0x4f tmp422           # TH3 temp. sensor
 fi
+if [ $((brd_type)) -eq 1 ]; then       # Only Wedge400C
+i2c_device_add 3 0x2a gibraltar        # GB temp. sensor
+fi
 
 # # i2c-mux 2, channel 1
 i2c_device_add "$(get_mux_bus_num 0)" 0x10 adm1278 # SCM Hotswap

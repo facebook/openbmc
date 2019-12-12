@@ -235,6 +235,8 @@ const uint8_t w400c_smb_sensor_list[] = {
   SMB_SENSOR_LM75B_U55_TEMP,
   SMB_SENSOR_TMP421_U62_TEMP,
   SMB_SENSOR_TMP421_U63_TEMP,
+  SMB_SENSOR_SW_DIE_TEMP1,
+  SMB_SENSOR_SW_DIE_TEMP2,
   /* Sensors on FCM */
   SMB_SENSOR_FCM_LM75B_U1_TEMP,
   SMB_SENSOR_FCM_LM75B_U2_TEMP,
@@ -2576,10 +2578,58 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_TMP421_U63_DEVICE, TEMP(1), value);
       break;
     case SMB_SENSOR_SW_DIE_TEMP1:
-      ret = read_attr(SMB_SW_TEMP_DEVICE, TEMP(2), value);
+      if( brd_type == BRD_TYPE_WEDGE400 ){
+        ret = read_attr(SMB_SW_TEMP_DEVICE, TEMP(2), value);
+      }
+      if( brd_type == BRD_TYPE_WEDGE400C ){ // Get Highest
+        char path[32];
+        int num = 0;
+        float read_val = 0;
+        for ( int id=1;id<=10;id++ ){
+          sprintf(path,"temp%d_input",id);
+          ret = read_attr(SMB_GB_TEMP_DEVICE, path, &read_val);
+          if(ret){
+            continue;
+          }else{
+            num++;
+          }
+          if(read_val > *value){
+            *value = read_val;
+          }
+        }
+        if(num){
+          ret = 0;
+        }else{
+          ret = READING_NA;
+        }
+      }
       break;
     case SMB_SENSOR_SW_DIE_TEMP2:
-      ret = read_attr(SMB_SW_TEMP_DEVICE, TEMP(3), value);
+      if( brd_type == BRD_TYPE_WEDGE400 ){
+        ret = read_attr(SMB_SW_TEMP_DEVICE, TEMP(3), value);
+      }
+      if( brd_type == BRD_TYPE_WEDGE400C ){ // Average
+        int num = 0;
+        char path[32];
+        float total = 0;
+        float read_val = 0;
+        for ( int id=1;id<=10;id++ ){
+          sprintf(path,"temp%d_input",id);
+          ret = read_attr(SMB_GB_TEMP_DEVICE, path, &read_val);
+          if(ret){
+            continue;
+          }else{
+            num++;
+          }
+          total += read_val;
+        }
+        if(num){
+          *value = total/num;
+          ret = 0;
+        }else{
+          ret = READING_NA;
+        }
+      }
       break;
     case SMB_SENSOR_FCM_LM75B_U1_TEMP:
       ret = read_attr(SMB_FCM_LM75B_U1_DEVICE, TEMP(1), value);
@@ -3406,14 +3456,14 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_DIE_TEMP1");
       }else if(brd_type == BRD_TYPE_WEDGE400C){
-        sprintf(name, SENSOR_NAME_ERR);
+        sprintf(name, "GB_DIE_TEMP_HIGH");
       }
       break;
     case SMB_SENSOR_SW_DIE_TEMP2:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "TH3_DIE_TEMP2");
       }else if(brd_type == BRD_TYPE_WEDGE400C){
-        sprintf(name, SENSOR_NAME_ERR);
+        sprintf(name, "GB_DIE_TEMP_MEAN");
       }
       break;
     case SMB_SENSOR_FCM_LM75B_U1_TEMP:

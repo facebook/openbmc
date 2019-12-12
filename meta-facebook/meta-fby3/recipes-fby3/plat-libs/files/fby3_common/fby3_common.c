@@ -37,8 +37,7 @@ const char *slot_usage = "slot1|slot2|slot3|slot4";
 const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc"};
 
 static int
-get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask)
-{
+get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask) {
   int i;
   *mask = 0;
   for (i = 0; i < num; i++) {
@@ -55,6 +54,29 @@ get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask)
     }
     *mask |= (value == GPIO_VALUE_HIGH ? 1 : 0) << i;
   }
+  return 0;
+}
+
+static int
+get_gpio_value(uint8_t fru, const char *gpio_name, uint8_t *status) {
+  int ret;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val;
+
+  gdesc = gpio_open_by_shadow(gpio_name);
+  if ( gdesc == NULL ) {
+    syslog(LOG_WARNING, "[%s] Cannot open %s", __func__, gpio_name);
+    return -1;
+  }
+
+  ret = gpio_get_value(gdesc, &val);
+  gpio_close(gdesc);
+  if ( ret != 0 ) {
+    syslog(LOG_WARNING, "[%s] Cannot get the value of %s", __func__, gpio_name);
+    return -1;
+  }
+
+  *status = (val == GPIO_VALUE_HIGH ? 1 : 0);
   return 0;
 }
 
@@ -110,6 +132,21 @@ fby3_common_check_slot_id(uint8_t fru) {
   }
 
   return -1;
+}
+
+int
+fby3_common_is_fru_prsnt(uint8_t fru, uint8_t *val) {
+  int ret = 0;
+
+  ret = get_gpio_value(fru, gpio_server_prsnt[fru], val);
+  if ( ret < 0 ) {
+    return -1;
+  }
+
+  //0: the fru isn't present
+  //1: the fru is present
+  *val = (*val == GPIO_VALUE_HIGH)?0:1;
+  return 0; 
 }
 
 int

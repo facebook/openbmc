@@ -70,13 +70,15 @@ enum {
   BB_BMC  = 0x0E,
 };
 
-const static uint8_t gpio_server_prsnt[] =
+//TODO: These pins should be modified because the slot number is rollbacked
+//setup-gpio.sh
+const static char *gpio_server_prsnt[] =
 {
-/*  GPIOB4_PRSNT_MB_BMC_SLOT1_BB_N,
-  GPIOB5_PRSNT_MB_BMC_SLOT2_BB_N,
-  GPIOB6_PRSNT_MB_BMC_SLOT3_BB_N,
-  GPIOB7_PRSNT_MB_BMC_SLOT4_BB_N
-*/
+  "",
+  "PRSNT_MB_BMC_SLOT0_BB_N",
+  "PRSNT_MB_BMC_SLOT1_BB_N",
+  "PRSNT_MB_BMC_SLOT2_BB_N",
+  "PRSNT_MB_BMC_SLOT3_BB_N"
 };
 
 const static uint8_t gpio_bic_ready[] =
@@ -104,6 +106,7 @@ int fby3_common_get_fru_id(char *str, uint8_t *fru);
 int fby3_common_check_slot_id(uint8_t fru);
 int fby3_common_get_slot_id(char *str, uint8_t *fru);
 int fby3_common_get_bus_id(uint8_t slot_id);
+int fby3_common_is_fru_prsnt(uint8_t fru, uint8_t *val);
 
 #ifdef __cplusplus
 } // extern "C"

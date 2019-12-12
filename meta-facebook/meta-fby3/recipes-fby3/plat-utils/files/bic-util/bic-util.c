@@ -126,6 +126,7 @@ process_file(uint8_t slot_id, char *path) {
 int
 main(int argc, char **argv) {
   uint8_t slot_id;
+  uint8_t is_fru_present = 0;
   int ret;
 
   if (argc < 3) {
@@ -135,6 +136,12 @@ main(int argc, char **argv) {
   ret = fby3_common_get_slot_id(argv[1], &slot_id);
   if ( ret < 0 ) {
     goto err_exit;
+  }
+
+  ret = fby3_common_is_fru_prsnt(slot_id, &is_fru_present);
+  if ( ret < 0 || is_fru_present == 0 ) {
+    printf("%s is not present!\n", argv[1]);
+    return -1;
   }
   
   return process_command(slot_id, (argc - 2), (argv + 2));

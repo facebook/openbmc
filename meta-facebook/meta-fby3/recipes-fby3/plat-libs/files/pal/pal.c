@@ -48,6 +48,9 @@ const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bb"
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 
+#define SYSFW_VER "sysfw_ver_slot"
+#define SYSFW_VER_STR SYSFW_VER"%d"
+
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
@@ -59,11 +62,24 @@ struct pal_key_cfg {
   int (*function)(int, void*);
 } key_cfg[] = {
   /* name, default value, function */
-  {"sysfw_ver_server0", "0", NULL},
-  {"sysfw_ver_server1", "0", NULL},
-  {"sysfw_ver_server2", "0", NULL},
-  {"sysfw_ver_server3", "0", NULL},
-
+  {SYSFW_VER "1", "0", NULL},
+  {SYSFW_VER "2", "0", NULL},
+  {SYSFW_VER "3", "0", NULL},
+  {SYSFW_VER "4", "0", NULL},
+  {"pwr_server1_last_state", "on", NULL},
+  {"pwr_server2_last_state", "on", NULL},
+  {"pwr_server3_last_state", "on", NULL},
+  {"pwr_server4_last_state", "on", NULL},
+  {"timestamp_sled", "0", NULL},
+  {"slot1_boot_order", "0000000", NULL},
+  {"slot2_boot_order", "0000000", NULL},
+  {"slot3_boot_order", "0000000", NULL},
+  {"slot4_boot_order", "0000000", NULL},
+  {"fru1_restart_cause", "3", NULL},
+  {"fru2_restart_cause", "3", NULL},
+  {"fru3_restart_cause", "3", NULL},
+  {"fru4_restart_cause", "3", NULL},
+  {"ntp_server", "", NULL},  
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
@@ -116,6 +132,63 @@ pal_set_key_value(char *key, char *value) {
   return kv_set(key, value, 0, KV_FPERSIST);
 }
 
+void
+pal_dump_key_value(void) {
+  int ret;
+  int i = 0;
+  char value[MAX_VALUE_LEN] = {0x0};
+
+  while (strcmp(key_cfg[i].name, LAST_KEY)) {
+    printf("%s:", key_cfg[i].name);
+    if ((ret = kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST)) < 0) {
+    printf("\n");
+  } else {
+    printf("%s\n",  value);
+  }
+    i++;
+    memset(value, 0, MAX_VALUE_LEN);
+  }
+}
+
+int
+pal_set_def_key_value() {
+  int i;
+  //char key[MAX_KEY_LEN] = {0};
+
+  for(i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; i++) {
+    if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed.");
+#endif
+    }
+    if (key_cfg[i].function) {
+      key_cfg[i].function(KEY_AFTER_INI, key_cfg[i].name);
+    }
+  }
+
+  return 0;
+}
+
+bool
+pal_is_fw_update_ongoing(uint8_t fruid) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  int ret;
+  struct timespec ts;
+
+  sprintf(key, "fru%d_fwupd", fruid);
+  ret = kv_get(key, value, NULL, 0);
+  if (ret < 0) {
+     return false;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec)
+     return true;
+
+  return false;
+}
+
 int
 pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
   int i;
@@ -123,8 +196,7 @@ pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
   char str[MAX_VALUE_LEN] = {0};
   char tstr[10] = {0};
 
-  sprintf(key, "sysfw_ver_slot%d", (int) slot);
-
+  sprintf(key, SYSFW_VER_STR, (int) slot);
   for (i = 0; i < SIZE_SYSFW_VER; i++) {
     sprintf(tstr, "%02x", ver[i]);
     strcat(str, tstr);
@@ -133,49 +205,22 @@ pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
   return pal_set_key_value(key, str);
 }
 
-#if 0
-static int key_func_por_policy (int event, void *arg);
-static int key_func_lps (int event, void *arg);
-
-static int fw_getenv(char *key, char *value)
+void
+pal_update_ts_sled()
 {
-  char cmd[MAX_KEY_LEN + 32] = {0};
-  char *p;
-  FILE *fp;
+  char key[MAX_KEY_LEN] = {0};
+  char tstr[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
 
-  sprintf(cmd, "/sbin/fw_printenv -n %s", key);
-  fp = popen(cmd, "r");
-  if (!fp) {
-    return -1;
-  }
-  if (fgets(value, MAX_VALUE_LEN, fp) == NULL) {
-    pclose(fp);
-    return -1;
-  }
-  for (p = value; *p != '\0'; p++) {
-    if (*p == '\n' || *p == '\r') {
-      *p = '\0';
-      break;
-    }
-  }
-  pclose(fp);
-  return 0;
+  clock_gettime(CLOCK_REALTIME, &ts);
+  sprintf(tstr, "%ld", ts.tv_sec);
+
+  sprintf(key, "timestamp_sled");
+
+  pal_set_key_value(key, tstr);
 }
 
-static int
-fw_setenv(char *key, char *value) {
-  char old_value[MAX_VALUE_LEN] = {0};
-  if (fw_getenv(key, old_value) != 0 ||
-      strcmp(old_value, value) != 0) {
-    /* Set the env key:value if either the key
-     * does not exist or the value is different from
-     * what we want set */
-    char cmd[MAX_VALUE_LEN] = {0};
-    snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv %s %s", key, value);
-    return system(cmd);
-  }
-  return 0;
-}
+#if 0
 
 static int
 key_func_por_policy (int event, void *arg) {
@@ -238,18 +283,15 @@ pal_get_fru_list(char *list) {
 
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
+
+  int ret = PAL_EOK;
+
   switch (fru) {
     case FRU_SLOT1:
-      *status = 1;
-      break;
     case FRU_SLOT2:
-      *status = 1;
-      break;
     case FRU_SLOT3:
-      *status = 1;
-      break;
     case FRU_SLOT4:
-      *status = 1;
+      ret = fby3_common_is_fru_prsnt(fru, status);
       break;
     case FRU_BB:
       *status = 1;
@@ -265,7 +307,8 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       syslog(LOG_WARNING, "%s() wrong fru id 0x%02x", __func__, fru);
       return -1;
   }
-  return PAL_EOK;
+
+  return ret;
 }
 
 int
@@ -413,6 +456,50 @@ pal_fruid_write(uint8_t fru, char *path)
     //return _write_nic_fruid(path);
   }
   return bic_write_fruid(fru, 0, path, NONE_INTF);
+}
+
+int
+pal_is_bmc_por(void) {
+  FILE *fp;
+  int por = 0;
+
+  fp = fopen("/tmp/ast_por", "r");
+  if (fp != NULL) {
+    if (fscanf(fp, "%d", &por) != 1) {
+      por = 0;
+    }
+    fclose(fp);
+  }
+
+  return (por)?1:0;
+}
+
+int
+pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
+  int i;
+  int j = 0;
+  int ret;
+  int msb, lsb;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[4] = {0};
+
+  sprintf(key, SYSFW_VER_STR, (int) slot);
+  ret = pal_get_key_value(key, str);
+  if (ret) {
+    return ret;
+  }
+
+  for (i = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
+    sprintf(tstr, "%c\n", str[i]);
+    msb = strtol(tstr, NULL, 16);
+
+    sprintf(tstr, "%c\n", str[i+1]);
+    lsb = strtol(tstr, NULL, 16);
+    ver[j++] = (msb << 4) | lsb;
+  }
+
+  return 0;
 }
 
 #if 0

@@ -154,6 +154,7 @@ do_cmds(uint8_t fru, char *cmd) {
 int
 main(int argc, char **argv) {
   uint8_t slot_id;
+  uint8_t is_fru_present = 0;
   int ret;
 
   if (argc < 3) {
@@ -165,6 +166,12 @@ main(int argc, char **argv) {
     goto err_exit;
   }
 
+  ret = fby3_common_is_fru_prsnt(slot_id, &is_fru_present);
+  if ( ret < 0 || is_fru_present == 0 ) {
+    printf("%s is not present!\n", argv[1]);
+    return -1;
+  }
+  
   if ( (strncmp(argv[2], "--", 2) == 0) ) {
     return do_cmds(slot_id, argv[2]);
   } else {

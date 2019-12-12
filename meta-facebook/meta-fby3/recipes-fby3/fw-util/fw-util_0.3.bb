@@ -24,6 +24,8 @@ SRC_URI =+ "file://Makefile \
            file://bmc_cpld.h \
            file://bic_cpld.cpp \
            file://bic_cpld.h \
+           file://bios.cpp \
+           file://bios.h \
            file://check_image.cpp \
            file://image_parts.json \
            file://platform.cpp \

@@ -2,6 +2,7 @@
 #include "bic_me.h"
 #include "bic_cpld.h"
 #include "bmc_cpld.h"
+#include "bios.h"
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
 
@@ -66,4 +67,9 @@ CpldComponent cpld_fw4("slot4", "sb", "cpld", FRU_SLOT4, 2, 0x80, NONE_INTF);
 /*The CPLD of BMC*/
 BmcCpldComponent cpld_bmc("bmc", "bmc", "cpld", 12, 0x80);
 
+/*The BIOS of the server board*/
+BiosComponent bios_fw1("slot1", "sb", "bios", FRU_SLOT1, NONE_INTF);
+BiosComponent bios_fw2("slot2", "sb", "bios", FRU_SLOT2, NONE_INTF);
+BiosComponent bios_fw3("slot3", "sb", "bios", FRU_SLOT3, NONE_INTF);
+BiosComponent bios_fw4("slot4", "sb", "bios", FRU_SLOT4, NONE_INTF);
 #endif

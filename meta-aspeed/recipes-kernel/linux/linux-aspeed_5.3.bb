@@ -21,4 +21,9 @@ S = "${WORKDIR}/git"
 # to meta/classes/kernel.bbclass), thus it's safe to remove the line when we
 # move out of rocko.
 #
-FILES_kernel-base += "${nonarch_base_libdir}/modules/${KERNEL_VERSION}/modules.builtin.modinfo"
+python () {
+    if d.getVar('DISTRO_CODENAME') == 'rocko':
+        d.appendVar(
+            'FILES_kernel-base',
+            ' ${nonarch_base_libdir}/modules/${KERNEL_VERSION}/modules.builtin.modinfo')
+}

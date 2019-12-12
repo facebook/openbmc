@@ -69,8 +69,9 @@ class BMCMachine(object):
             elif data.offset_table != None:
                 # Offset sensor Temp, relate with current fan speed
                 for (fan_speed, offset_temp) in sorted(data.offset_table):
-                    offset = offset_temp
-                    if self.last_fan_speed < fan_speed:
+                    if self.last_fan_speed > fan_speed:
+                        offset = offset_temp
+                    else:
                         break
             if offset != 0:
                 for fru in self.frus:

@@ -162,24 +162,46 @@ case "$sku_type" in
           echo "Keep FSC config : $fw_ver"
         else
           echo "Run default FSC for M.2 devices"
-          cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
+          if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
+            cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
+          else
+            cp /etc/FSC_FBGPV2_10KFAN_DVT_config.json ${default_fsc_config_path}
+          fi
         fi
      elif [ "$dev_type" == "$DEV_TYPE_SSD" ] ; then
         echo "Run FSC for SSD"
-        cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
+        if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
+          cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
+        else
+          cp /etc/FSC_FBGPV2_10KFAN_DVT_config.json ${default_fsc_config_path}
+        fi
      elif [ "$dev_type" == "$DEV_TYPE_VSI_ACC" ] ; then
         echo "Run FSC for VSI Accelerator"
-        cp /etc/FSC_FBGPV2_VSI_DVT_config.json ${default_fsc_config_path}
+        if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
+          cp /etc/FSC_FBGPV2_VSI_DVT_config.json ${default_fsc_config_path}
+        else
+          cp /etc/FSC_FBGPV2_VSI_10KFAN_DVT_config.json ${default_fsc_config_path}
+        fi
      elif [ "$dev_type" == "$DEV_TYPE_BRCM_ACC" ] ; then
         echo "Run FSC for BRCM Accelerator"
-        cp /etc/FSC_FBGPV2_BRCM_DVT_config.json ${default_fsc_config_path}
+        if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
+          cp /etc/FSC_FBGPV2_BRCM_DVT_config.json ${default_fsc_config_path}
+        else
+          cp /etc/FSC_FBGPV2_BRCM_10KFAN_DVT_config.json ${default_fsc_config_path}
+        fi
      else
         echo "Run default FSC for M.2 devices"
-        cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
+        if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
+          cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
+        else
+          cp /etc/FSC_FBGPV2_10KFAN_DVT_config.json ${default_fsc_config_path}
+        fi
      fi
 
      if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
         cp /etc/aggregate-sensor-gpv2-conf.json ${default_aggregate_config_path}
+     else
+        cp /etc/aggregate-sensor-gpv2-10kfan-conf.json ${default_aggregate_config_path}
      fi
    ;;
    *)

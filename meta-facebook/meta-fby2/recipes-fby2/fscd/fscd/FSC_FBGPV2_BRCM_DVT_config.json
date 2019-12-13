@@ -132,7 +132,7 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
+      "negative_hysteresis": 2,
       "data": [
         [ 56, 25 ],
         [ 58, 27 ],

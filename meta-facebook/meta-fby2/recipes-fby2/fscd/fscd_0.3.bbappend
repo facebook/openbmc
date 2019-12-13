@@ -33,8 +33,11 @@ SRC_URI += "file://init_pwm.sh \
             file://FSC_FBEP_DVT_2GP_2EP_config.json \
             file://FSC_FBEP_DVT_2GP_2EP_zone1.fsc \
             file://FSC_FBGPV2_DVT_config.json \
+            file://FSC_FBGPV2_10KFAN_DVT_config.json \
             file://FSC_FBGPV2_VSI_DVT_config.json \
+            file://FSC_FBGPV2_VSI_10KFAN_DVT_config.json \
             file://FSC_FBGPV2_BRCM_DVT_config.json \
+            file://FSC_FBGPV2_BRCM_10KFAN_DVT_config.json \
             file://FSC_FBGPV2_DVT_zone1.fsc \
             file://FSC_FBND_DVT_4ND_config.json \
             file://FSC_FBND_DVT_4ND_zone1.fsc \
@@ -54,8 +57,11 @@ FSC_CONFIG += "FSC_FBY2_PVT_4TL_config.json \
                FSC_FBEP_DVT_4EP_config.json \
                FSC_FBEP_DVT_2GP_2EP_config.json \
                FSC_FBGPV2_DVT_config.json \
+               FSC_FBGPV2_10KFAN_DVT_config.json \
                FSC_FBGPV2_VSI_DVT_config.json \
+               FSC_FBGPV2_VSI_10KFAN_DVT_config.json \
                FSC_FBGPV2_BRCM_DVT_config.json \
+               FSC_FBGPV2_BRCM_10KFAN_DVT_config.json \
                FSC_FBND_DVT_4ND_config.json \
               "
 

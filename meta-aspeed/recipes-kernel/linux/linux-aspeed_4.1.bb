@@ -14,3 +14,13 @@ PV = "${LINUX_VERSION}"
 include linux-aspeed.inc
 
 S = "${WORKDIR}/git"
+
+do_configure_prepend() {
+    # in kernel.bbclass::kernel_do_configure(), the code only copies defconfig to
+    # .config if "${B}/.config" is not there. That causes issue that if defconfig
+    # is changed, the kernel build will not pick up the new kernel config.
+    # We copy defconfig all the time to avoid this bug.
+    if [ -f "${WORKDIR}/defconfig" ]; then
+        cp -p "${WORKDIR}/defconfig" "${B}/.config"
+    fi
+}

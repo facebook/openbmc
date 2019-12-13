@@ -179,6 +179,7 @@ debug_card_out:
     else
       sleep(1);
   }
+  return NULL;
 }
 
 // Thread to monitor Reset Button and propagate to selected server
@@ -234,6 +235,7 @@ rst_btn_handler() {
 rst_btn_out:
     msleep(100);
   }
+  return NULL;
 }
 
 // Thread to handle Power Button and power on/off the selected server
@@ -301,6 +303,7 @@ pwr_btn_handler() {
 pwr_btn_out:
     msleep(100);
   }
+  return NULL;
 }
 
 // Thread to monitor SLED Cycles by using time stamp
@@ -311,7 +314,6 @@ ts_handler() {
   struct timespec mts;
   char tstr[64] = {0};
   char buf[128] = {0};
-  uint8_t por = 0;
   uint8_t time_init = 0;
   long time_sled_on;
   long time_sled_off;
@@ -359,6 +361,7 @@ ts_handler() {
 
     sleep(HB_SLEEP_TIME);
   }
+  return NULL;
 }
 
 // Thread to handle LED state of the server at given slot
@@ -455,6 +458,7 @@ led_handler() {
       }
     }
   }
+  return NULL;
 }
 
 // Thread to handle LED state of the SLED
@@ -610,6 +614,7 @@ led_sync_handler() {
     }
     msleep(500);
   }
+  return NULL;
 }
 
 int

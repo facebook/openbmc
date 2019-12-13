@@ -11,7 +11,7 @@ class CpldComponent : public Component {
       : Component(fru, comp) {}
     int print_version() {
       uint8_t cpld_var[4] = {0};
-      if (!cpld_intf_open()) {
+      if (!cpld_intf_open(LCMXO2_2000HC, INTF_JTAG, NULL)) {
         // Print CPLD Version
         if (cpld_get_ver((unsigned int *)&cpld_var)) {
           printf("CPLD Version: NA, ");
@@ -27,7 +27,9 @@ class CpldComponent : public Component {
           printf("CPLD DeviceID: %02X%02X%02X%02X\n", cpld_var[3], cpld_var[2],
 		        cpld_var[1], cpld_var[0]);
         }
-        cpld_intf_close();
+        cpld_intf_close(INTF_JTAG);
+      } else {
+        printf("CPLD_INTF Open failed!\n");
       }
       //Disable JTAG Engine after CPLD access
       if (system("devmem 0x1e6e4008 32 0") != 0) {
@@ -37,9 +39,9 @@ class CpldComponent : public Component {
     }
     int update(string image) {
       int ret;
-      if ( !cpld_intf_open() ) {
+      if ( !cpld_intf_open(LCMXO2_2000HC, INTF_JTAG, NULL) ) {
         ret = cpld_program((char *)image.c_str());
-        cpld_intf_close();
+        cpld_intf_close(INTF_JTAG);
         if ( ret < 0 ) {
           printf("Error Occur at updating CPLD FW!\n");
         }

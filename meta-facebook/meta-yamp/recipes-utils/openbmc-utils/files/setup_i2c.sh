@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2018-present Facebook. All Rights Reserved.
 #
@@ -31,6 +31,81 @@ i2c_dsp1900_create(){
   i2c_device_add "$1" 0x58 pmbus
 }
 
+# if applicable, saved the debug log for ir35223
+ir35223_dbg_log(){
+  log_data=("${!1}")
+  if [ ${#log_data[@]} != 0 ]; then
+    touch /var/log/failed_ir35223_log.txt
+    for cmd in "${log_data[@]}"
+    do
+      echo "${cmd}" >> /var/log/failed_ir35223_log.txt;
+    done
+  fi
+}
+
+# There are some registers that need to be initialized in IR35223
+# prior to loading PMBus module for yamp devices
+i2c_ir35223_init(){
+  # Array to hold failed data
+  declare -a failed_ir35223_cmds
+
+  # Step 1:0x005C [15:0] = 0x0102
+  if ! i2cset -y 3 0x12 0xff 0x00; then
+    failed_ir35223_cmds+=("Running i2cset -y 3 0x12 0xff 0x00 failed")
+  fi
+  if ! i2cset -y 3 0x12 0x5c 0x0102 w; then 
+    failed_ir35223_cmds+=("Running i2cset -y 3 0x12 0x5c 0x0102 w failed")
+  fi
+
+  # Step 2: 0x043A [7:4] = 0xD
+  if ! i2cset -y 3 0x12 0xff 0x04; then
+    echo "Running i2cset -y 3 0x12 0xff 0x04 failed"
+  fi
+  if ! i2cset -y -m 0xf0 3 0x12 0x3a 0xd0; then 
+    echo "Running i2cset -y -m 0xf0 3 0x12 0x3a 0xd0 failed"
+  fi
+
+  # Step 3: 0x0040 [7:0] = 0xFF
+  if ! i2cset -y 3 0x12 0xff 0x00; then
+    echo "Running i2cset -y 3 0x12 0xff 0x00 failed"
+  fi
+  if ! i2cset -y 3 0x12 0x40 0xff; then
+    echo "Running i2cset -y 3 0x12 0x40 0xff failed"
+  fi
+
+  # Step 4: 0x0428 [3:0] = 0x2
+  if ! i2cset -y 3 0x12 0xff 0x04; then
+    echo "Running i2cset -y 3 0x12 0xff 0x04 failed"
+  fi
+  if ! i2cset -y -m 0x0f 3 0x12 0x28 0x02; then
+    echo "Running i2cset -y -m 0x0f 3 0x12 0x28 0x02"
+  fi
+
+  # Step 5: 0x042E [5:0] = 0x0D
+  if ! i2cset -y 3 0x12 0xff 0x04; then
+    echo "Running i2cset -y 3 0x12 0xff 0x04"
+  fi
+  if ! i2cset -y -m 0x1f 3 0x12 0x2e 0x0d; then
+    echo "i2cset -y -m 0x1f 3 0x12 0x2e 0x0d failed"
+  fi
+
+  # Step 6: 0x0444 [7:7] = 0x1
+  if ! i2cset -y 3 0x12 0xff 0x04; then
+    echo "Running i2cset -y -m 0x1f 3 0x12 0x2e 0x0d failed"
+  fi
+  if ! i2cset -y -m 0x80 3 0x12 0x44 0x80; then
+    echo "Running i2cset -y -m 0x80 3 0x12 0x44 0x80 failed"
+  fi
+
+  # Step 7: Set Page back to 0
+  if ! i2cset -y 3 0x12 0xff 0x00; then
+    echo "i2cset -y 3 0x12 0xff 0x00"
+  fi
+
+  # Saved debug log
+  ir35223_dbg_log failed_ir35223_cmds[@]
+}
+
 # First, take TPM out of reset, so that we can probe it later
 # Active low - 1 means out of reset, 0 means in reset
 gpio_set TPM_RST_N 1
@@ -60,6 +135,7 @@ i2c_device_add 1 0x50 supsfp
 i2c_device_add 3 0x40 pmbus
 i2c_device_add 3 0x41 pmbus
 i2c_device_add 3 0x4e ucd90120
+i2c_ir35223_init
 i2c_device_add 3 0x42 pmbus
 i2c_device_add 3 0x44 pmbus
 

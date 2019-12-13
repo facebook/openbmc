@@ -163,13 +163,19 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
   }
 
   ret = bic_get_server_power_status(fru, status);
+  if ( ret == POWER_STATUS_OK ) {
+    return ret;
+  }
+
+  ret = fby3_common_server_stby_pwr_sts(fru, status);
   if ( ret < 0 ) {
-    //TODO: if bic_get_server_power_status is failed, we should check the 12V status of the system
-    //Now we suppose it is 12V-off
+    syslog(LOG_WARNING, "%s: Failed to run fby3_common_server_stby_pwr_sts on slot%d\n", __func__, fru);
+  }
+
+  if ( *status == 1 ) {
+    *status = SERVER_12V_ON;
+  } else {
     *status = SERVER_12V_OFF;
-    ret = POWER_STATUS_OK;
-    //syslog(LOG_ERR, "%s: bic_get_server_power_status fails on slot%d\n", __func__, fru);
-    //return POWER_STATUS_ERR;
   }
 
   return ret;

@@ -37,6 +37,10 @@ extern "C" {
 #define FRU_BB_BIN    "/tmp/fruid_bb.bin"
 #define FRU_SLOT1_BIN "/tmp/fruid_slot1.bin"
 
+#define I2CDEV "/dev/i2c-%d"
+
+#define SB_CPLD_ADDR 0x0f
+
 #define CLASS1_FRU_BUS 11
 #define CLASS2_FRU_BUS 10
 #define BMC_FRU_ADDR 0x54
@@ -81,26 +85,17 @@ const static char *gpio_server_prsnt[] =
   "PRSNT_MB_BMC_SLOT3_BB_N"
 };
 
-const static uint8_t gpio_bic_ready[] =
+const static char *gpio_server_stby_pwr_sts[] =
 {
-/*
-  GPIOB0_SMB_BMC_SLOT1_ALT_N,
-  GPIOB1_SMB_BMC_SLOT2_ALT_N,
-  GPIOB2_SMB_BMC_SLOT3_ALT_N,
-  GPIOB3_SMB_BMC_SLOT4_ALT_N
-*/
+  "",
+  "PWROK_STBY_BMC_SLOT0",
+  "PWROK_STBY_BMC_SLOT1",
+  "PWROK_STBY_BMC_SLOT2",
+  "PWROK_STBY_BMC_SLOT3"
 };
 
-const static uint8_t gpio_server_hsc_pgood_sts[] =
-{
-/*
-  GPIOS0_PWROK_STBY_BMC_SLOT1,
-  GPIOS1_PWROK_STBY_BMC_SLOT2,
-  GPIOS2_PWROK_STBY_BMC_SLOT3,
-  GPIOS3_PWROK_STBY_BMC_SLOT4
-*/
-};
-
+int fby3_common_is_bic_ready(uint8_t fru, uint8_t *val);
+int fby3_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val);
 int fby3_common_get_bmc_location(uint8_t *id);
 int fby3_common_get_fru_id(char *str, uint8_t *fru);
 int fby3_common_check_slot_id(uint8_t fru);

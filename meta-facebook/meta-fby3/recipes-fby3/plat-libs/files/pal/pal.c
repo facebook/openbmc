@@ -502,88 +502,35 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
   return 0;
 }
 
-#if 0
-void
-pal_update_ts_sled()
-{
-  char key[MAX_KEY_LEN] = {0};
-  char tstr[MAX_VALUE_LEN] = {0};
-  struct timespec ts;
-
-  clock_gettime(CLOCK_REALTIME, &ts);
-  sprintf(tstr, "%ld", ts.tv_sec);
-
-  sprintf(key, "timestamp_sled");
-
-  pal_set_key_value(key, tstr);
-}
-
 int
 pal_is_fru_ready(uint8_t fru, uint8_t *status) {
-  *status = 1;
+  int ret = PAL_EOK;
 
-  return 0;
-}
-
-// GUID for System and Device
-static int
-pal_get_guid(uint16_t offset, char *guid) {
-  int fd;
-  ssize_t bytes_rd;
-
-  errno = 0;
-
-  // check for file presence
-  if (access(FRU_EEPROM_MB, F_OK)) {
-    syslog(LOG_ERR, "pal_get_guid: unable to access %s: %s", FRU_EEPROM_MB, strerror(errno));
-    return errno;
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      *status = 1;
+      //ret = fby3_common_is_bic_ready(fru, status);
+      break;
+    case FRU_BB:
+      *status = 1;
+      break;
+    case FRU_NIC:
+      *status = 1;
+      break;
+    case FRU_BMC:
+      *status = 1;
+      break;
+    default:
+      ret = -1;
+      *status = 0;
+      syslog(LOG_WARNING, "%s() wrong fru id 0x%02x", __func__, fru);
+      break;
   }
 
-  fd = open(FRU_EEPROM_MB, O_RDONLY);
-  if (fd < 0) {
-    syslog(LOG_ERR, "pal_get_guid: unable to open %s: %s", FRU_EEPROM_MB, strerror(errno));
-    return errno;
-  }
-
-  lseek(fd, offset, SEEK_SET);
-
-  bytes_rd = read(fd, guid, GUID_SIZE);
-  if (bytes_rd != GUID_SIZE) {
-    syslog(LOG_ERR, "pal_get_guid: read from %s failed: %s", FRU_EEPROM_MB, strerror(errno));
-  }
-
-  close(fd);
-  return errno;
-}
-
-static int
-pal_set_guid(uint16_t offset, char *guid) {
-  int fd;
-  ssize_t bytes_wr;
-
-  errno = 0;
-
-  // check for file presence
-  if (access(FRU_EEPROM_MB, F_OK)) {
-    syslog(LOG_ERR, "pal_set_guid: unable to access %s: %s", FRU_EEPROM_MB, strerror(errno));
-    return errno;
-  }
-
-  fd = open(FRU_EEPROM_MB, O_WRONLY);
-  if (fd < 0) {
-    syslog(LOG_ERR, "pal_set_guid: unable to open %s: %s", FRU_EEPROM_MB, strerror(errno));
-    return errno;
-  }
-
-  lseek(fd, offset, SEEK_SET);
-
-  bytes_wr = write(fd, guid, GUID_SIZE);
-  if (bytes_wr != GUID_SIZE) {
-    syslog(LOG_ERR, "pal_set_guid: write to %s failed: %s", FRU_EEPROM_MB, strerror(errno));
-  }
-
-  close(fd);
-  return errno;
+  return ret;
 }
 
 // GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
@@ -659,51 +606,91 @@ pal_populate_guid(char *guid, char *str) {
   return;
 }
 
+// GUID for System and Device
+static int
+pal_get_guid(uint16_t offset, char *guid) {
+  char path[128] = {0};
+  int fd;
+  uint8_t bmc_location = 0;
+  ssize_t bytes_rd;
+
+  errno = 0;
+
+  if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    return -1;
+  }
+
+  snprintf(path, sizeof(path), EEPROM_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS, BB_FRU_ADDR);
+
+  // check for file presence
+  if (access(path, F_OK)) {
+    syslog(LOG_ERR, "%s() unable to access %s: %s", __func__, path, strerror(errno));
+    return errno;
+  }
+
+  fd = open(path, O_RDONLY);
+  if (fd < 0) {
+    syslog(LOG_ERR, "%s() unable to open %s: %s", __func__, path, strerror(errno));
+    return errno;
+  }
+
+  lseek(fd, offset, SEEK_SET);
+
+  bytes_rd = read(fd, guid, GUID_SIZE);
+  if (bytes_rd != GUID_SIZE) {
+    syslog(LOG_ERR, "%s() read from %s failed: %s", __func__, path, strerror(errno));
+  }
+
+  if (fd > 0 ) {
+    close(fd);
+  }
+
+  return errno;
+}
+
+static int
+pal_set_guid(uint16_t offset, char *guid) {
+  char path[128] = {0};
+  int fd;
+  uint8_t bmc_location = 0;
+  ssize_t bytes_wr;
+
+  errno = 0;
+
+  if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    return -1;
+  }
+
+  snprintf(path, sizeof(path), EEPROM_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS, BB_FRU_ADDR);
+
+  // check for file presence
+  if (access(path, F_OK)) {
+    syslog(LOG_ERR, "%s() unable to open %s: %s", __func__, path, strerror(errno));
+    return errno;
+  }
+
+  fd = open(path, O_WRONLY);
+  if (fd < 0) {
+    syslog(LOG_ERR, "%s() read from %s failed: %s", __func__, path, strerror(errno));
+    return errno;
+  }
+
+  lseek(fd, offset, SEEK_SET);
+
+  bytes_wr = write(fd, guid, GUID_SIZE);
+  if (bytes_wr != GUID_SIZE) {
+    syslog(LOG_ERR, "%s() write to %s failed: %s", __func__, path, strerror(errno));
+  }
+
+  close(fd);
+  return errno;
+}
+
 int
 pal_get_sys_guid(uint8_t fru, char *guid) {
-  pal_get_guid(OFFSET_SYS_GUID, guid);
-  return 0;
-}
-
-int
-pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
-  return -1;
-}
-
-int
-pal_set_def_key_value() {
-  int i;
-  char key[MAX_KEY_LEN] = {0};
-
-  for(i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; i++) {
-    if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) {
-#ifdef DEBUG
-      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed.");
-#endif
-    }
-    if (key_cfg[i].function) {
-      key_cfg[i].function(KEY_AFTER_INI, key_cfg[i].name);
-    }
-  }
-
-  /* Actions to be taken on Power On Reset */
-  if (pal_is_bmc_por()) {
-    /* Clear all the SEL errors */
-    memset(key, 0, MAX_KEY_LEN);
-    strcpy(key, "server_sel_error");
-
-    /* Write the value "1" which means FRU_STATUS_GOOD */
-    pal_set_key_value(key, "1");
-
-    /* Clear all the sensor health files*/
-    memset(key, 0, MAX_KEY_LEN);
-    strcpy(key, "server_sensor_health");
-
-    /* Write the value "1" which means FRU_STATUS_GOOD */
-    pal_set_key_value(key, "1");
-  }
-
-  return 0;
+  return pal_get_guid(OFFSET_SYS_GUID, guid);
 }
 
 int
@@ -716,8 +703,7 @@ pal_set_sys_guid(uint8_t fru, char *str) {
 
 int
 pal_get_dev_guid(uint8_t fru, char *guid) {
-  pal_get_guid(OFFSET_DEV_GUID, guid);
-  return 0;
+  return pal_get_guid(OFFSET_DEV_GUID, guid);
 }
 
 int
@@ -727,4 +713,3 @@ pal_set_dev_guid(uint8_t fru, char *str) {
   pal_populate_guid(guid, str);
   return pal_set_guid(OFFSET_DEV_GUID, guid);
 }
-#endif

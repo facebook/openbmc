@@ -31,6 +31,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/obmc-i2c.h>
 #include "fby3_common.h"
 
 const char *slot_usage = "slot1|slot2|slot3|slot4";
@@ -137,16 +138,103 @@ fby3_common_check_slot_id(uint8_t fru) {
 int
 fby3_common_is_fru_prsnt(uint8_t fru, uint8_t *val) {
   int ret = 0;
+  uint8_t bmc_location = 0;
 
-  ret = get_gpio_value(fru, gpio_server_prsnt[fru], val);
+  ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
-    return -1;
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return ret;
   }
 
-  //0: the fru isn't present
-  //1: the fru is present
-  *val = (*val == GPIO_VALUE_HIGH)?0:1;
-  return 0; 
+  if ( bmc_location == BB_BMC ) {
+    ret = get_gpio_value(fru, gpio_server_prsnt[fru], val);
+    if ( ret < 0 ) {
+      return ret;
+    }
+
+    //0: the fru isn't present
+    //1: the fru is present
+    *val = (*val == GPIO_VALUE_HIGH)?0:1;
+  } else {
+    //1: a server is always existed on class2
+    *val = 1;
+  }
+
+  return ret; 
+}
+
+int
+fby3_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val) {
+  int ret = 0;
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return ret;
+  }
+
+  if ( bmc_location == BB_BMC ) {
+    ret = get_gpio_value(fru, gpio_server_stby_pwr_sts[fru], val);
+    if ( ret < 0 ) {
+      return ret;
+    }
+  } else {
+    //1: a server is always existed on class2 
+    *val = 1;
+  }
+
+  return ret;
+}
+
+int
+fby3_common_is_bic_ready(uint8_t fru, uint8_t *val) {
+  int i2cfd = 0;
+  int ret = 0;
+  char path[32] = {0};
+  uint8_t bmc_location = 0;
+  uint8_t bus = 0;
+  uint8_t tbuf[1] = {0x02};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 1;
+  uint8_t rlen = 1;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    goto error_exit;
+  }
+
+  //a bus starts from 4 
+  ret = fby3_common_get_bus_id(fru) + 4;
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, fru);
+    goto error_exit;
+  }
+
+  bus= (uint8_t)ret;
+  snprintf(path, sizeof(path), I2CDEV, bus);
+
+  i2cfd = open(path, O_RDWR);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
+    goto error_exit;
+  }
+
+  ret = i2c_rdwr_msg_transfer(i2cfd, SB_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+    goto error_exit;
+  }
+
+  *val = (rbuf[0] & 0x2) >> 1;
+  
+error_exit:
+  if ( i2cfd > 0 ) {
+    close(i2cfd);
+  }
+
+  return ret;
 }
 
 int

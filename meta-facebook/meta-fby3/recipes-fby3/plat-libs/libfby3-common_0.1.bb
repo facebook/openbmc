@@ -12,8 +12,8 @@ SRC_URI = "file://fby3_common \
 
 CFLAGS += " -Wall -Werror -fPIC "
 LDFLAGS = "-lobmc-i2c -lgpio-ctrl"
-DEPENDS += "libgpio-ctrl"
-RDEPENDS_${PN} += "libgpio-ctrl"
+DEPENDS += "libobmc-i2c libgpio-ctrl"
+RDEPENDS_${PN} += "libobmc-i2c libgpio-ctrl"
 
 S = "${WORKDIR}/fby3_common"
 

@@ -15,7 +15,6 @@ require recipes-core/images/fb-openbmc-image.bb
 # fpc-util
 # imc-util
 # crashdump
-# guid-util
 # sensordump
 # enclosure-util
 # nvme-util
@@ -57,4 +56,5 @@ IMAGE_INSTALL += " \
   bic-util \
   me-util \
   bic-cached \
+  guid-util \
   "

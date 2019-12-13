@@ -1,0 +1,7 @@
+"usbcli" is mainly designed for debugging USB-to-SPI FPGA devices.
+
+It's NOT intended to be called from other scripts or programs to access
+USB devices: the command line interface may change in the future.
+
+If you need to access USB devices in your program, please use libusb or
+you may need a USB driver in kernel space.

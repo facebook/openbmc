@@ -5,7 +5,7 @@
 all: fruid_util_remote
 
 fruid_util_remote:  fruid_util_remote.c
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

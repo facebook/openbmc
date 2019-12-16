@@ -3,8 +3,8 @@ all: front-paneld
 
 CFLAGS += -Wall -Werror
 
-front-paneld: front-paneld.c 
-	$(CC) -pthread -lpal -o $@ $^ $(LDFLAGS)
+front-paneld: front-paneld.c
+	$(CC) $(CFLAGS) -pthread -lpal -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

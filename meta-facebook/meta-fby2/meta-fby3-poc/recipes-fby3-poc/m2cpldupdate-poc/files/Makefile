@@ -5,7 +5,7 @@
 all: m2cpldupdate_poc
 
 m2cpldupdate_poc:  cpld_update.c
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

@@ -1,10 +1,10 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
-all: yosemite-sensors 
+all: yosemite-sensors
 
 CFLAGS += -Wall -Werror
 
-yosemite-sensors: yosemite-sensors.c 
-	$(CC) -lyosemite_sensor -std=c99 -o $@ $^ $(LDFLAGS)
+yosemite-sensors: yosemite-sensors.c
+	$(CC) $(CFLAGS) -lyosemite_sensor -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

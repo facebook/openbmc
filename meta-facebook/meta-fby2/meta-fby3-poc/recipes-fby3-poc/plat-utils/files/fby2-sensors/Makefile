@@ -2,7 +2,7 @@
 all: fby2-sensors
 
 fby2-sensors: fby2-sensors.c
-	$(CC) -lfby2_common -lfby2_sensor -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -lfby2_common -lfby2_sensor -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

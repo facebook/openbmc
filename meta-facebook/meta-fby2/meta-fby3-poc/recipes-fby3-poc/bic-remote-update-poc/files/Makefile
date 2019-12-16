@@ -5,7 +5,7 @@
 all: bic_remote_update
 
 bic_remote_update:  bic_remote_update.c
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

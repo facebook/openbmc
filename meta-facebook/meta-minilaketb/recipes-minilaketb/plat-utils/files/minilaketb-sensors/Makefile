@@ -2,7 +2,7 @@
 all: minilaketb-sensors
 
 minilaketb-sensors: minilaketb-sensors.c
-	$(CC) -lminilaketb_sensor -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -lminilaketb_sensor -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

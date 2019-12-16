@@ -5,7 +5,7 @@
 all: cpldupdate_poc
 
 cpldupdate_poc:  i2cupdate.c max10_i2c_update.c
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

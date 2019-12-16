@@ -2,7 +2,7 @@
 all: guid-util
 
 guid-util: guid-util.c
-	$(CC) -lpal -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -lpal -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

@@ -5,7 +5,7 @@
 all: vrupdate_poc
 
 vrupdate_poc:  vr_update.c
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

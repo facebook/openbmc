@@ -17,6 +17,21 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+ret=0
+
+PIDFILE="/var/run/run-rackmond.pid"
+check_duplicate_process()
+{
+    exec 2>$PIDFILE
+    flock -n 2 || (echo "Another process is running" && exit 1)
+    ret=$?
+    if [ $ret -eq 1 ]; then
+        exit 1
+    fi
+    pid=$$
+    echo $pid 1>&200
+}
+check_duplicate_process
 (sleep 5; PYTHONPATH=/etc python /etc/rackmon-config.py) &
 export RACKMOND_FOREGROUND=1
 # Give PSUs 2ms of grace time to let go of the bus after they respond to a

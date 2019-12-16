@@ -707,7 +707,7 @@ int pal_sled_cycle(void)
 
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
 {
-  if (fru == FRU_MB || fru == FRU_PDB)
+  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM)
     *status = 1;
   else
     return -1;

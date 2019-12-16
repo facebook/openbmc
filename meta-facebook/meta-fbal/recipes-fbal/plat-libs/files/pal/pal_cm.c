@@ -154,14 +154,14 @@ lib_cmc_get_fan_speed(uint8_t fan_num, uint16_t* speed) {
   uint8_t rbuf[16];
    
   ret = cmd_cmc_get_sensor_value(cm_fan_list[fan_num].sdr, rbuf, &rlen);
-//#ifdef DEBUG
+#ifdef DEBUG
 {    
   int i;
   for(i=0; i<rlen; i++) {
     syslog(LOG_DEBUG, "%s rbuf[%d]=%d\n", __func__, i, *(rbuf+i));
   }
 }  
-//#endif  
+#endif  
   if(ret != 0) {
     return -1;
   }
@@ -185,14 +185,14 @@ lib_cmd_set_fan_ctrl(uint8_t fan_mode, uint8_t* status) {
   tlen = 1;
 
   ret = cmc_ipmb_process(ipmi_cmd, netfn, tbuf, tlen, rbuf, &rlen);
-//#ifdef DEBUG
+#ifdef DEBUG
 {    
   int i;
   for(i=0; i<rlen; i++) {
     syslog(LOG_DEBUG, "%s rbuf[%d]=%d\n", __func__, i, *(rbuf+i));
   }
 }  
-//#endif  
+#endif  
   if(ret != 0) {
     return -1;
   }
@@ -215,14 +215,14 @@ lib_cmc_set_fan_pwm(uint8_t fan_num, uint8_t pwm) {
   tlen = 2;
 
   ret = cmc_ipmb_process(ipmi_cmd, netfn, tbuf, tlen, rbuf, &rlen);
-//#ifdef DEBUG
+#ifdef DEBUG
 {    
   int i;
   for(i=0; i<rlen; i++) {
     syslog(LOG_DEBUG, "%s rbuf[%d]=%d\n", __func__, i, *(rbuf+i));
   }
 }  
-//#endif  
+#endif  
   if(ret != 0) {
     return -1;
   }
@@ -243,18 +243,39 @@ lib_cmc_get_fan_pwm(uint8_t fan_num, uint8_t* pwm) {
   tlen = 1;
 
   ret = cmc_ipmb_process(ipmi_cmd, netfn, tbuf, tlen, rbuf, &rlen);
-//#ifdef DEBUG
+#ifdef DEBUG
 {    
   int i;
   for(i=0; i<rlen; i++) {
     syslog(LOG_DEBUG, "%s rbuf[%d]=%d\n", __func__, i, *(rbuf+i));
   }
 }  
-//#endif  
+#endif  
   if(ret != 0) {
     return -1;
   }
 
   *pwm = rbuf[1];
   return 0;
+}
+
+int lib_cmc_get_fan_id(uint8_t fan_sdr) {
+  int fan_num=-1;
+
+  switch(fan_sdr) {
+    case PDB_EVENT_FAN0_PRESENT: 
+      fan_num = FAN_ID0; 
+      break;
+    case PDB_EVENT_FAN1_PRESENT: 
+      fan_num = FAN_ID1; 
+      break;
+    case PDB_EVENT_FAN2_PRESENT: 
+      fan_num = FAN_ID2; 
+      break;
+    case PDB_EVENT_FAN3_PRESENT: 
+      fan_num = FAN_ID3; 
+      break;
+  }
+
+  return fan_num;
 }

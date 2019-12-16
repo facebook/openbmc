@@ -15,6 +15,12 @@
 #define CM_SET_FAN_MANUAL_MODE            (0x00)
 #define CM_SET_FAN_AUTO_MODE              (0x01)
 
+#define PDB_EVENT_STATUS        (0xFB)
+#define PDB_EVENT_FAN0_PRESENT  (0x2C) 
+#define PDB_EVENT_FAN1_PRESENT  (0x2D) 
+#define PDB_EVENT_FAN2_PRESENT  (0x2E) 
+#define PDB_EVENT_FAN3_PRESENT  (0x2F) 
+
 
 //CMC SENSOR TABLE
 enum {
@@ -68,6 +74,13 @@ typedef struct {
 } CMC_RW_INFO;
 
 
+enum {
+  PDB_EVENT_CM_RESET = 0,
+  PDB_EVENT_PWR_CYCLE = 2,
+  PDB_EVENT_SLED_CYCLE = 3,
+  PDB_EVENT_RECONFIG_SYSTEM =4,
+};
+
 int cmd_cmc_get_dev_id(ipmi_dev_id_t *dev_id);
 int cmd_cmc_get_config_mode(uint8_t *mode);
 int cmd_cmc_get_mb_position(uint8_t *partion);
@@ -76,5 +89,6 @@ int lib_cmc_set_fan_pwm(uint8_t fan_num, uint8_t pwm);
 int lib_cmc_get_fan_pwm(uint8_t fan_num, uint8_t* pwm);
 int lib_cmc_get_fan_speed(uint8_t fan_id, uint16_t* speed);
 int lib_cmc_set_fan_ctrl(uint8_t fan_mode, uint8_t* status);
+int lib_cmc_get_fan_id(uint8_t fan_sdr);
 #endif
 

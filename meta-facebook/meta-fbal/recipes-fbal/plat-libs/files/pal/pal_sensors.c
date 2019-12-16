@@ -768,7 +768,9 @@ cmd_peci_rdpkgconfig(PECI_RD_PKG_CONFIG_INFO* info, uint8_t* rx_buf, uint8_t rx_
 
   ret = pal_get_peci_val(&msg);
   if (ret != 0) {
+#ifdef DEBUG   
     syslog(LOG_WARNING, "peci rdpkg error index=%x", info->index);
+#endif    
     return -1;
   }
   memcpy(rx_buf, msg.rx_buf, msg.rx_len);
@@ -1859,4 +1861,111 @@ pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
   
   *value = pwm;
   return ret;
-} 
+}
+
+
+static int
+fbal_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
+
+  switch(fru) {
+    case FRU_PDB:
+      switch(sensor_num) {
+        case PDB_EVENT_STATUS:
+          sprintf(name, "PDB_EVENT_STATUS");
+          break;
+        case PDB_EVENT_FAN0_PRESENT:
+          sprintf(name, "PDB_FAN0_PRESENT");
+          break;
+        case PDB_EVENT_FAN1_PRESENT:
+          sprintf(name, "PDB_FAN1_PRESENT");
+          break;
+        case PDB_EVENT_FAN2_PRESENT:
+          sprintf(name, "PDB_FAN2_PRESENT");
+          break;
+        case PDB_EVENT_FAN3_PRESENT:
+          sprintf(name, "PDB_FAN3_PRESENT");
+          break; 
+      }
+      break;
+  }
+  return 0;
+}
+
+int
+pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
+  uint8_t snr_type = sel[10];
+  uint8_t snr_num = sel[11];
+
+  // If SNR_TYPE is OS_BOOT, sensor name is OS
+  switch (snr_type) {
+    case OS_BOOT:
+      // OS_BOOT used by OS
+      sprintf(name, "OS");
+      return 0;
+    default:
+      if (fbal_sensor_name(fru, snr_num, name) != 0) {
+        break;
+      }
+      return 0;
+  }
+
+  // Otherwise, translate it based on snr_num
+  return pal_get_x86_event_sensor_name(fru, snr_num, name);
+}
+
+int
+pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  uint8_t snr_num = sel[11];
+  uint8_t *event_data = &sel[10];
+  uint8_t *ed = &event_data[3];
+  uint8_t fan_id=0;
+  char temp_log[128] = {0};
+  bool parsed = true;
+
+  strcpy(error_log, "");
+  switch(snr_num) {
+    case PDB_EVENT_STATUS:
+      switch (ed[0]) {
+        case PDB_EVENT_CM_RESET:
+          strcat(error_log, "PDB_Event_CM_Reset");
+          break;
+        case PDB_EVENT_PWR_CYCLE:
+          sprintf(temp_log, "PDB_Event_Power_Cycle, MB%d", ed[1]);
+          strcat(error_log, temp_log);
+          break;
+        case PDB_EVENT_SLED_CYCLE:
+          sprintf(temp_log, "PDB_Event_SLED_Cydle, MB%d", ed[1]);
+          strcat(error_log, temp_log);
+          break;
+        case PDB_EVENT_RECONFIG_SYSTEM:
+          sprintf(temp_log, "PDB_Event_Reconfig_System, MB%d, Mode=%d", ed[1], ed[2]);
+          strcat(error_log, temp_log);
+          break;
+        default:
+          parsed = false;
+          strcat(error_log, "Unknown");
+          break;
+      }
+      break;
+    case PDB_EVENT_FAN0_PRESENT:
+    case PDB_EVENT_FAN1_PRESENT:
+    case PDB_EVENT_FAN2_PRESENT:
+    case PDB_EVENT_FAN3_PRESENT:
+      fan_id = lib_cmc_get_fan_id(snr_num);
+      sprintf(temp_log, "PDB_Event_Fan%d_%s", fan_id, ed[0] ? "Present": "Not_Present");
+      strcat(error_log, temp_log);
+      break;
+    default:
+      parsed = false;
+      break;
+  }
+
+  if (parsed == true) {
+    return 0;
+  }
+
+  pal_parse_sel_helper(fru, sel, error_log);
+  return 0;
+}
+

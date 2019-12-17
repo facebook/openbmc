@@ -20,11 +20,12 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://vr.cpp \
             file://bic_bios_ext.cpp \
             file://platform.cpp \
+            file://mcu_fw.h \
+            file://mcu_fw.cpp \
             file://usbdbg.h \
             file://usbdbg.cpp \
-            file://usbdbg_ext.cpp \
            "
 CXXFLAGS += " -DBIC_SUPPORT "
-DEPENDS += "libipmi libipmb libbic libocpdbg-lcd libminilaketb-sensor"
-RDEPENDS_${PN} += "libipmi libipmb libbic libocpdbg-lcd libminilaketb-sensor"
-LDFLAGS += " -lipmi -lipmb -lbic -locpdbg-lcd -lminilaketb_sensor "
+DEPENDS += "libipmi libipmb libbic libmcu libminilaketb-sensor"
+RDEPENDS_${PN} += "libipmi libipmb libbic libmcu libminilaketb-sensor"
+LDFLAGS += " -lipmi -lipmb -lbic -lmcu -lminilaketb_sensor "

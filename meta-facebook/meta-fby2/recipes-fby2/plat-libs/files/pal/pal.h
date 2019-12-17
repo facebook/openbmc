@@ -266,7 +266,6 @@ uint8_t pal_get_status(void);
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_get_fan_latch(uint8_t *status);
 int pal_ipmb_processing(int bus, void *buf, uint16_t size);
-bool pal_is_mcu_working(void);
 int pal_set_fru_post(uint8_t fru, uint8_t value);
 int pal_get_fru_post(uint8_t fru, uint8_t *value);
 uint8_t pal_is_post_ongoing();

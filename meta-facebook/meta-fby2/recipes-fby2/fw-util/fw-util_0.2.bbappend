@@ -20,15 +20,17 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://vr.cpp \
             file://bic_bios_ext.cpp \
             file://platform.cpp \
+            file://mcu_fw.h \
+            file://mcu_fw.cpp \
             file://usbdbg.h \
             file://usbdbg.cpp \
-            file://usbdbg_ext.cpp \
             file://bic_cpld_ext.cpp \
             file://bic_me_ext.cpp \
             file://pcie_switch.cpp \
             file://m2_dev.cpp \
            "
+
 CXXFLAGS += " -DBIC_SUPPORT "
-DEPENDS += "libipmi libipmb libbic libocpdbg-lcd libfby2-sensor"
-RDEPENDS_${PN} += "libipmi libipmb libbic libocpdbg-lcd libfby2-sensor"
-LDFLAGS += " -lipmi -lipmb -lbic -locpdbg-lcd -lfby2_sensor "
+DEPENDS += "libipmi libipmb libbic libmcu libfby2-sensor"
+RDEPENDS_${PN} += "libipmi libipmb libbic libmcu libfby2-sensor"
+LDFLAGS += " -lipmi -lipmb -lbic -lmcu -lfby2_sensor "

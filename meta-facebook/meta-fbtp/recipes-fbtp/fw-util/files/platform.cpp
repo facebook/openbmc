@@ -7,6 +7,6 @@
 AliasComponent bmc("mb", "bmc", "bmc", "bmc");
 AliasComponent rom("mb", "rom", "bmc", "rom");
 AliasComponent mb_fscd("mb", "fscd", "bmc", "fscd");
-UsbDbgComponent usbdbg("mb", "usbdbgfw", (uint8_t)0x9, (uint8_t)0x60, (uint8_t)0x4E);
-UsbDbgBlComponent usbdbgbl("mb", "usbdbgbl", (uint8_t)0x9, (uint8_t)0x60, (uint8_t)0x4E);
+UsbDbgComponent usbdbg("mb", "usbdbgfw", 9, 0x60);
+UsbDbgBlComponent usbdbgbl("mb", "usbdbgbl", 9, 0x60, 0x02);
 BiosComponent bios("mb", "bios", "\"bios0\"", "");

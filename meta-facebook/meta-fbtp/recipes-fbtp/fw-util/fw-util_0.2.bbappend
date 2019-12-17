@@ -22,11 +22,13 @@ SRC_URI += "file://vr.cpp \
             file://cpld.cpp \
             file://bios.h \
             file://bios.cpp \
+            file://mcu_fw.h \
+            file://mcu_fw.cpp \
             file://usbdbg.cpp \
             file://usbdbg.h \
             file://me.cpp \
            "
 
-DEPENDS += "libgpio libme libfpga libocpdbg-lcd libvr"
-RDEPENDS_${PN} += "libgpio libme libfpga libocpdbg-lcd libvr"
-LDFLAGS += " -lgpio -lme -lfpga -locpdbg-lcd -lvr"
+DEPENDS += "libgpio libme libfpga libmcu libvr"
+RDEPENDS_${PN} += "libgpio libme libfpga libmcu libvr"
+LDFLAGS += " -lgpio -lme -lfpga -lmcu -lvr"

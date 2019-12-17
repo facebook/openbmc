@@ -21,11 +21,13 @@ SRC_URI += "file://platform.cpp \
             file://vr.cpp \
             file://exp.cpp \
             file://ioc.cpp \
+            file://mcu_fw.h \
+            file://mcu_fw.cpp \
             file://usbdbg.cpp \
             file://usbdbg.h \
            "
 
 CXXFLAGS += " -DBIC_SUPPORT "
-DEPENDS += "libipmi libipmb libbic libexp libocpdbg-lcd"
-RDEPENDS_${PN} += "libipmi libipmb libbic libexp libocpdbg-lcd"
-LDFLAGS += " -lipmi -lipmb -lbic -lexp -locpdbg-lcd"
+DEPENDS += "libipmi libipmb libbic libexp libmcu"
+RDEPENDS_${PN} += "libipmi libipmb libbic libexp libmcu"
+LDFLAGS += " -lipmi -lipmb -lbic -lexp -lmcu"

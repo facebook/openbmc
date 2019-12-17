@@ -9404,7 +9404,7 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
     clock_gettime(CLOCK_MONOTONIC, &ts);
     if (ts.tv_sec >= (last_time + 5)) {
       last_time = ts.tv_sec;
-      ts.tv_sec += 30;
+      ts.tv_sec += 20;
 
       sprintf(key, "ocpdbg_lcd");
       sprintf(value, "%ld", ts.tv_sec);
@@ -9417,20 +9417,21 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
   return 0;
 }
 
-bool
-pal_is_mcu_working(void) {
+int
+pal_is_mcu_ready(uint8_t bus) {
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN] = {0};
   struct timespec ts;
 
   sprintf(key, "ocpdbg_lcd");
   if (kv_get(key, value, NULL, 0)) {
-     return false;
+    return false;
   }
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  if (strtoul(value, NULL, 10) > ts.tv_sec)
+  if (strtoul(value, NULL, 10) > ts.tv_sec) {
      return true;
+  }
 
   return false;
 }
@@ -11429,6 +11430,7 @@ pal_parse_mem_mapping_string(uint8_t channel, bool *support_mem_mapping, char *e
 #endif
   return 0;
 }
+
 bool
 pal_is_modify_sel_time(uint8_t *sel, int size) {
   bool need = false;

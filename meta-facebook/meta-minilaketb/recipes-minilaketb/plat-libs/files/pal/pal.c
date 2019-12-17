@@ -4020,20 +4020,21 @@ pal_ipmb_processing(int bus, void *buf, uint16_t size) {
   return 0;
 }
 
-bool
-pal_is_mcu_working(void) {
-  char key[MAX_KEY_LEN] = {0};
+int
+pal_is_mcu_ready(uint8_t bus) {
+  char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN] = {0};
   struct timespec ts;
 
   sprintf(key, "ocpdbg_lcd");
   if (kv_get(key, value, NULL, 0)) {
-     return false;
+    return false;
   }
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  if (strtoul(value, NULL, 10) > ts.tv_sec)
+  if (strtoul(value, NULL, 10) > ts.tv_sec) {
      return true;
+  }
 
   return false;
 }

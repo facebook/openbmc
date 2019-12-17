@@ -7,8 +7,8 @@
 #include <openbmc/pal.h>
 
 // Set aliases for BMC components to usbdbg components
-UsbDbgComponent usbdbg("bmc", "usbdbgfw", (uint8_t)0xb, (uint8_t)0x60, (uint8_t)0x4E);
-UsbDbgBlComponent usbdbgbl("bmc", "usbdbgbl", (uint8_t)0xb, (uint8_t)0x60, (uint8_t)0x4E);
+UsbDbgComponent usbdbg("bmc", "usbdbgfw", 11, 0x60);
+UsbDbgBlComponent usbdbgbl("bmc", "usbdbgbl", 11, 0x60, 0x02);
 // Register BIC FW and BL components
 BicFwComponent bicfw1("server", "bic", 1);
 BicFwBlComponent bicfwbl1("server", "bicbl", 1);

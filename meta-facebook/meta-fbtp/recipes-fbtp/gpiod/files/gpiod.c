@@ -33,7 +33,7 @@
 #include <sys/file.h>
 #include <openbmc/pal.h>
 #include <openbmc/libgpio.h>
-#include <openbmc/ocp-dbg-lcd.h>
+#include <openbmc/mcu.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 
@@ -169,8 +169,8 @@ static void usb_debug_card_check_hotfix(gpiopoll_pin_t *desc, gpio_value_t last,
   }
 
   if (odm_id == 0 && board_rev <= BOARD_REV_DVT) {
-    if(value == GPIO_VALUE_HIGH)
-      usb_dbg_reset();
+    if (value == GPIO_VALUE_HIGH)
+      usb_dbg_reset_ioexp(9, 0x4E);
   }
   log_gpio_change(desc, value, 0);
 }
@@ -268,7 +268,7 @@ static void
   syslog(LOG_WARNING, "[%s][%lu] Timer is started.\n", __func__, pthread_self());
   syslog(LOG_WARNING, "[%s] Get GPIO Num: %d", __func__, pin_num);
 #endif
-  
+
   while(1)
   {
     if (gpio_get_value(gpio, &value)) {
@@ -288,7 +288,7 @@ static void
 #ifdef SMI_DEBUG
     syslog(LOG_WARNING, "[%s][%lu] smi_timeout_count[%d] == smi_timeout_threshold[%d]\n", __func__, pthread_self(), smi_timeout_count, smi_timeout_threshold);
 #endif
-    
+
     if ( smi_timeout_count == smi_timeout_threshold )
     {
       syslog(LOG_CRIT, "ASSERT: GPIOG7-FM_BIOS_SMI_ACTIVE_N\n");
@@ -694,7 +694,7 @@ main(int argc, char **argv) {
     {
       syslog(LOG_WARNING, "pthread_create for smi_handler fail\n");
       exit(1);
-    }   
+    }
 
     polldesc = gpio_poll_open(g_gpios, sizeof(g_gpios)/sizeof(g_gpios[0]));
     if (!polldesc) {

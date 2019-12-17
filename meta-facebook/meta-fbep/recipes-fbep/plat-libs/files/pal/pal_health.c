@@ -4,7 +4,6 @@
 #include <string.h>
 #include <time.h>
 #include "pal.h"
-#include "pal_health.h"
 
 static int pal_get_sensor_health_key(uint8_t fru, char *key)
 {

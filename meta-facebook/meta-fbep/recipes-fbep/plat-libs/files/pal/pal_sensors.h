@@ -28,27 +28,6 @@
 extern "C" {
 #endif
 
-enum {
-  FAN_0 = 1,
-  FAN_1,
-  FAN_2,
-  FAN_3,
-  FAN_4,
-  FAN_5,
-  FAN_6,
-  FAN_7,
-};
-
-enum {
-  ADC_0 = 1,
-  ADC_1,
-  ADC_2,
-  ADC_3,
-  ADC_4,
-  ADC_7,
-  ADC_8,
-};
-
 // Total sensors list
 enum {
   MB_FAN0_TACH_I = 0x0,

@@ -27,7 +27,6 @@
 #include <openbmc/obmc-sensors.h>
 #include <switchtec/switchtec.h>
 #include "pal.h"
-#include "pal_sensors.h"
 #include "pal_calibration.h"
 
 size_t pal_pwm_cnt = 4;
@@ -37,12 +36,10 @@ const char pal_tach_list[] = "0..7";
 
 #define TLA2024_DIR(bus, addr, index) \
   "/sys/bus/i2c/drivers/tla2024/"#bus"-00"#addr"/iio:device"#index"/%s"
-#define TLA2024_AIN	"in_voltage%d_raw"
-#define TLA2024_FSR	"scale"
-#define ADC_1_DIR	TLA2024_DIR(16, 48, 1)
-#define ADC_2_DIR	TLA2024_DIR(16, 49, 2)
-
-#define SWITCHTEC_DEV "/dev/i2c-12@0x%x"
+#define TLA2024_AIN     "in_voltage%d_raw"
+#define TLA2024_FSR     "scale"
+#define ADC_1_DIR       TLA2024_DIR(16, 48, 1)
+#define ADC_2_DIR       TLA2024_DIR(16, 49, 2)
 
 #define MAX_SENSOR_NUM FBEP_SENSOR_MAX
 #define MAX_SENSOR_THRESHOLD 8
@@ -229,7 +226,7 @@ bail:
   return ret;
 }
 
-static int read_switchtec_dietemp(uint8_t sensor_num, float *value)
+static int read_pax_dietemp(uint8_t paxid, float *value)
 {
   int ret = 0;
   uint8_t addr;
@@ -237,7 +234,7 @@ static int read_switchtec_dietemp(uint8_t sensor_num, float *value)
   char device_name[LARGEST_DEVICE_NAME] = {0};
   struct switchtec_dev *dev;
 
-  addr = 0x18 + (sensor_num - MB_SWITCH_PAX0_DIE_TEMP);
+  addr = SWITCH_BASE_ADDR + paxid;
   snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, addr);
 
   dev = switchtec_open(device_name);
@@ -249,14 +246,13 @@ static int read_switchtec_dietemp(uint8_t sensor_num, float *value)
   sub_cmd_id = MRPC_DIETEMP_GET_GEN4;
   ret = switchtec_cmd(dev, MRPC_DIETEMP, &sub_cmd_id,
                       sizeof(sub_cmd_id), &temp, sizeof(temp));
-  if (ret)
-    ret = -1;
-  else
-    *value = (float) temp / 100.0;
 
   switchtec_close(dev);
 
-  return ret;
+  if (ret == 0)
+    *value = (float) temp / 100.0;
+
+  return ret < 0? -1: 0;
 }
 
 static int sensors_read_vicor(uint8_t sensor_num, float *value)
@@ -631,25 +627,25 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
       if (pal_get_server_power(FRU_MB, &status) == 0 && status == SERVER_POWER_ON)
         ret = sensors_read("tmp422-i2c-6-4d", "PAX01_THERM", (float *)value);
       else
-	ret = READING_NA;
+        ret = READING_NA;
       break;
     case MB_SENSOR_PAX01_THERM_REMOTE:
       if (pal_get_server_power(FRU_MB, &status) == 0 && status == SERVER_POWER_ON)
         ret = sensors_read("tmp422-i2c-6-4d", "PAX01_THERM_REMOTE", (float *)value);
       else
-	ret = READING_NA;
+        ret = READING_NA;
       break;
     case MB_SENSOR_PAX23_THERM:
       if (pal_get_server_power(FRU_MB, &status) == 0 && status == SERVER_POWER_ON)
         ret = sensors_read("tmp422-i2c-6-4e", "PAX23_THERM", (float *)value);
       else
-	ret = READING_NA;
+        ret = READING_NA;
       break;
     case MB_SENSOR_PAX23_THERM_REMOTE:
       if (pal_get_server_power(FRU_MB, &status) == 0 && status == SERVER_POWER_ON)
         ret = sensors_read("tmp422-i2c-6-4e", "PAX23_THERM_REMOTE", (float *)value);
       else
-	ret = READING_NA;
+        ret = READING_NA;
       break;
     case PDB_SENSOR_OUTLET_TEMP:
       ret = sensors_read("tmp421-i2c-17-4c", "OUTLET_TEMP", (float *)value);
@@ -662,41 +658,43 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
     case MB_SWITCH_PAX1_DIE_TEMP:
     case MB_SWITCH_PAX2_DIE_TEMP:
     case MB_SWITCH_PAX3_DIE_TEMP:
-      if (pal_get_server_power(FRU_MB, &status) == 0 && status == SERVER_POWER_ON)
-        ret = read_switchtec_dietemp(sensor_num, (float*)value);
-      else
+      if (pal_get_server_power(FRU_MB, &status) == 0 && status == SERVER_POWER_ON
+	  && !pal_is_pax_proc_ongoing(sensor_num - MB_SWITCH_PAX0_DIE_TEMP)) {
+        ret = read_pax_dietemp(sensor_num - MB_SWITCH_PAX0_DIE_TEMP, (float*)value);
+      } else {
         ret = READING_NA;
+      }
       break;
     // HSC reading
     case PDB_HSC_P12V_1_CURR:
       ret = sensors_read("ltc4282-i2c-16-53", "P12V_1_CURR", (float *)value);
       if (ret == 0)
-	hsc_value_adjust(current_table, (float *)value);
+        hsc_value_adjust(current_table, (float *)value);
       break;
     case PDB_HSC_P12V_2_CURR:
       ret = sensors_read("ltc4282-i2c-17-40", "P12V_2_CURR", (float *)value);
       if (ret == 0)
-	hsc_value_adjust(current_table, (float *)value);
+        hsc_value_adjust(current_table, (float *)value);
       break;
     case PDB_HSC_P12V_AUX_CURR:
       ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_CURR", (float *)value);
       if (ret == 0)
-	hsc_value_adjust(aux_current_table, (float *)value);
+        hsc_value_adjust(aux_current_table, (float *)value);
       break;
     case PDB_HSC_P12V_1_PWR:
       ret = sensors_read("ltc4282-i2c-16-53", "P12V_1_PWR", (float *)value);
       if (ret == 0)
-	hsc_value_adjust(power_table, (float *)value);
+        hsc_value_adjust(power_table, (float *)value);
       break;
     case PDB_HSC_P12V_2_PWR:
       ret = sensors_read("ltc4282-i2c-17-40", "P12V_2_PWR", (float *)value);
       if (ret == 0)
-	hsc_value_adjust(power_table, (float *)value);
+        hsc_value_adjust(power_table, (float *)value);
       break;
     case PDB_HSC_P12V_AUX_PWR:
       ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_PWR", (float *)value);
       if (ret == 0)
-	hsc_value_adjust(aux_power_table, (float *)value);
+        hsc_value_adjust(aux_power_table, (float *)value);
       break;
     case PDB_HSC_P12V_1_VIN:
       ret = sensors_read("ltc4282-i2c-16-53", "P12V_1_VIN", (float *)value);

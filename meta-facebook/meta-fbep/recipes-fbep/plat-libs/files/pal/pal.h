@@ -25,6 +25,7 @@
 #include <openbmc/kv.h>
 #include "pal_sensors.h"
 #include "pal_health.h"
+#include "pal_switch.h"
 
 #ifdef __cplusplus
 extern "C" {

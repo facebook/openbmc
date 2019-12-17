@@ -20,6 +20,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://nic.cpp \
             file://cpld.cpp \
             file://vr.cpp \
+            file://switch.cpp \
            "
 
 DEPENDS += "libfpga libast-jtag libvr"

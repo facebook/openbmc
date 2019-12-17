@@ -562,7 +562,7 @@ pal_channel_to_bus(int channel) {
       return I2C_BUS_8; // CM
 
     case IPMI_CHANNEL_9:
-      return I2C_BUS_6; // Riser
+      return I2C_BUS_6; // EP
   }
 
   // Debug purpose, map to real bus number
@@ -685,16 +685,16 @@ int
 pal_get_bmc_ipmb_slave_addr(uint16_t* slave_addr, uint8_t bus_id) {
   uint8_t val;
   int ret;
-  static uint16_t addr=0;
+  static uint8_t addr=0;
 
-  if ((bus_id == I2C_BUS_1) || (bus_id == I2C_BUS_5)) {
+  if ((bus_id == I2C_BUS_2) || (bus_id == I2C_BUS_5)) {
 
     if (addr == 0) {
       ret = pal_get_blade_id (&val);
       if (ret != 0) {
         return -1;
       }
-      addr = 0x1010 | val;
+      addr = 0x10 | val;
       *slave_addr = addr;
     } else {
       *slave_addr = addr;

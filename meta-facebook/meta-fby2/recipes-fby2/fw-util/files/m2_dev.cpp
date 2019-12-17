@@ -108,11 +108,7 @@ class M2_DevComponent : public Component {
             server.ready();
             ret = bic_update_fw(slot_dev_id, UPDATE_SPH, (char *)image.c_str());
 
-            printf("* Slot%u 12V-cycle\n", slot_id);
-            ret_power = pal_set_server_power(slot_id, SERVER_12V_CYCLE);
-            if (ret_power < 0) {
-              printf("Slot%u 12V-cycle failed\n", slot_id);
-            }
+            printf("* Please do 12V-power-cycle on Slot%u to activate new FPGA fw.\n", slot_id);
           } else {
             printf("Can not get the device type, try again later.\n");
             ret = FW_STATUS_NOT_SUPPORTED;

@@ -839,7 +839,6 @@ pal_fw_update_prepare(uint8_t fru, const char *comp) {
       printf("Failed to Power Off Server. Stopping the update!\n");
       return -1;
     }
-    sleep(10);
 
     retry = MAX_RETRY_ME_RECOVERY;
     while (retry > 0) {

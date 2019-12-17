@@ -90,8 +90,9 @@ class tree:
     async def handlePost(self, request):
         result = {"result": "not-supported"}
         data = await request.json()
+        param = dict(request.query)
         if "action" in data and data["action"] in self.data.actions:
-            result = self.data.doAction(data)
+            result = self.data.doAction(data, param)
         return web.json_response(result, dumps=dumps_bytestr)
 
     def setup(self, app, support_post):

@@ -146,7 +146,7 @@ is_pem1=$(
     echo $?
 )
 # # ltc4282 only support registers 0~0x4f
-if [ "$is_pem1" = "0" ]; then
+if [ "$is_pem1" = "1" ]; then
     i2c_device_add "$(get_mux_bus_num 8)" 0x58 psu_driver   # PSU1 Driver
 else
     i2c_device_add "$(get_mux_bus_num 8)" 0x58 ltc4282      # PEM1 Driver
@@ -158,7 +158,7 @@ is_pem2=$(
     pem-util pem2 --get_pem_info | grep WEDGE400-PEM
     echo $?
 )
-if [ "$is_pem2" = "0" ]; then
+if [ "$is_pem2" = "1" ]; then
     i2c_device_add "$(get_mux_bus_num 9)" 0x58 psu_driver   # PSU2 Driver
 else
     i2c_device_add "$(get_mux_bus_num 9)" 0x58 ltc4282      # PEM2 Driver

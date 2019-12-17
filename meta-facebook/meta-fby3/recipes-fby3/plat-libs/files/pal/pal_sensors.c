@@ -229,7 +229,6 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
   }
   ret = sensors_read_fan(label, &value);
   *rpm = (int)value;
-  syslog(LOG_WARNING, "%s() fan%d: %d", __func__, fan, *rpm);
   return ret;
 }
 

@@ -94,6 +94,16 @@ const static char *gpio_server_stby_pwr_sts[] =
   "PWROK_STBY_BMC_SLOT3"
 };
 
+const static char *gpio_server_i2c_isolated[] =
+{
+  "",
+  "FM_BMC_SLOT0_ISOLATED_EN_R",
+  "FM_BMC_SLOT1_ISOLATED_EN_R",
+  "FM_BMC_SLOT2_ISOLATED_EN_R",
+  "FM_BMC_SLOT3_ISOLATED_EN_R"
+};
+
+int fby3_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val);
 int fby3_common_is_bic_ready(uint8_t fru, uint8_t *val);
 int fby3_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val);
 int fby3_common_get_bmc_location(uint8_t *id);

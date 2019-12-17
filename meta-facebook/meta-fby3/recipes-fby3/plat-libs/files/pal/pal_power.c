@@ -41,7 +41,7 @@ server_power_on(uint8_t fru) {
 
 static int
 server_power_12v_on(uint8_t fru) {
-  int i2cfd;
+  int i2cfd = 0;
   char cmd[64] = {0};
   uint8_t tbuf[2] = {0};
   uint8_t rbuf[2] = {0};
@@ -75,21 +75,27 @@ server_power_12v_on(uint8_t fru) {
     goto error_exit;
   }
 
+  ret = fby3_common_set_fru_i2c_isolated(fru, GPIO_VALUE_HIGH);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to enable the i2c of fru%d", __func__, fru);
+    goto error_exit;
+  }
+
   sleep(1);
 
-  snprintf(cmd, sizeof(cmd), "sv start ipmbd_%d > /dev/null 2>&1", fru); 
+  snprintf(cmd, sizeof(cmd), "sv start ipmbd_%d > /dev/null 2>&1", fby3_common_get_bus_id(fru)); 
   if (system(cmd) != 0) {
-      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      return PAL_ENOTSUP;
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    ret = PAL_ENOTSUP;
+    goto error_exit;
   }
   sleep(2);
   
   ret = server_power_on(fru);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to do server_power_on fru%d", __func__, fru);
+    goto error_exit;
   }
-
-  //TODO: need to change the status of FM_BMC_SLOT${num}_ISOLATED_EN
 
 error_exit:
   if ( i2cfd > 0 ) close(i2cfd);
@@ -99,7 +105,7 @@ error_exit:
 
 static int
 server_power_12v_off(uint8_t fru) {
-  int i2cfd;
+  int i2cfd = 0;
   char cmd[64] = {0};
   uint8_t tbuf[2] = {0};
   uint8_t rbuf[2] = {0};
@@ -133,12 +139,18 @@ server_power_12v_off(uint8_t fru) {
     goto error_exit;
   }
 
-  snprintf(cmd, sizeof(cmd), "sv stop ipmbd_%d > /dev/null 2>&1", fru);
+  snprintf(cmd, sizeof(cmd), "sv stop ipmbd_%d > /dev/null 2>&1", fby3_common_get_bus_id(fru));
   if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      return PAL_ENOTSUP;
+      ret = PAL_ENOTSUP;
+      goto error_exit;
   }
-  //TODO: need to change the status of FM_BMC_SLOT${num}_ISOLATED_EN
+
+  ret = fby3_common_set_fru_i2c_isolated(fru, GPIO_VALUE_LOW);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to disable the i2c of fru%d", __func__, fru);
+    goto error_exit;
+  }
 
 error_exit:
   if ( i2cfd > 0 ) close(i2cfd);
@@ -234,19 +246,33 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if ( pal_get_server_12v_power(fru, &status) < 0 ) {
         return POWER_STATUS_ERR;
       } 
-      //return (status == SERVER_POWER_ON)?POWER_STATUS_ALREADY_OK:server_power_12v_on(fru);  
-      return server_power_12v_on(fru);
+      return (status == SERVER_POWER_ON)?POWER_STATUS_ALREADY_OK:server_power_12v_on(fru);  
       break;
 
     case SERVER_12V_OFF:
       if ( pal_get_server_12v_power(fru, &status) < 0 ) {
         return POWER_STATUS_ERR;
       }
-      //return (status == SERVER_POWER_OFF)?POWER_STATUS_ALREADY_OK:server_power_12v_off(fru);
-      return server_power_12v_off(fru);
+      return (status == SERVER_POWER_OFF)?POWER_STATUS_ALREADY_OK:server_power_12v_off(fru);
       break;
 
     case SERVER_12V_CYCLE:
+      if ( pal_get_server_12v_power(fru, &status) < 0 ) {
+        return POWER_STATUS_ERR;
+      }
+
+      if (status == SERVER_POWER_OFF) {
+        return server_power_12v_on(fru);
+      } else {
+        if ( server_power_12v_off(fru) < 0 ) {
+          return POWER_STATUS_ERR;
+        }
+        sleep(2);
+        if ( server_power_12v_on(fru) < 0 ) {
+          return POWER_STATUS_ERR;
+        }
+      }
+
       break;
 
     default:

@@ -622,16 +622,16 @@ update_remote_bic(uint8_t slot_id, uint8_t intf, int fd, int file_size) {
       bic_i2c    = FEXP_BIC_IPMI_I2C_SW;
       break;
     case BB_BIC_INTF:
-      bic_read   = REXP_BIC_I2C_READ;
-      bic_write  = REXP_BIC_I2C_WRITE;
-      bic_update = REXP_BIC_I2C_UPDATE;
-      bic_i2c    = REXP_BIC_IPMI_I2C_SW;
-      break;
-    case REXP_BIC_INTF:
       bic_read   = BB_BIC_I2C_READ;
       bic_write  = BB_BIC_I2C_WRITE;
       bic_update = BB_BIC_I2C_UPDATE;
       bic_i2c    = BB_BIC_IPMI_I2C_SW;
+      break;
+    case REXP_BIC_INTF:
+      bic_read   = REXP_BIC_I2C_READ;
+      bic_write  = REXP_BIC_I2C_WRITE;
+      bic_update = REXP_BIC_I2C_UPDATE;
+      bic_i2c    = REXP_BIC_IPMI_I2C_SW;
       break;
     default:
       syslog(LOG_WARNING, "%s() unknown information, slot id:%d, intf: 0x%X", __func__, slot_id, intf);
@@ -897,7 +897,6 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t f
   int ret = 0;
 
   printf("slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, path, force);
-
   switch (comp) {
     case UPDATE_BIC:
       ret = update_bic_runtime_fw(slot_id, intf, path, force);

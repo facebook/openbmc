@@ -59,8 +59,28 @@ get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask) {
 }
 
 static int
-get_gpio_value(uint8_t fru, const char *gpio_name, uint8_t *status) {
-  int ret;
+set_gpio_value(const char *gpio_name, gpio_value_t val) {
+  int ret = 0;
+  gpio_desc_t *gdesc = NULL;
+ 
+  gdesc = gpio_open_by_shadow(gpio_name);
+  if ( gdesc == NULL ) {
+    syslog(LOG_WARNING, "[%s] Cannot open %s", __func__, gpio_name);
+    return -1;
+  }
+
+  ret = gpio_set_value(gdesc, val);
+  gpio_close(gdesc);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "[%s] Cannot set %s to %d", __func__, gpio_name, val);
+  }
+
+  return ret;
+}
+
+static int
+get_gpio_value(const char *gpio_name, uint8_t *status) {
+  int ret = 0;
   gpio_desc_t *gdesc = NULL;
   gpio_value_t val;
 
@@ -72,13 +92,17 @@ get_gpio_value(uint8_t fru, const char *gpio_name, uint8_t *status) {
 
   ret = gpio_get_value(gdesc, &val);
   gpio_close(gdesc);
-  if ( ret != 0 ) {
+  if ( ret < 0 ) {
     syslog(LOG_WARNING, "[%s] Cannot get the value of %s", __func__, gpio_name);
-    return -1;
   }
 
   *status = (val == GPIO_VALUE_HIGH ? 1 : 0);
-  return 0;
+  return ret;
+}
+
+int
+fby3_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val) {
+  return set_gpio_value(gpio_server_i2c_isolated[fru], (val==0)?GPIO_VALUE_LOW:GPIO_VALUE_HIGH);
 }
 
 int
@@ -147,7 +171,7 @@ fby3_common_is_fru_prsnt(uint8_t fru, uint8_t *val) {
   }
 
   if ( bmc_location == BB_BMC ) {
-    ret = get_gpio_value(fru, gpio_server_prsnt[fru], val);
+    ret = get_gpio_value(gpio_server_prsnt[fru], val);
     if ( ret < 0 ) {
       return ret;
     }
@@ -175,7 +199,7 @@ fby3_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val) {
   }
 
   if ( bmc_location == BB_BMC ) {
-    ret = get_gpio_value(fru, gpio_server_stby_pwr_sts[fru], val);
+    ret = get_gpio_value(gpio_server_stby_pwr_sts[fru], val);
     if ( ret < 0 ) {
       return ret;
     }

@@ -29,6 +29,8 @@ SRC_URI =+ "file://Makefile \
            file://check_image.cpp \
            file://image_parts.json \
            file://platform.cpp \
+           file://fscd.cpp \
+           file://fscd.h \
           "
 
 S = "${WORKDIR}"

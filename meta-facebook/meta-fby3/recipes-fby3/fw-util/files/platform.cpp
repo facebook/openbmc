@@ -3,6 +3,7 @@
 #include "bic_cpld.h"
 #include "bmc_cpld.h"
 #include "bios.h"
+#include "fscd.h"
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
 
@@ -72,4 +73,8 @@ BiosComponent bios_fw1("slot1", "sb", "bios", FRU_SLOT1, NONE_INTF);
 BiosComponent bios_fw2("slot2", "sb", "bios", FRU_SLOT2, NONE_INTF);
 BiosComponent bios_fw3("slot3", "sb", "bios", FRU_SLOT3, NONE_INTF);
 BiosComponent bios_fw4("slot4", "sb", "bios", FRU_SLOT4, NONE_INTF);
+
+/*The fscd of BMC*/
+FscdComponent fscd("bmc", "bmc", "fscd");
+
 #endif

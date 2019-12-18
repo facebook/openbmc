@@ -365,6 +365,10 @@ int main(int argc, char *argv[])
                 << " on fru: " << c->fru() << endl;
             }
           } else {  // update or dump
+            if (fru == "all") {
+              usage();
+              return -1;
+            }
             string str_act("");
             uint8_t fru_id = system.get_fru_id(c->fru());
             system.set_update_ongoing(fru_id, 60 * 10);

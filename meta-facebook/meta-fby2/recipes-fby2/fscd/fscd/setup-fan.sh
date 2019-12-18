@@ -154,7 +154,7 @@ case "$sku_type" in
        cp /etc/FSC_FBY2_PVT_2CF_2TL_config.json ${default_fsc_config_path}
      fi
    ;;
-   "1028")
+   "1028"|"1027"|"772") # 2GPv2 +2TL or GPv2 +2TL
      echo "Run FSC 2 GPV2s and 2 TLs Config"
      if [ "$dev_type" == "$DEV_TYPE_UNKNOWN" ] ; then
         fw_ver=$(/usr/bin/fw-util bmc --version fscd)

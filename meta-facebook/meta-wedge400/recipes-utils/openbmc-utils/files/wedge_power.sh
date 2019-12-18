@@ -74,8 +74,8 @@ do_status() {
 }
 
 do_on_com_e() {
-    echo 1 > $PWR_USRV_SYSFS
-    echo 1 > $PWR_USRV_FORCE_OFF
+    echo 1 > "$PWR_USRV_SYSFS"
+    echo 1 > "$PWR_USRV_FORCE_OFF"
     return $?
 }
 
@@ -118,7 +118,7 @@ do_on() {
 }
 
 do_off_com_e() {
-    echo 0 > $PWR_USRV_FORCE_OFF
+    echo 0 > "$PWR_USRV_FORCE_OFF"
     return $?
 }
 
@@ -138,29 +138,29 @@ do_off() {
 do_config_reset_timer() {
     # Check numeric
     wake_t=$1
-    echo $wake_t | grep -E -q '^[0-9]+$'
+    echo "$wake_t" | grep -E -q '^[0-9]+$'
     ret=$?
     if [ $ret -ne 0 ]; then
         usage
         exit 1
     else
-        if [ $wake_t -ge 1 -a $wake_t -lt 250 ];then
-            echo 1 > $PWR_TIMER_BASE_1S_SYSFS
-            echo 0 > $PWR_TIMER_BASE_10S_SYSFS
+        if [ "$wake_t" -ge 1 ] && [ "$wake_t" -lt 250 ];then
+            echo 1 > "$PWR_TIMER_BASE_1S_SYSFS"
+            echo 0 > "$PWR_TIMER_BASE_10S_SYSFS"
             logger "Waiting $wake_t seconds for the system boot up"
             echo "Waiting $wake_t seconds for the system boot up"
-        elif [ $wake_t -ge 250 -a $wake_t -le 2550 ];then
-            echo 0 > $PWR_TIMER_BASE_1S_SYSFS
-            echo 1 > $PWR_TIMER_BASE_10S_SYSFS
+        elif [ "$wake_t" -ge 250 ] && [ "$wake_t" -le 2550 ];then
+            echo 0 > "$PWR_TIMER_BASE_1S_SYSFS"
+            echo 1 > "$PWR_TIMER_BASE_10S_SYSFS"
             wake_t=$((wake_t/10))
-            logger "Waiting $(($wake_t * 10)) seconds for the system boot up"
-            echo "Waiting $(($wake_t * 10)) seconds for the system boot up"
+            logger "Waiting $((wake_t * 10)) seconds for the system boot up"
+            echo "Waiting $((wake_t * 10)) seconds for the system boot up"
         else
             usage
             exit 1
         fi
-        echo $wake_t > $PWR_TIMER_COUNTER_SETTING_SYSFS
-        echo 1 > $PWR_TIMER_COUNTER_SETTING_UPDATE_SYSFS
+        echo $wake_t > "$PWR_TIMER_COUNTER_SETTING_SYSFS"
+        echo 1 > "$PWR_TIMER_COUNTER_SETTING_UPDATE_SYSFS"
     fi
 }
 
@@ -187,11 +187,11 @@ do_reset() {
 
     if [ $system -eq 1 ]; then
         if [ $timer -eq 1 ]; then
-            do_config_reset_timer $wake_t
+            do_config_reset_timer "$wake_t"
         fi
         logger "Power reset the whole system ..."
         echo  "Power reset the whole system ..."
-        echo 1 > $PWR_CYCLE_SYSFS
+        echo 1 > "$PWR_CYCLE_SYSFS"
         sleep 3
         # Control should not reach here, but if it failed to reset
         # the system through PSU, then run a workaround to reset
@@ -208,9 +208,9 @@ do_reset() {
         # reset TH first
         # reset_brcm.sh
         echo -n "Power reset microserver ..."
-        echo 0 > $PWR_USRV_RST_SYSFS
+        echo 0 > "$PWR_USRV_RST_SYSFS"
         sleep 1
-        echo 1 > $PWR_USRV_RST_SYSFS
+        echo 1 > "$PWR_USRV_RST_SYSFS"
         logger "Successfully power reset micro-server"
     fi
     echo " Done"
@@ -225,23 +225,30 @@ fi
 command="$1"
 shift
 
+set_bic=0
 case "$command" in
     status)
-        do_status $@
+        do_status "$@"
         ;;
     on)
-        do_on $@
+        do_on "$@"
+        set_bic=1
         ;;
     off)
-        do_off $@
+        do_off "$@"
         ;;
     reset)
-        do_reset $@
+        do_reset "$@"
+        set_bic=1
         ;;
     *)
         usage
         exit 1
         ;;
 esac
+
+if [ $set_bic -ne 0 ]; then
+    (sleep 5; setup_bic.sh) &
+fi
 
 exit $?

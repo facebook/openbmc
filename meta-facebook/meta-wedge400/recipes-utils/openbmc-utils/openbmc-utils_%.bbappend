@@ -36,7 +36,6 @@ SRC_URI += "file://board-utils.sh \
             file://setup_bic.sh \
             file://setup_board.sh \
             file://setup_default_gpio.sh \
-            file://setup_emmc.sh \
             file://setup_i2c.sh \
             file://setup_mgmt.sh \
             file://seutil \
@@ -95,10 +94,6 @@ do_install_board() {
 
     install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .
-
-    # the script to setup EMMC
-    install -m 0755 ${WORKDIR}/setup_emmc.sh ${D}${sysconfdir}/init.d/setup_emmc.sh
-    update-rc.d -r ${D} setup_emmc.sh start 05 S .
 
     install -m 755 setup_default_gpio.sh ${D}${sysconfdir}/init.d/setup_default_gpio.sh
     update-rc.d -r ${D} setup_default_gpio.sh start 60 S .

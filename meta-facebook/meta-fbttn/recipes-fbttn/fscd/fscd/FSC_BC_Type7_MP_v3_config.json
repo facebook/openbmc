@@ -1,5 +1,5 @@
 {
-  "version": "fbttn-type7-mp-v2",
+  "version": "fbttn-type7-mp-v3",
   "pwm_transition_value": 55,
   "pwm_boost_value": 50,
   "sample_interval_ms": 3000,
@@ -38,7 +38,9 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [ -102, 20 ],
+        [ -102, 10 ],
+        [ -12, 15 ],
+        [ -11, 20 ],
         [ -10, 25 ],
         [ -9, 30 ],
         [ -8, 35 ],
@@ -56,20 +58,13 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [ 0, 20 ],
-        [ 76, 22 ],
-        [ 78, 24 ],
-        [ 80, 26 ],
-        [ 82, 28 ],
-        [ 84, 30 ],
-        [ 86, 32 ],
-        [ 88, 34 ],
-        [ 90, 36 ],
-        [ 91, 38 ],
-        [ 92, 40 ],
-        [ 93, 45 ],
-        [ 94, 50 ],
-        [ 95, 55 ]
+        [ 0, 10 ],
+        [ 93, 11 ],
+        [ 94, 12 ],
+        [ 95, 13 ],
+        [ 96, 14 ],
+        [ 97, 35 ],
+        [ 98, 55 ]
       ]
     },
     "pid_soc_therm_margin": {
@@ -89,7 +84,7 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 80,
+      "setpoint": 95,
       "negative_hysteresis": 2,
       "positive_hysteresis": 0,
       "kp": -8,

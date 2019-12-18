@@ -933,7 +933,7 @@ _update_brcm_fw(uint8_t slot_id, uint8_t drv_num, uint8_t target, uint32_t offse
   wbuf[1] = count+5;
   offset += 0x00400000;
   memcpy(&wbuf[2],&offset, sizeof(uint32_t));
-  wbuf[6] = count;
+  wbuf[6] = 5;
   memcpy(&wbuf[7],buf, sizeof(uint8_t)*count);
   ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, count+7, rbuf, rlen);
   if (ret != 0) {
@@ -2088,7 +2088,7 @@ bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *pat
     }
 
     if (comp == UPDATE_BRCM) {
-      msleep(100); // wait
+      msleep(1); // wait
 
       wbuf[0] = BRCM_UPDATE_STATUS;  // offset 128 process bit == 1?
       rlen = 1;
@@ -2153,6 +2153,12 @@ bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *pat
     } else {
       syslog(LOG_DEBUG,"%s(): readiness bit == 1 offset=%d rbuf[0]=%d", __func__,wbuf[0],rbuf[0]);
     }
+
+    for (int i=0;i<5;i++) {
+      _check_brcm_fw_status(slot_id,dev_id);
+      sleep(1);
+    }
+
   } else {
     sleep(2);
     //# Step 5: host informs ASIC: host Tx done

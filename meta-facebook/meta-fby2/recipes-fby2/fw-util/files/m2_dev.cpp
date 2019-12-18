@@ -90,7 +90,6 @@ class M2_DevComponent : public Component {
             server.ready();
             ret = bic_update_dev_firmware(slot_id, dev_id, UPDATE_BRCM, (char *)image.c_str(),0);
             if (ret == FW_STATUS_SUCCESS) {
-              sleep(4);
               pal_set_device_power(slot_id, dev_id+1, SERVER_POWER_CYCLE);
             } else {
               syslog(LOG_WARNING, "update: Slot%u Dev%d brcm vk failed", slot_id, dev_id);

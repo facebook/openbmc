@@ -205,3 +205,10 @@ i2c_device_add "$(get_mux_bus_num 22)" 0x52 24c64           # FAN tray
 
 # # i2c-mux 11, channel 8
 i2c_device_add "$(get_mux_bus_num 23)" 0x52 24c64           # FAN tray
+
+#
+# Check if I2C devices are bound to drivers. A summary message (total #
+# of devices and # of devices without drivers) will be dumped at the end
+# of this function.
+#
+i2c_check_driver_binding

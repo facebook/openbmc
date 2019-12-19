@@ -919,6 +919,8 @@ static int pldm_monitoring(int sock_fd)
               (PLDM_COMMON_REQ_LEN + sizeof(PLDM_Get_StateSensor_Reading_t)),
               (unsigned char *)&(pldmReq.common), 0);
       }
+      if (ret)
+        break; //Prepare_ncsi_req_msg failed as low memory, no reason to continue
       // fill in the look up table, store in the sensor index to IID table
       //  so when we received the PLDM response, we can map the response back
       //  to sensor
@@ -934,7 +936,9 @@ static int pldm_monitoring(int sock_fd)
       syslog(LOG_ERR, "tx: failed to send pldm_msg, status ret = %d, errno=%d\n",
              ret, errno);
     }
+    free_ncsi_req_msg(&pldm_msg);
   }
+
   return ret;
 }
 

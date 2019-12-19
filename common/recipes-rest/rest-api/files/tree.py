@@ -106,6 +106,8 @@ class tree:
             child.setup(app, support_post)
 
     def merge(self, other):
+        if other is None:
+            return
         if self.name != other.name:
             raise ValueError("Nodes {} and {} differ".format(self.name, other.name))
 

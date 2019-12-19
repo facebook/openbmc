@@ -27,6 +27,7 @@ LIC_FILES_CHKSUM = "file://rest.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa
 
 SRC_URI = "file://rest.py \
            file://common_tree.py \
+           file://plat_tree.py \
            file://rest_crawler.py \
            file://node.py \
            file://tree.py \

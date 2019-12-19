@@ -45,4 +45,6 @@ IMAGE_INSTALL += " \
   ipmb-util\
   me-util \
   i2craw \
+  tpm2-tools \
+  tpm2-abrmd \
   "

@@ -18,36 +18,20 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __BIC_H__
-#define __BIC_H__
+#ifndef __BIC_VR_FWUPDATE_H__
+#define __BIC_VR_FWUPDATE_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include "bic_xfer.h"
-#include "bic_power.h"
-#include "bic_fwupdate.h"
-#include "bic_ipmi.h"
-#include "error.h"
+#include "bic.h"
 
-enum {
-  FW_CPLD = 1,
-  FW_BIC,
-  FW_ME,
-  FW_BIC_BOOTLOADER,
-  FW_VR,
-};
-
-enum {
-  BIC_EOK = 0,
-  BIC_ENOTSUP = -ENOTSUP,
-  BIC_ENOTREADY = -EAGAIN,
-  /* non system errors start from -256 downwards */
-};
+int update_bic_vr(uint8_t slot_id, char *image, uint8_t force);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-#endif /* __BIC_H__ */
+#endif /* __BIC_FWUPDATE_H__ */

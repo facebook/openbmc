@@ -31,15 +31,17 @@ SRC_URI =+ "file://Makefile \
            file://platform.cpp \
            file://fscd.cpp \
            file://fscd.h \
+           file://bic_vr.cpp \
+           file://bic_vr.h \
           "
 
 S = "${WORKDIR}"
 
 #The definition for the project
 CXXFLAGS += " -DBIC_SUPPORT "
-DEPENDS += "libipmi libipmb libbic libocpdbg-lcd libobmc-i2c"
-RDEPENDS_${PN} += "libipmi libipmb libbic libocpdbg-lcd libobmc-i2c"
-LDFLAGS += " -lipmi -lipmb -lbic -locpdbg-lcd -lobmc-i2c"
+DEPENDS += "libipmi libipmb libbic libocpdbg-lcd libobmc-i2c libfpga"
+RDEPENDS_${PN} += "libipmi libipmb libbic libocpdbg-lcd libobmc-i2c libfpga"
+LDFLAGS += " -lipmi -lipmb -lbic -locpdbg-lcd -lobmc-i2c -lfpga"
 
 LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -lpal -lvbs -ldl "
 DEPENDS += "jansson libpal dtc zlib openssl libvbs "

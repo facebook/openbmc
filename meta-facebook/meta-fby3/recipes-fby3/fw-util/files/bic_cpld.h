@@ -12,6 +12,7 @@ class CpldComponent : public Component {
     CpldComponent(std::string fru, std::string board, std::string comp, uint8_t _slot_id, uint8_t _bus, uint8_t _addr, uint8_t _intf)
       : Component(fru, board, comp), slot_id(_slot_id), bus(_bus), addr(_addr), intf(_intf){}
     int print_version();
+    int update(std::string image);
 };
 
 #endif

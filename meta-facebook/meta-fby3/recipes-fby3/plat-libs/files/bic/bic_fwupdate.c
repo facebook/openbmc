@@ -31,7 +31,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "bic_fwupdate.h"
-
+#include "bic_cpld_fwupdate.h"
+#include "bic_vr_fwupdate.h"
 //#define DEBUG
 
 /****************************/
@@ -903,6 +904,12 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t f
       break;
     case UPDATE_BIC_BOOTLOADER:
       ret = update_fw_via_bic(slot_id, UPDATE_BIC_BOOTLOADER, path, force);
+      break;
+    case UPDATE_CPLD:
+      ret = update_bic_cpld(slot_id, path, intf, force);
+      break;
+    case UPDATE_VR:
+      ret = update_bic_vr(slot_id, path, force);
       break;
   }
  

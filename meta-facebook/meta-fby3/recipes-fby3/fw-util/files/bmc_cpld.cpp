@@ -19,17 +19,17 @@ int BmcCpldComponent::get_cpld_version(uint8_t *ver) {
   uint8_t tlen = 4;
   uint8_t rlen = 4;
   int i2cfd = 0;
-  string i2cdev("/dev/i2c-12");
+  string i2cdev = "/dev/i2c-" + to_string(bus);
 
   if ((i2cfd = open(i2cdev.c_str(), O_RDWR)) < 0) {
     printf("Failed to open %s\n", i2cdev.c_str());
     return -1;
   }
 
-  if (ioctl(i2cfd, I2C_SLAVE, addr>>1) < 0) {
+  if (ioctl(i2cfd, I2C_SLAVE, addr) < 0) {
     printf("Failed to talk to slave@0x%02X\n", addr);
   } else {
-    ret = i2c_rdwr_msg_transfer(i2cfd, addr, tbuf, tlen, ver, rlen);
+    ret = i2c_rdwr_msg_transfer(i2cfd, addr << 1, tbuf, tlen, ver, rlen);
   }
 
   if ( i2cfd > 0 ) close(i2cfd);
@@ -37,6 +37,11 @@ int BmcCpldComponent::get_cpld_version(uint8_t *ver) {
   return ret;
 }
 
+/*
+ * The definition of ON_CHIP_FLASH_USER_VER in fby3 is different to libfpga. 
+ * TODO: We should add ON_CHIP_FLASH_USER_VER into altera_max10_attr_t, 
+ * so it can be defined by each project.
+*/
 int BmcCpldComponent::print_version()
 {
   uint8_t ver[4] = {0};
@@ -57,4 +62,21 @@ int BmcCpldComponent::print_version()
     printf("%s CPLD Version: NA (%s)\n", fru_name.c_str(), err.c_str());
   }
   return 0;
+}
+
+int BmcCpldComponent::update(string image)
+{
+  int ret;
+
+  if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
+    printf("Cannot open i2c!\n");
+    return -1;
+  }
+
+  ret = cpld_program((char *)image.c_str());
+  cpld_intf_close(INTF_I2C);
+  if (ret) {
+    printf("Error Occur at updating CPLD FW!\n");
+  }
+  return ret;
 }

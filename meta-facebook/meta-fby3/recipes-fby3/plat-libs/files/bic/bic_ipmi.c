@@ -48,48 +48,6 @@ typedef struct _sdr_rec_hdr_t {
 } sdr_rec_hdr_t;
 #pragma pack(pop)
 
-// Repack data according to the interface
-int
-bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen, uint8_t intf) {
-  int ret = 0;
-  uint8_t tmp_buf[MAX_IPMB_RES_LEN] = {0x0};
-  uint8_t tmp_len = 0;
-
-  switch(intf) {
-    case NONE_INTF:
-      ret = bic_ipmb_wrapper(slot_id, netfn, cmd, tbuf, tlen, rbuf, rlen);
-      break;
-    case FEXP_BIC_INTF:
-    case BB_BIC_INTF:
-    case REXP_BIC_INTF:
-      if ( tlen + MIN_IPMB_REQ_LEN + MIN_IPMB_BYPASS_LEN > MAX_IPMB_RES_LEN ) {
-        syslog(LOG_WARNING, "%s() xfer length is too long. len=%d, max=%d", __func__, (tlen + MIN_IPMB_REQ_LEN + MIN_IPMB_BYPASS_LEN), MAX_IPMB_RES_LEN);
-        return BIC_STATUS_FAILURE;
-      }
-
-      tmp_len = 3;
-      memcpy(tmp_buf, (uint8_t *)&IANA_ID, tmp_len);
-      tmp_buf[tmp_len++] = intf;
-      tmp_buf[tmp_len++] = netfn << 2;
-      tmp_buf[tmp_len++] = cmd;
-      memcpy(&tmp_buf[tmp_len], tbuf, tlen);
-      tmp_len += tlen;
-
-      ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tmp_buf, tmp_len, rbuf, rlen);
-      //rbuf[6] is the completion code
-      if ( ret == BIC_STATUS_SUCCESS && rbuf[6] != CC_SUCCESS ) {
-        printf("The 2nd BIC cannot be reached. CC: 0x%2X\n", rbuf[6]);
-        ret = BIC_STATUS_FAILURE;
-      } else {
-        //catch the data and ignore the packet of the bypass command.
-        memmove(rbuf, &rbuf[7], *rlen - 7);
-      }
-
-      break;
-  }
-  return ret;
-}
-
 // S/E - Get Sensor reading
 // Netfn: 0x04, Cmd: 0x2d
 int
@@ -369,6 +327,18 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t intf) {
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
   int ret;
+  uint8_t bmc_location = 0;
+
+  if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    return -1;
+  }
+
+  if ( bmc_location == BB_BMC && (intf == BB_BIC_INTF) ) {
+    return -1;
+  } else if ( bmc_location == NIC_BMC && (intf == FEXP_BIC_INTF) ) {
+    return -1;
+  }
 
   // File the IANA ID
   memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
@@ -407,4 +377,100 @@ bic_get_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8
   tbuf[6] = (reg >> 0) & 0xff;
   tlen = 7;
   return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, ver, &rlen, intf);
+}
+
+// Custom Command for getting vr version/device id
+int
+bic_get_vr_device_id(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr, uint8_t intf) {
+  uint8_t tbuf[32] = {0};
+  uint8_t tlen = 0;
+  int ret = 0;
+
+  tbuf[0] = (bus << 1) + 1;
+  tbuf[1] = addr;
+  tbuf[2] = 0x07; //read back 7 bytes
+  tbuf[3] = 0xAD; //get device id command
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, rlen, intf);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to get vr device id, ret=%d", __func__, ret);
+  } else {
+    *rlen = rbuf[0];//read cnt
+    memmove(rbuf, &rbuf[1], *rlen);
+  }
+
+  return ret;
+}
+
+int
+bic_get_vr_ver(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen, uint8_t addr, uint8_t intf) {
+  uint8_t tbuf[32] = {0};
+  uint8_t tlen = 0;
+  int ret = 0;
+  const uint8_t bus = 0x8;
+
+  ret = bic_get_vr_device_id(slot_id, comp, rbuf, rlen, bus, addr, intf);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to get vr device id, ret=%d", __func__, ret);
+    return ret;
+  }
+
+  tbuf[0] = (bus << 1) + 1;
+  tbuf[1] = addr;
+
+  //The length of GET_DEVICE_ID of ISL is different to TI.
+  if ( *rlen > 4 ) {
+    //do nothing now
+  } else {
+    //ISL
+    tbuf[2] = 0x00; //read cnt
+    tbuf[3] = 0xC7; //command code
+    tbuf[4] = 0x3F; //reg
+    tbuf[5] = 0x00; //dummy data
+    tlen = 6;
+    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, rlen, intf);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to send command code to get vr ver. ret=%d", __func__, ret);
+      return ret;
+    }
+
+    tbuf[2] = 0x04; //read cnt
+    tbuf[3] = 0xC5; //command code
+    tlen = 4;
+  }
+
+  return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, rlen, intf);
+}
+
+int
+bic_is_m2_exp_prsnt(uint8_t slot_id) {
+  uint8_t tbuf[4] = {0};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 4;
+  uint8_t rlen = 0;
+  int ret = 0;
+  int present = 0;
+
+  tbuf[0] = 0x05; //bus id
+  tbuf[1] = 0x42; //slave addr
+  tbuf[2] = 0x01; //read 1 byte
+  tbuf[3] = 0x0D; //register offset
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+  present = rbuf[0] & 0xC;
+
+  if ( ret < 0 ) {
+    return -1;
+  } else {
+    if ( present == 0) {
+      return 3; //1OU+2OU present
+    } else if ( present == 8) {
+      return 1; //1OU present
+    } else if ( present == 4) {
+      return 2; //2OU present
+    }
+  }
+
+  return 0;
 }

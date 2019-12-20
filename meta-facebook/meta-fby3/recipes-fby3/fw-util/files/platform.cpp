@@ -1,6 +1,7 @@
 #include "bic_fw.h"
 #include "bic_me.h"
 #include "bic_cpld.h"
+#include "bic_vr.h"
 #include "bmc_cpld.h"
 #include "bios.h"
 #include "fscd.h"
@@ -66,7 +67,7 @@ CpldComponent cpld_fw3("slot3", "sb", "cpld", FRU_SLOT3, 2, 0x80, NONE_INTF);
 CpldComponent cpld_fw4("slot4", "sb", "cpld", FRU_SLOT4, 2, 0x80, NONE_INTF);
 
 /*The CPLD of BMC*/
-BmcCpldComponent cpld_bmc("bmc", "bmc", "cpld", 12, 0x80);
+BmcCpldComponent cpld_bmc("bmc", "bmc", "cpld", MAX10_10M25, 12, 0x40);
 
 /*The BIOS of the server board*/
 BiosComponent bios_fw1("slot1", "sb", "bios", FRU_SLOT1, NONE_INTF);
@@ -76,5 +77,11 @@ BiosComponent bios_fw4("slot4", "sb", "bios", FRU_SLOT4, NONE_INTF);
 
 /*The fscd of BMC*/
 FscdComponent fscd("bmc", "bmc", "fscd");
+
+/*The VR of the server board*/
+VrComponent vr_fw1("slot1", "sb", "vr", FRU_SLOT1, NONE_INTF);
+VrComponent vr_fw2("slot2", "sb", "vr", FRU_SLOT2, NONE_INTF);
+VrComponent vr_fw3("slot3", "sb", "vr", FRU_SLOT3, NONE_INTF);
+VrComponent vr_fw4("slot4", "sb", "vr", FRU_SLOT4, NONE_INTF);
 
 #endif

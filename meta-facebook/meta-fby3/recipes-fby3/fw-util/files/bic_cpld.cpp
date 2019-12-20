@@ -35,4 +35,17 @@ int CpldComponent::print_version()
   return 0;
 
 }
+
+int CpldComponent::update(string image)
+{
+  int ret;
+  try {
+    //TODO: the function is not ready, we skip it now.
+    //server.ready()
+    ret = bic_update_fw(slot_id, UPDATE_CPLD, intf, (char *)image.c_str(), 0);
+  } catch (string err) {
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+  return ret;
+}
 #endif

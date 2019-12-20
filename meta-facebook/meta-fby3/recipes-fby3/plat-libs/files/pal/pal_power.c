@@ -67,7 +67,7 @@ server_power_12v_on(uint8_t fru) {
   msleep(100);
 
   tbuf[0] = 0x0;
-  tbuf[1] = (rbuf[0] | (0x1 << fru));
+  tbuf[1] = (rbuf[0] | (0x1 << (fru-1)));
   tlen = 2;
   ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
   if ( ret < 0 ) {
@@ -131,7 +131,7 @@ server_power_12v_off(uint8_t fru) {
   msleep(100);
 
   tbuf[0] = 0x0;
-  tbuf[1] = (rbuf[0] &~(0x1 << fru));
+  tbuf[1] = (rbuf[0] &~(0x1 << (fru-1)));
   tlen = 2;
   ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
   if ( ret < 0 ) {
@@ -160,9 +160,20 @@ error_exit:
 
 int
 pal_get_server_12v_power(uint8_t slot_id, uint8_t *status) {
-  //TODO: need to check the status with a gpio
-  *status = 1;
-  return POWER_STATUS_OK;
+  int ret = 0;
+
+  ret = fby3_common_server_stby_pwr_sts(slot_id, status);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s: Failed to run fby3_common_server_stby_pwr_sts on slot%d\n", __func__, slot_id);
+  }
+
+  if ( *status == 1 ) {
+    *status = SERVER_12V_ON;
+  } else {
+    *status = SERVER_12V_OFF;
+  }
+
+  return ret; 
 }
 
 int
@@ -179,18 +190,7 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
     return ret;
   }
 
-  ret = fby3_common_server_stby_pwr_sts(fru, status);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s: Failed to run fby3_common_server_stby_pwr_sts on slot%d\n", __func__, fru);
-  }
-
-  if ( *status == 1 ) {
-    *status = SERVER_12V_ON;
-  } else {
-    *status = SERVER_12V_OFF;
-  }
-
-  return ret;
+  return pal_get_server_12v_power(fru, status);
 }
 
 // Power Off, Power On, or Power Reset the server in given slot

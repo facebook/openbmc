@@ -141,13 +141,36 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
   close(fd);
   rename(sdr_temp_path, sdr_path);
 
+  sprintf(sdr_temp_path, "/tmp/sdr_slot%d.bin", slot_id);
+
+  FILE *fp1 = fopen(sdr_temp_path, "a");
+  FILE *fp2 = fopen(sdr_path, "rb");
+  char c;
+  int count = 0, filesize = 0;
+
+  if (fp1 == NULL || fp2 == NULL) {
+    return ret;
+  }
+
+  fseek(fp2, 0L, SEEK_END);
+  filesize = ftell(fp2);
+  rewind(fp2);
+
+  while ((c = fgetc(fp2)) != -1 && filesize != count) {
+    fputc(c, fp1);
+    count++;
+  }
+
+  fclose(fp1);
+  fclose(fp2);
+
   return ret;
 
 }
 
 int
 sdr_cache_init(uint8_t slot_id) {
-  int ret = 0, rc;
+  int ret = 0, remote_f_ret = 0, remote_r_ret = 0, present = 0, rc;
   int fd;
   int retry = 0;
   uint8_t rlen;
@@ -222,6 +245,21 @@ sdr_cache_init(uint8_t slot_id) {
 
   close(fd);
   rename(sdr_temp_path, sdr_path);
+
+  // Get remote SDR
+  present = bic_is_m2_exp_prsnt(slot_id);
+  if (present == 1) {
+    remote_f_ret = remote_sdr_cache_init(slot_id, FEXP_BIC_INTF);
+  } else if (present == 2) {
+    remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
+  } else if (present == 3) {
+    remote_f_ret = remote_sdr_cache_init(slot_id, FEXP_BIC_INTF);
+    remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
+  }
+  if (remote_f_ret != 0 || remote_r_ret != 0) {
+    syslog(LOG_CRIT, "Fail on getting Remote Slot%u SDR", slot_id);
+    return (remote_f_ret || remote_r_ret);
+  }
 
   return ret;
 }

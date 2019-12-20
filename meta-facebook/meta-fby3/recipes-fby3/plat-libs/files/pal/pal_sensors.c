@@ -21,6 +21,12 @@
 #define MAX_SDR_LEN 64
 #define SDR_PATH "/tmp/sdr_%s.bin"
 
+static int read_adc_val(uint8_t adc_id, float *value);
+static int read_temp(uint8_t snr_id, float *value);
+static int read_hsc_vin(uint8_t hsc_id, float *value);
+static int read_hsc_temp(uint8_t hsc_id, float *value);
+static int pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value);
+
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 static bool sdr_init_done[MAX_NUM_FRUS] = {false};
 
@@ -64,7 +70,7 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_VCCIO_VR_Temp,
   BIC_SENSOR_P3V3_STBY_VR_TEMP,
   BIC_SENSOR_PVDDQ_ABC_VR_TEMP,
-  BIC_SEnSOR_PVDDQ_DEF_VR_TEMP,
+  BIC_SENSOR_PVDDQ_DEF_VR_TEMP,
 
   //BIC - voltage sensors
   BIC_SENSOR_P3V3_M2A_VOL,
@@ -105,7 +111,43 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_VCCIO_VR_POUT,
   BIC_SENSOR_P3V3_STBY_VR_POUT,
   BIC_SENSOR_PVDDQ_ABC_VR_POUT,
-  BIC_SENSOR_PVDDQ_DEF_VR_POUT,  
+  BIC_SENSOR_PVDDQ_DEF_VR_POUT,
+
+  //BIC 1OU EXP Sensors
+  BIC_1OU_EXP_SENSOR_OUTLET_TEMP,
+  BIC_1OU_EXP_SENSOR_P12_VOL,
+  BIC_1OU_EXP_SENSOR_P1V8_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_STBY_VR_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_STBY2_VR_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2A_PWR,
+  BIC_1OU_EXP_SENSOR_P3V3_M2A_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2B_PWR,
+  BIC_1OU_EXP_SENSOR_P3V3_M2B_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2C_PWR,
+  BIC_1OU_EXP_SENSOR_P3V3_M2C_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2D_PWR,
+  BIC_1OU_EXP_SENSOR_P3V3_M2D_VOL,
+
+  //BIC 2OU EXP Sensors
+  BIC_2OU_EXP_SENSOR_OUTLET_TEMP,
+  BIC_2OU_EXP_SENSOR_P12_VOL,
+  BIC_2OU_EXP_SENSOR_P1V8_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_STBY_VR_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_STBY2_VR_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2A_PWR,
+  BIC_2OU_EXP_SENSOR_P3V3_M2A_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2B_PWR,
+  BIC_2OU_EXP_SENSOR_P3V3_M2B_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2C_PWR,
+  BIC_2OU_EXP_SENSOR_P3V3_M2C_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2D_PWR,
+  BIC_2OU_EXP_SENSOR_P3V3_M2D_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2E_PWR,
+  BIC_2OU_EXP_SENSOR_P3V3_M2E_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2F_PWR,
+  BIC_2OU_EXP_SENSOR_P3V3_M2F_VOL,
 };
 
 const uint8_t nic_sensor_list[] = {
@@ -122,6 +164,281 @@ PAL_ADM1278_INFO adm1278_info_list[] = {
   {ADM1278_CURRENT, 800 * ADM1278_RSENSE, 20475, 10},
   {ADM1278_POWER, 6123 * ADM1278_RSENSE, 0, 100},
   {ADM1278_TEMP, 42, 31880, 10},
+};
+
+//{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNR, UNC, LCR, LNR, LNC, Pos, Neg}
+PAL_SENSOR_MAP sensor_map[] = {
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x01
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x02
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x03
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x04
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x05
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x06
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x07
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x08
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x09
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0A
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0B
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0C
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0D
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0E
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0F
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x10
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x11
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x12
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x13
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x14
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x15
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x16
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x17
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x18
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x19
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x1A
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x1B
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x1C
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x1D
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x1E
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x1F
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x20
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x21
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x22
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x23
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x24
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x25
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x26
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x27
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x28
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x29
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2A
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2B
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2C
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2D
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2E
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2F
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x30
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x31
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x32
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x33
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x34
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x35
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x36
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x37
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x38
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x39
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x3A
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x3B
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x3C
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x3D
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x3E
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x3F
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x40
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x41
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x42
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x43
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x44
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x45
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x46
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x47
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x48
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x49
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x4A
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x4B
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x4C
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x4D
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x4E
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x4F
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x50
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x51
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x52
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x53
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x54
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x55
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x56
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x57
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x58
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x59
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5A
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5B
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5C
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5D
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5E
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5F
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x60
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x61
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x62
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x63
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x64
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x65
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x66
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x67
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x68
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x69
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6A
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6B
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6C
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6D
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6E
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6F
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x70
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x71
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x72
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x73
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x74
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x75
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x76
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x77
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x78
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x79
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7A
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7B
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7C
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7D
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7E
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7F
+
+  {"BMC_INLET_TEMP",  TEMP_INLET,  read_temp, true, {40, 0, 0, 20, 0, 0, 0, 0}, TEMP}, //0x80
+  {"BMC_OUTLET_TEMP", TEMP_OUTLET, read_temp, true, {80, 0, 0, 20, 0, 0, 0, 0}, TEMP}, //0x81
+  {"NIC_SENSOR_MEZZ_TEMP", TEMP_MEZZ, read_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x82
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x83
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x84
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x85
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x86
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x87
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x88
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x89
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8A
+  {"BMC_SENSOR_P5V", ADC0, read_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x8B
+  {"BMC_SENSOR_P12V", ADC1, read_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x8C
+  {"BMC_SENSOR_P3V3_STBY", ADC2, read_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x8D
+  {"BMC_SENSOR_P1V15_STBY", ADC3, read_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x8E
+  {"BMC_SENSOR_P1V2_STBY", ADC4, read_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x8F
+
+  {"BMC_SENSOR_P2V5_STBY", ADC5, read_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x90
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x91
+  {"BMC_SENSOR_HSC_IN_VOLT", 0, read_hsc_vin, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x92
+  {"BMC_SENSOR_HSC_TEMP", 0, read_hsc_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x93
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x94
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x95
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x96
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x97
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x98
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x99
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9A
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9B
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9C
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9D
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9E
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9F
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA0
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA1
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA2
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA3
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA4
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA5
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA6
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA7
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA8
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA9
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAA
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAB
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAC
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAD
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAF
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB0
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB1
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0XB2
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB3
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB4
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB5
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB6
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB7
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB8
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB9
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBA
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBB
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBC
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBD
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBE
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBF
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC0
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC1
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC2
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC3
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC4
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC8
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC9
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCA
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD0
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD1
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD2
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD3
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD4
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD5
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD6
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD7
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD8
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD9
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDA
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDB
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDC
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDD
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDE
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDF
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE0
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE1
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE2
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE3
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE4
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE5
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE6
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE7
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE8
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE9
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEA
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEB
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEC
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xED
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEE
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEF
+
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF0
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF1
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF2
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF3
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF4
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF5
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF6
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF7
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF8
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF9
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFA
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFB
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFC
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFD
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFE
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFF
 };
 
 //HSC
@@ -266,13 +583,36 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
 }
 
 static int
-read_sysfs_temp(const char *chip, const char *label, float *value) {
-  return sensors_read(chip, label, value);
+read_temp(uint8_t id, float *value) {
+  struct {
+    const char *chip;
+    const char *label;
+  } devs[] = {
+    {"lm75-i2c-12-4e",  "BMC_INLET_TEMP"},
+    {"lm75-i2c-12-4f",  "BMC_OUTLET_TEMP"},
+    {"tmp421-i2c-8-1f", "NIC_SENSOR_MEZZ_TEMP"},
+  };
+  if (id >= ARRAY_SIZE(devs)) {
+    return -1;
+  }
+
+  return sensors_read(devs[id].chip, devs[id].label, value);
 }
 
 static int
-read_sysfs_volt(const char *label, float *value) {
-  return sensors_read_adc(label, value);
+read_adc_val(uint8_t adc_id, float *value) {
+  const char *adc_label[] = {
+    "BMC_SENSOR_P5V",
+    "BMC_SENSOR_P12V",
+    "BMC_SENSOR_P3V3_STBY",
+    "BMC_SENSOR_P1V15_STBY",
+    "BMC_SENSOR_P1V2_STBY",
+    "BMC_SENSOR_P2V5_STBY",
+  };
+  if (adc_id >= ARRAY_SIZE(adc_label)) {
+    return -1;
+  }
+  return sensors_read_adc(adc_label[adc_id], value);
 }
 
 static void
@@ -287,12 +627,12 @@ get_adm1278_info(uint8_t hsc_id, uint8_t type, uint8_t *addr, float* m, float* b
 }
 
 static int
-read_hsc_temp(float *value) {
+read_hsc_temp(uint8_t hsc_id, float *value) {
   uint8_t tbuf[1] = {0x00};
   uint8_t rbuf[2] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  uint8_t addr = 0;
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr;
   float m, b, r;
   int retry = 3;
   int ret = -1;
@@ -327,12 +667,12 @@ error_exit:
 }
 
 static int
-read_hsc_vin(float *value) {
+read_hsc_vin(uint8_t hsc_id, float *value) {
   uint8_t tbuf[1] = {0x00};
   uint8_t rbuf[2] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  uint8_t addr = 0;
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr;
   float m, b, r;
   int retry = 3;
   int ret = -1;
@@ -379,7 +719,13 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
     return READING_NA;
   }
 
-  ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
+  if ( (bic_is_m2_exp_prsnt(fru) == 1 || bic_is_m2_exp_prsnt(fru) == 3) && (sensor_num >= 0x40 && sensor_num <= 0x7F)) { // 1OU Exp
+    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
+  } else if ( (bic_is_m2_exp_prsnt(fru) == 2 || bic_is_m2_exp_prsnt(fru) == 3) && (sensor_num >= 0x80 && sensor_num <= 0xBF)) { // 2OU Exp
+    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
+  } else {
+    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
+  }
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). snr#0x%x", __func__, sensor_num);
     return READING_NA;
@@ -439,9 +785,11 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char str[MAX_VALUE_LEN] = {0};
   char fru_name[32];
   int ret=0;
+  uint8_t id=0;
 
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
+  id = sensor_map[sensor_num].id;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -451,44 +799,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value);
       break;
     case FRU_BMC:
-      switch (sensor_num) {
-        case BMC_SENSOR_OUTLET_TEMP:
-          ret = read_sysfs_temp("lm75-i2c-12-4f", "BMC_OUTLET_TEMP", (float*)value);
-          break;
-        case BMC_SENSOR_INLET_TEMP:
-          ret = read_sysfs_temp("lm75-i2c-12-4e", "BMC_INLET_TEMP", (float*)value);
-          break; 
-        case BMC_SENSOR_P5V:
-          ret = read_sysfs_volt("BMC_SENSOR_P5V", (float*)value);
-          break;
-        case BMC_SENSOR_P12V:
-          ret = read_sysfs_volt("BMC_SENSOR_P12V", (float*)value);
-          break;
-        case BMC_SENSOR_P3V3_STBY:
-          ret = read_sysfs_volt("BMC_SENSOR_P3V3_STBY", (float*)value);
-          break;
-        case BMC_SENSOR_P1V15_BMC_STBY:
-          ret = read_sysfs_volt("BMC_SENSOR_P1V15_STBY", (float*)value);
-          break;
-        case BMC_SENSOR_P1V2_BMC_STBY:
-          ret = read_sysfs_volt("BMC_SENSOR_P1V2_STBY", (float*)value);
-          break;
-        case BMC_SENSOR_P2V5_BMC_STBY:
-          ret = read_sysfs_volt("BMC_SENSOR_P2V5_STBY", (float*)value);
-          break;
-        case BMC_SENSOR_HSC_TEMP:
-          ret = read_hsc_temp((float*)value);
-          break;
-        case BMC_SENSOR_HSC_IN_VOLT:
-          ret = read_hsc_vin((float*)value);
-          break;
-      }
     case FRU_NIC:
-      switch (sensor_num) {
-        case NIC_SENSOR_MEZZ_TEMP:
-          read_sysfs_temp("tmp421-i2c-8-1f", "NIC_SENSOR_MEZZ_TEMP", (float*) value);
-          break;
-      }
+      ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
       break;
       
     default:
@@ -517,73 +829,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 int
 pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   switch(fru) {
-  case FRU_BMC:
-    switch (sensor_num) {
-      case BMC_SENSOR_INLET_TEMP:
-        sprintf(name, "BMC_INLET_TEMP");
-        break;
-      case BMC_SENSOR_OUTLET_TEMP:
-        sprintf(name, "BMC_OUTLET_TEMP");
-        break;
-      case BMC_SENSOR_P5V:
-        sprintf(name, "BMC_SENSOR_P5V");
-        break;
-      case BMC_SENSOR_P12V:
-        sprintf(name, "BMC_SENSOR_P12V");
-        break;
-      case BMC_SENSOR_P3V3_STBY:
-        sprintf(name, "BMC_SENSOR_P3V3_STBY");
-        break;
-      case BMC_SENSOR_P1V15_BMC_STBY:
-        sprintf(name, "BMC_SENSOR_P1V15_STBY");
-        break;
-      case BMC_SENSOR_P1V2_BMC_STBY:
-        sprintf(name, "BMC_SENSOR_P1V2_STBY");
-        break;
-      case BMC_SENSOR_P2V5_BMC_STBY:
-        sprintf(name, "BMC_SENSOR_P2V5_STBY");
-        break;
-      case BMC_SENSOR_FAN0_TACH:
-        sprintf(name, "BMC_SENSOR_FAN0_TACH0");
-        break;
-      case BMC_SENSOR_FAN1_TACH:
-        sprintf(name, "BMC_SENSOR_FAN0_TACH1");
-        break;
-      case BMC_SENSOR_FAN2_TACH:
-        sprintf(name, "BMC_SENSOR_FAN0_TACH2");
-        break;
-      case BMC_SENSOR_FAN3_TACH:
-        sprintf(name, "BMC_SENSOR_FAN0_TACH3");
-        break;
-      case BMC_SENSOR_FAN4_TACH:
-        sprintf(name, "BMC_SENSOR_FAN0_TACH4");
-        break;
-      case BMC_SENSOR_FAN5_TACH:
-        sprintf(name, "BMC_SENSOR_FAN0_TACH5");
-        break;
-      case BMC_SENSOR_FAN6_TACH:
-        sprintf(name, "BMC_SENSOR_FAN0_TACH6");
-        break;
-      case BMC_SENSOR_FAN7_TACH:
-        sprintf(name, "BMC_SENSOR_FAN0_TACH7");
-        break;
-      case BMC_SENSOR_HSC_TEMP:
-        sprintf(name, "BMC_SENSOR_HSC_TEMP");
-        break;
-      case BMC_SENSOR_HSC_IN_VOLT:
-        sprintf(name, "BMC_SENSOR_HSC_IN_VOLT");
-        break;
-    }
-  case FRU_NIC:
-    switch (sensor_num) {
-      case NIC_SENSOR_MEZZ_TEMP:
-        sprintf(name, "NIC_SENSOR_MEZZ_TEMP");
-        break;
-    }
-    break;
-    
-  default:
-    return -1;
+    case FRU_BMC:
+    case FRU_NIC:
+      sprintf(name, "%s", sensor_map[sensor_num].snr_name);
+      break;
+    default:
+      return -1;
   }
   return 0;
 }
@@ -749,6 +1000,7 @@ pal_sdr_init(uint8_t fru) {
 int
 pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   int ret = 0;
+  uint8_t scale = sensor_map[sensor_num].units;
 
   if (fru == FRU_SLOT1 || fru == FRU_SLOT2 || \
       fru == FRU_SLOT3 || fru == FRU_SLOT4) {
@@ -757,31 +1009,21 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     return ret;
   }
 
-  switch(sensor_num) {
-    case BMC_SENSOR_OUTLET_TEMP:
-    case BMC_SENSOR_INLET_TEMP:
-    case NIC_SENSOR_MEZZ_TEMP:
-    case BMC_SENSOR_HSC_TEMP:
+  switch(scale) {
+    case TEMP:
       sprintf(units, "C");
       break;
-    case BMC_SENSOR_P5V:
-    case BMC_SENSOR_P12V:
-    case BMC_SENSOR_P3V3_STBY:
-    case BMC_SENSOR_P1V15_BMC_STBY:
-    case BMC_SENSOR_P1V2_BMC_STBY:
-    case BMC_SENSOR_P2V5_BMC_STBY:
-    case BMC_SENSOR_HSC_IN_VOLT:
+    case FAN:
+      sprintf(units, "RPM");
+      break;
+    case VOLT:
       sprintf(units, "Volts");
       break;
-    case BMC_SENSOR_FAN0_TACH:
-    case BMC_SENSOR_FAN1_TACH:
-    case BMC_SENSOR_FAN2_TACH:
-    case BMC_SENSOR_FAN3_TACH:
-    case BMC_SENSOR_FAN4_TACH:
-    case BMC_SENSOR_FAN5_TACH:
-    case BMC_SENSOR_FAN6_TACH:
-    case BMC_SENSOR_FAN7_TACH:
-      sprintf(units, "RPM");
+    case CURR:
+      sprintf(units, "Amps");
+      break;
+    case POWER:
+      sprintf(units, "Watts");
       break;
     default:
       syslog(LOG_WARNING, "%s() unknown sensor number %x", __func__, sensor_num);

@@ -308,3 +308,13 @@ fby3_common_get_bmc_location(uint8_t *id) {
 
   return 0;
 }
+
+int
+fby3_common_get_slot_type(uint8_t fru) {
+  int type = -1;
+  if ((fru >= FRU_SLOT1) && (fru <= FRU_SLOT4)) {
+    return 0;
+  }
+
+  return type;
+}

@@ -713,3 +713,36 @@ pal_set_dev_guid(uint8_t fru, char *str) {
   pal_populate_guid(guid, str);
   return pal_set_guid(OFFSET_DEV_GUID, guid);
 }
+
+int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  uint8_t pcie_conf = 0xff;
+  uint8_t *data = res_data;
+  int ret = 0;
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    return -1;
+  }
+
+  if (bmc_location == BB_BMC) {
+      pcie_conf = 0x01;
+  } else {
+      pcie_conf = 0x03;
+  }
+
+  *data++ = pcie_conf;
+  *res_len = data - res_data;
+  return ret;
+}
+
+int
+pal_is_slot_server(uint8_t fru)
+{
+  if (fby3_common_get_slot_type(fru) == 0) {
+    return 1;
+  }
+  return 0;
+}

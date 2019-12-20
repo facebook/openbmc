@@ -97,6 +97,7 @@
 
 #define PCIE_PHY_FW 0x00
 #define BOOT_ROM_PATCH_FW 0x01
+#define UNKOWN_FW -1
 
 #pragma pack(push, 1)
 typedef struct _sdr_rec_hdr_t {
@@ -1178,6 +1179,41 @@ check_bic_image(uint8_t slot_id, int fd, long size) {
 }
 
 static int
+check_gpv2_rp_image(int *rp_type, int fd, long size) {
+  int offs;
+  uint8_t buf[4];
+  const uint8_t hdr_pcie_phy[] = {0x45,0x49,0x43,0x50}; //EICP
+  const uint8_t hdr_rom_patch[] = {0x48,0x54,0x41,0x50}; //HTAP
+
+  if (size < 4)
+    return -1;
+
+  if (read(fd, buf, 4) != 4)
+    return -1;
+
+  if (memcmp(buf, hdr_pcie_phy, 4) == 0) {
+    printf("Update PCIE PHY FW\n");
+    syslog(LOG_CRIT, "Update VSI: PCIE PHY FW\n");
+    *rp_type = PCIE_PHY_FW;
+  } else if (memcmp(buf, hdr_rom_patch, 4) == 0) {
+    printf("Update ROM PATCH FW\n");
+    syslog(LOG_CRIT, "Update VSI: ROM PATCH FW\n");
+    *rp_type = BOOT_ROM_PATCH_FW;
+  } else {
+    printf("invalid file for RP!\n");
+    *rp_type = UNKOWN_FW;
+    return -1;
+  }
+
+  if ((offs = lseek(fd, 0, SEEK_SET))) {
+    syslog(LOG_ERR, "%s: fail to init file offset %d, errno=%d", __func__, offs, errno);
+    return -1;
+  }
+  return 0;
+}
+
+
+static int
 _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
 #define MAX_CMD_LEN 100
 
@@ -1924,6 +1960,7 @@ bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *pat
   volatile uint16_t count, read_count;
   uint8_t buf[256] = {0};
   int fd;
+  int rp_fw_type =  UNKOWN_FW;
 
   printf("updating fw on slot %d device %d:\n", slot_id,dev_id);
 
@@ -1943,6 +1980,9 @@ bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *pat
   if (comp == UPDATE_BRCM) {
     syslog(LOG_CRIT, "Update BRCM: update brcm vk firmware on slot %d device %d\n", slot_id, dev_id);
   } else if (comp == UPDATE_VSI) {
+    if (check_gpv2_rp_image(&rp_fw_type, fd, st.st_size) < 0) {
+      goto error_exit;
+    }
     syslog(LOG_CRIT, "Update VSI: update vsi rp firmware on slot %d device %d\n", slot_id, dev_id);
   }
 
@@ -1952,6 +1992,7 @@ bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *pat
     dsize = st.st_size/100;
 
   bic_disable_sensor_monitor(slot_id, 1);
+  msleep(100);
 
   offset = 0;
   last_offset = 0;
@@ -2037,16 +2078,19 @@ bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *pat
       goto error_exit;
     }
 
+    sleep(1);
+
     //# Step 2: host informs ASIC: host will trans the image of bootrom patch
     wbuf[0] = VSI_FW_TYPE;  // offset 135
-    wbuf[1] = BOOT_ROM_PATCH_FW;
-    // wbuf[1] = PCIE_PHY_FW; // try for pcie phy update
+    wbuf[1] = rp_fw_type;
     rlen = 0; //write
     ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 2, rbuf, rlen);
     if (ret != 0) {
       syslog(LOG_DEBUG,"%s(): host will trans the image offset=%d read length=%d failed", __func__,wbuf[0],rlen);
       goto error_exit;
     }
+
+    sleep(1);
 
     //# Step 3: ASIC informs host: ASIC ready
     wbuf[0] = VSI_UPDATE_STATUS;  // offset 133
@@ -2102,6 +2146,8 @@ bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *pat
         ret = -1;
         goto error_exit;
       }
+    } else {
+      msleep(1); // wait
     }
 
     // Update counter
@@ -2163,7 +2209,7 @@ bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *pat
     sleep(2);
     //# Step 5: host informs ASIC: host Tx done
     wbuf[0] = VSI_UPDATE_STATUS;  // offset 133
-    wbuf[1] = 0x04;
+    wbuf[1] = 0x08;
     rlen = 0; //write
     ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 2, rbuf, rlen);
     if (ret != 0) {
@@ -2185,6 +2231,7 @@ bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *pat
         goto error_exit;
       }
     }
+    sleep(1);
   }
 
   ret = 0;

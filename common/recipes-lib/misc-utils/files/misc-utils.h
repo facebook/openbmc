@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+#include <time.h>
+#include <errno.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -30,6 +32,29 @@ extern "C" {
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
 #endif
+
+/* Retry till condition is true.
+   Helper macro to consolidate retry logic. Usage example:
+  if (retry_cond((rc = stuff(1, 4)) == 0, 4, 1000)) {
+    printf("stuff failed with %d even after 4 attempts\n", rc);
+  } else {
+    printf("Stuff succeeded!\n");
+  }
+*/
+#define retry_cond(oper, _num_retries, _msec) ({                          \
+  int retries;                                                            \
+  int num_retries = (int)(_num_retries);                                  \
+  int msec = (int)(_msec);                                                \
+  struct timespec ts;                                                     \
+  ts.tv_sec = msec / 1000; ts.tv_nsec = (msec % 1000) * 1000000;          \
+  for (retries = 0; retries < num_retries && !(oper); retries++) {        \
+    int res;                                                              \
+    do {                                                                  \
+      res = nanosleep(&ts, &ts);                                          \
+    } while (res && errno == EINTR);                                      \
+  }                                                                       \
+  retries == num_retries ? (!(oper) ? -1 : 0) : 0;                        \
+})
 
 typedef enum {
 	CPU_MODEL_INVALID = -1,

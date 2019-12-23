@@ -19,6 +19,8 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://mcu_fw.h \
             file://mcu_fw.cpp \
+            file://usbdbg.h \
+            file://usbdbg.cpp \
             file://cm.cpp \
             file://bios.h \
             file://bios.cpp \

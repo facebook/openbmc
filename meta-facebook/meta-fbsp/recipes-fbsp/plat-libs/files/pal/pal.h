@@ -167,6 +167,7 @@ int pal_set_fault_led(uint8_t fru, uint8_t status);
 int pal_uart_select (uint32_t base, uint8_t offset, int option, uint32_t para);
 int pal_uart_select_led_set(void);
 int pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log);
+int pal_is_debug_card_prsnt(uint8_t *status);
 
 #ifdef __cplusplus
 } // extern "C"

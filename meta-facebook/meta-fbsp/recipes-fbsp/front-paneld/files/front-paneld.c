@@ -161,10 +161,57 @@ rst_btn_handler() {
   return 0;
 }
 
+// Thread for monitoring debug card hotswap
+static void *
+debug_card_handler() {
+  int curr = -1;
+  int prev = -1;
+  uint8_t prsnt;
+  int ret;
+
+  while (1) {
+    // Check if debug card present or not
+    ret = pal_is_debug_card_prsnt(&prsnt);
+    if (ret) {
+      goto debug_card_out;
+    }
+
+    curr = prsnt;
+
+    // Check if Debug Card was either inserted or removed
+    if (curr == prev) {
+      goto debug_card_out;
+    }
+
+    if (!curr) {
+    // Debug Card was removed
+      syslog(LOG_WARNING, "Debug Card Extraction\n");
+      //UART Switch control by bmc
+      ret = pal_uart_select(AST_GPIO_BASE, UARTSW_OFFSET, UARTSW_BY_BMC, 0);
+      if (ret) {
+        goto debug_card_out;
+      }
+    } else {
+    // Debug Card was inserted
+      syslog(LOG_WARNING, "Debug Card Insertion\n");
+      //UART Switch control by debug card
+      ret = pal_uart_select(AST_GPIO_BASE, UARTSW_OFFSET, UARTSW_BY_DEBUG, 0);
+      if (ret) {
+        goto debug_card_out;
+      }
+    }
+    prev = curr;
+debug_card_out:
+      sleep(1);
+  }
+  return NULL;
+}
+
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_sync_led;
   pthread_t tid_rst_btn;
+  pthread_t tid_debug_card;
   int rc;
   int pid_file;
 
@@ -193,7 +240,14 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
+  if (pthread_create(&tid_debug_card, NULL, debug_card_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for debug card error\n");
+    exit(1);
+  }
+
   pthread_join(tid_sync_led, NULL);
   pthread_join(tid_rst_btn, NULL);
+  pthread_join(tid_debug_card, NULL);
+  
   return 0;
 }

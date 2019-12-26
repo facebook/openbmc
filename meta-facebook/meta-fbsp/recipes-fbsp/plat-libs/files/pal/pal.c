@@ -1174,3 +1174,20 @@ pal_dump_key_value(void) {
     memset(value, 0, MAX_VALUE_LEN);
   }
 }
+
+int
+pal_is_debug_card_prsnt(uint8_t *status) {
+  gpio_desc_t *desc = gpio_open_by_shadow("FM_POST_CARD_PRES_BMC_N");
+  gpio_value_t value;
+  int ret = -1;
+
+  if (!desc) {
+    return -1;
+  }
+  if (gpio_get_value(desc, &value) == 0) {
+    *status = value == GPIO_VALUE_LOW ? 1 : 0;
+    ret = 0;
+  }
+  gpio_close(desc);
+  return ret;
+}

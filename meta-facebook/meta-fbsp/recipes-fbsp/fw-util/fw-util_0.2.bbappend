@@ -21,7 +21,11 @@ SRC_URI += "file://bios.h \
             file://bios.cpp \
             file://platform.cpp \
             file://cpld.cpp \
+            file://mcu_fw.h \
+            file://mcu_fw.cpp \
             file://me.cpp \
+            file://usbdbg.h \
+            file://usbdbg.cpp \
             file://vr.cpp \
            "
 

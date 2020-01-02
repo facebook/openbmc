@@ -37,6 +37,12 @@
 #define BLKDEV_ADDR_INVALID	UINT32_MAX
 
 /*
+ * Extended CSD register size. Refer to JEDEC Standard, Section 7.4 for
+ * details.
+ */
+#define MMC_EXTCSD_SIZE		512
+
+/*
  * Following flags are copied from Micron eMMC Application Notes.
  * We may need to revisit them later (for other chips).
  */
@@ -74,6 +80,14 @@ static struct {
 	unsigned int verbose:1;
 	unsigned int secure:1;
 } mmc_flags;
+
+/*
+ * Cache of mmc registers (extcsd, csd, cid and etc.).
+ */
+static struct {
+	unsigned int extcsd_loaded:1;
+	__u8 extcsd[MMC_EXTCSD_SIZE];
+} mmc_reg_cache;
 
 /*
  * Check whether the device supports secure feature (defined in
@@ -371,6 +385,85 @@ static int mmc_erase_cmd(struct m_cmd_args *args)
 	return 0;
 }
 
+static int mmc_read_extcsd(int fd, __u8 *extcsd)
+{
+	int ret;
+	struct mmc_ioc_cmd idata;
+
+	memset(&idata, 0, sizeof(idata));
+	memset(extcsd, 0, sizeof(__u8) * MMC_EXTCSD_SIZE);
+	idata.opcode = MMC_SEND_EXT_CSD;
+	idata.blksz = MMC_EXTCSD_SIZE;
+	idata.blocks = 1;
+	mmc_ioc_cmd_set_data(idata, extcsd);
+
+	ret = ioctl(fd, MMC_IOC_CMD, &idata);
+	if (ret < 0)
+		return -1;
+
+	return 0;
+}
+
+static int mmc_load_extcsd(struct m_cmd_args *cmd_args)
+{
+	int ret;
+
+	if (!mmc_reg_cache.extcsd_loaded) {
+		ret = mmc_read_extcsd(cmd_args->dev_fd, mmc_reg_cache.extcsd);
+		if (ret != 0) {
+			MMC_ERR("failed to read extcsd: %s\n",
+				strerror(errno));
+			return -1;
+		}
+
+		mmc_reg_cache.extcsd_loaded = 1;
+	}
+
+	return 0;
+}
+
+static void mmc_dump_extcsd(__u8 *extcsd)
+{
+	int i, rows, columns, start, end;
+
+	columns = 16;
+	rows = MMC_EXTCSD_SIZE / columns;
+	assert((MMC_EXTCSD_SIZE % columns) == 0);
+
+	/*
+	 * Decimal index is used intentionally so it's consistent with
+	 * JEDEC Standard; otherwise, people will have to translate index
+	 * between dec/hex while looking up fields in the Standard doc.
+	 */
+	MMC_INFO("EXTCSD Register (decimal index, hexadecimal value):\n");
+	for (i = 0; i < rows; i++) {
+		start = i * columns;
+		end = start + columns - 1;
+
+		MMC_INFO("%-3d-%3d: ", start, end);
+		while (start <= end) {
+			MMC_INFO("%02x ", extcsd[start++]);
+
+			/*
+			 * Insert extra space between every 4 bytes for
+			 * easy reading.
+			 */
+			if ((start & 3) == 0)
+				MMC_INFO(" ");
+		}
+		MMC_INFO("\n");
+	}
+}
+
+static int mmc_read_extcsd_cmd(struct m_cmd_args *cmd_args)
+{
+	if (mmc_load_extcsd(cmd_args) != 0)
+		return -1;
+
+	mmc_dump_extcsd(mmc_reg_cache.extcsd);
+	return 0;
+}
+
 static struct m_cmd_info mmc_cmds[] = {
 	{
 		"trim",
@@ -381,6 +474,11 @@ static struct m_cmd_info mmc_cmds[] = {
 		"erase",
 		"send erase command to the mmc device",
 		mmc_erase_cmd,
+	},
+	{
+		"read-extcsd",
+		"read Extended CSD register of the mmc device",
+		mmc_read_extcsd_cmd,
 	},
 
 	/* This is the last entry. */

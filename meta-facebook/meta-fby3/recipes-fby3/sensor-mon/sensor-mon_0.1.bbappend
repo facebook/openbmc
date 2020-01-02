@@ -25,7 +25,7 @@ S = "${WORKDIR}"
 
 DEPENDS_append = "update-rc.d-native"
 
-CFLAGS_prepend = " -DDYN_THRESH_FRU1 "
+CFLAGS_prepend = " "
 
 pkgdir = "sensor-mon"
 

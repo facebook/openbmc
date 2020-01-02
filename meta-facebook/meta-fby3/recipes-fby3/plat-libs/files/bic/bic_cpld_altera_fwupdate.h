@@ -18,8 +18,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __BIC_FWUPDATE_H__
-#define __BIC_FWUPDATE_H__
+#ifndef __BIC_CPLD_ALTERA_FWUPDATE_H__
+#define __BIC_CPLD_ALTERA_FWUPDATE_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,17 +28,7 @@ extern "C" {
 #include "bic_xfer.h"
 #include "bic.h"
 
-enum {
-  UPDATE_BIOS = 0,
-  UPDATE_CPLD,
-  UPDATE_BIC_BOOTLOADER,
-  UPDATE_BIC,
-  UPDATE_VR,
-  UPDATE_PCIE_SWITCH,
-};
-
-int bic_update_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force);
-int bic_show_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf);
+int update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force);
 
 #ifdef __cplusplus
 } // extern "C"

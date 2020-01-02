@@ -10,8 +10,8 @@ LIC_FILES_CHKSUM = "file://bic.h;beginline=4;endline=16;md5=417473877b7959f38685
 SRC_URI = "file://bic \
           "
 
-SOURCES = "bic_xfer.c bic_power.c bic_ipmi.c bic_fwupdate.c bic_cpld_fwupdate.c bic_vr_fwupdate.c"
-HEADERS = "bic.h bic_xfer.h bic_power.h bic_ipmi.h bic_fwupdate.h bic_cpld_fwupdate.h bic_vr_fwupdate.h"
+SOURCES = "bic_xfer.c bic_power.c bic_ipmi.c bic_fwupdate.c bic_cpld_altera_fwupdate.c bic_cpld_lattice_fwupdate.c bic_vr_fwupdate.c"
+HEADERS = "bic.h bic_xfer.h bic_power.h bic_ipmi.h bic_fwupdate.h bic_cpld_altera_fwupdate.h bic_cpld_lattice_fwupdate.h bic_vr_fwupdate.h"
 
 CFLAGS += " -Wall -Werror -fPIC "
 LDFLAGS = "-lobmc-i2c -lipmb -lgpio-ctrl"

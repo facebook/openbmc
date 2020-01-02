@@ -120,6 +120,7 @@ int
 bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen, uint8_t intf) {
   int ret = 0;
   uint8_t tmp_buf[MAX_IPMB_RES_LEN] = {0x0};
+  uint8_t rsp_buf[MAX_IPMB_RES_LEN] = {0x0};
   uint8_t tmp_len = 0;
   uint8_t rsp_len = 0;
 
@@ -143,19 +144,15 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
       memcpy(&tmp_buf[tmp_len], tbuf, tlen);
       tmp_len += tlen;
 
-      ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tmp_buf, tmp_len, rbuf, &rsp_len);
-      //rbuf[6] is the completion code
-      if ( ret == BIC_STATUS_SUCCESS && rbuf[6] != CC_SUCCESS ) {
-        printf("The 2nd BIC cannot be reached. CC: 0x%2X\n", rbuf[6]);
+      ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tmp_buf, tmp_len, rsp_buf, &rsp_len);
+      //rsp_buf[6] is the completion code
+      if ( (ret < 0) || (ret == BIC_STATUS_SUCCESS && rsp_buf[6] != CC_SUCCESS) ) {
+        syslog(LOG_WARNING, "%s() The 2nd BIC cannot be reached. CC: 0x%02X, intf: 0x%x, ret = %d\n", __func__, rsp_buf[6], intf, ret);
         ret = BIC_STATUS_FAILURE;
       } else { 
         //catch the data and ignore the packet of the bypass command.
-        if (cmd == CMD_SENSOR_GET_SENSOR_READING) {
-          memmove(rbuf, &rbuf[7], 3);
-        } else {
-          *rlen = rsp_len - 7;
-          memmove(rbuf, &rbuf[7], *rlen);
-        }
+        *rlen = rsp_len - 7;
+        memmove(rbuf, &rsp_buf[7], *rlen);
       }
 
       break;

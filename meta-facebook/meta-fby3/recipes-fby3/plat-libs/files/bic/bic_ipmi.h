@@ -34,9 +34,11 @@ int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_s
 int bic_write_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, uint8_t intf);
 int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen, uint8_t intf);
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t intf);
+int bic_get_80port_record(uint8_t slot_id, uint8_t *rbuf, uint8_t *rlen, uint8_t intf);
 int bic_get_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf);
 int bic_get_vr_device_id(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr, uint8_t intf);
 int bic_get_vr_ver(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen, uint8_t addr, uint8_t intf);
+int bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf);
 int bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor, uint8_t intf);
 int bic_is_m2_exp_prsnt(uint8_t slot_id);
 #ifdef __cplusplus

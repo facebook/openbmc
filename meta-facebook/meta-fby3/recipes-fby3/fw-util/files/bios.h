@@ -1,6 +1,5 @@
 #ifndef _BIOS_H_
 #define _BIOS_H_
-
 #include "fw-util.h"
 #include "server.h"
 

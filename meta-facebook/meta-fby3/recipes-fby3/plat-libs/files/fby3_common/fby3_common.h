@@ -74,6 +74,12 @@ enum {
   BB_BMC  = 0x0E,
 };
 
+// Server type
+enum {
+  SERVER_TYPE_DL = 0x0,
+  SERVER_TYPE_NONE = 0xFF,
+};
+
 //TODO: These pins should be modified because the slot number is rollbacked
 //setup-gpio.sh
 const static char *gpio_server_prsnt[] =

@@ -21,32 +21,27 @@ int BiosComponent::fupdate(string image) {
 int BiosComponent::print_version() {
   uint8_t ver[32];
   uint8_t fruid = 0;
-  int i, end;
-
+  int ret = 0;
   try {
-    //TODO The function is not ready, we skip it now.
-    //server.ready();
+    server.ready();
+    ret = pal_get_fru_id((char *)_fru.c_str(), &fruid);
+    if ( ret < 0 ) {
+      throw "get " + _fru + " fru id failed";
+    }
 
+    ret = pal_get_sysfw_ver(fruid, ver);
     // Print BIOS Version
-    pal_get_fru_id((char *)_fru.c_str(), &fruid);
-    if (!pal_get_sysfw_ver(fruid, ver)) {
-      // BIOS version response contains the length at offset 2 followed by ascii string
-      if ((end = 3+ver[2]) > (int)sizeof(ver)) {
-        end = sizeof(ver);
-      }
-
-      printf("BIOS Version: ");
-      for (i = 3; i < end; i++) {
-        printf("%c", ver[i]);
-      }
-      printf("\n");
-    } else {
+    if ( ret < 0 ) {
       cout << "BIOS Version: NA" << endl;
+    } else {
+      printf("BIOS Version: ");
+      cout << &ver[3] << endl;
     }
   } catch(string err) {
     printf("BIOS Version: NA (%s)\n", err.c_str());
   }
-  return 0;
+
+  return ret;
 }
 
 #endif

@@ -30,7 +30,7 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "bic_cpld_fwupdate.h"
+#include "bic_cpld_altera_fwupdate.h"
 
 //#define DEBUG
 
@@ -331,7 +331,7 @@ Max10_erase_sector(uint8_t slot_id, SectorType_t secType, uint8_t intf) {
 }
 
 int 
-update_bic_cpld(uint8_t slot_id, char *image, uint8_t intf, uint8_t force) {
+update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force) {
 #define STATUS_BIT_MASK  0x1F
 #define CFM_START_ADDR 0x64000
 #define CFM_END_ADDR   0xbffff

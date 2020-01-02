@@ -16,32 +16,33 @@ using namespace std;
 int CpldComponent::print_version()
 {
   uint8_t ver[4] = {0};
-  string fru_name = fru();
-  try {
-    //TODO The function is not ready, we skip it now.
-    //server.ready();
+  int ret = 0;
+  string board_name = board();
 
+  //make the strig to uppercase.
+  transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
+
+  try {
+    server.ready();
+    ret = bic_show_fw_ver(slot_id, FW_CPLD, ver, bus, addr, intf);
     // Print CPLD Version
-    transform(fru_name.begin(), fru_name.end(), fru_name.begin(), ::toupper);
-    if (bic_get_cpld_ver(slot_id, FW_CPLD, ver, bus, addr, intf)) {
-      printf("%s CPLD Version: NA\n", fru_name.c_str());
-    }
-    else {
-      printf("%s CPLD Version: %02X%02X%02X%02X\n", fru_name.c_str(), ver[3], ver[2], ver[1], ver[0]);
+    if ( ret < 0 ) {
+      throw  "Error in getting the version of " + board_name;
+    } else {
+      printf("%s CPLD Version: %02X%02X%02X%02X\n", board_name.c_str(), ver[3], ver[2], ver[1], ver[0]);
     }
   } catch(string err) {
-    printf("%s CPLD Version: NA (%s)\n", fru_name.c_str(), err.c_str());
+    printf("%s CPLD Version: NA (%s)\n", board_name.c_str(), err.c_str());
   }
-  return 0;
+  return ret;
 
 }
 
 int CpldComponent::update(string image)
 {
-  int ret;
+  int ret = 0;
   try {
-    //TODO: the function is not ready, we skip it now.
-    //server.ready()
+    server.ready();
     ret = bic_update_fw(slot_id, UPDATE_CPLD, intf, (char *)image.c_str(), 0);
   } catch (string err) {
     return FW_STATUS_NOT_SUPPORTED;

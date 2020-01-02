@@ -186,7 +186,7 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size,
   uint32_t nread;
   uint32_t offset;
   uint8_t count;
-  uint8_t rbuf[256] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t rlen = 0;
   int fd;
   ssize_t bytes_wr;
@@ -258,7 +258,7 @@ static int
 _write_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, uint8_t *buf, uint8_t intf) {
   int ret;
   uint8_t tbuf[64] = {0};
-  uint8_t rbuf[16] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   
@@ -324,20 +324,23 @@ error_exit:
 int
 bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t intf) {
   uint8_t tbuf[4] = {0x00}; 
-  uint8_t rbuf[16] = {0x00};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
   uint8_t rlen = 0;
   int ret;
   uint8_t bmc_location = 0;
 
   if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
     syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
-    return -1;
+    ret = BIC_STATUS_FAILURE;
+    goto error_exit;
   }
 
   if ( bmc_location == BB_BMC && (intf == BB_BIC_INTF) ) {
-    return -1;
+    ret = BIC_STATUS_FAILURE;
+    goto error_exit;
   } else if ( bmc_location == NIC_BMC && (intf == FEXP_BIC_INTF) ) {
-    return -1;
+    ret = BIC_STATUS_FAILURE;
+    goto error_exit;
   }
 
   // File the IANA ID
@@ -351,11 +354,35 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t intf) {
   // rlen should be greater than or equal to 4 (IANA + Data1 +...+ DataN)
   if ( ret < 0 || rlen < 4 ) {
     syslog(LOG_ERR, "%s: ret: %d, rlen: %d\n", __func__, ret, rlen);
-    return BIC_STATUS_FAILURE;
+    ret = BIC_STATUS_FAILURE;
+    goto error_exit;
   }
 
   //Ignore IANA ID
   memcpy(ver, &rbuf[3], rlen-3);
+
+error_exit:
+  return ret;
+}
+
+// OEM - Get Post Code buffer
+// Netfn: 0x38, Cmd: 0x12
+int
+bic_get_80port_record(uint8_t slot_id, uint8_t *rbuf, uint8_t *rlen, uint8_t intf) {
+  int ret = 0;
+  uint8_t tbuf[3] = {0};
+  uint8_t tlen = sizeof(tbuf);
+
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_BUF, tbuf, tlen, rbuf, rlen, intf);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "[%s] Cannot get the postcode buffer from slot%d", __func__, slot_id);
+  } else {
+    *rlen -= 3; 
+    memmove(rbuf, &rbuf[3], *rlen);
+  }
 
   return ret;
 }
@@ -420,7 +447,10 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen, uint
 
   //The length of GET_DEVICE_ID of ISL is different to TI.
   if ( *rlen > 4 ) {
-    //do nothing now
+    //TI
+    tbuf[2] = 0x02; //read cnt
+    tbuf[3] = 0xF0; //command code
+    tlen = 4;
   } else {
     //ISL
     tbuf[2] = 0x00; //read cnt
@@ -443,9 +473,54 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen, uint
 }
 
 int
+bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf) {
+  uint8_t tbuf[32] = {0};
+  uint8_t rbuf[4] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int i = 0;
+  int ret = 0;
+  int retries = 10;
+
+  //mux
+  tbuf[0] = (bus << 1) + 1; //bus
+  tbuf[1] = 0xE2; //mux addr
+  tbuf[2] = 0x00;
+  tbuf[3] = 0x02;
+  tlen = 4;
+  do {
+    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+    if ( ret == BIC_STATUS_SUCCESS ) break;
+    else msleep(50);
+  } while ( retries-- > 0 );
+
+  if ( retries == 0 ) {
+    goto error_exit;
+  }
+
+  //read cpld
+  tbuf[1] = addr;
+  tbuf[2] = 0x04; //read cnt
+  tbuf[3] = 0xC0; //data 1
+  tbuf[4] = 0x00; //data 2
+  tbuf[5] = 0x00; //data 3
+  tbuf[6] = 0x00; //data 4
+  tlen = 7;
+
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to send command code to get vr ver. ret=%d", __func__, ret);
+  }
+
+  for (i = 0; i < 4; i++) ver[i] = rbuf[3-i];
+error_exit:
+  return ret;
+}
+
+int
 bic_is_m2_exp_prsnt(uint8_t slot_id) {
   uint8_t tbuf[4] = {0};
-  uint8_t rbuf[1] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t tlen = 4;
   uint8_t rlen = 0;
   int ret = 0;

@@ -1,0 +1,864 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <syslog.h>
+#include <errno.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include "bic_cpld_lattice_fwupdate.h"
+
+#define MAX_RETRY  500
+#define LATTICE_COL_SIZE 128
+
+//#define CPLD_DEBUG
+typedef struct
+{
+  unsigned long int QF;
+  unsigned int *CF;
+  unsigned int CF_Line;
+  unsigned int *UFM;
+  unsigned int UFM_Line;
+  unsigned int Version;
+  unsigned int CheckSum;
+  unsigned int FEARBits;
+  unsigned int FeatureRow;
+} CPLDInfo;
+
+enum {
+  MUX  = 0xE2,
+  CPLD = 0x80,
+};
+
+static int
+send_cpld_data(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *data, uint8_t data_len, uint8_t *rsp, uint8_t read_cnt) {
+  int ret = 0;
+  int retries = 3;
+  uint8_t txbuf[256] = {0x9c, 0x9c, 0x00, intf, NETFN_APP_REQ << 2, CMD_APP_MASTER_WRITE_READ, 0x01/*bus 1*/, addr, read_cnt/*read cnt*/};
+  uint8_t txlen = 9;//start from 9
+  uint8_t rxbuf[256] = {0};
+  uint8_t rxlen = 0;
+
+  if ( data_len > 0 ) {
+    memcpy(&txbuf[txlen], data, data_len);
+    txlen += data_len;
+  }
+
+  while ( retries > 0 ) {
+    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, txbuf, txlen, rxbuf, &rxlen);
+    if (ret) {
+      sleep(1);
+      retries--;
+    } else {
+      break;
+    }
+  }
+
+  if ( retries == 0 || rxbuf[6] != 0x0 || rxlen < 7 ) {
+     //printf("%s() read/write register fails after retry 3 times. ret=%d \n", __func__,  ret);
+     return -1;
+  }
+
+  if ( read_cnt > 0 ) {
+    memcpy(rsp, &rxbuf[7], read_cnt);
+  }
+
+  return ret;
+    
+}
+
+static int
+read_cpld_status_flag(uint8_t slot_id, uint8_t intf, uint8_t addr) {
+  int ret;
+  uint8_t data[4]= {0x3C, 0x0, 0x0, 0x0};
+  uint8_t data_len = sizeof(data);
+  uint8_t rsp[16] = {0};
+  uint8_t read_cnt = 4;
+  
+  ret = send_cpld_data(slot_id, intf, addr, data, data_len, rsp, read_cnt);
+
+  if ( ret < 0 ) {
+    printf("Couldn't read_cpld_status_flag cmd\n");
+    return ret;
+  }
+
+  rsp[0] = (rsp[2] >> 12) & 0x3;
+
+  ret = (rsp[0] == 0x0)?0:-1;
+
+  return ret;
+}
+
+static int
+read_cpld_busy_flag(uint8_t slot_id, uint8_t intf, uint8_t addr) {
+  int ret;
+  uint8_t data[4]= {0xF0, 0x0, 0x0, 0x0};
+  uint8_t data_len = sizeof(data);
+  uint8_t rsp[16] = {0};
+  uint8_t read_cnt = 1;
+
+  ret = send_cpld_data(slot_id, intf, addr, data, data_len, rsp, read_cnt);
+  if ( ret < 0 ) {
+    printf("Couldn't send read_cpld_busy_flag cmd\n");
+    return ret;
+  }
+
+  rsp[0] = (rsp[0] & 0x80) >> 7;
+
+  ret = (rsp[0] == 0x0)?0:-1;
+
+  return ret;
+}
+
+static int
+set_mux_to_cpld(uint8_t slot_id, uint8_t intf, uint8_t addr) {
+  int ret;
+  uint8_t data[1] = {0x2};
+  uint8_t data_len = 1;
+  ret = send_cpld_data(slot_id, intf, addr, data, data_len, NULL, 0);
+  return ret;
+}
+
+static int
+read_cpld_dev_id(uint8_t slot_id, uint8_t intf, uint8_t addr) {
+  int ret;
+  uint8_t data[4]= {0xE0, 0x0, 0x0, 0x0};
+  uint8_t data_len = sizeof(data);
+  uint8_t rsp[16] = {0};
+  uint8_t read_cnt = 4;
+
+  ret = send_cpld_data(slot_id, intf, addr, data, data_len, rsp, read_cnt);
+  if ( ret < 0 ) {
+    return ret;
+  }
+
+  int i;
+  printf("CPLD DevID: ");
+  for (i=0;i<read_cnt;i++)
+    printf("%02X", rsp[i]);
+  printf("\n");
+  
+  return ret;
+}
+
+static int
+enter_transparent_mode(uint8_t slot_id, uint8_t intf, uint8_t addr) {
+  int ret;
+  int retry = MAX_RETRY; 
+  uint8_t data[3]= {0x74, 0x08, 0x00};
+  uint8_t data_len = sizeof(data);
+  uint8_t rsp[16] = {0};
+  uint8_t read_cnt = 0;
+
+  ret = send_cpld_data(slot_id, intf, addr, data, data_len, rsp, read_cnt);
+  if ( ret < 0 ) {
+    printf("Couldn't send enter_transparent_mode cmd\n");
+    return ret;
+  }
+
+  do {
+    ret = read_cpld_busy_flag(slot_id, intf, addr);
+    if ( ret < 0 ) msleep(50);
+    else break;
+  } while(  retry-- );
+
+  return ret;
+}
+
+static int
+erase_flash(uint8_t slot_id, uint8_t intf, uint8_t addr) {
+  int ret;
+  int retry = MAX_RETRY;
+  uint8_t data[4]= {0x0E, 0x04/*erase CF*/, 0x0, 0x0};
+  uint8_t data_len = sizeof(data);
+  uint8_t rsp[16] = {0};
+  uint8_t read_cnt = 0;
+
+  ret = send_cpld_data(slot_id, intf, addr, data, data_len, rsp, read_cnt);
+  if ( ret < 0 ) {
+    printf("Couldn't send erase_flash cmd\n");
+    return ret;
+  }
+
+  do {
+    ret = read_cpld_busy_flag(slot_id, intf, addr);
+    if ( ret < 0 ) msleep(50);
+    else break;
+  } while( retry-- );
+
+  retry = MAX_RETRY;
+  do {
+    ret = read_cpld_status_flag(slot_id, intf, addr);
+    if ( ret < 0 ) msleep(50);
+    else break;
+  } while( retry-- );
+
+  return ret;
+}
+
+static int
+reset_config_addr(uint8_t slot_id, uint8_t intf, uint8_t addr) {
+  int ret;
+  uint8_t data[4]= {0x46, 0x00, 0x0, 0x0};
+  uint8_t data_len = sizeof(data);
+  uint8_t rsp[16] = {0};
+  uint8_t read_cnt = 0;
+
+  ret = send_cpld_data(slot_id, intf, addr, data, data_len, rsp, read_cnt);
+  if ( ret < 0 ) {
+    printf("Couldn't send reset_config_addr cmd\n");
+    return ret;
+  }
+
+  return ret;
+}
+
+static int
+program_cf(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *cf_data) {
+  int ret;
+  int retry = MAX_RETRY;
+  uint8_t data[20]= {0x70, 0x0, 0x0, 0x01};
+  uint8_t data_len = sizeof(data);
+  uint8_t rsp[16] = {0};
+  uint8_t read_cnt = 0;
+  int idx;
+
+  for (idx = 4; idx <= 16; idx += 4) {
+    data[idx + 0] = cf_data[idx - 1];
+    data[idx + 1] = cf_data[idx - 2];
+    data[idx + 2] = cf_data[idx - 3];
+    data[idx + 3] = cf_data[idx - 4];
+  }
+
+  ret = send_cpld_data(slot_id, intf, addr, data, data_len, rsp, read_cnt);
+  if ( ret < 0 ) {
+    printf("Couldn't send program_cf cmd\n");
+    return ret;
+  }
+
+  do {
+    ret = read_cpld_busy_flag(slot_id, intf, addr);
+    if ( ret < 0 ) msleep(10);
+    else break;
+  } while( retry--);
+
+  return ret;
+}
+
+#if 0
+static int
+verify_cf(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *cf_data) {
+  int ret;
+  int retry = MAX_RETRY;
+  uint8_t data[4]= {0x73, 0x00, 0x00, 0x01};
+  uint8_t data_len = sizeof(data);
+  uint8_t rsp[16] = {0};
+  uint8_t cmp_data[16] = {0};
+  uint8_t read_cnt = sizeof(rsp);
+  int idx;
+
+  for (idx = 0; idx <= 12; idx += 4) {
+    cmp_data[idx + 0] = cf_data[idx + 3];
+    cmp_data[idx + 1] = cf_data[idx + 2];
+    cmp_data[idx + 2] = cf_data[idx + 1];
+    cmp_data[idx + 3] = cf_data[idx + 0];
+  }
+
+  ret = send_cpld_data(slot_id, intf, addr, data, data_len, rsp, read_cnt);
+  if ( ret < 0 ) {
+    printf("Couldn't send program_cf cmd\n");
+    return ret;
+  }
+ 
+  if ( 0 != memcmp(rsp, cmp_data, read_cnt)) {
+    printf("Data verify fail\n");
+    return -1;
+  }
+
+  do {
+    ret = read_cpld_busy_flag(slot_id, intf, addr);
+    if ( ret < 0 ) msleep(10);
+    else break;
+  } while( retry--);
+
+  return ret;
+}
+#endif
+
+static int
+program_user_code(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *user_data) {
+  int ret;
+  int retry = MAX_RETRY;
+  uint8_t data[8]= {0xC2, 0x0, 0x0, 0x00};
+  uint8_t data_len = sizeof(data);
+  uint8_t rsp[16] = {0};
+  uint8_t read_cnt = 0;
+
+  memcpy(&data[4], user_data, 4);
+  ret = send_cpld_data(slot_id, intf, addr, data, data_len, rsp, read_cnt);
+  if ( ret < 0 ) {
+    printf("Couldn't send program_user_code cmd\n");
+    return ret;
+  }
+
+  do {
+    ret = read_cpld_busy_flag(slot_id, intf, addr);
+    if ( ret < 0 ) msleep(10);
+    else break;
+  } while( retry-- );
+
+  return ret;
+}
+
+static int
+program_done(uint8_t slot_id, uint8_t intf, uint8_t addr) {
+  int ret;
+  uint8_t data[4]= {0x5E, 0x0, 0x0, 0x00};
+  uint8_t data_len = sizeof(data);
+  uint8_t rsp[16] = {0};
+  uint8_t read_cnt = 0;
+
+  ret = send_cpld_data(slot_id, intf, addr, data, data_len, rsp, read_cnt);
+  if ( ret < 0 ) {
+    printf("Couldn't send program_done cmd\n");
+    return ret;
+  }
+
+  return ret;
+}
+
+#if 0
+static uint8_t
+read_cpld_user_code(uint8_t slot_id, uint8_t intf, uint8_t addr) {
+  int ret;
+  uint8_t data[4]= {0xC0, 0x0, 0x0, 0x0};
+  uint8_t data_len = sizeof(data);
+  uint8_t rsp[16] = {0};
+  uint8_t read_cnt = 4;
+
+  ret = send_cpld_data(slot_id, intf, addr, data, data_len, rsp, read_cnt);
+  int i;
+  printf("Usercode: ");
+  for (i=0;i<read_cnt;i++)
+    printf("%02X", rsp[i]);
+  printf("\n");
+
+  return ret;
+}
+#endif
+
+static int 
+detect_cpld_dev(uint8_t slot_id, uint8_t intf) { 
+  int retries = 100;
+  int ret = 0;
+  do {
+
+    ret = set_mux_to_cpld(slot_id, intf, MUX);
+
+    ret = read_cpld_dev_id(slot_id, intf, CPLD);
+
+    if ( ret < 0 ) {
+      msleep(10);
+    } else {
+      break;   
+    }
+  } while(retries--);
+
+  return ret;
+}
+
+/*reverse byte order*/
+static uint8_t 
+reverse_bit(uint8_t b) {
+  b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
+  b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
+  b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+  return b;
+}
+
+/*search the index of char in string*/
+static int
+indexof(const char *str, const char *c) {
+  char *ptr = strstr(str, c);
+  int  index = 0;
+
+  if ( ptr )
+  {
+    index = ptr - str;
+  }
+  else
+  {
+    index = -1;
+  }
+
+  return index;
+}
+
+/*identify the str start with a specific str or not*/
+static int
+startWith(const char *str, const char *c) {
+  int len = strlen(c);
+  int i;
+
+  for ( i=0; i<len; i++ )
+  {
+    if ( str[i] != c[i] )
+    {
+       return 0;
+    }
+  }
+  return 1;
+}
+
+/*convert bit data to byte data*/
+static unsigned int
+ShiftData(char *data, unsigned int *result, int len) {
+  int i;
+  int ret = 0;
+  int result_index = 0, data_index = 31;
+  int bit_count = 0;
+
+#ifdef CPLD_DEBUG
+  printf("[%s][%s]\n", __func__, data);
+
+  for ( i = 0; i < len; i++ )
+  {
+    printf("%c", data[i]);
+
+    if ( 0 == ((i+1) % 8) )
+    {
+       printf("\n");
+    }
+  }
+#endif
+
+  for ( i = 0; i < len; i++ )
+  {
+    data[i] = data[i] - 0x30;
+
+    result[result_index] |= ((uint8_t)data[i] << data_index);
+
+#ifdef CPLD_DEBUG
+    printf("[%s]%x %d %x\n", __func__, data[i], data_index, result[result_index]);
+#endif
+    data_index--;
+    bit_count++;
+
+    if ( 0 == ((i+1) % 32) )
+    {
+      data_index = 31;
+#ifdef CPLD_DEBUG
+      printf("[%s]%x\n", __func__, result[result_index]);
+#endif
+      result_index++;
+    }
+  }
+
+  if ( bit_count != len )
+  {
+     printf("[%s] Expected Data Length is [%d] but not [%d] ", __func__, bit_count, len);
+
+     ret = -1;
+  }
+
+  return ret;
+}
+
+static int
+LCMXO2Family_Get_Update_Data_Size(FILE *jed_fd, int *cf_size) {
+  const char TAG_CF_START[]="L000";
+  int ReadLineSize = LATTICE_COL_SIZE + 2;
+  char tmp_buf[ReadLineSize];
+  unsigned int CFStart = 0;
+  int ret = 0;
+  fseek(jed_fd, 0, SEEK_SET);
+
+  while( NULL != fgets(tmp_buf, ReadLineSize, jed_fd) )
+  {
+    if ( startWith(tmp_buf, TAG_CF_START/*"L000"*/) )
+    {
+      CFStart = 1;
+    } else if ( startWith(tmp_buf, "*") ) {
+      /* the end of the CF data*/
+      break;
+    }
+
+    if ( CFStart )
+    {
+      if ( !startWith(tmp_buf, TAG_CF_START/*"L000"*/) && strlen(tmp_buf) != 1 )
+      {
+        if ( startWith(tmp_buf,"0") || startWith(tmp_buf,"1") )
+        {
+          (*cf_size)++;
+        }
+      }
+    }
+  }
+  //cf must greater than 0
+  if ( !(*cf_size) )
+  {
+    ret = -1;
+  }
+
+  return ret;
+}
+
+static int
+LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info) {
+  /**TAG Information**/
+  const char TAG_QF[]="QF";
+  const char TAG_CF_START[]="L000";
+  const char TAG_UFM[]="NOTE TAG DATA";
+  const char TAG_ROW[]="NOTE FEATURE";
+  const char TAG_CHECKSUM[]="C";
+  const char TAG_USERCODE[]="NOTE User Electronic";
+  /**TAG Information**/
+
+  int ReadLineSize = LATTICE_COL_SIZE + 2;//the len of 128 only contain data size, '\n' need to be considered, too.
+  char tmp_buf[ReadLineSize];
+  char data_buf[LATTICE_COL_SIZE];
+  unsigned int CFStart = 0;
+  unsigned int UFMStart = 0;
+  unsigned int ROWStart = 0;
+  unsigned int VersionStart = 0;
+  unsigned int ChkSUMStart = 0;
+  unsigned int JED_CheckSum = 0;
+  int copy_size;
+  int current_addr=0;
+  int i;
+  int ret = 0;
+  int cf_size_used = 0; //(cf_size * LATTICE_COL_SIZE) / 8; // unit: bytes
+
+  LCMXO2Family_Get_Update_Data_Size(jed_fd, &cf_size_used);
+
+  //printf("Line cnt: %d\n", cf_size_used);
+  cf_size_used = (cf_size_used * LATTICE_COL_SIZE) / 8;
+  //printf("Size cnt: %d\n", cf_size_used);
+
+  fseek(jed_fd, 0, SEEK_SET);
+
+  dev_info->CF = (unsigned int*)malloc( cf_size_used );
+  memset(dev_info->CF, 0, cf_size_used);
+
+  dev_info->CF_Line=0;
+  dev_info->UFM_Line=0;
+
+  while( NULL != fgets(tmp_buf, ReadLineSize, jed_fd) )
+  {
+    if ( startWith(tmp_buf, TAG_QF/*"QF"*/) )
+    {
+      copy_size = indexof(tmp_buf, "*") - indexof(tmp_buf, "F") - 1;
+
+      memset(data_buf, 0, sizeof(data_buf));
+
+      memcpy(data_buf, &tmp_buf[2], copy_size );
+
+      dev_info->QF = atol(data_buf);
+
+#ifdef CPLD_DEBUG
+      printf("[QF]%ld\n",dev_info->QF);
+#endif
+    }
+    else if ( startWith(tmp_buf, TAG_CF_START/*"L000"*/) )
+    {
+#ifdef CPLD_DEBUG
+      printf("[CFStart]\n");
+#endif
+      CFStart = 1;
+    }
+    else if ( startWith(tmp_buf, TAG_UFM/*"NOTE TAG DATA"*/) )
+    {
+#ifdef CPLD_DEBUG
+      printf("[UFMStart]\n");
+#endif
+      UFMStart = 1;
+    }
+    else if ( startWith(tmp_buf, TAG_ROW/*"NOTE FEATURE"*/) )
+    {
+#ifdef CPLD_DEBUG
+      printf("[ROWStart]\n");
+#endif
+      ROWStart = 1;
+    }
+    else if ( startWith(tmp_buf, TAG_USERCODE/*"NOTE User Electronic"*/) )
+    {
+#ifdef CPLD_DEBUG
+      printf("[VersionStart]\n");
+#endif
+      VersionStart = 1;
+    }
+    else if ( startWith(tmp_buf, TAG_CHECKSUM/*"C"*/) )
+    {
+#ifdef CPLD_DEBUG
+      printf("[ChkSUMStart]\n");
+#endif
+      ChkSUMStart = 1;
+    }
+
+    if ( CFStart )
+    {
+#ifdef CPLD_DEBUG
+      //printf("[%s][%d][%c]", __func__, (int)strlen(tmp_buf), tmp_buf[0]);
+#endif
+      if ( !startWith(tmp_buf, TAG_CF_START/*"L000"*/) && strlen(tmp_buf) != 1 )
+      {
+        if ( startWith(tmp_buf,"0") || startWith(tmp_buf,"1") )
+        {
+          current_addr = (dev_info->CF_Line * LATTICE_COL_SIZE) / 32;
+
+          memset(data_buf, 0, sizeof(data_buf));
+
+          memcpy(data_buf, tmp_buf, LATTICE_COL_SIZE);
+
+          /*convert string to byte data*/
+          ShiftData(data_buf, &dev_info->CF[current_addr], LATTICE_COL_SIZE);
+#ifdef CPLD_DEBUG
+          printf("[%d]%x %x %x %x\n",dev_info->CF_Line, dev_info->CF[current_addr],dev_info->CF[current_addr+1],dev_info->CF[current_addr+2],dev_info->CF[current_addr+3]);
+#endif
+          //each data has 128bits(4*unsigned int), so the for-loop need to be run 4 times
+          for ( i = 0; i < sizeof(unsigned int); i++ )
+          {
+            JED_CheckSum += reverse_bit((dev_info->CF[current_addr+i]>>24) & 0xff);
+            JED_CheckSum += reverse_bit((dev_info->CF[current_addr+i]>>16) & 0xff);
+            JED_CheckSum += reverse_bit((dev_info->CF[current_addr+i]>>8)  & 0xff);
+            JED_CheckSum += reverse_bit((dev_info->CF[current_addr+i])     & 0xff);
+          }
+
+            dev_info->CF_Line++;
+        }
+        else
+        {
+#ifdef CPLD_DEBUG
+          printf("[%s]CF Line: %d\n", __func__, dev_info->CF_Line);
+#endif
+          CFStart = 0;
+        }
+      }
+    }
+    else if ( ChkSUMStart && strlen(tmp_buf) != 1 )
+    {
+      ChkSUMStart = 0;
+
+      copy_size = indexof(tmp_buf, "*") - indexof(tmp_buf, "C") - 1;
+
+      memset(data_buf, 0, sizeof(data_buf));
+
+      memcpy(data_buf, &tmp_buf[1], copy_size );
+
+      dev_info->CheckSum = strtoul(data_buf, NULL, 16);
+      printf("[ChkSUM]%x\n",dev_info->CheckSum);
+    }
+    else if ( ROWStart )
+    {
+       if ( !startWith(tmp_buf, TAG_ROW/*"NOTE FEATURE"*/ ) && strlen(tmp_buf) != 1 )
+       {
+          if ( startWith(tmp_buf, "E" ) )
+          {
+            copy_size = strlen(tmp_buf) - indexof(tmp_buf, "E") - 2;
+
+            memset(data_buf, 0, sizeof(data_buf));
+
+            memcpy(data_buf, &tmp_buf[1], copy_size );
+
+            dev_info->FeatureRow = strtoul(data_buf, NULL, 2);
+          }
+          else
+          {
+            copy_size = indexof(tmp_buf, "*") - 1;
+
+            memset(data_buf, 0, sizeof(data_buf));
+
+            memcpy(data_buf, &tmp_buf[2], copy_size );
+
+            dev_info->FEARBits = strtoul(data_buf, NULL, 2);
+#ifdef CPLD_DEBUG
+            printf("[FeatureROW]%x\n", dev_info->FeatureRow);
+            printf("[FEARBits]%x\n", dev_info->FEARBits);
+#endif
+            ROWStart = 0;
+          }
+       }
+    }
+    else if ( VersionStart )
+    {
+      if ( !startWith(tmp_buf, TAG_USERCODE/*"NOTE User Electronic"*/) && strlen(tmp_buf) != 1 )
+      {
+        VersionStart = 0;
+
+        if ( startWith(tmp_buf, "UH") )
+        {
+          copy_size = indexof(tmp_buf, "*") - indexof(tmp_buf, "H") - 1;
+
+          memset(data_buf, 0, sizeof(data_buf));
+
+          memcpy(data_buf, &tmp_buf[2], copy_size );
+
+          dev_info->Version = strtoul(data_buf, NULL, 16);
+#ifdef CPLD_DEBUG
+          printf("[UserCode]%x\n",dev_info->Version);
+#endif
+        }
+      }
+    }
+    else if ( UFMStart )
+    {
+      if ( !startWith(tmp_buf, TAG_UFM/*"NOTE TAG DATA"*/) && !startWith(tmp_buf, "L") && strlen(tmp_buf) != 1 )
+      {
+        if ( startWith(tmp_buf,"0") || startWith(tmp_buf,"1") )
+        {
+          current_addr = (dev_info->UFM_Line * LATTICE_COL_SIZE) / 32;
+
+          memset(data_buf, 0, sizeof(data_buf));
+
+          memcpy(data_buf, tmp_buf, LATTICE_COL_SIZE);
+
+          ShiftData(data_buf, &dev_info->UFM[current_addr], LATTICE_COL_SIZE);
+#ifdef CPLD_DEBUG
+          printf("%x %x %x %x\n",dev_info->UFM[current_addr],dev_info->UFM[current_addr+1],dev_info->UFM[current_addr+2],dev_info->UFM[current_addr+3]);
+#endif
+          dev_info->UFM_Line++;
+        }
+        else
+        {
+#ifdef CPLD_DEBUG
+          printf("[%s]UFM Line: %d\n", __func__, dev_info->UFM_Line);
+#endif
+          UFMStart = 0;
+        }
+      }
+    }
+  }
+
+  JED_CheckSum = JED_CheckSum & 0xffff;
+
+  if ( dev_info->CheckSum != JED_CheckSum || dev_info->CheckSum == 0)
+  {
+    printf("[%s] JED File CheckSum Error\n", __func__);
+    ret = -1;
+  }
+#ifdef CPLD_DEBUG
+  else
+  {
+    printf("[%s] JED File CheckSum OKay\n", __func__);
+  }
+#endif
+  return ret;
+}
+
+int update_bic_cpld_lattice(uint8_t slot_id, char *image, uint8_t intf, uint8_t force) {
+  int ret = 0;
+  uint32_t fsize = 0;
+  uint32_t record_offset = 0;
+  CPLDInfo dev_info;
+  FILE *fp = NULL;
+  uint8_t addr = 0xff;
+
+  fp = fopen(image, "r");
+  if ( fp == NULL ) {
+    ret = -1;
+    goto error_exit;
+  }
+  
+  memset(&dev_info, 0, sizeof(dev_info));
+  ret = LCMXO2Family_JED_File_Parser(fp, &dev_info);
+  if ( ret < 0 ) {
+    goto error_exit;
+  }
+
+  fsize = dev_info.CF_Line / 20;
+
+  //step 1 - detect CPLD
+  ret = detect_cpld_dev(slot_id, intf);
+  if ( ret < 0 ) {
+    printf("Device is not found!\n");
+    goto error_exit;
+  }
+
+  //step 1.5 - provide the addr
+  addr = CPLD;
+ 
+  //step 2 - enter transparent mode and check the status
+  ret = enter_transparent_mode(slot_id, intf, addr);
+  if ( ret < 0 ) {
+    printf("Couldn't enter transparent mode!\n");
+    goto error_exit;
+  }
+
+  //step 3 - erase the CF and check the status
+  ret = erase_flash(slot_id, intf, addr);
+  if ( ret < 0 ) {
+    printf("Couldn't erase the flash!\n");
+    goto error_exit;
+  }
+
+  //step 4 - Transmit Reset Configuration Address
+  ret = reset_config_addr(slot_id, intf, addr);
+  if ( ret < 0 ) {
+    printf("Couldn't reset the flash!\n");
+    goto error_exit;
+  }
+
+  //step 5 - send data and check the status
+  int i, data_idx; //two vars are used in for-loop
+  for (i = 0, data_idx = 0; i < dev_info.CF_Line; i++, data_idx+=4) {
+    ret = program_cf(slot_id, intf, addr, (uint8_t *)&dev_info.CF[data_idx]); 
+    if ( ret < 0 ) {
+      printf("send cf data but ret < 0. exit.\n");
+      goto error_exit;
+    }
+    
+    if ( (record_offset + fsize) <= i ) {
+        printf("updated cpld: %d %%\n", (i/fsize)*5);
+        record_offset += fsize;
+    }
+  }
+
+  //step 6 - program user code
+  ret = program_user_code(slot_id, intf, addr, (uint8_t *)&dev_info.Version);
+  if ( ret < 0 ) {
+    printf("Couldn't program the usercode!\n");
+    goto error_exit; 
+  }
+
+#if 0
+  //step 7 - verify the CF data 
+  //step 7.1 Transmit Reset Configuration Address again
+  ret = reset_config_addr(slot_id, intf, addr);
+  if ( ret < 0 ) {
+    printf("Couldn't reset the flash again!\n");
+    goto error_exit;
+  }
+
+  record_offset = 0;
+  //step 7.2 Transmit Read Command with Number of Pages
+  for (i = 0, data_idx = 0; i < dev_info.CF_Line; i++, data_idx+=4) {
+    ret = verify_cf(slot_id, intf, addr, (uint8_t *)&dev_info.CF[data_idx]);
+    if ( ret < 0 ) {
+      printf("Read cf data but ret < 0. exit\n");
+      goto error_exit;
+    }
+
+    if ( (record_offset + fsize) <= i ) {
+      printf("verify cpld: %d %%\n", (i/fsize)*5);
+      record_offset += fsize;
+    }
+  }
+#endif
+
+  //step 8 - program done
+  ret = program_done(slot_id, intf, addr);
+  if ( ret < 0 ) {
+    printf("Couldn't finish the program!\n");
+    goto error_exit;
+  }
+
+error_exit: 
+
+  if ( fp != NULL ) fclose(fp);
+  if ( dev_info.CF != NULL ) free(dev_info.CF);
+
+  return ret;
+}

@@ -31,7 +31,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "bic_fwupdate.h"
-#include "bic_cpld_fwupdate.h"
+#include "bic_cpld_altera_fwupdate.h"
+#include "bic_cpld_lattice_fwupdate.h"
 #include "bic_vr_fwupdate.h"
 //#define DEBUG
 
@@ -906,12 +907,40 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t f
       ret = update_fw_via_bic(slot_id, UPDATE_BIC_BOOTLOADER, path, force);
       break;
     case UPDATE_CPLD:
-      ret = update_bic_cpld(slot_id, path, intf, force);
+      if ( intf == NONE_INTF ) {
+        ret = update_bic_cpld_altera(slot_id, path, intf, force);
+      } else if ( intf == BB_BIC_INTF ){
+         //do nothing
+        ret = BIC_STATUS_FAILURE;
+      } else {
+        ret = update_bic_cpld_lattice(slot_id, path, intf, force);
+      }
       break;
     case UPDATE_VR:
       ret = update_bic_vr(slot_id, path, force);
       break;
   }
  
+  return ret;
+}
+
+int
+bic_show_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf) {
+  int ret = 0;
+  switch(comp) {
+    case FW_BIC:
+    case FW_BIC_BOOTLOADER:
+    case FW_ME:
+      ret = bic_get_fw_ver(slot_id, comp, ver, intf);
+      break;
+    case FW_CPLD:
+      if ( intf == NONE_INTF ) {
+        ret = bic_get_cpld_ver(slot_id, comp, ver, bus, addr, intf);
+      } else if ( intf == FEXP_BIC_INTF || intf == REXP_BIC_INTF ) {
+        ret = bic_get_exp_cpld_ver(slot_id, comp, ver, bus, addr, intf);
+      }
+      break;
+  }
+
   return ret;
 }

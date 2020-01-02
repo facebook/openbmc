@@ -311,10 +311,13 @@ fby3_common_get_bmc_location(uint8_t *id) {
 
 int
 fby3_common_get_slot_type(uint8_t fru) {
-  int type = -1;
-  if ((fru >= FRU_SLOT1) && (fru <= FRU_SLOT4)) {
-    return 0;
+  int ret = 0;
+
+  ret = fby3_common_check_slot_id(fru);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Unknown fru: %d", __func__, fru);
+    return -1;
   }
 
-  return type;
+  return SERVER_TYPE_DL;
 }

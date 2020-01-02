@@ -49,7 +49,8 @@ const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 
 #define SYSFW_VER "sysfw_ver_slot"
-#define SYSFW_VER_STR SYSFW_VER"%d"
+#define SYSFW_VER_STR SYSFW_VER "%d"
+#define BOOR_ORDER_STR "slot%d_boot_order"
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -71,10 +72,10 @@ struct pal_key_cfg {
   {"pwr_server3_last_state", "on", NULL},
   {"pwr_server4_last_state", "on", NULL},
   {"timestamp_sled", "0", NULL},
-  {"slot1_boot_order", "0000000", NULL},
-  {"slot2_boot_order", "0000000", NULL},
-  {"slot3_boot_order", "0000000", NULL},
-  {"slot4_boot_order", "0000000", NULL},
+  {"slot1_boot_order", "0100090203ff", NULL},
+  {"slot2_boot_order", "0100090203ff", NULL},
+  {"slot3_boot_order", "0100090203ff", NULL},
+  {"slot4_boot_order", "0100090203ff", NULL},
   {"fru1_restart_cause", "3", NULL},
   {"fru2_restart_cause", "3", NULL},
   {"fru3_restart_cause", "3", NULL},
@@ -167,6 +168,118 @@ pal_set_def_key_value() {
   }
 
   return 0;
+}
+
+int
+pal_get_boot_order(uint8_t slot_id, uint8_t *req_data, uint8_t *boot, uint8_t *res_len) {
+  int i = 0, j = 0;
+  int ret = PAL_EOK;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[4] = {0};
+
+  *res_len = 0;
+
+  sprintf(key, BOOR_ORDER_STR, slot_id);
+  ret = pal_get_key_value(key, str);
+  if ( ret < 0 ) {
+    *res_len = 0;
+    goto error_exit;
+  }
+
+  for (i = 0; i < 2*SIZE_BOOT_ORDER; i += 2) {
+    sprintf(tstr, "%c%c\n", str[i], str[i+1]);
+    boot[j++] = strtol(tstr, NULL, 16);
+  }
+
+  *res_len = SIZE_BOOT_ORDER;
+
+error_exit:
+  return ret;
+}
+
+int
+pal_set_boot_order(uint8_t slot_id, uint8_t *boot, uint8_t *res_data, uint8_t *res_len) {
+  int i = 0;
+  int j = 0;
+  int network_dev = 0;
+  int ret = PAL_EOK;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[10] = {0};
+  enum {
+    BOOT_DEVICE_IPV4 = 0x1,
+    BOOT_DEVICE_IPV6 = 0x9,
+    BOOT_DEVICE_RSVD = 0xff,
+  };
+
+  *res_len = 0;
+
+  for (i = 0; i < SIZE_BOOT_ORDER; i++) {
+    if ( (i > 0) && (boot[i] != BOOT_DEVICE_RSVD) ) {  // byte[0] is boot mode, byte[1:5] are boot order
+      for (j = i+1; j < SIZE_BOOT_ORDER; j++) {
+        //not allow having the same boot devcie in the boot order
+        if ( boot[i] == boot[j] ) {
+          syslog(LOG_WARNING, "Not allow having the same boot devcie in the boot order");
+          ret = CC_INVALID_PARAM;
+          goto error_exit;
+        }  
+      }
+
+      if ((boot[i] == BOOT_DEVICE_IPV4) || (boot[i] == BOOT_DEVICE_IPV6)) {
+        network_dev++;
+      }
+    }
+
+    snprintf(tstr, 3, "%02x", boot[i]);
+    strncat(str, tstr, 3);
+  }
+
+  //not allow having more than 1 network boot device in the boot order
+  if ( network_dev > 1 ) {
+    syslog(LOG_WARNING, "Not allow having more than 1 network boot device in the boot order");
+    ret = CC_INVALID_PARAM;
+    goto error_exit;
+  }
+
+  sprintf(key, BOOR_ORDER_STR, slot_id);
+  ret = pal_set_key_value(key, str);
+
+error_exit:
+  return ret;
+}
+
+int
+pal_get_80port_record(uint8_t slot_id, uint8_t *res_data, size_t max_len, size_t *res_len) {
+  int ret;
+  uint8_t status;
+  uint8_t len;
+
+  ret = fby3_common_check_slot_id(slot_id);
+  if (ret < 0 ) {
+    ret = PAL_ENOTSUP;
+    goto error_exit;
+  }
+
+  ret = fby3_common_is_fru_prsnt(slot_id, &status);
+  if ( ret < 0 || status == 0 ) {
+    ret = PAL_ENOTREADY;
+    goto error_exit;
+  }
+
+  ret = pal_get_server_12v_power(slot_id, &status);
+  if(ret < 0 || SERVER_12V_OFF == status) {
+    ret = PAL_ENOTREADY;
+    goto error_exit;
+  }
+
+  // Send command to get 80 port record from Bridge IC
+  ret = bic_get_80port_record(slot_id, res_data, &len, NONE_INTF);
+  if (ret == 0)
+    *res_len = (size_t)len;
+
+error_exit:
+  return ret;
 }
 
 bool
@@ -282,6 +395,31 @@ pal_get_fru_list(char *list) {
 }
 
 int
+pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  int ret = CC_UNSPECIFIED_ERROR;
+  uint8_t *data = res_data;
+  uint8_t bmc_location = 0; //the value of bmc_location is board id.
+  *res_len = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) { 
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    goto error_exit;
+  }
+
+  *data++ = bmc_location;
+  *data++ = 0x00; //board rev id
+  *data++ = slot; //slot id
+  *data++ = 0x00; //slot type. server = 0x00
+  *res_len = data - res_data;
+  ret = CC_SUCCESS;
+
+error_exit:
+
+  return ret;
+}
+
+int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
 
   int ret = PAL_EOK;
@@ -379,6 +517,9 @@ pal_get_fru_name(uint8_t fru, char *name) {
     case FRU_NIC:
       sprintf(name, "nic");
       break;
+    case FRU_BB:
+      sprintf(name, "bb");
+      break;
     default:
       syslog(LOG_WARNING, "%s() unknown fruid %d", __func__, fru);
       return -1;
@@ -395,7 +536,7 @@ pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-    return ret;;
+    return ret;
   }
 
   switch(fru) {
@@ -478,8 +619,7 @@ int
 pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
   int i;
   int j = 0;
-  int ret;
-  int msb, lsb;
+  int ret = 0;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   char tstr[4] = {0};
@@ -487,19 +627,18 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
   sprintf(key, SYSFW_VER_STR, (int) slot);
   ret = pal_get_key_value(key, str);
   if (ret) {
-    return ret;
+    syslog(LOG_WARNING, "%s() Failed to run pal_get_key_value. key:%s", __func__, key);
+    ret = PAL_ENOTSUP;
+    goto error_exit;
   }
 
   for (i = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
-    sprintf(tstr, "%c\n", str[i]);
-    msb = strtol(tstr, NULL, 16);
-
-    sprintf(tstr, "%c\n", str[i+1]);
-    lsb = strtol(tstr, NULL, 16);
-    ver[j++] = (msb << 4) | lsb;
+    sprintf(tstr, "%c%c\n", str[i], str[i+1]);
+    ver[j++] = strtol(tstr, NULL, 16);
   }
 
-  return 0;
+error_exit:
+  return ret;
 }
 
 int
@@ -741,7 +880,7 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
 int
 pal_is_slot_server(uint8_t fru)
 {
-  if (fby3_common_get_slot_type(fru) == 0) {
+  if ( SERVER_TYPE_DL == fby3_common_get_slot_type(fru) ) {
     return 1;
   }
   return 0;

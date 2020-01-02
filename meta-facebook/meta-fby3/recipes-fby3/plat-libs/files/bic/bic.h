@@ -37,6 +37,7 @@ enum {
   FW_ME,
   FW_BIC_BOOTLOADER,
   FW_VR,
+  FW_EXP_CPLD,
 };
 
 enum {

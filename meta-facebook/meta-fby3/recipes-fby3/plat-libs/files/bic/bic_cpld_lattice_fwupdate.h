@@ -18,8 +18,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __BIC_CPLD_FWUPDATE_H__
-#define __BIC_CPLD_FWUPDATE_H__
+#ifndef __BIC_CPLD_LATTICE_FWUPDATE_H__
+#define __BIC_CPLD_LATTICE_FWUPDATE_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,7 +28,7 @@ extern "C" {
 #include "bic_xfer.h"
 #include "bic.h"
 
-int update_bic_cpld(uint8_t slot_id, char *image, uint8_t intf, uint8_t force);
+int update_bic_cpld_lattice(uint8_t slot_id, char *image, uint8_t intf, uint8_t force);
 
 #ifdef __cplusplus
 } // extern "C"

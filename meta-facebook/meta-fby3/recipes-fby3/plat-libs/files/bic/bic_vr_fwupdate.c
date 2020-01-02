@@ -33,7 +33,7 @@
 #include "bic_vr_fwupdate.h"
 #include "bic_ipmi.h"
 
-#define DEBUG
+//#define DEBUG
 
 /****************************/
 /*       VR fw update       */                            
@@ -44,7 +44,7 @@
 typedef struct {
   uint8_t command;
   uint8_t data_len;
-  uint8_t data[16];
+  uint8_t data[64];
 } vr_data;
 
 typedef struct {
@@ -163,7 +163,7 @@ error_exit:
 }
 
 static int
-vr_ISL_program(uint8_t slot_id, uint8_t addr, vr_data *list, int len) {
+vr_ISL_program(uint8_t slot_id, vr *dev) {
   int i = 0;
   int ret = 0;
   uint8_t tbuf[16] = {0};
@@ -171,6 +171,9 @@ vr_ISL_program(uint8_t slot_id, uint8_t addr, vr_data *list, int len) {
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   int retry = MAX_RETRY;
+  vr_data *list = dev->pdata;
+  uint8_t addr = dev->addr;
+  int len = dev->data_cnt;
 
   tbuf[0] = (VR_BUS << 1) + 1;
   tbuf[1] = addr;
@@ -312,7 +315,233 @@ error_exit:
   return ret;
 }
 
-static char* get_vr_name(uint8_t addr) {
+//CRC16 lookup table
+unsigned int CRC16_LUT[256] = {
+  0x0000, 0x8005, 0x800f, 0x000a, 0x801b, 0x001e, 0x0014, 0x8011, 0x8033, 0x0036, 0x003c, 0x8039,
+  0x0028, 0x802d, 0x8027, 0x0022, 0x8063, 0x0066, 0x006c, 0x8069, 0x0078, 0x807d, 0x8077, 0x0072,
+  0x0050, 0x8055, 0x805f, 0x005a, 0x804b, 0x004e, 0x0044, 0x8041, 0x80c3, 0x00c6, 0x00cc, 0x80c9,
+  0x00d8, 0x80dd, 0x80d7, 0x00d2, 0x00f0, 0x80f5, 0x80ff, 0x00fa, 0x80eb, 0x00ee, 0x00e4, 0x80e1,
+  0x00a0, 0x80a5, 0x80af, 0x00aa, 0x80bb, 0x00be, 0x00b4, 0x80b1, 0x8093, 0x0096, 0x009c, 0x8099,
+  0x0088, 0x808d, 0x8087, 0x0082, 0x8183, 0x0186, 0x018c, 0x8189, 0x0198, 0x819d, 0x8197, 0x0192,
+  0x01b0, 0x81b5, 0x81bf, 0x01ba, 0x81ab, 0x01ae, 0x01a4, 0x81a1, 0x01e0, 0x81e5, 0x81ef, 0x01ea,
+  0x81fb, 0x01fe, 0x01f4, 0x81f1, 0x81d3, 0x01d6, 0x01dc, 0x81d9, 0x01c8, 0x81cd, 0x81c7, 0x01c2,
+  0x0140, 0x8145, 0x814f, 0x014a, 0x815b, 0x015e, 0x0154, 0x8151, 0x8173, 0x0176, 0x017c, 0x8179,
+  0x0168, 0x816d, 0x8167, 0x0162, 0x8123, 0x0126, 0x012c, 0x8129, 0x0138, 0x813d, 0x8137, 0x0132,
+  0x0110, 0x8115, 0x811f, 0x011a, 0x810b, 0x010e, 0x0104, 0x8101, 0x8303, 0x0306, 0x030c, 0x8309,
+  0x0318, 0x831d, 0x8317, 0x0312, 0x0330, 0x8335, 0x833f, 0x033a, 0x832b, 0x032e, 0x0324, 0x8321,
+  0x0360, 0x8365, 0x836f, 0x036a, 0x837b, 0x037e, 0x0374, 0x8371, 0x8353, 0x0356, 0x035c, 0x8359,
+  0x0348, 0x834d, 0x8347, 0x0342, 0x03c0, 0x83c5, 0x83cf, 0x03ca, 0x83db, 0x03de, 0x03d4, 0x83d1,
+  0x83f3, 0x03f6, 0x03fc, 0x83f9, 0x03e8, 0x83ed, 0x83e7, 0x03e2, 0x83a3, 0x03a6, 0x03ac, 0x83a9,
+  0x03b8, 0x83bd, 0x83b7, 0x03b2, 0x0390, 0x8395, 0x839f, 0x039a, 0x838b, 0x038e, 0x0384, 0x8381,
+  0x0280, 0x8285, 0x828f, 0x028a, 0x829b, 0x029e, 0x0294, 0x8291, 0x82b3, 0x02b6, 0x02bc, 0x82b9,
+  0x02a8, 0x82ad, 0x82a7, 0x02a2, 0x82e3, 0x02e6, 0x02ec, 0x82e9, 0x02f8, 0x82fd, 0x82f7, 0x02f2,
+  0x02d0, 0x82d5, 0x82df, 0x02da, 0x82cb, 0x02ce, 0x02c4, 0x82c1, 0x8243, 0x0246, 0x024c, 0x8249,
+  0x0258, 0x825d, 0x8257, 0x0252, 0x0270, 0x8275, 0x827f, 0x027a, 0x826b, 0x026e, 0x0264, 0x8261,
+  0x0220, 0x8225, 0x822f, 0x022a, 0x823b, 0x023e, 0x0234, 0x8231, 0x8213, 0x0216, 0x021c, 0x8219,
+  0x0208, 0x820d, 0x8207, 0x0202
+};
+
+static int 
+cal_TI_crc16(vr *dev) {
+  uint8_t data[254] = {0};
+  uint8_t data_index = 0;
+  uint8_t crc16_result[2] = {0};
+  uint32_t crc16_accum = 0;
+  uint32_t crc_shift = 0;
+  uint8_t index = 0;
+  int i = 0;
+
+  for (i = 0; i < dev->data_cnt; i++) {
+    if ( i == 0 ) {
+      memcpy(crc16_result, &dev->pdata[i].data[9], 2);
+      memcpy(&data[data_index], &dev->pdata[i].data[11], 21); //get data
+      data_index += 21;
+    } else if ( i == 8 ) { //get the last data
+      memcpy(&data[data_index], dev->pdata[i].data, 9);
+      data_index += 9;
+    } else {
+      memcpy(&data[data_index], dev->pdata[i].data, 32);
+      data_index += 32;
+    }
+  }
+
+  for(i=0; i<254; i++) {
+    index = ((crc16_accum >> 8) ^ data[i]) & 0xFF;
+    crc_shift = (crc16_accum << 8) & 0xFFFF;
+    crc16_accum = (crc_shift ^ CRC16_LUT[index]) & 0xFFFF;
+  }
+
+  return ( crc16_accum == (crc16_result[1] << 8 | crc16_result[0]))?0:-1;
+}
+
+static int
+vr_TI_csv_parser(char *image) {
+#define IC_DEVICE_ID "IC_DEVICE_ID"
+#define BLOCK_READ "BlockRead"
+#define BLOCK_WRITE "BlockWrite"
+  int ret = 0;
+  FILE *fp = NULL;
+  char *token = NULL;
+  char tmp_buf[128] = "\0";
+  int tmp_len = sizeof(tmp_buf);
+  int data_cnt = 0;
+  int i = 0;
+  uint8_t data_index = 0;
+
+  if ( (fp = fopen(image, "r") ) == NULL ) {
+    printf("Invalid file: %s\n", image);
+    ret = -1;
+    goto error_exit;
+  }
+
+  while ( NULL != fgets(tmp_buf, tmp_len, fp) ) {
+    if ( (token = strstr(tmp_buf, IC_DEVICE_ID)) != NULL ) { //get device id from the string
+      token = strstr(token, "0x"); //get the pointer
+      vr_list[vr_cnt].devid_len = 6;
+      vr_list[vr_cnt].devid[0] = string_to_byte(&token[2]);
+      vr_list[vr_cnt].devid[1] = string_to_byte(&token[4]);
+      vr_list[vr_cnt].devid[2] = string_to_byte(&token[6]);
+      vr_list[vr_cnt].devid[3] = string_to_byte(&token[8]);
+      vr_list[vr_cnt].devid[4] = string_to_byte(&token[10]);
+      vr_list[vr_cnt].devid[5] = string_to_byte(&token[12]);
+    } else if ( (token = strstr(tmp_buf, BLOCK_READ)) != NULL ) { //get block read
+      if ( vr_list[vr_cnt].addr != 0x00 ) {
+        continue;
+      }
+
+      token = strstr(token, ",");
+      vr_list[vr_cnt].addr = string_to_byte(&token[3]) << 1;
+    } else if ( (token = strstr(tmp_buf, BLOCK_WRITE)) != NULL ) { //get block write
+      token = strstr(token, ",");
+      vr_list[vr_cnt].pdata[data_cnt].command  = string_to_byte(&token[8]);
+      vr_list[vr_cnt].pdata[data_cnt].data_len = string_to_byte(&token[13]);
+      int data_len = vr_list[vr_cnt].pdata[data_cnt].data_len;
+      for (i = 0, data_index = 15; i < data_len; data_index+=2, i++) {
+        vr_list[vr_cnt].pdata[data_cnt].data[i] = string_to_byte(&token[data_index]);
+      } 
+      vr_list[vr_cnt].data_cnt++;  
+      data_cnt++;
+    }
+  }
+
+#ifdef DEBUG
+  int j = 0;
+  printf("ID: ");
+  for (i = 0; i < vr_list[vr_cnt].devid_len; i++) {
+    printf("%02X ", vr_list[vr_cnt].devid[i]);
+  }
+  printf("\n Addr: %02X, Datalen:%d\n", vr_list[vr_cnt].addr, vr_list[vr_cnt].data_cnt);
+  for (i = 0; i < vr_list[vr_cnt].data_cnt; i++){
+    printf("[%d] %02X ", i, vr_list[vr_cnt].pdata[i].command);
+    for (j = 0; j < vr_list[vr_cnt].pdata[i].data_len;j++) {
+      printf("%02X ", vr_list[vr_cnt].pdata[i].data[j]);
+    }
+    printf("\n");
+  }
+#endif
+
+  //calculate the checksum
+  ret = cal_TI_crc16(&vr_list[vr_cnt]);
+  if ( ret < 0 ) {
+    printf("CRC16 is error!\n");
+  }
+
+error_exit:
+  return ret;
+}
+
+static int
+vr_TI_program(uint8_t slot_id, vr *dev) {
+#define TI_USER_NVM_INDEX   0xF5
+#define TI_USER_NVM_EXECUTE 0xF6
+#define TI_NVM_CHECKSUM     0xF0
+#define TI_NVM_INDEX_00     0x00
+  int i = 0;
+  int ret = 0;
+  uint8_t tbuf[64] = {0};
+  uint8_t rbuf[64] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int check_cnt = 0;
+  uint8_t addr = dev->addr;
+  uint8_t len = dev->data_cnt;
+  vr_data *list = dev->pdata;
+
+  tbuf[0] = (VR_BUS << 1) + 1;
+  tbuf[1] = addr;
+  tbuf[2] = 0x00; //read cnt
+
+  //step 1- Set page to 0x00 first
+  tbuf[3] = TI_USER_NVM_INDEX;
+  tbuf[4] = TI_NVM_INDEX_00;
+  tlen = 5;
+
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    printf("Cannot initialize the page to 0x00!\n");
+    goto error_exit;
+  }
+
+  //step 2 - program a VR
+  for ( i=0; i<len; i++ ) {
+    //prepare data
+    tbuf[3] = list[i].command ;//command code
+    memcpy(&tbuf[4], list[i].data, list[i].data_len);
+    tlen = 4 + list[i].data_len;
+
+    //send it
+    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "Failed to send data...%d", i);
+      break;
+    }
+
+    msleep(50);
+  }
+
+  //step 3 - verify data
+  tbuf[3] = TI_USER_NVM_INDEX;
+  tbuf[4] = TI_NVM_INDEX_00;
+  tlen = 5;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    printf("Cannot initialize the page to 0x00 again.!\n");
+    goto error_exit;
+  }
+
+  tbuf[2] = 0x21;
+  tbuf[3] = TI_USER_NVM_EXECUTE;
+  tlen = 4;
+  for ( i=0; i<len; i++ ) {
+    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+    if ( ret < 0 ) {
+      printf("Failed to read data. index:%d\n", i);
+    } else {
+      if ( rbuf[0] == 0x20 ) {
+        memmove(rbuf, &rbuf[1], 0x20);
+      } else {
+        printf("The count of data is incorrect. index:%d, data_len:%d\n", i, rbuf[0]);
+        ret = -1;
+        goto error_exit;
+      }
+
+      ret = memcmp(rbuf, list[i].data, list[i].data_len);
+      if ( ret == 0 ) {
+        check_cnt++;
+      }
+    }
+  }
+
+  if ( check_cnt != len ) {
+    ret = -1;
+  }
+
+error_exit:
+  return ret;
+}
+
+static char* 
+get_vr_name(uint8_t addr) {
   struct dev_table {
     uint8_t addr;
     char *dev_name;
@@ -336,10 +565,16 @@ static char* get_vr_name(uint8_t addr) {
 
 int 
 update_bic_vr(uint8_t slot_id, char *image, uint8_t force) {
+  enum {
+    VR_ISL = 0x0,
+    VR_TI  = 0x1,
+  };
+
   int ret = 0;
   int i = 0;
   uint8_t rbuf[6] = {0};
   uint8_t rlen = 0;
+  uint8_t sel_vendor = 0;
 
   //step 1 - read the dev id of one of them.
   ret = bic_get_vr_device_id(slot_id, FW_CPLD, rbuf, &rlen, 8 /*bus*/, 0xC0/*addr*/, NONE_INTF);
@@ -349,11 +584,17 @@ update_bic_vr(uint8_t slot_id, char *image, uint8_t force) {
   }
 
   //step 2 - parse the image file.
+  //TODO: Maybe we should use a function pointer
   //The length of GET_DEVICE_ID of ISL is different to TI.
-  if ( rlen > 4 ) {
-    //do nothing
+  sel_vendor = (rlen > 4)?VR_TI:VR_ISL;
+  if ( sel_vendor == VR_TI ) {
+    ret = vr_TI_csv_parser(image);
   } else {
     ret = vr_ISL_hex_parser(image);
+  }
+
+  if ( ret < 0 ) {
+    goto error_exit;
   }
 
   //step 3 - check DEVID
@@ -373,11 +614,17 @@ update_bic_vr(uint8_t slot_id, char *image, uint8_t force) {
   //step 4 - program
   for ( i = 0; i < vr_cnt + 1; i++ ) { 
     printf("Update %s...", get_vr_name(vr_list[i].addr));
-    ret = vr_ISL_program(slot_id, vr_list[i].addr, vr_list[i].pdata, vr_list[i].data_cnt);
-    if ( ret < 0 ) {
-      printf("Fail.\n");
+    //TODO: Maybe we should use a function pointer
+    if ( sel_vendor == VR_TI ) {
+      ret = vr_TI_program(slot_id, &vr_list[i]);
     } else {
-      printf("Success.\n");
+      ret = vr_ISL_program(slot_id, &vr_list[i]);
+    }
+
+    if ( ret < 0 ) {
+      printf("Failed.\n");
+    } else {
+      printf("Succeeded.\n");
     }
   }
 error_exit:

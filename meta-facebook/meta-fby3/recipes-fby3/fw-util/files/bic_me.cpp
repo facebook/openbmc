@@ -10,21 +10,24 @@
 using namespace std;
 
 int MeFwComponent::print_version() {
-  uint8_t ver[32];
+  uint8_t ver[32] = {0};
+  int ret = 0;
+  string board_name = board();
+
+  transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
   try {
-    //TODO The function is not ready, we skip it now.
-    //server.ready();
+    server.ready();
+    ret = bic_show_fw_ver(slot_id, FW_ME, ver, 0, 0, intf);
     // Print ME Version
-    if (bic_get_fw_ver(slot_id, FW_ME, ver, intf)) {
-      printf("ME Version: NA\n");
-    }
-    else {
+    if ( ret < 0 ) {
+      throw "Error in getting the version of " + board_name;
+    } else {
       printf("ME Version: %x.%x.%x.%x%x\n", ver[0], ver[1], ver[2], ver[3], ver[4]);
     }
   } catch(string err) {
     printf("ME Version: NA (%s)\n", err.c_str());
   }
-  return 0;
+  return ret;
 }
 
 #endif

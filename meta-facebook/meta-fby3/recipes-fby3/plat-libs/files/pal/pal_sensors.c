@@ -727,7 +727,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
     ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
   }
   if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). snr#0x%x", __func__, sensor_num);
+    syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);
     return READING_NA;
   }
 

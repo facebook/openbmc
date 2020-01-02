@@ -66,6 +66,18 @@ CpldComponent cpld_fw2("slot2", "sb", "cpld", FRU_SLOT2, 2, 0x80, NONE_INTF);
 CpldComponent cpld_fw3("slot3", "sb", "cpld", FRU_SLOT3, 2, 0x80, NONE_INTF);
 CpldComponent cpld_fw4("slot4", "sb", "cpld", FRU_SLOT4, 2, 0x80, NONE_INTF);
 
+/*The CPLD of the 1OU board*/
+CpldComponent cpld_1ou_fw1("slot1", "1ou", "cpld", FRU_SLOT1, 0, 0x80, FEXP_BIC_INTF);
+CpldComponent cpld_1ou_fw2("slot2", "1ou", "cpld", FRU_SLOT2, 0, 0x80, FEXP_BIC_INTF);
+CpldComponent cpld_1ou_fw3("slot3", "1ou", "cpld", FRU_SLOT3, 0, 0x80, FEXP_BIC_INTF);
+CpldComponent cpld_1ou_fw4("slot4", "1ou", "cpld", FRU_SLOT4, 0, 0x80, FEXP_BIC_INTF);
+
+/*The CPLD of the 2OU board*/
+CpldComponent cpld_2ou_fw1("slot1", "2ou", "cpld", FRU_SLOT1, 0, 0x80, REXP_BIC_INTF);
+CpldComponent cpld_2ou_fw2("slot2", "2ou", "cpld", FRU_SLOT2, 0, 0x80, REXP_BIC_INTF);
+CpldComponent cpld_2ou_fw3("slot3", "2ou", "cpld", FRU_SLOT3, 0, 0x80, REXP_BIC_INTF);
+CpldComponent cpld_2ou_fw4("slot4", "2ou", "cpld", FRU_SLOT4, 0, 0x80, REXP_BIC_INTF);
+
 /*The CPLD of BMC*/
 BmcCpldComponent cpld_bmc("bmc", "bmc", "cpld", MAX10_10M25, 12, 0x40);
 

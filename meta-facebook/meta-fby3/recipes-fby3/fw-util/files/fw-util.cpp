@@ -259,17 +259,14 @@ void parse_arg(int argc, char **argv, struct args_t &param) {
 }
 
 void show_fw_version(string target) {
-  int ret;
   for ( auto fru : (*Component::fru_list) ) {
     if ( target == "all" || target == fru.first ) {
       for ( auto board:fru.second ) {
         for ( auto comp:board.second ) {
-          ret = comp.second->print_version();
-          if ( ret != FW_STATUS_SUCCESS )
-            cerr << "Error getting version of " << comp.first << ":" << board.first
-                 << " on fru: " << fru.first << endl;
+          comp.second->print_version();
         }
       }
+      cout << endl;
     }
   }
 }
@@ -295,6 +292,8 @@ int main(int argc, char *argv[])
   struct args_t fw_args{};
   struct sigaction sa;
   int ret = FW_STATUS_NOT_SUPPORTED;
+  uint8_t fru_id = 0;
+  System system;
 
   exec_name = argv[0];
 
@@ -367,7 +366,10 @@ int main(int argc, char *argv[])
         } else {
           str_act.assign("Upgrade");
         }
+        fru_id = system.get_fru_id(fw_args.fru);
+        system.set_update_ongoing(fru_id, 60 * 10);
         ret = do_fw_update(fw_args.fru, fw_args.board, fw_args.component, fw_args.image, fw_args.force); 
+        system.set_update_ongoing(fru_id, 0);
       }
       break;
     case FW_SCHEDULE_ADD:

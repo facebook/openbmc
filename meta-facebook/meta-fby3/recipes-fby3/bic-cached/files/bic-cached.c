@@ -104,10 +104,10 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
   }
 
   retry = 0;
-  do {
+  while (retry < MAX_RETRY) {
     ret = bic_get_sdr(slot_id, &req, res, &rlen, intf);
-    if (ret) {
-      syslog(LOG_WARNING, "%s: bic_get_sdr returns %d, rsv_id: 0x%x, record_id: 0x%x, sdr_size: %d\n", __func__, ret, req.rsv_id, req.rec_id, rlen);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s: rsv_id: 0x%x, record_id: 0x%x, sdr_size: %d, intf: %x, retry: %d\n", __func__, req.rsv_id, req.rec_id, rlen, intf, retry);
       retry++;
       continue;
     }
@@ -125,10 +125,10 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
       // syslog(LOG_INFO, "This record is LAST record\n");
       break;
     }
-    retry++;
-  } while (retry < MAX_RETRY_CNT);
-  if (retry == MAX_RETRY_CNT) {   // if exceed 30 secs, exit this step
-    syslog(LOG_WARNING, "Fail on getting Slot%u SDR via BIC", slot_id);
+  }
+
+  if (retry == MAX_RETRY) {   // if exceed 30 secs, exit this step
+    syslog(LOG_WARNING, "Fail on getting the sdr of slot%u via BIC. intf:%x", slot_id, intf);
   }
 
   rc = pal_unflock_retry(fd);
@@ -209,10 +209,10 @@ sdr_cache_init(uint8_t slot_id) {
   }
 
   retry = 0;
-  do {
+  while (retry < MAX_RETRY) {
     ret = bic_get_sdr(slot_id, &req, res, &rlen, NONE_INTF);
-    if (ret) {
-      syslog(LOG_WARNING, "%s: bic_get_sdr returns %d, rsv_id: 0x%x, record_id: 0x%x, sdr_size: %d\n", __func__, ret, req.rsv_id, req.rec_id, rlen);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s: rsv_id: 0x%x, record_id: 0x%x, sdr_size: %d, retry: %d\n", __func__, req.rsv_id, req.rec_id, rlen, retry);
       retry++;
       continue;
     }
@@ -230,10 +230,10 @@ sdr_cache_init(uint8_t slot_id) {
       // syslog(LOG_INFO, "This record is LAST record\n");
       break;
     }
-    retry++;
-  } while (retry < MAX_RETRY_CNT);
-  if (retry == MAX_RETRY_CNT) {   // if exceed 30 secs, exit this step
-    syslog(LOG_WARNING, "Fail on getting Slot%u SDR via BIC", slot_id);
+  }
+
+  if (retry == MAX_RETRY) {   // if exceed 30 secs, exit this step
+    syslog(LOG_WARNING, "Fail on getting the sdr of slot%u via BIC", slot_id);
   }
 
   rc = pal_unflock_retry(fd);
@@ -257,8 +257,8 @@ sdr_cache_init(uint8_t slot_id) {
     remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
   }
   if (remote_f_ret != 0 || remote_r_ret != 0) {
-    syslog(LOG_CRIT, "Fail on getting Remote Slot%u SDR", slot_id);
-    return (remote_f_ret || remote_r_ret);
+    syslog(LOG_WARNING, "Failed to get the remote sdr of slot%u. remote_f_ret: %d, remote_r_ret:%d, %d", slot_id, remote_f_ret, remote_r_ret, (remote_f_ret+remote_r_ret));
+    return (remote_f_ret + remote_r_ret);
   }
 
   return ret;
@@ -367,23 +367,16 @@ main (int argc, char * const argv[])
     sleep(5);
   } while (ret != 0);
 
-  if (sdr_dump == true) {
-    retry = 0;
-    do {
-      if ( remote_dump == true ) {
-        ret = remote_sdr_cache_init(slot_id, intf);
-      } else {
-        ret = sdr_cache_init(slot_id);
-      }
-      if (ret == 0)
-        break;
+  // Get the sdr of slot
+  if ( sdr_dump == true ) {
+    if ( remote_dump == true ) {
+      ret = remote_sdr_cache_init(slot_id, intf);
+    } else { 
+      ret = sdr_cache_init(slot_id);
+    }
 
-      retry++;
-      sleep(1);
-    } while ((ret != 0) && (retry < MAX_RETRY));
-
-    if (ret != 0) {   // if exceed 3 mins, exit this step
-      syslog(LOG_CRIT, "Fail on getting Slot%u SDR", slot_id);
+    if ( ret < 0 ) {
+      syslog(LOG_CRIT, "Fail on getting slot%u FRU", slot_id);
     }
   }
 
@@ -400,7 +393,7 @@ main (int argc, char * const argv[])
     } while (retry < max_retry);
 
     if (ret != 0) {
-      syslog(LOG_CRIT, "Fail on getting Slot%u FRU", slot_id);
+      syslog(LOG_CRIT, "Fail on getting slot%u FRU", slot_id);
     }
   }
 

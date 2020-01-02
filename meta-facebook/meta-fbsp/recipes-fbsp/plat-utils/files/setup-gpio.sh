@@ -426,10 +426,30 @@ gpio_export PWRGD_BMC_PS_PWROK GPIOAB3
 # I/O Expander TCA9539 0xEC
 gpio_export_ioexp 4-0076 FM_SLOT1_PRSNT_N 0
 gpio_export_ioexp 4-0076 FM_SLOT2_PRSNT_N 1
+gpio_export_ioexp 4-0076 BMC_PWM_EN 7
+gpio_set BMC_PWM_EN 1
 
 # I/O Expander TCA9539 0xEE
 gpio_export_ioexp 4-0077 HP_LVC3_OCP_V3_2_PRSNT2_N 8
 gpio_export_ioexp 4-0077 HP_LVC3_OCP_V3_1_PRSNT2_N 9
+
+# I/O Expander PCA9552PW 0xC0
+for i in {0..3};
+do
+  gpio_export_ioexp 8-0060 FM_FAN${i}_POWER_LED_N ${i}
+  gpio_export_ioexp 8-0060 FM_FAN${i}_FAULT_LED_N $((i+4))
+  gpio_export_ioexp 8-0060 FM_FAN${i}_BUF_PRESENT_R $((i+8))
+  gpio_export_ioexp 8-0060 FM_FAN${i}_P12V_EN  $((i+12))
+done
+
+# I/O Expander PCA9552PW 0xC2
+for i in {4..7};
+do
+  gpio_export_ioexp 8-0061 FM_FAN${i}_POWER_LED_N $((i-4))
+  gpio_export_ioexp 8-0061 FM_FAN${i}_FAULT_LED_N $((i))
+  gpio_export_ioexp 8-0061 FM_FAN${i}_BUF_PRESENT_R $((i+4))
+  gpio_export_ioexp 8-0061 FM_FAN${i}_P12V_EN $((i+8))
+done
 
 # Disable JTAG engine
 devmem 0x1e6e4008 32 0x0

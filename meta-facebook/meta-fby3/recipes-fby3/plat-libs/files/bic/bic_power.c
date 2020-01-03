@@ -137,7 +137,7 @@ bic_server_power_reset(uint8_t slot_id) {
       return ret;
     }
 
-    if ( POWER_BTN_LOW == pwr_seq[i] ) sleep(1);
+    if ( RESET_BTN_LOW == pwr_seq[i] ) sleep(1);
   }
 
   return ret;

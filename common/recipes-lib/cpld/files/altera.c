@@ -139,6 +139,7 @@ void max10_update_init(int i2c_file)
 void max10_done()
 {
   close(g_i2c_file);
+  g_i2c_file = 0;
 }
 
 int max10_reg_write(int address, int data)
@@ -506,8 +507,6 @@ int max10_update_rpd(uint8_t* rpd_file, uint8_t image_type, int cfm_start_addr, 
 
   printf("\n Done!\n");
   max10_protect_sectors();
-
-  g_i2c_file = 0;
 
   return ret;
 }

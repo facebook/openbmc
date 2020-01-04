@@ -16,6 +16,7 @@ SRC_URI =+ "file://Makefile \
            file://bmc.cpp \
            file://bmc.h \
            file://check_image.cpp \
+           file://nic.h \
            file://nic.cpp \
            file://fscd.cpp \
            file://tpm.cpp \

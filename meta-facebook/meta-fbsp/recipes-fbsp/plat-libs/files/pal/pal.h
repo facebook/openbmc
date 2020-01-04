@@ -151,6 +151,12 @@ enum {
   SET_SEVEN_SEGMENT,
 };
 
+enum {
+  BOARD_REV_ID,
+  BOARD_SKU_ID,
+};
+
+int pal_get_platform_id(uint8_t id_type, uint8_t *id);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_is_slot_server(uint8_t fru);
 int pal_set_id_led(uint8_t slot, uint8_t status);
@@ -159,8 +165,6 @@ int pal_get_fru_name(uint8_t fru, char *name);
 int pal_set_key_value(char *key, char *value);
 int pal_get_key_value(char *key, char *value);
 void pal_update_ts_sled();
-int read_device(const char *device, int *value);
-int write_device(const char *device, int value);
 int pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver);
 int pal_get_fruid_eeprom_path(uint8_t fru, char *path);
 int pal_set_fault_led(uint8_t fru, uint8_t status);

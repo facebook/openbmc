@@ -39,6 +39,9 @@
 #define PLATFORM_NAME "sonorapass"
 #define LAST_KEY "last_key"
 
+#define REV_ID_FILE "/tmp/mb_rev"
+#define SKU_ID_FILE "/tmp/mb_sku"
+
 #define GPIO_LOCATE_LED "FP_LOCATE_LED"
 #define GPIO_FAULT_LED "FP_FAULT_LED_N"
 
@@ -232,6 +235,29 @@ key_func_lps (int event, void *arg)
   return 0;
 }
 
+static int
+read_device(const char *device, int *value) {
+  FILE *fp;
+  int rc;
+
+  fp = fopen(device, "r");
+  if (!fp) {
+    int err = errno;
+    syslog(LOG_INFO, "failed to open device %s", device);
+    return err;
+  }
+
+  rc = fscanf(fp, "%d", value);
+
+  fclose(fp);
+  if (rc != 1) {
+    syslog(LOG_INFO, "failed to read device %s", device);
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
+
 int
 pal_is_bmc_por(void) {
   FILE *fp;
@@ -253,6 +279,44 @@ pal_get_platform_name(char *name) {
   strcpy(name, PLATFORM_NAME);
 
   return 0;
+}
+
+int
+pal_get_platform_id(uint8_t id_type, uint8_t *id) {
+  int ret = 0, retry = 3, val;
+  uint8_t *id_cache = NULL;
+  char *id_file = NULL;
+  static uint8_t rev_id = 0xFF, sku_id = 0xFF;
+
+  switch (id_type) {
+    case BOARD_REV_ID:
+      id_cache = &rev_id;
+      id_file = REV_ID_FILE;
+      break;
+    case BOARD_SKU_ID:
+      id_cache = &sku_id;
+      id_file = SKU_ID_FILE;
+      break;
+    default:
+      return -1;
+  }
+
+  if (*id_cache != 0xFF) {
+    *id = *id_cache;
+  } else {
+    do {
+      ret = read_device(id_file, &val);
+      if (!ret) {
+        *id_cache = (uint8_t)val;
+        *id = *id_cache;
+        break;
+      }
+      syslog(LOG_WARNING, "pal_get_platform_id failed, id_type: %u", id_type);
+      msleep(10);
+    } while (--retry);
+  }
+
+  return ret;
 }
 
 int

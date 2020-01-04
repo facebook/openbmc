@@ -72,6 +72,10 @@ typedef struct fruid_area_chassis_t {
   char * custom3;
   uint8_t custom4_type_len;
   char * custom4;
+  uint8_t custom5_type_len;
+  char * custom5;
+  uint8_t custom6_type_len;
+  char * custom6;
   uint8_t chksum;
 } fruid_area_chassis_t;
 
@@ -100,6 +104,10 @@ typedef struct fruid_area_board_t {
   char * custom3;
   uint8_t custom4_type_len;
   char * custom4;
+  uint8_t custom5_type_len;
+  char * custom5;
+  uint8_t custom6_type_len;
+  char * custom6;
   uint8_t chksum;
 } fruid_area_board_t;
 
@@ -130,6 +138,10 @@ typedef struct fruid_area_product_t {
   char * custom3;
   uint8_t custom4_type_len;
   char * custom4;
+  uint8_t custom5_type_len;
+  char * custom5;
+  uint8_t custom6_type_len;
+  char * custom6;
   uint8_t chksum;
 } fruid_area_product_t;
 
@@ -160,6 +172,10 @@ typedef struct fruid_info_t {
     char * custom3;
     uint8_t custom4_type_len;
     char * custom4;
+    uint8_t custom5_type_len;
+    char * custom5;
+    uint8_t custom6_type_len;
+    char * custom6;
     uint8_t chksum;
   } chassis;
   struct {
@@ -187,6 +203,10 @@ typedef struct fruid_info_t {
     char * custom3;
     uint8_t custom4_type_len;
     char * custom4;
+    uint8_t custom5_type_len;
+    char * custom5;
+    uint8_t custom6_type_len;
+    char * custom6;
     uint8_t chksum;
   } board;
   struct {
@@ -216,6 +236,10 @@ typedef struct fruid_info_t {
     char * custom3;
     uint8_t custom4_type_len;
     char * custom4;
+    uint8_t custom5_type_len;
+    char * custom5;
+    uint8_t custom6_type_len;
+    char * custom6;
     uint8_t chksum;
   } product;
 } fruid_info_t;
@@ -272,6 +296,8 @@ static const char * fruid_field_all_opt[] = {
   "--CCD2",
   "--CCD3",
   "--CCD4",
+  "--CCD5",
+  "--CCD6",
   "--BMD",
   "--BM",
   "--BP",
@@ -282,6 +308,8 @@ static const char * fruid_field_all_opt[] = {
   "--BCD2",
   "--BCD3",
   "--BCD4",
+  "--BCD5",
+  "--BCD6",
   "--PM",
   "--PN",
   "--PPN",
@@ -292,7 +320,9 @@ static const char * fruid_field_all_opt[] = {
   "--PCD1",
   "--PCD2",
   "--PCD3",
-  "--PCD4"
+  "--PCD4",
+  "--PCD5",
+  "--PCD6"
 };
 
 enum {
@@ -302,6 +332,8 @@ enum {
   CCD2,
   CCD3,
   CCD4,
+  CCD5,
+  CCD6,
   BMD,
   BM,
   BP,
@@ -312,6 +344,8 @@ enum {
   BCD2,
   BCD3,
   BCD4,
+  BCD5,
+  BCD6,
   PM,
   PN,
   PPN,
@@ -322,7 +356,9 @@ enum {
   PCD1,
   PCD2,
   PCD3,
-  PCD4
+  PCD4,
+  PCD5,
+  PCD6
 };
 
 int fruid_parse(const char * bin, fruid_info_t * fruid);

@@ -276,6 +276,8 @@ void free_fruid_info(fruid_info_t * fruid)
     free(fruid->chassis.custom2);
     free(fruid->chassis.custom3);
     free(fruid->chassis.custom4);
+    free(fruid->chassis.custom5);
+    free(fruid->chassis.custom6);
   }
 
   if (fruid->board.flag) {
@@ -290,6 +292,8 @@ void free_fruid_info(fruid_info_t * fruid)
     free(fruid->board.custom2);
     free(fruid->board.custom3);
     free(fruid->board.custom4);
+    free(fruid->board.custom5);
+    free(fruid->board.custom6);
   }
 
   if (fruid->product.flag) {
@@ -304,6 +308,8 @@ void free_fruid_info(fruid_info_t * fruid)
     free(fruid->product.custom2);
     free(fruid->product.custom3);
     free(fruid->product.custom4);
+    free(fruid->product.custom5);
+    free(fruid->product.custom6);
   }
 }
 
@@ -326,6 +332,10 @@ static void init_fruid_info(fruid_info_t * fruid)
   fruid->chassis.custom3 = NULL;
   fruid->chassis.custom4_type_len = 0;
   fruid->chassis.custom4 = NULL;
+  fruid->chassis.custom5_type_len = 0;
+  fruid->chassis.custom5 = NULL;
+  fruid->chassis.custom6_type_len = 0;
+  fruid->chassis.custom6 = NULL;
   fruid->chassis.chksum = 0;
   fruid->board.mfg_time_str = NULL;
   fruid->board.mfg_time = NULL;
@@ -347,6 +357,10 @@ static void init_fruid_info(fruid_info_t * fruid)
   fruid->board.custom3 = NULL;
   fruid->board.custom4_type_len = 0;
   fruid->board.custom4 = NULL;
+  fruid->board.custom5_type_len = 0;
+  fruid->board.custom5 = NULL;
+  fruid->board.custom6_type_len = 0;
+  fruid->board.custom6 = NULL;
   fruid->board.chksum = 0;
   fruid->product.mfg_type_len = 0;
   fruid->product.mfg = NULL;
@@ -370,6 +384,10 @@ static void init_fruid_info(fruid_info_t * fruid)
   fruid->product.custom3 = NULL;
   fruid->product.custom4_type_len = 0;
   fruid->product.custom4 = NULL;
+  fruid->product.custom5_type_len = 0;
+  fruid->product.custom5 = NULL;
+  fruid->product.custom6_type_len = 0;
+  fruid->product.custom6 = NULL;
   fruid->product.chksum = 0;
 }
 
@@ -482,6 +500,24 @@ int parse_fruid_area_product(uint8_t * product,
     return 0;
   fruid_product->custom4 = _fruid_area_field_read(&product[index]);
   if (fruid_product->custom4 == NULL)
+    return ENOMEM;
+  index += FIELD_LEN(product[index]) + 1;
+
+  /* Check if this field was last and there is no more custom data */
+  fruid_product->custom5_type_len = product[index];
+  if (product[index] == NO_MORE_DATA_BYTE)
+    return 0;
+  fruid_product->custom5 = _fruid_area_field_read(&product[index]);
+  if (fruid_product->custom5 == NULL)
+    return ENOMEM;
+  index += FIELD_LEN(product[index]) + 1;
+
+  /* Check if this field was last and there is no more custom data */
+  fruid_product->custom6_type_len = product[index];
+  if (product[index] == NO_MORE_DATA_BYTE)
+    return 0;
+  fruid_product->custom6 = _fruid_area_field_read(&product[index]);
+  if (fruid_product->custom6 == NULL)
     return ENOMEM;
 
   return 0;
@@ -596,6 +632,24 @@ int parse_fruid_area_board(uint8_t * board,
   fruid_board->custom4 = _fruid_area_field_read(&board[index]);
   if (fruid_board->custom4 == NULL)
     return ENOMEM;
+  index += FIELD_LEN(board[index]) + 1;
+
+  /* Check if this field was last and there is no more custom data */
+  fruid_board->custom5_type_len = board[index];
+  if (board[index] == NO_MORE_DATA_BYTE)
+    return 0;
+  fruid_board->custom5 = _fruid_area_field_read(&board[index]);
+  if (fruid_board->custom5 == NULL)
+    return ENOMEM;
+  index += FIELD_LEN(board[index]) + 1;
+
+  /* Check if this field was last and there is no more custom data */
+  fruid_board->custom6_type_len = board[index];
+  if (board[index] == NO_MORE_DATA_BYTE)
+    return 0;
+  fruid_board->custom6 = _fruid_area_field_read(&board[index]);
+  if (fruid_board->custom6 == NULL)
+    return ENOMEM;
 
   return 0;
 }
@@ -683,6 +737,24 @@ int parse_fruid_area_chassis(uint8_t * chassis,
   fruid_chassis->custom4 = _fruid_area_field_read(&chassis[index]);
   if (fruid_chassis->custom4 == NULL)
     return ENOMEM;
+  index += FIELD_LEN(chassis[index]) + 1;
+
+  /* Check if this field was last and there is no more custom data */
+  fruid_chassis->custom5_type_len = chassis[index];
+  if (chassis[index] == NO_MORE_DATA_BYTE)
+    return 0;
+  fruid_chassis->custom5 = _fruid_area_field_read(&chassis[index]);
+  if (fruid_chassis->custom5 == NULL)
+    return ENOMEM;
+  index += FIELD_LEN(chassis[index]) + 1;
+
+  /* Check if this field was last and there is no more custom data */
+  fruid_chassis->custom6_type_len = chassis[index];
+  if (chassis[index] == NO_MORE_DATA_BYTE)
+    return 0;
+  fruid_chassis->custom6 = _fruid_area_field_read(&chassis[index]);
+  if (fruid_chassis->custom6 == NULL)
+    return ENOMEM;
 
   return 0;
 }
@@ -759,6 +831,10 @@ int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid)
       fruid->chassis.custom3 = fruid_chassis.custom3;
       fruid->chassis.custom4_type_len = fruid_chassis.custom4_type_len;
       fruid->chassis.custom4 = fruid_chassis.custom4;
+      fruid->chassis.custom5_type_len = fruid_chassis.custom5_type_len;
+      fruid->chassis.custom5 = fruid_chassis.custom5;
+      fruid->chassis.custom6_type_len = fruid_chassis.custom6_type_len;
+      fruid->chassis.custom6 = fruid_chassis.custom6;
       fruid->chassis.chksum = fruid_chassis.chksum;
     } else
       return ret;
@@ -792,6 +868,10 @@ int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid)
       fruid->board.custom3 = fruid_board.custom3;
       fruid->board.custom4_type_len = fruid_board.custom4_type_len;
       fruid->board.custom4 = fruid_board.custom4;
+      fruid->board.custom5_type_len = fruid_board.custom5_type_len;
+      fruid->board.custom5 = fruid_board.custom5;
+      fruid->board.custom6_type_len = fruid_board.custom6_type_len;
+      fruid->board.custom6 = fruid_board.custom6;
       fruid->board.chksum = fruid_board.chksum;
     } else
       return ret;
@@ -827,6 +907,10 @@ int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid)
       fruid->product.custom3 = fruid_product.custom3;
       fruid->product.custom4_type_len = fruid_product.custom4_type_len;
       fruid->product.custom4 = fruid_product.custom4;
+      fruid->product.custom5_type_len = fruid_product.custom5_type_len;
+      fruid->product.custom5 = fruid_product.custom5;
+      fruid->product.custom6_type_len = fruid_product.custom6_type_len;
+      fruid->product.custom6 = fruid_product.custom6;
       fruid->product.chksum = fruid_product.chksum;
     } else
       return ret;
@@ -1072,12 +1156,12 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
     return -1;
   }
 
-  if (target <= CCD4) {
+  if (target <= CCD6) {
     if (fruid.chassis.flag != 1) {
       printf("Chassis Area is invalid!\n");
       return -1;
     }
-  } else if (target <= BCD4) {
+  } else if (target <= BCD6) {
     if (fruid.board.flag != 1) {
       printf("Board Area is invalid!\n");
       return -1;
@@ -1108,14 +1192,20 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
     case CCD2:
     case CCD3:
     case CCD4:
+    case CCD5:
+    case CCD6:
     case BCD1:
     case BCD2:
     case BCD3:
     case BCD4:
+    case BCD5:
+    case BCD6:
     case PCD1:
     case PCD2:
     case PCD3:
     case PCD4:
+    case PCD5:
+    case PCD6:
       if (type_length == NO_MORE_DATA_BYTE) {
         printf("Content length \"%s\" should not be 1 !\n", field);
         return -1;
@@ -1162,6 +1252,32 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
         fruid.chassis.custom3_type_len = 0;
       fruid.chassis.custom4_type_len = type_length;
       alter_field_content(&fruid.chassis.custom4,tmp_content);
+      break;
+    case CCD5:
+      if (fruid.chassis.custom1_type_len == NO_MORE_DATA_BYTE)
+        fruid.chassis.custom1_type_len = 0;
+      if (fruid.chassis.custom2_type_len == NO_MORE_DATA_BYTE)
+        fruid.chassis.custom2_type_len = 0;
+      if (fruid.chassis.custom3_type_len == NO_MORE_DATA_BYTE)
+        fruid.chassis.custom3_type_len = 0;
+      if (fruid.chassis.custom4_type_len == NO_MORE_DATA_BYTE)
+        fruid.chassis.custom4_type_len = 0;
+      fruid.chassis.custom5_type_len = type_length;
+      alter_field_content(&fruid.chassis.custom5,tmp_content);
+      break;
+    case CCD6:
+      if (fruid.chassis.custom1_type_len == NO_MORE_DATA_BYTE)
+        fruid.chassis.custom1_type_len = 0;
+      if (fruid.chassis.custom2_type_len == NO_MORE_DATA_BYTE)
+        fruid.chassis.custom2_type_len = 0;
+      if (fruid.chassis.custom3_type_len == NO_MORE_DATA_BYTE)
+        fruid.chassis.custom3_type_len = 0;
+      if (fruid.chassis.custom4_type_len == NO_MORE_DATA_BYTE)
+        fruid.chassis.custom4_type_len = 0;
+      if (fruid.chassis.custom5_type_len == NO_MORE_DATA_BYTE)
+        fruid.chassis.custom5_type_len = 0;
+      fruid.chassis.custom6_type_len = type_length;
+      alter_field_content(&fruid.chassis.custom6,tmp_content);
       break;
     case BMD:
       if(set_mfg_time(fruid.board.mfg_time, tmp_content) < 0) {
@@ -1215,6 +1331,32 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
         fruid.board.custom3_type_len = 0;
       fruid.board.custom4_type_len = type_length;
       alter_field_content(&fruid.board.custom4,tmp_content);
+      break;
+    case BCD5:
+      if (fruid.board.custom1_type_len == NO_MORE_DATA_BYTE)
+        fruid.board.custom1_type_len = 0;
+      if (fruid.board.custom2_type_len == NO_MORE_DATA_BYTE)
+        fruid.board.custom2_type_len = 0;
+      if (fruid.board.custom3_type_len == NO_MORE_DATA_BYTE)
+        fruid.board.custom3_type_len = 0;
+      if (fruid.board.custom4_type_len == NO_MORE_DATA_BYTE)
+        fruid.board.custom4_type_len = 0;
+      fruid.board.custom5_type_len = type_length;
+      alter_field_content(&fruid.board.custom5,tmp_content);
+      break;
+    case BCD6:
+      if (fruid.board.custom1_type_len == NO_MORE_DATA_BYTE)
+        fruid.board.custom1_type_len = 0;
+      if (fruid.board.custom2_type_len == NO_MORE_DATA_BYTE)
+        fruid.board.custom2_type_len = 0;
+      if (fruid.board.custom3_type_len == NO_MORE_DATA_BYTE)
+        fruid.board.custom3_type_len = 0;
+      if (fruid.board.custom4_type_len == NO_MORE_DATA_BYTE)
+        fruid.board.custom4_type_len = 0;
+      if (fruid.board.custom5_type_len == NO_MORE_DATA_BYTE)
+        fruid.board.custom5_type_len = 0;
+      fruid.board.custom6_type_len = type_length;
+      alter_field_content(&fruid.board.custom6,tmp_content);
       break;
     case PM:
       fruid.product.mfg_type_len = type_length;
@@ -1271,6 +1413,32 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
         fruid.product.custom3_type_len = 0;
       fruid.product.custom4_type_len = type_length;
       alter_field_content(&fruid.product.custom4,tmp_content);
+      break;
+    case PCD5:
+      if (fruid.product.custom1_type_len == NO_MORE_DATA_BYTE)
+        fruid.product.custom1_type_len = 0;
+      if (fruid.product.custom2_type_len == NO_MORE_DATA_BYTE)
+        fruid.product.custom2_type_len = 0;
+      if (fruid.product.custom3_type_len == NO_MORE_DATA_BYTE)
+        fruid.product.custom3_type_len = 0;
+      if (fruid.product.custom4_type_len == NO_MORE_DATA_BYTE)
+        fruid.product.custom4_type_len = 0;
+      fruid.product.custom5_type_len = type_length;
+      alter_field_content(&fruid.product.custom5,tmp_content);
+      break;
+    case PCD6:
+      if (fruid.product.custom1_type_len == NO_MORE_DATA_BYTE)
+        fruid.product.custom1_type_len = 0;
+      if (fruid.product.custom2_type_len == NO_MORE_DATA_BYTE)
+        fruid.product.custom2_type_len = 0;
+      if (fruid.product.custom3_type_len == NO_MORE_DATA_BYTE)
+        fruid.product.custom3_type_len = 0;
+      if (fruid.product.custom4_type_len == NO_MORE_DATA_BYTE)
+        fruid.product.custom4_type_len = 0;
+      if (fruid.product.custom5_type_len == NO_MORE_DATA_BYTE)
+        fruid.product.custom5_type_len = 0;
+      fruid.product.custom6_type_len = type_length;
+      alter_field_content(&fruid.product.custom6,tmp_content);
       break;
     default:
       return -1;
@@ -1333,6 +1501,20 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
       goto chasis_chksum;
     len = FIELD_LEN(fruid.chassis.custom4_type_len);
     memcpy(&eeprom[i], fruid.chassis.custom4, len);
+    i += len;
+
+    eeprom[i++] = fruid.chassis.custom5_type_len;
+    if (fruid.chassis.custom5_type_len == NO_MORE_DATA_BYTE)
+      goto chasis_chksum;
+    len = FIELD_LEN(fruid.chassis.custom5_type_len);
+    memcpy(&eeprom[i], fruid.chassis.custom5, len);
+    i += len;
+
+    eeprom[i++] = fruid.chassis.custom6_type_len;
+    if (fruid.chassis.custom6_type_len == NO_MORE_DATA_BYTE)
+      goto chasis_chksum;
+    len = FIELD_LEN(fruid.chassis.custom6_type_len);
+    memcpy(&eeprom[i], fruid.chassis.custom6, len);
     i += len;
 
   chasis_chksum:
@@ -1413,6 +1595,20 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
       goto board_chksum;
     len = FIELD_LEN(fruid.board.custom4_type_len);
     memcpy(&eeprom[i], fruid.board.custom4, len);
+    i += len;
+
+    eeprom[i++] = fruid.board.custom5_type_len;
+    if (fruid.board.custom5_type_len == NO_MORE_DATA_BYTE)
+      goto board_chksum;
+    len = FIELD_LEN(fruid.board.custom5_type_len);
+    memcpy(&eeprom[i], fruid.board.custom5, len);
+    i += len;
+
+    eeprom[i++] = fruid.board.custom6_type_len;
+    if (fruid.board.custom6_type_len == NO_MORE_DATA_BYTE)
+      goto board_chksum;
+    len = FIELD_LEN(fruid.board.custom6_type_len);
+    memcpy(&eeprom[i], fruid.board.custom6, len);
     i += len;
 
   board_chksum:
@@ -1500,6 +1696,20 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
       goto product_chksum;
     len = FIELD_LEN(fruid.product.custom4_type_len);
     memcpy(&eeprom[i], fruid.product.custom4, len);
+    i += len;
+
+    eeprom[i++] = fruid.product.custom5_type_len;
+    if (fruid.product.custom5_type_len == NO_MORE_DATA_BYTE)
+      goto product_chksum;
+    len = FIELD_LEN(fruid.product.custom5_type_len);
+    memcpy(&eeprom[i], fruid.product.custom5, len);
+    i += len;
+
+    eeprom[i++] = fruid.product.custom6_type_len;
+    if (fruid.product.custom6_type_len == NO_MORE_DATA_BYTE)
+      goto product_chksum;
+    len = FIELD_LEN(fruid.product.custom6_type_len);
+    memcpy(&eeprom[i], fruid.product.custom6, len);
     i += len;
 
   product_chksum:

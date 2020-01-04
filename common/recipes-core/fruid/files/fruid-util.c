@@ -92,6 +92,10 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
       printf("%-27s: %s", "\nChassis Custom Data 3",fruid->chassis.custom3);
     if (fruid->chassis.custom4 != NULL)
       printf("%-27s: %s", "\nChassis Custom Data 4",fruid->chassis.custom4);
+    if (fruid->chassis.custom5 != NULL)
+      printf("%-27s: %s", "\nChassis Custom Data 5",fruid->chassis.custom5);
+    if (fruid->chassis.custom6 != NULL)
+      printf("%-27s: %s", "\nChassis Custom Data 6",fruid->chassis.custom6);
   }
 
   if (fruid->board.flag) {
@@ -109,6 +113,10 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
       printf("%-27s: %s", "\nBoard Custom Data 3",fruid->board.custom3);
     if (fruid->board.custom4 != NULL)
       printf("%-27s: %s", "\nBoard Custom Data 4",fruid->board.custom4);
+    if (fruid->board.custom5 != NULL)
+      printf("%-27s: %s", "\nBoard Custom Data 5",fruid->board.custom5);
+    if (fruid->board.custom6 != NULL)
+      printf("%-27s: %s", "\nBoard Custom Data 6",fruid->board.custom6);
   }
 
   if (fruid->product.flag) {
@@ -127,6 +135,10 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
       printf("%-27s: %s", "\nProduct Custom Data 3",fruid->product.custom3);
     if (fruid->product.custom4 != NULL)
       printf("%-27s: %s", "\nProduct Custom Data 4",fruid->product.custom4);
+    if (fruid->product.custom5 != NULL)
+      printf("%-27s: %s", "\nProduct Custom Data 5",fruid->product.custom5);
+    if (fruid->product.custom6 != NULL)
+      printf("%-27s: %s", "\nProduct Custom Data 6",fruid->product.custom6);
   }
 
   printf("\n");
@@ -145,12 +157,16 @@ print_json_fruid_info(fruid_info_t *fruid, const char *name)
     json_object_set_new(fru_object, "Chassis Serial Number", json_string(fruid->chassis.serial));
     if (fruid->chassis.custom1 != NULL)
       json_object_set_new(fru_object, "Chassis Custom Data 1", json_string(fruid->chassis.custom1));
-    if (fruid->chassis.custom1 != NULL)
+    if (fruid->chassis.custom2 != NULL)
       json_object_set_new(fru_object, "Chassis Custom Data 2", json_string(fruid->chassis.custom2));
-    if (fruid->chassis.custom1 != NULL)
+    if (fruid->chassis.custom3 != NULL)
       json_object_set_new(fru_object, "Chassis Custom Data 3", json_string(fruid->chassis.custom3));
-    if (fruid->chassis.custom1 != NULL)
+    if (fruid->chassis.custom4 != NULL)
       json_object_set_new(fru_object, "Chassis Custom Data 4", json_string(fruid->chassis.custom4));
+    if (fruid->chassis.custom5 != NULL)
+      json_object_set_new(fru_object, "Chassis Custom Data 5", json_string(fruid->chassis.custom5));
+    if (fruid->chassis.custom6 != NULL)
+      json_object_set_new(fru_object, "Chassis Custom Data 6", json_string(fruid->chassis.custom6));
   }
 
   if (fruid->board.flag) {
@@ -162,12 +178,16 @@ print_json_fruid_info(fruid_info_t *fruid, const char *name)
     json_object_set_new(fru_object, "Board FRU ID", json_string(fruid->board.fruid));
     if (fruid->board.custom1 != NULL)
       json_object_set_new(fru_object, "Board Custom Data 1", json_string(fruid->board.custom1));
-    if (fruid->board.custom1 != NULL)
+    if (fruid->board.custom2 != NULL)
       json_object_set_new(fru_object, "Board Custom Data 2", json_string(fruid->board.custom2));
-    if (fruid->board.custom1 != NULL)
+    if (fruid->board.custom3 != NULL)
       json_object_set_new(fru_object, "Board Custom Data 3", json_string(fruid->board.custom3));
-    if (fruid->board.custom1 != NULL)
+    if (fruid->board.custom4 != NULL)
       json_object_set_new(fru_object, "Board Custom Data 4", json_string(fruid->board.custom4));
+    if (fruid->board.custom5 != NULL)
+      json_object_set_new(fru_object, "Board Custom Data 5", json_string(fruid->board.custom5));
+    if (fruid->board.custom6 != NULL)
+      json_object_set_new(fru_object, "Board Custom Data 6", json_string(fruid->board.custom6));
   }
 
   if (fruid->product.flag) {
@@ -180,12 +200,16 @@ print_json_fruid_info(fruid_info_t *fruid, const char *name)
     json_object_set_new(fru_object, "Product FRU ID", json_string(fruid->product.fruid));
     if (fruid->product.custom1 != NULL)
       json_object_set_new(fru_object, "Product Custom Data 1", json_string(fruid->product.custom1));
-    if (fruid->product.custom1 != NULL)
+    if (fruid->product.custom2 != NULL)
       json_object_set_new(fru_object, "Product Custom Data 2", json_string(fruid->product.custom2));
-    if (fruid->product.custom1 != NULL)
+    if (fruid->product.custom3 != NULL)
       json_object_set_new(fru_object, "Product Custom Data 3", json_string(fruid->product.custom3));
-    if (fruid->product.custom1 != NULL)
+    if (fruid->product.custom4 != NULL)
       json_object_set_new(fru_object, "Product Custom Data 4", json_string(fruid->product.custom4));
+    if (fruid->product.custom5 != NULL)
+      json_object_set_new(fru_object, "Product Custom Data 5", json_string(fruid->product.custom5));
+    if (fruid->product.custom6 != NULL)
+      json_object_set_new(fru_object, "Product Custom Data 6", json_string(fruid->product.custom6));
   }
 
   json_dumpf(fru_object, stdout, 4);
@@ -227,6 +251,8 @@ print_usage() {
            "                 CCD2 (Chassis Custom Data 2)\n"
            "                 CCD3 (Chassis Custom Data 3)\n"
            "                 CCD4 (Chassis Custom Data 4)\n"
+           "                 CCD5 (Chassis Custom Data 5)\n"
+           "                 CCD6 (Chassis Custom Data 6)\n"
            "                 BMD  (Board Mfg Date)\n"
            "                       e.g., fruid-util fru1 --modify --BMD \"$( date +%%s -d \"2018-01-01 17:00:00\" )\" xxx.bin\n"
            "                 BM   (Board Mfg)\n"
@@ -238,6 +264,8 @@ print_usage() {
            "                 BCD2 (Board Custom Data 2)\n"
            "                 BCD3 (Board Custom Data 3)\n"
            "                 BCD4 (Board Custom Data 4)\n"
+           "                 BCD5 (Board Custom Data 5)\n"
+           "                 BCD6 (Board Custom Data 6)\n"
            "                 PM   (Product Manufacturer)\n"
            "                 PN   (Product Name)\n"
            "                 PPN  (Product Part Number)\n"
@@ -248,7 +276,9 @@ print_usage() {
            "                 PCD1 (Product Custom Data 1)\n"
            "                 PCD2 (Product Custom Data 2)\n"
            "                 PCD3 (Product Custom Data 3)\n"
-           "                 PCD4 (Product Custom Data 4)\n");
+           "                 PCD4 (Product Custom Data 4)\n"
+           "                 PCD5 (Product Custom Data 5)\n"
+           "                 PCD6 (Product Custom Data 6)\n");
   } else {
     printf("Usage: fruid-util [ %s ] [--json]\n"
       "Usage: fruid-util [ %s ] [--dump | --write ] <file>\n",
@@ -262,6 +292,8 @@ print_usage() {
            "                 CCD2 (Chassis Custom Data 2)\n"
            "                 CCD3 (Chassis Custom Data 3)\n"
            "                 CCD4 (Chassis Custom Data 4)\n"
+           "                 CCD5 (Chassis Custom Data 5)\n"
+           "                 CCD6 (Chassis Custom Data 6)\n"
            "                 BMD  (Board Mfg Date)\n"
            "                       e.g., fruid-util fru1 --modify --BMD \"$( date +%%s -d \"2018-01-01 17:00:00\" )\" xxx.bin\n"
            "                 BM   (Board Manufacturer)\n"
@@ -273,6 +305,8 @@ print_usage() {
            "                 BCD2 (Board Custom Data 2)\n"
            "                 BCD3 (Board Custom Data 3)\n"
            "                 BCD4 (Board Custom Data 4)\n"
+           "                 BCD5 (Board Custom Data 5)\n"
+           "                 BCD6 (Board Custom Data 6)\n"
            "                 PM   (Product Manufacturer)\n"
            "                 PN   (Product Name)\n"
            "                 PPN  (Product Part Number)\n"
@@ -283,7 +317,9 @@ print_usage() {
            "                 PCD1 (Product Custom Data 1)\n"
            "                 PCD2 (Product Custom Data 2)\n"
            "                 PCD3 (Product Custom Data 3)\n"
-           "                 PCD4 (Product Custom Data 4)\n");
+           "                 PCD4 (Product Custom Data 4)\n"
+           "                 PCD5 (Product Custom Data 5)\n"
+           "                 PCD6 (Product Custom Data 6)\n");
   }
   exit(-1);
 }
@@ -765,6 +801,8 @@ int main(int argc, char * argv[]) {
     {"CCD2", 1, NULL, 'f'},
     {"CCD3", 1, NULL, 'f'},
     {"CCD4", 1, NULL, 'f'},
+    {"CCD5", 1, NULL, 'f'},
+    {"CCD6", 1, NULL, 'f'},
     {"BMD", 1, NULL, 'f'},
     {"BM", 1, NULL, 'f'},
     {"BP", 1, NULL, 'f'},
@@ -775,6 +813,8 @@ int main(int argc, char * argv[]) {
     {"BCD2", 1, NULL, 'f'},
     {"BCD3", 1, NULL, 'f'},
     {"BCD4", 1, NULL, 'f'},
+    {"BCD5", 1, NULL, 'f'},
+    {"BCD6", 1, NULL, 'f'},
     {"PM", 1, NULL, 'f'},
     {"PN", 1, NULL, 'f'},
     {"PPN", 1, NULL, 'f'},
@@ -786,6 +826,8 @@ int main(int argc, char * argv[]) {
     {"PCD2", 1, NULL, 'f'},
     {"PCD3", 1, NULL, 'f'},
     {"PCD4", 1, NULL, 'f'},
+    {"PCD5", 1, NULL, 'f'},
+    {"PCD6", 1, NULL, 'f'},
   };
 
   const char *optstring = "";   //not support short option

@@ -32,7 +32,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 function init_class2_server() {
   if [ $(is_bmc_por) -eq 1 ]; then
     devmem_clear_bit $(scu_addr 9c) 17
-    power-util slot0 on
+    power-util slot1 on
   fi
 }
 
@@ -41,10 +41,6 @@ function init_class1_server() {
   if [ $(is_bmc_por) -eq 1 ]; then
     # Disable clearing of PWM block on WDT SoC Reset
     devmem_clear_bit $(scu_addr 9c) 17
-
-    if [ $(is_server_prsnt 0) == "1" ] ; then
-      power-util slot0 on
-    fi
 
     if [ $(is_server_prsnt 1) == "1" ] ; then
       power-util slot1 on
@@ -56,6 +52,10 @@ function init_class1_server() {
 
     if [ $(is_server_prsnt 3) == "1" ] ; then
       power-util slot3 on
+    fi
+
+    if [ $(is_server_prsnt 4) == "1" ] ; then
+      power-util slot4 on
     fi
   fi
 }

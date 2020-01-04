@@ -549,3 +549,142 @@ bic_is_m2_exp_prsnt(uint8_t slot_id) {
 
   return 0;
 }
+
+/*
+    0x2E 0xDF: Force Intel ME Recovery
+Request
+  Byte 1:3 = Intel Manufacturer ID - 000157h, LS byte first.
+
+  Byte 4 - Command
+    = 01h Restart using Recovery Firmware
+      (Intel ME FW configuration is not restored to factory defaults)
+    = 02h Restore Factory Default Variable values and restart the Intel ME FW
+    = 03h PTT Initial State Restore
+Response
+  Byte 1 - Completion Code
+  = 00h - Success
+  (Remaining standard Completion Codes are shown in Section 2.12)
+  = 81h - Unsupported Command parameter value in the Byte 4 of the request.
+
+  Byte 2:4 = Intel Manufacturer ID - 000157h, LS byte first.
+*/
+int
+me_recovery(uint8_t slot_id, uint8_t command) {
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+  int retry = 0;
+
+  while (retry <= 3) {
+    tbuf[0] = 0xB8;
+    tbuf[1] = 0xDF;
+    tbuf[2] = 0x57;
+    tbuf[3] = 0x01;
+    tbuf[4] = 0x00;
+    tbuf[5] = command;
+    tlen = 6;
+
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret) {
+      retry++;
+      sleep(1);
+      continue;
+    }
+    else
+      break;
+  }
+  if (retry == 4) { //if the third retry still failed, return -1
+    syslog(LOG_CRIT, "%s: Restart using Recovery Firmware failed..., retried: %d", __func__,  retry);
+    return -1;
+  }
+
+  sleep(10);
+  retry = 0;
+  memset(&tbuf, 0, 256);
+  memset(&rbuf, 0, 256);
+  /*
+      0x6 0x4: Get Self-Test Results
+    Byte 1 - Completion Code
+    Byte 2
+      = 55h - No error. All Self-Tests Passed.
+      = 81h - Firmware entered Recovery bootloader mode
+    Byte 3 For byte 2 = 55h, 56h, FFh:
+      =00h
+      =02h - recovery mode entered by IPMI command "Force ME Recovery"
+  */
+  //Using ME self-test result to check if the ME Recovery Command Success or not
+  while (retry <= 3) {
+    tbuf[0] = 0x18;
+    tbuf[1] = 0x04;
+    tlen = 2;
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret) {
+      retry++;
+      sleep(1);
+      continue;
+    }
+
+    //if Get Self-Test Results is 0x55 0x00, means No error. All Self-Tests Passed.
+    //if Get Self-Test Results is 0x81 0x02, means Firmware entered Recovery bootloader mode
+    if ( (command == RECOVERY_MODE) && (rbuf[1] == 0x81) && (rbuf[2] == 0x02) ) {
+      return 0;
+    }
+    else if ( (command == RESTORE_FACTORY_DEFAULT) && (rbuf[1] == 0x55) && (rbuf[2] == 0x00) ) {
+      return 0;
+    }
+    else {
+      return -1;
+    }
+  }
+  if (retry == 4) { //if the third retry still failed, return -1
+    syslog(LOG_CRIT, "%s: Restore Factory Default failed..., retried: %d", __func__,  retry);
+    return -1;
+  }
+  return 0;
+}
+
+int
+bic_switch_mux_for_bios_spi(uint8_t slot_id, uint8_t mux) {
+  uint8_t tbuf[5] = {0};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 5;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[0] = 0x05; //bus id
+  tbuf[1] = 0x42; //slave addr
+  tbuf[2] = 0x01; //read 1 byte
+  tbuf[3] = 0x00; //register offset
+  tbuf[4] = mux;  //mux setting
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+  if ( ret < 0 ) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+bic_set_gpio(uint8_t slot_id, uint8_t gpio_num,uint8_t value) {
+  uint8_t tbuf[6] = {0x9c, 0x9c, 0x00};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 6;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[3] = 0x01;
+  tbuf[4] = gpio_num;
+  tbuf[5] = value;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen);
+
+  if ( ret < 0 ) {
+    return -1;
+  }
+
+  return 0;
+}

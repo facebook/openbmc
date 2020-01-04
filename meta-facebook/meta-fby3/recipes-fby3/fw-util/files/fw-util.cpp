@@ -173,10 +173,10 @@ void usage()
   cout << "-------:--------------:-------------"<< endl;
   cout << "bmc    :bmc           :bmc cpld rom "<< endl;
   cout << "nic    :nic           :nic" << endl;
-  cout << "slot1  :bb sb 1ou 2ou :bic bicbl cpld me vr" << endl;
-  cout << "slot2  :sb 1ou 2ou    :bic bicbl cpld me vr" << endl;
-  cout << "slot3  :sb 1ou 2ou    :bic bicbl cpld me vr" << endl;
-  cout << "slot4  :sb 1ou 2ou    :bic bicbl cpld me vr" << endl;
+  cout << "slot1  :bb sb 1ou 2ou :bic bicbl bios cpld me vr" << endl;
+  cout << "slot2  :sb 1ou 2ou    :bic bicbl bios cpld me vr" << endl;
+  cout << "slot3  :sb 1ou 2ou    :bic bicbl bios cpld me vr" << endl;
+  cout << "slot4  :sb 1ou 2ou    :bic bicbl bios cpld me vr" << endl;
 
   if (plock)
     delete plock;

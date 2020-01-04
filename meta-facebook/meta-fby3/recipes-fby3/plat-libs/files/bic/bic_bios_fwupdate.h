@@ -18,42 +18,21 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __BIC_H__
-#define __BIC_H__
+#ifndef __BIC_BIOS_FWUPDATE_H__
+#define __BIC_BIOS_FWUPDATE_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include "bic_xfer.h"
-#include "bic_power.h"
-#include "bic_fwupdate.h"
-#include "bic_ipmi.h"
-#include "error.h"
-
-enum {
-  FW_CPLD = 1,
-  FW_BIC,
-  FW_ME,
-  FW_BIC_BOOTLOADER,
-  FW_VR,
-  FW_EXP_CPLD,
-};
-
-enum {
-  BIC_EOK = 0,
-  BIC_ENOTSUP = -ENOTSUP,
-  BIC_ENOTREADY = -EAGAIN,
-  /* non system errors start from -256 downwards */
-};
-
-enum {
-  RECOVERY_MODE = 1,
-  RESTORE_FACTORY_DEFAULT,
-};
+#include "bic.h"
+int bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *ver);
+int update_bic_bios(uint8_t slot_id, char *image, uint8_t force);
+int update_bic_usb_bios(uint8_t slot_id, char *image);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-#endif /* __BIC_H__ */
+#endif /* __BIC_FWUPDATE_H__ */

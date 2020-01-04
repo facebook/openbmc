@@ -34,6 +34,7 @@
 #include "bic_cpld_altera_fwupdate.h"
 #include "bic_cpld_lattice_fwupdate.h"
 #include "bic_vr_fwupdate.h"
+#include "bic_bios_fwupdate.h"
 //#define DEBUG
 
 /****************************/
@@ -897,6 +898,8 @@ exit:
 int
 bic_update_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force) {
   int ret = 0;
+  char ipmb_content[] = "ipmb";
+  char* loc = strstr(path, ipmb_content);
 
   printf("slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, path, force);
   switch (comp) {
@@ -918,6 +921,13 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t f
       break;
     case UPDATE_VR:
       ret = update_bic_vr(slot_id, path, force);
+      break;
+    case UPDATE_BIOS:
+      if (loc != NULL) {
+        ret = update_bic_bios(slot_id, path, force);
+      } else {
+        ret = update_bic_usb_bios(slot_id, path);
+      }
       break;
   }
  

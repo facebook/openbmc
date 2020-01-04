@@ -41,6 +41,9 @@ int bic_get_vr_ver(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen, 
 int bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf);
 int bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor, uint8_t intf);
 int bic_is_m2_exp_prsnt(uint8_t slot_id);
+int me_recovery(uint8_t slot_id, uint8_t command);
+int bic_switch_mux_for_bios_spi(uint8_t slot_id, uint8_t mux);
+int bic_set_gpio(uint8_t slot_id, uint8_t gpio_num,uint8_t value);
 #ifdef __cplusplus
 } // extern "C"
 #endif

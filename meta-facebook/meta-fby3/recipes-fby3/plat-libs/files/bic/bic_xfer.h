@@ -34,6 +34,8 @@ extern "C" {
 #define MIN_IPMB_BYPASS_LEN 6
 extern const uint32_t IANA_ID;
 
+#define CMD_OEM_GET_SET_GPIO 0x33
+
 enum {
   BIC_STATUS_SUCCESS =  0,
   BIC_STATUS_FAILURE = -1,

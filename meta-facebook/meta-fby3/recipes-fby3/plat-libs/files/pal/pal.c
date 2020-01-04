@@ -41,11 +41,11 @@
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
-const char pal_fru_list_print[] = "all, slot1, slot2, slot3, slot4, bmc, bb";
+const char pal_fru_list_print[] = "all, slot1, slot2, slot3, slot4, bmc, nic, bb";
 const char pal_fru_list_rw[] = "slot1, slot2, slot3, slot4, bmc, bb";
 const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc";
 
-const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc";
+const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 
 #define SYSFW_VER "sysfw_ver_slot"
@@ -545,6 +545,9 @@ pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
     break;
   case FRU_BB:
     sprintf(path, EEPROM_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS, BB_FRU_ADDR);
+    break;
+  case FRU_NIC:
+    sprintf(path, EEPROM_PATH, NIC_FRU_BUS, NIC_FRU_ADDR);
     break;
   default:
     return -1;

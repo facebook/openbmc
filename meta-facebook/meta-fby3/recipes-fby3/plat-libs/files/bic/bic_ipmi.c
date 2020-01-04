@@ -480,7 +480,7 @@ bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, u
   uint8_t rlen = 0;
   int i = 0;
   int ret = 0;
-  int retries = 10;
+  int retries = 3;
 
   //mux
   tbuf[0] = (bus << 1) + 1; //bus

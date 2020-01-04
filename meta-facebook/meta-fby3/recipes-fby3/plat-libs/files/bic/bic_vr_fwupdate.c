@@ -486,8 +486,9 @@ vr_TI_program(uint8_t slot_id, vr *dev) {
   for ( i=0; i<len; i++ ) {
     //prepare data
     tbuf[3] = list[i].command ;//command code
-    memcpy(&tbuf[4], list[i].data, list[i].data_len);
-    tlen = 4 + list[i].data_len;
+    tbuf[4] = list[i].data_len;//counts
+    memcpy(&tbuf[5], list[i].data, list[i].data_len);
+    tlen = 5 + list[i].data_len;
 
     //send it
     ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
@@ -503,6 +504,7 @@ vr_TI_program(uint8_t slot_id, vr *dev) {
   tbuf[3] = TI_USER_NVM_INDEX;
   tbuf[4] = TI_NVM_INDEX_00;
   tlen = 5;
+  msleep(300);
   ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
   if ( ret < 0 ) {
     printf("Cannot initialize the page to 0x00 again.!\n");
@@ -530,6 +532,7 @@ vr_TI_program(uint8_t slot_id, vr *dev) {
         check_cnt++;
       }
     }
+    msleep(50);
   }
 
   if ( check_cnt != len ) {

@@ -25,6 +25,9 @@ static int read_adc_val(uint8_t adc_id, float *value);
 static int read_temp(uint8_t snr_id, float *value);
 static int read_hsc_vin(uint8_t hsc_id, float *value);
 static int read_hsc_temp(uint8_t hsc_id, float *value);
+static int read_hsc_pin(uint8_t hsc_id, float *value);
+static int read_hsc_iout(uint8_t hsc_id, float *value);
+static int read_ltc4282_volt(uint8_t hsc_id, float *value);
 static int pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value);
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
@@ -45,7 +48,10 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_P1V2_BMC_STBY,
   BMC_SENSOR_P2V5_BMC_STBY,
   BMC_SENSOR_HSC_TEMP,
-  BMC_SENSOR_HSC_IN_VOLT,
+  BMC_SENSOR_HSC_VIN,
+  BMC_SENSOR_HSC_PIN,
+  BMC_SENSOR_HSC_IOUT,
+  BMC_SENSOR_P12V_MEDUSA,
 };
 
 const uint8_t bic_sensor_list[] = {
@@ -159,11 +165,16 @@ const uint8_t bmc_discrete_sensor_list[] = {
 };
  
 //ADM1278
-PAL_ADM1278_INFO adm1278_info_list[] = {
-  {ADM1278_VOLTAGE, 19599, 0, 100},
-  {ADM1278_CURRENT, 800 * ADM1278_RSENSE, 20475, 10},
-  {ADM1278_POWER, 6123 * ADM1278_RSENSE, 0, 100},
-  {ADM1278_TEMP, 42, 31880, 10},
+PAL_ATTR_INFO adm1278_info_list[] = {
+  {HSC_VOLTAGE, 19599, 0, 100},
+  {HSC_CURRENT, 800 * ADM1278_RSENSE, 20475, 10},
+  {HSC_POWER, 6123 * ADM1278_RSENSE, 0, 100},
+  {HSC_TEMP, 42, 31880, 10},
+};
+
+//LTC4282
+PAL_ATTR_INFO ltc4282_info_list[] = {
+  {HSC_VOLTAGE, 65535, 0, 16.64},
 };
 
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNR, UNC, LCR, LNR, LNC, Pos, Neg}
@@ -315,18 +326,18 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x88
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x89
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8A
-  {"BMC_SENSOR_P5V", ADC0, read_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x8B
-  {"BMC_SENSOR_P12V", ADC1, read_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x8C
-  {"BMC_SENSOR_P3V3_STBY", ADC2, read_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x8D
-  {"BMC_SENSOR_P1V15_STBY", ADC3, read_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x8E
-  {"BMC_SENSOR_P1V2_STBY", ADC4, read_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x8F
+  {"BMC_SENSOR_P5V", ADC0, read_adc_val, true, {5.486, 0, 0, 4.524, 0, 0, 0, 0}, VOLT}, //0x8B
+  {"BMC_SENSOR_P12V", ADC1, read_adc_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0x8C
+  {"BMC_SENSOR_P3V3_STBY", ADC2, read_adc_val, true, {3.629, 0, 0, 2.976, 0, 0, 0, 0}, VOLT}, //0x8D
+  {"BMC_SENSOR_P1V15_STBY", ADC3, read_adc_val, true, {1.264, 0, 0, 1.037, 0, 0, 0, 0}, VOLT}, //0x8E
+  {"BMC_SENSOR_P1V2_STBY", ADC4, read_adc_val, true, {1.314, 0, 0, 1.086, 0, 0, 0, 0}, VOLT}, //0x8F
 
-  {"BMC_SENSOR_P2V5_STBY", ADC5, read_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x90
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x91
-  {"BMC_SENSOR_HSC_IN_VOLT", 0, read_hsc_vin, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x92
-  {"BMC_SENSOR_HSC_TEMP", 0, read_hsc_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x93
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x94
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x95
+  {"BMC_SENSOR_P2V5_STBY", ADC5, read_adc_val, true, {2.743, 0, 0, 2.262, 0, 0, 0, 0}, VOLT}, //0x90
+  {"BMC_SENSOR_P12V_MEDUSA", HSC_ID1, read_ltc4282_volt, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0x91
+  {"BMC_SENSOR_HSC_VIN", HSC_ID0, read_hsc_vin, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x92
+  {"BMC_SENSOR_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x93
+  {"BMC_SENSOR_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x94
+  {"BMC_SENSOR_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x95
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x96
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x97
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x98
@@ -444,6 +455,7 @@ PAL_SENSOR_MAP sensor_map[] = {
 //HSC
 PAL_HSC_INFO hsc_info_list[] = {
   {HSC_ID0, ADM1278_SLAVE_ADDR, adm1278_info_list},
+  {HSC_ID1, LTC4282_SLAVE_ADDR, ltc4282_info_list}
 };
 
 size_t bmc_sensor_cnt = sizeof(bmc_sensor_list)/sizeof(uint8_t);
@@ -616,24 +628,23 @@ read_adc_val(uint8_t adc_id, float *value) {
 }
 
 static void
-get_adm1278_info(uint8_t hsc_id, uint8_t type, uint8_t *addr, float* m, float* b, float* r) {
+get_hsc_info(uint8_t hsc_id, uint8_t type, uint8_t *addr, float* m, float* b, float* r) {
+  *addr = hsc_info_list[hsc_id].slv_addr;
+  *m = hsc_info_list[hsc_id].info[type].m;
+  *b = hsc_info_list[hsc_id].info[type].b;
+  *r = hsc_info_list[hsc_id].info[type].r;
 
- *addr = hsc_info_list[hsc_id].slv_addr;
- *m = hsc_info_list[hsc_id].info[type].m;
- *b = hsc_info_list[hsc_id].info[type].b;
- *r = hsc_info_list[hsc_id].info[type].r;
-
- return;
+  return;
 }
 
 static int
-read_hsc_temp(uint8_t hsc_id, float *value) {
+read_hsc_pin(uint8_t hsc_id, float *value) {
   uint8_t tbuf[1] = {0x00};
   uint8_t rbuf[2] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  uint8_t addr = hsc_info_list[hsc_id].slv_addr;
-  float m, b, r;
+  uint8_t addr = 0;
+  float m = 0, b = 0, r = 0;
   int retry = 3;
   int ret = -1;
   int fd = 0;
@@ -644,7 +655,87 @@ read_hsc_temp(uint8_t hsc_id, float *value) {
     goto error_exit;
   }
 
-  get_adm1278_info(HSC_ID0, ADM1278_TEMP, &addr, &m, &b, &r);
+  get_hsc_info(hsc_id, HSC_POWER, &addr, &m, &b, &r);
+
+  tbuf[0] = PMBUS_READ_PIN;
+  tlen = 1;
+  rlen = 2;
+
+  while ( ret < 0 && retry-- > 0 ) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+  if ( ret < 0 ) {
+    ret = READING_NA;
+    goto error_exit;
+  }
+
+  *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
+error_exit:
+  if ( fd > 0 ) close(fd);
+
+  return ret;
+}
+
+static int
+read_hsc_iout(uint8_t hsc_id, float *value) {
+  uint8_t tbuf[1] = {0x00};
+  uint8_t rbuf[2] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  uint8_t addr = 0;
+  float m = 0, b = 0, r = 0;
+  int retry = 3;
+  int ret = -1;
+  int fd = 0;
+
+  fd = open("/dev/i2c-11", O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "Failed to open bus 11");
+    goto error_exit;
+  }
+
+  get_hsc_info(hsc_id, HSC_CURRENT, &addr, &m, &b, &r);
+
+  tbuf[0] = PMBUS_READ_IOUT;
+  tlen = 1;
+  rlen = 2;
+
+  while ( ret < 0 && retry-- > 0 ) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+  if ( ret < 0 ) {
+    ret = READING_NA;
+    goto error_exit;
+  }
+
+  *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
+error_exit:
+  if ( fd > 0 ) close(fd);
+
+  return ret;
+}
+
+static int
+read_hsc_temp(uint8_t hsc_id, float *value) {
+  uint8_t tbuf[1] = {0x00};
+  uint8_t rbuf[2] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  uint8_t addr = 0;
+  float m = 0, b = 0, r = 0;
+  int retry = 3;
+  int ret = -1;
+  int fd = 0;
+
+  fd = open("/dev/i2c-11", O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "Failed to open bus 11");
+    goto error_exit;
+  }
+
+  get_hsc_info(hsc_id, HSC_TEMP, &addr, &m, &b, &r);
 
   tbuf[0] = PMBUS_READ_TEMP1;
   tlen = 1;
@@ -672,8 +763,8 @@ read_hsc_vin(uint8_t hsc_id, float *value) {
   uint8_t rbuf[2] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  uint8_t addr = hsc_info_list[hsc_id].slv_addr;
-  float m, b, r;
+  uint8_t addr = 0;
+  float m = 0, b = 0, r = 0;
   int retry = 3;
   int ret = -1;
   int fd = 0;
@@ -684,7 +775,7 @@ read_hsc_vin(uint8_t hsc_id, float *value) {
     goto error_exit;
   }
   
-  get_adm1278_info(HSC_ID0, ADM1278_VOLTAGE, &addr, &m, &b, &r);
+  get_hsc_info(hsc_id, HSC_VOLTAGE, &addr, &m, &b, &r);
 
   tbuf[0] = PMBUS_READ_VIN;
   tlen = 1;
@@ -704,6 +795,73 @@ error_exit:
   if ( fd > 0 ) close(fd);
 
   return ret;
+}
+
+static int
+read_ltc4282_volt(uint8_t hsc_id, float *value) {
+  uint8_t tbuf[2] = {0x00};
+  uint8_t rbuf[2] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  uint8_t addr = 0;
+  static bool is_initialized = false;
+  float m = 0, b = 0, r =0;
+  int retry = 3;
+  int ret = -1;
+  int fd = 0;
+
+  get_hsc_info(hsc_id, HSC_VOLTAGE, &addr, &m, &b, &r);
+
+  fd = open("/dev/i2c-11", O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "Failed to open bus 11");
+    goto error_exit;
+  }
+
+  //enable 16-bit mode
+  if ( is_initialized == false ) {
+    tbuf[0] = ILIM_ADJUST;
+    tlen = 1;
+    rlen = 1;
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      ret = READING_NA;
+      goto error_exit;
+    }
+
+    tbuf[0] = ILIM_ADJUST;
+    tbuf[1] = rbuf[0] | 0x1;
+    tlen = 2;
+    rlen = 0;
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      ret = READING_NA;
+      goto error_exit;
+    }
+
+    is_initialized = true;
+  }
+
+  tbuf[0] = VSOURCE;
+  tlen = 1;
+  rlen = 2;
+
+  while ( ret < 0 && retry-- > 0 ) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+  if ( ret < 0 ) {
+    ret = READING_NA;
+    goto error_exit;
+  }
+
+  *value = ((float)(rbuf[0] << 8 | rbuf[1]) * r - b) / m;
+
+error_exit:
+  if ( fd > 0 ) close(fd);
+
+  return ret;
+
 }
 
 static int
@@ -842,7 +1000,43 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
   float *val = (float*) value;
-  *val = 0;
+  switch (fru) {
+    case FRU_BMC:
+    case FRU_NIC:
+      switch(thresh) {
+        case UCR_THRESH:
+          *val = sensor_map[sensor_num].snr_thresh.ucr_thresh;
+          break;
+        case UNC_THRESH:
+          *val = sensor_map[sensor_num].snr_thresh.unc_thresh;
+          break;
+        case UNR_THRESH:
+          *val = sensor_map[sensor_num].snr_thresh.unr_thresh;
+          break;
+        case LCR_THRESH:
+          *val = sensor_map[sensor_num].snr_thresh.lcr_thresh;
+          break;
+        case LNC_THRESH:
+          *val = sensor_map[sensor_num].snr_thresh.lnc_thresh;
+          break;
+        case LNR_THRESH:
+          *val = sensor_map[sensor_num].snr_thresh.lnr_thresh;
+          break;
+        case POS_HYST:
+          *val = sensor_map[sensor_num].snr_thresh.pos_hyst;
+          break;
+        case NEG_HYST:
+          *val = sensor_map[sensor_num].snr_thresh.neg_hyst;
+          break;
+        default:
+          syslog(LOG_WARNING, "Threshold type error value=%d\n", thresh);
+          return -1;
+      }
+      break;
+    default:
+      return -1;
+      break;
+  }
   return 0;
 }
 

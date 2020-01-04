@@ -8,6 +8,11 @@
 #define MB_TEMP_DEVICE  "/sys/class/i2c-dev/i2c-%d/device/%d-00%x/hwmon/hwmon*/temp1_input"
 #define MB_ADC_VOLTAGE_DEVICE "/sys/devices/platform/iio-hwmon/hwmon/hwmon*/in%d_input"
 
+//LTC4282
+#define LTC4282_SLAVE_ADDR (0x88)
+#define ILIM_ADJUST        (0x11)
+#define VSOURCE            (0x3A)
+
 //AMD1278 CMD INFO
 #define PMBUS_PMON_CONFIG  (0xD4)
 #define ADM1278_SLAVE_ADDR (0x80)
@@ -196,8 +201,10 @@ enum {
   BMC_SENSOR_P1V2_BMC_STBY = 0x8F,
   BMC_SENSOR_P2V5_BMC_STBY = 0x90,
   BMC_SENSOR_P12V_MEDUSA = 0x91,
-  BMC_SENSOR_HSC_IN_VOLT = 0x92,
+  BMC_SENSOR_HSC_VIN = 0x92,
   BMC_SENSOR_HSC_TEMP = 0x93,
+  BMC_SENSOR_HSC_PIN = 0x94,
+  BMC_SENSOR_HSC_IOUT = 0x95,
 };
 
 //ADC INFO
@@ -234,22 +241,31 @@ enum {
   ADM1278_TEMP,
 };
 
+//ATTR INFO
+enum {
+  HSC_VOLTAGE = 0,
+  HSC_CURRENT,
+  HSC_POWER,
+  HSC_TEMP,
+};
+
 typedef struct {
   uint8_t type;
   float m;
   float b;
   float r;
-} PAL_ADM1278_INFO;
+} PAL_ATTR_INFO;
 
 //HSC INFO
 enum {
-  HSC_ID0,
+  HSC_ID0 = 0,
+  HSC_ID1,
 };
 
 typedef struct {
   uint8_t id;
   uint8_t slv_addr;
-  PAL_ADM1278_INFO* info;
+  PAL_ATTR_INFO* info;
 } PAL_HSC_INFO;
 
 typedef struct {

@@ -35,10 +35,10 @@
 #include <linux/netlink.h>
 #include <openbmc/pal.h>
 #include <openbmc/ncsi.h>
+#include <openbmc/nl-wrapper.h>
 #include <openbmc/pldm.h>
 #include <openbmc/pldm_base.h>
 #include <openbmc/pldm_fw_update.h>
-#include "libnl-wrapper.h"
 
 #define noDEBUG   /* debug printfs */
 

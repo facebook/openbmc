@@ -17,8 +17,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#ifndef _LIBNL_WRAPPER_H_
-#define _LIBNL_WRAPPER_H_
+#ifndef _NL_WRAPPER_H_
+#define _NL_WRAPPER_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include <linux/types.h>
 
 #define ETHERNET_HEADER_SIZE 16
 
@@ -52,27 +57,30 @@ enum ncsi_nl_attrs {
 };
 
 struct ncsi_pkt_hdr {
-       unsigned char mc_id;        /* Management controller ID */
-       unsigned char revision;     /* NCSI version - 0x01      */
-       unsigned char reserved;     /* Reserved                 */
-       unsigned char id;           /* Packet sequence number   */
-       unsigned char type;         /* Packet type              */
-       unsigned char channel;      /* Network controller ID    */
-       __be16        length;       /* Payload length           */
-       __be32        reserved1[2]; /* Reserved                 */
+	unsigned char mc_id;        /* Management controller ID */
+	unsigned char revision;     /* NCSI version - 0x01      */
+	unsigned char reserved;     /* Reserved                 */
+	unsigned char id;           /* Packet sequence number   */
+	unsigned char type;         /* Packet type              */
+	unsigned char channel;      /* Network controller ID    */
+	__be16        length;       /* Payload length           */
+	__be32        reserved1[2]; /* Reserved                 */
 };
 
-
 struct ncsi_msg {
-	struct nl_sock	*sk;
-	struct nl_msg	*msg;
-	struct nlmsghdr	*hdr;
-  NCSI_NL_RSP_T *rsp;
-	int ret;
+	struct nl_sock  *sk;
+	struct nl_msg   *msg;
+	struct nlmsghdr *hdr;
+	NCSI_NL_RSP_T   *rsp;
+	int             ret;
 };
 
 
 // APIs
 NCSI_NL_RSP_T * send_nl_msg_libnl(NCSI_NL_MSG_T *nl_msg);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

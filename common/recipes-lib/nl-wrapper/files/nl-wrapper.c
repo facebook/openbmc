@@ -1,5 +1,5 @@
 /*
- * libnl-wrapper.c
+ * nl-wrapper.c
  *
  * Copyright 2015-present Facebook. All Rights Reserved.
  *
@@ -17,26 +17,18 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
 #include <stdint.h>
-#include <stddef.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <linux/netlink.h>
 #include <net/if.h>
-#include <openbmc/pal.h>
 #include <openbmc/ncsi.h>
-#include <netlink/socket.h>
 #include <netlink/genl/genl.h>
 #include <netlink/genl/ctrl.h>
-#include <linux/taskstats.h>
-#include <linux/genetlink.h>
-#include "libnl-wrapper.h"
+#include "nl-wrapper.h"
 
 #define noDEBUG_LIBNL
 
@@ -103,9 +95,10 @@ int setup_ncsi_message(struct ncsi_msg *msg, int cmd, int flags)
 		rc = -1;
 		goto out;
 	}
-  msg->ret = 1;
 
+	msg->ret = 1;
 	return 0;
+
 out:
 	if (errno)
 		fprintf(stderr, "\t%m\n");
@@ -119,61 +112,62 @@ static int send_cb(struct nl_msg *msg, void *arg)
 	struct nlmsghdr *hdr = nlmsg_hdr(msg);
 	struct nlattr *tb[NCSI_ATTR_MAX + 1] = {0};
 	int rc, data_len;
-  char *data;
-  struct ncsi_msg *ncsi_msg = (struct ncsi_msg *)arg;
-
+	char *data;
+	struct ncsi_msg *ncsi_msg = (struct ncsi_msg *)arg;
 
 	static struct nla_policy ncsi_genl_policy[NCSI_ATTR_MAX + 1] = {
-		[NCSI_ATTR_IFINDEX] =		{ .type = NLA_U32 },
-		[NCSI_ATTR_PACKAGE_LIST] =	{ .type = NLA_NESTED },
-		[NCSI_ATTR_PACKAGE_ID] =	{ .type = NLA_U32 },
-		[NCSI_ATTR_CHANNEL_ID] =	{ .type = NLA_U32 },
-		[NCSI_ATTR_DATA] =		{ .type = NLA_BINARY  },
-		[NCSI_ATTR_MULTI_FLAG] =	{ .type = NLA_FLAG },
-		[NCSI_ATTR_PACKAGE_MASK] =	{ .type = NLA_U32 },
-		[NCSI_ATTR_CHANNEL_MASK] =	{ .type = NLA_U32 },
+		[NCSI_ATTR_IFINDEX] =      { .type = NLA_U32 },
+		[NCSI_ATTR_PACKAGE_LIST] = { .type = NLA_NESTED },
+		[NCSI_ATTR_PACKAGE_ID] =   { .type = NLA_U32 },
+		[NCSI_ATTR_CHANNEL_ID] =   { .type = NLA_U32 },
+		[NCSI_ATTR_DATA] =         { .type = NLA_BINARY },
+		[NCSI_ATTR_MULTI_FLAG] =   { .type = NLA_FLAG },
+		[NCSI_ATTR_PACKAGE_MASK] = { .type = NLA_U32 },
+		[NCSI_ATTR_CHANNEL_MASK] = { .type = NLA_U32 },
 	};
 
-  DBG_PRINT("%s called\n", __FUNCTION__);
+	DBG_PRINT("%s called\n", __FUNCTION__);
 	rc = genlmsg_parse(hdr, 0, tb, NCSI_ATTR_MAX, ncsi_genl_policy);
-  DBG_PRINT("%s rc = %d \n", __FUNCTION__, rc);
-
-
-
+	DBG_PRINT("%s rc = %d\n", __FUNCTION__, rc);
 	if (rc) {
 		fprintf(stderr, "Failed to parse ncsi info callback\n");
 		return rc;
 	}
 
+	if (!tb[NCSI_ATTR_DATA]) {
+		fprintf(stderr, "null data attribute\n");
+		errno = EFAULT;
+		return -1;
+	}
+
 	data_len = nla_len(tb[NCSI_ATTR_DATA]);
 
-  // kernel returns the entire ethernet frame, skip the ethernet header
-  ncsi_msg->rsp->hdr.payload_length = data_len - ETHERNET_HEADER_SIZE;
+	// kernel returns the entire ethernet frame, skip the ethernet header
+	ncsi_msg->rsp->hdr.payload_length = data_len - ETHERNET_HEADER_SIZE;
 
-  if (data_len >= NCSI_MAX_RESPONSE) {
+	if (data_len >= NCSI_MAX_RESPONSE) {
 		fprintf(stderr, "data_len (%d) exceeds max buffer size (%d)\n",
             data_len, NCSI_MAX_RESPONSE);
-  } else {
-  	data = nla_data(tb[NCSI_ATTR_DATA]);
-    // copy NC-SI response, skip header
-    memcpy(ncsi_msg->rsp->msg_payload, (void*)(data + ETHERNET_HEADER_SIZE), data_len);
-  }
+	} else {
+		data = nla_data(tb[NCSI_ATTR_DATA]);
+		// copy NC-SI response, skip header
+		memcpy(ncsi_msg->rsp->msg_payload, (void*)(data + ETHERNET_HEADER_SIZE), data_len);
+	}
 
 #ifdef DEBUG_LIBNL
-  int i = 0;
+	int i = 0;
 	DBG_PRINT("%s, data len %d\n", __FUNCTION__, data_len);
-  DBG_PRINT("payload:\n");
+	DBG_PRINT("payload:\n");
 	data = nla_data(tb[NCSI_ATTR_DATA]);
-  data += ETHERNET_HEADER_SIZE;
+	data += ETHERNET_HEADER_SIZE;
 	for (i = 0; i < data_len; ++i) {
 		DBG_PRINT("0x%x ", *(data+i));
 	}
-  DBG_PRINT("\n");
+	DBG_PRINT("\n");
 #endif
 
-  // indicating callback has been completed
-  ncsi_msg->ret = 0;
-
+	// indicating callback has been completed
+	ncsi_msg->ret = 0;
 	return 0;
 }
 
@@ -183,23 +177,23 @@ int run_command_send(int ifindex, NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rsp)
 	struct ncsi_msg msg;
 	struct ncsi_pkt_hdr *hdr = {0};
 	int rc = 0;
-  int payload_len = nl_msg->payload_length;
-  int package = 0;  // hardcoding for now, we need to extend ncsi-util to supported
-                    // specifying package # in the CLI
+	int payload_len = nl_msg->payload_length;
+	int package = 0;  // hardcoding for now, we need to extend ncsi-util to supported
+                      // specifying package # in the CLI
 
-  uint8_t *pData, *pCtrlPktPayload;
+	uint8_t *pData, *pCtrlPktPayload;
 
-  // allocate a  contiguous buffer space to hold ncsi message
-  //  (header + Control Packet payload)
-  pData = calloc(1, sizeof(struct ncsi_pkt_hdr) + payload_len);
-  if (!pData) {
-    fprintf(stderr, "Failed to allocate buffer for control packet, %m\n");
-    goto out;
-  }
-  // prepare buffer to be copied to netlink msg
-  hdr = (struct ncsi_pkt_hdr *)pData;
-  pCtrlPktPayload = pData + sizeof(struct ncsi_pkt_hdr);
-  memcpy(pCtrlPktPayload, nl_msg->msg_payload, payload_len);
+	// allocate a  contiguous buffer space to hold ncsi message
+	//  (header + Control Packet payload)
+	pData = calloc(1, sizeof(struct ncsi_pkt_hdr) + payload_len);
+	if (!pData) {
+		fprintf(stderr, "Failed to allocate buffer for control packet, %m\n");
+		goto out;
+	}
+	// prepare buffer to be copied to netlink msg
+	hdr = (struct ncsi_pkt_hdr *)pData;
+	pCtrlPktPayload = pData + sizeof(struct ncsi_pkt_hdr);
+	memcpy(pCtrlPktPayload, nl_msg->msg_payload, payload_len);
 
 	rc = setup_ncsi_message(&msg, NCSI_CMD_SEND_CMD, 0);
 	if (rc)
@@ -208,8 +202,8 @@ int run_command_send(int ifindex, NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rsp)
 	DBG_PRINT("send cmd, ifindex %d, package %d, channel %d, cmd 0x%x\n",
 			ifindex, package, nl_msg->channel_id, nl_msg->cmd);
 
-  msg.rsp = rsp;
-  msg.rsp->hdr.cmd = nl_msg->cmd;
+	msg.rsp = rsp;
+	msg.rsp->hdr.cmd = nl_msg->cmd;
 
 	rc = nla_put_u32(msg.msg, NCSI_ATTR_IFINDEX, ifindex);
 	if (rc) {
@@ -231,15 +225,14 @@ int run_command_send(int ifindex, NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rsp)
 	}
 
 
-  hdr->type = nl_msg->cmd;
-  hdr->length = htons(payload_len);  // NC-SI command payload length
-  rc = nla_put(msg.msg, NCSI_ATTR_DATA,
-                sizeof(struct ncsi_pkt_hdr) + payload_len,
-                (void *)pData);
+	hdr->type = nl_msg->cmd;
+	hdr->length = htons(payload_len);  // NC-SI command payload length
+	rc = nla_put(msg.msg, NCSI_ATTR_DATA,
+		sizeof(struct ncsi_pkt_hdr) + payload_len, (void *)pData);
 	if (rc) {
 		fprintf(stderr, "Failed to add opcode, %m\n");
 	}
-  nl_socket_disable_seq_check(msg.sk);
+	nl_socket_disable_seq_check(msg.sk);
 	rc = nl_socket_modify_cb(msg.sk, NL_CB_VALID, NL_CB_CUSTOM, send_cb, &msg);
 	if (rc) {
 		fprintf(stderr, "Failed to modify callback function, %m\n");
@@ -252,7 +245,7 @@ int run_command_send(int ifindex, NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rsp)
 		goto out;
 	}
 
-  while (msg.ret == 1) {
+	while (msg.ret == 1) {
 		rc = nl_recvmsgs_default(msg.sk);
 		DBG_PRINT("%s, rc = %d\n", __FUNCTION__, rc);
 		if (rc) {
@@ -269,19 +262,19 @@ out:
 // Sending data to kernel via netlink libnl
 NCSI_NL_RSP_T * send_nl_msg_libnl(NCSI_NL_MSG_T *nl_msg)
 {
-  NCSI_NL_RSP_T  *ret_buf = NULL;
+  NCSI_NL_RSP_T *ret_buf = NULL;
   unsigned int ifindex = 0;  // network interface (e.g. eth0)'s ifindex
 
   ifindex = if_nametoindex(nl_msg->dev_name);
   // if_nametoindex returns 0 on error
   if (ifindex == 0) {
-   	fprintf(stderr, "Invalid netdev %s %m\n", nl_msg->dev_name);
+    fprintf(stderr, "Invalid netdev %s %m\n", nl_msg->dev_name);
     return NULL;
   }
 
   ret_buf = calloc(1, sizeof(NCSI_NL_RSP_T));
   if (!ret_buf) {
-   	fprintf(stderr, "Failed to allocate rspbuf %d  %m\n", sizeof(NCSI_NL_RSP_T));
+    fprintf(stderr, "Failed to allocate rspbuf %d  %m\n", sizeof(NCSI_NL_RSP_T));
     return NULL;
   }
 

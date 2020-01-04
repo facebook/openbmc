@@ -3,8 +3,8 @@ all: ncsi-util
 
 CFLAGS += -Wall -Werror
 
-ncsi-util: ncsi-util.c libnl-wrapper.c
-	$(CC) -pthread $(CFLAGS)  -std=gnu11 -o $@ $^ $(LDFLAGS)
+ncsi-util: ncsi-util.c
+	$(CC) -pthread $(CFLAGS) -std=gnu11 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

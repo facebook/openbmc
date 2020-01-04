@@ -6,8 +6,15 @@ sv stop fscd
 
 pwm_value=100 
 
-fan0_rpm=`cat /sys/devices/platform/ast_pwm_tacho.0/tacho0_rpm`
-fan1_rpm=`cat /sys/devices/platform/ast_pwm_tacho.0/tacho1_rpm`
+spb_type=$(get_spb_type)
+if [ $spb_type == 1 ] ; then
+    # for Yv2.50
+    fan0_rpm=`cat /sys/devices/platform/ast_pwm_tacho.0/tacho2_rpm`
+    fan1_rpm=`cat /sys/devices/platform/ast_pwm_tacho.0/tacho3_rpm`
+else
+    fan0_rpm=`cat /sys/devices/platform/ast_pwm_tacho.0/tacho0_rpm`
+    fan1_rpm=`cat /sys/devices/platform/ast_pwm_tacho.0/tacho1_rpm`
+fi
 
 if [ $fan0_rpm -le "500" ] || [ $fan1_rpm -le "500" ]; then
     # for fan fail condition

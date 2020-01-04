@@ -395,3 +395,22 @@ is_date_synced() {
     echo 0
   fi
 }
+
+# Get platform type
+get_spb_type() {
+  local board_id
+  local rev_id2
+  board_id=`cat /sys/class/gpio/gpio195/value`
+  rev_id2=`cat /sys/class/gpio/gpio194/value`
+  
+  if [[ $board_id == "1" && $rev_id2 == "1" ]]; then
+    # Yosemite V2.50 Platform
+    echo 1
+  elif [[ $board_id == "1" && $rev_id2 == "0" ]]; then
+    # FBND Platform
+    echo 2
+  else
+    # Yosemite V2 Platform
+    echo 0
+  fi
+}

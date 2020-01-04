@@ -859,7 +859,7 @@ pal_set_dev_guid(uint8_t fru, char *str) {
 int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   uint8_t pcie_conf = 0xff;
   uint8_t *data = res_data;
-  int ret = 0;
+  int ret = 0, config_status = 0;
   uint8_t bmc_location = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
@@ -869,10 +869,20 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
     return -1;
   }
 
+  config_status = bic_is_m2_exp_prsnt(slot);
+
   if (bmc_location == BB_BMC) {
-      pcie_conf = 0x01;
+    if (config_status == 0) {
+      pcie_conf = CONFIG_A;
+    } else if (config_status == 1) {
+      pcie_conf = CONFIG_B;
+    } else if (config_status == 3) {
+      pcie_conf = CONFIG_D;
+    } else {
+      pcie_conf = CONFIG_B;
+    }
   } else {
-      pcie_conf = 0x03;
+      pcie_conf = CONFIG_C;
   }
 
   *data++ = pcie_conf;

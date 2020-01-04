@@ -868,7 +868,7 @@ static int
 pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
 #define BIC_SENSOR_READ_NA 0x20
   int ret = 0;
-  uint8_t power_status = 0;
+  uint8_t power_status = 0, config_status = 0;
   ipmi_sensor_reading_t sensor = {0};
   sdr_full_t *sdr = NULL;
 
@@ -877,9 +877,15 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
     return READING_NA;
   }
 
-  if ( (bic_is_m2_exp_prsnt(fru) == 1 || bic_is_m2_exp_prsnt(fru) == 3) && (sensor_num >= 0x40 && sensor_num <= 0x7F)) { // 1OU Exp
+  config_status = bic_is_m2_exp_prsnt(fru);
+
+  if (config_status < 0) {
+    return READING_NA;
+  }
+
+  if ( (config_status == 1 || config_status == 3) && (sensor_num >= 0x40 && sensor_num <= 0x7F)) { // 1OU Exp
     ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
-  } else if ( (bic_is_m2_exp_prsnt(fru) == 2 || bic_is_m2_exp_prsnt(fru) == 3) && (sensor_num >= 0x80 && sensor_num <= 0xBF)) { // 2OU Exp
+  } else if ( (config_status == 2 || config_status == 3) && (sensor_num >= 0x80 && sensor_num <= 0xBF)) { // 2OU Exp
     ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
   } else {
     ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);

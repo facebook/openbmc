@@ -66,6 +66,13 @@ enum {
   PWM_3,
 };
 
+enum {
+  CONFIG_A = 0x01,
+  CONFIG_B = 0x02,
+  CONFIG_C = 0x03,
+  CONFIG_D = 0x04,
+};
+
 #define MAX_NODES 5
 #define READING_SKIP    (1)
 #define READING_NA      (-2)

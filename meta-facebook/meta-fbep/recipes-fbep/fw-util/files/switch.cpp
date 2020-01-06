@@ -110,7 +110,7 @@ int PAXComponent2::print_version()
 int PAXComponent2::update(string image)
 {
   int ret;
-  string cmd("switchtec fw-update /dev/i2c-12@0x20 ");
+  string cmd("switchtec fw-update /dev/i2c-12@0x1a ");
 
   cmd = cmd + image;
   pal_set_pax_proc_ongoing(PAX2, 30*60);
@@ -149,7 +149,7 @@ int PAXComponent3::print_version()
 int PAXComponent3::update(string image)
 {
   int ret;
-  string cmd("switchtec fw-update /dev/i2c-12@0x21 ");
+  string cmd("switchtec fw-update /dev/i2c-12@0x1b ");
 
   cmd = cmd + image;
   pal_set_pax_proc_ongoing(PAX3, 30*60);

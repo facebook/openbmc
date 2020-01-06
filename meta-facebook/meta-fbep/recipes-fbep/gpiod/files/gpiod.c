@@ -27,6 +27,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/file.h>
+#include <openbmc/pal.h>
 #include <openbmc/libgpio.h>
 
 #define POLL_TIMEOUT -1 /* Forever */
@@ -87,8 +88,15 @@ static void* fan_status_monitor()
     {"FAN2_PWR_GOOD", "Fan2 power", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
     {"FAN3_PWR_GOOD", "Fan3 power", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
   };
+  uint8_t status;
 
   while (1) {
+    sleep(1);
+
+    if (pal_get_server_power(FRU_MB, &status) < 0 || status == SERVER_POWER_OFF) {
+      continue;
+    }
+
     for (i = 0; i < 8; i++) {
       fan_gpios[i].curr = gpio_get(fan_gpios[i].shadow);
       if (fan_gpios[i].last != fan_gpios[i].curr) {
@@ -99,7 +107,6 @@ static void* fan_status_monitor()
       }
       fan_gpios[i].last = fan_gpios[i].curr;
     }
-    sleep(1);
   }
 
   return NULL;
@@ -126,7 +133,6 @@ int main(int argc, char **argv)
       syslog(LOG_CRIT, "pthread_create for fan monitor error");
       exit(1);
     }
-    pthread_join(tid_fan_monitor, NULL);
 
     polldesc = gpio_poll_open(g_gpios, sizeof(g_gpios)/sizeof(g_gpios[0]));
     if (!polldesc) {

@@ -20,7 +20,7 @@ all: gpiod
 CFLAGS += -Wall -Werror
 
 gpiod: gpiod.c
-	$(CC) $(CFLAGS) -pthread -lgpio-ctrl -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -pthread -lpal -lgpio-ctrl -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

@@ -32,4 +32,6 @@ IMAGE_INSTALL += " \
   gpiod \
   guid-util \
   mterm \
+  front-paneld \
+  fpc-util \
   "

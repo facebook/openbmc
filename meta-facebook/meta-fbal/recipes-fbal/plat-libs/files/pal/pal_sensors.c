@@ -1884,9 +1884,13 @@ fbal_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           break;
         case PDB_EVENT_FAN3_PRESENT:
           sprintf(name, "PDB_FAN3_PRESENT");
-          break; 
+          break;
+        default:
+          return -1; 
       }
       break;
+   default:
+     return -1; 
   }
   return 0;
 }

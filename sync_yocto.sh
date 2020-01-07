@@ -3,6 +3,21 @@ set -e
 
 repos="rocko warrior"
 
+FETCH_ONLY=0
+while [[ $# -gt 0 ]]
+do
+  case $1 in
+    -f|--fetch-only)
+      FETCH_ONLY=1
+      shift
+      ;;
+
+    *)
+      shift
+      ;;
+  esac
+done
+
 if [ ! -d ./yocto ]; then
   mkdir ./yocto
 fi
@@ -35,8 +50,10 @@ do
   git fetch yocto-meta-oe $branch
   git fetch yocto-meta-security $branch
 
-  git worktree add yocto/$branch/poky yocto-poky/$branch
-  git worktree add yocto/$branch/meta-openembedded yocto-meta-oe/$branch
-  git worktree add yocto/$branch/meta-security yocto-meta-security/$branch
+  if [ $FETCH_ONLY -eq 0 ]; then
+    git worktree add yocto/$branch/poky yocto-poky/$branch
+    git worktree add yocto/$branch/meta-openembedded yocto-meta-oe/$branch
+    git worktree add yocto/$branch/meta-security yocto-meta-security/$branch
+  fi
 
 done

@@ -58,12 +58,15 @@ env:
     - MODIFIED_SH="$(git diff --diff-filter=d --name-only $ORIGIN_COMMIT -- | grep -P '[.]sh$')"
     - MODIFIED_PY="$(git diff --diff-filter=d --name-only $ORIGIN_COMMIT -- | grep -P '[.]py$')"
   matrix:
+    - BOARD=angelslanding
     - BOARD=cmm
+    - BOARD=emeraldpools
     - BOARD=fbtp
     - BOARD=fbttn
     - BOARD=fby2
     - BOARD=galaxy100
     - BOARD=lightning
+    - BOARD=sonorapass
     - BOARD=wedge
     - BOARD=wedge100
     - BOARD=yosemite

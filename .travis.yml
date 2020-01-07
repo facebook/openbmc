@@ -80,6 +80,6 @@ script:
   - touch ${CACHE}/.seed
 
   # Build the image.
-  - source ./openbmc-init-build-env meta-facebook/meta-${BOARD} build-${BOARD}
+  - source ./openbmc-init-build-env ${BOARD} build-${BOARD}
   - echo "SSTATE_DIR = \"${CACHE}\"" >> ./conf/local.conf
   - bitbake ${BOARD}-image

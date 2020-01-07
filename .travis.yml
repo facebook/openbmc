@@ -54,7 +54,7 @@ env:
     # completely unrelated)
     - ORIGIN_COMMIT=$(git merge-base HEAD origin/helium 2>/dev/null || git merge-base HEAD origin/master)
     - CACHE="${HOME}/sstate-cache"
-    - CACHE_URI="https://s3-us-west-2.amazonaws.com/openbmc-sstate"
+    - CACHE_URI="https://fb-openbmc-sstate.s3.us-east-2.amazonaws.com"
     - MODIFIED_SH="$(git diff --diff-filter=d --name-only $ORIGIN_COMMIT -- | grep -P '[.]sh$')"
     - MODIFIED_PY="$(git diff --diff-filter=d --name-only $ORIGIN_COMMIT -- | grep -P '[.]py$')"
   matrix:
@@ -72,11 +72,10 @@ script:
   - ./sync_yocto.sh
   # This is how we seed the shared-state cache.
   # It is a small hack to allow builds to finish within 50 minutes.
-  # Start a powerful machine and build all images using the same sstate serially.
-  # cd $CACHE && tar czf ../sstate-cache.tgz .; and then upload to S3.
+  # The S3 cache is built on an AWS EC2 instance in the fbopenbmc account.
   # Within TravisCI each machine will then maintain a unique cache.
-  - if [ ! -f ${CACHE}/.seed ]; then wget ${CACHE_URI}/sstate-cache.tgz; tar -xzf sstate-cache.tgz -C ${CACHE}; fi
-  - if [ -f sstate-cache.tgz ]; then rm sstate-cache.tgz; fi
+  - if [ ! -f ${CACHE}/.seed ]; then wget ${CACHE_URI}/sstate-cache.tar; tar -xf sstate-cache.tar -C ${CACHE}; fi
+  - if [ -f sstate-cache.tar ]; then rm sstate-cache.tar; fi
   - touch ${CACHE}/.seed
 
   # Build the image.

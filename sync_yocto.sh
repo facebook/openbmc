@@ -1,10 +1,18 @@
-#!/bin/sh
+#!/bin/bash
+set -e
 
 repos="rocko warrior"
 
 if [ ! -d ./yocto ]; then
   mkdir ./yocto
 fi
+
+git remote add yocto-poky \
+    https://git.yoctoproject.org/git/poky || true
+git remote add yocto-meta-oe \
+    https://github.com/openembedded/meta-openembedded.git || true
+git remote add yocto-meta-security \
+    https://git.yoctoproject.org/git/meta-security || true
 
 for branch in $repos
 do
@@ -22,7 +30,13 @@ do
   if [ -d ./yocto/$branch/meta-security ]; then
     rm -rf ./yocto/$branch/meta-security
   fi
-  git clone -b $branch https://git.yoctoproject.org/git/poky yocto/$branch/poky
-  git clone -b $branch https://github.com/openembedded/meta-openembedded.git yocto/$branch/meta-openembedded
-  git clone -b $branch https://git.yoctoproject.org/git/meta-security yocto/$branch/meta-security
+
+  git fetch yocto-poky $branch
+  git fetch yocto-meta-oe $branch
+  git fetch yocto-meta-security $branch
+
+  git worktree add yocto/$branch/poky yocto-poky/$branch
+  git worktree add yocto/$branch/meta-openembedded yocto-meta-oe/$branch
+  git worktree add yocto/$branch/meta-security yocto-meta-security/$branch
+
 done

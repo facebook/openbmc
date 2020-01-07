@@ -28,6 +28,12 @@ import system
 import virtualcat
 
 
+# Python2 compatibility layer
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = OSError
+
 # For wedge100, there was a bug that caused the CS1 pin to be configured
 # for GPIO instead. Manually configure it for Chip Select before attempting
 # to write to flash1.
@@ -47,6 +53,27 @@ def free_mem_remediation(logger):
     system.drop_caches(logger)
 
     return
+
+
+def get_downloaded_image_size(logger, image):
+    if not image:
+        return 0
+
+    # worst case scenario already accounted in calculations
+    if image.startswith("http:") or image.startswith("https:"):
+        return 0
+
+    try:
+        img_stat = os.stat(image)
+        img_size_kb = int(img_stat.st_size / 1024)
+        logger.info("Image size {} Kb".format(img_size_kb))
+        return img_size_kb
+    except FileNotFoundError:
+        # this is weird, but let's leave it to "normal" pypartition flow
+        logger.error(
+            "File {} not found, can not calculate real minimum memory".format(image)
+        )
+        return 0
 
 
 def improve_system(logger):
@@ -113,6 +140,11 @@ def improve_system(logger):
             reboot_threshold_pct, reboot_threshold_kb
         )
     )
+
+    # we need to take into account a case when image is already downloaded and
+    # subtract its size from `min_memory_needed`
+    min_memory_needed -= get_downloaded_image_size(logger, args.image)
+
     logger.info("Minimum memory needed for update is {} KiB".format(min_memory_needed))
     if free_memory_kb < min_memory_needed:
         logger.info(

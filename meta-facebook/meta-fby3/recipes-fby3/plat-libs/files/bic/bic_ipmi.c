@@ -688,3 +688,26 @@ bic_set_gpio(uint8_t slot_id, uint8_t gpio_num,uint8_t value) {
 
   return 0;
 }
+
+int
+bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t rbuf[13] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+
+  memset(gpio, 0, sizeof(*gpio));
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, 3, rbuf, &rlen);
+  if (ret != 0 || rlen < 3)
+    return -1;
+    
+  rlen -= 3;
+  if (rlen > sizeof(bic_gpio_t))
+    rlen = sizeof(bic_gpio_t);
+
+  // Ignore first 3 bytes of IANA ID
+  memcpy((uint8_t*) gpio, &rbuf[3], rlen);
+
+  return ret;
+}

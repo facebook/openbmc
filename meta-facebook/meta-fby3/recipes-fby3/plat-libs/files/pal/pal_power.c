@@ -305,11 +305,38 @@ pal_sled_cycle(void) {
 
 int
 pal_set_last_pwr_state(uint8_t fru, char *state) {
-  return 0;
+  
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+
+  sprintf(key, "pwr_server%d_last_state", (int) fru);
+
+  ret = pal_set_key_value(key, state);
+  if (ret < 0) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "pal_set_last_pwr_state: pal_set_key_value failed for "
+        "fru %u", fru);
+#endif
+  }
+
+  return ret;
 }
 
 int
 pal_get_last_pwr_state(uint8_t fru, char *state) {
-  return 0;
-}
+  
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
 
+  sprintf(key, "pwr_server%d_last_state", (int) fru);
+
+  ret = pal_get_key_value(key, state);
+  if (ret < 0) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "pal_get_last_pwr_state: pal_get_key_value failed for "
+        "fru %u", fru);
+#endif
+  }
+
+  return ret;
+}

@@ -300,7 +300,7 @@ bios_flash_post_operate() {
 }
 
 read_spi1_dev(){
-    spi_no=0
+    spi_no=1
     dev=$1
     file=$2
     case ${dev} in
@@ -333,7 +333,7 @@ read_spi1_dev(){
 }
 
 write_spi1_dev(){
-    spi_no=0
+    spi_no=1
     dev=$1
     file=$2
     case ${dev} in
@@ -371,7 +371,7 @@ write_spi1_dev(){
 }
 
 erase_spi1_dev(){
-    spi_no=0
+    spi_no=1
     dev=$1
     file=$2
     case ${dev} in

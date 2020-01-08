@@ -155,7 +155,8 @@ vr_ISL_polling_status(uint8_t slot_id, uint8_t addr) {
     goto error_exit;
   }
 
-  return rbuf[3] & 0x1;
+  //bit1 is held to 1, it means the action is successful.
+  return rbuf[0] & 0x1;
 
 error_exit:
 
@@ -180,7 +181,6 @@ vr_ISL_program(uint8_t slot_id, vr *dev) {
   tbuf[2] = 0x00; //read cnt
 
   for ( i=0; i<len; i++ ) {
-
     //prepare data
     tbuf[3] = list[i].command ;//command code
     memcpy(&tbuf[4], list[i].data, list[i].data_len);
@@ -190,25 +190,24 @@ vr_ISL_program(uint8_t slot_id, vr *dev) {
       syslog(LOG_WARNING, "Failed to send data...%d", i);
       break;
     }
+  }
 
-    //check the status
-    retry = MAX_RETRY;
-    do {
-      if ( vr_ISL_polling_status(slot_id, addr) == 1 ) {
-        break;
-      } else {
-        retry--;
-        msleep(500);
-      }
-    } while ( retry > 0 );
-
-    if ( retry == 0 ) {
-      printf("Failed to send data...%d to add 0x%x after retry %d times\n", i, addr, MAX_RETRY);
-      ret = -1;
+  //check the status
+  retry = MAX_RETRY;
+  do {
+    if ( vr_ISL_polling_status(slot_id, addr) > 0 ) {
       break;
-    }    
-  } 
-  
+    } else {
+      retry--;
+      sleep(2);
+    }
+  } while ( retry > 0 );
+
+  if ( retry == 0 ) {
+    syslog(LOG_WARNING, "Failed to program the device");
+    ret = -1;
+  }
+
   return ret;
 }
 

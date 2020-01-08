@@ -28,7 +28,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
-#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <openbmc/kv.h>
@@ -42,6 +41,8 @@
 
 #define GPIO_LOCATE_LED "FP_LOCATE_LED"
 #define GPIO_FAULT_LED "FP_FAULT_LED_N"
+#define GPIO_NIC0_PRSNT "HP_LVC3_OCP_V3_1_PRSNT2_N"
+#define GPIO_NIC1_PRSNT "HP_LVC3_OCP_V3_2_PRSNT2_N"
 
 #define GUID_SIZE 16
 #define OFFSET_SYS_GUID 0x17F0
@@ -257,6 +258,9 @@ pal_get_platform_name(char *name) {
 
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val;
+
   *status = 0;
 
   switch (fru) {
@@ -264,10 +268,20 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     *status = 1;
     break;
   case FRU_NIC0:
-    *status = 1;
+    if ((gdesc = gpio_open_by_shadow(GPIO_NIC0_PRSNT))) {
+      if (!gpio_get_value(gdesc, &val)) {
+        *status = !val;
+      }
+      gpio_close(gdesc);
+    }
     break;
   case FRU_NIC1:
-    *status = 1; 
+    if ((gdesc = gpio_open_by_shadow(GPIO_NIC1_PRSNT))) {
+      if (!gpio_get_value(gdesc, &val)) {
+        *status = !val;
+      }
+      gpio_close(gdesc);
+    }
     break;
   case FRU_PDB:
     *status = 1;
@@ -278,6 +292,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   default:
     return -1;
   }
+
   return 0;
 }
 
@@ -343,7 +358,7 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_MB;
   } else if (!strcmp(str, "pdb")) {
     *fru = FRU_PDB;
-  } else if (!strcmp(str, "nic0")) {
+  } else if (!strcmp(str, "nic0") || !strcmp(str, "nic")) {
     *fru = FRU_NIC0;
   } else if (!strcmp(str, "nic1")) {
     *fru = FRU_NIC1;
@@ -470,7 +485,7 @@ pal_get_fruid_path(uint8_t fru, char *path) {
     sprintf(fname, "pdb");
     break;
   case FRU_BMC:
-    sprintf(fname, "bmc");   
+    sprintf(fname, "bmc");
     break;
   default:
     return -1;

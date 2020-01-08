@@ -43,6 +43,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     CPLD_FIRMWARE_INFO_ENDPOINT = "/api/sys/firmware_info/cpld"
     FPGA_FIRMWARE_INFO_ENDPOINT = "/api/sys/firmware_info/fpga"
     SCM_FIRMWARE_INFO_ENDPOINT = "/api/sys/firmware_info/scm"
+    ALL_FIRMWARE_INFO_ENDPOINT = "/api/sys/firmware_info/all"
 
     # "/api/sys"
     def set_endpoint_sys_attributes(self):
@@ -218,10 +219,10 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     # "/api/sys/firmware_info/cpld"
     def set_endpoint_firmware_info_cpld_attributes(self):
         self.endpoint_firmware_info_cpld_attributes = [
-            "SCMCPLD",
-            "SMB_SYSCPLD",
-            "SMB_PWRCPLD",
             "FCMCPLD",
+            "PWRCPLD",
+            "SCMCPLD",
+            "SMBCPLD",
         ]
 
     def test_endpoint_api_sys_firmware_info_cpld(self):
@@ -263,5 +264,31 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         )
 
     # "/api/sys/firmware_info_all"
+    def set_endpoint_firmware_info_all_attributes(self):
+        self.endpoint_firmware_info_all_attributes = [
+            "ALTBMC Version",
+            "BMC Version",
+            "Fan Speed Controller Version",
+            "TPM Version",
+            "FCMCPLD",
+            "PWRCPLD",
+            "SCMCPLD",
+            "SMBCPLD",
+            "DOMFPGA1",
+            "DOMFPGA2",
+            "Bridge-IC Version",
+            "Bridge-IC Bootloader Version",
+            "BIOS Version",
+            "CPLD Version",
+            "ME Version",
+            "PVCCIN VR Version",
+            "DDRAB VR Version",
+            "P1V05 VR Version",
+        ]
+
     def test_endpoint_api_sys_firmware_info_all(self):
-        self.skipTest("not support")
+        self.set_endpoint_firmware_info_all_attributes()
+        self.verify_endpoint_attributes(
+            RestEndpointTest.ALL_FIRMWARE_INFO_ENDPOINT,
+            self.endpoint_firmware_info_all_attributes,
+        )

@@ -1,6 +1,9 @@
 {
   "pwm_transition_value": 50,
   "pwm_boost_value": 70,
+  "fan_limit_upper_pwm":70,
+  "fan_limit_lower_pwm":30,
+  "ramp_rate":100,
   "sample_interval_ms": 3000,
   "boost": {
     "fan_fail": true,
@@ -21,19 +24,18 @@
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util --force",
         "offset_table": [
-          [0,-10],
-          [40,-8],
-          [55,-5]
+          [0,-12],
+          [40,-9],
+          [55,-7]
         ]
       },
       "read_limit": {
         "alarm_major": {
-          "limit": 45,
-          "soak_time_s": 30
+          "limit": 45
         },
         "alarm_minor": {
           "limit": 40,
-          "soak_time_s": 30
+          "soak_time_s": 300
         }
       },
       "type": "linear_4curve",
@@ -56,19 +58,19 @@
         [33, 60]
       ],
       "data_onefail_up":[
-        [29.99, 40],
-        [30, 45],
-        [31, 50],
-        [32, 55],
+        [27.99, 40],
+        [28, 45],
+        [29, 50],
+        [31, 55],
         [33, 60],
         [34, 65],
         [35, 70]
       ],
       "data_onefail_down":[
-        [27.99, 40],
-        [28, 45],
-        [29, 50],
-        [30, 55],
+        [25.99, 40],
+        [26, 45],
+        [27, 50],
+        [29, 55],
         [31, 60],
         [32, 65],
         [33, 70]
@@ -76,18 +78,16 @@
     },
     "TH3_DIE_TEMP1": {
       "read_source" : {
-        "util" : "/usr/local/bin/sensor-util --force",
-        "offset" : -1
+        "util" : "/usr/local/bin/sensor-util --force"
       },
       "read_limit": {
         "valid": {
-          "limit": 113,
+          "limit": 118,
           "threshold": 20,
           "action": "host_shutdown"
         },
         "alarm_major": {
-          "limit": 110,
-          "soak_time_s": 300
+          "limit": 110
         },
         "alarm_minor": {
           "limit": 107,
@@ -95,10 +95,10 @@
         }
       },
       "type": "incrementpid",
-      "setpoint": 88,
+      "setpoint": 92,
       "positive_hysteresis": 0,
       "negative_hysteresis": 3,
-      "kp": 3,
+      "kp": 2,
       "ki": 0.5,
       "kd": 0.5
     },
@@ -108,8 +108,7 @@
       },
       "read_limit": {
         "alarm_major": {
-          "limit": -1,
-          "soak_time_s": 300
+          "limit": -1
         },
         "alarm_minor": {
           "limit": -5,
@@ -120,7 +119,7 @@
       "setpoint": -15,
       "positive_hysteresis": 0,
       "negative_hysteresis": 3,
-      "kp": 4,
+      "kp": 2,
       "ki": 0.5,
       "kd": 0.5
     }

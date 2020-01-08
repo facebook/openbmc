@@ -47,6 +47,8 @@ typedef struct pmbus_device pmbus_dev_t;
 enum pmbus_regs {
 	PMBUS_PAGE = 0x00,
 	PMBUS_OPERATION = 0x01,
+	PMBUS_MFR_ID = 0x99,
+	PMBUS_MFR_MODEL = 0x9A,
 };
 
 /*

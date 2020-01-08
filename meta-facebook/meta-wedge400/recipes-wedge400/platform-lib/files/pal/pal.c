@@ -2568,7 +2568,7 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, TEMP(2), value);
       break;
     case SMB_SENSOR_SW_CORE_TEMP1:
-      ret = read_attr(SMB_ISL_DEVICE, TEMP(1), value);
+      ret = read_attr(SMB_ISL_DEVICE, TEMP(2), value);
       break;
     case SMB_SENSOR_LM75B_U28_TEMP:
       ret = read_attr(SMB_LM75B_U28_DEVICE, TEMP(1), value);

@@ -2239,10 +2239,13 @@ bic_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 }
 
 static int
-bic_sdr_init(uint8_t fru) {
+bic_sdr_init(uint8_t fru, bool reinit) {
 
   static bool init_done[MAX_NUM_FRUS] = {false};
 
+  if (reinit) {
+    init_done[fru - 1] = false;
+  }
   if (!init_done[fru - 1]) {
 
     sensor_info_t *sinfo = g_sinfo[fru-1];
@@ -2479,7 +2482,7 @@ scm_sensor_read(uint8_t sensor_num, float *value) {
         break;
     }
   } else if (!scm_sensor && is_server_on()) {
-    ret = bic_sdr_init(FRU_SCM);
+    ret = bic_sdr_init(FRU_SCM, false);
     if (ret < 0) {
 #ifdef DEBUG
     OBMC_INFO("bic_sdr_init fail\n");
@@ -2493,6 +2496,14 @@ scm_sensor_read(uint8_t sensor_num, float *value) {
         break;
       }
     }
+
+    if (!g_sinfo[FRU_SCM-1][sensor_num].valid) {
+      ret = bic_sdr_init(FRU_SCM, true); //reinit g_sinfo
+      if (!g_sinfo[FRU_SCM-1][sensor_num].valid) {
+        return READING_NA;
+      }
+    }
+
     ret = bic_read_sensor_wrapper(FRU_SCM, sensor_num, discrete, value);
   } else {
     ret = READING_NA;

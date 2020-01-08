@@ -60,6 +60,12 @@ class boardApp_Handler:
             rest_firmware_info.get_firmware_info_scm(), dumps=dumps_bytestr
         )
 
+    # Handler for sys/firmware_info/all resource endpoint
+    async def rest_firmware_info_all_hdl(self, request):
+        return web.json_response(
+            rest_firmware_info.get_firmware_info_all(), dumps=dumps_bytestr
+        )
+
     # Handler for sys/presence resource endpoint
     async def rest_presence_hdl(self, request):
         return web.json_response(rest_presence.get_presence_info(), dumps=dumps_bytestr)

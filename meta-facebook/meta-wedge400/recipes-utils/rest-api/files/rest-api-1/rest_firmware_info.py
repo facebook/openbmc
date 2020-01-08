@@ -28,25 +28,33 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 # Handler for sys/firmware resource endpoint
 def get_firmware_info() -> Dict:
     result = []
-    devices = ["cpld", "fpga", "scm"]
+    devices = ["cpld", "fpga", "scm", "all"]
     return {"Information": result, "Actions": [], "Resources": devices}
 
 
 # Handler for sys/firmware/cpld resource endpoint
 def get_firmware_info_cpld() -> Dict:
-    cmd = ["/usr/local/bin/cpld_ver.sh"]
+    cmd = ["/usr/bin/fw-util", "cpld", "--version"]
     return {"Information": get_dev_ver_data(cmd), "Actions": [], "Resources": []}
 
 
 # Handler for sys/firmware/fpga resource endpoint
 def get_firmware_info_fpga() -> Dict:
-    cmd = ["/usr/local/bin/fpga_ver.sh"]
+    cmd = ["/usr/bin/fw-util", "fpga", "--version"]
     return {"Information": get_dev_ver_data(cmd), "Actions": [], "Resources": []}
+
 
 # Handler for sys/firmware/scm resource endpoint
 def get_firmware_info_scm() -> Dict:
     cmd = ["/usr/bin/fw-util", "scm", "--version"]
     return {"Information": get_dev_ver_data(cmd), "Actions": [], "Resources": []}
+
+
+# Handler for sys/firmware/all resource endpoint
+def get_firmware_info_all() -> Dict:
+    cmd = ["/usr/bin/fw-util", "all", "--version"]
+    return {"Information": get_dev_ver_data(cmd), "Actions": [], "Resources": []}
+
 
 def _parse_firmware_info_data(data) -> Dict:
     result = {}
@@ -59,9 +67,9 @@ def _parse_firmware_info_data(data) -> Dict:
         result[dev] = firmware_version
     return result
 
+
 def get_dev_ver_data(cmd) -> Dict:
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
     data = data.decode(errors="ignore")
     return _parse_firmware_info_data(data)
-

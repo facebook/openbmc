@@ -24,6 +24,7 @@ board_routes = [
     "/api/sys/firmware_info/cpld",
     "/api/sys/firmware_info/fpga",
     "/api/sys/firmware_info/scm",
+    "/api/sys/firmware_info/all",
     "/api/sys/presence",
     "/api/sys/presence/scm",
     "/api/sys/presence/fan",

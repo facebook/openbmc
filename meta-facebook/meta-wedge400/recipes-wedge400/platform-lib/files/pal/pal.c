@@ -2693,7 +2693,7 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_SW_SERDES_PVDD_VOLT:
       if( brd_type == BRD_TYPE_WEDGE400 ){
-        ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, VOLT(3), value);
+        ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, VOLT(4), value);
       }
       if( brd_type == BRD_TYPE_WEDGE400C ){
         ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, VOLT(2), value);
@@ -2702,7 +2702,7 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_SW_SERDES_TRVDD_VOLT:
       if( brd_type == BRD_TYPE_WEDGE400 ){
-        ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, VOLT(3), value);
+        ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, VOLT(4), value);
       }
       if( brd_type == BRD_TYPE_WEDGE400C ){
         ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, VOLT(2), value);
@@ -2729,11 +2729,11 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_hsc_volt(SMB_FCM_HSC_DEVICE, 1, value);
       break;
     case SMB_SENSOR_SW_SERDES_PVDD_CURR:
-      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, CURR(3), value);
+      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, CURR(4), value);
       *value = *value * 1.0433 + 0.3926;
       break;
     case SMB_SENSOR_SW_SERDES_TRVDD_CURR:
-      ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, CURR(3), value);
+      ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, CURR(4), value);
       *value = *value * 0.9994 + 1.0221;
       break;
     case SMB_SENSOR_SW_CORE_CURR:
@@ -2752,11 +2752,11 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
         *value = 0;
       break;
     case SMB_SENSOR_SW_SERDES_PVDD_POWER:
-      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE,  POWER(3), value);
+      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE,  POWER(4), value);
       *value /= 1000;
       break;
     case SMB_SENSOR_SW_SERDES_TRVDD_POWER:
-      ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE,  POWER(3), value);
+      ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE,  POWER(4), value);
       *value /= 1000;
       break;
     case SMB_SENSOR_SW_CORE_POWER:

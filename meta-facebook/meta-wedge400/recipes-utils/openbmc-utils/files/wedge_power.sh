@@ -165,7 +165,7 @@ do_config_reset_timer() {
 }
 
 do_reset() {
-    local system timer wake_t opt pulse_us
+    local system timer wake_t opt
     system=0
     timer=0
     wake_t=0
@@ -248,7 +248,7 @@ case "$command" in
 esac
 
 if [ $set_bic -ne 0 ]; then
-    (sleep 5; setup_bic.sh) &
+    (sleep 10; setup_bic.sh) &
 fi
 
 exit $?

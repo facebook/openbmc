@@ -109,7 +109,7 @@ extern "C" {
 #define SMB_TMP421_U62_DEVICE         I2C_DEV_DIR(3, 4c)HW_MON_DIR
 #define SMB_TMP421_U63_DEVICE         I2C_DEV_DIR(3, 4e)HW_MON_DIR
 #define SMB_SW_TEMP_DEVICE            I2C_DEV_DIR(3, 4f)HW_MON_DIR
-#define SMB_GB_TEMP_DEVICE            I2C_DEV_DIR(3, 2a)
+#define SMB_GB_TEMP_DEVICE            I2C_DEV_DIR(3, 2a)HW_MON_DIR
 #define SMB_DOM_DEVICE                I2C_DEV_DIR(13, 60)
 #define SMB_FCM_TACH_DEVICE           I2C_DEV_DIR(30, 3e)
 #define SMB_FCM_LM75B_U1_DEVICE       I2C_DEV_DIR(32, 48)HW_MON_DIR

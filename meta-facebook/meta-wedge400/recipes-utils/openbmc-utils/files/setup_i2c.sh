@@ -118,7 +118,7 @@ if [ "$brd_type" = "0" ]; then         # Only Wedge400
 i2c_device_add 3 0x4f tmp422           # TH3 temp. sensor
 fi
 if [ $((brd_type)) -eq 1 ]; then       # Only Wedge400C
-i2c_device_add 3 0x2a gibraltar        # GB temp. sensor
+i2c_device_add 3 0x2a net_asic        # GB temp. sensor
 fi
 
 # # i2c-mux 2, channel 1

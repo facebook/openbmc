@@ -790,7 +790,7 @@ CONFIG_MTD_CFI_I2=y
 # Self-contained MTD device drivers
 #
 # CONFIG_MTD_DATAFLASH is not set
-# CONFIG_MTD_M25P80 is not set
+CONFIG_MTD_M25P80=y
 # CONFIG_MTD_MCHP23K256 is not set
 # CONFIG_MTD_SST25L is not set
 # CONFIG_MTD_SLRAM is not set

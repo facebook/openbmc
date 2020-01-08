@@ -17,6 +17,8 @@
 #
 import math
 
+from fsc_util import Logger
+
 
 class PID:
     def __init__(self, setpoint, kp=0.0, ki=0.0, kd=0.0, neg_hyst=0.0, pos_hyst=0.0):
@@ -62,6 +64,7 @@ class IncrementPID:
 
     def run(self, value, ctx):
         value = float(value)
+        self.last_out = ctx["last_pwm"]
         out = (
             (self.last_out)
             + (self.kp * (value - self.valp1))
@@ -70,6 +73,11 @@ class IncrementPID:
         )
         self.valp2 = self.valp1
         self.valp1 = value
+        Logger.debug(
+            " PID  pwm(new:%.2f old:%.2f) pid(%.2f,%.2f,%.2f) setpoint(%.2f) temp(%.2f) "
+            % (out, self.last_out, self.kp, self.ki, self.kd, self.setpoint, value)
+        )
+
         self.last_out = out
         return self.last_out
 
@@ -126,7 +134,7 @@ class TTable4Curve:
         self.table = self.table_normal_up
         self.compare_fsc_value = 0
         self.last_out = None
-        self.accelate = 1
+        self.accelerate = 1
         self.dead_fans = 0
 
     def run(self, value, ctx):
@@ -137,28 +145,57 @@ class TTable4Curve:
             self.table = self.table_normal_up
         if self.compare_fsc_value == None:
             self.compare_fsc_value = value
-            self.accelate = 1
-        elif self.compare_fsc_value > value:
-            self.accelate = 1
-        elif self.compare_fsc_value < value:
-            self.accelate = 0
+            self.accelerate = 1
+        elif value > self.compare_fsc_value:
+            self.accelerate = 1
+        elif value < self.compare_fsc_value:
+            self.accelerate = 0
 
-        if self.accelate == 1 and dead_fans == 0:
+        if self.accelerate == 1 and dead_fans == 0:
             self.table = self.table_normal_up
-        elif self.accelate == 0 and dead_fans == 0:
+        elif self.accelerate == 0 and dead_fans == 0:
             self.table = self.table_normal_down
-        elif self.accelate == 1 and dead_fans == 1:
+        elif self.accelerate == 1 and dead_fans == 1:
             self.table = self.table_onefail_up
-        elif self.accelate == 0 and dead_fans == 1:
+        elif self.accelerate == 0 and dead_fans == 1:
             self.table = self.table_onefail_down
+
+        if self.accelerate:
+            Logger.debug(" accelerate(up) table {0}".format(self.table))
+        else:
+            Logger.debug(" accelerate(down) table {0}".format(self.table))
 
         for (in_thr, out) in self.table:
             mini = out
+            if self.last_out == None:
+                self.last_out = out
             if value >= in_thr:
                 self.compare_fsc_value = value
-                self.last_out = out
-                return out
+                if self.accelerate:  # ascending
+                    Logger.debug(
+                        " LINEAR pwmout max([%.0f,%.0f]) temp(%.2f)"
+                        % (out, self.last_out, value)
+                    )
+                    self.last_out = max([out, self.last_out])
+                else:  # descending
+                    Logger.debug(
+                        " LINEAR pwmout min[(%.0f,%.0f]) temp(%.2f)"
+                        % (out, self.last_out, value)
+                    )
+                    self.last_out = min([out, self.last_out])
+                return self.last_out
 
         self.compare_fsc_value = value
-        self.last_out = mini
-        return mini
+        if self.accelerate:  # ascending
+            Logger.debug(
+                " LINEAR pwmout max([%.0f,%.0f]) temp(%.2f)"
+                % (mini, self.last_out, value)
+            )
+            self.last_out = max([mini, self.last_out])
+        else:  # descending
+            Logger.debug(
+                " LINEAR pwmout min([%.0f,%.0f]) temp(%.2f)"
+                % (mini, self.last_out, value)
+            )
+            self.last_out = min([mini, self.last_out])
+        return self.last_out

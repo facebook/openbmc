@@ -60,9 +60,18 @@ class BMCMachine(object):
         for fru in self.frus:
             sensors[fru] = get_sensor_tuples(fru, self.nums[fru], sensor_sources)
 
+        Logger.debug("Last fan speed : %d" % self.last_fan_speed)
+        Logger.debug("Sensor reading")
+
         # Offset the sensor Temp value
         for key, data in list(sensor_sources.items()):
             sensorname = key.lower()
+
+            for fru in self.frus:
+                if sensorname in sensors[fru]:
+                    senvalue = sensors[fru][sensorname]
+                    Logger.debug(" %s = %.2f" % (sensorname, senvalue.value))
+
             offset = 0
             if data.offset != None:
                 offset = data.offset
@@ -79,6 +88,11 @@ class BMCMachine(object):
                         senvalue = sensors[fru][sensorname]
                         value = senvalue.value + offset
                         sensors[fru][sensorname] = senvalue._replace(value=value)
+                        value = senvalue.value + offset
+                        Logger.debug(
+                            " %s = %.2f (after offset %.2f)"
+                            % (sensorname, value, offset)
+                        )
         return sensors
 
     def read_fans(self, fans):

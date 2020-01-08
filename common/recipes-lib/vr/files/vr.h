@@ -26,18 +26,17 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+
 #define MAX_VER_STR_LEN 80
+#define VR_REG_PAGE 0x00
 
 enum {
-  VR_STATUS_SUCCESS       = 0,
-  VR_STATUS_FAILURE       = -1,
-  VR_STATUS_NOT_AVAILABLE = -2,
+  VR_STATUS_SUCCESS = 0,
+  VR_STATUS_FAILURE = -1,
+  VR_STATUS_SKIP    = -2,
 };
 
-struct vr_ops;
 struct vr_info;
-struct vr_dev;
-struct vr_dev_list;
 
 struct vr_ops {
   /*
@@ -84,18 +83,13 @@ struct vr_info {
   struct vr_ops *ops;
 };
 
-struct vr_dev {
-  struct vr_info *info;
-  struct vr_dev *next;
-};
-
 extern void *plat_priv_data;
 
-int vr_device_register(struct vr_info*);
+int vr_device_register(struct vr_info*, int);
 void vr_device_unregister(void);
 int vr_probe(void);
 void vr_remove(void);
-int vr_fw_version(const char*, char*);
+int vr_fw_version(int, const char*, char*);
 int vr_fw_update(const char*, const char*);
 
 extern int plat_vr_init(void);

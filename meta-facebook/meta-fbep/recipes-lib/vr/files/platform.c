@@ -94,14 +94,11 @@ struct vr_info fbep_vr_list[] = {
 
 int plat_vr_init()
 {
-  int i, ret;
+  int ret;
 
-  for (i = 0; i < 7; i++) {
-    ret = vr_device_register(&fbep_vr_list[i]);
-    if (ret < 0) {
-      vr_device_unregister();
-      break;
-    }
+  ret = vr_device_register(fbep_vr_list, sizeof(fbep_vr_list)/sizeof(fbep_vr_list[0]));
+  if (ret < 0) {
+    vr_device_unregister();
   }
 
   return ret;

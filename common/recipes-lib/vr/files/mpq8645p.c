@@ -27,20 +27,9 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/obmc-pal.h>
 #include <openbmc/kv.h>
 #include "mpq8645p.h"
-
-static void msleep(int msec)
-{
-  struct timespec req;
-
-  req.tv_sec = 0;
-  req.tv_nsec = msec * 1000 * 1000;
-
-  while (nanosleep(&req, &req) == -1 && errno == EINTR) {
-    continue;
-  }
-}
 
 static int mpq8645p_open(struct vr_info *info)
 {

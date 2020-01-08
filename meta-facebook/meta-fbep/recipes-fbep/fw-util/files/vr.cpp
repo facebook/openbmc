@@ -1,7 +1,7 @@
 #include <sstream>
 #include "fw-util.h"
 #include <openbmc/pal.h>
-#include <facebook/vr.h>
+#include <openbmc/vr.h>
 
 using namespace std;
 
@@ -27,7 +27,7 @@ int VrComponent0::print_version()
     ostringstream vr_name;
     vr_name << name << i;
     cout << vr_name.str() << " Version: ";
-    if (vr_fw_version(vr_name.str().c_str(), ver))
+    if (vr_fw_version(-1, vr_name.str().c_str(), ver))
       cout << "NA" << endl;
     else
       cout << string(ver) << endl;
@@ -82,7 +82,7 @@ int VrComponent1::print_version()
     ostringstream vr_name;
     vr_name << name << i;
     cout << vr_name.str() << " Version: ";
-    if (vr_fw_version(vr_name.str().c_str(), ver))
+    if (vr_fw_version(-1, vr_name.str().c_str(), ver))
       cout << "NA" << endl;
     else
       cout << string(ver) << endl;

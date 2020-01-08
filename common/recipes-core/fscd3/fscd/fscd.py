@@ -67,7 +67,9 @@ def stop_watchdog():
     )
     info, err = f.communicate()
     if len(err) != 0:
-        Logger.error("failed to kick watchdog device")
+        Logger.error("failed to stop watchdog device")
+    else:
+        Logger.info("watchdog stopped")
 
 
 class Fscd(object):
@@ -745,11 +747,9 @@ class Fscd(object):
 
 
 def handle_term(signum, frame):
-    global wdfile
     board_callout(callout="init_fans", boost=DEFAULT_INIT_TRANSITIONAL)
     Logger.warn("killed by signal %d" % (signum,))
-    if signum == signal.SIGQUIT and wdfile:
-        Logger.info("Killed with SIGQUIT - stopping watchdog.")
+    if signum == signal.SIGQUIT or signum == signal.SIGTERM or signum == signal.SIGINT:
         stop_watchdog()
     sys.exit("killed")
 

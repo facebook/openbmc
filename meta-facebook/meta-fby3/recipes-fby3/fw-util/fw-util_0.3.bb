@@ -39,9 +39,9 @@ S = "${WORKDIR}"
 
 #The definition for the project
 CXXFLAGS += " -DBIC_SUPPORT "
-DEPENDS += "libipmi libipmb libbic libocpdbg-lcd libobmc-i2c libfpga"
-RDEPENDS_${PN} += "libipmi libipmb libbic libocpdbg-lcd libobmc-i2c libfpga"
-LDFLAGS += " -lipmi -lipmb -lbic -locpdbg-lcd -lobmc-i2c -lfpga"
+DEPENDS += "libipmi libipmb libbic libocpdbg-lcd libobmc-i2c libfpga libfby3-common"
+RDEPENDS_${PN} += "libipmi libipmb libbic libocpdbg-lcd libobmc-i2c libfpga libfby3-common"
+LDFLAGS += " -lipmi -lipmb -lbic -locpdbg-lcd -lobmc-i2c -lfpga -lfby3_common"
 
 LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -lpal -lvbs -ldl "
 DEPENDS += "jansson libpal dtc zlib openssl libvbs "

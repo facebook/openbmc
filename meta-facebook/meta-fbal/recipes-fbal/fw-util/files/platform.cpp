@@ -1,5 +1,9 @@
 #include "bios.h"
 #include "usbdbg.h"
+#include "nic.h"
+
+// NIC0
+NicComponent nic("nic", "nic");
 
 AliasComponent bmc("mb", "bmc", "bmc", "bmc");
 AliasComponent rom("mb", "rom", "bmc", "rom");

@@ -94,5 +94,3 @@ int NicComponent::print_version() {
 
   return FW_STATUS_SUCCESS;
 }
-
-NicComponent nic("nic", "nic");

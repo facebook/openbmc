@@ -2,6 +2,10 @@
 #include "bic_bios.h"
 #include "bic_me.h"
 #include "bic_cpld.h"
+#include "nic.h"
+
+// Shared NIC
+NicComponent nic("nic", "nic");
 
 // Register BIC FW and BL components
 BicFwComponent bicfw1("slot1", "bic", 1);

@@ -26,7 +26,6 @@
 
 using namespace std;
 
-
 const int slot_id = 0;
 // Register BIC FW and BL components
 BicFwComponent bicfw("scm", "bic", slot_id);

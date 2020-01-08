@@ -1,5 +1,9 @@
 #include "bic_fw.h"
 #include "usbdbg.h"
+#include "nic.h"
+
+// Shared NIC
+NicComponent nic("nic", "nic");
 
 // Register BIC FW and BL components
 BicFwComponent bicfw1("slot1", "bic", 1);

@@ -1,5 +1,9 @@
 #include "bios.h"
 #include "usbdbg.h"
+#include "nic.h"
+
+// NIC0
+NicComponent nic("nic", "nic");
 
 BiosComponent bios("mb", "bios", "\"pnor\"", "F0G_");
 

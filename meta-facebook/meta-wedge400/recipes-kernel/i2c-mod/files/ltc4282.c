@@ -141,55 +141,20 @@ enum registers_t {
     ltc4282_reg_adjust,
 
     ltc4282_reg_vin,
-    ltc4282_reg_vin_min,
-    ltc4282_reg_vin_max,
-    
     ltc4282_reg_vout,
-    ltc4282_reg_vout_min,
-    ltc4282_reg_vout_max,
-
     ltc4282_reg_curr,
-    ltc4282_reg_curr_min,
-    ltc4282_reg_curr_max,
-
     ltc4282_reg_power,
-    ltc4282_reg_power_min,
-    ltc4282_reg_power_max,
-
     ltc4282_reg_temp,
-    ltc4282_reg_temp_min,
-    ltc4282_reg_temp_max,
 
     ltc4282_reg_max
 };
 
 enum sysfs_t {
     ltc4282_vin,
-    ltc4282_vin_min,
-    ltc4282_vin_max,
-    ltc4282_vin_min_alarm,
-    ltc4282_vin_max_alarm,
-
     ltc4282_vout,
-    ltc4282_vout_min,
-    ltc4282_vout_max,
-    ltc4282_vout_min_alarm,
-    ltc4282_vout_max_alarm,
-
     ltc4282_curr, 
-    ltc4282_curr_min,
-    ltc4282_curr_max, 
-    ltc4282_curr_max_alarm,
-
     ltc4282_power,
-    ltc4282_power_min,
-    ltc4282_power_max,
-    ltc4282_power_alarm,
-
     ltc4282_temp,
-    ltc4282_temp_min,
-    ltc4282_temp_max,
-    ltc4282_temp_max_alarm
 }; 
 
 struct ltc4282_data {
@@ -397,46 +362,6 @@ static struct ltc4282_data *ltc4282_update_device(struct device *dev) {
             case ltc4282_reg_adjust:
                 val = i2c_smbus_read_byte_data(client, LTC4282_ADJUST); 
                 break;
-            case ltc4282_reg_vin_min:
-                val = i2c_smbus_read_word_data(client, LTC4282_VSOURCE_MIN); 
-                val = (u16)(val << 8) | (val >> 8);
-                break;
-            case ltc4282_reg_vin_max:
-                val = i2c_smbus_read_word_data(client, LTC4282_VSOURCE_MAX); 
-                val = (u16)(val << 8) | (val >> 8); 
-                break;
-            case ltc4282_reg_vout_min:
-                val = i2c_smbus_read_word_data(client, LTC4282_VSOURCE_MIN); 
-                val = (u16)(val << 8) | (val >> 8);
-                break;
-            case ltc4282_reg_vout_max:
-                val = i2c_smbus_read_word_data(client, LTC4282_VSOURCE_MAX); 
-                val = (u16)(val << 8) | (val >> 8); 
-                break;
-            case ltc4282_reg_curr_min:
-                val = i2c_smbus_read_word_data(client, LTC4282_VSENSE_MIN); 
-                val = (u16)(val << 8) | (val >> 8);
-                break;
-            case ltc4282_reg_curr_max:
-                val = i2c_smbus_read_word_data(client, LTC4282_VSENSE_MAX); 
-                val = (u16)(val << 8) | (val >> 8);
-                break;
-            case ltc4282_reg_power_min:
-                val = i2c_smbus_read_word_data(client, LTC4282_POWER_MIN); 
-                val = (u16)(val << 8) | (val >> 8);
-                break;
-            case ltc4282_reg_power_max:
-                val = i2c_smbus_read_word_data(client, LTC4282_POWER_MAX); 
-                val = (u16)(val << 8) | (val >> 8);
-                break;
-            case ltc4282_reg_temp_min:
-                val = i2c_smbus_read_word_data(client, LTC4282_TEMP_MIN);
-                val = (u16)(val << 8) | (val >> 8);
-                break;
-            case ltc4282_reg_temp_max:
-                val = i2c_smbus_read_word_data(client, LTC4282_TEMP_MAX);
-                val = (u16)(val << 8) | (val >> 8);
-                break;
             default:
                 val = 0;
                 break;
@@ -469,29 +394,19 @@ static int ltc4282_reg_to_value(struct ltc4282_data * data, u8 reg) {
 
     switch (reg) {
     case ltc4282_reg_vin:
-    case ltc4282_reg_vin_min:
-    case ltc4282_reg_vin_max:
     case ltc4282_reg_vout:
-    case ltc4282_reg_vout_min:
-    case ltc4282_reg_vout_max:
         /* Linear. Convert to mV. */
         val = ltc4282_vsourve_calculate(val);
         break; 
     case ltc4282_reg_curr:
-    case ltc4282_reg_curr_min:
-    case ltc4282_reg_curr_max:
         /* Linear. Convert to mA. */
         val = ltc4282_vsense_calculate(data->regs[reg]);
         break;
     case ltc4282_reg_power:
-    case ltc4282_reg_power_min:
-    case ltc4282_reg_power_max:
         /* Linear Convert to mW */
         val = ltc4282_power_calculate(val);
         break;
     case ltc4282_reg_temp:
-    case ltc4282_reg_temp_min:
-    case ltc4282_reg_temp_max:
         /* Linear. Convert to mC. */
         val = ltc4282_temp_calculate(val);
         break;
@@ -519,125 +434,25 @@ static ssize_t ltc4282_show_value(struct device * dev,
         data = ltc4282_update_adc(dev, ltc4282_reg_vin);
         value = ltc4282_reg_to_value(data, ltc4282_reg_vin); 
         break;
-    case ltc4282_vin_min:
-        value = ltc4282_reg_to_value(data, ltc4282_reg_vin_min); 
-        break;
-    case ltc4282_vin_max:
-        value = ltc4282_reg_to_value(data, ltc4282_reg_vin_max); 
-        break;
     case ltc4282_vout:
         data = ltc4282_update_adc(dev, ltc4282_reg_vout);
         value = ltc4282_reg_to_value(data, ltc4282_reg_vout); 
-        break;
-    case ltc4282_vout_min:
-        value = ltc4282_reg_to_value(data, ltc4282_reg_vout_min); 
-        break;
-    case ltc4282_vout_max:
-        value = ltc4282_reg_to_value(data, ltc4282_reg_vout_max); 
         break;
     case ltc4282_curr:
         data = ltc4282_update_adc(dev, ltc4282_reg_curr);
         value = ltc4282_reg_to_value(data, ltc4282_reg_curr); 
         break;
-    case ltc4282_curr_min:
-        value = ltc4282_reg_to_value(data, ltc4282_reg_curr_min); 
-        break;
-    case ltc4282_curr_max:
-        value = ltc4282_reg_to_value(data, ltc4282_reg_curr_max); 
-        break;
     case ltc4282_power:
         data = ltc4282_update_adc(dev, ltc4282_reg_power);
         value = ltc4282_reg_to_value(data, ltc4282_reg_power);
-        break;
-    case ltc4282_power_min:
-        value = ltc4282_reg_to_value(data, ltc4282_reg_power_min);
-        break;
-    case ltc4282_power_max:
-        value = ltc4282_reg_to_value(data, ltc4282_reg_power_max);
         break;
     case ltc4282_temp:
         data = ltc4282_update_adc(dev, ltc4282_reg_temp);
         value = ltc4282_reg_to_value(data, ltc4282_reg_temp);
         break;
-    case ltc4282_temp_min:
-        value = ltc4282_reg_to_value(data, ltc4282_reg_temp_min);
-        break;
-    case ltc4282_temp_max:
-        value = ltc4282_reg_to_value(data, ltc4282_reg_temp_max);
-        break;
     }
     
     return snprintf(buf, PAGE_SIZE, "%d\n", value); 
-}
-
-static ssize_t ltc4282_value_to_reg(int fn, int val, u32* reg) {
-    int ret = 0;
-
-    switch(fn) {
-        case ltc4282_vin_min:
-        case ltc4282_vin_max:
-            val *= UNIT_MV;
-            *reg = (val - VSOURCE_INTERCEPT) / VSOURCE_SLOPE;
-            if (*reg < 0) *reg = 0;
-            break;
-        case ltc4282_reg_curr_min:
-        case ltc4282_reg_curr_max:
-            val *= UNIT_MA;
-            *reg = (val - VSENSE_INTERCEPT) / VSENSE_SLOPE;
-            if (*reg < 0) *reg = 0;
-            break; 
-        case ltc4282_temp_min:
-        case ltc4282_temp_max:
-            val *= UNIT_C;
-            *reg = (val - TEMP_INTERCEPT) / TEMP_SLOPE;
-            break;
-        default:
-            *reg = 0;
-            break;
-    }
-
-    return ret;
-}
-
-static ssize_t ltc4282_set_value(struct device *dev, struct device_attribute *dev_attr,
-                                 const char *buf, size_t count){
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(dev_attr);
-    struct ltc4282_data *data = dev_get_drvdata(dev);
-    struct i2c_client *client = data->client;
-    long val;
-    int res;
-
-    res = kstrtoul(buf, 10, &val);
-    if (res)
-        return res;
-
-    ltc4282_value_to_reg(attr->index, val, (u32 *)&val);
-
-    switch(attr->index) {
-        case ltc4282_vin_min:
-            i2c_smbus_write_byte_data(client, LTC4282_VGPIO_ALARM_MIN, (val & 0xFF00) >> 8);
-            break;
-        case ltc4282_vin_max:
-            i2c_smbus_write_byte_data(client, LTC4282_VGPIO_ALARM_MAX, (val & 0xFF00) >> 8);
-            break;
-        case ltc4282_reg_curr_min:
-            i2c_smbus_write_byte_data(client, LTC4282_VSOURCE_ALARM_MIN, (val & 0xFF00) >> 8);
-            break;
-        case ltc4282_reg_curr_max:
-            i2c_smbus_write_byte_data(client, LTC4282_VSOURCE_ALARM_MAX, (val & 0xFF00) >> 8);
-            break;
-        case ltc4282_temp_min:
-            i2c_smbus_write_byte_data(client, LTC4282_VSENSE_ALARM_MIN, (val & 0xFF00) >> 8);
-            break;
-        case ltc4282_temp_max:
-            i2c_smbus_write_byte_data(client, LTC4282_VSENSE_ALARM_MAX, (val & 0xFF00) >> 8);
-            break;
-
-        default:
-            return -ENOTSUPP;
-    }
-
-    return count;
 }
 
 static ssize_t ltc4282_show_alarm(struct device *dev, 
@@ -729,48 +544,23 @@ static ssize_t ltc4282_do_reboot(struct device *dev, struct device_attribute *de
     return count;
 }
 
-/*
- * Input voltages.
- */
+/* Input/Output voltages */
 static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, ltc4282_show_value, NULL,
               ltc4282_vin);
 static SENSOR_DEVICE_ATTR(in2_input, S_IRUGO, ltc4282_show_value, NULL,
               ltc4282_vout);
 
-/*
- * Voltages alarm threshold.
- */
-static SENSOR_DEVICE_ATTR(in1_min, S_IRUGO | S_IWUSR, ltc4282_show_value, ltc4282_set_value,
-              ltc4282_vin_min);
-static SENSOR_DEVICE_ATTR(in1_max, S_IRUGO | S_IWUSR, ltc4282_show_value, ltc4282_set_value,
-              ltc4282_vin_max);
-static SENSOR_DEVICE_ATTR(in2_min, S_IRUGO | S_IWUSR, ltc4282_show_value, ltc4282_set_value,
-              ltc4282_vout_min);
-static SENSOR_DEVICE_ATTR(in2_max, S_IRUGO | S_IWUSR, ltc4282_show_value, ltc4282_set_value,
-              ltc4282_vout_max);
-
-/* Currents (via sense resistor) */
+/* Current (via sense resistor) */
 static SENSOR_DEVICE_ATTR(curr1_input, S_IRUGO, ltc4282_show_value, NULL,
               ltc4282_curr);
-/* Current alarm threshold */
-static SENSOR_DEVICE_ATTR(curr1_min, S_IRUGO | S_IWUSR, ltc4282_show_value, ltc4282_set_value,
-              ltc4282_curr_min);
-static SENSOR_DEVICE_ATTR(curr1_max, S_IRUGO | S_IWUSR, ltc4282_show_value, ltc4282_set_value,
-              ltc4282_curr_max);
 
+/* Power */
 static SENSOR_DEVICE_ATTR(power1_input, S_IRUGO, ltc4282_show_value, NULL,
               ltc4282_power);
-static SENSOR_DEVICE_ATTR(power1_min, S_IRUGO, ltc4282_show_value, NULL,
-              ltc4282_power_min);
-static SENSOR_DEVICE_ATTR(power1_max, S_IRUGO, ltc4282_show_value, NULL,
-              ltc4282_power_max);
 
+/* Mosfet Temp(GPIO3 ADC mode) */
 static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, ltc4282_show_value, NULL,
               ltc4282_temp);
-static SENSOR_DEVICE_ATTR(temp1_min, S_IRUGO | S_IWUSR, ltc4282_show_value, ltc4282_set_value,
-              ltc4282_temp_min);
-static SENSOR_DEVICE_ATTR(temp1_max, S_IRUGO | S_IWUSR, ltc4282_show_value, ltc4282_set_value,
-              ltc4282_temp_max);
 
 /* Fault log system file nodes */
 static SENSOR_DEVICE_ATTR(fault_ov, S_IRUGO, ltc4282_show_fault, NULL,
@@ -853,20 +643,10 @@ static SENSOR_DEVICE_ATTR(reboot, S_IWUSR, NULL, ltc4282_do_reboot,
 
 static struct attribute *ltc4282_attrs[] =  {
     &sensor_dev_attr_in1_input.dev_attr.attr,
-    &sensor_dev_attr_in1_min.dev_attr.attr,
-    &sensor_dev_attr_in1_max.dev_attr.attr,
     &sensor_dev_attr_in2_input.dev_attr.attr,
-    &sensor_dev_attr_in2_min.dev_attr.attr,
-    &sensor_dev_attr_in2_max.dev_attr.attr,
     &sensor_dev_attr_curr1_input.dev_attr.attr,
-    &sensor_dev_attr_curr1_min.dev_attr.attr,
-    &sensor_dev_attr_curr1_max.dev_attr.attr,
     &sensor_dev_attr_power1_input.dev_attr.attr,
-    &sensor_dev_attr_power1_min.dev_attr.attr,
-    &sensor_dev_attr_power1_max.dev_attr.attr,
     &sensor_dev_attr_temp1_input.dev_attr.attr,
-    &sensor_dev_attr_temp1_min.dev_attr.attr,
-    &sensor_dev_attr_temp1_max.dev_attr.attr,
 
     &sensor_dev_attr_fault_ov.dev_attr.attr,
     &sensor_dev_attr_fault_uv.dev_attr.attr,

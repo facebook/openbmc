@@ -480,7 +480,6 @@ bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, u
   uint8_t rlen = 0;
   int i = 0;
   int ret = 0;
-  int retries = 3;
 
   //mux
   tbuf[0] = (bus << 1) + 1; //bus
@@ -488,13 +487,10 @@ bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, u
   tbuf[2] = 0x00;
   tbuf[3] = 0x02;
   tlen = 4;
-  do {
-    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-    if ( ret == BIC_STATUS_SUCCESS ) break;
-    else msleep(50);
-  } while ( retries-- > 0 );
 
-  if ( retries == 0 ) {
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to send the command to switch the mux. ret=%d", __func__, ret);
     goto error_exit;
   }
 
@@ -509,10 +505,11 @@ bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, u
 
   ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
   if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to send command code to get vr ver. ret=%d", __func__, ret);
+    syslog(LOG_WARNING, "%s() Failed to send the command code to get cpld ver. ret=%d", __func__, ret);
   }
 
   for (i = 0; i < 4; i++) ver[i] = rbuf[3-i];
+
 error_exit:
   return ret;
 }

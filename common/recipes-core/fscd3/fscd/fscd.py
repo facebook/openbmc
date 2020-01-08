@@ -99,6 +99,8 @@ class Fscd(object):
         self.fan_fail = None
         self.fan_recovery_pending = False
         self.fan_recovery_time = None
+        self.fan_limit_upper_pwm = None
+        self.fan_limit_lower_pwm = None
 
     # TODO: Add checks for invalid config file path
     def get_fsc_config(self, fsc_config):
@@ -110,6 +112,10 @@ class Fscd(object):
     def get_config_params(self):
         self.transitional = self.fsc_config["pwm_transition_value"]
         self.boost = self.fsc_config["pwm_boost_value"]
+        if "fan_limit_upper_pwm" in self.fsc_config:
+            self.fan_limit_upper_pwm = self.fsc_config["fan_limit_upper_pwm"]
+        if "fan_limit_lower_pwm" in self.fsc_config:
+            self.fan_limit_lower_pwm = self.fsc_config["fan_limit_lower_pwm"]
         if "non_fanfail_limited_boost_value" in self.fsc_config:
             self.non_fanfail_limited_boost = self.fsc_config[
                 "non_fanfail_limited_boost_value"
@@ -360,11 +366,13 @@ class Fscd(object):
                             "alarm_major"
                             in self.fsc_config["profiles"][tuple.name]["read_limit"]
                         ):
+                            # Get value from configuration
                             valid_table = self.fsc_config["profiles"][tuple.name][
                                 "read_limit"
                             ]["alarm_major"]
                             valid_read_limit = valid_table["limit"]
-                            if tuple.value > valid_read_limit:
+                            # Compare temp after offset with threshold value
+                            if tuple.value >= valid_read_limit:
                                 reason = (
                                     sensor
                                     + "(alarm_major v="
@@ -373,51 +381,32 @@ class Fscd(object):
                                     + str(valid_read_limit)
                                     + ") reached"
                                 )
+                                # change error flag and update last time error for Soak time feature
                                 last_error_level = "alarm_major"
                                 self.sensors[tuple.name].source.last_error_time = int(
                                     datetime.datetime.now().strftime("%s")
                                 )
+                                # Do action if exist in configuration
                                 if "action" in valid_table:
                                     self.fsc_host_action(
                                         action=valid_table["action"], cause=reason
                                     )
                                 Logger.warn(reason)
                                 ret = 1
-                            elif (
-                                "soak_time_s" in valid_table
-                                and last_error_level is "alarm_major"
-                            ):
-                                elapsed_time = (
-                                    int(datetime.datetime.now().strftime("%s"))
-                                    - last_error_time
-                                )
-                                if elapsed_time < valid_table["soak_time_s"]:
-                                    reason = (
-                                        sensor
-                                        + "(alarm_major elapsed_time = "
-                                        + str(elapsed_time)
-                                        + ",soak_time = "
-                                        + str(valid_table["soak_time_s"])
-                                        + ") reached"
-                                    )
-                                    if "action" in valid_table:
-                                        self.fsc_host_action(
-                                            action=valid_table["action"], cause=reason
-                                        )
-                                    Logger.warn(reason)
-                                    ret = 1
-                                else:
-                                    last_error_level = None
+                                # Skip alarm minor
+                                continue
 
                         if (
                             "alarm_minor"
                             in self.fsc_config["profiles"][tuple.name]["read_limit"]
-                            and last_error_level != "alarm_major"
                         ):
+                            # Get value from configuration
                             valid_table = self.fsc_config["profiles"][tuple.name][
                                 "read_limit"
                             ]["alarm_minor"]
-                            if tuple.value > valid_read_limit:
+                            valid_read_limit = valid_table["limit"]
+                            # Compare temp after offset with threshold value
+                            if tuple.value >= valid_read_limit:
                                 reason = (
                                     sensor
                                     + "(alarm_minor v="
@@ -426,10 +415,13 @@ class Fscd(object):
                                     + str(valid_read_limit)
                                     + ") reached"
                                 )
-                                last_error_level = "alarm_minor"
+                                # change error flag and update last time error for Soak time feature
+                                if last_error_level is None:
+                                    last_error_level = "alarm_minor"
                                 self.sensors[tuple.name].source.last_error_time = int(
                                     datetime.datetime.now().strftime("%s")
                                 )
+                                # Do action if exist in configuration
                                 if "action" in valid_table:
                                     self.fsc_host_action(
                                         action=valid_table["action"], cause=reason
@@ -438,7 +430,7 @@ class Fscd(object):
                                 ret = 1
                             elif (
                                 "soak_time_s" in valid_table
-                                and last_error_level == "alarm_minor"
+                                and last_error_level is not None
                             ):
                                 elapsed_time = (
                                     int(datetime.datetime.now().strftime("%s"))
@@ -558,10 +550,13 @@ class Fscd(object):
                 Logger.info("enable_fsc_sensor_check")
                 if self.fsc_sensor_check(sensors_tuples) != 0:
                     sensor_violated_flag = 1
+            Logger.debug(" dead_fans(%d) " % len(dead_fans))
+            Logger.debug("Calculate")
 
             if chassis_intrusion_boost_flag == 0 and sensor_violated_flag == 0:
                 ctx["dt"] = time_difference
                 ctx["dead_fans"] = dead_fans
+                ctx["last_pwm"] = zone.last_pwm
                 ignore_fan_mode = False
                 if self.non_fanfail_limited_boost and dead_fans:
                     ignore_fan_mode = True
@@ -640,6 +635,14 @@ class Fscd(object):
                         else:
                             # If atleast 1 fan is working reset the counter
                             self.all_fan_fail_counter = 0
+
+            if self.fan_limit_upper_pwm:
+                if pwmval > self.fan_limit_upper_pwm:
+                    pwmval = self.fan_limit_upper_pwm
+
+            if self.fan_limit_lower_pwm:
+                if pwmval < self.fan_limit_lower_pwm:
+                    pwmval = self.fan_limit_lower_pwm
 
             # if no fan fail, the max of pwm is non_fanfail_limited_boost pwm:
             if self.non_fanfail_limited_boost and not dead_fans:

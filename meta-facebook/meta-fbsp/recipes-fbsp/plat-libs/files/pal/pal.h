@@ -74,9 +74,10 @@ enum {
   FRU_RISER1 = 4,
   FRU_RISER2 = 5,
   FRU_BMC = 6,
+  FRU_FCB = 7,
 };
 
-#define MAX_NUM_FRUS 6
+#define MAX_NUM_FRUS 7
 #define MAX_NODES    1
 #define READING_SKIP    (1)
 #define READING_NA      (-2)

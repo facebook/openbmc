@@ -70,6 +70,32 @@ enum {
   MB_SNR_CPU0_THERM_MARGIN = 0x34,
   MB_SNR_CPU1_THERM_MARGIN = 0x35,
 
+//ADC128 VOLT/CURR/POWER
+  FCB_FAN0_VOLT  = 0x12,
+  FCB_FAN0_CURR  = 0x13,
+  FCB_FAN0_PWR = 0x14,
+  FCB_FAN1_VOLT  = 0x15,
+  FCB_FAN1_CURR  = 0x16,
+  FCB_FAN1_PWR = 0x17,
+  FCB_FAN2_VOLT  = 0x18,
+  FCB_FAN2_CURR  = 0x19,
+  FCB_FAN2_PWR = 0x1A,
+  FCB_FAN3_VOLT  = 0x1B,
+  FCB_FAN3_CURR  = 0x1C,
+  FCB_FAN3_PWR = 0x1D,
+  FCB_FAN4_VOLT  = 0x1E,
+  FCB_FAN4_CURR  = 0x1F,
+  FCB_FAN4_PWR = 0x20,
+  FCB_FAN5_VOLT = 0x21,
+  FCB_FAN5_CURR = 0x22,
+  FCB_FAN5_PWR = 0x23,
+  FCB_FAN6_VOLT = 0x24,
+  FCB_FAN6_CURR = 0x25,
+  FCB_FAN6_PWR = 0x26,
+  FCB_FAN7_VOLT = 0x27,
+  FCB_FAN7_CURR = 0x28,
+  FCB_FAN7_PWR = 0x29,
+
 //HSC
   MB_SNR_HSC_VIN = 0x40,
   MB_SNR_HSC_IOUT = 0x41,
@@ -366,6 +392,18 @@ enum {
   VR_ID7,
   VR_ID8,
   VR_ID9,
+};
+
+// ADC128 INFO
+enum {
+  FAN_ID0 = 0,
+  FAN_ID1,
+  FAN_ID2,
+  FAN_ID3,
+  FAN_ID4,
+  FAN_ID5,
+  FAN_ID6,
+  FAN_ID7,
 };
 
 int cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr);

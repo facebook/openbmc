@@ -49,7 +49,7 @@
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
-const char pal_fru_list[] = "all, mb, nic0, nic1, riser1, riser2, bmc";
+const char pal_fru_list[] = "all, mb, nic0, nic1, riser1, riser2, bmc, fcb";
 const char pal_server_list[] = "mb";
 
 static int key_func_por_policy (int event, void *arg);
@@ -348,6 +348,9 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_BMC:
       *status = 1;
       break;
+    case FRU_FCB:
+      *status = 1;
+      break;
     default:
       return -1;
     }
@@ -424,6 +427,8 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_RISER2;
   } else if (!strcmp(str, "bmc")) {
     *fru = FRU_BMC;
+  } else if (!strcmp(str, "fcb")) {
+    *fru = FRU_FCB;
   } else {
     syslog(LOG_WARNING, "pal_get_fru_id: Wrong fru#%s", str);
     return -1;
@@ -452,6 +457,9 @@ pal_get_fru_name(uint8_t fru, char *name) {
       break;
     case FRU_BMC:
       strcpy(name, "bmc");
+      break;
+    case FRU_FCB:
+      strcpy(name, "fcb");
       break;
     default:
       syslog(LOG_WARNING, "[%s] unknown fruid %d", __func__, fru);
@@ -498,6 +506,9 @@ pal_get_fruid_path(uint8_t fru, char *path) {
     break;
   case FRU_BMC:
     sprintf(fname, "bmc");
+    break;
+  case FRU_FCB:
+    sprintf(fname, "fcb");
     break;
   default:
     return -1;
@@ -555,6 +566,9 @@ pal_get_fruid_name(uint8_t fru, char *name) {
     break;
   case FRU_BMC:
     sprintf(name, "BMC");
+    break;
+  case FRU_FCB:
+    sprintf(name, "FCB");
     break;
   default:
     return -1;

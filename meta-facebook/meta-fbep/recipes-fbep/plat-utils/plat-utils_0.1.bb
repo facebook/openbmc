@@ -29,6 +29,7 @@ SRC_URI = "file://ast-functions \
            file://setup-por.sh \
            file://sol-util \
            file://COPYING \
+           file://workaround.sh \
           "
 
 pkgdir = "utils"
@@ -66,6 +67,8 @@ do_install() {
   update-rc.d -r ${D} setup-usbnet.sh start 90 S .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 70 S .
+  install -m 755 workaround.sh ${D}${sysconfdir}/init.d/workaround.sh
+  update-rc.d -r ${D} workaround.sh start 71 S .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

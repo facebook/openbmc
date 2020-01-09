@@ -30,10 +30,10 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 # get the MAC from EEPROM
-mac=$(weutil  | grep '^Local MAC'  | cut -d' ' -f3 )
+mac=$(weutil | grep '^Local MAC' | cut -d' ' -f3)
 
 # get the MAC from u-boot environment
-ethaddr=$(fw_printenv ethaddr  | cut -d'=' -f2 )
+ethaddr=$(fw_printenv ethaddr | cut -d'=' -f2)
 
 if [ -z "$mac" ] && [ -n "$ethaddr" ]; then
     # no MAC from EEPROM, use the one from u-boot environment
@@ -41,11 +41,10 @@ if [ -z "$mac" ] && [ -n "$ethaddr" ]; then
 fi
 
 if [ -n "$mac" ]; then
-    ifconfig eth0 hw ether $mac
+    ifconfig eth0 hw ether "$mac"
 else
     # no MAC from either EEPROM or u-boot environment
-    mac=$(ifconfig eth0  |grep HWaddr  |awk '{ print $5 }')
-
+    mac=$(ifconfig eth0 | grep HWaddr | awk '{ print $5 }')
 fi
 
 if [ "$ethaddr" != "$mac" ]; then

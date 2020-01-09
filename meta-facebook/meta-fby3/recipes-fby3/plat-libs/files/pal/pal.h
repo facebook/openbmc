@@ -86,6 +86,13 @@ enum {
   BOOT_DEVICE_RESERVED = 0xff,
 };
 
+typedef struct {
+    int bus_value;
+    int dev_value;
+    char *silk_screen;
+    char *location;
+} MAPTOSTRING;
+
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 
 #ifdef __cplusplus

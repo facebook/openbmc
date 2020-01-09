@@ -44,6 +44,7 @@ typedef struct {
     int read;                       /* enable/disable read flag */
     int erase;                      /* enable/disable erase flag */
     int debug;                      /* enable/disable debug flag */
+    int refresh;                    /* refresh device */
     jtag_object_t *pjtag_object;    /* hardware interface (JTAG interface) */
     cpld_device_t *pcpld_device;    /* CPLD device related */
 }cpld_t;
@@ -65,7 +66,7 @@ static void usage(FILE *fp, int argc, char **argv)
 			argv[0]);
 }
 
-static const char short_options [] = "dhmep:v:f:o:";
+static const char short_options [] = "dhmeRp:v:f:o:";
 
 static const struct option
 	long_options [] = {
@@ -550,7 +551,11 @@ int main(int argc, char *argv[]){
         case 'm':
             cpld.programming_mode = CPLD_OFFLINE_MODE;
             break;
-            
+
+        case 'R':
+            cpld.refresh = 1;
+            break;
+
         default:
             usage(stdout, argc, argv);
             exit(EXIT_FAILURE);
@@ -591,15 +596,25 @@ cpld_verification:
         goto end_of_func;
     }
 
+    if(cpld.refresh)
+    {
+        rc = transmit_refresh();
+        if(rc < 0){
+            printf("%s(%d) - failed to transmit refesh\n", __FUNCTION__, __LINE__);
+            printf_failure();
+            return -1;
+        }
+    }
+
 end_of_func:
     /*
      * The return value is kept consistent the ispvm tool.
      */
     if(rc == 0) {
         printf_pass();
-        return 1;
+        return 0;
     }else{
         printf_failure();
-        return 0;
+        return 1;
     }
 }

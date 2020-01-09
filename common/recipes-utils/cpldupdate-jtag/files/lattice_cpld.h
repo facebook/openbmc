@@ -112,7 +112,7 @@ int program_feature_row(unsigned int a, unsigned int b);
 int program_feabits(unsigned short feabits);
 int program_user_code(unsigned int code);
 int programe_done();
-
+int transmit_refesh();
 #ifdef __cplusplus
 }
 #endif

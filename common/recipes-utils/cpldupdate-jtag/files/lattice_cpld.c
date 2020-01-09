@@ -726,3 +726,21 @@ end_of_func:
     return rc;
 }
 
+
+/*
+ * Force the MachXO3 to reconfigure. Transmitting
+ * a REFRESH command reconfigures the
+ * MachXO3 in the same fashion as asserting
+ * PROGRAMN.
+ * refer to MachXO3ProgrammingandConfigurationUsageGuide page 58
+ */
+int transmit_refresh()
+{
+    int rc;
+    rc = write_onebyte_instruction(JTAG_STATE_IDLE, LSC_REFRESH);
+    if(rc < 0){
+        printf("%s(%d) - failed to write instruction LSC_REFRESH\n", __FUNCTION__, __LINE__);
+        return -1;
+    }
+    return rc;
+}

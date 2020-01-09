@@ -282,6 +282,12 @@ pal_get_platform_name(char *name) {
 }
 
 int
+pal_get_num_slots(uint8_t *num) {
+  *num = 1;
+  return 0;
+}
+
+int
 pal_get_platform_id(uint8_t id_type, uint8_t *id) {
   int ret = 0, retry = 3, val;
   uint8_t *id_cache = NULL;
@@ -764,6 +770,11 @@ pal_set_dev_guid(uint8_t fru, char *str) {
 
   pal_populate_guid(guid, str);
   return pal_set_guid(OFFSET_DEV_GUID, guid);
+}
+
+int
+pal_devnum_to_fruid(int devnum) {
+  return FRU_MB;
 }
 
 int

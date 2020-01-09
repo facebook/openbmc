@@ -142,7 +142,7 @@ vr_ISL_polling_status(uint8_t slot_id, uint8_t addr) {
   tlen = 6;
   ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
   if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Failed to send PROGRAMMER_STATUS command");
+    syslog(LOG_WARNING, "[%s] Failed to send PROGRAMMER_STATUS command", __func__);
     goto error_exit;
   }
 
@@ -151,7 +151,7 @@ vr_ISL_polling_status(uint8_t slot_id, uint8_t addr) {
   tlen = 4;
   ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
   if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Failed to get PROGRAMMER_STATUS");
+    syslog(LOG_WARNING, "[%s] Failed to get PROGRAMMER_STATUS", __func__);
     goto error_exit;
   }
 
@@ -187,7 +187,7 @@ vr_ISL_program(uint8_t slot_id, vr *dev) {
     tlen = 4 + list[i].data_len;
     ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
     if ( ret < 0 ) {
-      syslog(LOG_WARNING, "Failed to send data...%d", i);
+      syslog(LOG_WARNING, "[%s] Failed to send data...%d", __func__, i);
       break;
     }
   }
@@ -204,7 +204,7 @@ vr_ISL_program(uint8_t slot_id, vr *dev) {
   } while ( retry > 0 );
 
   if ( retry == 0 ) {
-    syslog(LOG_WARNING, "Failed to program the device");
+    syslog(LOG_WARNING, "[%s] Failed to program the device", __func__);
     ret = -1;
   }
 
@@ -263,8 +263,8 @@ vr_ISL_hex_parser(char *image) {
 
       //printf("cnt %x, addr %x, data_end %x, crc8 %x\n", cnt, addr, data_end, crc8);
       if ( addr != vr_list[vr_cnt].addr ) {
-        printf("[%s] Failed to parse this line since the addr is not match. 0x%x != 0x%x\n", __func__, addr, vr_list[vr_cnt].addr);
-        printf("[%s] %s\n", __func__, tmp_buf);
+        syslog(LOG_WARNING, "[%s] Failed to parse this line since the addr is not match. 0x%x != 0x%x\n", __func__, addr, vr_list[vr_cnt].addr);
+        syslog(LOG_WARNING, "[%s] %s\n", __func__, tmp_buf);
         ret = -1;
         break;
       }
@@ -279,7 +279,7 @@ vr_ISL_hex_parser(char *image) {
       crc8_check = cal_crc8(crc8_check, data, cnt-1);
 
       if ( crc8_check != crc8 ) {
-        printf("[%s] CRC8 is not match. Expected CRC8: 0x%x, Acutal CRC8: 0x%x\n", __func__, crc8, crc8_check);
+        syslog(LOG_WARNING, "[%s] CRC8 is not match. Expected CRC8: 0x%x, Acutal CRC8: 0x%x\n", __func__, crc8, crc8_check);
         ret = -1;
         break;
       }
@@ -442,7 +442,7 @@ vr_TI_csv_parser(char *image) {
   //calculate the checksum
   ret = cal_TI_crc16(&vr_list[vr_cnt]);
   if ( ret < 0 ) {
-    printf("CRC16 is error!\n");
+    syslog(LOG_WARNING, "[%s] CRC16 is error!", __func__);
   }
 
 error_exit:
@@ -477,7 +477,7 @@ vr_TI_program(uint8_t slot_id, vr *dev) {
 
   ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
   if ( ret < 0 ) {
-    printf("Cannot initialize the page to 0x00!\n");
+    syslog(LOG_WARNING, "[%s] Cannot initialize the page to 0x00!", __func__);
     goto error_exit;
   }
 
@@ -492,7 +492,7 @@ vr_TI_program(uint8_t slot_id, vr *dev) {
     //send it
     ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
     if ( ret < 0 ) {
-      syslog(LOG_WARNING, "Failed to send data...%d", i);
+      syslog(LOG_WARNING, "[%s] Failed to send data...%d", __func__, i);
       break;
     }
 
@@ -506,7 +506,7 @@ vr_TI_program(uint8_t slot_id, vr *dev) {
   msleep(300);
   ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
   if ( ret < 0 ) {
-    printf("Cannot initialize the page to 0x00 again.!\n");
+    syslog(LOG_WARNING, "[%s] Cannot initialize the page to 0x00 again.!", __func__);
     goto error_exit;
   }
 
@@ -516,12 +516,12 @@ vr_TI_program(uint8_t slot_id, vr *dev) {
   for ( i=0; i<len; i++ ) {
     ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
     if ( ret < 0 ) {
-      printf("Failed to read data. index:%d\n", i);
+      syslog(LOG_WARNING, "[%s] Failed to read data. index:%d", __func__, i);
     } else {
       if ( rbuf[0] == 0x20 ) {
         memmove(rbuf, &rbuf[1], 0x20);
       } else {
-        printf("The count of data is incorrect. index:%d, data_len:%d\n", i, rbuf[0]);
+        syslog(LOG_WARNING, "[%s] The count of data is incorrect. index:%d, data_len:%d", __func__, i, rbuf[0]);
         ret = -1;
         goto error_exit;
       }
@@ -593,6 +593,15 @@ update_bic_vr(uint8_t slot_id, char *image, uint8_t force) {
     ret = vr_TI_csv_parser(image);
   } else {
     ret = vr_ISL_hex_parser(image);
+  }
+
+  //step 2.5 - check if data is existed.
+  //data_cnt, addr, and devid_len cannot be 0.
+  for ( i = 0; i < vr_cnt + 1; i++ ) {
+    if ( vr_list[i].data_cnt == 0 || vr_list[i].addr == 0 || vr_list[i].devid_len == 0 ) {
+      printf("Invalid file: %s.\n", image);
+      ret = -1;
+    }
   }
 
   if ( ret < 0 ) {

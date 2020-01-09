@@ -85,6 +85,38 @@ const uint8_t mb_sensor_list[] = {
   MB_SWITCH_PAX1_DIE_TEMP,
   MB_SWITCH_PAX2_DIE_TEMP,
   MB_SWITCH_PAX3_DIE_TEMP,
+  MB_VR_P0V8_VDD0_VIN,
+  MB_VR_P0V8_VDD0_VOUT,
+  MB_VR_P0V8_VDD0_CURR,
+  MB_VR_P0V8_VDD0_TEMP,
+  MB_VR_P0V8_VDD1_VIN,
+  MB_VR_P0V8_VDD1_VOUT,
+  MB_VR_P0V8_VDD1_CURR,
+  MB_VR_P0V8_VDD1_TEMP,
+  MB_VR_P0V8_VDD2_VIN,
+  MB_VR_P0V8_VDD2_VOUT,
+  MB_VR_P0V8_VDD2_CURR,
+  MB_VR_P0V8_VDD2_TEMP,
+  MB_VR_P0V8_VDD3_VIN,
+  MB_VR_P0V8_VDD3_VOUT,
+  MB_VR_P0V8_VDD3_CURR,
+  MB_VR_P0V8_VDD3_TEMP,
+  MB_VR_P1V0_AVD0_VIN,
+  MB_VR_P1V0_AVD0_VOUT,
+  MB_VR_P1V0_AVD0_CURR,
+  MB_VR_P1V0_AVD0_TEMP,
+  MB_VR_P1V0_AVD1_VIN,
+  MB_VR_P1V0_AVD1_VOUT,
+  MB_VR_P1V0_AVD1_CURR,
+  MB_VR_P1V0_AVD1_TEMP,
+  MB_VR_P1V0_AVD2_VIN,
+  MB_VR_P1V0_AVD2_VOUT,
+  MB_VR_P1V0_AVD2_CURR,
+  MB_VR_P1V0_AVD2_TEMP,
+  MB_VR_P1V0_AVD3_VIN,
+  MB_VR_P1V0_AVD3_VOUT,
+  MB_VR_P1V0_AVD3_CURR,
+  MB_VR_P1V0_AVD3_TEMP
 };
 
 const uint8_t pdb_sensor_list[] = {
@@ -109,7 +141,7 @@ const uint8_t pdb_sensor_list[] = {
   PDB_ADC_2_VICOR2_TEMP,
   PDB_ADC_2_VICOR3_TEMP,
   PDB_SENSOR_OUTLET_TEMP,
-  PDB_SENSOR_OUTLET_TEMP_REMOTE,
+  PDB_SENSOR_OUTLET_TEMP_REMOTE
 };
 
 /*
@@ -151,6 +183,38 @@ const char* sensors_name[] = {
   "MB_SWITCH_PAX1_DIE_TEMP",
   "MB_SWITCH_PAX2_DIE_TEMP",
   "MB_SWITCH_PAX3_DIE_TEMP",
+  "MB_VR_P0V8_VDD0_VIN",
+  "MB_VR_P0V8_VDD0_VOUT",
+  "MB_VR_P0V8_VDD0_CURR",
+  "MB_VR_P0V8_VDD0_TEMP",
+  "MB_VR_P0V8_VDD1_VIN",
+  "MB_VR_P0V8_VDD1_VOUT",
+  "MB_VR_P0V8_VDD1_CURR",
+  "MB_VR_P0V8_VDD1_TEMP",
+  "MB_VR_P0V8_VDD2_VIN",
+  "MB_VR_P0V8_VDD2_VOUT",
+  "MB_VR_P0V8_VDD2_CURR",
+  "MB_VR_P0V8_VDD2_TEMP",
+  "MB_VR_P0V8_VDD3_VIN",
+  "MB_VR_P0V8_VDD3_VOUT",
+  "MB_VR_P0V8_VDD3_CURR",
+  "MB_VR_P0V8_VDD3_TEMP",
+  "MB_VR_P1V0_AVD0_VIN",
+  "MB_VR_P1V0_AVD0_VOUT",
+  "MB_VR_P1V0_AVD0_CURR",
+  "MB_VR_P1V0_AVD0_TEMP",
+  "MB_VR_P1V0_AVD1_VIN",
+  "MB_VR_P1V0_AVD1_VOUT",
+  "MB_VR_P1V0_AVD1_CURR",
+  "MB_VR_P1V0_AVD1_TEMP",
+  "MB_VR_P1V0_AVD2_VIN",
+  "MB_VR_P1V0_AVD2_VOUT",
+  "MB_VR_P1V0_AVD2_CURR",
+  "MB_VR_P1V0_AVD2_TEMP",
+  "MB_VR_P1V0_AVD3_VIN",
+  "MB_VR_P1V0_AVD3_VOUT",
+  "MB_VR_P1V0_AVD3_CURR",
+  "MB_VR_P1V0_AVD3_TEMP",
   "PDB_HSC_P12V_1_VIN",
   "PDB_HSC_P12V_1_VOUT",
   "PDB_HSC_P12V_1_CURR",
@@ -172,7 +236,7 @@ const char* sensors_name[] = {
   "PDB_ADC_2_VICOR2_TEMP",
   "PDB_ADC_2_VICOR3_TEMP",
   "PDB_SENSOR_OUTLET_TEMP",
-  "PDB_SENSOR_OUTLET_TEMP_REMOTE",
+  "PDB_SENSOR_OUTLET_TEMP_REMOTE"
 };
 
 float sensors_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
@@ -348,6 +412,9 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
   } else if (fru == FRU_PDB) {
     *sensor_list = (uint8_t *) pdb_sensor_list;
     *cnt = pdb_sensor_cnt;
+  } else if (fru == FRU_BSM) {
+    *sensor_list = NULL;
+    *cnt = 0;
   } else {
     *sensor_list = NULL;
     *cnt = 0;
@@ -462,6 +529,22 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
     case MB_ADC_P12V_2:
     case MB_ADC_P3V3:
     case MB_ADC_P3V_BAT:
+    case MB_VR_P0V8_VDD0_VIN:
+    case MB_VR_P0V8_VDD0_VOUT:
+    case MB_VR_P0V8_VDD1_VIN:
+    case MB_VR_P0V8_VDD1_VOUT:
+    case MB_VR_P0V8_VDD2_VIN:
+    case MB_VR_P0V8_VDD2_VOUT:
+    case MB_VR_P0V8_VDD3_VIN:
+    case MB_VR_P0V8_VDD3_VOUT:
+    case MB_VR_P1V0_AVD0_VIN:
+    case MB_VR_P1V0_AVD0_VOUT:
+    case MB_VR_P1V0_AVD1_VIN:
+    case MB_VR_P1V0_AVD1_VOUT:
+    case MB_VR_P1V0_AVD2_VIN:
+    case MB_VR_P1V0_AVD2_VOUT:
+    case MB_VR_P1V0_AVD3_VIN:
+    case MB_VR_P1V0_AVD3_VOUT:
     case PDB_HSC_P12V_1_VIN:
     case PDB_HSC_P12V_2_VIN:
     case PDB_HSC_P12V_AUX_VIN:
@@ -482,6 +565,14 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
     case MB_SWITCH_PAX1_DIE_TEMP:
     case MB_SWITCH_PAX2_DIE_TEMP:
     case MB_SWITCH_PAX3_DIE_TEMP:
+    case MB_VR_P0V8_VDD0_TEMP:
+    case MB_VR_P0V8_VDD1_TEMP:
+    case MB_VR_P0V8_VDD2_TEMP:
+    case MB_VR_P0V8_VDD3_TEMP:
+    case MB_VR_P1V0_AVD0_TEMP:
+    case MB_VR_P1V0_AVD1_TEMP:
+    case MB_VR_P1V0_AVD2_TEMP:
+    case MB_VR_P1V0_AVD3_TEMP:
     case PDB_ADC_1_VICOR0_TEMP:
     case PDB_ADC_1_VICOR1_TEMP:
     case PDB_ADC_1_VICOR2_TEMP:
@@ -498,6 +589,14 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
     case MB_FAN1_CURR:
     case MB_FAN2_CURR:
     case MB_FAN3_CURR:
+    case MB_VR_P0V8_VDD0_CURR:
+    case MB_VR_P0V8_VDD1_CURR:
+    case MB_VR_P0V8_VDD2_CURR:
+    case MB_VR_P0V8_VDD3_CURR:
+    case MB_VR_P1V0_AVD0_CURR:
+    case MB_VR_P1V0_AVD1_CURR:
+    case MB_VR_P1V0_AVD2_CURR:
+    case MB_VR_P1V0_AVD3_CURR:
     case PDB_HSC_P12V_1_CURR:
     case PDB_HSC_P12V_2_CURR:
     case PDB_HSC_P12V_AUX_CURR:
@@ -724,6 +823,103 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
     case PDB_ADC_2_VICOR2_TEMP:
     case PDB_ADC_2_VICOR3_TEMP:
       ret = sensors_read_vicor(sensor_num, (float *)value);
+      break;
+    // Voltage regulator
+    case MB_VR_P0V8_VDD0_VIN:
+      ret = sensors_read("mpq8645p-i2c-5-30", "VR_P0V8_VDD0_VIN", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD0_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-30", "VR_P0V8_VDD0_VOUT", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD0_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-30", "VR_P0V8_VDD0_CURR", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD0_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-30", "VR_P0V8_VDD0_TEMP", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD1_VIN:
+      ret = sensors_read("mpq8645p-i2c-5-31", "VR_P0V8_VDD1_VIN", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD1_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-31", "VR_P0V8_VDD1_VOUT", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD1_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-31", "VR_P0V8_VDD1_CURR", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD1_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-31", "VR_P0V8_VDD1_TEMP", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD2_VIN:
+      ret = sensors_read("mpq8645p-i2c-5-32", "VR_P0V8_VDD2_VIN", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD2_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-32", "VR_P0V8_VDD2_VOUT", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD2_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-32", "VR_P0V8_VDD2_CURR", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD2_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-32", "VR_P0V8_VDD2_TEMP", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD3_VIN:
+      ret = sensors_read("mpq8645p-i2c-5-33", "VR_P0V8_VDD3_VIN", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD3_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-33", "VR_P0V8_VDD3_VOUT", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD3_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-33", "VR_P0V8_VDD3_CURR", (float *)value);
+      break;
+    case MB_VR_P0V8_VDD3_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-33", "VR_P0V8_VDD3_TEMP", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD0_VIN:
+      ret = sensors_read("mpq8645p-i2c-5-34", "VR_P1V0_AVD0_VIN", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD0_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-34", "VR_P1V0_AVD0_VOUT", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD0_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-34", "VR_P1V0_AVD0_CURR", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD0_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-34", "VR_P1V0_AVD0_TEMP", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD1_VIN:
+      ret = sensors_read("mpq8645p-i2c-5-35", "VR_P1V0_AVD1_VIN", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD1_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-35", "VR_P1V0_AVD1_VOUT", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD1_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-35", "VR_P1V0_AVD1_CURR", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD1_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-35", "VR_P1V0_AVD1_TEMP", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD2_VIN:
+      ret = sensors_read("mpq8645p-i2c-5-36", "VR_P1V0_AVD2_VIN", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD2_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-36", "VR_P1V0_AVD2_VOUT", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD2_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-36", "VR_P1V0_AVD2_CURR", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD2_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-36", "VR_P1V0_AVD2_TEMP", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD3_VIN:
+      ret = sensors_read("mpq8645p-i2c-5-3b", "VR_P1V0_AVD3_VIN", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD3_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-3b", "VR_P1V0_AVD3_VOUT", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD3_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-3b", "VR_P1V0_AVD3_CURR", (float *)value);
+      break;
+    case MB_VR_P1V0_AVD3_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-3b", "VR_P1V0_AVD3_TEMP", (float *)value);
       break;
     default:
       ret = READING_NA;

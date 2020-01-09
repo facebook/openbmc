@@ -29,3 +29,12 @@ power-util mb on > /dev/null
 # Thermal sensors for PCIe switch
 i2c_device_add 6 0x4d tmp422
 i2c_device_add 6 0x4e tmp422
+
+i2c_device_add 5 0x30 mpq8645p
+i2c_device_add 5 0x31 mpq8645p
+i2c_device_add 5 0x32 mpq8645p
+i2c_device_add 5 0x33 mpq8645p
+i2c_device_add 5 0x34 mpq8645p
+i2c_device_add 5 0x35 mpq8645p
+i2c_device_add 5 0x36 mpq8645p
+i2c_device_add 5 0x3b mpq8645p

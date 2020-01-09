@@ -78,7 +78,7 @@ int VrComponent1::print_version()
     return -1;
   }
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 4; i++) {
     ostringstream vr_name;
     vr_name << name << i;
     cout << vr_name.str() << " Version: ";
@@ -102,7 +102,7 @@ int VrComponent1::update(string image)
     return -1;
   }
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 4; i++) {
     ostringstream vr_name;
     vr_name << name << i;
     ret = vr_fw_update(vr_name.str().c_str(), image.c_str());

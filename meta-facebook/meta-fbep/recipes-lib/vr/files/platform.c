@@ -9,7 +9,7 @@ enum {
   VR_P1V0_AVD0,
   VR_P1V0_AVD1,
   VR_P1V0_AVD2,
-  VR_P1V0_AVD3,
+  VR_P1V0_AVD3
 };
 
 enum {
@@ -20,7 +20,7 @@ enum {
   ADDR_P1V0_AVD0 = 0x34,
   ADDR_P1V0_AVD1 = 0x35,
   ADDR_P1V0_AVD2 = 0x36,
-  ADDR_P1V0_AVD3,
+  ADDR_P1V0_AVD3 = 0x3b
 };
 
 struct vr_ops mpq8645p_ops = {
@@ -80,8 +80,7 @@ struct vr_info fbep_vr_list[] = {
     .dev_id = MPQ8645P_ID,
     .dev_name = "VR_P1V0_AVD2",
     .ops = &mpq8645p_ops,
-  }
-  /*
+  },
   [VR_P1V0_AVD3] = {
     .bus = 5,
     .addr = ADDR_P1V0_AVD3,
@@ -89,7 +88,6 @@ struct vr_info fbep_vr_list[] = {
     .dev_name = "VR_P1V0_AVD3",
     .ops = &mpq8645p_ops,
   }
-  */
 };
 
 int plat_vr_init()

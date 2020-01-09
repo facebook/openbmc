@@ -122,3 +122,14 @@ wedge_power_on_board() {
     # wedge400 SCM power is controlled by SCMCPLD
     return 0
 }
+
+wedge_prepare_cpld_update() {
+    echo "Stop fscd service."
+    sv stop fscd
+
+    echo "Disable watchdog."
+    /usr/local/bin/wdtcli stop
+
+    echo "Set fan speed 40%."
+    set_fan_speed.sh 40
+}

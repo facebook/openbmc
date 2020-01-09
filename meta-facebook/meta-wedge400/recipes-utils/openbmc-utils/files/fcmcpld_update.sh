@@ -77,6 +77,8 @@ trap 'rm -rf /tmp/fcmcpld_update' INT TERM QUIT EXIT
 
 echo 1 > /tmp/fcmcpld_update
 
+wedge_prepare_cpld_update
+
 enable_jtag_chain
 
 case $2 in
@@ -99,8 +101,11 @@ disable_jtag_chain
 # 0 is returned upon upgrade success
 if [ $result -eq 1 ]; then
     echo "Upgrade successful."
+    echo "Re-start fscd service."
+    sv start fscd
     exit 0
 else
     echo "Upgrade failure. Return code from utility : $result"
+    echo "To prevent system reboot. Keep fscd stop & watchdog disable."
     exit 1
 fi

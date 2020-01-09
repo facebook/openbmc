@@ -101,7 +101,7 @@ if [ "$brd_type" = "0" ]; then          # Only Wedge400
 elif [ "$brd_type" = "1" ]; then        # Only Wedge400-2
     i2c_device_add 1 0x40 xdpe132g5c    # Wedge400-2 GB core voltage/current monitor
     if [ "$brd_rev" = "1" ]; then
-        i2c_device_add 1 0x0e pxe1211c  # Wedge400-2 EVT2 GB serdes voltage/current monitor
+        i2c_device_add 1 0x0e pxe1211   # Wedge400-2 EVT2 GB serdes voltage/current monitor
     else
         i2c_device_add 1 0x43 ir35215   # Wedge400-2 GB serdes voltage/current monitor
     fi

@@ -99,7 +99,7 @@ result=$?
 disable_jtag_chain
 
 # 0 is returned upon upgrade success
-if [ $result -eq 1 ]; then
+if [ $result -eq 0 ]; then
     echo "Upgrade successful."
     echo "Re-start fscd service."
     sv start fscd

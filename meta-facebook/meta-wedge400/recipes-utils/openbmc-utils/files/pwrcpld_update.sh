@@ -84,7 +84,7 @@ enable_jtag_chain
 case $2 in
     hw)
         # enable CPLD immediately after cpld update done
-        cpldprog -p "${img}" -m
+        cpldprog -p "${img}" -R
         ;;
     sw)
         ispvm -f 1000 dll $DLL_PATH "${img}"
@@ -92,7 +92,7 @@ case $2 in
     *)
         # default: hw mode
         # enable CPLD immediately after cpld update done
-        cpldprog -p "${img}" -m
+        cpldprog -p "${img}" -R
         ;;
 esac
 
@@ -101,7 +101,7 @@ result=$?
 disable_jtag_chain
 
 # 0 is returned upon upgrade success
-if [ $result -eq 1 ]; then
+if [ $result -eq 0 ]; then
     echo "Upgrade successful."
     echo "Re-start fscd service."
     sv start fscd

@@ -48,7 +48,7 @@ extern "C" int sensors_read(const char *chip, const char *label, float *value)
 extern "C" int sensors_write(const char *chip, const char *label, float value)
 {
   int ret = -1;
-  if (!chip || !label || !value) {
+  if (!chip || !label) {
     errno = EINVAL;
     return -1;
   }

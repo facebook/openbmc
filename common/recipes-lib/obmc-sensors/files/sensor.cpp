@@ -16,6 +16,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #include <map>
+#include <cmath>
 #include <syslog.h>
 #include "sensor.hpp"
 
@@ -100,12 +101,12 @@ void PWMSensor::initialize()
 
 float PWMSensor::read()
 {
-	InFile file;
+  InFile file;
   file.open(path);
   int val;
   file >> val;
   file.close();
-  return float(val) * 100.0 / 255.0;
+  return ceil(float(val) * 100.0 / 255.0);
 }
 
 void PWMSensor::write(float value)

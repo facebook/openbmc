@@ -14,6 +14,9 @@ SRC_URI =+ "file://Makefile \
            file://server.h \
            file://server.cpp \
            file://nic.cpp \
+           file://nic.h \
+           file://nic_ext.cpp \
+           file://nic_ext.h \
            file://bic_fw.cpp \
            file://bic_fw.h \
            file://bic_me.cpp \
@@ -39,9 +42,9 @@ S = "${WORKDIR}"
 
 #The definition for the project
 CXXFLAGS += " -DBIC_SUPPORT "
-DEPENDS += "libipmi libipmb libbic libocpdbg-lcd libobmc-i2c libfpga libfby3-common"
-RDEPENDS_${PN} += "libipmi libipmb libbic libocpdbg-lcd libobmc-i2c libfpga libfby3-common"
-LDFLAGS += " -lipmi -lipmb -lbic -locpdbg-lcd -lobmc-i2c -lfpga -lfby3_common"
+DEPENDS += "libipmi libipmb libbic libocpdbg-lcd libobmc-i2c libfpga libfby3-common libncsi libnl-wrapper"
+RDEPENDS_${PN} += "libipmi libipmb libbic libocpdbg-lcd libobmc-i2c libfpga libfby3-common libncsi libnl-wrapper"
+LDFLAGS += " -lipmi -lipmb -lbic -locpdbg-lcd -lobmc-i2c -lfpga -lfby3_common -lncsi -lnl-wrapper"
 
 LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -lpal -lvbs -ldl "
 DEPENDS += "jansson libpal dtc zlib openssl libvbs "

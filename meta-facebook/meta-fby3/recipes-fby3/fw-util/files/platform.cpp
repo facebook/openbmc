@@ -5,6 +5,7 @@
 #include "bmc_cpld.h"
 #include "bios.h"
 #include "fscd.h"
+#include "nic_ext.h"
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
 #include <facebook/fby3_common.h>
@@ -72,6 +73,8 @@ VrComponent vr_fw1("slot1", "sb", "vr", FRU_SLOT1, NONE_INTF);
 VrComponent vr_fw2("slot2", "sb", "vr", FRU_SLOT2, NONE_INTF);
 VrComponent vr_fw3("slot3", "sb", "vr", FRU_SLOT3, NONE_INTF);
 VrComponent vr_fw4("slot4", "sb", "vr", FRU_SLOT4, NONE_INTF);
+
+NicExtComponent nic_fw("nic", "nic", "nic", 0);
 
 class ClassConfig {
   public:

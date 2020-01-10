@@ -846,7 +846,7 @@ pal_set_guid(uint16_t offset, char *guid) {
 
 int
 pal_get_sys_guid(uint8_t fru, char *guid) {
-  return pal_get_guid(OFFSET_SYS_GUID, guid);
+  return bic_get_sys_guid(fru, (uint8_t *)guid);
 }
 
 int
@@ -854,7 +854,7 @@ pal_set_sys_guid(uint8_t fru, char *str) {
   char guid[GUID_SIZE] = {0};
 
   pal_populate_guid(guid, str);
-  return pal_set_guid(OFFSET_SYS_GUID, guid);
+  return bic_set_sys_guid(fru, (uint8_t *)guid);
 }
 
 int

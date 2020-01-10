@@ -48,6 +48,8 @@ typedef struct _sdr_rec_hdr_t {
 } sdr_rec_hdr_t;
 #pragma pack(pop)
 
+#define SIZE_SYS_GUID 16
+
 // S/E - Get Sensor reading
 // Netfn: 0x04, Cmd: 0x2d
 int
@@ -705,6 +707,33 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
 
   // Ignore first 3 bytes of IANA ID
   memcpy((uint8_t*) gpio, &rbuf[3], rlen);
+
+  return ret;
+}
+
+int
+bic_get_sys_guid(uint8_t slot_id, uint8_t *guid) {
+  int ret;
+  uint8_t rlen = 0;
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_GET_SYSTEM_GUID, NULL, 0, guid, &rlen);
+  if (rlen != SIZE_SYS_GUID) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "bic_get_sys_guid: returned rlen of %d\n");
+#endif
+    return -1;
+  }
+
+  return ret;
+}
+
+int
+bic_set_sys_guid(uint8_t slot_id, uint8_t *guid) {
+  int ret;
+  uint8_t rlen = 0;
+  uint8_t rbuf[MAX_IPMB_RES_LEN]={0x00};
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_REQ, CMD_OEM_SET_SYSTEM_GUID, guid, SIZE_SYS_GUID, rbuf, &rlen);
 
   return ret;
 }

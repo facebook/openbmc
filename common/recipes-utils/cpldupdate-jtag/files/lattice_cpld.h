@@ -24,9 +24,9 @@
 #define LATTICE_INSTRUCTION_LENGTH      (BITS_OF_ONE_BYTE)
 #define LATTICE_OPCODE_LENGTH           (BITS_OF_ONE_BYTE*3)
 
-#define CPD_IDCODE_PUB		  0xe0 /* Read Device ID */
+#define CPD_IDCODE_PUB        0xe0 /* Read Device ID */
 #define ISC_ENABLE_X          0x74 /* Enable Configuration Interface (Transparent Mode) */
-#define ISC_ENABLE		      0xc6 /* Enable Configuration Interface (Offline Mode) */
+#define ISC_ENABLE            0xc6 /* Enable Configuration Interface (Offline Mode) */
 #define LSC_CHECK_BUSY        0xF0 /* Read Busy Flag */
 
 #define LSC_READ_STATUS       0x3c /* Read Status Register */
@@ -83,11 +83,11 @@ command is issued, or a power cycle event occurs */
 #define CPLD_OFFLINE_MODE     1
 
 typedef struct {
-	const char		*name;
-	unsigned int    dev_id;
-	unsigned short  page_bits; /* page size, unit bit */
-	unsigned int    num_of_cfg_pages;
-	unsigned int    num_of_ufm_pages;
+    const char      *name;
+    unsigned int    dev_id;
+    unsigned short  page_bits; /* page size, unit bit */
+    unsigned int    num_of_cfg_pages;
+    unsigned int    num_of_ufm_pages;
 }cpld_device_t;
 
 typedef void (*progress_func_t)(int percent);

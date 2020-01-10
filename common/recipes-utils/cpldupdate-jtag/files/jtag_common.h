@@ -30,7 +30,7 @@ typedef struct {
 
 
 #ifdef __cplusplus
-extern "C" {
+extern "C" {
 #endif
 
 jtag_object_t *jtag_init(const char *if_name, unsigned char mode, unsigned int freq);

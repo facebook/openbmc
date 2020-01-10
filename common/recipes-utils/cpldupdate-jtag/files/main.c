@@ -51,34 +51,34 @@ typedef struct {
 
 static void usage(FILE *fp, int argc, char **argv)
 {
-	fprintf(fp,
-			"Usage: %s [options]\n\n"
-			"Options:\n"
-			" -h | --help                   Print this message\n"
-			" -e | --erase                  Erase cpld\n"
-			" -p | --program                Program cpld and verify\n"
-			" -v | --verify                 verifiy cpld image with file\n"
-			" -d | --debug                  debug mode\n"
-			" -f | --frequency              frequency\n"
-			" -o | --option                 Program option\n"
-			" -m | --mode                   Offline mode\n"
-			"",
-			argv[0]);
+    fprintf(fp,
+            "Usage: %s [options]\n\n"
+            "Options:\n"
+            " -h | --help                   Print this message\n"
+            " -e | --erase                  Erase cpld\n"
+            " -p | --program                Program cpld and verify\n"
+            " -v | --verify                 verifiy cpld image with file\n"
+            " -d | --debug                  debug mode\n"
+            " -f | --frequency              frequency\n"
+            " -o | --option                 Program option\n"
+            " -m | --mode                   Offline mode\n"
+            "",
+            argv[0]);
 }
 
 static const char short_options [] = "dhmeRp:v:f:o:";
 
 static const struct option
-	long_options [] = {
-	{ "help",		no_argument,		NULL,	'h' },
-	{ "erase",		no_argument,		NULL,	'e' },
-	{ "program",	required_argument,	NULL,	'p' },
-	{ "verify",		required_argument,	NULL,	'v' },
-	{ "debug",		no_argument,		NULL,	'd' },
-	{ "fequency",	required_argument,	NULL,	'f' },
-	{ "option",     required_argument,	NULL,	'o' },
-    { "mode",       no_argument,        NULL,   'm' },   
-	{ 0, 0, 0, 0 }
+    long_options [] = {
+    { "help",       no_argument,        NULL,    'h' },
+    { "erase",      no_argument,        NULL,    'e' },
+    { "program",    required_argument,  NULL,    'p' },
+    { "verify",     required_argument,  NULL,    'v' },
+    { "debug",      no_argument,        NULL,    'd' },
+    { "fequency",   required_argument,  NULL,    'f' },
+    { "option",     required_argument,  NULL,    'o' },
+    { "mode",       no_argument,        NULL,    'm' },   
+    { 0, 0, 0, 0 }
 };
 
 static unsigned short prog_option = 0;
@@ -86,7 +86,7 @@ static int debug = 1;
 
 static int print_progess_bar(long pecent)
 {
-	int i = 0;
+    int i = 0;
     static int prev_pecent = 0;
 
     if(prev_pecent == pecent){
@@ -95,39 +95,39 @@ static int print_progess_bar(long pecent)
     }else{
         prev_pecent = pecent;
     }
-    
-	printf("\033[?251");
-	printf("\r");
 
-	for(i = 0; i < pecent / 2; i++) {
-		printf("\033[;44m \033[0m");
-	}
+    printf("\033[?251");
+    printf("\r");
 
-	for(i = pecent / 2; i < 50; i++) {
-		printf("\033[47m \033[0m");
-	}
+    for(i = 0; i < pecent / 2; i++) {
+        printf("\033[;44m \033[0m");
+    }
 
-	printf(" [%d%%]", pecent);
-	fflush(stdout);
-	if(pecent == 100) {
-		printf("\n");
-	}
+    for(i = pecent / 2; i < 50; i++) {
+        printf("\033[47m \033[0m");
+    }
 
-	return 0;
+    printf(" [%d%%]", pecent);
+    fflush(stdout);
+    if(pecent == 100) {
+        printf("\n");
+    }
+
+    return 0;
 }
 
 static void printf_pass()
 {
     printf("+=======+\n" );
-	printf("| PASS! |\n" );
-	printf("+=======+\n\n" );
+    printf("| PASS! |\n" );
+    printf("+=======+\n\n" );
 }
 
 static void printf_failure()
 {
     printf("+=======+\n" );
-	printf("| FAIL! |\n" );
-	printf("+=======+\n\n" );
+    printf("| FAIL! |\n" );
+    printf("+=======+\n\n" );
 }
 
 int check_file(const char *file_name)
@@ -207,7 +207,7 @@ int cpld_program(cpld_t *pcpld, const char *file_name)
     /* Reset and put the JTAG state machine in IDLE status */
     run_test_idle(1, JTAG_STATE_IDLE, 3);
     usleep(3000);
-    
+
     pcpld->pcpld_device = scan_cpld_device();
     if(NULL == pcpld->pcpld_device){
         printf("%s(%d) - Failed to find CPLD\n", __FUNCTION__, __LINE__);
@@ -233,7 +233,7 @@ int cpld_program(cpld_t *pcpld, const char *file_name)
         goto end_of_func;
     }
 
-	printf("Erase/Program the Flash ...\n");
+    printf("Erase/Program the Flash ...\n");
 
     rc = erase_cpld(option, 1500);
     if(rc < 0){
@@ -269,17 +269,17 @@ int cpld_program(cpld_t *pcpld, const char *file_name)
         }
     }
 
-	rc = programe_done();
+    rc = programe_done();
     if(rc < 0){
         printf("%s(%d) - failed to program done\n", __FUNCTION__, __LINE__);
         goto end_of_func;
     }
 
-	rc = exit_configuration_mode();
+    rc = exit_configuration_mode();
 
 end_of_func:
     if(rc == 0) print_progess_bar(100);
-	return rc;
+    return rc;
 }
 
 int cpld_erase(cpld_t *pcpld, unsigned char flash_block){
@@ -483,7 +483,7 @@ end_of_func:
 
 int main(int argc, char *argv[]){
     char option;
-	char in_name[100]  = "";
+    char in_name[100]  = "";
     char out_name[100] = "";
 
     cpld_t cpld;
@@ -514,29 +514,29 @@ int main(int argc, char *argv[]){
         case 'p':
             cpld.program = 1;
             strcpy(in_name, optarg);
-			if (!strcmp(in_name, "")) {
-				printf("No input file name!\n");
-				usage(stdout, argc, argv);
-				exit(EXIT_FAILURE);
-			}
+            if (!strcmp(in_name, "")) {
+                printf("No input file name!\n");
+                usage(stdout, argc, argv);
+                exit(EXIT_FAILURE);
+            }
             break;
         case 'v':
             cpld.verification = 1;
             strcpy(in_name, optarg);
-			if (!strcmp(in_name, "")) {
-				printf("No input file name!\n");
-				usage(stdout, argc, argv);
-				exit(EXIT_FAILURE);
-			}
+            if (!strcmp(in_name, "")) {
+                printf("No input file name!\n");
+                usage(stdout, argc, argv);
+                exit(EXIT_FAILURE);
+            }
             break;
         case 'r':
             cpld.read = 1;
             strcpy(in_name, optarg);
-			if (!strcmp(in_name, "")) {
-				printf("No input file name!\n");
-				usage(stdout, argc, argv);
-				exit(EXIT_FAILURE);
-			}
+            if (!strcmp(in_name, "")) {
+                printf("No input file name!\n");
+                usage(stdout, argc, argv);
+                exit(EXIT_FAILURE);
+            }
             break;
         case 'd':
             cpld.debug = 1;

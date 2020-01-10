@@ -29,19 +29,19 @@
 
 static cpld_device_t device_list[] = {
     {
-		.name = "LC LCMXO2-1200HC",
-		.dev_id = 0x012BA043,
-		.page_bits = 128,
-		.num_of_cfg_pages = 2175,
-		.num_of_ufm_pages = 512,
-	},
-	{
-		.name = "LC LCMXO3-4300C",
-		.dev_id = 0xE12BD043,
-		.page_bits = 128,
-		.num_of_cfg_pages = 9212,
-		.num_of_ufm_pages = 2048,
-	}
+        .name = "LC LCMXO2-1200HC",
+        .dev_id = 0x012BA043,
+        .page_bits = 128,
+        .num_of_cfg_pages = 2175,
+        .num_of_ufm_pages = 512,
+    },
+    {
+        .name = "LC LCMXO3-4300C",
+        .dev_id = 0xE12BD043,
+        .page_bits = 128,
+        .num_of_cfg_pages = 9212,
+        .num_of_ufm_pages = 2048,
+    }
 };
 
 static jtag_object_t *global_jtag_object = NULL;
@@ -101,7 +101,7 @@ static int read_device_id(unsigned int *deviceId)
         return -1;
     }
     *deviceId = dr_data;
-	return 0;
+    return 0;
 }
 
 static int read_status_register(unsigned int *status, int ustime)
@@ -129,9 +129,9 @@ static int read_status_register(unsigned int *status, int ustime)
         printf("%s(%d) - failed to write data from cpld\n", __FILE__, __LINE__);
         return -1;
     }
-	*status = dr_data;
+    *status = dr_data;
 
-	return 0;
+    return 0;
 }
 
 static int read_busy_register(unsigned int *status, int ustime)
@@ -151,9 +151,9 @@ static int read_busy_register(unsigned int *status, int ustime)
         printf("%s(%d) - failed to write data from cpld\n", __FILE__, __LINE__);
         return -1;
     }
-	*status = dr_data;
+    *status = dr_data;
 
-	return 0;
+    return 0;
 }
 
 int run_test_idle(unsigned char reset, unsigned char endstate, unsigned char tck)
@@ -236,7 +236,7 @@ cpld_device_t *scan_cpld_device()
     printf("Unsupport device id 0x%08x\n", tempId);
 
 end_of_func:
-	return pcpld_device;
+    return pcpld_device;
 }
 
 int preload()
@@ -358,17 +358,17 @@ int erase_cpld(unsigned char option, int num_of_loops)
         return -1;
     }
 
-	rc = write_onebyte_instruction(JTAG_STATE_IDLE, LSC_CHECK_BUSY);
+    rc = write_onebyte_instruction(JTAG_STATE_IDLE, LSC_CHECK_BUSY);
     if(rc < 0){
         printf("%s(%d) - failed to write instruction LSC_CHECK_BUSY\n",  __FUNCTION__, __LINE__);
         return -1;
     }
 
-	for (i = 0; i < num_of_loops ; i++) {
-		usleep(2000);
-		rc = read_data_register(JTAG_STATE_IDLE, &dr_data, 1);
+    for (i = 0; i < num_of_loops ; i++) {
+        usleep(2000);
+        rc = read_data_register(JTAG_STATE_IDLE, &dr_data, 1);
         if(rc < 0) return rc;
-	}
+    }
 
     rc = check_cpld_status(CPLD_STATUS_BUSY_BIT|CPLD_STATUS_FAIL_BIT, 5);
     if(rc < 0){
@@ -420,7 +420,7 @@ int program_configuration(int bytes_per_page, int num_of_pages, progress_func_t 
         goto end_of_func;
     }
     
-	for (row = 0 ; row < used_pages; row++){
+    for (row = 0 ; row < used_pages; row++){
         enum jtag_endstate endstate;
         rc = jtag_get_status(global_jtag_object, &endstate);
         if(endstate != JTAG_STATE_IDLE){
@@ -446,7 +446,7 @@ int program_configuration(int bytes_per_page, int num_of_pages, progress_func_t 
         }
         
         run_test_idle(0, JTAG_STATE_IDLE, 2);
-		usleep(1000);
+        usleep(1000);
 
         rc = write_onebyte_instruction(JTAG_STATE_PAUSEIR, LSC_CHECK_BUSY);
         if(rc < 0){
@@ -454,23 +454,23 @@ int program_configuration(int bytes_per_page, int num_of_pages, progress_func_t 
             goto end_of_func;
         }
 
-		for (i = 0; i < 10; i++) {
-			usleep(3000);
-			page_buffer[0] = 0;
-			read_data_register(JTAG_STATE_IDLE, page_buffer, 1);
-			if (page_buffer[0] == 0) break;
-		}
+        for (i = 0; i < 10; i++) {
+            usleep(3000);
+            page_buffer[0] = 0;
+            read_data_register(JTAG_STATE_IDLE, page_buffer, 1);
+            if (page_buffer[0] == 0) break;
+        }
 
-		if (page_buffer[0] != 0){
-			printf("%S(%d) - Prgram failure row %d: failure data [%08x] \n", row, page_buffer[0]);
+        if (page_buffer[0] != 0){
+            printf("%S(%d) - Prgram failure row %d: failure data [%08x] \n", row, page_buffer[0]);
             rc = -1;
             break;
         } else {
             if(NULL != progress){
-		        progress((row*100)/used_pages);
+                progress((row*100)/used_pages);
             }
         }
-	}
+    }
 
 end_of_func:
     if(page_buffer) free(page_buffer);
@@ -549,11 +549,11 @@ int program_feature_row(unsigned int a0, unsigned int a1)
         return -1;
     }
 
-	for (i = 0; i < 10; i++) {
-		usleep(3000);
-		dr_data[0] = 0;
-		read_data_register(JTAG_STATE_IDLE, dr_data, 1);
-	}
+    for (i = 0; i < 10; i++) {
+        usleep(3000);
+        dr_data[0] = 0;
+        read_data_register(JTAG_STATE_IDLE, dr_data, 1);
+    }
 
     rc = write_onebyte_instruction(JTAG_STATE_IDLE, LSC_READ_FEATURE);
     if(rc < 0){
@@ -561,9 +561,9 @@ int program_feature_row(unsigned int a0, unsigned int a1)
         return -1;
     }
 
-	dr_data[0] = 0x00000000;
-	dr_data[1] = 0x00000000;
-	rc = read_data_register(0, dr_data, 64);
+    dr_data[0] = 0x00000000;
+    dr_data[1] = 0x00000000;
+    rc = read_data_register(0, dr_data, 64);
     if(rc < 0){
         printf("%s(%d) - failed to read data register\n", __FUNCTION__, __LINE__);
         return -1;
@@ -601,12 +601,12 @@ int program_feabits(unsigned short feabits)
         return -1;
     }
 
-	for (i = 0; i < 10; i++) {
-		usleep(3000);
-		dr_data = 0;
-		rc = read_data_register(JTAG_STATE_IDLE, &dr_data, 1);
+    for (i = 0; i < 10; i++) {
+        usleep(3000);
+        dr_data = 0;
+        rc = read_data_register(JTAG_STATE_IDLE, &dr_data, 1);
         if(rc < 0) return rc;
-	}
+    }
 
     rc = write_onebyte_instruction(JTAG_STATE_IDLE, LSC_READ_FEABITS);
     if(rc < 0){
@@ -614,8 +614,8 @@ int program_feabits(unsigned short feabits)
         return -1;
     }
 
-	dr_data = 0x0;
-	rc = read_data_register(JTAG_STATE_IDLE, &dr_data, sizeof(feabits)*BITS_OF_UNSIGNED_INT);
+    dr_data = 0x0;
+    rc = read_data_register(JTAG_STATE_IDLE, &dr_data, sizeof(feabits)*BITS_OF_UNSIGNED_INT);
     if(dr_data != feabits) {
         printf("%s(%d) - %04x [%04x]\n", __FUNCTION__, __LINE__, dr_data&0xfff2, feabits);
         return -1;
@@ -636,18 +636,18 @@ int programe_done()
         return -1;
     }
 
-	rc = write_onebyte_instruction(JTAG_STATE_IDLE, LSC_CHECK_BUSY);
+    rc = write_onebyte_instruction(JTAG_STATE_IDLE, LSC_CHECK_BUSY);
     if(rc < 0){
         printf("%s(%d) - failed to write onebyte instruction LSC_CHECK_BUSY\n", __FUNCTION__, __LINE__);
         return -1;
     }
 
-	for (i = 0; i < 10; i++) {
-		usleep(3000);
-		dr_data = 0;
-		rc = read_data_register(0, &dr_data, 1);
+    for (i = 0; i < 10; i++) {
+        usleep(3000);
+        dr_data = 0;
+        rc = read_data_register(0, &dr_data, 1);
         if(rc < 0) return rc;
-	}
+    }
 
     return 0;
 }

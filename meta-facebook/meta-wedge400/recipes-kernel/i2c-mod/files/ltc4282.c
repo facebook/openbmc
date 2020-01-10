@@ -168,6 +168,43 @@ struct ltc4282_data {
     u32 regs[ltc4282_reg_max];
 }; 
 
+#define TEMP_XLAT_TABLE_SIZE 256
+/*
+ * Hotswap mosfet temp and register mapping table, len TEMP_XLAT_TABLE_SIZE, unit: mC
+ * We sample many set of register and real temp, then we do linear calibration to generate
+ * a formula which is -0.00000000002656*reg_msb^6 + 0.000000018325*reg_msb^5
+ * - 0.000005001*reg_msb^4 + 0.000694575*reg_msb^3 - 0.0537*reg_msb^2 + 2.764*reg_msb
+ * - 21.059, then we use formula to generate this table.
+ */
+static int temp_table[TEMP_XLAT_TABLE_SIZE] = {-8500, -8500, -8500, -8500,
+      -8500, -8500, -6260, -4120, -2050, -60, 1860, 3700, 5480, 7190, 8840,
+      10420, 11950, 13430, 14850, 16230, 17550, 18840, 20070, 21270, 22430,
+      23550, 24640, 25690, 26710, 27700, 28660, 29590, 30500, 31390, 32250,
+      33090, 33910, 34710, 35490, 36250, 37000, 37730, 38450, 39150, 39850,
+      40530, 41190, 41850, 42500, 43140, 43770, 44390, 45000, 45610, 46210,
+      46800, 47390, 47970, 48550, 49120, 49690, 50250, 50810, 51360, 51910,
+      52450, 53000, 53530, 54070, 54600, 55130, 55660, 56180, 56700, 57210,
+      57730, 58240, 58740, 59250, 59750, 60250, 60740, 61230, 61720, 62210,
+      62690, 63170, 63650, 64120, 64590, 65050, 65510, 65970, 66430, 66880,
+      67330, 67770, 68210, 68650, 69080, 69510, 69930, 70350, 70770, 71180,
+      71590, 71990, 72390, 72790, 73180, 73570, 73950, 74330, 74710, 75080,
+      75450, 75810, 76170, 76530, 76890, 77240, 77580, 77930, 78270, 78600,
+      78940, 79270, 79600, 79930, 80250, 80570, 80890, 81210, 81520, 81840,
+      82150, 82460, 82770, 83080, 83380, 83690, 83990, 84300, 84600, 84910,
+      85210, 85520, 85820, 86130, 86440, 86750, 87050, 87360, 87670, 87990,
+      88300, 88620, 88930, 89250, 89570, 89900, 90220, 90550, 90880, 91210,
+      91550, 91880, 92220, 92560, 92900, 93250, 93590, 93940, 94290, 94640,
+      94990, 95350, 95700, 96050, 96410, 96760, 97110, 97470, 97820, 98170,
+      98510, 98850, 99190, 99530, 99860, 100180, 100500, 100810, 101110,
+      101400, 101680, 101950, 102210, 102460, 102690, 102900, 103100,
+      103280, 103430, 103570, 103680, 103770, 103830, 103870, 103870,
+      103870, 103870, 103870, 103870, 103870, 103870, 103870, 103870,
+      103870, 103870, 103870, 103870, 103870, 103870, 103870, 103870,
+      103870, 103870, 103870, 103870, 103870, 103870, 103870, 103870,
+      103870, 103870, 103870, 103870, 103870, 103870, 103870, 103870,
+      103870, 103870, 103870, 103870, 103870, 103870, 103870, 103870,
+      103870, 103870, 103870, 103870, 103870, 103870};
+
 /* 
  * ltc4282 Vin/Vout adc convert to mVolts 
  * refer to ltc4282 datasheet page 23
@@ -236,25 +273,12 @@ static inline int ltc4282_power_calculate(int reg_val) {
 
 /* 
  * ltc4282 Hot Swap Temp adc convert to degree mC
- * Becasue the 65535^3 is out of range of int_32, discard the LSB, reg = reg_val >> 8
- * this formula is from sampling many sets of register values and read values, and then
- * do linear fitting.
- * linear correction: temp * 1000 = (reg^3 - 480 * reg^2 + 103440 * reg - 205380) / 100
+ * As lookup table discard LSBs, need shift to right 8 bits
  */
 static inline int ltc4282_temp_calculate(int reg_val) {
-    int unit_mC = 100;
-    int temp_multi_coef[4] = { 1, -480, 103440, -205380 };
-    int coef_len = sizeof(temp_multi_coef)/sizeof(temp_multi_coef[0]);
-    int coef_index = 0;
-    int temp = 0;
-
-    reg_val = reg_val >> 8;
-    for (; coef_index < coef_len - 1; coef_index++) {
-        temp += temp_multi_coef[coef_index] * reg_val;
-    }
-    temp += temp_multi_coef[coef_len - 1];
-    temp = temp / unit_mC;
-    return temp;
+    u8 reg;
+    reg = reg_val >> 8;
+    return temp_table[reg];
 }
 
 static struct ltc4282_data *ltc4282_update_adc(struct device *dev, int reg) {

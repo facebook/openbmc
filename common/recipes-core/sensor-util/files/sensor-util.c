@@ -354,11 +354,12 @@ get_sensor_reading(void *sensor_data) {
       }
     }
 
-    usleep(50);
-    if ((false == pal_sensor_is_cached(sensor_info->fru, snr_num)) || (true == sensor_info->force))
+    if ((false == pal_sensor_is_cached(sensor_info->fru, snr_num)) || (true == sensor_info->force)) {
+      usleep(50);
       ret = sensor_raw_read(sensor_info->fru, snr_num, &fvalue);
-    else
+    } else {
       ret = sensor_cache_read(sensor_info->fru, snr_num, &fvalue);
+    }
 
     if (ret < 0) {
       // do not print unavaiable PLDM sensors

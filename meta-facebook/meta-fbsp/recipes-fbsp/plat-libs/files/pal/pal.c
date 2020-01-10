@@ -54,6 +54,15 @@ const char pal_server_list[] = "mb";
 
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
+static bool is_cpu_socket_occupy(unsigned int cpu_id);
+
+static char *dimm_label[12] = {
+  "A0", "B0", "C0", "D0", "E0", "F0", "A1", "B1", "C1", "D1", "E1", "F1"};
+
+struct dimm_map {
+  unsigned char index;
+  char *label;
+};
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -1279,4 +1288,169 @@ pal_is_debug_card_prsnt(uint8_t *status) {
   }
   gpio_close(desc);
   return ret;
+}
+
+static bool
+is_cpu_socket_occupy(unsigned int cpu_idx) {
+  static bool cached = false;
+  static uint8_t cached_id = 0;
+
+  if (!cached) {
+    const char *shadows[] = {
+      "FM_CPU0_SKTOCC_LVT3_N",
+      "FM_CPU1_SKTOCC_LVT3_N"
+    };
+    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+      return false;
+    }
+    cached = true;
+  }
+
+  // bit == 1 implies CPU is absent.
+  if (cached_id & (1 << cpu_idx)) {
+    return false;
+  }
+  return true;
+}
+
+int
+pal_get_syscfg_text (char *text) {
+  char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
+  char *key_prefix = "sys_config/";
+  int num_cpu=2, num_dimm, num_drive=14;
+  int index, surface, bubble;
+  size_t ret;
+  char **dimm_labels;
+  struct dimm_map map[24], temp_map;
+
+  if (text == NULL)
+    return -1;
+
+  // Clear string buffer
+  text[0] = '\0';
+
+  // CPU information
+  for (index = 0; index < num_cpu; index++) {
+    if (!is_cpu_socket_occupy((unsigned int)index))
+      continue;
+    sprintf(entry, "CPU%d:", index);
+
+    // Processor#
+    snprintf(key, MAX_KEY_LEN, "%sfru1_cpu%d_product_name",
+      key_prefix, index);
+    if (kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 26) {
+      // Read 4 bytes Processor#
+      if (snprintf(&entry[strlen(entry)], 5, "%s", &value[22]) > 5) {
+        syslog(LOG_ERR, "%s: CPU processor ID truncation detected!\n", __func__);
+      }
+    }
+
+    // Frequency & Core Number
+    snprintf(key, MAX_KEY_LEN, "%sfru1_cpu%d_basic_info",
+      key_prefix, index);
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 5) {
+      sprintf(&entry[strlen(entry)], "/%.1fG/%dc",
+        (float) (value[4] << 8 | value[3])/1000, value[0]);
+    }
+
+    sprintf(&entry[strlen(entry)], "\n");
+    strcat(text, entry);
+  }
+
+
+  num_dimm = 12;
+  dimm_labels = dimm_label;
+
+  // Initialize map
+  for (index = 0; index < num_dimm; index++) {
+    map[index].index = index;
+    map[index].label = dimm_labels[index];
+  }
+  // Bubble Sort the map according label string
+  surface = num_dimm;
+  for (surface = num_dimm; surface > 1;) {
+    bubble = 0;
+    for(index = 0; index < surface - 1; index++) {
+      if (strcmp(map[index].label, map[index+1].label) > 0) {
+        // Swap
+        temp_map = map[index+1];
+        map[index+1] = map[index];
+        map[index] = temp_map;
+
+        bubble = index + 1;
+      }
+    }
+    surface = bubble;
+  }
+  // DIMM information
+  for (index = 0; index < num_dimm; index++) {
+    sprintf(entry, "MEM%s:", map[index].label);
+
+    // Check Present
+    snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_location",
+      key_prefix, map[index].index);
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 1) {
+      // Skip if not present
+      if (value[0] != 0x01)
+        continue;
+    }
+
+    // Module Manufacturer ID
+    snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_manufacturer_id",
+      key_prefix, map[index].index);
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 2) {
+      switch (value[1]) {
+        case 0xce:
+          sprintf(&entry[strlen(entry)], "Samsung");
+          break;
+        case 0xad:
+          sprintf(&entry[strlen(entry)], "Hynix");
+          break;
+        case 0x2c:
+          sprintf(&entry[strlen(entry)], "Micron");
+          break;
+        default:
+          sprintf(&entry[strlen(entry)], "unknown");
+          break;
+      }
+    }
+
+    // Speed
+    snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_speed",
+      key_prefix, map[index].index);
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 6) {
+      sprintf(&entry[strlen(entry)], "/%dMhz/%dGB",
+        value[1]<<8 | value[0],
+        (value[5]<<24 | value[4]<<16 | value[3]<<8 | value[2])/1024 );
+    }
+
+    sprintf(&entry[strlen(entry)], "\n");
+    strcat(text, entry);
+  }
+
+  // Drive information
+  for (index = 0; index < num_drive; index++) {
+    sprintf(entry, "HDD%d:", index);
+
+    // Check Present
+    snprintf(key, MAX_KEY_LEN, "%sfru1_B_drive%d_location",
+      key_prefix, index);
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 3) {
+      // Skip if not present
+      if (value[2] == 0xff)
+        continue;
+    }
+
+    // Model name
+    snprintf(key, MAX_KEY_LEN, "%sfru1_B_drive%d_model_name",
+      key_prefix, index);
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 1) {
+      snprintf(&entry[strlen(entry)], ret+1, "%s", value);
+    }
+
+    sprintf(&entry[strlen(entry)], "\n");
+    strcat(text, entry);
+  }
+
+  return 0;
 }

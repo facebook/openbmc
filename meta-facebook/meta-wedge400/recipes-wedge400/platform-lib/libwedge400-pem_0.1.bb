@@ -25,10 +25,10 @@ LIC_FILES_CHKSUM = "file://wedge400-pem.c;beginline=4;endline=16;md5=da35978751a
 SRC_URI = "file://wedge400_pem \
           "
 
-LDFLAGS = "-lfruid -lpal -lobmc-i2c"
+LDFLAGS = "-lfruid -lpal -lobmc-i2c -lobmc-pmbus"
 
-DEPENDS += "libfruid libpal libobmc-i2c"
-RDEPENDS_${PN} += "libfruid libpal libobmc-i2c"
+DEPENDS += "libfruid libpal libobmc-i2c libobmc-pmbus"
+RDEPENDS_${PN} += "libfruid libpal libobmc-i2c libobmc-pmbus"
 
 S = "${WORKDIR}/wedge400_pem"
 

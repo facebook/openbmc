@@ -41,6 +41,7 @@ static void
 print_usage(const char *name) {
   int i;
 
+  printf("Usage: %s <pem1|pem2> --update [--force] <file_path>\n", name);
   printf("Usage: %s <pem1|pem2> <command> <options>\n", name);
   printf("       command:\n");
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
@@ -99,6 +100,24 @@ main(int argc, const char *argv[]) {
   }
   else if (!strcmp(argv[2], "--archive_pem_chips")) {
     ret = archive_pem_chips(pem_num);
+  }
+  else if (!strcmp(argv[2], "--update") && argv[3] != NULL) {
+    if (!strcmp(argv[3], "--force") && argv[4] != NULL) {
+      ret = do_update_pem(pem_num, argv[4], argv[5], 1);
+    } else {
+      ret = do_update_pem(pem_num, argv[3], argv[4], 0);
+    }
+    if (ret < 0) {
+      syslog(LOG_WARNING, "PEM%d update fail!", pem_num + 1);
+      printf("PEM%d update fail!\n", pem_num + 1);
+    } else {
+      if (ret == FW_IDENTICAL) {
+        printf("PEM%d firmware is identical to the target, skip to update.\n" \
+               "Please add \"--force\" option to update forcibly!\n", pem_num + 1);
+      } else {
+        syslog(LOG_WARNING, "PEM%d update success!", pem_num + 1);
+      }
+    }
   }
   else {
     print_usage(argv[0]);

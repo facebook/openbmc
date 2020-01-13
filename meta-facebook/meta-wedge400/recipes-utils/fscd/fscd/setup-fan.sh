@@ -69,9 +69,8 @@ if [ "$(wedge_board_type)" = "0" ] &&
    [ "$SMB_CPLD_BOARD_REV" = "0x0" ]; then #WEDGE400 EVT
     fcm_compatible=0
 #WEDGE400-C EVT wedge_board_rev = 0  disable
-elif [ "$(wedge_board_type)" = "1" ] &&
-     [ "$(wedge_board_rev)" = "0" ]; then #WEDGE400-C EVT
-    fcm_compatible=0
+elif [ "$(wedge_board_type)" = "1" ]; then #WEDGE400C
+    fcm_compatible=0 #fcm_compatible = 0 means fscd not ready.
 fi
 
 if [ $fcm_compatible -eq 0 ]; then

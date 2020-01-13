@@ -714,13 +714,13 @@ exit:
 
 static int
 is_valid_intf(uint8_t intf) {
-  int ret = -1;
+  int ret = BIC_STATUS_FAILURE;
   switch(intf) {
     case FEXP_BIC_INTF:
     case BB_BIC_INTF:
     case REXP_BIC_INTF:
     case NONE_INTF:
-      ret = 1;
+      ret = BIC_STATUS_SUCCESS;
       break;
   }
 
@@ -728,8 +728,75 @@ is_valid_intf(uint8_t intf) {
 }
 
 static int
-is_valid_bic_image(uint8_t slot_id, uint8_t intf, int fd, int file_size){
-  return 1;
+is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file_size){
+#define BICBL_TAG 0x00
+#define BICBR_TAG 0x01
+#define BICBL_OFFSET 0x3f00
+#define BICBR_OFFSET 0x8000
+
+#define REVISION_ID(x) ((x >> 4) & 0x0f)
+#define COMPONENT_ID(x) (x & 0x0f)
+
+enum {
+  BICDL  = 0x01,
+  BICBB  = 0x02,
+  BIC2OU = 0x04,
+  BIC1OU = 0x05
+};
+
+  int ret = BIC_STATUS_FAILURE;
+  uint8_t rbuf[2] = {0};
+  uint8_t rlen = sizeof(rbuf);
+  uint8_t sel_comp = 0xff;
+  uint8_t sel_tag = 0xff;
+  uint32_t sel_offset = 0xffffffff;
+
+  switch (comp) {
+    case UPDATE_BIC:
+      sel_tag = BICBR_TAG;
+      sel_offset = BICBR_OFFSET;
+      break;
+    case UPDATE_BIC_BOOTLOADER:
+      sel_tag = BICBL_TAG;
+      sel_offset = BICBL_OFFSET;
+      break;
+  }
+
+  switch (intf) {
+    case FEXP_BIC_INTF:
+      sel_comp = BIC1OU;
+      break;
+    case BB_BIC_INTF:
+      sel_comp = BICBB;
+      break;
+    case REXP_BIC_INTF:
+      sel_comp = BIC2OU;
+      break;
+    case NONE_INTF:
+      sel_comp = BICDL;
+      break;
+  }
+
+  if ( lseek(fd, sel_offset, SEEK_SET) != (off_t)sel_offset ) {
+    goto error_exit;
+  }
+
+  if ( read(fd, rbuf, rlen) != (off_t)rlen ) {
+    goto error_exit;
+  }
+
+  if ( rbuf[0] != sel_tag || COMPONENT_ID(rbuf[1]) != COMPONENT_ID(sel_comp) ) {
+    goto error_exit;
+  }
+
+  ret = BIC_STATUS_SUCCESS;
+
+error_exit:
+  if ( ret == BIC_STATUS_FAILURE) {
+    printf("This file cannot be updated to this component!\n");
+  }
+
+  return ret;
 }
 
 static int
@@ -749,7 +816,7 @@ open_and_get_size(char *path, int *file_size) {
 }
 
 static int
-update_bic_runtime_fw(uint8_t slot_id, uint8_t intf, char *path, uint8_t force) {
+update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
   int ret;
   int fd = 0;
   int file_size;
@@ -771,7 +838,7 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t intf, char *path, uint8_t force) 
   printf("file size = %d bytes, slot = %d, intf = 0x%x\n", file_size, slot_id, intf);  
 
   //check the content of the image
-  ret = is_valid_bic_image(slot_id, intf, fd, file_size);
+  ret = is_valid_bic_image(slot_id, comp, intf, fd, file_size);
   if ( ret < 0 ) {
     printf("Invalid BIC file!\n");
     goto exit;
@@ -871,7 +938,7 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, int fd, int file_size) {
 }
 
 static int
-update_fw_via_bic(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
+update_bic_bootloader_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force) {
   int fd = 0;
   int ret = 0;
   int file_size = 0;
@@ -884,7 +951,13 @@ update_fw_via_bic(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
   
   printf("file size = %d bytes, slot = %d, comp = 0x%x\n", file_size, slot_id, comp);
 
-  //bicbootloader
+  //check the content of the image
+  ret = is_valid_bic_image(slot_id, comp, intf, fd, file_size);
+  if ( ret < 0 ) {
+    printf("Invalid BIC file!\n");
+    goto exit;
+  }
+
   switch (comp) {
     case UPDATE_BIC_BOOTLOADER:
       ret = update_fw_bic_bootloader(slot_id, comp, fd, file_size);
@@ -902,12 +975,13 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t f
   char* loc = strstr(path, ipmb_content);
 
   printf("slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, path, force);
+
   switch (comp) {
     case UPDATE_BIC:
-      ret = update_bic_runtime_fw(slot_id, intf, path, force);
+      ret = update_bic_runtime_fw(slot_id, comp, intf, path, force);
       break;
     case UPDATE_BIC_BOOTLOADER:
-      ret = update_fw_via_bic(slot_id, UPDATE_BIC_BOOTLOADER, path, force);
+      ret = update_bic_bootloader_fw(slot_id, comp, intf , path, force);
       break;
     case UPDATE_CPLD:
       if ( intf == NONE_INTF ) {

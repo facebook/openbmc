@@ -94,6 +94,7 @@ typedef struct {
 } MAPTOSTRING;
 
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
+int pal_get_uart_select_from_cpld(uint8_t *uart_select);
 
 #ifdef __cplusplus
 } // extern "C"

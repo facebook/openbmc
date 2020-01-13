@@ -32,6 +32,7 @@
 #include <sys/time.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/obmc-i2c.h>
 #include "pal.h"
 
 #define PLATFORM_NAME "yosemitev3"
@@ -51,6 +52,14 @@ const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 #define SYSFW_VER "sysfw_ver_slot"
 #define SYSFW_VER_STR SYSFW_VER "%d"
 #define BOOR_ORDER_STR "slot%d_boot_order"
+#define GPIO_OCP_DEBUG_BMC_PRSNT_N "OCP_DEBUG_BMC_PRSNT_N"
+
+#define CPLD_ADDRESS 0x1E
+#define SLOT1_POSTCODE_OFFSET 0x02
+#define SLOT2_POSTCODE_OFFSET 0x03
+#define SLOT3_POSTCODE_OFFSET 0x04
+#define SLOT4_POSTCODE_OFFSET 0x05
+#define DEBUG_CARD_UART_MUX 0x06
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -81,6 +90,7 @@ struct pal_key_cfg {
   {"fru3_restart_cause", "3", NULL},
   {"fru4_restart_cause", "3", NULL},
   {"ntp_server", "", NULL},  
+  {"debug_card_uart_select", "0", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
@@ -1019,4 +1029,159 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   }
 
   return 0;
+}
+
+int
+pal_is_debug_card_prsnt(uint8_t *status) {  
+  int ret = -1;
+  gpio_value_t value;
+  gpio_desc_t *gpio = gpio_open_by_shadow(GPIO_OCP_DEBUG_BMC_PRSNT_N);
+  if (!gpio) {
+    return -1;
+  }
+  
+  ret = gpio_get_value(gpio, &value);
+  gpio_close(gpio);
+  
+  if (ret != 0) {
+    return -1;
+  }
+
+  if (value == 0x0) {
+    *status = 1;
+  } else {
+    *status = 0;
+  }
+
+  return 0;
+}
+
+int
+pal_get_uart_select_from_kv(uint8_t *pos) {
+  char value[MAX_VALUE_LEN] = {0};
+  uint8_t loc;
+  int ret = -1;
+
+  ret = pal_get_key_value("debug_card_uart_select", value);
+  if (!ret) {
+    loc = atoi(value);
+    *pos = loc;
+  }
+  return ret;
+}
+
+int
+pal_get_uart_select_from_cpld(uint8_t *uart_select) {
+  int fd = 0;
+  int retry = 3;
+  int ret = -1;
+  uint8_t tbuf[1] = {0x00};
+  uint8_t rbuf[1] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  
+  fd = open("/dev/i2c-12", O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "Failed to open bus 12");
+    return -1;
+  }
+
+  tbuf[0] = DEBUG_CARD_UART_MUX;
+  tlen = 1;
+  rlen = 1;
+
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+  }
+  if (fd > 0) {
+    close(fd);
+  }
+  if (ret < 0) {
+    return -1;
+  }
+  
+  *uart_select = rbuf[0];
+  return 0;
+}
+
+int
+pal_post_display(uint8_t uart_select, uint8_t postcode) {
+  int fd = 0;
+  int retry = 3;
+  int ret = -1;
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  uint8_t tbuf[2] = {0x00};
+  uint8_t rbuf[1] = {0x00};
+  uint8_t offset = 0;
+  
+  fd = open("/dev/i2c-12", O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "Failed to open bus 12");
+    return -1;
+  }
+  
+  switch (uart_select) {
+    case 1:
+      offset = SLOT1_POSTCODE_OFFSET;
+      break;
+    case 2:
+      offset = SLOT2_POSTCODE_OFFSET;
+      break;
+    case 3:
+      offset = SLOT3_POSTCODE_OFFSET;
+      break;
+    case 4:
+      offset = SLOT4_POSTCODE_OFFSET;
+      break;
+  }
+  
+  tbuf[0] = offset;
+  tbuf[1] = postcode;
+  tlen = 2;
+  rlen = 0;
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+  }
+  if (fd > 0) {
+    close(fd);
+  }
+  
+  return ret;
+}
+
+// Handle the received post code, display it on debug card
+int
+pal_post_handle(uint8_t slot, uint8_t postcode) {
+  uint8_t prsnt = 0;
+  uint8_t uart_select = 0;
+  int ret = -1;
+
+  // Check for debug card presence
+  ret = pal_is_debug_card_prsnt(&prsnt);
+  if (ret) {
+    return ret;
+  }
+
+  // No debug card  present, return
+  if (prsnt == 0) {
+    return 0;
+  }
+
+  // Get the UART SELECT from kv, avoid large access CPLD in a short time
+  ret = pal_get_uart_select_from_kv(&uart_select);
+  if (ret) {
+    return ret;
+  }
+
+  // If the give server is not selected, return
+  if (uart_select != slot) {
+    return 0;
+  }
+
+  // Display the post code in the debug card
+  ret = pal_post_display(uart_select, postcode);
+
+
+  return ret;
 }

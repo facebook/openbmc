@@ -9,7 +9,6 @@ require recipes-core/images/fb-openbmc-image.bb
 # bic-util
 # fby2-sensors
 # gpiointrd
-# front-paneld
 # hsvc-util
 # fpc-util
 # imc-util
@@ -57,4 +56,5 @@ IMAGE_INSTALL += " \
   bic-cached \
   guid-util \
   gpiod \
+  front-paneld \
   "

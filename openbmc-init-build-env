@@ -13,7 +13,6 @@ DISTRO_OVERRIDES=(
   meta-fbsp:warrior
   meta-fby3:warrior
   meta-cmm:warrior
-  meta-wedge400:warrior
 )
 
 platform="$1"

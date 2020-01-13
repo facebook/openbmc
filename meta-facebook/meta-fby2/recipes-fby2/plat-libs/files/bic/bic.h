@@ -516,6 +516,7 @@ int bic_get_device_type(uint8_t slot_id, uint8_t drv_num);
 int reverse_bit(int raw_val);
 int program_dev_fw(uint8_t slot_id, uint8_t dev_id, int bus, char* image, int start, int end);
 int update_dev_firmware (uint8_t slot_id, uint8_t dev_id, char* image);
+int bic_fget_device_info(uint8_t slot_id, uint8_t dev_num, uint8_t *ffi, uint8_t *meff, uint16_t *vendor_id, uint8_t *major_ver, uint8_t *minor_ver);
 
 #ifdef __cplusplus
 } // extern "C"

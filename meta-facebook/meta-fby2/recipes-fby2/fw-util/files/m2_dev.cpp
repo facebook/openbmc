@@ -22,6 +22,7 @@ class M2_DevComponent : public Component {
   uint8_t slot_id = 0;
   uint8_t dev_id = 0;
   Server server;
+  int _update(string image, uint8_t force);
   public:
   M2_DevComponent(string fru, string comp, uint8_t _slot_id, uint8_t dev_id)
     : Component(fru, comp), slot_id(_slot_id), dev_id(dev_id), server(_slot_id, fru) {
@@ -66,66 +67,70 @@ class M2_DevComponent : public Component {
     }
     return 0;
   }
+  int update(string image);
+  int fupdate(string image);
+};
 
-  int update(string image) {
-    int ret;
-    uint8_t status = DEVICE_POWER_OFF;
-    uint8_t type = DEV_TYPE_UNKNOWN;
-    uint8_t nvme_ready = 0;
-    if (fby2_get_slot_type(slot_id) != SLOT_TYPE_GPV2) {
-      return FW_STATUS_NOT_SUPPORTED;
-    }
-    try {
-      ret = pal_get_dev_info(slot_id, dev_id+1, &nvme_ready ,&status, &type);
-      if (!ret) {
-        if (status != 0) {
-          syslog(LOG_WARNING, "update: Slot%u Dev%d power=%u nvme_ready=%u type=%u", slot_id, dev_id, status, nvme_ready, type);
-          if (type == DEV_TYPE_VSI_ACC) {
-            server.ready();
-            ret = bic_update_dev_firmware(slot_id, dev_id, UPDATE_VSI, (char *)image.c_str(),0);
-            if (ret) {
-              syslog(LOG_WARNING, "update: Slot%u Dev%d vsi rp failed", slot_id, dev_id);
-            }
-          } else if (type == DEV_TYPE_BRCM_ACC) {
-            server.ready();
-            ret = bic_update_dev_firmware(slot_id, dev_id, UPDATE_BRCM, (char *)image.c_str(),0);
-            if (ret == FW_STATUS_SUCCESS) {
-              pal_set_device_power(slot_id, dev_id+1, SERVER_POWER_CYCLE);
-            } else {
-              syslog(LOG_WARNING, "update: Slot%u Dev%d brcm vk failed", slot_id, dev_id);
-            }
-          } else if (type == DEV_TYPE_SPH_ACC) {
-            uint16_t slot_dev_id = (slot_id << 4) | dev_id;
-            sleep(1);
-            printf("* Power cycling slot %u device %u...\n", slot_id, dev_id);
-            int ret_power = pal_set_device_power(slot_id, (dev_id + 1), SERVER_POWER_CYCLE);
-            if (ret_power < 0) {
-              printf("fw_util: pal_set_server_power failed for slot_id %u\n", slot_id);
-              return FW_STATUS_FAILURE;
-            }
-            sleep(1);
-            server.ready();
-            ret = bic_update_fw(slot_dev_id, UPDATE_SPH, (char *)image.c_str());
-
-            printf("* Please do 12V-power-cycle on Slot%u to activate new FPGA fw.\n", slot_id);
-          } else {
-            printf("Can not get the device type, try again later.\n");
-            ret = FW_STATUS_NOT_SUPPORTED;
+int M2_DevComponent::_update(string image, uint8_t force) {
+  int ret;
+  uint8_t status = DEVICE_POWER_OFF;
+  uint8_t type = DEV_TYPE_UNKNOWN;
+  uint8_t nvme_ready = 0;
+  if (fby2_get_slot_type(slot_id) != SLOT_TYPE_GPV2) {
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+  try {
+    ret = pal_get_dev_info(slot_id, dev_id+1, &nvme_ready ,&status, &type, force);
+    if (!ret) {
+      if (status != 0) {
+        syslog(LOG_WARNING, "update: Slot%u Dev%d power=%u nvme_ready=%u type=%u", slot_id, dev_id, status, nvme_ready, type);
+        if (type == DEV_TYPE_VSI_ACC) {
+          server.ready();
+          ret = bic_update_dev_firmware(slot_id, dev_id, UPDATE_VSI, (char *)image.c_str(),0);
+          if (ret) {
+            syslog(LOG_WARNING, "update: Slot%u Dev%d vsi rp failed", slot_id, dev_id);
           }
+        } else if (type == DEV_TYPE_BRCM_ACC) {
+          server.ready();
+          ret = bic_update_dev_firmware(slot_id, dev_id, UPDATE_BRCM, (char *)image.c_str(),0);
+          if (ret == FW_STATUS_SUCCESS) {
+            pal_set_device_power(slot_id, dev_id+1, SERVER_POWER_CYCLE);
+          } else {
+            syslog(LOG_WARNING, "update: Slot%u Dev%d brcm vk failed", slot_id, dev_id);
+          }
+        } else if (type == DEV_TYPE_SPH_ACC) {
+          uint16_t slot_dev_id = (slot_id << 4) | dev_id;
+          sleep(1);
+
+          server.ready();
+          ret = bic_update_fw(slot_dev_id, UPDATE_SPH, (char *)image.c_str());
+
+          printf("* Please do 12V-power-cycle on Slot%u to activate new FPGA fw.\n", slot_id);
         } else {
-          printf("device%d: Not Present\n", dev_id);
+          printf("Can not get the device type, try again later.\n");
           ret = FW_STATUS_NOT_SUPPORTED;
         }
       } else {
-        printf("Device%d status is unknown.\n", dev_id);
-        ret = FW_STATUS_FAILURE;
+        printf("device%d: Not Present\n", dev_id);
+        ret = FW_STATUS_NOT_SUPPORTED;
       }
-    } catch(string err) {
-      ret = FW_STATUS_NOT_SUPPORTED;
+    } else {
+      printf("Device%d status is unknown.\n", dev_id);
+      ret = FW_STATUS_FAILURE;
     }
-    return ret;
+  } catch(string err) {
+    ret = FW_STATUS_NOT_SUPPORTED;
   }
-};
+  return ret;
+}
+
+int M2_DevComponent::update(string image) {
+  return _update(image, 0);
+}
+
+int M2_DevComponent::fupdate(string image) {
+  return _update(image, 1);
+}
 
 // Register M.2 device components
 // slot1 device from 0 to 11

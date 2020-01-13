@@ -2737,8 +2737,8 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
 }
 
 int
-pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type) {
-  int ret;
+pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type, uint8_t force) {
+  int ret, fret = 0;
   uint8_t retry = MAX_READ_RETRY;
   uint16_t vendor_id = 0, reversed_vender_sph = 0;
   uint8_t ffi = 0 ,meff = 0 ,major_ver = 0, minor_ver = 0;
@@ -2760,7 +2760,10 @@ pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
 
     while (retry) {
       ret = bic_get_dev_power_status(slot_id,dev_id, nvme_ready, status, &ffi, &meff, &vendor_id, &major_ver, &minor_ver);
-      if (!ret)
+      if (force == 1) {
+        fret = bic_fget_device_info(slot_id, dev_id, &ffi, &meff, &vendor_id, &major_ver, &minor_ver);
+      }
+      if (!ret && !fret)
         break;
       msleep(50);
       retry--;
@@ -2768,7 +2771,7 @@ pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
 
     reversed_vender_sph = (((VENDOR_SPH << 8) & 0xFF00) | ((VENDOR_SPH >> 8) & 0x00FF));
 
-    if (*nvme_ready) {
+    if (*nvme_ready || (force == true)) {
       if ( meff == MEFF_DUAL_M2 ) {
         *type = DEV_TYPE_DUAL_M2;
       } else{
@@ -6822,7 +6825,7 @@ pal_get_nvme_ready_from_bic(uint8_t fru, uint8_t *value, uint8_t *dev_type) {
   *value = 1;
   *dev_type = DEV_TYPE_UNKNOWN;
   for (dev_id=1;dev_id <= MAX_NUM_DEVS;dev_id++) {
-    ret = pal_get_dev_info(fru, dev_id, &nvme_ready, &status, &type);
+    ret = pal_get_dev_info(fru, dev_id, &nvme_ready, &status, &type, 0);
     if (ret) {
       *value = 0;
       return ret;

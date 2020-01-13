@@ -2268,6 +2268,7 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     slot_num = (slot_id >> 4);
     dev_id = (slot_id & 0xF);
     slot_id = slot_num;
+    syslog(LOG_CRIT, "Update Intel: update intel sph firmware on slot %d device %d\n", slot_id, dev_id);
   }
 
   printf("updating fw on slot %d:\n", slot_id);
@@ -2496,7 +2497,7 @@ error_exit:
       syslog(LOG_CRIT, "Update PCIE SWITCH: updating pcie switch firmware is exiting on slot %d\n", slot_id);
       break;
     case UPDATE_SPH:
-      syslog(LOG_CRIT, "Update DEV FW: updating device firmware is exiting on slot %d\n", slot_id);
+      syslog(LOG_CRIT, "Update Intel: updating intel sph device firmware is exiting on slot %d device %d\n", slot_id, dev_id);
       break;
   }
   if (fd > 0 ) {
@@ -3557,50 +3558,6 @@ int update_dev_firmware (uint8_t slot_id, uint8_t dev_id, char* image) {
   sleep(2);
 
   bus = (dev_id / 2) + 2;
-  printf("* Erasing Device CFM1 sector...\n");
-  wbuf[0] = bus;
-  wbuf[1] = ERASE_DEV_FW;
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_STORAGE_REQ, DEV_UPDATE, wbuf, 2, rbuf, &rlen);
-  if (ret < 0) {
-    printf("Failed to send IPMB command!\n");
-    return ret;
-  }
-  if (rbuf[0] == CC_CAN_NOT_RESPOND) {
-    printf("Command response could not be provided\n");
-    return -1;
-  }
-  ret = program_dev_fw(slot_id, dev_id, bus, image, CFM1_START, CFM1_END);
-  if (ret < 0) {
-    return ret;
-  }
-
-  printf("* Reloading device image\n");
-  wbuf[0] = bus;
-  wbuf[1] = RELOAD_DEV_IMG;
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_STORAGE_REQ, DEV_UPDATE, wbuf, 2, rbuf, &rlen);
-  if (ret < 0) {
-    printf("Failed to send IPMB command!\n");
-    return ret;
-  }
-  if (rbuf[0] == CC_CAN_NOT_RESPOND) {
-    printf("Command response could not be provided\n");
-    return -1;
-  }
-  sleep(5);
-
-  printf("* Getting the image location\n");
-  wbuf[0] = bus;
-  wbuf[1] = GET_BOOT_LOCATION;
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_STORAGE_REQ, DEV_UPDATE, wbuf, 2, rbuf, &rlen);
-  if (ret < 0) {
-    printf("Failed to send IPMB command!\n");
-    return ret;
-  }
-  if (rbuf[0] == CC_CAN_NOT_RESPOND) {
-    printf("Command response could not be provided\n");
-    return -1;
-  }
-
   printf("* Erasing Device CFM0 sector...\n");
   wbuf[0] = bus;
   wbuf[1] = ERASE_DEV_FW;
@@ -3625,5 +3582,67 @@ int update_dev_firmware (uint8_t slot_id, uint8_t dev_id, char* image) {
     printf("Turn on slot%u sensor monitor failed\n", slot_id);
     return ret;
   }
+  return ret;
+}
+
+int
+bic_fget_device_info(uint8_t slot_id, uint8_t dev_num, uint8_t *ffi, uint8_t *meff, uint16_t *vendor_id, uint8_t *major_ver, uint8_t *minor_ver) {
+  int ret = 0;
+  int rlen = 0;
+  uint8_t bus, wbuf[8], rbuf[64];
+
+  dev_num = dev_num - 1;
+
+  bus = (2 + (dev_num / 2)) * 2 + 1;
+  ret = bic_disable_sensor_monitor(slot_id, 1);
+  if (ret < 0) {
+    printf("Turn off slot%u sensor monitor failed\n", slot_id);
+    return -1;
+  }
+
+  wbuf[0] = 1 << (dev_num % 2);
+  ret = bic_master_write_read(slot_id, bus, 0xe2, wbuf, 1, rbuf, 0);
+  if (ret != 0) {
+    syslog(LOG_DEBUG, "%s(): bic_master_write_read failed", __func__);
+    return ret;
+  }
+
+  msleep(50);
+
+  wbuf[0] = 0x08;  // offset 08
+  rlen = 24;
+  ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
+  if (ret != 0) {
+    syslog(LOG_DEBUG, "%s(): bic_master_write_read offset=%d read length=%d failed", __func__,wbuf[0],rlen);
+    return ret;
+  }
+  *vendor_id = (rbuf[1] << 8) | rbuf[2];
+
+  wbuf[0] = 0x20;  // offset 32
+  rlen = 55;
+  ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
+  if (ret != 0) {
+    syslog(LOG_DEBUG, "%s(): bic_master_write_read offset=%d read length=%d failed", __func__,wbuf[0],rlen);
+    return ret;
+  }
+  *meff = rbuf[42];
+  *ffi = rbuf[43];
+
+  wbuf[0] = 0x68;  // offset 104
+  rlen = 8;
+  ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
+  if (ret != 0) {
+    syslog(LOG_DEBUG, "%s(): bic_master_write_read offset=%d read length=%d failed", __func__,wbuf[0],rlen);
+    return ret;
+  }
+  *major_ver = rbuf[2];
+  *minor_ver = rbuf[3];
+
+  ret = bic_disable_sensor_monitor(slot_id, 0);
+  if (ret < 0) {
+    printf("Turn on slot%u sensor monitor failed\n", slot_id);
+    return ret;
+  }
+
   return ret;
 }

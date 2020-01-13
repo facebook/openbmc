@@ -304,7 +304,7 @@ fru_cache_dump(void *arg) {
   for (dev_id = 1; dev_id <= MAX_NUM_DEVS; dev_id++) {
 
     //check for power status
-    ret = pal_get_dev_info(fru, dev_id, &nvme_ready ,&status[dev_id], &type);
+    ret = pal_get_dev_info(fru, dev_id, &nvme_ready ,&status[dev_id], &type, 0);
     syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u nvme_ready=%u type=%u", fru, dev_id-1, status[dev_id], nvme_ready, type);
 
     if (dev_fru_complete[fru][dev_id] != DEV_FRU_NOT_COMPLETE) {
@@ -372,7 +372,7 @@ fru_cache_dump(void *arg) {
       }
 
       // check for device type
-      ret = pal_get_dev_info(fru, dev_id, &nvme_ready, &status[dev_id], &type);
+      ret = pal_get_dev_info(fru, dev_id, &nvme_ready, &status[dev_id], &type, 0);
       syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u nvme_ready=%u type=%u", fru, dev_id-1, status[dev_id], nvme_ready, type);
 
       if (ret || (!nvme_ready))

@@ -170,7 +170,7 @@ int pal_is_slot_server(uint8_t fru);
 int pal_is_slot_support_update(uint8_t fru);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type);
-int pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type);
+int pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type, uint8_t force);
 void pal_power_policy_control(uint8_t slot_id, char *last_ps);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd);

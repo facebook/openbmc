@@ -37,7 +37,7 @@ jobs:
         - "if [[ $MODIFIED_SH ]]; then shellcheck $MODIFIED_SH; fi"
     - env: BOARD='<PYTHON LINT>'
       script:
-        - "python3 -m pip install black==18.6b4"
+        - "python3 -m pip install black==19.3b0"
         - "python3 -m black --diff --check $MODIFIED_PY"
 
 # Due to travis ci weirdness, we don't include the build job matrix in the "jobs"

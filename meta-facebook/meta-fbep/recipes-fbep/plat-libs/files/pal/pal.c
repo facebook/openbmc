@@ -645,43 +645,55 @@ int pal_set_server_power(uint8_t fru, uint8_t cmd)
   return 0;
 }
 
-void* sled_cycle_handler(void* arg)
+void* chassis_control_handler(void *arg)
 {
-  sleep(4);
-  pal_sled_cycle();
+  int cmd = (int)arg;
+
+  switch (cmd) {
+    case 0x00:  // power off
+      if (pal_set_server_power(FRU_MB, SERVER_POWER_OFF) < 0)
+        syslog(LOG_CRIT, "SERVER_POWER_OFF failed");
+      else
+	syslog(LOG_CRIT, "SERVER_POWER_OFF successful");
+      break;
+    case 0x01:  // power on
+      if (pal_set_server_power(FRU_MB, SERVER_POWER_ON) < 0)
+        syslog(LOG_CRIT, "SERVER_POWER_ON failed");
+      else
+	syslog(LOG_CRIT, "SERVER_POWER_ON successful");
+      break;
+    case 0x02:  // power cycle
+      if (pal_set_server_power(FRU_MB, SERVER_POWER_CYCLE) < 0)
+        syslog(LOG_CRIT, "SERVER_POWER_CYCLE failed");
+      else
+	syslog(LOG_CRIT, "SERVER_POWER_CYCLE successful");
+      break;
+    case 0xAC:  // sled-cycle with delay 4 secs
+      sleep(4);
+      pal_sled_cycle();
+      break;
+  }
+
   pthread_exit(0);
 }
 
 int pal_chassis_control(uint8_t fru, uint8_t *req_data, uint8_t req_len)
 {
-  int ret = 0;
+  int cmd;
   pthread_t tid;
 
   if (req_len != 1) {
     return CC_INVALID_LENGTH;
   }
 
-  switch (req_data[0]) {
-    case 0x00:  // power off
-      ret = pal_set_server_power(fru, SERVER_POWER_OFF);
-      break;
-    case 0x01:  // power on
-      ret = pal_set_server_power(fru, SERVER_POWER_ON);
-      break;
-    case 0x02:  // power cycle
-      ret = pal_set_server_power(fru, SERVER_POWER_CYCLE);
-      break;
-    case 0xAC:  // sled-cycle with delay 4 secs
-      if (pthread_create(&tid, NULL, sled_cycle_handler, NULL) < 0) {
-        syslog(LOG_WARNING, "ipmid: bbv_power_cycle_handler pthread_create failed\n");
-	ret = -1;
-      }
-      break;
-    default:
-      return CC_INVALID_DATA_FIELD;
+  cmd = req_data[0];
+
+  if (pthread_create(&tid, NULL, chassis_control_handler, (void *)cmd) < 0) {
+    syslog(LOG_WARNING, "ipmid: chassis_control_handler pthread_create failed\n");
+    return CC_UNSPECIFIED_ERROR;
   }
 
-  return ret < 0? CC_UNSPECIFIED_ERROR: CC_SUCCESS;
+  return CC_SUCCESS;
 }
 
 void pal_get_chassis_status(uint8_t fru, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)

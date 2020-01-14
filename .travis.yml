@@ -69,6 +69,7 @@ env:
     - BOARD=sonorapass
     - BOARD=wedge
     - BOARD=wedge100
+    - BOARD=wedge400
     - BOARD=yosemite
 
 script:

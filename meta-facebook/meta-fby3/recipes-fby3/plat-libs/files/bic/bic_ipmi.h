@@ -46,6 +46,7 @@ int bic_switch_mux_for_bios_spi(uint8_t slot_id, uint8_t mux);
 int bic_set_gpio(uint8_t slot_id, uint8_t gpio_num,uint8_t value);
 int bic_get_sys_guid(uint8_t slot_id, uint8_t *guid);
 int bic_set_sys_guid(uint8_t slot_id, uint8_t *guid);
+int bic_do_sled_cycle(uint8_t slot_id);
 #ifdef __cplusplus
 } // extern "C"
 #endif

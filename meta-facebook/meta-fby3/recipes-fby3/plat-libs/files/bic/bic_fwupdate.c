@@ -984,11 +984,8 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t f
       ret = update_bic_bootloader_fw(slot_id, comp, intf , path, force);
       break;
     case UPDATE_CPLD:
-      if ( intf == NONE_INTF ) {
+      if ( intf == NONE_INTF || intf == BB_BIC_INTF ) {
         ret = update_bic_cpld_altera(slot_id, path, intf, force);
-      } else if ( intf == BB_BIC_INTF ){
-         //do nothing
-        ret = BIC_STATUS_FAILURE;
       } else {
         ret = update_bic_cpld_lattice(slot_id, path, intf, force);
       }
@@ -1018,7 +1015,7 @@ bic_show_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_
       ret = bic_get_fw_ver(slot_id, comp, ver, intf);
       break;
     case FW_CPLD:
-      if ( intf == NONE_INTF ) {
+      if ( intf == NONE_INTF || intf == BB_BIC_INTF ) {
         ret = bic_get_cpld_ver(slot_id, comp, ver, bus, addr, intf);
       } else if ( intf == FEXP_BIC_INTF || intf == REXP_BIC_INTF ) {
         ret = bic_get_exp_cpld_ver(slot_id, comp, ver, bus, addr, intf);

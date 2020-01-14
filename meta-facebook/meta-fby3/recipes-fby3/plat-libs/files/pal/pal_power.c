@@ -297,7 +297,19 @@ pal_sled_cycle(void) {
   if ( bmc_location == BB_BMC ) {
     ret = system("i2cset -y 11 0x40 0xd9 c &> /dev/null");
   } else {
-    //TODO: The power control of class2
+    int i = 0;
+    int retries = 3;
+    for (i = 0 ; i < retries; i++) {
+      //BMC always sends the command with slot id 1 on class 2
+      if ( bic_do_sled_cycle(1) < 0 ) {
+        printf("Try to do the sled cycle...\n");
+        msleep(100);
+      }
+    }
+
+    if ( i == retries ) {
+      printf("Failed to do the sled cycle. Please check the BIC is alive.\n");
+    }
   }
 
   return ret;

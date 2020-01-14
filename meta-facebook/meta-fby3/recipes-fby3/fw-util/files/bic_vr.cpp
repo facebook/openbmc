@@ -32,7 +32,7 @@ int VrComponent::print_version()
       if ( ret < 0 ) {
         throw "Error in getting the version of " + vr.second;
       } else {
-        printf("%s Version: 0x", vr.second.c_str());
+        printf("%s %s Version: 0x", (len > 3)?"Renesas":"Texas Instruments", vr.second.c_str());
         for (int i = 0; i < len; i++) printf("%02X", ver[i]);
         printf("\n");
       }
@@ -48,8 +48,7 @@ int VrComponent::update(string image)
 {
   int ret;
   try {
-    //TODO: the function is not ready, we skip it now.
-    //server.ready()
+    server.ready();
     return bic_update_fw(slot_id, UPDATE_VR, intf, (char *)image.c_str(), 0);
   } catch (string err) {
     return FW_STATUS_NOT_SUPPORTED;

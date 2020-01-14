@@ -90,6 +90,7 @@ class ClassConfig {
         static BmcCpldComponent cpld_bmc("bmc", "bmc", "cpld", MAX10_10M25, 9, 0x40);
         static BicFwExtComponent bic_bb_fw1("slot1", "bb", "bic", FRU_SLOT1, BB_BIC_INTF);
         static BicFwBlExtComponent bic_bb_fwbl1("slot1", "bb", "bicbl", FRU_SLOT1, BB_BIC_INTF);
+        static CpldComponent cpld_bb_fw1("slot1", "bb", "cpld", FRU_SLOT1, 0, 0x80, BB_BIC_INTF);
       } else {
       //class1
         /*The BIC of the 1OU board*/

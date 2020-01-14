@@ -66,6 +66,8 @@ bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id, uint8_t intf) {
   return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_GET_DEVICE_ID, NULL, 0, (uint8_t *) dev_id, &rlen, intf);
 }
 
+// APP - Get Device ID
+// Netfn: 0x06, Cmd: 0x04
 int
 bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result, uint8_t intf) {
   uint8_t rlen = 0;
@@ -73,7 +75,7 @@ bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result, uint8_t int
 }
 
 // Storage - Get FRUID info
-// Netfn: , Cmd:
+// Netfn: 0x0A, Cmd: 0x10
 int
 bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info, uint8_t intf) {
   uint8_t rlen = 0;
@@ -81,7 +83,8 @@ bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info, uin
   return bic_ipmb_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_FRUID_INFO, &fruid, 1, (uint8_t *) info, &rlen, intf);
 }
 
-
+// Storage - Reserve SDR
+// Netfn: 0x0A, Cmd: 0x22
 static int
 _get_sdr_rsv(uint8_t slot_id, uint8_t *rsv, uint8_t intf) {
   uint8_t rlen = 0;
@@ -89,7 +92,7 @@ _get_sdr_rsv(uint8_t slot_id, uint8_t *rsv, uint8_t intf) {
 }
 
 // Storage - Get SDR
-// Netfn: , Cmd:
+// Netfn: 0x0A, Cmd: 0x23
 static int
 _get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen, uint8_t intf) {
   return bic_ipmb_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_SDR, (uint8_t *)req, sizeof(ipmi_sel_sdr_req_t), (uint8_t*)res, rlen, intf);
@@ -169,6 +172,8 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
   return BIC_STATUS_SUCCESS;
 }
 
+// Storage - Get SDR
+// Netfn: 0x0A, Cmd: 0x11
 static int
 _read_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, uint8_t *rbuf, uint8_t *rlen, uint8_t intf) {
   uint8_t tbuf[4] = {0};
@@ -256,6 +261,8 @@ error_exit:
   return ret;
 }
 
+// Storage - Get SDR
+// Netfn: 0x0A, Cmd: 0x12
 static int
 _write_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, uint8_t *buf, uint8_t intf) {
   int ret;
@@ -737,3 +744,17 @@ bic_set_sys_guid(uint8_t slot_id, uint8_t *guid) {
 
   return ret;
 }
+
+int
+bic_do_sled_cycle(uint8_t slot_id) {
+  uint8_t tbuf[4] = {0};
+  uint8_t tlen = 4;
+
+  tbuf[0] = 0x05; //bus id
+  tbuf[1] = 0x80; //slave addr
+  tbuf[2] = 0x00; //read 0 byte
+  tbuf[3] = 0xd9; //register offset
+  tlen = 4;
+  return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, NULL, 0, BB_BIC_INTF);
+}
+

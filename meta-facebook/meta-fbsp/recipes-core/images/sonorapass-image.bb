@@ -35,16 +35,15 @@ IMAGE_INSTALL += " \
   ipmitool \
   bios-util \
   vboot-utils \
-  libncsi \
   ncsi-util \
-  ncsid \
-  libpldm \
   gpiod \
   guid-util \
-  ipmbd\
+  ipmbd \
   ipmb-util\
   me-util \
   i2craw \
   tpm2-tools \
   tpm2-abrmd \
   "
+
+# @TODO T60523536 - Re-enable ncsid.

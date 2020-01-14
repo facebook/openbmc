@@ -1706,7 +1706,11 @@ is_fan_present(uint8_t fan_id) {
 
   sprintf(shadow_name, GPIO_FAN_BUF_PRESENT, fan_id);
   gpio_desc_t *desc = gpio_open_by_shadow(shadow_name);
+  if (!desc) {
+    return false;
+  }
   gpio_get_value(desc, &value);
+  gpio_close(desc);
   if (value == GPIO_VALUE_HIGH) {
     return true;
   }

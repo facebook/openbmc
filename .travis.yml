@@ -4,10 +4,6 @@ language: c
 git:
   depth: false # needed to get common ancestor to master
 
-cache:
-  directories:
-  - ${HOME}/sstate-cache
-
 addons:
   apt:
     update: true
@@ -78,9 +74,10 @@ script:
   # It is a small hack to allow builds to finish within 50 minutes.
   # The S3 cache is built on an AWS EC2 instance in the fbopenbmc account.
   # Within TravisCI each machine will then maintain a unique cache.
-  - if [ ! -f ${CACHE}/.seed ]; then wget ${CACHE_URI}/sstate-cache.tar; tar -xf sstate-cache.tar -C ${CACHE}; fi
-  - if [ -f sstate-cache.tar ]; then rm sstate-cache.tar; fi
-  - touch ${CACHE}/.seed
+  - mkdir ${CACHE} &&
+    wget ${CACHE_URI}/sstate-cache.tar &&
+    tar -xf sstate-cache.tar -C ${CACHE} &&
+    rm sstate-cache.tar
 
   # Build the image.
   - source ./openbmc-init-build-env ${BOARD} build-${BOARD}

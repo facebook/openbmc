@@ -706,6 +706,18 @@ static inlet_corr_t g_ict[] = {
 
 static uint8_t g_ict_count = sizeof(g_ict)/sizeof(inlet_corr_t);
 
+static inlet_corr_t g_ict_nd[] = {
+  // Inlet Sensor:
+  // duty cycle vs delta_t
+  { 10, 2.0 },
+  { 16, 1.0 },
+  { 52, 0.0 },
+};
+
+static uint8_t g_ict_nd_count = sizeof(g_ict_nd)/sizeof(inlet_corr_t);
+
+
+
 static inlet_corr_t g_ict_gpv2_10k[] = {
   // duty cycle vs delta_t
   { 10, 4.0 },
@@ -733,6 +745,8 @@ static inlet_corr_t g_ict_gpv2_15k[] = {
 static uint8_t g_ict_gpv2_10k_count = sizeof(g_ict_gpv2_10k)/sizeof(inlet_corr_t);
 static uint8_t g_ict_gpv2_15k_count = sizeof(g_ict_gpv2_15k)/sizeof(inlet_corr_t);
 
+int pal_check_board_type(uint8_t *status);
+
 static void apply_inlet_correction(float *value) {
   static float dt = 0;
   uint8_t pwm[2] = {0};
@@ -749,8 +763,15 @@ static void apply_inlet_correction(float *value) {
   pwm[0] = (pwm[0] + pwm[1]) / 2;
 
   if ((fby2_get_slot_type(FRU_SLOT1) != SLOT_TYPE_GPV2) || (fby2_get_slot_type(FRU_SLOT3) != SLOT_TYPE_GPV2)) {
-    ict = g_ict;
-    ict_cnt = g_ict_count;
+    uint8_t is_nd_board = 0;
+    pal_check_board_type(&is_nd_board);
+    if(is_nd_board == 1) {
+      ict = g_ict_nd;
+      ict_cnt = g_ict_nd_count;
+    } else {
+      ict = g_ict;
+      ict_cnt = g_ict_count;
+    }
   } else {
     if (pal_get_fan_config()==FAN_CONFIG_15K) {
       ict = g_ict_gpv2_15k;

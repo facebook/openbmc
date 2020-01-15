@@ -1,7 +1,7 @@
 {
-    "version": "fbnd-dvt-r03",
+    "version": "fbnd-dvt-r04",
     "pwm_transition_value": 70,
-    "pwm_boost_value": 80,
+    "pwm_boost_value": 100,
     "non_fanfail_limited_boost_value": 80,
     "sample_interval_ms": 3000,
     "boost": {

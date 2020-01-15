@@ -69,6 +69,7 @@ static uint8_t IsLatchOpenStart[MAX_NODES + 1] = {0};
 static void *latch_open_handler(void *ptr);
 static pthread_mutex_t latch_open_mutex[MAX_NODES + 1];
 static uint8_t dev_fru_complete[MAX_NODES + 1][MAX_NUM_DEVS + 1] = {DEV_FRU_NOT_COMPLETE};
+static bool is_slot_missing();
 
 char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
   // slot1, slot2, slot3, slot4
@@ -109,6 +110,11 @@ typedef struct {
 enum {
   REMOVAl = 0,
   INSERTION = 1,
+};
+
+enum {
+  SLOT_PRESNT = 0,
+  SLOT_MISSING = 1,
 };
 
 slot_kv_st slot_kv_list[] = {
@@ -473,6 +479,22 @@ fru_cahe_init(uint8_t fru) {
   return 0;
 }
 
+static bool is_slot_missing()
+{
+  char vpath[80] = {0};
+  int value = 0;
+  int i = 0;
+  int slot_presnt_gpio[] = {GPIO_SLOT1_PRSNT_N, GPIO_SLOT2_PRSNT_N, GPIO_SLOT3_PRSNT_N, GPIO_SLOT4_PRSNT_N};
+
+  for (i = 0; i < MAX_NUM_SLOTS; i++) {
+    sprintf(vpath, GPIO_VAL, slot_presnt_gpio[i]);
+    read_device(vpath, &value);
+    if (value == SLOT_MISSING) {
+      return true;
+    }
+  }
+  return false;
+}
 
 // Generic Event Handler for GPIO changes
 static void gpio_event_handle(gpio_poll_st *gp)
@@ -480,6 +502,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
   char cmd[128] = {0};
   uint8_t slot_id;
   uint8_t slot_12v = 1;
+  uint8_t server_type = 0;
   int value;
   char vpath[80] = {0};
   char locstr[MAX_VALUE_LEN];
@@ -490,6 +513,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
   struct timespec ts;
   pthread_t hsc_alert_tid;
 
+  server_type = fby2_common_get_spb_type();
   if (gp->gs.gs_gpio == gpio_num("GPIOH5")) { // GPIO_FAN_LATCH_DETECT
     if (gp->value == 1) { // low to high
       syslog(LOG_CRIT, "ASSERT: SLED is not seated");
@@ -500,8 +524,10 @@ static void gpio_event_handle(gpio_poll_st *gp)
     else { // high to low
       syslog(LOG_CRIT, "DEASSERT: SLED is seated");
       memset(cmd, 0, sizeof(cmd));
-      sprintf(cmd, "sv start fscd");
-      system(cmd);
+      if (((server_type == TYPE_SPB_YV250) && (is_slot_missing() == true)) == false) {
+        sprintf(cmd, "sv start fscd");
+        system(cmd);
+      }
     }
   }
   else if (gp->gs.gs_gpio == gpio_num("GPIOP0") || gp->gs.gs_gpio == gpio_num("GPIOP1") ||

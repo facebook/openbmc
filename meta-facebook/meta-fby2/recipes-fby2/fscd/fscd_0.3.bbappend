@@ -41,6 +41,8 @@ SRC_URI += "file://init_pwm.sh \
             file://FSC_FBGPV2_DVT_zone1.fsc \
             file://FSC_FBND_DVT_4ND_config.json \
             file://FSC_FBND_DVT_4ND_zone1.fsc \
+            file://FSC_FBYV250_10KFAN_DVT_config.json\
+            file://FSC_FBYV250_15KFAN_DVT_config.json\
             file://fsc_board.py \
             file://setup_sled_out_fan.sh \
            "
@@ -63,6 +65,8 @@ FSC_CONFIG += "FSC_FBY2_PVT_4TL_config.json \
                FSC_FBGPV2_BRCM_DVT_config.json \
                FSC_FBGPV2_BRCM_10KFAN_DVT_config.json \
                FSC_FBND_DVT_4ND_config.json \
+               FSC_FBYV250_10KFAN_DVT_config.json\
+               FSC_FBYV250_15KFAN_DVT_config.json\
               "
 
 FSC_ZONE_CONFIG +="FSC_FBY2_PVT_4TL_zone1.fsc \

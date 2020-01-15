@@ -43,7 +43,7 @@ extern "C" {
 #define SOCK_PATH_ASD_BIC "/tmp/asd_bic_socket"
 #define SOCK_PATH_JTAG_MSG "/tmp/jtag_msg_socket"
 
-#define YV250_NVMe_Temp_Dev_UCR 85
+#define YV250_NVMe_Temp_Dev_UCR 75
 
 extern char * key_list[];
 extern size_t pal_pwm_cnt;

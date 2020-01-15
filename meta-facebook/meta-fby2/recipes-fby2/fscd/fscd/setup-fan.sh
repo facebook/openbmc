@@ -52,20 +52,24 @@ fi
 
 echo "Setup fan speed... "
 
-#for i in `seq 1 1 4`
-#do
-#   if [ $(is_server_prsnt $i) == "0" ]; then
-#     echo "slot$i is empty"
-#     full_config=0
-#   fi
-#done
+spb_type=$(get_spb_type)
 
-#if [ $full_config -eq 0 ]; then
-#   echo "Enter into transitional mode - Unexpected sku type (system is not full config)!"
-#   /usr/local/bin/init_pwm.sh
-#   /usr/local/bin/fan-util --set 70
-#   exit 1
-#fi
+if [ $spb_type == 1 ] ; then
+  for i in `seq 1 1 4`
+  do
+     if [ $(is_server_prsnt $i) == "0" ]; then
+       echo "slot$i is empty"
+       full_config=0
+     fi
+  done
+
+  if [ $full_config -eq 0 ]; then
+     echo "System is missing a slot - Unexpected sku type (system is not full config)!"
+     /usr/local/bin/init_pwm.sh
+     /usr/local/bin/fan-util --set 90
+     exit 1
+  fi
+fi
 
 /usr/local/bin/init_pwm.sh
 if [ ! -f /tmp/cache_store/setup_fan_config ]; then
@@ -197,11 +201,21 @@ case "$sku_type" in
           cp /etc/FSC_FBGPV2_10KFAN_DVT_config.json ${default_fsc_config_path}
         fi
      fi
-
-     if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
-        cp /etc/aggregate-sensor-gpv2-conf.json ${default_aggregate_config_path}
+     if [ $spb_type == 1 ] ; then
+        # for Yv2.50
+        if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
+          cp /etc/aggregate-sensor-yv250-15kfan-conf.json ${default_aggregate_config_path}
+          cp /etc/FSC_FBYV250_15KFAN_DVT_config.json ${default_fsc_config_path}
+        else
+          cp /etc/aggregate-sensor-yv250-10kfan-conf.json ${default_aggregate_config_path}
+          cp /etc/FSC_FBYV250_10KFAN_DVT_config.json ${default_fsc_config_path}
+        fi
      else
-        cp /etc/aggregate-sensor-gpv2-10kfan-conf.json ${default_aggregate_config_path}
+        if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
+          cp /etc/aggregate-sensor-gpv2-conf.json ${default_aggregate_config_path}
+        else
+          cp /etc/aggregate-sensor-gpv2-10kfan-conf.json ${default_aggregate_config_path}
+        fi
      fi
    ;;
    *)

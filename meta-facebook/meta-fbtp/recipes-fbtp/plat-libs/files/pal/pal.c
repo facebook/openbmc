@@ -632,6 +632,7 @@ const uint8_t mb_sensor_list[] = {
   MB_SENSOR_CONN_P12V_INA230_VOL,
   MB_SENSOR_CONN_P12V_INA230_CURR,
   MB_SENSOR_CONN_P12V_INA230_PWR,
+  MB_SENSOR_HOST_BOOT_TEMP,
 };
 
 // List of NIC sensors to be monitored
@@ -972,6 +973,9 @@ sensor_thresh_array_init() {
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_POWER][UCR_THRESH] = 26;
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_VOLT][LCR_THRESH] = 0.94;
   mb_sensor_threshold[MB_SENSOR_VR_PCH_P1V05_VOLT][UCR_THRESH] = 1.15;
+
+  // Set when required
+  // mb_sensor_threshold[MB_SENSOR_HOST_BOOT_TEMP][UCR_THRESH] = 100;
 
   riser_slot2_sensor_threshold[MB_SENSOR_C2_NVME_CTEMP][UCR_THRESH] = 75;
   riser_slot3_sensor_threshold[MB_SENSOR_C3_NVME_CTEMP][UCR_THRESH] = 75;
@@ -4569,6 +4573,9 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case MB_SENSOR_VR_PCH_P1V05_POWER:
       sprintf(name, "MB_VR_PCH_P1V05_POWER");
       break;
+    case MB_SENSOR_HOST_BOOT_TEMP:
+      sprintf(name, "MB_HOST_BOOT_TEMP");
+      break;
     case MB_SENSOR_C2_NVME_CTEMP:
       sprintf(name, "MB_C2_NVME_CTEMP");
       break;
@@ -4732,6 +4739,7 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case MB_SENSOR_VR_CPU1_VDDQ_GRPD_TEMP:
     case MB_SENSOR_VR_PCH_PVNN_TEMP:
     case MB_SENSOR_VR_PCH_P1V05_TEMP:
+    case MB_SENSOR_HOST_BOOT_TEMP:
     case MB_SENSOR_C2_NVME_CTEMP:
     case MB_SENSOR_C3_NVME_CTEMP:
     case MB_SENSOR_C4_NVME_CTEMP:
@@ -7172,6 +7180,15 @@ bool pal_sensor_is_valid(char *fru_name, char *sensor_name)
   }
 
   return true;
+}
+
+bool
+pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id)
+{
+  if (fru == FRU_MB && sensor_id == MB_SENSOR_HOST_BOOT_TEMP) {
+    return true;
+  }
+  return false;
 }
 
 int

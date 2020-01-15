@@ -27,9 +27,8 @@ SRC_URI += "file://bios.h \
             file://usbdbg.h \
             file://usbdbg.cpp \
             file://vr.cpp \
+            file://fscd.cpp \
            "
-
-SRC_URI_remove = "file://fscd.cpp"
 
 DEPENDS += "libmcu libnm libpal libfpga libast-jtag libvr"
 RDEPENDS_${PN} += "libmcu libnm libpal libfpga libast-jtag libvr"

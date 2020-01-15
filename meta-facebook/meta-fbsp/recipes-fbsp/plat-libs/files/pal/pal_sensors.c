@@ -52,6 +52,7 @@ static int read_fan_volt(uint8_t fan_id, float *value);
 static int read_fan_curr(uint8_t fan_id, float *value);
 static int read_fan_pwr(uint8_t fan_id, float *value);
 static bool is_fan_present(uint8_t fan_id);
+static int read_fan_speed(uint8_t fan, float *rpm); 
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 16;
@@ -98,6 +99,14 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_CPU1_DIMM_GRPD_TEMP,
   MB_SNR_CPU1_DIMM_GRPE_TEMP,
   MB_SNR_CPU1_DIMM_GRPF_TEMP,
+  MB_SNR_FAN0_TACH_IN ,
+  MB_SNR_FAN0_TACH_OUT,
+  MB_SNR_FAN1_TACH_IN,
+  MB_SNR_FAN1_TACH_OUT,
+  MB_SNR_FAN6_TACH_IN,
+  MB_SNR_FAN6_TACH_OUT,
+  MB_SNR_FAN7_TACH_IN,
+  MB_SNR_FAN7_TACH_OUT,
   MB_SNR_DATA0_DRIVER_TEMP,
   MB_SNR_DATA1_DRIVER_TEMP,
   MB_SNR_CPU0_PKG_POWER,
@@ -348,10 +357,10 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5F
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x60
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x61
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x62
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x63
+  {"MB_FAN0_TACH_IN",  0, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x60
+  {"MB_FAN0_TACH_OUT", 1, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x61
+  {"MB_FAN1_TACH_IN",  2, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x62
+  {"MB_FAN1_TACH_OUT", 3, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x63
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x64
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x65
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x66
@@ -360,10 +369,10 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x69
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6A
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6B
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6C
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6D
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6E
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6F
+  {"MB_FAN6_TACH_IN", 12, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6C
+  {"MB_FAN6_TACH_OUT",13, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6D
+  {"MB_FAN7_TACH_IN", 14, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6E
+  {"MB_FAN7_TACH_OUT",15, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6F
 
   {"MB_BOOT_DRIVER_TEMP",  DISK_BOOT,  read_hd_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x70
   {"MB_DATA0_DRIVER_TEMP", DISK_DATA0, read_hd_temp, true, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x71
@@ -1950,5 +1959,21 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
       return -1;
   }
   return 0;
+}
+
+static int
+read_fan_speed(uint8_t fan, float *rpm) {
+  char fan_name[32] = {0};
+  float value;
+  int ret;
+
+  if (fan >= pal_tach_cnt ||
+      snprintf(fan_name, sizeof(fan_name), "fan%d", fan + 1) > sizeof(fan_name)) {
+    syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
+    return -1;
+  }
+  ret = sensors_read_fan(fan_name, &value);
+  *rpm = value;
+  return ret;
 }
 

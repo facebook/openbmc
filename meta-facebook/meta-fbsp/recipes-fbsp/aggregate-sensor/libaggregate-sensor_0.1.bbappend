@@ -1,4 +1,4 @@
-# Copyright 2014-present Facebook. All Rights Reserved.
+# Copyright 2020-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,16 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://setup-fan.sh \
-            file://fsc-config.json \
-            file://zone1.fsc \
-            file://fsc_board.py \
+SRC_URI += "file://aggregate-sensor-conf.json \
            "
-
-FSC_CONFIG += "fsc-config.json"
-
-FSC_ZONE_CONFIG +="zone1.fsc"
-
-FSC_INIT_FILE += "setup-fan.sh"

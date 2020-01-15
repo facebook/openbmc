@@ -29,5 +29,5 @@
 
 echo "Setup fan speed... "
 /usr/local/bin/fan-util --set 70
-#runsv /etc/sv/fscd > /dev/null 2>&1 &
+runsv /etc/sv/fscd > /dev/null 2>&1 &
 echo "done."

@@ -89,6 +89,48 @@ struct pal_key_cfg {
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
 
+bool
+pal_is_dimm_present(uint8_t sensor_num)
+{
+  return true;
+}
+
+struct fsc_monitor
+{
+  uint8_t sensor_num;
+  char *sensor_name;
+  bool (*check_sensor_sts)(uint8_t);
+  bool is_alive;
+  uint8_t init_count;
+  uint8_t retry;
+};
+
+static struct fsc_monitor fsc_monitor_basic_snr_list[] =
+{
+  {MB_SNR_INLET_TEMP            , "mb_inlet_temp"  , NULL, false, 5, 5},
+  {MB_SNR_CPU0_THERM_MARGIN     , "mb_cpu0_therm_margin"     , NULL, false, 5, 5},
+  {MB_SNR_CPU1_THERM_MARGIN     , "mb_cpu1_therm_margin"     , NULL, false, 5, 5},
+  {MB_SNR_DATA0_DRIVER_TEMP     , "mb_data0_driver_temp"  , NULL, false, 5, 5},
+  {MB_SNR_DATA1_DRIVER_TEMP     , "mb_data1_driver_temp"  , NULL, false, 5, 5},
+  {NIC_MEZZ0_SNR_TEMP           , "nic_mezz0_temp"  , NULL, false, 5, 5},
+  {NIC_MEZZ1_SNR_TEMP           , "nic_mezz1_temp"  , NULL, false, 5, 5},
+  //dimm sensors wait for 240s. 240=80*3(fsc monitor interval)
+  {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_b_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPC_TEMP, "mb_cpu0_dimm_c_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPD_TEMP, "mb_cpu0_dimm_d_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPE_TEMP, "mb_cpu0_dimm_e_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPF_TEMP, "mb_cpu0_dimm_f_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPA_TEMP, "mb_cpu1_dimm_a_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPB_TEMP, "mb_cpu1_dimm_b_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPC_TEMP, "mb_cpu1_dimm_c_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_d_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPE_TEMP, "mb_cpu1_dimm_e_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPF_TEMP, "mb_cpu1_dimm_f_temp", pal_is_dimm_present, false, 80, 5},
+};
+
+static int fsc_monitor_basic_snr_list_size = sizeof(fsc_monitor_basic_snr_list) / sizeof(struct fsc_monitor);
+
 static int
 pal_key_index(char *key) {
 
@@ -1483,4 +1525,53 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
    *data++ = 0x40;   // Misc. Chassis Status
    *data++ = 0x00;   // Front Panel Button Disable
    *res_len = data - res_data;
+}
+
+int
+pal_fsc_get_target_snr(char *sname, struct fsc_monitor *fsc_fru_list, int fsc_fru_list_size)
+{
+  int i;
+  for ( i=0;  i<fsc_fru_list_size; i++)
+  {
+    if ( 0 == strcmp(sname, fsc_fru_list[i].sensor_name) )
+    {
+#ifdef FSC_DEBUG
+      syslog(LOG_WARNING,"[%s]sensor is found:%s, idx:%d", __func__, sname, i);
+#endif
+      return i;
+    }
+  }
+
+  syslog(LOG_WARNING,"[%s]Unknown sensor name:%s", __func__, sname);
+  return PAL_ENOTSUP;
+}
+
+bool
+pal_sensor_is_valid(char *fru_name, char *sensor_name)
+{
+  uint8_t fru_id;
+  struct fsc_monitor *fsc_fru_list;
+  int fsc_fru_list_size;
+  int ret;
+
+  //check the fru name is valid or not
+  ret = pal_get_fru_id(fru_name, &fru_id);
+  if ( ret < 0 )
+  {
+    syslog(LOG_WARNING,"[%s] Wrong fru#%s", __func__, fru_name);
+    return false;
+  }
+
+  fsc_fru_list = fsc_monitor_basic_snr_list;
+  fsc_fru_list_size = fsc_monitor_basic_snr_list_size;
+
+  //get the target sensor
+  ret = pal_fsc_get_target_snr(sensor_name, fsc_fru_list, fsc_fru_list_size);
+  if ( ret < 0 )
+  {
+    syslog(LOG_WARNING,"[%s] undefined sensor: %s", __func__, sensor_name);
+    return false;
+  }
+
+  return true;
 }

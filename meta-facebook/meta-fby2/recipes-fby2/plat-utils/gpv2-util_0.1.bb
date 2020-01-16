@@ -16,7 +16,7 @@ do_install() {
     install -m 0755 gpv2-util ${D}${bindir}/gpv2-util
 }
 
-DEPENDS += "libpal jansson"
-RDEPENDS_${PN} += "libbic libpal jansson"
+DEPENDS += "libpal jansson libfby2-sensor"
+RDEPENDS_${PN} += "libbic libpal jansson libfby2-sensor"
 
 FILES_${PN} = "${bindir}"

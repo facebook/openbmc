@@ -2,7 +2,7 @@
 all: gpv2-util
 
 gpv2-util: gpv2-util.c
-	$(CC) $(CFLAGS) -lbic -lpal -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -lbic -lfby2_sensor -lpal -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

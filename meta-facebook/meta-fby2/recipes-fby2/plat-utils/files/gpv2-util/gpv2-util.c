@@ -25,6 +25,7 @@
 #include <syslog.h>
 #include <stdint.h>
 #include <facebook/bic.h>
+#include <facebook/fby2_sensor.h>
 #include <openbmc/pal.h>
 #include <jansson.h>
 
@@ -65,6 +66,11 @@ main(int argc, char **argv) {
   } else if (!strcmp(argv[1] , "slot3")) {
     slot_id = 3;
   } else {
+    goto err_exit;
+  }
+
+  if (fby2_get_slot_type(slot_id) != SLOT_TYPE_GPV2) {
+    printf("slot%d is not GPV2\n",slot_id);
     goto err_exit;
   }
 

@@ -180,7 +180,8 @@ pal_set_key_value(char *key, char *value) {
   return kv_set(key, value, 0, KV_FPERSIST);
 }
 
-static int fw_getenv(char *key, char *value)
+static int
+fw_getenv(char *key, char *value)
 {
   char cmd[MAX_KEY_LEN + 32] = {0};
   char *p;
@@ -220,45 +221,24 @@ fw_setenv(char *key, char *value) {
   return 0;
 }
 
-//Overwrite the one in obmc-pal.c without systme call of flashcp check
-bool
-pal_is_fw_update_ongoing(uint8_t fruid) {
-  char key[MAX_KEY_LEN];
-  char value[MAX_VALUE_LEN] = {0};
-  int ret;
-  struct timespec ts;
-
-  sprintf(key, "fru%d_fwupd", fruid);
-  ret = kv_get(key, value, NULL, 0);
-  if (ret < 0) {
-     return false;
-  }
-
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  if (strtoul(value, NULL, 10) > ts.tv_sec)
-     return true;
-
-  return false;
-}
-
 static int
-key_func_por_policy (int event, void *arg) {
+key_func_por_policy(int event, void *arg) {
   char value[MAX_VALUE_LEN] = {0};
-  int ret = -1;
+  int ret = 0;
 
   switch (event) {
     case KEY_BEFORE_SET:
-      if (pal_is_fw_update_ongoing(FRU_MB))
+      if (strcmp((char *)arg, "lps") && strcmp((char *)arg, "on") && strcmp((char *)arg, "off"))
         return -1;
-      // sync to env
-      if ( !strcmp(arg,"lps") || !strcmp(arg,"on") || !strcmp(arg,"off")) {
-        ret = fw_setenv("por_policy", (char *)arg);
+
+      if (pal_is_fw_update_ongoing(FRU_BMC)) {
+        syslog(LOG_WARNING, "key_func_por_policy: cannot setenv por_policy=%s", (char *)arg);
+        break;
       }
-      else
-        return -1;
+
+      ret = fw_setenv("por_policy", (char *)arg);
       break;
     case KEY_AFTER_INI:
-      // sync to env
       kv_get("server_por_cfg", value, NULL, KV_FPERSIST);
       ret = fw_setenv("por_policy", value);
       break;
@@ -268,14 +248,16 @@ key_func_por_policy (int event, void *arg) {
 }
 
 static int
-key_func_lps (int event, void *arg)
+key_func_lps(int event, void *arg)
 {
   char value[MAX_VALUE_LEN] = {0};
 
   switch (event) {
     case KEY_BEFORE_SET:
-      if (pal_is_fw_update_ongoing(FRU_MB))
-        return -1;
+      if (pal_is_fw_update_ongoing(FRU_BMC)) {
+        syslog(LOG_WARNING, "key_func_lps: cannot setenv por_ls=%s", (char *)arg);
+        break;
+      }
       fw_setenv("por_ls", (char *)arg);
       break;
     case KEY_AFTER_INI:
@@ -790,11 +772,6 @@ pal_get_sys_guid(uint8_t fru, char *guid) {
 }
 
 int
-pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
-  return -1;
-}
-
-int
 pal_set_def_key_value() {
   int i;
   char key[MAX_KEY_LEN] = {0};
@@ -873,6 +850,18 @@ pal_channel_to_bus(int channel) {
   }
 
   return channel;
+}
+
+bool
+pal_is_fw_update_ongoing_system(void) {
+  uint8_t i;
+
+  for (i = FRU_MB; i <= FRU_BMC; i++) {
+    if (pal_is_fw_update_ongoing(i) == true)
+      return true;
+  }
+
+  return false;
 }
 
 int

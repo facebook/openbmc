@@ -1752,6 +1752,8 @@ read_fan_volt(uint8_t fan_id, float *value) {
     return READING_NA;
   }
   ret = sensors_read(devs[fan_id].chip, devs[fan_id].label, value);
+  // Real voltage(V) = ((R1(ohm) + R2(ohm)) * ADC voltage(V)) / R2(ohm)
+  *value = ((ADC128_FAN_SCALED_R1 + ADC128_FAN_SCALED_R2) * (*value)) / ADC128_FAN_SCALED_R2;
   fan_volt[fan_id] = *value;
   return ret;
 }
@@ -1780,6 +1782,8 @@ read_fan_curr(uint8_t fan_id, float *value) {
     return READING_NA;
   }
   ret = sensors_read(devs[fan_id].chip, devs[fan_id].label, value);
+  // I_OUT(A) = V_IMON(V) * 10^6 / G_IMON(uA/A) / R_IMON(ohm)
+  *value = (*value) * 1000000 / ADC128_GIMON / ADC128_RIMON;
   fan_curr[fan_id] = *value;
   return ret;
 }

@@ -53,6 +53,12 @@
 #define PMBUS_READ_POUT    (0x96)
 #define PMBUS_READ_PIN     (0x97)
 
+//ADC128 INFO
+#define ADC128_FAN_SCALED_R1 (5110) //unit: ohm
+#define ADC128_FAN_SCALED_R2 (1020) //unit: ohm
+#define ADC128_GIMON         (243)  //unit: (uA/A)
+#define ADC128_RIMON         (1820) //unit: ohm
+
 //Sensor Table
 enum {
   MB_SNR_PCH_TEMP = 0x08,

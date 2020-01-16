@@ -15,6 +15,7 @@ BBLAYERS ?= " \
   ##OEROOT##/../meta-openembedded/meta-perl \
   ##OEROOT##/../../.. \
   ##OEROOT##/../meta-security \
+  ##OEROOT##/../meta-security/meta-tpm \
   ##OEROOT##/../../../meta-aspeed \
   ##OEROOT##/../../../meta-facebook \
   ##OEROOT##/../../../meta-facebook/meta-wedge400 \

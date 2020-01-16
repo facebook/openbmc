@@ -49,6 +49,7 @@ IMAGE_INSTALL += " \
   threshold-util \
   trousers \
   tpm-tools \
+  tpm2.0-tools \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \

@@ -777,6 +777,10 @@ main(int argc, char **argv) {
     if (argc != 4) {
       goto err_exit;
     }
+    if (fby2_get_slot_type(slot_id) != SLOT_TYPE_GPV2) {
+      printf("slot%d is not GPV2\n",slot_id);
+      goto err_exit;
+    }
     dev_id = atoi(argv[3]);
     if (dev_id > 11) {
       goto err_exit;

@@ -92,4 +92,3 @@ If you have an application that can be used by different BMCs, you can contribut
 If you are a BMC SoC vendor, you can contribute your SoC specific drivers to the BMC SoC layer.
 
 If you are a board vendor, you can contribute your board specific configurations and tools to the Board specific layer. If the board uses a new BMC SoC that is not part of the BMC SoC layer, the SoC specific driver contribution to the BMC SoC layer is also required.
-# openbmc.arista

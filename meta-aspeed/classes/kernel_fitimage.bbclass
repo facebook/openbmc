@@ -27,11 +27,22 @@ ROM_UBOOT_LOADADDRESS ?= "0x28084000"
 #   For kernel and rootfs: 16384
 #   For kernel only: 2690
 FLASH_SIZE ?= "16384"
-UBOOT_MAX_SIZE = "389120"
 FIT_MAX_SIZE = "28442624"
 RECOVERY_MAX_SIZE = "303104"
 SIGNED_UBOOT_MAX_SIZE = "393216"
 SPL_MAX_SIZE = "86016"
+
+#
+# Default maximum u-boot partition size: 380KB, and u-boot checksum is
+# stored at offset 380KB in the flash image.
+#
+UBOOT_PART_MAX_BYTES ?= "389120"
+UBOOT_CKSUM_OFFSET_KB ?= "380"
+
+#
+# Default offset (in KB) of FIT (kernel, rootfs and dtb) in flash image.
+#
+FLASH_FIT_OFFSET_KB ?= "512"
 
 UBOOT_SOURCE ?= "${DEPLOY_DIR_IMAGE}/u-boot-${MACHINE}.${UBOOT_SUFFIX}"
 FIT_SOURCE ?= "${STAGING_DIR_HOST}/etc/fit-${MACHINE}.its"
@@ -100,10 +111,10 @@ flash_image_generate() {
         dd if=${UBOOT_FIT_DESTINATION} of=${FLASH_IMAGE_DESTINATION} bs=1k seek=${FLASH_UBOOT_OFFSET} conv=notrunc
     else
         FLASH_UBOOT_OFFSET=0
-        FLASH_FIT_OFFSET=512
+        FLASH_FIT_OFFSET=${FLASH_FIT_OFFSET_KB}
 
-        if [ $(stat -L -c%s ${UBOOT_SOURCE}) -gt ${SIGNED_UBOOT_MAX_SIZE} ]; then
-            echo "Signed U-boot is too large to fit into partition"
+        if [ $(stat -L -c%s ${UBOOT_SOURCE}) -gt ${UBOOT_PART_MAX_BYTES} ]; then
+            echo "U-boot is too large to fit into partition"
             return 1
         fi
         # Write U-Boot directly to the start of the flash.
@@ -127,8 +138,8 @@ flash_image_generate() {
     fi
 
     # Generate MD5sums and store in image.
-    echo "{\"$(dd if=${FLASH_IMAGE_DESTINATION} bs=1k count=380 2> /dev/null | md5sum | awk '{print $1}')\": \"Built: $(date)\"}" > ./tmp.md5
-    dd if=./tmp.md5 of=${FLASH_IMAGE_DESTINATION} bs=1k count=4 seek=380 conv=notrunc
+    echo "{\"$(dd if=${FLASH_IMAGE_DESTINATION} bs=1k count=${UBOOT_CKSUM_OFFSET_KB} 2> /dev/null | md5sum | awk '{print $1}')\": \"Built: $(date)\"}" > ./tmp.md5
+    dd if=./tmp.md5 of=${FLASH_IMAGE_DESTINATION} bs=1k count=4 seek=${UBOOT_CKSUM_OFFSET_KB} conv=notrunc
     rm -f ./tmp.md5
 
     ln -sf ${FLASH_IMAGE} ${DEPLOY_DIR_IMAGE}/${FLASH_IMAGE_LINK}

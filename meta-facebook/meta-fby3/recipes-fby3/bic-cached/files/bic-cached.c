@@ -179,6 +179,7 @@ sdr_cache_init(uint8_t slot_id) {
   char sdr_temp_path[64] = {0};
   char sdr_path[64] = {0};
   ssize_t bytes_wr;
+  uint8_t bmc_location = 0;
 
   sprintf(sdr_temp_path, "/tmp/tsdr_slot%d.bin", slot_id);
   sprintf(sdr_path, "/tmp/sdr_slot%d.bin", slot_id);
@@ -248,14 +249,23 @@ sdr_cache_init(uint8_t slot_id) {
 
   // Get remote SDR
   present = bic_is_m2_exp_prsnt(slot_id);
-  if (present == 1) {
-    remote_f_ret = remote_sdr_cache_init(slot_id, FEXP_BIC_INTF);
-  } else if (present == 2) {
-    remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
-  } else if (present == 3) {
-    remote_f_ret = remote_sdr_cache_init(slot_id, FEXP_BIC_INTF);
-    remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
+  fby3_common_get_bmc_location(&bmc_location);
+  if (bmc_location == NIC_BMC) {
+    remote_f_ret = remote_sdr_cache_init(slot_id, BB_BIC_INTF);
+    if (present == 2 || present == 3) {
+      remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
+    }
+  } else {
+    if (present == 1) {
+      remote_f_ret = remote_sdr_cache_init(slot_id, FEXP_BIC_INTF);
+    } else if (present == 2) {
+      remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
+    } else if (present == 3) {
+      remote_f_ret = remote_sdr_cache_init(slot_id, FEXP_BIC_INTF);
+      remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
+    }
   }
+
   if (remote_f_ret != 0 || remote_r_ret != 0) {
     syslog(LOG_WARNING, "Failed to get the remote sdr of slot%u. remote_f_ret: %d, remote_r_ret:%d, %d", slot_id, remote_f_ret, remote_r_ret, (remote_f_ret+remote_r_ret));
     return (remote_f_ret + remote_r_ret);

@@ -135,6 +135,23 @@ const uint8_t bic_sensor_list[] = {
   BIC_1OU_EXP_SENSOR_P3V3_M2D_PWR,
   BIC_1OU_EXP_SENSOR_P3V3_M2D_VOL,
 
+  //BIC BaseBoard Sensors
+  BIC_BB_SENSOR_INLET_TEMP,
+  BIC_BB_SENSOR_OUTLET_TEMP,
+  BIC_BB_SENSOR_HSC_TEMP,
+  BIC_BB_SENSOR_HSC_VIN,
+  BIC_BB_SENSOR_HSC_PIN,
+  BIC_BB_SENSOR_HSC_IOUT,
+  BIC_BB_SENSOR_P12V_MEDUSA_CUR,
+  BIC_BB_SENSOR_P5V,
+  BIC_BB_SENSOR_P12V,
+  BIC_BB_SENSOR_P3V3_STBY,
+  BIC_BB_SENSOR_P1V2_BMC_STBY,
+  BIC_BB_SENSOR_P2V5_BMC_STBY,
+  BIC_BB_SENSOR_P12V_MEDUSA,
+  BIC_BB_SENSOR_P12V_SLOT0,
+  BIC_BB_SENSOR_P12V_SLOT2,
+
   //BIC 2OU EXP Sensors
   BIC_2OU_EXP_SENSOR_OUTLET_TEMP,
   BIC_2OU_EXP_SENSOR_P12_VOL,
@@ -537,12 +554,26 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
 {
   char label[32] = {0};
   uint8_t pwm_num = fan;
+  uint8_t bmc_location = 0;
+  int ret = 0;
 
-  if (pwm_num > pal_pwm_cnt ||
-      snprintf(label, sizeof(label), "pwm%d", pwm_num + 1) > sizeof(label)) {
-    return -1;
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    return ret;
   }
-  return sensors_write_fan(label, (float)pwm);
+
+  if (bmc_location == BB_BMC) {
+    if (pwm_num > pal_pwm_cnt ||
+      snprintf(label, sizeof(label), "pwm%d", pwm_num + 1) > sizeof(label)) {
+      return -1;
+    }
+    return sensors_write_fan(label, (float)pwm);
+  } else if (bmc_location == NIC_BMC) {
+    return bic_set_fan_speed(fan, pwm);
+  }
+
+  return -1;
 }
 
 int pal_get_fan_speed(uint8_t fan, int *rpm)
@@ -550,14 +581,27 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
   char label[32] = {0};
   float value;
   int ret;
+  uint8_t bmc_location = 0;
 
-  if (fan > pal_tach_cnt ||
-      snprintf(label, sizeof(label), "fan%d", fan + 1) > sizeof(label)) {
-    syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
-    return -1;
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
   }
-  ret = sensors_read_fan(label, &value);
-  *rpm = (int)value;
+  if (bmc_location == BB_BMC) {
+    if (fan > pal_tach_cnt ||
+        snprintf(label, sizeof(label), "fan%d", fan + 1) > sizeof(label)) {
+      syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
+      return -1;
+    }
+    ret = sensors_read_fan(label, &value);
+  } else if (bmc_location == NIC_BMC) {
+    ret = bic_get_fan_speed(fan, &value);
+  }
+
+  if (ret == 0) {
+    *rpm = (int)value;
+  }
+
   return ret;
 }
 
@@ -579,18 +623,30 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
   float value;
   int ret;
   uint8_t fan_src = 0;
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+  }
 
   fan_src = pal_get_fan_source(fan);
-
   if (fan >= pal_tach_cnt || fan_src == 0xff ||
       snprintf(label, sizeof(label), "pwm%d", fan_src + 1) > sizeof(label)) {
     syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
     return -1;
   }
 
-  ret = sensors_read_fan(label, &value);
-  if (ret == 0)
+  if (bmc_location == BB_BMC) {
+    ret = sensors_read_fan(label, &value);
+  } else if (bmc_location == NIC_BMC) {
+    ret = bic_get_fan_pwm(fan_src, &value);
+  }
+
+  if (ret == 0) {
     *pwm = (int)value;
+  }
+
   return ret;
 }
 
@@ -871,6 +927,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
   uint8_t power_status = 0, config_status = 0;
   ipmi_sensor_reading_t sensor = {0};
   sdr_full_t *sdr = NULL;
+  uint8_t bmc_location = 0;
 
   if ( bic_get_server_power_status(fru, &power_status) < 0 || power_status != SERVER_POWER_ON) {
     //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);
@@ -883,12 +940,28 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
     return READING_NA;
   }
 
-  if ( (config_status == 1 || config_status == 3) && (sensor_num >= 0x40 && sensor_num <= 0x7F)) { // 1OU Exp
-    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
-  } else if ( (config_status == 2 || config_status == 3) && (sensor_num >= 0x80 && sensor_num <= 0xBF)) { // 2OU Exp
-    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
-  } else {
-    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
+  ret = fby3_common_get_bmc_location(&bmc_location);
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+  }
+
+  if (bmc_location == BB_BMC) {
+    if ( (config_status == 1 || config_status == 3) && (sensor_num >= 0x40 && sensor_num <= 0x7F)) { // 1OU Exp
+      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
+    } else if ( (config_status == 2 || config_status == 3) && (sensor_num >= 0x80 && sensor_num <= 0xBF)) { // 2OU Exp
+      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
+    } else if (sensor_num >= 0x0 && sensor_num <= 0x3F) {
+      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
+    }
+  } else if (bmc_location == NIC_BMC) {
+    if (sensor_num >= 0xC0 && sensor_num <= 0xDF) { // BB
+      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);
+    } else if ( (config_status == 2 || config_status == 3) && (sensor_num >= 0x80 && sensor_num <= 0xBF)) { // 2OU Exp
+      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
+    } else if (sensor_num >= 0x0 && sensor_num <= 0x3F){
+      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
+    }
   }
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);

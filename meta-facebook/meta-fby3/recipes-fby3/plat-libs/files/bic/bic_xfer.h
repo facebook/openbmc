@@ -35,6 +35,9 @@ extern "C" {
 extern const uint32_t IANA_ID;
 
 #define CMD_OEM_GET_SET_GPIO 0x33
+#define CMD_OEM_SET_FAN_DUTY 0x50
+#define CMD_OEM_GET_FAN_DUTY 0x51
+#define CMD_OEM_GET_FAN_RPM  0x52
 
 enum {
   BIC_STATUS_SUCCESS =  0,

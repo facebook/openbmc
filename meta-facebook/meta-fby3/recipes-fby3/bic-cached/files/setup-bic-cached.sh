@@ -14,6 +14,7 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 function init_class2_sdr() {
+  /usr/local/bin/bic-cached -s slot1
   /usr/local/bin/bic-cached -f slot1 > /dev/null 2>&1 &
 }
 

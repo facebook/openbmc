@@ -270,7 +270,7 @@ _write_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, ui
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  
+
   tbuf[0] = fru_id;
   tbuf[1] = offset & 0xFF;
   tbuf[2] = (offset >> 8) & 0xFF;
@@ -332,7 +332,7 @@ error_exit:
 // Netfn: 0x38, Cmd: 0x0B
 int
 bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t intf) {
-  uint8_t tbuf[4] = {0x00}; 
+  uint8_t tbuf[4] = {0x00};
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
   uint8_t rlen = 0;
   int ret;
@@ -389,7 +389,7 @@ bic_get_80port_record(uint8_t slot_id, uint8_t *rbuf, uint8_t *rlen, uint8_t int
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "[%s] Cannot get the postcode buffer from slot%d", __func__, slot_id);
   } else {
-    *rlen -= 3; 
+    *rlen -= 3;
     memmove(rbuf, &rbuf[3], *rlen);
   }
 
@@ -707,7 +707,7 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, 3, rbuf, &rlen);
   if (ret != 0 || rlen < 3)
     return -1;
-    
+
   rlen -= 3;
   if (rlen > sizeof(bic_gpio_t))
     rlen = sizeof(bic_gpio_t);
@@ -758,3 +758,66 @@ bic_do_sled_cycle(uint8_t slot_id) {
   return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, NULL, 0, BB_BIC_INTF);
 }
 
+
+
+// Only For Class 2
+int
+bic_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
+  uint8_t tbuf[5] = {0x9c, 0x9c, 0x00};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 5;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[3] = fan_id;
+  tbuf[4] = pwm;
+
+  ret = bic_ipmb_send(1, NETFN_OEM_1S_REQ, CMD_OEM_SET_FAN_DUTY, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  if ( ret < 0 ) {
+    return -1;
+  }
+
+  return 0;
+}
+
+// Only For Class 2
+int
+bic_get_fan_speed(uint8_t fan_id, float *value) {
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00};
+  uint8_t rbuf[5] = {0};
+  uint8_t tlen = 4;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[3] = fan_id;
+
+  ret = bic_ipmb_send(1, NETFN_OEM_1S_REQ, CMD_OEM_GET_FAN_RPM, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  if ( ret < 0 ) {
+    return -1;
+  }
+
+  *value = (float)((rbuf[3] << 8)+ rbuf[4]);
+
+  return 0;
+}
+
+// Only For Class 2
+int
+bic_get_fan_pwm(uint8_t fan_id, float *value) {
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00};
+  uint8_t rbuf[4] = {0};
+  uint8_t tlen = 4;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[3] = fan_id;
+
+  ret = bic_ipmb_send(1, NETFN_OEM_1S_REQ, CMD_OEM_GET_FAN_DUTY, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  if ( ret < 0 ) {
+    return -1;
+  }
+
+  *value = (float)rbuf[3];
+
+  return 0;
+}

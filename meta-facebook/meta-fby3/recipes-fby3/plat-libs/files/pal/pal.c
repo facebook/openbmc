@@ -880,6 +880,18 @@ pal_set_dev_guid(uint8_t fru, char *str) {
   return pal_set_guid(OFFSET_DEV_GUID, guid);
 }
 
+bool
+pal_is_fw_update_ongoing_system(void) {
+  uint8_t i;
+
+  for (i = 1; i <= MAX_NUM_FRUS; i++) {
+    if (pal_is_fw_update_ongoing(i) == true)
+      return true;
+  }
+
+  return false;
+}
+
 int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   uint8_t pcie_conf = 0xff;
   uint8_t *data = res_data;
@@ -1032,17 +1044,17 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
 }
 
 int
-pal_is_debug_card_prsnt(uint8_t *status) {  
+pal_is_debug_card_prsnt(uint8_t *status) {
   int ret = -1;
   gpio_value_t value;
   gpio_desc_t *gpio = gpio_open_by_shadow(GPIO_OCP_DEBUG_BMC_PRSNT_N);
   if (!gpio) {
     return -1;
   }
-  
+
   ret = gpio_get_value(gpio, &value);
   gpio_close(gpio);
-  
+
   if (ret != 0) {
     return -1;
   }
@@ -1079,7 +1091,7 @@ pal_get_uart_select_from_cpld(uint8_t *uart_select) {
   uint8_t rbuf[1] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  
+
   fd = open("/dev/i2c-12", O_RDWR);
   if (fd < 0) {
     syslog(LOG_WARNING, "Failed to open bus 12");
@@ -1099,7 +1111,7 @@ pal_get_uart_select_from_cpld(uint8_t *uart_select) {
   if (ret < 0) {
     return -1;
   }
-  
+
   *uart_select = rbuf[0];
   return 0;
 }
@@ -1114,13 +1126,13 @@ pal_post_display(uint8_t uart_select, uint8_t postcode) {
   uint8_t tbuf[2] = {0x00};
   uint8_t rbuf[1] = {0x00};
   uint8_t offset = 0;
-  
+
   fd = open("/dev/i2c-12", O_RDWR);
   if (fd < 0) {
     syslog(LOG_WARNING, "Failed to open bus 12");
     return -1;
   }
-  
+
   switch (uart_select) {
     case 1:
       offset = SLOT1_POSTCODE_OFFSET;
@@ -1135,7 +1147,7 @@ pal_post_display(uint8_t uart_select, uint8_t postcode) {
       offset = SLOT4_POSTCODE_OFFSET;
       break;
   }
-  
+
   tbuf[0] = offset;
   tbuf[1] = postcode;
   tlen = 2;
@@ -1146,7 +1158,7 @@ pal_post_display(uint8_t uart_select, uint8_t postcode) {
   if (fd > 0) {
     close(fd);
   }
-  
+
   return ret;
 }
 

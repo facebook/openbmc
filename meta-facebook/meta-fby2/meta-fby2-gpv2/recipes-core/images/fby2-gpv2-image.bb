@@ -59,4 +59,5 @@ IMAGE_INSTALL += " \
   snapshot-util \
   gpv2-util \
   dimm-util \
+  sensordump \
   "

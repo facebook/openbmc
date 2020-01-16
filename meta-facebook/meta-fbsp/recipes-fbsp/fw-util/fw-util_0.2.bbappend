@@ -17,19 +17,22 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://bios.h \
-            file://bios.cpp \
-            file://platform.cpp \
-            file://cpld.cpp \
-            file://mcu_fw.h \
-            file://mcu_fw.cpp \
-            file://me.cpp \
-            file://usbdbg.h \
-            file://usbdbg.cpp \
-            file://vr.cpp \
-            file://fscd.cpp \
-           "
+SRC_URI += "\
+        file://bios.cpp \
+        file://bios.h \
+        file://cpld.cpp \
+        file://fscd.cpp \
+        file://mcu_fw.cpp \
+        file://mcu_fw.h \
+        file://me.cpp \
+        file://nic_ext.cpp \
+        file://nic_ext.h \
+        file://platform.cpp \
+        file://usbdbg.cpp \
+        file://usbdbg.h \
+        file://vr.cpp \
+        "
 
-DEPENDS += "libmcu libnm libpal libfpga libast-jtag libvr"
-RDEPENDS_${PN} += "libmcu libnm libpal libfpga libast-jtag libvr"
-LDFLAGS += "-lmcu -lnm -lpal -lfpga -last-jtag -lvr"
+DEPENDS += "libmcu libnm libpal libfpga libast-jtag libvr libncsi libnl-wrapper libkv"
+RDEPENDS_${PN} += "libmcu libnm libpal libfpga libast-jtag libvr libncsi libnl-wrapper libkv"
+LDFLAGS += "-lmcu -lnm -lpal -lfpga -last-jtag -lvr -lnl-wrapper -lkv"

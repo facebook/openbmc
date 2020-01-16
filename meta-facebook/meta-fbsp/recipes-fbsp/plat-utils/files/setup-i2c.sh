@@ -29,6 +29,7 @@ fi
 
 if [ "$(gpio_get HP_LVC3_OCP_V3_2_PRSNT2_N)" == "0" ]; then
   i2c_device_add 18 0x52 24c32
+  ifconfig eth1 up
 else 
   echo "Unknown or no device on the NIC#1"
 fi

@@ -44,6 +44,7 @@ IMAGE_INSTALL += " \
   i2craw \
   tpm2-tools \
   tpm2-abrmd \
+  crashdump \
   "
 
 # @TODO T60523536 - Re-enable ncsid.

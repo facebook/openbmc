@@ -84,7 +84,8 @@ sync_date()
   sts=$(ifconfig eth0 | grep -i "inet addr")
   if [ "$sts" == "" ]; then    #No ipv4 ip
     kill -9 `cat /var/run/dhclient.eth0.pid`
-    dhclient -pf /var/run/dhclient.eth0.pid eth0
+    #if dhcleint need to restart, make it non-demonized so that dhclient will continuely re-access ipv4 address
+    dhclient -d -pf /var/run/dhclient.eth0.pid eth0 > /dev/null 2>&1 &
   fi
 }
 

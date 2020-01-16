@@ -2383,7 +2383,14 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           }
           break;
         case SLOT_TYPE_GPV2:
-          strcpy(name, "");
+          switch(sensor_num) {
+            case BIC_SENSOR_SYSTEM_STATUS:
+              sprintf(name, "SYSTEM_STATUS");
+              break;
+            default:
+              strcpy(name, "");
+              break;
+          }
           break;
         case SLOT_TYPE_CF:
           switch(sensor_num) {

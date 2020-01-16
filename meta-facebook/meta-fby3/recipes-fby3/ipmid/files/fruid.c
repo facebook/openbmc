@@ -38,6 +38,14 @@
 #include "fruid.h"
 
 #define FRUID_SIZE        512
+#define BIN_BMC           "/tmp/fruid_bmc.bin"
+#define BIN_NIC           "/tmp/fruid_nic.bin"
+#define BIN_SLOT          "/tmp/fruid_slot%d.bin"
+
+#define FRU_ID_SERVER 0
+#define FRU_ID_BMC 1
+#define FRU_ID_NIC 2
+
 /*
  * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
  *
@@ -193,9 +201,60 @@ int plat_fruid_init(void) {
 }
 
 int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count, unsigned char *data) {
+  char fpath[64] = {0};
+  int fd;
+  int ret;
+
+  if (fru_id == FRU_ID_SERVER) {
+    // Fill the file path for a given slot
+    sprintf(fpath, BIN_SLOT, payload_id);
+  } else if (fru_id == FRU_ID_BMC) {
+    // Fill the file path for spb
+    sprintf(fpath, BIN_BMC);
+  } else if (fru_id == FRU_ID_NIC) {
+    // Fill the file path for nic
+    sprintf(fpath, BIN_NIC);
+  } else {
+    return -1;
+  }
+
+  // open file for read purpose
+  fd = open(fpath, O_RDONLY);
+  if (fd < 0) {
+    return fd;
+  }
+
+  // seek position based on given offset
+  ret = lseek(fd, offset, SEEK_SET);
+  if (ret < 0) {
+    close(fd);
+    return ret;
+  }
+
+  // read the file content
+  ret = read(fd, data, count);
+  if (ret != count) {
+    close(fd);
+    return -1;
+  }
+
+  close(fd);
   return 0;
 }
 
 int plat_fruid_size(unsigned char payload_id) {
-  return 0;
+  char fpath[64] = {0};
+  struct stat buf;
+  int ret;
+
+  // Fill the file path for a given slot
+  sprintf(fpath, BIN_SLOT, payload_id);
+
+  // check the size of the file and return size
+  ret = stat(fpath, &buf);
+  if (ret) {
+    return 0;
+  }
+
+  return buf.st_size;
 }

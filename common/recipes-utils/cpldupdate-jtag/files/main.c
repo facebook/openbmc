@@ -62,6 +62,7 @@ static void usage(FILE *fp, int argc, char **argv)
             " -f | --frequency              frequency\n"
             " -o | --option                 Program option\n"
             " -m | --mode                   Offline mode\n"
+            " -R | --Refresh                Refresh device\n"
             "",
             argv[0]);
 }
@@ -77,7 +78,8 @@ static const struct option
     { "debug",      no_argument,        NULL,    'd' },
     { "fequency",   required_argument,  NULL,    'f' },
     { "option",     required_argument,  NULL,    'o' },
-    { "mode",       no_argument,        NULL,    'm' },   
+    { "mode",       no_argument,        NULL,    'm' },
+    { "Refresh",    no_argument,        NULL,    'R' },
     { 0, 0, 0, 0 }
 };
 
@@ -596,25 +598,26 @@ cpld_verification:
         goto end_of_func;
     }
 
-    if(cpld.refresh)
-    {
-        rc = transmit_refresh();
-        if(rc < 0){
-            printf("%s(%d) - failed to transmit refesh\n", __FUNCTION__, __LINE__);
-            printf_failure();
-            return -1;
-        }
-    }
 
 end_of_func:
     /*
      * The return value is kept consistent the ispvm tool.
      */
+
     if(rc == 0) {
+        if(cpld.refresh)
+        {
+            rc = transmit_refresh();
+            if(rc < 0){
+                printf("%s(%d) - failed to transmit refesh\n", __FUNCTION__, __LINE__);
+                printf_failure();
+                return -1;
+            }
+        }
         printf_pass();
         return 0;
     }else{
         printf_failure();
-        return 1;
+        return -1;
     }
 }

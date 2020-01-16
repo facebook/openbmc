@@ -138,6 +138,46 @@ process_command(uint8_t slot_id, int argc, char **argv) {
   return ret;
 }
 
+static int
+process_file(uint8_t slot_id, char *path) {
+  FILE *fp = NULL;
+  int argc;
+  char buf[1024] = {0};
+  char *str = NULL, *next = NULL, *del=" \n";
+  char *argv[MAX_ARG_NUM] = {NULL};
+
+  if (!(fp = fopen(path, "r"))) {
+    syslog(LOG_WARNING, "Failed to open %s", path);
+    return -1;
+  }
+
+  while (fgets(buf, sizeof(buf), fp) != NULL) {
+    str = strtok_r(buf, del, &next);
+    for (argc = 0; argc < MAX_ARG_NUM && str; argc++, str = strtok_r(NULL, del, &next)) {
+      if (str[0] == '#')
+        break;
+
+      if (!argc && !strcmp(str, "echo")) {
+        printf("%s", (*next) ? next : "\n");
+        break;
+      }
+      argv[argc] = str;
+    }
+    if (argc < 1)
+      continue;
+
+    process_command(slot_id, argc, argv);
+    if (total_retry > MAX_TOTAL_RETRY) {
+      printf("Maximum retry count exceeded\n");
+      fclose(fp);
+      return -1;
+    }
+  }
+  fclose(fp);
+
+  return 0;
+}
+
 int
 do_cmds(uint8_t fru, char *cmd) {
   int ret = UTIL_EXECUTION_FAIL;
@@ -153,10 +193,14 @@ do_cmds(uint8_t fru, char *cmd) {
 
 int
 main(int argc, char **argv) {
-  uint8_t slot_id;
-  uint8_t is_fru_present = 0;
-  int ret;
+#define SLOT_MIN 1
+#define SLOT_MAX 4
+#define SLOT_ALL 5
 
+  uint8_t slot_id = 0xff;
+  uint8_t is_fru_present = 0;
+  int ret = 0;
+  int i = 0;
   if (argc < 3) {
     goto err_exit;
   }
@@ -172,7 +216,18 @@ main(int argc, char **argv) {
     return -1;
   }
   
-  if ( (strncmp(argv[2], "--", 2) == 0) ) {
+  if ( (strncmp(argv[2], "--file", 6) == 0) ) {
+    if (argc < 4) goto err_exit;
+
+    if (slot_id == SLOT_ALL) {
+      for (i = SLOT_MIN; i <= SLOT_MAX; i++) {
+        process_file(i, argv[3]);
+      }
+      return 0;
+    } else {
+      return process_file(slot_id, argv[3]);
+    }
+  } else if ( (strncmp(argv[2], "--", 2) == 0) ) {
     return do_cmds(slot_id, argv[2]);
   } else {
     if ( argc < 4) {

@@ -892,6 +892,20 @@ pal_is_fw_update_ongoing_system(void) {
   return false;
 }
 
+int
+pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  *res_len = 0;
+  if (req_len != 2) {
+    return CC_INVALID_LENGTH;
+  }
+
+  if (pal_set_fw_update_ongoing(slot, (req_data[1]<<8 | req_data[0]))) {
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  return CC_SUCCESS;
+}
+
 int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   uint8_t pcie_conf = 0xff;
   uint8_t *data = res_data;

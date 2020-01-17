@@ -701,16 +701,16 @@ sensor_thresh_array_init() {
       spb_sensor_threshold[SP_SENSOR_FAN3_TACH][LCR_THRESH] = 500;
     } else {
       if (fan_config == TYPE_15K_FAN) {
-        spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 16500;
-        spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 16500;
-        spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UNC_THRESH] = 14000;
-        spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UNC_THRESH] = 14000;
+        spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 17000;
+        spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 17000;
+        spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UNC_THRESH] = 13000;
+        spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UNC_THRESH] = 13000;
       }
       else {
         spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UCR_THRESH] = 11000;
         spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UCR_THRESH] = 11000;
-        spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UNC_THRESH] = 9500;
-        spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UNC_THRESH] = 9500;
+        spb_sensor_threshold[SP_SENSOR_FAN0_TACH][UNC_THRESH] = 8000;
+        spb_sensor_threshold[SP_SENSOR_FAN1_TACH][UNC_THRESH] = 8000;
       }
       spb_sensor_threshold[SP_SENSOR_FAN0_TACH][LCR_THRESH] = 500;
       spb_sensor_threshold[SP_SENSOR_FAN1_TACH][LCR_THRESH] = 500;

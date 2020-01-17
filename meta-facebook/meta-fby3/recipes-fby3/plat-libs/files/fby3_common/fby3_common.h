@@ -122,7 +122,7 @@ int fby3_common_get_slot_id(char *str, uint8_t *fru);
 int fby3_common_get_bus_id(uint8_t slot_id);
 int fby3_common_is_fru_prsnt(uint8_t fru, uint8_t *val);
 int fby3_common_get_slot_type(uint8_t fru);
-
+int fby3_common_crashdump(uint8_t fru, bool ierr, bool platform_reset);
 #ifdef __cplusplus
 } // extern "C"
 #endif

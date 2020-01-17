@@ -1194,6 +1194,47 @@ pal_post_handle(uint8_t slot, uint8_t postcode) {
   // Display the post code in the debug card
   ret = pal_post_display(uart_select, postcode);
 
+  return ret;
+}
+
+static int
+pal_store_crashdump(uint8_t fru, bool ierr) {
+  uint8_t status;
+
+  if (!pal_get_server_power(fru, &status) && !status) {
+    syslog(LOG_WARNING, "%s() fru %u is OFF", __func__, fru);
+    return PAL_ENOTSUP;
+  }
+
+  return fby3_common_crashdump(fru, ierr, false);
+}
+
+static int
+pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
+
+  switch (snr_num) {
+    case CATERR_B:
+      pal_store_crashdump(fru, (event_data[3] == 0x00));  // 00h:IERR, 0Bh:MCERR
+      break;
+  }
+
+  return PAL_EOK;
+}
+
+int
+pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
+  int ret = PAL_EOK;
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      ret = pal_bic_sel_handler(fru, snr_num, event_data);
+      break;
+    default:
+      ret = PAL_ENOTSUP;
+      break;
+  }
 
   return ret;
 }

@@ -321,3 +321,31 @@ fby3_common_get_slot_type(uint8_t fru) {
 
   return SERVER_TYPE_DL;
 }
+
+#define CRASHDUMP_BIN       "/usr/local/bin/autodump.sh"
+
+int
+fby3_common_crashdump(uint8_t fru, bool ierr, bool platform_reset) {
+  int ret = 0;
+  char cmd[128] = "\0";
+  int cmd_len = sizeof(cmd);
+
+  // Check if the crashdump script exist
+  if (access(CRASHDUMP_BIN, F_OK) == -1) {
+    syslog(LOG_CRIT, "%s() Try to run autodump for %d but %s is not existed", __func__, fru, CRASHDUMP_BIN);
+    return ret;
+  }
+
+  if ( platform_reset == true ) {
+    snprintf(cmd, cmd_len, "%s slot%d --second &", CRASHDUMP_BIN, fru);
+  } else {
+    snprintf(cmd, cmd_len, "%s slot%d &", CRASHDUMP_BIN, fru);
+  }
+  
+  if ( system(cmd) != 0 ) {
+    syslog(LOG_INFO, "%s() Crashdump for FRU: %d is failed to be generated.", __func__, fru);
+  } else {
+    syslog(LOG_INFO, "%s() Crashdump for FRU: %d is being generated.", __func__, fru);
+  }
+  return 0;
+}

@@ -219,7 +219,10 @@ int pldm_update_fw(char *path, int pldm_bufsize)
 
 
   pkgHdr = pldm_parse_fw_pkg(path);
-
+  if (!pkgHdr) {
+    ret = -1;
+    goto free_exit;
+  }
 
   pldmCreateReqUpdateCmd(pkgHdr, &pldmReq, pldm_bufsize);
   printf("\n01 PldmRequestUpdateOp: payload_size=%d\n", pldmReq.payload_size);

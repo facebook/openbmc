@@ -8268,6 +8268,31 @@ pal_sensor_assert_handle_tl(uint8_t fru, uint8_t snr_num, float val, char* thres
 }
 
 void
+pal_sensor_assert_handle_nd(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
+  char crisel[128];
+  sensor_desc_t *snr_desc;
+
+  switch (snr_num) {
+    case BIC_ND_SENSOR_SOC_TEMP:
+      sprintf(crisel, "SOC Temp %s %.0fC - ASSERT,FRU:%u", thresh_name, val, fru);
+      break;
+    case BIC_ND_SENSOR_P3V3_MB:
+    case BIC_ND_SENSOR_P12V_STBY_MB:
+    case BIC_ND_SENSOR_P3V3_STBY_MB:
+    case BIC_ND_SENSOR_PV_BAT:
+    case BIC_ND_SENSOR_INA230_VOLTAGE:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(crisel, "%s %s %.2fV - ASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
+      break;
+    default:
+      return;
+  }
+
+  pal_add_cri_sel(crisel);
+  return;
+}
+
+void
 pal_sensor_assert_handle_rc(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
   char crisel[128];
   sensor_desc_t *snr_desc;
@@ -8347,6 +8372,11 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
 #if defined(CONFIG_FBY2_RC)
           case SERVER_TYPE_RC:
             pal_sensor_assert_handle_rc(fru, snr_num, val, thresh_name);
+            break;
+#endif
+#if defined(CONFIG_FBY2_ND)
+          case SERVER_TYPE_ND:
+            pal_sensor_assert_handle_nd(fru, snr_num, val, thresh_name);
             break;
 #endif
           case SERVER_TYPE_TL:
@@ -8497,6 +8527,31 @@ pal_sensor_deassert_handle_tl(uint8_t fru, uint8_t snr_num, float val, char* thr
 }
 
 void
+pal_sensor_deassert_handle_nd(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
+  char crisel[128];
+  sensor_desc_t *snr_desc;
+
+  switch (snr_num) {
+    case BIC_ND_SENSOR_SOC_TEMP:
+      sprintf(crisel, "SOC Temp %s %.0fC - DEASSERT,FRU:%u", thresh_name, val, fru);
+      break;
+    case BIC_ND_SENSOR_P3V3_MB:
+    case BIC_ND_SENSOR_P12V_STBY_MB:
+    case BIC_ND_SENSOR_P3V3_STBY_MB:
+    case BIC_ND_SENSOR_PV_BAT:
+    case BIC_ND_SENSOR_INA230_VOLTAGE:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(crisel, "%s %s %.2fV - DEASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
+      break;
+    default:
+      return;
+  }
+
+  pal_add_cri_sel(crisel);
+  return;
+}
+
+void
 pal_sensor_deassert_handle_rc(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
   char crisel[128];
   sensor_desc_t *snr_desc;
@@ -8576,6 +8631,11 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
 #if defined(CONFIG_FBY2_RC)
           case SERVER_TYPE_RC:
             pal_sensor_deassert_handle_rc(fru, snr_num, val, thresh_name);
+            break;
+#endif
+#if defined(CONFIG_FBY2_ND)
+          case SERVER_TYPE_ND:
+            pal_sensor_deassert_handle_nd(fru, snr_num, val, thresh_name);
             break;
 #endif
           case SERVER_TYPE_TL:

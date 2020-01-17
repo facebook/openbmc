@@ -938,7 +938,38 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
 
 int
 pal_get_sensor_util_timeout(uint8_t fru) {
-  return READ_SENSOR_TIMEOUT;
+  uint8_t brd_type;
+  size_t cnt = 0;
+  pal_get_board_type(&brd_type);
+  switch(fru) {
+    case FRU_SCM:
+      cnt = scm_all_sensor_cnt;
+      break;
+    case FRU_SMB:
+      if(brd_type == BRD_TYPE_WEDGE400){
+        cnt = w400_smb_sensor_cnt;
+      }else if(brd_type == BRD_TYPE_WEDGE400C){
+        cnt = w400c_smb_sensor_cnt;
+      }
+      break;
+    case FRU_PEM1:
+      cnt = pem1_sensor_cnt;
+      break;
+    case FRU_PEM2:
+      cnt = pem2_sensor_cnt;
+      break;
+    case FRU_PSU1:
+      cnt = psu1_sensor_cnt;
+      break;
+    case FRU_PSU2:
+      cnt = psu2_sensor_cnt;
+      break;
+    default:
+      if (fru > MAX_NUM_FRUS)
+      cnt = 5;
+      break;
+  }
+  return (READ_UNIT_SENSOR_TIMEOUT * cnt);
 }
 
 int

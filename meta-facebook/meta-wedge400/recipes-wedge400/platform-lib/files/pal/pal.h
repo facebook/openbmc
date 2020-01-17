@@ -35,8 +35,7 @@ extern "C" {
 #include <facebook/bic.h>
 
 #define PLATFORM_NAME "wedge400"
-
-#define READ_SENSOR_TIMEOUT 30
+#define READ_UNIT_SENSOR_TIMEOUT 5
 
 #define I2C_DRIVER_DIR(name, bus, addr) "/sys/bus/i2c/drivers/"#name"/"#bus"-00"#addr"/"
 #define I2C_DEV_DIR(bus, addr) "/sys/bus/i2c/devices/i2c-"#bus"/"#bus"-00"#addr"/"

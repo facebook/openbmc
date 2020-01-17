@@ -2,7 +2,9 @@ dist: bionic # has python3.6 by default (needed by black)
 language: c
 
 git:
-  depth: false # needed to get common ancestor to master
+  # Need some depth to get the common ancestor
+  # 50 should be sufficient, otherwise you need to rebase.
+  depth: 50
 
 addons:
   apt:

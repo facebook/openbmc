@@ -5,14 +5,9 @@ inherit kernel_fitimage
 require recipes-core/images/fb-openbmc-image.bb
 
 # sensor-setup
-# bic-cached
-# bic-util
-# fby2-sensors
-# gpiointrd
 # hsvc-util
 # fpc-util
 # imc-util
-# crashdump
 # sensordump
 # enclosure-util
 # nvme-util
@@ -57,4 +52,6 @@ IMAGE_INSTALL += " \
   guid-util \
   gpiod \
   front-paneld \
+  gpiointrd \
+  crashdump \
   "

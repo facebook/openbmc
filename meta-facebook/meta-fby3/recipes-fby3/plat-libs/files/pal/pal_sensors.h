@@ -5,8 +5,6 @@
 
 #define MAX_SENSOR_NUM         (0xFF)
 #define MAX_DEVICE_NAME_SIZE   (128)
-#define MB_TEMP_DEVICE  "/sys/class/i2c-dev/i2c-%d/device/%d-00%x/hwmon/hwmon*/temp1_input"
-#define MB_ADC_VOLTAGE_DEVICE "/sys/devices/platform/iio-hwmon/hwmon/hwmon*/in%d_input"
 
 //LTC4282
 #define LTC4282_SLAVE_ADDR (0x88)
@@ -222,6 +220,8 @@ enum {
   BMC_SENSOR_HSC_TEMP = 0x93,
   BMC_SENSOR_HSC_PIN = 0x94,
   BMC_SENSOR_HSC_IOUT = 0x95,
+  BMC_SENSOR_FAN_IOUT = 0x96,
+  BMC_SENSOR_NIC_IOUT = 0x97,
 };
 
 //ADC INFO
@@ -248,6 +248,7 @@ enum {
   TEMP_INLET = 0,
   TEMP_OUTLET,
   TEMP_MEZZ,
+  TEMP_NICEXP_OUTLET,
 };
 
 //ADM1278 INFO

@@ -52,6 +52,8 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_HSC_PIN,
   BMC_SENSOR_HSC_IOUT,
   BMC_SENSOR_P12V_MEDUSA,
+  BMC_SENSOR_FAN_IOUT,
+  BMC_SENSOR_NIC_IOUT,
 };
 
 const uint8_t bic_sensor_list[] = {
@@ -352,11 +354,11 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_P2V5_STBY", ADC5, read_adc_val, true, {2.743, 0, 0, 2.262, 0, 0, 0, 0}, VOLT}, //0x90
   {"BMC_SENSOR_P12V_MEDUSA", HSC_ID1, read_ltc4282_volt, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0x91
   {"BMC_SENSOR_HSC_VIN", HSC_ID0, read_hsc_vin, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x92
-  {"BMC_SENSOR_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x93
-  {"BMC_SENSOR_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x94
-  {"BMC_SENSOR_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x95
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x96
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x97
+  {"BMC_SENSOR_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {120, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x93
+  {"BMC_SENSOR_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x94
+  {"BMC_SENSOR_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {27.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x95
+  {"BMC_SENSOR_FAN_IOUT", ADC8, read_adc_val, 0, {6.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x96
+  {"BMC_SENSOR_NIC_IOUT", ADC9, read_adc_val, 0, {12.5, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x97
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x98
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x99
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9A
@@ -659,6 +661,7 @@ read_temp(uint8_t id, float *value) {
     {"lm75-i2c-12-4e",  "BMC_INLET_TEMP"},
     {"lm75-i2c-12-4f",  "BMC_OUTLET_TEMP"},
     {"tmp421-i2c-8-1f", "NIC_SENSOR_MEZZ_TEMP"},
+    {"lm75-i2c-2-4f",  "BMC_OUTLET_TEMP"},
   };
   if (id >= ARRAY_SIZE(devs)) {
     return -1;
@@ -669,6 +672,7 @@ read_temp(uint8_t id, float *value) {
 
 static int
 read_adc_val(uint8_t adc_id, float *value) {
+  int ret = PAL_EOK;
   const char *adc_label[] = {
     "BMC_SENSOR_P5V",
     "BMC_SENSOR_P12V",
@@ -676,11 +680,26 @@ read_adc_val(uint8_t adc_id, float *value) {
     "BMC_SENSOR_P1V15_STBY",
     "BMC_SENSOR_P1V2_STBY",
     "BMC_SENSOR_P2V5_STBY",
+    "Dummy sensor",
+    "Dummy sensor",
+    "BMC_SENSOR_FAN_IOUT",
+    "BMC_SENSOR_NIC_IOUT",
   };
+
   if (adc_id >= ARRAY_SIZE(adc_label)) {
     return -1;
   }
-  return sensors_read_adc(adc_label[adc_id], value);
+
+  ret = sensors_read_adc(adc_label[adc_id], value);
+  if ( ret == PAL_EOK ) {
+    if ( ADC8 == adc_id ) {
+      *value = *value/0.22/0.237/4;
+    } else if ( ADC9 == adc_id ) {
+      *value = *value/0.16/0.649;
+    }
+  }
+
+  return ret;
 }
 
 static void
@@ -1016,6 +1035,33 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
   return ret;
 }
 
+static int
+skip_sensor_list(uint8_t fru, uint8_t sensor_num) {
+  uint8_t bmc_skip_list[] = {
+              BMC_SENSOR_P12V_MEDUSA,
+              BMC_SENSOR_HSC_VIN,
+              BMC_SENSOR_HSC_TEMP,
+              BMC_SENSOR_HSC_PIN,
+              BMC_SENSOR_HSC_IOUT,
+              BMC_SENSOR_FAN_IOUT,
+              BMC_SENSOR_NIC_IOUT,
+              BMC_SENSOR_INLET_TEMP};
+  int bmc_skip_size = sizeof(bmc_skip_list);
+  int i = 0;
+
+  switch(fru){
+    case FRU_BMC:
+      for (i = 0; i < bmc_skip_size; i++) {
+        if ( sensor_num == bmc_skip_list[i] ) {
+          return PAL_ENOTSUP;
+        }
+      }
+      break;
+  }
+
+  return PAL_EOK;
+}
+
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
@@ -1023,6 +1069,17 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char fru_name[32];
   int ret=0;
   uint8_t id=0;
+  static uint8_t bmc_location = 0;
+
+  if ( bmc_location == 0 ) {
+    if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
+      syslog(LOG_WARNING, "Failed to get the location of BMC");
+    } else {
+      if ( bmc_location == NIC_BMC ) {
+        sensor_map[BMC_SENSOR_OUTLET_TEMP].id = TEMP_NICEXP_OUTLET;
+      }
+    }
+  }
 
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
@@ -1037,7 +1094,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       break;
     case FRU_BMC:
     case FRU_NIC:
-      ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
+      //workaround: BMC cannot monitor these sensors, skip it.
+      if ( bmc_location == NIC_BMC && skip_sensor_list(fru, sensor_num) < 0 ) {
+        ret = READING_NA;
+      } else {
+        ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
+      }
       break;
       
     default:

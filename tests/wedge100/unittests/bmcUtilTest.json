@@ -1,6 +1,0 @@
-[
-  "/usr/local/bin/cp2112_i2c_flush.sh",
-  "/usr/local/bin/cpld_rev.sh",
-  "/usr/local/bin/ec_version.sh",
-  "/usr/local/bin/wedge_us_mac.sh"
-]

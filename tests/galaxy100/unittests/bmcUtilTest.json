@@ -1,8 +1,0 @@
-[
-  "cpld_rev.sh",
-  "scm_cpld_rev.sh",
-  "ec_version.sh",
-  "qsfp_cpld_ver.sh",
-  "wedge_us_mac.sh",
-  "galaxy100_cp2112_i2c_flush.sh"
-]

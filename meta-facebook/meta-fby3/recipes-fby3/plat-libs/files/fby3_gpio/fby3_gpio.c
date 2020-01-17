@@ -106,6 +106,13 @@ const char *gpio_pin_name[] = {
   "FM_PEHPCPU_INT",
 };
 
+const uint8_t gpio_pin_size = sizeof(gpio_pin_name)/sizeof(gpio_pin_name[0]);
+
+uint8_t
+fby3_get_gpio_list_size(void) {
+  return gpio_pin_size;
+}
+
 int
 fby3_get_gpio_name(uint8_t fru, uint8_t gpio, char *name) {
 

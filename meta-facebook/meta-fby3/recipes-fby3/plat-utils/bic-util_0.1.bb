@@ -12,9 +12,9 @@ SRC_URI = "file://bic-util \
 S = "${WORKDIR}/bic-util"
 
 CFLAGS += "-Wall -Werror -lbic -D_XOPEN_SOURCE"
-LDFLAGS = "-lbic -lpal -lfby3_common"
-DEPENDS += "libbic libpal libfby3-common"
-RDEPENDS_${PN} += "libbic libpal libfby3-common"
+LDFLAGS = "-lbic -lpal -lfby3_common -lfby3_gpio"
+DEPENDS += "libbic libpal libfby3-common libfby3-gpio"
+RDEPENDS_${PN} += "libbic libpal libfby3-common libfby3-gpio"
 
 do_install() {
   install -d ${D}${bindir}

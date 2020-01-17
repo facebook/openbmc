@@ -60,6 +60,13 @@ typedef struct _bic_gpio_t {
   uint32_t gpio[3]; 
 } bic_gpio_t;
 
+typedef struct _bic_gpio_config_t {
+  uint8_t dir:1;
+  uint8_t ie:1;
+  uint8_t edge:1;
+  uint8_t trig:2;
+} bic_gpio_config_t;
+
 enum {
   PWRGD_BMC_PS_PWROK_R,               // 0
   FM_PCH_BMC_THERMTRIP_N,

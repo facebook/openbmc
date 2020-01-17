@@ -55,6 +55,7 @@ env:
     - CACHE_URI="https://fb-openbmc-sstate.s3.us-east-2.amazonaws.com"
     - MODIFIED_SH="$(git diff --diff-filter=d --name-only $ORIGIN_COMMIT -- | grep -P '[.]sh$')"
     - MODIFIED_PY="$(git diff --diff-filter=d --name-only $ORIGIN_COMMIT -- | grep -P '[.]py$')"
+
   matrix:
     - BOARD=angelslanding
     - BOARD=cmm
@@ -83,5 +84,12 @@ script:
 
   # Build the image.
   - source ./openbmc-init-build-env ${BOARD} build-${BOARD}
+  - source ../tools/travis/check-build-required
+
   - echo "SSTATE_DIR = \"${CACHE}\"" >> ./conf/local.conf
-  - bitbake ${BOARD}-image
+
+  - if [ "x${FORCE_BUILD}" == "x"]; then
+        echo "Skipping ${BOARD}.  Not affected by diff."
+    else
+        bitbake ${BOARD}-image
+    fi

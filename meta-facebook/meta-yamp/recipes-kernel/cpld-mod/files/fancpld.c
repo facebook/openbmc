@@ -194,14 +194,14 @@ static const i2c_dev_attr_st fancpld_attr_table[] = {
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
-    0x0, 0, 8,
+    0x1, 0, 8,
   },
   {
     "scratch",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
-    0x1, 0, 8,
+    0x2, 0, 8,
   },
   {
     "fan1_input",

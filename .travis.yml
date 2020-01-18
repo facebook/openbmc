@@ -72,24 +72,15 @@ env:
     - BOARD=yosemite
 
 script:
+  # Sync Yocto meta-repositories.
   - ./sync_yocto.sh
-  # This is how we seed the shared-state cache.
-  # It is a small hack to allow builds to finish within 50 minutes.
-  # The S3 cache is built on an AWS EC2 instance in the fbopenbmc account.
-  # Within TravisCI each machine will then maintain a unique cache.
-  - mkdir ${CACHE} &&
-    wget ${CACHE_URI}/sstate-cache.tar &&
-    tar -xf sstate-cache.tar -C ${CACHE} &&
-    rm sstate-cache.tar
 
-  # Build the image.
+  # Set up bitbake build environment.
   - source ./openbmc-init-build-env ${BOARD} build-${BOARD}
   - source ../tools/travis/check-build-required
 
-  - echo "SSTATE_DIR = \"${CACHE}\"" >> ./conf/local.conf
+  # Set up sstate cache.
+  - ../tools/travis/download-sstate-cache
 
-  - if [ "x${FORCE_BUILD}" == "x"]; then
-        echo "Skipping ${BOARD}.  Not affected by diff."
-    else
-        bitbake ${BOARD}-image
-    fi
+  # Do the build.
+  - ../tools/travis/do-build

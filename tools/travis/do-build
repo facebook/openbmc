@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+if [ "x${FORCE_BUILD}" == "x" ]; then
+    echo "Skipping ${BOARD}.  Not affected by diff."
+    exit
+fi
+
+bitbake "${BOARD}-image"

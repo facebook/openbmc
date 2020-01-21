@@ -420,6 +420,7 @@ gpio_export FM_CM_READY_N GPIOP2
 
 # RST_CM_N
 gpio_export RST_CM_N GPIOP3
+gpio_set RST_CM_N 1
 
 # FM_ASIC_POWER_EN
 gpio_export FM_ASIC_POWER_EN GPIOP4

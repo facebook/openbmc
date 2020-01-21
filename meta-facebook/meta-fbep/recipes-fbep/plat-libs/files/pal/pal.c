@@ -50,6 +50,8 @@
 #define GUID_SIZE 16
 #define OFFSET_DEV_GUID 0x1800
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
 #define LAST_KEY "last_key"
 
 const char pal_fru_list[] = "all, mb, pdb, bsm";
@@ -833,4 +835,88 @@ void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t
 exit:
   gpio_close(fan_ok);
   gpio_close(fan_fail);
+}
+
+static int get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask)
+{
+  int i;
+  *mask = 0;
+  for (i = 0; i < num; i++) {
+    int ret;
+    gpio_value_t value;
+    gpio_desc_t *gpio = gpio_open_by_shadow(shadows[i]);
+    if (!gpio) {
+      return -1;
+    }
+    ret = gpio_get_value(gpio, &value);
+    gpio_close(gpio);
+    if (ret != 0) {
+      return -1;
+    }
+    *mask |= (value == GPIO_VALUE_HIGH ? 1 : 0) << i;
+  }
+  return 0;
+}
+
+static int get_platform_id(uint8_t *id)
+{
+  static bool cached = false;
+  static uint8_t cached_id = 0;
+
+  if (!cached) {
+    const char *shadows[] = {
+      "BOARD_ID0",
+      "BOARD_ID1",
+      "BOARD_ID2"
+    };
+    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+      return -1;
+    }
+    cached = true;
+  }
+  *id = cached_id;
+  return 0;
+}
+
+static int get_board_rev_id(uint8_t *id)
+{
+  static bool cached = false;
+  static uint8_t cached_id = 0;
+
+  if (!cached) {
+    const char *shadows[] = {
+      "REV_ID0",
+      "REV_ID1",
+      "REV_ID2"
+    };
+    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+      return -1;
+    }
+    cached = true;
+  }
+  *id = cached_id;
+  return 0;
+}
+
+int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len,
+                     uint8_t *res_data, uint8_t *res_len)
+{
+  uint8_t platform_id  = 0x00;
+  uint8_t board_rev_id = 0x00;
+
+  if (get_platform_id(&platform_id) < 0) {
+    *res_len = 0x00;
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  if (get_board_rev_id(&board_rev_id) < 0) {
+    *res_len = 0x00;
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  res_data[0] = platform_id;
+  res_data[1] = board_rev_id;
+  *res_len = 0x02;
+
+  return CC_SUCCESS;
 }

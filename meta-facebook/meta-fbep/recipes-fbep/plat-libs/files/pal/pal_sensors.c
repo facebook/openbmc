@@ -243,7 +243,192 @@ const char* sensors_name[] = {
   "PDB_SENSOR_OUTLET_TEMP_REMOTE"
 };
 
-float sensors_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float sensors_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {
+//{	UCR,	UNC,	UNR,	LCR,	LNC,	LNR,	POS,	NEG}
+  [MB_FAN0_TACH_I] =
+  {0,	13000,	0,	0,	1000,	0,	0,	0,	0},
+  [MB_FAN0_TACH_O] =
+  {0,	12000,	0,	0,	1000,	0,	0,	0,	0},
+  [MB_FAN1_TACH_I] =
+  {0,	13000,	0,	0,	1000,	0,	0,	0,	0},
+  [MB_FAN1_TACH_O] =
+  {0,	12000,	0,	0,	1000,	0,	0,	0,	0},
+  [MB_FAN2_TACH_I] =
+  {0,	13000,	0,	0,	1000,	0,	0,	0,	0},
+  [MB_FAN2_TACH_O] =
+  {0,	12000,	0,	0,	1000,	0,	0,	0,	0},
+  [MB_FAN3_TACH_I] =
+  {0,	13000,	0,	0,	1000,	0,	0,	0,	0},
+  [MB_FAN3_TACH_O] =
+  {0,	12000,	0,	0,	1000,	0,	0,	0,	0},
+  [MB_FAN0_VOLT] =
+  {0,	13.2,	13.0,	0,	10.8,	0,	0,	0,	0},
+  [MB_FAN1_VOLT] =
+  {0,	13.2,	13.0,	0,	10.8,	0,	0,	0,	0},
+  [MB_FAN2_VOLT] =
+  {0,	13.2,	13.0,	0,	10.8,	0,	0,	0,	0},
+  [MB_FAN3_VOLT] =
+  {0,	13.2,	13.0,	0,	10.8,	0,	0,	0,	0},
+  [MB_FAN0_CURR] =
+  {0,	8.0,	7.26,	0,	0,	0,	0,	0,	0},
+  [MB_FAN1_CURR] =
+  {0,	8.0,	7.26,	0,	0,	0,	0,	0,	0},
+  [MB_FAN2_CURR] =
+  {0,	8.0,	7.26,	0,	0,	0,	0,	0,	0},
+  [MB_FAN3_CURR] =
+  {0,	8.0,	7.26,	0,	0,	0,	0,	0,	0},
+  [MB_ADC_P12V_AUX] =
+  {0,	13.2,	13.0,	0,	10.8,	0,	0,	0,	0},
+  [MB_ADC_P12V_1] =
+  {0,	13.2,	13.0,	0,	10.8,	0,	0,	0,	0},
+  [MB_ADC_P12V_2] =
+  {0,	13.2,	13.0,	0,	10.8,	0,	0,	0,	0},
+  [MB_ADC_P3V3_STBY] =
+  {0,	3.465,	0,	0,	3.135,	0,	0,	0,	0},
+  [MB_ADC_P3V3] =
+  {0,	3.465,	0,	0,	3.135,	0,	0,	0,	0},
+  [MB_ADC_P3V_BAT] =
+  {0,	3.465,	0,	0,	2.0,	0,	0,	0,	0},
+  [MB_ADC_P5V_STBY] =
+  {0,	5.25,	0,	0,	4.75,	0,	0,	0,	0},
+  [MB_SENSOR_GPU_INLET] =
+  {0,	55.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SENSOR_GPU_INLET_REMOTE] =
+  {0,	50.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SENSOR_GPU_OUTLET] =
+  {0,	75.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SENSOR_GPU_OUTLET_REMOTE] =
+  {0,	70.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SENSOR_PAX01_THERM] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_SENSOR_PAX23_THERM] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_SENSOR_PAX0_THERM_REMOTE] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SENSOR_PAX1_THERM_REMOTE] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SENSOR_PAX2_THERM_REMOTE] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SENSOR_PAX3_THERM_REMOTE] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SWITCH_PAX0_DIE_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SWITCH_PAX1_DIE_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SWITCH_PAX2_DIE_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SWITCH_PAX3_DIE_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD0_VIN] =
+  {0,	13.2,	13.0,	0,	10.8,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD1_VIN] =
+  {0,	13.2,	13.0,	0,	10.8,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD2_VIN] =
+  {0,	13.2,	13.0,	0,	10.8,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD3_VIN] =
+  {0,	13.2,	13.0,	0,	10.8,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD0_VOUT] =
+  {0,	0.861,	0,	0,	0.819,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD1_VOUT] =
+  {0,	0.861,	0,	0,	0.819,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD2_VOUT] =
+  {0,	0.861,	0,	0,	0.819,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD3_VOUT] =
+  {0,	0.861,	0,	0,	0.819,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD0_CURR] =
+  {0,	55.8,	0,	0,	0,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD1_CURR] =
+  {0,	55.8,	0,	0,	0,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD2_CURR] =
+  {0,	55.8,	0,	0,	0,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD3_CURR] =
+  {0,	55.8,	0,	0,	0,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD0_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD1_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD2_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_VR_P0V8_VDD3_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD0_VIN] =
+  {0,	13.2,	13,	0,	10.8,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD1_VIN] =
+  {0,	13.2,	13,	0,	10.8,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD2_VIN] =
+  {0,	13.2,	13,	0,	10.8,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD3_VIN] =
+  {0,	13.2,	13,	0,	10.8,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD0_VOUT] =
+  {0,	1.025,	0,	0,	0.975,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD1_VOUT] =
+  {0,	1.025,	0,	0,	0.975,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD2_VOUT] =
+  {0,	1.025,	0,	0,	0.975,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD3_VOUT] =
+  {0,	1.025,	0,	0,	0.975,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD0_CURR] =
+  {0,	24.0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD1_CURR] =
+  {0,	24.0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD2_CURR] =
+  {0,	24.0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD3_CURR] =
+  {0,	24.0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD0_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD1_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD2_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_VR_P1V0_AVD3_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [PDB_HSC_P12V_AUX_VIN] =
+  {0,	13.2,	13,	0,	10.8,	0,	0,	0,	0},
+  [PDB_HSC_P12V_1_VIN] =
+  {0,	13.2,	13,	0,	10.8,	0,	0,	0,	0},
+  [PDB_HSC_P12V_2_VIN] =
+  {0,	13.2,	13,	0,	10.8,	0,	0,	0,	0},
+  [PDB_HSC_P12V_AUX_VOUT] =
+  {0,	13.2,	13,	0,	10.8,	0,	0,	0,	0},
+  [PDB_HSC_P12V_1_VOUT] =
+  {0,	13.2,	13,	0,	10.8,	0,	0,	0,	0},
+  [PDB_HSC_P12V_2_VOUT] =
+  {0,	13.2,	13,	0,	10.8,	0,	0,	0,	0},
+  [PDB_HSC_P12V_AUX_CURR] =
+  {0,	50.0,	42.0,	0,	0,	0,	0,	0,	0},
+  [PDB_HSC_P12V_1_CURR] =
+  {0,	343.75,	290.84,	0,	0,	0,	0,	0,	0},
+  [PDB_HSC_P12V_2_CURR] =
+  {0,	343.75,	290.84,	0,	0,	0,	0,	0,	0},
+  [PDB_HSC_P12V_AUX_PWR] =
+  {0,	600.0,	0,	0,	0,	0,	0,	0,	0},
+  [PDB_HSC_P12V_1_PWR] =
+  {0,	4125.0,	0,	0,	0,	0,	0,	0,	0},
+  [PDB_HSC_P12V_2_PWR] =
+  {0,	4125.0,	0,	0,	0,	0,	0,	0,	0},
+  [PDB_ADC_1_VICOR0_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [PDB_ADC_1_VICOR1_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [PDB_ADC_1_VICOR2_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [PDB_ADC_1_VICOR3_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [PDB_ADC_2_VICOR0_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [PDB_ADC_2_VICOR1_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [PDB_ADC_2_VICOR2_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [PDB_ADC_2_VICOR3_TEMP] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [PDB_SENSOR_OUTLET_TEMP] =
+  {0,	75.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [PDB_SENSOR_OUTLET_TEMP_REMOTE] =
+  {0,	70.0,	0,	0,	10.0,	0,	0,	0,	0}
+};
+
 size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
 size_t pdb_sensor_cnt = sizeof(pdb_sensor_list)/sizeof(uint8_t);
 
@@ -428,62 +613,9 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
   return 0;
 }
 
-static void sensor_thresh_array_init()
-{
-  // Fan Sensors
-  sensors_threshold[MB_FAN0_TACH_I][UNC_THRESH] = 8500;
-  sensors_threshold[MB_FAN0_TACH_I][UCR_THRESH] = 11500;
-  sensors_threshold[MB_FAN0_TACH_I][LCR_THRESH] = 500;
-  sensors_threshold[MB_FAN0_TACH_O][UNC_THRESH] = 8500;
-  sensors_threshold[MB_FAN0_TACH_O][UCR_THRESH] = 11500;
-  sensors_threshold[MB_FAN0_TACH_O][LCR_THRESH] = 500;
-  sensors_threshold[MB_FAN1_TACH_I][UNC_THRESH] = 8500;
-  sensors_threshold[MB_FAN1_TACH_I][UCR_THRESH] = 11500;
-  sensors_threshold[MB_FAN1_TACH_I][LCR_THRESH] = 500;
-  sensors_threshold[MB_FAN1_TACH_O][UNC_THRESH] = 8500;
-  sensors_threshold[MB_FAN1_TACH_O][UCR_THRESH] = 11500;
-  sensors_threshold[MB_FAN1_TACH_O][LCR_THRESH] = 500;
-  sensors_threshold[MB_FAN2_TACH_I][UNC_THRESH] = 8500;
-  sensors_threshold[MB_FAN2_TACH_I][UCR_THRESH] = 11500;
-  sensors_threshold[MB_FAN2_TACH_I][LCR_THRESH] = 500;
-  sensors_threshold[MB_FAN2_TACH_O][UNC_THRESH] = 8500;
-  sensors_threshold[MB_FAN2_TACH_O][UCR_THRESH] = 11500;
-  sensors_threshold[MB_FAN2_TACH_O][LCR_THRESH] = 500;
-  sensors_threshold[MB_FAN3_TACH_I][UNC_THRESH] = 8500;
-  sensors_threshold[MB_FAN3_TACH_I][UCR_THRESH] = 11500;
-  sensors_threshold[MB_FAN3_TACH_I][LCR_THRESH] = 500;
-  sensors_threshold[MB_FAN3_TACH_O][UNC_THRESH] = 8500;
-  sensors_threshold[MB_FAN3_TACH_O][UCR_THRESH] = 11500;
-  sensors_threshold[MB_FAN3_TACH_O][LCR_THRESH] = 500;
-
-  // ADC Sensors
-  sensors_threshold[MB_ADC_P12V_AUX][UCR_THRESH] = 13.23;
-  sensors_threshold[MB_ADC_P12V_AUX][LCR_THRESH] = 10.773;
-  sensors_threshold[MB_ADC_P3V3_STBY][UCR_THRESH] = 3.621;
-  sensors_threshold[MB_ADC_P3V3_STBY][LCR_THRESH] = 2.975;
-  sensors_threshold[MB_ADC_P5V_STBY][UCR_THRESH] = 5.486;
-  sensors_threshold[MB_ADC_P5V_STBY][LCR_THRESH] = 4.524;
-  sensors_threshold[MB_ADC_P12V_1][UCR_THRESH] = 13.23;
-  sensors_threshold[MB_ADC_P12V_1][LCR_THRESH] = 10.773;
-  sensors_threshold[MB_ADC_P12V_2][UCR_THRESH] = 13.23;
-  sensors_threshold[MB_ADC_P12V_2][LCR_THRESH] = 10.773;
-  sensors_threshold[MB_ADC_P3V3][UCR_THRESH] = 3.621;
-  sensors_threshold[MB_ADC_P3V3][LCR_THRESH] = 2.975;
-  sensors_threshold[MB_ADC_P3V_BAT][UCR_THRESH] = 3.738;
-  sensors_threshold[MB_ADC_P3V_BAT][LCR_THRESH] = 2.73;
-
-  return;
-}
-
 int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value)
 {
-  static bool is_thresh_init = false;
   float *val = (float*) value;
-
-  if (!is_thresh_init) {
-    sensor_thresh_array_init();
-    is_thresh_init = true;
-  }
 
   if (fru > FRU_PDB || sensor_num >= FBEP_SENSOR_MAX)
     return -1;

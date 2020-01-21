@@ -349,3 +349,36 @@ fby3_common_crashdump(uint8_t fru, bool ierr, bool platform_reset) {
   }
   return 0;
 }
+
+int
+fby3_common_dev_id(char *str, uint8_t *dev) {
+
+  if (!strcmp(str, "1U-dev0")) {
+    *dev = 1;
+  } else if (!strcmp(str, "1U-dev1")) {
+    *dev = 2;
+  } else if (!strcmp(str, "1U-dev2")) {
+    *dev = 3;
+  } else if (!strcmp(str, "1U-dev3")) {
+    *dev = 4;
+  } else if (!strcmp(str, "2U-dev0")) {
+    *dev = 5;
+  } else if (!strcmp(str, "2U-dev1")) {
+    *dev = 6;
+  } else if (!strcmp(str, "2U-dev2")) {
+    *dev = 7;
+  } else if (!strcmp(str, "2U-dev3")) {
+    *dev = 8;
+  } else if (!strcmp(str, "2U-dev4")) {
+    *dev = 9;
+  } else if (!strcmp(str, "2U-dev5")) {
+    *dev = 10;
+  } else {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "fby3_common_dev_id: Wrong fru id");
+#endif
+    return -1;
+  }
+
+  return 0;
+}

@@ -52,6 +52,9 @@ int bic_do_sled_cycle(uint8_t slot_id);
 int bic_set_fan_speed(uint8_t fan_id, uint8_t pwm);
 int bic_get_fan_speed(uint8_t fan_id, float *value);
 int bic_get_fan_pwm(uint8_t fan_id, float *value);
+int bic_do_12V_cycle(uint8_t slot_id);
+int bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t intf);
+int bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_t intf);
 #ifdef __cplusplus
 } // extern "C"
 #endif

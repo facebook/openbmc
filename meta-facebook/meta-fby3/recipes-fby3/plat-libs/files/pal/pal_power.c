@@ -14,6 +14,17 @@
 
 #define CPLD_PWR_CTRL_BUS "/dev/i2c-12"
 #define CPLD_PWR_CTRL_ADDR 0x1F
+#define MAX_READ_RETRY 3
+
+enum {
+  DEVICE_POWER_OFF = 0x0,
+  DEVICE_POWER_ON = 0x1,
+};
+
+enum {
+  DEV_TYPE_UNKNOWN,
+  DEV_TYPE_M2,
+};
 
 enum {
   POWER_STATUS_ALREADY_OK = 1,
@@ -198,6 +209,7 @@ int
 pal_set_server_power(uint8_t fru, uint8_t cmd) {
   uint8_t status;
   int ret = 0;
+  uint8_t bmc_location = 0;
 
   ret = fby3_common_check_slot_id(fru);
   if ( ret < 0 ) {
@@ -257,18 +269,30 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_12V_CYCLE:
-      if ( pal_get_server_12v_power(fru, &status) < 0 ) {
+      ret = fby3_common_get_bmc_location(&bmc_location);
+      if ( ret < 0 ) {
+        syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
         return POWER_STATUS_ERR;
       }
 
-      if (status == SERVER_POWER_OFF) {
-        return server_power_12v_on(fru);
-      } else {
-        if ( server_power_12v_off(fru) < 0 ) {
+      if ( bmc_location == BB_BMC ) {
+        if ( pal_get_server_12v_power(fru, &status) < 0 ) {
           return POWER_STATUS_ERR;
         }
-        sleep(2);
-        if ( server_power_12v_on(fru) < 0 ) {
+
+        if (status == SERVER_POWER_OFF) {
+          return server_power_12v_on(fru);
+        } else {
+          if ( server_power_12v_off(fru) < 0 ) {
+            return POWER_STATUS_ERR;
+          }
+          sleep(2);
+          if ( server_power_12v_on(fru) < 0 ) {
+            return POWER_STATUS_ERR;
+          }
+        }
+      } else {
+        if ( bic_do_12V_cycle(1) < 0 ) {
           return POWER_STATUS_ERR;
         }
       }
@@ -351,4 +375,163 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
   }
 
   return ret;
+}
+
+int
+pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type) {
+  int ret;
+  uint8_t nvme_ready = 0;
+  uint8_t intf = 0;
+  uint8_t config_status = 0;
+  uint8_t bmc_location = 0;
+
+  if (fby3_common_check_slot_id(slot_id) == 0) {
+    /* Check whether the system is 12V off or on */
+    if ( pal_get_server_12v_power(slot_id, status) < 0 ) {
+        return POWER_STATUS_ERR;
+    }
+
+    /* If 12V-off, return */
+    if ((*status) == SERVER_12V_OFF) {
+      *status = DEVICE_POWER_OFF;
+      syslog(LOG_WARNING, "pal_get_device_power: pal_is_server_12v_on 12V-off");
+      return 0;
+    }
+
+    ret = fby3_common_get_bmc_location(&bmc_location);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+      return POWER_STATUS_ERR;
+    }
+
+    config_status = bic_is_m2_exp_prsnt(slot_id);
+    if (config_status < 0) {
+      return POWER_STATUS_FRU_ERR;
+    }
+
+    if ( bmc_location == BB_BMC ) {
+        if ((dev_id >= 1 && dev_id <= 4) && (config_status == 1 || config_status == 3)) { // 1OU Exp
+          intf = FEXP_BIC_INTF;
+        } else if ((dev_id >= 5 && dev_id <= 10) && ( config_status == 2 || config_status == 3)) { // 2OU Exp
+          intf = REXP_BIC_INTF;
+          dev_id = dev_id - 4; //shift to 2OU device id
+        } else {
+          printf("Device not found \n");
+          return POWER_STATUS_FRU_ERR;
+        }
+    } else {
+      if ((dev_id >= 5 && dev_id <= 10) && ( config_status == 2 || config_status == 3)) { // 2OU Exp
+        intf = REXP_BIC_INTF;
+        dev_id = dev_id - 4; //shift to 2OU device id
+      } else {
+        printf("Device not found \n");
+        return POWER_STATUS_FRU_ERR;
+      }
+    }
+
+    ret = bic_get_dev_power_status(slot_id, dev_id, &nvme_ready, status, intf);
+    if (ret < 0) {
+      return -1;
+    }
+
+    if (nvme_ready) {
+      *type = DEV_TYPE_M2;
+    } else {
+      *type = DEV_TYPE_UNKNOWN;
+    }
+    return 0;
+  }
+
+  *type = DEV_TYPE_UNKNOWN;
+
+  return -1;
+}
+
+int
+pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
+  int ret;
+  uint8_t status, type;
+  uint8_t intf = 0;
+  uint8_t config_status = 0;
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_check_slot_id(slot_id);
+  if ( ret < 0 ) {
+    return POWER_STATUS_FRU_ERR;
+  }
+
+  if (pal_get_device_power(slot_id, dev_id, &status, &type) < 0) {
+    return -1;
+  }
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return POWER_STATUS_ERR;
+  }
+
+  config_status = bic_is_m2_exp_prsnt(slot_id);
+  if (config_status < 0) {
+    return POWER_STATUS_FRU_ERR;
+  }
+
+  if ( bmc_location == BB_BMC ) {
+      if ((dev_id >= 1 && dev_id <= 4) && (config_status == 1 || config_status == 3)) { // 1OU Exp
+        intf = FEXP_BIC_INTF;
+      } else if ((dev_id >= 5 && dev_id <= 10) && ( config_status == 2 || config_status == 3)) { // 2OU Exp
+        intf = REXP_BIC_INTF;
+        dev_id = dev_id - 4; //shift to 2OU device id
+      } else {
+        printf("Device not found \n");
+        return POWER_STATUS_FRU_ERR;
+      }
+  } else {
+    if ((dev_id >= 5 && dev_id <= 10) && ( config_status == 2 || config_status == 3)) { // 2OU Exp
+      intf = REXP_BIC_INTF;
+      dev_id = dev_id - 4; //shift to 2OU device id
+    } else {
+      printf("Device not found \n");
+      return POWER_STATUS_FRU_ERR;
+    }
+  }
+
+  switch(cmd) {
+    case SERVER_POWER_ON:
+      if (status == DEVICE_POWER_ON) {
+        return 1;
+      } else {
+        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_ON, intf);
+        return ret;
+      }
+      break;
+
+    case SERVER_POWER_OFF:
+      if (status == DEVICE_POWER_OFF) {
+        return 1;
+      } else {
+        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_OFF, intf);
+        return ret;
+      }
+      break;
+
+    case SERVER_POWER_CYCLE:
+      if (status == DEVICE_POWER_ON) {
+        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_OFF, intf);
+        if (ret < 0) {
+          return -1;
+        }
+        sleep(3);
+        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_ON, intf);
+        return ret;
+      } else if (status == DEVICE_POWER_OFF) {
+        ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_ON, intf);
+        return ret;
+      }
+      break;
+
+    default:
+      return -1;
+  }
+
+  return 0;
 }

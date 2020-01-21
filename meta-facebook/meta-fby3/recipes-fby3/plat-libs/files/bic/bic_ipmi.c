@@ -37,6 +37,11 @@
 #define FRUID_WRITE_COUNT_MAX 0x20
 #define FRUID_SIZE 256
 
+//GPIO
+#define GPIO_LOW 0
+#define GPIO_HIGH 1
+#define GPIO_HSC_MUX_SWITCH 0x2F
+
 //SDR
 #define SDR_READ_COUNT_MAX 0x1A
 #pragma pack(push, 1)
@@ -804,8 +809,6 @@ bic_do_sled_cycle(uint8_t slot_id) {
   return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, NULL, 0, BB_BIC_INTF);
 }
 
-
-
 // Only For Class 2
 int
 bic_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
@@ -866,4 +869,58 @@ bic_get_fan_pwm(uint8_t fan_id, float *value) {
   *value = (float)rbuf[3];
 
   return 0;
+}
+
+//Only for class 2
+int
+bic_do_12V_cycle(uint8_t slot_id) {
+  uint8_t tbuf[4] = {0};
+  uint8_t tlen = 4;
+
+  bic_set_gpio(slot_id, GPIO_HSC_MUX_SWITCH, GPIO_LOW);
+
+  tbuf[0] = 0x0B; //bus id
+  tbuf[1] = 0x80; //slave addr
+  tbuf[2] = 0x00; //read 0 byte
+  tbuf[3] = 0xd9; //register offset
+  tlen = 4;
+  return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, NULL, 0, NONE_INTF);
+}
+
+int
+bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t intf) {
+  uint8_t tbuf[5] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t rbuf[11] = {0x00};
+  uint8_t tlen = 5;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[3] = dev_id;
+  tbuf[4] = 0x3;  //get power status
+
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, tlen, rbuf, &rlen, intf);
+
+  // Ignore first 3 bytes of IANA ID
+  if ( ret >= 0 ) {
+    *nvme_ready = 0x1;
+  }
+  *status = rbuf[3];
+
+  return ret;
+}
+
+int
+bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_t intf) {
+  uint8_t tbuf[5] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t rbuf[10] = {0x00};
+  uint8_t tlen = 5;
+  uint8_t rlen = 0;
+  int ret;
+
+  tbuf[3] = dev_id;
+  tbuf[4] = status;  //set power status
+
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, tlen, rbuf, &rlen, intf);
+
+  return ret;
 }

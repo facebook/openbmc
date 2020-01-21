@@ -890,7 +890,7 @@ pal_fw_update_prepare(uint8_t fru, const char *comp) {
       printf("Failed to open SPI-Switch GPIO\n");
     }
 
-    if (system("echo -n 1e630000.spi > /sys/bus/platform/drivers/aspeed-smc/bind")) {
+    if (system("echo -n spi0.0 > /sys/bus/spi/drivers/m25p80/bind")) {
       syslog(LOG_ERR, "Unable to mount MTD partitions for BIOS SPI-Flash\n");
       ret = -1;
     }
@@ -905,7 +905,7 @@ pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
   gpio_desc_t *desc;
 
   if ((fru == FRU_MB) && !strcmp(comp, "bios")) {
-    if (system("echo -n 1e630000.spi > /sys/bus/platform/drivers/aspeed-smc/unbind")) {
+    if (system("echo -n spi0.0 > /sys/bus/spi/drivers/m25p80/unbind")) {
       syslog(LOG_ERR, "Unable to unmount MTD partitions\n");
     }
 

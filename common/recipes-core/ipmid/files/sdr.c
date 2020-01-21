@@ -419,7 +419,7 @@ sdr_init(void) {
   }
 
   // Initialize the reservation IDs
-  for (i = 0; i < MAX_NODES; i++) {
+  for (i = 0; i <= MAX_NODES; i++) {
     g_rsv_id[i] = 0x01;
   }
 

@@ -1,0 +1,158 @@
+{
+  "version": "fbep-evt-r01",
+  "pwm_transition_value": 100,
+  "pwm_boost_value": 100,
+  "sample_interval_ms": 1000,
+  "fan_recovery_time": 1,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": true
+  },
+  "sensor_valid_check": {
+    "mb": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "pdb": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    }
+  },
+  "watchdog": false,
+  "fanpower": true,
+  "min_rpm": 1500,
+  "profiles": {
+    "linear_inlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "negative_hysteresis": 1,
+      "positive_hysteresis": 0,
+      "data": [
+        [23, 23],
+        [28, 28],
+        [32, 35],
+        [37, 50],
+        [39, 60],
+        [40, 70],
+        [42, 100]
+      ]
+    },
+    "linear_switch_remote": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [60, 20],
+        [65, 25],
+        [70, 30],
+        [75, 35],
+        [80, 40],
+        [90, 100]
+      ]
+    },
+    "linear_vicor": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [60, 20],
+        [65, 25],
+        [70, 30],
+        [80, 40],
+        [90, 70],
+        [95, 85],
+        [100, 100]
+      ]
+    }
+  },
+  "fans": {
+    "0": {
+      "label" : "Fan 0 Inlet",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 0"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 0"
+      }
+    },
+    "1": {
+      "label" : "Fan 0 Outlet",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 1"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 0"
+      }
+    },
+    "2": {
+      "label" : "Fan 1 Inlet",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 2"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 1"
+      }
+    },
+    "3": {
+      "label" : "Fan 1 Outlet",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 3"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 1"
+      }
+    },
+    "4": {
+      "label" : "Fan 2 Inlet",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 4"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 2"
+      }
+    },
+    "5": {
+      "label" : "Fan 2 Outlet",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 5"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 2"
+      }
+    },
+    "6": {
+      "label" : "Fan 3 Inlet",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 6"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 3"
+      }
+    },
+    "7": {
+      "label" : "Fan 3 Outlet",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 7"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 3"
+      }
+    }
+  },
+  "zones": {
+    "zone_1": {
+      "pwm_output": [0, 2, 4, 6],
+      "expr_file": "zone1.fsc"
+    }
+  }
+}

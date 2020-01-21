@@ -1,0 +1,52 @@
+{
+  "version": "1.0",
+  "sensors": [
+    {
+      "name": "SYSTEM_AIRFLOW",
+      "units": "CFM",
+      "composition": {
+        "type": "conditional_linear_expression",
+        "sources": {
+          "rpm0": {
+            "fru":       1,
+            "sensor_id": 0
+          },
+          "rpm1": {
+            "fru":       1,
+            "sensor_id": 4
+          },
+	  "rpm2": {
+            "fru":       1,
+            "sensor_id": 8
+          },
+          "rpm3": {
+            "fru":       1,
+            "sensor_id": 12
+          },
+          "cfm0": {
+            "expression": "( rpm0 * 0.0117 ) + ( 0.00000004 * rpm0 * rpm0 ) - 0.864"
+          },
+          "cfm1": {
+            "expression": "( rpm1 * 0.0117 ) + ( 0.00000004 * rpm1 * rpm1 ) - 0.864"
+          },
+          "cfm2": {
+            "expression": "( rpm2 * 0.0117 ) + ( 0.00000004 * rpm2 * rpm2 ) - 0.864"
+          },
+          "cfm3": {
+            "expression": "( rpm3 * 0.0117 ) + ( 0.00000004 * rpm3 * rpm3 ) - 0.864"
+          }
+        },
+	"linear_expressions": {
+          "A0": "cfm0 + cfm1 + cfm2 + cfm3"
+        },
+        "condition": {
+          "key": "mb_system_conf",
+          "value_map": {
+            "SS_D": "A0"
+          },
+          "default_expression": "A0"
+        }
+      }
+    }
+  ]
+}

@@ -33,7 +33,7 @@ do_install_append() {
   install -d ${D}${sysconfdir}/sensord
   install -m 755 setup-sensord.sh ${D}${sysconfdir}/init.d/setup-sensord.sh
   install -m 755 run-sensord.sh ${D}${sysconfdir}/sv/sensord/run
-  update-rc.d -r ${D} setup-sensord.sh start 91 5 .
+  update-rc.d -r ${D} setup-sensord.sh start 90 5 .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import datetime
 import json
 import os.path
 import signal
@@ -24,7 +25,6 @@ import subprocess
 import sys
 import time
 import traceback
-import datetime
 
 import fsc_expr
 from fsc_bmcmachine import BMCMachine
@@ -750,9 +750,11 @@ class Fscd(object):
 
 
 def handle_term(signum, frame):
+    global wdfile
     board_callout(callout="init_fans", boost=DEFAULT_INIT_TRANSITIONAL)
     Logger.warn("killed by signal %d" % (signum,))
-    if signum == signal.SIGQUIT or signum == signal.SIGTERM or signum == signal.SIGINT:
+    if signum == signal.SIGQUIT and wdfile:
+        Logger.info("Killed with SIGQUIT - stopping watchdog.")
         stop_watchdog()
     sys.exit("killed")
 

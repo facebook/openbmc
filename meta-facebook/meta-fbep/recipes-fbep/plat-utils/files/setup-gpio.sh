@@ -39,6 +39,9 @@ do
   do
     gpioexp_export 7-002${i} OAM${i}_LINK_CONFIG${j} ${j}
   done
+  gpio_set OAM${i}_LINK_CONFIG0 0
+  gpio_set OAM${i}_LINK_CONFIG2 0
+  gpio_set OAM${i}_LINK_CONFIG4 0
 done
 
 for i in {0..3};

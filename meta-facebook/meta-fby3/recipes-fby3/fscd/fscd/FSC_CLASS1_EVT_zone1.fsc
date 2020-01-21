@@ -1,4 +1,4 @@
 max([
-  linear_inlet(bmc:bmc_inlet_temp),
-  linear_mezz(nic:mezz_sensor_temp)
+  linear_outlet(bmc:bmc_outlet_temp),
+  linear_mezz(nic:nic_sensor_mezz_temp)
 ])

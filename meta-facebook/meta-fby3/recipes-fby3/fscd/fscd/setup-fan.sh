@@ -32,7 +32,18 @@
 default_fsc_config_path="/etc/fsc-config.json"
 
 function init_class1_fsc(){
-  ln -s /etc/FSC_CLASS1_EVT_config.json ${default_fsc_config_path}
+  fan0_type=$(gpio_get DUAL_FAN0_DETECT_BMC_N_R)
+  fan1_type=$(gpio_get DUAL_FAN1_DETECT_BMC_N_R)
+
+  if [ $fan0_type -ne $fan1_type ]; then
+    echo "fan type is not the same!"
+  fi
+
+  if [ $fan0_type -eq 1 ]; then
+    ln -s /etc/FSC_CLASS1_EVT_singlefan_config.json ${default_fsc_config_path}
+  else
+    ln -s /etc/FSC_CLASS1_EVT_dualfan_config.json ${default_fsc_config_path}
+  fi
 }
 
 function init_class2_fsc(){
@@ -50,7 +61,8 @@ else
   echo -n "Is board id correct(id=$bmc_location)?..."
 fi
 
-echo "Setup fan speed... "
+echo "Setup fan speed..."
 /usr/local/bin/fan-util --set 70
-#runsv /etc/sv/fscd > /dev/null 2>&1 &
-echo "done."
+echo -n "Setup fscd for fby3..."
+runsv /etc/sv/fscd > /dev/null 2>&1 &
+echo "Done."

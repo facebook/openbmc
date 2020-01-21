@@ -5,13 +5,13 @@
   "non_fanfail_limited_boost_value": 90,
   "sample_interval_ms": 3000,
   "boost": {
-    "fan_fail": true,
+    "fan_fail": false,
     "sensor_fail": true
   },
   "watchdog": false,
   "min_rpm": 800,
   "profiles": {
-    "linear_inlet": {
+    "linear_outlet": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },
@@ -81,11 +81,11 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [80, 20],
-        [86, 30],
-        [88, 31],
-        [90, 33],
-        [92, 34],
+        [80, 60],
+        [86, 60],
+        [88, 65],
+        [90, 70],
+        [92, 70],
         [97, 70]
       ]
     }

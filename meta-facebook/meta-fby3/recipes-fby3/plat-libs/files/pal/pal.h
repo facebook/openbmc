@@ -73,9 +73,9 @@ enum {
   CONFIG_D = 0x04,
 };
 
-#define MAX_NODES 5
-#define READING_SKIP    (1)
-#define READING_NA      (-2)
+#define MAX_NODES     (4)
+#define READING_SKIP  (1)
+#define READING_NA    (-2)
 
 enum {
   BOOT_DEVICE_IPV4     = 0x1,

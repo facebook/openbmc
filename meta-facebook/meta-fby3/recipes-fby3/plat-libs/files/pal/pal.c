@@ -413,6 +413,12 @@ pal_get_platform_name(char *name) {
 }
 
 int
+pal_get_num_slots(uint8_t *num) {
+  *num = MAX_NODES;
+  return 0;
+}
+
+int
 pal_get_fru_list(char *list) {
   strcpy(list, pal_fru_list);
   return PAL_EOK;

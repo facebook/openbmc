@@ -1756,6 +1756,15 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
   end = BIOS_VER_REGION_SIZE - (sizeof(ver_sig) + strlen(BIOS_VER_STR));
   for (offs = 0; offs < end; offs++) {
     if (!memcmp(buf+offs, ver_sig, sizeof(ver_sig))) {
+#if defined(CONFIG_FBY2_ND)
+      if (memcmp(
+              buf + offs + sizeof(ver_sig),
+              ND_BIOS_VER_STR,
+              strlen(ND_BIOS_VER_STR))) {
+        offs = end;
+      }
+      break;
+#endif
       if (memcmp(
               buf + offs + sizeof(ver_sig),
               BIOS_VER_STR,
@@ -1767,11 +1776,7 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
           memcmp(
               buf + offs + sizeof(ver_sig),
               GPV2_BIOS_VER_STR,
-              strlen(GPV2_BIOS_VER_STR)) &&
-          memcmp(
-              buf + offs + sizeof(ver_sig),
-              ND_BIOS_VER_STR,
-              strlen(ND_BIOS_VER_STR))) {
+              strlen(GPV2_BIOS_VER_STR))) {
         offs = end;
       }
       break;

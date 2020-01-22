@@ -276,6 +276,16 @@ def get_vboot_enforcement():
     with open(command[0], "rb") as vboot_util_binary_or_script:
         if vboot_util_binary_or_script.read(4) != b"\x7fELF":
             command.insert(0, "bash")
+    # due to a bug in vboot-util if it use cached data for rom version it may
+    # results in trailing garbage and fail during bytes decode, we need to nuke
+    # the cache first as a mitigation
+    try:
+        os.remove("/tmp/cache_store/rom_version")
+        os.remove("/tmp/cache_store/rom_uboot_version")
+    except Exception:
+        # Python2 throws OSError, Python3 FileNotFound - we don't care, it should
+        # be ok to leave it as best effort
+        pass
     vboot_util_output = subprocess.check_output(command).decode()
     if "Flags hardware_enforce:  0x01" in vboot_util_output:
         support = "hardware-enforce"

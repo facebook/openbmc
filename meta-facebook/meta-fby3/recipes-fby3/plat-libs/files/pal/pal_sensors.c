@@ -100,8 +100,7 @@ const uint8_t bic_sensor_list[] = {
   //BIC - current sensors
   BIC_SENSOR_P3V3_M2A_CUR,
   BIC_SENSOR_P3V3_M2B_CUR,
-  BIC_SENSOR_HSC_OUTPUT_CUR1,
-  BIC_SENSOR_HSC_OUTPUT_CUR2,
+  BIC_SENSOR_HSC_OUTPUT_CUR,
   BIC_SENSOR_VCCIN_VR_CUR,
   BIC_SENSOR_VCCSA_VR_CUR,
   BIC_SENSOR_VCCIO_VR_CUR,
@@ -112,8 +111,7 @@ const uint8_t bic_sensor_list[] = {
   //BIC - power sensors
   BIC_SENSOR_P3V3_M2A_PWR,
   BIC_SENSOR_P3V3_M2B_PWR,
-  BIC_SENSOR_HSC_INPUT_PWR1,
-  BIC_SENSOR_HSC_INPUT_PWR2,
+  BIC_SENSOR_HSC_INPUT_PWR,
   BIC_SENSOR_VCCIN_VR_POUT,
   BIC_SENSOR_VCCSA_VR_POUT,
   BIC_SENSOR_VCCIO_VR_POUT,
@@ -997,7 +995,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
   if ( sdr->type != 1 ) {
     *value = sensor.value;
     return 0;
-  } 
+  }
 
   // y = (mx + b * 10^b_exp) * 10^r_exp
   int x;
@@ -1227,6 +1225,7 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
   uint8_t snr_num = 0;
   sdr_full_t *sdr;
   int retry = 3;
+  uint8_t bmc_location = 0;
 
   while ( access(path, F_OK) == -1 && retry > 0 ) {
     syslog(LOG_WARNING, "%s() Failed to access %s, wait a second.\n", __func__, path);
@@ -1255,6 +1254,18 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
     sdr = (sdr_full_t *) buf;
     snr_num = sdr->sensor_num;
     sinfo[snr_num].valid = true;
+    // If Class 2, threshold change
+    if (snr_num == BIC_SENSOR_HSC_OUTPUT_CUR) {
+      fby3_common_get_bmc_location(&bmc_location);
+      if (bmc_location == NIC_BMC) {
+          sdr->uc_thresh = HSC_OUTPUT_CUR_UC_THRESHOLD;
+      }
+    } else if (snr_num == BIC_SENSOR_HSC_INPUT_PWR){
+      fby3_common_get_bmc_location(&bmc_location);
+      if (bmc_location == NIC_BMC) {
+        sdr->uc_thresh = HSC_INPUT_PWR_UC_THRESHOLD;
+      }
+    }
     memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));
     //syslog(LOG_WARNING, "%s() copy num: 0x%x:%s success", __func__, snr_num, sdr->str);
   }

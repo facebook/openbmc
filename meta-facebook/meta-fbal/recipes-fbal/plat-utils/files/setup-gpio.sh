@@ -46,7 +46,7 @@ gpio_export FM_BOARD_BMC_REV_ID0 GPIOA0
 
 # FM_BOARD_BMC_REV_ID1 / FM_CPU0_THERMTRIP_LVT3_PLD_N
 gpio_export FM_CPU0_THERMTRIP_LVT3_PLD_N GPIOA1
-ln -s FM_CPU0_THERMTRIP_LVT3_PLD_N /tmp/gpionames/FM_BOARD_BMC_REV_ID1
+ln -n /tmp/gpionames/FM_CPU0_THERMTRIP_LVT3_PLD_N /tmp/gpionames/FM_BOARD_BMC_REV_ID1
 
 # FM_SPD_DDRCPU_LVLSHFT_EN
 gpio_export FM_SPD_DDRCPU_LVLSHFT_EN GPIOA3
@@ -64,19 +64,19 @@ gpio_export SMB_SLOT2_ALT_N GPIOA7
 
 # FM_BOARD_BMC_SKU_ID0 / FM_MEM_THERM_EVENT_CPU0_LVT3_N
 gpio_export FM_MEM_THERM_EVENT_CPU0_LVT3_N GPIOB0
-ln -s FM_MEM_THERM_EVENT_CPU0_LVT3_N /tmp/gpionames/FM_BOARD_BMC_SKU_ID0
+ln -n /tmp/gpionames/FM_MEM_THERM_EVENT_CPU0_LVT3_N /tmp/gpionames/FM_BOARD_BMC_SKU_ID0
 
 # FM_BOARD_BMC_SKU_ID1 / FM_MEM_THERM_EVENT_CPU1_LVT3_N
 gpio_export FM_MEM_THERM_EVENT_CPU1_LVT3_N GPIOB1
-ln -s FM_MEM_THERM_EVENT_CPU1_LVT3_N /tmp/gpionames/FM_BOARD_BMC_SKU_ID1
+ln -n /tmp/gpionames/FM_MEM_THERM_EVENT_CPU1_LVT3_N /tmp/gpionames/FM_BOARD_BMC_SKU_ID1
 
 # FM_BOARD_BMC_SKU_ID2 / FM_CPU0_FIVR_FAULT_LVT3_PLD
 gpio_export FM_CPU0_FIVR_FAULT_LVT3_PLD GPIOB2
-ln -s FM_CPU0_FIVR_FAULT_LVT3_PLD /tmp/gpionames/FM_BOARD_BMC_SKU_ID2
+ln -n /tmp/gpionames/FM_CPU0_FIVR_FAULT_LVT3_PLD /tmp/gpionames/FM_BOARD_BMC_SKU_ID2
 
 # FM_BOARD_BMC_SKU_ID3 / FM_CPU1_FIVR_FAULT_LVT3_PLD
 gpio_export FM_CPU1_FIVR_FAULT_LVT3_PLD GPIOB3
-ln -s FM_CPU1_FIVR_FAULT_LVT3_PLD /tmp/gpionames/FM_BOARD_BMC_SKU_ID3
+ln -n /tmp/gpionames/FM_CPU1_FIVR_FAULT_LVT3_PLD /tmp/gpionames/FM_BOARD_BMC_SKU_ID3
 
 # FM_BOARD_BMC_SKU_ID4
 gpio_export FM_BOARD_BMC_SKU_ID4 GPIOB4
@@ -100,7 +100,7 @@ gpio_export FM_CPU1_PROCHOT_LVT3_BMC_N GPIOB7
 
 # FM_BOARD_BMC_REV_ID2 / FM_CPU1_THERMTRIP_LVT3_PLD_N
 gpio_export FM_CPU1_THERMTRIP_LVT3_PLD_N GPIOD0
-ln -s FM_CPU1_THERMTRIP_LVT3_PLD_N /tmp/gpionames/FM_BOARD_BMC_REV_ID2
+ln -n /tmp/gpionames/FM_CPU1_THERMTRIP_LVT3_PLD_N /tmp/gpionames/FM_BOARD_BMC_REV_ID2
 
 # IRQ_TPM_BMC_SPI_N
 gpio_export IRQ_TPM_BMC_SPI_N GPIOD1
@@ -536,6 +536,19 @@ gpio_export OCP_V3_NIC_2_PWR_GOOD GPIOT6
 
 # BOARD_ID_MUX_SEL
 gpio_export BOARD_ID_MUX_SEL GPIOU2
+gpio_set BOARD_ID_MUX_SEL 0
+mkdir -p /tmp/cache_store
+echo $(($(gpio_get FM_BOARD_BMC_REV_ID2)<<2 |
+        $(gpio_get FM_BOARD_BMC_REV_ID1)<<1 |
+        $(gpio_get FM_BOARD_BMC_REV_ID0))) > /tmp/cache_store/mb_rev
+
+echo $(($(gpio_get FM_BOARD_BMC_SKU_ID5)<<5 |
+        $(gpio_get FM_BOARD_BMC_SKU_ID4)<<4 |
+        $(gpio_get FM_BOARD_BMC_SKU_ID3)<<3 |
+        $(gpio_get FM_BOARD_BMC_SKU_ID2)<<2 |
+        $(gpio_get FM_BOARD_BMC_SKU_ID1)<<1 |
+        $(gpio_get FM_BOARD_BMC_SKU_ID0))) > /tmp/cache_store/mb_sku
+
 gpio_set BOARD_ID_MUX_SEL 1
 
 # BMC_FORCE_NM_THROTTLE_N

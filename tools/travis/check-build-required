@@ -8,7 +8,7 @@ MACHINE_METAS="\
     meta-portwell \
     "
 
-FORCE="\e[31m[FORCE]\e[0m"
+FORCE="[FORCE]"
 INFO="       "
 
 # Extract the machine-specific from TEMPLATECONF.  "meta-facebook/meta-foo"
@@ -16,8 +16,8 @@ TEMPLATE_BASE=$(realpath --relative-to=.. "$TEMPLATECONF" | cut -d '/' -f1,2)
 
 # Non-PR builds do not have TRAVIS_PULL_REQUEST set.  If not set, then
 # force a full build.
-if [ "x${TRAVIS_PULL_REQUEST}" == "x" ]; then
-    printf "%s\n" "$FORCE non-PR"
+if [ "x${TRAVIS_PULL_REQUEST}" == "xfalse" ]; then
+    echo "$FORCE non-PR"
     export FORCE_BUILD=1
 fi
 
@@ -28,7 +28,7 @@ do
     # Check if the file is outside a machine-meta (ex. maybe "common").
     BASE_DIR=$(echo "$f" | cut -d '/' -f1)
     if [[ "$MACHINE_METAS" != *"$BASE_DIR"* ]]; then
-        printf "%s\n" "$FORCE $f found outside machine-meta"
+        echo "$FORCE $f found outside machine-meta"
         export FORCE_BUILD=1
         continue
     fi
@@ -37,7 +37,7 @@ do
     # non-machine directory (ex. meta-facebook/classes).
     MACHINE_META=$(echo "$f" | cut -d '/' -f2)
     if [[ "x$MACHINE_META" != "xmeta-"* ]]; then
-        printf "%s\n" "$FORCE $f found in $BASE_DIR but outside machine-meta"
+        echo "$FORCE $f found in $BASE_DIR but outside machine-meta"
         export FORCE_BUILD=1
         continue
     fi
@@ -45,10 +45,10 @@ do
     # Check if the file is inside *this* machine-meta
     # (meaning, somewhere in TEMPLATE_BASE).
     if [[ $f == *"$TEMPLATE_BASE"* ]]; then
-        printf "%s\n" "$FORCE $f found for $BOARD"
+        echo "$FORCE $f found for $BOARD"
         export FORCE_BUILD=1
         continue
     fi
 
-    printf "%s\n" "$INFO $BOARD is unaffected by $f"
+    echo "$INFO $BOARD is unaffected by $f"
 done

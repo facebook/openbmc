@@ -33,6 +33,7 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <facebook/fby3_common.h>
+#include <facebook/fby3_fruid.h>
 #include <facebook/bic.h>
 #include <openbmc/pal.h>
 
@@ -42,13 +43,49 @@
 #define MAX_RETRY 6           // 180 secs = 1500 * 6
 #define MAX_RETRY_CNT 1500    // A senond can run about 50 times, 30 secs = 30 * 50
 
+#define PRESENT_1OU 1
+#define PRESENT_2OU 2
+#define DEV_ID_1U 11
+#define DEV_ID_2U 12
+
 int
-fruid_cache_init(uint8_t slot_id) {
-  // Initialize Slot0's fruid
+remote_fruid_cache_init(uint8_t slot_id, uint8_t intf) {
   int ret=0;
   int fru_size=0;
   char fruid_temp_path[64] = {0};
   char fruid_path[64] = {0};
+
+  sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.%d.bin", slot_id, intf);
+  if (intf == FEXP_BIC_INTF) {
+    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, DEV_ID_1U);
+  } else if (intf == REXP_BIC_INTF) {
+    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, DEV_ID_2U);
+  } else {
+    sprintf(fruid_path, "/tmp/fruid_slot%d.%d.bin", slot_id, intf);
+  }
+
+  ret = bic_read_fruid(slot_id, 0, fruid_temp_path, &fru_size, intf);
+  if (ret) {
+    syslog(LOG_WARNING, "fruid_cache_init: bic_read_fruid slot%d returns %d, fru_size: %d\n", slot_id, ret, fru_size);
+  }
+
+  if (intf == BB_BIC_INTF) {
+    sprintf(fruid_path, FRU_BB_BIN);
+  }
+
+  rename(fruid_temp_path, fruid_path);
+
+  return ret;
+}
+
+int
+fruid_cache_init(uint8_t slot_id) {
+  // Initialize Slot0's fruid
+  int ret=0, present = 0, remote_f_ret = 0, remote_r_ret = 0;
+  int fru_size=0;
+  char fruid_temp_path[64] = {0};
+  char fruid_path[64] = {0};
+  uint8_t bmc_location = 0;
 
   sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.bin", slot_id);
   sprintf(fruid_path, "/tmp/fruid_slot%d.bin", slot_id);
@@ -59,6 +96,27 @@ fruid_cache_init(uint8_t slot_id) {
   }
 
   rename(fruid_temp_path, fruid_path);
+
+  // Get remote FRU
+  present = bic_is_m2_exp_prsnt(slot_id);
+  fby3_common_get_bmc_location(&bmc_location);
+  if (bmc_location == NIC_BMC) { //NIC BMC
+    remote_f_ret = remote_fruid_cache_init(slot_id, BB_BIC_INTF);
+    if (present == PRESENT_1OU || present == (PRESENT_1OU + PRESENT_2OU)) {
+      remote_r_ret = remote_fruid_cache_init(slot_id, REXP_BIC_INTF);
+    }
+    return (remote_f_ret + remote_r_ret);
+  } else { // Baseboard BMC
+    if (present == PRESENT_1OU) {
+      remote_f_ret = remote_fruid_cache_init(slot_id, FEXP_BIC_INTF);
+    } else if (present == PRESENT_2OU) {
+      remote_r_ret = remote_fruid_cache_init(slot_id, REXP_BIC_INTF);
+    } else if (present == (PRESENT_1OU + PRESENT_2OU)) {
+      remote_f_ret = remote_fruid_cache_init(slot_id, FEXP_BIC_INTF);
+      remote_r_ret = remote_fruid_cache_init(slot_id, REXP_BIC_INTF);
+    }
+    return (remote_f_ret + remote_r_ret);
+  }
 
   return ret;
 }

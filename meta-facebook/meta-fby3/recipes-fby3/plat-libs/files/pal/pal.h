@@ -24,6 +24,7 @@
 #include <openbmc/obmc-pal.h>
 #include <facebook/fby3_common.h>
 #include <facebook/bic.h>
+#include <facebook/fby3_fruid.h>
 #include "pal_power.h"
 #include "pal_sensors.h"
 #ifdef __cplusplus
@@ -37,6 +38,7 @@ extern "C" {
 #define ERR_NOT_READY       (-2)
 
 #define CUSTOM_FRU_LIST 1
+#define FRU_DEVICE_LIST 1
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
 extern const char pal_fru_list_sensor_history[];

@@ -353,7 +353,9 @@ fby3_common_crashdump(uint8_t fru, bool ierr, bool platform_reset) {
 int
 fby3_common_dev_id(char *str, uint8_t *dev) {
 
-  if (!strcmp(str, "1U-dev0")) {
+  if (!strcmp(str, "all")) {
+    *dev = 0;
+  } else if (!strcmp(str, "1U-dev0")) {
     *dev = 1;
   } else if (!strcmp(str, "1U-dev1")) {
     *dev = 2;
@@ -373,6 +375,10 @@ fby3_common_dev_id(char *str, uint8_t *dev) {
     *dev = 9;
   } else if (!strcmp(str, "2U-dev5")) {
     *dev = 10;
+  } else if (!strcmp(str, "1U")) {
+    *dev = 11;
+  } else if (!strcmp(str, "2U")) {
+    *dev = 12;
   } else {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fby3_common_dev_id: Wrong fru id");

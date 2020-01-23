@@ -24,84 +24,71 @@
 #include <facebook/fby3_common.h>
 #include "fby3_fruid.h"
 
-#define NIC_FW_VER_PATH "/tmp/cache_store/nic_fw_ver"
-
-uint32_t
-fby3_get_nic_mfgid(void) {
-  FILE *fp;
-  uint8_t buf[16];
-
-  fp = fopen(NIC_FW_VER_PATH, "rb");
-  if (!fp) {
-    return MFG_UNKNOWN;
-  }
-
-  fseek(fp, 32 , SEEK_SET);
-  if (fread(buf, 1, 4, fp)) {
-    fclose(fp);
-    return -1;
-  }
-  fclose(fp);
-
-  return ((buf[3]<<24)|(buf[2]<<16)|(buf[1]<<8)|buf[0]);
-}
-
-#if 0
-static int
-fby3_fruid_init_local_fru() {
-  int ret;
-  char cmd[128] = {0};
-  int cmd_len = sizeof(cmd);
-  
-  uint8_t bmc_location = 0;
-
-  ret = get_bmc_location(&bmc_location);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-    return ret;;
-  }
-
-  if ( bmc_location == BB_BMC ) {
-    snprintf(cmd, cmd_len, "echo \"24c128 0x54\" > /sys/class/i2c-dev/i2c-11/device/new_device");
-    ret = system(cmd);
-    snprintf(cmd, cmd_len, "echo \"24c128 0x51\" > /sys/class/i2c-dev/i2c-11/device/new_device");
-    ret = system(cmd);
-  } else {
-    snprintf(cmd, cmd_len, "echo \"24c128 0x54\" > /sys/class/i2c-dev/i2c-10/device/new_device");
-    ret = system(cmd);
-    snprintf(cmd, cmd_len, "echo \"24c128 0x51\" > /sys/class/i2c-dev/i2c-10/device/new_device");
-    ret = system(cmd);
-  }
-
-  return ret;
-}
-#endif
-
-#if 0
-static int
-fby3_fruid_init_server_fru() {
-
-}
-#endif
-
-#if 0
-int
-fby3_fruid_init_file(void) {
-  int ret;
-  //intialize the local frus that is connected to BMC directly.
-  ret = fby3_fruid_init_local_fru();
-  return ret;
-}
-#endif
-
 /* Populate char path[] with the path to the fru's fruid binary dump */
 int
 fby3_get_fruid_path(uint8_t fru, uint8_t dev_id, char *path) {
+  char fname[16] = {0};
+
+  switch(fru) {
+    case FRU_SLOT1:
+      sprintf(fname, "slot1");
+      break;
+    case FRU_SLOT2:
+      sprintf(fname, "slot2");
+      break;
+    case FRU_SLOT3:
+      sprintf(fname, "slot3");
+      break;
+    case FRU_SLOT4:
+      sprintf(fname, "slot4");
+      break;
+    case FRU_BMC:
+      sprintf(fname, "bmc");
+      break;
+    case FRU_NIC:
+      sprintf(fname, "nic");
+      break;
+    case FRU_BB:
+      sprintf(fname, "bb");
+      break;
+    default:
+      syslog(LOG_WARNING, "%s() unknown fruid %d", __func__, fru);
+      return -1;
+    }
+
+  sprintf(path, "/tmp/fruid_%s.bin", fname);
+
+  if ( dev_id == DEV_NONE ) {
+    sprintf(path, FBY3_FRU_PATH, fname);
+    return 0;
+  }
+
+  if ( fru < FRU_SLOT1 && fru > FRU_SLOT4 )
+    return -1;
+
+  if ( dev_id < 1 || dev_id > 12)
+    return -1;
+
+  sprintf(path, FBY3_FRU_DEV_PATH, fname, dev_id);
   return 0;
 }
 
 /* Populate char name[] with the path to the fru's name */
 int
 fby3_get_fruid_name(uint8_t fru, char *name) {
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      switch(fby3_common_get_slot_type(fru))
+      break;
+    default:
+#ifdef DEBUG
+      syslog(LOG_WARNING, "fby3_get_fruid_name: wrong fruid");
+#endif
+      return -1;
+  }
   return 0;
 }

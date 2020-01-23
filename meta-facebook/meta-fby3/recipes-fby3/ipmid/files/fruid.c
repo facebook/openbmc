@@ -168,12 +168,6 @@ fruid_init_local_fru() {
     goto error_exit;
   }
 
-  snprintf(path, path_len, EEPROM_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS, BB_FRU_ADDR);
-  if ( copy_eeprom_to_bin(path, FRU_BB_BIN) < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_BB_BIN);
-    goto error_exit;
-  }
-
   snprintf(path, path_len, EEPROM_PATH, NIC_FRU_BUS, NIC_FRU_ADDR);
   if ( copy_eeprom_to_bin(path, FRU_NIC_BIN) < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_NIC_BIN);

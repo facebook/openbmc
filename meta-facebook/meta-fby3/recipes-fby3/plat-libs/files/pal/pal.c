@@ -48,10 +48,10 @@ const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc
 
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
-const char pal_dev_list[] = "1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5";
+const char pal_dev_list[] = "all, 1U, 2U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5";
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
 
-#define MAX_NUM_DEVS 10
+#define MAX_NUM_DEVS 12
 
 #define SYSFW_VER "sysfw_ver_slot"
 #define SYSFW_VER_STR SYSFW_VER "%d"
@@ -1276,5 +1276,24 @@ pal_get_num_devs(uint8_t slot, uint8_t *num) {
   }
 
   return 0;
+}
+
+int
+pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
+{
+  char temp[64];
+  int ret = fby3_get_fruid_name(fru, name);
+  if (ret < 0) {
+    return ret;
+  }
+
+  sprintf(temp, "%s Device %u", name, dev-1);
+  strcpy(name, temp);
+  return 0;
+}
+
+int
+pal_get_dev_fruid_path(uint8_t fru, uint8_t dev_id, char *path) {
+  return fby3_get_fruid_path(fru, dev_id, path);
 }
 

@@ -21,18 +21,15 @@
 #define __FBY3_FRUID_H__
 
 #define FBY3_FRU_PATH "/tmp/fruid_%s.bin"
+#define FBY3_FRU_DEV_PATH "/tmp/fruid_%s_dev%d.bin"
 
-#define MFG_MELLANOX 0x19810000
-#define MFG_BROADCOM 0x3D110000
-#define MFG_UNKNOWN 0xFFFFFFFF
+#define DEV_NONE 0xFF
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-uint32_t fby3_get_nic_mfgid(void);
 int fby3_get_fruid_path(uint8_t fru, uint8_t dev_id, char *path);
-//tony: write with fruid
 int fby3_get_fruid_name(uint8_t fru, char *name);
 
 #ifdef __cplusplus

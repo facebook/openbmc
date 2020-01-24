@@ -123,8 +123,8 @@ def improve_system(logger):
     reboot_threshold_pct = system.get_healthd_reboot_threshold()
     reboot_threshold_kb = ((100 - reboot_threshold_pct) / 100) * total_memory_kb
 
-    # As of May 2019, sample image files are 17 to 23 MiB. Make sure there
-    # is space for them and a few flashing related processes.
+    # As of May 2019, sample image files are 17 to 23 MiB. Make sure
+    # there is space for them and a few flashing related processes.
     max_openbmc_img_size = 23
     openbmc_img_size_kb = max_openbmc_img_size * 1024
     # in the case of no reboot threshold, use a default limit
@@ -207,7 +207,7 @@ def improve_system(logger):
         attempts = 0 if args.dry_run else 3
 
         for mtd in full_flash_mtds:
-            system.flash(attempts, image_file, mtd, logger)
+            system.flash(attempts, image_file, mtd, logger, args.force)
         # One could in theory pre-emptively set mtdparts for images that
         # will need it, but the mtdparts generator hasn't been tested on dual
         # flash and potentially other systems. To avoid over-optimizing for

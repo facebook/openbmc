@@ -156,6 +156,11 @@ def get_checksums_args(description):
     parser.add_argument("--checksums", help=checksum_help, type=argparse.FileType("r"))
     if is_openbmc():
         parser.add_argument("--dry-run", action="store_true")
+        parser.add_argument(
+            "--force",
+            action="store_true",
+            help="Flash even if we suspect the image will brick the BMC",
+        )
     else:
         parser.add_argument("--serve", action="store_true")
         parser.add_argument("--port", type=int, default=2876)
@@ -601,8 +606,40 @@ def other_flasher_running(logger):
     return True
 
 
-def flash(attempts, image_file, mtd, logger):
-    # type: (int, ImageFile, MemoryTechnologyDevice, logging.Logger) -> None
+def image_file_compatible(image_file, issue_file, logger):
+    # type: (str, str, logging.Logger) -> bool
+    logger.info("Checking the sanity of the request")
+    with open(issue_file) as f:
+        ln = f.readline()
+
+    rx = re.compile(r"^openbmc release (\w+)", re.I)
+    m = rx.match(ln)
+    if not m:
+        # Bad /etc/issue, no way to tell. Failing open. TODO: Should
+        # we fail closed?
+        return True
+
+    current = m.group(1)
+
+    p = subprocess.Popen(["strings", "-n30", image_file], stdout=subprocess.PIPE)
+    p.wait()
+    if p.returncode != 0:
+        logger.warning("Couldn't check the strings of {}".format(image_file))
+        return False
+
+    rx = re.compile(r"U-Boot \d+\.\d+ (\w+)")
+    for ln in p.stdout:
+        m = rx.search(str(ln))
+        if m:
+            new = m.group(1)
+            return new == current
+
+    logger.warning("No U-Boot version string found! Assuming it's safe to flash")
+    return True
+
+
+def flash(attempts, image_file, mtd, logger, force=False):
+    # type: (int, ImageFile, MemoryTechnologyDevice, logging.Logger, bool) -> None
     if image_file.size > mtd.size:
         logger.error("{} is too big for {}.".format(image_file, mtd))
         sys.exit(1)
@@ -611,6 +648,14 @@ def flash(attempts, image_file, mtd, logger):
         sys.exit(1)
 
     image_name = image_file.file_name
+
+    if not image_file_compatible(image_name, "/etc/issue", logger):
+        logger.warning("Image {} is not for this platform!".format(image_name))
+        if not force:
+            logger.error("Aborting flash. Use a valid image or run with --force")
+            sys.exit(1)
+
+    logger.info("Proceeding with flash")
     # If MTD has a read-only offset, create a new image file with the
     # readonly offset from the device and the remaining from the image
     # file and use that for flashcp.

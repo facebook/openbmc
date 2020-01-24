@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <ctype.h>
 #include <openbmc/kv.h>
@@ -26,6 +27,8 @@
 #define PAL_FAN_CNT 8
 
 #define FAN_DIR "/sys/bus/platform/devices/1e786000.pwm-tacho-controller/hwmon/hwmon0"
+
+#define MAX_READ_RETRY 10
 
 static int read_adc_val(uint8_t adc_id, float *value);
 static int read_battery_val(uint8_t adc_id, float *value);
@@ -60,6 +63,7 @@ const char pal_pwm_list[] = "0, 1";
 const char pal_tach_list[] = "0..16";
 static float fan_volt[PAL_FAN_CNT];
 static float fan_curr[PAL_FAN_CNT];
+static uint8_t postcodes_last[256] = {0};
 
 const uint8_t mb_sensor_list[] = {
   MB_SNR_INLET_TEMP,
@@ -200,7 +204,7 @@ const uint8_t fcb_sensor_list[] = {
 const uint8_t mb_discrete_sensor_list[] = {
 //  MB_SENSOR_POWER_FAIL,
 //  MB_SENSOR_MEMORY_LOOP_FAIL,
-//  MB_SENSOR_PROCESSOR_FAIL,
+  MB_SENSOR_PROCESSOR_FAIL,
 };
 
 //CPU
@@ -1797,6 +1801,102 @@ read_fan_pwr(uint8_t fan_id, float *value) {
   return 0;
 }
 
+static void
+_print_sensor_discrete_log(uint8_t fru, uint8_t snr_num, char *snr_name,
+    uint8_t val, char *event) {
+  if (val) {
+    syslog(LOG_CRIT, "ASSERT: %s discrete - raised - FRU: %d", event, fru);
+  } else {
+    syslog(LOG_CRIT, "DEASSERT: %s discrete - settled - FRU: %d", event, fru);
+  }
+  pal_update_ts_sled();
+}
+
+bool
+pal_is_BIOS_completed(uint8_t fru)
+{
+  gpio_desc_t *desc;
+  gpio_value_t value;
+  bool ret = false;
+
+  if ( FRU_MB != fru )
+  {
+    syslog(LOG_WARNING, "[%s]incorrect fru id: %d", __func__, fru);
+    return false;
+  }
+  desc = gpio_open_by_shadow("FM_BIOS_POST_CMPLT_N");
+  if (!desc)
+    return false;
+
+  if (gpio_get_value(desc, &value) == 0 && value == GPIO_VALUE_LOW)
+    ret = true;
+  gpio_close(desc);
+  return ret;
+}
+
+static int
+check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
+  static unsigned int retry = 0;
+  static uint8_t frb3_fail = 0x10; // bit 4: FRB3 failure
+  static time_t rst_time = 0;
+  uint8_t postcodes[256] = {0};
+  struct stat file_stat;
+  int ret = READING_NA, rc;
+  size_t len = 0;
+  char sensor_name[32] = {0};
+  char error[32] = {0};
+
+  if (fru_id != 1) {
+    syslog(LOG_ERR, "Not Supported Operation for fru %d", fru_id);
+    return READING_NA;
+  }
+
+  if (stat("/tmp/rst_touch", &file_stat) == 0 && file_stat.st_mtime > rst_time) {
+    rst_time = file_stat.st_mtime;
+    // assume fail till we know it is not
+    frb3_fail = 0x10; // bit 4: FRB3 failure
+    retry = 0;
+    // cache current postcode buffer
+    if (stat("/tmp/DWR", &file_stat) != 0) {
+      memset(postcodes_last, 0, sizeof(postcodes_last));
+      pal_get_80port_record(FRU_MB, postcodes_last, sizeof(postcodes_last), &len);
+    }
+  }
+
+  if (frb3_fail) {
+    // KCS transaction
+    if (stat("/tmp/kcs_touch", &file_stat) == 0 && file_stat.st_mtime > rst_time)
+      frb3_fail = 0;
+
+    // Port 80 updated
+    memset(postcodes, 0, sizeof(postcodes));
+    rc = pal_get_80port_record(FRU_MB, postcodes, sizeof(postcodes), &len);
+    if (rc == PAL_EOK && memcmp(postcodes_last, postcodes, 256) != 0) {
+      frb3_fail = 0;
+    }
+
+    // BIOS POST COMPLT, in case BMC reboot when system idle in OS
+    if (pal_is_BIOS_completed(FRU_MB))
+      frb3_fail = 0;
+  }
+
+  if (frb3_fail)
+    retry++;
+  else
+    retry = 0;
+
+  if (retry == MAX_READ_RETRY) {
+    pal_get_sensor_name(fru_id, sensor_num, sensor_name);
+    snprintf(error, sizeof(error), "FRB3 failure");
+    _print_sensor_discrete_log(fru_id, sensor_num, sensor_name, frb3_fail, error);
+  }
+
+  *value = (float)frb3_fail;
+  ret = 0;
+
+  return ret;
+}
+
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
@@ -1833,6 +1933,17 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         ret = READING_NA;
         break;
       }
+
+      //Discrete sensor
+      switch(sensor_num) {
+        case MB_SENSOR_PROCESSOR_FAIL:
+          ret = check_frb3(FRU_MB, sensor_num, (float*) value);
+          return ret;
+          break;
+        default:
+          break;
+      }
+
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
     }
  
@@ -1877,9 +1988,13 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   case FRU_NIC0:
   case FRU_NIC1:
   case FRU_FCB:
-    sprintf(name, "%s", sensor_map[sensor_num].snr_name);
+    //Discrete sensor
+    if(sensor_num == 0xFC) 
+      sprintf(name, "%s", "MB_PROCESSOR_FAIL");
     break;
-    
+
+    sprintf(name, "%s", sensor_map[sensor_num].snr_name);
+
   default:
     return -1;
   }

@@ -34,6 +34,7 @@ SRC_URI += "file://board-utils.sh \
       file://setup_i2c.sh \
       file://scm_cpld_rev.sh \
       file://ec_version.sh \
+      file://create_vlan_intf \
       "
 
 RDEPENDS_${PN} += " python3 bash"

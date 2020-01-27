@@ -23,7 +23,11 @@ libkv.so: kv.c
 	$(CC) $(CFLAGS) -fPIC -c -o kv.o kv.c
 	$(CC) -shared -o libkv.so kv.o -lc $(LDFLAGS)
 
+test_kv: kv.c
+	$(CC) $(CFLAGS) -D__TEST__ -DDEBUG -c -o $@.o $^
+	$(CC) -o $@ -lc $(LDFLAGS) $@.o -v
+
 .PHONY: clean
 
 clean:
-	rm -rf *.o libkv.so
+	rm -rf *.o libkv.so test_kv

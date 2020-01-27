@@ -99,9 +99,23 @@ kv_set(const char *key, const char *value, size_t len, unsigned int flags) {
     return -1;
   }
 
-  /* Optimizes a lot of things */
+  /* Length of zero implies we should treat it like a string. */
   if (len == 0) {
-    len = strlen(value);
+    /* The typical buffer allocated is exactly MAX_VALUE_LEN bytes, so we
+     * cannot go past this when calculating strlen. */
+    len = strnlen(value, MAX_VALUE_LEN);
+
+    /* Unfortunately, this means we do not know if the buffer was null
+     * terminated at value[MAX_VALUE_LEN] or missing a null terminator
+     * (and we cannot look at it without possibly exceeding the buffer).
+     * Assume it is missing and give E2BIG error. */
+    if (len >= MAX_VALUE_LEN) {
+      errno = E2BIG;
+      return -1;
+    }
+  } else if (len > MAX_VALUE_LEN) {
+      errno = E2BIG;
+      return -1;
   }
 
   fp = fopen(kpath, "r+");
@@ -215,7 +229,7 @@ close_bail:
 #include <assert.h>
 int main(int argc, char *argv[])
 {
-  char value[MAX_VALUE_LEN];
+  char value[MAX_VALUE_LEN*2];
   size_t len;
 
   cache_store = "./test/tmp/%s";
@@ -260,6 +274,18 @@ int main(int argc, char *argv[])
   assert(kv_get("test2", value, NULL, 0) == 0);
   assert(strcmp(value, "val2") == 0);
   printf("SUCCESS: KV_FCREATE succeeded on non-existing key\n");
+
+  memset(value, 'a', sizeof(value));
+  errno = 0;
+  assert(kv_set("test2", value, 0, 0) < 0);
+  assert(errno == E2BIG);
+  printf("SUCCESS: string longer than MAX_VALUE_LEN caught\n");
+
+  memset(value, 'a', sizeof(value));
+  errno = 0;
+  assert(kv_set("test2", value, MAX_VALUE_LEN+1, 0) < 0);
+  assert(errno == E2BIG);
+  printf("SUCCESS: non-string longer than MAX_VALUE_LEN caught\n");
 
   system("rm -rf ./test");
 

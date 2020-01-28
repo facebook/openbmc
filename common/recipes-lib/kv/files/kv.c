@@ -211,8 +211,21 @@ kv_get(const char *key, char *value, size_t *len, unsigned int flags) {
     KV_DEBUG("kv_get: failed to read %s", kpath);
     goto unlock_bail;
   }
+
+  // Update length variable.
   if (len)
     *len = rc;
+  // If no length was given, treat it as a string.  Ensure we have a null
+  // terminator.
+  else if ((rc + 1) < MAX_VALUE_LEN)
+    value[rc] = '\0';
+  else if (value[MAX_VALUE_LEN-1] != '\0') {
+    syslog(LOG_WARNING,
+	   "kv_get: truncating string-type value for key %s with length %d",
+	   key, rc);
+    value[MAX_VALUE_LEN-1] = '\0';
+  }
+
   ret = 0;
 unlock_bail:
   rc = flock(fileno(fp), LOCK_UN);
@@ -286,6 +299,12 @@ int main(int argc, char *argv[])
   assert(kv_set("test2", value, MAX_VALUE_LEN+1, 0) < 0);
   assert(errno == E2BIG);
   printf("SUCCESS: non-string longer than MAX_VALUE_LEN caught\n");
+
+  memset(value, 'a', sizeof(value));
+  assert(kv_set("test2", "asdfasdf", 4, 0) == 0);
+  assert(kv_get("test2", value, NULL, 0) == 0);
+  assert(strcmp(value, "asdf") == 0);
+  printf("SUCCESS: Read key adds nul terminator for strings\n");
 
   system("rm -rf ./test");
 

@@ -24,7 +24,7 @@ def get_openbmc_version(d):
         if exitstatus == 0:
             fmtstr = '%s-v' % machine
             tags = output.splitlines()
-            for tag in tags:
+            for tag in reversed(tags):
                 if fmtstr in tag:
                     version = tag
                     break

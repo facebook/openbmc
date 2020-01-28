@@ -15,6 +15,7 @@ DISTRO_OVERRIDES=(
   meta-cmm:warrior
   meta-fuji:warrior
   meta-yamp:warrior
+  meta-minipack:warrior
 )
 
 platform="$1"

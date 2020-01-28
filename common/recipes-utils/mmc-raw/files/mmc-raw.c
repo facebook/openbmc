@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <getopt.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -80,13 +81,29 @@
 		(_idata).write_flag = (_wr_flag);			\
 	} while (0)
 
+#define BUILD_U32(b3, b2, b1, b0)	((__u32)((__u8)(b3) << 24 | \
+						 (__u8)(b2) << 16 | \
+						 (__u8)(b1) << 8  | \
+						 (__u8)(b0)))
+
 struct m_cmd_args {
 	const char *cmd;
 	const char *dev_path;
 
 	int dev_fd;
+
+	/*
+	 * offset and length associated with the command, and they may
+	 * have different meanings depending on commands. For example:
+	 *  - trim/erase "offset" specifies the starting address of the
+	 *    command.
+	 *  - write-extcsd "offset" refers to the starting index within
+	 *    512-byte extcsd register.
+	 */
 	__u32 offset;
 	__u32 length;
+
+	void* data;	/* Data associated with the command. */
 };
 
 struct m_cmd_info {
@@ -423,6 +440,96 @@ static int mmc_read_extcsd_cmd(struct m_cmd_args *cmd_args)
 	return 0;
 }
 
+/*
+ * Below logic is copied from mmc-utils, write_extcsd_value() function.
+ */
+static int mmc_extcsd_write_byte(int fd, __u8 index, __u8 value)
+{
+	__u32 arg, flags;
+	struct mmc_ioc_cmd idata;
+
+	arg = BUILD_U32(MMC_SWITCH_MODE_WRITE_BYTE, index, value,
+			EXT_CSD_CMD_SET_NORMAL);
+	flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
+	MMC_IOC_INIT(idata, MMC_SWITCH, arg, flags);
+	idata.write_flag = 1;
+
+	return mmc_ioc_issue_cmd(fd, &idata);
+}
+
+static int mmc_extcsd_data_parse(char *input, __u8 *values, size_t size)
+{
+	int i = 0;
+	char *start, *end;
+
+	for (start = input; *start != '\0' && i < size; start = end) {
+		__u8 val = (__u8)strtol(start, &end, 0);
+		if (start == end)
+			return -1;	/* invalid entry. */
+
+		values[i++] = val;
+
+		/*
+		 * remove trailing spaces to avoid strtol() failure in
+		 * case <input> has trailing spaces.
+		 */
+		while(isspace(*end))
+			end++;
+	}
+
+	return i; /* number of entries. */
+}
+
+static int mmc_write_extcsd_cmd(struct m_cmd_args *cmd_args)
+{
+	__u8 values[MMC_EXTCSD_SIZE];
+	int i, ret, num, offset;
+
+	if (cmd_args->data == NULL) {
+		MMC_ERR("Error: data option is required for '%s' command\n",
+			cmd_args->cmd);
+		return -1;
+	}
+	if (cmd_args->offset >= MMC_EXTCSD_SIZE) {
+		MMC_ERR("Error: '%s' command offset exceeds limit (%d)\n",
+			cmd_args->cmd, MMC_EXTCSD_SIZE);
+		return -1;
+	}
+
+	/*
+	 * data should be list of 8-byte unsigned integers separated by
+	 * spaces. For example, "0x3b 0 0xff".
+	 */
+	offset = cmd_args->offset;
+	num = mmc_extcsd_data_parse(cmd_args->data, values,
+				    MMC_EXTCSD_SIZE - offset);
+	if (num <= 0) {
+		MMC_ERR("Error: invalid data <%s> for command %s\n",
+			(char*)cmd_args->data, cmd_args->cmd);
+		return -1;
+	}
+
+	for (i = 0; i < num; i++) {
+		MMC_DEBUG("writing %#x to extcsd[%d]\n",
+			  values[i], offset + i);
+		ret = mmc_extcsd_write_byte(cmd_args->dev_fd, offset + i,
+					    values[i]);
+
+		/*
+		 * If unfortunately write fails, we will exit immediately,
+		 * and callers need to decide how to roll back or fix write
+		 * failures.
+		 */
+		if (ret < 0) {
+			MMC_ERR("failed to write %#x to extcsd[%d]: %s\n",
+				values[i], offset + i, strerror(errno));
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 static struct m_cmd_info mmc_cmds[] = {
 	{
 		"trim",
@@ -438,6 +545,11 @@ static struct m_cmd_info mmc_cmds[] = {
 		"read-extcsd",
 		"read Extended CSD register of the mmc device",
 		mmc_read_extcsd_cmd,
+	},
+	{
+		"write-extcsd",
+		"write Extended CSD register of the mmc device",
+		mmc_write_extcsd_cmd,
 	},
 
 	/* This is the last entry. */
@@ -473,6 +585,7 @@ static void mmc_usage(const char *prog_name)
 		{"-s|--secure", "secure trim/erase mmc device"},
 		{"-o|--offset", "offset of the operation"},
 		{"-l|--length", "length of the operation"},
+		{"-D|--data", "data associated with the command"},
 		{NULL, NULL},
 	};
 
@@ -499,6 +612,7 @@ int main(int argc, char **argv)
 	struct m_cmd_args cmd_args = {
 		.offset = BLKDEV_ADDR_INVALID,
 		.length = BLKDEV_ADDR_INVALID,
+		.data = NULL,
 	};
 	struct option long_opts[] = {
 		{"help",	no_argument,		NULL,	'h'},
@@ -506,12 +620,13 @@ int main(int argc, char **argv)
 		{"secure",	no_argument,		NULL,	's'},
 		{"offset",	required_argument,	NULL,	'o'},
 		{"length",	required_argument,	NULL,	'l'},
+		{"data",	required_argument,	NULL,	'D'},
 		{NULL,		0,			NULL,	0},
 	};
 
 	while (1) {
 		opt_index = 0;
-		ret = getopt_long(argc, argv, "hvso:l:", long_opts, &opt_index);
+		ret = getopt_long(argc, argv, "hvso:l:D:", long_opts, &opt_index);
 		if (ret == -1)
 			break;	/* end of arguments */
 
@@ -534,6 +649,10 @@ int main(int argc, char **argv)
 
 		case 'l':
 			cmd_args.length = (__u32)strtol(optarg, NULL, 0);
+			break;
+
+		case 'D':
+			cmd_args.data = optarg;
 			break;
 
 		default:

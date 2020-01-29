@@ -29,6 +29,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/file.h>
+#include <openbmc/log.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/obmc-pal.h>
@@ -110,7 +111,17 @@ sdr_cache_init(uint8_t slot_id) {
 
     sdr_full_t *sdr = (sdr_full_t *)res->data;
 
-    write(fd, sdr, sizeof(sdr_full_t));
+    ret = write(fd, sdr, sizeof(sdr_full_t));
+    if (ret < 0) {
+      OBMC_ERROR(errno, "write %s failed", path);
+      break;
+    } else if (ret != sizeof(sdr_full_t)) {
+      OBMC_WARN("data truncated (write %s): expect %i, actual %d\n",
+                path, sizeof(sdr_full_t), ret);
+      /*
+       * XXX shall we exit or continue??
+       */
+    }
 
     req.rec_id = res->next_rec_id;
     if (req.rec_id == LAST_RECORD_ID) {

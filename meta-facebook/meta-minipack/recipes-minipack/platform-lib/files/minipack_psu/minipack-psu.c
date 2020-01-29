@@ -17,9 +17,11 @@
  */
 
 #include <signal.h>
+#include <limits.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/pal.h>
 #include <openbmc/fruid.h>
+#include <openbmc/log.h>
 #include "minipack-psu.h"
 
 static delta_hdr_t delta_hdr;
@@ -177,13 +179,18 @@ hex_to_byte(uint8_t hbyte, uint8_t lbyte) {
 
 static int
 check_file_len(const char *file_path) {
-  int size;
   struct stat st;
 
-  stat(file_path, &st);
-  size = st.st_size;
+  if (stat(file_path, &st) != 0) {
+    return -1;
+  }
 
-  return size;
+  if (st.st_size > INT_MAX) {
+    errno = EFBIG;
+    return -1; /* integer overflow */
+  }
+
+  return (int)st.st_size;
 }
 
 static int
@@ -344,19 +351,42 @@ delta_fw_transmit(uint8_t num, const char *path) {
   uint32_t fw_block = block_size * (page_num_max - page_num_lo + 1);
   uint8_t block[I2C_SMBUS_BLOCK_MAX] = {0};
   uint8_t fw_buf[16];
+  uint8_t *fw_data = NULL;
+  int ret = 0;
 
-  fw_len = check_file_len(path) - 32;
+  fw_len = check_file_len(path);
+  if (fw_len < 0) {
+    OBMC_ERROR(errno, "failed to get %s size", path);
+    return -1;
+  } else if (fw_len <= 32) {
+    OBMC_WARN("%s size is too small (%d < 32)\n", path, fw_len);
+    return -1;
+  }
 
-  uint8_t fw_data[fw_len];
+  fw_len -= 32;
+  fw_data = malloc(fw_len);
+  if (fw_data == NULL) {
+    OBMC_ERROR(errno, "failed to allocate %d bytes", fw_len);
+    return -1;
+  }
 
   fp = fopen(path, "rb");
   if (fp == NULL) {
-    ERR_PRINT("delta_fw_transmit()");
-    return -1;
+    OBMC_ERROR(errno, "failed to open %s", path);
+    ret = -1;
+    goto exit;
   }
-  fseek(fp, 32, SEEK_SET);
-  fread(fw_data, sizeof(uint8_t), fw_len, fp);
-  fclose(fp);
+  ret = fseek(fp, 32, SEEK_SET);
+  if (ret != 0) {
+    OBMC_ERROR(errno, "fseek %s failed", path);
+    goto exit;
+  }
+  ret = fread(fw_data, sizeof(*fw_data), fw_len, fp);
+  if (ret != fw_len) {
+    OBMC_WARN("failed to read %d items from %s\n", fw_len, path);
+    ret = -1;
+    goto exit;
+  }
 
   if (delta_hdr.uc == 0x10) {
     printf("-- Transmit Primary Firmware --\n");
@@ -389,7 +419,8 @@ delta_fw_transmit(uint8_t num, const char *path) {
 #ifdef DEBUG
       if (delta_boot_flag(num, BOOT_MODE, READ) & 0x20) {
         printf("-- FW transmission error --\n");
-        return -1;
+        ret = -1;
+        goto exit;
       }
 #endif
     } else {
@@ -400,14 +431,18 @@ delta_fw_transmit(uint8_t num, const char *path) {
       msleep(90);
       if (page_num_lo == page_num_max) {
         printf("\n");
-        return 0;
+        goto exit;
       } else {
         page_num_lo++;
         block[1] = 0;
       }
     }
   }
-  return 0;
+exit:
+  if (fp != NULL)
+    fclose(fp);
+  free(fw_data);
+  return ret;
 }
 
 static int
@@ -504,13 +539,16 @@ belpower_img_hdr_parse(const char *file_path) {
 
   fp = fopen(file_path, "rb");
   if (fp == NULL) {
-    ERR_PRINT("belpower_img_hdr_parse()");
+    OBMC_ERROR(errno, "%s open failed", file_path);
     return -1;
   }
 
   if (fgets((char *)hdr_buf, sizeof(hdr_buf), fp) == NULL) {
-    ERR_PRINT("belpower_img_hdr_parse()");
+    OBMC_ERROR(errno, "fgets %s failed", file_path);
+    fclose(fp);
+    return -1;
   }
+
   fclose(fp);
 
   if (hdr_buf[0] == 'H') {
@@ -520,14 +558,14 @@ belpower_img_hdr_parse(const char *file_path) {
     }
     hdr_str[j] = '\0';
   }
-  if (!strncmp(((char *)hdr_str)+8, BEL_MODEL, 16)) {
-    printf("Vendor: Belpower\n");
-    printf("Model: %s\n", BEL_MODEL);
-    return BELPOWER_1500_NAC;
-  } else {
+  if (strncmp(((char *)hdr_str)+8, BEL_MODEL, 16) != 0) {
     printf("Get Image Header Fail!\n");
     return -1;
   }
+
+  printf("Vendor: Belpower\n");
+  printf("Model: %s\n", BEL_MODEL);
+  return BELPOWER_1500_NAC;
 }
 
 static int
@@ -549,13 +587,18 @@ belpower_fw_transmit(uint8_t num, const char *file_path) {
 
   fp = fopen(file_path, "rb");
   if (fp == NULL) {
-    ERR_PRINT("belpower_fw_transmit()");
+    OBMC_ERROR(errno, "%s open failed", file_path);
     return -1;
   }
 
   printf("-- Transmit Firmware --\n");
   while (!feof(fp)) {
-    fgets((char *)file_buf, sizeof(file_buf), fp);
+    if (fgets((char *)file_buf, sizeof(file_buf), fp) == NULL) {
+      OBMC_ERROR(errno, "fgets %s failed", file_path);
+      fclose(fp);
+      return -1;
+    }
+
     while (i < strlen((char *)file_buf) - 4) {
       if (i == 0) {
         command = file_buf[i++];
@@ -708,13 +751,15 @@ murata_img_hdr_parse(const char *file_path) {
 
   fp = fopen(file_path, "rb");
   if (fp == NULL) {
-    ERR_PRINT("murata_img_hdr_parse()");
+    OBMC_ERROR(errno, "%s open failed", file_path);
     return -1;
   }
 
   for (line = 0; line < 6; line++) {
     if (fgets((char *)hdr_buf, sizeof(hdr_buf), fp) == NULL) {
-      ERR_PRINT("murata_img_hdr_parse()");
+      OBMC_ERROR(errno, "fgets %s failed", file_path);
+      fclose(fp);
+      return -1;
     }
 
     switch (line) {
@@ -839,10 +884,11 @@ murata_fw_transmit(uint8_t num, const char *file_path) {
   uint8_t file_buf[128];
   uint8_t byte_buf[128];
   uint8_t block[I2C_SMBUS_BLOCK_MAX] = {0xfa, 0x44};
+  int ret = 0;
 
   fp = fopen(file_path, "rb");
   if (fp == NULL) {
-    ERR_PRINT("murata_fw_transmit()");
+    OBMC_ERROR(errno, "fopen %s failed", file_path);
     return -1;
   }
   file_line_total = check_file_line_cnt(file_path);
@@ -850,12 +896,18 @@ murata_fw_transmit(uint8_t num, const char *file_path) {
   /* When entering bootloader mode, Murata PSU PMBUS address change to 0x60 */
   fd = i2c_open(psu[num].bus, murata_hdr.boot_addr);
   if (fd < 0) {
-    ERR_PRINT("Fail to open i2c");
-    return -1;
+    OBMC_ERROR(errno, "failed to open i2c %u-00%02x",
+               psu[num].bus, murata_hdr.boot_addr);
+    ret = -1;
+    goto exit;
   }
 
   while (!feof(fp)) {
-    fgets((char *)file_buf, sizeof(file_buf), fp);
+    if (fgets((char *)file_buf, sizeof(file_buf), fp) == NULL) {
+      OBMC_ERROR(errno, "fgets %s failed", file_path);
+      ret = -1;
+      goto exit;
+    }
 
     if (file_line_curr < 6) {
       /* FW header information */
@@ -899,11 +951,15 @@ murata_fw_transmit(uint8_t num, const char *file_path) {
     murata_reset_psu(fd, num);
   }
 
-  fclose(fp);
-  close(fd);
   printf("-- Upgrade Done --\n");
 
-  return 0;
+exit:
+  if (fd >= 0)
+    close(fd);
+  if (fp != NULL)
+    fclose(fp);
+
+  return ret;
 }
 
 int

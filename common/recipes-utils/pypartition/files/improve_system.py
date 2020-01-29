@@ -207,7 +207,7 @@ def improve_system(logger):
         attempts = 0 if args.dry_run else 3
 
         for mtd in full_flash_mtds:
-            system.flash(attempts, image_file, mtd, logger, args.force)
+            system.flash(attempts, image_file, mtd, logger, args.flash_name, args.force)
         # One could in theory pre-emptively set mtdparts for images that
         # will need it, but the mtdparts generator hasn't been tested on dual
         # flash and potentially other systems. To avoid over-optimizing for

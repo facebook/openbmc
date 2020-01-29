@@ -37,6 +37,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <ctype.h>
 #include <linux/limits.h>
 #include <linux/version.h>
 #include "pal.h"
@@ -47,6 +48,14 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/sensor-correction.h>
 #include <openbmc/misc-utils.h>
+#include <openbmc/log.h>
+
+#define RUN_SHELL_CMD(_cmd)                              \
+  do {                                                   \
+    int _ret = system(_cmd);                             \
+    if (_ret != 0)                                       \
+      OBMC_WARN("'%s' command returned %d", _cmd, _ret); \
+  } while (0)
 
 typedef struct {
   char name[32];
@@ -1059,8 +1068,8 @@ pal_set_pim_thresh(uint8_t fru) {
 int
 pal_clear_thresh_value(uint8_t fru) {
   int ret;
-  char fpath[64] = {0};
-  char cmd[128] = {0};
+  char fpath[64];
+  char cmd[128];
   char fruname[16] = {0};
 
   ret = pal_get_fru_name(fru, fruname);
@@ -1069,15 +1078,13 @@ pal_clear_thresh_value(uint8_t fru) {
     return ret;
   }
 
-  memset(fpath, 0, sizeof(fpath));
-  sprintf(fpath, THRESHOLD_BIN, fruname);
-  sprintf(cmd,"rm -rf %s",fpath);
-  system(cmd);
+  snprintf(fpath, sizeof(fpath), THRESHOLD_BIN, fruname);
+  snprintf(cmd, sizeof(cmd), "rm -rf %s",fpath);
+  RUN_SHELL_CMD(cmd);
 
-  memset(fpath, 0, sizeof(fpath));
-  sprintf(fpath, THRESHOLD_RE_FLAG, fruname);
-  sprintf(cmd,"touch %s",fpath);
-  system(cmd);
+  snprintf(fpath, sizeof(fpath), THRESHOLD_RE_FLAG, fruname);
+  snprintf(cmd, sizeof(cmd), "touch %s",fpath);
+  RUN_SHELL_CMD(cmd);
 
   return 0;
 }
@@ -2256,25 +2263,27 @@ static int
 get_current_dir(const char *device, char *dir_name) {
   char cmd[LARGEST_DEVICE_NAME + 1];
   FILE *fp;
-  int ret=-1;
   int size;
 
   // Get current working directory
-  snprintf(
-      cmd, LARGEST_DEVICE_NAME, "cd %s;pwd", device);
+  snprintf(cmd, sizeof(cmd), "cd %s;pwd", device);
 
   fp = popen(cmd, "r");
   if(NULL == fp)
      return -1;
-  fgets(dir_name, LARGEST_DEVICE_NAME, fp);
 
-  ret = pclose(fp);
-  if(-1 == ret)
-     syslog(LOG_ERR, "%s pclose() fail ", __func__);
+  if (fgets(dir_name, LARGEST_DEVICE_NAME, fp) == NULL) {
+    pclose(fp);
+    return -1;
+  }
+
+  if (pclose(fp) == -1)
+     OBMC_ERROR(errno, "pclose(%s) failed", cmd);
 
   // Remove the newline character at the end
   size = strlen(dir_name);
-  dir_name[size-1] = '\0';
+  if (size > 0 && isspace(dir_name[size - 1]))
+    dir_name[size - 1] = '\0';
 
   return 0;
 }
@@ -6541,18 +6550,16 @@ generate_dump(void *arg) {
 
   pal_get_fru_name(fru, fruname);//scm
 
-  memset(fname, 0, sizeof(fname));
-  snprintf(fname, 128, "/var/run/autodump%d.pid", fru);
+  snprintf(fname, sizeof(fname), "/var/run/autodump%d.pid", fru);
   if (access(fname, F_OK) == 0) {
-    memset(cmd, 0, sizeof(cmd));
-    sprintf(cmd,"rm %s",fname);
-    system(cmd);
+    if (unlink(fname) != 0) {
+      OBMC_ERROR(errno, "failed to delete %s", fname);
+    }
   }
 
   // Execute automatic crashdump
-  memset(cmd, 0, 128);
-  sprintf(cmd, "%s %s", CRASHDUMP_BIN, fruname);
-  system(cmd);
+  snprintf(cmd, sizeof(cmd), "%s %s", CRASHDUMP_BIN, fruname);
+  RUN_SHELL_CMD(cmd);
 
   syslog(LOG_CRIT, "Crashdump for FRU: %d is generated.", fru);
 
@@ -6582,14 +6589,14 @@ pal_store_crashdump(uint8_t fru) {
              "pal_store_crashdump: No Crashdump pthread exists");
     } else {
       pthread_join(t_dump[fru-1].pt, NULL);
-      sprintf(cmd,
+      snprintf(cmd, sizeof(cmd),
               "ps | grep '{dump.sh}' | grep 'scm' "
               "| awk '{print $1}'| xargs kill");
-      system(cmd);
-      sprintf(cmd,
+      RUN_SHELL_CMD(cmd);
+      snprintf(cmd, sizeof(cmd),
               "ps | grep 'bic-util' | grep 'scm' "
               "| awk '{print $1}'| xargs kill");
-      system(cmd);
+      RUN_SHELL_CMD(cmd);
 #ifdef DEBUG
       syslog(LOG_INFO, "pal_store_crashdump:"
                        " Previous crashdump thread is cancelled");

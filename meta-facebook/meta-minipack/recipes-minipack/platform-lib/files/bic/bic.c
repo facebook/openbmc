@@ -576,7 +576,17 @@ int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char* path,
     }
 
     // Ignore the first byte as it indicates length of response
-    write(fd, &rbuf[1], rlen - 1);
+    ret = write(fd, &rbuf[1], rlen - 1);
+    if (ret < 0) {
+      OBMC_ERROR(errno, "failed to write %s", path);
+      goto error_exit;
+    } else if (ret != rlen - 1) {
+      OBMC_WARN("data truncated (write %s): expect %u, actual %d\n",
+                path, rlen - 1, ret);
+      /*
+       * XXX shall we exit or continue?
+       */
+    }
 
     // Update offset
     offset += (rlen - 1);
@@ -584,10 +594,10 @@ int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char* path,
   }
 
   close(fd);
-  return ret;
+  return 0;
 
 error_exit:
-  if (fd > 0) {
+  if (fd >= 0) {
     close(fd);
   }
   return -1;
@@ -598,7 +608,7 @@ int bic_read_mac(uint8_t slot_id, char* rbuf, uint8_t rlen) {
   int ret;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_REQ, CMD_OEM_GET_MAC_ADDR, tbuf,
-                         sizeof(tbuf), rbuf, &rlen);
+                         sizeof(tbuf), (uint8_t*)rbuf, &rlen);
   if (ret)
     return -1;
 
@@ -731,7 +741,6 @@ static int run_shell_cmd(const char* cmd) {
 
 static int prepare_update_bic(uint8_t slot_id, int ifd, int size) {
   int i = 0;
-  char cmd[100] = {0};
   uint8_t tbuf[MAX_IPMI_MSG_SIZE] = {0};
   uint8_t rbuf[16] = {0};
   uint8_t tcount;
@@ -755,7 +764,7 @@ static int prepare_update_bic(uint8_t slot_id, int ifd, int size) {
   run_shell_cmd(
       "ps -w | grep -v 'grep' | grep 'ipmbd -u 0' | awk '{print $1}' "
       "| xargs kill");
-  OBMC_INFO("stopped 'ipmbd -u' for minilake\n", slot_id);
+  OBMC_INFO("stopped 'ipmbd -u' for minilake\n");
 
   // The I2C fast speed clock (400KHz) may cause to read BIC data abnormally.
   // So reduce I2C bus clock speed which is a workaround for BIC update.
@@ -849,7 +858,6 @@ static int update_bic_status(uint8_t slot_id, int ifd) {
 static int _update_bic_main(uint8_t slot_id, const char* path) {
   int fd;
   int ifd = -1;
-  char cmd[100] = {0};
   struct stat buf;
   int size;
   uint8_t tbuf[MAX_IPMI_MSG_SIZE] = {0};
@@ -995,7 +1003,6 @@ static int _update_bic_main(uint8_t slot_id, const char* path) {
   }
   msleep(500);
 
-update_done:
   ret = 0;
 
   // Restore the I2C bus clock to 400KHz.
@@ -1211,7 +1218,6 @@ static struct {
 int bic_update_fw(uint8_t slot_id, uint8_t comp, const char* image_file) {
   uint16_t count, read_count;
   uint8_t buf[MAX_IPMI_MSG_SIZE] = {0};
-  char pathname[PATH_MAX];
   int i, fd, rc, ret = -1;
   uint8_t* tbuf = NULL;
   uint32_t dsize, offset, last_offset;
@@ -1574,4 +1580,6 @@ int me_recovery(uint8_t slot_id, uint8_t command) {
               __func__,  retry);
     return -1;
   }
+
+  return 0;
 }

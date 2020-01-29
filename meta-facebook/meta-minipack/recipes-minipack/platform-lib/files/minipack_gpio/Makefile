@@ -17,6 +17,8 @@
 
 lib: libminipack_gpio.so
 
+CFLAGS += -Wall -Werror
+
 libminipack_gpio.so: minipack_gpio.c
 	$(CC) $(CFLAGS) -fPIC -c -o minipack_gpio.o minipack_gpio.c
 	$(CC) -shared -o libminipack_gpio.so minipack_gpio.o $(LDFLAGS) -lc

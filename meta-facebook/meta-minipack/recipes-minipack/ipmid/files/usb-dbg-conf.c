@@ -475,7 +475,8 @@ plat_get_board_id(char *id)
 int
 plat_get_syscfg_text(uint8_t slot, char *text)
 {
-  char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
+  char key[MAX_KEY_LEN], value[MAX_VALUE_LEN];
+  char entry[MAX_VALUE_LEN] = "CPU:";
   char *key_prefix = "sys_config/";
   int index, slen;
   size_t ret;
@@ -490,14 +491,15 @@ plat_get_syscfg_text(uint8_t slot, char *text)
   text[0] = '\0';
 
   // CPU information
-  slen = sprintf(entry, "CPU:");
+  slen = strlen(entry);
 
   // Processor#
   snprintf(key, sizeof(key), "%sfru%u_cpu0_product_name", key_prefix, FRU_SCM);
   if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 26) {
     // Read 4 bytes Processor#
-    snprintf(&entry[slen], 5, "%s", &value[9]);
-    entry[(slen += 4)] = 0;
+    memcpy(&entry[slen], &value[9], 4);
+    slen += 4;
+    entry[slen] = '\0';
   }
 
   // Frequency & Core Number

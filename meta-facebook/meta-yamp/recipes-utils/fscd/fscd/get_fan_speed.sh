@@ -34,7 +34,7 @@ show_pwm()
     pwm="$FCMCPLD/fan$1_pwm"
     val=$(cat $pwm | head -n 1)
     # Val is [0,255], so let's scale the value down to [0,100]
-    float_val=`dc $val 100 mul 255 div p`
+    float_val=$(echo "$val 100 * 255 / p" | dc)
     rounded=`printf '%.*f' 0 $float_val`
     echo "$rounded%"
 }

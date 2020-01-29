@@ -57,7 +57,7 @@ fi
 # The user input is given in percent (0-100), 
 # but YAMP FANCPLD takes PWM as 8bit value (0-255)
 # So scale the value by multiplying 2.5
-float_step=`dc $1 255 mul 100 div p`
+float_step=$(echo "$1 255 * 100 / p" | dc)
 step=`printf '%.*f' 0 $float_step`
 
 for unit in ${FAN_UNIT}; do

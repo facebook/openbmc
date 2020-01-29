@@ -70,17 +70,14 @@ static pthread_mutex_t pos_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* Dynamic change lmsensors config for different PIM card type */
 static void
 add_adm1278_lmsensor_conf(uint8_t num, uint8_t bus, uint8_t pim_type) {
-  char tstr[64];
-  char cmd[128];
+  char cmd[256];
 
-  snprintf(cmd, sizeof(cmd), "cat /etc/sensors.d/custom/adm1278-%s.conf",
-           pim_type == PIM_TYPE_16O ? "PIM16O" : "PIM16Q");
-  snprintf(tstr, sizeof(tstr), " | sed 's/{pimid}/%d/g'", num);
-  strncat(cmd, tstr, sizeof(tstr));
-  snprintf(tstr, sizeof(tstr), " | sed 's/{i2cbus}/%d/g'", bus);
-  strncat(cmd, tstr, sizeof(tstr));
-  snprintf(tstr, sizeof(tstr), " > /etc/sensors.d/pim%d.conf", num);
-  strncat(cmd, tstr, sizeof(tstr));
+  snprintf(cmd, sizeof(cmd),
+           "cat /etc/sensors.d/custom/adm1278-%s.conf"
+           " | sed 's/{pimid}/%d/g'"
+           " | sed 's/{i2cbus}/%d/g'"
+           " > /etc/sensors.d/pim%d.conf",
+           pim_type == PIM_TYPE_16O ? "PIM16O" : "PIM16Q", num, bus, num);
 
   run_command(cmd);
 }

@@ -26,10 +26,11 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 #	CPLD will handle with 12V power when BMC is ready.
 power-util mb on > /dev/null
 
-# Thermal sensors for PCIe switch
+# Thermal sensors for PCIe switches
 i2c_device_add 6 0x4d tmp422
 i2c_device_add 6 0x4e tmp422
 
+# Voltage regulators
 i2c_device_add 5 0x30 mpq8645p
 i2c_device_add 5 0x31 mpq8645p
 i2c_device_add 5 0x32 mpq8645p
@@ -38,3 +39,7 @@ i2c_device_add 5 0x34 mpq8645p
 i2c_device_add 5 0x35 mpq8645p
 i2c_device_add 5 0x36 mpq8645p
 i2c_device_add 5 0x3b mpq8645p
+
+# P48V HSCs
+i2c_device_add 16 0x13 adm1272
+i2c_device_add 17 0x10 adm1272

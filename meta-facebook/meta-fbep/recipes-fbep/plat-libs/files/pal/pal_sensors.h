@@ -111,6 +111,14 @@ enum {
   PDB_HSC_P12V_AUX_VOUT,
   PDB_HSC_P12V_AUX_CURR,
   PDB_HSC_P12V_AUX_PWR,
+  PDB_HSC_P48V_1_VIN,
+  PDB_HSC_P48V_1_VOUT,
+  PDB_HSC_P48V_1_CURR,
+  PDB_HSC_P48V_1_PWR,
+  PDB_HSC_P48V_2_VIN,
+  PDB_HSC_P48V_2_VOUT,
+  PDB_HSC_P48V_2_CURR,
+  PDB_HSC_P48V_2_PWR,
   PDB_ADC_1_VICOR0_TEMP,
   PDB_ADC_1_VICOR1_TEMP,
   PDB_ADC_1_VICOR2_TEMP,
@@ -123,6 +131,8 @@ enum {
   PDB_SENSOR_OUTLET_TEMP_REMOTE,
   FBEP_SENSOR_MAX,  //keep this at the tail
 };
+
+enum { SNR_VOLT, SNR_CURR, SNR_PWR, SNR_TEMP, SNR_TACH };
 
 int pal_set_fan_speed(uint8_t fan, uint8_t pwm);
 int pal_get_fan_speed(uint8_t fan, int *rpm);

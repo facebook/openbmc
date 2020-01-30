@@ -7,11 +7,13 @@
 using namespace std;
 
 class CmComponent : public McuFwComponent {
+  string pld_name;
   uint8_t bus_id;
   uint8_t slv_addr;
+  uint8_t type;
   public:
-    CmComponent(string fru, string comp, uint8_t bus, uint8_t addr)
-      : McuFwComponent(fru, comp, bus, addr), bus_id(bus), slv_addr(addr) {}
+    CmComponent(string fru, string comp, string name, uint8_t bus, uint8_t addr, uint8_t is_signed)
+      : McuFwComponent(fru, comp, name, bus, addr, is_signed), pld_name(name), bus_id(bus), slv_addr(addr), type(is_signed) {}
     int print_version();
 };
 
@@ -56,5 +58,5 @@ int CmBlComponent::print_version() {
   return 0;
 }
 
-CmComponent pdbcm("pdb", "cm", 8, 0x68);
+CmComponent pdbcm("pdb", "cm", "F0C", 8, 0x68, true);
 CmBlComponent pdbcmbl("pdb", "cmbl", 8, 0x68, 0x02);  // target ID of bootloader = 0x02

@@ -32,8 +32,8 @@ enum {
 };
 
 int mcu_get_fw_ver(uint8_t bus, uint8_t addr, uint8_t comp, uint8_t *ver);
-int mcu_update_firmware(uint8_t bus, uint8_t addr, char *path);
-int mcu_update_bootloader(uint8_t bus, uint8_t addr, uint8_t target, char *path);
+int mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key, uint8_t is_signed);
+int mcu_update_bootloader(uint8_t bus, uint8_t addr, uint8_t target, const char *path);
 
 int usb_dbg_reset_ioexp(uint8_t bus, uint8_t addr);
 

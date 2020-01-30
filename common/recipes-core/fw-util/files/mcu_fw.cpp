@@ -9,7 +9,7 @@ int McuFwComponent::update(string image)
 {
   int ret;
 
-  ret = mcu_update_firmware(bus_id, slv_addr, (char *)image.c_str());
+  ret = mcu_update_firmware(bus_id, slv_addr, (const char *)image.c_str(), (const char *)pld_name.c_str(), type);
   if (ret != 0) {
     return FW_STATUS_FAILURE;
   }
@@ -21,7 +21,7 @@ int McuFwBlComponent::update(string image)
 {
   int ret;
 
-  ret = mcu_update_bootloader(bus_id, slv_addr, target_id, (char *)image.c_str());
+  ret = mcu_update_bootloader(bus_id, slv_addr, target_id, (const char *)image.c_str());
   if (ret != 0) {
     return FW_STATUS_FAILURE;
   }

@@ -49,7 +49,10 @@
 #define CMD_OEM_GET_BOOTLOADER_VER 0x40
 
 #define EN_UPDATE_IF_I2C 0x01
-
+#define MCU_SIGNED_FULL_SIZE    (32)
+#define MCU_SIGNED_HEAD_SIZE    (5)
+#define MCU_SIGNED_CHIP_SIZE    (9)
+#define MCU_SIGNED_DATA_SIZE    MCU_SIGNED_FULL_SIZE - MCU_SIGNED_HEAD_SIZE - MCU_SIGNED_CHIP_SIZE
 
 static int
 mcu_ipmb_wrapper(uint8_t bus, uint8_t addr, uint8_t netfn, uint8_t cmd,
@@ -146,14 +149,16 @@ mcu_enable_update(uint8_t bus, uint8_t addr) {
 }
 
 int
-mcu_update_firmware(uint8_t bus, uint8_t addr, char *path) {
+mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key, uint8_t is_signed ) {
   char cmd[100] = {0};
   uint8_t tbuf[256] = {0};
   uint8_t rbuf[16] = {0};
+  char str[32] = {0};
+  char sbuf[32] = {0};
   uint8_t tcount;
   uint8_t rcount;
   int fd, ifd, size;
-  int xcount;
+  int xcount = 0;
   int i, rc, ret = -1;
   uint32_t offset = 0, last_offset = 0, dsize;
   FILE *fp;
@@ -166,8 +171,29 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, char *path) {
     return -1;
   }
 
+  if(is_signed == true) {
+    memcpy(str, key, MCU_SIGNED_FULL_SIZE);
+    lseek(fd, -(MCU_SIGNED_DATA_SIZE), SEEK_END);
+    if (read(fd, sbuf, MCU_SIGNED_DATA_SIZE) == MCU_SIGNED_DATA_SIZE ) {
+      if(strstr(sbuf, str) == NULL) {
+        printf("Error, Signed Key not Match\n");
+        return -1;
+      }
+    } else {
+      printf("File Read Fail\n");
+      return -1;
+    }
+    lseek(fd, 0 ,SEEK_SET);
+    printf("Signed Key Match\n");
+  } 
+
   fstat(fd, &buf);
-  size = buf.st_size;
+
+  if (is_signed == true) {
+    size = buf.st_size - MCU_SIGNED_FULL_SIZE;
+  } else {
+    size = buf.st_size;
+  }
   printf("size of file is %d bytes\n", size);
   dsize = size/20;
 
@@ -322,7 +348,11 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, char *path) {
     }
 
     // send next packet
-    xcount = read(fd, &tbuf[3], MCU_PKT_MAX);
+    if((size - offset) < MCU_PKT_MAX ) {
+      xcount = read(fd, &tbuf[3], (size - offset));  
+    } else {
+      xcount = read(fd, &tbuf[3], MCU_PKT_MAX);
+    }
     if (xcount <= 0) {
 #ifdef DEBUG
       printf("read returns %d\n", xcount);
@@ -334,8 +364,12 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, char *path) {
 #endif
 
     offset += xcount;
+#ifdef DEBUG
+    printf("offset =%d\n", offset);
+#endif
     if ((last_offset + dsize) <= offset) {
-       printf("updated fw: %d %%\n", offset/dsize*5);
+       printf("\rupdated fw: %d %%", offset/dsize*5);
+       fflush(stdout);
        last_offset += dsize;
     }
 
@@ -408,6 +442,7 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, char *path) {
 
 error_exit:
   // Restart ipmbd
+  printf("\n");
   snprintf(cmd, sizeof(cmd), "sv start ipmbd_%d", bus);
   if (system(cmd)) {
     syslog(LOG_CRIT, "Starting ipmbd on bus %d failed\n", bus);
@@ -451,7 +486,7 @@ mcu_update_fw(uint8_t bus, uint8_t addr, uint8_t target, uint32_t offset, uint16
 }
 
 int
-mcu_update_bootloader(uint8_t bus, uint8_t addr, uint8_t target, char *path) {
+mcu_update_bootloader(uint8_t bus, uint8_t addr, uint8_t target, const char *path) {
   int fd, ret;
   uint32_t dsize, offset, last_offset;
   uint16_t count, read_count;

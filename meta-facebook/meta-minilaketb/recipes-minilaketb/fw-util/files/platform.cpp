@@ -25,5 +25,5 @@ MeComponent me1("slot1", "me", 1);
 CpldComponent cpld1("slot1", "cpld", 1);
 
 // Register USB Debug Card components
-UsbDbgComponent usbdbg("ocpdbg", "mcu", 4, 0x60);
+UsbDbgComponent usbdbg("ocpdbg", "mcu", "MINILAKE", 4, 0x60, false);
 UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 4, 0x60, 0x02);  // target ID of bootloader = 0x02

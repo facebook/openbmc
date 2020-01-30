@@ -16,5 +16,5 @@ BicFwBlComponent bicfwbl3("slot3", "bicbl", 3);
 BicFwBlComponent bicfwbl4("slot4", "bicbl", 4);
 
 // Register USB Debug Card components
-UsbDbgComponent usbdbg("ocpdbg", "mcu", 13, 0x60);
+UsbDbgComponent usbdbg("ocpdbg", "mcu", "FBY2", 13, 0x60, false);
 UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 13, 0x60, 0x02);  // target ID of bootloader = 0x02

@@ -48,7 +48,7 @@ int cpld_intf_close(cpld_intf_t intf);
 int cpld_get_ver(uint32_t *ver);
 int cpld_get_device_id(uint32_t *dev_id);
 int cpld_erase(void);
-int cpld_program(char *file);
+int cpld_program(char *file, char* key, char is_signed);
 int cpld_verify(char *file);
 
 struct cpld_dev_info {
@@ -58,7 +58,7 @@ struct cpld_dev_info {
   int (*cpld_close)(cpld_intf_t intf);
   int (*cpld_ver)(uint32_t *ver);
   int (*cpld_erase)(void);
-  int (*cpld_program)(FILE *fd);
+  int (*cpld_program)(FILE *fd, char *key, char is_signed);
   int (*cpld_verify)(FILE *fd);
   int (*cpld_dev_id)(uint32_t *dev_id);
 };

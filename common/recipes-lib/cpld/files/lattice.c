@@ -979,7 +979,7 @@ error_exit:
 }
 
 int
-LCMXO2Family_cpld_update(FILE *jed_fd)
+LCMXO2Family_cpld_update(FILE *jed_fd, char* key, char is_signed)
 {
   CPLDInfo dev_info = {0};
   int cf_size = 0;

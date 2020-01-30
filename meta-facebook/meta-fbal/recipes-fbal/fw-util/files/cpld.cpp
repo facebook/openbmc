@@ -172,7 +172,7 @@ int CPLD10m25cfm0::update(string image) {
 
   if (cpld_intf_open(pld_type, INTF_I2C, &attr)) 
     printf("Cannot open i2c!\n");
-  ret = cpld_program((char *)image.c_str());
+  ret = cpld_program((char *)image.c_str(), (char *)pld_name.c_str(), true);
   cpld_intf_close(INTF_I2C);
   if (ret) {
     printf("Error Occur at updating CPLD FW!\n");
@@ -186,7 +186,7 @@ int CPLD10m25cfm1::update(string image) {
 
   if (cpld_intf_open(pld_type, INTF_I2C, &attr)) 
     printf("Cannot open i2c!\n");
-  ret = cpld_program((char *)image.c_str());
+  ret = cpld_program((char *)image.c_str(), (char *)pld_name.c_str(), true);
   cpld_intf_close(INTF_I2C);
   if (ret) {
     printf("Error Occur at updating CPLD FW!\n");
@@ -201,7 +201,7 @@ int CPLD10m16cfm0::update(string image) {
 
   if (cpld_intf_open(pld_type, INTF_I2C, &attr))
     printf("Cannot open i2c!\n");
-  ret = cpld_program((char *)image.c_str());
+  ret = cpld_program((char *)image.c_str(), (char *)pld_name.c_str(), true);
   cpld_intf_close(INTF_I2C);
   if (ret) {
     printf("Error Occur at updating CPLD FW!\n");
@@ -215,7 +215,7 @@ int CPLD10m16cfm1::update(string image) {
 
   if (cpld_intf_open(pld_type, INTF_I2C, &attr))
     printf("Cannot open i2c!\n");
-  ret = cpld_program((char *)image.c_str());
+  ret = cpld_program((char *)image.c_str(), (char *)pld_name.c_str(), true);
   cpld_intf_close(INTF_I2C);
   if (ret) {
     printf("Error Occur at updating CPLD FW!\n");

@@ -39,8 +39,10 @@ class CpldComponent : public Component {
     }
     int update(string image) {
       int ret;
+      char key[32]= {0};
+
       if ( !cpld_intf_open(LCMXO2_2000HC, INTF_JTAG, NULL) ) {
-        ret = cpld_program((char *)image.c_str());
+        ret = cpld_program((char *)image.c_str(), key, false);
         cpld_intf_close(INTF_JTAG);
         if ( ret < 0 ) {
           printf("Error Occur at updating CPLD FW!\n");

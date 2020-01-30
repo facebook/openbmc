@@ -167,7 +167,7 @@ int cpld_erase(void)
   return cur_dev->cpld_erase();
 }
 
-int cpld_program(char *file)
+int cpld_program(char *file, char *key, char is_signed)
 {
   int ret;
   FILE *fp_in = NULL;
@@ -186,7 +186,7 @@ int cpld_program(char *file)
     return -1;
   }
 
-  ret = cur_dev->cpld_program(fp_in);
+  ret = cur_dev->cpld_program(fp_in, key, is_signed);
   fclose(fp_in);
 
   return ret;

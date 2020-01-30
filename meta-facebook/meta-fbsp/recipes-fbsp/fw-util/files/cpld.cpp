@@ -89,7 +89,7 @@ int CpldComponent::update(string image) {
       return -1;
     }
 
-    ret = cpld_program((char *)image.c_str());
+    ret = cpld_program((char *)image.c_str(), (char *)pld_name.c_str(), false);
     cpld_intf_close(INTF_I2C);
     if (ret) {
       printf("Error Occur at updating CPLD FW!\n");

@@ -30,6 +30,11 @@
 #define ERASE_SUCCESS     0x10
 #define STATUS_BIT_MASK   0x1F
 
+#define SIGNED_FULL_SIZE                 (32)
+#define SIGNED_HEAD_SIZE                 (5)
+#define SIGNED_DATA_SIZE                 SIGNED_FULL_SIZE - SIGNED_HEAD_SIZE
+
+
 enum {
   PROTECT_SEC_ID_5 = 0x1<<27,
   PROTECT_SEC_ID_4 = 0x1<<26,
@@ -577,21 +582,44 @@ int max10_trig_reconfig(void)
   return ret;
 }
 
-int max10_cpld_cfm_update(FILE *fd)
+int max10_cpld_cfm_update(FILE *fd, char *key, char is_signed)
 {
   struct stat finfo;
+  char buf[SIGNED_FULL_SIZE] = {0};
+  char str[SIGNED_FULL_SIZE] = {0};
   uint8_t *rpd_file_buff;
+  uint8_t image_type;
   int rpd_filesize;
   int readbytes;
   int cfm_start_addr, cfm_end_addr;
-  int ret = 0;
-  uint8_t image_type;
+  int ret = 0;  
+  int flash_size;
+
+  if (is_signed == true) {
+    memcpy(str, key, 32);
+    fseek(fd, -(SIGNED_DATA_SIZE), SEEK_END);
+    if (fread(buf, 1, SIGNED_FULL_SIZE, fd)) {
+      if (strstr(buf, str) == NULL) {
+        printf("Error, Signed Key not Match\n");
+        return -1;
+      }
+    } else {
+       printf("File read fail\n");
+       return -1;
+    }
+    fseek(fd, 0, SEEK_SET);
+    printf("Singed Key Match\n");
+  }
 
   // Get file size
   fstat(fileno(fd), &finfo);
-  rpd_filesize = finfo.st_size;
-
+  if (is_signed == true) {
+    rpd_filesize = finfo.st_size - SIGNED_FULL_SIZE;
+  } else {
+    rpd_filesize = finfo.st_size;
+  }
   printf("rpd file size = %d bytes. \r\n", rpd_filesize);
+
   // allocate memory
   rpd_file_buff = malloc(rpd_filesize);
   if (rpd_file_buff == 0) {
@@ -608,6 +636,12 @@ int max10_cpld_cfm_update(FILE *fd)
   cfm_start_addr = g_cfm_start_addr;
   cfm_end_addr = g_cfm_end_addr;
   image_type = g_cfm_image_type;
+
+  flash_size = cfm_end_addr - cfm_start_addr +1;
+  if(rpd_filesize != flash_size) {
+    printf("Error, File Size=%x Flash Size=%x\n", rpd_filesize, flash_size); 
+    return -1;
+  } 
 
   ret = max10_update_rpd(rpd_file_buff, image_type, cfm_start_addr, cfm_end_addr);
   free(rpd_file_buff);

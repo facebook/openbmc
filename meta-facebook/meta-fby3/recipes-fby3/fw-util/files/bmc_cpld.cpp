@@ -67,13 +67,14 @@ int BmcCpldComponent::print_version()
 int BmcCpldComponent::update(string image)
 {
   int ret;
+  char key[32] = {0};
 
   if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
     printf("Cannot open i2c!\n");
     return -1;
   }
 
-  ret = cpld_program((char *)image.c_str());
+  ret = cpld_program((char *)image.c_str(), key, false);
   cpld_intf_close(INTF_I2C);
   if (ret) {
     printf("Error Occur at updating CPLD FW!\n");

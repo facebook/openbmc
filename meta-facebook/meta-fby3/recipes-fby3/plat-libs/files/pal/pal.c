@@ -85,6 +85,10 @@ struct pal_key_cfg {
   {"pwr_server3_last_state", "on", NULL},
   {"pwr_server4_last_state", "on", NULL},
   {"timestamp_sled", "0", NULL},
+  {"slot1_por_cfg", "lps", NULL},
+  {"slot2_por_cfg", "lps", NULL},
+  {"slot3_por_cfg", "lps", NULL},
+  {"slot4_por_cfg", "lps", NULL},
   {"slot1_boot_order", "0100090203ff", NULL},
   {"slot2_boot_order", "0100090203ff", NULL},
   {"slot3_boot_order", "0100090203ff", NULL},
@@ -93,7 +97,7 @@ struct pal_key_cfg {
   {"fru2_restart_cause", "3", NULL},
   {"fru3_restart_cause", "3", NULL},
   {"fru4_restart_cause", "3", NULL},
-  {"ntp_server", "", NULL},  
+  {"ntp_server", "", NULL},
   {"debug_card_uart_select", "0", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
@@ -251,7 +255,7 @@ pal_set_boot_order(uint8_t slot_id, uint8_t *boot, uint8_t *res_data, uint8_t *r
           syslog(LOG_WARNING, "Not allow having the same boot devcie in the boot order");
           ret = CC_INVALID_PARAM;
           goto error_exit;
-        }  
+        }
       }
 
       if ((boot[i] == BOOT_DEVICE_IPV4) || (boot[i] == BOOT_DEVICE_IPV6)) {
@@ -436,7 +440,7 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   *res_len = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
-  if ( ret < 0 ) { 
+  if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     goto error_exit;
   }

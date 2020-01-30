@@ -29,10 +29,43 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
+KEYDIR=/mnt/data/kv_store
+DEF_PWR_ON=1
+TO_PWR_ON=
+
+check_por_config() {
+  TO_PWR_ON=-1
+
+  # Check if the file/key doesn't exist
+  if [ ! -f "${KEYDIR}/slot${1}_por_cfg" ]; then
+    TO_PWR_ON=$DEF_PWR_ON
+  else
+    POR=`cat ${KEYDIR}/slot${1}_por_cfg`
+
+    if [ $POR == "on" ]; then
+      TO_PWR_ON=1;
+    elif [ $POR == "lps" ]; then
+      # Check if the file/key doesn't exist
+      if [ ! -f "${KEYDIR}/pwr_server${1}_last_state" ]; then
+        TO_PWR_ON=$DEF_PWR_ON
+      else
+        LS=`cat ${KEYDIR}/pwr_server${1}_last_state`
+        if [ $LS == "on" ]; then
+          TO_PWR_ON=1;
+        fi
+      fi
+    fi
+  fi
+}
+
 function init_class2_server() {
   if [ $(is_bmc_por) -eq 1 ]; then
     devmem_clear_bit $(scu_addr 9c) 17
-    power-util slot1 on
+
+    check_por_config 1
+    if [ $TO_PWR_ON -eq 1 ] ; then
+      power-util slot1 on
+    fi
   fi
 }
 
@@ -42,19 +75,23 @@ function init_class1_server() {
     # Disable clearing of PWM block on WDT SoC Reset
     devmem_clear_bit $(scu_addr 9c) 17
 
-    if [ $(is_server_prsnt 1) == "1" ] ; then
+    check_por_config 1
+    if [ $(is_server_prsnt 1) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
       power-util slot1 on
     fi
 
-    if [ $(is_server_prsnt 2) == "1" ] ; then
+    check_por_config 2
+    if [ $(is_server_prsnt 2) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
       power-util slot2 on
     fi
 
-    if [ $(is_server_prsnt 3) == "1" ] ; then
+    check_por_config 3
+    if [ $(is_server_prsnt 3) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
       power-util slot3 on
     fi
 
-    if [ $(is_server_prsnt 4) == "1" ] ; then
+    check_por_config 4
+    if [ $(is_server_prsnt 4) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
       power-util slot4 on
     fi
   fi

@@ -7,6 +7,7 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <ctype.h>
+#include <pthread.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
@@ -33,6 +34,8 @@ enum {
   POWER_STATUS_FRU_ERR = -2,
 };
 
+static uint8_t m_slot_pwr_ctrl[MAX_NODES+1] = {0};
+
 bool
 is_server_off(void) {
   return POWER_STATUS_OK;
@@ -48,6 +51,37 @@ server_power_off(uint8_t fru) {
 static int
 server_power_on(uint8_t fru) {
   return bic_server_power_on(fru);
+}
+
+static void
+pal_power_policy_control(uint8_t slot, char *last_ps) {
+  uint8_t chassis_sts[8] = {0};
+  uint8_t chassis_sts_len;
+  uint8_t power_policy = POWER_CFG_UKNOWN;
+  char pwr_state[MAX_VALUE_LEN] = {0};
+
+  //get power restore policy
+  //defined by IPMI Spec/Section 28.2.
+  pal_get_chassis_status(slot, NULL, chassis_sts, &chassis_sts_len);
+
+  //byte[1], bit[6:5]: power restore policy
+  power_policy = (*chassis_sts >> 5);
+
+  //Check power policy and last power state
+  if (power_policy == POWER_CFG_LPS) {
+    if (!last_ps) {
+      pal_get_last_pwr_state(slot, pwr_state);
+      last_ps = pwr_state;
+    }
+    if (!(strcmp(last_ps, "on"))) {
+      sleep(3);
+      pal_set_server_power(slot, SERVER_POWER_ON);
+    }
+  }
+  else if (power_policy == POWER_CFG_ON) {
+    sleep(3);
+    pal_set_server_power(slot, SERVER_POWER_ON);
+  }
 }
 
 static int
@@ -94,24 +128,19 @@ server_power_12v_on(uint8_t fru) {
 
   sleep(1);
 
-  snprintf(cmd, sizeof(cmd), "sv start ipmbd_%d > /dev/null 2>&1", fby3_common_get_bus_id(fru)); 
+  snprintf(cmd, sizeof(cmd), "sv start ipmbd_%d > /dev/null 2>&1", fby3_common_get_bus_id(fru));
   if (system(cmd) != 0) {
     syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
     ret = PAL_ENOTSUP;
     goto error_exit;
   }
   sleep(2);
-  
-  ret = server_power_on(fru);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to do server_power_on fru%d", __func__, fru);
-    goto error_exit;
-  }
+  pal_power_policy_control(fru, NULL);
 
 error_exit:
   if ( i2cfd > 0 ) close(i2cfd);
 
-  return ret; 
+  return ret;
 }
 
 static int
@@ -184,7 +213,7 @@ pal_get_server_12v_power(uint8_t slot_id, uint8_t *status) {
     *status = SERVER_12V_OFF;
   }
 
-  return ret; 
+  return ret;
 }
 
 int
@@ -257,8 +286,8 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
     case SERVER_12V_ON:
       if ( pal_get_server_12v_power(fru, &status) < 0 ) {
         return POWER_STATUS_ERR;
-      } 
-      return (status == SERVER_POWER_ON)?POWER_STATUS_ALREADY_OK:server_power_12v_on(fru);  
+      }
+      return (status == SERVER_POWER_ON)?POWER_STATUS_ALREADY_OK:server_power_12v_on(fru);
       break;
 
     case SERVER_12V_OFF:
@@ -341,7 +370,7 @@ pal_sled_cycle(void) {
 
 int
 pal_set_last_pwr_state(uint8_t fru, char *state) {
-  
+
   int ret;
   char key[MAX_KEY_LEN] = {0};
 
@@ -360,7 +389,7 @@ pal_set_last_pwr_state(uint8_t fru, char *state) {
 
 int
 pal_get_last_pwr_state(uint8_t fru, char *state) {
-  
+
   int ret;
   char key[MAX_KEY_LEN] = {0};
 
@@ -534,4 +563,167 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
   }
 
   return 0;
+}
+
+void
+pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
+  char key[MAX_KEY_LEN];
+  char buff[MAX_VALUE_LEN] = {0};
+  int policy = 3;
+  uint8_t status, ret;
+  unsigned char *data = res_data;
+
+  sprintf(key, "slot%u_por_cfg", slot);
+  if (pal_get_key_value(key, buff) == 0) {
+    if (!memcmp(buff, "off", strlen("off")))
+      policy = 0;
+    else if (!memcmp(buff, "lps", strlen("lps")))
+      policy = 1;
+    else if (!memcmp(buff, "on", strlen("on")))
+      policy = 2;
+    else
+      policy = 3;
+  }
+
+  // Current Power State
+  ret = pal_get_server_power(slot, &status);
+  if (ret >= 0) {
+    *data++ = status | (policy << 5);
+  } else {
+    syslog(LOG_WARNING, "pal_get_chassis_status: pal_get_server_power failed for slot%u", slot);
+    *data++ = 0x00 | (policy << 5);
+  }
+
+  *data++ = 0x00;   // Last Power Event
+  *data++ = 0x40;   // Misc. Chassis Status
+  *data++ = 0x00;   // Front Panel Button Disable
+  *res_len = data - res_data;
+}
+
+uint8_t
+pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data) {
+  uint8_t comp_code = CC_SUCCESS;
+  uint8_t policy = *pwr_policy & 0x07;  // Power restore policy
+  char key[MAX_KEY_LEN];
+
+  sprintf(key, "slot%u_por_cfg", slot);
+  switch (policy) {
+    case 0:
+      if (pal_set_key_value(key, "off")) {
+        comp_code = CC_UNSPECIFIED_ERROR;
+      }
+      break;
+    case 1:
+      if (pal_set_key_value(key, "lps")) {
+        comp_code = CC_UNSPECIFIED_ERROR;
+      }
+      break;
+    case 2:
+      if (pal_set_key_value(key, "on")) {
+        comp_code = CC_UNSPECIFIED_ERROR;
+      }
+      break;
+    case 3:
+      // no change (just get present policy support)
+      break;
+    default:
+      comp_code = CC_PARAM_OUT_OF_RANGE;
+      break;
+  }
+
+  return comp_code;
+}
+
+// Do slot power control
+static void * slot_pwr_ctrl(void *ptr) {
+  uint8_t slot = (int)ptr & 0xFF;
+  uint8_t cmd = ((int)ptr >> 8) & 0xFF;
+  char pwr_state[MAX_VALUE_LEN] = {0};
+
+  pthread_detach(pthread_self());
+  msleep(500);
+
+  if (cmd == SERVER_12V_CYCLE) {
+    pal_get_last_pwr_state(slot, pwr_state);
+  }
+
+  if (!pal_set_server_power(slot, cmd)) {
+    switch (cmd) {
+      case SERVER_POWER_OFF:
+        syslog(LOG_CRIT, "SERVER_POWER_OFF successful for FRU: %d", slot);
+        break;
+      case SERVER_POWER_ON:
+        syslog(LOG_CRIT, "SERVER_POWER_ON successful for FRU: %d", slot);
+        break;
+      case SERVER_POWER_CYCLE:
+        syslog(LOG_CRIT, "SERVER_POWER_CYCLE successful for FRU: %d", slot);
+        break;
+      case SERVER_POWER_RESET:
+        syslog(LOG_CRIT, "SERVER_POWER_RESET successful for FRU: %d", slot);
+        break;
+      case SERVER_GRACEFUL_SHUTDOWN:
+        syslog(LOG_CRIT, "SERVER_GRACEFUL_SHUTDOWN successful for FRU: %d", slot);
+        break;
+      case SERVER_12V_CYCLE:
+        syslog(LOG_CRIT, "SERVER_12V_CYCLE successful for FRU: %d", slot);
+        pal_power_policy_control(slot, pwr_state);
+        break;
+    }
+  }
+
+  m_slot_pwr_ctrl[slot] = false;
+  pthread_exit(0);
+}
+
+int
+pal_chassis_control(uint8_t slot, uint8_t *req_data, uint8_t req_len) {
+  uint8_t comp_code = CC_SUCCESS, cmd = 0xFF;
+  int ret, cmd_slot;
+  pthread_t tid;
+
+  if ((slot < FRU_SLOT1) || (slot > FRU_SLOT4)) {
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  if (req_len != 1) {
+    return CC_INVALID_LENGTH;
+  }
+
+  if (m_slot_pwr_ctrl[slot] != false) {
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
+
+  switch (req_data[0]) {
+    case 0x00:  // power off
+      cmd = SERVER_POWER_OFF;
+      break;
+    case 0x01:  // power on
+      cmd = SERVER_POWER_ON;
+      break;
+    case 0x02:  // power cycle
+      cmd = SERVER_POWER_CYCLE;
+      break;
+    case 0x03:  // power reset
+      cmd = SERVER_POWER_RESET;
+      break;
+    case 0x05:  // graceful-shutdown
+      cmd = SERVER_GRACEFUL_SHUTDOWN;
+      break;
+    default:
+      comp_code = CC_INVALID_DATA_FIELD;
+      break;
+  }
+
+  if (comp_code == CC_SUCCESS) {
+    m_slot_pwr_ctrl[slot] = true;
+    cmd_slot = (cmd << 8) | slot;
+    ret = pthread_create(&tid, NULL, slot_pwr_ctrl, (void *)cmd_slot);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "[%s] Create slot_pwr_ctrl thread failed!", __func__);
+      m_slot_pwr_ctrl[slot] = false;
+      return CC_NODE_BUSY;
+    }
+  }
+
+  return comp_code;
 }

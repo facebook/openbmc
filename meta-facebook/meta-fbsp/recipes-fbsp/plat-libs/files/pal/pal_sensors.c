@@ -1989,12 +1989,13 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   case FRU_NIC1:
   case FRU_FCB:
     //Discrete sensor
-    if(sensor_num == 0xFC) 
+    if(sensor_num == 0xFC) {
       sprintf(name, "%s", "MB_PROCESSOR_FAIL");
-    break;
+      break;
+    }
 
     sprintf(name, "%s", sensor_map[sensor_num].snr_name);
-
+    break;
   default:
     return -1;
   }

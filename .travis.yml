@@ -60,15 +60,20 @@ env:
     - BOARD=angelslanding
     - BOARD=cmm
     - BOARD=emeraldpools
+    - BOARD=fbgp2
+    - BOARD=fbnd
     - BOARD=fbtp
     - BOARD=fbttn
     - BOARD=fby2
+    - BOARD=fby3
     - BOARD=galaxy100
     - BOARD=lightning
+    - BOARD=minipack
     - BOARD=sonorapass
     - BOARD=wedge
     - BOARD=wedge100
     - BOARD=wedge400
+    - BOARD=yamp
     - BOARD=yosemite
 
 script:

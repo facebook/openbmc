@@ -1,0 +1,1 @@
+fby2-gpv2-image.bb

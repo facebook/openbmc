@@ -1724,7 +1724,7 @@ is_fan_present(uint8_t fan_id) {
   }
   gpio_get_value(desc, &value);
   gpio_close(desc);
-  if (value == GPIO_VALUE_HIGH) {
+  if (value == GPIO_VALUE_LOW) {
     return true;
   }
   else {

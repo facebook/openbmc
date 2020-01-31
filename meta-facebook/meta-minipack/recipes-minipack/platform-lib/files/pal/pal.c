@@ -868,7 +868,6 @@ pim_thresh_array_init(uint8_t fru) {
       i = fru - FRU_PIM1;
       pim_sensor_threshold[PIM1_SENSOR_TEMP1+(i*0x15)][UCR_THRESH] = 70;
       pim_sensor_threshold[PIM1_SENSOR_TEMP2+(i*0x15)][UCR_THRESH] = 80;
-      pim_sensor_threshold[PIM1_SENSOR_QSFP_TEMP+i][UCR_THRESH] = 58;
       pim_sensor_threshold[PIM1_SENSOR_HSC_VOLT+(i*0x15)][UCR_THRESH] = 12.6;
       pim_sensor_threshold[PIM1_SENSOR_HSC_VOLT+(i*0x15)][LCR_THRESH] = 11.4;
       pim_sensor_threshold[PIM1_SENSOR_HSC_CURR+(i*0x15)][UCR_THRESH] = 12;
@@ -876,6 +875,7 @@ pim_thresh_array_init(uint8_t fru) {
 
       type = pal_get_pim_type_from_file(fru);
       if (type == PIM_TYPE_16Q) {
+        pim_sensor_threshold[PIM1_SENSOR_QSFP_TEMP+i][UCR_THRESH] = 58;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT1+(i*0x15)][UCR_THRESH] = 0.82;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT1+(i*0x15)][LCR_THRESH] = 0.56;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT2+(i*0x15)][UCR_THRESH] = 0.864;
@@ -909,6 +909,7 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT16+(i*0x15)][UCR_THRESH] = 1.944;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT16+(i*0x15)][LCR_THRESH] = 1.656;
       } else if (type == PIM_TYPE_16O) {
+        pim_sensor_threshold[PIM1_SENSOR_QSFP_TEMP+i][UCR_THRESH] = 60;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT1+(i*0x15)][UCR_THRESH] = 5.25;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT1+(i*0x15)][LCR_THRESH] = 4.75;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT2+(i*0x15)][UCR_THRESH] = 3.465;
@@ -920,13 +921,13 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT5+(i*0x15)][UCR_THRESH] = 0.84;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT5+(i*0x15)][LCR_THRESH] = 0.76;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT6+(i*0x15)][UCR_THRESH] = 0.84;
-        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT6+(i*0x15)][LCR_THRESH] = 0.76;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT6+(i*0x15)][LCR_THRESH] = 0.61;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT7+(i*0x15)][UCR_THRESH] = 0.84;
-        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT7+(i*0x15)][LCR_THRESH] = 0.76;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT7+(i*0x15)][LCR_THRESH] = 0.61;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT8+(i*0x15)][UCR_THRESH] = 0.84;
-        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT8+(i*0x15)][LCR_THRESH] = 0.76;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT8+(i*0x15)][LCR_THRESH] = 0.61;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT9+(i*0x15)][UCR_THRESH] = 0.84;
-        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT9+(i*0x15)][LCR_THRESH] = 0.76;
+        pim_sensor_threshold[PIM1_SENSOR_34461_VOLT9+(i*0x15)][LCR_THRESH] = 0.61;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT10+(i*0x15)][UCR_THRESH] = 3.465;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT10+(i*0x15)][LCR_THRESH] = 3.135;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT11+(i*0x15)][UCR_THRESH] = 2.625;
@@ -942,6 +943,7 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT16+(i*0x15)][UCR_THRESH] = 100;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT16+(i*0x15)][LCR_THRESH] = -100;
       } else if (type == PIM_TYPE_4DD) {
+        pim_sensor_threshold[PIM1_SENSOR_QSFP_TEMP+i][UCR_THRESH] = 58;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT1+(i*0x15)][UCR_THRESH] = 0.82;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT1+(i*0x15)][LCR_THRESH] = 0.56;
         pim_sensor_threshold[PIM1_SENSOR_34461_VOLT2+(i*0x15)][UCR_THRESH] = 0.864;

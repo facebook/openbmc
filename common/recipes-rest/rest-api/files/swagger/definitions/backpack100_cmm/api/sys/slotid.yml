@@ -1,0 +1,20 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/slotid  
+  title: Swagger doc for /api/sys/slotid  
+  version: 1.0.0
+paths: 
+  /api/sys/slotid: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              slotid: 
+                type: integer
+                format: int32
+            

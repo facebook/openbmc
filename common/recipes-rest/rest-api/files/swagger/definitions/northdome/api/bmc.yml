@@ -1,0 +1,97 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/bmc  
+  title: Swagger doc for /api/bmc  
+  version: 1.0.0
+paths: 
+  /api/bmc: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  load-1: 
+                    type: string
+                  Memory Usage: 
+                    type: string
+                  u-boot version: 
+                    type: string
+                  SPI0 Vendor: 
+                    type: string
+                  TPM FW version: 
+                    type: string
+                  open-fds: 
+                    type: string
+                  At-Scale-Debug Running: 
+                    type: boolean
+                  SPI1 Vendor: 
+                    type: string
+                  TPM TCG version: 
+                    type: string
+                  load-5: 
+                    type: string
+                  Reset Reason: 
+                    type: string
+                  Description: 
+                    type: string
+                  kernel version: 
+                    type: string
+                  load-15: 
+                    type: string
+                  OpenBMC Version: 
+                    type: string
+                  Uptime: 
+                    type: string
+                  CPU Usage: 
+                    type: string
+                  uptime: 
+                    type: string
+                  vboot: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      tpm_status: 
+                        type: string
+                      status_text: 
+                        type: string
+                      recovery_boot: 
+                        type: string
+                      software_enforce: 
+                        type: string
+                      recovery_retried: 
+                        type: string
+                      cert_time: 
+                        type: string
+                      hardware_enforce: 
+                        type: string
+                      uboot_fallback_time: 
+                        type: string
+                      status_crc: 
+                        type: string
+                      status: 
+                        type: string
+                      cert_fallback_time: 
+                        type: string
+                      uboot_time: 
+                        type: string
+                      force_recovery: 
+                        type: string
+                  MAC Addr: 
+                    type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+            

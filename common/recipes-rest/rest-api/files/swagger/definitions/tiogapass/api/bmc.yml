@@ -1,0 +1,97 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/bmc  
+  title: Swagger doc for /api/bmc  
+  version: 1.0.0
+paths: 
+  /api/bmc: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Description: 
+                    type: string
+                  SPI0 Vendor: 
+                    type: string
+                  Reset Reason: 
+                    type: string
+                  load-1: 
+                    type: string
+                  vboot: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      force_recovery: 
+                        type: string
+                      recovery_retried: 
+                        type: string
+                      tpm_status: 
+                        type: string
+                      software_enforce: 
+                        type: string
+                      status_crc: 
+                        type: string
+                      hardware_enforce: 
+                        type: string
+                      status: 
+                        type: string
+                      recovery_boot: 
+                        type: string
+                      status_text: 
+                        type: string
+                      uboot_fallback_time: 
+                        type: string
+                      uboot_time: 
+                        type: string
+                      cert_time: 
+                        type: string
+                      cert_fallback_time: 
+                        type: string
+                  open-fds: 
+                    type: string
+                  CPU Usage: 
+                    type: string
+                  Uptime: 
+                    type: string
+                  u-boot version: 
+                    type: string
+                  Memory Usage: 
+                    type: string
+                  load-5: 
+                    type: string
+                  SPI1 Vendor: 
+                    type: string
+                  load-15: 
+                    type: string
+                  TPM FW version: 
+                    type: string
+                  kernel version: 
+                    type: string
+                  MAC Addr: 
+                    type: string
+                  TPM TCG version: 
+                    type: string
+                  OpenBMC Version: 
+                    type: string
+                  uptime: 
+                    type: string
+                  At-Scale-Debug Running: 
+                    type: boolean
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+            

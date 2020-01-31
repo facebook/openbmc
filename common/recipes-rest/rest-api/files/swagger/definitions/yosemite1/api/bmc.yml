@@ -1,0 +1,75 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/bmc  
+  title: Swagger doc for /api/bmc  
+  version: 1.0.0
+paths: 
+  /api/bmc: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  OpenBMC Version: 
+                    type: string
+                  Reset Reason: 
+                    type: string
+                  TPM TCG version: 
+                    type: string
+                  u-boot version: 
+                    type: string
+                  Memory Usage: 
+                    type: string
+                  SPI0 Vendor: 
+                    type: string
+                  kernel version: 
+                    type: string
+                  CPU Usage: 
+                    type: string
+                  open-fds: 
+                    type: string
+                  Description: 
+                    type: string
+                  At-Scale-Debug Running: 
+                    type: boolean
+                  Uptime: 
+                    type: string
+                  load-5: 
+                    type: string
+                  uptime: 
+                    type: string
+                  SPI1 Vendor: 
+                    type: string
+                  load-1: 
+                    type: string
+                  TPM FW version: 
+                    type: string
+                  load-15: 
+                    type: string
+                  MAC Addr: 
+                    type: string
+                  vboot: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      status_text: 
+                        type: string
+                      status: 
+                        type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

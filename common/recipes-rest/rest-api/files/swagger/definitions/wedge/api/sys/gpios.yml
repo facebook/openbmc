@@ -1,0 +1,53 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/gpios  
+  title: Swagger doc for /api/sys/gpios  
+  version: 1.0.0
+paths: 
+  /api/sys/gpios: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              back_ports: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  port_2: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      pin_3: 
+                        type: integer
+                        format: int32
+                      pin_2: 
+                        type: integer
+                        format: int32
+                      pin_1: 
+                        type: integer
+                        format: int32
+                      pin_4: 
+                        type: integer
+                        format: int32
+                  port_1: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      pin_3: 
+                        type: integer
+                        format: int32
+                      pin_2: 
+                        type: integer
+                        format: int32
+                      pin_1: 
+                        type: integer
+                        format: int32
+                      pin_4: 
+                        type: integer
+                        format: int32
+            

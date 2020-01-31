@@ -1,0 +1,45 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sled/mb/logs  
+  title: Swagger doc for /api/sled/mb/logs  
+  version: 1.0.0
+paths: 
+  /api/sled/mb/logs: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Logs: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        MESSAGE: 
+                          type: string
+                        FRU#: 
+                          type: string
+                        FRU_NAME: 
+                          type: string
+                        TIME_STAMP: 
+                          type: string
+                        APP_NAME: 
+                          type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+            

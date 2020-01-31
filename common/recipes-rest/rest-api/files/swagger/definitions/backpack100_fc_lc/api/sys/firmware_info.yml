@@ -1,0 +1,47 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/firmware_info  
+  title: Swagger doc for /api/sys/firmware_info  
+  version: 1.0.0
+paths: 
+  /api/sys/firmware_info: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              SYS_CPLD: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  sub_version: 
+                    type: integer
+                    format: int32
+                  version: 
+                    type: integer
+                    format: int32
+              SCM_CPLD: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  sub_version: 
+                    type: integer
+                    format: int32
+                  version: 
+                    type: integer
+                    format: int32
+              QSFP_CPLD: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  sub_version: 
+                    type: integer
+                    format: int32
+                  version: 
+                    type: integer
+                    format: int32
+            

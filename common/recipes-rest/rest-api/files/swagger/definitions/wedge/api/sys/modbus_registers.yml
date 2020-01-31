@@ -1,0 +1,21 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/modbus_registers  
+  title: Swagger doc for /api/sys/modbus_registers  
+  version: 1.0.0
+paths: 
+  /api/sys/modbus_registers: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              0: 
+                type: string
+              1: 
+                type: string
+            

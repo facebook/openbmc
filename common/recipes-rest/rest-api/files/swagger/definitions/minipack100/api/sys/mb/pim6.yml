@@ -1,0 +1,73 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/mb/pim6  
+  title: Swagger doc for /api/sys/mb/pim6  
+  version: 1.0.0
+paths: 
+  /api/sys/mb/pim6: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Product Production State: 
+                    type: string
+                  Extended MAC Base: 
+                    type: string
+                  Facebook PCB Part Number: 
+                    type: string
+                  Product Sub-Version: 
+                    type: string
+                  ODM PCBA Serial Number: 
+                    type: string
+                  System Assembly Part Number: 
+                    type: string
+                  System Manufacturer: 
+                    type: string
+                  Extended MAC Address Size: 
+                    type: string
+                  System Manufacturing Date: 
+                    type: string
+                  Product Asset Tag: 
+                    type: string
+                  CRC8: 
+                    type: string
+                  ODM PCBA Part Number: 
+                    type: string
+                  Location on Fabric: 
+                    type: string
+                  Version: 
+                    type: string
+                  Product Part Number: 
+                    type: string
+                  PCB Manufacturer: 
+                    type: string
+                  Product Name: 
+                    type: string
+                  Product Serial Number: 
+                    type: string
+                  Facebook PCBA Part Number: 
+                    type: string
+                  Product Version: 
+                    type: string
+                  Assembled At: 
+                    type: string
+                  Local MAC: 
+                    type: string
+            

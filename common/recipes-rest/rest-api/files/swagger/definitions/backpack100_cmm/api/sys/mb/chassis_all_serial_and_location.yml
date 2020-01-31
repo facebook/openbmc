@@ -1,0 +1,89 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/mb/chassis_all_serial_and_location  
+  title: Swagger doc for /api/sys/mb/chassis_all_serial_and_location  
+  version: 1.0.0
+paths: 
+  /api/sys/mb/chassis_all_serial_and_location: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              cmm-c1: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  bmc: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      location: 
+                        type: string
+                      serial: 
+                        type: string
+              lc-102: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  scm: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      location: 
+                        type: string
+                      serial: 
+                        type: string
+                  bmc: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      location: 
+                        type: string
+                      serial: 
+                        type: string
+              lc-101: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  scm: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      location: 
+                        type: string
+                      serial: 
+                        type: string
+                  bmc: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      location: 
+                        type: string
+                      serial: 
+                        type: string
+              lc-302: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  scm: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      location: 
+                        type: string
+                      serial: 
+                        type: string
+                  bmc: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      location: 
+                        type: string
+                      serial: 
+                        type: string
+            

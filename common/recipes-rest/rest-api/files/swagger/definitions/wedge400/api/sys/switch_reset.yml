@@ -1,0 +1,27 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/switch_reset  
+  title: Swagger doc for /api/sys/switch_reset  
+  version: 1.0.0
+paths: 
+  /api/sys/switch_reset: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

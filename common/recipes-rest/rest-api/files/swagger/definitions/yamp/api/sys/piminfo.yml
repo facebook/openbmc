@@ -1,0 +1,109 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/piminfo  
+  title: Swagger doc for /api/sys/piminfo  
+  version: 1.0.0
+paths: 
+  /api/sys/piminfo: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  PIM8: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      ver: 
+                        type: string
+                      type: 
+                        type: string
+                      fpga_ver: 
+                        type: string
+                  PIM6: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      ver: 
+                        type: string
+                      type: 
+                        type: string
+                      fpga_ver: 
+                        type: string
+                  PIM7: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      ver: 
+                        type: string
+                      type: 
+                        type: string
+                      fpga_ver: 
+                        type: string
+                  PIM4: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      ver: 
+                        type: string
+                      type: 
+                        type: string
+                      fpga_ver: 
+                        type: string
+                  PIM5: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      ver: 
+                        type: string
+                      type: 
+                        type: string
+                      fpga_ver: 
+                        type: string
+                  PIM2: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      ver: 
+                        type: string
+                      type: 
+                        type: string
+                      fpga_ver: 
+                        type: string
+                  PIM3: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      ver: 
+                        type: string
+                      type: 
+                        type: string
+                      fpga_ver: 
+                        type: string
+                  PIM1: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      ver: 
+                        type: string
+                      type: 
+                        type: string
+                      fpga_ver: 
+                        type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+            

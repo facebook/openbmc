@@ -1,0 +1,77 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/feutil/fcm  
+  title: Swagger doc for /api/sys/feutil/fcm  
+  version: 1.0.0
+paths: 
+  /api/sys/feutil/fcm: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Fan FCM eeprom: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      Product Asset Tag: 
+                        type: string
+                      Product Serial Number: 
+                        type: string
+                      Product Version: 
+                        type: string
+                      Product Sub-Version: 
+                        type: string
+                      Assembled At: 
+                        type: string
+                      System Manufacturer: 
+                        type: string
+                      System Assembly Part Number: 
+                        type: string
+                      PCB Manufacturer: 
+                        type: string
+                      Facebook PCB Part Number: 
+                        type: string
+                      System Manufacturing Date: 
+                        type: string
+                      ODM PCBA Serial Number: 
+                        type: string
+                      Location on Fabric: 
+                        type: string
+                      Version: 
+                        type: string
+                      Extended MAC Address Size: 
+                        type: string
+                      Product Part Number: 
+                        type: string
+                      Product Name: 
+                        type: string
+                      CRC8: 
+                        type: string
+                      ODM PCBA Part Number: 
+                        type: string
+                      Extended MAC Base: 
+                        type: string
+                      Facebook PCBA Part Number: 
+                        type: string
+                      Product Production State: 
+                        type: string
+                      Local MAC: 
+                        type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

@@ -1,0 +1,49 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/sensors  
+  title: Swagger doc for /api/sys/sensors  
+  version: 1.0.0
+paths: 
+  /api/sys/sensors: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Information: 
+                type: array
+                items: 
+                  type: object
+                  additionalProperties: false
+                  properties: 
+                    DIMM Voltage: 
+                      type: string
+                    DIMM Temp: 
+                      type: string
+                    Adapter: 
+                      type: string
+                    +3 Voltage: 
+                      type: string
+                    +5 Voltage: 
+                      type: string
+                    name: 
+                      type: string
+                    CPU Temp: 
+                      type: string
+                    +12 Voltage: 
+                      type: string
+                    CPU Voltage: 
+                      type: string
+            

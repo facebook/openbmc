@@ -1,0 +1,45 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/pim_present  
+  title: Swagger doc for /api/sys/pim_present  
+  version: 1.0.0
+paths: 
+  /api/sys/pim_present: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  pim3: 
+                    type: string
+                  pim2: 
+                    type: string
+                  pim1: 
+                    type: string
+                  pim7: 
+                    type: string
+                  pim6: 
+                    type: string
+                  pim5: 
+                    type: string
+                  pim4: 
+                    type: string
+                  pim8: 
+                    type: string
+            

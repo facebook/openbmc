@@ -1,0 +1,35 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/sensors/pem1  
+  title: Swagger doc for /api/sys/sensors/pem1  
+  version: 1.0.0
+paths: 
+  /api/sys/sensors/pem1: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  name: 
+                    type: string
+                  present: 
+                    type: boolean
+                  Adapter: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

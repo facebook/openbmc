@@ -1,0 +1,653 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/sensors  
+  title: Swagger doc for /api/sys/sensors  
+  version: 1.0.0
+paths: 
+  /api/sys/sensors: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Information: 
+                type: array
+                items: 
+                  type: object
+                  additionalProperties: false
+                  properties: 
+                    PIM7_HSC_VOLT: 
+                      type: string
+                    PSU2_STBY_POWER: 
+                      type: string
+                    PIM6_MAX34461_VOLT2: 
+                      type: string
+                    P3V3_MB_VOLT: 
+                      type: string
+                    Adapter: 
+                      type: string
+                    PIM5_MAX34461_VOLT13: 
+                      type: string
+                    PIM7_MAX34461_VOLT1: 
+                      type: string
+                    PIM8_HSC_POWER: 
+                      type: string
+                    SCM_OUTLET_LOCAL_TEMP: 
+                      type: string
+                    PIM1_TEMP1: 
+                      type: string
+                    PIM1_TEMP2: 
+                      type: string
+                    PSU1_TEMP3: 
+                      type: string
+                    PIM8_MAX34461_VOLT15: 
+                      type: string
+                    P12V_MB_VOLT: 
+                      type: string
+                    PIM6_MAX34461_VOLT13: 
+                      type: string
+                    PIM1_MAX34461_VOLT16: 
+                      type: string
+                    PSU4_STBY_VOLT: 
+                      type: string
+                    TH3_DIE_TEMP1: 
+                      type: string
+                    TH3_DIE_TEMP2: 
+                      type: string
+                    PIM5_MAX34461_VOLT3: 
+                      type: string
+                    PIM2_MAX34461_VOLT8: 
+                      type: string
+                    PIM2_MAX34461_VOLT3: 
+                      type: string
+                    FAN8_REAR_SPEED: 
+                      type: string
+                    PSU2_FAN_SPEED: 
+                      type: string
+                    PIM3_HSC_VOLT: 
+                      type: string
+                    PIM7_MAX34461_VOLT7: 
+                      type: string
+                    PSU1_12V_CURR: 
+                      type: string
+                    PIM8_TEMP1: 
+                      type: string
+                    PSU2_12V_VOLT: 
+                      type: string
+                    PIM1_MAX34461_VOLT11: 
+                      type: string
+                    SOC_DIMMA0_TEMP: 
+                      type: string
+                    PIM6_MAX34461_VOLT15: 
+                      type: string
+                    1V05MIX_VR_VOLT: 
+                      type: string
+                    FCM_T_HSC_CURR: 
+                      type: string
+                    PCH_TEMP: 
+                      type: string
+                    PIM7_TEMP2: 
+                      type: string
+                    PSU2_STBY_CURR: 
+                      type: string
+                    PIM5_MAX34461_VOLT9: 
+                      type: string
+                    PSU3_12V_VOLT: 
+                      type: string
+                    VDDR_VR_VOLT: 
+                      type: string
+                    TH3_CORE_VOLT: 
+                      type: string
+                    PSU1_STBY_CURR: 
+                      type: string
+                    TH3_CORE_TEMP: 
+                      type: string
+                    PIM2_QSFP_TEMP: 
+                      type: string
+                    PIM5_MAX34461_VOLT15: 
+                      type: string
+                    SCM_OUTLET_REMOTE_TEMP: 
+                      type: string
+                    PSU1_IN_VOLT: 
+                      type: string
+                    PSU1_STBY_VOLT: 
+                      type: string
+                    PIM7_HSC_POWER: 
+                      type: string
+                    TH3_SERDES_TEMP: 
+                      type: string
+                    PIM5_QSFP_TEMP: 
+                      type: string
+                    PSU2_12V_POWER: 
+                      type: string
+                    PIM2_TEMP1: 
+                      type: string
+                    SCM_HSC_VOLT: 
+                      type: string
+                    P5V_STBY_MB_VOLT: 
+                      type: string
+                    PIM8_MAX34461_VOLT16: 
+                      type: string
+                    PIM2_TEMP2: 
+                      type: string
+                    PIM4_MAX34461_VOLT14: 
+                      type: string
+                    P1V05_PCH_VOLT: 
+                      type: string
+                    PIM5_MAX34461_VOLT11: 
+                      type: string
+                    PSU3_12V_CURR: 
+                      type: string
+                    PIM1_MAX34461_VOLT6: 
+                      type: string
+                    PIM7_MAX34461_VOLT9: 
+                      type: string
+                    PIM7_MAX34461_VOLT10: 
+                      type: string
+                    TH3_SERDES_VOLT: 
+                      type: string
+                    PIM5_MAX34461_VOLT12: 
+                      type: string
+                    PSU2_IN_POWER: 
+                      type: string
+                    PIM4_MAX34461_VOLT16: 
+                      type: string
+                    FCM_B_HSC_CURR: 
+                      type: string
+                    PIM2_MAX34461_VOLT11: 
+                      type: string
+                    PIM6_MAX34461_VOLT3: 
+                      type: string
+                    PDB_R_TEMP1: 
+                      type: string
+                    PIM3_MAX34461_VOLT13: 
+                      type: string
+                    PSU3_TEMP2: 
+                      type: string
+                    PIM2_MAX34461_VOLT15: 
+                      type: string
+                    PIM2_HSC_VOLT: 
+                      type: string
+                    PSU3_IN_VOLT: 
+                      type: string
+                    PIM4_MAX34461_VOLT13: 
+                      type: string
+                    PIM4_MAX34461_VOLT5: 
+                      type: string
+                    PIM8_MAX34461_VOLT3: 
+                      type: string
+                    SOC_TEMP: 
+                      type: string
+                    PIM6_MAX34461_VOLT6: 
+                      type: string
+                    PIM2_MAX34461_VOLT12: 
+                      type: string
+                    FAN5_FRONT_SPEED: 
+                      type: string
+                    PSU1_12V_VOLT: 
+                      type: string
+                    PIM1_MAX34461_VOLT15: 
+                      type: string
+                    FAN8_FRONT_SPEED: 
+                      type: string
+                    PIM2_MAX34461_VOLT9: 
+                      type: string
+                    PIM4_MAX34461_VOLT8: 
+                      type: string
+                    PIM1_MAX34461_VOLT7: 
+                      type: string
+                    PIM2_MAX34461_VOLT6: 
+                      type: string
+                    PIM1_MAX34461_VOLT5: 
+                      type: string
+                    PIM2_MAX34461_VOLT4: 
+                      type: string
+                    PIM3_MAX34461_VOLT3: 
+                      type: string
+                    PIM2_MAX34461_VOLT13: 
+                      type: string
+                    PIM2_MAX34461_VOLT1: 
+                      type: string
+                    FCM_T_HSC_POWER: 
+                      type: string
+                    PIM4_TEMP2: 
+                      type: string
+                    PIM7_MAX34461_VOLT4: 
+                      type: string
+                    PIM1_MAX34461_VOLT4: 
+                      type: string
+                    PIM4_HSC_POWER: 
+                      type: string
+                    PIM5_HSC_CURR: 
+                      type: string
+                    PIM4_MAX34461_VOLT6: 
+                      type: string
+                    PIM3_MAX34461_VOLT4: 
+                      type: string
+                    PIM6_MAX34461_VOLT1: 
+                      type: string
+                    PDB_R_TEMP2: 
+                      type: string
+                    VCCIN_VR_OUT_POWER: 
+                      type: string
+                    PIM7_MAX34461_VOLT12: 
+                      type: string
+                    PSU2_TEMP3: 
+                      type: string
+                    SCM_HSC_POWER: 
+                      type: string
+                    FAN3_REAR_SPEED: 
+                      type: string
+                    PIM8_MAX34461_VOLT11: 
+                      type: string
+                    PIM6_MAX34461_VOLT9: 
+                      type: string
+                    PIM8_HSC_VOLT: 
+                      type: string
+                    PIM3_QSFP_TEMP: 
+                      type: string
+                    PIM4_MAX34461_VOLT3: 
+                      type: string
+                    PIM4_MAX34461_VOLT2: 
+                      type: string
+                    PSU3_STBY_POWER: 
+                      type: string
+                    PIM8_MAX34461_VOLT14: 
+                      type: string
+                    PIM5_MAX34461_VOLT6: 
+                      type: string
+                    PIM4_MAX34461_VOLT15: 
+                      type: string
+                    PIM3_MAX34461_VOLT14: 
+                      type: string
+                    PIM6_MAX34461_VOLT12: 
+                      type: string
+                    PIM2_MAX34461_VOLT16: 
+                      type: string
+                    PIM3_MAX34461_VOLT11: 
+                      type: string
+                    PIM4_MAX34461_VOLT10: 
+                      type: string
+                    PIM1_MAX34461_VOLT13: 
+                      type: string
+                    PIM3_MAX34461_VOLT12: 
+                      type: string
+                    PIM5_MAX34461_VOLT2: 
+                      type: string
+                    PSU3_IN_CURR: 
+                      type: string
+                    FAN1_REAR_SPEED: 
+                      type: string
+                    PIM6_MAX34461_VOLT11: 
+                      type: string
+                    PIM7_MAX34461_VOLT6: 
+                      type: string
+                    INA230_POWER: 
+                      type: string
+                    PIM3_MAX34461_VOLT16: 
+                      type: string
+                    PIM4_HSC_VOLT: 
+                      type: string
+                    PSU2_IN_CURR: 
+                      type: string
+                    PIM5_MAX34461_VOLT5: 
+                      type: string
+                    PIM3_MAX34461_VOLT2: 
+                      type: string
+                    PIM2_MAX34461_VOLT2: 
+                      type: string
+                    VCCIN_VR_CURR: 
+                      type: string
+                    SYSTEM_AIRFLOW: 
+                      type: string
+                    PIM6_MAX34461_VOLT14: 
+                      type: string
+                    1V05MIX_VR_OUT_POWER: 
+                      type: string
+                    FAN4_REAR_SPEED: 
+                      type: string
+                    PIM3_HSC_CURR: 
+                      type: string
+                    PIM6_MAX34461_VOLT16: 
+                      type: string
+                    PSU2_12V_CURR: 
+                      type: string
+                    PIM6_MAX34461_VOLT4: 
+                      type: string
+                    PIM5_MAX34461_VOLT8: 
+                      type: string
+                    PIM3_MAX34461_VOLT7: 
+                      type: string
+                    PIM5_MAX34461_VOLT14: 
+                      type: string
+                    PSU1_IN_POWER: 
+                      type: string
+                    PSU1_12V_POWER: 
+                      type: string
+                    PIM1_MAX34461_VOLT1: 
+                      type: string
+                    PIM1_QSFP_TEMP: 
+                      type: string
+                    PIM3_MAX34461_VOLT5: 
+                      type: string
+                    PIM4_MAX34461_VOLT12: 
+                      type: string
+                    PSU3_12V_POWER: 
+                      type: string
+                    PIM8_MAX34461_VOLT9: 
+                      type: string
+                    PIM7_HSC_CURR: 
+                      type: string
+                    PIM8_TEMP2: 
+                      type: string
+                    PIM4_QSFP_TEMP: 
+                      type: string
+                    FAN7_REAR_SPEED: 
+                      type: string
+                    PIM1_HSC_VOLT: 
+                      type: string
+                    PIM7_MAX34461_VOLT13: 
+                      type: string
+                    TH3_SERDES_CURR: 
+                      type: string
+                    SCM_HSC_CURR: 
+                      type: string
+                    PVDDR_VOLT: 
+                      type: string
+                    PIM8_MAX34461_VOLT8: 
+                      type: string
+                    PSU3_IN_POWER: 
+                      type: string
+                    FAN3_FRONT_SPEED: 
+                      type: string
+                    PIM6_HSC_CURR: 
+                      type: string
+                    PIM4_TEMP1: 
+                      type: string
+                    PIM7_MAX34461_VOLT16: 
+                      type: string
+                    PIM5_HSC_VOLT: 
+                      type: string
+                    PIM2_MAX34461_VOLT10: 
+                      type: string
+                    PIM6_QSFP_TEMP: 
+                      type: string
+                    PSU4_TEMP1: 
+                      type: string
+                    1V05MIX_VR_TEMP: 
+                      type: string
+                    PIM6_MAX34461_VOLT5: 
+                      type: string
+                    PIM7_MAX34461_VOLT15: 
+                      type: string
+                    VDDR_VR_OUT_POWER: 
+                      type: string
+                    PIM1_MAX34461_VOLT12: 
+                      type: string
+                    PIM1_HSC_CURR: 
+                      type: string
+                    PIM1_MAX34461_VOLT9: 
+                      type: string
+                    PIM5_MAX34461_VOLT1: 
+                      type: string
+                    PIM1_MAX34461_VOLT8: 
+                      type: string
+                    PIM6_MAX34461_VOLT8: 
+                      type: string
+                    PIM3_MAX34461_VOLT8: 
+                      type: string
+                    FCM_B_HSC_VOLT: 
+                      type: string
+                    FAN6_REAR_SPEED: 
+                      type: string
+                    PSU4_12V_POWER: 
+                      type: string
+                    PIM3_MAX34461_VOLT6: 
+                      type: string
+                    P3V3_STBY_MB_VOLT: 
+                      type: string
+                    PIM5_MAX34461_VOLT16: 
+                      type: string
+                    SOC_PACKAGE_POWER: 
+                      type: string
+                    FAN2_FRONT_SPEED: 
+                      type: string
+                    PSU4_STBY_CURR: 
+                      type: string
+                    FAN7_FRONT_SPEED: 
+                      type: string
+                    PIM4_MAX34461_VOLT4: 
+                      type: string
+                    PSU4_TEMP3: 
+                      type: string
+                    PIM7_MAX34461_VOLT2: 
+                      type: string
+                    PIM1_MAX34461_VOLT3: 
+                      type: string
+                    PIM6_TEMP2: 
+                      type: string
+                    PIM8_MAX34461_VOLT10: 
+                      type: string
+                    PIM1_MAX34461_VOLT2: 
+                      type: string
+                    SCM_INLET_REMOTE_TEMP: 
+                      type: string
+                    FCM_T_TEMP2: 
+                      type: string
+                    PSU4_12V_VOLT: 
+                      type: string
+                    PIM4_MAX34461_VOLT1: 
+                      type: string
+                    PIM8_MAX34461_VOLT12: 
+                      type: string
+                    PIM8_MAX34461_VOLT1: 
+                      type: string
+                    SMB_TEMP3: 
+                      type: string
+                    SMB_TEMP2: 
+                      type: string
+                    SMB_TEMP1: 
+                      type: string
+                    PSU2_STBY_VOLT: 
+                      type: string
+                    PIM3_TEMP1: 
+                      type: string
+                    FAN4_FRONT_SPEED: 
+                      type: string
+                    SMB_TEMP5: 
+                      type: string
+                    SMB_TEMP4: 
+                      type: string
+                    PIM4_MAX34461_VOLT11: 
+                      type: string
+                    PIM3_MAX34461_VOLT1: 
+                      type: string
+                    PSU4_IN_POWER: 
+                      type: string
+                    INA230_VOLT: 
+                      type: string
+                    PIM4_HSC_CURR: 
+                      type: string
+                    PSU1_STBY_POWER: 
+                      type: string
+                    TH3_CORE_CURR: 
+                      type: string
+                    PSU3_FAN_SPEED: 
+                      type: string
+                    PIM6_MAX34461_VOLT10: 
+                      type: string
+                    PIM7_MAX34461_VOLT5: 
+                      type: string
+                    PSU3_TEMP1: 
+                      type: string
+                    PIM3_HSC_POWER: 
+                      type: string
+                    PIM8_MAX34461_VOLT7: 
+                      type: string
+                    PIM5_MAX34461_VOLT4: 
+                      type: string
+                    PSU4_TEMP2: 
+                      type: string
+                    PIM8_MAX34461_VOLT6: 
+                      type: string
+                    PIM5_HSC_POWER: 
+                      type: string
+                    PIM3_TEMP2: 
+                      type: string
+                    PIM7_MAX34461_VOLT8: 
+                      type: string
+                    PIM5_MAX34461_VOLT10: 
+                      type: string
+                    PIM8_HSC_CURR: 
+                      type: string
+                    MB_OUTLET_TEMP: 
+                      type: string
+                    PIM5_MAX34461_VOLT7: 
+                      type: string
+                    PSU2_IN_VOLT: 
+                      type: string
+                    PSU1_IN_CURR: 
+                      type: string
+                    FAN5_REAR_SPEED: 
+                      type: string
+                    FAN1_FRONT_SPEED: 
+                      type: string
+                    PIM8_MAX34461_VOLT2: 
+                      type: string
+                    PSU3_STBY_CURR: 
+                      type: string
+                    PIM6_HSC_VOLT: 
+                      type: string
+                    PSU3_TEMP3: 
+                      type: string
+                    FCM_B_HSC_POWER: 
+                      type: string
+                    PSU1_TEMP2: 
+                      type: string
+                    PSU2_TEMP1: 
+                      type: string
+                    PIM2_HSC_CURR: 
+                      type: string
+                    VDDR_VR_TEMP: 
+                      type: string
+                    PIM1_MAX34461_VOLT14: 
+                      type: string
+                    name: 
+                      type: string
+                    PSU4_12V_CURR: 
+                      type: string
+                    PIM8_QSFP_TEMP: 
+                      type: string
+                    PIM7_QSFP_TEMP: 
+                      type: string
+                    FCM_T_HSC_VOLT: 
+                      type: string
+                    PIM2_MAX34461_VOLT5: 
+                      type: string
+                    PSU4_FAN_SPEED: 
+                      type: string
+                    SOC_TJMAX_TEMP: 
+                      type: string
+                    VDDR_VR_CURR: 
+                      type: string
+                    MB_INLET_TEMP: 
+                      type: string
+                    PIM1_HSC_POWER: 
+                      type: string
+                    PDB_L_TEMP2: 
+                      type: string
+                    PDB_L_TEMP1: 
+                      type: string
+                    FAN2_REAR_SPEED: 
+                      type: string
+                    PIM7_MAX34461_VOLT11: 
+                      type: string
+                    PIM3_MAX34461_VOLT15: 
+                      type: string
+                    PIM1_MAX34461_VOLT10: 
+                      type: string
+                    PSU4_IN_CURR: 
+                      type: string
+                    PSU3_STBY_VOLT: 
+                      type: string
+                    PIM4_MAX34461_VOLT7: 
+                      type: string
+                    PIM7_MAX34461_VOLT14: 
+                      type: string
+                    P1V05_MIX_VOLT: 
+                      type: string
+                    FCM_B_TEMP2: 
+                      type: string
+                    FCM_B_TEMP1: 
+                      type: string
+                    SOC_DIMMB0_TEMP: 
+                      type: string
+                    PSU2_TEMP2: 
+                      type: string
+                    PIM2_MAX34461_VOLT7: 
+                      type: string
+                    PIM7_MAX34461_VOLT3: 
+                      type: string
+                    VCCIN_VR_TEMP: 
+                      type: string
+                    PIM6_MAX34461_VOLT7: 
+                      type: string
+                    VCCIN_VR_VOLT: 
+                      type: string
+                    PIM2_MAX34461_VOLT14: 
+                      type: string
+                    PIM7_TEMP1: 
+                      type: string
+                    PIM6_TEMP1: 
+                      type: string
+                    SCM_INLET_LOCAL_TEMP: 
+                      type: string
+                    FCM_T_TEMP1: 
+                      type: string
+                    PIM8_MAX34461_VOLT4: 
+                      type: string
+                    PV_BAT_VOLT: 
+                      type: string
+                    PIM2_HSC_POWER: 
+                      type: string
+                    PIM6_HSC_POWER: 
+                      type: string
+                    PSU1_TEMP1: 
+                      type: string
+                    PSU4_STBY_POWER: 
+                      type: string
+                    FAN6_FRONT_SPEED: 
+                      type: string
+                    PIM8_MAX34461_VOLT5: 
+                      type: string
+                    PIM4_MAX34461_VOLT9: 
+                      type: string
+                    PIM8_MAX34461_VOLT13: 
+                      type: string
+                    PSU1_FAN_SPEED: 
+                      type: string
+                    PIM3_MAX34461_VOLT10: 
+                      type: string
+                    PSU4_IN_VOLT: 
+                      type: string
+                    1V05MIX_VR_CURR: 
+                      type: string
+                    PIM5_TEMP1: 
+                      type: string
+                    PIM3_MAX34461_VOLT9: 
+                      type: string
+                    PIM5_TEMP2: 
+                      type: string
+            

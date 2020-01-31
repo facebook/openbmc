@@ -1,0 +1,31 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/firmware_info_scm  
+  title: Swagger doc for /api/sys/firmware_info_scm  
+  version: 1.0.0
+paths: 
+  /api/sys/firmware_info_scm: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  1: 
+                    type: string
+            

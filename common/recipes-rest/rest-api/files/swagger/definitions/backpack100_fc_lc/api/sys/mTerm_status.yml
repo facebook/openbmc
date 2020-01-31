@@ -1,0 +1,31 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/mTerm_status  
+  title: Swagger doc for /api/sys/mTerm_status  
+  version: 1.0.0
+paths: 
+  /api/sys/mTerm_status: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  mTerm Server Status: 
+                    type: string
+            

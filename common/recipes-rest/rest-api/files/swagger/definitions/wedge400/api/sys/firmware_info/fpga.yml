@@ -1,0 +1,33 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/firmware_info/fpga  
+  title: Swagger doc for /api/sys/firmware_info/fpga  
+  version: 1.0.0
+paths: 
+  /api/sys/firmware_info/fpga: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  DOMFPGA1: 
+                    type: string
+                  DOMFPGA2: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

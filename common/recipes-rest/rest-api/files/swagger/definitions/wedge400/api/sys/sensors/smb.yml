@@ -1,0 +1,129 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/sensors/smb  
+  title: Swagger doc for /api/sys/sensors/smb  
+  version: 1.0.0
+paths: 
+  /api/sys/sensors/smb: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  FAN1_FRONT_SPEED: 
+                    type: string
+                  FAN2_REAR_SPEED: 
+                    type: string
+                  XP12R0V(12V): 
+                    type: string
+                  name: 
+                    type: string
+                  FAN4_REAR_SPEED: 
+                    type: string
+                  XP1R2V_BMC(1.2V): 
+                    type: string
+                  FAN3_FRONT_SPEED: 
+                    type: string
+                  FCM_LM75B_U1_TEMP: 
+                    type: string
+                  XP3R3V_TH3(3.3V): 
+                    type: string
+                  TH3_SERDES_CURR(TRVDD): 
+                    type: string
+                  TH3_SERDES_VOLT(TRVDD): 
+                    type: string
+                  SMB_LM75B_U25_TEMP: 
+                    type: string
+                  present: 
+                    type: boolean
+                  XP2R5V_BMC(2.5V): 
+                    type: string
+                  FCM_HSC_VOLT: 
+                    type: string
+                  POWR1220_VCCA(3.3V): 
+                    type: string
+                  TH3_DIE_TEMP1: 
+                    type: string
+                  TH3_DIE_TEMP2: 
+                    type: string
+                  FCM_HSC_POWER: 
+                    type: string
+                  FAN4_FRONT_SPEED: 
+                    type: string
+                  SMB_LM75B_U55_TEMP: 
+                    type: string
+                  SMB_LM75B_U56_TEMP: 
+                    type: string
+                  XP5R0V(5V): 
+                    type: string
+                  TH3_SERDES_VOLT(PVDD): 
+                    type: string
+                  FCM_HSC_CURR: 
+                    type: string
+                  TH3_SERDES_POWER(TRVDD): 
+                    type: string
+                  FAN3_REAR_SPEED: 
+                    type: string
+                  TRVDD0P8_TH3(0.8V): 
+                    type: string
+                  TH3_SERDES_TEMP1(PVDD): 
+                    type: string
+                  XP1R15V_BMC(1.15V): 
+                    type: string
+                  TH3_SERDES_CURR(PVDD): 
+                    type: string
+                  FAN1_REAR_SPEED: 
+                    type: string
+                  Adapter: 
+                    type: string
+                  FCM_LM75B_U2_TEMP: 
+                    type: string
+                  VDD_CORE_TH3(0.75~0.9V): 
+                    type: string
+                  FAN2_FRONT_SPEED: 
+                    type: string
+                  XP1R8V_TH3(1.8V): 
+                    type: string
+                  TH3_SERDES_TEMP1(TRVDD): 
+                    type: string
+                  PVDD0P8_TH3(0.8V): 
+                    type: string
+                  TH3_CORE_VOLT: 
+                    type: string
+                  TH3_CORE_CURR: 
+                    type: string
+                  XP1R2V_TH3(1.2V): 
+                    type: string
+                  SMB_TMP421_U62_TEMP: 
+                    type: string
+                  POWR1220_VCCINP(3.3V): 
+                    type: string
+                  TH3_CORE_TEMP1: 
+                    type: string
+                  SMB_LM75B_U28_TEMP: 
+                    type: string
+                  XP3R3V_BMC(3.3V): 
+                    type: string
+                  TH3_CORE_POWER: 
+                    type: string
+                  TH3_SERDES_POWER(PVDD): 
+                    type: string
+                  SMB_TMP421_U63_TEMP: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

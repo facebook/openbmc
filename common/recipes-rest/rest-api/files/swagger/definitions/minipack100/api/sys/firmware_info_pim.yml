@@ -1,0 +1,45 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/firmware_info_pim  
+  title: Swagger doc for /api/sys/firmware_info_pim  
+  version: 1.0.0
+paths: 
+  /api/sys/firmware_info_pim: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  1: 
+                    type: string
+                  2: 
+                    type: string
+                  3: 
+                    type: string
+                  4: 
+                    type: string
+                  5: 
+                    type: string
+                  6: 
+                    type: string
+                  7: 
+                    type: string
+                  8: 
+                    type: string
+            

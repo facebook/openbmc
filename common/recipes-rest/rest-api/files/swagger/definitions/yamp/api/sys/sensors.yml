@@ -1,0 +1,55 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/sensors  
+  title: Swagger doc for /api/sys/sensors  
+  version: 1.0.0
+paths: 
+  /api/sys/sensors: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: array
+                items: 
+                  type: object
+                  additionalProperties: false
+                  properties: 
+                    PIM4 ECB_I: 
+                      type: string
+                    PIM4 1v2: 
+                      type: string
+                    PIM4 0v9_L: 
+                      type: string
+                    PIM4 1v8: 
+                      type: string
+                    Adapter: 
+                      type: string
+                    PIM4 12vEC: 
+                      type: string
+                    PIM4 12v_F: 
+                      type: string
+                    PIM4 3v3: 
+                      type: string
+                    PIM4 3v3_E: 
+                      type: string
+                    name: 
+                      type: string
+                    PIM4 0v9_R: 
+                      type: string
+                    PIM4 OVTMP: 
+                      type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+            

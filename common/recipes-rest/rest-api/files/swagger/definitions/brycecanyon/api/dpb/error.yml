@@ -1,0 +1,35 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/dpb/error  
+  title: Swagger doc for /api/dpb/error  
+  version: 1.0.0
+paths: 
+  /api/dpb/error: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Error Code f7: 
+                    type: string
+                  Error Counter: 
+                    type: string
+                  Error Code e0: 
+                    type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+            

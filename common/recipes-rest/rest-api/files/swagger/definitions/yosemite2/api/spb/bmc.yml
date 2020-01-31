@@ -1,0 +1,97 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/spb/bmc  
+  title: Swagger doc for /api/spb/bmc  
+  version: 1.0.0
+paths: 
+  /api/spb/bmc: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  u-boot version: 
+                    type: string
+                  Reset Reason: 
+                    type: string
+                  SPI1 Vendor: 
+                    type: string
+                  TPM FW version: 
+                    type: string
+                  OpenBMC Version: 
+                    type: string
+                  SPI0 Vendor: 
+                    type: string
+                  At-Scale-Debug Running: 
+                    type: boolean
+                  Uptime: 
+                    type: string
+                  vboot: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      uboot_fallback_time: 
+                        type: string
+                      uboot_time: 
+                        type: string
+                      status_text: 
+                        type: string
+                      recovery_retried: 
+                        type: string
+                      cert_fallback_time: 
+                        type: string
+                      recovery_boot: 
+                        type: string
+                      software_enforce: 
+                        type: string
+                      hardware_enforce: 
+                        type: string
+                      cert_time: 
+                        type: string
+                      status_crc: 
+                        type: string
+                      tpm_status: 
+                        type: string
+                      status: 
+                        type: string
+                      force_recovery: 
+                        type: string
+                  Memory Usage: 
+                    type: string
+                  kernel version: 
+                    type: string
+                  load-1: 
+                    type: string
+                  TPM TCG version: 
+                    type: string
+                  Description: 
+                    type: string
+                  CPU Usage: 
+                    type: string
+                  uptime: 
+                    type: string
+                  load-5: 
+                    type: string
+                  load-15: 
+                    type: string
+                  MAC Addr: 
+                    type: string
+                  open-fds: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

@@ -1,0 +1,37 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/firmware_info/cpld  
+  title: Swagger doc for /api/sys/firmware_info/cpld  
+  version: 1.0.0
+paths: 
+  /api/sys/firmware_info/cpld: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  SMB_SYSCPLD: 
+                    type: string
+                  SCMCPLD: 
+                    type: string
+                  SMB_PWRCPLD: 
+                    type: string
+                  FCMCPLD: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

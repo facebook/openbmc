@@ -1,0 +1,73 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/scdinfo  
+  title: Swagger doc for /api/sys/scdinfo  
+  version: 1.0.0
+paths: 
+  /api/sys/scdinfo: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Product Asset Tag: 
+                    type: string
+                  ODM PCBA Part Number: 
+                    type: string
+                  Facebook PCB Part Number: 
+                    type: string
+                  ODM PCBA Serial Number: 
+                    type: string
+                  System Manufacturer: 
+                    type: string
+                  Product Sub-Version: 
+                    type: string
+                  Extended MAC Address Size: 
+                    type: string
+                  Product Name: 
+                    type: string
+                  Product Part Number: 
+                    type: string
+                  Product Version: 
+                    type: string
+                  Local MAC: 
+                    type: string
+                  Facebook PCBA Part Number: 
+                    type: string
+                  System Manufacturing Date: 
+                    type: string
+                  System Assembly Part Number: 
+                    type: string
+                  Version: 
+                    type: string
+                  Assembled At: 
+                    type: string
+                  Location on Fabric: 
+                    type: string
+                  Product Serial Number: 
+                    type: string
+                  Extended MAC Base: 
+                    type: string
+                  PCB Manufacturer: 
+                    type: string
+                  Product Production State: 
+                    type: string
+                  CRC8: 
+                    type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+            

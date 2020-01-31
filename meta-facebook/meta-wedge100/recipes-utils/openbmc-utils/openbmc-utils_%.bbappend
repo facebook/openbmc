@@ -28,6 +28,7 @@ SRC_URI += "file://disable_watchdog.sh \
             file://reset_qsfp_mux.sh \
             file://setup_i2c.sh \
             file://setup_sensors_conf.sh \
+            file://spi_util.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -38,6 +39,7 @@ OPENBMC_UTILS_FILES += " \
     ec_version.sh \
     cp2112_i2c_flush.sh \
     reset_qsfp_mux.sh \
+    spi_util.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

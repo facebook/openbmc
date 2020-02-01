@@ -25,7 +25,10 @@ from common.base_process_running_test import BaseProcessRunningTest
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [
-            "dhclient -6 -d -D LL -pf /var/run/dhclient6.eth0.pid eth0",
+            (
+                "dhclient -6 -d -D LL --address-prefix-len 64 "
+                + "-pf /var/run/dhclient6.eth0.pid eth0"
+            ),
             "dhclient -pf /var/run/dhclient.eth0.pid eth0",
             "front-paneld",
             "fscd",

@@ -93,6 +93,10 @@ struct pal_key_cfg {
   {"slot2_boot_order", "0100090203ff", NULL},
   {"slot3_boot_order", "0100090203ff", NULL},
   {"slot4_boot_order", "0100090203ff", NULL},
+  {"slot1_cpu_ppin", "0", NULL},
+  {"slot2_cpu_ppin", "0", NULL},
+  {"slot3_cpu_ppin", "0", NULL},
+  {"slot4_cpu_ppin", "0", NULL},
   {"fru1_restart_cause", "3", NULL},
   {"fru2_restart_cause", "3", NULL},
   {"fru3_restart_cause", "3", NULL},
@@ -279,6 +283,28 @@ pal_set_boot_order(uint8_t slot_id, uint8_t *boot, uint8_t *res_data, uint8_t *r
 
 error_exit:
   return ret;
+}
+
+int
+pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  char key[MAX_KEY_LEN];
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[8];
+  int i, comp_code = CC_UNSPECIFIED_ERROR;
+
+  *res_len = 0;
+
+  for (i = 0; i < SIZE_CPU_PPIN; i++) {
+    sprintf(tstr, "%02x", req_data[i]);
+    strcat(str, tstr);
+  }
+
+  sprintf(key, "slot%u_cpu_ppin", slot);
+  if (!pal_set_key_value(key, str)) {
+    comp_code = CC_SUCCESS;
+  }
+
+  return comp_code;
 }
 
 int

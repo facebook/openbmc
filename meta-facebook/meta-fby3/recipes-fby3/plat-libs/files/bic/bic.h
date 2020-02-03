@@ -34,6 +34,11 @@ extern "C" {
 
 #define MAX_GPIO_PINS 96
 
+#define PRESENT_1OU 1
+#define PRESENT_2OU 2
+#define DEV_ID_1U 11
+#define DEV_ID_2U 12
+
 enum {
   FW_CPLD = 1,
   FW_BIC,

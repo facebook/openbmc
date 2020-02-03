@@ -110,6 +110,20 @@ int BicFwExtComponent::print_version() {
   transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
   try {
     server.ready();
+    if ( intf == BB_BIC_INTF ) {
+      ; // do nothing
+    } else {
+      ret = bic_is_m2_exp_prsnt(slot_id);
+      if ( ret < 0 ) {
+        throw "Error in getting the present status of " + board_name;
+      } else if ( intf == FEXP_BIC_INTF && (ret == PRESENT_1OU || ret == (PRESENT_1OU + PRESENT_2OU)) ) {
+        ; // Correct status, do nothing
+      } else if ( intf == REXP_BIC_INTF && (ret == PRESENT_2OU || ret == (PRESENT_1OU + PRESENT_2OU)) ) {
+        ; // Correct status, do nothing
+      } else {
+        throw board_name + " Board is empty";
+      }
+    }
     ret = bic_show_fw_ver(slot_id, FW_BIC, ver, 0, 0, intf); 
     // Print Bridge-IC Version
     if ( ret < 0 ) {
@@ -144,6 +158,20 @@ int BicFwBlExtComponent::print_version() {
   transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
   try {
     server.ready();
+    if ( intf == BB_BIC_INTF ) {
+      ; // do nothing
+    } else {
+      ret = bic_is_m2_exp_prsnt(slot_id);
+      if ( ret < 0 ) {
+        throw "Error in getting the present status of " + board_name;
+      } else if ( intf == FEXP_BIC_INTF && (ret == PRESENT_1OU || ret == (PRESENT_1OU + PRESENT_2OU)) ) {
+        ; // Correct status, do nothing
+      } else if ( intf == REXP_BIC_INTF && (ret == PRESENT_2OU || ret == (PRESENT_1OU + PRESENT_2OU)) ) {
+        ; // Correct status, do nothing
+      } else {
+        throw board_name + " Board is empty";
+      }
+    }
     ret = bic_show_fw_ver(slot_id, FW_BIC_BOOTLOADER, ver, 0, 0, intf);
     // Print Bridge-IC Bootloader Version
     if ( ret < 0 ) {

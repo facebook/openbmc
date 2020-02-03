@@ -35,7 +35,7 @@
 #include "fby3_common.h"
 
 const char *slot_usage = "slot1|slot2|slot3|slot4";
-const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc"};
+const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp"};
 
 static int
 get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask) {

@@ -33,10 +33,11 @@ extern "C" {
 
 #define BIC_CACHED_PID "/var/run/bic-cached_%d.lock"
 
-#define FRU_NIC_BIN   "/tmp/fruid_nic.bin"
-#define FRU_BMC_BIN   "/tmp/fruid_bmc.bin"
-#define FRU_BB_BIN    "/tmp/fruid_bb.bin"
-#define FRU_SLOT1_BIN "/tmp/fruid_slot1.bin"
+#define FRU_NIC_BIN    "/tmp/fruid_nic.bin"
+#define FRU_BMC_BIN    "/tmp/fruid_bmc.bin"
+#define FRU_BB_BIN     "/tmp/fruid_bb.bin"
+#define FRU_NICEXP_BIN "/tmp/fruid_nicexp.bin"
+#define FRU_SLOT_BIN   "/tmp/fruid_slot%d.bin"
 
 #define I2CDEV "/dev/i2c-%d"
 
@@ -47,13 +48,14 @@ extern "C" {
 #define CLASS2_FRU_BUS 10
 #define BMC_FRU_ADDR 0x54
 #define BB_FRU_ADDR  0x51
+#define NICEXP_FRU_ADDR 0x51
 #define NIC_FRU_ADDR 0x50
 #define I2C_PATH "/sys/class/i2c-dev/i2c-%d/device/new_device"
 #define EEPROM_PATH "/sys/bus/i2c/devices/%d-00%X/eeprom"
 
 extern const char *slot_usage;
 
-#define MAX_NUM_FRUS 7
+#define MAX_NUM_FRUS 8
 enum {
   FRU_ALL   = 0,
   FRU_SLOT1 = 1,
@@ -63,6 +65,7 @@ enum {
   FRU_BB    = 5,
   FRU_NIC   = 6,
   FRU_BMC   = 7,
+  FRU_NICEXP = 8, //the fru is used when bmc is located on class 2
 };
 
 enum {

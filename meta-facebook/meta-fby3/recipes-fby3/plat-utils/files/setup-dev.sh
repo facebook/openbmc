@@ -28,17 +28,30 @@ function create_new_dev() {
 }
 
 function init_class1_dev(){
-  #enable the register of the temperature
+  #enable the register of the temperature of hsc
   /usr/sbin/i2cset -y 11 0x40 0xd4 0x1c 0x3f i
+
+  #create the device of the inlet/outlet temp.
   create_new_dev "lm75" 0x4e 12
   create_new_dev "lm75" 0x4f 12
+
+  #create the device of bmc/bb fru.
+  create_new_dev "24c128" 0x51 11 
+  create_new_dev "24c128" 0x54 11
 }
 
 function init_class2_dev(){
+  #create the device of the outlet temp. 
   create_new_dev "lm75" 0x4f 2
+
+  #create the device of bmc/nic fru.
+  create_new_dev "24c128" 0x51 10
+  create_new_dev "24c128" 0x54 10
 }
 
+#create the device of mezz card
 create_new_dev "tmp421" 0x1f 8
+create_new_dev "24c32" 0x50 8
 
 bmc_location=$(get_bmc_board_id)
 if [ $bmc_location -eq 9 ]; then

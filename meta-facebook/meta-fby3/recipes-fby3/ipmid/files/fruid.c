@@ -38,9 +38,6 @@
 #include "fruid.h"
 
 #define FRUID_SIZE        512
-#define BIN_BMC           "/tmp/fruid_bmc.bin"
-#define BIN_NIC           "/tmp/fruid_nic.bin"
-#define BIN_SLOT          "/tmp/fruid_slot%d.bin"
 
 #define FRU_ID_SERVER 0
 #define FRU_ID_BMC 1
@@ -108,10 +105,7 @@ fruid_init_local_fru() {
   int ret = 0;
   char path[128] = {0};
   int path_len = sizeof(path);
-  int fd = 0;
-  char *dev[3] = {"24c128 0x54\n", "24c128 0x51\n", "24c32 0x50\n"};
   uint8_t bmc_location = 0;
-  ssize_t bytes_wr;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -122,62 +116,33 @@ fruid_init_local_fru() {
   //reinitialize ret 
   ret = -1;
 
-  //create the path
-  snprintf(path, path_len, I2C_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS);
-  
-  fd = open(path, O_WRONLY);
-  if ( fd < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to open %s, %s", __func__, path, strerror(errno));
-    goto error_exit;
-  }
-   
-  //initialize devs 
-  bytes_wr = write(fd, dev[0], strlen(dev[0]));
-  if (bytes_wr != strlen(dev[0])) {
-    syslog(LOG_ERR, "%s: write to FRU %s failed\n", __func__, dev[0]);
-    goto error_exit;
-  }  
-
-  bytes_wr = write(fd, dev[1], strlen(dev[1]));
-  if (bytes_wr != strlen(dev[1])) {
-    syslog(LOG_ERR, "%s: write to FRU %s failed\n", __func__, dev[1]);
-    goto error_exit;
-  }
-
-  //try to open the other bus, close fd first
-  if ( fd > 0 ) close(fd);
-
-  snprintf(path, path_len, I2C_PATH, NIC_FRU_BUS);
-  syslog(LOG_WARNING, "path %s", path);
-  fd = open(path, O_WRONLY);
-  if ( fd < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to open %s, %s", __func__, path, strerror(errno));
-    goto error_exit;
-  }
-
-  bytes_wr = write(fd, dev[2], strlen(dev[2]));
-  if (bytes_wr != strlen(dev[2])) {
-    syslog(LOG_ERR, "%s: write to FRU %s failed\n", __func__, dev[2]);
-    goto error_exit;
-  }
-
-  //create the binary in /tmp/
+  //create the fru binary in /tmp/
+  //fruid_bmc.bin
   snprintf(path, path_len, EEPROM_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS, BMC_FRU_ADDR);
   if ( copy_eeprom_to_bin(path, FRU_BMC_BIN) < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_BMC_BIN);
     goto error_exit;
   }
 
+  //fruid_nic.bin
   snprintf(path, path_len, EEPROM_PATH, NIC_FRU_BUS, NIC_FRU_ADDR);
   if ( copy_eeprom_to_bin(path, FRU_NIC_BIN) < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_NIC_BIN);
     goto error_exit;
   }
 
+  snprintf(path, path_len, EEPROM_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS, 
+                                        (bmc_location == BB_BMC)?BB_FRU_ADDR:NICEXP_FRU_ADDR);
+
+  //fruid_nicexp.bin or fruid_bb.bin 
+  if ( copy_eeprom_to_bin(path, (bmc_location == BB_BMC)?FRU_BB_BIN:FRU_NICEXP_BIN) < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, (bmc_location == BB_BMC)?FRU_BB_BIN:FRU_NICEXP_BIN);
+    goto error_exit;
+  }
+
   ret = 0;
 
 error_exit:
-  if ( fd > 0 ) close(fd);
   return ret;
 }
 
@@ -201,13 +166,13 @@ int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count,
 
   if (fru_id == FRU_ID_SERVER) {
     // Fill the file path for a given slot
-    sprintf(fpath, BIN_SLOT, payload_id);
+    sprintf(fpath, FRU_SLOT_BIN, payload_id);
   } else if (fru_id == FRU_ID_BMC) {
-    // Fill the file path for spb
-    sprintf(fpath, BIN_BMC);
+    // Fill the file path for bmc
+    sprintf(fpath, FRU_BMC_BIN);
   } else if (fru_id == FRU_ID_NIC) {
     // Fill the file path for nic
-    sprintf(fpath, BIN_NIC);
+    sprintf(fpath, FRU_NIC_BIN);
   } else {
     return -1;
   }
@@ -242,7 +207,7 @@ int plat_fruid_size(unsigned char payload_id) {
   int ret;
 
   // Fill the file path for a given slot
-  sprintf(fpath, BIN_SLOT, payload_id);
+  sprintf(fpath, FRU_SLOT_BIN, payload_id);
 
   // check the size of the file and return size
   ret = stat(fpath, &buf);

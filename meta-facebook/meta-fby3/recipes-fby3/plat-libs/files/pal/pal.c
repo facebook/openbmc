@@ -42,8 +42,8 @@
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
-const char pal_fru_list_print[] = "all, slot1, slot2, slot3, slot4, bmc, nic, bb";
-const char pal_fru_list_rw[] = "slot1, slot2, slot3, slot4, bmc, bb";
+const char pal_fru_list_print[] = "all, slot1, slot2, slot3, slot4, bmc, nic, bb, nicexp";
+const char pal_fru_list_rw[] = "slot1, slot2, slot3, slot4, bmc, bb, nicexp";
 const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc";
 
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic";
@@ -459,18 +459,35 @@ error_exit:
 
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
-
   int ret = PAL_EOK;
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return ret;
+  }
 
   switch (fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      ret = fby3_common_is_fru_prsnt(fru, status);
+      if ( bmc_location == BB_BMC ) {
+        ret = fby3_common_is_fru_prsnt(fru, status);
+      } else {
+        if ( fru == FRU_SLOT1 ) {
+          *status = 1;
+        } else {
+          *status = 0;
+        }
+      }
       break;
     case FRU_BB:
       *status = 1;
+      break;
+    case FRU_NICEXP:
+      *status = (bmc_location == NIC_BMC)?1:0;
       break;
     case FRU_NIC:
       *status = 1;
@@ -481,7 +498,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     default:
       *status = 0;
       syslog(LOG_WARNING, "%s() wrong fru id 0x%02x", __func__, fru);
-      return -1;
+      ret = PAL_ENOTSUP;
   }
 
   return ret;
@@ -502,6 +519,7 @@ pal_get_fru_id(char *str, uint8_t *fru) {
 
 int
 pal_get_fruid_name(uint8_t fru, char *name) {
+  int ret = PAL_EOK;
 
   switch(fru) {
   case FRU_SLOT1:
@@ -522,19 +540,30 @@ pal_get_fruid_name(uint8_t fru, char *name) {
   case FRU_BB:
     sprintf(name, "Baseboard");
     break;
+  case FRU_NICEXP:
+    sprintf(name, "NIC Expansion");
+    break;
   case FRU_NIC:
     sprintf(name, "NIC");
     break;
   default:
     syslog(LOG_WARNING, "%s() wrong fru %d", __func__, fru);
-    return -1;
+    ret = PAL_ENOTSUP;
   }
 
-  return PAL_EOK;
+  return ret;
 }
 
 int
 pal_get_fru_name(uint8_t fru, char *name) {
+  int ret = 0;
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return ret;
+  }
 
   switch(fru) {
     case FRU_SLOT1:
@@ -558,12 +587,15 @@ pal_get_fru_name(uint8_t fru, char *name) {
     case FRU_BB:
       sprintf(name, "bb");
       break;
+    case FRU_NICEXP:
+      sprintf(name, "nicexp");
+      break;
     default:
       syslog(LOG_WARNING, "%s() unknown fruid %d", __func__, fru);
-      return -1;
+      ret = PAL_ENOTSUP;
   }
 
-  return PAL_EOK;
+  return ret;
 }
 
 int
@@ -582,21 +614,38 @@ pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
     sprintf(path, EEPROM_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS, BMC_FRU_ADDR);
     break;
   case FRU_BB:
-    sprintf(path, EEPROM_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS, BB_FRU_ADDR);
+    if ( bmc_location == NIC_BMC ) {
+      //The FRU of baseboard is owned by BIC on class 2.
+      //And so, there is no eeprom path.
+      ret = PAL_ENOTSUP;
+    } else {
+      sprintf(path, EEPROM_PATH, CLASS1_FRU_BUS, BB_FRU_ADDR);
+    }
+    break;
+  case FRU_NICEXP:
+    sprintf(path, EEPROM_PATH, CLASS2_FRU_BUS, NICEXP_FRU_ADDR);
     break;
   case FRU_NIC:
     sprintf(path, EEPROM_PATH, NIC_FRU_BUS, NIC_FRU_ADDR);
     break;
   default:
-    return -1;
+    ret = PAL_ENOTSUP;
   }
 
-  return PAL_EOK;
+  return ret;
 }
 
 int
 pal_get_fruid_path(uint8_t fru, char *path) {
   char fname[16] = {0};
+  int ret = 0;
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return ret;
+  }
 
   switch(fru) {
   case FRU_SLOT1:
@@ -620,13 +669,19 @@ pal_get_fruid_path(uint8_t fru, char *path) {
   case FRU_BB:
     sprintf(fname, "bb");
     break;
+  case FRU_NICEXP:
+    sprintf(fname, "nicexp");
+    break;
   default:
     syslog(LOG_WARNING, "%s() unknown fruid %d", __func__, fru);
-    return -1;
+    ret = PAL_ENOTSUP;
   }
 
-  sprintf(path, "/tmp/fruid_%s.bin", fname);
-  return PAL_EOK;
+  if ( ret != PAL_ENOTSUP ) {
+    sprintf(path, "/tmp/fruid_%s.bin", fname);
+  }
+
+  return ret;
 }
 
 int
@@ -634,9 +689,11 @@ pal_fruid_write(uint8_t fru, char *path)
 {
   if (fru == FRU_NIC) {
     syslog(LOG_WARNING, "%s() nic is not supported", __func__);
-    return -1;
-    //return _write_nic_fruid(path);
+    return PAL_ENOTSUP;
+  } else if (fru == FRU_BB) {
+    return bic_write_fruid(FRU_SLOT1, 0, path, BB_BIC_INTF);
   }
+
   return bic_write_fruid(fru, 0, path, NONE_INTF);
 }
 
@@ -685,6 +742,13 @@ error_exit:
 int
 pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   int ret = PAL_EOK;
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return ret;
+  }
 
   switch (fru) {
     case FRU_SLOT1:
@@ -697,6 +761,9 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
     case FRU_BB:
       *status = 1;
       break;
+    case FRU_NICEXP:
+      *status = (bmc_location == NIC_BMC)?1:0;
+      break;
     case FRU_NIC:
       *status = 1;
       break;
@@ -704,7 +771,7 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
       *status = 1;
       break;
     default:
-      ret = -1;
+      ret = PAL_ENOTSUP;
       *status = 0;
       syslog(LOG_WARNING, "%s() wrong fru id 0x%02x", __func__, fru);
       break;

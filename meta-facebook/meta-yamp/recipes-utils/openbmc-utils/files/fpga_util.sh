@@ -13,110 +13,108 @@ LINECARD=0
 trap disconnect_jtag INT TERM QUIT EXIT
 
 usage() {
-    program=`basename "$0"`
+    program=$(basename "$0")
     echo "Usage:"
     echo "$program <fpga> <action> <fpga file>"
     echo "      <fpga> : sup, scd, lc1, lc2, ..., lc8, fan"
     echo "      <action> : program, verify"
-    exit -1
+    exit 1
 }
 
 disconnect_jtag() {
-    gpio_set $CPLD_JTAG_SEL_L 1
-    echo 0 > $JTAG_EN
-    echo 0 > $JTAG_SEL
+    gpio_set_value $CPLD_JTAG_SEL_L 1
+    echo 0 > "$JTAG_EN"
+    echo 0 > "$JTAG_SEL"
     # enable fancpld write protection
-    echo 1 > $JTAG_FAN_WP
+    echo 1 > "$JTAG_FAN_WP"
     # do not select any linecard or fan
-    echo 0x0 > $JTAG_LC_FAN_CTRL
+    echo 0x0 > "$JTAG_LC_FAN_CTRL"
     if [ $LINECARD -ne 0 ]; then
         # cycle the linecard FPGA
-        gpio_set LC${LINECARD}_FAST_JTAG_EN 0
-        gpio_set LC${LINECARD}_SCD_CONFIG_L 0
+        gpio_set_value LC${LINECARD}_FAST_JTAG_EN 0
+        gpio_set_value LC${LINECARD}_SCD_CONFIG_L 0
         sleep 1
-        gpio_set LC${LINECARD}_SCD_CONFIG_L 1
+        gpio_set_value LC${LINECARD}_SCD_CONFIG_L 1
     fi
 }
 
 connect_scd_jtag() {
-    gpio_set $CPLD_JTAG_SEL_L 1
-    echo 1 > $JTAG_EN
-    echo 1 > $JTAG_SEL
+    gpio_set_value $CPLD_JTAG_SEL_L 1
+    echo 1 > "$JTAG_EN"
+    echo 1 > "$JTAG_SEL"
 }
 
 connect_sup_jtag() {
-    gpio_set $CPLD_JTAG_SEL_L 0
-    echo 0 > $JTAG_EN
+    gpio_set_value $CPLD_JTAG_SEL_L 0
+    echo 0 > "$JTAG_EN"
 }
 
 connect_linecard_jtag() {
-    local lc
     lc=$1
     LINECARD=${lc}
-    gpio_set $CPLD_JTAG_SEL_L 1
-    echo 1 > $JTAG_EN
-    echo 0 > $JTAG_SEL
+    gpio_set_value $CPLD_JTAG_SEL_L 1
+    echo 1 > "$JTAG_EN"
+    echo 0 > "$JTAG_SEL"
     # choose correct LC
-    echo ${lc} > $JTAG_LC_FAN_CTRL
-    gpio_set LC${lc}_FAST_JTAG_EN 1
+    echo "${lc}" > "$JTAG_LC_FAN_CTRL"
+    gpio_set_value LC"${lc}"_FAST_JTAG_EN 1
 }
 
 connect_fan_jtag() {
-    gpio_set $CPLD_JTAG_SEL_L 1
-    echo 1 > $JTAG_EN
-    echo 0 > $JTAG_SEL
-    echo 0xa > $JTAG_LC_FAN_CTRL
+    gpio_set_value $CPLD_JTAG_SEL_L 1
+    echo 1 > "$JTAG_EN"
+    echo 0 > "$JTAG_SEL"
+    echo 0xa > "$JTAG_LC_FAN_CTRL"
 }
 
 do_scd() {
     # verify the fpga file
-    if ! grep "DESIGN.*scd" $2 > /dev/null; then
+    if ! grep "DESIGN.*scd" "$2" > /dev/null; then
         echo "$2 is not a vaild SCD FPGA file"
-        exit -1
+        exit 1
     fi
     connect_scd_jtag
-    jam -l/usr/lib/libcpldupdate_dll_ast_jtag.so -v -a${1^^} $2
+    jam -l/usr/lib/libcpldupdate_dll_ast_jtag.so -v -a"${1^^}" "$2"
 }
 
 do_sup() {
     # verify the fpga file
-    if ! grep "DESIGN.*son" $2 > /dev/null; then
+    if ! grep "DESIGN.*son" "$2" > /dev/null; then
         echo "$2 is not a vaild SUP FPGA file"
-        exit -1
+        exit 1
     fi
     connect_sup_jtag
-    jam -l/usr/lib/libcpldupdate_dll_ast_jtag.so -v -a${1^^} $2
+    jam -l/usr/lib/libcpldupdate_dll_ast_jtag.so -v -a"${1^^}" "$2"
 }
 
 do_fan() {
     echo "Fan CPLD upgrade is not supported"
-    exit -1
+    exit 1
 }
 
 do_linecard() {
-    local lc action
     lc="$1"
     action="${2,,}"
 
     if [ "$action" != "program" ]; then
         echo "Only 'program' action is supported for linecard"
-        exit -1
+        exit 1
     fi
 
     if [ ${#lc} -ne 3 ]; then
         echo "'$lc' is not a valid linecard. Expect 'lc1', 'lc2', ..., 'lc8'"
-        exit -1
+        exit 1
     fi
 
     lc=${lc:2:1}
     if [[ $lc -lt 1 || $lc -gt 8 ]]; then
         echo "'$lc' is not a valid linecard. Expect 'lc1', 'lc2', ..., 'lc8'"
-        exit -1
+        exit 1
     fi
 
-    connect_linecard_jtag $lc
+    connect_linecard_jtag "$lc"
 
-    xapp -l /usr/lib/libcpldupdate_dll_ast_jtag.so $3
+    xapp -l /usr/lib/libcpldupdate_dll_ast_jtag.so "$3"
 }
 
 if [ $# -ne 3 ]; then
@@ -127,17 +125,17 @@ if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
   modprobe ast_jtag
 fi
 
-if [ "$1" == "scd" ]; then
+if [ "$1" = "scd" ]; then
     shift 1
-    do_scd $@
-elif [ "$1" == "sup" ]; then
+    do_scd "$@"
+elif [ "$1" = "sup" ]; then
     shift 1
-    do_sup $@
-elif [ "$1" == "fan" ]; then
+    do_sup "$@"
+elif [ "$1" = "fan" ]; then
     shift 1
-    do_fan $@
-elif [[ "$1" == "lc"* ]]; then
-    do_linecard $@
+    do_fan "$@"
+elif [[ "$1" = "lc"* ]]; then
+    do_linecard "$@"
 else
     usage
 fi

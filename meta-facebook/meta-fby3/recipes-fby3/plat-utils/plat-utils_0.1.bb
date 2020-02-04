@@ -28,6 +28,7 @@ SRC_URI = "file://ast-functions \
            file://COPYING \
            file://setup-dev.sh \
            file://sol-util \
+           file://eth0_ipv6_fixup.sh \
           "
 
 pkgdir = "utils"
@@ -68,6 +69,10 @@ do_install() {
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
 
+  # install eth0_ipv6_fixup.sh
+  install -m 755 eth0_ipv6_fixup.sh ${D}${sysconfdir}/init.d/eth0_ipv6_fixup.sh
+  update-rc.d -r ${D} eth0_ipv6_fixup.sh start 60 5 .
+  
   # install power-on.sh
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
   update-rc.d -r ${D} power-on.sh start 70 5 .

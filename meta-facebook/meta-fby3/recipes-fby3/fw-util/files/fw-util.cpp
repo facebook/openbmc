@@ -264,6 +264,15 @@ void show_fw_version(string target) {
       for ( auto board:fru.second ) {
         for ( auto comp:board.second ) {
           comp.second->print_version();
+
+          if (plock && plock->getTerminate()) {
+            // Do not call destructor explicitly, since it's an undefined behaviour.
+            // While the constructor uses new, and the destructor uses delete.
+            syslog(LOG_DEBUG, "slot%u Terminated complete.",plock->getFru());
+            printf("Terminated complete.\n");
+            delete plock;
+            cout << endl;
+          }
         }
       }
       cout << endl;

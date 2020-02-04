@@ -60,6 +60,7 @@ env:
     - BOARD=angelslanding
     - BOARD=cmm
     - BOARD=emeraldpools
+    - BOARD=elbert
     - BOARD=fbgp2
     - BOARD=fbnd
     - BOARD=fbtp

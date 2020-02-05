@@ -31,6 +31,7 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <openbmc/kv.h>
 #include "bic_bios_fwupdate.h"
 
@@ -260,6 +261,7 @@ verify_bios_image(uint8_t slot_id, int fd, long size) {
 
 int 
 update_bic_bios(uint8_t slot_id, char *image, uint8_t force) {
+  struct timeval start, end;
   int ret = -1, rc;
   uint32_t offset;
   volatile uint16_t count, read_count;
@@ -293,6 +295,7 @@ update_bic_bios(uint8_t slot_id, char *image, uint8_t force) {
   last_offset = 0;
   i = 1;
   target = UPDATE_BIOS;
+  gettimeofday(&start, NULL);
   while (1) {
     // For BIOS, send packets in blocks of 64K
     if ((offset+IPMB_WRITE_COUNT_MAX) > (i * BIOS_ERASE_PKT_SIZE)) {
@@ -319,11 +322,13 @@ update_bic_bios(uint8_t slot_id, char *image, uint8_t force) {
     if ((last_offset + dsize) <= offset) {
       _set_fw_update_ongoing(slot_id, 60);
       printf("\rupdated bios: %d %%", offset/dsize);
+      fflush(stdout);
+      last_offset += dsize;
     }
-    fflush(stdout);
-    last_offset += dsize;
-
   }
+
+  gettimeofday(&end, NULL);
+  printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
 
   _set_fw_update_ongoing(slot_id, 60 * 2);
   if (verify_bios_image(slot_id, fd, st.st_size)) {

@@ -202,14 +202,13 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
   struct libusb_device_handle *handle = NULL, *hDevice_expected = NULL;
   struct libusb_device *dev,*dev_expected;
   struct libusb_device_descriptor desc;
-  int e = 0,config2;
+  int config2;
   int i = 0;
   char str1[64], str2[64];
   char key[64];
   char found = 0;
-  int r;
   ssize_t cnt;
-  int retries = 3, ret = 0;
+  int retries = 3, ret = -1;
   struct stat st;
   uint32_t fsize = 0;
   uint32_t record_offset = 0;
@@ -219,8 +218,8 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
   int fd;
   char fpath[128];
   
-  r = libusb_init(NULL);
-  if (r < 0) {
+  ret = libusb_init(NULL);
+  if (ret < 0) {
     printf("Failed to initialise libusb\n");
     goto error_exit;
   } else {
@@ -235,30 +234,30 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
   } 
 
   while ((dev = devs[i++]) != NULL) {
-    r = libusb_get_device_descriptor(dev, &desc);
-    if ( r < 0 ) {
+    ret = libusb_get_device_descriptor(dev, &desc);
+    if ( ret < 0 ) {
       printf("Failed to get device descriptor -- exit\n");
       libusb_free_device_list(devs,1);
       goto error_exit;
     }
 
-    e = libusb_open(dev,&handle); 
-    if ( e < 0 ) {
+    ret = libusb_open(dev,&handle);
+    if ( ret < 0 ) {
       printf("Error opening device -- exit\n");
       libusb_free_device_list(devs,1);
       goto error_exit;
     }
 
     if( (TI_VENDOR_ID == desc.idVendor) && (TI_PRODUCT_ID == desc.idProduct) ) {
-      e = libusb_get_string_descriptor_ascii(handle, desc.iManufacturer, (unsigned char*) str1, sizeof(str1));
-      if ( e < 0 ) {
+      ret = libusb_get_string_descriptor_ascii(handle, desc.iManufacturer, (unsigned char*) str1, sizeof(str1));
+      if ( ret < 0 ) {
         printf("Error get Manufacturer string descriptor -- exit\n");
         libusb_free_device_list(devs,1);
         goto error_exit;
       }
 
-      e = libusb_get_string_descriptor_ascii(handle, desc.iProduct, (unsigned char*) str2, sizeof(str2));
-      if ( e < 0 ) {
+      ret = libusb_get_string_descriptor_ascii(handle, desc.iProduct, (unsigned char*) str2, sizeof(str2));
+      if ( ret < 0 ) {
         printf("Error get Product string descriptor -- exit\n");
         libusb_free_device_list(devs,1);
         goto error_exit;
@@ -295,8 +294,8 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
   dev_expected = dev;
   hDevice_expected = handle;
 
-  e = libusb_get_configuration(handle,&config2);
-  if ( e != 0 ) {
+  ret = libusb_get_configuration(handle,&config2);
+  if ( ret != 0 ) {
     printf("Error in libusb_get_configuration -- exit\n");
     libusb_free_device_list(devs,1);
     goto error_exit;
@@ -305,7 +304,7 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
   printf("Configured value : %d\n",config2);
   if ( config2 != 1 ) {
     libusb_set_configuration(handle, 1);
-    if ( e != 0 ) {
+    if ( ret != 0 ) {
       printf("Error in libusb_set_configuration -- exit\n");
       libusb_free_device_list(devs,1);
       goto error_exit;
@@ -328,9 +327,9 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
     }
   }
 
-  e = libusb_claim_interface(handle, ci);
-  if ( e < 0 ) {
-    printf("Couldn't claim interface -- exit. err:%s\n", libusb_error_name(e));
+  ret = libusb_claim_interface(handle, ci);
+  if ( ret < 0 ) {
+    printf("Couldn't claim interface -- exit. err:%s\n", libusb_error_name(ret));
     libusb_free_device_list(devs,1);
     goto error_exit;
   }
@@ -379,10 +378,10 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
     data[6] = (read_cnt >> 8) & 0xFF;
 
 resend:
-    e = libusb_bulk_transfer(handle, epaddr, data, transferlen, &transferred, 3000);
-    if(((e != 0) || (transferlen != transferred))) {
-      printf("Error in transferring data! err = %d and transferred = %d(expected data length 64)\n",e ,transferred);
-      printf("Retry since  %s\n", libusb_error_name(e));
+    ret = libusb_bulk_transfer(handle, epaddr, data, transferlen, &transferred, 3000);
+    if(((ret != 0) || (transferlen != transferred))) {
+      printf("Error in transferring data! err = %d and transferred = %d(expected data length 64)\n",ret ,transferred);
+      printf("Retry since  %s\n", libusb_error_name(ret));
       retries--;
       if (!retries) {
         ret = -1;
@@ -402,13 +401,14 @@ resend:
   gettimeofday(&end, NULL);
   printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
 
-  e = libusb_release_interface(handle, ci);
-  if ( e < 0 ) {
+  ret = libusb_release_interface(handle, ci);
+  if ( ret < 0 ) {
     printf("Couldn't release the interface 0x%X\n", ci);
   }
 
   _set_fw_update_ongoing(slot_id, 60 * 2);
   if (verify_bios_image(slot_id, fd, st.st_size)) {
+    ret = -1;
     goto error_exit;
   }
 
@@ -416,6 +416,7 @@ resend:
     close(fd);
   }
 
+  ret = 0;
 error_exit:
   sprintf(key, "fru%u_fwupd", slot_id);
   remove(key);

@@ -317,6 +317,9 @@ power_util(uint8_t fru, uint8_t opt) {
         case SERVER_12V_OFF:
           printf("OFF (12V-OFF)\n");
           break;
+        case SERVER_12V_ON:
+          printf("ON (12V-ON)\n");
+          break;
       }
 
       break;

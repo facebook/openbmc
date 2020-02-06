@@ -237,6 +237,12 @@ pal_get_platform_name(char *name) {
 }
 
 int
+pal_get_num_slots(uint8_t *num) {
+  *num = 1;
+  return 0;
+}
+
+int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   gpio_desc_t *gdesc = NULL;
   gpio_value_t val;
@@ -539,6 +545,11 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   *status = 1;
 
   return 0;
+}
+
+int
+pal_devnum_to_fruid(int devnum) {
+  return FRU_MB;
 }
 
 int

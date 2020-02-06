@@ -1,5 +1,5 @@
 {
-  "version": "fby2-pvt-r06",
+  "version": "fby2-pvt-r07",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
@@ -113,9 +113,8 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [ 56, 28 ],
-        [ 58, 30 ],
-        [ 60, 35 ]
+        [ 65, 20 ],
+        [ 70, 60 ]
       ]
     },
     "pid_mb_m2": {

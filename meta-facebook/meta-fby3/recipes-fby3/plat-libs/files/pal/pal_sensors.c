@@ -62,7 +62,6 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_OUTLET_TEMP,
   BIC_SENSOR_FIO_TEMP,
   BIC_SENSOR_PCH_TEMP,
-  BIC_SENSOR_CPU_THERMAL_MARGIN,
   BIC_SENSOR_CPU_TEMP,
   BIC_SENSOR_DIMMA0_TEMP,
   BIC_SENSOR_DIMMB0_TEMP,
@@ -128,12 +127,16 @@ const uint8_t bic_sensor_list[] = {
   BIC_1OU_EXP_SENSOR_P3V3_STBY2_VR_VOL,
   BIC_1OU_EXP_SENSOR_P3V3_M2A_PWR,
   BIC_1OU_EXP_SENSOR_P3V3_M2A_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2A_TMP,
   BIC_1OU_EXP_SENSOR_P3V3_M2B_PWR,
   BIC_1OU_EXP_SENSOR_P3V3_M2B_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2B_TMP,
   BIC_1OU_EXP_SENSOR_P3V3_M2C_PWR,
   BIC_1OU_EXP_SENSOR_P3V3_M2C_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2C_TMP,
   BIC_1OU_EXP_SENSOR_P3V3_M2D_PWR,
   BIC_1OU_EXP_SENSOR_P3V3_M2D_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2D_TMP,
 
   //BIC BaseBoard Sensors
   BIC_BB_SENSOR_INLET_TEMP,
@@ -161,16 +164,22 @@ const uint8_t bic_sensor_list[] = {
   BIC_2OU_EXP_SENSOR_P3V3_STBY2_VR_VOL,
   BIC_2OU_EXP_SENSOR_P3V3_M2A_PWR,
   BIC_2OU_EXP_SENSOR_P3V3_M2A_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2A_TMP,
   BIC_2OU_EXP_SENSOR_P3V3_M2B_PWR,
   BIC_2OU_EXP_SENSOR_P3V3_M2B_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2B_TMP,
   BIC_2OU_EXP_SENSOR_P3V3_M2C_PWR,
   BIC_2OU_EXP_SENSOR_P3V3_M2C_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2C_TMP,
   BIC_2OU_EXP_SENSOR_P3V3_M2D_PWR,
   BIC_2OU_EXP_SENSOR_P3V3_M2D_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2D_TMP,
   BIC_2OU_EXP_SENSOR_P3V3_M2E_PWR,
   BIC_2OU_EXP_SENSOR_P3V3_M2E_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2E_TMP,
   BIC_2OU_EXP_SENSOR_P3V3_M2F_PWR,
   BIC_2OU_EXP_SENSOR_P3V3_M2F_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2F_TMP,
 };
 
 const uint8_t nic_sensor_list[] = {
@@ -332,9 +341,9 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7F
 
-  {"BMC_INLET_TEMP",  TEMP_INLET,  read_temp, true, {40, 0, 0, 20, 0, 0, 0, 0}, TEMP}, //0x80
-  {"BMC_OUTLET_TEMP", TEMP_OUTLET, read_temp, true, {80, 0, 0, 20, 0, 0, 0, 0}, TEMP}, //0x81
-  {"NIC_SENSOR_MEZZ_TEMP", TEMP_MEZZ, read_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x82
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x80
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x81
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x82
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x83
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x84
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x85
@@ -343,20 +352,20 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x88
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x89
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8A
-  {"BMC_SENSOR_P5V", ADC0, read_adc_val, true, {5.486, 0, 0, 4.524, 0, 0, 0, 0}, VOLT}, //0x8B
-  {"BMC_SENSOR_P12V", ADC1, read_adc_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0x8C
-  {"BMC_SENSOR_P3V3_STBY", ADC2, read_adc_val, true, {3.629, 0, 0, 2.976, 0, 0, 0, 0}, VOLT}, //0x8D
-  {"BMC_SENSOR_P1V15_STBY", ADC3, read_adc_val, true, {1.264, 0, 0, 1.037, 0, 0, 0, 0}, VOLT}, //0x8E
-  {"BMC_SENSOR_P1V2_STBY", ADC4, read_adc_val, true, {1.314, 0, 0, 1.086, 0, 0, 0, 0}, VOLT}, //0x8F
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8B
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8C
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8D
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8E
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8F
 
-  {"BMC_SENSOR_P2V5_STBY", ADC5, read_adc_val, true, {2.743, 0, 0, 2.262, 0, 0, 0, 0}, VOLT}, //0x90
-  {"BMC_SENSOR_P12V_MEDUSA", HSC_ID1, read_ltc4282_volt, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0x91
-  {"BMC_SENSOR_HSC_VIN", HSC_ID0, read_hsc_vin, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x92
-  {"BMC_SENSOR_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {120, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x93
-  {"BMC_SENSOR_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x94
-  {"BMC_SENSOR_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {27.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x95
-  {"BMC_SENSOR_FAN_IOUT", ADC8, read_adc_val, 0, {6.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x96
-  {"BMC_SENSOR_NIC_IOUT", ADC9, read_adc_val, 0, {12.5, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x97
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x90
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x91
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x92
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x93
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x94
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x95
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x96
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x97
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x98
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x99
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9A
@@ -447,23 +456,23 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xED
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEF
+  {"BMC_INLET_TEMP",  TEMP_INLET,  read_temp, true, {40, 0, 0, 20, 0, 0, 0, 0}, TEMP}, //0xED
+  {"BMC_OUTLET_TEMP", TEMP_OUTLET, read_temp, true, {80, 0, 0, 20, 0, 0, 0, 0}, TEMP}, //0xEE
+  {"NIC_SENSOR_MEZZ_TEMP", TEMP_MEZZ, read_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEF
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFC
+  {"BMC_SENSOR_P5V", ADC0, read_adc_val, true, {5.486, 0, 0, 4.524, 0, 0, 0, 0}, VOLT}, //0xF0
+  {"BMC_SENSOR_P12V", ADC1, read_adc_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF1
+  {"BMC_SENSOR_P3V3_STBY", ADC2, read_adc_val, true, {3.629, 0, 0, 2.976, 0, 0, 0, 0}, VOLT}, //0xF2
+  {"BMC_SENSOR_P1V15_STBY", ADC3, read_adc_val, true, {1.264, 0, 0, 1.037, 0, 0, 0, 0}, VOLT}, //0xF3
+  {"BMC_SENSOR_P1V2_STBY", ADC4, read_adc_val, true, {1.314, 0, 0, 1.086, 0, 0, 0, 0}, VOLT}, //0xF4
+  {"BMC_SENSOR_P2V5_STBY", ADC5, read_adc_val, true, {2.743, 0, 0, 2.262, 0, 0, 0, 0}, VOLT}, //0xF5
+  {"BMC_SENSOR_P12V_MEDUSA", HSC_ID1, read_ltc4282_volt, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF6
+  {"BMC_SENSOR_HSC_VIN", HSC_ID0, read_hsc_vin, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF7
+  {"BMC_SENSOR_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {120, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xF8
+  {"BMC_SENSOR_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF9
+  {"BMC_SENSOR_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {27.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFA
+  {"BMC_SENSOR_FAN_IOUT", ADC8, read_adc_val, 0, {6.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFB
+  {"BMC_SENSOR_NIC_IOUT", ADC9, read_adc_val, 0, {12.5, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFF
@@ -938,6 +947,95 @@ error_exit:
 }
 
 static int
+skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num) {
+  uint8_t bic_skip_list[] = {
+    BIC_SENSOR_CPU_TEMP,
+    BIC_SENSOR_DIMMA0_TEMP,
+    BIC_SENSOR_DIMMB0_TEMP,
+    BIC_SENSOR_DIMMC0_TEMP,
+    BIC_SENSOR_DIMMD0_TEMP,
+    BIC_SENSOR_DIMME0_TEMP,
+    BIC_SENSOR_DIMMF0_TEMP,
+    BIC_SENSOR_M2A_TEMP,
+    BIC_SENSOR_M2B_TEMP,
+    BIC_SENSOR_HSC_TEMP,
+    BIC_SENSOR_VCCIN_VR_TEMP,
+    BIC_SENSOR_VCCSA_VR_TEMP,
+    BIC_SENSOR_VCCIO_VR_Temp,
+    BIC_SENSOR_PVDDQ_ABC_VR_TEMP,
+    BIC_SENSOR_PVDDQ_DEF_VR_TEMP,
+    //BIC - voltage sensors
+    BIC_SENSOR_P3V3_M2A_VOL,
+    BIC_SENSOR_P3V3_M2B_VOL,
+    BIC_SENSOR_P3V3_VOL,
+    BIC_SENSOR_VCCIN_VR_VOL,
+    BIC_SENSOR_VCCSA_VR_VOL,
+    BIC_SENSOR_VCCIO_VR_VOL,
+    BIC_SENSOR_P3V3_STBY_VR_VOL,
+    BIC_PVDDQ_ABC_VR_VOL,
+    BIC_PVDDQ_DEF_VR_VOL,
+    //BIC - current sensors
+    BIC_SENSOR_P3V3_M2A_CUR,
+    BIC_SENSOR_P3V3_M2B_CUR,
+    BIC_SENSOR_VCCIN_VR_CUR,
+    BIC_SENSOR_VCCSA_VR_CUR,
+    BIC_SENSOR_VCCIO_VR_CUR,
+    BIC_SENSOR_PVDDQ_ABC_VR_CUR,
+    BIC_SENSOR_PVDDQ_DEF_VR_CUR,
+    //BIC - power sensors
+    BIC_SENSOR_P3V3_M2A_PWR,
+    BIC_SENSOR_P3V3_M2B_PWR,
+    BIC_SENSOR_VCCIN_VR_POUT,
+    BIC_SENSOR_VCCSA_VR_POUT,
+    BIC_SENSOR_VCCIO_VR_POUT,
+    BIC_SENSOR_PVDDQ_ABC_VR_POUT,
+    BIC_SENSOR_PVDDQ_DEF_VR_POUT,
+
+    //BIC 1OU EXP Sensors
+    BIC_1OU_EXP_SENSOR_P1V8_VOL,
+    BIC_1OU_EXP_SENSOR_P3V3_M2A_PWR,
+    BIC_1OU_EXP_SENSOR_P3V3_M2A_VOL,
+    BIC_1OU_EXP_SENSOR_P3V3_M2B_PWR,
+    BIC_1OU_EXP_SENSOR_P3V3_M2B_VOL,
+    BIC_1OU_EXP_SENSOR_P3V3_M2C_PWR,
+    BIC_1OU_EXP_SENSOR_P3V3_M2C_VOL,
+    BIC_1OU_EXP_SENSOR_P3V3_M2D_PWR,
+    BIC_1OU_EXP_SENSOR_P3V3_M2D_VOL,
+    //BIC 2OU EXP Sensors
+    BIC_2OU_EXP_SENSOR_P1V8_VOL,
+    BIC_2OU_EXP_SENSOR_P3V3_M2A_PWR,
+    BIC_2OU_EXP_SENSOR_P3V3_M2A_VOL,
+    BIC_2OU_EXP_SENSOR_P3V3_M2B_PWR,
+    BIC_2OU_EXP_SENSOR_P3V3_M2B_VOL,
+    BIC_2OU_EXP_SENSOR_P3V3_M2C_PWR,
+    BIC_2OU_EXP_SENSOR_P3V3_M2C_VOL,
+    BIC_2OU_EXP_SENSOR_P3V3_M2D_PWR,
+    BIC_2OU_EXP_SENSOR_P3V3_M2D_VOL,
+    BIC_2OU_EXP_SENSOR_P3V3_M2E_PWR,
+    BIC_2OU_EXP_SENSOR_P3V3_M2E_VOL,
+    BIC_2OU_EXP_SENSOR_P3V3_M2F_PWR,
+    BIC_2OU_EXP_SENSOR_P3V3_M2F_VOL,
+  };
+  int bic_skip_size = sizeof(bic_skip_list);
+  int i = 0;
+
+  switch(fru){
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      for (i = 0; i < bic_skip_size; i++) {
+        if ( sensor_num == bic_skip_list[i] ) {
+          return PAL_ENOTSUP;
+        }
+      }
+      break;
+  }
+
+  return PAL_EOK;
+}
+
+static int
 pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
 #define BIC_SENSOR_READ_NA 0x20
   int ret = 0;
@@ -948,7 +1046,9 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
 
   if ( bic_get_server_power_status(fru, &power_status) < 0 || power_status != SERVER_POWER_ON) {
     //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);
-    return READING_NA;
+    if (skip_bic_sensor_list(fru, sensor_num) < 0) {
+      return READING_NA;
+    }
   }
 
   config_status = bic_is_m2_exp_prsnt(fru);
@@ -964,21 +1064,27 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
   }
 
   if (bmc_location == BB_BMC) {
-    if ( (config_status == 1 || config_status == 3) && (sensor_num >= 0x40 && sensor_num <= 0x7F)) { // 1OU Exp
+    if ( (config_status == PRESENT_1OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x50 && sensor_num <= 0x7A)) { // 1OU Exp
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
-    } else if ( (config_status == 2 || config_status == 3) && (sensor_num >= 0x80 && sensor_num <= 0xBF)) { // 2OU Exp
+    } else if ( (config_status == PRESENT_2OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x80 && sensor_num <= 0xCA)) { // 2OU Exp
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
-    } else if (sensor_num >= 0x0 && sensor_num <= 0x3F) {
+    } else if (sensor_num >= 0x0 && sensor_num <= 0x42) {
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
+    } else {
+      return READING_NA;
     }
   } else if (bmc_location == NIC_BMC) {
-    if (sensor_num >= 0xC0 && sensor_num <= 0xDF) { // BB
+    if (sensor_num >= 0xD1 && sensor_num <= 0xEC) { // BB
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);
-    } else if ( (config_status == 2 || config_status == 3) && (sensor_num >= 0x80 && sensor_num <= 0xBF)) { // 2OU Exp
+    } else if ( (config_status == PRESENT_2OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x50 && sensor_num <= 0xCA)) { // 2OU Exp
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
-    } else if (sensor_num >= 0x0 && sensor_num <= 0x3F){
+    } else if (sensor_num >= 0x0 && sensor_num <= 0x42){
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
+    } else {
+      return READING_NA;
     }
+  } else {
+    return READING_NA;
   }
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);

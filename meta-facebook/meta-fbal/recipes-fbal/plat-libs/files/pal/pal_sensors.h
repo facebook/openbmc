@@ -253,6 +253,7 @@ enum {
   VOLT,
   FAN,
   POWER,
+  STATE,
 };
 
 typedef struct {

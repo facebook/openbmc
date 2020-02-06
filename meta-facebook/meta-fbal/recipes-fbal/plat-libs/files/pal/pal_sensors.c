@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <ctype.h>
 #include <openbmc/kv.h>
@@ -19,6 +20,8 @@
 
 //#define DEBUG
 #define GPIO_P3V_BAT_SCALED_EN "P3V_BAT_SCALED_EN"
+
+#define MAX_READ_RETRY 10
 
 size_t pal_pwm_cnt = FAN_PWM_ALL_NUM;
 size_t pal_tach_cnt = FAN_TACH_ALL_NUM;
@@ -47,9 +50,11 @@ static int read_vr_temp(uint8_t vr_id, float  *value);
 static int read_vr_iout(uint8_t vr_id, float  *value);
 static int read_vr_pout(uint8_t vr_id, float  *value);
 static int read_cm_sensor(uint8_t id, float *value);
+static int read_frb3(uint8_t fru_id, float *value);
 
 static uint8_t m_TjMax[CPU_ID_NUM] = {0};
 static float m_Dts[CPU_ID_NUM] = {0xFF,0xFF};
+static uint8_t postcodes_last[256] = {0};
 
 const uint8_t mb_sensor_list[] = {
   MB_SNR_INLET_TEMP,
@@ -182,7 +187,7 @@ const uint8_t pdb_sensor_list[] = {
 const uint8_t mb_discrete_sensor_list[] = {
 //  MB_SENSOR_POWER_FAIL,
 //  MB_SENSOR_MEMORY_LOOP_FAIL,
-//  MB_SENSOR_PROCESSOR_FAIL,
+  MB_SNR_PROCESSOR_FAIL,
 };
 
 //CPU
@@ -501,7 +506,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_CPU1_PVTT_ABC", ADC12, read_adc_val, false, {0.677, 0, 0, 0.554, 0, 0, 0, 0}, VOLT}, //0xDC
   {"MB_CPU0_PVTT_DEF", ADC13, read_adc_val, false, {0.677, 0, 0, 0.554, 0, 0, 0, 0}, VOLT}, //0xDD
   {"MB_CPU1_PVTT_DEF", ADC14, read_adc_val, false, {0.677, 0, 0, 0.554, 0, 0, 0, 0}, VOLT}, //0xDE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDF
+  {"MB_PROCESSOR_FAIL", FRU_MB, read_frb3, 0, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xDF
 
   {"MB_VR_CPU1_VCCIN_VOUT", VR_ID5, read_vr_vout, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xE0
   {"MB_VR_CPU1_VCCIN_TEMP", VR_ID5, read_vr_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xE1
@@ -578,6 +583,8 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
 int
 pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
+  syslog(LOG_INFO, "%s\n", __func__);
+
   switch(fru) {
   case FRU_MB:
     *sensor_list = (uint8_t *) mb_discrete_sensor_list;
@@ -1633,6 +1640,115 @@ read_vr_pin(uint8_t vr_id, float *value) {
  //   return ret;
  // }
   return 0;
+}
+
+static void
+_print_sensor_discrete_log(uint8_t fru, uint8_t snr_num, char *snr_name,
+    uint8_t val, char *event) {
+  if (val) {
+    syslog(LOG_CRIT, "ASSERT: %s discrete - raised - FRU: %d", event, fru);
+  } else {
+    syslog(LOG_CRIT, "DEASSERT: %s discrete - settled - FRU: %d", event, fru);
+  }
+  pal_update_ts_sled();
+}
+
+bool
+pal_bios_completed(uint8_t fru)
+{
+  gpio_desc_t *desc;
+  gpio_value_t value;
+  bool ret = false;
+
+  if ( FRU_MB != fru )
+  {
+    syslog(LOG_WARNING, "[%s]incorrect fru id: %d", __func__, fru);
+    return false;
+  }
+  desc = gpio_open_by_shadow("FM_BIOS_POST_CMPLT_BMC_N");
+  if (!desc)
+    return false;
+
+  if (gpio_get_value(desc, &value) == 0 && value == GPIO_VALUE_LOW)
+    ret = true;
+  gpio_close(desc);
+  return ret;
+}
+
+static int
+check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
+  static unsigned int retry = 0;
+  static uint8_t frb3_fail = 0x10; // bit 4: FRB3 failure
+  static time_t rst_time = 0;
+  uint8_t postcodes[256] = {0};
+  struct stat file_stat;
+  int ret = READING_NA, rc;
+  size_t len = 0;
+  char sensor_name[32] = {0};
+  char error[32] = {0};
+
+  if (fru_id != 1) {
+    syslog(LOG_ERR, "Not Supported Operation for fru %d", fru_id);
+    return READING_NA;
+  }
+
+  if (stat("/tmp/rst_touch", &file_stat) == 0 && file_stat.st_mtime > rst_time) {
+    rst_time = file_stat.st_mtime;
+    // assume fail till we know it is not
+    frb3_fail = 0x10; // bit 4: FRB3 failure
+    retry = 0;
+    // cache current postcode buffer
+    if (stat("/tmp/DWR", &file_stat) != 0) {
+      memset(postcodes_last, 0, sizeof(postcodes_last));
+      pal_get_80port_record(FRU_MB, postcodes_last, sizeof(postcodes_last), &len);
+    }
+  }
+
+  if (frb3_fail) {
+    // KCS transaction
+    if (stat("/tmp/kcs_touch", &file_stat) == 0 && file_stat.st_mtime > rst_time)
+      frb3_fail = 0;
+
+    // Port 80 updated
+    memset(postcodes, 0, sizeof(postcodes));
+    rc = pal_get_80port_record(FRU_MB, postcodes, sizeof(postcodes), &len);
+    if (rc == PAL_EOK && memcmp(postcodes_last, postcodes, 256) != 0) {
+      frb3_fail = 0;
+    }
+
+    // BIOS POST COMPLT, in case BMC reboot when system idle in OS
+    if (pal_bios_completed(FRU_MB))
+      frb3_fail = 0;
+  }
+
+  if (frb3_fail)
+    retry++;
+  else
+    retry = 0;
+
+  if (retry == MAX_READ_RETRY) {
+    pal_get_sensor_name(fru_id, sensor_num, sensor_name);
+    snprintf(error, sizeof(error), "FRB3 failure");
+    _print_sensor_discrete_log(fru_id, sensor_num, sensor_name, frb3_fail, error);
+  }
+
+  *value = (float)frb3_fail;
+  ret = 0;
+
+  return ret;
+}
+
+static
+int read_frb3(uint8_t fru_id, float *value) {
+  int ret = 0;
+ 
+  syslog(LOG_INFO, "%s\n", __func__); 
+  ret = check_frb3(fru_id, MB_SNR_PROCESSOR_FAIL, value);
+  if(ret != 0 ) {
+    return ret;
+  } 
+  
+  return ret;   
 }
 
 int

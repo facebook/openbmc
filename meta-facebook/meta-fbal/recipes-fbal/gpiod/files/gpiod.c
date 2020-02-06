@@ -47,6 +47,12 @@ do {                                       \
   }                                        \
 }while(0)
 
+#define TOUCH(path) \
+{\
+  int fd = creat(path, 0644);\
+  if (fd) close(fd);\
+}
+
 static uint8_t g_caterr_irq = 0;
 static uint8_t g_msmi_irq = 0;
 static bool g_mcerr_ierr_assert = false;
@@ -293,6 +299,16 @@ uart_select_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
    pal_uart_select_led_set();
 }
 
+// Event Handler for GPIOF6 platform reset changes
+static void platform_reset_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  // Use GPIOF6 to filter some gpio logging
+  reset_timer(&g_reset_sec);
+  TOUCH("/tmp/rst_touch");
+  log_gpio_change(desc, curr, 0);
+}
+
+
 // Thread for gpio timer
 static void
 *gpio_timer() {
@@ -355,6 +371,7 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_CPU_MSMI_LVT3_N", "GPIOZ2", GPIO_EDGE_FALLING, err_msmi_handler, init_msmi},
   {"FM_UARTSW_LSB_N", "GPIOL0", GPIO_EDGE_BOTH, uart_select_handle, NULL},
   {"FM_UARTSW_MSB_N", "GPIOL1", GPIO_EDGE_BOTH, uart_select_handle, NULL},
+  {"RST_PLTRST_BMC_N", "GPIOF6", GPIO_EDGE_BOTH, platform_reset_handle, NULL},
 
 };
 

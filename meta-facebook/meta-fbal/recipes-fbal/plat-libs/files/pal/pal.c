@@ -1212,3 +1212,11 @@ pal_set_dev_guid(uint8_t fru, char *str) {
   pal_populate_guid(guid, str);
   return pal_set_guid(OFFSET_DEV_GUID, guid);
 }
+
+int
+pal_get_fru_list(char *list) {
+
+  strcpy(list, pal_fru_list);
+  return 0;
+}
+

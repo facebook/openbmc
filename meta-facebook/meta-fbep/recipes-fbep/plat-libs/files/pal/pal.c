@@ -293,7 +293,13 @@ int pal_get_fru_name(uint8_t fru, char *name)
 
 int pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id)
 {
-  *slave_addr = BMC_IPMB_SLAVE_ADDR;
+  if (bus_id == 13) {
+    // DBG Card used default slave addr
+    *slave_addr = 0x10;
+  } else {
+    *slave_addr = BMC_IPMB_SLAVE_ADDR;
+  }
+
   return 0;
 }
 

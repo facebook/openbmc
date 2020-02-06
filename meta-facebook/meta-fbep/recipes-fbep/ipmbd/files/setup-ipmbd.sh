@@ -28,14 +28,14 @@
 #
 ### END INIT INFO
 
-. /usr/local/fbpackages/utils/ast-functions
+. /usr/local/bin/openbmc-utils.sh
 echo -n "Starting IPMB Rx/Tx Daemon.."
 
-echo slave-mqueue 0x1016 > /sys/bus/i2c/devices/i2c-13/new_device  #USB DBG
-echo slave-mqueue 0x1016 > /sys/bus/i2c/devices/i2c-0/new_device  #MB1
-echo slave-mqueue 0x1016 > /sys/bus/i2c/devices/i2c-1/new_device  #MB2
-echo slave-mqueue 0x1016 > /sys/bus/i2c/devices/i2c-2/new_device  #MB3
-echo slave-mqueue 0x1016 > /sys/bus/i2c/devices/i2c-3/new_device  #MB4
+i2c_mslave_add 0 0x16 #MB1
+i2c_mslave_add 1 0x16 #MB2
+i2c_mslave_add 2 0x16 #MB3
+i2c_mslave_add 3 0x16 #MB4
+i2c_mslave_add 13 0x10 #USB DBG
 
 ulimit -q 1024000
 runsv /etc/sv/ipmbd_13 > /dev/null 2>&1 &

@@ -21,8 +21,13 @@ SRC_URI += "file://nic.cpp \
             file://cpld.cpp \
             file://vr.cpp \
             file://switch.cpp \
+            file://usbdbg.h \
+            file://usbdbg.cpp \
+            file://mcu_fw.h \
+            file://mcu_fw.cpp \
+            file://platform.cpp \
            "
 
-DEPENDS += "libfpga libast-jtag libvr"
-RDEPENDS_${PN} += "libfpga libast-jtag libvr"
-LDFLAGS += " -lfpga -last-jtag -lvr"
+DEPENDS += "libmcu libfpga libast-jtag libvr"
+RDEPENDS_${PN} += "libmcu libfpga libast-jtag libvr"
+LDFLAGS += " -lmcu -lfpga -last-jtag -lvr"

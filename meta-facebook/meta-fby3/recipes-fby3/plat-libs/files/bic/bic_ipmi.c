@@ -30,6 +30,7 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <openbmc/obmc-i2c.h>
 #include "bic_ipmi.h"
 
 //FRU
@@ -911,16 +912,78 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
 
 int
 bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_t intf) {
-  uint8_t tbuf[5] = {0x9c, 0x9c, 0x00}; // IANA ID
-  uint8_t rbuf[10] = {0x00};
-  uint8_t tlen = 5;
-  uint8_t rlen = 0;
-  int ret;
+  enum {
+    M2_PWR_OFF = 0x00,
+    M2_PWR_ON  = 0x01,
+    M2_REG_2OU = 0x04,
+    M2_REG_1OU = 0x05,
+  };
 
+  enum {
+    M2_ROOT_PORT0 = 0x0,
+    M2_ROOT_PORT1 = 0x1,
+    M2_ROOT_PORT2 = 0x2,
+    M2_ROOT_PORT3 = 0x3,
+    M2_ROOT_PORT4 = 0x4,
+    M2_ROOT_PORT5 = 0x5,
+  };
+
+  uint8_t mapping_m2_prsnt[2][6] = { {M2_ROOT_PORT0, M2_ROOT_PORT1, M2_ROOT_PORT5, M2_ROOT_PORT4, M2_ROOT_PORT2, M2_ROOT_PORT3},
+                                     {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1}};
+  uint8_t tbuf[5]  = {0x00};
+  uint8_t rbuf[10] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  uint8_t bus_num = 0;
+  uint8_t table = 0;
+  uint8_t prsnt_bit = 0;
+  int fd = 0;
+  int ret = 0;
+
+  bus_num = fby3_common_get_bus_id(slot_id) + 4;
+
+  //set the present status of M.2
+  fd = i2c_open(bus_num);
+  if ( fd < 0 ) {
+    printf("Cannot open /dev/i2c-%d\n", bus_num);
+    ret = BIC_STATUS_FAILURE;
+    goto error_exit;
+  }
+
+  tbuf[0] = (intf == REXP_BIC_INTF )?M2_REG_2OU:M2_REG_1OU;
+  tlen = 1;
+  rlen = 1;
+  ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d, ret", __func__, tlen);
+    goto error_exit;
+  }
+
+  table = tbuf[0] - M2_REG_2OU;
+  prsnt_bit = mapping_m2_prsnt[table][dev_id - 1];
+  if ( status == M2_PWR_OFF ) {
+    tbuf[1] = (rbuf[0] | (0x1 << (prsnt_bit)));
+  } else {
+    tbuf[1] = (rbuf[0] & ~(0x1 << (prsnt_bit)));
+  }
+
+  tlen = 2;
+  rlen = 0;
+  ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+    goto error_exit;
+  }
+
+  //Send the command
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
   tbuf[3] = dev_id;
   tbuf[4] = status;  //set power status
+  tlen = 5;
 
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, tlen, rbuf, &rlen, intf);
 
+error_exit:
+  if ( fd > 0 ) close(fd);
   return ret;
 }

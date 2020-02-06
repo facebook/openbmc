@@ -31,6 +31,8 @@
 
 #define MAX_READ_RETRY 10
 #define MAX_GPV2_DRIVE_NUM 12
+#define MAX_DEVICE_LEN 16
+#define MAX_DEVICE_SLOT_NUM 2
 
 static void
 print_usage_help(void) {
@@ -42,6 +44,7 @@ main(int argc, char **argv) {
 
   uint8_t slot_id;
   uint8_t dev_id;
+  uint8_t dev_slot = 0;
   uint8_t status;
   uint8_t type;
   uint8_t nvme_ready;
@@ -53,9 +56,11 @@ main(int argc, char **argv) {
   uint8_t retry = MAX_READ_RETRY;
   uint8_t output_json = 0;
   json_t *device_object = NULL;
-#define MAX_DEVICE_LEN 16
   char device[MAX_DEVICE_LEN] = {};
   int ret = 0;
+  bool is_dual_m2 = false;
+  uint8_t dev_status[MAX_GPV2_DRIVE_NUM] = {0};
+  uint8_t dev_ret[MAX_GPV2_DRIVE_NUM] = {0};
 
   if (argc < 3) {
     goto err_exit;
@@ -88,9 +93,9 @@ main(int argc, char **argv) {
         goto err_exit;
     }
 
-
     for (dev_id = 1; dev_id <= MAX_GPV2_DRIVE_NUM; dev_id++) {
       status = 0;
+
       while (retry) {
         ret = bic_get_dev_power_status(slot_id, dev_id, &nvme_ready, &status, &ffi, &meff, &vendor_id, &major_ver, &minor_ver);
         if (!ret)
@@ -98,23 +103,51 @@ main(int argc, char **argv) {
         msleep(50);
         retry--;
       }
+      retry = MAX_READ_RETRY;
 
-      snprintf(device, MAX_DEVICE_LEN, "device%d", dev_id-1);
-      if (ret) {
-        if (output_json)
-          json_object_set_new(device_object, device, json_string("Unknown"));
-        else
-          printf("device%d: Unknown\n",dev_id-1);
-      } else if (status) {
-        if (output_json)
-          json_object_set_new(device_object, device, json_string("Present"));
-        else
-          printf("device%d: Present\n",dev_id-1);
-      } else {
-        if (output_json)
-          json_object_set_new(device_object, device, json_string("Not Present"));
-        else
-          printf("device%d: Not Present\n",dev_id-1);
+      dev_status[dev_id - 1] = status;
+      dev_ret[dev_id - 1] = ret;
+
+      if (is_dual_m2 == false && meff == MEFF_DUAL_M2) {
+          is_dual_m2 = true;
+      }
+    }
+
+    for (dev_id = 1; dev_id <= MAX_GPV2_DRIVE_NUM; dev_id+=2) {
+      for (dev_slot = 0; dev_slot < MAX_DEVICE_SLOT_NUM; dev_slot++) {
+        if (is_dual_m2 == true) {
+          snprintf(device, MAX_DEVICE_LEN, "device%d/%d", dev_id - 1, dev_id);
+          ret = dev_ret[dev_id - 1] | dev_ret[dev_id];
+          status = dev_status[dev_id - 1] | dev_status[dev_id];
+          dev_slot++;
+        } else {
+          snprintf(device, MAX_DEVICE_LEN, "device%d", (dev_id + dev_slot - 1));
+          ret = dev_ret[dev_id + dev_slot - 1];
+          status = dev_status[dev_id + dev_slot - 1];
+        }
+
+        if (ret) {
+          if (output_json) {
+            json_object_set_new(device_object, device, json_string("Unknown"));
+          }
+          else {
+            printf("%s: Unknown\n", device, dev_id - 1);
+          }
+        } else if (status) {
+          if (output_json) {
+            json_object_set_new(device_object, device, json_string("Present"));
+          }
+          else {
+            printf("%s: Present\n", device, dev_id - 1);
+          }
+        } else {
+          if (output_json) {
+            json_object_set_new(device_object, device, json_string("Not Present"));
+          }
+          else {
+            printf("%s: Not Present\n", device, dev_id - 1);
+          }
+        }
       }
     }
     if (output_json) {

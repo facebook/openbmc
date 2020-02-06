@@ -330,11 +330,29 @@ Max10_erase_sector(uint8_t slot_id, SectorType_t secType, uint8_t intf) {
   return ret;
 }
 
+static int
+is_valid_cpld_image(uint8_t signed_byte, uint8_t intf) {
+  int ret = -1;
+
+  switch (intf) {
+    case BB_BIC_INTF:
+        return (signed_byte == BICBB)?0:-1;
+      break;
+    case NONE_INTF:
+        return (signed_byte == BICDL)?0:-1;
+      break;
+  }
+
+  return ret;
+}
+
 int 
 update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force) {
 #define STATUS_BIT_MASK  0x1F
 #define CFM_START_ADDR 0x64000
 #define CFM_END_ADDR   0xbffff
+#define MAX10_RPD_SIZE 0x5C000
+
   int fd= 0;
   uint8_t *rpd_file = NULL;
   int ret = 0;
@@ -351,9 +369,44 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
   struct stat finfo;
   int rpd_filesize = 0;
   int read_bytes = 0;
+
   SectorType_t secType = Sector_CFM0;
 
-  printf("OnChip Flash Status = 0x%X., slot_id 0x%x, sectype 0x%x, intf: 0x%x\n", Max10_get_status(slot_id, intf), slot_id, secType, intf);
+  printf("OnChip Flash Status = 0x%X., slot_id 0x%x, sectype 0x%x, intf: 0x%x, ", Max10_get_status(slot_id, intf), slot_id, secType, intf);
+
+  //step 0 - Open the file
+  if ((fd = open(image, O_RDONLY)) < 0) {
+    printf("Fail to open file: %s.\n", image);
+    ret = -1;
+    goto error_exit;
+  }
+
+  fstat(fd, &finfo);
+  rpd_filesize = finfo.st_size;
+  rpd_file = malloc(rpd_filesize);
+  if( rpd_file == 0 ) {
+    printf("Failed to allocate memory\n");
+    ret = -1;
+    goto error_exit;
+  }
+
+  read_bytes = read(fd, rpd_file, rpd_filesize);
+  printf("read %d bytes.\n", read_bytes);
+
+  if ( force == 0 ) {
+    //it's an old image
+    if ( rpd_filesize == MAX10_RPD_SIZE ) {
+      printf("image is not a valid CPLD image for this component.\n");
+      ret = -1;
+      goto error_exit;
+    } else if ( (MAX10_RPD_SIZE + 1) == rpd_filesize ) {
+      if ( is_valid_cpld_image((rpd_file[MAX10_RPD_SIZE]&0xf), intf) < 0 ) {
+        printf("image is not a valid CPLD image for this component.\n");
+        ret = -1;
+        goto error_exit;
+      }
+    }
+  }
 
   //step 1 - UnprotectSector
   ret = Max10_unprotect_sector(slot_id, secType, intf);
@@ -375,26 +428,6 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
     printf("Failed to set None.\n");
     goto error_exit;
   }
-
-  //step 3.5 - Open the file
-  if ((fd = open(image, O_RDONLY)) < 0) {
-    printf("Fail to open file: %s.\n", image);
-    ret = -1;
-    goto error_exit;
-  }
-
-  fstat(fd, &finfo);
-  rpd_filesize = finfo.st_size;
-  //printf("file size = %d bytes, ", rpd_filesize);
-  rpd_file = malloc(rpd_filesize);
-  if( rpd_file == 0 ) {
-    printf("Failed to allocate memory\n");
-    ret = -1;
-    goto error_exit;
-  }
-  
-  read_bytes = read(fd, rpd_file, rpd_filesize);
-  printf("read %d bytes.\n", read_bytes);
 
   //step 4 - Start program
   offset = 0;

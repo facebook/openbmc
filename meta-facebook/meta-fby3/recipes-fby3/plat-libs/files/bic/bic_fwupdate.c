@@ -737,13 +737,6 @@ is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file
 #define REVISION_ID(x) ((x >> 4) & 0x0f)
 #define COMPONENT_ID(x) (x & 0x0f)
 
-enum {
-  BICDL  = 0x01,
-  BICBB  = 0x02,
-  BIC2OU = 0x04,
-  BIC1OU = 0x05
-};
-
   int ret = BIC_STATUS_FAILURE;
   uint8_t rbuf[2] = {0};
   uint8_t rlen = sizeof(rbuf);

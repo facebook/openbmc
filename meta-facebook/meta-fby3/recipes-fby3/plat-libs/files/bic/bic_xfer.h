@@ -51,6 +51,15 @@ enum {
   NONE_INTF     = 0xff,
 };
 
+//It is used to check the signed image of CPLD/BIC
+enum {
+  BICDL  = 0x01,
+  BICBB  = 0x02,
+  BIC2OU = 0x04,
+  BIC1OU = 0x05,
+  NICEXP = 0x06,
+};
+
 void msleep(int msec);
 int i2c_open(uint8_t bus_id);
 int i2c_io(int fd, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount);

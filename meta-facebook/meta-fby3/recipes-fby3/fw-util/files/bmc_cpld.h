@@ -22,17 +22,25 @@ enum {
   CFM_IMAGE_1,
 };
 
+typedef struct image_check {
+  std::string new_path;
+  bool result;
+} image_info;
+
 class BmcCpldComponent : public Component {
   uint8_t pld_type;
   uint8_t bus;
   uint8_t addr;
   altera_max10_attr_t attr;
   int get_cpld_version(uint8_t *ver);
+  private:
+    image_info check_image(std::string image, bool force);
   public:
     BmcCpldComponent(std::string fru, std::string board, std::string comp, uint8_t type, uint8_t _bus, uint8_t _addr)
       : Component(fru, board, comp), pld_type(type), bus(_bus), addr(_addr), attr{bus, addr, CFM_IMAGE_0, CFM0_START_ADDR, CFM0_END_ADDR, ON_CHIP_FLASH_IP_CSR_BASE, ON_CHIP_FLASH_IP_DATA_REG, DUAL_BOOT_IP_BASE} {}
     int print_version();
     int update(std::string image);
+    int fupdate(std::string image);
 };
 
 #endif

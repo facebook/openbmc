@@ -56,6 +56,9 @@ static int read_fan_curr(uint8_t fan_id, float *value);
 static int read_fan_pwr(uint8_t fan_id, float *value);
 static bool is_fan_present(uint8_t fan_id);
 static int read_fan_speed(uint8_t fan, float *rpm); 
+static bool is_ava_card_present(uint8_t riser_slot);
+static int read_nvme_temp(uint8_t sensor_num, float *value);
+static int read_ava_temp(uint8_t sensor_num, float *value);
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 16;
@@ -174,30 +177,48 @@ const uint8_t nic1_sensor_list[] = {
 };
 
 const uint8_t fcb_sensor_list[] = {
-    FCB_FAN0_VOLT,
-    FCB_FAN0_CURR,
-    FCB_FAN0_PWR,
-    FCB_FAN1_VOLT,
-    FCB_FAN1_CURR,
-    FCB_FAN1_PWR,
-    FCB_FAN2_VOLT,
-    FCB_FAN2_CURR,
-    FCB_FAN2_PWR,
-    FCB_FAN3_VOLT,
-    FCB_FAN3_CURR,
-    FCB_FAN3_PWR,
-    FCB_FAN4_VOLT,
-    FCB_FAN4_CURR,
-    FCB_FAN4_PWR,
-    FCB_FAN5_VOLT,
-    FCB_FAN5_CURR,
-    FCB_FAN5_PWR,
-    FCB_FAN6_VOLT,
-    FCB_FAN6_CURR,
-    FCB_FAN6_PWR,
-    FCB_FAN7_VOLT,
-    FCB_FAN7_CURR,
-    FCB_FAN7_PWR,
+  FCB_FAN0_VOLT,
+  FCB_FAN0_CURR,
+  FCB_FAN0_PWR,
+  FCB_FAN1_VOLT,
+  FCB_FAN1_CURR,
+  FCB_FAN1_PWR,
+  FCB_FAN2_VOLT,
+  FCB_FAN2_CURR,
+  FCB_FAN2_PWR,
+  FCB_FAN3_VOLT,
+  FCB_FAN3_CURR,
+  FCB_FAN3_PWR,
+  FCB_FAN4_VOLT,
+  FCB_FAN4_CURR,
+  FCB_FAN4_PWR,
+  FCB_FAN5_VOLT,
+  FCB_FAN5_CURR,
+  FCB_FAN5_PWR,
+  FCB_FAN6_VOLT,
+  FCB_FAN6_CURR,
+  FCB_FAN6_PWR,
+  FCB_FAN7_VOLT,
+  FCB_FAN7_CURR,
+  FCB_FAN7_PWR,
+};
+
+const uint8_t riser1_sensor_list[] = {
+  RISER1_SNR_AVAII_FTEMP,
+  RISER1_SNR_AVAII_RTEMP,
+  RISER1_SNR_SLOT0_NVME_TEMP,
+  RISER1_SNR_SLOT1_NVME_TEMP,
+  RISER1_SNR_SLOT2_NVME_TEMP,
+  RISER1_SNR_SLOT3_NVME_TEMP,   
+};
+
+const uint8_t riser2_sensor_list[] = {
+  RISER2_SNR_AVAII_FTEMP,
+  RISER2_SNR_AVAII_RTEMP,
+  RISER2_SNR_SLOT0_NVME_TEMP,
+  RISER2_SNR_SLOT1_NVME_TEMP,
+  RISER2_SNR_SLOT2_NVME_TEMP,
+  RISER2_SNR_SLOT3_NVME_TEMP, 
 };
 
 // List of MB discrete sensors to be monitored
@@ -395,18 +416,18 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7F
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x80
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x81
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x82
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x83
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x84
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x85
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x86
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x87
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x88
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x89
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8A
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8B
+  {"RISER1_AVAII_FTEMP"    , RISER1_SNR_AVAII_FTEMP    , read_ava_temp , true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x80
+  {"RISER1_AVAII_RTEMP"    , RISER1_SNR_AVAII_RTEMP    , read_ava_temp , true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x81
+  {"RISER2_AVAII_FTEMP"    , RISER2_SNR_AVAII_FTEMP    , read_ava_temp , true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x82
+  {"RISER2_AVAII_RTEMP"    , RISER2_SNR_AVAII_RTEMP    , read_ava_temp , true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x83
+  {"RISER1_SLOT0_NVME_TEMP", RISER1_SNR_SLOT0_NVME_TEMP, read_nvme_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x84
+  {"RISER1_SLOT1_NVME_TEMP", RISER1_SNR_SLOT1_NVME_TEMP, read_nvme_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x85
+  {"RISER1_SLOT2_NVME_TEMP", RISER1_SNR_SLOT2_NVME_TEMP, read_nvme_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x86
+  {"RISER1_SLOT3_NVME_TEMP", RISER1_SNR_SLOT3_NVME_TEMP, read_nvme_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x87
+  {"RISER2_SLOT0_NVME_TEMP", RISER2_SNR_SLOT0_NVME_TEMP, read_nvme_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x88
+  {"RISER2_SLOT1_NVME_TEMP", RISER2_SNR_SLOT1_NVME_TEMP, read_nvme_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x89
+  {"RISER2_SLOT2_NVME_TEMP", RISER2_SNR_SLOT2_NVME_TEMP, read_nvme_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x8A
+  {"RISER2_SLOT3_NVME_TEMP", RISER2_SNR_SLOT3_NVME_TEMP, read_nvme_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x8B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8E
@@ -537,6 +558,8 @@ size_t nic0_sensor_cnt = sizeof(nic0_sensor_list)/sizeof(uint8_t);
 size_t nic1_sensor_cnt = sizeof(nic1_sensor_list)/sizeof(uint8_t);
 size_t mb_discrete_sensor_cnt = sizeof(mb_discrete_sensor_list)/sizeof(uint8_t);
 size_t fcb_sensor_cnt = sizeof(fcb_sensor_list)/sizeof(uint8_t);
+size_t riser1_sensor_cnt = sizeof(riser1_sensor_list)/sizeof(uint8_t);
+size_t riser2_sensor_cnt = sizeof(riser2_sensor_list)/sizeof(uint8_t);
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
@@ -556,6 +579,14 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_FCB:
     *sensor_list = (uint8_t *) fcb_sensor_list;
     *cnt = fcb_sensor_cnt;
+    break;
+  case FRU_RISER1:
+    *sensor_list = (uint8_t *) riser1_sensor_list;
+    *cnt = riser1_sensor_cnt;
+    break;
+  case FRU_RISER2:
+    *sensor_list = (uint8_t *) riser2_sensor_list;
+    *cnt = riser2_sensor_cnt;
     break;
   default:
     if (fru > MAX_NUM_FRUS)
@@ -1897,6 +1928,136 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
   return ret;
 }
 
+static bool
+is_ava_card_present(uint8_t riser_bus) {
+  int fd = 0;
+  char fn[32];
+  bool ret = false;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tcount = 0, rcount = 0;
+  int  val = 0;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", riser_bus);
+  fd = open(fn, O_RDWR);
+  if ( fd < 0 ) {
+    return false;
+  }
+
+  //Send I2C to AVAII for FRU present check
+  rcount = 1;
+  tcount = 0;
+  val = i2c_rdwr_msg_transfer(fd, AVA_FRUID_ADDR, tbuf, tcount, rbuf, rcount);
+  if( val < 0 ) {
+    ret = false;
+  }
+  else {
+    ret = true;
+  }
+  close(fd);
+
+  return ret;
+}
+
+static int
+read_ava_temp(uint8_t sensor_num, float *value) {
+  int ret = 0;
+
+  switch(sensor_num) {
+    case RISER1_SNR_AVAII_FTEMP:
+    case RISER1_SNR_AVAII_RTEMP:
+      if (is_ava_card_present(RISER1_BUS) == false) {
+        return READING_NA;
+      }
+      break;
+    case RISER2_SNR_AVAII_FTEMP:
+    case RISER2_SNR_AVAII_RTEMP:
+      if (is_ava_card_present(RISER2_BUS) == false) {
+        return READING_NA;
+      }
+      break;
+  }
+
+  switch(sensor_num) {
+    case RISER1_SNR_AVAII_FTEMP:
+      ret = sensors_read("tmp75-i2c-2-49", "RISER1_AVAII_FRONT", value);
+      break;
+    case RISER1_SNR_AVAII_RTEMP:
+      ret = sensors_read("tmp75-i2c-2-48", "RISER1_AVAII_REAR", value);
+      break;
+    case RISER2_SNR_AVAII_FTEMP:
+      ret = sensors_read("tmp75-i2c-6-49", "RISER2_AVAII_FRONT", value);
+      break;
+    case RISER2_SNR_AVAII_RTEMP:
+      ret = sensors_read("tmp75-i2c-6-48", "RISER2_AVAII_REAR", value);
+      break;
+  }
+
+  return ret;
+}
+
+static int
+read_nvme_temp(uint8_t sensor_num, float *value) {
+  int ret = 0;
+  int bus_id = 0;
+  int fd = 0;
+  int riser_pca9846_bus_base = 0;
+  char fn[32];
+  uint8_t tcount = 0, rcount = 0;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  switch(sensor_num) {
+    case RISER1_SNR_SLOT0_NVME_TEMP:
+    case RISER1_SNR_SLOT1_NVME_TEMP:
+    case RISER1_SNR_SLOT2_NVME_TEMP:
+    case RISER1_SNR_SLOT3_NVME_TEMP:
+      if (is_ava_card_present(RISER1_BUS) == false) {
+        return READING_NA;
+      }
+      break;
+    case RISER2_SNR_SLOT0_NVME_TEMP:
+    case RISER2_SNR_SLOT1_NVME_TEMP:
+    case RISER2_SNR_SLOT2_NVME_TEMP:
+    case RISER2_SNR_SLOT3_NVME_TEMP:
+      if (is_ava_card_present(RISER2_BUS) == false) {
+        return READING_NA;
+      }
+      break;
+    default:
+      return READING_NA;
+  }
+
+  if (sensor_num < RISER2_SNR_SLOT0_NVME_TEMP) {
+    riser_pca9846_bus_base = RISER1_PCA9846_BUS_BASE;
+  } else {
+    riser_pca9846_bus_base = RISER2_PCA9846_BUS_BASE;
+  }
+
+  bus_id = (sensor_num % RISER_PCA9846_CH_MAX_NUM) + riser_pca9846_bus_base;
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus_id);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    return READING_NA;
+  }
+
+  ret = 0;
+  tbuf[0] = NVMe_GET_STATUS_CMD;
+  tcount = 1;
+  rcount = NVMe_GET_STATUS_LEN;
+  ret = i2c_rdwr_msg_transfer(fd, NVMe_SMBUS_ADDR, tbuf, tcount, rbuf, rcount);
+  if (ret < 0) {
+    ret = READING_NA;
+    goto error_exit;
+  }
+  *value = (float)(signed char)rbuf[NVMe_TEMP_REG];
+
+error_exit:
+  close(fd);
+
+  return ret;
+}
+
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
@@ -1917,6 +2078,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   case FRU_NIC0:
   case FRU_NIC1:
   case FRU_FCB:
+  case FRU_RISER1:
+  case FRU_RISER2:
     if (server_off) {
       poweron_10s_flag = 0;
       if (sensor_map[sensor_num].stby_read == true ) {
@@ -1988,6 +2151,8 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   case FRU_NIC0:
   case FRU_NIC1:
   case FRU_FCB:
+  case FRU_RISER1:
+  case FRU_RISER2:
     //Discrete sensor
     if(sensor_num == 0xFC) {
       sprintf(name, "%s", "MB_PROCESSOR_FAIL");
@@ -2010,6 +2175,8 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
   case FRU_NIC0:
   case FRU_NIC1:
   case FRU_FCB:
+  case FRU_RISER1:
+  case FRU_RISER2:
     switch(thresh) {
     case UCR_THRESH:
       *val = sensor_map[sensor_num].snr_thresh.ucr_thresh;
@@ -2055,6 +2222,8 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case FRU_NIC0:
     case FRU_NIC1:
     case FRU_FCB:
+    case FRU_RISER1:
+    case FRU_RISER2:
       switch(scale) {
         case TEMP:
           sprintf(units, "C");

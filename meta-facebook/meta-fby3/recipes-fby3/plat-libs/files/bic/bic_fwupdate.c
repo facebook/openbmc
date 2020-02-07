@@ -647,7 +647,7 @@ update_remote_bic(uint8_t slot_id, uint8_t intf, int fd, int file_size) {
   ret = enable_remote_bic_update(slot_id, intf); 
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "Enable the remote bic update, Fail, ret = %d\n", ret);
-    goto exit;
+    // goto exit;
   }  
 
   //step2 - adjust the bus of i2c speed of bridge BIC

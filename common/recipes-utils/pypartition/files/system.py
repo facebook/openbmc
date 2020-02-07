@@ -161,11 +161,6 @@ def get_checksums_args(description):
             action="store_true",
             help="Flash even if we suspect the image will brick the BMC",
         )
-        parser.add_argument(
-            "--flash_name",
-            help='Flash device to upgrade (defaults to "flash0")',
-            default="flash0",
-        )
     else:
         parser.add_argument("--serve", action="store_true")
         parser.add_argument("--port", type=int, default=2876)
@@ -318,7 +313,12 @@ def get_mtds():
     all_mtds = []
     full_flash_mtds = []
     for (device, size_in_hex, name) in mtd_info:
-        if name in ("flash", "flash0", "flash1", "Partition_000"):
+        if (
+            name == "flash"
+            or name == "flash0"
+            or name == "flash1"
+            or name == "Partition_000"
+        ):
             if vboot_support == "none" or (
                 vboot_support == "software-enforce" and (name in ["flash0", "flash1"])
             ):
@@ -638,17 +638,11 @@ def image_file_compatible(image_file, issue_file, logger):
     return True
 
 
-def flash(attempts, image_file, mtd, logger, flash_name, force=False):
-    # type: (int, ImageFile, MemoryTechnologyDevice, logging.Logger, str, bool) -> None
+def flash(attempts, image_file, mtd, logger, force=False):
+    # type: (int, ImageFile, MemoryTechnologyDevice, logging.Logger, bool) -> None
     if image_file.size > mtd.size:
         logger.error("{} is too big for {}.".format(image_file, mtd))
         sys.exit(1)
-
-    if flash_name != mtd.device_name:
-        logger.info("Not flashing {} - limited to {}".format(
-            mtd.device_name, flash_name)
-        )
-        return
 
     if other_flasher_running(logger):
         sys.exit(1)

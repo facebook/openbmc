@@ -16,6 +16,14 @@ SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};proto
            file://fw_env.config.full \
           "
 
+def release_patches(d):
+    distro = d.getVar('DISTRO_CODENAME', True)
+    if distro == 'warrior':
+        return "file://0001-libfdt-Make-it-compatible-with-newer-dtc.patch"
+    return ""
+SRC_URI += '${@release_patches(d)}'
+
+
 PV = "v2016.07"
 S = "${WORKDIR}/git"
 

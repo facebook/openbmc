@@ -201,13 +201,15 @@ cmd_NM_sensor_reading(NM_RW_INFO info, uint8_t snr_num, uint8_t* rbuf, uint8_t* 
   //ME no response
 #ifdef DEBUG
     syslog(LOG_DEBUG, "read NM sensor=%x: Zero bytes received\n", snr_num);
-    return -1;
 #endif
+    return -1;
   } else {
     if (rbuf[6] == 0) {
       if (rbuf[8] & 0x20) {
         return -1;
       }
+    } else {
+      return -1;
     }
   }
   return ret;

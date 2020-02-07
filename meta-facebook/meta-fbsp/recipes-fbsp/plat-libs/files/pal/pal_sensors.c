@@ -1824,7 +1824,7 @@ pal_is_BIOS_completed(uint8_t fru)
     syslog(LOG_WARNING, "[%s]incorrect fru id: %d", __func__, fru);
     return false;
   }
-  desc = gpio_open_by_shadow("FM_BIOS_POST_CMPLT_N");
+  desc = gpio_open_by_shadow("FM_BIOS_POST_CMPLT_BMC_N");
   if (!desc)
     return false;
 

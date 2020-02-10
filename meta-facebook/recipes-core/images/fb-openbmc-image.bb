@@ -34,3 +34,11 @@ PACKAGE_EXCLUDE += "\
     gnutls \
     perl \
     "
+# Nearly every package that uses TLS/SSL RRECOMMENDS the CA certificate
+# package.  Since we should not be initiating SSL traffic from a BMC
+# to outside of our own network, there is no value in all of these
+# certificates.  Add it to the BAD_RECOMMENDATIONS so it is not installed
+# unless there is a strict need for it.
+BAD_RECOMMENDATIONS += " \
+    ca-certificates \
+    "

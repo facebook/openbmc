@@ -72,6 +72,8 @@ can interact with both BMC and main CPU. These tests can interact with BMC to
 collect state example: power cycle tests, SoL tests etc
 3) Stress tests: Similar to 1) and 2). These tests are meant to take longer time to
 run, since they stress the SW module. Example: rest server
+4) Firmware upgrade tests: Similar to 1), but those test are specifically used with our
+UFW tools to test firmware upgrade.
 
 Following sections describe how to add new tests for the above types
 
@@ -97,3 +99,46 @@ tests2---common ---> add base_XXX_test.py (Define tests in the class as test_ext
 ---------tests
           |
           --------<platform> ---> add external_test_XXX.py (Define tests in the class as test_external_XXX methods)
+
+--------------------------------------------------------------------------------
+How to use CIT for firmware upgrade test? The commands example assume user is in the
+root openBMC code repo.
+-------------------------------------------------------------------------------
+1- Flash the BMC image (must support python unittest) that you want to use for testing on the box.
+2- scp test2 folder to target /usr/local/bin
+   Ex: scp -r test2 <target-bmc-unit-IP>:/usr/local/bin/
+3- scp tools/fw_upgrade folder to target /tmp/
+   Ex: scp -r tools/fw_upgrade <target-bmc-unit-IP>:/tmp/
+4- scp all the firmware binaries to target /tmp/fw_upgrade/
+   Ex: scp -r <path-for-firmware-binaries-folder>  <target-bmc-unit-IP>:/tmp/
+5- scp manifest and firmware jsons to target /tmp/
+   Ex: scp -r
+   meta-facebook/meta-<platform-name>/recipes-utils/openbmc-utils/files/fw_upgrade/*
+   <target-bmc-unit-IP>:/tmp/fw_upgrade/
+6- Please make sure that the firmware name are identical to the names you have
+   in the json files. If they aren't the same, please rename them accordingly.
+
+---------------------------------------------------------------------------------
+Adding a firmware test
+--------------------------------------------------------------------------------
+Firmware tests are both in common and platform specific folder just like the
+previous test structure explained in this README. However, firmware test file
+must be named with the test_fw_ prefix such as test_fw_<name-of-specific-test>.
+
+-----------------------------------------------------------------------------
+Running firmware test on BMC box
+-----------------------------------------------------------------------------
+The steps are the same as the ones explained earlier in this README for running
+test, but for firmware the --fw option must be used. Below are some examples
+with the --fw option.
+1- To list all the test for a specific platform, run this::
+   python cit_runner.py --platform <name-of-the-platform> --fw --list-tests
+
+2- To run a specific test, run this:
+  python cit_runner.py --platform wedge400 --fw --run-test
+<name-of-specific-test
+
+3- To run a firmware dryrun command without upgrading any firmware, cd inside /tmp/fw_upgrade
+   folder on the bmc unit and then run this: python ufw_upgrader.py --dryrun
+
+

@@ -13,11 +13,6 @@
         "attribute": {
           "type" : "power_status"
         }
-      },
-      "nic": {
-        "attribute": {
-          "type" : "power_status"
-        }
       }
     },  
     "watchdog": false,

@@ -30,4 +30,7 @@ IMAGE_FEATURES_append = " \
     tools-debug \
     "
 
-PACKAGE_EXCLUDE += "perl"
+PACKAGE_EXCLUDE += "\ 
+    gnutls \
+    perl \
+    "

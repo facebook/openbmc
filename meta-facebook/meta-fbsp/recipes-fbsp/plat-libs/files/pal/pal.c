@@ -1579,3 +1579,10 @@ pal_sensor_is_valid(char *fru_name, char *sensor_name)
 
   return true;
 }
+
+int
+pal_get_fru_list(char *list) {
+
+  strcpy(list, pal_fru_list);
+  return 0;
+}

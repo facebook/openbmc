@@ -29,3 +29,5 @@ IMAGE_FEATURES_append = " \
     ssh-server-openssh \
     tools-debug \
     "
+
+PACKAGE_EXCLUDE += "perl"

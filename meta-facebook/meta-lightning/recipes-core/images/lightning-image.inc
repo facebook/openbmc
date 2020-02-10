@@ -9,7 +9,7 @@ FLASH_ROOTFS_OFFSET = "4608"
 
 NTP_PKGS = " \
   ntp \
-  ntp-utils \
+  ntpq \
   sntp \
   ntpdate \
   "

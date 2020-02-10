@@ -12,8 +12,8 @@ RDEPENDS_${PN} += " \
   iproute2 \
   libndp \
   ntp \
-  ntp-utils \
   ntpdate \
+  ntpq \
   openssh-sftp-server \
   sntp \
   "

@@ -838,6 +838,7 @@ int rackmon_print_info(write_buffer *wb, monitoring_data *data)
 // check for new psus every N seconds
 static int search_at = 0;
 #define SEARCH_PSUS_EVERY 120
+#define MONITOR_INTERVAL 1
 void *monitoring_loop(void *arg)
 {
   (void)arg;
@@ -851,10 +852,11 @@ void *monitoring_loop(void *arg)
       OBMC_INFO("rackmon scan");
       check_active_psus();
       alloc_monitoring_datas();
+      fetch_monitored_data();
       clock_gettime(CLOCK_REALTIME, &ts);
       search_at = ts.tv_sec + SEARCH_PSUS_EVERY;
     }
-    fetch_monitored_data();
+    sleep(MONITOR_INTERVAL);
   }
   return NULL;
 }

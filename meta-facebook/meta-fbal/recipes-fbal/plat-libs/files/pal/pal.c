@@ -1223,3 +1223,76 @@ pal_get_fru_list(char *list) {
   return 0;
 }
 
+int
+pal_get_platform_id(uint8_t *id) {
+  static bool cached = false;
+  static uint8_t cached_id = 0;
+
+  if (!cached) {
+    const char *shadows[] = {
+      "FM_BOARD_BMC_SKU_ID0",
+      "FM_BOARD_BMC_SKU_ID1",
+      "FM_BOARD_BMC_SKU_ID2",
+      "FM_BOARD_BMC_SKU_ID3",
+      "FM_BOARD_BMC_SKU_ID4"
+    };
+    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+      return -1;
+    }
+    cached = true;
+  }
+  *id = cached_id;
+  return 0;
+}
+
+
+int
+pal_get_board_rev_id(uint8_t *id) {
+  static bool cached = false;
+  static uint8_t cached_id = 0;
+
+  if (!cached) {
+    const char *shadows[] = {
+      "FM_BOARD_BMC_REV_ID0",
+      "FM_BOARD_BMC_REV_ID1",
+      "FM_BOARD_BMC_REV_ID2"
+    };
+    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+      return -1;
+    }
+    cached = true;
+  }
+  *id = cached_id;
+  return 0;
+}
+
+
+int
+pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+  int ret;
+  uint8_t platform_id  = 0x00;
+  uint8_t board_rev_id = 0x00;
+  int completion_code=CC_UNSPECIFIED_ERROR;
+
+  ret = pal_get_platform_id(&platform_id);
+  if (ret) {
+    *res_len = 0x00;
+    return completion_code;
+  }
+
+  ret = pal_get_board_rev_id(&board_rev_id);
+  if (ret) {
+    *res_len = 0x00;
+    return completion_code;
+  }
+
+  // Prepare response buffer
+  completion_code = CC_SUCCESS;
+  res_data[0] = platform_id;
+  res_data[1] = board_rev_id;
+  *res_len = 0x02;
+
+  return completion_code;
+}
+

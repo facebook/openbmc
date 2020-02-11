@@ -66,20 +66,37 @@ def init_plat_tree():
     r_temp = tree("logs", data = get_node_logs("mb"))
     r_mb.addChild(r_temp)
 
-    # Add /api/sled/mezz to represent Network Mezzaine card
-    r_mezz = tree("mezz", data = get_node_mezz())
+    # Add /api/sled/mezz0 to represent Network Mezzaine card
+    r_mezz = tree("mezz0", data = get_node_mezz())
     r_sled.addChild(r_mezz)
 
     # Add /api/mezz/fruid end point
-    r_temp = tree("fruid", data = get_node_fruid("nic"))
+    r_temp = tree("fruid", data = get_node_fruid("nic0"))
     r_mezz.addChild(r_temp)
 
     # /api/mezz/sensors end point
-    r_temp = tree("sensors", data = get_node_sensors("nic"))
+    r_temp = tree("sensors", data = get_node_sensors("nic0"))
     r_mezz.addChild(r_temp)
 
     # /api/mezz/logs end point
-    r_temp = tree("logs", data = get_node_logs("nic"))
+    r_temp = tree("logs", data = get_node_logs("nic0"))
     r_mezz.addChild(r_temp)
+
+    # Add /api/sled/mezz1 to represent Network Mezzaine card
+    r_mezz1 = tree("mezz1", data = get_node_mezz())
+    r_sled.addChild(r_mezz1)
+
+    # Add /api/mezz1/fruid end point
+    r_temp = tree("fruid", data = get_node_fruid("nic1"))
+    r_mezz1.addChild(r_temp)
+
+    # /api/mezz1/sensors end point
+    r_temp = tree("sensors", data = get_node_sensors("nic1"))
+    r_mezz1.addChild(r_temp)
+
+    # /api/mezz1/logs end point
+    r_temp = tree("logs", data = get_node_logs("nic1"))
+    r_mezz1.addChild(r_temp)
+
 
     return r_api

@@ -120,7 +120,15 @@ int BiosComponent::_update(const char *path, uint8_t force) {
   if (found) {
     snprintf(line, sizeof(line), "flashcp -v %s /dev/mtd%d", path, mtdno);
     ret = system(line);
-    ret = (ret < 0) ? FW_STATUS_FAILURE : WEXITSTATUS(ret);
+  
+    if (ret == -1) {
+      ret = FW_STATUS_FAILURE;
+    }
+    
+    if (WIFEXITED(ret) && (WEXITSTATUS(ret) == 0))
+      ret = FW_STATUS_SUCCESS;
+    else
+      ret = FW_STATUS_FAILURE;
   } else {
     ret = FW_STATUS_FAILURE;
   }

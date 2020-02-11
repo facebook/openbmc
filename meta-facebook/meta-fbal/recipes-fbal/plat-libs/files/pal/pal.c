@@ -275,6 +275,9 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   case FRU_BMC:
     *status = 1;
     break;
+  case FRU_DBG:
+    *status = 1;
+    break;
   default:
     return -1;
   }

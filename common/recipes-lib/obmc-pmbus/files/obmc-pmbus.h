@@ -28,6 +28,7 @@
 extern "C" {
 #endif
 
+#include "pmbus.h"
 #include <unistd.h>
 #include <stdint.h>
 
@@ -39,17 +40,6 @@ extern "C" {
  * Opaque data type to represent a pmbus device.
  */
 typedef struct pmbus_device pmbus_dev_t;
-
-/*
- * Supported PMBus Commands. Refer to PMBus Spec, "APPENDIX I. Command
- * Summary" for details.
- */
-enum pmbus_regs {
-	PMBUS_PAGE = 0x00,
-	PMBUS_OPERATION = 0x01,
-	PMBUS_MFR_ID = 0x99,
-	PMBUS_MFR_MODEL = 0x9A,
-};
 
 /*
  * Supported OPERATION values. Refer to PMBus Spec, section 12.1 for

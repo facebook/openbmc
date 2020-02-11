@@ -24,6 +24,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://obmc-pmbus.h;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
 SRC_URI = "file://Makefile \
+           file://pmbus.h \
            file://obmc-pmbus.c \
            file://obmc-pmbus.h \
            "
@@ -40,7 +41,8 @@ do_install() {
 
     install -d ${D}${includedir}/openbmc
     install -m 0644 obmc-pmbus.h ${D}${includedir}/openbmc/obmc-pmbus.h
+    install -m 0644 pmbus.h ${D}${includedir}/openbmc/pmbus.h
 }
 
 FILES_${PN} = "${libdir}/libobmc-pmbus.so"
-FILES_${PN}-dev = "${includedir}/openbmc/obmc-pmbus.h"
+FILES_${PN}-dev = "${includedir}/openbmc/obmc-pmbus.h ${includedir}/openbmc/pmbus.h"

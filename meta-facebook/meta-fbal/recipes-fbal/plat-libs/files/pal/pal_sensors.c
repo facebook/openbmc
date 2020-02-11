@@ -28,6 +28,8 @@ size_t pal_tach_cnt = FAN_TACH_ALL_NUM;
 const char pal_pwm_list[] = "0,1,2,3";
 const char pal_tach_list[] = "0,1,2,3,4,5,6,7";
 
+bool pal_bios_completed(uint8_t fru);
+
 static int read_adc_val(uint8_t adc_id, float *value);
 static int read_battery_val(uint8_t adc_id, float *value);
 static int read_sensor(uint8_t snr_id, float *value);
@@ -1080,6 +1082,10 @@ read_cpu0_dimm_temp(uint8_t dimm_id, float *value) {
   uint8_t temp;
   static int retry = 0;
 
+  if(pal_bios_completed(FRU_MB) != true) {
+    return READING_NA;
+  }
+
   ret = cmd_peci_dimm_thermal_reading(PECI_CPU0_ADDR, dimm_id, &temp);
   if (ret != 0) {
     retry++;
@@ -1103,6 +1109,10 @@ read_cpu1_dimm_temp(uint8_t dimm_id, float *value) {
   int ret;
   uint8_t temp;
   static int retry = 0;
+
+  if(pal_bios_completed(FRU_MB) != true) {
+    return READING_NA;
+  }
 
   ret = cmd_peci_dimm_thermal_reading(PECI_CPU1_ADDR, dimm_id, &temp);
   if (ret != 0) {

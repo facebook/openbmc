@@ -42,7 +42,8 @@
 
 
 //Debug card presence check interval. Preferred range from ## milliseconds to ## milleseconds.
-#define DBG_CARD_CHECK_INTERVAL 100
+#define DBG_CARD_CHECK_INTERVAL 500
+#define LED_CHECK_INTERVAL 500
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
@@ -69,7 +70,7 @@ scm_monitor_handler(void *unused){
   OBMC_INFO("%s: %s started", FRONTPANELD_NAME,__FUNCTION__);
   while (1) {
     ret = pal_is_fru_prsnt(FRU_SCM, &prsnt);
-    if (ret) {
+    if (ret || !prsnt) {
       goto scm_mon_out;
     }
     curr = prsnt;
@@ -115,11 +116,17 @@ exithandler(int signum) {
 static void *
 sysLED_monitor_handler(void *unused) {
   int brd_rev;
+  int ret;
   struct timeval timeval;
   long curr_time;
   long last_time = 0;
   OBMC_INFO("%s: %s started", FRONTPANELD_NAME,__FUNCTION__);
-  pal_get_board_rev(&brd_rev);
+  ret = pal_get_board_rev(&brd_rev);
+  if (ret) {
+    OBMC_INFO("%s: %s get borad rev error",  FRONTPANELD_NAME,__FUNCTION__);
+    set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
+    return 0;
+  }
   while(1) {
     gettimeofday(&timeval, NULL);
     curr_time = timeval.tv_sec * 1000 + timeval.tv_usec / 1000;
@@ -129,7 +136,7 @@ sysLED_monitor_handler(void *unused) {
       set_sys_led(brd_rev);
       last_time = curr_time;
     }
-    usleep(100000);
+    msleep(LED_CHECK_INTERVAL);;
   }
   return 0;
 }
@@ -138,11 +145,19 @@ sysLED_monitor_handler(void *unused) {
 static void *
 LED_monitor_handler(void *unused) {
   int brd_rev;
+  int ret;
   struct timeval timeval;
   long curr_time;
   long last_time = 0;
   OBMC_INFO("%s: %s started", FRONTPANELD_NAME,__FUNCTION__);
-  pal_get_board_rev(&brd_rev);
+  ret = pal_get_board_rev(&brd_rev);
+  if (ret)
+  {
+    OBMC_INFO("%s: %s get borad rev error",  FRONTPANELD_NAME,__FUNCTION__);
+    set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
+    return 0;
+  }
+
   while(1) {
     gettimeofday(&timeval, NULL);
     curr_time = timeval.tv_sec * 1000 + timeval.tv_usec / 1000;
@@ -154,7 +169,7 @@ LED_monitor_handler(void *unused) {
       set_fan_led(brd_rev);
       last_time = curr_time;
     }
-    usleep(100000);
+    msleep(LED_CHECK_INTERVAL);
   }
   return 0;
 }
@@ -204,7 +219,13 @@ pwr_btn_handler(void *unused) {
   uint8_t btn = 0;
   uint8_t cmd = 0;
   uint8_t power = 0;
+  uint8_t prsnt = 0;
   while (1) {
+    ret = pal_is_debug_card_prsnt(&prsnt);
+    if (ret || !prsnt) {
+      goto pwr_btn_out;
+    }
+
     ret = pal_get_dbg_pwr_btn(&btn);
     if (ret || !btn) {
         goto pwr_btn_out;
@@ -247,7 +268,7 @@ pwr_btn_handler(void *unused) {
     // Reverse the power state of the given server.
     ret = pal_set_server_power(FRU_SCM, cmd);
 pwr_btn_out:
-    msleep(100);
+    msleep(DBG_CARD_CHECK_INTERVAL);
   }
   return 0;
 }
@@ -256,14 +277,26 @@ pwr_btn_out:
 static void *
 rst_btn_handler(void *unused) {
   uint8_t btn;
+  int ret;
+  uint8_t prsnt = 0;
   while (1) {
+    ret = pal_is_debug_card_prsnt(&prsnt);
+    if (ret || !prsnt) {
+      goto rst_btn_out;
+    }
     /* Check the position of hand switch
      * and if reset button is pressed */
-    pal_get_dbg_rst_btn(&btn);
+    ret = pal_get_dbg_rst_btn(&btn);
+    if (ret || !btn) {
+      goto rst_btn_out;
+    }
+
     if (btn) {
       /* Reset userver */
       pal_set_server_power(FRU_SCM, SERVER_POWER_RESET);
     }
+rst_btn_out:
+    msleep(DBG_CARD_CHECK_INTERVAL);
   }
   return 0;
 }
@@ -273,16 +306,31 @@ rst_btn_handler(void *unused) {
 static void *
 uart_sel_btn_handler(void *unused) {
   uint8_t btn;
+  uint8_t prsnt = 0;
+  int ret;
   /* Clear Debug Card reset button at the first time */
-  pal_clr_dbg_uart_btn();
+  ret = pal_clr_dbg_uart_btn();
+  if (ret) {
+    OBMC_INFO("%s: %s clear uart button status error",  FRONTPANELD_NAME,__FUNCTION__);
+    return 0;
+  }
   while (1) {
     /* Check the position of hand switch
      * and if reset button is pressed */
-    pal_get_dbg_uart_btn(&btn);
+    ret = pal_is_debug_card_prsnt(&prsnt);
+    if (ret || !prsnt) {
+      goto uart_sel_btn_out;
+    }
+    ret = pal_get_dbg_uart_btn(&btn);
+    if (ret || !btn) {
+      goto uart_sel_btn_out;
+    }
     if (btn) {
       pal_switch_uart_mux();
       pal_clr_dbg_uart_btn();
     }
+uart_sel_btn_out:
+    msleep(DBG_CARD_CHECK_INTERVAL);
   }
   return 0;
 }

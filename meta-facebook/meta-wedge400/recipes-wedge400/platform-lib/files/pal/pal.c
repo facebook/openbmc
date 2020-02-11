@@ -55,6 +55,7 @@
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define SCM_BRD_ID "6-0021"
 #define SENSOR_NAME_ERR "---- It should not be show ----"
+#define LED_INTERVAL 5
 uint8_t g_dev_guid[GUID_SIZE] = {0};
 
 typedef struct {
@@ -470,33 +471,6 @@ read_device(const char *device, int *value) {
   }
 
   rc = fscanf(fp, "%i", value);
-  fclose(fp);
-  if (rc != 1) {
-#ifdef DEBUG
-    OBMC_INFO("failed to read device %s", device);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-// Helper Functions
-static int
-read_device_float(const char *device, float *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "r");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    OBMC_INFO("failed to open device %s", device);
-#endif
-    return err;
-  }
-
-  rc = fscanf(fp, "%f", value);
   fclose(fp);
   if (rc != 1) {
 #ifdef DEBUG
@@ -5148,45 +5122,24 @@ set_sled(int brd_rev, uint8_t color, int led_name)
   }
 
   clr_val = color;
-  if(brd_rev == 0 || brd_rev == 4) {
-    if(led_name == SLED_SMB || led_name == SLED_FAN) {
-      clr_val = clr_val << 3;
-      val_io0 = (val_io0 & 0x7) | clr_val;
-      val_io1 = (val_io1 & 0x7) | clr_val;
-    }
-    else if(led_name == SLED_SYS || led_name == SLED_PSU) {
-      val_io0 = (val_io0 & 0x38) | clr_val;
-      val_io1 = (val_io1 & 0x38) | clr_val;
-    }
-    else {
-      OBMC_WARN("%s: unknown led name\n", __func__);
-    }
 
-    if(led_name == SLED_SYS || led_name == SLED_FAN) {
-      i2c_smbus_write_byte_data(dev, io0_reg, val_io0);
-    } else {
-      i2c_smbus_write_byte_data(dev, io1_reg, val_io1);
-    }
+  if(led_name == SLED_FAN || led_name == SLED_SMB) {
+    clr_val = clr_val << 3;
+    val_io0 = (val_io0 & 0x7) | clr_val;
+    val_io1 = (val_io1 & 0x7) | clr_val;
+  }
+  else if(led_name == SLED_SYS || led_name == SLED_PSU) {
+    val_io0 = (val_io0 & 0x38) | clr_val;
+    val_io1 = (val_io1 & 0x38) | clr_val;
   }
   else {
-    if(led_name == SLED_FAN || led_name == SLED_SMB) {
-      clr_val = clr_val << 3;
-      val_io0 = (val_io0 & 0x7) | clr_val;
-      val_io1 = (val_io1 & 0x7) | clr_val;
-    }
-    else if(led_name == SLED_SYS || led_name == SLED_PSU) {
-      val_io0 = (val_io0 & 0x38) | clr_val;
-      val_io1 = (val_io1 & 0x38) | clr_val;
-    }
-    else {
-      OBMC_WARN("%s: unknown led name\n", __func__);
-    }
+    OBMC_WARN("%s: unknown led name\n", __func__);
+  }
 
-    if(led_name == SLED_SYS || led_name == SLED_FAN) {
-      i2c_smbus_write_byte_data(dev, io0_reg, val_io0);
-    } else {
-      i2c_smbus_write_byte_data(dev, io1_reg, val_io1);
-    }
+  if(led_name == SLED_SYS || led_name == SLED_FAN) {
+    i2c_smbus_write_byte_data(dev, io0_reg, val_io0);
+  } else {
+    i2c_smbus_write_byte_data(dev, io1_reg, val_io1);
   }
 
   close(dev);
@@ -5318,8 +5271,8 @@ void set_sys_led(int brd_rev)
 
 void set_fan_led(int brd_rev)
 {
-  int i, value;
-  float unc, lcr;
+  int i;
+  float value, unc, lcr;
   uint8_t prsnt;
   uint8_t fan_num = MAX_NUM_FAN * 2;//rear & front: MAX_NUM_FAN * 2
   char path[LARGEST_DEVICE_NAME + 1];
@@ -5339,19 +5292,16 @@ void set_fan_led(int brd_rev)
     OBMC_INFO("fan %d : %d\n",i,prsnt);
 #endif
     if(!prsnt) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
       OBMC_WARN("%s: fan %d isn't presence\n",__func__,i-FRU_FAN1+1);
-      return;
+      goto cleanup;
     }
   }
   for(i = 0; i < fan_num; i++) {
-    pal_get_sensor_name(FRU_SMB,sensor_num[i],sensor_name);
-    snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_SMB, sensor_num[i]);
-    if(read_device(path, &value)) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
+    if(smb_sensor_read(sensor_num[i],&value)) {
       OBMC_WARN("%s: can't access %s\n",__func__,path);
-      return;
+      goto cleanup;
     }
+
     pal_get_sensor_threshold(FRU_SMB, sensor_num[i], UCR_THRESH, &unc);
     pal_get_sensor_threshold(FRU_SMB, sensor_num[i], LCR_THRESH, &lcr);
 #ifdef DEBUG
@@ -5361,24 +5311,28 @@ void set_fan_led(int brd_rev)
     OBMC_INFO(" lcr %f\n",smb_sensor_threshold[sensor_num[i]][LCR_THRESH]);
 #endif
     if(value == 0) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
       OBMC_WARN("%s: can't access %s\n",__func__,path);
-      return;
+      goto cleanup;
     }
     else if(value > unc){
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
-      OBMC_WARN("%s: %s value is over than UNC ( %d > %.2f )\n",
+      pal_get_sensor_name(FRU_SMB,sensor_num[i],sensor_name);
+      OBMC_WARN("%s: %s value is over than UNC ( %.2f > %.2f )\n",
       __func__,sensor_name,value,unc);
-      return;
+      goto cleanup;
     }
     else if(value < lcr){
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
-      OBMC_WARN("%s: %s value is under than LCR ( %d < %.2f )\n",
+      pal_get_sensor_name(FRU_SMB,sensor_num[i],sensor_name);
+      OBMC_WARN("%s: %s value is under than LCR ( %.2f < %.2f )\n",
       __func__,sensor_name,value,lcr);
-      return;
+      goto cleanup;
     }
   }
   set_sled(brd_rev, SLED_CLR_BLUE, SLED_FAN);
+  sleep(LED_INTERVAL);
+  return;
+cleanup:
+  set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
+  sleep(LED_INTERVAL);
   return;
 }
 
@@ -5386,7 +5340,7 @@ void set_psu_led(int brd_rev)
 {
   int i;
   float value,ucr,lcr;
-  uint8_t prsnt,fru,ready[4] = { 0 };
+  uint8_t prsnt,pem_prsnt,fru,ready[4] = { 0 };
   char path[LARGEST_DEVICE_NAME + 1];
   int psu1_sensor_num[] = { PSU1_SENSOR_IN_VOLT,
                             PSU1_SENSOR_12V_VOLT,
@@ -5396,42 +5350,61 @@ void set_psu_led(int brd_rev)
                             PSU2_SENSOR_12V_VOLT};
   int pem1_sensor_num[] = { PEM1_SENSOR_IN_VOLT,
                             PEM1_SENSOR_OUT_VOLT};
-  int pem2_sensor_num[] = { PEM1_SENSOR_IN_VOLT,
-                            PEM1_SENSOR_OUT_VOLT};
+  int pem2_sensor_num[] = { PEM2_SENSOR_IN_VOLT,
+                            PEM2_SENSOR_OUT_VOLT};
   char sensor_name[LARGEST_DEVICE_NAME];
-  for(i = FRU_PSU1; i <= FRU_PSU2; i++) {
-    pal_is_fru_prsnt(i, &prsnt);
-    if(!prsnt) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-      OBMC_WARN("%s: PSU%d or PEM%d isn't presence\n",__func__,i-FRU_PSU1+1,i-FRU_PSU1+1);
+  int *sensor_num,sensor_cnt;
+  char pem1_sensor_cnt,pem2_sensor_cnt;
+  char psu1_sensor_cnt,psu2_sensor_cnt;
+  pem1_sensor_cnt = sizeof(pem1_sensor_num)/sizeof(pem1_sensor_num[0]);
+  pem2_sensor_cnt = sizeof(pem2_sensor_num)/sizeof(pem2_sensor_num[0]);
+  psu1_sensor_cnt = sizeof(psu1_sensor_num)/sizeof(psu1_sensor_num[0]);
+  psu2_sensor_cnt = sizeof(psu2_sensor_num)/sizeof(psu2_sensor_num[0]);
+  for( fru = FRU_PEM1 ; fru <= FRU_PSU2 ; fru++){
+    pal_is_fru_prsnt(fru,&prsnt);
+    if(fru >= FRU_PEM1 && fru <= FRU_PEM2){    // check PEM present.
+      if(prsnt){
+        pem_prsnt = prsnt;                     // if PEM present,no need to check PSU.
+      }else{
+        pem_prsnt = 0;
+        continue;                              // if PEM not present, continue to check
+      }
+    }else if(fru >= FRU_PSU1 && fru <= FRU_PSU2){
+      if(!prsnt){            // PSU not present then check PEM present.
+        if(!pem_prsnt)       // PEM not present.
+        {
+          OBMC_WARN("%s: PSU%d isn't presence\n",__func__,fru-FRU_PSU1+1);
+          goto cleanup;
+        }else{               // PEM present check another PSU or PEM.
+          continue;
+        }
+      }
+    }else{
+      OBMC_WARN("%s: exit with invalid fru %d\n",__func__,fru);
       return;
     }
-  }
-  for( fru = FRU_PEM1 ; fru <= FRU_PSU2 ; fru++){
-    int *sensor_num,sensor_cnt;
     pal_is_fru_ready(fru,&ready[fru-FRU_PEM1]);
     if(!ready[fru-FRU_PEM1]){
       if(fru >= FRU_PSU1 && !ready[fru-2]){     // if PSU and PEM aren't ready both
-        set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
         OBMC_WARN("%s: PSU%d and PEM%d can't access\n",
         __func__,fru-FRU_PSU1+1,fru-FRU_PSU1+1);
-        return;
+        goto cleanup;
       }
       continue;
     }
 
     switch(fru){
       case FRU_PEM1:
-        sensor_cnt = sizeof(pem1_sensor_num)/sizeof(pem1_sensor_num[0]);
+        sensor_cnt = pem1_sensor_cnt;
         sensor_num = pem1_sensor_num;  break;
       case FRU_PEM2:
-        sensor_cnt = sizeof(pem2_sensor_num)/sizeof(pem2_sensor_num[0]);
+        sensor_cnt = pem2_sensor_cnt;
         sensor_num = pem2_sensor_num;  break;
       case FRU_PSU1:
-        sensor_cnt = sizeof(psu1_sensor_num)/sizeof(psu1_sensor_num[0]);
+        sensor_cnt = psu1_sensor_cnt;
         sensor_num = psu1_sensor_num;  break;
       case FRU_PSU2:
-        sensor_cnt = sizeof(psu2_sensor_num)/sizeof(psu2_sensor_num[0]);
+        sensor_cnt = psu2_sensor_cnt;
         sensor_num = psu2_sensor_num;  break;
       default :
         set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
@@ -5439,40 +5412,40 @@ void set_psu_led(int brd_rev)
         return;
     }
     for(i = 0; i < sensor_cnt ; i++) {
-      pal_get_sensor_name(fru,sensor_num[i],sensor_name);
       pal_get_sensor_threshold(fru, sensor_num[i], UCR_THRESH, &ucr);
       pal_get_sensor_threshold(fru, sensor_num[i], LCR_THRESH, &lcr);
-      if(fru == FRU_PEM1 || fru == FRU_PEM2){
-        snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PEM, fru+1-FRU_PEM1,sensor_num[i]);
-      }else if(fru == FRU_PSU1 || fru == FRU_PSU2){
-        snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU, fru+1-FRU_PSU1,sensor_num[i]);
-      }else{
-        set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-        OBMC_WARN("%s: fru id error %d\n",__func__,fru);
-        return;
-      }
-      if(read_device_float(path, &value)) {
-        set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-        OBMC_WARN("%s: fru %d sensor id %d (%s) can't access %s\n",
-        __func__,fru,sensor_num[i],sensor_name,path);
-        return;
+
+      if(fru >= FRU_PEM1 && fru <= FRU_PEM2){
+        if(pem_sensor_read(sensor_num[i], &value)) {
+          pal_get_sensor_name(fru, sensor_num[i],sensor_name);
+          OBMC_WARN("%s: fru %d sensor id %d (%s) can't access %s\n",
+          __func__,fru,sensor_num[i],sensor_name,path);
+          goto cleanup;
+        }
+      }else if(fru >= FRU_PSU1 && fru <= FRU_PSU2){
+        if(psu_sensor_read(sensor_num[i], &value)) {
+          pal_get_sensor_name(fru, sensor_num[i],sensor_name);
+          OBMC_WARN("%s: fru %d sensor id %d (%s) can't access %s\n",
+          __func__,fru,sensor_num[i],sensor_name,path);
+          goto cleanup;
+        }
       }
 
       if(value > ucr) {
-        set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
         OBMC_WARN("%s: %s value is over than UCR ( %.2f > %.2f )\n",
         __func__,sensor_name,value,ucr);
-        return;
+        goto cleanup;
       }else if(value < lcr){
         set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
         OBMC_WARN("%s: %s value is under than LCR ( %.2f < %.2f )\n",
         __func__,sensor_name,value,lcr);
-        return;
+        goto cleanup;
       }
     }
   }
+cleanup:
   set_sled(brd_rev, SLED_CLR_BLUE, SLED_PSU);
-
+  sleep(LED_INTERVAL);
   return;
 }
 
@@ -5499,8 +5472,7 @@ void set_scm_led(int brd_rev)
     fp = popen(cmd,"r");
     if (!fp) {
       OBMC_WARN("%s: can't run cmd '%s'",__func__,cmd);
-      set_sled(brd_rev,SLED_CLR_YELLOW,SLED_SMB);
-      return;
+      goto cleanup;
     }
 
     while (fgets(buffer,256,fp) != NULL){
@@ -5512,14 +5484,15 @@ void set_scm_led(int brd_rev)
       return;
     }else{
       OBMC_WARN("%s: can't ping to "SCM_IP_USB,__func__);
-      set_sled(brd_rev,SLED_CLR_YELLOW,SLED_SMB);
-      return;
+      goto cleanup;
     }
   }else{
     OBMC_WARN("%s: micro server is power off\n",__func__);
-    set_sled(brd_rev,SLED_CLR_RED,SLED_SMB);
-    return;
   }
+cleanup:
+  set_sled(brd_rev,SLED_CLR_YELLOW,SLED_SMB);
+  sleep(LED_INTERVAL);
+  return;
 }
 
 int

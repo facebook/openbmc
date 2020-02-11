@@ -33,6 +33,8 @@
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/nm.h>
+#include <openbmc/ncsi.h>
+#include <openbmc/nl-wrapper.h>
 #include "pal.h"
 
 #define PLATFORM_NAME "sonorapass"
@@ -1317,6 +1319,92 @@ pal_dump_key_value(void) {
     i++;
     memset(value, 0, MAX_VALUE_LEN);
   }
+}
+
+// OEM Command "CMD_OEM_BYPASS_CMD" 0x34
+int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
+  int ret;
+  int completion_code=CC_UNSPECIFIED_ERROR;
+  uint8_t cmd, select;
+  uint8_t tlen;
+  uint8_t status;
+  NCSI_NL_MSG_T *msg = NULL;
+  NCSI_NL_RSP_T *rsp = NULL;
+  uint8_t channel = 0;
+  uint8_t netdev = 0;
+  int i;
+
+  *res_len = 0;
+
+  ret = pal_is_fru_prsnt(slot, &status);
+  if (ret < 0) {
+    return -1;
+  }
+  if (status == 0) {
+    syslog(LOG_ERR, "%s pal_is_fru_prsnt status == 0", __func__);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  ret = pal_get_server_power(FRU_MB, &status);
+  if(ret < 0 || 0 == status) {
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
+
+  if(!pal_is_slot_server(slot)) {
+    syslog(LOG_ERR, "%s pal_is_slot_server false", __func__);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  select = req_data[0];
+
+  switch (select) {
+    case BYPASS_NCSI:
+      tlen = req_len - 7; // payload_id, netfn, cmd, data[0] (select), netdev, channel, cmd
+      if (tlen < 0) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+
+      netdev = req_data[1];
+      channel = req_data[2];
+      cmd = req_data[3];
+
+      msg = calloc(1, sizeof(NCSI_NL_MSG_T));
+      if (!msg) {
+        syslog(LOG_ERR, "%s Error: failed msg buffer allocation", __func__);
+        break;
+      }
+
+      memset(msg, 0, sizeof(NCSI_NL_MSG_T));
+
+      sprintf(msg->dev_name, "eth%d", netdev);
+      msg->channel_id = channel;
+      msg->cmd = cmd;
+      msg->payload_length = tlen;
+
+      for (i=0; i<msg->payload_length; i++) {
+        msg->msg_payload[i] = req_data[4+i];
+      }
+
+      rsp = send_nl_msg_libnl(msg);
+      if (rsp) {
+        memcpy(&res_data[0], &rsp->msg_payload[0], rsp->hdr.payload_length);
+        *res_len = rsp->hdr.payload_length;
+        completion_code = CC_SUCCESS;
+      } else {
+        completion_code = CC_UNSPECIFIED_ERROR;
+      }
+
+      free(msg);
+      if (rsp)
+        free(rsp);
+
+      break;
+    default:
+      return completion_code;
+  }
+
+  return completion_code;
 }
 
 int

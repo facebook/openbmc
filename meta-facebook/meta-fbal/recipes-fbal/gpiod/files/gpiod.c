@@ -110,6 +110,12 @@ decrease_timer(long int *val) {
   return *val;
 }
 
+//Usb Debug Card Event Handler
+static void
+usb_dbg_card_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  log_gpio_change(desc, curr, 0);
+}
+
 //Reset Button Event Handler
 static void
 pwr_reset_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
@@ -372,7 +378,7 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_UARTSW_LSB_N", "GPIOL0", GPIO_EDGE_BOTH, uart_select_handle, NULL},
   {"FM_UARTSW_MSB_N", "GPIOL1", GPIO_EDGE_BOTH, uart_select_handle, NULL},
   {"RST_PLTRST_BMC_N", "GPIOF6", GPIO_EDGE_BOTH, platform_reset_handle, NULL},
-
+  {"FM_POST_CARD_PRES_BMC_N", "GPIOQ6", GPIO_EDGE_BOTH, usb_dbg_card_handler, NULL},
 };
 
 int main(int argc, char **argv)

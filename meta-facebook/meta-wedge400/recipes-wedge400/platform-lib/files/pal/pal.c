@@ -5451,7 +5451,7 @@ cleanup:
 
 void set_scm_led(int brd_rev)
 {
-  #define SCM_IP_USB "fe80::2%%usb0"
+  #define SCM_IP_USB "fe80::ff:fe00:2%%usb0"
   char path[LARGEST_DEVICE_NAME];
   char cmd[64];
   char buffer[256];

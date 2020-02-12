@@ -21,28 +21,49 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 . /usr/local/bin/openbmc-utils.sh
 
+sku=$(cat /tmp/mb_sku)
+sku=$((sku & 0x4))
+if [ $sku -eq 4 ]; then
+  i2c_device_add 1 0x60 tps53688
+  i2c_device_add 1 0x62 tps53688
+  i2c_device_add 1 0x66 tps53688
+  i2c_device_add 1 0x68 tps53688
+  i2c_device_add 1 0x6c tps53688
+  i2c_device_add 1 0x70 tps53688
+  i2c_device_add 1 0x72 tps53688
+  i2c_device_add 1 0x76 tps53688
+else
+  i2c_device_add 1 0x60 xdpe12284
+  i2c_device_add 1 0x62 xdpe12284
+  i2c_device_add 1 0x66 xdpe12284
+  i2c_device_add 1 0x68 xdpe12284
+  i2c_device_add 1 0x6c xdpe12284
+  i2c_device_add 1 0x70 xdpe12284
+  i2c_device_add 1 0x72 xdpe12284
+  i2c_device_add 1 0x76 xdpe12284
+fi
+
 if [ "$(gpio_get HP_LVC3_OCP_V3_1_PRSNT2_N)" == "0" ]; then
   i2c_device_add 17 0x50 24c32
-else 
+else
   echo "Unknown or no device on the NIC#0"
 fi
 
 if [ "$(gpio_get HP_LVC3_OCP_V3_2_PRSNT2_N)" == "0" ]; then
   i2c_device_add 18 0x52 24c32
   ifconfig eth1 up
-else 
+else
   echo "Unknown or no device on the NIC#1"
 fi
 
 if [ "$(gpio_get FM_SLOT1_PRSNT_N)" == "0" ]; then
   i2c_device_add 2 0x50 24c32
-else 
+else
   echo "Unknown or no device on the RISER_SLOT#1"
 fi
 
 if [ "$(gpio_get FM_SLOT2_PRSNT_N)" == "0" ]; then
   i2c_device_add 6 0x50 24c32
-else 
+else
   echo "Unknown or no device on the RISER_SLOT#2"
 fi
-

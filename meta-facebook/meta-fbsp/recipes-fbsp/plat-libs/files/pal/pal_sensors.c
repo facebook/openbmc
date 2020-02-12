@@ -55,7 +55,7 @@ static int read_fan_volt(uint8_t fan_id, float *value);
 static int read_fan_curr(uint8_t fan_id, float *value);
 static int read_fan_pwr(uint8_t fan_id, float *value);
 static bool is_fan_present(uint8_t fan_id);
-static int read_fan_speed(uint8_t fan, float *rpm); 
+static int read_fan_speed(uint8_t fan, float *rpm);
 static bool is_ava_card_present(uint8_t riser_slot);
 static int read_nvme_temp(uint8_t sensor_num, float *value);
 static int read_ava_temp(uint8_t sensor_num, float *value);
@@ -68,11 +68,34 @@ static float fan_volt[PAL_FAN_CNT];
 static float fan_curr[PAL_FAN_CNT];
 static uint8_t postcodes_last[256] = {0};
 
+static const char *vr_chips[] = {
+  "tps53688-i2c-1-60",  // CPU0_VCCIN
+  "tps53688-i2c-1-60",  // CPU0_VCCSA
+  "tps53688-i2c-1-62",  // CPU0_VCCIO
+  "tps53688-i2c-1-66",  // CPU0_VDDQ_ABC
+  "tps53688-i2c-1-68",  // CPU0_VDDQ_DEF
+  "tps53688-i2c-1-70",  // CPU1_VCCIN
+  "tps53688-i2c-1-70",  // CPU1_VCCSA
+  "tps53688-i2c-1-72",  // CPU1_VCCIO
+  "tps53688-i2c-1-76",  // CPU1_VDDQ_ABC
+  "tps53688-i2c-1-6c",  // CPU1_VDDQ_DEF
+  "xdpe12284-i2c-1-60",  // CPU0_VCCIN
+  "xdpe12284-i2c-1-60",  // CPU0_VCCSA
+  "xdpe12284-i2c-1-62",  // CPU0_VCCIO
+  "xdpe12284-i2c-1-66",  // CPU0_VDDQ_ABC
+  "xdpe12284-i2c-1-68",  // CPU0_VDDQ_DEF
+  "xdpe12284-i2c-1-70",  // CPU1_VCCIN
+  "xdpe12284-i2c-1-70",  // CPU1_VCCSA
+  "xdpe12284-i2c-1-72",  // CPU1_VCCIO
+  "xdpe12284-i2c-1-76",  // CPU1_VDDQ_ABC
+  "xdpe12284-i2c-1-6c",  // CPU1_VDDQ_DEF
+};
+
 const uint8_t mb_sensor_list[] = {
   MB_SNR_INLET_TEMP,
   MB_SNR_OUTLET_TEMP_R,
   MB_SNR_OUTLET_TEMP_L,
-  MB_SNR_P5V,  
+  MB_SNR_P5V,
   MB_SNR_P5V_STBY,
   MB_SNR_P3V3_STBY,
   MB_SNR_P3V3,
@@ -209,7 +232,7 @@ const uint8_t riser1_sensor_list[] = {
   RISER1_SNR_SLOT0_NVME_TEMP,
   RISER1_SNR_SLOT1_NVME_TEMP,
   RISER1_SNR_SLOT2_NVME_TEMP,
-  RISER1_SNR_SLOT3_NVME_TEMP,   
+  RISER1_SNR_SLOT3_NVME_TEMP,
 };
 
 const uint8_t riser2_sensor_list[] = {
@@ -218,7 +241,7 @@ const uint8_t riser2_sensor_list[] = {
   RISER2_SNR_SLOT0_NVME_TEMP,
   RISER2_SNR_SLOT1_NVME_TEMP,
   RISER2_SNR_SLOT2_NVME_TEMP,
-  RISER2_SNR_SLOT3_NVME_TEMP, 
+  RISER2_SNR_SLOT3_NVME_TEMP,
 };
 
 // List of MB discrete sensors to be monitored
@@ -233,7 +256,7 @@ PAL_CPU_INFO cpu_info_list[] = {
   {CPU_ID0, PECI_CPU0_ADDR},
   {CPU_ID1, PECI_CPU1_ADDR},
 };
- 
+
 //ADM1278
 PAL_ADM1278_INFO adm1278_info_list[] = {
   {ADM1278_VOLTAGE, 19599, 0, 100},
@@ -657,9 +680,9 @@ read_battery_val(uint8_t adc_id, float *value) {
     goto bail;
   }
 
-#ifdef DEBUG 
+#ifdef DEBUG
   syslog(LOG_DEBUG, "%s %s\n", __func__, path);
-#endif  
+#endif
   msleep(10);
   ret = read_adc_val(adc_id, value);
   if (gpio_set_value(gp_batt, GPIO_VALUE_LOW)) {
@@ -676,7 +699,7 @@ pal_get_peci_val(struct peci_xfer_msg *msg) {
   int fd, retry;
 
   if ((fd = open(PECI_DEVICE, O_RDWR)) < 0) {
-#ifdef DEBUG   
+#ifdef DEBUG
     syslog(LOG_WARNING, "Failed to open %s\n", PECI_DEVICE);
 #endif
     return -1;
@@ -685,13 +708,13 @@ pal_get_peci_val(struct peci_xfer_msg *msg) {
   retry = 0;
   do {
     if (peci_cmd_xfer_fd(fd, msg) < 0) {
-#ifdef DEBUG     
+#ifdef DEBUG
       syslog(LOG_WARNING, "peci_cmd_xfer_fd");
 #endif
       close(fd);
       return -1;
     }
- 
+
     if (PECI_RETRY_TIMES) {
       switch (msg->rx_buf[0]) {
       case 0x80:  // response timeout, Data not ready
@@ -717,13 +740,13 @@ pal_get_peci_val(struct peci_xfer_msg *msg) {
   } while (retry <= PECI_RETRY_TIMES);
 
 #ifdef DEBUG
-{  
+{
   int i;
   for (i = 0; i < msg->rx_len; i++) {
     syslog(LOG_DEBUG, "rx_buf=%02X ", msg->rx_buf[i]);
   }
   syslog(LOG_DEBUG, "\n");
-}  
+}
 #endif
   close(fd);
   return 0;
@@ -896,7 +919,7 @@ cmd_peci_accumulated_energy(uint8_t cpu_addr, uint32_t* value) {
 
   for (i=0; i<4; i++) {
     *value |= rx_buf[i] << (8*i);
-  }  
+  }
   return 0;
 }
 
@@ -921,9 +944,9 @@ cmd_peci_total_time(uint8_t cpu_addr, uint32_t* value) {
 
   for (i=0; i<4; i++) {
     *value |= rx_buf[i] << (8*i);
-  }  
+  }
   return 0;
-} 
+}
 
 int
 cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr) {
@@ -1022,7 +1045,7 @@ read_cpu_pkg_pwr(uint8_t cpu_id, float *value) {
   static uint32_t last_pkg_energy[2] = {0}, last_run_time[2] = {0};
   static uint8_t retry[2] = {0x00}; // CPU0 and CPU1
   int ret = READING_NA;
-  cpu_addr = cpu_info_list[cpu_id].cpu_addr; 
+  cpu_addr = cpu_info_list[cpu_id].cpu_addr;
 
   ret = cmd_peci_accumulated_energy(cpu_addr, &pkg_energy);
   if( ret != 0) {
@@ -1055,7 +1078,7 @@ read_cpu_pkg_pwr(uint8_t cpu_id, float *value) {
       diff_time = run_time - last_run_time[cpu_id];
     } else {
       diff_time = run_time + (0xffffffff - last_run_time[cpu_id] + 1);
-    }  
+    }
     last_run_time[cpu_id] = run_time;
 
     if(diff_time == 0) {
@@ -1084,8 +1107,8 @@ read_cpu_temp(uint8_t cpu_id, float *value) {
   float dts;
   uint8_t cpu_addr;
   static int retry = 0;
-  
-  cpu_addr = cpu_info_list[cpu_id].cpu_addr; 
+
+  cpu_addr = cpu_info_list[cpu_id].cpu_addr;
 
   ret = cmd_peci_get_temp(cpu_addr, &dts);
   if (ret != 0) {
@@ -1116,7 +1139,7 @@ read_cpu_temp(uint8_t cpu_id, float *value) {
     syslog(LOG_DEBUG, "%s cpu_id=%d value=%f\n", __func__, cpu_id, *value);
   #endif
 
-  return 0;  
+  return 0;
 }
 
 static int
@@ -1141,7 +1164,7 @@ read_cpu0_dimm_temp(uint8_t dimm_id, float *value) {
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s CPU0 DIMM Temp=%f id=%d\n", __func__, *value, dimm_id);
 #endif
-  return 0;  
+  return 0;
 }
 
 static int
@@ -1166,7 +1189,7 @@ read_cpu1_dimm_temp(uint8_t dimm_id, float *value) {
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s CPU1 Dimm Temp=%f id=%d\n", __func__, *value, dimm_id);
 #endif
-  return 0;  
+  return 0;
 }
 
 
@@ -1180,7 +1203,7 @@ get_nm_rw_info(uint8_t nm_id, uint8_t* nm_bus, uint8_t* nm_addr, uint16_t* bmc_a
   if (ret != 0) {
     return ret;
   }
- 
+
   return 0;
 }
 
@@ -1190,8 +1213,8 @@ get_adm1278_info(uint8_t hsc_id, uint8_t type, float* m, float* b, float* r) {
  *m = hsc_info_list[hsc_id].info[type].m;
  *b = hsc_info_list[hsc_id].info[type].b;
  *r = hsc_info_list[hsc_id].info[type].r;
-  
- return;   
+
+ return;
 }
 
 //Sensor HSC
@@ -1222,7 +1245,7 @@ set_NM_hsc_pmon_config(uint8_t hsc_id, uint8_t value_l, uint8_t value_h) {
     ret = READING_NA;
     return ret;
   }
-  
+
   ret = cmd_NM_pmbus_write_word(info, dev_addr, data);
   if (ret != 0) {
     return ret;
@@ -1246,14 +1269,14 @@ enable_hsc_temp_monitor(uint8_t hsc_id) {
 static int
 read_hsc_iout(uint8_t hsc_id, float *value) {
   uint8_t rbuf[32] = {0x00};
-  uint8_t addr = hsc_info_list[hsc_id].slv_addr; 
-  float m, b, r; 
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr;
+  float m, b, r;
   static int retry = 0;
   int ret = 0;
   NM_RW_INFO info;
 
   get_nm_rw_info(NM_ID0, &info.bus, &info.nm_addr, &info.bmc_addr);
-  info.nm_cmd = PMBUS_READ_IOUT; 
+  info.nm_cmd = PMBUS_READ_IOUT;
 
   ret = cmd_NM_pmbus_read_word(info, addr, rbuf);
   if (ret != 0) {
@@ -1269,9 +1292,9 @@ read_hsc_iout(uint8_t hsc_id, float *value) {
 
   if (rbuf[6] == 0) {
     *value = ((float)(rbuf[11] << 8 | rbuf[10]) * r - b) / m;
-  #ifdef DEBUG  
+  #ifdef DEBUG
     syslog(LOG_DEBUG, "%s Iout value=%f\n", __func__, *value);
-  #endif  
+  #endif
     retry = 0;
   } else {
   #ifdef DEBUG
@@ -1286,8 +1309,8 @@ read_hsc_iout(uint8_t hsc_id, float *value) {
 static int
 read_hsc_vin(uint8_t hsc_id, float *value) {
   uint8_t rbuf[32] = {0x00};
-  uint8_t addr = hsc_info_list[hsc_id].slv_addr; 
-  float m, b, r; 
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr;
+  float m, b, r;
   static int retry = 0;
   int ret = 0;
   NM_RW_INFO info;
@@ -1305,13 +1328,13 @@ read_hsc_vin(uint8_t hsc_id, float *value) {
     return ret;
   }
 
-  
+
   get_adm1278_info(hsc_id, ADM1278_VOLTAGE, &m, &b, &r);
   if (rbuf[6] == 0) {
     *value = ((float)(rbuf[11] << 8 | rbuf[10]) * r - b) / m;
-  #ifdef DEBUG  
+  #ifdef DEBUG
     syslog(LOG_DEBUG, "%s Vin value=%f\n", __func__, *value);
-  #endif  
+  #endif
     retry = 0;
   } else {
   #ifdef DEBUG
@@ -1326,8 +1349,8 @@ read_hsc_vin(uint8_t hsc_id, float *value) {
 static int
 read_hsc_pin(uint8_t hsc_id, float *value) {
   uint8_t rbuf[32] = {0x00};
-  uint8_t addr = hsc_info_list[hsc_id].slv_addr; 
-  float m, b, r; 
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr;
+  float m, b, r;
   static int retry = 0;
   int ret = 0;
   NM_RW_INFO info;
@@ -1350,9 +1373,9 @@ read_hsc_pin(uint8_t hsc_id, float *value) {
 
   if (rbuf[6] == 0) {
     *value = ((float)(rbuf[11] << 8 | rbuf[10]) * r - b) / m;
-  #ifdef DEBUG  
+  #ifdef DEBUG
     syslog(LOG_DEBUG, "%s Pin value=%f\n", __func__, *value);
-  #endif  
+  #endif
     retry = 0;
   } else {
   #ifdef DEBUG
@@ -1367,8 +1390,8 @@ read_hsc_pin(uint8_t hsc_id, float *value) {
 static int
 read_hsc_temp(uint8_t hsc_id, float *value) {
   uint8_t rbuf[32] = {0x00};
-  uint8_t addr = hsc_info_list[hsc_id].slv_addr; 
-  float m, b, r; 
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr;
+  float m, b, r;
   static int retry = 0;
   int ret = 0;
   NM_RW_INFO info;
@@ -1392,9 +1415,9 @@ read_hsc_temp(uint8_t hsc_id, float *value) {
 
   if (rbuf[6] == 0) {
     *value = ((float)(rbuf[11] << 8 | rbuf[10]) * r - b) / m;
-  #ifdef DEBUG  
+  #ifdef DEBUG
     syslog(LOG_DEBUG, "%s Temp value=%f\n", __func__, *value);
-  #endif  
+  #endif
     retry = 0;
   } else {
   #ifdef DEBUG
@@ -1429,7 +1452,7 @@ read_NM_pch_temp(uint8_t nm_id, float *value) {
 
 /*==========================================
 Read temperature sensor TMP421 value.
-Interface: temp_id: temperature id 
+Interface: temp_id: temperature id
            *value: real temperature value
            return: error code
 ============================================*/
@@ -1455,21 +1478,21 @@ read_nic_temp(uint8_t nic_id, float *value) {
   char fn[32];
   uint8_t retry = 3, tlen, rlen, addr, bus;
   uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0}; 
+  uint8_t rbuf[16] = {0};
 
   bus = nic_info_list[nic_id].bus;
-  addr = nic_info_list[nic_id].slv_addr; 
+  addr = nic_info_list[nic_id].slv_addr;
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
   fd = open(fn, O_RDWR);
-  if (fd < 0) { 
+  if (fd < 0) {
     goto err_exit;
   }
 
   //Temp Register
   tbuf[0] = 0x01;
-  tlen = 1; 
-  rlen = 1; 
+  tlen = 1;
+  rlen = 1;
 
   while (ret < 0 && retry-- > 0 ) {
     ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
@@ -1483,7 +1506,7 @@ read_nic_temp(uint8_t nic_id, float *value) {
     goto err_exit;
   }
 
-  *value = rbuf[0]; 
+  *value = rbuf[0];
   err_exit:
   if (fd > 0) {
     close(fd);
@@ -1497,21 +1520,21 @@ read_hd_temp(uint8_t hd_id, float *value) {
   char fn[32];
   uint8_t retry = 3, tlen, rlen, addr, bus;
   uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0}; 
+  uint8_t rbuf[16] = {0};
 
   bus = disk_info_list[hd_id].bus;
-  addr = disk_info_list[hd_id].slv_addr; 
+  addr = disk_info_list[hd_id].slv_addr;
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
   fd = open(fn, O_RDWR);
-  if (fd < 0) { 
+  if (fd < 0) {
     goto err_exit;
   }
 
   //Temp Register
   tbuf[0] = 0x03;
-  tlen = 1; 
-  rlen = 1; 
+  tlen = 1;
+  rlen = 1;
 
   while (ret < 0 && retry-- > 0 ) {
     ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
@@ -1525,7 +1548,7 @@ read_hd_temp(uint8_t hd_id, float *value) {
     goto err_exit;
   }
 
-  *value = rbuf[0]; 
+  *value = rbuf[0];
   err_exit:
   if (fd > 0) {
     close(fd);
@@ -1643,71 +1666,68 @@ read_ina260_vol(uint8_t ina260_id, float *value) {
 
 static int
 read_vr_vout(uint8_t vr_id, float *value) {
-  struct {
-    const char *chip;
-    const char *label;
-  } devs[] = {
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCIN_VOUT"},
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCSA_VOUT"},
-    {"tps53688-i2c-1-62", "MB_VR_CPU0_VCCIO_VOUT"},
-    {"tps53688-i2c-1-66", "MB_VR_CPU0_VDDQ_ABC_VOUT"},
-    {"tps53688-i2c-1-68", "MB_VR_CPU0_VDDQ_DEF_VOUT"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCIN_VOUT"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCSA_VOUT"},
-    {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_VOUT"},
-    {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_VOUT"},
-    {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_VOUT"},
+  uint8_t sku_id = 0xFF, chip_id = vr_id;
+  static const char *labels[VR_ID_NUM] = {
+    "MB_VR_CPU0_VCCIN_VOUT",
+    "MB_VR_CPU0_VCCSA_VOUT",
+    "MB_VR_CPU0_VCCIO_VOUT",
+    "MB_VR_CPU0_VDDQ_ABC_VOUT",
+    "MB_VR_CPU0_VDDQ_DEF_VOUT",
+    "MB_VR_CPU1_VCCIN_VOUT",
+    "MB_VR_CPU1_VCCSA_VOUT",
+    "MB_VR_CPU1_VCCIO_VOUT",
+    "MB_VR_CPU1_VDDQ_ABC_VOUT",
+    "MB_VR_CPU1_VDDQ_DEF_VOUT",
   };
-  if (vr_id >= ARRAY_SIZE(devs)) {
-    return -1;
+
+  if (!pal_get_platform_id(BOARD_SKU_ID, &sku_id) && !(sku_id & 0x4)) {
+    chip_id += VR_ID_NUM;
   }
-  return sensors_read(devs[vr_id].chip, devs[vr_id].label, value);
+  return sensors_read(vr_chips[chip_id], labels[vr_id], value);
 }
 
 static int
 read_vr_temp(uint8_t vr_id, float *value) {
-  struct {
-    const char *chip;
-    const char *label;
-  } devs[] = {
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCIN_TEMP"},
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCSA_TEMP"},
-    {"tps53688-i2c-1-62", "MB_VR_CPU0_VCCIO_TEMP"},
-    {"tps53688-i2c-1-66", "MB_VR_CPU0_VDDQ_ABC_TEMP"},
-    {"tps53688-i2c-1-68", "MB_VR_CPU0_VDDQ_DEF_TEMP"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCIN_TEMP"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCSA_TEMP"},
-    {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_TEMP"},
-    {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_TEMP"},
-    {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_TEMP"},
+  uint8_t sku_id = 0xFF, chip_id = vr_id;
+  static const char *labels[VR_ID_NUM] = {
+    "MB_VR_CPU0_VCCIN_TEMP",
+    "MB_VR_CPU0_VCCSA_TEMP",
+    "MB_VR_CPU0_VCCIO_TEMP",
+    "MB_VR_CPU0_VDDQ_ABC_TEMP",
+    "MB_VR_CPU0_VDDQ_DEF_TEMP",
+    "MB_VR_CPU1_VCCIN_TEMP",
+    "MB_VR_CPU1_VCCSA_TEMP",
+    "MB_VR_CPU1_VCCIO_TEMP",
+    "MB_VR_CPU1_VDDQ_ABC_TEMP",
+    "MB_VR_CPU1_VDDQ_DEF_TEMP",
   };
-  if (vr_id >= ARRAY_SIZE(devs)) {
-    return -1;
+
+  if (!pal_get_platform_id(BOARD_SKU_ID, &sku_id) && !(sku_id & 0x4)) {
+    chip_id += VR_ID_NUM;
   }
-  return sensors_read(devs[vr_id].chip, devs[vr_id].label, value);
+  return sensors_read(vr_chips[chip_id], labels[vr_id], value);
 }
 
 static int
 read_vr_iout(uint8_t vr_id, float *value) {
-  struct {
-    const char *chip;
-    const char *label;
-  } devs[] = {
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCIN_IOUT"},
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCSA_IOUT"},
-    {"tps53688-i2c-1-62", "MB_VR_CPU0_VCCIO_IOUT"},
-    {"tps53688-i2c-1-66", "MB_VR_CPU0_VDDQ_ABC_IOUT"},
-    {"tps53688-i2c-1-68", "MB_VR_CPU0_VDDQ_DEF_IOUT"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCIN_IOUT"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCSA_IOUT"},
-    {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_IOUT"},
-    {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_IOUT"},
-    {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_IOUT"},
+  uint8_t sku_id = 0xFF, chip_id = vr_id;
+  static const char *labels[VR_ID_NUM] = {
+    "MB_VR_CPU0_VCCIN_IOUT",
+    "MB_VR_CPU0_VCCSA_IOUT",
+    "MB_VR_CPU0_VCCIO_IOUT",
+    "MB_VR_CPU0_VDDQ_ABC_IOUT",
+    "MB_VR_CPU0_VDDQ_DEF_IOUT",
+    "MB_VR_CPU1_VCCIN_IOUT",
+    "MB_VR_CPU1_VCCSA_IOUT",
+    "MB_VR_CPU1_VCCIO_IOUT",
+    "MB_VR_CPU1_VDDQ_ABC_IOUT",
+    "MB_VR_CPU1_VDDQ_DEF_IOUT",
   };
-  if (vr_id >= ARRAY_SIZE(devs)) {
-    return -1;
+
+  if (!pal_get_platform_id(BOARD_SKU_ID, &sku_id) && !(sku_id & 0x4)) {
+    chip_id += VR_ID_NUM;
   }
-  return sensors_read(devs[vr_id].chip, devs[vr_id].label, value);
+  return sensors_read(vr_chips[chip_id], labels[vr_id], value);
 }
 
 int
@@ -1717,25 +1737,24 @@ read_vr_iin(uint8_t vr_id, float *value) {
 
 static int
 read_vr_pout(uint8_t vr_id, float *value) {
-  struct {
-    const char *chip;
-    const char *label;
-  } devs[] = {
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCIN_POUT"},
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCSA_POUT"},
-    {"tps53688-i2c-1-62", "MB_VR_CPU0_VCCIO_POUT"},
-    {"tps53688-i2c-1-66", "MB_VR_CPU0_VDDQ_ABC_POUT"},
-    {"tps53688-i2c-1-68", "MB_VR_CPU0_VDDQ_DEF_POUT"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCIN_POUT"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCSA_POUT"},
-    {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_POUT"},
-    {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_POUT"},
-    {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_POUT"},
+  uint8_t sku_id = 0xFF, chip_id = vr_id;
+  static const char *labels[VR_ID_NUM] = {
+    "MB_VR_CPU0_VCCIN_POUT",
+    "MB_VR_CPU0_VCCSA_POUT",
+    "MB_VR_CPU0_VCCIO_POUT",
+    "MB_VR_CPU0_VDDQ_ABC_POUT",
+    "MB_VR_CPU0_VDDQ_DEF_POUT",
+    "MB_VR_CPU1_VCCIN_POUT",
+    "MB_VR_CPU1_VCCSA_POUT",
+    "MB_VR_CPU1_VCCIO_POUT",
+    "MB_VR_CPU1_VDDQ_ABC_POUT",
+    "MB_VR_CPU1_VDDQ_DEF_POUT",
   };
-  if (vr_id >= ARRAY_SIZE(devs)) {
-    return -1;
+
+  if (!pal_get_platform_id(BOARD_SKU_ID, &sku_id) && !(sku_id & 0x4)) {
+    chip_id += VR_ID_NUM;
   }
-  return sensors_read(devs[vr_id].chip, devs[vr_id].label, value);
+  return sensors_read(vr_chips[chip_id], labels[vr_id], value);
 }
 
 int
@@ -2083,7 +2102,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     if (server_off) {
       poweron_10s_flag = 0;
       if (sensor_map[sensor_num].stby_read == true ) {
-        ret = sensor_map[sensor_num].read_sensor(id, (float*) value);  
+        ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
       } else {
         ret = READING_NA;
       }
@@ -2091,7 +2110,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       if((poweron_10s_flag < 5) && ((sensor_num == MB_SNR_HSC_VIN) ||
         (sensor_num == MB_SNR_HSC_IOUT) || (sensor_num == MB_SNR_HSC_PIN) ||
         (sensor_num == MB_SNR_HSC_TEMP) )) {
-  
+
         poweron_10s_flag++;
         ret = READING_NA;
         break;
@@ -2109,7 +2128,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
     }
- 
+
     if (ret != 0) {
       ret = READING_NA;
     }
@@ -2120,7 +2139,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       return pal_sensor_read_raw(fru, sensor_num, value);
     }
     break;
-      
+
   default:
     return -1;
   }
@@ -2180,7 +2199,7 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
     switch(thresh) {
     case UCR_THRESH:
       *val = sensor_map[sensor_num].snr_thresh.ucr_thresh;
-      break;  
+      break;
     case UNC_THRESH:
       *val = sensor_map[sensor_num].snr_thresh.unc_thresh;
       break;
@@ -2205,7 +2224,7 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
     default:
       syslog(LOG_WARNING, "Threshold type error value=%d\n", thresh);
       return -1;
-    }    
+    }
     break;
   default:
     return -1;

@@ -416,6 +416,7 @@ enum {
   VR_ID7,
   VR_ID8,
   VR_ID9,
+  VR_ID_NUM
 };
 
 // ADC128 INFO

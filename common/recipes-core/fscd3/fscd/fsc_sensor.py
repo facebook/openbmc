@@ -31,6 +31,8 @@ class FscSensorBase(object):
     def __init__(self, **kwargs):
         if "name" in kwargs:
             self.name = kwargs["name"]
+        if "inf" in kwargs:
+            self.inf = kwargs["inf"]
         if "read_source" in kwargs:
             self.read_source = kwargs["read_source"]
         if "write_source" in kwargs:
@@ -179,7 +181,17 @@ class FscSensorSourceUtil(FscSensorBase):
         """
         cmd = self.read_source
         if "fru" in kwargs:
-            if "num" in kwargs and len(kwargs["num"]):
+            if "inf" in kwargs and kwargs["inf"] is not None:
+                cmd += " " + kwargs["fru"] +" --filter"
+                inf =  kwargs["inf"]
+                for name in inf["ext_vars"]:
+                    sdata = name.split(":")
+                    board = sdata[0]
+                    if board != kwargs["fru"]:
+                        continue
+                    #sname = sdata[1]
+                    cmd += " " + sdata[1]
+            elif "num" in kwargs and len(kwargs["num"]):
                 cmd = ""
                 for num in kwargs["num"]:
                     cmd += self.read_source + " " + kwargs["fru"] + " " + num + ";"

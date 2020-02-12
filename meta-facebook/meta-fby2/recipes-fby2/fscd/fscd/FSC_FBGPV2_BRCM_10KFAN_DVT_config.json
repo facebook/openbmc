@@ -4,12 +4,13 @@
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 90,
   "sample_interval_ms": 3000,
+  "sensor_filter_all": true,
   "boost": {
     "fan_fail": true,
     "sensor_fail": true
   },
   "sensor_valid_check": {
-    "soc": {
+    "(.*)soc": {
       "attribute": {
         "type" : "power_status"
       }

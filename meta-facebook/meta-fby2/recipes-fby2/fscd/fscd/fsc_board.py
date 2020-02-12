@@ -180,6 +180,12 @@ def sensor_valid_check(board, sname, check_name, attribute):
             fscd_counter = fscd_counter + 1
             lpal_hndl.pal_set_fscd_counter(fscd_counter)
 
+    if str(board) == "all":
+        sdata = sname.split("_")
+        board = sdata[0]
+        sname = sname.replace(board+"_", "")
+    Logger.debug("board=%s sname=%s" %  (board,sname))
+
     if match(r"soc_temp_diode", sname) != None:
         return rc_stby_sensor_check(board)
 

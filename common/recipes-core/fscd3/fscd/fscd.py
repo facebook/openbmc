@@ -101,6 +101,7 @@ class Fscd(object):
         self.fan_recovery_time = None
         self.fan_limit_upper_pwm = None
         self.fan_limit_lower_pwm = None
+        self.sensor_filter_all = False
 
     # TODO: Add checks for invalid config file path
     def get_fsc_config(self, fsc_config):
@@ -120,6 +121,7 @@ class Fscd(object):
             self.non_fanfail_limited_boost = self.fsc_config[
                 "non_fanfail_limited_boost_value"
             ]
+        self.sensor_filter_all = self.fsc_config.get("sensor_filter_all",False)
         if "boost" in self.fsc_config and "fan_fail" in self.fsc_config["boost"]:
             self.fan_fail = self.fsc_config["boost"]["fan_fail"]
         if "boost" in self.fsc_config and "progressive" in self.fsc_config["boost"]:
@@ -535,9 +537,13 @@ class Fscd(object):
 
         """
         ctx = {}
-        sensors_tuples = self.machine.read_sensors(self.sensors)
-        self.fsc_safe_guards(sensors_tuples)
+        if not self.sensor_filter_all:
+            sensors_tuples = self.machine.read_sensors(self.sensors, None)
+            self.fsc_safe_guards(sensors_tuples)
         for zone in self.zones:
+            if self.sensor_filter_all:
+                sensors_tuples = self.machine.read_sensors(self.sensors,zone.expr_meta)
+                self.fsc_safe_guards(sensors_tuples)
             Logger.info("PWM: %s" % (json.dumps(zone.pwm_output)))
             mode = 0
             chassis_intrusion_boost_flag = 0
@@ -744,6 +750,7 @@ class Fscd(object):
             now = time.time()
             time_difference = now - last
             last = now
+            Logger.info("time_difference: %f" % (time_difference))
 
             # Check sensors and update zones
             self.update_zones(dead_fans, time_difference)

@@ -247,14 +247,14 @@ gpio_export SCALE_DEBUG_EN_N_ASIC4 GPIOJ5
 gpio_export SEL0_CLK_MUX GPIOL0
 gpio_set SEL0_CLK_MUX 0
 gpio_export SEL1_CLK_MUX GPIOL1
-gpio_set SEL1_CLK_MUX 1
+gpio_set SEL1_CLK_MUX 0
 
 # Output control for clock source from MB
 # 0 = enable, 1 = high-impedance state
 gpio_export OEA_CLK_MUX_N GPIOL2
 gpio_set OEA_CLK_MUX_N 0
 gpio_export OEB_CLK_MUX_N GPIOL3
-gpio_set OEB_CLK_MUX_N 1
+gpio_set OEB_CLK_MUX_N 0
 
 # ASIC warm reset
 gpio_export WARMRST_BMC_N_ASIC7 GPIOL4

@@ -59,6 +59,7 @@ static gpio_value_t gpio_get(const char *shadow)
 static void gpio_event_handle_power_btn(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
   log_gpio_change(gp, curr, 0);
+  pal_clock_control();
 }
 
 // GPIO table to be monitored

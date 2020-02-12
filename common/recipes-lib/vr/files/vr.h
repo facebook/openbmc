@@ -25,6 +25,7 @@
 extern "C" {
 #endif
 
+#include <openbmc/pmbus.h>
 #include <stdint.h>
 
 #define MAX_VER_STR_LEN 80
@@ -81,9 +82,10 @@ struct vr_info {
   uint64_t dev_id;
   char dev_name[64];
   struct vr_ops *ops;
+  void *private_data;
 };
 
-extern void *plat_priv_data;
+extern void *plat_configs;
 
 int vr_device_register(struct vr_info*, int);
 void vr_device_unregister(void);

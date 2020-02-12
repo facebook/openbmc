@@ -26,47 +26,71 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-pal.h>
 #include <openbmc/kv.h>
 #include "mpq8645p.h"
 
-static int mpq8645p_open(struct vr_info *info)
-{
-  int fd;
+#define LARGEST_DEVICE_NAME 120
 
-  fd = i2c_cdev_slave_open(info->bus, info->addr, I2C_SLAVE_FORCE_CLAIM | I2C_CLIENT_PEC);
-  if (fd < 0) {
-    syslog(LOG_ERR, "%s: open %s failed", __func__, info->dev_name);
+static int write_attr(const char *attr, unsigned int value)
+{
+  FILE *fp;
+  char val[16] = {0};
+
+  fp = fopen(attr, "w");
+  if (fp == NULL) {
+    syslog(LOG_WARNING, "failed to write attr %s", attr);
+    return -1;
   }
 
-  return fd;
+  snprintf(val, 16, "0x%x\n", value);
+  fputs(val, fp);
+  fclose(fp);
+
+  return 0;
+}
+
+static int read_attr(const char *attr, unsigned int *value)
+{
+  FILE *fp;
+  int ret = 0;
+
+  fp = fopen(attr, "r");
+  if (fp == NULL) {
+    syslog(LOG_WARNING, "failed to read attr %s", attr);
+    return -1;
+  }
+
+  if (fscanf(fp, "%x", value) != 1) {
+    syslog(LOG_WARNING, "failed to read attr %s", attr);
+    ret = -1;
+  }
+  fclose(fp);
+  return ret;
 }
 
 static int get_mpq8645p_ver(struct vr_info *info, char *key, char *ver)
 {
-  int fd, ret = -1;
-  uint8_t rbuf[16];
+  int *hwmon_idxp = (int*)info->private_data;
+  int hwmon_idx = *hwmon_idxp;
+  int ret;
+  unsigned int val;
+  char dev_name[LARGEST_DEVICE_NAME] = {0};
 
-  if ((fd = mpq8645p_open(info)) < 0) {
-    return -1;
-  }
-
-  if ((ret = i2c_smbus_read_block_data(fd, MPQ8645P_REG_MFR_REVISION, rbuf)) < 0) {
+  snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS, hwmon_idx, MPQ8645P_MFR_REVISION);
+  if ((ret = read_attr(dev_name, &val)) < 0)
     goto exit;
-  }
 
-  snprintf(ver, MAX_VALUE_LEN, "%02X", rbuf[0]);
+  snprintf(ver, MAX_VER_STR_LEN, "0x%x", val);
   kv_set(key, ver, 0, 0);
 
 exit:
-  close(fd);
   return ret;
 }
 
 static struct config_data* create_data(char *buf)
 {
-  int i, val;
+  int val;
   char *token;
   struct config_data *tmp = (struct config_data *)malloc(sizeof(struct config_data));
 
@@ -90,13 +114,7 @@ static struct config_data* create_data(char *buf)
   tmp->writable = strcmp(token, "WR")? 0: 1;
 
   token = strtok(NULL, ",");
-  for (i = tmp->bytes-1; i >= 0; i--) {
-    token += 2;
-    if (sscanf(token, "%02x", &val) < 0) {
-      goto error;
-    }
-    tmp->value[i] = (uint8_t)val;
-  }
+  tmp->value = strtoul(token, NULL, 16);
 
   return tmp;
 
@@ -120,106 +138,121 @@ void mpq8645p_free_configs(struct mpq8645p_config *head)
   head = NULL;
 }
 
-static int program_mpq8645p(int fd, struct config_data *data)
+static int program_mpq8645p(int hwmon_idx, struct config_data *data)
 {
-  int ret;
+  char dev_name[LARGEST_DEVICE_NAME] = {0};
 
-  if (data->reg == MPQ8645P_REG_MFR_REVISION) {
-    if ((ret = i2c_smbus_write_word_data(fd, 0xE7, 0x0001)) < 0) {
-      goto exit;
-    }
-  }
+  switch (data->reg) {
+    case PMBUS_VOUT_COMMAND:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_VOUT_COMMAND);
+      break;
+    case PMBUS_VOUT_SCALE_LOOP:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_VOUT_SCALE_LOOP);
+      break;
+    case PMBUS_IOUT_OC_FAULT_LIMIT:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_IOUT_OC_FAULT_LIMIT);
+      break;
+    case PMBUS_IOUT_OC_WARN_LIMIT:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_IOUT_OC_WARN_LIMIT);
+      break;
+    case PMBUS_MFR_REVISION:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_MFR_REVISION);
+      break;
+    case MPQ8645P_REG_MFR_CTRL_COMP:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_MFR_CTRL_COMP);
+      break;
+    case MPQ8645P_REG_MFR_CTRL_VOUT:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_MFR_CTRL_VOUT);
+      break;
+    case MPQ8645P_REG_MFR_CTRL_OPS:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_MFR_CTRL_OPS);
+      break;
+    case MPQ8645P_REG_MFR_OC_PHASE_LIMIT:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_MFR_OC_PHASE_LIMIT);
+      break;
+    default:
+      syslog(LOG_WARNING, "Register 0x%x is not supported", data->reg);
+      return 0;
+  };
 
-  if (data->reg == MPQ8645P_REG_MFR_ID || data->reg == MPQ8645P_REG_MFR_MODEL ||
-      data->reg == MPQ8645P_REG_MFR_REVISION || data->reg == MPQ8645P_REG_MFR_4_DIGIT) {
-    ret = i2c_smbus_write_block_data(fd, data->reg, data->bytes, data->value);
-  } else if (data->bytes == 1) {
-    uint8_t val = data->value[0];
-
-    ret = i2c_smbus_write_byte_data(fd, data->reg, val);
-  } else if (data->bytes == 2) {
-    uint16_t val;
-
-    if (data->reg != MPQ8645P_REG_MFR_CTRL) {
-      memcpy(&val, data->value, 2);
-    } else {
-      if ((ret = i2c_smbus_read_word_data(fd, MPQ8645P_REG_MFR_CTRL)) < 0) {
-        goto exit;
-      }
-      val = ((ret & ~(0x8)) | (data->value[0] & 0x8));
-    }
-
-    ret = i2c_smbus_write_word_data(fd, data->reg, val);
-  } else {
-    // Shouldn't be here
-    return -1;
-  }
-
-  if (data->reg == MPQ8645P_REG_MFR_REVISION) {
-    ret = i2c_smbus_write_word_data(fd, 0xE7, 0x0000);
-  }
-
-exit:
-  return ret;
+  return write_attr(dev_name, data->value);
 }
 
-static int verify_mpq8645p(int fd, struct config_data *data)
+static int verify_mpq8645p(int hwmon_idx, struct config_data *data)
 {
-  int ret;
-  uint8_t val[8];
+  unsigned int val;
+  char dev_name[LARGEST_DEVICE_NAME] = {0};
 
-  if (data->reg == MPQ8645P_REG_MFR_ID || data->reg == MPQ8645P_REG_MFR_MODEL ||
-      data->reg == MPQ8645P_REG_MFR_REVISION || data->reg == MPQ8645P_REG_MFR_4_DIGIT) {
-    if ((ret = i2c_smbus_read_block_data(fd, data->reg, val)) < 0 ||
-        (ret != data->bytes || memcmp(val, data->value, data->bytes))) {
-      return -1;
-    }
-  } else if (data->bytes == 1) {
-    if ((ret = i2c_smbus_read_byte_data(fd, data->reg)) < 0 ||
-        (ret != data->value[0])) {
-      return -1;
-    }
-  } else if (data->bytes == 2) {
-    if ((ret = i2c_smbus_read_word_data(fd, data->reg)) < 0 ||
-        ((ret & 0xFF) != data->value[0] || ((ret >> 8) & 0xFF) != data->value[1])) {
-      return -1;
-    }
-  } else {
-    // Shouldn't be here
+  switch (data->reg) {
+    case PMBUS_VOUT_COMMAND:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_VOUT_COMMAND);
+      break;
+    case PMBUS_VOUT_SCALE_LOOP:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_VOUT_SCALE_LOOP);
+      break;
+    case PMBUS_IOUT_OC_FAULT_LIMIT:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_IOUT_OC_FAULT_LIMIT);
+      break;
+    case PMBUS_IOUT_OC_WARN_LIMIT:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_IOUT_OC_WARN_LIMIT);
+      break;
+    case PMBUS_MFR_REVISION:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_MFR_REVISION);
+      break;
+    case MPQ8645P_REG_MFR_CTRL_COMP:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_MFR_CTRL_COMP);
+      break;
+    case MPQ8645P_REG_MFR_CTRL_VOUT:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_MFR_CTRL_VOUT);
+      break;
+    case MPQ8645P_REG_MFR_CTRL_OPS:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_MFR_CTRL_OPS);
+      break;
+    case MPQ8645P_REG_MFR_OC_PHASE_LIMIT:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_MFR_OC_PHASE_LIMIT);
+      break;
+    default:
+      syslog(LOG_WARNING, "Register 0x%x is not supported", data->reg);
+      return 0;
+  };
+
+  if (read_attr(dev_name, &val) < 0)
+    return -1;
+
+  if (val != data->value) {
+    syslog(LOG_WARNING, "VR register = 0x%x != expected = 0x%x", val, data->value);
     return -1;
   }
 
   return 0;
 }
 
-static int restore_user(int fd)
+static int restore_user(int hwmon_idx)
 {
-  int ret, i;
-  struct mtp_cmd {
-    uint8_t reg; uint16_t value; int delay;
-  } cmds[6] = {
-    {0xE6, 0x287C, 1},
-    {0xE7, 0x0001, 2},
-    {0xE7, 0x2001, 167},
-    {0xE7, 0x1001, 1},
-    {0xE7, 0x4001, 300},
-    {0xE7, 0x0000, 10}
-  };
+  char dev_name[LARGEST_DEVICE_NAME] = {0};
 
-  // Write to MTP
-  for (i = 0; i < 6; i++) {
-    if ((ret = i2c_smbus_write_word_data(fd, cmds[i].reg, cmds[i].value)) < 0) {
-      goto exit;
-    }
-    msleep(cmds[i].delay);
-  }
+  snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+           hwmon_idx, MPQ8645P_RESTORE_USER_ALL);
 
-  // MTP->RAM
-  ret = i2c_smbus_write_byte(fd, MPQ8645P_REG_RESTORE_USER_ALL);
-  msleep(2);
-
-exit:
-  return ret;
+  return write_attr(dev_name, 1);
 }
 
 int mpq8645p_get_fw_ver(struct vr_info *info, char *ver_str)
@@ -296,24 +329,20 @@ error:
 int mpq8645p_fw_update(struct vr_info *info, void *configs)
 {
   uint8_t addr = info->addr;
-  int fd;
-  int ret = 0;
+  int *hwmon_idxp = (int*)info->private_data;
+  int hwmon_idx = *hwmon_idxp;
+  int ret = VR_STATUS_SKIP;
   char buf[64] = {0};
   struct mpq8645p_config *config = (struct mpq8645p_config *)configs;
   struct config_data *data;
 
-  if ((fd = mpq8645p_open(info)) < 0) {
-    return -1;
-  }
-
-  restore_user(fd);
   while (config != NULL) {
     data = config->data;
     if (info->addr == data->addr && data->writable) {
-      if (data->reg == MPQ8645P_REG_MFR_REVISION) {
-        printf("Update VR %s to version 0x%2x\n", info->dev_name, data->value[0]);
+      if (data->reg == PMBUS_MFR_REVISION) {
+        printf("Update VR %s to version 0x%x\n", info->dev_name, data->value);
       }
-      if ((ret = program_mpq8645p(fd, data)) < 0) {
+      if ((ret = program_mpq8645p(hwmon_idx, data)) < 0) {
         break;
       }
     }
@@ -321,37 +350,41 @@ int mpq8645p_fw_update(struct vr_info *info, void *configs)
   }
 
   if (ret == 0) {
-    restore_user(fd);
+    restore_user(hwmon_idx);
     snprintf((char *)buf, sizeof(buf), "/tmp/cache_store/vr_%02xh_ver", addr);
     unlink((char *)buf);
   }
 
-  close(fd);
-  return ret;
+  return ret == VR_STATUS_SKIP? 0: ret;
 }
 
 int mpq8645p_fw_verify(struct vr_info *info, void *configs)
 {
-  int fd;
+  int *hwmon_idxp = (int*)info->private_data;
+  int hwmon_idx = *hwmon_idxp;
   int ret = 0;
   struct mpq8645p_config *config = (struct mpq8645p_config *)configs;
   struct config_data *data;
 
-  if ((fd = mpq8645p_open(info)) < 0) {
-    return -1;
-  }
-
   while (config != NULL) {
     data = config->data;
     if (info->addr == data->addr) {
-      if ((ret = verify_mpq8645p(fd, data)) < 0) {
-        goto exit;
+      if ((ret = verify_mpq8645p(hwmon_idx, data)) < 0) {
+        break;
       }
     }
     config = config->next;
   }
 
-exit:
-  close(fd);
   return ret;
+}
+
+int mpq8645p_validate_file(struct vr_info *info, const char *file)
+{
+  char *p = strrchr(file, '.');
+  if (strcmp(p, ".csv")) {
+    printf("Only support .csv format\n");
+    return -1;
+  }
+  return 0;
 }

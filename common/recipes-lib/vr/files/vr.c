@@ -27,7 +27,7 @@
 
 struct vr_info *dev_list = NULL;
 int dev_list_count = 0;
-void *plat_priv_data = NULL;
+void *plat_configs = NULL;
 
 int vr_device_register(struct vr_info *info, int count)
 {
@@ -109,7 +109,7 @@ int vr_fw_update(const char *vr_name, const char *path)
         break;
       }
 
-      if (plat_priv_data == NULL) {
+      if (plat_configs == NULL) {
         if (info->ops->validate_file &&
             info->ops->validate_file(info, path) < 0) {
           if (!vr_name) {
@@ -119,7 +119,7 @@ int vr_fw_update(const char *vr_name, const char *path)
           break;
         }
 
-        if ((plat_priv_data = info->ops->parse_file(info, path)) == NULL) {
+        if ((plat_configs = info->ops->parse_file(info, path)) == NULL) {
           if (!vr_name) {
             continue;
           }
@@ -128,7 +128,7 @@ int vr_fw_update(const char *vr_name, const char *path)
         }
       }
 
-      if ((ret = info->ops->fw_update(info, plat_priv_data)) < 0) {
+      if ((ret = info->ops->fw_update(info, plat_configs)) < 0) {
         if (!vr_name && (ret == VR_STATUS_SKIP)) {
           continue;
         }
@@ -137,7 +137,7 @@ int vr_fw_update(const char *vr_name, const char *path)
       }
 
       if (info->ops->fw_verify &&
-          info->ops->fw_verify(info, plat_priv_data) < 0) {
+          info->ops->fw_verify(info, plat_configs) < 0) {
         syslog(LOG_WARNING, "%s: verify VR %s failed", __func__, info->dev_name);
         break;
       }

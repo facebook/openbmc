@@ -35,4 +35,4 @@ do_install() {
 }
 
 FILES_${PN} = "${libdir}/libvr.so"
-FILES_${PN}-dev = "${includedir}/openbmc/vr.h"
+FILES_${PN}-dev = "${includedir}/openbmc/vr.h ${includedir}/openbmc/pmbus.h"

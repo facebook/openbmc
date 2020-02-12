@@ -45,6 +45,7 @@ IMAGE_INSTALL += " \
   tpm2-tools \
   tpm2-abrmd \
   crashdump \
+  threshold-util \
   "
 
 # @TODO T60523536 - Re-enable ncsid.

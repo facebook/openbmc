@@ -36,7 +36,6 @@ extern "C" {
 #define MAX_NUM_FAN     2
 
 #define MAX_NODES 4
-#define MAX_NUM_DEVS 12
 
 #define MAX_NIC_TEMP_RETRY 3
 
@@ -66,16 +65,6 @@ enum {
 };
 
 enum {
-  DEV_TYPE_UNKNOWN,
-  DEV_TYPE_SSD,
-  DEV_TYPE_VSI_ACC,
-  DEV_TYPE_BRCM_ACC,
-  DEV_TYPE_OTHER_ACC,
-  DEV_TYPE_DUAL_M2,
-  DEV_TYPE_SPH_ACC,
-};
-
-enum {
   FFI_STORAGE,
   FFI_ACCELERATOR,
 };
@@ -85,11 +74,6 @@ enum {
   MEFF_DUAL_M2 = 0xF0,
 };
 
-enum {
-  VENDOR_VSI = 0x1D9B,
-  VENDOR_BRCM = 0x14E4,
-  VENDOR_SPH = 0x8086,
-};
 
 enum {
   DEV_FRU_NOT_COMPLETE,
@@ -309,6 +293,8 @@ int pal_update_sensor_reading_sdr(uint8_t fru);
 int pal_get_fan_config();
 int pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw);
 int pal_get_altered_comp_name(char *comp_name);
+int pal_set_update_sdr_flag(uint8_t fru, uint8_t value);
+int pal_get_update_sdr_flag(uint8_t fru, uint8_t *value);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -7053,6 +7053,53 @@ get_fan_ver_dev_type(uint8_t *type) {
   return 0;
 }
 
+int
+pal_set_update_sdr_flag(uint8_t fru, uint8_t value) {
+
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT3:
+      sprintf(key, "slot%d_sdr_update", fru);
+      break;
+
+    default:
+      return -1;
+  }
+
+  sprintf(cvalue, (value > 0) ? "1": "0");
+
+  return kv_set(key,cvalue,0,0);
+}
+
+int
+pal_get_update_sdr_flag(uint8_t fru, uint8_t *value) {
+
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  int ret;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT3:
+      sprintf(key, "slot%d_sdr_update", fru);
+      break;
+
+    default:
+      return -1;
+  }
+
+  ret = kv_get(key, cvalue, NULL, 0);
+  if (ret) {
+    *value = 0;
+    return ret;
+  }
+  *value = strtol(cvalue,NULL,10);
+  return 0;
+}
+
 uint8_t
 pal_is_nvme_ready() {
   uint8_t is_nvme_ready = 1;
@@ -7060,6 +7107,7 @@ pal_is_nvme_ready() {
   uint8_t type = DEV_TYPE_UNKNOWN;
   uint8_t fan_type = DEV_TYPE_UNKNOWN;
   uint8_t setup = 0;
+  uint8_t sdr_update = 0;
   char cmd[128] = {0};
 
   for (uint8_t fru=1;fru <= 4;fru+=2) {
@@ -7075,7 +7123,9 @@ pal_is_nvme_ready() {
         }
       }
 
-      // fan config update
+      fby2_get_slot_dev_type(fru, &type); //get device type from bios
+
+      // fan config update after bios get device type
       pal_get_dev_config_setup(&setup);
       if (!setup && (type!= DEV_TYPE_UNKNOWN)) { // once a device is recognized via NVMe
         syslog(LOG_WARNING, "pal_is_nvme_ready: device config change (slot%u type=%u)",fru ,type);
@@ -7096,15 +7146,10 @@ pal_is_nvme_ready() {
 
       // SDR update after NVMe ready
       pal_get_dev_sdr_setup(fru,&setup);
-      if (!setup && (type!= DEV_TYPE_UNKNOWN)) { // once a device is recognized via NVMe
+      pal_get_update_sdr_flag(fru,&sdr_update);
+      if (!setup && !sdr_update && (type!= DEV_TYPE_UNKNOWN)) { // once a device is recognized via NVMe
         syslog(LOG_WARNING, "pal_is_nvme_ready: device sdr change start (slot%u type=%u)",fru ,type);
-        // do not get sdr during sdr update
-        bic_set_sdr_threshold_update_flag(fru, 0);
-        memset(cmd, 0, sizeof(cmd));
-        snprintf(cmd, sizeof(cmd), "/usr/local/bin/bic-cached -s %d", fru);   //retrieve SDR data after BIC update SDR
-        system(cmd);
         bic_set_sdr_threshold_update_flag(fru, 1);
-        syslog(LOG_WARNING, "pal_is_nvme_ready: device sdr change finish (slot%u type=%u)",fru ,type);
         pal_set_dev_sdr_setup(fru,1);
       }
 

@@ -147,6 +147,10 @@ const uint8_t bic_nd_neg_reading_sensor_support_list[] = {
 #endif
 
 #ifdef CONFIG_FBY2_GPV2
+
+#define UC_GPV2_SENSOR_ACC_NVME_TRESH 98
+#define UC_GPV2_SENSOR_SSD_NVME_TRESH 74
+
 const uint8_t bic_gpv2_neg_reading_sensor_support_list[] = {
   GPV2_SENSOR_INLET_TEMP,
   GPV2_SENSOR_OUTLET_TEMP,
@@ -190,6 +194,33 @@ const uint8_t bic_gpv2_neg_reading_sensor_support_list[] = {
   //M.2 11
   GPV2_SENSOR_DEV11_Temp,
   GPV2_SENSOR_DEV11_Ambient_Temp,
+};
+
+const uint8_t bic_gpv2_sdr_alter_sensor_list[] = {
+  //M.2 0
+  GPV2_SENSOR_DEV0_Temp,
+  //M.2 1
+  GPV2_SENSOR_DEV1_Temp,
+  //M.2 2
+  GPV2_SENSOR_DEV2_Temp,
+  //M.2 3
+  GPV2_SENSOR_DEV3_Temp,
+  //M.2 4
+  GPV2_SENSOR_DEV4_Temp,
+  //M.2 5
+  GPV2_SENSOR_DEV5_Temp,
+  //M.2 6
+  GPV2_SENSOR_DEV6_Temp,
+  //M.2 7
+  GPV2_SENSOR_DEV7_Temp,
+  //M.2 8
+  GPV2_SENSOR_DEV8_Temp,
+  //M.2 9
+  GPV2_SENSOR_DEV9_Temp,
+  //M.2 10
+  GPV2_SENSOR_DEV10_Temp,
+  //M.2 11
+  GPV2_SENSOR_DEV11_Temp,
 };
 #endif
 
@@ -2020,6 +2051,141 @@ host_sensors_sdr_init(uint8_t fru, sensor_info_t *sinfo)
 }
 
 int
+fby2_get_m2_info_from_bios(uint8_t slot_id, uint8_t dev_index, bool *present, uint16_t *vendor_id, uint16_t * device_id, uint8_t* link_speed, uint8_t* link_width)
+{
+  uint8_t runoff_id;
+  int fd = -1;
+  char path[64];
+  uint8_t data[7] = {0};
+  uint8_t read_byte = 7;
+
+  *present = false;
+
+  if((slot_id < 1) || (slot_id > 4)) {
+    syslog(LOG_WARNING, "%s: invalid slot id %d", __func__, slot_id);
+    return false;
+  }
+
+  switch(fby2_get_slot_type(slot_id)) {
+    case SLOT_TYPE_SERVER:
+      // dev_index 0-based
+      runoff_id = slot_id;
+      break;
+    case SLOT_TYPE_GP:
+    case SLOT_TYPE_GPV2:
+      // dev_index 2-based
+      dev_index += 2;
+      runoff_id = slot_id + 1;
+      break;
+    default:
+      return -1;
+  }
+
+  if (dev_index < 0)
+    return -1;
+
+  sprintf(path, SYS_CONFIG_PATH "fru%d_m2_%d_info", runoff_id, dev_index);
+  fd = open(path, O_RDONLY);
+
+  if (fd < 0)
+    goto err_exit;
+
+  if(read(fd, &data, read_byte) != read_byte)
+    goto err_exit;
+
+  if (data[0] == 0x01) { //M.2 is present
+    *present = true;
+    *vendor_id = (data[2] << 8 ) | data[1];
+    *device_id = (data[4] << 8 ) | data[3];
+    *link_speed = data[5];
+    *link_width = data[6];
+  }
+
+  close(fd);
+  return 0;
+
+err_exit:
+  close(fd);
+  return -1;
+}
+
+int
+fby2_get_m2_type_from_bios(uint8_t slot_id, uint8_t dev_index, uint8_t *type) {
+  uint16_t vendor_id = 0;
+  uint16_t device_id = 0;
+  uint8_t link_speed = 0;
+  uint8_t link_width = 0;
+  int ret;
+  bool present = false;
+
+  ret = fby2_get_m2_info_from_bios(slot_id,dev_index, &present, &vendor_id, &device_id, &link_speed, &link_width);
+
+  if ((ret == 0) && present) {
+    if ((vendor_id == VENDOR_VSI) && (device_id == DEVICE_ID_RP)) {
+      *type = DEV_TYPE_VSI_ACC;
+    } else if ((vendor_id == VENDOR_BRCM) && (device_id == DEVICE_ID_VK)) {
+      *type = DEV_TYPE_BRCM_ACC;
+    } else if ((vendor_id == VENDOR_SAMSUNG) && (device_id == DEVICE_ID_PM983)) {
+      *type = DEV_TYPE_SSD;
+    } else {
+      *type = DEV_TYPE_UNKNOWN;
+    }
+  } else {
+    *type = DEV_TYPE_UNKNOWN;
+  }
+  return 0;
+}
+
+int
+fby2_get_slot_dev_type(uint8_t slot_id, uint8_t *dev_type) {
+
+  int ret = 0;
+  *dev_type = DEV_TYPE_UNKNOWN;
+
+  for (int dev_id = 0; dev_id < MAX_NUM_DEVS; dev_id++) {
+    ret = fby2_get_m2_type_from_bios(slot_id,dev_id, dev_type);
+
+    if (ret) {
+      continue;
+    }
+
+    if (*dev_type != DEV_TYPE_UNKNOWN) { // get the first accessible M.2 device's device type
+      break;
+    }
+  }
+
+  return 0;
+}
+
+#ifdef CONFIG_FBY2_GPV2
+static void
+gpv2_sensors_sdr_init(uint8_t fru, sensor_info_t *sinfo)
+{
+  sdr_full_t *sdr;
+  uint8_t type = DEV_TYPE_UNKNOWN;
+  uint8_t uc_thresh = UC_GPV2_SENSOR_ACC_NVME_TRESH; // deafult: set Accelerator threshold
+
+  if (fby2_get_slot_type(fru) != SLOT_TYPE_GPV2)
+    return;
+
+  if (fby2_common_get_spb_type() == TYPE_SPB_YV250) // do not alter Yv2.5 threshold
+    return;
+
+  fby2_get_slot_dev_type(fru,&type);
+  if (type == DEV_TYPE_SSD) {
+    uc_thresh = UC_GPV2_SENSOR_SSD_NVME_TRESH;
+  }
+
+  if (type != DEV_TYPE_UNKNOWN) { // only alter sdr after get device type
+    for (int i = 0; i< MAX_NUM_DEVS; i++){
+      sdr = &sinfo[bic_gpv2_sdr_alter_sensor_list[i]].sdr;
+      sdr->uc_thresh = uc_thresh;
+    }
+  }
+}
+#endif
+
+int
 fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   char path[64] = {0};
   int retry = 0;
@@ -2051,6 +2217,9 @@ fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
                  sleep(1);
               } else {
                 host_sensors_sdr_init(fru, sinfo);
+#ifdef CONFIG_FBY2_GPV2
+                gpv2_sensors_sdr_init(fru, sinfo);
+#endif
                 break;
               }
             }

@@ -56,6 +56,7 @@
 #define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 #define POST_FLAG_FILE "/tmp/cache_store/slot%d_post_flag"
 #define SYS_CONFIG_FILE "/mnt/data/kv_store/sys_config/fru%d_*"
+#define SYS_CONFIG_M2_DEV_FILE "/mnt/data/kv_store/sys_config/fru%d_m2_%d_info"
 #define SENSORDUMP_BIN "/usr/local/bin/sensordump.sh"
 
 
@@ -864,6 +865,12 @@ hsvc_event_handler(void *ptr) {
           sprintf(slotrcpath, SV_TYPE_RECORD_FILE, hsvc_info->slot_id);
           sprintf(cmd, "echo %d > %s", server_type, slotrcpath);
           system(cmd);
+        } else if (slot_type == SLOT_TYPE_GPV2) { // Remove GPv2 M.2 DEV INFO
+          for (int dev_id = 2; dev_id < MAX_NUM_DEVS +2; dev_id++) { // 2-base for GPv2
+            sprintf(sys_config_path, SYS_CONFIG_M2_DEV_FILE, hsvc_info->slot_id +1 , dev_id);
+            sprintf(cmd,"rm %s",sys_config_path);
+            system(cmd);
+          }
         }
       }
       break;

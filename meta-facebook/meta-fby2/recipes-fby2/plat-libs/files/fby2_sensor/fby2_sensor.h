@@ -46,6 +46,31 @@ extern "C" {
 
 #define SYS_CONFIG_PATH "/mnt/data/kv_store/sys_config/"
 
+#define MAX_NUM_DEVS 12
+
+enum {
+  DEV_TYPE_UNKNOWN,
+  DEV_TYPE_SSD,
+  DEV_TYPE_VSI_ACC,
+  DEV_TYPE_BRCM_ACC,
+  DEV_TYPE_OTHER_ACC,
+  DEV_TYPE_DUAL_M2,
+  DEV_TYPE_SPH_ACC,
+};
+
+enum {
+  VENDOR_SAMSUNG = 0x144D,
+  VENDOR_VSI = 0x1D9B,
+  VENDOR_BRCM = 0x14E4,
+  VENDOR_SPH = 0x8086,
+};
+
+enum {
+  DEVICE_ID_RP = 0xFACE,
+  DEVICE_ID_VK = 0x5E87,
+  DEVICE_ID_PM983 = 0xA808,
+};
+
 typedef struct {
   const char *dimm_location_file;
   uint8_t dimm_sensor_num;
@@ -538,6 +563,9 @@ int fby2_mux_control(char *device, uint8_t addr, uint8_t channel);
 int fby2_disable_gp_m2_monior(uint8_t slot_id, uint8_t dis);
 int fby2_check_hsc_sts_iout(uint8_t mask);
 int fby2_check_hsc_fault(void);
+int fby2_get_m2_info_from_bios(uint8_t slot_id, uint8_t dev_index, bool *present, uint16_t *vendor_id, uint16_t * device_id, uint8_t* link_speed, uint8_t* link_width);
+int fby2_get_m2_type_from_bios(uint8_t slot_id, uint8_t dev_index, uint8_t *type);
+int fby2_get_slot_dev_type(uint8_t slot_id, uint8_t *dev_type);
 int fby2_sdr_init(uint8_t fru, bool force);
 
 #ifdef __cplusplus

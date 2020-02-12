@@ -260,6 +260,7 @@ main (int argc, char * const argv[])
   } while (ret != 0);
 
   if (sdr_dump == true) {
+    pal_set_update_sdr_flag(slot_id,1);
     retry = 0;
     do {
       ret = sdr_cache_init(slot_id);
@@ -273,6 +274,7 @@ main (int argc, char * const argv[])
     if (ret != 0) {   // if exceed 3 mins, exit this step
       syslog(LOG_CRIT, "Fail on getting Slot%u SDR", slot_id);
     }
+    pal_set_update_sdr_flag(slot_id,0);
   }
 
   // Get Server FRU

@@ -53,6 +53,7 @@ int VrComponent0::update(string image)
     ret = vr_fw_update(vr_name.str().c_str(), image.c_str());
     if (ret < 0) {
       cout << "ERROR: VR Firmware update failed!\n" << endl;
+      break;
     }
   }
 
@@ -108,6 +109,7 @@ int VrComponent1::update(string image)
     ret = vr_fw_update(vr_name.str().c_str(), image.c_str());
     if (ret < 0) {
       cout << "ERROR: VR Firmware update failed!\n" << endl;
+      break;
     }
   }
 

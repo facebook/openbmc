@@ -23,10 +23,21 @@ enum {
   ADDR_P1V0_AVD3 = 0x3b
 };
 
+enum {
+  HWMON_P0V8_VDD0 = 11,
+  HWMON_P0V8_VDD1,
+  HWMON_P0V8_VDD2,
+  HWMON_P0V8_VDD3,
+  HWMON_P1V0_AVD0,
+  HWMON_P1V0_AVD1,
+  HWMON_P1V0_AVD2,
+  HWMON_P1V0_AVD3
+};
+
 struct vr_ops mpq8645p_ops = {
   .get_fw_ver = mpq8645p_get_fw_ver,
   .parse_file = mpq8645p_parse_file,
-  .validate_file = NULL,
+  .validate_file = mpq8645p_validate_file,
   .fw_update = mpq8645p_fw_update,
   .fw_verify = mpq8645p_fw_verify,
 };
@@ -92,7 +103,19 @@ struct vr_info fbep_vr_list[] = {
 
 int plat_vr_init()
 {
-  int ret;
+  int ret, i, *p;
+  int list_cnt = sizeof(fbep_vr_list)/sizeof(fbep_vr_list[0]);
+
+  for (i = 0; i < list_cnt; i++) {
+    p  = (int*)malloc(sizeof(int));
+    if (p == NULL) {
+      for (i = i-1; i >= 0; i--)
+	free(fbep_vr_list[i].private_data);
+      return -1;
+    }
+    *p = HWMON_P0V8_VDD0 + i;
+    fbep_vr_list[i].private_data = p;
+  }
 
   ret = vr_device_register(fbep_vr_list, sizeof(fbep_vr_list)/sizeof(fbep_vr_list[0]));
   if (ret < 0) {
@@ -104,5 +127,11 @@ int plat_vr_init()
 
 void plat_vr_exit()
 {
-  mpq8645p_free_configs(plat_priv_data);
+  int i;
+  int list_cnt = sizeof(fbep_vr_list)/sizeof(fbep_vr_list[0]);
+
+  for (i = 0; i < list_cnt; i++)
+    free(fbep_vr_list[i].private_data);
+
+  mpq8645p_free_configs(plat_configs);
 }

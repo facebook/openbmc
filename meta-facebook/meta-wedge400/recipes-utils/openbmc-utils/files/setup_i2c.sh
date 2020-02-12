@@ -89,9 +89,6 @@ i2c_device_add 5 0x60 domfpga         # DOM FPGA 2
 i2c_device_add 6 0x51 24c64            # SMB EEPROM
 i2c_device_add 6 0x21 pca9534          # PCA9534
 
-# # Bus 9
-i2c_device_add 9 0x74 si5391b          # SI5391B
-
 # # Bus 1
 i2c_device_add 1 0x3a powr1220          # SMB power sequencer
 i2c_device_add 1 0x4d ir35215           # TH3 serdes voltage/current monitor on the left
@@ -134,12 +131,6 @@ i2c_device_add "$(get_mux_bus_num 3)" 0x52 24c64   # EEPROM
 # # i2c-mux 2, channel 5
 i2c_device_add "$(get_mux_bus_num 4)" 0x50 24c02   # BMC54616S EEPROM
 
-# # i2c-mux 2, channel 6
-i2c_device_add "$(get_mux_bus_num 5)" 0x52 nvme    # NVME
-
-# # i2c-mux 2, channel 8
-i2c_device_add "$(get_mux_bus_num 7)" 0x6c si53108 # PCIE clock buffer
-
 # # i2c-mux 8, channel 1
 is_pem1=$(
     pem-util pem1 --get_pem_info | grep WEDGE400-PEM
@@ -173,9 +164,6 @@ i2c_device_add "$(get_mux_bus_num 11)" 0x50 24c02          # BCM54616 EEPROM
 
 # # i2c-mux 8, channel 5
 i2c_device_add "$(get_mux_bus_num 12)" 0x54 24c02          # TH3 EEPROM
-
-# # i2c-mux 8, channel 6
-i2c_device_add "$(get_mux_bus_num 13)" 0x50 pwrcpld_update # SMB PWRCPLD I2C Programming
 
 # # i2c-mux 11, channel 1
 i2c_device_add "$(get_mux_bus_num 16)" 0x3e fcbcpld # FCB CPLD

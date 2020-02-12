@@ -6249,7 +6249,7 @@ pal_parse_sel_gpv2(uint8_t fru, uint8_t *sel, char *error_log)
           strcat(error_log, "HSC_Throttle");
           break;
         case 0x06:
-          strcat(error_log, "MB_Throttle");
+          strcat(error_log, "INA230");
           break;
         case 0x07:
           strcat(error_log, "Platform_Reset");
@@ -6257,6 +6257,18 @@ pal_parse_sel_gpv2(uint8_t fru, uint8_t *sel, char *error_log)
         case 0x08:
           sprintf(temp_log, "Dev%d_INA231", ed[1] & 0x0F);
           strcat(error_log, temp_log);
+          break;
+        case 0x09:
+          strcat(error_log, "3V3_VR");
+          if (ed[1] == 0x00) {
+            strcat(error_log, " IOUT_OC_WARNING");
+          }
+          break;
+        case 0x0A:
+          strcat(error_log, "0V92_VR");
+          if (ed[1] == 0x00) {
+            strcat(error_log, " IOUT_OC_WARNING");
+          }
           break;
         default:
           strcat(error_log, "Unknown");

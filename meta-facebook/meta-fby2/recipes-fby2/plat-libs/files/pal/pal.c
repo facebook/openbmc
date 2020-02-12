@@ -4520,6 +4520,19 @@ pal_alter_sensor_thresh_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
 
 
 int
+pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value)
+{
+  return fby2_sensor_poll_interval(fru, sensor_num, value);
+}
+
+int
+pal_alter_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value)
+{
+  return fby2_sensor_poll_interval(fru, sensor_num, value);
+}
+
+
+int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
   return fby2_sensor_threshold(fru, sensor_num, thresh, value);
 }

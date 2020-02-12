@@ -567,6 +567,7 @@ int fby2_get_m2_info_from_bios(uint8_t slot_id, uint8_t dev_index, bool *present
 int fby2_get_m2_type_from_bios(uint8_t slot_id, uint8_t dev_index, uint8_t *type);
 int fby2_get_slot_dev_type(uint8_t slot_id, uint8_t *dev_type);
 int fby2_sdr_init(uint8_t fru, bool force);
+int fby2_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value);
 
 #ifdef __cplusplus
 } // extern "C"

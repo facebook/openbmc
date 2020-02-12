@@ -2478,6 +2478,115 @@ fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   return 0;
 }
 
+
+int
+fby2_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value) {
+
+#ifdef CONFIG_FBY2_GPV2
+  *value = 6;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      switch(fby2_get_slot_type(fru))
+      {
+        case SLOT_TYPE_SERVER:
+          switch(sensor_num) {
+            case BIC_SENSOR_MB_INLET_TEMP:
+            case BIC_SENSOR_PCH_TEMP:
+            case BIC_SENSOR_SOC_THERM_MARGIN:
+            case BIC_SENSOR_SOC_DIMMA0_TEMP:
+            case BIC_SENSOR_SOC_DIMMA1_TEMP:
+            case BIC_SENSOR_SOC_DIMMB0_TEMP:
+            case BIC_SENSOR_SOC_DIMMB1_TEMP:
+            case BIC_SENSOR_SOC_DIMMD0_TEMP:
+            case BIC_SENSOR_SOC_DIMMD1_TEMP:
+            case BIC_SENSOR_SOC_DIMME0_TEMP:
+            case BIC_SENSOR_SOC_DIMME1_TEMP:
+            case BIC_SENSOR_SOC_PACKAGE_PWR:
+            case BIC_SENSOR_VCCIN_VR_TEMP:
+            case BIC_SENSOR_NVME1_CTEMP:
+            case BIC_SENSOR_NVME2_CTEMP:
+            case BIC_SENSOR_VCCIN_VR_VOL:
+            case BIC_SENSOR_INA230_POWER:
+            case BIC_SENSOR_INA230_VOL:
+              *value = 2;
+              break;
+          }
+          break;
+        case SLOT_TYPE_GPV2:
+           switch(sensor_num) {
+            case GPV2_SENSOR_INA230_POWER:
+            case GPV2_SENSOR_INA230_VOLT:
+            case GPV2_SENSOR_PCIE_SW_TEMP:
+            case GPV2_SENSOR_3V3_VR_Curr:
+            case GPV2_SENSOR_0V92_VR_Curr:
+            case GPV2_SENSOR_3V3_VR_Pwr:
+            case GPV2_SENSOR_0V92_VR_Pwr:
+            case GPV2_SENSOR_DEV0_INA231_PW:
+            case GPV2_SENSOR_DEV0_Temp:
+            case GPV2_SENSOR_DEV1_INA231_PW:
+            case GPV2_SENSOR_DEV1_Temp:
+            case GPV2_SENSOR_DEV2_INA231_PW:
+            case GPV2_SENSOR_DEV2_Temp:
+            case GPV2_SENSOR_DEV3_INA231_PW:
+            case GPV2_SENSOR_DEV3_Temp:
+            case GPV2_SENSOR_DEV4_INA231_PW:
+            case GPV2_SENSOR_DEV4_Temp:
+            case GPV2_SENSOR_DEV5_INA231_PW:
+            case GPV2_SENSOR_DEV5_Temp:
+            case GPV2_SENSOR_DEV6_INA231_PW:
+            case GPV2_SENSOR_DEV6_Temp:
+            case GPV2_SENSOR_DEV7_INA231_PW:
+            case GPV2_SENSOR_DEV7_Temp:
+            case GPV2_SENSOR_DEV8_INA231_PW:
+            case GPV2_SENSOR_DEV8_Temp:
+            case GPV2_SENSOR_DEV9_INA231_PW:
+            case GPV2_SENSOR_DEV9_Temp:
+            case GPV2_SENSOR_DEV10_INA231_PW:
+            case GPV2_SENSOR_DEV10_Temp:
+            case GPV2_SENSOR_DEV11_INA231_PW:
+            case GPV2_SENSOR_DEV11_Temp:
+               *value = 2;
+               break;
+            case GPV2_SENSOR_3V3_VR_Vol:
+            case GPV2_SENSOR_0V92_VR_Vol:
+            case GPV2_SENSOR_3V3_VR_Temp:
+            case GPV2_SENSOR_0V92_VR_Temp:
+               *value = 4;
+               break;
+           }
+           break;
+      }
+      break;
+    case FRU_SPB:
+      switch(sensor_num) {
+        case SP_SENSOR_INLET_TEMP:
+        case SP_SENSOR_FAN0_TACH:
+        case SP_SENSOR_FAN0_PWM:
+        case SP_SENSOR_FAN1_TACH:
+        case SP_SENSOR_FAN1_PWM:
+        case SP_SENSOR_HSC_IN_VOLT:
+        case SP_SENSOR_HSC_OUT_CURR:
+        case SP_SENSOR_HSC_TEMP:
+          *value = 2;
+          break;
+      }
+      break;
+    case FRU_NIC:
+      switch(sensor_num) {
+        case MEZZ_SENSOR_TEMP:
+          *value = 2;
+          break;
+      }
+      break;
+  }
+#endif
+  return 0;
+}
+
 int
 fby2_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *value) {
 

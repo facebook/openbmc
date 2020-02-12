@@ -105,6 +105,7 @@ init_fru_snr_thresh(uint8_t fru) {
 #endif /* DEBUG */
       continue;
     }
+    pal_alter_sensor_poll_interval(fru, snr_num, &(snr[snr_num].poll_interval));
 
     pal_init_sensor_check(fru, snr_num, (void *)&snr[snr_num]);
   }

@@ -22,8 +22,8 @@
 # Provides:          server-init
 # Required-Start:
 # Required-Stop:
-# Default-Start:     
-# Default-Stop:      
+# Default-Start:
+# Default-Stop:
 # Short-Description: Provides a service to reinitialize the server
 #
 ### END INIT INFO
@@ -57,15 +57,9 @@ if [ $(is_server_prsnt $slot_num) == "0" ]; then
   rm -f /tmp/*fruid_slot${slot_num}*
   rm -f /tmp/*sdr_slot${slot_num}*
 else
-  enable_server_12V_power $slot_num
-  sleep 1 #wait for power is ready
-  enable_server_i2c_bus $slot_num
-  sleep 1 #wait for bus is ready
-  /usr/bin/sv start ipmbd_${bus}
-  sleep 2 #wait for ipmbd is ready  
-  /usr/local/bin/power-util slot${slot_num} on
-  /usr/local/bin/bic-cached -s slot${slot_num}
-  /usr/local/bin/bic-cached -f slot${slot_num}
+  /usr/local/bin/power-util "slot${slot_num}" 12V-on
+  /usr/local/bin/bic-cached -s "slot${slot_num}"
+  /usr/local/bin/bic-cached -f "slot${slot_num}"
 fi
 
 # restart the service

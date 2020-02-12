@@ -1,6 +1,7 @@
 #ifndef __PAL_SENSORS_H__
 #define __PAL_SENSORS_H__
 
+#include <openbmc/pmbus.h>
 #include <openbmc/obmc_pal_sensors.h>
 
 #define MAX_SENSOR_NUM         (0xFF)
@@ -42,18 +43,6 @@
 #define INA260_CURRENT   (0x01)
 #define INA260_VOLTAGE   (0x02)
 #define INA260_POWER     (0x03)
-
-#define PMBUS_PAGE         (0x00)
-#define PMBUS_VOUT_MODE    (0x20)
-#define PMBUS_VOUT_COMMAND (0x21)
-#define PMBUS_READ_VIN     (0x88)
-#define PMBUS_READ_IIN     (0x89)
-#define PMBUS_READ_VOUT    (0x8B)
-#define PMBUS_READ_IOUT    (0x8C)
-#define PMBUS_READ_TEMP1   (0x8D)
-#define PMBUS_READ_TEMP2   (0x8E)
-#define PMBUS_READ_POUT    (0x96)
-#define PMBUS_READ_PIN     (0x97)
 
 #define FAN_PWM_ALL_NUM        (4) 
 #define FAN_TACH_ALL_NUM       (8)

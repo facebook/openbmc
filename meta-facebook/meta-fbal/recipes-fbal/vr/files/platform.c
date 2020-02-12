@@ -113,8 +113,8 @@ int plat_vr_init(void) {
 }
 
 void plat_vr_exit(void) {
-  if (plat_priv_data) {
-    free(plat_priv_data);
+  if (plat_configs) {
+    free(plat_configs);
   }
   return;
 }

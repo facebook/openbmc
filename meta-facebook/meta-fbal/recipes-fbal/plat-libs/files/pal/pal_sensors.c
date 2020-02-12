@@ -1333,7 +1333,7 @@ read_hsc_temp(uint8_t hsc_id, float *value) {
   enable_hsc_temp_monitor(hsc_id);
 
   get_nm_rw_info(NM_ID0, &info.bus, &info.nm_addr, &info.bmc_addr);
-  info.nm_cmd = PMBUS_READ_TEMP1;
+  info.nm_cmd = PMBUS_READ_TEMPERATURE_1;
 
   ret = cmd_NM_pmbus_read_word(info, addr, rbuf);
   if (ret != 0) {

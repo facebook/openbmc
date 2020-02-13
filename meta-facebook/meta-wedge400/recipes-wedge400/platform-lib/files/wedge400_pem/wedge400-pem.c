@@ -594,7 +594,8 @@ int archive_pem_chips(uint8_t num) {
     strcpy(path, pem[num].file_path[chip]);
     mkdir_recurse(dirname(path), 0777);
 
-    pem[num].fd = i2c_cdev_slave_open(pem[num].bus, pem[num].chip_addr[chip], 1);
+    pem[num].fd = i2c_cdev_slave_open(pem[num].bus, pem[num].chip_addr[chip],
+                                      I2C_SLAVE_FORCE_CLAIM);
     if (pem[num].fd < 0) {
       ERR_PRINT("Fail to open i2c");
       ret |= (1 << chip);
@@ -960,7 +961,8 @@ static int pem_status_regs(uint8_t num, int option, pem_status_regs_t *status_re
   if (option != READ)
     return -1;
 
-  pem[num].fd = i2c_cdev_slave_open(pem[num].bus, pem[num].chip_addr[LTC4282], 1);
+  pem[num].fd = i2c_cdev_slave_open(pem[num].bus, pem[num].chip_addr[LTC4282],
+                                    I2C_SLAVE_FORCE_CLAIM);
   if (pem[num].fd < 0) {
     ERR_PRINT("Fail to open i2c");
     return pem[num].fd;
@@ -1030,7 +1032,8 @@ static int pem_eeprom_regs(uint8_t num, int option, pem_eeprom_reg_t *eeprom_reg
   if (option != READ && option != WRITE)
     return -1;
 
-  pem[num].fd = i2c_cdev_slave_open(pem[num].bus, pem[num].chip_addr[LTC4282], 0);
+  pem[num].fd = i2c_cdev_slave_open(pem[num].bus, pem[num].chip_addr[LTC4282],
+                                    I2C_SLAVE_FORCE_CLAIM);
   if (pem[num].fd < 0) {
     ERR_PRINT("Fail to open i2c");
     return -1;
@@ -1219,7 +1222,9 @@ int get_pem_info(uint8_t num) {
   if (ret == 0) {
     if (!strncmp((const char *)pem_model, DELTA_MODEL, strlen(DELTA_MODEL))) {
       if (pem[num].fd < 0) {
-        pem[num].fd = i2c_cdev_slave_open(pem[num].bus, pem[num].chip_addr[LTC4282], 1);
+        pem[num].fd = i2c_cdev_slave_open(pem[num].bus,
+                                          pem[num].chip_addr[LTC4282],
+                                          I2C_SLAVE_FORCE_CLAIM);
       }
       ret = pem_firmware_regs(pem[num].fd, READ, &firmware_regs);
       if (ret == 0) {
@@ -1253,7 +1258,8 @@ int get_blackbox_info(uint8_t num, const char *option) {
   pem_eeprom_reg_t eeprom_reg;
   pem_status_regs_t status_regs;
 
-  pem[num].fd = i2c_cdev_slave_open(pem[num].bus, pem[num].chip_addr[LTC4282], 0);
+  pem[num].fd = i2c_cdev_slave_open(pem[num].bus, pem[num].chip_addr[LTC4282],
+                                    I2C_SLAVE_FORCE_CLAIM);
   if (pem[num].fd < 0) {
     ERR_PRINT("Fail to open i2c");
     return -1;
@@ -1670,7 +1676,8 @@ do_update_pem(uint8_t num, const char *file_path, const char *vendor, _Bool forc
   pal_del_i2c_device(pem[num].bus, pem[num].chip_addr[LTC4282]);
   pal_del_i2c_device(pem[num].bus, pem[num].chip_addr[MAX6615]);
 
-  pem[num].fd = i2c_cdev_slave_open(pem[num].bus, pem[num].chip_addr[LTC4282], 0);
+  pem[num].fd = i2c_cdev_slave_open(pem[num].bus, pem[num].chip_addr[LTC4282],
+                                    I2C_SLAVE_FORCE_CLAIM);
   g_fd = pem[num].fd;
   if (pem[num].fd < 0) {
     ERR_PRINT("Fail to open i2c");

@@ -121,7 +121,7 @@ class Fscd(object):
             self.non_fanfail_limited_boost = self.fsc_config[
                 "non_fanfail_limited_boost_value"
             ]
-        self.sensor_filter_all = self.fsc_config.get("sensor_filter_all",False)
+        self.sensor_filter_all = self.fsc_config.get("sensor_filter_all", False)
         if "boost" in self.fsc_config and "fan_fail" in self.fsc_config["boost"]:
             self.fan_fail = self.fsc_config["boost"]["fan_fail"]
         if "boost" in self.fsc_config and "progressive" in self.fsc_config["boost"]:
@@ -359,6 +359,8 @@ class Fscd(object):
         ret = 0
         for fru in self.machine.frus:
             for sensor, tuple in list(sensors_tuples[fru].items()):
+                if tuple.value is None:  # Skip sensor if the reading fail
+                    continue
                 if tuple.name in self.fsc_config["profiles"]:
                     last_error_time = self.sensors[tuple.name].source.last_error_time
                     last_error_level = self.sensors[tuple.name].source.last_error_level
@@ -542,7 +544,7 @@ class Fscd(object):
             self.fsc_safe_guards(sensors_tuples)
         for zone in self.zones:
             if self.sensor_filter_all:
-                sensors_tuples = self.machine.read_sensors(self.sensors,zone.expr_meta)
+                sensors_tuples = self.machine.read_sensors(self.sensors, zone.expr_meta)
                 self.fsc_safe_guards(sensors_tuples)
             Logger.info("PWM: %s" % (json.dumps(zone.pwm_output)))
             mode = 0

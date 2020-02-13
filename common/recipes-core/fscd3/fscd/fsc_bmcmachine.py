@@ -70,7 +70,7 @@ class BMCMachine(object):
             for fru in self.frus:
                 if sensorname in sensors[fru]:
                     senvalue = sensors[fru][sensorname]
-                    Logger.debug(" %s = %.2f" % (sensorname, senvalue.value))
+                    Logger.debug(" {} = {}".format(sensorname, senvalue.value))
 
             offset = 0
             if data.offset != None:

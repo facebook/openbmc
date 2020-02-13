@@ -1,0 +1,5 @@
+max([
+  SMB_LM75B_U28_TEMP(smb:smb_lm75b_u28_temp:0x1b),
+  GB_DIE_TEMP_HIGH(smb:gb_die_temp_high:0x21),
+  SOC_THERM_MARGIN_TEMP(scm:soc_therm_margin_temp:0x09)
+])

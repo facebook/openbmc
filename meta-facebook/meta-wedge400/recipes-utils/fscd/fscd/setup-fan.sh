@@ -42,9 +42,12 @@ fcm_min=$((FCM_CPLD_SUB_VER))
 
 echo -n "Setup fan speed... "
 
-if [ "$(wedge_board_type)" = "0" ]; then
-    echo "Run FSC PWM 64 Levels Config"
+if [ $(wedge_board_type) -eq 0 ]; then
+    echo "Run FSC Wedge400 Config"
     cp /etc/FSC-W400-config.json ${default_fsc_config}
+elif [ $(wedge_board_type) -eq 1 ]; then
+    echo "Run FSC Wedge400C Config"
+    cp /etc/FSC-W400C-config.json ${default_fsc_config}
 fi
 echo "Setting fan speed to 50%..."
 /usr/local/bin/set_fan_speed.sh 50
@@ -69,7 +72,8 @@ if [ "$(wedge_board_type)" = "0" ] &&
    [ "$SMB_CPLD_BOARD_REV" = "0x0" ]; then #WEDGE400 EVT
     fcm_compatible=0
 #WEDGE400-C EVT wedge_board_rev = 0  disable
-elif [ "$(wedge_board_type)" = "1" ]; then #WEDGE400C
+elif [ "$(wedge_board_type)" = "1" ] &&
+     [ "$(wedge_board_rev)" = "0" ]; then #WEDGE400C EVT
     fcm_compatible=0 #fcm_compatible = 0 means fscd not ready.
 fi
 

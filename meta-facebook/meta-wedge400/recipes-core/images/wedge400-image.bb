@@ -47,8 +47,6 @@ IMAGE_INSTALL += " \
   sensor-mon \
   spatula \
   threshold-util \
-  trousers \
-  tpm-tools \
   tpm2.0-tools \
   usb-console \
   wedge-eeprom \

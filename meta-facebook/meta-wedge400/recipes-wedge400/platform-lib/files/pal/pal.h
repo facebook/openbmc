@@ -37,6 +37,7 @@ extern "C" {
 #define PLATFORM_NAME "wedge400"
 #define READ_UNIT_SENSOR_TIMEOUT 5
 
+#define SYS_PLATFROM_DIR(dev) "/sys/devices/platform/"#dev"/"
 #define I2C_DRIVER_DIR(name, bus, addr) "/sys/bus/i2c/drivers/"#name"/"#bus"-00"#addr"/"
 #define I2C_DEV_DIR(bus, addr) "/sys/bus/i2c/devices/i2c-"#bus"/"#bus"-00"#addr"/"
 #define HW_MON_DIR "hwmon/hwmon*"
@@ -109,11 +110,15 @@ extern "C" {
 #define SMB_TMP421_U63_DEVICE         I2C_DEV_DIR(3, 4e)HW_MON_DIR
 #define SMB_SW_TEMP_DEVICE            I2C_DEV_DIR(3, 4f)HW_MON_DIR
 #define SMB_GB_TEMP_DEVICE            I2C_DEV_DIR(3, 2a)HW_MON_DIR
-#define SMB_DOM_DEVICE                I2C_DEV_DIR(13, 60)
+#define SMB_DOM1_DEVICE               I2C_DEV_DIR(13, 60)
+#define SMB_DOM2_DEVICE               I2C_DEV_DIR(5, 60)
 #define SMB_FCM_TACH_DEVICE           I2C_DEV_DIR(30, 3e)
 #define SMB_FCM_LM75B_U1_DEVICE       I2C_DEV_DIR(32, 48)HW_MON_DIR
 #define SMB_FCM_LM75B_U2_DEVICE       I2C_DEV_DIR(32, 49)HW_MON_DIR
 #define SMB_FCM_HSC_DEVICE            I2C_DEV_DIR(33, 10)HW_MON_DIR
+
+//BMC Sensor Devices
+#define AST_ADC_DEVICE         SYS_PLATFROM_DIR("ast-adc-hwmon")HW_MON_DIR
 
 // PSU Sensor Devices
 #define PSU_DRIVER             "psu_driver"
@@ -136,7 +141,6 @@ extern "C" {
 #define VOLT_SET(x)            "vo"#x"_input"
 #define CURR(x)                "curr"#x"_input"
 #define POWER(x)               "power"#x"_input"
-
 
 #define GPIO_SMB_REV_ID_0   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID0/%s"
 #define GPIO_SMB_REV_ID_1   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID1/%s"
@@ -349,6 +353,8 @@ enum {
   SMB_SENSOR_TMP421_U63_TEMP,
   SMB_SENSOR_SW_DIE_TEMP1,
   SMB_SENSOR_SW_DIE_TEMP2,
+  SMB_DOM1_MAX_TEMP,
+  SMB_DOM2_MAX_TEMP,
   /* Sensors on FCM */
   SMB_SENSOR_FCM_LM75B_U1_TEMP,
   SMB_SENSOR_FCM_LM75B_U2_TEMP,
@@ -363,6 +369,12 @@ enum {
   SMB_SENSOR_FAN3_REAR_TACH,
   SMB_SENSOR_FAN4_FRONT_TACH,
   SMB_SENSOR_FAN4_REAR_TACH,
+  /* Sensors on BMC*/
+  SMB_BMC_ADC0_VSEN,
+  SMB_BMC_ADC1_VSEN,
+  SMB_BMC_ADC2_VSEN,
+  SMB_BMC_ADC3_VSEN,
+  SMB_BMC_ADC4_VSEN,
 };
 
 /* Sensors on PEM */

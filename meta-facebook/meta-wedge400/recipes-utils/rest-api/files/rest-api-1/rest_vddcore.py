@@ -31,24 +31,26 @@ def get_vdd_core() -> Dict:
 
 
 def get_vdd_core_data() -> Dict:
-    path = [f for f in glob.glob("/sys/bus/i2c/devices/1-0040/hwmon/hwmon*/in2_input")][0]
-    cmd = ["/usr/bin/head",path]
+    path = glob.glob("/sys/bus/i2c/devices/1-0040/hwmon/hwmon*/in3_input")
+    if len(path) == 0:
+        return {"result": "failure", "reason": "can't access device"}
+    path = path[0]
+    cmd = ["/usr/bin/head", path]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
-    return {"VDD_CORE" : data.decode("utf-8").split('\n')[0]}
+    return {"VDD_CORE": data.decode("utf-8").split("\n")[0]}
 
 
 def set_vdd_core(value) -> Dict:
-    cmd = ["/usr/local/bin/set_vdd.sh",value]
+    cmd = ["/usr/local/bin/set_vdd.sh", value]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
     rc = proc.returncode
-    if ( rc == 0 ):
-      return { "result":"success" }
-    elif ( rc == 254 ):
-      return { "result":"failure" , "reason":"can't access device" }
-    elif ( rc == 255 ):
-      return { "result":"failure" , "reason":"invalid value" }
+    if rc == 0:
+        return {"result": "success"}
+    elif rc == 254:
+        return {"result": "failure", "reason": "can't access device"}
+    elif rc == 255:
+        return {"result": "failure", "reason": "invalid value"}
     else:
-      return { "result":"failure" , "reason":"unknown reason" }
-
+        return {"result": "failure", "reason": "unknown reason"}

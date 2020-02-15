@@ -21,6 +21,7 @@ USER="root"
 test -x "${DAEMON}" || exit 0
 
 # Read configuration variable file if it is present
+# shellcheck disable=SC1090
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
 case "${1}" in
@@ -28,12 +29,16 @@ case "${1}" in
 		echo "Starting $DESC: "
 
     # If TPM chip has not been discovered, probe the chip here
-		if [ ! -e /dev/tpm* ]
-		then
+	    for file in /dev/tpm*
+		do
+		  if [ ! -e "$file" ]
+		  then
       # Finally, register the device and install the driver
-      . /usr/local/bin/openbmc-utils.sh
-      i2c_device_add 7 0x20 tpm_i2c_infineon
-    fi
+            # shellcheck disable=SC1091
+            . /usr/local/bin/openbmc-utils.sh
+            i2c_device_add 7 0x20 tpm_i2c_infineon
+          fi
+		done
 
     # Additionally, Generate symlink to tpm0 or tpm1, so that tcsd can use it
     rm -f /dev/tpm
@@ -43,7 +48,7 @@ case "${1}" in
     else
       ln -s /dev/tpm1 /dev/tpm
     fi
-
+                # shellcheck disable=SC2086
 		start-stop-daemon --start --quiet --oknodo --pidfile /var/run/${NAME}.pid --user ${USER} --chuid ${USER} --exec ${DAEMON} -- ${DAEMON_OPTS}
 		RETVAL="$?"
 		echo "$NAME."

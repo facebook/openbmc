@@ -3723,14 +3723,14 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "XP1R8V_FPGA");
       }else if(brd_type == BRD_TYPE_WEDGE400C){
-        sprintf(name, "XP2R5V_FPGA");
+        sprintf(name, "XP2R5V_BMC");
       }
       break;
     case SMB_BMC_ADC2_VSEN:
       if(brd_type == BRD_TYPE_WEDGE400){
         sprintf(name, "XP3R3V_FPGA");
       }else if(brd_type == BRD_TYPE_WEDGE400C){
-        sprintf(name, "XP1R15V_FPGA");
+        sprintf(name, "XP1R15V_BMC");
       }
       break;
     case SMB_BMC_ADC3_VSEN:

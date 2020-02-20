@@ -2285,3 +2285,24 @@ read_fan_speed(uint8_t fan, float *rpm) {
   return ret;
 }
 
+int
+pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value) {
+  //default poll interval
+  *value = 2;
+
+  switch(fru) {
+    case FRU_MB:
+      if (sensor_num == MB_SNR_P3V_BAT) {
+        *value = 3600;
+      }
+      break;
+    case FRU_NIC0:
+    case FRU_NIC1:
+    case FRU_FCB:
+    case FRU_RISER1:
+    case FRU_RISER2:
+      break;
+  }
+
+  return PAL_EOK;
+}

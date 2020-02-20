@@ -261,6 +261,12 @@ static ssize_t i2c_dev_sysfs_store(struct device *dev,
     return val;
   }
 
+  if (dev_attr->enable_log_on_write) {
+    pr_crit("Wrote %#x to %s -> %s by pid %ld (cmd=%s)\n",
+            req_val, client->name, i2c_attr->isa_dev_attr.attr.name,
+            (long)current->pid, current->comm);
+  }
+
   return count;
 }
 

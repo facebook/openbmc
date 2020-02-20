@@ -42,6 +42,7 @@ typedef struct i2c_dev_attr_st_ {
   int ida_reg;
   int ida_bit_offset;
   int ida_n_bits;
+  unsigned int enable_log_on_write:1;
 } i2c_dev_attr_st;
 
 typedef struct i2c_sysfs_attr_st_{

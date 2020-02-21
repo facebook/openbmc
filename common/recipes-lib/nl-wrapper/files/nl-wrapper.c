@@ -178,8 +178,7 @@ int run_command_send(int ifindex, NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rsp)
 	struct ncsi_pkt_hdr *hdr = {0};
 	int rc = 0;
 	int payload_len = nl_msg->payload_length;
-	int package = 0;  // hardcoding for now, we need to extend ncsi-util to supported
-                      // specifying package # in the CLI
+	int package = (nl_msg->channel_id & 0xE0) >> 5;
 
 	uint8_t *pData, *pCtrlPktPayload;
 
@@ -199,6 +198,7 @@ int run_command_send(int ifindex, NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rsp)
 	if (rc)
 		return -1;
 
+	nl_msg->channel_id &= 0x1F;
 	DBG_PRINT("send cmd, ifindex %d, package %d, channel %d, cmd 0x%x\n",
 			ifindex, package, nl_msg->channel_id, nl_msg->cmd);
 

@@ -148,6 +148,26 @@ init_msmi(gpiopoll_pin_t *desc, gpio_value_t value) {
   }
 }
 
+static void cpu0_thermtrip(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  if (curr == GPIO_VALUE_HIGH) {
+    pal_add_cri_sel("CPU0 thermtrip DEASSERT");
+  } else {
+    pal_add_cri_sel("CPU0 thermtrip ASSERT");
+  }
+  log_gpio_change(desc, curr, 0);
+}
+
+static void cpu1_thermtrip(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  if (curr == GPIO_VALUE_HIGH) {
+    pal_add_cri_sel("CPU1 thermtrip DEASSERT");
+  } else {
+    pal_add_cri_sel("CPU1 thermtrip ASSERT");
+  }
+  log_gpio_change(desc, curr, 0);
+}
+
 static void
 err_caterr_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   SERVER_POWER_CHECK(3);
@@ -373,6 +393,8 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_UARTSW_LSB_N", "GPIOL0", GPIO_EDGE_BOTH, uart_select_handle, NULL},
   {"FM_UARTSW_MSB_N", "GPIOL1", GPIO_EDGE_BOTH, uart_select_handle, NULL},
   {"RST_PLTRST_BMC_N", "GPIOF6", GPIO_EDGE_BOTH, platform_reset_event_handle, NULL},
+  {"FM_CPU0_THERMTRIP_LVT3_PLD_N", "GPIOA1", GPIO_EDGE_BOTH, cpu0_thermtrip, NULL},
+  {"FM_CPU1_THERMTRIP_LVT3_PLD_N", "GPIOD0", GPIO_EDGE_BOTH, cpu1_thermtrip, NULL},
 };
 
 int main(int argc, char **argv)

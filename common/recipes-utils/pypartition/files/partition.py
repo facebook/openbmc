@@ -137,17 +137,25 @@ class ExternalChecksumPartition(Partition):
     def finalize(self):
         # type: () -> None
 
-        checksums_data = self.checksums_data.decode()
-
-        # There might be white space appended to the partition data.
-        # Strip this to make json.loads() happy.
-        json_str = checksums_data.strip("\0\n\r")
         checksums = list(self.checksums)
         try:
-            json_data = list(json.loads(json_str).keys())
-            checksums += json_data
-            self.logger.info("U-Boot partition appended with MD5 checksums")
-        except ValueError:
+            # the u-boot checksums_json is a JSON object with md5sums as JSON keys
+            # e.g: '{"a5ad8133574ceb63d492c5e7a75feb71": "Signed: Wednesday Jul 17 13:44:40  2017"}'
+            checksums_json_str = self.checksums_data.decode()
+
+            # There might be white space appended to the partition data.
+            # Strip this to make json.loads() happy.
+            checksums_json = json.loads(checksums_json_str.strip("\0\n\r"))
+
+            checksums.extend(checksums_json.keys())
+            self.logger.info(
+                "U-Boot partition appended with MD5 checksums: %s", checksums_json
+            )
+        except (ValueError, AttributeError) as e:
+            # There was no valid JSON object appended to the partition
+            self.logger.info(
+                "Could not find MD5 checksums appended to U-Boot partition: %s", repr(e)
+            )
             self.md5sum.update(self.checksums_data)
 
         if self.md5sum.hexdigest() not in checksums:

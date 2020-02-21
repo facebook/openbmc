@@ -234,6 +234,12 @@ int pal_get_fruid_eeprom_path(uint8_t fru, char *path)
   return 0;
 }
 
+int pal_get_fru_list(char *list)
+{
+  strcpy(list, pal_fru_list);
+  return 0;
+}
+
 int pal_get_fru_id(char *str, uint8_t *fru)
 {
   if (!strcmp(str, "all")) {

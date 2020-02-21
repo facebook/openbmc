@@ -21,4 +21,5 @@ LDFLAGS += "-lfruid -lipmb"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://fruid.c \
+            file://usb-dbg-conf.c \
           "

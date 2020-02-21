@@ -758,9 +758,13 @@ int pal_chassis_control(uint8_t fru, uint8_t *req_data, uint8_t req_len)
 
 void pal_get_chassis_status(uint8_t fru, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)
 {
+   int policy = POWER_CFG_ON; // Always On
    unsigned char *data = res_data;
 
-   *data++ = is_server_off()? 0x00:0x01;
+   *data++ = ((is_server_off())?0x00:0x01) | (policy << 5);
+   *data++ = 0x00;   // Last Power Event
+   *data++ = 0x40;   // Misc. Chassis Status
+   *data++ = 0x00;   // Front Panel Button Disable
    *res_len = data - res_data;
 }
 
@@ -916,7 +920,7 @@ static int get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask)
   return 0;
 }
 
-static int get_platform_id(uint8_t *id)
+int pal_get_platform_id(uint8_t *id)
 {
   static bool cached = false;
   static uint8_t cached_id = 0;
@@ -962,7 +966,7 @@ int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len,
   uint8_t platform_id  = 0x00;
   uint8_t board_rev_id = 0x00;
 
-  if (get_platform_id(&platform_id) < 0) {
+  if (pal_get_platform_id(&platform_id) < 0) {
     *res_len = 0x00;
     return CC_UNSPECIFIED_ERROR;
   }
@@ -977,4 +981,10 @@ int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len,
   *res_len = 0x02;
 
   return CC_SUCCESS;
+}
+
+int pal_get_sysfw_ver(uint8_t fru, uint8_t *ver)
+{
+  // No BIOS
+  return -1;
 }

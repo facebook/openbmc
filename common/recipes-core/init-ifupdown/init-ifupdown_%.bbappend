@@ -7,12 +7,15 @@ SRC_URI += "file://dhcp_vendor_info \
             file://setup-dhc6.sh \
             file://run-dhc6.sh \
             file://run-dhc6_prefix64.sh \
+            file://run-dhc6_prefix64_ncsi.sh \
             "
+RUN_DHC6_FILE = "run-dhc6_prefix64.sh"
 
 def dhc6_run(d):
   distro = d.getVar('DISTRO_CODENAME', True)
+  dhcfile = d.getVar('RUN_DHC6_FILE', True)
   if distro == 'warrior':
-    return "run-dhc6_prefix64.sh"
+    return dhcfile
   else:
     return "run-dhc6.sh"
 

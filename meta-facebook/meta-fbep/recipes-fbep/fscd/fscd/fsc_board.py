@@ -86,13 +86,8 @@ def sensor_valid_check(board, sname, check_name, attribute):
             pwr_sts = bmc_read_power()
             if pwr_sts != 1:
                 return 0
-
-            fru_name = c_char_p(board.encode("utf-8"))
-            snr_name = c_char_p(sname.upper().encode("utf-8"))
-
-            is_snr_valid = lpal_hndl.pal_sensor_is_valid(fru_name, snr_name)
-
-            return int(is_snr_valid)
+            else:
+                return 1
 
         elif attribute["type"] == "gpio":
             cmd = ["gpiocli", "get-value", "--shadow", attribute["shadow"]]

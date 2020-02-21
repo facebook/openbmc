@@ -27,7 +27,6 @@
 # Short-Description: Set fan speed
 ### END INIT INFO
 
-echo "Setup fan speed... "
-/usr/local/bin/fan-util --set 70
+echo -n "Setup fan speed... "
 runsv /etc/sv/fscd > /dev/null 2>&1 &
 echo "done."

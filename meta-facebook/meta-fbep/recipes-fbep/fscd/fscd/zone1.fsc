@@ -1,9 +1,9 @@
 max([
   linear_inlet(mb:mb_sensor_gpu_inlet_remote),
-  linear_switch_remote(mb:mb_sensor_pax0_therm_remote),
-  linear_switch_remote(mb:mb_sensor_pax1_therm_remote),
-  linear_switch_remote(mb:mb_sensor_pax2_therm_remote),
-  linear_switch_remote(mb:mb_sensor_pax3_therm_remote),
+  linear_switch_remote(mb:mb_sensor_pax0_therm),
+  linear_switch_remote(mb:mb_sensor_pax1_therm),
+  linear_switch_remote(mb:mb_sensor_pax2_therm),
+  linear_switch_remote(mb:mb_sensor_pax3_therm),
   linear_vicor(pdb:pdb_adc_1_vicor0_temp),
   linear_vicor(pdb:pdb_adc_1_vicor1_temp),
   linear_vicor(pdb:pdb_adc_1_vicor2_temp),

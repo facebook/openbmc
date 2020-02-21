@@ -1165,47 +1165,6 @@ int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name)
   return 0;
 }
 
-int get_sensor_num(char *snr_name, uint8_t *snr_num)
-{
-  int i;
-
-  for (i = 0; i < FBEP_SENSOR_MAX; i++) {
-    if (!strncmp(snr_name, fbep_sensors_map[i].name, strlen(fbep_sensors_map[i].name))) {
-      *snr_num = i;
-      return 0;
-    }
-  }
-
-  return -1;
-}
-bool pal_sensor_is_valid(char *fru_name, char *snr_name)
-{
-  int i, cnt;
-  uint8_t fru_id, snr_num;
-  const uint8_t *snr_list;
-
-  if (pal_get_fru_id(fru_name, &fru_id)  < 0 ||
-      get_sensor_num(snr_name, &snr_num) < 0) {
-    return false;
-  }
-
-  if (fru_id == FRU_MB) {
-    snr_list = mb_sensor_list;
-    cnt = mb_sensor_cnt;
-  } else if (fru_id == FRU_PDB) {
-    snr_list = pdb_sensor_list;
-    cnt = pdb_sensor_cnt;
-  } else {
-    return false;
-  }
-
-  for (i = 0; i < cnt; i++) {
-    if (snr_num == snr_list[i])
-      return true;
-  }
-  return false;
-}
-
 int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
 {
   if (fru > FRU_PDB || sensor_num >= FBEP_SENSOR_MAX)

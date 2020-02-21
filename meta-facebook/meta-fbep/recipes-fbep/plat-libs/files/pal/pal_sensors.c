@@ -746,13 +746,65 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
   return ret;
 }
 
+static bool is_fan_present(uint8_t sensor_num)
+{
+  gpio_value_t value;
+  gpio_desc_t *desc;
+  char shadow[16] = {0};
+
+  switch (sensor_num) {
+    case MB_FAN0_TACH_I:
+    case MB_FAN0_TACH_O:
+    case MB_FAN0_VOLT:
+    case MB_FAN0_CURR:
+      snprintf(shadow, sizeof(shadow), "FAN0_PRESENT");
+      break;
+    case MB_FAN1_TACH_I:
+    case MB_FAN1_TACH_O:
+    case MB_FAN1_VOLT:
+    case MB_FAN1_CURR:
+      snprintf(shadow, sizeof(shadow), "FAN1_PRESENT");
+      break;
+    case MB_FAN2_TACH_I:
+    case MB_FAN2_TACH_O:
+    case MB_FAN2_VOLT:
+    case MB_FAN2_CURR:
+      snprintf(shadow, sizeof(shadow), "FAN2_PRESENT");
+      break;
+    case MB_FAN3_TACH_I:
+    case MB_FAN3_TACH_O:
+    case MB_FAN3_VOLT:
+    case MB_FAN3_CURR:
+      snprintf(shadow, sizeof(shadow), "FAN3_PRESENT");
+      break;
+    default:
+      return false;
+  }
+
+  desc = gpio_open_by_shadow(shadow);
+  if (!desc) {
+    syslog(LOG_CRIT, "Open failed for GPIO: %s\n", shadow);
+    return false;
+  }
+  if (gpio_get_value(desc, &value)) {
+    syslog(LOG_CRIT, "Get failed for GPIO: %s\n", shadow);
+    value = GPIO_VALUE_INVALID;
+  }
+  gpio_close(desc);
+
+  return value == GPIO_VALUE_LOW? true: false;
+}
+
 static int sensors_read_common_fan(uint8_t sensor_num, float *value)
 {
   int ret;
   uint8_t status;
 
-  if (pal_get_server_power(FRU_MB, &status) < 0 || status == SERVER_POWER_OFF)
+  if (pal_get_server_power(FRU_MB, &status) < 0 ||
+      status == SERVER_POWER_OFF ||
+      !is_fan_present(sensor_num)) {
     return READING_NA;
+  }
 
   switch (sensor_num) {
     case MB_FAN0_TACH_I:

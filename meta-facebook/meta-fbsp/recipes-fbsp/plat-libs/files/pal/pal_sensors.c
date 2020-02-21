@@ -1947,6 +1947,91 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
   return ret;
 }
 
+void
+pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
+  char cmd[128];
+  char thresh_name[10];
+
+  switch (thresh) {
+    case UNR_THRESH:
+        sprintf(thresh_name, "UNR");
+      break;
+    case UCR_THRESH:
+        sprintf(thresh_name, "UCR");
+      break;
+    case UNC_THRESH:
+        sprintf(thresh_name, "UNCR");
+      break;
+    case LNR_THRESH:
+        sprintf(thresh_name, "LNR");
+      break;
+    case LCR_THRESH:
+        sprintf(thresh_name, "LCR");
+      break;
+    case LNC_THRESH:
+        sprintf(thresh_name, "LNCR");
+      break;
+    default:
+      syslog(LOG_WARNING, "pal_sensor_assert_handle: wrong thresh enum value");
+      exit(-1);
+  }
+
+  switch(snr_num) {
+    case MB_SNR_CPU0_TEMP:
+      sprintf(cmd, "P0 Temp %s %.0fC - Assert", thresh_name, val);
+      break;
+    case MB_SNR_CPU1_TEMP:
+      sprintf(cmd, "P1 Temp %s %.0fC - Assert", thresh_name, val);
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cmd);
+
+}
+
+void
+pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
+  char cmd[128];
+  char thresh_name[10];
+
+  switch (thresh) {
+    case UNR_THRESH:
+        sprintf(thresh_name, "UNR");
+      break;
+    case UCR_THRESH:
+        sprintf(thresh_name, "UCR");
+      break;
+    case UNC_THRESH:
+        sprintf(thresh_name, "UNCR");
+      break;
+    case LNR_THRESH:
+        sprintf(thresh_name, "LNR");
+      break;
+    case LCR_THRESH:
+        sprintf(thresh_name, "LCR");
+      break;
+    case LNC_THRESH:
+        sprintf(thresh_name, "LNCR");
+      break;
+    default:
+      syslog(LOG_WARNING, "pal_sensor_assert_handle: wrong thresh enum value");
+      exit(-1);
+  }
+
+  switch(snr_num) {
+    case MB_SNR_CPU0_TEMP:
+      sprintf(cmd, "P0 Temp %s %3.0fC - Deassert", thresh_name, val);
+      break;
+    case MB_SNR_CPU1_TEMP:
+      sprintf(cmd, "P1 Temp %s %3.0fC - Deassert", thresh_name, val);
+    default:
+      return;
+  }
+  pal_add_cri_sel(cmd);
+
+}
+
 static bool
 is_ava_card_present(uint8_t riser_bus) {
   int fd = 0;

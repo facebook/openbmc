@@ -59,9 +59,9 @@ static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
 static bool is_cpu_socket_occupy(unsigned int cpu_id);
 
-static char *dimm_label[12] = {
-  "A0", "B0", "C0", "D0", "E0", "F0", "A1", "B1", "C1", "D1", "E1", "F1"};
-
+static char *dimm_label[24] = {
+  "A0", "C0", "A1", "C1", "A2", "C2", "A3", "C3", "A4", "C4", "A5", "C5",
+  "B0", "D0", "B1", "D1", "B2", "D2", "B3", "D3", "B4", "D4", "B5", "D5"};
 struct dimm_map {
   unsigned char index;
   char *label;
@@ -1475,7 +1475,7 @@ pal_get_syscfg_text (char *text) {
   int index, surface, bubble;
   size_t ret;
   char **dimm_labels;
-  struct dimm_map map[24], temp_map;
+  struct dimm_map map[48], temp_map;
 
   if (text == NULL)
     return -1;
@@ -1512,7 +1512,7 @@ pal_get_syscfg_text (char *text) {
   }
 
 
-  num_dimm = 12;
+  num_dimm = 24;
   dimm_labels = dimm_label;
 
   // Initialize map

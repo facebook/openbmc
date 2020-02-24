@@ -539,6 +539,7 @@ pal_get_fruid_path(uint8_t fru, char *path) {
   char fname[16] = {0};
 
   switch(fru) {
+  case FRU_ALL: //no bin for FRU_ALL, when fru id is 0 the default is set to FRU_MB
   case FRU_MB:
     sprintf(fname, "mb");
     break;

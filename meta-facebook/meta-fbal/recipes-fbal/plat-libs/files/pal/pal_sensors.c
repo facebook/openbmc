@@ -1929,6 +1929,18 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   return 0;
 }
 
+int pal_get_fan_name(uint8_t num, char *name)
+{
+  if (num >= pal_tach_cnt) {
+    syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, num);
+    return -1;
+  }
+
+  sprintf(name, "Fan %d %s", num/2, num%2==0? "In":"Out");
+
+  return 0;
+}
+
 int
 pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
   int ret = -1;

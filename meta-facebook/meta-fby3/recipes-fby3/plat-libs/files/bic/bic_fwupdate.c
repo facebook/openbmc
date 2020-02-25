@@ -498,7 +498,7 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
   printf("stop ipmbd for slot %x..\n", bus_num);
 
   //step3 - adjust the i2c speed and set properties of mqlim
-  snprintf(cmd, cmd_size, "devmem 0x1e78a%03X w 0xFFFFE003", I2CBASE + (I2CBASE * bus_num) + 4);
+  snprintf(cmd, cmd_size, "devmem 0x1e78a%03X w 0xFFFFE303", I2CBASE + (I2CBASE * bus_num) + 4);
   if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
       return BIC_ENOTSUP;
@@ -552,6 +552,8 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
     goto exit;
   }
 
+  msleep(600);
+
   //step7 - check the response
   ret = read_bic_update_ack_status(slot_id, i2cfd, NONE_INTF);
   if ( ret < 0 ) {
@@ -583,7 +585,7 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
 
 exit:
   //step11 - recover the i2c speed
-  snprintf(cmd, cmd_size, "devmem 0x1e78a%03X w 0xFFFCB000", I2CBASE + (I2CBASE * bus_num) + 4);
+  snprintf(cmd, cmd_size, "devmem 0x1e78a%03X w 0xFFFCB300", I2CBASE + (I2CBASE * bus_num) + 4);
   if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
       return BIC_ENOTSUP;

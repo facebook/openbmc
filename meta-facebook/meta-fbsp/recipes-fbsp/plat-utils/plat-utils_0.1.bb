@@ -28,7 +28,6 @@ SRC_URI = "file://ast-functions \
            file://sync_date.sh \
            file://setup-por.sh \
            file://setup-emmc.sh \
-           file://eth0_ipv6_fixup.sh \
            file://COPYING \
           "
 
@@ -66,10 +65,6 @@ do_install() {
   update-rc.d -r ${D} setup-por.sh start 70 S .
   install -m 755 setup-emmc.sh ${D}${sysconfdir}/init.d/setup-emmc.sh
   update-rc.d -r ${D} setup-emmc.sh start 05 S .
-
-  # install eth0_ipv6_fixup.sh
-  install -m 755 eth0_ipv6_fixup.sh ${D}${sysconfdir}/init.d/eth0_ipv6_fixup.sh
-  update-rc.d -r ${D} eth0_ipv6_fixup.sh start 60 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

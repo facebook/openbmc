@@ -46,7 +46,7 @@ static int read_hsc_temp(uint8_t hsc_id, float *value);
 static int read_cpu0_dimm_temp(uint8_t dimm_id, float *value);
 static int read_cpu1_dimm_temp(uint8_t dimm_id, float *value);
 static int read_NM_pch_temp(uint8_t nm_snr_id, float *value);
-static int read_ina260_vol(uint8_t ina260_id, float *value);
+static int read_ina260_sensor(uint8_t sensor_num, float *value);
 static int read_vr_vout(uint8_t vr_id, float *value);
 static int read_vr_temp(uint8_t vr_id, float  *value);
 static int read_vr_iout(uint8_t vr_id, float  *value);
@@ -146,9 +146,17 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_CPU0_THERM_MARGIN,
   MB_SNR_CPU1_THERM_MARGIN,
   MB_SNR_P3V3_STBY_INA260_VOL,
+  MB_SNR_P3V3_STBY_INA260_CURR,
+  MB_SNR_P3V3_STBY_INA260_POWER,
   MB_SNR_P3V3_M2_1_INA260_VOL,
+  MB_SNR_P3V3_M2_1_INA260_CURR,
+  MB_SNR_P3V3_M2_1_INA260_POWER,
   MB_SNR_P3V3_M2_2_INA260_VOL,
+  MB_SNR_P3V3_M2_2_INA260_CURR,
+  MB_SNR_P3V3_M2_2_INA260_POWER,
   MB_SNR_P3V3_M2_3_INA260_VOL,
+  MB_SNR_P3V3_M2_3_INA260_CURR,
+  MB_SNR_P3V3_M2_3_INA260_POWER,
   MB_SNR_VR_CPU0_VCCIN_VOLT,
   MB_SNR_VR_CPU0_VCCIN_TEMP,
   MB_SNR_VR_CPU0_VCCIN_CURR,
@@ -456,18 +464,18 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8F
 
-  {"MB_P3V3_STBY_INA260_VOL", INA260_ID0, read_ina260_vol, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x90
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x91
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x92
-  {"MB_P3V3_M2_1_INA260_VOL", INA260_ID1, read_ina260_vol, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x93
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x94
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x95
-  {"MB_P3V3_M2_2_INA260_VOL", INA260_ID2, read_ina260_vol, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x96
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x97
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x98
-  {"MB_P3V3_M2_3_INA260_VOL", INA260_ID3, read_ina260_vol, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x99
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9A
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9B
+  {"MB_P3V3_STBY_INA260_VOL", MB_SNR_P3V3_STBY_INA260_VOL, read_ina260_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x90
+  {"MB_P3V3_STBY_INA260_CURR", MB_SNR_P3V3_STBY_INA260_CURR, read_ina260_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x91
+  {"MB_P3V3_STBY_INA260_POWER", MB_SNR_P3V3_STBY_INA260_POWER, read_ina260_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x92
+  {"MB_P3V3_M2_1_INA260_VOL", MB_SNR_P3V3_M2_1_INA260_VOL, read_ina260_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x93
+  {"MB_P3V3_M2_1_INA260_CURR", MB_SNR_P3V3_M2_1_INA260_CURR, read_ina260_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0x94
+  {"MB_P3V3_M2_1_INA260_POWER", MB_SNR_P3V3_M2_1_INA260_POWER, read_ina260_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x95
+  {"MB_P3V3_M2_2_INA260_VOL", MB_SNR_P3V3_M2_2_INA260_VOL, read_ina260_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x96
+  {"MB_P3V3_M2_2_INA260_CURR", MB_SNR_P3V3_M2_2_INA260_CURR, read_ina260_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x97
+  {"MB_P3V3_M2_2_INA260_POWER", MB_SNR_P3V3_M2_2_INA260_POWER, read_ina260_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x98
+  {"MB_P3V3_M2_3_INA260_VOL", MB_SNR_P3V3_M2_3_INA260_VOL, read_ina260_sensor, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x99
+  {"MB_P3V3_M2_3_INA260_CURR", MB_SNR_P3V3_M2_3_INA260_CURR, read_ina260_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x9A
+  {"MB_P3V3_M2_3_INA260_POWER", MB_SNR_P3V3_M2_3_INA260_POWER, read_ina260_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x9B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9E
@@ -1613,19 +1621,62 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
 }
 
 static int
-read_ina260_vol(uint8_t ina260_id, float *value) {
+read_ina260_sensor(uint8_t sensor_num, float *value) {
   int fd = 0, ret = -1;
   char fn[32];
-  float scale;
+  float scale, vol_scale = 0.00125, curr_scale = 0.00125, pwr_scale = 0.01;
   uint8_t retry = 3, tlen, rlen, addr, bus, cmd;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
-  uint16_t tmp;
+  uint16_t ina260_id, tmp;
+
+  switch(sensor_num) {
+    case  MB_SNR_P3V3_STBY_INA260_VOL:
+    case  MB_SNR_P3V3_STBY_INA260_CURR:
+    case  MB_SNR_P3V3_STBY_INA260_POWER:
+      ina260_id = 0;
+      break;
+    case  MB_SNR_P3V3_M2_1_INA260_VOL:
+    case  MB_SNR_P3V3_M2_1_INA260_CURR:
+    case  MB_SNR_P3V3_M2_1_INA260_POWER:
+      ina260_id = 1;
+      break;
+    case  MB_SNR_P3V3_M2_2_INA260_VOL:
+    case  MB_SNR_P3V3_M2_2_INA260_CURR:
+    case  MB_SNR_P3V3_M2_2_INA260_POWER:
+      ina260_id = 2;
+      break;
+    case  MB_SNR_P3V3_M2_3_INA260_VOL:
+    case  MB_SNR_P3V3_M2_3_INA260_CURR:
+    case  MB_SNR_P3V3_M2_3_INA260_POWER:
+      ina260_id = 3;
+      break;
+    default:
+      return READING_NA;
+  }
 
   bus = ina260_info_list[ina260_id].bus;
-  cmd = INA260_VOLTAGE;
   addr = ina260_info_list[ina260_id].slv_addr;
-  scale = 0.00125;
+
+  syslog(LOG_DEBUG, "%s ina_id = %d, sensor_num = %d, name = %s\n", __func__, ina260_id, sensor_num, sensor_map[sensor_num].snr_name);
+
+  if (strstr(sensor_map[sensor_num].snr_name, "CURR")) {
+    cmd = INA260_CURRENT;
+    scale = curr_scale;
+  }
+  else if (strstr(sensor_map[sensor_num].snr_name, "VOL")) {
+    cmd = INA260_VOLTAGE;
+    scale = vol_scale;
+  }
+  else if (strstr(sensor_map[sensor_num].snr_name, "POWER")) {
+    cmd = INA260_POWER;
+    scale = pwr_scale;
+  }
+  else {
+    return READING_NA;
+  }
+
+  syslog(LOG_DEBUG, "%s bus=%x cmd=%x slavaddr=%x\n", __func__, bus, cmd, addr);
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
   fd = open(fn, O_RDWR);

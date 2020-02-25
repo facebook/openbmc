@@ -4445,7 +4445,7 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
         uint8_t server_type = 0xFF;
         ret = fby2_get_server_type(fru, &server_type);
         if (ret) {
-          syslog(LOG_INFO, "%s, Get server type failed, using Twinlake");
+          syslog(LOG_INFO, "%s, Get server type failed, using Twinlake", __func__);
         }
         switch (server_type) {
           case SERVER_TYPE_RC:
@@ -5091,10 +5091,12 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
             *sensor_list = (uint8_t *) bic_discrete_list;
             *cnt = bic_discrete_cnt;
             break;
+#ifdef CONFIG_FBY2_ND
           case SERVER_TYPE_ND:
             *sensor_list = (uint8_t *) bic_nd_discrete_list;
             *cnt = bic_discrete_cnt;
             break;
+#endif
           default:
             syslog(LOG_ERR, "%s, Undefined server type, using Twin Lake discrete sensor list as default", __func__);
             *sensor_list = (uint8_t *) bic_discrete_list;
@@ -5545,8 +5547,6 @@ pal_parse_sel_rc(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t snr_num = sel[11];
   uint8_t *event_data = &sel[10];
   uint8_t *ed = &event_data[3];
-  uint8_t sen_type = event_data[0];
-  char temp_log[512] = {0};
   bool parsed = false;
   char crisel[128];
 
@@ -11627,7 +11627,7 @@ pal_update_sensor_reading_sdr (uint8_t fru) {
   }
 }
 
-int 
+int
 pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw) {
   uint8_t byte1 = postcode_dw & 0xFF;
   uint8_t byte2 = (postcode_dw >> 8) & 0xFF;

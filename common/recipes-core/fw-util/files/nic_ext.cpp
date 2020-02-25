@@ -23,7 +23,7 @@ int NicExtComponent::_get_ncsi_vid(void) {
   }
 
   sprintf(nl_msg->dev_name, "eth%u", _if_idx);
-  nl_msg->channel_id = 0;
+  nl_msg->channel_id = _ch_id;
   nl_msg->cmd = NCSI_GET_VERSION_ID;
   nl_msg->payload_length = 0;
 

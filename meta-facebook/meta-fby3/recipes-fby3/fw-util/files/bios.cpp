@@ -43,24 +43,16 @@ int BiosComponent::update(string image) {
 
     me_recovery(slot_id, RECOVERY_MODE);
     if (slot_id == FRU_SLOT1) {
-      bic_set_gpio(FRU_SLOT2, GPIO_RST_USB_HUB, GPIO_LOW);
-      bic_set_gpio(FRU_SLOT3, GPIO_RST_USB_HUB, GPIO_LOW);
-      bic_set_gpio(FRU_SLOT4, GPIO_RST_USB_HUB, GPIO_LOW);
+      bic_set_gpio(FRU_SLOT1, GPIO_RST_USB_HUB, GPIO_HIGH);
       sleep(3);
     } else if (slot_id == FRU_SLOT2) {
-      bic_set_gpio(FRU_SLOT1, GPIO_RST_USB_HUB, GPIO_LOW);
-      bic_set_gpio(FRU_SLOT3, GPIO_RST_USB_HUB, GPIO_LOW);
-      bic_set_gpio(FRU_SLOT4, GPIO_RST_USB_HUB, GPIO_LOW);
+      bic_set_gpio(FRU_SLOT2, GPIO_RST_USB_HUB, GPIO_HIGH);
       sleep(3);
     } else if (slot_id == FRU_SLOT3) {
-      bic_set_gpio(FRU_SLOT1, GPIO_RST_USB_HUB, GPIO_LOW);
-      bic_set_gpio(FRU_SLOT2, GPIO_RST_USB_HUB, GPIO_LOW);
-      bic_set_gpio(FRU_SLOT4, GPIO_RST_USB_HUB, GPIO_LOW);
+      bic_set_gpio(FRU_SLOT3, GPIO_RST_USB_HUB, GPIO_HIGH);
       sleep(3);
     } else if (slot_id == FRU_SLOT4) {
-      bic_set_gpio(FRU_SLOT1, GPIO_RST_USB_HUB, GPIO_LOW);
-      bic_set_gpio(FRU_SLOT2, GPIO_RST_USB_HUB, GPIO_LOW);
-      bic_set_gpio(FRU_SLOT3, GPIO_RST_USB_HUB, GPIO_LOW);
+      bic_set_gpio(FRU_SLOT4, GPIO_RST_USB_HUB, GPIO_HIGH);
       sleep(3);
     }
     bic_switch_mux_for_bios_spi(slot_id, MUX_SWITCH_CPLD);
@@ -70,28 +62,6 @@ int BiosComponent::update(string image) {
     pal_set_server_power(slot_id, SERVER_12V_CYCLE);
     sleep(5);
     pal_set_server_power(slot_id, SERVER_POWER_ON);
-
-    if (slot_id == FRU_SLOT1) {
-      bic_set_gpio(FRU_SLOT2, GPIO_RST_USB_HUB, GPIO_HIGH);
-      bic_set_gpio(FRU_SLOT3, GPIO_RST_USB_HUB, GPIO_HIGH);
-      bic_set_gpio(FRU_SLOT4, GPIO_RST_USB_HUB, GPIO_HIGH);
-      sleep(3);
-    } else if (slot_id == FRU_SLOT2) {
-      bic_set_gpio(FRU_SLOT1, GPIO_RST_USB_HUB, GPIO_HIGH);
-      bic_set_gpio(FRU_SLOT3, GPIO_RST_USB_HUB, GPIO_HIGH);
-      bic_set_gpio(FRU_SLOT4, GPIO_RST_USB_HUB, GPIO_HIGH);
-      sleep(3);
-    } else if (slot_id == FRU_SLOT3) {
-      bic_set_gpio(FRU_SLOT1, GPIO_RST_USB_HUB, GPIO_HIGH);
-      bic_set_gpio(FRU_SLOT2, GPIO_RST_USB_HUB, GPIO_HIGH);
-      bic_set_gpio(FRU_SLOT4, GPIO_RST_USB_HUB, GPIO_HIGH);
-      sleep(3);
-    } else if (slot_id == FRU_SLOT4) {
-      bic_set_gpio(FRU_SLOT1, GPIO_RST_USB_HUB, GPIO_HIGH);
-      bic_set_gpio(FRU_SLOT2, GPIO_RST_USB_HUB, GPIO_HIGH);
-      bic_set_gpio(FRU_SLOT3, GPIO_RST_USB_HUB, GPIO_HIGH);
-      sleep(3);
-    }
 
   } catch(string err) {
     return FW_STATUS_NOT_SUPPORTED;

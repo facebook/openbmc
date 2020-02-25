@@ -1,0 +1,84 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/ntp  
+  title: Swagger doc for /api/sys/ntp  
+  version: 1.0.0
+paths: 
+  /api/sys/ntp: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  delay: 
+                    type: number
+                  when: 
+                    type: integer
+                    format: int32
+                  reach: 
+                    type: integer
+                    format: int32
+                  stratum: 
+                    type: integer
+                    format: int32
+                  poll: 
+                    type: integer
+                    format: int32
+                  jitter: 
+                    type: number
+        404: 
+          description: No system peers
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  reason: 
+                    type: string
+        500: 
+          description: Internal Server error
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  reason: 
+                    type: string

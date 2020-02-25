@@ -51,6 +51,7 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://rest-api-1/rest_mTerm.py \
            file://rest-api-1/eeprom_utils.py \
            file://rest-api-1/rest_fcpresent.py \
+           file://rest-api-1/rest_ntpstatus.py \
            file://rest-api-1/rest_helper.py \
            file://rest-api-1/rest_utils.py \
            file://board_setup_routes.py \
@@ -85,6 +86,7 @@ binfiles1 = "rest.py \
              rest_slotid.py \
              rest_psu_update.py \
              rest_fcpresent.py \
+             rest_ntpstatus.py \
              rest_helper.py \
              rest_utils.py \
              rest_mTerm.py \

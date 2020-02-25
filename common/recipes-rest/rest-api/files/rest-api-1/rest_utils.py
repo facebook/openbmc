@@ -37,6 +37,7 @@ common_routes = [
     "/api/sys/psu_update",
     "/api/sys/slotid",
     "/api/sys/mTerm_status",
+    "/api/sys/ntp",
 ]
 
 

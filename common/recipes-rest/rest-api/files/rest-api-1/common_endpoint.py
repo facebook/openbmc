@@ -27,6 +27,7 @@ import rest_fruid
 import rest_fruid_pim
 import rest_gpios
 import rest_mTerm
+import rest_ntpstatus
 import rest_psu_update
 import rest_sensors
 import rest_server
@@ -218,3 +219,11 @@ class commonApp_Handler:
     @common_force_async
     def rest_mTerm_status(self, request):
         return self.helper_rest_mTerm_status(request)
+
+    # Handler for ntp status
+    def helper_rest_ntp_status(self, request):
+        return web.json_response(**rest_ntpstatus.get_ntp_stats(), dumps=dumps_bytestr)
+
+    @common_force_async
+    def rest_ntp_status(self, request):
+        return self.helper_rest_ntp_status(request)

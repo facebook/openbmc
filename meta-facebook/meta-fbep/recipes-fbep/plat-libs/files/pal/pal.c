@@ -994,3 +994,8 @@ int pal_get_sysfw_ver(uint8_t fru, uint8_t *ver)
   // No BIOS
   return -1;
 }
+
+void pal_get_eth_intf_name(char* intf_name)
+{
+  snprintf(intf_name, 8, "usb0");
+}

@@ -32,8 +32,7 @@
 #include <sys/ioctl.h>
 #include <stdbool.h>
 #include <openbmc/ipmi.h>
-
-#define ETH_INTF_NAME "eth0"
+#include <openbmc/pal.h>
 
 #define IPV6_LINK_LOCAL_BYTE1 0xFE
 #define IPV6_LINK_LOCAL_BYTE2 0x80
@@ -54,6 +53,7 @@ void plat_lan_init(lan_config_t *lan)
   int sd;
   struct ifreq ifr;
   uint8_t eui_64_addr[8] = {0x0};
+  char intf_name[8] = {0};
 
   if (getifaddrs(&ifaddr) == -1) {
     return;
@@ -64,12 +64,13 @@ void plat_lan_init(lan_config_t *lan)
     goto init_done;
   }
 
+  pal_get_eth_intf_name(intf_name);
   for (ifa = ifaddr, n = 0; ifa != NULL; ifa = ifa->ifa_next, n++) {
     if (ifa->ifa_addr == NULL) {
       continue;
     }
 
-    if (strcmp(ifa->ifa_name, ETH_INTF_NAME)) {
+    if (strcmp(ifa->ifa_name, intf_name)) {
       continue;
     }
 

@@ -1610,6 +1610,30 @@ pal_get_syscfg_text (char *text) {
   return 0;
 }
 
+int
+pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+  char key[] = "mb_cpu_ppin";
+  char str[MAX_VALUE_LEN] = {0};
+  int i;
+  int completion_code = CC_UNSPECIFIED_ERROR;
+  *res_len = 0;
+
+  if (req_len > SIZE_CPU_PPIN*2)
+    req_len = SIZE_CPU_PPIN*2;
+
+  for (i = 0; i < req_len; i++) {
+    sprintf(str+(i*2), "%02x", req_data[i]);
+  }
+
+  if (kv_set(key, str, 0, KV_FPERSIST) != 0)
+    return completion_code;
+
+  completion_code = CC_SUCCESS;
+
+  return completion_code;
+}
+
 void
 pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
 

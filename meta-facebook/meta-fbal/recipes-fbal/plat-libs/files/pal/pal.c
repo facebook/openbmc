@@ -866,7 +866,7 @@ pal_get_config_is_master(void) {
   return status;
 } 
 
-static int
+int
 pal_get_platform_id(uint8_t *id) {
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN]={0};
@@ -880,7 +880,7 @@ pal_get_platform_id(uint8_t *id) {
   return 0;
 }
 
-static int
+int
 pal_get_host_system_mode(uint8_t* mode) {
   uint8_t id2 = 0;
   static bool cached = false;

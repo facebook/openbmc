@@ -247,3 +247,28 @@ int lib_cmc_get_fan_id(uint8_t fan_sdr) {
 
   return fan_num;
 }
+
+int
+lib_cmc_power_cycle(void) {
+  uint8_t ipmi_cmd = CMD_CMC_POWER_CYCLE;
+  uint8_t netfn = NETFN_OEM_REQ;
+  uint8_t tlen=0;
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen;
+  int ret;
+
+  ret = cmc_ipmb_process(ipmi_cmd, netfn, NULL, tlen, rbuf, &rlen);
+#ifdef DEBUG
+{    
+  int i;
+  for(i=0; i<rlen; i++) {
+    syslog(LOG_DEBUG, "%s rbuf[%d]=%d\n", __func__, i, *(rbuf+i));
+  }
+}  
+#endif  
+  if(ret != 0) {
+    return -1;
+  }
+  return 0;
+}
+

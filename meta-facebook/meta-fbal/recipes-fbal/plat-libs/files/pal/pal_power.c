@@ -171,8 +171,27 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
 int
 pal_sled_cycle(void) {
+  uint8_t mode=0;
+  int ret;
+
+  ret = pal_get_host_system_mode(&mode);
+  if (ret != 0) {
+    return -1;
+  }
+
+  syslog(LOG_DEBUG, "system mode=%x\n", mode);
   // Send command to HSC power cycle
-  if (system("i2cset -y 7 0x11 0xd9 c &> /dev/null")) {
+  if (mode == MB_8S_MODE ) {  
+    if( lib_cmc_power_cycle() ) {
+ syslog(LOG_DEBUG, "DEbug0\n");     
+      return -1;
+    }
+  } else if (mode == MB_2S_MODE ) {
+    if (system("i2cset -y 7 0x11 0xd9 c &> /dev/null")) {
+syslog(LOG_DEBUG, "DEbug1\n");
+      return -1;
+    }
+  } else {
     return -1;
   }
   return 0;

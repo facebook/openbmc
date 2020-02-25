@@ -6,6 +6,7 @@
 #define CMD_CMC_GET_FAN_DUTY              (0x07)
 #define CMD_CMC_SET_FAN_DUTY              (0x08)
 #define CMD_CMC_SET_FAN_CONTROL_STATUS    (0x0E)
+#define CMD_CMC_POWER_CYCLE               (0x62)
 #define CMD_CMC_GET_CONFIG_MODE           (0x63)
 #define CMD_CMC_GET_MB_POSITION           (0x0F)
 #define CMD_CMC_OEM_GET_SENSOR_READING    (0xF1)
@@ -90,5 +91,6 @@ int lib_cmc_get_fan_pwm(uint8_t fan_num, uint8_t* pwm);
 int lib_cmc_get_fan_speed(uint8_t fan_id, uint16_t* speed);
 int lib_cmc_set_fan_ctrl(uint8_t fan_mode, uint8_t* status);
 int lib_cmc_get_fan_id(uint8_t fan_sdr);
+int lib_cmc_power_cycle(void);
 #endif
 

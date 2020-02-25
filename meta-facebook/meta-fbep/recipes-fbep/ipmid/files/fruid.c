@@ -127,11 +127,12 @@ int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count,
   int ret;
   char fru_dev[LARGEST_DEVICE_NAME] = {0};
 
-  if (fru_id == FRU_MB)
+  // Align wiht IPMI FRU ID, 0-based
+  if (fru_id == FRU_MB-1)
     snprintf(fru_dev, LARGEST_DEVICE_NAME, MB_BIN);
-  else if (fru_id == FRU_PDB)
+  else if (fru_id == FRU_PDB-1)
     snprintf(fru_dev, LARGEST_DEVICE_NAME, PDB_BIN);
-  else if (fru_id == FRU_BSM)
+  else if (fru_id == FRU_BSM-1)
     snprintf(fru_dev, LARGEST_DEVICE_NAME, BSM_BIN);
   else
     return -1;

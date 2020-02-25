@@ -130,6 +130,26 @@ enum {
   I2C_BUS_23,
 };
 
+enum {
+  MB_ID1 = 0,
+  MB_ID2,
+  MB_ID3,
+  MB_ID4,
+};
+
+enum {
+  MB1_MASTER_8S = 0,
+  MB2_MASTER_8S,
+  MB3_MASTER_8S,
+  MB4_MASTER_8S,
+  ALL_2S_MODE,
+};
+
+enum {
+  MB_8S_MODE = 0,
+  MB_2S_MODE,
+};
+
 int pal_set_led(uint8_t slot, uint8_t status);
 int pal_set_id_led(uint8_t slot, uint8_t status);
 int read_device(const char *device, int *value);
@@ -139,7 +159,6 @@ int pal_uart_select (uint32_t base, uint8_t offset, int option, uint32_t para);
 int pal_uart_select_led_set(void);
 int pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver);
 int pal_get_platform_id(uint8_t *id);
-
 
 enum {
   UARTSW_BY_BMC,

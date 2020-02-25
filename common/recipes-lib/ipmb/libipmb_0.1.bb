@@ -14,8 +14,8 @@ SRC_URI = "file://Makefile \
 
 S = "${WORKDIR}"
 
-DEPENDS += "libipc"
-RDEPENDS_${PN} += "libipc"
+DEPENDS += "libipmi libipc"
+RDEPENDS_${PN} += "libipmi libipc"
 
 do_install() {
 	  install -d ${D}${libdir}

@@ -778,6 +778,139 @@ pal_is_mcu_ready(uint8_t bus) {
   return false;
 }
 
+static int
+pal_get_mb_position(uint8_t* pos) {
+  static bool cached = false;
+  static uint8_t cached_pos = 0;
+
+  if (!cached) {
+    if(pal_get_blade_id (&cached_pos))
+      return -1;
+
+    switch (cached_pos) {
+      case 0:
+        cached_pos = MB_ID4;
+        break;
+      case 1:
+        cached_pos = MB_ID3;
+        break;
+      case 2:
+        cached_pos = MB_ID2;
+        break;
+      case 3:
+        cached_pos = MB_ID1;
+        break;
+      default:
+        return -1;
+    }
+    cached = true;
+  }
+  
+  *pos = cached_pos;
+#ifdef DEBUG
+  syslog(LOG_DEBUG,"%s BMC Position ID =%d\n", __func__, cached_pos);
+#endif
+  return 0;
+}
+
+int
+pal_get_mb_mode(uint8_t* mode) {
+  int ret=0;
+
+  ret = cmd_cmc_get_config_mode(mode);
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s mode=%d\n", __func__, *mode);
+#endif
+  if(ret != 0) {
+    return ret;
+  }
+
+  return 0;
+}
+
+static int
+pal_get_config_is_master(void) {
+  uint8_t mode = 0;  
+  uint8_t pos=0;
+  int ret = 0;
+  static bool cached = 0;
+  static int status = 0;
+
+  if (!cached) {
+    ret = pal_get_mb_mode(&mode); 
+    if(ret != 0) {
+      return -1;
+    }
+#ifdef DEBUG 
+    syslog(LOG_DEBUG, "%s mode=%x", __func__, mode);
+#endif
+  
+    ret = pal_get_mb_position(&pos);
+    if(ret != 0) {
+      return -1;
+    }
+#ifdef DEBUG
+    syslog(LOG_DEBUG, "%s position=%x", __func__, pos);
+#endif
+
+    cached = 1;
+    if (mode != pos) {
+      status = 0;
+    } else {
+      status = 1;
+    }
+  }
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s status=%x", __func__, status);
+#endif 
+  return status;
+} 
+
+static int
+pal_get_platform_id(uint8_t *id) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN]={0};
+
+  sprintf(key, "mb_sku");
+  if (kv_get(key, value, NULL, 0)) {
+    return false;
+  }
+   
+  *id = atoi(value);
+  return 0;
+}
+
+static int
+pal_get_host_system_mode(uint8_t* mode) {
+  uint8_t id2 = 0;
+  static bool cached = false;
+  static uint8_t cached_pos = 0;
+
+  if (!cached) {
+    if(pal_get_platform_id(&cached_pos))
+      return -1;
+
+    id2 = cached_pos & (0x01 << 2);
+    switch (id2) {
+      case 0:
+        cached_pos = MB_8S_MODE;
+        break;
+      case 1:
+        cached_pos = MB_2S_MODE;
+        break;
+      default:
+        return -1;
+    }
+    cached = true;
+  }
+  
+  *mode = cached_pos;
+#ifdef DEBUG
+  syslog(LOG_DEBUG,"%s BMC System Mode =%d\n", __func__, cached_pos);
+#endif
+  return 0;
+}
+
 int
 pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
   int i;
@@ -794,19 +927,35 @@ pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
 
 int
 pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
-  int ret;
+  int ret = -1;
   int i, j;
   char str[MAX_VALUE_LEN] = {0};
   char tstr[8] = {0};
+  uint8_t mode; 
 
-  ret = pal_get_key_value("sysfw_ver_server", str);
-  if (ret) {
+  ret = pal_get_host_system_mode(&mode);
+  if(ret != 0) {
     return ret;
   }
 
-  for (i = 0, j = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
-    sprintf(tstr, "%c%c", str[i], str[i+1]);
-    ver[j++] = strtol(tstr, NULL, 16);
+  ret = pal_get_config_is_master();
+  if(ret < 0) {
+    return ret;
+  }
+
+  if( ret || (mode == MB_2S_MODE) ) {
+    syslog(LOG_DEBUG, "%s true, mode=%d\n", __func__, mode);
+    ret = pal_get_key_value("sysfw_ver_server", str);
+    if (ret) {
+      return ret;
+    }
+ 
+    for (i = 0, j = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
+      sprintf(tstr, "%c%c", str[i], str[i+1]);
+      ver[j++] = strtol(tstr, NULL, 16);
+    }
+  } else {
+    return -1;
   }
   return 0;
 }
@@ -1224,48 +1373,19 @@ pal_get_fru_list(char *list) {
 }
 
 int
-pal_get_platform_id(uint8_t *id) {
-  static bool cached = false;
-  static uint8_t cached_id = 0;
-
-  if (!cached) {
-    const char *shadows[] = {
-      "FM_BOARD_BMC_SKU_ID0",
-      "FM_BOARD_BMC_SKU_ID1",
-      "FM_BOARD_BMC_SKU_ID2",
-      "FM_BOARD_BMC_SKU_ID3",
-      "FM_BOARD_BMC_SKU_ID4"
-    };
-    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
-      return -1;
-    }
-    cached = true;
-  }
-  *id = cached_id;
-  return 0;
-}
-
-
-int
 pal_get_board_rev_id(uint8_t *id) {
-  static bool cached = false;
-  static uint8_t cached_id = 0;
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
 
-  if (!cached) {
-    const char *shadows[] = {
-      "FM_BOARD_BMC_REV_ID0",
-      "FM_BOARD_BMC_REV_ID1",
-      "FM_BOARD_BMC_REV_ID2"
-    };
-    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
-      return -1;
-    }
-    cached = true;
+  sprintf(key, "mb_rev");
+  if (kv_get(key, value, NULL, 0)) {
+    return false;
   }
-  *id = cached_id;
+
+  *id = atoi(value);
+
   return 0;
 }
-
 
 int
 pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)

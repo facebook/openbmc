@@ -585,8 +585,6 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
 int
 pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
-  syslog(LOG_INFO, "%s\n", __func__);
-
   switch(fru) {
   case FRU_MB:
     *sensor_list = (uint8_t *) mb_discrete_sensor_list;
@@ -1751,8 +1749,10 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
 static
 int read_frb3(uint8_t fru_id, float *value) {
   int ret = 0;
- 
+
+#ifdef DEBUG 
   syslog(LOG_INFO, "%s\n", __func__); 
+#endif  
   ret = check_frb3(fru_id, MB_SNR_PROCESSOR_FAIL, value);
   if(ret != 0 ) {
     return ret;

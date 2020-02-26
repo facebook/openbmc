@@ -38,6 +38,8 @@ extern "C" {
 #define PRESENT_2OU 2
 #define DEV_ID_1U 11
 #define DEV_ID_2U 12
+#define RETRY_TIME 5
+#define IPMB_RETRY_DELAY_TIME 500
 
 enum {
   FW_CPLD = 1,

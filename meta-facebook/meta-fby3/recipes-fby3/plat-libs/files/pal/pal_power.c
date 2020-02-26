@@ -15,7 +15,7 @@
 
 #define CPLD_PWR_CTRL_BUS "/dev/i2c-12"
 #define CPLD_PWR_CTRL_ADDR 0x1F
-#define MAX_READ_RETRY 3
+#define MAX_READ_RETRY 5
 
 enum {
   DEVICE_POWER_OFF = 0x0,
@@ -89,10 +89,8 @@ server_power_12v_on(uint8_t fru) {
   int i2cfd = 0;
   char cmd[64] = {0};
   uint8_t tbuf[2] = {0};
-  uint8_t rbuf[2] = {0};
   uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int ret = 0;
+  int ret = 0, retry= 0;
 
   i2cfd = open(CPLD_PWR_CTRL_BUS, O_RDWR);
   if ( i2cfd < 0 ) {
@@ -100,25 +98,25 @@ server_power_12v_on(uint8_t fru) {
     goto error_exit;
   }
 
-  tbuf[0] = 0x0;
-  tlen = 1;
-  rlen = 1;
-  ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-    goto error_exit;
-  }
-
-  msleep(100);
-
-  tbuf[0] = 0x0;
-  tbuf[1] = (rbuf[0] | (0x1 << (fru-1)));
+  tbuf[0] = 0x09 + (fru-1);
+  tbuf[1] = AC_ON;
   tlen = 2;
-  ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
-  if ( ret < 0 ) {
+  retry = 0;
+  while (retry < MAX_READ_RETRY) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  if (retry == MAX_READ_RETRY) {
     syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
     goto error_exit;
   }
+
+  sleep(1);
 
   ret = fby3_common_set_fru_i2c_isolated(fru, GPIO_VALUE_HIGH);
   if ( ret < 0 ) {
@@ -148,36 +146,8 @@ server_power_12v_off(uint8_t fru) {
   int i2cfd = 0;
   char cmd[64] = {0};
   uint8_t tbuf[2] = {0};
-  uint8_t rbuf[2] = {0};
   uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int ret = 0;
-
-  i2cfd = open(CPLD_PWR_CTRL_BUS, O_RDWR);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to open %s", __func__, CPLD_PWR_CTRL_BUS);
-    goto error_exit;
-  }
-
-  tbuf[0] = 0x0;
-  tlen = 1;
-  rlen = 1;
-  ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer fails, tlen=%d", __func__, tlen);
-    goto error_exit;
-  }
-
-  msleep(100);
-
-  tbuf[0] = 0x0;
-  tbuf[1] = (rbuf[0] &~(0x1 << (fru-1)));
-  tlen = 2;
-  ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer fails, tlen=%d", __func__, tlen);
-    goto error_exit;
-  }
+  int ret = 0, retry= 0;
 
   snprintf(cmd, sizeof(cmd), "sv stop ipmbd_%d > /dev/null 2>&1", fby3_common_get_bus_id(fru));
   if (system(cmd) != 0) {
@@ -189,6 +159,32 @@ server_power_12v_off(uint8_t fru) {
   ret = fby3_common_set_fru_i2c_isolated(fru, GPIO_VALUE_LOW);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to disable the i2c of fru%d", __func__, fru);
+    goto error_exit;
+  }
+
+  sleep(1);
+
+  i2cfd = open(CPLD_PWR_CTRL_BUS, O_RDWR);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open %s", __func__, CPLD_PWR_CTRL_BUS);
+    goto error_exit;
+  }
+
+  tbuf[0] = 0x09 + (fru-1);
+  tbuf[1] = AC_OFF;
+  tlen = 2;
+  retry = 0;
+  while (retry < MAX_READ_RETRY) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  if (retry == MAX_READ_RETRY) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer fails, tlen=%d", __func__, tlen);
     goto error_exit;
   }
 
@@ -321,7 +317,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
           }
         }
       } else {
-        if ( bic_do_12V_cycle(1) < 0 ) {
+        if ( bic_do_12V_cycle(fru) < 0 ) {
           return POWER_STATUS_ERR;
         }
       }

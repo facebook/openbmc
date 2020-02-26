@@ -208,7 +208,7 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
 
-  while(retry < 3) {
+  while(retry < RETRY_TIME) {
     // Invoke IPMB library handler
     lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
 
@@ -220,7 +220,7 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
       }
 #endif
       retry++;
-      msleep(2000);
+      msleep(IPMB_RETRY_DELAY_TIME);
     }
     else
       break;

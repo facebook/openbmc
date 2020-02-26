@@ -872,22 +872,6 @@ bic_get_fan_pwm(uint8_t fan_id, float *value) {
   return 0;
 }
 
-//Only for class 2
-int
-bic_do_12V_cycle(uint8_t slot_id) {
-  uint8_t tbuf[4] = {0};
-  uint8_t tlen = 4;
-
-  bic_set_gpio(slot_id, GPIO_HSC_MUX_SWITCH, GPIO_LOW);
-
-  tbuf[0] = 0x0B; //bus id
-  tbuf[1] = 0x80; //slave addr
-  tbuf[2] = 0x00; //read 0 byte
-  tbuf[3] = 0xd9; //register offset
-  tlen = 4;
-  return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, NULL, 0, NONE_INTF);
-}
-
 int
 bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t intf) {
   uint8_t tbuf[5] = {0x9c, 0x9c, 0x00}; // IANA ID

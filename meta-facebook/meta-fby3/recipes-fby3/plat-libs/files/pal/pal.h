@@ -77,6 +77,11 @@ enum {
   CONFIG_D = 0x04,
 };
 
+enum {
+  AC_OFF = 0x00,
+  AC_ON  = 0x01,
+};
+
 #define MAX_NODES     (4)
 #define READING_SKIP  (1)
 #define READING_NA    (-2)

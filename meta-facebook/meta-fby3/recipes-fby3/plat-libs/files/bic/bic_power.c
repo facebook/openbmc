@@ -187,3 +187,12 @@ bic_get_server_power_status(uint8_t slot_id, uint8_t *power_status)
 
   return ret;
 }
+
+//Only for class 2
+int
+bic_do_12V_cycle(uint8_t slot_id) {
+  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
+  uint8_t tlen = 3;
+
+  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_SET_12V_CYCLE, tbuf, tlen, NULL, 0, BB_BIC_INTF);
+}

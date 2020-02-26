@@ -129,14 +129,14 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_CPU1_DIMM_GRPD_TEMP,
   MB_SNR_CPU1_DIMM_GRPE_TEMP,
   MB_SNR_CPU1_DIMM_GRPF_TEMP,
-  MB_SNR_FAN0_TACH_IN ,
-  MB_SNR_FAN0_TACH_OUT,
-  MB_SNR_FAN1_TACH_IN,
-  MB_SNR_FAN1_TACH_OUT,
-  MB_SNR_FAN6_TACH_IN,
-  MB_SNR_FAN6_TACH_OUT,
-  MB_SNR_FAN7_TACH_IN,
-  MB_SNR_FAN7_TACH_OUT,
+  MB_SNR_FAN2_TACH_IN ,
+  MB_SNR_FAN2_TACH_OUT,
+  MB_SNR_FAN3_TACH_IN,
+  MB_SNR_FAN3_TACH_OUT,
+  MB_SNR_FAN4_TACH_IN ,
+  MB_SNR_FAN4_TACH_OUT,
+  MB_SNR_FAN5_TACH_IN,
+  MB_SNR_FAN5_TACH_OUT,
   MB_SNR_DATA0_DRIVER_TEMP,
   MB_SNR_DATA1_DRIVER_TEMP,
   MB_SNR_CPU0_PKG_POWER,
@@ -208,12 +208,6 @@ const uint8_t nic1_sensor_list[] = {
 };
 
 const uint8_t fcb_sensor_list[] = {
-  FCB_FAN0_VOLT,
-  FCB_FAN0_CURR,
-  FCB_FAN0_PWR,
-  FCB_FAN1_VOLT,
-  FCB_FAN1_CURR,
-  FCB_FAN1_PWR,
   FCB_FAN2_VOLT,
   FCB_FAN2_CURR,
   FCB_FAN2_PWR,
@@ -226,12 +220,6 @@ const uint8_t fcb_sensor_list[] = {
   FCB_FAN5_VOLT,
   FCB_FAN5_CURR,
   FCB_FAN5_PWR,
-  FCB_FAN6_VOLT,
-  FCB_FAN6_CURR,
-  FCB_FAN6_PWR,
-  FCB_FAN7_VOLT,
-  FCB_FAN7_CURR,
-  FCB_FAN7_PWR,
 };
 
 const uint8_t riser1_sensor_list[] = {
@@ -330,31 +318,31 @@ PAL_SENSOR_MAP sensor_map[] = {
 
   {"NIC_MEZZ0_TEMP", MEZZ0, read_nic_temp, true, {0, 0, 0, 10, 0, 0, 0, 0}, TEMP},  //0x10
   {"NIC_MEZZ1_TEMP", MEZZ1, read_nic_temp, true, {0, 0, 0, 10, 0, 0, 0, 0}, TEMP},  //0x11
-  {"FCB_FAN0_VOLT", FAN_ID0, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x12
-  {"FCB_FAN0_CURR", FAN_ID0, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x13
-  {"FCB_FAN0_PWR", FAN_ID0, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x14
-  {"FCB_FAN1_VOLT", FAN_ID1, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x15
-  {"FCB_FAN1_CURR", FAN_ID1, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x16
-  {"FCB_FAN1_PWR", FAN_ID1, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x17
-  {"FCB_FAN2_VOLT", FAN_ID2, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x18
-  {"FCB_FAN2_CURR", FAN_ID2, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x19
-  {"FCB_FAN2_PWR", FAN_ID2, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x1A
-  {"FCB_FAN3_VOLT", FAN_ID3, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x1B
-  {"FCB_FAN3_CURR", FAN_ID3, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x1C
-  {"FCB_FAN3_PWR", FAN_ID3, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x1D
-  {"FCB_FAN4_VOLT", FAN_ID4, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x1E
-  {"FCB_FAN4_CURR", FAN_ID4, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x1F
+  {"FCB_FAN0_VOLT", FAN_ID4, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x12
+  {"FCB_FAN0_CURR", FAN_ID4, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x13
+  {"FCB_FAN0_PWR", FAN_ID4, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x14
+  {"FCB_FAN1_VOLT", FAN_ID5, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x15
+  {"FCB_FAN1_CURR", FAN_ID5, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x16
+  {"FCB_FAN1_PWR", FAN_ID5, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x17
+  {"FCB_FAN2_VOLT", FAN_ID6, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x18
+  {"FCB_FAN2_CURR", FAN_ID6, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x19
+  {"FCB_FAN2_PWR", FAN_ID6, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x1A
+  {"FCB_FAN3_VOLT", FAN_ID7, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x1B
+  {"FCB_FAN3_CURR", FAN_ID7, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x1C
+  {"FCB_FAN3_PWR", FAN_ID7, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x1D
+  {"FCB_FAN4_VOLT", FAN_ID0, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x1E
+  {"FCB_FAN4_CURR", FAN_ID0, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x1F
 
-  {"FCB_FAN4_PWR", FAN_ID4, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x20
-  {"FCB_FAN5_VOLT", FAN_ID5, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x21
-  {"FCB_FAN5_CURR", FAN_ID5, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x22
-  {"FCB_FAN5_PWR", FAN_ID5, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x23
-  {"FCB_FAN6_VOLT", FAN_ID6, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x24
-  {"FCB_FAN6_CURR", FAN_ID6, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x25
-  {"FCB_FAN6_PWR", FAN_ID6, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x26
-  {"FCB_FAN7_VOLT", FAN_ID7, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x27
-  {"FCB_FAN7_CURR", FAN_ID7, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x28
-  {"FCB_FAN7_PWR", FAN_ID7, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x29
+  {"FCB_FAN4_PWR", FAN_ID0, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x20
+  {"FCB_FAN5_VOLT", FAN_ID1, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x21
+  {"FCB_FAN5_CURR", FAN_ID1, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x22
+  {"FCB_FAN5_PWR", FAN_ID1, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x23
+  {"FCB_FAN6_VOLT", FAN_ID2, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x24
+  {"FCB_FAN6_CURR", FAN_ID2, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x25
+  {"FCB_FAN6_PWR", FAN_ID2, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x26
+  {"FCB_FAN7_VOLT", FAN_ID3, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x27
+  {"FCB_FAN7_CURR", FAN_ID3, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x28
+  {"FCB_FAN7_PWR", FAN_ID3, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x29
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2A
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2C
@@ -417,14 +405,14 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_FAN0_TACH_OUT", 1, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x61
   {"MB_FAN1_TACH_IN",  2, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x62
   {"MB_FAN1_TACH_OUT", 3, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x63
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x64
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x65
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x66
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x67
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x68
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x69
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6A
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6B
+  {"MB_FAN2_TACH_IN",  4, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x64
+  {"MB_FAN2_TACH_OUT", 5, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x65
+  {"MB_FAN3_TACH_IN",  6, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x66
+  {"MB_FAN3_TACH_OUT", 7, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x67
+  {"MB_FAN4_TACH_IN",  8, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x68
+  {"MB_FAN4_TACH_OUT", 9, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x69
+  {"MB_FAN5_TACH_IN", 10, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6A
+  {"MB_FAN5_TACH_OUT",11, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6B
   {"MB_FAN6_TACH_IN", 12, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6C
   {"MB_FAN6_TACH_OUT",13, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6D
   {"MB_FAN7_TACH_IN", 14, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6E
@@ -1564,6 +1552,16 @@ read_hd_temp(uint8_t hd_id, float *value) {
   return ret;
 }
 
+int pal_mapping_fan_chnnel_id(uint8_t fan) {
+  int fan_id;
+  if(fan < 8)
+    fan_id = fan + 8;
+  else
+    fan_id = fan - 8;
+
+  return fan_id;
+}
+
 int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
 {
   char label[32] = {0};
@@ -1579,11 +1577,13 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
 {
   char label[32] = {0};
   float value;
-  int ret;
+  int ret, fan_id;
 
-  if (fan >= pal_tach_cnt ||
-      snprintf(label, sizeof(label), "fan%d", fan + 1) > sizeof(label)) {
-    syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
+  fan_id = pal_mapping_fan_chnnel_id(fan);
+
+  if (fan_id >= pal_tach_cnt ||
+      snprintf(label, sizeof(label), "fan%d", fan_id + 1) > sizeof(label)) {
+    syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan_id);
     return -1;
   }
   ret = sensors_read_fan(label, &value);
@@ -2409,11 +2409,13 @@ static int
 read_fan_speed(uint8_t fan, float *rpm) {
   char fan_name[32] = {0};
   float value;
-  int ret;
+  int ret, fan_id;
 
-  if (fan >= pal_tach_cnt ||
-      snprintf(fan_name, sizeof(fan_name), "fan%d", fan + 1) > sizeof(fan_name)) {
-    syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
+  fan_id = pal_mapping_fan_chnnel_id(fan);
+
+  if (fan_id >= pal_tach_cnt ||
+      snprintf(fan_name, sizeof(fan_name), "fan%d", fan_id + 1) > sizeof(fan_name)) {
+    syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan_id);
     return -1;
   }
   ret = sensors_read_fan(fan_name, &value);

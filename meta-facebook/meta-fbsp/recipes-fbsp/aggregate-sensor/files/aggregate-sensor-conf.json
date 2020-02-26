@@ -9,19 +9,19 @@
           "sources": {
             "rpm0": {
               "fru":       1,
-              "sensor_id": 96
+              "sensor_id": 100
             },
             "rpm1": {
               "fru":       1,
-              "sensor_id": 98
+              "sensor_id": 102
             },
             "rpm2": {
                 "fru":       1,
-                "sensor_id": 108
+                "sensor_id": 104
               },
             "rpm3": {
               "fru":       1,
-              "sensor_id": 110
+              "sensor_id": 106
             }
           },
           "linear_expressions": {

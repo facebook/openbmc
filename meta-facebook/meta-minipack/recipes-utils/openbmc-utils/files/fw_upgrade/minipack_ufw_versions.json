@@ -37,9 +37,9 @@
     },
     "16o_fpga" : {
         "filename"    : "pim16o_fpga.bit",
-        "version" : "0.52",
+        "version" : "0.55",
         "hash"    : "md5sum",
-        "hash_value" : "8c5511d61d91f038b1665ddc5a32bf67"
+        "hash_value" : "99e923b2875883e4e823c8cc536ab0a8"
     },
     "4dd_fpga" : {
         "filename"    : "pim4dd_fpga.bit",

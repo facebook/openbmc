@@ -32,7 +32,7 @@ IMAGE_INSTALL += " \
   mterm\
   cfg-util \
   fw-util \
-  log-util \
+  log-util-v2 \
   lldp-util \
   spatula \
   openbmc-utils \

@@ -42,3 +42,11 @@ PACKAGE_EXCLUDE += "\
 BAD_RECOMMENDATIONS += " \
     ca-certificates \
     "
+
+# Some packages have unit-tests but are not installed directly into an
+# image.  Add these to the NATIVE_UNIT_TESTS variable and cause the image
+# to DEPEND on it so the package is built and unit-tested.
+NATIVE_UNIT_TESTS += " \
+    pypartition-native \
+    "
+DEPENDS += "${NATIVE_UNIT_TESTS}"

@@ -46,4 +46,11 @@ do_lint() {
   mypy *.py
   shellcheck bmc_pusher
 }
-addtask do_lint after do_build
+# We don't have dependencies on flake8/mypy/shellcheck so we can't do this
+# right now otherwise we get something like:
+# pypartition-native/1.0-r3/temp/run.do_lint.1070986:
+#       line 114: flake8: command not found
+#
+# addtask lint after do_compile before do_install
+
+BBCLASSEXTEND += "native nativesdk"

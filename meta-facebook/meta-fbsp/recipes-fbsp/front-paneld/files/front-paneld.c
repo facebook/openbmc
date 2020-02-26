@@ -207,11 +207,46 @@ debug_card_out:
   return NULL;
 }
 
+// Thread to handle LED state of the server at given slot
+static void *
+led_handler() {
+  int ret;
+  uint8_t mb_health = -1, nic0_health = -1, nic1_health = -1;
+
+  while (1) {
+    sleep(1);
+    ret = pal_get_fru_health(FRU_MB, &mb_health);
+    if (ret) {
+      syslog(LOG_WARNING, "Fail to get MB health\n");
+    }
+
+    ret = pal_get_fru_health(FRU_NIC0, &nic0_health);
+    if (ret) {
+      syslog(LOG_WARNING, "Fail to get NIC0 health\n");
+    }
+
+    ret = pal_get_fru_health(FRU_NIC1, &nic1_health);
+    if (ret) {
+      syslog(LOG_WARNING, "Fail to get NIC1 health\n");
+    }
+
+    if (mb_health != FRU_STATUS_GOOD || nic0_health != FRU_STATUS_GOOD
+      || nic1_health != FRU_STATUS_GOOD) {
+      pal_set_id_led(FRU_MB, LED_ON);
+    }
+    else {
+      pal_set_id_led(FRU_MB, LED_OFF);
+    }
+  }
+  return NULL;
+}
+
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_sync_led;
   pthread_t tid_rst_btn;
   pthread_t tid_debug_card;
+  pthread_t tid_led;
   int rc;
   int pid_file;
 
@@ -245,9 +280,15 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
+  if (pthread_create(&tid_led, NULL, led_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for led error\n");
+    exit(1);
+  }
+
   pthread_join(tid_sync_led, NULL);
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_debug_card, NULL);
+  pthread_join(tid_led, NULL);
   
   return 0;
 }

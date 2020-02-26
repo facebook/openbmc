@@ -1485,6 +1485,12 @@ pal_get_pwm_value(uint8_t fan_num, uint8_t *value)
   return PAL_EOK;
 }
 
+bool __attribute__((weak))
+pal_is_fan_prsnt(uint8_t fan)
+{
+  return true;
+}
+
 int __attribute__((weak))
 pal_fan_dead_handle(int fan_num)
 {

@@ -1813,6 +1813,13 @@ read_vr_pin(uint8_t vr_id, float *value) {
   return 0;
 }
 
+bool
+pal_is_fan_prsnt(uint8_t fan) {
+  uint8_t fan_id = 0;
+  fan_id = (fan / 2);
+  return !is_fan_present(fan_id);
+}
+
 static bool
 is_fan_present(uint8_t fan_id) {
   char shadow_name[32];

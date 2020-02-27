@@ -338,6 +338,16 @@ int main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
+  //only one fru can be handled at the same time.
+  if ( plock != NULL ) {
+    plock->lock_file(system.get_fru_id(fw_args.fru), system.lock_file(fw_args.fru));
+    if ( plock->ok() == false ) {
+      cerr << "Another instance of fw-util already running" << endl;
+      delete plock;
+      exit(EXIT_FAILURE);
+    }
+  }
+
   //if user want to get the version of FWs, we check the fru only.
   if ( fw_args.action == FW_VERSION ) {
     //show version

@@ -1816,7 +1816,8 @@ read_vr_pin(uint8_t vr_id, float *value) {
 bool
 pal_is_fan_prsnt(uint8_t fan) {
   uint8_t fan_id = 0;
-  fan_id = (fan / 2);
+  fan_id = pal_mapping_fan_chnnel_id(fan);
+  fan_id = (fan_id / 2);
   return !is_fan_present(fan_id);
 }
 

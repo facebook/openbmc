@@ -1,5 +1,17 @@
 # Copyright 2018-present Facebook. All Rights Reserved.
 
+### ZSTD support taken from latest image_types.bbclass ###
+# Once we move to a Yocto version that includes this in image_types.bbclass,
+# we should remove it.
+IMAGE_TYPES += "cpio.zst"
+COMPRESSIONTYPES += "zst"
+
+ZSTD_COMPRESSION_LEVEL="-19"
+
+CONVERSION_CMD_zst = "zstd -f -k -T0 -c ${ZSTD_COMPRESSION_LEVEL} ${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.${type} > ${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.${type}.zst"
+CONVERSION_DEPENDS_zst = "zstd-native"
+### end ZSTD support ###
+
 # Base this image on core-image-minimal
 require recipes-core/images/core-image-minimal.bb
 

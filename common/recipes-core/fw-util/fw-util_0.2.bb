@@ -11,6 +11,7 @@ SRC_URI =+ "file://Makefile \
            file://fw-util.h \
            file://fw-util.cpp \
            file://system.cpp \
+           file://system_intf.h \
            file://server.h \
            file://server.cpp \
            file://bmc.cpp \

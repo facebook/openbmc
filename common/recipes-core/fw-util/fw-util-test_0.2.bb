@@ -19,6 +19,7 @@ SRC_URI =+ "file://Makefile \
            file://check_image.cpp \
            file://image_parts.json \
            file://system_mock.cpp \
+           file://system_intf.h \
            file://extlib.cpp \
            file://extlib.h \
           "

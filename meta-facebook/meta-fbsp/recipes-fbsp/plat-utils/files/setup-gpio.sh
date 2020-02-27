@@ -442,6 +442,12 @@ gpio_export_ioexp 4-0076 BMC_PWM_EN 7
 gpio_set BMC_PWM_EN 1
 
 # I/O Expander TCA9539 0xEE
+gpio_export_ioexp 4-0077 IRQ_PVCCIN_CPU0_VRHOT_LVC3_N 0
+gpio_export_ioexp 4-0077 IRQ_PVCCIN_CPU1_VRHOT_LVC3_N 1
+gpio_export_ioexp 4-0077 IRQ_PVDDQ_ABC_CPU0_VRHOT_LVC3_N 2
+gpio_export_ioexp 4-0077 IRQ_PVDDQ_DEF_CPU0_VRHOT_LVC3_N 3
+gpio_export_ioexp 4-0077 IRQ_PVDDQ_ABC_CPU1_VRHOT_LVC3_N 4
+gpio_export_ioexp 4-0077 IRQ_PVDDQ_DEF_CPU1_VRHOT_LVC3_N 5
 gpio_export_ioexp 4-0077 FM_CPU0_SKTOCC_LVT3_PLD_N 6
 gpio_export_ioexp 4-0077 FM_CPU1_SKTOCC_LVT3_PLD_N 7
 gpio_export_ioexp 4-0077 HP_LVC3_OCP_V3_2_PRSNT2_N 8

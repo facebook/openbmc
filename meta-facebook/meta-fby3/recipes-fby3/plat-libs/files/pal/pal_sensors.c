@@ -17,6 +17,7 @@
 
 //#define DEBUG
 
+#define MAX_RETRY 3
 #define FAN_DIR "/sys/bus/platform/devices/1e786000.pwm-tacho-controller/hwmon/hwmon0"
 #define MAX_SDR_LEN 64
 #define SDR_PATH "/tmp/sdr_%s.bin"
@@ -727,8 +728,8 @@ read_hsc_pin(uint8_t hsc_id, float *value) {
   uint8_t rlen = 0;
   uint8_t addr = 0;
   float m = 0, b = 0, r = 0;
-  int retry = 3;
-  int ret = -1;
+  int retry = MAX_RETRY;
+  int ret = ERR_NOT_READY;
   int fd = 0;
 
   fd = open("/dev/i2c-11", O_RDWR);
@@ -767,8 +768,8 @@ read_hsc_iout(uint8_t hsc_id, float *value) {
   uint8_t rlen = 0;
   uint8_t addr = 0;
   float m = 0, b = 0, r = 0;
-  int retry = 3;
-  int ret = -1;
+  int retry = MAX_RETRY;
+  int ret = ERR_NOT_READY;
   int fd = 0;
 
   fd = open("/dev/i2c-11", O_RDWR);
@@ -809,8 +810,8 @@ read_hsc_temp(uint8_t hsc_id, float *value) {
   uint8_t rlen = 0;
   uint8_t addr = 0;
   float m = 0, b = 0, r = 0;
-  int retry = 3;
-  int ret = -1;
+  int retry = MAX_RETRY;
+  int ret = ERR_NOT_READY;
   int fd = 0;
 
   fd = open("/dev/i2c-11", O_RDWR);
@@ -849,8 +850,8 @@ read_hsc_vin(uint8_t hsc_id, float *value) {
   uint8_t rlen = 0;
   uint8_t addr = 0;
   float m = 0, b = 0, r = 0;
-  int retry = 3;
-  int ret = -1;
+  int retry = MAX_RETRY;
+  int ret = ERR_NOT_READY;
   int fd = 0;
 
   fd = open("/dev/i2c-11", O_RDWR);
@@ -888,10 +889,9 @@ read_ltc4282_volt(uint8_t hsc_id, float *value) {
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   uint8_t addr = 0;
-  static bool is_initialized = false;
   float m = 0, b = 0, r =0;
-  int retry = 3;
-  int ret = -1;
+  int retry = MAX_RETRY;
+  int ret = ERR_NOT_READY;
   int fd = 0;
 
   get_hsc_info(hsc_id, HSC_VOLTAGE, &addr, &m, &b, &r);
@@ -900,30 +900,6 @@ read_ltc4282_volt(uint8_t hsc_id, float *value) {
   if (fd < 0) {
     syslog(LOG_WARNING, "Failed to open bus 11");
     goto error_exit;
-  }
-
-  //enable 16-bit mode
-  if ( is_initialized == false ) {
-    tbuf[0] = ILIM_ADJUST;
-    tlen = 1;
-    rlen = 1;
-    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      ret = READING_NA;
-      goto error_exit;
-    }
-
-    tbuf[0] = ILIM_ADJUST;
-    tbuf[1] = rbuf[0] | 0x1;
-    tlen = 2;
-    rlen = 0;
-    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      ret = READING_NA;
-      goto error_exit;
-    }
-
-    is_initialized = true;
   }
 
   tbuf[0] = VSOURCE;
@@ -1332,7 +1308,7 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
   uint8_t bytes_rd = 0;
   uint8_t snr_num = 0;
   sdr_full_t *sdr;
-  int retry = 3;
+  int retry = MAX_RETRY;
   uint8_t bmc_location = 0;
 
   while ( access(path, F_OK) == -1 && retry > 0 ) {
@@ -1401,7 +1377,7 @@ pal_set_sdr_init(uint8_t fru, bool set) {
 int
 pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   char path[64] = {0};
-  int retry = 3;
+  int retry = MAX_RETRY;
   int ret = 0;
 
   //syslog(LOG_WARNING, "%s() pal_is_sdr_init  bool %d, fru %d, snr_num: %x\n", __func__, pal_is_sdr_init(fru), fru, g_sinfo[fru-1][1].sdr.sensor_num);

@@ -31,6 +31,10 @@ function init_class1_dev(){
   #enable the register of the temperature of hsc
   /usr/sbin/i2cset -y 11 0x40 0xd4 0x1c 0x3f i
 
+  #enable ADC 16-bit mode(bit0) of LTC4282
+  #the default value of ILIM_ADJUST(11h) is 0x96
+  /usr/sbin/i2cset -y 11 0x44 0x11 0x97
+
   #create the device of the inlet/outlet temp.
   create_new_dev "lm75" 0x4e 12
   create_new_dev "lm75" 0x4f 12

@@ -29,6 +29,7 @@ SRC_URI = "file://ast-functions \
            file://setup-por.sh \
            file://setup-emmc.sh \
            file://setup-usbhub.sh \
+           file://setup-cmc.sh \
            file://COPYING \
           "
 
@@ -62,6 +63,8 @@ do_install() {
   update-rc.d -r ${D} setup_i2c.sh start 60 5 .
   install -m 755 sync_date.sh ${D}${sysconfdir}/init.d/sync_date.sh
   update-rc.d -r ${D} sync_date.sh start 66 5 .
+  install -m 755 setup-cmc.sh ${D}${sysconfdir}/init.d/setup-cmc.sh
+  update-rc.d -r ${D} setup-cmc.sh start 67 5 .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 70 S .
   install -m 755 setup-emmc.sh ${D}${sysconfdir}/init.d/setup-emmc.sh

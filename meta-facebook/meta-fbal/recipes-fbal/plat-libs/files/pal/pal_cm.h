@@ -10,11 +10,19 @@
 #define CMD_CMC_GET_CONFIG_MODE           (0x63)
 #define CMD_CMC_GET_MB_POSITION           (0x0F)
 #define CMD_CMC_OEM_GET_SENSOR_READING    (0xF1)
+#define CMD_CMC_OEM_SET_BLOCK_COMMON_FLAG (0xF2)
 #define CM_I2C_BUS_NUMBER                 (8)
 #define CM_I2C_SLAVE_ADDR                 (0x68)
 
 #define CM_SET_FAN_MANUAL_MODE            (0x00)
 #define CM_SET_FAN_AUTO_MODE              (0x01)
+
+#define CM_SET_FLAG_STATUS                (0x00)
+#define CM_GET_FLAG_STATUS                (0x01)
+
+#define CM_COMMAND_UNBLOCK                (0x00)
+#define CM_COMMAND_BLOCK                  (0x01)
+
 
 #define PDB_EVENT_STATUS        (0xFB)
 #define PDB_EVENT_FAN0_PRESENT  (0x2C) 
@@ -92,5 +100,6 @@ int lib_cmc_get_fan_speed(uint8_t fan_id, uint16_t* speed);
 int lib_cmc_set_fan_ctrl(uint8_t fan_mode, uint8_t* status);
 int lib_cmc_get_fan_id(uint8_t fan_sdr);
 int lib_cmc_power_cycle(void);
+int lib_cmc_set_block_command_flag(uint8_t fru, uint8_t flag);
 #endif
 

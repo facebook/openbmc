@@ -608,6 +608,33 @@ pal_is_fw_update_ongoing_system(void) {
   return false;
 }
 
+int 
+pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) { 
+  char key[64] = {0}; 
+  char value[64] = {0}; 
+  struct timespec ts; 
+
+  sprintf(key, "fru%d_fwupd", fruid); 
+ 
+  clock_gettime(CLOCK_MONOTONIC, &ts); 
+  ts.tv_sec += tmout; 
+  sprintf(value, "%ld", ts.tv_sec); 
+ 
+  if (kv_set(key, value, 0, 0) < 0) { 
+       return -1; 
+  } 
+
+  if (tmout == 0) {
+    lib_cmc_set_block_command_flag(fruid, CM_COMMAND_UNBLOCK);
+  } else {
+    lib_cmc_set_block_command_flag(fruid, CM_COMMAND_BLOCK);
+  }
+  
+  return 0;
+}
+
+
+
 int
 read_device(const char *device, int *value) {
   FILE *fp;

@@ -1,0 +1,26 @@
+{
+    "bios" : {
+        "get_version" : "strings /tmp/fw_upgrade/coreboot-glacier.rom | grep -w COREBOOT_VERSION | cut -d ' ' -f 3 | cut -d- -f1 | tr -d '\"'",
+        "priority" : 1,
+        "upgrade_cmd" : "/usr/local/bin/bios_util.sh write {filename}"
+    },
+    "dawson" : {
+        "get_version" : "fpga_ver.sh |grep SUP_FPGA|cut -d ' ' -f 2",
+        "upgrade_cmd" : "usr/local/bin/fpga_util.sh sup program {filename}",
+        "priority": 2
+    },
+    "livingston" : {
+        "get_version" : "fpga_ver.sh |grep SCD_FPGA|cut -d ' ' -f 2",
+        "upgrade_cmd" : "/usr/local/bin/fpga_util.sh scd program {filename}",
+        "priority": 3
+    },
+    "sperry" : {
+      "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"],
+        "condition": "fpga_ver.sh | grep PIM |  awk 'NR==2' | cut -d ' ' -f 4",
+        "get_version" : "fpga_ver.sh|grep 16Q|awk 'NR=={entity} + 5'|cut -d ' ' -f 3",
+        "continue_on_error" : true,
+        "upgrade_cmd" : "/usr/local/bin/fpga_util lc{entity} program {filename}",
+        "post_action" : "/usr/local/bin/wedge_power.sh lcreset -a; sleep 30",
+        "priority": 4
+    }
+}

@@ -79,21 +79,21 @@ do_on() {
     # start with resetting T2
     reset_brcm.sh
     # first make sure, GPIOD1 (25) is high
-    gpio_set 25 1
+    gpio_set_value BMC_PWR_BTN_OUT_N 1
     sleep 1
     # then, put GPIOP7 (127) to low
-    gpio_set 127 0
+    gpio_set_value BMC_READY_IN 0
     pulse_us=500000             # 500ms
     retries=3
     n=1
     while true; do
         # first make sure, GPIOD1 (25) is high
-        gpio_set 25 1
+        gpio_set_value BMC_PWR_BTN_OUT_N 1
         usleep $pulse_us
         # generate the power on pulse
-        gpio_set 25 0
+        gpio_set_value BMC_PWR_BTN_OUT_N 0
         usleep $pulse_us
-        gpio_set 25 1
+        gpio_set_value BMC_PWR_BTN_OUT_N 1
         sleep 3
         if wedge_is_us_on 1 '' 1; then
             break
@@ -116,12 +116,12 @@ do_on() {
 do_off() {
     echo -n "Power off microserver ..."
     # first make sure, GPIOD1 (25) is high
-    gpio_set 25 1
+    gpio_set_value BMC_PWR_BTN_OUT_N 1
     # then, put GPIOP7 (127) to low
-    gpio_set 127 0
-    gpio_set 25 0
+    gpio_set_value BMC_READY_IN 0
+    gpio_set_value BMC_PWR_BTN_OUT_N 0
     sleep 5
-    gpio_set 25 1
+    gpio_set_value BMC_PWR_BTN_OUT_N 1
     # Turn off the power LED (GPIOE5)
     /usr/local/bin/power_led.sh off
     echo " Done"
@@ -158,10 +158,10 @@ do_reset() {
         reset_brcm.sh
         echo -n "Power reset microserver ..."
         # then, put GPIOP7 (127) to low
-        gpio_set 127 0
-        gpio_set 17 0
+        gpio_set_value BMC_READY_IN 0
+        gpio_set_value MRSRVR_SYS_RST 0
         sleep 1
-        gpio_set 17 1
+        gpio_set_value MRSRVR_SYS_RST 1
         sleep 1
         logger "Successfully power reset micro-server"
     fi

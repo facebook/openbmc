@@ -35,18 +35,17 @@ pull_down_us_com() {
         connected=1
         down=1
     fi
-    # set GPIOL6 and GPIOL7 low
-    devmem_clear_bit $(scu_addr 84) 22
-    devmem_clear_bit $(scu_addr 84) 23
-    gpio_set 94 0
-    gpio_set 95 0
+
+    #
+    # XXX do we need to configure GPIOL6/GPIOL7 (BMC_UART1_TX/RX) as GPIO
+    # and set them to low?
+    #
+
     # now, connect uart from BMC to the uS
-    gpio_set 32 1
+    gpio_set_value DEBUG_UART_SEL_0 1
 }
 
 restore_us_com() {
-    devmem_set_bit $(scu_addr 84) 22
-    devmem_set_bit $(scu_addr 84) 23
     # if sol.sh or terminal server is running, keep uServer console UART
     # connected with BMC
     if pidof -x sol.sh > /dev/null 2>&1 || pidof -x mTerm_server > /dev/null 2>&1; then
@@ -54,13 +53,13 @@ restore_us_com() {
             _logger "Restore console. Keep connected"
             connected=1
         fi
-        gpio_set 32 1
+        gpio_set_value DEBUG_UART_SEL_0 1
     else
         if [ $connected -eq 1 ]; then
             _logger "Restore console. Keep disconnected"
             connected=0
         fi
-        gpio_set 32 0
+        gpio_set_value DEBUG_UART_SEL_0 0
     fi
     down=0
 }

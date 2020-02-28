@@ -38,10 +38,5 @@ else
     exit 1
 fi
 
-# GPIOE0 (32) controls if uS console connects to UART1 or not.
-# To enable GPIOE0, SCU80[16], SCU8C[12], and SCU70[22] must be 0
-devmem_clear_bit $(scu_addr 80) 16
-devmem_clear_bit $(scu_addr 8C) 12
-devmem_clear_bit $(scu_addr 70) 22
-
-gpio_set 32 $VALUE
+# GPIOE0 (DEBUG_UART_SEL_0) controls if uS console connects to UART1 or not.
+gpio_set_value DEBUG_UART_SEL_0 $VALUE

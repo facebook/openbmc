@@ -34,11 +34,11 @@
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
 
-#define ID_LED_ON 0
-#define ID_LED_OFF 1
+#define ID_LED_ON 1
+#define ID_LED_OFF 0
 
-#define LED_ON_TIME_IDENTIFY 100
-#define LED_OFF_TIME_IDENTIFY 900
+#define LED_ON_TIME_IDENTIFY 500
+#define LED_OFF_TIME_IDENTIFY 500
 
 #define BTN_MAX_SAMPLES   200
 #define FW_UPDATE_ONGOING 1
@@ -61,6 +61,7 @@ is_btn_blocked(uint8_t fru) {
 static void *
 led_sync_handler() {
   int ret;
+  uint8_t id_on = 0;
   char identify[MAX_VALUE_LEN] = {0};
 
   while (1) {
@@ -68,15 +69,18 @@ led_sync_handler() {
     memset(identify, 0x0, sizeof(identify));
     ret = pal_get_key_value("identify_sled", identify);
     if (ret == 0 && !strcmp(identify, "on")) {
+      id_on = 1;
+
       // Start blinking the ID LED
       pal_set_id_led(FRU_MB, ID_LED_ON);
-
       msleep(LED_ON_TIME_IDENTIFY);
 
       pal_set_id_led(FRU_MB, ID_LED_OFF);
-
       msleep(LED_OFF_TIME_IDENTIFY);
       continue;
+    } else if (id_on) {
+      id_on = 0;
+      pal_set_id_led(FRU_MB, 0xFF);
     }
 
     sleep(1);

@@ -39,6 +39,7 @@
 #define FBAL_PLATFORM_NAME "angelslanding"
 #define LAST_KEY "last_key"
 
+#define GPIO_ID_LED "FP_ID_LED_N"
 #define GPIO_LOCATE_LED "FP_LOCATE_LED"
 #define GPIO_FAULT_LED "FP_FAULT_LED_N"
 #define GPIO_NIC0_PRSNT "HP_LVC3_OCP_V3_1_PRSNT2_N"
@@ -295,25 +296,38 @@ pal_is_slot_server(uint8_t fru) {
 // Update the Identification LED for the given fru with the status
 int
 pal_set_id_led(uint8_t fru, uint8_t status) {
-  int ret;
-  gpio_desc_t *gdesc = NULL;
+  uint8_t sys_pwr;
+  gpio_desc_t *gdesc_id = NULL, *gdesc_loc = NULL;
   gpio_value_t val;
 
-  if (fru != FRU_MB)
-    return -1;
+  do {
+    if (!(gdesc_id = gpio_open_by_shadow(GPIO_ID_LED)))
+      break;
 
-  gdesc = gpio_open_by_shadow(GPIO_LOCATE_LED);
-  if (gdesc == NULL)
-    return -1;
+    if (status == 0xFF) {  // restore FP_ID_LED_N
+      gpio_set_value(gdesc_id, GPIO_VALUE_LOW);
+      break;
+    }
 
-  val = status? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
-  ret = gpio_set_value(gdesc, val);
-  if (ret != 0)
-    goto error;
+    if (!(gdesc_loc = gpio_open_by_shadow(GPIO_LOCATE_LED)))
+      break;
 
-  error:
-    gpio_close(gdesc);
-    return ret;
+    if (!pal_get_server_power(fru, &sys_pwr)) {
+      val = sys_pwr ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
+      gpio_set_value(gdesc_id, val);
+    }
+    val = status ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
+    gpio_set_value(gdesc_loc, val);
+  } while (0);
+
+  if (gdesc_id) {
+    gpio_close(gdesc_id);
+  }
+  if (gdesc_loc) {
+    gpio_close(gdesc_loc);
+  }
+
+  return 0;
 }
 
 int

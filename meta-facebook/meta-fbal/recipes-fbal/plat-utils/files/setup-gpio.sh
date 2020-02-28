@@ -424,6 +424,7 @@ gpio_set RST_CM_N 1
 
 # FM_ASIC_POWER_EN
 gpio_export FM_ASIC_POWER_EN GPIOP4
+gpio_set FM_ASIC_POWER_EN 0
 
 # FM_ASIC_PWRGD
 gpio_export FM_ASIC_PWRGD GPIOP5

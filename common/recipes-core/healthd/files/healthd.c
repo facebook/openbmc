@@ -88,6 +88,8 @@
 #define HB_TIMESTAMP_COUNT (60 * 60 / HB_SLEEP_TIME)
 #define SLED_TS_TIMEOUT 100    //SLED Time Sync Timeout
 
+#define KV_KEY_IMAGE_VERSIONS "image_versions"
+
 struct i2c_bus_s {
   uint32_t offset;
   char     *name;
@@ -1242,22 +1244,22 @@ crit_proc_monitor() {
   bool is_crashdump_ongoing = false;
   bool is_cplddump_ongoing = false;
 
-  while(1) 
+  while(1)
   {
     //if is_fw_updating == true, means BMC is Updating a Device FW
     is_fw_updating = pal_is_fw_update_ongoing_system();
-    
+
     //if is_autodump_ongoing == true, modify the permission
     is_crashdump_ongoing = pal_is_crashdump_ongoing_system();
 
     //if is_cplddump_ongoing == true, modify the permission
     is_cplddump_ongoing = pal_is_cplddump_ongoing_system();
 
-    if ( (true == is_fw_updating) || (true == is_crashdump_ongoing) || (true == is_cplddump_ongoing) ) 
+    if ( (true == is_fw_updating) || (true == is_crashdump_ongoing) || (true == is_cplddump_ongoing) )
     {
       crit_proc_ongoing_handle(true);
     }
-    
+
     if ( (false == is_fw_updating) && (false == is_crashdump_ongoing) && (false == is_cplddump_ongoing) )
     {
       crit_proc_ongoing_handle(false);
@@ -1285,61 +1287,102 @@ static int log_count(const char *str)
   return ret;
 }
 
-static int get_curr_version(char *vers)
+/* parser curr_version from /etc/issue
+  and return version string length on success
+  otherwise return 0 as failure */
+static size_t get_curr_version(char *buf, size_t buflen)
 {
   FILE *fp = fopen("/etc/issue", "r");
-  int ret = -1;
+  size_t ret = 0;
+  char *vers = 0;
   if (fp) {
-    if(fscanf(fp, "OpenBMC Release %s\n", vers) == 1) {
-      ret = 0;
+    if(fscanf(fp, "OpenBMC Release %ms\n", &vers) == 1) {
+      ret = strnlen(vers, buflen);
+      if ( ret < buflen) {
+        snprintf(buf, buflen, "%s", vers);
+      } else {
+        ret = 0;
+      }
     }
     fclose(fp);
   }
+  if (vers) free(vers);
   return ret;
+}
+
+static char*
+get_latest_n_versions(char* orig, size_t orig_len, size_t cnt)
+{
+  char* p = orig;
+  if (p == 0)
+    return p;
+  p += orig_len;
+  while (cnt && p > orig) {
+    p--;
+    if (*p == ',') cnt--;
+  }
+  if (*p == ',') {
+    p++;
+  }
+  return p;
 }
 
 static void store_curr_version(void)
 {
-  char versions_raw[MAX_VALUE_LEN] = {0};
-  char versions[VERSION_HISTORY_COUNT][MAX_VALUE_LEN] = {{0}};
-  char curr_version[MAX_VALUE_LEN] = {0};
-  char *saveptr = NULL, *vers;
-  size_t num_vers = 0, i;
+  static char old_versions[MAX_VALUE_LEN*2];
+  static char curr_version[MAX_VALUE_LEN];
+  char *new_versions;
+  size_t old_versions_len;
+  size_t new_versions_len;
 
-  if (get_curr_version(curr_version)) {
+  if (0 == get_curr_version(curr_version, sizeof(curr_version))) {
     syslog(LOG_ERR, "Getting version failed!\n");
     return;
   }
 
-  if (0 != kv_get("image_versions", versions_raw, NULL, KV_FPERSIST)) {
-    kv_set("image_versions", curr_version, 0, KV_FPERSIST);
-    return;
-  }
-  for (vers = strtok_r(versions_raw, ",", &saveptr), num_vers = 0;
-      vers != NULL;
-      vers = strtok_r(NULL, ",", &saveptr), num_vers++) {
-    strncpy(versions[num_vers], vers, MAX_VALUE_LEN);
-  }
-  if (!strcmp(versions[num_vers - 1], curr_version)) {
-    /* Current version is the same as the last stored
-     * one */
+  if (kv_get(KV_KEY_IMAGE_VERSIONS, old_versions, &old_versions_len, KV_FPERSIST)) {
+    if (kv_set(KV_KEY_IMAGE_VERSIONS, curr_version, 0, KV_FPERSIST)) {
+      syslog(LOG_ERR, "Setting image version failed");
+    }
     return;
   }
 
-  if (num_vers >= VERSION_HISTORY_COUNT) {
-    for (i = 1; i < num_vers; i++) {
-      strcpy(versions[i - 1], versions[i]);
+  /* kv-store won't gurantee null terminate when request to return value len
+   * so terminate it here explicitly */
+  old_versions[old_versions_len] = '\0';
+  /* check whether current version is the same as last version. */
+  if (strcmp( get_latest_n_versions(old_versions, old_versions_len, 1), 
+              curr_version) == 0) {
+    /* version not changed */
+    return;
+  }
+
+  /* otherwise append curr_version */
+  new_versions = old_versions;
+  strcat(new_versions, ",");
+  strncat(new_versions, curr_version, MAX_VALUE_LEN);
+  new_versions_len = strnlen(new_versions, sizeof(old_versions));
+
+  /* chop off oldest versions until it fits MAX_VALUE_LEN */
+  while (new_versions_len >= MAX_VALUE_LEN) {
+    while (*new_versions && *new_versions != ',') {
+      new_versions++;
+      new_versions_len--;
     }
-    num_vers--;
+    if (*new_versions == ',') {
+      new_versions++;
+      new_versions_len--;
+    }
   }
-  strcpy(versions[num_vers], curr_version);
-  num_vers++;
-  strcpy(versions_raw, versions[0]);
-  for (i = 1; i < num_vers; i++) {
-    strcat(versions_raw, ",");
-    strcat(versions_raw, versions[i]);
-  }
-  if (kv_set("image_versions", versions_raw, 0, KV_FPERSIST)) {
+
+  /* chop off oldest version and only keep at most VERSION_HISTORY_COUNT
+   * this is to backwards comptable with healthd which will crash
+   * when parser file contain history contain version more than VERSION_HISTORY_COUNT
+   */
+  new_versions = get_latest_n_versions(new_versions, new_versions_len,
+    VERSION_HISTORY_COUNT);
+  /* save the new versions string */
+  if (kv_set(KV_KEY_IMAGE_VERSIONS, new_versions, 0, KV_FPERSIST)) {
     syslog(LOG_ERR, "Setting image version failed");
   }
 }
@@ -1518,7 +1561,7 @@ timestamp_handler()
         sleep(1);
         continue;
       }
-      
+
       // If get the correct time or time sync timeout
       time_init = SLED_TS_TIMEOUT;
 
@@ -1544,7 +1587,7 @@ timestamp_handler()
 
     sleep(HB_SLEEP_TIME);
   }
-  
+
   return NULL;
 }
 
@@ -1654,7 +1697,7 @@ main(int argc, char **argv) {
       exit(1);
     }
   }
-  
+
 
   pthread_join(tid_watchdog, NULL);
 
@@ -1691,4 +1734,3 @@ main(int argc, char **argv) {
 
   return 0;
 }
-

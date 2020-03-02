@@ -1482,8 +1482,8 @@ is_cpu_socket_occupy(unsigned int cpu_idx) {
 
   if (!cached) {
     const char *shadows[] = {
-      "FM_CPU0_SKTOCC_LVT3_N",
-      "FM_CPU1_SKTOCC_LVT3_N"
+      "FM_CPU0_SKTOCC_LVT3_PLD_N",
+      "FM_CPU1_SKTOCC_LVT3_PLD_N"
     };
     if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
       return false;

@@ -1658,7 +1658,9 @@ read_ina260_sensor(uint8_t sensor_num, float *value) {
   bus = ina260_info_list[ina260_id].bus;
   addr = ina260_info_list[ina260_id].slv_addr;
 
+#ifdef DEBUG
   syslog(LOG_DEBUG, "%s ina_id = %d, sensor_num = %d, name = %s\n", __func__, ina260_id, sensor_num, sensor_map[sensor_num].snr_name);
+#endif
 
   if (strstr(sensor_map[sensor_num].snr_name, "CURR")) {
     cmd = INA260_CURRENT;
@@ -1676,7 +1678,9 @@ read_ina260_sensor(uint8_t sensor_num, float *value) {
     return READING_NA;
   }
 
+#ifdef DEBUG
   syslog(LOG_DEBUG, "%s bus=%x cmd=%x slavaddr=%x\n", __func__, bus, cmd, addr);
+#endif
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
   fd = open(fn, O_RDWR);

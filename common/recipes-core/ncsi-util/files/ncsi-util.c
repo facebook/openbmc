@@ -197,6 +197,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
   pldm_fw_pkg_hdr_t *pkgHdr;
   pldm_cmd_req pldmReq = {0};
   pldm_response *pldmRes = NULL;
+  int pldmCmdStatus = 0;
   int i = 0;
   int ret = 0;
   int waitcycle = 0;
@@ -302,8 +303,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
          (pldmCmd == CMD_APPLY_COMPLETE)) {
       loopCount++;
       waitcycle = 0;
-      int cmdStatus = 0;
-      cmdStatus = pldmFwUpdateCmdHandler(pkgHdr, &pldmReq, pldmRes);
+      pldmCmdStatus = pldmFwUpdateCmdHandler(pkgHdr, &pldmReq, pldmRes);
       ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_SEND_NC_PLDM_REPLY,
                                  pldmRes->resp_size, pldmRes->common);
       if (ret) {
@@ -315,7 +315,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
       }
       //print_ncsi_resp(nl_resp);
       free(nl_resp);
-      if ((pldmCmd == CMD_APPLY_COMPLETE) || (cmdStatus == -1))
+      if ((pldmCmd == CMD_APPLY_COMPLETE) || (pldmCmdStatus == -1))
         break;
     } else {
       printf("unknown PLDM cmd 0x%x\n", pldmCmd);
@@ -327,17 +327,23 @@ int pldm_update_fw(char *path, int pldm_bufsize)
     }
   }
 
-  // activate FW
-  memset(&pldmReq, 0, sizeof(pldm_cmd_req));
-  pldmCreateActivateFirmwareCmd(&pldmReq);
-  printf("\n05 PldmActivateFirmwareOp\n");
-  ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_PLDM_REQUEST, pldmReq.payload_size,
-                       &(pldmReq.common[0]));
-  if (ret) {
-    goto free_exit;
-  }
-  if (sendPldmCmdAndCheckResp(nl_msg) != CC_SUCCESS) {
-    goto free_exit;
+  // only activate FW if update loop exists with good status
+  if (!pldmCmdStatus && (pldmCmd == CMD_APPLY_COMPLETE)) {
+    // update successful,  activate FW
+    memset(&pldmReq, 0, sizeof(pldm_cmd_req));
+    pldmCreateActivateFirmwareCmd(&pldmReq);
+    printf("\n05 PldmActivateFirmwareOp\n");
+    ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_PLDM_REQUEST, pldmReq.payload_size,
+                         &(pldmReq.common[0]));
+    if (ret) {
+      goto free_exit;
+    }
+    if (sendPldmCmdAndCheckResp(nl_msg) != CC_SUCCESS) {
+      goto free_exit;
+    }
+  } else {
+    printf("PLDM cmd (%d) failed (status %d), abort update\n",
+      pldmCmd, pldmCmdStatus);
   }
 
 free_exit:

@@ -31,9 +31,9 @@ S = "${WORKDIR}"
 
 binfiles = "gpiod \
            "
-DEPENDS += "libpal libgpio-ctrl update-rc.d-native libnm"
-RDEPENDS_${PN} += "libpal libnm libgpio-ctrl"
-LDFLAGS += "-pthread -lpal -lnm -lgpio-ctrl"
+DEPENDS += "libpal libgpio-ctrl update-rc.d-native libnm libkv"
+RDEPENDS_${PN} += "libpal libnm libgpio-ctrl libkv"
+LDFLAGS += "-pthread -lpal -lnm -lgpio-ctrl -lkv"
 
 pkgdir = "gpiod"
 

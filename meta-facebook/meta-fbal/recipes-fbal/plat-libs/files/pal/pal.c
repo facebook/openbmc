@@ -44,6 +44,7 @@
 #define GPIO_FAULT_LED "FP_FAULT_LED_N"
 #define GPIO_NIC0_PRSNT "HP_LVC3_OCP_V3_1_PRSNT2_N"
 #define GPIO_NIC1_PRSNT "HP_LVC3_OCP_V3_2_PRSNT2_N"
+#define GPIO_SKT_ID2 "FM_BMC_SKT_ID_2"
 
 #define GUID_SIZE 16
 #define OFFSET_SYS_GUID 0x17F0
@@ -923,31 +924,24 @@ pal_get_platform_id(uint8_t *id) {
 
 int
 pal_get_host_system_mode(uint8_t* mode) {
-  uint8_t id2 = 0;
+  gpio_desc_t *gdesc;
+  gpio_value_t val;
   static bool cached = false;
   static uint8_t cached_pos = 0;
 
   if (!cached) {
-    if(pal_get_platform_id(&cached_pos))
-      return -1;
-
-    id2 = cached_pos & (0x01 << 2);
-    switch (id2) {
-      case 0:
-        cached_pos = MB_8S_MODE;
-        break;
-      case 1:
-        cached_pos = MB_2S_MODE;
-        break;
-      default:
-        return -1;
+    if ((gdesc = gpio_open_by_shadow(GPIO_SKT_ID2))) {
+      if (!gpio_get_value(gdesc, &val)) {
+        cached_pos = (val == GPIO_VALUE_LOW) ? MB_8S_MODE : MB_2S_MODE;
+        cached = true;
+      }
+      gpio_close(gdesc);
     }
-    cached = true;
   }
-  
+
   *mode = cached_pos;
 #ifdef DEBUG
-  syslog(LOG_DEBUG,"%s BMC System Mode =%d\n", __func__, cached_pos);
+  syslog(LOG_DEBUG, "%s: BMC System Mode = %u", __func__, cached_pos);
 #endif
   return 0;
 }

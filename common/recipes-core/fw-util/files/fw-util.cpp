@@ -41,7 +41,7 @@ using namespace std;
 std::atomic<bool> quit_process(false);
 
 string exec_name = "Unknown";
-map<string, map<string, Component *>> * Component::fru_list = NULL;
+map<string, map<string, Component *, partialLexCompare>, partialLexCompare> * Component::fru_list = NULL;
 
 Component::Component(string fru, string component)
   : _fru(fru), _component(component), sys(), update_initiated(false)

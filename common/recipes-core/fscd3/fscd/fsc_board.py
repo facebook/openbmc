@@ -45,3 +45,7 @@ def board_callout(callout="None", **kwargs):
     """
     Logger.warn("Need to perform callout action %s" % callout)
     pass
+
+
+def all_slots_power_off():
+    return False

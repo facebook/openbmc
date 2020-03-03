@@ -164,6 +164,19 @@ board_for_counter = ""
 sname_for_counter = ""
 
 
+def all_slots_power_off():
+    all_power_off = True
+    for board in fru_map:
+        with open(
+            "/sys/class/gpio/gpio" + fru_map[board]["pwr_gpio"] + "/value", "r"
+        ) as f:
+            pwr_sts = f.read(1)
+        if pwr_sts[0] == "1":
+            all_power_off = False
+            break
+    return all_power_off
+
+
 def sensor_valid_check(board, sname, check_name, attribute):
 
     global fscd_counter
@@ -183,8 +196,8 @@ def sensor_valid_check(board, sname, check_name, attribute):
     if str(board) == "all":
         sdata = sname.split("_")
         board = sdata[0]
-        sname = sname.replace(board+"_", "")
-    Logger.debug("board=%s sname=%s" %  (board,sname))
+        sname = sname.replace(board + "_", "")
+    Logger.debug("board=%s sname=%s" % (board, sname))
 
     if match(r"soc_temp_diode", sname) != None:
         return rc_stby_sensor_check(board)

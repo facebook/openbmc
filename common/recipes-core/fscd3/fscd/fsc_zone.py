@@ -27,7 +27,7 @@ from fsc_util import Logger, clamp
 verbose = "-v" in sys.argv
 RECORD_DIR = "/tmp/cache_store/"
 SENSOR_FAIL_RECORD_DIR = "/tmp/sensorfail_record/"
-fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2}
+fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
 
 
 class Fan(object):
@@ -134,9 +134,11 @@ class Zone:
     def run(self, sensors, ctx, ignore_mode):
         outmin = 0
         fail_ssd_count = 0
+        valid_m2_count = 0
         sensor_index = 0
         cause_boost_count = 0
         no_sane_flag = 0
+        display_progressive_flag = 0
         mode = 0
 
         for v in self.expr_meta["ext_vars"]:
@@ -175,6 +177,8 @@ class Zone:
 
                     sensor = sensors[board][sname]
                     ctx[v] = sensor.value
+                    if re.match(r".*temp_dev", sname) != None:
+                        valid_m2_count = valid_m2_count + 1
                     if sensor.status in ["ucr"]:
                         Logger.warn(
                             "Sensor %s reporting status %s"
@@ -191,8 +195,11 @@ class Zone:
                             if (sensor.status in ["na"]) and (
                                 self.sensor_valid_cur[sensor_index] != -1
                             ):
-                                if re.match(r"SSD", sensor.name) != None:
+                                if (re.match(r"SSD", sensor.name) != None) or (
+                                    re.match(r".*temp_dev", sname) != None
+                                ):
                                     fail_ssd_count = fail_ssd_count + 1
+                                    Logger.warn("M.2 Device %s Fail" % v)
                                 else:
                                     Logger.warn("%s Fail" % v)
                                     outmin = max(outmin, self.boost)
@@ -259,7 +266,48 @@ class Zone:
             self.transitional_assert_flag = False
 
         if self.fail_sensor_type != None:
-            if "SSD_sensor_fail" in list(self.fail_sensor_type.keys()):
+            progressive_mode = True
+            if ("M2_sensor_fail" in list(self.fail_sensor_type.keys())) and (
+                "M2_sensor_count" in list(self.fail_sensor_type.keys())
+            ):
+                if (self.fail_sensor_type["M2_sensor_fail"] == True) and (
+                    self.fail_sensor_type["M2_sensor_count"] > 0
+                ):
+                    if valid_m2_count == 0:
+                        if fsc_board.all_slots_power_off() == False:
+                            # Missing all module (no M.2 device)
+                            outmin = max(outmin, self.boost)
+                            cause_boost_count += 1
+                            mode = fan_mode["boost_mode"]
+                            progressive_mode = False
+                        else:
+                            # All slots power off, do not boost up
+                            progressive_mode = False
+                    elif valid_m2_count != self.fail_sensor_type["M2_sensor_count"]:
+                        # Missing some module (M.2 devices partially populated)
+                        progressive_mode = False
+                        cause_boost_count += 1
+                    else:
+                        # M.2 devices fully populated
+                        if cause_boost_count != 0:
+                            # other boost reasons: e.g. other sensors (not M.2 devices' sensors) fail to read sensors
+                            progressive_mode = False
+                        else:
+                            if fail_ssd_count != 0:
+                                # M.2 devices progressive_mode
+                                # handle M.2 devices/SSD fail to read case
+                                cause_boost_count += 1  # show out sensor fail record
+                                display_progressive_flag = (
+                                    1
+                                )  # do not override by normal mode
+                                mode = fan_mode["progressive_mode"]
+                            else:
+                                # M.2 devices noraml mode
+                                progressive_mode = False
+
+            if progressive_mode and (
+                "SSD_sensor_fail" in list(self.fail_sensor_type.keys())
+            ):
                 if self.fail_sensor_type["SSD_sensor_fail"] == True:
                     if fail_ssd_count != 0:
                         if self.ssd_progressive_algorithm != None:
@@ -300,7 +348,7 @@ class Zone:
         if exprout < outmin:
             exprout = outmin
         else:
-            if no_sane_flag != 1:
+            if (no_sane_flag != 1) and (display_progressive_flag != 1):
                 mode = fan_mode["normal_mode"]
         if not ignore_mode:
             self.get_set_fan_mode(mode, action="write")

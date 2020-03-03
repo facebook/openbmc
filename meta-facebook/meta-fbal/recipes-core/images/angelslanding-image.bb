@@ -43,4 +43,5 @@ IMAGE_INSTALL += " \
   guid-util \
   crashdump \
   threshold-util \
+  tpm2-tools \
   "

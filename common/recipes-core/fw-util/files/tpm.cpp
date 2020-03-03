@@ -1,4 +1,4 @@
-#include "fw-util.h"
+#include "tpm.h"
 #include <syslog.h>
 #include <unistd.h>
 #include <cstdio>
@@ -82,23 +82,16 @@ get_tpm_ver(char *ver) {
   return 0;
 }
 
-class TpmComponent : public Component {
-  public:
-    TpmComponent(string fru, string comp)
-      : Component(fru, comp) {}
-    int print_version() {
-      char ver[MAX_LINE_LENGTH] = {0};
+int TpmComponent::print_version()
+{
+  char ver[MAX_LINE_LENGTH] = {0};
 
-      if (get_tpm_ver(ver) == FW_STATUS_SUCCESS) {
-        printf("TPM Version: %s", ver);
-      } else if (get_tpm_ver(ver) == FW_STATUS_NOT_SUPPORTED) {
-        printf("TPM Version: TPM Not Supported\n");
-      } else {
-        printf("TPM Version: NA\n");
-      }
-
-      return 0;
-    }
-};
-
-TpmComponent tpm("bmc", "tpm");
+  if (get_tpm_ver(ver) == FW_STATUS_SUCCESS) {
+    printf("TPM Version: %s", ver);
+  } else if (get_tpm_ver(ver) == FW_STATUS_NOT_SUPPORTED) {
+    printf("TPM Version: TPM Not Supported\n");
+  } else {
+    printf("TPM Version: NA\n");
+  }
+  return 0;
+}

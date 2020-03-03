@@ -21,6 +21,7 @@ SRC_URI =+ "file://Makefile \
            file://nic.cpp \
            file://fscd.cpp \
            file://tpm.cpp \
+           file://tpm.h \
            file://bic_fw.cpp \
            file://bic_fw.h \
            file://bic_me.cpp \

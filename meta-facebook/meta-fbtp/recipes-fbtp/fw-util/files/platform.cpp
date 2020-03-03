@@ -3,6 +3,7 @@
 #include "bios.h"
 #include "usbdbg.h"
 #include "nic.h"
+#include "tpm.h"
 #include <openbmc/pal.h>
 
 class FBTPBiosComponent : public BiosComponent {
@@ -47,3 +48,4 @@ UsbDbgComponent usbdbg("mb", "usbdbgfw", "FBTP", 9, 0x60, false);
 UsbDbgBlComponent usbdbgbl("mb", "usbdbgbl", 9, 0x60, 0x02);
 FBTPBiosComponent bios("mb", "bios", "\"bios0\"", "");
 NicComponent nic("nic", "nic");
+TpmComponent tpm("bmc", "tpm");

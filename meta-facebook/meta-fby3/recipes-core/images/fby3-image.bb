@@ -54,4 +54,5 @@ IMAGE_INSTALL += " \
   front-paneld \
   gpiointrd \
   crashdump \
+  show-sys-config \
   "

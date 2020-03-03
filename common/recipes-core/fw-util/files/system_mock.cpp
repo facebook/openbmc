@@ -83,11 +83,11 @@ uint8_t System::get_fru_id(string &name)
   return atoi(env);
 }
 
-string System::lock_file(string &name)
-{
-  return "./fw-util-" + name + ".lock";
-}
-
 void System::set_update_ongoing(uint8_t fru_id, int timeo)
 {
+}
+
+bool System::is_update_ongoing(uint8_t fru_id)
+{
+  return false;
 }

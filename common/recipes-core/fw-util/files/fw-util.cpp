@@ -29,6 +29,7 @@
 #include <tuple>
 #include <signal.h>
 #include <syslog.h>
+#include <atomic>
 #include <openbmc/pal.h>
 #ifdef __TEST__
 #include <gtest/gtest.h>
@@ -37,11 +38,13 @@
 
 using namespace std;
 
+std::atomic<bool> quit_process(false);
+
 string exec_name = "Unknown";
 map<string, map<string, Component *>> * Component::fru_list = NULL;
 
 Component::Component(string fru, string component)
-  : _fru(fru), _component(component)
+  : _fru(fru), _component(component), sys(), update_initiated(false)
 {
   fru_list_setup();
   (*fru_list)[fru][component] = this;
@@ -53,6 +56,10 @@ Component::~Component()
   if ((*fru_list)[_fru].size() == 0) {
     fru_list->erase(_fru);
   }
+  // Clear the update-ongoing flag if we were the ones
+  // setting it.
+  if (update_initiated)
+    set_update_ongoing(0);
 }
 
 Component *Component::find_component(string fru, string comp)
@@ -115,65 +122,24 @@ int AliasComponent::print_version()
   return _target_comp->print_version();
 }
 
-class ProcessLock {
-  private:
-    string file;
-    int fd;
-    uint8_t _fru;
-    bool _ok;
-    bool _terminate;
-  public:
-  ProcessLock() {
-    _terminate = false;
-  }
+void AliasComponent::set_update_ongoing(int timeout)
+{
+  if (setup())
+    _target_comp->set_update_ongoing(timeout);
+}
 
-  void lock_file(uint8_t fru, string file){
-    _ok = false;
-    _fru = fru;
-    fd = open(file.c_str(), O_RDWR|O_CREAT, 0666);
-    if (fd < 0) {
-      return;
-    }
-    if (flock(fd, LOCK_EX | LOCK_NB) < 0) {
-      close(fd);
-      fd = -1;
-      return;
-    }
-    _ok = true;
-  }
+bool AliasComponent::is_update_ongoing()
+{
+  if (!setup())
+    return FW_STATUS_NOT_SUPPORTED;
+  return _target_comp->is_update_ongoing();
+}
 
-  void setTerminate(bool terminate) {
-    _terminate = terminate;
-  }
-
-  bool getTerminate() {
-    return _terminate;
-  }
-
-  uint8_t getFru() {
-    return _fru;
-  }
-
-  ~ProcessLock() {
-    if (_ok) {
-      remove(file.c_str());
-      close(fd);
-    }
-  }
-
-  bool ok() {
-    return _ok;
-  }
-};
-
-ProcessLock * plock = new ProcessLock();
-
-void fw_util_sig_handler(int signo) {
-  if (plock) {
-    plock->setTerminate(true);
-    printf("Terminated requested. Waiting for earlier operation complete.\n");
-    syslog(LOG_DEBUG, "slot%u fw_util_sig_handler signo=%d",plock->getFru(), signo);
-  }
+void fw_util_sig_handler(int signo)
+{
+  quit_process.store(true);
+  cout << "Terminated requested. Waiting for earlier operation complete.\n";
+  syslog(LOG_DEBUG, "fw_util_sig_handler signo=%d requesting exit", signo);
 }
 
 void usage()
@@ -205,8 +171,6 @@ void usage()
     }
     cout << endl;
   }
-  if (plock)
-    delete plock;
 }
 
 int main(int argc, char *argv[])
@@ -224,9 +188,6 @@ int main(int argc, char *argv[])
     return ret;
   }
 #endif
-
-  System system;
-
   exec_name = argv[0];
   if (argc < 3) {
     usage();
@@ -273,15 +234,11 @@ int main(int argc, char *argv[])
       ifstream f(image);
       if (!f.good()) {
         cerr << "Cannot access: " << image << endl;
-        if (plock)
-          delete plock;
         return -1;
       }
     } 
     if (component == "all") {
       cerr << "Upgrading all components not supported" << endl;
-      if (plock)
-        delete plock;
       return -1;
     }
   } else if (action == "--force") {
@@ -293,14 +250,10 @@ int main(int argc, char *argv[])
     ifstream f(image);
     if (!f.good()) {
       cerr << "Cannot access: " << image << endl;
-      if (plock)
-        delete plock;
       return -1;
     }
     if (component == "all") {
       cerr << "Upgrading all components not supported" << endl;
-      if (plock)
-        delete plock;
       return -1;
     }
   } else if (action == "--version") {
@@ -326,17 +279,6 @@ int main(int argc, char *argv[])
 
   for (auto fkv : *Component::fru_list) {
     if (fru == "all" || fru == fkv.first) {
-      // Ensure only one instance of fw-util per FRU is running
-      string this_fru(fkv.first);
-      if (plock) {
-        plock->lock_file(system.get_fru_id(this_fru),system.lock_file(this_fru));
-        if (!plock->ok()) {
-          cerr << "Another instance of fw-util already running" << endl;
-          delete plock;
-          return -1;
-        }
-      }
-
       for (auto ckv : fkv.second) {
         string comp_name = ckv.first;
         if (component == "all" || component == comp_name) {
@@ -352,6 +294,11 @@ int main(int argc, char *argv[])
               continue;
           }
 
+          if (c->is_update_ongoing()) {
+            cerr << "Upgrade aborted due to ongoing upgrade on FRU: " << c->fru() << endl;
+            return -1;
+          }
+
           if (action == "--version") {
             ret = c->print_version();
             if (ret != FW_STATUS_SUCCESS && ret != FW_STATUS_NOT_SUPPORTED) {
@@ -364,8 +311,7 @@ int main(int argc, char *argv[])
               return -1;
             }
             string str_act("");
-            uint8_t fru_id = system.get_fru_id(c->fru());
-            system.set_update_ongoing(fru_id, 60 * 10);
+            c->set_update_ongoing(60 * 10);
             if (action == "--update") {
               ret = c->update(image);
               str_act.assign("Upgrade");
@@ -376,7 +322,7 @@ int main(int argc, char *argv[])
               ret = c->dump(image);
               str_act.assign("Dump");
             }
-            system.set_update_ongoing(fru_id, 0);
+            c->set_update_ongoing(0);
             if (ret == 0) {
               cout << str_act << " of " << c->fru() << " : " << component << " succeeded" << endl;
             } else {
@@ -389,26 +335,20 @@ int main(int argc, char *argv[])
             }
           }
 
-          if (plock && plock->getTerminate()) {
-            system.set_update_ongoing(plock->getFru(), 0);
-            // Do not call destructor explicitly, since it's an undefined behaviour.
-            // While the constructor uses new, and the destructor uses delete.
-            syslog(LOG_DEBUG, "slot%u Terminated complete.",plock->getFru());
-            printf("Terminated complete.\n");
-            delete plock;
+          if (quit_process.load()) {
+            syslog(LOG_DEBUG, "fw-util: Terminate request handled");
+            cout << "Aborted action due to signal\n";
             return -1;
           }
         }
       }
     }
   }
+
   if (!find_comp) {
     usage();
     return -1;
   }
-
-  if (plock)
-    delete plock;
 
   return 0;
 }

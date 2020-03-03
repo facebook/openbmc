@@ -112,7 +112,7 @@ void System::set_update_ongoing(uint8_t fru_id, int timeo)
   pal_set_fw_update_ongoing(fru_id, timeo);
 }
 
-string System::lock_file(string &name)
+bool System::is_update_ongoing(uint8_t fru_id)
 {
-  return "/var/run/fw-util-" + name + ".lock";
+  return pal_is_fw_update_ongoing(fru_id);
 }

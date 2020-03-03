@@ -33,7 +33,8 @@ class System {
     virtual std::string& partition_conf();
     virtual uint8_t get_fru_id(std::string &name);
     virtual void set_update_ongoing(uint8_t fru_id, int timeo);
-    virtual std::string lock_file(std::string &name);
+    virtual bool is_update_ongoing(uint8_t fru);
+
 };
 
 #endif

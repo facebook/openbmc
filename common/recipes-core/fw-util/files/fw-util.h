@@ -4,6 +4,7 @@
 #include <iostream>
 #include <algorithm>
 #include <map>
+#include <atomic>
 #include "system_intf.h"
 
 #define FW_STATUS_SUCCESS        0
@@ -14,7 +15,8 @@ class Component {
   protected:
     std::string _fru;
     std::string _component;
-
+    System sys;
+    bool update_initiated;
   public:
     static std::map<std::string, std::map<std::string, Component *>> *fru_list;
     static Component *find_component(std::string fru, std::string comp);
@@ -36,6 +38,15 @@ class Component {
     virtual int fupdate(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int dump(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int print_version() { return FW_STATUS_NOT_SUPPORTED; }
+
+    virtual void set_update_ongoing(int timeout) {
+      if (timeout > 0)
+        update_initiated = true;
+      sys.set_update_ongoing(sys.get_fru_id(_fru), timeout);
+    }
+    virtual bool is_update_ongoing() {
+      return sys.is_update_ongoing(sys.get_fru_id(_fru));
+    }
 };
 
 class AliasComponent : public Component {
@@ -52,6 +63,9 @@ class AliasComponent : public Component {
     int fupdate(std::string image);
     int dump(std::string image);
     int print_version();
+
+    void set_update_ongoing(int timeout);
+    bool is_update_ongoing();
 };
 
 #endif

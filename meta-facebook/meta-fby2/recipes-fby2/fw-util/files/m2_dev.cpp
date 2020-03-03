@@ -134,29 +134,29 @@ int M2_DevComponent::fupdate(string image) {
 
 // Register M.2 device components
 // slot1 device from 0 to 11
-M2_DevComponent m2_slot1_dev0("slot1", "device 0", 1, 0);
-M2_DevComponent m2_slot1_dev1("slot1", "device 1", 1, 1);
-M2_DevComponent m2_slot1_dev2("slot1", "device 2", 1, 2);
-M2_DevComponent m2_slot1_dev3("slot1", "device 3", 1, 3);
-M2_DevComponent m2_slot1_dev4("slot1", "device 4", 1, 4);
-M2_DevComponent m2_slot1_dev5("slot1", "device 5", 1, 5);
-M2_DevComponent m2_slot1_dev6("slot1", "device 6", 1, 6);
-M2_DevComponent m2_slot1_dev7("slot1", "device 7", 1, 7);
-M2_DevComponent m2_slot1_dev8("slot1", "device 8", 1, 8);
-M2_DevComponent m2_slot1_dev9("slot1", "device 9", 1, 9);
+M2_DevComponent m2_slot1_dev0("slot1", "device0", 1, 0);
+M2_DevComponent m2_slot1_dev1("slot1", "device1", 1, 1);
+M2_DevComponent m2_slot1_dev2("slot1", "device2", 1, 2);
+M2_DevComponent m2_slot1_dev3("slot1", "device3", 1, 3);
+M2_DevComponent m2_slot1_dev4("slot1", "device4", 1, 4);
+M2_DevComponent m2_slot1_dev5("slot1", "device5", 1, 5);
+M2_DevComponent m2_slot1_dev6("slot1", "device6", 1, 6);
+M2_DevComponent m2_slot1_dev7("slot1", "device7", 1, 7);
+M2_DevComponent m2_slot1_dev8("slot1", "device8", 1, 8);
+M2_DevComponent m2_slot1_dev9("slot1", "device9", 1, 9);
 M2_DevComponent m2_slot1_dev10("slot1", "device10", 1, 10);
 M2_DevComponent m2_slot1_dev11("slot1", "device11", 1, 11);
 // slot3 device from 0 to 11
-M2_DevComponent m2_slot3_dev0("slot3", "device 0", 3, 0);
-M2_DevComponent m2_slot3_dev1("slot3", "device 1", 3, 1);
-M2_DevComponent m2_slot3_dev2("slot3", "device 2", 3, 2);
-M2_DevComponent m2_slot3_dev3("slot3", "device 3", 3, 3);
-M2_DevComponent m2_slot3_dev4("slot3", "device 4", 3, 4);
-M2_DevComponent m2_slot3_dev5("slot3", "device 5", 3, 5);
-M2_DevComponent m2_slot3_dev6("slot3", "device 6", 3, 6);
-M2_DevComponent m2_slot3_dev7("slot3", "device 7", 3, 7);
-M2_DevComponent m2_slot3_dev8("slot3", "device 8", 3, 8);
-M2_DevComponent m2_slot3_dev9("slot3", "device 9", 3, 9);
+M2_DevComponent m2_slot3_dev0("slot3", "device0", 3, 0);
+M2_DevComponent m2_slot3_dev1("slot3", "device1", 3, 1);
+M2_DevComponent m2_slot3_dev2("slot3", "device2", 3, 2);
+M2_DevComponent m2_slot3_dev3("slot3", "device3", 3, 3);
+M2_DevComponent m2_slot3_dev4("slot3", "device4", 3, 4);
+M2_DevComponent m2_slot3_dev5("slot3", "device5", 3, 5);
+M2_DevComponent m2_slot3_dev6("slot3", "device6", 3, 6);
+M2_DevComponent m2_slot3_dev7("slot3", "device7", 3, 7);
+M2_DevComponent m2_slot3_dev8("slot3", "device8", 3, 8);
+M2_DevComponent m2_slot3_dev9("slot3", "device9", 3, 9);
 M2_DevComponent m2_slot3_dev10("slot3", "device10", 3, 10);
 M2_DevComponent m2_slot3_dev11("slot3", "device11", 3, 11);
 #endif

@@ -108,7 +108,7 @@ root openBMC code repo.
 2- scp test2 folder to target /usr/local/bin
    Ex: scp -r test2 <target-bmc-unit-IP>:/usr/local/bin/
 3- scp tools/fw_upgrade folder to target /tmp/
-   Ex: scp -r tools/fw_upgrade <target-bmc-unit-IP>:/tmp/
+   Ex: scp -r tools/fw_upgrade <target-bmc-unit-IP>:/tmp/fw_upgrade/
 4- scp all the firmware binaries to target /tmp/fw_upgrade/
    Ex: scp -r <path-for-firmware-binaries-folder>  <target-bmc-unit-IP>:/tmp/
 5- scp manifest and firmware jsons to target /tmp/

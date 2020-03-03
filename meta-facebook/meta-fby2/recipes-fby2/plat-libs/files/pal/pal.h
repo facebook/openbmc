@@ -292,7 +292,6 @@ int pal_get_dev_sdr_setup(uint8_t fru, uint8_t *value);
 int pal_update_sensor_reading_sdr(uint8_t fru);
 int pal_get_fan_config();
 int pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw);
-int pal_get_altered_comp_name(char *comp_name);
 int pal_set_update_sdr_flag(uint8_t fru, uint8_t value);
 int pal_get_update_sdr_flag(uint8_t fru, uint8_t *value);
 #ifdef __cplusplus

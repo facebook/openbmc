@@ -408,7 +408,6 @@ bool pal_is_modify_sel_time(uint8_t *sel, int size);
 int pal_update_sensor_reading_sdr (uint8_t fru);
 int pal_set_usb_path (uint8_t slot, uint8_t endpoint);
 int pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw);
-int pal_get_altered_comp_name(char *comp_name);
 void pal_get_eth_intf_name(char *intf_name);
 
 #ifdef __cplusplus

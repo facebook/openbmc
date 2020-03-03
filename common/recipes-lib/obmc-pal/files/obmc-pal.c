@@ -2295,11 +2295,6 @@ pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw)
   return 0;
 }
 
-int __attribute__((weak))
-pal_get_altered_comp_name(char* comp_name) {
-  return PAL_ENOTSUP;
-}
-
 void __attribute__((weak))
 pal_get_eth_intf_name(char* intf_name) {
   snprintf(intf_name, 8, "eth0");

@@ -11669,14 +11669,3 @@ pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw) {
 
   return 0;
 }
-
-int
-pal_get_altered_comp_name(char *comp_name) {
-  // remove all spaces from a component string
-  int count = 0;
-  for (int i = 0; comp_name[i]; i++)
-    if (comp_name[i] != ' ')
-      comp_name[count++] = comp_name[i];
-  comp_name[count] = '\0';
-  return 0;
-}

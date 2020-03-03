@@ -20,70 +20,187 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <errno.h>
-#include <unistd.h>
 #include <syslog.h>
-#include <time.h>
-#include <sys/time.h>
+#include <pthread.h>
+#include <openbmc/libgpio.h>
 #include <switchtec/switchtec.h>
 #include "pal.h"
 
-int pal_set_pax_proc_ongoing(uint8_t paxid, uint16_t tmout)
+static pthread_mutex_t pax_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+int pal_pax_fw_update(uint8_t paxid, const char *fwimg)
 {
-  char key[64] = {0};
-  char value[64] = {0};
-  struct timespec ts;
+  int ret;
+  uint8_t status;
+  char cmd[128] = {0};
 
-  sprintf(key, "pax%d_proc", paxid);
-
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  ts.tv_sec += tmout;
-  sprintf(value, "%ld", ts.tv_sec);
-
-  if (kv_set(key, value, 0, 0) < 0) {
-     return -1;
+  if (pal_get_server_power(FRU_MB, &status) < 0 ||
+      status == SERVER_POWER_OFF) {
+    return -1;
   }
 
-  return 0;
+  snprintf(cmd, sizeof(cmd), SWITCHTEC_UPDATE_CMD, SWITCH_BASE_ADDR + paxid, fwimg);
+
+  pthread_mutex_lock(&pax_mutex);
+  ret = system(cmd);
+  pthread_mutex_unlock(&pax_mutex);
+  if (WIFEXITED(ret) && (WEXITSTATUS(ret) == 0)) {
+    snprintf(cmd, sizeof(cmd), "/tmp/cache_store/pax%d_ver", paxid);
+    unlink(cmd);
+    return 0;
+  } else {
+    return -1;
+  }
 }
 
-bool pal_is_pax_proc_ongoing(uint8_t paxid)
+int pal_read_pax_dietemp(uint8_t sensor_num, float *value)
 {
-  char key[MAX_KEY_LEN];
-  char value[MAX_VALUE_LEN] = {0};
-  int ret;
-  struct timespec ts;
+  int ret = 0;
+  uint8_t addr, status;
+  uint8_t paxid = sensor_num - MB_SWITCH_PAX0_DIE_TEMP;
+  uint32_t temp, sub_cmd_id;
+  char device_name[LARGEST_DEVICE_NAME] = {0};
+  struct switchtec_dev *dev;
 
-  sprintf(key, "pax%d_proc", paxid);
-  ret = kv_get(key, value, NULL, 0);
-  if (ret < 0) {
-    return false;
+  if (pal_get_server_power(FRU_MB, &status) < 0 || status == SERVER_POWER_OFF) {
+    return -1;
   }
 
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  if (strtoul(value, NULL, 10) > ts.tv_sec)
-    return true;
+  addr = SWITCH_BASE_ADDR + paxid;
+  snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, addr);
 
-  return false;
+  pthread_mutex_lock(&pax_mutex);
+  dev = switchtec_open(device_name);
+  if (dev == NULL) {
+    syslog(LOG_WARNING, "%s: switchtec open %s failed", __func__, device_name);
+    pthread_mutex_unlock(&pax_mutex);
+    return -1;
+  }
+
+  sub_cmd_id = MRPC_DIETEMP_GET_GEN4;
+  ret = switchtec_cmd(dev, MRPC_DIETEMP, &sub_cmd_id,
+                      sizeof(sub_cmd_id), &temp, sizeof(temp));
+
+  switchtec_close(dev);
+  pthread_mutex_unlock(&pax_mutex);
+
+  if (ret == 0)
+    *value = (float) temp / 100.0;
+
+  return ret < 0? -1: 0;
 }
 
 int pal_get_pax_version(uint8_t paxid, char *version)
 {
   int ret;
+  uint8_t status;
   char device_name[LARGEST_DEVICE_NAME] = {0};
+  char key[MAX_KEY_LEN], tmp_str[64] = {0};
   struct switchtec_dev *dev;
+
+  snprintf(key, sizeof(key), "pax%d_ver", paxid);
+  if (kv_get(key, tmp_str, NULL, 0) == 0) {
+    snprintf(version, 64, "%s", tmp_str);
+    return 0;
+  }
+
+  if (pal_get_server_power(FRU_MB, &status) < 0 ||
+      status == SERVER_POWER_OFF) {
+    return -1;
+  }
 
   snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, SWITCH_BASE_ADDR + paxid);
 
+  pthread_mutex_lock(&pax_mutex);
   dev = switchtec_open(device_name);
   if (dev == NULL) {
     syslog(LOG_WARNING, "%s: switchtec open %s failed", __func__, device_name);
+    pthread_mutex_unlock(&pax_mutex);
     return -1;
   }
 
   ret = switchtec_get_fw_version(dev, version, sizeof(version));
 
   switchtec_close(dev);
+  pthread_mutex_unlock(&pax_mutex);
+
+  kv_set(key, version, 0, 0);
 
   return ret < 0? -1: 0;
+}
+
+int pal_fw_update_prepare(uint8_t fru, const char *comp)
+{
+  int ret = -1;
+  gpio_desc_t *desc;
+
+  if (fru != FRU_MB)
+    return -1;
+
+  if (!strcmp(comp, "pax0")) {
+      desc = gpio_open_by_shadow("SEL_FLASH_PAX0");
+  } else if (!strcmp(comp, "pax1")) {
+      desc = gpio_open_by_shadow("SEL_FLASH_PAX1");
+  } else if (!strcmp(comp, "pax2")) {
+      desc = gpio_open_by_shadow("SEL_FLASH_PAX2");
+  } else if (!strcmp(comp, "pax3")) {
+      desc = gpio_open_by_shadow("SEL_FLASH_PAX3");
+  } else {
+    //Shouldn't be here
+    return -1;
+  }
+
+  if (!desc) {
+    printf("ERROR: Opening SPI-Switch GPIO failed\n");
+    return -1;
+  }
+
+  if (!gpio_set_value(desc, GPIO_VALUE_HIGH)) {
+    ret = system("echo -n spi2.0 > /sys/bus/spi/drivers/m25p80/bind");
+  } else {
+    printf("ERROR: Switching flash to BMC failed\n");
+  }
+
+  gpio_close(desc);
+
+  return ret;
+}
+
+int pal_fw_update_finished(uint8_t fru, const char *comp, int status)
+{
+  int ret;
+  gpio_desc_t *desc;
+
+  if (fru != FRU_MB)
+    return -1;
+
+  if (system("echo -n spi2.0 > /sys/bus/spi/drivers/m25p80/unbind") != 0) {
+    printf("WARNING: Could not unbind PAX flash\n");
+  }
+
+  if (!strcmp(comp, "pax0")) {
+      desc = gpio_open_by_shadow("SEL_FLASH_PAX0");
+  } else if (!strcmp(comp, "pax1")) {
+      desc = gpio_open_by_shadow("SEL_FLASH_PAX1");
+  } else if (!strcmp(comp, "pax2")) {
+      desc = gpio_open_by_shadow("SEL_FLASH_PAX2");
+  } else if (!strcmp(comp, "pax3")) {
+      desc = gpio_open_by_shadow("SEL_FLASH_PAX3");
+  } else {
+    //Shouldn't be here
+    return -1;
+  }
+
+  if (!desc) {
+    printf("ERROR: Opening SPI-Switch GPIO failed\n");
+    return -1;
+  }
+
+  ret = gpio_set_value(desc, GPIO_VALUE_LOW);
+  if (ret < 0)
+    printf("ERROR: Switching flash to PAX failed\n");
+
+  gpio_close(desc);
+
+  return status;
 }

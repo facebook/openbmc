@@ -49,7 +49,6 @@ const char pal_tach_list[] = "0..7";
 static int sensors_read_common_fan(uint8_t, float*);
 static int sensors_read_common_adc(uint8_t, float*);
 static int read_battery_value(uint8_t, float*);
-static int read_pax_dietemp(uint8_t, float*);
 static int sensors_read_vicor(uint8_t, float*);
 static int sensors_read_common_therm(uint8_t, float*);
 static int sensors_read_pax_therm(uint8_t, float*);
@@ -439,13 +438,13 @@ struct sensor_map {
   [MB_SENSOR_PAX3_THERM_REMOTE] =
   {sensors_read_pax_therm, "MB_SENSOR_PAX3_THERM", SNR_TEMP},
   [MB_SWITCH_PAX0_DIE_TEMP] =
-  {read_pax_dietemp, "MB_SWITCH_PAX0_DIE_TEMP", SNR_TEMP},
+  {pal_read_pax_dietemp, "MB_SWITCH_PAX0_DIE_TEMP", SNR_TEMP},
   [MB_SWITCH_PAX1_DIE_TEMP] =
-  {read_pax_dietemp, "MB_SWITCH_PAX1_DIE_TEMP", SNR_TEMP},
+  {pal_read_pax_dietemp, "MB_SWITCH_PAX1_DIE_TEMP", SNR_TEMP},
   [MB_SWITCH_PAX2_DIE_TEMP] =
-  {read_pax_dietemp, "MB_SWITCH_PAX2_DIE_TEMP", SNR_TEMP},
+  {pal_read_pax_dietemp, "MB_SWITCH_PAX2_DIE_TEMP", SNR_TEMP},
   [MB_SWITCH_PAX3_DIE_TEMP] =
-  {read_pax_dietemp, "MB_SWITCH_PAX3_DIE_TEMP", SNR_TEMP},
+  {pal_read_pax_dietemp, "MB_SWITCH_PAX3_DIE_TEMP", SNR_TEMP},
   [MB_VR_P0V8_VDD0_VIN] =
   {sensors_read_vr, "MB_VR_P0V8_VDD0_VIN", SNR_VOLT},
   [MB_VR_P0V8_VDD1_VIN] =
@@ -620,41 +619,6 @@ static int read_battery_value(uint8_t sensor_num, float *value)
 bail:
   gpio_close(gp_batt);
   return ret;
-}
-
-static int read_pax_dietemp(uint8_t sensor_num, float *value)
-{
-  int ret = 0;
-  uint8_t addr, status;
-  uint8_t paxid = sensor_num - MB_SWITCH_PAX0_DIE_TEMP;
-  uint32_t temp, sub_cmd_id;
-  char device_name[LARGEST_DEVICE_NAME] = {0};
-  struct switchtec_dev *dev;
-
-  if (pal_get_server_power(FRU_MB, &status) < 0 || status == SERVER_POWER_OFF
-      || pal_is_pax_proc_ongoing(paxid)) {
-    return READING_NA;
-  }
-
-  addr = SWITCH_BASE_ADDR + paxid;
-  snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, addr);
-
-  dev = switchtec_open(device_name);
-  if (dev == NULL) {
-    syslog(LOG_WARNING, "%s: switchtec open %s failed", __func__, device_name);
-    return -1;
-  }
-
-  sub_cmd_id = MRPC_DIETEMP_GET_GEN4;
-  ret = switchtec_cmd(dev, MRPC_DIETEMP, &sub_cmd_id,
-                      sizeof(sub_cmd_id), &temp, sizeof(temp));
-
-  switchtec_close(dev);
-
-  if (ret == 0)
-    *value = (float) temp / 100.0;
-
-  return ret < 0? -1: 0;
 }
 
 static int sensors_read_vicor(uint8_t sensor_num, float *value)

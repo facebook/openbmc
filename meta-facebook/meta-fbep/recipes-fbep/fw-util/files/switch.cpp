@@ -3,163 +3,83 @@
 
 using namespace std;
 
-class PAXComponent0 : public Component {
+class PAXComponent : public Component {
+  uint8_t _paxid;
+  std::string _mtd_name;
   public:
-    PAXComponent0(string fru, string comp)
-      : Component(fru, comp) {}
+    PAXComponent(string fru, string comp, uint8_t paxid, std::string mtd)
+      : Component(fru, comp), _paxid(paxid), _mtd_name(mtd) {}
     int print_version();
     int update(string image);
+    int fupdate(string image);
 };
 
-int PAXComponent0::print_version()
+int PAXComponent::print_version()
 {
   int ret;
   char ver[64] = {0};
 
-  cout << "PAX0 IMG Version: ";
-  pal_set_pax_proc_ongoing(PAX0, 10);
-  ret = pal_get_pax_version(PAX0, ver);
+  cout << "PAX" << (int)_paxid << " IMG Version: ";
+  ret = pal_get_pax_version(_paxid, ver);
   if (ret < 0)
     cout << "NA" << endl;
   else
     cout << string(ver) << endl;
 
-  pal_set_pax_proc_ongoing(PAX0, 0);
+  return ret;
+}
+
+int PAXComponent::update(string image)
+{
+  return pal_pax_fw_update(_paxid, image.c_str());
+}
+
+int PAXComponent::fupdate(string image)
+{
+  int ret;
+  int mtdno, found = 0;
+  char line[128], name[32];
+  FILE *fp;
+
+  // TODO:
+  // 	Check fwimg before force update
+  //
+  ret = pal_fw_update_prepare(FRU_MB, _component.c_str());
+  if (ret) {
+    return -1;
+  }
+
+  fp = fopen("/proc/mtd", "r");
+  if (fp) {
+    while (fgets(line, sizeof(line), fp)) {
+      if (sscanf(line, "mtd%d: %*x %*x %s", &mtdno, name) == 2) {
+        if (!strcmp(_mtd_name.c_str(), name)) {
+          found = 1;
+          break;
+        }
+      }
+    }
+    fclose(fp);
+  }
+
+  if (found) {
+    snprintf(line, sizeof(line), "flashcp -v %s /dev/mtd%d", image.c_str(), mtdno);
+    ret = system(line);
+    if (WIFEXITED(ret) && (WEXITSTATUS(ret) == 0))
+      ret = FW_STATUS_SUCCESS;
+    else
+      ret = FW_STATUS_FAILURE;
+
+  } else {
+    ret = FW_STATUS_FAILURE;
+  }
+
+  ret = pal_fw_update_finished(FRU_MB, _component.c_str(), ret);
 
   return ret;
 }
 
-int PAXComponent0::update(string image)
-{
-  int ret;
-  string cmd("switchtec fw-update /dev/i2c-12@0x18 ");
-
-  cmd = cmd + image;
-  pal_set_pax_proc_ongoing(PAX0, 30*60);
-  ret = system(cmd.c_str());
-  pal_set_pax_proc_ongoing(PAX0, 0);
-
-  return ret < 0? -1: 0;
-}
-
-class PAXComponent1 : public Component {
-  public:
-    PAXComponent1(string fru, string comp)
-      : Component(fru, comp) {}
-    int print_version();
-    int update(string image);
-};
-
-int PAXComponent1::print_version()
-{
-  int ret;
-  char ver[64] = {0};
-
-  cout << "PAX1 IMG Version: ";
-  pal_set_pax_proc_ongoing(PAX1, 10);
-  ret = pal_get_pax_version(PAX1, ver);
-  if (ret < 0)
-    cout << "NA" << endl;
-  else
-    cout << string(ver) << endl;
-
-  pal_set_pax_proc_ongoing(PAX1, 0);
-
-  return ret;
-}
-
-int PAXComponent1::update(string image)
-{
-  int ret;
-  string cmd("switchtec fw-update /dev/i2c-12@0x19 ");
-
-  cmd = cmd + image;
-  pal_set_pax_proc_ongoing(PAX1, 30*60);
-  ret = system(cmd.c_str());
-  pal_set_pax_proc_ongoing(PAX1, 0);
-
-  return ret < 0? -1: 0;
-}
-
-class PAXComponent2 : public Component {
-  public:
-    PAXComponent2(string fru, string comp)
-      : Component(fru, comp) {}
-    int print_version();
-    int update(string image);
-};
-
-int PAXComponent2::print_version()
-{
-  int ret;
-  char ver[64] = {0};
-
-  cout << "PAX2 IMG Version: ";
-  pal_set_pax_proc_ongoing(PAX2, 10);
-  ret = pal_get_pax_version(PAX2, ver);
-  if (ret < 0)
-    cout << "NA" << endl;
-  else
-    cout << string(ver) << endl;
-
-  pal_set_pax_proc_ongoing(PAX2, 0);
-
-  return ret;
-}
-
-int PAXComponent2::update(string image)
-{
-  int ret;
-  string cmd("switchtec fw-update /dev/i2c-12@0x1a ");
-
-  cmd = cmd + image;
-  pal_set_pax_proc_ongoing(PAX2, 30*60);
-  ret = system(cmd.c_str());
-  pal_set_pax_proc_ongoing(PAX2, 0);
-
-  return ret < 0? -1: 0;
-}
-
-class PAXComponent3 : public Component {
-  public:
-    PAXComponent3(string fru, string comp)
-      : Component(fru, comp) {}
-    int print_version();
-    int update(string image);
-};
-
-int PAXComponent3::print_version()
-{
-  int ret;
-  char ver[64] = {0};
-
-  cout << "PAX3 IMG Version: ";
-  pal_set_pax_proc_ongoing(PAX3, 10);
-  ret = pal_get_pax_version(PAX3, ver);
-  if (ret < 0)
-    cout << "NA" << endl;
-  else
-    cout << string(ver) << endl;
-
-  pal_set_pax_proc_ongoing(PAX3, 0);
-
-  return ret;
-}
-
-int PAXComponent3::update(string image)
-{
-  int ret;
-  string cmd("switchtec fw-update /dev/i2c-12@0x1b ");
-
-  cmd = cmd + image;
-  pal_set_pax_proc_ongoing(PAX3, 30*60);
-  ret = system(cmd.c_str());
-  pal_set_pax_proc_ongoing(PAX3, 0);
-
-  return ret < 0? -1: 0;
-}
-
-PAXComponent0 pax0("mb", "pax0");
-PAXComponent1 pax1("mb", "pax1");
-PAXComponent2 pax2("mb", "pax2");
-PAXComponent3 pax3("mb", "pax3");
+PAXComponent pax0("mb", "pax0", 0, "\"switch0\"");
+PAXComponent pax1("mb", "pax1", 1, "\"switch0\"");
+PAXComponent pax2("mb", "pax2", 2, "\"switch0\"");
+PAXComponent pax3("mb", "pax3", 3, "\"switch0\"");

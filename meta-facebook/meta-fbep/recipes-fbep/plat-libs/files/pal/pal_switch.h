@@ -28,6 +28,8 @@ extern "C" {
 
 #define SWITCHTEC_DEV "/dev/i2c-12@0x%x"
 #define SWITCH_BASE_ADDR 0x18
+#define SWITCHTEC_UPDATE_CMD \
+  "switchtec fw-update "SWITCHTEC_DEV" %s -y"
 
 enum {
   PAX0 = 0,
@@ -36,9 +38,9 @@ enum {
   PAX3,
 };
 
-int pal_set_pax_proc_ongoing(uint8_t paxid, uint16_t tmout);
-bool pal_is_pax_proc_ongoing(uint8_t paxid);
-int pal_get_pax_version(uint8_t paxid, char *version);
+int pal_get_pax_version(uint8_t, char*);
+int pal_pax_fw_update(uint8_t, const char*);
+int pal_read_pax_dietemp(uint8_t, float*);
 
 #ifdef __cplusplus
 } // extern "C"

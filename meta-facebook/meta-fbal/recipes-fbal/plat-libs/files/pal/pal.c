@@ -903,7 +903,7 @@ pal_get_mb_mode(uint8_t* mode) {
   return 0;
 }
 
-static int
+int
 pal_get_config_is_master(void) {
   uint8_t mode = 0;
   uint8_t pos=0;

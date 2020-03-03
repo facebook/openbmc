@@ -160,6 +160,7 @@ int pal_uart_select_led_set(void);
 int pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver);
 int pal_get_platform_id(uint8_t *id);
 int pal_get_host_system_mode(uint8_t* mode);
+int pal_get_config_is_master(void);
 
 enum {
   UARTSW_BY_BMC,

@@ -13,6 +13,7 @@
 
 #define GPIO_POWER "FM_BMC_PWRBTN_OUT_R_N"
 #define GPIO_POWER_GOOD "PWRGD_SYS_PWROK"
+#define GPIO_CPU0_POWER_GOOD "PWRGD_CPU0_LVC3"
 #define GPIO_POWER_RESET "RST_BMC_RSTBTN_OUT_R_N"
 #define GPIO_RESET_BTN_IN "FP_BMC_RST_BTN_N"
 
@@ -80,22 +81,44 @@ pal_power_button_override(uint8_t fru_id) {
 int
 pal_get_server_power(uint8_t fru, uint8_t *status) {
   int ret;
+  uint8_t mode;
   gpio_desc_t *gdesc = NULL;
   gpio_value_t val;
 
   if (fru != FRU_MB)
     return -1;
 
-  gdesc = gpio_open_by_shadow(GPIO_POWER_GOOD);
-  if (gdesc == NULL)
-    return -1;
+  ret = pal_get_host_system_mode(&mode);
+  if(ret != 0) {
+    return ret;
+  }
 
-  ret = gpio_get_value(gdesc, &val);
-  if (ret != 0)
-    goto error;
+  ret = pal_get_config_is_master();
+  if(ret < 0) {
+    return ret;
+  }
 
-  *status = (int)val;
+  if(ret || mode == MB_2S_MODE) { 
+    gdesc = gpio_open_by_shadow(GPIO_POWER_GOOD);
+    if (gdesc == NULL)
+      return -1;
+ 
+    ret = gpio_get_value(gdesc, &val);
+    if (ret != 0)
+      goto error;
+ 
+    *status = (int)val;
+  } else {
+    gdesc = gpio_open_by_shadow(GPIO_CPU0_POWER_GOOD);
+    if (gdesc == NULL)
+      return -1;
 
+    ret = gpio_get_value(gdesc, &val);
+    if (ret != 0)
+      goto error;
+
+    *status = (int)val;
+  }
 error:
   gpio_close(gdesc);
   return ret;

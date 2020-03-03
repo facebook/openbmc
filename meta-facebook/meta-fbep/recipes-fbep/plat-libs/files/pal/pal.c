@@ -527,7 +527,7 @@ int pal_set_usb_path(uint8_t slot, uint8_t endpoint)
     ret = CC_UNSPECIFIED_ERROR;
     goto exit;
   }
-  value = slot%2 == 0? GPIO_VALUE_LOW: GPIO_VALUE_HIGH;
+  value = slot%2 == 0? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
   if (gpio_set_value(desc, value)) {
     ret = CC_UNSPECIFIED_ERROR;
     goto bail;
@@ -540,7 +540,7 @@ int pal_set_usb_path(uint8_t slot, uint8_t endpoint)
     ret = CC_UNSPECIFIED_ERROR;
     goto exit;
   }
-  value = slot/2 == 0? GPIO_VALUE_LOW: GPIO_VALUE_HIGH;
+  value = slot/2 == 0? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
   if (gpio_set_value(desc, value)) {
     ret = CC_UNSPECIFIED_ERROR;
     goto bail;

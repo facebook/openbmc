@@ -464,10 +464,10 @@ gpio_export PRSNT1_N_ASIC4 GPIOY3
 
 # Select USB from MB
 # [S1:S0]
-# 0:0 = MB#1
+# 1:1 = MB#0
+# 1:0 = MB#1
 # 0:1 = MB#2
-# 1:0 = MB#3
-# 1:1 = MB#4
+# 0:0 = MB#3
 # PCH
 gpio_export USB2_SEL0_U42 GPIOZ0
 gpio_set USB2_SEL0_U42 1

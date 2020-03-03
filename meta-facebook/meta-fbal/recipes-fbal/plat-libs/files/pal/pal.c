@@ -50,6 +50,8 @@
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
+#define MAX_CPU_NUM 8
+
 const char pal_fru_list[] = "all, mb, nic0, nic1, pdb, bmc";
 const char pal_server_list[] = "mb";
 
@@ -61,39 +63,65 @@ enum key_event {
   KEY_AFTER_INI,
 };
 
+typedef enum {
+  SV_LAST_PWR_ST = 0,
+  SV_SYSFW_VER,
+  SLED_IDENTIFY,
+  SLED_TIMESTAMP,
+  SV_POR_CFG,
+  SV_SNR_HEALTH,
+  NIC_SNR_HEALTH,
+  SV_SEL_ERR,
+  SV_BOOT_ORDER,
+  CPU0_PPIN,
+  CPU1_PPIN,
+  CPU2_PPIN,
+  CPU3_PPIN,
+  CPU4_PPIN,
+  CPU5_PPIN,
+  CPU6_PPIN,
+  CPU7_PPIN,
+  NTP_SERVER,
+  LAST_ID = 255
+} key_cfg_id;
+
 struct pal_key_cfg {
+  key_cfg_id id;
   char *name;
   char *def_val;
   int (*function)(int, void*);
 } key_cfg[] = {
   /* name, default value, function */
-  {"pwr_server_last_state", "on", key_func_lps},
-  {"sysfw_ver_server", "0", NULL},
-  {"identify_sled", "off", NULL},
-  {"timestamp_sled", "0", NULL},
-  {"server_por_cfg", "lps", key_func_por_policy},
-  {"server_sensor_health", "1", NULL},
-  {"nic_sensor_health", "1", NULL},
-  {"server_sel_error", "1", NULL},
-  {"server_boot_order", "0100090203ff", NULL},
-  {"ntp_server", "", NULL},
+  {SV_LAST_PWR_ST, "pwr_server_last_state", "on", key_func_lps},
+  {SV_SYSFW_VER, "sysfw_ver_server", "0", NULL},
+  {SLED_IDENTIFY, "identify_sled", "off", NULL},
+  {SLED_TIMESTAMP, "timestamp_sled", "0", NULL},
+  {SV_POR_CFG, "server_por_cfg", "lps", key_func_por_policy},
+  {SV_SNR_HEALTH, "server_sensor_health", "1", NULL},
+  {NIC_SNR_HEALTH, "nic_sensor_health", "1", NULL},
+  {SV_SEL_ERR, "server_sel_error", "1", NULL},
+  {SV_BOOT_ORDER, "server_boot_order", "0100090203ff", NULL},
+  {CPU0_PPIN, "cpu0_ppin", "", NULL},
+  {CPU1_PPIN, "cpu1_ppin", "", NULL},
+  {CPU2_PPIN, "cpu2_ppin", "", NULL},
+  {CPU3_PPIN, "cpu3_ppin", "", NULL},
+  {CPU4_PPIN, "cpu4_ppin", "", NULL},
+  {CPU5_PPIN, "cpu5_ppin", "", NULL},
+  {CPU6_PPIN, "cpu6_ppin", "", NULL},
+  {CPU7_PPIN, "cpu7_ppin", "", NULL},
+  {NTP_SERVER, "ntp_server", "", NULL},
   /* Add more Keys here */
-  {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
+  {LAST_ID, LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
 
 static int
 pal_key_index(char *key) {
-
   int i;
 
-  i = 0;
-  while(strcmp(key_cfg[i].name, LAST_KEY)) {
-
+  for (i = 0; key_cfg[i].id != LAST_ID; i++) {
     // If Key is valid, return success
     if (!strcmp(key, key_cfg[i].name))
       return i;
-
-    i++;
   }
 
 #ifdef DEBUG
@@ -411,19 +439,24 @@ pal_get_fru_name(uint8_t fru, char *name) {
 
 void
 pal_dump_key_value(void) {
-  int ret;
-  int i = 0;
-  char value[MAX_VALUE_LEN] = {0x0};
+  int i;
+  uint8_t mode;
+  char value[MAX_VALUE_LEN];
 
-  while (strcmp(key_cfg[i].name, LAST_KEY)) {
+  for (i = 0; key_cfg[i].id != LAST_ID; i++) {
+    if ((key_cfg[i].id >= CPU2_PPIN) && (key_cfg[i].id <= CPU7_PPIN)) {
+      if (!pal_get_host_system_mode(&mode) && (mode == MB_2S_MODE)) {
+        continue;
+      }
+    }
+
     printf("%s:", key_cfg[i].name);
-    if ((ret = kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST)) < 0) {
-    printf("\n");
-  } else {
-    printf("%s\n",  value);
-  }
-    i++;
-    memset(value, 0, MAX_VALUE_LEN);
+    memset(value, 0, sizeof(value));
+    if (kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST) < 0) {
+      printf("\n");
+    } else {
+      printf("%s\n", value);
+    }
   }
 }
 
@@ -664,7 +697,7 @@ pal_set_def_key_value() {
   int i;
   char key[MAX_KEY_LEN] = {0};
 
-  for(i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; i++) {
+  for (i = 0; key_cfg[i].id != LAST_ID; i++) {
     if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) {
 #ifdef DEBUG
       syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed.");
@@ -738,7 +771,7 @@ pal_get_blade_id(uint8_t *id) {
   return 0;
 }
 
-int 
+int
 pal_get_bmc_ipmb_slave_addr(uint16_t* slave_addr, uint8_t bus_id) {
   uint8_t val;
   int ret;
@@ -847,7 +880,7 @@ pal_get_mb_position(uint8_t* pos) {
     }
     cached = true;
   }
-  
+
   *pos = cached_pos;
 #ifdef DEBUG
   syslog(LOG_DEBUG,"%s BMC Position ID =%d\n", __func__, cached_pos);
@@ -872,21 +905,21 @@ pal_get_mb_mode(uint8_t* mode) {
 
 static int
 pal_get_config_is_master(void) {
-  uint8_t mode = 0;  
+  uint8_t mode = 0;
   uint8_t pos=0;
   int ret = 0;
   static bool cached = 0;
   static int status = 0;
 
   if (!cached) {
-    ret = pal_get_mb_mode(&mode); 
+    ret = pal_get_mb_mode(&mode);
     if(ret != 0) {
       return -1;
     }
-#ifdef DEBUG 
+#ifdef DEBUG
     syslog(LOG_DEBUG, "%s mode=%x", __func__, mode);
 #endif
-  
+
     ret = pal_get_mb_position(&pos);
     if(ret != 0) {
       return -1;
@@ -904,9 +937,9 @@ pal_get_config_is_master(void) {
   }
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s status=%x", __func__, status);
-#endif 
+#endif
   return status;
-} 
+}
 
 int
 pal_get_platform_id(uint8_t *id) {
@@ -917,7 +950,7 @@ pal_get_platform_id(uint8_t *id) {
   if (kv_get(key, value, NULL, 0)) {
     return false;
   }
-   
+
   *id = atoi(value);
   return 0;
 }
@@ -966,7 +999,7 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
   int i, j;
   char str[MAX_VALUE_LEN] = {0};
   char tstr[8] = {0};
-  uint8_t mode; 
+  uint8_t mode;
 
   ret = pal_get_host_system_mode(&mode);
   if(ret != 0) {
@@ -984,7 +1017,7 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
     if (ret) {
       return ret;
     }
- 
+
     for (i = 0, j = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
       sprintf(tstr, "%c%c", str[i], str[i+1]);
       ver[j++] = strtol(tstr, NULL, 16);
@@ -1140,7 +1173,7 @@ pal_uart_select_led_set(void) {
   pre_channel = channel;
 
   //show channel on 7-segment display
-  pal_uart_select(AST_GPIO_BASE, SEVEN_SEGMENT_OFFSET, SET_SEVEN_SEGMENT, channel); 
+  pal_uart_select(AST_GPIO_BASE, SEVEN_SEGMENT_OFFSET, SET_SEVEN_SEGMENT, channel);
   return 0;
 }
 
@@ -1229,7 +1262,7 @@ pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver) {
   }
 
   ver[0] = dev_id.fw_rev1;
-  ver[1] = dev_id.fw_rev2 >> 4; 
+  ver[1] = dev_id.fw_rev2 >> 4;
   ver[2] = dev_id.fw_rev2 & 0x0f;
   ver[3] = dev_id.aux_fw_rev[1];
   ver[4] = dev_id.aux_fw_rev[2] >> 4;
@@ -1423,8 +1456,7 @@ pal_get_board_rev_id(uint8_t *id) {
 }
 
 int
-pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
-{
+pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   int ret;
   uint8_t platform_id  = 0x00;
   uint8_t board_rev_id = 0x00;
@@ -1451,3 +1483,27 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   return completion_code;
 }
 
+int
+pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  char key[MAX_KEY_LEN];
+  char str[MAX_VALUE_LEN];
+  int i, comp_code = CC_SUCCESS;
+
+  *res_len = 0;
+  if (req_len > SIZE_CPU_PPIN*MAX_CPU_NUM)
+    req_len = SIZE_CPU_PPIN*MAX_CPU_NUM;
+
+  for (i = 0; i < req_len; i++) {
+    sprintf(&str[(i%MAX_CPU_NUM)*2], "%02x", req_data[i]);
+
+    if (!((i+1)%MAX_CPU_NUM)) {
+      sprintf(key, "cpu%d_ppin", i/MAX_CPU_NUM);
+      if (pal_set_key_value(key, str)) {
+        comp_code = CC_UNSPECIFIED_ERROR;
+        break;
+      }
+    }
+  }
+
+  return comp_code;
+}

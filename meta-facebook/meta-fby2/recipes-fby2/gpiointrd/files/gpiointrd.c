@@ -519,14 +519,14 @@ static void gpio_event_handle(gpio_poll_st *gp)
     if (gp->value == 1) { // low to high
       syslog(LOG_CRIT, "ASSERT: SLED is not seated");
       memset(cmd, 0, sizeof(cmd));
-      sprintf(cmd, "/usr/local/bin/setup_sled_out_fan.sh");
+      sprintf(cmd, "/usr/local/bin/fscd_end.sh 0");
       system(cmd);
     }
     else { // high to low
       syslog(LOG_CRIT, "DEASSERT: SLED is seated");
       memset(cmd, 0, sizeof(cmd));
       if (((server_type == TYPE_SPB_YV250) && (is_slot_missing() == true)) == false) {
-        sprintf(cmd, "sv start fscd");
+        sprintf(cmd, "/etc/init.d/setup-fan.sh");
         system(cmd);
       }
     }
@@ -636,10 +636,6 @@ static void gpio_event_handle(gpio_poll_st *gp)
             pthread_cancel(hsvc_action_tid[slot_id]);
           }
 
-          pal_set_dev_config_setup(0); // set up device fan config
-          if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
-            pal_set_dev_sdr_setup(slot_id,0);
-          }
           //Create thread for hsvc event detect
           if (pthread_create(&hsvc_action_tid[slot_id], NULL, hsvc_event_handler, &hsvc_info[slot_id]) < 0) {
             syslog(LOG_WARNING, "[%s] Create hsvc_event_handler thread failed for slot%x\n",__func__, slot_id);
@@ -872,6 +868,11 @@ hsvc_event_handler(void *ptr) {
             system(cmd);
           }
         }
+#if defined(CONFIG_FBY2_GPV2)
+        //clear slot type for detect invalid config
+        syslog(LOG_WARNING, "REMOVAl: SLOT%d empty",hsvc_info->slot_id);
+        fby2_set_slot_type(hsvc_info->slot_id,SLOT_TYPE_NULL);
+#endif
       }
       break;
     case INSERTION :
@@ -897,6 +898,8 @@ hsvc_event_handler(void *ptr) {
         sprintf(cmd, "echo %d > %s", slot_type, slotrcpath);
         system(cmd);
 
+        pal_set_dev_config_setup(0); // set up device fan config
+
         if (slot_type == SLOT_TYPE_SERVER) {  // Assign server type
           server_type = 0xFF;
           ret = fby2_get_server_type(hsvc_info->slot_id, &server_type);
@@ -907,6 +910,7 @@ hsvc_event_handler(void *ptr) {
           sprintf(cmd, "echo %d > %s", server_type, slotrcpath);
           system(cmd);
         } else if (slot_type == SLOT_TYPE_GPV2) {
+          pal_set_dev_sdr_setup(hsvc_info->slot_id,0);
           for (i=1; i<=MAX_NUM_DEVS; i++)
             dev_fru_complete[hsvc_info->slot_id][i] = DEV_FRU_NOT_COMPLETE;
         }

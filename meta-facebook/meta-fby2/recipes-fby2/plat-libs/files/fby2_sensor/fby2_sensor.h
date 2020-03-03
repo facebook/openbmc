@@ -557,6 +557,7 @@ int fby2_sensor_sdr_path(uint8_t fru, char *path);
 int fby2_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *value);
 int fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 int fby2_get_slot_type(uint8_t fru);
+int fby2_set_slot_type(uint8_t fru,uint8_t type);
 int fby2_get_server_type(uint8_t fru, uint8_t *type);
 int fby2_get_server_type_directly(uint8_t fru, uint8_t *type);
 int fby2_mux_control(char *device, uint8_t addr, uint8_t channel);

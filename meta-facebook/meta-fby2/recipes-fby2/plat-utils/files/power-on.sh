@@ -72,6 +72,13 @@ check_por_config()
 
 # Check whether it is fresh power on reset
 if [ $(is_bmc_por) -eq 1 ]; then
+  # Remove all GP/GPv2 info
+  for i in {2..13};
+  do
+    rm -rf /mnt/data/kv_store/sys_config/fru2_m2_${i}_info;
+    rm -rf /mnt/data/kv_store/sys_config/fru4_m2_${i}_info;
+  done
+
   /usr/local/bin/sync_date.sh
 
   # Disable clearing of PWM block on WDT SoC Reset

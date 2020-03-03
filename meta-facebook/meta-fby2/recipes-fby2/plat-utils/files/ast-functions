@@ -4,6 +4,9 @@
 
 DEVMEM=/sbin/devmem
 
+FSCD_END_SLED_OUT=0
+FSCD_END_INVALID_CONFIG=1
+
 devmem_set_bit() {
     local addr
     local val

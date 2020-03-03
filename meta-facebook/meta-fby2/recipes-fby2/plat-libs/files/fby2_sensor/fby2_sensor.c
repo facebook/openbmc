@@ -2316,6 +2316,15 @@ fby2_get_slot_type(uint8_t fru) {
   return bic_get_slot_type(fru);
 }
 
+/*
+ * Set SLOT type
+ * PAL_TYPE = 0(TwinLake), 1(Crace Flat), 2(Glacier Point), 3(Empty Slot), 4(Glacier Point V2)
+ */
+int
+fby2_set_slot_type(uint8_t fru,uint8_t type) {
+  return bic_set_slot_type(fru,type);
+}
+
 /* Get the units for the sensor */
 int
 fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {

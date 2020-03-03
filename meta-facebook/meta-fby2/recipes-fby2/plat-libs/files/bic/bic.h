@@ -497,6 +497,7 @@ int me_recovery(uint8_t slot_id, uint8_t command);
 int bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result);
 int bic_read_accuracy_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_accuracy_sensor_reading_t *sensor);
 int bic_get_slot_type(uint8_t fru);
+int bic_set_slot_type(uint8_t fru,uint8_t type);
 int bic_get_server_type(uint8_t fru, uint8_t *type);
 int bic_clear_cmos(uint8_t slot_id);
 int bic_reset(uint8_t slot_id);

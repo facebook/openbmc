@@ -3187,6 +3187,27 @@ bic_get_slot_type(uint8_t fru) {
 }
 
 int
+bic_set_slot_type(uint8_t fru,uint8_t type) {
+  int retry = 3;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4))
+    return type;
+
+  snprintf(key, sizeof(key), SLOT_FILE, fru);
+  snprintf(value, sizeof(value),"%d", type);
+  do {
+    if (write_device(key, value) == 0)
+      break;
+    syslog(LOG_WARNING,"bic_set_slot_type failed");
+    msleep(10);
+  } while (--retry);
+
+  return 0;
+}
+
+int
 bic_get_server_type(uint8_t fru, uint8_t *type) {
   int ret;
   int retries = 3;

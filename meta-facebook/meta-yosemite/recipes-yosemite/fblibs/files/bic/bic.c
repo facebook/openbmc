@@ -1167,6 +1167,7 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
            printf("updated bic boot loader: %d %%\n", offset/dsize*5);
            break;
        }
+       fflush(stdout);
        last_offset += dsize;
     }
   }

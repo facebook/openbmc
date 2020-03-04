@@ -10,7 +10,7 @@ static int pal_get_sensor_health_key(uint8_t fru, char *key)
   if (fru != FRU_MB)
       return -1;
 
-  sprintf(key, "base_sensor_health");
+  sprintf(key, "fru_sensor_health");
 
   return 0;
 }
@@ -46,9 +46,11 @@ int pal_get_fru_health(uint8_t fru, uint8_t *value)
 
   *value = atoi(cvalue);
 
+  if (fru != FRU_MB)
+    return 0;
+
   // If Baseboard, get SEL error status.
-#if 0
-  sprintf(key, "base_sel_error");
+  sprintf(key, "fru_sel_error");
   memset(cvalue, 0, MAX_VALUE_LEN);
 
   ret = pal_get_key_value(key, cvalue);
@@ -58,7 +60,6 @@ int pal_get_fru_health(uint8_t fru, uint8_t *value)
   }
 
   *value = *value & atoi(cvalue);
-#endif
   return 0;
 }
 

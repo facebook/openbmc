@@ -73,8 +73,8 @@ struct pal_key_cfg {
   /* name, default value, function */
   {"identify_sled", "off", NULL},
   {"timestamp_sled", "0", NULL},
-  {"base_sensor_health", "1", NULL},
-  //{"base_sel_error", "1", NULL},
+  {"fru_sensor_health", "1", NULL},
+  {"fru_sel_error", "1", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
@@ -168,6 +168,7 @@ int pal_set_key_value(char *key, char *value)
 int pal_set_def_key_value()
 {
   int i;
+  char key[MAX_KEY_LEN] = {0};
 
   for (i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; i++) {
     if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) {
@@ -180,6 +181,22 @@ int pal_set_def_key_value()
     }
   }
 
+  /* Actions to be taken on Power On Reset */
+  if (pal_is_bmc_por()) {
+    /* Clear all the SEL errors */
+    memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, "fru_sel_error");
+
+    /* Write the value "1" which means FRU_STATUS_GOOD */
+    pal_set_key_value(key, "1");
+
+    /* Clear all the sensor health files*/
+    memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, "fru_sensor_health");
+
+    /* Write the value "1" which means FRU_STATUS_GOOD */
+    pal_set_key_value(key, "1");
+  }
   return 0;
 }
 
@@ -998,4 +1015,22 @@ int pal_get_sysfw_ver(uint8_t fru, uint8_t *ver)
 void pal_get_eth_intf_name(char* intf_name)
 {
   snprintf(intf_name, 8, "usb0");
+}
+
+void pal_dump_key_value(void)
+{
+  int ret;
+  int i = 0;
+  char value[MAX_VALUE_LEN] = {0x0};
+
+  while (strcmp(key_cfg[i].name, LAST_KEY)) {
+    printf("%s:", key_cfg[i].name);
+    if ((ret = kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST)) < 0) {
+    printf("\n");
+  } else {
+    printf("%s\n",  value);
+  }
+    i++;
+    memset(value, 0, MAX_VALUE_LEN);
+  }
 }

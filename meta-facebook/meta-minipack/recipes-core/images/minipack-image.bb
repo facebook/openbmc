@@ -40,8 +40,6 @@ IMAGE_INSTALL += " \
   sensor-mon \
   spatula \
   threshold-util \
-  trousers \
-  tpm-tools \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \

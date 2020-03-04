@@ -6,6 +6,8 @@ PR = "r1"
 inherit packagegroup
 
 RDEPENDS_${PN} += " \
+  fw-util \
+  gpiocli \
   i2c-tools \
   kernel-modules \
   lmsensors-sensors \
@@ -18,6 +20,4 @@ RDEPENDS_${PN} += " \
   u-boot \
   u-boot-fw-utils \
   wdtcli \
-  gpiocli \
-  fw-util \
   "

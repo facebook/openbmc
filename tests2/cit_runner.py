@@ -39,6 +39,10 @@ class Tests:
             "common",
             "minipack",
         ],  # So yamp can import minipack tests and run them only one time
+        "elbert": [
+            "common",
+            "minipack",
+        ],  # So elbert can import minipack tests and run them only one time
     }
 
     def __init__(self, platform, start_dir=BMC_START_DIR, pattern="test*.py"):
@@ -168,6 +172,7 @@ def arg_parser():
             "lightning",
             "fbttn",
             "yamp",
+            "elbert",
         ],
     )
     parser.add_argument(

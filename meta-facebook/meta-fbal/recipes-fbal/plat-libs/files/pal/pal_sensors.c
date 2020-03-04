@@ -96,15 +96,15 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_CPU1_DIMM_GRPD_TEMP,
   MB_SNR_CPU1_DIMM_GRPE_TEMP,
   MB_SNR_CPU1_DIMM_GRPF_TEMP,
-  MB_SNR_DATA0_DRIVER_TEMP,
-  MB_SNR_DATA1_DRIVER_TEMP,
+  MB_SNR_DATA0_DRIVE_TEMP,
+  MB_SNR_DATA1_DRIVE_TEMP,
   MB_SNR_CPU0_PKG_POWER,
   MB_SNR_CPU1_PKG_POWER,
   MB_SNR_CPU0_TJMAX,
   MB_SNR_CPU1_TJMAX,
   MB_SNR_CPU0_THERM_MARGIN,
   MB_SNR_CPU1_THERM_MARGIN,
-  MB_SNR_P3V3_STBY_INA260_VOL,
+  MB_SNR_P12V_STBY_INA260_VOL,
   MB_SNR_P3V3_M2_1_INA260_VOL,
   MB_SNR_P3V3_M2_2_INA260_VOL,
   MB_SNR_P3V3_M2_3_INA260_VOL,
@@ -323,8 +323,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2F
 
-  {"MB_CPU0_TJMAX", CPU_ID0, read_cpu_tjmax, false, {81, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x30
-  {"MB_CPU1_TJMAX", CPU_ID1, read_cpu_tjmax, false, {81, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x31
+  {"MB_CPU0_TJMAX", CPU_ID0, read_cpu_tjmax, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x30
+  {"MB_CPU1_TJMAX", CPU_ID1, read_cpu_tjmax, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x31
   {"MB_CPU0_PKG_POWER", CPU_ID0, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x32
   {"MB_CPU1_PKG_POWER", CPU_ID1, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x33
   {"MB_CPU0_THERM_MARGIN", CPU_ID0, read_cpu_thermal_margin, false, {-5, 0, 0, -70, 0, 0, 0, 0}, TEMP}, //0x34
@@ -391,9 +391,9 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"PDB_FAN2_CURR", CM_FAN2_CURR, read_cm_sensor, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x6E
   {"PDB_FAN3_CURR", CM_FAN3_CURR, read_cm_sensor, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x6F
 
-  {"MB_BOOT_DRIVER_TEMP",  DISK_BOOT,  read_hd_temp, false, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x70
-  {"MB_DATA0_DRIVER_TEMP", DISK_DATA0, read_hd_temp, false, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x71
-  {"MB_DATA1_DRIVER_TEMP", DISK_DATA1, read_hd_temp, false, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x72
+  {"MB_BOOT_DRIVE_TEMP",  DISK_BOOT,  read_hd_temp, false, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x70
+  {"MB_DATA0_DRIVE_TEMP", DISK_DATA0, read_hd_temp, false, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x71
+  {"MB_DATA1_DRIVE_TEMP", DISK_DATA1, read_hd_temp, false, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x72
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x73
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x74
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x75
@@ -425,7 +425,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8F
 
-  {"MB_P3V3_STBY_INA260_VOL", INA260_ID0, read_ina260_vol, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x90
+  {"MB_P12V_STBY_INA260_VOL", INA260_ID0, read_ina260_vol, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x90
   {"MB_P3V3_M2_1_INA260_VOL", INA260_ID1, read_ina260_vol, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x91
   {"MB_P3V3_M2_2_INA260_VOL", INA260_ID2, read_ina260_vol, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x92
   {"MB_P3V3_M2_3_INA260_VOL", INA260_ID3, read_ina260_vol, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x93

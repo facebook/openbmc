@@ -50,6 +50,7 @@ enum {
   NORMAL = 0,
   TRANSIT = 1,
   BOOST = 2,
+  PROGRESSION = 3,
 };
 
 static void
@@ -215,6 +216,9 @@ fan_mode_check(bool printMode) {
         break;
       case BOOST:
         printf("Fan Mode: Boost\n");
+        break;
+      case PROGRESSION:
+        printf("Fan Mode: Progression\n");
         break;
       default:
         printf("Fan Mode: Unknown\n");

@@ -30,7 +30,5 @@ IMAGE_INSTALL += " \
   psumuxmon \
   mterm \
   spatula \
-  trousers \
-  tpm-tools \
   fscd  \
   "

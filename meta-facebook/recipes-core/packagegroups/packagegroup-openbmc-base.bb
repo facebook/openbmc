@@ -13,6 +13,7 @@ RDEPENDS_${PN} += " \
   lmsensors-sensors \
   logrotate \
   os-release \
+  packagegroup-openbmc-tpm \
   passwd-util \
   rsyslog \
   sudo \

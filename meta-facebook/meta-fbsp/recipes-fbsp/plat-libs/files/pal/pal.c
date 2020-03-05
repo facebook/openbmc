@@ -52,7 +52,7 @@
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
-const char pal_fru_list[] = "all, mb, nic0, nic1, riser1, riser2, bmc";
+const char pal_fru_list[] = "all, mb, nic0, nic1, riser1, riser2, fcb, bmc";
 const char pal_server_list[] = "mb";
 
 static int key_func_por_policy (int event, void *arg);

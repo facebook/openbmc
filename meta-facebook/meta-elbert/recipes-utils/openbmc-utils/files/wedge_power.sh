@@ -19,7 +19,8 @@
 #
 
 # ELBERTTODO 442074 wedge_power.sh
-# . /usr/local/bin/openbmc-utils.sh
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
@@ -50,8 +51,17 @@ usage() {
 }
 
 do_status() {
-   echo "WEDGE_POWER do_status NOT IMPLEMENTED YET"
-   exit 1
+    echo -n "Microserver power is "
+    return_code=0
+
+    if wedge_is_us_on; then
+        echo "on"
+    else
+        echo "off"
+        return_code=1
+    fi
+
+    return $return_code
 }
 
 do_on() {
@@ -90,13 +100,48 @@ do_on() {
 }
 
 do_off() {
-   echo "WEDGE_POWER do_off NOT IMPLEMENTED YET"
-   exit 1
+    local ret
+    echo -n "Power off microserver ..."
+    wedge_power_off_board
+    ret=$?
+    if [ $ret -eq 0 ]; then
+        echo " Done"
+        logger "Successfully power off micro-server"
+    else
+        echo " Failed"
+        logger "Failed to power off micro-server"
+    fi
+    return $ret
 }
 
 do_reset() {
-   echo "WEDGE_POWER NOT IMPLEMENTED YET"
-   exit 1
+    local system opt
+    system=0
+    while getopts "s" opt; do
+        case $opt in
+            s)
+                system=1
+                ;;
+            *)
+                usage
+                exit 1
+                ;;
+        esac
+    done
+    if [ $system -eq 1 ]; then
+        logger "Power reset the whole system ..."
+        echo -n "Power reset the whole system ..."
+        sleep 1
+        echo 0xde > "$PWR_SYSTEM_SYSFS"
+        sleep 8
+        # The chassis shall be reset now... if not, we are in trouble
+        echo " Failed"
+        return 254
+    else
+        do_off
+        sleep 1
+        do_on
+    fi
 
 }
 

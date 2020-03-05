@@ -82,15 +82,15 @@
       },
       "read_limit": {
         "valid": {
-          "limit": 118,
+          "limit": 110,
           "threshold": 20,
           "action": "host_shutdown"
         },
         "alarm_major": {
-          "limit": 110
+          "limit": 103
         },
         "alarm_minor": {
-          "limit": 107,
+          "limit": 100,
           "soak_time_s": 300
         }
       },

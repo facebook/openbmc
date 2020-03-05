@@ -1050,6 +1050,7 @@ pal_fw_update_prepare(uint8_t fru, const char *comp) {
       syslog(LOG_ERR, "Unable to put ME in recovery mode!\n");
       return -1;
     }
+    sleep(5); // wait for ME changing mode
 
     ret = -1;
     desc = gpio_open_by_shadow("FM_BIOS_SPI_BMC_CTRL");

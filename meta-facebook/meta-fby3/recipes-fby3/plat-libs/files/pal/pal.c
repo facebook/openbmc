@@ -47,6 +47,7 @@ const char pal_fru_list_rw[] = "slot1, slot2, slot3, slot4, bmc, bb, nicexp";
 const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc";
 
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic";
+const char pal_guid_fru_list[] = "slot1, slot2, slot3, slot4, bmc";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 const char pal_dev_list[] = "all, 1U, 2U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5";
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
@@ -963,28 +964,44 @@ pal_set_guid(uint16_t offset, char *guid) {
 
 int
 pal_get_sys_guid(uint8_t fru, char *guid) {
-  return bic_get_sys_guid(fru, (uint8_t *)guid);
+  if (fru == FRU_SLOT1 || fru == FRU_SLOT2 || fru == FRU_SLOT3 || fru == FRU_SLOT4) {
+    return bic_get_sys_guid(fru, (uint8_t *)guid);
+  } else {
+    return -1;
+  }
 }
 
 int
 pal_set_sys_guid(uint8_t fru, char *str) {
   char guid[GUID_SIZE] = {0};
-
-  pal_populate_guid(guid, str);
-  return bic_set_sys_guid(fru, (uint8_t *)guid);
+  
+  if (fru == FRU_SLOT1 || fru == FRU_SLOT2 || fru == FRU_SLOT3 || fru == FRU_SLOT4) {
+    pal_populate_guid(guid, str);
+    return bic_set_sys_guid(fru, (uint8_t *)guid);
+  } else {
+    return -1;
+  }
 }
 
 int
-pal_get_dev_guid(uint8_t fru, char *guid) {
-  return pal_get_guid(OFFSET_DEV_GUID, guid);
+pal_get_dev_guid(uint8_t fru, char *guid) {  
+  if (fru == FRU_BMC) {
+    return pal_get_guid(OFFSET_DEV_GUID, guid);
+  } else {
+    return -1;
+  }
 }
 
 int
 pal_set_dev_guid(uint8_t fru, char *str) {
   char guid[GUID_SIZE] = {0};
-
+  
   pal_populate_guid(guid, str);
-  return pal_set_guid(OFFSET_DEV_GUID, guid);
+  if (fru == FRU_BMC) {
+    return pal_set_guid(OFFSET_DEV_GUID, guid);
+  } else {
+    return -1;
+  }
 }
 
 bool
@@ -1393,4 +1410,3 @@ int
 pal_get_dev_fruid_path(uint8_t fru, uint8_t dev_id, char *path) {
   return fby3_get_fruid_path(fru, dev_id, path);
 }
-

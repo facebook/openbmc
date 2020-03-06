@@ -32,14 +32,16 @@ SRC_URI =+ "file://Makefile \
            file://bic_cpld.h \
            file://extlib.cpp \
            file://extlib.h \
+           file://spiflash.cpp \
+           file://spiflash.h \
            file://image_parts.json \
           "
 
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -lpal -lvbs -ldl "
-DEPENDS += "jansson libpal dtc zlib openssl libvbs "
-RDEPENDS_${PN} += "jansson libpal zlib openssl libvbs "
+LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -lpal -lvbs -ldl -lgpio-ctrl"
+DEPENDS += "jansson libpal dtc zlib openssl libvbs libgpio-ctrl"
+RDEPENDS_${PN} += "jansson libpal zlib openssl libvbs libgpio-ctrl"
 
 do_install() {
   install -d ${D}${bindir}

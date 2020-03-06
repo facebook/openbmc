@@ -1,22 +1,22 @@
 #ifndef _BIOS_H_
 #define _BIOS_H_
 
-#include "fw-util.h"
+#include "spiflash.h"
 
-class BiosComponent : public Component {
+class BiosComponent : public GPIOSwitchedSPIMTDComponent {
   protected:
-  std::string _mtd_name;
-  std::string _ver_prefix;
-
-  virtual int extract_signature(const char *path, std::string &sig);
-  virtual int check_image(const char *path);
-  int update(const char *path, uint8_t force);
+    std::string _ver_prefix;
+    virtual int extract_signature(const char *path, std::string &sig);
+    virtual int check_image(const char *path);
+    int update(std::string image, bool force);
   public:
-    BiosComponent(std::string fru, std::string comp, std::string mtd, std::string verp)
-      : Component(fru, comp), _mtd_name(mtd), _ver_prefix(verp) {}
-    int update(std::string image);
-    int fupdate(std::string image);
+    BiosComponent(std::string fru, std::string comp, std::string mtd, std::string dev, std::string shadow, bool level, std::string verp) :
+      GPIOSwitchedSPIMTDComponent(fru, comp, mtd, dev, shadow, level), _ver_prefix(verp) {}
+    BiosComponent(std::string fru, std::string comp, std::string mtd, std::string verp) :
+      GPIOSwitchedSPIMTDComponent(fru, comp, mtd, "spi1.0", "BMC_BIOS_FLASH_CTL", true), _ver_prefix(verp) {}
     int print_version();
+    int update(std::string image) override;
+    int fupdate(std::string image) override;
 };
 
 #endif

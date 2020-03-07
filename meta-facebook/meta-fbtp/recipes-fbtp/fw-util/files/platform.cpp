@@ -8,7 +8,7 @@
 
 class FBTPBiosComponent : public BiosComponent {
   private:
-    int check_image(const char *path)
+    int check_image(const char *path) override
     {
       std::string vers;
       uint8_t board_info, sku;
@@ -36,8 +36,8 @@ class FBTPBiosComponent : public BiosComponent {
       return -1;
     }
   public:
-    FBTPBiosComponent(std::string fru, std::string comp, std::string mtd, std::string verp) :
-      BiosComponent(fru, comp, mtd, verp) {}
+    FBTPBiosComponent(std::string fru, std::string comp, std::string mtd, std::string dev, std::string shadow, bool level, std::string verp) :
+      BiosComponent(fru, comp, mtd, dev, shadow, level, verp) {}
 };
 
 // Set aliases for BMC components to MB components
@@ -46,6 +46,6 @@ AliasComponent rom("mb", "rom", "bmc", "rom");
 AliasComponent mb_fscd("mb", "fscd", "bmc", "fscd");
 UsbDbgComponent usbdbg("mb", "usbdbgfw", "FBTP", 9, 0x60, false);
 UsbDbgBlComponent usbdbgbl("mb", "usbdbgbl", 9, 0x60, 0x02);
-FBTPBiosComponent bios("mb", "bios", "\"bios0\"", "");
+FBTPBiosComponent bios("mb", "bios", "bios0", "spi1.0", "BMC_BIOS_FLASH_CTRL", true, "");
 NicComponent nic("nic", "nic");
 TpmComponent tpm("bmc", "tpm");

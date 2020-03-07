@@ -443,5 +443,4 @@ gpio_export IRQ_SML1_PMBUS_ALERT_N GPIOAA1
 gpio_export IRQ_HSC_FAULT_N GPIOAB0
 
 # BMC_BIOS_FLASH_CTRL
-# TODO Does exporting cause weird behavior.
-# gpio_export BMC_BIOS_FLASH_CTRL GPION5
+gpio_export BMC_BIOS_FLASH_CTRL GPION5

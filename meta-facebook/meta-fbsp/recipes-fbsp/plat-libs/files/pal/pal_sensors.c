@@ -354,8 +354,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_CPU1_TJMAX", CPU_ID1, read_cpu_tjmax, false, {0, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x31
   {"MB_CPU0_PKG_POWER", CPU_ID0, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x32
   {"MB_CPU1_PKG_POWER", CPU_ID1, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x33
-  {"MB_CPU0_THERM_MARGIN", CPU_ID0, read_cpu_thermal_margin, false, {-5, 0, 0, -70, 0, 0, 0, 0}, TEMP}, //0x34
-  {"MB_CPU1_THERM_MARGIN", CPU_ID1, read_cpu_thermal_margin, false, {-5, 0, 0, -70, 0, 0, 0, 0}, TEMP}, //0x35
+  {"MB_CPU0_THERM_MARGIN", CPU_ID0, read_cpu_thermal_margin, false, {-5, 0, 0, -76, 0, 0, 0, 0}, TEMP}, //0x34
+  {"MB_CPU1_THERM_MARGIN", CPU_ID1, read_cpu_thermal_margin, false, {-5, 0, 0, -76, 0, 0, 0, 0}, TEMP}, //0x35
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x36
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x37
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x38
@@ -479,8 +479,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA7
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA9
-  {"MB_CPU0_TEMP", CPU_ID0, read_cpu_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAA
-  {"MB_CPU1_TEMP", CPU_ID1, read_cpu_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAB
+  {"MB_CPU0_TEMP", CPU_ID0, read_cpu_temp, false, {80, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xAA
+  {"MB_CPU1_TEMP", CPU_ID1, read_cpu_temp, false, {80, 0, 0, 5, 0, 0, 0, 0}, TEMP}, //0xAB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE

@@ -10,7 +10,7 @@
 #define MB_ADC_VOLTAGE_DEVICE "/sys/devices/platform/iio-hwmon/hwmon/hwmon*/in%d_input"
 
 //PECI CMD INFO
-#define PECI_RETRY_TIMES                        (0)
+#define PECI_RETRY_TIMES                        (10)
 #define PECI_CMD_RD_PKG_CONFIG                  (0xA1)
 #define PECI_INDEX_ACCUMULATED_ENERGY_STATUS    (3)
 #define PECI_INDEX_THERMAL_MARGIN               (10)

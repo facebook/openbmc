@@ -530,6 +530,7 @@ enum
 // OEM Command Codes for 2S/8S server and GPU baseboard
 enum
 {
+  CMD_OEM_ZION_GET_SYSTEM_MODE = 0x00,
   CMD_OEM_ZION_SET_USB_PATH = 0x20,
 };
 

@@ -3954,6 +3954,25 @@ ipmi_handle_oem_usb_dbg(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_zion_get_system_mode(unsigned char *request, unsigned char req_len,
+       unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  uint8_t mode;
+
+  if (pal_get_host_system_mode(&mode) < 0) {
+    memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
+    *res_len = SIZE_IANA_ID;
+    res->cc = CC_INVALID_CMD;
+  } else {
+    res->data[0] = mode;
+    *res_len = 1;
+    res->cc = CC_SUCCESS;
+  }
+}
+
+static void
 oem_zion_set_usb_path(unsigned char *request, unsigned char req_len,
        unsigned char *response, unsigned char *res_len)
 {
@@ -3962,7 +3981,7 @@ oem_zion_set_usb_path(unsigned char *request, unsigned char req_len,
   uint8_t slot = req->data[0];
   uint8_t endpoint = req->data[1];
 
-  res-> cc = pal_set_usb_path(slot, endpoint);
+  res->cc = pal_set_usb_path(slot, endpoint);
 }
 
 static void
@@ -3977,6 +3996,9 @@ ipmi_handle_oem_zion(unsigned char *request, unsigned char req_len,
   pthread_mutex_lock(&m_oem_zion);
   switch (cmd)
   {
+    case CMD_OEM_ZION_GET_SYSTEM_MODE:
+      oem_zion_get_system_mode(request, req_len, response, res_len);
+      break;
     case CMD_OEM_ZION_SET_USB_PATH:
       oem_zion_set_usb_path(request, req_len, response, res_len);
       break;

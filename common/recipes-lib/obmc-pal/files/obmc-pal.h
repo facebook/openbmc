@@ -409,6 +409,7 @@ int pal_update_sensor_reading_sdr (uint8_t fru);
 int pal_set_usb_path (uint8_t slot, uint8_t endpoint);
 int pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw);
 void pal_get_eth_intf_name(char *intf_name);
+int pal_get_host_system_mode(uint8_t *mode);
 
 #ifdef __cplusplus
 }

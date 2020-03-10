@@ -2299,3 +2299,8 @@ void __attribute__((weak))
 pal_get_eth_intf_name(char* intf_name) {
   snprintf(intf_name, 8, "eth0");
 }
+
+int __attribute__((weak))
+pal_get_host_system_mode(uint8_t *mode) {
+  return PAL_ENOTSUP;
+}

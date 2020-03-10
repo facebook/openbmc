@@ -5453,10 +5453,10 @@ void set_psu_led(int brd_rev)
   char path[LARGEST_DEVICE_NAME + 1];
   int psu1_sensor_num[] = { PSU1_SENSOR_IN_VOLT,
                             PSU1_SENSOR_12V_VOLT,
-                            PSU1_SENSOR_12V_VOLT};
+                            PSU1_SENSOR_STBY_VOLT};
   int psu2_sensor_num[] = { PSU2_SENSOR_IN_VOLT,
                             PSU2_SENSOR_12V_VOLT,
-                            PSU2_SENSOR_12V_VOLT};
+                            PSU2_SENSOR_STBY_VOLT};
   int pem1_sensor_num[] = { PEM1_SENSOR_IN_VOLT,
                             PEM1_SENSOR_OUT_VOLT};
   int pem2_sensor_num[] = { PEM2_SENSOR_IN_VOLT,
@@ -5469,39 +5469,9 @@ void set_psu_led(int brd_rev)
   pem2_sensor_cnt = sizeof(pem2_sensor_num)/sizeof(pem2_sensor_num[0]);
   psu1_sensor_cnt = sizeof(psu1_sensor_num)/sizeof(psu1_sensor_num[0]);
   psu2_sensor_cnt = sizeof(psu2_sensor_num)/sizeof(psu2_sensor_num[0]);
-  for( fru = FRU_PEM1 ; fru <= FRU_PSU2 ; fru++){
-    pal_is_fru_prsnt(fru,&prsnt);
-    if(fru >= FRU_PEM1 && fru <= FRU_PEM2){    // check PEM present.
-      if(prsnt){
-        pem_prsnt = prsnt;                     // if PEM present,no need to check PSU.
-      }else{
-        pem_prsnt = 0;
-        continue;                              // if PEM not present, continue to check
-      }
-    }else if(fru >= FRU_PSU1 && fru <= FRU_PSU2){
-      if(!prsnt){            // PSU not present then check PEM present.
-        if(!pem_prsnt)       // PEM not present.
-        {
-          OBMC_WARN("%s: PSU%d isn't presence\n",__func__,fru-FRU_PSU1+1);
-          goto cleanup;
-        }else{               // PEM present check another PSU or PEM.
-          continue;
-        }
-      }
-    }else{
-      OBMC_WARN("%s: exit with invalid fru %d\n",__func__,fru);
-      return;
-    }
-    pal_is_fru_ready(fru,&ready[fru-FRU_PEM1]);
-    if(!ready[fru-FRU_PEM1]){
-      if(fru >= FRU_PSU1 && !ready[fru-2]){     // if PSU and PEM aren't ready both
-        OBMC_WARN("%s: PSU%d and PEM%d can't access\n",
-        __func__,fru-FRU_PSU1+1,fru-FRU_PSU1+1);
-        goto cleanup;
-      }
-      continue;
-    }
 
+  pem_prsnt = 0;
+  for( fru = FRU_PEM1 ; fru <= FRU_PSU2 ; fru++){
     switch(fru){
       case FRU_PEM1:
         sensor_cnt = pem1_sensor_cnt;
@@ -5516,24 +5486,53 @@ void set_psu_led(int brd_rev)
         sensor_cnt = psu2_sensor_cnt;
         sensor_num = psu2_sensor_num;  break;
       default :
-        set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-        OBMC_WARN("%s: fru id error %d\n",__func__,fru);
-        return;
+        OBMC_WARN("%s: skip with invalid fru %d\n",__func__,fru);
+        continue;
     }
+
+    pal_is_fru_prsnt(fru,&prsnt);
+    if(fru == FRU_PEM1 || fru == FRU_PEM2){    // check PEM present.
+      if(prsnt){
+        pem_prsnt = prsnt;                     // if PEM present,no need to check PSU.
+      }else{
+        pem_prsnt = 0;
+        continue;                              // if PEM not present, continue to check
+      }
+    }else if(fru == FRU_PSU1 || fru == FRU_PSU2){
+      if(!prsnt){            // PSU not present then check PEM present.
+        if(!pem_prsnt)       // PEM not present.
+        {
+          OBMC_WARN("%s: PSU%d isn't presence\n",__func__,fru-FRU_PSU1+1);
+          goto cleanup;
+        }
+        else{               // PEM present check another PSU or PEM.
+          continue;
+        }
+      }
+    }
+    pal_is_fru_ready(fru,&ready[fru-FRU_PEM1]);
+    if(!ready[fru-FRU_PEM1]){
+      if(fru >= FRU_PSU1 && !ready[fru-2]){     // if PSU and PEM aren't ready both
+        OBMC_WARN("%s: PSU%d and PEM%d can't access\n",
+        __func__,fru-FRU_PSU1+1,fru-FRU_PSU1+1);
+        goto cleanup;
+      }
+      continue;
+    }
+
     for(i = 0; i < sensor_cnt ; i++) {
       pal_get_sensor_threshold(fru, sensor_num[i], UCR_THRESH, &ucr);
       pal_get_sensor_threshold(fru, sensor_num[i], LCR_THRESH, &lcr);
+      pal_get_sensor_name(fru, sensor_num[i],sensor_name);
 
       if(fru >= FRU_PEM1 && fru <= FRU_PEM2){
         if(pem_sensor_read(sensor_num[i], &value)) {
-          pal_get_sensor_name(fru, sensor_num[i],sensor_name);
           OBMC_WARN("%s: fru %d sensor id %d (%s) can't access %s\n",
           __func__,fru,sensor_num[i],sensor_name,path);
           goto cleanup;
         }
       }else if(fru >= FRU_PSU1 && fru <= FRU_PSU2){
         if(psu_sensor_read(sensor_num[i], &value)) {
-          pal_get_sensor_name(fru, sensor_num[i],sensor_name);
           OBMC_WARN("%s: fru %d sensor id %d (%s) can't access %s\n",
           __func__,fru,sensor_num[i],sensor_name,path);
           goto cleanup;
@@ -5545,15 +5544,18 @@ void set_psu_led(int brd_rev)
         __func__,sensor_name,value,ucr);
         goto cleanup;
       }else if(value < lcr){
-        set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
         OBMC_WARN("%s: %s value is under than LCR ( %.2f < %.2f )\n",
         __func__,sensor_name,value,lcr);
         goto cleanup;
       }
     }
   }
-cleanup:
   set_sled(brd_rev, SLED_CLR_BLUE, SLED_PSU);
+  sleep(LED_INTERVAL);
+  return;
+
+cleanup:
+  set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
   sleep(LED_INTERVAL);
   return;
 }

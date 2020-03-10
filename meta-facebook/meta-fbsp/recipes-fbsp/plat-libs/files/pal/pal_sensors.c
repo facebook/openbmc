@@ -1459,8 +1459,8 @@ read_sensor(uint8_t id, float *value) {
     const char *label;
   } devs[] = {
     {"tmp421-i2c-19-4c", "MB_INLET_TEMP"},
-    {"tmp421-i2c-19-4e", "MB_OUTLET_L_TEMP"},
-    {"tmp421-i2c-19-4f", "MB_OUTLET_R_TEMP"},
+    {"tmp421-i2c-19-4e", "MB_OUTLET_R_TEMP"},
+    {"tmp421-i2c-19-4f", "MB_OUTLET_L_TEMP"},
   };
   if (id >= ARRAY_SIZE(devs)) {
     return -1;

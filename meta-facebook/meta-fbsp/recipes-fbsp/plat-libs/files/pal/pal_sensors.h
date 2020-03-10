@@ -317,8 +317,8 @@ enum {
 //GENERIC I2C Sensors
 enum {
   TEMP_INLET = 0,
-  TEMP_OUTLET_L,
   TEMP_OUTLET_R,
+  TEMP_OUTLET_L,
 };
 
 //NIC INFO

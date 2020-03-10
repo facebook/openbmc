@@ -974,7 +974,7 @@ pal_get_sys_guid(uint8_t fru, char *guid) {
 int
 pal_set_sys_guid(uint8_t fru, char *str) {
   char guid[GUID_SIZE] = {0};
-  
+
   if (fru == FRU_SLOT1 || fru == FRU_SLOT2 || fru == FRU_SLOT3 || fru == FRU_SLOT4) {
     pal_populate_guid(guid, str);
     return bic_set_sys_guid(fru, (uint8_t *)guid);
@@ -984,7 +984,7 @@ pal_set_sys_guid(uint8_t fru, char *str) {
 }
 
 int
-pal_get_dev_guid(uint8_t fru, char *guid) {  
+pal_get_dev_guid(uint8_t fru, char *guid) {
   if (fru == FRU_BMC) {
     return pal_get_guid(OFFSET_DEV_GUID, guid);
   } else {
@@ -995,7 +995,7 @@ pal_get_dev_guid(uint8_t fru, char *guid) {
 int
 pal_set_dev_guid(uint8_t fru, char *str) {
   char guid[GUID_SIZE] = {0};
-  
+
   pal_populate_guid(guid, str);
   if (fru == FRU_BMC) {
     return pal_set_guid(OFFSET_DEV_GUID, guid);
@@ -1409,4 +1409,24 @@ pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
 int
 pal_get_dev_fruid_path(uint8_t fru, uint8_t dev_id, char *path) {
   return fby3_get_fruid_path(fru, dev_id, path);
+}
+
+int
+pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
+  int ret;
+  uint8_t rbuf[256] = {0x00}, len = 0;
+
+  ret = bic_me_xmit(fru, request, req_len, rbuf, &len);
+  if (ret || (len < 1)) {
+    return -1;
+  }
+
+  if (rbuf[0] != 0x00) {
+    return -1;
+  }
+
+  *rlen = len - 1;
+  memcpy(response, &rbuf[1], *rlen);
+
+  return 0;
 }

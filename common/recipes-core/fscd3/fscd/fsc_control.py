@@ -165,10 +165,11 @@ class TTable4Curve:
         else:
             Logger.debug(" accelerate(down) table {0}".format(self.table))
 
+        if self.last_out is None:
+            self.last_out = sorted(self.table)[0][1]
+
         for (in_thr, out) in self.table:
             mini = out
-            if self.last_out == None:
-                self.last_out = out
             if value >= in_thr:
                 self.compare_fsc_value = value
                 if self.accelerate:  # ascending

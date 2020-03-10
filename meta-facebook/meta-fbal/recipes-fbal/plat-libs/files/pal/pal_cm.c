@@ -272,23 +272,23 @@ lib_cmc_power_cycle(void) {
   return 0;
 }
 
-static int
-get_block_cmd_flag_index(uint8_t fru) {
+int
+lib_cmc_get_block_index(uint8_t fru) {
   uint8_t index;
 
   switch(fru) {
     case FRU_MB:
-      index = 1;
+      index = COMP_BIOS;
       break;
     case FRU_BMC:
-      index = 0;
+      index = COMP_BMC;
       break;
     case FRU_NIC0:
     case FRU_NIC1:
-      index = 5;
+      index = COMP_NIC;
       break;
     case FRU_DBG:
-      index = 6;
+      index = COMP_MCU;
       break;
     default :
       return -1;
@@ -298,17 +298,14 @@ get_block_cmd_flag_index(uint8_t fru) {
 }
 
 int
-lib_cmc_set_block_command_flag(uint8_t fru, uint8_t flag) {
+lib_cmc_set_block_command_flag(uint8_t index, uint8_t flag) {
   uint8_t ipmi_cmd = CMD_CMC_OEM_SET_BLOCK_COMMON_FLAG;
   uint8_t netfn = NETFN_OEM_Q_REQ;
   uint8_t tbuf[8] = {0x00};
   uint8_t tlen=0;
   uint8_t rbuf[8] = {0x00};
   uint8_t rlen;
-  uint8_t index;
   int ret;
-
-  index = get_block_cmd_flag_index(fru);
   
   tbuf[0] = CM_SET_FLAG_STATUS;
   tbuf[1] = index;

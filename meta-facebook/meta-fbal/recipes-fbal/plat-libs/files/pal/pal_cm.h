@@ -90,6 +90,17 @@ enum {
   PDB_EVENT_RECONFIG_SYSTEM =4,
 };
 
+enum {
+  COMP_BMC =0,
+  COMP_BIOS,
+  COMP_CM,
+  COMP_VR,
+  COMP_CPLD,
+  COMP_NIC,
+  COMP_MCU,
+  COMP_CPU,  
+};
+
 int cmd_cmc_get_dev_id(ipmi_dev_id_t *dev_id);
 int cmd_cmc_get_config_mode(uint8_t *mode);
 int cmd_cmc_get_mb_position(uint8_t *partion);
@@ -100,6 +111,7 @@ int lib_cmc_get_fan_speed(uint8_t fan_id, uint16_t* speed);
 int lib_cmc_set_fan_ctrl(uint8_t fan_mode, uint8_t* status);
 int lib_cmc_get_fan_id(uint8_t fan_sdr);
 int lib_cmc_power_cycle(void);
-int lib_cmc_set_block_command_flag(uint8_t fru, uint8_t flag);
+int lib_cmc_set_block_command_flag(uint8_t index, uint8_t flag);
+int lib_cmc_get_block_index(uint8_t fru);
 #endif
 

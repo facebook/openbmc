@@ -75,8 +75,9 @@ if [ "$DELAY_SEC" != "0" ]; then
   sleep ${DELAY_SEC}
 fi
 
+# Block Power Cycle
+/usr/local/bin/ipmb-util 8 0x68 0xd8 0xf2 0x00 0x07 0x01
 echo "Auto Dump Started"
-
 # Start to dump and clear LOG_FILE
 echo -n "Auto Dump Start at " > $LOG_FILE
 date >> $LOG_FILE
@@ -129,5 +130,7 @@ logger -t "ipmid" -p daemon.crit "${LOG_MSG_PREFIX}Crashdump for FRU: 1 is gener
 rm $PID_FILE
 rm -r $DWR_FILE >/dev/null 2>&1
 
+# Unblock Power Cycle
+/usr/local/bin/ipmb-util 8 0x68 0xd8 0xf2 0x00 0x07 0x00
 echo "${LOG_MSG_PREFIX}Auto Dump Stored in $LOG_ARCHIVE"
 exit 0

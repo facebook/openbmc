@@ -646,7 +646,8 @@ int
 pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) { 
   char key[64] = {0}; 
   char value[64] = {0}; 
-  struct timespec ts; 
+  struct timespec ts;
+  int index;
 
   sprintf(key, "fru%d_fwupd", fruid); 
  
@@ -655,13 +656,18 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   sprintf(value, "%ld", ts.tv_sec); 
  
   if (kv_set(key, value, 0, 0) < 0) { 
-       return -1; 
+    return -1; 
+  } 
+
+  index = lib_cmc_get_block_index(fruid);
+  if(index < 0) {
+    return -1; 
   } 
 
   if (tmout == 0) {
-    lib_cmc_set_block_command_flag(fruid, CM_COMMAND_UNBLOCK);
+    lib_cmc_set_block_command_flag(index, CM_COMMAND_UNBLOCK);
   } else {
-    lib_cmc_set_block_command_flag(fruid, CM_COMMAND_BLOCK);
+    lib_cmc_set_block_command_flag(index, CM_COMMAND_BLOCK);
   }
   
   return 0;

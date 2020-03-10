@@ -12,6 +12,6 @@ SRC_URI += "file://pal.c \
 
 SOURCES += "pal_power.c pal_sensors.c pal_health.c"
 HEADERS += "pal_power.h pal_sensors.h pal_health.h"
-DEPENDS += "libgpio-ctrl libobmc-sensors libbic libfby3-common libobmc-i2c libfby3-fruid"
-RDEPENDS_${PN} += "libgpio-ctrl libobmc-sensors libbic libfby3-common libobmc-i2c libfby3-fruid"
-LDFLAGS += "-lgpio-ctrl -lobmc-sensors -lbic -lfby3_common -lobmc-i2c -lfby3_fruid"
+DEPENDS += "libgpio-ctrl libobmc-sensors libbic libfby3-common libobmc-i2c libfby3-fruid libsensor-correction"
+RDEPENDS_${PN} += "libgpio-ctrl libobmc-sensors libbic libfby3-common libobmc-i2c libfby3-fruid libsensor-correction"
+LDFLAGS += "-lgpio-ctrl -lobmc-sensors -lbic -lfby3_common -lobmc-i2c -lfby3_fruid -lsensor-correction"

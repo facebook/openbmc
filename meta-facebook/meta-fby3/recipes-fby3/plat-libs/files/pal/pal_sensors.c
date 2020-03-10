@@ -13,6 +13,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/obmc-sensors.h>
+#include <openbmc/sensor-correction.h>
 #include "pal.h"
 
 //#define DEBUG
@@ -455,9 +456,9 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEC
-  {"BMC_INLET_TEMP",  TEMP_INLET,  read_temp, true, {40, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xED
-  {"BMC_OUTLET_TEMP", TEMP_OUTLET, read_temp, true, {70, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEE
-  {"NIC_SENSOR_MEZZ_TEMP", TEMP_MEZZ, read_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEF
+  {"BMC_INLET_TEMP",  TEMP_INLET,  read_temp, true, {50, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xED
+  {"BMC_OUTLET_TEMP", TEMP_OUTLET, read_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEE
+  {"NIC_SENSOR_MEZZ_TEMP", TEMP_MEZZ, read_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEF
 
   {"BMC_SENSOR_P5V", ADC0, read_adc_val, true, {5.486, 0, 0, 4.524, 0, 0, 0, 0}, VOLT}, //0xF0
   {"BMC_SENSOR_P12V", ADC1, read_adc_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF1
@@ -467,7 +468,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_P2V5_STBY", ADC5, read_adc_val, true, {2.743, 0, 0, 2.262, 0, 0, 0, 0}, VOLT}, //0xF5
   {"BMC_SENSOR_P12V_MEDUSA", HSC_ID1, read_ltc4282_volt, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF6
   {"BMC_SENSOR_HSC_VIN", HSC_ID0, read_hsc_vin, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF7
-  {"BMC_SENSOR_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {105, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xF8
+  {"BMC_SENSOR_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xF8
   {"BMC_SENSOR_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF9
   {"BMC_SENSOR_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {27.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFA
   {"BMC_SENSOR_FAN_IOUT", ADC8, read_adc_val, 0, {6.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFB
@@ -656,6 +657,35 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
   }
 
   return ret;
+}
+
+static void
+apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value) {
+  int i = 0;
+  const uint8_t fan_num[4] = {FAN_0, FAN_2, FAN_4, FAN_6}; //Use fan# to get the PWM.
+  static uint8_t pwm[4] = {0};
+  static bool pwm_valid[4] = {false, false, false, false};
+  static bool inited = false;
+  float avg_pwm = 0;
+  uint8_t cnt = 0;
+
+  // Get PWM value
+  for (i = 0; i < pal_pwm_cnt; i ++) {
+    if (pal_get_pwm_value(fan_num[i], &pwm[i]) == 0 || pwm_valid[i] == true) {
+      pwm_valid[i] = true;
+      avg_pwm += (float)pwm[i];
+      cnt++;
+    }
+  }
+
+  if ( cnt > 0 ) {
+    avg_pwm = avg_pwm / (float)cnt;
+    if ( inited == false ) {
+      inited = true;
+      sensor_correction_init("/etc/sensor-frontIO-correction.json");
+    }
+    sensor_correction_apply(fru, snr_num, avg_pwm, value);
+  }
 }
 
 static int
@@ -1111,6 +1141,11 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
 
   //syslog(LOG_WARNING, "%s() snr#0x%x raw:%x m=%x b=%x b_exp=%x r_exp=%x", __func__, sensor_num, x, m, b, b_exp, r_exp);  
   *value = ((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp));
+
+  //correct the value
+  if ( sensor_num == BIC_SENSOR_FIO_TEMP ) {
+    apply_frontIO_correction(fru, sensor_num, value);
+  }
 
   return ret;
 }

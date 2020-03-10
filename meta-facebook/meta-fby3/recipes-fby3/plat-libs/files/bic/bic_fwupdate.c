@@ -481,7 +481,7 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
 
   //step1 -get the bus number and open the dev of i2c
   bus_num = fby3_common_get_bus_id(slot_id);
-  syslog(LOG_CRIT, "%s: update bic firmware on slot %d\n", __func__, bus_num);
+  syslog(LOG_CRIT, "%s: update bic firmware on slot %d\n", __func__, slot_id);
 
   i2cfd = i2c_open(bus_num);
   if ( i2cfd < 0 ) {
@@ -495,7 +495,7 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
       return BIC_ENOTSUP;
   }
-  printf("stop ipmbd for slot %x..\n", bus_num);
+  printf("stop ipmbd for slot %x..\n", slot_id);
 
   //step3 - adjust the i2c speed and set properties of mqlim
   snprintf(cmd, cmd_size, "devmem 0x1e78a%03X w 0xFFFFE303", I2CBASE + (I2CBASE * bus_num) + 4);
@@ -504,7 +504,7 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
       return BIC_ENOTSUP;
   }
   sleep(1);
-  printf("stopped ipmbd for slot %x..\n", bus_num);
+  printf("stopped ipmbd for slot %x..\n", slot_id);
 
   if ( is_bic_ready(slot_id, NONE_INTF) < 0 ) {
     printf("BIC is not ready after sleep 1s\n");
@@ -522,7 +522,7 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
       return BIC_ENOTSUP;
   }
-  printf("start ipmbd -u for this slot %x..\n", bus_num);
+  printf("start ipmbd -u for this slot %x..\n", slot_id);
 
   //assume ipmbd that it will be ready in 2s
   sleep(2);
@@ -540,7 +540,7 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
       return BIC_ENOTSUP;
   }
-  printf("stop ipmbd for slot %x..\n", bus_num);
+  printf("stop ipmbd for slot %x..\n", slot_id);
 
   //make sure that BIC enters bootloader
   sleep(3);
@@ -599,7 +599,7 @@ exit:
       return BIC_ENOTSUP;
   }
 
-  syslog(LOG_CRIT, "%s: updating bic firmware is exiting on slot %d\n", __func__, bus_num);
+  syslog(LOG_CRIT, "%s: updating bic firmware is exiting on slot %d\n", __func__, slot_id);
 
   if ( i2cfd > 0 ) {
     close(i2cfd);

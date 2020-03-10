@@ -77,16 +77,15 @@ gpio_export SCALE_DEBUG_EN_N_ASIC1 GPIOA6
 #devmem_clear_bit $(scu_addr 80) 14
 
 # PCIe switch GPIO (preserved)
-gpio_export PAX2_INT GPIOB0
+gpio_export PAX2_SKU_ID GPIOB0
 gpio_export PAX2_ALERT GPIOB1
-gpio_export PAX3_INT GPIOB4
+gpio_export PAX3_SKU_ID GPIOB4
 gpio_export PAX3_ALERT GPIOB5
 gpio_export PAX0_INT2 GPIOB6
 gpio_export PAX1_INT2 GPIOB7
 
 # BMC ready
 gpio_export BMC_READY_N GPIOB2
-gpio_set BMC_READY_N 0
 
 # System power good
 gpio_export SYS_PWR_READY GPIOB3
@@ -536,16 +535,47 @@ gpio_export CPLD_MUX_ID2 GPIOAB3
 gpio_set CPLD_MUX_ID2 0
 
 # To enable GPIOAC
-#devmem_clear_bit $(scu_addr ac) 0
-#devmem_clear_bit $(scu_addr ac) 1
-#devmem_clear_bit $(scu_addr ac) 2
-#devmem_clear_bit $(scu_addr ac) 3
+devmem_clear_bit $(scu_addr ac) 0
+devmem_clear_bit $(scu_addr ac) 1
+devmem_clear_bit $(scu_addr ac) 2
+devmem_clear_bit $(scu_addr ac) 3
 
 # PCIe switch GPIO (preserved)
-gpio_export PAX0_INT GPIOAC0
+gpio_export PAX0_SKU_ID GPIOAC0
 gpio_export PAX0_ALERT GPIOAC1
-gpio_export PAX1_INT GPIOAC2
+gpio_export PAX1_SKU_ID GPIOAC2
+gpio_export PAX1_ALERT GPIOAC3
 
 # Reserved
 gpio_export BMC_GPIOAC5 GPIOAC5
 gpio_export BMC_GPIOAC6 GPIOAC6
+
+echo -n "Setup PCIe switch config "
+gpio_set PAX0_SKU_ID 0
+gpio_set PAX1_SKU_ID 0
+gpio_set PAX2_SKU_ID 0
+gpio_set PAX3_SKU_ID 0
+
+for sec in {1..30};
+do
+  server_type=$(/usr/local/bin/ipmb-util 0 0x20 0xE8 0x0)
+  if [ $server_type == "00" ]
+  then
+    /usr/local/bin/cfg-util server_type 8
+    break
+  elif [ $server_type == "01" ]
+  then
+    /usr/local/bin/cfg-util server_type 2
+    gpio_set PAX0_SKU_ID 1
+    gpio_set PAX1_SKU_ID 1
+    gpio_set PAX2_SKU_ID 1
+    gpio_set PAX3_SKU_ID 1
+    break
+  else
+    echo -n "."
+    sleep 1
+  fi
+done
+echo "done"
+
+gpio_set BMC_READY_N 0

@@ -32,7 +32,7 @@ do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-front-paneld.sh ${D}${sysconfdir}/init.d/setup-front-paneld.sh
-  update-rc.d -r ${D} setup-front-paneld.sh start 67 5 .
+  update-rc.d -r ${D} setup-front-paneld.sh start 68 5 .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

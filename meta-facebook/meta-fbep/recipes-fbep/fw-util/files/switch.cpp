@@ -17,7 +17,7 @@ class PAXComponent : public GPIOSwitchedSPIMTDComponent {
 int PAXComponent::print_version()
 {
   int ret;
-  char ver[64] = {0};
+  char ver[MAX_VALUE_LEN] = {0};
 
   cout << "PAX" << (int)_paxid << " IMG Version: ";
   ret = pal_get_pax_version(_paxid, ver);

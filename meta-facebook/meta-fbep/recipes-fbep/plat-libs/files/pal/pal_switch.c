@@ -90,12 +90,12 @@ int pal_get_pax_version(uint8_t paxid, char *version)
 {
   int ret;
   char device_name[LARGEST_DEVICE_NAME] = {0};
-  char key[MAX_KEY_LEN], tmp_str[64] = {0};
+  char key[MAX_KEY_LEN], tmp_str[MAX_VALUE_LEN] = {0};
   struct switchtec_dev *dev;
 
   snprintf(key, sizeof(key), "pax%d_ver", paxid);
   if (kv_get(key, tmp_str, NULL, 0) == 0) {
-    snprintf(version, 64, "%s", tmp_str);
+    snprintf(version, MAX_VALUE_LEN, "%s", tmp_str);
     return 0;
   }
 

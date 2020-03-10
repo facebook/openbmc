@@ -76,6 +76,7 @@ struct pal_key_cfg {
   {"timestamp_sled", "0", NULL},
   {"fru_sensor_health", "1", NULL},
   {"fru_sel_error", "1", NULL},
+  {"server_type", "8", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };

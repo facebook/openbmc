@@ -95,10 +95,16 @@ esac
 
 result=$?
 
+if [ "$2" = "sw" ]; then
+    expect=1
+else
+    expect=0
+fi
+
 disable_jtag_chain
 
 # 0 is returned upon upgrade success
-if [ $result -eq 0 ]; then
+if [ $result -eq $expect ]; then
     echo "Upgrade successful."
     echo "Re-start fscd service."
     sv start fscd

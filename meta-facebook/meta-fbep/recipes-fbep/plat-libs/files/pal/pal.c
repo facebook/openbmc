@@ -33,6 +33,7 @@
 #include <openbmc/libgpio.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/obmc-sensors.h>
+#include <openbmc/obmc-i2c.h>
 #include "pal.h"
 
 #define LTC4282_DIR(bus, addr, index) \
@@ -680,7 +681,7 @@ bail:
   return ret;
 }
 
-static bool is_server_off()
+bool pal_is_server_off()
 {
   uint8_t status;
 
@@ -784,7 +785,7 @@ void pal_get_chassis_status(uint8_t fru, uint8_t *req_data, uint8_t *res_data, u
    int policy = POWER_CFG_ON; // Always On
    unsigned char *data = res_data;
 
-   *data++ = ((is_server_off())?0x00:0x01) | (policy << 5);
+   *data++ = ((pal_is_server_off())?0x00:0x01) | (policy << 5);
    *data++ = 0x00;   // Last Power Event
    *data++ = 0x40;   // Misc. Chassis Status
    *data++ = 0x00;   // Front Panel Button Disable

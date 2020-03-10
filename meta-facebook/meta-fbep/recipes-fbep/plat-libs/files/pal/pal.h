@@ -26,6 +26,7 @@
 #include "pal_sensors.h"
 #include "pal_health.h"
 #include "pal_switch.h"
+#include "pal_gpu.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -73,6 +74,7 @@ enum {
 
 int read_device(const char *device, int *value);
 int write_device(const char *device, int value);
+bool pal_is_server_off(void);
 int pal_get_server_power(uint8_t fru, uint8_t *status);
 int pal_get_platform_id(uint8_t *id);
 

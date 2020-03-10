@@ -44,8 +44,6 @@ const char pal_tach_list[] = "0..7";
 #define MAX_SENSOR_NUM FBEP_SENSOR_MAX
 #define MAX_SENSOR_THRESHOLD 8
 
-#define READING_NA -2
-
 static int sensors_read_common_fan(uint8_t, float*);
 static int sensors_read_common_adc(uint8_t, float*);
 static int read_battery_value(uint8_t, float*);
@@ -97,6 +95,30 @@ const uint8_t mb_sensor_list[] = {
   MB_SWITCH_PAX1_DIE_TEMP,
   MB_SWITCH_PAX2_DIE_TEMP,
   MB_SWITCH_PAX3_DIE_TEMP,
+  MB_GPU0_TEMP,
+  MB_GPU1_TEMP,
+  MB_GPU2_TEMP,
+  MB_GPU3_TEMP,
+  MB_GPU4_TEMP,
+  MB_GPU5_TEMP,
+  MB_GPU6_TEMP,
+  MB_GPU7_TEMP,
+  MB_GPU0_HBM_TEMP,
+  MB_GPU1_HBM_TEMP,
+  MB_GPU2_HBM_TEMP,
+  MB_GPU3_HBM_TEMP,
+  MB_GPU4_HBM_TEMP,
+  MB_GPU5_HBM_TEMP,
+  MB_GPU6_HBM_TEMP,
+  MB_GPU7_HBM_TEMP,
+  MB_GPU0_PWCS,
+  MB_GPU1_PWCS,
+  MB_GPU2_PWCS,
+  MB_GPU3_PWCS,
+  MB_GPU4_PWCS,
+  MB_GPU5_PWCS,
+  MB_GPU6_PWCS,
+  MB_GPU7_PWCS,
   MB_VR_P0V8_VDD0_VIN,
   MB_VR_P0V8_VDD0_VOUT,
   MB_VR_P0V8_VDD0_CURR,
@@ -240,6 +262,54 @@ float sensors_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {
   {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
   [MB_SWITCH_PAX3_DIE_TEMP] =
   {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_GPU0_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU1_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU2_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU3_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU4_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU5_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU6_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU7_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU0_HBM_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU1_HBM_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU2_HBM_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU3_HBM_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU4_HBM_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU5_HBM_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU6_HBM_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU7_HBM_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU0_PWCS] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU1_PWCS] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU2_PWCS] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU3_PWCS] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU4_PWCS] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU5_PWCS] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU6_PWCS] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU7_PWCS] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
   [MB_VR_P0V8_VDD0_VIN] =
   {0,	13.2,	13.0,	0,	10.8,	0,	0,	0,	0},
   [MB_VR_P0V8_VDD1_VIN] =
@@ -445,6 +515,54 @@ struct sensor_map {
   {pal_read_pax_dietemp, "MB_SWITCH_PAX2_DIE_TEMP", SNR_TEMP},
   [MB_SWITCH_PAX3_DIE_TEMP] =
   {pal_read_pax_dietemp, "MB_SWITCH_PAX3_DIE_TEMP", SNR_TEMP},
+  [MB_GPU0_TEMP] =
+  {pal_read_gpu_temp, "MB_GPU0_TEMP", SNR_TEMP},
+  [MB_GPU1_TEMP] =
+  {pal_read_gpu_temp, "MB_GPU1_TEMP", SNR_TEMP},
+  [MB_GPU2_TEMP] =
+  {pal_read_gpu_temp, "MB_GPU2_TEMP", SNR_TEMP},
+  [MB_GPU3_TEMP] =
+  {pal_read_gpu_temp, "MB_GPU3_TEMP", SNR_TEMP},
+  [MB_GPU4_TEMP] =
+  {pal_read_gpu_temp, "MB_GPU4_TEMP", SNR_TEMP},
+  [MB_GPU5_TEMP] =
+  {pal_read_gpu_temp, "MB_GPU5_TEMP", SNR_TEMP},
+  [MB_GPU6_TEMP] =
+  {pal_read_gpu_temp, "MB_GPU6_TEMP", SNR_TEMP},
+  [MB_GPU7_TEMP] =
+  {pal_read_gpu_temp, "MB_GPU7_TEMP", SNR_TEMP},
+  [MB_GPU0_HBM_TEMP] =
+  {pal_read_hbm_temp, "MB_GPU0_HBM_TEMP", SNR_TEMP},
+  [MB_GPU1_HBM_TEMP] =
+  {pal_read_hbm_temp, "MB_GPU1_HBM_TEMP", SNR_TEMP},
+  [MB_GPU2_HBM_TEMP] =
+  {pal_read_hbm_temp, "MB_GPU2_HBM_TEMP", SNR_TEMP},
+  [MB_GPU3_HBM_TEMP] =
+  {pal_read_hbm_temp, "MB_GPU3_HBM_TEMP", SNR_TEMP},
+  [MB_GPU4_HBM_TEMP] =
+  {pal_read_hbm_temp, "MB_GPU4_HBM_TEMP", SNR_TEMP},
+  [MB_GPU5_HBM_TEMP] =
+  {pal_read_hbm_temp, "MB_GPU5_HBM_TEMP", SNR_TEMP},
+  [MB_GPU6_HBM_TEMP] =
+  {pal_read_hbm_temp, "MB_GPU6_HBM_TEMP", SNR_TEMP},
+  [MB_GPU7_HBM_TEMP] =
+  {pal_read_hbm_temp, "MB_GPU7_HBM_TEMP", SNR_TEMP},
+  [MB_GPU0_PWCS] =
+  {pal_read_gpu_pwcs, "MB_GPU0_PWCS", SNR_PWR},
+  [MB_GPU1_PWCS] =
+  {pal_read_gpu_pwcs, "MB_GPU1_PWCS", SNR_PWR},
+  [MB_GPU2_PWCS] =
+  {pal_read_gpu_pwcs, "MB_GPU2_PWCS", SNR_PWR},
+  [MB_GPU3_PWCS] =
+  {pal_read_gpu_pwcs, "MB_GPU3_PWCS", SNR_PWR},
+  [MB_GPU4_PWCS] =
+  {pal_read_gpu_pwcs, "MB_GPU4_PWCS", SNR_PWR},
+  [MB_GPU5_PWCS] =
+  {pal_read_gpu_pwcs, "MB_GPU5_PWCS", SNR_PWR},
+  [MB_GPU6_PWCS] =
+  {pal_read_gpu_pwcs, "MB_GPU6_PWCS", SNR_PWR},
+  [MB_GPU7_PWCS] =
+  {pal_read_gpu_pwcs, "MB_GPU7_PWCS", SNR_PWR},
   [MB_VR_P0V8_VDD0_VIN] =
   {sensors_read_vr, "MB_VR_P0V8_VDD0_VIN", SNR_VOLT},
   [MB_VR_P0V8_VDD1_VIN] =
@@ -628,6 +746,9 @@ static int sensors_read_vicor(uint8_t sensor_num, float *value)
   char ain_name[LARGEST_DEVICE_NAME] = {0};
   char device[LARGEST_DEVICE_NAME] = {0};
 
+  if (pal_is_server_off())
+    return ERR_SENSOR_NA;
+
   index = (sensor_num - PDB_ADC_1_VICOR0_TEMP) / 4 + 1;
   snprintf(device, LARGEST_DEVICE_NAME, (index == 1)? ADC_1_DIR: ADC_2_DIR, TLA2024_FSR);
   // Set FSR to 4.096
@@ -638,18 +759,16 @@ static int sensors_read_vicor(uint8_t sensor_num, float *value)
   snprintf(ain_name, LARGEST_DEVICE_NAME, TLA2024_AIN, ain);
   snprintf(device, LARGEST_DEVICE_NAME, (index == 1)? ADC_1_DIR: ADC_2_DIR, ain_name);
   if (read_device(device, &val) < 0)
-    return READING_NA;
+    return ERR_SENSOR_NA;
 
   /*
    * Convert ADC to temperature
    * Volt = ADC * 4.096 / 2^11
    * Temp = (Volt - 2.73) * 100.0
    */
-  val = (float)(val*0.2-273.0);
-  if (val < 0)
-    return READING_NA;
-
-  *value = val;
+  *value = (float)(val*0.2-273.0);
+  if (*value < 0)
+    return ERR_SENSOR_NA;
 
   return 0;
 }
@@ -762,13 +881,9 @@ static bool is_fan_present(uint8_t sensor_num)
 static int sensors_read_common_fan(uint8_t sensor_num, float *value)
 {
   int ret;
-  uint8_t status;
 
-  if (pal_get_server_power(FRU_MB, &status) < 0 ||
-      status == SERVER_POWER_OFF ||
-      !is_fan_present(sensor_num)) {
-    return READING_NA;
-  }
+  if (pal_is_server_off() || !is_fan_present(sensor_num))
+    return ERR_SENSOR_NA;
 
   switch (sensor_num) {
     case MB_FAN0_TACH_I:
@@ -820,10 +935,10 @@ static int sensors_read_common_fan(uint8_t sensor_num, float *value)
       ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_CURR", (float *)value);
       break;
     default:
-      return READING_NA;
+      return ERR_SENSOR_NA;
   }
 
-  return ret;
+  return ret < 0? ERR_SENSOR_NA: 0;
 }
 
 static int sensors_read_common_adc(uint8_t sensor_num, float *value)
@@ -851,10 +966,10 @@ static int sensors_read_common_adc(uint8_t sensor_num, float *value)
       ret = sensors_read_adc("MB_ADC_P3V3", (float *)value);
       break;
     default:
-      return READING_NA;
+      return ERR_SENSOR_NA;
   }
 
-  return ret;
+  return ret < 0? ERR_SENSOR_NA: 0;
 }
 
 static int sensors_read_common_therm(uint8_t sensor_num, float *value)
@@ -881,19 +996,18 @@ static int sensors_read_common_therm(uint8_t sensor_num, float *value)
       ret = sensors_read("tmp421-i2c-17-4c", "OUTLET_TEMP_REMOTE", (float *)value);
       break;
     default:
-      return READING_NA;
+      return ERR_SENSOR_NA;
   }
 
-  return ret;
+  return ret < 0? ERR_SENSOR_NA: 0;
 }
 
 static int sensors_read_pax_therm(uint8_t sensor_num, float *value)
 {
   int ret;
-  uint8_t status;
 
-  if (pal_get_server_power(FRU_MB, &status) < 0 || status == SERVER_POWER_OFF)
-    return READING_NA;
+  if (pal_is_server_off())
+    return ERR_SENSOR_NA;
 
   switch (sensor_num) {
     case MB_SENSOR_PAX01_THERM:
@@ -915,19 +1029,18 @@ static int sensors_read_pax_therm(uint8_t sensor_num, float *value)
       ret = sensors_read("tmp422-i2c-6-4e", "PAX3_THERM_REMOTE", value);
       break;
     default:
-      return READING_NA;
+      return ERR_SENSOR_NA;
   }
 
-  return ret;
+  return ret < 0? ERR_SENSOR_NA: 0;
 }
 
 static int sensors_read_vr(uint8_t sensor_num, float *value)
 {
   int ret;
-  uint8_t status;
 
-  if (pal_get_server_power(FRU_MB, &status) < 0 || status == SERVER_POWER_OFF)
-    return READING_NA;
+  if (pal_is_server_off())
+    return ERR_SENSOR_NA;
 
   switch (sensor_num) {
     case MB_VR_P0V8_VDD0_VIN:
@@ -1027,10 +1140,10 @@ static int sensors_read_vr(uint8_t sensor_num, float *value)
       ret = sensors_read("mpq8645p-i2c-5-3b", "VR_P1V0_AVD3_TEMP", value);
       break;
     default:
-      ret = READING_NA;
+      ret = ERR_SENSOR_NA;
   }
 
-  return ret;
+  return ret < 0? ERR_SENSOR_NA: 0;
 }
 
 static int sensors_read_12v_hsc(uint8_t sensor_num, float *value)
@@ -1087,19 +1200,18 @@ static int sensors_read_12v_hsc(uint8_t sensor_num, float *value)
       ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_VOUT", value);
       break;
     default:
-      ret = READING_NA;
+      ret = ERR_SENSOR_NA;
   }
 
-  return ret;
+  return ret < 0? ERR_SENSOR_NA: 0;
 }
 
 static int sensors_read_48v_hsc(uint8_t sensor_num, float *value)
 {
   int ret;
-  uint8_t status;
 
-  if (pal_get_server_power(FRU_MB, &status) < 0 || status == SERVER_POWER_OFF)
-    return READING_NA;
+  if (pal_is_server_off())
+    return ERR_SENSOR_NA;
 
   switch (sensor_num) {
     case PDB_HSC_P48V_1_VIN:
@@ -1127,13 +1239,13 @@ static int sensors_read_48v_hsc(uint8_t sensor_num, float *value)
       ret = sensors_read("adm1272-i2c-17-10", "P48V_2_PWR", value);
       break;
     default:
-      ret = READING_NA;
+      ret = ERR_SENSOR_NA;
   }
 
   if (*value < 0)
     *value = 0.0;
 
-  return ret;
+  return ret < 0? ERR_SENSOR_NA: 0;
 }
 
 int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
@@ -1224,33 +1336,9 @@ int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *valu
 
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
 {
-  char key[MAX_KEY_LEN] = {0};
-  char str[MAX_VALUE_LEN] = {0};
-  int ret;
-
   if (fru > FRU_PDB || sensor_num >= FBEP_SENSOR_MAX)
-    return -1;
+    return ERR_SENSOR_NA;
 
-  ret = fbep_sensors_map[sensor_num].sensor_read(sensor_num, (float *)value);
-
-  if (ret) {
-    if (ret == READING_NA) {
-      strcpy(str, "NA");
-    } else {
-      return ret;
-    }
-  } else {
-    sprintf(str, "%.2f",*((float*)value));
-  }
-
-  sprintf(key, "fru_sensor%d", sensor_num);
-  if(kv_set(key, str, 0, 0) < 0) {
-#ifdef DEBUG
-     syslog(LOG_WARNING, "%s: cache_set key = %s, str = %s failed.", __func__, key, str);
-#endif
-    return -1;
-  }
-
-  return 0;
+  return fbep_sensors_map[sensor_num].sensor_read(sensor_num, (float *)value);
 }
 

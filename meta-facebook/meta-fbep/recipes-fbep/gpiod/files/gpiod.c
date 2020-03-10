@@ -89,14 +89,12 @@ static void* fan_status_monitor()
     {"FAN2_PWR_GOOD", "Fan2 power", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
     {"FAN3_PWR_GOOD", "Fan3 power", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
   };
-  uint8_t status;
 
   while (1) {
     sleep(1);
 
-    if (pal_get_server_power(FRU_MB, &status) < 0 || status == SERVER_POWER_OFF) {
+    if (pal_is_server_off())
       continue;
-    }
 
     for (i = 0; i < 8; i++) {
       fan_gpios[i].curr = gpio_get(fan_gpios[i].shadow);

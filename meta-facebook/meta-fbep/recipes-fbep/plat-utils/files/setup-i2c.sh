@@ -43,3 +43,9 @@ i2c_device_add 5 0x3b mpq8645p
 # P48V HSCs
 i2c_device_add 16 0x13 adm1272
 i2c_device_add 17 0x10 adm1272
+
+# i2c mux in front of OAMs
+i2c_mux_add_sync 11 0x70 pca9543 21
+i2c_mux_add_sync 10 0x70 pca9543 23
+i2c_mux_add_sync 9 0x70 pca9543 25
+i2c_mux_add_sync 8 0x70 pca9543 27

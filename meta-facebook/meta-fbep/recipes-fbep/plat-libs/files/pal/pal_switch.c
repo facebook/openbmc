@@ -31,13 +31,10 @@ static pthread_mutex_t pax_mutex = PTHREAD_MUTEX_INITIALIZER;
 int pal_pax_fw_update(uint8_t paxid, const char *fwimg)
 {
   int ret;
-  uint8_t status;
   char cmd[128] = {0};
 
-  if (pal_get_server_power(FRU_MB, &status) < 0 ||
-      status == SERVER_POWER_OFF) {
+  if (pal_is_server_off())
     return -1;
-  }
 
   snprintf(cmd, sizeof(cmd), SWITCHTEC_UPDATE_CMD, SWITCH_BASE_ADDR + paxid, fwimg);
 
@@ -56,15 +53,14 @@ int pal_pax_fw_update(uint8_t paxid, const char *fwimg)
 int pal_read_pax_dietemp(uint8_t sensor_num, float *value)
 {
   int ret = 0;
-  uint8_t addr, status;
+  uint8_t addr;
   uint8_t paxid = sensor_num - MB_SWITCH_PAX0_DIE_TEMP;
   uint32_t temp, sub_cmd_id;
   char device_name[LARGEST_DEVICE_NAME] = {0};
   struct switchtec_dev *dev;
 
-  if (pal_get_server_power(FRU_MB, &status) < 0 || status == SERVER_POWER_OFF) {
-    return -1;
-  }
+  if (pal_is_server_off())
+    return ERR_SENSOR_NA;
 
   addr = SWITCH_BASE_ADDR + paxid;
   snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, addr);
@@ -74,7 +70,7 @@ int pal_read_pax_dietemp(uint8_t sensor_num, float *value)
   if (dev == NULL) {
     syslog(LOG_WARNING, "%s: switchtec open %s failed", __func__, device_name);
     pthread_mutex_unlock(&pax_mutex);
-    return -1;
+    return ERR_SENSOR_NA;
   }
 
   sub_cmd_id = MRPC_DIETEMP_GET_GEN4;
@@ -87,13 +83,12 @@ int pal_read_pax_dietemp(uint8_t sensor_num, float *value)
   if (ret == 0)
     *value = (float) temp / 100.0;
 
-  return ret < 0? -1: 0;
+  return ret < 0? ERR_SENSOR_NA: 0;
 }
 
 int pal_get_pax_version(uint8_t paxid, char *version)
 {
   int ret;
-  uint8_t status;
   char device_name[LARGEST_DEVICE_NAME] = {0};
   char key[MAX_KEY_LEN], tmp_str[64] = {0};
   struct switchtec_dev *dev;
@@ -104,10 +99,8 @@ int pal_get_pax_version(uint8_t paxid, char *version)
     return 0;
   }
 
-  if (pal_get_server_power(FRU_MB, &status) < 0 ||
-      status == SERVER_POWER_OFF) {
+  if (pal_is_server_off())
     return -1;
-  }
 
   snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, SWITCH_BASE_ADDR + paxid);
 

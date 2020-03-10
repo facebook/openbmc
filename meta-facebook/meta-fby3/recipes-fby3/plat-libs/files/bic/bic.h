@@ -41,6 +41,13 @@ extern "C" {
 #define RETRY_TIME 5
 #define IPMB_RETRY_DELAY_TIME 500
 
+/*IFX VR pages*/
+#define VR_PAGE   0x00
+#define VR_PAGE32 0x32
+#define VR_PAGE50 0x50
+#define VR_PAGE60 0x60
+#define VR_PAGE62 0x62
+
 enum {
   FW_CPLD = 1,
   FW_BIC,
@@ -48,6 +55,21 @@ enum {
   FW_BIC_BOOTLOADER,
   FW_VR,
   FW_EXP_CPLD,
+};
+
+enum {
+  VR_ISL = 0x0,
+  VR_TI  = 0x1,
+  VR_IFX = 0x2,
+  IFX_DEVID_LEN = 0x2,
+  ISL_DEVID_LEN = 0x4,
+  TI_DEVID_LEN  = 0x6,
+
+  /*----VR ADDR-----*/
+  VCCIN_ADDR = 0xC0,
+  VCCIO_ADDR = 0xC4,
+  VDDQ_ABC_ADDR = 0xC8,
+  VDDQ_DEV_ADDR = 0xCC,
 };
 
 enum {

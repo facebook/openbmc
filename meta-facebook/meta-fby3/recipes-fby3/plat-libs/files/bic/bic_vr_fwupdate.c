@@ -126,6 +126,20 @@ start_with(const char *str, const char *c) {
 }
 
 static int
+split(char **dst, char *src, char *delim) {
+  char *s = strtok(src, delim);
+  int size = 0;
+
+  while ( NULL != s ) {
+    *dst++ = s;
+    size++;
+    s = strtok(NULL, delim);
+  }
+
+  return size;
+}
+
+static int
 vr_ISL_polling_status(uint8_t slot_id, uint8_t addr) {
   int ret = 0;
   uint8_t tbuf[16] = {0};
@@ -446,6 +460,8 @@ vr_TI_csv_parser(char *image) {
   }
 
 error_exit:
+  if ( fp != NULL ) fclose(fp);
+
   return ret;
 }
 
@@ -463,7 +479,7 @@ vr_TI_program(uint8_t slot_id, vr *dev) {
   uint8_t rlen = 0;
   int check_cnt = 0;
   uint8_t addr = dev->addr;
-  uint8_t len = dev->data_cnt;
+  int len = dev->data_cnt;
   vr_data *list = dev->pdata;
 
   tbuf[0] = (VR_BUS << 1) + 1;
@@ -542,21 +558,309 @@ error_exit:
   return ret;
 }
 
-static char* 
+static int
+vr_IFX_xsf_parser(char *image) {
+#define CHECKSUM_FIELD "Checksum :"
+#define ADDR_FIELD "i2c Address :"
+#define DATA_START_TAG "[Config Data]"
+#define DATA_END_TAG   "4000"
+#define DATA_LEN_IN_LINE 0x11
+  const uint16_t DEV_ID = 0x0279;
+  int ret = 0;
+  FILE *fp = NULL;
+  char *token = NULL;
+  char tmp_buf[128] = "\0";
+  int tmp_len = sizeof(tmp_buf);
+  int data_cnt = 0;
+  int i = 0;
+  bool is_data = false;
+
+  if ( (fp = fopen(image, "r") ) == NULL ) {
+    printf("Invalid file: %s\n", image);
+    ret = -1;
+    goto error_exit;
+  }
+
+  while ( NULL != fgets(tmp_buf, tmp_len, fp) ) {
+    if ( (token = strstr(tmp_buf, CHECKSUM_FIELD)) != NULL ) { //get the checksum
+      //set DEVID manually
+      memcpy(vr_list[vr_cnt].devid, (uint8_t *)&DEV_ID, 2);
+      vr_list[vr_cnt].devid_len = 2;
+    } else if ( (token = strstr(tmp_buf, ADDR_FIELD)) != NULL ) {
+      token = strstr(tmp_buf, "0x");
+      vr_list[vr_cnt].addr = string_to_byte(&token[2]);
+    } else if ( (token = strstr(tmp_buf, DATA_START_TAG)) != NULL ) {
+      is_data = true;
+      continue;
+    } else if ( start_with(tmp_buf, DATA_END_TAG) > 0 ) {
+      break;
+    } else if ( is_data == true ) {
+      char *token_list[32] = {NULL};
+      int token_size = split(token_list, tmp_buf, " "); //it should be 17 only
+      uint8_t page_addr = 0x0;
+      uint8_t index_addr = 0x0;
+
+      if ( token_size != DATA_LEN_IN_LINE ) {
+        printf("the len of token is not expected!\n");
+        ret = -1;
+        break;
+      }
+
+      page_addr = string_to_byte(&token_list[0][0]);
+      index_addr = string_to_byte(&token_list[0][2]);
+
+      for (i = 1; i < DATA_LEN_IN_LINE; i++) {
+        if ( start_with(token_list[i], "----") > 0 ) {
+          continue;
+        }
+        vr_list[vr_cnt].pdata[data_cnt].command = page_addr;
+        vr_list[vr_cnt].pdata[data_cnt].data_len = 2;//write word
+        vr_list[vr_cnt].pdata[data_cnt].data[0] = index_addr + i - 1; //put register offset to data[0]
+        vr_list[vr_cnt].pdata[data_cnt].data[1] = string_to_byte(&token_list[i][2]);
+        vr_list[vr_cnt].pdata[data_cnt].data[2] = string_to_byte(&token_list[i][0]);
+        data_cnt++;
+      }
+    }
+  }
+  vr_list[vr_cnt].data_cnt += data_cnt;
+
+error_exit:
+  if ( fp != NULL ) fclose(fp);
+
+  return ret;
+}
+
+static int
+vr_IFX_program(uint8_t slot_id, vr *dev) {
+#define VR_CONF_REG 0x1A
+#define VR_CLR_FAULT 0x03
+#define REG1_STS_CHECK 0x1
+#define REG2_STS_CHECK 0xA
+#define REMAINING_TIMES(x) (((x[1] << 8) + x[0]) & 0xFC0) >> 6
+  int i = 0;
+  int ret = 0;
+  uint8_t tbuf[64] = {0};
+  uint8_t rbuf[64] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  uint8_t current_page = 0xff;
+  uint8_t remaining_writes = 0x00;
+  uint8_t addr = dev->addr;
+  int len = dev->data_cnt;
+  vr_data *list = dev->pdata;
+
+  tbuf[0] = (VR_BUS << 1) + 1;
+  tbuf[1] = addr;
+  tbuf[2] = 0x00; //read cnt
+  tbuf[3] = VR_PAGE;
+  tbuf[4] = VR_PAGE50;
+  tlen = 5;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
+    goto error_exit;
+  }
+
+  tbuf[2] = 0x02; //read cnt
+  tbuf[3] = 0x82;
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't get data from 0x%02X", __func__, tbuf[3]);
+    goto error_exit;
+  }
+
+  remaining_writes = REMAINING_TIMES(rbuf);
+  printf("remaining writes %d..", remaining_writes);
+  if ( remaining_writes == 0 ) {
+    ret = -1;
+    printf("Cannot be programmed!\n");
+    goto error_exit;
+  }
+
+  //step 1 - write data to data register
+  for (i = 0; i < len; i++ ) {
+    if ( list[i].command != current_page ) {
+      //set page
+      tbuf[2] = 0x00; //read cnt
+      tbuf[3] = VR_PAGE;
+      tbuf[4] = list[i].command;
+      tlen = 5;
+      ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+      if ( ret < 0 ) {
+        syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, list[i].command);
+        goto error_exit;
+      }
+      current_page = list[i].command;
+      msleep(10);//sleep 10ms and carry on to write the data
+    }
+
+    //write data
+    memcpy(&tbuf[3], list[i].data, 3);
+    tlen = 6;
+    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Couldn't write data to page %02X and offset %02X", __func__, list[i].command, list[i].data[0]);
+      goto error_exit;
+    }
+  }
+
+  //step 2 - upload data to config
+  tbuf[3] = VR_PAGE;
+  tbuf[4] = VR_PAGE32;
+  tlen = 5;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
+    goto error_exit;
+  }
+
+  tbuf[3] = VR_CONF_REG;
+  tbuf[4] = 0xa1;
+  tbuf[5] = 0x08;
+  tlen = 6;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't write data to VR_CONF_REG", __func__);
+    goto error_exit;
+  }
+
+  tbuf[3] = VR_CLR_FAULT;
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't sent CLR FAULT", __func__);
+    goto error_exit;
+  }
+
+  tbuf[3] = 0x1d;
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't sent 0x1d", __func__);
+    goto error_exit;
+  }
+
+  tbuf[3] = 0x24;
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't sent 0x1d", __func__);
+    goto error_exit;
+  }
+
+  sleep(1); //wait for uploadprocess complete
+
+  tbuf[3] = VR_CONF_REG;
+  tbuf[4] = 0x00;
+  tbuf[5] = 0x00;
+  tlen = 6;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't write data to VR_CONF_REG", __func__);
+    goto error_exit;
+  }
+
+  // step 3 - checking for a successful upload
+  tbuf[3] = VR_PAGE;
+  tbuf[4] = VR_PAGE60;
+  tlen = 5;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
+    goto error_exit;
+  }
+
+  tbuf[2] = 0x01; //read cnt
+  tbuf[3] = 0x01; //sts reg1
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
+    goto error_exit;
+  }
+
+  if ( (rbuf[0] & REG1_STS_CHECK) != 0 ) {
+    ret = -1;
+    printf("Failed to upload data. rbuf[0]=%02X from reg1\n", rbuf[0]);
+    goto error_exit;
+  }
+
+  tbuf[3] = 0x02; //sts reg2
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
+    goto error_exit;
+  }
+
+  if ( (rbuf[0] & REG2_STS_CHECK) != 0 ) {
+    ret = -1;
+    printf("Failed to upload data. rbuf[0]=%02X from reg2\n", rbuf[0]);
+    printf("a defective bit is held or the mem space is full!\n");
+    goto error_exit;
+  }
+
+#if 0
+  //need to do sled-cycle to make the config reload
+  //step 4 - read crc from the dev
+  tbuf[2] = 0x00; //read cnt
+  tbuf[3] = VR_PAGE;
+  tbuf[4] = VR_PAGE62;
+  tlen = 5;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
+    goto error_exit;
+  }
+
+  tbuf[2] = 0x02; //read 2 bytes
+  tbuf[3] = 0x42;
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't read crc1 from %02X", __func__, tbuf[3]);
+    goto error_exit;
+  }
+
+  tbuf[3] = 0x43;
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't read crc2 from %02X", __func__, tbuf[3]);
+    goto error_exit;
+  }
+#endif
+
+error_exit:
+  return ret;
+}
+
+struct dev_table {
+  uint8_t addr;
+  char *dev_name;
+} dev_list[] = {
+  {VCCIN_ADDR,    "VCCIN/VSA"},
+  {VCCIO_ADDR,    "VCCIO"},
+  {VDDQ_ABC_ADDR, "VDDQ_ABC"},
+  {VDDQ_DEV_ADDR, "VDDQ_DEF"},
+};
+
+int dev_table_size = (sizeof(dev_list)/sizeof(struct dev_table));
+
+static struct tool {
+  uint8_t vendor;
+  int (*parser)(char *);
+  int (*program)(uint8_t , vr *);
+} vr_tool[] = {
+  {VR_ISL, vr_ISL_hex_parser, vr_ISL_program},
+  {VR_TI , vr_TI_csv_parser , vr_TI_program},
+  {VR_IFX, vr_IFX_xsf_parser, vr_IFX_program},
+};
+
+static char*
 get_vr_name(uint8_t addr) {
-  struct dev_table {
-    uint8_t addr;
-    char *dev_name;
-  } dev_list[] = {
-    {0xC0, "VCCIN/VSA"},
-    {0xC4, "VCCIO"},
-    {0xC8, "VDDQ_ABC"},
-    {0xCC, "VDDQ_DEF"},
-  };
-
-  int dev_table_size = (sizeof(dev_list)/sizeof(struct dev_table));
   int i;
-
   for ( i = 0; i< dev_table_size; i++ ) {
     if ( addr == dev_list[i].addr ) {
       return dev_list[i].dev_name;
@@ -567,11 +871,6 @@ get_vr_name(uint8_t addr) {
 
 int 
 update_bic_vr(uint8_t slot_id, char *image, uint8_t force) {
-  enum {
-    VR_ISL = 0x0,
-    VR_TI  = 0x1,
-  };
-
   int ret = 0;
   int i = 0;
   uint8_t rbuf[6] = {0};
@@ -579,42 +878,50 @@ update_bic_vr(uint8_t slot_id, char *image, uint8_t force) {
   uint8_t sel_vendor = 0;
 
   //step 1 - read the dev id of one of them.
-  ret = bic_get_vr_device_id(slot_id, FW_CPLD, rbuf, &rlen, 8 /*bus*/, 0xC0/*addr*/, NONE_INTF);
-  if ( ret < 0 ){
-    syslog(LOG_WARNING, "[%s] Failed to do bic_get_vr_device_id()", __func__);
+  do {
+    ret = bic_get_vr_device_id(slot_id, FW_CPLD, rbuf, &rlen, VR_BUS, dev_list[i].addr, NONE_INTF);
+    if ( ret == 0 && rlen <= TI_DEVID_LEN/*the longest length of dev id*/) break;
+  } while ( i++ < dev_table_size );
+
+  if ( i == dev_table_size ) {
+    printf("Couldn't get the devid from VRs\n");
     goto error_exit;
   }
 
   //step 2 - parse the image file.
-  //TODO: Maybe we should use a function pointer
-  //The length of GET_DEVICE_ID of ISL is different to TI.
-  sel_vendor = (rlen > 4)?VR_TI:VR_ISL;
-  if ( sel_vendor == VR_TI ) {
-    ret = vr_TI_csv_parser(image);
+  if ( rlen == IFX_DEVID_LEN ) {
+    sel_vendor = VR_IFX;
+  } else if (rlen == TI_DEVID_LEN ){
+    sel_vendor = VR_TI;
   } else {
-    ret = vr_ISL_hex_parser(image);
+    sel_vendor = VR_ISL;
+  }
+
+  printf("VR vendor=%s(%x.%x) \n", (sel_vendor == VR_IFX)?"IFX":(sel_vendor == VR_TI)?"TI":"ISL", rlen, sel_vendor);
+
+  ret = vr_tool[sel_vendor].parser(image);
+  if ( ret < 0 ) {
+    printf("Cannot parse the file!\n");
+    goto error_exit;
   }
 
   //step 2.5 - check if data is existed.
   //data_cnt, addr, and devid_len cannot be 0.
   for ( i = 0; i < vr_cnt + 1; i++ ) {
     if ( vr_list[i].data_cnt == 0 || vr_list[i].addr == 0 || vr_list[i].devid_len == 0 ) {
-      printf("Invalid file: %s.\n", image);
+      printf("data, addr, or devid_len is not caught!\n");
       ret = -1;
+      goto error_exit;
     }
-  }
-
-  if ( ret < 0 ) {
-    goto error_exit;
   }
 
   //step 3 - check DEVID
   if ( memcmp(vr_list[0].devid, rbuf, vr_list[0].devid_len) != 0 ) {
-    printf("[%s] Device ID is not match!\n", __func__);
-    printf("[%s] Expected ID: ", __func__);
+    printf("Device ID is not match!\n");
+    printf(" Expected ID: ");
     for ( i = 0 ; i < vr_list[0].devid_len; i++ ) printf("%02X ", vr_list[0].devid[i]);
     printf("\n");
-    printf("[%s] Actual ID: ", __func__);
+    printf(" Actual ID: ");
     for ( i = 0 ; i < vr_list[0].devid_len; i++ ) printf("%02X ", rbuf[i]);
     printf("\n");
     ret = -1;
@@ -625,19 +932,14 @@ update_bic_vr(uint8_t slot_id, char *image, uint8_t force) {
   //step 4 - program
   for ( i = 0; i < vr_cnt + 1; i++ ) { 
     printf("Update %s...", get_vr_name(vr_list[i].addr));
-    //TODO: Maybe we should use a function pointer
-    if ( sel_vendor == VR_TI ) {
-      ret = vr_TI_program(slot_id, &vr_list[i]);
-    } else {
-      ret = vr_ISL_program(slot_id, &vr_list[i]);
-    }
-
+    ret = vr_tool[sel_vendor].program(slot_id, &vr_list[i]);
     if ( ret < 0 ) {
       printf("Failed.\n");
     } else {
       printf("Succeeded.\n");
     }
   }
+
 error_exit:
 
   return ret;

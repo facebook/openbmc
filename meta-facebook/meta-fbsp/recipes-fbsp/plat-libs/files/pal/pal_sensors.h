@@ -437,4 +437,6 @@ enum {
 };
 
 int cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr);
+bool pal_is_dimm_present(int cpu_id, uint8_t dimm_id);
+bool pal_dimm_present_check(uint8_t snr_num);
 #endif

@@ -30,6 +30,8 @@
 
 #define MAX_READ_RETRY 10
 
+#define DIMM_SLOT_CNT 24
+
 static int read_adc_val(uint8_t adc_id, float *value);
 static int read_battery_val(uint8_t adc_id, float *value);
 static int read_sensor(uint8_t snr_id, float *value);
@@ -1138,11 +1140,17 @@ read_cpu_temp(uint8_t cpu_id, float *value) {
   return 0;
 }
 
+
 static int
 read_cpu0_dimm_temp(uint8_t dimm_id, float *value) {
   int ret;
   uint8_t temp;
   static int retry = 0;
+
+  if(!pal_is_dimm_present(0, dimm_id)) {
+    ret = READING_NA;
+    return ret;
+  }
 
   ret = cmd_peci_dimm_thermal_reading(PECI_CPU0_ADDR, dimm_id, &temp);
   if (ret != 0) {
@@ -1168,6 +1176,11 @@ read_cpu1_dimm_temp(uint8_t dimm_id, float *value) {
   int ret;
   uint8_t temp;
   static int retry = 0;
+
+  if(!pal_is_dimm_present(1, dimm_id)) {
+    ret = READING_NA;
+    return ret;
+  }
 
   ret = cmd_peci_dimm_thermal_reading(PECI_CPU1_ADDR, dimm_id, &temp);
   if (ret != 0) {
@@ -1945,6 +1958,80 @@ pal_is_BIOS_completed(uint8_t fru)
     ret = true;
   gpio_close(desc);
   return ret;
+}
+
+void
+pal_is_dimm_present_check(uint8_t fru, bool *dimm_sts_list)
+{
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  int i;
+  size_t ret;
+
+  //check dimm info from /mnt/data/sys_config/
+  for (i=0; i<DIMM_SLOT_CNT; i++)
+  {
+    sprintf(key, "sys_config/fru%d_dimm%d_location", fru, i);
+    if(kv_get(key, value, &ret, KV_FPERSIST) != 0 || ret < 4)
+    {
+      syslog(LOG_WARNING,"[%s]Cannot get dimm_slot%d present info", __func__, i);
+      return;
+    }
+
+    if ( 0xff == value[0] )
+    {
+      dimm_sts_list[i] = false;
+    }
+    else
+    {
+      dimm_sts_list[i] = true;
+    }
+  }
+}
+
+bool
+pal_is_dimm_present(int cpu_id, uint8_t dimm_id)
+{
+  static bool is_check = false;
+  static bool dimm_sts_list[DIMM_SLOT_CNT] = {0};
+  uint8_t fru = FRU_MB;
+  int list_index = 0;
+
+  if ( false == pal_is_BIOS_completed(fru) )
+  {
+    return false;
+  }
+
+  if ( false == is_check )
+  {
+    is_check = true;
+    pal_is_dimm_present_check(fru, dimm_sts_list);
+  }
+
+  list_index = 2*dimm_id + cpu_id;
+
+  if(true == dimm_sts_list[list_index])
+  {
+    return true;
+  }
+
+  return false;
+}
+
+bool
+pal_dimm_present_check(uint8_t snr_num) {
+  int cpu_id = 0;
+  uint8_t dimm_id = 0xFF;
+
+  if(snr_num >= MB_SNR_CPU1_DIMM_GRPA_TEMP) {
+    cpu_id = 1;
+    dimm_id = snr_num - MB_SNR_CPU1_DIMM_GRPA_TEMP;
+  } else {
+    cpu_id = 0;
+    dimm_id = snr_num - MB_SNR_CPU0_DIMM_GRPA_TEMP;
+  }
+
+  return !pal_is_dimm_present(cpu_id, dimm_id);
 }
 
 static int

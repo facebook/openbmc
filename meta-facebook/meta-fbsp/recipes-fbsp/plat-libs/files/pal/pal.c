@@ -93,12 +93,6 @@ struct pal_key_cfg {
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
 
-bool
-pal_is_dimm_present(uint8_t sensor_num)
-{
-  return true;
-}
-
 struct fsc_monitor
 {
   uint8_t sensor_num;
@@ -119,18 +113,18 @@ static struct fsc_monitor fsc_monitor_basic_snr_list[] =
   {NIC_MEZZ0_SNR_TEMP           , "nic_mezz0_temp"  , NULL, false, 5, 5},
   {NIC_MEZZ1_SNR_TEMP           , "nic_mezz1_temp"  , NULL, false, 5, 5},
   //dimm sensors wait for 240s. 240=80*3(fsc monitor interval)
-  {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a_temp", pal_is_dimm_present, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_b_temp", pal_is_dimm_present, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPC_TEMP, "mb_cpu0_dimm_c_temp", pal_is_dimm_present, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPD_TEMP, "mb_cpu0_dimm_d_temp", pal_is_dimm_present, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPE_TEMP, "mb_cpu0_dimm_e_temp", pal_is_dimm_present, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPF_TEMP, "mb_cpu0_dimm_f_temp", pal_is_dimm_present, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPA_TEMP, "mb_cpu1_dimm_a_temp", pal_is_dimm_present, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPB_TEMP, "mb_cpu1_dimm_b_temp", pal_is_dimm_present, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPC_TEMP, "mb_cpu1_dimm_c_temp", pal_is_dimm_present, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_d_temp", pal_is_dimm_present, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPE_TEMP, "mb_cpu1_dimm_e_temp", pal_is_dimm_present, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPF_TEMP, "mb_cpu1_dimm_f_temp", pal_is_dimm_present, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a_temp", pal_dimm_present_check, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_b_temp", pal_dimm_present_check, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPC_TEMP, "mb_cpu0_dimm_c_temp", pal_dimm_present_check, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPD_TEMP, "mb_cpu0_dimm_d_temp", pal_dimm_present_check, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPE_TEMP, "mb_cpu0_dimm_e_temp", pal_dimm_present_check, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPF_TEMP, "mb_cpu0_dimm_f_temp", pal_dimm_present_check, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPA_TEMP, "mb_cpu1_dimm_a_temp", pal_dimm_present_check, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPB_TEMP, "mb_cpu1_dimm_b_temp", pal_dimm_present_check, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPC_TEMP, "mb_cpu1_dimm_c_temp", pal_dimm_present_check, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_d_temp", pal_dimm_present_check, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPE_TEMP, "mb_cpu1_dimm_e_temp", pal_dimm_present_check, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPF_TEMP, "mb_cpu1_dimm_f_temp", pal_dimm_present_check, false, 80, 5},
 };
 
 static int fsc_monitor_basic_snr_list_size = sizeof(fsc_monitor_basic_snr_list) / sizeof(struct fsc_monitor);

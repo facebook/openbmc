@@ -32,7 +32,16 @@ WEUTIL_TIMEOUT="5"
 WEUTIL="/usr/bin/weutil"
 
 set +e  # handle weutil not working
-weutil_out=$(timeout -t "$WEUTIL_TIMEOUT" "$WEUTIL")
+#
+# "-t" option is removed since Busybox version v1.30.0, so we need to
+# get rid of "-t" from all yocto-warrior platforms (Busybox v1.30.1).
+# "-t" is still needed for rocko platforms (with Busybox v1.24.1).
+#
+if timeout --help 2>&1 | grep "Usage:.*\[\-t " > /dev/null 2>&1; then
+  weutil_out=$(timeout -t "$WEUTIL_TIMEOUT" "$WEUTIL")
+else
+  weutil_out=$(timeout "$WEUTIL_TIMEOUT" "$WEUTIL")
+fi
 if [ $? -ne 0 ]; then
   weutil_out=""
 fi

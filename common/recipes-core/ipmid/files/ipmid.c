@@ -2938,7 +2938,8 @@ oem_get_plat_info(unsigned char *request, unsigned char req_len, unsigned char *
   }
 
   // Populate the slot Index bit[2:0]
-  pinfo |= req->payload_id;
+  ret = pal_get_slot_index(req->payload_id);
+  pinfo |= (ret & 0x7);
 
   // Prepare response buffer
   res->cc = CC_SUCCESS;

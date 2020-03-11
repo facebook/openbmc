@@ -499,6 +499,12 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
 }
 
 int __attribute__((weak))
+pal_get_slot_index(unsigned char payload_id)
+{
+  return payload_id;
+}
+
+int __attribute__((weak))
 pal_get_server_power(uint8_t slot_id, uint8_t *status)
 {
   return PAL_EOK;

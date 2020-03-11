@@ -260,6 +260,7 @@ int pal_get_platform_name(char *name);
 int pal_get_num_slots(uint8_t *num);
 int pal_get_num_devs(uint8_t slot, uint8_t *num);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
+int pal_get_slot_index(unsigned char payload_id);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type);

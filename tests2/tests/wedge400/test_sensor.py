@@ -19,6 +19,7 @@
 #
 import unittest
 from abc import abstractmethod
+from utils.shell_util import run_shell_cmd
 
 from common.base_sensor_test import SensorUtilTest
 from tests.wedge400.test_data.sensors.sensors import (
@@ -27,7 +28,9 @@ from tests.wedge400.test_data.sensors.sensors import (
     PSU1_SENSORS,
     PSU2_SENSORS,
     SCM_SENSORS,
-    SMB_SENSORS,
+    SMB_SENSORS_W400,
+    SMB_SENSORS_W400CEVT,
+    SMB_SENSORS_W400CEVT2,
 )
 
 
@@ -75,6 +78,19 @@ class SmbSensorTest(SensorUtilTest, unittest.TestCase):
         self.sensors_cmd = ["/usr/local/bin/sensor-util smb"]
 
     def test_smb_sensor_keys(self):
+        data = run_shell_cmd(". openbmc-utils.sh && wedge_board_type_rev")
+        if data == "WEDGE400_EVT/EVT3\n":
+            SMB_SENSORS = SMB_SENSORS_W400
+        elif data == "WEDGE400_DVT\n":
+            SMB_SENSORS = SMB_SENSORS_W400
+        elif data == "WEDGE400_DVT2\n":
+            SMB_SENSORS = SMB_SENSORS_W400
+        elif data == "WEDGE400-C_EVT\n":
+            SMB_SENSORS = SMB_SENSORS_W400CEVT
+        elif data == "WEDGE400-C_EVT2\n":
+            SMB_SENSORS = SMB_SENSORS_W400CEVT2
+        else:
+            self.skipTest("Skip test for {}".format(data))
         result = self.get_parsed_result()
         for key in SMB_SENSORS:
             with self.subTest(key=key):

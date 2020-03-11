@@ -533,6 +533,9 @@ sel_add_entry(int node, sel_msg_t *msg, int *rec_id) {
     }
   }
 
+  msg->msg[0] = g_sel_hdr[node].end & 0xFF;
+  msg->msg[1] = (g_sel_hdr[node].end >> 8) & 0xFF;
+
   // Update message's time stamp starting at byte 4
   if (msg->msg[2] < 0xE0)
     time_stamp_fill(&msg->msg[3]);

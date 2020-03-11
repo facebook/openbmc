@@ -44,6 +44,7 @@
 #define BIOS_VERIFY_PKT_SIZE (32*1024)
 #define BIOS_VER_REGION_SIZE (4*1024*1024)
 #define BIOS_VER_STR "F09_"
+#define MAX_CHECK_DEVICE_TIME 5
 
 int interface_ref = 0;
 int alt_interface,interface_number;
@@ -193,7 +194,6 @@ int active_config(struct libusb_device *dev,struct libusb_device_handle *handle)
   return 0;
 }
 
-//int main(int argc, char **argv)
 int
 update_bic_usb_bios(uint8_t slot_id, char *image)
 {
@@ -217,6 +217,8 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
   int read_cnt;
   int fd;
   char fpath[128];
+  uint8_t path[8];
+  int recheck = MAX_CHECK_DEVICE_TIME;
   
   ret = libusb_init(NULL);
   if (ret < 0) {
@@ -226,64 +228,88 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
     printf("Init libusb Successful!\n");
   }
 
-
-  cnt = libusb_get_device_list(NULL, &devs);
-  if (cnt < 0) {
-    printf("There are no USB devices on bus\n");
-    goto error_exit;
-  } 
-
-  while ((dev = devs[i++]) != NULL) {
-    ret = libusb_get_device_descriptor(dev, &desc);
-    if ( ret < 0 ) {
-      printf("Failed to get device descriptor -- exit\n");
-      libusb_free_device_list(devs,1);
+  do {
+    cnt = libusb_get_device_list(NULL, &devs);
+    if (cnt < 0) {
+      printf("There are no USB devices on bus\n");
       goto error_exit;
     }
-
-    ret = libusb_open(dev,&handle);
-    if ( ret < 0 ) {
-      printf("Error opening device -- exit\n");
-      libusb_free_device_list(devs,1);
-      goto error_exit;
-    }
-
-    if( (TI_VENDOR_ID == desc.idVendor) && (TI_PRODUCT_ID == desc.idProduct) ) {
-      ret = libusb_get_string_descriptor_ascii(handle, desc.iManufacturer, (unsigned char*) str1, sizeof(str1));
+    while ((dev = devs[i++]) != NULL) {
+      ret = libusb_get_device_descriptor(dev, &desc);
       if ( ret < 0 ) {
-        printf("Error get Manufacturer string descriptor -- exit\n");
+        printf("Failed to get device descriptor -- exit\n");
         libusb_free_device_list(devs,1);
         goto error_exit;
       }
 
-      ret = libusb_get_string_descriptor_ascii(handle, desc.iProduct, (unsigned char*) str2, sizeof(str2));
+      ret = libusb_open(dev,&handle);
       if ( ret < 0 ) {
-        printf("Error get Product string descriptor -- exit\n");
+        printf("Error opening device -- exit\n");
         libusb_free_device_list(devs,1);
         goto error_exit;
       }
 
-      printf("Manufactured : %s\n",str1);
-      printf("Product : %s\n",str2);
-      printf("----------------------------------------\n");
-      printf("Device Descriptors:\n");    
-      printf("Vendor ID : %x\n",desc.idVendor);  
-      printf("Product ID : %x\n",desc.idProduct);
-      printf("Serial Number : %x\n",desc.iSerialNumber);
-      printf("Size of Device Descriptor : %d\n",desc.bLength);
-      printf("Type of Descriptor : %d\n",desc.bDescriptorType);
-      printf("USB Specification Release Number : %d\n",desc.bcdUSB);
-      printf("Device Release Number : %d\n",desc.bcdDevice);
-      printf("Device Class : %d\n",desc.bDeviceClass);
-      printf("Device Sub-Class : %d\n",desc.bDeviceSubClass);
-      printf("Device Protocol : %d\n",desc.bDeviceProtocol);
-      printf("Max. Packet Size : %d\n",desc.bMaxPacketSize0);
-      printf("No. of Configuraions : %d\n",desc.bNumConfigurations);
+      if( (TI_VENDOR_ID == desc.idVendor) && (TI_PRODUCT_ID == desc.idProduct) ) {
+        ret = libusb_get_string_descriptor_ascii(handle, desc.iManufacturer, (unsigned char*) str1, sizeof(str1));
+        if ( ret < 0 ) {
+          printf("Error get Manufacturer string descriptor -- exit\n");
+          libusb_free_device_list(devs,1);
+          goto error_exit;
+        }
 
-      found = 1;
+        ret = libusb_get_port_numbers(dev, path, sizeof(path));
+        if (ret < 0) {
+          printf("Error get port number\n");
+          libusb_free_device_list(devs,1);
+          goto error_exit;
+        }
+
+        if ( path[1] != slot_id) {
+          continue;
+        }
+        printf("%04x:%04x (bus %d, device %d)",desc.idVendor, desc.idProduct, libusb_get_bus_number(dev), libusb_get_device_address(dev));
+        printf(" path: %d", path[0]);
+        for (i = 1; i < ret; i++) {
+          printf(".%d", path[i]);
+        }
+        printf("\n");
+
+        ret = libusb_get_string_descriptor_ascii(handle, desc.iProduct, (unsigned char*) str2, sizeof(str2));
+        if ( ret < 0 ) {
+          printf("Error get Product string descriptor -- exit\n");
+          libusb_free_device_list(devs,1);
+          goto error_exit;
+        }
+
+        printf("Manufactured : %s\n",str1);
+        printf("Product : %s\n",str2);
+        printf("----------------------------------------\n");
+        printf("Device Descriptors:\n");
+        printf("Vendor ID : %x\n",desc.idVendor);
+        printf("Product ID : %x\n",desc.idProduct);
+        printf("Serial Number : %x\n",desc.iSerialNumber);
+        printf("Size of Device Descriptor : %d\n",desc.bLength);
+        printf("Type of Descriptor : %d\n",desc.bDescriptorType);
+        printf("USB Specification Release Number : %d\n",desc.bcdUSB);
+        printf("Device Release Number : %d\n",desc.bcdDevice);
+        printf("Device Class : %d\n",desc.bDeviceClass);
+        printf("Device Sub-Class : %d\n",desc.bDeviceSubClass);
+        printf("Device Protocol : %d\n",desc.bDeviceProtocol);
+        printf("Max. Packet Size : %d\n",desc.bMaxPacketSize0);
+        printf("No. of Configuraions : %d\n",desc.bNumConfigurations);
+
+        found = 1;
+        break;
+      }
+    }
+
+    if ( found != 1) {
+      sleep(3);
+    } else {
       break;
     }
-  }
+  } while ((--recheck) > 0);
+
 
   if ( found == 0 ) {
     printf("Device NOT found -- exit\n");

@@ -2,6 +2,7 @@
 #include "bios.h"
 #include "usbdbg.h"
 #include "nic_ext.h"
+#include "tpm2.h"
 
 AliasComponent bmc("mb", "bmc", "bmc", "bmc");
 AliasComponent rom("mb", "rom", "bmc", "rom");
@@ -12,3 +13,5 @@ NicExtComponent nic1("nic", "nic1", "nic1_fw_ver", FRU_NIC1, 1, 0x20);
 
 UsbDbgComponent usbdbg("ocpdbg", "mcu", "F0C", 0, 0x60, false);
 UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 0, 0x60, 0x02);  // target ID of bootloader = 0x02
+
+Tpm2Component tpm("bmc", "tpm");

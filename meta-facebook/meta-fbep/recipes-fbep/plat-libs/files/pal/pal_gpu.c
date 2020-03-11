@@ -128,7 +128,7 @@ static float amd_read_die_temp(uint8_t slot)
     ret = amd_cmd_ldrd_scratch_addr(fd, 9, 1, buf);
 
   close(fd);
-  return ret < 0? -1: (buf[0] << 8) | buf[1];
+  return ret < 0? -1: (buf[2] << 8) | buf[3];
 }
 
 static float amd_read_hbm_temp(uint8_t slot)

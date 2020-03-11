@@ -484,6 +484,36 @@ error_exit:
   return ret;
 }
 
+int 
+pal_get_slot_index(unsigned char payload_id)
+{
+  uint8_t bmc_location = 0;
+  uint8_t slot_index = 0;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = -1;
+  
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return payload_id;
+  }
+  
+  if ( bmc_location == NIC_BMC ) {
+    ret = bic_ipmb_send(payload_id, NETFN_OEM_REQ, 0xF0, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);  
+    if (ret) {
+      return payload_id;
+    } else {
+      slot_index = rbuf[0];
+      return slot_index;
+    }
+  } else {
+    return payload_id;
+  }
+}
+
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   int ret = PAL_EOK;

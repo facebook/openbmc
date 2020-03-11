@@ -539,6 +539,9 @@ devmem_clear_bit $(scu_addr ac) 0
 devmem_clear_bit $(scu_addr ac) 1
 devmem_clear_bit $(scu_addr ac) 2
 devmem_clear_bit $(scu_addr ac) 3
+devmem_clear_bit $(scu_addr ac) 5
+devmem_clear_bit $(scu_addr ac) 6
+devmem_clear_bit $(scu_addr ac) 7
 
 # PCIe switch GPIO (preserved)
 gpio_export PAX0_SKU_ID GPIOAC0
@@ -549,6 +552,7 @@ gpio_export PAX1_ALERT GPIOAC3
 # Reserved
 gpio_export BMC_GPIOAC5 GPIOAC5
 gpio_export BMC_GPIOAC6 GPIOAC6
+gpio_export BMC_GPIOAC7 GPIOAC7
 
 echo -n "Setup PCIe switch config "
 gpio_set PAX0_SKU_ID 0
@@ -559,11 +563,12 @@ gpio_set PAX3_SKU_ID 0
 for sec in {1..30};
 do
   server_type=$(/usr/local/bin/ipmb-util 0 0x20 0xE8 0x0)
-  if [ $server_type == "00" ]
+  server_type=${server_type:1:1}
+  if [ "$server_type" == "0" ]
   then
     /usr/local/bin/cfg-util server_type 8
     break
-  elif [ $server_type == "01" ]
+  elif [ "$server_type" == "1" ]
   then
     /usr/local/bin/cfg-util server_type 2
     gpio_set PAX0_SKU_ID 1

@@ -18,18 +18,24 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += "file://setup-fan.sh \
-            file://FSC_CLASS1_EVT_singlefan_config.json \
-            file://FSC_CLASS1_EVT_dualfan_config.json \
             file://FSC_CLASS2_EVT_config.json \
-            file://FSC_CLASS1_EVT_zone1.fsc \
             file://FSC_CLASS2_EVT_zone1.fsc \
+            file://FSC_CLASS1_EVT_type1.json \
+            file://FSC_CLASS1_EVT_type10.json \
+            file://FSC_CLASS1_EVT_type10_zone1.fsc \
+            file://FSC_CLASS1_EVT_type1_zone1.fsc \
+            file://FSC_CLASS1_EVT_dualfan_type1.json \
+            file://FSC_CLASS1_EVT_dualfan_type10.json \
            "
-FSC_CONFIG += "FSC_CLASS1_EVT_singlefan_config.json \
-               FSC_CLASS1_EVT_dualfan_config.json   \
+FSC_CONFIG += "FSC_CLASS1_EVT_type1.json \
+               FSC_CLASS1_EVT_type10.json \
+               FSC_CLASS1_EVT_dualfan_type1.json \
+               FSC_CLASS1_EVT_dualfan_type10.json \
                FSC_CLASS2_EVT_config.json \
               "
 
-FSC_ZONE_CONFIG += " FSC_CLASS1_EVT_zone1.fsc \
-                     FSC_CLASS2_EVT_zone1.fsc \
+FSC_ZONE_CONFIG += " FSC_CLASS2_EVT_zone1.fsc \
+                     FSC_CLASS1_EVT_type10_zone1.fsc \
+                     FSC_CLASS1_EVT_type1_zone1.fsc \
                    "
 FSC_INIT_FILE += "setup-fan.sh"

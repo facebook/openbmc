@@ -62,7 +62,7 @@ def main():
     openbmc_gpio.gpio_shadow_init()
     version = minipack_board_rev(soc_gpio_table, board_gpio_rev_table)
     # In order to satisy/unsatisfy conditions in setup_board_gpio()
-    # modify the registers
+    # modify the registers. After DVT, GPIO mapping does not change.
     set_register()
     if version is 4:
         print("Using GPIO EVTA table ", end="")
@@ -70,8 +70,8 @@ def main():
     elif version is 0:
         print("Using GPIO EVTB table ", end="")
         setup_board_gpio(soc_gpio_table, board_gpio_table_v2)
-    elif version is 1:
-        print("Using GPIO DVT table ", end="")
+    elif version in [1, 3]:
+        print("Using GPIO DVT/PVT/MP table ", end="")
         setup_board_gpio(soc_gpio_table, board_gpio_table_v3)
     else:
         print("Unexpected board version %s. Using GPIO DVT table. " % version, end="")

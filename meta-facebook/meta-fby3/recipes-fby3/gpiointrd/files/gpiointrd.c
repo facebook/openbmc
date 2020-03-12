@@ -101,14 +101,14 @@ ac_on_off_button_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 // GPIO table
 static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
-  {"PRSNT_MB_BMC_SLOT0_BB_N", "GPIOB4", GPIO_EDGE_BOTH, slot1_hotplug_hndlr, slot_present},
-  {"PRSNT_MB_BMC_SLOT1_BB_N", "GPIOB5", GPIO_EDGE_BOTH, slot2_hotplug_hndlr, slot_present},
-  {"PRSNT_MB_BMC_SLOT2_BB_N", "GPIOB6", GPIO_EDGE_BOTH, slot3_hotplug_hndlr, slot_present},
-  {"PRSNT_MB_BMC_SLOT3_BB_N", "GPIOB7", GPIO_EDGE_BOTH, slot4_hotplug_hndlr, slot_present},
-  {"AC_ON_OFF_BTN_SLOT0_N",       "GPIOL0", GPIO_EDGE_BOTH, ac_on_off_button_hndlr, NULL},
-  {"AC_ON_OFF_BTN_BMC_SLOT1_N_R", "GPIOL1", GPIO_EDGE_BOTH, ac_on_off_button_hndlr, NULL},
-  {"AC_ON_OFF_BTN_SLOT2_N",       "GPIOL2", GPIO_EDGE_BOTH, ac_on_off_button_hndlr, NULL},
-  {"AC_ON_OFF_BTN_BMC_SLOT3_N_R", "GPIOL3", GPIO_EDGE_BOTH, ac_on_off_button_hndlr, NULL},
+  {"PRSNT_MB_BMC_SLOT1_BB_N", "GPIOB4", GPIO_EDGE_BOTH, slot1_hotplug_hndlr, slot_present},
+  {"PRSNT_MB_BMC_SLOT2_BB_N", "GPIOB5", GPIO_EDGE_BOTH, slot2_hotplug_hndlr, slot_present},
+  {"PRSNT_MB_BMC_SLOT3_BB_N", "GPIOB6", GPIO_EDGE_BOTH, slot3_hotplug_hndlr, slot_present},
+  {"PRSNT_MB_BMC_SLOT4_BB_N", "GPIOB7", GPIO_EDGE_BOTH, slot4_hotplug_hndlr, slot_present},
+  {"AC_ON_OFF_BTN_SLOT1_N",       "GPIOL0", GPIO_EDGE_BOTH, ac_on_off_button_hndlr, NULL},
+  {"AC_ON_OFF_BTN_BMC_SLOT2_N_R", "GPIOL1", GPIO_EDGE_BOTH, ac_on_off_button_hndlr, NULL},
+  {"AC_ON_OFF_BTN_SLOT3_N",       "GPIOL2", GPIO_EDGE_BOTH, ac_on_off_button_hndlr, NULL},
+  {"AC_ON_OFF_BTN_BMC_SLOT4_N_R", "GPIOL3", GPIO_EDGE_BOTH, ac_on_off_button_hndlr, NULL},
 };
 
 static void

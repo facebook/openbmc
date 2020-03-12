@@ -91,28 +91,28 @@ enum {
 const static char *gpio_server_prsnt[] =
 {
   "",
-  "PRSNT_MB_BMC_SLOT0_BB_N",
   "PRSNT_MB_BMC_SLOT1_BB_N",
   "PRSNT_MB_BMC_SLOT2_BB_N",
-  "PRSNT_MB_BMC_SLOT3_BB_N"
+  "PRSNT_MB_BMC_SLOT3_BB_N",
+  "PRSNT_MB_BMC_SLOT4_BB_N"
 };
 
 const static char *gpio_server_stby_pwr_sts[] =
 {
   "",
-  "PWROK_STBY_BMC_SLOT0",
   "PWROK_STBY_BMC_SLOT1",
   "PWROK_STBY_BMC_SLOT2",
-  "PWROK_STBY_BMC_SLOT3"
+  "PWROK_STBY_BMC_SLOT3",
+  "PWROK_STBY_BMC_SLOT4"
 };
 
 const static char *gpio_server_i2c_isolated[] =
 {
   "",
-  "FM_BMC_SLOT0_ISOLATED_EN_R",
   "FM_BMC_SLOT1_ISOLATED_EN_R",
   "FM_BMC_SLOT2_ISOLATED_EN_R",
-  "FM_BMC_SLOT3_ISOLATED_EN_R"
+  "FM_BMC_SLOT3_ISOLATED_EN_R",
+  "FM_BMC_SLOT4_ISOLATED_EN_R"
 };
 
 int fby3_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val);

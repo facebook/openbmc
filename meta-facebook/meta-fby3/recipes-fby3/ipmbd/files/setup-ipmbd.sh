@@ -36,11 +36,10 @@ function init_class1_ipmb(){
     bus=$((slot_num-1))
     echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-${bus}/new_device
     runsv /etc/sv/ipmbd_${bus} > /dev/null 2>&1 &
-    slot_present=$(gpio_get PRSNT_MB_BMC_SLOT${bus}_BB_N)
+    slot_present=$(gpio_get PRSNT_MB_BMC_SLOT${slot_num}_BB_N)
     if [[ "$slot_present" == "1" ]]; then
       sv stop ipmbd_${bus}
     else
-      enable_server_12V_power ${slot_num}
       enable_server_i2c_bus ${slot_num}
     fi
   done  

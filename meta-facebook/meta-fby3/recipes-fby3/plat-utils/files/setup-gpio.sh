@@ -111,13 +111,19 @@ gpio_export FM_BMC_TPM_PRSNT_N GPIOQ7
 devmem_clear_bit $(scu_addr A8) 0
 gpio_export PWRGD_NIC_BMC GPIOAB0
 
-# GPIOAC4-PRSNT_SFF_BSM_N
-devmem_clear_bit $(scu_addr AC) 4
-gpio_export PRSNT_SFF_BSM_N GPIOAC4
+# GPIOAB2-RST_BMC_WDRST1_R
+devmem_clear_bit $(scu_addr 94) 0
+devmem_clear_bit $(scu_addr 94) 1
+devmem_set_bit $(scu_addr A8) 2
+gpio_set RST_BMC_WDRST1_R GPIOAB2
 
-# GPIOAC6-SMB_TEMP_OUTLET_ALERT_BMC_N_R
-devmem_clear_bit $(scu_addr AC) 6
-gpio_export SMB_TEMP_OUTLET_ALERT_BMC_N_R GPIOAC6
+# GPIOAB3-RST_BMC_WDRST2_R
+devmem_set_bit $(scu_addr A8) 3
+gpio_set RST_BMC_WDRST2_R GPIOAB3
+
+# GPIOAC4-EMMC_PRESENT_N
+devmem_clear_bit $(scu_addr AC) 4
+gpio_export EMMC_PRESENT_N GPIOAC4
 
 ###NIC EXP BMC###
 if [ $BOARD_ID -eq 9 ]; then
@@ -147,25 +153,25 @@ elif [ $BOARD_ID -eq 14 ]; then
   devmem_clear_bit $(scu_addr 80) 15
   gpio_export FM_HSC_BMC_FAULT_N_R GPIOA2
 
-  # GPIOB0-SMB_BMC_SLOT0_ALT_N
-  # GPIOB1-SMB_BMC_SLOT1_ALT_N
-  # GPIOB2-SMB_BMC_SLOT2_ALT_N
-  # GPIOB3-SMB_BMC_SLOT3_ALT_N
-  gpio_export SMB_BMC_SLOT0_ALT_N GPIOB0
-  gpio_export SMB_BMC_SLOT1_ALT_N GPIOB1
-  gpio_export SMB_BMC_SLOT2_ALT_N GPIOB2
-  gpio_export SMB_BMC_SLOT3_ALT_N GPIOB3
+  # GPIOB0-SMB_BMC_SLOT1_ALT_N
+  # GPIOB1-SMB_BMC_SLOT2_ALT_N
+  # GPIOB2-SMB_BMC_SLOT3_ALT_N
+  # GPIOB3-SMB_BMC_SLOT4_ALT_N
+  gpio_export SMB_BMC_SLOT1_ALT_N GPIOB0
+  gpio_export SMB_BMC_SLOT2_ALT_N GPIOB1
+  gpio_export SMB_BMC_SLOT3_ALT_N GPIOB2
+  gpio_export SMB_BMC_SLOT4_ALT_N GPIOB3
 
-  # GPIOB4-PRSNT_MB_BMC_SLOT0_BB_N
-  # GPIOB5-PRSNT_MB_BMC_SLOT1_BB_N
-  # GPIOB6-PRSNT_MB_BMC_SLOT2_BB_N
-  # GPIOB7-PRSNT_MB_BMC_SLOT3_BB_N
+  # GPIOB4-PRSNT_MB_BMC_SLOT1_BB_N
+  # GPIOB5-PRSNT_MB_BMC_SLOT2_BB_N
+  # GPIOB6-PRSNT_MB_BMC_SLOT3_BB_N
+  # GPIOB7-PRSNT_MB_BMC_SLOT4_BB_N
   devmem_clear_bit $(scu_addr 80) 13
   devmem_clear_bit $(scu_addr 80) 14
-  gpio_export PRSNT_MB_BMC_SLOT0_BB_N GPIOB4
-  gpio_export PRSNT_MB_BMC_SLOT1_BB_N GPIOB5
-  gpio_export PRSNT_MB_BMC_SLOT2_BB_N GPIOB6
-  gpio_export PRSNT_MB_BMC_SLOT3_BB_N GPIOB7
+  gpio_export PRSNT_MB_BMC_SLOT1_BB_N GPIOB4
+  gpio_export PRSNT_MB_BMC_SLOT2_BB_N GPIOB5
+  gpio_export PRSNT_MB_BMC_SLOT3_BB_N GPIOB6
+  gpio_export PRSNT_MB_BMC_SLOT4_BB_N GPIOB7
 
   # GPIOE3-ADAPTER_BUTTON_BMC_CO_N_R
   # GPIOE4-RST_BMC_USB_HUB_N_R
@@ -189,33 +195,33 @@ elif [ $BOARD_ID -eq 14 ]; then
   gpio_set FAN2_BMC_CPLD_EN_R 1
   gpio_set FAN3_BMC_CPLD_EN_R 1
 
-  # GPIOJ4-RST_PCIE_RESET_SLOT0_N
-  # GPIOJ5-RST_PCIE_RESET_SLOT1_N
-  # GPIOJ6-RST_PCIE_RESET_SLOT2_N
-  # GPIOJ7-RST_PCIE_RESET_SLOT3_N
+  # GPIOJ4-RST_PCIE_RESET_SLOT1_N
+  # GPIOJ5-RST_PCIE_RESET_SLOT2_N
+  # GPIOJ6-RST_PCIE_RESET_SLOT3_N
+  # GPIOJ7-RST_PCIE_RESET_SLOT4_N
   devmem_clear_bit $(scu_addr 84) 12
   devmem_clear_bit $(scu_addr 84) 13
   devmem_clear_bit $(scu_addr 84) 14
   devmem_clear_bit $(scu_addr 84) 15
   devmem_clear_bit $(scu_addr 94) 8
   devmem_clear_bit $(scu_addr 94) 9
-  gpio_export RST_PCIE_RESET_SLOT0_N GPIOJ4
-  gpio_export RST_PCIE_RESET_SLOT1_N GPIOJ5
-  gpio_export RST_PCIE_RESET_SLOT2_N GPIOJ6
-  gpio_export RST_PCIE_RESET_SLOT3_N GPIOJ7
+  gpio_export RST_PCIE_RESET_SLOT1_N GPIOJ4
+  gpio_export RST_PCIE_RESET_SLOT2_N GPIOJ5
+  gpio_export RST_PCIE_RESET_SLOT3_N GPIOJ6
+  gpio_export RST_PCIE_RESET_SLOT4_N GPIOJ7
 
-  # GPIOL0-AC_ON_OFF_BTN_SLOT0_N
-  # GPIOL1-AC_ON_OFF_BTN_BMC_SLOT1_N_R
-  # GPIOL2-AC_ON_OFF_BTN_SLOT2_N
-  # GPIOL3-AC_ON_OFF_BTN_BMC_SLOT3_N_R
+  # GPIOL0-AC_ON_OFF_BTN_SLOT1_N
+  # GPIOL1-AC_ON_OFF_BTN_BMC_SLOT2_N_R
+  # GPIOL2-AC_ON_OFF_BTN_SLOT3_N
+  # GPIOL3-AC_ON_OFF_BTN_BMC_SLOT4_N_R
   devmem_clear_bit $(scu_addr 84) 16
   devmem_clear_bit $(scu_addr 84) 17
   devmem_clear_bit $(scu_addr 84) 18
   devmem_clear_bit $(scu_addr 84) 19
-  gpio_export AC_ON_OFF_BTN_SLOT0_N GPIOL0
-  gpio_export AC_ON_OFF_BTN_BMC_SLOT1_N_R GPIOL1
-  gpio_export AC_ON_OFF_BTN_SLOT2_N GPIOL2
-  gpio_export AC_ON_OFF_BTN_BMC_SLOT3_N_R GPIOL3
+  gpio_export AC_ON_OFF_BTN_SLOT1_N GPIOL0
+  gpio_export AC_ON_OFF_BTN_BMC_SLOT2_N_R GPIOL1
+  gpio_export AC_ON_OFF_BTN_SLOT3_N GPIOL2
+  gpio_export AC_ON_OFF_BTN_BMC_SLOT4_N_R GPIOL3
 
   # GPIOL4-FAST_PROCHOT_BMC_N_R
   devmem_clear_bit $(scu_addr 84) 20
@@ -226,44 +232,18 @@ elif [ $BOARD_ID -eq 14 ]; then
   gpio_export USB_BMC_EN_R GPIOL5
   gpio_set USB_BMC_EN_R 1
 
-  # GPIOM0-HSC_FAULT_SLOT0_N
-  # GPIOM1-HSC_FAULT_BMC_SLOT1_N_R
-  # GPIOM2-HSC_FAULT_SLOT2_N
-  # GPIOM3-HSC_FAULT_BMC_SLOT3_N_R
+  # GPIOM0-HSC_FAULT_SLOT1_N
+  # GPIOM1-HSC_FAULT_BMC_SLOT2_N_R
+  # GPIOM2-HSC_FAULT_SLOT3_N
+  # GPIOM3-HSC_FAULT_BMC_SLOT4_N_R
   devmem_clear_bit $(scu_addr 84) 24
   devmem_clear_bit $(scu_addr 84) 25
   devmem_clear_bit $(scu_addr 84) 26
   devmem_clear_bit $(scu_addr 84) 27
-  gpio_export HSC_FAULT_SLOT0_N GPIOM0
-  gpio_export HSC_FAULT_BMC_SLOT1_N_R GPIOM1
-  gpio_export HSC_FAULT_SLOT2_N GPIOM2
-  gpio_export HSC_FAULT_BMC_SLOT3_N_R GPIOM3
-
-  # GPION0-FAN_BMC_PWM_0
-  # GPION1-FAN_BMC_PWM_1
-  # GPION3-FAN_BMC_PWM_2
-  # GPION4-FAN_BMC_PWM_3
-  devmem_set_bit $(scu_addr 88) 0
-  devmem_set_bit $(scu_addr 88) 1
-  devmem_set_bit $(scu_addr 88) 2
-  devmem_set_bit $(scu_addr 88) 3
-
-  # GPIOO0-FAN_BMC_TACH_0
-  # GPIOO1-FAN_BMC_TACH_1
-  # GPIOO2-FAN_BMC_TACH_2
-  # GPIOO3-FAN_BMC_TACH_3
-  # GPIOO4-FAN_BMC_TACH_4
-  # GPIOO5-FAN_BMC_TACH_5
-  # GPIOO6-FAN_BMC_TACH_6
-  # GPIOO7-FAN_BMC_TACH_7
-  devmem_clear_bit $(scu_addr 88) 8
-  devmem_clear_bit $(scu_addr 88) 9
-  devmem_clear_bit $(scu_addr 88) 10
-  devmem_clear_bit $(scu_addr 88) 11
-  devmem_clear_bit $(scu_addr 88) 12
-  devmem_clear_bit $(scu_addr 88) 13
-  devmem_clear_bit $(scu_addr 88) 14
-  devmem_clear_bit $(scu_addr 88) 15
+  gpio_export HSC_FAULT_SLOT1_N GPIOM0
+  gpio_export HSC_FAULT_BMC_SLOT2_N_R GPIOM1
+  gpio_export HSC_FAULT_SLOT3_N GPIOM2
+  gpio_export HSC_FAULT_BMC_SLOT4_N_R GPIOM3
 
   # GPION4-DUAL_FAN0_DETECT_BMC_N_R
   # GPION5-DUAL_FAN1_DETECT_BMC_N_R
@@ -276,43 +256,55 @@ elif [ $BOARD_ID -eq 14 ]; then
   devmem_clear_bit $(scu_addr 2C) 1
   gpio_export USB_OC_N GPIOQ6
 
-  # GPIOS0-PWROK_STBY_BMC_SLOT0
-  # GPIOS1-PWROK_STBY_BMC_SLOT1
-  # GPIOS2-PWROK_STBY_BMC_SLOT2
-  # GPIOS3-PWROK_STBY_BMC_SLOT3
+  # GPIOS0-PWROK_STBY_BMC_SLOT1
+  # GPIOS1-PWROK_STBY_BMC_SLOT2
+  # GPIOS2-PWROK_STBY_BMC_SLOT3
+  # GPIOS3-PWROK_STBY_BMC_SLOT4
   devmem_clear_bit $(scu_addr 8C) 0
   devmem_clear_bit $(scu_addr 8C) 1
   devmem_clear_bit $(scu_addr 8C) 2
   devmem_clear_bit $(scu_addr 8C) 3
-  gpio_export PWROK_STBY_BMC_SLOT0 GPIOS0
-  gpio_export PWROK_STBY_BMC_SLOT1 GPIOS1
-  gpio_export PWROK_STBY_BMC_SLOT2 GPIOS2
-  gpio_export PWROK_STBY_BMC_SLOT3 GPIOS3
+  gpio_export PWROK_STBY_BMC_SLOT1 GPIOS0
+  gpio_export PWROK_STBY_BMC_SLOT2 GPIOS1
+  gpio_export PWROK_STBY_BMC_SLOT3 GPIOS2
+  gpio_export PWROK_STBY_BMC_SLOT4 GPIOS3
 
-  # GPIOZ0-FM_BMC_SLOT0_ISOLATED_EN_R
-  # GPIOZ1-FM_BMC_SLOT1_ISOLATED_EN_R
-  # GPIOZ2-FM_BMC_SLOT2_ISOLATED_EN_R
-  # GPIOZ3-FM_BMC_SLOT3_ISOLATED_EN_R
+  # GPIOZ0-FM_BMC_SLOT1_ISOLATED_EN_R
+  # GPIOZ1-FM_BMC_SLOT2_ISOLATED_EN_R
+  # GPIOZ2-FM_BMC_SLOT3_ISOLATED_EN_R
+  # GPIOZ3-FM_BMC_SLOT4_ISOLATED_EN_R
   devmem_clear_bit $(scu_addr A4) 16
   devmem_clear_bit $(scu_addr A4) 17
   devmem_clear_bit $(scu_addr A4) 18
   devmem_clear_bit $(scu_addr A4) 19
-  gpio_export FM_BMC_SLOT0_ISOLATED_EN_R GPIOZ0
-  gpio_export FM_BMC_SLOT1_ISOLATED_EN_R GPIOZ1
-  gpio_export FM_BMC_SLOT2_ISOLATED_EN_R GPIOZ2
-  gpio_export FM_BMC_SLOT3_ISOLATED_EN_R GPIOZ3
-  gpio_set FM_BMC_SLOT0_ISOLATED_EN_R 0
+  gpio_export FM_BMC_SLOT1_ISOLATED_EN_R GPIOZ0
+  gpio_export FM_BMC_SLOT2_ISOLATED_EN_R GPIOZ1
+  gpio_export FM_BMC_SLOT3_ISOLATED_EN_R GPIOZ2
+  gpio_export FM_BMC_SLOT4_ISOLATED_EN_R GPIOZ3
   gpio_set FM_BMC_SLOT1_ISOLATED_EN_R 0
   gpio_set FM_BMC_SLOT2_ISOLATED_EN_R 0
   gpio_set FM_BMC_SLOT3_ISOLATED_EN_R 0
+  gpio_set FM_BMC_SLOT4_ISOLATED_EN_R 0
 
   # GPIOAB1-OCP_DEBUG_BMC_PRSNT_N
   devmem_clear_bit $(scu_addr A8) 1
   gpio_export OCP_DEBUG_BMC_PRSNT_N GPIOAB1
 
-  # GPIOAC5-SMB_TEMP_INLET_ALERT_BMC_N_R
-  devmem_clear_bit $(scu_addr AC) 5
-  gpio_export SMB_TEMP_INLET_ALERT_BMC_N_R GPIOAC5
+  # These pins are added in DVT
+  # GPIOI4-FM_RESBTN_SLOT3_BMC_N
+  # GPIOI6-FM_RESBTN_SLOT4_BMC_N
+  # GPIOAC2-FM_RESBTN_SLOT1_BMC_N
+  # GPIOAC3-FM_RESBTN_SLOT2_BMC_N
+  devmem_clear_bit $(scu_addr AC) 2
+  devmem_clear_bit $(scu_addr AC) 3
+  gpio_export FM_RESBTN_SLOT3_BMC_N GPIOI4
+  gpio_export FM_RESBTN_SLOT4_BMC_N GPIOI6
+  gpio_export FM_RESBTN_SLOT1_BMC_N GPIOAC2
+  gpio_export FM_RESBTN_SLOT2_BMC_N GPIOAC3
+  gpio_set FM_RESBTN_SLOT1_BMC_N 0
+  gpio_set FM_RESBTN_SLOT2_BMC_N 0
+  gpio_set FM_RESBTN_SLOT3_BMC_N 0
+  gpio_set FM_RESBTN_SLOT4_BMC_N 0
 else
   echo "Is board id correct(id=$BOARD_ID)?"
 fi

@@ -51,9 +51,9 @@ fi
 unset OLDPID
 
 if [ $(is_server_prsnt $slot_num) == "0" ]; then
-  /usr/bin/sv stop ipmbd_${bus}
+  /usr/bin/sv stop ipmbd_${bus} > /dev/null 2>&1
   disable_server_12V_power $slot_num
-  gpio_set FM_BMC_SLOT${bus}_ISOLATED_EN_R 0
+  gpio_set FM_BMC_SLOT${slot_num}_ISOLATED_EN_R 0
   rm -f /tmp/*fruid_slot${slot_num}*
   rm -f /tmp/*sdr_slot${slot_num}*
 else

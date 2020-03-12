@@ -90,56 +90,12 @@ get_bmc_board_id() {
   echo $val
 }
 
-# Enable 12V for a server board
-enable_server_12V_power() {
-  local pwr_sts
-  local offset
-
-  pwr_sts=$(/usr/sbin/i2cget -y 12 0xf 0x0)
-
-  case $1 in
-    1)
-      offset=0
-      ;;
-    2)
-      offset=1
-      ;;
-    3)
-      offset=2
-      ;;
-    4)
-      offset=3
-      ;;
-  esac
-
-  pwr_sts=$((pwr_sts | (0x1 << $offset)))
-  /usr/sbin/i2cset -y 12 0xf 0x0 $pwr_sts
-}
-
 # Disable 12V for a server board
 disable_server_12V_power() {
-  local pwr_sts
-  local offset
+  local reg=8
 
-  pwr_sts=$(/usr/sbin/i2cget -y 12 0xf 0x0)
-
-  case $1 in
-    1)
-      offset=0
-      ;;
-    2)
-      offset=1
-      ;;
-    3)
-      offset=2
-      ;;
-    4)
-      offset=3
-      ;;
-  esac
-
-  pwr_sts=$((pwr_sts & ~(0x1 << $offset)))
-  /usr/sbin/i2cset -y 12 0xf 0x0 $pwr_sts
+  reg=$(($reg + $1))
+  /usr/sbin/i2cset -y 12 0xf $reg 0x00
 }
 
 # Enable the I2C on the specified bus
@@ -148,16 +104,16 @@ enable_server_i2c_bus() {
 
   case $1 in
     1)
-      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT0)
-      ;;
-    2)
       pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT1)
       ;;
-    3)
+    2)
       pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT2)
       ;;
-    4)
+    3)
       pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT3)
+      ;;
+    4)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT4)
       ;;
     *)
       pwr_sts="0"
@@ -165,7 +121,7 @@ enable_server_i2c_bus() {
   esac
 
   if [ $pwr_sts == "1" ]; then
-    gpio_set FM_BMC_SLOT$(($1-1))_ISOLATED_EN_R 1
+    gpio_set FM_BMC_SLOT$1_ISOLATED_EN_R 1
   fi
 }
 
@@ -175,16 +131,16 @@ is_server_prsnt() {
 
   case $1 in
     1)
-      prsnt=$(gpio_get PRSNT_MB_BMC_SLOT0_BB_N)
-      ;;
-    2)
       prsnt=$(gpio_get PRSNT_MB_BMC_SLOT1_BB_N)
       ;;
-    3)
+    2)
       prsnt=$(gpio_get PRSNT_MB_BMC_SLOT2_BB_N)
       ;;
-    4)
+    3)
       prsnt=$(gpio_get PRSNT_MB_BMC_SLOT3_BB_N)
+      ;;
+    4)
+      prsnt=$(gpio_get PRSNT_MB_BMC_SLOT4_BB_N)
       ;;
     *)
       prsnt="1"
@@ -232,16 +188,16 @@ is_bic_ready() {
 
   case $1 in
    1)
-    ready=$(gpio_get SMB_BMC_SLOT0_ALT_N)
-    ;;
-   2)
     ready=$(gpio_get SMB_BMC_SLOT1_ALT_N)
     ;;
-   3)
+   2)
     ready=$(gpio_get SMB_BMC_SLOT2_ALT_N)
     ;;
-   4)
+   3)
     ready=$(gpio_get SMB_BMC_SLOT3_ALT_N)
+    ;;
+   4)
+    ready=$(gpio_get SMB_BMC_SLOT4_ALT_N)
     ;;
    *)
     ready="1"
@@ -261,16 +217,16 @@ is_slot_12v_on() {
 
   case $1 in
     1)
-      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT0)
-      ;;
-    2)
       pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT1)
       ;;
-    3)
+    2)
       pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT2)
       ;;
-    4)
+    3)
       pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT3)
+      ;;
+    4)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT4)
       ;;
     *)
       pwr_sts="0"
@@ -303,6 +259,48 @@ get_slot_bus() {
   esac
 
   echo $bus
+}
+
+get_cpld_bus() {
+  local bus
+
+  case $1 in
+    1)
+      bus=4
+      ;;
+    2)
+      bus=5
+      ;;
+    3)
+      bus=6
+      ;;
+    4)
+      bus=7
+      ;;
+  esac
+
+  echo $bus
+}
+
+get_platform_stage() {
+  local stage=255
+  re='^0x[0-9]+$'
+  for i in $(seq 1 4); do
+    prsnt_sts=$(gpio_get PRSNT_MB_BMC_SLOT${i}_BB_N)
+    if [ "$prsnt_sts" == "0" ]; then
+      gpio_set FM_BMC_SLOT${i}_ISOLATED_EN_R 1
+      bus=$(get_cpld_bus "$i")
+      stage=$(/usr/sbin/i2cget -y $bus 0x0f 0x07)
+      if ! [[ $stage =~ $re ]] ; then
+        continue
+      else
+        stage=$((16#${stage:2:3}))
+        break
+      fi
+    fi
+  done
+
+  echo $stage
 }
 
 i2c_remove_device() {

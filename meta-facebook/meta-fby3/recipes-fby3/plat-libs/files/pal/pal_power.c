@@ -276,7 +276,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_POWER_RESET:
-      return bic_server_power_reset(fru);
+      return (status == SERVER_POWER_OFF)?POWER_STATUS_ERR:bic_server_power_reset(fru);
       break;
 
     case SERVER_12V_ON:

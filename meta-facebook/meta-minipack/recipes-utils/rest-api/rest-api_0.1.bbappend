@@ -28,6 +28,7 @@ SRC_URI += " \
     file://rest-api-1/rest_seutil.py \
     file://rest-api-1/rest_usb2i2c_reset.py \
     file://rest-api-1/rest_fw_ver.py \
+    file://rest-api-1/rest_system_led_info.py \
 "
 
 binfiles1 += " \
@@ -41,4 +42,5 @@ binfiles1 += " \
     rest_seutil.py \
     rest_usb2i2c_reset.py \
     rest_fw_ver.py \
+    rest_system_led_info.py \
 "

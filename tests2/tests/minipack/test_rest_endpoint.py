@@ -39,6 +39,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     ALL_FIRMWARE_INFO = (
         "/api/sys/firmware_info_all"  # duplicate endpoint to firmware_info/all
     )
+    SYSTEM_LED_INFO = "/api/sys/system_led_info"
 
     # /api/sys
     def set_endpoint_sys_attributes(self):
@@ -58,6 +59,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "pimserial",
             "server",
             "gpios",
+            "system_led_info",
         ]
 
     # /api/sys/sensors
@@ -216,4 +218,15 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         self.set_endpoint_firmware_info_all_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.ALL_FIRMWARE_INFO, self.endpoint_firmware_info_all_attrb
+        )
+
+    # "/api/sys/system_led_info"
+    def set_endpoint_system_led_info_attributes(self):
+        self.endpoint_system_led_info_attrb = ["sys", "smb", "psu", "fan"]
+
+    # "/api/sys/system_led_info"
+    def test_endpoint_api_sys_system_led_info(self):
+        self.set_endpoint_system_led_info_attributes()
+        self.verify_endpoint_attributes(
+            RestEndpointTest.SYSTEM_LED_INFO, self.endpoint_system_led_info_attrb
         )

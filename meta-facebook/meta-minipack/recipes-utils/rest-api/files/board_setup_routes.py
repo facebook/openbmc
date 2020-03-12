@@ -40,3 +40,4 @@ def setup_board_routes(app):
     app.router.add_get(board_routes[16], bhandler.rest_seutil_hdl)
     app.router.add_get(board_routes[17], bhandler.rest_firmware_info_hdl)
     app.router.add_get(board_routes[18], bhandler.rest_firmware_info_all_hdl)
+    app.router.add_get(board_routes[19], bhandler.rest_system_led_info_hdl)

@@ -35,4 +35,5 @@ board_routes = [
     "/api/sys/mb/seutil",
     "/api/sys/firmware_info",
     "/api/sys/firmware_info/all",
+    "/api/sys/system_led_info",
 ]

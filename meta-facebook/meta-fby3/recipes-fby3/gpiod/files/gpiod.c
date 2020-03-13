@@ -120,23 +120,29 @@ smi_timer(void *ptr) {
   while(1)
   {
     // Check 12V status
-    if (0 == pal_get_server_12v_power(fru, &status)) {
-      if (0 == status) {
+    if ( 0 == pal_get_server_12v_power(fru, &status) ) {
+      if ( status == SERVER_12V_OFF ) {
         smi_count_start[fru-1] = false; // reset smi count
       }
     } else {
+      // If the code run into here, run `continue` since there is no need to continue.
       syslog(LOG_ERR, "%s: pal_get_server_12v_power failed", __func__);
+      sleep(1); //don't repeat it quickly.
       continue;
     }
 
-    // Check Power status
-    if (0 == pal_get_server_power(fru, &status)) {
-      if (SERVER_POWER_OFF == status) {
+    if ( true == pal_is_fw_update_ongoing(fru) ) {
+      sleep(1); //don't repeat it quickly
+      continue;
+    }
+
+    // Try to get the serve power
+    if ( 0 == pal_get_server_power(fru, &status) ) {
+      if ( status == SERVER_POWER_OFF ) {
         smi_count_start[fru-1] = false; // reset smi count
       }
     } else {
-      syslog(LOG_ERR, "%s: pal_get_server_power failed", __func__);
-      continue;
+      syslog(LOG_ERR, "%s: Failed to get the server power. Maybe a firmware update was existing on slot%d or something went wrong.", __func__, fru);
     }
 
     if ( smi_count_start[fru-1] == true )
@@ -275,7 +281,7 @@ gpio_monitor_poll(void *ptr) {
     pal_get_last_pwr_state(fru, pwr_state);
 
     /* Get the GPIO pins */
-    if ((ret = bic_get_gpio(fru, &n_pin_val)) < 0) {
+    if ( (pal_is_fw_update_ongoing(fru) == true) || ((ret = bic_get_gpio(fru, &n_pin_val)) < 0) ) {
 #ifdef DEBUG
       /* log the error message only when the CPU is on but not reachable. */
       if (!(strcmp(pwr_state, "on"))) {

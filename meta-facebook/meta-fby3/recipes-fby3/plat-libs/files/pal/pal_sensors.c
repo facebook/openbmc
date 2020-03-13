@@ -58,6 +58,18 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_NIC_IOUT,
 };
 
+const uint8_t nicexp_sensor_list[] = {
+  BMC_SENSOR_OUTLET_TEMP,
+  BMC_SENSOR_P5V,
+  BMC_SENSOR_P12V,
+  BMC_SENSOR_P3V3_STBY,
+  BMC_SENSOR_P1V15_BMC_STBY,
+  BMC_SENSOR_P1V2_BMC_STBY,
+  BMC_SENSOR_P2V5_BMC_STBY,
+  BMC_SENSOR_FAN_IOUT,
+  BMC_SENSOR_NIC_IOUT,
+};
+
 const uint8_t bic_sensor_list[] = {
   //BIC - threshold sensors
   BIC_SENSOR_INLET_TEMP,
@@ -485,15 +497,30 @@ PAL_HSC_INFO hsc_info_list[] = {
 };
 
 size_t bmc_sensor_cnt = sizeof(bmc_sensor_list)/sizeof(uint8_t);
+size_t nicexp_sensor_cnt = sizeof(nicexp_sensor_list)/sizeof(uint8_t);
 size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 size_t bic_sensor_cnt = sizeof(bic_sensor_list)/sizeof(uint8_t);
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
+  uint8_t bmc_location = 0;
+  int ret = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+  }
+  
   switch(fru) {
   case FRU_BMC:
-    *sensor_list = (uint8_t *) bmc_sensor_list;
-    *cnt = bmc_sensor_cnt;
+    if (bmc_location == NIC_BMC) {
+      *sensor_list = (uint8_t *) nicexp_sensor_list;
+      *cnt = nicexp_sensor_cnt;
+    } else {
+      *sensor_list = (uint8_t *) bmc_sensor_list;
+      *cnt = bmc_sensor_cnt;
+    }
+    
     break;
   case FRU_NIC:
     *sensor_list = (uint8_t *) nic_sensor_list;
@@ -1494,4 +1521,3 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   }
   return 0;
 }
-

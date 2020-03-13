@@ -1202,6 +1202,13 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
           break;
       }
       break;
+    case UNIFIED_POST_ERR:
+      {
+        char *post_failure_event[] = {"System PXE boot fail", "CMOS/NRAM configuration cleared", "TPM Self-Test Fail"};
+        sprintf(error_log, "GeneralInfo: POST(0x%02X), FailureEvent: %s",
+              error_type, post_failure_event[(sel[8]&0x0f)]);
+      }
+      break;
     default:
       sprintf(error_log, "Undefined Error Type(0x%02X), Raw: %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
               error_type, sel[3], sel[4], sel[5], sel[6], sel[7], sel[8], sel[9], sel[10], sel[11], sel[12], sel[13], sel[14], sel[15]);

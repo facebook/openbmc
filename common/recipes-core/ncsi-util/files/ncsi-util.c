@@ -287,6 +287,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
 
     pldmCmd = ncsiGetPldmCmd(nl_resp, &pldmReq);
     free(nl_resp);
+    nl_resp = NULL;
 
     if (pldmCmd == -1) {
   //    printf("No pending command, loop %d\n", idleCnt);
@@ -315,6 +316,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
       }
       //print_ncsi_resp(nl_resp);
       free(nl_resp);
+      nl_resp = NULL;
       if ((pldmCmd == CMD_APPLY_COMPLETE) || (pldmCmdStatus == -1))
         break;
     } else {

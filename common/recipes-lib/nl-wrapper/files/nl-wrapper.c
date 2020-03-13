@@ -112,7 +112,7 @@ static int send_cb(struct nl_msg *msg, void *arg)
 	struct nlmsghdr *hdr = nlmsg_hdr(msg);
 	struct nlattr *tb[NCSI_ATTR_MAX + 1] = {0};
 	int rc, data_len;
-	char *data;
+	char *ncsi_rsp;
 	struct ncsi_msg *ncsi_msg = (struct ncsi_msg *)arg;
 
 	static struct nla_policy ncsi_genl_policy[NCSI_ATTR_MAX + 1] = {
@@ -142,26 +142,30 @@ static int send_cb(struct nl_msg *msg, void *arg)
 
 	data_len = nla_len(tb[NCSI_ATTR_DATA]);
 
-	// kernel returns the entire ethernet frame, skip the ethernet header
-	ncsi_msg->rsp->hdr.payload_length = data_len - ETHERNET_HEADER_SIZE;
-
 	if (data_len >= NCSI_MAX_RESPONSE) {
 		fprintf(stderr, "data_len (%d) exceeds max buffer size (%d)\n",
             data_len, NCSI_MAX_RESPONSE);
 	} else {
-		data = nla_data(tb[NCSI_ATTR_DATA]);
-		// copy NC-SI response, skip header
-		memcpy(ncsi_msg->rsp->msg_payload, (void*)(data + ETHERNET_HEADER_SIZE), data_len);
+		ncsi_rsp = nla_data(tb[NCSI_ATTR_DATA]);
+    // prase the first 16 bytes of NCSI response (the header area) to get
+    //  payload length
+    CTRL_MSG_HDR_t *pNcsiHdr = (CTRL_MSG_HDR_t *)(void*)(ncsi_rsp);
+    ncsi_msg->rsp->hdr.payload_length = ntohs(pNcsiHdr->Payload_Length);
+
+    // copy NC-SI response, skip NCSI header bytes
+    memcpy(ncsi_msg->rsp->msg_payload, (void*)(ncsi_rsp + sizeof(CTRL_MSG_HDR_t)),
+           data_len - sizeof(CTRL_MSG_HDR_t));
 	}
 
 #ifdef DEBUG_LIBNL
 	int i = 0;
 	DBG_PRINT("%s, data len %d\n", __FUNCTION__, data_len);
+  DBG_PRINT("%s, NCSI Response len %d\n", __FUNCTION__, ncsi_msg->rsp->hdr.payload_length);
 	DBG_PRINT("payload:\n");
-	data = nla_data(tb[NCSI_ATTR_DATA]);
-	data += ETHERNET_HEADER_SIZE;
+	ncsi_rsp = nla_data(tb[NCSI_ATTR_DATA]);
+
 	for (i = 0; i < data_len; ++i) {
-		DBG_PRINT("0x%x ", *(data+i));
+		DBG_PRINT("0x%x ", *(ncsi_rsp+i));
 	}
 	DBG_PRINT("\n");
 #endif

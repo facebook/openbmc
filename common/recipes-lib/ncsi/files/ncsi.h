@@ -86,7 +86,23 @@
 #define NUM_NCSI_CDMS 27
 extern const char *ncsi_cmd_string[NUM_NCSI_CDMS];
 
-
+// defined in DSP0222 Table 9
+typedef struct ctrl_msg_hdr {
+/* 16 bytes NC-SI header */
+	unsigned char  MC_ID;
+	/* For NC-SI 1.0 spec, this field has to set 0x01 */
+	unsigned char  Header_Revision;
+	unsigned char  Reserved_1; /* Reserved has to set to 0x00 */
+	unsigned char  IID; /* Instance ID */
+	unsigned char  Command;
+	unsigned char  Channel_ID;
+	/* Payload Length = 12 bits, 4 bits are reserved */
+	unsigned short Payload_Length;
+	unsigned short  Reserved_2;
+	unsigned short  Reserved_3;
+	unsigned short  Reserved_4;
+	unsigned short  Reserved_5;
+} __attribute__((packed)) CTRL_MSG_HDR_t;
 
 typedef struct ncsi_nl_msg_t {
   char dev_name[10];

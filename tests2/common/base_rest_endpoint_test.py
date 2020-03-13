@@ -85,7 +85,10 @@ class BaseRestEndpointTest(object):
                 new_endpoint = endpointname + "/" + item
                 cmd = BaseRestEndpointTest.CURL_CMD6.format(new_endpoint)
                 handle = urlopen(cmd)
-                self.assertIn(handle.getcode(), [200, 202])
+                if item == "ntp":
+                    self.assertIn(handle.getcode(), [200, 404])
+                else:
+                    self.assertIn(handle.getcode(), [200, 202])
 
     def verify_endpoint_attributes(self, endpointname, attributes):
         """

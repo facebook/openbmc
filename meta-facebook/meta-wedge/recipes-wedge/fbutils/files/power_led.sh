@@ -20,7 +20,7 @@
 
 usage() {
     echo "Usage: $1 <on | off>"
-    exit -1
+    exit 1
 }
 
 . /usr/local/bin/openbmc-utils.sh

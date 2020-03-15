@@ -63,7 +63,7 @@ do_on() {
                 ;;
             *)
                 usage
-                exit -1
+                exit 1
                 ;;
 
         esac
@@ -139,7 +139,7 @@ do_reset() {
                 ;;
             *)
                 usage
-                exit -1
+                exit 1
                 ;;
         esac
     done
@@ -171,7 +171,7 @@ do_reset() {
 
 if [ $# -lt 1 ]; then
     usage
-    exit -1
+    exit 1
 fi
 
 command="$1"
@@ -192,7 +192,7 @@ case "$command" in
         ;;
     *)
         usage
-        exit -1
+        exit 1
         ;;
 esac
 

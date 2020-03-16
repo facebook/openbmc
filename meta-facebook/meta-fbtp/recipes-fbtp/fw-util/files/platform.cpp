@@ -4,10 +4,25 @@
 #include "usbdbg.h"
 #include "nic.h"
 #include "tpm.h"
+#include <linux/version.h>
 #include <openbmc/pal.h>
+#include <openbmc/misc-utils.h>
 
 class FBTPBiosComponent : public BiosComponent {
   private:
+    // SPI driver of 4.1 has SPI numbered starting from 1
+    // while the upstream 5.x drivers have them numbered
+    // from 0 like they should. :-(
+    std::string get_spi_dev()
+    {
+      k_version_t cur_ver;
+      cur_ver = get_kernel_version();
+      if (cur_ver <= KERNEL_VERSION(4, 1, 51)) {
+        return std::string("spi1.0");
+      }
+      return std::string("spi0.0");
+    }
+
     int check_image(const char *path) override
     {
       std::string vers;
@@ -36,8 +51,8 @@ class FBTPBiosComponent : public BiosComponent {
       return -1;
     }
   public:
-    FBTPBiosComponent(std::string fru, std::string comp, std::string mtd, std::string dev, std::string shadow, bool level, std::string verp) :
-      BiosComponent(fru, comp, mtd, dev, shadow, level, verp) {}
+    FBTPBiosComponent(std::string fru, std::string comp) :
+      BiosComponent(fru, comp, "bios0", get_spi_dev(), "BMC_BIOS_FLASH_CTRL", true, "") {}
 };
 
 // Set aliases for BMC components to MB components
@@ -46,6 +61,6 @@ AliasComponent rom("mb", "rom", "bmc", "rom");
 AliasComponent mb_fscd("mb", "fscd", "bmc", "fscd");
 UsbDbgComponent usbdbg("mb", "usbdbgfw", "FBTP", 9, 0x60, false);
 UsbDbgBlComponent usbdbgbl("mb", "usbdbgbl", 9, 0x60, 0x02);
-FBTPBiosComponent bios("mb", "bios", "bios0", "spi1.0", "BMC_BIOS_FLASH_CTRL", true, "");
+FBTPBiosComponent bios("mb", "bios");
 NicComponent nic("nic", "nic");
 TpmComponent tpm("bmc", "tpm");

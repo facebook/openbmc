@@ -29,6 +29,6 @@ SRC_URI += "file://vr.cpp \
             file://me.cpp \
            "
 
-DEPENDS += "libgpio libme libfpga libmcu libvr"
-RDEPENDS_${PN} += "libgpio libme libfpga libmcu libvr"
-LDFLAGS += " -lgpio -lme -lfpga -lmcu -lvr"
+DEPENDS += "libgpio libme libfpga libmcu libvr libmisc-utils"
+RDEPENDS_${PN} += "libgpio libme libfpga libmcu libvr libmisc-utils"
+LDFLAGS += " -lgpio -lme -lfpga -lmcu -lvr -lmisc-utils"

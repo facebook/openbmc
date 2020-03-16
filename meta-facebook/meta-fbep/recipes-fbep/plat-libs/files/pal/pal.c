@@ -494,24 +494,25 @@ int pal_get_dev_guid(uint8_t fru, char *guid) {
 
 int pal_get_server_power(uint8_t fru, uint8_t *status)
 {
-  int val;
-  char device[LARGEST_DEVICE_NAME] = {0};
+  gpio_desc_t *desc;
+  gpio_value_t value;
 
   if (fru != FRU_MB)
     return -1;
 
-  snprintf(device, LARGEST_DEVICE_NAME, P12V_1_DIR, LTC4282_STATUS_PWR_GOOD);
-  if (read_device(device, &val) < 0)
+  desc = gpio_open_by_shadow("SYS_PWR_READY");
+  if (!desc) {
+    syslog(LOG_WARNING, "Open GPIO SYS_PWR_READY failed");
     return -1;
+  }
 
-  *status = val;
+  if (gpio_get_value(desc, &value) < 0) {
+    syslog(LOG_WARNING, "Get GPIO SYS_PWR_READY failed");
+    value = GPIO_VALUE_INVALID;
+  }
 
-  snprintf(device, LARGEST_DEVICE_NAME, P12V_2_DIR, LTC4282_STATUS_PWR_GOOD);
-  if (read_device(device, &val) < 0)
-    return -1;
-
-  *status &= val;
-  *status = *status == 1? SERVER_POWER_ON: SERVER_POWER_OFF;
+  *status = (value == GPIO_VALUE_HIGH)? SERVER_POWER_ON: SERVER_POWER_OFF;
+  gpio_close(desc);
 
   return 0;
 }
@@ -637,10 +638,6 @@ static int server_power_on()
     goto bail;
   }
   sleep(2);
-  if (system("/usr/bin/sv restart fscd >> /dev/null")) {
-    syslog(LOG_CRIT, "Restarting FSCD failed!\n");
-    goto bail;
-  }
   pal_clock_control();
 
   ret = 0;
@@ -655,12 +652,6 @@ static int server_power_off()
   gpio_desc_t *gpio = gpio_open_by_shadow("BMC_IPMI_PWR_ON");
 
   if (!gpio) {
-    return -1;
-  }
-
-  if (system("/usr/bin/sv stop fscd >> /dev/null")) {
-    syslog(LOG_CRIT, "Stopping FSCD failed!\n");
-    gpio_close(gpio);
     return -1;
   }
 

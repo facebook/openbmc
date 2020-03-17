@@ -28,6 +28,7 @@ SRC_URI = "file://ast-functions \
            file://setup-usbnet.sh \
            file://setup-por.sh \
            file://sol-util \
+           file://mac-util \
            file://COPYING \
            file://workaround.sh \
            file://workaround_2.sh \
@@ -38,6 +39,7 @@ pkgdir = "utils"
 S = "${WORKDIR}"
 
 binfiles = "sol-util \
+            mac-util \
            "
 
 RDEPENDS_${PN} += "gpiocli"
@@ -65,7 +67,7 @@ do_install() {
   install -m 755 setup-emmc.sh ${D}${sysconfdir}/init.d/setup-emmc.sh
   update-rc.d -r ${D} setup-emmc.sh start 05 S .
   install -m 755 setup-usbnet.sh ${D}${sysconfdir}/init.d/setup-usbnet.sh
-  update-rc.d -r ${D} setup-usbnet.sh start 90 S .
+  update-rc.d -r ${D} setup-usbnet.sh start 69 5 .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 70 S .
   install -m 755 workaround.sh ${D}${sysconfdir}/init.d/workaround.sh

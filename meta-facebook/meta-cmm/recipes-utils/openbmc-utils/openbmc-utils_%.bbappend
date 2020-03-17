@@ -56,6 +56,10 @@ DEPENDS_append = " update-rc.d-native"
 RDEPENDS_${PN} += "python3-core"
 
 do_install_append() {
+    # the script to mount emmc to /var/log
+    install -m 0755 ${WORKDIR}/setup_persist_log.sh ${D}${sysconfdir}/init.d/setup_persist_log.sh
+    update-rc.d -r ${D} setup_persist_log.sh start 05 S .
+
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 80  S .
 

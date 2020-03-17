@@ -2014,7 +2014,7 @@ pal_is_dimm_present(int cpu_id, uint8_t dimm_id)
     pal_is_dimm_present_check(fru, dimm_sts_list);
   }
 
-  list_index = 2*dimm_id + cpu_id;
+  list_index = ((DIMM_SLOT_CNT / 2) * cpu_id) + (2 * dimm_id);
 
   if(true == dimm_sts_list[list_index])
   {

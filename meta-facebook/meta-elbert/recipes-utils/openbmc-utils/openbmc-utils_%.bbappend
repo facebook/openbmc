@@ -23,12 +23,14 @@ SRC_URI += "file://board-utils.sh \
             file://power-on.sh \
             file://setup_board.sh \
             file://wedge_power.sh \
+            file://setup_i2c.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
     fpga_ver.sh \
     wedge_power.sh \
+    setup_i2c.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"
@@ -48,7 +50,11 @@ do_install_board() {
     install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
 
-    # ELBERTTODO 442078 setup_i2c.sh
+    install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
+    update-rc.d -r ${D} setup_i2c.sh start 60 S .
+
+    install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
+    update-rc.d -r ${D} setup_board.sh start 80 S .
 
     install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .

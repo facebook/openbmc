@@ -4,8 +4,6 @@
 #include "nic_ext.h"
 #include "tpm2.h"
 
-AliasComponent bmc("mb", "bmc", "bmc", "bmc");
-AliasComponent rom("mb", "rom", "bmc", "rom");
 BiosComponent bios("mb", "bios", "pnor", "spi0.0", "FM_BIOS_SPI_BMC_CTRL", true, "(F0C_)(.*)");
 
 NicExtComponent nic0("nic", "nic0", "nic0_fw_ver", FRU_NIC0, 0, 0x00);  // fru_name, component, kv, fru_id, eth_index, ch_id

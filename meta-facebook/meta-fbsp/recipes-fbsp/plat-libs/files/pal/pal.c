@@ -1688,3 +1688,27 @@ pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *re
     syslog(LOG_ERR, "Sync date failed!\n");
   }
 }
+
+int
+pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
+{
+  uint8_t bus_id = 0x5;
+  int rlen = 0;
+  int ret = PAL_EOK;
+
+  rlen = ipmb_send(
+    bus_id,
+    0x2c,
+    NETFN_APP_REQ << 2,
+    CMD_APP_GET_SELFTEST_RESULTS);
+
+  if ( rlen < 2 ) {
+    ret = PAL_ENOTSUP;
+  }
+  else {
+    //get the response data
+    memcpy(data, ipmb_rxb()->data, 2);
+  }
+
+  return ret;
+}

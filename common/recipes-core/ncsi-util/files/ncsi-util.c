@@ -216,6 +216,8 @@ int pldm_update_fw(char *path, int pldm_bufsize)
   if (!pldmRes) {
     printf("%s, Error: failed pldmRes buffer allocation(%d)\n",
            __FUNCTION__, sizeof(pldm_response));
+    ret = -1;
+    goto free_exit;
   }
 
 
@@ -234,6 +236,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
   }
 
   if (sendPldmCmdAndCheckResp(nl_msg) != CC_SUCCESS) {
+    ret = -1;
     goto free_exit;
   }
 
@@ -248,6 +251,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
       goto free_exit;
     }
     if (sendPldmCmdAndCheckResp(nl_msg) != CC_SUCCESS) {
+      ret = -1;
       goto free_exit;
     }
   }
@@ -265,6 +269,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
       goto free_exit;
     }
     if (sendPldmCmdAndCheckResp(nl_msg) != CC_SUCCESS) {
+      ret = -1;
       goto free_exit;
     }
   }
@@ -281,6 +286,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
     }
     nl_resp = send_nl_msg(nl_msg);
     if (!nl_resp) {
+      ret = -1;
       goto free_exit;
     }
     print_pldm_cmd_status(nl_resp);
@@ -312,6 +318,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
       }
       nl_resp = send_nl_msg(nl_msg);
       if (!nl_resp) {
+        ret = -1;
         goto free_exit;
       }
       //print_ncsi_resp(nl_resp);
@@ -341,11 +348,13 @@ int pldm_update_fw(char *path, int pldm_bufsize)
       goto free_exit;
     }
     if (sendPldmCmdAndCheckResp(nl_msg) != CC_SUCCESS) {
+      ret = -1;
       goto free_exit;
     }
   } else {
     printf("PLDM cmd (%d) failed (status %d), abort update\n",
       pldmCmd, pldmCmdStatus);
+    ret = -1;
   }
 
 free_exit:
@@ -442,14 +451,14 @@ main(int argc, char **argv) {
             netdev = strdup(optarg);
             if (netdev == NULL) {
               printf("Error: malloc fail\n");
-              goto free_exit;
+              goto free_err_exit;
             }
             break;
     case 'c':
             channel = (int)strtoul(optarg, NULL, 0);
             if (channel < 0) {
               printf("channel %d is out of range.\n", channel);
-              goto free_exit;
+              goto free_err_exit;
             }
             break;
     case 'S':
@@ -464,21 +473,21 @@ main(int argc, char **argv) {
               bufSize = (int)strtoul(optarg, NULL, 0);
               if (bufSize < 0) {
                 printf("bufSize %d is out of range.\n", bufSize);
-                goto free_exit;
+                goto free_err_exit;
               } else {
                 printf("bufSize = %d\n", bufSize);
               }
             }
             // if invalid opt str or missing argument, getopt returns a '?'
             else if (argflag == '?') {
-              goto free_exit;
+              goto free_err_exit;
             }
             // if "b" is not found, getopt returns -1,  in this case, continue,
             //   and uses default size
             else if (argflag == -1) {
               printf("use default buf size %d\n", bufSize);
             } else {
-              goto free_exit;
+              goto free_err_exit;
             }
             fupgrade = 1;
             break;
@@ -490,12 +499,12 @@ main(int argc, char **argv) {
             nl_conf = (int)strtoul(optarg, NULL, 0);
             if ((nl_conf < 0) || (nl_conf > 1)) {
               printf("invalid nl_conf\n");
-              goto free_exit;
+              goto free_err_exit;
             }
             break;
     case 'h':
     default :
-            goto free_exit;
+            goto free_err_exit;
     }
   }
 
@@ -521,7 +530,7 @@ main(int argc, char **argv) {
     if (tmp_cmd <= 0xFF) {
       msg->cmd = tmp_cmd;
     } else {
-      goto free_exit;
+      goto free_err_exit;
     }
     msg->payload_length = argc - optind;
     for (i=0; i<msg->payload_length; ++i) {
@@ -545,12 +554,12 @@ main(int argc, char **argv) {
  else
     send_nl_msg = send_nl_msg_libnl;
 
+
  if (fupgrade) {
-    pldm_update_fw(pfile, bufSize);
-    goto ok_exit;
-  }
-
-
+    // special case - invoke PLDM fw upgrade
+    ret = pldm_update_fw(pfile, bufSize);
+  } else {
+    // send individual NCSI cmds
 #ifdef DEBUG
   printf("debug prints:");
   printf("dev = %s\n", msg->dev_name);
@@ -564,45 +573,44 @@ main(int argc, char **argv) {
   }
   printf("\n");
 #endif
+    rsp = send_nl_msg(msg);
+    if (rsp) {
+      if (msg->cmd == NCSI_PLDM_REQUEST) {
 
-  rsp = send_nl_msg(msg);
-  if (rsp) {
-    if (msg->cmd == NCSI_PLDM_REQUEST) {
+        if (get_cmd_status(rsp) != RESP_COMMAND_COMPLETED) {
+          // command failed, likely due to device not supporting PLDM over NCSI
+          print_ncsi_completion_codes(rsp);
+        } else {
+          // debug prints
+          print_pldm_cmd_status(rsp);
+          print_pldm_resp_raw(rsp);
 
-      if (get_cmd_status(rsp) != RESP_COMMAND_COMPLETED) {
-        // command failed, likely due to device not supporting PLDM over NCSI
-        print_ncsi_completion_codes(rsp);
-      } else {
-        // debug prints
-        print_pldm_cmd_status(rsp);
-        print_pldm_resp_raw(rsp);
+          pldm_response *pldmRes = NULL;
+          pldmRes = calloc(1, sizeof(pldm_response));
+          if (!pldmRes) {
+            printf("%s, Error: failed pldmRes buffer allocation(%d)\n",
+                   __FUNCTION__, sizeof(pldm_response));
+          }
+          pldmRes->resp_size = rsp->hdr.payload_length - 4;
+          memcpy(&(pldmRes->common[0]), &(rsp->msg_payload[4]), pldmRes->resp_size);
 
-        pldm_response *pldmRes = NULL;
-        pldmRes = calloc(1, sizeof(pldm_response));
-        if (!pldmRes) {
-          printf("%s, Error: failed pldmRes buffer allocation(%d)\n",
-                 __FUNCTION__, sizeof(pldm_response));
+          // handle command response
+          pldmRespHandler(pldmRes);
         }
-        pldmRes->resp_size = rsp->hdr.payload_length - 4;
-        memcpy(&(pldmRes->common[0]), &(rsp->msg_payload[4]), pldmRes->resp_size);
-
-        // handle command response
-        pldmRespHandler(pldmRes);
+      } else {
+        print_ncsi_resp(rsp);
       }
     } else {
-      print_ncsi_resp(rsp);
+      goto free_err_exit;
     }
-  } else {
-    goto free_exit;
   }
 
-ok_exit:
   free(msg);
   if (rsp)
     free(rsp);
-  return 0;
+  return ret;
 
-free_exit:
+free_err_exit:
   if (msg)
     free(msg);
 
@@ -613,4 +621,3 @@ err_exit:
   showUsage();
   return -1;
 }
-;

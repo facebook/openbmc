@@ -310,7 +310,8 @@ static const i2c_dev_attr_st domfpga_attr_table[] = {
     "Wedge400 DOM FPGA ID should be 0xa1\n"
     "Minipack PIM-16Q DOM FPGA ID should be 0xa3\n"
     "Minipack PIM-4DD DOM FPGA ID should be 0xa4\n"
-    "Minipack PIM-16O DOM FPGA ID should be 0xa5",
+    "Minipack PIM-16O DOM FPGA ID should be 0xa5\n"
+    "Minipack2 PIM FPGA ID should be 0xa7",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x00, 0, 8,
@@ -335,7 +336,8 @@ static const i2c_dev_attr_st domfpga_attr_table[] = {
     "Wedge400 is 0x30\n"
     "PIM-16Q is 0x0\n"
     "PIM-4DD is 0x10\n"
-    "PIM-16O is 0xf0",
+    "PIM-16O is 0xf0\n"
+    "PIM-16O is 0x80",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x03, 0, 8,

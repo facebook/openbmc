@@ -37,4 +37,6 @@ IMAGE_INSTALL += " \
   mterm \
   front-paneld \
   fpc-util \
+  tpm2-tools \
+  threshold-util \
   "

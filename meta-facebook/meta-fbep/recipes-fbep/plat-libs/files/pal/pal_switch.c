@@ -24,6 +24,7 @@
 #include <pthread.h>
 #include <openbmc/libgpio.h>
 #include <switchtec/switchtec.h>
+#include <switchtec/gas.h>
 #include "pal.h"
 
 static pthread_mutex_t pax_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -42,7 +43,9 @@ int pal_pax_fw_update(uint8_t paxid, const char *fwimg)
   ret = system(cmd);
   pthread_mutex_unlock(&pax_mutex);
   if (WIFEXITED(ret) && (WEXITSTATUS(ret) == 0)) {
-    snprintf(cmd, sizeof(cmd), "/tmp/cache_store/pax%d_ver", paxid);
+    snprintf(cmd, sizeof(cmd), "/tmp/cache_store/pax%d_img", paxid);
+    unlink(cmd);
+    snprintf(cmd, sizeof(cmd), "/tmp/cache_store/pax%d_cfg", paxid);
     unlink(cmd);
     return 0;
   } else {
@@ -86,16 +89,20 @@ int pal_read_pax_dietemp(uint8_t sensor_num, float *value)
   return ret < 0? ERR_SENSOR_NA: 0;
 }
 
-int pal_get_pax_version(uint8_t paxid, char *version)
+int pal_get_pax_version(uint8_t paxid, char *img_ver, char *cfg_ver)
 {
   int ret;
   char device_name[LARGEST_DEVICE_NAME] = {0};
-  char key[MAX_KEY_LEN], tmp_str[MAX_VALUE_LEN] = {0};
+  char img_key[MAX_KEY_LEN], cfg_key[MAX_KEY_LEN];
   struct switchtec_dev *dev;
+  size_t map_size;
+  unsigned int x;
+  gasptr_t map;
 
-  snprintf(key, sizeof(key), "pax%d_ver", paxid);
-  if (kv_get(key, tmp_str, NULL, 0) == 0) {
-    snprintf(version, MAX_VALUE_LEN, "%s", tmp_str);
+  snprintf(img_key, sizeof(img_key), "pax%d_img", paxid);
+  snprintf(cfg_key, sizeof(cfg_key), "pax%d_cfg", paxid);
+  if (kv_get(img_key, img_ver, NULL, 0) == 0 &&
+      kv_get(cfg_key, cfg_ver, NULL, 0) == 0) {
     return 0;
   }
 
@@ -112,12 +119,23 @@ int pal_get_pax_version(uint8_t paxid, char *version)
     return -1;
   }
 
-  ret = switchtec_get_fw_version(dev, version, sizeof(version));
+  ret = switchtec_get_fw_version(dev, img_ver, MAX_VALUE_LEN);
+  map = switchtec_gas_map(dev, 0, &map_size);
+  if (map != SWITCHTEC_MAP_FAILED) {
+    x = gas_read32(dev, (void __gas*)map + 0x2104);
+    switchtec_gas_unmap(dev, map);
+  } else {
+    ret = -1;
+  }
 
   switchtec_close(dev);
   pthread_mutex_unlock(&pax_mutex);
 
-  kv_set(key, version, 0, 0);
+  if (ret == 0) {
+    kv_set(img_key, img_ver, 0, 0);
+    snprintf(cfg_ver, MAX_VALUE_LEN, "%x", x);
+    kv_set(cfg_key, cfg_ver, 0, 0);
+  }
 
   return ret < 0? -1: 0;
 }

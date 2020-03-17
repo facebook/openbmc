@@ -8,7 +8,7 @@ class PAXComponent : public GPIOSwitchedSPIMTDComponent {
   uint8_t _paxid;
   public:
     PAXComponent(string fru, string comp, uint8_t paxid, std::string shadow)
-      : GPIOSwitchedSPIMTDComponent(fru, comp, "switch0", "spi2.0", shadow, true), _paxid(paxid) {}
+      : GPIOSwitchedSPIMTDComponent(fru, comp, "switch0", "spi1.0", shadow, true), _paxid(paxid) {}
     int print_version() override;
     int update(string image) override;
     int fupdate(string image) override;
@@ -17,14 +17,18 @@ class PAXComponent : public GPIOSwitchedSPIMTDComponent {
 int PAXComponent::print_version()
 {
   int ret;
-  char ver[MAX_VALUE_LEN] = {0};
+  char img_ver[MAX_VALUE_LEN] = {0};
+  char cfg_ver[MAX_VALUE_LEN] = {0};
 
-  cout << "PAX" << (int)_paxid << " IMG Version: ";
-  ret = pal_get_pax_version(_paxid, ver);
-  if (ret < 0)
-    cout << "NA" << endl;
-  else
-    cout << string(ver) << endl;
+  cout << "PAX" << (int)_paxid;
+  ret = pal_get_pax_version(_paxid, img_ver, cfg_ver);
+  if (ret < 0) {
+    cout << " IMG Version: NA, CFG Version: NA" << endl;;
+  }
+  else {
+    cout << " IMG Version: " << string(img_ver)
+         << ", CFG Version: " << string(cfg_ver) << endl;
+  }
 
   return ret;
 }

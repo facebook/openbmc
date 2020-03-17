@@ -38,7 +38,7 @@ enum {
   PAX3,
 };
 
-int pal_get_pax_version(uint8_t, char*);
+int pal_get_pax_version(uint8_t, char*, char*);
 int pal_pax_fw_update(uint8_t, const char*);
 int pal_read_pax_dietemp(uint8_t, float*);
 

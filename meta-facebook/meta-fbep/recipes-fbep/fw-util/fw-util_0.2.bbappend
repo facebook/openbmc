@@ -26,8 +26,10 @@ SRC_URI += "file://nic.cpp \
             file://mcu_fw.h \
             file://mcu_fw.cpp \
             file://platform.cpp \
+            file://tpm2.h \
+            file://tpm2.cpp \
            "
 
-DEPENDS += "libmcu libfpga libast-jtag libvr"
-RDEPENDS_${PN} += "libmcu libfpga libast-jtag libvr"
-LDFLAGS += " -lmcu -lfpga -last-jtag -lvr"
+DEPENDS += "libmcu libfpga libast-jtag libvr libkv"
+RDEPENDS_${PN} += "libmcu libfpga libast-jtag libvr libkv"
+LDFLAGS += " -lmcu -lfpga -last-jtag -lvr -lkv"

@@ -68,6 +68,7 @@ struct gpioexppoll_config {
   char pwr_st;
   gpio_value_t last;
   gpio_value_t curr;
+  gpio_edge_t edge;
 //  void (*handler)(char shadow, char desc, gpio_edge_t edge, gpio_value_t last, gpio_value_t curr);
   void (*init_gpio)(char shadow, char desc);
 };
@@ -80,14 +81,14 @@ enum {
 
 //PCA9539 Address 0XEE
 struct gpioexppoll_config ioex0_gpios[] = {
-  {"IRQ_PVCCIN_CPU0_VRHOT_LVC3_N", "ExIO_0", PS_ON, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-  {"IRQ_PVCCIN_CPU1_VRHOT_LVC3_N", "ExIO_1", PS_ON, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-  {"IRQ_PVDDQ_ABC_CPU0_VRHOT_LVC3_N", "ExIO_2", PS_ON, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-  {"IRQ_PVDDQ_DEF_CPU0_VRHOT_LVC3_N", "ExIO_3", PS_ON, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-  {"IRQ_PVDDQ_ABC_CPU1_VRHOT_LVC3_N", "ExIO_4", PS_ON, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-  {"IRQ_PVDDQ_DEF_CPU1_VRHOT_LVC3_N", "ExIO_5", PS_ON, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-  {"FM_CPU0_SKTOCC_LVT3_PLD_N", "ExIO_6", STBY, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-  {"FM_CPU1_SKTOCC_LVT3_PLD_N", "ExIO_7", STBY, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
+  {"IRQ_PVCCIN_CPU0_VRHOT_LVC3_N", "ExIO_0", PS_ON, GPIO_VALUE_HIGH, GPIO_VALUE_INVALID, GPIO_EDGE_FALLING},
+  {"IRQ_PVCCIN_CPU1_VRHOT_LVC3_N", "ExIO_1", PS_ON, GPIO_VALUE_HIGH, GPIO_VALUE_INVALID, GPIO_EDGE_FALLING},
+  {"IRQ_PVDDQ_ABC_CPU0_VRHOT_LVC3_N", "ExIO_2", PS_ON, GPIO_VALUE_HIGH, GPIO_VALUE_INVALID, GPIO_EDGE_FALLING},
+  {"IRQ_PVDDQ_DEF_CPU0_VRHOT_LVC3_N", "ExIO_3", PS_ON, GPIO_VALUE_HIGH, GPIO_VALUE_INVALID, GPIO_EDGE_FALLING},
+  {"IRQ_PVDDQ_ABC_CPU1_VRHOT_LVC3_N", "ExIO_4", PS_ON, GPIO_VALUE_HIGH, GPIO_VALUE_INVALID, GPIO_EDGE_FALLING},
+  {"IRQ_PVDDQ_DEF_CPU1_VRHOT_LVC3_N", "ExIO_5", PS_ON, GPIO_VALUE_HIGH, GPIO_VALUE_INVALID, GPIO_EDGE_FALLING},
+  {"FM_CPU0_SKTOCC_LVT3_PLD_N", "ExIO_6", STBY, GPIO_VALUE_LOW, GPIO_VALUE_INVALID, GPIO_EDGE_RISING},
+  {"FM_CPU1_SKTOCC_LVT3_PLD_N", "ExIO_7", STBY, GPIO_VALUE_LOW, GPIO_VALUE_INVALID, GPIO_EDGE_RISING},
 };
 
 static gpio_value_t gpio_get(const char *shadow)
@@ -110,6 +111,10 @@ static void* ioex0_monitor()
 {
   int i;
   uint8_t status;
+  bool assert = false;
+
+  //delay for system power on
+  sleep(5);
 
   while (1) {
 
@@ -121,12 +126,30 @@ static void* ioex0_monitor()
       }
 
       ioex0_gpios[i].curr = gpio_get(ioex0_gpios[i].shadow);
-      if (ioex0_gpios[i].last != ioex0_gpios[i].curr) {
-	      syslog(LOG_CRIT, "%s: %s - %s\n", 
-          ioex0_gpios[i].curr ? "DEASSERT": "ASSERT",
-          ioex0_gpios[i].desc,
-	        ioex0_gpios[i].shadow);
+
+      if (ioex0_gpios[i].last == ioex0_gpios[i].curr) {
+        ioex0_gpios[i].last = ioex0_gpios[i].curr;
+        continue;
       }
+
+      if (ioex0_gpios[i].edge == GPIO_EDGE_FALLING) {
+        if (ioex0_gpios[i].last == GPIO_VALUE_HIGH && ioex0_gpios[i].curr == GPIO_VALUE_LOW) {
+          assert = true;
+        }
+        else if (ioex0_gpios[i].last == GPIO_VALUE_LOW && ioex0_gpios[i].curr == GPIO_VALUE_HIGH ) {
+          assert = false;
+        }
+      }
+      else if (ioex0_gpios[i].edge == GPIO_EDGE_RISING) {
+        if (ioex0_gpios[i].last == GPIO_VALUE_LOW && ioex0_gpios[i].curr == GPIO_VALUE_HIGH) {
+          assert = true;
+        }
+        else if (ioex0_gpios[i].last == GPIO_VALUE_HIGH && ioex0_gpios[i].curr == GPIO_VALUE_LOW ) {
+          assert = false;
+        }
+      }
+
+      syslog(LOG_CRIT, "%s: %s - %s\n", assert? "ASSERT": "DEASSERT", ioex0_gpios[i].desc, ioex0_gpios[i].shadow);
       ioex0_gpios[i].last = ioex0_gpios[i].curr;
     }
 

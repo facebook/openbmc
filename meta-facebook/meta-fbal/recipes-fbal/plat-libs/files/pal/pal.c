@@ -1105,6 +1105,28 @@ pal_uart_select_led_set(void) {
   return 0;
 }
 
+
+bool
+pal_check_boot_device_is_vaild(uint8_t device) {
+  bool vaild = false;
+
+  switch (device)
+  {
+    case BOOT_DEVICE_IPV4:
+    case BOOT_DEVICE_HDD:
+    case BOOT_DEVICE_CDROM:
+    case BOOT_DEVICE_OTHERS:
+    case BOOT_DEVICE_IPV6:
+    case BOOT_DEVICE_RESERVED:
+      vaild = true;
+      break; 
+    default:
+      break;
+  }
+
+  return vaild;
+}
+
 int
 pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len) {
   int i, j, network_dev = 0;
@@ -1117,6 +1139,8 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
   for (i = 0; i < SIZE_BOOT_ORDER; i++) {
     //Byte 0 is boot mode, Byte 1~5 is boot order
     if ((i > 0) && (boot[i] != 0xFF)) {
+      if(!pal_check_boot_device_is_vaild(boot[i]))
+        return CC_INVALID_PARAM;
       for (j = i+1; j < SIZE_BOOT_ORDER; j++) {
         if ( boot[i] == boot[j])
           return CC_INVALID_PARAM;

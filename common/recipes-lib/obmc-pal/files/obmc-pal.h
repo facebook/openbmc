@@ -214,6 +214,12 @@ enum {
   BYPASS_NETWORK = 4,
 };
 
+enum {
+  PFR_NONE          = 0,
+  PFR_ACTIVE        = 1,
+  PFR_UNPROVISIONED = 2,
+};
+
 // Helper function needed by some of pal functions
 void msleep(int msec);
 
@@ -412,6 +418,7 @@ int pal_set_usb_path (uint8_t slot, uint8_t endpoint);
 int pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw);
 void pal_get_eth_intf_name(char *intf_name);
 int pal_get_host_system_mode(uint8_t *mode);
+int pal_is_pfr_active(void);
 
 #ifdef __cplusplus
 }

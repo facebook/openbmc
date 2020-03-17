@@ -2310,3 +2310,8 @@ int __attribute__((weak))
 pal_get_host_system_mode(uint8_t *mode) {
   return PAL_ENOTSUP;
 }
+
+int __attribute__((weak))
+pal_is_pfr_active(void) {
+  return PFR_NONE;
+}

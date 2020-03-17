@@ -241,6 +241,12 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
     return POWER_STATUS_FRU_ERR;
   }
 
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return POWER_STATUS_ERR;
+  }
+
   switch (cmd) {
     case SERVER_12V_OFF:
     case SERVER_12V_ON:
@@ -280,26 +286,20 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_12V_ON:
-      if ( pal_get_server_12v_power(fru, &status) < 0 ) {
+      if ( bmc_location == NIC_BMC || pal_get_server_12v_power(fru, &status) < 0 ) {
         return POWER_STATUS_ERR;
       }
       return (status == SERVER_POWER_ON)?POWER_STATUS_ALREADY_OK:server_power_12v_on(fru);
       break;
 
     case SERVER_12V_OFF:
-      if ( pal_get_server_12v_power(fru, &status) < 0 ) {
+      if ( bmc_location == NIC_BMC || pal_get_server_12v_power(fru, &status) < 0 ) {
         return POWER_STATUS_ERR;
       }
       return (status == SERVER_POWER_OFF)?POWER_STATUS_ALREADY_OK:server_power_12v_off(fru);
       break;
 
     case SERVER_12V_CYCLE:
-      ret = fby3_common_get_bmc_location(&bmc_location);
-      if ( ret < 0 ) {
-        syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-        return POWER_STATUS_ERR;
-      }
-
       if ( bmc_location == BB_BMC ) {
         if ( pal_get_server_12v_power(fru, &status) < 0 ) {
           return POWER_STATUS_ERR;

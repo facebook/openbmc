@@ -83,7 +83,6 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_DIMMD0_TEMP,
   BIC_SENSOR_DIMME0_TEMP,
   BIC_SENSOR_DIMMF0_TEMP,
-  BIC_SENSOR_M2A_TEMP,
   BIC_SENSOR_M2B_TEMP,
   BIC_SENSOR_HSC_TEMP,
   BIC_SENSOR_VCCIN_VR_TEMP,
@@ -101,7 +100,6 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_P3V3_STBY_VOL,
   BIC_SENSOR_P1V05_PCH_STBY_VOL,
   BIC_SENSOR_PVNN_PCH_STBY_VOL,
-  BIC_SENSOR_P3V3_VOL,
   BIC_SENSOR_HSC_INPUT_VOL,
   BIC_SENSOR_VCCIN_VR_VOL,
   BIC_SENSOR_VCCSA_VR_VOL,
@@ -989,7 +987,6 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num) {
     BIC_SENSOR_DIMMD0_TEMP,
     BIC_SENSOR_DIMME0_TEMP,
     BIC_SENSOR_DIMMF0_TEMP,
-    BIC_SENSOR_M2A_TEMP,
     BIC_SENSOR_M2B_TEMP,
     BIC_SENSOR_HSC_TEMP,
     BIC_SENSOR_VCCIN_VR_TEMP,
@@ -1000,7 +997,6 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num) {
     //BIC - voltage sensors
     BIC_SENSOR_P3V3_M2A_VOL,
     BIC_SENSOR_P3V3_M2B_VOL,
-    BIC_SENSOR_P3V3_VOL,
     BIC_SENSOR_VCCIN_VR_VOL,
     BIC_SENSOR_VCCSA_VR_VOL,
     BIC_SENSOR_VCCIO_VR_VOL,
@@ -1177,33 +1173,6 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
   return ret;
 }
 
-static int
-skip_sensor_list(uint8_t fru, uint8_t sensor_num) {
-  uint8_t bmc_skip_list[] = {
-              BMC_SENSOR_P12V_MEDUSA,
-              BMC_SENSOR_HSC_VIN,
-              BMC_SENSOR_HSC_TEMP,
-              BMC_SENSOR_HSC_PIN,
-              BMC_SENSOR_HSC_IOUT,
-              BMC_SENSOR_FAN_IOUT,
-              BMC_SENSOR_NIC_IOUT,
-              BMC_SENSOR_INLET_TEMP};
-  int bmc_skip_size = sizeof(bmc_skip_list);
-  int i = 0;
-
-  switch(fru){
-    case FRU_BMC:
-      for (i = 0; i < bmc_skip_size; i++) {
-        if ( sensor_num == bmc_skip_list[i] ) {
-          return PAL_ENOTSUP;
-        }
-      }
-      break;
-  }
-
-  return PAL_EOK;
-}
-
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
@@ -1236,12 +1205,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       break;
     case FRU_BMC:
     case FRU_NIC:
-      //workaround: BMC cannot monitor these sensors, skip it.
-      if ( bmc_location == NIC_BMC && skip_sensor_list(fru, sensor_num) < 0 ) {
-        ret = READING_NA;
-      } else {
-        ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
-      }
+      ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
       break;
       
     default:

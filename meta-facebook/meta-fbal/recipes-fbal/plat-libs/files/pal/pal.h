@@ -49,6 +49,9 @@ extern "C" {
 #define UARTSW_OFFSET 0x68
 #define SEVEN_SEGMENT_OFFSET 0x20
 
+#define NM_IPMB_BUS_ID (5)
+#define NM_SLAVE_ADDR  (0x2C)
+
 enum {
   FRU_ALL  = 0,
   FRU_MB,
@@ -166,15 +169,6 @@ enum {
   UARTSW_BY_BMC,
   UARTSW_BY_DEBUG,
   SET_SEVEN_SEGMENT,
-};
-
-enum {
-  PAL_LCMXO2_2000HC = 0,
-  PAL_LCMXO2_4000HC,
-  PAL_LCMXO2_7000HC,
-  PAL_MAX10_10M16,
-  PAL_MAX10_10M25,
-  PAL_UNKNOWN_DEV
 };
 
 #ifdef __cplusplus

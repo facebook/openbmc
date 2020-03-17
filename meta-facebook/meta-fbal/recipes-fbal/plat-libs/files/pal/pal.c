@@ -783,10 +783,9 @@ pal_get_bmc_ipmb_slave_addr(uint16_t* slave_addr, uint8_t bus_id) {
   int ret;
   static uint8_t addr=0;
 
-  if ((bus_id == I2C_BUS_2) || (bus_id == I2C_BUS_5)) {
-
+  if (bus_id == I2C_BUS_2) {
     if (addr == 0) {
-      ret = pal_get_blade_id (&val);
+      ret = pal_get_blade_id(&val);
       if (ret != 0) {
         return -1;
       }

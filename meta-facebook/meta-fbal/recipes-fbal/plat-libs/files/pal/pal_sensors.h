@@ -25,14 +25,9 @@
 #define EXTERNAL_CPU_ERROR_MASK                 (0xE0)
 #define BOTH_CPU_ERROR_MASK                     (0xFC)
 
-//NM DEVICE INFO
-#define NM_IPMB_BUS_ID   (5)
-#define NM_SLAVE_ADDR    (0x2C)
-
 //CPU INFO
 #define PECI_CPU0_ADDR    (0x30)
 #define PECI_CPU1_ADDR    (0x31)
-
 
 //AMD1278 CMD INFO
 #define PMBUS_PMON_CONFIG  (0xD4)
@@ -44,7 +39,7 @@
 #define INA260_VOLTAGE   (0x02)
 #define INA260_POWER     (0x03)
 
-#define FAN_PWM_ALL_NUM        (4) 
+#define FAN_PWM_ALL_NUM        (4)
 #define FAN_TACH_ALL_NUM       (8)
 
 //Sensor Table

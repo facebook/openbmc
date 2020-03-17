@@ -35,7 +35,7 @@ addr=$((0x1010 | $(gpio_get FM_BLADE_ID_1)<<1 | $(gpio_get FM_BLADE_ID_0)))
 
 echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-0/new_device  #USB DBG
 echo slave-mqueue $addr > /sys/bus/i2c/devices/i2c-2/new_device   #Slave BMC
-echo slave-mqueue $addr > /sys/bus/i2c/devices/i2c-5/new_device   #ME
+echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-5/new_device  #ME
 echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-6/new_device  #JG7
 echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-8/new_device  #CM
 

@@ -368,12 +368,12 @@ static sensor_desc_t cri_sensor[]  =
     {"HSC_PWR:", MB_SNR_HSC_PIN, "W", FRU_MB, 1},
     {"HSC_VOL:", MB_SNR_HSC_VIN, "V", FRU_MB, 2},
     {"FAN0_INLET_SP:", PDB_SNR_FAN0_INLET_SPEED, "RPM", FRU_PDB, 0},
-    {"FAN1_INLET_SP:", PDB_SNR_FAN1_INLET_SPEED, "RPM", FRU_PDB, 0},   
-    {"FAN2_INLET_SP:", PDB_SNR_FAN2_INLET_SPEED, "RPM", FRU_PDB, 0},   
+    {"FAN1_INLET_SP:", PDB_SNR_FAN1_INLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN2_INLET_SP:", PDB_SNR_FAN2_INLET_SPEED, "RPM", FRU_PDB, 0},
     {"FAN3_INLET_SP:", PDB_SNR_FAN3_INLET_SPEED, "RPM", FRU_PDB, 0},
     {"FAN0_OUTLET_SP:", PDB_SNR_FAN0_OUTLET_SPEED, "RPM", FRU_PDB, 0},
-    {"FAN1_OUTLET_SP:", PDB_SNR_FAN1_OUTLET_SPEED, "RPM", FRU_PDB, 0},   
-    {"FAN2_OUTLET_SP:", PDB_SNR_FAN2_OUTLET_SPEED, "RPM", FRU_PDB, 0},   
+    {"FAN1_OUTLET_SP:", PDB_SNR_FAN1_OUTLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN2_OUTLET_SP:", PDB_SNR_FAN2_OUTLET_SPEED, "RPM", FRU_PDB, 0},
     {"FAN3_OUTLET_SP:", PDB_SNR_FAN3_OUTLET_SPEED, "RPM", FRU_PDB, 0},
     {"INTLET_TEMP:", MB_SNR_INLET_TEMP, "C", FRU_MB, 0},
     {"CPU0_VR_TEMP:",  MB_SNR_VR_CPU0_VCCIN_TEMP, "C", FRU_MB, 0},
@@ -443,7 +443,7 @@ int plat_get_me_status(uint8_t fru, char *status)
 
   req = (ipmb_req_t*)buf;
   res = (ipmb_res_t*)buf;
-  req->res_slave_addr = 0x2C; //ME's Slave Address
+  req->res_slave_addr = NM_SLAVE_ADDR;
   req->netfn_lun = NETFN_APP_REQ<<2;
   req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
   req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
@@ -455,7 +455,7 @@ int plat_get_me_status(uint8_t fru, char *status)
   status[0] = '\0';
   // Invoke IPMB library handler
   len = 0;
-  lib_ipmb_handle(0x4, (uint8_t *)req, 7, (uint8_t *)res, &len);
+  lib_ipmb_handle(NM_IPMB_BUS_ID, (uint8_t *)req, 7, (uint8_t *)res, &len);
   if (len > 7 && res->cc == 0) {
     if (res->data[2] & 0x80)
       strcpy(status, "recovery mode");

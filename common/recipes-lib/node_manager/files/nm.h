@@ -9,8 +9,6 @@ extern "C" {
 
 
 //NM CMD INFO
-#define NM_IPMB_BUS_ID             (5)
-#define NM_SLAVE_ADDR              (0x2C)
 #define SMBUS_MSG_READ_WORD        (0x3 << 1)
 #define SMBUS_MSG_WRITE_WORD       (0x4 << 1)
 #define SMBUS_STANDARD_READ_WORD   (0x80 | SMBUS_MSG_READ_WORD)
@@ -18,7 +16,7 @@ extern "C" {
 #define SMBUS_EXTENDED_READ_WORD   (0x90 | SMBUS_MSG_READ_WORD)
 #define SMBUS_EXTENDED_WRITE_WORD  (0x90 | SMBUS_MSG_WRITE_WORD)
 #define EXTENDED_DEVICE_SMBUS      (0x00)
-#define EXTENDED_DEVICE_SMLINK0    (0x01) 
+#define EXTENDED_DEVICE_SMLINK0    (0x01)
 #define EXTENDED_DEVICE_SMLINK1    (0x02)
 #define EXTENDED_MUX_ADDR          (0x70)
 #define EXTENDED_MUX_DISABLE       (0x00)

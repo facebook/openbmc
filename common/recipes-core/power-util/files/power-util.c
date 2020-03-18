@@ -427,7 +427,7 @@ power_util(uint8_t fru, uint8_t opt) {
         syslog(LOG_WARNING, "power_util: pal_set_rst_btn failed for"
           " fru %u", fru);
         printf("Power reset fail for fru %u\n", fru);
-        return 0;
+        return ret;
       }
       syslog(LOG_CRIT, "SERVER_POWER_RESET successful for FRU: %d", fru);
       pal_set_restart_cause(fru, RESTART_CAUSE_IPMI_CHASSIS_CMD);
@@ -528,7 +528,7 @@ power_util(uint8_t fru, uint8_t opt) {
 
     default:
       syslog(LOG_WARNING, "power_util: wrong option");
-
+      ret = 2;
   }
 
   return ret;

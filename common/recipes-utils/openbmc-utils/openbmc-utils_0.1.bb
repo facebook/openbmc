@@ -38,6 +38,7 @@ SRC_URI = " \
     file://blkdev_mount.sh \
     file://emmc_auto_mount.sh \
     file://mount_data1.sh \
+    file://setup_persist_log.sh \
     "
 
 OPENBMC_UTILS_FILES = " \

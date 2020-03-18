@@ -2311,6 +2311,17 @@ pal_get_host_system_mode(uint8_t *mode) {
   return PAL_ENOTSUP;
 }
 
+uint8_t __attribute__((weak))
+pal_ipmb_get_sensor_val(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  *res_len = 0;
+  return 0;
+}
+
+int __attribute__((weak))
+pal_sensor_monitor_initial(void) {
+  return 0; 
+}
+
 int __attribute__((weak))
 pal_is_pfr_active(void) {
   return PFR_NONE;

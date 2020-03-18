@@ -88,8 +88,22 @@ cmd_NM_get_dev_id(NM_RW_INFO* info, ipmi_dev_id_t *dev_id) {
   return ret;
 }
 
+// Get Self Test Result
 int
-cmd_NM_pmbus_read_word(NM_RW_INFO info, uint8_t dev_addr, uint8_t *rbuf) {
+cmd_NM_get_self_test_result(NM_RW_INFO* info, uint8_t *rbuf, uint8_t *rlen) {
+  uint8_t ipmi_cmd = CMD_APP_GET_SELFTEST_RESULTS;
+  uint8_t netfn = NETFN_APP_REQ;
+  int ret;
+
+  ret = me_ipmb_process(info, ipmi_cmd, netfn, NULL, 0, rbuf, rlen);
+  if(ret !=0 || *rlen < 2) {
+    return -1;
+  } 
+  return 0;
+}
+
+int
+cmd_NM_send_pmbus_raw(NM_RW_INFO info, uint8_t *rbuf, uint8_t *wbuf, uint8_t wr_len) {
   uint8_t tbuf[64] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
@@ -102,37 +116,80 @@ cmd_NM_pmbus_read_word(NM_RW_INFO info, uint8_t dev_addr, uint8_t *rbuf) {
    
   req = (ipmb_req_t*)tbuf;
   set_NM_head(&info, NETFN_NM_REQ, req, CMD_NM_SEND_RAW_PMBUS);
+  memcpy(req->data, wbuf, wr_len);
+
+  tlen = MIN_IPMB_REQ_LEN + wr_len;
+
+  // Invoke IPMB library handler
+  lib_ipmb_handle(info.bus, tbuf, tlen, rbuf, &rlen);
+
+
+  if (rlen == 0) {
+  #ifdef DEBUG  
+    syslog(LOG_WARNING, "read_value: Zero bytes received\n");
+  #endif  
+    return -1;
+  } else {
+  #ifdef DEBUG
+    int i=0;
+    for(i=0; i<rlen; i++) {
+      syslog(LOG_WARNING, "read_value: rbuf[%d]=%x\n", rbuf[10+i]);
+    }
+  #endif  
+  }
+
+  return ret;
+}
+
+int
+cmd_NM_pmbus_standard_read_word(NM_RW_INFO info, uint8_t* buf, uint8_t *rdata) {
+  uint8_t tbuf[64] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+  ipmb_req_t *req;
+  NM_PMBUS_STANDAR_DEV dev;
+ 
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s\n", __func__);
+#endif
+   
+  req = (ipmb_req_t*)tbuf;
+  set_NM_head(&info, NETFN_NM_REQ, req, CMD_NM_SEND_RAW_PMBUS);
+
+  dev.psu_cmd = buf[0];
+  dev.psu_addr = buf[1];  
 
   req->data[0] = 0x57;
   req->data[1] = 0x01;
   req->data[2] = 0x00;
   req->data[3] = SMBUS_STANDARD_READ_WORD;
-  req->data[4] = dev_addr;
+  req->data[4] = dev.psu_addr;
   req->data[5] = 0x00;
   req->data[6] = 0x00;
   req->data[7] = 0x01;
   req->data[8] = 0x02;
-  req->data[9] = info.nm_cmd;
+  req->data[9] = dev.psu_cmd;
   tlen = 10 + MIN_IPMB_REQ_LEN;
 
 
   // Invoke IPMB library handler
-  lib_ipmb_handle(info.bus, tbuf, tlen, rbuf, &rlen);
+  lib_ipmb_handle(info.bus, tbuf, tlen, rdata, &rlen);
   if (rlen == 0) {
   #ifdef DEBUG  
-    syslog(LOG_WARNING, "read_hsc_value: Zero bytes received\n");
+    syslog(LOG_WARNING, "read_value: Zero bytes received\n");
   #endif  
     return -1;
   }
 
   #ifdef DEBUG  
-    syslog(LOG_WARNING, "read_hsc_value: rbuf[10]=%x rbuf[11]=%x\n", rbuf[10], rbuf[11]);
+    syslog(LOG_WARNING, "read_value: rdata[10]=%x rdata[11]=%x\n", rdata[10], rdata[11]);
   #endif  
   return ret;
 }
 
 int
-cmd_NM_pmbus_write_word(NM_RW_INFO info, uint8_t dev_addr, uint8_t *data){
+cmd_NM_pmbus_standard_write_word(NM_RW_INFO info, uint8_t* buf, uint8_t *wdata) {
   uint8_t tbuf[64] = {0x00};
   uint8_t rbuf[32] = {0x00};
   uint8_t tlen = 0;
@@ -140,7 +197,9 @@ cmd_NM_pmbus_write_word(NM_RW_INFO info, uint8_t dev_addr, uint8_t *data){
   uint8_t data_len = 2;
   int ret = 0;
   ipmb_req_t *req;
- 
+  NM_PMBUS_STANDAR_DEV dev;
+
+
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s\n", __func__);
 #endif
@@ -148,20 +207,23 @@ cmd_NM_pmbus_write_word(NM_RW_INFO info, uint8_t dev_addr, uint8_t *data){
   req = (ipmb_req_t*)tbuf;
   set_NM_head(&info, NETFN_NM_REQ, req, CMD_NM_SEND_RAW_PMBUS);
 
+  dev.psu_cmd = buf[0];
+  dev.psu_addr = buf[1];  
+
   req->data[0] = 0x57;
   req->data[1] = 0x01;
   req->data[2] = 0x00;
   req->data[3] = SMBUS_STANDARD_WRITE_WORD;
-  req->data[4] = dev_addr;
+  req->data[4] = dev.psu_addr;
   req->data[5] = 0x00;
   req->data[6] = 0x00;
   req->data[7] = 0x03;
   req->data[8] = 0x00;
-  req->data[9] = info.nm_cmd;
-  memcpy(req->data+10, data, data_len);
+  req->data[9] = dev.psu_cmd;
+  memcpy(req->data+10, wdata, data_len);
 
   #ifdef DEBUG  
-    syslog(LOG_DEBUG, "Tx data[0]=%x data[1]=%x\n", req->data[10], data[11]);
+    syslog(LOG_DEBUG, "Tx wdata[0]=%x wdata[1]=%x\n", req->data[10], data[11]);
   #endif  
 
   tlen = MIN_IPMB_REQ_LEN + 10 + data_len;
@@ -170,7 +232,116 @@ cmd_NM_pmbus_write_word(NM_RW_INFO info, uint8_t dev_addr, uint8_t *data){
   lib_ipmb_handle(info.bus, tbuf, tlen, rbuf, &rlen);
   if (rlen == 0) {
   #ifdef DEBUG  
-    syslog(LOG_WARNING, "write_hsc_value: Zero bytes received\n");
+    syslog(LOG_WARNING, "write_value: Zero bytes received\n");
+  #endif
+    return -1; 
+  }
+
+  return ret;
+}
+
+int
+cmd_NM_pmbus_extend_read_word(NM_RW_INFO info, uint8_t* buf, uint8_t *rdata) {
+  uint8_t tbuf[64] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+  ipmb_req_t *req;
+  NM_PMBUS_EXTEND_DEV dev;
+ 
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s\n", __func__);
+#endif
+   
+  req = (ipmb_req_t*)tbuf;
+  set_NM_head(&info, NETFN_NM_REQ, req, CMD_NM_SEND_RAW_PMBUS);
+
+  dev.psu_cmd = buf[0];
+  dev.psu_addr = buf[1];
+  dev.mux_addr = buf[2];
+  dev.mux_ch = buf[3];
+  dev.sensor_bus = buf[4];
+
+  req->data[0] = 0x57;
+  req->data[1] = 0x01;
+  req->data[2] = 0x00;
+  req->data[3] = SMBUS_EXTENDED_READ_WORD;
+  req->data[4] = dev.sensor_bus; 
+  req->data[5] = dev.psu_addr;  
+  req->data[6] = dev.mux_addr;
+  req->data[7] = dev.mux_ch;
+  req->data[8] = EXTENDED_MUX_ENABLE; 
+  req->data[9] = TRANS_PROTOCOL_PMBUS;
+  req->data[10] = 1;
+  req->data[11] = 2;
+  req->data[12] = dev.psu_cmd;
+
+  tlen = 13 + MIN_IPMB_REQ_LEN;
+
+  // Invoke IPMB library handler
+  lib_ipmb_handle(info.bus, tbuf, tlen, rdata, &rlen);
+  if (rlen == 0) {
+  #ifdef DEBUG  
+    syslog(LOG_WARNING, "read_value: Zero bytes received\n");
+  #endif  
+    return -1;
+  }
+
+  #ifdef DEBUG  
+    syslog(LOG_WARNING, "read_value: rdata[10]=%x rdata[11]=%x\n", rdata[10], rdata[11]);
+  #endif  
+  return ret;
+}
+
+int
+cmd_NM_pmbus_extend_write_word(NM_RW_INFO info, uint8_t* buf,  uint8_t *wdata) {
+  uint8_t tbuf[64] = {0x00};
+  uint8_t rbuf[32] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+  ipmb_req_t *req;
+  NM_PMBUS_EXTEND_DEV dev;
+ 
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s\n", __func__);
+#endif
+   
+  req = (ipmb_req_t*)tbuf;
+  set_NM_head(&info, NETFN_NM_REQ, req, CMD_NM_SEND_RAW_PMBUS);
+
+  dev.psu_cmd = buf[0];
+  dev.psu_addr = buf[1];
+  dev.mux_addr = buf[2];
+  dev.mux_ch = buf[3];
+  dev.sensor_bus = buf[4];
+
+  req->data[0] = 0x57;
+  req->data[1] = 0x01;
+  req->data[2] = 0x00;
+  req->data[3] = SMBUS_EXTENDED_WRITE_WORD;
+  req->data[4] = dev.sensor_bus; 
+  req->data[5] = dev.psu_addr;  
+  req->data[6] = dev.mux_addr;
+  req->data[7] = dev.mux_ch;
+  req->data[8] = EXTENDED_MUX_ENABLE; 
+  req->data[9] = TRANS_PROTOCOL_PMBUS;
+  req->data[10] = 3;
+  req->data[11] = 0;
+  req->data[12] = dev.psu_cmd;
+  req->data[13] = wdata[0];
+  req->data[14] = wdata[1];
+
+  tlen = MIN_IPMB_REQ_LEN + 15;
+  #ifdef DEBUG  
+    syslog(LOG_DEBUG, "Tx wdata[0]=%x wdata[1]=%x\n", wdata[0], wdata[1]);
+  #endif  
+
+  // Invoke IPMB library handler
+  lib_ipmb_handle(info.bus, tbuf, tlen, rbuf, &rlen);
+  if (rlen == 0) {
+  #ifdef DEBUG  
+    syslog(LOG_WARNING, "write_value: Zero bytes received\n");
   #endif
     return -1; 
   }

@@ -858,7 +858,7 @@ pal_is_mcu_ready(uint8_t bus) {
   return false;
 }
 
-static int
+int
 pal_get_mb_position(uint8_t* pos) {
   static bool cached = false;
   static uint8_t cached_pos = 0;
@@ -1017,7 +1017,9 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
   }
 
   if( ret || (mode == MB_2S_MODE) ) {
+#ifdef DEBUG    
     syslog(LOG_DEBUG, "%s true, mode=%d\n", __func__, mode);
+#endif
     ret = pal_get_key_value("sysfw_ver_server", str);
     if (ret) {
       return ret;
@@ -1470,3 +1472,30 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
 
   return comp_code;
 }
+
+
+int
+pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
+{
+  NM_RW_INFO info;
+  uint8_t rbuf[8];
+  uint8_t rlen;
+  int ret;
+
+  info.bus = NM_IPMB_BUS_ID;
+  info.nm_addr = NM_SLAVE_ADDR;
+  ret = pal_get_bmc_ipmb_slave_addr(&info.bmc_addr, info.bus);
+  if (ret != 0) {
+    return PAL_ENOTSUP;
+  }
+
+  ret = cmd_NM_get_self_test_result(&info, rbuf, &rlen);
+  if (ret != 0) {
+    return PAL_ENOTSUP;
+  }
+
+  memcpy(data, rbuf, rlen);
+  syslog(LOG_WARNING, "rbuf[0] =%x rbuf[1] =%x\n", rbuf[0], rbuf[1]);
+  return ret;
+}
+

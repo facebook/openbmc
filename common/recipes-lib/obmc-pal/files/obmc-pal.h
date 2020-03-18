@@ -418,6 +418,9 @@ int pal_set_usb_path (uint8_t slot, uint8_t endpoint);
 int pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw);
 void pal_get_eth_intf_name(char *intf_name);
 int pal_get_host_system_mode(uint8_t *mode);
+int pal_get_altered_comp_name(char *comp_name);
+int pal_sensor_monitor_initial(void);
+uint8_t pal_ipmb_get_sensor_val(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_is_pfr_active(void);
 
 #ifdef __cplusplus

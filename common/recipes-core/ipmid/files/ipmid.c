@@ -3986,6 +3986,18 @@ oem_zion_set_usb_path(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_zion_get_sensor_value(unsigned char *request, unsigned char req_len, unsigned char *response,
+      unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  res->cc = pal_ipmb_get_sensor_val(req->payload_id, req->data, req_len, res->data, res_len);
+
+  return;
+}
+
+static void
 ipmi_handle_oem_zion(unsigned char *request, unsigned char req_len,
      unsigned char *response, unsigned char *res_len)
 {
@@ -3999,6 +4011,8 @@ ipmi_handle_oem_zion(unsigned char *request, unsigned char req_len,
   {
     case CMD_OEM_ZION_GET_SYSTEM_MODE:
       oem_zion_get_system_mode(request, req_len, response, res_len);
+    case CMD_OEM_ZION_GET_SENSOR_VALUE:
+      oem_zion_get_sensor_value(request, req_len, response, res_len);
       break;
     case CMD_OEM_ZION_SET_USB_PATH:
       oem_zion_set_usb_path(request, req_len, response, res_len);

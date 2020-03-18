@@ -728,6 +728,8 @@ run_sensord(int argc, char **argv) {
     syslog(LOG_WARNING, "pthread_create for sensor health failed\n");
   }
 
+  ret = pal_sensor_monitor_initial();
+
   /* Aggregate sensor monitor */
   if (pthread_create(&agg_sensor_mon, NULL, aggregate_snr_monitor, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for aggregate sensor failed!\n");

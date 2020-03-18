@@ -32,7 +32,7 @@ cmc_ipmb_process(uint8_t ipmi_cmd, uint8_t netfn,
   uint16_t bmc_addr;
   
 
-  ret = pal_get_bmc_ipmb_slave_addr(&bmc_addr, CM_I2C_SLAVE_ADDR);
+  ret = pal_get_bmc_ipmb_slave_addr(&bmc_addr, CM_I2C_BUS_NUMBER);
   if(ret != 0) {
     return ret;
   }

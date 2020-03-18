@@ -26,6 +26,7 @@ bool
 is_server_off(void) {
   int ret;
   uint8_t status;
+
   ret = pal_get_server_power(FRU_MB, &status);
   if (ret) {
     return false;
@@ -106,8 +107,6 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
     ret = gpio_get_value(gdesc, &val);
     if (ret != 0)
       goto error;
- 
-    *status = (int)val;
   } else {
     gdesc = gpio_open_by_shadow(GPIO_CPU0_POWER_GOOD);
     if (gdesc == NULL)
@@ -116,9 +115,8 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
     ret = gpio_get_value(gdesc, &val);
     if (ret != 0)
       goto error;
-
-    *status = (int)val;
   }
+  *status = (int)val;
 error:
   gpio_close(gdesc);
   return ret;
@@ -206,7 +204,6 @@ pal_sled_cycle(void) {
   // Send command to HSC power cycle
   if (mode == MB_8S_MODE ) {  
     if( lib_cmc_power_cycle() ) {
- syslog(LOG_DEBUG, "DEbug0\n");     
       return -1;
     }
   } else if (mode == MB_2S_MODE ) {

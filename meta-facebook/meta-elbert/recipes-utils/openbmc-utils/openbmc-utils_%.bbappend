@@ -20,6 +20,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 # ELBERTTODO 447411 BOARD_UTILS
 SRC_URI += "file://board-utils.sh \
             file://fpga_ver.sh \
+            file://oob-mdio-util.sh \
             file://power-on.sh \
             file://setup_board.sh \
             file://wedge_power.sh \
@@ -29,6 +30,7 @@ SRC_URI += "file://board-utils.sh \
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
     fpga_ver.sh \
+    oob-mdio-util.sh \
     wedge_power.sh \
     setup_i2c.sh \
     "

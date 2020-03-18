@@ -35,6 +35,9 @@ SRC_URI = " \
     file://rm_poweroff_cmd.sh \
     file://revise_inittab \
     file://setup_emmc.sh \
+    file://blkdev_mount.sh \
+    file://emmc_auto_mount.sh \
+    file://mount_data1.sh \
     "
 
 OPENBMC_UTILS_FILES = " \
@@ -47,6 +50,8 @@ OPENBMC_UTILS_FILES = " \
     rc.local \
     rm_poweroff_cmd.sh \
     revise_inittab \
+    blkdev_mount.sh \
+    emmc_auto_mount.sh \
     "
 
 S = "${WORKDIR}"

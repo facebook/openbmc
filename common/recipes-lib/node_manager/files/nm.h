@@ -45,14 +45,15 @@ typedef struct {
   uint8_t bus;
   uint8_t nm_addr;
   uint16_t bmc_addr;
+  uint8_t nm_cmd;
 } NM_RW_INFO;
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
   uint8_t psu_cmd;
   uint8_t psu_addr; 
 } NM_PMBUS_STANDAR_DEV;
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
   uint8_t psu_cmd;
   uint8_t psu_addr;
   uint8_t mux_addr;
@@ -61,7 +62,7 @@ typedef struct {
 } NM_PMBUS_EXTEND_DEV;
 
 #if 0
-typedef struct {
+typedef struct __attribute__((__packed__)) {
   uint8_t flags;
   uint8_t target_addr;
   uint8_t mux_cfg;
@@ -71,7 +72,7 @@ typedef struct {
   uint8_t pmbus_cmd;
 } NM_SEND_PMBUS_STANDARD;
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
   uint8_t flags;           //[3:1]smbus type, [5:4] device format [7] enable PEC
   uint8_t sensor_bus;      //SMLINK or SMBUS number 
   uint8_t target_addr;     //PSU addr
@@ -93,6 +94,17 @@ int cmd_NM_sensor_reading(NM_RW_INFO info, uint8_t snr_num, uint8_t* rbuf, uint8
 int cmd_NM_cpu_err_num_get(NM_RW_INFO info, bool is_caterr);
 int cmd_NM_get_dev_id(NM_RW_INFO* info, ipmi_dev_id_t *dev_id);
 int cmd_NM_get_self_test_result(NM_RW_INFO* info, uint8_t *rbuf, uint8_t *rlen);
+
+static inline int cmd_NM_pmbus_read_word(NM_RW_INFO info, uint8_t dev_addr, uint8_t *rbuf)
+{
+  NM_PMBUS_STANDAR_DEV dev = {info.nm_cmd, dev_addr};
+  return cmd_NM_pmbus_standard_read_word(info, (uint8_t *)&dev, rbuf);
+}
+static inline int cmd_NM_pmbus_write_word(NM_RW_INFO info, uint8_t dev_addr, uint8_t *wbuf)
+{
+  NM_PMBUS_STANDAR_DEV dev = {info.nm_cmd, dev_addr};
+  return cmd_NM_pmbus_standard_write_word(info, (uint8_t *)&dev, wbuf);
+}
 
 #ifdef __cplusplus
 } // extern "C"

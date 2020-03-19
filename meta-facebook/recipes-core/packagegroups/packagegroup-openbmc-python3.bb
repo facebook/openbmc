@@ -13,6 +13,7 @@ RDEPENDS_${PN} += " \
   python3-ctypes \
   python3-datetime \
   python3-email \
+  python3-fcntl \
   python3-io \
   python3-json \
   python3-mime \

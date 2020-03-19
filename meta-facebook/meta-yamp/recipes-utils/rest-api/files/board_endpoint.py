@@ -26,6 +26,7 @@ import rest_peutil
 import rest_pim_present
 import rest_piminfo
 import rest_pimserial
+import rest_pimstatus
 import rest_scdinfo
 import rest_seutil
 from aiohttp import web
@@ -54,6 +55,10 @@ class boardApp_Handler:
     # Handler for sys/pim_serial resource endpoint
     async def rest_pimserial_hdl(self, request):
         return web.json_response(rest_pimserial.get_pimserial())
+
+    # Handler for sys/pimstatus resource endpoint
+    async def rest_pimstatus_hdl(self, request):
+        return web.json_response(rest_pimstatus.get_pimstatus())
 
     # Handler for sys/mb/seutil resource endpoint
     async def rest_seutil_hdl(self, request):

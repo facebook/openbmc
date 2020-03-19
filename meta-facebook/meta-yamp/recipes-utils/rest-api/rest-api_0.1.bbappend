@@ -22,6 +22,7 @@ SRC_URI += " \
     file://rest-api-1/rest_fruid_scm.py \
     file://rest-api-1/rest_piminfo.py \
     file://rest-api-1/rest_pimserial.py \
+    file://rest-api-1/rest_pimstatus.py \
     file://rest-api-1/rest_pim_present.py \
     file://rest-api-1/rest_sensors.py \
     file://rest-api-1/rest_seutil.py \
@@ -34,6 +35,7 @@ binfiles1 += " \
     rest_fruid_scm.py \
     rest_piminfo.py \
     rest_pimserial.py \
+    rest_pimstatus.py \
     rest_pim_present.py \
     rest_sensors.py \
     rest_seutil.py \

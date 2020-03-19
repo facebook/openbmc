@@ -1712,3 +1712,8 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
 
   return ret;
 }
+
+int
+pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
+  return me_xmit(request, req_len, response, rlen);
+}

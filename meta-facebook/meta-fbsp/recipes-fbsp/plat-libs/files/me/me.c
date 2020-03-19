@@ -60,7 +60,7 @@ me_ipmb_wrapper(uint8_t netfn, uint8_t cmd,
   uint8_t rlen = 0;
   uint8_t bus_id;
 
-  bus_id = 0x04;
+  bus_id = 0x05;
 
   req = (ipmb_req_t*)tbuf;
 

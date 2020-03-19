@@ -273,6 +273,15 @@ pwr_reset_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 //Power Button Event Handler
 static void
 pwr_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  struct timespec ts;
+  char value[MAX_VALUE_LEN];
+
+  if (!curr) {
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    ts.tv_sec += 5;
+    sprintf(value, "%ld", ts.tv_sec);
+    kv_set("pwr_btn_press_time", value, 0, 0);
+  }
   log_gpio_change(desc, curr, 0);
 }
 
@@ -483,7 +492,7 @@ slp3_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
     return;
   }
 
-  gpio_set_value(asic_en, GPIO_VALUE_HIGH);        
+  gpio_set_value(asic_en, GPIO_VALUE_HIGH);
 }
 
 static void init_slp3(gpiopoll_pin_t *desc, gpio_value_t value) {
@@ -504,7 +513,7 @@ static void init_slp3(gpiopoll_pin_t *desc, gpio_value_t value) {
     return;
   }
 
-  gpio_set_value(asic_en, GPIO_VALUE_HIGH); 
+  gpio_set_value(asic_en, GPIO_VALUE_HIGH);
 } 
 
 //Uart Select on DEBUG Card Event Handler
@@ -532,6 +541,7 @@ static void
   long int pot;
   char str[MAX_VALUE_LEN] = {0};
   int tread_time = 0;
+  struct timespec ts;
 
   while (1) {
     sleep(1);
@@ -555,6 +565,14 @@ static void
           pal_set_last_pwr_state(fru, POWER_ON_STR);
           syslog(LOG_INFO, "last pwr state updated to on\n");
           syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
+        }
+
+        memset(str, 0, sizeof(str));
+        if (!kv_get("pwr_btn_press_time", str, NULL, 0)) {
+          clock_gettime(CLOCK_MONOTONIC, &ts);
+          if (strtoul(str, NULL, 10) > ts.tv_sec) {
+            pal_set_restart_cause(FRU_MB, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
+          }
         }
       } else {
         // wait until PowerOnTime < -2 to make sure it's not AC lost

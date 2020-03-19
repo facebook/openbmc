@@ -77,6 +77,8 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_FIO_TEMP,
   BIC_SENSOR_PCH_TEMP,
   BIC_SENSOR_CPU_TEMP,
+  BIC_SENSOR_CPU_THERM_MARGIN,
+  BIC_SENSOR_CPU_TJMAX,
   BIC_SENSOR_DIMMA0_TEMP,
   BIC_SENSOR_DIMMB0_TEMP,
   BIC_SENSOR_DIMMC0_TEMP,
@@ -1166,8 +1168,13 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
   *value = ((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp));
 
   //correct the value
-  if ( sensor_num == BIC_SENSOR_FIO_TEMP ) {
-    apply_frontIO_correction(fru, sensor_num, value);
+  switch (sensor_num) {
+    case BIC_SENSOR_FIO_TEMP:
+      apply_frontIO_correction(fru, sensor_num, value);
+      break;
+    case BIC_SENSOR_CPU_THERM_MARGIN:
+      if ( *value > 0 ) *value = -(*value);
+      break;
   }
 
   return ret;

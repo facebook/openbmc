@@ -146,7 +146,7 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
 
 /* Print the FRUID in json format */
 static void
-print_json_fruid_info(fruid_info_t *fruid, const char *name)
+print_json_fruid_info(fruid_info_t *fruid, const char *name,json_t *fru_array)
 {
   json_t *fru_object = json_object();
 
@@ -212,27 +212,31 @@ print_json_fruid_info(fruid_info_t *fruid, const char *name)
       json_object_set_new(fru_object, "Product Custom Data 6", json_string(fruid->product.custom6));
   }
 
-  json_dumpf(fru_object, stdout, 4);
-  json_decref(fru_object);
-
-  printf("\n");
+  json_array_append_new(fru_array, fru_object);
 }
 
 /* Populate and print fruid_info by parsing the fru's binary dump */
-void get_fruid_info(uint8_t fru, char *path, char* name, unsigned char print_format) {
+void get_fruid_info(uint8_t fru, char *path, char* name, unsigned char print_format,json_t *fru_array) {
   int ret;
   fruid_info_t fruid;
 
   ret = fruid_parse(path, &fruid);
-  if (ret) {
-    fprintf(stderr, "Failed print FRUID for %s\nCheck syslog for errors!\n",
-        name);
-  } else if (print_format == JSON_FORMAT) {
-    print_json_fruid_info(&fruid, name);
-    free_fruid_info(&fruid);
+
+  if (print_format == JSON_FORMAT) {
+    if (ret) {
+      json_t *fru_object = json_object();
+      json_array_append_new(fru_array, fru_object);
+    } else {
+      print_json_fruid_info(&fruid, name,fru_array);
+      free_fruid_info(&fruid);
+    }
   } else {
-    print_fruid_info(&fruid, name);
-    free_fruid_info(&fruid);
+    if (ret) {
+      fprintf(stderr, "Failed print FRUID for %s\nCheck syslog for errors!\n",name);
+    } else {
+      print_fruid_info(&fruid, name);
+      free_fruid_info(&fruid);
+    }
   }
 }
 
@@ -437,34 +441,36 @@ int check_print_arg(int argc, char * argv[])
   return 0;
 }
 
-int print_fru(int fru, char * device, unsigned char print_format) {
+int print_fru(int fru, char * device, unsigned char print_format, json_t * fru_array) {
   int ret;
   char path[64] = {0};
   char name[64] = {0};
+  char error_mesg [128] = {0};
   uint8_t status;
   uint8_t num_devs = 0;
   uint8_t dev_id = DEV_NONE;
+  json_t *fru_object = json_object();
 
   ret = pal_get_fruid_name(fru, name);
   if (ret < 0) {
-    return ret;
+    goto error;
   }
 
   ret = pal_is_fru_prsnt(fru, &status);
   if (ret < 0) {
-    printf("pal_is_fru_prsnt failed for fru: %d\n", fru);
-    return ret;
+    sprintf(error_mesg,"pal_is_fru_prsnt failed for fru: %d\n", fru);
+    goto error;
   }
 
   if (status == 0) {
-    printf("%s is not present!\n\n", name);
-    return ret;
+    sprintf(error_mesg,"%s is not present!", name);
+    goto error;
   }
 
   ret = pal_is_fru_ready(fru, &status);
   if ((ret < 0) || (status == 0)) {
-    printf("%s is unavailable!\n\n", name);
-    return ret;
+    sprintf(error_mesg,"%s is unavailable!", name);
+    goto error;
   }
 
   if (device != NULL) {
@@ -478,9 +484,6 @@ int print_fru(int fru, char * device, unsigned char print_format) {
         return -1;
       pal_get_dev_name(fru,dev_id,name);
       ret = pal_get_dev_fruid_path(fru, dev_id, path);
-      if (ret < 0) {
-        printf("%s is unavailable!\n\n", name);
-      }
     }
     if (dev_id == DEV_ALL) {
       // when use command "fruid-util slot1 all", will show slot1 fru first then show all device fru.
@@ -491,21 +494,36 @@ int print_fru(int fru, char * device, unsigned char print_format) {
   }
 
   if (ret < 0) {
-    return ret;
+    sprintf(error_mesg,"%s is unavailable!", name);
+    goto error;
   }
 
-  get_fruid_info(fru, path, name, print_format);
+  get_fruid_info(fru, path, name, print_format,fru_array);
+
   if (num_devs && dev_id == DEV_ALL) {
     for (uint8_t i=1;i<=num_devs;i++) {
       pal_get_dev_name(fru,i,name);
       ret = pal_get_dev_fruid_path(fru, i, path);
       if (ret < 0) {
-        printf("%s is unavailable!\n\n", name);
+        if (print_format == JSON_FORMAT) {
+          json_array_append_new(fru_array, fru_object);
+        } else {
+          printf("%s is unavailable!\n\n", name);
+        }
       } else {
-        get_fruid_info(fru, path, name, print_format);
+        get_fruid_info(fru, path, name, print_format,fru_array);
       }
     }
   }
+  return ret;
+
+error:
+ if (print_format == JSON_FORMAT) {
+    json_array_append_new(fru_array, fru_object);
+  } else {
+    printf("%s\n\n", error_mesg);
+  }
+
   return ret;
 }
 
@@ -514,6 +532,7 @@ int do_print_fru(int argc, char * argv[], unsigned char print_format)
   int ret;
   uint8_t fru;
   char * device = argv[optind+1];
+  json_t *fru_array = json_array();
 
   ret = check_print_arg(argc, argv);
   if (ret) {
@@ -526,17 +545,23 @@ int do_print_fru(int argc, char * argv[], unsigned char print_format)
   }
 
   if (fru != FRU_ALL) {
-    ret = print_fru(fru, device, print_format);
+    ret = print_fru(fru, device, print_format,fru_array);
     if (ret < 0) {
       print_usage();
     }
   } else {
     fru = 1;
     while (fru <= MAX_NUM_FRUS) {
-      ret = print_fru(fru, device, print_format);
+      ret = print_fru(fru, device, print_format,fru_array);
       fru++;
     }
   }
+
+  if (print_format == JSON_FORMAT) {
+    json_dumpf(fru_array, stdout, 4);
+    printf("\n");
+  }
+  json_decref(fru_array);
 
   return 0;
 }
@@ -765,7 +790,7 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
         printf("Fail to modify %s FRU\n", name);
         return ret;
       }
-      get_fruid_info(fru, file_path, name, DEFAULT_FORMAT);
+      get_fruid_info(fru, file_path, name, DEFAULT_FORMAT,NULL);
       return 0;
 
     default:

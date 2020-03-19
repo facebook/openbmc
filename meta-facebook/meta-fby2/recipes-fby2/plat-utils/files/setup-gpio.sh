@@ -502,8 +502,8 @@ $DEVMEM 0x1e780050 32 0x179A7B0
 # Select debounce timer #1 for GPIOZ0~GPIOZ3 and GPIOAA0~GPIOAA3
 $DEVMEM 0x1e780194 32 0xF0F00
 
-# Set debounce timer #2 value to 0x25C3F8 ~= 200ms
-$DEVMEM 0x1e780054 32 0x25C3F8
+# Set debounce timer #2 value to 0xBCD3D8 ~= 1s
+$DEVMEM 0x1e780054 32 0xBCD3D8
 
 # Select debounce timer #2 for GPIOP0~GPIOP3
 $DEVMEM 0x1e780100 32 0xF000000

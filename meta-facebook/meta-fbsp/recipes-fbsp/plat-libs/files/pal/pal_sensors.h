@@ -279,6 +279,11 @@ enum {
   POWER,
 };
 
+enum {
+  FCB_0,
+  FCB_1,
+};
+
 typedef struct {
   char* snr_name;
   uint8_t id;
@@ -440,6 +445,9 @@ enum {
   FAN_ID7,
 };
 
+int pal_set_fan_led_state(uint8_t fan_id, char* state);
+int pal_get_fan_led_state(uint8_t fan_id, char* state);
+int pal_fan_led_control(void);
 int cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr);
 bool pal_is_dimm_present(int cpu_id, uint8_t dimm_id);
 bool pal_dimm_present_check(uint8_t snr_num);

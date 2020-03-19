@@ -24,6 +24,13 @@
 #define NM_IPMB_BUS_ID   (5)
 #define NM_SLAVE_ADDR    (0x2C)
 
+#define FAN_LED_STATE "fan%d_led_state"
+#define I2C_DEV_FAN_LED "/dev/i2c-8"
+#define BLUE_LED_FUNC 0x06
+#define YELLOW_LED_FUNC 0x07
+#define FCB_0_ADDR 0xC0
+#define FCB_1_ADDR 0xC2
+
 #define PAL_FAN_CNT 8
 
 #define FAN_DIR "/sys/bus/platform/devices/1e786000.pwm-tacho-controller/hwmon/hwmon0"
@@ -406,22 +413,22 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5F
 
-  {"MB_FAN0_TACH_IN",  0, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x60
-  {"MB_FAN0_TACH_OUT", 1, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x61
-  {"MB_FAN1_TACH_IN",  2, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x62
-  {"MB_FAN1_TACH_OUT", 3, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x63
-  {"MB_FAN2_TACH_IN",  4, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x64
-  {"MB_FAN2_TACH_OUT", 5, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x65
-  {"MB_FAN3_TACH_IN",  6, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x66
-  {"MB_FAN3_TACH_OUT", 7, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x67
-  {"MB_FAN4_TACH_IN",  8, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x68
-  {"MB_FAN4_TACH_OUT", 9, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x69
-  {"MB_FAN5_TACH_IN", 10, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6A
-  {"MB_FAN5_TACH_OUT",11, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6B
-  {"MB_FAN6_TACH_IN", 12, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6C
-  {"MB_FAN6_TACH_OUT",13, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6D
-  {"MB_FAN7_TACH_IN", 14, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6E
-  {"MB_FAN7_TACH_OUT",15, read_fan_speed, false, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0x6F
+  {"MB_FAN0_TACH_IN",  0, read_fan_speed, false, {27940, 0, 0, 2825, 0, 0, 0, 0}, FAN}, //0x60
+  {"MB_FAN0_TACH_OUT", 1, read_fan_speed, false, {25630, 0, 0, 1795, 0, 0, 0, 0}, FAN}, //0x61
+  {"MB_FAN1_TACH_IN",  2, read_fan_speed, false, {27940, 0, 0, 2825, 0, 0, 0, 0}, FAN}, //0x62
+  {"MB_FAN1_TACH_OUT", 3, read_fan_speed, false, {25630, 0, 0, 1795, 0, 0, 0, 0}, FAN}, //0x63
+  {"MB_FAN2_TACH_IN",  4, read_fan_speed, false, {27940, 0, 0, 2825, 0, 0, 0, 0}, FAN}, //0x64
+  {"MB_FAN2_TACH_OUT", 5, read_fan_speed, false, {25630, 0, 0, 1795, 0, 0, 0, 0}, FAN}, //0x65
+  {"MB_FAN3_TACH_IN",  6, read_fan_speed, false, {27940, 0, 0, 2825, 0, 0, 0, 0}, FAN}, //0x66
+  {"MB_FAN3_TACH_OUT", 7, read_fan_speed, false, {25630, 0, 0, 1795, 0, 0, 0, 0}, FAN}, //0x67
+  {"MB_FAN4_TACH_IN",  8, read_fan_speed, false, {27940, 0, 0, 2825, 0, 0, 0, 0}, FAN}, //0x68
+  {"MB_FAN4_TACH_OUT", 9, read_fan_speed, false, {25630, 0, 0, 1795, 0, 0, 0, 0}, FAN}, //0x69
+  {"MB_FAN5_TACH_IN", 10, read_fan_speed, false, {27940, 0, 0, 2825, 0, 0, 0, 0}, FAN}, //0x6A
+  {"MB_FAN5_TACH_OUT",11, read_fan_speed, false, {25630, 0, 0, 1795, 0, 0, 0, 0}, FAN}, //0x6B
+  {"MB_FAN6_TACH_IN", 12, read_fan_speed, false, {27940, 0, 0, 2825, 0, 0, 0, 0}, FAN}, //0x6C
+  {"MB_FAN6_TACH_OUT",13, read_fan_speed, false, {25630, 0, 0, 1795, 0, 0, 0, 0}, FAN}, //0x6D
+  {"MB_FAN7_TACH_IN", 14, read_fan_speed, false, {27940, 0, 0, 2825, 0, 0, 0, 0}, FAN}, //0x6E
+  {"MB_FAN7_TACH_OUT",15, read_fan_speed, false, {25630, 0, 0, 1795, 0, 0, 0, 0}, FAN}, //0x6F
 
   {"MB_BOOT_DRIVER_TEMP",  DISK_BOOT,  read_hd_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x70
   {"MB_DATA0_DRIVER_TEMP", DISK_DATA0, read_hd_temp, true, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x71
@@ -637,6 +644,36 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *cnt = 0;
   }
     return 0;
+}
+
+int
+pal_set_fan_led_state(uint8_t fan_id, char* state) {
+  char key[64] = {0};
+  int completion_code = CC_UNSPECIFIED_ERROR;
+
+  snprintf(key, sizeof(key), FAN_LED_STATE, fan_id);
+
+  if (kv_set(key, state, 0, KV_FPERSIST) != 0)
+    return completion_code;
+
+  completion_code = CC_SUCCESS;
+
+  return completion_code;
+}
+
+int
+pal_get_fan_led_state(uint8_t fan_id, char* state) {
+  char key[64] = {0};
+  int completion_code = CC_UNSPECIFIED_ERROR;
+
+  snprintf(key, sizeof(key), FAN_LED_STATE, fan_id);
+
+  if(kv_get(key, state, NULL, KV_FPERSIST) < 0)
+    return completion_code;
+
+  completion_code = CC_SUCCESS;
+
+  return completion_code;
 }
 
 /*==========================================
@@ -1573,12 +1610,28 @@ read_hd_temp(uint8_t hd_id, float *value) {
 
 int pal_mapping_fan_chnnel_id(uint8_t fan) {
   int fan_id;
-  if(fan < 8)
-    fan_id = fan + 8;
+  if(fan < PAL_FAN_CNT)
+    fan_id = fan + PAL_FAN_CNT;
   else
-    fan_id = fan - 8;
+    fan_id = fan - PAL_FAN_CNT;
 
   return fan_id;
+}
+
+int pal_fan_snr_num_to_id(uint8_t snr_num) {
+
+  if( snr_num >= MB_SNR_FAN4_TACH_IN) {
+    snr_num = snr_num & 0x0F;
+    if(snr_num - PAL_FAN_CNT != 0)
+      snr_num = (snr_num - PAL_FAN_CNT) / 2;
+    else
+      snr_num = 0;
+  } else {
+    snr_num = snr_num & 0x0F;
+    snr_num = (snr_num + PAL_FAN_CNT) / 2;
+  }
+
+  return snr_num;
 }
 
 int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
@@ -1847,7 +1900,16 @@ pal_is_fan_prsnt(uint8_t fan) {
 static bool
 is_fan_present(uint8_t fan_id) {
   char shadow_name[32];
+  char led_state[32];
   gpio_value_t value;
+  static bool state_flag = false; 
+
+  if(state_flag == false) {
+    state_flag = true;
+    for(int i = 0; i < PAL_FAN_CNT; i++) {
+      pal_set_fan_led_state(fan_id, "OFF");
+    }
+  }
 
   sprintf(shadow_name, GPIO_FAN_BUF_PRESENT, fan_id);
   gpio_desc_t *desc = gpio_open_by_shadow(shadow_name);
@@ -1857,9 +1919,14 @@ is_fan_present(uint8_t fan_id) {
   gpio_get_value(desc, &value);
   gpio_close(desc);
   if (value == GPIO_VALUE_LOW) {
+    pal_set_fan_led_state(fan_id, "OFF");
     return true;
   }
   else {
+    pal_get_fan_led_state(fan_id, led_state);
+    if((strcmp(led_state, "YELLOW") != 0)) {
+      pal_set_fan_led_state(fan_id, "BLUE");
+    }
     return false;
   }
 }
@@ -2103,6 +2170,115 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
   return ret;
 }
 
+int
+pal_set_fan_led_reg(uint8_t sel_addr, uint8_t led_func, uint8_t led_state) {
+  int dev, ret = 0, len = 0;
+  uint8_t wbuf[4] = {0};
+  uint8_t rbuf[4] = {0};
+
+  wbuf[0] = led_func;
+  wbuf[1] = led_state;
+  dev = open(I2C_DEV_FAN_LED, O_RDWR);
+  if (dev < 0) {
+    ret = dev;
+    return ret;
+  }
+
+  ret = i2c_rdwr_msg_transfer(dev, sel_addr, wbuf, 2, rbuf, len);
+
+  if (dev > 0) {
+    close(dev);
+  }
+  return ret;
+}
+
+int
+pal_set_fan_led(int fan_board) {
+  int ret = 0;
+  int start_index, end_index;
+  uint8_t yellow_led = 0x00;
+  uint8_t blue_led = 0x00;
+  uint8_t sel_addr = 0x00;
+  char led_state[32];
+
+  if(fan_board == FCB_0) {
+    start_index = (PAL_FAN_CNT/2) - 1;
+    end_index = (PAL_FAN_CNT/2) - (PAL_FAN_CNT/2);
+    sel_addr = FCB_0_ADDR;
+  } else {
+    start_index = PAL_FAN_CNT - 1;
+    end_index = PAL_FAN_CNT - (PAL_FAN_CNT/2);
+    sel_addr = FCB_1_ADDR;
+  }
+
+  for(int i = start_index; i >= end_index; i--) {
+    ret = pal_get_fan_led_state(i, led_state);
+    if(ret) {
+      yellow_led = (yellow_led << 2) | 0x01;
+      blue_led = (blue_led << 2) | 0x01;
+    } else if(strcmp(led_state, "OFF") == 0) {
+      yellow_led = (yellow_led << 2) | 0x01;
+      blue_led = (blue_led << 2) | 0x01;
+    } else if(strcmp(led_state, "YELLOW") == 0) {
+      yellow_led = (yellow_led << 2) | 0x00;
+      blue_led = (blue_led << 2) | 0x01;
+    } else if(strcmp(led_state, "BLUE") == 0) {
+      yellow_led = (yellow_led << 2) | 0x01;
+      blue_led = (blue_led << 2) | 0x00;
+    }
+  }
+
+  pal_set_fan_led_reg(sel_addr, BLUE_LED_FUNC, blue_led);
+  pal_set_fan_led_reg(sel_addr, YELLOW_LED_FUNC, yellow_led);
+
+  return ret;
+}
+
+int
+pal_fan_led_control(void) {
+  int ret = 0;
+
+  pal_set_fan_led(FCB_0);
+  pal_set_fan_led(FCB_1);
+
+  return ret;
+}
+
+void
+set_fan_led(uint8_t snr_num, bool assert) {
+  int fan_channel_id;
+  switch (snr_num) {
+    case MB_SNR_FAN0_TACH_IN:
+    case MB_SNR_FAN0_TACH_OUT:
+    case MB_SNR_FAN1_TACH_IN:
+    case MB_SNR_FAN1_TACH_OUT:
+    case MB_SNR_FAN2_TACH_IN:
+    case MB_SNR_FAN2_TACH_OUT:
+    case MB_SNR_FAN3_TACH_IN:
+    case MB_SNR_FAN3_TACH_OUT:
+    case MB_SNR_FAN4_TACH_IN:
+    case MB_SNR_FAN4_TACH_OUT:
+    case MB_SNR_FAN5_TACH_IN:
+    case MB_SNR_FAN5_TACH_OUT:
+    case MB_SNR_FAN6_TACH_IN:
+    case MB_SNR_FAN6_TACH_OUT:
+    case MB_SNR_FAN7_TACH_IN:
+    case MB_SNR_FAN7_TACH_OUT:
+      if(assert) {
+        fan_channel_id = pal_fan_snr_num_to_id(snr_num);
+        pal_set_fan_led_state(fan_channel_id, "YELLOW");
+      }
+      else {
+        fan_channel_id = pal_fan_snr_num_to_id(snr_num);
+        pal_set_fan_led_state(fan_channel_id, "BLUE");
+      }
+      break;
+
+    default:
+      break;
+  }
+}
+
 void
 pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char cmd[128];
@@ -2113,6 +2289,7 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
         sprintf(thresh_name, "UNR");
       break;
     case UCR_THRESH:
+        set_fan_led(snr_num, true);
         sprintf(thresh_name, "UCR");
       break;
     case UNC_THRESH:
@@ -2122,6 +2299,7 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
         sprintf(thresh_name, "LNR");
       break;
     case LCR_THRESH:
+        set_fan_led(snr_num, true);
         sprintf(thresh_name, "LCR");
       break;
     case LNC_THRESH:
@@ -2156,6 +2334,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
         sprintf(thresh_name, "UNR");
       break;
     case UCR_THRESH:
+        set_fan_led(snr_num, false);
         sprintf(thresh_name, "UCR");
       break;
     case UNC_THRESH:
@@ -2165,6 +2344,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
         sprintf(thresh_name, "LNR");
       break;
     case LCR_THRESH:
+        set_fan_led(snr_num, false);
         sprintf(thresh_name, "LCR");
       break;
     case LNC_THRESH:

@@ -207,6 +207,16 @@ debug_card_out:
   return NULL;
 }
 
+static void *
+fan_led_handler() {
+
+  while (1) {
+    sleep(1);
+    pal_fan_led_control();
+  }
+  return NULL;
+}
+
 // Thread to handle LED state of the server at given slot
 static void *
 led_handler() {
@@ -247,6 +257,7 @@ main (int argc, char * const argv[]) {
   pthread_t tid_rst_btn;
   pthread_t tid_debug_card;
   pthread_t tid_led;
+  pthread_t tid_fan_led;
   int rc;
   int pid_file;
 
@@ -280,6 +291,11 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
+  if (pthread_create(&tid_fan_led, NULL, fan_led_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for fan led error\n");
+    exit(1);
+  }
+
   if (pthread_create(&tid_led, NULL, led_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for led error\n");
     exit(1);
@@ -288,6 +304,7 @@ main (int argc, char * const argv[]) {
   pthread_join(tid_sync_led, NULL);
   pthread_join(tid_rst_btn, NULL);
   pthread_join(tid_debug_card, NULL);
+  pthread_join(tid_fan_led, NULL);
   pthread_join(tid_led, NULL);
   
   return 0;

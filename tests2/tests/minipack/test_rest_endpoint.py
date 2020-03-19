@@ -34,6 +34,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     MB_SEUTIL_ENDPOINT = "/api/sys/mb/seutil"
     PIM_INFO_ENDPOINT = "/api/sys/piminfo"
     PIM_SERIAL_ENDPOINT = "/api/sys/pimserial"
+    PIM_STATUS_ENDPOINT = "/api/sys/pimstatus"
     PIM_FIRMWARE_INFO = "/api/sys/firmware_info_pim"
     SCM_FIRMWARE_INFO = "/api/sys/firmware_info_scm"
     ALL_FIRMWARE_INFO = (
@@ -142,6 +143,14 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         self.verify_endpoint_attributes(
             RestEndpointTest.PIM_SERIAL_ENDPOINT,
             self.endpoint_piminfo_attrb,  # same keys as piminfo
+        )
+
+    # "/api/sys/pimstatus"
+    def test_endpoint_api_sys_pimstatus(self):
+        self.set_endpoint_pim_presence_attributes()
+        self.verify_endpoint_attributes(
+            RestEndpointTest.PIM_STATUS_ENDPOINT,
+            self.endpoint_pim_presence,  # same keys as pim_present
         )
 
     # "/api/sys/mb/seutil"

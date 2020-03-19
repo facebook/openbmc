@@ -21,6 +21,7 @@ board_routes = [
     "/api/sys/pim_present",
     "/api/sys/piminfo",
     "/api/sys/pimserial",
+    "/api/sys/pimstatus",
     "/api/sys/firmware_info_pim",
     "/api/sys/firmware_info_scm",
     "/api/sys/firmware_info_all",

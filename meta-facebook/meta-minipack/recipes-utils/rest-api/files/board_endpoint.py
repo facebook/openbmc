@@ -28,6 +28,7 @@ import rest_peutil
 import rest_pim_present
 import rest_piminfo
 import rest_pimserial
+import rest_pimstatus
 import rest_seutil
 import rest_system_led_info
 import rest_usb2i2c_reset
@@ -57,6 +58,10 @@ class boardApp_Handler:
     # Handler for sys/pim_serial resource endpoint
     async def rest_pimserial_hdl(self, request):
         return web.json_response(rest_pimserial.get_pimserial())
+
+    # Handler for sys/pimstatus resource endpoint
+    async def rest_pimstatus_hdl(self, request):
+        return web.json_response(rest_pimstatus.get_pimstatus())
 
     # Handler for sys/firmware_info_pim resource endpoint
     async def rest_firmware_info_pim_hdl(self, request):

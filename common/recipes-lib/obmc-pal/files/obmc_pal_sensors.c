@@ -795,6 +795,7 @@ pal_get_thresh_from_file(uint8_t fru, uint8_t snr_num, thresh_sensor_t *sinfo) {
   int sensor_cnt;
   uint8_t *sensor_list;
   char fpath[64] = {0};
+  int curr_state;
 
   ret = pal_get_fru_name(fru, fru_name);
   if (ret < 0)
@@ -821,7 +822,9 @@ pal_get_thresh_from_file(uint8_t fru, uint8_t snr_num, thresh_sensor_t *sinfo) {
         close(fd);
         return -1;
       }
+      curr_state = sinfo->curr_state;
       memcpy(sinfo, buf, sizeof(thresh_sensor_t));
+      sinfo->curr_state = curr_state;
       break;
     }
     cnt++;

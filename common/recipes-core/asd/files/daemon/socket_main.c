@@ -30,7 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *            Eric R. Hall <eric.r.hall@intel.com>
 *            Bryan Hunt <bryan.hunt@intel.com>
 *            Steven A. Filary <steven.a.filary@intel.com>
-*
+*            Solanki, Naresh <naresh.solanki@intel.com>
+*            Osmond Chen <Osmond_chen@wiwynn.com>
 */
 
 #include <stdarg.h>
@@ -53,6 +54,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <stdint.h>
 #include <fcntl.h>
+#include <openbmc/pal.h>
 
 #include "asd/SoftwareJTAGHandler.h"
 #include "target_handler.h"
@@ -210,6 +212,9 @@ typedef struct logging_configuration {
 #endif
 #define DEFAULT_PORT                 5123
 #define DEFAULT_FRU                  1 // usually the first FRU in most plats.
+#define DEFAULT_DEV                  0
+
+uint8_t g_dev_id = DEFAULT_DEV;
 
 // Two simple rules for the version string are:
 // 1. less than 265 in length (or it will be truncated in the plugin)
@@ -279,6 +284,8 @@ void showUsage(char **argv) {
     fprintf(stderr, "  -f <number>   fru number\n");
     fprintf(stderr, "  -p <number>   Port number (default=%d)\n", DEFAULT_PORT);
 #ifdef CONFIG_JTAG_MSG_FLOW
+    fprintf(stderr, "  -d <number>   device number (For Spring Hill only, default=0)\n");
+    fprintf(stderr, "     [Warning]  The option should be typed after -f, for knowing the fru is GPv2 or not.\n");
     fprintf(stderr, "  -j <number>   JTAG message process flow (default=%d)\n", DEFAULT_JFLOW);
     fprintf(stderr, "     1          process JTAG message on BMC\n");
     fprintf(stderr, "     2          process JTAG message on Bridge-IC\n");
@@ -293,15 +300,16 @@ void showUsage(char **argv) {
 }
 
 #ifndef REFERENCE_CODE
-#define OPTIONS "l:p:f:k:sb:" OPT_JFLOW
+#define OPTIONS "l:p:f:d:k:sb:" OPT_JFLOW
 #else
-#define OPTIONS "l:p:f:sb:" OPT_JFLOW
+#define OPTIONS "l:p:f:d:sb:" OPT_JFLOW
 #endif
 
 void process_command_line(int argc, char **argv) {
     int c = 0;
     ASD_LogType logType = LogType_None;
     bool b_usesyslog = false;
+
     while ((c = getopt(argc, argv, OPTIONS)) != -1) {
         switch (c) {
             case 'l': {
@@ -346,6 +354,10 @@ void process_command_line(int argc, char **argv) {
                     exit(EXIT_SUCCESS);
                 }
                 break;
+            case 'd': {
+                g_dev_id = atoi(optarg);
+                break;
+            }
 #endif
             case 'b':
                 num_in_flight_buffers_to_use = atoi(optarg);
@@ -1294,6 +1306,13 @@ int main(int argc, char **argv) {
 
     print_version();
     process_command_line(argc, argv);
+
+#ifdef CONFIG_JTAG_MSG_FLOW
+    int status = JTAG_set_device(cpu_fru, g_dev_id);
+    if (status != ST_OK) {
+        return ST_ERR;
+    }
+#endif
 
     if (check_dup_process(cpu_fru) != 0) {
         ASD_log(LogType_Error,

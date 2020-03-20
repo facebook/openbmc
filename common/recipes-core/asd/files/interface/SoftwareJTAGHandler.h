@@ -144,6 +144,7 @@ STATUS JTAG_set_jtag_tck(JTAG_Handler* state, unsigned int tck);
 STATUS JTAG_set_active_chain(JTAG_Handler* state, scanChain chain);
 
 #ifdef CONFIG_JTAG_MSG_FLOW
+STATUS JTAG_set_device(uint8_t fru, uint8_t dev_id);
 STATUS JTAG_init_passthrough(JTAG_Handler *state, uint8_t jflow, STATUS (*callback)(struct spi_message *));
 STATUS passthrough_jtag_message(JTAG_Handler *state, struct spi_message *s_message);
 #endif

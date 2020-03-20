@@ -47,7 +47,7 @@ extern "C" {
   #define TIMEOUT_IPMB 8
 #endif
 #define MIN_IPMB_REQ_LEN 7
-#define MAX_IPMB_RES_LEN 300
+#define MAX_IPMB_RES_LEN 1024
 #define MIN_IPMB_RES_LEN 8
 
 typedef struct _ipmb_req_t {

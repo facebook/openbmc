@@ -65,6 +65,7 @@ Target_Control_Handle* TargetHandler(uint8_t fru, TargetHandlerEventFunctionPtr 
 
 STATUS target_initialize(Target_Control_Handle* state)
 {
+    ASD_log(LogType_Debug, "target_initialize()");
     if (state == NULL)
         return ST_ERR;
 
@@ -101,6 +102,7 @@ STATUS target_initialize(Target_Control_Handle* state)
 
 STATUS target_deinitialize(Target_Control_Handle* state)
 {
+    ASD_log(LogType_Debug, "target_deinitialize()");
     if (state == NULL)
         return ST_ERR;
     state->exit_thread = true;
@@ -254,6 +256,7 @@ STATUS target_write(Target_Control_Handle* state, const Pin pin, const bool asse
 
     switch (pin) {
         case PIN_EARLY_BOOT_STALL: {
+            ASD_log(LogType_Debug, "target_write(): PIN_EARLY_BOOT_STALL");
             ASD_log(LogType_Debug, "Pin Write: %s CPU_PWR_DEBUG",
                     assert ? "assert" : "deassert");
             if (power_debug_assert(state->fru, assert) != ST_OK) {
@@ -263,6 +266,7 @@ STATUS target_write(Target_Control_Handle* state, const Pin pin, const bool asse
             break;
         }
         case PIN_POWER_BUTTON: {
+            ASD_log(LogType_Debug, "target_write(): PIN_POWER_BUTTON");
             ASD_log(LogType_Debug, "Pin Write: %s POWER_BUTTON",
                     assert ? "assert" : "deassert");
             if (pal_set_server_power(state->fru, assert ? 
@@ -273,6 +277,7 @@ STATUS target_write(Target_Control_Handle* state, const Pin pin, const bool asse
             break;
         }
         case PIN_RESET_BUTTON: {
+            ASD_log(LogType_Debug, "target_write(): PIN_RESET_BUTTON");
             ASD_log(LogType_Debug, "Pin Write: %s RESET_BUTTON",
                     assert ? "assert" : "deassert");
             // Reset doesn't have a de-asserted state; only care if it's been asserted
@@ -283,6 +288,7 @@ STATUS target_write(Target_Control_Handle* state, const Pin pin, const bool asse
             break;
         }
         case PIN_PREQ: {
+            ASD_log(LogType_Debug, "target_write(): PIN_PREQ");
             ASD_log(LogType_Debug, "Pin Write: %s PREQ",
                     assert ? "assert" : "deassert");
             if (preq_assert(state->fru, assert) != ST_OK) {
@@ -310,6 +316,7 @@ STATUS target_read(Target_Control_Handle* state, const ReadType statusRegister,
 
     if (statusRegister == READ_TYPE_PROBE) {
         if (pin == PRDY_EVENT_DETECTED) {
+            ASD_log(LogType_Debug, "target_read(): READ_TYPE_PROBE/PRDY_EVENT_DETECTED");
             bool triggered = false;
             pthread_mutex_lock(&state->write_config_mutex);
             STATUS status = prdy_is_event_triggered(state->fru, &triggered);
@@ -329,6 +336,7 @@ STATUS target_read(Target_Control_Handle* state, const ReadType statusRegister,
         switch (pin) {
             case PIN_POWER_BUTTON:
             case PIN_PWRGOOD: {  // Power Good
+                ASD_log(LogType_Debug, "target_read(): READ_TYPE_PIN/PIN_POWER_BUTTON/PIN_PWRGOOD");
                 uint8_t power_state;
                 if (pal_get_server_power(state->fru, &power_state)) {
                     ASD_log(LogType_Error, "get target power state failed!");
@@ -340,6 +348,7 @@ STATUS target_read(Target_Control_Handle* state, const ReadType statusRegister,
                 break;
             }
             case PIN_PREQ: {  // PREQ
+                ASD_log(LogType_Debug, "target_read(): READ_TYPE_PIN/PIN_PREQ");
                 bool pinState = false;
                 STATUS status = preq_is_asserted(state->fru, &pinState);
                 if (status != ST_OK) {
@@ -347,15 +356,18 @@ STATUS target_read(Target_Control_Handle* state, const ReadType statusRegister,
                     return ST_ERR;
                 }
                 *asserted = !pinState;  // this pin asserts low.
+                ASD_log(LogType_Error, "%s: PRDY read, %d\n",__func__, *asserted);
                 ASD_log(LogType_Debug, "Pin read: PREQ %s",
                         *asserted ? "asserted" : "deasserted");
                 break;
             }
             case PIN_RESET_BUTTON: {  // Reset Button
+                ASD_log(LogType_Debug, "target_read(): READ_TYPE_PIN/PIN_RESET_BUTTON");
                 ASD_log(LogType_Debug, "Pin read: Reset Button Not Supported");
                 break;
             }
             case PIN_EARLY_BOOT_STALL: {  // Early Boot Stall
+                ASD_log(LogType_Debug, "target_read(): READ_TYPE_PIN/PIN_EARLY_BOOT_STALL");
                 STATUS status = power_debug_is_asserted(state->fru, asserted);
                 if (status != ST_OK) {
                     ASD_log(LogType_Error, "Failed to get state for CPU_PWR_DEBUG: %d", status);

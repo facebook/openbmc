@@ -44,6 +44,11 @@ JTAG_Handler* SoftwareJTAGHandler(uint8_t fru)
   return NULL;
 }
 
+STATUS JTAG_set_device(uint8_t fru, uint8_t dev_id)
+{
+    return ST_OK;
+}
+
 STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
 {
     if (state == NULL)

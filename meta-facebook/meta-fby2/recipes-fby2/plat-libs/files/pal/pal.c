@@ -11669,3 +11669,75 @@ pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw) {
 
   return 0;
 }
+
+int8_t
+pal_init_dev_jtag_gpio(uint8_t fru, uint8_t dev) {
+  uint8_t dev_jtag_gpio_num[MAX_DEV_JTAG_GPIO] = {GPV2_FM_JTAG_SEL_0_R, GPV2_FM_JTAG_SEL_1_R, GPV2_FM_JTAG_SEL_2_R, GPV2_FM_JTAG_SEL_3_R};
+  uint8_t dev_jtag_gpio_val[MAX_DEV_JTAG_GPIO] = {0};
+  int i = 0, ret = 0;
+
+  for (i = 0; i < MAX_DEV_JTAG_GPIO; i++) {
+    dev_jtag_gpio_val[i] = dev & (1 << i);
+  }
+
+  for (i = 0; i < MAX_DEV_JTAG_GPIO; i++) {
+    ret = bic_set_gpio64(fru, dev_jtag_gpio_num[i], dev_jtag_gpio_val[i]);
+    if (ret) {
+      syslog(LOG_ERR, "%s: pal_init_dev_jtag_gpio failed for gpio%d", __func__, dev_jtag_gpio_num[i]);
+      return -1;
+    }
+  }
+  return 0;
+}
+
+int8_t
+pal_is_dev_com_sel_en(uint8_t fru) {
+  uint8_t gpio = 0;
+  int ret = 0;
+
+  if (fby2_get_slot_type(fru) == SLOT_TYPE_GPV2) {
+    if (fru == FRU_SLOT1 || fru == FRU_SLOT3) {
+      ret = bic_get_gpio_status(fru, GPV2_FM_JTAG_EN_N_R, &gpio);
+      if (ret) {
+        syslog(LOG_ERR, "%s: pal_is_dev_com_sel_en failed for getting gpio%d", __func__, GPV2_FM_JTAG_EN_N_R);
+        return -1;
+      }
+    } else {
+      return -1;
+    }
+
+    if (gpio == 0) {
+      return 0;
+    } else {
+      return -1;
+    }
+  } else {
+    return -1;
+  }
+}
+
+int8_t
+pal_dev_jtag_gpio_to_bus(uint8_t fru) {
+  uint8_t dev_jtag_gpio_num[MAX_DEV_JTAG_GPIO] = {GPV2_FM_JTAG_SEL_0_R, GPV2_FM_JTAG_SEL_1_R, GPV2_FM_JTAG_SEL_2_R, GPV2_FM_JTAG_SEL_3_R};
+  uint8_t gpio = 0;
+  uint8_t dev_id = 0;
+  uint8_t bus = 0;
+  int i = 0, ret = 0;
+
+  for (i = 0; i < MAX_DEV_JTAG_GPIO; i++) {
+    ret = bic_get_gpio_status(fru, dev_jtag_gpio_num[i], &gpio);
+    if (ret) {
+      syslog(LOG_ERR, "%s: pal_dev_jtag_gpio_to_bus failed for getting gpio%d", __func__, dev_jtag_gpio_num[i]);
+      return -1;
+    }
+    dev_id = dev_id | (gpio << i);
+  }
+
+  if (dev_id < MAX_NUM_DEVS) {
+    bus = (2 + (dev_id / 2)) * 2 + 1;
+  } else {
+    return -1;
+  }
+  
+  return bus;
+}

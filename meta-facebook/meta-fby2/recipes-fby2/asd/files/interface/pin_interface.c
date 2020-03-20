@@ -39,9 +39,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "openbmc/pal.h"
 #include "openbmc/gpio.h"
 #include <facebook/bic.h>
+#include <facebook/fby2_sensor.h>
 
 //#define FBY2_DEBUG
-
 
 //  PLTRST,  PRDY, XDP_PRESENT
 enum  MONITOR_EVENTS {
@@ -58,13 +58,50 @@ static pthread_t poll_thread;
 
 static void *gpio_poll_thread(void *arg);
 
+static int sph_pin_conf(uint8_t slot_id) {
+  int ret = 0, retry = 5, bus = 0;
+  uint8_t tbuf[256] = {0x18, 0x52, 0x05, 0xD4, 0x05, 0x8E, 0x8, 0x08, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0xB, 0xB, 0x8, 0x8, 0x8, 0x8, 0x8, 0xB};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 21;
+  uint8_t rlen = 0;
+
+  bus = pal_dev_jtag_gpio_to_bus(slot_id);
+
+  tbuf[2] = bus;
+
+  // Read existing FPGA Output pins status.
+  while (retry >= 0) {
+    ret =  bic_ipmb_wrapper(slot_id, tbuf[0] >> 2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+    if (ret == 0) 
+     break;
+    retry--;
+  }
+
+  if (ret) {
+    syslog(LOG_ERR, "%s: BIC no response!\n", __FUNCTION__);
+    return ret;
+  }
+
+  return 0;
+}
+
 int pin_initialize(const int fru)
 {
-    static bool gpios_polling = false;
+  static bool gpios_polling = false;
+  int ret = 0;
 
 #ifdef FBY2_DEBUG
     syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
 #endif
+
+  if (fby2_get_slot_type(fru) == SLOT_TYPE_GPV2) {
+    ret = sph_pin_conf(fru);
+    if (ret != 0) {
+      syslog(LOG_ERR, "%s: pin_conf failed, fru=%d", __FUNCTION__, fru);
+      return ST_ERR;
+    }
+  } else {
+    // For Twinlake ASD
     if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
       syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
       return ST_ERR;
@@ -117,7 +154,9 @@ int pin_initialize(const int fru)
         g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = false;
         pthread_mutex_unlock(&triggered_mutex);
     }
-    return ST_OK;
+  }
+
+  return ST_OK;
 }
 
 int pin_deinitialize(const int fru)
@@ -125,36 +164,36 @@ int pin_deinitialize(const int fru)
 #ifdef FBY2_DEBUG
     syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
 #endif
+    if (fby2_get_slot_type(fru) != SLOT_TYPE_GPV2) {
+      if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+        syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
+        return ST_ERR;
+      }
 
-    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
-      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
-      return ST_ERR;
+      // disable DEBUG_EN  = XDP_PRSNT_OUT_N pin
+      // active low
+      if (bic_set_gpio(fru, XDP_PRSNT_OUT_N, GPIO_VALUE_HIGH)) {
+        syslog(LOG_ERR, "%s: de-assert XDP_PRSNT_OUT_N failed, fru=%d",
+               __FUNCTION__, fru);
+        return ST_ERR;
+      }
+
+
+      // disable FM_JTAG_BIC_TCK_MUX_SEL_N = FM_BIC_JTAG_SEL_N pin
+      // active low
+      if (bic_set_gpio(fru, FM_JTAG_BIC_TCK_MUX_SEL_N, GPIO_VALUE_HIGH)) {
+        syslog(LOG_ERR, "%s: de-assert FM_JTAG_BIC_TCK_MUX_SEL_N failed, fru=%d",
+               __FUNCTION__, fru);
+        return ST_ERR;
+      };
+
+      // set FM_BIC_JTAG_SEL_N = 0 to disable ASD
+      if (bic_set_gpio(fru, FM_BIC_JTAG_SEL_N, GPIO_VALUE_LOW)) {
+        syslog(LOG_ERR, "%s: assert FM_BIC_JTAG_SEL_N failed, fru=%d",
+               __FUNCTION__, fru);
+        return ST_ERR;
+      };
     }
-
-    // disable DEBUG_EN  = XDP_PRSNT_OUT_N pin
-    // active low
-    if (bic_set_gpio(fru, XDP_PRSNT_OUT_N, GPIO_VALUE_HIGH)) {
-      syslog(LOG_ERR, "%s: de-assert XDP_PRSNT_OUT_N failed, fru=%d",
-             __FUNCTION__, fru);
-      return ST_ERR;
-    }
-
-
-    // disable FM_JTAG_BIC_TCK_MUX_SEL_N = FM_BIC_JTAG_SEL_N pin
-    // active low
-    if (bic_set_gpio(fru, FM_JTAG_BIC_TCK_MUX_SEL_N, GPIO_VALUE_HIGH)) {
-      syslog(LOG_ERR, "%s: de-assert FM_JTAG_BIC_TCK_MUX_SEL_N failed, fru=%d",
-             __FUNCTION__, fru);
-      return ST_ERR;
-    };
-
-    // set FM_BIC_JTAG_SEL_N = 0 to disable ASD
-    if (bic_set_gpio(fru, FM_BIC_JTAG_SEL_N, GPIO_VALUE_LOW)) {
-      syslog(LOG_ERR, "%s: assert FM_BIC_JTAG_SEL_N failed, fru=%d",
-             __FUNCTION__, fru);
-      return ST_ERR;
-    };
-
 
     return ST_OK;
 }
@@ -186,25 +225,97 @@ int power_debug_is_asserted(const int fru, bool* asserted)
     uint8_t gpio;
     int ret;
 
-    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
-      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
-      return ST_ERR;
-    }
+    if (fby2_get_slot_type(fru) != SLOT_TYPE_GPV2) {
+      if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+        syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
+        return ST_ERR;
+      }
 
-    ret = bic_get_gpio_status(fru, XDP_BIC_PWR_DEBUG_N, &gpio);
-    if (!ret) {
-      /* active low */
-      *asserted = gpio == GPIO_VALUE_LOW ? true : false;
-    }
-
+      ret = bic_get_gpio_status(fru, XDP_BIC_PWR_DEBUG_N, &gpio);
+      if (!ret) {
+        /* active low */
+        *asserted = gpio == GPIO_VALUE_LOW ? true : false;
+      }
 #ifdef FBY2_DEBUG
     if (*asserted)
       syslog(LOG_DEBUG, "%s, fru=%d asserted", __FUNCTION__, fru);
 #endif
-
-    return ret;
+      return ret;
+    } else {
+      return 0;
+    }
 }
 
+static int sph_preq(uint8_t slot_id, uint8_t *gpio) {
+  int ret = 0, retry = 5, bus = 0;
+  uint8_t tbuf[256] = {0x18, 0x52, 0x05, 0xD4, 0x05, 0x8E};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 6;
+  uint8_t rlen = 0;
+
+  bus = pal_dev_jtag_gpio_to_bus(slot_id);
+  tbuf[2] = bus;
+
+  // Read existing FPGA Output pins status.
+  while (retry >= 0) {
+    ret =  bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+    if (ret == 0) 
+     break;
+    retry--;
+
+  }
+
+  *gpio = (1 & (rbuf[2] >> 6));
+
+  return 0;
+}
+
+static int
+sph_preq_set(uint8_t slot_id, uint8_t select) {
+  int i = 0, ret = 0, retry = 5, bus = 0;
+  uint8_t tbuf[256] = {0x18, 0x52, 0x05, 0xD4, 0x05, 0x8D};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 6;
+  uint8_t rlen = 0;
+
+  bus = pal_dev_jtag_gpio_to_bus(slot_id);
+  tbuf[2] = bus;
+
+  // Read existing FPGA Output pins status.
+  while (retry >= 0) {
+    ret =  bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+    if (ret == 0) 
+     break;
+    retry--;
+  }
+
+  for (i = 0; i < rlen; i++) {
+    tbuf[6 + i] = rbuf[i];
+  }
+  tlen += (rlen - 1);
+  {
+    tbuf[8] =  tbuf[8] & 0x7F;
+    if( select == 0 )
+      tbuf[8] |= 0 << 7;
+    else
+      tbuf[8] |= 1 << 7;
+  
+    retry = 5;
+    while (retry >= 0) {
+      ret = bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+      if (ret == 0)
+        break;
+
+      retry--;
+    }
+    if (ret) {
+      syslog(LOG_ERR, "%s: BIC no response!\n", __FUNCTION__);
+      return ret;
+    }
+  }
+
+  return 0;
+}
 
 // preq pin = ""XDP_BIC_PREQ_N"", xdp_bic_preq_n
 int preq_assert(const int fru, const bool assert)
@@ -214,14 +325,17 @@ int preq_assert(const int fru, const bool assert)
 #ifdef FBY2_DEBUG
     syslog(LOG_DEBUG, "%s, fru=%d, assert=%d", __FUNCTION__, fru, assert);
 #endif
+    if (fby2_get_slot_type(fru) != SLOT_TYPE_GPV2) {
+      if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+        syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
+        return ST_ERR;
+      }
 
-    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
-      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
-      return ST_ERR;
+      /* active low */
+      ret = bic_set_gpio(fru, XDP_BIC_PREQ_N, assert ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH);
+    } else {
+      ret = sph_preq_set(fru, assert ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH);
     }
-
-    /* active low */
-    ret = bic_set_gpio(fru, XDP_BIC_PREQ_N, assert ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH);
 
     return ret;
 }
@@ -231,16 +345,23 @@ int preq_is_asserted(const int fru, bool* asserted)
 {
     uint8_t gpio;
     int ret;
+    if (fby2_get_slot_type(fru) != SLOT_TYPE_GPV2) {
+      if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+        syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
+        return ST_ERR;
+      }
 
-    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
-      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
-      return ST_ERR;
-    }
-
-    ret = bic_get_gpio_status(fru, XDP_BIC_PREQ_N, &gpio);
-    if (!ret) {
-      /* active low */
-      *asserted = gpio == GPIO_VALUE_LOW ? true : false;
+      ret = bic_get_gpio_status(fru, XDP_BIC_PREQ_N, &gpio);
+      if (!ret) {
+        /* active low */
+        *asserted = gpio == GPIO_VALUE_LOW ? true : false;
+      }
+    } else {
+      ret = sph_preq(fru, &gpio);
+      if (!ret) {
+        /* active low */
+        *asserted = gpio == GPIO_VALUE_LOW ? true : false;
+      }
     }
 
 #ifdef FBY2_DEBUG
@@ -251,7 +372,29 @@ int preq_is_asserted(const int fru, bool* asserted)
     return ret;
 }
 
+static int
+sph_prdy_get(uint8_t slot_id, uint8_t* gpio) {
+  int ret = 0, retry = 5, bus = 0;
+  uint8_t tbuf[256] = {0x18, 0x52, 0x05, 0xD4, 0x05, 0x8E};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 6;
+  uint8_t rlen = 0;
 
+  bus = pal_dev_jtag_gpio_to_bus(slot_id);
+  tbuf[2] = bus;
+
+  // Read existing FPGA Output pins status.
+  while (retry >= 0) {
+    ret =  bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+    if (ret == 0) 
+     break;
+    retry--;
+  }
+
+  *gpio = ( 1 & (rbuf[2] >> 6)  );
+
+  return 0;
+}
 
 // open a socket and waits for communcation from ipmid
 static void *gpio_poll_thread(void *fru)
@@ -368,16 +511,23 @@ int platform_reset_is_asserted(const int fru, bool* asserted)
 {
     uint8_t gpio;
     int ret;
+    if (fby2_get_slot_type(fru) != SLOT_TYPE_GPV2) {
+      if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
+        syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
+        return ST_ERR;
+      }
 
-    if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4)) {
-      syslog(LOG_ERR, "%s: invalid fru: %d", __FUNCTION__, fru);
-      return ST_ERR;
-    }
-
-    ret = bic_get_gpio_status(fru, PLTRST_N, &gpio);
-    if (!ret) {
-      /* active low */
-      *asserted = gpio == GPIO_VALUE_LOW ? true : false;
+      ret = bic_get_gpio_status(fru, PLTRST_N, &gpio);
+      if (!ret) {
+        /* active low */
+        *asserted = gpio == GPIO_VALUE_LOW ? true : false;
+      }
+    } else {
+      ret = sph_prdy_get(fru, &gpio);
+      if (!ret) {
+        /* active low */
+        *asserted = gpio == GPIO_VALUE_LOW ? true : false;
+      }
     }
 
 #ifdef FBY2_DEBUG
@@ -428,7 +578,6 @@ int prdy_is_asserted(const int fru, bool* asserted)
     } else {
       syslog(LOG_ERR, "%s: error getting GPIO. fru: %d", __FUNCTION__, fru);
     }
-
 
 #ifdef FBY2_DEBUG
     if (*asserted)
@@ -485,7 +634,64 @@ int xdp_present_is_asserted(const int fru, bool* asserted)
     return ret;
 }
 
+static int
+set_sph_mux_command(uint8_t slot_id, uint8_t select) {
+  int i = 0, ret = 0, retry = 5, bus = 0;
+  uint8_t tbuf[256] = {0x18, 0x52, 0x05, 0xD4, 0x05, 0x8D};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 6;
+  uint8_t rlen = 0;
+
+  bus = pal_dev_jtag_gpio_to_bus(slot_id);
+  tbuf[2] = bus;
+
+  // Read existing FPGA Output pins status.
+  while (retry >= 0) {
+    ret =  bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+    if (ret == 0) 
+     break;
+    retry--;
+  }
+
+  for (i = 0; i < rlen; i++) {
+    tbuf[6+i] = rbuf[i];
+  }
+  tlen += (rlen - 1);
+
+  {
+    tbuf[8] =  tbuf[8] & ~3;
+    if (select == 0) {
+      tbuf[8] |= 2;
+    }
+    else {
+      tbuf[8] |= 1;
+    }
+
+    retry = 5;
+    while (retry >= 0) {
+      ret = bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+      if (ret == 0) {
+        break;
+      }
+
+      retry--;
+    }
+    if (ret) {
+      syslog(LOG_ERR, "%s: BIC no response!\n", __FUNCTION__);
+      return ret;
+    }
+  }
+
+  return 0;
+}
+
 int tck_mux_select_assert(const int fru, bool assert)
 {
+  if (fby2_get_slot_type(fru) == SLOT_TYPE_GPV2) {
+    int status = set_sph_mux_command(fru, assert);
+    if (status != 0) {
+     syslog(LOG_ERR, "%s fru=%d triggered : failed to pass command", __FUNCTION__, fru);
+    }
+  }
   return ST_OK;
 }

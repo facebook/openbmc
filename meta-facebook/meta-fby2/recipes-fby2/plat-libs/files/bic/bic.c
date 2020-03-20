@@ -394,18 +394,23 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   while(retry < 3) {
     // Invoke IPMB library handler
-    lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
+    int ret = lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
+    if (ret != 0) {
+      syslog(LOG_ERR, "%s: Failed to send.\n", __func__);
+    }
 
     if (rlen == 0) {
       if (!is_bic_ready(slot_id)) {
+        syslog(LOG_ERR, "%s: BIC is busy.\n", __func__);
         break;
       }
 
       retry++;
       msleep(20);
     }
-    else
+    else {
       break;
+    }
   }
 
   if (rlen == 0) {

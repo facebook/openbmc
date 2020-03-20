@@ -49,6 +49,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <openbmc/gpio.h>
 #include <openbmc/pal.h>
 #include <facebook/bic.h>
+#include <facebook/fby2_sensor.h>
 
 // Enable to print IR/DR trace to syslog
 //#define DEBUG
@@ -56,6 +57,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Enable FBY2-specific debug messages
 //#define FBY2_DEBUG
+
+// Enable FBGPV2-specific debug messages
+//#define FBGPV2_DEBUG
 
 // ignore errors communicating with BIC
 //#define FBY2_IGNORE_ERROR
@@ -196,6 +200,38 @@ void initialize_jtag_chains(JTAG_Handler* state) {
     }
 }
 
+STATUS JTAG_set_device(uint8_t fru, uint8_t dev_id) {
+    int ret = 0, bus = 0;
+
+    if (!pal_is_slot_server(fru)) {
+        if (pal_is_dev_com_sel_en(fru) == 0) {
+            if (dev_id < 0 || dev_id > MAX_NUM_DEVS) {
+                fprintf(stderr, "Invalid device, Device: %u\n", dev_id);
+                return ST_ERR;
+            } else {
+                fprintf(stderr, "Setting Device: %u\n", dev_id);
+                ret = pal_init_dev_jtag_gpio(fru, dev_id);
+                if (ret < 0) {
+                    fprintf(stderr, "Setting Device%u failed.\n", dev_id);
+                    return ST_ERR;
+                }
+            }
+        } else {
+            fprintf(stderr, "Not support SPH or COM selection is disable in this FRU, FRU: %u\n", fru);
+            return ST_ERR;
+        }
+        bus = pal_dev_jtag_gpio_to_bus(fru);
+        if (bus > 0) {
+            fprintf(stderr, "Setting Bus: %u\n", bus);
+        } else {
+            fprintf(stderr, "Setting Device%u bus failed.\n", dev_id);
+            return ST_ERR;
+        }
+    }
+
+    return ST_OK;
+}
+
 JTAG_Handler* SoftwareJTAGHandler(uint8_t fru)
 {
     JTAG_Handler *state;
@@ -243,6 +279,9 @@ STATUS JTAG_clock_cycle(uint8_t slot_id, int number_of_cycles)
     tbuf[3] = number_of_cycles;
     tbuf[4] = 0x0;
 
+#ifdef FBGPV2_DEBUG
+    syslog(LOG_DEBUG, "%s : CMD_OEM_1S_SET_TAP_STATE %d", __func__, slot_id);
+#endif
     if (jtag_bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_TAP_STATE,
                            tbuf, tlen, rbuf, &rlen) < 0) {
         syslog(LOG_ERR, "wait cycle failed, slot%d", slot_id);
@@ -682,7 +721,9 @@ STATUS jtag_bic_set_tap_state(uint8_t slot_id, JtagStates src_state, JtagStates 
            tap_state, tap_states_name[tap_state], tbuf[3], tbuf[4]);
 #endif
 
-
+#ifdef FBGPV2_DEBUG
+    syslog(LOG_DEBUG, "%s : CMD_OEM_1S_SET_TAP_STATE %d", __func__, slot_id);
+#endif
     ret = jtag_bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_TAP_STATE,
                            tbuf, tlen, rbuf, &rlen);
 
@@ -729,6 +770,10 @@ STATUS jtag_bic_shift_wrapper(uint8_t slot_id, unsigned int write_bit_length,
                                     //  + 2 bytes WR length
                                     //  + 2 bytes RD length
                                     //  + 1 byte last_transaction
+
+#ifdef FBGPV2_DEBUG
+    syslog(LOG_DEBUG, "%s : CMD_OEM_1S_JTAG_SHIFT %d", __func__, slot_id);
+#endif
 
     ret = jtag_bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_JTAG_SHIFT,
                                 tbuf, tlen, rbuf, &rlen);
@@ -839,12 +884,19 @@ STATUS jtag_bic_read_write_scan(JTAG_Handler* state, struct scan_xfer *scan_xfer
 }
 
 STATUS JTAG_set_active_chain(JTAG_Handler* state, scanChain chain) {
-    if (state == NULL)
+    if (state == NULL) {
         return ST_ERR;
-
-    if (chain != SCAN_CHAIN_0) {
-        syslog(LOG_ERR, "Invalid chain!.");
+    }
+    if (pal_is_slot_server(state->fru)) {
+        if (chain != SCAN_CHAIN_0) {
+            syslog(LOG_ERR, "Invalid chain!.");
+            return ST_ERR;
+        }
+    } else {
+        if (chain > MAX_SCAN_CHAINS) {
+        syslog(LOG_ERR, "Invalid chain!. %d", chain);
         return ST_ERR;
+        }
     }
 
     state->active_chain = &state->chains[chain];
@@ -1001,6 +1053,10 @@ STATUS JTAG_init_passthrough(JTAG_Handler *state, uint8_t jflow, STATUS (*callba
       sig_init = true;
     }
 
+#ifdef FBGPV2_DEBUG
+    syslog(LOG_DEBUG, "%s : 1S_ASD_INIT , slot%d", __func__, slot_id);
+#endif
+
     if ((jflow == JFLOW_BIC) && (om_thread == false)) {
         if ((arg = malloc(sizeof(int)*2)) == NULL) {
             syslog(LOG_ERR, "%s: malloc failed, fru=%d", __FUNCTION__, slot_id);
@@ -1045,6 +1101,7 @@ STATUS passthrough_jtag_message(JTAG_Handler *state, struct spi_message *s_messa
     memcpy(&tbuf[3], &s_message->header, sizeof(s_message->header));
     memcpy(&tbuf[3+sizeof(s_message->header)], s_message->buffer, size);
     tlen += sizeof(s_message->header) + size;
+
     if (bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ASD_MSG_OUT, tbuf, tlen, rbuf, &rlen) < 0) {
         syslog(LOG_ERR, "passthrough_jtag_message failed, slot%d", slot_id);
         return ST_ERR;

@@ -44,6 +44,8 @@ extern "C" {
 
 #define YV250_NVMe_Temp_Dev_UCR 75
 
+#define MAX_DEV_JTAG_GPIO 4
+
 extern char * key_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
@@ -294,6 +296,9 @@ int pal_get_fan_config();
 int pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw);
 int pal_set_update_sdr_flag(uint8_t fru, uint8_t value);
 int pal_get_update_sdr_flag(uint8_t fru, uint8_t *value);
+int8_t pal_init_dev_jtag_gpio(uint8_t fru, uint8_t dev);
+int8_t pal_is_dev_com_sel_en (uint8_t fru);
+int8_t pal_dev_jtag_gpio_to_bus(uint8_t fru);
 #ifdef __cplusplus
 } // extern "C"
 #endif

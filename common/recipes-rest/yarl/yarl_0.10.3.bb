@@ -7,7 +7,7 @@ SRC_URI = "https://pypi.python.org/packages/e6/fc/9b3820c47aa66924c38841f1766bf3
 SRC_URI[md5sum] = "c10a2eb1e3474c0f84994d537313d246"
 SRC_URI[sha256sum] = "27b24ba3ef3cb8475aea1a655a1750bb11918ba139278af21db5846ee9643138"
 
-S = "${WORKDIR}/${PN}-${PV}"
+S = "${WORKDIR}/${BPN}-${PV}"
 
 inherit python3-dir
 dst="${PYTHON_SITEPACKAGES_DIR}/yarl.egg-info"
@@ -35,3 +35,4 @@ do_compile () {
 }
 
 FILES_${PN} = "${dst} ${dst1}"
+BBCLASSEXTEND += "native nativesdk"

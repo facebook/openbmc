@@ -24,12 +24,14 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://rest.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-DEPENDS_append = " update-rc.d-native"
-RDEPENDS_${PN} += "python3-core"
+DEPENDS_append = " update-rc.d-native aiohttp-native"
+RDEPENDS_${PN} += "python3-core aiohttp"
+
 
 SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://rest-api-1/rest.py \
            file://rest-api-1/common_endpoint.py \
+           file://common_middlewares.py\
            file://board_endpoint.py \
            file://rest-api-1/rest_watchdog.py \
            file://rest_config.py \
@@ -55,6 +57,7 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://rest-api-1/rest_helper.py \
            file://rest-api-1/rest_utils.py \
            file://board_setup_routes.py \
+           file://test_common_middlewares.py \
            file://boardroutes.py \
            file://rest-api-1/common_setup_routes.py \
           "
@@ -64,6 +67,7 @@ S = "${WORKDIR}/rest-api-1"
 binfiles = "board_setup_routes.py \
             boardroutes.py \
             board_endpoint.py \
+            common_middlewares.py \
             rest_config.py \
             node.py \
             node_bmc.py \
@@ -94,7 +98,7 @@ binfiles1 = "rest.py \
 
 pkgdir = "rest-api"
 
-do_install() {
+do_install_class-target() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   bin="${D}/usr/local/bin"
   install -d $dst
@@ -112,14 +116,16 @@ do_install() {
   done
   install -d ${D}${sysconfdir}/sv
   install -d ${D}${sysconfdir}/sv/restapi
-  install -m 755 run_rest ${D}${sysconfdir}/sv/restapi/run
+  install -m 755 ${WORKDIR}/rest-api-1/run_rest ${D}${sysconfdir}/sv/restapi/run
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 644 ${WORKDIR}/rest.cfg ${D}${sysconfdir}/rest.cfg
-  install -m 755 setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh
+  install -m 755 ${WORKDIR}/rest-api-1/setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh
   update-rc.d -r ${D} setup-rest-api.sh start 95 2 3 4 5  .
 }
+
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/rest-api ${prefix}/local/bin ${sysconfdir} "
+BBCLASSEXTEND += "native nativesdk"

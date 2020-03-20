@@ -31,6 +31,7 @@ import syslog
 
 from aiohttp import web
 from board_setup_routes import setup_board_routes
+from common_middlewares import jsonerrorhandler
 from common_setup_routes import setup_common_routes
 from rest_config import parse_config
 
@@ -77,7 +78,7 @@ logging.config.dictConfig(LOGGER_CONF)
 
 servers = []
 
-app = web.Application()
+app = web.Application(middlewares=[jsonerrorhandler])
 setup_common_routes(app)
 setup_board_routes(app)
 

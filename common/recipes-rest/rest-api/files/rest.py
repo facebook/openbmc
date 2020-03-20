@@ -31,6 +31,7 @@ import syslog
 
 from aiohttp import web
 from common_tree import init_common_tree
+from common_middlewares import jsonerrorhandler
 from node import node
 from plat_tree import init_plat_tree
 from rest_config import parse_config
@@ -79,7 +80,7 @@ logging.config.dictConfig(LOGGER_CONF)
 servers = []
 
 
-app = web.Application()
+app = web.Application(middlewares=[jsonerrorhandler])
 if config["writable"]:
     syslog.syslog(syslog.LOG_INFO, "REST: Launched with Read/Write Mode")
 else:

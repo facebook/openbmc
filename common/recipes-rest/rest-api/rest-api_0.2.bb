@@ -27,6 +27,7 @@ LIC_FILES_CHKSUM = "file://rest.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa
 
 SRC_URI = "file://rest.py \
            file://common_tree.py \
+           file://common_middlewares.py \
            file://plat_tree.py \
            file://rest_crawler.py \
            file://node.py \
@@ -60,12 +61,13 @@ SRC_URI = "file://rest.py \
            file://node_pdpb.py \
            file://setup-rest-api.sh \
            file://run_rest \
+           file://test_node_sensors.py \
           "
 
 S = "${WORKDIR}"
-DEPENDS += "libpal update-rc.d-native python3-psutil"
+DEPENDS += "libpal update-rc.d-native aiohttp python3-psutil"
 
-do_install() {
+do_install_class-target() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   bin="${D}/usr/local/bin"
   install -d $dst
@@ -77,13 +79,14 @@ do_install() {
   done
   install -d ${D}${sysconfdir}/sv
   install -d ${D}${sysconfdir}/sv/restapi
-  install -m 755 run_rest ${D}${sysconfdir}/sv/restapi/run
+  install -m 755 ${WORKDIR}/run_rest ${D}${sysconfdir}/sv/restapi/run
   install -m 644 ${WORKDIR}/rest.cfg ${D}${sysconfdir}/rest.cfg
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  install -m 755 setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh
+  install -m 755 ${WORKDIR}/setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh
   update-rc.d -r ${D} setup-rest-api.sh start 95 5 .
 }
+
 
 pkgdir = "rest-api"
 RDEPENDS_${PN} += "libpal python3-core"

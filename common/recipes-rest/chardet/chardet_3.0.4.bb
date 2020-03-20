@@ -7,7 +7,7 @@ SRC_URI = "https://pypi.python.org/packages/fc/bb/a5768c230f9ddb03acc9ef3f0d4a3c
 SRC_URI[md5sum] = "7dd1ba7f9c77e32351b0a0cfacf4055c"
 SRC_URI[sha256sum] = "84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae"
 
-S = "${WORKDIR}/${PN}-${PV}"
+S = "${WORKDIR}/${BPN}-${PV}"
 
 inherit python3-dir
 dst="${PYTHON_SITEPACKAGES_DIR}/chardet.egg-info"
@@ -73,3 +73,4 @@ do_compile() {
 }
 
 FILES_${PN} = "${dst} ${dst1}"
+BBCLASSEXTEND += "native nativesdk"

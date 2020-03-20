@@ -60,5 +60,6 @@ BAD_RECOMMENDATIONS += " \
 # to DEPEND on it so the package is built and unit-tested.
 NATIVE_UNIT_TESTS += " \
     pypartition-native \
+    rest-api-native \
     "
 DEPENDS += "${NATIVE_UNIT_TESTS}"

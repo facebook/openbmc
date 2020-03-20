@@ -24,7 +24,6 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 SRC_URI = "file://ast-functions \
            file://setup-gpio.sh \
            file://setup-i2c.sh \
-           file://setup-emmc.sh \
            file://setup-usbnet.sh \
            file://setup-por.sh \
            file://sol-util \
@@ -64,8 +63,6 @@ do_install() {
   update-rc.d -r ${D} setup-gpio.sh start 66 5 .
   install -m 755 setup-i2c.sh ${D}${sysconfdir}/init.d/setup-i2c.sh
   update-rc.d -r ${D} setup-i2c.sh start 67 5 .
-  install -m 755 setup-emmc.sh ${D}${sysconfdir}/init.d/setup-emmc.sh
-  update-rc.d -r ${D} setup-emmc.sh start 05 S .
   install -m 755 setup-usbnet.sh ${D}${sysconfdir}/init.d/setup-usbnet.sh
   update-rc.d -r ${D} setup-usbnet.sh start 69 5 .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh

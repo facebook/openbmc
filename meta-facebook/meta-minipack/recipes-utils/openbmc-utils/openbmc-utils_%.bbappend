@@ -94,22 +94,6 @@ do_install_board() {
     # init
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d
-    # the script to mount /mnt/data
-    install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
-    update-rc.d -r ${D} mount_data0.sh start 03 S .
-    install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
-    update-rc.d -r ${D} rc.early start 04 S .
-
-    #
-    # emmc driver will be binded to emmc device at bootup (/dev/mmcblk#
-    # will be created), but we are NOT going to auto-mount emmc device
-    # until:
-    #  1) the emmc driver has been running in fleet for at least 1 month
-    #     without crash.
-    #  2) filesystem check logic being added to setup-emmc.sh.
-    #
-    # install -m 0755 ${WORKDIR}/setup_emmc.sh ${D}${sysconfdir}/init.d/setup_emmc.sh
-    # update-rc.d -r ${D} setup_emmc.sh start 05 S .
 
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 60 S .

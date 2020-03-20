@@ -304,11 +304,106 @@ static const i2c_dev_attr_st supcpld_attr_table[] = {
     0x72, 0, 1,
   },
   {
+    "chassis_eeprom_wp",
+    "0x1: Disable IDPROM write(default)\n"
+    "0x0: Enable IDPROM write",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x72, 1, 1,
+  },
+  {
+    "sup_eeprom_wp",
+    "0x1: Disable IDPROM write(default)\n"
+    "0x0: Enable IDPROM write",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x72, 0, 1,
+  },
+  {
     "uart_selection",
     "Write 0xA5 to switch FP UART connection to CPU",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x80, 0, 8,
+  },
+  {
+    "oob_eeprom_cmd_3",
+    "OOB EEPROM Command [31:24]",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x90, 0, 8,
+  },
+  {
+    "oob_eeprom_cmd_2",
+    "OOB EEPROM Command [23:16]",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x91, 0, 8,
+  },
+  {
+    "oob_eeprom_cmd_1",
+    "OOB EEPROM Command [15:8]",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x92, 0, 8,
+  },
+  {
+    "oob_eeprom_cmd_0",
+    "OOB EEPROM Command [7:0]",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x93, 0, 8,
+  },
+  {
+    "oob_eeprom_resp_3",
+    "OOB EEPROM Status/Response [31:24]",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x94, 0, 8,
+  },
+  {
+    "oob_eeprom_resp_2",
+    "OOB EEPROM Status/Response [23:16]",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x95, 0, 8,
+  },
+  {
+    "oob_eeprom_resp_1",
+    "OOB EEPROM Status/Response [15:8]",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x96, 0, 8,
+  },
+  {
+    "oob_eeprom_resp_0",
+    "OOB EEPROM Status/Response [7:0]",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x97, 0, 8,
+  },
+  {
+    "oob_eeprom_resp_trigger",
+    "OOB EEPROM Status/Response Trigger",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x98, 0, 8,
+  },
+  {
+    "oob_switch_sel",
+    "0x1: 53134P EEPROM (default)\n"
+    "0x0: 53134P SPI",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x99, 1, 1,
+  },
+  {
+    "oob_switch_reset",
+    "0x1: 53134 in reset\n"
+    "0x0: 53134 out of reset\n",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x99, 0, 1,
   },
 };
 

@@ -23,6 +23,8 @@ buck-out/
 .buckd/
 .buckversion
 .fakebuckversion
+.lsp-buck-out/
+.lsp.buckd/
 
 ### Emacs ###
 # -*- mode: gitignore; -*-

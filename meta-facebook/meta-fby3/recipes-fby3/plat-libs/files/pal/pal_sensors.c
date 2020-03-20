@@ -23,6 +23,18 @@
 #define MAX_SDR_LEN 64
 #define SDR_PATH "/tmp/sdr_%s.bin"
 
+enum {
+  /* Fan Type */
+  DUAL_TYPE    = 0x00,
+  SINGLE_TYPE  = 0x03,
+  UNKNOWN_TYPE = 0xff,
+
+  /* Fan Cnt*/
+  DUAL_FAN_CNT = 0x08,
+  SINGLE_FAN_CNT = 0x04,
+  UNKNOWN_FAN_CNT = 0x00,
+};
+
 static int read_adc_val(uint8_t adc_id, float *value);
 static int read_temp(uint8_t snr_id, float *value);
 static int read_hsc_vin(uint8_t hsc_id, float *value);
@@ -37,8 +49,7 @@ static bool sdr_init_done[MAX_NUM_FRUS] = {false};
 
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
-const char pal_pwm_list[] = "0, 1, 2, 4";
-const char pal_tach_list[] = "0..7";
+const char pal_pwm_list[] = "0, 1, 2, 3";
 
 const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_OUTLET_TEMP,
@@ -557,9 +568,62 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     return 0;
 }
 
+static int
+get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask) {
+  int i;
+  *mask = 0;
+  for (i = 0; i < num; i++) {
+    int ret;
+    gpio_value_t value;
+    gpio_desc_t *gpio = gpio_open_by_shadow(shadows[i]);
+    if (!gpio) {
+      return -1;
+    }
+    ret = gpio_get_value(gpio, &value);
+    gpio_close(gpio);
+    if (ret != 0) {
+      return -1;
+    }
+    *mask |= (value == GPIO_VALUE_HIGH ? 1 : 0) << i;
+  }
+  return 0;
+}
+
+static int
+pal_get_fan_type(uint8_t *bmc_location, uint8_t *type) {
+  static bool is_cached = false;
+  static uint8_t cached_id = 0;
+  int ret = 0;
+
+  ret = fby3_common_get_bmc_location(bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+  }
+
+  if ( BB_BMC == *bmc_location ) {
+    if ( is_cached == false ) {
+      const char *shadows[] = {
+        "DUAL_FAN0_DETECT_BMC_N_R",
+        "DUAL_FAN1_DETECT_BMC_N_R",
+      };
+
+      if ( get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id) ) {
+        return PAL_ENOTSUP;
+      }
+
+      is_cached = true;
+    }
+
+    *type = cached_id;
+  } else {
+    *type = DUAL_TYPE;
+  }
+
+  return PAL_EOK;
+}
+
 uint8_t
 pal_get_fan_source(uint8_t fan_num) {
-
   switch (fan_num)
   {
     case FAN_0:
@@ -618,12 +682,17 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
   float value;
   int ret;
   uint8_t bmc_location = 0;
+  uint8_t fan_type = UNKNOWN_TYPE;
 
-  ret = fby3_common_get_bmc_location(&bmc_location);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+  ret = pal_get_fan_type(&bmc_location, &fan_type);
+  if ( ret < 0 ) {
+    syslog(LOG_ERR, "%s() Cannot get the type of fan", __func__);
+    fan_type = UNKNOWN_TYPE;
   }
+
   if (bmc_location == BB_BMC) {
+    if ( fan_type == SINGLE_TYPE ) fan *= 2;
+
     if (fan > pal_tach_cnt ||
         snprintf(label, sizeof(label), "fan%d", fan + 1) > sizeof(label)) {
       syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
@@ -659,21 +728,25 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
   float value;
   int ret;
   uint8_t fan_src = 0;
+  uint8_t fan_type = UNKNOWN_TYPE;
   uint8_t bmc_location = 0;
 
-  ret = fby3_common_get_bmc_location(&bmc_location);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+  ret = pal_get_fan_type(&bmc_location, &fan_type);
+  if ( ret < 0 ) {
+    syslog(LOG_ERR, "%s() Cannot get the type of fan, fvaule=%d", __func__, fan_type);
+    fan_type = UNKNOWN_TYPE;
   }
 
+  if ( fan_type == SINGLE_TYPE ) fan *= 2;
+
   fan_src = pal_get_fan_source(fan);
-  if (fan >= pal_tach_cnt || fan_src == 0xff ||
-      snprintf(label, sizeof(label), "pwm%d", fan_src + 1) > sizeof(label)) {
+  if (fan >= pal_tach_cnt || fan_src == 0xff ) {
     syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
     return -1;
   }
 
   if (bmc_location == BB_BMC) {
+    snprintf(label, sizeof(label), "pwm%d", fan_src + 1);
     ret = sensors_read_fan(label, &value);
   } else if (bmc_location == NIC_BMC) {
     ret = bic_get_fan_pwm(fan_src, &value);
@@ -686,10 +759,68 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
   return ret;
 }
 
+char *
+pal_get_tach_list(void) {
+  uint8_t fan_type = UNKNOWN_TYPE;
+  uint8_t bmc_location = 0;
+  int ret = 0;
+
+  ret = pal_get_fan_type(&bmc_location, &fan_type);
+  if ( ret < 0 ) {
+    syslog(LOG_ERR, "%s() Cannot get the type of fan, fvaule=%d", __func__, fan_type);
+    fan_type = UNKNOWN_TYPE;
+  }
+
+  switch (fan_type) {
+    case DUAL_TYPE:
+      return "0..7";
+      break;
+    case SINGLE_TYPE:
+      return "0..3";
+      break;
+    default:
+      syslog(LOG_ERR, "%s() Cannot identify the type of fan", __func__);
+      return "0..3";
+      break;
+  }
+
+  syslog(LOG_ERR, "%s() it should not reach here...", __func__);
+  return "NULL string";
+}
+
+int
+pal_get_tach_cnt(void) {
+  uint8_t fan_type = UNKNOWN_TYPE;
+  uint8_t bmc_location = 0;
+  int ret = 0;
+
+  ret = pal_get_fan_type(&bmc_location, &fan_type);
+  if ( ret < 0 ) {
+    syslog(LOG_ERR, "%s() Cannot get the type of fan", __func__);
+    fan_type = UNKNOWN_TYPE;
+  }
+
+  switch (fan_type) {
+    case DUAL_TYPE:
+      return DUAL_FAN_CNT;
+      break;
+    case SINGLE_TYPE:
+      return SINGLE_FAN_CNT;
+      break;
+    default:
+      syslog(LOG_ERR, "%s() Cannot identify the type of fan", __func__);
+      return SINGLE_FAN_CNT;
+      break;
+  }
+
+  syslog(LOG_ERR, "%s() it should not reach here...", __func__);
+  return UNKNOWN_FAN_CNT;
+}
+
 static void
 apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value) {
   int i = 0;
-  const uint8_t fan_num[4] = {FAN_0, FAN_2, FAN_4, FAN_6}; //Use fan# to get the PWM.
+  const uint8_t fan_num[4] = {FAN_0, FAN_1, FAN_2, FAN_3}; //Use fan# to get the PWM.
   static uint8_t pwm[4] = {0};
   static bool pwm_valid[4] = {false, false, false, false};
   static bool inited = false;

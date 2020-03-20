@@ -95,6 +95,10 @@ do_install_board() {
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d
 
+    # mount secondary storage (emmc) to /mnt/data1
+    install -m 0755 ${WORKDIR}/mount_data1.sh ${D}${sysconfdir}/init.d/mount_data1.sh
+    update-rc.d -r ${D} mount_data1.sh start 05 S .
+
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 60 S .
 

@@ -38,6 +38,7 @@
 /****************************/
 /*       VR fw update       */                            
 /****************************/
+#define WARNING_REMAINING_WRITES 3
 #define MAX_RETRY 3
 #define VR_BUS 0x8
 
@@ -139,6 +140,40 @@ split(char **dst, char *src, char *delim) {
   return size;
 }
 
+static void
+show_progress(int current_progress, int total) {
+  printf("Progress: %.0f %%\r", (float) (((current_progress+1)/(float)total)*100));
+  fflush(stdout);
+}
+
+static int
+vr_remaining_writes_check(uint8_t cnt, uint8_t force) {
+  int ret = BIC_STATUS_SUCCESS;
+
+  printf("remaining writes %d.\n", cnt);
+  if ( cnt == 0 ) {
+    printf("The device cannot be programmed since the remaining writes is 0.\n");
+    return BIC_STATUS_FAILURE;
+  }
+
+  switch (force) {
+    case FORCE_UPDATE_UNSET:
+      ret = BIC_STATUS_FAILURE;
+      if ( cnt <= WARNING_REMAINING_WRITES ) {
+        printf("WARNING: the remaining writes is below the threshold value %d!\n", WARNING_REMAINING_WRITES);
+        printf("Please use `--force` option to try again.\n");
+      } else {
+        ret = BIC_STATUS_SUCCESS;
+      }
+    case FORCE_UPDATE_SET:
+      /*fall through*/
+    default:
+     break;
+  }
+  fflush(stdout);
+  return ret;
+}
+
 static int
 vr_ISL_polling_status(uint8_t slot_id, uint8_t addr) {
   int ret = 0;
@@ -178,7 +213,7 @@ error_exit:
 }
 
 static int
-vr_ISL_program(uint8_t slot_id, vr *dev) {
+vr_ISL_program(uint8_t slot_id, vr *dev, uint8_t force) {
   int i = 0;
   int ret = 0;
   uint8_t tbuf[16] = {0};
@@ -193,7 +228,32 @@ vr_ISL_program(uint8_t slot_id, vr *dev) {
   tbuf[0] = (VR_BUS << 1) + 1;
   tbuf[1] = addr;
   tbuf[2] = 0x00; //read cnt
+  tbuf[3] = 0xC7; //command code
+  tbuf[4] = 0xC2; //data1
+  tbuf[5] = 0x00; //data2
+  tlen = 6;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "[%s] Failed to send command and data...", __func__);
+    goto error_exit;
+  }
 
+  tbuf[2] = 0x04; //read cnt
+  tbuf[3] = 0xC5; //command code
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "[%s] Failed to read NVM slots...", __func__);
+    goto error_exit;
+  }
+
+  ret = vr_remaining_writes_check(rbuf[0], force);
+  if ( ret < 0 ) {
+    goto error_exit;
+  }
+
+  //reset the read cnt
+  tbuf[2] = 0x00;
   for ( i=0; i<len; i++ ) {
     //prepare data
     tbuf[3] = list[i].command ;//command code
@@ -204,6 +264,8 @@ vr_ISL_program(uint8_t slot_id, vr *dev) {
       syslog(LOG_WARNING, "[%s] Failed to send data...%d", __func__, i);
       break;
     }
+    msleep(100);
+    show_progress(i, len);
   }
 
   //check the status
@@ -221,7 +283,8 @@ vr_ISL_program(uint8_t slot_id, vr *dev) {
     syslog(LOG_WARNING, "[%s] Failed to program the device", __func__);
     ret = -1;
   }
-
+  printf("\n");
+error_exit:
   return ret;
 }
 
@@ -466,7 +529,7 @@ error_exit:
 }
 
 static int
-vr_TI_program(uint8_t slot_id, vr *dev) {
+vr_TI_program(uint8_t slot_id, vr *dev, uint8_t force) {
 #define TI_USER_NVM_INDEX   0xF5
 #define TI_USER_NVM_EXECUTE 0xF6
 #define TI_NVM_CHECKSUM     0xF0
@@ -631,7 +694,7 @@ error_exit:
 }
 
 static int
-vr_IFX_program(uint8_t slot_id, vr *dev) {
+vr_IFX_program(uint8_t slot_id, vr *dev, uint8_t force) {
 #define VR_CONF_REG 0x1A
 #define VR_CLR_FAULT 0x03
 #define REG1_STS_CHECK 0x1
@@ -671,10 +734,8 @@ vr_IFX_program(uint8_t slot_id, vr *dev) {
   }
 
   remaining_writes = REMAINING_TIMES(rbuf);
-  printf("remaining writes %d..", remaining_writes);
-  if ( remaining_writes == 0 ) {
-    ret = -1;
-    printf("Cannot be programmed!\n");
+  ret = vr_remaining_writes_check(remaining_writes, force);
+  if ( ret < 0 ) {
     goto error_exit;
   }
 
@@ -703,7 +764,10 @@ vr_IFX_program(uint8_t slot_id, vr *dev) {
       syslog(LOG_WARNING, "%s() Couldn't write data to page %02X and offset %02X", __func__, list[i].command, list[i].data[0]);
       goto error_exit;
     }
+    msleep(100);
+    show_progress(i, len);
   }
+  printf("\n");
 
   //step 2 - upload data to config
   tbuf[3] = VR_PAGE;
@@ -843,7 +907,7 @@ struct dev_table {
   {VCCIN_ADDR,    "VCCIN/VSA"},
   {VCCIO_ADDR,    "VCCIO"},
   {VDDQ_ABC_ADDR, "VDDQ_ABC"},
-  {VDDQ_DEV_ADDR, "VDDQ_DEF"},
+  {VDDQ_DEF_ADDR, "VDDQ_DEF"},
 };
 
 int dev_table_size = (sizeof(dev_list)/sizeof(struct dev_table));
@@ -851,7 +915,7 @@ int dev_table_size = (sizeof(dev_list)/sizeof(struct dev_table));
 static struct tool {
   uint8_t vendor;
   int (*parser)(char *);
-  int (*program)(uint8_t , vr *);
+  int (*program)(uint8_t, vr *, uint8_t);
 } vr_tool[] = {
   {VR_ISL, vr_ISL_hex_parser, vr_ISL_program},
   {VR_TI , vr_TI_csv_parser , vr_TI_program},
@@ -930,15 +994,9 @@ update_bic_vr(uint8_t slot_id, char *image, uint8_t force) {
 
 
   //step 4 - program
-  for ( i = 0; i < vr_cnt + 1; i++ ) { 
-    printf("Update %s...", get_vr_name(vr_list[i].addr));
-    ret = vr_tool[sel_vendor].program(slot_id, &vr_list[i]);
-    if ( ret < 0 ) {
-      printf("Failed.\n");
-    } else {
-      printf("Succeeded.\n");
-    }
-  }
+  //For now, we only support to be input 1 file.
+  printf("Update %s...", get_vr_name(vr_list[0].addr));
+  ret = vr_tool[sel_vendor].program(slot_id, &vr_list[0], force);
 
 error_exit:
 

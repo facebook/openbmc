@@ -30,7 +30,10 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/time.h>
+#include <time.h>
 #include "bic_cpld_altera_fwupdate.h"
+#include <openbmc/kv.h>
 
 //#define DEBUG
 
@@ -190,11 +193,6 @@ write_register(uint8_t slot_id, int address, int data, uint8_t intf) {
   return set_register_via_bypass(slot_id, address, data, intf);
 }
 
-static int
-write_flash_data(uint8_t slot_id, int address, int data, uint8_t intf) {
-  return write_register(slot_id, ON_CHIP_FLASH_IP_DATA_REG + address, data, intf);
-}
-
 static int 
 Max10_get_status(uint8_t slot_id, uint8_t intf) {
   return read_register(slot_id, ON_CHIP_FLASH_IP_CSR_STATUS_REG, intf);
@@ -346,27 +344,75 @@ is_valid_cpld_image(uint8_t signed_byte, uint8_t intf) {
   return ret;
 }
 
+static int
+_update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf, uint8_t intf) {
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[16] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+  int retries = MAX_RETRY;
+
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+
+  // Fill the component for which firmware is requested
+  tbuf[3] = target;
+
+  tbuf[4] = (offset) & 0xFF;
+  tbuf[5] = (offset >> 8) & 0xFF;
+  tbuf[6] = (offset >> 16) & 0xFF;
+  tbuf[7] = (offset >> 24) & 0xFF;
+
+  tbuf[8] = len & 0xFF;
+  tbuf[9] = (len >> 8) & 0xFF;
+
+  memcpy(&tbuf[10], buf, len);
+
+  tlen = len + 10;
+
+  do {
+    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
+    if ( ret < 0 ) {
+      sleep(1);
+      printf("_update_fw: slot: %d, target %d, offset: %d, len: %d retrying..\n", slot_id, target, offset, len);
+    } else break;
+  } while ( retries-- > 0 );
+
+  return ret;
+}
+
+static int
+_set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
+  char key[64];
+  char value[64] = {0};
+  struct timespec ts;
+
+  sprintf(key, "fru%u_fwupd", slot_id);
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += tmout;
+  sprintf(value, "%ld", ts.tv_sec);
+
+  if (kv_set(key, value, 0, 0) < 0) {
+     return -1;
+  }
+
+  return 0;
+}
+
 int 
 update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force) {
-#define STATUS_BIT_MASK  0x1F
-#define CFM_START_ADDR 0x64000
-#define CFM_END_ADDR   0xbffff
 #define MAX10_RPD_SIZE 0x5C000
-
-  int fd= 0;
   uint8_t *rpd_file = NULL;
-  int ret = 0;
-  int offset = 0;
-  int address = 0;
-  int receivedHex[4];
-  int byte = 0;
-  int data = 0;
-  int status = 0;
-  int retries = MAX_RETRY;
-  int total = CFM_END_ADDR - CFM_START_ADDR;
-  int percent = 0;
-  uint8_t done = 0;
+  uint8_t buf[256] = {0};
+  const uint8_t target = UPDATE_CPLD; 
+  const uint16_t read_count = 128;
+  uint32_t offset = 0, last_offset = 0, dsize = 0;
   struct stat finfo;
+  struct timeval start, end;
+  int ret = 0;
+  int fd = 0;
   int rpd_filesize = 0;
   int read_bytes = 0;
 
@@ -393,19 +439,32 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
   read_bytes = read(fd, rpd_file, rpd_filesize);
   printf("read %d bytes.\n", read_bytes);
 
-  if ( force == 0 ) {
-    //it's an old image
-    if ( rpd_filesize == MAX10_RPD_SIZE ) {
-      printf("image is not a valid CPLD image for this component.\n");
-      ret = -1;
-      goto error_exit;
-    } else if ( (MAX10_RPD_SIZE + 1) == rpd_filesize ) {
-      if ( is_valid_cpld_image((rpd_file[MAX10_RPD_SIZE]&0xf), intf) < 0 ) {
-        printf("image is not a valid CPLD image for this component.\n");
-        ret = -1;
-        goto error_exit;
+  switch (force) {
+    case FORCE_UPDATE_UNSET:
+      ret = BIC_STATUS_FAILURE;
+      if ( rpd_filesize == MAX10_RPD_SIZE ) {
+        printf("The image is the unsigned CPLD image!\n");
+      } else if ( (MAX10_RPD_SIZE + 1) == rpd_filesize ) {
+        ret = is_valid_cpld_image((rpd_file[MAX10_RPD_SIZE]&0xf), intf);
+        if ( ret < 0 ) {
+          printf("The image is not the valid CPLD image for this component.\n");
+        } else {
+          ret = BIC_STATUS_SUCCESS; 
+        }
+      } else {
+        printf("The size of image is not expected!\n");
       }
-    }
+    case FORCE_UPDATE_SET:
+      /*fall through*/
+    default:
+      //adjust the size since one byte is the signature of the CPLD image.
+      if ( read_bytes == (MAX10_RPD_SIZE + 1) ) read_bytes -= 1;
+      break;
+  }
+
+  //something went wrong. exit.
+  if ( ret == BIC_STATUS_FAILURE ) {
+    goto error_exit;
   }
 
   //step 1 - UnprotectSector
@@ -429,59 +488,29 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
     goto error_exit;
   }
 
-  //step 4 - Start program
-  offset = 0;
-  for (address = CFM_START_ADDR; address < CFM_END_ADDR; address += 4) {
-    receivedHex[0] = rpd_file[offset + 0];
-    receivedHex[1] = rpd_file[offset + 1];
-    receivedHex[2] = rpd_file[offset + 2];
-    receivedHex[3] = rpd_file[offset + 3];
-    for (byte=0; byte < 4; byte++) {
-      receivedHex[byte] = (((receivedHex[byte] & 0xaa)>>1)|((receivedHex[byte] & 0x55)<<1));
-      receivedHex[byte] = (((receivedHex[byte] & 0xcc)>>2)|((receivedHex[byte] & 0x33)<<2));
-      receivedHex[byte] = (((receivedHex[byte] & 0xf0)>>4)|((receivedHex[byte] & 0x0f)<<4));
+  dsize = read_bytes/100;
+  gettimeofday(&start, NULL);
+  while (1) {
+    // Read from file
+    memcpy(buf, &rpd_file[offset], read_count);
+     
+    // Send data to Bridge-IC
+    ret = _update_fw(slot_id, target, offset, read_count, buf, intf);
+    if ( ret < 0 ) {
+      goto error_exit;
     }
 
-    data = (receivedHex[0]<<24)|(receivedHex[1]<<16)|(receivedHex[2]<<8)|(receivedHex[3]);
-    write_flash_data(slot_id, address, data, intf);
-
-    usleep(50);
-    retries = MAX_RETRY;
-    do {
-      status = Max10_get_status(slot_id, intf);
-      status &= STATUS_BIT_MASK;
-      if( (status & WRITE_SUCCESS) == WRITE_SUCCESS) {
-        done = 1;
-      }
-
-      if ( status == 0x0 ) {
-        printf("retry...\n");
-        retries--;
-      }
-    } while ( done == 0 && retries > 0);
-
-    if ( retries == 0 ) {
-      ret = -1;
-      break;
+    // Update counter
+    offset += read_count;
+    if ((last_offset + dsize) <= offset) {
+      _set_fw_update_ongoing(slot_id, 60);
+      printf("\rupdated cpld: %d %%", offset/dsize);
+      fflush(stdout);
+      last_offset += dsize;
     }
 
-    // show percentage
-    {
-      static int last_percent = 0;
-      percent = ((address - CFM_START_ADDR)*100)/total;
-      if(last_percent != percent) {
-        last_percent = percent;
-        printf(" Progress  %d %%.  addr: 0x%X \n", percent, address);
-      }
-    }
-
-    offset += 4;
-
-  }
-
-  if ( ret < 0 ) {
-    printf("Failed to send the data.\n");
-    goto error_exit;
+    //if all data are sent, break it.
+    if ( offset == read_bytes ) break;
   }
 
   //step 5 - protect sectors
@@ -490,6 +519,9 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
     printf("Failed to erase the sector.\n");
     goto error_exit;
   }
+
+  gettimeofday(&end, NULL);
+  printf("\nElapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
 
 error_exit:
   if ( fd > 0 ) close(fd);

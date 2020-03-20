@@ -69,7 +69,12 @@ enum {
   VCCIN_ADDR = 0xC0,
   VCCIO_ADDR = 0xC4,
   VDDQ_ABC_ADDR = 0xC8,
-  VDDQ_DEV_ADDR = 0xCC,
+  VDDQ_DEF_ADDR = 0xCC,
+};
+
+enum {
+  FORCE_UPDATE_UNSET = 0x0,
+  FORCE_UPDATE_SET,
 };
 
 enum {

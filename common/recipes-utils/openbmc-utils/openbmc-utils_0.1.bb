@@ -34,7 +34,6 @@ SRC_URI = " \
     file://dhclient-exit-hooks \
     file://rm_poweroff_cmd.sh \
     file://revise_inittab \
-    file://setup_emmc.sh \
     file://blkdev_mount.sh \
     file://emmc_auto_mount.sh \
     file://mount_data1.sh \

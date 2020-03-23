@@ -219,6 +219,7 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
   char fpath[128];
   uint8_t path[8];
   int recheck = MAX_CHECK_DEVICE_TIME;
+  uint8_t bmc_location = 0;
   
   ret = libusb_init(NULL);
   if (ret < 0) {
@@ -264,8 +265,16 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
           goto error_exit;
         }
 
-        if ( path[1] != slot_id) {
-          continue;
+        ret = fby3_common_get_bmc_location(&bmc_location);
+        if (ret < 0) {
+          syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+          goto error_exit;
+        }
+
+        if (bmc_location == BB_BMC) {
+          if ( path[1] != slot_id) {
+            continue;
+          }
         }
         printf("%04x:%04x (bus %d, device %d)",desc.idVendor, desc.idProduct, libusb_get_bus_number(dev), libusb_get_device_address(dev));
         printf(" path: %d", path[0]);
@@ -424,8 +433,6 @@ resend:
       record_offset += fsize;
     }
   }
-  gettimeofday(&end, NULL);
-  printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
 
   ret = libusb_release_interface(handle, ci);
   if ( ret < 0 ) {
@@ -437,6 +444,9 @@ resend:
     ret = -1;
     goto error_exit;
   }
+
+  gettimeofday(&end, NULL);
+  printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
 
   if ( fd > 0 ) {
     close(fd);

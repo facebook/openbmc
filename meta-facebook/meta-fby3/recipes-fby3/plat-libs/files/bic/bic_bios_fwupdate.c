@@ -327,13 +327,13 @@ update_bic_bios(uint8_t slot_id, char *image, uint8_t force) {
     }
   }
 
-  gettimeofday(&end, NULL);
-  printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
-
   _set_fw_update_ongoing(slot_id, 60 * 2);
   if (verify_bios_image(slot_id, fd, st.st_size)) {
     goto error_exit;
   }
+
+  gettimeofday(&end, NULL);
+  printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
 
   ret = 0;
 error_exit:

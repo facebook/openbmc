@@ -114,6 +114,9 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
   switch(cmd) {
     case SERVER_POWER_ON:
+      if (system("fan-util --set 70") != 0) {
+        return -1;
+      }
       if (status == SERVER_POWER_ON)
         return 1;
       else
@@ -121,6 +124,9 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_POWER_OFF:
+      if (system("fan-util --set 20") != 0) {
+        return -1;
+      }
       if (status == SERVER_POWER_OFF)
         return 1;
       else
@@ -143,6 +149,9 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_GRACEFUL_SHUTDOWN:
+      if (system("fan-util --set 20") != 0) {
+        return -1;
+      }
       if (status == SERVER_POWER_OFF)
         return 1;
       gs_flag = true;

@@ -99,6 +99,8 @@
 #define BOOT_ROM_PATCH_FW 0x01
 #define UNKOWN_FW -1
 
+#define PCIE_SW_MAX_RETRY 50
+
 #pragma pack(push, 1)
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
@@ -2434,23 +2436,49 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       uint8_t status[2] = {0};
       int j = 0;
       block_offset = offset; //update block offset
-      for (j=0;j<30;j++) {
+      for (j=0;j<PCIE_SW_MAX_RETRY;j++) {
         rc = _get_pcie_sw_update_status(slot_id,status);
         if (rc) {
+          syslog(LOG_WARNING,"_get_pcie_sw_update_status status: %d %d",status[0],status[1]);
           goto error_exit;
         }
-        if (status[1] == FW_PCIE_SWITCH_STAT_IDLE || status[1] == FW_PCIE_SWITCH_STAT_INPROGRESS) {
-          //do nothing
-        } else if (status[1] == FW_PCIE_SWITCH_STAT_DONE) {
-          break;
+        if (status[0] == FW_PCIE_SWITCH_DLSTAT_INPROGRESS || status[0] == FW_PCIE_SWITCH_DLSTAT_READY) {
+          // check background status
+          if ( status[1] == FW_PCIE_SWITCH_STAT_INPROGRESS || status[1] == FW_PCIE_SWITCH_STAT_IDLE ) {
+            // do nothing
+          } else if (status[1] == FW_PCIE_SWITCH_STAT_DONE) {
+            // In the middle of FW upfdate, wait for download status done
+            break;
+          } else {
+            _terminate_pcie_sw_update(slot_id);
+            syslog(LOG_WARNING,"_get_pcie_sw_update_status status: %d %d",status[0],status[1]);
+            goto error_exit;
+          }
+        } else if (status[0] == FW_PCIE_SWITCH_DLSTAT_COMPLETES
+          || status[0] == FW_PCIE_SWITCH_DLSTAT_SUCESS_FIRM_ACT
+          || status[0] == FW_PCIE_SWITCH_DLSTAT_SUCESS_DATA_ACT) {
+          // check background status
+          if ( status[1] == FW_PCIE_SWITCH_STAT_INPROGRESS) {
+            // do nothing
+          } else if (status[1] == FW_PCIE_SWITCH_STAT_IDLE || status[1] == FW_PCIE_SWITCH_STAT_DONE) {
+            // At the end of FW update, after done then chenage to idle
+            break;
+          } else {
+            _terminate_pcie_sw_update(slot_id);
+            syslog(LOG_WARNING,"_get_pcie_sw_update_status status: %d %d",status[0],status[1]);
+            goto error_exit;
+          }
         } else {
           _terminate_pcie_sw_update(slot_id);
+          syslog(LOG_WARNING,"_get_pcie_sw_update_status status: %d %d",status[0],status[1]);
           goto error_exit;
         }
+
         msleep(100);
       }
-      if (j == 30) {
+      if (j == PCIE_SW_MAX_RETRY) {
         _terminate_pcie_sw_update(slot_id);
+        syslog(LOG_WARNING,"_get_pcie_sw_update_status retry == %d status: %d %d",PCIE_SW_MAX_RETRY,status[0],status[1]);
         goto error_exit;
       }
       if (offset == st.st_size) {

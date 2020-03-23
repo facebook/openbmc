@@ -56,13 +56,14 @@ if [ $(is_server_prsnt $slot_num) == "0" ]; then
   gpio_set FM_BMC_SLOT${slot_num}_ISOLATED_EN_R 0
   rm -f /tmp/*fruid_slot${slot_num}*
   rm -f /tmp/*sdr_slot${slot_num}*
+  rm -f /tmp/cache_store/slot${slot_num}_vr*
 else
   /usr/local/bin/power-util "slot${slot_num}" 12V-on
   /usr/local/bin/bic-cached -s "slot${slot_num}"
   /usr/local/bin/bic-cached -f "slot${slot_num}"
+  /usr/bin/fw-util "slot${slot_num}" --version > /dev/null
 fi
 
 # restart the service
 sv restart gpiod
 sv restart sensord
-

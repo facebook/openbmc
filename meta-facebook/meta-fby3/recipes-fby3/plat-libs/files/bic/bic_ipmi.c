@@ -30,7 +30,9 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/file.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/kv.h>
 #include "bic_ipmi.h"
 
 //FRU
@@ -55,6 +57,9 @@ typedef struct _sdr_rec_hdr_t {
 #pragma pack(pop)
 
 #define SIZE_SYS_GUID 16
+
+#define MAX_VER_STR_LEN 80
+#define VR_LOCK "/var/run/vr_%d.lock"
 
 // S/E - Get Sensor reading
 // Netfn: 0x04, Cmd: 0x2d
@@ -445,13 +450,16 @@ bic_get_vr_device_id(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen
 }
 
 int
-bic_get_vr_ver(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen, uint8_t addr, uint8_t intf) {
+bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *key, char *ver_str) {
   uint8_t tbuf[32] = {0};
   uint8_t tlen = 0;
-  int ret = 0;
-  const uint8_t bus = 0x8;
+  uint8_t rbuf[32] = {0};
+  uint8_t rlen = 0;
+  char path[128];
+  int fd;
+  int ret = 0, rc;
 
-  ret = bic_get_vr_device_id(slot_id, comp, rbuf, rlen, bus, addr, intf);
+  ret = bic_get_vr_device_id(slot_id, 0, rbuf, &rlen, bus, addr, intf);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to get vr device id, ret=%d", __func__, ret);
     return ret;
@@ -460,12 +468,74 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen, uint
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
 
-  //The length of GET_DEVICE_ID of ISL is different to TI.
-  if ( *rlen > 4 ) {
+  //The length of GET_DEVICE_is different.
+  if ( rlen == 2 ) {
+    //Infineon
+
+    sprintf(path, VR_LOCK, slot_id);
+    fd = open(path, O_CREAT | O_RDWR, 0666);
+    rc = flock(fd, LOCK_EX | LOCK_NB);
+    if(rc) {
+      if(EWOULDBLOCK == errno) {
+        return -1;
+      }
+    }
+
+    tbuf[2] = 0x00; //read cnt
+    tbuf[3] = 0x00; //command code
+    tbuf[4] = 0x62;
+    tlen = 5;
+    
+    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
+      goto error_exit;
+    }
+    
+    tbuf[2] = 0x2; //read cnt
+    tbuf[3] = 0x42; //command code
+    tlen = 4;
+    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
+      goto error_exit;
+    }
+    
+    tbuf[2] = 0x2; //read cnt
+    tbuf[3] = 0x43; //command code
+    tlen = 4;
+    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, &rbuf[2], &rlen, intf);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
+      goto error_exit;
+    }
+    snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
+    kv_set(key, ver_str, 0, 0);
+    
+  error_exit:
+    rc = flock(fd, LOCK_UN);
+    if (rc == -1) {
+      syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
+      close(fd);
+      return rc;
+    }
+    close(fd);
+    remove(path);
+    return ret;
+    
+  } else if ( rlen > 4 ) {
     //TI
     tbuf[2] = 0x02; //read cnt
     tbuf[3] = 0xF0; //command code
     tlen = 4;
+    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
+      return ret;
+    }
+    
+    snprintf(ver_str, MAX_VALUE_LEN, "Texas Instruments %02X%02X", rbuf[1], rbuf[0]);
+    kv_set(key, ver_str, 0, 0);
   } else {
     //ISL
     tbuf[2] = 0x00; //read cnt
@@ -473,18 +543,43 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen, uint
     tbuf[4] = 0x3F; //reg
     tbuf[5] = 0x00; //dummy data
     tlen = 6;
-    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, rlen, intf);
+    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
     if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to send command code to get vr ver. ret=%d", __func__, ret);
+      syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
       return ret;
     }
 
     tbuf[2] = 0x04; //read cnt
     tbuf[3] = 0xC5; //command code
     tlen = 4;
+    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
+      return ret;
+    }
+    
+    snprintf(ver_str, MAX_VALUE_LEN, "Renesas %02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
+    kv_set(key, ver_str, 0, 0);
   }
 
-  return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, rlen, intf);
+  return ret;
+}
+
+int
+bic_get_vr_ver_cache(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *ver_str) {
+  char key[MAX_KEY_LEN], tmp_str[MAX_VALUE_LEN] = {0};
+
+  snprintf(key, sizeof(key), "slot%x_vr_%02xh_crc", slot_id, addr);
+  if (kv_get(key, tmp_str, NULL, 0)) {
+    
+    if (bic_get_vr_ver(slot_id, intf, bus, addr, key, tmp_str))
+      return -1;
+  }
+
+  if (snprintf(ver_str, MAX_VER_STR_LEN, "%s", tmp_str) > (MAX_VER_STR_LEN-1))
+    return -1;
+
+  return 0;  
 }
 
 int

@@ -148,6 +148,11 @@ server_power_12v_off(uint8_t fru) {
   uint8_t tbuf[2] = {0};
   uint8_t tlen = 0;
   int ret = 0, retry= 0;
+  
+  snprintf(cmd, 64, "rm -f /tmp/cache_store/slot%d_vr*", fru);
+  if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+  }
 
   snprintf(cmd, sizeof(cmd), "sv stop ipmbd_%d > /dev/null 2>&1", fby3_common_get_bus_id(fru));
   if (system(cmd) != 0) {

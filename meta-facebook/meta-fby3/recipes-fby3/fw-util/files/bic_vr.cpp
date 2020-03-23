@@ -9,6 +9,7 @@
 #include <sys/mman.h>
 #include <syslog.h>
 #include "bic_vr.h"
+#include <openbmc/kv.h>
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
 using namespace std;
@@ -20,24 +21,24 @@ map<uint8_t, string> list = {{0xC0, "VCCIN/VSA"},
 
 int VrComponent::print_version()
 {
-  uint8_t ver[6] = {0};
-  uint8_t len = 0;
+  const uint8_t bus = 0x8;
+  uint8_t addr;
   int ret = 0;
+  char ver_str[MAX_VALUE_LEN] = {0};
 
   // Print VR Version
   for ( auto vr:list ) {
     try {
+      addr = vr.first;
       server.ready();
-      ret = bic_get_vr_ver(slot_id, FW_VR, ver, &len, vr.first, intf);
-      if ( ret < 0 ) {
-        throw "Error in getting the version of " + vr.second;
-      } else {
-        printf("%s %s Version: 0x", (len > 3)?"Renesas":"Texas Instruments", vr.second.c_str());
-        for (int i = 0; i < len; i++) printf("%02X", ver[i]);
-        printf("\n");
-      }
+      
+      ret = bic_get_vr_ver_cache(slot_id, intf, bus, addr, ver_str);
+      if ( ret == 0 ) {
+        printf("%s Version : %s \n", vr.second.c_str(), ver_str);  //ex. ver_str = Infineon 0x588C254B
+      } 
+      
     } catch (string err) {
-      printf("%s Version: NA (%s)\n", vr.second.c_str(), err.c_str());
+      printf("%s Version : NA (%s)\n", vr.second.c_str(), err.c_str());
     }
   }
 

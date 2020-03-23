@@ -206,10 +206,10 @@ if [ "$has_gpv2" == "1" ] ; then
     fw_ver=$(/usr/bin/fw-util bmc --version fscd)
     if [[ $fw_ver =~ "fbgpv2" ]] ; then
       echo "Keep FSC config : $fw_ver"
-      logger -p user.crit "Keep FSC config : $fw_ver"
+      logger -p user.info "Keep FSC config : $fw_ver"
     else
       echo "Run default FSC for M.2 devices"
-      logger -p user.crit "Run default FSC for M.2 devices"
+      logger -p user.info "Run default FSC for M.2 devices"
       if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
         cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
       else
@@ -218,6 +218,7 @@ if [ "$has_gpv2" == "1" ] ; then
     fi
   elif [ "$dev_type" == "$DEV_TYPE_SSD" ] ; then
     echo "Run FSC for SSD"
+    logger -p user.info "Run FSC for SSD"
     if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
       cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
     else
@@ -225,6 +226,7 @@ if [ "$has_gpv2" == "1" ] ; then
     fi
   elif [ "$dev_type" == "$DEV_TYPE_VSI_ACC" ] ; then
     echo "Run FSC for VSI Accelerator"
+    logger -p user.info "Run FSC for VSI Accelerator"
     if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
       cp /etc/FSC_FBGPV2_VSI_DVT_config.json ${default_fsc_config_path}
     else
@@ -232,6 +234,7 @@ if [ "$has_gpv2" == "1" ] ; then
     fi
   elif [ "$dev_type" == "$DEV_TYPE_BRCM_ACC" ] ; then
     echo "Run FSC for BRCM Accelerator"
+    logger -p user.info "Run FSC for BRCM Accelerator"
     if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
       cp /etc/FSC_FBGPV2_BRCM_DVT_config.json ${default_fsc_config_path}
     else
@@ -239,6 +242,7 @@ if [ "$has_gpv2" == "1" ] ; then
     fi
   else
     echo "Run default FSC for M.2 devices"
+    logger -p user.info "Run default FSC for M.2 devices"
     if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
       cp /etc/FSC_FBGPV2_DVT_config.json ${default_fsc_config_path}
     else

@@ -50,6 +50,7 @@ int bic_get_sys_guid(uint8_t slot_id, uint8_t *guid);
 int bic_set_sys_guid(uint8_t slot_id, uint8_t *guid);
 int bic_do_sled_cycle(uint8_t slot_id);
 int bic_set_fan_speed(uint8_t fan_id, uint8_t pwm);
+int bic_manual_set_fan_speed(uint8_t fan_id, uint8_t pwm);
 int bic_get_fan_speed(uint8_t fan_id, float *value);
 int bic_get_fan_pwm(uint8_t fan_id, float *value);
 int bic_do_12V_cycle(uint8_t slot_id);

@@ -812,6 +812,27 @@ bic_do_sled_cycle(uint8_t slot_id) {
 
 // Only For Class 2
 int
+bic_set_fan_auto_mode(uint8_t crtl, uint8_t *status) {
+  uint8_t tbuf[1] = {0};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 1;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[0] = crtl;
+
+  ret = bic_ipmb_send(1, NETFN_OEM_REQ, CMD_OEM_FAN_CTRL_STAT, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  if ( ret < 0 ) {
+    return -1;
+  }
+
+  *status = rbuf[0];
+
+  return 0;
+}
+
+// Only For Class 2
+int
 bic_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
   uint8_t tbuf[5] = {0x9c, 0x9c, 0x00};
   uint8_t rbuf[1] = {0};
@@ -822,7 +843,27 @@ bic_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
   tbuf[3] = fan_id;
   tbuf[4] = pwm;
 
-  ret = bic_ipmb_send(1, NETFN_OEM_1S_REQ, CMD_OEM_SET_FAN_DUTY, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  ret = bic_ipmb_send(1, NETFN_OEM_1S_REQ, CMD_OEM_BMC_FAN_CTRL, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  if ( ret < 0 ) {
+    return -1;
+  }
+
+  return 0;
+}
+
+// Only For Class 2
+int
+bic_manual_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
+  uint8_t tbuf[2] = {0};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 2;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[0] = fan_id;
+  tbuf[1] = pwm;
+
+  ret = bic_ipmb_send(1, NETFN_OEM_REQ, CMD_OEM_SET_FAN_DUTY, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
   if ( ret < 0 ) {
     return -1;
   }

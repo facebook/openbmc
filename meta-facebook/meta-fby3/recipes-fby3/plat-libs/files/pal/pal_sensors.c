@@ -51,6 +51,7 @@ static bool sdr_init_done[MAX_NUM_FRUS] = {false};
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0, 1, 2, 3";
+const char pal_fan_opt_list[] = "enable, disable, status";
 
 const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_OUTLET_TEMP,
@@ -215,7 +216,7 @@ const uint8_t nic_sensor_list[] = {
 // List of MB discrete sensors to be monitored
 const uint8_t bmc_discrete_sensor_list[] = {
 };
- 
+
 //ADM1278
 PAL_ATTR_INFO adm1278_info_list[] = {
   {HSC_VOLTAGE, 19599, 0, 100},
@@ -524,7 +525,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
   }
-  
+
   switch(fru) {
   case FRU_BMC:
     if (bmc_location == NIC_BMC) {
@@ -534,7 +535,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       *sensor_list = (uint8_t *) bmc_sensor_list;
       *cnt = bmc_sensor_cnt;
     }
-    
+
     break;
   case FRU_NIC:
     *sensor_list = (uint8_t *) nic_sensor_list;
@@ -658,6 +659,7 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
   char label[32] = {0};
   uint8_t pwm_num = fan;
   uint8_t bmc_location = 0;
+  uint8_t status;
   int ret = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
@@ -673,7 +675,15 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
     }
     return sensors_write_fan(label, (float)pwm);
   } else if (bmc_location == NIC_BMC) {
-    return bic_set_fan_speed(fan, pwm);
+    ret = bic_set_fan_auto_mode(GET_FAN_MODE, &status);
+    if (ret < 0) {
+      return -1;
+    }
+    if (status == MANUAL_MODE) {
+      return bic_manual_set_fan_speed(fan, pwm);
+    } else {
+      return bic_set_fan_speed(fan, pwm);
+    }
   }
 
   return -1;
@@ -1048,7 +1058,7 @@ read_hsc_vin(uint8_t hsc_id, float *value) {
     syslog(LOG_WARNING, "Failed to open bus 11");
     goto error_exit;
   }
-  
+
   get_hsc_info(hsc_id, HSC_VOLTAGE, &addr, &m, &b, &r);
 
   tbuf[0] = PMBUS_READ_VIN;
@@ -1359,7 +1369,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
     r_exp = -r_exp;
   }
 
-  //syslog(LOG_WARNING, "%s() snr#0x%x raw:%x m=%x b=%x b_exp=%x r_exp=%x", __func__, sensor_num, x, m, b, b_exp, r_exp);  
+  //syslog(LOG_WARNING, "%s() snr#0x%x raw:%x m=%x b=%x b_exp=%x r_exp=%x", __func__, sensor_num, x, m, b, b_exp, r_exp);
   *value = ((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp));
 
   //correct the value
@@ -1409,7 +1419,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_NIC:
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
       break;
-      
+
     default:
       return -1;
   }
@@ -1608,7 +1618,7 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
   //syslog(LOG_WARNING, "%s() pal_is_sdr_init  bool %d, fru %d, snr_num: %x\n", __func__, pal_is_sdr_init(fru), fru, g_sinfo[fru-1][1].sdr.sensor_num);
   if ( true == pal_is_sdr_init(fru) ) {
-    memcpy(sinfo, g_sinfo[fru-1], sizeof(sensor_info_t) * MAX_SENSOR_NUM); 
+    memcpy(sinfo, g_sinfo[fru-1], sizeof(sensor_info_t) * MAX_SENSOR_NUM);
     goto error_exit;
   }
 
@@ -1617,7 +1627,7 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
     //syslog(LOG_WARNING, "%s() Failed to run pal_sensor_sdr_path\n", __func__);
     goto error_exit;
   }
-  
+
   while ( retry-- > 0 ) {
     ret = _sdr_init(path, sinfo);
     if ( ret < 0 ) {

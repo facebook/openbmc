@@ -66,6 +66,11 @@ const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
 #define SLOT4_POSTCODE_OFFSET 0x05
 #define DEBUG_CARD_UART_MUX 0x06
 
+#define ENABLE_STR "enable"
+#define DISABLE_STR "disable"
+#define STATUS_STR "status"
+#define FAN_MODE_FILE "/tmp/cache_store/fan_mode"
+
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
@@ -1466,4 +1471,64 @@ pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *respons
   memcpy(response, &rbuf[1], *rlen);
 
   return 0;
+}
+
+int
+pal_set_fan_ctrl (char *ctrl_opt) {
+  FILE* fp;
+  uint8_t bmc_location = 0;
+  uint8_t ctrl_mode, status;
+  int ret = 0;
+  char cmd[64] = {0};
+  char buf[32];
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return ret;
+  }
+
+  if (!strcmp(ctrl_opt, ENABLE_STR)) {
+    ctrl_mode = AUTO_MODE;
+    snprintf(cmd, sizeof(cmd), "sv start fscd > /dev/null 2>&1");
+  } else if (!strcmp(ctrl_opt, DISABLE_STR)) {
+    ctrl_mode = MANUAL_MODE;
+    snprintf(cmd, sizeof(cmd), "sv stop fscd > /dev/null 2>&1");
+  } else if (!strcmp(ctrl_opt, STATUS_STR)) {
+    ctrl_mode = GET_FAN_MODE;
+  } else {
+    return -1;
+  }
+
+  if (system(cmd) != 0) {
+    return -1;
+  }
+
+  if (bmc_location == NIC_BMC) {
+    ret = bic_set_fan_auto_mode(ctrl_mode, &status);
+  }
+
+  if (ctrl_mode == GET_FAN_MODE) {
+    if (bmc_location == NIC_BMC) {
+      if (status == AUTO_MODE) {
+        printf("Auto Mode: Normal\n");
+      } else if (status == MANUAL_MODE) {
+        printf("Auto Mode: Manual\n");
+      } else {
+        printf("Auto Mode: Unknown\n");
+      }
+    } else {
+      snprintf(cmd, sizeof(cmd), "fan-util --get | grep \"Fan Mode:\" | cut -d: -f2-");
+      if((fp = popen(cmd, "r")) == NULL) {
+        printf("Auto Mode: Unknown\n");
+        return -1;
+      }
+
+      if(fgets(buf, sizeof(buf), fp) != NULL) {
+        printf("Auto Mode:%s",buf);
+      }
+    }
+  } 
+
+  return ret;
 }

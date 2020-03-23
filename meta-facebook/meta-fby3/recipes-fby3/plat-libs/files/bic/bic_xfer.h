@@ -35,7 +35,9 @@ extern "C" {
 extern const uint32_t IANA_ID;
 
 #define CMD_OEM_GET_SET_GPIO    0x41
-#define CMD_OEM_SET_FAN_DUTY    0x50
+#define CMD_OEM_BMC_FAN_CTRL    0x50
+#define CMD_OEM_SET_FAN_DUTY    0xF1
+#define CMD_OEM_FAN_CTRL_STAT   0xF2
 #define CMD_OEM_GET_FAN_DUTY    0x51
 #define CMD_OEM_GET_FAN_RPM     0x52
 #define CMD_OEM_SET_12V_CYCLE   0x64
@@ -68,7 +70,7 @@ int is_bic_ready(uint8_t slot_id, uint8_t intf);
 int bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen, uint8_t intf);
 int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint16_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
-
+int bic_set_fan_auto_mode(uint8_t crtl, uint8_t *status);
 #ifdef __cplusplus
 } // extern "C"
 #endif

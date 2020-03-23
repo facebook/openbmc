@@ -41,8 +41,10 @@
 // PAL Variable
 size_t pal_pwm_cnt __attribute__((weak)) = 0;
 size_t pal_tach_cnt __attribute__((weak)) = 0;
+size_t pal_fan_opt_cnt __attribute__((weak)) = 0;
 char pal_pwm_list[] __attribute__((weak)) = "";
 char pal_tach_list[] __attribute__((weak)) = "";
+char pal_fan_opt_list[] __attribute__((weak)) = "";
 
 // PAL functions
 int __attribute__((weak))
@@ -2210,6 +2212,12 @@ pal_get_tach_list(void)
   return pal_tach_list;
 }
 
+char * __attribute__((weak))
+pal_get_fan_opt_list(void)
+{
+  return pal_fan_opt_list;
+}
+
 int __attribute__((weak))
 pal_get_pwm_cnt(void)
 {
@@ -2220,6 +2228,18 @@ int __attribute__((weak))
 pal_get_tach_cnt(void)
 {
   return pal_tach_cnt;
+}
+
+int __attribute__((weak))
+pal_get_fan_opt_cnt(void)
+{
+  return pal_fan_opt_cnt;
+}
+
+int __attribute__((weak))
+pal_set_fan_ctrl(char *ctrl_opt)
+{
+  return -1;
 }
 
 int __attribute__((weak))

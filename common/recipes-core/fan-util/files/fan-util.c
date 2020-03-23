@@ -32,6 +32,7 @@
 #define CMD_SET_FAN_STR "--set"
 #define CMD_GET_FAN_STR "--get"
 #define CMD_GET_FAN_DRIVER_STR "--get-driver"
+#define CMD_SET_AUTO_FAN_CTRL_STR "--auto-mode"
 #define ALL_FAN_NUM     0xFF
 #define SENSOR_FAIL_RECORD_DIR "/tmp/sensorfail_record"
 #define FAN_FAIL_RECORD_DIR "/tmp/fanfail_record"
@@ -44,6 +45,7 @@ enum {
   CMD_SET_FAN = 0,
   CMD_GET_FAN,
   CMD_GET_DRIVER,
+  CMD_SET_AUTO_FAN,
 };
 
 enum {
@@ -57,12 +59,17 @@ static void
 print_usage(void) {
   char pwm_list[16] = "";
   char tach_list[16] = "";
+  char fan_opt_list[32] = "";
 
   strncpy(pwm_list, pal_get_pwn_list(),16);
   strncpy(tach_list, pal_get_tach_list(),16);
+  strncpy(fan_opt_list, pal_get_fan_opt_list(),32);
   printf("Usage: fan-util --set <[0..100] %%> < Fan# [%s] >\n", pwm_list);
   printf("       fan-util --get < Fan# [%s] >\n", tach_list);
   printf("       fan-util --get-driver\n");
+  if (strlen(fan_opt_list) > 0){
+      printf("       fan-util --auto-mode < [%s] >\n", fan_opt_list);
+  }
 }
 
 static int
@@ -312,6 +319,9 @@ main(int argc, char **argv) {
   } else if (!strcmp(argv[1], CMD_GET_FAN_DRIVER_STR) && (argc == 2)) {
     /* fan-util --get-driver */
     cmd = CMD_GET_DRIVER;
+  } else if (!strcmp(argv[1], CMD_SET_AUTO_FAN_CTRL_STR) && (argc == 3)) {
+    /* fan-util --auto-control*/
+    cmd = CMD_SET_AUTO_FAN;
   } else {
     print_usage();
     return -1;
@@ -372,6 +382,12 @@ main(int argc, char **argv) {
   } else if ((cmd == CMD_GET_DRIVER) && (argc == 2)) {
     manu_flag = fan_mode_check(false);
     fscd_driver_check(manu_flag);
+  } else if ((cmd == CMD_SET_AUTO_FAN) && (argc == 3)) {
+    ret = pal_set_fan_ctrl(argv[2]);
+    if (ret < 0) {
+        printf("Error while setting fan auto mode : %s\n", argv[2]);
+        return -1;
+    }
   }
 
   return 0;

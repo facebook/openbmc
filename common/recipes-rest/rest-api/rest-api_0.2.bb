@@ -89,7 +89,7 @@ do_install_class-target() {
 
 
 pkgdir = "rest-api"
-RDEPENDS_${PN} += "libpal python3-core"
+RDEPENDS_${PN} += "libpal python3-core aiohttp"
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 

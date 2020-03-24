@@ -169,6 +169,12 @@ enum {
   BOARD_SKU_ID,
 };
 
+enum {
+  PLATFORM_EVT = 0x1,
+  PLATFORM_DVT,
+  PLATFORM_PVT,
+};
+
 int pal_get_platform_id(uint8_t id_type, uint8_t *id);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_is_slot_server(uint8_t fru);

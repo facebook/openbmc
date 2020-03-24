@@ -7,6 +7,3 @@ MACHINE ??= "lightning"
 
 # OpenBMC distro settings
 DISTRO ?= "openbmc-fb"
-
-# Disable fb_only_network
-INHERIT_remove = "fb-only-network"

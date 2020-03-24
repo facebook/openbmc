@@ -220,40 +220,27 @@ vr_ISL_program(uint8_t slot_id, vr *dev, uint8_t force) {
   uint8_t rbuf[16] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
+  uint8_t remaining_writes = 0x00;
   int retry = MAX_RETRY;
   vr_data *list = dev->pdata;
   uint8_t addr = dev->addr;
   int len = dev->data_cnt;
 
+  //get the remaining of the VR
+  ret = bic_get_isl_vr_remaining_writes(slot_id, VR_BUS, addr, &remaining_writes);
+  if ( ret < 0 ) {
+    goto error_exit;
+  }
+
+  //check it
+  ret = vr_remaining_writes_check(remaining_writes, force);
+  if ( ret < 0 ) {
+    goto error_exit;
+  }
+
   tbuf[0] = (VR_BUS << 1) + 1;
   tbuf[1] = addr;
   tbuf[2] = 0x00; //read cnt
-  tbuf[3] = 0xC7; //command code
-  tbuf[4] = 0xC2; //data1
-  tbuf[5] = 0x00; //data2
-  tlen = 6;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "[%s] Failed to send command and data...", __func__);
-    goto error_exit;
-  }
-
-  tbuf[2] = 0x04; //read cnt
-  tbuf[3] = 0xC5; //command code
-  tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "[%s] Failed to read NVM slots...", __func__);
-    goto error_exit;
-  }
-
-  ret = vr_remaining_writes_check(rbuf[0], force);
-  if ( ret < 0 ) {
-    goto error_exit;
-  }
-
-  //reset the read cnt
-  tbuf[2] = 0x00;
   for ( i=0; i<len; i++ ) {
     //prepare data
     tbuf[3] = list[i].command ;//command code
@@ -699,7 +686,6 @@ vr_IFX_program(uint8_t slot_id, vr *dev, uint8_t force) {
 #define VR_CLR_FAULT 0x03
 #define REG1_STS_CHECK 0x1
 #define REG2_STS_CHECK 0xA
-#define REMAINING_TIMES(x) (((x[1] << 8) + x[0]) & 0xFC0) >> 6
   int i = 0;
   int ret = 0;
   uint8_t tbuf[64] = {0};
@@ -712,33 +698,20 @@ vr_IFX_program(uint8_t slot_id, vr *dev, uint8_t force) {
   int len = dev->data_cnt;
   vr_data *list = dev->pdata;
 
-  tbuf[0] = (VR_BUS << 1) + 1;
-  tbuf[1] = addr;
-  tbuf[2] = 0x00; //read cnt
-  tbuf[3] = VR_PAGE;
-  tbuf[4] = VR_PAGE50;
-  tlen = 5;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  // get the remaining writes of the VR
+  ret = bic_get_ifx_vr_remaining_writes(slot_id, VR_BUS, addr, &remaining_writes);
   if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
     goto error_exit;
   }
 
-  tbuf[2] = 0x02; //read cnt
-  tbuf[3] = 0x82;
-  tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Couldn't get data from 0x%02X", __func__, tbuf[3]);
-    goto error_exit;
-  }
-
-  remaining_writes = REMAINING_TIMES(rbuf);
+  // check it
   ret = vr_remaining_writes_check(remaining_writes, force);
   if ( ret < 0 ) {
     goto error_exit;
   }
 
+  tbuf[0] = (VR_BUS << 1) + 1;
+  tbuf[1] = addr;
   //step 1 - write data to data register
   for (i = 0; i < len; i++ ) {
     if ( list[i].command != current_page ) {

@@ -450,14 +450,87 @@ bic_get_vr_device_id(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen
 }
 
 int
+bic_get_ifx_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes) {
+#define REMAINING_TIMES(x) (((x[1] << 8) + x[0]) & 0xFC0) >> 6
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[0] = (bus << 1) + 1;
+  tbuf[1] = addr;
+  tbuf[2] = 0x00; //read cnt
+  tbuf[3] = VR_PAGE;
+  tbuf[4] = VR_PAGE50;
+  tlen = 5;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
+    goto error_exit;
+  }
+
+  tbuf[2] = 0x02; //read cnt
+  tbuf[3] = 0x82;
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't get data from 0x%02X", __func__, tbuf[3]);
+    goto error_exit;
+  }
+
+  *writes = REMAINING_TIMES(rbuf);
+
+error_exit:
+  return ret;
+}
+
+int
+bic_get_isl_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes) {
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[0] = (bus << 1) + 1;
+  tbuf[1] = addr;
+  tbuf[2] = 0x00; //read cnt
+  tbuf[3] = 0xC7; //command code
+  tbuf[4] = 0xC2; //data1
+  tbuf[5] = 0x00; //data2
+  tlen = 6;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to send command and data...", __func__);
+    goto error_exit;
+  }
+
+  tbuf[2] = 0x04; //read cnt
+  tbuf[3] = 0xC5; //command code
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to read NVM slots...", __func__);
+    goto error_exit;
+  }
+
+  *writes = rbuf[0];
+
+error_exit:
+  return ret;
+}
+
+int
 bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *key, char *ver_str) {
   uint8_t tbuf[32] = {0};
   uint8_t tlen = 0;
   uint8_t rbuf[32] = {0};
   uint8_t rlen = 0;
+  uint8_t remaining_writes = 0;
   char path[128];
-  int fd;
-  int ret = 0, rc;
+  int fd = 0;
+  int ret = 0, rc = 0;
 
   ret = bic_get_vr_device_id(slot_id, 0, rbuf, &rlen, bus, addr, intf);
   if ( ret < 0 ) {
@@ -468,10 +541,11 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
 
-  //The length of GET_DEVICE_is different.
+  //The length of GET_DEVICE_ID is different.
   if ( rlen == 2 ) {
     //Infineon
-
+    //to avoid sensord changing the page of VRs, so use the LOCK file
+    //to stop monitoring sensors of VRs
     sprintf(path, VR_LOCK, slot_id);
     fd = open(path, O_CREAT | O_RDWR, 0666);
     rc = flock(fd, LOCK_EX | LOCK_NB);
@@ -481,6 +555,14 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
       }
     }
 
+    //get the remaining writes of VRs
+    ret = bic_get_ifx_vr_remaining_writes(slot_id, bus, addr, &remaining_writes);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr remaining writes. ret=%d", __func__,__LINE__, ret);
+      goto error_exit;
+    }
+ 
+    //get the CRC32 of the VR
     tbuf[2] = 0x00; //read cnt
     tbuf[3] = 0x00; //command code
     tbuf[4] = 0x62;
@@ -509,7 +591,7 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
       goto error_exit;
     }
-    snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
+    snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %d", rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
     kv_set(key, ver_str, 0, 0);
     
   error_exit:
@@ -538,6 +620,14 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
     kv_set(key, ver_str, 0, 0);
   } else {
     //ISL
+    //get the reamaining write
+    ret = bic_get_isl_vr_remaining_writes(slot_id, bus, addr, &remaining_writes);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr remaining writes. ret=%d", __func__,__LINE__, ret);
+      goto error_exit;
+    }
+
+    //get the CRC32 of the VR
     tbuf[2] = 0x00; //read cnt
     tbuf[3] = 0xC7; //command code
     tbuf[4] = 0x3F; //reg
@@ -558,7 +648,7 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
       return ret;
     }
     
-    snprintf(ver_str, MAX_VALUE_LEN, "Renesas %02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
+    snprintf(ver_str, MAX_VALUE_LEN, "Renesas %02X%02X%02X%02X, Remaining Writes: %d", rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
     kv_set(key, ver_str, 0, 0);
   }
 

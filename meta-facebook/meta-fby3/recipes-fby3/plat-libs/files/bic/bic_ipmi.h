@@ -57,6 +57,8 @@ int bic_get_fan_pwm(uint8_t fan_id, float *value);
 int bic_do_12V_cycle(uint8_t slot_id);
 int bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t intf);
 int bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_t intf);
+int bic_get_ifx_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes);
+int bic_get_isl_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes);
 #ifdef __cplusplus
 } // extern "C"
 #endif

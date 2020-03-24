@@ -10,7 +10,7 @@
 
 using namespace std;
 
-#define MAX_RETRY 5
+#define MAX_RETRY 30
 #define MUX_SWITCH_CPLD 0x07
 #define MUX_SWITCH_PCH 0x03
 #define GPIO_RST_USB_HUB 0x10

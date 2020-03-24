@@ -478,7 +478,38 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   }
 
   *data++ = bmc_location;
-  *data++ = 0x00; //board rev id
+
+  if ( bmc_location == BB_BMC ) {
+    int dev, retry = 3;
+    uint8_t tbuf[4] = {0};
+    uint8_t rbuf[4] = {0};
+
+    dev = open("/dev/i2c-12", O_RDWR);
+    if ( dev < 0 ) {
+      return -1;
+    }
+
+    while ((--retry) > 0) {
+      tbuf[0] = 8;
+      ret = i2c_rdwr_msg_transfer(dev, 0x1E, tbuf, 1, rbuf, 1);
+      if (!ret)
+        break;
+      if (retry)
+        msleep(10);
+    }
+
+    close(dev);
+    if (ret) {
+      *data++ = 0x00; //board rev id
+    } else {
+      *data++ = rbuf[0]; //board rev id
+    }
+
+  } else {
+    // Config C can not get rev id form NIC EXP CPLD so far
+    *data++ = 0x00; //board rev id
+  }
+
   *data++ = slot; //slot id
   *data++ = 0x00; //slot type. server = 0x00
   *res_len = data - res_data;

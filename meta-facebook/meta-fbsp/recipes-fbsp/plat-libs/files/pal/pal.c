@@ -54,6 +54,9 @@
 
 const char pal_fru_list[] = "all, mb, nic0, nic1, riser1, riser2, fcb, bmc";
 const char pal_server_list[] = "mb";
+const char pal_fru_list_print[] =  "all, mb, nic0, nic1, riser1, riser2, bmc";  // Cannot read fruid from "fcb"
+const char pal_fru_list_rw[] = "mb, nic0, nic1, riser1, riser2, bmc";  // Cannot write fruid to "fcb"
+const char pal_fru_list_sensor_history[] = "all, mb, nic0, nic1, riser1, riser2, fcb, bmc";
 
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);

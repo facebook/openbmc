@@ -67,6 +67,11 @@ extern const char pal_tach_list[];
 extern const char pal_fru_list[];
 extern const char pal_server_list[];
 
+#define CUSTOM_FRU_LIST 1
+extern const char pal_fru_list_print[];
+extern const char pal_fru_list_rw[];
+extern const char pal_fru_list_sensor_history[];
+
 enum {
   FAN_0 = 0,
   FAN_1,

@@ -1,7 +1,6 @@
 #include "bic_fw.h"
 #include "usbdbg.h"
 #include "nic.h"
-#include "tpm.h"
 
 // Shared NIC
 NicComponent nic("nic", "nic");
@@ -19,6 +18,3 @@ BicFwBlComponent bicfwbl4("slot4", "bicbl", 4);
 // Register USB Debug Card components
 UsbDbgComponent usbdbg("ocpdbg", "mcu", "FBY2", 13, 0x60, false);
 UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 13, 0x60, 0x02);  // target ID of bootloader = 0x02
-
-// Register BMC TPM
-TpmComponent tpm("bmc", "tpm");

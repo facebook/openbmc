@@ -1,5 +1,7 @@
 #include <cstdio>
 #include <cstring>
+#include <openbmc/obmc-i2c.h>
+#include <openbmc/pal.h>
 #include <openbmc/cpld.h>
 #include "fw-util.h"
 
@@ -79,16 +81,46 @@ class CpldComponent : public Component {
 
 int CpldComponent::_update(const char *path, uint8_t is_signed) {
   int ret = -1;
+  uint8_t i, cfm_cnt = 1, rev_id = 0xF;
 
-  if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
-    printf("Cannot open i2c!\n");
-    return -1;
+  if ((pal_is_pfr_active() == PFR_ACTIVE) && (pld_type == MAX10_10M25)) {
+    string dev;
+    string cmd;
+
+    if (!sys.get_mtd_name(string("stg-cpld"), dev)) {
+      return FW_STATUS_FAILURE;
+    }
+
+    sys.output << "Flashing to device: " << dev << endl;
+    cmd = "flashcp -v " + string(path) + " " + dev;
+    ret = sys.runcmd(cmd);
+    return pal_fw_update_finished(0, _component.c_str(), ret);
   }
 
-  ret = cpld_program((char *)path, (char *)pld_name.c_str(), is_signed);
-  cpld_intf_close(INTF_I2C);
-  if (ret) {
-    printf("Error Occur at updating CPLD FW!\n");
+  if ((pld_type == MAX10_10M25) && (!pal_get_board_rev_id(&rev_id) && (rev_id < 2))) {
+    cfm_cnt = 2;
+  }
+
+  for (i = 0; i < cfm_cnt; i++) {
+    if (i == 1) {
+      // workaround for EVT boards that CONFIG_SEL of main CPLD is floating,
+      // so program both CFMs
+      attr.img_type = s_attrs[CFM1_10M25].img_type;
+      attr.start_addr = s_attrs[CFM1_10M25].start_addr;
+      attr.end_addr = s_attrs[CFM1_10M25].end_addr;
+    }
+
+    if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
+      printf("Cannot open i2c!\n");
+      return -1;
+    }
+
+    ret = cpld_program((char *)path, (char *)pld_name.substr(0, 4).c_str(), is_signed);
+    cpld_intf_close(INTF_I2C);
+    if (ret) {
+      printf("Error Occur at updating CPLD FW!\n");
+      break;
+    }
   }
 
   return ret;
@@ -104,28 +136,50 @@ int CpldComponent::fupdate(string image) {
 
 int CpldComponent::print_version() {
   int ret = -1;
+  int ifd = 0;
+  uint8_t i, tbuf[8], rbuf[8], cmds[4] = {0x7f, 0x01, 0x7e, 0x7d};
   uint8_t ver[4];
+  char dev_i2c[16];
 
-  if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
-    printf("Cannot open i2c!\n");
-    return -1;
+  if (pal_is_pfr_active() && (pld_type == MAX10_10M25)) {
+    do {
+      sprintf(dev_i2c, "/dev/i2c-%d", PFR_MAILBOX_BUS);
+      ifd = open(dev_i2c, O_RDWR);
+      if (ifd < 0) {
+        break;
+      }
+
+      for (i = 0; i < sizeof(cmds); i++) {
+        tbuf[0] = cmds[i];
+        if ((ret = i2c_rdwr_msg_transfer(ifd, PFR_MAILBOX_ADDR, tbuf, 1, rbuf, 1))) {
+          break;
+        }
+        ver[i] = rbuf[0];
+      }
+    } while (0);
+
+    if (ifd > 0) {
+      close(ifd);
+    }
+  } else {
+    if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
+      printf("Cannot open i2c!\n");
+      return -1;
+    }
+
+    ret = cpld_get_ver((uint32_t *)ver);
+    cpld_intf_close(INTF_I2C);
   }
-
-  ret = cpld_get_ver((uint32_t *)ver);
-  cpld_intf_close(INTF_I2C);
 
   if (ret) {
     printf("%s CPLD Version: NA\n", pld_name.c_str());
   } else {
-    printf("%s CPLD Version: v%02x.%02x.%02x.%02x\n", pld_name.c_str(), ver[3], ver[2], ver[1], ver[0]);
+    printf("%s CPLD Version: v%02u.%02u.%02u.%02u\n", pld_name.c_str(), ver[3], ver[2], ver[1], ver[0]);
   }
 
   return 0;
 }
 
-CpldComponent pfr_cfm0("cpld", "pfr_cfm0", "PFR_CFM0", MAX10_10M25, CFM0_10M25, 4, 0x5a);
-CpldComponent pfr_cfm1("cpld", "pfr_cfm1", "PFR_CFM1", MAX10_10M25, CFM1_10M25, 4, 0x5a);
-CpldComponent mod_cfm0("cpld", "mod_cfm0", "MOD_CFM0", MAX10_10M16, CFM0_10M16, 4, 0x55);
-CpldComponent mod_cfm1("cpld", "mod_cfm1", "MOD_CFM1", MAX10_10M16, CFM1_10M16, 4, 0x55);
-CpldComponent glb_cfm0("cpld", "glb_cfm0", "GLB_CFM0", MAX10_10M16, CFM0_10M16, 23, 0x55);
-CpldComponent glb_cfm1("cpld", "glb_cfm1", "GLB_CFM1", MAX10_10M16, CFM1_10M16, 23, 0x55);
+CpldComponent pfr_cfm0("cpld", "pfr_cpld", "PFR_CPLD", MAX10_10M25, CFM0_10M25, 4, 0x5a);
+CpldComponent mod_cpld("cpld", "mod_cpld", "MOD_CPLD", MAX10_10M16, CFM0_10M16, 4, 0x55);
+CpldComponent glb_cpld("cpld", "glb_cpld", "GLB_CPLD", MAX10_10M16, CFM0_10M16, 23, 0x55);

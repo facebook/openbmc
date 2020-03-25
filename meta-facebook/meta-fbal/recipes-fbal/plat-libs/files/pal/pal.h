@@ -52,6 +52,9 @@ extern "C" {
 #define NM_IPMB_BUS_ID (5)
 #define NM_SLAVE_ADDR  (0x2C)
 
+#define PFR_MAILBOX_BUS  (4)
+#define PFR_MAILBOX_ADDR (0xB0)
+
 enum {
   FRU_ALL  = 0,
   FRU_MB,
@@ -166,6 +169,7 @@ int pal_get_host_system_mode(uint8_t* mode);
 int pal_get_config_is_master(void);
 int pal_get_blade_id(uint8_t *id);
 int pal_get_mb_position(uint8_t* pos);
+int pal_get_board_rev_id(uint8_t *id);
 
 enum {
   UARTSW_BY_BMC,

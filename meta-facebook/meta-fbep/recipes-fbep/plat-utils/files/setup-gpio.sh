@@ -279,9 +279,11 @@ gpio_export SMB_ALERT_ASIC67 GPIOM5
 gpio_export PAX2_INT2 GPIOM0
 gpio_export PAX3_INT2 GPIOM6
 
-# SLED ID LED
-gpio_export PWR_ID_LED_N GPIOM1
-gpio_set PWR_ID_LED_N 1
+# Power control with debug jumper J34
+# 0 = controlled by BMC
+# 1 = controlled by CPLD
+gpio_export PWR_CTRL GPIOM1
+gpio_set PWR_CTRL 0
 
 # RTC interrupt (PCF85263AT)
 gpio_export BMC_RTC_INT GPIOM7
@@ -471,12 +473,12 @@ gpio_export PRSNT1_N_ASIC4 GPIOY3
 gpio_export USB2_SEL0_U42 GPIOZ0
 gpio_set USB2_SEL0_U42 1
 gpio_export USB2_SEL1_U42 GPIOZ1
-gpio_set USB2_SEL1_U42 0
+gpio_set USB2_SEL1_U42 1
 # BMC
 gpio_export USB2_SEL0_U43 GPIOZ2
 gpio_set USB2_SEL0_U43 1
 gpio_export USB2_SEL1_U43 GPIOZ3
-gpio_set USB2_SEL1_U43 0
+gpio_set USB2_SEL1_U43 1
 
 # To enable GPIOAA
 #devmem_clear_bit $(scu_addr a4) 24
@@ -555,32 +557,43 @@ gpio_export BMC_GPIOAC6 GPIOAC6
 gpio_export BMC_GPIOAC7 GPIOAC7
 
 echo -n "Setup PCIe switch config "
+# 8S by default
 gpio_set PAX0_SKU_ID 0
 gpio_set PAX1_SKU_ID 0
 gpio_set PAX2_SKU_ID 0
 gpio_set PAX3_SKU_ID 0
 
-for sec in {1..30};
-do
-  server_type=$(/usr/local/bin/ipmb-util 0 0x20 0xE8 0x0)
-  server_type=${server_type:1:1}
-  if [ "$server_type" == "0" ]
-  then
-    /usr/local/bin/cfg-util server_type 8
-    break
-  elif [ "$server_type" == "1" ]
-  then
-    /usr/local/bin/cfg-util server_type 2
+if [[ -f "/mnt/data/kv_store/server_type" ]]; then
+  # If KV had existed
+  server_type=$(cat /mnt/data/kv_store/server_type)
+  if [[ "$server_type" == "2" ]]; then
     gpio_set PAX0_SKU_ID 1
     gpio_set PAX1_SKU_ID 1
     gpio_set PAX2_SKU_ID 1
     gpio_set PAX3_SKU_ID 1
-    break
-  else
-    echo -n "."
-    sleep 1
   fi
-done
+else
+  # Get config from MB0's BMC
+  for retry in {1..30};
+  do
+    server_type=$(/usr/local/bin/ipmb-util 2 0x20 0xE8 0x0)
+    server_type=${server_type:1:1}
+    if [[ "$server_type" == "0" ]]; then
+      /usr/local/bin/cfg-util server_type 8
+      break
+    elif [[ "$server_type" == "1" ]]; then
+      /usr/local/bin/cfg-util server_type 2
+      gpio_set PAX0_SKU_ID 1
+      gpio_set PAX1_SKU_ID 1
+      gpio_set PAX2_SKU_ID 1
+      gpio_set PAX3_SKU_ID 1
+      break
+    else
+      echo -n "."
+      sleep 1
+    fi
+  done
+fi
 echo "done"
 
 gpio_set BMC_READY_N 0

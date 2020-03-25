@@ -4,7 +4,7 @@ all: vboot-util
 CFLAGS += -Wall -Werror
 
 vboot-util: vboot-util.o
-	$(CC) $(CFLAGS) -std=gnu99 -o $@ $^ $(LDFLAGS) -lvbs -lkv
+	$(CC) $(CFLAGS) -std=gnu99 -o $@ $^ -lkv -lvbs $(LDFLAGS)
 
 .PHONY: clean
 

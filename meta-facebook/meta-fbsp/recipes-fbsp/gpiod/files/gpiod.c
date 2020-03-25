@@ -215,6 +215,13 @@ static void gpio_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_val
   log_gpio_change(desc, curr, 0);
 }
 
+// Generic Event Handler for GPIO changes, but only logs event when MB is ON
+static void gpio_event_pson_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  SERVER_POWER_CHECK(0);
+  log_gpio_change(desc, curr, 0);
+}
+
 // Generic Event Handler for GPIO changes, but only logs event when MB is ON 3S
 static void gpio_event_pson_3s_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
@@ -476,46 +483,6 @@ ierr_mcerr_event_handler() {
   return NULL;
 }
 
-//SLP3 Event Handler
-static void
-slp3_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  gpio_value_t status;
-  gpio_desc_t *asic_en = gpio_open_by_shadow("FM_ASIC_POWER_EN");
-
-  status = gpio_get("PRSNT_PCIE_CABLE_1_N");
-  if(status < 0 || status == GPIO_VALUE_HIGH) {
-    return;
-  }
-
-  status = gpio_get("PRSNT_PCIE_CABLE_2_N");
-  if(status < 0 || status == GPIO_VALUE_HIGH) {
-    return;
-  }
-
-  gpio_set_value(asic_en, GPIO_VALUE_HIGH);
-}
-
-static void init_slp3(gpiopoll_pin_t *desc, gpio_value_t value) {
-  gpio_value_t status;
-  gpio_desc_t *asic_en = gpio_open_by_shadow("FM_ASIC_POWER_EN");
-
-  if(value == GPIO_VALUE_LOW) {
-    return;
-  }
-
-  status = gpio_get("PRSNT_PCIE_CABLE_1_N");
-  if(status < 0 || status == GPIO_VALUE_HIGH) {
-    return;
-  }
-
-  status = gpio_get("PRSNT_PCIE_CABLE_2_N");
-  if(status < 0 || status == GPIO_VALUE_HIGH) {
-    return;
-  }
-
-  gpio_set_value(asic_en, GPIO_VALUE_HIGH);
-} 
-
 //Uart Select on DEBUG Card Event Handler
 static void
 uart_select_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
@@ -608,9 +575,10 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_CPU1_THERMTRIP_LVT3_PLD_N", "GPIOD0", GPIO_EDGE_BOTH, cpu1_thermtrip, NULL},
   {"FM_PCH_BMC_THERMTRIP_N", "GPIOG2", GPIO_EDGE_BOTH, pch_thermtrip_handler, NULL},
   {"RST_PLTRST_BMC_N", "GPIOF6", GPIO_EDGE_BOTH, platform_reset_event_handle, NULL},
-  {"FM_SLPS3_N", "GPIOY0", GPIO_EDGE_RISING, slp3_handler, init_slp3},
-  {"IRQ_UV_DETECT_N", "GPIOM0", GPIO_EDGE_BOTH, irq_uv_handler, NULL},
-  {"IRQ_OC_DETECT_N", "GPIOM1", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
+  {"FM_SLPS3_N", "GPIOY0", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
+  {"FM_SLPS4_N", "GPIOY1", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
+  {"IRQ_OC_DETECT_N", "GPIOM0", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
+  {"IRQ_UV_DETECT_N", "GPIOM1", GPIO_EDGE_BOTH, irq_uv_handler, NULL},
   {"IRQ_HSC_FAULT_N", "GPIOL2", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
   {"IRQ_SML1_PMBUS_BMC_ALERT_N", "GPIOAA1", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
   {"FM_CPU_CATERR_LVT3_N", "GPIOZ0", GPIO_EDGE_FALLING, err_caterr_handler, init_caterr},

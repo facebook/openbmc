@@ -203,6 +203,46 @@ numeric_state_to_name(unsigned int state, const char *name_str[], size_t n, cons
   return name_str[state];
 }
 
+static json_t *
+get_thresh_json_obj(thresh_sensor_t *thresh) {
+  json_t *thresh_obj = NULL;
+  char svalue[20];
+
+  if ((thresh->flag & 0x7E) && (thresh_obj = json_object())) {
+    if (thresh->flag & GETMASK(UCR_THRESH)) {
+      snprintf(svalue, sizeof(svalue), "%.2f", thresh->ucr_thresh);
+      json_object_set_new(thresh_obj, "UCR", json_string(svalue));
+    }
+
+    if (thresh->flag & GETMASK(UNC_THRESH)) {
+      snprintf(svalue, sizeof(svalue), "%.2f", thresh->unc_thresh);
+      json_object_set_new(thresh_obj, "UNC", json_string(svalue));
+    }
+
+    if (thresh->flag & GETMASK(UNR_THRESH)) {
+      snprintf(svalue, sizeof(svalue), "%.2f", thresh->unr_thresh);
+      json_object_set_new(thresh_obj, "UNR", json_string(svalue));
+    }
+
+    if (thresh->flag & GETMASK(LCR_THRESH)) {
+      snprintf(svalue, sizeof(svalue), "%.2f", thresh->lcr_thresh);
+      json_object_set_new(thresh_obj, "LCR", json_string(svalue));
+    }
+
+    if (thresh->flag & GETMASK(LNC_THRESH)) {
+      snprintf(svalue, sizeof(svalue), "%.2f", thresh->lnc_thresh);
+      json_object_set_new(thresh_obj, "LNC", json_string(svalue));
+    }
+
+    if (thresh->flag & GETMASK(LNR_THRESH)) {
+      snprintf(svalue, sizeof(svalue), "%.2f", thresh->lnr_thresh);
+      json_object_set_new(thresh_obj, "LNR", json_string(svalue));
+    }
+  }
+
+  return thresh_obj;
+}
+
 static void
 print_sensor_reading(float fvalue, uint16_t snr_num, thresh_sensor_t *thresh,
        get_sensor_reading_struct *sensor_info, char *status, json_t *fru_sensor_obj, char * filter_sensor_name) {
@@ -213,9 +253,8 @@ print_sensor_reading(float fvalue, uint16_t snr_num, thresh_sensor_t *thresh,
 
   if (json) {
     json_t *sensor_obj = json_object();
-    json_t *search = json_object();
+    json_t *search, *thresh_obj;
     char svalue[20];
-    snprintf(svalue, 20, "%.2f", fvalue);
 
     if (is_pldm_state_sensor(snr_num, sensor_info->fru)) {
       json_object_set_new(sensor_obj, "value",
@@ -224,6 +263,12 @@ print_sensor_reading(float fvalue, uint16_t snr_num, thresh_sensor_t *thresh,
       json_object_set_new(fru_sensor_obj, thresh->name, sensor_obj);
       return;
     }
+
+    if (threshold && (thresh_obj = get_thresh_json_obj(thresh))) {
+      json_object_set_new(sensor_obj, "thresholds", thresh_obj);
+    }
+    snprintf(svalue, sizeof(svalue), "%.2f", fvalue);
+    json_object_set_new(sensor_obj, "value", json_string(svalue));
 
     search = json_object_get(fru_sensor_obj, thresh->name);
     if (search != NULL) {
@@ -236,17 +281,15 @@ print_sensor_reading(float fvalue, uint16_t snr_num, thresh_sensor_t *thresh,
         the following "json_object_set_new(fru_sensor_obj, thresh->name, value_array)"
         will free the json_object "search"
         */
-        json_object_set_new(sensor_obj, "value", json_string(svalue));
         json_array_append_new(value_array, sensor_obj);
         json_object_set_new(fru_sensor_obj, thresh->name, value_array);
       } else if (json_is_array(search)) {
-        json_object_set_new(sensor_obj, "value", json_string(svalue));
         json_array_append_new(search, sensor_obj);
       } else {
-        syslog(LOG_ERR, "[%s:%d] get error type of the JSON obj", __FUNCTION__, __LINE__);
+        syslog(LOG_ERR, "[%s]get error type of the JSON obj", __func__);
+        json_decref(sensor_obj);
       }
     } else {
-      json_object_set_new(sensor_obj, "value", json_string(svalue));
       json_object_set_new(fru_sensor_obj, thresh->name, sensor_obj);
     }
 
@@ -417,8 +460,9 @@ get_sensor_reading(void *sensor_data) {
       if (!is_pldm_sensor(snr_num, sensor_info->fru)) {
         if (json) {
           json_t *sensor_obj = json_object();
-          json_t *search = json_object();
-          search = json_object_get(fru_sensor_obj, thresh.name);
+          json_t *search = json_object_get(fru_sensor_obj, thresh.name);
+
+          json_object_set_new(sensor_obj, "value", json_string("NA"));
           if (search != NULL) {
             /* in order to match the RESTAPI format */
             if (json_is_object(search)) {
@@ -429,17 +473,15 @@ get_sensor_reading(void *sensor_data) {
               the following "json_object_set_new(fru_sensor_obj, thresh->name, value_array)"
               will free the json_object "search"
               */
-              json_object_set_new(sensor_obj, "value", json_string("NA"));
               json_array_append_new(value_array, sensor_obj);
               json_object_set_new(fru_sensor_obj, thresh.name, value_array);
             } else if (json_is_array(search)) {
-              json_object_set_new(sensor_obj, "value", json_string("NA"));
               json_array_append_new(search, sensor_obj);
             } else {
-              syslog(LOG_ERR, "[%s:%d] get error type of the JSON obj", __FUNCTION__, __LINE__);
+              syslog(LOG_ERR, "[%s]get error type of the JSON obj", __func__);
+              json_decref(sensor_obj);
             }
           } else {
-            json_object_set_new(sensor_obj, "value", json_string("NA"));
             json_object_set_new(fru_sensor_obj, thresh.name, sensor_obj);
           }
         } else if (filter) {
@@ -570,7 +612,7 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
   abs_time.tv_sec += timeout->tv_sec;
   abs_time.tv_nsec += timeout->tv_nsec;
 
-   pal_get_fru_name(sensor_data->fru, fruname);
+  pal_get_fru_name(sensor_data->fru, fruname);
 
   //Make get_sensor_reading a thread
   if (pthread_create(&tid_get_sensor_reading, NULL, get_sensor_reading, (void *) sensor_data) < 0) {
@@ -709,7 +751,7 @@ int parse_args(int argc, char *argv[], char *fruname,
     bool *history_clear, bool *history, bool *threshold, bool *force, bool *json, bool *filter, long *period, int *snr)
 {
   int ret;
-  int num;
+  int num, options = 0;
   char *end;
   int index;
   static struct option long_opts[] = {
@@ -739,18 +781,23 @@ int parse_args(int argc, char *argv[], char *fruname,
         break;
       case 'i':
         *filter = true;
+        options |= (1 << 4);
         break;
       case 'j':
         *json = true;
+        options |= (1 << 3);
         break;
       case 'c':
         *history_clear = true;
+        options |= (1 << 2);
         break;
       case 't':
         *threshold = true;
+        options |= (1 << 1);
         break;
       case 'h':
         *history = true;
+        options |= (1 << 0);
         if (convert_period(optarg, period)) {
           return -1;
         }
@@ -787,10 +834,9 @@ int parse_args(int argc, char *argv[], char *fruname,
       }
     }
   }
-  /* Only one of these flags should be on at
-   * any time */
+
   num = (int)*threshold + (int)*history_clear + (int)*history + (int)*json + (int)*filter;
-  if (num > 1) {
+  if ((num > 1) && (options != 0x0A)) {  // threshold + json
     return -1;
   }
 

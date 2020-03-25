@@ -47,6 +47,7 @@ IMAGE_INSTALL += " \
   i2craw \
   crashdump \
   threshold-util \
+  sensor-setup \
   "
 
 # @TODO T60523536 - Re-enable ncsid.

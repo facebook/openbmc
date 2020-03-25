@@ -3,7 +3,6 @@
 #include "bios.h"
 #include "usbdbg.h"
 #include "nic.h"
-#include "tpm.h"
 #include <linux/version.h>
 #include <openbmc/pal.h>
 #include <openbmc/misc-utils.h>
@@ -63,4 +62,3 @@ UsbDbgComponent usbdbg("mb", "usbdbgfw", "FBTP", 9, 0x60, false);
 UsbDbgBlComponent usbdbgbl("mb", "usbdbgbl", 9, 0x60, 0x02);
 FBTPBiosComponent bios("mb", "bios");
 NicComponent nic("nic", "nic");
-TpmComponent tpm("bmc", "tpm");

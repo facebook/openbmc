@@ -208,13 +208,13 @@ int pal_channel_to_bus(int channel)
     case 0:
       return 13; // USB (LCD Debug Board)
     case 1:
-      return 1; // MB#1
+      return 2; // MB#0
     case 2:
-      return 0; // MB#2
+      return 3; // MB#1
     case 3:
-      return 3; // MB#3
+      return 0; // MB#2
     case 4:
-      return 2; // MB#4
+      return 1; // MB#3
   }
 
   // Debug purpose, map to real bus number
@@ -1026,4 +1026,19 @@ void pal_dump_key_value(void)
     i++;
     memset(value, 0, MAX_VALUE_LEN);
   }
+}
+
+int pal_set_host_system_mode(uint8_t mode)
+{
+  int ret;
+
+  if (mode == 0x00) {
+    ret = kv_set("server_type", "8", 0, KV_FPERSIST); // 8S
+  } else if (mode == 0x01) {
+    ret = kv_set("server_type", "2", 0, KV_FPERSIST); // 4*2S
+  } else {
+    return CC_INVALID_PARAM;
+  }
+
+  return ret < 0? CC_UNSPECIFIED_ERROR: CC_SUCCESS;
 }

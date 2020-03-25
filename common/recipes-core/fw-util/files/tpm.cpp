@@ -95,3 +95,7 @@ int TpmComponent::print_version()
   }
   return 0;
 }
+
+#ifdef CONFIG_TPM1
+TpmComponent tpm("bmc", "tpm");
+#endif

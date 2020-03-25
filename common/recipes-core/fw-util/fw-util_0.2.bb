@@ -43,6 +43,10 @@ LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -lpal -lvbs -ldl -lgpio-ctrl
 DEPENDS += "jansson libpal dtc zlib openssl libvbs libgpio-ctrl"
 RDEPENDS_${PN} += "jansson libpal zlib openssl libvbs libgpio-ctrl"
 
+CXXFLAGS += "\
+  ${@bb.utils.contains('MACHINE_FEATURES', 'tpm1', '-DCONFIG_TPM1', '', d)} \
+  ${@bb.utils.contains('MACHINE_FEATURES', 'tpm2', '-DCONFIG_TPM2', '', d)} \
+  "
 do_install() {
   install -d ${D}${bindir}
   install -m 0755 fw-util ${D}${bindir}/fw-util

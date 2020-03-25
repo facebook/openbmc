@@ -62,3 +62,7 @@ int Tpm2Component::print_version() {
 
   return 0;
 }
+
+#ifdef CONFIG_TPM2
+Tpm2Component tpm("bmc", "tpm");
+#endif

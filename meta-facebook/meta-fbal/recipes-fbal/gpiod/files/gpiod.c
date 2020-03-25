@@ -68,10 +68,11 @@ struct gpioexppoll_config {
   char shadow[32];
   char desc[64];
   char pwr_st;
+  gpio_edge_t edge;
   gpio_value_t last;
   gpio_value_t curr;
-//  void (*handler)(char shadow, char desc, gpio_edge_t edge, gpio_value_t last, gpio_value_t curr);
-  void (*init_gpio)(char shadow, char desc);
+  void (*init_gpio)(char* shadow, char* desc, gpio_value_t value);
+  void (*handler)(char* shadow, char* desc, gpio_value_t value);
 };
 
 enum {
@@ -80,16 +81,33 @@ enum {
   PS_ON_3S,
 };
 
+void cpu_vr_hot_init(char* shadow, char* desc, gpio_value_t value) {
+  if(value == GPIO_VALUE_LOW ) {
+    syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", desc, shadow);
+  }
+  return;
+}
+
+void cpu_skt_init(char* shadow, char* desc, gpio_value_t value) {
+  syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", desc, shadow);
+  return;
+}
+
+void ioex_gpios_event_handle(char* shadow, char* desc, gpio_value_t value) {
+  syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", desc, shadow);
+  return;
+}
+
 //PCA9539 Address 0XEE
 struct gpioexppoll_config ioex0_gpios[] = {
-  {"IRQ_PVCCIN_CPU0_VRHOT_LVC3_N", "ExIO_0", PS_ON, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-  {"IRQ_PVCCIN_CPU1_VRHOT_LVC3_N", "ExIO_1", PS_ON, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-  {"IRQ_PVDDQ_ABC_CPU0_VRHOT_LVC3_N", "ExIO_2", PS_ON, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-  {"IRQ_PVDDQ_DEF_CPU0_VRHOT_LVC3_N", "ExIO_3", PS_ON, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-  {"IRQ_PVDDQ_ABC_CPU1_VRHOT_LVC3_N", "ExIO_4", PS_ON, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-  {"IRQ_PVDDQ_DEF_CPU1_VRHOT_LVC3_N", "ExIO_5", PS_ON, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-  {"FM_CPU0_SKTOCC_LVT3_PLD_N", "ExIO_6", STBY, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-  {"FM_CPU1_SKTOCC_LVT3_PLD_N", "ExIO_7", STBY, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
+  {"IRQ_PVCCIN_CPU0_VRHOT_LVC3_N", "ExIO_0", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, ioex_gpios_event_handle},
+  {"IRQ_PVCCIN_CPU1_VRHOT_LVC3_N", "ExIO_1", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, ioex_gpios_event_handle},
+  {"IRQ_PVDDQ_ABC_CPU0_VRHOT_LVC3_N", "ExIO_2", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, ioex_gpios_event_handle},
+  {"IRQ_PVDDQ_DEF_CPU0_VRHOT_LVC3_N", "ExIO_3", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, ioex_gpios_event_handle},
+  {"IRQ_PVDDQ_ABC_CPU1_VRHOT_LVC3_N", "ExIO_4", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, ioex_gpios_event_handle},
+  {"IRQ_PVDDQ_DEF_CPU1_VRHOT_LVC3_N", "ExIO_5", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, ioex_gpios_event_handle},
+  {"FM_CPU0_SKTOCC_LVT3_PLD_N", "ExIO_6", STBY, GPIO_EDGE_RISING, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_skt_init, ioex_gpios_event_handle},
+  {"FM_CPU1_SKTOCC_LVT3_PLD_N", "ExIO_7", STBY, GPIO_EDGE_RISING, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_skt_init, ioex_gpios_event_handle},
 };
 
 static gpio_value_t gpio_get(const char *shadow)
@@ -129,6 +147,9 @@ static void* ioex0_monitor()
 {
   int i;
   uint8_t status;
+  uint8_t assert = false;
+  static uint8_t init_flag[8];
+  gpio_value_t curr;
 
   while (1) {
 
@@ -137,24 +158,56 @@ static void* ioex0_monitor()
         if (pal_get_server_power(FRU_MB, &status) < 0 || status == SERVER_POWER_OFF) {
           continue;
         }
+      } 
+      
+      curr = gpio_get(ioex0_gpios[i].shadow);
+      if(curr == ioex0_gpios[i].last) {
+        continue;
       }
 
-      ioex0_gpios[i].curr = gpio_get(ioex0_gpios[i].shadow);
-      if (ioex0_gpios[i].last != ioex0_gpios[i].curr) {
-          syslog(LOG_CRIT, "%s: %s - %s\n",
-          ioex0_gpios[i].curr ? "DEASSERT": "ASSERT",
-          ioex0_gpios[i].desc,
-          ioex0_gpios[i].shadow);
+      if(init_flag[i] != true) {
+        if(ioex0_gpios[i].init_gpio != NULL) {
+          ioex0_gpios[i].init_gpio(ioex0_gpios[i].shadow, ioex0_gpios[i].desc, curr);
+        }
+        ioex0_gpios[i].last = curr;
+        init_flag[i] = true;
+        syslog(LOG_DEBUG, "gpio %s initial value=%x\n", ioex0_gpios[i].shadow, curr);
+        continue;
       }
-      ioex0_gpios[i].last = ioex0_gpios[i].curr;
+
+      syslog(LOG_DEBUG, "edge gpio %s value=%x\n", ioex0_gpios[i].shadow, curr);
+      switch (ioex0_gpios[i].edge) {
+      case GPIO_EDGE_FALLING:          
+        if(curr == GPIO_VALUE_LOW) {
+          assert = true;
+        } else {
+          assert = false;
+        }
+        break;
+      case GPIO_EDGE_RISING:
+        if(curr == GPIO_VALUE_HIGH) {
+          assert = true;
+        } else {
+          assert = false;
+        }
+        break;
+      case GPIO_EDGE_BOTH:
+        assert = true;
+        break;
+      default:
+        assert = false;
+        break;
+      }
+       
+      if((assert == true) && (ioex0_gpios[i].handler != NULL)) {
+        ioex0_gpios[i].handler(ioex0_gpios[i].shadow, ioex0_gpios[i].desc, curr);
+      }
+      ioex0_gpios[i].last = curr;
     }
-
     sleep(1);
   }
-
   return NULL;
 }
-
 
 static void
 log_gpio_change(gpiopoll_pin_t *desc, gpio_value_t value, useconds_t log_delay) {
@@ -330,12 +383,7 @@ static void
 slp3_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   gpio_value_t status;
 
-  status = gpio_get("PRSNT_PCIE_CABLE_1_N");
-  if(status < 0 || status == GPIO_VALUE_HIGH) {
-    return;
-  }
-
-  status = gpio_get("PRSNT_PCIE_CABLE_2_N");
+  status = (gpio_get("PRSNT_PCIE_CABLE_1_N")) & (gpio_get("PRSNT_PCIE_CABLE_2_N"));
   if(status < 0 || status == GPIO_VALUE_HIGH) {
     return;
   }
@@ -354,12 +402,7 @@ static void init_slp3(gpiopoll_pin_t *desc, gpio_value_t value) {
     return;
   }
 
-  status = gpio_get("PRSNT_PCIE_CABLE_1_N");
-  if(status < 0 || status == GPIO_VALUE_HIGH) {
-    return;
-  }
-
-  status = gpio_get("PRSNT_PCIE_CABLE_2_N");
+  status = (gpio_get("PRSNT_PCIE_CABLE_1_N")) & (gpio_get("PRSNT_PCIE_CABLE_2_N"));
   if(status < 0 || status == GPIO_VALUE_HIGH) {
     return;
   }
@@ -636,7 +679,14 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_CPU1_MEMHOT_OUT_N", "GPIOL3", GPIO_EDGE_BOTH, gpio_event_pson_3s_handler, NULL},
   {"FM_CPU0_FIVR_FAULT_LVT3_PLD", "GPIOB2", GPIO_EDGE_BOTH, fivr_fault_handler, NULL},
   {"FM_CPU1_FIVR_FAULT_LVT3_PLD", "GPIOB3", GPIO_EDGE_BOTH, fivr_fault_handler, NULL},
-
+  {"FM_CPU_ERR0_LVT3_N", "GPIOF0", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
+  {"FM_CPU_ERR1_LVT3_N", "GPIOF1", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
+  {"FM_CPU_ERR2_LVT3_N", "GPIOF2", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
+  {"FM_MEM_THERM_EVENT_CPU0_LVT3_N", "GPIOB0", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
+  {"FM_MEM_THERM_EVENT_CPU1_LVT3_N", "GPIOB1", GPIO_EDGE_BOTH, gpio_event_handler, NULL}, 
+  {"FM_SYS_THROTTLE_LVC3", "GPIOR7", GPIO_EDGE_BOTH, gpio_event_handler, NULL}, 
+  {"IRQ_DIMM_SAVE_LVT3_N", "GPION4", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
+  {"FM_HSC_TIMER_EXP_N", "GPIOM2", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
 };
 
 int main(int argc, char **argv)

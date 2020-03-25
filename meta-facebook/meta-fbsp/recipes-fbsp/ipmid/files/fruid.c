@@ -102,8 +102,18 @@ err:
 
 /* Populate the platform specific eeprom for fruid info */
 int plat_fruid_init(void) {
+  char path[128];
+  uint8_t rev_id = 0xFF;
 
-  if (copy_eeprom_to_bin(FRU_EEPROM_MB, BIN_MB)) {
+  pal_get_platform_id(BOARD_REV_ID, &rev_id);
+  if (rev_id == PLATFORM_EVT) {
+    sprintf(path, FRU_EEPROM_MB_EVT);
+  }
+  else if (rev_id == PLATFORM_DVT) {
+    sprintf(path, FRU_EEPROM_MB_DVT);
+  }
+
+  if (copy_eeprom_to_bin(path, BIN_MB)) {
     syslog(LOG_WARNING, "%s: Copy MB EEPROM Failed", __func__);
   }
 
@@ -186,6 +196,7 @@ pal_fruid_write(uint8_t fru, char *path)
   char fru_name[20]={0};
   int ret=PAL_EOK;
   FILE *fruid_fd;
+  uint8_t rev_id = 0xFF;
 
   if(pal_get_fru_name(fru, fru_name) < 0) {
 	  return PAL_ENOTSUP;
@@ -205,7 +216,13 @@ pal_fruid_write(uint8_t fru, char *path)
   switch (fru)
   {
     case FRU_MB:
-      sprintf(command, "dd if=%s of=%s bs=%d count=1", path, FRU_EEPROM_MB, fru_size);
+      pal_get_platform_id(BOARD_REV_ID, &rev_id);
+      if (rev_id == PLATFORM_EVT) {
+        sprintf(command, "dd if=%s of=%s bs=%d count=1", path, FRU_EEPROM_MB_EVT, fru_size);
+      }
+      else if (rev_id == PLATFORM_DVT) {
+        sprintf(command, "dd if=%s of=%s bs=%d count=1", path, FRU_EEPROM_MB_DVT, fru_size);
+      }
       break;
     case FRU_NIC0:
       sprintf(command, "dd if=%s of=%s bs=%d count=1", path, FRU_EEPROM_NIC0, fru_size);

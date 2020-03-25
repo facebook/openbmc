@@ -595,9 +595,18 @@ pal_get_fruid_path(uint8_t fru, char *path) {
 
 int
 pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
+  uint8_t rev_id = 0xFF;
+
+  pal_get_platform_id(BOARD_REV_ID, &rev_id);
+
   switch(fru) {
   case FRU_MB:
-    sprintf(path, FRU_EEPROM_MB);
+    if (rev_id == PLATFORM_EVT) {
+      sprintf(path, FRU_EEPROM_MB_EVT);
+    }
+    else if (rev_id == PLATFORM_DVT) {
+      sprintf(path, FRU_EEPROM_MB_DVT);
+    }
     break;
   case FRU_NIC0:
     sprintf(path, FRU_EEPROM_NIC0);
@@ -663,18 +672,28 @@ static int
 pal_get_guid(uint16_t offset, char *guid) {
   int fd;
   ssize_t bytes_rd;
+  char path[128];
+  uint8_t rev_id = 0xFF;
 
   errno = 0;
 
+  pal_get_platform_id(BOARD_REV_ID, &rev_id);
+  if (rev_id == PLATFORM_EVT) {
+    sprintf(path, FRU_EEPROM_MB_EVT);
+  }
+  else if (rev_id == PLATFORM_DVT) {
+    sprintf(path, FRU_EEPROM_MB_DVT);
+  }
+
   // check for file presence
-  if (access(FRU_EEPROM_MB, F_OK)) {
-    syslog(LOG_ERR, "pal_get_guid: unable to access %s: %s", FRU_EEPROM_MB, strerror(errno));
+  if (access(path, F_OK)) {
+    syslog(LOG_ERR, "pal_get_guid: unable to access %s: %s", path, strerror(errno));
     return errno;
   }
 
-  fd = open(FRU_EEPROM_MB, O_RDONLY);
+  fd = open(path, O_RDONLY);
   if (fd < 0) {
-    syslog(LOG_ERR, "pal_get_guid: unable to open %s: %s", FRU_EEPROM_MB, strerror(errno));
+    syslog(LOG_ERR, "pal_get_guid: unable to open %s: %s", path, strerror(errno));
     return errno;
   }
 
@@ -682,7 +701,7 @@ pal_get_guid(uint16_t offset, char *guid) {
 
   bytes_rd = read(fd, guid, GUID_SIZE);
   if (bytes_rd != GUID_SIZE) {
-    syslog(LOG_ERR, "pal_get_guid: read from %s failed: %s", FRU_EEPROM_MB, strerror(errno));
+    syslog(LOG_ERR, "pal_get_guid: read from %s failed: %s", path, strerror(errno));
   }
 
   close(fd);
@@ -693,18 +712,28 @@ static int
 pal_set_guid(uint16_t offset, char *guid) {
   int fd;
   ssize_t bytes_wr;
+  char path[128];
+  uint8_t rev_id = 0xFF;
 
   errno = 0;
 
+  pal_get_platform_id(BOARD_REV_ID, &rev_id);
+  if (rev_id == PLATFORM_EVT) {
+    sprintf(path, FRU_EEPROM_MB_EVT);
+  }
+  else if (rev_id == PLATFORM_DVT) {
+    sprintf(path, FRU_EEPROM_MB_DVT);
+  }
+
   // check for file presence
-  if (access(FRU_EEPROM_MB, F_OK)) {
-    syslog(LOG_ERR, "pal_set_guid: unable to access %s: %s", FRU_EEPROM_MB, strerror(errno));
+  if (access(path, F_OK)) {
+    syslog(LOG_ERR, "pal_set_guid: unable to access %s: %s", path, strerror(errno));
     return errno;
   }
 
-  fd = open(FRU_EEPROM_MB, O_WRONLY);
+  fd = open(path, O_WRONLY);
   if (fd < 0) {
-    syslog(LOG_ERR, "pal_set_guid: unable to open %s: %s", FRU_EEPROM_MB, strerror(errno));
+    syslog(LOG_ERR, "pal_set_guid: unable to open %s: %s", path, strerror(errno));
     return errno;
   }
 
@@ -712,7 +741,7 @@ pal_set_guid(uint16_t offset, char *guid) {
 
   bytes_wr = write(fd, guid, GUID_SIZE);
   if (bytes_wr != GUID_SIZE) {
-    syslog(LOG_ERR, "pal_set_guid: write to %s failed: %s", FRU_EEPROM_MB, strerror(errno));
+    syslog(LOG_ERR, "pal_set_guid: write to %s failed: %s", path, strerror(errno));
   }
 
   close(fd);

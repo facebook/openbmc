@@ -37,7 +37,8 @@ extern "C" {
 
 
 #define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle"
-#define FRU_EEPROM_MB    "/sys/class/i2c-dev/i2c-4/device/4-0054/eeprom"
+#define FRU_EEPROM_MB_EVT "/sys/class/i2c-dev/i2c-4/device/4-0054/eeprom"
+#define FRU_EEPROM_MB_DVT "/sys/class/i2c-dev/i2c-4/device/4-0057/eeprom"
 #define FRU_EEPROM_NIC0  "/sys/class/i2c-dev/i2c-17/device/17-0050/eeprom"
 #define FRU_EEPROM_NIC1  "/sys/class/i2c-dev/i2c-18/device/18-0052/eeprom"
 #define FRU_EEPROM_RISER1  "/sys/class/i2c-dev/i2c-2/device/2-0050/eeprom"

@@ -212,14 +212,18 @@ int main(int argc, char *argv[])
     if (argc >= 5) {
       component.assign(argv[4]);
       if (component.compare(0, 2, "--") == 0) {
+        cerr << "WARNING: Passing component as " << component << " is deprecated" << endl;
         component = component.substr(2);
+        cerr << "         Use: --version|--update " << component << " instead" << endl;
       }
     }
   } else {
     if (argc >= 4) {
       component.assign(argv[3]);
       if (component.compare(0, 2, "--") == 0) {
+        cerr << "WARNING: Passing component as " << component << " is deprecated" << endl;
         component = component.substr(2);
+        cerr << "         Use: --version|--update " << component << " instead" << endl;
       }
     }
   }

@@ -40,7 +40,7 @@ def read_file_contents(path):
     return content
 
 
-def getSPIVendor(manufacturer_id):
+def SPIVendorID2Name(manufacturer_id):
     # Define Manufacturer ID
     MFID_WINBOND = "EF"  # Winbond
     MFID_MICRON = "20"  # Micron
@@ -56,6 +56,45 @@ def getSPIVendor(manufacturer_id):
         return vendor_name[manufacturer_id]
     else:
         return "Unknown"
+
+
+def getSPIVendorLegacy(spi_id):
+    cmd = "cat /tmp/spi0.%d_vendor.dat | cut -c1-2" % (spi_id)
+    data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+    manufacturer_id = data.strip("\n")
+    return SPIVendorID2Name(manufacturer_id)
+
+
+def getMTD(name):
+    mtd_name = '"' + name + '"'
+    with open("/proc/mtd") as f:
+        lines = f.readlines()
+        for line in lines:
+            if mtd_name in line:
+                return line.split(":")[0]
+    return None
+
+
+def getSPIVendorNew(spi_id):
+    mtd = getMTD("flash%d" % (spi_id))
+    if mtd is None:
+        return "Unknown"
+    debugfs_path = "/sys/kernel/debug/mtd/" + mtd + "/partid"
+    try:
+        with open(debugfs_path) as f:
+            data = f.read().strip()
+            # Example spi-nor:ef4019
+            mfg_id = data.split(":")[-1][0:2].upper()
+            return SPIVendorID2Name(mfg_id)
+    except Exception:
+        pass
+    return "Unknown"
+
+
+def getSPIVendor(spi_id):
+    if os.path.isfile("/tmp/spi0.%d_vendor.dat" % (spi_id)):
+        return getSPIVendorLegacy(spi_id)
+    return getSPIVendorNew(spi_id)
 
 
 class bmcNode(node):
@@ -180,25 +219,8 @@ class bmcNode(node):
                     elif "Firmware version:" in line:
                         tpm_fw_version = line.strip("Firmware version: ").strip("\n")
 
-        # SPI0 Vendor
-        spi0_vendor = ""
-        data = (
-            Popen("cat /tmp/spi0.0_vendor.dat | cut -c1-2", shell=True, stdout=PIPE)
-            .stdout.read()
-            .decode()
-        )
-        spi0_mfid = data.strip("\n")
-        spi0_vendor = getSPIVendor(spi0_mfid)
-
-        # SPI1 Vendor
-        spi1_vendor = ""
-        data = (
-            Popen("cat /tmp/spi0.1_vendor.dat | cut -c1-2", shell=True, stdout=PIPE)
-            .stdout.read()
-            .decode()
-        )
-        spi1_mfid = data.strip("\n")
-        spi1_vendor = getSPIVendor(spi1_mfid)
+        spi0_vendor = getSPIVendor(0)
+        spi1_vendor = getSPIVendor(1)
 
         # ASD status - check if ASD daemon/asd-test is currently running
         asd_status = bool(

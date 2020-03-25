@@ -159,7 +159,9 @@ class TestSystem(unittest.TestCase):
     def test_remove_healthd_reboot(self, mocked_check_call):
         data = """{"version":"1.0","heartbeat":{"interval":500},"bmc_cpu_utilization":{"enabled":true,"window_size":120,"monitor_interval":1,"threshold":[{"value":80,"hysteresis":5,"action":["log-critical","bmc-error-trigger"]}]},"bmc_mem_utilization":{"enabled":true,"enable_panic_on_oom":false,"window_size":120,"monitor_interval":1,"threshold":[{"value":60,"hysteresis":5,"action":["log-warning"]},{"value":70,"hysteresis":5,"action":["log-critical","bmc-error-trigger"]},{"value":80,"hysteresis":5,"action":["log-critical","reboot"]}]},"i2c":{"enabled":false,"busses":[0,1,2,3,4,5,6,7,8,9,10,11,12,13]},"ecc_monitoring":{"enabled":false,"ecc_address_log":false,"monitor_interval":2,"recov_max_counter":255,"unrec_max_counter":15,"recov_threshold":[{"value":0,"action":["log-critical","bmc-error-trigger"]},{"value":50,"action":["log-critical"]},{"value":90,"action":["log-critical"]}],"unrec_threshold":[{"value":0,"action":["log-critical","bmc-error-trigger"]},{"value":50,"action":["log-critical"]},{"value":90,"action":["log-critical"]}]},"bmc_health":{"enabled":false,"monitor_interval":2,"regenerating_interval":1200},"verified_boot":{"enabled":false}}"""  # noqa: E501
         # cov couldn't get a decorator version to surface .write()
-        with patch("system.open", new=mock_open(read_data=data)) as mock_file:
+        with patch("system.open", new=mock_open(read_data=data)) as mock_file, patch(
+            "time.sleep"
+        ):
             system.remove_healthd_reboot(self.logger)
             self.assertNotIn(call().write('"reboot"'), mock_file.mock_calls)
         mocked_check_call.assert_called_with(["sv", "restart", "healthd"])

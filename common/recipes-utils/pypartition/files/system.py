@@ -266,9 +266,18 @@ def get_mem_info():
         return [memTotal, memFree]
 
 
+def is_vboot():
+    """
+    Vastly simplified method of detecting if running on vboot system
+    """
+    if os.path.isfile("/usr/local/bin/vboot-util"):
+        return True
+    return False
+
+
 def get_vboot_enforcement():
     support = "none"
-    if not os.path.isfile("/usr/local/bin/vboot-util"):
+    if not is_vboot():
         return support
     with open("/proc/mtd", "r") as proc_mtd:
         mtd_info = proc_mtd.read()
@@ -292,11 +301,17 @@ def get_vboot_enforcement():
         # be ok to leave it as best effort
         pass
     vboot_util_output = subprocess.check_output(command).decode()
-    if "Flags hardware_enforce:  0x01" in vboot_util_output:
-        support = "hardware-enforce"
-    elif "Flags software_enforce:  0x01" in vboot_util_output:
-        support = "software-enforce"
-    return support
+
+    # at this point we already assume that this is vboot enabled system, if
+    # only software-enforce is set assume that this is true, if both aren't set
+    # though - let's assume that U-Boot is buggy and it's actually
+    # hardware-enforced
+    if (
+        "Flags hardware_enforce:  0x00" in vboot_util_output
+        and "Flags software_enforce:  0x01" in vboot_util_output
+    ):
+        return "software-enforce"
+    return "hardware-enforce"
 
 
 def get_mtds():

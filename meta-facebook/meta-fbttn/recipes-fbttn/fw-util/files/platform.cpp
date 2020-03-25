@@ -1,6 +1,5 @@
 #include "fw-util.h"
 #include "usbdbg.h"
-#include "tpm.h"
 #include "nic.h"
 #include "bic_fw.h"
 #include "bic_bios.h"
@@ -22,5 +21,3 @@ MeComponent me1("server", "me", 1);
 CpldComponent cpld1("server", "cpld", 1);
 // Register NIC
 NicComponent nic("nic", "nic");
-// Register BMC TPM
-TpmComponent tpm("bmc", "tpm");

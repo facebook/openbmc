@@ -114,9 +114,15 @@ struct vr_info fbsp_vr_list[] = {
 int plat_vr_init(void) {
   int ret, i;
   int vr_cnt = sizeof(fbsp_vr_list)/sizeof(fbsp_vr_list[0]);
-  uint8_t sku_id = 0xFF;
+  uint8_t sku_id = 0xFF, rev_id = 0xFF;
 
-  if (!pal_get_platform_id(BOARD_SKU_ID, &sku_id) && !(sku_id & 0x4)) {
+  pal_get_platform_id(BOARD_REV_ID, &rev_id);
+  pal_get_platform_id(BOARD_SKU_ID, &sku_id);
+
+  //EVT SKU_ID[2:1] = 00 (INFINEON), 01 (T1)
+  //DVT SKU_ID[2:1] = 00 (TI), 01 (INFINEON), TODO: 10 (3rd Source)
+  if (((rev_id == PLATFORM_EVT) && !(sku_id & 0x4)) ||
+      ((rev_id == PLATFORM_DVT) && (sku_id & 0x2))) {
     for (i = 1; i < vr_cnt; i++) {
       fbsp_vr_list[i].ops = &xdpe12284c_ops;
     }

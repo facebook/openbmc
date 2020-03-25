@@ -633,14 +633,14 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"PDB_FAN1_OUTLET_SPEED", CM_FAN1_OUTLET_SPEED, read_cm_sensor, true, {12000, 0, 0, 1000, 0, 0, 0, 0}, FAN}, //0x65
   {"PDB_FAN2_OUTLET_SPEED", CM_FAN2_OUTLET_SPEED, read_cm_sensor, true, {12000, 0, 0, 1000, 0, 0, 0, 0}, FAN}, //0x66
   {"PDB_FAN3_OUTLET_SPEED", CM_FAN3_OUTLET_SPEED, read_cm_sensor, true, {12000, 0, 0, 1000, 0, 0, 0, 0}, FAN}, //0x67
-  {"PDB_FAN0_VOLT", CM_FAN0_VOLT, read_cm_sensor, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x68
-  {"PDB_FAN1_VOLT", CM_FAN1_VOLT, read_cm_sensor, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x69
-  {"PDB_FAN2_VOLT", CM_FAN2_VOLT, read_cm_sensor, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x6A
-  {"PDB_FAN3_VOLT", CM_FAN3_VOLT, read_cm_sensor, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x6B
-  {"PDB_FAN0_CURR", CM_FAN0_CURR, read_cm_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6C
-  {"PDB_FAN1_CURR", CM_FAN1_CURR, read_cm_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6D
-  {"PDB_FAN2_CURR", CM_FAN2_CURR, read_cm_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6E
-  {"PDB_FAN3_CURR", CM_FAN3_CURR, read_cm_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6F
+  {"PDB_FAN0_VOLT", CM_FAN0_VOLT, read_cm_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x68
+  {"PDB_FAN1_VOLT", CM_FAN1_VOLT, read_cm_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x69
+  {"PDB_FAN2_VOLT", CM_FAN2_VOLT, read_cm_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x6A
+  {"PDB_FAN3_VOLT", CM_FAN3_VOLT, read_cm_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x6B
+  {"PDB_FAN0_CURR", CM_FAN0_CURR, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6C
+  {"PDB_FAN1_CURR", CM_FAN1_CURR, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6D
+  {"PDB_FAN2_CURR", CM_FAN2_CURR, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6E
+  {"PDB_FAN3_CURR", CM_FAN3_CURR, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6F
 
   {"MB_CPU0_DIMM_A_TEMP", DIMM_CRPA, read_cpu0_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x70
   {"MB_CPU0_DIMM_B_TEMP", DIMM_CRPB, read_cpu0_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x71

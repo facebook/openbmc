@@ -1051,11 +1051,7 @@ pal_set_sys_guid(uint8_t fru, char *str) {
 
 int
 pal_get_dev_guid(uint8_t fru, char *guid) {
-  if (fru == FRU_BMC) {
-    return pal_get_guid(OFFSET_DEV_GUID, guid);
-  } else {
-    return -1;
-  }
+  return pal_get_guid(OFFSET_DEV_GUID, guid);
 }
 
 int

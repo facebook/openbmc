@@ -58,4 +58,5 @@ IMAGE_INSTALL += " \
   gpiointrd \
   crashdump \
   show-sys-config \
+  slot-util \
   "

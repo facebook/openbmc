@@ -25,8 +25,8 @@ import subprocess
 def set_usb2i2c():
     p = subprocess.Popen(
         "source /usr/local/fbpackages/utils/ast-functions;"
-        "gpio_set USB_BRDG_RST 0 && usleep 50000 && \
-                         gpio_set USB_BRDG_RST 1",
+        "gpio_set_value USB_BRDG_RST 0 && usleep 50000 && \
+                         gpio_set_value USB_BRDG_RST 1",
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

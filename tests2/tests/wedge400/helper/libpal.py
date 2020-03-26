@@ -59,7 +59,7 @@ def pal_get_board_type():
     if ret:
         return None
     else:
-        return BoardRevision.board_type.get(brd_type.value)
+        return BoardRevision.board_type.get(brd_type.value, None)
 
 
 def pal_get_board_type_rev():
@@ -69,4 +69,4 @@ def pal_get_board_type_rev():
     if ret:
         return None
     else:
-        return BoardRevision.board_type_rev.get(board_type_rev.value)
+        return BoardRevision.board_type_rev.get(board_type_rev.value, None)

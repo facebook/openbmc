@@ -22,41 +22,25 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://kv.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-BBCLASSEXTEND = "native"
+inherit meson python3-dir
 
-SRC_URI = "file://Makefile \
-           file://kv.c \
-           file://kv.h \
-           file://kv \
-           file://kv.py \
-          "
+SRC_URI = "\
+    file://meson.build \
+    file://kv \
+    file://kv.c \
+    file://kv.h \
+    file://kv.py \
+    "
 
 S = "${WORKDIR}"
 
+DEPENDS += "python3-setuptools"
 RDEPENDS_${PN} += "python3-core bash"
-inherit distutils3 python3-dir
 
-distutils3_do_configure(){
-    :
-}
-
-do_compile() {
-  make
-}
-
-do_install() {
-    install -d ${D}${bindir}
-    install -m 755 kv ${D}${bindir}/kv
-
+do_install_append() {
     install -d ${D}${PYTHON_SITEPACKAGES_DIR}
-    install -m 644 kv.py ${D}${PYTHON_SITEPACKAGES_DIR}/
-
-	  install -d ${D}${libdir}
-    install -m 0644 libkv.so ${D}${libdir}/libkv.so
-
-    install -d ${D}${includedir}/openbmc
-    install -m 0644 kv.h ${D}${includedir}/openbmc/kv.h
+    install -m 644 ${S}/kv.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
+FILES_${PN} += "${PYTHON_SITEPACKAGES_DIR}/kv.py"
 
-FILES_${PN} = "${libdir}/libkv.so ${bindir}/kv ${PYTHON_SITEPACKAGES_DIR}/kv.py"
-FILES_${PN}-dev = "${includedir}/openbmc/kv.h"
+BBCLASSEXTEND = "native nativesdk"

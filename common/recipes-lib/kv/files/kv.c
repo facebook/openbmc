@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
   assert(strcmp(value, "asdf") == 0);
   printf("SUCCESS: Read key adds nul terminator for strings\n");
 
-  system("rm -rf ./test");
+  assert(system("rm -rf ./test") == 0);
 
   return 0;
 }

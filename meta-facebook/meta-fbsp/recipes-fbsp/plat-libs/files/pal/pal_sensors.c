@@ -36,9 +36,11 @@
 #define FAN_DIR "/sys/bus/platform/devices/1e786000.pwm-tacho-controller/hwmon/hwmon0"
 
 #define MAX_READ_RETRY 10
+#define MAX_SNR_READ_RETRY 3
 
 #define DIMM_SLOT_CNT 24
 
+static int get_snr_state(int retry);
 static int read_adc_val(uint8_t adc_id, float *value);
 static int read_battery_val(uint8_t adc_id, float *value);
 static int read_sensor(uint8_t snr_id, float *value);
@@ -676,6 +678,20 @@ pal_get_fan_led_state(uint8_t fan_id, char* state) {
   return completion_code;
 }
 
+static int
+get_snr_state(int retry) {
+  int ret = 0;
+
+  // Check the count of retry to decide return code.
+  if (retry <= MAX_SNR_READ_RETRY) {
+    ret = READING_SKIP;
+  } else {
+    ret = READING_NA;
+  }
+
+  return ret;
+}
+
 /*==========================================
 Read adc voltage sensor value.
   adc_id: ASPEED adc channel
@@ -1039,11 +1055,7 @@ read_cpu_tjmax(uint8_t cpu_id, float *value) {
   ret =  cmd_peci_get_tjmax(cpu_addr, &tjmax);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
-    }
-    ret = READING_NA;
-    return ret;
+    return get_snr_state(retry);
   } else {
     retry = 0;
   }
@@ -1061,11 +1073,7 @@ read_cpu_thermal_margin(uint8_t cpu_id, float *value) {
   ret = cmd_peci_get_temp(cpu_addr, &margin);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
-    }
-    ret = READING_NA;
-    return ret;
+    return get_snr_state(retry);
   } else {
     retry = 0;
   }
@@ -1129,7 +1137,7 @@ read_cpu_pkg_pwr(uint8_t cpu_id, float *value) {
   error_exit:
     if (ret != 0) {
       retry[cpu_id]++;
-      if (retry[cpu_id] <= 3) {
+      if (retry[cpu_id] <= MAX_SNR_READ_RETRY) {
         ret = READING_SKIP;
         return ret;
       }
@@ -1151,11 +1159,7 @@ read_cpu_temp(uint8_t cpu_id, float *value) {
   ret = cmd_peci_get_temp(cpu_addr, &dts);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
-    }
-    ret = READING_NA;
-    return ret;
+    return get_snr_state(retry);
   } else {
     retry = 0;
   }
@@ -1163,11 +1167,7 @@ read_cpu_temp(uint8_t cpu_id, float *value) {
   ret = cmd_peci_get_tjmax(cpu_addr, &tjmax);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
-    }
-    ret = READING_NA;
-    return ret;
+    return get_snr_state(retry);
   } else {
     retry = 0;
   }
@@ -1195,11 +1195,7 @@ read_cpu0_dimm_temp(uint8_t dimm_id, float *value) {
   ret = cmd_peci_dimm_thermal_reading(PECI_CPU0_ADDR, dimm_id, &temp);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
-    }
-    ret = READING_NA;
-    return ret;
+    return get_snr_state(retry);
   } else {
     retry = 0;
   }
@@ -1225,11 +1221,7 @@ read_cpu1_dimm_temp(uint8_t dimm_id, float *value) {
   ret = cmd_peci_dimm_thermal_reading(PECI_CPU1_ADDR, dimm_id, &temp);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
-    }
-    ret = READING_NA;
-    return ret;
+    return get_snr_state(retry);
   } else {
     retry = 0 ;
   }
@@ -1330,11 +1322,7 @@ read_hsc_iout(uint8_t hsc_id, float *value) {
   ret = cmd_NM_pmbus_read_word(info, addr, rbuf);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
-    }
-    ret = READING_NA;
-    return ret;
+    return get_snr_state(retry);
   }
 
   get_adm1278_info(hsc_id, ADM1278_CURRENT, &m, &b, &r);
@@ -1370,11 +1358,7 @@ read_hsc_vin(uint8_t hsc_id, float *value) {
   ret = cmd_NM_pmbus_read_word(info, addr, rbuf);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
-    }
-    ret = READING_NA;
-    return ret;
+    return get_snr_state(retry);
   }
 
 
@@ -1410,11 +1394,7 @@ read_hsc_pin(uint8_t hsc_id, float *value) {
   ret = cmd_NM_pmbus_read_word(info, addr, rbuf);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
-    }
-    ret = READING_NA;
-    return ret;
+    return get_snr_state(retry);
   }
 
 
@@ -1453,11 +1433,7 @@ read_hsc_temp(uint8_t hsc_id, float *value) {
   ret = cmd_NM_pmbus_read_word(info, addr, rbuf);
   if (ret != 0) {
     retry++;
-    if (retry <= 3 ) {
-      ret = READING_SKIP;
-    }
-    ret = READING_NA;
-    return ret;
+    return get_snr_state(retry);
   }
 
   get_adm1278_info(hsc_id, ADM1278_TEMP, &m, &b, &r);
@@ -1493,8 +1469,9 @@ read_NM_pch_temp(uint8_t nm_id, float *value) {
     retry = 0;
   } else {
     retry++;
-    if (retry <= 3)
+    if (retry <= MAX_SNR_READ_RETRY) {
       ret = READING_SKIP;
+    }
   }
   return ret;
 }
@@ -2572,10 +2549,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       }
 
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
-    }
-
-    if (ret != 0) {
-      ret = READING_NA;
     }
 
     if (is_server_off() != server_off) {

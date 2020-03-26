@@ -17,11 +17,21 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import json
 import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
-from tests.wedge400.test_data.sensors.sensors import SENSORS
+from tests.wedge400.test_data.sensors.sensors import (
+    SMB_SENSORS_W400,
+    SMB_SENSORS_W400CEVT,
+    SMB_SENSORS_W400CEVT2,
+    SCM_SENSORS,
+    PEM1_SENSORS,
+    PEM2_SENSORS,
+    PSU1_SENSORS,
+    PSU2_SENSORS,
+)
+from tests.wedge400.helper.libpal import pal_get_board_type, pal_get_board_type_rev
+from utils.shell_util import run_shell_cmd
 
 
 class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
@@ -30,6 +40,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     User can choose to sends these lists from jsons too.
     """
 
+    VDDCORE_ENDPOINT = "/api/sys/vddcore"
+    SWITCHRESET_ENDPOINT = "/api/sys/switch_reset"
     FRUID_SCM_ENDPOINT = "/api/sys/seutil"
     FRUID_SMB_ENDPOINT = "/api/sys/mb/fruid"
     FRUID_FCM_ENDPOINT = "/api/sys/feutil/fcm"
@@ -61,48 +73,56 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "sensors",
             "mTerm_status",
         ]
+        platform_type = pal_get_board_type()
+        # Wedge400C need to add vddcore and switch_reset end point
+        if platform_type == "Wedge400C":
+            self.endpoint_sys_attrb.append("vddcore")
+            self.endpoint_sys_attrb.append("switch_reset")
 
-    @unittest.skip("TODO: Fix test")
     def test_endpoint_api_sys(self):
         self.set_endpoint_sys_attributes()
-        self.verify_endpoint_attributes(
-            CommonRestEndpointTest.SYS_ENDPOINT, self.endpoint_sys_attrb
-        )
+        self.verify_endpoint_attributes(self.SYS_ENDPOINT, self.endpoint_sys_attrb)
+
+    def check_fru_sensors_present(self, fru):
+        sensors = run_shell_cmd("sensor-util {}".format(fru))
+        if "not present" in sensors:
+            return False
+        else:
+            return True
 
     # "/api/sys/sensors"
     def set_endpoint_sensors_attributes(self):
-        self.endpoint_sensors_attrb = SENSORS
+        self.endpoint_sensors_attrb = []
+        platform_type_rev = pal_get_board_type_rev()
+        if (
+            platform_type_rev == "Wedge400-EVT"
+            or platform_type_rev == "Wedge400-EVT3"
+            or platform_type_rev == "Wedge400-DVT"
+            or platform_type_rev == "Wedge400-DVT2"
+        ):
+            self.endpoint_sensors_attrb += SMB_SENSORS_W400
+        elif platform_type_rev == "Wedge400C-EVT":
+            self.endpoint_sensors_attrb += SMB_SENSORS_W400CEVT
+        elif platform_type_rev == "Wedge400C-EVT2":
+            self.endpoint_sensors_attrb += SMB_SENSORS_W400CEVT2
+        else:
+            self.skipTest("Skip test on {} board".format(platform_type_rev))
 
-    @unittest.skip("TODO: Fix test")
+        self.endpoint_sensors_attrb += SCM_SENSORS
+        if self.check_fru_sensors_present("pem1"):
+            self.endpoint_sensors_attrb += PEM1_SENSORS
+        if self.check_fru_sensors_present("pem2"):
+            self.endpoint_sensors_attrb += PEM2_SENSORS
+        if self.check_fru_sensors_present("psu1"):
+            self.endpoint_sensors_attrb += PSU1_SENSORS
+        if self.check_fru_sensors_present("psu2"):
+            self.endpoint_sensors_attrb += PSU2_SENSORS
+
     def test_endpoint_api_sys_sensors(self):
         self.set_endpoint_sensors_attributes()
         self.verify_endpoint_attributes(
-            RestEndpointTest.SENSORS_ENDPOINT, self.endpoint_sensors_attrb
+            self.SENSORS_ENDPOINT, self.endpoint_sensors_attrb
         )
-
-    # For sensors endpoint, custom verify attributes function
-    def verify_endpoint_attributes(self, endpointname, attributes):
-        """
-        Verify if attributes are present in endpoint response
-        """
-        self.assertNotEqual(
-            attributes, None, "{} endpoint attributes not set".format(endpointname)
-        )
-        info = self.get_from_endpoint(endpointname)
-        fail_attr = []
-        for attrib in attributes:
-            if not attrib in info:
-                fail_attr.append(attrib)
-                continue
-            with self.subTest(attrib=attrib):
-                self.assertIn(attrib, info)
-        if "Resources" in info:
-            dict_info = json.loads(info)
-            self.verify_endpoint_resource(
-                endpointname=endpointname, resources=dict_info["Resources"]
-            )
-        if len(fail_attr) > 0:
-            self.fail("attributes {} not in {}".format(fail_attr, info))
 
     # "/api/sys/mb/fruid"
     def set_endpoint_fruid_attributes(self):

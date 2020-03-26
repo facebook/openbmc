@@ -20,7 +20,7 @@
 import ctypes
 
 
-lkv_hndl = ctypes.CDLL("libkv.so")
+lkv_hndl = ctypes.CDLL("libkv.so.0")
 
 FPERSIST = 1
 FCREATE = 2

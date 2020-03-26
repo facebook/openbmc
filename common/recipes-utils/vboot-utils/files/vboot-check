@@ -71,9 +71,9 @@ def show_keys(name, fdt, error):
 
 def get_date(fdt):
     timestamp = fdt.resolve_path('/timestamp')[0]
-    return  datetime.datetime.fromtimestamp(
+    return  datetime.datetime.utcfromtimestamp(
         timestamp,
-    ).strftime('%Y-%m-%d %H:%M:%S')
+        ).strftime('%a %b %d %H:%M:%S UTC %Y') + " (0x%x)" % (timestamp)
 
 
 
@@ -218,11 +218,9 @@ def decode_os(fh):
     # kernel_valid = get_hash(os.resolve_path('/images/kernel@1/data').to_raw()) == kernel_hash
     kernel_data = os.resolve_path('/images/kernel@1/data')
     if kernel_data.blob_info:
-        print("kernel get_hash_from_file")
         kernel_img_hash = get_hash_from_file(fh, kernel_data.blob_info[0],
                                                  kernel_data.blob_info[1])
     else:
-        print("kernel get_hash")
         kernel_img_hash = get_hash(kernel_data.to_raw())
     kernel_valid = kernel_img_hash == kernel_hash
 
@@ -237,11 +235,9 @@ def decode_os(fh):
     # ramdisk_valid = get_hash(os.resolve_path('/images/ramdisk@1/data').to_raw()) == ramdisk_hash
     ramdisk_data = os.resolve_path('/images/ramdisk@1/data')
     if ramdisk_data.blob_info:
-        print("ramdisk get_hash_from_file")
         ramdisk_img_hash = get_hash_from_file(fh, ramdisk_data.blob_info[0],
                                                   ramdisk_data.blob_info[1])
     else:
-        print("ramdisk get_hash")
         ramdisk_img_hash = get_hash(ramdisk_data.to_raw())
     ramdisk_valid = ramdisk_hash == ramdisk_img_hash
 

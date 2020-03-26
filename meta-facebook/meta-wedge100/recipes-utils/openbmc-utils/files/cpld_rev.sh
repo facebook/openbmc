@@ -17,10 +17,22 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+set -e
+set -o pipefail
 
 . /usr/local/bin/openbmc-utils.sh
 
-rev=$(head -n 1 ${SYSCPLD_SYSFS_DIR}/cpld_rev)
-sub_rev=$(head -n 1 ${SYSCPLD_SYSFS_DIR}/cpld_sub_rev)
+BASEDIR=${SYSCPLD_SYSFS_DIR}
+if [[ $# -gt 0 && "$1" != "--fan" ]]; then
+    echo "Prints SYS CPLD version information when called with no arguments" >&2
+    echo "Prints FAN CPLD version if called with --fan" >&2
+    echo "Usage: $0 [--fan]" >&2
+    exit 2
+fi
+if [[ "$1" == "--fan" ]]; then
+       BASEDIR=${FANCPLD_SYSFS_DIR}
+fi
+rev=$(head -n 1 ${BASEDIR}/cpld_rev)
+sub_rev=$(head -n 1 ${BASEDIR}/cpld_sub_rev)
 
 echo $(($rev)).$(($sub_rev))

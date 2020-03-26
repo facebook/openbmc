@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import json
 import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
@@ -28,6 +29,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     User can choose to sends these lists from jsons too.
     """
 
+    SYS_FW_INFO_ENDPOINT = "/api/sys/firmware_info/sys"
+    FAN_FW_INFO_ENDPOINT = "/api/sys/firmware_info/fan"
     # /api
     def set_endpoint_api_attributes(self):
         self.endpoint_api_attrb = ["sys"]
@@ -118,8 +121,30 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     # "/api/sys/firmware_info"
     def set_endpoint_firmware_info_attributes(self):
-        self.endpoint_firmware_info_attrb = ["all"]
+        self.endpoint_firmware_info_attrb = ["all", "sys", "fan"]
 
     def set_endpoint_firmware_info_all_attributes(self):
         # TODO: what if this changes?
-        self.endpoint_firmware_info_all_attrb = ["6.101"]
+        self.endpoint_firmware_info_all_attrb = ["6.101", "1.11"]
+
+    def set_endpoint_firmware_info_sys_attributes(self):
+        # TODO: what if this changes?
+        self.endpoint_firmware_info_sys_attrb = ["6.101"]
+
+    def set_endpoint_firmware_info_fan_attributes(self):
+        # TODO: what if this changes?
+        self.endpoint_firmware_info_fan_attrb = ["1.11"]
+
+    def test_endpoint_api_sys_firmware_info_fan(self):
+        self.set_endpoint_firmware_info_fan_attributes()
+        self.assertNotEqual(self.endpoint_firmware_info_fan_attrb, None)
+        info = self.get_from_endpoint(RestEndpointTest.SYS_FW_INFO_ENDPOINT)
+        # If we get any JSON object I'm happy for the time being
+        self.assertTrue(json.loads(info))
+
+    def test_endpoint_api_sys_firmware_info_sys(self):
+        self.set_endpoint_firmware_info_sys_attributes()
+        self.assertNotEqual(self.endpoint_firmware_info_sys_attrb, None)
+        info = self.get_from_endpoint(RestEndpointTest.FAN_FW_INFO_ENDPOINT)
+        # If we get any JSON object I'm happy for the time being
+        self.assertTrue(json.loads(info))

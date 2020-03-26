@@ -16,4 +16,5 @@ paths:
             properties: 
               SYS_CPLD: 
                 type: string
-            
+              FAN_CPLD: 
+                type: string

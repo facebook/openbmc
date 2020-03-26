@@ -1,0 +1,18 @@
+swagger: "2.0"
+info:
+  description: Swagger doc for /api/sys/firmware_info/fan
+  title: Swagger doc for /api/sys/firmware_info/fan
+  version: 1.0.0
+paths:
+  /api/sys/firmware_info/fan:
+    get:
+      produces: [application/json]
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              FAN_CPLD:
+                type: string

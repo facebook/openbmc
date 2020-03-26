@@ -1,6 +1,8 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 
 SYSCPLD_SYSFS_DIR="/sys/class/i2c-adapter/i2c-12/12-0031"
+FANCPLD_SYSFS_DIR="/sys/devices/platform/ast-i2c.8/i2c-8/8-0033"
+
 PWR_MAIN_SYSFS="${SYSCPLD_SYSFS_DIR}/pwr_main_n"
 PWR_USRV_SYSFS="${SYSCPLD_SYSFS_DIR}/pwr_usrv_en"
 PWR_USRV_BTN_SYSFS="${SYSCPLD_SYSFS_DIR}/pwr_usrv_btn_en"

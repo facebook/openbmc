@@ -42,13 +42,25 @@ class boardApp_Handler:
         )
 
     async def rest_firmware_info_all_hdl(self, request):
-        fw = await rest_fw_ver.get_all_fw_ver()
-        return web.json_response(fw, dumps=dumps_bytestr)
+        cpld_version = await rest_fw_ver.get_sys_cpld_ver()
+        fan_version = await rest_fw_ver.get_fan_cpld_ver()
+        all_versions = {"SYS_CPLD": cpld_version, "FAN_CPLD": fan_version}
+        return web.json_response(all_versions, dumps=dumps_bytestr)
+
+    async def rest_firmware_info_sys_hdl(self, request):
+        cpld_version = await rest_fw_ver.get_sys_cpld_ver()
+        all_versions = {"SYS_CPLD": cpld_version}
+        return web.json_response(all_versions, dumps=dumps_bytestr)
+
+    async def rest_firmware_info_fan_hdl(self, request):
+        fan_version = await rest_fw_ver.get_fan_cpld_ver()
+        all_versions = {"FAN_CPLD": fan_version}
+        return web.json_response(all_versions, dumps=dumps_bytestr)
 
     async def rest_firmware_info_hdl(self, request):
         details = {
             "Information": {"Description": "Firmware versions"},
             "Actions": [],
-            "Resources": ["all"],
+            "Resources": ["all", "fan", "sys"],
         }
         return web.json_response(details, dumps=dumps_bytestr)

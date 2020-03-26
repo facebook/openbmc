@@ -31,6 +31,8 @@ class SysCpldRevisionTest(unittest.TestCase):
         self.cpld_paths = [
             "/sys/bus/i2c/devices/i2c-12/12-0031/cpld_rev",
             "/sys/bus/i2c/devices/i2c-12/12-0031/cpld_sub_rev",
+            "/sys/devices/platform/ast-i2c.8/i2c-8/8-0033/cpld_rev",
+            "/sys/devices/platform/ast-i2c.8/i2c-8/8-0033/cpld_sub_rev",
         ]
         Logger.start(name=self._testMethodName)
 
@@ -43,6 +45,20 @@ class SysCpldRevisionTest(unittest.TestCase):
         cpld_rev returns X.X
         """
         version = run_shell_cmd(self.cpld_rev).rstrip("\n").split(".")
+        self.assertTrue(
+            version[0].isdigit(),
+            "CPLD major version is not digit, received={}".format(version),
+        )
+        self.assertTrue(
+            version[1].isdigit(),
+            "CPLD minor version is not digit, received={}".format(version),
+        )
+
+    def test_cpld_fan_revision_format(self):
+        """
+        cpld_rev returns X.X
+        """
+        version = run_shell_cmd([self.cpld_rev, "--fan"]).rstrip("\n").split(".")
         self.assertTrue(
             version[0].isdigit(),
             "CPLD major version is not digit, received={}".format(version),

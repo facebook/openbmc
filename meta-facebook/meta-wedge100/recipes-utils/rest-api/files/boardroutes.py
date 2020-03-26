@@ -21,4 +21,6 @@ board_routes = [
     "/api/sys/modbus_registers",
     "/api/sys/firmware_info",
     "/api/sys/firmware_info/all",
+    "/api/sys/firmware_info/fan",
+    "/api/sys/firmware_info/sys",
 ]

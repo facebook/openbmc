@@ -30,7 +30,6 @@ SRC_URI = "file://ast-functions \
            file://setup_rov.sh \
            file://mdio.py \
            file://power-on.sh \
-           file://rc.local \
            file://src \
            file://COPYING \
            file://check_pal_sku.sh \
@@ -73,8 +72,6 @@ do_install() {
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
   update-rc.d -r ${D} power-on.sh start 70 5 .
-  install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
-  update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
   install -m 755 setup-platform.sh ${D}${sysconfdir}/init.d/setup-platform.sh
   update-rc.d -r ${D} setup-platform.sh start 63 5 .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh

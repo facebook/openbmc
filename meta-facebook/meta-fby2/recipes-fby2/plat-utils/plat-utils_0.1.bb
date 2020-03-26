@@ -33,7 +33,6 @@ SRC_URI = "file://ast-functions \
            file://eth0_mac_fixup.sh \
            file://fby2_power.sh \
            file://power-on.sh \
-           file://rc.local \
            file://src \
            file://COPYING \
            file://check_ocp_nic.sh \
@@ -95,8 +94,6 @@ do_install() {
   update-rc.d -r ${D} power-on.sh start 70 5 .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 63 5 .
-  install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
-  update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
   install -m 755 setup-platform.sh ${D}${sysconfdir}/init.d/setup-platform.sh
   update-rc.d -r ${D} setup-platform.sh start 91 S .
 }

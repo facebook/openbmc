@@ -36,17 +36,35 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-
-. /usr/local/fbpackages/utils/ast-functions
+ocp3nic=0
 sku_type=0
 
-# if no get_slot_type exist (such as Yosemite 1), assume 4 server config
-if [ -n "$(LC_ALL=C type -t get_slot_type)" ] && [ "$(LC_ALL=C type -t get_slot_type)" = function ]; then
-  for i in $(seq 1 1 4)
-  do
-    tmp_sku="$(get_slot_type "$i")"
-    sku_type="$(($(("$tmp_sku" << $(("$(("$i"*4))" - 4))))+"$sku_type"))"
-  done
+if grep -q "yosemite" /etc/issue; then
+    sku_type=0
+elif grep -q "fby3" /etc/issue; then
+    sku_type=ffff
+    ocp3nic=1
+else
+    # fby2 file
+    # shellcheck disable=SC1091
+    . /usr/local/fbpackages/utils/ast-functions
+
+    # if no get_slot_type exist (such as Yosemite 1), assume 4 server config
+    if [ -n "$(LC_ALL=C type -t get_slot_type)" ] && [ "$(LC_ALL=C type -t get_slot_type)" = function ]; then
+      for i in $(seq 1 1 4)
+      do
+        tmp_sku="$(get_slot_type "$i")"
+        sku_type="$(($(("$tmp_sku" << $(("$(("$i"*4))" - 4))))+"$sku_type"))"
+      done
+    fi
+    # OCP3 NIC detection
+    prsnt_a=$(cat /sys/class/gpio/gpio88/value)
+    prsnt_b=$(cat /sys/class/gpio/gpio89/value)
+    if ((prsnt_a == 0 && prsnt_b == 1)); then
+      ocp3nic=1
+    else
+      ocp3nic=0
+    fi
 fi
 
 
@@ -58,25 +76,12 @@ bmc_mac_dec="$( printf "%d\\n" "0x$(sed s/://g "/sys/class/net/eth0/address")")"
 # get neighboring devices in {hostname, MAC} format, shows only entries that can resolve to host name
 host_table=$(ip -r neigh show dev eth0 | grep -iE 'com|edu|gov|org' | sort -k 3)
 
-# OCP3 NIC detection
-prsnt_a=$(cat /sys/class/gpio/gpio88/value)
-prsnt_b=$(cat /sys/class/gpio/gpio89/value)
-if ((prsnt_a == 0 && prsnt_b == 1)); then
-  ocp3nic=1
-else
-  ocp3nic=0
-fi
 
 # calculate expected MAC address for each slot, convert it back to hex str
 #
 # MAC address calculation is different for 2xTL+2x carrier
 case "$sku_type" in
-   "1028")
-     echo "2server + 2GPv2, OCP2 NIC"
-      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
-   ;;
-   *)
+   "0")
       if [ $ocp3nic -eq 1 ]; then
         echo "4 server, OCP3 NIC"
         slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-4)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
@@ -90,6 +95,25 @@ case "$sku_type" in
         slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
         slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
       fi
+   ;;
+   "ffff")
+      echo "Yosemite V3, OCP3 NIC"
+      slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+   ;;
+   "1028")
+      echo "2server + 2GPv2, OCP2 NIC"
+      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+   ;;
+   *)
+      echo "unknown config - use default"
+      slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
    ;;
 esac
 

@@ -40,16 +40,6 @@
 
 /* Yeah, the file ends in .cpp, but it's a C program.  Deal. */
 
-/* XXX:  Both CONFIG_WEDGE and CONFIG_WEDGE100 are defined for Wedge100 */
-
-#if !defined(CONFIG_YOSEMITE) && !defined(CONFIG_WEDGE) && \
-    !defined(CONFIG_WEDGE100) && !defined(CONFIG_LIGHTNING)
-#error "No hardware platform defined!"
-#endif
-#if defined(CONFIG_YOSEMITE) && defined(CONFIG_WEDGE) && defined(CONFIG_LIGHTNING)
-#error "Two hardware platforms defined!"
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -58,29 +48,14 @@
 #include <signal.h>
 #include <syslog.h>
 #include <dirent.h>
-#if defined(CONFIG_YOSEMITE)
-#include <openbmc/ipmi.h>
-#include <facebook/bic.h>
-#include <facebook/yosemite_sensor.h>
-#endif
-#if defined(CONFIG_WEDGE) && !defined(CONFIG_WEDGE100)
 #include <facebook/wedge_eeprom.h>
-#endif
 
 #include <openbmc/watchdog.h>
 
-#if !defined(CONFIG_LIGHTNING)
 /* Sensor definitions */
 
-#if defined(CONFIG_WEDGE) || defined(CONFIG_WEDGE100)
 #define INTERNAL_TEMPS(x) ((x) * 1000) // stored as C * 1000
 #define EXTERNAL_TEMPS(x) ((x) / 1000)
-#define WEDGE100_COME_DIMM 100000 // 100C
-#elif defined(CONFIG_YOSEMITE)
-#define INTERNAL_TEMPS(x) (x)
-#define EXTERNAL_TEMPS(x) (x)
-#define TOTAL_1S_SERVERS 4
-#endif
 
 /*
  * The sensor for the uServer CPU is not on the CPU itself, so it reads
@@ -89,11 +64,7 @@
  * the entire configuration.  JSON file?
  */
 
-#if defined(CONFIG_WEDGE) || defined(CONFIG_WEDGE100)
 #define USERVER_TEMP_FUDGE INTERNAL_TEMPS(10)
-#else
-#define USERVER_TEMP_FUDGE INTERNAL_TEMPS(0)
-#endif
 
 #define BAD_TEMP INTERNAL_TEMPS(-60)
 
@@ -102,35 +73,6 @@
 #define FAN_SHUTDOWN_THRESHOLD 20 /* How long fans can be failed before */
                                   /* we just shut down the whole thing. */
 
-#if defined(CONFIG_WEDGE100)
-#define PWM_DIR "/sys/bus/i2c/drivers/fancpld/8-0033/"
-
-#define PWM_UNIT_MAX 31
-
-#define LM75_DIR "/sys/bus/i2c/drivers/lm75/"
-#define COM_E_DIR "/sys/bus/i2c/drivers/com_e_driver/"
-
-#define INTAKE_TEMP_DEVICE LM75_DIR "3-0048"
-#define CHIP_TEMP_DEVICE LM75_DIR "3-004b"
-#define EXHAUST_TEMP_DEVICE LM75_DIR "3-0048"
-#define USERVER_TEMP_DEVICE COM_E_DIR "4-0033"
-
-#define FAN_READ_RPM_FORMAT "fan%d_input"
-
-#define FAN0_LED PWM_DIR "fantray1_led_ctrl"
-#define FAN1_LED PWM_DIR "fantray2_led_ctrl"
-#define FAN2_LED PWM_DIR "fantray3_led_ctrl"
-#define FAN3_LED PWM_DIR "fantray4_led_ctrl"
-#define FAN4_LED PWM_DIR "fantray5_led_ctrl"
-
-#define FAN_LED_BLUE "0x1"
-#define FAN_LED_RED "0x2"
-
-#define MAIN_POWER "/sys/bus/i2c/drivers/syscpld/12-0031/pwr_main_n"
-#define USERVER_POWER "/sys/bus/i2c/drivers/syscpld/12-0031/pwr_usrv_en"
-
-#elif defined(CONFIG_WEDGE)
-
 #define LM75_DIR "/sys/bus/i2c/drivers/lm75/"
 #define PANTHER_PLUS_DIR "/sys/bus/i2c/drivers/fb_panther_plus/"
 
@@ -138,7 +80,6 @@
 #define CHIP_TEMP_DEVICE LM75_DIR "3-0049"
 #define EXHAUST_TEMP_DEVICE LM75_DIR "3-004a"
 #define USERVER_TEMP_DEVICE PANTHER_PLUS_DIR "4-0040"
-
 
 #define FAN0_LED "/sys/class/gpio/gpio53/value"
 #define FAN1_LED "/sys/class/gpio/gpio54/value"
@@ -163,13 +104,6 @@
 #define REV_ID_NEW_BOARD_ID 3
 #define GPIO_BOARD_ID_START_NEW 166
 
-#elif defined(CONFIG_YOSEMITE)
-#define FAN_LED_RED "0"
-#define FAN_LED_BLUE "1"
-#endif
-
-#if (defined(CONFIG_YOSEMITE) || defined(CONFIG_WEDGE)) && \
-    !defined(CONFIG_WEDGE100)
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 
 #define PWM_UNIT_MAX 96
@@ -179,17 +113,11 @@
 #define GPIO_USERVER_POWER "/sys/class/gpio/gpio25/value"
 #define GPIO_T2_POWER_DIRECTION "/tmp/gpionames/T2_POWER_UP/direction"
 #define GPIO_T2_POWER "/tmp/gpionames/T2_POWER_UP/value"
-#endif
 
 #define LARGEST_DEVICE_NAME 120
 
-#if defined(CONFIG_WEDGE) || defined(CONFIG_WEDGE100)
 const char *fan_led[] = {FAN0_LED, FAN1_LED, FAN2_LED, FAN3_LED,
-#if defined(CONFIG_WEDGE100)
-                         FAN4_LED,
-#endif
 };
-#endif
 
 #define REPORT_TEMP 720  /* Report temp every so many cycles */
 
@@ -197,11 +125,7 @@ const char *fan_led[] = {FAN0_LED, FAN1_LED, FAN2_LED, FAN3_LED,
 
 #define INTAKE_LIMIT INTERNAL_TEMPS(60)
 #define SWITCH_LIMIT INTERNAL_TEMPS(80)
-#if defined(CONFIG_YOSEMITE)
-#define USERVER_LIMIT INTERNAL_TEMPS(110)
-#else
 #define USERVER_LIMIT INTERNAL_TEMPS(90)
-#endif
 
 #define TEMP_TOP INTERNAL_TEMPS(70)
 #define TEMP_BOTTOM INTERNAL_TEMPS(40)
@@ -218,11 +142,7 @@ const char *fan_led[] = {FAN0_LED, FAN1_LED, FAN2_LED, FAN3_LED,
 #define WEDGE_FAN_LOW 35
 #define WEDGE_FAN_MEDIUM 50
 #define WEDGE_FAN_HIGH 70
-#if defined(CONFIG_WEDGE100)
-#define WEDGE_FAN_MAX 100
-#else
 #define WEDGE_FAN_MAX 99
-#endif
 
 #define SIXPACK_FAN_LOW 35
 #define SIXPACK_FAN_MEDIUM 55
@@ -234,29 +154,12 @@ const char *fan_led[] = {FAN0_LED, FAN1_LED, FAN2_LED, FAN3_LED,
  * RPM measuring and PWM setting, naturally.  Doh.
  */
 
-#if defined(CONFIG_WEDGE100)
-int fan_to_rpm_map[] = {1, 3, 5, 7, 9};
-int fan_to_pwm_map[] = {1, 2, 3, 4, 5};
-#define FANS 5
-// Tacho offset between front and rear fans:
-#define REAR_FAN_OFFSET 1
-#define BACK_TO_BACK_FANS
-
-#elif defined(CONFIG_WEDGE)
 int fan_to_rpm_map[] = {3, 2, 0, 1};
 int fan_to_pwm_map[] = {7, 6, 0, 1};
 #define FANS 4
 // Tacho offset between front and rear fans:
 #define REAR_FAN_OFFSET 4
 #define BACK_TO_BACK_FANS
-#elif defined(CONFIG_YOSEMITE)
-int fan_to_rpm_map[] = {0, 1};
-int fan_to_pwm_map[] = {0, 1};
-#define FANS 2
-// Tacho offset between front and rear fans:
-#define REAR_FAN_OFFSET 1
-
-#endif
 
 
 /*
@@ -275,45 +178,6 @@ struct rpm_to_pct_map {
   uint rpm;
 };
 
-#if defined(CONFIG_WEDGE100)
-struct rpm_to_pct_map rpm_front_map[] = {{20, 4200},
-                                         {25, 5550},
-                                         {30, 6180},
-                                         {35, 7440},
-                                         {40, 8100},
-                                         {45, 9300},
-                                         {50, 10410},
-                                         {55, 10920},
-                                         {60, 11910},
-                                         {65, 12360},
-                                         {70, 13260},
-                                         {75, 14010},
-                                         {80, 14340},
-                                         {85, 15090},
-                                         {90, 15420},
-                                         {95, 15960},
-                                         {100, 16200}};
-#define FRONT_MAP_SIZE (sizeof(rpm_front_map) / sizeof(struct rpm_to_pct_map))
-
-struct rpm_to_pct_map rpm_rear_map[] = {{20, 2130},
-                                        {25, 3180},
-                                        {30, 3690},
-                                        {35, 4620},
-                                        {40, 5130},
-                                        {45, 6120},
-                                        {50, 7050},
-                                        {55, 7560},
-                                        {60, 8580},
-                                        {65, 9180},
-                                        {70, 10230},
-                                        {75, 11280},
-                                        {80, 11820},
-                                        {85, 12870},
-                                        {90, 13350},
-                                        {95, 14370},
-                                        {100, 14850}};
-#define REAR_MAP_SIZE (sizeof(rpm_rear_map) / sizeof(struct rpm_to_pct_map))
-#elif defined(CONFIG_WEDGE)
 struct rpm_to_pct_map rpm_front_map[] = {{30, 6150},
                                          {35, 7208},
                                          {40, 8195},
@@ -347,28 +211,6 @@ struct rpm_to_pct_map rpm_rear_map[] = {{30, 3911},
                                         {95, 15516},
                                         {100, 15897}};
 #define REAR_MAP_SIZE (sizeof(rpm_rear_map) / sizeof(struct rpm_to_pct_map))
-#elif defined(CONFIG_YOSEMITE)
-
-/* XXX:  Note that 0% is far from 0 RPM. */
-struct rpm_to_pct_map rpm_map[] = {{0, 989},
-                                   {10, 1654},
-                                   {20, 2650},
-                                   {30, 3434},
-                                   {40, 4318},
-                                   {50, 5202},
-                                   {60, 5969},
-                                   {70, 6869},
-                                   {80, 7604},
-                                   {90, 8525},
-                                   {100, 9325}};
-
-struct rpm_to_pct_map *rpm_front_map = rpm_map;
-struct rpm_to_pct_map *rpm_rear_map = rpm_map;
-#define MAP_SIZE (sizeof(rpm_map) / sizeof(struct rpm_to_pct_map))
-#define FRONT_MAP_SIZE MAP_SIZE
-#define REAR_MAP_SIZE MAP_SIZE
-
-#endif
 
 /*
  * Mappings from temperatures recorded from sensors to fan speeds;
@@ -381,38 +223,6 @@ struct temp_to_pct_map {
   int temp;
   unsigned speed;
 };
-
-#if defined(CONFIG_YOSEMITE)
-struct temp_to_pct_map intake_map[] = {{25, 15},
-                                       {27, 16},
-                                       {29, 17},
-                                       {31, 18},
-                                       {33, 19},
-                                       {35, 20},
-                                       {37, 21},
-                                       {39, 22},
-                                       {41, 23},
-                                       {43, 24},
-                                       {45, 25}};
-#define INTAKE_MAP_SIZE (sizeof(intake_map) / sizeof(struct temp_to_pct_map))
-
-struct temp_to_pct_map cpu_map[] = {{-28, 10},
-                                    {-26, 20},
-                                    {-24, 25},
-                                    {-22, 30},
-                                    {-20, 35},
-                                    {-18, 40},
-                                    {-16, 45},
-                                    {-14, 50},
-                                    {-12, 55},
-                                    {-10, 60},
-                                    {-8, 65},
-                                    {-6, 70},
-                                    {-4, 80},
-                                    {-2, 100}};
-#define CPU_MAP_SIZE (sizeof(cpu_map) / sizeof(struct temp_to_pct_map))
-#endif
-
 
 #define FAN_FAILURE_OFFSET 30
 
@@ -508,7 +318,6 @@ int write_device(const char *device, const char *value) {
   }
 }
 
-#if defined(CONFIG_WEDGE) || defined(CONFIG_WEDGE100)
 int read_temp(const char *device, int *value) {
   char full_name[LARGEST_DEVICE_NAME + 1];
 
@@ -555,21 +364,13 @@ int read_temp(const char *device, int *value) {
     }
   }
 
-#if defined(CONFIG_WEDGE100)
-  if ((rc || *value > WEDGE100_COME_DIMM) && (strstr(device, COM_E_DIR))) {
-    *value = BAD_TEMP;
-  }
-#endif
-
   if (rc) {
     syslog(LOG_INFO, "failed to read temperature from %s", device);
   }
 
   return rc;
 }
-#endif
 
-#if defined(CONFIG_WEDGE) && !defined(CONFIG_WEDGE100)
 int read_gpio_value(const int id, const char *device, int *value) {
   char full_name[LARGEST_DEVICE_NAME];
 
@@ -644,7 +445,6 @@ bool is_two_fan_board(bool verbose) {
     }
   }
 }
-#endif
 
 int read_fan_value(const int fan, const char *device, int *value) {
   char device_name[LARGEST_DEVICE_NAME];
@@ -774,19 +574,11 @@ int write_fan_speed(const int fan, const int value) {
   int real_fan = fan_to_pwm_map[fan];
 
   if (value == 0) {
-#if defined(CONFIG_WEDGE100)
-    return write_fan_value(real_fan, "fantray%d_pwm", 0);
-#else
     return write_fan_value(real_fan, "pwm%d_en", 0);
-#endif
   } else {
     int unit = value * PWM_UNIT_MAX / 100;
     int status;
 
-#if defined(CONFIG_WEDGE100)
-    // Note that PWM for Wedge100 is in 32nds of a cycle
-    return write_fan_value(real_fan, "fantray%d_pwm", unit);
-#else
     if (unit == PWM_UNIT_MAX)
       unit = 0;
 
@@ -796,29 +588,13 @@ int write_fan_speed(const int fan, const int value) {
       (status = write_fan_value(real_fan, "pwm%d_en", 1)) != 0) {
       return status;
     }
-#endif
   }
 }
-
-#if defined(CONFIG_YOSEMITE)
-int temp_to_fan_speed(int temp, struct temp_to_pct_map *map, int map_size) {
-  int i = map_size - 1;
-
-  while (i > 0 && temp < map[i].temp) {
-    --i;
-  }
-  return map[i].speed;
-}
-#endif
 
 /* Set up fan LEDs */
 
 int write_fan_led(const int fan, const char *color) {
-#if defined(CONFIG_WEDGE100) || defined(CONFIG_WEDGE)
 	return write_device(fan_led[fan], color);
-#else
-        return 0;
-#endif
 }
 
 int server_shutdown(const char *why) {
@@ -828,12 +604,6 @@ int server_shutdown(const char *why) {
   }
 
   syslog(LOG_EMERG, "Shutting down:  %s", why);
-#if defined(CONFIG_WEDGE100)
-  write_device(USERVER_POWER, "0");
-  sleep(5);
-  write_device(MAIN_POWER, "0");
-#endif
-#if defined(CONFIG_WEDGE) && !defined(CONFIG_WEDGE100)
   write_device(GPIO_USERVER_POWER_DIRECTION, "out");
   write_device(GPIO_USERVER_POWER, "0");
   /*
@@ -860,10 +630,6 @@ int server_shutdown(const char *why) {
     system("rmmod adm1275");
     system("i2cset -y 12 0x10 0x01 00");
   }
-#else
-  // TODO(7088822):  try throttling, then shutting down server.
-  syslog(LOG_EMERG, "Need to implement actual shutdown!\n");
-#endif
 
   /*
    * We have to stop the watchdog, or the system will be automatically
@@ -893,25 +659,13 @@ void fand_interrupt(int sig)
   exit(3);
 }
 
-#endif
-
 int main(int argc, char **argv) {
   /* Sensor values */
 
-#if defined(CONFIG_LIGHTNING)
-  return 0;
-#else
-
-#if defined(CONFIG_WEDGE)
   int intake_temp;
   int exhaust_temp;
   int switch_temp;
   int userver_temp;
-#else
-  float intake_temp;
-  float exhaust_temp;
-  float userver_temp;
-#endif
 
   int fan_speed = fan_high;
   int bad_reads = 0;
@@ -940,7 +694,6 @@ int main(int argc, char **argv) {
 
   openlog("fand", LOG_CONS, LOG_DAEMON);
 
-#if defined(CONFIG_WEDGE) && !defined(CONFIG_WEDGE100)
   if (is_two_fan_board(false)) {
     /* Alternate, two fan configuration */
     total_fans = 2;
@@ -952,7 +705,6 @@ int main(int argc, char **argv) {
     fan_max = SIXPACK_FAN_MAX;
     fan_speed = fan_high;
   }
-#endif
 
   while ((opt = getopt(argc, argv, "l:m:h:b:t:r:v")) != -1) {
     switch (opt) {
@@ -1017,27 +769,6 @@ int main(int argc, char **argv) {
     write_fan_led(fan + fan_offset, FAN_LED_BLUE);
   }
 
-#if defined(CONFIG_YOSEMITE)
-  /* Ensure that we can read from sensors before proceeding. */
-
-  int found = 0;
-  userver_temp = 100;
-  while (!found) {
-    for (int node = 1; node <= TOTAL_1S_SERVERS && !found; node++) {
-      if (!yosemite_sensor_read(node, BIC_SENSOR_SOC_THERM_MARGIN,
-                               &userver_temp) &&
-          userver_temp < 0) {
-        syslog(LOG_DEBUG, "SOC_THERM_MARGIN first valid read of %f.",
-               userver_temp);
-        found = 1;
-      }
-      sleep(5);
-    }
-    // XXX:  Will it ever be a problem that we don't exit this until
-    //       we see a valid value?
-  }
-#endif
-
   /* Start watchdog in manual mode */
   open_watchdog(0, 0);
 
@@ -1053,7 +784,6 @@ int main(int argc, char **argv) {
 
     /* Read sensors */
 
-#if defined(CONFIG_WEDGE) || defined(CONFIG_WEDGE100)
     read_temp(INTAKE_TEMP_DEVICE, &intake_temp);
     read_temp(EXHAUST_TEMP_DEVICE, &exhaust_temp);
     read_temp(CHIP_TEMP_DEVICE, &switch_temp);
@@ -1069,30 +799,6 @@ int main(int argc, char **argv) {
          switch_temp == BAD_TEMP)) {
       bad_reads++;
     }
-#else
-    intake_temp = exhaust_temp = userver_temp = BAD_TEMP;
-    if (yosemite_sensor_read(FRU_SPB, SP_SENSOR_INLET_TEMP, &intake_temp) ||
-        yosemite_sensor_read(FRU_SPB, SP_SENSOR_OUTLET_TEMP, &exhaust_temp))
-      bad_reads++;
-
-    /*
-     * There are a number of 1S servers;  any or all of them
-     * could be powered off and returning no values.  Ignore these
-     * invalid values.
-     */
-    for (int node = 1; node <= TOTAL_1S_SERVERS; node++) {
-      float new_temp;
-      if (!yosemite_sensor_read(node, BIC_SENSOR_SOC_THERM_MARGIN,
-			        &new_temp)) {
-        if (userver_temp < new_temp) {
-          userver_temp = new_temp;
-        }
-      }
-
-      // Since the yosemite_sensor_read() times out after 8secs, keep WDT from expiring
-      kick_watchdog();
-    }
-#endif
 
     if (bad_reads > BAD_READ_THRESHOLD) {
       server_shutdown("Some sensors couldn't be read");
@@ -1100,18 +806,11 @@ int main(int argc, char **argv) {
 
     if (log_count++ % report_temp == 0) {
       syslog(LOG_DEBUG,
-#if defined(CONFIG_WEDGE) || defined(CONFIG_WEDGE100)
              "Temp intake %d, switch %d, "
              " userver %d, exhaust %d, "
              "fan speed %d, speed changes %d",
-#else
-             "Temp intake %f, max server %f, exhaust %f, "
-             "fan speed %d, speed changes %d",
-#endif
              intake_temp,
-#if defined(CONFIG_WEDGE) || defined(CONFIG_WEDGE100)
              switch_temp,
-#endif
              userver_temp,
              exhaust_temp,
              fan_speed,
@@ -1124,26 +823,17 @@ int main(int argc, char **argv) {
       server_shutdown("Intake temp limit reached");
     }
 
-#if defined(CONFIG_WEDGE) || defined(CONFIG_WEDGE100)
     if (switch_temp > SWITCH_LIMIT) {
       server_shutdown("T2 temp limit reached");
     }
-#endif
 
     if (userver_temp + USERVER_TEMP_FUDGE > USERVER_LIMIT) {
       syslog(LOG_DEBUG,
-#if defined(CONFIG_WEDGE) || defined(CONFIG_WEDGE100)
              "Temp intake %d, switch %d, "
              " userver %d, exhaust %d, "
              "fan speed %d, speed changes %d",
-#else
-             "Temp intake %f, max server %f, exhaust %f, "
-             "fan speed %d, speed changes %d",
-#endif
              intake_temp,
-#if defined(CONFIG_WEDGE) || defined(CONFIG_WEDGE100)
              switch_temp,
-#endif
              userver_temp,
              exhaust_temp,
              fan_speed,
@@ -1160,21 +850,6 @@ int main(int argc, char **argv) {
      * as well.
      */
 
-#if defined(CONFIG_YOSEMITE)
-    /* Use tables to lookup the new fan speed for Yosemite. */
-
-    int intake_speed = temp_to_fan_speed(intake_temp, intake_map,
-                                         INTAKE_MAP_SIZE);
-    int cpu_speed = temp_to_fan_speed(userver_temp, cpu_map, CPU_MAP_SIZE);
-
-    if (fan_speed == fan_max && fan_failure != 0) {
-      /* Don't change a thing */
-    } else if (intake_speed > cpu_speed) {
-      fan_speed = intake_speed;
-    } else {
-      fan_speed = cpu_speed;
-    }
-#else
     /* Other systems use a simpler built-in table to determine fan speed. */
 
     if (switch_temp > userver_temp + USERVER_TEMP_FUDGE) {
@@ -1207,7 +882,6 @@ int main(int argc, char **argv) {
         fan_speed = fan_medium;
       }
     }
-#endif
 
     /*
      * Update fans only if there are no failed ones. If any fans failed
@@ -1283,7 +957,6 @@ int main(int argc, char **argv) {
         write_fan_speed(fan + fan_offset, fan_speed);
       }
 
-#if defined(CONFIG_WEDGE) || defined(CONFIG_WEDGE100)
       /*
        * On Wedge, we want to shut down everything if none of the fans
        * are visible, since there isn't automatic protection to shut
@@ -1302,7 +975,6 @@ int main(int argc, char **argv) {
           server_shutdown("all fans are bad for more than 12 cycles");
         }
       }
-#endif
 
       /*
        * Fans can be hot swapped and replaced; in which case the fan daemon
@@ -1320,5 +992,4 @@ int main(int argc, char **argv) {
      * to reboot after the watchdog timeout. */
     kick_watchdog();
   }
-#endif
 }

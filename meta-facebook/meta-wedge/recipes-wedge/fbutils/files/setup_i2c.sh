@@ -53,23 +53,4 @@ i2c_device_add 8 0x60 ncp4200
 # Bus 12
 i2c_device_add 12 0x10 adm1278
 
-#
-# setup ADC channels.
-# "ast_config_adc" is only needed in kernel 4.1: aspeed-adc setup is taken
-# care by aspeed-adc and iio-hwmon drivers in the latest kernel.
-#
-if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
-    modprobe ast_adc
-    # channel 5: r1:  1.0K; r2:  1.0K; v2: 1000mv
-    # channel 6: r1:  1.0K; r2:  1.0K; v2: 1000mv
-    # channel 7: r1:  1.0K; r2:  1.0K; v2: 0mv
-    # channel 8: r1:  1.0K; r2:  1.0K; v2: 0mv
-    # channel 9: r1:  1.0K; r2:  1.0K; v2: 0mv
-    ast_config_adc 5  1 1 1000
-    ast_config_adc 6  1 1 1000
-    ast_config_adc 7  1 1 0
-    ast_config_adc 8  1 1 0
-    ast_config_adc 9  1 1 0
-fi
-
 i2c_check_driver_binding

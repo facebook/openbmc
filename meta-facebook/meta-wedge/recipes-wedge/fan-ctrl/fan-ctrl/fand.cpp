@@ -48,9 +48,21 @@
 #include <signal.h>
 #include <syslog.h>
 #include <dirent.h>
+#include <assert.h>
 #include <facebook/wedge_eeprom.h>
 
 #include <openbmc/watchdog.h>
+#include <openbmc/libgpio.h>
+
+#ifndef BITS_PER_BYTE
+#define BITS_PER_BYTE 8
+#endif
+
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
+#endif
+
+#define MAX_FANS 4
 
 /* Sensor definitions */
 
@@ -81,42 +93,40 @@
 #define EXHAUST_TEMP_DEVICE LM75_DIR "3-004a"
 #define USERVER_TEMP_DEVICE PANTHER_PLUS_DIR "4-0040"
 
-#define FAN0_LED "/sys/class/gpio/gpio53/value"
-#define FAN1_LED "/sys/class/gpio/gpio54/value"
-#define FAN2_LED "/sys/class/gpio/gpio55/value"
-#define FAN3_LED "/sys/class/gpio/gpio72/value"
+#define REV_ID_BITS  3
+#define SLOT_ID_BITS 4
 
-#define FAN_LED_RED "0"
-#define FAN_LED_BLUE "1"
+static const char *board_rev_gpios[REV_ID_BITS] = {
+    "BOARD_REV_ID0",
+    "BOARD_REV_ID1",
+    "BOARD_REV_ID2",
+};
 
-#define GPIO_PIN_ID "/sys/class/gpio/gpio%d/value"
-#define REV_IDS 3
-#define GPIO_REV_ID_START 192
-
-#define BOARD_IDS 4
-#define GPIO_BOARD_ID_START 160
-
-/*
- * With hardware revisions after 3, we use a different set of pins for
- * the BOARD_ID.
- */
-
-#define REV_ID_NEW_BOARD_ID 3
-#define GPIO_BOARD_ID_START_NEW 166
+static const char *slot_id_gpios[SLOT_ID_BITS] = {
+    "BP_SLOT_ID0",
+    "BP_SLOT_ID1",
+    "BP_SLOT_ID2",
+    "BP_SLOT_ID3",
+};
 
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 
 #define PWM_UNIT_MAX 96
 #define FAN_READ_RPM_FORMAT "tacho%d_rpm"
 
-#define GPIO_USERVER_POWER_DIRECTION "/sys/class/gpio/gpio25/direction"
-#define GPIO_USERVER_POWER "/sys/class/gpio/gpio25/value"
-#define GPIO_T2_POWER_DIRECTION "/tmp/gpionames/T2_POWER_UP/direction"
-#define GPIO_T2_POWER "/tmp/gpionames/T2_POWER_UP/value"
-
 #define LARGEST_DEVICE_NAME 120
 
-const char *fan_led[] = {FAN0_LED, FAN1_LED, FAN2_LED, FAN3_LED,
+#define FAN_LED_RED  GPIO_VALUE_LOW
+#define FAN_LED_BLUE GPIO_VALUE_HIGH
+
+static struct {
+    const char *shadow;
+    gpio_desc_t *gdesc;
+} fan_led_gpios[MAX_FANS] = {
+    {"FAN_LED_GPIOG5", NULL},
+    {"FAN_LED_GPIOG6", NULL},
+    {"FAN_LED_GPIOG7", NULL},
+    {"FAN_LED_GPIOJ0", NULL},
 };
 
 #define REPORT_TEMP 720  /* Report temp every so many cycles */
@@ -156,7 +166,6 @@ const char *fan_led[] = {FAN0_LED, FAN1_LED, FAN2_LED, FAN3_LED,
 
 int fan_to_rpm_map[] = {3, 2, 0, 1};
 int fan_to_pwm_map[] = {7, 6, 0, 1};
-#define FANS 4
 // Tacho offset between front and rear fans:
 #define REAR_FAN_OFFSET 4
 #define BACK_TO_BACK_FANS
@@ -230,7 +239,7 @@ int fan_low = WEDGE_FAN_LOW;
 int fan_medium = WEDGE_FAN_MEDIUM;
 int fan_high = WEDGE_FAN_HIGH;
 int fan_max = WEDGE_FAN_MAX;
-int total_fans = FANS;
+int total_fans = MAX_FANS;
 int fan_offset = 0;
 
 int temp_bottom = TEMP_BOTTOM;
@@ -371,44 +380,45 @@ int read_temp(const char *device, int *value) {
   return rc;
 }
 
-int read_gpio_value(const int id, const char *device, int *value) {
-  char full_name[LARGEST_DEVICE_NAME];
+static int parse_gpio_ids(const char **shadows, size_t size, unsigned int *id)
+{
+    gpio_desc_t *gdesc;
+    gpio_value_t value;
+    unsigned int i, bit;
 
-  snprintf(full_name, LARGEST_DEVICE_NAME, device, id);
-  return read_device(full_name, value);
+    assert(size < sizeof(*id) * BITS_PER_BYTE);
+
+    *id = 0;
+    for (i = 0; i < size; i++) {
+        gdesc = gpio_open_by_shadow(shadows[i]);
+        if (gdesc == NULL)
+            return -1;
+
+        if (gpio_get_value(gdesc, &value) != 0) {
+            gpio_close(gdesc);
+            return -1;
+        }
+
+        if (gpio_close(gdesc) != 0)
+            return -1;
+
+        bit = (value == GPIO_VALUE_HIGH) ? 1 : 0;
+        *id |= (bit << i);
+    }
+
+    return 0;
 }
 
-int read_gpio_values(const int start, const int count,
-                     const char *device, int *result) {
-  int status = 0;
-  int value;
+static int read_ids(unsigned int *rev_id, unsigned int *board_id) {
+  int status;
 
-  *result = 0;
-  for (int i = 0; i < count; i++) {
-      status |= read_gpio_value(start + i, GPIO_PIN_ID, &value);
-      *result |= value << i;
-  }
-  return status;
-}
-
-int read_ids(int *rev_id, int *board_id) {
-  int status = 0;
-  int value;
-
-  status = read_gpio_values(GPIO_REV_ID_START, REV_IDS, GPIO_PIN_ID, rev_id);
+  status = parse_gpio_ids(board_rev_gpios, ARRAY_SIZE(board_rev_gpios), rev_id);
   if (status != 0) {
     syslog(LOG_INFO, "failed to read rev_id");
     return status;
   }
 
-  int board_id_start;
-  if (*rev_id >= REV_ID_NEW_BOARD_ID) {
-    board_id_start = GPIO_BOARD_ID_START_NEW;
-  } else {
-    board_id_start = GPIO_BOARD_ID_START;
-  }
-
-  status = read_gpio_values(board_id_start, BOARD_IDS, GPIO_PIN_ID, board_id);
+  status = parse_gpio_ids(slot_id_gpios, ARRAY_SIZE(slot_id_gpios), board_id);
   if (status != 0) {
     syslog(LOG_INFO, "failed to read board_id");
   }
@@ -428,8 +438,8 @@ bool is_two_fan_board(bool verbose) {
                        sizeof(eeprom.fbw_location));
   } else {
     int status;
-    int board_id = 0;
-    int rev_id = 0;
+    unsigned int board_id = 0;
+    unsigned int rev_id = 0;
     /*
      * Could not parse EEPROM. Most likely, it is an old HW without EEPROM.
      * In this case, use board ID to distinguish if it is wedge or 6-pack.
@@ -593,8 +603,40 @@ int write_fan_speed(const int fan, const int value) {
 
 /* Set up fan LEDs */
 
-int write_fan_led(const int fan, const char *color) {
-	return write_device(fan_led[fan], color);
+static int update_fan_led(int fan, gpio_value_t color) {
+    const char *shadow;
+
+    assert(fan >= 0 && fan < MAX_FANS);
+
+    if (fan_led_gpios[fan].gdesc == NULL) {
+        shadow = fan_led_gpios[fan].shadow;
+        fan_led_gpios[fan].gdesc = gpio_open_by_shadow(shadow);
+        if (fan_led_gpios[fan].gdesc == NULL)
+            return -1;
+    }
+
+    return gpio_set_value(fan_led_gpios[fan].gdesc, color);
+}
+
+static int set_gpio_state(const char *shadow, gpio_value_t value)
+{
+    int error;
+    gpio_desc_t *gdesc;
+
+    gdesc = gpio_open_by_shadow(shadow);
+    if (gdesc == NULL)
+        return -1;
+
+    error = gpio_set_direction(gdesc, GPIO_DIRECTION_OUT);
+    if (error != 0)
+        goto exit;
+
+    error = gpio_set_value(gdesc, value);
+
+exit:
+    if (gpio_close(gdesc) != 0)
+        return -1;
+    return error;
 }
 
 int server_shutdown(const char *why) {
@@ -604,8 +646,9 @@ int server_shutdown(const char *why) {
   }
 
   syslog(LOG_EMERG, "Shutting down:  %s", why);
-  write_device(GPIO_USERVER_POWER_DIRECTION, "out");
-  write_device(GPIO_USERVER_POWER, "0");
+  if (set_gpio_state("BMC_PWR_BTN_OUT_N", GPIO_VALUE_LOW) != 0)
+      syslog(LOG_EMERG, "failed to shutdown userver: %s", strerror(errno));
+
   /*
    * Putting T2 in reset generates a non-maskable interrupt to uS,
    * the kernel running on uS might panic depending on its version.
@@ -613,8 +656,7 @@ int server_shutdown(const char *why) {
    */
   sleep(5);
 
-  if (write_device(GPIO_T2_POWER_DIRECTION, "out") ||
-      write_device(GPIO_T2_POWER, "1")) {
+  if (set_gpio_state("T2_POWER_UP", GPIO_VALUE_HIGH) != 0) {
     /*
      * We're here because something has gone badly wrong.  If we
      * didn't manage to shut down the T2, cut power to the whole box,
@@ -673,7 +715,7 @@ int main(int argc, char **argv) {
   int fan_speed_changes = 0;
   int old_speed;
 
-  int fan_bad[FANS];
+  int fan_bad[MAX_FANS];
   int fan;
 
   unsigned log_count = 0; // How many times have we logged our temps?
@@ -766,7 +808,7 @@ int main(int argc, char **argv) {
   for (fan = 0; fan < total_fans; fan++) {
     fan_bad[fan] = 0;
     write_fan_speed(fan + fan_offset, fan_speed);
-    write_fan_led(fan + fan_offset, FAN_LED_BLUE);
+    update_fan_led(fan + fan_offset, FAN_LED_BLUE);
   }
 
   /* Start watchdog in manual mode */
@@ -919,7 +961,7 @@ int main(int argc, char **argv) {
        */
       if (fan_speed_okay(fan + fan_offset, fan_speed, FAN_FAILURE_OFFSET)) {
         if (fan_bad[fan] > FAN_FAILURE_THRESHOLD) {
-          write_fan_led(fan + fan_offset, FAN_LED_BLUE);
+          update_fan_led(fan + fan_offset, FAN_LED_BLUE);
           syslog(LOG_CRIT,
                  "Fan %d has recovered",
                  fan);
@@ -934,7 +976,7 @@ int main(int argc, char **argv) {
     for (fan = 0; fan < total_fans; fan++) {
       if (fan_bad[fan] > FAN_FAILURE_THRESHOLD) {
         fan_failure++;
-        write_fan_led(fan + fan_offset, FAN_LED_RED);
+        update_fan_led(fan + fan_offset, FAN_LED_RED);
       }
     }
 

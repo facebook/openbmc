@@ -163,6 +163,7 @@ def arg_parser():
             "wedge",
             "wedge100",
             "wedge400",
+            "wedge400c",
             "galaxy100",
             "cmm",
             "minipack",
@@ -253,6 +254,9 @@ def repeat_test(test, num_iter, single=False):
 if __name__ == "__main__":
     args = arg_parser()
     pattern = None
+
+    if args.platform == "wedge400c":
+        args.platform = "wedge400"
 
     if args.external:
         pattern = "external*.py"

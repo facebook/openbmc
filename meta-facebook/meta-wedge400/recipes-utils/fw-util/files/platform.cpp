@@ -22,6 +22,7 @@
 #include "bic_me.h"
 #include "bic_cpld.h"
 #include "bic_bios.h"
+#include "tpm2.h"
 #include <facebook/bic.h>
 
 using namespace std;
@@ -34,3 +35,10 @@ MeComponent me("scm", "me", slot_id);
 CpldComponent cpld("scm", "cpld", slot_id);
 BiosComponent bios("scm", "bios", slot_id);
 
+Tpm2Component tpm("bmc", "tpm",
+                  "/dev/tpmrm0",
+                  "export TPM2TOOLS_TCTI_NAME=device; " \
+                  "export TPM2TOOLS_DEVICE_FILE=/dev/tpmrm0; " \
+                  "tpm2_dump_capability -c properties-fixed 2>/dev/null | " \
+                  "grep TPM_PT_FIRMWARE_VERSION_1",
+                  "tpm2_version");

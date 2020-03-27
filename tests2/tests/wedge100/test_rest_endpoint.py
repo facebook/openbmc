@@ -31,6 +31,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     SYS_FW_INFO_ENDPOINT = "/api/sys/firmware_info/sys"
     FAN_FW_INFO_ENDPOINT = "/api/sys/firmware_info/fan"
+    EEPROM_FW_INFO_ENDPOINT = "/api/sys/firmware_info/internal_switch_config"
+
     # /api
     def set_endpoint_api_attributes(self):
         self.endpoint_api_attrb = ["sys"]
@@ -121,11 +123,20 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     # "/api/sys/firmware_info"
     def set_endpoint_firmware_info_attributes(self):
-        self.endpoint_firmware_info_attrb = ["all", "sys", "fan"]
+        self.endpoint_firmware_info_attrb = [
+            "all",
+            "sys",
+            "fan",
+            "internal_switch_config",
+        ]
 
     def set_endpoint_firmware_info_all_attributes(self):
         # TODO: what if this changes?
-        self.endpoint_firmware_info_all_attrb = ["6.101", "1.11"]
+        self.endpoint_firmware_info_all_attrb = [
+            "6.101",
+            "1.11",
+            "36e0d729d079561511c18db645f3f7617fd7c14fcb9be9712",
+        ]
 
     def set_endpoint_firmware_info_sys_attributes(self):
         # TODO: what if this changes?
@@ -146,5 +157,17 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         self.set_endpoint_firmware_info_sys_attributes()
         self.assertNotEqual(self.endpoint_firmware_info_sys_attrb, None)
         info = self.get_from_endpoint(RestEndpointTest.FAN_FW_INFO_ENDPOINT)
+        self.assertTrue(json.loads(info))
+
+    def set_endpoint_firmware_info_eeprom_attributes(self):
+        # TODO: what if this changes?
+        self.endpoint_firmware_info_eeprom_attrb = [
+            "36e0d729d079561511c18db645f3f7617fd7c14fcb9be9712"
+        ]
+
+    def test_endpoint_api_eeprom_firmware_info_sys(self):
+        self.set_endpoint_firmware_info_eeprom_attributes()
+        self.assertNotEqual(self.endpoint_firmware_info_eeprom_attrb, None)
+        info = self.get_from_endpoint(RestEndpointTest.EEPROM_FW_INFO_ENDPOINT)
         # If we get any JSON object I'm happy for the time being
         self.assertTrue(json.loads(info))

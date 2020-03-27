@@ -19,21 +19,16 @@
 #
 set -e
 set -o pipefail
+exit_code=2  
 
-. /usr/local/bin/openbmc-utils.sh
+cleanup () {
+  echo out > /tmp/gpionames/SWITCH_EEPROM1_WRT/direction 
+  echo 0 > /tmp/gpionames/SWITCH_EEPROM1_WRT/value
+  exit $exit_code
+}
+trap cleanup EXIT ERR INT TERM
 
-BASEDIR=${SYSCPLD_SYSFS_DIR}
-if [[ $# -gt 0 && "$1" != "--fan" ]]; then
-    echo "Prints SYS CPLD version information when called with no arguments" >&2
-    echo "Prints FAN CPLD version if called with --fan" >&2
-    echo "Usage: $0 [--fan]" >&2
-    exit 2
-fi
-
-if [[ "$1" == "--fan" ]]; then
-    BASEDIR=${FANCPLD_SYSFS_DIR}
-fi
-rev=$(head -n 1 ${BASEDIR}/cpld_rev)
-sub_rev=$(head -n 1 ${BASEDIR}/cpld_sub_rev)
-
-echo $(($rev)).$(($sub_rev))
+echo out > /tmp/gpionames/SWITCH_EEPROM1_WRT/direction 
+echo 1 > /tmp/gpionames/SWITCH_EEPROM1_WRT/value
+/usr/local/bin/at93cx6_util_py3.py chip read | sha256sum | head -c 64
+exit_code=$?

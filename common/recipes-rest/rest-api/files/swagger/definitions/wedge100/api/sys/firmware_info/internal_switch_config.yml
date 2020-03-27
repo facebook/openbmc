@@ -1,10 +1,10 @@
 swagger: "2.0"
 info: 
-  description: Swagger doc for /api/sys/firmware_info/all  
-  title: Swagger doc for /api/sys/firmware_info/all  
+  description: Swagger doc for /api/sys/firmware_info/internal_switch_config  
+  title: Swagger doc for /api/sys/firmware_info/internal_switch_config  
   version: 1.0.0
 paths: 
-  /api/sys/firmware_info/all: 
+  /api/sys/firmware_info/internal_switch_config: 
     get: 
       produces: [application/json]
       responses: 
@@ -14,9 +14,5 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              SYS_CPLD: 
-                type: string
-              FAN_CPLD: 
-                type: string
               INTERNAL_SWITCH_CONFIG: 
                 type: string

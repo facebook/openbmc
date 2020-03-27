@@ -23,4 +23,5 @@ board_routes = [
     "/api/sys/firmware_info/all",
     "/api/sys/firmware_info/fan",
     "/api/sys/firmware_info/sys",
+    "/api/sys/firmware_info/internal_switch_config",
 ]

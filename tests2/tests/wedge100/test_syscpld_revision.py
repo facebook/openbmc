@@ -56,16 +56,16 @@ class SysCpldRevisionTest(unittest.TestCase):
 
     def test_cpld_fan_revision_format(self):
         """
-        cpld_rev returns X.X
+        cpld_rev --fan returns X.X
         """
         version = run_shell_cmd([self.cpld_rev, "--fan"]).rstrip("\n").split(".")
         self.assertTrue(
             version[0].isdigit(),
-            "CPLD major version is not digit, received={}".format(version),
+            "Fan major version is not digit, received={}".format(version),
         )
         self.assertTrue(
             version[1].isdigit(),
-            "CPLD minor version is not digit, received={}".format(version),
+            "Fan minor version is not digit, received={}".format(version),
         )
 
     def test_cpld_version_sysfs_path_exists(self):

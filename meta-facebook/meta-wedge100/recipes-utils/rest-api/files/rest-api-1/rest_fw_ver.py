@@ -26,3 +26,8 @@ async def get_sys_cpld_ver() -> str:
 async def get_fan_cpld_ver() -> str:
     cmd = ["/usr/local/bin/cpld_rev.sh", "--fan"]
     return await __run_cmd(cmd)
+
+
+async def get_internal_switch_config() -> str:
+    cmd = ["/usr/local/bin/internal_switch_version.sh"]
+    return await __run_cmd(cmd)

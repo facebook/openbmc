@@ -24,6 +24,7 @@ SRC_URI += "file://disable_watchdog.sh \
             file://setup_board.sh \
             file://cpld_rev.sh \
             file://cpld_upgrade.sh \
+            file://internal_switch_version.sh \
             file://cp2112_i2c_flush.sh \
             file://reset_qsfp_mux.sh \
             file://setup_i2c.sh \
@@ -36,6 +37,7 @@ OPENBMC_UTILS_FILES += " \
     enable_watchdog_ext_signal.sh \
     cpld_upgrade.sh \
     cpld_rev.sh \
+    internal_switch_version.sh \
     ec_version.sh \
     cp2112_i2c_flush.sh \
     reset_qsfp_mux.sh \

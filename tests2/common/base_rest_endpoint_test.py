@@ -88,7 +88,7 @@ class BaseRestEndpointTest(object):
                     handle = urlopen(cmd)
                 except HTTPError as err:
                     if item == "ntp":
-                        self.assertIn(handle.getcode(), [200, 404])
+                        self.assertIn(err.code, [200, 404])
                         return
                     else:
                         raise (err)

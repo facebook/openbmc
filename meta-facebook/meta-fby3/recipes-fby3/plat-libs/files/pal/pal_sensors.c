@@ -42,8 +42,7 @@ static int read_hsc_vin(uint8_t hsc_id, float *value);
 static int read_hsc_temp(uint8_t hsc_id, float *value);
 static int read_hsc_pin(uint8_t hsc_id, float *value);
 static int read_hsc_iout(uint8_t hsc_id, float *value);
-static int read_ltc4282_vout(uint8_t hsc_id, float *value);
-static int read_ltc4282_vin(uint8_t hsc_id, float *value);
+static int read_ltc4282_val(uint8_t snr_number, float *value);
 static int pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value);
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
@@ -69,6 +68,8 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_HSC_IOUT,
   BMC_SENSOR_MEDUSA_VOUT,
   BMC_SENSOR_MEDUSA_VIN,
+  BMC_SENSOR_MEDUSA_CURR,
+  BMC_SENSOR_MEDUSA_PWR,
   BMC_SENSOR_FAN_IOUT,
   BMC_SENSOR_NIC_IOUT,
 };
@@ -182,6 +183,8 @@ const uint8_t bic_sensor_list[] = {
   BIC_BB_SENSOR_P2V5_BMC_STBY,
   BIC_BB_SENSOR_MEDUSA_VOUT,
   BIC_BB_SENSOR_MEDUSA_VIN,
+  BIC_BB_SENSOR_MEDUSA_PIN,
+  BIC_BB_SENSOR_MEDUSA_IOUT,
 
   //BIC 2OU EXP Sensors
   BIC_2OU_EXP_SENSOR_OUTLET_TEMP,
@@ -224,11 +227,6 @@ PAL_ATTR_INFO adm1278_info_list[] = {
   {HSC_CURRENT, 800 * ADM1278_RSENSE, 20475, 10},
   {HSC_POWER, 6123 * ADM1278_RSENSE, 0, 100},
   {HSC_TEMP, 42, 31880, 10},
-};
-
-//LTC4282
-PAL_ATTR_INFO ltc4282_info_list[] = {
-  {HSC_VOLTAGE, 65535, 0, 16.64},
 };
 
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNR, UNC, LCR, LNR, LNC, Pos, Neg}
@@ -454,8 +452,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD1
+  {"BMC_SENSOR_MEDUSA_CURR", 0xD0, read_ltc4282_val, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xD0
+  {"BMC_SENSOR_MEDUSA_PWR", 0xD1, read_ltc4282_val, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xD1
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD2
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD3
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD4
@@ -494,14 +492,14 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_P1V15_STBY", ADC3, read_adc_val, true, {1.264, 0, 0, 1.037, 0, 0, 0, 0}, VOLT}, //0xF3
   {"BMC_SENSOR_P1V2_STBY", ADC4, read_adc_val, true, {1.314, 0, 0, 1.086, 0, 0, 0, 0}, VOLT}, //0xF4
   {"BMC_SENSOR_P2V5_STBY", ADC5, read_adc_val, true, {2.743, 0, 0, 2.262, 0, 0, 0, 0}, VOLT}, //0xF5
-  {"BMC_SENSOR_MEDUSA_VOUT", HSC_ID1, read_ltc4282_vout, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF6
+  {"BMC_SENSOR_MEDUSA_VOUT", 0xF6, read_ltc4282_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF6
   {"BMC_SENSOR_HSC_VIN", HSC_ID0, read_hsc_vin, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF7
   {"BMC_SENSOR_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xF8
   {"BMC_SENSOR_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF9
   {"BMC_SENSOR_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {27.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFA
   {"BMC_SENSOR_FAN_IOUT", ADC8, read_adc_val, 0, {6.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFB
   {"BMC_SENSOR_NIC_IOUT", ADC9, read_adc_val, 0, {6.6, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFC
-  {"BMC_SENSOR_MEDUSA_VIN", HSC_ID1, read_ltc4282_vin, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xFD
+  {"BMC_SENSOR_MEDUSA_VIN", 0xFD, read_ltc4282_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xFD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFF
 };
@@ -509,7 +507,6 @@ PAL_SENSOR_MAP sensor_map[] = {
 //HSC
 PAL_HSC_INFO hsc_info_list[] = {
   {HSC_ID0, ADM1278_SLAVE_ADDR, adm1278_info_list},
-  {HSC_ID1, LTC4282_SLAVE_ADDR, ltc4282_info_list}
 };
 
 size_t bmc_sensor_cnt = sizeof(bmc_sensor_list)/sizeof(uint8_t);
@@ -861,6 +858,28 @@ apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value) {
 }
 
 static int
+read_ltc4282_val(uint8_t snr_number, float *value) {
+  int ret = READING_NA;
+
+  switch(snr_number) {
+    case BMC_SENSOR_MEDUSA_VIN:
+      ret = sensors_read("ltc4282-i2c-11-44", "BMC_SENSOR_MEDUSA_VIN", value);
+      break;
+    case BMC_SENSOR_MEDUSA_VOUT:
+      ret = sensors_read("ltc4282-i2c-11-44", "BMC_SENSOR_MEDUSA_VOUT", value);
+      break;
+    case BMC_SENSOR_MEDUSA_CURR:
+      ret = sensors_read("ltc4282-i2c-11-44", "BMC_SENSOR_MEDUSA_CURR", value);
+      break;
+    case BMC_SENSOR_MEDUSA_PWR:
+      ret = sensors_read("ltc4282-i2c-11-44", "BMC_SENSOR_MEDUSA_PWR", value);
+      break;
+  }
+
+  return ret;
+}
+
+static int
 read_temp(uint8_t id, float *value) {
   struct {
     const char *chip;
@@ -1078,109 +1097,6 @@ read_hsc_vin(uint8_t hsc_id, float *value) {
   *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
 error_exit:
   if ( fd > 0 ) close(fd);
-
-  return ret;
-}
-
-static int
-read_ltc4282_volt_src(uint8_t hsc_id, uint8_t volt_src, float *value) {
-  uint8_t tbuf[2] = {0x00};
-  uint8_t rbuf[2] = {0x00};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  static uint8_t addr = 0;
-  static float m = 0;
-  static float b = 0;
-  static float r =0;
-  int fd = 0;
-  int ret = ERR_NOT_READY;
-
-  //is it ready?
-  if ( addr == 0 ) {
-    get_hsc_info(hsc_id, HSC_VOLTAGE, &addr, &m, &b, &r);
-  }
-
-  fd = open("/dev/i2c-11", O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "Failed to open bus 11");
-    goto error_exit;
-  }
-
-  //get the current setting
-  tbuf[0] = ILIM_ADJUST;
-  tlen = 1;
-  rlen = 1;
-  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
-  if ( ret < 0 ) {
-    goto error_exit;
-  }
-
-  //reset the bit2
-  rbuf[0] = rbuf[0] & 0xFB;
-
-  switch (volt_src) {
-    case LTC4282_VOLT_SRC_VOUT:
-      rbuf[0] = rbuf[0] | (0x1 << 2);
-      break;
-    case LTC4282_VOLT_SRC_VIN:
-      /*do nothing since bit2 is 0*/
-      break;
-  }
-
-  //set the volt source
-  tbuf[0] = ILIM_ADJUST;
-  tbuf[1] = rbuf[0];
-  tlen = 2;
-  rlen = 0;
-  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
-  if ( ret < 0 ) {
-    goto error_exit;
-  }
-
-  msleep(10);
-
-  //read the data
-  tbuf[0] = VSOURCE;
-  tlen = 1;
-  rlen = 2;
-  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
-  if ( ret < 0 ) {
-    goto error_exit;
-  }
-
-  *value = ((float)(rbuf[0] << 8 | rbuf[1]) * r - b) / m;
-
-error_exit:
-  if ( fd > 0 ) close(fd);
-  return ret;
-}
-
-static int
-read_ltc4282_vout(uint8_t hsc_id, float *value) {
-  int retry = MAX_RETRY;
-  int ret = ERR_NOT_READY;
-
-  do {
-    ret = read_ltc4282_volt_src(hsc_id, LTC4282_VOLT_SRC_VOUT, value);
-    if ( ret < 0 ) {
-      ret = READING_NA;
-    } else break;
-  } while ( retry-- > 0 );
-
-  return ret;
-}
-
-static int
-read_ltc4282_vin(uint8_t hsc_id, float *value) {
-  int retry = MAX_RETRY;
-  int ret = ERR_NOT_READY;
-
-  do {
-    ret = read_ltc4282_volt_src(hsc_id, LTC4282_VOLT_SRC_VIN, value);
-    if ( ret < 0 ) {
-      ret = READING_NA;
-    } else break;
-  } while ( retry-- > 0 );
 
   return ret;
 }

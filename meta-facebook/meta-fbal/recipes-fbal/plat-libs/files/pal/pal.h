@@ -26,6 +26,7 @@
 #include "pal_health.h"
 #include "pal_power.h"
 #include "pal_cm.h"
+#include "pal_ep.h"
 
 #ifdef __cplusplus
 extern "C" {

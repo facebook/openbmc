@@ -201,6 +201,12 @@ pal_sled_cycle(void) {
   }
 
   syslog(LOG_DEBUG, "system mode=%x\n", mode);
+  // If JBOG is present, request power cycle
+  // TODO:
+  //      Add common interface for different JBOG platform
+  if (pal_ep_sled_cycle() < 0)
+    syslog(LOG_ERR, "Request JBOG power-cycle failed");
+
   // Send command to HSC power cycle
   if (mode == MB_8S_MODE ) {  
     if( lib_cmc_power_cycle() ) {

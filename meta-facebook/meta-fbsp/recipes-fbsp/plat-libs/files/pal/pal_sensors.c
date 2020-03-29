@@ -71,9 +71,9 @@ static bool is_ava_card_present(uint8_t riser_slot);
 static int read_nvme_temp(uint8_t sensor_num, float *value);
 static int read_ava_temp(uint8_t sensor_num, float *value);
 
-size_t pal_pwm_cnt = 16;
+size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 16;
-const char pal_pwm_list[] = "0..15";
+const char pal_pwm_list[] = "0, 1";
 const char pal_tach_list[] = "0..15";
 static float fan_volt[PAL_FAN_CNT];
 static float fan_curr[PAL_FAN_CNT];
@@ -1616,7 +1616,7 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
   char label[32] = {0};
 
   if (fan >= pal_pwm_cnt ||
-      snprintf(label, sizeof(label), "pwm%d", fan=(fan>=(pal_pwm_cnt/2))?2:1) > sizeof(label)) {
+      snprintf(label, sizeof(label), "pwm%d", fan + 1) > sizeof(label)) {
     return -1;
   }
   return sensors_write_fan(label, (float)pwm);
@@ -1903,7 +1903,7 @@ is_fan_present(uint8_t fan_id) {
   char shadow_name[32];
   char led_state[32];
   gpio_value_t value;
-  static bool state_flag = false; 
+  static bool state_flag = false;
 
   if(state_flag == false) {
     state_flag = true;

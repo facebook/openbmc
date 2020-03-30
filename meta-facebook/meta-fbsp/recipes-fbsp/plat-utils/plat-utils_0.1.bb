@@ -28,6 +28,7 @@ SRC_URI = "file://ast-functions \
            file://sync_date.sh \
            file://setup-por.sh \
            file://setup-clock-port.sh \
+           file://setup-pfr.sh \
            file://COPYING \
           "
 
@@ -61,6 +62,8 @@ do_install() {
   update-rc.d -r ${D} setup-i2c.sh start 60 5 .
   install -m 755 sync_date.sh ${D}${sysconfdir}/init.d/sync_date.sh
   update-rc.d -r ${D} sync_date.sh start 66 5 .
+  install -m 755 setup-pfr.sh ${D}${sysconfdir}/init.d/setup-pfr.sh
+  update-rc.d -r ${D} setup-pfr.sh start 99 5 .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 70 S .
   install -m 755 setup-clock-port.sh ${D}${sysconfdir}/init.d/setup-clock-port.sh

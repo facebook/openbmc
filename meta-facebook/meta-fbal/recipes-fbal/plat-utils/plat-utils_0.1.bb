@@ -29,6 +29,7 @@ SRC_URI = "file://ast-functions \
            file://setup-por.sh \
            file://setup-usbhub.sh \
            file://setup-cmc.sh \
+           file://setup-pfr.sh \
            file://COPYING \
           "
 
@@ -64,6 +65,8 @@ do_install() {
   update-rc.d -r ${D} sync_date.sh start 66 5 .
   install -m 755 setup-cmc.sh ${D}${sysconfdir}/init.d/setup-cmc.sh
   update-rc.d -r ${D} setup-cmc.sh start 67 5 .
+  install -m 755 setup-pfr.sh ${D}${sysconfdir}/init.d/setup-pfr.sh
+  update-rc.d -r ${D} setup-pfr.sh start 99 5 .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 70 S .
   install -m 755 setup-usbhub.sh ${D}${sysconfdir}/init.d/setup-usbhub.sh

@@ -212,6 +212,7 @@ enum {
   BYPASS_IMC     = 2,
   BYPASS_NCSI    = 3,
   BYPASS_NETWORK = 4,
+  BYPASS_CNT,
 };
 
 enum {

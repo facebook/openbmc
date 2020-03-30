@@ -26,8 +26,6 @@
 #define BOTH_CPU_ERROR_MASK                     (0xFC)
 
 //NM DEVICE INFO
-#define NM_IPMB_BUS_ID   (5)
-#define NM_SLAVE_ADDR    (0x2C)
 #define NM_PSU_MUX_ADDR  (0xE0)
 
 //CPU INFO

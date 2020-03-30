@@ -32,7 +32,7 @@ cmc_ipmb_process(uint8_t ipmi_cmd, uint8_t netfn,
   uint16_t bmc_addr;
   
 
-  ret = pal_get_bmc_ipmb_slave_addr(&bmc_addr, CM_I2C_BUS_NUMBER);
+  ret = pal_get_bmc_ipmb_slave_addr(&bmc_addr, CM_IPMB_BUS_ID);
   if(ret != 0) {
     return ret;
   }
@@ -40,7 +40,7 @@ cmc_ipmb_process(uint8_t ipmi_cmd, uint8_t netfn,
   ret = lib_ipmb_send_request(ipmi_cmd, netfn, 
                          txbuf, txlen, 
                          rxbuf, rxlen, 
-                         CM_I2C_BUS_NUMBER, CM_I2C_SLAVE_ADDR, bmc_addr);
+                         CM_IPMB_BUS_ID, CM_SLAVE_ADDR, bmc_addr);
 
   if(ret != 0) {
     return ret;
@@ -187,10 +187,10 @@ lib_cmd_set_fan_ctrl(uint8_t fan_mode, uint8_t* status) {
 }  
 #endif  
   if(ret != 0) {
-    return -1;
+    return ret;
   }
   *status = rbuf[0];
-  return 0;
+  return CC_SUCCESS;
 }
 
 int
@@ -217,9 +217,9 @@ lib_cmc_set_fan_pwm(uint8_t fan_num, uint8_t pwm) {
 }  
 #endif  
   if(ret != 0) {
-    return -1;
+    return ret;
   }
-  return 0;
+  return CC_SUCCESS;
 }
 
 int
@@ -245,11 +245,11 @@ lib_cmc_get_fan_pwm(uint8_t fan_num, uint8_t* pwm) {
 }  
 #endif  
   if(ret != 0) {
-    return -1;
+    return ret;
   }
 
   *pwm = rbuf[1];
-  return 0;
+  return CC_SUCCESS;
 }
 
 int lib_cmc_get_fan_id(uint8_t fan_sdr) {
@@ -292,9 +292,9 @@ lib_cmc_power_cycle(void) {
 }  
 #endif  
   if(ret != 0) {
-    return -1;
+    return ret;
   }
-  return 0;
+  return CC_SUCCESS;
 }
 
 int
@@ -348,8 +348,8 @@ lib_cmc_set_block_command_flag(uint8_t index, uint8_t flag) {
 }  
 #endif  
   if(ret != 0) {
-    return -1;
+    return ret;
   }
-  return 0;
+  return CC_SUCCESS;
 }
 

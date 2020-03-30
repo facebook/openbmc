@@ -50,9 +50,6 @@ extern "C" {
 #define UARTSW_OFFSET 0x68
 #define SEVEN_SEGMENT_OFFSET 0x20
 
-#define NM_IPMB_BUS_ID (5)
-#define NM_SLAVE_ADDR  (0x2C)
-
 #define PFR_MAILBOX_BUS  (4)
 #define PFR_MAILBOX_ADDR (0xB0)
 
@@ -137,6 +134,16 @@ enum {
   I2C_BUS_23,
 };
 
+#define NM_IPMB_BUS_ID          (I2C_BUS_5)
+#define NM_SLAVE_ADDR           (0x2C)
+#define BMC0_SLAVE_DEF_ADDR     (0x20)
+#define BMC1_SLAVE_DEF_ADDR     (0x22)
+#define BMC2_SLAVE_DEF_ADDR     (0x24)
+#define BMC3_SLAVE_DEF_ADDR     (0x26)
+#define BMC_IPMB_BUS_ID         (I2C_BUS_2)
+#define ASIC_BMC_SLAVE_ADDR     (0x2C)
+#define ASIC_IPMB_BUS_ID        (I2C_BUS_6)
+
 enum {
   MB_ID1 = 0,
   MB_ID2,
@@ -176,6 +183,21 @@ enum {
   UARTSW_BY_BMC,
   UARTSW_BY_DEBUG,
   SET_SEVEN_SEGMENT,
+};
+
+enum {
+  BRIDGE_2_CM = BYPASS_CNT,
+  BRIDGE_2_MB_BMC0,
+  BRIDGE_2_MB_BMC1,
+  BRIDGE_2_MB_BMC2,
+  BRIDGE_2_MB_BMC3,
+  BRIDGE_2_ASIC_BMC,
+};
+
+enum {
+  CC_OEM_DEVICE_NOT_PRESENT = 0x30,
+  CC_OEM_DEVICE_INFO_ERR = 0x31,
+  CC_OEM_DEVICE_DESTINATION_ERR = 0x32,
 };
 
 #ifdef __cplusplus

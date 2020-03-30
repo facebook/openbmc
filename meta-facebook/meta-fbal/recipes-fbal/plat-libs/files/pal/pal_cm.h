@@ -13,8 +13,8 @@
 #define CMD_CMC_GET_MB_POSITION           (0x0F)
 #define CMD_CMC_OEM_GET_SENSOR_READING    (0xF1)
 #define CMD_CMC_OEM_SET_BLOCK_COMMON_FLAG (0xF2)
-#define CM_I2C_BUS_NUMBER                 (8)
-#define CM_I2C_SLAVE_ADDR                 (0x68)
+#define CM_IPMB_BUS_ID                    (8)
+#define CM_SLAVE_ADDR                     (0x68)
 
 #define CM_SET_FAN_MANUAL_MODE            (0x00)
 #define CM_SET_FAN_AUTO_MODE              (0x01)

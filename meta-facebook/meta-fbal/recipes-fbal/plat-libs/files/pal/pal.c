@@ -34,6 +34,7 @@
 #include <openbmc/libgpio.h>
 #include <openbmc/nm.h>
 #include <facebook/fbal_fruid.h>
+#include <openbmc/ipmb.h>
 #include "pal.h"
 
 #define FBAL_PLATFORM_NAME "angelslanding"
@@ -1473,7 +1474,6 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
   return comp_code;
 }
 
-
 int
 pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
 {
@@ -1495,7 +1495,143 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
   }
 
   memcpy(data, rbuf, rlen);
+#ifdef DEBUG
   syslog(LOG_WARNING, "rbuf[0] =%x rbuf[1] =%x\n", rbuf[0], rbuf[1]);
+#endif
   return ret;
 }
 
+static int get_dev_bridge_info(uint8_t slot, uint8_t* dev_addr, 
+                               uint8_t* bus_num, uint16_t* bmc_addr) {
+  int ret=0;
+
+  switch(slot) {
+    case BYPASS_ME:
+      *dev_addr = NM_SLAVE_ADDR;
+      *bus_num = NM_IPMB_BUS_ID; 
+      break;
+
+    case BRIDGE_2_CM:
+      *dev_addr = CM_SLAVE_ADDR;
+      *bus_num = CM_IPMB_BUS_ID;
+      break;
+
+    case BRIDGE_2_MB_BMC0:
+      //BMC IPMB SLVAE ADDR MB0 0x20
+      *dev_addr = BMC0_SLAVE_DEF_ADDR;
+      *bus_num = BMC_IPMB_BUS_ID;
+      break;
+
+    case BRIDGE_2_MB_BMC1:
+      //BMC IPMB SLVAE ADDR MB1:0x22
+      *dev_addr = BMC1_SLAVE_DEF_ADDR;
+      *bus_num = BMC_IPMB_BUS_ID;
+      break;
+
+    case BRIDGE_2_MB_BMC2:
+      //BMC IPMB SLVAE ADDR MB2:0x24
+      *dev_addr = BMC2_SLAVE_DEF_ADDR;
+      *bus_num = BMC_IPMB_BUS_ID;
+      break;
+
+    case BRIDGE_2_MB_BMC3:
+      //BMC IPMB SLVAE ADDR MB3:0x26
+      *dev_addr = BMC3_SLAVE_DEF_ADDR;
+      *bus_num = BMC_IPMB_BUS_ID;
+      break;
+
+    case BRIDGE_2_ASIC_BMC:
+      *dev_addr = ASIC_BMC_SLAVE_ADDR;
+      *bus_num = ASIC_IPMB_BUS_ID;
+      break;
+
+    default:
+      return -1;  
+  }
+
+  ret = pal_get_bmc_ipmb_slave_addr(bmc_addr, *bus_num);
+  if(ret != 0) {
+    return -1;
+  }
+  return 0;
+}
+
+static int pal_ipmb_bypass (uint8_t *req_data, uint8_t req_len, 
+                            uint8_t *res_data, uint8_t *res_len) {
+  int ret;
+  uint8_t slot, netfn, cmd;
+  uint8_t dev_addr, bus_num;
+  uint8_t txlen, rxlen;
+  uint8_t txbuf[256] = {0x00};
+  uint8_t rxbuf[256] = {0x00};
+  uint16_t bmc_addr;
+  
+  //payload, netfn, cmd, data[0]:select, data[1]:bypass netfn, data[2]:bypass cmd
+  txlen = req_len - 6;       
+  slot = req_data[0];
+  netfn = req_data[1];
+  cmd = req_data[2];
+
+  ret = get_dev_bridge_info(slot, &dev_addr, &bus_num, &bmc_addr);
+  if(ret != 0) {
+    return CC_OEM_DEVICE_INFO_ERR;
+  }
+
+  //Don't allow bridge to self
+  if(bmc_addr << 1 == dev_addr) {
+    return CC_OEM_DEVICE_DESTINATION_ERR; 
+  }
+
+  memcpy(txbuf, &req_data[3], txlen);
+
+  ret = lib_ipmb_send_request(cmd, netfn, 
+                              txbuf, txlen, 
+                              rxbuf, &rxlen, 
+                              bus_num, dev_addr, bmc_addr);
+ 
+  if(ret != CC_SUCCESS) {
+    return ret;
+  }
+   
+  memcpy(&res_data[0], &rxbuf[0], rxlen);
+  *res_len = rxlen;
+  
+  return CC_SUCCESS;
+}
+
+// OEM Command "CMD_OEM_BYPASS_CMD" 0x34 return: CC Code
+int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
+  int ret;
+  uint8_t select;
+  uint8_t status;
+
+  *res_len = 0;
+  ret = pal_is_fru_prsnt(slot, &status);
+  if (ret < 0) {
+    return CC_OEM_DEVICE_NOT_PRESENT;
+  }
+  if (status == 0) {
+    return CC_UNSPECIFIED_ERROR;
+  }
+  select = req_data[0];
+
+  switch (select) {
+    case BYPASS_ME:          //ME
+    case BRIDGE_2_CM:        //Chassis Manager
+    case BRIDGE_2_MB_BMC0:   //MB BMC0
+    case BRIDGE_2_MB_BMC1:   //MB BMC1
+    case BRIDGE_2_MB_BMC2:   //MB BMC2 
+    case BRIDGE_2_MB_BMC3:   //MB BMC3
+    case BRIDGE_2_ASIC_BMC:  //FBEP
+      ret = pal_ipmb_bypass(req_data, req_len, res_data, res_len);
+
+      if(ret != CC_SUCCESS) {
+        return ret;
+      }     
+      break;
+
+    default:
+      return CC_UNSPECIFIED_ERROR;
+  }
+  return CC_SUCCESS;
+}

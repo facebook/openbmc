@@ -114,6 +114,17 @@ static int open_by_check(uint8_t slot)
   return open(dev, O_RDWR);
 }
 
+static bool is_amd_gpu_ready(int fd)
+{
+  uint8_t buf[4] = {0};
+
+  // Check if SMU is ready by reading id
+  if (amd_cmd_ldrd_scratch_addr(fd, 0, 1, buf) == 0 && buf[2])
+    return true;
+  else
+    return false;
+}
+
 static float amd_read_die_temp(uint8_t slot)
 {
   int fd = open_by_check(slot);
@@ -123,8 +134,23 @@ static float amd_read_die_temp(uint8_t slot)
   if (fd < 0)
     return -1;
 
-  // Check if SMU is ready by reading id
-  if (amd_cmd_ldrd_scratch_addr(fd, 0, 1, buf) == 0 && buf[2])
+  if (is_amd_gpu_ready(fd))
+    ret = amd_cmd_ldrd_scratch_addr(fd, 9, 1, buf);
+
+  close(fd);
+  return ret < 0? -1: (buf[0] << 8) | buf[1];
+}
+
+static float amd_read_edge_temp(uint8_t slot)
+{
+  int fd = open_by_check(slot);
+  int ret = -1;
+  uint8_t buf[4] = {0};
+
+  if (fd < 0)
+    return -1;
+
+  if (is_amd_gpu_ready(fd))
     ret = amd_cmd_ldrd_scratch_addr(fd, 9, 1, buf);
 
   close(fd);
@@ -140,8 +166,7 @@ static float amd_read_hbm_temp(uint8_t slot)
   if (fd < 0)
     return -1;
 
-  // Check if SMU is ready by reading id
-  if (amd_cmd_ldrd_scratch_addr(fd, 0, 1, buf) == 0 && buf[2])
+  if (is_amd_gpu_ready(fd))
     ret = amd_cmd_ldrd_scratch_addr(fd, 10, 1, buf);
 
   close(fd);
@@ -157,8 +182,7 @@ static float amd_read_pwcs(uint8_t slot)
   if (fd < 0)
     return -1;
 
-  // Check if SMU is ready by reading id
-  if (amd_cmd_ldrd_scratch_addr(fd, 0, 1, buf) == 0 && buf[2])
+  if (is_amd_gpu_ready(fd))
     ret = amd_cmd_ldrd_scratch_addr(fd, 11, 1, buf);
 
   close(fd);
@@ -172,6 +196,23 @@ int pal_read_gpu_temp(uint8_t sensor_num, float *value)
 
   if (vendor == GPU_AMD) {
     *value = amd_read_die_temp(slot);
+  } else if (vendor == GPU_NV){
+    // Not supported yet
+    return ERR_SENSOR_NA;
+  } else {
+    return ERR_SENSOR_NA;
+  }
+
+  return *value < 0? ERR_SENSOR_NA: 0;
+}
+
+int pal_read_edge_temp(uint8_t sensor_num, float *value)
+{
+  uint8_t vendor = get_gpu_id();
+  uint8_t slot = sensor_num - MB_GPU0_EDGE_TEMP;
+
+  if (vendor == GPU_AMD) {
+    *value = amd_read_edge_temp(slot);
   } else if (vendor == GPU_NV){
     // Not supported yet
     return ERR_SENSOR_NA;

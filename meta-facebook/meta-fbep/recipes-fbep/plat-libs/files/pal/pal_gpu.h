@@ -31,6 +31,7 @@ enum {
 };
 
 int pal_read_gpu_temp(uint8_t, float*);
+int pal_read_edge_temp(uint8_t, float*);
 int pal_read_hbm_temp(uint8_t, float*);
 int pal_read_gpu_pwcs(uint8_t, float*);
 

@@ -103,6 +103,14 @@ const uint8_t mb_sensor_list[] = {
   MB_GPU5_TEMP,
   MB_GPU6_TEMP,
   MB_GPU7_TEMP,
+  MB_GPU0_EDGE_TEMP,
+  MB_GPU1_EDGE_TEMP,
+  MB_GPU2_EDGE_TEMP,
+  MB_GPU3_EDGE_TEMP,
+  MB_GPU4_EDGE_TEMP,
+  MB_GPU5_EDGE_TEMP,
+  MB_GPU6_EDGE_TEMP,
+  MB_GPU7_EDGE_TEMP,
   MB_GPU0_HBM_TEMP,
   MB_GPU1_HBM_TEMP,
   MB_GPU2_HBM_TEMP,
@@ -277,6 +285,22 @@ float sensors_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {
   [MB_GPU6_TEMP] =
   {0,	0,	0,	0,	0,	0,	0,	0,	0},
   [MB_GPU7_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU0_EDGE_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU1_EDGE_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU2_EDGE_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU3_EDGE_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU4_EDGE_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU5_EDGE_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU6_EDGE_TEMP] =
+  {0,	0,	0,	0,	0,	0,	0,	0,	0},
+  [MB_GPU7_EDGE_TEMP] =
   {0,	0,	0,	0,	0,	0,	0,	0,	0},
   [MB_GPU0_HBM_TEMP] =
   {0,	0,	0,	0,	0,	0,	0,	0,	0},
@@ -531,6 +555,22 @@ struct sensor_map {
   {pal_read_gpu_temp, "MB_GPU6_TEMP", SNR_TEMP},
   [MB_GPU7_TEMP] =
   {pal_read_gpu_temp, "MB_GPU7_TEMP", SNR_TEMP},
+  [MB_GPU0_EDGE_TEMP] =
+  {pal_read_edge_temp, "MB_GPU0_EDGE_TEMP", SNR_TEMP},
+  [MB_GPU1_EDGE_TEMP] =
+  {pal_read_edge_temp, "MB_GPU1_EDGE_TEMP", SNR_TEMP},
+  [MB_GPU2_EDGE_TEMP] =
+  {pal_read_edge_temp, "MB_GPU2_EDGE_TEMP", SNR_TEMP},
+  [MB_GPU3_EDGE_TEMP] =
+  {pal_read_edge_temp, "MB_GPU3_EDGE_TEMP", SNR_TEMP},
+  [MB_GPU4_EDGE_TEMP] =
+  {pal_read_edge_temp, "MB_GPU4_EDGE_TEMP", SNR_TEMP},
+  [MB_GPU5_EDGE_TEMP] =
+  {pal_read_edge_temp, "MB_GPU4_EDGE_TEMP", SNR_TEMP},
+  [MB_GPU6_EDGE_TEMP] =
+  {pal_read_edge_temp, "MB_GPU6_EDGE_TEMP", SNR_TEMP},
+  [MB_GPU7_EDGE_TEMP] =
+  {pal_read_edge_temp, "MB_GPU7_EDGE_TEMP", SNR_TEMP},
   [MB_GPU0_HBM_TEMP] =
   {pal_read_hbm_temp, "MB_GPU0_HBM_TEMP", SNR_TEMP},
   [MB_GPU1_HBM_TEMP] =

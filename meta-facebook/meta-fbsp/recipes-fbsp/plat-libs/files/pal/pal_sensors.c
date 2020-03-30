@@ -1616,7 +1616,7 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
   char label[32] = {0};
 
   if (fan >= pal_pwm_cnt ||
-      snprintf(label, sizeof(label), "pwm%d", fan + 1) > sizeof(label)) {
+      snprintf(label, sizeof(label), "pwm%d", pal_pwm_cnt - fan) > sizeof(label)) {
     return -1;
   }
   return sensors_write_fan(label, (float)pwm);
@@ -1659,7 +1659,7 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
   int ret;
 
   if (fan >= pal_tach_cnt ||
-      snprintf(label, sizeof(label), "pwm%d", fan/8 + 1) > sizeof(label)) {
+      snprintf(label, sizeof(label), "pwm%d", pal_pwm_cnt - fan/8) > sizeof(label)) {
     syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
     return -1;
   }

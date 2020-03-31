@@ -311,6 +311,43 @@ PAL_I2C_BUS_INFO ina260_info_list[] = {
   {INA260_ID3, I2C_BUS_1, 0x86},
 };
 
+typedef struct _inlet_corr_t {
+  uint8_t duty;
+  float delta_t;
+} inlet_corr_t;
+
+static inlet_corr_t g_ict[] = {
+  // Inlet Sensor:
+  // duty cycle vs delta_t
+  { 10, 7.67 },
+  { 16, 5.66 },
+  { 30, 2.74 },
+  { 40, 2.51 },
+  { 50, 1.68 },
+  { 60, 1.69 },
+  { 70, 1.51 },
+  { 80, 1.66 },
+  { 90, 0.86 },
+  {100, 1.26 },
+};
+
+static uint8_t g_ict_count = sizeof(g_ict)/sizeof(inlet_corr_t);
+
+static inlet_corr_t g_remote_ict[] = {
+  // Inlet Sensor:
+  // duty cycle vs delta_t
+  { 10, 3.49 },
+  { 16, 2.36 },
+  { 30, 0.68 },
+  { 40, 0.69 },
+  { 50, 0.25 },
+  { 60, 0.19 },
+  { 70, 0.20 },
+  { 80, 0.32 },
+};
+
+static uint8_t g_remote_ict_count = sizeof(g_remote_ict)/sizeof(inlet_corr_t);
+
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNR, UNC, LCR, LNR, LNC, Pos, Neg}
 PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
@@ -1476,6 +1513,42 @@ read_NM_pch_temp(uint8_t nm_id, float *value) {
   return ret;
 }
 
+static void apply_inlet_correction(bool remove_sensor, float *value) {
+  static float dt = 0;
+  uint8_t pwm[2] = {0};
+  uint8_t ict_cnt;
+  int i;
+  inlet_corr_t *ict;
+
+  // Get PWM value
+  if (pal_get_pwm_value(0, &pwm[0]) || pal_get_pwm_value(1, &pwm[1])) {
+    // If error reading PWM value, use the previous deltaT
+    *value -= dt;
+    return;
+  }
+  pwm[0] = (pwm[0] + pwm[1]) / 2;
+
+  if(remove_sensor) {
+    ict = g_remote_ict;
+    ict_cnt = g_remote_ict_count;
+  } else {
+    ict = g_ict;
+    ict_cnt = g_ict_count;
+  }
+
+  // Scan through the correction table to get correction value for given PWM
+  dt = ict[0].delta_t;
+  for (i = 1; i < ict_cnt; i++) {
+    if (pwm[0] >= ict[i].duty)
+      dt = ict[i].delta_t;
+    else
+      break;
+  }
+
+  // Apply correction for the sensor
+  *(float*)value -= dt;
+}
+
 /*==========================================
 Read temperature sensor TMP421 value.
 Interface: temp_id: temperature id
@@ -1484,6 +1557,7 @@ Interface: temp_id: temperature id
 ============================================*/
 static int
 read_sensor(uint8_t id, float *value) {
+  int ret;
   struct {
     const char *chip;
     const char *label;
@@ -1498,7 +1572,15 @@ read_sensor(uint8_t id, float *value) {
   if (id >= ARRAY_SIZE(devs)) {
     return -1;
   }
-  return sensors_read(devs[id].chip, devs[id].label, value);
+
+  ret = sensors_read(devs[id].chip, devs[id].label, value);
+  if(strcmp(devs[id].label, "MB_INLET_TEMP") == 0) {
+    apply_inlet_correction(false, (float *)value);
+  } else if (strcmp(devs[id].label, "MB_INLET_REMOTE_TEMP") == 0) {
+    apply_inlet_correction(true, (float *)value);
+  }
+
+  return ret;
 }
 
 static int

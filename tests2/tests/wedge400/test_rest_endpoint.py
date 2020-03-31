@@ -17,20 +17,23 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import json
+import time
 import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
+from tests.wedge400.helper.libpal import pal_get_board_type, pal_get_board_type_rev
 from tests.wedge400.test_data.sensors.sensors import (
-    SMB_SENSORS_W400,
-    SMB_SENSORS_W400CEVT,
-    SMB_SENSORS_W400CEVT2,
-    SCM_SENSORS,
     PEM1_SENSORS,
     PEM2_SENSORS,
     PSU1_SENSORS,
     PSU2_SENSORS,
+    SCM_SENSORS,
+    SMB_SENSORS_W400,
+    SMB_SENSORS_W400CEVT,
+    SMB_SENSORS_W400CEVT2,
 )
-from tests.wedge400.helper.libpal import pal_get_board_type, pal_get_board_type_rev
+from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
 
 
@@ -81,7 +84,9 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     def test_endpoint_api_sys(self):
         self.set_endpoint_sys_attributes()
-        self.verify_endpoint_attributes(self.SYS_ENDPOINT, self.endpoint_sys_attrb)
+        self.verify_endpoint_attributes(
+            FbossRestEndpointTest.SYS_ENDPOINT, self.endpoint_sys_attrb
+        )
 
     def check_fru_sensors_present(self, fru):
         sensors = run_shell_cmd("sensor-util {}".format(fru))
@@ -311,4 +316,87 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         self.verify_endpoint_attributes(
             RestEndpointTest.ALL_FIRMWARE_INFO_ENDPOINT,
             self.endpoint_firmware_info_all_attributes,
+        )
+
+    def get_vddcore(self):
+        # test accessing get vdd core
+        info = json.loads(self.get_from_endpoint(RestEndpointTest.VDDCORE_ENDPOINT))
+        if "Information" not in info:
+            Logger.info("can't get information in {}".format(info))
+            return None
+        if "VDD_CORE" not in info["Information"]:
+            Logger.info("not have VDD_CORE in {}".format(info))
+            return None
+        return int(info["Information"]["VDD_CORE"])
+
+    def set_vddcore(self, target):
+        info = json.loads(
+            self.get_from_endpoint(
+                RestEndpointTest.VDDCORE_ENDPOINT + "/{}".format(target)
+            )
+        )
+        if "result" not in info:
+            Logger.info("can't detect result on vddcore command {}".format(info))
+            return False
+        if info["result"] != "success":
+            Logger.info("set vddcore not success {}".format(info))
+            return False
+        return True
+
+    # "/api/sys/vddcore"
+    def test_endpoint_api_sys_vddcore_get(self):
+        platform_type = pal_get_board_type()
+        # Wedge400 need to skip vddcore
+        if platform_type != "Wedge400C":
+            self.skipTest("Skip vddcore test on {} platform".format(platform_type))
+
+        # test accessing get vdd core
+        volt = self.get_vddcore()
+        if volt is None:
+            self.fail("get vddcore failed")
+
+    # "/api/sys/vddcore/{#vddcore_value}"
+    def test_endpoint_api_sys_vddcore_post(self):
+        platform_type = pal_get_board_type()
+        # Wedge400 need to skip vddcore
+        if platform_type != "Wedge400C":
+            self.skipTest("Skip vddcore test on {} platform".format(platform_type))
+
+        # save default value
+        default_volt = self.get_vddcore()
+        if default_volt is None:
+            self.fail("can't get default value")
+
+        # test setting vdd core to target value
+        target_volt = 750
+        if not self.set_vddcore(target_volt):
+            self.fail("failed to set vddcore to target value {}".format(target_volt))
+
+        # test get back vddcore to check value is changed to target value
+        time.sleep(3)
+        current_volt = self.get_vddcore()
+        if abs(current_volt - target_volt) > 10:
+            self.fail("VDD_CORE not changed target:{}, current:{}".format(target_volt, current_volt))
+
+        # set vddcore back to default value
+        if not self.set_vddcore(default_volt):
+            self.fail(
+                "failed to set vddcore back to default value {}".format(default_volt)
+            )
+
+    # "/api/sys/switch_reset"
+    def set_endpoint_api_sys_switch_reset_attributes(self):
+        self.endpoint_switch_reset_attributes = ["cycle_reset", "only_reset"]
+
+    def test_endpoint_api_sys_switch_reset(self):
+        platform_type = pal_get_board_type()
+        # Wedge400 need to skip vddcore
+        if platform_type != "Wedge400C":
+            self.skipTest("Skip vddcore test on Wedge400 platform")
+
+        self.set_endpoint_api_sys_switch_reset_attributes()
+
+        self.verify_endpoint_attributes(
+            RestEndpointTest.SWITCHRESET_ENDPOINT,
+            self.endpoint_switch_reset_attributes,
         )

@@ -47,6 +47,7 @@ static int pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 static bool sdr_init_done[MAX_NUM_FRUS] = {false};
+static uint8_t bic_dynamic_sensor_list[4][MAX_SENSOR_NUM] = {0};
 
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
@@ -147,8 +148,9 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_P3V3_STBY_VR_POUT,
   BIC_SENSOR_PVDDQ_ABC_VR_POUT,
   BIC_SENSOR_PVDDQ_DEF_VR_POUT,
-
-  //BIC 1OU EXP Sensors
+};
+//BIC 1OU EXP Sensors
+const uint8_t bic_1ou_sensor_list[] = {
   BIC_1OU_EXP_SENSOR_OUTLET_TEMP,
   BIC_1OU_EXP_SENSOR_P12_VOL,
   BIC_1OU_EXP_SENSOR_P1V8_VOL,
@@ -167,26 +169,9 @@ const uint8_t bic_sensor_list[] = {
   BIC_1OU_EXP_SENSOR_P3V3_M2D_PWR,
   BIC_1OU_EXP_SENSOR_P3V3_M2D_VOL,
   BIC_1OU_EXP_SENSOR_P3V3_M2D_TMP,
-
-  //BIC BaseBoard Sensors
-  BIC_BB_SENSOR_INLET_TEMP,
-  BIC_BB_SENSOR_OUTLET_TEMP,
-  BIC_BB_SENSOR_HSC_TEMP,
-  BIC_BB_SENSOR_HSC_VIN,
-  BIC_BB_SENSOR_HSC_PIN,
-  BIC_BB_SENSOR_HSC_IOUT,
-  BIC_BB_SENSOR_P12V_MEDUSA_CUR,
-  BIC_BB_SENSOR_P5V,
-  BIC_BB_SENSOR_P12V,
-  BIC_BB_SENSOR_P3V3_STBY,
-  BIC_BB_SENSOR_P1V2_BMC_STBY,
-  BIC_BB_SENSOR_P2V5_BMC_STBY,
-  BIC_BB_SENSOR_MEDUSA_VOUT,
-  BIC_BB_SENSOR_MEDUSA_VIN,
-  BIC_BB_SENSOR_MEDUSA_PIN,
-  BIC_BB_SENSOR_MEDUSA_IOUT,
-
-  //BIC 2OU EXP Sensors
+};
+//BIC 2OU EXP Sensors
+const uint8_t bic_2ou_sensor_list[] = {
   BIC_2OU_EXP_SENSOR_OUTLET_TEMP,
   BIC_2OU_EXP_SENSOR_P12_VOL,
   BIC_2OU_EXP_SENSOR_P1V8_VOL,
@@ -212,7 +197,23 @@ const uint8_t bic_sensor_list[] = {
   BIC_2OU_EXP_SENSOR_P3V3_M2F_VOL,
   BIC_2OU_EXP_SENSOR_P3V3_M2F_TMP,
 };
-
+//BIC BaseBoard Sensors
+const uint8_t bic_bb_sensor_list[] = {
+  BIC_BB_SENSOR_INLET_TEMP,
+  BIC_BB_SENSOR_OUTLET_TEMP,
+  BIC_BB_SENSOR_HSC_TEMP,
+  BIC_BB_SENSOR_HSC_VIN,
+  BIC_BB_SENSOR_HSC_PIN,
+  BIC_BB_SENSOR_HSC_IOUT,
+  BIC_BB_SENSOR_P12V_MEDUSA_CUR,
+  BIC_BB_SENSOR_P5V,
+  BIC_BB_SENSOR_P12V,
+  BIC_BB_SENSOR_P3V3_STBY,
+  BIC_BB_SENSOR_P1V2_BMC_STBY,
+  BIC_BB_SENSOR_P2V5_BMC_STBY,
+  BIC_BB_SENSOR_MEDUSA_VOUT,
+  BIC_BB_SENSOR_MEDUSA_VIN,
+};
 const uint8_t nic_sensor_list[] = {
   NIC_SENSOR_MEZZ_TEMP,
 };
@@ -513,11 +514,17 @@ size_t bmc_sensor_cnt = sizeof(bmc_sensor_list)/sizeof(uint8_t);
 size_t nicexp_sensor_cnt = sizeof(nicexp_sensor_list)/sizeof(uint8_t);
 size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 size_t bic_sensor_cnt = sizeof(bic_sensor_list)/sizeof(uint8_t);
+size_t bic_1ou_sensor_cnt = sizeof(bic_1ou_sensor_list)/sizeof(uint8_t);
+size_t bic_2ou_sensor_cnt = sizeof(bic_2ou_sensor_list)/sizeof(uint8_t);
+size_t bic_bb_sensor_cnt = sizeof(bic_bb_sensor_list)/sizeof(uint8_t);
+
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   uint8_t bmc_location = 0;
   int ret = 0;
+  uint8_t config_status = 0;
+  uint8_t current_cnt = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
@@ -543,8 +550,29 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_SLOT2:
   case FRU_SLOT3:
   case FRU_SLOT4:
-    *sensor_list = (uint8_t *) bic_sensor_list;
-    *cnt = bic_sensor_cnt;
+    memcpy(bic_dynamic_sensor_list[fru-1], bic_sensor_list, bic_sensor_cnt);
+    current_cnt = bic_sensor_cnt;
+
+    if (pal_is_fw_update_ongoing(fru) == false) {
+      config_status = bic_is_m2_exp_prsnt(fru);
+      if ( bmc_location == BB_BMC && ( (config_status == PRESENT_1OU) || (config_status == (PRESENT_1OU + PRESENT_2OU))) ) {
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_sensor_list, bic_1ou_sensor_cnt);
+        current_cnt += bic_1ou_sensor_cnt;
+      }
+
+      if ( (config_status == PRESENT_2OU) || (config_status == (PRESENT_1OU + PRESENT_2OU)) ) {
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
+        current_cnt += bic_2ou_sensor_cnt;
+      }
+
+      if ( bmc_location == NIC_BMC ) {
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_bb_sensor_list, bic_bb_sensor_cnt);
+        current_cnt += bic_bb_sensor_cnt;
+      }
+    }
+
+    *sensor_list = (uint8_t *) bic_dynamic_sensor_list[fru-1];
+    *cnt = current_cnt;
     break;
   default:
     if (fru > MAX_NUM_FRUS)

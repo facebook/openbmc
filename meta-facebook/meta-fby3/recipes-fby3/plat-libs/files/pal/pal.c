@@ -791,6 +791,18 @@ pal_fruid_write(uint8_t fru, char *path)
 }
 
 int
+pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
+  //return bic_write_fruid(fru, dev_id, path);
+  if (dev_id == 11) { // 1U
+    return bic_write_fruid(fru, 0, path, FEXP_BIC_INTF);
+  } else if (dev_id == 12) { // 2U
+    return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
+  } else {
+    return -1;
+  }
+}
+
+int
 pal_is_bmc_por(void) {
   FILE *fp;
   int por = 0;

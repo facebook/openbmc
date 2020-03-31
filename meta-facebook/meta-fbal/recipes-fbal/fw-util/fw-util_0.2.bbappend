@@ -30,8 +30,6 @@ SRC_URI += "file://mcu_fw.h \
             file://vr.cpp \
             file://nic_ext.h \
             file://nic_ext.cpp \
-            file://tpm2.cpp \
-            file://tpm2.h \
            "
 
 SRC_URI_remove = "file://fscd.cpp"

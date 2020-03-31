@@ -31,8 +31,6 @@ SRC_URI += "\
         file://usbdbg.cpp \
         file://usbdbg.h \
         file://vr.cpp \
-        file://tpm2.cpp \
-        file://tpm2.h \
         "
 
 DEPENDS += "libmcu libnm libpal libfpga libast-jtag libvr libncsi libnl-wrapper libkv"

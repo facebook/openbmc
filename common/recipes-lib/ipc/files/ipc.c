@@ -88,7 +88,7 @@ int ipc_send_req(const char *endpoint, uint8_t *req, size_t req_len,
                  uint8_t *resp, size_t *resp_len, int timeout)
 {
   struct sockaddr_un remote;
-  int len, retry, sockfd;
+  int len, retry = 0, sockfd;
   size_t max_resp;
 
   if (!req || !req_len || !resp || !resp_len || !*resp_len) {

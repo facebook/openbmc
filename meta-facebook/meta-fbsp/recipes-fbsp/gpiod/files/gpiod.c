@@ -320,6 +320,7 @@ init_msmi(gpiopoll_pin_t *desc, gpio_value_t value) {
 
 static void cpu0_thermtrip(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
+  SERVER_POWER_CHECK(3);
   if (curr == GPIO_VALUE_HIGH) {
     pal_add_cri_sel("CPU0 thermtrip DEASSERT");
   } else {
@@ -330,10 +331,31 @@ static void cpu0_thermtrip(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t
 
 static void cpu1_thermtrip(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
+  SERVER_POWER_CHECK(3);
   if (curr == GPIO_VALUE_HIGH) {
     pal_add_cri_sel("CPU1 thermtrip DEASSERT");
   } else {
     pal_add_cri_sel("CPU1 thermtrip ASSERT");
+  }
+  log_gpio_change(desc, curr, 0);
+}
+
+static void cpu0_mem_thermtrip(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  if (curr == GPIO_VALUE_HIGH) {
+    pal_add_cri_sel("CPU0 MEM thermtrip DEASSERT");
+  } else {
+    pal_add_cri_sel("CPU0 MEM thermtrip ASSERT");
+  }
+  log_gpio_change(desc, curr, 0);
+}
+
+static void cpu1_mem_thermtrip(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  if (curr == GPIO_VALUE_HIGH) {
+    pal_add_cri_sel("CPU1 MEM thermtrip DEASSERT");
+  } else {
+    pal_add_cri_sel("CPU1 MEM thermtrip ASSERT");
   }
   log_gpio_change(desc, curr, 0);
 }
@@ -587,6 +609,8 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_CPU1_MEMHOT_OUT_N", "GPIOL3", GPIO_EDGE_BOTH, gpio_event_pson_3s_handler, NULL},
   {"FM_CPU0_FIVR_FAULT_LVT3_PLD", "GPIOB2", GPIO_EDGE_BOTH, fivr_fault_handler, NULL},
   {"FM_CPU1_FIVR_FAULT_LVT3_PLD", "GPIOB3", GPIO_EDGE_BOTH, fivr_fault_handler, NULL},
+  {"FM_MEM_THERM_EVENT_CPU0_LVT3_N", "GPIOB0", GPIO_EDGE_BOTH, cpu0_mem_thermtrip, NULL},
+  {"FM_MEM_THERM_EVENT_CPU1_LVT3_N", "GPIOB1", GPIO_EDGE_BOTH, cpu1_mem_thermtrip, NULL},
 };
 
 int main(int argc, char **argv)

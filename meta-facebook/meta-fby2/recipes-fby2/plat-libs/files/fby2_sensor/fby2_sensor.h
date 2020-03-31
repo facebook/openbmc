@@ -506,6 +506,7 @@ extern const uint8_t spb_sensor_dual_r_fan_list[];
 extern const uint8_t nic_sensor_list[];
 
 #ifdef CONFIG_FBY2_GPV2
+extern const uint8_t nic_yv250_sensor_list[];
 extern const uint8_t gpv2_sensor_list[];
 #endif
 
@@ -542,6 +543,7 @@ extern size_t nic_sensor_cnt;
 extern size_t dc_cf_sensor_cnt;
 
 #ifdef CONFIG_FBY2_GPV2
+extern size_t nic_yv250_sensor_cnt;
 extern size_t gpv2_sensor_cnt;
 #endif
 

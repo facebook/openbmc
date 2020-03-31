@@ -3899,8 +3899,15 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       }
       break;
     case FRU_NIC:
-      *sensor_list = (uint8_t *) nic_sensor_list;
-      *cnt = nic_sensor_cnt;
+      spb_type = fby2_common_get_spb_type();
+
+      if (spb_type == TYPE_SPB_YV250) { // YV2.50
+        *sensor_list = (uint8_t *) nic_yv250_sensor_list;
+        *cnt = nic_yv250_sensor_cnt;
+      } else {
+        *sensor_list = (uint8_t *) nic_sensor_list;
+        *cnt = nic_sensor_cnt;
+      }
       break;
     default:
 #ifdef DEBUG

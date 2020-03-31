@@ -497,6 +497,11 @@ const uint8_t nic_sensor_list[] = {
 };
 
 #ifdef CONFIG_FBY2_GPV2
+// List of NIC sensors to be monitored (YV2.50)
+const uint8_t nic_yv250_sensor_list[] = {
+  MEZZ_SENSOR_TEMP,
+};
+
 const uint8_t gpv2_sensor_list[] = {
   GPV2_SENSOR_INLET_TEMP,
   GPV2_SENSOR_OUTLET_TEMP,
@@ -859,6 +864,7 @@ size_t dc_sensor_cnt = sizeof(dc_sensor_list)/sizeof(uint8_t);
 size_t dc_cf_sensor_cnt = sizeof(dc_cf_sensor_list)/sizeof(uint8_t);
 
 #ifdef CONFIG_FBY2_GPV2
+size_t nic_yv250_sensor_cnt = sizeof(nic_yv250_sensor_list)/sizeof(uint8_t);
 size_t gpv2_sensor_cnt = sizeof(gpv2_sensor_list)/sizeof(uint8_t);
 #endif
 

@@ -177,7 +177,7 @@ ipmb_send_internal (unsigned char bus_id,
 
 int
 lib_ipmb_send_request(uint8_t ipmi_cmd, uint8_t netfn,
-              uint8_t *txbuf, uint8_t txlen, 
+              uint8_t *txbuf, uint8_t txlen,
               uint8_t *rxbuf, uint8_t *rxlen,
               uint8_t bus_num, uint8_t dev_addr, uint8_t bmc_addr) {
   uint8_t rdata[MAX_IPMB_RES_LEN] = {0x00};
@@ -186,7 +186,6 @@ lib_ipmb_send_request(uint8_t ipmi_cmd, uint8_t netfn,
   uint8_t rlen = 0;
   ipmb_req_t *req;
   ipmb_res_t *res;
-  int ret=0;
 
   req = (ipmb_req_t*) wdata;
 
@@ -196,7 +195,7 @@ lib_ipmb_send_request(uint8_t ipmi_cmd, uint8_t netfn,
   req->seq_lun = 0x00;
   req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
   req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
-  
+
   req->req_slave_addr = bmc_addr << 1;
 
   if (txlen) {

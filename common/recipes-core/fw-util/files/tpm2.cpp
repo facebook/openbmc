@@ -8,22 +8,26 @@
 using namespace std;
 
 #define MAX_LINE_LENGTH 80
-#define TPM_DEV "/sys/class/tpm/tpm0"
-#define TPM2_VERSION_CMD "/usr/bin/tpm2_getcap -c properties-fixed 2>/dev/null | grep TPM_PT_FIRMWARE_VERSION_1"
-#define TPM2_VERSION_CACHE "tpm2_version"
 
-int tpm2_get_ver(char *ver) {
+int tpm2_get_ver(char *ver, Tpm2Component *tpm2) {
   FILE *fp;
   char value[MAX_VALUE_LEN] = {0};
   bool match;
   uint32_t fw_ver;
 
-  if (access(TPM_DEV, F_OK)) {
+  if (ver == NULL || tpm2->device.c_str() == NULL ||
+      tpm2->version_command.c_str() == NULL ||
+      tpm2->verion_cache.c_str() == NULL
+     ) {
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+  
+  if (access(tpm2->device.c_str(), F_OK)) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-  if (kv_get(TPM2_VERSION_CACHE, value, NULL, 0)) {
-    fp = popen(TPM2_VERSION_CMD, "r");
+  if (kv_get(tpm2->verion_cache.c_str(), value, NULL, 0)) {
+    fp = popen(tpm2->version_command.c_str(), "r");
     if (!fp) {
       syslog(LOG_WARNING, "Cannot open TPM2 file");
       return FW_STATUS_FAILURE;
@@ -33,7 +37,7 @@ int tpm2_get_ver(char *ver) {
     while (fgets(value, sizeof(value), fp)) {
       if (sscanf(value, "%*s %x", &fw_ver) == 1) {
         sprintf(value, "%d.%d", fw_ver >> 16, fw_ver & 0xFFFF);
-        kv_set(TPM2_VERSION_CACHE, value, 0, 0);
+        kv_set(tpm2->verion_cache.c_str(), value, 0, 0);
         match = true;
         break;
       }
@@ -54,7 +58,7 @@ int tpm2_get_ver(char *ver) {
 int Tpm2Component::print_version() {
   char ver[MAX_LINE_LENGTH] = {0};
 
-  if (tpm2_get_ver(ver)) {
+  if (tpm2_get_ver(ver, this)) {
     cout << "TPM Version: NA" << endl;
   } else {
     cout << "TPM Version: " << string(ver) << endl;

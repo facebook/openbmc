@@ -22,6 +22,8 @@ SRC_URI =+ "file://Makefile \
            file://fscd.cpp \
            file://tpm.cpp \
            file://tpm.h \
+           file://tpm2.cpp \
+           file://tpm2.h \
            file://bic_fw.cpp \
            file://bic_fw.h \
            file://bic_me.cpp \
@@ -39,9 +41,9 @@ SRC_URI =+ "file://Makefile \
 
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -lpal -lvbs -ldl -lgpio-ctrl"
-DEPENDS += "jansson libpal dtc zlib openssl libvbs libgpio-ctrl"
-RDEPENDS_${PN} += "jansson libpal zlib openssl libvbs libgpio-ctrl"
+LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -lpal -lvbs -ldl -lgpio-ctrl -lkv"
+DEPENDS += "jansson libpal dtc zlib openssl libvbs libgpio-ctrl libkv"
+RDEPENDS_${PN} += "jansson libpal zlib openssl libvbs libgpio-ctrl libkv"
 
 CXXFLAGS += "\
   ${@bb.utils.contains('MACHINE_FEATURES', 'tpm1', '-DCONFIG_TPM1', '', d)} \

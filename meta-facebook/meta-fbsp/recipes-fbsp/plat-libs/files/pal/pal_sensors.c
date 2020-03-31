@@ -124,6 +124,7 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_CPU1_PVPP_DEF,
   MB_SNR_CPU1_PVTT_ABC,
   MB_SNR_CPU1_PVTT_DEF,
+  MB_SNR_P12V_OCP_IMON,
   MB_SNR_CPU0_TEMP,
   MB_SNR_CPU1_TEMP,
   MB_SNR_HSC_VIN,
@@ -586,7 +587,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_CPU1_PVTT_ABC", ADC12, read_adc_val, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xDC
   {"MB_CPU0_PVTT_DEF", ADC13, read_adc_val, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xDD
   {"MB_CPU1_PVTT_DEF", ADC14, read_adc_val, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xDE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDF
+  {"MB_P12V_OCP_IOUT", ADC15, read_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xDF
 
   {"MB_VR_CPU1_VCCIN_VOUT", VR_ID5, read_vr_vout, false, {2.1, 0, 0, 1.35, 0, 0, 0, 0}, VOLT}, //0xE0
   {"MB_VR_CPU1_VCCIN_TEMP", VR_ID5, read_vr_temp, false, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xE1
@@ -753,6 +754,7 @@ read_adc_val(uint8_t adc_id, float *value) {
     "MB_CPU1_PVTT_ABC",
     "MB_CPU0_PVTT_DEF",
     "MB_CPU1_PVTT_DEF",
+    "MB_P12V_OCP_IOUT",
   };
   if (adc_id >= ARRAY_SIZE(adc_label)) {
     return -1;

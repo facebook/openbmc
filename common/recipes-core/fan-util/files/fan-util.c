@@ -57,15 +57,20 @@ enum {
 
 static void
 print_usage(void) {
-  char pwm_list[16] = "";
-  char tach_list[16] = "";
-  char fan_opt_list[32] = "";
+  const char* pwm_list = pal_get_pwn_list();
+  const char* tach_list = pal_get_tach_list();
+  const char* fan_opt_list = pal_get_fan_opt_list();
 
-  strncpy(pwm_list, pal_get_pwn_list(),16);
-  strncpy(tach_list, pal_get_tach_list(),16);
-  strncpy(fan_opt_list, pal_get_fan_opt_list(),32);
-  printf("Usage: fan-util --set <[0..100] %%> < Fan# [%s] >\n", pwm_list);
-  printf("       fan-util --get < Fan# [%s] >\n", tach_list);
+  // If the number of PWMs matches the number of tachs, then `set` works on
+  // "fans" otherwise "zones".
+  bool fans_equal = pal_get_pwm_cnt() == pal_get_tach_cnt();
+  const char* ident_set = fans_equal ? "Fan" : "Zone";
+  const char* ident_get = fans_equal ? "Fan" : "Tach";
+
+  printf("Usage: fan-util --set <[0..100] %%> < %s# [%s] >\n",
+         ident_set, pwm_list);
+  printf("       fan-util --get < %s# [%s] >\n",
+         ident_get, tach_list);
   printf("       fan-util --get-driver\n");
   if (strlen(fan_opt_list) > 0){
       printf("       fan-util --auto-mode < [%s] >\n", fan_opt_list);

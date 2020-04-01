@@ -18,22 +18,15 @@
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://watchdog.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
+LIC_FILES_CHKSUM = "file://src/watchdog.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-SRC_URI = "file://Makefile \
-           file://watchdog.c \
-           file://watchdog.h \
-           "
+SRC_URI = "\
+    file://meson.build \
+    file://src/meson.build \
+    file://src/watchdog.c \
+    file://src/watchdog.h \
+    "
 
 S = "${WORKDIR}"
 
-do_install() {
-    install -d ${D}${libdir}
-    install -m 0644 libwatchdog.so ${D}${libdir}/libwatchdog.so
-
-    install -d ${D}${includedir}/openbmc
-    install -m 0644 watchdog.h ${D}${includedir}/openbmc/watchdog.h
-}
-
-FILES_${PN} = "${libdir}/libwatchdog.so"
-FILES_${PN}-dev = "${includedir}/openbmc/watchdog.h"
+inherit meson

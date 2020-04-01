@@ -53,6 +53,7 @@ static int sensors_read_common_therm(uint8_t, float*);
 static int sensors_read_pax_therm(uint8_t, float*);
 static int sensors_read_vr(uint8_t, float*);
 static int sensors_read_12v_hsc(uint8_t, float*);
+static int sensors_read_12v_hsc_vout(uint8_t, float*);
 static int sensors_read_48v_hsc(uint8_t, float*);
 
 /*
@@ -677,9 +678,9 @@ struct sensor_map {
   [PDB_HSC_P12V_AUX_VOUT] =
   {sensors_read_12v_hsc, "PDB_HSC_P12V_AUX_VOUT", SNR_VOLT},
   [PDB_HSC_P12V_1_VOUT] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_1_VOUT", SNR_VOLT},
+  {sensors_read_12v_hsc_vout, "PDB_HSC_P12V_1_VOUT", SNR_VOLT},
   [PDB_HSC_P12V_2_VOUT] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_2_VOUT", SNR_VOLT},
+  {sensors_read_12v_hsc_vout, "PDB_HSC_P12V_2_VOUT", SNR_VOLT},
   [PDB_HSC_P12V_AUX_CURR] =
   {sensors_read_12v_hsc, "PDB_HSC_P12V_AUX_CURR", SNR_CURR},
   [PDB_HSC_P12V_1_CURR] =
@@ -1246,12 +1247,6 @@ static int sensors_read_12v_hsc(uint8_t sensor_num, float *value)
     case PDB_HSC_P12V_AUX_VIN:
       ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_VIN", value);
       break;
-    case PDB_HSC_P12V_1_VOUT:
-      ret = sensors_read("ltc4282-i2c-16-53", "P12V_1_VOUT", value);
-      break;
-    case PDB_HSC_P12V_2_VOUT:
-      ret = sensors_read("ltc4282-i2c-17-40", "P12V_2_VOUT", value);
-      break;
     case PDB_HSC_P12V_AUX_VOUT:
       ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_VOUT", value);
       break;
@@ -1259,6 +1254,26 @@ static int sensors_read_12v_hsc(uint8_t sensor_num, float *value)
       ret = ERR_SENSOR_NA;
   }
 
+  return ret < 0? ERR_SENSOR_NA: 0;
+}
+
+static int sensors_read_12v_hsc_vout(uint8_t sensor_num, float *value)
+{
+  int ret;
+
+  if (pal_is_server_off())
+    return ERR_SENSOR_NA;
+
+  switch (sensor_num) {
+    case PDB_HSC_P12V_1_VOUT:
+      ret = sensors_read("ltc4282-i2c-16-53", "P12V_1_VOUT", value);
+      break;
+    case PDB_HSC_P12V_2_VOUT:
+      ret = sensors_read("ltc4282-i2c-17-40", "P12V_2_VOUT", value);
+      break;
+    default:
+      ret = ERR_SENSOR_NA;
+  }
   return ret < 0? ERR_SENSOR_NA: 0;
 }
 

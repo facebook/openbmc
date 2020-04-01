@@ -704,8 +704,8 @@ i2c_open(uint8_t bus_id) {
   return fd;
 }
 
-static int
-i2c_io(int fd, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount) {
+static int bic_i2c_xfer(int fd, uint8_t* tbuf, uint8_t tcount, uint8_t* rbuf,
+                        uint8_t rcount) {
   struct i2c_rdwr_ioctl_data data;
   struct i2c_msg msg[2];
   int n_msg = 0;
@@ -732,6 +732,7 @@ i2c_io(int fd, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount) {
   data.msgs = msg;
   data.nmsgs = n_msg;
 
+  OBMC_DEBUG("start i2c xfer with bic: tx=%u, rx=%u bytes", tcount, rcount);
   rc = ioctl(fd, I2C_RDWR, &data);
   if (rc < 0) {
     OBMC_ERROR(rc, "Failed to do raw io");
@@ -741,21 +742,141 @@ i2c_io(int fd, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount) {
   return 0;
 }
 
-static int
-_update_bic_main(uint8_t slot_id, const char *path) {
+static int run_shell_cmd(const char* cmd) {
+  OBMC_DEBUG("running <%s> command\n", cmd);
+  return system(cmd);
+}
+
+static int prepare_update_bic(uint8_t slot_id, int ifd, int size) {
+  int i = 0;
+  uint8_t tbuf[MAX_IPMI_MSG_SIZE] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tcount;
+  uint8_t rcount;
+
+  /* Kill ipmb daemon for this slot and debug card */
+  run_shell_cmd("sv stop ipmbd_0; sv stop ipmbd_4");
+  sleep(1);
+  OBMC_INFO("stopped ipmbd for slot %u\n", slot_id);
+
+  /* Restart ipmb daemon with "-u|--enable-bic-update" for bic update */
+  run_shell_cmd("/usr/local/bin/ipmbd -u 0 1 > /dev/null 2>&1 &");
+  OBMC_INFO("started 'ipmbd -u' for minilake\n");
+
+  sleep(2);
+
+  /* Enable Bridge-IC update */
+  _enable_bic_update(slot_id);
+
+  /* Kill ipmb daemon "--enable-bic-update" for this slot */
+  run_shell_cmd(
+      "ps -w | grep -v 'grep' | grep 'ipmbd -u 0' | awk '{print $1}' "
+      "| xargs kill");
+  OBMC_INFO("stopped 'ipmbd -u' for minilake\n");
+
+  // The I2C fast speed clock (1MHz) may cause to read BIC data abnormally.
+  // So reduce I2C bus clock speed which is a workaround for BIC update.
+  run_shell_cmd("devmem 0x1e78a044 w 0xffffe303");
+  OBMC_INFO("updated i2c-0 timing settings\n");
+
+  sleep(1);
+
+  /* Start Bridge IC update(0x21) */
+  tbuf[0] = CMD_DOWNLOAD_SIZE;
+  tbuf[1] = 0x00; // Checksum, will fill later
+  tbuf[2] = BIC_CMD_DOWNLOAD;
+
+  /* update flash address: 0x8000 */
+  tbuf[3] = (BIC_FLASH_START >> 24) & 0xff;
+  tbuf[4] = (BIC_FLASH_START >> 16) & 0xff;
+  tbuf[5] = (BIC_FLASH_START >> 8) & 0xff;
+  tbuf[6] = (BIC_FLASH_START)&0xff;
+
+  /* image size */
+  tbuf[7] = (size >> 24) & 0xff;
+  tbuf[8] = (size >> 16) & 0xff;
+  tbuf[9] = (size >> 8) & 0xff;
+  tbuf[10] = (size)&0xff;
+
+  /* calcualte checksum for data portion */
+  for (i = 2; i < CMD_DOWNLOAD_SIZE; i++) {
+    tbuf[1] += tbuf[i];
+  }
+
+  tcount = CMD_DOWNLOAD_SIZE;
+  rcount = 0;
+
+  if (bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount)) {
+    OBMC_ERROR(errno, "bic_i2c_xfer failed download");
+    return -1;
+  }
+  msleep(500); // delay for download command process
+
+  tcount = 0;
+  rcount = 2;
+  if (bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount)) {
+    OBMC_ERROR(errno, "bic_i2c_xfer failed download ack");
+    return -1;
+  }
+
+  if (rbuf[0] != 0x00 || rbuf[1] != 0xcc) {
+    OBMC_WARN("unexpected download response: %x:%x\n", rbuf[0], rbuf[1]);
+    return -1;
+  }
+
+  return 0;
+}
+
+static int update_bic_status(uint8_t slot_id, int ifd) {
+  uint8_t tbuf[MAX_IPMI_MSG_SIZE] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tcount;
+  uint8_t rcount;
+
+  /* Get Status */
+  tbuf[0] = CMD_STATUS_SIZE;
+  tbuf[1] = BIC_CMD_STATUS; // checksum same as data
+  tbuf[2] = BIC_CMD_STATUS;
+
+  tcount = CMD_STATUS_SIZE;
+  rcount = 0;
+
+  if (bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount)) {
+    OBMC_ERROR(errno, "failed to get BIC_CMD_STATUS");
+    return -1;
+  }
+
+  tcount = 0;
+  rcount = 5;
+  if (bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount)) {
+    OBMC_ERROR(errno, "failed to get status ack");
+    return -1;
+  }
+
+  if (rbuf[0] != 0x00 || rbuf[1] != 0xcc || rbuf[2] != 0x03 ||
+      rbuf[3] != 0x40 || rbuf[4] != 0x40) {
+    OBMC_WARN("unexpected status resp: %x:%x:%x:%x:%x\n", rbuf[0], rbuf[1],
+              rbuf[2], rbuf[3], rbuf[4]);
+    return -1;
+  }
+
+  return 0;
+}
+
+static int _update_bic_main(uint8_t slot_id, const char* path) {
   int fd;
   int ifd = -1;
   char cmd[100] = {0};
   struct stat buf;
   int size;
-  uint8_t tbuf[256] = {0};
+  uint8_t tbuf[MAX_IPMI_MSG_SIZE] = {0};
   uint8_t rbuf[16] = {0};
   uint8_t tcount;
   uint8_t rcount;
   volatile int xcount;
-  int i = 0;
+  int i = 0, retry = 5;
   int ret = -1, rc;
-  uint8_t xbuf[256] = {0};
+  uint8_t xbuf[MAX_IPMI_MSG_SIZE] = {0};
   uint32_t offset = 0, last_offset = 0, dsize;
 
   OBMC_CRIT("bic_update_fw: update bic firmware on minilake\n");
@@ -770,132 +891,43 @@ _update_bic_main(uint8_t slot_id, const char *path) {
   fstat(fd, &buf);
   size = buf.st_size;
   printf("size of file is %d bytes\n", size);
+  OBMC_INFO("size of %s is %d bytes\n", path, size);
   dsize = size/20;
 
+  // stop gpiod/sensord/front-paneld
+  bic_related_process(UPDATE_BIC, PROCESS_STOP);
+  // Set BIC 100kHZ
+  system("bic-util scm 0xe0 0x2a 0x15 0xa0 0x00 0x00 > /dev/null 2>&1");
+  // Kill ipmb daemon for this slot
+  // system("sv stop ipmbd_0; sv stop ipmbd_4");
+  // printf("stop ipmbd_0 and ipmbd_4\n");
+
+  // sleep(1);
+  // printf("Stopped ipmbd for this slot\n");
+
   // Open the i2c driver
-  ifd = i2c_open(0);//bus 0
+  ifd = i2c_cdev_slave_open(0, BRIDGE_SLAVE_ADDR, 0); // bus 0
   if (ifd < 0) {
     printf("ifd error\n");
     goto error_exit;
   }
 
-  bic_related_process(UPDATE_BIC, PROCESS_STOP);
-
-  // Set BIC 1MHZ
-  system("bic-util scm 0xe0 0x2a 0x15 0xa0 0x00 0x01 > /dev/null 2>&1");
-  // Kill ipmb daemon for this slot
-  sprintf(cmd, "sv stop ipmbd_0;sv stop ipmbd_4");
-  system(cmd);
-  printf("stop ipmbd\n");
-
-  sleep(1);
-  printf("Stopped ipmbd for this slot\n");
-
-  // Restart ipmb daemon with "bicup" for bic update
-  memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "/usr/local/bin/ipmbd 0 1 bicup > /dev/null 2>&1 &");
-  system(cmd);
-  printf("start ipmbd bicup for minilake\n");
-
-  sleep(2);
-
-  // Enable Bridge-IC update
-  _enable_bic_update(slot_id);
-
-  // Kill ipmb daemon "bicup" for this slot
-  memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "ps -w | grep -v 'grep' | grep 'ipmbd 0' | awk '{print $1}' | xargs kill");
-  system(cmd);
-  printf("stop ipmbd for minilake\n", slot_id);
-
-  // The I2C high speed clock (1M) could cause to read BIC data abnormally.
-  // So reduce I2C bus clock speed which is a workaround for BIC update.
-  system("devmem 0x1e78a044 w 0xfff77304");
-
-  sleep(1);
-
-  // Start Bridge IC update(0x21)
-
-  tbuf[0] = CMD_DOWNLOAD_SIZE;
-  tbuf[1] = 0x00; //Checksum, will fill later
-
-  tbuf[2] = BIC_CMD_DOWNLOAD;
-
-  // update flash address: 0x8000
-  tbuf[3] = (BIC_FLASH_START >> 24) & 0xff;
-  tbuf[4] = (BIC_FLASH_START >> 16) & 0xff;
-  tbuf[5] = (BIC_FLASH_START >> 8) & 0xff;
-  tbuf[6] = (BIC_FLASH_START) & 0xff;
-
-  // image size
-  tbuf[7] = (size >> 24) & 0xff;
-  tbuf[8] = (size >> 16) & 0xff;
-  tbuf[9] = (size >> 8) & 0xff;
-  tbuf[10] = (size) & 0xff;
-
-  // calcualte checksum for data portion
-  for (i = 2; i < CMD_DOWNLOAD_SIZE; i++) {
-    tbuf[1] += tbuf[i];
-  }
-
-  tcount = CMD_DOWNLOAD_SIZE;
-
-  rcount = 0;
-
-  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-  if (rc) {
-    printf("i2c_io failed download\n");
-    goto error_exit;
-  }
-
-  //delay for download command process ---
-  msleep(500);
-  tcount = 0;
-  rcount = 2;
-  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-  if (rc) {
-    printf("i2c_io failed download ack\n");
-    goto error_exit;
-  }
-
-  if (rbuf[0] != 0x00 || rbuf[1] != 0xcc) {
-    printf("download response: %x:%x\n", rbuf[0], rbuf[1]);
+  if (prepare_update_bic(slot_id, ifd, size)) {
     goto error_exit;
   }
 
   // Loop to send all the image data
   while (1) {
-    // Get Status
-    tbuf[0] = CMD_STATUS_SIZE;
-    tbuf[1] = BIC_CMD_STATUS;// checksum same as data
-    tbuf[2] = BIC_CMD_STATUS;
-
-    tcount = CMD_STATUS_SIZE;
-    rcount = 0;
-
-    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
-    if (rc) {
-      printf("i2c_io failed get status\n");
-      goto error_exit;
+    /* Sometimes BIC update status get fail, so add retry for workaround */
+    retry = 5;
+    while ((rc = update_bic_status(slot_id, ifd)) != 0 && retry--) {
+      OBMC_WARN("update_bic, BIC status get fail retrying ...\n");
+      offset = 0;
+      last_offset = 0;
+      lseek(fd, 0, SEEK_SET);
+      prepare_update_bic(slot_id, ifd, size);
     }
-
-    tcount = 0;
-    rcount = 5;
-
-    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
     if (rc) {
-      printf("i2c_io failed get status ack\n");
-      goto error_exit;
-    }
-
-    if (rbuf[0] != 0x00 ||
-        rbuf[1] != 0xcc ||
-        rbuf[2] != 0x03 ||
-        rbuf[3] != 0x40 ||
-        rbuf[4] != 0x40) {
-
-      printf("status resp: %x:%x:%x:%x:%x",
-              rbuf[0], rbuf[1], rbuf[2], rbuf[3], rbuf[4]);
       goto error_exit;
     }
 
@@ -903,9 +935,10 @@ _update_bic_main(uint8_t slot_id, const char *path) {
     tbuf[0] = 0xcc;
     tcount = 1;
     rcount = 0;
-    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+    rc = bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount);
     if (rc) {
-      printf("i2c_io failed send ack\n");
+      printf("bic_i2c_xfer failed send ack\n");
+      OBMC_ERROR(errno, "bic_i2c_xfer: failed send ack");
       goto error_exit;
     }
 
@@ -940,9 +973,10 @@ _update_bic_main(uint8_t slot_id, const char *path) {
     tcount = tbuf[0];
     rcount = 0;
 
-    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+    rc = bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount);
     if (rc) {
-      printf("i2c_io error send data\n");
+      printf("bic_i2c_xfer error send data\n");
+      OBMC_ERROR(errno, "bic_i2c_xfer: error send data");
       goto error_exit;
     }
 
@@ -950,9 +984,10 @@ _update_bic_main(uint8_t slot_id, const char *path) {
     tcount = 0;
     rcount = 2;
 
-    rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+    rc = bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount);
     if (rc) {
-      printf("i2c_io error send data ack\n");
+      printf("bic_i2c_xfer error send data ack\n");
+      OBMC_ERROR(errno, "bic_i2c_xfer: error send data ack");
       goto error_exit;
     }
 
@@ -979,23 +1014,26 @@ _update_bic_main(uint8_t slot_id, const char *path) {
   tcount = CMD_RUN_SIZE;
   rcount = 0;
 
-  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+  rc = bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount);
   if (rc) {
-    printf("i2c_io failed run\n");
+    printf("bic_i2c_xfer failed run\n");
+    OBMC_ERROR(errno, "bic_i2c_xfer: failed run");
     goto error_exit;
   }
 
   tcount = 0;
   rcount = 2;
 
-  rc = i2c_io(ifd, tbuf, tcount, rbuf, rcount);
+  rc = bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount);
   if (rc) {
-    printf("i2c_io failed run ack\n");
+    printf("bic_i2c_xfer failed run ack\n");
+    OBMC_ERROR(errno, "bic_i2c_xfer: failed run ack");
     goto error_exit;
   }
 
   if (rbuf[0] != 0x00 || rbuf[1] != 0xcc) {
     printf("run response: %x:%x\n", rbuf[0], rbuf[1]);
+    OBMC_WARN("unexpected run response: %#x:%#x\n", rbuf[0], rbuf[1]);
     goto error_exit;
   }
   msleep(500);
@@ -1003,14 +1041,18 @@ _update_bic_main(uint8_t slot_id, const char *path) {
 update_done:
   ret = 0;
 
-  // Restore the I2C bus clock to 1M.
-  system("devmem 0x1e78a044 w 0xfff55301");
+  // Restore the I2C bus clock to 1MHz.
+  OBMC_INFO("restoring i2c-0 timing settings");
+  system("devmem 0x1e78a044 w 0xfffcb300");
 
   // Restart ipmbd daemon
   sleep(1);
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "sv start ipmbd_0;sv start ipmbd_4");
+  sprintf(cmd, "sv start ipmbd_0; sv start ipmbd_4");
   system(cmd);
+  sleep(5);
+  system("bic-util scm 0xe0 0x2a 0x15 0xa0 0x00 0x01 > /dev/null 2>&1");
+  // Set BIC 1MHZ
   bic_related_process(UPDATE_BIC, PROCESS_RUN);
 
 error_exit:
@@ -1023,16 +1065,6 @@ error_exit:
      close(ifd);
   }
 
-  set_fw_update_ongoing(slot_id, 0);
-
-  //Unlock fw-util
-  memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "rm /var/run/fw-util-scm.lock");
-  system(cmd);
-
-  sleep(5);
-  // Set BIC 1MHZ
-  system("bic-util scm 0xe0 0x2a 0x15 0xa0 0x00 0x01 > /dev/null 2>&1");
   return ret;
 }
 

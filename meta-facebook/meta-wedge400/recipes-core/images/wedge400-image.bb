@@ -42,7 +42,6 @@ IMAGE_INSTALL += " \
   pemd \
   pem-util \
   psu-util \
-  sensor-setup \
   sensor-util \
   sensor-mon \
   spatula \

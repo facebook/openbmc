@@ -112,7 +112,9 @@ sdr_cache_init(uint8_t slot_id) {
 
     sdr_full_t *sdr = (sdr_full_t *)res->data;
 
-    write(fd, sdr, sizeof(sdr_full_t));
+    if (write(fd, sdr, sizeof(sdr_full_t)) != sizeof(sdr_full_t)) {
+      OBMC_WARN("%s: failed to write SDR\n", __func__);
+    }
 
     req.rec_id = res->next_rec_id;
     if (req.rec_id == LAST_RECORD_ID) {

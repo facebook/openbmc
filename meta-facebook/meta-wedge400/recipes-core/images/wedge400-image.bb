@@ -46,9 +46,16 @@ IMAGE_INSTALL += " \
   sensor-mon \
   spatula \
   threshold-util \
-  tpm2.0-tools \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \
   rackmon \
   "
+
+def tpm_tools_recipe(d):
+  distro = d.getVar('DISTRO_CODENAME', True)
+  if distro == 'rocko':
+    return 'tpm2.0-tools'
+  return 'tpm2-tools'
+
+IMAGE_INSTALL += "${@tpm_tools_recipe(d)}"

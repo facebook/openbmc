@@ -38,11 +38,31 @@
 #define PECI_CPU6_ADDR    (0x36)
 #define PECI_CPU7_ADDR    (0x37)
 
-//AMD1278 CMD INFO
-#define PMBUS_PMON_CONFIG  (0xD4)
-#define ADM1278_SLAVE_ADDR (0x22)
-#define ADM1278_RSENSE     (0.15)
+enum {
+  CFG_SAMPLE_DIABLE = 0,
+  CFG_SAMPLE_2,
+  CFG_SAMPLE_4,
+  CFG_SAMPLE_8,
+  CFG_SAMPLE_16,
+  CFG_SAMPLE_32,
+  CFG_SAMPLE_64,
+  CFG_SAMPLE_128,
+};
 
+//AMD1278 CMD INFO
+#define ADM1278_SLAVE_ADDR  (0x22)
+#define ADM1278_RSENSE      (0.15)
+
+#define ADM1278_PMON_CONFIG         (0xD4)
+#define PMON_CFG_VIN_EN             (1 << 2)
+#define PMON_CFG_TEPM1_EN           (1 << 3)
+#define PMON_CFG_CONTINUOUS_SAMPLE  (1 << 4)
+#define PMON_CFG_VI_AVG(x)          (x << 8)
+#define PMON_CFG_AVG_PWR(x)         (x << 11)
+
+#define ADM1278_ALTER_CONFIG        (0xD5)
+#define IOUT_OC_WARN_EN1            (1 << 10) 
+ 
 //INA260 CMD INFO
 #define INA260_CURRENT   (0x01)
 #define INA260_VOLTAGE   (0x02)
@@ -491,6 +511,8 @@ enum {
   VR_ID7,
   VR_ID8,
   VR_ID9,
+  VR_ID10,
+  VR_ID11,
 };
 
 enum {

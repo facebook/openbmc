@@ -23,6 +23,7 @@
 
 #define MAX_READ_RETRY 10
 
+uint8_t rst_10s_flag=0;
 size_t pal_pwm_cnt = FAN_PWM_ALL_NUM;
 size_t pal_tach_cnt = FAN_TACH_ALL_NUM;
 const char pal_pwm_list[] = "0,1,2,3";
@@ -227,6 +228,14 @@ const uint8_t mb_8s_m_sensor_list[] = {
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP,
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_CURR,
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_POWER,
+  MB_SNR_VR_PCH_P1V05_VOLT, 
+  MB_SNR_VR_PCH_P1V05_TEMP, 
+  MB_SNR_VR_PCH_P1V05_CURR, 
+  MB_SNR_VR_PCH_P1V05_POWER,
+  MB_SNR_VR_PCH_PVNN_VOLT,
+  MB_SNR_VR_PCH_PVNN_TEMP,
+  MB_SNR_VR_PCH_PVNN_CURR,
+  MB_SNR_VR_PCH_PVNN_POWER,
 };
 
 //8S Slave BMC Sensor List
@@ -295,6 +304,15 @@ const uint8_t mb_8s_s_sensor_list[] = {
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP,
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_CURR,
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_POWER,
+  MB_SNR_VR_PCH_P1V05_VOLT, 
+  MB_SNR_VR_PCH_P1V05_TEMP, 
+  MB_SNR_VR_PCH_P1V05_CURR, 
+  MB_SNR_VR_PCH_P1V05_POWER,
+  MB_SNR_VR_PCH_PVNN_VOLT,
+  MB_SNR_VR_PCH_PVNN_TEMP,
+  MB_SNR_VR_PCH_PVNN_CURR,
+  MB_SNR_VR_PCH_PVNN_POWER,
+ 
 };
 
 const uint8_t mb_2s_sensor_list[] = {
@@ -387,6 +405,14 @@ const uint8_t mb_2s_sensor_list[] = {
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP,
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_CURR,
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_POWER,
+  MB_SNR_VR_PCH_P1V05_VOLT, 
+  MB_SNR_VR_PCH_P1V05_TEMP, 
+  MB_SNR_VR_PCH_P1V05_CURR, 
+  MB_SNR_VR_PCH_P1V05_POWER,
+  MB_SNR_VR_PCH_PVNN_VOLT,
+  MB_SNR_VR_PCH_PVNN_TEMP,
+  MB_SNR_VR_PCH_PVNN_CURR,
+  MB_SNR_VR_PCH_PVNN_POWER,
 };
 
 const uint8_t nic0_sensor_list[] = {
@@ -447,8 +473,8 @@ PAL_CPU_INFO cpu_info_list[] = {
 //ADM1278
 PAL_ADM1278_INFO adm1278_info_list[] = {
   {ADM1278_VOLTAGE, 19599, 0, 100},
-  {ADM1278_CURRENT, 800 * ADM1278_RSENSE, 20475, 10},
-  {ADM1278_POWER, 6123 * ADM1278_RSENSE, 0, 100},
+  {ADM1278_CURRENT, 842 * ADM1278_RSENSE, 20475, 10},
+  {ADM1278_POWER, 6442 * ADM1278_RSENSE, 0, 100},
   {ADM1278_TEMP, 42, 31880, 10},
 };
 
@@ -736,14 +762,15 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_VR_CPU0_VDDQ_DEF_TEMP", VR_ID4, read_vr_temp, false, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xC1
   {"MB_VR_CPU0_VDDQ_DEF_IOUT", VR_ID4, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XC2
   {"MB_VR_CPU0_VDDQ_DEF_POUT", VR_ID4, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xC3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
+  {"MB_VR_PCH_P1V05_VOLT", VR_ID10, read_vr_vout, true, {1.2, 0, 0, 1.0085, 0, 0, 0, 0}, VOLT}, //0xC4
+  {"MB_VR_PCH_P1V05_TEMP", VR_ID10, read_vr_temp, true, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xC5
+  {"MB_VR_PCH_P1V05_IOUT", VR_ID10, read_vr_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC6
+  {"MB_VR_PCH_P1V05_POUT", VR_ID10, read_vr_pout, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xC7
+
+  {"MB_VR_PCH_PVNN_VOLT", VR_ID11, read_vr_vout, true, {1.2, 0, 0, 0.80175, 0, 0, 0, 0}, VOLT}, //0xC8
+  {"MB_VR_PCH_PVNN_TEMP", VR_ID11, read_vr_temp, true, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xC9
+  {"MB_VR_PCH_PVNN_IOUT", VR_ID11, read_vr_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xCA
+  {"MB_VR_PCH_PVNN_POUT", VR_ID11, read_vr_pout, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
@@ -1602,18 +1629,17 @@ get_hsc_val_from_me(uint8_t hsc_id, uint8_t pmbus_cmd, uint8_t *data) {
 }
 
 int
-set_NM_hsc_pmon_config(uint8_t hsc_id, uint8_t value_l, uint8_t value_h) {
+set_NM_hsc_word_data(uint8_t hsc_id, uint8_t psu_cmd, uint16_t value) {
   uint8_t data[2] = {0x00};
-  uint8_t rbuf[20] = {0x00};
-  int ret = 0;
-  NM_RW_INFO info;
   uint8_t buf[5] = {0x00};
   uint8_t extend=0;
   uint8_t mode=0; 
+    int ret = 0;
+  NM_RW_INFO info;
 
   get_hsc_rw_info(&extend, &mode);  
     
-  buf[0] = PMBUS_PMON_CONFIG;                // psu_cmd;
+  buf[0] = psu_cmd;                          // psu_cmd;
   buf[1] = hsc_info_list[hsc_id].slv_addr;   // psu_addr;
   buf[2] = NM_PSU_MUX_ADDR;                  // mux_addr;
   buf[3] = hsc_info_list[hsc_id].ch;         // mux_ch;
@@ -1621,23 +1647,12 @@ set_NM_hsc_pmon_config(uint8_t hsc_id, uint8_t value_l, uint8_t value_h) {
 
   get_nm_rw_info(NM_ID0, &info.bus, &info.nm_addr, &info.bmc_addr);
 
-  if(extend == 0) { 
-    ret = cmd_NM_pmbus_standard_read_word(info, buf, rbuf);
-  } else {
-    ret = cmd_NM_pmbus_extend_read_word(info, buf, rbuf);
-  }
+  data[0] = value & 0x00FF;   //PMON data low byte
+  data[1] = value >> 8;       //PMON data high byte 
 
-  if (ret != 0) {
-    return READING_NA;
-  }
- 
-  if (rbuf[6] == 0) {
-    data[0] = rbuf[10] | value_l;   //PMON data low byte
-    data[1] = rbuf[11] | value_h;   //PMON data high byte 
-  } else {
-    return READING_NA;
-  }
- 
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s cmd=%x lb =%x hb=%x\n", __func__, psu_cmd, data[0], data[1]);
+#endif 
   if(extend == 0) { 
     ret = cmd_NM_pmbus_standard_write_word(info, buf, data);
   } else {
@@ -1650,11 +1665,82 @@ set_NM_hsc_pmon_config(uint8_t hsc_id, uint8_t value_l, uint8_t value_h) {
   return 0;
 }
 
+int
+get_NM_hsc_word_data(uint8_t hsc_id, uint8_t psu_cmd, uint8_t* value) {
+  uint8_t rbuf[32] = {0x00};
+  uint8_t buf[5] = {0x00};
+  uint8_t extend=0;
+  uint8_t mode=0; 
+    int ret = 0;
+  NM_RW_INFO info;
+
+  get_hsc_rw_info(&extend, &mode);  
+    
+  buf[0] = psu_cmd;                          // psu_cmd;
+  buf[1] = hsc_info_list[hsc_id].slv_addr;   // psu_addr;
+  buf[2] = NM_PSU_MUX_ADDR;                  // mux_addr;
+  buf[3] = hsc_info_list[hsc_id].ch;         // mux_ch;
+  buf[4] = NM_SENSOR_BUS_SMLINK1;            // sensor_bus;
+
+  get_nm_rw_info(NM_ID0, &info.bus, &info.nm_addr, &info.bmc_addr);
+ 
+  if(extend == 0) { 
+    ret = cmd_NM_pmbus_standard_read_word(info, buf, rbuf);
+  } else {
+    ret = cmd_NM_pmbus_extend_read_word(info, buf, rbuf);
+  }
+
+  if (ret != 0) {
+    return ret;
+  }
+
+  if (rbuf[6] == 0) {
+    *value = rbuf[10];
+    *(value+1) = rbuf[11];
+  } else {
+    syslog(LOG_DEBUG, "%s cc=%x\n", __func__, rbuf[6]);
+  }
+#ifdef DEBUG 
+  syslog(LOG_DEBUG, "%s id=%x cmd=%x data[0]=%x, [1]=%x\n",
+          __func__, hsc_id, psu_cmd, value[0], value[1]);
+#endif  
+  return 0;
+}
+
+
 static int
-enable_hsc_temp_monitor(uint8_t hsc_id) {
+set_hsc_pmon_config(uint8_t hsc_id, uint16_t value) {
+  int ret=0;
+  ret = set_NM_hsc_word_data(hsc_id, ADM1278_PMON_CONFIG, value);
+  if (ret != 0) {
+    return ret;
+  }
+
+  return 0;
+}
+
+static int
+set_hsc_iout_warn_limit(uint8_t hsc_id, float value) {
+  int ret=0;
+  float m, b, r;
+  uint16_t data;
+
+  get_adm1278_info(hsc_id, ADM1278_CURRENT, &m, &b, &r);
+
+  data =(uint16_t) ((value * m + b)/r);
+  ret = set_NM_hsc_word_data(hsc_id, PMBUS_IOUT_OC_WARN_LIMIT, data);
+  if (ret != 0) {
+    return ret;
+  }
+
+  return 0;
+}
+
+static int
+set_alter1_config(uint8_t hsc_id, uint16_t value) {
   int ret=0;
 
-  ret = set_NM_hsc_pmon_config(hsc_id, 0x08, 0x00);
+  ret = set_NM_hsc_word_data(hsc_id, ADM1278_ALTER_CONFIG, value);
   if (ret != 0) {
     return ret;
   }
@@ -1939,6 +2025,8 @@ read_vr_vout(uint8_t vr_id, float *value) {
     {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_VOUT"},
     {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_VOUT"},
     {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_VOUT"},
+    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_P1V05_VOLT"},
+    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_PVNN_VOLT"},
   };
   if (vr_id >= ARRAY_SIZE(devs)) {
     return -1;
@@ -1962,6 +2050,8 @@ read_vr_temp(uint8_t vr_id, float *value) {
     {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_TEMP"},
     {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_TEMP"},
     {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_TEMP"},
+    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_P1V05_TEMP"},
+    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_PVNN_TEMP"},
   };
   if (vr_id >= ARRAY_SIZE(devs)) {
     return -1;
@@ -1985,6 +2075,9 @@ read_vr_iout(uint8_t vr_id, float *value) {
     {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_IOUT"},
     {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_IOUT"},
     {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_IOUT"},
+    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_P1V05_IOUT"},
+    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_PVNN_IOUT"},
+   
   };
   if (vr_id >= ARRAY_SIZE(devs)) {
     return -1;
@@ -2013,6 +2106,8 @@ read_vr_pout(uint8_t vr_id, float *value) {
     {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_POUT"},
     {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_POUT"},
     {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_POUT"},
+    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_P1V05_POUT"},
+    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_PVNN_POUT"},
   };
   if (vr_id >= ARRAY_SIZE(devs)) {
     return -1;
@@ -2056,6 +2151,13 @@ pal_bios_completed(uint8_t fru)
     syslog(LOG_WARNING, "[%s]incorrect fru id: %d", __func__, fru);
     return false;
   }
+
+//BIOS COMPLT need time to inital when platform reset.
+  if(rst_10s_flag < 5) {
+    syslog(LOG_DEBUG,"BIOS not ready\n");
+    return false;
+  }
+
   desc = gpio_open_by_shadow("FM_BIOS_POST_CMPLT_BMC_N");
   if (!desc)
     return false;
@@ -2151,8 +2253,16 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char fru_name[32];
   int ret=0;
   static uint8_t poweron_10s_flag = 0;
+  static time_t rst_timer=0;
+  struct stat file_stat;
   bool server_off;
   uint8_t id=0;
+
+  if (stat("/tmp/rst_touch", &file_stat) == 0 && file_stat.st_mtime > rst_timer) {
+    rst_timer = file_stat.st_mtime;
+    rst_10s_flag=0;
+    syslog(LOG_DEBUG, "rst flag clear\n");
+  }
 
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
@@ -2177,6 +2287,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         ret = READING_NA;
         break;
       }
+
+      if(rst_10s_flag < 5) {
+        rst_10s_flag++;
+      } 
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
     }
 
@@ -2493,10 +2607,24 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 
 int pal_sensor_monitor_initial(void) {
   int i=0;
+  uint16_t pmon_cfg = 0; 
+  uint16_t alert1_cfg = 0;
+  float iout_oc_warn_limit = 123;
+
+  pmon_cfg = PMON_CFG_TEPM1_EN | PMON_CFG_CONTINUOUS_SAMPLE | PMON_CFG_VIN_EN |
+             PMON_CFG_VI_AVG(CFG_SAMPLE_128) | PMON_CFG_AVG_PWR(CFG_SAMPLE_128);
+ 
+  alert1_cfg = IOUT_OC_WARN_EN1;
   
   for (i=0; i<4; i++) {
-    if( enable_hsc_temp_monitor(i) != 0 ) {
-      return -1;
+    if(set_hsc_pmon_config(i, pmon_cfg) != 0) {
+      syslog(LOG_WARNING, "Set MB%d PMON CONFIG Fail\n", i);
+    }
+    if(set_hsc_iout_warn_limit(i, iout_oc_warn_limit) != 0) {
+      syslog(LOG_WARNING, "Set MB%d Iout OC Warning Limit Fail\n", i); 
+    }
+    if(set_alter1_config(i, alert1_cfg) != 0) {
+      syslog(LOG_WARNING, "Set MB%d Alert1 Config Fail\n", i);
     }
   }
   return 0;

@@ -171,11 +171,15 @@ static void* ioex0_monitor()
         }
         ioex0_gpios[i].last = curr;
         init_flag[i] = true;
+#ifdef DEBUG        
         syslog(LOG_DEBUG, "gpio %s initial value=%x\n", ioex0_gpios[i].shadow, curr);
+#endif        
         continue;
       }
 
+#ifdef DEBUG
       syslog(LOG_DEBUG, "edge gpio %s value=%x\n", ioex0_gpios[i].shadow, curr);
+#endif      
       switch (ioex0_gpios[i].edge) {
       case GPIO_EDGE_FALLING:          
         if(curr == GPIO_VALUE_LOW) {

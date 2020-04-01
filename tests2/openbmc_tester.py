@@ -58,6 +58,7 @@ def arg_parse():
             "fbtp",
             "fby2",
             "fbttn",
+            "fuji",
             "yamp",
         ],
     )

@@ -3900,11 +3900,14 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       break;
     case FRU_NIC:
       spb_type = fby2_common_get_spb_type();
-
+#ifdef CONFIG_FBY2_GPV2
       if (spb_type == TYPE_SPB_YV250) { // YV2.50
         *sensor_list = (uint8_t *) nic_yv250_sensor_list;
         *cnt = nic_yv250_sensor_cnt;
-      } else {
+      }
+      else
+#endif
+      {
         *sensor_list = (uint8_t *) nic_sensor_list;
         *cnt = nic_sensor_cnt;
       }
@@ -11745,6 +11748,6 @@ pal_dev_jtag_gpio_to_bus(uint8_t fru) {
   } else {
     return -1;
   }
-  
+
   return bus;
 }

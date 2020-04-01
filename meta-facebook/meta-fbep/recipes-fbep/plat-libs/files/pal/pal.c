@@ -1045,3 +1045,27 @@ int pal_set_host_system_mode(uint8_t mode)
 
   return ret < 0? CC_UNSPECIFIED_ERROR: CC_SUCCESS;
 }
+
+int pal_set_id_led(uint8_t status)
+{
+  static gpio_desc_t *desc = NULL;
+  gpio_value_t value;
+
+  if (desc == NULL) {
+    desc = gpio_open_by_shadow("SYSTEM_LOG_LED");
+    if (!desc) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "Open GPIO SYSTEM_LOG_LED failed");
+#endif
+      return -1;
+    }
+  }
+
+  value = status? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
+  if (gpio_set_value(desc, value)) {
+    syslog(LOG_ERR, "Set GPIO SYSTEM_LOG_LED failed\n");
+    return -1;
+  }
+
+  return 0;
+}

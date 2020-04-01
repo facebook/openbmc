@@ -30,31 +30,29 @@
 #include <openbmc/pal.h>
 #include <openbmc/libgpio.h>
 
+#define LED_ON 1
+#define LED_OFF 0
+
+#define LED_IDENTIFY_INTERVAL 500
+
 // Thread to handle LED state of the SLED
 static void* led_sync_handler()
 {
   int ret;
   char identify[MAX_VALUE_LEN] = {0};
-  gpio_desc_t *desc = gpio_open_by_shadow("PWR_ID_LED_N");
-  gpio_value_t value;
-
-  if (!desc) {
-    syslog(LOG_ERR, "ID LED open failed\n");
-    return NULL;
-  }
 
   while (1) {
-    sleep(1);
-
     // Handle IDENTIFY LED
     memset(identify, 0x0, sizeof(identify));
     ret = pal_get_key_value("identify_sled", identify);
-    if (ret == 0) {
-      value = strcmp(identify, "on") == 0? GPIO_VALUE_LOW: GPIO_VALUE_HIGH;
-      if (gpio_set_value(desc, value)) {
-        syslog(LOG_ERR, "ID LED control failed\n");
-      }
+    if (ret == 0 && !strcmp(identify, "on")) {
+      pal_set_id_led(LED_ON);
+      msleep(LED_IDENTIFY_INTERVAL);
+      pal_set_id_led(LED_OFF);
+      msleep(LED_IDENTIFY_INTERVAL);
+      continue;
     }
+    sleep(1);
   }
 
   return NULL;

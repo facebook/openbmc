@@ -269,7 +269,10 @@ int modbuscmd(modbus_req *req) {
   struct timespec wait_end;
   struct timespec read_end;
   clock_gettime(CLOCK_MONOTONIC_RAW, &write_begin);
-  write(req->tty_fd, modbus_cmd, cmd_len);
+  if (write(req->tty_fd, modbus_cmd, cmd_len) != cmd_len) {
+    fprintf(stderr, "Failed to write modbus command!\n");
+    return -1;
+  }
   clock_gettime(CLOCK_MONOTONIC_RAW, &wait_begin);
   int waitloops = waitfd(req->tty_fd);
   clock_gettime(CLOCK_MONOTONIC_RAW, &wait_end);

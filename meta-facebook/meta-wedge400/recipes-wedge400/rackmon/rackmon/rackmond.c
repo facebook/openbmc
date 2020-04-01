@@ -1176,7 +1176,11 @@ int main(int argc, char **argv)
 {
   if (getenv("RACKMOND_FOREGROUND") == NULL)
   {
-    daemon(0, 0);
+    if (daemon(0, 0))
+    {
+      fprintf(stderr, "%s: Failed to run as daemon\n", RACKMOND_NAME);
+      return -1;
+    }
   }
   signal(SIGPIPE, SIG_IGN);
 

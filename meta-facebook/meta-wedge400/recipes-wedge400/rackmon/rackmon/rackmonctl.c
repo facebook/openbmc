@@ -86,7 +86,10 @@ int main(int argc, char **argv) {
     char readbuf[1024];
     ssize_t n_read;
     while((n_read = read(clisock, readbuf, sizeof(readbuf))) > 0) {
-      write(1, readbuf, n_read);
+      if (write(1, readbuf, n_read) != n_read) {
+        fprintf(stderr, "Writing command read from socket failed!\n");
+        goto cleanup;
+      }
     }
 cleanup:
     if(error != 0) {

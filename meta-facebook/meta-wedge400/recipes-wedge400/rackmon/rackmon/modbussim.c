@@ -164,7 +164,10 @@ wait_for_command:
     // Disable UART read
     tio.c_cflag &= ~CREAD;
     CHECK(tcsetattr(fd,TCSANOW,&tio));
-    write(fd, modbus_reply, reply_len);
+    if (write(fd, modbus_reply, reply_len) != reply_len) {
+      fprintf(stderr, "Writing reply failed!\n");
+      goto cleanup;
+    }
     waitfd(fd);
 
 cleanup:

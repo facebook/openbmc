@@ -46,6 +46,7 @@ const char pal_tach_list[] = "0..7";
 
 static int sensors_read_common_fan(uint8_t, float*);
 static int sensors_read_common_adc(uint8_t, float*);
+static int sensors_read_12v_adc(uint8_t, float*);
 static int read_battery_value(uint8_t, float*);
 static int sensors_read_vicor(uint8_t, float*);
 static int sensors_read_common_therm(uint8_t, float*);
@@ -500,13 +501,13 @@ struct sensor_map {
   [MB_ADC_P12V_AUX] =
   {sensors_read_common_adc, "MB_ADC_P12V_AUX", SNR_VOLT},
   [MB_ADC_P12V_1] =
-  {sensors_read_common_adc, "MB_ADC_P12V_1", SNR_VOLT},
+  {sensors_read_12v_adc, "MB_ADC_P12V_1", SNR_VOLT},
   [MB_ADC_P12V_2] =
-  {sensors_read_common_adc, "MB_ADC_P12V_2", SNR_VOLT},
+  {sensors_read_12v_adc, "MB_ADC_P12V_2", SNR_VOLT},
   [MB_ADC_P3V3_STBY] =
   {sensors_read_common_adc, "MB_ADC_P3V3_STBY", SNR_VOLT},
   [MB_ADC_P3V3] =
-  {sensors_read_common_adc, "MB_ADC_P3V3", SNR_VOLT},
+  {sensors_read_12v_adc, "MB_ADC_P3V3", SNR_VOLT},
   [MB_ADC_P3V_BAT] =
   {read_battery_value, "MB_ADC_P3V_BAT", SNR_VOLT},
   [MB_ADC_P5V_STBY] =
@@ -996,6 +997,21 @@ static int sensors_read_common_adc(uint8_t sensor_num, float *value)
     case MB_ADC_P5V_STBY:
       ret = sensors_read_adc("MB_ADC_P5V_STBY", (float *)value);
       break;
+    default:
+      return ERR_SENSOR_NA;
+  }
+
+  return ret < 0? ERR_SENSOR_NA: 0;
+}
+
+static int sensors_read_12v_adc(uint8_t sensor_num, float *value)
+{
+  int ret;
+
+  if (pal_is_server_off())
+    return ERR_SENSOR_NA;
+
+  switch (sensor_num) {
     case MB_ADC_P12V_1:
       ret = sensors_read_adc("MB_ADC_P12V_1", (float *)value);
       break;

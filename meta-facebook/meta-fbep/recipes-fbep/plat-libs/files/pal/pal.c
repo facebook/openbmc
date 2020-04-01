@@ -263,7 +263,7 @@ int pal_get_fru_id(char *str, uint8_t *fru)
 {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;
-  } else if (!strcmp(str, "mb")) {
+  } else if (!strcmp(str, "mb") || !strcmp(str, "bmc")) {
     *fru = FRU_MB;
   } else if (!strcmp(str, "pdb")) {
     *fru = FRU_PDB;
@@ -494,16 +494,20 @@ int pal_get_dev_guid(uint8_t fru, char *guid) {
 
 int pal_get_server_power(uint8_t fru, uint8_t *status)
 {
-  gpio_desc_t *desc;
+  static gpio_desc_t *desc = NULL;
   gpio_value_t value;
 
   if (fru != FRU_MB)
     return -1;
 
-  desc = gpio_open_by_shadow("SYS_PWR_READY");
-  if (!desc) {
-    syslog(LOG_WARNING, "Open GPIO SYS_PWR_READY failed");
-    return -1;
+  if (desc == NULL) {
+    desc = gpio_open_by_shadow("SYS_PWR_READY");
+    if (!desc) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "Open GPIO SYS_PWR_READY failed");
+#endif
+      return -1;
+    }
   }
 
   if (gpio_get_value(desc, &value) < 0) {
@@ -512,7 +516,6 @@ int pal_get_server_power(uint8_t fru, uint8_t *status)
   }
 
   *status = (value == GPIO_VALUE_HIGH)? SERVER_POWER_ON: SERVER_POWER_OFF;
-  gpio_close(desc);
 
   return 0;
 }

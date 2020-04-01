@@ -158,9 +158,34 @@ enum {
 };
 
 enum {
-  UNIFIED_PCIE_ERR = 0x0,
-  UNIFIED_MEM_ERR  = 0x1,
-  UNIFIED_POST_ERR = 0x8,
+  UNIFIED_PCIE_ERR   = 0x0,
+  UNIFIED_MEM_ERR    = 0x1,
+  UNIFIED_UPI_ERR    = 0x2,
+  UNIFIED_POST_ERR   = 0x8,
+  UNIFIED_PCIE_EVENT = 0x9,
+  UNIFIED_MEM_EVENT  = 0xA,
+  UNIFIED_UPI_EVENT  = 0xB,
+};
+
+enum {
+  MEMORY_TRAINING_ERR        = 0x0,
+  MEMORY_CORRECTABLE_ERR     = 0x1,
+  MEMORY_UNCORRECTABLE_ERR   = 0x2,
+  MEMORY_CORR_ERR_PTRL_SCR   = 0x3,
+  MEMORY_UNCORR_ERR_PTRL_SCR = 0x4,
+};
+
+enum {
+  UPI_INIT_ERR = 0x0,
+};
+
+enum {
+  PCIE_DPC = 0x0,
+};
+
+enum {
+  MEM_PPR     = 0x0,
+  MEM_NO_DIMM = 0x9,
 };
 
 // Enum for get the event sensor name in processing SEL
@@ -197,12 +222,6 @@ enum {
   PWR_THRESH_EVT = 0x3B,
   MSMI = 0xE7,
   HPR_WARNING = 0xC5,
-};
-
-enum {
-  MEMORY_TRAINING_ERR = 0x0,
-  MEMORY_CORRECTABLE_ERR = 0x1,
-  MEMORY_UNCORRECTABLE_ERR = 0x2,
 };
 
 // Enum for BYPASS command selection
@@ -413,6 +432,7 @@ int pal_set_time_sync(uint8_t *req_data, uint8_t req_len);
 int pal_set_sdr_update_flag(uint8_t slot, uint8_t update);
 int pal_get_sdr_update_flag(uint8_t slot);
 int pal_parse_mem_mapping_string(uint8_t channel, bool *support_mem_mapping, char *error_log);
+int pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str);
 int pal_fw_update_prepare(uint8_t fru, const char *comp);
 int pal_fw_update_finished(uint8_t fru, const char *comp, int status);
 int pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *buf, size_t max_len, size_t *len);

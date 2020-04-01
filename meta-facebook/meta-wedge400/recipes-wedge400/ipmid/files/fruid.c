@@ -145,7 +145,9 @@ static void populate_fruid(unsigned char id)
              id, filename);
       return;
     }
-    fread(frumem, 1, WEDGE400_FRUID_SIZE, fp);
+    if (fread(frumem, 1, WEDGE400_FRUID_SIZE, fp) != WEDGE400_FRUID_SIZE) {
+      OBMC_WARN("populate_fruid: Read less than requested FRUID\n");
+    }
     fclose(fp);
     return;
   }

@@ -2011,10 +2011,10 @@ is_server_on(void) {
 
 int
 pal_set_th3_power(int option) {
-  char path[64];
+  char path[256];
   int ret;
   uint8_t brd_type;
-  char sysfs[32];
+  char sysfs[128];
   if(pal_get_board_type(&brd_type)){
     return -1;
   }
@@ -2087,7 +2087,10 @@ get_current_dir(const char *device, char *dir_name) {
   fp = popen(cmd, "r");
   if(NULL == fp)
      return -1;
-  fgets(dir_name, LARGEST_DEVICE_NAME, fp);
+  if (fgets(dir_name, LARGEST_DEVICE_NAME, fp) == NULL) {
+    pclose(fp);
+    return -1;
+  }
 
   ret = pclose(fp);
   if(-1 == ret)
@@ -2102,7 +2105,7 @@ get_current_dir(const char *device, char *dir_name) {
 
 static int
 read_attr_integer(const char *device, const char *attr, int *value) {
-  char full_name[LARGEST_DEVICE_NAME + 1];
+  char full_name[LARGEST_DEVICE_NAME * 2];
   char dir_name[LARGEST_DEVICE_NAME + 1];
 
   // Get current working directory
@@ -2111,7 +2114,7 @@ read_attr_integer(const char *device, const char *attr, int *value) {
   }
 
   snprintf(
-      full_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, attr);
+      full_name, sizeof(full_name), "%s/%s", dir_name, attr);
 
   if (read_device(full_name, value)) {
     return -1;
@@ -2122,7 +2125,7 @@ read_attr_integer(const char *device, const char *attr, int *value) {
 
 static int
 read_attr(const char *device, const char *attr, float *value) {
-  char full_name[LARGEST_DEVICE_NAME + 1];
+  char full_name[LARGEST_DEVICE_NAME * 2];
   char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;
 
@@ -2132,7 +2135,7 @@ read_attr(const char *device, const char *attr, float *value) {
   }
 
   snprintf(
-      full_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, attr);
+      full_name, sizeof(full_name), "%s/%s", dir_name, attr);
 
   if (read_device(full_name, &tmp)) {
     return -1;
@@ -2146,7 +2149,7 @@ read_attr(const char *device, const char *attr, float *value) {
 static int
 read_hsc_attr(const char *device,
               const char* attr, float r_sense, float *value) {
-  char full_dir_name[LARGEST_DEVICE_NAME];
+  char full_dir_name[LARGEST_DEVICE_NAME * 2];
   char dir_name[LARGEST_DEVICE_NAME + 1];
   int tmp;
 
@@ -2156,7 +2159,7 @@ read_hsc_attr(const char *device,
     return -1;
   }
   snprintf(
-      full_dir_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, attr);
+      full_dir_name, sizeof(full_dir_name), "%s/%s", dir_name, attr);
 
   if (read_device(full_dir_name, &tmp)) {
     return -1;
@@ -2184,7 +2187,7 @@ read_hsc_power(const char *device, float r_sense, float *value) {
 
 static int
 read_fan_rpm_f(const char *device, uint8_t fan, float *value) {
-  char full_name[LARGEST_DEVICE_NAME + 1];
+  char full_name[LARGEST_DEVICE_NAME * 2];
   char dir_name[LARGEST_DEVICE_NAME + 1];
   char device_name[11];
   int tmp;
@@ -2195,7 +2198,7 @@ read_fan_rpm_f(const char *device, uint8_t fan, float *value) {
   }
 
   snprintf(device_name, 11, "fan%d_input", fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, device_name);
+  snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, device_name);
   if (read_device(full_name, &tmp)) {
     return -1;
   }
@@ -2207,7 +2210,7 @@ read_fan_rpm_f(const char *device, uint8_t fan, float *value) {
 
 static int
 read_fan_rpm(const char *device, uint8_t fan, int *value) {
-  char full_name[LARGEST_DEVICE_NAME + 1];
+  char full_name[LARGEST_DEVICE_NAME * 2];
   char dir_name[LARGEST_DEVICE_NAME + 1];
   char device_name[11];
   int tmp;
@@ -2218,7 +2221,7 @@ read_fan_rpm(const char *device, uint8_t fan, int *value) {
   }
 
   snprintf(device_name, 11, "fan%d_input", fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", dir_name, device_name);
+  snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, device_name);
   if (read_device(full_name, &tmp)) {
     return -1;
   }
@@ -5353,7 +5356,7 @@ void *
 generate_dump(void *arg) {
 
   uint8_t fru = *(uint8_t *) arg;
-  char cmd[128];
+  char cmd[256];
   char fname[128];
   char fruname[16];
 
@@ -5368,16 +5371,20 @@ generate_dump(void *arg) {
   snprintf(fname, 128, "/var/run/autodump%d.pid", fru);
   if (access(fname, F_OK) == 0) {
     memset(cmd, 0, sizeof(cmd));
-    sprintf(cmd,"rm %s",fname);
-    system(cmd);
+    snprintf(cmd,sizeof(cmd),"rm %s",fname);
+    if (system(cmd)) {
+      OBMC_CRIT("Removing old crashdump: %s failed!\n", fname);
+    }
   }
 
   // Execute automatic crashdump
   memset(cmd, 0, 128);
   sprintf(cmd, "%s %s", CRASHDUMP_BIN, fruname);
-  system(cmd);
-
-  OBMC_CRIT("Crashdump for FRU: %d is generated.", fru);
+  if (system(cmd)) {
+    OBMC_CRIT("Crashdump for FRU: %d failed.", fru);
+  } else {
+    OBMC_CRIT("Crashdump for FRU: %d is generated.", fru);
+  }
 
   t_dump[fru-1].is_running = 0;
   return 0;
@@ -5407,11 +5414,15 @@ pal_store_crashdump(uint8_t fru) {
       sprintf(cmd,
               "ps | grep '{dump.sh}' | grep 'scm' "
               "| awk '{print $1}'| xargs kill");
-      system(cmd);
+      if (system(cmd)) {
+        OBMC_INFO("Detection of existing crashdump failed!\n");
+      }
       sprintf(cmd,
               "ps | grep 'bic-util' | grep 'scm' "
               "| awk '{print $1}'| xargs kill");
-      system(cmd);
+      if (system(cmd)) {
+        OBMC_INFO("Detection of existing bic-util scm failed!\n");
+      }
 #ifdef DEBUG
       OBMC_INFO("pal_store_crashdump:"
                        " Previous crashdump thread is cancelled");
@@ -6579,7 +6590,7 @@ pal_get_hand_sw(uint8_t *pos) {
 int
 pal_get_dbg_pwr_btn(uint8_t *status) {
    char cmd[MAX_KEY_LEN + 32] = {0};
-  char value[32];
+  char value[MAX_VALUE_LEN];
   char *p;
   FILE *fp;
   int val = 0;
@@ -6617,7 +6628,7 @@ pal_get_dbg_pwr_btn(uint8_t *status) {
 int
 pal_get_dbg_rst_btn(uint8_t *status) {
   char cmd[MAX_KEY_LEN + 32] = {0};
-  char value[32];
+  char value[MAX_VALUE_LEN];
   char *p;
   FILE *fp;
   int val = 0;
@@ -6679,7 +6690,7 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
 int
 pal_get_dbg_uart_btn(uint8_t *status) {
   char cmd[MAX_KEY_LEN + 32] = {0};
-  char value[32];
+  char value[MAX_VALUE_LEN];
   char *p;
   FILE *fp;
   int val = 0;

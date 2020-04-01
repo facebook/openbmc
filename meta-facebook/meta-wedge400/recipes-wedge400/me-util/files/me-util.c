@@ -41,7 +41,7 @@
 #define MAX_CMD_RETRY 2
 #define MAX_TOTAL_RETRY 30
 
-static total_retry = 0;
+static int total_retry = 0;
 
 static void
 print_usage_help(void) {
@@ -58,7 +58,7 @@ process_command(uint8_t slot_id, int argc, char **argv) {
   uint8_t rlen = 0;
 #ifdef ENABLE_LOG
   int logfd, len;
-  char log[256];
+  char log[512] = {0};
 #endif
 
   for (i = 0; i < argc; i++) {
@@ -86,17 +86,17 @@ process_command(uint8_t slot_id, int argc, char **argv) {
   }
 
   for (i = 1; i < rlen; i++) {
-    printf("%02X ", rbuf[i]);
 #ifdef ENABLE_LOG
-    sprintf(log, "%s%02X ", log, rbuf[i]);
+    char tmp[8];
+    snprintf(tmp, sizeof(tmp), "%02X ", rbuf[i]);
+    strncat(log, tmp, sizeof(tmp));
 #endif
+    printf("%02X ", rbuf[i]);
   }
   printf("\n");
 
 #ifdef ENABLE_LOG
-  sprintf(log, "%s\n", log);
-
-  logfd = open(LOGFILE, O_CREAT | O_WRONLY);
+  logfd = open(LOGFILE, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
   if (logfd < 0) {
     syslog(LOG_WARNING, "Opening a tmp file failed. errno: %d", errno);
     return -1;
@@ -156,7 +156,7 @@ process_file(uint8_t slot_id, char *path) {
 
 int
 main(int argc, char **argv) {
-  uint8_t slot_id = 0xff;
+  unsigned int slot_id = 0xff;
 
   if (argc < 3) {
     goto err_exit;
@@ -164,7 +164,7 @@ main(int argc, char **argv) {
 
   if (!strcmp(argv[1], "--slot")) {
     errno = 0;
-    int ret = sscanf(argv[2], "%d", &slot_id);
+    int ret = sscanf(argv[2], "%u", &slot_id);
     if (slot_id == 0xff || errno != 0 || ret != 1) {
       goto err_exit;
     }
@@ -178,11 +178,11 @@ main(int argc, char **argv) {
       goto err_exit;
     }
 
-    process_file(slot_id, argv[3]);
+    process_file((uint8_t)slot_id, argv[3]);
     return 0;
   }
 
-  return process_command(slot_id, (argc - 3), (argv + 3));
+  return process_command((uint8_t)slot_id, (argc - 3), (argv + 3));
 
 err_exit:
   print_usage_help();

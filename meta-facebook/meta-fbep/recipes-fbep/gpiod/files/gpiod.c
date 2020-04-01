@@ -80,15 +80,16 @@ static void* fan_status_monitor()
 {
   int i;
   struct gpioexppoll_config fan_gpios[] = {
-    {"FAN0_PRESENT", "Fan0 not present", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-    {"FAN1_PRESENT", "Fan1 not present", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-    {"FAN2_PRESENT", "Fan2 not present", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-    {"FAN3_PRESENT", "Fan3 not present", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-    {"FAN0_PWR_GOOD", "Fan0 power", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-    {"FAN1_PWR_GOOD", "Fan1 power", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-    {"FAN2_PWR_GOOD", "Fan2 power", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
-    {"FAN3_PWR_GOOD", "Fan3 power", GPIO_VALUE_INVALID, GPIO_VALUE_INVALID},
+    {"FAN0_PRESENT", "Fan0 present", GPIO_VALUE_LOW, GPIO_VALUE_INVALID},
+    {"FAN1_PRESENT", "Fan1 present", GPIO_VALUE_LOW, GPIO_VALUE_INVALID},
+    {"FAN2_PRESENT", "Fan2 present", GPIO_VALUE_LOW, GPIO_VALUE_INVALID},
+    {"FAN3_PRESENT", "Fan3 present", GPIO_VALUE_LOW, GPIO_VALUE_INVALID},
+    {"FAN0_PWR_GOOD", "Fan0 power", GPIO_VALUE_HIGH, GPIO_VALUE_INVALID},
+    {"FAN1_PWR_GOOD", "Fan1 power", GPIO_VALUE_HIGH, GPIO_VALUE_INVALID},
+    {"FAN2_PWR_GOOD", "Fan2 power", GPIO_VALUE_HIGH, GPIO_VALUE_INVALID},
+    {"FAN3_PWR_GOOD", "Fan3 power", GPIO_VALUE_HIGH, GPIO_VALUE_INVALID},
   };
+  struct gpioexppoll_config *gp;
 
   while (1) {
     sleep(1);
@@ -97,14 +98,22 @@ static void* fan_status_monitor()
       continue;
 
     for (i = 0; i < 8; i++) {
-      fan_gpios[i].curr = gpio_get(fan_gpios[i].shadow);
-      if (fan_gpios[i].last != fan_gpios[i].curr) {
-	syslog(LOG_CRIT, "%s: %s - %s\n",
-	    fan_gpios[i].curr ? "ON": "OFF",
-	    fan_gpios[i].description,
-	    fan_gpios[i].shadow);
+      gp = &fan_gpios[i];
+      gp->curr = gpio_get(gp->shadow);
+      if (gp->last != gp->curr) {
+	if (i>>2) {
+	  syslog(LOG_CRIT, "%s: %s - %s\n",
+	      gp->curr == GPIO_VALUE_HIGH? "ON": "OFF",
+	      gp->description,
+	      gp->shadow);
+        } else {
+	  syslog(LOG_CRIT, "%s: %s - %s\n",
+	      gp->curr == GPIO_VALUE_LOW? "ON": "OFF",
+	      gp->description,
+	      gp->shadow);
+	}
+	gp->last = gp->curr;
       }
-      fan_gpios[i].last = fan_gpios[i].curr;
     }
   }
 

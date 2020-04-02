@@ -94,7 +94,7 @@ get_flash_size()
 {
     spi_no=$1
     ori_str=$(check_flash_info ${spi_no})
-    flash_sz=$(echo ${ori_str} | cut -d '(' -f 3 | cut -d ' ' -f 1)
+    flash_sz=$(echo ${ori_str} | cut -d '(' -f 4 | cut -d ' ' -f 1)
     echo $flash_sz | grep -E -q '^[0-9]+$'
     num_ret=$?
     if [ $num_ret -eq 0 ];then

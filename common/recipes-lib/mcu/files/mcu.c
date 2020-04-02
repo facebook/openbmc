@@ -186,7 +186,7 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key
     }
     lseek(fd, 0 ,SEEK_SET);
     printf("Signed Key Match\n");
-  } 
+  }
 
   fstat(fd, &buf);
 
@@ -217,15 +217,15 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key
   printf("Stopped ipmbd_%d...\n", bus);
   msleep(500);
 
-  if(bus < I2C_BUS_7) {
+  if (bus < 7) {
     reg_base = 0x1e78a044 + (bus * 0x40);
   } else {
-    reg_base = 0x1e78a304 + ((bus - I2C_BUS_7)  * 0x40);
+    reg_base = 0x1e78a304 + ((bus - 7)  * 0x40);
   }
 
   //Set I2C Clock 100K
   sprintf(cmd, "devmem 0x%x w 0xFFFFE303", reg_base);
-  syslog(LOG_DEBUG, "%s %s\n", __func__, cmd);  
+  syslog(LOG_DEBUG, "%s %s\n", __func__, cmd);
   if (system(cmd)) {
     syslog(LOG_CRIT, "set bus %d clk 100khz failed\n", bus);
   }
@@ -363,7 +363,7 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key
 
     // send next packet
     if((size - offset) < MCU_PKT_MAX ) {
-      xcount = read(fd, &tbuf[3], (size - offset));  
+      xcount = read(fd, &tbuf[3], (size - offset));
     } else {
       xcount = read(fd, &tbuf[3], MCU_PKT_MAX);
     }
@@ -464,7 +464,7 @@ error_exit:
 
   // Restore the I2C bus clock to 400KHz
   sprintf(cmd, "devmem 0x%x w 0xFFFFE301", reg_base);
-  syslog(LOG_DEBUG, "%s %s\n", __func__, cmd);  
+  syslog(LOG_DEBUG, "%s %s\n", __func__, cmd);
   if (system(cmd)) {
     syslog(LOG_CRIT, "set bus %d clk 400khz failed\n", bus);
   }
@@ -516,19 +516,19 @@ mcu_update_bootloader(uint8_t bus, uint8_t addr, uint8_t target, const char *pat
   char cmd[100] = {0};
   uint32_t reg_base;
 
-  if(bus < I2C_BUS_7) {
+  if (bus < 7) {
     reg_base = 0x1e78a044 + (bus * 0x40);
   } else {
-    reg_base = 0x1e78a304 + ((bus - I2C_BUS_7)  * 0x40);
+    reg_base = 0x1e78a304 + ((bus - 7)  * 0x40);
   }
 
   //Set I2C Clock 100K
   sprintf(cmd, "devmem 0x%x w 0xFFFFE303", reg_base);
-  syslog(LOG_DEBUG, "%s %s\n", __func__, cmd);  
+  syslog(LOG_DEBUG, "%s %s\n", __func__, cmd);
   if (system(cmd)) {
     syslog(LOG_CRIT, "set bus %d clk 100khz failed\n", bus);
   }
-  
+
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
     printf("ERROR: invalid file path!\n");
@@ -573,7 +573,7 @@ mcu_update_bootloader(uint8_t bus, uint8_t addr, uint8_t target, const char *pat
 
   // Restore the I2C bus clock to 400KHz
   sprintf(cmd, "devmem 0x%x w 0xFFFFE301", reg_base);
-  syslog(LOG_DEBUG, "%s %s\n", __func__, cmd);  
+  syslog(LOG_DEBUG, "%s %s\n", __func__, cmd);
 
   if (system(cmd)) {
     syslog(LOG_CRIT, "set bus %d clk 400khz failed\n", bus);

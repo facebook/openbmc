@@ -387,6 +387,7 @@ int main(int argc, char *argv[])
         }
         fru_id = system.get_fru_id(fw_args.fru);
         system.set_update_ongoing(fru_id, 60 * 10);
+        usleep(200000);  //wait 0.2s for the last command(get sensor reading) finish.
         ret = do_fw_update(fw_args.fru, fw_args.board, fw_args.component, fw_args.image, fw_args.force); 
         system.set_update_ongoing(fru_id, 0);
       }

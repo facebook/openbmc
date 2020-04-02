@@ -1371,7 +1371,11 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value);
+      if (pal_is_fw_update_ongoing(fru)) {
+        return READING_SKIP;
+      } else {
+        ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value);
+      }
       break;
     case FRU_BMC:
     case FRU_NIC:

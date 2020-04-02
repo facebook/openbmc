@@ -86,7 +86,7 @@ int obmc_log_init(const char *ident, int min_prio, int options)
 		return -1;
 	}
 
-	strncpy(my_ldesc.ident, ident, sizeof(my_ldesc.ident));
+	strncpy(my_ldesc.ident, ident, sizeof(my_ldesc.ident) - 1);
 	my_ldesc.min_prio = min_prio;
 	my_ldesc.log_devices = LOG_DEV_STD_STREAM;
 	my_ldesc.priv_flags = (LOG_FLAG_CONFIGURED |
@@ -265,7 +265,7 @@ int obmc_log_set_file(const char *log_file)
 		return -1;
 
 	strncpy(my_ldesc.file_path, log_file,
-		sizeof(my_ldesc.file_path));
+		sizeof(my_ldesc.file_path) - 1);
 	my_ldesc.file_fp = fp;
 	LOG_DEVICE_SET(&my_ldesc, LOG_DEV_FILE);
 	return 0;

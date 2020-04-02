@@ -40,4 +40,4 @@ do_install() {
 FILES_${PN} = "${libdir}/libnvme-mi.so"
 FILES_${PN}-dev = "${includedir}/openbmc/nvme-mi.h"
 
-DEPENDS_${PN} += " liblog libobmc-i2c "
+DEPENDS += " liblog libobmc-i2c "

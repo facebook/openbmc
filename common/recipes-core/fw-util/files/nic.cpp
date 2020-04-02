@@ -45,7 +45,7 @@ get_bcm_fw_version(uint8_t *buf, char *version) {
   strcat(version, ver);
 }
 
-static nic_info_st support_nic_list[] = {
+static const nic_info_st support_nic_list[] = {
   {"Mellanox", 0x19810000, get_mlx_fw_version},
   {"Broadcom", 0x3d110000, get_bcm_fw_version},
 };

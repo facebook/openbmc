@@ -278,9 +278,6 @@ gpio_export_by_name "${ASPEED_GPIO}" GPIOY2 BOARD_REV_ID2
 # enabled Y0, Y1, Y2, we can use wedge_board_rev() now
 board_rev=$(wedge_board_rev)
 
-# load the EEPROM
-i2c_device_add 6 0x50 24c64
-
 # Set up ISO_SVR_ID[0-3], GPION[2-5]
 # On wedge, these 4 GPIOs are not connected. And the corresponding
 # 4 pins from uS are strapped to low.
@@ -481,6 +478,9 @@ gpio_export_by_name "${ASPEED_GPIO}" GPIOC2 ISO_BUF_EN
 
 # Enable the isolation buffer
 wedge_iso_buf_enable
+
+# load the EEPROM
+i2c_device_add 6 0x50 24c64
 
 # Get the board type by parsing the EEPROM.
 # This must be after enabling isolation buffer as the i2c bus

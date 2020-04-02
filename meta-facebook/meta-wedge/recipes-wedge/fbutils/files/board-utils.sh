@@ -1,6 +1,19 @@
 #!/bin/sh
 # Copyright 2014-present Facebook. All Rights Reserved.
 
+#
+# Functions to enable/disable isolation buffer:
+#
+# An Isolation Buffer is a 8-bit bus switch (TI SN74CBT3245APWR):
+#  - when OE (controlled by ISO_BUF_EN GPIO) is low, 8 input ports are
+#    connected to the 8 output ports.
+#  - when OE (controlled by ISO_BUF_EN GPIO) is high, input and output
+#    prots are disconnected.
+#
+# For more details, please refer to:
+#  - wedge schematics, "BMC SIGNAL ISOLATION BUFFERS" in page 61.
+#  - https://www.ti.com/store/ti/en/p/product/?p=SN74CBT3245APWR
+#
 wedge_iso_buf_enable() {
     gpio_set_value ISO_BUF_EN 0
 }

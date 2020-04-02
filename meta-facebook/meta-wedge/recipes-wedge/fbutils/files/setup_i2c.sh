@@ -39,7 +39,6 @@ i2c_device_add 4 0x51 24c128
 # Bus 6, trouble
 i2c_device_add 6 0x28 max127
 i2c_device_add 6 0x3f pcf8574
-i2c_device_add 6 0x50 24c64
 
 # Bus 7
 i2c_device_add 7 0x50 24c64         # 6pack power supply EEPROM

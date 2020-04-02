@@ -4,6 +4,7 @@ set -e
 branches=(
   rocko
   warrior
+  zeus
 )
 
 rocko_repos=(
@@ -18,7 +19,11 @@ warrior_repos=(
     meta-security:4f7be0d252
 )
 
-
+zeus_repos=(
+  poky:5531ffc566
+  meta-openembedded:9e60d3066
+  meta-security:ecd8c30
+)
 
 FETCH_ONLY=0
 while [[ $# -gt 0 ]]

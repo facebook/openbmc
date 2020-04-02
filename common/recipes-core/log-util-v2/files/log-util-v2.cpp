@@ -214,17 +214,17 @@ print_log (uint8_t fru_id, bool opt_json) {
 
       // Application Name
       memset(app, 0, sizeof(app));
-      strncpy(app, tmp_str_token[ts_end+3], strlen(tmp_str_token[ts_end+3])-1);
+      strncpy(app, tmp_str_token[ts_end+3], sizeof(app) - 1);
 
       // Log Message
       memset(message, 0, sizeof(message));
       for (k=ts_end+4; k<j; k++) {
         if (k == j-1) {
-          strncat(message, tmp_str_token[k], strlen(tmp_str_token[k])-1);
+          strncat(message, tmp_str_token[k], sizeof(message) - 1);
         }
         else {
-          strncat(message, tmp_str_token[k], strlen(tmp_str_token[k]));
-          strncat(message, " ", 1);
+          strncat(message, tmp_str_token[k], sizeof(message) - 1);
+          strncat(message, " ", sizeof(message) - 1);
         }
       }
 

@@ -227,6 +227,13 @@ enum {
   BMC_SENSOR_MEDUSA_VIN = 0xFD,
 };
 
+//Serverboard Discrete/SEL Sensors
+enum {
+  BIC_SENSOR_SYSTEM_STATUS = 0x46,
+  ME_SENSOR_SMART_CLST = 0xB2,
+  BIC_SENSOR_VRHOT = 0xB4,
+};
+
 //ADC INFO
 enum {
   ADC0 = 0,

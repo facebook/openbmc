@@ -397,55 +397,6 @@ pal_update_ts_sled()
   pal_set_key_value(key, tstr);
 }
 
-#if 0
-
-static int
-key_func_por_policy (int event, void *arg) {
-  char value[MAX_VALUE_LEN] = {0};
-  int ret = -1;
-
-  switch (event) {
-    case KEY_BEFORE_SET:
-      if (pal_is_fw_update_ongoing(FRU_MB))
-        return -1;
-      // sync to env
-      if ( !strcmp(arg,"lps") || !strcmp(arg,"on") || !strcmp(arg,"off")) {
-        ret = fw_setenv("por_policy", (char *)arg);
-      }
-      else
-        return -1;
-      break;
-    case KEY_AFTER_INI:
-      // sync to env
-      kv_get("server_por_cfg", value, NULL, KV_FPERSIST);
-      ret = fw_setenv("por_policy", value);
-      break;
-  }
-
-  return ret;
-}
-
-static int
-key_func_lps (int event, void *arg)
-{
-  char value[MAX_VALUE_LEN] = {0};
-
-  switch (event) {
-    case KEY_BEFORE_SET:
-      if (pal_is_fw_update_ongoing(FRU_MB))
-        return -1;
-      fw_setenv("por_ls", (char *)arg);
-      break;
-    case KEY_AFTER_INI:
-      kv_get("pwr_server_last_state", value, NULL, KV_FPERSIST);
-      fw_setenv("por_ls", value);
-      break;
-  }
-
-  return 0;
-}
-#endif
-
 int
 pal_get_platform_name(char *name) {
   strcpy(name, PLATFORM_NAME);
@@ -1145,6 +1096,244 @@ pal_is_slot_server(uint8_t fru)
     return 1;
   }
   return 0;
+}
+
+static int
+pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
+  int ret = PAL_EOK;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      switch(sensor_num) {
+        case BIC_SENSOR_VRHOT:
+          sprintf(name, "VR_HOT");
+          break;
+        case BIC_SENSOR_SYSTEM_STATUS:
+          sprintf(name, "SYSTEM_STATUS");
+          break;
+        case ME_SENSOR_SMART_CLST:
+          sprintf(name, "SmaRT&CLST");
+          break;
+        default:
+          sprintf(name, "Unknown");
+          ret = PAL_ENOTSUP;
+          break;
+      }
+      break;
+    default:
+      sprintf(name, "Unknown");
+      ret = PAL_ENOTSUP;
+      break;
+  }
+
+  return ret;
+}
+
+int
+pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
+  uint8_t snr_type = sel[10];
+  uint8_t snr_num = sel[11];
+
+  switch (snr_type) {
+    // If SNR_TYPE is OS_BOOT, sensor name is OS
+    case OS_BOOT:
+      // OS_BOOT used by OS
+      sprintf(name, "OS");
+      return PAL_EOK;
+    default:
+      if ( pal_get_custom_event_sensor_name(fru, snr_num, name) == PAL_EOK ) {
+        return PAL_EOK;
+      }
+  }
+
+  // Otherwise, translate it based on snr_num
+  return pal_get_x86_event_sensor_name(fru, snr_num, name);
+}
+
+static int
+pal_parse_smart_clst_event(uint8_t fru, uint8_t *event_data, char *error_log) {
+  enum {
+    /*
+    00h - transition to OK
+    01h - transition to noncritical from OK
+    02h - transition to critical from less severe
+    03h - transition to unrecoverable from less severe
+    04h - transition to noncritical from more severe
+    05h - transition to critical from unrecoverable
+    06h - transition to unrecoverable
+    07h - monitor
+    08h - informational*/
+    TRANS_TO_OK = 0x0,
+    TRANS_TO_NON_CRIT_FROM_OK = 0x1,
+    TRANS_TO_CRIT_FROM_LESS_SEVERE = 0x2,
+    TRANS_TO_UNR_FROM_LESS_SEVERE = 0x3,
+    TRANS_TO_NCR_FROM_MORE_SEVERE = 0x4,
+    TRANS_TO_CRIT_FROM_UNR = 0x5,
+    TRANS_TO_UNR = 0x6,
+    MONITOR = 0x7,
+    INFORMATIONAL = 0x8,
+
+    /*
+    0h – State Deasserted (throttling released)
+    1h – State Asserted (throttling enforced)
+    */
+    THROTTLING_RELEASED = 0x0,
+    THROTTLING_ENFORCED = 0x1,
+  };
+  uint8_t code = (event_data[0] & 0x1);
+  uint8_t severity = (event_data[1] >> 4) & 0x0f;
+
+  switch(code) {
+    case THROTTLING_RELEASED:
+      strcat(error_log, "Throttling released, ");
+      break;
+    case THROTTLING_ENFORCED:
+      strcat(error_log, "Throttling enforced, ");
+      break;
+    default:
+      strcat(error_log, "Undefined data, ");
+      break;
+  }
+
+  switch (severity) {
+    case TRANS_TO_OK:
+      strcat(error_log, "Transition to OK");
+      break;
+    case TRANS_TO_NON_CRIT_FROM_OK:
+      strcat(error_log, "Transition to noncritical from OK");
+      break;
+    case TRANS_TO_CRIT_FROM_LESS_SEVERE:
+      strcat(error_log, "Transition to critical from less severe");
+      break;
+    case TRANS_TO_UNR_FROM_LESS_SEVERE:
+      strcat(error_log, "Transition to unrecoverable from less severe");
+      break;
+    case TRANS_TO_NCR_FROM_MORE_SEVERE:
+      strcat(error_log, "Transition to noncritical from more severe");
+      break;
+    case TRANS_TO_CRIT_FROM_UNR:
+      strcat(error_log, "Transition to critical from unrecoverable");
+      break;
+    case TRANS_TO_UNR:
+      strcat(error_log, "Transition to unrecoverable");
+      break;
+    case MONITOR:
+      strcat(error_log, "Monitor");
+      break;
+    case INFORMATIONAL:
+      strcat(error_log, "Informational");
+      break;
+    default:
+      strcat(error_log, "Undefined severity");
+      break;
+  }
+
+  return PAL_EOK;
+}
+
+static int
+pal_parse_vr_event(uint8_t fru, uint8_t *event_data, char *error_log) {
+  enum {
+    VCCIN_VRHOT = 0x00,
+    DIMM_ABC_VRHOT = 0x01,
+    DIMM_DEF_VRHOT = 0x02,
+    VCCIO_VRHOT = 0x03,
+  };
+  uint8_t event = event_data[0];
+
+  switch (event) {
+    case VCCIN_VRHOT:
+      strcat(error_log, "SOC VCCIN VRHOT");
+      break;
+    case DIMM_ABC_VRHOT:
+      strcat(error_log, "DIMM ABC VRHOT");
+      break;
+    case DIMM_DEF_VRHOT:
+      strcat(error_log, "DIMM DEF VRHOT");
+      break;
+    case VCCIO_VRHOT:
+      strcat(error_log, "SOC VCCIO VRHOT");
+      break;
+    default:
+      strcat(error_log, "Undefined VR event");
+      break;
+  }
+
+  return PAL_EOK;
+}
+
+static int
+pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
+  enum {
+    SOC_THERM_TRIP  = (0x0),
+    SOC_FIVR_FAULT  = (0x1),
+    SYS_THROTTLE    = (0x2),
+    PCH_THERM_TRIP  = (0x3),
+    SYS_UV_DETECT   = (0x4),
+    PMBUS_ALERT     = (0x5),
+    EVENT_MASK       = 0x0F,
+  };
+  uint8_t event = EVENT_MASK & event_data[0];
+
+  switch (event) {
+    case SOC_THERM_TRIP:
+      strcat(error_log, "SOC Thermal Trip");
+      break;
+    case SOC_FIVR_FAULT:
+      strcat(error_log, "SOC FIVR Fault");
+      break;
+    case SYS_THROTTLE:
+      strcat(error_log, "System Throttle");
+      break;
+    case PCH_THERM_TRIP:
+      strcat(error_log, "PCH Thermal Trip");
+      break;
+    case SYS_UV_DETECT:
+      strcat(error_log, "System Under Voltage");
+      break;
+    case PMBUS_ALERT:
+      strcat(error_log, "PMBus Alert");
+      break;
+    default:
+      strcat(error_log, "Undefined system event");
+      break;
+  }
+
+  return PAL_EOK;
+}
+
+int
+pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
+  uint8_t snr_num = sel[11];
+  uint8_t event_dir = sel[12];
+  uint8_t *event_data = &sel[13];
+  bool unknown_snr = false;
+  error_log[0] = '\0';
+
+  switch (snr_num) {
+    case BIC_SENSOR_VRHOT:
+      pal_parse_vr_event(fru, event_data, error_log);
+      break;
+    case BIC_SENSOR_SYSTEM_STATUS:
+      pal_parse_sys_sts_event(fru, event_data, error_log);
+      break;
+    case ME_SENSOR_SMART_CLST:
+      pal_parse_smart_clst_event(fru, event_data, error_log);
+      break;
+    default:
+      unknown_snr = true;
+      break;
+  }
+
+  if ( unknown_snr == false ) {
+    strcat(error_log, ((event_dir & 0x80) == 0)?" Assertion":" Deassertion");
+  } else {
+    pal_parse_sel_helper(fru, sel, error_log);
+  }
+  return PAL_EOK;
 }
 
 int

@@ -77,7 +77,7 @@ main(int argc, char **argv) {
 
     // initialize guid_comp[] for help message
     i = 0;
-    strncpy(gf_list, guid_fru_list, sizeof(gf_list));
+    strncpy(gf_list, guid_fru_list, sizeof(gf_list) - 1);
     tok = strtok(gf_list, ", ");
     while (tok) {
       guid_comp[i++] = tok;
@@ -97,7 +97,7 @@ main(int argc, char **argv) {
           break;
         case 's':
           do_set = 1;
-          strncpy(node_src, optarg, sizeof(node_src));
+          strncpy(node_src, optarg, sizeof(node_src) - 1);
           break;
       }
     }

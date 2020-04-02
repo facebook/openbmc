@@ -1,7 +1,8 @@
 {
     "capabilities": [
         "submit",
-        "sandcastle"
+        "sandcastle",
+        "land"
     ],
     "postponed_linters": {
         "determinator-lint": [
@@ -13,6 +14,22 @@
             }
         ]
     },
+
+    "land_modes": {
+        "default": {
+            "description": "Normal build gated land",
+            "landStyle": "wait_for_all",
+            "skipSanityChecks": false,
+            "checkDiffSuccess": true,
+            "checks": {
+                "verifyNoMerges": true,
+                "verifyDiffsAccepted": true,
+                "verifyDiffLocalCommitsMatch": true,
+                "allowAfterHours": true
+            }
+        }
+    },
+
     "sandcastle_job_specs": [
         {
             "alias": "openbmc-sandcastle-determinator",

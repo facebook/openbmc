@@ -1155,8 +1155,8 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
         network_dev++;
     }
 
-    snprintf(tstr, 3, "%02x", boot[i]);
-    strncat(str, tstr, 3);
+    snprintf(tstr, sizeof(tstr), "%02x", boot[i]);
+    strncat(str, tstr, sizeof(str) - 1);
   }
 
   //Not allow having more than 1 network boot device in the boot order.

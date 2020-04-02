@@ -164,6 +164,7 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key
   FILE *fp;
   struct stat buf;
   struct rlimit mqlim;
+  uint32_t reg_base;
 
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
@@ -215,6 +216,19 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key
   }
   printf("Stopped ipmbd_%d...\n", bus);
   msleep(500);
+
+  if(bus < I2C_BUS_7) {
+    reg_base = 0x1e78a044 + (bus * 0x40);
+  } else {
+    reg_base = 0x1e78a304 + ((bus - I2C_BUS_7)  * 0x40);
+  }
+
+  //Set I2C Clock 100K
+  sprintf(cmd, "devmem 0x%x w 0xFFFFE303", reg_base);
+  syslog(LOG_DEBUG, "%s %s\n", __func__, cmd);  
+  if (system(cmd)) {
+    syslog(LOG_CRIT, "set bus %d clk 100khz failed\n", bus);
+  }
 
   if (pal_is_mcu_ready(bus)) {
     // To avoid mq_open problem that some platforms may have many ipmbd,
@@ -448,6 +462,13 @@ error_exit:
     syslog(LOG_CRIT, "Starting ipmbd on bus %d failed\n", bus);
   }
 
+  // Restore the I2C bus clock to 400KHz
+  sprintf(cmd, "devmem 0x%x w 0xFFFFE301", reg_base);
+  syslog(LOG_DEBUG, "%s %s\n", __func__, cmd);  
+  if (system(cmd)) {
+    syslog(LOG_CRIT, "set bus %d clk 400khz failed\n", bus);
+  }
+
   close(fd);
   close(ifd);
 
@@ -492,7 +513,22 @@ mcu_update_bootloader(uint8_t bus, uint8_t addr, uint8_t target, const char *pat
   uint16_t count, read_count;
   uint8_t buf[256] = {0};
   struct stat st;
+  char cmd[100] = {0};
+  uint32_t reg_base;
 
+  if(bus < I2C_BUS_7) {
+    reg_base = 0x1e78a044 + (bus * 0x40);
+  } else {
+    reg_base = 0x1e78a304 + ((bus - I2C_BUS_7)  * 0x40);
+  }
+
+  //Set I2C Clock 100K
+  sprintf(cmd, "devmem 0x%x w 0xFFFFE303", reg_base);
+  syslog(LOG_DEBUG, "%s %s\n", __func__, cmd);  
+  if (system(cmd)) {
+    syslog(LOG_CRIT, "set bus %d clk 100khz failed\n", bus);
+  }
+  
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
     printf("ERROR: invalid file path!\n");
@@ -534,6 +570,15 @@ mcu_update_bootloader(uint8_t bus, uint8_t addr, uint8_t target, const char *pat
   }
   printf("\n");
   close(fd);
+
+  // Restore the I2C bus clock to 400KHz
+  sprintf(cmd, "devmem 0x%x w 0xFFFFE301", reg_base);
+  syslog(LOG_DEBUG, "%s %s\n", __func__, cmd);  
+
+  if (system(cmd)) {
+    syslog(LOG_CRIT, "set bus %d clk 400khz failed\n", bus);
+  }
+
 
   ret = (offset >= st.st_size) ? 0 : -1;
   return ret;

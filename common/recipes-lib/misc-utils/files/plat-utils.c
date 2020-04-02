@@ -58,7 +58,7 @@ static int proc_read_cpuinfo(struct cpu_info *cinfo)
 
 			for (pos++; isspace(*pos); pos++) {}
 			strncpy(cinfo->model_name, pos,
-				sizeof(cinfo->model_name));
+				sizeof(cinfo->model_name) - 1);
 		}
 	} /* while */
 

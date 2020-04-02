@@ -31,7 +31,7 @@
 static char g_fru[16];
 
 void setFru(char *dev) {
-    strncpy(g_fru, dev, sizeof(g_fru));
+    strncpy(g_fru, dev, sizeof(g_fru) - 1);
 }
 
 void escHelp(void) {

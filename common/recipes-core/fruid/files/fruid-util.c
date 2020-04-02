@@ -51,8 +51,8 @@ enum format{
   static const char * pal_dev_list_print_t = pal_dev_list;
   static const char * pal_dev_list_rw_t =  pal_dev_list;
 #else
-  static const char * pal_dev_list_print_t = NULL;
-  static const char * pal_dev_list_rw_t = NULL;
+  static const char * pal_dev_list_print_t = "";
+  static const char * pal_dev_list_rw_t = "";
 #endif
 
 /* To copy the bin files */

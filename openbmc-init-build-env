@@ -8,6 +8,7 @@ fi
 declare -a DISTRO_OVERRIDES
 # Add overrides here on a per-platform basis.
 DISTRO_OVERRIDES=(
+  meta-wedge400:warrior
   meta-fbal:warrior
   meta-fbep:warrior
   meta-fbsp:warrior

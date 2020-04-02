@@ -4902,34 +4902,6 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num,
   return 0;
 }
 
-bool
-pal_is_fw_update_ongoing(uint8_t fru) {
-
-  char key[MAX_KEY_LEN];
-  char value[MAX_VALUE_LEN] = {0};
-  int ret;
-  struct timespec ts;
-
-  switch (fru) {
-    case FRU_SCM:
-      sprintf(key, "slot%d_fwupd", IPMB_BUS);
-      break;
-    default:
-      return false;
-  }
-
-  ret = kv_get(key, value, NULL, 0);
-  if (ret < 0) {
-     return false;
-  }
-
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  if (strtoul(value, NULL, 10) > ts.tv_sec)
-     return true;
-
-  return false;
-}
-
 int
 pal_get_fw_info(uint8_t fru, unsigned char target,
                 unsigned char* res, unsigned char* res_len) {

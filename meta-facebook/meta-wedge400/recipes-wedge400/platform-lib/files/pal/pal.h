@@ -597,7 +597,6 @@ int pal_get_board_type_rev(uint8_t *brd_type_rev);
 int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
 int pal_sensor_discrete_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
-bool pal_is_fw_update_ongoing(uint8_t fru);
 int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
 void pal_update_ts_sled();
 int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);

@@ -84,7 +84,7 @@ process_command(int fd, int argc, char **argv) {
       retry_interval = strtoul(optarg, NULL, 0);
       break;
     case 'f':
-      strncpy(file_path, optarg, sizeof(file_path));
+      strncpy(file_path, optarg, sizeof(file_path) - 1);
       return process_file(fd, file_path);
     case 'v':
       verbose = 1;

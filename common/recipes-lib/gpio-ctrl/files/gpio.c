@@ -224,7 +224,7 @@ static gpio_desc_t* gpio_desc_alloc(int pin_num, const char *shadow_path)
 	gdesc->pin_num = pin_num;
 	if (shadow_path != NULL)
 		strncpy(gdesc->shadow_path, shadow_path,
-			sizeof(gdesc->shadow_path));
+			sizeof(gdesc->shadow_path) - 1);
 	return gdesc;
 }
 

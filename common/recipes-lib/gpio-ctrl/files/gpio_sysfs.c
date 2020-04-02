@@ -431,7 +431,7 @@ static char* gsysfs_chip_read_device(char *buf,
 	target_path[len] = '\0';
 
 	base_name = basename(target_path);
-	strncpy(buf, base_name, size);
+	strncpy(buf, base_name, size - 1);
 	return buf;
 }
 
@@ -489,18 +489,18 @@ static void chip_desc_init(gpiochip_desc_t *gcdesc,
 	memset(gcdesc, 0, sizeof(*gcdesc));
 	gcdesc->base = base;
 	gcdesc->ngpio = ngpio;
-	strncpy(gcdesc->dev_name, dev_name, sizeof(gcdesc->dev_name));
+	strncpy(gcdesc->dev_name, dev_name, sizeof(gcdesc->dev_name) - 1);
 
 	/*
 	 * Update "chip_type" and gpiochip_ops.
 	 */
 	if (strcmp(dev_name, GPIO_SYSFS_ASPEED_DEVICE) == 0) {
 		strncpy(gcdesc->chip_type, GPIO_CHIP_ASPEED_SOC,
-			sizeof(gcdesc->chip_type));
+			sizeof(gcdesc->chip_type) - 1);
 		gcdesc->ops = &aspeed_gpiochip_ops;
 	} else if (i2c_sysfs_is_valid_suid(dev_name)) {
 		strncpy(gcdesc->chip_type, GPIO_CHIP_I2C_EXPANDER,
-			sizeof(gcdesc->chip_type));
+			sizeof(gcdesc->chip_type) - 1);
 	}
 }
 

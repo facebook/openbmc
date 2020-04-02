@@ -1,0 +1,4 @@
+ACTION=="add", SUBSYSTEM=="block", ATTRS{device/name}=="data0", SYMLINK+="data0"
+SUBSYSTEM=="mtd", ATTRS{name}=="flash0", SYMLINK+="flash0"
+SUBSYSTEM=="mtd", ATTRS{name}=="flash1", SYMLINK+="flash1"
+SUBSYSTEM=="mtd", ATTRS{name}=="env", SYMLINK+="uboot/env"

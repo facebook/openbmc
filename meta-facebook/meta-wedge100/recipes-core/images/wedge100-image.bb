@@ -31,4 +31,5 @@ IMAGE_INSTALL += " \
   mterm \
   spatula \
   fscd  \
+  udev-rules \
   "

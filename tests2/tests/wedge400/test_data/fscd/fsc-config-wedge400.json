@@ -23,11 +23,7 @@
     "linear_inlet": {
       "read_source" : {
         "sysfs" : "/usr/local/bin/tests2/tests/wedge400/test_data/fscd/inlet/temp1_input",
-        "offset_table": [
-          [0,-12],
-          [40,-9],
-          [55,-7]
-        ]
+        "offset_table": []
       },
       "read_limit": {
         "alarm_major": {

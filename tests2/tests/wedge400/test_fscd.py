@@ -37,7 +37,9 @@ class FscdTest(BaseFscdTest, unittest.TestCase):
             # If host was already on, script takes care of just returning on
             cmd = "/usr/local/bin/wedge_power.sh on"
             data = run_shell_cmd(cmd)
-            Logger.info("[FSCD Testing] Try {} Executing cmd= [{}]".format(num_retry, cmd))
+            Logger.info(
+                "[FSCD Testing] Try {} Executing cmd= [{}]".format(num_retry, cmd)
+            )
             Logger.info("[FSCD Testing] Received data= [{}]".format(data))
             time.sleep(5)
             if self.is_host_on():
@@ -101,6 +103,13 @@ class FscdTest(BaseFscdTest, unittest.TestCase):
                 int(expected_pwm),
             )
         )
+        # Initialize PWM 30 for testing normal up curve in the next following steps
+        run_shell_cmd(
+            "echo {} > {}/inlet/temp1_input".format(20000, self.TEST_DATA_PATH)
+        )
+        # Wait for fans to change PWM
+        time.sleep(20)
+
         run_shell_cmd(
             "echo {} > {}/userver/temp1_input".format(userver_temp, self.TEST_DATA_PATH)
         )
@@ -146,9 +155,7 @@ class FscdTestPwmWedge400(FscdTest):
         run_shell_cmd("cp /etc/fsc/zone-w400.fsc /etc/fsc/zone-w400.fsc.orig")
         # Overwrite fscd config
         run_shell_cmd(
-            "cp {}/zone-w400.fsc /etc/fsc/zone-w400.fsc".format(
-                super().TEST_DATA_PATH
-            )
+            "cp {}/zone-w400.fsc /etc/fsc/zone-w400.fsc".format(super().TEST_DATA_PATH)
         )
         super().setUp(config=config_file, test_data_path=super().TEST_DATA_PATH)
 
@@ -187,6 +194,7 @@ class FscdTestPwmWedge400(FscdTest):
 
     def test_fscd_inlet_29_duty_cycle_35(self):
         # sub-test3: pwm when all temp~[29C,30C) to 33C pwm=22 => duty_cycle=35
+
         PWM_VAL = 35
         status, pwm_output = self.run_pwm_test(
             userver_temp=-68000,
@@ -300,7 +308,9 @@ class FscdTestPwmWedge400C(FscdTest):
         run_shell_cmd("cp /etc/fsc/zone-w400c.fsc /etc/fsc/zone-w400c.fsc.orig")
         # Overwrite fscd config
         run_shell_cmd(
-            "cp {}/zone-w400c.fsc /etc/fsc/zone-w400c.fsc".format(super().TEST_DATA_PATH)
+            "cp {}/zone-w400c.fsc /etc/fsc/zone-w400c.fsc".format(
+                super().TEST_DATA_PATH
+            )
         )
         super().setUp(config=config_file, test_data_path=super().TEST_DATA_PATH)
 

@@ -53,6 +53,7 @@ class Main(object):
                 ResetMode.HARD_RESET.value,
                 ResetMode.NO_RESET.value,
             ],
+            help="Need to perform reset or not",
         )
         parser.add_argument(
             "-v",
@@ -76,10 +77,8 @@ class Main(object):
             action="store_true",
             dest="check_only",
             default=False,
-            help=(
-                "Do not upgrade and only check if upgrade needed, "
-                "exits with status 2 if upgrade needed",
-            ),
+            help="Do not upgrade and only check if upgrade needed, "
+            "exits with status 2 if upgrade needed",
         )
         parser.add_argument(
             "-l",

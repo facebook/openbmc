@@ -66,7 +66,7 @@ static int load_variable(const char *name, json_t *obj, variable_type *var)
   if (!obj) {
     return -1;
   }
-  strncpy(var->name, name, sizeof(var->name));
+  strncpy(var->name, name, sizeof(var->name) - 1);
 
   exp_o = json_object_get(obj, "expression");
   fru_o = json_object_get(obj, "fru");
@@ -288,7 +288,7 @@ static int load_linear_cond_eq(aggregate_sensor_t *snr, json_t *obj)
       goto bail_exp_parse;
     }
 
-    strncpy(&name2idx_map[i][0], key, MAX_STRING_SIZE);
+    strncpy(&name2idx_map[i][0], key, MAX_STRING_SIZE - 1);
 
     DEBUG("Loading expression: %zu\n", i);
     snr->expressions[i] = expression_parse(json_string_value(val), vars, num_vars);
@@ -326,7 +326,7 @@ static int load_linear_cond_eq(aggregate_sensor_t *snr, json_t *obj)
     DEBUG("Getting key key failed\n");
     goto bail_exp_parse;
   }
-  strncpy(snr->cond_key, json_string_value(tmp2), MAX_KEY_LEN);
+  strncpy(snr->cond_key, json_string_value(tmp2), MAX_KEY_LEN - 1);
   tmp2 = json_object_get(tmp, "value_map");
   if (!tmp2) {
     DEBUG("Getting key value_map failed!\n");
@@ -460,13 +460,13 @@ static int load_sensor_conf(aggregate_sensor_t *snr, json_t *obj)
     DEBUG("Getting string key: name failed\n");
     return -1;
   }
-  strncpy(snr->sensor.name, json_string_value(tmp), sizeof(snr->sensor.name));
+  strncpy(snr->sensor.name, json_string_value(tmp), sizeof(snr->sensor.name) - 1);
   tmp = json_object_get(obj, "units");
   if (!tmp || !json_is_string(tmp)) {
     DEBUG("Getting string key: units failed\n");
     return -1;
   }
-  strncpy(snr->sensor.units, json_string_value(tmp), sizeof(snr->sensor.units));
+  strncpy(snr->sensor.units, json_string_value(tmp), sizeof(snr->sensor.units) - 1);
 
   if (load_thresholds(&snr->sensor, json_object_get(obj, "thresholds"))) {
     DEBUG("Loading of thresholds failed!\n");

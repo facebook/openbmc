@@ -18,6 +18,7 @@ IMAGE_INSTALL += " \
   openbmc-gpio \
   openbmc-utils \
   usb-console \
+  wedge-eeprom \
   "
 # ELBERTTODO 447407 led-controld
 # ELBERTTODO 442073 EEPROM util

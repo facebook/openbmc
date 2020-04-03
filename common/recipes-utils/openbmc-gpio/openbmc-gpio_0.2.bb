@@ -45,7 +45,7 @@ OPENBMC_GPIO_SOC_TABLE = "soc_gpio_table.py"
 
 inherit distutils3
 
-DEPENDS = "python3 python3-distribute update-rc.d-native"
+DEPENDS = "python3 python3-setuptools update-rc.d-native"
 
 RDEPENDS_${PN} = "python3-core"
 

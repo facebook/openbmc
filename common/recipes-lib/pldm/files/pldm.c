@@ -360,6 +360,15 @@ void pldmCreateActivateFirmwareCmd(pldm_cmd_req *pPldmCdb)
 }
 
 
+void pldmCreateCancelUpdateCmd(pldm_cmd_req *pPldmCdb)
+{
+  printf("\n\nCMD_CANCEL_UPDATE\n");
+
+  genReqCommonFields(PLDM_TYPE_FIRMWARE_UPDATE, CMD_CANCEL_UPDATE, &(pPldmCdb->common[0]));
+  pPldmCdb->payload_size = PLDM_COMMON_REQ_LEN;
+}
+
+
 // helper function to check if a given UUID is a PLDM FW Package
 int isPldmFwUuid(char *uuid)
 {
@@ -889,6 +898,17 @@ int pldmFwUpdateCmdHandler(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_r
   return ret;
 }
 
+
+void setPldmTimeout(int pldmCmd, int *timeout_sec)
+{
+  if (pldmCmd == CMD_REQUEST_FIRMWARE_DATA) {
+    // special timeout value (UA_T2) for Request FW data as specified in DSP0267
+    *timeout_sec = UA_T2;
+  } else {
+    // default time out is State Change Timeout (in DSP0267, tbl 2 timing spec)
+    *timeout_sec = UA_T3;
+  }
+}
 
 // PLDM Base commands
 

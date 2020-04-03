@@ -70,6 +70,29 @@ typedef enum pldm_fw_cmds {
 #define NUM_PLDM_UPDATE_CDMS 14
 extern const char *pldm_fw_cmd_string[NUM_PLDM_UPDATE_CDMS];
 
+typedef enum
+{
+    p_IDLE,
+    p_LC, // learn components
+    p_RDY_XFER,
+    p_DL,
+    p_VERIFY,
+    p_APPLY,
+    p_ACTIVATE,
+    p_NUM_PLDM_STATES,
+} upgrade_state_E;
+
+// Update Agent (UA) timeout value, in seconds
+// as defined in DMTF DSP0267
+// https://www.dmtf.org/sites/default/files/standards/documents/DSP0267_1.1.0.pdf
+typedef enum
+{
+    UA_T1 = 5,
+    UA_T2 = 90,
+    UA_T3 = 180, //default value for  PLDM_STATE_CHANGE_TIMEOUT_S
+    UA_T4 = 5,
+    UA_T5 = 5,
+} UA_TO_E;
 
 // Component Classification values   (DSP0267, Table 19)
 typedef enum pldm_comp_class {

@@ -64,6 +64,7 @@ void pldmCreatePassComponentTblCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx
 void pldmCreateUpdateComponentCmd (pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx,
                                    pldm_cmd_req *pPldmCdb);
 void pldmCreateActivateFirmwareCmd(pldm_cmd_req *pPldmCdb);
+void pldmCreateCancelUpdateCmd(pldm_cmd_req *pPldmCdb);
 
 void pldmCreateGetVersionCmd(uint8_t pldmType, pldm_cmd_req *pPldmCdb);
 void pldmHandleGetVersionResp(PLDM_GetPldmVersion_Response_t *pPldmResp,
@@ -72,6 +73,7 @@ void pldmHandleGetVersionResp(PLDM_GetPldmVersion_Response_t *pPldmResp,
 void pldmCreateGetPldmTypesCmd(pldm_cmd_req *pPldmCdb);
 uint64_t pldmHandleGetPldmTypesResp(PLDM_GetPldmTypes_Response_t *pPldmResp);
 
+void setPldmTimeout(int pldmCmd, int *timeout_sec);
 int pldmFwUpdateCmdHandler(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd,
                            pldm_response *pldmRes);
 int pldmRespHandler(pldm_response *pResp);

@@ -30,6 +30,6 @@ SRC_URI += "file://nic.cpp \
             file://tpm2.cpp \
            "
 
-DEPENDS += "libmcu libfpga libast-jtag libvr libkv"
-RDEPENDS_${PN} += "libmcu libfpga libast-jtag libvr libkv"
-LDFLAGS += " -lmcu -lfpga -last-jtag -lvr -lkv"
+DEPENDS += "libmcu libfpga libast-jtag libvr libkv libobmc-i2c"
+RDEPENDS_${PN} += "libmcu libfpga libast-jtag libvr libkv libobmc-i2c"
+LDFLAGS += " -lmcu -lfpga -last-jtag -lvr -lkv -lobmc-i2c"

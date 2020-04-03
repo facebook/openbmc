@@ -43,6 +43,9 @@ extern "C" {
 #define LARGEST_DEVICE_NAME 120
 #define ERR_NOT_READY -2
 
+#define PFR_MAILBOX_BUS  (4)
+#define PFR_MAILBOX_ADDR (0xB0)
+
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
 extern const char pal_pwm_list[];

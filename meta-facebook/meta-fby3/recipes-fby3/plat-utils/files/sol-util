@@ -115,6 +115,12 @@ fi
 
 SLOT_NUM=$(get_slot_num $SLOT)
 I2C_NUM=$(get_bus_num $SLOT)
+
+if [ $(is_server_prsnt $[ $SLOT_NUM + 1 ]) == "0" ]; then
+  echo "The $SLOT is empty"
+  exit -1;
+fi
+
 if [ $(get_slot_type $SLOT_NUM) == "0" ]; then
   # set UART clock source 24MHz
   devmem_clear_bit $(scu_addr 4c) $((SLOT_NUM + 23))

@@ -183,7 +183,8 @@ static int load_conditional_sensor_correction(json_t *obj, sensor_correction_t *
       i++, iter = json_object_iter_next(tmp, iter)) {
     const char *table_name = json_object_iter_key(iter);
     json_t *tbl_o = json_object_iter_value(iter);
-    strncpy(snr->tables[i].name, table_name, sizeof(snr->tables[i].name));
+    strncpy(snr->tables[i].name, table_name, sizeof(snr->tables[i].name) - 1);
+    snr->tables[i].name[sizeof(snr->tables[i].name) - 1] = '\0';
     if (!tbl_o || !json_is_array(tbl_o)) {
       DEBUG("Could not get correction table for %s\n", table_name);
       return -1;
@@ -212,7 +213,8 @@ static int load_conditional_sensor_correction(json_t *obj, sensor_correction_t *
     DEBUG("Could not get the key\n");
     return -1;
   }
-  strncpy(snr->cond_key, json_string_value(tmp), sizeof(snr->cond_key));
+  strncpy(snr->cond_key, json_string_value(tmp), sizeof(snr->cond_key) - 1);
+  snr->cond_key[sizeof(snr->cond_key) - 1] = '\0';
 
   tmp = json_object_get(obj, "key_type");
   snr->cond_key_type = KEY_REGULAR;
@@ -262,7 +264,8 @@ static int load_sensor_correction(json_t *obj, sensor_correction_t *snr)
     DEBUG("Getting sensor name failed!\n");
     return -1;
   }
-  strncpy(snr->name, json_string_value(tmp), sizeof(snr->name));
+  strncpy(snr->name, json_string_value(tmp), sizeof(snr->name) - 1);
+  snr->name[sizeof(snr->name) - 1] = '\0';
 
   tmp = json_object_get(obj, "fru");
   if (!tmp || !json_is_number(tmp)) {

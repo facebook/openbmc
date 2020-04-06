@@ -7581,9 +7581,8 @@ pal_get_boot_order(uint8_t slot, uint8_t *req_data,
 int
 pal_set_boot_order(uint8_t slot, uint8_t *boot,
                    uint8_t *res_data, uint8_t *res_len) {
-  int i, j, network_dev = 0;
+  int i, j, offset, network_dev = 0;
   char str[MAX_VALUE_LEN] = {0};
-  char tstr[10];
   enum {
     BOOT_DEVICE_IPV4 = 0x1,
     BOOT_DEVICE_IPV6 = 0x9,
@@ -7591,7 +7590,7 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot,
 
   *res_len = 0;
 
-  for (i = 0; i < SIZE_BOOT_ORDER; i++) {
+  for (i = offset = 0; i < SIZE_BOOT_ORDER && offset < sizeof(str); i++) {
     if (i > 0) {  // byte[0] is boot mode, byte[1:5] are boot order
       for (j = i+1; j < SIZE_BOOT_ORDER; j++) {
         if (boot[i] == boot[j])
@@ -7605,8 +7604,7 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot,
         network_dev++;
     }
 
-    snprintf(tstr, 3, "%02x", boot[i]);
-    strncat(str, tstr, 3);
+    offset += snprintf(str + offset, sizeof(str) - offset, "%02x", boot[i]);
   }
 
   // not allow having more than 1 network boot device in the boot order

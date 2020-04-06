@@ -30,8 +30,8 @@ S = "${WORKDIR}/utils"
 
 LDFLAGS = "-lfruid -lpal -lminipack-psu "
 
-DEPENDS += "libminipack-psu"
-RDEPENDS_${PN} += "libminipack-psu"
+DEPENDS += "libminipack-psu libfruid libpal"
+RDEPENDS_${PN} += "libminipack-psu libfruid libpal"
 
 do_install() {
   install -d ${D}${bindir}

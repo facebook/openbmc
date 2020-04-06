@@ -42,7 +42,7 @@ else
 fi
 
 # Now, double check if power is on, and do forced power up ad needed.
-echo -n "Checking microserver power status ... "
+echo  "Checking microserver power status ... "
 if wedge_is_us_on; then
     echo "on"
     on=1

@@ -19,7 +19,7 @@ wedge_iso_buf_disable() {
 wedge_is_us_on() {
     isWedgeOn=$(head -n 1 $SUP_PWR_ON_SYSFS 2> /dev/null)
     if [ -z "$isWedgeOn" ]; then
-	echo 'Failed to find cpu_control register'
+        return "$default"
     elif [ "$isWedgeOn" = "0x1" ]; then
         # Powered On
         return 0

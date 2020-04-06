@@ -74,7 +74,10 @@ wedge_board_type_rev(){
                 echo "WEDGE400_DVT"
                 ;;
             3)
-                echo "WEDGE400_DVT2"
+                echo "WEDGE400_DVT2/PVT1/PV2"
+                ;;
+            4)
+                echo "WEDGE400_PVT3/MP"
                 ;;
             *)
                 echo "WEDGE400 (Undefine $rev)"
@@ -87,6 +90,9 @@ wedge_board_type_rev(){
                 ;;
             1)
                 echo "WEDGE400-C_EVT2"
+                ;;
+            2)
+                echo "WEDGE400-C_DVT"
                 ;;
             *)
                 echo "WEDGE400-C_(Undefine $rev)"

@@ -1609,7 +1609,8 @@ pal_get_board_type_rev(uint8_t *brd_type_rev){
         }
         break;
       case 0x02: *brd_type_rev = BOARD_WEDGE400_DVT; break;
-      case 0x03: *brd_type_rev = BOARD_WEDGE400_DVT2; break;
+      case 0x03: *brd_type_rev = BOARD_WEDGE400_DVT2_PVT_PVT2; break;
+      case 0x04: *brd_type_rev = BOARD_WEDGE400_PVT3; break;
       default:
         *brd_type_rev = BOARD_UNDEFINED;
         return CC_UNSPECIFIED_ERROR;
@@ -1618,6 +1619,7 @@ pal_get_board_type_rev(uint8_t *brd_type_rev){
     switch ( brd_rev ) {
       case 0x00: *brd_type_rev = BOARD_WEDGE400C_EVT; break;
       case 0x01: *brd_type_rev = BOARD_WEDGE400C_EVT2; break;
+      case 0x02: *brd_type_rev = BOARD_WEDGE400C_DVT; break;
       default:
         *brd_type_rev = BOARD_UNDEFINED;
         return CC_UNSPECIFIED_ERROR;

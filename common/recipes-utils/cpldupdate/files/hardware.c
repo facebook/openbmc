@@ -18,7 +18,6 @@
  *             Moved the sclock() function from ivm_core.c to hardware.c
  *********************************************************************************/
 #include "vmopcode.h"
-#include <sys/io.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

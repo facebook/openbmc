@@ -53,6 +53,7 @@ do_compile() {
 do_install() {
     install -d ${D}${libdir}
     install -m 0644 libgpio-ctrl.so ${D}${libdir}/libgpio-ctrl.so
+    ln -s libgpio-ctrl.so ${D}${libdir}/libgpio-ctrl.so.0
 
     install -d ${D}${includedir}/openbmc
     install -m 0644 libgpio.h ${D}${includedir}/openbmc/libgpio.h
@@ -61,5 +62,5 @@ do_install() {
     install -m 644 libgpio.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
 
-FILES_${PN} = "${libdir}/libgpio-ctrl.so ${PYTHON_SITEPACKAGES_DIR}/libgpio.py"
+FILES_${PN} = "${libdir}/libgpio-ctrl.so* ${PYTHON_SITEPACKAGES_DIR}/libgpio.py"
 FILES_${PN}-dev = "${includedir}/openbmc/libgpio.h"

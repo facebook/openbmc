@@ -18,11 +18,11 @@
 # Boston, MA 02110-1301 USA
 #
 import ctypes
+import os
 from enum import IntEnum
 
 
 lgpio_hndl = ctypes.CDLL("libgpio-ctrl.so", use_errno=True)
-libc = ctypes.CDLL("libc.so.6", use_errno=True)
 
 
 class GPIOValue(IntEnum):
@@ -48,10 +48,9 @@ class GPIOEdge(IntEnum):
 class GpioOperationFailure(Exception):
     def __init__(self, errno=0):
         self.errno = errno
-        strerr = ctypes.create_string_buffer(256)
-        libc.strerror_r(self.errno)
-        self.message = strerr.value.decode()
-        if self.message == "":
+        try:
+            self.message = os.strerror(self.errno)
+        except ValueError:
             self.message = "ERROR: %s" % (self.errno)
 
 

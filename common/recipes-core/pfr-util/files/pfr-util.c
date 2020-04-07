@@ -24,6 +24,9 @@
 #include <openssl/sha.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/pal.h>
+#ifdef CONFIG_BIC
+#include <openbmc/bic.h>
+#endif
 
 #define PFR_PROVISION    (1 << 0)
 #define PFR_RD_PROVISION (1 << 1)
@@ -86,6 +89,8 @@ enum {
 
 static bool verbose = false;
 static const char *st_table[256] = {0};
+static uint8_t pfr_bus = 0x4;
+static uint8_t pfr_addr = 0xb0;
 
 static const char *prov_err_str[ERR_UNKNOWN] = {
   "",
@@ -106,7 +111,7 @@ static void
 print_usage_help(void) {
   int i;
 
-  printf("Usage: pfr-util <option>\n");
+  printf("Usage: pfr-util FRU <option>\n");
   printf("       option:\n");
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++) {
     printf("         %s\n", option_list[i]);
@@ -114,10 +119,31 @@ print_usage_help(void) {
 }
 
 static int
-i2c_rw(int fd, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt) {
+pfr_transfer(uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt) {
+#ifdef CONFIG_BIC
+  // TODO Transfer message via BIC
+  return -1;
+#else
+  static int fd = -1;
   int ret = -1;
   int retry = 2;
   uint8_t buf[16];
+
+  void __attribute__((destructor))deinit_fd(void)
+  {
+    if (fd >= 0) {
+      close(fd);
+      fd = -1;
+    }
+  }
+
+  if (fd < 0) {
+    fd = i2c_cdev_slave_open(pfr_bus, pfr_addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if (fd < 0) {
+      printf("OPEN: I2C%d failed\n", pfr_bus);
+      return -1;
+    }
+  }
 
   do {
     memcpy(buf, tbuf, tcnt);
@@ -131,6 +157,7 @@ i2c_rw(int fd, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt) {
   } while (retry > 0);
 
   return ret;
+#endif
 }
 
 static int
@@ -192,7 +219,7 @@ pfr_get_pubrk_hash(uint8_t *shasum) {
 }
 
 static int
-pfr_mailbox_cmd(int fd, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt) {
+pfr_mailbox_cmd(uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt) {
   int ret = -1;
   int i, wait = 50;
   uint8_t buf[8];
@@ -201,7 +228,7 @@ pfr_mailbox_cmd(int fd, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt
     case 0x0A:  // wait cmd done
       for (i = 0; i < wait; i++) {
         msleep(10);
-        if (!(ret = i2c_rw(fd, tbuf, 1, rbuf, 1)) && ((rbuf[0]&0x7) == 0x2))  // CMD_DONE
+        if (!(ret = pfr_transfer(tbuf, 1, rbuf, 1)) && ((rbuf[0]&0x7) == 0x2))  // CMD_DONE
           break;
       }
       if (i >= wait) {
@@ -224,7 +251,7 @@ pfr_mailbox_cmd(int fd, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt
       for (i = 0; i < tcnt; i++) {
         buf[0] = tbuf[0];
         buf[1] = tbuf[i+1];
-        if ((ret = i2c_rw(fd, buf, 2, rbuf, 0))) {
+        if ((ret = pfr_transfer(buf, 2, rbuf, 0))) {
           syslog(LOG_WARNING, "%s: write 0x%02x 0x%02x failed", __func__, buf[0], buf[1]);
           return ret;
         }
@@ -233,7 +260,7 @@ pfr_mailbox_cmd(int fd, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt
 
     case 0x0E:  // read from FIFO
       for (i = 0; i < rcnt; i++) {
-        if ((ret = i2c_rw(fd, tbuf, 1, &rbuf[i], 1))) {
+        if ((ret = pfr_transfer(tbuf, 1, &rbuf[i], 1))) {
           syslog(LOG_WARNING, "%s: read 0x%02x failed", __func__, tbuf[0]);
           return ret;
         }
@@ -241,7 +268,7 @@ pfr_mailbox_cmd(int fd, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt
       break;
 
     default:
-      if ((ret = i2c_rw(fd, tbuf, tcnt, rbuf, rcnt))) {
+      if ((ret = pfr_transfer(tbuf, tcnt, rbuf, rcnt))) {
         syslog(LOG_WARNING, "%s: cmd 0x%02x failed", __func__, tbuf[0]);
         return ret;
       }
@@ -252,7 +279,7 @@ pfr_mailbox_cmd(int fd, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt
 }
 
 static int
-pfr_provision_cmd(int fd, uint8_t prov, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt) {
+pfr_provision_cmd(uint8_t prov, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt) {
   int ret = -1;
   uint8_t rd_prov = 0xFF;
   uint8_t buf[64];
@@ -283,36 +310,36 @@ pfr_provision_cmd(int fd, uint8_t prov, uint8_t *tbuf, uint8_t tcnt, uint8_t *rb
     if (tcnt) {
       buf[0] = 0x0c;
       buf[1] = FLUSH_FIFO;  // flush write FIFO
-      if ((ret = pfr_mailbox_cmd(fd, buf, 2, rbuf, 0))) {
+      if ((ret = pfr_mailbox_cmd(buf, 2, rbuf, 0))) {
         return ret;
       }
 
       buf[0] = 0x0a;
-      if ((ret = pfr_mailbox_cmd(fd, buf, 1, rbuf, 0))) {
+      if ((ret = pfr_mailbox_cmd(buf, 1, rbuf, 0))) {
         return ret;
       }
 
       buf[0] = 0x0d;  // write to FIFO
       memcpy(&buf[1], tbuf, tcnt);
-      if ((ret = pfr_mailbox_cmd(fd, buf, tcnt, rbuf, 0))) {
+      if ((ret = pfr_mailbox_cmd(buf, tcnt, rbuf, 0))) {
         return ret;
       }
     }
 
     buf[0] = 0x0b;
     buf[1] = prov;
-    if ((ret = pfr_mailbox_cmd(fd, buf, 2, rbuf, 0))) {
+    if ((ret = pfr_mailbox_cmd(buf, 2, rbuf, 0))) {
       return ret;
     }
 
     buf[0] = 0x0c;
     buf[1] = EXECUTE_CMD;
-    if ((ret = pfr_mailbox_cmd(fd, buf, 2, rbuf, 0))) {
+    if ((ret = pfr_mailbox_cmd(buf, 2, rbuf, 0))) {
       return ret;
     }
 
     buf[0] = 0x0a;
-    if ((ret = pfr_mailbox_cmd(fd, buf, 1, rbuf, 0))) {
+    if ((ret = pfr_mailbox_cmd(buf, 1, rbuf, 0))) {
       return ret;
     }
   } while (0);
@@ -324,23 +351,23 @@ pfr_provision_cmd(int fd, uint8_t prov, uint8_t *tbuf, uint8_t tcnt, uint8_t *rb
   // read provisioned content
   buf[0] = 0x0b;
   buf[1] = rd_prov;
-  if ((ret = pfr_mailbox_cmd(fd, buf, 2, rbuf, 0))) {
+  if ((ret = pfr_mailbox_cmd(buf, 2, rbuf, 0))) {
     return ret;
   }
 
   buf[0] = 0x0c;
   buf[1] = EXECUTE_CMD;
-  if ((ret = pfr_mailbox_cmd(fd, buf, 2, rbuf, 0))) {
+  if ((ret = pfr_mailbox_cmd(buf, 2, rbuf, 0))) {
     return ret;
   }
 
   buf[0] = 0x0a;
-  if ((ret = pfr_mailbox_cmd(fd, buf, 1, rbuf, 0))) {
+  if ((ret = pfr_mailbox_cmd(buf, 1, rbuf, 0))) {
     return ret;
   }
 
   buf[0] = 0x0e;  // read from FIFO
-  if ((ret = pfr_mailbox_cmd(fd, buf, 1, rbuf, rcnt))) {
+  if ((ret = pfr_mailbox_cmd(buf, 1, rbuf, rcnt))) {
     return ret;
   }
 
@@ -348,7 +375,7 @@ pfr_provision_cmd(int fd, uint8_t prov, uint8_t *tbuf, uint8_t tcnt, uint8_t *rb
 }
 
 static int
-pfr_provision(int fd) {
+pfr_provision(void) {
   int ret = -1;
   uint8_t shasum[SHA256_DIGEST_LENGTH], i;
   uint8_t tbuf[64], rbuf[64];
@@ -359,13 +386,13 @@ pfr_provision(int fd) {
   }
 
   // erase provision in UFM
-  if ((ret = pfr_provision_cmd(fd, ERASE_PROVISION, tbuf, 0, rbuf, 0))) {
+  if ((ret = pfr_provision_cmd(ERASE_PROVISION, tbuf, 0, rbuf, 0))) {
     syslog(LOG_ERR, "%s: erase provision failed", __func__);
     return ret;
   }
 
   // provision root-key-hash
-  if ((ret = pfr_provision_cmd(fd, PROV_ROOT_KEY, shasum, 32, rbuf, 32))) {
+  if ((ret = pfr_provision_cmd(PROV_ROOT_KEY, shasum, 32, rbuf, 32))) {
     syslog(LOG_ERR, "%s: provision root-key-hash failed", __func__);
     return ret;
   }
@@ -390,7 +417,7 @@ pfr_provision(int fd) {
   *(uint32_t *)tbuf = PCH_PFM_OFFSET;
   *(uint32_t *)(tbuf+4) = PCH_RC_OFFSET;
   *(uint32_t *)(tbuf+8) = PCH_STG_OFFSET;
-  if ((ret = pfr_provision_cmd(fd, PROV_PCH_OFFSET, tbuf, 12, rbuf, 12))) {
+  if ((ret = pfr_provision_cmd(PROV_PCH_OFFSET, tbuf, 12, rbuf, 12))) {
     syslog(LOG_ERR, "%s: provision pch-offset failed", __func__);
     return ret;
   }
@@ -411,7 +438,7 @@ pfr_provision(int fd) {
   *(uint32_t *)tbuf = BMC_PFM_OFFSET;
   *(uint32_t *)(tbuf+4) = BMC_RC_OFFSET;
   *(uint32_t *)(tbuf+8) = BMC_STG_OFFSET;
-  if ((ret = pfr_provision_cmd(fd, PROV_BMC_OFFSET, tbuf, 12, rbuf, 12))) {
+  if ((ret = pfr_provision_cmd(PROV_BMC_OFFSET, tbuf, 12, rbuf, 12))) {
     syslog(LOG_ERR, "%s: provision bmc-offset failed", __func__);
     return ret;
   }
@@ -429,7 +456,7 @@ pfr_provision(int fd) {
   }
 
   // lock UFM
-  if ((ret = pfr_provision_cmd(fd, LOCK_UFM, tbuf, 0, rbuf, 0))) {
+  if ((ret = pfr_provision_cmd(LOCK_UFM, tbuf, 0, rbuf, 0))) {
     syslog(LOG_ERR, "%s: lock UFM failed", __func__);
     return ret;
   }
@@ -438,12 +465,12 @@ pfr_provision(int fd) {
 }
 
 static int
-pfr_read_provision(int fd) {
+pfr_read_provision(void) {
   int ret = -1;
   uint8_t rbuf[64], i;
 
   // read root-key-hash
-  if ((ret = pfr_provision_cmd(fd, PROV_ROOT_KEY, NULL, 0, rbuf, 32))) {
+  if ((ret = pfr_provision_cmd(PROV_ROOT_KEY, NULL, 0, rbuf, 32))) {
     syslog(LOG_ERR, "%s: read root-key-hash failed", __func__);
     return ret;
   }
@@ -458,7 +485,7 @@ pfr_read_provision(int fd) {
   printf("\n\n");
 
   // read pch-offset
-  if ((ret = pfr_provision_cmd(fd, PROV_PCH_OFFSET, NULL, 0, rbuf, 12))) {
+  if ((ret = pfr_provision_cmd(PROV_PCH_OFFSET, NULL, 0, rbuf, 12))) {
     syslog(LOG_ERR, "%s: read pch-offset failed", __func__);
     return ret;
   }
@@ -469,7 +496,7 @@ pfr_read_provision(int fd) {
   printf("Staging Offset   : %08X\n\n", *(uint32_t *)(rbuf+8));
 
   // read bmc-offset
-  if ((ret = pfr_provision_cmd(fd, PROV_BMC_OFFSET, NULL, 0, rbuf, 12))) {
+  if ((ret = pfr_provision_cmd(PROV_BMC_OFFSET, NULL, 0, rbuf, 12))) {
     syslog(LOG_ERR, "%s: read bmc-offset failed", __func__);
     return ret;
   }
@@ -483,13 +510,13 @@ pfr_read_provision(int fd) {
 }
 
 static int
-pfr_state_history(int fd) {
+pfr_state_history(void) {
   uint8_t tbuf[8], rbuf[80];
   uint8_t i, idx;
 
   for (i = 0; i < 64; i += 16) {
     tbuf[0] = 0xC0 + i;
-    if (i2c_rw(fd, tbuf, 1, &rbuf[i], 16)) {
+    if (pfr_transfer(tbuf, 1, &rbuf[i], 16)) {
       syslog(LOG_ERR, "%s: read state-history failed", __func__);
       return -1;
     }
@@ -604,9 +631,11 @@ pfr_state_history(int fd) {
 int
 main(int argc, char **argv) {
   int ret = -1, retry = 0;
-  int opt, ifd = 0;
+  int opt;
   uint32_t operations = 0;
+  const char *fruname;
   uint8_t tbuf[8], rbuf[8];
+  uint8_t fru_id;
   static struct option long_opts[] = {
     {"provision", no_argument, 0, 'p'},
     {"read_provision", no_argument, 0, 'r'},
@@ -616,7 +645,7 @@ main(int argc, char **argv) {
   };
 
   do {
-    if (argc < 2) {
+    if (argc < 3) {
       break;
     }
 
@@ -643,22 +672,30 @@ main(int argc, char **argv) {
       break;
     }
 
-    if ((ifd = i2c_cdev_slave_open(PFR_BUS, (PFR_ADDR>>1), I2C_SLAVE_FORCE_CLAIM)) < 0) {
-      printf("open i2c%d failed\n", PFR_BUS);
-      return ret;
+    if (optind >= argc) {
+      printf("USAGE: %s [OPTIONS] FRUNAME\n", argv[0]);
+      return  -1;
+    }
+    fruname = argv[optind];
+    if (pal_get_fru_id((char *)fruname, &fru_id)) {
+      printf("Invalid FRU: %s\n", fruname);
+      return -1;
+    }
+    if (pal_get_pfr_address(fru_id, &pfr_bus, &pfr_addr)) {
+      printf("ERROR: Getting PFR Address from Platform Interface\n");
+      return -1;
     }
 
     tbuf[0] = 0x00;
-    if ((ret = i2c_rw(ifd, tbuf, 1, rbuf, 1))) {
+    if ((ret = pfr_transfer(tbuf, 1, rbuf, 1))) {
       printf("access mailbox failed, bus=%d, addr=0x%02X\n", PFR_BUS, PFR_ADDR);
-      close(ifd);
       return ret;
     }
 
     do {
       if (operations & PFR_PROVISION) {
         do {
-          ret = pfr_provision(ifd);
+          ret = pfr_provision();
           if (ret && retry) {
             msleep(100);
             syslog(LOG_WARNING, "retry pfr_provision");
@@ -674,23 +711,20 @@ main(int argc, char **argv) {
       }
 
       if (operations & PFR_RD_PROVISION) {
-        if ((ret = pfr_read_provision(ifd))) {
+        if ((ret = pfr_read_provision())) {
           printf("read provision failed\n");
         }
         break;
       }
 
       if (operations & PFR_ST_HISTORY) {
-        if ((ret = pfr_state_history(ifd))) {
+        if ((ret = pfr_state_history())) {
           printf("get state history failed\n");
         }
         break;
       }
     } while (0);
 
-    if (ifd > 0) {
-      close(ifd);
-    }
     return ret;
   } while (0);
 

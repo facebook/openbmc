@@ -19,6 +19,12 @@ pkgdir = "pfr-util"
 DEPENDS = "openssl libpal libobmc-i2c"
 RDEPENDS_${PN} = "openssl libpal libobmc-i2c"
 LDFLAGS += "-lcrypto -lpal -lobmc-i2c"
+CFLAGS += "\
+  ${@bb.utils.contains('MACHINE_FEATURES', 'bic', '-DCONFIG_BIC', '', d)} \
+"
+LDFLAGS += "\
+  ${@bb.utils.contains('MACHINE_FEATURES', 'bic', '-lbic', '', d)} \
+"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -34,6 +40,3 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/pfr-util ${prefix}/local/bin"
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-INHIBIT_PACKAGE_STRIP = "1"

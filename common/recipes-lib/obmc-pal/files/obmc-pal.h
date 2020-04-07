@@ -447,6 +447,7 @@ int pal_sensor_monitor_initial(void);
 uint8_t pal_ipmb_get_sensor_val(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_set_host_system_mode(uint8_t mode);
 int pal_is_pfr_active(void);
+int pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr);
 
 #ifdef __cplusplus
 }

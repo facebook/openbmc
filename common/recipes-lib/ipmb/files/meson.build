@@ -7,7 +7,7 @@ project('libipmb', 'c',
 install_headers('ipmb.h', subdir: 'openbmc')
 
 thread_lib = dependency('threads')
-ipc_lib = meson.get_compiler('c').find_library('ipc')
+ipc_lib = dependency('libipc')
 
 ipmb_lib = shared_library('ipmb',
     'ipmb.c',

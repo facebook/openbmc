@@ -21,4 +21,5 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
   openbmc-utils \
+  usb-console \
   "

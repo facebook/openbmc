@@ -31,10 +31,10 @@ SRC_URI = "file://Makefile \
 
 S = "${WORKDIR}"
 
-DEPENDS += " update-rc.d-native libgpio-ctrl "
-RDEPENDS_${PN} += " libgpio-ctrl "
+DEPENDS += " update-rc.d-native libgpio-ctrl libfby3-common "
+RDEPENDS_${PN} += " libgpio-ctrl libfby3-common "
 CFLAGS += "-DCONFIG_FBY3"
-LDFLAGS += " -lgpio-ctrl "
+LDFLAGS += " -lgpio-ctrl -lfby3_common "
 
 pkgdir = "gpiointrd"
 

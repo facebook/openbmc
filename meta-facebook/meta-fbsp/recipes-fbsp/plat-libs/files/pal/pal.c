@@ -1684,6 +1684,20 @@ pal_sensor_is_valid(char *fru_name, char *sensor_name)
 }
 
 int
+pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str) {
+  uint8_t idx;
+  char label[] = {'A','C','B','D'};
+
+  if ((idx = cpu*2+slot) < sizeof(label)) {
+    sprintf(str, "%c%d", label[idx], channel);
+  } else {
+    sprintf(str, "NA");
+  }
+
+  return 0;
+}
+
+int
 pal_get_fru_list(char *list) {
 
   strcpy(list, pal_fru_list);

@@ -3083,6 +3083,10 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
       if(status)  //Have already 12V-ON
         return 1;
 
+      ret = server_12v_on(slot_id); //Handle 12V-ON and update slot type if hot service
+      if (ret != 0)
+        return ret;
+
       if (slot_id == 1 || slot_id == 3) {     //Handle power policy for pair configuration
         pair_set_type = pal_get_pair_slot_type(slot_id);
         switch(pair_set_type) {
@@ -3090,16 +3094,12 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
           case TYPE_GP_A_SV:
           case TYPE_GPV2_A_SV:
             pair_slot_id = slot_id + 1;
-            ret = server_12v_on(slot_id);
-            if (ret != 0)
-              return ret;
             pal_power_policy_control(pair_slot_id, NULL);
-            return ret;
           default:
             break;
         }
       }
-      return server_12v_on(slot_id);
+      return ret;
 
     case SERVER_12V_OFF:
       /* Check whether the system is 12V off or on */

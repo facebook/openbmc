@@ -8,20 +8,12 @@ LIC_FILES_CHKSUM = "file://ipc.c;beginline=5;endline=17;md5=da35978751a9d71b7367
 
 BBCLASSEXTEND = "native"
 
-SRC_URI = "file://Makefile \
-           file://ipc.c \
-           file://ipc.h \
-          "
+SRC_URI = "\
+    file://meson.build \
+    file://ipc.c \
+    file://ipc.h \
+    "
 
 S = "${WORKDIR}"
 
-do_install() {
-	  install -d ${D}${libdir}
-    install -m 0644 libipc.so ${D}${libdir}/libipc.so
-
-    install -d ${D}${includedir}/openbmc
-    install -m 0644 ipc.h ${D}${includedir}/openbmc/ipc.h
-}
-
-FILES_${PN} = "${libdir}/libipc.so"
-FILES_${PN}-dev = "${includedir}/openbmc/ipc.h"
+inherit meson

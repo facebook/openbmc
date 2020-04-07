@@ -14,6 +14,7 @@ RDEPENDS_${PN} += " \
   logrotate \
   os-release \
   packagegroup-openbmc-tpm \
+  packagegroup-openbmc-emmc \
   passwd-util \
   rsyslog \
   sudo \

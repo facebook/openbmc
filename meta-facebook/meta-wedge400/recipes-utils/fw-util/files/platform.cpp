@@ -35,10 +35,4 @@ MeComponent me("scm", "me", slot_id);
 CpldComponent cpld("scm", "cpld", slot_id);
 BiosComponent bios("scm", "bios", slot_id);
 
-Tpm2Component tpm("bmc", "tpm",
-                  "/dev/tpmrm0",
-                  "export TPM2TOOLS_TCTI_NAME=device; " \
-                  "export TPM2TOOLS_DEVICE_FILE=/dev/tpmrm0; " \
-                  "tpm2_dump_capability -c properties-fixed 2>/dev/null | " \
-                  "grep TPM_PT_FIRMWARE_VERSION_1",
-                  "tpm2_version");
+Tpm2Component tpm("bmc", "tpm");

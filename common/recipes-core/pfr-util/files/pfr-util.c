@@ -75,8 +75,25 @@ enum {
   FLUSH_FIFO  = 0x02,  // flush read/write FIFO
 };
 
+enum {
+  ERR_NONE       = 0,
+  ERR_UFM_LOCKED = 1,
+  ERR_CMD_ERROR  = 2,
+  ERR_CMD_BUSY   = 3,
+  ERR_GET_PUBRK  = 4,
+  ERR_UNKNOWN
+};
+
 static bool verbose = false;
 static const char *st_table[256] = {0};
+
+static const char *prov_err_str[ERR_UNKNOWN] = {
+  "",
+  "UFM Locked",
+  "Command Error",
+  "Command Busy",
+  "Failed to get Root Key Hash"
+};
 
 static const char *option_list[] = {
   "--provision",
@@ -184,12 +201,22 @@ pfr_mailbox_cmd(int fd, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt
     case 0x0A:  // wait cmd done
       for (i = 0; i < wait; i++) {
         msleep(10);
-        if (!(ret = i2c_rw(fd, tbuf, 1, rbuf, 1)) && ((rbuf[0]&0x7) == 0x2))
+        if (!(ret = i2c_rw(fd, tbuf, 1, rbuf, 1)) && ((rbuf[0]&0x7) == 0x2))  // CMD_DONE
           break;
       }
       if (i >= wait) {
+        if (!ret) {
+          if (rbuf[0] & 0x04) {
+            ret = (rbuf[0] & 0x10) ? ERR_UFM_LOCKED : ERR_CMD_ERROR;
+          } else if (rbuf[0] & 0x01) {
+            ret = ERR_CMD_BUSY;
+          } else {
+            ret = -1;
+          }
+        }
+
         syslog(LOG_WARNING, "%s: wait cmd done timeout", __func__);
-        return -1;
+        return ret;
       }
       break;
 
@@ -328,7 +355,7 @@ pfr_provision(int fd) {
 
   if (pfr_get_pubrk_hash(shasum)) {
     syslog(LOG_ERR, "%s: get root-key-hash failed", __func__);
-    return -1;
+    return ERR_GET_PUBRK;
   }
 
   // erase provision in UFM
@@ -637,7 +664,12 @@ main(int argc, char **argv) {
             syslog(LOG_WARNING, "retry pfr_provision");
           }
         } while (ret && (retry-- > 0));
-        printf("provision %s\n", (!ret)?"succeeded":"failed");
+
+        printf("provision %s", (!ret)?"succeeded":"failed");
+        if ((ret > 0) && (ret < ERR_UNKNOWN)) {
+          printf(" (%s)", prov_err_str[ret]);
+        }
+        printf("\n");
         break;
       }
 

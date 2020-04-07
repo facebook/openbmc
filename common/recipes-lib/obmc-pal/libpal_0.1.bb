@@ -29,6 +29,7 @@ do_compile() {
 do_install_append() {
   install -d ${D}${libdir}
   install -m 0644 libpal.so ${D}${libdir}/libpal.so
+  ln -s libpal.so ${D}${libdir}/libpal.so.0
 
   install -d ${D}${includedir}/openbmc
   for f in ${HEADERS}; do
@@ -38,5 +39,5 @@ do_install_append() {
 
 RDEPENDS_${PN} += " libkv "
 
-FILES_${PN} = "${libdir}/libpal.so"
+FILES_${PN} = "${libdir}/libpal.so*"
 FILES_${PN}-dev = "${includedir}/openbmc"

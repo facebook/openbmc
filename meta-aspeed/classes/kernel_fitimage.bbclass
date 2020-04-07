@@ -155,8 +155,7 @@ oe_mkimage() {
 
       # Step 1: Prepare a firmware image section
       fitimage_emit_section_maint ${UBOOT_FIT_SOURCE} imagestart
-      fitimage_emit_section_firmware ${UBOOT_FIT_SOURCE} 1 "${UBOOT_SOURCE}" \
-          ${ROM_UBOOT_LOADADDRESS} ${ROM_UBOOT_LOADADDRESS}
+      fitimage_emit_section_firmware ${UBOOT_FIT_SOURCE} 1 "${UBOOT_SOURCE}"
       fitimage_emit_section_maint ${UBOOT_FIT_SOURCE} sectend
 
       # Step 2: Prepare a configurations section

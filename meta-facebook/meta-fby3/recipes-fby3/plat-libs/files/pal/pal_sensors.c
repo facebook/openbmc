@@ -682,11 +682,16 @@ pal_get_fan_source(uint8_t fan_num) {
 
 int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
 {
+  FILE* fp;
   char label[32] = {0};
   uint8_t pwm_num = fan;
   uint8_t bmc_location = 0;
   uint8_t status;
   int ret = 0;
+  char cmd[64] = {0};
+  char buf[32];
+  int res;
+  bool is_fscd_run = true;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
@@ -705,7 +710,20 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
     if (ret < 0) {
       return -1;
     }
-    if (status == MANUAL_MODE) {
+    snprintf(cmd, sizeof(cmd), "sv status fscd | grep run | wc -l");
+    if((fp = popen(cmd, "r")) == NULL) {
+      is_fscd_run = false;
+    }
+
+    if(fgets(buf, sizeof(buf), fp) != NULL) {
+      res = atoi(buf);
+      if(res == 0) {
+        is_fscd_run = false;
+      }
+    }
+    pclose(fp);
+
+    if ( (status == MANUAL_MODE) && (!is_fscd_run) ) {
       return bic_manual_set_fan_speed(fan, pwm);
     } else {
       return bic_set_fan_speed(fan, pwm);

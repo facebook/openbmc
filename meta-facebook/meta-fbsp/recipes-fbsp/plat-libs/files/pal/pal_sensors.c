@@ -101,6 +101,7 @@ static const char *vr_chips[] = {
   "xdpe12284-i2c-1-72",  // CPU1_VCCIO
   "xdpe12284-i2c-1-76",  // CPU1_VDDQ_ABC
   "xdpe12284-i2c-1-6c",  // CPU1_VDDQ_DEF
+  "pxe1110c-i2c-1-4a",  //PCH PVNN, 1V5
 };
 
 const uint8_t mb_sensor_list[] = {
@@ -193,6 +194,14 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_VR_CPU0_VDDQ_GRPDEF_TEMP,
   MB_SNR_VR_CPU0_VDDQ_GRPDEF_CURR,
   MB_SNR_VR_CPU0_VDDQ_GRPDEF_POWER,
+  MB_SNR_VR_PCH_P1V05_VOLT,
+  MB_SNR_VR_PCH_P1V05_TEMP,
+  MB_SNR_VR_PCH_P1V05_CURR,
+  MB_SNR_VR_PCH_P1V05_POWER,
+  MB_SNR_VR_PCH_PVNN_VOLT,
+  MB_SNR_VR_PCH_PVNN_TEMP,
+  MB_SNR_VR_PCH_PVNN_CURR,
+  MB_SNR_VR_PCH_PVNN_POWER,
   MB_SNR_VR_CPU1_VCCIN_VOLT,
   MB_SNR_VR_CPU1_VCCIN_TEMP,
   MB_SNR_VR_CPU1_VCCIN_CURR,
@@ -560,14 +569,14 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_VR_CPU0_VDDQ_DEF_TEMP", VR_ID4, read_vr_temp, false, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xC1
   {"MB_VR_CPU0_VDDQ_DEF_IOUT", VR_ID4, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC2
   {"MB_VR_CPU0_VDDQ_DEF_POUT", VR_ID4, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xC3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
+  {"MB_VR_PCH_P1V05_VOLT", VR_ID10, read_vr_vout, true, {1.2, 0, 0, 1.0085, 0, 0, 0, 0}, VOLT}, //0xC4
+  {"MB_VR_PCH_P1V05_TEMP", VR_ID10, read_vr_temp, true, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xC5
+  {"MB_VR_PCH_P1V05_IOUT", VR_ID10, read_vr_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC6
+  {"MB_VR_PCH_P1V05_POUT", VR_ID10, read_vr_pout, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xC7
+  {"MB_VR_PCH_PVNN_VOLT", VR_ID11, read_vr_vout, true, {1.2, 0, 0, 0.80175, 0, 0, 0, 0}, VOLT}, //0xC8
+  {"MB_VR_PCH_PVNN_TEMP", VR_ID11, read_vr_temp, true, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xC9
+  {"MB_VR_PCH_PVNN_IOUT", VR_ID11, read_vr_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xCA
+  {"MB_VR_PCH_PVNN_POUT", VR_ID11, read_vr_pout, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
@@ -1856,7 +1865,7 @@ read_ina260_sensor(uint8_t sensor_num, float *value) {
 static int
 read_vr_vout(uint8_t vr_id, float *value) {
   uint8_t sku_id = 0xFF,  rev_id = 0xFF, chip_id = vr_id;
-  static const char *labels[VR_ID_NUM] = {
+  static const char *labels[VR_ID_NUM + PCH_ID_NUM] = {
     "MB_VR_CPU0_VCCIN_VOUT",
     "MB_VR_CPU0_VCCSA_VOUT",
     "MB_VR_CPU0_VCCIO_VOUT",
@@ -1867,6 +1876,8 @@ read_vr_vout(uint8_t vr_id, float *value) {
     "MB_VR_CPU1_VCCIO_VOUT",
     "MB_VR_CPU1_VDDQ_ABC_VOUT",
     "MB_VR_CPU1_VDDQ_DEF_VOUT",
+    "MB_VR_PCH_P1V05_VOLT",
+    "MB_VR_PCH_PVNN_VOLT",
   };
 
   pal_get_platform_id(BOARD_REV_ID, &rev_id);
@@ -1878,13 +1889,19 @@ read_vr_vout(uint8_t vr_id, float *value) {
       ((rev_id == PLATFORM_DVT) && (sku_id & 0x2))) {
     chip_id += VR_ID_NUM;
   }
+
+  //PCH VR
+  if (vr_id >=  VR_ID10) {
+    chip_id = 2*VR_ID_NUM;
+  }
+
   return sensors_read(vr_chips[chip_id], labels[vr_id], value);
 }
 
 static int
 read_vr_temp(uint8_t vr_id, float *value) {
   uint8_t sku_id = 0xFF,  rev_id = 0xFF, chip_id = vr_id;
-  static const char *labels[VR_ID_NUM] = {
+  static const char *labels[VR_ID_NUM + PCH_ID_NUM] = {
     "MB_VR_CPU0_VCCIN_TEMP",
     "MB_VR_CPU0_VCCSA_TEMP",
     "MB_VR_CPU0_VCCIO_TEMP",
@@ -1895,6 +1912,8 @@ read_vr_temp(uint8_t vr_id, float *value) {
     "MB_VR_CPU1_VCCIO_TEMP",
     "MB_VR_CPU1_VDDQ_ABC_TEMP",
     "MB_VR_CPU1_VDDQ_DEF_TEMP",
+    "MB_VR_PCH_P1V05_TEMP",
+    "MB_VR_PCH_PVNN_TEMP",
   };
 
   pal_get_platform_id(BOARD_REV_ID, &rev_id);
@@ -1906,13 +1925,19 @@ read_vr_temp(uint8_t vr_id, float *value) {
       ((rev_id == PLATFORM_DVT) && (sku_id & 0x2))) {
     chip_id += VR_ID_NUM;
   }
+
+  //PCH VR
+  if (vr_id >=  VR_ID10) {
+    chip_id = 2*VR_ID_NUM;
+  }
+
   return sensors_read(vr_chips[chip_id], labels[vr_id], value);
 }
 
 static int
 read_vr_iout(uint8_t vr_id, float *value) {
   uint8_t sku_id = 0xFF,  rev_id = 0xFF, chip_id = vr_id;
-  static const char *labels[VR_ID_NUM] = {
+  static const char *labels[VR_ID_NUM + PCH_ID_NUM] = {
     "MB_VR_CPU0_VCCIN_IOUT",
     "MB_VR_CPU0_VCCSA_IOUT",
     "MB_VR_CPU0_VCCIO_IOUT",
@@ -1923,6 +1948,8 @@ read_vr_iout(uint8_t vr_id, float *value) {
     "MB_VR_CPU1_VCCIO_IOUT",
     "MB_VR_CPU1_VDDQ_ABC_IOUT",
     "MB_VR_CPU1_VDDQ_DEF_IOUT",
+    "MB_VR_PCH_P1V05_IOUT",
+    "MB_VR_PCH_PVNN_IOUT",
   };
 
   pal_get_platform_id(BOARD_REV_ID, &rev_id);
@@ -1934,6 +1961,12 @@ read_vr_iout(uint8_t vr_id, float *value) {
       ((rev_id == PLATFORM_DVT) && (sku_id & 0x2))) {
     chip_id += VR_ID_NUM;
   }
+
+  //PCH VR
+  if (vr_id >=  VR_ID10) {
+    chip_id = 2*VR_ID_NUM;
+  }
+
   return sensors_read(vr_chips[chip_id], labels[vr_id], value);
 }
 
@@ -1945,7 +1978,7 @@ read_vr_iin(uint8_t vr_id, float *value) {
 static int
 read_vr_pout(uint8_t vr_id, float *value) {
   uint8_t sku_id = 0xFF,  rev_id = 0xFF, chip_id = vr_id;
-  static const char *labels[VR_ID_NUM] = {
+  static const char *labels[VR_ID_NUM + PCH_ID_NUM] = {
     "MB_VR_CPU0_VCCIN_POUT",
     "MB_VR_CPU0_VCCSA_POUT",
     "MB_VR_CPU0_VCCIO_POUT",
@@ -1956,6 +1989,8 @@ read_vr_pout(uint8_t vr_id, float *value) {
     "MB_VR_CPU1_VCCIO_POUT",
     "MB_VR_CPU1_VDDQ_ABC_POUT",
     "MB_VR_CPU1_VDDQ_DEF_POUT",
+    "MB_VR_PCH_P1V05_POUT",
+    "MB_VR_PCH_PVNN_POUT",
   };
 
   pal_get_platform_id(BOARD_REV_ID, &rev_id);
@@ -1967,6 +2002,12 @@ read_vr_pout(uint8_t vr_id, float *value) {
       ((rev_id == PLATFORM_DVT) && (sku_id & 0x2))) {
     chip_id += VR_ID_NUM;
   }
+
+  //PCH VR
+  if (vr_id >=  VR_ID10) {
+    chip_id = 2*VR_ID_NUM;
+  }
+
   return sensors_read(vr_chips[chip_id], labels[vr_id], value);
 }
 

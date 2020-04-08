@@ -434,6 +434,13 @@ enum {
   VR_ID_NUM
 };
 
+//PCH VR
+enum {
+  PCH_ID_NUM = 2,
+  VR_ID10 = 10,
+  VR_ID11 = 11,
+};
+
 // ADC128 INFO
 enum {
   FAN_ID0 = 0,

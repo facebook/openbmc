@@ -621,6 +621,22 @@ def other_flasher_running(logger):
     return True
 
 
+# Deal with images that have changed names, but are otherwise compatible.
+# The version strings are free form, so to come up with regexes that safely
+# matches all possible formats would be tough.  Instead, we use this to do
+# substitutions before matching in image_file_compatible().
+def normalize_version(version):
+    # type: (str) -> str
+    translations = {"fby2-gpv2-": "fbgp2-"}
+
+    for pattern, patch in translations.items():
+        normalized = re.sub(pattern, patch, version, 1, re.I)
+        if version != normalized:
+            return normalized
+
+    return version
+
+
 def image_file_compatible(image_file, issue_file, logger):
     # type: (str, str, logging.Logger) -> bool
     logger.info("Checking the sanity of the request")
@@ -628,7 +644,7 @@ def image_file_compatible(image_file, issue_file, logger):
         ln = f.readline()
 
     rx = re.compile(r"^openbmc release (\w+)", re.I)
-    m = rx.match(ln)
+    m = rx.match(normalize_version(ln))
     if not m:
         # Bad /etc/issue, no way to tell. Failing open. TODO: Should
         # we fail closed?
@@ -644,7 +660,7 @@ def image_file_compatible(image_file, issue_file, logger):
 
     rx = re.compile(r"U-Boot \d+\.\d+ (\w+)")
     for ln in p.stdout:
-        m = rx.search(str(ln))
+        m = rx.search(normalize_version(str(ln)))
         if m:
             new = m.group(1)
             return new == current

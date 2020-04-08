@@ -99,7 +99,11 @@ static void* fan_status_monitor()
 
     for (i = 0; i < 8; i++) {
       gp = &fan_gpios[i];
-      gp->curr = gpio_get(gp->shadow);
+      if (i>>2)
+        gp->curr = gpio_get(gp->shadow);
+      else
+        gp->curr = pal_is_fan_prsnt(i<<1)? GPIO_VALUE_LOW: GPIO_VALUE_HIGH;
+
       if (gp->last != gp->curr) {
 	if (i>>2) {
 	  syslog(LOG_CRIT, "%s: %s - %s\n",

@@ -815,6 +815,38 @@ static int sensors_read_vicor(uint8_t sensor_num, float *value)
   return 0;
 }
 
+bool pal_is_fan_prsnt(uint8_t fan)
+{
+  const char *shadow[] = {
+    "FAN0_PRESENT",
+    "FAN1_PRESENT",
+    "FAN2_PRESENT",
+    "FAN3_PRESENT"
+  };
+  static gpio_desc_t *desc[4] = {
+    NULL, NULL, NULL, NULL
+  };
+  gpio_value_t value;
+  int index = fan>>1;
+
+  if (desc[index] == NULL) {
+    desc[index] = gpio_open_by_shadow(shadow[index]);
+    if (!desc[index]) {
+#ifdef DEBUG
+      syslog(LOG_CRIT, "Open failed for GPIO: %s\n", shadow[index]);
+#endif
+      return false;
+    }
+  }
+
+  if (gpio_get_value(desc[index], &value)) {
+    syslog(LOG_CRIT, "Get failed for GPIO: %s\n", shadow[index]);
+    return false;
+  }
+
+  return value == GPIO_VALUE_LOW? true: false;
+}
+
 int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
 {
   char label[32] = {0};

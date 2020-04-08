@@ -154,10 +154,10 @@ static int g_tck = -1;
 static int g_tms = -1;
 static int g_tdo = -1;
 static int g_tdi = -1;
-static gpio_st g_gpio_tck;
-static gpio_st g_gpio_tms;
-static gpio_st g_gpio_tdo;
-static gpio_st g_gpio_tdi;
+static gpio_st g_gpio_tck = {.gs_fd = -1};
+static gpio_st g_gpio_tms = {.gs_fd = -1};
+static gpio_st g_gpio_tdo = {.gs_fd = -1};
+static gpio_st g_gpio_tdi = {.gs_fd = -1};
 
 static int (*jtag_io_func)(int, int, int);
 #endif
@@ -273,7 +273,7 @@ static int jtag_swio_read(int fd) {
     fprintf(stderr, "%s: lseek failed\n", __func__);
     return -1;
   }
-  if (read(fd, buf, sizeof(buf)) < 1) {
+  if (read(fd, buf, sizeof(buf) - 1) < 1) {
     fprintf(stderr, "%s: read failed\n", __func__);
     return -1;
   }
@@ -2016,6 +2016,17 @@ void close_jtag_hardware()
 			CloseHandle(nt_device_handle);
 		}
 #endif
+#endif
+
+#ifdef OPENBMC
+		if (g_gpio_tck.gs_fd >= 0)
+			close(g_gpio_tck.gs_fd);
+		if (g_gpio_tms.gs_fd >= 0)
+			close(g_gpio_tms.gs_fd);
+		if (g_gpio_tdo.gs_fd >= 0)
+			close(g_gpio_tdo.gs_fd);
+		if (g_gpio_tdi.gs_fd >= 0)
+			close(g_gpio_tdi.gs_fd);
 #endif
 	}
 }

@@ -28,6 +28,7 @@ do_compile() {
 do_install() {
     install -d ${D}${libdir}
     install -m 0644 libbic.so ${D}${libdir}/libbic.so
+    ln -s libbic.so ${D}${libdir}/libbic.so.0
 
     install -d ${D}${includedir}/facebook
     for f in ${HEADERS}; do
@@ -35,5 +36,5 @@ do_install() {
     done
 }
 
-FILES_${PN} = "${libdir}/libbic.so"
+FILES_${PN} = "${libdir}/libbic.so*"
 FILES_${PN}-dev = "${includedir}/facebook"

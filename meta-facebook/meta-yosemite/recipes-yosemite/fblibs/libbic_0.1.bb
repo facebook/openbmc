@@ -18,12 +18,13 @@ S = "${WORKDIR}/bic"
 do_install() {
 	  install -d ${D}${libdir}
     install -m 0644 libbic.so ${D}${libdir}/libbic.so
+    ln -s libbic.so ${D}${libdir}/libbic.so.0
 
     install -d ${D}${includedir}/facebook
     install -m 0644 bic.h ${D}${includedir}/facebook/bic.h
 }
 
-FILES_${PN} = "${libdir}/libbic.so"
+FILES_${PN} = "${libdir}/libbic.so*"
 FILES_${PN}-dev = "${includedir}/facebook/bic.h"
 
 RDEPENDS_${PN} += " libipmb libkv libobmc-i2c"

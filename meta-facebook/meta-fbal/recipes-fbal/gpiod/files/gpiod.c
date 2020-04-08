@@ -591,9 +591,17 @@ uart_select_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 // Event Handler for GPIOF6 platform reset changes
 static void platform_reset_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
+  struct timespec ts;
+  char value[MAX_VALUE_LEN];
+
   // Use GPIOF6 to filter some gpio logging
   reset_timer(&g_reset_sec);
   TOUCH("/tmp/rst_touch");
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  sprintf(value, "%ld", ts.tv_sec);
+  kv_set("snr_polling_flag", value, 0, 0);
+  
   log_gpio_change(desc, curr, 0);
 }
 

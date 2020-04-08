@@ -24,6 +24,7 @@
 #define INTERNAL_CPU_ERROR_MASK                 (0x1C)
 #define EXTERNAL_CPU_ERROR_MASK                 (0xE0)
 #define BOTH_CPU_ERROR_MASK                     (0xFC)
+#define PECI_SUCCESS                            (0x40)
 
 //NM DEVICE INFO
 #define NM_PSU_MUX_ADDR  (0xE0)

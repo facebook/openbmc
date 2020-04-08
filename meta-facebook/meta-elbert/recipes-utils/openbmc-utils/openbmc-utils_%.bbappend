@@ -26,6 +26,7 @@ SRC_URI += "file://board-utils.sh \
             file://power-on.sh \
             file://setup_board.sh \
             file://wedge_power.sh \
+            file://wedge_us_mac.sh \
             file://setup_i2c.sh \
            "
 
@@ -35,6 +36,7 @@ OPENBMC_UTILS_FILES += " \
     fpga_ver.sh \
     oob-mdio-util.sh \
     wedge_power.sh \
+    wedge_us_mac.sh \
     setup_i2c.sh \
     "
 

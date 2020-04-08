@@ -403,6 +403,17 @@ ierr_mcerr_event_log(bool is_caterr, const char *err_type) {
   return ret;
 }
 
+static int trigger_hpr(void) {
+
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (!kv_get("mb_trigger_hpr", value, NULL, KV_FPERSIST) && !strcmp(value, "off")) {
+    return 0;
+  }
+
+  return 1;
+}
+
 static void *
 ierr_mcerr_event_handler() {
   uint8_t caterr_cnt = 0;
@@ -443,8 +454,13 @@ ierr_mcerr_event_handler() {
           pthread_mutex_unlock(&caterr_mutex);
           caterr_cnt = 0;
           pal_set_fault_led(FRU_MB, FAULT_LED_ON);
-          if (system("/usr/local/bin/autodump.sh &")) {
+          if (system("/usr/local/bin/autodump.sh")) {
             syslog(LOG_WARNING, "Failed to start crashdump\n");
+          }
+
+          if (value == GPIO_VALUE_LOW && trigger_hpr()) {
+            if (system("/usr/local/bin/power-util mb reset") != 0)
+              syslog(LOG_WARNING, "Failed to power reset\n");
           }
 
         } else if (g_caterr_irq > 1) {
@@ -482,8 +498,13 @@ ierr_mcerr_event_handler() {
           pthread_mutex_unlock(&caterr_mutex);
           msmi_cnt = 0;
           pal_set_fault_led(FRU_MB, FAULT_LED_ON);
-          if (system("/usr/local/bin/autodump.sh &")) {
+          if (system("/usr/local/bin/autodump.sh")) {
             syslog(LOG_WARNING, "Failed to start crashdump\n");
+          }
+
+          if (value == GPIO_VALUE_LOW && trigger_hpr()) {
+            if (system("/usr/local/bin/power-util mb reset") != 0)
+              syslog(LOG_WARNING, "Failed to power reset\n");
           }
 
         } else if (g_msmi_irq > 1) {
@@ -520,6 +541,10 @@ static void platform_reset_event_handle(gpiopoll_pin_t *desc, gpio_value_t last,
   reset_timer(&g_reset_sec);
   TOUCH("/tmp/rst_touch");
   log_gpio_change(desc, curr, 0);
+  if (g_mcerr_ierr_assert) {
+    pal_second_crashdump_chk();
+    g_mcerr_ierr_assert = false;
+  }
 }
 
 // Thread for gpio timer
@@ -620,6 +645,7 @@ int main(int argc, char **argv)
   pthread_t tid_ierr_mcerr_event;
   pthread_t tid_gpio_timer;
   pthread_t tid_ioex0_monitor;
+  char value[MAX_VALUE_LEN] = {0};
 
   pid_file = open("/var/run/gpiod.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
@@ -631,6 +657,13 @@ int main(int argc, char **argv)
   } else {
     openlog("gpiod", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "gpiod: daemon started");
+
+    if (kv_get("mb_trigger_hpr", value, NULL, KV_FPERSIST) < 0) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "mb_trigger_hpr did not exist!\n");
+#endif
+      kv_set("mb_trigger_hpr", "on", 0, KV_FPERSIST);
+    }
 
     //Create thread for IERR/MCERR event detect
     if (pthread_create(&tid_ierr_mcerr_event, NULL, ierr_mcerr_event_handler, NULL) < 0) {

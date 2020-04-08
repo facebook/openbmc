@@ -16,6 +16,7 @@
 #include <openbmc/nm.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/obmc-sensors.h>
+#include <pthread.h>
 #include "pal.h"
 
 //#define DEBUG
@@ -2809,4 +2810,36 @@ pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value) {
   }
 
   return PAL_EOK;
+}
+
+static pthread_t tid_dwr = -1;
+static void *dwr_handler(void *arg) {
+  syslog(LOG_WARNING, "Start Second/DWR Autodump");
+  if (system("/usr/local/bin/autodump.sh --second &") != 0) {
+    syslog(LOG_ERR, "Autodump.sh --second failed!\n");
+  }
+
+  tid_dwr = -1;
+  pthread_exit(NULL);
+}
+
+void
+pal_second_crashdump_chk(void) {
+    int fd;
+    size_t len;
+
+    if (tid_dwr != -1)
+      pthread_cancel(tid_dwr);
+
+    if (pthread_create(&tid_dwr, NULL, dwr_handler, NULL) == 0) {
+      memset(postcodes_last, 0, sizeof(postcodes_last));
+      pal_get_80port_record(FRU_MB, postcodes_last, sizeof(postcodes_last), &len);
+
+      fd =  creat("/tmp/DWR", 0644);
+      if (fd)
+        close(fd);
+      pthread_detach(tid_dwr);
+    }
+    else
+      tid_dwr = -1;
 }

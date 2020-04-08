@@ -2072,7 +2072,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
     case SERVER_GRACEFUL_SHUTDOWN:
       ret = cpu_power_off(slot_id);
       break;
-    
+
     case SERVER_GRACEFUL_POWER_ON:
       ret = cpu_power_btn(slot_id);
       break;
@@ -2719,7 +2719,7 @@ scm_sensor_read(uint8_t sensor_num, float *value) {
 
 static int
 cor_th3_volt(uint8_t board_type) {
-  /* 
+  /*
    * Currently, skip to set vdd core with sysfs nodes because sysfs node exposed
    * has no write permission. Laterly we will fix this.
    */
@@ -3121,7 +3121,7 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
     case SMB_SENSOR_HBM_IN_CURR:
       if( brd_type_rev == BOARD_WEDGE400C_EVT ){
         ret = read_attr(SMB_IR_HMB_DEVICE, CURR(1), value);
-      }else if( brd_type_rev == BOARD_WEDGE400C_EVT2 || 
+      }else if( brd_type_rev == BOARD_WEDGE400C_EVT2 ||
                 brd_type_rev == BOARD_WEDGE400C_DVT ){
         ret = read_attr(SMB_PXE1211_DEVICE, CURR(1), value);
       }
@@ -6115,7 +6115,7 @@ pal_mon_fw_upgrade
       buf_size *= 2;
     }
     if(!buf_ptr) {
-      OBMC_ERROR(-1, 
+      OBMC_ERROR(-1,
              "%s realloc() fail, please check memory remaining", __func__);
       goto free_buf;
     }

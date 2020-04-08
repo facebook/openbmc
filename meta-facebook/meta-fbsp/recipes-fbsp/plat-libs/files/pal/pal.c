@@ -35,6 +35,7 @@
 #include <openbmc/nm.h>
 #include <openbmc/ncsi.h>
 #include <openbmc/nl-wrapper.h>
+#include <openbmc/obmc-i2c.h>
 #include "pal.h"
 
 #define PLATFORM_NAME "sonorapass"
@@ -1762,4 +1763,83 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
 int
 pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
   return me_xmit(request, req_len, response, rlen);
+}
+
+int
+pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
+  int ret = 0;
+  int ifd, retry = 3;
+  uint8_t buf[16];
+  char dev_i2c[16];
+
+  ret = status;
+  if (ret == 0) {
+    sprintf(dev_i2c, "/dev/i2c-%d", PFR_MAILBOX_BUS);
+    ifd = open(dev_i2c, O_RDWR);
+    if (ifd < 0) {
+      return -1;
+    }
+
+    buf[0] = 0x13;  // BMC update intent
+    if (!strcmp(comp, "bmc")) {
+      buf[1] = 0x08;  // BMC_ACTIVE
+    } else if (!strcmp(comp, "bios")) {
+      buf[1] = 0x01;  // PCH_ACTIVE
+    } else if (!strcmp(comp, "cpld")) {
+      buf[1] = 0x04;  // CPLD_ACTIVE
+    }
+
+    sync();
+    sleep(3);
+    ret = system("sv stop sensord > /dev/null 2>&1");
+    ret = system("sv stop ipmbd_0 > /dev/null 2>&1");
+    ret = system("sv stop ipmbd_5 > /dev/null 2>&1");
+
+    printf("sending update intent to CPLD...\n");
+    fflush(stdout);
+    sleep(1);
+    do {
+      ret = i2c_rdwr_msg_transfer(ifd, PFR_MAILBOX_ADDR, buf, 2, NULL, 0);
+      if (ret) {
+        syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x %02x", PFR_MAILBOX_BUS, buf[0], buf[1]);
+        if (--retry > 0) {
+          msleep(100);
+        }
+      }
+    } while (ret && retry > 0);
+    close(ifd);
+  }
+
+  return ret;
+}
+
+int
+pal_is_pfr_active(void) {
+  int pfr_active = PFR_NONE;
+  int ifd, retry = 3;
+  uint8_t tbuf[8], rbuf[8];
+  char dev_i2c[16];
+
+  sprintf(dev_i2c, "/dev/i2c-%d", PFR_MAILBOX_BUS);
+  ifd = open(dev_i2c, O_RDWR);
+  if (ifd < 0) {
+    return pfr_active;
+  }
+
+  tbuf[0] = 0x0A;
+  do {
+    if (!i2c_rdwr_msg_transfer(ifd, PFR_MAILBOX_ADDR, tbuf, 1, rbuf, 1)) {
+      pfr_active = (rbuf[0] & 0x20) ? PFR_ACTIVE : PFR_UNPROVISIONED;
+      break;
+    }
+
+#ifdef DEBUG
+    syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x", 4, tbuf[0]);
+#endif
+    if (--retry > 0)
+      msleep(20);
+  } while (retry > 0);
+  close(ifd);
+
+  return pfr_active;
 }

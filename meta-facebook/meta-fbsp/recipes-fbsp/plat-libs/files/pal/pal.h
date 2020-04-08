@@ -61,6 +61,9 @@ extern "C" {
 #define MAX_RETRY_PWR_CTL 3
 #define MAX_RETRY_ME_RECOVERY 15
 
+#define PFR_MAILBOX_BUS  (4)
+#define PFR_MAILBOX_ADDR (0xB0)
+
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
 extern const char pal_pwm_list[];

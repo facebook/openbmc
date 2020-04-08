@@ -34,8 +34,8 @@
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
 
-#define ID_LED_ON 0
-#define ID_LED_OFF 1
+#define ID_LED_ON 1
+#define ID_LED_OFF 0
 
 #define LED_ON_TIME_IDENTIFY 100
 #define LED_OFF_TIME_IDENTIFY 900
@@ -43,6 +43,8 @@
 #define BTN_MAX_SAMPLES   200
 #define FW_UPDATE_ONGOING 1
 #define CRASHDUMP_ONGOING 2
+
+static int sensor_health = FRU_STATUS_GOOD;
 
 static int
 is_btn_blocked(uint8_t fru) {
@@ -77,6 +79,13 @@ led_sync_handler() {
 
       msleep(LED_OFF_TIME_IDENTIFY);
       continue;
+    } else if (ret == 0 && !strcmp(identify, "off")) {
+      // Turn on the ID LED if sensor health is abnormal.
+      if (sensor_health == FRU_STATUS_BAD) { 
+        pal_set_id_led(FRU_MB, ID_LED_ON);
+      } else {
+        pal_set_id_led(FRU_MB, ID_LED_OFF);
+      }
     }
 
     sleep(1);
@@ -242,10 +251,10 @@ led_handler() {
 
     if (mb_health != FRU_STATUS_GOOD || nic0_health != FRU_STATUS_GOOD
       || nic1_health != FRU_STATUS_GOOD) {
-      pal_set_id_led(FRU_MB, LED_ON);
+      sensor_health = FRU_STATUS_BAD;
     }
     else {
-      pal_set_id_led(FRU_MB, LED_OFF);
+      sensor_health = FRU_STATUS_GOOD;
     }
   }
   return NULL;

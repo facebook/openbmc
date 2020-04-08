@@ -61,5 +61,5 @@ max([
       slot4:soc_dimmd_temp,
       slot4:soc_dimme_temp,
       slot4:soc_dimmf_temp])),
-  linear_mezz(nic:nic_sensor_mezz_temp) + pid_mezz(nic:nic_sensor_mezz_temp)
+  linear_mezz(nic:nic_sensor_mezz_temp)
 ])

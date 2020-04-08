@@ -1,4 +1,0 @@
-max([
-  linear_outlet(bmc:bmc_outlet_temp),
-  linear_mezz(nic:nic_sensor_mezz_temp)
-])

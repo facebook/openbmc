@@ -22,8 +22,7 @@ DESCRIPTION = "Daemon to handle RESTful interface."
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://rest.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
-
+LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 
 SRC_URI = "file://rest.py \
            file://common_tree.py \
@@ -60,6 +59,7 @@ SRC_URI = "file://rest.py \
            file://node_identify.py \
            file://node_pdpb.py \
            file://setup-rest-api.sh \
+           file://setup_plat_routes.py \
            file://run_rest \
            file://test_node_sensors.py \
           "

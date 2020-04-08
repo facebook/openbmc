@@ -19,11 +19,18 @@
 #
 
 import configparser
+import syslog
 
 
 def parse_config(configpath):
     RestConfig = configparser.ConfigParser()
     RestConfig.read(configpath)
+
+    writable = RestConfig.getboolean("access", "write", fallback=False)
+    if writable:
+        syslog.syslog(syslog.LOG_INFO, "REST: Launched with Read/Write Mode")
+    else:
+        syslog.syslog(syslog.LOG_INFO, "REST: Launched with Read Only Mode")
 
     return {
         "ports": RestConfig.get("listen", "port", fallback="8080").split(","),
@@ -31,7 +38,7 @@ def parse_config(configpath):
             filter(None, RestConfig.get("listen", "ssl_port", fallback="").split(","))
         ),
         "logfile": RestConfig.get("logging", "filename", fallback="/tmp/rest.log"),
-        "writable": RestConfig.getboolean("access", "write", fallback=False),
+        "writable": writable,
         "ssl_certificate": RestConfig.get("ssl", "certificate", fallback=None),
         "ssl_key": RestConfig.get("ssl", "key", fallback=None),
     }

@@ -22,14 +22,13 @@ DESCRIPTION = "Daemon to handle RESTful interface."
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://rest.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
-
+LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 DEPENDS_append = " update-rc.d-native aiohttp-native"
 RDEPENDS_${PN} += "python3-core aiohttp"
 
 
 SRC_URI = "file://rest-api-1/setup-rest-api.sh \
-           file://rest-api-1/rest.py \
+           file://rest.py \
            file://rest-api-1/common_endpoint.py \
            file://common_middlewares.py\
            file://board_endpoint.py \
@@ -39,7 +38,7 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://node.py \
            file://node_bmc.py \
            file://vboot.py \
-           file://rest-api-1/run_rest \
+           file://run_rest \
            file://rest.cfg \
            file://rest-api-1/rest_bmc.py \
            file://rest-api-1/rest_fruid.py \
@@ -60,6 +59,7 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://test_common_middlewares.py \
            file://boardroutes.py \
            file://rest-api-1/common_setup_routes.py \
+           file://rest-api-1/setup_plat_routes.py \
           "
 
 S = "${WORKDIR}/rest-api-1"
@@ -71,12 +71,12 @@ binfiles = "board_setup_routes.py \
             rest_config.py \
             node.py \
             node_bmc.py \
+            rest.py \
             vboot.py \
             pal.py \
            "
 
-binfiles1 = "rest.py \
-             setup-rest-api.sh \
+binfiles1 = "setup-rest-api.sh \
              rest_watchdog.py \
              common_endpoint.py \
              rest_bmc.py \
@@ -94,6 +94,7 @@ binfiles1 = "rest.py \
              rest_helper.py \
              rest_utils.py \
              rest_mTerm.py \
+             setup_plat_routes.py \
              common_setup_routes.py"
 
 pkgdir = "rest-api"
@@ -116,7 +117,7 @@ do_install_class-target() {
   done
   install -d ${D}${sysconfdir}/sv
   install -d ${D}${sysconfdir}/sv/restapi
-  install -m 755 ${WORKDIR}/rest-api-1/run_rest ${D}${sysconfdir}/sv/restapi/run
+  install -m 755 ${WORKDIR}/run_rest ${D}${sysconfdir}/sv/restapi/run
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 644 ${WORKDIR}/rest.cfg ${D}${sysconfdir}/rest.cfg

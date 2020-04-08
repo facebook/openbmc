@@ -36,7 +36,7 @@ def plat_info(fru):
         if "Class 2" in sys_type:
             pcie_configuration = "2x Delta Lakes"
         else:
-            pcie_configuration = json_data["Config"].lower()
+            pcie_configuration = json_data["server_config"]["slot"+str(fru)]["Type"].lower()
             if re.search(r'a|b', pcie_configuration):
                 pcie_configuration = "4x Delta Lakes"
             elif re.search(r'c|d', pcie_configuration):

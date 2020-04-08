@@ -56,15 +56,56 @@
             ]
         },
         {
-            "alias": "openbmc-buildci-emeraldpools-determinator",
+            "alias": "openbmc-buildci-default-determinator",
             "args": {
-                "name": "openbmc-buildci-emeraldpools-determinator",
+                "name": "openbmc-buildci-default-determinator",
                 "oncall": "openbmc",
                 "steps": [
                     {
                         "determinator": true,
-                        "name": "openbmc-buildci-emeraldpools-determinator",
-                        "shell": "facebook/sandcastle/job.py diff --platform emeraldpools"
+                        "name": "openbmc-buildci-default-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform default"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^common/.*",
+                        "^facebook/.*",
+                        "^tests2/.*",
+                        "^meta-aspeed/.*",
+                        "^meta-facebook/recipes-.*/.*",
+                        "^meta-facebook/meta-python3/.*",
+                        "^meta-facebook/classes",
+                        "^meta-facebook/conf",
+                        "^yocto/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-buildci-angelslanding-determinator",
+            "args": {
+                "name": "openbmc-buildci-angelslanding-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-angelslanding-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform angelslanding"
                     }
                 ]
             },
@@ -79,7 +120,7 @@
                 {
                     "type": "every_file_matches_every_regexp",
                     "value": [
-                        "^meta-facebook/meta-emeraldpools/.*"
+                        "^meta-facebook/meta-angelslanding/.*"
                     ]
                 }
             ],
@@ -122,6 +163,171 @@
             ]
         },
         {
+            "alias": "openbmc-buildci-elbert-determinator",
+            "args": {
+                "name": "openbmc-buildci-elbert-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-elbert-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform elbert"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-elbert/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-buildci-emeraldpools-determinator",
+            "args": {
+                "name": "openbmc-buildci-emeraldpools-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-emeraldpools-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform emeraldpools"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-emeraldpools/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-buildci-fbgp2-determinator",
+            "args": {
+                "name": "openbmc-buildci-fbgp2-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-fbgp2-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform fbgp2"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fbgp2/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-buildci-fbnd-determinator",
+            "args": {
+                "name": "openbmc-buildci-fbnd-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-fbnd-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform fbnd"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fbnd/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-buildci-fbtp-determinator",
+            "args": {
+                "name": "openbmc-buildci-fbtp-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-fbtp-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform fbtp"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fbtp/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-buildci-fbttn-determinator",
             "args": {
                 "name": "openbmc-buildci-fbttn-determinator",
@@ -146,6 +352,171 @@
                     "type": "every_file_matches_every_regexp",
                     "value": [
                         "^meta-facebook/meta-fbttn/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-buildci-fby2-determinator",
+            "args": {
+                "name": "openbmc-buildci-fby2-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-fby2-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform fby2"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fby2/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-buildci-fby3-determinator",
+            "args": {
+                "name": "openbmc-buildci-fby3-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-fby3-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform fby3"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fby3/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-buildci-fuji-determinator",
+            "args": {
+                "name": "openbmc-buildci-fuji-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-fuji-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform fuji"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fuji/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-buildci-galaxy100-determinator",
+            "args": {
+                "name": "openbmc-buildci-galaxy100-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-galaxy100-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform galaxy100"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-galaxy100/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-buildci-lightning-determinator",
+            "args": {
+                "name": "openbmc-buildci-lightning-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-lightning-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform lightning"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-lightning/.*"
                     ]
                 }
             ],
@@ -221,15 +592,15 @@
             ]
         },
         {
-            "alias": "openbmc-buildci-default-determinator",
+            "alias": "openbmc-buildci-wedge-determinator",
             "args": {
-                "name": "openbmc-buildci-default-determinator",
+                "name": "openbmc-buildci-wedge-determinator",
                 "oncall": "openbmc",
                 "steps": [
                     {
                         "determinator": true,
-                        "name": "openbmc-buildci-default-determinator",
-                        "shell": "facebook/sandcastle/job.py diff --platform default"
+                        "name": "openbmc-buildci-wedge-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform wedge"
                     }
                 ]
             },
@@ -242,16 +613,9 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "some_file_matches_some_regexp",
+                    "type": "every_file_matches_every_regexp",
                     "value": [
-                        "^common/.*",
-                        "^facebook/.*",
-                        "^tests2/.*",
-                        "^meta-aspeed/.*",
-                        "^meta-facebook/recipes-.*/.*",
-                        "^meta-facebook/meta-python3/.*",
-                        "^meta-facebook/classes",
-                        "^meta-facebook/conf"
+                        "^meta-facebook/meta-wedge/.*"
                     ]
                 }
             ],
@@ -294,303 +658,6 @@
             ]
         },
         {
-            "alias": "openbmc-buildci-fby3-determinator",
-            "args": {
-                "name": "openbmc-buildci-fby3-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-buildci-fby3-determinator",
-                        "shell": "facebook/sandcastle/job.py diff --platform fby3"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-fby3/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-buildci-fby2-determinator",
-            "args": {
-                "name": "openbmc-buildci-fby2-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-buildci-fby2-determinator",
-                        "shell": "facebook/sandcastle/job.py diff --platform fby2"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-fby2/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-buildci-angelslanding-determinator",
-            "args": {
-                "name": "openbmc-buildci-angelslanding-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-buildci-angelslanding-determinator",
-                        "shell": "facebook/sandcastle/job.py diff --platform angelslanding"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-angelslanding/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-buildci-lightning-determinator",
-            "args": {
-                "name": "openbmc-buildci-lightning-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-buildci-lightning-determinator",
-                        "shell": "facebook/sandcastle/job.py diff --platform lightning"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-lightning/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-buildci-fuji-determinator",
-            "args": {
-                "name": "openbmc-buildci-fuji-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-buildci-fuji-determinator",
-                        "shell": "facebook/sandcastle/job.py diff --platform fuji"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-fuji/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-buildci-elbert-determinator",
-            "args": {
-                "name": "openbmc-buildci-elbert-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-buildci-elbert-determinator",
-                        "shell": "facebook/sandcastle/job.py diff --platform elbert"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-elbert/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-buildci-fbgp2-determinator",
-            "args": {
-                "name": "openbmc-buildci-fbgp2-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-buildci-fbgp2-determinator",
-                        "shell": "facebook/sandcastle/job.py diff --platform fbgp2"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-fbgp2/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-buildci-galaxy100-determinator",
-            "args": {
-                "name": "openbmc-buildci-galaxy100-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-buildci-galaxy100-determinator",
-                        "shell": "facebook/sandcastle/job.py diff --platform galaxy100"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-galaxy100/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-buildci-wedge-determinator",
-            "args": {
-                "name": "openbmc-buildci-wedge-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-buildci-wedge-determinator",
-                        "shell": "facebook/sandcastle/job.py diff --platform wedge"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-wedge/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
             "alias": "openbmc-buildci-wedge400-determinator",
             "args": {
                 "name": "openbmc-buildci-wedge400-determinator",
@@ -615,72 +682,6 @@
                     "type": "every_file_matches_every_regexp",
                     "value": [
                         "^meta-facebook/meta-wedge400/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-buildci-fbtp-determinator",
-            "args": {
-                "name": "openbmc-buildci-fbtp-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-buildci-fbtp-determinator",
-                        "shell": "facebook/sandcastle/job.py diff --platform fbtp"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-fbtp/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-buildci-fbnd-determinator",
-            "args": {
-                "name": "openbmc-buildci-fbnd-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-buildci-fbnd-determinator",
-                        "shell": "facebook/sandcastle/job.py diff --platform fbnd"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-fbnd/.*"
                     ]
                 }
             ],
@@ -756,15 +757,56 @@
             ]
         },
         {
-            "alias": "openbmc-cit-emeraldpools-determinator",
+            "alias": "openbmc-cit-default-determinator",
             "args": {
-                "name": "openbmc-cit-emeraldpools-determinator",
+                "name": "openbmc-cit-default-determinator",
                 "oncall": "openbmc",
                 "steps": [
                     {
                         "determinator": true,
-                        "name": "openbmc-cit-emeraldpools-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform emeraldpools"
+                        "name": "openbmc-cit-default-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform default"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^common/.*",
+                        "^facebook/.*",
+                        "^tests2/.*",
+                        "^meta-aspeed/.*",
+                        "^meta-facebook/recipes-.*/.*",
+                        "^meta-facebook/meta-python3/.*",
+                        "^meta-facebook/classes",
+                        "^meta-facebook/conf",
+                        "^yocto/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-angelslanding-determinator",
+            "args": {
+                "name": "openbmc-cit-angelslanding-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-angelslanding-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform angelslanding"
                     }
                 ]
             },
@@ -779,7 +821,7 @@
                 {
                     "type": "every_file_matches_every_regexp",
                     "value": [
-                        "^meta-facebook/meta-emeraldpools/.*"
+                        "^meta-facebook/meta-angelslanding/.*"
                     ]
                 }
             ],
@@ -822,6 +864,171 @@
             ]
         },
         {
+            "alias": "openbmc-cit-elbert-determinator",
+            "args": {
+                "name": "openbmc-cit-elbert-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-elbert-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform elbert"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-elbert/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-emeraldpools-determinator",
+            "args": {
+                "name": "openbmc-cit-emeraldpools-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-emeraldpools-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform emeraldpools"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-emeraldpools/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-fbgp2-determinator",
+            "args": {
+                "name": "openbmc-cit-fbgp2-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-fbgp2-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform fbgp2"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fbgp2/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-fbnd-determinator",
+            "args": {
+                "name": "openbmc-cit-fbnd-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-fbnd-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform fbnd"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fbnd/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-fbtp-determinator",
+            "args": {
+                "name": "openbmc-cit-fbtp-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-fbtp-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform fbtp"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fbtp/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-fbttn-determinator",
             "args": {
                 "name": "openbmc-cit-fbttn-determinator",
@@ -846,6 +1053,171 @@
                     "type": "every_file_matches_every_regexp",
                     "value": [
                         "^meta-facebook/meta-fbttn/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-fby2-determinator",
+            "args": {
+                "name": "openbmc-cit-fby2-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-fby2-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform fby2"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fby2/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-fby3-determinator",
+            "args": {
+                "name": "openbmc-cit-fby3-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-fby3-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform fby3"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fby3/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-fuji-determinator",
+            "args": {
+                "name": "openbmc-cit-fuji-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-fuji-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform fuji"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fuji/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-galaxy100-determinator",
+            "args": {
+                "name": "openbmc-cit-galaxy100-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-galaxy100-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform galaxy100"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-galaxy100/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-lightning-determinator",
+            "args": {
+                "name": "openbmc-cit-lightning-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-lightning-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform lightning"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "every_file_matches_every_regexp",
+                    "value": [
+                        "^meta-facebook/meta-lightning/.*"
                     ]
                 }
             ],
@@ -921,15 +1293,15 @@
             ]
         },
         {
-            "alias": "openbmc-cit-default-determinator",
+            "alias": "openbmc-cit-wedge-determinator",
             "args": {
-                "name": "openbmc-cit-default-determinator",
+                "name": "openbmc-cit-wedge-determinator",
                 "oncall": "openbmc",
                 "steps": [
                     {
                         "determinator": true,
-                        "name": "openbmc-cit-default-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform default"
+                        "name": "openbmc-cit-wedge-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform wedge"
                     }
                 ]
             },
@@ -942,16 +1314,9 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "some_file_matches_some_regexp",
+                    "type": "every_file_matches_every_regexp",
                     "value": [
-                        "^common/.*",
-                        "^facebook/.*",
-                        "^tests2/.*",
-                        "^meta-aspeed/.*",
-                        "^meta-facebook/recipes-.*/.*",
-                        "^meta-facebook/meta-python3/.*",
-                        "^meta-facebook/classes",
-                        "^meta-facebook/conf"
+                        "^meta-facebook/meta-wedge/.*"
                     ]
                 }
             ],
@@ -994,303 +1359,6 @@
             ]
         },
         {
-            "alias": "openbmc-cit-fby3-determinator",
-            "args": {
-                "name": "openbmc-cit-fby3-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-fby3-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform fby3"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-fby3/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-cit-fby2-determinator",
-            "args": {
-                "name": "openbmc-cit-fby2-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-fby2-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform fby2"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-fby2/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-cit-angelslanding-determinator",
-            "args": {
-                "name": "openbmc-cit-angelslanding-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-angelslanding-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform angelslanding"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-angelslanding/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-cit-lightning-determinator",
-            "args": {
-                "name": "openbmc-cit-lightning-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-lightning-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform lightning"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-lightning/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-cit-fuji-determinator",
-            "args": {
-                "name": "openbmc-cit-fuji-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-fuji-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform fuji"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-fuji/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-cit-elbert-determinator",
-            "args": {
-                "name": "openbmc-cit-elbert-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-elbert-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform elbert"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-elbert/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-cit-fbgp2-determinator",
-            "args": {
-                "name": "openbmc-cit-fbgp2-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-fbgp2-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform fbgp2"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-fbgp2/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-cit-galaxy100-determinator",
-            "args": {
-                "name": "openbmc-cit-galaxy100-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-galaxy100-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform galaxy100"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-galaxy100/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-cit-wedge-determinator",
-            "args": {
-                "name": "openbmc-cit-wedge-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-wedge-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform wedge"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-wedge/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
             "alias": "openbmc-cit-wedge400-determinator",
             "args": {
                 "name": "openbmc-cit-wedge400-determinator",
@@ -1315,72 +1383,6 @@
                     "type": "every_file_matches_every_regexp",
                     "value": [
                         "^meta-facebook/meta-wedge400/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-cit-fbtp-determinator",
-            "args": {
-                "name": "openbmc-cit-fbtp-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-fbtp-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform fbtp"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-fbtp/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-cit-fbnd-determinator",
-            "args": {
-                "name": "openbmc-cit-fbnd-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-fbnd-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform fbnd"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "every_file_matches_every_regexp",
-                    "value": [
-                        "^meta-facebook/meta-fbnd/.*"
                     ]
                 }
             ],

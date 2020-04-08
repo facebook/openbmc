@@ -15,6 +15,7 @@ RDEPENDS_${PN} += " \
   os-release \
   packagegroup-openbmc-tpm \
   packagegroup-openbmc-emmc \
+  packagegroup-openbmc-pfr \
   passwd-util \
   rsyslog \
   sudo \

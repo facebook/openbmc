@@ -184,6 +184,7 @@ enum {
 };
 
 int bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio);
+int bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt);
 
 #ifdef __cplusplus
 } // extern "C"

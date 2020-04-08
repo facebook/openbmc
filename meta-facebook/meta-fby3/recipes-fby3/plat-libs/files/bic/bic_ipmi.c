@@ -1197,3 +1197,21 @@ error_exit:
   if ( fd > 0 ) close(fd);
   return ret;
 }
+
+int
+bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt) {
+  uint8_t tbuf[256];
+  uint8_t tlen = 3, rlen = 0;
+  int ret;
+
+  tbuf[0] = bus;
+  tbuf[1] = addr;
+  tbuf[2] = rcnt;
+  if (wcnt) {
+    memcpy(&tbuf[3], wbuf, wcnt);
+    tlen += wcnt;
+  }
+  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+  return ret;
+}

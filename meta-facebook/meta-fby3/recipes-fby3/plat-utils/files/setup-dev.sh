@@ -31,10 +31,6 @@ function init_class1_dev(){
   #enable the register of the temperature of hsc
   /usr/sbin/i2cset -y 11 0x40 0xd4 0x1c 0x3f i
 
-  #enable ADC 16-bit mode(bit0) of LTC4282
-  #the default value of ILIM_ADJUST(11h) is 0x96
-  /usr/sbin/i2cset -y 11 0x44 0x11 0x97
-
   #create the device of the inlet/outlet temp.
   create_new_dev "lm75" 0x4e 12
   create_new_dev "lm75" 0x4f 12
@@ -57,11 +53,13 @@ function init_class2_dev(){
 create_new_dev "tmp421" 0x1f 8
 create_new_dev "24c32" 0x50 8
 
+echo -n "Setup devs for fby3..."
+
 bmc_location=$(get_bmc_board_id)
 if [ $bmc_location -eq 9 ]; then
   #The BMC of class2
   init_class2_dev
-elif [ $bmc_location -eq 14 ]; then
+elif [ $bmc_location -eq 14 ] || [ $bmc_location -eq 7 ]; then
   #The BMC of class1
   init_class1_dev
 else

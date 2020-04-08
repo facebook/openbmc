@@ -305,7 +305,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_12V_CYCLE:
-      if ( bmc_location == BB_BMC ) {
+      if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
         if ( pal_get_server_12v_power(fru, &status) < 0 ) {
           return POWER_STATUS_ERR;
         }
@@ -348,7 +348,7 @@ pal_sled_cycle(void) {
     return POWER_STATUS_ERR;
   }
 
-  if ( bmc_location == BB_BMC ) {
+  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
     ret = system("i2cset -y 11 0x40 0xd9 c &> /dev/null");
   } else {
     int i = 0;
@@ -439,7 +439,7 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
       return POWER_STATUS_FRU_ERR;
     }
 
-    if ( bmc_location == BB_BMC ) {
+    if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
         if ((dev_id >= 1 && dev_id <= 4) && (config_status == 1 || config_status == 3)) { // 1OU Exp
           intf = FEXP_BIC_INTF;
         } else if ((dev_id >= 5 && dev_id <= 10) && ( config_status == 2 || config_status == 3)) { // 2OU Exp
@@ -505,7 +505,7 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
     return POWER_STATUS_FRU_ERR;
   }
 
-  if ( bmc_location == BB_BMC ) {
+  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
       if ((dev_id >= 1 && dev_id <= 4) && (config_status == 1 || config_status == 3)) { // 1OU Exp
         intf = FEXP_BIC_INTF;
       } else if ((dev_id >= 5 && dev_id <= 10) && ( config_status == 2 || config_status == 3)) { // 2OU Exp

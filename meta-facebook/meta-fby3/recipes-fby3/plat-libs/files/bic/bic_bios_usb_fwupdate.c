@@ -271,7 +271,7 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
           goto error_exit;
         }
 
-        if (bmc_location == BB_BMC) {
+        if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
           if ( path[1] != slot_id) {
             continue;
           }

@@ -69,13 +69,13 @@ image_info BmcCpldComponent::check_image(string image, bool force) {
   
   if ( force == false ) {
     //CPLD is located on class 2(NIC_EXP)
-    if ( bmc_location == NIC_BMC) {
+    if ( bmc_location == NIC_BMC ) {
       if ( signed_byte != NICEXP ) {
         cout << "image is not a valid CPLD image for NIC expansion board" << endl;
       } else {
         image_sts.result = true;
       }
-    } else if (bmc_location == BB_BMC) {
+    } else if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
       if ( signed_byte != BICBB ) {
         cout << "image is not a valid CPLD image for baseboard" << endl;
       } else {

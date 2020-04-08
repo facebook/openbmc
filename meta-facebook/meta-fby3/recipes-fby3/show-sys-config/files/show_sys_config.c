@@ -207,8 +207,14 @@ main(int argc, char **argv) {
     return UTIL_EXECUTION_FAIL;
   }
 
-  total_fru = (bmc_location == BB_BMC)?FRU_SLOT4:FRU_SLOT1;
-  sys_info.type = (bmc_location == BB_BMC)?CLASS1:CLASS2;
+  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+    total_fru = FRU_SLOT4;
+    sys_info.type = CLASS1;
+  } else {
+    total_fru = FRU_SLOT1;
+    sys_info.type = CLASS2;
+  }
+
   sys_info.fru_cnt = total_fru;
 
   for ( i = FRU_SLOT1; i <= total_fru; i++ ) {
@@ -225,7 +231,7 @@ main(int argc, char **argv) {
         uint8_t riser_exp_bit = GET_BIT(data, 3);
         uint8_t server_config = UNKNOWN_CONFIG;
         sys_info.server_info[i-1].is_server_present = SERVER_PRSNT;
-        if ( bmc_location == BB_BMC ) {
+        if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
           sys_info.server_info[i-1].is_1ou_present = (front_exp_bit == 0)?M2_BOARD_PRSNT:M2_BOARD_NOT_PRSNT;
         } else {
           sys_info.server_info[i-1].is_1ou_present = M2_BOARD_NOT_PRSNT;

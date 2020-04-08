@@ -150,7 +150,7 @@ BOARD_ID=$(get_bmc_board_id)
 if [ $BOARD_ID -eq 9 ]; then
   set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x02"
   set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x03"
-elif [ $BOARD_ID -eq 14 ]; then
+elif [ $BOARD_ID -eq 14 ] || [ $BOARD_ID -eq 7 ]; then
   set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x01"
   set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x03"
 else

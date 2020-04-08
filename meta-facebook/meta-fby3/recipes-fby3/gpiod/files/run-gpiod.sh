@@ -29,7 +29,7 @@ bmc_location=$(get_bmc_board_id)
 if [ $bmc_location -eq 9 ]; then
   #The BMC of class2
   init_class2_gpiod
-elif [ $bmc_location -eq 14 ]; then
+elif [ $bmc_location -eq 14 ] || [ $bmc_location -eq 7 ]; then
   #The BMC of class1
   init_class1_gpiod
 else

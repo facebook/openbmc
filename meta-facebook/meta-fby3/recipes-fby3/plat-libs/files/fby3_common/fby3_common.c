@@ -170,7 +170,7 @@ fby3_common_is_fru_prsnt(uint8_t fru, uint8_t *val) {
     return ret;
   }
 
-  if ( bmc_location == BB_BMC ) {
+  if ( bmc_location == BB_BMC || bmc_location == DVT_BB_BMC ) {
     ret = get_gpio_value(gpio_server_prsnt[fru], val);
     if ( ret < 0 ) {
       return ret;
@@ -198,7 +198,7 @@ fby3_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val) {
     return ret;
   }
 
-  if ( bmc_location == BB_BMC ) {
+  if ( bmc_location == BB_BMC || bmc_location == DVT_BB_BMC ) {
     ret = get_gpio_value(gpio_server_stby_pwr_sts[fru], val);
     if ( ret < 0 ) {
       return ret;

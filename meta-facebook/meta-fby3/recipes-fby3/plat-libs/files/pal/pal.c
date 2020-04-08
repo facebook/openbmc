@@ -430,7 +430,7 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 
   *data++ = bmc_location;
 
-  if ( bmc_location == BB_BMC ) {
+  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
     int dev, retry = 3;
     uint8_t tbuf[4] = {0};
     uint8_t rbuf[4] = {0};
@@ -517,7 +517,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      if ( bmc_location == BB_BMC ) {
+      if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
         ret = fby3_common_is_fru_prsnt(fru, status);
       } else {
         if ( fru == FRU_SLOT1 ) {
@@ -646,7 +646,7 @@ int
 pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
   int ret = 0;
   uint8_t bmc_location = 0;
-
+  uint8_t fru_bus = 0;
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
@@ -655,7 +655,13 @@ pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
 
   switch(fru) {
   case FRU_BMC:
-    sprintf(path, EEPROM_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS, BMC_FRU_ADDR);
+    if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+      fru_bus = CLASS1_FRU_BUS;
+    } else {
+      fru_bus = CLASS2_FRU_BUS;
+    }
+
+    sprintf(path, EEPROM_PATH, fru_bus, BMC_FRU_ADDR);
     break;
   case FRU_BB:
     if ( bmc_location == NIC_BMC ) {
@@ -915,8 +921,9 @@ pal_get_guid(uint16_t offset, char *guid) {
   char path[128] = {0};
   int fd;
   uint8_t bmc_location = 0;
+  uint8_t fru_bus = 0;
   ssize_t bytes_rd;
-
+  
   errno = 0;
 
   if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
@@ -924,7 +931,13 @@ pal_get_guid(uint16_t offset, char *guid) {
     return -1;
   }
 
-  snprintf(path, sizeof(path), EEPROM_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS, BB_FRU_ADDR);
+  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+    fru_bus = CLASS1_FRU_BUS;
+  } else {
+    fru_bus = CLASS2_FRU_BUS;
+  }
+ 
+  snprintf(path, sizeof(path), EEPROM_PATH, fru_bus, BB_FRU_ADDR);
 
   // check for file presence
   if (access(path, F_OK)) {
@@ -957,6 +970,7 @@ pal_set_guid(uint16_t offset, char *guid) {
   char path[128] = {0};
   int fd;
   uint8_t bmc_location = 0;
+  uint8_t fru_bus = 0;
   ssize_t bytes_wr;
 
   errno = 0;
@@ -966,7 +980,13 @@ pal_set_guid(uint16_t offset, char *guid) {
     return -1;
   }
 
-  snprintf(path, sizeof(path), EEPROM_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS, BB_FRU_ADDR);
+  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+    fru_bus = CLASS1_FRU_BUS;
+  } else {
+    fru_bus = CLASS2_FRU_BUS;
+  }
+
+  snprintf(path, sizeof(path), EEPROM_PATH, fru_bus, BB_FRU_ADDR);
 
   // check for file presence
   if (access(path, F_OK)) {
@@ -1070,7 +1090,7 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
 
   config_status = bic_is_m2_exp_prsnt(slot);
 
-  if (bmc_location == BB_BMC) {
+  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
     if (config_status == 0) {
       pcie_conf = CONFIG_A;
     } else if (config_status == 1) {

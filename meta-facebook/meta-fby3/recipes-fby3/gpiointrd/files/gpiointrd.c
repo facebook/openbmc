@@ -199,7 +199,7 @@ main(int argc, char **argv) {
       exit(-1);
     }
 
-    if ( bmc_location == BB_BMC ) {
+    if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
       gpiop = g_class1_gpios;
       gpio_cnt = sizeof(g_class1_gpios)/sizeof(g_class1_gpios[0]);
       init_class1_threads();

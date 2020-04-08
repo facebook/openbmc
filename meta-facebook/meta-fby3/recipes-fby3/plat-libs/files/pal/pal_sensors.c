@@ -555,7 +555,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
     if (pal_is_fw_update_ongoing(fru) == false) {
       config_status = bic_is_m2_exp_prsnt(fru);
-      if ( bmc_location == BB_BMC && ( (config_status == PRESENT_1OU) || (config_status == (PRESENT_1OU + PRESENT_2OU))) ) {
+      if ( (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ( (config_status == PRESENT_1OU) || (config_status == (PRESENT_1OU + PRESENT_2OU))) ) {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_sensor_list, bic_1ou_sensor_cnt);
         current_cnt += bic_1ou_sensor_cnt;
       }
@@ -630,7 +630,7 @@ pal_get_fan_type(uint8_t *bmc_location, uint8_t *type) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
   }
 
-  if ( BB_BMC == *bmc_location ) {
+  if ( (BB_BMC == *bmc_location) || (DVT_BB_BMC == *bmc_location) ) {
     if ( is_cached == false ) {
       const char *shadows[] = {
         "DUAL_FAN0_DETECT_BMC_N_R",
@@ -699,7 +699,7 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
     return ret;
   }
 
-  if (bmc_location == BB_BMC) {
+  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
     if (pwm_num > pal_pwm_cnt ||
       snprintf(label, sizeof(label), "pwm%d", pwm_num + 1) > sizeof(label)) {
       return -1;
@@ -747,7 +747,7 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
     fan_type = UNKNOWN_TYPE;
   }
 
-  if (bmc_location == BB_BMC) {
+  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
     if ( fan_type == SINGLE_TYPE ) fan *= 2;
 
     if (fan > pal_tach_cnt ||
@@ -802,7 +802,7 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
     return -1;
   }
 
-  if (bmc_location == BB_BMC) {
+  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
     snprintf(label, sizeof(label), "pwm%d", fan_src + 1);
     ret = sensors_read_fan(label, &value);
   } else if (bmc_location == NIC_BMC) {
@@ -1265,7 +1265,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
     syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
   }
 
-  if (bmc_location == BB_BMC) {
+  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
     if ( (config_status == PRESENT_1OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x50 && sensor_num <= 0x7A)) { // 1OU Exp
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
     } else if ( (config_status == PRESENT_2OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x80 && sensor_num <= 0xCA)) { // 2OU Exp

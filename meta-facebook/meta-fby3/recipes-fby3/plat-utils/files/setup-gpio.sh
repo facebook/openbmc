@@ -144,7 +144,7 @@ if [ $BOARD_ID -eq 9 ]; then
   gpio_set FM_BMC_ISOLATED_UART_EN_R 0
 
 ###Baseboard BMC###
-elif [ $BOARD_ID -eq 14 ]; then
+elif [ $BOARD_ID -eq 14 ] || [ $BOARD_ID -eq 7 ]; then
   # GPIOA1-SMB_HOTSWAP_BMC_ALERT_N_R
   devmem_clear_bit $(scu_addr 80) 1
   gpio_export SMB_HOTSWAP_BMC_ALERT_N_R GPIOA1

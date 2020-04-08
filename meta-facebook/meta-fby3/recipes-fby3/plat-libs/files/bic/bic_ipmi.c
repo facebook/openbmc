@@ -355,7 +355,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t intf) {
     goto error_exit;
   }
 
-  if ( bmc_location == BB_BMC && (intf == BB_BIC_INTF) ) {
+  if ( (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && (intf == BB_BIC_INTF) ) {
     ret = BIC_STATUS_FAILURE;
     goto error_exit;
   } else if ( bmc_location == NIC_BMC && (intf == FEXP_BIC_INTF) ) {

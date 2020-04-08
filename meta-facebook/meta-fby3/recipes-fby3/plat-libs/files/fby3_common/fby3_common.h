@@ -78,6 +78,7 @@ enum {
 enum {
   NIC_BMC = 0x09,
   BB_BMC  = 0x0E,
+  DVT_BB_BMC  = 0x07,
 };
 
 // Server type

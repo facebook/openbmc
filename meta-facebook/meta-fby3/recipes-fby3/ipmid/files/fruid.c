@@ -105,6 +105,9 @@ fruid_init_local_fru() {
   int ret = 0;
   char path[128] = {0};
   int path_len = sizeof(path);
+  uint8_t fru_bus = 0;
+  uint8_t fru_addr = 0;
+  char *fru_path = NULL;
   uint8_t bmc_location = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
@@ -113,12 +116,22 @@ fruid_init_local_fru() {
     return ret;;
   }
 
+  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+    fru_bus = CLASS1_FRU_BUS;
+    fru_addr = BB_FRU_ADDR;
+    fru_path = FRU_BB_BIN;
+  } else {
+    fru_bus = CLASS2_FRU_BUS;
+    fru_addr = NICEXP_FRU_ADDR;
+    fru_path = FRU_NICEXP_BIN;
+  }
+
   //reinitialize ret 
   ret = -1;
 
   //create the fru binary in /tmp/
   //fruid_bmc.bin
-  snprintf(path, path_len, EEPROM_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS, BMC_FRU_ADDR);
+  snprintf(path, path_len, EEPROM_PATH, fru_bus, BMC_FRU_ADDR);
   if ( copy_eeprom_to_bin(path, FRU_BMC_BIN) < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_BMC_BIN);
     goto error_exit;
@@ -131,12 +144,11 @@ fruid_init_local_fru() {
     goto error_exit;
   }
 
-  snprintf(path, path_len, EEPROM_PATH, (bmc_location == BB_BMC)?CLASS1_FRU_BUS:CLASS2_FRU_BUS, 
-                                        (bmc_location == BB_BMC)?BB_FRU_ADDR:NICEXP_FRU_ADDR);
+  snprintf(path, path_len, EEPROM_PATH, fru_bus, fru_addr);
 
   //fruid_nicexp.bin or fruid_bb.bin 
-  if ( copy_eeprom_to_bin(path, (bmc_location == BB_BMC)?FRU_BB_BIN:FRU_NICEXP_BIN) < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, (bmc_location == BB_BMC)?FRU_BB_BIN:FRU_NICEXP_BIN);
+  if ( copy_eeprom_to_bin(path, fru_path) < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, fru_path);
     goto error_exit;
   }
 

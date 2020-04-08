@@ -2425,7 +2425,7 @@ pal_is_pfr_active(void) {
 }
 
 int __attribute__((weak))
-pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr)
+pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged)
 {
   return -1;
 }

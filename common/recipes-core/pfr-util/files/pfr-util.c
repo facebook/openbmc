@@ -25,7 +25,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/pal.h>
 #ifdef CONFIG_BIC
-#include <openbmc/bic.h>
+#include <facebook/bic.h>
 #endif
 
 #define PFR_PROVISION    (1 << 0)
@@ -91,6 +91,8 @@ static bool verbose = false;
 static const char *st_table[256] = {0};
 static uint8_t pfr_bus = 0x4;
 static uint8_t pfr_addr = 0xb0;
+static uint8_t pfr_fru = 0;
+static int (*pfr_transfer)(uint8_t *,uint8_t,uint8_t *,uint8_t) = NULL;
 
 static const char *prov_err_str[ERR_UNKNOWN] = {
   "",
@@ -119,11 +121,17 @@ print_usage_help(void) {
 }
 
 static int
-pfr_transfer(uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt) {
+pfr_transfer_bridged(uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt) {
 #ifdef CONFIG_BIC
-  // TODO Transfer message via BIC
-  return -1;
+  return bic_master_write_read(pfr_fru, pfr_bus, pfr_addr, tbuf, tcnt, rbuf, rcnt);
 #else
+  return -1;
+#endif
+}
+
+static int
+pfr_transfer_i2c(uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt)
+{
   static int fd = -1;
   int ret = -1;
   int retry = 2;
@@ -157,7 +165,6 @@ pfr_transfer(uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt) {
   } while (retry > 0);
 
   return ret;
-#endif
 }
 
 static int
@@ -632,10 +639,10 @@ int
 main(int argc, char **argv) {
   int ret = -1, retry = 0;
   int opt;
+  bool bridged = false;
   uint32_t operations = 0;
   const char *fruname;
   uint8_t tbuf[8], rbuf[8];
-  uint8_t fru_id;
   static struct option long_opts[] = {
     {"provision", no_argument, 0, 'p'},
     {"read_provision", no_argument, 0, 'r'},
@@ -677,14 +684,15 @@ main(int argc, char **argv) {
       return  -1;
     }
     fruname = argv[optind];
-    if (pal_get_fru_id((char *)fruname, &fru_id)) {
+    if (pal_get_fru_id((char *)fruname, &pfr_fru)) {
       printf("Invalid FRU: %s\n", fruname);
       return -1;
     }
-    if (pal_get_pfr_address(fru_id, &pfr_bus, &pfr_addr)) {
+    if (pal_get_pfr_address(pfr_fru, &pfr_bus, &pfr_addr, &bridged)) {
       printf("ERROR: Getting PFR Address from Platform Interface\n");
       return -1;
     }
+    pfr_transfer = bridged ? pfr_transfer_bridged : pfr_transfer_i2c;
 
     tbuf[0] = 0x00;
     if ((ret = pfr_transfer(tbuf, 1, rbuf, 1))) {

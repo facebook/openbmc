@@ -25,6 +25,12 @@ CFLAGS += "\
 LDFLAGS += "\
   ${@bb.utils.contains('MACHINE_FEATURES', 'bic', '-lbic', '', d)} \
 "
+DEPENDS += "\
+  ${@bb.utils.contains('MACHINE_FEATURES', 'bic', 'libbic', '', d)} \
+"
+RDEPENDS_${PN} += "\
+  ${@bb.utils.contains('MACHINE_FEATURES', 'bic', 'libbic', '', d)} \
+"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

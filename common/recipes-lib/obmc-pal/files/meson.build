@@ -26,7 +26,7 @@ pal_sources = [
 pal_deps = [
     cc.find_library('ipmi'),
     cc.find_library('rt'),
-    cc.find_library('pthread'),
+    dependency('threads'),
     dependency('libipmb'),
     dependency('libkv'),
     ]

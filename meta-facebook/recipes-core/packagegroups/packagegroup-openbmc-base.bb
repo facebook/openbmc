@@ -23,4 +23,5 @@ RDEPENDS_${PN} += " \
   u-boot \
   u-boot-fw-utils \
   wdtcli \
+  udev-rules \
   "

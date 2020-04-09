@@ -1649,3 +1649,14 @@ pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str) {
 
   return 0;
 }
+
+int pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged)
+{
+  if (fru != FRU_MB || fru != FRU_BMC) {
+    return -1;
+  }
+  *bus = PFR_MAILBOX_BUS;
+  *addr = PFR_MAILBOX_ADDR;
+  *bridged = false;
+  return 0;
+}

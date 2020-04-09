@@ -72,7 +72,7 @@ try:
             logging.Formatter("%(levelname)s:%(asctime)-15s %(message)s")
         )
         logger.addHandler(handler)
-        if is_openbmc():
+        if is_openbmc() and not systemd_available(logger):
             add_syslog_handler(logger)
         return logger
 
@@ -224,8 +224,15 @@ def exec_bunch(commands, logger):
             logger.error("Running `{}` failed".format(" ".join(cmd)))
 
 
-def restart_healthd(logger, wait=False):
-    run_verbosely(["sv", "restart", "healthd"], logger)
+def systemd_available(logger):
+    with open("/proc/1/cmdline") as f:
+        c = f.readline()
+        return "systemd" in c
+
+
+def restart_healthd(logger, wait=False, supervisor="sv"):
+    run_verbosely([supervisor, "restart", "healthd"], logger)
+
     # healthd is petting watchdog, if something goes wrong and it doesn't do so
     # after restart it may hard-reboot the system - it's better to be safe
     # then sorry here, let's wait 30s before proceeding
@@ -234,16 +241,20 @@ def restart_healthd(logger, wait=False):
 
 
 def restart_services(logger):
+    if systemd_available(logger):
+        supervisor = "systemctl"
+    else:
+        supervisor = "sv"
     commands = (
         # restart the high memory profile services
-        ["sv", "restart", "restapi"],
+        [supervisor, "restart", "restapi"],
     )
     exec_bunch(commands, logger)
 
     # similarly to exec_bunch - make the restart best effort, this is not
     # critical
     try:
-        restart_healthd(logger, wait=False)
+        restart_healthd(logger, supervisor=supervisor, wait=False)
     except Exception as e:
         logger.error("Restarting healthd failed: {}".format(e))
 

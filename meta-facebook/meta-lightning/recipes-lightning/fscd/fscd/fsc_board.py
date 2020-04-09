@@ -17,13 +17,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from ctypes import *
+from ctypes import CDLL, c_uint, pointer
 from subprocess import PIPE, Popen
 
 from fsc_util import Logger
 
 
-lpal_hndl = CDLL("libpal.so")
+lpal_hndl = CDLL("libpal.so.0")
 
 
 def board_fan_actions(fan, action="None"):

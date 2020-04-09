@@ -22,7 +22,7 @@ import logging
 import os
 import re
 import time
-from ctypes import *
+from ctypes import CDLL, Structure, c_char, pointer
 
 
 POR_DIR = "/mnt/data/power/por"
@@ -40,7 +40,7 @@ class PORConfig:
 
 
 # Handler for Bridge IC libraries
-bic = CDLL("libbic.so")
+bic = CDLL("libbic.so.0")
 
 
 class BIC_GPIO(Structure):
@@ -71,21 +71,21 @@ def init_por():
     if not os.path.isfile(POR_CONFIG):
         try:
             os.makedirs(POR_DIR)
-        except OSError as err:
+        except OSError:
             pass
 
-        por_cnfg = open(POR_CONFIG, "w")
-        por_cnfg.write("%s\n" % por.on)
-        por_cnfg.close()
+        with open(POR_CONFIG, "w") as por_cnfg:
+            por_cnfg.write("%s\n" % por.on)
+            por_cnfg.close()
 
     # For the Last Power State info
     if not os.path.isfile(POR_LPS):
         curr_time = int(time.time())
         lps = "on %s" % str(curr_time)
 
-        f_lps = open(POR_LPS, "w")
-        f_lps.write("%s\n" % lps)
-        f_lps.close()
+        with open(POR_LPS, "w") as f_lps:
+            f_lps.write("%s\n" % lps)
+            f_lps.close()
 
 
 # Get the POR config [ ON | OFF | LPS ]
@@ -94,8 +94,8 @@ def get_por_config():
     por = PORConfig()
 
     if os.path.isfile(POR_CONFIG):
-        por_cnfg = open(POR_CONFIG, "r")
-        cnfg = por_cnfg.read(1)
+        with open(POR_CONFIG, "r") as por_cnfg:
+            cnfg = por_cnfg.read(1)
 
         if cnfg in [por.on, por.off, por.lps]:
             return cnfg
@@ -109,8 +109,8 @@ def get_por_config():
 def get_por_lps():
 
     if os.path.isfile(POR_LPS):
-        f_lps = open(POR_LPS, "r")
-        lps = f_lps.readline()
+        with open(POR_LPS, "r") as f_lps:
+            lps = f_lps.readline()
         if re.search(r"on", lps):
             return 1
         elif re.search(r"off", lps):

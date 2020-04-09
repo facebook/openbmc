@@ -22,7 +22,7 @@ import os
 from enum import IntEnum
 
 
-lgpio_hndl = ctypes.CDLL("libgpio-ctrl.so", use_errno=True)
+lgpio_hndl = ctypes.CDLL("libgpio-ctrl.so.0", use_errno=True)
 
 
 class GPIOValue(IntEnum):

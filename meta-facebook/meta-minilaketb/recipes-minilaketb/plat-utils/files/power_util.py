@@ -22,7 +22,7 @@ import logging
 import os
 import re
 import time
-from ctypes import *
+from ctypes import CDLL, Structure, c_char, pointer
 
 
 POR_DIR = "/mnt/data/power/por"
@@ -40,7 +40,7 @@ class PORConfig:
 
 
 # Handler for Bridge IC libraries
-bic = CDLL("libbic.so")
+bic = CDLL("libbic.so.0")
 
 
 class BIC_GPIO(Structure):
@@ -71,7 +71,7 @@ def init_por():
     if not os.path.isfile(POR_CONFIG):
         try:
             os.makedirs(POR_DIR)
-        except OSERROR as err:
+        except OSError:
             pass
 
         por_cnfg = open(POR_CONFIG, "w")

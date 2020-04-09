@@ -1,8 +1,8 @@
 import subprocess
-from ctypes import *
+from ctypes import CDLL, c_uint, pointer
 
 
-lpal_hndl = CDLL("libpal.so")
+lpal_hndl = CDLL("libpal.so.0")
 
 
 def pal_fan_dead_handle(fan):

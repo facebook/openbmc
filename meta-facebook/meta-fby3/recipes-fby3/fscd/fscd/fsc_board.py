@@ -17,14 +17,15 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from ctypes import *
+from ctypes import CDLL
 from re import match
 from subprocess import PIPE, Popen
 
 from fsc_util import Logger
 
 
-lpal_hndl = CDLL("libpal.so")
+lpal_hndl = CDLL("libpal.so.0")
+
 
 def board_fan_actions(fan, action="None"):
     """
@@ -75,6 +76,7 @@ def set_all_pwm(boost):
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     response = response.decode()
     return response
+
 
 def sensor_valid_check(board, sname, check_name, attribute):
     try:

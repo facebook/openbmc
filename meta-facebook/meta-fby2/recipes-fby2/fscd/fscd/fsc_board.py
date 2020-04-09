@@ -17,14 +17,14 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from ctypes import *
+from ctypes import CDLL, c_char_p
 from re import match
 from subprocess import PIPE, Popen
 
 from fsc_util import Logger
 
 
-lpal_hndl = CDLL("libpal.so")
+lpal_hndl = CDLL("libpal.so.0")
 
 fru_map = {
     "slot1": {
@@ -199,7 +199,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
         sname = sname.replace(board + "_", "")
     Logger.debug("board=%s sname=%s" % (board, sname))
 
-    if match(r"soc_temp_diode", sname) != None:
+    if match(r"soc_temp_diode", sname) is not None:
         return rc_stby_sensor_check(board)
 
     try:
@@ -220,7 +220,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     ) as f:
                         bic_sts = f.read(1)
                     if bic_sts[0] == "0":
-                        if match(r"soc_dimm", sname) != None:
+                        if match(r"soc_dimm", sname) is not None:
                             server_type = lpal_hndl.pal_get_server_type(slot_id)
                             if int(server_type) == 1:  # RC Server
                                 # check DIMM present
@@ -280,7 +280,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
                             is_m2_prsnt = lpal_hndl.pal_is_m2_prsnt(fru_name, snr_name)
                             return int(is_m2_prsnt)
                 else:
-                    if match(r"dc_nvme", sname) != None:  # GPv1
+                    if match(r"dc_nvme", sname) is not None:  # GPv1
                         fru_name = c_char_p(board.encode("utf-8"))
                         snr_name = c_char_p(sname.encode("utf-8"))
                         is_m2_prsnt = lpal_hndl.pal_is_m2_prsnt(fru_name, snr_name)

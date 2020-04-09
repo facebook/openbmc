@@ -18,10 +18,10 @@
 # Boston, MA 02110-1301 USA
 #
 
-from ctypes import c_uint8, byref, CDLL
+from ctypes import CDLL, byref, c_uint8
 
 
-lpal_hndl = CDLL("libpal.so")
+lpal_hndl = CDLL("libpal.so.0")
 
 
 class BoardRevision:

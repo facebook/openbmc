@@ -18,14 +18,14 @@
 # Boston, MA 02110-1301 USA
 #
 import os.path
-from ctypes import *
+from ctypes import CDLL, c_uint, pointer
 from re import match
 from subprocess import PIPE, Popen
 
 from fsc_util import Logger
 
 
-lpal_hndl = CDLL("libpal.so")
+lpal_hndl = CDLL("libpal.so.0")
 
 
 def board_fan_actions(fan, action="None"):
@@ -114,7 +114,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
             data = ""
             data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
             result = data.split(": ")
-            if match(r"ON", result[1]) != None:
+            if match(r"ON", result[1]) is not None:
                 cmd = "cat /sys/class/gpio/gpio%s/value" % attribute["number"]
                 data = ""
                 data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
@@ -134,15 +134,15 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 data = ""
                 data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
                 result = data.split(": ")
-                if match(r"ON", result[1]) != None:
+                if match(r"ON", result[1]) is not None:
                     cmd = "/tmp/cache_store/M2_%s_NVMe" % attribute["nvme"]
                     data = ""
-                    if os.path.isfile(cmd) == True:
-                        data = open(cmd, "r")
-                        if data.read() == "1":
-                            return 1
-                        else:
-                            return 0
+                    if os.path.isfile(cmd) is True:
+                        with open(cmd, "r") as data:
+                            if data.read() == "1":
+                                return 1
+                            else:
+                                return 0
                     else:
                         return 0
                 else:

@@ -2,7 +2,7 @@
 from ctypes import *
 
 
-libpal_name = "libpal.so"
+libpal_name = "libpal.so.0"
 
 
 def tpm_physical_presence(fru, argv):

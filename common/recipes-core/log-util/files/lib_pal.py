@@ -18,10 +18,10 @@
 # Boston, MA 02110-1301 USA
 #
 
-from ctypes import *
+from ctypes import CDLL, c_ubyte, create_string_buffer, pointer
 
 
-lpal_hndl = CDLL("libpal.so")
+lpal_hndl = CDLL("libpal.so.0")
 
 
 def pal_get_fru_list():

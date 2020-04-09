@@ -3,7 +3,7 @@ import sys
 from ctypes import CDLL, byref, c_ubyte, c_uint
 
 
-libpal_name = "libpal.so"
+libpal_name = "libpal.so.0"
 
 
 def pal_print_postcode(fru):

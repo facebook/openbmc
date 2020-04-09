@@ -42,6 +42,14 @@
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
+// Baseboard PFR
+#define PFR_MAILBOX_BUS  (9)
+#define PFR_MAILBOX_ADDR (0xB0)
+
+// Server PFR
+#define PFR_BIC_MAILBOX_BUS (2)
+#define PFR_BIC_MAILBOX_ADDR (0xB0)
+
 const char pal_fru_list_print[] = "all, slot1, slot2, slot3, slot4, bmc, nic, bb, nicexp";
 const char pal_fru_list_rw[] = "slot1, slot2, slot3, slot4, bmc, bb, nicexp";
 const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc";
@@ -1778,5 +1786,30 @@ pal_set_fan_ctrl (char *ctrl_opt) {
     }
   } 
 
+  return ret;
+}
+
+int pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged)
+{
+  int ret = 0;
+  switch (fru) {
+    case FRU_BB:
+    case FRU_BMC:
+      *bus = PFR_MAILBOX_BUS;
+      *addr = PFR_MAILBOX_ADDR;
+      *bridged = false;
+      break;
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      *bus = PFR_BIC_MAILBOX_BUS;
+      *addr = PFR_BIC_MAILBOX_ADDR;
+      *bridged = true;
+      break;
+    default:
+      ret = -1;
+      break;
+  }
   return ret;
 }

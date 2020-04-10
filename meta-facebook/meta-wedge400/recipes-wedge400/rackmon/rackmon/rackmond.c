@@ -359,16 +359,18 @@ int check_active_psus()
       {
         char addr = psu_address(rack, shelf, psu);
         uint16_t status = 0;
-        int err = read_registers(&world.rs485, world.modbus_timeout, addr, REGISTER_PSU_STATUS, 1, &status);
-        if (err == 0)
-        {
-          world.active_addrs[world.num_active_addrs] = addr;
-          world.num_active_addrs++;
-        }
-        else
-        {
-          OBMC_INFO("check_active_psus error %02X - %d", addr, err);
-          dbg("%02x - %d; ", addr, err);
+        for (int retry = 0; retry < 5; retry++) {
+          int err = read_registers(&world.rs485, world.modbus_timeout, addr, REGISTER_PSU_STATUS, 1, &status);
+          if (err == 0)
+          {
+            world.active_addrs[world.num_active_addrs] = addr;
+            world.num_active_addrs++;
+          }
+          else
+          {
+            OBMC_INFO("check_active_psus error %02X - %d", addr, err);
+            dbg("%02x - %d; ", addr, err);
+          }
         }
       }
     }

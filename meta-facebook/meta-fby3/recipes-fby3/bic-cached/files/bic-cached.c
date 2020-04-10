@@ -444,7 +444,7 @@ main (int argc, char * const argv[])
     }
 
     if ( ret < 0 ) {
-      syslog(LOG_CRIT, "Fail on getting slot%u FRU", slot_id);
+      syslog(LOG_CRIT, "Fail on getting slot%u SDR", slot_id);
     }
   }
 

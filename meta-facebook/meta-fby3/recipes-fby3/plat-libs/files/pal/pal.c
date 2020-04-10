@@ -757,13 +757,31 @@ pal_fruid_write(uint8_t fru, char *path)
 
 int
 pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
-  //return bic_write_fruid(fru, dev_id, path);
-  if (dev_id == 11) { // 1U
+  int ret = PAL_ENOTSUP;
+  uint8_t config_status = 0;
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    printf("%s() Couldn't get the location of BMC\n", __func__);
+    return ret;
+  }
+
+  ret = bic_is_m2_exp_prsnt(fru);
+  if ( ret < 0 ) {
+    printf("%s() Couldn't get the status of 1OU/2OU\n", __func__);
+    return ret;
+  }
+
+  config_status = (uint8_t) ret;
+
+  if ( (dev_id == BOARD_1OU) && ((config_status & PRESENT_1OU) == PRESENT_1OU) && (bmc_location != NIC_BMC) ) { // 1U
     return bic_write_fruid(fru, 0, path, FEXP_BIC_INTF);
-  } else if (dev_id == 12) { // 2U
+  } else if ( (dev_id == BOARD_2OU) && ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { // 2U
     return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
   } else {
-    return -1;
+    printf("%s is not present!\n", (dev_id == BOARD_1OU)?"1OU":"2OU");
+    return PAL_ENOTSUP;
   }
 }
 

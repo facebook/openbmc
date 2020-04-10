@@ -69,6 +69,21 @@ enum {
 };
 
 enum {
+  DEV_ID0_1OU = 0x1,
+  DEV_ID1_1OU = 0x2,
+  DEV_ID2_1OU = 0x3,
+  DEV_ID3_1OU = 0x4,
+  DEV_ID0_2OU = 0x5,
+  DEV_ID1_2OU = 0x6,
+  DEV_ID2_2OU = 0x7,
+  DEV_ID3_2OU = 0x8,
+  DEV_ID4_2OU = 0x9,
+  DEV_ID5_2OU = 0xA,
+  BOARD_1OU   = 0xB,
+  BOARD_2OU   = 0xC,
+};
+
+enum {
   IPMB_SLOT1_I2C_BUS = 0,
   IPMB_SLOT2_I2C_BUS = 1,
   IPMB_SLOT3_I2C_BUS = 2,
@@ -87,8 +102,6 @@ enum {
   SERVER_TYPE_NONE = 0xFF,
 };
 
-//TODO: These pins should be modified because the slot number is rollbacked
-//setup-gpio.sh
 const static char *gpio_server_prsnt[] =
 {
   "",

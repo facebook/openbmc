@@ -354,31 +354,31 @@ int
 fby3_common_dev_id(char *str, uint8_t *dev) {
 
   if (!strcmp(str, "all")) {
-    *dev = 0;
+    *dev = FRU_ALL;
   } else if (!strcmp(str, "1U-dev0")) {
-    *dev = 1;
+    *dev = DEV_ID0_1OU;
   } else if (!strcmp(str, "1U-dev1")) {
-    *dev = 2;
+    *dev = DEV_ID1_1OU;
   } else if (!strcmp(str, "1U-dev2")) {
-    *dev = 3;
+    *dev = DEV_ID2_1OU;
   } else if (!strcmp(str, "1U-dev3")) {
-    *dev = 4;
+    *dev = DEV_ID3_1OU;
   } else if (!strcmp(str, "2U-dev0")) {
-    *dev = 5;
+    *dev = DEV_ID0_2OU;
   } else if (!strcmp(str, "2U-dev1")) {
-    *dev = 6;
+    *dev = DEV_ID1_2OU;
   } else if (!strcmp(str, "2U-dev2")) {
-    *dev = 7;
+    *dev = DEV_ID2_2OU;
   } else if (!strcmp(str, "2U-dev3")) {
-    *dev = 8;
+    *dev = DEV_ID3_2OU;
   } else if (!strcmp(str, "2U-dev4")) {
-    *dev = 9;
+    *dev = DEV_ID4_2OU;
   } else if (!strcmp(str, "2U-dev5")) {
-    *dev = 10;
+    *dev = DEV_ID5_2OU;
   } else if (!strcmp(str, "1U")) {
-    *dev = 11;
+    *dev = BOARD_1OU;
   } else if (!strcmp(str, "2U")) {
-    *dev = 12;
+    *dev = BOARD_2OU;
   } else {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fby3_common_dev_id: Wrong fru id");

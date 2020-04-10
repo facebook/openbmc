@@ -14,7 +14,7 @@ rocko_repos=(
 )
 
 warrior_repos=(
-    poky:023ff85a9a
+    poky:4c773c7b03
     meta-openembedded:a24acf94d4
     meta-security:4f7be0d252
 )

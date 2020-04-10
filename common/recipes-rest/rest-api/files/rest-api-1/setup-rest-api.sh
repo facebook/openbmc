@@ -28,5 +28,7 @@
 ### END INIT INFO
 
 runsv /etc/sv/restapi >/dev/null 2>&1 &
-
-sv "$1" restapi
+# delay 0.5 sencond to avoid suprising error print like below:
+# warning: restapi: can't open supervise/control: No such file or directory
+# root casue is runit deamon is not ready.
+(sleep 0.5; sv "$1" restapi) &

@@ -213,6 +213,8 @@ const uint8_t bic_bb_sensor_list[] = {
   BIC_BB_SENSOR_P2V5_BMC_STBY,
   BIC_BB_SENSOR_MEDUSA_VOUT,
   BIC_BB_SENSOR_MEDUSA_VIN,
+  BIC_BB_SENSOR_MEDUSA_PIN,
+  BIC_BB_SENSOR_MEDUSA_IOUT
 };
 const uint8_t nic_sensor_list[] = {
   NIC_SENSOR_MEZZ_TEMP,
@@ -453,8 +455,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
 
-  {"BMC_SENSOR_MEDUSA_CURR", 0xD0, read_ltc4282_val, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xD0
-  {"BMC_SENSOR_MEDUSA_PWR", 0xD1, read_ltc4282_val, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xD1
+  {"BMC_SENSOR_MEDUSA_CURR", 0xD0, read_ltc4282_val, 0, {144, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xD0
+  {"BMC_SENSOR_MEDUSA_PWR", 0xD1, read_ltc4282_val, 0, {1800, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xD1
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD2
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD3
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD4
@@ -498,7 +500,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xF8
   {"BMC_SENSOR_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF9
   {"BMC_SENSOR_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {27.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFA
-  {"BMC_SENSOR_FAN_IOUT", ADC8, read_adc_val, 0, {6.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFB
+  {"BMC_SENSOR_FAN_IOUT", ADC8, read_adc_val, 0, {25.6, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFB
   {"BMC_SENSOR_NIC_IOUT", ADC9, read_adc_val, 0, {6.6, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFC
   {"BMC_SENSOR_MEDUSA_VIN", 0xFD, read_ltc4282_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xFD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFE
@@ -966,9 +968,9 @@ read_adc_val(uint8_t adc_id, float *value) {
   ret = sensors_read_adc(adc_label[adc_id], value);
   if ( ret == PAL_EOK ) {
     if ( ADC8 == adc_id ) {
-      *value = *value/0.22/0.237/4;
+      *value = *value/0.22/0.237; // EVT: /0.22/0.237/4
     } else if ( ADC9 == adc_id ) {
-      *value = *value/0.16/0.649;
+      *value = *value/0.16/1.27;  // EVT: /0.16/0.649
     }
   }
 
@@ -1253,11 +1255,12 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
     }
   }
 
-  config_status = bic_is_m2_exp_prsnt(fru);
+  ret = bic_is_m2_exp_prsnt(fru);
 
-  if (config_status < 0) {
+  if (ret < 0) {
     return READING_NA;
   }
+  config_status = (uint8_t) ret;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
 

@@ -21,6 +21,7 @@
 import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
+from utils.shell_util import run_shell_cmd
 
 
 class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
@@ -28,6 +29,10 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     Input data to the test needs to be a list like below.
     User can choose to sends these lists from jsons too.
     """
+
+    PSU1_I2C_DEVICE = "pfe1100-i2c-7-59"
+    PSU2_I2C_DEVICE = "pfe1100-i2c-7-5a"
+    PSU_I2C_CMD = ["sensors | grep pfe"]
 
     # /api/sys
     def set_endpoint_sys_attributes(self):
@@ -55,11 +60,16 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "tmp75-i2c-3-4a",
             "fb_panther_plus-i2c-4-40",
             "max127-i2c-6-28",
-            "pfe1100-i2c-7-5a",
             "ncp4200-i2c-8-60",
             "ast_adc-isa-0000",
             "adm1278-i2c-12-10",
         ]
+
+        psu_i2c_devices = run_shell_cmd(cmd=RestEndpointTest.PSU_I2C_CMD)
+        if RestEndpointTest.PSU1_I2C_DEVICE in psu_i2c_devices:
+            self.endpoint_sensors_attrb.append(RestEndpointTest.PSU1_I2C_DEVICE)
+        if RestEndpointTest.PSU2_I2C_DEVICE in psu_i2c_devices:
+            self.endpoint_sensors_attrb.append(RestEndpointTest.PSU2_I2C_DEVICE)
 
     # "/api/sys/mb"
     def set_endpoint_mb_attributes(self):

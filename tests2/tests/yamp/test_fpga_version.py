@@ -38,7 +38,11 @@ class FpgaVersionTest(unittest.TestCase):
         self.assertIn("SUP_FPGA", data[1], "SUP_FPGA missing received={}".format(data))
 
         value = data[1].split(":")[1]
-        self.assertIn("3.8", value, "SUP_FPGA value missing received={}".format(value))
+        self.assertRegex(
+            value,
+            r"\b[0-9]+\.[0-9]+\b",
+            "SUP_FPGA version {} isn't numeric".format(value),
+        )
 
     def test_sup_fpga_sysfs_path_exists(self):
         self.sup_version_paths = {
@@ -57,7 +61,11 @@ class FpgaVersionTest(unittest.TestCase):
         self.assertIn("SCD_FPGA", data[3], "SCD_FPGA missing received={}".format(data))
 
         value = data[3].split(":")[1]
-        self.assertIn("14.4", value, "SCD_FPGA value missing received={}".format(value))
+        self.assertRegex(
+            value,
+            r"\b[0-9]+\.[0-9]+\b",
+            "SCD_FPGA version {} isn't numeric".format(value),
+        )
 
     def test_scd_fpga_sysfs_path_exists(self):
         self.scd_version_paths = {
@@ -85,10 +93,10 @@ class FpgaVersionTest(unittest.TestCase):
                     "PIM{} FPGA missing received={}".format(pim_count, data),
                 )
 
-                self.assertIn(
-                    "8.2",
-                    data[i].split(":")[1],
-                    "PIM{} FPGA value missing received={}".format(pim_count, data[i]),
+                self.assertRegex(
+                    data[i],
+                    r"\b[0-9]+\.[0-9]+\b",
+                    "PIM{} version {} isn't numeric".format(pim_count, data[i]),
                 )
 
     def test_pims_fpga_sysfs_path_exists(self):

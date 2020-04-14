@@ -21,6 +21,16 @@
       }
     }
   },
+  "fail_sensor_type": {
+    "SSD_sensor_fail":true,
+    "M2_sensor_fail":true,
+    "M2_sensor_count":12
+  },
+  "ssd_progressive_algorithm":{
+    "offset_algorithm":[
+      [11,20]
+    ]
+  },
   "watchdog": false,
   "min_rpm": 800,
   "profiles": {

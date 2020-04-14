@@ -71,6 +71,9 @@ const uint8_t mb_8s_m_sensor_list[] = {
   MB_SNR_INLET_TEMP,
   MB_SNR_OUTLET_TEMP_R,
   MB_SNR_OUTLET_TEMP_L,
+  MB_SNR_INLET_REMOTE_TEMP,
+  MB_SNR_OUTLET_REMOTE_TEMP_R,
+  MB_SNR_OUTLET_REMOTE_TEMP_L,
   MB_SNR_P5V,
   MB_SNR_P5V_STBY,
   MB_SNR_P3V3_STBY,
@@ -244,6 +247,9 @@ const uint8_t mb_8s_s_sensor_list[] = {
   MB_SNR_INLET_TEMP,
   MB_SNR_OUTLET_TEMP_R,
   MB_SNR_OUTLET_TEMP_L,
+  MB_SNR_INLET_REMOTE_TEMP, 
+  MB_SNR_OUTLET_REMOTE_TEMP_R,
+  MB_SNR_OUTLET_REMOTE_TEMP_L,
   MB_SNR_P5V,
   MB_SNR_P5V_STBY,
   MB_SNR_P3V3_STBY,
@@ -320,6 +326,9 @@ const uint8_t mb_2s_sensor_list[] = {
   MB_SNR_INLET_TEMP,
   MB_SNR_OUTLET_TEMP_R,
   MB_SNR_OUTLET_TEMP_L,
+  MB_SNR_INLET_REMOTE_TEMP, 
+  MB_SNR_OUTLET_REMOTE_TEMP_R,
+  MB_SNR_OUTLET_REMOTE_TEMP_L,
   MB_SNR_P5V,
   MB_SNR_P5V_STBY,
   MB_SNR_P3V3_STBY,
@@ -490,13 +499,6 @@ PAL_HSC_INFO hsc_info_list[] = {
 //NM
 PAL_I2C_BUS_INFO nm_info_list[] = {
   {NM_ID0, NM_IPMB_BUS_ID, NM_SLAVE_ADDR},
-};
-
-//TPM421
-PAL_I2C_BUS_INFO tmp421_info_list[] = {
-  {TEMP_INLET, I2C_BUS_19, 0x4C},
-  {TEMP_OUTLET_R, I2C_BUS_19, 0x4E},
-  {TEMP_OUTLET_L, I2C_BUS_19, 0x4F},
 };
 
 PAL_I2C_BUS_INFO nic_info_list[] = {
@@ -727,9 +729,9 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_INLET_TEMP",    TEMP_INLET,    read_sensor, true, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA0
   {"MB_OUTLET_TEMP_R", TEMP_OUTLET_R, read_sensor, true, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA1
   {"MB_OUTLET_TEMP_L", TEMP_OUTLET_L, read_sensor, true, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA5
+  {"MB_INLET_REMOTE_TEMP", TEMP_REMOTE_INLET, read_sensor, true, {55, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA3
+  {"MB_OUTLET_R_REMOTE_TEMP", TEMP_REMOTE_OUTLET_R, read_sensor, true, {75, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA4
+  {"MB_OUTLET_L_REMOTE_TEMP", TEMP_REMOTE_OUTLET_L, read_sensor, true, {75, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA5
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA6
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA7
   {"MB_CPU0_TEMP", CPU_ID0, read_cpu_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA8
@@ -1865,6 +1867,9 @@ read_sensor(uint8_t id, float *value) {
     {"tmp421-i2c-19-4c", "MB_INLET_TEMP"},
     {"tmp421-i2c-19-4e", "MB_OUTLET_L_TEMP"},
     {"tmp421-i2c-19-4f", "MB_OUTLET_R_TEMP"},
+    {"tmp421-i2c-19-4c", "MB_INLET_REMOTE_TEMP"},
+    {"tmp421-i2c-19-4e", "MB_OUTLET_L_REMOTE_TEMP"},
+    {"tmp421-i2c-19-4f", "MB_OUTLET_R_REMOTE_TEMP"},
   };
   if (id >= ARRAY_SIZE(devs)) {
     return -1;

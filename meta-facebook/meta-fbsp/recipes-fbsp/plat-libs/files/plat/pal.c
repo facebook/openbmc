@@ -935,7 +935,7 @@ pal_check_boot_device_is_vaild(uint8_t device) {
     case BOOT_DEVICE_IPV6:
     case BOOT_DEVICE_RESERVED:
       vaild = true;
-      break; 
+      break;
     default:
       break;
   }
@@ -1763,6 +1763,17 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
 int
 pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
   return me_xmit(request, req_len, response, rlen);
+}
+
+int
+pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
+  if (fru != FRU_MB) {
+    return -1;
+  }
+  *bus = PFR_MAILBOX_BUS;
+  *addr = PFR_MAILBOX_ADDR;
+  *bridged = false;
+  return 0;
 }
 
 int

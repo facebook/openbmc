@@ -120,7 +120,7 @@
                 {
                     "type": "every_file_matches_every_regexp",
                     "value": [
-                        "^meta-facebook/meta-angelslanding/.*"
+                        "^meta-facebook/meta-fbal/.*"
                     ]
                 }
             ],
@@ -219,7 +219,7 @@
                 {
                     "type": "every_file_matches_every_regexp",
                     "value": [
-                        "^meta-facebook/meta-emeraldpools/.*"
+                        "^meta-facebook/meta-fbep/.*"
                     ]
                 }
             ],
@@ -250,9 +250,10 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
-                        "^meta-facebook/meta-fbgp2/.*"
+                        "^meta-facebook/meta-fby2/meta-fby2-gpv2/.*",
+                        "^meta-facebook/meta-fby2/recipes-.*"
                     ]
                 }
             ],
@@ -283,9 +284,10 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
-                        "^meta-facebook/meta-fbnd/.*"
+                        "^meta-facebook/meta-fby2/meta-fby2-nd/.*",
+                        "^meta-facebook/meta-fby2/recipes-.*"
                     ]
                 }
             ],
@@ -582,7 +584,7 @@
                 {
                     "type": "every_file_matches_every_regexp",
                     "value": [
-                        "^meta-facebook/meta-sonorapass/.*"
+                        "^meta-facebook/meta-fbsp/.*"
                     ]
                 }
             ],
@@ -821,7 +823,7 @@
                 {
                     "type": "every_file_matches_every_regexp",
                     "value": [
-                        "^meta-facebook/meta-angelslanding/.*"
+                        "^meta-facebook/meta-fbal/.*"
                     ]
                 }
             ],
@@ -920,7 +922,7 @@
                 {
                     "type": "every_file_matches_every_regexp",
                     "value": [
-                        "^meta-facebook/meta-emeraldpools/.*"
+                        "^meta-facebook/meta-fbep/.*"
                     ]
                 }
             ],
@@ -951,9 +953,10 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
-                        "^meta-facebook/meta-fbgp2/.*"
+                        "^meta-facebook/meta-fby2/meta-fby2-gpv2/.*",
+                        "^meta-facebook/meta-fby2/recipes-.*"
                     ]
                 }
             ],
@@ -984,9 +987,10 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
-                        "^meta-facebook/meta-fbnd/.*"
+                        "^meta-facebook/meta-fby2/meta-fby2-nd/.*",
+                        "^meta-facebook/meta-fby2/recipes-.*"
                     ]
                 }
             ],
@@ -1283,7 +1287,7 @@
                 {
                     "type": "every_file_matches_every_regexp",
                     "value": [
-                        "^meta-facebook/meta-sonorapass/.*"
+                        "^meta-facebook/meta-fbsp/.*"
                     ]
                 }
             ],

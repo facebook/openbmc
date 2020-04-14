@@ -58,5 +58,4 @@ IMAGE_INSTALL += " \
   crashdump \
   show-sys-config \
   slot-util \
-  pfr-util \
   "

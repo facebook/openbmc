@@ -494,26 +494,25 @@ int pal_get_dev_guid(uint8_t fru, char *guid) {
 
 int pal_get_server_power(uint8_t fru, uint8_t *status)
 {
-  static gpio_desc_t *desc = NULL;
+  gpio_desc_t *desc;
   gpio_value_t value;
 
   if (fru != FRU_MB)
     return -1;
 
-  if (desc == NULL) {
-    desc = gpio_open_by_shadow("SYS_PWR_READY");
-    if (!desc) {
+  desc = gpio_open_by_shadow("SYS_PWR_READY");
+  if (!desc) {
 #ifdef DEBUG
-      syslog(LOG_WARNING, "Open GPIO SYS_PWR_READY failed");
+    syslog(LOG_WARNING, "Open GPIO SYS_PWR_READY failed");
 #endif
-      return -1;
-    }
+    return -1;
   }
 
   if (gpio_get_value(desc, &value) < 0) {
     syslog(LOG_WARNING, "Get GPIO SYS_PWR_READY failed");
     value = GPIO_VALUE_INVALID;
   }
+  gpio_close(desc);
 
   *status = (value == GPIO_VALUE_HIGH)? SERVER_POWER_ON: SERVER_POWER_OFF;
 
@@ -760,14 +759,17 @@ int pal_chassis_control(uint8_t fru, uint8_t *req_data, uint8_t req_len)
 {
   int cmd;
   pthread_t tid;
+  pthread_attr_t a;
 
   if (req_len != 1) {
     return CC_INVALID_LENGTH;
   }
 
   cmd = req_data[0];
+  pthread_attr_init(&a);
+  pthread_attr_setdetachstate(&a, PTHREAD_CREATE_DETACHED);
 
-  if (pthread_create(&tid, NULL, chassis_control_handler, (void *)cmd) < 0) {
+  if (pthread_create(&tid, &a, chassis_control_handler, (void *)cmd) < 0) {
     syslog(LOG_WARNING, "ipmid: chassis_control_handler pthread_create failed\n");
     return CC_UNSPECIFIED_ERROR;
   }
@@ -1048,17 +1050,15 @@ int pal_set_host_system_mode(uint8_t mode)
 
 int pal_set_id_led(uint8_t status)
 {
-  static gpio_desc_t *desc = NULL;
+  gpio_desc_t *desc;
   gpio_value_t value;
 
-  if (desc == NULL) {
-    desc = gpio_open_by_shadow("SYSTEM_LOG_LED");
-    if (!desc) {
+  desc = gpio_open_by_shadow("SYSTEM_LOG_LED");
+  if (!desc) {
 #ifdef DEBUG
-      syslog(LOG_WARNING, "Open GPIO SYSTEM_LOG_LED failed");
+    syslog(LOG_WARNING, "Open GPIO SYSTEM_LOG_LED failed");
 #endif
-      return -1;
-    }
+    return -1;
   }
 
   value = status? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
@@ -1066,6 +1066,7 @@ int pal_set_id_led(uint8_t status)
     syslog(LOG_ERR, "Set GPIO SYSTEM_LOG_LED failed\n");
     return -1;
   }
+  gpio_close(desc);
 
   return 0;
 }

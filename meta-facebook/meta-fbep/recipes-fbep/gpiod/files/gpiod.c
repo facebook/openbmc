@@ -32,6 +32,8 @@
 
 #define POLL_TIMEOUT -1 /* Forever */
 
+bool g_sys_pwr_off = true;
+
 static void log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay)
 {
   const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
@@ -62,10 +64,16 @@ static void gpio_event_handle_power_btn(gpiopoll_pin_t *gp, gpio_value_t last, g
   pal_clock_control();
 }
 
+static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  g_sys_pwr_off = (curr == GPIO_VALUE_HIGH)? false: true;
+}
+
 // GPIO table to be monitored
 static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
   {"BMC_PWR_BTN_IN_N", "Power button", GPIO_EDGE_BOTH, gpio_event_handle_power_btn, NULL},
+  {"SYS_PWR_READY", "System power off", GPIO_EDGE_BOTH, gpio_event_handle_pwr_good, NULL},
 };
 
 // For monitoring GPIOs on IO expender
@@ -94,7 +102,7 @@ static void* fan_status_monitor()
   while (1) {
     sleep(1);
 
-    if (pal_is_server_off())
+    if (g_sys_pwr_off)
       continue;
 
     for (i = 0; i < 8; i++) {

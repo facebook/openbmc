@@ -25,6 +25,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 
 SRC_URI = "file://rest.py \
+           file://common_logging.py \
            file://common_tree.py \
            file://common_middlewares.py \
            file://plat_tree.py \
@@ -62,10 +63,12 @@ SRC_URI = "file://rest.py \
            file://setup_plat_routes.py \
            file://run_rest \
            file://test_node_sensors.py \
+           file://test_common_logging.py \
+           file://test_rest_config.py \
           "
 
 S = "${WORKDIR}"
-DEPENDS += "libpal update-rc.d-native aiohttp python3-psutil"
+DEPENDS += "libpal update-rc.d-native aiohttp python3-psutil json-log-formatter-native"
 
 do_install_class-target() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -89,7 +92,7 @@ do_install_class-target() {
 
 
 pkgdir = "rest-api"
-RDEPENDS_${PN} += "libpal python3-core aiohttp"
+RDEPENDS_${PN} += "libpal python3-core aiohttp json-log-formatter"
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 

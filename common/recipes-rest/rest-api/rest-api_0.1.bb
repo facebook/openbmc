@@ -23,14 +23,15 @@ SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
-DEPENDS_append = " update-rc.d-native aiohttp-native"
-RDEPENDS_${PN} += "python3-core aiohttp"
+DEPENDS_append = " update-rc.d-native aiohttp-native json-log-formatter-native"
+RDEPENDS_${PN} += "python3-core aiohttp json-log-formatter"
 
 
 SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://rest.py \
            file://rest-api-1/common_endpoint.py \
            file://common_middlewares.py\
+           file://common_logging.py\
            file://board_endpoint.py \
            file://rest-api-1/rest_watchdog.py \
            file://rest_config.py \
@@ -57,6 +58,8 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://rest-api-1/rest_utils.py \
            file://board_setup_routes.py \
            file://test_common_middlewares.py \
+           file://test_common_logging.py \
+           file://test_rest_config.py \
            file://boardroutes.py \
            file://rest-api-1/common_setup_routes.py \
            file://rest-api-1/setup_plat_routes.py \
@@ -68,6 +71,7 @@ binfiles = "board_setup_routes.py \
             boardroutes.py \
             board_endpoint.py \
             common_middlewares.py \
+            common_logging.py \
             rest_config.py \
             node.py \
             node_bmc.py \

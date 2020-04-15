@@ -30,6 +30,7 @@ import sys
 import syslog
 
 from aiohttp import web
+from common_logging import get_logger_config
 from common_middlewares import jsonerrorhandler
 from rest_config import parse_config
 from setup_plat_routes import setup_plat_routes
@@ -52,26 +53,8 @@ for opt, arg in opts:
 
 config = parse_config(configpath)
 
-LOGGER_CONF = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {"default": {"format": "%(message)s"}},
-    "handlers": {
-        "file_handler": {
-            "level": "INFO",
-            "formatter": "default",
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": config["logfile"],
-            "maxBytes": 1048576,
-            "backupCount": 3,
-            "encoding": "utf8",
-        }
-    },
-    "loggers": {
-        "": {"handlers": ["file_handler"], "level": "DEBUG", "propagate": True}
-    },
-}
-logging.config.dictConfig(LOGGER_CONF)
+
+logging.config.dictConfig(get_logger_config(config))
 
 
 servers = []

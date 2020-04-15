@@ -19,8 +19,6 @@
 #
 
 import json
-import os
-import sys
 import unittest
 
 from aiohttp import test_utils, web
@@ -53,18 +51,12 @@ class TestMiddleware(test_utils.AioHTTPTestCase):
     async def test_internal_server_error_case(self):
         self.maxDiff = None
         r = repr(ValueError("OOPS"))
-        with unittest.mock.patch.object(server_logger, "error") as mock_error:
-            request = await self.client.request("GET", "/bad")
-            assert request.status == 500
-            resp = await request.json()
-            self.assertEqual(
-                {
-                    "Information": {"reason": r},
-                    "Actions": [],
-                    "Resources": [],
-                },
-                resp,
-            )
+        request = await self.client.request("GET", "/bad")
+        assert request.status == 500
+        resp = await request.json()
+        self.assertEqual(
+            {"Information": {"reason": r}, "Actions": [], "Resources": []}, resp
+        )
 
     @test_utils.unittest_run_loop
     async def test_proper_response(self):

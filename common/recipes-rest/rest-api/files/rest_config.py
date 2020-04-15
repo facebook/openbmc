@@ -22,6 +22,10 @@ import configparser
 import syslog
 
 
+VALID_LOG_HANDLERS = ["stdout", "syslog", "file"]
+VALID_LOG_FORMATS = ["default", "json"]
+
+
 def parse_config(configpath):
     RestConfig = configparser.ConfigParser()
     RestConfig.read(configpath)
@@ -31,12 +35,34 @@ def parse_config(configpath):
         syslog.syslog(syslog.LOG_INFO, "REST: Launched with Read/Write Mode")
     else:
         syslog.syslog(syslog.LOG_INFO, "REST: Launched with Read Only Mode")
+    log_handler = RestConfig.get("logging", "handler", fallback="file")
+    if log_handler not in VALID_LOG_HANDLERS:
+        # There is no logger yet, so we syslog the fallback warning ¯\_(ツ)_/¯
+        syslog.syslog(
+            syslog.LOG_WARNING,
+            "Invalid logging handler ("
+            + repr(log_handler)
+            + ") detected, falling back to 'file'",
+        )
+        log_handler = "file"
+    log_format = RestConfig.get("logging", "format", fallback="text")
+    if log_format not in VALID_LOG_FORMATS:
+        # There is no logger yet, so we syslog the fallback warning ¯\_(ツ)_/¯
+        syslog.syslog(
+            syslog.LOG_WARNING,
+            "Invalid logging format ("
+            + repr(log_format)
+            + ") detected, falling back to 'default'",
+        )
+        log_format = "default"
 
     return {
         "ports": RestConfig.get("listen", "port", fallback="8080").split(","),
         "ssl_ports": list(
             filter(None, RestConfig.get("listen", "ssl_port", fallback="").split(","))
         ),
+        "logformat": log_format,
+        "loghandler": log_handler,
         "logfile": RestConfig.get("logging", "filename", fallback="/tmp/rest.log"),
         "writable": writable,
         "ssl_certificate": RestConfig.get("ssl", "certificate", fallback=None),

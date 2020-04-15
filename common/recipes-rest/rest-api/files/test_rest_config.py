@@ -1,9 +1,8 @@
 import os
-import sys
 import tempfile
 import unittest
 
-from .. import rest_config as sut
+import rest_config as sut
 
 
 valid_config = [
@@ -14,6 +13,8 @@ valid_config = [
             "ports": ["8080"],
             "ssl_ports": [],
             "logfile": "/tmp/rest.log",
+            "logformat": "default",
+            "loghandler": "file",
             "writable": False,
             "ssl_certificate": None,
             "ssl_key": None,
@@ -28,6 +29,8 @@ valid_config = [
             "ports": ["8081"],
             "ssl_ports": [],
             "logfile": "/tmp/rest.log",
+            "logformat": "default",
+            "loghandler": "file",
             "writable": False,
             "ssl_certificate": None,
             "ssl_key": None,
@@ -43,6 +46,8 @@ valid_config = [
             "ports": ["8080", "8888"],
             "ssl_ports": ["8443"],
             "logfile": "/tmp/rest.log",
+            "logformat": "default",
+            "loghandler": "file",
             "writable": False,
             "ssl_certificate": None,
             "ssl_key": None,
@@ -64,6 +69,56 @@ valid_config = [
             "ports": ["8080", "8888"],
             "ssl_ports": ["8443"],
             "logfile": "/some/other/file.log",
+            "logformat": "default",
+            "loghandler": "file",
+            "writable": True,
+            "ssl_certificate": None,
+            "ssl_key": None,
+        },
+    ),
+    (
+        b"""
+        [listen]
+        port = 8080,8888
+        ssl_port = 8443
+
+        [logging]
+        format = json
+        handler = stdout
+
+        [access]
+        write = true
+        """,
+        {
+            "ports": ["8080", "8888"],
+            "ssl_ports": ["8443"],
+            "logfile": "/tmp/rest.log",
+            "logformat": "json",
+            "loghandler": "stdout",
+            "writable": True,
+            "ssl_certificate": None,
+            "ssl_key": None,
+        },
+    ),
+    (
+        b"""
+        [listen]
+        port = 8080,8888
+        ssl_port = 8443
+
+        [logging]
+        format = invalid
+        handler = invalid
+
+        [access]
+        write = true
+        """,
+        {
+            "ports": ["8080", "8888"],
+            "ssl_ports": ["8443"],
+            "logfile": "/tmp/rest.log",
+            "logformat": "default",
+            "loghandler": "file",
             "writable": True,
             "ssl_certificate": None,
             "ssl_key": None,

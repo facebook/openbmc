@@ -40,9 +40,7 @@
   "/sys/bus/i2c/drivers/ltc4282/"#bus"-00"#addr"/hwmon/hwmon"#index"/%s"
 #define LTC4282_STATUS_PWR_GOOD	"power_good"
 #define LTC4282_REBOOT		"reboot"
-#define P12V_1_DIR	LTC4282_DIR(16, 53, 6)
-#define P12V_2_DIR	LTC4282_DIR(17, 40, 7)
-#define P12V_AUX_DIR	LTC4282_DIR(18, 43, 8)
+#define P12V_AUX_DIR	LTC4282_DIR(18, 43, 7)
 
 #define DELAY_POWER_CYCLE 10
 #define MAX_RETRY 10
@@ -640,6 +638,12 @@ static int server_power_on()
     goto bail;
   }
   sleep(2);
+
+  /* Enable ADM1272 Vout sampling (it is disabled by default) */
+  if (system("i2cset -f -y 16 0x13 0xd4 0x3f37 w > /dev/null") < 0 ||
+      system("i2cset -f -y 17 0x10 0xd4 0x3f37 w > /dev/null") < 0) {
+    syslog(LOG_CRIT, "Failed to enable P48V VOUT monitoring");
+  }
   pal_clock_control();
 
   ret = 0;
@@ -749,6 +753,9 @@ void* chassis_control_handler(void *arg)
     case 0xAC:  // sled-cycle with delay 4 secs
       sleep(4);
       pal_sled_cycle();
+      break;
+    default:
+      syslog(LOG_CRIT, "Invalid command 0x%x for chassis control", cmd);
       break;
   }
 

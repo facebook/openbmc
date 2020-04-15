@@ -80,25 +80,32 @@ class CpldComponent : public Component {
 };
 
 int CpldComponent::_update(const char *path, uint8_t is_signed) {
-  int ret = -1;
+  int ret = -1, pfr_active;
   uint8_t i, cfm_cnt = 1, rev_id = 0xF;
 
-  if ((pal_is_pfr_active() == PFR_ACTIVE) && (pld_type == MAX10_10M25)) {
-    string dev;
-    string cmd;
-
-    if (!sys.get_mtd_name(string("stg-cpld"), dev)) {
-      return FW_STATUS_FAILURE;
+  if (pld_type == MAX10_10M25) {
+    pfr_active = pal_is_pfr_active();
+    if (pfr_active == PFR_UNPROVISIONED) {
+      return FW_STATUS_NOT_SUPPORTED;
     }
 
-    sys.output << "Flashing to device: " << dev << endl;
-    cmd = "flashcp -v " + string(path) + " " + dev;
-    ret = sys.runcmd(cmd);
-    return pal_fw_update_finished(0, _component.c_str(), ret);
-  }
+    if (pfr_active == PFR_ACTIVE) {
+      string dev;
+      string cmd;
 
-  if ((pld_type == MAX10_10M25) && (!pal_get_board_rev_id(&rev_id) && (rev_id < 2))) {
-    cfm_cnt = 2;
+      if (!sys.get_mtd_name(string("stg-cpld"), dev)) {
+        return FW_STATUS_FAILURE;
+      }
+
+      sys.output << "Flashing to device: " << dev << endl;
+      cmd = "flashcp -v " + string(path) + " " + dev;
+      ret = sys.runcmd(cmd);
+      return pal_fw_update_finished(0, _component.c_str(), ret);
+    }
+
+    if (!pal_get_board_rev_id(&rev_id) && (rev_id < 2)) {
+      cfm_cnt = 2;
+    }
   }
 
   for (i = 0; i < cfm_cnt; i++) {
@@ -141,7 +148,7 @@ int CpldComponent::print_version() {
   uint8_t ver[4];
   char dev_i2c[16];
 
-  if (pal_is_pfr_active() && (pld_type == MAX10_10M25)) {
+  if ((pld_type == MAX10_10M25) && pal_is_pfr_active()) {
     do {
       sprintf(dev_i2c, "/dev/i2c-%d", PFR_MAILBOX_BUS);
       ifd = open(dev_i2c, O_RDWR);

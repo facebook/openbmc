@@ -33,6 +33,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/nm.h>
+#include <openbmc/obmc-i2c.h>
 #include <facebook/fbal_fruid.h>
 #include <openbmc/ipmb.h>
 #include "pal.h"
@@ -45,6 +46,7 @@
 #define GPIO_FAULT_LED "FM_BMC_LED_CATERR_N"
 #define GPIO_NIC0_PRSNT "HP_LVC3_OCP_V3_1_PRSNT2_N"
 #define GPIO_NIC1_PRSNT "HP_LVC3_OCP_V3_2_PRSNT2_N"
+#define GPIO_SKT_ID0 "FM_BMC_SKT_ID_0"
 #define GPIO_SKT_ID2 "FM_BMC_SKT_ID_2"
 
 #define GUID_SIZE 16
@@ -911,36 +913,21 @@ pal_get_mb_mode(uint8_t* mode) {
 
 int
 pal_get_config_is_master(void) {
-  uint8_t mode = 0;
-  uint8_t pos=0;
-  int ret = 0;
-  static bool cached = 0;
-  static int status = 0;
+  gpio_desc_t *gdesc;
+  gpio_value_t val;
+  static bool cached = false;
+  static int status = 1;
 
   if (!cached) {
-    ret = pal_get_mb_mode(&mode);
-    if(ret != 0) {
-      return -1;
-    }
-#ifdef DEBUG
-    syslog(LOG_DEBUG, "%s mode=%x", __func__, mode);
-#endif
-
-    ret = pal_get_mb_position(&pos);
-    if(ret != 0) {
-      return -1;
-    }
-#ifdef DEBUG
-    syslog(LOG_DEBUG, "%s position=%x", __func__, pos);
-#endif
-
-    cached = 1;
-    if (mode != pos) {
-      status = 0;
-    } else {
-      status = 1;
+    if ((gdesc = gpio_open_by_shadow(GPIO_SKT_ID0))) {
+      if (!gpio_get_value(gdesc, &val)) {
+        status = (val == GPIO_VALUE_LOW) ? 1 : 0;
+        cached = true;
+      }
+      gpio_close(gdesc);
     }
   }
+
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s status=%x", __func__, status);
 #endif
@@ -1650,13 +1637,95 @@ pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str) {
   return 0;
 }
 
-int pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged)
-{
-  if (fru != FRU_MB || fru != FRU_BMC) {
+int
+pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
+  if (fru != FRU_MB) {
     return -1;
   }
   *bus = PFR_MAILBOX_BUS;
   *addr = PFR_MAILBOX_ADDR;
   *bridged = false;
   return 0;
+}
+
+int
+pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
+  int ret = 0;
+  int ifd, retry = 3;
+  uint8_t buf[16];
+  char dev_i2c[16];
+
+  ret = status;
+  if (ret == 0) {
+    sprintf(dev_i2c, "/dev/i2c-%d", PFR_MAILBOX_BUS);
+    ifd = open(dev_i2c, O_RDWR);
+    if (ifd < 0) {
+      return -1;
+    }
+
+    buf[0] = 0x13;  // BMC update intent
+    if (!strcmp(comp, "bmc")) {
+      buf[1] = 0x08;  // BMC_ACTIVE
+    } else if (!strcmp(comp, "bios")) {
+      buf[1] = (pal_get_config_is_master()) ? 0x01 : 0x81;  // PCH_ACTIVE
+    } else if (!strcmp(comp, "pfr_cpld")) {
+      buf[1] = (pal_get_config_is_master()) ? 0x04 : 0x84;  // CPLD_ACTIVE
+    }
+
+    sync();
+    sleep(3);
+    ret = system("sv stop sensord > /dev/null 2>&1");
+    ret = system("sv stop ipmbd_0 > /dev/null 2>&1");
+    ret = system("sv stop ipmbd_2 > /dev/null 2>&1");
+    ret = system("sv stop ipmbd_5 > /dev/null 2>&1");
+    ret = system("sv stop ipmbd_6 > /dev/null 2>&1");
+    ret = system("sv stop ipmbd_8 > /dev/null 2>&1");
+
+    printf("sending update intent to CPLD...\n");
+    fflush(stdout);
+    sleep(1);
+    do {
+      ret = i2c_rdwr_msg_transfer(ifd, PFR_MAILBOX_ADDR, buf, 2, NULL, 0);
+      if (ret) {
+        syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x %02x", PFR_MAILBOX_BUS, buf[0], buf[1]);
+        if (--retry > 0) {
+          msleep(100);
+        }
+      }
+    } while (ret && retry > 0);
+    close(ifd);
+  }
+
+  return ret;
+}
+
+int
+pal_is_pfr_active(void) {
+  int pfr_active = PFR_NONE;
+  int ifd, retry = 3;
+  uint8_t tbuf[8], rbuf[8];
+  char dev_i2c[16];
+
+  sprintf(dev_i2c, "/dev/i2c-%d", PFR_MAILBOX_BUS);
+  ifd = open(dev_i2c, O_RDWR);
+  if (ifd < 0) {
+    return pfr_active;
+  }
+
+  tbuf[0] = 0x0A;
+  do {
+    if (!i2c_rdwr_msg_transfer(ifd, PFR_MAILBOX_ADDR, tbuf, 1, rbuf, 1)) {
+      pfr_active = (rbuf[0] & 0x20) ? PFR_ACTIVE : PFR_UNPROVISIONED;
+      break;
+    }
+
+#ifdef DEBUG
+    syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x", 4, tbuf[0]);
+#endif
+    if (--retry > 0)
+      msleep(20);
+  } while (retry > 0);
+  close(ifd);
+
+  return pfr_active;
 }

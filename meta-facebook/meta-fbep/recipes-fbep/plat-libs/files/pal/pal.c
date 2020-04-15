@@ -1151,9 +1151,9 @@ pal_is_pfr_active(void) {
   return pfr_active;
 }
 
-int pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged)
-{
-  if (fru != FRU_MB || fru != FRU_BSM) {
+int
+pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
+  if (fru != FRU_MB) {
     return -1;
   }
   *bus = PFR_MAILBOX_BUS;

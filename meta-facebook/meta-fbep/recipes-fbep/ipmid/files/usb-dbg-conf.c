@@ -100,29 +100,8 @@ int plat_get_syscfg_text(uint8_t fru, char *syscfg)
 
 int plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
 {
-  char img_ver[64] = {0}, cfg_ver[64] = {0};
-  char tmp_str[80] = {0};
-  uint8_t paxid;
-
-  if (fw_text == NULL)
-    return -1;
-
-  fw_text[0] = '\0';
-  for (paxid = 0; paxid < 4; paxid++) {
-    if (pal_get_pax_version(paxid, img_ver, cfg_ver) < 0) {
-      snprintf(tmp_str, sizeof(tmp_str), "pax%d_img:\nNA\n", paxid);
-      strncat(fw_text, tmp_str, sizeof(tmp_str)+1);
-      snprintf(tmp_str, sizeof(tmp_str), "pax%d_cfg:\nNA\n", paxid);
-      strncat(fw_text, tmp_str, sizeof(tmp_str)+1);
-    } else {
-      snprintf(tmp_str, sizeof(tmp_str), "pax%d_img:\n%s\n", paxid, img_ver);
-      strncat(fw_text, tmp_str, sizeof(tmp_str)+1);
-      snprintf(tmp_str, sizeof(tmp_str), "pax%d_cfg:\n%s\n", paxid, cfg_ver);
-      strncat(fw_text, tmp_str, sizeof(tmp_str)+1);
-    }
-  }
-
-  return 0;
+  // Not supported
+  return -1;
 }
 
 int plat_get_extra_sysinfo(uint8_t fru, char *info)

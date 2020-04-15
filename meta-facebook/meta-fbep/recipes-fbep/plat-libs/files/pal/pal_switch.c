@@ -29,6 +29,38 @@
 
 static pthread_mutex_t pax_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+int pal_check_pax_fw_type(uint8_t comp, const char *fwimg)
+{
+  int fd;
+  struct switchtec_fw_image_info info;
+
+  fd = open(fwimg, O_RDONLY);
+  if (fd < 0 || switchtec_fw_file_info(fd, &info) < 0)
+    return -1;
+
+  close(fd);
+
+  if ((comp == PAX_BL2 && info.type == SWITCHTEC_FW_TYPE_BL2) ||
+      (comp == PAX_IMG && info.type == SWITCHTEC_FW_TYPE_IMG) ||
+      (comp == PAX_CFG && info.type == SWITCHTEC_FW_TYPE_CFG) ) {
+    return 0;
+  } else {
+    return -1;
+  }
+}
+
+void pal_clear_pax_cache(uint8_t paxid)
+{
+  char cmd[128] = {0};
+
+  snprintf(cmd, sizeof(cmd), "/tmp/cache_store/pax%d_bl2", paxid);
+  unlink(cmd);
+  snprintf(cmd, sizeof(cmd), "/tmp/cache_store/pax%d_img", paxid);
+  unlink(cmd);
+  snprintf(cmd, sizeof(cmd), "/tmp/cache_store/pax%d_cfg", paxid);
+  unlink(cmd);
+}
+
 int pal_pax_fw_update(uint8_t paxid, const char *fwimg)
 {
   int ret;
@@ -43,10 +75,6 @@ int pal_pax_fw_update(uint8_t paxid, const char *fwimg)
   ret = system(cmd);
   pthread_mutex_unlock(&pax_mutex);
   if (WIFEXITED(ret) && (WEXITSTATUS(ret) == 0)) {
-    snprintf(cmd, sizeof(cmd), "/tmp/cache_store/pax%d_img", paxid);
-    unlink(cmd);
-    snprintf(cmd, sizeof(cmd), "/tmp/cache_store/pax%d_cfg", paxid);
-    unlink(cmd);
     return 0;
   } else {
     return -1;
@@ -89,22 +117,101 @@ int pal_read_pax_dietemp(uint8_t sensor_num, float *value)
   return ret < 0? ERR_SENSOR_NA: 0;
 }
 
-int pal_get_pax_version(uint8_t paxid, char *img_ver, char *cfg_ver)
+static struct switchtec_fw_part_summary* get_pax_ver_sum(uint8_t paxid)
 {
-  int ret;
   char device_name[LARGEST_DEVICE_NAME] = {0};
-  char img_key[MAX_KEY_LEN], cfg_key[MAX_KEY_LEN];
+  struct switchtec_dev *dev;
+  struct switchtec_fw_part_summary *sum;
+
+  snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, SWITCH_BASE_ADDR + paxid);
+
+  pthread_mutex_lock(&pax_mutex);
+  dev = switchtec_open(device_name);
+  if (dev == NULL) {
+    syslog(LOG_WARNING, "%s: switchtec open %s failed", __func__, device_name);
+    pthread_mutex_unlock(&pax_mutex);
+    return NULL;
+  }
+
+  sum = switchtec_fw_part_summary(dev);
+
+  switchtec_close(dev);
+  pthread_mutex_unlock(&pax_mutex);
+
+  if (!sum) {
+    syslog(LOG_WARNING, "%s: switchtec get %s version failed", __func__, device_name);
+    return NULL;
+  }
+
+  return sum;
+}
+int pal_get_pax_bl2_ver(uint8_t paxid, char *ver)
+{
+  struct switchtec_fw_part_summary *sum;
+  char img_key[MAX_KEY_LEN];
+  char bl2_key[MAX_KEY_LEN];
+
+  snprintf(img_key, sizeof(img_key), "pax%d_img", paxid);
+  snprintf(bl2_key, sizeof(bl2_key), "pax%d_bl2", paxid);
+  if (kv_get(bl2_key, ver, NULL, 0) == 0)
+    return 0;
+
+  if (pal_is_server_off())
+    return -1;
+
+  sum = get_pax_ver_sum(paxid);
+  if (sum == NULL)
+    return -1;
+
+  snprintf(ver, MAX_VALUE_LEN, "%s", sum->img.active->version);
+  kv_set(img_key, ver, 0, 0);
+  snprintf(ver, MAX_VALUE_LEN, "%s", sum->bl2.active->version);
+  kv_set(bl2_key, ver, 0, 0);
+  switchtec_fw_part_summary_free(sum);
+
+  return 0;
+}
+
+int pal_get_pax_fw_ver(uint8_t paxid, char *ver)
+{
+  struct switchtec_fw_part_summary *sum;
+  char img_key[MAX_KEY_LEN];
+  char bl2_key[MAX_KEY_LEN];
+
+  snprintf(bl2_key, sizeof(bl2_key), "pax%d_bl2", paxid);
+  snprintf(img_key, sizeof(img_key), "pax%d_img", paxid);
+  if (kv_get(img_key, ver, NULL, 0) == 0)
+    return 0;
+
+  if (pal_is_server_off())
+    return -1;
+
+  sum = get_pax_ver_sum(paxid);
+  if (sum == NULL)
+    return -1;
+
+  snprintf(ver, MAX_VALUE_LEN, "%s", sum->bl2.active->version);
+  kv_set(bl2_key, ver, 0, 0);
+  snprintf(ver, MAX_VALUE_LEN, "%s", sum->img.active->version);
+  kv_set(img_key, ver, 0, 0);
+  switchtec_fw_part_summary_free(sum);
+
+  return 0;
+}
+
+int pal_get_pax_cfg_ver(uint8_t paxid, char *ver)
+{
+  int ret = 0;
+  char device_name[LARGEST_DEVICE_NAME] = {0};
+  char cfg_key[MAX_KEY_LEN];
   struct switchtec_dev *dev;
   size_t map_size;
   unsigned int x;
   gasptr_t map;
 
-  snprintf(img_key, sizeof(img_key), "pax%d_img", paxid);
   snprintf(cfg_key, sizeof(cfg_key), "pax%d_cfg", paxid);
-  if (kv_get(img_key, img_ver, NULL, 0) == 0 &&
-      kv_get(cfg_key, cfg_ver, NULL, 0) == 0) {
+  if (kv_get(cfg_key, ver, NULL, 0) == 0)
     return 0;
-  }
 
   if (pal_is_server_off())
     return -1;
@@ -119,7 +226,6 @@ int pal_get_pax_version(uint8_t paxid, char *img_ver, char *cfg_ver)
     return -1;
   }
 
-  ret = switchtec_get_fw_version(dev, img_ver, MAX_VALUE_LEN);
   map = switchtec_gas_map(dev, 0, &map_size);
   if (map != SWITCHTEC_MAP_FAILED) {
     x = gas_read32(dev, (void __gas*)map + 0x2104);
@@ -132,9 +238,8 @@ int pal_get_pax_version(uint8_t paxid, char *img_ver, char *cfg_ver)
   pthread_mutex_unlock(&pax_mutex);
 
   if (ret == 0) {
-    kv_set(img_key, img_ver, 0, 0);
-    snprintf(cfg_ver, MAX_VALUE_LEN, "%x", x);
-    kv_set(cfg_key, cfg_ver, 0, 0);
+    snprintf(ver, MAX_VALUE_LEN, "%x", x);
+    kv_set(cfg_key, ver, 0, 0);
   }
 
   return ret < 0? -1: 0;

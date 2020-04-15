@@ -31,6 +31,7 @@
 #define PFR_PROVISION    (1 << 0)
 #define PFR_RD_PROVISION (1 << 1)
 #define PFR_ST_HISTORY   (1 << 2)
+#define PFR_LOCK_UFM     (1 << 3)
 
 #define PFM_B0_MAGIC 0xB6EAFD19
 #define PFM_B0_SIZE  0x10
@@ -47,14 +48,6 @@
 #define PCH_PFM_OFFSET 0x02ff0000
 #define PCH_RC_OFFSET  0x01bf0000
 #define PCH_STG_OFFSET 0x007f0000
-
-#if defined(PFR_MAILBOX_BUS)
-#define PFR_BUS  PFR_MAILBOX_BUS
-#define PFR_ADDR PFR_MAILBOX_ADDR
-#else
-#define PFR_BUS  4
-#define PFR_ADDR 0xb0
-#endif
 
 #define INIT_ST_TBL(tbl, idx, str) tbl[idx] = str
 
@@ -106,6 +99,7 @@ static const char *option_list[] = {
   "--provision",
   "--read_provision",
   "--state_history",
+  "--lock",
   "--verbose"
 };
 
@@ -155,7 +149,7 @@ pfr_transfer_i2c(uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt)
 
   do {
     memcpy(buf, tbuf, tcnt);
-    if (!(ret = i2c_rdwr_msg_transfer(fd, PFR_ADDR, buf, tcnt, rbuf, rcnt))) {
+    if (!(ret = i2c_rdwr_msg_transfer(fd, pfr_addr, buf, tcnt, rbuf, rcnt))) {
       break;
     }
 
@@ -382,7 +376,21 @@ pfr_provision_cmd(uint8_t prov, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint
 }
 
 static int
-pfr_provision(void) {
+pfr_lock_ufm(void) {
+  int ret = -1;
+  uint8_t tbuf[4], rbuf[4];
+
+  // lock UFM
+  if ((ret = pfr_provision_cmd(LOCK_UFM, tbuf, 0, rbuf, 0))) {
+    syslog(LOG_ERR, "%s: lock UFM failed", __func__);
+    return ret;
+  }
+
+  return ret;
+}
+
+static int
+pfr_provision(uint8_t lock_ufm) {
   int ret = -1;
   uint8_t shasum[SHA256_DIGEST_LENGTH], i;
   uint8_t tbuf[64], rbuf[64];
@@ -463,7 +471,7 @@ pfr_provision(void) {
   }
 
   // lock UFM
-  if ((ret = pfr_provision_cmd(LOCK_UFM, tbuf, 0, rbuf, 0))) {
+  if (lock_ufm && (ret = pfr_lock_ufm())) {
     syslog(LOG_ERR, "%s: lock UFM failed", __func__);
     return ret;
   }
@@ -647,6 +655,7 @@ main(int argc, char **argv) {
     {"provision", no_argument, 0, 'p'},
     {"read_provision", no_argument, 0, 'r'},
     {"state_history", no_argument, 0, 's'},
+    {"lock", no_argument, 0, 'l'},
     {"verbose", no_argument, 0, 'v'},
     {0,0,0,0},
   };
@@ -656,7 +665,7 @@ main(int argc, char **argv) {
       break;
     }
 
-    while ((opt = getopt_long(argc, argv, "prsv", long_opts, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "prslv", long_opts, NULL)) != -1) {
       switch (opt) {
         case 'p':
           operations |= PFR_PROVISION;
@@ -666,6 +675,9 @@ main(int argc, char **argv) {
           break;
         case 's':
           operations |= PFR_ST_HISTORY;
+          break;
+        case 'l':
+          operations |= PFR_LOCK_UFM;
           break;
         case 'v':
           verbose = true;
@@ -696,14 +708,15 @@ main(int argc, char **argv) {
 
     tbuf[0] = 0x00;
     if ((ret = pfr_transfer(tbuf, 1, rbuf, 1))) {
-      printf("access mailbox failed, bus=%d, addr=0x%02X\n", PFR_BUS, PFR_ADDR);
+      printf("access mailbox failed, bus=%d, addr=0x%02X, bridge=%c\n",
+             pfr_bus, pfr_addr, (bridged)?'Y':'N');
       return ret;
     }
 
     do {
       if (operations & PFR_PROVISION) {
         do {
-          ret = pfr_provision();
+          ret = pfr_provision((operations & PFR_LOCK_UFM));
           if (ret && retry) {
             msleep(100);
             syslog(LOG_WARNING, "retry pfr_provision");
@@ -729,6 +742,15 @@ main(int argc, char **argv) {
         if ((ret = pfr_state_history())) {
           printf("get state history failed\n");
         }
+        break;
+      }
+
+      if (operations & PFR_LOCK_UFM) {
+        if ((ret = pfr_lock_ufm()) == ERR_UFM_LOCKED) {
+          printf("UFM already locked\n");
+          break;
+        }
+        printf("lock UFM %s\n", (!ret)?"succeeded":"failed");
         break;
       }
     } while (0);

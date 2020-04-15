@@ -24,7 +24,15 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # TODO:
 #	This is a workaround before EVT
 #	CPLD will handle with 12V power when BMC is ready.
-power-util mb on > /dev/null
+for retry in {1..30};
+do
+  pwr_ready=$(gpiocli -s SYS_PWR_READY get-value)
+  pwr_ready=${pwr_ready:0-1}
+  if [[ "$pwr_ready" == "1" ]]; then
+    break
+  fi
+  power-util mb on > /dev/null
+done
 
 # Thermal sensors for PCIe switches
 i2c_device_add 6 0x4d tmp422

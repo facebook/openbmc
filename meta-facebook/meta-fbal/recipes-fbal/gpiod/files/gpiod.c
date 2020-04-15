@@ -261,28 +261,6 @@ decrease_timer(long int *val) {
   return *val;
 }
 
-//CPU0 Event Handler
-static void cpu0_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
-{
-  if (curr == GPIO_VALUE_HIGH) {
-    pal_add_cri_sel("CPU0 thermtrip DEASSERT");
-  } else {
-    pal_add_cri_sel("CPU0 thermtrip ASSERT");
-  }
-  log_gpio_change(desc, curr, 0);
-}
-
-//CPU1 Event Handler
-static void cpu1_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
-{
-  if (curr == GPIO_VALUE_HIGH) {
-    pal_add_cri_sel("CPU1 thermtrip DEASSERT");
-  } else {
-    pal_add_cri_sel("CPU1 thermtrip ASSERT");
-  }
-  log_gpio_change(desc, curr, 0);
-}
-
 //PCH Thermtrip Handler
 static void pch_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
@@ -303,7 +281,7 @@ static void pch_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
   log_gpio_change(desc, curr, 0);
 }
 
-//PCH Thermtrip Handler
+//FIVR Fault Handler
 static void fivr_fault_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
   uint8_t status = 0;
@@ -334,13 +312,13 @@ static void gpio_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_val
 
 
 // Generic Event Handler for GPIO changes, but only logs event when MB is ON
-/*
+
 static void gpio_event_pson_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
   SERVER_POWER_CHECK(0);
   log_gpio_change(desc, curr, 0);
 }
-*/
+
 // Generic Event Handler for GPIO changes, but only logs event when MB is ON 3S
 static void gpio_event_pson_3s_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
@@ -439,7 +417,7 @@ init_msmi(gpiopoll_pin_t *desc, gpio_value_t value) {
 
 static void
 err_caterr_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  SERVER_POWER_CHECK(3);
+  SERVER_POWER_CHECK(1);
   pthread_mutex_lock(&caterr_mutex);
   g_caterr_irq++;
   pthread_mutex_unlock(&caterr_mutex);
@@ -447,7 +425,7 @@ err_caterr_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 
 static void
 err_msmi_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  SERVER_POWER_CHECK(3);
+  SERVER_POWER_CHECK(1);
   pthread_mutex_lock(&caterr_mutex);
   g_msmi_irq++;
   pthread_mutex_unlock(&caterr_mutex);
@@ -685,19 +663,19 @@ static struct gpiopoll_config g_gpios[] = {
   {"IRQ_SML1_PMBUS_BMC_ALERT_N", "GPIOAA1", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
   {"FM_CPU_CATERR_LVT3_N", "GPIOZ0", GPIO_EDGE_FALLING, err_caterr_handler, init_caterr},
   {"FM_CPU_MSMI_LVT3_N", "GPIOZ2", GPIO_EDGE_FALLING, err_msmi_handler, init_msmi},
-  {"FM_CPU0_THERMTRIP_LVT3_PLD_N", "GPIOA1", GPIO_EDGE_BOTH, cpu0_thermtrip_handler, NULL},
-  {"FM_CPU1_THERMTRIP_LVT3_PLD_N", "GPIOD0", GPIO_EDGE_BOTH, cpu1_thermtrip_handler, NULL},
+  {"FM_CPU0_THERMTRIP_LVT3_PLD_N", "GPIOA1", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
+  {"FM_CPU1_THERMTRIP_LVT3_PLD_N", "GPIOD0", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
   {"FM_CPU0_MEMHOT_OUT_N", "GPIOU5", GPIO_EDGE_BOTH, gpio_event_pson_3s_handler, NULL},
   {"FM_CPU1_MEMHOT_OUT_N", "GPIOL3", GPIO_EDGE_BOTH, gpio_event_pson_3s_handler, NULL},
   {"FM_CPU0_FIVR_FAULT_LVT3_PLD", "GPIOB2", GPIO_EDGE_BOTH, fivr_fault_handler, NULL},
   {"FM_CPU1_FIVR_FAULT_LVT3_PLD", "GPIOB3", GPIO_EDGE_BOTH, fivr_fault_handler, NULL},
-  {"FM_CPU_ERR0_LVT3_N", "GPIOF0", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
-  {"FM_CPU_ERR1_LVT3_N", "GPIOF1", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
-  {"FM_CPU_ERR2_LVT3_N", "GPIOF2", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
-  {"FM_MEM_THERM_EVENT_CPU0_LVT3_N", "GPIOB0", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
-  {"FM_MEM_THERM_EVENT_CPU1_LVT3_N", "GPIOB1", GPIO_EDGE_BOTH, gpio_event_handler, NULL}, 
-  {"FM_SYS_THROTTLE_LVC3", "GPIOR7", GPIO_EDGE_BOTH, gpio_event_handler, NULL}, 
-  {"IRQ_DIMM_SAVE_LVT3_N", "GPION4", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
+  {"FM_CPU_ERR0_LVT3_N", "GPIOF0", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
+  {"FM_CPU_ERR1_LVT3_N", "GPIOF1", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
+  {"FM_CPU_ERR2_LVT3_N", "GPIOF2", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
+  {"FM_MEM_THERM_EVENT_CPU0_LVT3_N", "GPIOB0", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
+  {"FM_MEM_THERM_EVENT_CPU1_LVT3_N", "GPIOB1", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL}, 
+  {"FM_SYS_THROTTLE_LVC3", "GPIOR7", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL}, 
+  {"IRQ_DIMM_SAVE_LVT3_N", "GPION4", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
   {"FM_HSC_TIMER_EXP_N", "GPIOM2", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
 };
 

@@ -12,6 +12,7 @@ EMMC_REQUIRED_PACKAGES = "\
   blktrace \
   fio \
   mmc-raw \
+  emmcd \
 "
 
 RDEPENDS_${PN} += "\

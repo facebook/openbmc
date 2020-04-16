@@ -6293,6 +6293,10 @@ pal_parse_sel_gpv2(uint8_t fru, uint8_t *sel, char *error_log)
             strcat(error_log, " IOUT_OC_WARNING");
           }
           break;
+        case 0x0B:
+          sprintf(temp_log, "LS%d_EN_HI_PG_LO", ed[1] & 0x0F);
+          strcat(error_log, temp_log);
+          break;
         default:
           strcat(error_log, "Unknown");
           break;

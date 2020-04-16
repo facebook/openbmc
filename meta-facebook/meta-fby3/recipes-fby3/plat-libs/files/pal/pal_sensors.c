@@ -197,6 +197,39 @@ const uint8_t bic_2ou_sensor_list[] = {
   BIC_2OU_EXP_SENSOR_P3V3_M2F_VOL,
   BIC_2OU_EXP_SENSOR_P3V3_M2F_TMP,
 };
+
+const uint8_t bic_1ou_edsff_sensor_list[] = {
+  //BIC 1OU EDSFF Sensors 
+  BIC_1OU_EDSFF_SENSOR_NUM_T_MB_OUTLET_TEMP_T,
+  BIC_1OU_EDSFF_SENSOR_NUM_V_12_AUX,
+  BIC_1OU_EDSFF_SENSOR_NUM_V_12_EDGE,
+  BIC_1OU_EDSFF_SENSOR_NUM_V_3_3_AUX,
+  BIC_1OU_EDSFF_SENSOR_NUM_V_HSC_IN,
+  BIC_1OU_EDSFF_SENSOR_NUM_I_HSC_OUT,
+  BIC_1OU_EDSFF_SENSOR_NUM_P_HSC_IN,
+  BIC_1OU_EDSFF_SENSOR_NUM_T_HSC,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2A,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2A,
+  BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2A,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2A,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2A, 
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2D,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2D,
+  BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2D,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2D,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2D,
+};
+
 //BIC BaseBoard Sensors
 const uint8_t bic_bb_sensor_list[] = {
   BIC_BB_SENSOR_INLET_TEMP,
@@ -216,6 +249,7 @@ const uint8_t bic_bb_sensor_list[] = {
   BIC_BB_SENSOR_MEDUSA_PIN,
   BIC_BB_SENSOR_MEDUSA_IOUT
 };
+
 const uint8_t nic_sensor_list[] = {
   NIC_SENSOR_MEZZ_TEMP,
 };
@@ -519,11 +553,12 @@ size_t bic_sensor_cnt = sizeof(bic_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_sensor_cnt = sizeof(bic_1ou_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_sensor_cnt = sizeof(bic_2ou_sensor_list)/sizeof(uint8_t);
 size_t bic_bb_sensor_cnt = sizeof(bic_bb_sensor_list)/sizeof(uint8_t);
+size_t bic_1ou_edsff_sensor_cnt = sizeof(bic_1ou_edsff_sensor_list)/sizeof(uint8_t);
 
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
-  uint8_t bmc_location = 0;
+  uint8_t bmc_location = 0, type = 0;
   int ret = 0;
   uint8_t config_status = 0;
   uint8_t current_cnt = 0;
@@ -558,8 +593,14 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     if (pal_is_fw_update_ongoing(fru) == false) {
       config_status = bic_is_m2_exp_prsnt(fru);
       if ( (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ( (config_status == PRESENT_1OU) || (config_status == (PRESENT_1OU + PRESENT_2OU))) ) {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_sensor_list, bic_1ou_sensor_cnt);
-        current_cnt += bic_1ou_sensor_cnt;
+        ret = bic_get_1ou_type(fru, &type); 
+        if (type == EDSFF_1U) {
+          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_edsff_sensor_list, bic_1ou_edsff_sensor_cnt);
+          current_cnt += bic_1ou_edsff_sensor_cnt;
+        } else {
+          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_sensor_list, bic_1ou_sensor_cnt);
+          current_cnt += bic_1ou_sensor_cnt;
+        }
       }
 
       if ( (config_status == PRESENT_2OU) || (config_status == (PRESENT_1OU + PRESENT_2OU)) ) {
@@ -1269,7 +1310,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
   }
 
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-    if ( (config_status == PRESENT_1OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x50 && sensor_num <= 0x7A)) { // 1OU Exp
+    if ( (config_status == PRESENT_1OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x50 && sensor_num <= 0x7F)) { // 1OU Exp
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
     } else if ( (config_status == PRESENT_2OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x80 && sensor_num <= 0xCA)) { // 2OU Exp
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);

@@ -41,6 +41,7 @@ extern const uint32_t IANA_ID;
 #define CMD_OEM_GET_FAN_DUTY    0x51
 #define CMD_OEM_GET_FAN_RPM     0x52
 #define CMD_OEM_SET_12V_CYCLE   0x64
+#define CMD_OEM_GET_BOARD_ID    0xA0
 
 enum {
   BIC_STATUS_SUCCESS =  0,

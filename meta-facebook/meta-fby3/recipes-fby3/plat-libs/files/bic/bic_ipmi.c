@@ -385,6 +385,28 @@ error_exit:
   return ret;
 }
 
+int bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
+  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
+  uint8_t rbuf[16] = {0};
+  uint8_t rlen = 0;
+  int ret = 0;
+  int retry = 0;
+  
+  while (retry < 3) {
+    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_GET_BOARD_ID, tbuf, 3, rbuf, &rlen, FEXP_BIC_INTF);
+    if (ret == 0) break;
+    retry++;
+  }
+  
+  if (ret == 0) {
+    *type = rbuf[3];
+  } else {
+    syslog(LOG_WARNING, "[%s] fail at slot%d", __func__, slot_id);
+  }
+  
+  return ret;
+}
+
 // OEM - Get Post Code buffer
 // Netfn: 0x38, Cmd: 0x12
 int

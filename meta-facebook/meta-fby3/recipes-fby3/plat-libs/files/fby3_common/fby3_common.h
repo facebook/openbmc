@@ -91,9 +91,11 @@ enum {
 };
 
 enum {
-  NIC_BMC = 0x09,
-  BB_BMC  = 0x0E,
-  DVT_BB_BMC  = 0x07,
+  // BOARD_ID [0:3] 
+  NIC_BMC = 0x09, // 1001
+  BB_BMC  = 0x0E, // 1110
+  DVT_BB_BMC  = 0x07, // 0111
+  EDSFF_1U = 0x07,  // 0111
 };
 
 // Server type

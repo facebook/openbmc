@@ -36,6 +36,7 @@ SRC_URI = " \
     file://revise_inittab \
     file://blkdev_mount.sh \
     file://emmc_auto_mount.sh \
+    file://emmc_enhance_part.sh \
     file://mount_data1.sh \
     file://setup_persist_log.sh \
     "
@@ -52,6 +53,7 @@ OPENBMC_UTILS_FILES = " \
     revise_inittab \
     blkdev_mount.sh \
     emmc_auto_mount.sh \
+    emmc_enhance_part.sh \
     "
 
 S = "${WORKDIR}"

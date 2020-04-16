@@ -115,10 +115,18 @@ fi
 
 SLOT_NUM=$(get_slot_num $SLOT)
 I2C_NUM=$(get_bus_num $SLOT)
+BOARD_ID=$(get_bmc_board_id)
 
-if [ $(is_server_prsnt $[ $SLOT_NUM + 1 ]) == "0" ]; then
-  echo "The $SLOT is empty"
-  exit -1;
+if [ $BOARD_ID -eq 14 ] || [ $BOARD_ID -eq 7 ]; then
+  if [ $(is_server_prsnt $[ $SLOT_NUM + 1 ]) == "0" ]; then
+    echo "The $SLOT is empty"
+    exit -1;
+  fi
+elif [ $BOARD_ID -eq 9 ]; then
+  if [ $SLOT_NUM != 0 ]; then
+    echo "The $SLOT is empty"
+    exit -1;
+  fi
 fi
 
 if [ $(get_slot_type $SLOT_NUM) == "0" ]; then
@@ -146,7 +154,7 @@ fi
 #  01 [0x1|0x2|0x3]
 # val: 0x1=2ou, 0x2=Host, 0x3=SB BIC, 0x4=SB BIC
 
-BOARD_ID=$(get_bmc_board_id)
+
 if [ $BOARD_ID -eq 9 ]; then
   set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x02"
   set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x03"

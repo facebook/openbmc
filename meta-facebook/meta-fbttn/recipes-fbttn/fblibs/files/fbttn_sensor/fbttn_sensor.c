@@ -390,7 +390,7 @@ assign_sensor_threshold(uint8_t fru, uint8_t snr_num, float ucr, float unc,
 }
 
 static void
-sensor_thresh_array_init() {
+sensor_thresh_array_init(int iom_type) {
   static bool init_done = false;
   int i = 0;
 
@@ -462,22 +462,41 @@ sensor_thresh_array_init() {
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_12V_CURR_CLIP,
       150, 0, 0, 0, 0, 0, 0, 0);
   //DPB FAN
-  assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN1_FRONT,
-      13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
-  assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN1_REAR,
-      13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
-  assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN2_FRONT,
-      13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
-  assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN2_REAR,
-      13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
-  assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN3_FRONT,
-      13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
-  assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN3_REAR,
-      13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
-  assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN4_FRONT,
-      13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
-  assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN4_REAR,
-      13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
+  if (iom_type == IOM_IOC) {  // IOC solution
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN1_FRONT,
+        13500 /* ucr */, 13200 /* unc */, 0, 500/* lcr */, 800 /* lnc */, 0, 0, 0);
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN1_REAR,
+        13500 /* ucr */, 13200 /* unc */, 0, 500/* lcr */, 800 /* lnc */, 0, 0, 0);
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN2_FRONT,
+        13500 /* ucr */, 13200 /* unc */, 0, 500/* lcr */, 800 /* lnc */, 0, 0, 0);
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN2_REAR,
+        13500 /* ucr */, 13200 /* unc */, 0, 500/* lcr */, 800 /* lnc */, 0, 0, 0);
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN3_FRONT,
+        13500 /* ucr */, 13200 /* unc */, 0, 500/* lcr */, 800 /* lnc */, 0, 0, 0);
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN3_REAR,
+        13500 /* ucr */, 13200 /* unc */, 0, 500/* lcr */, 800 /* lnc */, 0, 0, 0);
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN4_FRONT,
+        13500 /* ucr */, 13200 /* unc */, 0, 500/* lcr */, 800 /* lnc */, 0, 0, 0);
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN4_REAR,
+        13500 /* ucr */, 13200 /* unc */, 0, 500/* lcr */, 800 /* lnc */, 0, 0, 0);
+  } else {  // default uses the config of Type 5 (M.2 solution)
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN1_FRONT,
+        13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN1_REAR,
+        13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN2_FRONT,
+        13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN2_REAR,
+        13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN3_FRONT,
+        13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN3_REAR,
+        13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN4_FRONT,
+        13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
+    assign_sensor_threshold(FRU_DPB, DPB_SENSOR_FAN4_REAR,
+        13500 /* ucr */, 13200 /* unc */, 0, 1200/* lcr */, 2000 /* lnc */, 0, 0, 0);
+  }
   //DPB HSC
   assign_sensor_threshold(FRU_DPB, DPB_SENSOR_HSC_POWER,
       885, 0, 0, 0, 0, 0, 0, 0);
@@ -1408,9 +1427,9 @@ fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 }
 
 int
-fbttn_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *value) {
+fbttn_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *value, int iom_type) {
 
-  sensor_thresh_array_init();
+  sensor_thresh_array_init(iom_type);
 
   switch(fru) {
     case FRU_SLOT1:

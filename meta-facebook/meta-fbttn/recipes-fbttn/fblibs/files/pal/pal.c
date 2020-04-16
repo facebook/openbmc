@@ -1676,7 +1676,10 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
 
 int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
-  return fbttn_sensor_threshold(fru, sensor_num, thresh, value);
+  int iom_type = IOM_M2;
+
+  iom_type = pal_get_iom_type();
+  return fbttn_sensor_threshold(fru, sensor_num, thresh, value, iom_type);
 }
 
 int

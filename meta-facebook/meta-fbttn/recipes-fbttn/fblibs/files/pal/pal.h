@@ -139,11 +139,6 @@ enum {
 };
 
 enum {
-  IOM_M2 = 1,
-  IOM_IOC = 2,
-};
-
-enum {
   IOM_SIDEA = 1,
   IOM_SIDEB = 2,
 };

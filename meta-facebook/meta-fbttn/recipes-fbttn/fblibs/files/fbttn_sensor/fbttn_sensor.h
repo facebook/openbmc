@@ -294,7 +294,7 @@ int fbttn_sensor_read(uint8_t fru, uint8_t sensor_num, void *value, uint8_t stat
 int fbttn_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 int fbttn_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
 int fbttn_sensor_sdr_path(uint8_t fru, char *path);
-int fbttn_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *value);
+int fbttn_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, float *value, int iom_type);
 int fbttn_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 bool is_server_prsnt(uint8_t fru);
 bool is_scc_prsnt(uint8_t scc_port);

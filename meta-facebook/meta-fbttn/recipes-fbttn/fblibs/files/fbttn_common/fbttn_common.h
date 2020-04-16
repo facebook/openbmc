@@ -35,6 +35,11 @@ enum {
   FRU_NIC   = 5,
 };
 
+enum {
+  IOM_M2 = 1,
+  IOM_IOC = 2,
+};
+
 int fbttn_common_fru_name(uint8_t fru, char *str);
 int fbttn_common_fru_id(char *str, uint8_t *fru);
 int fbttn_common_crashdump(uint8_t fru);

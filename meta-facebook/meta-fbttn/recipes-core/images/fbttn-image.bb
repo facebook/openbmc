@@ -32,7 +32,7 @@ IMAGE_INSTALL += " \
   libexp \
   libmctp \
   lldp-util \
-  log-util \
+  log-util-v2 \
   me-util \
   mterm \
   openbmc-utils \

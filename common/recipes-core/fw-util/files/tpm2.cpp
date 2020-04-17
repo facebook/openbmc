@@ -42,7 +42,7 @@ int tpm2_get_ver(char *ver, Tpm2Component *tpm2) {
         break;
       }
     }
-    fclose(fp);
+    pclose(fp);
 
     if (match != true) {
       return FW_STATUS_FAILURE;

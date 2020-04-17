@@ -28,6 +28,7 @@ SRC_URI = "file://ast-functions \
            file://COPYING \
            file://setup-dev.sh \
            file://sol-util \
+           file://setup-pfr.sh \
           "
 
 pkgdir = "utils"
@@ -71,6 +72,11 @@ do_install() {
   # install power-on.sh
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
   update-rc.d -r ${D} power-on.sh start 70 5 .
+
+  # install setup-pfr.sh
+  install -m 755 setup-pfr.sh ${D}${sysconfdir}/init.d/setup-pfr.sh
+  update-rc.d -r ${D} setup-pfr.sh start 99 5 .
+
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

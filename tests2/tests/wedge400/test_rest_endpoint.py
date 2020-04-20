@@ -103,12 +103,16 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             platform_type_rev == "Wedge400-EVT"
             or platform_type_rev == "Wedge400-EVT3"
             or platform_type_rev == "Wedge400-DVT"
-            or platform_type_rev == "Wedge400-DVT2"
+            or platform_type_rev == "Wedge400-DVT2/PVT/PVT2"
+            or platform_type_rev == "Wedge400-PVT3/MP"
         ):
             self.endpoint_sensors_attrb += SMB_SENSORS_W400
         elif platform_type_rev == "Wedge400C-EVT":
             self.endpoint_sensors_attrb += SMB_SENSORS_W400CEVT
-        elif platform_type_rev == "Wedge400C-EVT2":
+        elif (
+            platform_type_rev == "Wedge400C-EVT2"
+            or platform_type_rev == "Wedge400C-DVT"
+        ):
             self.endpoint_sensors_attrb += SMB_SENSORS_W400CEVT2
         else:
             self.skipTest("Skip test on {} board".format(platform_type_rev))
@@ -376,7 +380,11 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         time.sleep(3)
         current_volt = self.get_vddcore()
         if abs(current_volt - target_volt) > 10:
-            self.fail("VDD_CORE not changed target:{}, current:{}".format(target_volt, current_volt))
+            self.fail(
+                "VDD_CORE not changed target:{}, current:{}".format(
+                    target_volt, current_volt
+                )
+            )
 
         # set vddcore back to default value
         if not self.set_vddcore(default_volt):

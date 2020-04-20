@@ -19,8 +19,7 @@
 #
 import unittest
 from abc import abstractmethod
-from utils.shell_util import run_shell_cmd
-
+from tests.wedge400.helper.libpal import pal_get_board_type_rev
 from common.base_sensor_test import SensorUtilTest
 from tests.wedge400.test_data.sensors.sensors import (
     PEM1_SENSORS,
@@ -78,19 +77,25 @@ class SmbSensorTest(SensorUtilTest, unittest.TestCase):
         self.sensors_cmd = ["/usr/local/bin/sensor-util smb"]
 
     def test_smb_sensor_keys(self):
-        data = run_shell_cmd(". openbmc-utils.sh && wedge_board_type_rev")
-        if data == "WEDGE400_EVT/EVT3\n":
+        SMB_SENSORS = []
+        platform_type_rev = pal_get_board_type_rev()
+        if (
+            platform_type_rev == "Wedge400-EVT"
+            or platform_type_rev == "Wedge400-EVT3"
+            or platform_type_rev == "Wedge400-DVT"
+            or platform_type_rev == "Wedge400-DVT2/PVT/PVT2"
+            or platform_type_rev == "Wedge400-PVT3/MP"
+        ):
             SMB_SENSORS = SMB_SENSORS_W400
-        elif data == "WEDGE400_DVT\n":
-            SMB_SENSORS = SMB_SENSORS_W400
-        elif data == "WEDGE400_DVT2\n":
-            SMB_SENSORS = SMB_SENSORS_W400
-        elif data == "WEDGE400-C_EVT\n":
+        elif platform_type_rev == "Wedge400C-EVT":
             SMB_SENSORS = SMB_SENSORS_W400CEVT
-        elif data == "WEDGE400-C_EVT2\n":
+        elif (
+            platform_type_rev == "Wedge400C-EVT2"
+            or platform_type_rev == "Wedge400C-DVT"
+        ):
             SMB_SENSORS = SMB_SENSORS_W400CEVT2
         else:
-            self.skipTest("Skip test for {}".format(data))
+            self.skipTest("Skip test on {} board".format(platform_type_rev))
         result = self.get_parsed_result()
         for key in SMB_SENSORS:
             with self.subTest(key=key):

@@ -108,7 +108,6 @@ const uint8_t scm_sensor_list[] = {
   SCM_SENSOR_INLET_TEMP,
   SCM_SENSOR_HSC_VOLT,
   SCM_SENSOR_HSC_CURR,
-  SCM_SENSOR_HSC_POWER,
 };
 
 /* List of SCM and BIC sensors to be monitored */
@@ -117,7 +116,6 @@ const uint8_t scm_all_sensor_list[] = {
   SCM_SENSOR_INLET_TEMP,
   SCM_SENSOR_HSC_VOLT,
   SCM_SENSOR_HSC_CURR,
-  SCM_SENSOR_HSC_POWER,
   BIC_SENSOR_MB_OUTLET_TEMP,
   BIC_SENSOR_MB_INLET_TEMP,
   BIC_SENSOR_PCH_TEMP,
@@ -217,7 +215,6 @@ const uint8_t w400_smb_sensor_list[] = {
   SMB_SENSOR_FCM_LM75B_U2_TEMP,
   SMB_SENSOR_FCM_HSC_VOLT,
   SMB_SENSOR_FCM_HSC_CURR,
-  SMB_SENSOR_FCM_HSC_POWER,
   /* Sensors FAN Speed */
   SMB_SENSOR_FAN1_FRONT_TACH,
   SMB_SENSOR_FAN1_REAR_TACH,
@@ -299,7 +296,6 @@ const uint8_t w400c_evt1_smb_sensor_list[] = {
   SMB_SENSOR_FCM_LM75B_U2_TEMP,
   SMB_SENSOR_FCM_HSC_VOLT,
   SMB_SENSOR_FCM_HSC_CURR,
-  SMB_SENSOR_FCM_HSC_POWER,
   /* Sensors FAN Speed */
   SMB_SENSOR_FAN1_FRONT_TACH,
   SMB_SENSOR_FAN1_REAR_TACH,
@@ -395,7 +391,6 @@ const uint8_t w400c_evt2_smb_sensor_list[] = {
   SMB_SENSOR_FCM_LM75B_U2_TEMP,
   SMB_SENSOR_FCM_HSC_VOLT,
   SMB_SENSOR_FCM_HSC_CURR,
-  SMB_SENSOR_FCM_HSC_POWER,
   /* Sensors FAN Speed */
   SMB_SENSOR_FAN1_FRONT_TACH,
   SMB_SENSOR_FAN1_REAR_TACH,
@@ -2273,11 +2268,6 @@ read_hsc_curr(const char *device, float r_sense, float *value) {
 }
 
 static int
-read_hsc_power(const char *device, float r_sense, float *value) {
-  return read_hsc_attr(device, POWER(1), r_sense, value);
-}
-
-static int
 read_fan_rpm_f(const char *device, uint8_t fan, float *value) {
   char full_name[LARGEST_DEVICE_NAME * 2];
   char dir_name[LARGEST_DEVICE_NAME + 1];
@@ -2679,10 +2669,6 @@ scm_sensor_read(uint8_t sensor_num, float *value) {
         if (*value < 0)
           *value = 0;
         break;
-      case SCM_SENSOR_HSC_POWER:
-        ret = read_hsc_power(SCM_HSC_DEVICE, SCM_RSENSE, value);
-        *value = *value / 1000 * 0.86;
-        break;
       default:
         ret = READING_NA;
         break;
@@ -3051,11 +3037,6 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
         ret = read_attr(SMB_XPDE_DEVICE, POWER(3), value);
       }
       *value /= 1000;
-      break;
-    case SMB_SENSOR_FCM_HSC_POWER:
-      hsc_rsense_init(HSC_FCM, FCM_SYSFS);
-      ret = read_hsc_power(SMB_FCM_HSC_DEVICE, hsc_rsense[HSC_FCM], value);
-      *value = *value / 1000 * 3.03;
       break;
     case SMB_SENSOR_FAN1_FRONT_TACH:
       ret = read_fan_rpm_f(SMB_FCM_TACH_DEVICE, 1, value);
@@ -3761,9 +3742,6 @@ get_scm_sensor_name(uint8_t sensor_num, char *name) {
     case SCM_SENSOR_HSC_CURR:
       sprintf(name, "SCM_HSC_CURR");
       break;
-    case SCM_SENSOR_HSC_POWER:
-      sprintf(name, "SCM_HSC_POWER");
-      break;
     case BIC_SENSOR_MB_OUTLET_TEMP:
       sprintf(name, "MB_OUTLET_TEMP");
       break;
@@ -4199,9 +4177,6 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
       }else if(brd_type == BRD_TYPE_WEDGE400C){
         sprintf(name, "VDD_CORE_POWER");
       }
-      break;
-    case SMB_SENSOR_FCM_HSC_POWER:
-      sprintf(name, "FCM_HSC_POWER");
       break;
     case SMB_SENSOR_FAN1_FRONT_TACH:
       sprintf(name, "FAN1_FRONT_SPEED");
@@ -4792,7 +4767,6 @@ get_scm_sensor_units(uint8_t sensor_num, char *units) {
     case BIC_SENSOR_VCCIN_VR_CURR:
       sprintf(units, "Amps");
       break;
-    case SCM_SENSOR_HSC_POWER:
     case BIC_SENSOR_SOC_PACKAGE_PWR:
     case BIC_SENSOR_VCCIN_VR_POUT:
     case BIC_SENSOR_VDDR_VR_POUT:
@@ -4899,7 +4873,6 @@ get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case SMB_SENSOR_IR3R3V_RIGHT_IN_POWER:
     case SMB_SENSOR_IR3R3V_RIGHT_OUT_POWER:
     case SMB_SENSOR_SW_CORE_POWER:
-    case SMB_SENSOR_FCM_HSC_POWER:
     case SMB_SENSOR_HBM_IN_POWER:
     case SMB_SENSOR_HBM_OUT_POWER:
     case SMB_SENSOR_VDDCK_0_IN_POWER:
@@ -5056,7 +5029,6 @@ sensor_thresh_array_init(uint8_t fru) {
       scm_sensor_threshold[SCM_SENSOR_HSC_VOLT][UCR_THRESH] = 14.13;
       scm_sensor_threshold[SCM_SENSOR_HSC_VOLT][LCR_THRESH] = 7.5;
       scm_sensor_threshold[SCM_SENSOR_HSC_CURR][UCR_THRESH] = 24.7;
-      scm_sensor_threshold[SCM_SENSOR_HSC_POWER][UCR_THRESH] = 96;
       for (int sensor_index = scm_sensor_cnt; sensor_index < scm_all_sensor_cnt; sensor_index++) {
         for (int threshold_type = 1; threshold_type <= MAX_SENSOR_THRESHOLD + 1; threshold_type++) {
           if (!bic_get_sdr_thresh_val(fru, scm_all_sensor_list[sensor_index], threshold_type, &fvalue)){
@@ -5342,7 +5314,6 @@ sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[SMB_SENSOR_FCM_HSC_VOLT][UCR_THRESH] = 14.13;
       smb_sensor_threshold[SMB_SENSOR_FCM_HSC_VOLT][LCR_THRESH] = 7.5;
       smb_sensor_threshold[SMB_SENSOR_FCM_HSC_CURR][UCR_THRESH] = 40;
-      smb_sensor_threshold[SMB_SENSOR_FCM_HSC_POWER][UCR_THRESH] = 288;
       smb_sensor_threshold[SMB_SENSOR_FAN1_FRONT_TACH][UCR_THRESH] = 15000;
       smb_sensor_threshold[SMB_SENSOR_FAN1_FRONT_TACH][LCR_THRESH] = 1000;
       smb_sensor_threshold[SMB_SENSOR_FAN1_REAR_TACH][UCR_THRESH] = 15000;
@@ -5596,7 +5567,6 @@ scm_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
       break;
     case SCM_SENSOR_HSC_VOLT:
     case SCM_SENSOR_HSC_CURR:
-    case SCM_SENSOR_HSC_POWER:
       *value = 30;
       break;
     case BIC_SENSOR_SOC_TEMP:

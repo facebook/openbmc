@@ -9,6 +9,9 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/time.h>
+#include <time.h>
+#include <openbmc/kv.h>
 #include "bic_cpld_lattice_fwupdate.h"
 
 #define MAX_RETRY  500
@@ -32,6 +35,67 @@ enum {
   MUX  = 0xE2,
   CPLD = 0x80,
 };
+
+
+#if 1
+static int
+_update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf, uint8_t intf) {
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[16] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+  int retries = MAX_RETRY;
+
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+
+  // Fill the component for which firmware is requested
+  tbuf[3] = target;
+
+  tbuf[4] = (offset) & 0xFF;
+  tbuf[5] = (offset >> 8) & 0xFF;
+  tbuf[6] = (offset >> 16) & 0xFF;
+  tbuf[7] = (offset >> 24) & 0xFF;
+
+  tbuf[8] = len & 0xFF;
+  tbuf[9] = (len >> 8) & 0xFF;
+
+  memcpy(&tbuf[10], buf, len);
+
+  tlen = len + 10;
+
+  do {
+    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
+    if ( ret < 0 ) {
+      sleep(1);
+      printf("_update_fw: slot: %d, target %d, offset: %d, len: %d retrying..\n", slot_id, target, offset, len);
+    } else break;
+  } while ( retries-- > 0 );
+
+  return ret;
+}
+
+static int
+_set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
+  char key[64];
+  char value[64] = {0};
+  struct timespec ts;
+
+  sprintf(key, "fru%u_fwupd", slot_id);
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += tmout;
+  sprintf(value, "%ld", ts.tv_sec);
+
+  if (kv_set(key, value, 0, 0) < 0) {
+     return -1;
+  }
+
+  return 0;
+}
+#endif
+
 
 static int
 send_cpld_data(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *data, uint8_t data_len, uint8_t *rsp, uint8_t read_cnt) {
@@ -85,7 +149,7 @@ read_cpld_status_flag(uint8_t slot_id, uint8_t intf, uint8_t addr) {
     return ret;
   }
 
-  rsp[0] = (rsp[2] >> 12) & 0x3;
+  rsp[0] = (rsp[2] >> 4) & 0x3;
 
   ret = (rsp[0] == 0x0)?0:-1;
 
@@ -147,7 +211,7 @@ read_cpld_dev_id(uint8_t slot_id, uint8_t intf, uint8_t addr) {
 static int
 enter_transparent_mode(uint8_t slot_id, uint8_t intf, uint8_t addr) {
   int ret;
-  int retry = MAX_RETRY; 
+  int retry = MAX_RETRY;
   uint8_t data[3]= {0x74, 0x08, 0x00};
   uint8_t data_len = sizeof(data);
   uint8_t rsp[16] = {0};
@@ -216,6 +280,7 @@ reset_config_addr(uint8_t slot_id, uint8_t intf, uint8_t addr) {
   return ret;
 }
 
+#if 0
 static int
 program_cf(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *cf_data) {
   int ret;
@@ -247,8 +312,8 @@ program_cf(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *cf_data) {
 
   return ret;
 }
+#endif
 
-#if 0
 static int
 verify_cf(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *cf_data) {
   int ret;
@@ -272,7 +337,7 @@ verify_cf(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *cf_data) {
     printf("Couldn't send program_cf cmd\n");
     return ret;
   }
- 
+
   if ( 0 != memcmp(rsp, cmp_data, read_cnt)) {
     printf("Data verify fail\n");
     return -1;
@@ -286,7 +351,6 @@ verify_cf(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *cf_data) {
 
   return ret;
 }
-#endif
 
 static int
 program_user_code(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *user_data) {
@@ -350,8 +414,8 @@ read_cpld_user_code(uint8_t slot_id, uint8_t intf, uint8_t addr) {
 }
 #endif
 
-static int 
-detect_cpld_dev(uint8_t slot_id, uint8_t intf) { 
+static int
+detect_cpld_dev(uint8_t slot_id, uint8_t intf) {
   int retries = 100;
   int ret = 0;
   do {
@@ -363,7 +427,7 @@ detect_cpld_dev(uint8_t slot_id, uint8_t intf) {
     if ( ret < 0 ) {
       msleep(10);
     } else {
-      break;   
+      break;
     }
   } while(retries--);
 
@@ -755,6 +819,12 @@ int update_bic_cpld_lattice(uint8_t slot_id, char *image, uint8_t intf, uint8_t 
   CPLDInfo dev_info;
   FILE *fp = NULL;
   uint8_t addr = 0xff;
+  uint8_t buf[16] = {0};
+  uint8_t transfer_buf[16] = {0};
+  uint32_t offset = 0;
+  const uint16_t read_count = 16;
+  const uint8_t target = UPDATE_CPLD;
+  int retry = 0;
 
   fp = fopen(image, "r");
   if ( fp == NULL ) {
@@ -770,83 +840,124 @@ int update_bic_cpld_lattice(uint8_t slot_id, char *image, uint8_t intf, uint8_t 
 
   fsize = dev_info.CF_Line / 20;
 
-  //step 1 - detect CPLD
-  ret = detect_cpld_dev(slot_id, intf);
-  if ( ret < 0 ) {
-    printf("Device is not found!\n");
-    goto error_exit;
-  }
-
-  //step 1.5 - provide the addr
-  addr = CPLD;
- 
-  //step 2 - enter transparent mode and check the status
-  ret = enter_transparent_mode(slot_id, intf, addr);
-  if ( ret < 0 ) {
-    printf("Couldn't enter transparent mode!\n");
-    goto error_exit;
-  }
-
-  //step 3 - erase the CF and check the status
-  ret = erase_flash(slot_id, intf, addr);
-  if ( ret < 0 ) {
-    printf("Couldn't erase the flash!\n");
-    goto error_exit;
-  }
-
-  //step 4 - Transmit Reset Configuration Address
-  ret = reset_config_addr(slot_id, intf, addr);
-  if ( ret < 0 ) {
-    printf("Couldn't reset the flash!\n");
-    goto error_exit;
-  }
-
-  //step 5 - send data and check the status
-  int i, data_idx; //two vars are used in for-loop
-  for (i = 0, data_idx = 0; i < dev_info.CF_Line; i++, data_idx+=4) {
-    ret = program_cf(slot_id, intf, addr, (uint8_t *)&dev_info.CF[data_idx]); 
+  do {
+    // step 1 - detect CPLD
+    ret = detect_cpld_dev(slot_id, intf);
     if ( ret < 0 ) {
-      printf("send cf data but ret < 0. exit.\n");
+      printf("Device is not found!\n");
       goto error_exit;
     }
-    
-    if ( (record_offset + fsize) <= i ) {
+
+    //step 1.5 - provide the addr
+    addr = CPLD;
+
+    //step 2 - enter transparent mode and check the status
+    ret = enter_transparent_mode(slot_id, intf, addr);
+    if ( ret < 0 ) {
+      printf("Couldn't enter transparent mode!\n");
+      goto error_exit;
+    }
+
+    //step 3 - erase the CF and check the status
+    ret = erase_flash(slot_id, intf, addr);
+    if ( ret < 0 ) {
+      printf("Couldn't erase the flash!\n");
+      goto error_exit;
+    }
+
+    //step 4 - Transmit Reset Configuration Address
+    ret = reset_config_addr(slot_id, intf, addr);
+    if ( ret < 0 ) {
+      printf("Couldn't reset the flash!\n");
+      goto error_exit;
+    }
+
+    //step 5 - send data and check the status
+    int i, data_idx, idx; //two vars are used in for-loop
+#if 1
+    printf("[Update CPLD via Exp BIC]\n");
+    for (i = 0, data_idx = 0; i < dev_info.CF_Line; i++, data_idx+=4) {
+      memcpy(buf, (uint8_t *)&dev_info.CF[data_idx], read_count);
+      for (idx = 0; idx <= 12; idx+=4) {
+          transfer_buf[idx + 0] = buf[idx + 3];
+          transfer_buf[idx + 1] = buf[idx + 2];
+          transfer_buf[idx + 2] = buf[idx + 1];
+          transfer_buf[idx + 3] = buf[idx + 0];
+      }
+
+      // printf("[write] offset : %d \n", offset);
+      // for (int k = 0; k < read_count; k++) {
+      //   printf("%02X ", transfer_buf[k]);
+      // }
+      // printf("\n");
+
+      ret = _update_fw(slot_id, target, offset, read_count, transfer_buf, intf);
+      if ( ret < 0 ) {
+        goto error_exit;
+      }
+
+      offset += read_count;
+      if ( (record_offset + fsize) <= i ) {
+        _set_fw_update_ongoing(slot_id, 60);
         printf("updated cpld: %d %%\n", (i/fsize)*5);
         record_offset += fsize;
+      }
     }
-  }
+#else
+   for (i = 0, data_idx = 0; i < dev_info.CF_Line; i++, data_idx+=4) {
+      ret = program_cf(slot_id, intf, addr, (uint8_t *)&dev_info.CF[data_idx]);
+      if ( ret < 0 ) {
+        printf("send cf data but ret < 0. exit.\n");
+        goto error_exit;
+      }
 
-  //step 6 - program user code
-  ret = program_user_code(slot_id, intf, addr, (uint8_t *)&dev_info.Version);
-  if ( ret < 0 ) {
-    printf("Couldn't program the usercode!\n");
-    goto error_exit; 
-  }
+      if ( (record_offset + fsize) <= i ) {
+        printf("updated cpld: %d %%\n", (i/fsize)*5);
+        record_offset += fsize;
+      }
+    }
 
-#if 0
-  //step 7 - verify the CF data 
-  //step 7.1 Transmit Reset Configuration Address again
-  ret = reset_config_addr(slot_id, intf, addr);
-  if ( ret < 0 ) {
-    printf("Couldn't reset the flash again!\n");
-    goto error_exit;
-  }
+#endif
 
-  record_offset = 0;
-  //step 7.2 Transmit Read Command with Number of Pages
-  for (i = 0, data_idx = 0; i < dev_info.CF_Line; i++, data_idx+=4) {
-    ret = verify_cf(slot_id, intf, addr, (uint8_t *)&dev_info.CF[data_idx]);
+    //step 6 - program user code
+    ret = program_user_code(slot_id, intf, addr, (uint8_t *)&dev_info.Version);
     if ( ret < 0 ) {
-      printf("Read cf data but ret < 0. exit\n");
+      printf("Couldn't program the usercode!\n");
       goto error_exit;
     }
 
-    if ( (record_offset + fsize) <= i ) {
-      printf("verify cpld: %d %%\n", (i/fsize)*5);
-      record_offset += fsize;
+
+    //step 7 - verify the CF data
+    //step 7.1 Transmit Reset Configuration Address again
+    ret = reset_config_addr(slot_id, intf, addr);
+    if ( ret < 0 ) {
+      printf("Couldn't reset the flash again!\n");
+      goto error_exit;
     }
+
+    record_offset = 0;
+    //step 7.2 Transmit Read Command with Number of Pages
+    for (i = 0, data_idx = 0; i < dev_info.CF_Line; i++, data_idx+=4) {
+      ret = verify_cf(slot_id, intf, addr, (uint8_t *)&dev_info.CF[data_idx]);
+      if ( ret < 0 ) {
+        printf("Read cf data but ret < 0. exit\n");
+        goto error_exit;//break;
+      }
+
+      if ( (record_offset + fsize) <= i ) {
+        printf("verify cpld: %d %%\n", (i/fsize)*5);
+        record_offset += fsize;
+      }
+    }
+
+    if (i == dev_info.CF_Line) {
+      break;
+    }
+  } while ((++retry) < RETRY_TIME);
+
+  if (retry == RETRY_TIME) {
+    goto error_exit;
   }
-#endif
 
   //step 8 - program done
   ret = program_done(slot_id, intf, addr);

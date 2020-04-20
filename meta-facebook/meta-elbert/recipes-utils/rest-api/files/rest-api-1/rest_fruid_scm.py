@@ -1,5 +1,6 @@
+#!/usr/bin/env python3
+#
 # Copyright 2020-present Facebook. All Rights Reserved.
-
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,16 +16,18 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+import json
+import re
+import subprocess
 
-# ELBERTTODO 442087 REST API SUPPORT
-SRC_URI += " \
-    file://rest-api-1/rest_fruid_scm.py \
-    file://rest-api-1/rest_seutil.py \
-"
+from rest_fruid import get_fruid
 
-binfiles1 += " \
-    rest_fruid_scm.py \
-    rest_seutil.py \
-"
+
+# Handler for SCM FRUID resource endpoint
+# In ELBERT, SUP is equivalent to SCM
+def get_fruid_scm():
+    cmd = ["weutil", "SUP"]
+    fresult = get_fruid(cmd)
+    return fresult

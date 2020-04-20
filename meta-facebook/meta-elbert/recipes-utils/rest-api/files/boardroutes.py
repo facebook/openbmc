@@ -17,4 +17,6 @@
 
 board_routes = [
     # ELBERTTODO 442087 REST API SUPPORT
+    "/api/sys/fruid_scm",
+    "/api/sys/mb/seutil",
 ]

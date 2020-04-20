@@ -77,6 +77,7 @@
 #define IMC_VER_SIZE 8
 
 #define SLOT_FILE "/tmp/slot%d.bin"
+#define SLOT_RECORD_FILE "/tmp/slot%d.rc"
 #define SERVER_TYPE_FILE "/tmp/server_type%d.bin"
 
 #define RC_BIOS_SIG_OFFSET 0x3F00000
@@ -3213,6 +3214,26 @@ bic_get_slot_type(uint8_t fru) {
     if (read_device(key, &type) == 0)
       break;
     syslog(LOG_WARNING,"bic_get_slot_type failed");
+    msleep(10);
+  } while (--retry);
+
+  return type;
+}
+
+int
+bic_get_record_slot_type(uint8_t fru) {
+  int type = 3;   //set default to 3(Empty Slot)
+  int retry = 3;
+  char key[MAX_KEY_LEN] = {0};
+
+  if ((fru < FRU_SLOT1) || (fru > FRU_SLOT4))
+    return type;
+
+  snprintf(key, sizeof(key), SLOT_RECORD_FILE, fru);
+  do {
+    if (read_device(key, &type) == 0)
+      break;
+    syslog(LOG_WARNING,"bic_get_record_slot_type failed");
     msleep(10);
   } while (--retry);
 

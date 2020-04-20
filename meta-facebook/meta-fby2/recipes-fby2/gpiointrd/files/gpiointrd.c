@@ -46,7 +46,7 @@
 #define MAX_NUM_SLOTS       4
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
-
+#define SLOT_FILE "/tmp/slot%d.bin"
 #define SLOT_RECORD_FILE "/tmp/slot%d.rc"
 #define SV_TYPE_RECORD_FILE "/tmp/server_type%d.rc"
 
@@ -892,11 +892,20 @@ hsvc_event_handler(void *ptr) {
         sprintf(cmd,"touch %s",hspath);
         system(cmd);
 
+#if defined(CONFIG_FBY2_GPV2)
+        // Since clear slot type while slot remove (for GPV2 detect invalid config)
+        // get the slot type before hot service as default slot type
+        sprintf(slotrcpath, SLOT_FILE, hsvc_info->slot_id);
+        slot_type = fby2_get_record_slot_type(hsvc_info->slot_id);
+        sprintf(cmd, "echo %d > %s", slot_type, slotrcpath);
+        system(cmd);
+#else
         // Assign slot type
         sprintf(slotrcpath, SLOT_RECORD_FILE, hsvc_info->slot_id);
         slot_type = fby2_get_slot_type(hsvc_info->slot_id);
         sprintf(cmd, "echo %d > %s", slot_type, slotrcpath);
         system(cmd);
+#endif
 
         pal_set_dev_config_setup(0); // set up device fan config
 
@@ -910,6 +919,7 @@ hsvc_event_handler(void *ptr) {
           sprintf(cmd, "echo %d > %s", server_type, slotrcpath);
           system(cmd);
         } else if (slot_type == SLOT_TYPE_GPV2) {
+          syslog(LOG_WARNING, "Slot Insert: Slot%u GPV2 SDR and FRU update", hsvc_info->slot_id);
           pal_set_dev_sdr_setup(hsvc_info->slot_id,0);
           for (i=1; i<=MAX_NUM_DEVS; i++)
             dev_fru_complete[hsvc_info->slot_id][i] = DEV_FRU_NOT_COMPLETE;

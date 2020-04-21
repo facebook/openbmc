@@ -524,10 +524,6 @@ gpio_export FRU_WP GPIOAA7
 #devmem_clear_bit $(scu_addr a8) 1
 #devmem_clear_bit $(scu_addr a8) 3
 
-# BMC self-reset
-gpio_export BMC_SELF_HW_RST GPIOAB2
-gpio_set BMC_SELF_HW_RST 0
-
 # Set target OAM for test
 gpio_export CPLD_MUX_ID0 GPIOAB1
 gpio_set CPLD_MUX_ID0 0

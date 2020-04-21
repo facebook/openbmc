@@ -42,6 +42,9 @@ static const char *option_list[] = {
   "--set_gpio $gpio_num $value",
   "--get_gpio_config",
   "--set_gpio_config $gpio_num $value",
+  "--check_status",
+  "--get_dev_id",
+  "--reset",
 };
 
 static void
@@ -53,6 +56,74 @@ print_usage_help(void) {
   printf("       option:\n");
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
     printf("       %s\n", option_list[i]);
+}
+
+// Check BIC status
+static int
+util_check_status(uint8_t slot_id) {
+  int ret = 0;
+  uint8_t status;
+
+  // BIC status is only valid if 12V-on. check this first
+  ret = pal_get_server_12v_power(slot_id, &status);
+  if ( (ret < 0) || (SERVER_12V_OFF == status) ) {
+    ret = pal_is_fru_prsnt(slot_id, &status);
+
+    if (ret < 0) {
+       printf("unable to check BIC status\n");
+       return ret;
+    }
+
+    if (status == 0) {
+      printf("Slot is empty, unable to check BIC status\n");
+    } else {
+      printf("Slot is 12V-off, unable to check BIC status\n");
+    }
+    ret = 0;
+  } else {
+    if ( is_bic_ready(slot_id, NONE_INTF) == BIC_STATUS_SUCCESS ) {
+      printf("BIC status ok\n");
+      ret = 0;
+    } else {
+      printf("Error: BIC not ready\n");
+      ret = -1;
+    }
+  }
+  return ret;
+}
+
+// Test to Get device ID
+static int
+util_get_device_id(uint8_t slot_id) {
+  int ret = 0;
+  ipmi_dev_id_t id = {0};
+
+  ret = bic_get_dev_id(slot_id, &id, NONE_INTF);
+  if (ret) {
+    printf("util_get_device_id: bic_get_dev_id returns %d\n", ret);
+    return ret;
+  }
+
+  // Print response
+  printf("Device ID: 0x%X\n", id.dev_id);
+  printf("Device Revision: 0x%X\n", id.dev_rev);
+  printf("Firmware Revision: 0x%X:0x%X\n", id.fw_rev1, id.fw_rev2);
+  printf("IPMI Version: 0x%X\n", id.ipmi_ver);
+  printf("Device Support: 0x%X\n", id.dev_support);
+  printf("Manufacturer ID: 0x%X:0x%X:0x%X\n", id.mfg_id[2], id.mfg_id[1], id.mfg_id[0]);
+  printf("Product ID: 0x%X:0x%X\n", id.prod_id[1], id.prod_id[0]);
+  printf("Aux. FW Rev: 0x%X:0x%X:0x%X:0x%X\n", id.aux_fw_rev[0], id.aux_fw_rev[1],id.aux_fw_rev[2],id.aux_fw_rev[3]);
+
+  return ret;
+}
+
+// reset BIC
+static int
+util_bic_reset(uint8_t slot_id) {
+  int ret = 0;
+  ret = bic_reset(slot_id);
+  printf("Performing BIC reset, status %d\n", ret);
+  return ret;
 }
 
 static int
@@ -273,6 +344,12 @@ main(int argc, char **argv) {
         goto err_exit;
       }
       return util_set_gpio_config(slot_id, gpio_num, gpio_val);
+    } else if ( strcmp(argv[2], "--check_status") == 0 ) {
+      return util_check_status(slot_id);
+    } else if ( strcmp(argv[2], "--get_dev_id") == 0 ) {
+      return util_get_device_id(slot_id);
+    } else if ( strcmp(argv[2], "--reset") == 0 ) {
+      return util_bic_reset(slot_id);
     } else {
       printf("Invalid option: %s\n", argv[2]);
       goto err_exit;

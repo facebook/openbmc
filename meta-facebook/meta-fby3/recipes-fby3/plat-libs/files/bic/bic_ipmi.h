@@ -60,6 +60,7 @@ int bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_read
 int bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_t intf);
 int bic_get_ifx_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes);
 int bic_get_isl_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes);
+int bic_reset(uint8_t slot_id);
 #ifdef __cplusplus
 } // extern "C"
 #endif

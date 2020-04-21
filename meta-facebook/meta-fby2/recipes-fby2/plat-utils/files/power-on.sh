@@ -32,6 +32,8 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 KEYDIR=/mnt/data/kv_store
 DEF_PWR_ON=1
 TO_PWR_ON=
+POWER_ON_SLOT=
+RETRY=0
 
 check_por_config()
 {
@@ -86,23 +88,45 @@ if [ $(is_bmc_por) -eq 1 ]; then
 
   check_por_config 1
   if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 1) == "1" ] && [ $(get_slot_type 1) == "0" ] ; then
-    power-util slot1 on
+    POWER_ON_SLOT+=(1)
+    power-util slot1 on &
   fi
 
   check_por_config 2
   if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 2) == "1" ] && [ $(get_slot_type 2) == "0" ] ; then
-    power-util slot2 on
+    POWER_ON_SLOT+=(2)
+    power-util slot2 on &
   fi
 
   check_por_config 3
   if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 3) == "1" ] && [ $(get_slot_type 3) == "0" ] ; then
-    power-util slot3 on
+    POWER_ON_SLOT+=(3)
+    power-util slot3 on &
   fi
 
   check_por_config 4
   if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 4) == "1" ] && [ $(get_slot_type 4) == "0" ] ; then
-    power-util slot4 on
+    POWER_ON_SLOT+=(4)
+    power-util slot4 on &
   fi
+  
+  # Wait for all slots finish power-up
+  while [ $RETRY -lt 10 ]
+  do
+    FINISH=1
+    for i in ${POWER_ON_SLOT[@]}
+    do
+      status=$(power-util slot${POWER_ON_SLOT[$i]} status)
+      if [ ${status:(-3)} == "OFF" ]; then
+        FINISH=0
+      fi
+    done
+    if [ $FINISH -eq 1 ]; then
+      break
+    fi
+    RETRY=$(($RETRY+1))
+    sleep 1
+  done
 
   if [ $(is_date_synced) == "0" ]; then
     # Time sync with RC Server

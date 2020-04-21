@@ -530,6 +530,37 @@ static int mmc_write_extcsd_cmd(struct m_cmd_args *cmd_args)
 	return 0;
 }
 
+static int mmc_read_report_cmd(struct m_cmd_args *cmd_args)
+{
+	__u32  arg, flags;
+	__u8 *extcsd = mmc_reg_cache.extcsd;
+	struct mmc_ioc_cmd idata;
+	int ret;
+
+	arg = BUILD_U32(0x96, 0xC9, 0xD7, 0x1C);
+	flags = ( MMC_RSP_R1B | MMC_CMD_AC );
+	MMC_IOC_INIT(idata, MMC_SEND_MANUFACTURER_1, arg, flags);
+	ret = mmc_ioc_issue_cmd(cmd_args->dev_fd, &idata);
+	if (ret != 0) {
+		MMC_ERR("Error: query for CMD%d \n",
+			MMC_SEND_MANUFACTURER_1);
+		return ret;
+	}
+
+	memset(extcsd, 0, sizeof(__u8) * MMC_EXTCSD_SIZE);
+	MMC_IOC_INIT(idata, MMC_SEND_MANUFACTURER_2, 0, 0);
+	MMC_IOC_SET_DATA(idata, extcsd, 1, MMC_EXTCSD_SIZE, 0);
+	ret = mmc_ioc_issue_cmd(cmd_args->dev_fd, &idata);
+	if (ret != 0) {
+		MMC_ERR("Error: read device report for CMD%d \n",
+			MMC_SEND_MANUFACTURER_2);
+		return ret;
+	}
+
+	mmc_dump_extcsd(extcsd);
+	return 0;
+}
+
 static struct m_cmd_info mmc_cmds[] = {
 	{
 		"trim",
@@ -550,6 +581,11 @@ static struct m_cmd_info mmc_cmds[] = {
 		"write-extcsd",
 		"write Extended CSD register of the mmc device",
 		mmc_write_extcsd_cmd,
+	},
+	{
+		"read-devreport",
+		"read device report of the mmc device (support for WD iNAND 7250)",
+		mmc_read_report_cmd,
 	},
 
 	/* This is the last entry. */

@@ -42,13 +42,9 @@
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
-// Baseboard PFR
-#define PFR_MAILBOX_BUS  (9)
-#define PFR_MAILBOX_ADDR (0xB0)
-
-// Server PFR
-#define PFR_BIC_MAILBOX_BUS (2)
-#define PFR_BIC_MAILBOX_ADDR (0xB0)
+#define PFR_NICEXP_BUS 9  // NICEXP PFR
+#define PFR_BB_BUS 12     // Baseboard PFR
+#define PFR_MAILBOX_ADDR (0x70)
 
 const char pal_fru_list_print[] = "all, slot1, slot2, slot3, slot4, bmc, nic, bb, nicexp";
 const char pal_fru_list_rw[] = "slot1, slot2, slot3, slot4, bmc, bb, nicexp";
@@ -479,7 +475,7 @@ error_exit:
   return ret;
 }
 
-int 
+int
 pal_get_slot_index(unsigned char payload_id)
 {
   uint8_t bmc_location = 0;
@@ -489,15 +485,15 @@ pal_get_slot_index(unsigned char payload_id)
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   int ret = -1;
-  
+
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return payload_id;
   }
-  
+
   if ( bmc_location == NIC_BMC ) {
-    ret = bic_ipmb_send(payload_id, NETFN_OEM_REQ, 0xF0, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);  
+    ret = bic_ipmb_send(payload_id, NETFN_OEM_REQ, 0xF0, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
     if (ret) {
       return payload_id;
     } else {
@@ -949,7 +945,7 @@ pal_get_guid(uint16_t offset, char *guid) {
   uint8_t bmc_location = 0;
   uint8_t fru_bus = 0;
   ssize_t bytes_rd;
-  
+
   errno = 0;
 
   if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
@@ -962,7 +958,7 @@ pal_get_guid(uint16_t offset, char *guid) {
   } else {
     fru_bus = CLASS2_FRU_BUS;
   }
- 
+
   snprintf(path, sizeof(path), EEPROM_PATH, fru_bus, BB_FRU_ADDR);
 
   // check for file presence
@@ -1802,18 +1798,24 @@ pal_set_fan_ctrl (char *ctrl_opt) {
         printf("Auto Mode:%s",buf);
       }
     }
-  } 
+  }
 
   return ret;
 }
 
-int pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged)
-{
-  int ret = 0;
+int
+pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
+  int ret;
+  uint8_t bmc_location = 0;
+
+  if ((ret = fby3_common_get_bmc_location(&bmc_location))) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return ret;
+  }
+
   switch (fru) {
-    case FRU_BB:
     case FRU_BMC:
-      *bus = PFR_MAILBOX_BUS;
+      *bus = (bmc_location == NIC_BMC) ? PFR_NICEXP_BUS : PFR_BB_BUS;
       *addr = PFR_MAILBOX_ADDR;
       *bridged = false;
       break;
@@ -1821,13 +1823,25 @@ int pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged)
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      *bus = PFR_BIC_MAILBOX_BUS;
-      *addr = PFR_BIC_MAILBOX_ADDR;
-      *bridged = true;
+      if ((bmc_location == NIC_BMC) && (fru != FRU_SLOT1)) {
+        ret = -1;
+        break;
+      }
+
+      if ((ret = fby3_common_get_bus_id(fru)) < 0) {
+        syslog(LOG_WARNING, "%s() get bus failed, fru %d\n", __func__, fru);
+        break;
+      }
+
+      *bus = ret + 4;  // I2C_4 ~ I2C_7
+      *addr = PFR_MAILBOX_ADDR;
+      *bridged = false;
+      ret = 0;
       break;
     default:
       ret = -1;
       break;
   }
+
   return ret;
 }

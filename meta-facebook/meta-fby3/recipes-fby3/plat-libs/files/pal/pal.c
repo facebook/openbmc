@@ -1208,25 +1208,32 @@ pal_parse_smart_clst_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     06h - transition to unrecoverable
     07h - monitor
     08h - informational*/
-    TRANS_TO_OK = 0x0,
-    TRANS_TO_NON_CRIT_FROM_OK = 0x1,
-    TRANS_TO_CRIT_FROM_LESS_SEVERE = 0x2,
-    TRANS_TO_UNR_FROM_LESS_SEVERE = 0x3,
-    TRANS_TO_NCR_FROM_MORE_SEVERE = 0x4,
-    TRANS_TO_CRIT_FROM_UNR = 0x5,
-    TRANS_TO_UNR = 0x6,
-    MONITOR = 0x7,
-    INFORMATIONAL = 0x8,
+    TRANS_TO_OK                    = 0x00,
+    TRANS_TO_NON_CRIT_FROM_OK      = 0x01,
+    TRANS_TO_CRIT_FROM_LESS_SEVERE = 0x02,
+    TRANS_TO_UNR_FROM_LESS_SEVERE  = 0x03,
+    TRANS_TO_NCR_FROM_MORE_SEVERE  = 0x04,
+    TRANS_TO_CRIT_FROM_UNR         = 0x05,
+    TRANS_TO_UNR                   = 0x06,
+    MONITOR                        = 0x07,
+    INFORMATIONAL                  = 0x08,
 
     /*
     0h – State Deasserted (throttling released)
     1h – State Asserted (throttling enforced)
     */
-    THROTTLING_RELEASED = 0x0,
-    THROTTLING_ENFORCED = 0x1,
+    THROTTLING_RELEASED = 0x00,
+    THROTTLING_ENFORCED = 0x01,
   };
   uint8_t code = (event_data[0] & 0x1);
   uint8_t severity = (event_data[1] >> 4) & 0x0f;
+  const uint8_t ME_FW_ASSERTION[3] = {0x61, 0x2F, 0x00}; //612F00h is a special case. it just displays the ME FW assertion.
+
+  //handle the special case
+  if ( memcmp(event_data, (uint8_t *)&ME_FW_ASSERTION, 3) == 0 ) {
+    strcat(error_log, "Management Engine FW");
+    return PAL_EOK;
+  }
 
   switch(code) {
     case THROTTLING_RELEASED:
@@ -1279,25 +1286,25 @@ pal_parse_smart_clst_event(uint8_t fru, uint8_t *event_data, char *error_log) {
 static int
 pal_parse_vr_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   enum {
-    VCCIN_VRHOT = 0x00,
-    DIMM_ABC_VRHOT = 0x01,
-    DIMM_DEF_VRHOT = 0x02,
-    VCCIO_VRHOT = 0x03,
+    VCCIN_VRHOT    = 0x00,
+    VCCIO_VRHOT    = 0x01,
+    DIMM_ABC_VRHOT = 0x02,
+    DIMM_DEF_VRHOT = 0x03,
   };
   uint8_t event = event_data[0];
 
   switch (event) {
     case VCCIN_VRHOT:
-      strcat(error_log, "SOC VCCIN VRHOT");
-      break;
-    case DIMM_ABC_VRHOT:
-      strcat(error_log, "DIMM ABC VRHOT");
-      break;
-    case DIMM_DEF_VRHOT:
-      strcat(error_log, "DIMM DEF VRHOT");
+      strcat(error_log, "CPU VCCIN VR HOT Warning");
       break;
     case VCCIO_VRHOT:
-      strcat(error_log, "SOC VCCIO VRHOT");
+      strcat(error_log, "CPU VCCIO VR HOT Warning");
+      break;
+    case DIMM_ABC_VRHOT:
+      strcat(error_log, "DIMM ABC Memory VR HOT Warning");
+      break;
+    case DIMM_DEF_VRHOT:
+      strcat(error_log, "DIMM DEF Memory VR HOT Warning");
       break;
     default:
       strcat(error_log, "Undefined VR event");
@@ -1310,34 +1317,38 @@ pal_parse_vr_event(uint8_t fru, uint8_t *event_data, char *error_log) {
 static int
 pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   enum {
-    SOC_THERM_TRIP  = (0x0),
-    SOC_FIVR_FAULT  = (0x1),
-    SYS_THROTTLE    = (0x2),
-    PCH_THERM_TRIP  = (0x3),
-    SYS_UV_DETECT   = (0x4),
-    PMBUS_ALERT     = (0x5),
-    EVENT_MASK       = 0x0F,
+    SYS_THERM_TRIP     = 0x00,
+    SYS_FIVR_FAULT     = 0x01,
+    SYS_SURGE_CURR     = 0x02,
+    SYS_PCH_PROCHOT    = 0x03,
+    SYS_UV_DETECT      = 0x04,
+    SYS_OC_DETECT      = 0x05,
+    SYS_OCP_FAULT_WARN = 0x06,
+    EVENT_MASK         = 0x0F,
   };
   uint8_t event = EVENT_MASK & event_data[0];
 
   switch (event) {
-    case SOC_THERM_TRIP:
-      strcat(error_log, "SOC Thermal Trip");
+    case SYS_THERM_TRIP:
+      strcat(error_log, "System thermal trip");
       break;
-    case SOC_FIVR_FAULT:
-      strcat(error_log, "SOC FIVR Fault");
+    case SYS_FIVR_FAULT:
+      strcat(error_log, "System FIVR fault");
       break;
-    case SYS_THROTTLE:
-      strcat(error_log, "System Throttle");
+    case SYS_SURGE_CURR:
+      strcat(error_log, "Surge Current Warning");
       break;
-    case PCH_THERM_TRIP:
-      strcat(error_log, "PCH Thermal Trip");
+    case SYS_PCH_PROCHOT:
+      strcat(error_log, "PCH prochot");
       break;
     case SYS_UV_DETECT:
-      strcat(error_log, "System Under Voltage");
+      strcat(error_log, "Under Voltage Warning");
       break;
-    case PMBUS_ALERT:
-      strcat(error_log, "PMBus Alert");
+    case SYS_OC_DETECT:
+      strcat(error_log, "OC Warning");
+      break;
+    case SYS_OCP_FAULT_WARN:
+      strcat(error_log, "OCP Fault Warning");
       break;
     default:
       strcat(error_log, "Undefined system event");

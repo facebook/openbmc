@@ -10,6 +10,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include "pal.h"
+#include "pal_sbmc.h"
 
 #define GPIO_POWER "FM_BMC_PWRBTN_OUT_R_N"
 #define GPIO_POWER_GOOD "PWRGD_SYS_PWROK"
@@ -303,31 +304,55 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
 
 uint8_t
 pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data) {
-  uint8_t completion_code;
-  completion_code = CC_SUCCESS;  // Fill response with default values
-  unsigned char policy = *pwr_policy & 0x07;  // Power restore policy
+  int cc = CC_SUCCESS;  // Fill response with default values
+  int i=0;
+  int ret;
+  uint8_t policy = *pwr_policy & 0x07;  // Power restore policy
+  uint8_t mode;
+  uint8_t target_addr[3] = { BMC1_SLAVE_DEF_ADDR,
+                             BMC2_SLAVE_DEF_ADDR,
+                             BMC3_SLAVE_DEF_ADDR };
 
   switch (policy) {
     case 0:
       if (pal_set_key_value("server_por_cfg", "off") != 0)
-        completion_code = CC_UNSPECIFIED_ERROR;
+        cc = CC_UNSPECIFIED_ERROR;
       break;
     case 1:
       if (pal_set_key_value("server_por_cfg", "lps") != 0)
-        completion_code = CC_UNSPECIFIED_ERROR;
+        cc = CC_UNSPECIFIED_ERROR;
       break;
     case 2:
       if (pal_set_key_value("server_por_cfg", "on") != 0)
-        completion_code = CC_UNSPECIFIED_ERROR;
+        cc = CC_UNSPECIFIED_ERROR;
       break;
     case 3:
       // no change (just get present policy support)
       break;
     default:
-      completion_code = CC_PARAM_OUT_OF_RANGE;
+      cc = CC_PARAM_OUT_OF_RANGE;
       break;
   }
-  return completion_code;
+
+  ret = pal_get_host_system_mode(&mode);
+  if(ret != 0) {
+    return ret;
+  }
+
+  if(mode == MB_8S_MODE) {
+    ret = pal_get_config_is_master(); 
+    if(ret == false) {
+      return CC_OEM_ONLY_SUPPORT_MASTER;
+    } else {
+      for(i=0; i<2; i++) {
+        ret = cmd_set_smbc_restore_power_policy(policy, target_addr[i]);
+        if(ret != 0) {
+          return CC_OEM_DEVICE_SEND_SLAVE_RESTORE_POWER_POLICY_FAIL;
+        }
+      }
+    }
+  }  
+  return cc;
 }
 
 void

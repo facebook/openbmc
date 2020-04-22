@@ -48,6 +48,7 @@ static int pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 static bool sdr_init_done[MAX_NUM_FRUS] = {false};
 static uint8_t bic_dynamic_sensor_list[4][MAX_SENSOR_NUM] = {0};
+static uint8_t bic_dynamic_skip_sensor_list[4][MAX_SENSOR_NUM] = {0};
 
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
@@ -212,7 +213,7 @@ const uint8_t bic_1ou_edsff_sensor_list[] = {
   BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2A,
   BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2A,
   BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2A,
-  BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2A, 
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2A,
   BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2B,
   BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2B,
   BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2B,
@@ -248,6 +249,105 @@ const uint8_t bic_bb_sensor_list[] = {
   BIC_BB_SENSOR_MEDUSA_VIN,
   BIC_BB_SENSOR_MEDUSA_PIN,
   BIC_BB_SENSOR_MEDUSA_IOUT
+};
+
+const uint8_t bic_skip_sensor_list[] = {
+  BIC_SENSOR_CPU_TEMP,
+  BIC_SENSOR_DIMMA0_TEMP,
+  BIC_SENSOR_DIMMB0_TEMP,
+  BIC_SENSOR_DIMMC0_TEMP,
+  BIC_SENSOR_DIMMD0_TEMP,
+  BIC_SENSOR_DIMME0_TEMP,
+  BIC_SENSOR_DIMMF0_TEMP,
+  BIC_SENSOR_M2B_TEMP,
+  BIC_SENSOR_HSC_TEMP,
+  BIC_SENSOR_VCCIN_VR_TEMP,
+  BIC_SENSOR_VCCSA_VR_TEMP,
+  BIC_SENSOR_VCCIO_VR_Temp,
+  BIC_SENSOR_PVDDQ_ABC_VR_TEMP,
+  BIC_SENSOR_PVDDQ_DEF_VR_TEMP,
+  //BIC - voltage sensors
+  BIC_SENSOR_P3V3_M2A_VOL,
+  BIC_SENSOR_P3V3_M2B_VOL,
+  BIC_SENSOR_VCCIN_VR_VOL,
+  BIC_SENSOR_VCCSA_VR_VOL,
+  BIC_SENSOR_VCCIO_VR_VOL,
+  BIC_SENSOR_P3V3_STBY_VR_VOL,
+  BIC_PVDDQ_ABC_VR_VOL,
+  BIC_PVDDQ_DEF_VR_VOL,
+  //BIC - current sensors
+  BIC_SENSOR_P3V3_M2A_CUR,
+  BIC_SENSOR_P3V3_M2B_CUR,
+  BIC_SENSOR_VCCIN_VR_CUR,
+  BIC_SENSOR_VCCSA_VR_CUR,
+  BIC_SENSOR_VCCIO_VR_CUR,
+  BIC_SENSOR_PVDDQ_ABC_VR_CUR,
+  BIC_SENSOR_PVDDQ_DEF_VR_CUR,
+  //BIC - power sensors
+  BIC_SENSOR_P3V3_M2A_PWR,
+  BIC_SENSOR_P3V3_M2B_PWR,
+  BIC_SENSOR_VCCIN_VR_POUT,
+  BIC_SENSOR_VCCSA_VR_POUT,
+  BIC_SENSOR_VCCIO_VR_POUT,
+  BIC_SENSOR_PVDDQ_ABC_VR_POUT,
+  BIC_SENSOR_PVDDQ_DEF_VR_POUT,
+};
+
+const uint8_t bic_1ou_skip_sensor_list[] = {
+  //BIC 1OU EXP Sensors
+  BIC_1OU_EXP_SENSOR_P1V8_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2A_PWR,
+  BIC_1OU_EXP_SENSOR_P3V3_M2A_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2B_PWR,
+  BIC_1OU_EXP_SENSOR_P3V3_M2B_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2C_PWR,
+  BIC_1OU_EXP_SENSOR_P3V3_M2C_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2D_PWR,
+  BIC_1OU_EXP_SENSOR_P3V3_M2D_VOL,
+};
+
+const uint8_t bic_2ou_skip_sensor_list[] = {
+  //BIC 2OU EXP Sensors
+  BIC_2OU_EXP_SENSOR_P1V8_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2A_PWR,
+  BIC_2OU_EXP_SENSOR_P3V3_M2A_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2B_PWR,
+  BIC_2OU_EXP_SENSOR_P3V3_M2B_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2C_PWR,
+  BIC_2OU_EXP_SENSOR_P3V3_M2C_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2D_PWR,
+  BIC_2OU_EXP_SENSOR_P3V3_M2D_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2E_PWR,
+  BIC_2OU_EXP_SENSOR_P3V3_M2E_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2F_PWR,
+  BIC_2OU_EXP_SENSOR_P3V3_M2F_VOL,
+};
+
+const uint8_t bic_1ou_edsff_skip_sensor_list[] = {
+  BIC_1OU_EDSFF_SENSOR_NUM_V_HSC_IN,
+  BIC_1OU_EDSFF_SENSOR_NUM_I_HSC_OUT,
+  BIC_1OU_EDSFF_SENSOR_NUM_P_HSC_IN,
+  BIC_1OU_EDSFF_SENSOR_NUM_T_HSC,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2A,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2A,
+  BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2A,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2A,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2A,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2D,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2D,
+  BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2D,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2D,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2D,
 };
 
 const uint8_t nic_sensor_list[] = {
@@ -554,7 +654,40 @@ size_t bic_1ou_sensor_cnt = sizeof(bic_1ou_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_sensor_cnt = sizeof(bic_2ou_sensor_list)/sizeof(uint8_t);
 size_t bic_bb_sensor_cnt = sizeof(bic_bb_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_edsff_sensor_cnt = sizeof(bic_1ou_edsff_sensor_list)/sizeof(uint8_t);
+size_t bic_skip_sensor_cnt = sizeof(bic_skip_sensor_list)/sizeof(uint8_t);
+size_t bic_1ou_skip_sensor_cnt = sizeof(bic_1ou_skip_sensor_list)/sizeof(uint8_t);
+size_t bic_2ou_skip_sensor_cnt = sizeof(bic_2ou_skip_sensor_list)/sizeof(uint8_t);
+size_t bic_1ou_edsff_skip_sensor_cnt = sizeof(bic_1ou_edsff_skip_sensor_list)/sizeof(uint8_t);
 
+
+int
+get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt) {
+  uint8_t type = 0;
+  static uint8_t current_cnt = 0;
+
+  if (bic_dynamic_skip_sensor_list[fru-1][0] == 0) {
+
+    memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_skip_sensor_list, bic_skip_sensor_cnt);
+    current_cnt = bic_skip_sensor_cnt;
+        
+    bic_get_1ou_type(fru, &type); 
+    if (type == EDSFF_1U) {
+      memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_1ou_edsff_skip_sensor_list, bic_1ou_edsff_skip_sensor_cnt);
+      current_cnt += bic_1ou_edsff_skip_sensor_cnt;
+    } else {
+      memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_1ou_skip_sensor_list, bic_1ou_skip_sensor_cnt);
+      current_cnt += bic_1ou_skip_sensor_cnt;
+    }
+    
+    memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_2ou_skip_sensor_list, bic_2ou_skip_sensor_cnt);
+    current_cnt += bic_2ou_skip_sensor_cnt;
+  }
+  
+  *skip_sensor_list = (uint8_t *) bic_dynamic_skip_sensor_list[fru-1];
+  *cnt = current_cnt;
+  
+  return 0;
+}
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
@@ -1192,81 +1325,19 @@ error_exit:
 
 static int
 skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num) {
-  uint8_t bic_skip_list[] = {
-    BIC_SENSOR_CPU_TEMP,
-    BIC_SENSOR_DIMMA0_TEMP,
-    BIC_SENSOR_DIMMB0_TEMP,
-    BIC_SENSOR_DIMMC0_TEMP,
-    BIC_SENSOR_DIMMD0_TEMP,
-    BIC_SENSOR_DIMME0_TEMP,
-    BIC_SENSOR_DIMMF0_TEMP,
-    BIC_SENSOR_M2B_TEMP,
-    BIC_SENSOR_HSC_TEMP,
-    BIC_SENSOR_VCCIN_VR_TEMP,
-    BIC_SENSOR_VCCSA_VR_TEMP,
-    BIC_SENSOR_VCCIO_VR_Temp,
-    BIC_SENSOR_PVDDQ_ABC_VR_TEMP,
-    BIC_SENSOR_PVDDQ_DEF_VR_TEMP,
-    //BIC - voltage sensors
-    BIC_SENSOR_P3V3_M2A_VOL,
-    BIC_SENSOR_P3V3_M2B_VOL,
-    BIC_SENSOR_VCCIN_VR_VOL,
-    BIC_SENSOR_VCCSA_VR_VOL,
-    BIC_SENSOR_VCCIO_VR_VOL,
-    BIC_SENSOR_P3V3_STBY_VR_VOL,
-    BIC_PVDDQ_ABC_VR_VOL,
-    BIC_PVDDQ_DEF_VR_VOL,
-    //BIC - current sensors
-    BIC_SENSOR_P3V3_M2A_CUR,
-    BIC_SENSOR_P3V3_M2B_CUR,
-    BIC_SENSOR_VCCIN_VR_CUR,
-    BIC_SENSOR_VCCSA_VR_CUR,
-    BIC_SENSOR_VCCIO_VR_CUR,
-    BIC_SENSOR_PVDDQ_ABC_VR_CUR,
-    BIC_SENSOR_PVDDQ_DEF_VR_CUR,
-    //BIC - power sensors
-    BIC_SENSOR_P3V3_M2A_PWR,
-    BIC_SENSOR_P3V3_M2B_PWR,
-    BIC_SENSOR_VCCIN_VR_POUT,
-    BIC_SENSOR_VCCSA_VR_POUT,
-    BIC_SENSOR_VCCIO_VR_POUT,
-    BIC_SENSOR_PVDDQ_ABC_VR_POUT,
-    BIC_SENSOR_PVDDQ_DEF_VR_POUT,
-
-    //BIC 1OU EXP Sensors
-    BIC_1OU_EXP_SENSOR_P1V8_VOL,
-    BIC_1OU_EXP_SENSOR_P3V3_M2A_PWR,
-    BIC_1OU_EXP_SENSOR_P3V3_M2A_VOL,
-    BIC_1OU_EXP_SENSOR_P3V3_M2B_PWR,
-    BIC_1OU_EXP_SENSOR_P3V3_M2B_VOL,
-    BIC_1OU_EXP_SENSOR_P3V3_M2C_PWR,
-    BIC_1OU_EXP_SENSOR_P3V3_M2C_VOL,
-    BIC_1OU_EXP_SENSOR_P3V3_M2D_PWR,
-    BIC_1OU_EXP_SENSOR_P3V3_M2D_VOL,
-    //BIC 2OU EXP Sensors
-    BIC_2OU_EXP_SENSOR_P1V8_VOL,
-    BIC_2OU_EXP_SENSOR_P3V3_M2A_PWR,
-    BIC_2OU_EXP_SENSOR_P3V3_M2A_VOL,
-    BIC_2OU_EXP_SENSOR_P3V3_M2B_PWR,
-    BIC_2OU_EXP_SENSOR_P3V3_M2B_VOL,
-    BIC_2OU_EXP_SENSOR_P3V3_M2C_PWR,
-    BIC_2OU_EXP_SENSOR_P3V3_M2C_VOL,
-    BIC_2OU_EXP_SENSOR_P3V3_M2D_PWR,
-    BIC_2OU_EXP_SENSOR_P3V3_M2D_VOL,
-    BIC_2OU_EXP_SENSOR_P3V3_M2E_PWR,
-    BIC_2OU_EXP_SENSOR_P3V3_M2E_VOL,
-    BIC_2OU_EXP_SENSOR_P3V3_M2F_PWR,
-    BIC_2OU_EXP_SENSOR_P3V3_M2F_VOL,
-  };
-  int bic_skip_size = sizeof(bic_skip_list);
+  uint8_t *bic_skip_list;
+  int skip_sensor_cnt;
   int i = 0;
+  
+  get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt);
 
   switch(fru){
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      for (i = 0; i < bic_skip_size; i++) {
+      
+      for (i = 0; i < skip_sensor_cnt; i++) {
         if ( sensor_num == bic_skip_list[i] ) {
           return PAL_ENOTSUP;
         }

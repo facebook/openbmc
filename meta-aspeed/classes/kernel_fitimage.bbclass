@@ -63,6 +63,7 @@ UBOOT_FIT_SOURCE ?= "${STAGING_DIR_HOST}/etc/u-boot-fit-${MACHINE}.its"
 UBOOT_FIT[vardepsexclude] = "DATETIME"
 UBOOT_FIT ?= "u-boot-fit-${MACHINE}-${DATETIME}.itb"
 UBOOT_FIT_LINK ?= "u-boot-fit-${MACHINE}.itb"
+DEPENDS_append = " dtc-native"
 
 IMAGE_PREPROCESS_COMMAND += " generate_data_mount_dir ; "
 IMAGE_POSTPROCESS_COMMAND += " flash_image_generate ; "

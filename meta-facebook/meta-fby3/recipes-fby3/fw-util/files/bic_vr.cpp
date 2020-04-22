@@ -32,8 +32,10 @@ int VrComponent::print_version()
       addr = vr.first;
       server.ready();
       
-      ret = bic_get_vr_ver_cache(slot_id, intf, bus, addr, ver_str);
-      if ( ret == 0 ) {
+      ret = bic_get_vr_ver_cache(slot_id, NONE_INTF, bus, addr, ver_str);
+      if ( ret < 0 ) {
+        throw "Error in getting the version of " + vr.second;
+      } else {
         printf("%s Version : %s \n", vr.second.c_str(), ver_str);  //ex. ver_str = Infineon 0x588C254B
       } 
       
@@ -47,11 +49,12 @@ int VrComponent::print_version()
 
 int VrComponent::update(string image)
 {
-  int ret;
+  int ret = 0;
   try {
     server.ready();
-    return bic_update_fw(slot_id, UPDATE_VR, intf, (char *)image.c_str(), 0);
+    ret = bic_update_fw(slot_id, FW_VR, (char *)image.c_str(), FORCE_UPDATE_UNSET);
   } catch (string err) {
+    printf("%s\n", err.c_str());
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;

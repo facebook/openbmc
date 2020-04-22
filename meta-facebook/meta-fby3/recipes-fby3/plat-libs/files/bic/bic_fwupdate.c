@@ -966,60 +966,113 @@ exit:
   return ret;
 }
 
+static char*
+get_component_name(uint8_t comp) {
+  switch (comp) {
+    case FW_CPLD:
+      return "SB CPLD";
+    case FW_BIC:
+      return "SB BIC";
+    case FW_BIC_BOOTLOADER:
+      return "SB BIC Bootloader";
+    case FW_VR:
+      return "VR";
+    case FW_BIOS:
+      return "BIOS";
+    case FW_1OU_BIC:
+      return "1OU BIC";
+    case FW_1OU_BIC_BOOTLOADER:
+      return "1OU BIC Bootloader";
+    case FW_1OU_CPLD:
+      return "1OU CPLD";
+    case FW_2OU_BIC:
+      return "2OU BIC";
+    case FW_2OU_BIC_BOOTLOADER:
+      return "2OU BIC Bootloader";
+    case FW_2OU_CPLD:
+      return "2OU CPLD";
+    case FW_BB_BIC:
+      return "BB BIC";
+    case FW_BB_BIC_BOOTLOADER:
+      return "BB BIC Bootloader";
+    case FW_BB_CPLD:
+      return "BB CPLD";
+    default:
+      return "Unknown";
+  }
+
+  return "NULL";
+}
+
 int
-bic_update_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force) {
-  int ret = 0;
+bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
+  int ret = BIC_STATUS_SUCCESS;
+  uint8_t intf = 0x0;
   char ipmb_content[] = "ipmb";
   char* loc = strstr(path, ipmb_content);
 
   printf("slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, path, force);
+  syslog(LOG_CRIT, "Updating %s on slot%d. File: %s", get_component_name(comp), slot_id, path);
 
+  //get the intf
   switch (comp) {
-    case UPDATE_BIC:
-      ret = update_bic_runtime_fw(slot_id, comp, intf, path, force);
+    case FW_CPLD:
+    case FW_ME:
+    case FW_BIC:
+    case FW_BIC_BOOTLOADER:
+      intf = NONE_INTF;
       break;
-    case UPDATE_BIC_BOOTLOADER:
-      ret = update_bic_bootloader_fw(slot_id, comp, intf , path, force);
+    case FW_1OU_BIC:
+    case FW_1OU_BIC_BOOTLOADER:
+    case FW_1OU_CPLD:
+      intf = FEXP_BIC_INTF;
       break;
-    case UPDATE_CPLD:
-      if ( intf == NONE_INTF || intf == BB_BIC_INTF ) {
-        ret = update_bic_cpld_altera(slot_id, path, intf, force);
-      } else {
-        ret = update_bic_cpld_lattice(slot_id, path, intf, force);
-      }
+    case FW_2OU_BIC:
+    case FW_2OU_BIC_BOOTLOADER:
+    case FW_2OU_CPLD:
+      intf = REXP_BIC_INTF;
       break;
-    case UPDATE_VR:
-      ret = update_bic_vr(slot_id, path, force);
+    case FW_BB_BIC:
+    case FW_BB_BIC_BOOTLOADER:
+    case FW_BB_CPLD:
+      intf = BB_BIC_INTF;
       break;
-    case UPDATE_BIOS:
+  }
+
+  //run cmd
+  switch (comp) {
+    case FW_BIC:
+    case FW_1OU_BIC:
+    case FW_2OU_BIC:
+    case FW_BB_BIC:
+      ret = update_bic_runtime_fw(slot_id, UPDATE_BIC, intf, path, force);
+      break;
+    case FW_BIC_BOOTLOADER:
+    case FW_1OU_BIC_BOOTLOADER:
+    case FW_2OU_BIC_BOOTLOADER:
+    case FW_BB_BIC_BOOTLOADER:
+      ret = update_bic_bootloader_fw(slot_id, UPDATE_BIC_BOOTLOADER, intf , path, force);
+      break;
+    case FW_1OU_CPLD:
+    case FW_2OU_CPLD:
+      ret = update_bic_cpld_lattice(slot_id, path, intf, force);
+      break;
+    case FW_BB_CPLD:
+    case FW_CPLD:
+      ret = update_bic_cpld_altera(slot_id, path, intf, force);
+      break;
+    case FW_BIOS:
       if (loc != NULL) {
         ret = update_bic_bios(slot_id, path, force);
       } else {
         ret = update_bic_usb_bios(slot_id, path);
       }
       break;
-  }
-
-  return ret;
-}
-
-int
-bic_show_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf) {
-  int ret = 0;
-  switch(comp) {
-    case FW_BIC:
-    case FW_BIC_BOOTLOADER:
-    case FW_ME:
-      ret = bic_get_fw_ver(slot_id, comp, ver, intf);
-      break;
-    case FW_CPLD:
-      if ( intf == NONE_INTF || intf == BB_BIC_INTF ) {
-        ret = bic_get_cpld_ver(slot_id, comp, ver, bus, addr, intf);
-      } else if ( intf == FEXP_BIC_INTF || intf == REXP_BIC_INTF ) {
-        ret = bic_get_exp_cpld_ver(slot_id, comp, ver, bus, addr, intf);
-      }
+    case FW_VR:
+      ret = update_bic_vr(slot_id, path, force);
       break;
   }
 
+  syslog(LOG_CRIT, "Updated %s on slot%d. File: %s. Result: %s", get_component_name(comp), slot_id, path, (ret < 0)?"Fail":"Success");
   return ret;
 }

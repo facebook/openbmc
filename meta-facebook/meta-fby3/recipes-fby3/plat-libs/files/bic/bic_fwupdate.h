@@ -37,8 +37,7 @@ enum {
   UPDATE_PCIE_SWITCH,
 };
 
-int bic_update_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force);
-int bic_show_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf);
+int bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force);
 
 #ifdef __cplusplus
 } // extern "C"

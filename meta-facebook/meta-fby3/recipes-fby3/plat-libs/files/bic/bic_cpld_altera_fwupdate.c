@@ -506,7 +506,7 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
   //So, the other will know the CPLD is updating by reading the register.
   //If the status of CPLD is 1h, it means the CPLD update is ongoing. Otherwise, it should be 0.
   //Since the update don't start, return ret if one of them is failure.
-  if ( intf == BB_BIC_INTF ) {
+  if ( intf == BB_BIC_INTF && force != FORCE_UPDATE_SET) {
     //generate random numbers from 1 to 9
     srand(time(NULL));
     int interval = (rand()%10);

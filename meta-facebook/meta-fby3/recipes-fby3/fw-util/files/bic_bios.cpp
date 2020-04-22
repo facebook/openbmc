@@ -3,7 +3,7 @@
 #include <cstring>
 #include <syslog.h>
 #include <unistd.h>
-#include "bios.h"
+#include "bic_bios.h"
 #include <openbmc/pal.h>
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
@@ -54,7 +54,7 @@ int BiosComponent::update(string image) {
     sleep(3);
     bic_switch_mux_for_bios_spi(slot_id, MUX_SWITCH_CPLD);
     sleep(1);
-    ret = bic_update_fw(slot_id, UPDATE_BIOS, intf, (char *)image.c_str(), 1);
+    ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
     if (ret != 0) {
       return -1;
     }
@@ -97,7 +97,7 @@ int BiosComponent::print_version() {
     ret = pal_get_sysfw_ver(fruid, ver);
     // Print BIOS Version
     if ( ret < 0 ) {
-      cout << "BIOS Version: NA" << endl;
+      throw "Error in getting the version of BIOS";
     } else {
       printf("BIOS Version: ");
       cout << &ver[3] << endl;
@@ -106,7 +106,7 @@ int BiosComponent::print_version() {
     printf("BIOS Version: NA (%s)\n", err.c_str());
   }
 
-  return ret;
+  return FW_STATUS_SUCCESS;
 }
 
 #endif

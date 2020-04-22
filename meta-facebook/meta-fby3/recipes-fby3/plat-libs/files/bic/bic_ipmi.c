@@ -342,46 +342,94 @@ error_exit:
 // OEM - Get Firmware Version
 // Netfn: 0x38, Cmd: 0x0B
 int
-bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t intf) {
+bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   uint8_t tbuf[4] = {0x00};
-  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
+  uint8_t rbuf[16] = {0x00};
+  uint8_t tlen = 4;
   uint8_t rlen = 0;
-  int ret;
-  uint8_t bmc_location = 0;
+  uint8_t fw_comp = 0x0;
+  uint8_t intf = 0x0;
+  int ret = BIC_STATUS_FAILURE;
 
-  if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
-    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
-    ret = BIC_STATUS_FAILURE;
-    goto error_exit;
+  //get the component
+  switch (comp) {
+    case FW_1OU_BIC:
+    case FW_2OU_BIC:
+    case FW_BB_BIC:
+      fw_comp = FW_BIC;
+      break;
+    case FW_1OU_BIC_BOOTLOADER:
+    case FW_2OU_BIC_BOOTLOADER:
+    case FW_BB_BIC_BOOTLOADER:
+      fw_comp = FW_BIC_BOOTLOADER;
+      break;
+    default:
+      fw_comp = comp;
+      break;
   }
 
-  if ( (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && (intf == BB_BIC_INTF) ) {
-    ret = BIC_STATUS_FAILURE;
-    goto error_exit;
-  } else if ( bmc_location == NIC_BMC && (intf == FEXP_BIC_INTF) ) {
-    ret = BIC_STATUS_FAILURE;
-    goto error_exit;
+  //get the intf
+  switch (comp) {
+    case FW_CPLD:
+    case FW_ME:
+    case FW_BIC:
+    case FW_BIC_BOOTLOADER:
+      intf = NONE_INTF;
+      break;
+    case FW_1OU_BIC:
+    case FW_1OU_BIC_BOOTLOADER:
+    case FW_1OU_CPLD:
+      intf = FEXP_BIC_INTF;
+      break;
+    case FW_2OU_BIC:
+    case FW_2OU_BIC_BOOTLOADER:
+    case FW_2OU_CPLD:
+      intf = REXP_BIC_INTF;
+      break;
+    case FW_BB_BIC:
+    case FW_BB_BIC_BOOTLOADER:
+    case FW_BB_CPLD:
+      intf = BB_BIC_INTF;
+      break;
   }
 
-  // File the IANA ID
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  //run cmd
+  switch (comp) {
+    case FW_CPLD:
+    case FW_ME:
+    case FW_BIC:
+    case FW_BIC_BOOTLOADER:
+    case FW_1OU_BIC:
+    case FW_1OU_BIC_BOOTLOADER:
+    case FW_2OU_BIC:
+    case FW_2OU_BIC_BOOTLOADER:
+    case FW_BB_BIC:
+    case FW_BB_BIC_BOOTLOADER:
+      // File the IANA ID
+      memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
 
-  // Fill the component for which firmware is requested
-  tbuf[3] = comp;
+      // Fill the component for which firmware is requested
+      tbuf[3] = fw_comp;
 
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, 0x04, rbuf, &rlen, intf);
-
-  // rlen should be greater than or equal to 4 (IANA + Data1 +...+ DataN)
-  if ( ret < 0 || rlen < 4 ) {
-    syslog(LOG_ERR, "%s: ret: %d, rlen: %d\n", __func__, ret, rlen);
-    ret = BIC_STATUS_FAILURE;
-    goto error_exit;
+      ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, tlen, rbuf, &rlen, intf);
+      // rlen should be greater than or equal to 4 (IANA + Data1 +...+ DataN)
+      if ( ret < 0 || rlen < 4 ) {
+        syslog(LOG_ERR, "%s: ret: %d, rlen: %d, slot_id:%x, intf:%x\n", __func__, ret, rlen, slot_id, intf);
+        ret = BIC_STATUS_FAILURE;
+      } else {
+        //Ignore IANA ID
+        memcpy(ver, &rbuf[3], rlen-3);
+      }
+      break;
+    case FW_1OU_CPLD:
+    case FW_2OU_CPLD:
+      ret = bic_get_exp_cpld_ver(slot_id, fw_comp, ver, 0/*bus 0*/, 0x80/*8-bit addr*/, intf);
+      break;
+    case FW_BB_CPLD:
+      ret = bic_get_cpld_ver(slot_id, fw_comp, ver, 0/*bus 0*/, 0x80/*8-bit addr*/, intf);
+      break;
   }
 
-  //Ignore IANA ID
-  memcpy(ver, &rbuf[3], rlen-3);
-
-error_exit:
   return ret;
 }
 

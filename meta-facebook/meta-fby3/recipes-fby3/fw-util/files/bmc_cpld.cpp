@@ -94,10 +94,14 @@ image_info BmcCpldComponent::check_image(string image, bool force) {
 
 int BmcCpldComponent::get_cpld_version(uint8_t *ver) {
   int ret = 0;
-  uint8_t tbuf[4] = {0x00, 0x20, 0x00, 0x28};
+  uint32_t ver_reg = ON_CHIP_FLASH_USER_VER;
+  uint8_t tbuf[4] = {0x00};
   uint8_t tlen = 4;
   uint8_t rlen = 4;
   int i2cfd = 0;
+
+  memcpy(tbuf, (uint8_t *)&ver_reg, tlen);
+  reverse(tbuf, tbuf + 4);
   string i2cdev = "/dev/i2c-" + to_string(bus);
 
   if ((i2cfd = open(i2cdev.c_str(), O_RDWR)) < 0) {
@@ -116,11 +120,6 @@ int BmcCpldComponent::get_cpld_version(uint8_t *ver) {
   return ret;
 }
 
-/*
- * The definition of ON_CHIP_FLASH_USER_VER in fby3 is different to libfpga. 
- * TODO: We should add ON_CHIP_FLASH_USER_VER into altera_max10_attr_t, 
- * so it can be defined by each project.
-*/
 int BmcCpldComponent::print_version()
 {
   uint8_t ver[4] = {0};
@@ -129,9 +128,8 @@ int BmcCpldComponent::print_version()
     // Print CPLD Version
     transform(fru_name.begin(), fru_name.end(), fru_name.begin(), ::toupper);
     if ( get_cpld_version(ver) < 0 ) {
-      printf("%s CPLD Version: NA\n", fru_name.c_str());
-    }
-    else {
+      throw "Error in getting the version of " + fru_name;
+    } else {
       printf("%s CPLD Version: %02X%02X%02X%02X\n", fru_name.c_str(), ver[3], ver[2], ver[1], ver[0]);
     }
   } catch(string err) {
@@ -140,10 +138,47 @@ int BmcCpldComponent::print_version()
   return 0;
 }
 
-int BmcCpldComponent::update(string image)
+int BmcCpldComponent::update_cpld(string image) 
 {
   int ret = 0;
   char key[32] = {0};
+  uint8_t bmc_location = 0;
+  string bmc_location_str;
+  string image_tmp;
+  size_t pos = image.find("-tmp"); 
+  image_tmp = image.substr(0, pos);
+
+  if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
+    printf("Failed to initialize the fw-util\n");
+    return FW_STATUS_FAILURE;
+  }
+
+  if ( bmc_location == NIC_BMC ) {
+    bmc_location_str = "NIC Expansion";
+  } else {
+    bmc_location_str = "baseboard";
+  }
+
+  syslog(LOG_CRIT, "Updating CPLD on %s. File: %s", bmc_location_str.c_str(), image_tmp.c_str());
+  if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
+    printf("Cannot open i2c!\n");
+    ret = FW_STATUS_FAILURE;
+  } else {
+    //TODO: need to update 2 CFMs
+    ret = cpld_program((char *)image.c_str(), key, false);
+    cpld_intf_close(INTF_I2C);
+    if ( ret < 0 ) {
+      printf("Error Occur at updating CPLD FW!\n");
+    }
+  }
+
+  syslog(LOG_CRIT, "Updated CPLD on %s. File: %s. Result: %s", bmc_location_str.c_str(), image_tmp.c_str(), (ret < 0)?"Fail":"Success"); 
+  return ret;
+}
+
+int BmcCpldComponent::update(string image)
+{
+  int ret = 0;
   image_info image_sts = check_image(image, false);
 
   if ( image_sts.result == false ) {
@@ -154,16 +189,7 @@ int BmcCpldComponent::update(string image)
   //use the new path
   image = image_sts.new_path;
 
-  if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
-    printf("Cannot open i2c!\n");
-    return -1;
-  }
-
-  ret = cpld_program((char *)image.c_str(), key, false);
-  cpld_intf_close(INTF_I2C);
-  if (ret) {
-    printf("Error Occur at updating CPLD FW!\n");
-  }
+  ret = update_cpld(image);
 
   //remove the tmp file
   remove(image.c_str());
@@ -173,21 +199,11 @@ int BmcCpldComponent::update(string image)
 int BmcCpldComponent::fupdate(string image) 
 {
   int ret = 0;
-  char key[32] = {0};
   image_info image_sts = check_image(image, true);
 
   image = image_sts.new_path;
 
-  if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
-    printf("Cannot open i2c!\n");
-    return -1;
-  }
-
-  ret = cpld_program((char *)image.c_str(), key, false);
-  cpld_intf_close(INTF_I2C);
-  if (ret) {
-    printf("Error Occur at updating CPLD FW!\n");
-  }
+  ret = update_cpld(image);
 
   //remove the tmp file
   remove(image.c_str());

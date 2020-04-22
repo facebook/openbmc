@@ -46,4 +46,8 @@ echo "=== LC7 SERIAL NUMBER ==="
 weutil LC7
 echo "=== LC8 SERIAL NUMBER ==="
 weutil LC8
+echo "=== PSU SHOWTECH AT BUS 5 ==="
+python /usr/local/bin/psu_show_tech.py 5 0x58 -c dps1900
+echo "=== PSU SHOWTECH AT BUS 8 ==="
+python /usr/local/bin/psu_show_tech.py 8 0x58 -c dps1900
 

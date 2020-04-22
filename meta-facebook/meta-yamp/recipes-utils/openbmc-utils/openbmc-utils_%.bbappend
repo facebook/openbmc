@@ -36,6 +36,7 @@ SRC_URI += "file://bios_util.sh \
             file://seutil \
             file://peutil \
             file://scdinfo \
+            file://psu_show_tech.py \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -53,6 +54,7 @@ OPENBMC_UTILS_FILES += " \
     seutil \
     peutil \
     scdinfo \
+    psu_show_tech.py \
     "
 
 DEPENDS_append = " update-rc.d-native"

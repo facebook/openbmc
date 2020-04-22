@@ -15,6 +15,8 @@
 #define GPIO_POWER_GOOD "PWRGD_SYS_PWROK"
 #define GPIO_POWER_RESET "RST_BMC_RSTBTN_OUT_R_N"
 #define GPIO_RESET_BTN_IN "FP_BMC_RST_BTN_N"
+#define GPIO_CPU0_PRESENT "FM_CPU0_SKTOCC_LVT3_PLD_N"
+#define GPIO_CPU1_PRESENT "FM_CPU1_SKTOCC_LVT3_PLD_N"
 
 #define DELAY_POWER_ON 1
 #define DELAY_POWER_OFF 6
@@ -99,6 +101,36 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
 error:
   gpio_close(gdesc);
   return ret;
+}
+
+int
+is_cpu_present(uint8_t fru, uint8_t cpu_id) {
+  int ret;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val;
+  uint8_t status;
+
+  if (fru != FRU_MB)
+    return -1;
+
+  if(cpu_id == 0)
+    gdesc = gpio_open_by_shadow(GPIO_CPU0_PRESENT);
+  else
+    gdesc = gpio_open_by_shadow(GPIO_CPU1_PRESENT);
+  
+  if (gdesc == NULL)
+    return -1;
+
+  ret = gpio_get_value(gdesc, &val);
+
+  gpio_close(gdesc);
+  
+  if(ret == 0)
+    status = (int)val;
+  else 
+      return -1;
+
+  return status;
 }
 
 // Power Off, Power On, or Power Reset the server in given slot

@@ -578,7 +578,7 @@ static void
         if (strncmp(str, POWER_ON_STR, strlen(POWER_ON_STR)) != 0) {
           pal_set_last_pwr_state(fru, POWER_ON_STR);
           syslog(LOG_INFO, "last pwr state updated to on\n");
-          syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
+          syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
         }
 
         memset(str, 0, sizeof(str));
@@ -594,7 +594,7 @@ static void
         if (pot < -2 && strncmp(str, POWER_OFF_STR, strlen(POWER_OFF_STR)) != 0) {
           pal_set_last_pwr_state(fru, POWER_OFF_STR);
           syslog(LOG_INFO, "last pwr state updated to off\n");
-          syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
+          syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
         }
       }
       set_smi_trigger();

@@ -2632,6 +2632,33 @@ error_exit:
   return ret;
 }
 
+bool
+is_cpu_sensor(uint8_t id, uint8_t* cpu_id) {
+  bool is_cpu_sensor = false;
+    switch(id) {
+    case VR_ID0:
+    case VR_ID1:
+    case VR_ID2:
+    case VR_ID3:
+    case VR_ID4:
+      is_cpu_sensor = true;
+      *cpu_id = 0;
+      break;
+    case VR_ID5:
+    case VR_ID6:
+    case VR_ID7:
+    case VR_ID8:
+    case VR_ID9:
+      is_cpu_sensor = true;
+      *cpu_id = 1;
+      break;
+    default:
+      is_cpu_sensor = false;
+      break;
+  }
+  return is_cpu_sensor;
+}
+
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
@@ -2641,6 +2668,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   static uint8_t poweron_10s_flag = 0;
   bool server_off;
   uint8_t id=0;
+  uint8_t cpu_id;
 
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
@@ -2679,6 +2707,13 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           break;
         default:
           break;
+      }
+
+      if(is_cpu_sensor(id, &cpu_id)) {
+        if(is_cpu_present(fru, cpu_id)) {
+          ret = READING_NA;
+          break;
+        }
       }
 
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);

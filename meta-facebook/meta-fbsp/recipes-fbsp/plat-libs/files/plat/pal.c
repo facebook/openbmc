@@ -1793,11 +1793,11 @@ pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
 
     buf[0] = 0x13;  // BMC update intent
     if (!strcmp(comp, "bmc")) {
-      buf[1] = 0x08;  // BMC_ACTIVE
+      buf[1] = UPDATE_BMC_ACTIVE;
     } else if (!strcmp(comp, "bios")) {
-      buf[1] = 0x01;  // PCH_ACTIVE
+      buf[1] = UPDATE_UPDATE_DYNAMIC | UPDATE_PCH_ACTIVE;
     } else if (!strcmp(comp, "cpld")) {
-      buf[1] = 0x04;  // CPLD_ACTIVE
+      buf[1] = UPDATE_CPLD_ACTIVE;
     }
 
     sync();

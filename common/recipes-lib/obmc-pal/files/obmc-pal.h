@@ -240,6 +240,17 @@ enum {
   PFR_UNPROVISIONED = 2,
 };
 
+enum {
+  UPDATE_PCH_ACTIVE     = 0x01,
+  UPDATE_PCH_RECOVERY   = 0x02,
+  UPDATE_CPLD_ACTIVE    = 0x04,
+  UPDATE_BMC_ACTIVE     = 0x08,
+  UPDATE_BMC_RECOVERY   = 0x10,
+  UPDATE_CPLD_RECOVERY  = 0x20,
+  UPDATE_UPDATE_DYNAMIC = 0x40,
+  UPDATE_AT_RESET       = 0x80,
+};
+
 // Helper function needed by some of pal functions
 void msleep(int msec);
 

@@ -1665,11 +1665,17 @@ pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
 
     buf[0] = 0x13;  // BMC update intent
     if (!strcmp(comp, "bmc")) {
-      buf[1] = 0x08;  // BMC_ACTIVE
+      buf[1] = UPDATE_BMC_ACTIVE;
     } else if (!strcmp(comp, "bios")) {
-      buf[1] = (pal_get_config_is_master()) ? 0x01 : 0x81;  // PCH_ACTIVE
+      buf[1] = UPDATE_UPDATE_DYNAMIC | UPDATE_PCH_ACTIVE;
+      if (!pal_get_config_is_master()) {
+        buf[1] |= UPDATE_AT_RESET;
+      }
     } else if (!strcmp(comp, "pfr_cpld")) {
-      buf[1] = (pal_get_config_is_master()) ? 0x04 : 0x84;  // CPLD_ACTIVE
+      buf[1] = UPDATE_CPLD_ACTIVE;
+      if (!pal_get_config_is_master()) {
+        buf[1] |= UPDATE_AT_RESET;
+      }
     }
 
     sync();

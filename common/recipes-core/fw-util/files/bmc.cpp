@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <sys/mman.h>
 #include <syslog.h>
+#include <openbmc/pal.h>
 #include "bmc.h"
 
 using namespace std;
@@ -18,7 +19,7 @@ using namespace std;
 int BmcComponent::update(string image_path)
 {
   string dev;
-  int ret;
+  int ret, pfr_active;
   string flash_image = image_path;
   stringstream cmd_str;
 
@@ -27,9 +28,21 @@ int BmcComponent::update(string image_path)
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-  if (is_valid(image_path) == false) {
+  pfr_active = pal_is_pfr_active();
+  if (is_valid(image_path, (pfr_active == PFR_ACTIVE)) == false) {
     system.error << image_path << " is not a valid BMC image for " << system.name() << endl;
     return FW_STATUS_FAILURE;
+  }
+
+  if (pfr_active == PFR_ACTIVE) {
+    if (!sys.get_mtd_name(string("stg-bmc"), dev)) {
+      return FW_STATUS_FAILURE;
+    }
+
+    system.output << "Flashing to device: " << dev << endl;
+    cmd_str << "flashcp -v " << flash_image << " " << dev;
+    ret = system.runcmd(cmd_str.str());
+    return pal_fw_update_finished(0, _component.c_str(), ret);
   }
 
   if (!system.get_mtd_name(_mtd_name, dev)) {

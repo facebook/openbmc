@@ -414,7 +414,7 @@ class ImageDescriptorList {
   }
 };
 
-bool BmcComponent::is_valid(string &file)
+bool BmcComponent::is_valid(string &file, bool pfr_active)
 {
   bool valid = false;
   try {
@@ -423,6 +423,11 @@ bool BmcComponent::is_valid(string &file)
     if (!image.supports_machine(machine)) {
       return false;
     }
+
+    if (pfr_active) {
+      return true;
+    }
+
     ImageDescriptorList desc_list(system.partition_conf().c_str());
     valid = desc_list.is_valid(image);
   } catch(string &ex) {

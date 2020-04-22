@@ -18,7 +18,7 @@ class BmcComponent : public Component {
 
     int update(std::string image);
     int print_version();
-    virtual bool is_valid(std::string &image);
+    virtual bool is_valid(std::string &image, bool pfr_active);
 };
 
 #endif

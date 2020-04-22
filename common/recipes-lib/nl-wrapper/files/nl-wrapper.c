@@ -28,6 +28,7 @@
 #include <openbmc/ncsi.h>
 #include <netlink/genl/genl.h>
 #include <netlink/genl/ctrl.h>
+#include <sys/utsname.h>
 #include "nl-wrapper.h"
 
 #define noDEBUG_LIBNL
@@ -288,4 +289,18 @@ NCSI_NL_RSP_T * send_nl_msg_libnl(NCSI_NL_MSG_T *nl_msg)
   } else {
     return ret_buf;
   }
+}
+
+
+// returns 1 if libnl is available in ncsi driver
+//         0 otherwise
+int islibnl(void) {
+  struct utsname unamebuf;
+  int ret = 0;
+
+  ret = uname(&unamebuf);
+  if ((!ret) && (strcmp(unamebuf.release, "4.1.51")))
+    return 1;
+  else
+    return 0;
 }

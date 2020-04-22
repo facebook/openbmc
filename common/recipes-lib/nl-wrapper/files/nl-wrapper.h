@@ -78,6 +78,7 @@ struct ncsi_msg {
 
 // APIs
 NCSI_NL_RSP_T * send_nl_msg_libnl(NCSI_NL_MSG_T *nl_msg);
+int islibnl(void);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -1324,6 +1324,10 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_UV_DETECT      = 0x04,
     SYS_OC_DETECT      = 0x05,
     SYS_OCP_FAULT_WARN = 0x06,
+    SYS_FW_TRIGGER     = 0x07,
+    SYS_OCP_FAULT      = 0x08,
+    SYS_RSVD           = 0x09,
+    SYS_VR_WDT_TIMEOUT = 0x0A,
     EVENT_MASK         = 0x0F,
   };
   uint8_t event = EVENT_MASK & event_data[0];
@@ -1349,6 +1353,15 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_OCP_FAULT_WARN:
       strcat(error_log, "OCP Fault Warning");
+      break;
+    case SYS_FW_TRIGGER:
+      strcat(error_log, "Firmware");
+      break;
+    case SYS_OCP_FAULT:
+      strcat(error_log, "OCP fault");
+      break;
+    case SYS_VR_WDT_TIMEOUT:
+      strcat(error_log, "VR WDT");
       break;
     default:
       strcat(error_log, "Undefined system event");

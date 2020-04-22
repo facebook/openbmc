@@ -32,6 +32,7 @@
 #include <sys/un.h>
 #include <sys/file.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/ipmi.h>
 #include <facebook/fby3_common.h>
 
 #define POLL_TIMEOUT -1 /* Forever */
@@ -68,28 +69,28 @@ slot_hotplug_setup(uint8_t slot_id) {
 
 static void 
 slot1_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = 0x1;
+  const uint8_t slot_id = FRU_SLOT1;
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0);
 }
 
 static void
 slot2_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = 0x2;
+  const uint8_t slot_id = FRU_SLOT2;
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0);
 }
 
 static void
 slot3_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = 0x3;
+  const uint8_t slot_id = FRU_SLOT3;
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0);
 }
 
 static void
 slot4_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = 0x4;
+  const uint8_t slot_id = FRU_SLOT4;
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0);
 }
@@ -97,6 +98,60 @@ slot4_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
 static void 
 ac_on_off_button_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   log_gpio_change(gp, curr, 0);
+}
+
+static void
+issue_slot_ocp_fault_sel(uint8_t slot_id) {
+  uint8_t tbuf[32] = {0x00};
+  uint8_t rbuf[32] = {0x00};
+  uint8_t tlen = 0;
+  uint16_t rlen = 0;
+
+  tbuf[0]  = slot_id;
+  tbuf[1]  = NETFN_STORAGE_REQ << 2;
+  tbuf[2]  = CMD_STORAGE_ADD_SEL;
+  tbuf[5]  = 0x02; //record ID
+  tbuf[10] = 0x20; //addr 
+  tbuf[11] = 0x00;
+  tbuf[12] = 0x04;
+  tbuf[13] = 0xC9;
+  tbuf[14] = 0x46;
+  //When the OCP fault is asserted, the slot is shutdown.
+  //So, only the assertion event is issued.
+  tbuf[15] = 0x6F;
+  tbuf[16] = 0x08; //fault event
+  tbuf[17] = 0xff;
+  tbuf[18] = 0xff; 
+  tlen = 19;
+  lib_ipmi_handle(tbuf, tlen, rbuf, &rlen);
+}
+
+static void
+slot1_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+  const uint8_t slot_id = FRU_SLOT1;
+  log_gpio_change(gp, curr, 0);
+  issue_slot_ocp_fault_sel(slot_id);
+}
+
+static void
+slot2_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+  const uint8_t slot_id = FRU_SLOT2;
+  log_gpio_change(gp, curr, 0);
+  issue_slot_ocp_fault_sel(slot_id);
+}
+
+static void
+slot3_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+  const uint8_t slot_id = FRU_SLOT3;
+  log_gpio_change(gp, curr, 0);
+  issue_slot_ocp_fault_sel(slot_id);
+}
+
+static void
+slot4_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+  const uint8_t slot_id = FRU_SLOT4;
+  log_gpio_change(gp, curr, 0);
+  issue_slot_ocp_fault_sel(slot_id);
 }
 
 // GPIO table of the class 1
@@ -110,6 +165,10 @@ static struct gpiopoll_config g_class1_gpios[] = {
   {"AC_ON_OFF_BTN_BMC_SLOT2_N_R", "GPIOL1", GPIO_EDGE_BOTH, ac_on_off_button_hndlr, NULL},
   {"AC_ON_OFF_BTN_SLOT3_N",       "GPIOL2", GPIO_EDGE_BOTH, ac_on_off_button_hndlr, NULL},
   {"AC_ON_OFF_BTN_BMC_SLOT4_N_R", "GPIOL3", GPIO_EDGE_BOTH, ac_on_off_button_hndlr, NULL},
+  {"HSC_FAULT_SLOT1_N",           "GPIOM0", GPIO_EDGE_BOTH, slot1_ocp_fault_hndlr, NULL},
+  {"HSC_FAULT_BMC_SLOT2_N_R",     "GPIOM1", GPIO_EDGE_BOTH, slot2_ocp_fault_hndlr, NULL},
+  {"HSC_FAULT_SLOT3_N",           "GPIOM2", GPIO_EDGE_BOTH, slot3_ocp_fault_hndlr, NULL},
+  {"HSC_FAULT_BMC_SLOT4_N_R",     "GPIOM3", GPIO_EDGE_BOTH, slot4_ocp_fault_hndlr, NULL},
 };
 
 // GPIO table of the class 2

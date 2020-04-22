@@ -47,7 +47,6 @@ int main(int argc, const char *argv[])
   int rc;
   char local_mac[20];
   uint8_t parsed_mac[6];
-  uint8_t sup_mac[6];
 
   if (argc >= 2) {
     fn = argv[1];
@@ -64,10 +63,6 @@ int main(int argc, const char *argv[])
 
   read_local_mac(local_mac);
   elbert_parse_mac(parsed_mac,local_mac,0);
-  elbert_calculate_mac(parsed_mac, -1, sup_mac);
-  if (!strcmp(fn, "SUP"))
-    for (int i = 0; i < 6; i++)
-      parsed_mac[i] = sup_mac[i];
 
   printf("Wedge EEPROM %s:\n", fn ? fn : "");
   printf("Version: %d\n", eeprom.fbw_version);

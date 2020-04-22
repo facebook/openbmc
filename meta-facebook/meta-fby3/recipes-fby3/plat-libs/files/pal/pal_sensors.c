@@ -1122,6 +1122,10 @@ read_temp(uint8_t id, float *value) {
 static int
 read_adc_val(uint8_t adc_id, float *value) {
   int ret = PAL_EOK;
+  int i = 0;
+  int available_sampling = 0;
+  float temp_val = 0;
+  const int sampling = 100;
   const char *adc_label[] = {
     "BMC_SENSOR_P5V",
     "BMC_SENSOR_P12V",
@@ -1139,12 +1143,42 @@ read_adc_val(uint8_t adc_id, float *value) {
     return -1;
   }
 
-  ret = sensors_read_adc(adc_label[adc_id], value);
+  if ( ADC8 == adc_id ) {
+    *value = 0;
+    for ( i = 0; i < sampling; i++ ) {
+      ret = sensors_read_adc(adc_label[adc_id], &temp_val);
+      if ( ret < 0 ) {
+        syslog(LOG_WARNING,"%s() Failed to get val. i=%d", __func__, i);
+      } else {
+        *value += temp_val;
+        available_sampling++;
+      }
+    }
+
+    if ( available_sampling == 0 ) {
+      ret = READING_NA;
+    } else {
+      *value = *value / available_sampling;
+    }
+  } else {
+    ret = sensors_read_adc(adc_label[adc_id], value);
+  }
+
+  //TODO: if devices are not installed, maybe we need to show NA instead of 0.01
   if ( ret == PAL_EOK ) {
     if ( ADC8 == adc_id ) {
       *value = *value/0.22/0.237; // EVT: /0.22/0.237/4
+      //when pwm is kept low, the current is very small or close to 0
+      //BMC will show 0.00 amps. make it show 0.01 at least.
+      if ( *value < 0.01 ) *value = 0.01;
     } else if ( ADC9 == adc_id ) {
       *value = *value/0.16/1.27;  // EVT: /0.16/0.649
+
+      //adjust the reading to make it more accurate
+      *value = (*value - 0.5) * 0.98;
+
+      //it's not support to show the negative value, make it show 0.01 at least.
+      if ( *value <= 0 ) *value = 0.01;
     }
   }
 

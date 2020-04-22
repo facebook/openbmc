@@ -34,6 +34,7 @@ int pal_read_gpu_temp(uint8_t, float*);
 int pal_read_edge_temp(uint8_t, float*);
 int pal_read_hbm_temp(uint8_t, float*);
 int pal_read_gpu_pwcs(uint8_t, float*);
+bool pal_is_asic_prsnt(uint8_t);
 
 #ifdef __cplusplus
 } // extern "C"

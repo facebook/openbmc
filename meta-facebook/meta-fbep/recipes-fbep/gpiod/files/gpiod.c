@@ -32,7 +32,7 @@
 
 #define POLL_TIMEOUT -1 /* Forever */
 
-bool g_sys_pwr_off = true;
+bool g_sys_pwr_off;
 
 static void log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay)
 {
@@ -67,6 +67,13 @@ static void gpio_event_handle_power_btn(gpiopoll_pin_t *gp, gpio_value_t last, g
 static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
   g_sys_pwr_off = (curr == GPIO_VALUE_HIGH)? false: true;
+  if (curr == GPIO_VALUE_HIGH) {
+    /* Enable ADM1272 Vout sampling (it is disabled by default) */
+    if (system("i2cset -f -y 16 0x13 0xd4 0x3f37 w > /dev/null") < 0 ||
+	system("i2cset -f -y 17 0x10 0xd4 0x3f37 w > /dev/null") < 0) {
+      syslog(LOG_CRIT, "Failed to enable P48V VOUT monitoring");
+    }
+  }
 }
 
 // GPIO table to be monitored
@@ -78,7 +85,7 @@ static struct gpiopoll_config g_gpios[] = {
 
 // For monitoring GPIOs on IO expender
 struct gpioexppoll_config {
-  char shadow[16];
+  char shadow[64];
   char description[64];
   gpio_value_t last;
   gpio_value_t curr;
@@ -113,19 +120,60 @@ static void* fan_status_monitor()
         gp->curr = pal_is_fan_prsnt(i<<1)? GPIO_VALUE_LOW: GPIO_VALUE_HIGH;
 
       if (gp->last != gp->curr) {
-	if (i>>2) {
-	  syslog(LOG_CRIT, "%s: %s - %s\n",
-	      gp->curr == GPIO_VALUE_HIGH? "ON": "OFF",
-	      gp->description,
-	      gp->shadow);
+        if (i>>2) {
+          syslog(LOG_CRIT, "%s: %s - %s\n",
+              gp->curr == GPIO_VALUE_HIGH? "ON": "OFF",
+              gp->description,
+              gp->shadow);
         } else {
-	  syslog(LOG_CRIT, "%s: %s - %s\n",
-	      gp->curr == GPIO_VALUE_LOW? "ON": "OFF",
-	      gp->description,
-	      gp->shadow);
-	}
-	gp->last = gp->curr;
+          syslog(LOG_CRIT, "%s: %s - %s\n",
+              gp->curr == GPIO_VALUE_LOW? "ON": "OFF",
+              gp->description,
+              gp->shadow);
+        }
+        gp->last = gp->curr;
       }
+    }
+  }
+
+  return NULL;
+}
+
+static void* asic_status_monitor()
+{
+  int i;
+  struct gpioexppoll_config asic_gpios[] = {
+    {"OAM0_MODULE_PWRGD", "ASIC0 power", GPIO_VALUE_HIGH, GPIO_VALUE_INVALID},
+    {"OAM1_MODULE_PWRGD", "ASIC1 power", GPIO_VALUE_HIGH, GPIO_VALUE_INVALID},
+    {"OAM2_MODULE_PWRGD", "ASIC2 power", GPIO_VALUE_HIGH, GPIO_VALUE_INVALID},
+    {"OAM3_MODULE_PWRGD", "ASIC3 power", GPIO_VALUE_HIGH, GPIO_VALUE_INVALID},
+    {"OAM4_MODULE_PWRGD", "ASIC4 power", GPIO_VALUE_HIGH, GPIO_VALUE_INVALID},
+    {"OAM5_MODULE_PWRGD", "ASIC5 power", GPIO_VALUE_HIGH, GPIO_VALUE_INVALID},
+    {"OAM6_MODULE_PWRGD", "ASIC6 power", GPIO_VALUE_HIGH, GPIO_VALUE_INVALID},
+    {"OAM7_MODULE_PWRGD", "ASIC7 power", GPIO_VALUE_HIGH, GPIO_VALUE_INVALID},
+  };
+  struct gpioexppoll_config *gp;
+
+  while (1) {
+    sleep(1);
+
+    if (g_sys_pwr_off)
+      continue;
+
+    for (i = 0; i < 8; i++) {
+      if (!pal_is_asic_prsnt(i))
+        continue;
+
+      gp = &asic_gpios[i];
+      gp->curr = gpio_get(gp->shadow);
+
+      if (gp->last != gp->curr) {
+        syslog(LOG_CRIT, "%s: %s - %s\n",
+            gp->curr == GPIO_VALUE_HIGH? "ON": "OFF",
+            gp->description,
+            gp->shadow);
+      }
+      gp->last = gp->curr;
     }
   }
 
@@ -135,6 +183,7 @@ static void* fan_status_monitor()
 int main(int argc, char **argv)
 {
   pthread_t tid_fan_monitor;
+  pthread_t tid_asic_monitor;
   int rc, pid_file;
   gpiopoll_desc_t *polldesc;
 
@@ -149,8 +198,14 @@ int main(int argc, char **argv)
     openlog("gpiod", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "gpiod: daemon started");
 
+    g_sys_pwr_off = pal_is_server_off();
     if (pthread_create(&tid_fan_monitor, NULL, fan_status_monitor, NULL) < 0) {
       syslog(LOG_CRIT, "pthread_create for fan monitor error");
+      exit(1);
+    }
+
+    if (pthread_create(&tid_asic_monitor, NULL, asic_status_monitor, NULL) < 0) {
+      syslog(LOG_CRIT, "pthread_create for asic monitor error");
       exit(1);
     }
 

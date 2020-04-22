@@ -39,6 +39,16 @@ do
   do
     gpioexp_export 7-002${i} OAM${i}_LINK_CONFIG${j} ${j}
   done
+  gpioexp_export 7-002${i} OAM${i}_PE_BIF1 5
+  gpioexp_export 7-002${i} OAM${i}_PE_BIF0 6
+  gpioexp_export 7-002${i} OAM${i}_MANF_MODE 7
+  gpioexp_export 7-002${i} OAM${i}_FW_RECOVERY 8
+  gpioexp_export 7-002${i} OAM${i}_TEST_MODE 9
+  gpioexp_export 7-002${i} OAM${i}_PLINK_CAP 10
+  gpioexp_export 7-002${i} OAM${i}_PWRRDT0 11
+  gpioexp_export 7-002${i} OAM${i}_PWRRDT1 12
+  gpioexp_export 7-002${i} OAM${i}_MODULE_PWRGD 13
+
   gpio_set OAM${i}_LINK_CONFIG0 0
   gpio_set OAM${i}_LINK_CONFIG2 0
   gpio_set OAM${i}_LINK_CONFIG4 0

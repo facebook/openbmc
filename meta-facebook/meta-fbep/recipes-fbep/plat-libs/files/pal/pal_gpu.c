@@ -81,24 +81,19 @@ static uint8_t get_gpu_id()
   return GPU_AMD;
 }
 
-static int open_by_check(uint8_t slot)
+bool pal_is_asic_prsnt(uint8_t slot)
 {
   bool prsnt = true;
   char dev[64] = {0};
   gpio_desc_t *desc;
   gpio_value_t value;
 
-  // Step 1: Check power
-  if (pal_is_server_off())
-    return -1;
-
-  // Step 2: Check present
   for (int i = 0; i < 2 && prsnt; i++) {
     snprintf(dev, sizeof(dev), "PRSNT%d_N_ASIC%d", i, (int)slot);
     desc = gpio_open_by_shadow(dev);
     if (!desc) {
       syslog(LOG_WARNING, "Open GPIO %s failed", dev);
-      return -1;
+      return false;
     }
     if (gpio_get_value(desc, &value) < 0) {
       syslog(LOG_WARNING, "Get GPIO %s failed", dev);
@@ -107,8 +102,20 @@ static int open_by_check(uint8_t slot)
     gpio_close(desc);
     prsnt &= (value == GPIO_VALUE_LOW)? true: false;
     if (!prsnt)
-      return -1;
+      return false;
   }
+
+  return true;
+}
+
+static int open_by_check(uint8_t slot)
+{
+  char dev[64] = {0};
+
+  if (!pal_is_asic_prsnt(slot))
+    return -1;
+  if (pal_is_server_off())
+    return -1;
 
   snprintf(dev, sizeof(dev), "/dev/i2c-2%d", (int)slot);
   return open(dev, O_RDWR);

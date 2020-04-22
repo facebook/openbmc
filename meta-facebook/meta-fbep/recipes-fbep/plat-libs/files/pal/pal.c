@@ -638,12 +638,6 @@ static int server_power_on()
     goto bail;
   }
   sleep(2);
-
-  /* Enable ADM1272 Vout sampling (it is disabled by default) */
-  if (system("i2cset -f -y 16 0x13 0xd4 0x3f37 w > /dev/null") < 0 ||
-      system("i2cset -f -y 17 0x10 0xd4 0x3f37 w > /dev/null") < 0) {
-    syslog(LOG_CRIT, "Failed to enable P48V VOUT monitoring");
-  }
   pal_clock_control();
 
   ret = 0;

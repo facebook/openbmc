@@ -668,16 +668,16 @@ handle_get_version_id(NCSI_Response_Packet *resp)
   return 0;
 }
 
-
-
-
 int
 create_ncsi_ctrl_pkt(NCSI_NL_MSG_T *nl_msg, uint8_t ch, uint8_t cmd,
                      uint16_t payload_len, unsigned char *payload) {
-  sprintf(nl_msg->dev_name, "eth0");
-  nl_msg->channel_id = ch;
   nl_msg->cmd = cmd;
   nl_msg->payload_length = payload_len;
+  nl_msg->channel_id = ch;
+  int package = (ch & 0xE0) >> 5;
+
+  sprintf(nl_msg->dev_name, "eth%d", package);
+//  printf("%s %s\n", __func__, nl_msg->dev_name);
 
   if (payload_len > NCSI_MAX_PAYLOAD) {
     syslog(LOG_ERR, "%s payload length(%d) exceeds threshold(%d), cmd=0x%02x",

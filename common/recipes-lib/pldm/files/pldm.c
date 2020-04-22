@@ -781,10 +781,11 @@ int handlePldmReqFwData(pldm_fw_pkg_hdr_t *pkgHdr, pldm_cmd_req *pCmd, pldm_resp
                    (pReqDataCmd->length - compBytesLeft) : 0;
 
 
-
-  printf("%s offset = 0x%x, length = 0x%x, compBytesLeft=%d, numPadding=%d\n",
+  printf("\r%s offset = 0x%x, length = 0x%x, compBytesLeft=%d, numPadding=%d",
          __FUNCTION__, pReqDataCmd->offset, pReqDataCmd->length, compBytesLeft,
          numPaddingNeeded);
+  fflush(stdout);
+
   memcpy(pldmRes->common, pCmd->common, PLDM_COMMON_REQ_LEN);
   // clear Req bit in PLDM response header
   pldmRes->common[PLDM_IID_OFFSET] &= PLDM_RESP_MASK;

@@ -188,7 +188,7 @@ int sendPldmCmdAndCheckResp(NCSI_NL_MSG_T *nl_msg)
   return ret;
 }
 
-int pldm_update_fw(char *path, int pldm_bufsize)
+int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
 {
 #define SLEEP_TIME_MS               200  // wait time per loop in ms
   NCSI_NL_MSG_T *nl_msg = NULL;
@@ -229,7 +229,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
 
   pldmCreateReqUpdateCmd(pkgHdr, &pldmReq, pldm_bufsize);
   printf("\n01 PldmRequestUpdateOp: payload_size=%d\n", pldmReq.payload_size);
-  ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_PLDM_REQUEST, pldmReq.payload_size,
+  ret = create_ncsi_ctrl_pkt(nl_msg, ch, NCSI_PLDM_REQUEST, pldmReq.payload_size,
                        &(pldmReq.common[0]));
   if (ret) {
     goto free_exit;
@@ -245,7 +245,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
     pldmCreatePassComponentTblCmd(pkgHdr, i, &pldmReq);
     printf("\n02 PldmPassComponentTableOp[%d]: payload_size=%d\n", i,
             pldmReq.payload_size);
-    ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_PLDM_REQUEST, pldmReq.payload_size,
+    ret = create_ncsi_ctrl_pkt(nl_msg, ch, NCSI_PLDM_REQUEST, pldmReq.payload_size,
                          &(pldmReq.common[0]));
     if (ret) {
       goto free_exit;
@@ -263,7 +263,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
     pldmCreateUpdateComponentCmd(pkgHdr, i, &pldmReq);
     printf("\n03 PldmUpdateComponentOp[%d]: payload_size=%d\n", i,
             pldmReq.payload_size);
-    ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_PLDM_REQUEST, pldmReq.payload_size,
+    ret = create_ncsi_ctrl_pkt(nl_msg, ch, NCSI_PLDM_REQUEST, pldmReq.payload_size,
                          &(pldmReq.common[0]));
     if (ret) {
       goto free_exit;
@@ -281,7 +281,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
   setPldmTimeout(CMD_UPDATE_COMPONENT, &waitTOsec);
   while (idleCnt < (waitTOsec * 1000 /SLEEP_TIME_MS) ) {
 //    printf("\n04 QueryPendingNcPldmRequestOp, loop=%d\n", loopCount);
-    ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_QUERY_PENDING_NC_PLDM_REQ, 0, NULL);
+    ret = create_ncsi_ctrl_pkt(nl_msg, ch, NCSI_QUERY_PENDING_NC_PLDM_REQ, 0, NULL);
     if (ret) {
       goto free_exit;
     }
@@ -312,7 +312,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
       loopCount++;
       waitcycle = 0;
       pldmCmdStatus = pldmFwUpdateCmdHandler(pkgHdr, &pldmReq, pldmRes);
-      ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_SEND_NC_PLDM_REPLY,
+      ret = create_ncsi_ctrl_pkt(nl_msg, ch, NCSI_SEND_NC_PLDM_REPLY,
                                  pldmRes->resp_size, pldmRes->common);
       if (ret) {
         goto free_exit;
@@ -343,7 +343,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
     memset(&pldmReq, 0, sizeof(pldm_cmd_req));
     pldmCreateActivateFirmwareCmd(&pldmReq);
     printf("\n05 PldmActivateFirmwareOp\n");
-    ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_PLDM_REQUEST, pldmReq.payload_size,
+    ret = create_ncsi_ctrl_pkt(nl_msg, ch, NCSI_PLDM_REQUEST, pldmReq.payload_size,
                          &(pldmReq.common[0]));
     if (ret) {
       goto free_exit;
@@ -359,7 +359,7 @@ int pldm_update_fw(char *path, int pldm_bufsize)
     // send abort update cmd
     memset(&pldmReq, 0, sizeof(pldm_cmd_req));
     pldmCreateCancelUpdateCmd(&pldmReq);
-    ret = create_ncsi_ctrl_pkt(nl_msg, 0, NCSI_PLDM_REQUEST, pldmReq.payload_size,
+    ret = create_ncsi_ctrl_pkt(nl_msg, ch, NCSI_PLDM_REQUEST, pldmReq.payload_size,
                               &(pldmReq.common[0]));
     if (ret) {
       ret = -1;
@@ -570,7 +570,7 @@ main(int argc, char **argv) {
 
  if (fupgrade) {
     // special case - invoke PLDM fw upgrade
-    ret = pldm_update_fw(pfile, bufSize);
+    ret = pldm_update_fw(pfile, bufSize, msg->channel_id);
   } else {
     // send individual NCSI cmds
 #ifdef DEBUG

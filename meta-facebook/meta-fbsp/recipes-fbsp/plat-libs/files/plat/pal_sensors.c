@@ -347,14 +347,21 @@ static uint8_t g_ict_count = sizeof(g_ict)/sizeof(inlet_corr_t);
 static inlet_corr_t g_remote_ict[] = {
   // Inlet Sensor:
   // duty cycle vs delta_t
-  { 10, 3.49 },
-  { 16, 2.36 },
-  { 30, 0.68 },
-  { 40, 0.69 },
-  { 50, 0.25 },
-  { 60, 0.19 },
-  { 70, 0.20 },
-  { 80, 0.32 },
+  { 10, 2.87 },
+  { 12, 3.15 },
+  { 14, 1.67 },
+  { 16, 1.22 },
+  { 18, 1.09 },
+  { 20, 0.78 },
+  { 22, 0.81 },
+  { 24, 0.86 },
+  { 26, 0.73 },
+  { 28, 0.62 },
+  { 30, 0.53 },
+  { 40, 0.37 },
+  { 50, 0.21 },
+  { 75, 0.16 },
+  { 100, -0.82 },
 };
 
 static uint8_t g_remote_ict_count = sizeof(g_remote_ict)/sizeof(inlet_corr_t);

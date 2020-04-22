@@ -23,7 +23,6 @@ LIC_FILES_CHKSUM = "file://fand.cpp;beginline=6;endline=18;md5=da35978751a9d71b7
 
 SRC_URI = "file://README \
            file://Makefile \
-           file://fand.cpp \
           "
 
 S = "${WORKDIR}"

@@ -23,6 +23,7 @@ SRC_URI += "file://get_fan_speed.sh \
             file://init_pwm.sh \
             file://set_fan_speed.sh \
             file://setup-fan.sh \
+            file://fand.cpp \
            "
 
 S = "${WORKDIR}"

@@ -16,9 +16,9 @@ binfiles = "pfr-util"
 
 pkgdir = "pfr-util"
 
-DEPENDS = "openssl libpal libobmc-i2c"
-RDEPENDS_${PN} = "openssl libpal libobmc-i2c"
-LDFLAGS += "-lcrypto -lpal -lobmc-i2c"
+DEPENDS = "openssl libpal libobmc-i2c libfpga"
+RDEPENDS_${PN} = "openssl libpal libobmc-i2c libfpga"
+LDFLAGS += "-lcrypto -lpal -lobmc-i2c -lfpga"
 CFLAGS += "\
   ${@bb.utils.contains('MACHINE_FEATURES', 'bic', '-DCONFIG_BIC', '', d)} \
 "

@@ -4,7 +4,7 @@ all: pfr-util
 CFLAGS += -Wall -Werror
 
 pfr-util: pfr-util.c
-	$(CC) $(CFLAGS) -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

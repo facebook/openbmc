@@ -21,9 +21,14 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <getopt.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <openssl/sha.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/pal.h>
+#include <openbmc/cpld.h>
+#include <openbmc/altera.h>
 #ifdef CONFIG_BIC
 #include <facebook/bic.h>
 #endif
@@ -32,6 +37,7 @@
 #define PFR_RD_PROVISION (1 << 1)
 #define PFR_ST_HISTORY   (1 << 2)
 #define PFR_LOCK_UFM     (1 << 3)
+#define PFR_UPDATE       (1 << 4)
 
 #define PFM_B0_MAGIC 0xB6EAFD19
 #define PFM_B0_SIZE  0x10
@@ -50,6 +56,34 @@
 #define PCH_STG_OFFSET 0x007f0000
 
 #define INIT_ST_TBL(tbl, idx, str) tbl[idx] = str
+
+#define READ_SUCCESS   0x04
+#define WRITE_SUCCESS  0x08
+#define ERASE_SUCCESS  0x10
+
+#define STATUS_BIT_MASK                  0x1F
+
+#define MAX_RETRY                        5
+#define CFM0_START_ADDR                  0x64000
+#define CFM0_END_ADDR                    0xbffff
+#define CFM1_START_ADDR                  0x8000
+#define CFM1_END_ADDR                    0x63fff
+
+// on-chip Flash IP
+#define ON_CHIP_FLASH_IP_DATA_REG        (0x00000000)
+#define ON_CHIP_FLASH_IP_CSR_BASE        (0x00200020)
+#define ON_CHIP_FLASH_IP_CSR_STATUS_REG  (ON_CHIP_FLASH_IP_CSR_BASE + 0x0)
+#define ON_CHIP_FLASH_IP_CSR_CTRL_REG    (ON_CHIP_FLASH_IP_CSR_BASE + 0x4)
+#define ON_CHIP_FLASH_USER_VER           (0x00200028)
+// Dual-boot IP
+#define DUAL_BOOT_IP_BASE                (0x00200000)
+
+enum {
+  CFM_IMAGE_NONE = 0,
+  CFM_IMAGE_0,
+  CFM_IMAGE_1,
+};
+
 
 enum {
   PC_PFR_BMC_PFM = 3,
@@ -80,6 +114,15 @@ enum {
   ERR_UNKNOWN
 };
 
+typedef enum{
+  Sector_NotSet = 0,
+  Sector_UFM1 = 1,
+  Sector_UFM0 = 2,
+  Sector_CFM2 = 3,
+  Sector_CFM1 = 4,
+  Sector_CFM0 = 5,
+} SectorType_t;
+
 static bool verbose = false;
 static const char *st_table[256] = {0};
 static uint8_t pfr_bus = 0x4;
@@ -100,7 +143,8 @@ static const char *option_list[] = {
   "--read_provision",
   "--state_history",
   "--lock",
-  "--verbose"
+  "--verbose",
+  "--cpld_update"
 };
 
 static void
@@ -644,6 +688,277 @@ pfr_state_history(void) {
 }
 
 int
+update_pfr_cpld_altera(char *image) {
+  int fd = 0;
+  uint8_t *rpd_file = NULL;
+  int ret = 0;
+  int offset = 0;
+  int address = 0;
+  int receivedHex[4];
+  int byte = 0;
+  int data = 0;
+  int status = 0;
+  int retries = MAX_RETRY;
+  int total_0 = CFM0_END_ADDR - CFM0_START_ADDR;
+  int total_1 = CFM1_END_ADDR - CFM1_START_ADDR;
+  int percent = 0;
+  uint8_t done = 0;
+  struct stat finfo;
+  int rpd_filesize = 0;
+  int read_bytes = 0;
+
+// Update CFM0
+  SectorType_t secType = Sector_CFM0;
+
+  printf("OnChip Flash Status = 0x%X, sectype 0x%x, ", max10_status_read(), secType);
+
+  //step 0 - Open the file
+  if ((fd = open(image, O_RDONLY)) < 0) {
+    printf("Fail to open file: %s.\n", image);
+    ret = -1;
+    goto error_exit;
+  }
+
+  fstat(fd, &finfo);
+  rpd_filesize = finfo.st_size;
+  rpd_file = malloc(rpd_filesize);
+  if( rpd_file == 0 ) {
+    printf("Failed to allocate memory\n");
+    ret = -1;
+    goto error_exit;
+  }
+
+  read_bytes = read(fd, rpd_file, rpd_filesize);
+  printf("read %d bytes.\n", read_bytes);
+
+  // TODO - Check image is valid
+
+  //step 1 - UnprotectSector
+  ret = max10_unprotect_sector(5);
+  if ( ret < 0 ) {
+    printf("Failed to unprotect the sector.\n");
+    goto error_exit;
+  }
+
+  //step 2 - Erase a sector
+  ret = max10_erase_sector(5);
+  if ( ret < 0 ) {
+    printf("Failed to erase the sector. %d \n", secType);
+    goto error_exit;
+  }
+
+  //step 3 - Set Erase to `None`
+  ret = max10_erase_sector(0);
+  if ( ret < 0 ) {
+    printf("Failed to set None.\n");
+    goto error_exit;
+  }
+
+  //step 4 - Start program
+  offset = 0x65000;
+  //printf("[Debug] Write offset 0x%x\n", offset);
+  for (address = CFM0_START_ADDR; address < CFM0_END_ADDR; address += 4) {
+    /*Get 4 bytes from UART Terminal*/
+    receivedHex[0] = rpd_file[offset + 0];
+    receivedHex[1] = rpd_file[offset + 1];
+    receivedHex[2] = rpd_file[offset + 2];
+    receivedHex[3] = rpd_file[offset + 3];
+    /*Swap LSB with MSB before write into CFM*/
+    for (byte=0; byte < 4; byte++) {
+      receivedHex[byte] = (((receivedHex[byte] & 0xaa)>>1)|((receivedHex[byte] & 0x55)<<1));
+      receivedHex[byte] = (((receivedHex[byte] & 0xcc)>>2)|((receivedHex[byte] & 0x33)<<2));
+      receivedHex[byte] = (((receivedHex[byte] & 0xf0)>>4)|((receivedHex[byte] & 0x0f)<<4));
+    }
+
+    /*Combine 4 bytes to become 1 word before write operation*/
+    data = (receivedHex[0]<<24)|(receivedHex[1]<<16)|(receivedHex[2]<<8)|(receivedHex[3]);
+    max10_flash_write(address, data);
+
+    usleep(50);
+    retries = MAX_RETRY;
+    do {
+      status = max10_status_read();
+      status &= STATUS_BIT_MASK;
+      if( (status & WRITE_SUCCESS) == WRITE_SUCCESS) {
+        done = 1;
+      }
+
+      if ( status == 0x0 ) {
+        printf("retry...\n");
+        retries--;
+      }
+    } while ( done == 0 && retries > 0);
+
+    if ( retries == 0 ) {
+      ret = -1;
+      break;
+    }
+
+    // show percentage
+    {
+      static int last_percent = 0;
+      percent = ((address+4 - CFM0_START_ADDR)*100)/total_0;
+      if(last_percent != percent) {
+        last_percent = percent;
+        printf("\r Progress  %d %%.  addr: 0x%X ", percent, address);
+        fflush(stdout);
+      }
+    }
+
+    offset += 4;
+  }
+
+  if ( ret < 0 ) {
+    printf("Failed to send the data.\n");
+    goto error_exit;
+  }
+
+  printf("\n Done!\n");
+
+// Update CFM1
+  secType = Sector_CFM1;
+  printf("OnChip Flash Status = 0x%X., sectype 0x%x, ", max10_status_read(), secType);
+
+  //step 1 - UnprotectSector
+  ret = max10_unprotect_sector(3);
+  if ( ret < 0 ) {
+    printf("Failed to unprotect the sector.\n");
+    goto error_exit;
+  }
+
+  ret = max10_unprotect_sector(4);
+  if ( ret < 0 ) {
+    printf("Failed to unprotect the sector.\n");
+    goto error_exit;
+  }
+
+  //step 2 - Erase a sector
+  ret = max10_erase_sector(3);
+  if ( ret < 0 ) {
+    printf("Failed to erase the sector.\n");
+    goto error_exit;
+  }
+
+  ret = max10_erase_sector(4);
+  if ( ret < 0 ) {
+    printf("Failed to erase the sector.\n");
+    goto error_exit;
+  }
+
+  //step 3 - Set Erase to `None`
+  ret = max10_erase_sector(0);
+  //ret = Max10_bmc_erase_sector(Sector_NotSet, file);
+  if ( ret < 0 ) {
+    printf("Failed to set None.\n");
+    goto error_exit;
+  }
+
+  //step 4 - Start program
+  offset = 0x9000;
+  //printf("[Debug] Write offset 0x%x\n", offset);
+  for (address = CFM1_START_ADDR; address < CFM1_END_ADDR; address += 4) {
+    /*Get 4 bytes from UART Terminal*/
+    receivedHex[0] = rpd_file[offset + 0];
+    receivedHex[1] = rpd_file[offset + 1];
+    receivedHex[2] = rpd_file[offset + 2];
+    receivedHex[3] = rpd_file[offset + 3];
+    /*Swap LSB with MSB before write into CFM*/
+    for (byte=0; byte < 4; byte++) {
+      receivedHex[byte] = (((receivedHex[byte] & 0xaa)>>1)|((receivedHex[byte] & 0x55)<<1));
+      receivedHex[byte] = (((receivedHex[byte] & 0xcc)>>2)|((receivedHex[byte] & 0x33)<<2));
+      receivedHex[byte] = (((receivedHex[byte] & 0xf0)>>4)|((receivedHex[byte] & 0x0f)<<4));
+    }
+
+    /*Combine 4 bytes to become 1 word before write operation*/
+    data = (receivedHex[0]<<24)|(receivedHex[1]<<16)|(receivedHex[2]<<8)|(receivedHex[3]);
+    max10_flash_write(address, data);
+
+    usleep(50);
+    retries = MAX_RETRY;
+    do {
+      status = max10_status_read();
+      status &= STATUS_BIT_MASK;
+      if( (status & WRITE_SUCCESS) == WRITE_SUCCESS) {
+        done = 1;
+      }
+
+      if ( status == 0x0 ) {
+        printf("retry...\n");
+        retries--;
+      }
+    } while ( done == 0 && retries > 0);
+
+    if ( retries == 0 ) {
+      ret = -1;
+      break;
+    }
+
+    // show percentage
+    {
+      static int last_percent = 0;
+      percent = ((address+4 - CFM1_START_ADDR)*100)/total_1;
+      if(last_percent != percent) {
+        last_percent = percent;
+        printf("\r Progress  %d %%.  addr: 0x%X ", percent, address);
+        fflush(stdout);
+      }
+    }
+
+    offset += 4;
+  }
+
+  if ( ret < 0 ) {
+    printf("Failed to send the data.\n");
+    goto error_exit;
+  }
+
+  printf("\n Done!\n");
+
+  //step 5 - protect sectors
+  max10_protect_sectors();
+
+error_exit:
+  if ( fd > 0 ) close(fd);
+  if ( rpd_file != NULL ) free(rpd_file);
+
+  return ret;
+}
+
+int
+pfr_firmware_update(uint8_t bus, uint8_t addr, char *file) {
+// on-chip Flash IP
+#define ON_CHIP_FLASH_IP_DATA_REG        (0x00000000)
+#define ON_CHIP_FLASH_IP_CSR_BASE        (0x00200020)
+#define ON_CHIP_FLASH_IP_CSR_STATUS_REG  (ON_CHIP_FLASH_IP_CSR_BASE + 0x0)
+#define ON_CHIP_FLASH_IP_CSR_CTRL_REG    (ON_CHIP_FLASH_IP_CSR_BASE + 0x4)
+#define ON_CHIP_FLASH_USER_VER           (0x00200028)
+// Dual-boot IP
+#define DUAL_BOOT_IP_BASE                (0x00200000)
+enum {
+  CFM_IMAGE_NONE = 0,
+  CFM_IMAGE_0,
+  CFM_IMAGE_1,
+};
+  int ret = -1;
+  altera_max10_attr_t attr = {bus, addr, CFM_IMAGE_0, CFM0_START_ADDR, CFM0_END_ADDR, ON_CHIP_FLASH_IP_CSR_BASE, ON_CHIP_FLASH_IP_DATA_REG, DUAL_BOOT_IP_BASE};
+
+  //printf("[Debug] bus : %d , addr : 0x%x \n", bus, addr);
+
+  if (cpld_intf_open(MAX10_10M25, INTF_I2C, &attr)) {
+    printf("Cannot open i2c!\n");
+    return -1;
+  }
+
+  ret = update_pfr_cpld_altera(file);
+  cpld_intf_close(INTF_I2C);
+  if (ret) {
+    printf("Error Occur at updating CPLD FW!\n");
+  }
+
+  return 0;
+}
+
+int
 main(int argc, char **argv) {
   int ret = -1, retry = 0;
   int opt;
@@ -651,12 +966,14 @@ main(int argc, char **argv) {
   uint32_t operations = 0;
   const char *fruname;
   uint8_t tbuf[8], rbuf[8];
+  char node_src[128];
   static struct option long_opts[] = {
     {"provision", no_argument, 0, 'p'},
     {"read_provision", no_argument, 0, 'r'},
     {"state_history", no_argument, 0, 's'},
     {"lock", no_argument, 0, 'l'},
     {"verbose", no_argument, 0, 'v'},
+    {"cpld_update", required_argument, 0, 'u'},
     {0,0,0,0},
   };
 
@@ -682,6 +999,10 @@ main(int argc, char **argv) {
         case 'v':
           verbose = true;
           break;
+        case 'u':
+          operations |= PFR_UPDATE;
+          strncpy(node_src, optarg, sizeof(node_src) - 1);
+          break;
         default:
           printf("Unknown option\n");
           break;
@@ -700,6 +1021,12 @@ main(int argc, char **argv) {
       printf("Invalid FRU: %s\n", fruname);
       return -1;
     }
+
+    if (pal_is_fw_update_ongoing(pfr_fru)) {
+      printf("FW update for %s is ongoing, block the power controlling.\n", fruname);
+      return -1;
+    }
+
     if (pal_get_pfr_address(pfr_fru, &pfr_bus, &pfr_addr, &bridged)) {
       printf("ERROR: Getting PFR Address from Platform Interface\n");
       return -1;
@@ -707,7 +1034,7 @@ main(int argc, char **argv) {
     pfr_transfer = bridged ? pfr_transfer_bridged : pfr_transfer_i2c;
 
     tbuf[0] = 0x00;
-    if ((ret = pfr_transfer(tbuf, 1, rbuf, 1))) {
+    if ((ret = pfr_transfer(tbuf, 1, rbuf, 1)) && !(operations & PFR_UPDATE)) {
       printf("access mailbox failed, bus=%d, addr=0x%02X, bridge=%c\n",
              pfr_bus, pfr_addr, (bridged)?'Y':'N');
       return ret;
@@ -751,6 +1078,20 @@ main(int argc, char **argv) {
           break;
         }
         printf("lock UFM %s\n", (!ret)?"succeeded":"failed");
+      }
+
+      if (operations & PFR_UPDATE) {
+        if (pal_get_pfr_update_address(pfr_fru, &pfr_bus, &pfr_addr, &bridged)) {
+          printf("ERROR: Getting PFR Update Address from Platform Interface\n");
+          return -1;
+        }
+
+        pal_set_fw_update_ongoing(pfr_fru, 60*10);
+
+        if ((ret = pfr_firmware_update(pfr_bus, pfr_addr, node_src))) {
+          printf("pfr firmware update failed\n");
+        }
+        pal_set_fw_update_ongoing(pfr_fru, 0);
         break;
       }
     } while (0);

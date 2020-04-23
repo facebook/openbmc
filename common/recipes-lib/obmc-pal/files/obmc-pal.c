@@ -2429,3 +2429,9 @@ pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged)
 {
   return -1;
 }
+
+int __attribute__((weak))
+pal_get_pfr_update_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged)
+{
+  return -1;
+}

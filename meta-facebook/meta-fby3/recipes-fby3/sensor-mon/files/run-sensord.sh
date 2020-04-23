@@ -4,15 +4,7 @@ echo -n "Setup sensor monitoring for FBY3... "
 SLOTS=
 
 function read_system_conf() {
-  val=$(/usr/bin/bic-util $1 0x18 0x52 0x05 0x42 0x01 0x0D)
-
-  # if BIC is no response, set val to 255
-  if [[ $ret =~ BIC* ]]; then
-    val=255
-  else
-    val=$((16#$val))
-    val=$((val & 0xC))
-  fi
+  val=$(get_m2_prsnt_sts $1)
 
   system_type="Type_"
   #0 = 2ou and 1ou are present

@@ -90,6 +90,20 @@ get_bmc_board_id() {
   echo $val
 }
 
+# Get 1OU/2OU present status
+get_m2_prsnt_sts() {
+  val=$(/usr/bin/bic-util $1 0x18 0x52 0x05 0x42 0x01 0x0D)
+  # if BIC is no response, set val to 255
+  if [[ $val =~ BIC* ]]; then
+    val=255
+  else
+    val=$((16#$val))
+    val=$((val & 0xC))
+  fi
+
+  echo $val
+}
+
 # Disable 12V for a server board
 disable_server_12V_power() {
   local reg=8

@@ -62,6 +62,7 @@ else
   /usr/local/bin/bic-cached -s "slot${slot_num}"
   /usr/local/bin/bic-cached -f "slot${slot_num}"
   /usr/bin/fw-util "slot${slot_num}" --version > /dev/null
+  /etc/init.d/setup-sic.sh "slot${slot_num}" > /dev/null
 fi
 
 # restart the service

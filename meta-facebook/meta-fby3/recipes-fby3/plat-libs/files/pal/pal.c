@@ -1866,6 +1866,48 @@ pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
       ret = -1;
       break;
   }
+  return ret;
+}
+
+int pal_get_pfr_update_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged)
+{
+  uint8_t bmc_location = 0;
+  int ret = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+  }
+
+  switch (fru) {
+    case FRU_BB:
+    case FRU_BMC:
+      *bus = (bmc_location == NIC_BMC) ? PFR_NICEXP_BUS : PFR_BB_BUS;
+      *addr = CPLD_UPDATE_ADDR;
+      *bridged = false;
+      break;
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      if ((bmc_location == NIC_BMC) && (fru != FRU_SLOT1)) {
+        ret = -1;
+        break;
+      }
+
+      if ((ret = fby3_common_get_bus_id(fru)) < 0) {
+        syslog(LOG_WARNING, "%s() get bus failed, fru %d\n", __func__, fru);
+        break;
+      }
+
+      *bus = ret + 4;  // I2C_4 ~ I2C_7
+      *addr = CPLD_UPDATE_ADDR;
+      *bridged = false;
+      break;
+    default:
+      ret = -1;
+      break;
+  }
 
   return ret;
 }

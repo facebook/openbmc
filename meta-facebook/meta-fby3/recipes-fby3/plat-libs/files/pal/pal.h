@@ -41,6 +41,9 @@ extern "C" {
 #define FRU_DEVICE_LIST 1
 #define GUID_FRU_LIST 1
 
+// Baseboard PFR
+#define CPLD_UPDATE_ADDR (0x40)
+
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
 extern const char pal_fru_list_sensor_history[];

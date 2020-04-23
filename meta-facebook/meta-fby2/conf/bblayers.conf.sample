@@ -16,7 +16,8 @@ BBLAYERS ?= " \
   ##OEROOT##/../../../meta-aspeed \
   ##OEROOT##/../../../meta-facebook \
   ##OEROOT##/../../../meta-facebook/meta-fby2 \
-  ##OEROOT##/../../../meta-facebook/meta-python3 \  
+  ##OEROOT##/../../../meta-facebook/meta-python3 \
+  ##OEROOT##/../../../meta-facebook/meta-backports \
   "
 BBLAYERS_NON_REMOVABLE ?= " \
   ##OEROOT##/meta \

@@ -184,7 +184,7 @@ int max10_reg_read(uint32_t address)
   return data;
 }
 
-static int max10_protect_sectors(void)
+int max10_protect_sectors(void)
 {
   int ret = 0;
   int value;
@@ -199,7 +199,7 @@ static int max10_protect_sectors(void)
   return ret;
 }
 
-static int max10_unprotect_sector(int sector_id)
+int max10_unprotect_sector(int sector_id)
 {
   int ret = 0;
   int value;
@@ -359,7 +359,7 @@ int max10_erase_sector(int sector_id)
 }
 
 // write 4 byte into on-chip flash.
-static int max10_flash_write(int address, int data)
+int max10_flash_write(int address, int data)
 {
   int ret = 0;
 

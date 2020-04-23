@@ -29,17 +29,13 @@ paths:
                   delay: 
                     type: number
                   when: 
-                    type: integer
-                    format: int32
+                    type: number
                   reach: 
-                    type: integer
-                    format: int32
+                    type: number
                   stratum: 
-                    type: integer
-                    format: int32
+                    type: number
                   poll: 
-                    type: integer
-                    format: int32
+                    type: number
                   jitter: 
                     type: number
         404: 

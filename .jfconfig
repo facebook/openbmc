@@ -118,7 +118,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fbal/.*"
                     ]
@@ -151,7 +151,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-cmm/.*"
                     ]
@@ -184,7 +184,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-elbert/.*"
                     ]
@@ -217,7 +217,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fbep/.*"
                     ]
@@ -318,7 +318,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fbtp/.*"
                     ]
@@ -351,7 +351,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fbttn/.*"
                     ]
@@ -384,7 +384,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fby2/.*"
                     ]
@@ -417,7 +417,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fby3/.*"
                     ]
@@ -450,7 +450,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fuji/.*"
                     ]
@@ -483,7 +483,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-galaxy100/.*"
                     ]
@@ -516,7 +516,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-lightning/.*"
                     ]
@@ -549,7 +549,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-minipack/.*"
                     ]
@@ -582,7 +582,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fbsp/.*"
                     ]
@@ -615,7 +615,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-wedge/.*"
                     ]
@@ -648,7 +648,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-wedge100/.*"
                     ]
@@ -681,7 +681,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-wedge400/.*"
                     ]
@@ -714,7 +714,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-yamp/.*"
                     ]
@@ -747,7 +747,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-yosemite/.*"
                     ]
@@ -821,7 +821,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fbal/.*"
                     ]
@@ -854,7 +854,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-cmm/.*"
                     ]
@@ -887,7 +887,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-elbert/.*"
                     ]
@@ -920,7 +920,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fbep/.*"
                     ]
@@ -1021,7 +1021,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fbtp/.*"
                     ]
@@ -1054,7 +1054,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fbttn/.*"
                     ]
@@ -1087,7 +1087,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fby2/.*"
                     ]
@@ -1120,7 +1120,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fby3/.*"
                     ]
@@ -1153,7 +1153,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fuji/.*"
                     ]
@@ -1186,7 +1186,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-galaxy100/.*"
                     ]
@@ -1219,7 +1219,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-lightning/.*"
                     ]
@@ -1252,7 +1252,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-minipack/.*"
                     ]
@@ -1285,7 +1285,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fbsp/.*"
                     ]
@@ -1318,7 +1318,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-wedge/.*"
                     ]
@@ -1351,7 +1351,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-wedge100/.*"
                     ]
@@ -1384,7 +1384,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-wedge400/.*"
                     ]
@@ -1417,7 +1417,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-yamp/.*"
                     ]
@@ -1450,7 +1450,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-yosemite/.*"
                     ]
@@ -1518,7 +1518,7 @@
             "description": "Yocto diff listener",
             "jellyfish_conditions": [
                 {
-                    "type": "every_file_matches_every_regexp",
+                    "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-wedge400/recipes-utils/openbmc-utils/files/fw_upgrade/.*"
                     ]

@@ -197,6 +197,11 @@ static bool vboot_state_check = false;
 /* BMC time stamp enabled */
 static bool bmc_timestamp_enabled = false;
 
+/* PFR status Monitor */
+extern bool pfr_monitor_enabled;
+extern void initialize_pfr_monitor_config(json_t *);
+extern void * pfr_monitor();
+
 static void
 initialize_threshold(const char *target, json_t *thres, struct threshold_s *t) {
   json_t *tmp;
@@ -543,6 +548,7 @@ initialize_configuration(void) {
   initialize_ecc_config(json_object_get(conf, "ecc_monitoring"));
   initialize_bmc_health_config(json_object_get(conf, "bmc_health"));
   initialize_nm_monitor_config(json_object_get(conf, "nm_monitor"));
+  initialize_pfr_monitor_config(json_object_get(conf, "pfr_monitor"));
   initialize_vboot_config(json_object_get(conf, "verified_boot"));
   initialize_bmc_timestamp_config(json_object_get(conf, "bmc_timestamp"));
 
@@ -1608,6 +1614,7 @@ main(int argc, char **argv) {
   pthread_t tid_ecc_monitor;
   pthread_t tid_bmc_health_monitor;
   pthread_t tid_nm_monitor;
+  pthread_t tid_pfr_monitor;
   pthread_t tid_timestamp_handler;
 
   if (argc > 1) {
@@ -1686,6 +1693,13 @@ main(int argc, char **argv) {
     }
   }
 
+  if (pfr_monitor_enabled) {
+    if (pthread_create(&tid_pfr_monitor, NULL, pfr_monitor, NULL)) {
+      syslog(LOG_WARNING, "pthread_create for pfr monitor error\n");
+      exit(1);
+    }
+  }
+
   if (pthread_create(&tid_crit_proc_monitor, NULL, crit_proc_monitor, NULL)) {
     syslog(LOG_WARNING, "pthread_create for FW Update Monitor error\n");
     exit(1);
@@ -1724,6 +1738,10 @@ main(int argc, char **argv) {
 
   if (nm_monitor_enabled) {
     pthread_join(tid_nm_monitor, NULL);
+  }
+
+  if (pfr_monitor_enabled) {
+    pthread_join(tid_pfr_monitor, NULL);
   }
 
   pthread_join(tid_crit_proc_monitor, NULL);

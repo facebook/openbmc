@@ -15,11 +15,14 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-all: healthd  
+C_SRCS := $(wildcard *.c)
+C_OBJS := ${C_SRCS:.c=.o}
+
+all: healthd
 
 CFLAGS += -Wall -Werror
 
-healthd: healthd.c
+healthd: $(C_OBJS)
 	$(CC) $(CFLAGS) -pthread -lm -std=gnu99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean

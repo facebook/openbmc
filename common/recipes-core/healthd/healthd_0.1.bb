@@ -8,6 +8,7 @@ LIC_FILES_CHKSUM = "file://healthd.c;beginline=4;endline=16;md5=b395943ba8a0717a
 
 SRC_URI = "file://Makefile \
            file://healthd.c \
+           file://pfr_monitor.c \
            file://setup-healthd.sh \
            file://run-healthd.sh \
            file://healthd-config.json \

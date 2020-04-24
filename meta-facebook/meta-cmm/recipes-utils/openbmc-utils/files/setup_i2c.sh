@@ -36,9 +36,8 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 #
 # instantiate all the i2c-muxes.
 # Note:
-#   - the step is not needed in kernel 4.1 because all the i2c-muxes
-#     are created in 4.1 kernel code. For details please refer to
-#     "arch/arm/plat-aspeed/dev-i2c-cmm.c"
+#   - the function may be skipped if i2c switches were already created
+#     in kernel space.
 #   - please do not modify the order of i2c-mux creation unless you've
 #     decided to fix bus-number of leaf i2c-devices.
 #
@@ -78,8 +77,16 @@ bulk_create_i2c_mux() {
     done
 }
 
-KERNEL_VERSION=`uname -r`
-if [[ ${KERNEL_VERSION} != 4.1.* ]]; then
+#
+# Let's check a few i2c switches on fabric cards to determine if these
+# switches were already created in kernel space.
+#
+I2C_MUX_FAB1="${SYSFS_I2C_DEVICES}/16-0070"
+I2C_MUX_FAB2="${SYSFS_I2C_DEVICES}/17-0070"
+I2C_MUX_FAB3="${SYSFS_I2C_DEVICES}/22-0070"
+I2C_MUX_FAB4="${SYSFS_I2C_DEVICES}/23-0070"
+if [ ! -e "${I2C_MUX_FAB1}" ] && [ ! -e "${I2C_MUX_FAB2}" ] && \
+   [ ! -e "${I2C_MUX_FAB3}" ] && [ ! -e "${I2C_MUX_FAB4}" ]; then
     bulk_create_i2c_mux
 fi
 

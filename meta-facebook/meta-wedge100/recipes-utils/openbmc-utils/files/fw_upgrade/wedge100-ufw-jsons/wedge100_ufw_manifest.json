@@ -1,0 +1,16 @@
+{
+    "bcm5387_eeprom" : {
+        "priority" : 1,
+        "upgrade_cmd" : "/usr/local/bin/at93cx6_util_py3.py chip write --file {filename}"
+    },
+    "fan_rackmon_cpld" : {
+        "get_version" : "cpld_rev.sh",
+        "priority" : 2,
+        "upgrade_cmd" : "/usr/local/bin/cpld_upgrade.sh {filename}"
+    },
+    "sys_cpld" : {
+        "get_version" : "cpld_rev.sh",
+        "priority" : 3,
+        "upgrade_cmd" : "/usr/local/bin/cpld_upgrade.sh {filename}"
+    }
+}

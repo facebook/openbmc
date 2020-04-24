@@ -55,6 +55,11 @@ class OpenBMCJSONFormatter(json_log_formatter.JSONFormatter):
         return json_record
 
 
+class JsonSyslogFormatter(OpenBMCJSONFormatter):
+    def format(self, record):
+        return "rest-api: %s" % (super(JsonSyslogFormatter, self).format(record),)
+
+
 def get_logger_config(config):
     LOGGER_CONF = {
         "version": 1,
@@ -62,6 +67,8 @@ def get_logger_config(config):
         "formatters": {
             "default": {"format": "%(message)s"},
             "json": {"()": "common_logging.OpenBMCJSONFormatter"},
+            "syslog_json": {"()": "common_logging.JsonSyslogFormatter"},
+            "syslog_default": {"format": "rest-api: %(message)s"},
         },
         "handlers": {
             "file": {
@@ -75,7 +82,7 @@ def get_logger_config(config):
             },
             "syslog": {
                 "level": "INFO",
-                "formatter": config["logformat"],
+                "formatter": "syslog_" + config["logformat"],
                 "class": "logging.handlers.SysLogHandler",
                 "address": "/dev/log",
             },

@@ -74,6 +74,18 @@ class TestLoggerConfigurator(unittest.TestCase):
         logging_config = get_logger_config(merge_configs([json_format]))
         self.assertEqual(logging_config["handlers"]["file"]["formatter"], "json")
 
+    def test_configurator_configures_correct_formatter_for_syslog(self):
+        logging_config = get_logger_config(
+            merge_configs([syslog_target, default_format])
+        )
+        self.assertEqual(
+            logging_config["handlers"]["syslog"]["formatter"], "syslog_default"
+        )
+        logging_config = get_logger_config(merge_configs([syslog_target, json_format]))
+        self.assertEqual(
+            logging_config["handlers"]["syslog"]["formatter"], "syslog_json"
+        )
+
     def test_configurator_configures_correct_logfile(self):
         logging_config = get_logger_config(merge_configs([logfile_location]))
         self.assertEqual(

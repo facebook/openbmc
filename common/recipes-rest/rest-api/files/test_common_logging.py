@@ -24,6 +24,7 @@ import io
 import json
 import logging
 import logging.config
+import os
 import unittest
 from unittest.mock import patch
 
@@ -59,14 +60,20 @@ class TestLoggerConfigurator(unittest.TestCase):
     def test_configurator_configures_correct_handler(self):
         logging.config.dictConfig(get_logger_config(merge_configs([stdout_target])))
         self.assertIsInstance(logging.getLogger().handlers[0], logging.StreamHandler)
-        logging.config.dictConfig(get_logger_config(merge_configs([syslog_target])))
-        self.assertIsInstance(
-            logging.getLogger().handlers[0], logging.handlers.SysLogHandler
-        )
         logging.config.dictConfig(get_logger_config(merge_configs([file_target])))
         self.assertIsInstance(
             logging.getLogger().handlers[0], logging.handlers.RotatingFileHandler
         )
+
+    def test_configurator_configures_correct_syslog_handler(self):
+        logging.config.dictConfig(get_logger_config(merge_configs([syslog_target])))
+        expected_parent = (
+            logging.handlers.SysLogHandler
+            if os.path.exists("/dev/log")
+            else logging.StreamHandler
+        )
+
+        self.assertIsInstance(logging.getLogger().handlers[0], expected_parent)
 
     def test_configurator_configures_correct_formatter(self):
         logging_config = get_logger_config(merge_configs([default_format]))
@@ -74,6 +81,7 @@ class TestLoggerConfigurator(unittest.TestCase):
         logging_config = get_logger_config(merge_configs([json_format]))
         self.assertEqual(logging_config["handlers"]["file"]["formatter"], "json")
 
+    @unittest.skipUnless(os.path.exists("/dev/log"), "Syslog not available")
     def test_configurator_configures_correct_formatter_for_syslog(self):
         logging_config = get_logger_config(
             merge_configs([syslog_target, default_format])

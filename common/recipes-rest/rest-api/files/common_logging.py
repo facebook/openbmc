@@ -20,6 +20,7 @@
 
 import datetime
 import logging
+import os
 import sys
 from typing import Any, Dict
 
@@ -61,6 +62,20 @@ class JsonSyslogFormatter(OpenBMCJSONFormatter):
 
 
 def get_logger_config(config):
+    if os.path.exists("/dev/log"):
+        rsyslog_config = {
+            "level": "INFO",
+            "formatter": "syslog_" + config["logformat"],
+            "class": "logging.handlers.SysLogHandler",
+            "address": "/dev/log",
+        }
+    else:
+        rsyslog_config = {
+            "level": "INFO",
+            "formatter": config["logformat"],
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
+        }
     LOGGER_CONF = {
         "version": 1,
         "disable_existing_loggers": False,
@@ -80,12 +95,7 @@ def get_logger_config(config):
                 "backupCount": 3,
                 "encoding": "utf8",
             },
-            "syslog": {
-                "level": "INFO",
-                "formatter": "syslog_" + config["logformat"],
-                "class": "logging.handlers.SysLogHandler",
-                "address": "/dev/log",
-            },
+            "syslog": rsyslog_config,
             "stdout": {
                 "level": "INFO",
                 "formatter": config["logformat"],

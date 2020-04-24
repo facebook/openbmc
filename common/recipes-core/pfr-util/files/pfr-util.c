@@ -38,6 +38,7 @@
 #define PFR_ST_HISTORY   (1 << 2)
 #define PFR_LOCK_UFM     (1 << 3)
 #define PFR_UPDATE       (1 << 4)
+#define PFR_ERASE_PROVISION (1 << 5)
 
 #define PFM_B0_MAGIC 0xB6EAFD19
 #define PFM_B0_SIZE  0x10
@@ -98,6 +99,7 @@ enum {
   READ_ROOT_KEY   = 0x08,
   READ_PCH_OFFSET = 0x0C,
   READ_BMC_OFFSET = 0x0D,
+  RECONFIG_CPLD   = 0x0E,
 };
 
 enum {
@@ -141,6 +143,7 @@ static const char *prov_err_str[ERR_UNKNOWN] = {
 static const char *option_list[] = {
   "--provision",
   "--read_provision",
+  "--erase_provision",
   "--state_history",
   "--lock",
   "--verbose",
@@ -569,6 +572,21 @@ pfr_read_provision(void) {
 }
 
 static int
+pfr_erase_provision(void) {
+  int ret = -1;
+  uint8_t tbuf[64], rbuf[64];
+
+  // erase provision in UFM
+  if ((ret = pfr_provision_cmd(ERASE_PROVISION, tbuf, 0, rbuf, 0))) {
+    syslog(LOG_ERR, "%s: erase provision failed", __func__);
+    return ret;
+  }
+
+  ret = 0;
+  return ret;
+}
+
+static int
 pfr_state_history(void) {
   uint8_t tbuf[8], rbuf[80];
   uint8_t i, idx;
@@ -970,6 +988,7 @@ main(int argc, char **argv) {
   static struct option long_opts[] = {
     {"provision", no_argument, 0, 'p'},
     {"read_provision", no_argument, 0, 'r'},
+    {"erase_provision", no_argument, 0, 'e'},
     {"state_history", no_argument, 0, 's'},
     {"lock", no_argument, 0, 'l'},
     {"verbose", no_argument, 0, 'v'},
@@ -982,13 +1001,16 @@ main(int argc, char **argv) {
       break;
     }
 
-    while ((opt = getopt_long(argc, argv, "prslv", long_opts, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "preslvu", long_opts, NULL)) != -1) {
       switch (opt) {
         case 'p':
           operations |= PFR_PROVISION;
           break;
         case 'r':
           operations |= PFR_RD_PROVISION;
+          break;
+        case 'e':
+          operations |= PFR_ERASE_PROVISION;
           break;
         case 's':
           operations |= PFR_ST_HISTORY;
@@ -1061,6 +1083,13 @@ main(int argc, char **argv) {
       if (operations & PFR_RD_PROVISION) {
         if ((ret = pfr_read_provision())) {
           printf("read provision failed\n");
+        }
+        break;
+      }
+
+     if (operations & PFR_ERASE_PROVISION) {
+        if ((ret = pfr_erase_provision())) {
+          printf("erase provision failed\n");
         }
         break;
       }

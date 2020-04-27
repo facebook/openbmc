@@ -200,13 +200,17 @@ pal_sled_cycle(void) {
   if (ret != 0) {
     return -1;
   }
-
+ 
   syslog(LOG_DEBUG, "system mode=%x\n", mode);
   // If JBOG is present, request power cycle
   // TODO:
   //      Add common interface for different JBOG platform
-  if (pal_ep_sled_cycle() < 0)
-    syslog(LOG_ERR, "Request JBOG power-cycle failed");
+
+  if(is_ep_present()) {
+    if (pal_ep_sled_cycle() < 0) {
+      syslog(LOG_ERR, "Request JBOG power-cycle failed");
+    }
+  }
 
   // Send command to HSC power cycle
   if (mode == MB_8S_MODE ) {  
@@ -215,7 +219,7 @@ pal_sled_cycle(void) {
     }
   } else if (mode == MB_2S_MODE ) {
     if (system("i2cset -y 7 0x11 0xd9 c &> /dev/null")) {
-syslog(LOG_DEBUG, "DEbug1\n");
+      syslog(LOG_DEBUG, "DEbug1\n");
       return -1;
     }
   } else {

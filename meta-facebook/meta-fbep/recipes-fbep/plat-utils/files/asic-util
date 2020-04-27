@@ -1,0 +1,178 @@
+#!/bin/sh
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+. /usr/local/fbpackages/utils/ast-functions
+
+usage() {
+  echo "Usage: asic-util --info [ slot0 | slot1 | slot2 | slot3 |"
+  echo "                          slot4 | slot5 | slot6 | slot7 ]"
+  echo "       asic-util --info all"
+  exit -1
+}
+
+show_linkconfig() {
+  slot=$1
+  cfg0=$(gpio_get OAM${slot}_LINK_CONFIG0)
+  cfg1=$(gpio_get OAM${slot}_LINK_CONFIG1)
+  cfg2=$(gpio_get OAM${slot}_LINK_CONFIG2)
+  cfg3=$(gpio_get OAM${slot}_LINK_CONFIG3)
+  cfg4=$(gpio_get OAM${slot}_LINK_CONFIG4)
+  echo "	LINK_CONFIG[4:0]: $cfg4$cfg3$cfg2$cfg1$cfg0"
+}
+
+show_pe_bif() {
+  slot=$1
+  pe_bif=$(gpio_get OAM${slot}_PE_BIF1)$(gpio_get OAM${slot}_PE_BIF0)
+  case "$pe_bif" in
+    "00")
+      pe_bif="One x16"
+      ;;
+    "01")
+      pe_bif="Two x8"
+      ;;
+    "10")
+      pe_bif="Four x4"
+      ;;
+    "11")
+      pe_bif="Unknown"
+      ;;
+  esac
+  echo "	PE_BIF: $pe_bif PCIe host interface"
+}
+
+show_manf_mode() {
+  slot=$1
+  manf_mode=$(gpio_get OAM${slot}_MANF_MODE)
+  if [[ "$manf_mode" == "1" ]]; then
+    manf_mode="Normal"
+  else
+    manf_mode="Manufacturing"
+  fi
+  echo "	MANF_MODE: $manf_mode mode"
+}
+
+show_fw_recover() {
+  slot=$1
+  fw_recover=$(gpio_get OAM${slot}_FW_RECOVERY)
+  if [[ "$fw_recover" == "1" ]]; then
+    fw_recover="Normal"
+  else
+    fw_recover="Firmware Recovery"
+  fi
+  echo "	FW_RECOVERY: $fw_recover mode"
+}
+
+show_test_mode() {
+  slot=$1
+  test_mode=$(gpio_get OAM${slot}_TEST_MODE)
+  if [[ "$test_mode" == "1" ]]; then
+    test_mode="Normal"
+  else
+    test_mode="Electrical compliance"
+  fi
+  echo "	TEST_MODE: $test_mode mode"
+}
+
+show_plink_cap() {
+  slot=$1
+  plink=$(gpio_get OAM${slot}_PLINK_CAP)
+  if [[ "$plink" == "0" ]]; then
+    plink="PCIe only"
+  else
+    plink="Alternate protocol"
+  fi
+  echo "	PLINK_CAP: $plink supported"
+}
+
+show_pwr_rdt() {
+  slot=$1
+  pwrrdt=$(gpio_get OAM${slot}_PWRRDT1)$(gpio_get OAM${slot}_PWRRDT0)
+  case "$pwrrdt" in
+    "00")
+      pwrrdt="L3 Max power"
+      ;;
+    "01")
+      pwrrdt="L2 2nd power"
+      ;;
+    "10")
+      pwrrdt="L1 1st power"
+      ;;
+    "11")
+      pwrrdt="L0 Normal power"
+      ;;
+  esac
+  echo "	PWRRDT: $pwrrdt reduction"
+}
+
+show_module_pwrgd() {
+  slot=$1
+  pwrgd=$(gpio_get OAM${slot}_MODULE_PWRGD)
+  if [[ "$pwrgd" == "1" ]]; then
+    pwrgd="Normal"
+  else
+    pwrgd="Abnormal"
+  fi
+  echo "	MODULE_PWRGD: $pwrgd"
+}
+
+show_asic_info() {
+  slot=$1
+  prsnt0=$(gpio_get PRSNT0_N_ASIC${slot})
+  prsnt1=$(gpio_get PRSNT1_N_ASIC${slot})
+  if [[ "$prsnt0" == "1" ]] || [[ "$prsnt1" == "1" ]]; then
+    echo "ASIC${slot} is not present"
+    return
+  fi
+  echo "ASIC${slot}:"
+  show_linkconfig $slot
+  show_pe_bif $slot
+  show_manf_mode $slot
+  show_fw_recover $slot
+  show_test_mode $slot
+  show_plink_cap $slot
+  show_pwr_rdt $slot
+  show_module_pwrgd $slot
+  echo ""
+}
+
+SLOT=$2
+SLOT_NAME=${SLOT:0:4}
+SLOT_NUM=${SLOT:4}
+
+# TODO:
+#	Show the name of OAM vendor here
+if [[ "$1" == "--info" ]]; then
+  if [[ "$SLOT" == "all" ]]; then
+    for i in {0..7};
+    do
+      show_asic_info $i
+    done
+    exit 0
+  elif ! [[ "$SLOT_NUM" =~ ^[0-9]+$ ]]; then
+    usage
+    exit -1
+  elif [ ${#SLOT} != 5 ] || [ "$SLOT_NAME" != "slot" ] || [ $SLOT_NUM -gt 7 ]; then
+    usage
+    exit -1
+  fi
+  show_asic_info $SLOT_NUM
+else
+  usage
+fi

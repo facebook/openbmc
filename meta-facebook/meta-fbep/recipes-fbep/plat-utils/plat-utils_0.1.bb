@@ -28,6 +28,7 @@ SRC_URI = "file://ast-functions \
            file://setup-por.sh \
            file://sol-util \
            file://mac-util \
+           file://asic-util \
            file://setup-pfr.sh \
            file://COPYING \
            file://workaround.sh \
@@ -40,6 +41,7 @@ S = "${WORKDIR}"
 
 binfiles = "sol-util \
             mac-util \
+            asic-util \
            "
 
 RDEPENDS_${PN} += "gpiocli"

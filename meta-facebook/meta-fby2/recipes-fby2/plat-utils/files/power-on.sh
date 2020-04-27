@@ -116,7 +116,7 @@ if [ $(is_bmc_por) -eq 1 ]; then
     FINISH=1
     for i in ${POWER_ON_SLOT[@]}
     do
-      status=$(power-util slot${POWER_ON_SLOT[$i]} status)
+      status=$(power-util slot$i status)
       if [ ${status:(-3)} == "OFF" ]; then
         FINISH=0
       fi

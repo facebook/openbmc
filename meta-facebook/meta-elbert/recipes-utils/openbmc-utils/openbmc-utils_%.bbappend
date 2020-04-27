@@ -17,7 +17,6 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-# ELBERTTODO 447411 BOARD_UTILS
 SRC_URI += "file://board-utils.sh \
             file://bios_util.sh \
             file://fpga_util.sh \
@@ -31,6 +30,7 @@ SRC_URI += "file://board-utils.sh \
             file://wedge_us_mac.sh \
             file://setup_i2c.sh \
             file://seutil \
+            file://dpm_ver.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -44,6 +44,7 @@ OPENBMC_UTILS_FILES += " \
     wedge_us_mac.sh \
     setup_i2c.sh \
     seutil \
+    dpm_ver.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

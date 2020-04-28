@@ -18,11 +18,34 @@ using namespace std;
 #define FFI_0_STORAGE 0x00
 #define FFI_0_ACCELERATOR 0x01
 
-class M2_DevComponent : public Component {
+#define MAX_GPV2_DRIVE_NUM 12
+
+class M2_DevComponent : public Component { 
   uint8_t slot_id = 0;
   uint8_t dev_id = 0;
+
+  enum Dev_Main_Slot {
+    ON_EVEN = 0,
+    ON_ODD = 1
+  };
+
+  struct PowerInfo {
+    int ret;
+    uint8_t status;
+    uint8_t nvme_ready;
+    uint8_t ffi;
+    uint8_t major_ver;
+    uint8_t minor_ver;
+  };
+  static PowerInfo statusTable[MAX_GPV2_DRIVE_NUM];
+  static bool isDual;
+  static Dev_Main_Slot dev_main_slot;
+
   Server server;
   int _update(string image, uint8_t force);
+  void save_info(uint8_t id, int ret, uint8_t status, uint8_t nvme_ready, uint8_t ffi, uint8_t major_ver, uint8_t minor_ver);
+  void print_single();
+  void print_dual();
   public:
   M2_DevComponent(string fru, string comp, uint8_t _slot_id, uint8_t dev_id)
     : Component(fru, comp), slot_id(_slot_id), dev_id(dev_id), server(_slot_id, fru) {
@@ -50,26 +73,79 @@ class M2_DevComponent : public Component {
       msleep(50);
       retry--;
     }
-
-    if (ret || !status || !nvme_ready || (ffi != FFI_0_ACCELERATOR) ) {
-      printf("device%d Version: NA",dev_id);
-      if (ret) { // Add Reason for dsiplay NA
-        printf("\n");
-      } else if (!status) {
-        printf("(Not Present)\n");
-      } else if (!nvme_ready) {
-        printf("(NVMe Not Ready)\n");
-      } else if (ffi != FFI_0_ACCELERATOR) {
-        printf("(Not Accelerator)\n");
+    save_info(dev_id, ret, status, nvme_ready, ffi, major_ver, minor_ver);
+    if (isDual == false && meff == MEFF_DUAL_M2) {
+      isDual = true;
+      if (dev_id % 2 == 0) {
+        dev_main_slot = Dev_Main_Slot::ON_EVEN;
+      } else {
+        dev_main_slot = Dev_Main_Slot::ON_ODD;
       }
-    } else {
-      printf("device%d Version: v%d.%d\n",dev_id,major_ver,minor_ver);
+    }
+    if (dev_id + 1 == MAX_GPV2_DRIVE_NUM) {
+      if (isDual == true) {
+        print_dual();
+      } else {
+        print_single();
+      }
+      isDual = false;
     }
     return 0;
   }
   int update(string image);
   int fupdate(string image);
 };
+
+M2_DevComponent::PowerInfo M2_DevComponent::statusTable[] = {0};
+bool M2_DevComponent::isDual = false;
+M2_DevComponent::Dev_Main_Slot M2_DevComponent::dev_main_slot = M2_DevComponent::Dev_Main_Slot::ON_EVEN;
+
+void M2_DevComponent::save_info(uint8_t id, int ret, uint8_t status,
+ uint8_t nvme_ready, uint8_t ffi, uint8_t major_ver, uint8_t minor_ver) {
+  if (id < 0 || id >= MAX_GPV2_DRIVE_NUM) {
+    return;
+  }
+  statusTable[id].ret = ret;
+  statusTable[id].status = status;
+  statusTable[id].nvme_ready = nvme_ready;
+  statusTable[id].ffi = ffi;
+  statusTable[id].major_ver = major_ver;
+  statusTable[id].minor_ver = minor_ver;
+}
+
+void M2_DevComponent::print_single() {
+  for (int i = 0; i < MAX_GPV2_DRIVE_NUM; i++) {
+    printf("device%d Version: ", i);
+    if (statusTable[i].ret) {
+      printf("NA\n");
+    } else if (!statusTable[i].status) {
+      printf("NA(Not Present)\n");
+    } else if (!statusTable[i].nvme_ready) {
+      printf("NA(NVMe Not Ready)\n");
+    } else if (statusTable[i].ffi != FFI_0_ACCELERATOR) {
+      printf("NA(Not Accelerator)\n");
+    } else {
+      printf("v%d.%d\n", statusTable[i].major_ver, statusTable[i].minor_ver);
+    }
+  }
+}
+
+void M2_DevComponent::print_dual() {
+  for (int i = 0; i < MAX_GPV2_DRIVE_NUM; i+=2) {
+    printf("device%d/%d Version: ", i, i + 1);
+    if (statusTable[i + dev_main_slot].ret) {
+      printf("NA\n");
+    } else if (!statusTable[i + dev_main_slot].status) {
+      printf("NA(Not Present)\n");
+    } else if (!statusTable[i + dev_main_slot].nvme_ready) {
+      printf("NA(NVMe Not Ready)\n");
+    } else if (statusTable[i + dev_main_slot].ffi != FFI_0_ACCELERATOR) {
+      printf("NA(Not Accelerator)\n");
+    } else {
+      printf("v%d.%d\n", statusTable[i + dev_main_slot].major_ver, statusTable[i + dev_main_slot].minor_ver);
+    }
+  }
+}
 
 int M2_DevComponent::_update(string image, uint8_t force) {
   int ret;

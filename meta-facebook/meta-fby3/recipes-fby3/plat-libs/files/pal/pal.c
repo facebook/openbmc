@@ -117,7 +117,6 @@ struct pal_key_cfg {
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
 
-
 MAPTOSTRING root_port_mapping[] = {
     { 0xB2, 3, "0", "1OU"}, //Port 0x4D
     { 0xB2, 2, "1", "1OU"}, //Port 0x4C
@@ -129,6 +128,42 @@ MAPTOSTRING root_port_mapping[] = {
     { 0x63, 0, "3", "2OU"}, //Port 0x2A
     { 0x15, 2, "4", "2OU"}, //Port 0x1C
     { 0x15, 3, "5", "2OU"}, //Port 0x1D
+};
+
+PCIE_ERR_DECODE pcie_err_tab[] = {
+    {0x00, "Receiver Error"},
+    {0x01, "Bad TLP"},
+    {0x02, "Bad DLLP"},
+    {0x03, "Replay Time-out"},
+    {0x04, "Replay Rollover"},
+    {0x05, "Advisory Non-Fatal"},
+    {0x06, "Corrected Internal Error"},
+    {0x07, "Header Log Overflow"},
+    {0x20, "Data Link Protocol Error"},
+    {0x21, "Surprise Down Error"},
+    {0x22, "Poisoned TLP"},
+    {0x23, "Flow Control Protocol Error"},
+    {0x24, "Completion Timeout"},
+    {0x25, "Completer Abort"},
+    {0x26, "Unexpected Completion"},
+    {0x27, "Receiver Buffer Overflow"},
+    {0x28, "Malformed TLP"},
+    {0x29, "ECRC Error"},
+    {0x2A, "Unsupported Request"},
+    {0x2B, "ACS Violation"},
+    {0x2C, "Uncorrectable Internal Error"},
+    {0x2D, "MC Blocked TLP"},
+    {0x2E, "AtomicOp Egress Blocked"},
+    {0x2F, "TLP Prefix Blocked Error"},
+    {0x30, "Poisoned TLP Egress Blocked"},
+    {0x50, "Received ERR_COR Message"},
+    {0x51, "Received ERR_NONFATAL Message"},
+    {0x52, "Received ERR_FATAL Message"},
+    {0x59, "LER was triggered by ERR_NONFATAL"},
+    {0x5A, "LER was triggered by ERR_FATAL"},
+    {0xA0, "PERR (non-AER)"},
+    {0xA1, "SERR (non-AER)"},
+    {0xFF, "None"}
 };
 
 static int
@@ -1419,22 +1454,35 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   int index = 0;
   char *sil = "NA";
   char *location = "NA";
+  char *err1_descript = "NA", *err2_descript = "NA";
 
   switch (error_type) {
     case UNIFIED_PCIE_ERR:
       plat = (general_info & 0x10) >> 4;
       if (plat == 0) {  //x86
-        for (index = 0; index < (sizeof(root_port_mapping)/sizeof(MAPTOSTRING)); index++)
-        {
+        for (index = 0; index < (sizeof(root_port_mapping)/sizeof(MAPTOSTRING)); index++) {
           if ((sel[11] == root_port_mapping[index].bus_value) && ((sel[10] >> 3) == root_port_mapping[index].dev_value)) {
             location = root_port_mapping[index].location;
             sil = root_port_mapping[index].silk_screen;
             break;
           }
         }
+
+        for (index = 0; index < (sizeof(pcie_err_tab)/sizeof(PCIE_ERR_DECODE)); index++) {
+          if (sel[14] == pcie_err_tab[index].err_id) {
+            err2_descript = pcie_err_tab[index].err_descr;
+            continue;
+          } else if (sel[15] == pcie_err_tab[index].err_id) {
+            err1_descript = pcie_err_tab[index].err_descr;
+            continue;
+          }
+          if ( strcmp(err1_descript,"NA") && strcmp(err2_descript,"NA") ) {
+            break;
+          }
+        }
         sprintf(error_log, "GeneralInfo: x86/PCIeErr(0x%02X), Bus %02X/Dev %02X/Fun %02X, %s/Num %s,\
-                            TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
-                general_info, sel[11], sel[10] >> 3, sel[10] & 0x7, location, sil, ((sel[13]<<8)|sel[12]), sel[14], sel[15]);
+                            TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X(%s), ErrID1: 0x%02X(%s)",
+                general_info, sel[11], sel[10] >> 3, sel[10] & 0x7, location, sil, ((sel[13]<<8)|sel[12]), sel[14], err2_descript, sel[15], err1_descript);
       } else {
         sprintf(error_log, "GeneralInfo: ARM/PCIeErr(0x%02X), Aux. Info: 0x%04X, Bus %02X/Dev %02X/Fun %02X, \
                             TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",

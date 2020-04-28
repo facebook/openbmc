@@ -282,6 +282,7 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
   uint32_t timestamp;
   uint8_t *sel = data->msg;
   uint8_t sensor_num;
+  uint8_t general_info;
   uint8_t record_type;
   char sensor_name[32];
   char error_log[256];
@@ -375,7 +376,9 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
     {
       time_stamp_fill(&sel[4]);
       ret = pal_parse_oem_unified_sel(fru, sel, error_log);
-      syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), %s", fru, error_type, record_type, error_log); 
+      syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), %s", fru, error_type, record_type, error_log);
+      general_info = (uint8_t) sel[3];
+      ret = pal_oem_unified_sel_handler(fru, general_info, sel);
     }
     else
     {

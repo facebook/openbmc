@@ -225,6 +225,7 @@ typedef struct {
 
 static int nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type);
 
+static int assert_cnt[FBY2_MAX_NUM_SLOTS] = {0};
 
 const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N, GPIO_RST_SLOT2_SYS_RESET_N, GPIO_RST_SLOT3_SYS_RESET_N, GPIO_RST_SLOT4_SYS_RESET_N };
 const static uint8_t gpio_led[] = { 0, GPIO_PWR1_LED, GPIO_PWR2_LED, GPIO_PWR3_LED, GPIO_PWR4_LED };      // TODO: In DVT, Map to ML PWR LED
@@ -5436,7 +5437,6 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
   char key[MAX_KEY_LEN] = {0};
   char cvalue[MAX_VALUE_LEN] = {0};
-  static int assert_cnt[FBY2_MAX_NUM_SLOTS] = {0};
 
   /* For every SEL event received from the BIC, set the critical LED on */
   switch(fru) {
@@ -5548,6 +5548,38 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
   /* Write the value "0" which means FRU_STATUS_BAD */
   return pal_set_key_value(key, cvalue);
+}
+
+int
+pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel)
+{
+  char key[MAX_KEY_LEN] = {0};
+
+  /* For every SEL event received from the BIC, set the critical LED on */
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+    {
+      sprintf(key, "slot%d_sel_error", fru);
+
+      fru -= 1;
+      assert_cnt[fru]++; // FB OEM SEL assert only
+      break;
+    }
+    case FRU_SPB:
+      return 0;
+
+    case FRU_NIC:
+      return 0;
+
+    default:
+      return -1;
+  }
+
+  /* Write the value "0" which means FRU_STATUS_BAD */
+  return pal_set_key_value(key, "0");
 }
 
 #if defined(CONFIG_FBY2_RC)

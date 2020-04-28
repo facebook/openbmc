@@ -350,6 +350,7 @@ bool pal_is_fru_x86(uint8_t fru);
 int pal_get_x86_event_sensor_name(uint8_t fru, uint8_t snr_num, char *name);
 int pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
+int pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel);
 bool pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log);
 int pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log);
 void pal_add_cri_sel(char *str);

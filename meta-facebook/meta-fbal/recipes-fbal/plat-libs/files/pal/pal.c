@@ -389,7 +389,7 @@ int
 pal_get_fru_id(char *str, uint8_t *fru) {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;
-  } else if (!strcmp(str, "mb") || !strcmp(str, "cpld")) {
+  } else if (!strcmp(str, "mb") || !strcmp(str, "cpld") || !strcmp(str, "vr")) {
     *fru = FRU_MB;
   } else if (!strcmp(str, "pdb")) {
     *fru = FRU_PDB;

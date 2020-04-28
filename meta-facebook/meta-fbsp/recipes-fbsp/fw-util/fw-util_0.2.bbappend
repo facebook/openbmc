@@ -30,7 +30,8 @@ SRC_URI += "\
         file://platform.cpp \
         file://usbdbg.cpp \
         file://usbdbg.h \
-        file://vr.cpp \
+        file://vr_fw.cpp \
+        file://vr_fw.h \
         "
 
 DEPENDS += "libmcu libnm libpal libfpga libast-jtag libvr libncsi libnl-wrapper libkv libobmc-i2c"

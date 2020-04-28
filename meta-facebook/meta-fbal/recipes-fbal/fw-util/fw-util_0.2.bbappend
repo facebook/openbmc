@@ -27,7 +27,8 @@ SRC_URI += "file://mcu_fw.h \
             file://platform.cpp \
             file://cpld.cpp \
             file://me.cpp \
-            file://vr.cpp \
+            file://vr_fw.cpp \
+            file://vr_fw.h \
             file://nic_ext.h \
             file://nic_ext.cpp \
            "

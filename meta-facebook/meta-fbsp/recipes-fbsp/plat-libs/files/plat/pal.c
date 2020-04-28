@@ -391,8 +391,8 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
-	gpio_desc_t *gdesc = NULL;
-	gpio_value_t val;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val;
 
   *status = 0;
 
@@ -493,7 +493,7 @@ int
 pal_get_fru_id(char *str, uint8_t *fru) {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;
-  } else if (!strcmp(str, "mb")) {
+  } else if (!strcmp(str, "mb") || !strcmp(str, "vr")) {
     *fru = FRU_MB;
   } else if (!strcmp(str, "nic0") || !strcmp(str, "nic")) {
     *fru = FRU_NIC0;

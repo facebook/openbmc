@@ -19,7 +19,8 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://nic.cpp \
             file://cpld.cpp \
-            file://vr.cpp \
+            file://vr_fw.cpp \
+            file://vr_fw.h \
             file://switch.cpp \
             file://usbdbg.h \
             file://usbdbg.cpp \

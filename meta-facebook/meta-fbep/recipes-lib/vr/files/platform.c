@@ -1,5 +1,9 @@
+#include <stdio.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include "mpq8645p.h"
+
+#define MPQ8645P_HWMON_DIR "/sys/bus/i2c/drivers/mpq8645p/5-00%x/hwmon"
 
 enum {
   VR_P0V8_VDD0 = 0,
@@ -21,17 +25,6 @@ enum {
   ADDR_P1V0_AVD1 = 0x35,
   ADDR_P1V0_AVD2 = 0x36,
   ADDR_P1V0_AVD3 = 0x3b
-};
-
-enum {
-  HWMON_P0V8_VDD0 = 11,
-  HWMON_P0V8_VDD1,
-  HWMON_P0V8_VDD2,
-  HWMON_P0V8_VDD3,
-  HWMON_P1V0_AVD0,
-  HWMON_P1V0_AVD1,
-  HWMON_P1V0_AVD2,
-  HWMON_P1V0_AVD3
 };
 
 struct vr_ops mpq8645p_ops = {
@@ -103,18 +96,36 @@ struct vr_info fbep_vr_list[] = {
 
 int plat_vr_init()
 {
-  int ret, i, *p;
+  int ret, i, index, *p;
+  struct dirent *dp;
+  DIR *dir;
+  char path[128] = {0};
   int list_cnt = sizeof(fbep_vr_list)/sizeof(fbep_vr_list[0]);
 
   for (i = 0; i < list_cnt; i++) {
+    snprintf(path, sizeof(path), MPQ8645P_HWMON_DIR, fbep_vr_list[i].addr);
+    dir = opendir(path);
+    if (dir == NULL)
+      goto err_exit;
+
+    while ((dp = readdir(dir)) != NULL) {
+      if (sscanf(dp->d_name, "hwmon%d", &index))
+	break;
+    }
+    if (dp == NULL) {
+      closedir(dir);
+      goto err_exit;
+    }
+
     p  = (int*)malloc(sizeof(int));
     if (p == NULL) {
-      for (i = i-1; i >= 0; i--)
-	free(fbep_vr_list[i].private_data);
-      return -1;
+      closedir(dir);
+      goto err_exit;
     }
-    *p = HWMON_P0V8_VDD0 + i;
+
+    *p = index;
     fbep_vr_list[i].private_data = p;
+    closedir(dir);
   }
 
   ret = vr_device_register(fbep_vr_list, sizeof(fbep_vr_list)/sizeof(fbep_vr_list[0]));
@@ -123,6 +134,10 @@ int plat_vr_init()
   }
 
   return ret;
+err_exit:
+  for (i = i-1; i >= 0; i--)
+    free(fbep_vr_list[i].private_data);
+  return -1;
 }
 
 void plat_vr_exit()

@@ -30,17 +30,20 @@
 #include <time.h>
 #include <sys/time.h>
 #include <pthread.h>
+#include <dirent.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/obmc-i2c.h>
 #include "pal.h"
 
-#define LTC4282_DIR(bus, addr, index) \
-  "/sys/bus/i2c/drivers/ltc4282/"#bus"-00"#addr"/hwmon/hwmon"#index"/%s"
+#define P12V_AUX_HWMON_DIR \
+  "/sys/bus/i2c/drivers/ltc4282/18-0043/hwmon"
+#define P12V_AUX_DIR \
+  P12V_AUX_HWMON_DIR"/hwmon%d/%s"
+
 #define LTC4282_STATUS_PWR_GOOD	"power_good"
 #define LTC4282_REBOOT		"reboot"
-#define P12V_AUX_DIR	LTC4282_DIR(18, 43, 7)
 
 #define DELAY_POWER_CYCLE 10
 #define MAX_RETRY 10
@@ -792,15 +795,36 @@ void pal_get_chassis_status(uint8_t fru, uint8_t *req_data, uint8_t *res_data, u
 
 int pal_sled_cycle(void)
 {
+  int index;
+  struct dirent *dp;
+  DIR *dir;
+  char path[128] = {0};
   char device[LARGEST_DEVICE_NAME] = {0};
 
-  // reboot LTC4282 for 12V
-  snprintf(device, LARGEST_DEVICE_NAME, P12V_AUX_DIR, LTC4282_REBOOT);
-  if (write_device(device, 1) < 0) {
-    syslog(LOG_CRIT, "SLED Cycle failed!\n");
-    return -1;
+  snprintf(path, sizeof(path), P12V_AUX_HWMON_DIR);
+  dir = opendir(path);
+  if (dir == NULL)
+    goto err_exit;
+
+  while ((dp = readdir(dir)) != NULL) {
+    if (sscanf(dp->d_name, "hwmon%d", &index))
+      break;
   }
+  if (dp == NULL) {
+    closedir(dir);
+    goto err_exit;
+  }
+
+  closedir(dir);
+  // reboot LTC4282 for 12V
+  snprintf(device, LARGEST_DEVICE_NAME, P12V_AUX_DIR, index, LTC4282_REBOOT);
+  if (write_device(device, 1) < 0)
+    goto err_exit;
+
   return 0;
+err_exit:
+  syslog(LOG_CRIT, "SLED Cycle failed!\n");
+  return -1;
 }
 
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)

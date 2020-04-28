@@ -39,18 +39,17 @@ i2c_device_add 6 0x4d tmp422
 i2c_device_add 6 0x4e tmp422
 
 # Voltage regulators
-i2c_device_add 5 0x30 mpq8645p
-i2c_device_add 5 0x31 mpq8645p
-i2c_device_add 5 0x32 mpq8645p
-i2c_device_add 5 0x33 mpq8645p
-i2c_device_add 5 0x34 mpq8645p
-i2c_device_add 5 0x35 mpq8645p
-i2c_device_add 5 0x36 mpq8645p
-i2c_device_add 5 0x3b mpq8645p
+i2c_bind_driver mpq8645p 5-0030
+i2c_bind_driver mpq8645p 5-0031
+i2c_bind_driver mpq8645p 5-0032
+i2c_bind_driver mpq8645p 5-0033
+i2c_bind_driver mpq8645p 5-0034
+i2c_bind_driver mpq8645p 5-0035
+i2c_bind_driver mpq8645p 5-0036
+i2c_bind_driver mpq8645p 5-003b
 
 # P48V HSCs
-i2c_device_add 16 0x13 adm1272
-i2c_device_add 17 0x10 adm1272
+modprobe adm1275
 
 # i2c mux in front of OAMs
 i2c_mux_add_sync 11 0x70 pca9543 21

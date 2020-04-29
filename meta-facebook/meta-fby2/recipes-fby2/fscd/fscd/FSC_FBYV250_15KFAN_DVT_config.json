@@ -1,5 +1,5 @@
 {
-  "version": "fbgpv2-15kfan-dvt-r01",
+  "version": "fbgpv2-15kfan-dvt-r02",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 90,
@@ -114,6 +114,18 @@
         [97, 70]
       ]
     },
+    "pid_mezz": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 88,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -1.6,
+      "ki": -0.1,
+      "kd": 0
+    },
     "linear_mb_m2": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
@@ -145,7 +157,7 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 0,
+      "negative_hysteresis": 2,
       "data": [
         [ 56, 20 ],
         [ 58, 25 ],
@@ -186,7 +198,7 @@
   "zones": {
     "zone_1": {
       "pwm_output": [0, 1],
-      "expr_file": "FSC_FBGPV2_DVT_zone1.fsc"
+      "expr_file": "FSC_FBYV250_DVT_zone1.fsc"
     }
   }
 }

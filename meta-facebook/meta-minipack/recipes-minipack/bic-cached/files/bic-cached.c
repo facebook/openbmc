@@ -67,7 +67,7 @@ void
 sdr_cache_init(uint8_t slot_id) {
   int ret;
   int fd;
-  uint8_t rlen;
+  size_t rlen;
   uint8_t rbuf[MAX_IPMB_RES_LEN];
   char *path = NULL;
   char sdr_temp_path[64];

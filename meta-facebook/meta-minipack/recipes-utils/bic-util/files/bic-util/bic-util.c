@@ -368,11 +368,9 @@ util_get_sel_info(uint8_t slot_id) {
 
 static void
 util_get_sel(uint8_t slot_id) {
-  int ret;
-  int i;
+  int i, ret;
   uint16_t rsv;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
-  uint8_t rlen = (uint8_t)sizeof(rbuf);
 
   ipmi_sel_sdr_req_t req;
   ipmi_sel_sdr_res_t *res = (ipmi_sel_sdr_res_t *) rbuf;
@@ -383,6 +381,8 @@ util_get_sel(uint8_t slot_id) {
   req.nbytes = BYTES_ENTIRE_RECORD;
 
   while (1) {
+    size_t rlen = sizeof(rbuf);
+
     ret = bic_get_sel(slot_id, &req, res, &rlen);
     if (ret) {
       printf("util_get_sel:bic_get_sel returns %d\n", ret);
@@ -391,9 +391,11 @@ util_get_sel(uint8_t slot_id) {
 
     printf("SEL for rec_id %d\n", req.rec_id);
     printf("Next Record ID is %d\n", res->next_rec_id);
-    printf("Record contents are..\n");
-    for (i = 0;  i < rlen-2; i++) { // First 2 bytes are next_rec_id
-      printf("0x%X:", res->data[i]);
+    if (rlen >= 2) {
+      printf("Record contents are..\n");
+      for (i = 0;  i < rlen-2; i++) { // First 2 bytes are next_rec_id
+        printf("0x%X:", res->data[i]);
+      }
     }
     printf("\n");
 
@@ -433,7 +435,7 @@ util_get_sdr(uint8_t slot_id) {
   int ret;
   int i;
   uint16_t rsv;
-  uint8_t rlen;
+  size_t rlen;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
 
   ipmi_sel_sdr_req_t req;
@@ -514,13 +516,14 @@ process_command(uint8_t slot_id, int argc, char **argv) {
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
   uint8_t tlen = 0;
-  uint8_t rlen = sizeof(rbuf);
+  size_t rlen;
 
   for (i = 0; i < argc; i++) {
     tbuf[tlen++] = (uint8_t)strtoul(argv[i], NULL, 0);
   }
 
   while (retry >= 0) {
+    rlen = sizeof(rbuf);
     ret = bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1],
                            &tbuf[2], tlen-2, rbuf, &rlen);
     if (ret == 0)

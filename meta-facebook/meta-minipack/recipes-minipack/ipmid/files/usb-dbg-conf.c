@@ -448,7 +448,7 @@ int
 plat_get_me_status(uint8_t fru, char *status)
 {
   char buf[256];
-  unsigned char rlen;
+  size_t rlen;
   int ret;
 
   buf[0] = NETFN_APP_REQ << 2;

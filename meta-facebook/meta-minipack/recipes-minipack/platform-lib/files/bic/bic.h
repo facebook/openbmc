@@ -154,7 +154,9 @@ typedef union _bic_config_u {
   bic_config_t bits;
 } bic_config_u;
 
-int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
+int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
+                     uint8_t *txbuf, size_t txlen,
+                     uint8_t *rxbuf, size_t *rxlen);
 int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config);
 int bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio);
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info);
@@ -162,19 +164,22 @@ int bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value);
 int bic_get_config(uint8_t slot_id, bic_config_t *cfg);
 int bic_get_post_buf(uint8_t slot_id, uint8_t *buf, uint8_t *len);
 int bic_get_sel_info(uint8_t slot_id, ipmi_sel_sdr_info_t *info);
-int bic_get_sel(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen);
+int bic_get_sel(uint8_t slot_id, ipmi_sel_sdr_req_t *req,
+                ipmi_sel_sdr_res_t *res, size_t *rlen);
 int bic_get_sdr_info(uint8_t slot_id, ipmi_sel_sdr_info_t *info);
-int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen);
+int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req,
+                ipmi_sel_sdr_res_t *res, size_t *rlen);
 int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id);
 int bic_read_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor);
 int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size);
-int bic_read_mac(uint8_t slot_id, char *rbuf, uint8_t rlen);
+int bic_read_mac(uint8_t slot_id, char *rbuf, size_t rlen);
 int bic_update_fw(uint8_t slot_id, uint8_t comp, const char *path);
 int bic_get_fw_cksum(uint8_t slot_id, uint8_t comp, uint32_t offset, uint32_t len, uint8_t *ver);
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 int bic_set_config(uint8_t slot_id, bic_config_t *cfg);
 int bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result);
-int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
+int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, size_t txlen,
+                uint8_t *rxbuf, size_t *rxlen);
 int me_recovery(uint8_t slot_id, uint8_t command);
 
 #ifdef __cplusplus

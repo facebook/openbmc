@@ -101,15 +101,23 @@ typedef struct _sdr_rec_hdr_t {
  *     actual response length.
  */
 int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
-                     uint8_t* txbuf, uint8_t txlen, uint8_t* rxbuf,
-                     uint8_t* rxlen) {
-  uint8_t tlen;
-  uint8_t rlen = 0;
+                     uint8_t* txbuf, size_t txlen, uint8_t* rxbuf,
+                     size_t* rxlen) {
+  unsigned short tlen;
+  unsigned char rlen = 0;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
   ipmb_req_t* req = (ipmb_req_t*)tbuf;
   ipmb_res_t* res = (ipmb_res_t*)rbuf;
 
+  if (txlen) {
+    if ((txbuf == NULL) ||
+        (IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen > sizeof(tbuf))) {
+      errno = EINVAL;
+      return -1;
+    }
+    memcpy(req->data, txbuf, txlen);
+  }
   req->res_slave_addr = BRIDGE_SLAVE_ADDR << 1;
   req->netfn_lun = netfn << LUN_OFFSET;
   req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
@@ -118,16 +126,8 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   req->seq_lun = 0x00;
   req->cmd = cmd;
 
-  // copy the data to be send
-  tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
-  BIC_ASSERT(tlen < sizeof(tbuf), "txbuf overflow: txlen=%u, buflen=%u",
-             tlen, sizeof(tbuf));
-  if (txlen) {
-    BIC_ASSERT(txbuf != NULL, "txbuf is null");
-    memcpy(req->data, txbuf, txlen);
-  }
-
   // Invoke IPMB library handler
+  tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
   if (lib_ipmb_handle(slot_id, tbuf, tlen, rbuf, &rlen) != 0) {
     return -1;
   }
@@ -156,8 +156,7 @@ int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio,
                         bic_gpio_config_t* gpio_config) {
   uint8_t tbuf[7] = BIC_IANA_ID; // IANA ID
   uint8_t rbuf[4] = {0x00};
-  uint8_t rlen = (uint8_t)sizeof(rbuf);
-  uint8_t tlen = (uint8_t)sizeof(tbuf);
+  size_t rlen = sizeof(rbuf);
   uint32_t pin;
   int ret;
 
@@ -173,7 +172,7 @@ int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio,
   tbuf[6] = (pin >> 24) & 0xFF;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO_CONFIG,
-                         tbuf, tlen, rbuf, &rlen);
+                         tbuf, sizeof(tbuf), rbuf, &rlen);
   IPMB_XFER_VERIFY(ret, rlen, sizeof(rbuf));
 
   *((uint8_t*)gpio_config) = rbuf[BIC_IANA_ID_SIZE];
@@ -184,7 +183,7 @@ int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio,
 int bic_get_gpio(uint8_t slot_id, bic_gpio_t* gpio) {
   uint8_t tbuf[3] = BIC_IANA_ID; // IANA ID
   uint8_t rbuf[7] = {0x00};
-  uint8_t rlen = (uint8_t)sizeof(rbuf);
+  size_t rlen = sizeof(rbuf);
   int ret;
 
   if (gpio == NULL) {
@@ -204,13 +203,12 @@ int bic_get_gpio(uint8_t slot_id, bic_gpio_t* gpio) {
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id,
                        ipmi_fruid_info_t* info) {
   int ret;
-  uint8_t rlen;
+  size_t rlen = sizeof(*info);
 
   if (info == NULL) {
     errno = EINVAL;
     return -1;
   }
-  rlen = sizeof(*info);
   ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_FRUID_INFO,
                          &fru_id, 1, (uint8_t*)info, &rlen);
   IPMB_XFER_VERIFY(ret, rlen, 3);
@@ -221,7 +219,7 @@ int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id,
 int bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value) {
   uint8_t tbuf[11] = BIC_IANA_ID; // IANA ID
   uint8_t rbuf[3] = {0x00};
-  uint8_t rlen = sizeof(rbuf);
+  size_t rlen = sizeof(rbuf);
   int ret;
 
   // Check for boundary conditions
@@ -274,7 +272,7 @@ int bic_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value) {
 int bic_get_config(uint8_t slot_id, bic_config_t* cfg) {
   uint8_t tbuf[3] = BIC_IANA_ID; // IANA ID
   uint8_t rbuf[4] = {0x00};
-  uint8_t rlen = sizeof(rbuf);
+  size_t rlen = sizeof(rbuf);
   int ret;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_CONFIG, tbuf,
@@ -289,7 +287,7 @@ int bic_get_config(uint8_t slot_id, bic_config_t* cfg) {
 int bic_set_config(uint8_t slot_id, bic_config_t* cfg) {
   uint8_t tbuf[4] = BIC_IANA_ID; // IANA ID
   uint8_t rbuf[4] = {0};
-  uint8_t rlen = sizeof(rbuf);
+  size_t rlen = sizeof(rbuf);
   int ret;
 
   if (cfg == NULL) {
@@ -307,7 +305,7 @@ int bic_set_config(uint8_t slot_id, bic_config_t* cfg) {
 int bic_get_post_buf(uint8_t slot_id, uint8_t* buf, uint8_t* len) {
   uint8_t tbuf[3] = BIC_IANA_ID; // IANA ID
   uint8_t rbuf[255] = {0x00};
-  uint8_t rlen = sizeof(rbuf);
+  size_t rlen = sizeof(rbuf);
   int ret;
 
   if (buf == NULL || len == NULL) {
@@ -338,21 +336,20 @@ int bic_get_post_buf(uint8_t slot_id, uint8_t* buf, uint8_t* len) {
 // Read System Event Log (SEL)
 int bic_get_sel_info(uint8_t slot_id, ipmi_sel_sdr_info_t* info) {
   int ret;
-  uint8_t rlen;
+  size_t rlen = sizeof(*info);
 
   if (info == NULL) {
     errno = EINVAL;
     return -1;
   }
 
-  rlen = sizeof(*info);
   ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_SEL_INFO,
                          NULL, 0, (uint8_t*)info, &rlen);
   return ret;
 }
 
 int bic_get_sel(uint8_t slot_id, ipmi_sel_sdr_req_t* req,
-                ipmi_sel_sdr_res_t* res, uint8_t* rlen) {
+                ipmi_sel_sdr_res_t* res, size_t* rlen) {
   int ret;
 
   if (req == NULL || res == NULL || rlen == NULL) {
@@ -368,21 +365,20 @@ int bic_get_sel(uint8_t slot_id, ipmi_sel_sdr_req_t* req,
 // Read Sensor Data Records (SDR)
 int bic_get_sdr_info(uint8_t slot_id, ipmi_sel_sdr_info_t* info) {
   int ret;
-  uint8_t rlen;
+  size_t rlen = sizeof(*info);
 
   if (info == NULL) {
     errno = EINVAL;
     return -1;
   }
 
-  rlen = sizeof(*info);
   ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_SDR_INFO,
                          NULL, 0, (uint8_t*)info, &rlen);
   return ret;
 }
 
 static int _get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t* req,
-                    ipmi_sel_sdr_res_t* res, uint8_t* rlen) {
+                    ipmi_sel_sdr_res_t* res, size_t* rlen) {
   int ret;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_SDR,
@@ -392,7 +388,7 @@ static int _get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t* req,
 
 static int _get_sdr_rsv(uint8_t slot_id, uint16_t* rsv) {
   int ret;
-  uint8_t rlen = sizeof(*rsv);
+  size_t rlen = sizeof(*rsv);
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_RSV_SDR, NULL,
                          0, (uint8_t*)rsv, &rlen);
@@ -401,10 +397,10 @@ static int _get_sdr_rsv(uint8_t slot_id, uint16_t* rsv) {
 }
 
 int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t* req,
-                ipmi_sel_sdr_res_t* res, uint8_t* rlen) {
+                ipmi_sel_sdr_res_t* res, size_t* rlen) {
   int ret;
   uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
-  uint8_t tlen = (uint8_t)sizeof(tbuf);
+  size_t tlen = sizeof(tbuf);
   uint8_t len;
   ipmi_sel_sdr_res_t* tres = (ipmi_sel_sdr_res_t*)tbuf;
   sdr_rec_hdr_t* hdr;
@@ -454,7 +450,7 @@ int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t* req,
       req->nbytes = len;
     }
 
-    tlen = (uint8_t)sizeof(tbuf);
+    tlen = sizeof(tbuf);
     ret = _get_sdr(slot_id, req, (ipmi_sel_sdr_res_t*)tbuf, &tlen);
     if (ret) {
       return ret;
@@ -474,7 +470,7 @@ int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t* req,
 
 // Get Device ID
 int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t* dev_id) {
-  uint8_t rlen;
+  size_t rlen = sizeof(*dev_id);
   int ret;
 
   if (dev_id == NULL) {
@@ -482,7 +478,6 @@ int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t* dev_id) {
     return -1;
   }
 
-  rlen = sizeof(*dev_id);
   ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_GET_DEVICE_ID, NULL, 0,
                          (uint8_t*)dev_id, &rlen);
 
@@ -492,14 +487,13 @@ int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t* dev_id) {
 int bic_read_sensor(uint8_t slot_id, uint8_t sensor_num,
                     ipmi_sensor_reading_t* sensor) {
   int ret;
-  uint8_t rlen;
+  size_t rlen = sizeof(*sensor);
 
   if (sensor == NULL) {
     errno = EINVAL;
     return -1;
   }
 
-  rlen = sizeof(*sensor);
   ret =
       bic_ipmb_wrapper(slot_id, NETFN_SENSOR_REQ, CMD_SENSOR_GET_SENSOR_READING,
                        (uint8_t*)&sensor_num, 1, (uint8_t*)sensor, &rlen);
@@ -508,7 +502,7 @@ int bic_read_sensor(uint8_t slot_id, uint8_t sensor_num,
 }
 
 static int _read_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset,
-                       uint8_t count, uint8_t* rbuf, uint8_t* rlen) {
+                       uint8_t count, uint8_t* rbuf, size_t* rlen) {
   int ret;
   uint8_t tbuf[4] = {0};
 
@@ -530,7 +524,7 @@ int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char* path,
   uint32_t offset;
   uint8_t count;
   uint8_t rbuf[MAX_IPMI_MSG_SIZE] = {0};
-  uint8_t rlen = 0;
+  size_t rlen = 0;
   int fd = -1;
   ipmi_fruid_info_t info;
 
@@ -569,7 +563,7 @@ int bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char* path,
       count = nread;
     }
 
-    rlen = (uint8_t)sizeof(rbuf);
+    rlen = sizeof(rbuf);
     ret = _read_fruid(slot_id, fru_id, offset, count, rbuf, &rlen);
     if (ret) {
       goto error_exit;
@@ -603,7 +597,7 @@ error_exit:
   return -1;
 }
 
-int bic_read_mac(uint8_t slot_id, char* rbuf, uint8_t rlen) {
+int bic_read_mac(uint8_t slot_id, char* rbuf, size_t rlen) {
   uint8_t tbuf[2] = {0x00, 0x01};
   int ret;
 
@@ -637,7 +631,7 @@ static int _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset,
                       uint16_t len, uint8_t* buf) {
   uint8_t tbuf[MAX_IPMI_MSG_SIZE] = BIC_IANA_ID; // IANA ID
   uint8_t rbuf[16] = {0x00};
-  uint8_t tlen, rlen;
+  size_t tlen, rlen;
   int ret;
   int retries = 3;
 
@@ -674,7 +668,7 @@ static int _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset,
 static int _enable_bic_update(uint8_t slot_id) {
   uint8_t tbuf[4] = BIC_IANA_ID;
   uint8_t rbuf[16] = {0x00};
-  uint8_t rlen = sizeof(rbuf);
+  size_t rlen = sizeof(rbuf);
   int ret;
 
   // 0x1: Update on I2C Channel, the only available option from BMC
@@ -1126,7 +1120,7 @@ int bic_get_fw_cksum(uint8_t slot_id, uint8_t comp, uint32_t offset,
                      uint32_t len, uint8_t* ver) {
   uint8_t tbuf[12] = BIC_IANA_ID; // IANA ID
   uint8_t rbuf[16] = {0x00};
-  uint8_t rlen = sizeof(rbuf);
+  size_t rlen = sizeof(rbuf);
   int ret;
 
   if (ver == NULL) {
@@ -1399,7 +1393,7 @@ error_exit:
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t* ver) {
   uint8_t tbuf[4] = BIC_IANA_ID; // IANA ID
   uint8_t rbuf[16] = {0x00};
-  uint8_t rlen = sizeof(rbuf);
+  size_t rlen = sizeof(rbuf);
   int ret;
 
   if (ver == NULL) {
@@ -1428,25 +1422,24 @@ int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t* ver) {
 
 int bic_get_self_test_result(uint8_t slot_id, uint8_t* self_test_result) {
   int ret;
-  uint8_t rlen;
+  size_t rlen = sizeof(*self_test_result);
 
   if (self_test_result == NULL) {
     errno = EINVAL;
     return -1;
   }
 
-  rlen = sizeof(*self_test_result);
   ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_GET_SELFTEST_RESULTS,
                          NULL, 0, (uint8_t*)self_test_result, &rlen);
   return ret;
 }
 
-int bic_me_xmit(uint8_t slot_id, uint8_t* txbuf, uint8_t txlen, uint8_t* rxbuf,
-                uint8_t* rxlen) {
+int bic_me_xmit(uint8_t slot_id, uint8_t* txbuf, size_t txlen, uint8_t* rxbuf,
+                size_t* rxlen) {
   uint8_t tbuf[MAX_IPMI_MSG_SIZE] = BIC_IANA_ID; // IANA ID
   uint8_t rbuf[MAX_IPMI_MSG_SIZE] = {0x00};
-  uint8_t rlen = (uint8_t)sizeof(rbuf);
-  uint8_t tlen = 0;
+  size_t rlen = sizeof(rbuf);
+  size_t tlen = 0;
   int ret;
 
   if (txbuf == NULL || rxbuf == NULL || rxlen == NULL) {
@@ -1502,8 +1495,8 @@ int bic_me_xmit(uint8_t slot_id, uint8_t* txbuf, uint8_t txlen, uint8_t* rxbuf,
 int me_recovery(uint8_t slot_id, uint8_t command) {
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
+  size_t tlen = 0;
+  size_t rlen = 0;
   int ret = 0;
   int retry = 0;
 

@@ -24,6 +24,9 @@
 #define MAX_READ_RETRY 10
 #define POLLING_DELAY_TIME  (10)
 
+#define PECI_MUX_SELECT_BMC                     (GPIO_VALUE_HIGH)
+#define PECI_MUX_SELECT_PCH                     (GPIO_VALUE_LOW)
+
 uint8_t pwr_polling_flag=false;
 size_t pal_pwm_cnt = FAN_PWM_ALL_NUM;
 size_t pal_tach_cnt = FAN_TACH_ALL_NUM;
@@ -2603,11 +2606,25 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
   return 0;
 }
 
+static int pal_set_peci_mux(uint8_t select) {
+  gpio_desc_t *desc;
+  bool ret = false;
+
+  desc = gpio_open_by_shadow("PECI_MUX_SELECT");
+  if (!desc)
+    return ret;
+ 
+  gpio_set_value(desc, select);
+  gpio_close(desc);
+  return 0;
+}
+
 int pal_sensor_monitor_initial(void) {
   int i=0;
   uint16_t pmon_cfg = 0; 
   uint16_t alert1_cfg = 0;
   float iout_oc_warn_limit = 123;
+  uint8_t mode;
 
   pmon_cfg = PMON_CFG_TEPM1_EN | PMON_CFG_CONTINUOUS_SAMPLE | PMON_CFG_VIN_EN |
              PMON_CFG_VI_AVG(CFG_SAMPLE_128) | PMON_CFG_AVG_PWR(CFG_SAMPLE_128);
@@ -2624,6 +2641,16 @@ int pal_sensor_monitor_initial(void) {
     if(set_alter1_config(i, alert1_cfg) != 0) {
       syslog(LOG_WARNING, "Set MB%d Alert1 Config Fail\n", i);
     }
+  }
+
+  if(!pal_get_host_system_mode(&mode) && mode == MB_8S_MODE) {
+    if(pal_get_config_is_master()) {
+      pal_set_peci_mux(PECI_MUX_SELECT_BMC); 
+    } else {
+      pal_set_peci_mux(PECI_MUX_SELECT_PCH);
+    }
+  } else {
+    pal_set_peci_mux(PECI_MUX_SELECT_BMC);
   }
   return 0;
 }

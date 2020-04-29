@@ -505,10 +505,26 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
 
 int
 bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
-  uint8_t tbuf[5] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[5]; // IANA ID
   uint8_t rbuf[4] = {0x00};
   uint8_t rlen = 0;
   int ret;
+
+#if defined(CONFIG_FBY2_GPV2)
+  int spb_type = 0;
+  spb_type = fby2_common_get_spb_type();
+  if (spb_type == TYPE_SPB_YV250) {
+    tbuf[0] = 0x9C;  // WiWynn IANA
+    tbuf[1] = 0x9C;
+    tbuf[2] = 0x00;
+  }
+  else
+#endif
+  {
+    tbuf[0] = 0x15;  // FB IANA
+    tbuf[1] = 0xA0;
+    tbuf[2] = 0x00;
+  }
 
   tbuf[3] = status;  //set power status
   tbuf[4] = dev_id;

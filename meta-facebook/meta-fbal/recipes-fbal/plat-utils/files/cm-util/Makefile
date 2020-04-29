@@ -1,10 +1,10 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 all: cm-util
 
-CFLAGS += -Wall -Werror
+CXXFLAGS += -Wall -Werror
 
-cm-util: cm-util.c
-	$(CC) $(CFLAGS) -lpal -std=c99 -o $@ $^ $(LDFLAGS)
+cm-util: cm-util.cpp
+	$(CXX) $(CXXFLAGS) -lpal -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

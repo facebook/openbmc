@@ -22,15 +22,15 @@
 #define __PAL_H__
 
 #include <openbmc/obmc-pal.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "pal_sensors.h"
 #include "pal_health.h"
 #include "pal_power.h"
 #include "pal_cm.h"
 #include "pal_ep.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle"
 #define FRU_EEPROM_MB    "/sys/class/i2c-dev/i2c-4/device/4-0054/eeprom"

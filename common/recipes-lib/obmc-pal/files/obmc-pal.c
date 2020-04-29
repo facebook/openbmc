@@ -150,7 +150,7 @@ static int pal_lpc_snoop_read(uint8_t *buf, size_t max_len, size_t *rlen)
       len = MAX_VALUE_LEN;
     }
     if (kv_set(cache_key, (char *)cache, len, 0)) {
-      syslog(LOG_CRIT, "%d postcodes dropped\n", len - cache_len);
+      syslog(LOG_CRIT, "%zu postcodes dropped\n", len - cache_len);
     }
   }
   len = len > max_len ? max_len : len;

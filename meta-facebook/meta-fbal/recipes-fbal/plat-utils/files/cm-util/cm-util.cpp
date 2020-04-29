@@ -18,75 +18,76 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <errno.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <syslog.h>
-#include <unistd.h>
+#include <iostream>
+#include <set>
+#include <map>
+#include <string>
+#include <CLI/CLI.hpp>
 #include <openbmc/pal.h>
 
-static void
-print_usage_help(void) {
-  printf("Usage : cm-util --set --mode <slot> <do_cycle>\n");
-  printf("      : cm-util sled-cycle\n");
-  printf("<slot>     : the slot to be master\n");
-  printf("             [0..3] if 8S mode, 4 if 2S mode\n");
-  printf("<do_cycle> : 1 if do power-cycle to apply configuration\n");
-  printf("             0 otherwise\n");
+static int set_mode(uint8_t slot)
+{
+  int rc = 0;
+  if (pal_ep_set_system_mode(slot == 4 ? MB_2S_MODE : MB_8S_MODE)) {
+    std::cerr << "Set JBOG system mode failed" << std::endl;
+    rc = -1;
+  }
+
+  if (cmd_cmc_set_system_mode(slot, false) < 0) {
+    std::cerr << "Set CM system mode failed" << std::endl;
+    rc = -1;
+  }
+  return rc;
+}
+
+static int sled_cycle()
+{
+  int rc = 0;
+  if (pal_ep_sled_cycle() < 0) {
+    std::cerr << "Request JBOG sled-cycle failed\n";
+    rc = -1;
+  }
+  if (cmd_cmc_sled_cycle()) {
+    std::cerr << "Request chassis manager for a sled cycle failed\n";
+    rc = -1;
+  }
+  return rc;
 }
 
 int
 main(int argc, char **argv) {
-  bool do_cycle;
-  uint8_t slot;
-  uint8_t mode;
+  int rc = -1;
+  bool do_cycle = false;
+  CLI::App app("Chassis Management Utility");
+  app.failure_message(CLI::FailureMessage::help);
 
-  if (argc != 2 && argc != 5)
-    goto err_exit;
+  const std::map<std::string, uint8_t> mode_map{
+    {"8S-0", 3},
+    {"8S-1", 2},
+    {"8S-2", 1},
+    {"8S-3", 0},
+    {"2S", 4}
+  };
+  std::string op_mode;
+  auto mode = app.add_set("--set-mode", op_mode,
+                          {"8S-0", "8S-1", "8S-2", "8S-3", "2S"},
+                          "Chassis operating mode.\n"
+                          "2S: 4x2S Mode\n"
+                          "8S-N: 8S mode with tray N as the master"
+                         )->ignore_case();
+  app.add_flag("--sled-cycle", do_cycle,
+               "Perform a SLED cycle after operations (If any)");
+  app.require_option();
 
-  if (!strcmp(argv[1], "--set") && !strcmp(argv[2], "--mode")) {
-    slot = (uint8_t)atoi(argv[3]);
-    if (slot < 0 || slot > ALL_2S_MODE)
-      goto err_exit;
+  CLI11_PARSE(app, argc, argv);
 
-    do_cycle = atoi(argv[4])? true: false;
-
-    if (slot == ALL_2S_MODE) {
-      printf("set system mode to 2S\n");
-      mode = MB_2S_MODE;
-    } else {
-      printf("set system mode to 8S and master is slot %d\n", (int)slot);
-      mode = MB_8S_MODE;
-      // Reverse the index
-      slot = ~slot & 0x3;
-    }
-
-    if (pal_ep_set_system_mode(mode) < 0)
-      printf("Set JBOG system mode failed\n");
-    if (cmd_cmc_set_system_mode(slot, false) < 0)
-      printf("Set CM system mode failed\n");
-
-    if (do_cycle) {
-      if (pal_ep_sled_cycle() < 0)
-	printf("Request JBOG sled-cycle failed\n");
-
-      cmd_cmc_sled_cycle();
-    } else {
-      printf("Do \"cm-util sled-cycle\" to enable the new configuration\n");
-    }
-  } else if (!strcmp(argv[1], "sled-cycle")) {
-    if (pal_ep_sled_cycle() < 0)
-      printf("Request JBOG sled-cycle failed\n");
-
-    cmd_cmc_sled_cycle();
-  } else {
-    goto err_exit;
+  if (*mode) {
+    rc = set_mode(mode_map.at(op_mode));
   }
 
-  return 0;
-err_exit:
-  print_usage_help();
-  return -1;
+  if (do_cycle) {
+    rc = sled_cycle();
+  }
+
+  return rc;
 }

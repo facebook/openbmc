@@ -16,7 +16,7 @@ do_install() {
     install -m 0755 cm-util ${D}${bindir}/cm-util
 }
 
-DEPENDS += "libpal"
+DEPENDS += "libpal cli11"
 RDEPENDS_${PN} += "libpal"
 
 FILES_${PN} = "${bindir}"

@@ -128,7 +128,7 @@ main(int argc, char **argv) {
       }
 
       sleep(3);
-      reboot(RB_AUTOBOOT);
+      pal_bmc_reboot(RB_AUTOBOOT);
       return 0;
   }
 

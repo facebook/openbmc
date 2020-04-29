@@ -571,7 +571,7 @@ static void threshold_assert_check(const char *target, float value, struct thres
       syslog(thres->log_level, "Rebooting BMC; latest uptime: %ld sec", info.uptime);
 
       sleep(1);
-      reboot(RB_AUTOBOOT);
+      pal_bmc_reboot(RB_AUTOBOOT);
     }
     if (thres->bmc_error_trigger) {
       pthread_mutex_lock(&global_error_mutex);
@@ -651,7 +651,7 @@ static void ecc_threshold_assert_check(const char *target, int value,
       }
     }
     if (thres->reboot) {
-      reboot(RB_AUTOBOOT);
+      pal_bmc_reboot(RB_AUTOBOOT);
     }
     if (thres->bmc_error_trigger) {
       pthread_mutex_lock(&global_error_mutex);

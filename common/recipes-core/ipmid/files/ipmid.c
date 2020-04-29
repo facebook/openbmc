@@ -631,7 +631,7 @@ app_cold_reset(unsigned char *request, unsigned char req_len,
   }
 
   syslog(LOG_CRIT, "BMC Cold Reset.");
-  reboot(RB_AUTOBOOT);
+  pal_bmc_reboot(RB_AUTOBOOT);
 }
 
 

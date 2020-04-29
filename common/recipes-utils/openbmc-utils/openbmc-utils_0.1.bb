@@ -39,6 +39,7 @@ SRC_URI = " \
     file://emmc_enhance_part.sh \
     file://mount_data1.sh \
     file://setup_persist_log.sh \
+    file://setup-reboot.sh \
     "
 
 OPENBMC_UTILS_FILES = " \
@@ -90,6 +91,9 @@ do_install() {
 
     install -m 0755 ${WORKDIR}/rm_poweroff_cmd.sh ${D}${sysconfdir}/init.d/rm_poweroff_cmd.sh
     update-rc.d -r ${D} rm_poweroff_cmd.sh start 99 S .
+
+    install -m 755 ${WORKDIR}/setup-reboot.sh ${D}${sysconfdir}/init.d/setup-reboot.sh
+    update-rc.d -r ${D} setup-reboot.sh start 89 6 .
 }
 
 FILES_${PN} += "/usr/local"

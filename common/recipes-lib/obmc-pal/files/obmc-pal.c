@@ -27,6 +27,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/reboot.h>
 #include <sys/wait.h>
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
@@ -55,6 +56,17 @@ int __attribute__((weak))
 pal_is_bmc_por(void)
 {
   return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_bmc_reboot(int cmd) {
+  if (cmd == 0) {
+    return run_command("/sbin/reboot");
+  }
+
+  // flag for healthd logging reboot cause
+  run_command("/etc/init.d/setup-reboot.sh > /dev/null 2>&1");
+  return reboot(cmd);
 }
 
 int __attribute__((weak))

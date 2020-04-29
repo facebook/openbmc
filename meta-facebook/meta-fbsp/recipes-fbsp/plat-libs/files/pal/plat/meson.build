@@ -1,15 +1,15 @@
-install_headers(
+pal_headers += [
     'pal.h',
     'pal_power.h',
     'pal_sensors.h',
     'pal_health.h',
-    subdir: 'openbmc')
+    ]
 
 pal_sources += [
-    'plat/pal.c',
-    'plat/pal_power.c',
-    'plat/pal_sensors.c',
-    'plat/pal_health.c'
+    'pal.c',
+    'pal_power.c',
+    'pal_sensors.c',
+    'pal_health.c',
     ]
 
 pal_deps += [

@@ -10,11 +10,11 @@ cc = meson.get_compiler('c')
 add_global_arguments('-D__MACHINE__=' + get_option('machine'),
     language: 'c')
 
-# Install header files.
-install_headers(
+# Define header files.
+pal_headers = [
     'obmc-pal.h',
-    'obmc_pal_sensors.h',
-    subdir: 'openbmc')
+    'obmc_pal_sensors.h'
+    ]
 
 # Add additional source files.
 pal_sources = [
@@ -34,6 +34,11 @@ pal_deps = [
 # Import the plat-specific subdirectory for platform
 # headers/sources/dependencies.
 subdir('plat')
+
+# Instead headers.
+install_headers(
+    pal_headers,
+    subdir: 'openbmc')
 
 # Build shared library.
 pal_lib = shared_library('pal',

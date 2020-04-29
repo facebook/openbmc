@@ -1,15 +1,15 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal:"
 
 SRC_URI += " \
+    file://pal.c \
+    file://pal.h \
+    file://pal_health.c \
+    file://pal_health.h \
+    file://pal_power.c \
+    file://pal_power.h \
+    file://pal_sensors.c \
+    file://pal_sensors.h \
     file://plat/meson.build \
-    file://plat/pal.c \
-    file://plat/pal.h \
-    file://plat/pal_power.c \
-    file://plat/pal_power.h \
-    file://plat/pal_sensors.c \
-    file://plat/pal_sensors.h \
-    file://plat/pal_health.c \
-    file://plat/pal_health.h \
     "
 
 DEPENDS += " \

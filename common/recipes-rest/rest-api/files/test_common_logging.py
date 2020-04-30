@@ -22,6 +22,8 @@ import copy
 import datetime
 import io
 import json
+import tempfile
+import os
 import logging
 import logging.config
 import os
@@ -53,9 +55,16 @@ def merge_configs(overrides):
 
 
 class TestLoggerConfigurator(unittest.TestCase):
+    def setUp(self):
+        self.temp_file = tempfile.NamedTemporaryFile()
+        default_config['logfile'] = self.temp_file.name
+
     def tearDown(self):
         # reset logger
         logging.disable(logging.NOTSET)
+
+        # remove the tempfile
+        self.temp_file.close()
 
     def test_configurator_configures_correct_handler(self):
         logging.config.dictConfig(get_logger_config(merge_configs([stdout_target])))

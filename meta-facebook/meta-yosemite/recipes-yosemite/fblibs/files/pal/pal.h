@@ -22,6 +22,7 @@
 #define __PAL_H__
 
 #include <openbmc/obmc-pal.h>
+#include <openbmc/kv.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,7 +32,6 @@ extern "C" {
 #include <facebook/yosemite_common.h>
 #include <facebook/yosemite_fruid.h>
 #include <facebook/yosemite_sensor.h>
-#include <openbmc/kv.h>
 
 #define MAX_NUM_FAN     2
 #define MAX_DATA_NUM    2000

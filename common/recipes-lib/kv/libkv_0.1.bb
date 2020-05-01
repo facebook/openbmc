@@ -20,16 +20,21 @@ DESCRIPTION = "library for get set of kv pairs"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://kv.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
+LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 
 inherit meson python3-dir
 
 SRC_URI = "\
-    file://meson.build \
+    file://fileops.cpp \
+    file://fileops.hpp \
     file://kv \
-    file://kv.c \
+    file://kv.cpp \
     file://kv.h \
+    file://kv.hpp \
     file://kv.py \
+    file://log.hpp \
+    file://meson.build \
+    file://test-kv.cpp \
     "
 
 S = "${WORKDIR}"

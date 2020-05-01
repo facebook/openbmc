@@ -22,6 +22,7 @@
 #define __PAL_H__
 
 #include <openbmc/obmc-pal.h>
+#include <openbmc/kv.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,7 +33,6 @@ extern "C" {
 #include <facebook/lightning_sensor.h>
 #include <facebook/lightning_flash.h>
 #include <facebook/lightning_gpio.h>
-#include <openbmc/kv.h>
 #include <openbmc/nvme-mi.h>
 
 #define MAX_RETRY       5

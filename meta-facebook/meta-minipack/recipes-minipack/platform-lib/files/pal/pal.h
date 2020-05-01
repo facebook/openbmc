@@ -22,12 +22,12 @@
 #define __PAL_H__
 
 #include <openbmc/obmc-pal.h>
+#include <openbmc/kv.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
 #include <stdbool.h>
 #include <math.h>

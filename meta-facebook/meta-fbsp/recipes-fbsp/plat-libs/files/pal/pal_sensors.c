@@ -2633,30 +2633,17 @@ error_exit:
 }
 
 bool
-is_cpu_sensor(uint8_t id, uint8_t* cpu_id) {
-  bool is_cpu_sensor = false;
-    switch(id) {
-    case VR_ID0:
-    case VR_ID1:
-    case VR_ID2:
-    case VR_ID3:
-    case VR_ID4:
-      is_cpu_sensor = true;
-      *cpu_id = 0;
-      break;
-    case VR_ID5:
-    case VR_ID6:
-    case VR_ID7:
-    case VR_ID8:
-    case VR_ID9:
-      is_cpu_sensor = true;
-      *cpu_id = 1;
-      break;
-    default:
-      is_cpu_sensor = false;
-      break;
+is_cpu_sensor(uint8_t sensor_num, uint8_t* cpu_id) {
+  if(sensor_num >= 0xB0 && sensor_num <= 0xC3) {
+    *cpu_id = 0;
+    return true;
   }
-  return is_cpu_sensor;
+  else if(sensor_num >= 0xE0 && sensor_num <= 0xF3) {
+    *cpu_id = 1;
+    return true;
+  }
+
+  return false;
 }
 
 int
@@ -2709,7 +2696,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           break;
       }
 
-      if(is_cpu_sensor(id, &cpu_id)) {
+      if(is_cpu_sensor(sensor_num, &cpu_id)) {
         if(is_cpu_present(fru, cpu_id)) {
           ret = READING_NA;
           break;

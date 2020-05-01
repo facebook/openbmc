@@ -1,0 +1,17 @@
+#
+# Local configuration file for building the OpenBMC image.
+#
+
+# Machine Selection
+MACHINE ??= "qemux86-64"
+
+# Do not build kernel since we are doing a chroot to execute
+# the binaries in the image.
+PREFERRED_PROVIDER_virtual/kernel = "linux-dummy"
+
+# OpenBMC distro settings
+DISTRO ?= "openbmc-fb"
+
+# Enable ptest to be built into the image.
+DISTRO_FEATURES_append = " ptest"
+EXTRA_IMAGE_FEATURES += "ptest-pkgs"

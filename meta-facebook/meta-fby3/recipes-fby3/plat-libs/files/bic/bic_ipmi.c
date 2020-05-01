@@ -59,7 +59,7 @@ typedef struct _sdr_rec_hdr_t {
 #define SIZE_SYS_GUID 16
 
 #define MAX_VER_STR_LEN 80
-#define VR_LOCK "/var/run/vr_%d.lock"
+#define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
 
 // S/E - Get Sensor reading
 // Netfn: 0x04, Cmd: 0x2d
@@ -616,7 +616,7 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
     //Infineon
     //to avoid sensord changing the page of VRs, so use the LOCK file
     //to stop monitoring sensors of VRs
-    sprintf(path, VR_LOCK, slot_id);
+    sprintf(path, SLOT_SENSOR_LOCK, slot_id);
     fd = open(path, O_CREAT | O_RDWR, 0666);
     rc = flock(fd, LOCK_EX | LOCK_NB);
     if(rc) {

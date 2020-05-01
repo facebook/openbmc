@@ -388,3 +388,41 @@ fby3_common_dev_id(char *str, uint8_t *dev) {
 
   return 0;
 }
+
+int
+fby3_common_dev_name(uint8_t dev, char *str) {
+
+  if (dev == FRU_ALL) {
+    strcpy(str, "all");
+  } else if (dev == DEV_ID0_1OU) {
+    strcpy(str, "1U-dev0");
+  } else if (dev == DEV_ID1_1OU) {
+    strcpy(str, "1U-dev1");
+  } else if (dev == DEV_ID2_1OU) {
+    strcpy(str, "1U-dev2");
+  } else if (dev == DEV_ID3_1OU) {
+    strcpy(str, "1U-dev3");
+  } else if (dev == DEV_ID0_2OU) {
+    strcpy(str, "2U-dev0");
+  } else if (dev == DEV_ID1_2OU) {
+    strcpy(str, "2U-dev1");
+  } else if (dev == DEV_ID2_2OU) {
+    strcpy(str, "2U-dev2");
+  } else if (dev == DEV_ID3_2OU) {
+    strcpy(str, "2U-dev3");
+  } else if (dev == DEV_ID4_2OU) {
+    strcpy(str, "2U-dev4");
+  } else if (dev == DEV_ID5_2OU) {
+    strcpy(str, "2U-dev5");
+  } else if (dev == BOARD_1OU) {
+    strcpy(str, "1U");
+  } else if (dev == BOARD_2OU) {
+    strcpy(str, "2U");
+  } else {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "fby3_common_dev_id: Wrong fru id");
+#endif
+    return -1;
+  }
+  return 0;
+}

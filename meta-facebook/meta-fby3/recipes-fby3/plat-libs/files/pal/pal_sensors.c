@@ -1385,14 +1385,14 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num) {
 static int
 pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
 #define BIC_SENSOR_READ_NA 0x20
-#define VR_LOCK "/var/run/vr_%d.lock"
+#define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
   int ret = 0;
   uint8_t power_status = 0, config_status = 0;
   ipmi_sensor_reading_t sensor = {0};
   sdr_full_t *sdr = NULL;
   uint8_t bmc_location = 0;
   char path[128];
-  sprintf(path, VR_LOCK, fru);
+  sprintf(path, SLOT_SENSOR_LOCK, fru);
 
   if ( bic_get_server_power_status(fru, &power_status) < 0 || power_status != SERVER_POWER_ON) {
     //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);
@@ -1409,9 +1409,13 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
   config_status = (uint8_t) ret;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
-
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+  }
+  
+  ret = access(path, F_OK);
+  if(ret == 0) {
+    return READING_SKIP;
   }
 
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
@@ -1420,11 +1424,6 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
     } else if ( (config_status == PRESENT_2OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x80 && sensor_num <= 0xCA)) { // 2OU Exp
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
     } else if (sensor_num >= 0x0 && sensor_num <= 0x42) {
-      ret = access(path, F_OK);
-      if( ret == 0 ) {
-        // file exit
-        return READING_SKIP;
-      }
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
     } else {
       return READING_NA;
@@ -1435,11 +1434,6 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
     } else if ( (config_status == PRESENT_2OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x50 && sensor_num <= 0xCA)) { // 2OU Exp
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
     } else if (sensor_num >= 0x0 && sensor_num <= 0x42){
-      ret = access(path, F_OK);
-      if( ret == 0 ) {
-        // file exit
-        return READING_SKIP;
-      }
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
     } else {
       return READING_NA;

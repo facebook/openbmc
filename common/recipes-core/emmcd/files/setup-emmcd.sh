@@ -13,8 +13,18 @@
 
 echo "Setup eMMC Daemon.."
 
-EXTCSD_CACHE="/tmp/cache_store/mmc0_extcsd"
+CACHE_STORE_DIR="/tmp/cache_store"
+EXTCSD_CACHE="${CACHE_STORE_DIR}/mmc0_extcsd"
 MMC_DEVICE="/dev/mmcblk0"
+
+if [ ! -b "$MMC_DEVICE" ]; then
+  echo "$MMC_DEVICE does not exist. Exiting."
+  exit 1
+fi
+
+if [ ! -d "$CACHE_STORE_DIR" ]; then
+  mkdir -p "$CACHE_STORE_DIR" || exit 1
+fi
 
 if ! [[ -f $EXTCSD_CACHE ]]; then
   /usr/local/bin/mmcraw read-extcsd $MMC_DEVICE > $EXTCSD_CACHE
@@ -78,4 +88,3 @@ esac
 echo "eMMC H/W reset: $hw_reset"
 
 runsv /etc/sv/emmcd > /dev/null 2>&1 &
-

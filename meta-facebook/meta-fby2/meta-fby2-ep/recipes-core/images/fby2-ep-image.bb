@@ -52,4 +52,5 @@ IMAGE_INSTALL += " \
   ncsid \
   vboot-utils \
   sensordump \
+  setup-gpio \
   "

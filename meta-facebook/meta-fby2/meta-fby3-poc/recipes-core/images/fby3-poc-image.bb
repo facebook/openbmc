@@ -54,4 +54,5 @@ IMAGE_INSTALL += " \
   bic-remote-update-poc \
   m2cpldupdate-poc \
   fby2-sensors \
+  setup-gpio \
   "

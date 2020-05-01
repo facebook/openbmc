@@ -60,4 +60,5 @@ IMAGE_INSTALL += " \
   snapshot-util \
   slot-util \
   dimm-util \
+  setup-gpio \
   "

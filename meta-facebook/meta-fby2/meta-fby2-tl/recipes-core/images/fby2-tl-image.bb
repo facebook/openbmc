@@ -48,4 +48,5 @@ IMAGE_INSTALL += " \
   asd-test \
   bios-util \
   threshold-util \
+  setup-gpio \
   "

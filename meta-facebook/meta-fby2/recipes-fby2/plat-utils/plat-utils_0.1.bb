@@ -27,7 +27,6 @@ SRC_URI = "file://ast-functions \
            file://power_util.py \
            file://post_led.sh \
            file://reset_usb.sh \
-           file://setup-gpio.sh \
            file://setup-sysconfig.sh \
            file://mdio.py \
            file://eth0_mac_fixup.sh \
@@ -80,8 +79,6 @@ do_install() {
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
-  update-rc.d -r ${D} setup-gpio.sh start 59 5 .
   install -m 755 setup-sysconfig.sh ${D}${sysconfdir}/init.d/setup-sysconfig.sh
   update-rc.d -r ${D} setup-sysconfig.sh start 60 5 .
   install -m 755 setup-server-type.sh ${D}${sysconfdir}/init.d/setup-server-type.sh

@@ -55,4 +55,5 @@ IMAGE_INSTALL += " \
   snapshot-util \
   apml-util \
   psb-util \
+  setup-gpio \
   "

@@ -60,4 +60,5 @@ IMAGE_INSTALL += " \
   gpv2-util \
   dimm-util \
   sensordump \
+  setup-gpio \
   "

@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+import argparse
+import pickle
+import re
+
+parser = argparse.ArgumentParser(description="Fix up cross-compiled meson data.")
+parser.add_argument("--install-path", nargs=1, required=True)
+parser.add_argument("--package-path", nargs=1, required=True)
+
+args = parser.parse_args()
+
+# Set up paths from arguments.
+install_path = args.install_path[0]
+if not install_path.endswith('/'):
+    install_path = install_path + '/'
+meson_path = args.package_path[0] + '/meson-private/meson_test_setup.dat'
+
+# Load current meson data.
+with open(meson_path, 'rb') as meson_file:
+    obj_data = pickle.load(meson_file)
+
+# Modify meson data to:
+#   - Replace build directory with install directory.
+#   - Turn off 'is_cross_built'.
+new_obj_data = []
+for o in obj_data:
+    new_paths = []
+    for t in o.fname:
+        new_paths.append(re.sub(r".*/build/", install_path, t))
+    o.fname = new_paths
+    o.is_cross_built = False
+    new_obj_data.append(o)
+
+# Write meson data back out.
+with open(meson_path, 'wb') as meson_file:
+    pickle.dump(new_obj_data, meson_file)

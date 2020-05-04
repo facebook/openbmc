@@ -1,0 +1,37 @@
+#!/bin/bash
+
+POSITIONAL=()
+build_dir=""
+while [[ $# -gt 0 ]]; do
+	key="$1"
+	case $key in
+		-b|--build)
+			build_dir="$2"
+			shift 2
+			;;
+    *)
+    	POSITIONAL+=("$1")
+    	shift
+    	;;
+	esac
+done
+set -- "${POSITIONAL[@]}"
+
+openbmc_dir=$(realpath "$(dirname "${BASH_SOURCE[0]}")"/../..)
+cur=$(pwd)
+cd "$openbmc_dir" || exit 1
+if [ -z "$build_dir" ]; then
+  env -i HOME="$HOME" bash -l -c "cd  $openbmc_dir; source ./openbmc-init-build-env qemux86 build-qemux86 > /dev/null; bitbake -q qemux86-image"
+  build_dir="${openbmc_dir}/build-qemux86"
+fi
+cd "$build_dir" || exit 1
+deploy=./tmp/deploy/images/qemux86-64
+rootfs_zip=$(realpath $deploy/qemux86-image-qemux86-64.tar.bz2)
+rootfs=$deploy/rootfs
+if [ -d $rootfs ]; then
+  rm -rf $rootfs
+fi
+mkdir $rootfs
+tar -xf "$rootfs_zip" -C "$rootfs" > /dev/null
+unshare --mount --map-root-user chroot "$rootfs" ptest-runner "$@"
+cd "$cur" || exit 1

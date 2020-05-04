@@ -14,4 +14,3 @@ DISTRO ?= "openbmc-fb"
 
 # Enable ptest to be built into the image.
 DISTRO_FEATURES_append = " ptest"
-EXTRA_IMAGE_FEATURES += "ptest-pkgs"

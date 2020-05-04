@@ -14,6 +14,10 @@ FLASH_ROOTFS_OFFSET = "4608"
 # Include modules in rootfs
 IMAGE_INSTALL += " \
   ptest-runner \
+  packagegroup-openbmc-base \
+  packagegroup-openbmc-net \
+  packagegroup-openbmc-python3 \
+  packagegroup-openbmc-rest3 \
   "
 
 # Certain image post-process commands tend to depend
@@ -27,3 +31,4 @@ flash_image_generate() {
     mkdir -p ${DEPLOY_DIR_IMAGE}
   fi
 }
+EXTRA_IMAGE_FEATURES += "ptest-pkgs"

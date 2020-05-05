@@ -226,12 +226,18 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
     return POWER_STATUS_FRU_ERR;
   }
 
-  ret = bic_get_server_power_status(fru, status);
-  if ( ret == POWER_STATUS_OK ) {
+  ret = pal_get_server_12v_power(fru, status);
+  if ( ret < 0 || (*status) == SERVER_12V_OFF ) {
+    // return earlier if power state is SERVER_12V_OFF or error happened
     return ret;
   }
 
-  return pal_get_server_12v_power(fru, status);
+  if (bic_get_server_power_status(fru, status) < 0) {
+    // if bic not responsing, we reset status to SERVER_12V_ON
+    *status = SERVER_12V_ON;
+  }
+
+  return ret;
 }
 
 // Power Off, Power On, or Power Reset the server in given slot
@@ -261,6 +267,10 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
     default:
       if (pal_get_server_power(fru, &status) < 0) {
         return POWER_STATUS_ERR;
+      }
+      if (status == SERVER_12V_OFF) {
+        // discard the commands if power state is 12V-off
+        return POWER_STATUS_FRU_ERR;
       }
       break;
   }
@@ -294,14 +304,14 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if ( bmc_location == NIC_BMC || pal_get_server_12v_power(fru, &status) < 0 ) {
         return POWER_STATUS_ERR;
       }
-      return (status == SERVER_POWER_ON)?POWER_STATUS_ALREADY_OK:server_power_12v_on(fru);
+      return (status != SERVER_12V_OFF)?POWER_STATUS_ALREADY_OK:server_power_12v_on(fru);
       break;
 
     case SERVER_12V_OFF:
       if ( bmc_location == NIC_BMC || pal_get_server_12v_power(fru, &status) < 0 ) {
         return POWER_STATUS_ERR;
       }
-      return (status == SERVER_POWER_OFF)?POWER_STATUS_ALREADY_OK:server_power_12v_off(fru);
+      return (status == SERVER_12V_OFF)?POWER_STATUS_ALREADY_OK:server_power_12v_off(fru);
       break;
 
     case SERVER_12V_CYCLE:
@@ -310,7 +320,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
           return POWER_STATUS_ERR;
         }
 
-        if (status == SERVER_POWER_OFF) {
+        if (status == SERVER_12V_OFF) {
           return server_power_12v_on(fru);
         } else {
           if ( server_power_12v_off(fru) < 0 ) {

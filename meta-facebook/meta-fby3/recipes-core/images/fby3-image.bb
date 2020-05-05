@@ -59,4 +59,5 @@ IMAGE_INSTALL += " \
   show-sys-config \
   slot-util \
   enclosure-util \
+  fpc-util \
   "

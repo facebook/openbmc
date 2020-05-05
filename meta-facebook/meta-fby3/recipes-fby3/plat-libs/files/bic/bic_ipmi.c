@@ -433,7 +433,8 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   return ret;
 }
 
-int bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
+int 
+bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
   uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
   uint8_t rbuf[16] = {0};
   uint8_t rlen = 0;
@@ -450,6 +451,30 @@ int bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
     *type = rbuf[3];
   } else {
     syslog(LOG_WARNING, "[%s] fail at slot%d", __func__, slot_id);
+  }
+  
+  return ret;
+}
+
+int
+bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
+  // bic_set_amber_led(slot_id, dev_id, 0xFE);
+  uint8_t tbuf[5] = {0x9c, 0x9c, 0x00, 0x00, 0x00};
+  uint8_t rbuf[2] = {0};
+  uint8_t rlen = 0;
+  int ret = 0;
+  int retry = 0;
+  
+  tbuf[3] = dev_id;
+  tbuf[4] = status;
+  while (retry < 3) {
+    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_SET_AMBER_LED, tbuf, 5, rbuf, &rlen, FEXP_BIC_INTF);
+    if (ret == 0) break;
+    retry++;
+  }
+  
+  if (ret != 0) {
+    syslog(LOG_WARNING, "[%s] fail at slot%u dev%u", __func__, slot_id, dev_id);
   }
   
   return ret;

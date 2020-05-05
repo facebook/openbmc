@@ -30,6 +30,7 @@ class M2_DevComponent : public Component {
   };
 
   struct PowerInfo {
+    bool isPrinted;
     int ret;
     uint8_t status;
     uint8_t nvme_ready;
@@ -39,10 +40,12 @@ class M2_DevComponent : public Component {
   };
   static PowerInfo statusTable[MAX_GPV2_DRIVE_NUM];
   static bool isDual;
+  static bool isScaned;
   static Dev_Main_Slot dev_main_slot;
 
   Server server;
   int _update(string image, uint8_t force);
+  void scan_all_devices();
   void save_info(uint8_t id, int ret, uint8_t status, uint8_t nvme_ready, uint8_t ffi, uint8_t major_ver, uint8_t minor_ver);
   void print_single();
   void print_dual();
@@ -58,37 +61,15 @@ class M2_DevComponent : public Component {
   }
 
   int print_version() {
-    int ret = 0;
-    uint8_t retry = MAX_READ_RETRY;
-    uint16_t vendor_id = 0;
-    uint8_t nvme_ready = 0 ,status = 0 ,ffi = 0 ,meff = 0 ,major_ver = 0, minor_ver = 0;
-
     if (fby2_get_slot_type(slot_id) != SLOT_TYPE_GPV2)
       return -1;
 
-    while (retry) {
-      ret = bic_get_dev_power_status(slot_id, dev_id + 1, &nvme_ready, &status, &ffi, &meff, &vendor_id, &major_ver,&minor_ver);
-      if (!ret)
-        break;
-      msleep(50);
-      retry--;
-    }
-    save_info(dev_id, ret, status, nvme_ready, ffi, major_ver, minor_ver);
-    if (isDual == false && meff == MEFF_DUAL_M2) {
-      isDual = true;
-      if (dev_id % 2 == 0) {
-        dev_main_slot = Dev_Main_Slot::ON_EVEN;
-      } else {
-        dev_main_slot = Dev_Main_Slot::ON_ODD;
-      }
-    }
-    if (dev_id + 1 == MAX_GPV2_DRIVE_NUM) {
-      if (isDual == true) {
-        print_dual();
-      } else {
-        print_single();
-      }
-      isDual = false;
+    scan_all_devices();
+
+    if (isDual == true) {
+      print_dual();
+    } else {
+      print_single();
     }
     return 0;
   }
@@ -98,7 +79,38 @@ class M2_DevComponent : public Component {
 
 M2_DevComponent::PowerInfo M2_DevComponent::statusTable[] = {0};
 bool M2_DevComponent::isDual = false;
+bool M2_DevComponent::isScaned = false;
 M2_DevComponent::Dev_Main_Slot M2_DevComponent::dev_main_slot = M2_DevComponent::Dev_Main_Slot::ON_EVEN;
+
+
+void M2_DevComponent::scan_all_devices() {
+  int ret = 0;
+  uint8_t retry = MAX_READ_RETRY;
+  uint16_t vendor_id = 0;
+  uint8_t nvme_ready = 0 ,status = 0 ,ffi = 0 ,meff = 0 ,major_ver = 0, minor_ver = 0;
+
+  if (isScaned == true) return;
+
+  for (int i = 0; i < MAX_GPV2_DRIVE_NUM; i++) {
+    while (retry) {
+      ret = bic_get_dev_power_status(slot_id, i + 1, &nvme_ready, &status, &ffi, &meff, &vendor_id, &major_ver,&minor_ver);
+      if (!ret)
+        break;
+      msleep(50);
+      retry--;
+    }
+    save_info(i, ret, status, nvme_ready, ffi, major_ver, minor_ver);
+    if (isDual == false && meff == MEFF_DUAL_M2) {
+      isDual = true;
+      if (i % 2 == 0) {
+        dev_main_slot = Dev_Main_Slot::ON_EVEN;
+      } else {
+        dev_main_slot = Dev_Main_Slot::ON_ODD;
+      }
+    }
+  }
+  isScaned = true;
+}
 
 void M2_DevComponent::save_info(uint8_t id, int ret, uint8_t status,
  uint8_t nvme_ready, uint8_t ffi, uint8_t major_ver, uint8_t minor_ver) {
@@ -114,36 +126,52 @@ void M2_DevComponent::save_info(uint8_t id, int ret, uint8_t status,
 }
 
 void M2_DevComponent::print_single() {
-  for (int i = 0; i < MAX_GPV2_DRIVE_NUM; i++) {
-    printf("device%d Version: ", i);
-    if (statusTable[i].ret) {
-      printf("NA\n");
-    } else if (!statusTable[i].status) {
-      printf("NA(Not Present)\n");
-    } else if (!statusTable[i].nvme_ready) {
-      printf("NA(NVMe Not Ready)\n");
-    } else if (statusTable[i].ffi != FFI_0_ACCELERATOR) {
-      printf("NA(Not Accelerator)\n");
-    } else {
-      printf("v%d.%d\n", statusTable[i].major_ver, statusTable[i].minor_ver);
-    }
+  printf("device%d Version: ", dev_id);
+  if (statusTable[dev_id].ret) {
+    printf("NA\n");
+  } else if (!statusTable[dev_id].status) {
+    printf("NA(Not Present)\n");
+  } else if (!statusTable[dev_id].nvme_ready) {
+    printf("NA(NVMe Not Ready)\n");
+  } else if (statusTable[dev_id].ffi != FFI_0_ACCELERATOR) {
+    printf("NA(Not Accelerator)\n");
+  } else {
+    printf("v%d.%d\n", statusTable[dev_id].major_ver, statusTable[dev_id].minor_ver);
   }
 }
 
 void M2_DevComponent::print_dual() {
-  for (int i = 0; i < MAX_GPV2_DRIVE_NUM; i+=2) {
-    printf("device%d/%d Version: ", i, i + 1);
-    if (statusTable[i + dev_main_slot].ret) {
-      printf("NA\n");
-    } else if (!statusTable[i + dev_main_slot].status) {
-      printf("NA(Not Present)\n");
-    } else if (!statusTable[i + dev_main_slot].nvme_ready) {
-      printf("NA(NVMe Not Ready)\n");
-    } else if (statusTable[i + dev_main_slot].ffi != FFI_0_ACCELERATOR) {
-      printf("NA(Not Accelerator)\n");
-    } else {
-      printf("v%d.%d\n", statusTable[i + dev_main_slot].major_ver, statusTable[i + dev_main_slot].minor_ver);
+  int first_dev, second_dev, main_dev;
+
+  if (dev_id % 2 == 0) {
+    first_dev = dev_id;
+    second_dev = dev_id + 1;
+    statusTable[first_dev].isPrinted = true;
+  } else {
+    first_dev = dev_id - 1;
+    second_dev = dev_id;
+    if (statusTable[first_dev].isPrinted == true) {
+      return;
     }
+  }
+  if (dev_main_slot == Dev_Main_Slot::ON_EVEN) {
+    main_dev = first_dev;
+  }
+  else {
+    main_dev = second_dev;
+  }
+
+  printf("device%d/%d Version: ", first_dev, second_dev);
+  if (statusTable[main_dev].ret) {
+    printf("NA\n");
+  } else if (!statusTable[main_dev].status) {
+    printf("NA(Not Present)\n");
+  } else if (!statusTable[main_dev].nvme_ready) {
+    printf("NA(NVMe Not Ready)\n");
+  } else if (statusTable[main_dev].ffi != FFI_0_ACCELERATOR) {
+    printf("NA(Not Accelerator)\n");
+  } else {
+    printf("v%d.%d\n", statusTable[main_dev].major_ver, statusTable[main_dev].minor_ver);
   }
 }
 

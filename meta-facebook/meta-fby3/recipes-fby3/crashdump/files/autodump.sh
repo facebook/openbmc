@@ -1,5 +1,7 @@
 #!/bin/bash
+. /usr/local/fbpackages/utils/ast-functions
 
+BOARD_ID=$(get_bmc_board_id)
 ME_UTIL="/usr/local/bin/me-util"
 FRUID_UTIL="/usr/local/bin/fruid-util"
 FW_UTIL="/usr/bin/fw-util"
@@ -31,10 +33,21 @@ case $SLOT_NAME in
     *)
       N=${0##*/}
       N=${N#[SK]??}
-      echo "Usage: $N {slot1|slot2|slot3|slot4}"
+      if [ $BOARD_ID -eq 9 ]; then
+        echo "Usage: $N {slot1}"
+      else
+        echo "Usage: $N {slot1|slot2|slot3|slot4}"
+      fi
       exit 1
       ;;
 esac
+
+
+if [ $BOARD_ID -eq 9 ] && [ $SLOT_NAME != "slot1" ]; then
+  # class2 checking
+  echo "$SLOT_NAME not supported"
+  exit 1
+fi
 
 # File format autodump<slot_id>.pid (See pal_is_crashdump_ongoing()
 # function definition)

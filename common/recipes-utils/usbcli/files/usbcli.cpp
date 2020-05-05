@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <getopt.h>
+#include <ctype.h>
 
 #include <libusb-1.0/libusb.h>
 
@@ -71,6 +72,7 @@ typedef struct {
 	/* usb transfer data buffer. */
 	int xfer_len;
 	uint8_t data[UCLI_DATA_MAX];
+	const char *datafile;
 
 	/* transfer timeout in milliseconds. */
 	unsigned int timeout;
@@ -130,14 +132,17 @@ static libusb_device* ucli_lookup_device(ucli_dev_t *dev_id)
 		bus = libusb_get_bus_number(dev);
 		addr = libusb_get_device_address(dev);
 
+		if (bus == dev_id->bus && addr == dev_id->addr) {
+			return dev;
+		}
+
 		ret = libusb_get_device_descriptor(dev, &desc);
 		if (ret < 0) {
 			return NULL;
 		}
 
-		if ((bus == dev_id->bus && addr == dev_id->addr) ||
-		    (desc.idVendor == dev_id->vid &&
-		     desc.idProduct == dev_id->pid)) {
+		if (desc.idVendor == dev_id->vid &&
+		    desc.idProduct == dev_id->pid) {
 			return dev;
 		}
 	}
@@ -176,10 +181,103 @@ static int ucli_list_endpoints (ucli_param_t *params)
 	return -1;
 }
 
-static int ucli_do_bulk_xfer(ucli_param_t *params, int *act_len)
+static void ucli_dump_xfer_info(uint8_t ep, uint8_t *data,
+				int exp_len, int act_len)
 {
-	int ret;
-	libusb_device_handle *handle;
+	int i;
+
+	UCLI_INFO("endp=%#02x: requested %d bytes, actual transferred %d bytes:\n",
+		  ep, exp_len, act_len);
+	for (i = 0; i < act_len; i++) {
+		UCLI_INFO("%#02x ", data[i]);
+	}
+	UCLI_INFO("\n");
+}
+
+static int ucli_bulk_xfer_series(libusb_device_handle *handle,
+				 ucli_param_t *params)
+{
+	uint8_t ep;
+	int ret = 0;
+	int offset, xfer_len, act_len;
+	FILE *fp;
+	char line[4096];
+	uint8_t payload[1024];
+	char *curr, *next;
+
+	fp = fopen(params->datafile, "r");
+	if (fp == NULL) {
+		UCLI_ERR("failed to open %s: %s\n",
+			 params->datafile, strerror(errno));
+		return -1;
+	}
+
+	while (fgets(line, sizeof(line), fp) != NULL) {
+		/* Skip leading white spaces */
+		for (curr = line; isspace(*curr); curr++) {}
+
+		/*
+		 * The first entry should be endpoint. Format: endp=<value>
+		 * Example: endp=0x81, [data...]
+		 */
+		curr = strtok_r(curr, ",", &next);
+		if ((curr == NULL) ||
+		    (strncmp(curr, "endp=", strlen("endp=")) != 0)) {
+			continue; /* invalid endpoint entry */
+		}
+
+		curr += strlen("endp=");
+		ep = (uint8_t)strtol(curr, NULL, 0);
+		if (ep == 0) {
+			continue; /* invalid endpoint number */
+		}
+
+		/*
+		 * For bulk in endpoint, the first data entry is parsed
+		 * as transfer length, and following data entries (if any)
+		 * are ignored.
+		 * For bulk out endpoint, all the data entries are sent
+		 * to device as payload.
+		 */
+		if (ep & 0x80) { /* bulk in */
+			curr = strtok_r(NULL, " ", &next);
+			if (curr == NULL) {
+				continue; /* xfer length not specified */
+			}
+
+			xfer_len = (int)strtol(curr, NULL, 0);
+		} else { /* bulk out */
+			for (offset = 0;
+			     (offset < sizeof(payload)) &&
+			     ((curr = strtok_r(NULL, " ", &next)) != NULL);
+			     offset++) {
+				payload[offset] = (uint8_t)strtol(curr, NULL, 0);
+			}
+			xfer_len = offset;
+		}
+		if (offset == 0) {
+			continue; /* no payload, nothing to do */
+		}
+
+		ret = libusb_bulk_transfer(handle, ep, payload, xfer_len,
+					   &act_len, params->timeout);
+		if (ret != 0) {
+			UCLI_ERR("%s (endp=%#02x) failed: %s\n",
+				 params->cmd, params->endp, strerror(errno));
+			ret = -1;
+			break;
+		}
+		ucli_dump_xfer_info(ep, payload, xfer_len, act_len);
+	} /* while (fgets...) */
+
+	fclose(fp);
+	return ret;
+}
+
+static int ucli_bulk_xfer_single(libusb_device_handle *handle,
+				 ucli_param_t *params)
+{
+	int ret, act_len;
 
 	if (params->endp == UCLI_INVALID_ENDPOINT) {
 		UCLI_ERR("endpoint is required for %s command.\n",
@@ -187,62 +285,37 @@ static int ucli_do_bulk_xfer(ucli_param_t *params, int *act_len)
 		return -1;
 	}
 
+	ret = libusb_bulk_transfer(handle, params->endp, params->data,
+			params->xfer_len, &act_len, params->timeout);
+	if (ret != 0) {
+		UCLI_ERR("%s (endp=%#02x) failed: %s\n",
+			 params->cmd, params->endp, strerror(errno));
+		return -1;
+	}
+
+	ucli_dump_xfer_info(params->endp, params->data,
+			    params->xfer_len, act_len);
+	return 0;
+}
+
+static int ucli_bulk_xfer(ucli_param_t *params)
+{
+	int ret = 0;
+	libusb_device_handle *handle;
+
 	handle = ucli_open_device(&params->dev_id);
 	if (handle == NULL) {
 		return -1;
 	}
 
-	ret = libusb_bulk_transfer(handle, params->endp, params->data,
-			params->xfer_len, act_len, params->timeout);
-	if (ret != 0) {
-		UCLI_ERR("%s transfer failed: %s\n",
-			 params->cmd, strerror(errno));
-		ret = -1;
-		goto exit;
+	if (params->datafile) {
+		ret = ucli_bulk_xfer_series(handle, params);
+	} else {
+		ret = ucli_bulk_xfer_single(handle, params);
 	}
 
-exit:
 	libusb_close(handle);
 	return ret;
-}
-
-static int ucli_bulk_in(ucli_param_t *params)
-{
-	int i, act_len;
-
-	if (ucli_do_bulk_xfer(params, &act_len) != 0) {
-		return -1;
-	}
-
-	/* Dump transfer summary */
-	UCLI_INFO("bulk in transfer, request %d bytes, actual %u bytes\n",
-		  params->xfer_len, act_len);
-	UCLI_INFO("Data read from device:\n");
-	for (i = 0; i < act_len; i++) {
-		UCLI_INFO("%#02x ", params->data[i]);
-	}
-	UCLI_INFO("\n");
-	return 0;
-}
-
-static int ucli_bulk_out(ucli_param_t *params)
-{
-	int i, act_len;
-
-	if (ucli_do_bulk_xfer(params, &act_len) != 0) {
-		return -1;
-	}
-
-	/* Dump transfer summary */
-	UCLI_INFO("bulk out transfer, request %d bytes, actual %u bytes\n",
-		  params->xfer_len, act_len);
-	UCLI_INFO("Data sent to device:\n");
-	for (i = 0; i < act_len; i++) {
-		UCLI_INFO("%#02x ", params->data[i]);
-	}
-	UCLI_INFO("\n");
-
-	return 0;
 }
 
 static ucli_cmd_t ucli_cmds[] = {
@@ -257,14 +330,9 @@ static ucli_cmd_t ucli_cmds[] = {
 		ucli_list_endpoints,
 	},
 	{
-		"bulk-in",
-		"read data from the specified bulk-in endpoint",
-		ucli_bulk_in,
-	},
-	{
-		"bulk-out",
-		"write data to the specified bulk-out endpoint",
-		ucli_bulk_out,
+		"bulk-xfer",
+		"transfer data to/from the specified bulk-in endpoint",
+		ucli_bulk_xfer,
 	},
 
 	/* Always the last entry. */
@@ -293,8 +361,8 @@ static void ucli_usage(const char *prog_name)
 {
 	int i;
 	struct {
-		char *opt;
-		char *desc;
+		const char *opt;
+		const char *desc;
 	} options[] = {
 		{"-h|--help", "print this help message"},
 		{"-v|--verbose", "enable verbose logging"},
@@ -305,6 +373,7 @@ static void ucli_usage(const char *prog_name)
 		{"-E|--endpoint", "usb device's endpoint"},
 		{"-l|--length", "number of bytes for usb tranfer"},
 		{"-t|--timeout", "timeout (in milliseconds) of a tranfer"},
+		{"-D|--datafile", "data file containing bulk transfer payload"},
 		{NULL, NULL},
 	};
 
@@ -344,12 +413,14 @@ int main(int argc, char **argv)
 		{"endpoint",	required_argument,	NULL,	'E'},
 		{"length",	required_argument,	NULL,	'l'},
 		{"timeout",	required_argument,	NULL,	't'},
+		{"datafile",	required_argument,	NULL,	'D'},
 		{NULL,		0,			NULL,	0},
 	};
 
 	while (1) {
 		opt_index = 0;
-		ret = getopt_long(argc, argv, "hvB:A:V:P:E:l:t:", long_opts, &opt_index);
+		ret = getopt_long(argc, argv, "hvB:A:V:P:E:l:t:D:",
+				  long_opts, &opt_index);
 		if (ret == -1)
 			break;	/* end of arguments */
 
@@ -388,6 +459,10 @@ int main(int argc, char **argv)
 
 		case 't':
 			params.timeout = (unsigned int)strtol(optarg, NULL, 0);
+			break;
+
+		case 'D':
+			params.datafile = optarg;
 			break;
 
 		default:

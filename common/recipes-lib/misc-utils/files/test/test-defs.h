@@ -29,7 +29,7 @@
 #include <fcntl.h>
 #include <linux/limits.h>
 
-#include <openbmc/misc-utils.h>
+#include "../misc-utils.h"
 
 /*
  * Constants.

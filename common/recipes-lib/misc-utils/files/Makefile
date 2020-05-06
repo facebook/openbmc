@@ -19,11 +19,16 @@ lib: libmisc-utils.so
 
 C_SRCS := $(wildcard *.c)
 C_OBJS := ${C_SRCS:.c=.o}
+TEST_C_SRCS := $(wildcard test/*.c)
+TEST_C_OBJS := ${TEST_C_SRCS:.c=.o}
 
 CFLAGS += -Wall -Werror -fPIC
 
 libmisc-utils.so: $(C_OBJS)
 	$(CC) -shared -o libmisc-utils.so $^ -lc $(LDFLAGS)
+
+test-libmisc-utils: $(C_OBJS) $(TEST_C_OBJS)
+	$(CC) $(CFLAGS) -std=c99 -o $@ $^ $(LDFLAGS)
 
 $(C_SRCS:.c=.d):%.d:%.c
 	$(CC) $(CFLAGS) $< >$@
@@ -31,4 +36,4 @@ $(C_SRCS:.c=.d):%.d:%.c
 .PHONY: clean
 
 clean:
-	rm -rf *.o libmisc-utils.so
+	rm -rf *.o test/*.o libmisc-utils.so test-libmisc-utils

@@ -109,11 +109,13 @@ struct fsc_monitor
 
 static struct fsc_monitor fsc_monitor_basic_snr_list[] =
 {
-  {MB_SNR_INLET_TEMP            , "mb_inlet_temp"  , NULL, false, 5, 5},
+  {MB_SNR_INLET_REMOTE_TEMP     , "mb_inlet_remote_temp"  , NULL, false, 5, 5},
   {MB_SNR_CPU0_THERM_MARGIN     , "mb_cpu0_therm_margin"     , NULL, false, 5, 5},
   {MB_SNR_CPU1_THERM_MARGIN     , "mb_cpu1_therm_margin"     , NULL, false, 5, 5},
-  {MB_SNR_DATA0_DRIVER_TEMP     , "mb_data0_driver_temp"  , NULL, false, 5, 5},
-  {MB_SNR_DATA1_DRIVER_TEMP     , "mb_data1_driver_temp"  , NULL, false, 5, 5},
+  {RISER2_SNR_SLOT0_NVME_TEMP   , "riser2_slot0_nvme_temp"  , NULL, false, 5, 5},
+  {RISER2_SNR_SLOT1_NVME_TEMP   , "riser2_slot1_nvme_temp"  , NULL, false, 5, 5},
+  {RISER2_SNR_SLOT2_NVME_TEMP   , "riser2_slot2_nvme_temp"  , NULL, false, 5, 5},
+  {RISER2_SNR_SLOT3_NVME_TEMP   , "riser2_slot3_nvme_temp"  , NULL, false, 5, 5},
   {NIC_MEZZ0_SNR_TEMP           , "nic_mezz0_temp"  , NULL, false, 5, 5},
   {NIC_MEZZ1_SNR_TEMP           , "nic_mezz1_temp"  , NULL, false, 5, 5},
   //dimm sensors wait for 240s. 240=80*3(fsc monitor interval)

@@ -133,8 +133,6 @@ is_cpu_present(uint8_t fru, uint8_t cpu_id) {
   return status;
 }
 
-#define FAN_UTIL_CMD "/usr/local/bin/fan-util "
-
 // Power Off, Power On, or Power Reset the server in given slot
 int
 pal_set_server_power(uint8_t fru, uint8_t cmd) {
@@ -148,9 +146,6 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
   switch(cmd) {
     case SERVER_POWER_ON:
-      if (system(FAN_UTIL_CMD "--set 70") != 0) {
-        return -1;
-      }
       if (status == SERVER_POWER_ON)
         return 1;
       else
@@ -158,9 +153,6 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_POWER_OFF:
-      if (system(FAN_UTIL_CMD "--set 20") != 0) {
-        return -1;
-      }
       if (status == SERVER_POWER_OFF)
         return 1;
       else
@@ -183,9 +175,6 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_GRACEFUL_SHUTDOWN:
-      if (system(FAN_UTIL_CMD "--set 20") != 0) {
-        return -1;
-      }
       if (status == SERVER_POWER_OFF)
         return 1;
       gs_flag = true;
@@ -211,8 +200,6 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
   return 0;
 }
-
-#undef FAN_UTIL_CMD
 
 int
 pal_sled_cycle(void) {

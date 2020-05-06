@@ -83,6 +83,7 @@ print_log (uint8_t fru_id, bool opt_json) {
   char strline[MAX_LINE] = "";
   int ret = -1;
   size_t i,j,k;
+  size_t len;
   char *pch;
   bool print_pair_flag = false;
   uint8_t pair_slot;
@@ -227,6 +228,9 @@ print_log (uint8_t fru_id, bool opt_json) {
           strncat(message, " ", sizeof(message) - 1);
         }
       }
+      len = strlen(message) - 1;
+      if (*message && message[len] == '\n') 
+        message[len] = '\0';
 
       if (opt_json) {
         if (first_json) {

@@ -63,3 +63,9 @@ NATIVE_UNIT_TESTS += " \
     rest-api-native \
     "
 DEPENDS += "${NATIVE_UNIT_TESTS}"
+
+# Many of the sysv init files we already have install into runlevel 5, so
+# the automatic service files created for them by systemd add them to the
+# graphical.target.  Set that as our default until we get them all migrated
+# to native systemd services.
+SYSTEMD_DEFAULT_TARGET = "graphical.target"

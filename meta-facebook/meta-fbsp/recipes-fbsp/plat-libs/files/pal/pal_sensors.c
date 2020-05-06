@@ -2417,6 +2417,7 @@ void
 pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char cmd[128];
   char thresh_name[10];
+  char snr_name[32];
 
   switch (thresh) {
     case UNR_THRESH:
@@ -2450,6 +2451,14 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
       break;
     case MB_SNR_CPU1_TEMP:
       sprintf(cmd, "P1 Temp %s %.0fC - Assert", thresh_name, val);
+      break;
+    case MB_SNR_P5V:  
+    case MB_SNR_P5V_STBY:
+    case MB_SNR_P3V3_STBY:
+    case MB_SNR_P3V3:
+    case MB_SNR_P3V_BAT:
+      pal_get_sensor_name(fru, snr_num, snr_name);
+      sprintf(cmd, "%s %s %.2fVolts - Assert", snr_name, thresh_name, val);
       break;
     default:
       return;

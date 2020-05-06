@@ -31,3 +31,4 @@ do_install_append() {
         rm "$nslookup_path"
     fi
 }
+ALTERNATIVE_${PN}-utils_remove = "nslookup"

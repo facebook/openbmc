@@ -22,4 +22,5 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-python3 \
   openbmc-utils \
   usb-console \
+  mterm \
   "

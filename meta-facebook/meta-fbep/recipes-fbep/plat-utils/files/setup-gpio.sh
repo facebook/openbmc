@@ -33,6 +33,24 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
+# Read info from MB's FRU at offset 1030
+vendor=$(ipmitool i2c bus=6 0xA8 0x1 0x4 0x6)
+vendor=${vendor:1:2}
+case "$vendor" in
+  "00")
+    vendor="AMD"
+    ;;
+  "01")
+    vendor="NVIDIA"
+    ;;
+  *)
+    echo "WARNGING: ASIC Manufacturer is unknown, set to default"
+    vendor="AMD"
+    ;;
+esac
+echo "ASIC Manufacturer: $vendor"
+/usr/local/bin/cfg-util asic_manf $vendor
+
 for i in {0..7};
 do
   for j in {0..4};

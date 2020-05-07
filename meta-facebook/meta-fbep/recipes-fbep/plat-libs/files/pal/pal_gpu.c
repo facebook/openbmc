@@ -76,9 +76,18 @@ static int amd_cmd_ldrd_scratch_addr(int fd, uint8_t offset, uint8_t words, uint
 
 static uint8_t get_gpu_id()
 {
-  // TODO:
-  // 	Read OAM info from FRU to decide the protocol
-  return GPU_AMD;
+  uint8_t vendor_id = GPU_AMD; // default
+  char vendor[MAX_VALUE_LEN] = {0};
+
+  if (kv_get("asic_manf", vendor, NULL, 0) < 0)
+    goto exit;
+
+  if (!strcmp(vendor, MANF_AMD))
+    return GPU_AMD;
+  else if (!strcmp(vendor, MANF_NV))
+    return GPU_NV;
+exit:
+  return vendor_id;
 }
 
 bool pal_is_asic_prsnt(uint8_t slot)

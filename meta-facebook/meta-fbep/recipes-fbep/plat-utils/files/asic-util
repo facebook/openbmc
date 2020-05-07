@@ -156,8 +156,7 @@ SLOT=$2
 SLOT_NAME=${SLOT:0:4}
 SLOT_NUM=${SLOT:4}
 
-# TODO:
-#	Show the name of OAM vendor here
+echo "ASIC Manufacturer: $(/usr/local/bin/cfg-util asic_manf | cut -d ":" -f 1)"
 if [[ "$1" == "--info" ]]; then
   if [[ "$SLOT" == "all" ]]; then
     for i in {0..7};

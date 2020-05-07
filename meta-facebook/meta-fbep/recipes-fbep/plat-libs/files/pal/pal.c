@@ -62,6 +62,8 @@ const char pal_server_list[] = "mb";
 
 char g_dev_guid[GUID_SIZE] = {0};
 
+static int key_set_asic_manf(int, void*);
+
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
@@ -78,6 +80,7 @@ struct pal_key_cfg {
   {"fru_sensor_health", "1", NULL},
   {"fru_sel_error", "1", NULL},
   {"server_type", "8", NULL},
+  {"asic_manf", MANF_AMD, key_set_asic_manf},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
@@ -201,6 +204,43 @@ int pal_set_def_key_value()
     pal_set_key_value(key, "1");
   }
   return 0;
+}
+
+static int key_set_asic_manf(int event, void *arg)
+{
+  int ret, fd;
+  off_t offset = 1030;
+  char *vendor = (char*)arg;
+  char vendor_id;
+
+  if (event == KEY_AFTER_INI) // Do nothing
+    return 0;
+
+  // Update vendor id in EEPROM
+  fd = open(MB_EEPROM, O_RDWR);
+  if (fd < 0)
+    return -1;
+
+  ret = lseek(fd, offset, SEEK_SET);
+  if (ret < 0)
+    goto exit;
+
+  if (!strcmp(vendor, MANF_AMD)) {
+    vendor_id = GPU_AMD;
+  } else if (!strcmp(vendor, MANF_NV)) {
+    vendor_id = GPU_NV;
+  } else {
+    syslog(LOG_WARNING, "%s is not supported", vendor);
+    ret = -1;
+    goto exit;
+  }
+
+  ret = write(fd, &vendor_id, 1);
+  if (ret != 1)
+    ret = -1;
+exit:
+  close(fd);
+  return ret;
 }
 
 int pal_channel_to_bus(int channel)

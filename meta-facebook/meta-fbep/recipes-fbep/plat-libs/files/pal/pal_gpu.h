@@ -25,6 +25,9 @@
 extern "C" {
 #endif
 
+#define MANF_AMD "AMD"
+#define MANF_NV  "NVIDIA"
+
 enum {
   GPU_AMD = 0,
   GPU_NV

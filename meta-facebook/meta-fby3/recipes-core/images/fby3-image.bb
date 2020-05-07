@@ -60,4 +60,5 @@ IMAGE_INSTALL += " \
   slot-util \
   enclosure-util \
   fpc-util \
+  at \
   "

@@ -35,7 +35,7 @@
 #include <gtest/gtest.h>
 #endif
 #include "fw-util.h"
-
+#include "scheduler.h"
 using namespace std;
 
 std::atomic<bool> quit_process(false);
@@ -148,6 +148,15 @@ void usage()
   cout << "       " << exec_name << " FRU --update [--]COMPONENT IMAGE_PATH" << endl;
   cout << "       " << exec_name << " FRU --force --update [--]COMPONENT IMAGE_PATH" << endl;
   cout << "       " << exec_name << " FRU --dump [--]COMPONENT IMAGE_PATH" << endl;
+  cout << "       " << exec_name << " FRU --update COMPONENT IMAGE_PATH --schedule \"TIME\"" << endl;
+  cout << "       " << exec_name << " all --show-schedule" << endl;
+  cout << "       " << exec_name << " all --delete-schedule TASK_ID" << endl;
+  cout << "Ex:    " << endl;
+  cout << " a) Update the BMC image after 30 min" << endl;
+  cout << "    fw-util bmc --update bmc $image --schedule \"now + 30 min\"" << endl;
+  cout << " b) Update the BMC image at 2:30 pm 10/21/2020" << endl;
+  cout << "    fw-util bmc --update bmc $image --schedule \"2:30 pm 10/21/2020\"" << endl;
+  cout << endl;
   cout << left << setw(10) << "FRU" << " : Components" << endl;
   cout << "---------- : ----------" << endl;
   for (auto fkv : *Component::fru_list) {
@@ -198,6 +207,11 @@ int main(int argc, char *argv[])
   string action(argv[2]);
   string component("all");
   string image("");
+  string sub_action("");
+  string time("");
+  string task_id("");
+  bool add_task = false;
+  Scheduler tasker;
 
   if (action == "--force") {
     if (argc < 4) {
@@ -225,11 +239,18 @@ int main(int argc, char *argv[])
         component = component.substr(2);
         cerr << "         Use: --version|--update " << component << " instead" << endl;
       }
+
+      if ( argc == 7 ) {
+        sub_action.assign(argv[5]);
+        time.assign(argv[6]);
+      } else {
+        task_id.assign(argv[3]);
+      }
     }
   }
 
   if ((action == "--update") || (action == "--dump")) {
-    if (argc != 5) {
+    if (argc != 5 && argc != 7 ) {
       usage();
       return -1;
     }
@@ -244,6 +265,15 @@ int main(int argc, char *argv[])
     if (component == "all") {
       cerr << "Upgrading all components not supported" << endl;
       return -1;
+    }
+
+    if ( sub_action.empty() == false ) {
+      if ( sub_action == "--schedule" ) {
+        add_task = true;
+      } else {
+        cerr << "Invalid action: " << sub_action << endl;
+        return -1;
+      }
     }
   } else if (action == "--force") {
     if (argc != 6) {
@@ -265,6 +295,10 @@ int main(int argc, char *argv[])
       usage();
       return -1;
     }
+  } else if ( action == "--show-schedule" ) {
+    return tasker.show_task();
+  } else if ( action == "--delete-schedule" ) {
+    return tasker.del_task(task_id);
   } else {
     cerr << "Invalid action: " << action << endl;
     usage();
@@ -281,6 +315,7 @@ int main(int argc, char *argv[])
   sigaction(SIGTERM, &sa, NULL);
   sigaction(SIGPIPE, &sa, NULL); // for ssh terminate
 
+  //print the fw version or do the fw update when the fru and the comp are found
   for (auto fkv : *Component::fru_list) {
     if (fru == "all" || fru == fkv.first) {
       for (auto ckv : fkv.second) {
@@ -296,6 +331,12 @@ int main(int argc, char *argv[])
               continue;
             if (fru == "all" && component == c->alias_component())
               continue;
+          }
+
+          // We are going to add a task but print fw version
+          // or do fw update.
+          if ( add_task == true ) {
+            return tasker.add_task(fru, component, image, time);
           }
 
           if (c->is_update_ongoing()) {
@@ -314,6 +355,7 @@ int main(int argc, char *argv[])
               usage();
               return -1;
             }
+
             string str_act("");
             c->set_update_ongoing(60 * 10);
             if (action == "--update") {

@@ -37,6 +37,8 @@ SRC_URI =+ "file://Makefile \
            file://spiflash.cpp \
            file://spiflash.h \
            file://image_parts.json \
+           file://scheduler.h \
+           file://scheduler.cpp \
           "
 
 S = "${WORKDIR}"

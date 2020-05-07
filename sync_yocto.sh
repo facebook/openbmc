@@ -20,7 +20,7 @@ warrior_repos=(
 )
 
 zeus_repos=(
-  poky:5531ffc566
+  poky:40daaa0c05
   meta-openembedded:9e60d3066
   meta-security:ecd8c30
 )

@@ -18,7 +18,6 @@
 # Boston, MA 02110-1301 USA
 #
 
-# ELBERTTODO 442074 wedge_power.sh
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
@@ -145,6 +144,7 @@ do_reset() {
 
 }
 
+# ELBERTTODO LC Reset Support
 toggle_pim_reset() {
    echo "PIM RESET NOT IMPLEMENTED YET"
    exit 1

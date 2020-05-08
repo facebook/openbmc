@@ -20,7 +20,6 @@ IMAGE_INSTALL += " \
   wedge-eeprom \
   "
 # ELBERTTODO 447407 led-controld
-# ELBERTTODO 442073 EEPROM util
 # ELBERTTODO 442091 fscd using inlet
   # led-controld\
   # wedge-eeprom \

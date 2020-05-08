@@ -291,6 +291,8 @@ typedef struct {
   uint8_t stby_read;
   PAL_SENSOR_THRESHOLD snr_thresh;
   uint8_t units;
+  int retry;
+  float last_value;
 } PAL_SENSOR_MAP;
 
 //ADC INFO

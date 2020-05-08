@@ -38,6 +38,7 @@
 
 #define MAX_READ_RETRY 10
 #define MAX_SNR_READ_RETRY 3
+#define MAX_KEEP_VALUE_RETRY 1
 
 #define DIMM_SLOT_CNT 24
 
@@ -2728,12 +2729,24 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   if (ret) {
     if (ret == READING_NA || ret == -1) {
-      strcpy(str, "NA");
+      if(sensor_map[sensor_num].retry < MAX_KEEP_VALUE_RETRY && sensor_map[sensor_num].last_value != 0) {
+        sprintf(str, "%.2f", sensor_map[sensor_num].last_value);
+        sensor_map[sensor_num].retry++;
+      } else {
+        strcpy(str, "NA");
+      }
     } else {
       return ret;
     }
   } else {
-    sprintf(str, "%.2f",*((float*)value));
+    if(sensor_map[sensor_num].retry < MAX_KEEP_VALUE_RETRY && *((float*)value) == 0) {
+        sprintf(str, "%.2f", sensor_map[sensor_num].last_value);
+        sensor_map[sensor_num].retry++;
+    } else {
+      sprintf(str, "%.2f",*((float*)value));
+      sensor_map[sensor_num].retry = 0;
+      sensor_map[sensor_num].last_value = *((float*)value);
+    }
   }
   if(kv_set(key, str, 0, 0) < 0) {
     syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);

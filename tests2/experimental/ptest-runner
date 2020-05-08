@@ -2,6 +2,8 @@
 
 POSITIONAL=()
 build_dir=""
+shell=no
+print_help=no
 while [[ $# -gt 0 ]]; do
 	key="$1"
 	case $key in
@@ -9,6 +11,14 @@ while [[ $# -gt 0 ]]; do
 			build_dir="$2"
 			shift 2
 			;;
+    -s|--shell)
+      shell=yes
+      shift 1
+      ;;
+    -h|--help)
+      print_help=yes
+      shift 1
+      ;;
     *)
     	POSITIONAL+=("$1")
     	shift
@@ -16,6 +26,18 @@ while [[ $# -gt 0 ]]; do
 	esac
 done
 set -- "${POSITIONAL[@]}"
+
+if [ $print_help = "yes" ]; then
+  echo "USAGE: $0 [OPTIONS] [RECIPES]"
+  echo "       -b|--build BUILD_DIR"
+  echo "                  Use an existing build directory instead of building one"
+  echo "       -s|--shell"
+  echo "                  Drops you into a CHROOTed shell of the image instead of running ptest-runner (Useful for debugging)"
+  echo "       -h|--help"
+  echo "                  Prints this message"
+  echo "       RECIPES    Space separated list of recipes to run tests for. By default, will run all discovered. Ignored if -s|--shell"
+  exit 0
+fi
 
 openbmc_dir=$(realpath "$(dirname "${BASH_SOURCE[0]}")"/../..)
 cur=$(pwd)
@@ -33,5 +55,9 @@ if [ -d $rootfs ]; then
 fi
 mkdir $rootfs
 tar -xf "$rootfs_zip" -C "$rootfs" > /dev/null
-unshare --mount --map-root-user chroot "$rootfs" ptest-runner "$@"
+if [ $shell = "yes" ]; then
+  unshare --mount --map-root-user chroot "$rootfs"
+else
+  unshare --mount --map-root-user chroot "$rootfs" ptest-runner "$@"
+fi
 cd "$cur" || exit 1

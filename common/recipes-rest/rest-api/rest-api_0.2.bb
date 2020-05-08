@@ -16,6 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 inherit python3unittest
+inherit ptest
 
 SUMMARY = "Rest API Daemon"
 DESCRIPTION = "Daemon to handle RESTful interface."
@@ -70,6 +71,13 @@ SRC_URI = "file://rest.py \
 S = "${WORKDIR}"
 DEPENDS += "libpal update-rc.d-native aiohttp python3-psutil json-log-formatter-native"
 
+do_compile_ptest() {
+cat <<EOF > ${WORKDIR}/run-ptest
+#!/bin/sh
+python -m unittest discover /usr/local/fbpackages/rest-api
+EOF
+}
+
 do_install_class-target() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   bin="${D}/usr/local/bin"
@@ -97,3 +105,4 @@ RDEPENDS_${PN} += "libpal python3-core aiohttp json-log-formatter"
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/rest-api ${prefix}/local/bin ${sysconfdir} "
+FILES_${PN}-ptest = "${libdir}/rest-api/ptest/run-ptest"

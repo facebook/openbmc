@@ -194,7 +194,7 @@ debug_card_handler() {
 
     if (!curr) {
     // Debug Card was removed
-      syslog(LOG_WARNING, "Debug Card Extraction\n");
+      syslog(LOG_CRIT, "Debug Card Extraction\n");
       //UART Switch control by bmc
       ret = pal_uart_select(AST_GPIO_BASE, UARTSW_OFFSET, UARTSW_BY_BMC, 0);
       if (ret) {
@@ -202,7 +202,7 @@ debug_card_handler() {
       }
     } else {
     // Debug Card was inserted
-      syslog(LOG_WARNING, "Debug Card Insertion\n");
+      syslog(LOG_CRIT, "Debug Card Insertion\n");
       //UART Switch control by debug card
       ret = pal_uart_select(AST_GPIO_BASE, UARTSW_OFFSET, UARTSW_BY_DEBUG, 0);
       if (ret) {

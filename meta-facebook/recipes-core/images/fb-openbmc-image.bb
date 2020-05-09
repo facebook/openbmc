@@ -46,13 +46,23 @@ PACKAGE_EXCLUDE += "\
     gnutls \
     perl \
     "
+
+# ca-certificates:
 # Nearly every package that uses TLS/SSL RRECOMMENDS the CA certificate
 # package.  Since we should not be initiating SSL traffic from a BMC
 # to outside of our own network, there is no value in all of these
 # certificates.  Add it to the BAD_RECOMMENDATIONS so it is not installed
 # unless there is a strict need for it.
+#
+# udev-hwdb:
+# There is no need for the udev hwdb and it installs 8MB uncompressed of data.
+#
+# shared-mime-info:
+# We're not sending email, so unneeded.
 BAD_RECOMMENDATIONS += " \
     ca-certificates \
+    udev-hwdb \
+    shared-mime-info \
     "
 
 # Some packages have unit-tests but are not installed directly into an

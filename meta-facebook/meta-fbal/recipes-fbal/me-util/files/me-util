@@ -18,4 +18,10 @@
 # Boston, MA 02110-1301 USA
 
 PATH=/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# Remove 'mb' parameter if present.
+if [ "x$1" = "xmb" ]; then
+    shift
+fi
+
 ipmb-util 0x5 0x2c $@

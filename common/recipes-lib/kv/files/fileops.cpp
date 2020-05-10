@@ -55,13 +55,13 @@ void FileHandle::open_and_lock(const std::string& key, region r) {
 
   if (!fp) {
     throw std::filesystem::filesystem_error(
-        "kv: error opening file: " + fpath.string(),
+        "kv: error opening file", fpath,
         std::error_code(errno, std::system_category()));
   }
 
   if (flock(fileno(fp), LOCK_EX) != 0) {
     throw std::filesystem::filesystem_error(
-        "kv: error calling flock: " + fpath.string(),
+        "kv: error calling flock", fpath,
         std::error_code(errno, std::system_category()));
   }
   locked = true;
@@ -86,7 +86,7 @@ std::string FileHandle::read() {
 
   if ((0 == bytes) && ferror(fp)) {
     throw std::filesystem::filesystem_error(
-        "kv: error reading from file: " + fpath.string(),
+        "kv: error reading from file", fpath,
         std::error_code(errno, std::system_category()));
   }
 
@@ -99,26 +99,26 @@ void FileHandle::write(std::string value) {
 
   if (ftruncate(fileno(fp), 0) < 0) { // truncate file to erase.
     throw std::filesystem::filesystem_error(
-        "kv: error calling ftruncate: " + fpath.string(),
+        "kv: error calling ftruncate", fpath,
         std::error_code(errno, std::system_category()));
   }
 
   auto bytes = fwrite(value.data(), 1, value.size(), fp);
   if ((bytes == 0) && ferror(fp)) {
     throw std::filesystem::filesystem_error(
-        "kv: error writing to file: " + fpath.string(),
+        "kv: error writing to file", fpath,
         std::error_code(errno, std::system_category()));
   }
 
   if (bytes != value.size()) {
     throw std::filesystem::filesystem_error(
-        "kv: error writing full contents to file: " + fpath.string(),
+        "kv: error writing full contents to file", fpath,
         std::error_code(ENOSPC, std::system_category()));
   }
 
   if (0 != fflush(fp)) {
     throw std::filesystem::filesystem_error(
-        "kv: error calling fflush: " + fpath.string(),
+        "kv: error calling fflush", fpath,
         std::error_code(errno, std::system_category()));
   }
 }

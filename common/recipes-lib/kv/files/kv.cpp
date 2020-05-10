@@ -94,7 +94,17 @@ int kv_get(const char *key, char *value, size_t *len, unsigned int flags) {
           key, bytes);
       value[max_len - 1] = '\0';
     }
+  } catch (std::filesystem::filesystem_error& e)
+  {
+    // Eat no-such-file errors and just return a -1.
+    // Too many callers try to look up kv-entries for entries that haven't
+    // been created yet and if we don't eat the error, we fill up the syslog.
+    if (e.code().value() == ENOENT) {
+      return -1;
+    }
 
+    KV_WARN("kv_get: %s", e.what());
+    return -1;
   } catch (std::exception& e) {
     KV_WARN("kv_get: %s", e.what());
     return -1;

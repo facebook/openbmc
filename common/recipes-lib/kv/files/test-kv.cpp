@@ -13,6 +13,9 @@ int main(int argc, char *argv[])
   char value[MAX_VALUE_LEN*2];
   size_t len;
 
+  assert(kv_get("test1", value, NULL, KV_FPERSIST) != 0);
+  printf("SUCCESS: Non-existent file results in error.\n");
+
   assert(kv_set("test1", "val", 0, KV_FPERSIST) == 0);
   printf("SUCCESS: Creating persist key func call\n");
   assert(access("./test/persist/test1", F_OK) == 0);

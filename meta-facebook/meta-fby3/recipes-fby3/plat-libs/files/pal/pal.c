@@ -602,39 +602,7 @@ pal_get_fru_id(char *str, uint8_t *fru) {
 
 int
 pal_get_fruid_name(uint8_t fru, char *name) {
-  int ret = PAL_EOK;
-
-  switch(fru) {
-  case FRU_SLOT1:
-    sprintf(name, "Server board 1");
-    break;
-  case FRU_SLOT2:
-    sprintf(name, "Server board 2");
-    break;
-  case FRU_SLOT3:
-    sprintf(name, "Server board 3");
-    break;
-  case FRU_SLOT4:
-    sprintf(name, "Server board 4");
-    break;
-  case FRU_BMC:
-    sprintf(name, "BMC");
-    break;
-  case FRU_BB:
-    sprintf(name, "Baseboard");
-    break;
-  case FRU_NICEXP:
-    sprintf(name, "NIC Expansion");
-    break;
-  case FRU_NIC:
-    sprintf(name, "NIC");
-    break;
-  default:
-    syslog(LOG_WARNING, "%s() wrong fru %d", __func__, fru);
-    ret = PAL_ENOTSUP;
-  }
-
-  return ret;
+  return fby3_get_fruid_name(fru, name);
 }
 
 int
@@ -1779,13 +1747,25 @@ pal_get_num_devs(uint8_t slot, uint8_t *num) {
 int
 pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
 {
-  char temp[64];
-  int ret = fby3_get_fruid_name(fru, name);
+  char temp[64] = {0};
+  char dev_name[32] = {0};
+  int ret = pal_get_fruid_name(fru, name);
   if (ret < 0) {
     return ret;
   }
 
-  sprintf(temp, "%s Device %u", name, dev-1);
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      fby3_common_dev_name(dev, dev_name);
+      break;
+    default:
+      return -1;
+  }
+  
+  snprintf(temp, sizeof(temp), "%s %s", name, dev_name);
   strcpy(name, temp);
   return 0;
 }

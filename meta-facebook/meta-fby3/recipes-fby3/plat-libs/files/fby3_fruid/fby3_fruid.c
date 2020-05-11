@@ -79,15 +79,31 @@ fby3_get_fruid_name(uint8_t fru, char *name) {
 
   switch(fru) {
     case FRU_SLOT1:
+      sprintf(name, "Server board 1");
+      break;
     case FRU_SLOT2:
+      sprintf(name, "Server board 2");
+      break;
     case FRU_SLOT3:
+      sprintf(name, "Server board 3");
+      break;
     case FRU_SLOT4:
-      switch(fby3_common_get_slot_type(fru))
+      sprintf(name, "Server board 4");
+      break;
+    case FRU_BMC:
+      sprintf(name, "BMC");
+      break;
+    case FRU_BB:
+      sprintf(name, "Baseboard");
+      break;
+    case FRU_NICEXP:
+      sprintf(name, "NIC Expansion");
+      break;
+    case FRU_NIC:
+      sprintf(name, "NIC");
       break;
     default:
-#ifdef DEBUG
-      syslog(LOG_WARNING, "fby3_get_fruid_name: wrong fruid");
-#endif
+      syslog(LOG_WARNING, "%s() wrong fru %d", __func__, fru);
       return -1;
   }
   return 0;

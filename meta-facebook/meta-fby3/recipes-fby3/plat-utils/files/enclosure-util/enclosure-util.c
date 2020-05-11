@@ -154,7 +154,6 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd) {
   fby3_common_dev_name(device_id, str);
   
   get_mapping_parameter(device_id, type_1ou, &bus, &intf, &mux);
-  // printf("[Ken] %s %d device_id=%u bus=%u intf=%u mux=%u\n", __FUNCTION__, __LINE__,device_id,bus,intf,mux);
   
   if (type_1ou != EDSFF_1U) { // E1S no need but 1/2OU need to stop sensor monitor then switch mux
     tbuf[0] = (bus << 1) + 1;

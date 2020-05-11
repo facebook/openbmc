@@ -812,7 +812,7 @@ open_and_get_size(char *path, int *file_size) {
 
 static int
 update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
-  int ret;
+  int ret = -1;
   int fd = 0;
   int file_size;
 
@@ -833,9 +833,9 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
   printf("file size = %d bytes, slot = %d, intf = 0x%x\n", file_size, slot_id, intf);
 
   //check the content of the image
-  ret = is_valid_bic_image(slot_id, comp, intf, fd, file_size);
-  if ( ret < 0 ) {
+  if( !force && is_valid_bic_image(slot_id, comp, intf, fd, file_size) ) {
     printf("Invalid BIC file!\n");
+    ret = -1;
     goto exit;
   }
 

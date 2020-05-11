@@ -130,7 +130,7 @@ fby3_common_get_slot_id(char *str, uint8_t *fru) {
   int fru_id = 0;
   bool found_id = false;
 
-  for (fru_id = FRU_SLOT1; fru_id <= FRU_SLOT4; fru_id++) {
+  for (fru_id = FRU_ALL; fru_id <= FRU_SLOT4; fru_id++) {
     if ( strcmp(str, slot_list[fru_id]) == 0 ) {
       *fru = fru_id;
       found_id = true;

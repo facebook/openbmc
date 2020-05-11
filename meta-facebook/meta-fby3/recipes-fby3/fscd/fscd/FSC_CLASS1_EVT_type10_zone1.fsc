@@ -97,5 +97,5 @@ max([
       slot4:1ou_m2_b_temp,
       slot4:1ou_m2_c_temp,
       slot4:1ou_m2_d_temp])),
-  linear_mezz(nic:nic_sensor_mezz_temp)
+  linear_nic(nic:nic_sensor_temp)
 ])

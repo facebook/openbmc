@@ -91,7 +91,7 @@
       "ki": -0.035,
       "kd": 0
     },
-    "linear_mezz": {
+    "linear_nic": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },
@@ -115,7 +115,7 @@
         [94, 60]
       ]
     },
-    "pid_mezz": {
+    "pid_nic": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },

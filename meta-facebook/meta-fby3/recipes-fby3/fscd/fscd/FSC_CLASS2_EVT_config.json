@@ -73,7 +73,7 @@
         [80, 50]
       ]
     },
-    "linear_mezz": {
+    "linear_nic": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },

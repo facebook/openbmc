@@ -78,14 +78,11 @@ const uint8_t bmc_sensor_list[] = {
 
 const uint8_t nicexp_sensor_list[] = {
   BMC_SENSOR_OUTLET_TEMP,
-  BMC_SENSOR_P5V,
   BMC_SENSOR_P12V,
   BMC_SENSOR_P3V3_STBY,
   BMC_SENSOR_P1V15_BMC_STBY,
   BMC_SENSOR_P1V2_BMC_STBY,
   BMC_SENSOR_P2V5_BMC_STBY,
-  BMC_SENSOR_FAN_IOUT,
-  BMC_SENSOR_NIC_IOUT,
 };
 
 const uint8_t bic_sensor_list[] = {
@@ -339,7 +336,7 @@ const uint8_t bic_1ou_edsff_skip_sensor_list[] = {
 };
 
 const uint8_t nic_sensor_list[] = {
-  NIC_SENSOR_MEZZ_TEMP,
+  NIC_SENSOR_TEMP,
 };
 
 // List of MB discrete sensors to be monitored
@@ -609,7 +606,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEC
   {"BMC_INLET_TEMP",  TEMP_INLET,  read_temp, true, {50, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xED
   {"BMC_OUTLET_TEMP", TEMP_OUTLET, read_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEE
-  {"NIC_SENSOR_MEZZ_TEMP", TEMP_MEZZ, read_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEF
+  {"NIC_SENSOR_TEMP", TEMP_NIC, read_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEF
 
   {"BMC_SENSOR_P5V", ADC0, read_adc_val, true, {5.486, 0, 0, 4.524, 0, 0, 0, 0}, VOLT}, //0xF0
   {"BMC_SENSOR_P12V", ADC1, read_adc_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF1
@@ -1097,7 +1094,7 @@ read_temp(uint8_t id, float *value) {
   } devs[] = {
     {"lm75-i2c-12-4e",  "BMC_INLET_TEMP"},
     {"lm75-i2c-12-4f",  "BMC_OUTLET_TEMP"},
-    {"tmp421-i2c-8-1f", "NIC_SENSOR_MEZZ_TEMP"},
+    {"tmp421-i2c-8-1f", "NIC_SENSOR_TEMP"},
     {"lm75-i2c-2-4f",  "BMC_OUTLET_TEMP"},
   };
   if (id >= ARRAY_SIZE(devs)) {

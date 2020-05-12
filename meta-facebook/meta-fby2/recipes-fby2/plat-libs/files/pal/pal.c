@@ -4278,9 +4278,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         if (is_time_out) {
           if (!is_last_time_out) {
             if (is_post_timeout)
-              syslog(LOG_WARNING, "Fans' UNC masks removed: slot%d host POST hangs up",is_post_timeout);
+              syslog(LOG_CRIT, "Fans' UNC masks removed: slot%d after %d minutes timeout waiting for POST end",is_post_timeout,POST_TIMEOUT/60);
             if (is_nvme_timeout)
-              syslog(LOG_WARNING, "Fans' UNC masks removed: slot%d NVMe not ready after OS Start",is_nvme_timeout);
+              syslog(LOG_CRIT, "Fans' UNC masks removed: slot%d after %d minutes timeout waiting for NVMe ready",is_nvme_timeout,NVME_TIMEOUT/60);
           }
         } else if (is_sled_out) {
           pal_is_nvme_ready(); // check NVMe status while sled out

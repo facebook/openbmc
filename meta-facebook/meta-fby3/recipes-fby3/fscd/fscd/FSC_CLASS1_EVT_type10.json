@@ -5,7 +5,7 @@
   "non_fanfail_limited_boost_value": 90,
   "sample_interval_ms": 3000,
   "boost": {
-    "fan_fail": false,
+    "fan_fail": true,
     "sensor_fail": false
   },
   "watchdog": false,
@@ -164,25 +164,25 @@
         "util" : "/usr/local/bin/fan-util --set %d 0"
       }
     },
-    "2": {
+    "1": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 2"
+        "util" : "/usr/local/bin/fan-util --get 1"
       },
       "write_source" : {
         "util" : "/usr/local/bin/fan-util --set %d 1"
       }
     },
-    "4": {
+    "2": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 4"
+        "util" : "/usr/local/bin/fan-util --get 2"
       },
       "write_source" : {
         "util" : "/usr/local/bin/fan-util --set %d 2"
       }
     },
-    "6": {
+    "3": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 6"
+        "util" : "/usr/local/bin/fan-util --get 3"
       },
       "write_source" : {
         "util" : "/usr/local/bin/fan-util --set %d 3"
@@ -191,7 +191,7 @@
   },
   "zones": {
     "zone_1": {
-      "pwm_output": [0, 2, 4, 6],
+      "pwm_output": [0, 1, 2, 3],
       "expr_file": "FSC_CLASS1_EVT_type10_zone1.fsc"
     }
   }

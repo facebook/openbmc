@@ -5,7 +5,7 @@
   "non_fanfail_limited_boost_value": 90,
   "sample_interval_ms": 3000,
   "boost": {
-    "fan_fail": false,
+    "fan_fail": true,
     "sensor_fail": false
   },
   "watchdog": false,

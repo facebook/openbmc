@@ -18,6 +18,7 @@ using namespace std;
 #define FFI_0_STORAGE 0x00
 #define FFI_0_ACCELERATOR 0x01
 
+#define MAX_FRU_NUM 4
 #define MAX_GPV2_DRIVE_NUM 12
 
 class M2_DevComponent : public Component { 
@@ -40,12 +41,12 @@ class M2_DevComponent : public Component {
   };
   static PowerInfo statusTable[MAX_GPV2_DRIVE_NUM];
   static bool isDual;
-  static bool isScaned;
+  static bool isScaned[MAX_FRU_NUM];
   static Dev_Main_Slot dev_main_slot;
 
   Server server;
   int _update(string image, uint8_t force);
-  void scan_all_devices();
+  void scan_all_devices(uint8_t slot_id);
   void save_info(uint8_t id, int ret, uint8_t status, uint8_t nvme_ready, uint8_t ffi, uint8_t major_ver, uint8_t minor_ver);
   void print_single();
   void print_dual();
@@ -64,7 +65,7 @@ class M2_DevComponent : public Component {
     if (fby2_get_slot_type(slot_id) != SLOT_TYPE_GPV2)
       return -1;
 
-    scan_all_devices();
+    scan_all_devices(slot_id);
 
     if (isDual == true) {
       print_dual();
@@ -79,17 +80,17 @@ class M2_DevComponent : public Component {
 
 M2_DevComponent::PowerInfo M2_DevComponent::statusTable[] = {0};
 bool M2_DevComponent::isDual = false;
-bool M2_DevComponent::isScaned = false;
+bool M2_DevComponent::isScaned[MAX_FRU_NUM] = {false};
 M2_DevComponent::Dev_Main_Slot M2_DevComponent::dev_main_slot = M2_DevComponent::Dev_Main_Slot::ON_EVEN;
 
 
-void M2_DevComponent::scan_all_devices() {
+void M2_DevComponent::scan_all_devices(uint8_t slot_id) {
   int ret = 0;
   uint8_t retry = MAX_READ_RETRY;
   uint16_t vendor_id = 0;
   uint8_t nvme_ready = 0 ,status = 0 ,ffi = 0 ,meff = 0 ,major_ver = 0, minor_ver = 0;
 
-  if (isScaned == true) return;
+  if (isScaned[slot_id] == true) return;
 
   for (int i = 0; i < MAX_GPV2_DRIVE_NUM; i++) {
     while (retry) {
@@ -109,7 +110,7 @@ void M2_DevComponent::scan_all_devices() {
       }
     }
   }
-  isScaned = true;
+  isScaned[slot_id] = true;
 }
 
 void M2_DevComponent::save_info(uint8_t id, int ret, uint8_t status,

@@ -738,3 +738,49 @@ pal_chassis_control(uint8_t slot, uint8_t *req_data, uint8_t req_len) {
 
   return comp_code;
 }
+
+static int
+pal_slot_ac_cycle(uint8_t slot) {
+  int ret, cmd_slot;
+  pthread_t tid;
+
+  if (m_slot_pwr_ctrl[slot] != false) {
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
+
+  m_slot_pwr_ctrl[slot] = true;
+  cmd_slot = (SERVER_12V_CYCLE << 8) | slot;
+  ret = pthread_create(&tid, NULL, slot_pwr_ctrl, (void *)cmd_slot);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "[%s] Create slot_ac_cycle thread failed!", __func__);
+    m_slot_pwr_ctrl[slot] = false;
+    return CC_NODE_BUSY;
+  }
+
+  return CC_SUCCESS;
+}
+
+int
+pal_sled_ac_cycle(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  uint8_t comp_code = CC_UNSPECIFIED_ERROR;
+  uint8_t *data = req_data;
+
+  if ( fby3_common_check_slot_id(slot) < 0 ) {
+    return comp_code;
+  }
+
+  if ((*data != 0x55) || (*(data+1) != 0x66)) {
+    return comp_code;
+  }
+
+  switch (*(data+2)) {
+    case 0x0f:  //do slot ac cycle
+      comp_code = pal_slot_ac_cycle(slot);
+      break;
+    default:
+      comp_code = CC_INVALID_DATA_FIELD;
+      break;
+  }
+
+  return comp_code;
+}

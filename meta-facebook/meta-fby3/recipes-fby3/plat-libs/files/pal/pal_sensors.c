@@ -42,7 +42,7 @@ static int read_hsc_vin(uint8_t hsc_id, float *value);
 static int read_hsc_temp(uint8_t hsc_id, float *value);
 static int read_hsc_pin(uint8_t hsc_id, float *value);
 static int read_hsc_iout(uint8_t hsc_id, float *value);
-static int read_ltc4282_val(uint8_t snr_number, float *value);
+static int read_medusa_val(uint8_t snr_number, float *value);
 static int pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value);
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
@@ -574,8 +574,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
 
-  {"BMC_SENSOR_MEDUSA_CURR", 0xD0, read_ltc4282_val, 0, {144, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xD0
-  {"BMC_SENSOR_MEDUSA_PWR", 0xD1, read_ltc4282_val, 0, {1800, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xD1
+  {"BMC_SENSOR_MEDUSA_CURR", 0xD0, read_medusa_val, 0, {144, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xD0
+  {"BMC_SENSOR_MEDUSA_PWR", 0xD1, read_medusa_val, 0, {1800, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xD1
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD2
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD3
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD4
@@ -614,14 +614,14 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_P1V15_STBY", ADC3, read_adc_val, true, {1.264, 0, 0, 1.037, 0, 0, 0, 0}, VOLT}, //0xF3
   {"BMC_SENSOR_P1V2_STBY", ADC4, read_adc_val, true, {1.314, 0, 0, 1.086, 0, 0, 0, 0}, VOLT}, //0xF4
   {"BMC_SENSOR_P2V5_STBY", ADC5, read_adc_val, true, {2.743, 0, 0, 2.262, 0, 0, 0, 0}, VOLT}, //0xF5
-  {"BMC_SENSOR_MEDUSA_VOUT", 0xF6, read_ltc4282_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF6
+  {"BMC_SENSOR_MEDUSA_VOUT", 0xF6, read_medusa_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF6
   {"BMC_SENSOR_HSC_VIN", HSC_ID0, read_hsc_vin, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF7
   {"BMC_SENSOR_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xF8
   {"BMC_SENSOR_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF9
   {"BMC_SENSOR_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {27.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFA
   {"BMC_SENSOR_FAN_IOUT", ADC8, read_adc_val, 0, {25.6, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFB
   {"BMC_SENSOR_NIC_IOUT", ADC9, read_adc_val, 0, {6.6, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFC
-  {"BMC_SENSOR_MEDUSA_VIN", 0xFD, read_ltc4282_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xFD
+  {"BMC_SENSOR_MEDUSA_VIN", 0xFD, read_medusa_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xFD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFF
 };
@@ -1065,21 +1065,53 @@ apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value) {
 }
 
 static int
-read_ltc4282_val(uint8_t snr_number, float *value) {
+read_medusa_val(uint8_t snr_number, float *value) {
+  static bool is_cached = false;
+  static bool is_ltc4282 = true;
+  static char chip[20] = {0};
   int ret = READING_NA;
+
+  if ( is_cached == false) {
+    if ( kv_get("bb_hsc_conf", chip, NULL, KV_FPERSIST) < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to read bb_hsc_conf", __func__);
+      return ret;
+    }
+
+    is_cached = true;
+    strcat(chip, "-i2c-11-44");
+    //MP5920 is 12-bit ADC. Use the flag to do the calibration of sensors of mp5920.
+    //Make the readings more reliable
+    if( strstr(chip, "mp5920")  != NULL ) is_ltc4282 = false;
+    syslog(LOG_WARNING, "%s() Use '%s', flag:%d", __func__, chip, is_ltc4282);
+  }
 
   switch(snr_number) {
     case BMC_SENSOR_MEDUSA_VIN:
-      ret = sensors_read("ltc4282-i2c-11-44", "BMC_SENSOR_MEDUSA_VIN", value);
+      ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_VIN", value);
+      if ( is_ltc4282 == false ) *value *= 0.99;
       break;
     case BMC_SENSOR_MEDUSA_VOUT:
-      ret = sensors_read("ltc4282-i2c-11-44", "BMC_SENSOR_MEDUSA_VOUT", value);
+      ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_VOUT", value);
+      if ( is_ltc4282 == false ) *value *= 0.99;
       break;
     case BMC_SENSOR_MEDUSA_CURR:
-      ret = sensors_read("ltc4282-i2c-11-44", "BMC_SENSOR_MEDUSA_CURR", value);
+      ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_CURR", value);
+      if ( is_ltc4282 == false ) {
+        //The current in light load cannot be sensed. The value should be 0.
+        if ( (int)(*value) != 0 ) {
+          *value = (*value + 3) * 0.97;
+        }
+      }
       break;
     case BMC_SENSOR_MEDUSA_PWR:
-      ret = sensors_read("ltc4282-i2c-11-44", "BMC_SENSOR_MEDUSA_PWR", value);
+      ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_PWR", value);
+      if ( is_ltc4282 == false ) {
+        //The current is 0 amps when the system is in light load.
+        //So, the power is 0, too.
+        if ( (int)(*value) != 0 ) {
+          *value = (*value * 0.98) + 25;
+        }
+      }
       break;
   }
 

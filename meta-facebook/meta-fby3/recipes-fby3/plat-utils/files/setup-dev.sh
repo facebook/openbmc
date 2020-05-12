@@ -38,6 +38,20 @@ function init_class1_dev(){
   #create the device of bmc/bb fru.
   create_new_dev "24c128" 0x51 11 
   create_new_dev "24c128" 0x54 11
+
+  local VENDOR_MPS="0x4d5053"
+  local chip=""
+
+  #create the device of medusa board
+  vendor=$(/usr/sbin/i2cget -y 11 0x44 0x99 i | tail -n 1)
+  if [ "$vendor" == "$VENDOR_MPS" ]; then
+    chip="mp5920"
+  else
+    chip="ltc4282"
+  fi
+
+  create_new_dev $chip 0x44 11
+  echo -n $chip > /mnt/data/kv_store/bb_hsc_conf
 }
 
 function init_class2_dev(){

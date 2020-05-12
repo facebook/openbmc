@@ -1521,7 +1521,8 @@ read_ina230_value(uint8_t reg, char *device, uint8_t addr, float *value) {
 
 static int
 read_nic_temp(const char *device, uint8_t addr, float *value) {
-  int dev, ret, res;
+  int dev, ret;
+  uint8_t res;
   uint8_t wbuf[4] = {I2C_NIC_SENSOR_TEMP_REG};
 
   dev = open(device, O_RDWR);
@@ -1529,11 +1530,18 @@ read_nic_temp(const char *device, uint8_t addr, float *value) {
     return -1;
   }
 
-  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, (uint8_t *)&res, 1);
+  ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, &res, 1);
   close(dev);
   if (ret) {
     return -1;
   }
+
+  if (res == 0x80) {
+    // NIC shutdown return 0x80 can view as return NA
+    syslog(LOG_ERR, "%s, NIC shutdown read sensor failed", __func__);
+    return EER_READ_NA;
+  }
+
   *value = (float)(res & 0xFF);
   if (*value > MAX_POS_READING_MARGIN)
     *value -= THERMAL_CONSTANT;

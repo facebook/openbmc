@@ -758,6 +758,11 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
 
     case FLAG_MODIFY:
       file_path = argv[argc-1];
+      if (optind != 4) { //fail to get field "--XXX"
+        printf("Parameter \"%s\" is invalid!\n",  argv[argc-3]);
+        printf("Fail to modify %s FRU\n", name);
+        return -1;
+      }
       if(access(file_path, F_OK) == -1) {  //copy current FRU bin file to specified bin file
         fd_tmpbin = open(path, O_RDONLY);
         if (fd_tmpbin == -1) {

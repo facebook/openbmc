@@ -231,6 +231,9 @@ def systemd_available(logger):
 
 
 def restart_healthd(logger, wait=False, supervisor="sv"):
+    if not os.path.exists("/etc/sv/healthd"):
+        return
+
     run_verbosely([supervisor, "restart", "healthd"], logger)
 
     # healthd is petting watchdog, if something goes wrong and it doesn't do so

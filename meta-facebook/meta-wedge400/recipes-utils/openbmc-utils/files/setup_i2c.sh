@@ -19,6 +19,7 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
+# shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
 KERNEL_VERSION=$(uname -r)
@@ -66,6 +67,7 @@ get_mux_bus_num() {
 
 brd_type=$(get_board_type)
 brd_rev=$(get_board_rev)
+brd_type_rev=$(wedge_board_type_rev)
 
 # # Bus 2
 i2c_device_add 2 0x3e scmcpld          # SCMCPLD
@@ -97,10 +99,10 @@ if [ "$brd_type" = "0" ]; then          # Only Wedge400
     i2c_device_add 1 0x60 isl68137      # TH3 core voltage/current monitor
 elif [ "$brd_type" = "1" ]; then        # Only Wedge400-2
     i2c_device_add 1 0x40 xdpe132g5c    # Wedge400-2 GB core voltage/current monitor
-    if [ "$brd_rev" = "1" ]; then
-        i2c_device_add 1 0x0e pxe1211   # Wedge400-2 EVT2 GB serdes voltage/current monitor
-    else
+    if [ "$brd_rev" = "0" ]; then
         i2c_device_add 1 0x43 ir35215   # Wedge400-2 GB serdes voltage/current monitor
+    else
+        i2c_device_add 1 0x0e pxe1211   # Wedge400-2 EVT2 or later GB serdes voltage/current monitor
     fi
 fi
 
@@ -156,11 +158,13 @@ else
     i2c_device_add "$(get_mux_bus_num 9)" 0x18 max6615      # PEM2 Driver
 fi
 
-# # i2c-mux 8, channel 3
-i2c_device_add "$(get_mux_bus_num 10)" 0x50 24c02          # BCM54616 EEPROM
-
-# # i2c-mux 8, channel 4
-i2c_device_add "$(get_mux_bus_num 11)" 0x50 24c02          # BCM54616 EEPROM
+# BCM54616 EEPROMs are removed physically on Wedge400-C DVT units
+if [ "$brd_type_rev" != "WEDGE400-C_DVT" ]; then
+    # # i2c-mux 8, channel 3
+    i2c_device_add "$(get_mux_bus_num 10)" 0x50 24c02          # BCM54616 EEPROM
+    # # i2c-mux 8, channel 4
+    i2c_device_add "$(get_mux_bus_num 11)" 0x50 24c02          # BCM54616 EEPROM
+fi
 
 # # i2c-mux 8, channel 5
 i2c_device_add "$(get_mux_bus_num 12)" 0x54 24c02          # TH3 EEPROM

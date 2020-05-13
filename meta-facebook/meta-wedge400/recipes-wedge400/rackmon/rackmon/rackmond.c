@@ -255,13 +255,15 @@ int modbus_command(rs485_dev *dev, int timeout, char *command, size_t len, char 
   req.expected_len = expect != 0 ? expect : dest_limit;
   req.scan = scanning;
   lock_take(devlock);
-  int cmd_error = modbuscmd(&req);
-  if (delay != 0)
-  {
-    usleep(delay);
+  for (int retry = 0; retry < 5; retry++) {
+    int cmd_error = modbuscmd(&req);
+    if (delay != 0) {
+      usleep(delay);
+    }
+    if (cmd_error >= 0) {
+      break;
+    }
   }
-  CHECK(cmd_error);
-cleanup:
   lock_release(devlock);
   if (error >= 0)
   {
@@ -359,18 +361,16 @@ int check_active_psus()
       {
         char addr = psu_address(rack, shelf, psu);
         uint16_t status = 0;
-        for (int retry = 0; retry < 5; retry++) {
-          int err = read_registers(&world.rs485, world.modbus_timeout, addr, REGISTER_PSU_STATUS, 1, &status);
-          if (err == 0)
-          {
-            world.active_addrs[world.num_active_addrs] = addr;
-            world.num_active_addrs++;
-          }
-          else
-          {
-            OBMC_INFO("check_active_psus error %02X - %d", addr, err);
-            dbg("%02x - %d; ", addr, err);
-          }
+        int err = read_registers(&world.rs485, world.modbus_timeout, addr, REGISTER_PSU_STATUS, 1, &status);
+        if (err == 0)
+        {
+          world.active_addrs[world.num_active_addrs] = addr;
+          world.num_active_addrs++;
+        }
+        else
+        {
+          OBMC_INFO("check_active_psus error %02X - %d", addr, err);
+          dbg("%02x - %d; ", addr, err);
         }
       }
     }

@@ -15,7 +15,6 @@ DISTRO_OVERRIDES=(
   meta-fbep:warrior
   meta-fbsp:warrior
   meta-fby3:warrior
-  meta-cmm:warrior
   meta-fuji:warrior
   meta-yamp:warrior
   meta-minipack:warrior

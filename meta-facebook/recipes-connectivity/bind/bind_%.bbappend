@@ -27,7 +27,7 @@ do_install_append() {
 
     # some distros (e.g. rocko) already remove nslookup by default
     # remove nslookup bin only if it already exists.
-    if [[ -e "$nslookup_path" ]]; then
+    if [ -e "$nslookup_path" ]; then
         rm "$nslookup_path"
     fi
 }

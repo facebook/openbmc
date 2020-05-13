@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
-GPIOS = {
+GPIOS_COMMON = {
     "BMC_EMMC_RST_N_R": {
         "active_low": "0",
         "direction": "out",
@@ -97,13 +97,6 @@ GPIOS = {
         "value": "1",
     },
     "BMC_LPCRST_N": {
-        "active_low": "0",
-        "direction": "in",
-        "uevent": "",
-        "edge": "none",
-        "value": "0",
-    },
-    "TH3_POWER_OK": {
         "active_low": "0",
         "direction": "in",
         "uevent": "",
@@ -446,4 +439,24 @@ GPIOS = {
         "edge": "none",
         "value": "1",
     },
+}
+
+GPIOS_W400 = {
+    "TH3_POWER_OK": {
+        "active_low": "0",
+        "direction": "in",
+        "uevent": "",
+        "edge": "none",
+        "value": "1",
+    }
+}
+
+GPIOS_W400C = {
+    "GB_POWER_OK": {
+        "active_low": "0",
+        "direction": "in",
+        "uevent": "",
+        "edge": "none",
+        "value": "1",
+    }
 }

@@ -20,9 +20,28 @@
 import unittest
 
 from common.base_gpio_test import BaseGpioTest
-from tests.wedge400.test_data.gpio.gpio import GPIOS
+from tests.wedge400.helper.libpal import BoardRevision, pal_get_board_type
+from tests.wedge400.test_data.gpio.gpio import (
+    GPIOS_COMMON,
+    GPIOS_W400,
+    GPIOS_W400C,
+)
 
 
 class GpioTest(BaseGpioTest, unittest.TestCase):
     def set_gpios(self):
-        self.gpios = GPIOS
+        self.gpios = GPIOS_COMMON
+        platform_type = pal_get_board_type()
+        Wedge400_type = BoardRevision.board_type.get(
+            BoardRevision.BRD_TYPE_WEDGE400, ""
+        )
+        Wedge400C_type = BoardRevision.board_type.get(
+            BoardRevision.BRD_TYPE_WEDGE400C, ""
+        )
+
+        if platform_type == Wedge400_type:
+            self.gpios.update(GPIOS_W400)
+        elif platform_type == Wedge400C_type:
+            self.gpios.update(GPIOS_W400C)
+        else:
+            self.skipTest("Skip test on {} board".format(platform_type))

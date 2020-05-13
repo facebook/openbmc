@@ -251,7 +251,32 @@ elif [ $BOARD_ID -eq 14 ] || [ $BOARD_ID -eq 7 ]; then
   devmem_clear_bit $(scu_addr 88) 5
   gpio_export DUAL_FAN0_DETECT_BMC_N_R GPION4
   gpio_export DUAL_FAN1_DETECT_BMC_N_R GPION5
-  
+
+  # GPIOP0-SLOT1_ID0_DETECT_BMC_N
+  # GPIOP1-SLOT1_ID1_DETECT_BMC_N
+  # GPIOP2-SLOT2_ID0_DETECT_BMC_N
+  # GPIOP3-SLOT2_ID1_DETECT_BMC_N
+  # GPIOP4-SLOT3_ID0_DETECT_BMC_N
+  # GPIOP5-SLOT3_ID1_DETECT_BMC_N
+  # GPIOP6-SLOT4_ID0_DETECT_BMC_N
+  # GPIOP7-SLOT4_ID1_DETECT_BMC_N
+  devmem_clear_bit $(scu_addr 88) 16
+  devmem_clear_bit $(scu_addr 88) 17
+  devmem_clear_bit $(scu_addr 88) 18
+  devmem_clear_bit $(scu_addr 88) 19
+  devmem_clear_bit $(scu_addr 88) 20
+  devmem_clear_bit $(scu_addr 88) 21
+  devmem_clear_bit $(scu_addr 88) 22
+  devmem_clear_bit $(scu_addr 88) 23
+  gpio_export SLOT1_ID0_DETECT_BMC_N GPIOP0
+  gpio_export SLOT1_ID1_DETECT_BMC_N GPIOP1
+  gpio_export SLOT2_ID0_DETECT_BMC_N GPIOP2
+  gpio_export SLOT2_ID1_DETECT_BMC_N GPIOP3
+  gpio_export SLOT3_ID0_DETECT_BMC_N GPIOP4
+  gpio_export SLOT3_ID1_DETECT_BMC_N GPIOP5
+  gpio_export SLOT4_ID0_DETECT_BMC_N GPIOP6
+  gpio_export SLOT4_ID1_DETECT_BMC_N GPIOP7
+
   # GPIOQ6-USB_OC_N
   devmem_clear_bit $(scu_addr 2C) 1
   gpio_export USB_OC_N GPIOQ6

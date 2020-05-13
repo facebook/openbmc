@@ -262,6 +262,74 @@ error_exit:
 }
 
 int
+fby3_common_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uint8_t bmc_location) {
+  const char *gpio_mgmt_cbl_tbl[] = {"SLOT%d_ID0_DETECT_BMC_N", "SLOT%d_ID1_DETECT_BMC_N"};
+  const int num_of_mgmt_pins = ARRAY_SIZE(gpio_mgmt_cbl_tbl);
+  int i = 0;
+  int ret = 0;
+  int i2cfd = 0;
+  int cpld_bus = 0;
+  char dev[32] = {0};
+  uint8_t tbuf[1] = {0x06};
+  uint8_t rbuf[1] = {0x00};
+  uint8_t tlen = 1;
+  uint8_t rlen = 1;
+  uint8_t val = 0;
+  uint8_t gpio_vals = 0;
+
+  if ( bmc_location == DVT_BB_BMC ) {
+    if ( (cpld_bus = fby3_common_get_bus_id(slot_id)) < 0 ) {
+      return -1;
+    }
+
+    cpld_bus += 4; //ipmb bus + 4 = cpld bus;
+    snprintf(dev, sizeof(dev), I2CDEV, cpld_bus);
+
+    i2cfd = open(dev, O_RDWR);
+    if ( i2cfd < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to open %s", __func__, dev);
+      goto error_exit;
+    }
+
+    ret = i2c_rdwr_msg_transfer(i2cfd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+      goto error_exit;
+    }
+
+    //Bit0: SLOT_ID0, Bit1: SLOT_ID1
+    rbuf[0] = rbuf[0] & 0x03;
+
+    //read GPIO vals
+    for ( i = 0; i < num_of_mgmt_pins; i++ ) {
+      snprintf(dev, sizeof(dev), gpio_mgmt_cbl_tbl[i], slot_id);
+      if ( get_gpio_value(dev, &val) < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to read %s", __func__, dev);
+      }
+      gpio_vals |= (val << i);
+    }
+  } else {
+    //NIC EXP
+    //read GPIO from BB BIC
+    //read 06h from SB CPLD
+  }
+
+  bool vals_match = (gpio_vals == rbuf[0]);
+  if ( log_evnt == true ) {
+    syslog(LOG_CRIT, "%s: Wrong sled in slot%d", (vals_match == false)?"ASSERT":"DEASSERT", slot_id);
+  }
+
+  if ( cbl_val != NULL ) *cbl_val = gpio_vals;
+
+error_exit:
+  if ( i2cfd > 0 ) {
+    close(i2cfd);
+  }
+
+  return ret;
+}
+
+int
 fby3_common_get_bus_id(uint8_t slot_id) {
   int bus_id = 0;
   switch(slot_id) {

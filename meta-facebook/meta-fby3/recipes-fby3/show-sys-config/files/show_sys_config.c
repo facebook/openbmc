@@ -54,16 +54,16 @@ enum {
 };
 
 enum {
-  SERVER_PRSNT = 0,
-  SERVER_NOT_PRSNT,
-  SERVER_ABNORMAL_STATE,
-  M2_BOARD_PRSNT = 0,
-  M2_BOARD_NOT_PRSNT,
+  STATUS_PRSNT = 0,
+  STATUS_NOT_PRSNT,
+  STATUS_ABNORMAL,
+  STATUS_MGMT_CBL_NOT_INSTALLED,
 };
 
 typedef struct server {
   uint8_t is_server_present;
   uint8_t config;
+  uint8_t is_mgmt_cbl_present;
   uint8_t is_1ou_present;
   uint8_t is_2ou_present;
 } server_conf;
@@ -78,7 +78,7 @@ typedef struct conf {
 char *prsnt_sts[] = {"Present", "Not Present", "Abnormal state"};
 
 static int
-get_server_config(uint8_t slot_id, uint8_t *data) {
+get_server_config(uint8_t slot_id, uint8_t *data, uint8_t bmc_location) {
   int ret = UTIL_EXECUTION_FAIL; 
   int retry = MAX_RETRY;
   uint8_t tbuf[4] = {0x05, 0x42, 0x01, 0x0d};
@@ -91,11 +91,18 @@ get_server_config(uint8_t slot_id, uint8_t *data) {
   }
 
   if ( ret < 0 ) {
-    printf("BIC no response!\n");
     return UTIL_EXECUTION_FAIL;
   }
 
-  *data = rbuf[0];
+  data[0] = rbuf[0];
+
+  ret = fby3_common_check_sled_mgmt_cbl_id(slot_id, &tbuf[0], false, bmc_location);
+  if ( ret < 0 ) {
+    return UTIL_EXECUTION_FAIL;
+  }
+
+  data[1] = (tbuf[0] == STATUS_MGMT_CBL_NOT_INSTALLED)?STATUS_NOT_PRSNT:STATUS_PRSNT;
+
   return UTIL_EXECUTION_OK;
 }
 
@@ -129,11 +136,14 @@ show_sys_configuration(sys_conf system) {
       //create the object
       data[i-1] = json_object();
       sts = system.server_info[i-1].is_server_present;
-      if ( sts != SERVER_PRSNT ) {
-        json_object_set_new(data[i-1], "Type", json_string("Not Present"));
+      if ( sts != STATUS_PRSNT ) {
+        json_object_set_new(data[i-1], "Type", json_string(prsnt_sts[sts]));
       } else {        
         snprintf(config_str, sizeof(config_str), "%X", system.server_info[i-1].config);
         json_object_set_new(data[i-1], "Type", json_string(config_str));
+
+        sts = system.server_info[i-1].is_mgmt_cbl_present;
+        json_object_set_new(data[i-1], "SledManagementCable", json_string(prsnt_sts[sts]));
 
         sts = system.server_info[i-1].is_1ou_present;
         json_object_set_new(data[i-1], "FrontExpansionCard", json_string(prsnt_sts[sts]));
@@ -161,17 +171,19 @@ show_sys_configuration(sys_conf system) {
     printf("---------------------------\n");
     for ( i = FRU_SLOT1; i <= fru_cnt; i++) {
       sts = system.server_info[i-1].is_server_present;
-      if ( sts != SERVER_PRSNT ) {
+      if ( sts != STATUS_PRSNT ) {
         printf("Slot%d : %s\n\n", i, prsnt_sts[sts]);
         continue;
       }
     
       printf("Slot%d : %s, Config %X\n", i, prsnt_sts[sts], system.server_info[i-1].config);
       if ( verbosed == true ) {
+        sts = system.server_info[i-1].is_mgmt_cbl_present;
+        printf("    SledManagementCable: %s\n", prsnt_sts[sts]);
         sts = system.server_info[i-1].is_1ou_present;
-        printf("  FrontExpansionCard: %s\n", prsnt_sts[sts]);
+        printf("     FrontExpansionCard: %s\n", prsnt_sts[sts]);
         sts = system.server_info[i-1].is_2ou_present;
-        printf("  RiserExpansionCard: %s\n", prsnt_sts[sts]);
+        printf("     RiserExpansionCard: %s\n", prsnt_sts[sts]);
       }
       printf("\n");
     }
@@ -187,7 +199,7 @@ main(int argc, char **argv) {
   int ret = UTIL_EXECUTION_OK;
   int i = 0;
   uint8_t total_fru = 0;
-  uint8_t data = 0;
+  uint8_t data[2] = {0};
   uint8_t check_sys_config = UNKNOWN_CONFIG;
   sys_conf sys_info = {0};
 
@@ -221,24 +233,27 @@ main(int argc, char **argv) {
     ret = fby3_common_is_fru_prsnt(i, &is_fru_present);
     if ( ret < 0 || is_fru_present == 0 ) {
       //the server is not present
-      sys_info.server_info[i-1].is_server_present = SERVER_NOT_PRSNT; 
+      sys_info.server_info[i-1].is_server_present = STATUS_NOT_PRSNT;
     } else {
-      ret = get_server_config(i, &data);
+      ret = get_server_config(i, data, bmc_location);
       if ( ret < 0 ) {
-        sys_info.server_info[i-1].is_server_present = SERVER_ABNORMAL_STATE;
+        sys_info.server_info[i-1].is_server_present = STATUS_ABNORMAL;
       } else {
-        uint8_t front_exp_bit = GET_BIT(data, 2);
-        uint8_t riser_exp_bit = GET_BIT(data, 3);
+        uint8_t front_exp_bit = GET_BIT(data[0], 2);
+        uint8_t riser_exp_bit = GET_BIT(data[0], 3);
         uint8_t server_config = UNKNOWN_CONFIG;
-        sys_info.server_info[i-1].is_server_present = SERVER_PRSNT;
+
+        sys_info.server_info[i-1].is_server_present = STATUS_PRSNT;
+        sys_info.server_info[i-1].is_mgmt_cbl_present = data[1];
+
         if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-          sys_info.server_info[i-1].is_1ou_present = (front_exp_bit == 0)?M2_BOARD_PRSNT:M2_BOARD_NOT_PRSNT;
+          sys_info.server_info[i-1].is_1ou_present = (front_exp_bit == 0)?STATUS_PRSNT:STATUS_NOT_PRSNT;
         } else {
-          sys_info.server_info[i-1].is_1ou_present = M2_BOARD_NOT_PRSNT;
-          front_exp_bit = M2_BOARD_NOT_PRSNT;
+          sys_info.server_info[i-1].is_1ou_present = STATUS_NOT_PRSNT;
+          front_exp_bit = STATUS_NOT_PRSNT;
         }
 
-        sys_info.server_info[i-1].is_2ou_present = (riser_exp_bit == 0)?M2_BOARD_PRSNT:M2_BOARD_NOT_PRSNT;
+        sys_info.server_info[i-1].is_2ou_present = (riser_exp_bit == 0)?STATUS_PRSNT:STATUS_NOT_PRSNT;
 
         if ( (front_exp_bit == riser_exp_bit) && (front_exp_bit == 0) ) {
           server_config = 0xD; 
@@ -256,9 +271,15 @@ main(int argc, char **argv) {
 
   //check the sys config  
   for ( i = FRU_SLOT1; i <= total_fru; i++ ) {
-    if ( sys_info.server_info[i-1].is_server_present != SERVER_PRSNT ) {
+    if ( sys_info.server_info[i-1].is_server_present != STATUS_PRSNT ) {
       continue;
     }
+
+    //handle a special case.
+    //SLOT1_ID0 and SLOT1_ID1 are held to 1 always.
+    //So, we use the other slots to check the mgmt cbl is used
+    if ( i != FRU_SLOT1 && (sys_info.server_info[i-1].is_server_present == STATUS_PRSNT) )
+      sys_info.server_info[FRU_SLOT1].is_mgmt_cbl_present &= sys_info.server_info[i-1].is_mgmt_cbl_present;
 
     if ( check_sys_config == UNKNOWN_CONFIG ) {
       check_sys_config = sys_info.server_info[i-1].config;

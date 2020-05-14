@@ -79,3 +79,15 @@ DEPENDS += "${NATIVE_UNIT_TESTS}"
 # graphical.target.  Set that as our default until we get them all migrated
 # to native systemd services.
 SYSTEMD_DEFAULT_TARGET = "graphical.target"
+
+#
+# "openssl-bin" (which provides "/usr/bin/openssl") is needed by backport
+# and it needs to be explicitly included after yocto rocko.
+#
+def openssl_bin_recipe(d):
+    distro = d.getVar('DISTRO_CODENAME', True)
+    if distro != 'rocko':
+        return 'openssl-bin'
+    return ''
+
+IMAGE_INSTALL += "${@openssl_bin_recipe(d)}"

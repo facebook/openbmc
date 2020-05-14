@@ -1764,7 +1764,7 @@ pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
     default:
       return -1;
   }
-  
+
   snprintf(temp, sizeof(temp), "%s %s", name, dev_name);
   strcpy(name, temp);
   return 0;
@@ -1897,10 +1897,10 @@ pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
   return ret;
 }
 
-int pal_get_pfr_update_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged)
-{
+int
+pal_get_pfr_update_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
+  int ret;
   uint8_t bmc_location = 0;
-  int ret = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
@@ -1931,6 +1931,7 @@ int pal_get_pfr_update_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *b
       *bus = ret + 4;  // I2C_4 ~ I2C_7
       *addr = CPLD_UPDATE_ADDR;
       *bridged = false;
+      ret = 0;
       break;
     default:
       ret = -1;

@@ -17,11 +17,14 @@
 #define GPIO_CPU0_POWER_GOOD "PWRGD_CPU0_LVC3"
 #define GPIO_POWER_RESET "RST_BMC_RSTBTN_OUT_R_N"
 #define GPIO_RESET_BTN_IN "FP_BMC_RST_BTN_N"
+#define GPIO_CM_READY "FM_CM_READY_N"
 
 #define DELAY_POWER_ON 1
 #define DELAY_POWER_OFF 6
 #define DELAY_GRACEFUL_SHUTDOWN 1
 #define DELAY_POWER_CYCLE 10
+
+#define BOOT_DC_TIMEOUT_2S  (25)
 
 bool
 is_server_off(void) {
@@ -72,6 +75,46 @@ server_power_off(bool gs_flag) {
 // Power On the server
 static int
 server_power_on(void) {
+  uint8_t mode;
+  gpio_value_t value;
+  gpio_desc_t *desc;
+  int ret;
+
+  ret = pal_get_host_system_mode(&mode);
+  if(ret != 0) {
+    return ret;
+  }
+
+  if( mode == MB_2S_MODE ) {
+    desc = gpio_open_by_shadow(GPIO_CM_READY);
+    if (!desc) {
+      return -1;
+    }
+    ret = gpio_get_value(desc, &value);
+    gpio_close(desc);
+
+    if ( ret != 0) {
+      return -1;
+    }
+
+    if( value == GPIO_VALUE_LOW ) {
+      //2s retry to dc on
+      for(int i=0; i<BOOT_DC_TIMEOUT_2S; i++) {
+        if( lib_cmc_req_dc_on() == CC_SUCCESS ) {
+          syslog(LOG_DEBUG, "DC Request Success\n");
+          return power_btn_out_pulse(DELAY_POWER_ON);
+        } else {
+          sleep(1);
+          syslog(LOG_DEBUG, "Retry, DC Request Fail\n");
+        }
+      }
+      //Request DC On Timeout
+      syslog(LOG_DEBUG, "DC Request Timeout\n"); 
+      return -1;
+    }
+    syslog(LOG_DEBUG, "CM not ready\n");      
+  }
+  syslog(LOG_DEBUG, "It is not 2S Mode\n");
   return power_btn_out_pulse(DELAY_POWER_ON);
 }
 

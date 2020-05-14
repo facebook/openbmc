@@ -1331,15 +1331,23 @@ static int sensors_read_48v_hsc(uint8_t sensor_num, float *value)
       break;
     case PDB_HSC_P48V_1_CURR:
       ret = sensors_read("adm1272-i2c-16-13", "P48V_1_CURR", value);
+      if (ret == 0)
+        hsc_value_adjust(p48v_current_table, value);
       break;
     case PDB_HSC_P48V_2_CURR:
       ret = sensors_read("adm1272-i2c-17-10", "P48V_2_CURR", value);
+      if (ret == 0)
+        hsc_value_adjust(p48v_current_table, value);
       break;
     case PDB_HSC_P48V_1_PWR:
       ret = sensors_read("adm1272-i2c-16-13", "P48V_1_PWR", value);
+      if (ret == 0)
+        hsc_value_adjust(p48v_power_table, value);
       break;
     case PDB_HSC_P48V_2_PWR:
       ret = sensors_read("adm1272-i2c-17-10", "P48V_2_PWR", value);
+      if (ret == 0)
+        hsc_value_adjust(p48v_power_table, value);
       break;
     default:
       ret = ERR_SENSOR_NA;

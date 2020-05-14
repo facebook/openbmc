@@ -19,10 +19,12 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://setup-gpio.sh \
             file://sol.sh \
+            file://cpld_update.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
     sol.sh \
+    cpld_update.sh \
     "
 DEPENDS_append = " update-rc.d-native"
 

@@ -551,6 +551,16 @@ PAL_CM_SENSOR_HEAD cm_snr_head_list[] = {
  {CM_FAN3_CURR, CM_SNR_FAN3_CURR},
 };
 
+struct fsc_monitor
+{
+  uint8_t sensor_num;
+  char *sensor_name;
+  bool (*check_sensor_sts)(uint8_t);
+  bool is_alive;
+  uint8_t init_count;
+  uint8_t retry;
+};
+
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}
 PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
@@ -840,6 +850,165 @@ size_t nic0_sensor_cnt = sizeof(nic0_sensor_list)/sizeof(uint8_t);
 size_t nic1_sensor_cnt = sizeof(nic1_sensor_list)/sizeof(uint8_t);
 size_t mb_discrete_sensor_cnt = sizeof(mb_discrete_sensor_list)/sizeof(uint8_t);
 size_t pdb_sensor_cnt = sizeof(pdb_sensor_list)/sizeof(uint8_t);
+
+static struct fsc_monitor fsc_2s_snr_list[] =
+{
+  {MB_SNR_INLET_TEMP         , "mb_inlet_temp"        , NULL, false, 5, 5},
+  {MB_SNR_CPU0_THERM_MARGIN  , "mb_cpu0_therm_margin" , NULL, false, 5, 5},
+  {MB_SNR_CPU1_THERM_MARGIN  , "mb_cpu1_therm_margin" , NULL, false, 5, 5},
+  {NIC_MEZZ0_SNR_TEMP        , "nic_mezz0_temp"       , NULL, false, 5, 5},
+  {NIC_MEZZ1_SNR_TEMP        , "nic_mezz1_temp"       , NULL, false, 5, 5},
+  //dimm sensors wait for 240s. 240=80*3(fsc monitor interval)
+  {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a0_c0_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_a1_c1_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPC_TEMP, "mb_cpu0_dimm_a2_c2_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPD_TEMP, "mb_cpu0_dimm_a3_c3_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPE_TEMP, "mb_cpu0_dimm_a4_c4_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPF_TEMP, "mb_cpu0_dimm_a5_c5_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPA_TEMP, "mb_cpu1_dimm_b0_d0_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPB_TEMP, "mb_cpu1_dimm_b1_d1_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPC_TEMP, "mb_cpu1_dimm_b2_d2_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_b3_d3_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPE_TEMP, "mb_cpu1_dimm_b4_d4_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPF_TEMP, "mb_cpu1_dimm_b5_d5_temp", NULL, false, 80, 5},
+};
+
+static struct fsc_monitor fsc_8s_master_snr_list[] =
+{
+  {MB_SNR_INLET_TEMP         , "mb_inlet_temp"        , NULL, false, 5, 5},
+  {MB_SNR_CPU0_THERM_MARGIN  , "mb_cpu0_therm_margin" , NULL, false, 5, 5},
+  {MB_SNR_CPU1_THERM_MARGIN  , "mb_cpu1_therm_margin" , NULL, false, 5, 5},
+  {MB_SNR_CPU2_THERM_MARGIN  , "mb_cpu2_therm_margin" , NULL, false, 5, 5},
+  {MB_SNR_CPU3_THERM_MARGIN  , "mb_cpu3_therm_margin" , NULL, false, 5, 5},
+  {MB_SNR_CPU4_THERM_MARGIN  , "mb_cpu4_therm_margin" , NULL, false, 5, 5},
+  {MB_SNR_CPU5_THERM_MARGIN  , "mb_cpu5_therm_margin" , NULL, false, 5, 5},
+  {MB_SNR_CPU6_THERM_MARGIN  , "mb_cpu6_therm_margin" , NULL, false, 5, 5},
+  {MB_SNR_CPU7_THERM_MARGIN  , "mb_cpu7_therm_margin" , NULL, false, 5, 5},
+  {NIC_MEZZ0_SNR_TEMP        , "nic_mezz0_temp"       , NULL, false, 5, 5},
+  {NIC_MEZZ1_SNR_TEMP        , "nic_mezz1_temp"       , NULL, false, 5, 5},
+  //dimm sensors wait for 240s. 240=80*3(fsc monitor interval)
+  {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a0_c0_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_a1_c1_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPC_TEMP, "mb_cpu0_dimm_a2_c2_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPD_TEMP, "mb_cpu0_dimm_a3_c3_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPE_TEMP, "mb_cpu0_dimm_a4_c4_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPF_TEMP, "mb_cpu0_dimm_a5_c5_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPA_TEMP, "mb_cpu1_dimm_b0_d0_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPB_TEMP, "mb_cpu1_dimm_b1_d1_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPC_TEMP, "mb_cpu1_dimm_b2_d2_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_b3_d3_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPE_TEMP, "mb_cpu1_dimm_b4_d4_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPF_TEMP, "mb_cpu1_dimm_b5_d5_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPA_TEMP, "mb_cpu2_dimm_a0_c0_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPB_TEMP, "mb_cpu2_dimm_a1_c1_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPC_TEMP, "mb_cpu2_dimm_a2_c2_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPD_TEMP, "mb_cpu2_dimm_a3_c3_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPE_TEMP, "mb_cpu2_dimm_a4_c4_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPF_TEMP, "mb_cpu2_dimm_a5_c5_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPA_TEMP, "mb_cpu3_dimm_b0_d0_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPB_TEMP, "mb_cpu3_dimm_b1_d1_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPC_TEMP, "mb_cpu3_dimm_b2_d2_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPD_TEMP, "mb_cpu3_dimm_b3_d3_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPE_TEMP, "mb_cpu3_dimm_b4_d4_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPF_TEMP, "mb_cpu3_dimm_b5_d5_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU4_DIMM_GRPA_TEMP, "mb_cpu4_dimm_a0_c0_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU4_DIMM_GRPB_TEMP, "mb_cpu4_dimm_a1_c1_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU4_DIMM_GRPC_TEMP, "mb_cpu4_dimm_a2_c2_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU4_DIMM_GRPD_TEMP, "mb_cpu4_dimm_a3_c3_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU4_DIMM_GRPE_TEMP, "mb_cpu4_dimm_a4_c4_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU4_DIMM_GRPF_TEMP, "mb_cpu4_dimm_a5_c5_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU5_DIMM_GRPA_TEMP, "mb_cpu5_dimm_b0_d0_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU5_DIMM_GRPB_TEMP, "mb_cpu5_dimm_b1_d1_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU5_DIMM_GRPC_TEMP, "mb_cpu5_dimm_b2_d2_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU5_DIMM_GRPD_TEMP, "mb_cpu5_dimm_b3_d3_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU5_DIMM_GRPE_TEMP, "mb_cpu5_dimm_b4_d4_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU5_DIMM_GRPF_TEMP, "mb_cpu5_dimm_b5_d5_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU6_DIMM_GRPA_TEMP, "mb_cpu6_dimm_a0_c0_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU6_DIMM_GRPB_TEMP, "mb_cpu6_dimm_a1_c1_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU6_DIMM_GRPC_TEMP, "mb_cpu6_dimm_a2_c2_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU6_DIMM_GRPD_TEMP, "mb_cpu6_dimm_a3_c3_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU6_DIMM_GRPE_TEMP, "mb_cpu6_dimm_a4_c4_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU6_DIMM_GRPF_TEMP, "mb_cpu6_dimm_a5_c5_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU7_DIMM_GRPA_TEMP, "mb_cpu7_dimm_b0_d0_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU7_DIMM_GRPB_TEMP, "mb_cpu7_dimm_b1_d1_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU7_DIMM_GRPC_TEMP, "mb_cpu7_dimm_b2_d2_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU7_DIMM_GRPD_TEMP, "mb_cpu7_dimm_b3_d3_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU7_DIMM_GRPE_TEMP, "mb_cpu7_dimm_b4_d4_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU7_DIMM_GRPF_TEMP, "mb_cpu7_dimm_b5_d5_temp", NULL, false, 80, 5},
+
+};
+
+static struct fsc_monitor fsc_8s_slave_snr_list[] =
+{
+  {MB_SNR_INLET_TEMP,  "mb_inlet_temp",  NULL, false, 5, 5},
+  {NIC_MEZZ0_SNR_TEMP, "nic_mezz0_temp", NULL, false, 5, 5},
+  {NIC_MEZZ1_SNR_TEMP, "nic_mezz1_temp", NULL, false, 5, 5},
+};
+
+static int fsc_2s_snr_list_size = sizeof(fsc_2s_snr_list) / sizeof(struct fsc_monitor);
+static int fsc_8s_slave_snr_list_size = sizeof(fsc_8s_slave_snr_list) / sizeof(struct fsc_monitor);
+static int fsc_8s_master_snr_list_size = sizeof(fsc_8s_master_snr_list) / sizeof(struct fsc_monitor);
+
+int
+pal_fsc_get_target_snr(char *sname, struct fsc_monitor *fsc_fru_list, int fsc_fru_list_size)
+{
+  int i;
+  for ( i=0;  i<fsc_fru_list_size; i++) {
+    if ( 0 == strcmp(sname, fsc_fru_list[i].sensor_name) ) {
+#ifdef FSC_DEBUG
+      syslog(LOG_WARNING,"[%s]sensor is found:%s, idx:%d", __func__, sname, i);
+#endif
+      return i;
+    }
+  }
+
+  syslog(LOG_WARNING,"[%s]Unknown sensor name:%s", __func__, sname);
+  return PAL_ENOTSUP;
+}
+
+bool
+pal_sensor_is_valid(char *fru_name, char *sensor_name)
+{
+  uint8_t fru_id;
+  struct fsc_monitor *fsc_fru_list;
+  int fsc_fru_list_size;
+  int ret;
+  uint8_t mode;
+
+  //check the fru name is valid or not
+  ret = pal_get_fru_id(fru_name, &fru_id);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING,"[%s] Wrong fru#%s", __func__, fru_name);
+    return false;
+  }
+
+  ret = pal_get_host_system_mode(&mode);
+  if (ret != 0) {
+    syslog(LOG_WARNING,"%s Wrong get system mode\n", __func__);
+    return false; 
+  } 
+
+  if( mode == MB_8S_MODE ) {
+    if(pal_get_config_is_master()) {
+      fsc_fru_list = fsc_8s_master_snr_list;
+      fsc_fru_list_size = fsc_8s_master_snr_list_size;
+    } else {
+      fsc_fru_list = fsc_8s_slave_snr_list;
+      fsc_fru_list_size = fsc_8s_slave_snr_list_size;
+    }
+  } else {
+    fsc_fru_list = fsc_2s_snr_list;
+    fsc_fru_list_size = fsc_2s_snr_list_size;
+  }
+  //get the target sensor
+  ret = pal_fsc_get_target_snr(sensor_name, fsc_fru_list, fsc_fru_list_size);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING,"[%s] undefined sensor: %s", __func__, sensor_name);
+    return false;
+  }
+
+  return true;
+}
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {

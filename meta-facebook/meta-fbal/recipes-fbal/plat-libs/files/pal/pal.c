@@ -1101,6 +1101,7 @@ pal_check_boot_device_is_vaild(uint8_t device) {
 
   switch (device)
   {
+    case BOOT_DEVICE_USB:
     case BOOT_DEVICE_IPV4:
     case BOOT_DEVICE_HDD:
     case BOOT_DEVICE_CDROM:

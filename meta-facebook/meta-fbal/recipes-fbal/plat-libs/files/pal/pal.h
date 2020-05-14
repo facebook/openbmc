@@ -80,6 +80,7 @@ enum{
 };
 
 enum {
+  BOOT_DEVICE_USB      = 0x0,
   BOOT_DEVICE_IPV4     = 0x1,
   BOOT_DEVICE_HDD      = 0x2,
   BOOT_DEVICE_CDROM    = 0x3,

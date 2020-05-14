@@ -20,6 +20,7 @@
 
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,56 +40,81 @@ void print_i2c_data(const unsigned char *data, size_t len)
 }
 
 static int
-i2c_open(uint8_t bus_num, uint8_t addr) {
+i2c_open(uint8_t bus_num, uint8_t addr, uint8_t force) {
   int fd = -1, rc = -1;
   char fn[32];
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus_num);
   fd = open(fn, O_RDWR);
   if (fd == -1) {
-    fprintf(stderr, "Failed to open i2c device %s", fn);
+    fprintf(stderr, "Failed to open i2c device %s\n", fn);
     return -1;
   }
 
-  rc = ioctl(fd, I2C_SLAVE, addr);
+  rc = ioctl(fd, force ? I2C_SLAVE_FORCE : I2C_SLAVE, addr);
   if (rc < 0) {
-    fprintf(stderr, "Failed to open slave @ address 0x%x", addr);
+    fprintf(stderr, "Failed to open slave @ address 0x%x\n", addr);
     close(fd);
     return -1;
   }
   return fd;
 }
 
+void usage(char *app_name){
+    fprintf(stdout, "\nUsage:%s [-h] [-f] <bus_num> <dev_addr> <reg_addr> [data_dword]\n"
+                "  option:   -f          - Add force flag when open the i2c\n"
+                "            -h          - show this usage\n"
+                "  argument: <bus_num>   - bus of i2c (start with 0)\n"
+                "            <dev_addr>  - i2c device address\n"
+                "            <reg_addr>  - register address (4 byte address)\n"
+                "            [data_dword]- data for writing (4 byte data)\n"
+                "Example as:\n"
+                "  [reading] - %s 3 0x2a 0x00000004\n"
+                "  [writing] - %s 3 0x2a 0x00000004 0x04030201\n", app_name,app_name,app_name);
+}
+
 int main(int argc, char **argv)
 {
-    unsigned char buf[8];
+    int opt;
+    unsigned char buf[8],force = 0;
     unsigned int addr = 0, reg_address = 0, data_bytes = 0, bus_num = -1;
 
-    if (argc < 4) {
+    while((opt = getopt(argc,argv,"fh")) != -1){
+        switch(opt)
+        {
+            case 'f':
+                force = 1;
+                break;
+            case 'h':
+                usage(argv[0]);
+                exit(0);
+                break;
+            default:
+                fprintf(stderr,"unknown option: %c\n",opt);
+                usage(argv[0]);
+                exit(-1);
+        }
+    }
 
-        fprintf(stderr, "Usage:%s <bus_num> <dev_addr> <reg_address> [data_dword]\n"
-                "Such as:\n"
-                "\t[reading] - %s 3 0x2a 0x00000004\n"
-                "\t[writing] - %s 3 0x2a 0x00000004 0x04030201\n", argv[0],argv[0],argv[0]);
-        exit(0);
+    if (argc - optind < 3) { // at least 3 argument (bus,dev_addr,reg_addr)
+        usage(argv[0]);
+        exit(-1);
     }
 
     /* Get i2c bus number */
-    if (sscanf(argv[1], "%u", &bus_num) != 1) {
-
+    if (sscanf(argv[optind], "%u", &bus_num) != 1) {
         fprintf(stderr, "Can't parse i2c 'bus_num' [%s]\n", argv[1]);
         exit(-1);
     }
 
     /* Get i2c device address */
-    if (sscanf(argv[2], "0x%x", &addr) != 1) {
-
+    if (sscanf(argv[optind+1], "0x%x", &addr) != 1) {
         fprintf(stderr, "Can't parse i2c 'dev_addr' [%s]\n", argv[2]);
         exit(-1);
     }
 
     /* Get i2c internal address bytes */
-    if (sscanf(argv[3], "0x%x", &reg_address) != 1) {
+    if (sscanf(argv[optind+2], "0x%x", &reg_address) != 1) {
         fprintf(stderr, "Can't parse i2c 'reg_address' [%s]\n", argv[3]);
         exit(-2);
     }
@@ -98,9 +124,8 @@ int main(int argc, char **argv)
     buf[3] = (reg_address) & 0xFF;
 
     /* Get i2c writing address */
-    if( argc > 4) {
-
-        if (sscanf(argv[4], "0x%x", &data_bytes) != 1) {
+    if( argc - optind > 3) {
+        if (sscanf(argv[optind+3], "0x%x", &data_bytes) != 1) {
             fprintf(stderr, "Can't parse i2c 'data_bytes' [%s]\n", argv[4]);
             exit(-2);
         }
@@ -112,12 +137,12 @@ int main(int argc, char **argv)
 
     /* Open i2c bus */
     int fd;
-    if ((fd = i2c_open(bus_num,addr)) == -1) {
+    if ((fd = i2c_open(bus_num,addr,force)) == -1) {
         fprintf(stderr, "Open i2c bus:/dev/i2c-%d error!\n", bus_num);
         exit(-3);
     }
 
-    if( argc > 4 ){ // write
+    if( argc - optind > 3 ){ // write
       /* Print before write */
       fprintf(stdout, "Reg Addr : ");
       print_i2c_data(&buf[0], 4);

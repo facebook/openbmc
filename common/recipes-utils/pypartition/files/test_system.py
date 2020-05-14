@@ -197,7 +197,7 @@ class TestSystem(unittest.TestCase):
     def test_flash_too_big(self, mocked_check_output):
         self.mock_image.size = 2
         with self.assertRaises(SystemExit) as context_manager:
-            system.flash(1, self.mock_image, self.mock_mtd, self.logger)
+            system.flash(1, self.mock_image, self.mock_mtd, self.logger, None)
             mocked_check_output.assert_not_called()
             self.assertEqual(context_manager.exception.code, 1)
 
@@ -254,7 +254,7 @@ class TestSystem(unittest.TestCase):
         self, mocked_check_call, mocked_other_flasher_running
     ):
         with self.assertRaises(SystemExit) as context_manager:
-            system.flash(1, self.mock_image, self.mock_mtd, self.logger)
+            system.flash(1, self.mock_image, self.mock_mtd, self.logger, None)
             mocked_check_call.assert_not_called()
             self.assertEqual(context_manager.exception.code, 1)
 
@@ -280,7 +280,9 @@ class TestSystem(unittest.TestCase):
                     )
                     calls.append(flashcp)
                 mocked_check_call.side_effect = return_values
-                system.flash(attempts, self.mock_image, self.mock_mtd, self.logger)
+                system.flash(
+                    attempts, self.mock_image, self.mock_mtd, self.logger, None
+                )
                 self.assertNotEqual(mocked_other_flasher_running.call_count, 0)
                 if attempts == 0:
                     self.assertEqual(mocked_check_call.call_count, 1)

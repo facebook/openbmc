@@ -206,8 +206,16 @@ def improve_system(logger):
 
         attempts = 0 if args.dry_run else 3
 
+        if args.mtd_labels:
+            full_flash_mtds = [
+                d for d in full_flash_mtds if d.device_name == args.mtd_labels
+            ]
+
+        if not full_flash_mtds:
+            raise ValueError("No device with label {}".format(args.mtd_labels))
+
         for mtd in full_flash_mtds:
-            system.flash(attempts, image_file, mtd, logger, args.force)
+            system.flash(attempts, image_file, mtd, logger, args.mtd_labels, args.force)
         # One could in theory pre-emptively set mtdparts for images that
         # will need it, but the mtdparts generator hasn't been tested on dual
         # flash and potentially other systems. To avoid over-optimizing for

@@ -25,6 +25,7 @@ import re
 import socket
 import subprocess
 import sys
+import textwrap
 import time
 from glob import glob
 
@@ -153,6 +154,14 @@ def get_checksums_args(description):
     checksum_help += "md5sums to image descriptions"
     append_help = "append unrecognized checksums to those from CHECKSUMS and "
     append_help += "write the result to this file"
+    mtd_labels_help = textwrap.dedent(
+        """\
+    Name of the MTD device to write to (.e.g, "flash0").  If not
+    given pypartition will try to guess the appropriate device, and
+    often get it wrong.
+    """
+    )
+
     parser.add_argument("--checksums", help=checksum_help, type=argparse.FileType("r"))
     if is_openbmc():
         parser.add_argument("--dry-run", action="store_true")
@@ -167,6 +176,8 @@ def get_checksums_args(description):
         parser.add_argument(
             "--append-new-checksums", help=append_help, type=argparse.FileType("w")
         )
+
+    parser.add_argument("--mtd-labels", help=mtd_labels_help)
 
     args = parser.parse_args()
 
@@ -683,8 +694,8 @@ def image_file_compatible(image_file, issue_file, logger):
     return True
 
 
-def flash(attempts, image_file, mtd, logger, force=False):
-    # type: (int, ImageFile, MemoryTechnologyDevice, logging.Logger, bool) -> None
+def flash(attempts, image_file, mtd, logger, flash_name, force=False):
+    # type: (int, ImageFile, MemoryTechnologyDevice, logging.Logger, Optional[str], bool) -> None
     if image_file.size > mtd.size:
         logger.error("{} is too big for {}.".format(image_file, mtd))
         sys.exit(1)

@@ -3064,7 +3064,12 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_BMC_ADC1_VSEN:
       ret = read_attr(AST_ADC_DEVICE, VOLT(2), value);
-      *value = *value * 2;
+      /* Formulas of this sensor comes from resister values
+       * R1 = 3.3k//52k unit: ohm (parallel connection)
+       * R2 = 3.3k unit: ohm
+       * in2: 2.06=(R1+R2)/R1 
+       */
+      *value = *value * 2.06;
       break;
     case SMB_BMC_ADC2_VSEN:
       ret = read_attr(AST_ADC_DEVICE, VOLT(3), value);

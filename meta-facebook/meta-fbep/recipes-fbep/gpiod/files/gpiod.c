@@ -58,6 +58,11 @@ static gpio_value_t gpio_get(const char *shadow)
 }
 
 // Generic Event Handler for GPIO changes
+static void gpio_event_handle_common(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  log_gpio_change(gp, curr, 0);
+}
+
 static void gpio_event_handle_power_btn(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
   log_gpio_change(gp, curr, 0);
@@ -70,7 +75,7 @@ static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gp
   if (curr == GPIO_VALUE_HIGH) {
     /* Enable ADM1272 Vout sampling (it is disabled by default) */
     if (system("i2cset -f -y 16 0x13 0xd4 0x3f37 w > /dev/null") < 0 ||
-	system("i2cset -f -y 17 0x10 0xd4 0x3f37 w > /dev/null") < 0) {
+        system("i2cset -f -y 17 0x10 0xd4 0x3f37 w > /dev/null") < 0) {
       syslog(LOG_CRIT, "Failed to enable P48V VOUT monitoring");
     }
   }
@@ -81,6 +86,13 @@ static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
   {"BMC_PWR_BTN_IN_N", "Power button", GPIO_EDGE_BOTH, gpio_event_handle_power_btn, NULL},
   {"SYS_PWR_READY", "System power off", GPIO_EDGE_BOTH, gpio_event_handle_pwr_good, NULL},
+  {"PMBUS_BMC_1_ALERT_N", "HSC 1 Alert", GPIO_EDGE_BOTH, gpio_event_handle_common, NULL},
+  {"PMBUS_BMC_2_ALERT_N", "HSC 2 Alert", GPIO_EDGE_BOTH, gpio_event_handle_common, NULL},
+  {"PMBUS_BMC_3_ALERT_N", "HSC AUX Alert", GPIO_EDGE_BOTH, gpio_event_handle_common, NULL},
+  {"SMB_ALERT_ASIC01", "ASIC01 Alert", GPIO_EDGE_BOTH, gpio_event_handle_common, NULL},
+  {"SMB_ALERT_ASIC23", "ASIC23 Alert", GPIO_EDGE_BOTH, gpio_event_handle_common, NULL},
+  {"SMB_ALERT_ASIC45", "ASIC45 Alert", GPIO_EDGE_BOTH, gpio_event_handle_common, NULL},
+  {"SMB_ALERT_ASIC67", "ASIC67 Alert", GPIO_EDGE_BOTH, gpio_event_handle_common, NULL},
 };
 
 // For monitoring GPIOs on IO expender

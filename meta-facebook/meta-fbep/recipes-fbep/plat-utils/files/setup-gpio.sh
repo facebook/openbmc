@@ -313,9 +313,6 @@ gpio_export PAX3_INT2 GPIOM6
 gpio_export PWR_CTRL GPIOM1
 gpio_set PWR_CTRL 0
 
-# RTC interrupt (PCF85263AT)
-gpio_export BMC_RTC_INT GPIOM7
-
 # To enable GPION
 #devmem_clear_bit $(scu_addr 88) 2
 #devmem_clear_bit $(scu_addr 88) 3
@@ -438,10 +435,6 @@ gpio_set BMC_BOOT_RCVR_B0_PAX3 0
 
 # To enable GPIOV
 #devmem_set_bit $(scu_addr a0) 19
-
-# BSM module presence
-# 0 = present, 1 = not present
-gpio_export BSM_EMMC_PRSNT_R_N GPIOV0
 
 # Debug connector presence
 # 1 = no debug port

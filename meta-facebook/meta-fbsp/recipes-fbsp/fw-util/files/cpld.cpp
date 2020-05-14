@@ -82,7 +82,7 @@ int CpldComponent::print_version() {
   if (ret) {
     printf("%s CPLD Version: NA\n", pld_name.c_str());
   } else {
-    printf("%s CPLD Version: v%02u.%02u.%02u.%02u\n", pld_name.c_str(), ver[3], ver[2], ver[1], ver[0]);
+    printf("%s CPLD Version: %02X%02X%02X%02X\n", pld_name.c_str(), ver[3], ver[2], ver[1], ver[0]);
   }
 
   return 0;

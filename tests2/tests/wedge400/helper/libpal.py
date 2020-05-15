@@ -20,9 +20,12 @@
 
 from ctypes import CDLL, byref, c_uint8
 
-
-lpal_hndl = CDLL("libpal.so.0")
-
+# When tests are discovered out of BMC there is no libpal
+# catch the import failure
+try:
+    lpal_hndl = CDLL("libpal.so.0")
+except Exception:
+    pass
 
 class BoardRevision:
     """ Board type """

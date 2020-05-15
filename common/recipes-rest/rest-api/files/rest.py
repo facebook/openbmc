@@ -27,12 +27,11 @@ import logging.config
 import os.path
 import ssl
 import sys
-import syslog
 
 from aiohttp import web
 from common_logging import get_logger_config
-from common_middlewares import jsonerrorhandler
-from rest_config import parse_config
+from common_middlewares import auth_enforcer, jsonerrorhandler
+from rest_config import load_acl_provider, parse_config
 from setup_plat_routes import setup_plat_routes
 
 
@@ -60,7 +59,7 @@ logging.config.dictConfig(get_logger_config(config))
 servers = []
 
 
-app = web.Application(middlewares=[jsonerrorhandler])
+app = web.Application(middlewares=[jsonerrorhandler, auth_enforcer])
 setup_plat_routes(app, config)
 
 
@@ -71,6 +70,10 @@ servers.extend([loop.create_server(handler, "*", port) for port in config["ports
 
 if config["ssl_certificate"] and os.path.isfile(config["ssl_certificate"]):
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    if config["ssl_ca_certificate"]:
+        # Set up mutual TLS authentication if config has ssl_ca_certificate
+        ssl_context.load_verify_locations(config["ssl_ca_certificate"])
+        ssl_context.verify_mode = ssl.CERT_OPTIONAL
     ssl_context.load_cert_chain(
         certfile=config["ssl_certificate"], keyfile=config["ssl_key"]  # May be None
     )
@@ -80,6 +83,9 @@ if config["ssl_certificate"] and os.path.isfile(config["ssl_certificate"]):
             for port in config["ssl_ports"]
         ]
     )
+
+
+app["acl_provider"] = load_acl_provider(config)
 
 srv = loop.run_until_complete(asyncio.gather(*servers, loop=loop))
 try:

@@ -19,10 +19,8 @@
 #
 
 import json
-import unittest
 
 from aiohttp import test_utils, web
-from aiohttp.log import server_logger
 from common_middlewares import jsonerrorhandler
 
 
@@ -37,7 +35,7 @@ def good_handler(request):
     )
 
 
-class TestMiddleware(test_utils.AioHTTPTestCase):
+class TestErrorHandler(test_utils.AioHTTPTestCase):
     async def get_application(self):
         """
         Override the get_app method to return your application.

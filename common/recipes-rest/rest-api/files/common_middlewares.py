@@ -18,9 +18,12 @@
 # Boston, MA 02110-1301 USA
 #
 import json
+from contextlib import suppress
 
+from acl_config import RULES
 from aiohttp.log import server_logger
-from aiohttp.web_exceptions import HTTPException, HTTPInternalServerError
+from aiohttp.web_exceptions import HTTPException, HTTPForbidden, HTTPInternalServerError
+from common_auth import auth_required, permissions_required
 
 
 async def jsonerrorhandler(app, handler):
@@ -40,6 +43,24 @@ async def jsonerrorhandler(app, handler):
                 body=json.dumps(body), content_type="application/json"
             )
             server_logger.exception("Error handling request", exc_info=exc)
+        return resp
+
+    return middleware_handler
+
+
+async def auth_enforcer(app, handler):
+    async def middleware_handler(request):
+        acls = []
+        with suppress(KeyError):
+            acls = RULES[request.path][request.method]
+        # We only allow GET endpoints without authorization.
+        # Anything else will be forbidden.
+        if not acls and request.method != "GET":
+            raise HTTPForbidden()
+        if acls:
+            await auth_required(request)
+            await permissions_required(request, acls)
+        resp = await handler(request)
         return resp
 
     return middleware_handler

@@ -29,6 +29,11 @@ SRC_URI = "file://rest.py \
            file://common_logging.py \
            file://common_tree.py \
            file://common_middlewares.py \
+           file://common_auth.py\
+           file://acl_config.py\
+           file://acl_providers/__init__.py\
+           file://acl_providers/common_acl_provider_base.py\
+           file://acl_providers/dummy_acl_provider.py\
            file://plat_tree.py \
            file://rest_crawler.py \
            file://node.py \
@@ -64,6 +69,7 @@ SRC_URI = "file://rest.py \
            file://setup_plat_routes.py \
            file://run_rest \
            file://test_node_sensors.py \
+           file://test_auth_enforcer.py \
            file://test_common_logging.py \
            file://test_rest_config.py \
           "
@@ -80,9 +86,11 @@ EOF
 
 do_install_class-target() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
+  acld="${D}/usr/local/fbpackages/${pkgdir}/acl_providers"
   bin="${D}/usr/local/bin"
   install -d $dst
   install -d $bin
+  install -d $acld
   for f in ${S}/*.py; do
     n=$(basename $f)
     install -m 755 "$f" ${dst}/$n

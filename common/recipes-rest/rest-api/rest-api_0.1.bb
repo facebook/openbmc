@@ -32,6 +32,11 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://rest-api-1/common_endpoint.py \
            file://common_middlewares.py\
            file://common_logging.py\
+           file://common_auth.py\
+           file://acl_config.py\
+           file://acl_providers/__init__.py\
+           file://acl_providers/common_acl_provider_base.py\
+           file://acl_providers/dummy_acl_provider.py\
            file://board_endpoint.py \
            file://rest-api-1/rest_watchdog.py \
            file://rest_config.py \
@@ -57,6 +62,7 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://rest-api-1/rest_helper.py \
            file://rest-api-1/rest_utils.py \
            file://board_setup_routes.py \
+           file://test_auth_enforcer.py \
            file://test_common_middlewares.py \
            file://test_common_logging.py \
            file://test_rest_config.py \
@@ -67,9 +73,11 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
 
 S = "${WORKDIR}/rest-api-1"
 
-binfiles = "board_setup_routes.py \
+binfiles = "acl_config.py\
+            board_setup_routes.py \
             boardroutes.py \
             board_endpoint.py \
+            common_auth.py \
             common_middlewares.py \
             common_logging.py \
             rest_config.py \
@@ -101,13 +109,19 @@ binfiles1 = "setup-rest-api.sh \
              setup_plat_routes.py \
              common_setup_routes.py"
 
+aclfiles = "__init__.py \
+            common_acl_provider_base.py \
+            dummy_acl_provider.py"
+
 pkgdir = "rest-api"
 
 do_install_class-target() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   bin="${D}/usr/local/bin"
+  acld="${D}/usr/local/fbpackages/${pkgdir}/acl_providers"
   install -d $dst
   install -d $bin
+  install -d $acld
   for f in ${binfiles1}; do
     install -m 755 $f ${dst}/$f
     ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
@@ -118,6 +132,9 @@ do_install_class-target() {
   done
   for f in ${otherfiles}; do
     install -m 644 $f ${dst}/$f
+  done
+  for f in ${aclfiles}; do
+    install -m 755 ${WORKDIR}/acl_providers/$f ${dst}/acl_providers/$f
   done
   install -d ${D}${sysconfdir}/sv
   install -d ${D}${sysconfdir}/sv/restapi

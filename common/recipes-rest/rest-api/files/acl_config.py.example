@@ -1,0 +1,1 @@
+RULES = {"/api/sys/bmc": {"GET": ["admin", "test"]}}

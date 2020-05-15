@@ -21,6 +21,30 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 . /usr/local/bin/openbmc-utils.sh
 
+sku=$(cat /tmp/cache_store/mb_sku)
+
+#DVT SKU_ID[2:1] = 00(TI), 01(INFINEON), TODO: 10(3rd Source)
+sku=$((sku & 0x2))
+if [ $sku -eq 0 ]; then
+  i2c_device_add 1 0x60 tps53688
+  i2c_device_add 1 0x62 tps53688
+  i2c_device_add 1 0x66 tps53688
+  i2c_device_add 1 0x68 tps53688
+  i2c_device_add 1 0x6c tps53688
+  i2c_device_add 1 0x70 tps53688
+  i2c_device_add 1 0x72 tps53688
+  i2c_device_add 1 0x76 tps53688
+else
+  i2c_device_add 1 0x60 xdpe12284
+  i2c_device_add 1 0x62 xdpe12284
+  i2c_device_add 1 0x66 xdpe12284
+  i2c_device_add 1 0x68 xdpe12284
+  i2c_device_add 1 0x6c xdpe12284
+  i2c_device_add 1 0x70 xdpe12284
+  i2c_device_add 1 0x72 xdpe12284
+  i2c_device_add 1 0x76 xdpe12284
+fi
+
 if [ "$(gpio_get HP_LVC3_OCP_V3_1_PRSNT2_N)" == "0" ]; then
   i2c_device_add 17 0x50 24c32
 fi

@@ -1,6 +1,8 @@
 #include <stdlib.h>
+#include <openbmc/pal.h>
 #include "tps53688.h"
 #include "pxe1110c.h"
+#include "xdpe12284c.h"
 
 #define VR_BUS_ID 1
 
@@ -42,6 +44,14 @@ struct vr_ops tps53688_ops = {
   .validate_file = NULL,
   .fw_update = tps_fw_update,
   .fw_verify = tps_fw_verify,
+};
+
+struct vr_ops xdpe12284c_ops = {
+  .get_fw_ver = get_xdpe_ver,
+  .parse_file = xdpe_parse_file,
+  .validate_file = NULL,
+  .fw_update = xdpe_fw_update,
+  .fw_verify = xdpe_fw_verify,
 };
 
 struct vr_info fbal_vr_list[] = {
@@ -102,9 +112,19 @@ struct vr_info fbal_vr_list[] = {
 };
 
 int plat_vr_init(void) {
-  int ret;
+  int ret, i;
+  int vr_cnt = sizeof(fbal_vr_list)/sizeof(fbal_vr_list[0]); 
+  uint8_t sku_id = 0xFF;
 
-  ret = vr_device_register(fbal_vr_list, sizeof(fbal_vr_list)/sizeof(fbal_vr_list[0]));
+  pal_get_platform_id(&sku_id);
+  //DVT SKU_ID[2:1] = 00 (TI), 01 (INFINEON), TODO: 10 (3rd Source)
+  if (sku_id & 0x2) {
+    for (i = 1; i < vr_cnt; i++) {
+      fbal_vr_list[i].ops = &xdpe12284c_ops;
+    }
+  }
+
+  ret = vr_device_register(fbal_vr_list, vr_cnt );
   if (ret < 0) {
     vr_device_unregister();
   }

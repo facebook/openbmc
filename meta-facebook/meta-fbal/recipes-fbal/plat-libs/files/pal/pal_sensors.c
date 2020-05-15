@@ -551,6 +551,39 @@ PAL_CM_SENSOR_HEAD cm_snr_head_list[] = {
  {CM_FAN3_CURR, CM_SNR_FAN3_CURR},
 };
 
+char *vr_ti_chips[] = {
+  "tps53688-i2c-1-60",  // CPU0_VCCIN
+  "tps53688-i2c-1-60",  // CPU0_VCCSA
+  "tps53688-i2c-1-62",  // CPU0_VCCIO
+  "tps53688-i2c-1-66",  // CPU0_VDDQ_ABC
+  "tps53688-i2c-1-68",  // CPU0_VDDQ_DEF
+  "tps53688-i2c-1-70",  // CPU1_VCCIN
+  "tps53688-i2c-1-70",  // CPU1_VCCSA
+  "tps53688-i2c-1-72",  // CPU1_VCCIO
+  "tps53688-i2c-1-76",  // CPU1_VDDQ_ABC
+  "tps53688-i2c-1-6c",  // CPU1_VDDQ_DEF
+  "pxe1110c-i2c-1-4a",  // PCH PVNN
+  "pxe1110c-i2c-1-4a",  // PCH 1V5 
+};
+
+char *vr_infineon_chips[] = {
+  "xdpe12284-i2c-1-60",  // CPU0_VCCIN
+  "xdpe12284-i2c-1-60",  // CPU0_VCCSA
+  "xdpe12284-i2c-1-62",  // CPU0_VCCIO
+  "xdpe12284-i2c-1-66",  // CPU0_VDDQ_ABC
+  "xdpe12284-i2c-1-68",  // CPU0_VDDQ_DEF
+  "xdpe12284-i2c-1-70",  // CPU1_VCCIN
+  "xdpe12284-i2c-1-70",  // CPU1_VCCSA
+  "xdpe12284-i2c-1-72",  // CPU1_VCCIO
+  "xdpe12284-i2c-1-76",  // CPU1_VDDQ_ABC
+  "xdpe12284-i2c-1-6c",  // CPU1_VDDQ_DEF
+  "pxe1110c-i2c-1-4a",   // PCH PVNN
+  "pxe1110c-i2c-1-4a",   // PCH 1V5
+};
+
+
+char **vr_chips = vr_ti_chips;
+
 struct fsc_monitor
 {
   uint8_t sensor_num;
@@ -2187,78 +2220,68 @@ read_ina260_vol(uint8_t ina260_id, float *value) {
 
 static int
 read_vr_vout(uint8_t vr_id, float *value) {
-  struct {
-    const char *chip;
-    const char *label;
-  } devs[] = {
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCIN_VOUT"},
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCSA_VOUT"},
-    {"tps53688-i2c-1-62", "MB_VR_CPU0_VCCIO_VOUT"},
-    {"tps53688-i2c-1-66", "MB_VR_CPU0_VDDQ_ABC_VOUT"},
-    {"tps53688-i2c-1-68", "MB_VR_CPU0_VDDQ_DEF_VOUT"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCIN_VOUT"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCSA_VOUT"},
-    {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_VOUT"},
-    {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_VOUT"},
-    {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_VOUT"},
-    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_P1V05_VOLT"},
-    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_PVNN_VOLT"},
+    const char *label[] = {
+    "MB_VR_CPU0_VCCIN_VOUT",
+    "MB_VR_CPU0_VCCSA_VOUT",
+    "MB_VR_CPU0_VCCIO_VOUT",
+    "MB_VR_CPU0_VDDQ_ABC_VOUT",
+    "MB_VR_CPU0_VDDQ_DEF_VOUT",
+    "MB_VR_CPU1_VCCIN_VOUT",
+    "MB_VR_CPU1_VCCSA_VOUT",
+    "MB_VR_CPU1_VCCIO_VOUT",
+    "MB_VR_CPU1_VDDQ_ABC_VOUT",
+    "MB_VR_CPU1_VDDQ_DEF_VOUT",
+    "MB_VR_PCH_P1V05_VOLT",
+    "MB_VR_PCH_PVNN_VOLT",
   };
-  if (vr_id >= ARRAY_SIZE(devs)) {
+  if (vr_id >= ARRAY_SIZE(label)) {
     return -1;
   }
-  return sensors_read(devs[vr_id].chip, devs[vr_id].label, value);
+  return sensors_read(vr_chips[vr_id], label[vr_id], value);
 }
 
 static int
 read_vr_temp(uint8_t vr_id, float *value) {
-  struct {
-    const char *chip;
-    const char *label;
-  } devs[] = {
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCIN_TEMP"},
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCSA_TEMP"},
-    {"tps53688-i2c-1-62", "MB_VR_CPU0_VCCIO_TEMP"},
-    {"tps53688-i2c-1-66", "MB_VR_CPU0_VDDQ_ABC_TEMP"},
-    {"tps53688-i2c-1-68", "MB_VR_CPU0_VDDQ_DEF_TEMP"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCIN_TEMP"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCSA_TEMP"},
-    {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_TEMP"},
-    {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_TEMP"},
-    {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_TEMP"},
-    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_P1V05_TEMP"},
-    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_PVNN_TEMP"},
+    const char *label[] = {
+    "MB_VR_CPU0_VCCIN_TEMP",
+    "MB_VR_CPU0_VCCSA_TEMP",
+    "MB_VR_CPU0_VCCIO_TEMP",
+    "MB_VR_CPU0_VDDQ_ABC_TEMP",
+    "MB_VR_CPU0_VDDQ_DEF_TEMP",
+    "MB_VR_CPU1_VCCIN_TEMP",
+    "MB_VR_CPU1_VCCSA_TEMP",
+    "MB_VR_CPU1_VCCIO_TEMP",
+    "MB_VR_CPU1_VDDQ_ABC_TEMP",
+    "MB_VR_CPU1_VDDQ_DEF_TEMP",
+    "MB_VR_PCH_P1V05_TEMP",
+    "MB_VR_PCH_PVNN_TEMP",
   };
-  if (vr_id >= ARRAY_SIZE(devs)) {
+  if (vr_id >= ARRAY_SIZE(label)) {
     return -1;
   }
-  return sensors_read(devs[vr_id].chip, devs[vr_id].label, value);
+  return sensors_read(vr_chips[vr_id], label[vr_id], value);
 }
 
 static int
 read_vr_iout(uint8_t vr_id, float *value) {
-  struct {
-    const char *chip;
-    const char *label;
-  } devs[] = {
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCIN_IOUT"},
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCSA_IOUT"},
-    {"tps53688-i2c-1-62", "MB_VR_CPU0_VCCIO_IOUT"},
-    {"tps53688-i2c-1-66", "MB_VR_CPU0_VDDQ_ABC_IOUT"},
-    {"tps53688-i2c-1-68", "MB_VR_CPU0_VDDQ_DEF_IOUT"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCIN_IOUT"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCSA_IOUT"},
-    {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_IOUT"},
-    {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_IOUT"},
-    {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_IOUT"},
-    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_P1V05_IOUT"},
-    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_PVNN_IOUT"},
-   
+    const char *label[] = {
+    "MB_VR_CPU0_VCCIN_IOUT",
+    "MB_VR_CPU0_VCCSA_IOUT",
+    "MB_VR_CPU0_VCCIO_IOUT",
+    "MB_VR_CPU0_VDDQ_ABC_IOUT",
+    "MB_VR_CPU0_VDDQ_DEF_IOUT",
+    "MB_VR_CPU1_VCCIN_IOUT",
+    "MB_VR_CPU1_VCCSA_IOUT",
+    "MB_VR_CPU1_VCCIO_IOUT",
+    "MB_VR_CPU1_VDDQ_ABC_IOUT",
+    "MB_VR_CPU1_VDDQ_DEF_IOUT",
+    "MB_VR_PCH_P1V05_IOUT",
+    "MB_VR_PCH_PVNN_IOUT",
   };
-  if (vr_id >= ARRAY_SIZE(devs)) {
+  if (vr_id >= ARRAY_SIZE(label)) {
     return -1;
   }
-  return sensors_read(devs[vr_id].chip, devs[vr_id].label, value);
+  return sensors_read(vr_chips[vr_id], label[vr_id], value);
 }
 
 int
@@ -2268,27 +2291,24 @@ read_vr_iin(uint8_t vr_id, float *value) {
 
 static int
 read_vr_pout(uint8_t vr_id, float *value) {
-  struct {
-    const char *chip;
-    const char *label;
-  } devs[] = {
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCIN_POUT"},
-    {"tps53688-i2c-1-60", "MB_VR_CPU0_VCCSA_POUT"},
-    {"tps53688-i2c-1-62", "MB_VR_CPU0_VCCIO_POUT"},
-    {"tps53688-i2c-1-66", "MB_VR_CPU0_VDDQ_ABC_POUT"},
-    {"tps53688-i2c-1-68", "MB_VR_CPU0_VDDQ_DEF_POUT"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCIN_POUT"},
-    {"tps53688-i2c-1-70", "MB_VR_CPU1_VCCSA_POUT"},
-    {"tps53688-i2c-1-72", "MB_VR_CPU1_VCCIO_POUT"},
-    {"tps53688-i2c-1-76", "MB_VR_CPU1_VDDQ_ABC_POUT"},
-    {"tps53688-i2c-1-6c", "MB_VR_CPU1_VDDQ_DEF_POUT"},
-    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_P1V05_POUT"},
-    {"pxe1110c-i2c-1-4a", "MB_VR_PCH_PVNN_POUT"},
+  const char *label[] = {
+    "MB_VR_CPU0_VCCIN_POUT",
+    "MB_VR_CPU0_VCCSA_POUT",
+    "MB_VR_CPU0_VCCIO_POUT",
+    "MB_VR_CPU0_VDDQ_ABC_POUT",
+    "MB_VR_CPU0_VDDQ_DEF_POUT",
+    "MB_VR_CPU1_VCCIN_POUT",
+    "MB_VR_CPU1_VCCSA_POUT",
+    "MB_VR_CPU1_VCCIO_POUT",
+    "MB_VR_CPU1_VDDQ_ABC_POUT",
+    "MB_VR_CPU1_VDDQ_DEF_POUT",
+    "MB_VR_PCH_P1V05_POUT",
+    "MB_VR_PCH_PVNN_POUT",
   };
-  if (vr_id >= ARRAY_SIZE(devs)) {
+  if (vr_id >= ARRAY_SIZE(label)) {
     return -1;
   }
-  return sensors_read(devs[vr_id].chip, devs[vr_id].label, value);
+  return sensors_read(vr_chips[vr_id], label[vr_id], value);
 }
 
 int
@@ -2794,11 +2814,21 @@ int pal_sensor_monitor_initial(void) {
   uint16_t alert1_cfg = 0;
   float iout_oc_warn_limit = 123;
   uint8_t mode;
+  uint8_t sku_id = 0xFF;
 
+  syslog(LOG_DEBUG,"Sensor Initial\n");
   pmon_cfg = PMON_CFG_TEPM1_EN | PMON_CFG_CONTINUOUS_SAMPLE | PMON_CFG_VIN_EN |
              PMON_CFG_VI_AVG(CFG_SAMPLE_128) | PMON_CFG_AVG_PWR(CFG_SAMPLE_128);
  
   alert1_cfg = IOUT_OC_WARN_EN1;
+
+  pal_get_platform_id(&sku_id);
+  //DVT SKU_ID[2:1] = 00 (TI), 01 (INFINEON), TODO: 10 (3rd Source)
+  if (sku_id & 0x2) {
+    vr_chips = vr_infineon_chips;
+  } else {
+    vr_chips = vr_ti_chips;
+  }
   
   for (i=0; i<4; i++) {
     if(set_hsc_pmon_config(i, pmon_cfg) != 0) {
@@ -2821,5 +2851,6 @@ int pal_sensor_monitor_initial(void) {
   } else {
     pal_set_peci_mux(PECI_MUX_SELECT_BMC);
   }
+
   return 0;
 }

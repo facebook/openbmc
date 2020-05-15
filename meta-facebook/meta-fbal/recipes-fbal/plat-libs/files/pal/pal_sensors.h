@@ -518,6 +518,7 @@ enum {
   VR_ID9,
   VR_ID10,
   VR_ID11,
+  VR_NUM_CNT,
 };
 
 enum {

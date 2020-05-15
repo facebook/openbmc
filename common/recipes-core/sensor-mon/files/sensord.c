@@ -702,7 +702,8 @@ run_sensord(int argc, char **argv) {
     fru_flag = SETBIT(fru_flag, fru);
     arg++;
   }
-
+ 
+  ret = pal_sensor_monitor_initial();
   for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
 
     if (GETBIT(fru_flag, fru)) {
@@ -727,8 +728,6 @@ run_sensord(int argc, char **argv) {
   if (pthread_create(&sensor_health, NULL, snr_health_monitor, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for sensor health failed\n");
   }
-
-  ret = pal_sensor_monitor_initial();
 
   /* Aggregate sensor monitor */
   if (pthread_create(&agg_sensor_mon, NULL, aggregate_snr_monitor, NULL) < 0) {

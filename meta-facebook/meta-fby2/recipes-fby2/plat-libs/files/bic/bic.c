@@ -350,6 +350,13 @@ int
 bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
                   uint8_t *txbuf, uint16_t txlen,
                   uint8_t *rxbuf, uint8_t *rxlen) {
+  return bic_ipmb_limit_rlen_wrapper(slot_id,netfn,cmd,txbuf,txlen,rxbuf,rxlen, 255 - IPMB_HDR_SIZE - IPMI_RESP_HDR_SIZE);
+}
+
+int
+bic_ipmb_limit_rlen_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
+                  uint8_t *txbuf, uint16_t txlen,
+                  uint8_t *rxbuf, uint8_t *rxlen, uint8_t max_rlen) {
   ipmb_req_t *req;
   ipmb_res_t *res;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
@@ -439,6 +446,10 @@ bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   // copy the received data back to caller
   *rxlen = rlen - IPMB_HDR_SIZE - IPMI_RESP_HDR_SIZE;
+  if (*rxlen > max_rlen) {
+    syslog(LOG_ERR, "bic_ipmb_wrapper: return length %d larger then its maximum: %d\n",*rxlen, max_rlen);
+    return -1;
+  }
   memcpy(rxbuf, res->data, *rxlen);
 
   // Calculate dataCksum
@@ -810,7 +821,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   // Fill the component for which firmware is requested
   tbuf[3] = comp;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, 0x04, rbuf, &rlen);
+  ret = bic_ipmb_limit_rlen_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, 0x04, rbuf, &rlen,16);
   // fw version has to be between 1 and 5 bytes based on component
   if (ret || (rlen < 1+SIZE_IANA_ID) || (rlen > 5+SIZE_IANA_ID)) {
 #ifdef DEBUG

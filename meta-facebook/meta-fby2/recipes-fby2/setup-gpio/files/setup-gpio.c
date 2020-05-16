@@ -1,23 +1,21 @@
 /*
  *
- * Copyright 2015-present Facebook. All Rights Reserved.
+ * Copyright 2014-present Facebook. All Rights Reserved.
  *
- * This file contains code to support IPMI2.0 Specificaton available @
- * http://www.intel.com/content/www/us/en/servers/ipmi/ipmi-specifications.html
+ * This program file is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; version 2 of the License.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * along with this program in a file named COPYING; if not, write to the
+ * Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02110-1301 USA
  */
 #include <stdio.h>
 #include <stdint.h>
@@ -245,7 +243,7 @@ main(int argc, char **argv) {
 	// To use GPIOD1, SCU70[21] shall be 0
 	// To use GPIOE0, GPIOE4, SCU70[22] must be 0
 	// To use GPIOB4, SCU70[23] must be 0
-	set_register(SCU_BASE, REG_SCU7C, 0x00E03000);	
+	set_register(SCU_BASE, REG_SCU7C, 0x00E03000);
 
 	// SLOT1_PRSNT_N, GPIOAA0 (208)
 	gpio_export_by_name(ASPPED_CHIP, "GPIOAA0", "SLOT1_PRSNT_N");

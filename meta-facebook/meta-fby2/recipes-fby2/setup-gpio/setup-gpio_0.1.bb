@@ -4,7 +4,7 @@ DESCRIPTION = "Set and export GPIO"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://setup-gpio.c;beginline=8;endline=20;md5=da35978751a9d71b73679307c4d296ec"
+LIC_FILES_CHKSUM = "file://setup-gpio.c;beginline=8;endline=20;md5=8e8a5829be6e215cdbf65cac2aa6ddc4"
 
 SRC_URI = "file://setup-gpio.c \
            file://Makefile \

@@ -115,11 +115,11 @@ gpio_export PWRGD_NIC_BMC GPIOAB0
 devmem_clear_bit $(scu_addr 94) 0
 devmem_clear_bit $(scu_addr 94) 1
 devmem_set_bit $(scu_addr A8) 2
-gpio_set RST_BMC_WDRST1_R GPIOAB2
+gpio_export RST_BMC_WDRST1_R GPIOAB2
 
 # GPIOAB3-RST_BMC_WDRST2_R
 devmem_set_bit $(scu_addr A8) 3
-gpio_set RST_BMC_WDRST2_R GPIOAB3
+gpio_export RST_BMC_WDRST2_R GPIOAB3
 
 # GPIOAC4-EMMC_PRESENT_N
 devmem_clear_bit $(scu_addr AC) 4

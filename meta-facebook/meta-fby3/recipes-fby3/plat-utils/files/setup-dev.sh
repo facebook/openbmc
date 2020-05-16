@@ -43,7 +43,7 @@ function init_class1_dev(){
   local chip=""
 
   #create the device of medusa board
-  vendor=$(/usr/sbin/i2cget -y 11 0x44 0x99 i | tail -n 1)
+  vendor=$(/usr/sbin/i2cget -y 11 0x44 0x99 i 2> /dev/null | tail -n 1)
   if [ "$vendor" == "$VENDOR_MPS" ]; then
     chip="mp5920"
   else

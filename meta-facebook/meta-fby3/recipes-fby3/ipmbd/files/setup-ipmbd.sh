@@ -39,6 +39,7 @@ function init_class1_ipmb(){
     slot_present=$(gpio_get PRSNT_MB_BMC_SLOT${slot_num}_BB_N)
     if [[ "$slot_present" == "1" ]]; then
       sv stop ipmbd_${bus}
+      disable_server_12V_power ${slot_num}
     else
       enable_server_i2c_bus ${slot_num}
     fi

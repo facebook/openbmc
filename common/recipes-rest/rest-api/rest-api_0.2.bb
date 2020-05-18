@@ -96,6 +96,11 @@ do_install_class-target() {
     install -m 755 "$f" ${dst}/$n
     ln -snf ../fbpackages/${pkgdir}/$n ${bin}/$n
   done
+  for f in ${S}/acl_providers/*.py; do
+    n=$(basename $f)
+    install -m 755 "$f" ${acld}/$n
+    ln -snf ../fbpackages/${pkgdir}/acl_providers/$n ${bin}/$n
+  done
   install -d ${D}${sysconfdir}/sv
   install -d ${D}${sysconfdir}/sv/restapi
   install -m 755 ${WORKDIR}/run_rest ${D}${sysconfdir}/sv/restapi/run

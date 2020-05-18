@@ -40,6 +40,7 @@
 #define GPIO_SYSFS_ROOT			"/sys/class/gpio"
 #define GPIO_SYSFS_EXPORT		"/sys/class/gpio/export"
 #define GPIO_SYSFS_UNEXPORT		"/sys/class/gpio/unexport"
+#define GPIO_SYSFS_PIN_PATH		"/sys/class/gpio/gpio%d"
 #define GPIO_SYSFS_EDGE_FILE		"edge"
 #define GPIO_SYSFS_VALUE_FILE		"value"
 #define GPIO_SYSFS_DIRECTION_FILE	"direction"
@@ -55,6 +56,11 @@
  * Default buffer size when reading/writing gpio sysfs files.
  */
 #define GPIO_SYSFS_IO_BUF_SIZE		16
+
+/*
+ * Default path size when export gpio sysfs files.
+ */
+#define GPIO_SYSFS_PATH_SIZE		64
 
 /*
  * Aspeed gpio controller's device name in sysfs tree.
@@ -98,6 +104,7 @@ static int gsysfs_export_control(const char *ctrl_file, int pin_num)
 {
 	int fd, count;
 	int status = 0;
+	char pin_path[GPIO_SYSFS_PATH_SIZE];
 	char data[GPIO_SYSFS_IO_BUF_SIZE];
 
 	GLOG_DEBUG("open <%s> for write\n", ctrl_file);
@@ -108,13 +115,16 @@ static int gsysfs_export_control(const char *ctrl_file, int pin_num)
 		return -1;
 	}
 
-	snprintf(data, sizeof(data), "%d", pin_num);
-	count = strlen(data);
-	GLOG_DEBUG("write data (%s) to <%s>\n", data, ctrl_file);
-	if (write(fd, data, count) != count) {
-		GLOG_ERR("failed to write <%s> to <%s>: %s\n",
-			 data, ctrl_file, strerror(errno));
-		status = -1;
+	snprintf(pin_path, sizeof(pin_path), GPIO_SYSFS_PIN_PATH, pin_num);
+	if (access(pin_path, F_OK ) == -1 ) {
+		snprintf(data, sizeof(data), "%d", pin_num);
+		count = strlen(data);
+		GLOG_DEBUG("write data (%s) to <%s>\n", data, ctrl_file);
+		if (write(fd, data, count) != count) {
+			GLOG_ERR("failed to write <%s> to <%s>: %s\n",
+				 data, ctrl_file, strerror(errno));
+			status = -1;
+		}
 	}
 
 	close(fd);

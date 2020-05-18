@@ -69,6 +69,10 @@ void jedec_save_as_jed(const char *device, FILE *fp);
 unsigned char jedec_get_byte(unsigned int idx);
 unsigned int jedec_get_long(unsigned int idx);
 int jedec_get_cfg_fuse();
+// TODO: to be implemented to support more feature
+int jedec_get_user_code(unsigned int *usercode);
+int jedec_get_feature_row(unsigned char *buff, unsigned int *length);
+int jedec_get_feature_bits(unsigned char *buff, unsigned int *length);
 
 #ifdef __cplusplus__
 }

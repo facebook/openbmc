@@ -19,26 +19,29 @@
 #ifndef __LATTICE_CPLD_H__
 #define __LATTICE_CPLD_H__
 
+#define BIT(x)      (1 << x)
+
 #define BITS_OF_ONE_BYTE                8
-#define BITS_OF_UNSIGNED_INT            4*BITS_OF_ONE_BYTE
+#define BITS_OF_UNSIGNED_INT            (4 * BITS_OF_ONE_BYTE)
 #define LATTICE_INSTRUCTION_LENGTH      (BITS_OF_ONE_BYTE)
-#define LATTICE_OPCODE_LENGTH           (BITS_OF_ONE_BYTE*3)
+#define LATTICE_OPCODE_LENGTH           (BITS_OF_ONE_BYTE * 3)
 
 #define CPD_IDCODE_PUB        0xe0 /* Read Device ID */
 #define ISC_ENABLE_X          0x74 /* Enable Configuration Interface (Transparent Mode) */
 #define ISC_ENABLE            0xc6 /* Enable Configuration Interface (Offline Mode) */
+#define   ISC_ENABLE_OPCODE         0x08
 #define LSC_CHECK_BUSY        0xF0 /* Read Busy Flag */
-
+#define   CPLD_BUSY_FLAG_BIT        BIT(7) /* value: 1-busy, 0-ready */
 #define LSC_READ_STATUS       0x3c /* Read Status Register */
-#define CPLD_STATUS_ALL_BIT       0xFFFFFFFF
-#define CPLD_STATUS_BUSY_BIT      0x00010000
-#define CPLD_STATUS_FAIL_BIT      0x00020000
+#define   CPLD_STATUS_ALL_BIT       0xFFFFFFFF
+#define   CPLD_STATUS_BUSY_BIT      BIT(12) /* value: 1-busy, 0-ready */
+#define   CPLD_STATUS_FAIL_BIT      BIT(13) /* value: 1-fail, 0-OK */
 
-#define ISC_ERASE             0x0e 
-#define CPLD_OPCODE_ERASE_SRAM_BIT       0x1
-#define CPLD_OPCODE_ERASE_FEATURE_BIT    0x2
-#define CPLD_OPCODE_ERASE_CONF_FLASH_BIT 0x4
-#define CPLD_OPCODE_ERASE_UFM            0x8
+#define ISC_ERASE             0x0e  /* Erase */
+#define   CPLD_OPCODE_ERASE_SRAM_BIT       0x1
+#define   CPLD_OPCODE_ERASE_FEATURE_BIT    0x2
+#define   CPLD_OPCODE_ERASE_CONF_FLASH_BIT 0x4
+#define   CPLD_OPCODE_ERASE_UFM            0x8
 
 #define LSC_ERASE_TAG         0xcb /* Erase the UFM sector only */
 #define LSC_INIT_ADDRESS      0x46 /* Set Page Address pointer to the beginning of the Configuration Flash sector */
@@ -82,6 +85,9 @@ command is issued, or a power cycle event occurs */
 #define CPLD_TRANSPARENT_MODE 0
 #define CPLD_OFFLINE_MODE     1
 
+#define CPLD_ERASE_TIMEOUT      10
+#define CPLD_BUSY_CHECK_TIMEOUT 3
+
 typedef struct {
     const char      *name;
     unsigned int    dev_id;
@@ -111,7 +117,7 @@ int program_configuration(int bytes_per_page, int num_of_pages, progress_func_t 
 int program_feature_row(unsigned int a, unsigned int b);
 int program_feabits(unsigned short feabits);
 int program_user_code(unsigned int code);
-int programe_done();
+int program_done();
 int transmit_refesh();
 #ifdef __cplusplus
 }

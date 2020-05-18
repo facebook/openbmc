@@ -271,7 +271,7 @@ int cpld_program(cpld_t *pcpld, const char *file_name)
         }
     }
 
-    rc = programe_done();
+    rc = program_done();
     if(rc < 0){
         printf("%s(%d) - failed to program done\n", __FUNCTION__, __LINE__);
         goto end_of_func;
@@ -457,7 +457,7 @@ int cpld_read(cpld_t *pcpld, const char *file_name)
     usleep(3000);
 
     printf("Read config pages: %d \n", pcpld->pcpld_device->num_of_cfg_pages);
-    bytes_per_page = (pcpld->pcpld_device->page_bits/ 8);
+    bytes_per_page = (pcpld->pcpld_device->page_bits / BITS_OF_ONE_BYTE);
     
     FILE *cpld_fp = fopen("cpld_data", "w");
     FILE *jed_fp = fopen("jed_data", "w");

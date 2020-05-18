@@ -687,3 +687,17 @@ int jedec_get_cfg_fuse(){
     return jed.cfg_count;
 }
 
+// TODO
+int jedec_get_user_code(unsigned int *usercode) {
+    return -1;
+}
+
+// TODO
+int jedec_get_feature_row(unsigned char *buff, unsigned int *length) {
+    return -1;
+}
+
+// TODO
+int jedec_get_feature_bits(unsigned char *buff, unsigned int *length) {
+    return -1;
+}

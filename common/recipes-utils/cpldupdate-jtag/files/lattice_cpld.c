@@ -79,7 +79,6 @@ int write_onebyte_opcode(unsigned char endstate, unsigned char opcode)
     return write_data_register(endstate, &temp, LATTICE_INSTRUCTION_LENGTH);
 }
 
-
 int read_data_register(unsigned char endstate, unsigned int *buf, int length)
 {
     return jtag_read_data_register(global_jtag_object, endstate, buf, length);
@@ -288,7 +287,7 @@ int enter_configuration_mode(int mode)
         goto end_of_func;
     }
 
-    rc = write_onebyte_opcode(JTAG_STATE_IDLE, 0x8);
+    rc = write_onebyte_opcode(JTAG_STATE_IDLE, ISC_ENABLE_OPCODE);
     if(rc < 0){
         goto end_of_func;
     }
@@ -297,13 +296,7 @@ int enter_configuration_mode(int mode)
     usleep(3000);
 
     /* Check status in 10s */
-    rc = check_cpld_status(CPLD_STATUS_FAIL_BIT|0x40, 10);
-    if(rc < 0){
-        goto end_of_func;
-    }
-
-    /* Check status in 10s */
-    rc = check_cpld_status(CPLD_STATUS_BUSY_BIT, 10);
+    rc = check_cpld_status(CPLD_STATUS_FAIL_BIT | CPLD_STATUS_BUSY_BIT, CPLD_BUSY_CHECK_TIMEOUT);
     if(rc < 0){
         goto end_of_func;
     }
@@ -358,19 +351,7 @@ int erase_cpld(unsigned char option, int num_of_loops)
         return -1;
     }
 
-    rc = write_onebyte_instruction(JTAG_STATE_IDLE, LSC_CHECK_BUSY);
-    if(rc < 0){
-        printf("%s(%d) - failed to write instruction LSC_CHECK_BUSY\n",  __FUNCTION__, __LINE__);
-        return -1;
-    }
-
-    for (i = 0; i < num_of_loops ; i++) {
-        usleep(2000);
-        rc = read_data_register(JTAG_STATE_IDLE, &dr_data, 1);
-        if(rc < 0) return rc;
-    }
-
-    rc = check_cpld_status(CPLD_STATUS_BUSY_BIT|CPLD_STATUS_FAIL_BIT, 5);
+    rc = check_cpld_status(CPLD_STATUS_BUSY_BIT|CPLD_STATUS_FAIL_BIT, CPLD_ERASE_TIMEOUT);
     if(rc < 0){
         printf("%s(%d) - check cpld status failure\n",  __FUNCTION__, __LINE__);
         return -1;
@@ -448,9 +429,9 @@ int program_configuration(int bytes_per_page, int num_of_pages, progress_func_t 
         run_test_idle(0, JTAG_STATE_IDLE, 2);
         usleep(1000);
 
-        rc = write_onebyte_instruction(JTAG_STATE_PAUSEIR, LSC_CHECK_BUSY);
+        rc = check_cpld_busy(CPLD_BUSY_FLAG_BIT, CPLD_BUSY_CHECK_TIMEOUT);
         if(rc < 0){
-            printf("%s(%d) - failed to write instruction LSC_CHECK_BUSY\n",  __FUNCTION__, __LINE__);
+            printf("%s(%d) - failed to check cpld busy due to timeout\n",  __FUNCTION__, __LINE__);
             goto end_of_func;
         }
 
@@ -501,13 +482,13 @@ int program_user_code(unsigned int code)
     }
     usleep(2000);
 
-    rc = check_cpld_status(CPLD_STATUS_BUSY_BIT|CPLD_STATUS_FAIL_BIT, 1);
+    rc = check_cpld_status(CPLD_STATUS_BUSY_BIT|CPLD_STATUS_FAIL_BIT, CPLD_BUSY_CHECK_TIMEOUT);
     if(rc < 0){
         printf("%s(%d) - failed to check cpld status\n", __FUNCTION__, __LINE__);
         return -1;
     }
-    
-    return 0;   
+
+    return 0;
 }
 
 int program_feature_row(unsigned int a0, unsigned int a1)
@@ -543,9 +524,9 @@ int program_feature_row(unsigned int a0, unsigned int a1)
         return -1;
     }
 
-    rc = write_onebyte_instruction(JTAG_STATE_IDLE, LSC_CHECK_BUSY);
+    rc = check_cpld_busy(CPLD_BUSY_FLAG_BIT, CPLD_BUSY_CHECK_TIMEOUT);
     if(rc < 0){
-        printf("%s(%d) - failed to write onebyte instruction\n", __FUNCTION__, __LINE__);
+        printf("%s(%d) - failed to check cpld busy due to timeout\n",  __FUNCTION__, __LINE__);
         return -1;
     }
 
@@ -595,9 +576,9 @@ int program_feabits(unsigned short feabits)
         return -1;
     }
 
-    rc = write_onebyte_instruction(JTAG_STATE_IDLE, LSC_CHECK_BUSY);
+    rc = check_cpld_busy(CPLD_BUSY_FLAG_BIT, CPLD_BUSY_CHECK_TIMEOUT);
     if(rc < 0){
-        printf("%s(%d) - failed to write onebyte instruction LSC_CHECK_BUSY\n", __FUNCTION__, __LINE__);
+        printf("%s(%d) - failed to check cpld busy due to timeout\n",  __FUNCTION__, __LINE__);
         return -1;
     }
 
@@ -624,7 +605,7 @@ int program_feabits(unsigned short feabits)
     return 0;
 }
 
-int programe_done()
+int program_done()
 {
     int i;
     int rc;
@@ -636,9 +617,9 @@ int programe_done()
         return -1;
     }
 
-    rc = write_onebyte_instruction(JTAG_STATE_IDLE, LSC_CHECK_BUSY);
+    rc = check_cpld_busy(CPLD_BUSY_FLAG_BIT, CPLD_BUSY_CHECK_TIMEOUT);
     if(rc < 0){
-        printf("%s(%d) - failed to write onebyte instruction LSC_CHECK_BUSY\n", __FUNCTION__, __LINE__);
+        printf("%s(%d) - failed to check cpld busy due to timeout\n",  __FUNCTION__, __LINE__);
         return -1;
     }
 
@@ -701,11 +682,11 @@ int verify_configuration(int bytes_per_page, int num_of_pages)
         printf("%s(%d) - failed to write onebyte instruction LSC_READ_INCR_NV\n", __FUNCTION__, __LINE__);
         goto end_of_func;
     }
-    
+
     run_test_idle(0, JTAG_STATE_IDLE, 2);
     usleep(3000);
 
-    printf("Verify config pages: %d \n", used_pages);   
+    printf("Verify config pages: %d \n", used_pages);
     
     for (row = 0 ; row < used_pages; row++) {
         memset(page_buffer, 0, bytes_per_page);

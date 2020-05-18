@@ -25,4 +25,5 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   usb-console \
   mterm \
+  fscd \
   "

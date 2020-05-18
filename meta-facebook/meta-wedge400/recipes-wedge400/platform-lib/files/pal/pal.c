@@ -326,6 +326,17 @@ const uint8_t w400c_evt1_smb_sensor_list[] = {
   SMB_SENSOR_VDDCK_0_IN_POWER,
   SMB_SENSOR_VDDCK_0_OUT_POWER,
   SMB_SENSOR_VDDCK_0_TEMP,
+  /* GB switch internal sensors */
+  SMB_SENSOR_GB_TEMP1,
+  SMB_SENSOR_GB_TEMP2,
+  SMB_SENSOR_GB_TEMP3,
+  SMB_SENSOR_GB_TEMP4,
+  SMB_SENSOR_GB_TEMP5,
+  SMB_SENSOR_GB_TEMP6,
+  SMB_SENSOR_GB_TEMP7,
+  SMB_SENSOR_GB_TEMP8,
+  SMB_SENSOR_GB_TEMP9,
+  SMB_SENSOR_GB_TEMP10,
 };
 
 const uint8_t w400c_evt2_smb_sensor_list[] = {
@@ -425,6 +436,17 @@ const uint8_t w400c_evt2_smb_sensor_list[] = {
   SMB_SENSOR_VDDCK_1_OUT_CURR,
   SMB_SENSOR_VDDCK_1_OUT_POWER,
   SMB_SENSOR_VDDCK_1_TEMP,
+  /* GB switch internal sensors */
+  SMB_SENSOR_GB_TEMP1,
+  SMB_SENSOR_GB_TEMP2,
+  SMB_SENSOR_GB_TEMP3,
+  SMB_SENSOR_GB_TEMP4,
+  SMB_SENSOR_GB_TEMP5,
+  SMB_SENSOR_GB_TEMP6,
+  SMB_SENSOR_GB_TEMP7,
+  SMB_SENSOR_GB_TEMP8,
+  SMB_SENSOR_GB_TEMP9,
+  SMB_SENSOR_GB_TEMP10,
 };
 
 const uint8_t pem1_sensor_list[] = {
@@ -2853,6 +2875,56 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
         }
       }
       break;
+    case SMB_SENSOR_GB_TEMP1:
+      if( brd_type == BRD_TYPE_WEDGE400C ){
+        ret = read_attr(SMB_GB_TEMP_DEVICE, TEMP(1), value);
+      }
+      break;
+    case SMB_SENSOR_GB_TEMP2:
+      if( brd_type == BRD_TYPE_WEDGE400C ){
+        ret = read_attr(SMB_GB_TEMP_DEVICE, TEMP(2), value);
+      }
+      break;
+    case SMB_SENSOR_GB_TEMP3:
+      if( brd_type == BRD_TYPE_WEDGE400C ){
+        ret = read_attr(SMB_GB_TEMP_DEVICE, TEMP(3), value);
+      }
+      break;
+    case SMB_SENSOR_GB_TEMP4:
+      if( brd_type == BRD_TYPE_WEDGE400C ){
+        ret = read_attr(SMB_GB_TEMP_DEVICE, TEMP(4), value);
+      }
+      break;
+    case SMB_SENSOR_GB_TEMP5:
+      if( brd_type == BRD_TYPE_WEDGE400C ){
+        ret = read_attr(SMB_GB_TEMP_DEVICE, TEMP(5), value);
+      }
+      break;
+    case SMB_SENSOR_GB_TEMP6:
+      if( brd_type == BRD_TYPE_WEDGE400C ){
+        ret = read_attr(SMB_GB_TEMP_DEVICE, TEMP(6), value);
+      }
+      break;
+    case SMB_SENSOR_GB_TEMP7:
+      if( brd_type == BRD_TYPE_WEDGE400C ){
+        ret = read_attr(SMB_GB_TEMP_DEVICE, TEMP(7), value);
+      }
+      break;
+    case SMB_SENSOR_GB_TEMP8:
+      if( brd_type == BRD_TYPE_WEDGE400C ){
+        ret = read_attr(SMB_GB_TEMP_DEVICE, TEMP(8), value);
+      }
+      break;
+    case SMB_SENSOR_GB_TEMP9:
+      if( brd_type == BRD_TYPE_WEDGE400C ){
+        ret = read_attr(SMB_GB_TEMP_DEVICE, TEMP(9), value);
+      }
+      break;
+    case SMB_SENSOR_GB_TEMP10:
+      if( brd_type == BRD_TYPE_WEDGE400C ){
+        ret = read_attr(SMB_GB_TEMP_DEVICE, TEMP(10), value);
+      }
+      break;
     case SMB_DOM1_MAX_TEMP:
       ret = read_attr(SMB_DOM1_DEVICE, TEMP(1), value);
       break;
@@ -3928,6 +4000,36 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
         sprintf(name, "GB_DIE_TEMP_MEAN");
       }
       break;
+    case SMB_SENSOR_GB_TEMP1:
+      sprintf(name, "GB_TEMP1");
+      break;
+    case SMB_SENSOR_GB_TEMP2:
+      sprintf(name, "GB_TEMP2");
+      break;
+    case SMB_SENSOR_GB_TEMP3:
+      sprintf(name, "GB_TEMP3");
+      break;
+    case SMB_SENSOR_GB_TEMP4:
+      sprintf(name, "GB_TEMP4");
+      break;
+    case SMB_SENSOR_GB_TEMP5:
+      sprintf(name, "GB_TEMP5");
+      break;
+    case SMB_SENSOR_GB_TEMP6:
+      sprintf(name, "GB_TEMP6");
+      break;
+    case SMB_SENSOR_GB_TEMP7:
+      sprintf(name, "GB_TEMP7");
+      break;
+    case SMB_SENSOR_GB_TEMP8:
+      sprintf(name, "GB_TEMP8");
+      break;
+    case SMB_SENSOR_GB_TEMP9:
+      sprintf(name, "GB_TEMP9");
+      break;
+    case SMB_SENSOR_GB_TEMP10:
+      sprintf(name, "GB_TEMP10");
+      break;
     case SMB_DOM1_MAX_TEMP:
       sprintf(name, "DOM_FPGA1_MAX_TEMP");
       break;
@@ -4783,6 +4885,16 @@ get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case SMB_SENSOR_TMP422_U20_TEMP:
     case SMB_SENSOR_SW_DIE_TEMP1:
     case SMB_SENSOR_SW_DIE_TEMP2:
+    case SMB_SENSOR_GB_TEMP1:
+    case SMB_SENSOR_GB_TEMP2:
+    case SMB_SENSOR_GB_TEMP3:
+    case SMB_SENSOR_GB_TEMP4:
+    case SMB_SENSOR_GB_TEMP5:
+    case SMB_SENSOR_GB_TEMP6:
+    case SMB_SENSOR_GB_TEMP7:
+    case SMB_SENSOR_GB_TEMP8:
+    case SMB_SENSOR_GB_TEMP9:
+    case SMB_SENSOR_GB_TEMP10:
     case SMB_SENSOR_FCM_LM75B_U1_TEMP:
     case SMB_SENSOR_FCM_LM75B_U2_TEMP:
     case SMB_DOM1_MAX_TEMP:
@@ -5254,6 +5366,16 @@ sensor_thresh_array_init(uint8_t fru) {
       }else if(brd_type == BRD_TYPE_WEDGE400C){
         smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP1][UCR_THRESH] = 105;
         smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP2][UCR_THRESH] = 105;
+        smb_sensor_threshold[SMB_SENSOR_GB_TEMP1][UCR_THRESH] = 105;
+        smb_sensor_threshold[SMB_SENSOR_GB_TEMP2][UCR_THRESH] = 105;
+        smb_sensor_threshold[SMB_SENSOR_GB_TEMP3][UCR_THRESH] = 105;
+        smb_sensor_threshold[SMB_SENSOR_GB_TEMP4][UCR_THRESH] = 105;
+        smb_sensor_threshold[SMB_SENSOR_GB_TEMP5][UCR_THRESH] = 105;
+        smb_sensor_threshold[SMB_SENSOR_GB_TEMP6][UCR_THRESH] = 105;
+        smb_sensor_threshold[SMB_SENSOR_GB_TEMP7][UCR_THRESH] = 105;
+        smb_sensor_threshold[SMB_SENSOR_GB_TEMP8][UCR_THRESH] = 105;
+        smb_sensor_threshold[SMB_SENSOR_GB_TEMP9][UCR_THRESH] = 105;
+        smb_sensor_threshold[SMB_SENSOR_GB_TEMP10][UCR_THRESH] = 105;
       }
       smb_sensor_threshold[SMB_DOM1_MAX_TEMP][UCR_THRESH] = 65;
       smb_sensor_threshold[SMB_DOM2_MAX_TEMP][UCR_THRESH] = 65;
@@ -5550,6 +5672,16 @@ smb_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case SMB_SENSOR_HBM_TEMP:
     case SMB_SENSOR_VDDCK_0_TEMP:
     case SMB_SENSOR_VDDCK_1_TEMP:
+    case SMB_SENSOR_GB_TEMP1:
+    case SMB_SENSOR_GB_TEMP2:
+    case SMB_SENSOR_GB_TEMP3:
+    case SMB_SENSOR_GB_TEMP4:
+    case SMB_SENSOR_GB_TEMP5:
+    case SMB_SENSOR_GB_TEMP6:
+    case SMB_SENSOR_GB_TEMP7:
+    case SMB_SENSOR_GB_TEMP8:
+    case SMB_SENSOR_GB_TEMP9:
+    case SMB_SENSOR_GB_TEMP10:
       *value = 30;
       break;
     case SMB_SENSOR_SW_DIE_TEMP1:

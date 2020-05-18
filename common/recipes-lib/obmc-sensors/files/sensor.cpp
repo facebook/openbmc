@@ -150,7 +150,7 @@ float LegacyPWMSensor::read()
   file >> en;
   file.close();
   if (!en) {
-    throw system_error(EIO, std::generic_category(), "PWM Not enabled");
+    return 0.0;
   }
   int val;
   file.open(falling_path);
@@ -171,7 +171,9 @@ void LegacyPWMSensor::write(float val)
     file.open(en_path);
     file << 0 << endl;
     file.close();
-  } else if (value == max) {
+    return;
+  }
+  if (value == max) {
     value = 0;
   }
 

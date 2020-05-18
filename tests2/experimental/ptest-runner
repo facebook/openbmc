@@ -41,7 +41,6 @@ fi
 
 openbmc_dir=$(realpath "$(dirname "${BASH_SOURCE[0]}")"/../..)
 cur=$(pwd)
-cd "$openbmc_dir" || exit 1
 if [ -z "$build_dir" ]; then
   env -i HOME="$HOME" bash -l -c "cd  $openbmc_dir; source ./openbmc-init-build-env qemux86 build-qemux86 > /dev/null; bitbake -q qemux86-image"
   build_dir="${openbmc_dir}/build-qemux86"

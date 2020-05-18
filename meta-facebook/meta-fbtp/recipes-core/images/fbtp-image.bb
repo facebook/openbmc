@@ -55,4 +55,5 @@ IMAGE_INSTALL += " \
   libpldm \
   obmc-sensors-test \
   dimm-util \
+  setup-gpio \
   "

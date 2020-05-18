@@ -25,26 +25,19 @@ from common.base_kernel_module_presence_test import BaseKernelModulePresenceTest
 class KernelModulePresenceTest(BaseKernelModulePresenceTest, unittest.TestCase):
     def set_kmods(self):
         self.expected_kmod = [
-            "usb_f_acm",
-            "u_serial",
-            "usb_f_ecm",
-            "g_cdc",
-            "u_ether",
-            "adm1275",
-            "tmp421",
-            "powr1220",
-            "tpm_i2c_infineon",
+            "i2c_dev_sysfs",
+
+            # Modules in meta-facebook/meta-minipack/recipes-kernel/cpld-mod/
             "smbcpld",
             "scmcpld",
-            "psu_driver",
             "pdbcpld",
-            "max34461",
-            "isl68127",
-            "ir3595",
             "iobfpga",
             "fcmcpld",
             "domfpga",
-            "i2c_dev_sysfs",
-            "at25",
-            "i2c_mux_pca954x",
+
+            # Modules in meta-facebook/meta-minipack/recipes-kernel/i2c-mod/.
+            "max34461",
+            "isl68127",
+            "ir3595",
+            "psu_driver",
         ]

@@ -20,6 +20,27 @@ import re
 from subprocess import PIPE, Popen
 
 from fsc_util import Logger
+from ctypes import CDLL, byref, c_uint8
+
+
+lpal_hndl = CDLL("libpal.so.0")
+
+
+def pal_get_board_type():
+    """ get board type """
+    BRD_TYPE_WEDGE400 = 0x00
+    BRD_TYPE_WEDGE400C = 0x01
+
+    board_type = {
+        BRD_TYPE_WEDGE400: "Wedge400",
+        BRD_TYPE_WEDGE400C: "Wedge400C",
+    }
+    brd_type = c_uint8()
+    ret = lpal_hndl.pal_get_board_type(byref(brd_type))
+    if ret:
+        return None
+    else:
+        return board_type.get(brd_type.value, None)
 
 
 def board_fan_actions(fan, action="None"):
@@ -123,14 +144,23 @@ def set_fan_led(fan, color="led_blue"):
 
 
 def host_shutdown():
-    MAIN_POWER = "/sys/bus/i2c/drivers/smb_syscpld/12-003e/cpld_in_p1220"
-    USERVER_POWER = "/sys/bus/i2c/drivers/scmcpld/2-003e/com_exp_pwr_enable"
+    SCM_POWER_COMMAND = "/usr/local/bin/wedge_power.sh reset"
+    TH_SWITCH_POWER_COMMAND = "/usr/local/bin/reset_brcm.sh"
+    GB_SWITCH_POWER_COMMAND = "/usr/local/bin/switch_reset.sh cycle"
+    switch_reset_cmd = ""
+    brd_type = pal_get_board_type()
+    if brd_type == "Wedge400":
+        switch_reset_cmd = TH_SWITCH_POWER_COMMAND
+    elif brd_type == "Wedge400C":
+        switch_reset_cmd = GB_SWITCH_POWER_COMMAND
+    else:
+        Logger.crit("Cannot identify board type: %s" % brd_type)
+        Logger.crit("Switch won't be resetting!")
 
-    cmd = "echo 0 > " + USERVER_POWER
-    Logger.info("host_shutdown() executing {}".format(cmd))
-    response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    Logger.info("host_shutdown() executing {}".format(SCM_POWER_COMMAND))
+    response = Popen(SCM_POWER_COMMAND, shell=True, stdout=PIPE).stdout.read()
     time.sleep(5)
-    cmd = "echo 0 > " + MAIN_POWER
-    Logger.info("host_shutdown() executing {}".format(cmd))
-    response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    if switch_reset_cmd != "":
+        Logger.info("host_shutdown() executing {}".format(switch_reset_cmd))
+        response = Popen(switch_reset_cmd, shell=True, stdout=PIPE).stdout.read()
     return response

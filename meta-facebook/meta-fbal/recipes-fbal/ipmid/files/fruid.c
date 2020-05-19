@@ -122,6 +122,8 @@ static void *pdb_fru_reader(void *arg) {
 /* Populate the platform specific eeprom for fruid info */
 int plat_fruid_init(void) {
   pthread_t tid;
+  char FRU_EEPROM_MB[64];
+  fru_eeprom_mb_check(FRU_EEPROM_MB);
 
   if (copy_eeprom_to_bin(FRU_EEPROM_MB, BIN_MB)) {
     syslog(LOG_WARNING, "%s: Copy MB EEPROM Failed", __func__);

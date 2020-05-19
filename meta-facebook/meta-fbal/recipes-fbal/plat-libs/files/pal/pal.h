@@ -33,7 +33,7 @@ extern "C" {
 #include "pal_ep.h"
 
 #define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle"
-#define FRU_EEPROM_MB    "/sys/class/i2c-dev/i2c-4/device/4-0054/eeprom"
+#define FRU_EEPROM_MB_T  "/sys/class/i2c-dev/i2c-4/device/4-00%d/eeprom"
 #define FRU_EEPROM_NIC0  "/sys/class/i2c-dev/i2c-17/device/17-0050/eeprom"
 #define FRU_EEPROM_NIC1  "/sys/class/i2c-dev/i2c-18/device/18-0052/eeprom"
 #define FRU_EEPROM_BMC  "/sys/class/i2c-dev/i2c-13/device/13-0056/eeprom"
@@ -62,6 +62,14 @@ enum {
   FRU_DBG,
   FRU_BMC,
   FRU_CNT,
+};
+
+enum {
+  REV_PO = 0, 
+  REV_EVT,
+  REV_DVT,
+  REV_PVT,
+  REV_MP,
 };
 
 #define MAX_NUM_FRUS    (FRU_CNT-1)
@@ -179,6 +187,7 @@ int pal_get_config_is_master(void);
 int pal_get_blade_id(uint8_t *id);
 int pal_get_mb_position(uint8_t* pos);
 int pal_get_board_rev_id(uint8_t *id);
+void fru_eeprom_mb_check(char* mb_path);
 
 enum {
   UARTSW_BY_BMC,

@@ -535,11 +535,27 @@ pal_get_fruid_path(uint8_t fru, char *path) {
   return 0;
 }
 
+void fru_eeprom_mb_check(char* mb_path) {
+  uint8_t id=0;
+
+  pal_get_board_rev_id(&id);
+
+  if(id < REV_DVT) {
+   sprintf(mb_path, FRU_EEPROM_MB_T, 54);
+  } else {
+   sprintf(mb_path, FRU_EEPROM_MB_T, 57);
+  }
+}
+
+
 int
 pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
+  char FRU_EEPROM_MB[64];
+
   switch(fru) {
   case FRU_MB:
-    sprintf(path, FRU_EEPROM_MB);
+    fru_eeprom_mb_check(FRU_EEPROM_MB);
+    sprintf(path, "%s", FRU_EEPROM_MB);
     break;
   case FRU_NIC0:
     sprintf(path, FRU_EEPROM_NIC0);
@@ -1228,7 +1244,9 @@ static int
 pal_get_guid(uint16_t offset, char *guid) {
   int fd;
   ssize_t bytes_rd;
+  char FRU_EEPROM_MB[64];
 
+  fru_eeprom_mb_check(FRU_EEPROM_MB);
   errno = 0;
 
   // check for file presence
@@ -1258,7 +1276,9 @@ static int
 pal_set_guid(uint16_t offset, char *guid) {
   int fd;
   ssize_t bytes_wr;
+  char FRU_EEPROM_MB[64];
 
+  fru_eeprom_mb_check(FRU_EEPROM_MB);
   errno = 0;
 
   // check for file presence

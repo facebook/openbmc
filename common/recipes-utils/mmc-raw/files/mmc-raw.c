@@ -52,6 +52,10 @@
 #define MMC_ERASE_GROUP_FLAGS	0x195
 #define MMC_ERASE_FLAGS		0x49d
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(_a)		(sizeof(_a) / sizeof((_a)[0]))
+#endif
+
 /*
  * Logging utilities.
  */
@@ -690,6 +694,223 @@ static int mmc_read_report_cmd(struct m_cmd_args *cmd_args)
 	return 0;
 }
 
+static char *mmc_extcsd_rev(__u8 rev, char *buf, size_t size)
+{
+	static const char *revisions[] = {
+		"v4.0",
+		"v4.1",
+		"v4.2",
+		"v4.3",
+		"Obsolete",
+		"v4.41",
+		"v4.5",
+		"v5.0",
+		"v5.1",
+	};
+
+	if (rev < ARRAY_SIZE(revisions)) {
+		snprintf(buf, size, "%s", revisions[rev]);
+	} else {
+		snprintf(buf, size, "REV(%#02x)", rev);
+	}
+
+	return buf;
+}
+
+static char *mmc_pre_eol(__u8 eol, char *buf, size_t size)
+{
+	static const char *eol_states[] = {
+		"Undefined",
+		"Normal",
+		"Wanring",
+		"Urgent",
+	};
+
+	if (eol < ARRAY_SIZE(eol_states)) {
+		snprintf(buf, size, "%s", eol_states[eol]);
+	} else {
+		snprintf(buf, size, "EOL(%#02x)", eol);
+	}
+
+	return buf;
+}
+
+static char *mmc_est_life_time(__u8 life_time, char *buf, size_t size)
+{
+	static const char *life_time_ranges[] = {
+		"Undefined",
+		"0%-10% life time used",
+		"10%-20% life time used",
+		"20%-30% life time used",
+		"30%-40% life time used",
+		"40%-50% life time used",
+		"50%-60% life time used",
+		"60%-70% life time used",
+		"70%-80% life time used",
+		"80%-90% life time used",
+		"90%-10% life time used",
+		"excedded maximum life time",
+	};
+
+	if (life_time < ARRAY_SIZE(life_time_ranges)) {
+		snprintf(buf, size, "%s", life_time_ranges[life_time]);
+	} else {
+		snprintf(buf, size, "LifeTime(%#02x)", life_time);
+	}
+
+	return buf;
+}
+
+static char *mmc_bus_width(__u8 width, char *buf, size_t size)
+{
+	static const char *bus_width[] = {
+		"1",
+		"4",
+		"8",
+		"Reserved",
+		"Reserved",
+		"4 (dual data rate)",
+		"8 (dual data rate)",
+	};
+
+	if (width < ARRAY_SIZE(bus_width)) {
+		snprintf(buf, size, "%s", bus_width[width]);
+	} else {
+		snprintf(buf, size, "WIDTH(%#02x)", width);
+	}
+
+	return buf;
+}
+
+static char *mmc_reset_n_state(__u8 rst_n, char *buf, size_t size)
+{
+	static const char *reset_states[] = {
+		"temporarily disabled (default)",
+		"permanently enabled",
+		"permanently disabled",
+		"Reserved",
+	};
+
+	if (rst_n < ARRAY_SIZE(reset_states)) {
+		snprintf(buf, size, "%s", reset_states[rst_n]);
+	} else {
+		snprintf(buf, size, "RST_N(%#02x)", rst_n);
+	}
+
+	return buf;
+}
+
+static char *mmc_cache_ctrl(__u8 cache_ctrl, char *buf, size_t size)
+{
+	static const char *cache_states[] = {
+		"OFF",
+		"ON",
+	};
+
+	if (cache_ctrl < ARRAY_SIZE(cache_states)) {
+		snprintf(buf, size, "%s", cache_states[cache_ctrl]);
+	} else {
+		snprintf(buf, size, "CACHE_CTRL(%#02x)", cache_ctrl);
+	}
+
+	return buf;
+}
+
+static void mmc_dump_base_info(mmc_cid_t *cid, __u8 *extcsd)
+{
+	char buf[NAME_MAX];
+	__u8 rev = extcsd[EXT_CSD_REV];
+
+	MMC_INFO("- Vendor/Product: %s %s\n",
+		mmc_manufacturer(cid->mid, buf, sizeof(buf)), cid->pnm);
+	MMC_INFO("- eMMC Revision: %s\n",
+		mmc_extcsd_rev(rev, buf, sizeof(buf)));
+}
+
+static void mmc_dump_secure_info(__u8 *extcsd)
+{
+	__u8 sec_info = extcsd[EXT_CSD_SEC_FEATURE_SUPPORT];
+
+	MMC_INFO("- Secure Feature: %s%s%s%s\n",
+		(sec_info & SEC_SANITIZE) ? "sanitize," : "",
+		(sec_info & SEC_GB_CL_EN) ? "secure-trim,"  : "",
+		(sec_info & SEC_BD_BLK_EN) ? "auto-erase,"  : "",
+		(sec_info & SECURE_ER_EN) ? "secure-purge" : "");
+}
+
+static void mmc_dump_health_info(__u8 *extcsd)
+{
+	char buf[NAME_MAX];
+	__u8 eol = extcsd[EXT_CSD_PRE_EOL_INFO];
+	__u8 lta = extcsd[EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_A];
+	__u8 ltb = extcsd[EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_B];
+
+	MMC_INFO("- Device Health (PRE_EOL): %s\n",
+		mmc_pre_eol(eol, buf, sizeof(buf)));
+	MMC_INFO("- Estimated Life Time (Type A): %s\n",
+		mmc_est_life_time(lta, buf, sizeof(buf)));
+	if (ltb > 0) {
+		MMC_INFO("- Estimated Life Time (Type B): %s\n",
+			mmc_est_life_time(ltb, buf, sizeof(buf)));
+	}
+}
+
+static void mmc_dump_misc_info(__u8 *extcsd)
+{
+	char buf[NAME_MAX];
+	__u8 width, rst_n, cache_ctrl;
+
+	width = extcsd[EXT_CSD_BUS_WIDTH];
+	MMC_INFO("- Bus Width: %s\n",
+		mmc_bus_width(width, buf, sizeof(buf)));
+
+	rst_n = extcsd[EXT_CSD_RST_N_FUNCTION];
+	MMC_INFO("- H/W Reset Function: %s\n",
+		mmc_reset_n_state(rst_n, buf, sizeof(buf)));
+
+	cache_ctrl = extcsd[EXT_CSD_CACHE_CTRL];
+	MMC_INFO("- Cache Control: %s\n",
+		mmc_cache_ctrl(cache_ctrl, buf, sizeof(buf)));
+}
+
+static int mmc_show_summary_cmd(struct m_cmd_args *cmd_args)
+{
+	mmc_cid_t *cid = &mmc_reg_cache.cid;
+	__u8 *extcsd = mmc_reg_cache.extcsd;
+
+	/*
+	 * Load CID and EXT_CSD for reference.
+	 */
+	if (mmc_load_cid(cmd_args) != 0)
+		return -1;
+	if (mmc_load_extcsd(cmd_args) != 0)
+		return -1;
+
+	/*
+	 * Basic device information.
+	 */
+	MMC_INFO("eMMC %s Device Summary:\n", cmd_args->dev_path);
+	mmc_dump_base_info(cid, extcsd);
+
+	/*
+	 * Secure feature.
+	 */
+	mmc_dump_secure_info(extcsd);
+
+	/*
+	 * Health status.
+	 */
+	mmc_dump_health_info(extcsd);
+
+	/*
+	 * Others.
+	 */
+	mmc_dump_misc_info(extcsd);
+
+	MMC_INFO("\n");
+	return 0;
+}
+
 static struct m_cmd_info mmc_cmds[] = {
 	{
 		"trim",
@@ -715,6 +936,11 @@ static struct m_cmd_info mmc_cmds[] = {
 		"write-extcsd",
 		"write Extended CSD register of the mmc device",
 		mmc_write_extcsd_cmd,
+	},
+	{
+		"show-summary",
+		"display summary information of the mmc device",
+		mmc_show_summary_cmd,
 	},
 	{
 		"read-devreport",

@@ -23,6 +23,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://mmc-raw.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
 SRC_URI = "file://Makefile \
+           file://lsmmc.c \
            file://mmc-raw.c \
            file://mmc.h \
           "

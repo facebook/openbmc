@@ -27,6 +27,7 @@
 #include <getopt.h>
 #include <fcntl.h>
 #include <ctype.h>
+#include <libgen.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -36,6 +37,7 @@
 
 #define BLKDEV_SECTOR_SIZE	512
 #define BLKDEV_ADDR_INVALID	UINT32_MAX
+#define BLKDEV_SYSFS_ROOT	"/sys/class/block"
 
 /*
  * Extended CSD register size. Refer to JEDEC Standard, Section 7.4 for
@@ -117,14 +119,34 @@ static struct {
 	unsigned int secure:1;
 } mmc_flags;
 
+typedef struct {
+	__u8	mid;		/* Manufacturer ID */
+	__u8	cbx;		/* Device/BGA */
+	__u8	oid;		/* OEM/Application ID */
+	char	pnm[7];		/* Product Name */
+	__u8	prv_major;	/* Product revision (major) */
+	__u8	prv_minor;	/* Product revision (minor) */
+	__u32	psn;		/* Product serial number */
+	__u8	mdt_month;	/* Manufacturing date (month) */
+	__u8	mdt_year;	/* Manufacturing date (month) */
+} mmc_cid_t;
+
 /*
  * Cache of mmc registers (extcsd, csd, cid and etc.).
  */
 static struct {
+	unsigned int cid_loaded:1;
 	unsigned int extcsd_loaded:1;
+
+	mmc_cid_t cid;
 	__u8 extcsd[MMC_EXTCSD_SIZE];
 } mmc_reg_cache;
 
+/*
+ * Functions defined in lsmmc.c, used in parse cid.
+ */
+extern char *read_file(char *name);
+extern void parse_bin(char *hexstr, char *fmt, ...);
 
 static int mmc_ioc_issue_cmd(int fd, struct mmc_ioc_cmd *idata)
 {
@@ -370,6 +392,101 @@ static int mmc_erase_cmd(struct m_cmd_args *args)
 	return ret;
 }
 
+static char *mmc_sysfs_path_gen(const char *mmc_dev, const char *entry,
+				char *buf, size_t size)
+{
+	char pathname[PATH_MAX];
+
+	snprintf(pathname, sizeof(pathname), "%s", mmc_dev);
+
+	snprintf(buf, size, "%s/%s/device/%s",
+		 BLKDEV_SYSFS_ROOT, basename(pathname), entry);
+	return buf;
+}
+
+static int mmc_read_cid(struct m_cmd_args *cmd_args, mmc_cid_t *cid)
+{
+	char *cid_str;
+	char cid_path[PATH_MAX];
+	unsigned int crc;
+
+	mmc_sysfs_path_gen(cmd_args->dev_path, "cid",
+			   cid_path, sizeof(cid_path));
+
+	cid_str = read_file(cid_path);
+	parse_bin(cid_str, "8u6r2u8u48a4u4u32u4u4u7u1r",
+		&cid->mid, &cid->cbx, &cid->oid, &cid->pnm[0], &cid->psn,
+		&cid->prv_major, &cid->prv_minor,
+		&cid->mdt_year, &cid->mdt_month, &crc);
+
+	cid->pnm[6] = '\0';
+	free(cid_str);
+
+	return 0;
+}
+
+static int mmc_load_cid(struct m_cmd_args *cmd_args)
+{
+	int ret;
+
+	if (!mmc_reg_cache.cid_loaded) {
+		ret = mmc_read_cid(cmd_args, &mmc_reg_cache.cid);
+		if (ret != 0) {
+			MMC_ERR("failed to read cid: %s\n", strerror(errno));
+			return -1;
+		}
+
+		mmc_reg_cache.cid_loaded = 1;
+	}
+
+	return 0;
+}
+
+static char *mmc_manufacturer(__u8 mid, char *buf, size_t size)
+{
+	const char *mfr_name = NULL;
+
+	switch (mid) {
+	case 0x03:
+	case 0x11:
+		mfr_name = "Toshiba";
+		break;
+
+	case 0x13:
+	case 0xfe:
+		mfr_name = "Micron";
+		break;
+
+	case 0x45:
+		mfr_name = "Western Digital";
+		break;
+	}
+
+	if (mfr_name) {
+		snprintf(buf, size, "%s", mfr_name);
+	} else {
+		snprintf(buf, size, "MFR(%#02X)", mid);
+	}
+
+	return buf;
+}
+
+static void mmc_dump_cid(mmc_cid_t *cid)
+{
+	char mfr[NAME_MAX];
+
+	MMC_INFO("- Manufacturer: %s\n",
+		mmc_manufacturer(cid->mid, mfr, sizeof(mfr)));
+	MMC_INFO("- Device Type (CBX): %#01x\n", cid->cbx);
+	MMC_INFO("- OEM/Application ID: %#02x\n", cid->oid);
+	MMC_INFO("- Product Name: %s\n", cid->pnm);
+	MMC_INFO("- Product Revision: %d.%d\n",
+		 cid->prv_major, cid->prv_minor);
+	MMC_INFO("- Product Serial Number: %#08x\n", cid->psn);
+	MMC_INFO("- Manufacturing Date (month/year): %d/%d\n",
+		 cid->mdt_month, cid->mdt_year);
+}
+
 static int mmc_read_extcsd(int fd, __u8 *extcsd)
 {
 	struct mmc_ioc_cmd idata;
@@ -429,6 +546,18 @@ static void mmc_dump_extcsd(__u8 *extcsd)
 		}
 		MMC_INFO("\n");
 	}
+}
+
+static int mmc_read_cid_cmd(struct m_cmd_args *cmd_args)
+{
+	if (mmc_load_cid(cmd_args) != 0)
+		return -1;
+
+	MMC_INFO("eMMC %s CID Register:\n", cmd_args->dev_path);
+	mmc_dump_cid(&mmc_reg_cache.cid);
+	MMC_INFO("\n");
+
+	return 0;
 }
 
 static int mmc_read_extcsd_cmd(struct m_cmd_args *cmd_args)
@@ -571,6 +700,11 @@ static struct m_cmd_info mmc_cmds[] = {
 		"erase",
 		"send erase command to the mmc device",
 		mmc_erase_cmd,
+	},
+	{
+		"read-cid",
+		"read CID register of the mmc device",
+		mmc_read_cid_cmd,
 	},
 	{
 		"read-extcsd",

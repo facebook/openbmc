@@ -730,7 +730,7 @@ int main(int argc, char **argv)
 	close(cmd_args.dev_fd);
 
 	if (ret == 0) {
-		MMC_INFO("'%s' command completed successfully!\n",
+		MMC_DEBUG("'%s' command completed successfully!\n",
 			 cmd_args.cmd);
 	} else {
 		MMC_ERR("'%s' command failed with errors!\n", cmd_args.cmd);

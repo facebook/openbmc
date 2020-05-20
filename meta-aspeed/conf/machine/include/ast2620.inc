@@ -19,7 +19,7 @@ PREFERRED_PROVIDER_virtual/kernel ?= "linux-aspeed"
 PREFERRED_VERSION_linux-aspeed ?= "5.3.8"
 
 PREFERRED_VERSION_u-boot ?= "v2019.04"
-PREFERRED_VERSION_u-boot-mkimage ?= "v2019.04"
+PREFERRED_VERSION_u-boot-tools ?= "v2019.04"
 PREFERRED_VERSION_u-boot-fw-utils ?= "v2019.04"
 
 KERNEL_IMAGETYPE ?= "zImage"

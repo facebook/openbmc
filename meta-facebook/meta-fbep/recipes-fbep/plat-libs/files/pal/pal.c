@@ -38,12 +38,11 @@
 #include "pal.h"
 
 #define P12V_AUX_HWMON_DIR \
-  "/sys/bus/i2c/drivers/ltc4282/18-0043/hwmon"
+  "/sys/bus/i2c/drivers/adm1275/18-0042/hwmon"
 #define P12V_AUX_DIR \
   P12V_AUX_HWMON_DIR"/hwmon%d/%s"
 
-#define LTC4282_STATUS_PWR_GOOD	"power_good"
-#define LTC4282_REBOOT		"reboot"
+#define ADM1278_REBOOT	"power_cycle"
 
 #define DELAY_POWER_CYCLE 10
 #define MAX_RETRY 10
@@ -856,8 +855,8 @@ int pal_sled_cycle(void)
   }
 
   closedir(dir);
-  // reboot LTC4282 for 12V
-  snprintf(device, LARGEST_DEVICE_NAME, P12V_AUX_DIR, index, LTC4282_REBOOT);
+  // reboot ADM1278 for 12V cycle
+  snprintf(device, LARGEST_DEVICE_NAME, P12V_AUX_DIR, index, ADM1278_REBOOT);
   if (write_device(device, 1) < 0)
     goto err_exit;
 

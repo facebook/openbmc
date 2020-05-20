@@ -61,4 +61,5 @@ IMAGE_INSTALL += " \
   slot-util \
   dimm-util \
   setup-gpio \
+  at \
   "

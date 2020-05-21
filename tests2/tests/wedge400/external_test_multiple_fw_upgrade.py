@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2018-present Facebook. All Rights Reserved.
+# Copyright 2020-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -18,22 +18,16 @@
 # Boston, MA 02110-1301 USA
 #
 
-from pexpect import pxssh
+import unittest
+from tests.wedge400.test_data.firmware_upgrade.firmware_upgrade_config import (
+    FwUpgradeTest,
+)
 
 
-class OpenBMCSSHSession:
-    def __init__(self, hostname):
-        self._hostname = hostname
-        self._username = "root"
-        self._password = "0penBmc"
+class CollectiveFwUpgradeTest(FwUpgradeTest, unittest.TestCase):
+    """
+        Collective test for all components which is found in json file
+    """
 
-    def connect(self):
-        self.session = pxssh.pxssh()
-        self.session.SSH_OPTS = (
-            " -o 'StrictHostKeyChecking=no'" + " -o 'UserKnownHostsFile /dev/null' "
-        )
-
-    def login(self):
-        if not self.session.login(self._hostname, self._username, self._password):
-            print("Login [FAILED]")
-        return
+    def test_collective_firmware_upgrade(self):
+        super().do_external_firmware_upgrade()

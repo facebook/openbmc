@@ -49,27 +49,45 @@ class ScmSensorTest(SensorUtilTest, unittest.TestCase):
                 )
 
     def test_scm_temp_sensor_range(self):
-        result = self.get_parsed_result()
-        TEMP_KEYS = [
-            "SCM_OUTLET_TEMP",
-            "SCM_INLET_TEMP",
-            "MB_OUTLET_TEMP",
-            "MB_INLET_TEMP",
-            "SOC_TEMP",
-            "SOC_DIMMA_TEMP",
-            "SOC_DIMMB_TEMP",
-        ]
-        for key in TEMP_KEYS:
+        result = self.get_json_threshold_result()
+        for key in result.keys():
             with self.subTest(key=key):
-                value = result[key]
-                self.assertAlmostEqual(
-                    float(value),
-                    50,
-                    delta=30,
-                    msg="Sensor={} reported value={} not within range".format(
+                data = result[key]
+                if isinstance(data, bool):  # Filter non-sensor item out
+                    continue
+                ucr = None
+                lcr = None
+                value = data["value"]
+
+                self.assertNotEqual(  # Assert if value is N/A
+                    value,
+                    "NA",
+                    msg="Sensor={}, reported value={}, is unmeasurable".format(
                         key, value
                     ),
                 )
+
+                if data.get("thresholds", None):
+                    ucr = data["thresholds"].get("UCR", None)
+                    lcr = data["thresholds"].get("LCR", None)
+
+                if ucr:  # Assert if value is above UCR
+                    self.assertLess(
+                        float(value),
+                        float(ucr),
+                        msg="Sensor={} reported value={} is over UCR={}".format(
+                            key, value, ucr
+                        ),
+                    )
+
+                if lcr:  # Assert if value is below LCR
+                    self.assertGreater(
+                        float(value),
+                        float(lcr),
+                        msg="Sensor={} reported value={} is below LCR={}".format(
+                            key, value, lcr
+                        ),
+                    )
 
 
 class SmbSensorTest(SensorUtilTest, unittest.TestCase):

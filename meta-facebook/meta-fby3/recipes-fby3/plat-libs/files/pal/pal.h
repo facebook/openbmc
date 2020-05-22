@@ -109,8 +109,9 @@ enum {
 };
 
 typedef struct {
-    int bus_value;
-    int dev_value;
+    uint8_t bus_value;
+    uint8_t dev_value;
+    uint8_t root_port;
     char *silk_screen;
     char *location;
 } MAPTOSTRING;

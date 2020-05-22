@@ -118,16 +118,16 @@ struct pal_key_cfg {
 };
 
 MAPTOSTRING root_port_mapping[] = {
-    { 0xB2, 3, "0", "1OU"}, //Port 0x4D
-    { 0xB2, 2, "1", "1OU"}, //Port 0x4C
-    { 0xB2, 1, "2", "1OU"}, //Port 0x4B
-    { 0xB2, 0, "3", "1OU"}, //Port 0x4A
-    { 0x15, 0, "0", "2OU"}, //Port 0x1A
-    { 0x15, 1, "1", "2OU"}, //Port 0x1B
-    { 0x63, 1, "2", "2OU"}, //Port 0x2B
-    { 0x63, 0, "3", "2OU"}, //Port 0x2A
-    { 0x15, 2, "4", "2OU"}, //Port 0x1C
-    { 0x15, 3, "5", "2OU"}, //Port 0x1D
+    { 0xB2, 3, 0x3D, "0", "1OU"}, //Port 0x4D
+    { 0xB2, 2, 0x3C, "1", "1OU"}, //Port 0x4C
+    { 0xB2, 1, 0x3B, "2", "1OU"}, //Port 0x4B
+    { 0xB2, 0, 0x3A, "3", "1OU"}, //Port 0x4A
+    { 0x15, 0, 0x1A, "0", "2OU"}, //Port 0x1A
+    { 0x15, 1, 0x1B, "1", "2OU"}, //Port 0x1B
+    { 0x63, 1, 0x2B, "2", "2OU"}, //Port 0x2B
+    { 0x63, 0, 0x2A, "3", "2OU"}, //Port 0x2A
+    { 0x15, 2, 0x1C, "4", "2OU"}, //Port 0x1C
+    { 0x15, 3, 0x1D, "5", "2OU"}, //Port 0x1D
 };
 
 PCIE_ERR_DECODE pcie_err_tab[] = {
@@ -1317,6 +1317,38 @@ pal_parse_vr_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   return PAL_EOK;
 }
 
+static void
+pal_get_m2vpp_str_name(uint8_t comp, uint8_t root_port, char *error_log) {
+  int i = 0;
+  int size = ARRAY_SIZE(root_port_mapping);
+  for ( i = 0 ; i < size; i++ ) {
+    if ( root_port_mapping[i].root_port == root_port ) {
+      char *silk_screen = root_port_mapping[i].silk_screen;
+      char *location = root_port_mapping[i].location;
+      snprintf(error_log, 256, "%s/Num %s ", location, silk_screen);
+      return;
+    }
+  } 
+
+  if ( i == size ) {
+    snprintf(error_log, 256, "Undefined M2 RootPort %X ", root_port);
+  }
+  return;
+}
+
+static void
+pal_get_m2pgood_str_name(uint8_t comp, uint8_t device_num, char *error_log) {
+  uint8_t index = comp - 1;
+  char *comp_str[4] = {"1OU", "2OU", "SP", "GPv3"};
+  if ( index < 4 ) {
+    snprintf(error_log, 256, "%s/Num %d ", comp_str[index], device_num);
+  } else {
+    snprintf(error_log, 256, "Undefined M2 DevNum %d ", device_num);
+  }
+
+  return;
+}
+
 static int
 pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   enum {
@@ -1331,9 +1363,10 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_OCP_FAULT      = 0x08,
     SYS_RSVD           = 0x09,
     SYS_VR_WDT_TIMEOUT = 0x0A,
-    EVENT_MASK         = 0x0F,
+    SYS_M2_VPP         = 0x0B,
+    SYS_M2_PGOOD       = 0x0C,
   };
-  uint8_t event = EVENT_MASK & event_data[0];
+  uint8_t event = event_data[0];
 
   switch (event) {
     case SYS_THERM_TRIP:
@@ -1366,6 +1399,14 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     case SYS_VR_WDT_TIMEOUT:
       strcat(error_log, "VR WDT");
       break;
+    case SYS_M2_VPP:
+      pal_get_m2vpp_str_name(event_data[1], event_data[2], error_log);
+      strcat(error_log, "VPP Power Control");
+      break;
+    case SYS_M2_PGOOD:
+      pal_get_m2pgood_str_name(event_data[1], event_data[2], error_log);
+      strcat(error_log, "Power Good Fault");
+      break;
     default:
       strcat(error_log, "Undefined system event");
       break;
@@ -1376,8 +1417,12 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
 
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
+  enum {
+    EVENT_TYPE_NOTIF = 0x77, /*IPMI-Table 42-1, Event/Reading Type Code Ranges - OEM specific*/
+  };
   uint8_t snr_num = sel[11];
-  uint8_t event_dir = sel[12];
+  uint8_t event_dir = sel[12] & 0x80;
+  uint8_t event_type = sel[12] & 0x7f;
   uint8_t *event_data = &sel[13];
   bool unknown_snr = false;
   error_log[0] = '\0';
@@ -1398,7 +1443,11 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   }
 
   if ( unknown_snr == false ) {
-    strcat(error_log, ((event_dir & 0x80) == 0)?" Assertion":" Deassertion");
+    if ( event_type == EVENT_TYPE_NOTIF ) {
+      strcat(error_log, " Triggered");
+    } else {
+      strcat(error_log, ((event_dir & 0x80) == 0)?" Assertion":" Deassertion");
+    }
   } else {
     pal_parse_sel_helper(fru, sel, error_log);
   }

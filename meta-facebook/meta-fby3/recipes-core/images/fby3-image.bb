@@ -61,4 +61,5 @@ IMAGE_INSTALL += " \
   enclosure-util \
   fpc-util \
   at \
+  ncsid-v2 \
   "

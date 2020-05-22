@@ -84,7 +84,7 @@ gpio_export NIC_POWER_BMC_EN_R GPIOE1
 gpio_export P12V_NIC_FAULT_N GPIOE2
 gpio_export EMMC_RST_N_R GPIOE5
 gpio_set NIC_POWER_BMC_EN_R 1
-gpio_set EMMC_RST_N_R 0
+gpio_set EMMC_RST_N_R 1
 
 # GPIOF4-SMB_RST_PRIMARY_BMC_N_R
 devmem_clear_bit $(scu_addr 80) 28

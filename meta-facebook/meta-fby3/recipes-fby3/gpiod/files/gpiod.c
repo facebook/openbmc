@@ -34,6 +34,7 @@
 #include <openbmc/pal.h>
 #include <facebook/bic.h>
 #include <facebook/fby3_gpio.h>
+#include <openbmc/obmc-i2c.h>
 #include <openbmc/kv.h>
 
 #define MAX_NUM_SLOTS       4
@@ -43,6 +44,10 @@
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 
+#define MAX_READ_RETRY 3
+#define CPLD_INTENT_CTRL_ADDR 0x70
+#define SLOT_BUS_BASE 3
+
 /* To hold the gpio info and status */
 typedef struct {
   uint8_t flag;
@@ -50,6 +55,11 @@ typedef struct {
   uint8_t ass_val;
   char name[32];
 } gpio_pin_t;
+
+typedef struct {
+  uint8_t err_id;
+  char *err_des;
+} err_t;
 
 static gpio_pin_t gpio_slot1[MAX_GPIO_PINS] = {0};
 static gpio_pin_t gpio_slot2[MAX_GPIO_PINS] = {0};
@@ -65,6 +75,32 @@ bic_gpio_t gpio_ass_val = {
 };
 // memset(&gpio_ass_val, 0, sizeof(gpio_ass_val));
 
+enum {
+  MAJOR_ERROR_BMC_AUTH_FAILED=0x01,
+  MAJOR_ERROR_PCH_AUTH_FAILED=0x02,
+  MAJOR_ERROR_UPDATE_FROM_PCH_FAILED=0x03,
+  MAJOR_ERROR_UPDATE_FROM_BMC_FAILED=0x04,
+};
+
+err_t minor_auth_error[] = {
+  /*MAJOR_ERROR_BMC_AUTH_FAILED or MAJOR_ERROR_PCH_AUTH_FAILED */
+  {0x01, "MINOR_ERROR_AUTH_ACTIVE"},
+  {0x02, "MINOR_ERROR_AUTH_RECOVERY"},
+  {0x03, "MINOR_ERROR_AUTH_ACTIVE_AND_RECOVERY"},
+  {0x04, "MINOR_ERROR_AUTH_ALL_REGIONS"},
+};
+err_t minor_update_error[] = {
+  /* MAJOR_ERROR_PCH_UPDATE_FAIELD or MAJOR_ERROR_BMC_UPDATE_FAIELD */
+  {0x01, "MINOR_ERROR_INVALID_UPDATE_INTENT"},
+  {0x02, "MINOR_ERROR_FW_UPDATE_INVALID_SVN"},
+  {0x03, "MINOR_ERROR_FW_UPDATE_AUTH_FAILED"},
+  {0x04, "MINOR_ERROR_FW_UPDATE_EXCEEDED_MAX_FAILED_ATTEMPTS"},
+  {0x05, "MINOR_ERROR_FW_UPDATE_ACTIVE_UPDATE_NOT_ALLOWED"},
+  /* MAJOR_ERROR_CPLD_UPDATE_FAIELD */
+  {0x06, "MINOR_ERROR_CPLD_UPDATE_INVALID_SVN"},
+  {0x07, "MINOR_ERROR_CPLD_UPDATE_AUTH_FAILED"},
+  {0x08, "MINOR_ERROR_CPLD_UPDATE_EXCEEDED_MAX_FAILED_ATTEMPTS"},
+};
 
 static int
 read_device(const char *device, int *value) {
@@ -219,9 +255,10 @@ populate_gpio_pins(uint8_t fru) {
     return;
   }
 
-  // Only monitor the PWRGD_CPU_LVC3_R & IRQ_SMI_ACTIVE_BMC_N
+  // Only monitor the PWRGD_CPU_LVC3_R & IRQ_SMI_ACTIVE_BMC_N & RST_RSMRST_BMC_N
   gpios[PWRGD_CPU_LVC3_R].flag = 1;
   gpios[IRQ_SMI_ACTIVE_BMC_N].flag = 1;
+  gpios[RST_RSMRST_BMC_N].flag = 1;
   
   for (i = 0; i < MAX_GPIO_PINS; i++) {
     if (gpios[i].flag) {
@@ -255,6 +292,14 @@ gpio_monitor_poll(void *ptr) {
   gpio_pin_t *gpios;
   char pwr_state[MAX_VALUE_LEN];
   char path[128];
+  uint8_t chassis_sts[8] = {0};
+  uint8_t chassis_sts_len;
+  uint8_t power_policy = POWER_CFG_UKNOWN;
+  int ctrl_bus = 0, i2cfd = 0, retry=0, index = 0;
+  uint8_t tbuf[1] = {0}, rbuf[1] = {0};
+  uint8_t tlen = 1, rlen = 1;
+  uint8_t major_err = 0, minor_err = 0;
+  char *major_str = "NA", *minor_str = "NA";
 
   /* Check for initial Asserts */
   gpios = get_struct_gpio_pin(fru);
@@ -275,6 +320,7 @@ gpio_monitor_poll(void *ptr) {
 
   //Init POST status
   gpios[PWRGD_CPU_LVC3_R].status = get_bit(o_pin_val, PWRGD_CPU_LVC3_R);
+  gpios[RST_RSMRST_BMC_N].status = get_bit(o_pin_val, RST_RSMRST_BMC_N);
 
   while (1) {
     memset(pwr_state, 0, MAX_VALUE_LEN);
@@ -295,6 +341,7 @@ gpio_monitor_poll(void *ptr) {
 
       // 12V-off
       gpios[PWRGD_CPU_LVC3_R].status = 0;
+      gpios[RST_RSMRST_BMC_N].status = 0;
 
       memset(&o_pin_val, 0, sizeof(o_pin_val));
       memset(&n_pin_val, 0, sizeof(n_pin_val));
@@ -338,6 +385,8 @@ gpio_monitor_poll(void *ptr) {
           } else if (i == IRQ_SMI_ACTIVE_BMC_N) {
             printf("IRQ_SMI_ACTIVE_BMC_N is ASSERT !\n");
             smi_count_start[fru-1] = true;
+          } else if (i == RST_RSMRST_BMC_N) {
+            printf("RST_RSMRST_BMC_N is ASSERT !\n");
           } 
           
         } else {
@@ -356,7 +405,100 @@ gpio_monitor_poll(void *ptr) {
           } else if (i == IRQ_SMI_ACTIVE_BMC_N) {
             printf("IRQ_SMI_ACTIVE_BMC_N is DEASSERT !\n");
             smi_count_start[fru-1] = false;
-          } 
+          } else if (i == RST_RSMRST_BMC_N) {
+            printf("RST_RSMRST_BMC_N is DEASSERT !\n");
+#if 0
+            //get power restore policy
+            //defined by IPMI Spec/Section 28.2.
+            pal_get_chassis_status(fru, NULL, chassis_sts, &chassis_sts_len);
+
+            //byte[1], bit[6:5]: power restore policy
+            power_policy = (*chassis_sts >> 5);
+
+            //Check power policy and last power state
+            if (power_policy == POWER_CFG_LPS) {
+              //if (!last_ps) {
+              pal_get_last_pwr_state(fru, pwr_state);
+              //last_ps = pwr_state;
+              //}
+              if (!(strcmp(pwr_state, "on"))) {
+                sleep(3);
+                pal_set_server_power(fru, SERVER_POWER_ON);
+              }
+            }
+            else if (power_policy == POWER_CFG_ON) {
+              sleep(3);
+              pal_set_server_power(fru, SERVER_POWER_ON);
+            }
+#endif
+            pal_set_server_power(fru, SERVER_POWER_ON);
+
+            // Check SB PFR status
+            // TODO: Still need to check Platform State (Add = 0x03), Last Recovery reason (Add = 0x05), Last Panic reason (Add = 0x07)
+            // and plan to create a function for checking PFR status
+            snprintf(path, sizeof(path), "/dev/i2c-%d", (fru+SLOT_BUS_BASE));
+            i2cfd = open(path, O_RDWR);
+            if ( i2cfd < 0 ) {
+              syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
+            }
+            tbuf[0] = 0x08;
+            retry = 0;
+            while (retry < MAX_READ_RETRY) {
+              ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+              if ( ret < 0 ) {
+                retry++;
+                msleep(100);
+              } else {
+                major_err = rbuf[0];
+                break;
+              }
+            }
+            if (retry == MAX_READ_RETRY) {
+              syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+            }
+
+            tbuf[0] = 0x09;
+            retry = 0;
+            while (retry < MAX_READ_RETRY) {
+              ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+              if ( ret < 0 ) {
+                retry++;
+                msleep(100);
+              } else {
+                minor_err = rbuf[0];
+                break;
+              }
+            }
+            if (retry == MAX_READ_RETRY) {
+              syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+            }
+            if ( i2cfd > 0 ) close(i2cfd);
+
+            if ( (major_err != 0) || (minor_err != 0) ) {
+              if ( major_err == MAJOR_ERROR_PCH_AUTH_FAILED ) {
+                major_str = "MAJOR_ERROR_PCH_AUTH_FAILED";
+                for (index = 0; index < (sizeof(minor_auth_error)/sizeof(err_t)); index++) {
+                  if (minor_err == minor_auth_error[index].err_id) {
+                    minor_str = minor_auth_error[index].err_des;
+                    break;
+                  }
+                }
+              } else if ( major_err == MAJOR_ERROR_UPDATE_FROM_PCH_FAILED ) {
+                major_str = "MAJOR_ERROR_UPDATE_FROM_PCH_FAILED";
+                for (index = 0; index < (sizeof(minor_update_error)/sizeof(err_t)); index++) {
+                  if (minor_err == minor_update_error[index].err_id) {
+                    minor_str = minor_update_error[index].err_des;
+                    break;
+                  }
+                }
+              } else {
+                major_str = "unknown major error";
+              }
+
+              syslog(LOG_CRIT, "FRU: %d, Major error: %s (0x%02X), Minor error: %s (0x%02X)", fru, major_str, major_err, minor_str, minor_err);
+            }
+
+          }
         }
       }
     }

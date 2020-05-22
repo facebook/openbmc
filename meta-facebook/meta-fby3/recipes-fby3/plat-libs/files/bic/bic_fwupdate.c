@@ -1,3 +1,4 @@
+
 /*
  *
  * Copyright 2015-present Facebook. All Rights Reserved.
@@ -997,6 +998,12 @@ get_component_name(uint8_t comp) {
       return "BB BIC Bootloader";
     case FW_BB_CPLD:
       return "BB CPLD";
+    case FW_BIOS_CAPSULE:
+    case FW_BIOS_RCVY_CAPSULE:
+      return "BIOS Capsule";
+    case FW_CPLD_CAPSULE:
+    case FW_CPLD_RCVY_CAPSULE:
+      return "CPLD Capsule";
     default:
       return "Unknown";
   }
@@ -1062,10 +1069,14 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       ret = update_bic_cpld_altera(slot_id, path, intf, force);
       break;
     case FW_BIOS:
+    case FW_BIOS_CAPSULE:
+    case FW_CPLD_CAPSULE:
+    case FW_BIOS_RCVY_CAPSULE:
+    case FW_CPLD_RCVY_CAPSULE:
       if (loc != NULL) {
-        ret = update_bic_bios(slot_id, path, force);
+        ret = update_bic_bios(slot_id, comp, path, force);
       } else {
-        ret = update_bic_usb_bios(slot_id, path);
+        ret = update_bic_usb_bios(slot_id, comp, path);
       }
       break;
     case FW_VR:

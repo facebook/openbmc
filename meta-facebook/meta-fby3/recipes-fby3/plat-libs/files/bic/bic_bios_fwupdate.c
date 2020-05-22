@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <openbmc/kv.h>
+#include "bic_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 
 /****************************/
@@ -260,15 +261,17 @@ verify_bios_image(uint8_t slot_id, int fd, long size) {
 }
 
 int 
-update_bic_bios(uint8_t slot_id, char *image, uint8_t force) {
+update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force) {
   struct timeval start, end;
   int ret = -1, rc;
-  uint32_t offset;
+  uint32_t offset, shift_offset = 0;
   volatile uint16_t count, read_count;
   uint8_t buf[256] = {0};
   uint8_t target;
   int fd;
   int i;
+  int remain = 0;
+  unsigned char buff[1];
   
   printf("updating fw on slot %d:\n", slot_id);
 
@@ -288,6 +291,29 @@ update_bic_bios(uint8_t slot_id, char *image, uint8_t force) {
     goto error_exit;
   }
   syslog(LOG_CRIT, "Update BIOS: update bios firmware on slot %d\n", slot_id);
+
+  remain = BIOS_ERASE_PKT_SIZE - (st.st_size % BIOS_ERASE_PKT_SIZE);
+  if ( fd > 0 ) {
+    close(fd);
+  }
+
+  // align 64K
+  FILE *fp1 = fopen(image, "a");
+  buff[0] = 0xFF;
+  while (remain) {
+    fwrite(buff, sizeof(unsigned char), 1, fp1);
+    remain -= 1;
+  }
+  fclose(fp1);
+
+  fd = open(image, O_RDONLY, 0666);
+  if (fd < 0) {
+    printf("ERROR: invalid file path!\n");
+    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", image);
+    goto error_exit;
+  }
+
+  stat(image, &st);
   dsize = st.st_size/100;
 
   // Write chunks of binary data in a loop
@@ -297,6 +323,7 @@ update_bic_bios(uint8_t slot_id, char *image, uint8_t force) {
   target = UPDATE_BIOS;
   gettimeofday(&start, NULL);
   while (1) {
+    memset(buf, 0xFF, sizeof(buf));
     // For BIOS, send packets in blocks of 64K
     if ((offset+IPMB_WRITE_COUNT_MAX) > (i * BIOS_ERASE_PKT_SIZE)) {
       read_count = (i * BIOS_ERASE_PKT_SIZE) - offset;
@@ -311,7 +338,14 @@ update_bic_bios(uint8_t slot_id, char *image, uint8_t force) {
       break;
     }
     // Send data to Bridge-IC
-    rc = _update_fw(slot_id, target, offset, count, buf);
+    if (comp == FW_BIOS) {
+      shift_offset = 0;
+    } else if ( (comp == FW_BIOS_CAPSULE) || (comp == FW_BIOS_RCVY_CAPSULE) ){
+      shift_offset = BIOS_CAPSULE_OFFSET;
+    } else if ( (comp == FW_CPLD_CAPSULE) || (comp == FW_CPLD_RCVY_CAPSULE) ) {
+      shift_offset = CPLD_CAPSULE_OFFSET;
+    }
+    rc = _update_fw(slot_id, target, offset + shift_offset, count, buf);
 
     if (rc) {
       goto error_exit;
@@ -327,9 +361,11 @@ update_bic_bios(uint8_t slot_id, char *image, uint8_t force) {
     }
   }
 
-  _set_fw_update_ongoing(slot_id, 60 * 2);
-  if (verify_bios_image(slot_id, fd, st.st_size)) {
-    goto error_exit;
+  if (comp != FW_BIOS_CAPSULE && comp != FW_CPLD_CAPSULE && comp != FW_BIOS_RCVY_CAPSULE && comp != FW_CPLD_RCVY_CAPSULE) {
+    _set_fw_update_ongoing(slot_id, 60 * 2);
+    if (verify_bios_image(slot_id, fd, st.st_size)) {
+      goto error_exit;
+    }
   }
 
   gettimeofday(&end, NULL);

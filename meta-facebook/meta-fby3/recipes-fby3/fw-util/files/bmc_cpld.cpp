@@ -19,6 +19,11 @@ image_info BmcCpldComponent::check_image(string image, bool force) {
 #define MAX10_RPD_SIZE 0x5C000
   string flash_image = image;
   uint8_t bmc_location = 0;
+  string fru_name = fru();
+  string slot_str = "slot";
+  string bmc_str = "bmc";
+  size_t slot_found = fru_name.find(slot_str);
+  size_t bmc_found = fru_name.find(bmc_str);
 
   image_info image_sts = {"", false};
 
@@ -70,16 +75,20 @@ image_info BmcCpldComponent::check_image(string image, bool force) {
   if ( force == false ) {
     //CPLD is located on class 2(NIC_EXP)
     if ( bmc_location == NIC_BMC ) {
-      if ( signed_byte != NICEXP ) {
-        cout << "image is not a valid CPLD image for NIC expansion board" << endl;
-      } else {
+      if ( (signed_byte == NICEXP) && (bmc_found != string::npos) ) {
         image_sts.result = true;
+      } else if (signed_byte == BICDL && (slot_found != string::npos)) {
+        image_sts.result = true;
+      } else {
+        cout << "image is not a valid CPLD image for " << fru_name << endl;
       }
     } else if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-      if ( signed_byte != BICBB ) {
-        cout << "image is not a valid CPLD image for baseboard" << endl;
-      } else {
+      if ( (signed_byte == BICBB) && (bmc_found != string::npos) ) {
         image_sts.result = true;
+      } else if ( (signed_byte == BICDL) && (slot_found != string::npos) ) {
+        image_sts.result = true;
+      } else {
+        cout << "image is not a valid CPLD image for " << fru_name << endl;
       }
     }
   }
@@ -124,9 +133,14 @@ int BmcCpldComponent::print_version()
 {
   uint8_t ver[4] = {0};
   string fru_name = fru();
+  string slot_str = "slot";
+  size_t slot_found = fru_name.find(slot_str);
   try {
     // Print CPLD Version
     transform(fru_name.begin(), fru_name.end(), fru_name.begin(), ::toupper);
+    if (slot_found != string::npos) {
+      fru_name = "SB";
+    }
     if ( get_cpld_version(ver) < 0 ) {
       throw "Error in getting the version of " + fru_name;
     } else {
@@ -147,6 +161,9 @@ int BmcCpldComponent::update_cpld(string image)
   string image_tmp;
   size_t pos = image.find("-tmp"); 
   image_tmp = image.substr(0, pos);
+  string fru_name = fru();
+  string slot_str = "slot";
+  size_t slot_found = fru_name.find(slot_str);
 
   if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
     printf("Failed to initialize the fw-util\n");
@@ -157,6 +174,10 @@ int BmcCpldComponent::update_cpld(string image)
     bmc_location_str = "NIC Expansion";
   } else {
     bmc_location_str = "baseboard";
+  }
+
+  if (slot_found != string::npos) {
+    bmc_location_str = "SB";
   }
 
   syslog(LOG_CRIT, "Updating CPLD on %s. File: %s", bmc_location_str.c_str(), image_tmp.c_str());

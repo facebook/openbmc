@@ -31,6 +31,7 @@
 #include <sys/types.h>
 #include <openbmc/kv.h>
 #include <libusb-1.0/libusb.h>
+#include "bic_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 
 #define TI_VENDOR_ID  0x1CBE
@@ -195,7 +196,7 @@ int active_config(struct libusb_device *dev,struct libusb_device_handle *handle)
 }
 
 int
-update_bic_usb_bios(uint8_t slot_id, char *image)
+update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
 {
   struct timeval start, end;
   struct libusb_device **devs;
@@ -212,7 +213,7 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
   struct stat st;
   uint32_t fsize = 0;
   uint32_t record_offset = 0;
-  uint32_t offset = 0;
+  uint32_t offset = 0, shift_offset = 0;
   uint8_t data[USB_PKT_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
   int read_cnt;
   int fd;
@@ -220,6 +221,8 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
   uint8_t path[8];
   int recheck = MAX_CHECK_DEVICE_TIME;
   uint8_t bmc_location = 0;
+  int remain = 0;
+  unsigned char buff[1];
   
   ret = libusb_init(NULL);
   if (ret < 0) {
@@ -381,6 +384,27 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
     goto error_exit;
   }
   stat(fpath, &st);
+  remain = BIOS_PKT_SIZE - (st.st_size % BIOS_PKT_SIZE);
+  if ( fd > 0 ) {
+    close(fd);
+  }
+
+  // align 64K
+  FILE *fp1 = fopen(fpath, "a");
+  buff[0] = 0xFF;
+  while (remain) {
+    fwrite(buff, sizeof(unsigned char), 1, fp1);
+    remain -= 1;
+  }
+  fclose(fp1);
+
+  fd = open(fpath, O_RDONLY, 0666);
+  if (fd < 0) {
+    printf("ERROR: invalid file path!\n");
+    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", image);
+    goto error_exit;
+  }
+  stat(fpath, &st);
   fsize = st.st_size / 20;
 
   int transferlen = 0;
@@ -389,7 +413,7 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
   int per_size = 0;
   gettimeofday(&start, NULL);
   while (1) {
-    memset(data, 0, sizeof(data));
+    memset(data, 0xFF, sizeof(data));
     
     //check size
     if ( (offset + USB_DAT_SIZE) > (count * BIOS_PKT_SIZE) ) {
@@ -405,10 +429,18 @@ update_bic_usb_bios(uint8_t slot_id, char *image)
 
     if ( read_cnt <= 0 ) break;
 
-    data[1] = (offset) & 0xFF;
-    data[2] = (offset >> 8) & 0xFF;
-    data[3] = (offset >> 16) & 0xFF;
-    data[4] = (offset >> 24) & 0xFF;
+    if (comp == FW_BIOS) {
+      shift_offset = 0;
+    } else if ( (comp == FW_BIOS_CAPSULE) || (comp == FW_BIOS_RCVY_CAPSULE) ){
+      shift_offset = BIOS_CAPSULE_OFFSET;
+    } else if ( (comp == FW_CPLD_CAPSULE) || (comp == FW_CPLD_RCVY_CAPSULE) ) {
+      shift_offset = CPLD_CAPSULE_OFFSET;
+    }
+
+    data[1] = (offset + shift_offset) & 0xFF;
+    data[2] = ((offset + shift_offset) >> 8) & 0xFF;
+    data[3] = ((offset + shift_offset) >> 16) & 0xFF;
+    data[4] = ((offset + shift_offset) >> 24) & 0xFF;
     data[5] = read_cnt & 0xFF;
     data[6] = (read_cnt >> 8) & 0xFF;
 
@@ -439,10 +471,12 @@ resend:
     printf("Couldn't release the interface 0x%X\n", ci);
   }
 
-  _set_fw_update_ongoing(slot_id, 60 * 2);
-  if (verify_bios_image(slot_id, fd, st.st_size)) {
-    ret = -1;
-    goto error_exit;
+  if (comp != FW_BIOS_CAPSULE && comp != FW_CPLD_CAPSULE && comp != FW_BIOS_RCVY_CAPSULE && comp != FW_CPLD_RCVY_CAPSULE) {
+    _set_fw_update_ongoing(slot_id, 60 * 2);
+    if (verify_bios_image(slot_id, fd, st.st_size)) {
+      ret = -1;
+      goto error_exit;
+    }
   }
 
   gettimeofday(&end, NULL);

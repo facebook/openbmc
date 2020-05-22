@@ -32,6 +32,10 @@ SRC_URI += "\
         file://bic_bios.cpp \
         file://bic_vr.h \
         file://bic_vr.cpp \
+        file://bic_capsule.h \
+        file://bic_capsule.cpp \
+        file://bmc_cpld_capsule.h \
+        file://bmc_cpld_capsule.cpp \
         "
 
 CXXFLAGS += " -DBIC_SUPPORT "

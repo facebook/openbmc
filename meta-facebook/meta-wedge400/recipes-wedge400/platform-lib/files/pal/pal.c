@@ -1691,33 +1691,20 @@ pal_get_board_type(uint8_t *brd_type){
 
 int
 pal_get_board_type_rev(uint8_t *brd_type_rev){
-  char path[LARGEST_DEVICE_NAME + 1];
   int brd_rev;
   uint8_t brd_type;
-  int val;
   if( pal_get_board_rev(&brd_rev) != 0 ||
       pal_get_board_type(&brd_type) != 0 ){
-        return CC_UNSPECIFIED_ERROR;
+        return -1;
   } else if ( brd_type == BRD_TYPE_WEDGE400 ){
     switch ( brd_rev ) {
-      case 0x00:
-        /* For WEDGE400 EVT & EVT3 need to detect from SMBCPLD */
-        snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, "board_ver");
-        if (read_device(path, &val)) {
-          return CC_UNSPECIFIED_ERROR;
-        }
-        if ( val == 0x00 ) {
-          *brd_type_rev = BOARD_WEDGE400_EVT;
-        } else {
-          *brd_type_rev = BOARD_WEDGE400_EVT3;
-        }
-        break;
+      case 0x00: *brd_type_rev = BOARD_WEDGE400_EVT_EVT3; break;
       case 0x02: *brd_type_rev = BOARD_WEDGE400_DVT; break;
       case 0x03: *brd_type_rev = BOARD_WEDGE400_DVT2_PVT_PVT2; break;
       case 0x04: *brd_type_rev = BOARD_WEDGE400_PVT3; break;
       default:
         *brd_type_rev = BOARD_UNDEFINED;
-        return CC_UNSPECIFIED_ERROR;
+        return -1;
     }
   } else if ( brd_type == BRD_TYPE_WEDGE400C ){
     switch ( brd_rev ) {
@@ -1726,13 +1713,13 @@ pal_get_board_type_rev(uint8_t *brd_type_rev){
       case 0x02: *brd_type_rev = BOARD_WEDGE400C_DVT; break;
       default:
         *brd_type_rev = BOARD_UNDEFINED;
-        return CC_UNSPECIFIED_ERROR;
+        return -1;
     }
   } else {
     *brd_type_rev = BOARD_UNDEFINED;
-    return CC_UNSPECIFIED_ERROR;
+    return -1;
   }
-  return CC_SUCCESS;
+  return 0;
 }
 
 int

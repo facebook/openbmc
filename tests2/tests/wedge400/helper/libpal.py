@@ -34,8 +34,7 @@ class BoardRevision:
     BRD_TYPE_WEDGE400C = 0x01
 
     """ Board type and revision """
-    BOARD_WEDGE400_EVT = 0x00
-    BOARD_WEDGE400_EVT3 = 0x01
+    BOARD_WEDGE400_EVT_EVT3 = 0x00
     BOARD_WEDGE400_DVT = 0x02
     BOARD_WEDGE400_DVT2 = 0x03
     BOARD_WEDGE400_PVT3 = 0x04
@@ -47,8 +46,7 @@ class BoardRevision:
     board_type = {BRD_TYPE_WEDGE400: "Wedge400", BRD_TYPE_WEDGE400C: "Wedge400C"}
 
     board_type_rev = {
-        BOARD_WEDGE400_EVT: "Wedge400-EVT",
-        BOARD_WEDGE400_EVT3: "Wedge400-EVT3",
+        BOARD_WEDGE400_EVT_EVT3: "Wedge400-EVT/EVT3",
         BOARD_WEDGE400_DVT: "Wedge400-DVT",
         BOARD_WEDGE400_DVT2: "Wedge400-DVT2/PVT/PVT2",
         BOARD_WEDGE400_PVT3: "Wedge400-PVT3/MP",

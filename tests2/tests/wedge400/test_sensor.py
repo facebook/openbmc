@@ -98,8 +98,7 @@ class SmbSensorTest(SensorUtilTest, unittest.TestCase):
         SMB_SENSORS = []
         platform_type_rev = pal_get_board_type_rev()
         if (
-            platform_type_rev == "Wedge400-EVT"
-            or platform_type_rev == "Wedge400-EVT3"
+            platform_type_rev == "Wedge400-EVT/EVT3"
             or platform_type_rev == "Wedge400-DVT"
             or platform_type_rev == "Wedge400-DVT2/PVT/PVT2"
             or platform_type_rev == "Wedge400-PVT3/MP"

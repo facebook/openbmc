@@ -21,12 +21,14 @@ SRC_URI += "file://setup-gpio.sh \
             file://board-utils.sh \
             file://sol.sh \
             file://cpld_update.sh \
+            file://wedge_power.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
     sol.sh \
     cpld_update.sh \
+    wedge_power.sh \
     "
 DEPENDS_append = " update-rc.d-native"
 

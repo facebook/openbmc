@@ -26,8 +26,8 @@ PIM7_DOMFPGA_SYSFS_DIR=$(i2c_device_sysfs_abspath 128-0060)
 PIM8_DOMFPGA_SYSFS_DIR=$(i2c_device_sysfs_abspath 136-0060)
 
 PWR_USRV_SYSFS="${SCMCPLD_SYSFS_DIR}/com_exp_pwr_enable"
-PWR_TH_RST_SYSFS="${SMBCPLD_SYSFS_DIR}/cpld_mac_reset_n"
-
+PWR_USRV_FORCE_OFF="${SCMCPLD_SYSFS_DIR}/com_exp_pwr_force_off"
+PIM_RST_SYSFS="${SMBCPLD_SYSFS_DIR}"
 
 wedge_board_rev() {
     local val0 val1 val2
@@ -37,3 +37,17 @@ wedge_board_rev() {
     echo $((val0 | (val1 << 1) | (val2 << 2)))
 }
 
+wedge_is_us_on() {
+    local val0 val1
+
+    val0=$(head -n 1 < "$PWR_USRV_SYSFS" 2> /dev/null)
+    val1=$(head -n 1 < "$PWR_USRV_FORCE_OFF" 2> /dev/null)
+
+    if [ "$val0" == "0x1" ] && [ "$val1" == "0x1" ] ; then
+        return 0            # powered on
+    else
+        return 1
+    fi
+
+    return 0
+}

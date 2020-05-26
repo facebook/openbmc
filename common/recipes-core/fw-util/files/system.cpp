@@ -79,7 +79,7 @@ string System::version()
     char vers[128] = "NA";
     FILE *fp = fopen("/etc/issue", "r");
     if (fp) {
-      if (fscanf(fp, "OpenBMC Release %s\n", vers) == 1) {
+      if (fscanf(fp, "OpenBMC Release %127s\n", vers) == 1) {
         ret = vers;
       }
       fclose(fp);

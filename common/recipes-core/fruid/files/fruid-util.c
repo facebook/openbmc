@@ -34,6 +34,8 @@
 #define FLAG_WRITE  (0x01 << 1)
 #define FLAG_MODIFY (0x01 << 2)
 
+#define FIELD_LEN(x)      (x & ~(0x03 << 6))
+
 enum format{
   DEFAULT_FORMAT = 0,
   JSON_FORMAT = 1,
@@ -82,62 +84,76 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
 
   if (fruid->chassis.flag) {
     printf("%-27s: %s", "\nChassis Type",fruid->chassis.type_str);
-    printf("%-27s: %s", "\nChassis Part Number",fruid->chassis.part);
-    printf("%-27s: %s", "\nChassis Serial Number",fruid->chassis.serial);
-    if (fruid->chassis.custom1 != NULL)
+    if (FIELD_LEN(fruid->chassis.part_type_len) > 0)
+      printf("%-27s: %s", "\nChassis Part Number",fruid->chassis.part);
+    if (FIELD_LEN(fruid->chassis.serial_type_len) > 0)
+      printf("%-27s: %s", "\nChassis Serial Number",fruid->chassis.serial);
+    if ((fruid->chassis.custom1 != NULL) && (FIELD_LEN(fruid->chassis.custom1_type_len) > 0))
       printf("%-27s: %s", "\nChassis Custom Data 1",fruid->chassis.custom1);
-    if (fruid->chassis.custom2 != NULL)
+    if ((fruid->chassis.custom2 != NULL) && (FIELD_LEN(fruid->chassis.custom2_type_len) > 0))
       printf("%-27s: %s", "\nChassis Custom Data 2",fruid->chassis.custom2);
-    if (fruid->chassis.custom3 != NULL)
+    if ((fruid->chassis.custom3 != NULL) && (FIELD_LEN(fruid->chassis.custom3_type_len) > 0))
       printf("%-27s: %s", "\nChassis Custom Data 3",fruid->chassis.custom3);
-    if (fruid->chassis.custom4 != NULL)
+    if ((fruid->chassis.custom4 != NULL) && (FIELD_LEN(fruid->chassis.custom4_type_len) > 0))
       printf("%-27s: %s", "\nChassis Custom Data 4",fruid->chassis.custom4);
-    if (fruid->chassis.custom5 != NULL)
+    if ((fruid->chassis.custom5 != NULL) && (FIELD_LEN(fruid->chassis.custom5_type_len) > 0))
       printf("%-27s: %s", "\nChassis Custom Data 5",fruid->chassis.custom5);
-    if (fruid->chassis.custom6 != NULL)
+    if ((fruid->chassis.custom6 != NULL) && (FIELD_LEN(fruid->chassis.custom6_type_len) > 0))
       printf("%-27s: %s", "\nChassis Custom Data 6",fruid->chassis.custom6);
   }
 
   if (fruid->board.flag) {
     printf("%-27s: %s", "\nBoard Mfg Date",fruid->board.mfg_time_str);
-    printf("%-27s: %s", "\nBoard Mfg",fruid->board.mfg);
-    printf("%-27s: %s", "\nBoard Product",fruid->board.name);
-    printf("%-27s: %s", "\nBoard Serial",fruid->board.serial);
-    printf("%-27s: %s", "\nBoard Part Number",fruid->board.part);
-    printf("%-27s: %s", "\nBoard FRU ID",fruid->board.fruid);
-    if (fruid->board.custom1 != NULL)
+    if (FIELD_LEN(fruid->board.mfg_type_len) > 0)
+      printf("%-27s: %s", "\nBoard Mfg",fruid->board.mfg);
+    if (FIELD_LEN(fruid->board.name_type_len) > 0)
+      printf("%-27s: %s", "\nBoard Product",fruid->board.name);
+    if (FIELD_LEN(fruid->board.serial_type_len) > 0)
+      printf("%-27s: %s", "\nBoard Serial",fruid->board.serial);
+    if (FIELD_LEN(fruid->board.part_type_len) > 0)
+      printf("%-27s: %s", "\nBoard Part Number",fruid->board.part);
+    if (FIELD_LEN(fruid->board.fruid_type_len) > 0)
+      printf("%-27s: %s", "\nBoard FRU ID",fruid->board.fruid);
+    if ((fruid->board.custom1 != NULL) && (FIELD_LEN(fruid->board.custom1_type_len) > 0))
       printf("%-27s: %s", "\nBoard Custom Data 1",fruid->board.custom1);
-    if (fruid->board.custom2 != NULL)
+    if ((fruid->board.custom2 != NULL) && (FIELD_LEN(fruid->board.custom2_type_len) > 0))
       printf("%-27s: %s", "\nBoard Custom Data 2",fruid->board.custom2);
-    if (fruid->board.custom3 != NULL)
+    if ((fruid->board.custom3 != NULL) && (FIELD_LEN(fruid->board.custom3_type_len) > 0))
       printf("%-27s: %s", "\nBoard Custom Data 3",fruid->board.custom3);
-    if (fruid->board.custom4 != NULL)
+    if ((fruid->board.custom4 != NULL) && (FIELD_LEN(fruid->board.custom4_type_len) > 0))
       printf("%-27s: %s", "\nBoard Custom Data 4",fruid->board.custom4);
-    if (fruid->board.custom5 != NULL)
+    if ((fruid->board.custom5 != NULL) && (FIELD_LEN(fruid->board.custom5_type_len) > 0))
       printf("%-27s: %s", "\nBoard Custom Data 5",fruid->board.custom5);
-    if (fruid->board.custom6 != NULL)
+    if ((fruid->board.custom6 != NULL) && (FIELD_LEN(fruid->board.custom6_type_len) > 0))
       printf("%-27s: %s", "\nBoard Custom Data 6",fruid->board.custom6);
   }
 
   if (fruid->product.flag) {
-    printf("%-27s: %s", "\nProduct Manufacturer",fruid->product.mfg);
-    printf("%-27s: %s", "\nProduct Name",fruid->product.name);
-    printf("%-27s: %s", "\nProduct Part Number",fruid->product.part);
-    printf("%-27s: %s", "\nProduct Version",fruid->product.version);
-    printf("%-27s: %s", "\nProduct Serial",fruid->product.serial);
-    printf("%-27s: %s", "\nProduct Asset Tag",fruid->product.asset_tag);
-    printf("%-27s: %s", "\nProduct FRU ID",fruid->product.fruid);
-    if (fruid->product.custom1 != NULL)
+    if (FIELD_LEN(fruid->product.mfg_type_len) > 0)
+      printf("%-27s: %s", "\nProduct Manufacturer",fruid->product.mfg);
+    if (FIELD_LEN(fruid->product.name_type_len) > 0)
+      printf("%-27s: %s", "\nProduct Name",fruid->product.name);
+    if (FIELD_LEN(fruid->product.part_type_len) > 0)
+      printf("%-27s: %s", "\nProduct Part Number",fruid->product.part);
+    if (FIELD_LEN(fruid->product.version_type_len) > 0)
+      printf("%-27s: %s", "\nProduct Version",fruid->product.version);
+    if (FIELD_LEN(fruid->product.serial_type_len) > 0)
+      printf("%-27s: %s", "\nProduct Serial",fruid->product.serial);
+    if (FIELD_LEN(fruid->product.asset_tag_type_len) > 0)
+      printf("%-27s: %s", "\nProduct Asset Tag",fruid->product.asset_tag);
+    if (FIELD_LEN(fruid->product.fruid_type_len) > 0)
+      printf("%-27s: %s", "\nProduct FRU ID",fruid->product.fruid);
+    if ((fruid->product.custom1 != NULL) && (FIELD_LEN(fruid->product.custom1_type_len) > 0))
       printf("%-27s: %s", "\nProduct Custom Data 1",fruid->product.custom1);
-    if (fruid->product.custom2 != NULL)
+    if ((fruid->product.custom2 != NULL) && (FIELD_LEN(fruid->product.custom2_type_len) > 0))
       printf("%-27s: %s", "\nProduct Custom Data 2",fruid->product.custom2);
-    if (fruid->product.custom3 != NULL)
+    if ((fruid->product.custom3 != NULL) && (FIELD_LEN(fruid->product.custom3_type_len) > 0))
       printf("%-27s: %s", "\nProduct Custom Data 3",fruid->product.custom3);
-    if (fruid->product.custom4 != NULL)
+    if ((fruid->product.custom4 != NULL) && (FIELD_LEN(fruid->product.custom4_type_len) > 0))
       printf("%-27s: %s", "\nProduct Custom Data 4",fruid->product.custom4);
-    if (fruid->product.custom5 != NULL)
+    if ((fruid->product.custom5 != NULL) && (FIELD_LEN(fruid->product.custom5_type_len) > 0))
       printf("%-27s: %s", "\nProduct Custom Data 5",fruid->product.custom5);
-    if (fruid->product.custom6 != NULL)
+    if ((fruid->product.custom6 != NULL) && (FIELD_LEN(fruid->product.custom6_type_len) > 0))
       printf("%-27s: %s", "\nProduct Custom Data 6",fruid->product.custom6);
   }
 

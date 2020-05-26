@@ -333,6 +333,7 @@ pfr_provision_cmd(uint8_t prov, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint
   uint8_t buf[64];
 
   switch (prov) {
+    case RECONFIG_CPLD:
     case ERASE_PROVISION:
     case LOCK_UFM:
       break;
@@ -705,6 +706,22 @@ pfr_state_history(void) {
   return 0;
 }
 
+static int
+pfr_reconfig(void) {
+  int ret = -1;
+  uint8_t tbuf[64], rbuf[64];
+
+  // reconfig CPLD
+  if ((ret = pfr_provision_cmd(RECONFIG_CPLD, tbuf, 0, rbuf, 0))) {
+    syslog(LOG_ERR, "%s: reconfig CPLD failed", __func__);
+    return ret;
+  }
+
+  ret = 0;
+  return ret;
+}
+
+
 int
 update_pfr_cpld_altera(char *image) {
   int fd = 0;
@@ -1075,6 +1092,10 @@ main(int argc, char **argv) {
         printf("provision %s", (!ret)?"succeeded":"failed");
         if ((ret > 0) && (ret < ERR_UNKNOWN)) {
           printf(" (%s)", prov_err_str[ret]);
+        } else {
+          if ((ret = pfr_reconfig())) {
+            printf("Reconfig CPLD failed\n");
+          }
         }
         printf("\n");
         break;
@@ -1090,6 +1111,10 @@ main(int argc, char **argv) {
      if (operations & PFR_ERASE_PROVISION) {
         if ((ret = pfr_erase_provision())) {
           printf("erase provision failed\n");
+        } else {
+          if ((ret = pfr_reconfig())) {
+            printf("Reconfig CPLD failed\n");
+          }
         }
         break;
       }

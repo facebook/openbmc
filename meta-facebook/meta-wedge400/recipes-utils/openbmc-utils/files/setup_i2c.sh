@@ -32,41 +32,12 @@ else
     start_of_mux_bus=16
 fi
 
-# get from smb cpld
-get_board_type() {
-    reg=$(i2cget -y -f 12 0x3e 0x00)
-    reg=$((reg >> 4))
-    if [ $reg -eq 0 ]; then
-        echo 0
-        return
-    elif [ $reg -eq 1 ]; then
-        echo 1
-        return
-    else
-        echo -1
-    fi
-}
-
-get_board_rev() {
-    reg=$(i2cget -y -f 12 0x3e 0x00)
-    reg=$((reg & 0x3))
-    if [ $reg -eq 0 ]; then
-        echo 0
-        return
-    elif [ $reg -eq 1 ]; then
-        echo 1
-        return
-    else
-        echo -1
-    fi
-}
-
 get_mux_bus_num() {
     echo $((start_of_mux_bus + $1))
 }
 
-brd_type=$(get_board_type)
-brd_rev=$(get_board_rev)
+brd_type=$(wedge_board_type)
+brd_rev=$(wedge_board_rev)
 brd_type_rev=$(wedge_board_type_rev)
 
 # # Bus 2
@@ -173,11 +144,7 @@ i2c_device_add "$(get_mux_bus_num 12)" 0x54 24c02          # TH3 EEPROM
 i2c_device_add "$(get_mux_bus_num 16)" 0x3e fcbcpld # FCB CPLD
 
 # # i2c-mux 11, channel 2
-if [ "$brd_type" = "0" ] && [ "$brd_rev" = "0" ]; then  # WEDGE400 & EVT1
-    i2c_device_add "$(get_mux_bus_num 17)" 0x51 24c02           # EEPROM
-else
-    i2c_device_add "$(get_mux_bus_num 17)" 0x51 24c64           # EEPROM
-fi
+i2c_device_add "$(get_mux_bus_num 17)" 0x51 24c64           # FCM EEPROM
 
 # # i2c-mux 11, channel 3
 i2c_device_add "$(get_mux_bus_num 18)" 0x48 tmp75           # Temp. sensor

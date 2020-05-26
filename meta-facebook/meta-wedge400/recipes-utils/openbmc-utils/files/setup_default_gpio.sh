@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2019-present Facebook. All Rights Reserved.
 #
@@ -26,11 +26,10 @@
 # Short-Description: Setup the board
 ### END INIT INFO
 
+# shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
-
-board_rev=$(wedge_board_rev)
 
 echo -n "Setting up Default GPIOs value... "
 

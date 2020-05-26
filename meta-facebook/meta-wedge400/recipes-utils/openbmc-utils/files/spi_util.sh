@@ -52,14 +52,8 @@ remove_pid_file()
 
 check_board_type()
 {
-    board_type=$(head -n 1 $SMBCPLD_SYSFS_DIR/board_type)
-    ret_type=$?
-    board_ver=$(head -n 1 $SMBCPLD_SYSFS_DIR/board_ver)
-    ret_ver=$?
-    if [ $ret_type -ne 0 ] || [ $ret_ver -ne 0 ]; then # get version error
-        SWITCH_PCIE_FLASH="GB_PCIE_FLASH"
-        MAC_TYPE="W400?"
-    elif [ "$((board_type))" -eq 0 ]; then # Wedge400 any version
+    board_type=$(wedge_board_type)
+    if [ "$((board_type))" -eq 0 ]; then # Wedge400 any version
         SWITCH_PCIE_FLASH="TH3_PCIE_FLASH"
         MAC_TYPE="W400"
     elif [ "$((board_type))" -eq 1 ]; then # Wedge400-C any version

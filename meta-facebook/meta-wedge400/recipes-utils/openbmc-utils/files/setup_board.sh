@@ -26,6 +26,7 @@
 # Short-Description: Setup the board
 ### END INIT INFO
 
+# shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
@@ -53,17 +54,17 @@ echo 0 > "${SMBCPLD_SYSFS_DIR}/cpld_usb_mux_sel_1"
 # UART connect to BMC UART-2
 echo 0x3 > "$SMBCPLD_SYSFS_DIR/uart_selection"
 
-# Read board type from SMB CPLD and keep in cache store
-brd_type=$(head -n 1 "$SMBCPLD_SYSFS_DIR/board_type")
+# Read board type from Board type GPIO pin and save to cache
+brd_type=$(wedge_board_type)
 if [ ! -d /tmp/cache_store ]; then
   mkdir /tmp/cache_store
 fi
 echo "$brd_type" > /tmp/cache_store/board_type
 
 # Check board type to select lmsensor configuration
-if [ $((brd_type)) -eq $((0x00)) ]; then
+if [ $((brd_type)) -eq 0 ]; then
   cp /etc/sensors.d/custom/wedge400.conf /etc/sensors.d/wedge400.conf
-elif  [ $((brd_type)) -eq $((0x01)) ]; then
+elif  [ $((brd_type)) -eq 1 ]; then
   cp /etc/sensors.d/custom/wedge400c.conf /etc/sensors.d/wedge400c.conf
 fi
 

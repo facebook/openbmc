@@ -462,6 +462,7 @@ int pal_set_host_system_mode(uint8_t mode);
 int pal_is_pfr_active(void);
 int pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged);
 int pal_get_pfr_update_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged);
+int pal_get_dev_card_sensor(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 
 #ifdef __cplusplus
 }

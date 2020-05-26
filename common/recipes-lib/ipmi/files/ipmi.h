@@ -449,6 +449,7 @@ enum
   CMD_OEM_SET_PSB_INFO = 0x71,
   CMD_OEM_SET_M2_INFO = 0x92,
   CMD_OEM_GET_80_PORT_DWORD_BUFFER = 0x93,
+  CMD_OEM_GET_DEV_CARD_SENSOR = 0xA0,
 };
 
 // OEM Command Codes for Storage (netfn = 0x32/0x33)

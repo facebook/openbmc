@@ -3285,6 +3285,16 @@ oem_get_80port_dword_record (unsigned char *request, unsigned char req_len, unsi
 }
 
 static void
+oem_get_dev_card_sensor(unsigned char *request, unsigned char req_len, unsigned char *response,
+                 unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  res->cc = pal_get_dev_card_sensor(req->payload_id, req->data, req_len, res->data, res_len);
+}
+
+static void
 oem_bbv_power_cycle ( unsigned char *request, unsigned char req_len,
                   unsigned char *response, unsigned char *res_len)
 {
@@ -3457,6 +3467,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_GET_80_PORT_DWORD_BUFFER:
       oem_get_80port_dword_record (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_DEV_CARD_SENSOR:
+      oem_get_dev_card_sensor(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

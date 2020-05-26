@@ -11240,6 +11240,40 @@ pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
   return CC_SUCCESS;
 }
 
+int
+pal_get_dev_crad_sensor(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  int ret;
+  uint8_t snr_num;
+  uint8_t slot_type = 0x3;
+  float val;
+  slot--; // get device card slot
+  *res_len = 3;
+
+  slot_type = fby2_get_slot_type(slot);
+  if (slot_type != SLOT_TYPE_GPV2) {
+    syslog(LOG_INFO, "pal_get_dev_crad_sensor non-GPv2 slot type:%u on slot%u",slot_type,slot);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  if (req_len != 4) {
+    syslog(LOG_INFO, "pal_get_dev_crad_sensor invalid request length:%u on slot%u",req_len,slot);
+    return CC_INVALID_LENGTH;
+  }
+
+  snr_num = req_data[0];
+
+  ret = sensor_cache_read(slot, snr_num, &val);
+  if (ret < 0 ) { // ERR_SENSOR_NA
+    res_data[2] = 0xe0;
+  } else {
+    res_data[0] = (int) val;
+    res_data[1] = (((int)(val*100)) % 100);
+    res_data[2] = 0xc0;
+  }
+
+  return CC_SUCCESS;
+}
+
 uint8_t
 pal_get_server_type(uint8_t fru) {
 

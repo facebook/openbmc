@@ -386,8 +386,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0F
 
-  {"NIC_MEZZ0_TEMP", MEZZ0, read_nic_temp, true, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP},  //0x10
-  {"NIC_MEZZ1_TEMP", MEZZ1, read_nic_temp, true, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP},  //0x11
+  {"NIC0_MEZZ0_TEMP", MEZZ0, read_nic_temp, true, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP},  //0x10
+  {"NIC1_MEZZ1_TEMP", MEZZ1, read_nic_temp, true, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP},  //0x11
   {"FCB_FAN0_VOLT", FAN_ID4, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x12
   {"FCB_FAN0_CURR", FAN_ID4, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x13
   {"FCB_FAN0_PWR", FAN_ID4, read_fan_pwr, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER},  //0x14
@@ -2269,7 +2269,7 @@ pal_dimm_present_check(uint8_t snr_num) {
     dimm_id = snr_num - MB_SNR_CPU0_DIMM_GRPA_TEMP;
   }
 
-  return !pal_is_dimm_present(cpu_id, dimm_id);
+  return pal_is_dimm_present(cpu_id, dimm_id);
 }
 
 static int

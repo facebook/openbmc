@@ -116,8 +116,8 @@ static struct fsc_monitor fsc_monitor_basic_snr_list[] =
   {RISER2_SNR_SLOT1_NVME_TEMP   , "riser2_slot1_nvme_temp"  , NULL, false, 5, 5},
   {RISER2_SNR_SLOT2_NVME_TEMP   , "riser2_slot2_nvme_temp"  , NULL, false, 5, 5},
   {RISER2_SNR_SLOT3_NVME_TEMP   , "riser2_slot3_nvme_temp"  , NULL, false, 5, 5},
-  {NIC_MEZZ0_SNR_TEMP           , "nic_mezz0_temp"  , NULL, false, 5, 5},
-  {NIC_MEZZ1_SNR_TEMP           , "nic_mezz1_temp"  , NULL, false, 5, 5},
+  {NIC_MEZZ0_SNR_TEMP           , "nic0_mezz0_temp"  , pal_is_nic_prsnt, false, 5, 5},
+  {NIC_MEZZ1_SNR_TEMP           , "nic1_mezz1_temp"  , pal_is_nic_prsnt, false, 5, 5},
   //dimm sensors wait for 240s. 240=80*3(fsc monitor interval)
   {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a_temp", pal_dimm_present_check, false, 80, 5},
   {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_b_temp", pal_dimm_present_check, false, 80, 5},
@@ -1648,7 +1648,15 @@ pal_fsc_get_target_snr(char *sname, struct fsc_monitor *fsc_fru_list, int fsc_fr
 #ifdef FSC_DEBUG
       syslog(LOG_WARNING,"[%s]sensor is found:%s, idx:%d", __func__, sname, i);
 #endif
-      return i;
+      if ( NULL != fsc_fru_list[i].check_sensor_sts )
+      {
+        if(fsc_fru_list[i].check_sensor_sts(fsc_fru_list[i].sensor_num))
+        {
+          return i;
+        } else {
+            return PAL_ENOTSUP;
+        }
+      }
     }
   }
 
@@ -1679,7 +1687,9 @@ pal_sensor_is_valid(char *fru_name, char *sensor_name)
   ret = pal_fsc_get_target_snr(sensor_name, fsc_fru_list, fsc_fru_list_size);
   if ( ret < 0 )
   {
+#ifdef FSC_DEBUG
     syslog(LOG_WARNING,"[%s] undefined sensor: %s", __func__, sensor_name);
+#endif
     return false;
   }
 
@@ -1778,6 +1788,21 @@ pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
   *addr = PFR_MAILBOX_ADDR;
   *bridged = false;
   return 0;
+}
+
+bool
+pal_is_nic_prsnt(uint8_t snr_num) {
+  uint8_t fru, status;
+
+  if(snr_num == NIC_MEZZ0_SNR_TEMP) {
+    fru = FRU_NIC0;
+    pal_is_fru_prsnt(fru, &status);
+  } else {
+    fru = FRU_NIC1;
+    pal_is_fru_prsnt(fru, &status);
+  }
+
+  return status;
 }
 
 int

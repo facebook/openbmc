@@ -1,5 +1,5 @@
 {
-    "version": "fbsp-dvt-r01",
+    "version": "fbsp-dvt-r02",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -13,6 +13,11 @@
         "attribute": {
           "type" : "power_status"
         }
+      },
+      "nic": {
+        "attribute": {
+          "type" : "prsnt"
+        }
       }
     },  
     "watchdog": false,
@@ -23,12 +28,14 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
-        "negative_hysteresis":10,
+        "negative_hysteresis":1,
         "data": [
           [50, 10],
-          [60, 17],
-          [68, 21],
-          [72, 24],
+          [63, 15],
+          [67, 20],
+          [69, 22],
+          [71, 24],
+          [73, 26],
           [74, 28],
           [83, 70]
         ]
@@ -50,12 +57,23 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
-        "negative_hysteresis":3,
+        "negative_hysteresis":2,
         "data": [
-          [70, 10],
-          [75, 15],
-          [80, 20]
+          [91, 10],
+          [98, 70]
         ]
+      },
+      "pid_mezz": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "setpoint": 93,
+        "negative_hysteresis": 2,
+        "positive_hysteresis": 1,
+        "kp": -2,
+        "ki": -0.015,
+        "kd": 0
       },
       "linear_inlet": {
         "read_source" : {
@@ -108,9 +126,9 @@
         "positive_hysteresis":0,
         "negative_hysteresis":4,
         "data": [
-          [ 40, 10 ],
-          [ 48, 16 ],
-          [ 56, 22 ]
+          [ 43, 10 ],
+          [ 60, 17 ],
+          [ 77, 25 ]
         ]
       },
       "linear_e1s": {

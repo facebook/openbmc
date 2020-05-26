@@ -68,13 +68,9 @@ def set_all_pwm(boost):
 
 
 def bmc_read_power():
-    cmd = "/usr/local/bin/power-util mb status"
-    data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
-    data = data.decode()
-    if "ON" in data:
-        return 1
-    else:
-        return 0
+    with open("/tmp/gpionames/PWRGD_SYS_PWROK/value", "r") as f:
+        status = f.read(1)
+    return status
 
 
 def sensor_valid_check(board, sname, check_name, attribute):
@@ -101,6 +97,14 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 return 1
             else:
                 return 0
+        elif attribute["type"] == "prsnt":
+
+            fru_name = c_char_p(board.encode("utf-8"))
+            snr_name = c_char_p(sname.encode("utf-8"))
+
+            is_snr_valid = lpal_hndl.pal_sensor_is_valid(fru_name, snr_name)
+
+            return int(is_snr_valid)
         else:
             Logger.debug("Sensor corresponding valid check funciton not found!")
             return -1

@@ -27,12 +27,18 @@
 #include <syslog.h>
 #include <string.h>
 #include <unistd.h>
+#include <stddef.h>
 #include <time.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/ncsi.h>
+#include <openbmc/nl-wrapper.h>
+#include <sys/socket.h>
+#include <linux/netlink.h>
 #include "pal.h"
 
 #define PLATFORM_NAME "yosemitev3"
@@ -1988,4 +1994,162 @@ pal_get_pfr_update_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridg
   }
 
   return ret;
+}
+
+// OEM Command "CMD_OEM_BYPASS_CMD" 0x34
+int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
+  int ret;
+  int completion_code = CC_UNSPECIFIED_ERROR;
+  uint8_t netfn, cmd, select;
+  uint8_t tlen, rlen;
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+  uint8_t status;
+  NCSI_NL_MSG_T *msg = NULL;
+  NCSI_NL_RSP_T *rsp = NULL;
+  uint8_t channel = 0;
+  uint8_t netdev = 0;
+  uint8_t netenable = 0;
+  char sendcmd[128] = {0};
+  int i;
+
+  *res_len = 0;
+
+  if (slot < FRU_SLOT1 || slot > FRU_SLOT4) {
+    return CC_PARAM_OUT_OF_RANGE;
+  }
+
+  ret = pal_is_fru_prsnt(slot, &status);
+  if (ret < 0) {
+    return -1;
+  }
+  if (status == 0) {
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  ret = pal_get_server_12v_power(slot, &status);
+  if(ret < 0 || status == SERVER_12V_OFF) {
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
+
+  if(!pal_is_slot_server(slot)) {
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  select = req_data[0];
+
+  switch (select) {
+    case BYPASS_BIC:
+      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
+      if (tlen < 0) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+
+      netfn = req_data[1];
+      cmd = req_data[2];
+
+      // Bypass command to Bridge IC
+      if (tlen != 0) {
+        ret = bic_ipmb_wrapper(slot, netfn, cmd, &req_data[3], tlen, res_data, res_len);
+      } else {
+        ret = bic_ipmb_wrapper(slot, netfn, cmd, NULL, 0, res_data, res_len);
+      }
+
+      if (0 == ret) {
+        completion_code = CC_SUCCESS;
+      }
+      break;
+    case BYPASS_ME:
+      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
+      if (tlen < 0) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+
+      netfn = req_data[1];
+      cmd = req_data[2];
+
+      tlen += 2;
+      memcpy(tbuf, &req_data[1], tlen);
+      tbuf[0] = tbuf[0] << 2;
+
+      // Bypass command to ME
+      ret = bic_me_xmit(slot, tbuf, tlen, rbuf, &rlen);
+      if (0 == ret) {
+        completion_code = rbuf[0];
+        memcpy(&res_data[0], &rbuf[1], (rlen - 1));
+        *res_len = rlen - 1;
+      }
+      break;
+    case BYPASS_NCSI:
+      tlen = req_len - 7; // payload_id, netfn, cmd, data[0] (select), netdev, channel, cmd
+      if (tlen < 0) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+    
+      netdev = req_data[1];
+      channel = req_data[2];
+      cmd = req_data[3];
+    
+      msg = calloc(1, sizeof(NCSI_NL_MSG_T));
+      if (!msg) {
+        syslog(LOG_ERR, "%s Error: failed msg buffer allocation", __func__);
+        break;
+      }
+    
+      memset(msg, 0, sizeof(NCSI_NL_MSG_T));
+    
+      sprintf(msg->dev_name, "eth%d", netdev);
+      msg->channel_id = channel;
+      msg->cmd = cmd;
+      msg->payload_length = tlen;
+    
+      for (i=0; i<msg->payload_length; i++) {
+        msg->msg_payload[i] = req_data[4+i];
+      }
+      //send_nl_msg_libnl
+      rsp = send_nl_msg_libnl(msg);
+      if (rsp) {
+        memcpy(&res_data[0], &rsp->msg_payload[0], rsp->hdr.payload_length);
+        *res_len = rsp->hdr.payload_length;
+        completion_code = CC_SUCCESS;
+      } else {
+        completion_code = CC_UNSPECIFIED_ERROR;
+      }
+    
+      free(msg);
+      if (rsp)
+        free(rsp);
+    
+      break;
+    case BYPASS_NETWORK:
+      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), netdev, netenable
+      if (tlen != 0) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+
+      netdev = req_data[1];
+      netenable = req_data[2];
+
+      if (netenable) {
+        if (netenable > 1) {
+          completion_code = CC_INVALID_PARAM;
+          break;
+        }
+
+        sprintf(sendcmd, "ifup eth%d", netdev);
+      } else {
+        sprintf(sendcmd, "ifdown eth%d", netdev);
+      }
+      ret = system(sendcmd);
+      completion_code = CC_SUCCESS;
+      break;
+    default:
+      return completion_code;
+  }
+
+  return completion_code;
 }

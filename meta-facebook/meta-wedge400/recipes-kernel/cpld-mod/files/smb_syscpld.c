@@ -73,7 +73,7 @@ static const i2c_dev_attr_st smb_syscpld_attr_table_th3[] = {
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
-    0x0, 0, 2,
+    0x0, 0, 3,
   },
   {
     "board_type",

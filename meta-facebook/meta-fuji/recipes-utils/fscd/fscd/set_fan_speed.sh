@@ -20,9 +20,6 @@
 #shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
 
-fcm_b_ver=$(head -n1 "$BOTTOM_FCMCPLD_SYSFS_DIR"/cpld_ver 2> /dev/null)
-fcm_t_ver=$(head -n1 "$TOP_FCMCPLD_SYSFS_DIR"/cpld_ver 2> /dev/null)
-
 usage() {
     echo "Usage: $0 <PERCENT (0..100)> <Fan Unit (1..8)> " >&2
 }
@@ -56,14 +53,8 @@ else
       FAN_UNIT=$((FAN + 1))
     fi
 fi
-
-if [ "$fcm_b_ver" == "0x0" ] || [ "$fcm_t_ver" == "0x0" ]; then
-    # Convert the percentage to our 1/32th level (0-31).
-    step=$((($1 * 31) / 100))
-else
     # Convert the percentage to our 1/64th level (0-63).
-    step=$((($1 * 63) / 100))
-fi
+    step=$(( ($1 * 630 + 5) / 1000 ))
 cnt=1
 
 for bus in ${BUS}; do

@@ -20,9 +20,6 @@
 #shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
 
-fcm_b_ver=$(head -n1 "$BOTTOM_FCMCPLD_SYSFS_DIR"/cpld_ver 2> /dev/null)
-fcm_t_ver=$(head -n1 "$TOP_FCMCPLD_SYSFS_DIR"/cpld_ver 2> /dev/null)
-
 usage() {
     echo "Usage: $0 [Fan Unit (1..8)]" >&2
 }
@@ -34,11 +31,8 @@ show_pwm()
     pwm="$(i2c_device_sysfs_abspath "$1"-0033)/fan$2_pwm"
     val=$(head -n 1 < "$pwm")
 
-    if [ "$fcm_b_ver" == "0x0" ] || [ "$fcm_t_ver" == "0x0" ]; then
-        echo "$((val * 100 / 31))%"
-    else
-        echo "$((val * 100 / 63))%"
-    fi
+    # Convert the percentage to our 1/64th level (0-63) and round.
+    echo "$(( (val * 1000 / 63 + 5) /10 ))%"
 }
 
 show_rpm()

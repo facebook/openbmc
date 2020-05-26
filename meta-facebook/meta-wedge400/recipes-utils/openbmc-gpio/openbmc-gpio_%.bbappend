@@ -30,7 +30,7 @@ do_install_append() {
      install -d ${D}${sysconfdir}/init.d
      install -d ${D}${sysconfdir}/rcS.d
      install -m 755 openbmc_gpio_setup.py ${D}${sysconfdir}/init.d/openbmc_gpio_setup.py
-     update-rc.d -r ${D} openbmc_gpio_setup.py start 60 S .
+     update-rc.d -r ${D} openbmc_gpio_setup.py start 58 S .
 }
 
 FILES_${PN} += "/usr/local/bin ${sysconfdir}"

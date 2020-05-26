@@ -56,14 +56,11 @@ def wedge400_board_rev(soc_gpio_table, board_gpio_rev_table):
 
 
 def wedge400_board_type():
-    stream = os.popen("head -n 1 /sys/bus/i2c/devices/12-003e/board_type")
-    val = stream.read()
-    if stream.close():
-        return None
+    val = v0 = openbmc_gpio.gpio_get_value("BMC_CPLD_BOARD_TYPE")
 
-    if int(val, 16) == 0:
+    if val == 1:
         return 0
-    elif int(val, 16) == 1:
+    elif val == 0:
         return 1
     else:
         return None

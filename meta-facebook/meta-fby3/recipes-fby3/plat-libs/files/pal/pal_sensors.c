@@ -43,6 +43,7 @@ static int read_hsc_temp(uint8_t hsc_id, float *value);
 static int read_hsc_pin(uint8_t hsc_id, float *value);
 static int read_hsc_iout(uint8_t hsc_id, float *value);
 static int read_medusa_val(uint8_t snr_number, float *value);
+static int read_cached_val(uint8_t snr_number, float *value);
 static int pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value);
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
@@ -73,7 +74,9 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_MEDUSA_CURR,
   BMC_SENSOR_MEDUSA_PWR,
   BMC_SENSOR_FAN_IOUT,
+  BMC_SENSOR_NIC_P12V,
   BMC_SENSOR_NIC_IOUT,
+  BMC_SENSOR_NIC_PWR,
 };
 
 const uint8_t nicexp_sensor_list[] = {
@@ -576,8 +579,8 @@ PAL_SENSOR_MAP sensor_map[] = {
 
   {"BMC_SENSOR_MEDUSA_CURR", 0xD0, read_medusa_val, 0, {144, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xD0
   {"BMC_SENSOR_MEDUSA_PWR", 0xD1, read_medusa_val, 0, {1800, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xD1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD3
+  {"BMC_SENSOR_NIC_P12V", ADC10, read_adc_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT},//0xD2
+  {"BMC_SENSOR_NIC_PWR" , 0xD3, read_cached_val, true, {82.5, 0, 0, 0, 0, 0, 0, 0}, POWER},//0xD3
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD4
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD5
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD6
@@ -1065,6 +1068,23 @@ apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value) {
 }
 
 static int
+read_cached_val(uint8_t snr_number, float *value) {
+
+  switch (snr_number) {
+    case BMC_SENSOR_NIC_PWR:
+      {
+        float volt = 0, curr = 0;
+        if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_NIC_P12V, &volt) < 0) return READING_NA;
+        if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_NIC_IOUT, &curr) < 0) return READING_NA;
+        *value = volt * curr;
+      }
+      break;
+  }
+
+  return PAL_EOK;
+}
+
+static int
 read_medusa_val(uint8_t snr_number, float *value) {
   static bool is_cached = false;
   static bool is_ltc4282 = true;
@@ -1154,6 +1174,7 @@ read_adc_val(uint8_t adc_id, float *value) {
     "Dummy sensor",
     "BMC_SENSOR_FAN_IOUT",
     "BMC_SENSOR_NIC_IOUT",
+    "BMC_SENSOR_NIC_P12V",
   };
 
   if (adc_id >= ARRAY_SIZE(adc_label)) {

@@ -118,7 +118,6 @@ struct pal_key_cfg {
   {"fru3_restart_cause", "3", NULL},
   {"fru4_restart_cause", "3", NULL},
   {"ntp_server", "", NULL},
-  {"debug_card_uart_select", "0", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
@@ -1619,11 +1618,12 @@ pal_get_uart_select_from_kv(uint8_t *pos) {
   uint8_t loc;
   int ret = -1;
 
-  ret = pal_get_key_value("debug_card_uart_select", value);
+  ret = kv_get("debug_card_uart_select", value, NULL, 0);
   if (!ret) {
     loc = atoi(value);
     *pos = loc;
   }
+
   return ret;
 }
 

@@ -33,18 +33,17 @@ debug_card_handler() {
   char str[8];
 
   while (1) {
-    
     ret = pal_get_uart_select_from_cpld(&uart_select);
     if (ret) {
       goto debug_card_out;
     }
-    
+
     sprintf(str, "%u", uart_select);
-    ret = pal_set_key_value("debug_card_uart_select", str);
+    ret = kv_set("debug_card_uart_select", str, 0, 0);
     if (ret) {
       goto debug_card_out;
     }
-    
+
 debug_card_out:
     msleep(500);
   }

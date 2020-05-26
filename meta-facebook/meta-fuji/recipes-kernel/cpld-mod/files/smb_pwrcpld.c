@@ -51,22 +51,45 @@ static const i2c_dev_attr_st smb_pwrcpld_attr_table[] = {
     0x01, 0, 8,
   },
   {
-    "cpld_sub_ver",
+    "cpld_minor_ver",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x02, 0, 8,
   },
   {
-    "cpld_psu1_on",
+    "cpld_sub_ver",
     NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x03, 0, 8,
+  },
+  {
+    "soft_scratch",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x04, 0, 8,
+  },
+  {
+    "cpld_pdb_L_sim_on",
+    "Enable - high active",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x05, 0, 8,
+  },
+  {
+    "cpld_psu1_on",
+    "0: L1/R1 PSU1 POWER OFF\n"
+    "1: L1/R1 PSU1 POWER ON",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x10, 0, 1,
   },
   {
     "cpld_psu2_on",
-    NULL,
+    "0: L2/R2 PSU2 POWER OFF\n"
+    "1: L2/R2 PSU2 POWER ON",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x10, 1, 1,
@@ -145,6 +168,85 @@ static const i2c_dev_attr_st smb_pwrcpld_attr_table[] = {
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x23, 1, 1,
   },
+  {
+    "upgrade_run",
+    "0: No upgrade\n"
+    "1: Start the upgrade",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa0, 0, 1,
+  },
+  {
+    "upgrade_data",
+    "UPGRADE DATA",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa1, 0, 8,
+  },
+  {
+    "almost_fifo_empty",
+    "0: No upgrade  data fifo almost empty\n"
+    "1: Upgrade data fifo almost empty",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa2, 0, 1,
+  },
+  {
+    "fifo_full",
+    "0: No upgrade  data fifo full\n"
+    "1: Upgrade data fifo full",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa2, 1, 1,
+  },
+  {
+    "fifo_empty",
+    "0: No upgrade  data fifo empty\n"
+    "1: Upgrade data fifo empty",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa2, 2, 1,
+  },
+  {
+    "almost_fifo_full",
+    "0: No upgrade  data fifo almost full\n"
+    "1: Upgrade data fifo almost full",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa2, 3, 1,
+  },
+  {
+    "done",
+    "0: No upgrade done\n"
+    "1: Upgrade done",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa2, 4, 1,
+  },
+  {
+    "error",
+    "0: No upgrade error\n"
+    "1: Upgrade error",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa2, 5, 1,
+  },
+  {
+    "st_pgm_done_flag",
+    "0: FSM No upgrade done\n"
+    "1: FSM Upgrade done",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa2, 6, 1,
+  },
+  {
+    "upgrade_refresh_r",
+    "0: No update\n"
+    "1: Start the upgrade refresh",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa3, 0, 1,
+  }
 };
 
 static i2c_dev_data_st smb_pwrcpld_data;

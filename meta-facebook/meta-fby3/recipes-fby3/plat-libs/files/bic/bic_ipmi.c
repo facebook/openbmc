@@ -1098,11 +1098,16 @@ bic_set_fan_auto_mode(uint8_t crtl, uint8_t *status) {
   uint8_t tlen = 1;
   uint8_t rlen = 0;
   int ret = 0;
+  int retry = 0;
 
   tbuf[0] = crtl;
 
-  ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_FAN_CTRL_STAT, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
-  if ( ret < 0 ) {
+  while (retry < 3) {
+    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_FAN_CTRL_STAT, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    if (ret == 0) break; 
+    retry++;
+  }
+  if (ret != 0) {
     return -1;
   }
 
@@ -1119,12 +1124,17 @@ bic_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
   uint8_t tlen = 5;
   uint8_t rlen = 0;
   int ret = 0;
+  int retry = 0;
 
   tbuf[3] = fan_id;
   tbuf[4] = pwm;
 
-  ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BMC_FAN_CTRL, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
-  if ( ret < 0 ) {
+  while (retry < 3) {
+    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BMC_FAN_CTRL, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    if ( ret == 0 ) break;
+    retry++;
+  }
+  if (ret != 0) {
     return -1;
   }
 
@@ -1139,12 +1149,17 @@ bic_manual_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
   uint8_t tlen = 2;
   uint8_t rlen = 0;
   int ret = 0;
+  int retry = 0;
 
   tbuf[0] = fan_id;
   tbuf[1] = pwm;
 
-  ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_SET_FAN_DUTY, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
-  if ( ret < 0 ) {
+  while (retry < 3) {
+    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_SET_FAN_DUTY, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    if (ret == 0) break;
+    retry++;
+  }
+  if (ret != 0) {
     return -1;
   }
 
@@ -1159,11 +1174,16 @@ bic_get_fan_speed(uint8_t fan_id, float *value) {
   uint8_t tlen = 4;
   uint8_t rlen = 0;
   int ret = 0;
+  int retry = 0;
 
   tbuf[3] = fan_id;
 
-  ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_FAN_RPM, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
-  if ( ret < 0 ) {
+  while (retry < 3) {
+    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_FAN_RPM, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    if (ret == 0) break;
+    retry++;
+  }
+  if (ret != 0) {
     return -1;
   }
 
@@ -1180,11 +1200,16 @@ bic_get_fan_pwm(uint8_t fan_id, float *value) {
   uint8_t tlen = 4;
   uint8_t rlen = 0;
   int ret = 0;
+  int retry = 0;
 
   tbuf[3] = fan_id;
 
-  ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_FAN_DUTY, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
-  if ( ret < 0 ) {
+  while (retry < 3) {
+    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_FAN_DUTY, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    if (ret == 0) break;
+    retry++;
+  }
+  if (ret != 0) {
     return -1;
   }
 

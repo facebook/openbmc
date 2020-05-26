@@ -1503,7 +1503,16 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
   uint8_t b_lsb, b_msb;
   uint16_t b = 0;
   int8_t b_exp, r_exp;
-  x = sensor.value;
+
+  if ((sdr->sensor_units1 & 0xC0) == 0x00) {  // unsigned
+    x = sensor.value;
+  } else if ((sdr->sensor_units1 & 0xC0) == 0x40) {  // 1's complements
+    x = (sensor.value & 0x80) ? (0-(~sensor.value)) : sensor.value;
+  } else if ((sdr->sensor_units1 & 0xC0) == 0x80) {  // 2's complements
+    x = (int8_t)sensor.value;
+  } else { // Does not return reading
+    return READING_NA;
+  }
 
   m_lsb = sdr->m_val;
   m_msb = sdr->m_tolerance >> 6;
@@ -1526,7 +1535,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
     r_exp = -r_exp;
   }
 
-  //syslog(LOG_WARNING, "%s() snr#0x%x raw:%x m=%x b=%x b_exp=%x r_exp=%x", __func__, sensor_num, x, m, b, b_exp, r_exp);
+  //syslog(LOG_WARNING, "%s() snr#0x%x raw:%x m=%x b=%x b_exp=%x r_exp=%x s_units1=%x", __func__, sensor_num, x, m, b, b_exp, r_exp, sdr->sensor_units1);
   *value = ((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp));
 
   //correct the value

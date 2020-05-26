@@ -1736,6 +1736,8 @@ pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *re
   if (system("/etc/init.d/sync_date.sh &") != 0) {
     syslog(LOG_ERR, "Sync date failed!\n");
   }
+
+  pal_set_post_complete(true);
 }
 
 int

@@ -295,6 +295,10 @@ pwr_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 //System Power Ok Event Handler
 static void
 pwr_sysok_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if(curr == GPIO_VALUE_HIGH){
+    pal_set_post_complete(false);
+  }
+
   reset_timer(&g_power_on_sec);
   log_gpio_change(desc, curr, 0);
 }

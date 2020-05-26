@@ -2147,25 +2147,55 @@ _print_sensor_discrete_log(uint8_t fru, uint8_t snr_num, char *snr_name,
 }
 
 bool
+pal_set_post_complete(bool is_completed)
+{
+  char state[16];
+
+  snprintf(state, sizeof(state), "%d", is_completed);
+
+  if (kv_set("post_complete", state, 0, 0) != 0)
+    return false;
+
+  return true;
+}
+
+bool
 pal_is_BIOS_completed(uint8_t fru)
 {
+  const char *POST_CMPLT = "/tmp/cache_store/post_complete";
+
   gpio_desc_t *desc;
   gpio_value_t value;
   bool ret = false;
+  char state[16];
+  int is_completed;
 
-  if ( FRU_MB != fru )
+  if(FRU_MB != fru)
   {
     syslog(LOG_WARNING, "[%s]incorrect fru id: %d", __func__, fru);
     return false;
   }
-  desc = gpio_open_by_shadow("FM_BIOS_POST_CMPLT_BMC_N");
-  if (!desc)
+
+  // POST_CMPLT haven't initialized
+  if(access(POST_CMPLT, F_OK)) {
+    syslog(LOG_WARNING, "pal_is_BIOS_completed: can not access %s", POST_CMPLT);
+
+    desc = gpio_open_by_shadow("FM_BIOS_POST_CMPLT_BMC_N");
+    if (!desc)
+      return false;
+
+    if (gpio_get_value(desc, &value) == 0 && value == GPIO_VALUE_LOW)
+      ret = true;
+    gpio_close(desc);
+    return ret;
+  }
+
+  if(kv_get("post_complete", state, 0, 0) < 0)
     return false;
 
-  if (gpio_get_value(desc, &value) == 0 && value == GPIO_VALUE_LOW)
-    ret = true;
-  gpio_close(desc);
-  return ret;
+  sscanf(state, "%d", &is_completed);
+
+  return is_completed;
 }
 
 void

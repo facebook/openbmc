@@ -462,4 +462,5 @@ int cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr);
 bool pal_is_dimm_present(int cpu_id, uint8_t dimm_id);
 bool pal_dimm_present_check(uint8_t snr_num);
 void pal_second_crashdump_chk(void);
+bool pal_set_post_complete(bool is_completed);
 #endif

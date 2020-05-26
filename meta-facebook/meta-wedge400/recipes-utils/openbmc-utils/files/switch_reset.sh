@@ -17,6 +17,14 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+#shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
+
+if [ "$(wedge_board_type)" != "1" ]; then
+    echo "$(basename "$0") only support on Wedge400C"
+    exit 1
+fi
+
 SMB_CPLD_I2C_BUS="12"
 SMB_CPLD_I2C_ADDR="0x3e"
 

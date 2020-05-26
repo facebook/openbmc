@@ -54,7 +54,7 @@
 
 const char pal_fru_list_print[] = "all, slot1, slot2, slot3, slot4, bmc, nic, bb, nicexp";
 const char pal_fru_list_rw[] = "slot1, slot2, slot3, slot4, bmc, bb, nicexp";
-const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc";
+const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc nic";
 
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic";
 const char pal_guid_fru_list[] = "slot1, slot2, slot3, slot4, bmc";

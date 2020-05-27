@@ -204,7 +204,7 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
   struct libusb_device *dev,*dev_expected;
   struct libusb_device_descriptor desc;
   int config2;
-  int i = 0;
+  int index = 0;
   char str1[64], str2[64];
   char key[64];
   char found = 0;
@@ -238,7 +238,8 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
       printf("There are no USB devices on bus\n");
       goto error_exit;
     }
-    while ((dev = devs[i++]) != NULL) {
+    index = 0;
+    while ((dev = devs[index++]) != NULL) {
       ret = libusb_get_device_descriptor(dev, &desc);
       if ( ret < 0 ) {
         printf("Failed to get device descriptor -- exit\n");
@@ -261,16 +262,16 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
           goto error_exit;
         }
 
+        ret = fby3_common_get_bmc_location(&bmc_location);
+        if (ret < 0) {
+          syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+          goto error_exit;
+        }
+        
         ret = libusb_get_port_numbers(dev, path, sizeof(path));
         if (ret < 0) {
           printf("Error get port number\n");
           libusb_free_device_list(devs,1);
-          goto error_exit;
-        }
-
-        ret = fby3_common_get_bmc_location(&bmc_location);
-        if (ret < 0) {
-          syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
           goto error_exit;
         }
 
@@ -281,8 +282,8 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
         }
         printf("%04x:%04x (bus %d, device %d)",desc.idVendor, desc.idProduct, libusb_get_bus_number(dev), libusb_get_device_address(dev));
         printf(" path: %d", path[0]);
-        for (i = 1; i < ret; i++) {
-          printf(".%d", path[i]);
+        for (index = 1; index < ret; index++) {
+          printf(".%d", path[index]);
         }
         printf("\n");
 
@@ -326,6 +327,7 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
   if ( found == 0 ) {
     printf("Device NOT found -- exit\n");
     libusb_free_device_list(devs,1);
+    ret = -1;
     goto error_exit;
   }
 

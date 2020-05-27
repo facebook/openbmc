@@ -73,6 +73,8 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_MEDUSA_VIN,
   BMC_SENSOR_MEDUSA_CURR,
   BMC_SENSOR_MEDUSA_PWR,
+  BMC_SENSOR_MEDUSA_VDELTA,
+  BMC_SENSOR_PDB_VDELTA,
   BMC_SENSOR_FAN_IOUT,
   BMC_SENSOR_NIC_P12V,
   BMC_SENSOR_NIC_IOUT,
@@ -574,8 +576,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
+  {"BMC_SENSOR_PDB_VDELTA", 0xCE, read_cached_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCE
+  {"BMC_SENSOR_MEDUSA_VDELTA", 0xCF, read_cached_val, true, {0.5, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCF
 
   {"BMC_SENSOR_MEDUSA_CURR", 0xD0, read_medusa_val, 0, {144, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xD0
   {"BMC_SENSOR_MEDUSA_PWR", 0xD1, read_medusa_val, 0, {1800, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xD1
@@ -1069,15 +1071,37 @@ apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value) {
 
 static int
 read_cached_val(uint8_t snr_number, float *value) {
+  float temp1 = 0, temp2 = 0;
+  uint8_t snr1_num = 0, snr2_num = 0;
 
   switch (snr_number) {
     case BMC_SENSOR_NIC_PWR:
-      {
-        float volt = 0, curr = 0;
-        if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_NIC_P12V, &volt) < 0) return READING_NA;
-        if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_NIC_IOUT, &curr) < 0) return READING_NA;
-        *value = volt * curr;
-      }
+        snr1_num = BMC_SENSOR_NIC_P12V;
+        snr2_num = BMC_SENSOR_NIC_IOUT;
+      break;
+    case BMC_SENSOR_PDB_VDELTA:
+        snr1_num = BMC_SENSOR_MEDUSA_VOUT;
+        snr2_num = BMC_SENSOR_HSC_VIN;
+      break;
+    case BMC_SENSOR_MEDUSA_VDELTA:
+        snr1_num = BMC_SENSOR_MEDUSA_VIN;
+        snr2_num = BMC_SENSOR_MEDUSA_VOUT;
+      break;
+    default:
+      return READING_NA;
+      break;
+  }
+
+  if ( sensor_cache_read(FRU_BMC, snr1_num, &temp1) < 0) return READING_NA;
+  if ( sensor_cache_read(FRU_BMC, snr2_num, &temp2) < 0) return READING_NA;
+
+  switch (snr_number) {
+    case BMC_SENSOR_NIC_PWR:
+      *value = temp1 * temp2;
+      break;
+    case BMC_SENSOR_PDB_VDELTA:
+    case BMC_SENSOR_MEDUSA_VDELTA:
+      *value = temp1 - temp2;
       break;
   }
 

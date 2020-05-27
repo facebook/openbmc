@@ -19,6 +19,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://setup-gpio.sh \
             file://board-utils.sh \
+            file://setup_i2c.sh \
             file://sol.sh \
             file://cpld_update.sh \
             file://wedge_power.sh \
@@ -34,6 +35,8 @@ DEPENDS_append = " update-rc.d-native"
 
 do_install_board() {
 
+    install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
+    update-rc.d -r ${D} setup_i2c.sh start 59 S .
     # Export GPIO pins and set initial directions/values.
     install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
     update-rc.d -r ${D} setup-gpio.sh start 59 S .

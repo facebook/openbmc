@@ -2782,7 +2782,7 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, TEMP(2), value);
       break;
     case SMB_SENSOR_IR3R3V_RIGHT_TEMP:
-      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, TEMP(1), value);
+      ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, TEMP(1), value);
       break;
     case SMB_SENSOR_IR3R3V_LEFT_TEMP:
       ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, TEMP(1), value);
@@ -2993,17 +2993,17 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, VOLT(4), value);
       break;
     case SMB_SENSOR_IR3R3V_RIGHT_IN_VOLT:
-      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, VOLT(1), value);
-      break;
-    case SMB_SENSOR_IR3R3V_LEFT_IN_VOLT:
       ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, VOLT(1), value);
       break;
+    case SMB_SENSOR_IR3R3V_LEFT_IN_VOLT:
+      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, VOLT(1), value);
+      break;
     case SMB_SENSOR_IR3R3V_RIGHT_OUT_VOLT:
-      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, VOLT(3), value);
+      ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, VOLT(3), value);
       *value *= 2;
       break;
     case SMB_SENSOR_IR3R3V_LEFT_OUT_VOLT:
-      ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, VOLT(3), value);
+      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, VOLT(3), value);
       *value *= 2;
       break;
     case SMB_SENSOR_SW_CORE_VOLT:
@@ -3040,16 +3040,16 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       *value = *value * 0.9994 + 1.0221;
       break;
     case SMB_SENSOR_IR3R3V_RIGHT_IN_CURR:
-      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, CURR(2), value);
+      ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, CURR(1), value);
       break;
     case SMB_SENSOR_IR3R3V_LEFT_IN_CURR:
-      ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, CURR(2), value);
+      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, CURR(1), value);
       break;
     case SMB_SENSOR_IR3R3V_RIGHT_OUT_CURR:
-      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, CURR(4), value);
+      ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, CURR(3), value);
       break;
     case SMB_SENSOR_IR3R3V_LEFT_OUT_CURR:
-      ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, CURR(4), value);
+      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, CURR(3), value);
       break;
     case SMB_SENSOR_SW_CORE_CURR:
       if( brd_type == BRD_TYPE_WEDGE400 ){
@@ -3083,19 +3083,19 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       *value /= 1000;
       break;
     case SMB_SENSOR_IR3R3V_RIGHT_IN_POWER:
-      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE,  POWER(1), value);
-      *value = *value / 1000;
-      break;
-    case SMB_SENSOR_IR3R3V_LEFT_IN_POWER:
       ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE,  POWER(1), value);
       *value = *value / 1000;
       break;
+    case SMB_SENSOR_IR3R3V_LEFT_IN_POWER:
+      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE,  POWER(1), value);
+      *value = *value / 1000;
+      break;
     case SMB_SENSOR_IR3R3V_RIGHT_OUT_POWER:
-      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE,  POWER(3), value);
+      ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE,  POWER(3), value);
       *value = *value / 1000 * 2;
       break;
     case SMB_SENSOR_IR3R3V_LEFT_OUT_POWER:
-      ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE,  POWER(3), value);
+      ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE,  POWER(3), value);
       *value = *value / 1000 * 2;
       break;
     case SMB_SENSOR_SW_CORE_POWER:

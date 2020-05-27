@@ -61,18 +61,32 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x01, 0, 8,
   },
   {
-    "cpld_sub_ver",
+    "cpld_min_ver",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x02, 0, 8,
   },
   {
+    "cpld_sub_ver",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x03, 0, 8,
+  },
+  {
+    "software_scratch",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x04, 0, 8,
+  },
+  {
     "iso_com_brg_wdt",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
-    0x0c, 0, 2,
+    0x0c, 0, 1,
   },
   {
     "sys_reset_n",
@@ -112,6 +126,27 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x10, 4, 1,
+  },
+  {
+    "cb_pwr_btn_n",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x10, 5, 1,
+  },
+  {
+    "come_pwr_ok_control",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x10, 6, 1,
+  },
+  {
+    "oob_mdio_phy_rst_n",
+    NULL,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x10, 7, 1,
   },
   {
     "iso_com_sus_s3_n",
@@ -154,6 +189,41 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x12, 1, 1,
+  },
+  {
+    "sys_led_red",
+    "LED RED Control ",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x13, 0, 1,
+  },
+  {
+    "sys_led_green",
+    "LED GREEN Control",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x13, 1, 1,
+  },
+    {
+    "sys_led_blue",
+    "LED BLUE Control",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x13, 2, 1,
+  },
+  {
+    "led_bink_en",
+    "LED BLINK_EN",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x13, 3, 1,
+  },
+  {
+    "led_test_en",
+    "LED Control",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x13, 4, 1,
   },
   {
     "com_exp_pwr_enable",
@@ -219,7 +289,7 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x21, 4, 1,
   },
   {
-    "bcm54616s_int_n",
+    "come_phy_int_n",
     "0: Interrupt\n"
     "1: No interrupt",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -267,7 +337,7 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x28, 4, 1,
   },
   {
-    "bcm54616s_int_n_mask",
+    "come_phy_int_n_mask",
     "0: CPLD passes the interrupt to CPU\n"
     "1: CPLD blocks incoming the interrupt",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -310,14 +380,14 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x29, 4, 1,
   },
   {
-    "bcm54616s_int_n_status",
-    "BCM54616S_INT_N status",
+    "come_phy_int_n_status",
+    "COME_PHY_INT_N status",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x29, 5, 1,
   },
   {
-    "xp3r3v_ssd_pg",
+    "xp3r3v_pg",
     "0: Fail\n"
     "1: Normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -325,7 +395,7 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x30, 0, 1,
   },
   {
-    "xp1r8v_pg",
+    "xp3r3v_ssd_pg",
     "0: Fail\n"
     "1: Normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -333,7 +403,7 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x30, 1, 1,
   },
   {
-    "xp5r0v_come_pg",
+    "xp1r8v_pg",
     "0: Fail\n"
     "1: Normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -341,7 +411,7 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x30, 2, 1,
   },
   {
-    "xp12r0v_come_pg",
+    "xp5r0v_come_pg",
     "0: Fail\n"
     "1: Normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -349,20 +419,28 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x30, 3, 1,
   },
   {
-    "pwrgd_pch_pwrok",
+    "xp12r0v_come_pg",
     "0: Fail\n"
     "1: Normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x30, 4, 1,
   },
-   {
-    "com_pwrok",
+  {
+    "come_cpld_pch_pwr_ok",
     "0: Fail\n"
     "1: Normal",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x30, 5, 1,
+  },
+  {
+    "come_pwr_ok_status",
+    "0: Fail\n"
+    "1: Normal",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x30, 6, 1,
   },
   {
     "xp3r3v_ssd_en",
@@ -397,6 +475,14 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x31, 3, 1,
   },
   {
+    "xp3r3v_en",
+    "0: disable\n"
+    "1: Enable",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x31, 4, 1,
+  },
+  {
     "io_buf_come_3v3_oe_n",
     "0: Enable\n"
     "1: Disbale",
@@ -405,7 +491,7 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x32, 0, 1,
   },
   {
-    "io_buf_3v3_scm_smb_oe_n",
+    "io_buf_come_3v3_oe2_n",
     "0: Enable\n"
     "1: Disbale",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -413,7 +499,7 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x32, 1, 1,
   },
   {
-    "come_usb_buf_oe_n",
+    "usb3_power_en",
     "0: Enable\n"
     "1: Disbale",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -421,12 +507,36 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x32, 2, 1,
   },
   {
-    "i2c1_buf_en",
+    "io_buf_3v3_scm_smb_oe_n",
     "0: Enable\n"
     "1: Disbale",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x32, 3, 1,
+  },
+  {
+    "io_buf_3v3_scm_smb_oe2_n",
+    "0: Enable\n"
+    "1: Disbale",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x32, 4, 1,
+  },
+  {
+    "io_buf_3v3_scm_smb_oe3_n",
+    "0: Enable\n"
+    "1: Disbale",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x32, 5, 1,
+  },
+  {
+    "bmc_usb_buf_oe_n",
+    "0: Enable\n"
+    "1: Disbale",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x32, 6, 1,
   },
   {
     "ch_thrmtrip_n",
@@ -436,7 +546,7 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x34, 0, 1,
   },
   {
-    "rtc_clear",
+    "come_cpld_rtc_rst",
     "0: Clear CMOS\n"
     "1: Normal work",
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -504,24 +614,16 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x37, 4, 1,
   },
   {
-    "uart_switch_n",
-    "OCP debug card used\n"
-    "When negative edge detect, The bit will flag",
+    "iso_com_pwrok",
+    "COME POWER OK",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x37, 5, 1,
   },
   {
-    "debug_rst_btn_n",
+    "iso_cpld_pwr_btn_n",
     "OCP debug card used\n"
     "When negative edge detect, The bit will flag",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x37, 6, 1,
-  },
-  {
-    "pwr_btn_n",
-    "OCP debug card used",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x37, 6, 1,
@@ -541,46 +643,6 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x38, 1, 1,
-  },
-  {
-    "pcie_clk_buffer_dif0_oe_n",
-    "0: Buffer enable\n"
-    "1: Buffer disable",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x39, 0, 1,
-  },
-  {
-    "pcie_clk_buffer_dif1_oe_n",
-    "0: Buffer enable\n"
-    "1: Buffer disable",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x39, 1, 1,
-  },
-  {
-    "pcie_clk_buffer_dif2_oe_n",
-    "0: Buffer enable\n"
-    "1: Buffer disable",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x39, 2, 1,
-  },
-  {
-    "pcie_clk_buffer_dif3_oe_n",
-    "0: Buffer enable\n"
-    "1: Buffer disable",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x39, 3, 1,
-  },
-  {
-    "sus_s3_n_clk_buffer_pwrd_n",
-    "0: Power down\n"
-    "1: Power on",
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x39, 4, 1,
   },
   {
     "cb_gbe0_link100_n",
@@ -603,6 +665,92 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     NULL,
     0x3a, 2, 1,
   },
+  {
+    "oob_mdi_phy_error_om_wp",
+    "OOB MDI PHY EEPROM WP",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x3b, 0, 1,
+  },
+  {
+    "upgrade_run",
+    "0: No upgrade\n"
+    "1: Start the upgrade",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0xa0, 0, 1,
+  },
+  {
+    "upgrade_data",
+    "UPGRADE DATA",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0xa1, 0, 1,
+  },
+  {
+    "almost_fifo_empty",
+    "0: No upgrade  data fifo almost empty\n"
+    "1: Upgrade data fifo almost empty",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa2, 0, 1,
+  },
+  {
+    "fifo_full",
+    "0: No upgrade  data fifo full\n"
+    "1: Upgrade data fifo full",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa2, 1, 1,
+  },
+  {
+    "fifo_empty",
+    "0: No upgrade  data fifo empty\n"
+    "1: Upgrade data fifo empty",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa2, 2, 1,
+  },
+  {
+    "almost_fifo_full",
+    "0: No upgrade  data fifo almost full\n"
+    "1: Upgrade data fifo almost full",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa2, 3, 1,
+  },
+  {
+    "done",
+    "0: No upgrade done\n"
+    "1: Upgrade done",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa2, 4, 1,
+  },
+  {
+    "error",
+    "0: No upgrade error\n"
+    "1: Upgrade error",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa2, 5, 1,
+  },
+  {
+    "st_pgm_done_flag",
+    "0: FSM No upgrade done\n"
+    "1: FSM Upgrade done",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa2, 6, 1,
+  },
+  {
+    "upgrade_refresh_r",
+    "0: No update\n"
+    "1: Start the upgrade refresh",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xa3, 0, 1,
+  }
 };
 
 static i2c_dev_data_st scmcpld_data;

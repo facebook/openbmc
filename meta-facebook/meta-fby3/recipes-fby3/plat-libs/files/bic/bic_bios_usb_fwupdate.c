@@ -216,14 +216,14 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
   uint32_t offset = 0, shift_offset = 0;
   uint8_t data[USB_PKT_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
   int read_cnt;
-  int fd;
+  int fd = 0;
   char fpath[128];
   uint8_t path[8];
   int recheck = MAX_CHECK_DEVICE_TIME;
   uint8_t bmc_location = 0;
   int remain = 0;
   unsigned char buff[1];
-  
+
   ret = libusb_init(NULL);
   if (ret < 0) {
     printf("Failed to initialise libusb\n");
@@ -353,7 +353,7 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
   libusb_free_device_list(devs, 1);
 
   int ci = 1;
-  uint8_t epaddr = 0x1; 
+  uint8_t epaddr = 0x1;
   if(libusb_kernel_driver_active(handle, ci) == 1) {
     printf("Kernel Driver Active\n");
     if(libusb_detach_kernel_driver(handle, ci) == 0) {
@@ -377,20 +377,19 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
 
   strcpy(fpath, image);
   printf("Input: %s, USB timeout: 3000ms\n", fpath);
-  fd = open(fpath, O_RDONLY, 0666);
-  if (fd < 0) {
+
+  // align 64K
+  if (stat(fpath, &st)) {
     printf("ERROR: invalid file path!\n");
     syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", image);
     goto error_exit;
   }
-  stat(fpath, &st);
-  remain = BIOS_PKT_SIZE - (st.st_size % BIOS_PKT_SIZE);
-  if ( fd > 0 ) {
-    close(fd);
+
+  if ((remain = (st.st_size % BIOS_PKT_SIZE))) {
+    remain = BIOS_PKT_SIZE - remain;
   }
 
-  // align 64K
-  FILE *fp1 = fopen(fpath, "a");
+  FILE *fp1 = fopen(fpath, "ab");
   buff[0] = 0xFF;
   while (remain) {
     fwrite(buff, sizeof(unsigned char), 1, fp1);
@@ -414,7 +413,7 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
   gettimeofday(&start, NULL);
   while (1) {
     memset(data, 0xFF, sizeof(data));
-    
+
     //check size
     if ( (offset + USB_DAT_SIZE) > (count * BIOS_PKT_SIZE) ) {
       per_size = (count * BIOS_PKT_SIZE) - offset;
@@ -482,10 +481,6 @@ resend:
   gettimeofday(&end, NULL);
   printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
 
-  if ( fd > 0 ) {
-    close(fd);
-  }
-
   ret = 0;
 error_exit:
   sprintf(key, "fru%u_fwupd", slot_id);
@@ -494,6 +489,10 @@ error_exit:
   if ( handle != NULL )
     libusb_close(handle);
   libusb_exit(NULL);
+
+  if (fd > 0) {
+    close(fd);
+  }
 
   return ret;
 }

@@ -37,7 +37,7 @@
 #include "bic_bios_fwupdate.h"
 
 /****************************/
-/*      BIOS fw update      */                            
+/*      BIOS fw update      */
 /****************************/
 #define MAX_RETRY 3
 #define SIZE_IANA_ID 3
@@ -260,7 +260,7 @@ verify_bios_image(uint8_t slot_id, int fd, long size) {
   return ret;
 }
 
-int 
+int
 update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force) {
   struct timeval start, end;
   int ret = -1, rc;
@@ -272,7 +272,7 @@ update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force) {
   int i;
   int remain = 0;
   unsigned char buff[1];
-  
+
   printf("updating fw on slot %d:\n", slot_id);
 
   uint32_t dsize, last_offset;
@@ -292,13 +292,16 @@ update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force) {
   }
   syslog(LOG_CRIT, "Update BIOS: update bios firmware on slot %d\n", slot_id);
 
-  remain = BIOS_ERASE_PKT_SIZE - (st.st_size % BIOS_ERASE_PKT_SIZE);
-  if ( fd > 0 ) {
+  if (fd > 0) {
     close(fd);
   }
 
   // align 64K
-  FILE *fp1 = fopen(image, "a");
+  if ((remain = (st.st_size % BIOS_ERASE_PKT_SIZE))) {
+    remain = BIOS_ERASE_PKT_SIZE - remain;
+  }
+
+  FILE *fp1 = fopen(image, "ab");
   buff[0] = 0xFF;
   while (remain) {
     fwrite(buff, sizeof(unsigned char), 1, fp1);
@@ -376,7 +379,7 @@ error_exit:
   printf("\n");
   syslog(LOG_CRIT, "Update BIOS: updating bios firmware is exiting on slot %d\n", slot_id);
 
-  if (fd > 0 ) {
+  if (fd > 0) {
     close(fd);
   }
 

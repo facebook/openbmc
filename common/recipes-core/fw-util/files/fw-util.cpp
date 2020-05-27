@@ -378,6 +378,7 @@ int main(int argc, char *argv[])
               } else {
                 cerr << " failed" << endl;
               }
+              return -1;
             }
           }
 

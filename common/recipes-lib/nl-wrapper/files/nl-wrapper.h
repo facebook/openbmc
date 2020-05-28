@@ -27,6 +27,7 @@ extern "C" {
 
 #define ETHERNET_HEADER_SIZE 16
 
+#define NCSI_GENL_AEN_MCGROUP       "ncsi_aen"
 
 enum ncsi_nl_commands {
 	NCSI_CMD_UNSPEC,
@@ -56,6 +57,12 @@ enum ncsi_nl_attrs {
 	NCSI_ATTR_MAX = __NCSI_ATTR_AFTER_LAST - 1
 };
 
+struct eth_hdr {
+	unsigned char  DA[6];
+	unsigned char  SA[6]; /* Network Controller SA = FF:FF:FF:FF:FF:FF */
+	unsigned short EtherType; /* DMTF NC-SI */
+} __attribute__((packed));
+
 struct ncsi_pkt_hdr {
 	unsigned char mc_id;        /* Management controller ID */
 	unsigned char revision;     /* NCSI version - 0x01      */
@@ -78,8 +85,10 @@ struct ncsi_msg {
 
 // APIs
 NCSI_NL_RSP_T * send_nl_msg_libnl(NCSI_NL_MSG_T *nl_msg);
+int setup_ncsi_mc_socket(struct nl_sock **sk, unsigned char *dst);
 int islibnl(void);
-
+int nl_rcv_msg(struct nl_sock *sk);
+int libnl_free_socket(struct nl_sock *sk);
 #ifdef __cplusplus
 } // extern "C"
 #endif

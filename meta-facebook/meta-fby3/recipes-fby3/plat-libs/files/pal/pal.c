@@ -1110,6 +1110,7 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
   uint8_t *data = res_data;
   int ret = 0, config_status = 0;
   uint8_t bmc_location = 0;
+  uint8_t type_1ou = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
 
@@ -1124,7 +1125,12 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
     if (config_status == 0) {
       pcie_conf = CONFIG_A;
     } else if (config_status == 1) {
-      pcie_conf = CONFIG_B;
+      bic_get_1ou_type(slot, &type_1ou);
+      if (type_1ou == EDSFF_1U) {
+        pcie_conf = CONFIG_B_E1S;
+      } else {
+        pcie_conf = CONFIG_B;
+      }
     } else if (config_status == 3) {
       pcie_conf = CONFIG_D;
     } else {

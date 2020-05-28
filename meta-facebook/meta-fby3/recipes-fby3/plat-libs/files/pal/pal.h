@@ -82,6 +82,7 @@ enum {
   CONFIG_B = 0x02,
   CONFIG_C = 0x03,
   CONFIG_D = 0x04,
+  CONFIG_B_E1S = 0x05,
 };
 
 enum {

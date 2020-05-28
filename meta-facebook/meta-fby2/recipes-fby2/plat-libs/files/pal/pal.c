@@ -11241,7 +11241,7 @@ pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
 }
 
 int
-pal_get_dev_crad_sensor(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+pal_get_dev_card_sensor(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   int ret;
   uint8_t snr_num;
   uint8_t slot_type = 0x3;
@@ -11249,14 +11249,19 @@ pal_get_dev_crad_sensor(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
   slot--; // get device card slot
   *res_len = 3;
 
+  if ((slot != FRU_SLOT1) && (slot != FRU_SLOT3)) {
+    syslog(LOG_INFO, "pal_get_dev_card_sensor on wrong slot%u",slot);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
   slot_type = fby2_get_slot_type(slot);
   if (slot_type != SLOT_TYPE_GPV2) {
-    syslog(LOG_INFO, "pal_get_dev_crad_sensor non-GPv2 slot type:%u on slot%u",slot_type,slot);
+    syslog(LOG_INFO, "pal_get_dev_card_sensor non-GPv2 slot type:%u on slot%u",slot_type,slot);
     return CC_UNSPECIFIED_ERROR;
   }
 
   if (req_len != 4) {
-    syslog(LOG_INFO, "pal_get_dev_crad_sensor invalid request length:%u on slot%u",req_len,slot);
+    syslog(LOG_INFO, "pal_get_dev_card_sensor invalid request length:%u on slot%u",req_len,slot);
     return CC_INVALID_LENGTH;
   }
 

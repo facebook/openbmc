@@ -32,6 +32,7 @@ SRC_URI = "file://rest.py \
            file://common_auth.py\
            file://acl_config.py\
            file://acl_providers/__init__.py\
+           file://acl_providers/cached_acl_provider.py\
            file://acl_providers/common_acl_provider_base.py\
            file://acl_providers/dummy_acl_provider.py\
            file://plat_tree.py \
@@ -68,6 +69,7 @@ SRC_URI = "file://rest.py \
            file://setup-rest-api.sh \
            file://setup_plat_routes.py \
            file://run_rest \
+           file://test_cached_acl_provider.py \
            file://test_node_sensors.py \
            file://test_auth_enforcer.py \
            file://test_common_logging.py \

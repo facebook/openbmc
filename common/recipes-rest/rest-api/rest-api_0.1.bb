@@ -35,6 +35,7 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://common_auth.py\
            file://acl_config.py\
            file://acl_providers/__init__.py\
+           file://acl_providers/cached_acl_provider.py\
            file://acl_providers/common_acl_provider_base.py\
            file://acl_providers/dummy_acl_provider.py\
            file://board_endpoint.py \
@@ -63,6 +64,7 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://rest-api-1/rest_utils.py \
            file://board_setup_routes.py \
            file://test_auth_enforcer.py \
+           file://test_cached_acl_provider.py \
            file://test_common_middlewares.py \
            file://test_common_logging.py \
            file://test_rest_config.py \
@@ -110,6 +112,7 @@ binfiles1 = "setup-rest-api.sh \
              common_setup_routes.py"
 
 aclfiles = "__init__.py \
+            cached_acl_provider.py \
             common_acl_provider_base.py \
             dummy_acl_provider.py"
 

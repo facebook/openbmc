@@ -28,5 +28,5 @@ class DummyAclProvider(common_acl_provider_base.AclProviderBase):
         return []
 
     async def is_user_authorized(self, identity: str, permissions: t.List[str]) -> bool:
-        self._get_perimssions_for_identity(identity)
+        self._get_permissions_for_identity(identity)
         return True

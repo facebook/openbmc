@@ -451,18 +451,21 @@ send_cmd_and_get_resp_libnl(nl_usr_sk_t *sfd, uint8_t ncsi_cmd,
   memset(nl_msg, 0, sizeof(NCSI_NL_MSG_T));
   create_ncsi_ctrl_pkt(nl_msg, 0, ncsi_cmd, payload_len, payload);
   nl_rsp = send_nl_msg_libnl(nl_msg);
-  ret = get_cmd_status(nl_rsp);
-  if (ret != RESP_COMMAND_COMPLETED)
-  {
-    syslog(LOG_ERR, "send_cmd(0x%x): Command failed, resp = 0x%x",
-           ncsi_cmd, ret);
+  if (!nl_rsp) {
     ret = -1;
-    goto free_exit;
+  } else {
+    ret = get_cmd_status(nl_rsp);
+    if (ret != RESP_COMMAND_COMPLETED)
+    {
+      syslog(LOG_ERR, "send_cmd(0x%x): Command failed, resp = 0x%x",
+            ncsi_cmd, ret);
+      ret = -1;
+      goto free_exit;
+    }
+    ret = 0;
+    if (resp_buf)
+      memcpy(resp_buf, nl_rsp, sizeof(NCSI_NL_RSP_T));
   }
-  ret = 0;
-  if (resp_buf)
-    memcpy(resp_buf, nl_rsp, sizeof(NCSI_NL_RSP_T));
-
 free_exit:
   free(nl_msg);
   if (nl_rsp)
@@ -519,19 +522,21 @@ send_cmd_and_get_resp_nl_user(nl_usr_sk_t *sock, uint8_t ncsi_cmd,
     goto free_exit;
   }
   rcv_buf = (NCSI_NL_RSP_T *)NLMSG_DATA(gmsg.msg_nl_usr.msg_iov->iov_base);
-  // check NCSI command response, exit if command failed
-  ret = get_cmd_status(rcv_buf);
-  if (ret != RESP_COMMAND_COMPLETED)
-  {
-    syslog(LOG_ERR, "send_cmd(0x%x): Command failed, resp = 0x%x",
-           ncsi_cmd, ret);
+  if (!rcv_buf) {
     ret = -1;
-    goto free_exit;
+  } else {
+    // check NCSI command response, exit if command failed
+    ret = get_cmd_status(rcv_buf);
+    if (ret != RESP_COMMAND_COMPLETED)
+    {
+      syslog(LOG_ERR, "send_cmd(0x%x): Command failed, resp = 0x%x",
+            ncsi_cmd, ret);
+      ret = -1;
+      goto free_exit;
+    }
+    if (resp_buf)
+      memcpy(resp_buf, rcv_buf, sizeof(NCSI_NL_RSP_T));
   }
-
-  if (resp_buf)
-    memcpy(resp_buf, rcv_buf, sizeof(NCSI_NL_RSP_T));
-
 free_exit:
   free_ncsi_req_msg(&gmsg);
   return ret;

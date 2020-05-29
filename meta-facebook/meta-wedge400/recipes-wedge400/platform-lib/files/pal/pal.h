@@ -163,7 +163,7 @@ extern "C" {
 #define MAX_NUM_SCM 1
 #define MAX_NUM_FAN 4
 #define MAX_RETRIES_SDR_INIT  30
-#define MAX_READ_RETRY 10
+#define MAX_READ_RETRY 3
 #define DELAY_POWER_BTN 2
 #define DELAY_POWER_CYCLE 5
 

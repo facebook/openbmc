@@ -5268,15 +5268,9 @@ sensor_thresh_array_init(uint8_t fru) {
       if (brd_type == BRD_TYPE_WEDGE400){ //TH_CORE 0.75-0.9
         smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][UCR_THRESH] = 0.99;
         smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][LCR_THRESH] = 0.675;
-      } else if (brd_type == BRD_TYPE_WEDGE400C) {
-        if (brd_type_rev == BOARD_WEDGE400C_EVT){ //VDD_CORE 0.85
-          smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][UCR_THRESH] = 0.935;
-          smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][LCR_THRESH] = 0.765;
-        } else if (brd_type_rev == BOARD_WEDGE400C_EVT2 ||
-                   brd_type_rev == BOARD_WEDGE400C_DVT){ //VDD_CORE 0.75
-          smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][UCR_THRESH] = 0.825;
+      } else if (brd_type == BRD_TYPE_WEDGE400C) { //VDD_CORE 0.82
+          smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][UCR_THRESH] = 0.94;
           smb_sensor_threshold[SMB_SENSOR_SW_CORE_VOLT][LCR_THRESH] = 0.675;
-        }
       }
       if ( brd_type == BRD_TYPE_WEDGE400 ){
         smb_sensor_threshold[SMB_SENSOR_SW_CORE_CURR][UCR_THRESH] = 450;

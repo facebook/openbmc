@@ -30,6 +30,8 @@ SRC_URI = "file://ast-functions \
            file://setup-usbhub.sh \
            file://setup-cmc.sh \
            file://setup-pfr.sh \
+           file://setup-bridge.sh \
+           file://run-bridge.sh \
            file://COPYING \
           "
 
@@ -71,7 +73,8 @@ do_install() {
   update-rc.d -r ${D} setup-por.sh start 70 S .
   install -m 755 setup-usbhub.sh ${D}${sysconfdir}/init.d/setup-usbhub.sh
   update-rc.d -r ${D} setup-usbhub.sh start 90 S .
-
+  install -m 755 setup-bridge.sh ${D}${sysconfdir}/init.d/setup-bridge.sh
+  install -m 755 run-bridge.sh ${D}${sysconfdir}/init.d/run-bridge.sh
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

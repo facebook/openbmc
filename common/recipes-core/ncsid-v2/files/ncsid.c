@@ -74,7 +74,7 @@
 /* POLL nic status every N seconds */
 #define NIC_STATUS_SAMPLING_DELAY  60
 
-#define RX_BUF_SIZE 10
+#define RX_BUF_SIZE 20
 #define fillcnt_sem_path  "/fillsem"
 
 
@@ -88,7 +88,7 @@ typedef struct generic_msg_t {
   NCSI_NL_MSG_T *pmsg_libnl;
 } generic_msg_t;
 
-nl_usr_sk_t gSock = { .fd = -1, .sock = 0 };
+static nl_usr_sk_t gSock = { .fd = -1, .sock = 0 };
 
 // libnl rx buffer struct
 static struct {
@@ -107,6 +107,7 @@ static struct {
   .buf = {0},
 };
 
+static NCSI_NL_RSP_T aenbuf;
 
 static struct timespec last_config_ts;
 static NCSI_Get_Capabilities_Response gNicCapability = {0};
@@ -1038,7 +1039,18 @@ ncsi_rx_handler_libnl(void *args) {
     ret = rx_buffer_get(rcv_buf);
     if (ret != 0)
       continue;
-
+#if DEBUG
+    syslog(LOG_INFO, "%s rcv_buf->hdr.cmd 0x%x, hdr.len %d", __FUNCTION__, rcv_buf->hdr.cmd, rcv_buf->hdr.payload_length);
+    syslog(LOG_INFO, "%s data 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x", __FUNCTION__,
+            rcv_buf->msg_payload[0],
+            rcv_buf->msg_payload[1],
+            rcv_buf->msg_payload[2],
+            rcv_buf->msg_payload[3],
+            rcv_buf->msg_payload[4],
+            rcv_buf->msg_payload[5],
+            rcv_buf->msg_payload[6],
+            rcv_buf->msg_payload[7]);
+#endif
     if (is_aen_packet((AEN_Packet *)rcv_buf->msg_payload)) {
       ret = process_NCSI_AEN((AEN_Packet *)rcv_buf->msg_payload);
     } else {
@@ -1180,6 +1192,32 @@ ncsi_aen_handler(void *arg) {
 
   // enable platform-specific AENs
   enable_aens(&gSock, aen_enable_mask);
+
+  if (islibnl()) {
+    struct nl_sock *sk;
+    ret = setup_ncsi_mc_socket(&sk, (void *)&aenbuf);
+    if (ret < 0) {
+      syslog(LOG_ERR, "ncsi_aen_handler: error setup seocket\n");
+      goto cleanup;
+    }
+
+    while (1) {
+      ret = nl_rcv_msg(sk);
+      if (ret <0) {
+        syslog(LOG_ERR, "ncsi_aen_handler: rc = %d\n",ret);
+        // delay 30s before checking AENs again to prevent hugging CPU resources
+        //   on error
+        sleep(30);
+        continue;
+      }
+#if DEBUG
+      syslog(LOG_INFO, "ncsi_aen_handler: AEN received\n");
+#endif
+      ret = rx_buffer_add(&aenbuf);
+    }
+    if (sk)
+      libnl_free_socket(sk);
+  }
 
 cleanup:
   if (tid_rx > 0)

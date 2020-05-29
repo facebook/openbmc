@@ -34,11 +34,14 @@
 
 bool g_sys_pwr_off;
 
-static void log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay)
+static void log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay, bool low_active)
 {
   const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
   assert(cfg);
-  syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
+  if (low_active)
+    syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
+  else
+    syslog(LOG_CRIT, "%s: %s - %s\n", value ? "ASSERT": "DEASSERT", cfg->description, cfg->shadow);
 }
 
 static gpio_value_t gpio_get(const char *shadow)
@@ -58,14 +61,20 @@ static gpio_value_t gpio_get(const char *shadow)
 }
 
 // Generic Event Handler for GPIO changes
-static void gpio_event_handle_common(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+static void gpio_event_handle_low_active(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  log_gpio_change(gp, curr, 0);
+  log_gpio_change(gp, curr, 0, true);
 }
 
+static void gpio_event_handle_high_active(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  log_gpio_change(gp, curr, 0, false);
+}
+
+// Specific Event Handlers
 static void gpio_event_handle_power_btn(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  log_gpio_change(gp, curr, 0);
+  log_gpio_change(gp, curr, 0, true);
   pal_clock_control();
 }
 
@@ -81,18 +90,40 @@ static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gp
   }
 }
 
+static void asic_def_prsnt(gpiopoll_pin_t *gp, gpio_value_t curr)
+{
+  if (curr == GPIO_VALUE_HIGH)
+    log_gpio_change(gp, curr, 0, false);
+}
+
 // GPIO table to be monitored
 static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
   {"BMC_PWR_BTN_IN_N", "Power button", GPIO_EDGE_BOTH, gpio_event_handle_power_btn, NULL},
   {"SYS_PWR_READY", "System power off", GPIO_EDGE_BOTH, gpio_event_handle_pwr_good, NULL},
-  {"PMBUS_BMC_1_ALERT_N", "HSC 1 Alert", GPIO_EDGE_BOTH, gpio_event_handle_common, NULL},
-  {"PMBUS_BMC_2_ALERT_N", "HSC 2 Alert", GPIO_EDGE_BOTH, gpio_event_handle_common, NULL},
-  {"PMBUS_BMC_3_ALERT_N", "HSC AUX Alert", GPIO_EDGE_BOTH, gpio_event_handle_common, NULL},
-  {"SMB_ALERT_ASIC01", "ASIC01 Alert", GPIO_EDGE_BOTH, gpio_event_handle_common, NULL},
-  {"SMB_ALERT_ASIC23", "ASIC23 Alert", GPIO_EDGE_BOTH, gpio_event_handle_common, NULL},
-  {"SMB_ALERT_ASIC45", "ASIC45 Alert", GPIO_EDGE_BOTH, gpio_event_handle_common, NULL},
-  {"SMB_ALERT_ASIC67", "ASIC67 Alert", GPIO_EDGE_BOTH, gpio_event_handle_common, NULL},
+  {"PMBUS_BMC_1_ALERT_N", "HSC 1 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
+  {"PMBUS_BMC_2_ALERT_N", "HSC 2 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
+  {"PMBUS_BMC_3_ALERT_N", "HSC AUX Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
+  {"SMB_ALERT_ASIC01", "ASIC01 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
+  {"SMB_ALERT_ASIC23", "ASIC23 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
+  {"SMB_ALERT_ASIC45", "ASIC45 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
+  {"SMB_ALERT_ASIC67", "ASIC67 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
+  {"PRSNT0_N_ASIC0", "ASIC0 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT1_N_ASIC0", "ASIC0 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT0_N_ASIC1", "ASIC1 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT1_N_ASIC1", "ASIC1 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT0_N_ASIC2", "ASIC2 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT1_N_ASIC2", "ASIC2 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT0_N_ASIC3", "ASIC3 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT1_N_ASIC3", "ASIC3 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT0_N_ASIC4", "ASIC4 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT1_N_ASIC4", "ASIC4 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT0_N_ASIC5", "ASIC5 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT1_N_ASIC5", "ASIC5 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT0_N_ASIC6", "ASIC6 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT1_N_ASIC6", "ASIC6 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT0_N_ASIC7", "ASIC7 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"PRSNT1_N_ASIC7", "ASIC7 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
 };
 
 // For monitoring GPIOs on IO expender

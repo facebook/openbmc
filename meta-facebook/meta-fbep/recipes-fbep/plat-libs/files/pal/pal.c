@@ -44,6 +44,13 @@
 
 #define ADM1278_REBOOT	"power_cycle"
 
+#define LTC4282_AUX_HWMON_DIR \
+  "/sys/bus/i2c/drivers/ltc4282/18-0043/hwmon"
+#define LTC4282_AUX_DIR \
+  LTC4282_AUX_HWMON_DIR"/hwmon%d/%s"
+
+#define LTC4282_REBOOT	"reboot"
+
 #define DELAY_POWER_CYCLE 10
 #define MAX_RETRY 10
 
@@ -843,6 +850,28 @@ int pal_sled_cycle(void)
   snprintf(path, sizeof(path), P12V_AUX_HWMON_DIR);
   dir = opendir(path);
   if (dir == NULL)
+    goto evt_compat;
+
+  while ((dp = readdir(dir)) != NULL) {
+    if (sscanf(dp->d_name, "hwmon%d", &index))
+      break;
+  }
+  if (dp == NULL) {
+    closedir(dir);
+    goto evt_compat;
+  }
+
+  closedir(dir);
+  // reboot ADM1278 for 12V cycle
+  snprintf(device, LARGEST_DEVICE_NAME, P12V_AUX_DIR, index, ADM1278_REBOOT);
+  if (write_device(device, 1) < 0)
+    goto evt_compat;
+
+  return 0;
+evt_compat:
+  snprintf(path, sizeof(path), LTC4282_AUX_HWMON_DIR);
+  dir = opendir(path);
+  if (dir == NULL)
     goto err_exit;
 
   while ((dp = readdir(dir)) != NULL) {
@@ -855,12 +884,10 @@ int pal_sled_cycle(void)
   }
 
   closedir(dir);
-  // reboot ADM1278 for 12V cycle
-  snprintf(device, LARGEST_DEVICE_NAME, P12V_AUX_DIR, index, ADM1278_REBOOT);
+  snprintf(device, LARGEST_DEVICE_NAME, LTC4282_AUX_DIR, index, LTC4282_REBOOT);
   if (write_device(device, 1) < 0)
     goto err_exit;
 
-  return 0;
 err_exit:
   syslog(LOG_CRIT, "SLED Cycle failed!\n");
   return -1;

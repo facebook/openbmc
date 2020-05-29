@@ -1252,6 +1252,8 @@ static int sensors_read_12v_hsc(uint8_t sensor_num, float *value)
       break;
     case PDB_HSC_P12V_AUX_CURR:
       ret = sensors_read("adm1278-i2c-18-42", "P12V_AUX_CURR", value);
+      if (ret < 0)
+        ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_CURR", value);
       if (ret == 0)
         hsc_value_adjust(aux_current_table, value);
       break;
@@ -1267,6 +1269,8 @@ static int sensors_read_12v_hsc(uint8_t sensor_num, float *value)
       break;
     case PDB_HSC_P12V_AUX_PWR:
       ret = sensors_read("adm1278-i2c-18-42", "P12V_AUX_PWR", value);
+      if (ret < 0)
+        ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_PWR", value);
       if (ret == 0)
         hsc_value_adjust(aux_power_table, value);
       break;
@@ -1278,9 +1282,13 @@ static int sensors_read_12v_hsc(uint8_t sensor_num, float *value)
       break;
     case PDB_HSC_P12V_AUX_VIN:
       ret = sensors_read("adm1278-i2c-18-42", "P12V_AUX_VIN", value);
+      if (ret < 0)
+        ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_VIN", value);
       break;
     case PDB_HSC_P12V_AUX_VOUT:
       ret = sensors_read("adm1278-i2c-18-42", "P12V_AUX_VOUT", value);
+      if (ret < 0)
+        ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_VOUT", value);
       break;
     default:
       ret = ERR_SENSOR_NA;

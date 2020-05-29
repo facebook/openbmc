@@ -1339,7 +1339,7 @@ pal_get_m2vpp_str_name(uint8_t comp, uint8_t root_port, char *error_log) {
       snprintf(error_log, 256, "%s/Num %s ", location, silk_screen);
       return;
     }
-  } 
+  }
 
   if ( i == size ) {
     snprintf(error_log, 256, "Undefined M2 RootPort %X ", root_port);
@@ -2094,24 +2094,24 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
         completion_code = CC_INVALID_LENGTH;
         break;
       }
-    
+
       netdev = req_data[1];
       channel = req_data[2];
       cmd = req_data[3];
-    
+
       msg = calloc(1, sizeof(NCSI_NL_MSG_T));
       if (!msg) {
         syslog(LOG_ERR, "%s Error: failed msg buffer allocation", __func__);
         break;
       }
-    
+
       memset(msg, 0, sizeof(NCSI_NL_MSG_T));
-    
+
       sprintf(msg->dev_name, "eth%d", netdev);
       msg->channel_id = channel;
       msg->cmd = cmd;
       msg->payload_length = tlen;
-    
+
       for (i=0; i<msg->payload_length; i++) {
         msg->msg_payload[i] = req_data[4+i];
       }
@@ -2124,11 +2124,11 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
       } else {
         completion_code = CC_UNSPECIFIED_ERROR;
       }
-    
+
       free(msg);
       if (rsp)
         free(rsp);
-    
+
       break;
     case BYPASS_NETWORK:
       tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), netdev, netenable
@@ -2158,4 +2158,10 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
   }
 
   return completion_code;
+}
+
+int
+pal_get_nic_fru_id(void)
+{
+  return FRU_NIC;
 }

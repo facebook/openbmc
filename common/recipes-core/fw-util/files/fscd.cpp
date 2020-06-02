@@ -1,37 +1,48 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <cstring>
 #include <stdio.h>
 #include "fw-util.h"
-#include <jansson.h>
-
-#define FSC_CONFIG           "/etc/fsc-config.json"
 
 using namespace std;
 
+constexpr auto FSC_CONFIG = "/etc/fsc-config.json";
+
 class FscdComponent : public Component {
+  private:
+  string get_fsc_ver_str() {
+    json j(nullptr);
+    ifstream ifs(FSC_CONFIG);
+    string ver;
+
+    if (!ifs) {
+      return "NA";
+    }
+
+    try {
+      j = json::parse(ifs);
+      //access existing value and rely on default value
+      ver = j.value("version", "error_returned");
+    } catch (json::parse_error& e) {
+      ver = "error_returned";
+      cout << "parse_error: " << e.what() << endl;
+    }
+    return ver;
+  }
+
   public:
   FscdComponent(string fru, string comp)
     : Component(fru, comp) {}
   int print_version()
   {
-    json_error_t error;
-    json_t *conf, *vers;
-
-    cout << "Fan Speed Controller Version: ";
-    conf = json_load_file(FSC_CONFIG, 0, &error);
-    if(!conf) {
-      cout << "NA" << endl;
-      return FW_STATUS_FAILURE;
-    }
-    vers = json_object_get(conf, "version");
-    if(!vers || !json_is_string(vers)) {
-      cout << "NA" << endl;
-    } else {
-      cout << string(json_string_value(vers)) << endl;
-    }
-    json_decref(conf);
+    cout << "Fan Speed Controller Version: " << get_fsc_ver_str() << endl;;
     return FW_STATUS_SUCCESS;
+  }
+
+  void get_ver_in_json(json& j) {
+    j["VERSION"] = get_fsc_ver_str();
+    return;
   }
 };
 

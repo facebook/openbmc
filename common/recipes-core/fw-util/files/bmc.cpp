@@ -190,6 +190,14 @@ int BmcComponent::print_version()
   return FW_STATUS_SUCCESS;
 }
 
+void BmcComponent::get_ver_in_json(json& j) {
+  if (_vers_mtd == "") {
+    j["VERSION"] = system.version();
+  } else {
+    j["VERSION"] = get_bmc_version();
+  }
+}
+
 class SystemConfig {
   public:
     bool dual_flash;

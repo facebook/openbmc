@@ -18,6 +18,7 @@ class BmcComponent : public Component {
 
     int update(std::string image);
     int print_version();
+    void get_ver_in_json(json& j);
     virtual bool is_valid(std::string &image, bool pfr_active);
 };
 

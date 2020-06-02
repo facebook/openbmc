@@ -64,7 +64,17 @@ int Tpm2Component::print_version() {
     cout << "TPM Version: " << string(ver) << endl;
   }
 
-  return 0;
+  return FW_STATUS_SUCCESS;
+}
+
+void Tpm2Component::get_ver_in_json(json& j) {
+  char ver[MAX_LINE_LENGTH] = {0};
+  if (tpm2_get_ver(ver, this)) {
+    j["VERSION"] = "error_returned";
+  } else {
+    j["VERSION"] = string(ver);
+  }
+  return;
 }
 
 #ifdef CONFIG_TPM2

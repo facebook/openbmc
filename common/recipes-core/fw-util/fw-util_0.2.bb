@@ -43,9 +43,9 @@ SRC_URI =+ "file://Makefile \
 
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpthread -ljansson -lfdt -lcrypto -lz -lpal -lvbs -ldl -lgpio-ctrl -lkv"
-DEPENDS += "jansson libpal dtc zlib openssl libvbs libgpio-ctrl libkv"
-RDEPENDS_${PN} += "jansson libpal zlib openssl libvbs libgpio-ctrl libkv"
+LDFLAGS =+ " -lpthread -lfdt -lcrypto -lz -lpal -lvbs -ldl -lgpio-ctrl -lkv"
+DEPENDS += " nlohmann-json libpal dtc zlib openssl libvbs libgpio-ctrl libkv"
+RDEPENDS_${PN} += " libpal zlib openssl libvbs libgpio-ctrl libkv"
 
 CXXFLAGS += "\
   ${@bb.utils.contains('MACHINE_FEATURES', 'tpm1', '-DCONFIG_TPM1', '', d)} \

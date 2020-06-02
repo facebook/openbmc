@@ -210,6 +210,7 @@ int main(int argc, char *argv[])
   string sub_action("");
   string time("");
   string task_id("");
+  json json_array(nullptr);
   bool add_task = false;
   Scheduler tasker;
 
@@ -295,6 +296,8 @@ int main(int argc, char *argv[])
       usage();
       return -1;
     }
+  } else if (action == "--version-json" ) {
+    json_array = json::array();
   } else if ( action == "--show-schedule" ) {
     return tasker.show_task();
   } else if ( action == "--delete-schedule" ) {
@@ -314,7 +317,6 @@ int main(int argc, char *argv[])
   sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGTERM, &sa, NULL);
   sigaction(SIGPIPE, &sa, NULL); // for ssh terminate
-
   //print the fw version or do the fw update when the fru and the comp are found
   for (auto fkv : *Component::fru_list) {
     if (fru == "all" || fru == fkv.first) {
@@ -350,6 +352,10 @@ int main(int argc, char *argv[])
               cerr << "Error getting version of " << c->component()
                 << " on fru: " << c->fru() << endl;
             }
+          } else if ( action == "--version-json" ) {
+            json j_object = {{"FRU", c->fru()}, {"COMPONENT", c->component()}};
+            c->get_ver_in_json(j_object);
+            json_array.push_back(j_object);
           } else {  // update or dump
             if (fru == "all") {
               usage();
@@ -395,6 +401,10 @@ int main(int argc, char *argv[])
   if (!find_comp) {
     usage();
     return -1;
+  }
+
+  if ( action == "--version-json" ) {
+    cout << json_array.dump(4) << endl;
   }
 
   return 0;

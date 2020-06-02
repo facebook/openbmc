@@ -19,6 +19,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://setup-gpio.sh \
             file://board-utils.sh \
+	    file://setup_board.sh \
             file://setup_i2c.sh \
             file://sol.sh \
             file://cpld_update.sh \
@@ -41,6 +42,8 @@ do_install_board() {
     install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
     update-rc.d -r ${D} setup-gpio.sh start 59 S .
 
+    install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
+    update-rc.d -r ${D} setup_board.sh start 80 S .
 
 }
 

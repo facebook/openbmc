@@ -712,29 +712,30 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_SLOT4:
     memcpy(bic_dynamic_sensor_list[fru-1], bic_sensor_list, bic_sensor_cnt);
     current_cnt = bic_sensor_cnt;
+    config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
 
-    if (pal_is_fw_update_ongoing(fru) == false) {
-      config_status = bic_is_m2_exp_prsnt(fru);
-      if ( (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ( (config_status == PRESENT_1OU) || (config_status == (PRESENT_1OU + PRESENT_2OU))) ) {
-        ret = bic_get_1ou_type(fru, &type); 
-        if (type == EDSFF_1U) {
-          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_edsff_sensor_list, bic_1ou_edsff_sensor_cnt);
-          current_cnt += bic_1ou_edsff_sensor_cnt;
-        } else {
-          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_sensor_list, bic_1ou_sensor_cnt);
-          current_cnt += bic_1ou_sensor_cnt;
-        }
+    // 1OU
+    if ( (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ( (config_status == PRESENT_1OU) || (config_status == (PRESENT_1OU + PRESENT_2OU))) ) {
+      ret = (pal_is_fw_update_ongoing(fru) == false) ? bic_get_1ou_type(fru, &type):bic_get_1ou_type_cache(fru, &type);
+      if (type == EDSFF_1U) {
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_edsff_sensor_list, bic_1ou_edsff_sensor_cnt);
+        current_cnt += bic_1ou_edsff_sensor_cnt;
+      } else {
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_sensor_list, bic_1ou_sensor_cnt);
+        current_cnt += bic_1ou_sensor_cnt;
       }
+    }
 
-      if ( (config_status == PRESENT_2OU) || (config_status == (PRESENT_1OU + PRESENT_2OU)) ) {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
-        current_cnt += bic_2ou_sensor_cnt;
-      }
+    // 2OU
+    if ( (config_status == PRESENT_2OU) || (config_status == (PRESENT_1OU + PRESENT_2OU)) ) {
+      memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
+      current_cnt += bic_2ou_sensor_cnt;
+    }
 
-      if ( bmc_location == NIC_BMC ) {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_bb_sensor_list, bic_bb_sensor_cnt);
-        current_cnt += bic_bb_sensor_cnt;
-      }
+    // BB (for NIC_BMC only)
+    if ( bmc_location == NIC_BMC ) {
+      memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_bb_sensor_list, bic_bb_sensor_cnt);
+      current_cnt += bic_bb_sensor_cnt;
     }
 
     *sensor_list = (uint8_t *) bic_dynamic_sensor_list[fru-1];

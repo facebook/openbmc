@@ -35,6 +35,7 @@ int bic_write_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, uint8_t i
 int bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen, uint8_t intf);
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 int bic_get_1ou_type(uint8_t slot_id, uint8_t *type);
+int bic_get_1ou_type_cache(uint8_t slot_id, uint8_t *type);
 int bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status);
 int bic_get_80port_record(uint8_t slot_id, uint8_t *rbuf, uint8_t *rlen, uint8_t intf);
 int bic_get_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf);
@@ -44,6 +45,7 @@ int bic_get_vr_ver_cache(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t add
 int bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf);
 int bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor, uint8_t intf);
 int bic_is_m2_exp_prsnt(uint8_t slot_id);
+int bic_is_m2_exp_prsnt_cache(uint8_t slot_id);
 int me_recovery(uint8_t slot_id, uint8_t command);
 int bic_switch_mux_for_bios_spi(uint8_t slot_id, uint8_t mux);
 int bic_set_gpio(uint8_t slot_id, uint8_t gpio_num,uint8_t value);

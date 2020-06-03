@@ -66,28 +66,22 @@ def set_all_pwm(boost):
     response = response.decode()
     return response
 
-
 def bmc_read_power():
-    cmd = "/usr/local/bin/power-util mb status"
-    data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
-    data = data.decode()
-    if "ON" in data:
+    with open(
+        "/tmp/gpionames/SYS_PWR_READY/value", "r"
+    ) as f:
+        pwr_sts = f.read(1)
+    if pwr_sts[0] == "1":
         return 1
     else:
         return 0
-
 
 def sensor_valid_check(board, sname, check_name, attribute):
     cmd = ""
     data = ""
     try:
         if attribute["type"] == "power_status":
-            # check power status first
-            pwr_sts = bmc_read_power()
-            if pwr_sts != 1:
-                return 0
-            else:
-                return 1
+            return bmc_read_power()
 
         elif attribute["type"] == "gpio":
             cmd = ["gpiocli", "get-value", "--shadow", attribute["shadow"]]

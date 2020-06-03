@@ -1,5 +1,5 @@
 {
-  "version": "fbep-evt-r02",
+  "version": "fbep-dvt-r05",
   "pwm_transition_value": 100,
   "pwm_boost_value": 100,
   "sample_interval_ms": 1000,
@@ -10,6 +10,11 @@
   },
   "sensor_valid_check": {
     "(.*)pax": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "mb_gpu": {
       "attribute": {
         "type" : "power_status"
       }
@@ -29,16 +34,17 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "linear",
-      "negative_hysteresis": 1,
       "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
       "data": [
-        [23, 23],
-        [28, 28],
-        [32, 35],
-        [37, 50],
-        [39, 60],
-        [40, 70],
-        [42, 100]
+        [23, 10],
+        [28, 15],
+        [32, 25],
+        [37, 35],
+        [39, 45],
+        [40, 55],
+        [42, 65],
+        [45, 80]
       ]
     },
     "linear_switch_remote": {
@@ -54,8 +60,64 @@
         [70, 30],
         [75, 35],
         [80, 40],
-        [90, 100]
+        [90, 70]
       ]
+    },
+    "linear_gpu_edge": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "data": [
+        [50, 20],
+        [55, 35],
+        [60, 45],
+        [65, 50],
+        [68, 55],
+        [70, 60]
+      ]
+    },
+    "pid_gpu_edge": {
+      "read_source" : {
+	"util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 71,
+      "positive_hysteresis": 2,
+      "negative_hysteresis": 1,
+      "kp": 3.5,
+      "ki": 0.4,
+      "kd": 0.4
+    },
+    "linear_gpu_mem": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "data": [
+        [62, 20],
+        [65, 45],
+        [68, 50],
+        [70, 55],
+        [73, 60],
+        [75, 65]
+      ]
+    },
+    "pid_gpu_mem": {
+      "read_source" : {
+	"util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 76,
+      "positive_hysteresis": 2,
+      "negative_hysteresis": 2,
+      "kp": 3.5,
+      "ki": 0.4,
+      "kd": 0.4
     },
     "linear_vicor": {
       "read_source" : {
@@ -68,10 +130,9 @@
         [60, 20],
         [65, 25],
         [70, 30],
+        [75, 35],
         [80, 40],
-        [90, 70],
-        [95, 85],
-        [100, 100]
+        [90, 70]
       ]
     }
   },

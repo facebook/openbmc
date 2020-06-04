@@ -354,7 +354,7 @@ int main(int argc, char *argv[])
             }
           } else if ( action == "--version-json" ) {
             json j_object = {{"FRU", c->fru()}, {"COMPONENT", c->component()}};
-            c->get_ver_in_json(j_object);
+            c->get_version(j_object);
             json_array.push_back(j_object);
           } else {  // update or dump
             if (fru == "all") {

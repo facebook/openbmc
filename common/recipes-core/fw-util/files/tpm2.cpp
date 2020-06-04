@@ -67,7 +67,7 @@ int Tpm2Component::print_version() {
   return FW_STATUS_SUCCESS;
 }
 
-void Tpm2Component::get_ver_in_json(json& j) {
+void Tpm2Component::get_version(json& j) {
   char ver[MAX_LINE_LENGTH] = {0};
   if (tpm2_get_ver(ver, this)) {
     j["VERSION"] = "error_returned";

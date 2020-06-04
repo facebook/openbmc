@@ -78,7 +78,14 @@ class Component {
     virtual int fupdate(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int dump(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int print_version() { return FW_STATUS_NOT_SUPPORTED; }
-    virtual void get_ver_in_json(json &j) { j["VERSION"] = "not_supported"; }
+    virtual void get_version(std::string& str) {
+      str = "not_supported";
+    }
+    virtual void get_version(json &j) {
+      std::string ver;
+      get_version(ver);
+      j["VERSION"] = ver;
+    }
     virtual void set_update_ongoing(int timeout) {
       if (timeout > 0)
         update_initiated = true;

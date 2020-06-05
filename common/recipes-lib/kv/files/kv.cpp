@@ -50,6 +50,15 @@ int kv_set(const char *key, const char *value, size_t len, unsigned int flags) {
     auto r = flags & KV_FPERSIST ? region::persist : region::temp;
     kv::set(key, data, r, flags & KV_FCREATE);
 
+  } catch (kv::key_already_exists& e) {
+    // Eat key-already-exists errors on KV_FPERSIST and just return a -1.
+    // Too many callers are calling FCREATE as a way to initialize persistent
+    // data and if we don't eat the error, we fill up the syslog.
+    if ((flags & KV_FPERSIST) && (flags & KV_FCREATE)) {
+      return -1;
+    }
+    KV_WARN("kv_set: %s", e.what());
+    return -1;
   } catch (std::exception& e) {
     KV_WARN("kv_set: %s", e.what());
     return -1;
@@ -94,8 +103,7 @@ int kv_get(const char *key, char *value, size_t *len, unsigned int flags) {
           key, bytes);
       value[max_len - 1] = '\0';
     }
-  } catch (std::filesystem::filesystem_error& e)
-  {
+  } catch (std::filesystem::filesystem_error& e) {
     // Eat no-such-file errors and just return a -1.
     // Too many callers try to look up kv-entries for entries that haven't
     // been created yet and if we don't eat the error, we fill up the syslog.
@@ -124,7 +132,7 @@ void set(const std::string& key, const std::string& value,
 
 
   if (fp.was_present() && require_create) {
-    throw std::logic_error("kv_set: key " + key + " already exists");
+    throw key_already_exists("kv_set: key " + key + " already exists");
   }
 
   // Check if we are writing the same value. If so, exit early

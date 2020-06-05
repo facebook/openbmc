@@ -25,6 +25,7 @@
 # Default-Stop:
 # Short-Description: Setup the board
 ### END INIT INFO
+
 # shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
 
@@ -62,3 +63,18 @@ echo "$brd_type" > /tmp/cache_store/board_type
 
 
 cp /etc/sensors.d/custom/fuji.conf /etc/sensors.d/fuji.conf
+
+# export_gpio_pin for PCA9534 54-0021
+gpiocli export -c 54-0021 -o 0 --shadow PDB_L_JTAG_TDO
+gpiocli export -c 54-0021 -o 1 --shadow PDB_L_JTAG_TDI
+gpiocli export -c 54-0021 -o 2 --shadow PDB_L_JTAG_TMS
+gpiocli export -c 54-0021 -o 3 --shadow PDB_L_JTAG_TCK
+gpiocli export -c 54-0021 -o 4 --shadow PDB_L_JTAG_PGM
+gpiocli export -c 54-0021 -o 7 --shadow PDB_L_HITLESS
+gpiocli export -c 62-0021 -o 0 --shadow PDB_R_JTAG_TDO
+gpiocli export -c 62-0021 -o 1 --shadow PDB_R_JTAG_TDI
+gpiocli export -c 62-0021 -o 2 --shadow PDB_R_JTAG_TMS
+gpiocli export -c 62-0021 -o 3 --shadow PDB_R_JTAG_TCK
+gpiocli export -c 62-0021 -o 4 --shadow PDB_R_JTAG_PGM
+gpiocli export -c 62-0021 -o 7 --shadow PDB_R_HITLESS
+

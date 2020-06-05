@@ -30,7 +30,7 @@ DLL_PATH=/usr/lib/libcpldupdate_dll_gpio.so
 usage() {
     echo "Usage: $prog -s <CPLD_TYPE> -f <img_file> <hw|sw>"
     echo
-    echo "CPLD_TYPE: ( FCM-T | FCM-B | SCM | SMB )"
+    echo "CPLD_TYPE: ( FCM-T | FCM-B | SCM | SMB | PDB-L | PDB-R)"
     echo
     echo "img_file: Image file for lattice CPLD"
     echo "  VME file for software mode"
@@ -48,60 +48,86 @@ if [ $# -lt 5 ]; then
 fi
 
 enable_fct-t_jtag_chain(){
-    gpio_set BMC_JTAG_MUX_IN        1
-    gpio_set FCM_1_CPLD_JTAG_EN_N   0
-    gpio_set BMC_FCM_1_SEL          0
-    gpio_set FCM_2_CPLD_JTAG_EN_N   1
-    gpio_set BMC_FCM_2_SEL          1
-    gpio_set SYS_CPLD_JTAG_EN_N     1
-    gpio_set BMC_SCM_CPLD_JTAG_EN_N 1
-    gpio_set BMC_FPGA_JTAG_EN       1
+    gpio_set_value BMC_JTAG_MUX_IN        1
+    gpio_set_value FCM_1_CPLD_JTAG_EN_N   0
+    gpio_set_value BMC_FCM_1_SEL          0
+    gpio_set_value FCM_2_CPLD_JTAG_EN_N   1
+    gpio_set_value BMC_FCM_2_SEL          1
+    gpio_set_value SYS_CPLD_JTAG_EN_N     1
+    gpio_set_value BMC_SCM_CPLD_JTAG_EN_N 1
+    gpio_set_value BMC_FPGA_JTAG_EN       1
 }
 
 enable_fct-b_jtag_chain(){
-    gpio_set BMC_JTAG_MUX_IN        1
-    gpio_set FCM_1_CPLD_JTAG_EN_N   1
-    gpio_set BMC_FCM_1_SEL          1
-    gpio_set FCM_2_CPLD_JTAG_EN_N   0
-    gpio_set BMC_FCM_2_SEL          0
-    gpio_set SYS_CPLD_JTAG_EN_N     1
-    gpio_set BMC_SCM_CPLD_JTAG_EN_N 1
-    gpio_set BMC_FPGA_JTAG_EN       1
+    gpio_set_value BMC_JTAG_MUX_IN        1
+    gpio_set_value FCM_1_CPLD_JTAG_EN_N   1
+    gpio_set_value BMC_FCM_1_SEL          1
+    gpio_set_value FCM_2_CPLD_JTAG_EN_N   0
+    gpio_set_value BMC_FCM_2_SEL          0
+    gpio_set_value SYS_CPLD_JTAG_EN_N     1
+    gpio_set_value BMC_SCM_CPLD_JTAG_EN_N 1
+    gpio_set_value BMC_FPGA_JTAG_EN       1
 }
 
 enable_smb_jtag_chain(){
-    gpio_set BMC_JTAG_MUX_IN        1
-    gpio_set FCM_1_CPLD_JTAG_EN_N   1
-    gpio_set BMC_FCM_1_SEL          1
-    gpio_set FCM_2_CPLD_JTAG_EN_N   1
-    gpio_set BMC_FCM_2_SEL          1
-    gpio_set SYS_CPLD_JTAG_EN_N     0
-    gpio_set BMC_SCM_CPLD_JTAG_EN_N 1
-    gpio_set BMC_FPGA_JTAG_EN       1
+    gpio_set_value BMC_JTAG_MUX_IN        1
+    gpio_set_value FCM_1_CPLD_JTAG_EN_N   1
+    gpio_set_value BMC_FCM_1_SEL          1
+    gpio_set_value FCM_2_CPLD_JTAG_EN_N   1
+    gpio_set_value BMC_FCM_2_SEL          1
+    gpio_set_value SYS_CPLD_JTAG_EN_N     0
+    gpio_set_value BMC_SCM_CPLD_JTAG_EN_N 1
+    gpio_set_value BMC_FPGA_JTAG_EN       1
 }
 
 enable_scm_jtag_chain(){
-    gpio_set BMC_JTAG_MUX_IN        1
-    gpio_set FCM_1_CPLD_JTAG_EN_N   1
-    gpio_set BMC_FCM_1_SEL          1
-    gpio_set FCM_2_CPLD_JTAG_EN_N   1
-    gpio_set BMC_FCM_2_SEL          1
-    gpio_set SYS_CPLD_JTAG_EN_N     1
-    gpio_set BMC_SCM_CPLD_JTAG_EN_N 0
-    gpio_set BMC_FPGA_JTAG_EN       1
+    gpio_set_value BMC_JTAG_MUX_IN        1
+    gpio_set_value FCM_1_CPLD_JTAG_EN_N   1
+    gpio_set_value BMC_FCM_1_SEL          1
+    gpio_set_value FCM_2_CPLD_JTAG_EN_N   1
+    gpio_set_value BMC_FCM_2_SEL          1
+    gpio_set_value SYS_CPLD_JTAG_EN_N     1
+    gpio_set_value BMC_SCM_CPLD_JTAG_EN_N 0
+    gpio_set_value BMC_FPGA_JTAG_EN       1
+}
+
+enable_pdb-l_jtag_chain(){
+    gpio_set_value BMC_JTAG_MUX_IN        1
+    gpio_set_value FCM_1_CPLD_JTAG_EN_N   1
+    gpio_set_value BMC_FCM_1_SEL          1
+    gpio_set_value FCM_2_CPLD_JTAG_EN_N   1
+    gpio_set_value BMC_FCM_2_SEL          1
+    gpio_set_value SYS_CPLD_JTAG_EN_N     1
+    gpio_set_value BMC_SCM_CPLD_JTAG_EN_N 1
+    gpio_set_value BMC_FPGA_JTAG_EN       1
+    gpio_set_value PDB_L_HITLESS    0
+}
+
+enable_pdb-r_jtag_chain(){
+    gpio_set_value BMC_JTAG_MUX_IN        1
+    gpio_set_value FCM_1_CPLD_JTAG_EN_N   1
+    gpio_set_value BMC_FCM_1_SEL          1
+    gpio_set_value FCM_2_CPLD_JTAG_EN_N   1
+    gpio_set_value BMC_FCM_2_SEL          1
+    gpio_set_value SYS_CPLD_JTAG_EN_N     1
+    gpio_set_value BMC_SCM_CPLD_JTAG_EN_N 1
+    gpio_set_value BMC_FPGA_JTAG_EN       1
+    gpio_set_value PDB_R_HITLESS    0
 }
 
 disable_jtag_chain(){
-    gpio_set BMC_JTAG_MUX_IN        0
-    gpio_set FCM_1_CPLD_JTAG_EN_N   1
-    gpio_set BMC_FCM_1_SEL          1
-    gpio_set FCM_2_CPLD_JTAG_EN_N   1
-    gpio_set BMC_FCM_2_SEL          1
-    gpio_set SYS_CPLD_JTAG_EN_N     1
-    gpio_set BMC_SCM_CPLD_JTAG_EN_N 1
-    gpio_set_value JTAG_TDI 1
-    gpio_set_value JTAG_TCK 0
-    gpio_set_value JTAG_TMS 1
+    gpio_set_value BMC_JTAG_MUX_IN        0
+    gpio_set_value FCM_1_CPLD_JTAG_EN_N   1
+    gpio_set_value BMC_FCM_1_SEL          1
+    gpio_set_value FCM_2_CPLD_JTAG_EN_N   1
+    gpio_set_value BMC_FCM_2_SEL          1
+    gpio_set_value SYS_CPLD_JTAG_EN_N     1
+    gpio_set_value BMC_SCM_CPLD_JTAG_EN_N 1
+    gpio_set_value JTAG_TDI         1
+    gpio_set_value JTAG_TCK         0
+    gpio_set_value JTAG_TMS         1
+    gpio_set_value PDB_L_HITLESS    1
+    gpio_set_value PDB_R_HITLESS    1
 }
 
 trap 'rm -rf /tmp/fcmcpld_update' INT TERM QUIT EXIT
@@ -117,6 +143,10 @@ if [ -e "$UPDATE_IMG" ];then
         enable_smb_jtag_chain
     elif [[  $CPLD_TYPE == "SCM" ]];then
         enable_scm_jtag_chain
+    elif [[  $CPLD_TYPE == "PDB-L" ]];then
+        enable_pdb-l_jtag_chain
+    elif [[  $CPLD_TYPE == "PDB-R" ]];then
+        enable_pdb-r_jtag_chain
     else
         echo 'argument '"$CPLD_TYPE"' is wrong'
         exit 1
@@ -131,7 +161,13 @@ case $5 in
         cpldprog -p "${UPDATE_IMG}"
         ;;
     sw)
-        ispvm -f 1000 dll $DLL_PATH "${UPDATE_IMG}" --tdo JTAG_TDO --tdi JTAG_TDI --tms JTAG_TMS --tck JTAG_TCK
+        if [[  $CPLD_TYPE == "PDB-L" ]];then
+            ispvm -f 100 dll $DLL_PATH "${UPDATE_IMG}" --tdo PDB_L_JTAG_TDO --tdi PDB_L_JTAG_TDI --tms PDB_L_JTAG_TMS --tck PDB_L_JTAG_TCK
+        elif [[  $CPLD_TYPE == "PDB-R" ]];then
+            ispvm -f 100 dll $DLL_PATH "${UPDATE_IMG}" --tdo PDB_R_JTAG_TDO --tdi PDB_R_JTAG_TDI --tms PDB_R_JTAG_TMS --tck PDB_R_JTAG_TCK
+        else
+            ispvm -f 1000 dll $DLL_PATH "${UPDATE_IMG}" --tdo JTAG_TDO --tdi JTAG_TDI --tms JTAG_TMS --tck JTAG_TCK
+        fi
         ;;
     *)
         # default: hw mode

@@ -32,7 +32,6 @@ SRC_URI = "file://ast-functions \
            file://setup-pfr.sh \
            file://COPYING \
            file://workaround.sh \
-           file://workaround_2.sh \
           "
 
 pkgdir = "utils"
@@ -74,8 +73,6 @@ do_install() {
   update-rc.d -r ${D} setup-por.sh start 70 S .
   install -m 755 workaround.sh ${D}${sysconfdir}/init.d/workaround.sh
   update-rc.d -r ${D} workaround.sh start 71 S .
-  install -m 755 workaround_2.sh ${D}${sysconfdir}/init.d/workaround_2.sh
-  update-rc.d -r ${D} workaround_2.sh start 98 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

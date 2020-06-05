@@ -33,7 +33,6 @@
 #include <dirent.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/ipmi.h>
-#include <openbmc/obmc-sensors.h>
 #include <openbmc/obmc-i2c.h>
 #include "pal.h"
 
@@ -621,53 +620,6 @@ exit:
   return ret;
 }
 
-static void clock_control(bool enable)
-{
-  int ret, i;
-  gpio_desc_t *gpio;
-  const char *clock_shadow_name[2] = {
-    "SEL1_CLK_MUX",
-    "OEB_CLK_MUX_N"
-  };
-
-  for (i = 0; i < 2; i++) {
-    gpio = gpio_open_by_shadow(clock_shadow_name[i]);
-    if (!gpio) {
-      syslog(LOG_WARNING, "Open GPIO %s failed", clock_shadow_name[i]);
-      continue;
-    }
-
-    if (enable)
-      ret = gpio_set_value(gpio, GPIO_VALUE_HIGH);
-    else
-      ret = gpio_set_value(gpio, GPIO_VALUE_LOW);
-
-    if (ret < 0) {
-      syslog(LOG_WARNING, "Control GPIO %s failed", clock_shadow_name[i]);
-    }
-
-    gpio_close(gpio);
-  }
-}
-
-void pal_clock_control()
-{
-  int ret;
-  float value;
-
-  sleep(2);
-  ret = sensors_read_adc("MB_ADC_P3V3", &value);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "Read P3V3 failed");
-    return;
-  }
-
-  if (value < 3.0)
-    clock_control(false);
-  else
-    clock_control(true);
-}
-
 static int server_power_on()
 {
   int ret = -1;
@@ -687,7 +639,6 @@ static int server_power_on()
     goto bail;
   }
   sleep(2);
-  pal_clock_control();
 
   ret = 0;
 bail:
@@ -714,7 +665,6 @@ static int server_power_off()
   if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
     goto bail;
   }
-  pal_clock_control();
 
   ret = 0;
 bail:

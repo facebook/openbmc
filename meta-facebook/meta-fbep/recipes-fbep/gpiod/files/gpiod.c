@@ -75,7 +75,6 @@ static void gpio_event_handle_high_active(gpiopoll_pin_t *gp, gpio_value_t last,
 static void gpio_event_handle_power_btn(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
   log_gpio_change(gp, curr, 0, true);
-  pal_clock_control();
 }
 
 static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)

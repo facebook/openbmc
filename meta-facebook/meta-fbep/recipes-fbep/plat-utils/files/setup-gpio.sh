@@ -66,6 +66,7 @@ do
   gpioexp_export 7-002${i} OAM${i}_PWRRDT0 11
   gpioexp_export 7-002${i} OAM${i}_PWRRDT1 12
   gpioexp_export 7-002${i} OAM${i}_MODULE_PWRGD 13
+  gpioexp_export 7-002${i} OAM${i}_THERMTRIP 14
 
   gpio_set OAM${i}_LINK_CONFIG0 0
   gpio_set OAM${i}_LINK_CONFIG2 0
@@ -90,6 +91,8 @@ done
 #devmem_clear_bit $(scu_addr 80) 7
 #devmem_clear_bit $(scu_addr 90) 2
 
+gpio_export ASIC_PWR_EN_CTRL GPIOA0
+
 # Reserved
 gpio_export BMC_GPIOA1 GPIOA1
 gpio_export BMC_GPIOA2 GPIOA2
@@ -105,12 +108,14 @@ gpio_export SCALE_DEBUG_EN_N_ASIC1 GPIOA6
 #devmem_clear_bit $(scu_addr 80) 14
 
 # PCIe switch GPIO (preserved)
-gpio_export PAX2_SKU_ID GPIOB0
+gpio_export PAX2_SKU_ID0 GPIOB0
 gpio_export PAX2_ALERT GPIOB1
-gpio_export PAX3_SKU_ID GPIOB4
+gpio_export PAX3_SKU_ID0 GPIOB4
 gpio_export PAX3_ALERT GPIOB5
-gpio_export PAX0_INT2 GPIOB6
-gpio_export PAX1_INT2 GPIOB7
+gpio_export PAX0_SKU_ID1 GPIOB6
+gpio_set PAX0_SKU_ID1 0
+gpio_export PAX1_SKU_ID1 GPIOB7
+gpio_set PAX1_SKU_ID1 0
 
 # BMC ready
 gpio_export BMC_READY_N GPIOB2
@@ -245,6 +250,12 @@ gpio_export PRSNT0_N_ASIC0 GPIOH7
 gpio_export BMC_OAM_TEST13 GPIOI0
 gpio_export BMC_OAM_TEST14 GPIOI1
 
+gpio_export OAM_FAST_BRK_N GPIOI2
+gpio_set OAM_FAST_BRK_N 1
+
+gpio_export OAM_FAST_BRK_ON_N GPIOI3
+gpio_set OAM_FAST_BRK_ON_N 1
+
 # OAM debug pin (defined by OAM)
 gpio_export BMC_OAM_TEST3 GPIOJ0
 gpio_export BMC_OAM_TEST4 GPIOJ1
@@ -267,19 +278,20 @@ gpio_export SCALE_DEBUG_EN_N_ASIC4 GPIOJ5
 #devmem_clear_bit $(scu_addr 90) 5
 
 # Select clock source from MB
-# 0:0 = MB#1
-# 1:0 = MB#2
-# 0:1 = MB#3
-# 1:1 = MB#4
+# [S1:S0]
+# 0:0 = MB#0
+# 1:0 = MB#1
+# 0:1 = MB#2
+# 1:1 = MB#3
 gpio_export SEL0_CLK_MUX GPIOL0
 gpio_set SEL0_CLK_MUX 0
 gpio_export SEL1_CLK_MUX GPIOL1
 gpio_set SEL1_CLK_MUX 0
 
 # Output control for clock source from MB
-# 0 = enable, 1 = high-impedance state
+# 1 = enable, 0 = high-impedance state
 gpio_export OEA_CLK_MUX_N GPIOL2
-gpio_set OEA_CLK_MUX_N 0
+gpio_set OEA_CLK_MUX_N 1
 gpio_export OEB_CLK_MUX_N GPIOL3
 gpio_set OEB_CLK_MUX_N 0
 
@@ -304,12 +316,14 @@ gpio_export SMB_ALERT_ASIC45 GPIOM4
 gpio_export SMB_ALERT_ASIC67 GPIOM5
 
 # PCIe switch GPIO (preserved)
-gpio_export PAX2_INT2 GPIOM0
-gpio_export PAX3_INT2 GPIOM6
+gpio_export PAX2_SKU_ID1 GPIOM0
+gpio_set PAX2_SKU_ID1 0
+gpio_export PAX3_SKU_ID1 GPIOM6
+gpio_set PAX3_SKU_ID1 0
 
-# Power control with debug jumper J34
-# 0 = controlled by BMC
-# 1 = controlled by CPLD
+# Power control for Debug
+# 1 = controlled by BMC
+# 0 = controlled by CPLD
 gpio_export PWR_CTRL GPIOM1
 gpio_set PWR_CTRL 0
 
@@ -417,11 +431,15 @@ gpio_export PMBUS_BMC_1_ALERT_N GPIOS3
 # OAM debug mode enable
 gpio_export SCALE_DEBUG_EN_N_ASIC6 GPIOT0
 gpio_export SCALE_DEBUG_EN_N_ASIC7 GPIOT6
+gpio_export PD_GPIOT7 GPIOT7
 
 # To enable GPIOU
 #devmem_set_bit $(scu_addr a0) 10
 #devmem_set_bit $(scu_addr a0) 11
 #devmem_set_bit $(scu_addr a0) 13
+gpio_export PD_GPIOU1 GPIOU1
+gpio_export PD_GPIOU2 GPIOU2
+gpio_export PD_GPIOU3 GPIOU3
 
 # PCIe switch firmware recovery pin
 gpio_export BMC_BOOT_RCVR_B0_PAX0 GPIOU4
@@ -535,10 +553,12 @@ gpio_set SEL_USB_MUX 0
 
 # SPI BMC write protection
 gpio_export SPI_BMC_BT_WP0_N GPIOAA4
+gpio_set SPI_BMC_BT_WP0_N 1
 
 # FRU on BSM write protection
 # 0 = writable
 gpio_export FRU_WP GPIOAA7
+gpio_set FRU_WP 0
 
 # To enable GPIOAB
 #devmem_clear_bit $(scu_addr a8) 0
@@ -563,9 +583,9 @@ devmem_clear_bit $(scu_addr ac) 6
 devmem_clear_bit $(scu_addr ac) 7
 
 # PCIe switch GPIO (preserved)
-gpio_export PAX0_SKU_ID GPIOAC0
+gpio_export PAX0_SKU_ID0 GPIOAC0
 gpio_export PAX0_ALERT GPIOAC1
-gpio_export PAX1_SKU_ID GPIOAC2
+gpio_export PAX1_SKU_ID0 GPIOAC2
 gpio_export PAX1_ALERT GPIOAC3
 
 # Reserved
@@ -575,19 +595,19 @@ gpio_export BMC_GPIOAC7 GPIOAC7
 
 echo -n "Setup PCIe switch config "
 # 8S by default
-gpio_set PAX0_SKU_ID 0
-gpio_set PAX1_SKU_ID 0
-gpio_set PAX2_SKU_ID 0
-gpio_set PAX3_SKU_ID 0
+gpio_set PAX0_SKU_ID0 0
+gpio_set PAX1_SKU_ID0 0
+gpio_set PAX2_SKU_ID0 0
+gpio_set PAX3_SKU_ID0 0
 
 if [[ -f "/mnt/data/kv_store/server_type" ]]; then
   # If KV had existed
   server_type=$(cat /mnt/data/kv_store/server_type)
   if [[ "$server_type" == "2" ]]; then
-    gpio_set PAX0_SKU_ID 1
-    gpio_set PAX1_SKU_ID 1
-    gpio_set PAX2_SKU_ID 1
-    gpio_set PAX3_SKU_ID 1
+    gpio_set PAX0_SKU_ID0 1
+    gpio_set PAX1_SKU_ID0 1
+    gpio_set PAX2_SKU_ID0 1
+    gpio_set PAX3_SKU_ID0 1
   fi
 else
   # Get config from MB0's BMC
@@ -600,10 +620,10 @@ else
       break
     elif [[ "$server_type" == "1" ]]; then
       /usr/local/bin/cfg-util server_type 2
-      gpio_set PAX0_SKU_ID 1
-      gpio_set PAX1_SKU_ID 1
-      gpio_set PAX2_SKU_ID 1
-      gpio_set PAX3_SKU_ID 1
+      gpio_set PAX0_SKU_ID0 1
+      gpio_set PAX1_SKU_ID0 1
+      gpio_set PAX2_SKU_ID0 1
+      gpio_set PAX3_SKU_ID0 1
       break
     else
       echo -n "."

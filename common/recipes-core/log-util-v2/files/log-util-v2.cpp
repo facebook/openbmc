@@ -33,6 +33,7 @@
 #define MAX_LEN 64
 #define MAX_PID_LEN 32   // A 64-bit int can be represented in 20 characters.
 #define MAX_LINE 1024
+#define MAX_TOKEN_LEN 256
 #define FRU_SYS 0x20
 #define sem_path "/logsem"
 #define JSON_FILE "/tmp/log_json_format.tmp"
@@ -90,8 +91,8 @@ print_log (uint8_t fru_id, bool opt_json) {
   char pair_fruname[MAX_LEN] = "";
   int fru_num;
   char fruname[MAX_LEN] = "";
-  char tmp_str_token[64][64];
-  char curtime[256] = "";
+  char tmp_str_token[64][MAX_TOKEN_LEN];
+  char curtime[MAX_TOKEN_LEN*4] = "";
   struct tm ts;
   int ts_end;
   char hostname[MAX_LEN] = "";

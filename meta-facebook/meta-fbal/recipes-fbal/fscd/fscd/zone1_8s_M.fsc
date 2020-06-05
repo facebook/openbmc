@@ -56,6 +56,6 @@ max([
   linear_dimm(mb:mb_cpu7_dimm_b3_d3_temp),
   linear_dimm(mb:mb_cpu7_dimm_b4_d4_temp),
   linear_dimm(mb:mb_cpu7_dimm_b5_d5_temp),
-  linear_mezz(nic:nic_mezz0_temp),
-  linear_mezz(nic:nic_mezz1_temp)
+  linear_mezz(nic0:nic_mezz0_temp),
+  linear_mezz(nic1:nic_mezz1_temp)
 ])

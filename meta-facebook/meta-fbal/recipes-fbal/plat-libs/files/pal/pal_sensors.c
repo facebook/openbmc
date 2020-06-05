@@ -2086,7 +2086,8 @@ static int
 read_nic_temp(uint8_t nic_id, float *value) {
   int fd = 0, ret = -1;
   char fn[32];
-  uint8_t retry = 3, tlen, rlen, addr, bus;
+  uint8_t tlen, rlen, addr, bus;
+  static uint8_t retry=0;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
 
@@ -2104,8 +2105,12 @@ read_nic_temp(uint8_t nic_id, float *value) {
   tlen = 1;
   rlen = 1;
 
-  while (ret < 0 && retry-- > 0) {
-    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  if( ret < 0 || (rbuf[0] == 0x80) ) {
+    retry++;
+    return READING_NA;
+  } else {
+    retry=0;
   }
 
 #ifdef DEBUG
@@ -2116,7 +2121,7 @@ read_nic_temp(uint8_t nic_id, float *value) {
     goto err_exit;
   }
 
-  *value = rbuf[0];
+  *value = (float)rbuf[0];
   err_exit:
   if (fd > 0) {
     close(fd);

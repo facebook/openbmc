@@ -394,6 +394,12 @@ static void
 pwr_sysok_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   reset_timer(&g_power_on_sec);
   log_gpio_change(desc, curr, 0);
+  if( curr == GPIO_VALUE_HIGH ) { 
+    syslog(LOG_CRIT, "SERVER_POWER_ON successful for FRU: %d", FRU_MB);
+  } else {
+    syslog(LOG_CRIT, "SERVER_POWER_OFF successful for FRU: %d", FRU_MB);
+  }
+
 }
 
 //SLP3 Event Handler

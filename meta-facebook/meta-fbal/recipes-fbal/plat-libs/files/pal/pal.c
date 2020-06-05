@@ -966,19 +966,18 @@ pal_get_platform_id(uint8_t *id) {
 
 int
 pal_get_host_system_mode(uint8_t* mode) {
-  gpio_desc_t *gdesc;
-  gpio_value_t val;
   static bool cached = false;
   static uint8_t cached_pos = 0;
 
   if (!cached) {
-    if ((gdesc = gpio_open_by_shadow(GPIO_SKT_ID2))) {
-      if (!gpio_get_value(gdesc, &val)) {
-        cached_pos = (val == GPIO_VALUE_LOW) ? MB_8S_MODE : MB_2S_MODE;
-        cached = true;
-      }
-      gpio_close(gdesc);
+    const char *shadows[] = {
+      "FM_BMC_SKT_ID_1",
+      "FM_BMC_SKT_ID_2"
+    };
+    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_pos)) {
+      return -1;
     }
+    cached = true;
   }
 
   *mode = cached_pos;
@@ -1756,3 +1755,12 @@ pal_is_pfr_active(void) {
 
   return pfr_active;
 }
+
+bool
+pal_is_nic_prsnt(uint8_t fru) {
+  uint8_t status;
+  pal_is_fru_prsnt(fru, &status);
+
+  return status;
+}
+

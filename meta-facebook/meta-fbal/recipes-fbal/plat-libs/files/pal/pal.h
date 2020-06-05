@@ -169,8 +169,9 @@ enum {
 };
 
 enum {
-  MB_8S_MODE = 0,
-  MB_2S_MODE,
+  MB_8S_MODE = 0,  //SKT_ID[2:1] 00
+  MB_4S_MODE,      //SKT_ID[2:1] 01
+  MB_2S_MODE,      //SKT_ID[2:1] 10
 };
 
 int pal_set_led(uint8_t slot, uint8_t status);
@@ -187,6 +188,7 @@ int pal_get_config_is_master(void);
 int pal_get_blade_id(uint8_t *id);
 int pal_get_mb_position(uint8_t* pos);
 int pal_get_board_rev_id(uint8_t *id);
+bool pal_is_nic_prsnt(uint8_t fru);
 void fru_eeprom_mb_check(char* mb_path);
 
 enum {

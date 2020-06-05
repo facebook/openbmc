@@ -29,6 +29,7 @@ cmc_ipmb_process(uint8_t ipmi_cmd, uint8_t netfn,
               uint8_t *txbuf, uint8_t txlen, 
               uint8_t *rxbuf, uint8_t *rxlen ) {
   int ret=0;
+  int retry=0;
   uint16_t bmc_addr;
   
 
@@ -37,10 +38,16 @@ cmc_ipmb_process(uint8_t ipmi_cmd, uint8_t netfn,
     return ret;
   }
 
-  ret = lib_ipmb_send_request(ipmi_cmd, netfn, 
-                         txbuf, txlen, 
-                         rxbuf, rxlen, 
-                         CM_IPMB_BUS_ID, CM_SLAVE_ADDR, bmc_addr);
+  while (retry < 3) {
+    ret = lib_ipmb_send_request(ipmi_cmd, netfn, 
+                                txbuf, txlen, 
+                                rxbuf, rxlen, 
+                                CM_IPMB_BUS_ID, CM_SLAVE_ADDR, bmc_addr);
+    if (ret == 0) {
+      break;
+    }
+    retry++;
+  }
 
   if(ret != 0) {
     return ret;

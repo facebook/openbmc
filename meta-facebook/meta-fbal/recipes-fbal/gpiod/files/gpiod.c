@@ -304,6 +304,42 @@ static void irq_uv_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t
   log_gpio_change(desc, curr, 20*1000);
 }
 
+
+//PROCHOT Handler
+static void prochot_reason(char *reason)
+{
+  if (gpio_get("IRQ_UV_DETECT_N") == GPIO_VALUE_LOW)
+    strcpy(reason, "UV");
+  if (gpio_get("IRQ_OC_DETECT_N") == GPIO_VALUE_LOW)
+    strcpy(reason, "OC");
+  if (gpio_get("FM_HSC_TIMER_EXP_N") == GPIO_VALUE_LOW)
+    strcpy(reason, "timer exp");
+  if (gpio_get("IRQ_SML1_PMBUS_BMC_ALERT_N") == GPIO_VALUE_LOW)
+    strcpy(reason, "PMBus alert");
+}
+
+static void cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  char cmd[128] = {0};
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+  assert(cfg);
+  SERVER_POWER_CHECK(3);
+  //LCD debug card critical SEL support
+  strcat(cmd, "CPU FPH");
+  if (curr) {
+    strcat(cmd, " DEASSERT");
+    syslog(LOG_CRIT, "DEASSERT: %s - %s\n", cfg->description, cfg->shadow);
+  } else {
+    char reason[32] = "";
+    strcat(cmd, " by ");
+    prochot_reason(reason);
+    strcat(cmd, reason);
+    syslog(LOG_CRIT, "ASSERT: %s - %s (reason: %s)\n", cfg->description, cfg->shadow, reason);
+    strcat(cmd, " ASSERT");
+  }
+  pal_add_cri_sel(cmd);
+}
+
 //Generic Event Handler for GPIO changes
 static void gpio_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
@@ -677,6 +713,9 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_SYS_THROTTLE_LVC3", "GPIOR7", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL}, 
   {"IRQ_DIMM_SAVE_LVT3_N", "GPION4", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
   {"FM_HSC_TIMER_EXP_N", "GPIOM2", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
+  {"FM_CPU0_PROCHOT_LVT3_BMC_N", "GPIOB5", GPIO_EDGE_BOTH, cpu_prochot_handler, NULL},
+  {"FM_CPU1_PROCHOT_LVT3_BMC_N", "GPIOB6", GPIO_EDGE_BOTH, cpu_prochot_handler, NULL},
+ 
 };
 
 int main(int argc, char **argv)

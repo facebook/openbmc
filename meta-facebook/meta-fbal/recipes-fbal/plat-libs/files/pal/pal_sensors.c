@@ -889,8 +889,8 @@ static struct fsc_monitor fsc_2s_snr_list[] =
   {MB_SNR_INLET_TEMP         , "mb_inlet_temp"        , NULL, false, 5, 5},
   {MB_SNR_CPU0_THERM_MARGIN  , "mb_cpu0_therm_margin" , NULL, false, 5, 5},
   {MB_SNR_CPU1_THERM_MARGIN  , "mb_cpu1_therm_margin" , NULL, false, 5, 5},
-  {NIC_MEZZ0_SNR_TEMP        , "nic_mezz0_temp"       , NULL, false, 5, 5},
-  {NIC_MEZZ1_SNR_TEMP        , "nic_mezz1_temp"       , NULL, false, 5, 5},
+  {NIC_MEZZ0_SNR_TEMP        , "nic_mezz0_temp"       , pal_is_nic_prsnt, false, 5, 5},
+  {NIC_MEZZ1_SNR_TEMP        , "nic_mezz1_temp"       , pal_is_nic_prsnt, false, 5, 5},
   //dimm sensors wait for 240s. 240=80*3(fsc monitor interval)
   {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a0_c0_temp", NULL, false, 80, 5},
   {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_a1_c1_temp", NULL, false, 80, 5},
@@ -917,8 +917,8 @@ static struct fsc_monitor fsc_8s_master_snr_list[] =
   {MB_SNR_CPU5_THERM_MARGIN  , "mb_cpu5_therm_margin" , NULL, false, 5, 5},
   {MB_SNR_CPU6_THERM_MARGIN  , "mb_cpu6_therm_margin" , NULL, false, 5, 5},
   {MB_SNR_CPU7_THERM_MARGIN  , "mb_cpu7_therm_margin" , NULL, false, 5, 5},
-  {NIC_MEZZ0_SNR_TEMP        , "nic_mezz0_temp"       , NULL, false, 5, 5},
-  {NIC_MEZZ1_SNR_TEMP        , "nic_mezz1_temp"       , NULL, false, 5, 5},
+  {NIC_MEZZ0_SNR_TEMP        , "nic_mezz0_temp"       , pal_is_nic_prsnt, false, 5, 5},
+  {NIC_MEZZ1_SNR_TEMP        , "nic_mezz1_temp"       , pal_is_nic_prsnt, false, 5, 5},
   //dimm sensors wait for 240s. 240=80*3(fsc monitor interval)
   {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a0_c0_temp", NULL, false, 80, 5},
   {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_a1_c1_temp", NULL, false, 80, 5},
@@ -974,8 +974,8 @@ static struct fsc_monitor fsc_8s_master_snr_list[] =
 static struct fsc_monitor fsc_8s_slave_snr_list[] =
 {
   {MB_SNR_INLET_TEMP,  "mb_inlet_temp",  NULL, false, 5, 5},
-  {NIC_MEZZ0_SNR_TEMP, "nic_mezz0_temp", NULL, false, 5, 5},
-  {NIC_MEZZ1_SNR_TEMP, "nic_mezz1_temp", NULL, false, 5, 5},
+  {NIC_MEZZ0_SNR_TEMP, "nic_mezz0_temp", pal_is_nic_prsnt, false, 5, 5},
+  {NIC_MEZZ1_SNR_TEMP, "nic_mezz1_temp", pal_is_nic_prsnt, false, 5, 5},
 };
 
 static int fsc_2s_snr_list_size = sizeof(fsc_2s_snr_list) / sizeof(struct fsc_monitor);
@@ -2813,6 +2813,116 @@ static int pal_set_peci_mux(uint8_t select) {
   return 0;
 }
 
+void
+pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
+  char cmd[128];
+  char thresh_name[10];
+  char snr_name[32];
+  uint8_t fan_id;
+  uint8_t cpu_id;
+
+  switch (thresh) {
+    case UNR_THRESH:
+        sprintf(thresh_name, "UNR");
+      break;
+    case UCR_THRESH:
+        sprintf(thresh_name, "UCR");
+      break;
+    case UNC_THRESH:
+        sprintf(thresh_name, "UNCR");
+      break;
+    case LNR_THRESH:
+        sprintf(thresh_name, "LNR");
+      break;
+    case LCR_THRESH:
+        sprintf(thresh_name, "LCR");
+      break;
+    case LNC_THRESH:
+        sprintf(thresh_name, "LNCR");
+      break;
+    default:
+      syslog(LOG_WARNING, "%s: wrong thresh enum value", __func__);
+      exit(-1);
+  }
+
+  switch(snr_num) {
+    case MB_SNR_CPU0_TEMP:
+    case MB_SNR_CPU1_TEMP:
+      cpu_id = snr_num - MB_SNR_CPU0_TEMP; 
+      sprintf(cmd, "P%d Temp %s %3.0fC - Assert",cpu_id, thresh_name, val);
+      break;
+    case MB_SNR_P5V:  
+    case MB_SNR_P5V_STBY:
+    case MB_SNR_P3V3_STBY:
+    case MB_SNR_P3V3:
+    case MB_SNR_P3V_BAT:
+      pal_get_sensor_name(fru, snr_num, snr_name);
+      sprintf(cmd, "%s %s %.2fVolts - Assert", snr_name, thresh_name, val);
+      break;
+    case PDB_SNR_FAN0_INLET_SPEED:
+    case PDB_SNR_FAN1_INLET_SPEED:
+    case PDB_SNR_FAN2_INLET_SPEED:
+    case PDB_SNR_FAN3_INLET_SPEED:
+      fan_id = snr_num-PDB_SNR_FAN0_INLET_SPEED; 
+      sprintf(cmd, "FAN%d %s %fRPM - Assert",fan_id ,thresh_name, val);
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cmd);
+}
+
+void
+pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
+  char cmd[128];
+  char thresh_name[10];
+  uint8_t fan_id;
+  uint8_t cpu_id;
+
+  switch (thresh) {
+    case UNR_THRESH:
+        sprintf(thresh_name, "UNR");
+      break;
+    case UCR_THRESH:
+        sprintf(thresh_name, "UCR");
+      break;
+    case UNC_THRESH:
+        sprintf(thresh_name, "UNCR");
+      break;
+    case LNR_THRESH:
+        sprintf(thresh_name, "LNR");
+      break;
+    case LCR_THRESH:
+        sprintf(thresh_name, "LCR");
+      break;
+    case LNC_THRESH:
+        sprintf(thresh_name, "LNCR");
+      break;
+    default:
+      syslog(LOG_WARNING, "%s: wrong thresh enum value", __func__);
+      exit(-1);
+  }
+
+  switch(snr_num) {
+    case MB_SNR_CPU0_TEMP:
+    case MB_SNR_CPU1_TEMP:
+      cpu_id = snr_num - MB_SNR_CPU0_TEMP; 
+      sprintf(cmd, "P%d Temp %s %3.0fC - Deassert",cpu_id, thresh_name, val);
+      break;
+    case PDB_SNR_FAN0_INLET_SPEED:
+    case PDB_SNR_FAN1_INLET_SPEED:
+    case PDB_SNR_FAN2_INLET_SPEED:
+    case PDB_SNR_FAN3_INLET_SPEED:
+      fan_id = snr_num-PDB_SNR_FAN0_INLET_SPEED; 
+      sprintf(cmd, "FAN%d %s %fRPM - Deassert",fan_id ,thresh_name, val);
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cmd);
+
+}
+
 int pal_sensor_monitor_initial(void) {
   int i=0;
   uint16_t pmon_cfg = 0; 
@@ -2820,7 +2930,17 @@ int pal_sensor_monitor_initial(void) {
   float iout_oc_warn_limit = 123;
   uint8_t mode;
   uint8_t sku_id = 0xFF;
+  uint8_t hsc_cnt=0;
+  uint8_t master = pal_get_config_is_master(); 
+  int ret;
 
+//Get Config
+  ret = pal_get_host_system_mode(&mode);
+  if (ret != 0) {
+    syslog(LOG_WARNING,"%s Wrong get system mode\n", __func__);
+  } 
+
+//Initial
   syslog(LOG_DEBUG,"Sensor Initial\n");
   pmon_cfg = PMON_CFG_TEPM1_EN | PMON_CFG_CONTINUOUS_SAMPLE | PMON_CFG_VIN_EN |
              PMON_CFG_VI_AVG(CFG_SAMPLE_128) | PMON_CFG_AVG_PWR(CFG_SAMPLE_128);
@@ -2834,8 +2954,19 @@ int pal_sensor_monitor_initial(void) {
   } else {
     vr_chips = vr_ti_chips;
   }
-  
-  for (i=0; i<4; i++) {
+
+//Set HSC ControllerG
+  if( mode == MB_2S_MODE ) {
+    hsc_cnt = 1;
+  } else if(mode == MB_4S_MODE && master == true) {
+    hsc_cnt = 2;
+  } else if(mode == MB_8S_MODE && master == true) {
+    hsc_cnt = 4;
+  } else {
+    hsc_cnt = 0;
+  }
+     
+  for (i=0; i<hsc_cnt; i++) {
     if(set_hsc_pmon_config(i, pmon_cfg) != 0) {
       syslog(LOG_WARNING, "Set MB%d PMON CONFIG Fail\n", i);
     }
@@ -2847,14 +2978,11 @@ int pal_sensor_monitor_initial(void) {
     }
   }
 
-  if(!pal_get_host_system_mode(&mode) && mode == MB_8S_MODE) {
-    if(pal_get_config_is_master()) {
-      pal_set_peci_mux(PECI_MUX_SELECT_BMC); 
-    } else {
-      pal_set_peci_mux(PECI_MUX_SELECT_PCH);
-    }
+//Config PECI Switch
+  if (master == true) {
+    pal_set_peci_mux(PECI_MUX_SELECT_BMC); 
   } else {
-    pal_set_peci_mux(PECI_MUX_SELECT_BMC);
+    pal_set_peci_mux(PECI_MUX_SELECT_PCH);
   }
 
   return 0;

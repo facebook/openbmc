@@ -1,9 +1,9 @@
-#include "fw-util.h"
+#include "bic_bios.h"
+#include <sstream>
 #include <cstdio>
 #include <cstring>
 #include <syslog.h>
 #include <unistd.h>
-#include "bic_bios.h"
 #include <openbmc/pal.h>
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
@@ -66,30 +66,58 @@ int BiosComponent::fupdate(string image) {
   return FW_STATUS_NOT_SUPPORTED;
 }
 
-int BiosComponent::print_version() {
-  uint8_t ver[32];
+int BiosComponent::get_ver_str(string& s) {
+  uint8_t ver[32] = {0};
   uint8_t fruid = 0;
   int ret = 0;
+
+  ret = pal_get_fru_id((char *)_fru.c_str(), &fruid);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "Failed to get fru id");
+    return FW_STATUS_FAILURE;
+  }
+
+  ret = pal_get_sysfw_ver(fruid, ver);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "Failed to get sysfw ver");
+    return FW_STATUS_FAILURE;
+  }
+
+  stringstream  ss;
+  ss << &ver[3];
+  s = ss.str();
+  return FW_STATUS_SUCCESS;
+}
+
+int BiosComponent::print_version() {
+  string ver("");
   try {
     server.ready();
-    ret = pal_get_fru_id((char *)_fru.c_str(), &fruid);
-    if ( ret < 0 ) {
-      throw "get " + _fru + " fru id failed";
-    }
-
-    ret = pal_get_sysfw_ver(fruid, ver);
-    // Print BIOS Version
-    if ( ret < 0 ) {
+    if ( get_ver_str(ver) < 0 ) {
       throw "Error in getting the version of BIOS";
-    } else {
-      printf("BIOS Version: ");
-      cout << &ver[3] << endl;
     }
-  } catch(string err) {
+    cout << "BIOS Version: " << ver << endl;
+  } catch(string& err) {
     printf("BIOS Version: NA (%s)\n", err.c_str());
   }
 
   return FW_STATUS_SUCCESS;
+}
+
+
+void BiosComponent::get_version(json& j) {
+  string ver("");
+  try {
+    server.ready();
+    if ( get_ver_str(ver) < 0 ) {
+      throw "Error in getting the version of BIOS";
+    }
+    j["VERSION"] = ver;
+  } catch(string& err) {
+    if ( err.find("empty") != string::npos ) j["VERSION"] = "not_present";
+    else j["VERSION"] = "error_returned";
+  }
+  return;
 }
 
 #endif

@@ -12,12 +12,15 @@ class BicFwExtComponent : public BicFwComponent {
   string name;  
   Server server;
   ExpansionBoard expansion;
+  private:
+    int get_ver_str(string& ver);
   public:
     BicFwExtComponent(string fru, string comp, uint8_t _slot_id, string _name, uint8_t _fw_comp)
       : BicFwComponent(fru, comp, _slot_id), slot_id(_slot_id), fw_comp(_fw_comp), name(_name), server(_slot_id, fru), expansion(_slot_id, fru, _name, _fw_comp) {}
     int update(string image);
     int fupdate(string image);
     int print_version();
+    void get_version(json& j);
 };
 
 class BicFwExtBlComponent : public BicFwBlComponent {
@@ -26,11 +29,14 @@ class BicFwExtBlComponent : public BicFwBlComponent {
   string name;
   Server server;
   ExpansionBoard expansion;
+  private:
+    int get_ver_str(string& ver);
   public:
     BicFwExtBlComponent(string fru, string comp, uint8_t _slot_id, string _name, uint8_t _fw_comp)
       : BicFwBlComponent(fru, comp, _slot_id), slot_id(_slot_id), fw_comp(_fw_comp), name(_name), server(_slot_id, fru), expansion(_slot_id, fru, _name, _fw_comp) {}
     int update(string image);
     int print_version();
+    void get_version(json& j);
 };
 
 #endif

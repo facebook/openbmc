@@ -8,11 +8,14 @@ class VrComponent : public Component {
   uint8_t slot_id = 0;
   uint8_t fw_comp = 0;
   Server server;
+  private:
+    int get_ver_str(uint8_t& addr, std::string& s);
   public:
     VrComponent(std::string fru, std::string comp, uint8_t _slot_id, uint8_t _fw_comp)
       : Component(fru, comp), slot_id(_slot_id), fw_comp(_fw_comp), server(_slot_id, fru){}
     int print_version();
     int update(std::string image);
+    void get_version(json& j);
 };
 
 #endif

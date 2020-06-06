@@ -490,7 +490,7 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
 int
 pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
   int ret;
-  uint8_t status, type;
+  uint8_t status, type, type_1ou = 0;
   uint8_t intf = 0;
   uint8_t config_status = 0;
   uint8_t bmc_location = 0;
@@ -560,7 +560,16 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
         if (ret < 0) {
           return -1;
         }
-        sleep(3);
+
+        if (intf == FEXP_BIC_INTF) {
+          bic_get_1ou_type_cache(slot_id, &type_1ou);
+        }
+        if (type_1ou == EDSFF_1U) {
+          sleep(6); // EDSFF timing requirement
+        } else {
+          sleep(3);
+        }
+
         ret = bic_set_dev_power_status(slot_id, dev_id, DEVICE_POWER_ON, intf);
         return ret;
       } else if (status == DEVICE_POWER_OFF) {

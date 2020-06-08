@@ -458,10 +458,10 @@ enum
   CMD_OEM_STOR_ADD_STRING_SEL = 0x30,
 };
 
-//Device update
 enum
 {
-  DEV_UPDATE = 0x01,
+  DEV_UPDATE = 0x01, // SPH device update
+  CHECK_PCIE_LINK = 0x11, // Trigger the PCIe workaround for SPH
 };
 
 // OEM Command Codes for QC

@@ -6637,6 +6637,11 @@ pal_set_fru_post(uint8_t fru, uint8_t value) {
     return pal_set_post_end_timestamp(fru);
   } else {
     syslog(LOG_WARNING, "FRU: %d, POST Start", fru);
+#if defined(CONFIG_FBY2_GPV2)
+    if (fby2_common_get_spb_type() == TYPE_SPB_YV250) {
+      bic_check_pcie_link(fru);
+    }
+#endif
     return pal_set_post_start_timestamp(fru,POST_SET);
   }
 }

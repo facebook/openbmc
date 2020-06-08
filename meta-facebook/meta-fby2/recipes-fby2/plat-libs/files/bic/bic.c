@@ -102,6 +102,8 @@
 
 #define PCIE_SW_MAX_RETRY 50
 
+#define PCIE_LINK_CHECK_MAX_RETRY 3
+
 #pragma pack(push, 1)
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
@@ -542,6 +544,12 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, 5, rbuf, &rlen);
 
+#if defined(CONFIG_FBY2_GPV2)
+  if ((spb_type == TYPE_SPB_YV250) && (status == 1)) {
+    // Check link state when power on
+    bic_check_pcie_link(slot_id);
+  }
+#endif
   return ret;
 }
 
@@ -3752,4 +3760,47 @@ bic_fget_device_info(uint8_t slot_id, uint8_t dev_num, uint8_t *ffi, uint8_t *me
   }
 
   return ret;
+}
+
+void
+bic_check_pcie_link(uint8_t fru) {
+  int ret = 0, slot_id = 0, retry = 0;
+  uint8_t rlen = 0;
+  uint8_t rbuf[255] = {0x0};
+
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+      slot_id = FRU_SLOT1;
+      break;
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      slot_id = FRU_SLOT3;
+      break;
+    default:
+       return;
+  }
+  while (retry < PCIE_LINK_CHECK_MAX_RETRY) {
+    if (!is_bic_ready(slot_id)) {
+      sleep(1);
+      retry++;
+    } else {
+      break;
+    }
+  }
+  if (retry == PCIE_LINK_CHECK_MAX_RETRY) {
+    syslog(LOG_WARNING, "FRU: %d, BIC is not ready to check PCIe link.", slot_id);
+    return;
+  }
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_STORAGE_REQ, CHECK_PCIE_LINK, NULL, 0, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: Fail to send IPMB command to slot%d", __func__, slot_id);
+    return;
+  }
+  if (rbuf[0] == CC_SUCCESS) {
+    syslog(LOG_INFO, "FRU: %d, Checking PCIe link successfully", slot_id);
+  } else {
+    syslog(LOG_WARNING, "FRU: %d, Fail to create PCIe link checking thread.", slot_id);
+  }
 }

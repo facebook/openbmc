@@ -14,7 +14,7 @@ RUN_DHC6_FILE = "run-dhc6_prefix64.sh"
 def dhc6_run(d):
   distro = d.getVar('DISTRO_CODENAME', True)
   dhcfile = d.getVar('RUN_DHC6_FILE', True)
-  if distro == 'warrior':
+  if distro != 'rocko':
     return dhcfile
   else:
     return "run-dhc6.sh"

@@ -1764,3 +1764,17 @@ pal_is_nic_prsnt(uint8_t fru) {
   return status;
 }
 
+int
+pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
+  NM_RW_INFO info;
+  int ret;
+
+  info.bus = NM_IPMB_BUS_ID;
+  info.nm_addr = NM_SLAVE_ADDR;
+  ret = pal_get_bmc_ipmb_slave_addr(&info.bmc_addr, info.bus);
+  if (ret != 0) {
+    return PAL_ENOTSUP;
+  }
+
+  return lib_dcmi_wrapper(&info, request, req_len, response, rlen);
+}

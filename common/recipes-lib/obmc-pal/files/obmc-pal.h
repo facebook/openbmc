@@ -185,7 +185,7 @@ enum {
 
 enum {
   MEM_PPR     = 0x0,
-  MEM_NO_DIMM = 0x9,
+  MEM_NO_DIMM = 0x7,
 };
 
 // Enum for get the event sensor name in processing SEL

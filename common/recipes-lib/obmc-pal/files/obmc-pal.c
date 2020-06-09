@@ -311,8 +311,7 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
                         "PCIe Link CRC Error Check and Retry", "PCIe Corrupt Data Containment", "PCIe Express ECRC",
                         "Reserved"};
   char *mem_event[] = {"Memory PPR event", "Memory Correctable Error logging limit reached", "Memory disable/map-out for FRB",
-                       "Memory SDDC", "Memory Address range/Partial mirroring", "Memory Demand and Patrol Scrubbing",
-                       "Memory ADC", "Memory ADDDC", "Memory SMBus hang recovery", "No DIMM in System", "Reserved"};
+                       "Memory SDDC", "Memory Address range/Partial mirroring", "Memory ADDDC", "Memory SMBus hang recovery", "No DIMM in System", "Reserved"};
   char *upi_event[] = {"Intel UPI Protocol Protection via CRC", "Intel UPI Link Level Retry",
                        "Intel UPI Dynamic Link Width Reduction", "Reserved"};
   char dimm_str[8] = {0};

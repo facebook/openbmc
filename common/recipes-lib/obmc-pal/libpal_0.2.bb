@@ -11,12 +11,11 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/LGPL-2.1;md5=1
 SRC_URI = "\
     file://meson.build \
     file://meson_options.txt \
-    file://obmc-pal.h \
     file://obmc-pal.c \
+    file://obmc-pal.h \
     file://obmc_pal_sensors.c \
     file://obmc_pal_sensors.h \
-    file://openbmc/obmc-pal.h \
-    file://openbmc/obmc_pal_sensors.h \
+    file://pal.c \
     file://pal.h \
     file://pal_sensors.h \
     "
@@ -25,6 +24,7 @@ DEPENDS += " \
     libipmb \
     libipmi \
     libkv \
+    obmc-pal \
     "
 
 EXTRA_OEMESON_append = "-Dmachine=\"${MACHINE}\""

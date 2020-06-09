@@ -36,6 +36,8 @@
 #include <openbmc/obmc-i2c.h>
 #include <facebook/fbal_fruid.h>
 #include <openbmc/ipmb.h>
+#include <openbmc/ncsi.h>
+#include <openbmc/nl-wrapper.h>
 #include "pal.h"
 
 #define FBAL_PLATFORM_NAME "angelslanding"
@@ -1606,6 +1608,56 @@ static int pal_ipmb_bypass (uint8_t *req_data, uint8_t req_len,
   return CC_SUCCESS;
 }
 
+static
+int pal_ncsi_bypass (uint8_t *req_data, uint8_t req_len,
+                     uint8_t *res_data, uint8_t *res_len) {
+  uint8_t cmd, tlen;
+  uint8_t channel = 0;
+  uint8_t netdev = 0;
+  int cc=CC_UNSPECIFIED_ERROR;
+  NCSI_NL_MSG_T *msg = NULL;
+  NCSI_NL_RSP_T *rsp = NULL;
+
+  tlen = req_len - 7; // payload_id, netfn, cmd, data[0] (select), netdev, channel, cmd
+  if (tlen < 0) {
+    return CC_INVALID_LENGTH;
+  }
+
+  netdev = req_data[1];
+  channel = req_data[2];
+  cmd = req_data[3];
+
+  msg = calloc(1, sizeof(NCSI_NL_MSG_T));
+  if (!msg) {
+    syslog(LOG_ERR, "%s Error: failed msg buffer allocation", __func__);
+    return cc;
+  }
+
+  memset(msg, 0, sizeof(NCSI_NL_MSG_T));
+
+  sprintf(msg->dev_name, "eth%d", netdev);
+  msg->channel_id = channel;
+  msg->cmd = cmd;
+  msg->payload_length = tlen;
+
+  for (int i=0; i<msg->payload_length; i++) {
+    msg->msg_payload[i] = req_data[4+i];
+  }
+
+  rsp = send_nl_msg_libnl(msg);
+  if (rsp) {
+    memcpy(&res_data[0], &rsp->msg_payload[0], rsp->hdr.payload_length);
+    *res_len = rsp->hdr.payload_length;
+    free(rsp);
+    cc = CC_SUCCESS;
+  } else {
+    cc = CC_UNSPECIFIED_ERROR;
+  }
+
+  free(msg);
+  return cc;
+}
+
 // OEM Command "CMD_OEM_BYPASS_CMD" 0x34 return: CC Code
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
   int ret;
@@ -1631,15 +1683,19 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
     case BRIDGE_2_MB_BMC3:   //MB BMC3
     case BRIDGE_2_ASIC_BMC:  //FBEP
       ret = pal_ipmb_bypass(req_data, req_len, res_data, res_len);
-
-      if(ret != CC_SUCCESS) {
-        return ret;
-      }
+      break;   
+    case BYPASS_NCSI:
+      ret = pal_ncsi_bypass(req_data, req_len, res_data, res_len);
       break;
 
     default:
       return CC_UNSPECIFIED_ERROR;
   }
+
+  if(ret != CC_SUCCESS) {
+    return ret;
+  }
+
   return CC_SUCCESS;
 }
 

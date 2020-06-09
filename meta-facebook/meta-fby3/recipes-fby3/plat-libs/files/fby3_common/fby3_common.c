@@ -37,8 +37,8 @@
 const char *slot_usage = "slot1|slot2|slot3|slot4";
 const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp"};
 
-static int
-get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask) {
+int
+fby3_common_get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask) {
   int i;
   *mask = 0;
   for (i = 0; i < num; i++) {
@@ -365,7 +365,7 @@ fby3_common_get_bmc_location(uint8_t *id) {
       "BOARD_BMC_ID3_R",
     };
 
-    if ( get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id) ) {
+    if ( fby3_common_get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id) ) {
       return -1;
     }
 

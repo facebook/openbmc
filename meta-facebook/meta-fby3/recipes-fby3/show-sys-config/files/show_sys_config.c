@@ -37,8 +37,6 @@
 
 #define MAX_RETRY 3
 
-#define GET_BIT(data, index) ((data >> index) & 0x1)
-
 bool verbosed = false;
 bool output_json = false;
 
@@ -239,8 +237,8 @@ main(int argc, char **argv) {
       if ( ret < 0 ) {
         sys_info.server_info[i-1].is_server_present = STATUS_ABNORMAL;
       } else {
-        uint8_t front_exp_bit = GET_BIT(data[0], 2);
-        uint8_t riser_exp_bit = GET_BIT(data[0], 3);
+        uint8_t front_exp_bit = GETBIT(data[0], 2);
+        uint8_t riser_exp_bit = GETBIT(data[0], 3);
         uint8_t server_config = UNKNOWN_CONFIG;
 
         sys_info.server_info[i-1].is_server_present = STATUS_PRSNT;

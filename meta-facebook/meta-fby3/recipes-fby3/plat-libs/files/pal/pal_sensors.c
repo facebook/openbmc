@@ -776,27 +776,6 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 }
 
 static int
-get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask) {
-  int i;
-  *mask = 0;
-  for (i = 0; i < num; i++) {
-    int ret;
-    gpio_value_t value;
-    gpio_desc_t *gpio = gpio_open_by_shadow(shadows[i]);
-    if (!gpio) {
-      return -1;
-    }
-    ret = gpio_get_value(gpio, &value);
-    gpio_close(gpio);
-    if (ret != 0) {
-      return -1;
-    }
-    *mask |= (value == GPIO_VALUE_HIGH ? 1 : 0) << i;
-  }
-  return 0;
-}
-
-static int
 pal_get_fan_type(uint8_t *bmc_location, uint8_t *type) {
   static bool is_cached = false;
   static uint8_t cached_id = 0;
@@ -814,7 +793,7 @@ pal_get_fan_type(uint8_t *bmc_location, uint8_t *type) {
         "DUAL_FAN1_DETECT_BMC_N_R",
       };
 
-      if ( get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id) ) {
+      if ( fby3_common_get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id) ) {
         return PAL_ENOTSUP;
       }
 

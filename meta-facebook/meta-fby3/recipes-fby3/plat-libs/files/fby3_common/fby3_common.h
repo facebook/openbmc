@@ -31,6 +31,10 @@ extern "C" {
 #define ARRAY_SIZE(a)   (sizeof(a) / sizeof((a)[0]))
 #endif
 
+#ifndef GETBIT
+#define GETBIT(x, y)  ((x & (1ULL << y)) > y)
+#endif
+
 #define BIC_CACHED_PID "/var/run/bic-cached_%d.lock"
 
 #define FRU_NIC_BIN    "/tmp/fruid_nic.bin"
@@ -145,6 +149,7 @@ int fby3_common_crashdump(uint8_t fru, bool ierr, bool platform_reset);
 int fby3_common_dev_id(char *str, uint8_t *dev);
 int fby3_common_dev_name(uint8_t dev, char *str);
 int fby3_common_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uint8_t bmc_location);
+int fby3_common_get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask);
 #ifdef __cplusplus
 } // extern "C"
 #endif

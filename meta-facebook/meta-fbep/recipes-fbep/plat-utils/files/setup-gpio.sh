@@ -325,7 +325,7 @@ gpio_set PAX3_SKU_ID1 0
 # 1 = controlled by BMC
 # 0 = controlled by CPLD
 gpio_export PWR_CTRL GPIOM1
-gpio_set PWR_CTRL 0
+# gpio_set PWR_CTRL 0
 
 # To enable GPION
 #devmem_clear_bit $(scu_addr 88) 2

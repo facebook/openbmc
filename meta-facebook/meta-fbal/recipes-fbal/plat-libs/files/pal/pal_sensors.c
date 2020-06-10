@@ -2108,7 +2108,12 @@ read_nic_temp(uint8_t nic_id, float *value) {
   ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
   if( ret < 0 || (rbuf[0] == 0x80) ) {
     retry++;
-    return READING_NA;
+    if (retry < 3) {
+      ret = READING_SKIP;
+    } else {
+      ret = READING_NA;
+    }
+    goto err_exit;
   } else {
     retry=0;
   }
@@ -2117,12 +2122,9 @@ read_nic_temp(uint8_t nic_id, float *value) {
   syslog(LOG_DEBUG, "%s Temp[%d]=%x bus=%x slavaddr=%x\n", __func__, nic_id, rbuf[0], bus, addr);
 #endif
 
-  if (ret < 0) {
-    goto err_exit;
-  }
-
   *value = (float)rbuf[0];
-  err_exit:
+
+err_exit:
   if (fd > 0) {
     close(fd);
   }

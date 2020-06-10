@@ -67,7 +67,7 @@ struct wedge_eeprom_st {
   /* Top Level 20 - Product Part Number: XX-XXXXXX */
   char fbw_product_number[FBW_EEPROM_F_PRODUCT_NUMBER + 2];
 
-  /* System Assembly Part Number XXX-XXXXXX-XX */
+  /* System Assembly Part Number XX-XXXXXXX-XX */
   char fbw_assembly_number[FBW_EEPROM_F_ASSEMBLY_NUMBER + 3];
 
   /* Facebook PCBA Part Number: XXX-XXXXXXX-XX */

@@ -19,6 +19,7 @@
 #
 
 import unittest
+
 from tests.wedge400.test_data.firmware_upgrade.firmware_upgrade_config import (
     FwUpgradeTest,
 )

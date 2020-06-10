@@ -18,20 +18,24 @@
 # Boston, MA 02110-1301 USA
 #
 
-import os
-import time
-import pexpect
 import argparse
+import os
+import sys
+import time
 from abc import abstractmethod
 
+import pexpect
 from utils.cit_logger import Logger
 from utils.ssh_util import OpenBMCSSHSession
 
 
 # When tests are discovered upgrader is not yet installed,
 # catch the import failure
+
+
 try:
     # The upgrader need to be inside e.g. /tmp/fw_upgrade on dev server.
+    sys.path.append("/tmp/fw_upgrade")
     import fw_json as fw_up
     from entity_upgrader import FwEntityUpgrader, FwUpgrader
     from constants import (
@@ -43,8 +47,8 @@ try:
         UFW_GET_VERSION,
         UFW_CMD,
     )
-except Exception as err:
-    print(err)
+except Exception:
+    pass
 
 # Global variables
 G_VERBOSE = False
@@ -104,8 +108,11 @@ class BaseFwUpgradeTest(object):
     DEFAULT_SCM_BOOT_TIME = 30  # SCM startup time
     DEFAULT_COMMAND_EXEC_DELAY = 1  # Delay for UUT command handler
     DEFAULT_COMMAND_PROMTP_TIME_OUT = 10  # Waiting promtp timeout
-    DEFAULT_POWER_RESET_CMD = FwUpgrader._POWER_RESET_HARD
-    # End
+
+    try:
+        DEFAULT_POWER_RESET_CMD = FwUpgrader._POWER_RESET_HARD
+    except Exception:
+        pass
 
     USERVER_HOSTNAME = "DEFAULT"
     BMC_HOSTNAME = "DEFAULT"
@@ -158,9 +165,7 @@ class BaseFwUpgradeTest(object):
 
     def set_ssh_session_bmc_hostname(self):
         self.hostname = os.environ.get("TEST_HOSTNAME", self.USERVER_HOSTNAME)
-        self.bmc_hostname = os.environ.get(
-            "TEST_BMC_HOSTNAME", self.BMC_HOSTNAME
-        )
+        self.bmc_hostname = os.environ.get("TEST_BMC_HOSTNAME", self.BMC_HOSTNAME)
         pass
 
     def set_optional_arguments(self):
@@ -242,17 +247,13 @@ class BaseFwUpgradeTest(object):
 
     def reconnect_to_remote_host(self, timeout=30, logging=False):
         """
-            reconnect to remote UUT until the timeout is expired
+            reconnect to remote DUT until the timeout is expired
         """
         if logging:
             self.print_line(
-                "Reconnecting to UUT ",
-                "left",
-                ".",
-                endline=" ",
-                has_append=True,
+                "Reconnecting to DUT ", "left", ".", endline=" ", has_append=True
             )
-        Logger.info("Reconnecting to UUT ...")
+        Logger.info("Reconnecting to DUT ...")
         if not self.wait_until(lambda: self.connect_to_remote_host(), timeout):
             print("Failed")
             return False
@@ -391,9 +392,7 @@ class BaseFwUpgradeTest(object):
 
         for fw_entity in self.json:
             need_to_upgrade = False
-            check_version_cmd = self.json.get(fw_entity, "").get(
-                UFW_GET_VERSION, ""
-            )
+            check_version_cmd = self.json.get(fw_entity, "").get(UFW_GET_VERSION, "")
             package_ver = self.json.get(fw_entity, "").get(UFW_VERSION, "")
 
             if len(package_ver) == 0:
@@ -408,9 +407,7 @@ class BaseFwUpgradeTest(object):
                 current_ver = ""
             else:
                 self.send_command_to_UUT(check_version_cmd)
-                current_ver = self.receive_command_output_from_UUT(
-                    only_last=True
-                )
+                current_ver = self.receive_command_output_from_UUT(only_last=True)
 
             version_length = len(current_ver)
             if version_length > 10 or version_length == 0:
@@ -422,12 +419,15 @@ class BaseFwUpgradeTest(object):
                 warning_list.append(warning_msg)
                 Logger.warn(warning_msg)
             else:
-                entityUpgradeObj = FwEntityUpgrader(
-                    fw_entity, self.json, self.upgrader_path
-                )
-                need_to_upgrade = entityUpgradeObj._compare_current_and_package_versions(
-                    current_ver, package_ver
-                )
+                try:
+                    entityUpgradeObj = FwEntityUpgrader(
+                        fw_entity, self.json, self.upgrader_path
+                    )
+                    need_to_upgrade = entityUpgradeObj._compare_current_and_package_versions(
+                        current_ver, package_ver
+                    )
+                except Exception:
+                    pass
 
             if self.is_skip_components(fw_entity):
                 need_to_upgrade = False
@@ -493,14 +493,11 @@ class BaseFwUpgradeTest(object):
             text_width = int(line_width / word_cnt)
             line = ""
             for word in contents:
-                line = line + self.justify_text(
-                    word, alignment, fillchr, text_width
-                )
+                line = line + self.justify_text(word, alignment, fillchr, text_width)
             print(line, end=endline)
         else:
             print(
-                self.justify_text(contents, alignment, fillchr, line_width),
-                end=endline,
+                self.justify_text(contents, alignment, fillchr, line_width), end=endline
             )
 
     def print_warning(self, messages):
@@ -551,14 +548,7 @@ class BaseFwUpgradeTest(object):
             self.print_line("Test Summary", "center")
             self.print_line("", "center", "*")
             self.print_line(
-                [
-                    "Name",
-                    "Previous",
-                    "Current",
-                    "Package",
-                    "   Result",
-                    "Time elapsed",
-                ],
+                ["Name", "Previous", "Current", "Package", "   Result", "Time elapsed"],
                 "center",
             )
             self.print_line("", "center", "-")
@@ -617,9 +607,7 @@ class BaseFwUpgradeTest(object):
                 try:
                     if not self.bmc_ssh_session.session.isalive():
                         self.fail("remote ssh session broke!")
-                    filename = (
-                        self.remote_bin_path + "/" + self.json[entity][UFW_NAME]
-                    )
+                    filename = self.remote_bin_path + "/" + self.json[entity][UFW_NAME]
                     cmd_to_execute = self.json[entity][UFW_CMD]
                     cmd_to_execute = cmd_to_execute.format(filename=filename)
                     if logging:
@@ -634,8 +622,7 @@ class BaseFwUpgradeTest(object):
                     self.send_command_to_UUT(self.STOP_WDT)
                     self.send_command_to_UUT(cmd_to_execute, prompt=False)
                     ret = self.bmc_ssh_session.session.expect_exact(
-                        self.expected_keyword,
-                        timeout=self.upgrading_timeout[entity],
+                        self.expected_keyword, timeout=self.upgrading_timeout[entity]
                     )
                 except pexpect.exceptions.TIMEOUT:
                     ret = -1
@@ -677,7 +664,7 @@ class BaseFwUpgradeTest(object):
         if component is not None:
             json_data[component] = self.json.get(component, "")
             if json_data[component] == "":
-                self.skipTest("Component \"{}\" does not exist".format(component))
+                self.skipTest('Component "{}" does not exist'.format(component))
             self.json = json_data
 
         if G_VERBOSE:
@@ -699,9 +686,7 @@ class BaseFwUpgradeTest(object):
         ):
             # No need upgrading for all components
             # Summary the test with verbose flag
-            self.summary_test(
-                components_to_upgrade, verbose=True, logging=G_VERBOSE
-            )
+            self.summary_test(components_to_upgrade, verbose=True, logging=G_VERBOSE)
             return
 
         # Verify binaries checksom on UUT
@@ -728,8 +713,5 @@ class BaseFwUpgradeTest(object):
 
         # Summary test result for only collective test
         self.summary_test(
-            components_to_upgrade,
-            upgraded_components,
-            G_VERBOSE,
-            logging=G_VERBOSE,
+            components_to_upgrade, upgraded_components, G_VERBOSE, logging=G_VERBOSE
         )

@@ -19,6 +19,7 @@
 #
 
 import unittest
+
 from tests.wedge400.test_data.firmware_upgrade.firmware_upgrade_config import (
     FwUpgradeTest,
 )
@@ -30,4 +31,15 @@ class CollectiveFwUpgradeTest(FwUpgradeTest, unittest.TestCase):
     """
 
     def test_collective_firmware_upgrade(self):
-        super().do_external_firmware_upgrade()
+        """
+            This test file will enable us to do all the upgrade and
+            one power cycle at the end. While this has its advantages,
+            it makes it impossible for us to catch which specific FW
+            break a device in cases a box don't come up after upgrade.
+            Therefore, we will skip this test for now. Please comment
+            out the skipTest line and uncomment the line of code of
+            that come right before pass to activate this test.
+        """
+        self.skipTest("collective upgrade with 1 power cycle skipped")
+        # super().do_external_firmware_upgrade()
+        pass

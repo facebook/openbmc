@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse
 import os
 import unittest
@@ -53,9 +53,7 @@ class Tests:
         self.pattern = pattern
 
     def discover_tests(self):
-        suite = unittest.defaultTestLoader.discover(
-            self.start_dir, self.pattern
-        )
+        suite = unittest.defaultTestLoader.discover(self.start_dir, self.pattern)
         return suite
 
     def filter_based_on_pattern(self, test_string):
@@ -123,7 +121,7 @@ def set_fw_args(args):
     """
     Optional arguments for firmware upgrade test
     """
-    os.environ["TEST_FW_OPT_ARGS"] = args.fw_opt_args
+    os.environ["TEST_FW_OPT_ARGS"] = args.firmware_opt_args
 
 
 def get_tests(platform, start_dir, pattern=None):
@@ -161,8 +159,7 @@ def arg_parser():
     """
 
     parser = argparse.ArgumentParser(
-        epilog=cit_description,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=cit_description, formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
     parser.add_argument(
@@ -195,10 +192,7 @@ def arg_parser():
     )
 
     parser.add_argument(
-        "--list-tests",
-        "-l",
-        action="store_true",
-        help="List all available tests",
+        "--list-tests", "-l", action="store_true", help="List all available tests"
     )
 
     parser.add_argument(
@@ -209,9 +203,7 @@ def arg_parser():
         default=BMC_START_DIR,
     )
 
-    parser.add_argument(
-        "--stress", help="run all stress tests", action="store_true"
-    )
+    parser.add_argument("--stress", help="run all stress tests", action="store_true")
     parser.add_argument(
         "--external",
         help="Run tests from outside BMC, these are tests that have \
@@ -221,7 +213,7 @@ def arg_parser():
     )  # find better way to represent this ?
 
     parser.add_argument(
-        "--fw-opt-args",
+        "--firmware-opt-args",
         help="Set optional arguments for external firmware upgrading \
                         -To skip upgrading of desired components, please use the \
                         component name e.g bios, scm ... etc with '--skip'. \
@@ -229,7 +221,7 @@ def arg_parser():
                         enable verbose mode , add '--verbose' to the argument string. \
                         -To force to upgrade all components(except skipped comps) \
                         , add '--force' to the argument string.\
-                        example: --fw-opt-args='--skip=bios,scm --verbose --force'",
+                        example: --firmware-opt-args='--skip=bios,scm --verbose --force'",
         type=str,
     )
 
@@ -291,7 +283,7 @@ if __name__ == "__main__":
         pattern = "external*.py"
         set_external(args)
 
-    if args.fw_opt_args:
+    if args.firmware_opt_args:
         set_fw_args(args)
 
     if args.fw_upgrade:

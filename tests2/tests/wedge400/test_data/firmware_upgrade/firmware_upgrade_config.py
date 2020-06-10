@@ -1,4 +1,4 @@
-#!/usr/bin/env python,
+#!/usr/bin/env python3
 #
 # Copyright 2020-present Facebook. All Rights Reserved.,
 #
@@ -21,6 +21,9 @@
 import sys
 from abc import abstractmethod
 
+from common.base_fw_upgrade_test import BaseFwUpgradeTest
+
+
 # Global variables
 # Upgrader and binary path on dev server and bmc target BMC unit.
 DEV_SERVER_RESOURCE_PATH = "/tmp/fw_upgrade"
@@ -29,9 +32,10 @@ UUT_RESOURCE_PATH = "/mnt/data1/fw_upgrade"
 
 # You have to add sys path of upgrader before importing upgrader class here.
 sys.path.append(DEV_SERVER_RESOURCE_PATH)
-from common.base_fw_upgrade_test import BaseFwUpgradeTest
-from entity_upgrader import FwUpgrader
-
+try:
+    from entity_upgrader import FwUpgrader
+except Exception:
+    pass
 
 # Override default settings
 UPGRADING_TIMEOUT = {
@@ -58,7 +62,10 @@ EXPECTED_KEYWORD = [
 NUM_LAST_FAILED_EXPECTED_KEY = 4  # zero-based number 0...N
 BMC_RECONNECT_TIMEOUT = 300
 SCM_BOOT_TIME = 30
-POWER_RESET_CMD = FwUpgrader._POWER_RESET_HARD
+try:
+    POWER_RESET_CMD = FwUpgrader._POWER_RESET_HARD
+except Exception:
+    pass
 
 
 class FwUpgradeTest(BaseFwUpgradeTest):

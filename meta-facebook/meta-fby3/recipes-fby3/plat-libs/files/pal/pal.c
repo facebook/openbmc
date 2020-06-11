@@ -1173,6 +1173,9 @@ pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case ME_SENSOR_SMART_CLST:
           sprintf(name, "SmaRT&CLST");
           break;
+        case BIC_SENSOR_PROC_FAIL:
+          sprintf(name, "PROC_FAIL");
+          break;
         default:
           sprintf(name, "Unknown");
           ret = PAL_ENOTSUP;
@@ -1207,6 +1210,24 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
 
   // Otherwise, translate it based on snr_num
   return pal_get_x86_event_sensor_name(fru, snr_num, name);
+}
+
+static int
+pal_parse_proc_fail(uint8_t fru, uint8_t *event_data, char *error_log) {
+  enum {
+    FRB3                  = 0x04,
+  };
+
+  switch(event_data[0]) {
+    case FRB3:
+      strcat(error_log, "FRB3, ");
+      break;
+    default:
+      strcat(error_log, "Undefined data, ");
+      break;
+  }
+
+  return PAL_EOK;
 }
 
 static int
@@ -1447,6 +1468,9 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
     case ME_SENSOR_SMART_CLST:
       pal_parse_smart_clst_event(fru, event_data, error_log);
+      break;
+    case BIC_SENSOR_PROC_FAIL:
+      pal_parse_proc_fail(fru, event_data, error_log);
       break;
     default:
       unknown_snr = true;

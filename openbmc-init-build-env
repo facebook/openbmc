@@ -12,7 +12,7 @@ DISTRO_OVERRIDES=(
   meta-cloudripper:warrior
   meta-wedge400:warrior
   meta-fbal:warrior
-  meta-fbep:warrior
+  meta-fbep:zeus
   meta-fbsp:warrior
   meta-fby3:warrior
   meta-fuji:warrior

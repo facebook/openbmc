@@ -44,6 +44,7 @@ static int read_hsc_pin(uint8_t hsc_id, float *value);
 static int read_hsc_iout(uint8_t hsc_id, float *value);
 static int read_medusa_val(uint8_t snr_number, float *value);
 static int read_cached_val(uint8_t snr_number, float *value);
+static int read_fan_speed(uint8_t snr_number, float *value);
 static int pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value);
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
@@ -57,6 +58,10 @@ const char pal_pwm_list[] = "0, 1, 2, 3";
 const char pal_fan_opt_list[] = "enable, disable, status";
 
 const uint8_t bmc_sensor_list[] = {
+  BMC_SENSOR_FAN0_TACH,
+  BMC_SENSOR_FAN1_TACH,
+  BMC_SENSOR_FAN2_TACH,
+  BMC_SENSOR_FAN3_TACH,
   BMC_SENSOR_OUTLET_TEMP,
   BMC_SENSOR_INLET_TEMP,
   BMC_SENSOR_P5V,
@@ -82,6 +87,14 @@ const uint8_t bmc_sensor_list[] = {
 };
 
 const uint8_t nicexp_sensor_list[] = {
+  BMC_SENSOR_FAN0_TACH,
+  BMC_SENSOR_FAN1_TACH,
+  BMC_SENSOR_FAN2_TACH,
+  BMC_SENSOR_FAN3_TACH,
+  BMC_SENSOR_FAN4_TACH,
+  BMC_SENSOR_FAN5_TACH,
+  BMC_SENSOR_FAN6_TACH,
+  BMC_SENSOR_FAN7_TACH,
   BMC_SENSOR_OUTLET_TEMP,
   BMC_SENSOR_P12V,
   BMC_SENSOR_P3V3_STBY,
@@ -606,14 +619,14 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDF
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE7
+  {"BMC_SENSOR_FAN0_TACH", 0xE0, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE0
+  {"BMC_SENSOR_FAN1_TACH", 0xE1, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE1
+  {"BMC_SENSOR_FAN2_TACH", 0xE2, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE2
+  {"BMC_SENSOR_FAN3_TACH", 0xE3, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE3
+  {"BMC_SENSOR_FAN4_TACH", 0xE4, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE4
+  {"BMC_SENSOR_FAN5_TACH", 0xE5, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE5
+  {"BMC_SENSOR_FAN6_TACH", 0xE6, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE6
+  {"BMC_SENSOR_FAN7_TACH", 0xE7, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE7
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE9
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEA
@@ -889,6 +902,7 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
   return -1;
 }
 
+// Provide the fan speed to fan-util and it also will be called by read_fan_speed
 int pal_get_fan_speed(uint8_t fan, int *rpm)
 {
   char label[32] = {0};
@@ -1057,6 +1071,20 @@ apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value) {
     }
     sensor_correction_apply(fru, snr_num, avg_pwm, value);
   }
+}
+
+// Provide the fan speed to sensor-util
+static int
+read_fan_speed(uint8_t snr_number, float *value) {
+  int rpm = 0;
+  int ret = 0;
+  uint8_t fan = snr_number - BMC_SENSOR_FAN0_TACH;
+  ret = pal_get_fan_speed(fan, &rpm);
+  if ( ret < 0 ) {
+    ret = READING_NA;
+  }
+  *value = (float)rpm;
+  return ret;
 }
 
 static int

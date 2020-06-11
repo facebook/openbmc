@@ -94,7 +94,7 @@ int BiosComponent::print_version() {
   try {
     server.ready();
     if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of BIOS";
+      throw std::runtime_error("Error in getting the version of BIOS");
     }
     cout << "BIOS Version: " << ver << endl;
   } catch(string& err) {

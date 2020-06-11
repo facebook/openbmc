@@ -1498,10 +1498,13 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t dimm_failure_event = (uint8_t) sel[12];
   uint8_t mem_error_type;
   uint8_t channel;
+  uint8_t event_type;
+  uint8_t estr_idx;
   bool support_mem_mapping = false;
   char dimm_fail_event[][64] = {"Memory training failure", "Memory correctable error", "Memory uncorrectable error", "Reserved"};
   char mem_mapping_string[32];
   char temp_log[128] = {0};
+  char dimm_str[8] = {0};
   error_log[0] = '\0';
   int index = 0;
   char *sil = "NA";
@@ -1606,6 +1609,33 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
         char *post_failure_event[] = {"System PXE boot fail", "CMOS/NRAM configuration cleared", "TPM Self-Test Fail"};
         sprintf(error_log, "GeneralInfo: POST(0x%02X), FailureEvent: %s",
               error_type, post_failure_event[(sel[8]&0x0f)]);
+      }
+      break;
+    case UNIFIED_MEM_EVENT:
+      {
+        char *mem_event[] = {"Memory PPR event", "Memory Correctable Error logging limit reached", "Memory disable/map-out for FRB",
+                         "Memory SDDC", "Memory Address range/Partial mirroring", "Memory ADDDC", "Memory SMBus hang recovery", "No DIMM in System", "Reserved"};
+        event_type = sel[8] & 0xF;
+        switch (event_type) {
+          case MEM_PPR:
+            pal_convert_to_dimm_str(sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str);
+            sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, \
+                                Slot %02d, DIMM %s, DIMM Failure Event: %s",
+                    general_info, ((sel[9]>>4)&0x3), sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str,
+                    (sel[12]&0x1)?"PPR fail":"PPR success");
+            break;
+          case MEM_NO_DIMM:
+            sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Failure Event: %s",
+                    general_info, mem_event[event_type]);
+            break;
+          default:
+            pal_convert_to_dimm_str(sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str);
+            estr_idx = (event_type < ARRAY_SIZE(mem_event)) ? event_type : (ARRAY_SIZE(mem_event) - 1);
+            sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, \
+                                Slot %02d, DIMM %s, DIMM Failure Event: %s",
+                    general_info, ((sel[9]>>4)&0x3), sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str, mem_event[estr_idx]);
+            break;
+        }
       }
       break;
     default:

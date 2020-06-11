@@ -21,6 +21,7 @@ DEPENDS += " \
     libncsi \
     libnl-wrapper \
     libnm \
+    libobmc-i2c \
     libobmc-pmbus \
     libobmc-sensors \
     libpeci \
@@ -34,6 +35,7 @@ RDEPENDS_${PN} += " \
     libncsi \
     libnl-wrapper \
     libnm \
+    libobmc-i2c \
     libobmc-pmbus \
     libobmc-sensors \
     libpeci \

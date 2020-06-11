@@ -1683,7 +1683,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
     case BRIDGE_2_MB_BMC3:   //MB BMC3
     case BRIDGE_2_ASIC_BMC:  //FBEP
       ret = pal_ipmb_bypass(req_data, req_len, res_data, res_len);
-      break;   
+      break;
     case BYPASS_NCSI:
       ret = pal_ncsi_bypass(req_data, req_len, res_data, res_len);
       break;
@@ -1741,7 +1741,7 @@ pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
 
     buf[0] = 0x13;  // BMC update intent
     if (!strcmp(comp, "bmc")) {
-      buf[1] = UPDATE_BMC_ACTIVE;
+      buf[1] = UPDATE_AT_RESET | UPDATE_BMC_ACTIVE;
     } else if (!strcmp(comp, "bios")) {
       buf[1] = UPDATE_UPDATE_DYNAMIC | UPDATE_PCH_ACTIVE;
       if (!pal_get_config_is_master()) {
@@ -1756,12 +1756,6 @@ pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
 
     sync();
     sleep(3);
-    ret = system("sv stop sensord > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_0 > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_2 > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_5 > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_6 > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_8 > /dev/null 2>&1");
 
     printf("sending update intent to CPLD...\n");
     fflush(stdout);

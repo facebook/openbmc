@@ -387,6 +387,11 @@ pfr_provision_cmd(uint8_t prov, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint
       return ret;
     }
 
+    // Reconfigure CPLD would go to T-1 stage
+    if (prov == RECONFIG_CPLD){
+      return ret;
+    }
+
     buf[0] = 0x0a;
     if ((ret = pfr_mailbox_cmd(buf, 1, rbuf, 0))) {
       return ret;
@@ -1089,7 +1094,7 @@ main(int argc, char **argv) {
           }
         } while (ret && (retry-- > 0));
 
-        printf("provision %s", (!ret)?"succeeded":"failed");
+        printf("provision %s\n", (!ret)?"succeeded":"failed");
         if ((ret > 0) && (ret < ERR_UNKNOWN)) {
           printf(" (%s)", prov_err_str[ret]);
         } else {

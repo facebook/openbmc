@@ -1,13 +1,16 @@
 #!/bin/bash
 
-if [ -z "$DISTRO_DEFAULT" ]; then
+if [ -n "$DISTRO_OVERRIDE" ]; then
+  echo "WARNING: distro is set to ${DISTRO_OVERRIDE} based on DISTRO_OVERRIDE env variable"
+elif [ -z "$DISTRO_DEFAULT" ]; then
   DISTRO_DEFAULT=rocko
 else
-  echo "WARNING: distro is set to ${DISTRO_DEFAULT} based on DISTRO_DEFAULT env variable"
+  echo "WARNING: default distro is set to ${DISTRO_DEFAULT} based on DISTRO_DEFAULT env variable"
 fi
-declare -a DISTRO_OVERRIDES
+
+declare -a PLAT_DISTRO_OVERRIDES
 # Add overrides here on a per-platform basis.
-DISTRO_OVERRIDES=(
+PLAT_DISTRO_OVERRIDES=(
   meta-qemux86:zeus
   meta-cloudripper:warrior
   meta-wedge400:warrior
@@ -20,7 +23,11 @@ DISTRO_OVERRIDES=(
 )
 
 platform="$1"
-_distro="${DISTRO_DEFAULT}"
+if [ -z "$DISTRO_OVERRIDE" ]; then
+  _distro="${DISTRO_DEFAULT}"
+else
+  _distro="${DISTRO_OVERRIDE}"
+fi
 
 if [ -n "$BASH_SOURCE" ]; then
     THIS_SCRIPT=$BASH_SOURCE
@@ -62,7 +69,6 @@ if [ -z "$TEMPLATECONF" ]; then
             if [ "x$machine" = "x$platform" ]; then
                 TEMPLATECONF="$(pwd)/$meta"
                 platform=$(basename "$(dirname "$meta")")
-                echo "$NTEMPLATECONF"
                 break
             fi
         done
@@ -75,15 +81,19 @@ if [ -z "$TEMPLATECONF" ]; then
     shift 1
 fi
 
-for override in ${DISTRO_OVERRIDES[*]}; do
-    override_plat=${override%%:*}
-    override_distro=${override##*:}
-    if [[ "${platform/${override_plat}/}" != "${platform}" ]]; then
-        # override happens
-        _distro="${override_distro}"
-    fi
-done
-unset DISTRO_DEFAULT DISTRO_OVERRIDES
+# If user is not overriding the distro, then see
+# if there are platform overrides.
+if [ -z "$DISTRO_OVERRIDE" ]; then
+    for override in ${PLAT_DISTRO_OVERRIDES[*]}; do
+        override_plat=${override%%:*}
+        override_distro=${override##*:}
+        if [[ "${platform/${override_plat}/}" != "${platform}" ]]; then
+            # override happens
+            _distro="${override_distro}"
+        fi
+    done
+fi
+unset DISTRO_DEFAULT PLAT_DISTRO_OVERRIDES DISTRO_OVERRIDE
 unset override override_plat override_distro
 
 echo "Init build environment for platform '${platform}' with distro ${_distro}..."

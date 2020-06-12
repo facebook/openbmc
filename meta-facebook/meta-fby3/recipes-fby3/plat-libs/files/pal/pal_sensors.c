@@ -636,8 +636,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEC
   {"BMC_INLET_TEMP",  TEMP_INLET,  read_temp, true, {50, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xED
   {"BMC_OUTLET_TEMP", TEMP_OUTLET, read_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEE
-  {"NIC_SENSOR_TEMP", TEMP_NIC, read_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEF
-
+  {"NIC_SENSOR_TEMP", TEMP_NIC, read_temp, true, {95, 85, 105, 0, 0, 0, 0, 0}, TEMP}, //0xEF
   {"BMC_SENSOR_P5V", ADC0, read_adc_val, true, {5.486, 0, 0, 4.524, 0, 0, 0, 0}, VOLT}, //0xF0
   {"BMC_SENSOR_P12V", ADC1, read_adc_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF1
   {"BMC_SENSOR_P3V3_STBY", ADC2, read_adc_val, true, {3.629, 0, 0, 2.976, 0, 0, 0, 0}, VOLT}, //0xF2
@@ -1439,6 +1438,53 @@ error_exit:
   return ret;
 }
 
+static void
+pal_all_slot_power_ctrl(uint8_t opt, float *val) {
+  int i = 0;
+  uint8_t status = 0;
+  for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
+    if ( fby3_common_is_fru_prsnt(i, &status) < 0 || status == 0 ) {
+      continue;
+    }
+    syslog(LOG_CRIT, "FRU: %d, Turned %s 12V power of slot%d due to NIC temp is %s UNR. (val = %.2f)", i, (opt == SERVER_12V_ON)?"on":"off" \
+                                                                                                     , i, (opt == SERVER_12V_ON)?"under":"over", *val);
+    if ( pal_set_server_power(i, opt) < 0 ) {
+      syslog(LOG_CRIT, "Failed to turn %s 12V power of slot%d", (opt == SERVER_12V_ON)?"on":"off", i);
+    }
+  }
+}
+
+static void
+pal_nic_otp_check(float *value, float unr) {
+  static int retry = MAX_RETRY;
+  static bool is_otp_asserted = false;
+  if ( *value < unr ) {
+    if ( is_otp_asserted == false ) return; //it will move on when is_otp_asserted is true
+    if ( retry != MAX_RETRY ) {
+      retry++;
+      return;
+    }
+
+    //recover the system
+    is_otp_asserted = false;
+    pal_all_slot_power_ctrl(SERVER_12V_ON, value);
+    return;
+  }
+
+  if ( retry != 0 ) {
+    retry--;
+    return;
+  }
+
+  //need to turn off all slots since retry is reached
+  if ( is_otp_asserted == false ) {
+    is_otp_asserted = true;
+    pal_all_slot_power_ctrl(SERVER_12V_OFF, value);
+  }
+
+  return;
+}
+
 static int
 skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num) {
   uint8_t *bic_skip_list;
@@ -1630,8 +1676,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       }
       break;
     case FRU_BMC:
+      ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
+      break;
     case FRU_NIC:
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
+      //Over temperature protection
+      pal_nic_otp_check((float*)value, sensor_map[sensor_num].snr_thresh.unr_thresh);
       break;
 
     default:

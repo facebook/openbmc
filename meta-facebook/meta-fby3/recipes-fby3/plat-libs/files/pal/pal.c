@@ -1397,6 +1397,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_VR_WDT_TIMEOUT = 0x0A,
     SYS_M2_VPP         = 0x0B,
     SYS_M2_PGOOD       = 0x0C,
+    SYS_VCCIO_FAULT    = 0x0D,
   };
   uint8_t event = event_data[0];
 
@@ -1438,6 +1439,9 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     case SYS_M2_PGOOD:
       pal_get_m2pgood_str_name(event_data[1], event_data[2], error_log);
       strcat(error_log, "Power Good Fault");
+      break;
+    case SYS_VCCIO_FAULT:
+      strcat(error_log, "VCCIO fault");
       break;
     default:
       strcat(error_log, "Undefined system event");

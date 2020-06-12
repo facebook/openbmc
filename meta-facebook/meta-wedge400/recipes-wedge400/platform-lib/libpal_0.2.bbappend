@@ -19,10 +19,26 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal:"
 
-SRC_URI += "file://pal.c \
-            file://pal.h \
-            "
+SRC_URI += " \
+    file://plat/meson.build \
+    "
 
-DEPENDS += "liblog libbic libsensor-correction libobmc-i2c libwedge-eeprom libgpio-ctrl"
-RDEPENDS_${PN} += " liblog libbic libsensor-correction libobmc-i2c libwedge-eeprom libgpio-ctrl"
-LDFLAGS += " -llog -lbic -lsensor-correction -lm -lobmc-i2c -lwedge_eeprom -lgpio-ctrl"
+DEPENDS += " \
+    libbic \
+    libgpio-ctrl \
+    liblog \
+    libobmc-i2c \
+    libsensor-correction \
+    libwedge-eeprom \
+    "
+
+# These shouldn't be needed but are because we aren't properly versioning the
+# shared libraries contained in these recipes.
+RDEPENDS_${PN} += " \
+    libbic \
+    libgpio-ctrl \
+    liblog \
+    libobmc-i2c \
+    libsensor-correction \
+    libwedge-eeprom \
+    "

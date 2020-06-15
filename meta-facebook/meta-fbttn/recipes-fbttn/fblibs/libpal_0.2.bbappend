@@ -21,5 +21,3 @@ RDEPENDS_${PN} += " \
     libfbttn-sensor \
     libnvme-mi \
     "
-
-CFLAGS += " -DCONFIG_FBTTN=1"

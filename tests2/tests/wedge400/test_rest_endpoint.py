@@ -103,7 +103,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             platform_type_rev == "Wedge400-EVT/EVT3"
             or platform_type_rev == "Wedge400-DVT"
             or platform_type_rev == "Wedge400-DVT2/PVT/PVT2"
-            or platform_type_rev == "Wedge400-PVT3/MP"
+            or platform_type_rev == "Wedge400-PVT3"
+            or platform_type_rev == "Wedge400-MP"
         ):
             self.endpoint_sensors_attrb += SMB_SENSORS_W400
         elif platform_type_rev == "Wedge400C-EVT":

@@ -53,7 +53,7 @@ do
 
     # Add specific commit of repo into yocto/branch/repo/ worktree 
     if [ $FETCH_ONLY -eq 0 ]; then
-      git worktree add yocto/${branch}/${repo_name} ${commit_id}
+      git worktree add -f yocto/${branch}/${repo_name} ${commit_id}
     fi
   done
 done

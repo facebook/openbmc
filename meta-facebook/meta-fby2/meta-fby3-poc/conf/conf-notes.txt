@@ -1,2 +1,0 @@
-Common targets are:
-    fby3-poc-image

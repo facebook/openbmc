@@ -49,6 +49,7 @@
 #include <syslog.h>
 #include <dirent.h>
 #include <assert.h>
+#include <linux/limits.h>
 #include <facebook/wedge_eeprom.h>
 
 #include <openbmc/watchdog.h>
@@ -113,8 +114,6 @@ static const char *slot_id_gpios[SLOT_ID_BITS] = {
 
 #define PWM_UNIT_MAX 96
 #define FAN_READ_RPM_FORMAT "tacho%d_rpm"
-
-#define LARGEST_DEVICE_NAME 120
 
 #define FAN_LED_RED  GPIO_VALUE_LOW
 #define FAN_LED_BLUE GPIO_VALUE_HIGH
@@ -328,12 +327,11 @@ int write_device(const char *device, const char *value) {
 }
 
 int read_temp(const char *device, int *value) {
-  char full_name[LARGEST_DEVICE_NAME + 1];
+  char full_name[PATH_MAX];
 
   /* We set an impossible value to check for errors */
   *value = BAD_TEMP;
-  snprintf(
-      full_name, LARGEST_DEVICE_NAME, "%s/temp1_input", device);
+  snprintf(full_name, sizeof(full_name), "%s/temp1_input", device);
 
   int rc = read_device_internal(full_name, value, 0);
 
@@ -457,23 +455,22 @@ bool is_two_fan_board(bool verbose) {
 }
 
 int read_fan_value(const int fan, const char *device, int *value) {
-  char device_name[LARGEST_DEVICE_NAME];
-  char output_value[LARGEST_DEVICE_NAME];
-  char full_name[LARGEST_DEVICE_NAME];
+  char device_name[PATH_MAX];
+  char full_name[PATH_MAX];
 
-  snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR,device_name);
+  snprintf(device_name, sizeof(device_name), device, fan);
+  snprintf(full_name, sizeof(full_name), "%s/%s", PWM_DIR, device_name);
   return read_device(full_name, value);
 }
 
 int write_fan_value(const int fan, const char *device, const int value) {
-  char full_name[LARGEST_DEVICE_NAME];
-  char device_name[LARGEST_DEVICE_NAME];
-  char output_value[LARGEST_DEVICE_NAME];
+  char full_name[PATH_MAX];
+  char device_name[PATH_MAX];
+  char output_value[PATH_MAX];
 
-  snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
-  snprintf(output_value, LARGEST_DEVICE_NAME, "%d", value);
+  snprintf(device_name, sizeof(device_name), device, fan);
+  snprintf(full_name, sizeof(full_name), "%s/%s", PWM_DIR, device_name);
+  snprintf(output_value, sizeof(output_value), "%d", value);
   return write_device(full_name, output_value);
 }
 

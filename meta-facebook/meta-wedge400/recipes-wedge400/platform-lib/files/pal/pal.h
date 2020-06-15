@@ -214,6 +214,7 @@ enum {
   BOARD_WEDGE400_DVT            = 0x02,
   BOARD_WEDGE400_DVT2_PVT_PVT2  = 0x03,
   BOARD_WEDGE400_PVT3           = 0x04,
+  BOARD_WEDGE400_MP             = 0x05,
   BOARD_WEDGE400C_EVT           = 0x10,
   BOARD_WEDGE400C_EVT2          = 0x11,
   BOARD_WEDGE400C_DVT           = 0x12,

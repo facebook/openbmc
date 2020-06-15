@@ -1702,6 +1702,7 @@ pal_get_board_type_rev(uint8_t *brd_type_rev){
       case 0x02: *brd_type_rev = BOARD_WEDGE400_DVT; break;
       case 0x03: *brd_type_rev = BOARD_WEDGE400_DVT2_PVT_PVT2; break;
       case 0x04: *brd_type_rev = BOARD_WEDGE400_PVT3; break;
+      case 0x05: *brd_type_rev = BOARD_WEDGE400_MP; break;
       default:
         *brd_type_rev = BOARD_UNDEFINED;
         return -1;

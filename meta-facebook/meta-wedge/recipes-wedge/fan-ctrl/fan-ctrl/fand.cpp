@@ -270,70 +270,66 @@ void usage() {
   exit(1);
 }
 
-/* We need to open the device each time to read a value */
-int read_device_internal(const char *device, int *value, int log) {
+/*
+ * Read an integer from the beginning of the file.
+ * Return 0 for success, or errno on failures.
+ */
+static int device_read_integer(const char *pathname, int *value)
+{
   FILE *fp;
-  int rc;
+  int rc, saved_errno;
 
-  fp = fopen(device, "r");
-  if (!fp) {
-    int err = errno;
-    if (log) {
-      syslog(LOG_INFO, "failed to open device %s", device);
-    }
-    return err;
+  fp = fopen(pathname, "r");
+  if (fp == NULL) {
+    return errno;
   }
 
   rc = fscanf(fp, "%d", value);
-  fclose(fp);
-
   if (rc != 1) {
-    if (log) {
-      syslog(LOG_INFO, "failed to read device %s", device);
-    }
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-int read_device(const char *device, int *value) {
-  return read_device_internal(device, value, 1);
-}
-
-/* We need to open the device again each time to write a value */
-
-int write_device(const char *device, const char *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "w");
-  if (!fp) {
-    int err = errno;
-
-    syslog(LOG_INFO, "failed to open device for write %s", device);
-    return err;
+    saved_errno = errno;
+    fclose(fp);  /* ignore errors */
+    return saved_errno;
   }
 
-  rc = fputs(value, fp);
   fclose(fp);
+  return 0;
+}
 
-  if (rc < 0) {
-    syslog(LOG_INFO, "failed to write device %s", device);
-    return ENOENT;
-  } else {
-    return 0;
+/*
+ * Write an integer to the beginning of the given file.
+ * Return 0 for success, or errno on failures.
+ */
+int device_write_integer(const char *pathname, int value) {
+  FILE *fp;
+  int rc, saved_errno;
+  char data[64];
+
+  fp = fopen(pathname, "w");
+  if (!fp) {
+    return errno;
   }
+
+  snprintf(data, sizeof(data), "%d", value);
+  rc = fputs(data, fp);
+  if (rc < 0) {
+    saved_errno = errno;
+    fclose(fp); /* ignore errors */
+    return saved_errno;
+  }
+
+  fclose(fp);
+  return 0;
 }
 
 int read_temp(const char *device, int *value) {
+  int rc;
   char full_name[PATH_MAX];
 
   /* We set an impossible value to check for errors */
   *value = BAD_TEMP;
   snprintf(full_name, sizeof(full_name), "%s/temp1_input", device);
 
-  int rc = read_device_internal(full_name, value, 0);
+  rc = device_read_integer(full_name, value);
 
   /**
    * In the latest Linux kernel, lm75 temperature sysfs file is moved from
@@ -347,32 +343,29 @@ int read_temp(const char *device, int *value) {
    * with ENOENT, the code will try to probe device/hwmon/hwmon???.
    */
 
-  if (rc == ENOENT) {
+  if (rc != 0) {
     DIR *dir = NULL;
     struct dirent *ent;
+
     snprintf(full_name, sizeof(full_name), "%s/hwmon", device);
     dir = opendir(full_name);
-    if (dir == NULL) {
-      goto close_dir_out;
-    }
-    while ((ent = readdir(dir)) != NULL) {
-      if (strstr(ent->d_name, "hwmon")) {
-        // found the correct 'hwmon??' directory
-        snprintf(full_name, sizeof(full_name), "%s/hwmon/%s/temp1_input",
-                 device, ent->d_name);
-        rc = read_device_internal(full_name, value, 0);
-        goto close_dir_out;
+    if (dir != NULL) {
+      while ((ent = readdir(dir)) != NULL) {
+        if (strstr(ent->d_name, "hwmon")) {
+          // found the correct 'hwmon??' directory
+          snprintf(full_name, sizeof(full_name), "%s/hwmon/%s/temp1_input",
+                   device, ent->d_name);
+          rc = device_read_integer(full_name, value);
+          break;
+        }
       }
-    }
-
- close_dir_out:
-    if (dir) {
       closedir(dir);
-    }
-  }
+    } /* if (dir != NULL) */
+  } /* if (rc != 0) */
 
-  if (rc) {
-    syslog(LOG_INFO, "failed to read temperature from %s", device);
+  if (rc != 0) {
+    syslog(LOG_INFO, "failed to read temperature from %s: %s",
+           full_name, strerror(rc));
   }
 
   return rc;
@@ -455,23 +448,35 @@ bool is_two_fan_board(bool verbose) {
 }
 
 int read_fan_value(const int fan, const char *device, int *value) {
+  int rc;
   char device_name[PATH_MAX];
   char full_name[PATH_MAX];
 
   snprintf(device_name, sizeof(device_name), device, fan);
   snprintf(full_name, sizeof(full_name), "%s/%s", PWM_DIR, device_name);
-  return read_device(full_name, value);
+  rc = device_read_integer(full_name, value);
+  if (rc != 0) {
+      syslog(LOG_WARNING, "failed to read from %s: %s",
+             full_name, strerror(rc));
+  }
+
+  return rc;
 }
 
 int write_fan_value(const int fan, const char *device, const int value) {
+  int rc;
   char full_name[PATH_MAX];
   char device_name[PATH_MAX];
-  char output_value[PATH_MAX];
 
   snprintf(device_name, sizeof(device_name), device, fan);
   snprintf(full_name, sizeof(full_name), "%s/%s", PWM_DIR, device_name);
-  snprintf(output_value, sizeof(output_value), "%d", value);
-  return write_device(full_name, output_value);
+  rc = device_write_integer(full_name, value);
+  if (rc != 0) {
+      syslog(LOG_WARNING, "failed to write to %s: %s",
+             full_name, strerror(rc));
+  }
+
+  return rc;
 }
 
 /* Return fan speed as a percentage of maximum -- not necessarily linear. */

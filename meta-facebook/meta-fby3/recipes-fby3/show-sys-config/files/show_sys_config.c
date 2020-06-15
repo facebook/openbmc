@@ -41,21 +41,9 @@ bool verbosed = false;
 bool output_json = false;
 
 enum {
-  UTIL_EXECUTION_OK = 0,
-  UTIL_EXECUTION_FAIL = -1,
-};
-
-enum {
   CLASS1 = 1,
   CLASS2,
   UNKNOWN_CONFIG = 0xff,
-};
-
-enum {
-  STATUS_PRSNT = 0,
-  STATUS_NOT_PRSNT,
-  STATUS_ABNORMAL,
-  STATUS_MGMT_CBL_NOT_INSTALLED,
 };
 
 typedef struct server {
@@ -99,8 +87,7 @@ get_server_config(uint8_t slot_id, uint8_t *data, uint8_t bmc_location) {
     return UTIL_EXECUTION_FAIL;
   }
 
-  data[1] = (tbuf[0] == STATUS_MGMT_CBL_NOT_INSTALLED)?STATUS_NOT_PRSNT:STATUS_PRSNT;
-
+  data[1] = tbuf[0];
   return UTIL_EXECUTION_OK;
 }
 
@@ -272,12 +259,6 @@ main(int argc, char **argv) {
     if ( sys_info.server_info[i-1].is_server_present != STATUS_PRSNT ) {
       continue;
     }
-
-    //handle a special case.
-    //SLOT1_ID0 and SLOT1_ID1 are held to 1 always.
-    //So, we use the other slots to check the mgmt cbl is used
-    if ( i != FRU_SLOT1 && (sys_info.server_info[i-1].is_server_present == STATUS_PRSNT) )
-      sys_info.server_info[FRU_SLOT1].is_mgmt_cbl_present &= sys_info.server_info[i-1].is_mgmt_cbl_present;
 
     if ( check_sys_config == UNKNOWN_CONFIG ) {
       check_sys_config = sys_info.server_info[i-1].config;

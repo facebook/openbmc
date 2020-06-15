@@ -40,11 +40,6 @@
 #define MAX_CMD_RETRY 2
 #define MAX_TOTAL_RETRY 30
 
-enum {
-  UTIL_EXECUTION_OK = 0,
-  UTIL_EXECUTION_FAIL = -1,
-};
-
 static int total_retry = 0;
 
 static void

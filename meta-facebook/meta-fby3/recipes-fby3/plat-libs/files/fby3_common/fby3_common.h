@@ -108,6 +108,17 @@ enum {
   SERVER_TYPE_NONE = 0xFF,
 };
 
+enum {
+  UTIL_EXECUTION_OK = 0,
+  UTIL_EXECUTION_FAIL = -1,
+};
+
+enum {
+  STATUS_PRSNT = 0,
+  STATUS_NOT_PRSNT,
+  STATUS_ABNORMAL,
+};
+
 const static char *gpio_server_prsnt[] =
 {
   "",

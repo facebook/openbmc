@@ -24,6 +24,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # TODO:
 #	This is a workaround before EVT
 #	CPLD will handle with 12V power when BMC is ready.
+echo "Waiting for power up"
 for retry in {1..30};
 do
   pwr_ready=$(gpiocli -s SYS_PWR_READY get-value)

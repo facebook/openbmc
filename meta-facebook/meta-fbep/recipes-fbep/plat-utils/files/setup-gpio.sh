@@ -74,6 +74,14 @@ do
 done
 
 for i in {0..3};
+ do
+  gpioexp_export 13-0020 MB${i}_P0_PRSNT0 $((i*4))
+  gpioexp_export 13-0020 MB${i}_P0_PRSNT1 $((i*4+1))
+  gpioexp_export 13-0020 MB${i}_P1_PRSNT0 $((i*4+2))
+  gpioexp_export 13-0020 MB${i}_P1_PRSNT1 $((i*4+3))
+done
+
+for i in {0..3};
 do
   gpioexp_export 18-0067 FAN${i}_PRESENT ${i}
   gpioexp_export 18-0067 FAN${i}_PWR_GOOD $((i+4))
@@ -325,7 +333,18 @@ gpio_set PAX3_SKU_ID1 0
 # 1 = controlled by BMC
 # 0 = controlled by CPLD
 gpio_export PWR_CTRL GPIOM1
-# gpio_set PWR_CTRL 0
+
+for i in {0..3};
+do
+  if [[ "$(gpio_get MB${i}_P0_PRSNT0)" == "0" && \
+        "$(gpio_get MB${i}_P0_PRSNT1)" == "0" && \
+        "$(gpio_get MB${i}_P1_PRSNT0)" == "0" && \
+        "$(gpio_get MB${i}_P1_PRSNT1)" == "0" ]]; then
+    echo "Server is detected"
+    gpio_set PWR_CTRL 0
+    break
+  fi
+done
 
 # To enable GPION
 #devmem_clear_bit $(scu_addr 88) 2

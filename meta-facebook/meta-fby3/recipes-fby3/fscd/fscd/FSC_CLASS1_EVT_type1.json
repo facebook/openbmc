@@ -9,7 +9,7 @@
     "sensor_fail": false
   },
   "watchdog": false,
-  "min_rpm": 800,
+  "min_rpm": 500,
   "profiles": {
     "linear_frontIO_inlet": {
       "read_source" : {

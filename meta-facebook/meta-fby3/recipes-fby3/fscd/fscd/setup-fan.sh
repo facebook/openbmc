@@ -33,21 +33,10 @@ default_fsc_config_path="/etc/fsc-config.json"
 
 function init_class1_fsc(){
   sys_config=$(/usr/local/bin/show_sys_config | grep -i "config:" | awk -F ": " '{print $3}')
-  fan0_type=$(gpio_get DUAL_FAN0_DETECT_BMC_N_R)
-  fan1_type=$(gpio_get DUAL_FAN1_DETECT_BMC_N_R)
-
-  if [ $fan0_type -ne $fan1_type ]; then
-    echo "fan type is not the same!"
-  fi
-
-  if [ $fan0_type -eq 1 ] && [ "$sys_config" = "A" ]; then
+  if [ "$sys_config" = "A" ]; then
     ln -s /etc/FSC_CLASS1_EVT_type1.json ${default_fsc_config_path}
-  elif [ $fan0_type -eq 0 ] && [ "$sys_config" = "A" ]; then
-    ln -s /etc/FSC_CLASS1_EVT_dualfan_type1.json ${default_fsc_config_path}
-  elif [ $fan0_type -eq 1 ] && [ "$sys_config" = "B" ]; then
-    ln -s /etc/FSC_CLASS1_EVT_type10.json ${default_fsc_config_path}
   else
-    ln -s /etc/FSC_CLASS1_EVT_dualfan_type10.json ${default_fsc_config_path}
+    ln -s /etc/FSC_CLASS1_EVT_type10.json ${default_fsc_config_path}
   fi
 }
 

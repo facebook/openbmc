@@ -24,13 +24,9 @@ SRC_URI += "file://setup-fan.sh \
             file://FSC_CLASS1_EVT_type10.json \
             file://FSC_CLASS1_EVT_type10_zone1.fsc \
             file://FSC_CLASS1_EVT_type1_zone1.fsc \
-            file://FSC_CLASS1_EVT_dualfan_type1.json \
-            file://FSC_CLASS1_EVT_dualfan_type10.json \
            "
 FSC_CONFIG += "FSC_CLASS1_EVT_type1.json \
                FSC_CLASS1_EVT_type10.json \
-               FSC_CLASS1_EVT_dualfan_type1.json \
-               FSC_CLASS1_EVT_dualfan_type10.json \
                FSC_CLASS2_EVT_config.json \
               "
 

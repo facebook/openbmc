@@ -45,7 +45,7 @@
 #define BIOS_VERIFY_PKT_SIZE (32*1024)
 #define BIOS_VER_REGION_SIZE (4*1024*1024)
 #define BIOS_VER_STR "F09_"
-#define MAX_CHECK_DEVICE_TIME 5
+#define MAX_CHECK_DEVICE_TIME 8
 
 int interface_ref = 0;
 int alt_interface,interface_number;

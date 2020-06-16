@@ -37,6 +37,9 @@ extern "C" {
 
 #define BIC_CACHED_PID "/var/run/bic-cached_%d.lock"
 
+#define SOCK_PATH_ASD_BIC "/tmp/asd_bic_socket"
+#define SOCK_PATH_JTAG_MSG "/tmp/jtag_msg_socket"
+
 #define FRU_NIC_BIN    "/tmp/fruid_nic.bin"
 #define FRU_BMC_BIN    "/tmp/fruid_bmc.bin"
 #define FRU_BB_BIN     "/tmp/fruid_bb.bin"

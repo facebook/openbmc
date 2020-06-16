@@ -4,7 +4,7 @@ SRCREV = "AUTOINC"
 SRC_URI = "git://github.com/facebook/openbmc-linux.git;branch=${SRCBRANCH};protocol=https \
           "
 
-LINUX_VERSION ?= "5.6.3"
+LINUX_VERSION ?= "5.6.14"
 LINUX_VERSION_EXTENSION ?= "-aspeed"
 
 PR = "r1"

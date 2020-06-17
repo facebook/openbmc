@@ -1,5 +1,5 @@
 {
-    "version": "fbal-r01",
+    "version": "fbal-r03",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -23,14 +23,17 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
-        "positive_hysteresis":1,
-        "negative_hysteresis":1,
         "data": [
+          [65, 8],
           [70, 10],
-          [75, 20],
-          [80, 30],
-          [85, 40],
-          [90, 50]
+          [72, 13],
+          [75, 15],
+          [78, 18],
+          [80, 20],
+          [83, 25],
+          [85, 30],
+          [90, 35],
+          [95, 60]
         ]
       },
       "linear_inlet": {
@@ -39,15 +42,28 @@
         },
         "type": "linear",
         "data": [
-          [20, 10],
-          [25, 25],
-          [30, 30],
-          [35, 35],
-          [38, 50],
-          [40, 80]
+          [25, 10],
+          [30, 10],
+          [35, 15],
+          [38, 25],
+          [40, 70]
         ]
       }
-    }, 
+    },
+    "linear_vr": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "data": [
+        [70, 20],
+        [75, 25],
+        [80, 30],
+        [85, 35],
+        [90, 60],
+        [95, 65]
+      ]
+    },     
     "fans": {
       "0": {
         "read_source" : {
@@ -117,7 +133,7 @@
     "zones": {
       "zone_1": {
         "pwm_output": [0, 2, 4, 6],
-        "expr_file": "zone1_8s_S.fsc"
+        "expr_file": "zone1_Slave.fsc"
       }
     }
 } 

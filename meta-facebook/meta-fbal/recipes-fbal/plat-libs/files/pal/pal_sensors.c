@@ -245,8 +245,136 @@ const uint8_t mb_8s_m_sensor_list[] = {
   MB_SNR_VR_PCH_PVNN_POWER,
 };
 
-//8S Slave BMC Sensor List
-const uint8_t mb_8s_s_sensor_list[] = {
+//4S Master BMC Sensor List
+const uint8_t mb_4s_m_sensor_list[] = {
+  MB_SNR_INLET_TEMP,
+  MB_SNR_OUTLET_TEMP_R,
+  MB_SNR_OUTLET_TEMP_L,
+  MB_SNR_INLET_REMOTE_TEMP,
+  MB_SNR_OUTLET_REMOTE_TEMP_R,
+  MB_SNR_OUTLET_REMOTE_TEMP_L,
+  MB_SNR_P5V,
+  MB_SNR_P5V_STBY,
+  MB_SNR_P3V3_STBY,
+  MB_SNR_P3V3,
+  MB_SNR_P3V_BAT,
+  MB_SNR_CPU_P1V8,
+  MB_SNR_PCH_P1V8,
+  MB_SNR_CPU0_PVPP_ABC,
+  MB_SNR_CPU0_PVPP_DEF,
+  MB_SNR_CPU0_PVTT_ABC,
+  MB_SNR_CPU0_PVTT_DEF,
+  MB_SNR_CPU1_PVPP_ABC,
+  MB_SNR_CPU1_PVPP_DEF,
+  MB_SNR_CPU1_PVTT_ABC,
+  MB_SNR_CPU1_PVTT_DEF,
+  MB_SNR_HSC_VIN,
+  MB_SNR_HSC_IOUT,
+  MB_SNR_HSC_PIN,
+  MB_SNR_HSC_TEMP,
+  MB1_SNR_HSC_VIN,
+  MB1_SNR_HSC_IOUT,
+  MB1_SNR_HSC_PIN,
+  MB1_SNR_HSC_TEMP,
+  MB_SNR_PCH_TEMP,
+  MB_SNR_CPU0_TEMP,
+  MB_SNR_CPU1_TEMP,
+  MB_SNR_CPU2_TEMP,
+  MB_SNR_CPU3_TEMP,
+  MB_SNR_CPU0_DIMM_GRPA_TEMP,
+  MB_SNR_CPU0_DIMM_GRPB_TEMP,
+  MB_SNR_CPU0_DIMM_GRPC_TEMP,
+  MB_SNR_CPU0_DIMM_GRPD_TEMP,
+  MB_SNR_CPU0_DIMM_GRPE_TEMP,
+  MB_SNR_CPU0_DIMM_GRPF_TEMP,
+  MB_SNR_CPU1_DIMM_GRPA_TEMP,
+  MB_SNR_CPU1_DIMM_GRPB_TEMP,
+  MB_SNR_CPU1_DIMM_GRPC_TEMP,
+  MB_SNR_CPU1_DIMM_GRPD_TEMP,
+  MB_SNR_CPU1_DIMM_GRPE_TEMP,
+  MB_SNR_CPU1_DIMM_GRPF_TEMP,
+  MB_SNR_CPU2_DIMM_GRPA_TEMP,
+  MB_SNR_CPU2_DIMM_GRPB_TEMP,
+  MB_SNR_CPU2_DIMM_GRPC_TEMP,
+  MB_SNR_CPU2_DIMM_GRPD_TEMP,
+  MB_SNR_CPU2_DIMM_GRPE_TEMP,
+  MB_SNR_CPU2_DIMM_GRPF_TEMP,
+  MB_SNR_CPU3_DIMM_GRPA_TEMP,
+  MB_SNR_CPU3_DIMM_GRPB_TEMP,
+  MB_SNR_CPU3_DIMM_GRPC_TEMP,
+  MB_SNR_CPU3_DIMM_GRPD_TEMP,
+  MB_SNR_CPU3_DIMM_GRPE_TEMP,
+  MB_SNR_CPU3_DIMM_GRPF_TEMP,
+  MB_SNR_DATA0_DRIVE_TEMP,
+  MB_SNR_DATA1_DRIVE_TEMP,
+  MB_SNR_CPU0_PKG_POWER,
+  MB_SNR_CPU1_PKG_POWER,
+  MB_SNR_CPU2_PKG_POWER,
+  MB_SNR_CPU3_PKG_POWER,
+  MB_SNR_CPU0_TJMAX,
+  MB_SNR_CPU1_TJMAX,
+  MB_SNR_CPU2_TJMAX,
+  MB_SNR_CPU3_TJMAX,
+  MB_SNR_CPU0_THERM_MARGIN,
+  MB_SNR_CPU1_THERM_MARGIN,
+  MB_SNR_CPU2_THERM_MARGIN,
+  MB_SNR_CPU3_THERM_MARGIN,
+  MB_SNR_P12V_STBY_INA260_VOL,
+  MB_SNR_P3V3_M2_1_INA260_VOL,
+  MB_SNR_P3V3_M2_2_INA260_VOL,
+  MB_SNR_P3V3_M2_3_INA260_VOL,
+  MB_SNR_VR_CPU0_VCCIN_VOLT,
+  MB_SNR_VR_CPU0_VCCIN_TEMP,
+  MB_SNR_VR_CPU0_VCCIN_CURR,
+  MB_SNR_VR_CPU0_VCCIN_POWER,
+  MB_SNR_VR_CPU0_VSA_VOLT,
+  MB_SNR_VR_CPU0_VSA_TEMP,
+  MB_SNR_VR_CPU0_VSA_CURR,
+  MB_SNR_VR_CPU0_VSA_POWER,
+  MB_SNR_VR_CPU0_VCCIO_VOLT,
+  MB_SNR_VR_CPU0_VCCIO_TEMP,
+  MB_SNR_VR_CPU0_VCCIO_CURR,
+  MB_SNR_VR_CPU0_VCCIO_POWER,
+  MB_SNR_VR_CPU0_VDDQ_GRPABC_VOLT,
+  MB_SNR_VR_CPU0_VDDQ_GRPABC_TEMP,
+  MB_SNR_VR_CPU0_VDDQ_GRPABC_CURR,
+  MB_SNR_VR_CPU0_VDDQ_GRPABC_POWER,
+  MB_SNR_VR_CPU0_VDDQ_GRPDEF_VOLT,
+  MB_SNR_VR_CPU0_VDDQ_GRPDEF_TEMP,
+  MB_SNR_VR_CPU0_VDDQ_GRPDEF_CURR,
+  MB_SNR_VR_CPU0_VDDQ_GRPDEF_POWER,
+  MB_SNR_VR_CPU1_VCCIN_VOLT,
+  MB_SNR_VR_CPU1_VCCIN_TEMP,
+  MB_SNR_VR_CPU1_VCCIN_CURR,
+  MB_SNR_VR_CPU1_VCCIN_POWER,
+  MB_SNR_VR_CPU1_VSA_VOLT,
+  MB_SNR_VR_CPU1_VSA_TEMP,
+  MB_SNR_VR_CPU1_VSA_CURR,
+  MB_SNR_VR_CPU1_VSA_POWER,
+  MB_SNR_VR_CPU1_VCCIO_VOLT,
+  MB_SNR_VR_CPU1_VCCIO_TEMP,
+  MB_SNR_VR_CPU1_VCCIO_CURR,
+  MB_SNR_VR_CPU1_VCCIO_POWER,
+  MB_SNR_VR_CPU1_VDDQ_GRPABC_VOLT,
+  MB_SNR_VR_CPU1_VDDQ_GRPABC_TEMP,
+  MB_SNR_VR_CPU1_VDDQ_GRPABC_CURR,
+  MB_SNR_VR_CPU1_VDDQ_GRPABC_POWER,
+  MB_SNR_VR_CPU1_VDDQ_GRPDEF_VOLT,
+  MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP,
+  MB_SNR_VR_CPU1_VDDQ_GRPDEF_CURR,
+  MB_SNR_VR_CPU1_VDDQ_GRPDEF_POWER,
+  MB_SNR_VR_PCH_P1V05_VOLT, 
+  MB_SNR_VR_PCH_P1V05_TEMP, 
+  MB_SNR_VR_PCH_P1V05_CURR, 
+  MB_SNR_VR_PCH_P1V05_POWER,
+  MB_SNR_VR_PCH_PVNN_VOLT,
+  MB_SNR_VR_PCH_PVNN_TEMP,
+  MB_SNR_VR_PCH_PVNN_CURR,
+  MB_SNR_VR_PCH_PVNN_POWER,
+};
+
+//Slave BMC Sensor List
+const uint8_t mb_slv_sensor_list[] = {
   MB_SNR_INLET_TEMP,
   MB_SNR_OUTLET_TEMP_R,
   MB_SNR_OUTLET_TEMP_L,
@@ -321,8 +449,7 @@ const uint8_t mb_8s_s_sensor_list[] = {
   MB_SNR_VR_PCH_PVNN_VOLT,
   MB_SNR_VR_PCH_PVNN_TEMP,
   MB_SNR_VR_PCH_PVNN_CURR,
-  MB_SNR_VR_PCH_PVNN_POWER,
- 
+  MB_SNR_VR_PCH_PVNN_POWER, 
 };
 
 const uint8_t mb_2s_sensor_list[] = {
@@ -604,7 +731,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x05
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x06
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x07
-  {"MB_PCH_TEMP", NM_ID0, read_NM_pch_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x08
+  {"MB_PCH_TEMP", NM_ID0, read_NM_pch_temp, false, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x08
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x09
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0A
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0B
@@ -613,8 +740,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x0F
 
-  {"NIC_MEZZ0_TEMP", MEZZ0, read_nic_temp, true, {98, 0, 0, 10, 0, 0, 0, 0}, TEMP},  //0x10
-  {"NIC_MEZZ1_TEMP", MEZZ1, read_nic_temp, true, {98, 0, 0, 10, 0, 0, 0, 0}, TEMP},  //0x11
+  {"NIC_MEZZ0_TEMP", MEZZ0, read_nic_temp, true, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP},  //0x10
+  {"NIC_MEZZ1_TEMP", MEZZ1, read_nic_temp, true, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP},  //0x11
   {"MB_BOOT_DRIVE_TEMP",  DISK_BOOT,  read_hd_temp, false, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x12
   {"MB_DATA0_DRIVE_TEMP", DISK_DATA0, read_hd_temp, false, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x13
   {"MB_DATA1_DRIVE_TEMP", DISK_DATA1, read_hd_temp, false, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x14
@@ -630,14 +757,14 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x1E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x1F
 
-  {"PDB_HSC_VIN",  CM_HSC_VIN,  read_cm_sensor, 1, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x20
-  {"PDB_HSC_IOUT", CM_HSC_IOUT, read_cm_sensor, 1, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x21
-  {"PDB_HSC_TEMP", CM_HSC_TEMP, read_cm_sensor, 1, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x22
-  {"PDB_HSC_PIN",  CM_HSC_PIN,  read_cm_sensor, 1, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x23
-  {"PDB_HSC_PEAK_IOUT", CM_HSC_PEAK_IOUT, read_cm_sensor, 1, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x24
-  {"PDB_HSC_PEAK_PIN",  CM_HSC_PEAK_PIN,  read_cm_sensor, 1, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x25
-  {"PDB_P12V", CM_P12V, read_cm_sensor, 1, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x26
-  {"PDB_P3V3", CM_P3V,  read_cm_sensor, 1, {3.47, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0x27
+  {"PDB_HSC_VIN",  CM_HSC_VIN,  read_cm_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x20
+  {"PDB_HSC_IOUT", CM_HSC_IOUT, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x21
+  {"PDB_HSC_TEMP", CM_HSC_TEMP, read_cm_sensor, true, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x22
+  {"PDB_HSC_PIN",  CM_HSC_PIN,  read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x23
+  {"PDB_HSC_PEAK_IOUT", CM_HSC_PEAK_IOUT, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x24
+  {"PDB_HSC_PEAK_PIN",  CM_HSC_PEAK_PIN,  read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x25
+  {"PDB_P12V", CM_P12V, read_cm_sensor, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x26
+  {"PDB_P3V3", CM_P3V,  read_cm_sensor, false, {3.47, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0x27
 
   {"MB_CPU0_TJMAX", CPU_ID0, read_cpu_tjmax, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x28
   {"MB_CPU1_TJMAX", CPU_ID1, read_cpu_tjmax, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x29
@@ -648,39 +775,39 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_CPU6_TJMAX", CPU_ID6, read_cpu_tjmax, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x2E
   {"MB_CPU7_TJMAX", CPU_ID7, read_cpu_tjmax, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x2F
 
-  {"MB_CPU0_PKG_POWER", CPU_ID0, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x30
-  {"MB_CPU1_PKG_POWER", CPU_ID1, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x31
-  {"MB_CPU2_PKG_POWER", CPU_ID2, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x32
-  {"MB_CPU3_PKG_POWER", CPU_ID3, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x33
-  {"MB_CPU4_PKG_POWER", CPU_ID4, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x34
-  {"MB_CPU5_PKG_POWER", CPU_ID5, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x35
-  {"MB_CPU6_PKG_POWER", CPU_ID6, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x36
-  {"MB_CPU7_PKG_POWER", CPU_ID7, read_cpu_pkg_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x37
+  {"MB_CPU0_PKG_POWER", CPU_ID0, read_cpu_pkg_pwr, false, {208, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x30
+  {"MB_CPU1_PKG_POWER", CPU_ID1, read_cpu_pkg_pwr, false, {208, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x31
+  {"MB_CPU2_PKG_POWER", CPU_ID2, read_cpu_pkg_pwr, false, {208, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x32
+  {"MB_CPU3_PKG_POWER", CPU_ID3, read_cpu_pkg_pwr, false, {208, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x33
+  {"MB_CPU4_PKG_POWER", CPU_ID4, read_cpu_pkg_pwr, false, {208, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x34
+  {"MB_CPU5_PKG_POWER", CPU_ID5, read_cpu_pkg_pwr, false, {208, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x35
+  {"MB_CPU6_PKG_POWER", CPU_ID6, read_cpu_pkg_pwr, false, {208, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x36
+  {"MB_CPU7_PKG_POWER", CPU_ID7, read_cpu_pkg_pwr, false, {208, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x37
 
-  {"MB_CPU0_THERM_MARGIN", CPU_ID0, read_cpu_thermal_margin, false, {-5, 0, 0, -70, 0, 0, 0, 0}, TEMP}, //0x38
-  {"MB_CPU1_THERM_MARGIN", CPU_ID1, read_cpu_thermal_margin, false, {-5, 0, 0, -70, 0, 0, 0, 0}, TEMP}, //0x39
-  {"MB_CPU2_THERM_MARGIN", CPU_ID2, read_cpu_thermal_margin, false, {-5, 0, 0, -70, 0, 0, 0, 0}, TEMP}, //0x3A
-  {"MB_CPU3_THERM_MARGIN", CPU_ID3, read_cpu_thermal_margin, false, {-5, 0, 0, -70, 0, 0, 0, 0}, TEMP}, //0x3B
-  {"MB_CPU4_THERM_MARGIN", CPU_ID4, read_cpu_thermal_margin, false, {-5, 0, 0, -70, 0, 0, 0, 0}, TEMP}, //0x3C
-  {"MB_CPU5_THERM_MARGIN", CPU_ID5, read_cpu_thermal_margin, false, {-5, 0, 0, -70, 0, 0, 0, 0}, TEMP}, //0x3D
-  {"MB_CPU6_THERM_MARGIN", CPU_ID6, read_cpu_thermal_margin, false, {-5, 0, 0, -70, 0, 0, 0, 0}, TEMP}, //0x3E
-  {"MB_CPU7_THERM_MARGIN", CPU_ID7, read_cpu_thermal_margin, false, {-5, 0, 0, -70, 0, 0, 0, 0}, TEMP}, //0x3F
+  {"MB_CPU0_THERM_MARGIN", CPU_ID0, read_cpu_thermal_margin, false, {-5, 0, 0, -81, 0, 0, 0, 0}, TEMP}, //0x38
+  {"MB_CPU1_THERM_MARGIN", CPU_ID1, read_cpu_thermal_margin, false, {-5, 0, 0, -81, 0, 0, 0, 0}, TEMP}, //0x39
+  {"MB_CPU2_THERM_MARGIN", CPU_ID2, read_cpu_thermal_margin, false, {-5, 0, 0, -81, 0, 0, 0, 0}, TEMP}, //0x3A
+  {"MB_CPU3_THERM_MARGIN", CPU_ID3, read_cpu_thermal_margin, false, {-5, 0, 0, -81, 0, 0, 0, 0}, TEMP}, //0x3B
+  {"MB_CPU4_THERM_MARGIN", CPU_ID4, read_cpu_thermal_margin, false, {-5, 0, 0, -81, 0, 0, 0, 0}, TEMP}, //0x3C
+  {"MB_CPU5_THERM_MARGIN", CPU_ID5, read_cpu_thermal_margin, false, {-5, 0, 0, -81, 0, 0, 0, 0}, TEMP}, //0x3D
+  {"MB_CPU6_THERM_MARGIN", CPU_ID6, read_cpu_thermal_margin, false, {-5, 0, 0, -81, 0, 0, 0, 0}, TEMP}, //0x3E
+  {"MB_CPU7_THERM_MARGIN", CPU_ID7, read_cpu_thermal_margin, false, {-5, 0, 0, -81, 0, 0, 0, 0}, TEMP}, //0x3F
   {"MB_HSC_VIN",   HSC_ID0, read_hsc_vin,  true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x40
   {"MB_HSC_IOUT",  HSC_ID0, read_hsc_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x41
   {"MB_HSC_PIN",   HSC_ID0, read_hsc_pin,  true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x42
-  {"MB_HSC_TEMP",  HSC_ID0, read_hsc_temp, true, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x43
+  {"MB_HSC_TEMP",  HSC_ID0, read_hsc_temp, true, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x43
   {"MB1_HSC_VIN",  HSC_ID1, read_hsc_vin,  true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x44
   {"MB1_HSC_IOUT", HSC_ID1, read_hsc_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x45
   {"MB1_HSC_PIN",  HSC_ID1, read_hsc_pin,  true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x46
-  {"MB1_HSC_TEMP", HSC_ID1, read_hsc_temp, true, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x47
+  {"MB1_HSC_TEMP", HSC_ID1, read_hsc_temp, true, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x47
   {"MB2_HSC_VIN",  HSC_ID2, read_hsc_vin,  true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x48
   {"MB2_HSC_IOUT", HSC_ID2, read_hsc_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x49
   {"MB2_HSC_PIN",  HSC_ID2, read_hsc_pin,  true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x4A
-  {"MB2_HSC_TEMP", HSC_ID2, read_hsc_temp, true, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x4B
+  {"MB2_HSC_TEMP", HSC_ID2, read_hsc_temp, true, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x4B
   {"MB3_HSC_VIN",  HSC_ID3, read_hsc_vin,  true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x4C
   {"MB3_HSC_IOUT", HSC_ID3, read_hsc_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x4D
   {"MB3_HSC_PIN",  HSC_ID3, read_hsc_pin,  true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x4E
-  {"MB3_HSC_TEMP", HSC_ID3, read_hsc_temp, true, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x4F
+  {"MB3_HSC_TEMP", HSC_ID3, read_hsc_temp, true, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x4F
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x50
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x51
@@ -695,19 +822,19 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5A
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5B
 
-  {"MB_P12V_STBY_INA260_VOL", INA260_ID0, read_ina260_vol, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x5C
+  {"MB_P12V_STBY_INA260_VOL", INA260_ID0, read_ina260_vol, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x5C
   {"MB_P3V3_M2_1_INA260_VOL", INA260_ID1, read_ina260_vol, false, {3.47, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0x5D
   {"MB_P3V3_M2_2_INA260_VOL", INA260_ID2, read_ina260_vol, false, {3.47, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0x5E
   {"MB_P3V3_M2_3_INA260_VOL", INA260_ID3, read_ina260_vol, false, {3.47, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0x5F
 
-  {"PDB_FAN0_INLET_SPEED", CM_FAN0_INLET_SPEED, read_cm_sensor, true, {12000, 0, 0, 1000, 0, 0, 0, 0}, FAN}, //0x60
-  {"PDB_FAN1_INLET_SPEED", CM_FAN1_INLET_SPEED, read_cm_sensor, true, {12000, 0, 0, 1000, 0, 0, 0, 0}, FAN}, //0x61
-  {"PDB_FAN2_INLET_SPEED", CM_FAN2_INLET_SPEED, read_cm_sensor, true, {12000, 0, 0, 1000, 0, 0, 0, 0}, FAN}, //0x62
-  {"PDB_FAN3_INLET_SPEED", CM_FAN3_INLET_SPEED, read_cm_sensor, true, {12000, 0, 0, 1000, 0, 0, 0, 0}, FAN}, //0x63
-  {"PDB_FAN0_OUTLET_SPEED", CM_FAN0_OUTLET_SPEED, read_cm_sensor, true, {11000, 0, 0, 1000, 0, 0, 0, 0}, FAN}, //0x64
-  {"PDB_FAN1_OUTLET_SPEED", CM_FAN1_OUTLET_SPEED, read_cm_sensor, true, {11000, 0, 0, 1000, 0, 0, 0, 0}, FAN}, //0x65
-  {"PDB_FAN2_OUTLET_SPEED", CM_FAN2_OUTLET_SPEED, read_cm_sensor, true, {11000, 0, 0, 1000, 0, 0, 0, 0}, FAN}, //0x66
-  {"PDB_FAN3_OUTLET_SPEED", CM_FAN3_OUTLET_SPEED, read_cm_sensor, true, {11000, 0, 0, 1000, 0, 0, 0, 0}, FAN}, //0x67
+  {"PDB_FAN0_INLET_SPEED", CM_FAN0_INLET_SPEED, read_cm_sensor, true, {11990, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x60
+  {"PDB_FAN1_INLET_SPEED", CM_FAN1_INLET_SPEED, read_cm_sensor, true, {11990, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x61
+  {"PDB_FAN2_INLET_SPEED", CM_FAN2_INLET_SPEED, read_cm_sensor, true, {11990, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x62
+  {"PDB_FAN3_INLET_SPEED", CM_FAN3_INLET_SPEED, read_cm_sensor, true, {11990, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x63
+  {"PDB_FAN0_OUTLET_SPEED", CM_FAN0_OUTLET_SPEED, read_cm_sensor, true, {10800, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x64
+  {"PDB_FAN1_OUTLET_SPEED", CM_FAN1_OUTLET_SPEED, read_cm_sensor, true, {10800, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x65
+  {"PDB_FAN2_OUTLET_SPEED", CM_FAN2_OUTLET_SPEED, read_cm_sensor, true, {10800, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x66
+  {"PDB_FAN3_OUTLET_SPEED", CM_FAN3_OUTLET_SPEED, read_cm_sensor, true, {10800, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x67
   {"PDB_FAN0_VOLT", CM_FAN0_VOLT, read_cm_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x68
   {"PDB_FAN1_VOLT", CM_FAN1_VOLT, read_cm_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x69
   {"PDB_FAN2_VOLT", CM_FAN2_VOLT, read_cm_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x6A
@@ -717,61 +844,61 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"PDB_FAN2_CURR", CM_FAN2_CURR, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6E
   {"PDB_FAN3_CURR", CM_FAN3_CURR, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6F
 
-  {"MB_CPU0_DIMM_A0_C0_TEMP", DIMM_CRPA, read_cpu0_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x70
-  {"MB_CPU0_DIMM_A1_C1_TEMP", DIMM_CRPB, read_cpu0_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x71
-  {"MB_CPU0_DIMM_A2_C2_TEMP", DIMM_CRPC, read_cpu0_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x72
-  {"MB_CPU0_DIMM_A3_C3_TEMP", DIMM_CRPD, read_cpu0_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x73
-  {"MB_CPU0_DIMM_A4_C4_TEMP", DIMM_CRPE, read_cpu0_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x74
-  {"MB_CPU0_DIMM_A5_C5_TEMP", DIMM_CRPF, read_cpu0_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x75
+  {"MB_CPU0_DIMM_A0_C0_TEMP", DIMM_CRPA, read_cpu0_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x70
+  {"MB_CPU0_DIMM_A1_C1_TEMP", DIMM_CRPB, read_cpu0_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x71
+  {"MB_CPU0_DIMM_A2_C2_TEMP", DIMM_CRPC, read_cpu0_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x72
+  {"MB_CPU0_DIMM_A3_C3_TEMP", DIMM_CRPD, read_cpu0_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x73
+  {"MB_CPU0_DIMM_A4_C4_TEMP", DIMM_CRPE, read_cpu0_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x74
+  {"MB_CPU0_DIMM_A5_C5_TEMP", DIMM_CRPF, read_cpu0_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x75
 
-  {"MB_CPU1_DIMM_B0_D0_TEMP", DIMM_CRPA, read_cpu1_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x76
-  {"MB_CPU1_DIMM_B1_D1_TEMP", DIMM_CRPB, read_cpu1_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x77
-  {"MB_CPU1_DIMM_B2_D2_TEMP", DIMM_CRPC, read_cpu1_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x78
-  {"MB_CPU1_DIMM_B3_D3_TEMP", DIMM_CRPD, read_cpu1_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x79
-  {"MB_CPU1_DIMM_B4_D4_TEMP", DIMM_CRPE, read_cpu1_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x7A
-  {"MB_CPU1_DIMM_B5_D5_TEMP", DIMM_CRPF, read_cpu1_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x7B
+  {"MB_CPU1_DIMM_B0_D0_TEMP", DIMM_CRPA, read_cpu1_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x76
+  {"MB_CPU1_DIMM_B1_D1_TEMP", DIMM_CRPB, read_cpu1_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x77
+  {"MB_CPU1_DIMM_B2_D2_TEMP", DIMM_CRPC, read_cpu1_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x78
+  {"MB_CPU1_DIMM_B3_D3_TEMP", DIMM_CRPD, read_cpu1_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x79
+  {"MB_CPU1_DIMM_B4_D4_TEMP", DIMM_CRPE, read_cpu1_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x7A
+  {"MB_CPU1_DIMM_B5_D5_TEMP", DIMM_CRPF, read_cpu1_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x7B
 
-  {"MB_CPU2_DIMM_A0_C0_TEMP", DIMM_CRPA, read_cpu2_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x7C
-  {"MB_CPU2_DIMM_A1_C1_TEMP", DIMM_CRPB, read_cpu2_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x7D
-  {"MB_CPU2_DIMM_A2_C2_TEMP", DIMM_CRPC, read_cpu2_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x7E
-  {"MB_CPU2_DIMM_A3_C3_TEMP", DIMM_CRPD, read_cpu2_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x7F
-  {"MB_CPU2_DIMM_A4_C4_TEMP", DIMM_CRPE, read_cpu2_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x80
-  {"MB_CPU2_DIMM_A5_C5_TEMP", DIMM_CRPF, read_cpu2_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x81
+  {"MB_CPU2_DIMM_A0_C0_TEMP", DIMM_CRPA, read_cpu2_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x7C
+  {"MB_CPU2_DIMM_A1_C1_TEMP", DIMM_CRPB, read_cpu2_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x7D
+  {"MB_CPU2_DIMM_A2_C2_TEMP", DIMM_CRPC, read_cpu2_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x7E
+  {"MB_CPU2_DIMM_A3_C3_TEMP", DIMM_CRPD, read_cpu2_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x7F
+  {"MB_CPU2_DIMM_A4_C4_TEMP", DIMM_CRPE, read_cpu2_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x80
+  {"MB_CPU2_DIMM_A5_C5_TEMP", DIMM_CRPF, read_cpu2_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x81
 
-  {"MB_CPU3_DIMM_B0_D0_TEMP", DIMM_CRPA, read_cpu3_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x82
-  {"MB_CPU3_DIMM_B1_D1_TEMP", DIMM_CRPB, read_cpu3_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x83
-  {"MB_CPU3_DIMM_B2_D2_TEMP", DIMM_CRPC, read_cpu3_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x84
-  {"MB_CPU3_DIMM_B3_D3_TEMP", DIMM_CRPD, read_cpu3_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x85
-  {"MB_CPU3_DIMM_B4_D4_TEMP", DIMM_CRPE, read_cpu3_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x86
-  {"MB_CPU3_DIMM_B5_D5_TEMP", DIMM_CRPF, read_cpu3_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x87
+  {"MB_CPU3_DIMM_B0_D0_TEMP", DIMM_CRPA, read_cpu3_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x82
+  {"MB_CPU3_DIMM_B1_D1_TEMP", DIMM_CRPB, read_cpu3_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x83
+  {"MB_CPU3_DIMM_B2_D2_TEMP", DIMM_CRPC, read_cpu3_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x84
+  {"MB_CPU3_DIMM_B3_D3_TEMP", DIMM_CRPD, read_cpu3_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x85
+  {"MB_CPU3_DIMM_B4_D4_TEMP", DIMM_CRPE, read_cpu3_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x86
+  {"MB_CPU3_DIMM_B5_D5_TEMP", DIMM_CRPF, read_cpu3_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x87
 
-  {"MB_CPU4_DIMM_A0_C0_TEMP", DIMM_CRPA, read_cpu4_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x88
-  {"MB_CPU4_DIMM_A1_C1_TEMP", DIMM_CRPB, read_cpu4_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x89
-  {"MB_CPU4_DIMM_A2_C2_TEMP", DIMM_CRPC, read_cpu4_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x8A
-  {"MB_CPU4_DIMM_A3_C3_TEMP", DIMM_CRPD, read_cpu4_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x8B
-  {"MB_CPU4_DIMM_A4_C4_TEMP", DIMM_CRPE, read_cpu4_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x8C
-  {"MB_CPU4_DIMM_A5_C5_TEMP", DIMM_CRPF, read_cpu4_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x8D
+  {"MB_CPU4_DIMM_A0_C0_TEMP", DIMM_CRPA, read_cpu4_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x88
+  {"MB_CPU4_DIMM_A1_C1_TEMP", DIMM_CRPB, read_cpu4_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x89
+  {"MB_CPU4_DIMM_A2_C2_TEMP", DIMM_CRPC, read_cpu4_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x8A
+  {"MB_CPU4_DIMM_A3_C3_TEMP", DIMM_CRPD, read_cpu4_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x8B
+  {"MB_CPU4_DIMM_A4_C4_TEMP", DIMM_CRPE, read_cpu4_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x8C
+  {"MB_CPU4_DIMM_A5_C5_TEMP", DIMM_CRPF, read_cpu4_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x8D
 
-  {"MB_CPU5_DIMM_B0_D0_TEMP", DIMM_CRPA, read_cpu5_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x8E
-  {"MB_CPU5_DIMM_B1_D1_TEMP", DIMM_CRPB, read_cpu5_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x8F
-  {"MB_CPU5_DIMM_B2_D2_TEMP", DIMM_CRPC, read_cpu5_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x90
-  {"MB_CPU5_DIMM_B3_D3_TEMP", DIMM_CRPD, read_cpu5_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x91
-  {"MB_CPU5_DIMM_B4_D4_TEMP", DIMM_CRPE, read_cpu5_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x92
-  {"MB_CPU5_DIMM_B5_D5_TEMP", DIMM_CRPF, read_cpu5_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x93
+  {"MB_CPU5_DIMM_B0_D0_TEMP", DIMM_CRPA, read_cpu5_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x8E
+  {"MB_CPU5_DIMM_B1_D1_TEMP", DIMM_CRPB, read_cpu5_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x8F
+  {"MB_CPU5_DIMM_B2_D2_TEMP", DIMM_CRPC, read_cpu5_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x90
+  {"MB_CPU5_DIMM_B3_D3_TEMP", DIMM_CRPD, read_cpu5_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x91
+  {"MB_CPU5_DIMM_B4_D4_TEMP", DIMM_CRPE, read_cpu5_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x92
+  {"MB_CPU5_DIMM_B5_D5_TEMP", DIMM_CRPF, read_cpu5_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x93
 
-  {"MB_CPU6_DIMM_A0_C0_TEMP", DIMM_CRPA, read_cpu6_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x94
-  {"MB_CPU6_DIMM_A1_C1_TEMP", DIMM_CRPB, read_cpu6_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x95
-  {"MB_CPU6_DIMM_A2_C2_TEMP", DIMM_CRPC, read_cpu6_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x96
-  {"MB_CPU6_DIMM_A3_C3_TEMP", DIMM_CRPD, read_cpu6_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x97
-  {"MB_CPU6_DIMM_A4_C4_TEMP", DIMM_CRPE, read_cpu6_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x98
-  {"MB_CPU6_DIMM_A5_C5_TEMP", DIMM_CRPF, read_cpu6_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x99
+  {"MB_CPU6_DIMM_A0_C0_TEMP", DIMM_CRPA, read_cpu6_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x94
+  {"MB_CPU6_DIMM_A1_C1_TEMP", DIMM_CRPB, read_cpu6_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x95
+  {"MB_CPU6_DIMM_A2_C2_TEMP", DIMM_CRPC, read_cpu6_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x96
+  {"MB_CPU6_DIMM_A3_C3_TEMP", DIMM_CRPD, read_cpu6_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x97
+  {"MB_CPU6_DIMM_A4_C4_TEMP", DIMM_CRPE, read_cpu6_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x98
+  {"MB_CPU6_DIMM_A5_C5_TEMP", DIMM_CRPF, read_cpu6_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x99
 
-  {"MB_CPU7_DIMM_B0_D0_TEMP", DIMM_CRPA, read_cpu7_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9A
-  {"MB_CPU7_DIMM_B1_D1_TEMP", DIMM_CRPB, read_cpu7_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9B
-  {"MB_CPU7_DIMM_B2_D2_TEMP", DIMM_CRPC, read_cpu7_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9C
-  {"MB_CPU7_DIMM_B3_D3_TEMP", DIMM_CRPD, read_cpu7_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9D
-  {"MB_CPU7_DIMM_B4_D4_TEMP", DIMM_CRPE, read_cpu7_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9E
-  {"MB_CPU7_DIMM_B5_D5_TEMP", DIMM_CRPF, read_cpu7_dimm_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9F
+  {"MB_CPU7_DIMM_B0_D0_TEMP", DIMM_CRPA, read_cpu7_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9A
+  {"MB_CPU7_DIMM_B1_D1_TEMP", DIMM_CRPB, read_cpu7_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9B
+  {"MB_CPU7_DIMM_B2_D2_TEMP", DIMM_CRPC, read_cpu7_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9C
+  {"MB_CPU7_DIMM_B3_D3_TEMP", DIMM_CRPD, read_cpu7_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9D
+  {"MB_CPU7_DIMM_B4_D4_TEMP", DIMM_CRPE, read_cpu7_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9E
+  {"MB_CPU7_DIMM_B5_D5_TEMP", DIMM_CRPF, read_cpu7_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9F
   {"MB_INLET_TEMP",    TEMP_INLET,    read_sensor, true, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA0
   {"MB_OUTLET_TEMP_R", TEMP_OUTLET_R, read_sensor, true, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA1
   {"MB_OUTLET_TEMP_L", TEMP_OUTLET_L, read_sensor, true, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA2
@@ -780,43 +907,43 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_OUTLET_L_REMOTE_TEMP", TEMP_REMOTE_OUTLET_L, read_sensor, true, {75, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA5
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA6
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA7
-  {"MB_CPU0_TEMP", CPU_ID0, read_cpu_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA8
-  {"MB_CPU1_TEMP", CPU_ID1, read_cpu_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA9
-  {"MB_CPU2_TEMP", CPU_ID2, read_cpu_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAA
-  {"MB_CPU3_TEMP", CPU_ID3, read_cpu_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAB
-  {"MB_CPU4_TEMP", CPU_ID4, read_cpu_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAC
-  {"MB_CPU5_TEMP", CPU_ID5, read_cpu_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAD
-  {"MB_CPU6_TEMP", CPU_ID6, read_cpu_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAE
-  {"MB_CPU7_TEMP", CPU_ID7, read_cpu_temp, false, {80, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAF
+  {"MB_CPU0_TEMP", CPU_ID0, read_cpu_temp, false, {94, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA8
+  {"MB_CPU1_TEMP", CPU_ID1, read_cpu_temp, false, {94, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA9
+  {"MB_CPU2_TEMP", CPU_ID2, read_cpu_temp, false, {94, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAA
+  {"MB_CPU3_TEMP", CPU_ID3, read_cpu_temp, false, {94, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAB
+  {"MB_CPU4_TEMP", CPU_ID4, read_cpu_temp, false, {94, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAC
+  {"MB_CPU5_TEMP", CPU_ID5, read_cpu_temp, false, {94, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAD
+  {"MB_CPU6_TEMP", CPU_ID6, read_cpu_temp, false, {94, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAE
+  {"MB_CPU7_TEMP", CPU_ID7, read_cpu_temp, false, {94, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAF
 
   {"MB_VR_CPU0_VCCIN_VOUT", VR_ID0, read_vr_vout, false, {2.1, 0, 0, 1.33, 0, 0, 0, 0}, VOLT}, //0xB0
-  {"MB_VR_CPU0_VCCIN_TEMP", VR_ID0, read_vr_temp, false, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xB1
+  {"MB_VR_CPU0_VCCIN_TEMP", VR_ID0, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xB1
   {"MB_VR_CPU0_VCCIN_IOUT", VR_ID0, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XB2
   {"MB_VR_CPU0_VCCIN_POUT", VR_ID0, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB3
   {"MB_VR_CPU0_VCCSA_VOUT", VR_ID1, read_vr_vout, false, {1.25, 0, 0, 0.44, 0, 0, 0, 0}, VOLT}, //0xB4
-  {"MB_VR_CPU0_VCCSA_TEMP", VR_ID1, read_vr_temp, false, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xB5
+  {"MB_VR_CPU0_VCCSA_TEMP", VR_ID1, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xB5
   {"MB_VR_CPU0_VCCSA_IOUT", VR_ID1, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XB6
   {"MB_VR_CPU0_VCCSA_POUT", VR_ID1, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB7
   {"MB_VR_CPU0_VCCIO_VOUT", VR_ID2, read_vr_vout, false, {1.25, 0, 0, 0.85, 0, 0, 0, 0}, VOLT}, //0xB8
-  {"MB_VR_CPU0_VCCIO_TEMP", VR_ID2, read_vr_temp, false, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xB9
+  {"MB_VR_CPU0_VCCIO_TEMP", VR_ID2, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xB9
   {"MB_VR_CPU0_VCCIO_IOUT", VR_ID2, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XBA
   {"MB_VR_CPU0_VCCIO_POUT", VR_ID2, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xBB
   {"MB_VR_CPU0_VDDQ_ABC_VOUT", VR_ID3, read_vr_vout, false, {1.4, 0, 0, 1.13, 0, 0, 0, 0}, VOLT}, //0xBC
-  {"MB_VR_CPU0_VDDQ_ABC_TEMP", VR_ID3, read_vr_temp, false, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xBD
+  {"MB_VR_CPU0_VDDQ_ABC_TEMP", VR_ID3, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xBD
   {"MB_VR_CPU0_VDDQ_ABC_IOUT", VR_ID3, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XBE
   {"MB_VR_CPU0_VDDQ_ABC_POUT", VR_ID3, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xBF
 
   {"MB_VR_CPU0_VDDQ_DEF_VOUT", VR_ID4, read_vr_vout, false, {1.4, 0, 0, 1.13, 0, 0, 0, 0}, VOLT}, //0xC0
-  {"MB_VR_CPU0_VDDQ_DEF_TEMP", VR_ID4, read_vr_temp, false, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xC1
+  {"MB_VR_CPU0_VDDQ_DEF_TEMP", VR_ID4, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xC1
   {"MB_VR_CPU0_VDDQ_DEF_IOUT", VR_ID4, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XC2
   {"MB_VR_CPU0_VDDQ_DEF_POUT", VR_ID4, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xC3
   {"MB_VR_PCH_P1V05_VOLT", VR_ID10, read_vr_vout, true, {1.2, 0, 0, 1.01, 0, 0, 0, 0}, VOLT}, //0xC4
-  {"MB_VR_PCH_P1V05_TEMP", VR_ID10, read_vr_temp, true, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xC5
+  {"MB_VR_PCH_P1V05_TEMP", VR_ID10, read_vr_temp, true, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xC5
   {"MB_VR_PCH_P1V05_IOUT", VR_ID10, read_vr_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC6
   {"MB_VR_PCH_P1V05_POUT", VR_ID10, read_vr_pout, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xC7
 
   {"MB_VR_PCH_PVNN_VOLT", VR_ID11, read_vr_vout, true, {1.2, 0, 0, 0.80, 0, 0, 0, 0}, VOLT}, //0xC8
-  {"MB_VR_PCH_PVNN_TEMP", VR_ID11, read_vr_temp, true, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xC9
+  {"MB_VR_PCH_PVNN_TEMP", VR_ID11, read_vr_temp, true, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xC9
   {"MB_VR_PCH_PVNN_IOUT", VR_ID11, read_vr_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xCA
   {"MB_VR_PCH_PVNN_POUT", VR_ID11, read_vr_pout, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
@@ -828,7 +955,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_P5V_STBY",  ADC1, read_adc_val, true,  {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0xD1
   {"MB_P3V3_STBY", ADC2, read_adc_val, true,  {3.47, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0xD2
   {"MB_P3V3",      ADC3, read_adc_val, false, {3.47, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0xD3
-  {"MB_P3V_BAT",   ADC4, read_battery_val, false, {3.4, 0, 0, 2.6, 0, 0, 0, 0}, VOLT}, //0xD4
+  {"MB_P3V_BAT",   ADC4, read_battery_val, true, {3.4, 0, 0, 2.6, 0, 0, 0, 0}, VOLT}, //0xD4
   {"MB_CPU_P1V8",   ADC5, read_adc_val, false, {1.89, 0, 0, 1.71, 0, 0, 0, 0}, VOLT}, //0xD5
   {"MB_PCH_P1V8",   ADC6, read_adc_val, false, {1.89, 0, 0, 1.71, 0, 0, 0, 0}, VOLT}, //0xD6
   {"MB_CPU0_PVPP_ABC", ADC7,  read_adc_val, false, {2.75, 0, 0, 2.38, 0, 0, 0, 0}, VOLT}, //0xD7
@@ -842,24 +969,24 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_PROCESSOR_FAIL", FRU_MB, read_frb3, 0, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xDF
 
   {"MB_VR_CPU1_VCCIN_VOUT", VR_ID5, read_vr_vout, false, {2.1, 0, 0, 1.33, 0, 0, 0, 0}, VOLT}, //0xE0
-  {"MB_VR_CPU1_VCCIN_TEMP", VR_ID5, read_vr_temp, false, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xE1
+  {"MB_VR_CPU1_VCCIN_TEMP", VR_ID5, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xE1
   {"MB_VR_CPU1_VCCIN_IOUT", VR_ID5, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XE2
   {"MB_VR_CPU1_VCCIN_POUT", VR_ID5, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xE3
   {"MB_VR_CPU1_VCCSA_VOUT", VR_ID6, read_vr_vout, false, {1.25, 0, 0, 0.44, 0, 0, 0, 0}, VOLT}, //0xE4
-  {"MB_VR_CPU1_VCCSA_TEMP", VR_ID6, read_vr_temp, false, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xE5
+  {"MB_VR_CPU1_VCCSA_TEMP", VR_ID6, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xE5
   {"MB_VR_CPU1_VCCSA_IOUT", VR_ID6, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XE6
   {"MB_VR_CPU1_VCCSA_POUT", VR_ID6, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xE7
   {"MB_VR_CPU1_VCCIO_VOUT", VR_ID7, read_vr_vout, false, {1.25, 0, 0, 0.85, 0, 0, 0, 0}, VOLT}, //0xE8
-  {"MB_VR_CPU1_VCCIO_TEMP", VR_ID7, read_vr_temp, false, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xE9
+  {"MB_VR_CPU1_VCCIO_TEMP", VR_ID7, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xE9
   {"MB_VR_CPU1_VCCIO_IOUT", VR_ID7, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XEA
   {"MB_VR_CPU1_VCCIO_POUT", VR_ID7, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xEB
   {"MB_VR_CPU1_VDDQ_ABC_VOUT", VR_ID8, read_vr_vout, false, {1.4, 0, 0, 1.13, 0, 0, 0, 0}, VOLT}, //0xEC
-  {"MB_VR_CPU1_VDDQ_ABC_TEMP", VR_ID8, read_vr_temp, false, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xED
+  {"MB_VR_CPU1_VDDQ_ABC_TEMP", VR_ID8, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xED
   {"MB_VR_CPU1_VDDQ_ABC_IOUT", VR_ID8, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XEE
   {"MB_VR_CPU1_VDDQ_ABC_POUT", VR_ID8, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xEF
 
   {"MB_VR_CPU1_VDDQ_DEF_VOUT", VR_ID9, read_vr_vout, false, {1.4, 0, 0, 1.13, 0, 0, 0, 0}, VOLT}, //0xF0
-  {"MB_VR_CPU1_VDDQ_DEF_TEMP", VR_ID9, read_vr_temp, false, {100, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xF1
+  {"MB_VR_CPU1_VDDQ_DEF_TEMP", VR_ID9, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xF1
   {"MB_VR_CPU1_VDDQ_DEF_IOUT", VR_ID9, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XF2
   {"MB_VR_CPU1_VDDQ_DEF_POUT", VR_ID9, read_vr_pout, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF3
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF4
@@ -877,7 +1004,8 @@ PAL_SENSOR_MAP sensor_map[] = {
 };
 
 size_t mb_8s_m_sensor_cnt = sizeof(mb_8s_m_sensor_list)/sizeof(uint8_t);
-size_t mb_8s_s_sensor_cnt = sizeof(mb_8s_s_sensor_list)/sizeof(uint8_t);
+size_t mb_4s_m_sensor_cnt = sizeof(mb_4s_m_sensor_list)/sizeof(uint8_t);
+size_t mb_slv_sensor_cnt = sizeof(mb_slv_sensor_list)/sizeof(uint8_t);
 size_t mb_2s_sensor_cnt = sizeof(mb_2s_sensor_list)/sizeof(uint8_t);
 size_t nic0_sensor_cnt = sizeof(nic0_sensor_list)/sizeof(uint8_t);
 size_t nic1_sensor_cnt = sizeof(nic1_sensor_list)/sizeof(uint8_t);
@@ -904,6 +1032,66 @@ static struct fsc_monitor fsc_2s_snr_list[] =
   {MB_SNR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_b3_d3_temp", NULL, false, 80, 5},
   {MB_SNR_CPU1_DIMM_GRPE_TEMP, "mb_cpu1_dimm_b4_d4_temp", NULL, false, 80, 5},
   {MB_SNR_CPU1_DIMM_GRPF_TEMP, "mb_cpu1_dimm_b5_d5_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VCCIN_TEMP, "mb_cpu0_vr_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VSA_TEMP,   "mb_cpu0_vr_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VCCIO_TEMP, "mb_cpu0_vr_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPABC_TEMP, "mb_cpu0_vr_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPDEF_TEMP, "mb_cpu0_vr_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIN_TEMP, "mb_cpu1_vr_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VSA_TEMP,   "mb_cpu1_vr_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIO_TEMP, "mb_cpu1_vr_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPABC_TEMP, "mb_cpu1_vr_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP, "mb_cpu1_vr_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_P1V05_TEMP, "mb_pch_vr_p1v05_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_PVNN_TEMP, "mb_pch_vr_pvnn_temp", NULL, false, 80, 5},
+};
+
+static struct fsc_monitor fsc_4s_master_snr_list[] =
+{
+  {MB_SNR_INLET_TEMP         , "mb_inlet_temp"        , NULL, false, 5, 5},
+  {MB_SNR_CPU0_THERM_MARGIN  , "mb_cpu0_therm_margin" , NULL, false, 5, 5},
+  {MB_SNR_CPU1_THERM_MARGIN  , "mb_cpu1_therm_margin" , NULL, false, 5, 5},
+  {MB_SNR_CPU2_THERM_MARGIN  , "mb_cpu2_therm_margin" , NULL, false, 5, 5},
+  {MB_SNR_CPU3_THERM_MARGIN  , "mb_cpu3_therm_margin" , NULL, false, 5, 5},
+  {NIC_MEZZ0_SNR_TEMP        , "nic_mezz0_temp"       , pal_is_nic_prsnt, false, 5, 5},
+  {NIC_MEZZ1_SNR_TEMP        , "nic_mezz1_temp"       , pal_is_nic_prsnt, false, 5, 5},
+  //dimm sensors wait for 240s. 240=80*3(fsc monitor interval)
+  {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a0_c0_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_a1_c1_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPC_TEMP, "mb_cpu0_dimm_a2_c2_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPD_TEMP, "mb_cpu0_dimm_a3_c3_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPE_TEMP, "mb_cpu0_dimm_a4_c4_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPF_TEMP, "mb_cpu0_dimm_a5_c5_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPA_TEMP, "mb_cpu1_dimm_b0_d0_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPB_TEMP, "mb_cpu1_dimm_b1_d1_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPC_TEMP, "mb_cpu1_dimm_b2_d2_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_b3_d3_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPE_TEMP, "mb_cpu1_dimm_b4_d4_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPF_TEMP, "mb_cpu1_dimm_b5_d5_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPA_TEMP, "mb_cpu2_dimm_a0_c0_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPB_TEMP, "mb_cpu2_dimm_a1_c1_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPC_TEMP, "mb_cpu2_dimm_a2_c2_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPD_TEMP, "mb_cpu2_dimm_a3_c3_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPE_TEMP, "mb_cpu2_dimm_a4_c4_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPF_TEMP, "mb_cpu2_dimm_a5_c5_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPA_TEMP, "mb_cpu3_dimm_b0_d0_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPB_TEMP, "mb_cpu3_dimm_b1_d1_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPC_TEMP, "mb_cpu3_dimm_b2_d2_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPD_TEMP, "mb_cpu3_dimm_b3_d3_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPE_TEMP, "mb_cpu3_dimm_b4_d4_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPF_TEMP, "mb_cpu3_dimm_b5_d5_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VCCIN_TEMP, "mb_cpu0_vr_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VSA_TEMP,   "mb_cpu0_vr_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VCCIO_TEMP, "mb_cpu0_vr_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPABC_TEMP, "mb_cpu0_vr_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPDEF_TEMP, "mb_cpu0_vr_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIN_TEMP, "mb_cpu1_vr_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VSA_TEMP,   "mb_cpu1_vr_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIO_TEMP, "mb_cpu1_vr_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPABC_TEMP, "mb_cpu1_vr_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP, "mb_cpu1_vr_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_P1V05_TEMP, "mb_pch_vr_p1v05_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_PVNN_TEMP, "mb_pch_vr_pvnn_temp", NULL, false, 80, 5},
 };
 
 static struct fsc_monitor fsc_8s_master_snr_list[] =
@@ -968,19 +1156,43 @@ static struct fsc_monitor fsc_8s_master_snr_list[] =
   {MB_SNR_CPU7_DIMM_GRPD_TEMP, "mb_cpu7_dimm_b3_d3_temp", NULL, false, 80, 5},
   {MB_SNR_CPU7_DIMM_GRPE_TEMP, "mb_cpu7_dimm_b4_d4_temp", NULL, false, 80, 5},
   {MB_SNR_CPU7_DIMM_GRPF_TEMP, "mb_cpu7_dimm_b5_d5_temp", NULL, false, 80, 5},
-
+  {MB_SNR_VR_CPU0_VCCIN_TEMP, "mb_cpu0_vr_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VSA_TEMP,   "mb_cpu0_vr_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VCCIO_TEMP, "mb_cpu0_vr_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPABC_TEMP, "mb_cpu0_vr_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPDEF_TEMP, "mb_cpu0_vr_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIN_TEMP, "mb_cpu1_vr_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VSA_TEMP,   "mb_cpu1_vr_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIO_TEMP, "mb_cpu1_vr_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPABC_TEMP, "mb_cpu1_vr_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP, "mb_cpu1_vr_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_P1V05_TEMP, "mb_pch_vr_p1v05_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_PVNN_TEMP, "mb_pch_vr_pvnn_temp", NULL, false, 80, 5},
 };
 
-static struct fsc_monitor fsc_8s_slave_snr_list[] =
+static struct fsc_monitor fsc_slave_snr_list[] =
 {
   {MB_SNR_INLET_TEMP,  "mb_inlet_temp",  NULL, false, 5, 5},
   {NIC_MEZZ0_SNR_TEMP, "nic_mezz0_temp", pal_is_nic_prsnt, false, 5, 5},
   {NIC_MEZZ1_SNR_TEMP, "nic_mezz1_temp", pal_is_nic_prsnt, false, 5, 5},
+  {MB_SNR_VR_CPU0_VCCIN_TEMP, "mb_cpu0_vr_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VSA_TEMP,   "mb_cpu0_vr_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VCCIO_TEMP, "mb_cpu0_vr_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPABC_TEMP, "mb_cpu0_vr_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPDEF_TEMP, "mb_cpu0_vr_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIN_TEMP, "mb_cpu1_vr_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VSA_TEMP,   "mb_cpu1_vr_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIO_TEMP, "mb_cpu1_vr_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPABC_TEMP, "mb_cpu1_vr_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP, "mb_cpu1_vr_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_P1V05_TEMP, "mb_pch_vr_p1v05_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_PVNN_TEMP, "mb_pch_vr_pvnn_temp", NULL, false, 80, 5},
 };
 
-static int fsc_2s_snr_list_size = sizeof(fsc_2s_snr_list) / sizeof(struct fsc_monitor);
-static int fsc_8s_slave_snr_list_size = sizeof(fsc_8s_slave_snr_list) / sizeof(struct fsc_monitor);
 static int fsc_8s_master_snr_list_size = sizeof(fsc_8s_master_snr_list) / sizeof(struct fsc_monitor);
+static int fsc_4s_master_snr_list_size = sizeof(fsc_4s_master_snr_list) / sizeof(struct fsc_monitor);
+static int fsc_2s_snr_list_size = sizeof(fsc_2s_snr_list) / sizeof(struct fsc_monitor);
+static int fsc_slave_snr_list_size = sizeof(fsc_slave_snr_list) / sizeof(struct fsc_monitor);
 
 int
 pal_fsc_get_target_snr(char *sname, struct fsc_monitor *fsc_fru_list, int fsc_fru_list_size)
@@ -1007,6 +1219,7 @@ pal_sensor_is_valid(char *fru_name, char *sensor_name)
   int fsc_fru_list_size;
   int ret;
   uint8_t mode;
+  uint8_t master = pal_get_config_is_master();
 
   //check the fru name is valid or not
   ret = pal_get_fru_id(fru_name, &fru_id);
@@ -1021,17 +1234,22 @@ pal_sensor_is_valid(char *fru_name, char *sensor_name)
     return false; 
   } 
 
-  if( mode == MB_8S_MODE ) {
-    if(pal_get_config_is_master()) {
-      fsc_fru_list = fsc_8s_master_snr_list;
-      fsc_fru_list_size = fsc_8s_master_snr_list_size;
-    } else {
-      fsc_fru_list = fsc_8s_slave_snr_list;
-      fsc_fru_list_size = fsc_8s_slave_snr_list_size;
-    }
-  } else {
+  if( mode == MB_2S_MODE ) {
+    //2S Master
     fsc_fru_list = fsc_2s_snr_list;
     fsc_fru_list_size = fsc_2s_snr_list_size;
+  } else if(mode == MB_4S_MODE && master ==true) {
+    //4S Master
+    fsc_fru_list = fsc_4s_master_snr_list;
+    fsc_fru_list_size = fsc_4s_master_snr_list_size;
+  } else if(mode == MB_8S_MODE && master ==true) {
+    //8S Master
+    fsc_fru_list = fsc_8s_master_snr_list;
+    fsc_fru_list_size = fsc_8s_master_snr_list_size;
+  } else {
+    //Slave
+    fsc_fru_list = fsc_slave_snr_list;
+    fsc_fru_list_size = fsc_slave_snr_list_size;
   }
   //get the target sensor
   ret = pal_fsc_get_target_snr(sensor_name, fsc_fru_list, fsc_fru_list_size);
@@ -1061,14 +1279,18 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       //2S Mode
       *sensor_list = (uint8_t *) mb_2s_sensor_list;
       *cnt = mb_2s_sensor_cnt;
-    } else if (master == true) {
+    } else if(mode == MB_4S_MODE && master == true) {
+      //4S Master Mode
+      *sensor_list = (uint8_t *) mb_4s_m_sensor_list;
+      *cnt = mb_4s_m_sensor_cnt;      
+    } else if(mode == MB_8S_MODE && master == true) {
       //8S Master Mode
       *sensor_list = (uint8_t *) mb_8s_m_sensor_list;
-      *cnt = mb_8s_m_sensor_cnt;      
+      *cnt = mb_8s_m_sensor_cnt;
     } else {
-      //8S Slave Mode
-      *sensor_list = (uint8_t *) mb_8s_s_sensor_list;
-      *cnt = mb_8s_s_sensor_cnt;
+      //8S or 4S Slave Mode
+      *sensor_list = (uint8_t *) mb_slv_sensor_list;
+      *cnt = mb_slv_sensor_cnt;
     }
     break;
 

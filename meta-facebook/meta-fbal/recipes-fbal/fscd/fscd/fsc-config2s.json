@@ -1,5 +1,5 @@
 {
-    "version": "fbal-r01",
+    "version": "fbal-r03",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -24,24 +24,40 @@
         },
         "type": "linear",
         "data": [
-          [60, 20],
-          [65, 25],
-          [70, 30]
+          [60, 8],
+          [65, 10],
+          [70, 13],
+          [73, 15]
         ]
       },
+      "pid_dimm": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 1,      
+        "negative_hysteresis": 2,
+        "setpoint": 77,
+        "kp": -2,
+        "ki": -0.035,
+        "kd": 0
+      }, 
       "linear_mezz": {
         "read_source" : {
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
-        "positive_hysteresis":1,
-        "negative_hysteresis":1,
         "data": [
+          [65, 8],
           [70, 10],
-          [75, 20],
-          [80, 30],
-          [85, 40],
-          [90, 50]
+          [72, 13],
+          [75, 15],
+          [78, 18],
+          [80, 20],
+          [83, 25],
+          [85, 30],
+          [90, 35],
+          [95, 60]
         ]
       },
       "linear_inlet": {
@@ -50,25 +66,36 @@
         },
         "type": "linear",
         "data": [
-          [20, 10],
-          [25, 25],
-          [30, 30],
-          [35, 35],
-          [38, 50],
-          [40, 80]
+          [25, 10],
+          [30, 10],
+          [35, 15],
+          [38, 25],
+          [40, 70]
         ]
       },
+      "linear_vr": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "data": [
+          [70, 20],
+          [75, 25],
+          [80, 30],
+          [85, 35],
+          [90, 60],
+          [95, 65]
+        ]
+      }, 
       "linear_cpu_margin": {
         "read_source" : {
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
         "data": [
-          [-50, 5],
-          [-40, 10],
-          [-30, 15],
-          [-20, 20],
-          [-13, 25]
+          [-20, 10],
+          [-18, 12],
+          [-15, 15]
         ]
       },
       "pid_cpu_margin": {
@@ -77,11 +104,11 @@
         },
         "type": "pid",
         "setpoint": -10,
-        "negative_hysteresis": 2,
         "positive_hysteresis": 1,
-        "kp": 3.5,
-        "ki": 0.4,
-        "kd": 0.4
+        "negative_hysteresis": 2,
+        "kp": -1.25,
+        "ki": -0.035,
+        "kd": 0
       }
     },
     "fans": {

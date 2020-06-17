@@ -1,0 +1,17 @@
+max([
+  linear_inlet(mb:mb_inlet_temp),
+  linear_vr(mb:mb_cpu0_vr_vccin_temp),
+  linear_vr(mb:mb_cpu0_vr_vccsa_temp),
+  linear_vr(mb:mb_cpu0_vr_vccio_temp),
+  linear_vr(mb:mb_cpu0_vr_vddq_abc_temp),
+  linear_vr(mb:mb_cpu0_vr_vddq_def_temp),
+  linear_vr(mb:mb_cpu1_vr_vccin_temp),
+  linear_vr(mb:mb_cpu1_vr_vccsa_temp),
+  linear_vr(mb:mb_cpu1_vr_vccio_temp),
+  linear_vr(mb:mb_cpu1_vr_vddq_abc_temp),
+  linear_vr(mb:mb_cpu1_vr_vddq_def_temp),
+  linear_vr(mb:mb_pch_vr_p1v05_temp),
+  linear_vr(mb:mb_pch_vr_pvnn_temp),
+  linear_mezz(nic0:nic_mezz0_temp),
+  linear_mezz(nic1:nic_mezz1_temp)
+])

@@ -1,5 +1,0 @@
-max([
-  linear_inlet(mb:mb_inlet_temp),
-  linear_mezz(nic0:nic_mezz0_temp),
-  linear_mezz(nic1:nic_mezz1_temp)
-])

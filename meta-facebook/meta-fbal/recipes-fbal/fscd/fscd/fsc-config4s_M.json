@@ -35,13 +35,13 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "pid",
-        "positive_hysteresis": 1, 
+        "positive_hysteresis": 1,
         "negative_hysteresis": 2,      
         "setpoint": 77,
         "kp": -2,
         "ki": -0.035,
         "kd": 0
-      },    
+      },
       "linear_mezz": {
         "read_source" : {
           "util" : "/usr/local/bin/sensor-util"
@@ -104,7 +104,7 @@
         },
         "type": "pid",
         "positive_hysteresis": 1,
-        "negative_hysteresis": 2,      
+        "negative_hysteresis": 2,     
         "setpoint": -10,
         "kp": -1.25,
         "ki": -0.035,
@@ -180,7 +180,7 @@
      "zones": {
       "zone_1": {
         "pwm_output": [0, 2, 4, 6],
-        "expr_file": "zone1_8s_M.fsc"
+        "expr_file": "zone1_4s_M.fsc"
       }
     }
 }

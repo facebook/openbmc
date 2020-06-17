@@ -15,7 +15,14 @@ static int
 pal_get_sensor_health_key(uint8_t fru, char *key) {
   switch (fru) {
     case FRU_MB:
+    case FRU_PDB:
       sprintf(key, "server_sensor_health");
+      break;
+    case FRU_NIC0:
+      sprintf(key, "nic0_sensor_health");
+      break;
+    case FRU_NIC1:
+      sprintf(key, "nic1_sensor_health");
       break;
     default:
       return -1;

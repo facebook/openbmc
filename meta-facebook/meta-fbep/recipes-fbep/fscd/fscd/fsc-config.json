@@ -87,9 +87,9 @@
       "setpoint": 71,
       "positive_hysteresis": 2,
       "negative_hysteresis": 1,
-      "kp": 3.5,
-      "ki": 0.4,
-      "kd": 0.4
+      "kp": -3.5,
+      "ki": -0.4,
+      "kd": -0.4
     },
     "linear_gpu_mem": {
       "read_source" : {
@@ -115,9 +115,9 @@
       "setpoint": 76,
       "positive_hysteresis": 2,
       "negative_hysteresis": 2,
-      "kp": 3.5,
-      "ki": 0.4,
-      "kd": 0.4
+      "kp": -3.5,
+      "ki": -0.4,
+      "kd": -0.4
     },
     "linear_vicor": {
       "read_source" : {

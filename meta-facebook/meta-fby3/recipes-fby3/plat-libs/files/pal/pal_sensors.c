@@ -45,6 +45,7 @@ static int read_hsc_iout(uint8_t hsc_id, float *value);
 static int read_medusa_val(uint8_t snr_number, float *value);
 static int read_cached_val(uint8_t snr_number, float *value);
 static int read_fan_speed(uint8_t snr_number, float *value);
+static int read_fan_pwm(uint8_t snr_number, float *value);
 static int pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value);
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
@@ -62,6 +63,10 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_FAN1_TACH,
   BMC_SENSOR_FAN2_TACH,
   BMC_SENSOR_FAN3_TACH,
+  BMC_SENSOR_PWM0,
+  BMC_SENSOR_PWM1,
+  BMC_SENSOR_PWM2,
+  BMC_SENSOR_PWM3,
   BMC_SENSOR_OUTLET_TEMP,
   BMC_SENSOR_INLET_TEMP,
   BMC_SENSOR_P5V,
@@ -629,10 +634,10 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_FAN5_TACH", 0xE5, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE5
   {"BMC_SENSOR_FAN6_TACH", 0xE6, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE6
   {"BMC_SENSOR_FAN7_TACH", 0xE7, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEB
+  {"BMC_SENSOR_PWM0", 0xE8, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xE8
+  {"BMC_SENSOR_PWM1", 0xE9, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xE9
+  {"BMC_SENSOR_PWM2", 0xEA, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xEA
+  {"BMC_SENSOR_PWM3", 0xEB, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xEB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEC
   {"BMC_INLET_TEMP",  TEMP_INLET,  read_temp, true, {50, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xED
   {"BMC_OUTLET_TEMP", TEMP_OUTLET, read_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEE
@@ -950,6 +955,7 @@ int pal_get_fan_name(uint8_t num, char *name)
   return 0;
 }
 
+// Provide the fan pwm to fan-util and it also will be called by read_fan_pwm
 int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
 {
   char label[32] = {0};
@@ -1072,6 +1078,20 @@ apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value) {
     }
     sensor_correction_apply(fru, snr_num, avg_pwm, value);
   }
+}
+
+// Provide the fan pwm to sensor-util
+static int
+read_fan_pwm(uint8_t snr_number, float *value) {
+  uint8_t pwm = 0;
+  int ret = 0;
+  uint8_t pwm_number = snr_number - BMC_SENSOR_PWM0;
+  ret = pal_get_pwm_value(pwm_number, &pwm);
+  if ( ret < 0 ) {
+    ret = READING_NA;
+  }
+  *value = (float)pwm;
+  return ret;
 }
 
 // Provide the fan speed to sensor-util
@@ -1945,6 +1965,9 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
       break;
     case FAN:
       sprintf(units, "RPM");
+      break;
+    case PWM:
+      sprintf(units, "%%");
       break;
     case VOLT:
       sprintf(units, "Volts");

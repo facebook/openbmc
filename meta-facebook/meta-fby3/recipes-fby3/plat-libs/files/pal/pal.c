@@ -2062,7 +2062,7 @@ pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
   uint8_t bus, addr;
   bool bridged;
 
-  if (pal_get_pfr_address(fru, &bus, &addr, &bridged)) {
+  if (pal_get_pfr_address(FRU_BMC, &bus, &addr, &bridged)) {
     return -1;
   }
 

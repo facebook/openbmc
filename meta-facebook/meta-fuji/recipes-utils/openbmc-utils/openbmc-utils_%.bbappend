@@ -24,6 +24,7 @@ SRC_URI += "file://setup-gpio.sh \
             file://sol.sh \
             file://cpld_update.sh \
             file://wedge_power.sh \
+            file://setup_avs.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -31,6 +32,7 @@ OPENBMC_UTILS_FILES += " \
     sol.sh \
     cpld_update.sh \
     wedge_power.sh \
+    setup_avs.sh \
     "
 DEPENDS_append = " update-rc.d-native"
 
@@ -44,6 +46,9 @@ do_install_board() {
     # Export GPIO pins and set initial directions/values.
     install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
     update-rc.d -r ${D} setup-gpio.sh start 59 S .
+
+    install -m 755 setup_avs.sh ${D}${sysconfdir}/init.d/setup_avs.sh
+    update-rc.d -r ${D} setup_avs.sh start 65 S .
 
     install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .

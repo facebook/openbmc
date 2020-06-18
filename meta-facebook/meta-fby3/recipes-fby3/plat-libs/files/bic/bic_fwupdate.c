@@ -999,11 +999,13 @@ get_component_name(uint8_t comp) {
     case FW_BB_CPLD:
       return "BB CPLD";
     case FW_BIOS_CAPSULE:
+      return "BIOS Capsule, Target to Active Region";
     case FW_BIOS_RCVY_CAPSULE:
-      return "BIOS Capsule";
+      return "BIOS Capsule, Target to Recovery Region";
     case FW_CPLD_CAPSULE:
+      return "CPLD Capsule, Target to Active Region";
     case FW_CPLD_RCVY_CAPSULE:
-      return "CPLD Capsule";
+      return "CPLD Capsule, Target to Recovery Region";
     default:
       return "Unknown";
   }

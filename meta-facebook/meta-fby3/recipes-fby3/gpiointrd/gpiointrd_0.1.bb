@@ -31,10 +31,10 @@ SRC_URI = "file://Makefile \
 
 S = "${WORKDIR}"
 
-DEPENDS += " libpal update-rc.d-native libgpio-ctrl libfby3-common libipmi libfby3-gpio libobmc-i2c libkv libbic "
-RDEPENDS_${PN} += " libpal libgpio-ctrl libfby3-common libipmi libfby3-gpio libobmc-i2c libkv libbic "
+DEPENDS += " libpal update-rc.d-native libgpio-ctrl libfby3-common libipmi libfby3-gpio libobmc-i2c libkv libbic libpal "
+RDEPENDS_${PN} += " libpal libgpio-ctrl libfby3-common libipmi libfby3-gpio libobmc-i2c libkv libbic libpal "
 CFLAGS += " -DCONFIG_FBY3 "
-LDFLAGS += " -lpal -lgpio-ctrl -lfby3_common -lipmi -lbic -lfby3_gpio -lobmc-i2c -lkv "
+LDFLAGS += " -lpal -lgpio-ctrl -lfby3_common -lipmi -lbic -lfby3_gpio -lobmc-i2c -lkv -lpal "
 
 pkgdir = "gpiointrd"
 

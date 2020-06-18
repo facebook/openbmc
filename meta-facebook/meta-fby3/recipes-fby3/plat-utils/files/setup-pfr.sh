@@ -24,6 +24,8 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 # CHKPT_COMPLETE
 
 BOARD_ID=$(get_bmc_board_id)
+RCVY_CNT=0x0
+PANIC_CNT=0x0
 LAST_RCVY_ERROR=0x0
 LAST_PANIC_ERROR=0x0
 MAJOR_ERROR=0x0
@@ -44,7 +46,23 @@ if [ $BOARD_ID -eq 9 ]; then
     done
 
     for i in {1..3}; do
+        RCVY_CNT=$(/usr/sbin/i2cget -y 9 0x38 0x04)
+        ret=$?
+        if [[ "$ret" == "0" ]]; then
+            break
+        fi
+    done
+
+    for i in {1..3}; do
         LAST_RCVY_ERROR=$(/usr/sbin/i2cget -y 9 0x38 0x05)
+        ret=$?
+        if [[ "$ret" == "0" ]]; then
+            break
+        fi
+    done
+
+    for i in {1..3}; do
+        PANIC_CNT=$(/usr/sbin/i2cget -y 9 0x38 0x06)
         ret=$?
         if [[ "$ret" == "0" ]]; then
             break
@@ -86,7 +104,23 @@ elif [ $BOARD_ID -eq 14 ] || [ $BOARD_ID -eq 7 ]; then
     done
 
     for i in {1..3}; do
+        RCVY_CNT=$(/usr/sbin/i2cget -y 12 0x38 0x04)
+        ret=$?
+        if [[ "$ret" == "0" ]]; then
+            break
+        fi
+    done
+
+    for i in {1..3}; do
         LAST_RCVY_ERROR=$(/usr/sbin/i2cget -y 12 0x38 0x05)
+        ret=$?
+        if [[ "$ret" == "0" ]]; then
+            break
+        fi
+    done
+
+    for i in {1..3}; do
+        PANIC_CNT=$(/usr/sbin/i2cget -y 12 0x38 0x06)
         ret=$?
         if [[ "$ret" == "0" ]]; then
             break
@@ -179,7 +213,11 @@ if [[ "$MAJOR_ERROR" -ne "0x0" ]] || [[ "$MINOR_ERROR" -ne "0x0" ]]; then
             MAJOR_ERROR_MSG="unknown major error"
         ;;
     esac
-    logger -t "pfr" -p daemon.crit "Major error: ${MAJOR_ERROR_MSG} (${MAJOR_ERROR}), Minor error: ${MINOR_ERROR_MSG} (${MINOR_ERROR})"
+    logger -t "pfr" -p daemon.crit "BMC, PFR - Major error: ${MAJOR_ERROR_MSG} (${MAJOR_ERROR}), Minor error: ${MINOR_ERROR_MSG} (${MINOR_ERROR})"
+fi
+
+if [[ "$RCVY_CNT" -ne "0x0" ]]; then
+    logger -t "pfr" -p daemon.crit "BMC, PFR - Recovery count: $((RCVY_CNT))"
 fi
 
 if [[ "$LAST_RCVY_ERROR" -ne "0x0" ]]; then
@@ -211,17 +249,18 @@ if [[ "$LAST_RCVY_ERROR" -ne "0x0" ]]; then
         0x09 )
             LAST_RCVY_ERROR_MSG="LAST_RECOVERY_BMC_LAUNCH_FAIL"
         ;;
-        0x0A )
-            LAST_RCVY_ERROR_MSG="LAST_RECOVERY_CPLD_WDT_EXPIRED"
-        ;;
-        0x0B )
+        0x0a )
             LAST_RCVY_ERROR_MSG="LAST_RECOVERY_FORCED_ACTIVE_FW_RECOVERY"
         ;;
         *)
-            LAST_RCVY_ERROR_MSG="unknown recovery error"
+            LAST_RCVY_ERROR_MSG="unknown recovery reason"
         ;;
     esac
-    logger -t "pfr" -p daemon.crit "Last recovery error: ${LAST_RCVY_ERROR_MSG} (${LAST_RCVY_ERROR})"
+    logger -t "pfr" -p daemon.crit "BMC, PFR - Last recovery reason: ${LAST_RCVY_ERROR_MSG} (${LAST_RCVY_ERROR})"
+fi
+
+if [[ "$PANIC_CNT" -ne "0x0" ]]; then
+    logger -t "pfr" -p daemon.crit "BMC, PFR - Panic event count: $((PANIC_CNT))"
 fi
 
 if [[ "$LAST_PANIC_ERROR" -ne "0x0" ]]; then
@@ -254,8 +293,8 @@ if [[ "$LAST_PANIC_ERROR" -ne "0x0" ]]; then
             LAST_PANIC_ERROR_MSG="LAST_PANIC_ACM_IBB_OBB_AUTH_FAILED"
         ;;
         *)
-            LAST_PANIC_ERROR_MSG="unknown panic error"
+            LAST_PANIC_ERROR_MSG="unknown panic reason"
         ;;
     esac
-    logger -t "pfr" -p daemon.crit "Last panic error: ${LAST_PANIC_ERROR_MSG} (${LAST_PANIC_ERROR})"
+    logger -t "pfr" -p daemon.crit "BMC, PFR - Last panic reason: ${LAST_PANIC_ERROR_MSG} (${LAST_PANIC_ERROR})"
 fi

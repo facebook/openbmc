@@ -66,13 +66,6 @@ bic_gpio_t gpio_ass_val = {
 };
 // memset(&gpio_ass_val, 0, sizeof(gpio_ass_val));
 
-enum {
-  MAJOR_ERROR_BMC_AUTH_FAILED=0x01,
-  MAJOR_ERROR_PCH_AUTH_FAILED=0x02,
-  MAJOR_ERROR_UPDATE_FROM_PCH_FAILED=0x03,
-  MAJOR_ERROR_UPDATE_FROM_BMC_FAILED=0x04,
-};
-
 err_t last_recovery_err[] = {
   /* Value indicating last FW Recovery reason. */
   {0x01, "LAST_RECOVERY_PCH_ACTIVE_FAIL"},
@@ -84,8 +77,7 @@ err_t last_recovery_err[] = {
   {0x07, "LAST_RECOVERY_BMC_ACTIVE_FAIL"},
   {0x08, "LAST_RECOVERY_BMC_RECOVERY_FAIL"},
   {0x09, "LAST_RECOVERY_BMC_LAUNCH_FAIL"},
-  {0x0A, "LAST_RECOVERY_CPLD_WDT_EXPIRED"},
-  {0x0B, "LAST_RECOVERY_FORCED_ACTIVE_FW_RECOVERY"},
+  {0x0A, "LAST_RECOVERY_FORCED_ACTIVE_FW_RECOVERY"},
 };
 
 err_t last_panic_err[] = {
@@ -99,26 +91,6 @@ err_t last_panic_err[] = {
   {0x07, "LAST_PANIC_IBB_WDT_EXPIRED"},
   {0x08, "LAST_PANIC_OBB_WDT_EXPIRED"},
   {0x09, "LAST_PANIC_ACM_IBB_OBB_AUTH_FAILED"},
-};
-
-err_t minor_auth_error[] = {
-  /*MAJOR_ERROR_BMC_AUTH_FAILED or MAJOR_ERROR_PCH_AUTH_FAILED */
-  {0x01, "MINOR_ERROR_AUTH_ACTIVE"},
-  {0x02, "MINOR_ERROR_AUTH_RECOVERY"},
-  {0x03, "MINOR_ERROR_AUTH_ACTIVE_AND_RECOVERY"},
-  {0x04, "MINOR_ERROR_AUTH_ALL_REGIONS"},
-};
-err_t minor_update_error[] = {
-  /* MAJOR_ERROR_PCH_UPDATE_FAIELD or MAJOR_ERROR_BMC_UPDATE_FAIELD */
-  {0x01, "MINOR_ERROR_INVALID_UPDATE_INTENT"},
-  {0x02, "MINOR_ERROR_FW_UPDATE_INVALID_SVN"},
-  {0x03, "MINOR_ERROR_FW_UPDATE_AUTH_FAILED"},
-  {0x04, "MINOR_ERROR_FW_UPDATE_EXCEEDED_MAX_FAILED_ATTEMPTS"},
-  {0x05, "MINOR_ERROR_FW_UPDATE_ACTIVE_UPDATE_NOT_ALLOWED"},
-  /* MAJOR_ERROR_CPLD_UPDATE_FAIELD */
-  {0x06, "MINOR_ERROR_CPLD_UPDATE_INVALID_SVN"},
-  {0x07, "MINOR_ERROR_CPLD_UPDATE_AUTH_FAILED"},
-  {0x08, "MINOR_ERROR_CPLD_UPDATE_EXCEEDED_MAX_FAILED_ATTEMPTS"},
 };
 
 static int
@@ -307,12 +279,29 @@ check_pfr_mailbox(uint8_t fru) {
   uint8_t tbuf[1] = {0}, rbuf[1] = {0};
   uint8_t tlen = 1, rlen = 1;
   uint8_t rcvy_err = 0, panic_err = 0, major_err = 0, minor_err = 0;
+  uint8_t rcvy_cnt = 0, panic_cnt = 0;
   char *rcvy_str = "NA", *panic_str = "NA", *major_str = "NA", *minor_str = "NA";
   // Check SB PFR status
   snprintf(path, sizeof(path), "/dev/i2c-%d", (fru+SLOT_BUS_BASE));
   i2cfd = open(path, O_RDWR);
   if ( i2cfd < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
+  }
+
+  tbuf[0] = RCVY_CNT_OFFSET;
+  retry = 0;
+  while (retry < MAX_READ_RETRY) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      rcvy_cnt = rbuf[0];
+      break;
+    }
+  }
+  if (retry == MAX_READ_RETRY) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
   }
 
   tbuf[0] = LAST_RCVY_OFFSET;
@@ -324,6 +313,22 @@ check_pfr_mailbox(uint8_t fru) {
       msleep(100);
     } else {
       rcvy_err = rbuf[0];
+      break;
+    }
+  }
+  if (retry == MAX_READ_RETRY) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+  }
+
+  tbuf[0] = PANIC_CNT_OFFSET;
+  retry = 0;
+  while (retry < MAX_READ_RETRY) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      panic_cnt = rbuf[0];
       break;
     }
   }
@@ -380,6 +385,10 @@ check_pfr_mailbox(uint8_t fru) {
   }
   if ( i2cfd > 0 ) close(i2cfd);
 
+  if ( rcvy_cnt != 0 ) {
+    syslog(LOG_CRIT, "FRU: %d, PFR - Recovery count: %d", fru, rcvy_cnt);
+  }
+
   if ( rcvy_err != 0 ) {
     for (index = 0; index < (sizeof(last_recovery_err)/sizeof(err_t)); index++) {
       if (rcvy_err == last_recovery_err[index].err_id) {
@@ -387,7 +396,11 @@ check_pfr_mailbox(uint8_t fru) {
         break;
       }
     }
-    syslog(LOG_CRIT, "FRU: %d, PFR - Recovery error: %s (0x%02X)", fru, rcvy_str, rcvy_err);
+    syslog(LOG_CRIT, "FRU: %d, PFR - Last recovery reason: %s (0x%02X)", fru, rcvy_str, rcvy_err);
+  }
+
+  if ( panic_cnt != 0 ) {
+    syslog(LOG_CRIT, "FRU: %d, PFR - Panic event count: %d", fru, panic_cnt);
   }
 
   if ( panic_err != 0 ) {
@@ -397,13 +410,13 @@ check_pfr_mailbox(uint8_t fru) {
         break;
       }
     }
-    syslog(LOG_CRIT, "FRU: %d, PFR - Panic error: %s (0x%02X)", fru, panic_str, panic_err);
+    syslog(LOG_CRIT, "FRU: %d, PFR - Last panic reason: %s (0x%02X)", fru, panic_str, panic_err);
   }
 
   if ( (major_err != 0) || (minor_err != 0) ) {
     if ( major_err == MAJOR_ERROR_PCH_AUTH_FAILED ) {
       major_str = "MAJOR_ERROR_PCH_AUTH_FAILED";
-      for (index = 0; index < (sizeof(minor_auth_error)/sizeof(err_t)); index++) {
+      for (index = 0; index < minor_auth_size; index++) {
         if (minor_err == minor_auth_error[index].err_id) {
           minor_str = minor_auth_error[index].err_des;
           break;
@@ -411,7 +424,7 @@ check_pfr_mailbox(uint8_t fru) {
       }
     } else if ( major_err == MAJOR_ERROR_UPDATE_FROM_PCH_FAILED ) {
       major_str = "MAJOR_ERROR_UPDATE_FROM_PCH_FAILED";
-      for (index = 0; index < (sizeof(minor_update_error)/sizeof(err_t)); index++) {
+      for (index = 0; index < minor_update_size; index++) {
         if (minor_err == minor_update_error[index].err_id) {
           minor_str = minor_update_error[index].err_des;
           break;

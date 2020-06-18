@@ -15,7 +15,6 @@
 
 #define CPLD_PWR_CTRL_BUS "/dev/i2c-12"
 #define CPLD_PWR_CTRL_ADDR 0x1F
-#define MAX_READ_RETRY 5
 
 enum {
   DEVICE_POWER_OFF = 0x0,

@@ -25,23 +25,6 @@ extern "C" {
 
 #include <facebook/bic.h>
 
-#define MAX_READ_RETRY 3
-#define CPLD_INTENT_CTRL_ADDR 0x70
-#define SLOT_BUS_BASE 3
-
-typedef struct {
-  uint8_t err_id;
-  char *err_des;
-} err_t;
-
-enum {
-  PLATFORM_STATE_OFFSET = 0x03,
-  LAST_RCVY_OFFSET      = 0x05,
-  LAST_PANIC_OFFSET     = 0x07,
-  MAJOR_ERR_OFFSET      = 0x08,
-  MINOR_ERR_OFFSET      = 0x09,
-};
-
 uint8_t fby3_get_gpio_list_size(void);
 int fby3_get_gpio_name(uint8_t fru, uint8_t gpio, char *name);
 

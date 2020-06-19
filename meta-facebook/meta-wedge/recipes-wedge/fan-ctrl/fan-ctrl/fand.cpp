@@ -49,11 +49,14 @@
 #include <syslog.h>
 #include <dirent.h>
 #include <assert.h>
+#include <ctype.h>
 #include <linux/limits.h>
+#include <linux/version.h>
 #include <facebook/wedge_eeprom.h>
 
 #include <openbmc/watchdog.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/misc-utils.h>
 
 #ifndef BITS_PER_BYTE
 #define BITS_PER_BYTE 8
@@ -62,6 +65,8 @@
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
 #endif
+
+#define HWMON_SYSFS_DIR "/sys/class/hwmon"
 
 #define MAX_FANS 4
 
@@ -221,7 +226,46 @@ static struct fan_controller fan_controller_41 = {
   .fan_pwm_write = fan_pwm_write_41,
 };
 
+static int fan_pwm_write_5x(struct fan_controller *ctrl, int fan, int duty);
+static int fan_controller_init_5x(struct fan_controller *ctrl);
 
+/*
+ * "fan_controller_5x" is intended to be used in kernel 5.x.
+ */
+static struct fan_controller fan_controller_5x = {
+  .name = "fan_controller_5x",
+  .pwm_tacho_dir = {},
+  /*
+   * 1 pwm drives 2 fans (front and rear) and that's why there are 4 pwm
+   * for 8 fans.
+   */
+  .fan_pwm_map = {
+    [0] = "pwm8",
+    [1] = "pwm7",
+    [2] = "pwm1",
+    [3] = "pwm2",
+  },
+
+  /*
+   * fan [0-3] are the 4 front fans and fan [4-7] are the corresponding
+   * rear fans.
+   */
+  .fan_tacho_map = {
+    [0] = "fan1_input",
+    [1] = "fan2_input",
+    [2] = "fan3_input",
+    [3] = "fan4_input",
+    [4] = "fan5_input",
+    [5] = "fan6_input",
+    [6] = "fan7_input",
+    [7] = "fan8_input",
+  },
+
+  .init = fan_controller_init_5x,
+  .cleanup = NULL,
+  .fan_rpm_read = fan_speed_sysfs_read,
+  .fan_pwm_write = fan_pwm_write_5x,
+};
 
 static struct fan_controller *active_fan_ctrl = &fan_controller_41;
 
@@ -396,6 +440,98 @@ int device_write_integer(const char *pathname, int value) {
   }
 
   fclose(fp);
+  return 0;
+}
+
+static int file_read_line(const char *pathname, char *buf, size_t size)
+{
+  int len;
+  FILE *fp;
+
+  fp = fopen(pathname, "r");
+  if (fp == NULL) {
+    return errno;
+  }
+
+  buf[0] = '\0';
+  if (fgets(buf, size, fp) != NULL) {
+    len = strlen(buf);
+
+    /* delete the newline character */
+    if (len > 0 && isspace(buf[len - 1])) {
+      buf[len - 1] = '\0';
+    }
+  }
+
+  fclose(fp);
+  return 0;
+}
+
+static int hwmon_lookup_by_name(const char *name, char *buf, size_t size)
+{
+  DIR *dir;
+  int rc = 0;
+  int found = 0;
+  struct dirent *dent;
+  char hwmon_name[NAME_MAX];
+  char hwmon_path[PATH_MAX];
+
+  dir = opendir(HWMON_SYSFS_DIR);
+  if (dir == NULL)
+    return errno;
+
+  while (1) {
+    errno = 0;
+    dent = readdir(dir);
+    if (dent == NULL) { /* Error or end of directory */
+      if (errno != 0) {
+        rc = errno;
+      }
+      break;
+    }
+
+    if (!str_startswith(dent->d_name, "hwmon")) {
+      continue;
+    }
+
+    snprintf(hwmon_path, sizeof(hwmon_path), "%s/%s/name",
+             HWMON_SYSFS_DIR, dent->d_name);
+    if (!path_isfile(hwmon_path)) {
+      continue;
+    }
+    if (file_read_line(hwmon_path, hwmon_name, sizeof(hwmon_name)) != 0) {
+      continue;
+    }
+
+    if (strcmp(hwmon_name, name) == 0) {
+      snprintf(buf, size, "%s/%s", HWMON_SYSFS_DIR, dent->d_name);
+      found = 1;
+      break;
+    }
+  } /* while */
+
+  closedir(dir);
+  if (found == 0 && rc == 0) {
+    rc = ENOENT;
+  }
+  return rc;
+}
+
+static int fan_controller_init_5x(struct fan_controller *controller)
+{
+  int rc;
+  char hwmon_path[PATH_MAX];
+  const char *name = "aspeed_pwm_tacho";
+
+  rc = hwmon_lookup_by_name(name, hwmon_path, sizeof(hwmon_path));
+  if (rc != 0) {
+    syslog(LOG_WARNING, "failed to find hwmon node for %s: %s",
+           name, strerror(rc));
+    return rc;
+  }
+
+  snprintf(controller->pwm_tacho_dir, sizeof(controller->pwm_tacho_dir),
+           "%s", hwmon_path);
   return 0;
 }
 
@@ -694,6 +830,30 @@ static int fan_pwm_write_41(struct fan_controller *controller, int fan,
   return rc;
 }
 
+static int fan_pwm_write_5x(struct fan_controller *controller, int fan,
+                            int percent)
+{
+  int rc, pwm_value;
+  char pathname[PATH_MAX];
+
+  /*
+   * Duty cycle from 0 to 100% with 1/256 resolution incremental.
+   */
+  pwm_value = percent * 256 / 100;
+
+  fan %= ARRAY_SIZE(controller->fan_pwm_map);
+  snprintf(pathname, sizeof(pathname), "%s/%s",
+           controller->pwm_tacho_dir, controller->fan_pwm_map[fan]);
+
+  rc = device_write_integer(pathname, pwm_value);
+  if (rc != 0) {
+    syslog(LOG_WARNING, "failed to write %d to %s: %s",
+           pwm_value, pathname, strerror(rc));
+  }
+
+  return rc;
+}
+
 /* Set up fan LEDs */
 
 static int update_fan_led(int fan, gpio_value_t color) {
@@ -817,6 +977,8 @@ int main(int argc, char **argv) {
 
   struct sigaction sa;
 
+  k_version_t k_version;
+
   sa.sa_handler = fand_interrupt;
   sa.sa_flags = 0;
   sigemptyset(&sa.sa_mask);
@@ -891,6 +1053,13 @@ int main(int argc, char **argv) {
             fan_high);
   }
 
+  /*
+   * Determine which fan controller to be used based on kernel version.
+   */
+  k_version = get_kernel_version();
+  if (k_version > KERNEL_VERSION(4, 1, 51)) {
+    active_fan_ctrl = &fan_controller_5x;
+  }
   if (active_fan_ctrl->init != NULL) {
     if (active_fan_ctrl->init(active_fan_ctrl) != 0) {
       syslog(LOG_CRIT, "unable to initialize %s!", active_fan_ctrl->name);

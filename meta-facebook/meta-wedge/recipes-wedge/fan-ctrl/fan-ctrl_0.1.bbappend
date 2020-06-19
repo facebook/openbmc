@@ -15,8 +15,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS_append = "libwedge-eeprom update-rc.d-native libwatchdog libgpio-ctrl"
-RDEPENDS_${PN} += "libwedge-eeprom libwatchdog libgpio-ctrl"
+DEPENDS_append = "libwedge-eeprom update-rc.d-native libwatchdog libgpio-ctrl libmisc-utils"
+RDEPENDS_${PN} += "libwedge-eeprom libwatchdog libgpio-ctrl libmisc-utils"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://get_fan_speed.sh \
@@ -33,8 +33,7 @@ binfiles += "get_fan_speed.sh \
             set_fan_speed.sh \
            "
 
-LDFLAGS_append = " -lwedge_eeprom -lwatchdog -lgpio-ctrl"
-CXXFLAGS_prepend = "-DCONFIG_WEDGE "
+LDFLAGS_append = " -lwedge_eeprom -lwatchdog -lgpio-ctrl -lmisc-utils"
 
 pkgdir = "fan_ctrl"
 

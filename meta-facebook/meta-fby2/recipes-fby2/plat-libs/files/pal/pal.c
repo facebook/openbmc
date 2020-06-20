@@ -44,6 +44,8 @@
 #include <facebook/bic.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/obmc-sensors.h>
+#include <openbmc/libgpio.h>
 #include <sys/socket.h>
 #include <linux/netlink.h>
 #include <openbmc/ncsi.h>
@@ -106,10 +108,18 @@
 #define HOTSERVICE_BLOCK "/tmp/slot%d_reinit_block"
 
 #define FRUID_SIZE        256
-#define EEPROM_DC       "/sys/class/i2c-adapter/i2c-%d/%d-0051/eeprom"
+#if defined(CONFIG_FBY2_KERNEL)
+  #define EEPROM_DC       "/sys/bus/i2c/devices/i2c-%d/%d-0051/eeprom"
+#else
+  #define EEPROM_DC       "/sys/class/i2c-adapter/i2c-%d/%d-0051/eeprom"
+#endif
 #define BIN_SLOT        "/tmp/fruid_slot%d.bin"
 
-#define GMAC0_DIR "/sys/devices/platform/ftgmac100.0/net/eth0"
+#if defined(CONFIG_FBY2_KERNEL)
+  #define GMAC0_DIR "/sys/bus/platform/drivers/ftgmac100/1e660000.ethernet/net/eth0"
+#else
+  #define GMAC0_DIR "/sys/devices/platform/ftgmac100.0/net/eth0"
+#endif
 
 #define SPB_REV_FILE "/tmp/spb_rev"
 #define SPB_REV_PVT 3
@@ -227,14 +237,25 @@ static int nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type);
 
 static int assert_cnt[FBY2_MAX_NUM_SLOTS] = {0};
 
-const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N, GPIO_RST_SLOT2_SYS_RESET_N, GPIO_RST_SLOT3_SYS_RESET_N, GPIO_RST_SLOT4_SYS_RESET_N };
-const static uint8_t gpio_led[] = { 0, GPIO_PWR1_LED, GPIO_PWR2_LED, GPIO_PWR3_LED, GPIO_PWR4_LED };      // TODO: In DVT, Map to ML PWR LED
-const static uint8_t gpio_id_led[] = { 0,  GPIO_SYSTEM_ID1_LED_N, GPIO_SYSTEM_ID2_LED_N, GPIO_SYSTEM_ID3_LED_N, GPIO_SYSTEM_ID4_LED_N };  // Identify LED
-const static uint8_t gpio_slot_id_led[] = { 0,  GPIO_SLOT1_LED, GPIO_SLOT2_LED, GPIO_SLOT3_LED, GPIO_SLOT4_LED }; // Slot ID LED on each TL card
-const static uint8_t gpio_prsnt_prim[] = { 0, GPIO_SLOT1_PRSNT_N, GPIO_SLOT2_PRSNT_N, GPIO_SLOT3_PRSNT_N, GPIO_SLOT4_PRSNT_N };
-const static uint8_t gpio_prsnt_ext[] = { 0, GPIO_SLOT1_PRSNT_B_N, GPIO_SLOT2_PRSNT_B_N, GPIO_SLOT3_PRSNT_B_N, GPIO_SLOT4_PRSNT_B_N };
-const static uint8_t gpio_power[] = { 0, GPIO_PWR_SLOT1_BTN_N, GPIO_PWR_SLOT2_BTN_N, GPIO_PWR_SLOT3_BTN_N, GPIO_PWR_SLOT4_BTN_N };
-const static uint8_t gpio_slot_latch[] = { 0, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N};
+#if defined(CONFIG_FBY2_KERNEL)
+  const static char* gpio_rst_btn[] = { 0, "RST_SLOT1_SYS_RESET_N", "RST_SLOT2_SYS_RESET_N", "RST_SLOT3_SYS_RESET_N", "RST_SLOT4_SYS_RESET_N" };
+  const static char* gpio_led[] = { 0, "PWR1_LED", "PWR2_LED", "PWR3_LED", "PWR4_LED" };      // TODO: In DVT, Map to ML PWR LED
+  const static char* gpio_id_led[] = { 0, "SYSTEM_ID1_LED_N", "SYSTEM_ID2_LED_N", "SYSTEM_ID3_LED_N", "SYSTEM_ID4_LED_N" };  // Identify LED
+  const static char* gpio_slot_id_led[] = { 0, "SLOT1_LED", "SLOT2_LED", "SLOT3_LED", "SLOT4_LED" }; // Slot ID LED on each TL card
+  const static char* gpio_prsnt_prim[] = { 0, "SLOT1_PRSNT_N", "SLOT2_PRSNT_N", "SLOT3_PRSNT_N", "SLOT4_PRSNT_N" };
+  const static char* gpio_prsnt_ext[] = { 0, "SLOT1_PRSNT_B_N", "SLOT2_PRSNT_B_N", "SLOT3_PRSNT_B_N", "SLOT4_PRSNT_B_N" };
+  const static char* gpio_power[] = { 0, "PWR_SLOT1_BTN_N", "PWR_SLOT2_BTN_N", "PWR_SLOT3_BTN_N", "PWR_SLOT4_BTN_N" };
+  const static char* gpio_slot_latch[] = { 0, "SLOT1_EJECTOR_LATCH_DETECT_N", "SLOT2_EJECTOR_LATCH_DETECT_N", "SLOT3_EJECTOR_LATCH_DETECT_N", "SLOT4_EJECTOR_LATCH_DETECT_N"};
+#else
+  const static uint8_t gpio_rst_btn[] = { 0, GPIO_RST_SLOT1_SYS_RESET_N, GPIO_RST_SLOT2_SYS_RESET_N, GPIO_RST_SLOT3_SYS_RESET_N, GPIO_RST_SLOT4_SYS_RESET_N };
+  const static uint8_t gpio_led[] = { 0, GPIO_PWR1_LED, GPIO_PWR2_LED, GPIO_PWR3_LED, GPIO_PWR4_LED };      // TODO: In DVT, Map to ML PWR LED
+  const static uint8_t gpio_id_led[] = { 0,  GPIO_SYSTEM_ID1_LED_N, GPIO_SYSTEM_ID2_LED_N, GPIO_SYSTEM_ID3_LED_N, GPIO_SYSTEM_ID4_LED_N };  // Identify LED
+  const static uint8_t gpio_slot_id_led[] = { 0,  GPIO_SLOT1_LED, GPIO_SLOT2_LED, GPIO_SLOT3_LED, GPIO_SLOT4_LED }; // Slot ID LED on each TL card
+  const static uint8_t gpio_prsnt_prim[] = { 0, GPIO_SLOT1_PRSNT_N, GPIO_SLOT2_PRSNT_N, GPIO_SLOT3_PRSNT_N, GPIO_SLOT4_PRSNT_N };
+  const static uint8_t gpio_prsnt_ext[] = { 0, GPIO_SLOT1_PRSNT_B_N, GPIO_SLOT2_PRSNT_B_N, GPIO_SLOT3_PRSNT_B_N, GPIO_SLOT4_PRSNT_B_N };
+  const static uint8_t gpio_power[] = { 0, GPIO_PWR_SLOT1_BTN_N, GPIO_PWR_SLOT2_BTN_N, GPIO_PWR_SLOT3_BTN_N, GPIO_PWR_SLOT4_BTN_N };
+  const static uint8_t gpio_slot_latch[] = { 0, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N};
+#endif
 
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, spb, nic";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
@@ -1089,6 +1110,41 @@ int pal_copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
 }
 
 // Update the Reset button input to the server at given slot
+#if defined(CONFIG_FBY2_KERNEL)
+int
+pal_set_rst_btn(uint8_t slot, uint8_t status) {
+  int ret = 0;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val;
+
+  if (slot < 1 || slot > 4) {
+    return -1;
+  }
+
+  if (status) {
+    val = GPIO_VALUE_HIGH;
+  } else {
+
+    val = GPIO_VALUE_LOW;
+
+    // send notification to NIC about impending reset
+    if (nic_powerup_prep(slot, REINIT_TYPE_HOST_RESOURCE) != 0) {
+      syslog(LOG_ERR, "%s: NIC notification failed, abort reset\n",
+             __FUNCTION__);
+      return -1;
+    }
+  }
+
+  gdesc = gpio_open_by_shadow(gpio_rst_btn[slot]);
+  if (gdesc == NULL) {
+    return -1;
+  }
+  ret = gpio_set_value(gdesc, val);
+  gpio_close(gdesc);
+  
+  return ret;
+}
+#else
 int
 pal_set_rst_btn(uint8_t slot, uint8_t status) {
   char path[64] = {0};
@@ -1119,6 +1175,7 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
 
   return 0;
 }
+#endif
 
 int pal_fruid_init(uint8_t slot_id) {
 
@@ -1259,6 +1316,36 @@ pal_get_pair_slot_type(uint8_t fru) {
 
 static int
 power_on_server_physically(uint8_t slot_id){
+#if defined(CONFIG_FBY2_KERNEL)
+  uint8_t ret = -1;
+  uint8_t retry = MAX_READ_RETRY;
+  uint8_t gpio;
+  gpio_desc_t *gdesc = NULL;
+
+  syslog(LOG_WARNING, "%s is on going for slot%d\n",__func__,slot_id);
+
+  gdesc = gpio_open_by_shadow(gpio_power[slot_id]);
+  if (gdesc == NULL) {
+    return -1;
+  }
+
+  ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
+  if (ret) {
+    goto error;
+  }
+
+  ret = gpio_set_value(gdesc, GPIO_VALUE_LOW);
+  if (ret) {
+    goto error;
+  }
+
+  sleep(1);
+
+  ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
+  if (ret) {
+    goto error;
+  }
+#else
   char vpath[64] = {0};
   uint8_t ret = -1;
   uint8_t retry = MAX_READ_RETRY;
@@ -1280,6 +1367,7 @@ power_on_server_physically(uint8_t slot_id){
   if (write_device(vpath, "1")) {
     return -1;
   }
+#endif
 
   // Wait for server power good ready
   sleep(2);
@@ -1308,8 +1396,14 @@ power_on_server_physically(uint8_t slot_id){
     syslog(LOG_WARNING, "%s: Power on is failed for slot%d\n",__func__,slot_id);
     return -1;
   }
-
+  
+#if defined(CONFIG_FBY2_KERNEL)
+  error:
+  gpio_close(gdesc);
+  return ret;
+#else
   return 0;
+#endif
 }
 
 
@@ -1382,6 +1476,52 @@ server_power_on(uint8_t slot_id) {
 }
 
 // Power Off the server in given slot
+#if defined(CONFIG_FBY2_KERNEL)
+static int
+server_power_off(uint8_t slot_id, bool gs_flag) {
+  int ret = 0;
+  gpio_desc_t *gdesc = NULL;
+
+  if (slot_id < 1 || slot_id > 4) {
+    return -1;
+  }
+
+  if (!gs_flag) {
+    // only needed in ungraceful-shutdown
+    if (nic_powerup_prep(slot_id, REINIT_TYPE_FULL) != 0) {
+      return -1;
+    }
+  }
+  gdesc = gpio_open_by_shadow(gpio_power[slot_id]);
+  if (gdesc == NULL) {
+    return -1;
+  }
+
+  ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
+  if (ret) {
+    goto error;
+  }
+
+  sleep(1);
+
+  ret = gpio_set_value(gdesc, GPIO_VALUE_LOW);
+  if (ret) {
+    goto error;
+  }
+
+  if (gs_flag) {
+    sleep(DELAY_GRACEFUL_SHUTDOWN);
+  } else {
+    sleep(DELAY_POWER_OFF);
+  }
+
+  ret = gpio_set_value(gdesc, GPIO_VALUE_HIGH);
+
+error:
+  gpio_close(gdesc);
+  return ret;
+}
+#else
 static int
 server_power_off(uint8_t slot_id, bool gs_flag) {
   char vpath[64] = {0};
@@ -1421,6 +1561,7 @@ server_power_off(uint8_t slot_id, bool gs_flag) {
 
   return 0;
 }
+#endif
 
 static uint8_t
 _get_spb_rev(void) {
@@ -2498,6 +2639,37 @@ pal_get_num_devs(uint8_t slot, uint8_t *num) {
   return 0;
 }
 
+#if defined(CONFIG_FBY2_KERNEL)
+int
+pal_is_slot_latch_closed(uint8_t slot_id, uint8_t *status) {
+  int ret = 0;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val_latch;
+
+  switch (slot_id) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      gdesc = gpio_open_by_shadow(gpio_slot_latch[slot_id]);
+      if (gdesc == NULL) {
+        return -1;
+      }
+      ret = gpio_get_value(gdesc, &val_latch);     
+
+      if (val_latch == GPIO_VALUE_LOW) {
+        *status = 1;
+      } else {
+        *status = 0;
+      }
+      break;
+    default:
+      return -1;
+  }
+  gpio_close(gdesc);
+  return ret;
+}
+#else
 int
 pal_is_slot_latch_closed(uint8_t slot_id, uint8_t *status) {
   int val_latch;
@@ -2525,17 +2697,38 @@ pal_is_slot_latch_closed(uint8_t slot_id, uint8_t *status) {
 
   return 0;
 }
+#endif
 
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
+#if defined(CONFIG_FBY2_KERNEL)
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val, val_prim, val_ext;
+#else
   int val, val_prim, val_ext;
   char path[64] = {0};
+#endif
 
   switch (fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
+#if defined(CONFIG_FBY2_KERNEL)
+      gdesc = gpio_open_by_shadow(gpio_prsnt_prim[fru]);
+      if (gdesc == NULL) {
+        return -1;
+      }
+      gpio_get_value(gdesc, &val_prim);
+      gpio_close(gdesc);
+
+      gdesc = gpio_open_by_shadow(gpio_prsnt_ext[fru]);
+      if (gdesc == NULL){
+        return -1;
+      }
+      gpio_get_value(gdesc, &val_ext);
+      gpio_close(gdesc);
+#else
       sprintf(path, GPIO_VAL, gpio_prsnt_prim[fru]);
       if (read_device(path, &val_prim)) {
         return -1;
@@ -2545,6 +2738,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       if (read_device(path, &val_ext)) {
         return -1;
       }
+#endif
 
       val = (val_prim || val_ext);
 
@@ -3140,6 +3334,31 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
   return 0;
 }
 
+#if defined(CONFIG_FBY2_KERNEL)
+int
+pal_get_fan_latch(uint8_t *status) {
+  int ret = 0;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val;
+
+  gdesc = gpio_open_by_shadow("FAN_LATCH_DETECT");
+  ret = gpio_get_value(gdesc, &val);
+  if (ret != 0) {
+    gpio_close(gdesc);
+    return -1;
+  }
+
+  if (val == GPIO_VALUE_HIGH) {
+    *status = 1;
+  }
+  else {
+    *status = 0;
+  }
+  gpio_close(gdesc);
+
+  return 0;
+}
+#else
 int
 pal_get_fan_latch(uint8_t *status) {
   char path[64] = {0};
@@ -3157,11 +3376,14 @@ pal_get_fan_latch(uint8_t *status) {
 
   return 0;
 }
+#endif
 
 int
 pal_sled_cycle(void) {
+#if !defined(CONFIG_FBY2_KERNEL)
   // Remove the adm1275 module as the HSC device is busy
   system("rmmod adm1275");
+#endif
 
   // Send command to HSC power cycle
   system("i2cset -y 10 0x40 0xd9 c");
@@ -3271,6 +3493,32 @@ pal_get_pwr_btn(uint8_t *status) {
 }
 
 // Return the front panel's Reset Button status
+#if defined(CONFIG_FBY2_KERNEL)
+int
+pal_get_rst_btn(uint8_t *status) {
+  int ret = 0;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val;
+
+  gdesc = gpio_open_by_shadow("BMC_RST_BTN_IN_N");
+  if (gdesc == NULL) {
+    return -1;
+  }
+  ret = gpio_get_value(gdesc, &val);
+  gpio_close(gdesc);
+  if (ret != 0) {
+    return -1;
+  }
+
+  if (val == GPIO_VALUE_HIGH) {
+    *status = 0x0;
+  } else {
+    *status = 0x1;
+  }
+
+  return 0;
+}
+#else
 int
 pal_get_rst_btn(uint8_t *status) {
   char path[64] = {0};
@@ -3289,6 +3537,7 @@ pal_get_rst_btn(uint8_t *status) {
 
   return 0;
 }
+#endif
 
 // Update the SLED LED for sled fully seated
 int
@@ -3311,6 +3560,33 @@ pal_set_sled_led(uint8_t status) {
   return 0;
 }
 
+#if defined(CONFIG_FBY2_KERNEL)
+int
+pal_set_led(uint8_t slot, uint8_t status) {
+  int ret = 0;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val;
+
+  if (slot < 1 || slot > 4) {
+    return -1;
+  }
+
+  if (status) {
+    val = GPIO_VALUE_HIGH;
+  } else {
+    val = GPIO_VALUE_LOW;
+  }
+  
+  gdesc = gpio_open_by_shadow(gpio_led[slot]);
+  if (gdesc == NULL) {
+    return -1;
+  }
+  ret = gpio_set_value(gdesc, val);  
+  gpio_close(gdesc);
+
+  return ret;
+}
+#else
 // Update the LED for the given slot with the status
 int
 pal_set_led(uint8_t slot, uint8_t status) {
@@ -3334,6 +3610,7 @@ pal_set_led(uint8_t slot, uint8_t status) {
 
   return 0;
 }
+#endif
 
 // Update Heartbeet LED
 int
@@ -3367,6 +3644,59 @@ pal_set_hb_led(uint8_t status) {
 }
 
 // Update the Identification LED for the given slot with the status
+#if defined(CONFIG_FBY2_KERNEL)
+int
+pal_set_id_led(uint8_t slot, uint8_t status) {
+  int ret = 0;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val;
+
+  if (slot < 1 || slot > 4) {
+    return -1;
+  }
+
+  if (status) {
+    val = GPIO_VALUE_HIGH;
+  } else {
+    val = GPIO_VALUE_LOW;
+  }
+
+  gdesc = gpio_open_by_shadow(gpio_id_led[slot]);
+  if (gdesc == NULL) {
+    return -1;
+  }
+  ret = gpio_set_value(gdesc, val);  
+  gpio_close(gdesc);
+
+  return ret;
+}
+
+int
+pal_set_slot_id_led(uint8_t slot, uint8_t status) {
+  int ret = 0;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val;
+
+  if (slot < 1 || slot > 4) {
+    return -1;
+  }
+
+  if (status) {
+    val = GPIO_VALUE_HIGH;
+  } else {
+    val = GPIO_VALUE_LOW;
+  }
+
+  gdesc = gpio_open_by_shadow(gpio_slot_id_led[slot]);
+  if (gdesc == NULL) {
+    return -1;
+  }
+  ret = gpio_set_value(gdesc, val);  
+  gpio_close(gdesc);
+
+  return ret;
+}
+#else
 int
 pal_set_id_led(uint8_t slot, uint8_t status) {
   char path[64] = {0};
@@ -3412,6 +3742,7 @@ pal_set_slot_id_led(uint8_t slot, uint8_t status) {
 
   return 0;
 }
+#endif
 
 static int
 set_usb_mux(uint8_t state) {
@@ -7414,6 +7745,65 @@ pal_get_fan_name(uint8_t num, char *name) {
   return 0;
 }
 
+#if defined(CONFIG_FBY2_KERNEL)
+int
+pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
+  char label[32] = {0};
+  uint8_t pwm_num = fan;
+  int pwm_cnt = 0;
+  int spb_type;
+  int fan_type;
+
+  pwm_cnt = pal_get_pwm_cnt();
+
+  if (fan >= pwm_cnt) {
+    syslog(LOG_INFO, "pal_set_fan_speed: fan number is invalid - %d", fan);
+    return -1;
+  }
+
+  spb_type = fby2_common_get_spb_type();
+  fan_type = fby2_common_get_fan_type();
+
+  if (spb_type == TYPE_SPB_YV250 && fan_type == TYPE_DUAL_R_FAN) {
+    switch (fan) {
+      case 0:
+      case 2:
+        fan = 0;
+        break;
+      case 1:
+      case 3:
+        fan = 1;
+        break;
+    }
+  }
+  if (snprintf(label, sizeof(label), "pwm%d", pwm_num + 1) > sizeof(label)) {
+    return -1;
+  }
+
+  return sensors_write_fan(label, (float)pwm);
+}
+
+int pal_get_fan_speed(uint8_t fan, int *rpm)
+{
+  char label[32] = {0};
+  float value;
+  int ret;
+
+  if (snprintf(label, sizeof(label), "fan%d", fan + 1) > sizeof(label)) {
+    syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
+    return -1;
+  }
+
+  ret = sensor_cache_read(FRU_SPB, SP_SENSOR_FAN0_TACH + fan, &value);
+  if (ret != 0) {
+    ret = sensors_read_fan(label, &value);
+  }
+  if (0 == ret) {
+    *rpm = (int)value;
+  }
+  return ret;
+}
+#else
 static int
 write_fan_value(const int fan, const char *device, const int value) {
   char full_name[LARGEST_DEVICE_NAME];
@@ -7518,6 +7908,7 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
 
    return ret;
 }
+#endif
 
 void
 pal_update_ts_sled()

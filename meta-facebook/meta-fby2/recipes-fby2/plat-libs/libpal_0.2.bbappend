@@ -13,6 +13,7 @@ DEPENDS += " \
     libfruid \
     libncsi \
     libobmc-i2c \
+    libgpio-ctrl \
     "
 
 # These shouldn't be needed but are because we aren't properly versioning the
@@ -25,4 +26,5 @@ RDEPENDS_${PN} += " \
     libfruid \
     libncsi \
     libobmc-i2c \
+    libgpio-ctrl \
     "

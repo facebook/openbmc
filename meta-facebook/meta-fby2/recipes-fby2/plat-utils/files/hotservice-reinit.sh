@@ -68,11 +68,11 @@ function set_sysconfig() {
           2)
             # Detect invalid configuration and then power-down the 12V for that slot(e.g. GP/CF plugged in to slot#2/slot#4)
             if [ $(is_server_prsnt $SLOT_N) == "1" ] && [ $(get_slot_type $SLOT_N) != "0" ] ; then
-                  gpio_set O5 0
+                  gpio_set P12V_STBY_SLOT2_EN O5 0
                   logger -p user.crit "Invalid configuration on SLOT$SLOT_N"
 
                   if [ $(is_server_prsnt $(($SLOT_N-1))) == "1" ] && [ $(get_slot_type $(($SLOT_N-1))) != "0" ] ; then
-                     gpio_set O4 0
+                     gpio_set P12V_STBY_SLOT1_EN O4 0
                   fi
             fi
           ;;
@@ -82,10 +82,10 @@ function set_sysconfig() {
           4)
             # Detect invalid configuration and then power-down the 12V for that slot(e.g. GP/CF plugged in to slot#2/slot#4)
             if [ $(is_server_prsnt $SLOT_N) == "1" ] && [ $(get_slot_type $SLOT_N) != "0" ] ; then
-                  gpio_set O7 0
+                  gpio_set P12V_STBY_SLOT4_EN O7 0
                   logger -p user.crit "Invalid configuration on SLOT$SLOT_N"
                   if [ $(is_server_prsnt $(($SLOT_N-1))) == "1" ] && [ $(get_slot_type $(($SLOT_N-1))) != "0" ] ; then
-                     gpio_set O6 0
+                     gpio_set P12V_STBY_SLOT3_EN O6 0
                   fi
             fi
           ;;

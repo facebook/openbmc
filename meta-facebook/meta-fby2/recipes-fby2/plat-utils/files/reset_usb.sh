@@ -28,27 +28,27 @@ slot=$1
 
 case $slot in
   1)
-    gpio_set E4 0
-    gpio_set E5 0
-    gpio_set AB3 0
+    gpio_set FM_USB_SW0 E4 0
+    gpio_set FM_USB_SW1 E5 0
+    gpio_set USB_MUX_EN_R_N AB3 0
     ;;
   2)
-    gpio_set E4 1
-    gpio_set E5 0
-    gpio_set AB3 0
+    gpio_set FM_USB_SW0 E4 E4 1
+    gpio_set FM_USB_SW1 E5 E5 0
+    gpio_set USB_MUX_EN_R_NAB3 0
     ;;
   3)
-    gpio_set E4 0
-    gpio_set E5 1
-    gpio_set AB3 0
+    gpio_set FM_USB_SW0 E4 E4 0
+    gpio_set FM_USB_SW1 E5 E5 1
+    gpio_set USB_MUX_EN_R_N AB3 0
     ;;
   4)
-    gpio_set E4 1
-    gpio_set E5 1
-    gpio_set AB3 0
+    gpio_set FM_USB_SW0 E4 E4 1
+    gpio_set FM_USB_SW1 E5 E5 1
+    gpio_set USB_MUX_EN_R_N AB3 0
     ;;
   *)
-    gpio_set AB3 1
+    gpio_set USB_MUX_EN_R_N AB3 1
     ;;
 esac
 

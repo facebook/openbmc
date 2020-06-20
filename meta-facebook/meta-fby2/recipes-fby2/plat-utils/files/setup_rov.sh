@@ -26,13 +26,21 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
+kernel_ver=$(get_kernel_ver)
+
 # read the T2 ROV after the GPIOs are enabled
 t2_rov() {
     local val0 val1 val2
     # Note that the values are *not* read in order.
-    val0=$(cat /sys/class/gpio/gpio58/value 2>/dev/null)
-    val1=$(cat /sys/class/gpio/gpio56/value 2>/dev/null)
-    val2=$(cat /sys/class/gpio/gpio57/value 2>/dev/null)
+    if [ $kernel_ver == 5 ]; then
+        val0=$(cat /sys/class/gpio/gpio850/value 2>/dev/null)
+        val1=$(cat /sys/class/gpio/gpio848/value 2>/dev/null)
+        val2=$(cat /sys/class/gpio/gpio849/value 2>/dev/null)
+    else
+        val0=$(cat /sys/class/gpio/gpio58/value 2>/dev/null)
+        val1=$(cat /sys/class/gpio/gpio56/value 2>/dev/null)
+        val2=$(cat /sys/class/gpio/gpio57/value 2>/dev/null)
+    fi
     echo $((val0 | (val1 << 1) | (val2 << 2)))
 }
 
@@ -53,8 +61,10 @@ target_volts=$(( $target_volts * 1 ))  # normalize to decimal
 
 # We shouldn't have to rmmod pmbus, because it hasn't been loaded yet,
 # but if the script is rerun after the system is up, it may be necessary.
-rmmod pmbus
-reload=$?
+if [ $kernel_ver == 4 ]; then
+    rmmod pmbus
+    reload=$?
+fi
 
 # Get current voltage value
 cur_volts=$(i2cget -y 1 0x60 0x8b w)
@@ -63,12 +73,9 @@ cur_volts=$(( $cur_volts * 1 ))  # normalize to decimal
 # Only bounce the T2 if we actually need to modify the voltage
 if [ $cur_volts -ne $target_volts ]; then 
     # Set values before turning out output;  we're using "PCIE, then MCS"
-    echo 1 > /sys/class/gpio/gpio42/value
-    echo 1 > /sys/class/gpio/gpio43/value
-    echo out > /sys/class/gpio/gpio42/direction
-    echo out > /sys/class/gpio/gpio43/direction
-    echo 0 > /sys/class/gpio/gpio16/value
-    echo out > /sys/class/gpio/gpio16/direction
+    gpio_set SYSTEM_ID3_LED_N F2 1
+    gpio_set SYSTEM_ID4_LED_N F3 1
+    gpio_set SMB_TEMP_SCL_R C0 0
     # T2 is in reset;  note that this may cause NMI messages on the uServer,
     # which shouldn't be up anyway when this is first run.
     
@@ -85,15 +92,18 @@ if [ $cur_volts -ne $target_volts ]; then
     sleep 1
 
     # Let T2 come out of reset
-    echo 1 > /sys/class/gpio/gpio16/value
+    gpio_set SMB_TEMP_SCL_R C0 1
     echo "T2 ROV value set based on $rov."
     sleep 2
-    echo 0 > /sys/class/gpio/gpio42/value
-    echo 0 > /sys/class/gpio/gpio43/value
+    gpio_set SYSTEM_ID3_LED_N F2 0
+    gpio_set SYSTEM_ID4_LED_N F3 0
 else
     echo "T2 ROV already correctly set."
 fi
-# Bring back pmbus if necessary
-if [ $reload -eq 0 ]; then
-    modprobe pmbus
+
+if [ $kernel_ver == 4 ]; then
+    # Bring back pmbus if necessary
+    if [ $reload -eq 0 ]; then
+        modprobe pmbus
+    fi
 fi

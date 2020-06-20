@@ -33,6 +33,7 @@
 #include <time.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc_pal_sensors.h>
+#include <openbmc/obmc-sensors.h>
 #include "fby2_sensor.h"
 #include <openbmc/nvme-mi.h>
 
@@ -41,9 +42,15 @@
 #define MEZZ_TEMP_DEVICE "/sys/class/i2c-adapter/i2c-11/11-001f/hwmon/hwmon*"
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
-#define I2C_BUS_1_DIR "/sys/class/i2c-adapter/i2c-1/"
-#define I2C_BUS_5_DIR "/sys/class/i2c-adapter/i2c-5/"
-#define I2C_BUS_9_DIR "/sys/class/i2c-adapter/i2c-9/"
+#if defined(CONFIG_FBY2_KERNEL)
+  #define I2C_BUS_1_DIR "/sys/bus/i2c/devices/i2c-1/"
+  #define I2C_BUS_5_DIR "/sys/bus/i2c/devices/i2c-5/"
+  #define I2C_BUS_9_DIR "/sys/bus/i2c/devices/i2c-9/"
+#else
+  #define I2C_BUS_1_DIR "/sys/class/i2c-adapter/i2c-1/"
+  #define I2C_BUS_5_DIR "/sys/class/i2c-adapter/i2c-5/"
+  #define I2C_BUS_9_DIR "/sys/class/i2c-adapter/i2c-9/"
+#endif
 
 #define TACH_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 #define ADC_DIR "/sys/devices/platform/ast_adc.0"
@@ -57,9 +64,14 @@
 #define DC_SLOT3_INLET_TEMP_DEVICE I2C_BUS_5_DIR "5-004d/hwmon/hwmon*"
 #define DC_SLOT3_OUTLET_TEMP_DEVICE I2C_BUS_5_DIR "5-004e/hwmon/hwmon*"
 
-#define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
-#define FAN_TACH_RPM "tacho%d_rpm"
-#define ADC_VALUE "adc%d_value"
+#if defined(CONFIG_FBY2_KERNEL)
+  #define FAN_TACH_RPM "fan%d_input"
+  #define ADC_VALUE "in%d_input"
+#else
+  #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
+  #define FAN_TACH_RPM "tacho%d_rpm"
+  #define ADC_VALUE "adc%d_value"
+#endif
 
 #define UNIT_DIV 1000
 
@@ -98,6 +110,10 @@ static float hsc_r_sense = ADM1278_R_SENSE;
 #define ERR_UNKNOWN_FRU -1
 #define ERR_SENSOR_NA   -2
 #define ERR_FAILURE     -3
+
+#define PAGE_SIZE 0x1000
+#define AST_SCU_BASE 0x1E6E2000
+#define SCU_MULTIFUNC_CTRL3_OFFSET 0x88
 
 // List of BIC sensors which need to do negative reading handle
 const uint8_t bic_neg_reading_sensor_support_list[] = {
@@ -994,6 +1010,7 @@ read_device(const char *device, int *value) {
   }
 }
 
+#if !defined(CONFIG_FBY2_KERNEL)
 static int
 read_device_float(const char *device, float *value) {
   FILE *fp;
@@ -1023,6 +1040,7 @@ read_device_float(const char *device, float *value) {
 
   return 0;
 }
+#endif
 
 int
 fby2_get_server_type(uint8_t fru, uint8_t *type) {
@@ -1236,14 +1254,21 @@ read_temp(const char *device, float *value) {
 
 static int
 read_fan_value(const int fan, const char *device, float *value) {
-  char device_name[LARGEST_DEVICE_NAME];
+  char device_name[LARGEST_DEVICE_NAME];  
+
+#if defined(CONFIG_FBY2_KERNEL)
+  sprintf(device_name, "fan%d", fan + 1);
+  return sensors_read_fan(device_name, value);
+#else
   char full_name[LARGEST_DEVICE_NAME];
 
   snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
   snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", TACH_DIR, device_name);
   return read_device_float(full_name, value);
+#endif
 }
 
+#if !defined(CONFIG_FBY2_KERNEL)
 static int
 read_device_hex(const char *device, int *value) {
     FILE *fp;
@@ -1268,7 +1293,73 @@ read_device_hex(const char *device, int *value) {
       return 0;
     }
 }
+#endif
 
+#if defined(CONFIG_FBY2_KERNEL)
+int
+read_pwm_value(uint8_t fan_num, uint8_t* pwm) {
+  int pwm_cnt = 0;
+  int spb_type;
+  int fan_type;
+  int ret = 0;
+  int pwm_enable = 0;
+  float value = 0;
+  char label[32] = {0};
+  uint32_t fd = 0;
+  uint32_t pwm_status = 0;
+  void *base_addr;
+  void *scu88_addr;
+  
+  spb_type = fby2_common_get_spb_type();
+  fan_type = fby2_common_get_fan_type();
+
+  if (spb_type == TYPE_SPB_YV250 && fan_type == TYPE_DUAL_R_FAN) {
+    pwm_cnt = 4;
+  } else {
+    pwm_cnt = 2;
+  }
+
+  if(fan_num < 0 || fan_num >= pwm_cnt) {
+    syslog(LOG_INFO, "%s: fan number is invalid - %d", __FUNCTION__, fan_num);
+    return -1;
+  }
+
+  if (spb_type == TYPE_SPB_YV250 && fan_type == TYPE_DUAL_R_FAN) {
+    switch (fan_num) {
+      case 0:
+      case 2:
+        fan_num = 0;
+        break;
+      case 1:
+      case 3:
+        fan_num = 1;
+        break;
+    }
+  }
+
+  fd = open("/dev/mem", O_RDWR | O_SYNC );
+  if (fd < 0) {
+    syslog(LOG_ERR, "%s - cannot open /dev/mem", __func__);
+    goto get_pwm;
+  }
+  base_addr = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, AST_SCU_BASE);
+  scu88_addr = (char*)base_addr + SCU_MULTIFUNC_CTRL3_OFFSET;
+  pwm_status = *(volatile uint32_t*) scu88_addr;
+  pwm_enable = (pwm_status >> fan_num) & 0x1; 
+  close(fd);
+
+get_pwm:
+  if(pwm_enable) {  
+    snprintf(label, sizeof(label), "pwm%d", fan_num + 1);
+    ret = sensors_read_fan(label, &value);
+    *pwm = (int)value;
+  } else {  
+    *pwm = 0; 
+  }
+
+  return ret;
+}
+#else
 int
 read_pwm_value(uint8_t fan_num, uint8_t* value) {
   char path[LARGEST_DEVICE_NAME] = {0};
@@ -1332,6 +1423,7 @@ read_pwm_value(uint8_t fan_num, uint8_t* value) {
 
   return 0;
 }
+#endif
 
 static int
 read_pwm_value_float(uint8_t fan_num, float* value) {
@@ -1344,6 +1436,30 @@ read_pwm_value_float(uint8_t fan_num, float* value) {
   return ret;
 }
 
+#if defined(CONFIG_FBY2_KERNEL)
+static int
+read_adc_value(uint8_t adc_id, float *value) {
+  const char *adc_label[] = {
+    "ADC_P5V",
+    "ADC_P12V",
+    "ADC_P3V3_STBY",
+    "ADC_P12V_SLOT1",
+    "ADC_P12V_SLOT2",
+    "ADC_P12V_SLOT3",
+    "ADC_P12V_SLOT4",
+    "ADC_P3V3",
+    "ADC_P1V15_BMC_STBY",
+    "ADC_P1V2_BMC_STBY",
+    "ADC_P2V5_BMC_STBY",
+    "ADC_P1V8_STBY",
+  };
+  if (adc_id >= sizeof(adc_label)/sizeof(adc_label[0])) {
+    return -1;
+  }
+
+  return sensors_read_adc(adc_label[adc_id], value);
+}
+#else
 static int
 read_adc_value(const int pin, const char *device, float *value) {
   char device_name[LARGEST_DEVICE_NAME];
@@ -1353,6 +1469,7 @@ read_adc_value(const int pin, const char *device, float *value) {
   snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", ADC_DIR, device_name);
   return read_device_float(full_name, value);
 }
+#endif
 
 static int
 read_hsc_reg(uint8_t reg, uint8_t *rbuf, uint8_t len) {
@@ -2277,7 +2394,7 @@ fby2_sdr_init(uint8_t fru, bool force) {
 
 static bool
 is_server_prsnt(uint8_t fru) {
-  uint8_t gpio_prim, gpio_ext;
+  uint32_t gpio_prim, gpio_ext;
   int val, val_prim, val_ext;
   char path[64] = {0};
 
@@ -3122,6 +3239,32 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_pwm_value_float(FAN3, (float *) value);
 
         // Various Voltages
+#if defined(CONFIG_FBY2_KERNEL)
+        case SP_SENSOR_P5V:
+          return read_adc_value(ADC_PIN0, (float*) value);
+        case SP_SENSOR_P12V:
+          return read_adc_value(ADC_PIN1, (float*) value);
+        case SP_SENSOR_P3V3_STBY:
+          return read_adc_value(ADC_PIN2, (float*) value);
+        case SP_SENSOR_P12V_SLOT1:
+          return read_adc_value(ADC_PIN3, (float*) value);
+        case SP_SENSOR_P12V_SLOT2:
+          return read_adc_value(ADC_PIN4, (float*) value);
+        case SP_SENSOR_P12V_SLOT3:
+          return read_adc_value(ADC_PIN5, (float*) value);
+        case SP_SENSOR_P12V_SLOT4:
+          return read_adc_value(ADC_PIN6, (float*) value);
+        case SP_SENSOR_P3V3:
+          return read_adc_value(ADC_PIN7, (float*) value);
+        case SP_SENSOR_P1V15_BMC_STBY:
+          return read_adc_value(ADC_PIN8, (float*) value);
+        case SP_SENSOR_P1V2_BMC_STBY:
+          return read_adc_value(ADC_PIN9, (float*) value);
+        case SP_SENSOR_P2V5_BMC_STBY:
+          return read_adc_value(ADC_PIN10, (float*) value);
+        case SP_P1V8_STBY:
+          return read_adc_value(ADC_PIN11, (float*) value);
+#else
         case SP_SENSOR_P5V:
           return read_adc_value(ADC_PIN0, ADC_VALUE, (float*) value);
         case SP_SENSOR_P12V:
@@ -3146,6 +3289,7 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_adc_value(ADC_PIN10, ADC_VALUE, (float*) value);
         case SP_P1V8_STBY:
           return read_adc_value(ADC_PIN11, ADC_VALUE, (float*) value);
+#endif
 
         // Hot Swap Controller
         case SP_SENSOR_HSC_IN_VOLT:

@@ -104,11 +104,11 @@ do_on() {
     devmem_set_bit $(scu_addr 7c) 21
 
     # first make sure, GPIO is high
-    gpio_set $gpio 1
+    gpio_set $gpio_name $gpio 1
     # generate the power on pulse
-    gpio_set $gpio 0
+    gpio_set $gpio_name $gpio 0
     sleep 1
-    gpio_set $gpio 1
+    gpio_set $gpio_name $gpio 1
     sleep 1
     # Turn on the power LED
     /usr/local/bin/power_led.sh $slot on
@@ -140,11 +140,11 @@ do_off() {
     devmem_set_bit $(scu_addr 7c) 21
 
     # first make sure, GPIO is high
-    gpio_set $gpio 1
+    gpio_set $gpio_name $gpio 1
     sleep 1
-    gpio_set $gpio 0
+    gpio_set $gpio_name $gpio 0
     sleep 5
-    gpio_set $gpio 1
+    gpio_set $gpio_name $gpio 1
     # Turn off the power LED
     /usr/local/bin/power_led.sh $slot off
 
@@ -161,18 +161,23 @@ slot=$1
 case $slot in
   1)
     gpio=D1
+    gpio_name=PWR_SLOT1_BTN_N
     ;;
   2)
     gpio=D3
+    gpio_name=PWR_SLOT2_BTN_N
     ;;
   3)
     gpio=D5
+    gpio_name=PWR_SLOT3_BTN_N
     ;;
   4)
     gpio=D7
+    gpio_name=PWR_SLOT4_BTN_N
     ;;
   *)
     gpio=D1
+    gpio_name=PWR_SLOT1_BTN_N
     ;;
 esac
 

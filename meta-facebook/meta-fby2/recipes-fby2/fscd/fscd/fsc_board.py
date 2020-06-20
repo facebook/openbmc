@@ -26,36 +26,73 @@ from fsc_util import Logger
 
 lpal_hndl = CDLL("libpal.so.0")
 
-fru_map = {
-    "slot1": {
-        "name": "fru1",
-        "pwr_gpio": "64",
-        "bic_ready_gpio": "106",
-        "slot_num": 1,
-        "slot_12v_status": "116",
-    },
-    "slot2": {
-        "name": "fru2",
-        "pwr_gpio": "65",
-        "bic_ready_gpio": "107",
-        "slot_num": 2,
-        "slot_12v_status": "117",
-    },
-    "slot3": {
-        "name": "fru3",
-        "pwr_gpio": "66",
-        "bic_ready_gpio": "108",
-        "slot_num": 3,
-        "slot_12v_status": "118",
-    },
-    "slot4": {
-        "name": "fru4",
-        "pwr_gpio": "67",
-        "bic_ready_gpio": "109",
-        "slot_num": 4,
-        "slot_12v_status": "119",
-    },
-}
+# check kernel version
+ver = Popen('uname -r', shell=True, stdout=PIPE).stdout.read()
+ver = ver.decode()
+if ver[0] == '5':
+    gpio_path = "/tmp/gpionames/"
+    fru_map = {
+        "slot1": {
+            "name": "fru1",
+            "pwr_gpio": "SLOT1_POWER_EN",
+            "bic_ready_gpio": "I2C_SLOT1_ALERT_N",
+            "slot_num": 1,
+            "slot_12v_status": "P12V_STBY_SLOT1_EN",
+        },
+        "slot2": {
+            "name": "fru2",
+            "pwr_gpio": "SLOT2_POWER_EN",
+            "bic_ready_gpio": "I2C_SLOT2_ALERT_N",
+            "slot_num": 2,
+            "slot_12v_status": "P12V_STBY_SLOT2_EN",
+        },
+        "slot3": {
+            "name": "fru3",
+            "pwr_gpio": "SLOT3_POWER_EN",
+            "bic_ready_gpio": "I2C_SLOT3_ALERT_N",
+            "slot_num": 3,
+            "slot_12v_status": "P12V_STBY_SLOT3_EN",
+        },
+        "slot4": {
+            "name": "fru4",
+            "pwr_gpio": "SLOT4_POWER_EN",
+            "bic_ready_gpio": "I2C_SLOT4_ALERT_N",
+            "slot_num": 4,
+            "slot_12v_status": "P12V_STBY_SLOT4_EN",
+        },
+    }
+else:
+    gpio_path = "/sys/class/gpio/gpio"
+    fru_map = {
+        "slot1": {
+            "name": "fru1",
+            "pwr_gpio": "64",
+            "bic_ready_gpio": "106",
+            "slot_num": 1,
+            "slot_12v_status": "116",
+        },
+        "slot2": {
+            "name": "fru2",
+            "pwr_gpio": "65",
+            "bic_ready_gpio": "107",
+            "slot_num": 2,
+            "slot_12v_status": "117",
+        },
+        "slot3": {
+            "name": "fru3",
+            "pwr_gpio": "66",
+            "bic_ready_gpio": "108",
+            "slot_num": 3,
+            "slot_12v_status": "118",
+        },
+        "slot4": {
+            "name": "fru4",
+            "pwr_gpio": "67",
+            "bic_ready_gpio": "109",
+            "slot_num": 4,
+            "slot_12v_status": "119",
+        },
+    }
 
 loc_map = {
     "a0": "_dimm0_location",
@@ -143,12 +180,12 @@ def set_all_pwm(boost):
 
 def rc_stby_sensor_check(board):
     with open(
-        "/sys/class/gpio/gpio" + fru_map[board]["slot_12v_status"] + "/value", "r"
+        gpio_path + fru_map[board]["slot_12v_status"] + "/value", "r"
     ) as f:
         slot_12v_sts = f.read(1)
     if slot_12v_sts[0] == "1":
         with open(
-            "/sys/class/gpio/gpio" + fru_map[board]["bic_ready_gpio"] + "/value", "r"
+            gpio_path + fru_map[board]["bic_ready_gpio"] + "/value", "r"
         ) as f:
             bic_rdy = f.read(1)
         if bic_rdy[0] == "0":
@@ -168,7 +205,7 @@ def all_slots_power_off():
     all_power_off = True
     for board in fru_map:
         with open(
-            "/sys/class/gpio/gpio" + fru_map[board]["pwr_gpio"] + "/value", "r"
+            gpio_path + fru_map[board]["pwr_gpio"] + "/value", "r"
         ) as f:
             pwr_sts = f.read(1)
         if pwr_sts[0] == "1":
@@ -205,7 +242,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
     try:
         if attribute["type"] == "power_status":
             with open(
-                "/sys/class/gpio/gpio" + fru_map[board]["pwr_gpio"] + "/value", "r"
+                gpio_path + fru_map[board]["pwr_gpio"] + "/value", "r"
             ) as f:
                 pwr_sts = f.read(1)
             if pwr_sts[0] == "1":
@@ -213,7 +250,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 is_slot_server = lpal_hndl.pal_is_slot_support_update(slot_id)
                 if int(is_slot_server) == 1:
                     with open(
-                        "/sys/class/gpio/gpio"
+                        gpio_path
                         + fru_map[board]["bic_ready_gpio"]
                         + "/value",
                         "r",

@@ -38,4 +38,4 @@ else
     exit 1
 fi
 
-gpio_set 32 $VALUE
+gpio_set DEBUG_UART_SEL_0 E0 $VALUE

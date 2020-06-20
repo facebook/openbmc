@@ -20,10 +20,10 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-gpio_set F4 1
-gpio_set F5 1
+gpio_set MEZZ_PRSNTID_A_SEL_N F4 1
+gpio_set MEZZ_PRSNTID_B_SEL_N F5 1
 
-if [[ $(gpio_get_val L0) == "0" && $(gpio_get_val L1) == "1" ]]; then
+if [[ $(gpio_get MEZZ_PRSNTA2_N L0) == "0" && $(gpio_get MEZZ_PRSNTB2_N L1) == "1" ]]; then
   val=0
   for i in {1..3}; do
     val=$(i2cget -y -f 12 0x20 0 b)

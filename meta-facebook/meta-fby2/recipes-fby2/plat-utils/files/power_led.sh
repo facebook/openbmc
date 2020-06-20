@@ -36,12 +36,16 @@ fi
 # Slot#1: GPIOM0(96),Slot#2: GPIOM1(97),Slot#3: GPIOM2(98),Slot#4: GPIOM3(99)
 if [ $1 = "1" ]; then
     gpio=M0
+    name=PWR1_LED
 elif [ $1 = "2" ]; then
     gpio=M1
+    name=PWR2_LED
 elif [ $1 = "3" ]; then
     gpio=M2
+    name=PWR3_LED
 elif [ $1 = "4" ]; then
     gpio=M3
+    name=PWR4_LED
 else
     usage $0
 fi
@@ -55,4 +59,4 @@ else
     usage $0
 fi
 
-gpio_set $gpio $val
+gpio_set $name $gpio $val

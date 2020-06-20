@@ -20,15 +20,16 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-MAC1LINK=0    # GPIOA0
-FAB0_PRES=20  # GPIOC4
-FAB1_PRES=21  # GPIOC5
+MAC1LINK=A0   # GPIOA0
+FAB0_PRES=C4  # GPIOC4
+FAB1_PRES=C5  # GPIOC5
+
 while true; do
   # fabN_pres: active low.
-  if [ $(gpio_get $FAB0_PRES) = 0 ]; then
-    gpio_set $MAC1LINK 0
-  elif [ $(gpio_get $FAB1_PRES) = 0 ]; then
-    gpio_set $MAC1LINK 1
+  if [ $(gpio_get SMB_MEZZ_NIC_CLK_R $FAB0_PRES) = 0 ]; then
+    gpio_set BMC_READY_N $MAC1LINK 0
+  elif [ $(gpio_get SMB_MEZZ_NIC_DAT_R $FAB1_PRES) = 0 ]; then
+    gpio_set BMC_READY_N $MAC1LINK 1
   fi
   sleep 1
 done

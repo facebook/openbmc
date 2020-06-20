@@ -137,6 +137,8 @@ fby2_get_fruid_eeprom_path(uint8_t fru, char *path) {
     case FRU_SPB:
 #if defined(CONFIG_FBY3_POC)
       sprintf(path, "/sys/class/i2c-adapter/i2c-10/10-0051/eeprom");
+#elif defined(CONFIG_FBY2_KERNEL)
+      sprintf(path, "/sys/bus/i2c/devices/8-0051/eeprom");
 #else
       sprintf(path, "/sys/class/i2c-adapter/i2c-8/8-0051/eeprom");
 #endif

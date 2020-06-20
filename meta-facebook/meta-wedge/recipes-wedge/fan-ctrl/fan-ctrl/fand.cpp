@@ -346,6 +346,12 @@ int temp_top = TEMP_TOP;
 int report_temp = REPORT_TEMP;
 bool verbose = false;
 
+#define LOG_VERBOSE(fmt, args...)    \
+  do {                               \
+    if (verbose)                     \
+      syslog(LOG_INFO, fmt, ##args); \
+  } while (0)
+
 void usage() {
   fprintf(stderr,
           "fand [-v] [-l <low-pct>] [-m <medium-pct>] "
@@ -371,18 +377,32 @@ void usage() {
 
 static int read_fan_speed(int fan, int *rpm)
 {
+  int rc;
+
   assert(active_fan_ctrl != NULL);
   assert(active_fan_ctrl->fan_rpm_read != NULL);
 
-  return active_fan_ctrl->fan_rpm_read(active_fan_ctrl, fan, rpm);
+  rc = active_fan_ctrl->fan_rpm_read(active_fan_ctrl, fan, rpm);
+  if (rc == 0) {
+    LOG_VERBOSE("fan %d, current speed (rpm): %d", fan, *rpm);
+  }
+
+  return rc;
 }
 
 static int write_fan_speed(int fan, int percent)
 {
+  int rc;
+
   assert(active_fan_ctrl != NULL);
   assert(active_fan_ctrl->fan_pwm_write != NULL);
 
-  return active_fan_ctrl->fan_pwm_write(active_fan_ctrl, fan, percent);
+  rc = active_fan_ctrl->fan_pwm_write(active_fan_ctrl, fan, percent);
+  if (rc == 0) {
+    LOG_VERBOSE("fan %d, pwm is set to %d percent", fan, percent);
+  }
+
+  return rc;
 }
 
 static int fan_controller_init_41(struct fan_controller *controller)
@@ -1043,6 +1063,8 @@ int main(int argc, char **argv) {
             EXTERNAL_TEMPS(temp_bottom),
             EXTERNAL_TEMPS(temp_top));
   }
+  LOG_VERBOSE("temperature settings: bottom=%d, top=%d",
+              temp_bottom, temp_top);
 
   if (fan_low > fan_medium || fan_low > fan_high || fan_medium > fan_high) {
     fprintf(stderr,
@@ -1052,6 +1074,8 @@ int main(int argc, char **argv) {
             fan_medium,
             fan_high);
   }
+  LOG_VERBOSE("fan speed settings: low=%d, medium=%d, high=%d",
+              fan_low, fan_medium, fan_high);
 
   /*
    * Determine which fan controller to be used based on kernel version.
@@ -1060,6 +1084,7 @@ int main(int argc, char **argv) {
   if (k_version > KERNEL_VERSION(4, 1, 51)) {
     active_fan_ctrl = &fan_controller_5x;
   }
+  LOG_VERBOSE("Setting up %s", active_fan_ctrl->name);
   if (active_fan_ctrl->init != NULL) {
     if (active_fan_ctrl->init(active_fan_ctrl) != 0) {
       syslog(LOG_CRIT, "unable to initialize %s!", active_fan_ctrl->name);
@@ -1073,10 +1098,7 @@ int main(int argc, char **argv) {
 
   daemon(1, 0);
 
-  if (verbose) {
-    syslog(LOG_DEBUG, "Starting up;  system should have %d fans.",
-           total_fans);
-  }
+  LOG_VERBOSE("Starting up;  system should have %d fans.", total_fans);
 
   for (fan = 0; fan < total_fans; fan++) {
     fan_bad[fan] = 0;
@@ -1097,8 +1119,8 @@ int main(int argc, char **argv) {
     int max_temp;
     old_speed = fan_speed;
 
+    LOG_VERBOSE("checking system temperature..");
     /* Read sensors */
-
     read_temp(INTAKE_TEMP_DEVICE, &intake_temp);
     read_temp(EXHAUST_TEMP_DEVICE, &exhaust_temp);
     read_temp(CHIP_TEMP_DEVICE, &switch_temp);
@@ -1173,6 +1195,7 @@ int main(int argc, char **argv) {
       max_temp = userver_temp + USERVER_TEMP_FUDGE;
     }
 
+    LOG_VERBOSE("checking/adjusting fan speed..");
     /*
      * If recovering from a fan problem, spin down fans gradually in case
      * temperatures are still high. Gradual spin down also reduces wear on
@@ -1305,6 +1328,7 @@ int main(int argc, char **argv) {
     /* if everything is fine, restart the watchdog countdown. If this process
      * is terminated, the persistent watchdog setting will cause the system
      * to reboot after the watchdog timeout. */
+    LOG_VERBOSE("kicking watchdog");
     kick_watchdog();
   }
 

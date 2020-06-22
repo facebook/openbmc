@@ -1653,9 +1653,9 @@ read_nic_temp(const char *device, uint8_t addr, float *value) {
     return -1;
   }
 
-  if (res == 0x80) {
-    // NIC shutdown return 0x80 can view as return NA
-    syslog(LOG_ERR, "%s, NIC shutdown read sensor failed", __func__);
+  if (res >= 0x80 && res < 0xC4) {
+    // filter invalid NIC temp from -128 to -60, view them as NA
+    syslog(LOG_ERR, "%s, NIC shutdown read sensor failed value=%u", __func__,res);
     return EER_READ_NA;
   }
 

@@ -20,6 +20,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fby3:warrior
   meta-fuji:warrior
   meta-elbert:warrior
+  meta-grandcanyon:warrior
 )
 
 platform="$1"

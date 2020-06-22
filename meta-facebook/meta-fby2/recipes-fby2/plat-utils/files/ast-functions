@@ -17,6 +17,7 @@ get_kernel_ver() {
   else
     ver=$(uname -r)
     echo ${ver:0:1} > /tmp/kernel_ver
+    cat /tmp/kernel_ver
   fi
 }
 

@@ -533,7 +533,7 @@ int reverse_bit(int raw_val);
 int program_dev_fw(uint8_t slot_id, uint8_t dev_id, int bus, char* image, int start, int end);
 int update_dev_firmware (uint8_t slot_id, uint8_t dev_id, char* image);
 int bic_fget_device_info(uint8_t slot_id, uint8_t dev_num, uint8_t *ffi, uint8_t *meff, uint16_t *vendor_id, uint8_t *major_ver, uint8_t *minor_ver);
-
+int bic_disable_brcm_parity_init(uint8_t slot_id, uint8_t drv_num);
 void bic_check_pcie_link(uint8_t fru);
 
 #ifdef __cplusplus

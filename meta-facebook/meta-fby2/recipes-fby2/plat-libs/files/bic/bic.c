@@ -968,6 +968,44 @@ _check_brcm_fw_status(uint8_t slot_id, uint8_t drv_num) {
 }
 
 int
+bic_disable_brcm_parity_init(uint8_t slot_id, uint8_t drv_num) {
+  uint8_t bus, wbuf[256], rbuf[256];
+  int ret = 0;
+  int rlen = 0; // write
+
+  bic_disable_sensor_monitor(slot_id, 1); // disable sensor monitor
+  msleep(100);
+
+  // MUX select
+  bus = (2 + drv_num/2) * 2 + 1;
+  wbuf[0] = 1 << (drv_num%2);
+  ret = bic_master_write_read(slot_id, bus, 0xe2, wbuf, 1, rbuf, 0);
+  if (ret != 0) {
+    syslog(LOG_DEBUG,"%s(): bic_master_write_read offset=%d  failed", __func__,wbuf[0]);
+    bic_disable_sensor_monitor(slot_id, 0); // enable sensor monitor
+    return ret;
+  }
+
+  wbuf[0] = BRCM_WRITE_CMD;  // offset 130
+  wbuf[1] = 0x08;
+  wbuf[2] = 0x78;
+  wbuf[3] = 0x0c;
+  wbuf[4] = 0x07;
+  wbuf[5] = 0x40;
+  wbuf[6] = 0x04;
+  wbuf[7] = 0x00;
+  wbuf[8] = 0x40;
+  wbuf[9] = 0x00;
+  wbuf[10] = 0x00;
+  ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 11, rbuf, rlen);
+  if (ret != 0) {
+    syslog(LOG_DEBUG,"%s(): bic_master_write_read offset=%d  failed", __func__,wbuf[0]);
+  }
+  bic_disable_sensor_monitor(slot_id, 0); // enable sensor monitor
+  return ret;
+}
+
+int
 _update_brcm_fw(uint8_t slot_id, uint8_t drv_num, uint8_t target, uint32_t offset, uint16_t count, uint8_t * buf) {
   uint8_t bus, wbuf[256], rbuf[256];
   int ret = 0;

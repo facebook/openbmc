@@ -858,6 +858,7 @@ int
 pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   int ret = PAL_EOK;
   uint8_t bmc_location = 0;
+  uint8_t status_12v = 1;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -870,8 +871,12 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      *status = 1;
-      //ret = fby3_common_is_bic_ready(fru, status);
+      ret = pal_get_server_12v_power(fru, &status_12v);
+      if(ret < 0 || status_12v == SERVER_12V_OFF) {
+        *status = 0;
+      } else {
+        *status = 1;
+      }
       break;
     case FRU_BB:
       *status = 1;

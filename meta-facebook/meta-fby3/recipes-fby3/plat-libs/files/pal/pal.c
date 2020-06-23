@@ -123,16 +123,22 @@ struct pal_key_cfg {
 };
 
 MAPTOSTRING root_port_mapping[] = {
-    { 0xB2, 3, 0x3D, "0", "1OU"}, //Port 0x4D
-    { 0xB2, 2, 0x3C, "1", "1OU"}, //Port 0x4C
-    { 0xB2, 1, 0x3B, "2", "1OU"}, //Port 0x4B
-    { 0xB2, 0, 0x3A, "3", "1OU"}, //Port 0x4A
-    { 0x15, 0, 0x1A, "0", "2OU"}, //Port 0x1A
-    { 0x15, 1, 0x1B, "1", "2OU"}, //Port 0x1B
-    { 0x63, 1, 0x2B, "2", "2OU"}, //Port 0x2B
-    { 0x63, 0, 0x2A, "3", "2OU"}, //Port 0x2A
-    { 0x15, 2, 0x1C, "4", "2OU"}, //Port 0x1C
-    { 0x15, 3, 0x1D, "5", "2OU"}, //Port 0x1D
+    { 0xB2, 3, 0x3D, "Num 0", "1OU"}, //Port 0x4D
+    { 0xB2, 2, 0x3C, "Num 1", "1OU"}, //Port 0x4C
+    { 0xB2, 1, 0x3B, "Num 2", "1OU"}, //Port 0x4B
+    { 0xB2, 0, 0x3A, "Num 3", "1OU"}, //Port 0x4A
+    { 0x15, 0, 0x1A, "Num 0", "2OU"}, //Port 0x1A
+    { 0x15, 1, 0x1B, "Num 1", "2OU"}, //Port 0x1B
+    { 0x63, 1, 0x2B, "Num 2", "2OU"}, //Port 0x2B
+    { 0x63, 0, 0x2A, "Num 3", "2OU"}, //Port 0x2A
+    { 0x15, 2, 0x1C, "Num 4", "2OU"}, //Port 0x1C
+    { 0x15, 3, 0x1D, "Num 5", "2OU"}, //Port 0x1D
+    // NIC
+    { 0xB2, 0, 0x4A, "Class 2", "NIC"}, // Class 2 NIC    TODO check root port
+    { 0x63, 3, 0x2D, "Class 1", "NIC"}, // Class 1 NIC
+    // DL
+    { 0x63, 2, 0x2C, "Num 1", "SB" },
+    { 0x00, 0x1D, 0xFF, "Num 0", "SB"},
 };
 
 PCIE_ERR_DECODE pcie_err_tab[] = {
@@ -1524,6 +1530,8 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 int
 pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
+#define ERROR_LOG_LEN 256
+
   uint8_t general_info = (uint8_t) sel[3];
   uint8_t error_type = general_info & 0x0f;
   uint8_t plat;
@@ -1542,6 +1550,8 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   char *sil = "NA";
   char *location = "NA";
   char *err1_descript = "NA", *err2_descript = "NA";
+  int ret = 0;
+  uint8_t bmc_location = 0;
 
   switch (error_type) {
     case UNIFIED_PCIE_ERR:
@@ -1551,6 +1561,16 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
           if ((sel[11] == root_port_mapping[index].bus_value) && ((sel[10] >> 3) == root_port_mapping[index].dev_value)) {
             location = root_port_mapping[index].location;
             sil = root_port_mapping[index].silk_screen;
+            if (!strcmp(location, "1OU")) {
+              ret = fby3_common_get_bmc_location(&bmc_location);
+              if ( ret < 0 ) {
+                syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+              }
+
+              if (bmc_location == NIC_BMC ) {
+                continue;
+              }
+            }
             break;
           }
         }
@@ -1567,11 +1587,11 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
             break;
           }
         }
-        sprintf(error_log, "GeneralInfo: x86/PCIeErr(0x%02X), Bus %02X/Dev %02X/Fun %02X, %s/Num %s,\
+        snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: x86/PCIeErr(0x%02X), Bus %02X/Dev %02X/Fun %02X, %s/%s,\
                             TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X(%s), ErrID1: 0x%02X(%s)",
                 general_info, sel[11], sel[10] >> 3, sel[10] & 0x7, location, sil, ((sel[13]<<8)|sel[12]), sel[14], err2_descript, sel[15], err1_descript);
       } else {
-        sprintf(error_log, "GeneralInfo: ARM/PCIeErr(0x%02X), Aux. Info: 0x%04X, Bus %02X/Dev %02X/Fun %02X, \
+        snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: ARM/PCIeErr(0x%02X), Aux. Info: 0x%04X, Bus %02X/Dev %02X/Fun %02X, \
                             TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
                 general_info, ((sel[9]<<8)|sel[8]),sel[11], sel[10] >> 3, sel[10] & 0x7, ((sel[13]<<8)|sel[12]), sel[14], sel[15]);
       }

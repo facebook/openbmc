@@ -24,6 +24,9 @@
 #define MAX_SDR_LEN 64
 #define SDR_PATH "/tmp/sdr_%s.bin"
 
+#define PWM_PLAT_SET 0x80
+#define PWM_MASK     0x0f
+
 enum {
   /* Fan Type */
   DUAL_TYPE    = 0x00,
@@ -45,8 +48,7 @@ static int read_hsc_iout(uint8_t hsc_id, float *value);
 static int read_medusa_val(uint8_t snr_number, float *value);
 static int read_cached_val(uint8_t snr_number, float *value);
 static int read_fan_speed(uint8_t snr_number, float *value);
-static int read_fan_pwm(uint8_t snr_number, float *value);
-static int pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_fan_pwm(uint8_t pwm_id, float *value);
 
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 static bool sdr_init_done[MAX_NUM_FRUS] = {false};
@@ -102,6 +104,10 @@ const uint8_t nicexp_sensor_list[] = {
   BMC_SENSOR_FAN5_TACH,
   BMC_SENSOR_FAN6_TACH,
   BMC_SENSOR_FAN7_TACH,
+  BMC_SENSOR_PWM0,
+  BMC_SENSOR_PWM1,
+  BMC_SENSOR_PWM2,
+  BMC_SENSOR_PWM3,
   BMC_SENSOR_OUTLET_TEMP,
   BMC_SENSOR_P12V,
   BMC_SENSOR_P3V3_STBY,
@@ -636,10 +642,10 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_FAN5_TACH", 0xE5, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE5
   {"BMC_SENSOR_FAN6_TACH", 0xE6, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE6
   {"BMC_SENSOR_FAN7_TACH", 0xE7, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE7
-  {"BMC_SENSOR_PWM0", 0xE8, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xE8
-  {"BMC_SENSOR_PWM1", 0xE9, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xE9
-  {"BMC_SENSOR_PWM2", 0xEA, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xEA
-  {"BMC_SENSOR_PWM3", 0xEB, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xEB
+  {"BMC_SENSOR_PWM0", PWM_0, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xE8
+  {"BMC_SENSOR_PWM1", PWM_1, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xE9
+  {"BMC_SENSOR_PWM2", PWM_2, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xEA
+  {"BMC_SENSOR_PWM3", PWM_3, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xEB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEC
   {"BMC_INLET_TEMP",  TEMP_INLET,  read_temp, true, {50, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xED
   {"BMC_OUTLET_TEMP", TEMP_OUTLET, read_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEE
@@ -957,13 +963,24 @@ int pal_get_fan_name(uint8_t num, char *name)
   return 0;
 }
 
-// Provide the fan pwm to fan-util and it also will be called by read_fan_pwm
-int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
-{
+static int
+_pal_get_pwm_value(uint8_t pwm, float *value, uint8_t bmc_location) {
+  if ( bmc_location == NIC_BMC ) {
+    return bic_get_fan_pwm(pwm, value);
+  }
+
   char label[32] = {0};
-  float value;
-  int ret;
+  snprintf(label, sizeof(label), "pwm%d", pwm + 1);
+  return sensors_read_fan(label, value);
+}
+
+// Provide the fan pwm to fan-util and it also will be called by read_fan_pwm
+int pal_get_pwm_value(uint8_t fan, uint8_t *pwm) {
+  char label[32] = {0};
+  float value = 0;
+  int ret = 0;
   uint8_t fan_src = 0;
+  uint8_t pwm_snr = 0;
   uint8_t fan_type = UNKNOWN_TYPE;
   uint8_t bmc_location = 0;
 
@@ -973,25 +990,25 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
     fan_type = UNKNOWN_TYPE;
   }
 
-  if ( fan_type == SINGLE_TYPE ) fan *= 2;
-
-  fan_src = pal_get_fan_source(fan);
-  if (fan >= pal_tach_cnt || fan_src == 0xff ) {
-    syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
-    return -1;
+  if ( fan >= pal_tach_cnt ) {
+    syslog(LOG_WARNING, "%s() invalid fan#%d", __func__, fan);
+    return PAL_ENOTSUP;
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-    snprintf(label, sizeof(label), "pwm%d", fan_src + 1);
-    ret = sensors_read_fan(label, &value);
-  } else if (bmc_location == NIC_BMC) {
-    ret = bic_get_fan_pwm(fan_src, &value);
+  if ( NIC_BMC == bmc_location ) {
+    fan_src = pal_get_fan_source(fan);
+  } else fan_src = fan;
+
+  //read cached value if it's available
+  pwm_snr = BMC_SENSOR_PWM0 + fan_src;
+  if ( sensor_cache_read(FRU_BMC, pwm_snr, &value) < 0 ) {
+    ret = _pal_get_pwm_value(fan_src, &value, bmc_location);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get the PWM%d of fan%d", __func__, fan_src, fan);
+    }
   }
 
-  if (ret == 0) {
-    *pwm = (int)value;
-  }
-
+  *pwm = (uint8_t)value;
   return ret;
 }
 
@@ -1054,20 +1071,18 @@ pal_get_tach_cnt(void) {
 }
 
 static void
-apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value) {
-  int i = 0;
-  const uint8_t fan_num[4] = {FAN_0, FAN_1, FAN_2, FAN_3}; //Use fan# to get the PWM.
-  static uint8_t pwm[4] = {0};
-  static bool pwm_valid[4] = {false, false, false, false};
+apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value, uint8_t bmc_location) {
+  int pwm = 0;
   static bool inited = false;
+  float pwm_val = 0;
   float avg_pwm = 0;
   uint8_t cnt = 0;
 
   // Get PWM value
-  for (i = 0; i < pal_pwm_cnt; i ++) {
-    if (pal_get_pwm_value(fan_num[i], &pwm[i]) == 0 || pwm_valid[i] == true) {
-      pwm_valid[i] = true;
-      avg_pwm += (float)pwm[i];
+  for (pwm = 0; pwm < pal_pwm_cnt; pwm++) {
+    if ( _pal_get_pwm_value(pwm, &pwm_val, bmc_location) < 0 ) continue;
+    else {
+      avg_pwm += pwm_val;
       cnt++;
     }
   }
@@ -1079,20 +1094,28 @@ apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value) {
       sensor_correction_init("/etc/sensor-frontIO-correction.json");
     }
     sensor_correction_apply(fru, snr_num, avg_pwm, value);
+  } else {
+    syslog(LOG_WARNING, "Failed to apply frontIO correction");
   }
 }
 
 // Provide the fan pwm to sensor-util
 static int
-read_fan_pwm(uint8_t snr_number, float *value) {
-  uint8_t pwm = 0;
+read_fan_pwm(uint8_t pwm_id, float *value) {
+  static uint8_t bmc_location = 0;
+  float pwm = 0;
   int ret = 0;
-  uint8_t pwm_number = snr_number - BMC_SENSOR_PWM0;
-  ret = pal_get_pwm_value(pwm_number, &pwm);
+
+  if ( bmc_location == 0 ) {
+    if ( (pwm_id & PWM_PLAT_SET) == PWM_PLAT_SET ) bmc_location = NIC_BMC;
+    else bmc_location = DVT_BB_BMC;
+  }
+
+  ret = _pal_get_pwm_value((pwm_id&PWM_MASK), &pwm, bmc_location);
   if ( ret < 0 ) {
     ret = READING_NA;
   }
-  *value = (float)pwm;
+  *value = pwm;
   return ret;
 }
 
@@ -1533,14 +1556,13 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num) {
 }
 
 static int
-pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
+pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t bmc_location){
 #define BIC_SENSOR_READ_NA 0x20
 #define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
   int ret = 0;
   uint8_t power_status = 0, config_status = 0;
   ipmi_sensor_reading_t sensor = {0};
   sdr_full_t *sdr = NULL;
-  uint8_t bmc_location = 0;
   char path[128];
   sprintf(path, SLOT_SENSOR_LOCK, fru);
   uint8_t *bic_skip_list;
@@ -1577,11 +1599,6 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
   }
   config_status = (uint8_t) ret;
 
-  ret = fby3_common_get_bmc_location(&bmc_location);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
-  }
-  
   ret = access(path, F_OK);
   if(ret == 0) {
     return READING_SKIP;
@@ -1672,7 +1689,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
   //correct the value
   switch (sensor_num) {
     case BIC_SENSOR_FIO_TEMP:
-      apply_frontIO_correction(fru, sensor_num, value);
+      apply_frontIO_correction(fru, sensor_num, value, bmc_location);
       break;
     case BIC_SENSOR_CPU_THERM_MARGIN:
       if ( *value > 0 ) *value = -(*value);
@@ -1705,6 +1722,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     } else {
       if ( bmc_location == NIC_BMC ) {
         sensor_map[BMC_SENSOR_OUTLET_TEMP].id = TEMP_NICEXP_OUTLET;
+        //Use to indicate that we need to handle PWM sensors especially.
+        //Also, use bit7 to represent class 1 or 2.
+        sensor_map[BMC_SENSOR_PWM0].id |= PWM_PLAT_SET;
+        sensor_map[BMC_SENSOR_PWM1].id |= PWM_PLAT_SET;
+        sensor_map[BMC_SENSOR_PWM2].id |= PWM_PLAT_SET;
+        sensor_map[BMC_SENSOR_PWM3].id |= PWM_PLAT_SET;
       }
     }
   }
@@ -1721,7 +1744,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       if (pal_is_fw_update_ongoing(fru)) {
         return READING_SKIP;
       } else {
-        ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value);
+        ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location);
       }
       break;
     case FRU_BMC:

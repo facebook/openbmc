@@ -293,6 +293,10 @@ enum {
 static long post_end_counter = POST_END_COUNTER_IGNORE_LOG;
 static long nvme_ready_counter = NVME_READY_COUNTER_NOT_READY;
 
+/* To identify the API is excuted by power-util or not
+   If pair slot power 12V-on/off/cycle sucees, print the sel*/
+static bool from_power_util = false;
+
 typedef struct {
   uint16_t flag;
   float ucr;
@@ -3174,6 +3178,44 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
 
   return 0;
 }
+
+int
+pal_set_pair_power_succees_sel(uint8_t slot_id, uint8_t cmd) {
+  uint8_t pair_slot_id;
+
+  if (from_power_util == false)
+    return -1;
+
+  switch(pal_get_pair_slot_type(slot_id)) {
+    case TYPE_CF_A_SV:
+    case TYPE_GP_A_SV:
+    case TYPE_GPV2_A_SV:
+      if (0 == slot_id%2)
+        pair_slot_id = slot_id - 1;
+      else
+        pair_slot_id = slot_id + 1;
+      break;
+    default:
+      return -1;
+  }
+
+  switch (cmd)
+  {
+    case SERVER_12V_OFF:
+      syslog(LOG_CRIT, "PAIR_12V_OFF successful for FRU: %d", pair_slot_id);
+      break;
+    case SERVER_12V_ON:
+      syslog(LOG_CRIT, "PAIR_12V_ON successful for FRU: %d", pair_slot_id);
+      break;
+    case SERVER_12V_CYCLE:
+      syslog(LOG_CRIT, "PAIR_12V_CYCLE successful for FRU: %d", pair_slot_id);
+      break;
+    default:
+      return -1;
+  }
+  return 0;
+}
+
 // Power Off, Power On, or Power Reset the server in given slot
 int
 pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
@@ -3294,6 +3336,8 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
             break;
         }
       }
+      if (ret == 0)
+        pal_set_pair_power_succees_sel(slot_id,cmd);
       return ret;
 
     case SERVER_12V_OFF:
@@ -3313,15 +3357,23 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
           case TYPE_GP_A_SV:
           case TYPE_GPV2_A_SV:
             pair_slot_id = slot_id + 1;
-            return server_12v_off(pair_slot_id);
+            ret = server_12v_off(pair_slot_id);
+            if (ret == 0)
+              pal_set_pair_power_succees_sel(slot_id,cmd);
+            return ret;
           default:
             break;
         }
       }
-      return server_12v_off(slot_id);
+      ret = server_12v_off(slot_id);
+      if (ret == 0)
+        pal_set_pair_power_succees_sel(slot_id,cmd);
+      return ret;
 
     case SERVER_12V_CYCLE:
       ret = server_12v_cycle_physically(slot_id);
+      if (ret == 0)
+        pal_set_pair_power_succees_sel(slot_id,cmd);
       return ret;
 
     case SERVER_GLOBAL_RESET:
@@ -9919,6 +9971,8 @@ pal_can_change_power(uint8_t fru)
   char fruname[32];
   char pair_fruname[32];
   uint8_t pair_fru;
+
+  from_power_util = true; // pal_can_change_power is excuted only by power-util
 
   if (pal_get_fru_name(fru, fruname)) {
     sprintf(fruname, "fru%d", fru);

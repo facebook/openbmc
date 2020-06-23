@@ -440,6 +440,9 @@ const uint8_t spb_sensor_list[] = {
   SP_SENSOR_HSC_IN_POWER,
   SP_SENSOR_HSC_PEAK_IOUT,
   SP_SENSOR_HSC_PEAK_PIN,
+#ifdef CONFIG_FBY2_GPV2
+  SP_SENSOR_BMC_HSC_PIN,
+#endif
 };
 
 // List of SPB sensors to be monitored (YV2.50 Dual FAN)
@@ -474,6 +477,9 @@ const uint8_t spb_sensor_dual_r_fan_list[] = {
   SP_SENSOR_HSC_IN_POWER,
   SP_SENSOR_HSC_PEAK_IOUT,
   SP_SENSOR_HSC_PEAK_PIN,
+#ifdef CONFIG_FBY2_GPV2
+  SP_SENSOR_BMC_HSC_PIN,
+#endif
 };
 
 const uint8_t dc_sensor_list[] = {
@@ -2599,6 +2605,9 @@ fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case SP_SENSOR_HSC_PEAK_PIN:
           sprintf(units, "Watts");
           break;
+        case SP_SENSOR_BMC_HSC_PIN:
+          sprintf(units, "Watts");
+          break;
       }
       break;
     case FRU_NIC:
@@ -2969,6 +2978,9 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case SP_SENSOR_HSC_PEAK_PIN:
           sprintf(name, "SP_HSC_PEAK_PIN");
           break;
+        case SP_SENSOR_BMC_HSC_PIN:
+          sprintf(name, "SP_BMC_HSC_PIN");
+          break;
       }
       break;
     case FRU_NIC:
@@ -3042,7 +3054,6 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-
       switch(fby2_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER:
@@ -3304,6 +3315,8 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_hsc_value(0xd0, (800*hsc_r_sense), 20475, -1, (float *)value);
         case SP_SENSOR_HSC_PEAK_PIN:
           return read_hsc_value(0xda, (6123*hsc_r_sense), 0, -2, (float *)value);
+        case SP_SENSOR_BMC_HSC_PIN:
+          return 0;
       }
       break;
 

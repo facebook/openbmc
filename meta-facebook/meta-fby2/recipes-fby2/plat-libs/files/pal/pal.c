@@ -717,6 +717,37 @@ power_value_adjust(const struct power_coeff *table, float *value) {
   return;
 }
 
+// SP_BMC_HSC_PIN = SP_HSC_IN_POWER - (slot1 GPv2 INA230 Pwr + slot2 INA230 Power + slot3 GPv2 INA230 Pwr + slot4 INA230 Power) 
+static int
+calc_bmc_hsc_value(float *value) {
+  uint8_t ret = 0;
+  float bmc_hsc_val = 0, val = 0;
+  uint8_t status = 0;
+  uint8_t i = 0;
+  uint8_t hsc_snr_list[4] = {GPV2_SENSOR_INA230_POWER, BIC_SENSOR_INA230_POWER, 
+                             GPV2_SENSOR_INA230_POWER, BIC_SENSOR_INA230_POWER}; // power sensor for 4 slots
+
+  ret = pal_sensor_read_raw(FRU_SPB, SP_SENSOR_HSC_IN_POWER, &val);
+  if (ret != 0) {
+    return ret;
+  }
+  bmc_hsc_val = val;
+
+  for (i = 0; i < 4; i++) {
+    pal_is_fru_prsnt(FRU_SLOT1 + i, &status);
+    if (status == 1) {
+      ret = fby2_sensor_read(FRU_SLOT1 + i, hsc_snr_list[i], &val);
+      if (ret != 0) {
+        return ret;
+      }
+      bmc_hsc_val -= val;
+    }
+  }  
+  *value = bmc_hsc_val;
+
+  return ret;
+}
+
 typedef struct _inlet_corr_t {
   uint8_t duty;
   float delta_t;
@@ -4529,7 +4560,6 @@ pal_check_board_type(uint8_t *status) {
 
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
-
   uint8_t status;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
@@ -4616,6 +4646,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           power_value_adjust(nd_pwr_cali_table, (float *)value);
         } else {
           power_value_adjust(pwr_cali_table, (float *)value);
+        }
+      }
+      if (sensor_num == SP_SENSOR_BMC_HSC_PIN) {
+        ret = calc_bmc_hsc_value((float *)value);
+        if (ret != 0) {
+          return ERR_SENSOR_NA;
         }
       }
       if (sensor_num == SP_SENSOR_INLET_TEMP) {
@@ -12275,4 +12311,22 @@ pal_dev_jtag_gpio_to_bus(uint8_t fru) {
   }
 
   return bus;
+}
+
+bool 
+pal_sensor_is_cached(uint8_t fru, uint8_t sensor_num) {
+  if (fru == FRU_SPB) {
+    if (sensor_num == SP_SENSOR_BMC_HSC_PIN) {
+      return false;
+    }
+  }
+  return true;
+}
+
+uint8_t
+pal_get_iana_id(uint8_t *id) {
+  uint8_t iana_id[] = {0x15, 0xA0, 0x00};
+
+  memcpy(id, iana_id, sizeof(iana_id));
+  return PAL_EOK;
 }

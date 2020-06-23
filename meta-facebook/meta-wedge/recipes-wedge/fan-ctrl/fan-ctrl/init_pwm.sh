@@ -23,6 +23,14 @@ PWM_DIR=/sys/devices/platform/ast_pwm_tacho.0
 
 set -e
 
+#
+# Note: the script is only needed for kernel 4.1, as pwm/tacho is already
+# initialized in device tree in kernel 5.x.
+#
+if ! uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
+    exit 0
+fi
+
 # Enable PWM 0, 1, 6, 7
 devmem_set_bit $(scu_addr 88) 0
 devmem_set_bit $(scu_addr 88) 1

@@ -1067,7 +1067,7 @@ main(int argc, char **argv) {
     }
 
     if (pal_is_fw_update_ongoing(pfr_fru)) {
-      printf("FW update for %s is ongoing, block the power controlling.\n", fruname);
+      printf("FW update for %s is ongoing, block the command.\n", fruname);
       return -1;
     }
 

@@ -13,7 +13,6 @@ using namespace std;
 #define MAX_RETRY 30
 #define MUX_SWITCH_CPLD 0x07
 #define MUX_SWITCH_PCH 0x03
-#define GPIO_RST_USB_HUB 0x10
 #define GPIO_HIGH 1
 #define GPIO_LOW 0
 
@@ -42,7 +41,7 @@ int BiosComponent::update(string image) {
     }
 
     me_recovery(slot_id, RECOVERY_MODE);
-    bic_set_gpio(slot_id, GPIO_RST_USB_HUB, GPIO_HIGH);
+    bic_set_gpio(slot_id, RST_USB_HUB_N, GPIO_HIGH);
     sleep(3);
     bic_switch_mux_for_bios_spi(slot_id, MUX_SWITCH_CPLD);
     sleep(1);
@@ -54,7 +53,7 @@ int BiosComponent::update(string image) {
     pal_set_server_power(slot_id, SERVER_12V_CYCLE);
     sleep(5);
     pal_set_server_power(slot_id, SERVER_POWER_ON);
-    bic_set_gpio(slot_id, GPIO_RST_USB_HUB, GPIO_LOW);
+    bic_set_gpio(slot_id, RST_USB_HUB_N, GPIO_LOW);
 
   } catch(string err) {
     return FW_STATUS_NOT_SUPPORTED;

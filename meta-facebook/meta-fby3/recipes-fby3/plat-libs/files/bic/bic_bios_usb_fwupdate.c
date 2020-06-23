@@ -223,6 +223,7 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
   uint8_t bmc_location = 0;
   int remain = 0;
   unsigned char buff[1];
+  char *update_target = "bios";
 
   ret = libusb_init(NULL);
   if (ret < 0) {
@@ -432,10 +433,13 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
 
     if (comp == FW_BIOS) {
       shift_offset = 0;
+      update_target = "bios";
     } else if ( (comp == FW_BIOS_CAPSULE) || (comp == FW_BIOS_RCVY_CAPSULE) ){
       shift_offset = BIOS_CAPSULE_OFFSET;
+      update_target = "bios capsule to PCH";
     } else if ( (comp == FW_CPLD_CAPSULE) || (comp == FW_CPLD_RCVY_CAPSULE) ) {
       shift_offset = CPLD_CAPSULE_OFFSET;
+      update_target = "cpld capsule to PCH";
     }
 
     data[1] = (offset + shift_offset) & 0xFF;
@@ -462,7 +466,7 @@ resend:
     offset += read_cnt;
     if ( (record_offset + fsize) <= offset ) {
       _set_fw_update_ongoing(slot_id, 60);
-      printf("updated bios: %d %%\n", (offset/fsize)*5);
+      printf("updated %s: %d %%\n", update_target, (offset/fsize)*5);
       record_offset += fsize;
     }
   }
@@ -481,7 +485,9 @@ resend:
   }
 
   gettimeofday(&end, NULL);
-  printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
+  if (comp == FW_BIOS) {
+    printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
+  }
 
   ret = 0;
 error_exit:

@@ -173,6 +173,7 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   uint8_t bus_id;
   uint8_t dataCksum;
   int retry = 0;
+  uint8_t status_12v = 0;
 
 #if 0
   //TODO: implement the is_bic_ready funcitons
@@ -180,6 +181,12 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
     return -1;
   }
 #endif
+
+  // avoid waiting 5 seconds to do the retry
+  ret = fby3_common_server_stby_pwr_sts(slot_id, &status_12v);
+  if ( ret < 0 || status_12v == 0) {
+    return -1;
+  }
 
   ret = fby3_common_get_bus_id(slot_id);
   if (ret < 0) {

@@ -203,6 +203,7 @@ static int
 read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t cmd) {
   int ret = 0, offset_base = 0;
   int rlen = 0;
+  float tdp_val = 0;
   uint8_t bus, wbuf[8], rbuf[64];
   char stype_str[32] = {0};
   ssd_data ssd;
@@ -286,7 +287,20 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t cmd) {
             ssd.upper_threshold = rbuf[offset_base + 3];
             ssd.power_state = rbuf[offset_base + 4];
             ssd.i2c_freq = rbuf[offset_base + 5];
-            ssd.tdp_level = rbuf[offset_base + 6];
+
+            // Formula provided by SPH
+            if (ssd.vendor == VENDOR_ID_INTEL) {
+              tdp_val = rbuf[offset_base + 7] + rbuf[offset_base + 6] / 250;
+              if (tdp_val > 13) {
+                ssd.tdp_level = TDP_LEVEL3;
+              } else if (tdp_val >= 10.5) {
+                ssd.tdp_level = TDP_LEVEL2;
+              } else {
+                ssd.tdp_level = TDP_LEVEL1;
+              } 
+            } else {
+              ssd.tdp_level = rbuf[offset_base + 6];
+            }
 
             wbuf[0] = 0x68;  // offset 104
             rlen = 8 + offset_base;

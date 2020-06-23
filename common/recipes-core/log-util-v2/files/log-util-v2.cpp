@@ -216,7 +216,7 @@ print_log (uint8_t fru_id, bool opt_json) {
 
       // Application Name
       memset(app, 0, sizeof(app));
-      strncpy(app, tmp_str_token[ts_end+3], sizeof(app) - 1);
+      strncpy(app, tmp_str_token[ts_end+3], strlen(tmp_str_token[ts_end+3]) > sizeof(app) ? sizeof(app)-1 : strlen(tmp_str_token[ts_end+3])-1);
 
       // Log Message
       memset(message, 0, sizeof(message));

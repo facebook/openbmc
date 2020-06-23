@@ -41,6 +41,7 @@ if [ $kernel_ver == 5 ]; then
   echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-3/new_device
   echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-5/new_device
   echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-7/new_device
+  echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-13/new_device
 fi
 
 ulimit -q 1024000

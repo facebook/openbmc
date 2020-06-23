@@ -33,11 +33,16 @@ default_fsc_config_path="/etc/fsc-config.json"
 
 function init_class1_fsc(){
   sys_config=$(/usr/local/bin/show_sys_config | grep -i "config:" | awk -F ": " '{print $3}')
+  target_fsc_config=""
   if [ "$sys_config" = "A" ]; then
-    ln -s /etc/FSC_CLASS1_EVT_type1.json ${default_fsc_config_path}
+    target_fsc_config="/etc/FSC_CLASS1_EVT_type1.json"
+  elif [ "$sys_config" = "B" ]; then
+    target_fsc_config="/etc/FSC_CLASS1_EVT_type10.json"
   else
-    ln -s /etc/FSC_CLASS1_EVT_type10.json ${default_fsc_config_path}
+    target_fsc_config="/etc/FSC_CLASS1_type17.json"
   fi
+
+  ln -s ${target_fsc_config} ${default_fsc_config_path}
 }
 
 function init_class2_fsc(){

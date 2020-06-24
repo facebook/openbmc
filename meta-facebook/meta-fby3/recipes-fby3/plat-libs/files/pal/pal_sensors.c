@@ -1355,6 +1355,7 @@ read_hsc_pin(uint8_t hsc_id, float *value) {
   }
 
   *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
+  *value *= 0.99;
 error_exit:
   if ( fd > 0 ) close(fd);
 
@@ -1396,7 +1397,7 @@ read_hsc_iout(uint8_t hsc_id, float *value) {
 
   *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
   //improve the accuracy of IOUT to +-2%
-  *value = *value * 0.98;
+  *value *= 0.99;
 error_exit:
   if ( fd > 0 ) close(fd);
 

@@ -19,6 +19,8 @@
 #
 set -e
 
+. "/usr/local/bin/pwm_common.sh"
+
 if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
     PWM_SYSFS_DIR="/sys/devices/platform/ast_pwm_tacho.0"
 
@@ -28,6 +30,15 @@ if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
     #
     PWM_UNIT_MAX=96
     FAN_PWM_MAP="0:7 1:6 2:0 3:1"
+else
+    # kernel 5.x and higher versions
+    PWM_SYSFS_DIR=$(hwmon_lookup_by_name "aspeed_pwm_tacho")
+    if [ -z "$PWM_SYSFS_DIR" ]; then
+        echo "unable to find hwmon directory for aspeed_pwm_tacho. Exiting!"
+        exit 1
+    fi
+    PWM_UNIT_MAX=256
+    FAN_PWM_MAP="0:8 1:7 2:1 3:2"
 fi
 
 usage() {
@@ -55,6 +66,13 @@ set_fan_pwm_41() {
     fi
 }
 
+set_fan_pwm_5x() {
+    pwm_id="$1"
+    unit="$2"
+
+    echo "$unit" > "${PWM_SYSFS_DIR}/pwm${pwm_id}"
+}
+
 set_fan_speed() {
     pwm_id="$1"
     percent="$2"
@@ -62,6 +80,8 @@ set_fan_speed() {
 
     if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
         set_fan_pwm_41 "$pwm_id" "$unit"
+    else
+        set_fan_pwm_5x "$pwm_id" "$unit"
     fi
 }
 

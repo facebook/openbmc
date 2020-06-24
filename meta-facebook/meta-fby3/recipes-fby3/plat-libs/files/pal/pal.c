@@ -2377,6 +2377,7 @@ pal_check_bmc_pfr_mailbox(uint8_t bmc_location) {
   }
 
   snprintf(dev, sizeof(dev), I2CDEV, cpld_bus);
+  i2cfd = open(dev, O_RDWR);
   if ( i2cfd < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to open %s", __func__, dev);
     return -1;
@@ -2436,6 +2437,8 @@ pal_check_bmc_pfr_mailbox(uint8_t bmc_location) {
 
     syslog(LOG_CRIT, "BMC, PFR - Major error: %s (0x%02X), Minor error: %s (0x%02X)", major_str, major_err, minor_str, minor_err);
   }
+
+  if ( i2cfd > 0 ) close(i2cfd);
 
   return 0;
 }

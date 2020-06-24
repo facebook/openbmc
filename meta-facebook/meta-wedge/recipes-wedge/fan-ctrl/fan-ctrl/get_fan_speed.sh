@@ -19,6 +19,8 @@
 #
 set -e
 
+. "/usr/local/bin/pwm_common.sh"
+
 if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
     PWM_SYSFS_DIR="/sys/devices/platform/ast_pwm_tacho.0"
 
@@ -26,6 +28,13 @@ if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
     # Refer to "init_pwm.sh" for more details about fan-tacho mapping.
     #
     FAN_TACHO_MAP="0:3,7 1:2,6 2:0,4 3:1,5"
+else
+    PWM_SYSFS_DIR=$(hwmon_lookup_by_name "aspeed_pwm_tacho")
+    if [ -z "$PWM_SYSFS_DIR" ]; then
+        echo "unable to find hwmon directory for aspeed_pwm_tacho. Exiting!"
+        exit 1
+    fi
+    FAN_TACHO_MAP="0:4,8 1:3,7 2:1,5 3:2,6"
 fi
 
 usage() {
@@ -42,6 +51,16 @@ get_fan_speed_41() {
     echo "Fan $fan_id RPMs: $front_rpm, $rear_rpm"
 }
 
+get_fan_speed_5x() {
+    fan_id="$1"
+    front_tacho="$2"
+    rear_tacho="$3"
+
+    front_rpm=$(cat "${PWM_SYSFS_DIR}/fan${front_tacho}_input")
+    rear_rpm=$(cat "${PWM_SYSFS_DIR}/fan${rear_tacho}_input")
+    echo "Fan $fan_id RPMs: $front_rpm, $rear_rpm"
+}
+
 get_fan_speed() {
     fan_id="$1"
     tacho_list="$2"
@@ -50,6 +69,8 @@ get_fan_speed() {
     rear_tacho=${tacho_list##*,}
     if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
         get_fan_speed_41 "$fan_id" "$front_tacho" "$rear_tacho"
+    else
+        get_fan_speed_5x "$fan_id" "$front_tacho" "$rear_tacho"
     fi
 }
 

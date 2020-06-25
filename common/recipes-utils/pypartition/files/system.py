@@ -146,6 +146,22 @@ def run_verbosely(command, logger):
     logger.info("Finished running `{}`.".format(command_string))
 
 
+def run_verbosely_retry(command, logger):
+    # type: (List[str], logging.Logger) -> None
+    exception = None
+
+    for _ in range(3):
+        try:
+            return run_verbosely(command, logger)
+        except subprocess.CalledProcessError as e:
+            exception = e
+
+        logger.exception(exception)
+        time.sleep(30)
+
+    raise exception
+
+
 def get_checksums_args(description):
     # type: (str) -> Tuple[List[str], argparse.Namespace]
     parser = argparse.ArgumentParser(description=description)
@@ -407,7 +423,10 @@ def fuser_k_mount_ro(writeable_mounted_mtds, logger):
             run_verbosely(["fuser", "-km", mountpoint], logger)
         except subprocess.CalledProcessError:
             pass
-        run_verbosely(["mount", "-o", "remount,ro", device, mountpoint], logger)
+
+        # it happens that device is busy just temporarily, worth to try more than
+        # once
+        run_verbosely_retry(["mount", "-o", "remount,ro", device, mountpoint], logger)
 
     # rsyslog was likely killed; bring it back
     add_syslog_handler(logger)

@@ -13,12 +13,14 @@ DEPENDS += " \
     libfruid \
     libncsi \
     libobmc-i2c \
+    libobmc-sensors \
     libgpio-ctrl \
     "
 
 # These shouldn't be needed but are because we aren't properly versioning the
 # shared libraries contained in these recipes.
 RDEPENDS_${PN} += " \
+    jansson \
     libbic \
     libfby2-common \
     libfby2-fruid \
@@ -26,5 +28,6 @@ RDEPENDS_${PN} += " \
     libfruid \
     libncsi \
     libobmc-i2c \
+    libobmc-sensors \
     libgpio-ctrl \
     "

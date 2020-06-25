@@ -1304,18 +1304,12 @@ read_device_hex(const char *device, int *value) {
 #if defined(CONFIG_FBY2_KERNEL)
 int
 read_pwm_value(uint8_t fan_num, uint8_t* pwm) {
-  int pwm_cnt = 0;
-  int spb_type;
-  int fan_type;
   int ret = 0;
-  int pwm_enable = 0;
+  int spb_type, fan_type;
+  int pwm_cnt = 0;
   float value = 0;
   char label[32] = {0};
-  uint32_t fd = 0;
-  uint32_t pwm_status = 0;
-  void *base_addr;
-  void *scu88_addr;
-  
+
   spb_type = fby2_common_get_spb_type();
   fan_type = fby2_common_get_fan_type();
 
@@ -1325,7 +1319,7 @@ read_pwm_value(uint8_t fan_num, uint8_t* pwm) {
     pwm_cnt = 2;
   }
 
-  if(fan_num < 0 || fan_num >= pwm_cnt) {
+  if (fan_num >= pwm_cnt) {
     syslog(LOG_INFO, "%s: fan number is invalid - %d", __FUNCTION__, fan_num);
     return -1;
   }
@@ -1343,25 +1337,9 @@ read_pwm_value(uint8_t fan_num, uint8_t* pwm) {
     }
   }
 
-  fd = open("/dev/mem", O_RDWR | O_SYNC );
-  if (fd < 0) {
-    syslog(LOG_ERR, "%s - cannot open /dev/mem", __func__);
-    goto get_pwm;
-  }
-  base_addr = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, AST_SCU_BASE);
-  scu88_addr = (char*)base_addr + SCU_MULTIFUNC_CTRL3_OFFSET;
-  pwm_status = *(volatile uint32_t*) scu88_addr;
-  pwm_enable = (pwm_status >> fan_num) & 0x1; 
-  close(fd);
-
-get_pwm:
-  if(pwm_enable) {  
-    snprintf(label, sizeof(label), "pwm%d", fan_num + 1);
-    ret = sensors_read_fan(label, &value);
-    *pwm = (int)value;
-  } else {  
-    *pwm = 0; 
-  }
+  snprintf(label, sizeof(label), "pwm%d", fan_num + 1);
+  ret = sensors_read_fan(label, &value);
+  *pwm = (uint8_t)value;
 
   return ret;
 }

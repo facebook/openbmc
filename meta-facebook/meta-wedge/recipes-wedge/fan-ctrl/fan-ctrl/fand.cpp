@@ -251,14 +251,14 @@ static struct fan_controller fan_controller_5x = {
    * rear fans.
    */
   .fan_tacho_map = {
-    [0] = "fan1_input",
-    [1] = "fan2_input",
-    [2] = "fan3_input",
-    [3] = "fan4_input",
-    [4] = "fan5_input",
-    [5] = "fan6_input",
-    [6] = "fan7_input",
-    [7] = "fan8_input",
+    [0] = "fan4_input",
+    [1] = "fan3_input",
+    [2] = "fan1_input",
+    [3] = "fan2_input",
+    [4] = "fan8_input",
+    [5] = "fan7_input",
+    [6] = "fan5_input",
+    [7] = "fan6_input",
   },
 
   .init = fan_controller_init_5x,

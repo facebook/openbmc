@@ -89,7 +89,9 @@ void cpu_vr_hot_init(char* shadow, char* desc, gpio_value_t value) {
 }
 
 void cpu_skt_init(char* shadow, char* desc, gpio_value_t value) {
-  syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", desc, shadow);
+  if(value == GPIO_VALUE_HIGH ) {
+    syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", desc, shadow);
+  }
   return;
 }
 

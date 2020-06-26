@@ -2985,13 +2985,16 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
           strcat(error_log, temp_log);
           break;
         case PDB_EVENT_SLED_CYCLE:
-          sprintf(temp_log, "PDB_Event_SLED_Cydle, MB%d", ed[1]);
+          sprintf(temp_log, "PDB_Event_SLED_Cycle, MB%d", ed[1]);
           strcat(error_log, temp_log);
           break;
         case PDB_EVENT_RECONFIG_SYSTEM:
           sprintf(temp_log, "PDB_Event_Reconfig_System, MB%d, Mode=%d", ed[1], ed[2]);
           strcat(error_log, temp_log);
           break;
+        case PDB_EVENT_CM_EXTERNAL_RESET:
+          strcat(error_log, "PDB_Event_CM_External_Reset");
+          break;         
         default:
           parsed = false;
           strcat(error_log, "Unknown");
@@ -3083,7 +3086,7 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
     case PDB_SNR_FAN2_INLET_SPEED:
     case PDB_SNR_FAN3_INLET_SPEED:
       fan_id = snr_num-PDB_SNR_FAN0_INLET_SPEED; 
-      sprintf(cmd, "FAN%d %s %fRPM - Assert",fan_id ,thresh_name, val);
+      sprintf(cmd, "FAN%d %s %dRPM - Assert",fan_id ,thresh_name, (int)val);
       break;
     default:
       return;
@@ -3133,7 +3136,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
     case PDB_SNR_FAN2_INLET_SPEED:
     case PDB_SNR_FAN3_INLET_SPEED:
       fan_id = snr_num-PDB_SNR_FAN0_INLET_SPEED; 
-      sprintf(cmd, "FAN%d %s %fRPM - Deassert",fan_id ,thresh_name, val);
+      sprintf(cmd, "FAN%d %s %dRPM - Deassert",fan_id ,thresh_name, (int)val);
       break;
     default:
       return;

@@ -2863,11 +2863,6 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
     return -1;
   }
 
-  // Do not allow setting fan when server is off.
-  if (is_server_off()) {
-    return PAL_ENOTREADY;
-  }
-
   ret = lib_cmc_set_fan_pwm(fan, pwm);
   return ret;
 }

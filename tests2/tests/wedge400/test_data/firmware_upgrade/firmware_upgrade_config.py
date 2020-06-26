@@ -21,14 +21,12 @@
 import sys
 from abc import abstractmethod
 
-from common.base_fw_upgrade_test import BaseFwUpgradeTest
+from common.base_fw_upgrade_test import DEV_SERVER_RESOURCE_PATH, BaseFwUpgradeTest
 
 
 # Global variables
 # Upgrader and binary path on dev server and bmc target BMC unit.
-DEV_SERVER_RESOURCE_PATH = "/tmp/fw_upgrade"
 UUT_RESOURCE_PATH = "/mnt/data1/fw_upgrade"
-
 
 # You have to add sys path of upgrader before importing upgrader class here.
 sys.path.append(DEV_SERVER_RESOURCE_PATH)

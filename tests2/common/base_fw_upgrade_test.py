@@ -31,11 +31,16 @@ from utils.ssh_util import OpenBMCSSHSession
 
 # When tests are discovered upgrader is not yet installed,
 # catch the import failure
-
+SANDCASTLE_NEXUS = "SANDCASTLE_NEXUS"
+DEV_SERVER_RESOURCE_PATH = (
+    "/sandcastle/temp/fw_upgrade"
+    if SANDCASTLE_NEXUS in os.environ
+    else "/tmp/fw_upgrade"
+)
 
 try:
     # The upgrader need to be inside e.g. /tmp/fw_upgrade on dev server.
-    sys.path.append("/tmp/fw_upgrade")
+    sys.path.append(DEV_SERVER_RESOURCE_PATH)
     import fw_json as fw_up
     from entity_upgrader import FwEntityUpgrader, FwUpgrader
     from constants import (

@@ -128,20 +128,6 @@ int BiosComponent::update(std::string image, bool force) {
     }
   }
 
-  if (pal_is_pfr_active() == PFR_ACTIVE) {
-    string dev;
-    string cmd;
-
-    if (!sys.get_mtd_name(string("stg-pch"), dev)) {
-      return FW_STATUS_FAILURE;
-    }
-
-    sys.output << "Flashing to device: " << dev << endl;
-    cmd = "flashcp -v " + image + " " + dev;
-    ret = sys.runcmd(cmd);
-    return pal_fw_update_finished(0, _component.c_str(), ret);
-  }
-
   retry = max_retry_power_ctl;
   pal_set_server_power(fruid, SERVER_POWER_OFF);
   while (retry > 0) {

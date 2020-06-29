@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+
+source $(dirname $BASH_SOURCE)/../../openbmc-init-build-env $MACHINE build
+bitbake "$MACHINE-image"

@@ -734,10 +734,6 @@ sensor_thresh_array_init() {
   spb_sensor_threshold[SP_SENSOR_FAN1_PWM][UCR_THRESH] = 100;
   spb_sensor_threshold[SP_SENSOR_FAN2_PWM][UCR_THRESH] = 100;
   spb_sensor_threshold[SP_SENSOR_FAN3_PWM][UCR_THRESH] = 100;
-  spb_sensor_threshold[SP_SENSOR_FAN0_PWM][UNC_THRESH] = 100;
-  spb_sensor_threshold[SP_SENSOR_FAN1_PWM][UNC_THRESH] = 100;
-  spb_sensor_threshold[SP_SENSOR_FAN2_PWM][UNC_THRESH] = 100;
-  spb_sensor_threshold[SP_SENSOR_FAN3_PWM][UNC_THRESH] = 100;
   spb_sensor_threshold[SP_SENSOR_FAN0_PWM][LCR_THRESH] = 1;
   spb_sensor_threshold[SP_SENSOR_FAN1_PWM][LCR_THRESH] = 1;
   spb_sensor_threshold[SP_SENSOR_FAN2_PWM][LCR_THRESH] = 1;

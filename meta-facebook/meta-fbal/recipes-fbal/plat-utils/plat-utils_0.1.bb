@@ -75,6 +75,7 @@ do_install() {
   update-rc.d -r ${D} setup-usbhub.sh start 90 S .
   install -m 755 setup-bridge.sh ${D}${sysconfdir}/init.d/setup-bridge.sh
   install -m 755 run-bridge.sh ${D}${sysconfdir}/init.d/run-bridge.sh
+  update-rc.d -r ${D} run-bridge.sh start 99 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

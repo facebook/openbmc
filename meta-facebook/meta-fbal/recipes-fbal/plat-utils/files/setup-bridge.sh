@@ -92,7 +92,8 @@ killall dhclient
 
 #Restart DHCP
 echo DHCP IPV6..
-dhclient -6 -d -D LL --address-prefix-len 64 -pf /var/run/dhclient6.br0.pid br0 &
+#dhclient -6 -d -D LL --address-prefix-len 64 -pf /var/run/dhclient6.br0.pid br0 &
+sv start dhc6
 echo DHCP IPV4..
 dhclient -d -pf /var/run/dhclient.br0.pid br0 &
 

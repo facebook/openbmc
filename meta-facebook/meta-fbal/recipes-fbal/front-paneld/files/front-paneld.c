@@ -44,6 +44,8 @@
 #define FW_UPDATE_ONGOING 1
 #define CRASHDUMP_ONGOING 2
 
+static int sensor_health = FRU_STATUS_GOOD;
+
 static int
 is_btn_blocked(uint8_t fru) {
 
@@ -81,6 +83,13 @@ led_sync_handler() {
     } else if (id_on) {
       id_on = 0;
       pal_set_id_led(FRU_MB, 0xFF);
+    } else if (ret == 0 && !strcmp(identify, "off")) {
+      // Turn on the ID LED if sensor health is abnormal.
+      if (sensor_health == FRU_STATUS_BAD) { 
+        pal_set_id_led(FRU_MB, ID_LED_ON);
+      } else {
+        pal_set_id_led(FRU_MB, ID_LED_OFF);
+      }
     }
 
     sleep(1);
@@ -165,10 +174,45 @@ rst_btn_handler() {
   return 0;
 }
 
+// Thread to handle LED state of the server at given slot
+static void *
+led_handler() {
+  int ret;
+  uint8_t mb_health = -1, nic0_health = -1, nic1_health = -1;
+
+  while (1) {
+    sleep(1);
+    ret = pal_get_fru_health(FRU_MB, &mb_health);
+    if (ret) {
+      syslog(LOG_WARNING, "Fail to get MB health\n");
+    }
+
+    ret = pal_get_fru_health(FRU_NIC0, &nic0_health);
+    if (ret) {
+      syslog(LOG_WARNING, "Fail to get NIC0 health\n");
+    }
+
+    ret = pal_get_fru_health(FRU_NIC1, &nic1_health);
+    if (ret) {
+      syslog(LOG_WARNING, "Fail to get NIC1 health\n");
+    }
+
+    if (mb_health != FRU_STATUS_GOOD || nic0_health != FRU_STATUS_GOOD
+      || nic1_health != FRU_STATUS_GOOD) {
+      sensor_health = FRU_STATUS_BAD;
+    }
+    else {
+      sensor_health = FRU_STATUS_GOOD;
+    }
+  }
+  return NULL;
+}
+
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_sync_led;
   pthread_t tid_rst_btn;
+  pthread_t tid_led;
   int rc;
   int pid_file;
 
@@ -197,7 +241,13 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
+  if (pthread_create(&tid_led, NULL, led_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for led error\n");
+    exit(1);
+  }
+
   pthread_join(tid_sync_led, NULL);
   pthread_join(tid_rst_btn, NULL);
+  pthread_join(tid_led, NULL);
   return 0;
 }

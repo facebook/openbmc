@@ -1114,59 +1114,60 @@ int pal_set_id_led(uint8_t status)
 
 int
 pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
-  int ret = 0;
-  int ifd, retry = 3;
-  uint8_t buf[16];
+  int ret, ifd, retry = 3;
+  uint8_t buf[8];
   char dev_i2c[16];
 
   ret = status;
-  if (ret == 0) {
-    sprintf(dev_i2c, "/dev/i2c-%d", PFR_MAILBOX_BUS);
-    ifd = open(dev_i2c, O_RDWR);
-    if (ifd < 0) {
-      return -1;
-    }
-
-    buf[0] = 0x13;  // BMC update intent
-    if (!strcmp(comp, "bmc")) {
-      buf[1] = 0x08;  // BMC_ACTIVE
-    } else if (!strcmp(comp, "pfr_cpld")) {
-      buf[1] = 0x04;  // CPLD_ACTIVE
-    }
-
-    sync();
-    sleep(3);
-    ret = system("sv stop sensord > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_0 > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_1 > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_2 > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_3 > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_13 > /dev/null 2>&1");
-
-    printf("sending update intent to CPLD...\n");
-    fflush(stdout);
-    sleep(1);
-    do {
-      ret = i2c_rdwr_msg_transfer(ifd, PFR_MAILBOX_ADDR, buf, 2, NULL, 0);
-      if (ret) {
-        syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x %02x", PFR_MAILBOX_BUS, buf[0], buf[1]);
-        if (--retry > 0) {
-          msleep(100);
-        }
-      }
-    } while (ret && retry > 0);
-    close(ifd);
+  if (ret) {
+    return ret;
   }
+
+  sync();
+  sleep(2);
+  printf("sending update intent to CPLD...\n");
+  fflush(stdout);
+
+  sprintf(dev_i2c, "/dev/i2c-%d", PFR_MAILBOX_BUS);
+  ifd = open(dev_i2c, O_RDWR);
+  if (ifd < 0) {
+    return -1;
+  }
+
+  buf[0] = 0x13;  // BMC update intent
+  if (!strcmp(comp, "pfr_cpld")) {
+    buf[1] = UPDATE_CPLD_ACTIVE;
+  } else if (!strcmp(comp, "pfr_cpld_rc")) {
+    buf[1] = UPDATE_CPLD_RECOVERY;
+  } else {
+    close(ifd);
+    return -1;
+  }
+
+  do {
+    ret = i2c_rdwr_msg_transfer(ifd, PFR_MAILBOX_ADDR, buf, 2, NULL, 0);
+    if (ret) {
+      syslog(LOG_WARNING, "send update intent failed, cmd: %02x %02x", buf[0], buf[1]);
+      if (--retry > 0)
+        msleep(100);
+    }
+  } while (ret && retry > 0);
+  close(ifd);
 
   return ret;
 }
 
 int
 pal_is_pfr_active(void) {
-  int pfr_active = PFR_NONE;
   int ifd, retry = 3;
   uint8_t tbuf[8], rbuf[8];
   char dev_i2c[16];
+  static bool cached = false;
+  static int pfr_active = PFR_NONE;
+
+  if (cached) {
+    return pfr_active;
+  }
 
   sprintf(dev_i2c, "/dev/i2c-%d", PFR_MAILBOX_BUS);
   ifd = open(dev_i2c, O_RDWR);
@@ -1188,6 +1189,7 @@ pal_is_pfr_active(void) {
       msleep(20);
   } while (retry > 0);
   close(ifd);
+  cached = true;
 
   return pfr_active;
 }

@@ -16,6 +16,8 @@ SRC_URI =+ "file://Makefile \
            file://server.cpp \
            file://bmc.cpp \
            file://bmc.h \
+           file://pfr_bmc.cpp \
+           file://pfr_bmc.h \
            file://check_image.cpp \
            file://nic.h \
            file://nic.cpp \
@@ -43,9 +45,9 @@ SRC_URI =+ "file://Makefile \
 
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpthread -lfdt -lcrypto -lz -lpal -lvbs -ldl -lgpio-ctrl -lkv"
-DEPENDS += " nlohmann-json libpal dtc zlib openssl libvbs libgpio-ctrl libkv"
-RDEPENDS_${PN} += " libpal zlib openssl libvbs libgpio-ctrl libkv"
+LDFLAGS =+ " -lpthread -lfdt -lcrypto -lz -lpal -lvbs -ldl -lgpio-ctrl -lkv -lobmc-i2c"
+DEPENDS += " nlohmann-json libpal dtc zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c"
+RDEPENDS_${PN} += " libpal zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c"
 
 CXXFLAGS += "\
   ${@bb.utils.contains('MACHINE_FEATURES', 'tpm1', '-DCONFIG_TPM1', '', d)} \

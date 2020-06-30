@@ -3190,7 +3190,7 @@ CONFIG_FS_MBCACHE=m
 # CONFIG_XFS_FS is not set
 # CONFIG_GFS2_FS is not set
 # CONFIG_OCFS2_FS is not set
-# CONFIG_BTRFS_FS is not set
+CONFIG_BTRFS_FS=m
 # CONFIG_NILFS2_FS is not set
 # CONFIG_F2FS_FS is not set
 CONFIG_EXPORTFS=y

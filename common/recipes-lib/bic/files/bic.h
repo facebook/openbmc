@@ -167,6 +167,7 @@ typedef union _bic_config_u {
 int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
                      uint8_t *txbuf, size_t txlen,
                      uint8_t *rxbuf, size_t *rxlen);
+const char *bic_gpio_name(unsigned int pin);
 int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, bic_gpio_config_t *gpio_config);
 int bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio);
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info);

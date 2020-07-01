@@ -75,6 +75,15 @@ typedef struct _sdr_rec_hdr_t {
 } sdr_rec_hdr_t;
 #pragma pack(pop)
 
+/*
+ * BIC GPIO pin names.
+ */
+#define BIC_GPIO_DEF(type, name)  [type] = name
+static const char *gpio_pin_names[BIC_GPIO_MAX] = {
+  BIC_GPIO_LIST,
+};
+#undef BIC_GPIO_DEF
+
 #define BIC_ASSERT(expr, fmt, args...)                      \
   do {                                                      \
     if (!(expr)) {                                          \
@@ -150,6 +159,15 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
     memcpy(rxbuf, res->data, *rxlen);
   }
   return 0;
+}
+
+const char *bic_gpio_name(unsigned int pin)
+{
+  if ((pin < BIC_GPIO_MAX) && (gpio_pin_names[pin] != NULL)) {
+    return gpio_pin_names[pin];
+  }
+
+  return "";
 }
 
 int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio,

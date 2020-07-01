@@ -4080,6 +4080,7 @@ ipmi_handle_oem_zion(unsigned char *request, unsigned char req_len,
   {
     case CMD_OEM_ZION_GET_SYSTEM_MODE:
       oem_zion_get_system_mode(request, req_len, response, res_len);
+      break;
     case CMD_OEM_ZION_GET_SENSOR_VALUE:
       oem_zion_get_sensor_value(request, req_len, response, res_len);
       break;

@@ -20,7 +20,7 @@ RDEPENDS_${PN} += " libmisc-utils libobmc-i2c libgpio-ctrl libkv libipmb libipmi
 S = "${WORKDIR}"
 
 do_install() {
-	  install -d ${D}${libdir}
+    install -d ${D}${libdir}
     install -m 0644 libbic.so ${D}${libdir}/libbic.so
     ln -s libbic.so ${D}${libdir}/libbic.so.0
 

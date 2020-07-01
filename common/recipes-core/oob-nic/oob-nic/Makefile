@@ -17,7 +17,7 @@
 
 all: oob-nic i2craw
 
-oob-nic: main.o nic.o intf.o ll_map.o libnetlink.o
+oob-nic: main.o mac_platform.o nic.o intf.o ll_map.o libnetlink.o
 	$(CC) -o $@ $^ $(LDFLAGS) -lwedge_eeprom
 
 i2craw: i2craw.o

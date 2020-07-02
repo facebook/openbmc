@@ -58,8 +58,9 @@ else
       done
     fi
     # OCP3 NIC detection
-    prsnt_a=$(cat /sys/class/gpio/gpio88/value)
-    prsnt_b=$(cat /sys/class/gpio/gpio89/value)
+    GPIOCLI_CMD=/usr/local/bin/gpiocli
+    prsnt_a=$($GPIOCLI_CMD get-value --shadow MEZZ_PRSNTA2_N | awk -F= '{print $2}')
+    prsnt_b=$($GPIOCLI_CMD get-value --shadow MEZZ_PRSNTB2_N | awk -F= '{print $2}')
     if ((prsnt_a == 0 && prsnt_b == 1)); then
       ocp3nic=1
     else

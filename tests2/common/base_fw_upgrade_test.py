@@ -325,14 +325,16 @@ class BaseFwUpgradeTest(object):
         """
             dispose method to unset variable and clean up the resource.
         """
-        self.bmc_ssh_session.session.close()
+        if self.bmc_ssh_session:
+            self.bmc_ssh_session.session.close()
 
     def recovery_normal_environment(self):
         """
             recover UUT to normal environment
         """
-        if self.bmc_ssh_session.session.isalive():
-            self.send_command_to_UUT(self.START_FSCD)
+        if self.bmc_ssh_session:
+            if self.bmc_ssh_session.session.isalive():
+                self.send_command_to_UUT(self.START_FSCD)
 
     def verify_binary_checksum_on_remote_target(self, logging=False):
         """

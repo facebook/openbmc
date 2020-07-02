@@ -19,35 +19,49 @@ DESCRIPTION = "Utility to parse and display logs."
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://log-util-v2.cpp;beginline=5;endline=18;md5=ff9a2ba58fa5b39d3d3dcb7c42e26496"
-
+LIC_FILES_CHKSUM = "file://main.cpp;beginline=5;endline=18;md5=ff9a2ba58fa5b39d3d3dcb7c42e26496"
 
 SRC_URI = "file://Makefile \
-           file://log-util-v2.cpp \
+           file://main.cpp \
+           file://selformat.hpp \
+           file://selformat.cpp \
+           file://selstream.hpp \
+           file://selstream.cpp \
+           file://log-util.hpp \
+           file://log-util.cpp \
+           file://rsyslogd.hpp \
+           file://rsyslogd.cpp \
+           file://exclusion.hpp \
+           file://tests/test_rsyslogd.cpp \
+           file://tests/test_selformat.cpp \
+           file://tests/test_selstream.cpp \
+           file://tests/test_logutil.cpp \
           "
 
-S = "${WORKDIR}"
-binfiles = "log-util-v2"
-
-CFLAGS += " -lpal "
-CXXFLAGS += " -lpal "
-
-pkgdir = "log-util-v2"
-
-do_install() {
-  dst="${D}/usr/local/fbpackages/${pkgdir}"
-  bin="${D}/usr/local/bin"
-  install -d $dst
-  install -d $bin
-  install -m 755 log-util-v2 ${dst}/log-util-v2
-  ln -snf ../fbpackages/${pkgdir}/log-util-v2 ${bin}/log-util
+inherit ptest
+do_compile_ptest() {
+  make log-util-test
+  cat <<EOF > ${WORKDIR}/run-ptest
+#!/bin/sh
+/usr/lib/log-util-v2/ptest/log-util-test
+EOF
 }
 
-DEPENDS += "libpal"
+do_install_ptest() {
+#  install -d ${D}${libdir}/log-util-v2
+#  install -D ${D}${libdir}/log-util-v2/ptest
+  install -D -m 755 log-util-test ${D}${libdir}/log-util-v2/ptest/log-util-test
+}
+
+do_install() {
+#  install -D ${D}{bindir}
+  install -D -m 755 log-util ${D}${bindir}/log-util
+}
+
+S = "${WORKDIR}"
+DEPENDS += "libpal cli11 nlohmann-json gtest gmock"
 RDEPENDS_${PN} += "libpal"
+RDEPENDS_${PN}-ptest += "libpal"
 
-
-FBPACKAGEDIR = "${prefix}/local/fbpackages"
-
-FILES_${PN} = "${FBPACKAGEDIR}/log-util-v2 ${prefix}/local/bin"
-
+FILES_${PN} = "${bindir}/log-util"
+FILES_${PN}-ptest = "${libdir}/log-util-v2/ptest"

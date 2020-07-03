@@ -55,6 +55,8 @@ typedef struct {
 static bool verbose_logging;
 static gpio_pin_t gpio_slot1[BIC_GPIO_MAX] = {0};
 
+static const uint32_t gpio_ass_val = (1 << FM_CPLD_FIVR_FAULT);
+
 /* Returns the pointer to the struct holding all gpio info for the fru#. */
 static gpio_pin_t *
 get_struct_gpio_pin(uint8_t fru) {
@@ -91,7 +93,7 @@ populate_gpio_pins(uint8_t fru) {
     if (gpios[i].flag) {
       gpios[i].ass_val = GETBIT(gpio_ass_val, i);
       GPIOD_VERBOSE("start monitoring '%s', ass_val=%u\n",
-                    bic_gpio_type_to_name(i), gpios[i].ass_val);
+                    bic_gpio_name(i), gpios[i].ass_val);
     }
   }
 }

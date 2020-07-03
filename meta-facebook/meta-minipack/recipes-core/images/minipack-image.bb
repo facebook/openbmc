@@ -13,7 +13,7 @@ IMAGE_INSTALL += " \
   at93cx6-util \
   ast-mdio \
   bcm5396-util \
-  bic-cached \
+  bic-cache \
   bic-util \
   bitbang \
   cpldupdate \
@@ -23,7 +23,7 @@ IMAGE_INSTALL += " \
   front-paneld \
   fscd \
   fw-util \
-  gpiod \
+  bic-monitor \
   ipmbd \
   ipmid \
   libcpldupdate-dll-echo \

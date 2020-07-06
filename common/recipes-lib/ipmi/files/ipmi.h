@@ -65,6 +65,8 @@ extern "C" {
 #define SIZE_SEL_REC 16
 #define SIZE_RAS_SEL 35
 
+#define SIZE_SELF_TEST_RESULT 2
+
 // PayloadID, NetFn, Command, IANAID(3 bytes), BIC Interface type
 #define BIC_INTF_HDR_SIZE 7
 

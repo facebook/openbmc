@@ -50,6 +50,7 @@ static int read_cached_val(uint8_t snr_number, float *value);
 static int read_fan_speed(uint8_t snr_number, float *value);
 static int read_fan_pwm(uint8_t pwm_id, float *value);
 
+static int pal_sdr_init(uint8_t fru);
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 static bool sdr_init_done[MAX_NUM_FRUS] = {false};
 static uint8_t bic_dynamic_sensor_list[4][MAX_SENSOR_NUM] = {0};
@@ -1745,7 +1746,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       if (pal_is_fw_update_ongoing(fru)) {
         return READING_SKIP;
       } else {
-        ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location);
+        if ( pal_sdr_init(fru) == ERR_NOT_READY ) ret = READING_NA;
+        else ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location);
       }
       break;
     case FRU_BMC:
@@ -1854,23 +1856,22 @@ pal_sensor_sdr_path(uint8_t fru, char *path) {
       sprintf(fru_name, "%s", "slot4");
     break;
     case FRU_BMC:
-      sprintf(fru_name, "%s", "bmc");
-    break;
     case FRU_NIC:
-      sprintf(fru_name, "%s", "nic");
+      //Both FRUs don't own SDRs.
+      return PAL_ENOTSUP;
     break;
 
     default:
       syslog(LOG_WARNING, "%s() Wrong fru id %d", __func__, fru);
-    return -1;
+    return PAL_ENOTSUP;
   }
 
   sprintf(path, SDR_PATH, fru_name);
   if (access(path, F_OK) == -1) {
-    return -1;
+    return PAL_ENOTSUP;
   }
 
-  return 0;
+  return PAL_EOK;
 }
 
 static int
@@ -1982,7 +1983,7 @@ error_exit:
   return ret;
 }
 
-int
+static int
 pal_sdr_init(uint8_t fru) {
 
   if ( false == pal_is_sdr_init(fru) ) {
@@ -2005,14 +2006,10 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   int ret = 0;
   uint8_t scale = sensor_map[sensor_num].units;
 
-  if (fru == FRU_SLOT1 || fru == FRU_SLOT2 || \
-      fru == FRU_SLOT3 || fru == FRU_SLOT4) {
-    ret = pal_sdr_init(fru);
-    strcpy(units, "");
-    return ret;
-  }
-
   switch(scale) {
+    case UNSET_UNIT:
+      strcpy(units, "");
+      break;
     case TEMP:
       sprintf(units, "C");
       break;

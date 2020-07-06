@@ -63,6 +63,7 @@ typedef struct {
 } PAL_SENSOR_MAP;
 
 enum {
+  UNSET_UNIT = 0,
   TEMP = 1,
   CURR,
   VOLT,

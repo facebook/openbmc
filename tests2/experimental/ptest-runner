@@ -49,7 +49,15 @@ fi
 openbmc_dir=$(realpath "$(dirname "${BASH_SOURCE[0]}")"/../..)
 cur=$(pwd)
 if [ -z "$build_dir" ]; then
-  env -i HOME="$HOME" bash -l -c "cd  $openbmc_dir; source ./openbmc-init-build-env qemux86 build-qemux86 > /dev/null; bitbake -q qemux86-image"
+  build_steps=(
+    "cd  $openbmc_dir;"
+    "source ./openbmc-init-build-env qemux86 build-qemux86 > /dev/null;"
+    "sed -i -e 's/IMAGE_INSTALL_append.*//' conf/local.conf;"
+    "echo IMAGE_INSTALL_append = \\\"$@\\\" >> conf/local.conf;"
+    "bitbake -q qemux86-image"
+  )
+  cmd="${build_steps[*]}"
+  env -i HOME="$HOME" bash -l -c "${cmd}"
   if [ $? != 0 ]; then
     echo "Build failed"
     exit 1

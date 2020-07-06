@@ -4,6 +4,7 @@ POSITIONAL=()
 build_dir=""
 shell=no
 print_help=no
+log_loc=""
 while [[ $# -gt 0 ]]; do
 	key="$1"
 	case $key in
@@ -19,6 +20,10 @@ while [[ $# -gt 0 ]]; do
       print_help=yes
       shift 1
       ;;
+     -l|--log)
+       log_loc="$2"
+       shift 2
+       ;;
     *)
     	POSITIONAL+=("$1")
     	shift
@@ -33,6 +38,8 @@ if [ $print_help = "yes" ]; then
   echo "                  Use an existing build directory instead of building one"
   echo "       -s|--shell"
   echo "                  Drops you into a CHROOTed shell of the image instead of running ptest-runner (Useful for debugging)"
+  echo "       -l|--log LOCATION"
+  echo "                  Print log file at LOCATION after execution"
   echo "       -h|--help"
   echo "                  Prints this message"
   echo "       RECIPES    Space separated list of recipes to run tests for. By default, will run all discovered. Ignored if -s|--shell"
@@ -43,6 +50,10 @@ openbmc_dir=$(realpath "$(dirname "${BASH_SOURCE[0]}")"/../..)
 cur=$(pwd)
 if [ -z "$build_dir" ]; then
   env -i HOME="$HOME" bash -l -c "cd  $openbmc_dir; source ./openbmc-init-build-env qemux86 build-qemux86 > /dev/null; bitbake -q qemux86-image"
+  if [ $? != 0 ]; then
+    echo "Build failed"
+    exit 1
+  fi
   build_dir="${openbmc_dir}/build-qemux86"
 fi
 cd "$build_dir" || exit 1
@@ -58,5 +69,8 @@ if [ $shell = "yes" ]; then
   unshare --mount --map-root-user chroot "$rootfs"
 else
   unshare --mount --map-root-user chroot "$rootfs" ptest-runner "$@"
+  if [ "$log_loc" != "" ]; then
+    cat "${rootfs}${log_loc}"
+  fi
 fi
 cd "$cur" || exit 1

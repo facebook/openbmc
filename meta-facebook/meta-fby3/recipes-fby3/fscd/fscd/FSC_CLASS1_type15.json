@@ -184,8 +184,8 @@
   },
   "zones": {
     "zone_1": {
-      "pwm_output": [0, 2, 4, 6],
-      "expr_file": "FSC_CLASS1_type17_zone1.fsc"
+      "pwm_output": [0, 1, 2, 3],
+      "expr_file": "FSC_CLASS1_type15_zone1.fsc"
     }
   }
 }

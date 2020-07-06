@@ -34,19 +34,25 @@ default_fsc_config_path="/etc/fsc-config.json"
 function init_class1_fsc(){
   sys_config=$(/usr/local/bin/show_sys_config | grep -i "config:" | awk -F ": " '{print $3}')
   target_fsc_config=""
+  config_type=""
   if [ "$sys_config" = "A" ]; then
+    config_type="1"
     target_fsc_config="/etc/FSC_CLASS1_EVT_type1.json"
   elif [ "$sys_config" = "B" ]; then
+    config_type="10"
     target_fsc_config="/etc/FSC_CLASS1_EVT_type10.json"
   else
-    target_fsc_config="/etc/FSC_CLASS1_type17.json"
+    config_type="15"
+    target_fsc_config="/etc/FSC_CLASS1_type15.json"
   fi
 
   ln -s ${target_fsc_config} ${default_fsc_config_path}
+  echo -n "Type_${config_type}" > /mnt/data/kv_store/sled_system_conf
 }
 
 function init_class2_fsc(){
   ln -s /etc/FSC_CLASS2_EVT_config.json ${default_fsc_config_path}
+  echo -n "Type_17" > /mnt/data/kv_store/sled_system_conf
 }
 
 bmc_location=$(get_bmc_board_id)

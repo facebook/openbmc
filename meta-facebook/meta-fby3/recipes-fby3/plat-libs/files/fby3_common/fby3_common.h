@@ -64,15 +64,16 @@ extern const char *slot_usage;
 
 #define MAX_NUM_FRUS 8
 enum {
-  FRU_ALL   = 0,
-  FRU_SLOT1 = 1,
-  FRU_SLOT2 = 2,
-  FRU_SLOT3 = 3,
-  FRU_SLOT4 = 4,
-  FRU_BB    = 5,
-  FRU_NIC   = 6,
-  FRU_BMC   = 7,
-  FRU_NICEXP = 8, //the fru is used when bmc is located on class 2
+  FRU_ALL       = 0,
+  FRU_SLOT1     = 1,
+  FRU_SLOT2     = 2,
+  FRU_SLOT3     = 3,
+  FRU_SLOT4     = 4,
+  FRU_BB        = 5,
+  FRU_NIC       = 6,
+  FRU_BMC       = 7,
+  FRU_NICEXP    = 8, //the fru is used when bmc is located on class 2
+  FRU_AGGREGATE = 0xff, //sensor-util will call pal_get_fru_name(). Add this virtual fru for sensor-util.
 };
 
 enum {

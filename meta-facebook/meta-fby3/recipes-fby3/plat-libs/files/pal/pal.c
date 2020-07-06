@@ -675,6 +675,9 @@ pal_get_fru_name(uint8_t fru, char *name) {
     case FRU_NICEXP:
       sprintf(name, "nicexp");
       break;
+    case FRU_AGGREGATE:
+      ret = PAL_EOK; //it's the virtual FRU.
+      break;
     default:
       syslog(LOG_WARNING, "%s() unknown fruid %d", __func__, fru);
       ret = PAL_ENOTSUP;

@@ -22,6 +22,21 @@ jobs:
                 name: Run lint.
                 command: |
                     ./tools/circle-ci/do-lint
+    setup:
+        docker:
+            - image: crops/poky:latest
+        resource_class: small
+        working_directory: /tmp/job/project
+        steps:
+            - checkout
+            - run:
+                name: Sync Yocto repositories.
+                command: |
+                    ./sync_yocto.sh
+            - persist_to_workspace:
+                root: /tmp/job
+                paths:
+                    - project
     build:
         parameters:
             machine:
@@ -30,15 +45,13 @@ jobs:
             - image: crops/poky:latest
               environment:
                   MACHINE: << parameters.machine >>
-                  CACHE_DIR: /tmp/sstate-cache
+                  CACHE_DIR: /tmp/job/sstate-cache
                   CACHE_URI: https://fb-openbmc-sstate.s3.us-east-2.amazonaws.com
         resource_class: xlarge
+        working_directory: /tmp/job/project
         steps:
-            - checkout
-            - run:
-                name: Sync Yocto repositories.
-                command: |
-                    ./sync_yocto.sh
+            - attach_workspace:
+                at: /tmp/job
             - run:
                 name: Check build required.
                 command: |
@@ -56,7 +69,10 @@ workflows:
     everything:
         jobs:
             - lint
+            - setup
             - build:
+                requires:
+                    - setup
                 matrix:
                     parameters:
                         machine: [

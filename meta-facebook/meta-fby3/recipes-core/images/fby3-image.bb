@@ -62,4 +62,5 @@ IMAGE_INSTALL += " \
   fpc-util \
   at \
   ncsid-v2 \
+  throttle-util \
   "

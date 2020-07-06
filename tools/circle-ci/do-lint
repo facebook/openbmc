@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+ORIGIN_COMMIT="$(git merge-base HEAD origin/helium 2>/dev/null)"
+
+MODIFIED_FILES="$(git diff --diff-filter=d --name-only "$ORIGIN_COMMIT" --)"
+
+MODIFIED_SH="$(echo "$MODIFIED_FILES" | xargs -n1 echo | grep -P '[.]sh$' || \
+    true)"
+MODIFIED_PY="$(echo "$MODIFIED_FILES" | xargs -n1 echo | grep -P '[.]py$' || \
+    true)"
+
+if [[ $MODIFIED_PY ]]; then
+    python3 -m black --diff --check "$MODIFIED_PY"
+fi
+
+if [[ $MODIFIED_SH ]]; then
+    shellcheck "$MODIFIED_SH"
+fi

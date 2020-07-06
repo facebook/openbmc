@@ -1,0 +1,82 @@
+version: 2.1
+jobs:
+    lint:
+        docker:
+            - image: ubuntu:focal
+        resource_class: small
+        steps:
+            - run:
+                name: Install Ubuntu dependencies.
+                command: |
+                    apt-get update
+                    apt-get install -y \
+                        git \
+                        python3-pip \
+                        shellcheck
+            - run:
+                name: Install 'black'.
+                command: |
+                    python3 -m pip install "black==19.3b0"
+            - checkout
+            - run:
+                name: Run lint.
+                command: |
+                    ./tools/circle-ci/do-lint
+    build:
+        parameters:
+            machine:
+                type: string
+        docker:
+            - image: crops/poky:latest
+              environment:
+                  MACHINE: << parameters.machine >>
+                  CACHE_DIR: /tmp/sstate-cache
+                  CACHE_URI: https://fb-openbmc-sstate.s3.us-east-2.amazonaws.com
+        resource_class: xlarge
+        steps:
+            - checkout
+            - run:
+                name: Sync Yocto repositories.
+                command: |
+                    ./sync_yocto.sh
+            - run:
+                name: Check build required.
+                command: |
+                    ./tools/circle-ci/check-build-required
+            - run:
+                name: Download sstate cache.
+                command: |
+                    ./tools/circle-ci/download-sstate-cache
+            - run:
+                name: Do build.
+                command: |
+                    ./tools/circle-ci/do-build
+workflows:
+    version: 2
+    everything:
+        jobs:
+            - lint
+            - build:
+                matrix:
+                    parameters:
+                        machine: [
+                            angelslanding,
+                            cmm,
+                            elbert,
+                            emeraldpools,
+                            fbgp2,
+                            fbnd,
+                            fbtp,
+                            fbttn,
+                            fby2,
+                            fby3,
+                            galaxy100,
+                            lightning,
+                            minipack,
+                            sonorapass,
+                            wedge,
+                            wedge100,
+                            wedge400,
+                            yamp,
+                            yosemite,
+                            ]

@@ -71,10 +71,21 @@ get_server_config(uint8_t slot_id, uint8_t *data, uint8_t bmc_location) {
   uint8_t rbuf[1] = {0x00};
   uint8_t tlen = 4;
   uint8_t rlen = 0;
+  uint8_t bic_ready;
 
-  while ( ret < 0 && retry-- > 0 ) {
-    ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  ret = fby3_common_is_bic_ready(slot_id, &bic_ready);
+
+  if (ret < 0) {
+    return UTIL_EXECUTION_FAIL;
   }
+
+  if (bic_ready != 1) {
+    return UTIL_EXECUTION_FAIL;
+  }
+
+  do {
+    ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  } while ( ret < 0 && retry-- > 0 );
 
   if ( ret < 0 ) {
     return UTIL_EXECUTION_FAIL;

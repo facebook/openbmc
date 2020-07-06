@@ -245,7 +245,7 @@ fby3_common_is_bic_ready(uint8_t fru, uint8_t *val) {
     goto error_exit;
   }
 
-  ret = i2c_rdwr_msg_transfer(i2cfd, SB_CPLD_ADDR, tbuf, tlen, rbuf, rlen);
+  ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
     goto error_exit;

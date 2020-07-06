@@ -1440,7 +1440,7 @@ int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t* ver) {
 
 int bic_get_self_test_result(uint8_t slot_id, uint8_t* self_test_result) {
   int ret;
-  size_t rlen = sizeof(*self_test_result);
+  size_t rlen = SIZE_SELF_TEST_RESULT;
 
   if (self_test_result == NULL) {
     errno = EINVAL;

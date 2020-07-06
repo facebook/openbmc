@@ -104,10 +104,10 @@ int BmcCpldCapsuleComponent::update(string image)
 
     if (comp == "bmc_cap_rcvy") {
       tbuf[1] = BMC_INTENT_RCVY_VALUE;
-      syslog(LOG_CRIT, "Updating BMC Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), file);
+      syslog(LOG_CRIT, "Updating BMC Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), file);
     } else {
       tbuf[1] = BMC_INTENT_VALUE;
-      syslog(LOG_CRIT, "Updating BMC Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), file);
+      syslog(LOG_CRIT, "Updating BMC Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), file);
     }
 
     snprintf(cmd, sizeof(cmd), "/usr/sbin/flashcp -v %s %s", file, dev);
@@ -117,9 +117,9 @@ int BmcCpldCapsuleComponent::update(string image)
     }
 
     if (comp == "bmc_cap_rcvy") {
-      syslog(LOG_CRIT, "Updated BMC Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), file);
-    } else {
       syslog(LOG_CRIT, "Updated BMC Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), file);
+    } else {
+      syslog(LOG_CRIT, "Updated BMC Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), file);
     }
   } else if (comp == "cpld_cap" || comp == "cpld_cap_rcvy") {
     if ((fp = fopen("/proc/mtd", "r"))) {
@@ -140,10 +140,10 @@ int BmcCpldCapsuleComponent::update(string image)
 
     if (comp == "cpld_cap_rcvy") {
       tbuf[1] = CPLD_INTENT_RCVY_VALUE;
-      syslog(LOG_CRIT, "Updating CPLD Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), file);
+      syslog(LOG_CRIT, "Updating CPLD Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), file);
     } else {
       tbuf[1] = CPLD_INTENT_VALUE;
-      syslog(LOG_CRIT, "Updating CPLD Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), file);
+      syslog(LOG_CRIT, "Updating CPLD Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), file);
     }
 
     snprintf(cmd, sizeof(cmd), "/usr/sbin/flashcp -v %s %s", file, dev);
@@ -153,9 +153,9 @@ int BmcCpldCapsuleComponent::update(string image)
     }
 
     if (comp == "cpld_cap_rcvy") {
-      syslog(LOG_CRIT, "Updated CPLD Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), file);
-    } else {
       syslog(LOG_CRIT, "Updated CPLD Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), file);
+    } else {
+      syslog(LOG_CRIT, "Updated CPLD Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), file);
     }
   } else {
     return FW_STATUS_NOT_SUPPORTED;
@@ -187,7 +187,11 @@ int BmcCpldCapsuleComponent::update(string image)
 
   // If intent failed
   // Check the error code
-  pal_check_bmc_pfr_mailbox(bmc_location);
+  sleep(2);
+  ret = pal_check_pfr_mailbox(FRU_BMC);
+  if ( ret < 0 ) {
+      return -1;
+  }
 
   return 0;
 }

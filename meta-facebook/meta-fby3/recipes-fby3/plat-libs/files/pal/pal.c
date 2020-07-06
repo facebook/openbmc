@@ -2361,7 +2361,7 @@ pal_get_nic_fru_id(void)
 }
 
 int
-pal_check_bmc_pfr_mailbox(uint8_t bmc_location) {
+pal_check_pfr_mailbox(uint8_t fru) {
   int ret = 0, i2cfd = 0, retry=0, index = 0;
   int cpld_bus = 0;
   uint8_t tbuf[1] = {0}, rbuf[1] = {0};
@@ -2369,14 +2369,16 @@ pal_check_bmc_pfr_mailbox(uint8_t bmc_location) {
   uint8_t major_err = 0, minor_err = 0;
   char *major_str = "NA", *minor_str = "NA";
   char dev[32] = {0};
+  char fru_str[32] = {0};
+  uint8_t bus, addr;
+  bool bridged;
 
-  if (bmc_location == NIC_BMC) {
-    cpld_bus = NIC_CPLD_BUS;
-  } else {
-    cpld_bus = BB_CPLD_BUS;
+  if (pal_get_pfr_address(fru, &bus, &addr, &bridged)) {
+    syslog(LOG_WARNING, "%s() Failed to do pal_get_pfr_address(), FRU%d", __func__, fru);
+    return -1;
   }
 
-  snprintf(dev, sizeof(dev), I2CDEV, cpld_bus);
+  snprintf(dev, sizeof(dev), I2CDEV, bus);
   i2cfd = open(dev, O_RDWR);
   if ( i2cfd < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to open %s", __func__, dev);
@@ -2387,7 +2389,7 @@ pal_check_bmc_pfr_mailbox(uint8_t bmc_location) {
   tlen = 1;
   retry = 0;
   while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+    ret = i2c_rdwr_msg_transfer(i2cfd, addr, tbuf, tlen, rbuf, rlen);
     if ( ret < 0 ) {
       retry++;
       sleep(1);
@@ -2404,7 +2406,7 @@ pal_check_bmc_pfr_mailbox(uint8_t bmc_location) {
   tlen = 1;
   retry = 0;
   while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+    ret = i2c_rdwr_msg_transfer(i2cfd, addr, tbuf, tlen, rbuf, rlen);
     if ( ret < 0 ) {
       retry++;
       sleep(1);
@@ -2414,8 +2416,18 @@ pal_check_bmc_pfr_mailbox(uint8_t bmc_location) {
     }
   }
 
+  if ( i2cfd > 0 ) close(i2cfd);
+
   if ( (major_err != 0) || (minor_err != 0) ) {
     if ( major_err == MAJOR_ERROR_PCH_AUTH_FAILED ) {
+      major_str = "MAJOR_ERROR_BMC_AUTH_FAILED";
+      for (index = 0; index < minor_auth_size; index++) {
+        if (minor_err == minor_auth_error[index].err_id) {
+          minor_str = minor_auth_error[index].err_des;
+          break;
+        }
+      }
+    } else if ( major_err == MAJOR_ERROR_PCH_AUTH_FAILED ) {
       major_str = "MAJOR_ERROR_PCH_AUTH_FAILED";
       for (index = 0; index < minor_auth_size; index++) {
         if (minor_err == minor_auth_error[index].err_id) {
@@ -2431,14 +2443,35 @@ pal_check_bmc_pfr_mailbox(uint8_t bmc_location) {
           break;
         }
       }
+    } else if ( major_err == MAJOR_ERROR_UPDATE_FROM_BMC_FAILED ) {
+      major_str = "MAJOR_ERROR_UPDATE_FROM_BMC_FAILED";
+      for (index = 0; index < minor_update_size; index++) {
+        if (minor_err == minor_update_error[index].err_id) {
+          minor_str = minor_update_error[index].err_des;
+          break;
+        }
+      }
     } else {
       major_str = "unknown major error";
     }
 
-    syslog(LOG_CRIT, "BMC, PFR - Major error: %s (0x%02X), Minor error: %s (0x%02X)", major_str, major_err, minor_str, minor_err);
-  }
+    switch (fru) {
+      case FRU_BMC:
+        snprintf(fru_str, sizeof(fru_str), "BMC");
+        break;
+      case FRU_SLOT1:
+      case FRU_SLOT2:
+      case FRU_SLOT3:
+      case FRU_SLOT4:
+        snprintf(fru_str, sizeof(fru_str), "FRU: %d", fru);
+        break;
+      default:
+        break;
+    }
 
-  if ( i2cfd > 0 ) close(i2cfd);
+    syslog(LOG_CRIT, "%s, PFR - Major error: %s (0x%02X), Minor error: %s (0x%02X)", fru_str, major_str, major_err, minor_str, minor_err);
+    return -1;
+  }
 
   return 0;
 }

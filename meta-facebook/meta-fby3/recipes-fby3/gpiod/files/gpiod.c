@@ -68,29 +68,30 @@ bic_gpio_t gpio_ass_val = {
 
 err_t last_recovery_err[] = {
   /* Value indicating last FW Recovery reason. */
-  {0x01, "LAST_RECOVERY_PCH_ACTIVE_FAIL"},
-  {0x02, "LAST_RECOVERY_PCH_RECOVERY_FAIL"},
+  {0x01, "LAST_RECOVERY_PCH_ACTIVE"},
+  {0x02, "LAST_RECOVERY_PCH_RECOVERY"},
   {0x03, "LAST_RECOVERY_ME_LAUNCH_FAIL"},
   {0x04, "LAST_RECOVERY_ACM_LAUNCH_FAIL"},
   {0x05, "LAST_RECOVERY_IBB_LAUNCH_FAIL"},
   {0x06, "LAST_RECOVERY_OBB_LAUNCH_FAIL"},
-  {0x07, "LAST_RECOVERY_BMC_ACTIVE_FAIL"},
-  {0x08, "LAST_RECOVERY_BMC_RECOVERY_FAIL"},
+  {0x07, "LAST_RECOVERY_BMC_ACTIVE"},
+  {0x08, "LAST_RECOVERY_BMC_RECOVERY"},
   {0x09, "LAST_RECOVERY_BMC_LAUNCH_FAIL"},
   {0x0A, "LAST_RECOVERY_FORCED_ACTIVE_FW_RECOVERY"},
 };
 
 err_t last_panic_err[] = {
   /* Value indicating last Panic reason. */
+  {0x00, "LAST_PANIC_DEFAULT"},
   {0x01, "LAST_PANIC_PCH_UPDATE_INTENT"},
   {0x02, "LAST_PANIC_BMC_UPDATE_INTENT"},
   {0x03, "LAST_PANIC_BMC_RESET_DETECTED"},
   {0x04, "LAST_PANIC_BMC_WDT_EXPIRED"},
   {0x05, "LAST_PANIC_ME_WDT_EXPIRED"},
-  {0x06, "LAST_PANIC_ACM_WDT_EXPIRED"},
-  {0x07, "LAST_PANIC_IBB_WDT_EXPIRED"},
-  {0x08, "LAST_PANIC_OBB_WDT_EXPIRED"},
-  {0x09, "LAST_PANIC_ACM_IBB_OBB_AUTH_FAILED"},
+  {0x06, "LAST_PANIC_ACM_BIOS_WDT_EXPIRED"},
+  {0x07, "LAST_PANIC_RESERVED_1"},
+  {0x08, "LAST_PANIC_RESERVED_2"},
+  {0x09, "LAST_PANIC_ACM_BIOS_AUTH_FAILED"},
 };
 
 static int
@@ -437,6 +438,7 @@ check_pfr_mailbox(uint8_t fru) {
     syslog(LOG_CRIT, "FRU: %d, PFR - Major error: %s (0x%02X), Minor error: %s (0x%02X)", fru, major_str, major_err, minor_str, minor_err);
   }
 
+  if ( i2cfd > 0 ) close(i2cfd);
 }
 
 /* Monitor the gpio pins */

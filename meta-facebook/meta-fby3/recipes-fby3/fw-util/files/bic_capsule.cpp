@@ -26,8 +26,8 @@ using namespace std;
 #define BIOS_UPDATE_RCVY_INTENT 0x02
 #define CPLD_UPDATE_RCVY_INTENT 0x20
 #define POLLING_INTERVAL 10
-#define CPLD_UPDATE_TIMEOUT 18
-#define BIOS_UPDATE_TIMEOUT 36
+#define CPLD_UPDATE_TIMEOUT 20
+#define BIOS_UPDATE_TIMEOUT 50
 #define PLATFORM_STATE_ENTER_T0 0x09
 
 #define BIT_VALUE(list, index) \
@@ -36,14 +36,14 @@ using namespace std;
 int CapsuleComponent::update(string image) {
   int ret;
   uint8_t status;
-  int retry_count = 0;
   uint8_t tbuf[2] = {0}, rbuf[1] = {0};
   uint8_t tlen = 1, rlen = 1;
   char path[128];
   int i2cfd = 0, retry=0;
   bic_gpio_t gpio = {0};
-  int check_update_time = 0, time_cnt = 0, update_timeout = 0;
+  uint32_t check_update_time = 0, time_cnt = 0, update_timeout = 0, retry_count = 0;
   uint8_t plt_state = 0, panic_cnt_o = 0, panic_cnt_n = 0;
+  int is_check_panic_cnt = 1;
 
   // Check PFR provision status
   snprintf(path, sizeof(path), "/dev/i2c-%d", (slot_id+SLOT_BUS_BASE));
@@ -125,7 +125,7 @@ int CapsuleComponent::update(string image) {
     panic_cnt_o = rbuf[0];
     if ( retry == RETRY_TIME ) return -1;
 
-    // Update intent
+    // Defined update configuration
     tbuf[0] = UPDATE_INTENT_OFFSET;
     if (fw_comp == FW_BIOS_CAPSULE) {
       tbuf[1] = BIOS_UPDATE_INTENT;
@@ -147,6 +147,7 @@ int CapsuleComponent::update(string image) {
       return -1;
     }
 
+    // Update intent to CPLD
     retry = 0;
     tlen = 2;
     while (retry < RETRY_TIME) {
@@ -160,10 +161,20 @@ int CapsuleComponent::update(string image) {
     }
     if ( retry == RETRY_TIME ) return -1;
 
+    ret = pal_check_pfr_mailbox(slot_id);
+    if ( ret < 0 ) {
+      return -1;
+    }
+
     // Check update status
-    printf("Capsule update is ongoing ...\n");
     for (retry_count = 0; retry_count < check_update_time; retry_count++) {
+      if (retry_count == 0) {
+        printf("Capsule active update is ongoing ...\n");
+      } else {
+        printf("Capsule recovery update is ongoing ...\n");
+      }
       time_cnt = 0;
+      // Timeout mechanism to avoid updating failed
       while (time_cnt < update_timeout) {
         ret = bic_get_gpio(slot_id, &gpio);
         if ( ret < 0 ) {
@@ -206,7 +217,14 @@ int CapsuleComponent::update(string image) {
         }
 
         // When PLATFORM_STATE_ENTER_T0 is 0x09 and panic count is changed, it means that firmware update successfully.
-        if (( plt_state >= PLATFORM_STATE_ENTER_T0 ) && ( panic_cnt_n > panic_cnt_o )) {
+        if (fw_comp != FW_CPLD_CAPSULE) {
+          if ((fw_comp == FW_CPLD_RCVY_CAPSULE) && (retry_count == 0)) {
+            is_check_panic_cnt = 1;
+          } else {
+            is_check_panic_cnt = (panic_cnt_n > panic_cnt_o);
+          }
+        }
+        if ((plt_state >= PLATFORM_STATE_ENTER_T0) && (is_check_panic_cnt)) {
           break;
         } else {
           time_cnt++;
@@ -224,6 +242,13 @@ int CapsuleComponent::update(string image) {
 
     auto end = chrono::steady_clock::now();
     cout << "Elapsed time:  " << chrono::duration_cast<chrono::seconds>(end - start).count() << "   sec." << endl;
+
+    pal_set_server_power(slot_id, SERVER_POWER_ON);
+
+    ret = pal_check_pfr_mailbox(slot_id);
+    if ( ret < 0 ) {
+      return -1;
+    }
 
     if ( i2cfd > 0 ) close(i2cfd);
 

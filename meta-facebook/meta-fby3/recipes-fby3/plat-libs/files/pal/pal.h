@@ -161,7 +161,7 @@ int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_get_uart_select_from_cpld(uint8_t *uart_select);
 int pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen);
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
-int pal_check_bmc_pfr_mailbox(uint8_t bmc_location);
+int pal_check_pfr_mailbox(uint8_t fru);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -68,6 +68,10 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_FAN1_TACH,
   BMC_SENSOR_FAN2_TACH,
   BMC_SENSOR_FAN3_TACH,
+  BMC_SENSOR_FAN4_TACH,
+  BMC_SENSOR_FAN5_TACH,
+  BMC_SENSOR_FAN6_TACH,
+  BMC_SENSOR_FAN7_TACH,
   BMC_SENSOR_PWM0,
   BMC_SENSOR_PWM1,
   BMC_SENSOR_PWM2,
@@ -933,7 +937,13 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
   }
 
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-    if ( fan_type == SINGLE_TYPE ) fan *= 2;
+    //8 fans are included in bmc_sensor_list. sensord will monitor all fans anyway.
+    //in order to avoid accessing invalid fans, we add a condition to filter them out.
+    if ( fan_type == SINGLE_TYPE ) {
+      //only supports FAN_0, FAN_1, FAN_2, and FAN_3
+      if ( fan < FAN_4 ) fan *= 2;
+      else return PAL_ENOTSUP;
+    }
 
     if (fan > pal_tach_cnt ||
         snprintf(label, sizeof(label), "fan%d", fan + 1) > sizeof(label)) {
@@ -998,7 +1008,12 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm) {
 
   if ( NIC_BMC == bmc_location ) {
     fan_src = pal_get_fan_source(fan);
-  } else fan_src = fan;
+  } else {
+    //Config A and B use a single type of fan.
+    //Config D uses a dual type of fan.
+    if ( fan_type == SINGLE_TYPE) fan_src = fan;
+    else fan_src = pal_get_fan_source(fan);
+  }
 
   //read cached value if it's available
   pwm_snr = BMC_SENSOR_PWM0 + fan_src;

@@ -30,6 +30,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <pthread.h>
+#include <getopt.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -294,6 +295,14 @@ static pthread_mutex_t m_storage;
 static pthread_mutex_t m_transport;
 static pthread_mutex_t m_oem;
 
+static int verbose_logging;
+
+#define IPMID_VERBOSE(fmt, args...)  \
+  do {                               \
+    if (verbose_logging)             \
+      syslog(LOG_INFO, fmt, ##args); \
+  } while (0)
+
 /*
  * Function(s) to handle IPMI messages with NetFn: Chassis
  */
@@ -308,12 +317,12 @@ chassis_get_status (unsigned char *response, unsigned char *res_len)
 
   // TODO: Need to obtain current power state and last power event
   // from platform and return
-  *data++ = 0x01;		// Current Power State
-  *data++ = 0x00;		// Last Power Event
-  *data++ = 0x40;		// Misc. Chassis Status
-  *data++ = 0x00;		// Front Panel Button Disable
+  data[0] = 0x01;		// Current Power State
+  data[1] = 0x00;		// Last Power Event
+  data[2] = 0x40;		// Misc. Chassis Status
+  data[3] = 0x00;		// Front Panel Button Disable
 
-  res_len = data - &res->data[0];
+  *res_len = 4;
 }
 
 // Get System Boot Options (IPMI/Section 28.12)
@@ -1388,6 +1397,8 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
   res->cc = 0xFF;		// Unspecified completion code
   *res_len = 0;
 
+  IPMID_VERBOSE("processing ipmi request: netfn=%#02x, cmd=%#02x\n",
+                netfn, req->cmd);
   switch (netfn)
   {
     case NETFN_CHASSIS_REQ:
@@ -1448,13 +1459,58 @@ conn_cleanup:
   return 0;
 }
 
+static void
+dump_usage(const char *prog_name)
+{
+  int i;
+  struct {
+    const char *opt;
+    const char *desc;
+  } options[] = {
+    {"-h|--help", "print this help message"},
+    {"-v|--verbose", "enable verbose logging"},
+    {NULL, NULL},
+  };
+
+  printf("Usage: %s [options]\n", prog_name);
+  for (i = 0; options[i].opt != NULL; i++) {
+    printf("    %-18s - %s\n", options[i].opt, options[i].desc);
+  }
+}
 
 int
-main (void)
+main (int argc, char **argv)
 {
   int s, s2, t, len;
   struct sockaddr_un local, remote;
   pthread_t tid;
+
+  struct option long_opts[] = {
+    {"help",       no_argument, NULL, 'h'},
+    {"verbose",    no_argument, NULL, 'v'},
+    {"foreground", no_argument, NULL, 'f'},
+    {NULL,         0,           NULL, 0},
+  };
+
+  while (1) {
+    int opt_index = 0;
+    int ret = getopt_long(argc, argv, "hv", long_opts, &opt_index);
+    if (ret == -1)
+      break; /* end of arguments */
+
+    switch (ret) {
+    case 'h':
+      dump_usage(argv[0]);
+      return 0;
+
+    case 'v':
+      verbose_logging = 1;
+      break;
+
+    default:
+      return -1;
+    }
+  } /* while */
 
   daemon(1, 0);
   openlog("ipmid", LOG_CONS, LOG_DAEMON);
@@ -1492,6 +1548,7 @@ main (void)
     exit (1);
   }
 
+  IPMID_VERBOSE("starting ipmid main loop\n");
   while(1) {
     int n;
     t = sizeof (remote);
@@ -1499,6 +1556,8 @@ main (void)
       syslog(LOG_ALERT, "ipmid: accept() failed\n");
       break;
     }
+
+    IPMID_VERBOSE("new request received: fd=%d\n", s2);
 
     // Creating a worker thread to handle the request
     // TODO: Need to monitor the server performance with higher load and

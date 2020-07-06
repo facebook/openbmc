@@ -436,6 +436,9 @@ nvme_vendor_decode(uint16_t value, t_key_value_pair *vendor_decoding) {
     case VENDOR_ID_QUALCOMM:
       sprintf(vendor_decoding->value, "Qualcomm(0x%04X)", value);
       break;
+    case VENDOR_ID_SSSTC:
+      sprintf(vendor_decoding->value, "SSSTC(0x%04X)", value);
+      break;
     default:
       sprintf(vendor_decoding->value, "Unknown(0x%04X)", value);
       break;

@@ -76,22 +76,22 @@ function init_class1_server() {
     devmem_clear_bit $(scu_addr 9c) 17
 
     check_por_config 1
-    if [ $(is_server_prsnt 1) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
+    if [ $(is_sb_bic_ready 1) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
       power-util slot1 on
     fi
 
     check_por_config 2
-    if [ $(is_server_prsnt 2) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
+    if [ $(is_sb_bic_ready 2) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
       power-util slot2 on
     fi
 
     check_por_config 3
-    if [ $(is_server_prsnt 3) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
+    if [ $(is_sb_bic_ready 3) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
       power-util slot3 on
     fi
 
     check_por_config 4
-    if [ $(is_server_prsnt 4) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
+    if [ $(is_sb_bic_ready 4) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
       power-util slot4 on
     fi
   fi

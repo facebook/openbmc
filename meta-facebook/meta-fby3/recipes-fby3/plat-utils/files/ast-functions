@@ -225,6 +225,27 @@ is_bic_ready() {
   fi
 }
 
+# Check to see if Server Board Present & Bridge-IC is ready
+is_sb_bic_ready() {
+  local ready
+  local slot_num=$1
+  local cpld_bus=$(($slot_num+3))
+
+  if [[ $(is_server_prsnt 1) == "0" ]]; then
+    ready=0
+  else
+    cpld_bic_ready_out=$(i2cget -y ${cpld_bus} 0x0f 0x02)
+    val=$((((16#${cpld_bic_ready_out:2}) & 0x02) >> 1))
+    if [ $val -eq 1 ]; then
+      ready=1
+    else
+      ready=0
+    fi
+  fi
+
+  echo $ready
+}
+
 # Check to see if slot 12v is on or not
 is_slot_12v_on() {
   local pwr_sts

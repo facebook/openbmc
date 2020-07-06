@@ -47,8 +47,9 @@ enum {
 };
 
 enum {
-  BIC_STATUS_SUCCESS =  0,
-  BIC_STATUS_FAILURE = -1,
+  BIC_STATUS_SUCCESS                =  0,
+  BIC_STATUS_FAILURE                = -1,
+  BIC_STATUS_NOT_SUPP_IN_CURR_STATE = -2,
 };
 
 enum {

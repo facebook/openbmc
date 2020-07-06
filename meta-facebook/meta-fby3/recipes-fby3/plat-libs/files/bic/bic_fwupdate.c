@@ -884,8 +884,10 @@ send_image_data_via_bic(uint8_t slot_id, uint8_t comp, uint8_t intf, uint32_t of
 
   do {
     ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
-    if ( ret < 0 ) {
-      printf("%s() slot: %d, target: %d, offset: %d, len: %d retrying..", __func__, slot_id, comp, offset, len);
+    if (ret != BIC_STATUS_SUCCESS) {
+      if (ret == BIC_STATUS_NOT_SUPP_IN_CURR_STATE)
+        return ret;
+      printf("%s() slot: %d, target: %d, offset: %d, len: %d retrying..\n", __func__, slot_id, comp, offset, len);
     }
   } while( (ret < 0) && (retries--));
 
@@ -924,6 +926,8 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, in
       comp |= 0x80;
     }
     ret = send_image_data_via_bic(slot_id, comp, intf, offset, read_bytes, buf);
+    if (ret != BIC_STATUS_SUCCESS)
+      break;
 
     offset += read_bytes;
     if ((last_offset + dsize) <= offset) {
@@ -932,7 +936,6 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, in
       last_offset += dsize;
     }
   }
-
   return ret;
 }
 

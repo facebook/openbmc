@@ -9,12 +9,27 @@
 
 using namespace std;
 
-int BicFwExtComponent::update(string image) {
+int BicFwExtComponent::update_internal(string image, bool force) {
   int ret = 0;
   try {
     server.ready();
     expansion.ready();
-    ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
+    ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), (force)?FORCE_UPDATE_SET:FORCE_UPDATE_UNSET);
+
+    if (ret != BIC_FW_UPDATE_SUCCESS) {
+      switch(ret) {
+      case BIC_FW_UPDATE_FAILED:
+        cerr << this->alias_component() << ": update process failed" << endl;
+        break;
+      case BIC_FW_UPDATE_NOT_SUPP_IN_CURR_STATE:
+        cerr << this->alias_component() << ": firmware update not supported in current state." << endl;
+        break;
+      default:
+        cerr << this->alias_component() << ": unknow error (ret: " << ret << ")" << endl;
+        break;
+      }
+      return FW_STATUS_FAILURE;
+    }
   } catch (string err) {
     printf("%s\n", err.c_str());
     return FW_STATUS_NOT_SUPPORTED;
@@ -22,17 +37,12 @@ int BicFwExtComponent::update(string image) {
   return ret;
 }
 
+int BicFwExtComponent::update(string image) {
+  return update_internal(image, false);
+}
+
 int BicFwExtComponent::fupdate(string image) {
-  int ret = 0;
-  try {
-    server.ready();
-    expansion.ready();
-    ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_SET);
-  } catch (string err) {
-    printf("%s\n", err.c_str());
-    return FW_STATUS_NOT_SUPPORTED;
-  }
-  return ret;
+  return update_internal(image, true);
 }
 
 int BicFwExtComponent::get_ver_str(string& s) {
@@ -80,17 +90,36 @@ void BicFwExtComponent::get_version(json& j) {
   }
 }
 
-int BicFwExtBlComponent::update(string image) {
+int BicFwExtBlComponent::update_internal(string image, bool force) {
   int ret = 0;
   try {
     server.ready();
     expansion.ready();
-    ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
+    ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), (force)?FORCE_UPDATE_SET:FORCE_UPDATE_UNSET);
+
+    if (ret != BIC_FW_UPDATE_SUCCESS) {
+      switch(ret) {
+      case BIC_FW_UPDATE_FAILED:
+        cerr << this->alias_component() << ": update process failed" << endl;
+        break;
+      case BIC_FW_UPDATE_NOT_SUPP_IN_CURR_STATE:
+        cerr << this->alias_component() << ": firmware update not supported in current state." << endl;
+        break;
+      default:
+        cerr << this->alias_component() << ": unknow error (ret: " << ret << ")" << endl;
+        break;
+      }
+      return FW_STATUS_FAILURE;
+    }
   } catch(string err) {
     printf("%s\n", err.c_str());
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
+}
+
+int BicFwExtBlComponent::update(string image) {
+  return update_internal(image, false);
 }
 
 int BicFwExtBlComponent::get_ver_str(string& s) {

@@ -1914,6 +1914,12 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
     goto error_exit;
   }
 
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    goto error_exit;
+  }
+
   while ((bytes_rd = read(fd, buf, sizeof(sdr_full_t))) > 0) {
     if (bytes_rd != sizeof(sdr_full_t)) {
       syslog(LOG_WARNING, "%s() read returns %d bytes\n", __func__, bytes_rd);
@@ -1923,16 +1929,16 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
     sdr = (sdr_full_t *) buf;
     snr_num = sdr->sensor_num;
     sinfo[snr_num].valid = true;
-    // If Class 2, threshold change
+    // If it is a system of class 2, change m_val and UCR of HSC.
     if (snr_num == BIC_SENSOR_HSC_OUTPUT_CUR) {
-      fby3_common_get_bmc_location(&bmc_location);
       if (bmc_location == NIC_BMC) {
-          sdr->uc_thresh = HSC_OUTPUT_CUR_UC_THRESHOLD;
+        sdr->uc_thresh = HSC_OUTPUT_CUR_UC_THRESHOLD;
+        sdr->m_val = 0x04;
       }
     } else if (snr_num == BIC_SENSOR_HSC_INPUT_PWR){
-      fby3_common_get_bmc_location(&bmc_location);
       if (bmc_location == NIC_BMC) {
         sdr->uc_thresh = HSC_INPUT_PWR_UC_THRESHOLD;
+        sdr->m_val = 0x04;
       }
     }
     memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));

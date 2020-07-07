@@ -105,8 +105,9 @@ do_install_board() {
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 59 S .
 
+    # AVS voltage setup on Wegde400 units, this should be after power-on.sh
     install -m 755 setup_avs.sh ${D}${sysconfdir}/init.d/setup_avs.sh
-    update-rc.d -r ${D} setup_avs.sh start 65 S .
+    update-rc.d -r ${D} setup_avs.sh start 86 S .
 
     # networking is done after rcS, any start level within rcS
     # for mac fixup should work

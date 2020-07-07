@@ -42,6 +42,27 @@
   "0: Fail\n"                                   \
   "1: Normal"
 
+static ssize_t pwrcpld_gb_switch_freq_show(struct device *dev,
+                                           struct device_attribute *attr,
+                                           char *buf)
+{
+  int val;
+
+  val = i2c_dev_read_byte(dev, attr);
+    if (val < 0) {
+      return val;
+    }
+
+  switch(val) {
+    case 0x2f:
+      return scnprintf(buf, PAGE_SIZE, "%s\n", "1.2G");
+    case 0x35:
+      return scnprintf(buf, PAGE_SIZE, "%s\n", "1.35G");
+    default:
+      return -EIO;
+  }
+}
+
 static const i2c_dev_attr_st smb_pwrcpld_attr_table[] = {
   {
     "cpld_ver",
@@ -152,6 +173,12 @@ static const i2c_dev_attr_st smb_pwrcpld_attr_table[] = {
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x23, 1, 1,
+  },
+  {
+    "gb_freq",
+    pwrcpld_gb_switch_freq_show,
+    NULL,
+    0x25, 0, 8,
   },
 };
 

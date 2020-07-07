@@ -29,7 +29,6 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "dhclient -pf /var/run/dhclient.eth0.pid eth0",
             "front-paneld",
             "fscd",
-            "gpiod",
             "ipmbd",
             "ipmid",
             "mTerm_server",

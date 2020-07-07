@@ -41,6 +41,7 @@
 #include <facebook/fby2_fruid.h>
 #include <openbmc/pal.h>
 #include <openbmc/ncsi.h>
+#include <openbmc/nl-wrapper.h>
 
 #define EEPROM_DC       "/sys/class/i2c-adapter/i2c-%d/%d-0051/eeprom"
 
@@ -120,6 +121,54 @@ static int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
   return 0;
 }
 
+#if defined(CONFIG_FBY2_KERNEL)
+static int get_ncsi_vid() {
+  NCSI_NL_MSG_T *nl_msg;
+  NCSI_NL_RSP_T *nl_rsp;
+  char value[MAX_VALUE_LEN] = {0};
+  Get_Version_ID_Response *vidresp, *vidcache;
+  int ret = -1;
+  char *nic_key = "nic_fw_ver";
+
+  nl_msg = (NCSI_NL_MSG_T *)calloc(1, sizeof(NCSI_NL_MSG_T));
+  if (!nl_msg) {
+    syslog(LOG_WARNING, "%s: allocate nl_msg buffer failed", __func__);
+    return -1;
+  }
+
+  sprintf(nl_msg->dev_name, "eth0");
+  nl_msg->channel_id = 0;
+  nl_msg->cmd = NCSI_GET_VERSION_ID;
+  nl_msg->payload_length = 0;
+
+  do {
+    nl_rsp = send_nl_msg_libnl(nl_msg);
+    if (!nl_rsp) {
+      break;
+    }
+    if (((NCSI_Response_Packet *)nl_rsp->msg_payload)->Response_Code) {
+      break;
+    }
+
+    ret = kv_get(nic_key, value, NULL, 0);
+    vidcache = (Get_Version_ID_Response *)value;
+    vidresp = (Get_Version_ID_Response *)((NCSI_Response_Packet *)nl_rsp->msg_payload)->Payload_Data;
+    if (ret || memcmp(vidresp->fw_ver, vidcache->fw_ver, sizeof(vidresp->fw_ver))) {
+      if (!kv_set(nic_key, (const char *)vidresp, sizeof(Get_Version_ID_Response), 0)){
+        syslog(LOG_WARNING, "updated %s", nic_key);
+      }
+    }
+    ret = 0;
+  } while (0);
+
+  free(nl_msg);
+  if (nl_rsp) {
+    free(nl_rsp);
+  }
+
+  return ret;  
+}
+#else
 static int get_ncsi_vid(void) {
   int sock_fd, ret = 0;
   int req_msg_size = offsetof(NCSI_NL_MSG_T, msg_payload);
@@ -210,6 +259,7 @@ close_and_exit:
 
   return ret;
 }
+#endif
 
 int plat_fruid_init(void) {
 

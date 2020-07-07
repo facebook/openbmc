@@ -23,7 +23,6 @@
 #include <syslog.h>
 #include "fby2_fruid.h"
 
-#define NIC_FW_VER_PATH "/tmp/cache_store/nic_fw_ver"
 
 int
 plat_get_ipmb_bus_id(uint8_t slot_id) {

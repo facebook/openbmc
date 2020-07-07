@@ -49,6 +49,7 @@
 #include <sys/socket.h>
 #include <linux/netlink.h>
 #include <openbmc/ncsi.h>
+#include <openbmc/nl-wrapper.h>
 #include <sys/sysinfo.h>
 
 
@@ -150,6 +151,11 @@
 #define FAN_CONFIG_FILE "/tmp/fan_config"
 #define FAN_CONFIG_10K 0
 #define FAN_CONFIG_15K 1
+
+#define NCSI_DATA_PAYLOAD     64
+#define NCSI_MIN_DATA_PAYLOAD 36
+#define NCSI_RETRY_MAX        2
+#define BRCM_POWERUP_PRE_CMD  0x1A
 
 #if defined CONFIG_FBY2_ND
 /* MCA bank data format */
@@ -1447,6 +1453,87 @@ power_on_server_physically(uint8_t slot_id){
 
 
 #define MAX_POWER_PREP_RETRY_CNT    3
+
+// Write to /sys/devices/platform/ftgmac100.0/net/eth0/powerup_prep_host_id
+// This is a combo ID consists of the following fields:
+// bit 11~8: reinit_type
+// bit 7~0:  host_id
+#if defined(CONFIG_FBY2_KERNEL)
+
+static int
+nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type) {
+  uint8_t ret = 0, retry = 0, cc = 0;
+  uint8_t buf[NCSI_DATA_PAYLOAD] = {0};
+  uint8_t channel = 0;
+  uint8_t oem_payload_length = 4;
+  uint32_t nic_mfg_id = 0;
+  FILE *fp = NULL;
+  NCSI_NL_MSG_T *msg = NULL;
+  NCSI_NL_RSP_T *rsp = NULL;
+
+  fp = fopen(NIC_FW_VER_PATH, "rb");
+  if (!fp) {
+    syslog(LOG_WARNING, "%s(): Fail to read vendor ID.", __func__);
+    return -1;
+  }
+  if (fread(buf, sizeof(uint8_t), NCSI_DATA_PAYLOAD, fp) < NCSI_MIN_DATA_PAYLOAD) {
+    fclose(fp);
+    return -1;
+  }
+  fclose(fp);
+
+  // get the manufcture id
+  nic_mfg_id = (buf[35]<<24) | (buf[34]<<16) | (buf[33]<<8) | buf[32];
+
+  if (nic_mfg_id == MFG_BROADCOM) {
+    msg = calloc(1, sizeof(NCSI_NL_MSG_T));
+    memset(msg, 0, sizeof(NCSI_NL_MSG_T));
+    sprintf(msg->dev_name, "eth0");
+    msg->channel_id = channel;
+    msg->cmd = NCSI_OEM_CMD;
+    msg->payload_length = 16;
+
+    msg->msg_payload[0] = 0x00;  // 0~3: IANA
+    msg->msg_payload[1] = 0x00;
+    msg->msg_payload[2] = 0x11;
+    msg->msg_payload[3] = 0x3D;
+    msg->msg_payload[4] = 0x00; // OEM Playload Version
+    msg->msg_payload[5] = BRCM_POWERUP_PRE_CMD ; // OEM Command Type
+    msg->msg_payload[6] = 0x00; // 6~7: OEM Payload Length
+    msg->msg_payload[7] = oem_payload_length; 
+    msg->msg_payload[8] = 0x00; // 8~12: Reserved
+    msg->msg_payload[9] = 0x00; 
+    msg->msg_payload[10] = 0x00;
+    msg->msg_payload[11] = 0x00;
+    msg->msg_payload[12] = 0x00;
+    msg->msg_payload[13] = reinit_type; // ReInit Type
+    msg->msg_payload[14] = 0x00; //14~15: Host ID
+    msg->msg_payload[15] = slot_id;
+
+    do {
+      rsp = send_nl_msg_libnl(msg);
+      cc = (rsp->msg_payload[0]<<8) + rsp->msg_payload[1];
+      if (cc == RESP_COMMAND_COMPLETED ) {
+        break;
+      }
+      retry++;
+    } while (retry < NCSI_RETRY_MAX);
+
+    if (cc != RESP_COMMAND_COMPLETED) {
+      printf("Power-up prepare command failed!\n");
+      ret = -1;      
+      print_ncsi_completion_codes(rsp);
+    } else {
+      syslog(LOG_INFO, "Power-up perpare is done");
+    }
+    free(rsp);
+    free(msg);
+  }
+
+  return ret;
+}
+
+#else
 static int
 write_gmac0_value(const char *device_name, const int value) {
   char full_name[LARGEST_DEVICE_NAME];
@@ -1471,10 +1558,6 @@ write_gmac0_value(const char *device_name, const int value) {
   return err;
 }
 
-// Write to /sys/devices/platform/ftgmac100.0/net/eth0/powerup_prep_host_id
-// This is a combo ID consists of the following fields:
-// bit 11~8: reinit_type
-// bit 7~0:  host_id
 static int
 nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type) {
   int err;
@@ -1484,6 +1567,7 @@ nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type) {
 
   return err;
 }
+#endif
 
 
 // Power On the server in a given slot

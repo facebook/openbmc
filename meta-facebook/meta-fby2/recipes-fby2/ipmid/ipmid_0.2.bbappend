@@ -15,11 +15,11 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS += " libipmi libfruid update-rc.d-native libsdr libgpio libfby2-fruid libfby2-sensor libncsi"
-RDEPENDS_${PN} += "libipmi libfruid libsdr libgpio libfby2-fruid libbic libfby2-sensor libncsi"
+DEPENDS += " libipmi libfruid update-rc.d-native libsdr libgpio libfby2-fruid libfby2-sensor libncsi libnl-wrapper"
+RDEPENDS_${PN} += "libipmi libfruid libsdr libgpio libfby2-fruid libbic libfby2-sensor libncsi libnl-wrapper"
 
 CFLAGS += "-DCONFIG_FBY2"
-LDFLAGS += " -lipmb -lbic -lgpio -lfby2_sensor -lncsi -lfby2_fruid"
+LDFLAGS += " -lipmb -lbic -lgpio -lfby2_sensor -lncsi -lfby2_fruid -lnl-wrapper"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://fruid.c \

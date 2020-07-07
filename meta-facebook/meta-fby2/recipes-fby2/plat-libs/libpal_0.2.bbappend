@@ -15,6 +15,7 @@ DEPENDS += " \
     libobmc-i2c \
     libobmc-sensors \
     libgpio-ctrl \
+    libnl-wrapper \
     "
 
 # These shouldn't be needed but are because we aren't properly versioning the
@@ -30,4 +31,5 @@ RDEPENDS_${PN} += " \
     libobmc-i2c \
     libobmc-sensors \
     libgpio-ctrl \
+    libnl-wrapper \
     "

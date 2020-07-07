@@ -742,7 +742,11 @@ calc_bmc_hsc_value(float *value) {
       }
       bmc_hsc_val -= val;
     }
-  }  
+  }
+
+  if (bmc_hsc_val < 0) {
+    return ERR_SENSOR_NA;
+  }
   *value = bmc_hsc_val;
 
   return ret;

@@ -1758,12 +1758,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      if (pal_is_fw_update_ongoing(fru)) {
-        return READING_SKIP;
-      } else {
-        if ( pal_sdr_init(fru) == ERR_NOT_READY ) ret = READING_NA;
-        else ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location);
-      }
+      if ( pal_sdr_init(fru) == ERR_NOT_READY ) ret = READING_NA;
+      else ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location);
       break;
     case FRU_BMC:
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);

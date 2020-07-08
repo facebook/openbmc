@@ -1,84 +1,126 @@
-#!/bin/bash
+#!/usr/bin/python3
 
-POSITIONAL=()
-build_dir=""
-shell=no
-print_help=no
-log_loc=""
-while [[ $# -gt 0 ]]; do
-	key="$1"
-	case $key in
-		-b|--build)
-			build_dir="$2"
-			shift 2
-			;;
-    -s|--shell)
-      shell=yes
-      shift 1
-      ;;
-    -h|--help)
-      print_help=yes
-      shift 1
-      ;;
-     -l|--log)
-       log_loc="$2"
-       shift 2
-       ;;
-    *)
-    	POSITIONAL+=("$1")
-    	shift
-    	;;
-	esac
-done
-set -- "${POSITIONAL[@]}"
+import os
+import re
+import sys
+import glob
+import shutil
+import subprocess
+import argparse
 
-if [ $print_help = "yes" ]; then
-  echo "USAGE: $0 [OPTIONS] [RECIPES]"
-  echo "       -b|--build BUILD_DIR"
-  echo "                  Use an existing build directory instead of building one"
-  echo "       -s|--shell"
-  echo "                  Drops you into a CHROOTed shell of the image instead of running ptest-runner (Useful for debugging)"
-  echo "       -l|--log LOCATION"
-  echo "                  Print log file at LOCATION after execution"
-  echo "       -h|--help"
-  echo "                  Prints this message"
-  echo "       RECIPES    Space separated list of recipes to run tests for. By default, will run all discovered. Ignored if -s|--shell"
-  exit 0
-fi
 
-openbmc_dir=$(realpath "$(dirname "${BASH_SOURCE[0]}")"/../..)
-cur=$(pwd)
-if [ -z "$build_dir" ]; then
-  build_steps=(
-    "cd  $openbmc_dir;"
-    "source ./openbmc-init-build-env qemux86 build-qemux86 > /dev/null;"
-    "sed -i -e 's/IMAGE_INSTALL_append.*//' conf/local.conf;"
-    "echo IMAGE_INSTALL_append = \\\"$@\\\" >> conf/local.conf;"
-    "bitbake -q qemux86-image"
-  )
-  cmd="${build_steps[*]}"
-  env -i HOME="$HOME" bash -l -c "${cmd}"
-  if [ $? != 0 ]; then
-    echo "Build failed"
-    exit 1
-  fi
-  build_dir="${openbmc_dir}/build-qemux86"
-fi
-cd "$build_dir" || exit 1
-deploy=./tmp/deploy/images/qemux86-64
-rootfs_zip=$(realpath $deploy/qemux86-image-qemux86-64.tar.bz2)
-rootfs=$deploy/rootfs
-if [ -d $rootfs ]; then
-  rm -rf $rootfs
-fi
-mkdir $rootfs
-tar -xf "$rootfs_zip" -C "$rootfs" > /dev/null
-if [ $shell = "yes" ]; then
-  unshare --mount --map-root-user chroot "$rootfs"
-else
-  unshare --mount --map-root-user chroot "$rootfs" ptest-runner "$@"
-  if [ "$log_loc" != "" ]; then
-    cat "${rootfs}${log_loc}"
-  fi
-fi
-cd "$cur" || exit 1
+def openbmc_path():
+    curr = os.path.abspath(__file__)
+    openbmc = os.path.dirname(curr) + "/../.."
+    return os.path.abspath(openbmc)
+
+
+def recipes_with_ptest():
+    openbmc = openbmc_path()
+    blacklist = ["qemux86-image.bb", "ptest-meson-crosstarget-native_0.1.bb"]
+
+    def contains_ptest(f):
+        with open(f) as fd:
+            if "ptest" in fd.read():
+                return True
+        return False
+
+    def recipe_name(recipe):
+        m = re.match(r"(.+)_.+\.bb$", recipe)
+        return m[1]
+
+    dirs = [
+        f
+        for f in glob.glob(f"{openbmc}/*")
+        if os.path.isdir(f)
+        and os.path.basename(f) != "yocto"
+        and not os.path.basename(f).startswith("build")
+    ]
+    recipes = set()
+    total_recipes = 0
+    for d in dirs:
+        for root, _, files in os.walk(d):
+            if "meta-backports" in root:
+                continue
+            for f in files:
+                f_full = os.path.join(root, f)
+                if f.endswith(".bb"):
+                    total_recipes += 1
+                    if f not in blacklist and contains_ptest(f_full):
+                        recipes.add(recipe_name(f))
+    print(f"Found {total_recipes} recipes of which {len(recipes)} define unit-tests")
+    return list(recipes)
+
+
+def bmc_build():
+    openbmc = openbmc_path()
+    recipe_arg = " ".join(recipes_with_ptest())
+    build_steps = [
+        f"cd {openbmc}",
+        "source ./openbmc-init-build-env qemux86 build-qemux86 > /dev/null",
+        "sed -i -e 's/IMAGE_INSTALL_append.*//' conf/local.conf",
+        f'echo IMAGE_INSTALL_append = \\"{recipe_arg}\\" >> conf/local.conf',
+        "bitbake -q qemux86-image",
+    ]
+    build_cmd = "; ".join(build_steps)
+    cmd = ["env", "-i", f"HOME={os.environ['HOME']}", "bash", "-l", "-c", build_cmd]
+    subprocess.check_call(cmd)
+    return openbmc + "/build-qemux86"
+
+
+def main(args):
+    if args.build is None:
+        args.build = bmc_build()
+
+    if not os.path.isdir(args.build):
+        print(f"{args.build} does not exist")
+        sys.exit(-1)
+    args.build = os.path.abspath(args.build)
+    deploy = args.build + "/tmp/deploy/images/qemux86-64"
+    rootfs_zip = deploy + "/qemux86-image-qemux86-64.tar.bz2"
+    rootfs_zip = os.path.abspath(rootfs_zip)
+    rootfs = deploy + "/rootfs"
+    if os.path.isdir(rootfs):
+        shutil.rmtree(rootfs)
+    os.makedirs(rootfs)
+    untar = ["tar", "-xf", rootfs_zip, "-C", rootfs]
+    subprocess.check_call(untar)
+    cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
+    if args.shell:
+        subprocess.check_call(cmd)
+    else:
+        cmd += ["ptest-runner"] + args.recipes
+        out = subprocess.check_output(cmd).decode()
+        print(out)
+        if args.log is not None:
+            log = os.path.join(rootfs, args.log)
+            with open(log) as f:
+                print(f.read())
+
+
+parser = argparse.ArgumentParser(description="Helper to run unit-tests natively")
+parser.add_argument(
+    "--build",
+    "-b",
+    help="Use an existing build directory instead of building one (For debugging)",
+    dest="build",
+    default=None,
+)
+parser.add_argument(
+    "--shell",
+    "-s",
+    help="Drops you into a CHROOTed shell of the image (For debugging)",
+    dest="shell",
+    default=False,
+    action="store_true",
+)
+parser.add_argument(
+    "--log",
+    "-l",
+    help="Print the log file after execution of the test(s)",
+    dest="log",
+    default=None,
+)
+parser.add_argument("recipes", nargs="*", help="Recipe(s) to test")
+args = parser.parse_args()
+main(args)

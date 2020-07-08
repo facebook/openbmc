@@ -48,14 +48,11 @@ EOF
 }
 
 do_install_ptest() {
-#  install -d ${D}${libdir}/log-util-v2
-#  install -D ${D}${libdir}/log-util-v2/ptest
   install -D -m 755 log-util-test ${D}${libdir}/log-util-v2/ptest/log-util-test
 }
 
 do_install() {
-#  install -D ${D}{bindir}
-  install -D -m 755 log-util ${D}${bindir}/log-util
+  install -D -m 755 log-util ${D}${prefix}/local/bin/log-util
 }
 
 S = "${WORKDIR}"
@@ -63,5 +60,5 @@ DEPENDS += "libpal cli11 nlohmann-json gtest gmock"
 RDEPENDS_${PN} += "libpal"
 RDEPENDS_${PN}-ptest += "libpal"
 
-FILES_${PN} = "${bindir}/log-util"
+FILES_${PN} = "${prefix}/local/bin/log-util"
 FILES_${PN}-ptest = "${libdir}/log-util-v2/ptest"

@@ -18,6 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
+#shellcheck disable=SC1091,SC2034
 # Do not change this line to openbmc-utils.sh, or it will generate a source loop.
 . /usr/local/bin/i2c-utils.sh
 
@@ -96,6 +97,9 @@ wedge_board_type_rev(){
                 ;;
             2)
                 echo "WEDGE400-C_DVT"
+                ;;
+            3)
+                echo "WEDGE400-C_DVT2"
                 ;;
             *)
                 echo "WEDGE400-C_(Undefine $rev)"

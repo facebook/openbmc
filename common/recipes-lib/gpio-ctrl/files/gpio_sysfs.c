@@ -37,10 +37,14 @@
 /*
  * gpio sysfs paths and files.
  */
+#ifdef __TEST__
+#define GPIO_SYSFS_ROOT			"/tmp/test"
+#else
 #define GPIO_SYSFS_ROOT			"/sys/class/gpio"
-#define GPIO_SYSFS_EXPORT		"/sys/class/gpio/export"
-#define GPIO_SYSFS_UNEXPORT		"/sys/class/gpio/unexport"
-#define GPIO_SYSFS_PIN_PATH		"/sys/class/gpio/gpio%d"
+#endif
+#define GPIO_SYSFS_EXPORT		GPIO_SYSFS_ROOT "/export"
+#define GPIO_SYSFS_UNEXPORT		GPIO_SYSFS_ROOT "/unexport"
+#define GPIO_SYSFS_PIN_PATH		GPIO_SYSFS_ROOT "/gpio%d"
 #define GPIO_SYSFS_EDGE_FILE		"edge"
 #define GPIO_SYSFS_VALUE_FILE		"value"
 #define GPIO_SYSFS_DIRECTION_FILE	"direction"

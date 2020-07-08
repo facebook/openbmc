@@ -176,6 +176,7 @@ static const i2c_dev_attr_st smb_pwrcpld_attr_table[] = {
   },
   {
     "gb_freq",
+    NULL,
     pwrcpld_gb_switch_freq_show,
     NULL,
     0x25, 0, 8,

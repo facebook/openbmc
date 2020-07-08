@@ -65,4 +65,5 @@ IMAGE_INSTALL += " \
   dimm-util \
   i2craw \
   setup-gpio \
+  ncsid-v2 \
   "

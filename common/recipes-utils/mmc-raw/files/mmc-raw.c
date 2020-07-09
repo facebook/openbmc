@@ -694,6 +694,56 @@ static int mmc_read_report_cmd(struct m_cmd_args *cmd_args)
 	return 0;
 }
 
+static int mmc_read_report_cmd_sk(struct m_cmd_args *cmd_args)
+{
+        int ret = 0;
+        __u32 value = 0;
+        __u8 dummy_data[MMC_EXTCSD_SIZE];
+        __u8 *extcsd = mmc_reg_cache.extcsd;
+        struct mmc_ioc_multi_cmd *multi_cmd;
+
+        memset(dummy_data, 0, sizeof(__u8) * MMC_EXTCSD_SIZE);
+        memset(extcsd, 0, sizeof(__u8) * MMC_EXTCSD_SIZE);
+
+        multi_cmd = calloc(1, sizeof(struct mmc_ioc_multi_cmd) + 3 * sizeof(struct mmc_ioc_cmd));
+        multi_cmd->num_of_cmds = 3;
+
+        value = 0x534D4900;
+        multi_cmd->cmds[0].opcode = MMC_SEND_MANUFACTURER_3;
+        multi_cmd->cmds[0].arg = value;
+        multi_cmd->cmds[0].flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
+        multi_cmd->cmds[0].write_flag = 1;
+        mmc_ioc_cmd_set_data(multi_cmd->cmds[0], dummy_data);
+
+        value = 0x48525054;
+        multi_cmd->cmds[1].opcode = MMC_SEND_MANUFACTURER_3;
+        multi_cmd->cmds[1].arg = value;
+        multi_cmd->cmds[1].flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
+        multi_cmd->cmds[1].write_flag = 1;
+        mmc_ioc_cmd_set_data(multi_cmd->cmds[1], dummy_data);
+
+        multi_cmd->cmds[2].opcode = MMC_SEND_EXT_CSD;
+        multi_cmd->cmds[2].arg = 0x00000000;
+        multi_cmd->cmds[2].flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_ADTC;
+        multi_cmd->cmds[2].write_flag = 0;
+        multi_cmd->cmds[2].blksz = MMC_EXTCSD_SIZE;
+        multi_cmd->cmds[2].blocks = 1;
+        mmc_ioc_cmd_set_data(multi_cmd->cmds[2], extcsd);
+
+        ret = ioctl(cmd_args->dev_fd, MMC_IOC_MULTI_CMD, multi_cmd);
+        if (ret) {
+          MMC_ERR("Error: read SK hynix health report - %s\n", strerror(errno));
+          free(multi_cmd);
+          return -1;
+        }
+        free(multi_cmd);
+
+        mmc_dump_extcsd(extcsd);
+
+        return 0;
+}
+
+
 static char *mmc_extcsd_rev(__u8 rev, char *buf, size_t size)
 {
 	static const char *revisions[] = {
@@ -947,6 +997,11 @@ static struct m_cmd_info mmc_cmds[] = {
 		"read device report of the mmc device (support for WD iNAND 7250)",
 		mmc_read_report_cmd,
 	},
+	{
+		"read-devreport-sk",
+		"read device report of the mmc device (support for SK hynix)",
+		mmc_read_report_cmd_sk,
+        },
 
 	/* This is the last entry. */
 	{

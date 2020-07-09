@@ -37,6 +37,7 @@
 #define MMC_ERASE_GROUP_START    35   /* ac   [31:0] data addr   R1  */
 #define MMC_ERASE_GROUP_END      36   /* ac   [31:0] data addr   R1  */
 #define MMC_ERASE                38   /* ac                      R1b */
+#define MMC_SEND_MANUFACTURER_3  60   /* ac                      R1b */
 #define MMC_SEND_MANUFACTURER_1  62   /* ac                      R1b */
 #define MMC_SEND_MANUFACTURER_2  63   /* adtc                    R1  */
 

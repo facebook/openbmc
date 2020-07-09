@@ -24,14 +24,14 @@ import (
 	"runtime"
 )
 
-type EntryPointMapType = map[string]func(string, string)
+type EntryPointMapType = map[string]func(string, string) StepExitError
 
 // maps from the sanitized binary name to the function to run
 // the file path keys are also used to symlink the paths (busybox style)
 var EntryPointMap = EntryPointMapType{}
 
 // registers endpoints into EntryPointMap
-func RegisterStepEntryPoint(step func(string, string)) {
+func RegisterStepEntryPoint(step func(string, string) StepExitError) {
 	// get the filename 1 stack call above
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {

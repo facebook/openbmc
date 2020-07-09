@@ -77,3 +77,9 @@ func getSymlinkPathForSourceFile(path string) string {
 	symlinkPath := path[len(sourceRootDir)+1 : len(path)-3]
 	return symlinkPath
 }
+
+// wrapper for os.Remove
+var RemoveFile = os.Remove
+
+// wrapper for os.Truncate
+var TruncateFile = os.Truncate

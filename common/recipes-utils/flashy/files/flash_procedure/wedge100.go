@@ -26,9 +26,10 @@ import (
 )
 
 func init() {
-	utils.RegisterStepEntryPoint(FlashWedge100)
+	utils.RegisterStepEntryPoint(flashWedge100)
 }
 
-func FlashWedge100(imageFilePath, deviceID string) {
+func flashWedge100(imageFilePath, deviceID string) utils.StepExitError {
 	log.Printf("Flashing wedge100")
+	return nil
 }

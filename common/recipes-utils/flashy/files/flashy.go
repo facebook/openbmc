@@ -46,5 +46,10 @@ func main() {
 	imageFilePath := os.Args[1]
 	deviceID := os.Args[2]
 
-	utils.EntryPointMap[binName](imageFilePath, deviceID)
+	log.Printf("Starting: %v", binName)
+	err := utils.EntryPointMap[binName](imageFilePath, deviceID)
+	if err != nil {
+		utils.HandleError(err)
+	}
+	log.Printf("Finished: %v", binName)
 }

@@ -17,19 +17,40 @@
  * Boston, MA 02110-1301 USA
  */
 
-package flash_procedure
+package tests
 
 import (
-	"log"
+	"testing"
 
 	"github.com/facebook/openbmc/tree/helium/common/recipes-utils/flashy/files/utils"
 )
 
-func init() {
-	utils.RegisterStepEntryPoint(flashYosemite3)
+// used to test and compare errors in testing
+func CompareTestErrors(want error, got error, t *testing.T) {
+	if got == nil {
+		if want != nil {
+			t.Errorf("want '%v' got '%v'", want, got)
+		}
+	} else {
+		if want == nil {
+			t.Errorf("want '%v' got '%v'", want, got)
+		} else if got.Error() != want.Error() {
+			t.Errorf("want '%v' got '%v'", want.Error(), got.Error())
+		}
+	}
 }
 
-func flashYosemite3(imageFilePath, deviceID string) utils.StepExitError {
-	log.Printf("Flashing yosemite3")
-	return nil
+// used to test and compare Exit Errors used in testing
+func CompareTestExitErrors(want utils.StepExitError, got utils.StepExitError, t *testing.T) {
+	if got == nil {
+		if want != nil {
+			t.Errorf("want %v got %v", want, got)
+		}
+	} else {
+		if want == nil {
+			t.Errorf("want %v got %v", want, got)
+		} else if got.GetError() != want.GetError() {
+			t.Errorf("want %v got %v", want.GetError(), got.GetError())
+		}
+	}
 }

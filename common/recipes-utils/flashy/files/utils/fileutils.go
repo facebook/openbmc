@@ -87,3 +87,15 @@ var TruncateFile = os.Truncate
 
 // wrapper for ioutil.WriteFile
 var WriteFile = ioutil.WriteFile
+
+// wrapper for ioutil.ReadFile for testing
+var ReadFile = ioutil.ReadFile
+
+func FileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	// check if it's a file
+	return !info.IsDir()
+}

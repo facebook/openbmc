@@ -20,6 +20,7 @@
 package tests
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/facebook/openbmc/tree/helium/common/recipes-utils/flashy/files/utils"
@@ -40,17 +41,62 @@ func CompareTestErrors(want error, got error, t *testing.T) {
 	}
 }
 
-// used to test and compare Exit Errors used in testing
+// used to test and compare Exit Errors in testing
 func CompareTestExitErrors(want utils.StepExitError, got utils.StepExitError, t *testing.T) {
 	if got == nil {
 		if want != nil {
-			t.Errorf("want %v got %v", want, got)
+			t.Errorf("want '%v' got '%v'", want, got)
 		}
 	} else {
 		if want == nil {
-			t.Errorf("want %v got %v", want, got)
+			t.Errorf("want '%v' got '%v'", want, got)
 		} else if got.GetError() != want.GetError() {
-			t.Errorf("want %v got %v", want.GetError(), got.GetError())
+			t.Errorf("want '%v' got '%v'", want.GetError(), got.GetError())
 		}
 	}
 }
+
+// compare uint64 pointers
+func CompareUint64Pointers(want *uint64, got *uint64, t *testing.T) {
+	if got == nil {
+		if want != nil {
+			t.Errorf("want '%v' got '%v'", want, got)
+		}
+	} else {
+		if want == nil {
+			t.Errorf("want '%v' got '%v'", want, got)
+		} else if *want != *got {
+			t.Errorf("want '%v' got '%v'", *want, *got)
+		}
+	}
+}
+
+// returns true if str contains all strings in all
+func StringContainsAll(str string, all []string) bool {
+	for _, s := range all {
+		if !strings.Contains(str, s) {
+			return false
+		}
+	}
+	return true
+}
+
+// check that logs are complete and contain all
+// strings in logContainsSeq in sequence
+func LogContainsSeqTest(logs string, logContainsSeq []string, t *testing.T) {
+	lastIndex := -1
+
+	for _, s := range logContainsSeq {
+		idx := strings.Index(logs, s)
+		if idx == -1 {
+			t.Errorf("Logs incomplete, want '%v' got '%v'", s, logs)
+		} else if idx < lastIndex {
+			t.Errorf("Log sequence wrong, want sequence %#v got %v", logContainsSeq, logs)
+		}
+		lastIndex = idx
+	}
+}
+
+func GetUint64Ptr(x uint64) *uint64    { return &x }
+func GetFloat32Ptr(x float32) *float32 { return &x }
+func GetBoolPtr(b bool) *bool          { return &b }

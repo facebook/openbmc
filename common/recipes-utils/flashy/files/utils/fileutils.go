@@ -20,6 +20,7 @@
 package utils
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -83,3 +84,6 @@ var RemoveFile = os.Remove
 
 // wrapper for os.Truncate
 var TruncateFile = os.Truncate
+
+// wrapper for ioutil.WriteFile
+var WriteFile = ioutil.WriteFile

@@ -20,8 +20,16 @@
 package utils
 
 import (
+	"bufio"
+	"context"
+	"fmt"
+	"log"
+	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
+	"syscall"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -64,4 +72,80 @@ var GetMemInfo = func() (*MemInfo, error) {
 		memTotal,
 		memFree,
 	}, nil
+}
+
+// function to aid logging and saving live stdout and stderr output
+// from running command
+// note that sequential execution is not guaranteed - race conditions
+// might still exist
+func logScanner(s *bufio.Scanner, ch chan struct{}, pre string, str *string) {
+	for s.Scan() {
+		t := fmt.Sprintf("%v\n", s.Text())
+		log.Printf("%v%v", pre, t)
+		*str = *str + t
+	}
+	close(ch)
+}
+
+// runs command and pipes live output
+// returns exitcode, error, stdout (string), stderr (string) if non-zero/error returned or timed out
+// returns 0, nil, stdout (string), stderr (string) if successfully run
+func RunCommand(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
+	start := time.Now()
+	timeout := time.Duration(timeoutInSeconds) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	fullCmdStr := strings.Join(cmdArr[:], " ")
+	log.Printf("Running command '%v' with %v timeout", fullCmdStr, timeout)
+	cmd := exec.CommandContext(ctx, cmdArr[0], cmdArr[1:]...)
+
+	var stdoutStr, stderrStr string
+	stdout, _ := cmd.StdoutPipe()
+	stderr, _ := cmd.StderrPipe()
+	stdoutScanner := bufio.NewScanner(stdout)
+	stderrScanner := bufio.NewScanner(stderr)
+	stdoutDone := make(chan struct{})
+	stderrDone := make(chan struct{})
+	go logScanner(stdoutScanner, stdoutDone, "stdout: ", &stdoutStr)
+	go logScanner(stderrScanner, stderrDone, "stderr: ", &stderrStr)
+
+	exitCode := 1 // show 1 if failed by default
+
+	if err := cmd.Start(); err != nil {
+		log.Printf("Command '%v' failed to start: %v", fullCmdStr, err)
+		// failed to start, exit now
+		return exitCode, err, stdoutStr, stderrStr
+	}
+
+	err := cmd.Wait()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			// The program exited with exit code != 0
+			waitStatus := exitErr.Sys().(syscall.WaitStatus)
+			exitCode = waitStatus.ExitStatus()
+		} else {
+			log.Printf("Could not get exit code, defaulting to '1'")
+		}
+	} else {
+		// exit code should be 0
+		waitStatus := cmd.ProcessState.Sys().(syscall.WaitStatus)
+		exitCode = waitStatus.ExitStatus()
+	}
+
+	<-stdoutDone
+	<-stderrDone
+
+	elapsed := time.Since(start)
+
+	if ctx.Err() == context.DeadlineExceeded {
+		log.Printf("Command '%v' timed out after %v", fullCmdStr, timeout)
+		// replace the err with the deadline exceeded error
+		// instead of just signal: killed
+		err = ctx.Err()
+	} else {
+		log.Printf("Command '%v' exited with code %v after %v", fullCmdStr, exitCode, elapsed)
+	}
+
+	return exitCode, err, stdoutStr, stderrStr
 }

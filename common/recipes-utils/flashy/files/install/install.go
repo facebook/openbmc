@@ -28,6 +28,7 @@ import (
 
 	// all entry point packages must be included to successfully run install
 	_ "github.com/facebook/openbmc/tree/helium/common/recipes-utils/flashy/files/checks_and_remediations/common"
+	_ "github.com/facebook/openbmc/tree/helium/common/recipes-utils/flashy/files/checks_and_remediations/wedge100"
 	_ "github.com/facebook/openbmc/tree/helium/common/recipes-utils/flashy/files/flash_procedure"
 )
 

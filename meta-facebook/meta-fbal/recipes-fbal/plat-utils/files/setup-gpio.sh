@@ -33,13 +33,6 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-# To enable GPIOA
-#devmem_clear_bit $(scu_addr 80) 0
-#devmem_clear_bit $(scu_addr 80) 1
-#devmem_clear_bit $(scu_addr 80) 3
-#devmem_clear_bit $(scu_addr 80) 6
-#devmem_clear_bit $(scu_addr 80) 7
-#devmem_clear_bit $(scu_addr 90) 2
 
 # FM_BOARD_BMC_REV_ID0
 gpio_export FM_BOARD_BMC_REV_ID0 GPIOA0
@@ -47,6 +40,9 @@ gpio_export FM_BOARD_BMC_REV_ID0 GPIOA0
 # FM_BOARD_BMC_REV_ID1 / FM_CPU0_THERMTRIP_LVT3_PLD_N
 gpio_export FM_CPU0_THERMTRIP_LVT3_PLD_N GPIOA1
 ln -n /tmp/gpionames/FM_CPU0_THERMTRIP_LVT3_PLD_N /tmp/gpionames/FM_BOARD_BMC_REV_ID1
+
+# BMC_EMMC_RST_N
+gpio_export BMC_EMMC_RST_N GPIOA2
 
 # FM_SPD_DDRCPU_LVLSHFT_EN
 gpio_export FM_SPD_DDRCPU_LVLSHFT_EN GPIOA3
@@ -57,10 +53,6 @@ gpio_export SMB_SLOT1_ALT_N GPIOA6
 # SMB_SLOT2_ALT_N
 gpio_export SMB_SLOT2_ALT_N GPIOA7
 
-# To enable GPIOB
-#devmem_clear_scu70_bit 23
-#devmem_clear_bit $(scu_addr 80) 13
-#devmem_clear_bit $(scu_addr 80) 14
 
 # FM_BOARD_BMC_SKU_ID0 / FM_MEM_THERM_EVENT_CPU0_LVT3_N
 gpio_export FM_MEM_THERM_EVENT_CPU0_LVT3_N GPIOB0
@@ -90,13 +82,6 @@ gpio_export FM_CPU0_PROCHOT_LVT3_BMC_N GPIOB6
 # FM_CPU1_PROCHOT_LVT3_BMC_N
 gpio_export FM_CPU1_PROCHOT_LVT3_BMC_N GPIOB7
 
-# To enable GPIOD
-#devmem_clear_scu70_bit 21
-#devmem_clear_bit $(scu_addr 8c) 8
-#devmem_clear_bit $(scu_addr 8c) 9
-#devmem_clear_bit $(scu_addr 8c) 10
-#devmem_clear_bit $(scu_addr 8c) 11
-#devmem_clear_bit $(scu_addr 90) 1
 
 # FM_BOARD_BMC_REV_ID2 / FM_CPU1_THERMTRIP_LVT3_PLD_N
 gpio_export FM_CPU1_THERMTRIP_LVT3_PLD_N GPIOD0
@@ -111,20 +96,6 @@ gpio_export SMB_BMC_ADM1278_ALT_N GPIOD6
 # SMB_BMC_ADM1278_RST_N
 gpio_export SMB_BMC_ADM1278_RST_N GPIOD7
 
-# To enable GPIOE
-#devmem_clear_scu70_bit 22
-#devmem_clear_bit $(scu_addr 80) 16
-#devmem_clear_bit $(scu_addr 80) 17
-#devmem_clear_bit $(scu_addr 80) 18
-#devmem_clear_bit $(scu_addr 80) 19
-#devmem_clear_bit $(scu_addr 80) 20
-#devmem_clear_bit $(scu_addr 80) 21
-#devmem_clear_bit $(scu_addr 80) 22
-#devmem_clear_bit $(scu_addr 80) 23
-#devmem_clear_bit $(scu_addr 8c) 12
-#devmem_clear_bit $(scu_addr 8c) 13
-#devmem_clear_bit $(scu_addr 8c) 14
-#devmem_clear_bit $(scu_addr 8c) 15
 
 # FP_BMC_RST_BTN_N
 gpio_export FP_BMC_RST_BTN_N GPIOE0
@@ -140,30 +111,16 @@ gpio_export FM_BMC_PWR_BTN_R_N GPIOE2
 gpio_export FM_BMC_PWRBTN_OUT_R_N GPIOE3
 gpio_set FM_BMC_PWRBTN_OUT_R_N 1
 
-# FP_NMI_BTN_N
-gpio_export FP_NMI_BTN_N GPIOE4
+# JTAG_MUX_SEL_0
+gpio_export JTAG_MUX_SEL_0 GPIOE4
 
-# IRQ_BMC_PCH_NMI
-gpio_export IRQ_BMC_PCH_NMI GPIOE5
+# JTAG_MUX_SEL_1
+gpio_export JTAG_MUX_SEL_1 GPIOE5
 
 # FP_FAULT_LED_N
 gpio_export FP_FAULT_LED_N GPIOE6
 gpio_set FP_FAULT_LED_N 1
 
-# FP_ID_LED_N, Power LED
-gpio_export FP_ID_LED_N GPIOE7
-gpio_set FP_ID_LED_N 0
-
-# To enable GPIOF
-#devmem_clear_bit $(scu_addr 80) 24
-#devmem_clear_bit $(scu_addr 80) 25
-#devmem_clear_bit $(scu_addr 80) 26
-#devmem_clear_bit $(scu_addr 80) 27
-#devmem_clear_bit $(scu_addr 80) 28
-#devmem_clear_bit $(scu_addr 80) 29
-#devmem_clear_bit $(scu_addr 80) 30
-#devmem_clear_bit $(scu_addr 80) 31
-#devmem_clear_bit $(scu_addr 90) 30
 
 # FM_CPU_ERR0_LVT3_N
 gpio_export FM_CPU_ERR0_LVT3_N GPIOF0
@@ -190,15 +147,6 @@ gpio_export RST_PLTRST_BMC_N GPIOF6
 # IRQ_BMC_PRDY_N
 gpio_export IRQ_BMC_PRDY_N GPIOF7
 
-# To enable GPIOG
-#devmem_clear_bit $(scu_addr 84) 0
-#devmem_clear_bit $(scu_addr 84) 1
-#devmem_clear_bit $(scu_addr 84) 2
-#devmem_clear_bit $(scu_addr 84) 3
-#devmem_clear_bit $(scu_addr 84) 4
-#devmem_clear_bit $(scu_addr 84) 5
-#devmem_clear_bit $(scu_addr 84) 6
-#devmem_clear_bit $(scu_addr 94) 12
 
 # FM_CPU1_DISABLE_COD_N
 gpio_export FM_CPU1_DISABLE_COD_N GPIOG0
@@ -224,49 +172,31 @@ gpio_export IRQ_BMC_PCH_SMI_LPC_N GPIOG5
 # IRQ_SMB3_M2_ALERT_N
 gpio_export IRQ_SMB3_M2_ALERT_N GPIOG6
 
-# To enable GPIOH
-#devmem_clear_bit $(scu_addr 90) 7
-#devmem_clear_bit $(scu_addr 94) 5
-#devmem_clear_bit $(scu_addr 94) 6
-#devmem_clear_bit $(scu_addr 94) 7
 
 # LED_POSTCODE_0
 gpio_export LED_POSTCODE_0 GPIOH0
-gpio_set LED_POSTCODE_0 0
 
 # LED_POSTCODE_1
 gpio_export LED_POSTCODE_1 GPIOH1
-gpio_set LED_POSTCODE_1 0
 
 # LED_POSTCODE_2
 gpio_export LED_POSTCODE_2 GPIOH2
-gpio_set LED_POSTCODE_2 0
 
 # LED_POSTCODE_3
 gpio_export LED_POSTCODE_3 GPIOH3
-gpio_set LED_POSTCODE_3 0
 
 # LED_POSTCODE_4
 gpio_export LED_POSTCODE_4 GPIOH4
-gpio_set LED_POSTCODE_4 0
 
 # LED_POSTCODE_5
 gpio_export LED_POSTCODE_5 GPIOH5
-gpio_set LED_POSTCODE_5 0
 
 # LED_POSTCODE_6
 gpio_export LED_POSTCODE_6 GPIOH6
-gpio_set LED_POSTCODE_6 0
 
 # LED_POSTCODE_7
 gpio_export LED_POSTCODE_7 GPIOH7
-gpio_set LED_POSTCODE_7 0
 
-devmem_set_bit 0x1e780068 24
-devmem_clear_bit 0x1e78006c 24
-
-# To enable GPIOI
-#devmem_clear_scu70_bit 13
 
 # PRSNT_PCIE_CABLE_1_N
 gpio_export PRSNT_PCIE_CABLE_1_N GPIOI0
@@ -277,14 +207,6 @@ gpio_export PRSNT_PCIE_CABLE_2_N GPIOI1
 # FM_PFR_ACTIVE_N
 gpio_export FM_PFR_ACTIVE_N GPIOI3
 
-# To enable GPIOL
-#devmem_clear_bit $(scu_addr 84) 16
-#devmem_clear_bit $(scu_addr 84) 17
-#devmem_clear_bit $(scu_addr 84) 18
-#devmem_clear_bit $(scu_addr 84) 19
-#devmem_clear_bit $(scu_addr 84) 20
-#devmem_clear_bit $(scu_addr 84) 21
-#devmem_clear_bit $(scu_addr 90) 5
 
 # FM_UARTSW_LSB_N
 gpio_export FM_UARTSW_LSB_N GPIOL0
@@ -305,13 +227,6 @@ gpio_set FM_MASTER_MB_N 1
 # JTAG_MUX_EN_N
 gpio_export JTAG_MUX_EN_N GPIOL5
 
-# To enable GPIOM
-#devmem_clear_bit $(scu_addr 84) 24
-#devmem_clear_bit $(scu_addr 84) 25
-#devmem_clear_bit $(scu_addr 84) 26
-#devmem_clear_bit $(scu_addr 84) 27
-#devmem_clear_bit $(scu_addr 84) 28
-#devmem_clear_bit $(scu_addr 84) 29
 
 # IRQ_OC_DETECT_N
 gpio_export IRQ_OC_DETECT_N GPIOM0
@@ -331,13 +246,12 @@ gpio_export FM_TPM_BMC_PRES_N GPIOM4
 # SPI_BMC_BT_WP0_N
 gpio_export SPI_BMC_BT_WP0_N GPIOM5
 
-# To enable GPION
-#devmem_clear_bit $(scu_addr 88) 2
-#devmem_clear_bit $(scu_addr 88) 3
-#devmem_clear_bit $(scu_addr 88) 4
-#devmem_clear_bit $(scu_addr 88) 5
-#devmem_clear_bit $(scu_addr 88) 6
-#devmem_clear_bit $(scu_addr 88) 7
+# SMB_BMC_MM5_ALT_N
+gpio_export SMB_BMC_MM5_ALT_N GPIOM6
+
+# SMB_BMC_MM5_RST_N
+gpio_export SMB_BMC_MM5_RST_N GPIOM7
+
 
 # REMOTE_DEBUG_DIS_N
 gpio_export REMOTE_DEBUG_DIS_N GPION2
@@ -365,15 +279,6 @@ gpio_export FM_POST_CARD_PRES_BMC_N GPION6
 # FM_PWRBRK_N
 gpio_export FM_PWRBRK_N GPION7
 
-# To enable GPIOO
-#devmem_clear_bit $(scu_addr 88) 8
-#devmem_clear_bit $(scu_addr 88) 9
-#devmem_clear_bit $(scu_addr 88) 10
-#devmem_clear_bit $(scu_addr 88) 11
-#devmem_clear_bit $(scu_addr 88) 12
-#devmem_clear_bit $(scu_addr 88) 13
-#devmem_clear_bit $(scu_addr 88) 14
-#devmem_clear_bit $(scu_addr 88) 15
 
 # FM_BMC_SKT_ID_0
 gpio_export FM_BMC_SKT_ID_0 GPIOO0
@@ -399,15 +304,6 @@ gpio_export PRSNT_UPI_BD_2_N GPIOO6
 # PRSNT_UPI_BD_3_N
 gpio_export PRSNT_UPI_BD_3_N GPIOO7
 
-# To enable GPIOP
-#devmem_clear_bit $(scu_addr 88) 16
-#devmem_clear_bit $(scu_addr 88) 17
-#devmem_clear_bit $(scu_addr 88) 18
-#devmem_clear_bit $(scu_addr 88) 19
-#devmem_clear_bit $(scu_addr 88) 20
-#devmem_clear_bit $(scu_addr 88) 21
-#devmem_clear_bit $(scu_addr 88) 22
-#devmem_clear_bit $(scu_addr 88) 23
 
 # PRSNT_UPI_BD_4_N
 gpio_export PRSNT_UPI_BD_4_N GPIOP0
@@ -435,9 +331,6 @@ gpio_export FM_BLADE_ID_0 GPIOP6
 # FM_BLADE_ID_1
 gpio_export FM_BLADE_ID_1 GPIOP7
 
-# To enable GPIOQ
-#devmem_clear_bit $(scu_addr 2c) 1
-#devmem_clear_bit $(scu_addr 2c) 29
 
 # RST_TCA9545_DDR_MUX_N
 gpio_export RST_TCA9545_DDR_MUX_N GPIOQ6
@@ -445,14 +338,6 @@ gpio_export RST_TCA9545_DDR_MUX_N GPIOQ6
 # FM_BMC_CPU_PWR_DEBUG_N
 gpio_export FM_BMC_CPU_PWR_DEBUG_N GPIOQ7
 
-# To enable GPIOR
-#devmem_clear_bit $(scu_addr 88) 25
-#devmem_clear_bit $(scu_addr 88) 26
-#devmem_clear_bit $(scu_addr 88) 27
-#devmem_clear_bit $(scu_addr 88) 28
-#devmem_clear_bit $(scu_addr 88) 29
-#devmem_clear_bit $(scu_addr 88) 30
-#devmem_clear_bit $(scu_addr 88) 31
 
 # DBP_PRESENT_N
 gpio_export DBP_PRESENT_N GPIOR1
@@ -463,15 +348,6 @@ gpio_export FM_BIOS_SPI_BMC_CTRL GPIOR6
 # FM_SYS_THROTTLE_LVC3
 gpio_export FM_SYS_THROTTLE_LVC3 GPIOR7
 
-# To enable GPIOS
-#devmem_clear_bit $(scu_addr 8C) 0
-#devmem_clear_bit $(scu_addr 8C) 1
-#devmem_clear_bit $(scu_addr 8C) 2
-#devmem_clear_bit $(scu_addr 8C) 3
-#devmem_clear_bit $(scu_addr 8C) 4
-#devmem_clear_bit $(scu_addr 8C) 5
-#devmem_clear_bit $(scu_addr 8C) 6
-#devmem_clear_bit $(scu_addr 8C) 7
 
 # FM_MODULAR_ASD_EN
 gpio_export FM_MODULAR_ASD_EN GPIOS0
@@ -489,39 +365,23 @@ gpio_export IRQ_SML0_ALERT_MUX_N GPIOS3
 gpio_export FP_LOCATE_LED GPIOS4
 gpio_set FP_LOCATE_LED 0
 
-# FP_LED_STATUS_AMBER_N
-gpio_export FP_LED_STATUS_AMBER_N GPIOS5
-
 # FM_2S_FAN_IO_EXP_RST
 gpio_export FM_2S_FAN_IO_EXP_RST GPIOS6
 
 # RST_SMB_OCP_MUX_N
 gpio_export RST_SMB_OCP_MUX_N GPIOS7
 
-# To enable GPIOT
-#devmem_clear_bit $(scu_addr 48) 29
-#devmem_clear_bit $(scu_addr 48) 30
-#devmem_set_bit $(scu_addr a0) 0
-#devmem_set_bit $(scu_addr a0) 4
-#devmem_set_bit $(scu_addr a0) 5
-#devmem_set_bit $(scu_addr a0) 6
 
 # FM_FORCE_BMC_UPDATE_N
 gpio_export FM_FORCE_BMC_UPDATE_N GPIOT0
 
-# FM_BMC_RBT_ISOLATE_N
-gpio_export FM_BMC_RBT_ISOLATE_N GPIOT4
-
-# FM_FAST_PROCHOT_EN_N
-gpio_export FM_FAST_PROCHOT_EN_N GPIOT5
+# FP_LOCATE_LED_ACT
+gpio_export FP_LOCATE_LED_ACT GPIOT5
+gpio_set FP_LOCATE_LED_ACT 0
 
 # OCP_V3_NIC_2_PWR_GOOD
 gpio_export OCP_V3_NIC_2_PWR_GOOD GPIOT6
 
-# To enable GPIOU
-#devmem_set_bit $(scu_addr a0) 10
-#devmem_set_bit $(scu_addr a0) 11
-#devmem_set_bit $(scu_addr a0) 13
 
 # BOARD_ID_MUX_SEL
 gpio_export BOARD_ID_MUX_SEL GPIOU2
@@ -546,20 +406,10 @@ gpio_export BMC_FORCE_NM_THROTTLE_N GPIOU3
 # FM_CPU0_MEMHOT_OUT_N
 gpio_export FM_CPU0_MEMHOT_OUT_N GPIOU5
 
-# To enable GPIOV
-#devmem_set_bit $(scu_addr a0) 19
 
 # OCP_V3_NIC_1_PWR_GOOD
 gpio_export OCP_V3_NIC_1_PWR_GOOD GPIOV3
 
-# To enable GPIOY
-#devmem_clear_scu70_bit 19
-#devmem_clear_bit $(scu_addr 94) 10
-#devmem_clear_bit $(scu_addr 94) 11
-#devmem_clear_bit $(scu_addr a4) 8
-#devmem_clear_bit $(scu_addr a4) 9
-#devmem_clear_bit $(scu_addr a4) 10
-#devmem_clear_bit $(scu_addr a4) 11
 
 # FM_SLPS3_N
 gpio_export FM_SLPS3_N GPIOY0
@@ -573,16 +423,6 @@ gpio_export PWRGD_SYS_PWROK GPIOY2
 # FM_BMC_ONCTL_N
 gpio_export FM_BMC_ONCTL_N GPIOY3
 
-# To enable GPIOZ
-#devmem_clear_bit $(scu_addr 90) 31
-#devmem_clear_bit $(scu_addr a4) 16
-#devmem_clear_bit $(scu_addr a4) 17
-#devmem_clear_bit $(scu_addr a4) 18
-#devmem_clear_bit $(scu_addr a4) 19
-#devmem_clear_bit $(scu_addr a4) 20
-#devmem_clear_bit $(scu_addr a4) 21
-#devmem_clear_bit $(scu_addr a4) 22
-#devmem_clear_bit $(scu_addr a4) 23
 
 # FM_CPU_CATERR_LVT3_N
 gpio_export FM_CPU_CATERR_LVT3_N GPIOZ0
@@ -609,15 +449,6 @@ gpio_export FM_SML1_PMBUS_ALERT_EN_N GPIOZ6
 gpio_export FM_BMC_LED_CATERR_N GPIOZ7
 gpio_set FM_BMC_LED_CATERR_N 1
 
-# To enable GPIOAA
-#devmem_clear_bit $(scu_addr a4) 24
-#devmem_clear_bit $(scu_addr a4) 25
-#devmem_clear_bit $(scu_addr a4) 26
-#devmem_clear_bit $(scu_addr a4) 27
-#devmem_clear_bit $(scu_addr a4) 28
-#devmem_clear_bit $(scu_addr a4) 29
-#devmem_clear_bit $(scu_addr a4) 30
-#devmem_clear_bit $(scu_addr a4) 31
 
 # P3V_BAT_SCALED_EN
 gpio_export P3V_BAT_SCALED_EN GPIOAA0
@@ -644,10 +475,6 @@ gpio_export IRQ_SMI_ACTIVE_BMC_N GPIOAA6
 # FM_BIOS_POST_CMPLT_BMC_N
 gpio_export FM_BIOS_POST_CMPLT_BMC_N GPIOAA7
 
-# To enable GPIOAB
-#devmem_clear_bit $(scu_addr a8) 0
-#devmem_clear_bit $(scu_addr a8) 1
-#devmem_clear_bit $(scu_addr a8) 3
 
 # FM_BMC_BMCINIT
 gpio_export FM_BMC_BMCINIT GPIOAB0

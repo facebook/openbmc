@@ -12,5 +12,5 @@
 ### END INIT INFO
 
 echo -n "Setup Front Panel Daemon.."
-  /usr/local/bin/front-paneld > /dev/null 2>&1 &
+runsv /etc/sv/front-paneld > /dev/null 2>&1 &
 echo "done."

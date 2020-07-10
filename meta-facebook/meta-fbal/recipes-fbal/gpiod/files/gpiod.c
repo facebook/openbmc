@@ -162,8 +162,8 @@ static void* ioex0_monitor()
         if (pal_get_server_power(FRU_MB, &status) < 0 || status == SERVER_POWER_OFF) {
           continue;
         }
-      } 
-      
+      }
+
       curr = gpio_get(ioex0_gpios[i].shadow);
       if(curr == ioex0_gpios[i].last) {
         continue;
@@ -175,17 +175,17 @@ static void* ioex0_monitor()
         }
         ioex0_gpios[i].last = curr;
         init_flag[i] = true;
-#ifdef DEBUG        
+#ifdef DEBUG
         syslog(LOG_DEBUG, "gpio %s initial value=%x\n", ioex0_gpios[i].shadow, curr);
-#endif        
+#endif
         continue;
       }
 
 #ifdef DEBUG
       syslog(LOG_DEBUG, "edge gpio %s value=%x\n", ioex0_gpios[i].shadow, curr);
-#endif      
+#endif
       switch (ioex0_gpios[i].edge) {
-      case GPIO_EDGE_FALLING:          
+      case GPIO_EDGE_FALLING:
         if(curr == GPIO_VALUE_LOW) {
           assert = true;
         } else {
@@ -206,7 +206,7 @@ static void* ioex0_monitor()
         assert = false;
         break;
       }
-       
+
       if((assert == true) && (ioex0_gpios[i].handler != NULL)) {
         ioex0_gpios[i].handler(ioex0_gpios[i].shadow, ioex0_gpios[i].desc, curr);
       }
@@ -500,7 +500,6 @@ ierr_mcerr_event_handler() {
           g_caterr_irq--;
           pthread_mutex_unlock(&caterr_mutex);
           caterr_cnt = 0;
-          pal_set_fault_led(FRU_MB, FAULT_LED_ON);
           if (system("/usr/local/bin/autodump.sh &")) {
             syslog(LOG_WARNING, "Failed to start crashdump\n");
           }
@@ -538,7 +537,6 @@ ierr_mcerr_event_handler() {
           g_msmi_irq--;
           pthread_mutex_unlock(&caterr_mutex);
           msmi_cnt = 0;
-          pal_set_fault_led(FRU_MB, FAULT_LED_ON);
           if (system("/usr/local/bin/autodump.sh &")) {
             syslog(LOG_WARNING, "Failed to start crashdump\n");
           }
@@ -583,7 +581,7 @@ static void platform_reset_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
   clock_gettime(CLOCK_MONOTONIC, &ts);
   sprintf(value, "%ld", ts.tv_sec);
   kv_set("snr_polling_flag", value, 0, 0);
-  
+
   log_gpio_change(desc, curr, 0);
 }
 
@@ -676,13 +674,13 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_CPU_ERR1_LVT3_N", "GPIOF1", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
   {"FM_CPU_ERR2_LVT3_N", "GPIOF2", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
   {"FM_MEM_THERM_EVENT_CPU0_LVT3_N", "GPIOB0", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
-  {"FM_MEM_THERM_EVENT_CPU1_LVT3_N", "GPIOB1", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL}, 
-  {"FM_SYS_THROTTLE_LVC3", "GPIOR7", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL}, 
+  {"FM_MEM_THERM_EVENT_CPU1_LVT3_N", "GPIOB1", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
+  {"FM_SYS_THROTTLE_LVC3", "GPIOR7", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
   {"IRQ_DIMM_SAVE_LVT3_N", "GPION4", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
   {"FM_HSC_TIMER_EXP_N", "GPIOM2", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
   {"FM_CPU0_PROCHOT_LVT3_BMC_N", "GPIOB5", GPIO_EDGE_BOTH, cpu_prochot_handler, NULL},
   {"FM_CPU1_PROCHOT_LVT3_BMC_N", "GPIOB6", GPIO_EDGE_BOTH, cpu_prochot_handler, NULL},
- 
+
 };
 
 int main(int argc, char **argv)

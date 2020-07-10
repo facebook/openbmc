@@ -42,9 +42,6 @@ extern "C" {
 #define ERR_NOT_READY       (-2)
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-#define FAULT_LED_ON  (1)
-#define FAULT_LED_OFF (0)
-
 #define PAGE_SIZE  0x1000
 #define AST_GPIO_BASE 0x1e780000
 #define UARTSW_OFFSET 0x68
@@ -65,7 +62,7 @@ enum {
 };
 
 enum {
-  REV_PO = 0, 
+  REV_PO = 0,
   REV_EVT,
   REV_DVT,
   REV_PVT,
@@ -174,11 +171,10 @@ enum {
   MB_2S_MODE,      //SKT_ID[2:1] 10
 };
 
-int pal_set_led(uint8_t slot, uint8_t status);
-int pal_set_id_led(uint8_t slot, uint8_t status);
+int pal_set_id_led(uint8_t fru, uint8_t status);
+int pal_set_fault_led(uint8_t fru, uint8_t status);
 int read_device(const char *device, int *value);
 int pal_get_rst_btn(uint8_t *status);
-int pal_set_fault_led(uint8_t fru, uint8_t status);
 int pal_uart_select (uint32_t base, uint8_t offset, int option, uint32_t para);
 int pal_uart_select_led_set(void);
 int pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver);

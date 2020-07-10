@@ -18,24 +18,14 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
 #include <string.h>
 #include <pthread.h>
 #include <fcntl.h>
-#include <sys/file.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <time.h>
-#include <sys/time.h>
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
-
-#define ID_LED_ON 1
-#define ID_LED_OFF 0
 
 #define LED_ON_TIME_IDENTIFY 500
 #define LED_OFF_TIME_IDENTIFY 500
@@ -44,7 +34,6 @@
 #define FW_UPDATE_ONGOING 1
 #define CRASHDUMP_ONGOING 2
 
-static int sensor_health = FRU_STATUS_GOOD;
 
 static int
 is_btn_blocked(uint8_t fru) {
@@ -63,7 +52,7 @@ is_btn_blocked(uint8_t fru) {
 static void *
 led_sync_handler() {
   int ret;
-  uint8_t id_on = 0;
+  uint8_t id_on = 0xFF;
   char identify[MAX_VALUE_LEN] = {0};
 
   while (1) {
@@ -74,26 +63,55 @@ led_sync_handler() {
       id_on = 1;
 
       // Start blinking the ID LED
-      pal_set_id_led(FRU_MB, ID_LED_ON);
+      pal_set_id_led(FRU_MB, LED_ON);
       msleep(LED_ON_TIME_IDENTIFY);
 
-      pal_set_id_led(FRU_MB, ID_LED_OFF);
+      pal_set_id_led(FRU_MB, LED_OFF);
       msleep(LED_OFF_TIME_IDENTIFY);
       continue;
     } else if (id_on) {
       id_on = 0;
       pal_set_id_led(FRU_MB, 0xFF);
-    } else if (ret == 0 && !strcmp(identify, "off")) {
-      // Turn on the ID LED if sensor health is abnormal.
-      if (sensor_health == FRU_STATUS_BAD) { 
-        pal_set_id_led(FRU_MB, ID_LED_ON);
-      } else {
-        pal_set_id_led(FRU_MB, ID_LED_OFF);
-      }
     }
 
     sleep(1);
   }
+  return NULL;
+}
+
+static void *
+fault_led_handler() {
+  int ret;
+  uint8_t mb_health = FRU_STATUS_GOOD, pdb_health = FRU_STATUS_GOOD;
+  uint8_t nic0_health = FRU_STATUS_GOOD, nic1_health = FRU_STATUS_GOOD;
+
+  while (1) {
+    if ((ret = pal_get_fru_health(FRU_MB, &mb_health))) {
+      syslog(LOG_WARNING, "Fail to get MB health");
+    }
+
+    if ((ret = pal_get_fru_health(FRU_PDB, &pdb_health))) {
+      syslog(LOG_WARNING, "Fail to get PDB health");
+    }
+
+    if ((ret = pal_get_fru_health(FRU_NIC0, &nic0_health))) {
+      syslog(LOG_WARNING, "Fail to get NIC0 health");
+    }
+
+    if ((ret = pal_get_fru_health(FRU_NIC1, &nic1_health))) {
+      syslog(LOG_WARNING, "Fail to get NIC1 health");
+    }
+
+    if ((mb_health != FRU_STATUS_GOOD) || (pdb_health != FRU_STATUS_GOOD) ||
+        (nic0_health != FRU_STATUS_GOOD) || (nic1_health != FRU_STATUS_GOOD)) {
+      pal_set_fault_led(FRU_MB, LED_N_ON);
+    } else {
+      pal_set_fault_led(FRU_MB, LED_N_OFF);
+    }
+
+    sleep(2);
+  }
+
   return NULL;
 }
 
@@ -166,73 +184,39 @@ rst_btn_handler() {
       goto rst_btn_out;
     }
 
-    rst_btn_out:
-      last_btn = btn;
-      msleep(100);
+rst_btn_out:
+    last_btn = btn;
+    msleep(100);
   }
 
   return 0;
 }
 
-// Thread to handle LED state of the server at given slot
-static void *
-led_handler() {
-  int ret;
-  uint8_t mb_health = -1, nic0_health = -1, nic1_health = -1;
-
-  while (1) {
-    sleep(1);
-    ret = pal_get_fru_health(FRU_MB, &mb_health);
-    if (ret) {
-      syslog(LOG_WARNING, "Fail to get MB health\n");
-    }
-
-    ret = pal_get_fru_health(FRU_NIC0, &nic0_health);
-    if (ret) {
-      syslog(LOG_WARNING, "Fail to get NIC0 health\n");
-    }
-
-    ret = pal_get_fru_health(FRU_NIC1, &nic1_health);
-    if (ret) {
-      syslog(LOG_WARNING, "Fail to get NIC1 health\n");
-    }
-
-    if (mb_health != FRU_STATUS_GOOD || nic0_health != FRU_STATUS_GOOD
-      || nic1_health != FRU_STATUS_GOOD) {
-      sensor_health = FRU_STATUS_BAD;
-    }
-    else {
-      sensor_health = FRU_STATUS_GOOD;
-    }
-  }
-  return NULL;
-}
-
 int
 main (int argc, char * const argv[]) {
+  int pid_file, rc;
   pthread_t tid_sync_led;
+  pthread_t tid_fault_led;
   pthread_t tid_rst_btn;
-  pthread_t tid_led;
-  int rc;
-  int pid_file;
 
   pid_file = open("/var/run/front-paneld.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
-  if(rc) {
-    if(EWOULDBLOCK == errno) {
+  if (rc) {
+    if (EWOULDBLOCK == errno) {
       printf("Another front-paneld instance is running...\n");
       exit(-1);
     }
   } else {
-    if (daemon(0, 1)) {
-      printf("Daemon failed!\n");
-      exit(-1);
-    }
-   openlog("front-paneld", LOG_CONS, LOG_DAEMON);
+    openlog("front-paneld", LOG_CONS, LOG_DAEMON);
   }
 
   if (pthread_create(&tid_sync_led, NULL, led_sync_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for led sync error\n");
+    exit(1);
+  }
+
+  if (pthread_create(&tid_fault_led, NULL, fault_led_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for led error\n");
     exit(1);
   }
 
@@ -241,13 +225,9 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
-  if (pthread_create(&tid_led, NULL, led_handler, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for led error\n");
-    exit(1);
-  }
-
   pthread_join(tid_sync_led, NULL);
+  pthread_join(tid_fault_led, NULL);
   pthread_join(tid_rst_btn, NULL);
-  pthread_join(tid_led, NULL);
+
   return 0;
 }

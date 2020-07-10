@@ -43,9 +43,9 @@
 #define FBAL_PLATFORM_NAME "angelslanding"
 #define LAST_KEY "last_key"
 
-#define GPIO_ID_LED "FP_ID_LED_N"
+#define GPIO_LOCATE_LED_ACT "FP_LOCATE_LED_ACT"
 #define GPIO_LOCATE_LED "FP_LOCATE_LED"
-#define GPIO_FAULT_LED "FM_BMC_LED_CATERR_N"
+#define GPIO_FAULT_LED "FP_FAULT_LED_N"
 #define GPIO_NIC0_PRSNT "HP_LVC3_OCP_V3_1_PRSNT2_N"
 #define GPIO_NIC1_PRSNT "HP_LVC3_OCP_V3_2_PRSNT2_N"
 #define GPIO_SKT_ID0 "FM_BMC_SKT_ID_0"
@@ -334,28 +334,24 @@ pal_is_slot_server(uint8_t fru) {
 // Update the Identification LED for the given fru with the status
 int
 pal_set_id_led(uint8_t fru, uint8_t status) {
-  uint8_t sys_pwr;
+  int ret = -1;
   gpio_desc_t *gdesc_id = NULL, *gdesc_loc = NULL;
-  gpio_value_t val;
 
   do {
-    if (!(gdesc_id = gpio_open_by_shadow(GPIO_ID_LED)))
+    if (!(gdesc_id = gpio_open_by_shadow(GPIO_LOCATE_LED_ACT)))
       break;
-
-    if (status == 0xFF) {  // restore FP_ID_LED_N
-      gpio_set_value(gdesc_id, GPIO_VALUE_LOW);
-      break;
-    }
 
     if (!(gdesc_loc = gpio_open_by_shadow(GPIO_LOCATE_LED)))
       break;
 
-    if (!pal_get_server_power(fru, &sys_pwr)) {
-      val = sys_pwr ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
-      gpio_set_value(gdesc_id, val);
+    if (status == 0xFF) {  // restore FP_LOCATE_LED_ACT
+      ret = gpio_set_value(gdesc_id, GPIO_VALUE_LOW);
+      ret |= gpio_set_value(gdesc_loc, GPIO_VALUE_LOW);
+      break;
     }
-    val = status ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
-    gpio_set_value(gdesc_loc, val);
+
+    ret = gpio_set_value(gdesc_id, GPIO_VALUE_HIGH);
+    ret |= gpio_set_value(gdesc_loc, status ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
   } while (0);
 
   if (gdesc_id) {
@@ -365,30 +361,22 @@ pal_set_id_led(uint8_t fru, uint8_t status) {
     gpio_close(gdesc_loc);
   }
 
-  return 0;
+  return ret;
 }
 
 int
 pal_set_fault_led(uint8_t fru, uint8_t status) {
   int ret;
   gpio_desc_t *gdesc = NULL;
-  gpio_value_t val;
 
-  if (fru != FRU_MB)
+  if (!(gdesc = gpio_open_by_shadow(GPIO_FAULT_LED))) {
     return -1;
+  }
 
-  gdesc = gpio_open_by_shadow(GPIO_FAULT_LED);
-  if (gdesc == NULL)
-    return -1;
+  ret = gpio_set_value(gdesc, status ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
+  gpio_close(gdesc);
 
-  val = status? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
-  ret = gpio_set_value(gdesc, val);
-  if (ret != 0)
-    goto error;
-
-  error:
-    gpio_close(gdesc);
-    return ret;
+  return ret;
 }
 
 int

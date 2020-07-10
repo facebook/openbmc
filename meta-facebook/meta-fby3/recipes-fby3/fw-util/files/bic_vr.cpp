@@ -12,6 +12,7 @@
 #include <openbmc/kv.h>
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
+#include <openbmc/pal.h>
 using namespace std;
  
 map<uint8_t, string> list = {{0xC0, "VCCIN_VSA"},
@@ -101,7 +102,12 @@ int VrComponent::update(string image)
   int ret = 0;
   try {
     server.ready();
+    ret = set_pfr_i2c_filter(slot_id, DISABLE_PFR_I2C_FILTER);
+    if (ret < 0) return -1;
     ret = bic_update_fw(slot_id, FW_VR, (char *)image.c_str(), FORCE_UPDATE_UNSET);
+    if (ret < 0) return -1;
+    ret = set_pfr_i2c_filter(slot_id, ENABLE_PFR_I2C_FILTER);
+    if (ret < 0) return -1;
   } catch (string err) {
     printf("%s\n", err.c_str());
     return FW_STATUS_NOT_SUPPORTED;

@@ -51,6 +51,10 @@ extern "C" {
 #define CPLD_UPDATE_ADDR (0x40)
 #define UFM_PROVISIONED_MSK 0x20
 
+#define PFR_I2C_FILTER_OFFSET 0x10
+#define DISABLE_PFR_I2C_FILTER 0
+#define ENABLE_PFR_I2C_FILTER 1
+
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
 extern const char pal_fru_list_sensor_history[];
@@ -162,6 +166,7 @@ int pal_get_uart_select_from_cpld(uint8_t *uart_select);
 int pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen);
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_check_pfr_mailbox(uint8_t fru);
+int set_pfr_i2c_filter(uint8_t slot_id, uint8_t value);
 
 #ifdef __cplusplus
 } // extern "C"

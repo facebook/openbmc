@@ -2478,3 +2478,37 @@ pal_check_pfr_mailbox(uint8_t fru) {
 
   return 0;
 }
+
+int
+set_pfr_i2c_filter(uint8_t slot_id, uint8_t value) {
+  int ret;
+  uint8_t tbuf[2] = {0};
+  uint8_t tlen = 2;
+  char path[128];
+  int i2cfd = 0, retry=0;
+
+  snprintf(path, sizeof(path), "/dev/i2c-%d", (slot_id + SLOT_BUS_BASE));
+  i2cfd = open(path, O_RDWR);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
+    return -1;
+  }
+  retry = 0;
+  tbuf[0] = PFR_I2C_FILTER_OFFSET;
+  tbuf[1] = value;
+  while (retry < RETRY_TIME) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  if ( i2cfd > 0 ) close(i2cfd);
+
+  if ( retry == RETRY_TIME ) return -1;
+
+  return 0;
+
+}

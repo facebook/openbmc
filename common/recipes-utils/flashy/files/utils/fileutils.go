@@ -79,19 +79,13 @@ func getSymlinkPathForSourceFile(path string) string {
 	return symlinkPath
 }
 
-// wrapper for os.Remove
+// basic file utilities as function variables for mocking purposes
 var RemoveFile = os.Remove
-
-// wrapper for os.Truncate
 var TruncateFile = os.Truncate
-
-// wrapper for ioutil.WriteFile
 var WriteFile = ioutil.WriteFile
-
-// wrapper for ioutil.ReadFile for testing
 var ReadFile = ioutil.ReadFile
 
-func FileExists(filename string) bool {
+var FileExists = func(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return false

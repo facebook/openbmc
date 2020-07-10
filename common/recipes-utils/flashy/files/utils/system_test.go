@@ -126,7 +126,7 @@ func TestRunCommand(t *testing.T) {
 			name:             "Run `bash -c \"echo openbmc\"`",
 			cmdArr:           []string{"bash", "-c", "echo openbmc"},
 			timeoutInSeconds: 30,
-			wantExitCode: 	  0,
+			wantExitCode:     0,
 			wantErr:          nil,
 			wantStdout:       "openbmc\n",
 			wantStderr:       "",
@@ -140,7 +140,7 @@ func TestRunCommand(t *testing.T) {
 			name:             "Run `bash -c \"echo openbmc 1>&2\"` (to stderr)",
 			cmdArr:           []string{"bash", "-c", "echo openbmc 1>&2"},
 			timeoutInSeconds: 30,
-			wantExitCode: 	  0,
+			wantExitCode:     0,
 			wantErr:          nil,
 			wantStdout:       "",
 			wantStderr:       "openbmc\n",
@@ -154,7 +154,7 @@ func TestRunCommand(t *testing.T) {
 			name:             "Run `bash -c \"ech0 openbmc\"` (rubbish command)",
 			cmdArr:           []string{"bash", "-c", "ech0 openbmc"},
 			timeoutInSeconds: 30,
-			wantExitCode: 	  127,
+			wantExitCode:     127,
 			wantErr:          errors.Errorf("exit status 127"),
 			wantStdout:       "",
 			wantStderr:       "bash: ech0: command not found\n",
@@ -171,7 +171,7 @@ func TestRunCommand(t *testing.T) {
 			name:             "Run 'ech0 openbmc'` (rubbish command, not found in PATH)",
 			cmdArr:           []string{"ech0", "openbmc"},
 			timeoutInSeconds: 30,
-			wantExitCode: 	  1,
+			wantExitCode:     1,
 			wantErr:          errors.Errorf("exec: \"ech0\": executable file not found in $PATH"),
 			wantStdout:       "",
 			wantStderr:       "",
@@ -183,7 +183,7 @@ func TestRunCommand(t *testing.T) {
 			name:             "Command timed out",
 			cmdArr:           []string{"sleep", "42"},
 			timeoutInSeconds: 1,
-			wantExitCode: 	  -1,
+			wantExitCode:     -1,
 			wantErr:          errors.Errorf("context deadline exceeded"),
 			wantStdout:       "",
 			wantStderr:       "",
@@ -197,7 +197,7 @@ func TestRunCommand(t *testing.T) {
 			// the sleeps are necessary as the scanners are concurrrent
 			cmdArr:           []string{"bash", "-c", "echo seq1 >&2; sleep 0.1; echo seq2; sleep 0.1; echo seq3 >&2"},
 			timeoutInSeconds: 30,
-			wantExitCode: 	  0,
+			wantExitCode:     0,
 			wantErr:          nil,
 			wantStdout:       "seq2\n",
 			wantStderr:       "seq1\nseq3\n",
@@ -213,7 +213,7 @@ func TestRunCommand(t *testing.T) {
 			// the sleeps are necessary as the scanners are concurrrent
 			cmdArr:           []string{"bash", "-c", "echo seq1; sleep 0.1; echo seq2 >&2; sleep 0.1; echo seq3"},
 			timeoutInSeconds: 30,
-			wantExitCode: 	  0,
+			wantExitCode:     0,
 			wantErr:          nil,
 			wantStdout:       "seq1\nseq3\n",
 			wantStderr:       "seq2\n",
@@ -225,10 +225,10 @@ func TestRunCommand(t *testing.T) {
 			},
 		},
 		{
-			name: "Non utf-8 character",
+			name:             "Non utf-8 character",
 			cmdArr:           []string{"printf", "'\x87'"},
 			timeoutInSeconds: 30,
-			wantExitCode: 	  0,
+			wantExitCode:     0,
 			wantErr:          nil,
 			wantStdout:       "'\x87'\n",
 			wantStderr:       "",
@@ -239,13 +239,13 @@ func TestRunCommand(t *testing.T) {
 		},
 		{
 			name: "Mock progress bar",
-			cmdArr:           []string{
+			cmdArr: []string{
 				"bash",
 				"-c",
 				"echo -ne 'PROG:#  \r'; echo -ne 'PROG:## \r'; echo -ne 'PROG:###\r'; echo -ne '\n'",
 			},
 			timeoutInSeconds: 30,
-			wantExitCode: 	  0,
+			wantExitCode:     0,
 			wantErr:          nil,
 			wantStdout:       "PROG:#  \rPROG:## \rPROG:###\n",
 			wantStderr:       "",
@@ -273,6 +273,82 @@ func TestRunCommand(t *testing.T) {
 			}
 
 			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
+		})
+	}
+}
+
+func TestSystemdAvailable(t *testing.T) {
+	// save and defer restore FileExists and ReadFile
+	fileExistsOrig := FileExists
+	readFileOrig := ReadFile
+	defer func() {
+		FileExists = fileExistsOrig
+		ReadFile = readFileOrig
+	}()
+
+	cases := []struct {
+		name             string
+		fileExists       bool
+		readFileContents string
+		readFileErr      error
+		want             bool
+		wantErr          error
+	}{
+		{
+			name:             "file does not exist",
+			fileExists:       false,
+			readFileContents: "",
+			readFileErr:      nil,
+			want:             false,
+			wantErr:          nil,
+		},
+		{
+			name:             "systemd not available (as in wedge100)",
+			fileExists:       true,
+			readFileContents: "init ",
+			readFileErr:      nil,
+			want:             false,
+			wantErr:          nil,
+		},
+		{
+			name:             "systemd available",
+			fileExists:       true,
+			readFileContents: " systemd ",
+			readFileErr:      nil,
+			want:             true,
+			wantErr:          nil,
+		},
+		{
+			name:             "/proc/1/cmdline exists but ReadFile failed",
+			fileExists:       true,
+			readFileContents: "",
+			readFileErr:      errors.Errorf("ReadFile error"),
+			want:             false,
+			wantErr:          errors.Errorf("/proc/1/cmdline exists but cannot be read: ReadFile error"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			FileExists = func(filename string) bool {
+				if filename != "/proc/1/cmdline" {
+					t.Errorf("filename: want '%v' got '%v'", "/proc/1/cmdline", filename)
+				}
+				return tc.fileExists
+			}
+			ReadFile = func(filename string) ([]byte, error) {
+				if filename != "/proc/1/cmdline" {
+					return []byte{}, errors.Errorf("filename: want '%v' got '%v'", "/proc/meminfo", filename)
+				}
+				return []byte(tc.readFileContents), tc.readFileErr
+			}
+			got, err := SystemdAvailable()
+
+			tests.CompareTestErrors(tc.wantErr, err, t)
+
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
 		})
 	}
 }

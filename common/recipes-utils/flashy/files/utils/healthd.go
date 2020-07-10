@@ -22,6 +22,7 @@ package utils
 import (
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -95,4 +96,23 @@ func (h *HealthdConfig) GetRebootThresholdPercentage() float32 {
 	// default to 100 if so
 	log.Printf("No healthd reboot threshold found, defaulting to 100 percent")
 	return 100
+}
+
+var RestartHealthd = func(wait bool, supervisor string, sleepFunc func(time.Duration)) error {
+	if !FileExists("/etc/sv/healthd") {
+		return errors.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist")
+	}
+
+	_, err, _, _ := RunCommand([]string{supervisor, "restart", "healthd"}, 60)
+	if err != nil {
+		return err
+	}
+
+	// healthd is petting watchdog, if something goes wrong and it doesn't do so
+	// after restart it may hard-reboot the system - it's better to be safe
+	// than sorry here, let's wait 30s before proceeding
+	if wait {
+		sleepFunc(30 * time.Second)
+	}
+	return nil
 }

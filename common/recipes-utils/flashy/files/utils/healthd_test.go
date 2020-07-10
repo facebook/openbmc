@@ -21,10 +21,13 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/facebook/openbmc/tree/helium/common/recipes-utils/flashy/files/tests"
 	"github.com/pkg/errors"
@@ -204,6 +207,105 @@ func TestGetRebootThresholdPercentage(t *testing.T) {
 				t.Errorf("want '%v' got '%v'", tc.want, got)
 			}
 			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
+		})
+	}
+}
+
+func TestRestartHealthd(t *testing.T) {
+	// save and defer restore FileExists and RunCommand
+	fileExistsOrig := FileExists
+	runCommandOrig := RunCommand
+	defer func() {
+		FileExists = fileExistsOrig
+		RunCommand = runCommandOrig
+	}()
+
+	cases := []struct {
+		name          string
+		wait          bool
+		supervisor    string
+		fileExists    bool
+		runCmdErr     error
+		want          error
+		wantSleepTime time.Duration
+	}{
+		{
+			name:          "Normal restart operation with sv, wait",
+			wait:          true,
+			supervisor:    "sv",
+			fileExists:    true,
+			runCmdErr:     nil,
+			want:          nil,
+			wantSleepTime: 30 * time.Second,
+		},
+		{
+			name:          "Normal restart operation, no wait",
+			wait:          false,
+			supervisor:    "sv",
+			fileExists:    true,
+			runCmdErr:     nil,
+			want:          nil,
+			wantSleepTime: 0 * time.Second,
+		},
+		{
+			name:          "Normal restart operation with systemctl, wait",
+			wait:          true,
+			supervisor:    "systemctl",
+			fileExists:    true,
+			runCmdErr:     nil,
+			want:          nil,
+			wantSleepTime: 30 * time.Second,
+		},
+		{
+			name:          "/etc/sv/healthd does not exist",
+			wait:          true,
+			supervisor:    "sv",
+			fileExists:    false,
+			runCmdErr:     nil,
+			want:          errors.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist"),
+			wantSleepTime: 0 * time.Second,
+		},
+		{
+			name:          "Restart command returned error",
+			wait:          true,
+			supervisor:    "systemctl",
+			fileExists:    true,
+			runCmdErr:     errors.Errorf("RunCommand error"),
+			want:          errors.Errorf("RunCommand error"),
+			wantSleepTime: 0 * time.Second,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotSleepTime time.Duration
+			var sleepFunc = func(t time.Duration) {
+				gotSleepTime = t
+			}
+			FileExists = func(filename string) bool {
+				if filename != "/etc/sv/healthd" {
+					t.Errorf("filename: want %v got %v", "/etc/sv/healthd", filename)
+				}
+				return tc.fileExists
+			}
+			RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
+				wantCmd := fmt.Sprintf("%v restart healthd", tc.supervisor)
+				gotCmd := strings.Join(cmdArr, " ")
+				if wantCmd != gotCmd {
+					t.Errorf("command: want '%v' got '%v'", wantCmd, gotCmd)
+				}
+				if timeoutInSeconds != 60 {
+					t.Errorf("timeout: want 60 got %v", timeoutInSeconds)
+				}
+				// exit code ignored
+				return 0, tc.runCmdErr, "", ""
+			}
+			got := RestartHealthd(tc.wait, tc.supervisor, sleepFunc)
+
+			tests.CompareTestErrors(tc.want, got, t)
+			if gotSleepTime != tc.wantSleepTime {
+				t.Errorf("sleeptime: want '%v' got '%v'", tc.wantSleepTime, gotSleepTime)
+			}
 		})
 	}
 }

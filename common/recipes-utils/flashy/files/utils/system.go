@@ -90,7 +90,7 @@ func logScanner(s *bufio.Scanner, ch chan struct{}, pre string, str *string) {
 // runs command and pipes live output
 // returns exitcode, error, stdout (string), stderr (string) if non-zero/error returned or timed out
 // returns 0, nil, stdout (string), stderr (string) if successfully run
-func RunCommand(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
+var RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
 	start := time.Now()
 	timeout := time.Duration(timeoutInSeconds) * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -148,4 +148,22 @@ func RunCommand(cmdArr []string, timeoutInSeconds int) (int, error, string, stri
 	}
 
 	return exitCode, err, stdoutStr, stderrStr
+}
+
+// check whether systemd is available
+var SystemdAvailable = func() (bool, error) {
+	const cmdlinePath = "/proc/1/cmdline"
+
+	if FileExists(cmdlinePath) {
+		buf, err := ReadFile(cmdlinePath)
+		if err != nil {
+			return false, errors.Errorf("%v exists but cannot be read: %v", cmdlinePath, err)
+		}
+
+		contains := strings.Contains(string(buf), "systemd")
+
+		return contains, nil
+	}
+
+	return false, nil
 }

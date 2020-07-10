@@ -56,21 +56,6 @@ func CompareTestExitErrors(want utils.StepExitError, got utils.StepExitError, t 
 	}
 }
 
-// compare uint64 pointers
-func CompareUint64Pointers(want *uint64, got *uint64, t *testing.T) {
-	if got == nil {
-		if want != nil {
-			t.Errorf("want '%v' got '%v'", want, got)
-		}
-	} else {
-		if want == nil {
-			t.Errorf("want '%v' got '%v'", want, got)
-		} else if *want != *got {
-			t.Errorf("want '%v' got '%v'", *want, *got)
-		}
-	}
-}
-
 // returns true if str contains all strings in all
 func StringContainsAll(str string, all []string) bool {
 	for _, s := range all {

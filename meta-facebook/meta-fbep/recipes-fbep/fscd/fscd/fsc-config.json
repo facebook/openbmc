@@ -1,6 +1,6 @@
 {
   "version": "fbep-dvt-r05",
-  "pwm_transition_value": 100,
+  "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 1000,
   "fan_recovery_time": 1,

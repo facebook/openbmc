@@ -30,6 +30,7 @@ SRC_URI = "file://ast-functions \
            file://mac-util \
            file://asic-util \
            file://setup-pfr.sh \
+           file://post-fan.sh \
            file://COPYING \
            file://workaround.sh \
           "
@@ -60,6 +61,7 @@ do_install() {
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+  install -d ${D}${sysconfdir}/rc6.d
   # the script to mount /mnt/data
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 66 5 .
@@ -71,6 +73,8 @@ do_install() {
   update-rc.d -r ${D} setup-pfr.sh start 99 5 .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 70 S .
+  install -m 755 post-fan.sh ${D}${sysconfdir}/init.d/post-fan.sh
+  update-rc.d -r ${D} post-fan.sh start 39 6 .
   install -m 755 workaround.sh ${D}${sysconfdir}/init.d/workaround.sh
   update-rc.d -r ${D} workaround.sh start 71 S .
 }

@@ -1,10 +1,8 @@
 #include <openbmc/pal.h>
-#include "bios.h"
 #include "usbdbg.h"
 #include "nic_ext.h"
 #include "vr_fw.h"
-
-BiosComponent bios("mb", "bios", "pnor", "spi0.0", "FM_BIOS_SPI_BMC_CTRL", true, "(F0C_)(.*)");
+#include "pfr_bios.h"
 
 NicExtComponent nic0("nic", "nic0", "nic0_fw_ver", FRU_NIC0, 0, 0x00);  // fru_name, component, kv, fru_id, eth_index, ch_id
 NicExtComponent nic1("nic", "nic1", "nic1_fw_ver", FRU_NIC1, 1, 0x20);
@@ -21,3 +19,17 @@ VrComponent vr_cpu1_vccin("vr", "cpu1_vccin", "VR_CPU1_VCCIN/VCCSA");
 VrComponent vr_cpu1_vccio("vr", "cpu1_vccio", "VR_CPU1_VCCIO");
 VrComponent vr_cpu1_vddq_abc("vr", "cpu1_vddq_abc", "VR_CPU1_VDDQ_ABC");
 VrComponent vr_cpu1_vddq_def("vr", "cpu1_vddq_def", "VR_CPU1_VDDQ_DEF");
+
+class PlatformConfig {
+  public:
+  PlatformConfig() {
+    if (pal_is_pfr_active() != PFR_ACTIVE) {
+      static BiosComponent bios("mb", "bios", "pnor", "spi0.0", "FM_BIOS_SPI_BMC_CTRL", true, "(F0C_)(.*)");
+    } else {
+      static PfrBiosComponent bios("mb", "bios", PCH_PFM_ACTIVE, "(F0C_)(.*)");
+      static PfrBiosComponent bios_rc("mb", "bios_rc", PCH_PFM_RC, "(F0C_)(.*)");
+    }
+  }
+};
+
+PlatformConfig plat_conf;

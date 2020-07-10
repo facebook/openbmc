@@ -21,6 +21,8 @@
 
 //#define DEBUG
 #define GPIO_P3V_BAT_SCALED_EN "P3V_BAT_SCALED_EN"
+#define GPIO_CPU0_PRESENT "FM_CPU0_SKTOCC_LVT3_PLD_N"
+#define GPIO_CPU1_PRESENT "FM_CPU1_SKTOCC_LVT3_PLD_N"
 #define MAX_READ_RETRY 10
 #define POLLING_DELAY_TIME  (10)
 
@@ -1343,6 +1345,77 @@ get_cm_snr_num(uint8_t id) {
   return snr_num;
 }
 
+bool
+check_cpu_present_pin_gpio(uint8_t cpu_id) {
+  int ret;
+  gpio_desc_t *gdesc = NULL;
+  gpio_value_t val;
+  uint8_t status;
+
+  if(cpu_id == 0)
+    gdesc = gpio_open_by_shadow(GPIO_CPU0_PRESENT);
+  else
+    gdesc = gpio_open_by_shadow(GPIO_CPU1_PRESENT);
+  
+  if (gdesc == NULL)
+    return -1;
+
+  ret = gpio_get_value(gdesc, &val);
+
+  gpio_close(gdesc);
+  
+  if(ret == 0)
+    status = (int)val;
+  else 
+      return -1;
+
+  return status;
+}
+
+bool
+check_cpu_present(const char *label) {
+  uint8_t cpu_id;
+
+  const char *cpu0_vr_sensor_list[] = {
+    "MB_CPU0_PVPP_ABC",
+    "MB_CPU0_PVPP_DEF",
+    "MB_CPU0_PVTT_ABC",
+    "MB_CPU0_PVTT_DEF",
+    "MB_VR_CPU0_VCCIN_VOUT",
+    "MB_VR_CPU0_VCCSA_VOUT",
+    "MB_VR_CPU0_VCCIO_VOUT",
+    "MB_VR_CPU0_VDDQ_ABC_VOUT",
+    "MB_VR_CPU0_VDDQ_DEF_VOUT",
+  };
+
+  const char *cpu1_vr_sensor_list[] = {
+    "MB_CPU1_PVPP_ABC",
+    "MB_CPU1_PVPP_DEF",
+    "MB_CPU1_PVTT_ABC",
+    "MB_CPU1_PVTT_DEF",
+    "MB_VR_CPU1_VCCIN_VOUT",
+    "MB_VR_CPU1_VCCSA_VOUT",
+    "MB_VR_CPU1_VCCIO_VOUT",
+    "MB_VR_CPU1_VDDQ_ABC_VOUT",
+    "MB_VR_CPU1_VDDQ_DEF_VOUT",
+  };
+
+  for(int i = 0; i < ARRAY_SIZE(cpu0_vr_sensor_list); i++) {
+    if(!strcmp(label, cpu0_vr_sensor_list[i])) {
+      cpu_id = 0;
+      return !check_cpu_present_pin_gpio(cpu_id);
+    }
+  }
+
+  for(int i = 0; i < ARRAY_SIZE(cpu1_vr_sensor_list); i++) {
+    if(!strcmp(label, cpu1_vr_sensor_list[i])) {
+      cpu_id = 1;
+      return !check_cpu_present_pin_gpio(cpu_id);
+    }
+  }
+
+  return true;
+}
 
 static int
 read_cm_sensor(uint8_t id, float *value) {
@@ -1405,6 +1478,8 @@ read_adc_val(uint8_t adc_id, float *value) {
   };
   if (adc_id >= ARRAY_SIZE(adc_label)) {
     return -1;
+  } else if (!check_cpu_present(adc_label[adc_id])) {
+    return READING_NA;
   }
   return sensors_read_adc(adc_label[adc_id], value);
 }
@@ -2465,6 +2540,8 @@ read_vr_vout(uint8_t vr_id, float *value) {
   };
   if (vr_id >= ARRAY_SIZE(label)) {
     return -1;
+  } else if (!check_cpu_present(label[vr_id])) {
+    return READING_NA;
   }
   return sensors_read(vr_chips[vr_id], label[vr_id], value);
 }

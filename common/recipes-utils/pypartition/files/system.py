@@ -465,7 +465,9 @@ def get_kernel_parameters():
     # As far as cov knows, kernel parameters we use are backwards compatible,
     # so it's safe to use the following output even when there are CRC32
     # mismatch warnings.
-    return subprocess.check_output(["fw_printenv", "-n", "bootargs"]).strip()
+    return subprocess.check_output(
+        ["fw_printenv", "-n", "bootargs"], universal_newlines=True
+    ).strip()
 
 
 def append_to_kernel_parameters(dry_run, addition, logger):

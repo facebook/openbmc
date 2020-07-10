@@ -21,18 +21,19 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 . /usr/local/bin/openbmc-utils.sh
 
-# TODO:
-#	This is a workaround before EVT
-#	CPLD will handle with 12V power when BMC is ready.
+# Keep "power-util mb on" for debug purpose
 echo "Waiting for power up"
-for retry in {1..30};
+pwr_ctrl=$(gpio_get PWR_CTRL keepdirection)
+for retry in {1..60};
 do
-  pwr_ready=$(gpiocli -s SYS_PWR_READY get-value)
-  pwr_ready=${pwr_ready:0-1}
+  pwr_ready=$(gpio_get SYS_PWR_READY keepdirection)
   if [[ "$pwr_ready" == "1" ]]; then
     break
+  elif [[ "$pwr_ctrl" == "1" ]]; then
+    power-util mb on > /dev/null
+  else
+    sleep 1
   fi
-  power-util mb on > /dev/null
 done
 
 # Thermal sensors for PCIe switches

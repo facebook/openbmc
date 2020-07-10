@@ -24,12 +24,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/facebook/openbmc/tree/helium/common/recipes-utils/flashy/files/utils"
+	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/utils"
 
 	// all entry point packages must be included to successfully run install
-	_ "github.com/facebook/openbmc/tree/helium/common/recipes-utils/flashy/files/checks_and_remediations/common"
-	_ "github.com/facebook/openbmc/tree/helium/common/recipes-utils/flashy/files/checks_and_remediations/wedge100"
-	_ "github.com/facebook/openbmc/tree/helium/common/recipes-utils/flashy/files/flash_procedure"
+	_ "github.com/facebook/openbmc/common/recipes-utils/flashy/files/checks_and_remediations/common"
+	_ "github.com/facebook/openbmc/common/recipes-utils/flashy/files/checks_and_remediations/wedge100"
+	_ "github.com/facebook/openbmc/common/recipes-utils/flashy/files/flash_procedure"
 )
 
 // flashy _MUST_ be installed here

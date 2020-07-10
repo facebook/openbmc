@@ -25,8 +25,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/facebook/openbmc/tree/helium/common/recipes-utils/flashy/files/tests"
-	"github.com/facebook/openbmc/tree/helium/common/recipes-utils/flashy/files/utils"
+	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/tests"
+	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/utils"
 	"github.com/pkg/errors"
 )
 

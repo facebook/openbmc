@@ -23,8 +23,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/facebook/openbmc/tree/helium/common/recipes-utils/flashy/files/install"
-	"github.com/facebook/openbmc/tree/helium/common/recipes-utils/flashy/files/utils"
+	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/install"
+	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/utils"
 )
 
 func main() {

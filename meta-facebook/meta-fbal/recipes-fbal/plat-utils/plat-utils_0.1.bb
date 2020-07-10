@@ -32,6 +32,7 @@ SRC_URI = "file://ast-functions \
            file://setup-pfr.sh \
            file://setup-bridge.sh \
            file://run-bridge.sh \
+           file://eth0_mac_fixup.sh \
            file://COPYING \
           "
 
@@ -67,6 +68,8 @@ do_install() {
   update-rc.d -r ${D} sync_date.sh start 66 5 .
   install -m 755 setup-cmc.sh ${D}${sysconfdir}/init.d/setup-cmc.sh
   update-rc.d -r ${D} setup-cmc.sh start 67 5 .
+  install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
+  update-rc.d -r ${D} eth0_mac_fixup.sh start 71 5 .
   install -m 755 setup-pfr.sh ${D}${sysconfdir}/init.d/setup-pfr.sh
   update-rc.d -r ${D} setup-pfr.sh start 99 5 .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh

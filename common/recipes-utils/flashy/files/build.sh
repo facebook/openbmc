@@ -22,4 +22,4 @@ set -e
 # Ensure we're in the project root
 cd "$(dirname "$0")"
 rm -rf build
-GOOS=linux GOARCH=arm GOARM=5 go build -o build/flashy
+GOOS=linux GOARCH=arm GOARM=5 go build -ldflags="-w -s" -gcflags=all="-l -B" -o build/flashy

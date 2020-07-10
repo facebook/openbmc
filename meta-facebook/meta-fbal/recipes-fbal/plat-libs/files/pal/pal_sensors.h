@@ -537,6 +537,8 @@ typedef struct {
 
 int cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr);
 int pal_sensor_monitor_initial(void);
+bool pal_check_nic_prsnt(uint8_t fru);
+bool pal_check_dimm_prsnt(uint8_t snr_num);
 
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;

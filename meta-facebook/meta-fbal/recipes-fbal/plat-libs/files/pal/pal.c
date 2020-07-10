@@ -1806,14 +1806,6 @@ pal_is_pfr_active(void) {
   return pfr_active;
 }
 
-bool
-pal_is_nic_prsnt(uint8_t fru) {
-  uint8_t status;
-  pal_is_fru_prsnt(fru, &status);
-
-  return status;
-}
-
 int
 pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
   NM_RW_INFO info;

@@ -30,6 +30,7 @@
 #define PECI_MUX_SELECT_PCH                     (GPIO_VALUE_LOW)
 
 uint8_t pwr_polling_flag=false;
+uint8_t DIMM_SLOT_CNT = 0;
 size_t pal_pwm_cnt = FAN_PWM_ALL_NUM;
 size_t pal_tach_cnt = FAN_TACH_ALL_NUM;
 const char pal_pwm_list[] = "0,1,2,3";
@@ -1019,33 +1020,33 @@ static struct fsc_monitor fsc_2s_snr_list[] =
   {MB_SNR_INLET_TEMP         , "mb_inlet_temp"        , NULL, false, 5, 5},
   {MB_SNR_CPU0_THERM_MARGIN  , "mb_cpu0_therm_margin" , NULL, false, 5, 5},
   {MB_SNR_CPU1_THERM_MARGIN  , "mb_cpu1_therm_margin" , NULL, false, 5, 5},
-  {NIC_MEZZ0_SNR_TEMP        , "nic_mezz0_temp"       , pal_is_nic_prsnt, false, 5, 5},
-  {NIC_MEZZ1_SNR_TEMP        , "nic_mezz1_temp"       , pal_is_nic_prsnt, false, 5, 5},
+  {NIC_MEZZ0_SNR_TEMP        , "nic_mezz0_temp"       , pal_check_nic_prsnt, false, 5, 5},
+  {NIC_MEZZ1_SNR_TEMP        , "nic_mezz1_temp"       , pal_check_nic_prsnt, false, 5, 5},
   //dimm sensors wait for 240s. 240=80*3(fsc monitor interval)
-  {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a0_c0_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_a1_c1_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPC_TEMP, "mb_cpu0_dimm_a2_c2_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPD_TEMP, "mb_cpu0_dimm_a3_c3_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPE_TEMP, "mb_cpu0_dimm_a4_c4_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPF_TEMP, "mb_cpu0_dimm_a5_c5_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPA_TEMP, "mb_cpu1_dimm_b0_d0_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPB_TEMP, "mb_cpu1_dimm_b1_d1_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPC_TEMP, "mb_cpu1_dimm_b2_d2_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_b3_d3_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPE_TEMP, "mb_cpu1_dimm_b4_d4_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPF_TEMP, "mb_cpu1_dimm_b5_d5_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VCCIN_TEMP, "mb_cpu0_vr_vccin_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VSA_TEMP,   "mb_cpu0_vr_vccsa_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VCCIO_TEMP, "mb_cpu0_vr_vccio_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VDDQ_GRPABC_TEMP, "mb_cpu0_vr_vddq_abc_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VDDQ_GRPDEF_TEMP, "mb_cpu0_vr_vddq_def_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VCCIN_TEMP, "mb_cpu1_vr_vccin_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VSA_TEMP,   "mb_cpu1_vr_vccsa_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VCCIO_TEMP, "mb_cpu1_vr_vccio_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VDDQ_GRPABC_TEMP, "mb_cpu1_vr_vddq_abc_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP, "mb_cpu1_vr_vddq_def_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_PCH_P1V05_TEMP, "mb_pch_vr_p1v05_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_PCH_PVNN_TEMP, "mb_pch_vr_pvnn_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a0_c0_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_a1_c1_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPC_TEMP, "mb_cpu0_dimm_a2_c2_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPD_TEMP, "mb_cpu0_dimm_a3_c3_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPE_TEMP, "mb_cpu0_dimm_a4_c4_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPF_TEMP, "mb_cpu0_dimm_a5_c5_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPA_TEMP, "mb_cpu1_dimm_b0_d0_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPB_TEMP, "mb_cpu1_dimm_b1_d1_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPC_TEMP, "mb_cpu1_dimm_b2_d2_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_b3_d3_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPE_TEMP, "mb_cpu1_dimm_b4_d4_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPF_TEMP, "mb_cpu1_dimm_b5_d5_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_VR_CPU0_VCCIN_TEMP, "mb_vr_cpu0_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VSA_TEMP,   "mb_vr_cpu0_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VCCIO_TEMP, "mb_vr_cpu0_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPABC_TEMP, "mb_vr_cpu0_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPDEF_TEMP, "mb_vr_cpu0_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIN_TEMP, "mb_vr_cpu1_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VSA_TEMP,   "mb_vr_cpu1_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIO_TEMP, "mb_vr_cpu1_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPABC_TEMP, "mb_vr_cpu1_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP, "mb_vr_cpu1_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_P1V05_TEMP, "mb_vr_pch_p1v05_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_PVNN_TEMP, "mb_vr_pch_pvnn_temp", NULL, false, 80, 5},
 };
 
 static struct fsc_monitor fsc_4s_master_snr_list[] =
@@ -1055,45 +1056,46 @@ static struct fsc_monitor fsc_4s_master_snr_list[] =
   {MB_SNR_CPU1_THERM_MARGIN  , "mb_cpu1_therm_margin" , NULL, false, 5, 5},
   {MB_SNR_CPU2_THERM_MARGIN  , "mb_cpu2_therm_margin" , NULL, false, 5, 5},
   {MB_SNR_CPU3_THERM_MARGIN  , "mb_cpu3_therm_margin" , NULL, false, 5, 5},
-  {NIC_MEZZ0_SNR_TEMP        , "nic_mezz0_temp"       , pal_is_nic_prsnt, false, 5, 5},
-  {NIC_MEZZ1_SNR_TEMP        , "nic_mezz1_temp"       , pal_is_nic_prsnt, false, 5, 5},
+  {NIC_MEZZ0_SNR_TEMP        , "nic_mezz0_temp"       , pal_check_nic_prsnt, false, 5, 5},
+  {NIC_MEZZ1_SNR_TEMP        , "nic_mezz1_temp"       , pal_check_nic_prsnt, false, 5, 5},
   //dimm sensors wait for 240s. 240=80*3(fsc monitor interval)
-  {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a0_c0_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_a1_c1_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPC_TEMP, "mb_cpu0_dimm_a2_c2_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPD_TEMP, "mb_cpu0_dimm_a3_c3_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPE_TEMP, "mb_cpu0_dimm_a4_c4_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPF_TEMP, "mb_cpu0_dimm_a5_c5_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPA_TEMP, "mb_cpu1_dimm_b0_d0_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPB_TEMP, "mb_cpu1_dimm_b1_d1_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPC_TEMP, "mb_cpu1_dimm_b2_d2_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_b3_d3_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPE_TEMP, "mb_cpu1_dimm_b4_d4_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPF_TEMP, "mb_cpu1_dimm_b5_d5_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU2_DIMM_GRPA_TEMP, "mb_cpu2_dimm_a0_c0_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU2_DIMM_GRPB_TEMP, "mb_cpu2_dimm_a1_c1_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU2_DIMM_GRPC_TEMP, "mb_cpu2_dimm_a2_c2_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU2_DIMM_GRPD_TEMP, "mb_cpu2_dimm_a3_c3_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU2_DIMM_GRPE_TEMP, "mb_cpu2_dimm_a4_c4_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU2_DIMM_GRPF_TEMP, "mb_cpu2_dimm_a5_c5_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU3_DIMM_GRPA_TEMP, "mb_cpu3_dimm_b0_d0_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU3_DIMM_GRPB_TEMP, "mb_cpu3_dimm_b1_d1_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU3_DIMM_GRPC_TEMP, "mb_cpu3_dimm_b2_d2_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU3_DIMM_GRPD_TEMP, "mb_cpu3_dimm_b3_d3_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU3_DIMM_GRPE_TEMP, "mb_cpu3_dimm_b4_d4_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU3_DIMM_GRPF_TEMP, "mb_cpu3_dimm_b5_d5_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a0_c0_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_a1_c1_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPC_TEMP, "mb_cpu0_dimm_a2_c2_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPD_TEMP, "mb_cpu0_dimm_a3_c3_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPE_TEMP, "mb_cpu0_dimm_a4_c4_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPF_TEMP, "mb_cpu0_dimm_a5_c5_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPA_TEMP, "mb_cpu1_dimm_b0_d0_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPB_TEMP, "mb_cpu1_dimm_b1_d1_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPC_TEMP, "mb_cpu1_dimm_b2_d2_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_b3_d3_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPE_TEMP, "mb_cpu1_dimm_b4_d4_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPF_TEMP, "mb_cpu1_dimm_b5_d5_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPA_TEMP, "mb_cpu2_dimm_a0_c0_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPB_TEMP, "mb_cpu2_dimm_a1_c1_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPC_TEMP, "mb_cpu2_dimm_a2_c2_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPD_TEMP, "mb_cpu2_dimm_a3_c3_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPE_TEMP, "mb_cpu2_dimm_a4_c4_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPF_TEMP, "mb_cpu2_dimm_a5_c5_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPA_TEMP, "mb_cpu3_dimm_b0_d0_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPB_TEMP, "mb_cpu3_dimm_b1_d1_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPC_TEMP, "mb_cpu3_dimm_b2_d2_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPD_TEMP, "mb_cpu3_dimm_b3_d3_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPE_TEMP, "mb_cpu3_dimm_b4_d4_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPF_TEMP, "mb_cpu3_dimm_b5_d5_temp", pal_check_dimm_prsnt, false, 80, 5},
   {MB_SNR_VR_CPU0_VCCIN_TEMP, "mb_cpu0_vr_vccin_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VSA_TEMP,   "mb_cpu0_vr_vccsa_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VCCIO_TEMP, "mb_cpu0_vr_vccio_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VDDQ_GRPABC_TEMP, "mb_cpu0_vr_vddq_abc_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VDDQ_GRPDEF_TEMP, "mb_cpu0_vr_vddq_def_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VCCIN_TEMP, "mb_cpu1_vr_vccin_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VSA_TEMP,   "mb_cpu1_vr_vccsa_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VCCIO_TEMP, "mb_cpu1_vr_vccio_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VDDQ_GRPABC_TEMP, "mb_cpu1_vr_vddq_abc_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP, "mb_cpu1_vr_vddq_def_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_PCH_P1V05_TEMP, "mb_pch_vr_p1v05_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_PCH_PVNN_TEMP, "mb_pch_vr_pvnn_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VCCIN_TEMP, "mb_vr_cpu0_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VSA_TEMP,   "mb_vr_cpu0_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VCCIO_TEMP, "mb_vr_cpu0_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPABC_TEMP, "mb_vr_cpu0_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPDEF_TEMP, "mb_vr_cpu0_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIN_TEMP, "mb_vr_cpu1_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VSA_TEMP,   "mb_vr_cpu1_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIO_TEMP, "mb_vr_cpu1_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPABC_TEMP, "mb_vr_cpu1_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP, "mb_vr_cpu1_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_P1V05_TEMP, "mb_vr_pch_p1v05_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_PVNN_TEMP, "mb_vr_pch_pvnn_temp", NULL, false, 80, 5},
 };
 
 static struct fsc_monitor fsc_8s_master_snr_list[] =
@@ -1107,88 +1109,88 @@ static struct fsc_monitor fsc_8s_master_snr_list[] =
   {MB_SNR_CPU5_THERM_MARGIN  , "mb_cpu5_therm_margin" , NULL, false, 5, 5},
   {MB_SNR_CPU6_THERM_MARGIN  , "mb_cpu6_therm_margin" , NULL, false, 5, 5},
   {MB_SNR_CPU7_THERM_MARGIN  , "mb_cpu7_therm_margin" , NULL, false, 5, 5},
-  {NIC_MEZZ0_SNR_TEMP        , "nic_mezz0_temp"       , pal_is_nic_prsnt, false, 5, 5},
-  {NIC_MEZZ1_SNR_TEMP        , "nic_mezz1_temp"       , pal_is_nic_prsnt, false, 5, 5},
+  {NIC_MEZZ0_SNR_TEMP        , "nic_mezz0_temp"       , pal_check_nic_prsnt, false, 5, 5},
+  {NIC_MEZZ1_SNR_TEMP        , "nic_mezz1_temp"       , pal_check_nic_prsnt, false, 5, 5},
   //dimm sensors wait for 240s. 240=80*3(fsc monitor interval)
-  {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a0_c0_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_a1_c1_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPC_TEMP, "mb_cpu0_dimm_a2_c2_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPD_TEMP, "mb_cpu0_dimm_a3_c3_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPE_TEMP, "mb_cpu0_dimm_a4_c4_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU0_DIMM_GRPF_TEMP, "mb_cpu0_dimm_a5_c5_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPA_TEMP, "mb_cpu1_dimm_b0_d0_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPB_TEMP, "mb_cpu1_dimm_b1_d1_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPC_TEMP, "mb_cpu1_dimm_b2_d2_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_b3_d3_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPE_TEMP, "mb_cpu1_dimm_b4_d4_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU1_DIMM_GRPF_TEMP, "mb_cpu1_dimm_b5_d5_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU2_DIMM_GRPA_TEMP, "mb_cpu2_dimm_a0_c0_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU2_DIMM_GRPB_TEMP, "mb_cpu2_dimm_a1_c1_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU2_DIMM_GRPC_TEMP, "mb_cpu2_dimm_a2_c2_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU2_DIMM_GRPD_TEMP, "mb_cpu2_dimm_a3_c3_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU2_DIMM_GRPE_TEMP, "mb_cpu2_dimm_a4_c4_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU2_DIMM_GRPF_TEMP, "mb_cpu2_dimm_a5_c5_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU3_DIMM_GRPA_TEMP, "mb_cpu3_dimm_b0_d0_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU3_DIMM_GRPB_TEMP, "mb_cpu3_dimm_b1_d1_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU3_DIMM_GRPC_TEMP, "mb_cpu3_dimm_b2_d2_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU3_DIMM_GRPD_TEMP, "mb_cpu3_dimm_b3_d3_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU3_DIMM_GRPE_TEMP, "mb_cpu3_dimm_b4_d4_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU3_DIMM_GRPF_TEMP, "mb_cpu3_dimm_b5_d5_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU4_DIMM_GRPA_TEMP, "mb_cpu4_dimm_a0_c0_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU4_DIMM_GRPB_TEMP, "mb_cpu4_dimm_a1_c1_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU4_DIMM_GRPC_TEMP, "mb_cpu4_dimm_a2_c2_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU4_DIMM_GRPD_TEMP, "mb_cpu4_dimm_a3_c3_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU4_DIMM_GRPE_TEMP, "mb_cpu4_dimm_a4_c4_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU4_DIMM_GRPF_TEMP, "mb_cpu4_dimm_a5_c5_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU5_DIMM_GRPA_TEMP, "mb_cpu5_dimm_b0_d0_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU5_DIMM_GRPB_TEMP, "mb_cpu5_dimm_b1_d1_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU5_DIMM_GRPC_TEMP, "mb_cpu5_dimm_b2_d2_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU5_DIMM_GRPD_TEMP, "mb_cpu5_dimm_b3_d3_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU5_DIMM_GRPE_TEMP, "mb_cpu5_dimm_b4_d4_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU5_DIMM_GRPF_TEMP, "mb_cpu5_dimm_b5_d5_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU6_DIMM_GRPA_TEMP, "mb_cpu6_dimm_a0_c0_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU6_DIMM_GRPB_TEMP, "mb_cpu6_dimm_a1_c1_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU6_DIMM_GRPC_TEMP, "mb_cpu6_dimm_a2_c2_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU6_DIMM_GRPD_TEMP, "mb_cpu6_dimm_a3_c3_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU6_DIMM_GRPE_TEMP, "mb_cpu6_dimm_a4_c4_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU6_DIMM_GRPF_TEMP, "mb_cpu6_dimm_a5_c5_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU7_DIMM_GRPA_TEMP, "mb_cpu7_dimm_b0_d0_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU7_DIMM_GRPB_TEMP, "mb_cpu7_dimm_b1_d1_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU7_DIMM_GRPC_TEMP, "mb_cpu7_dimm_b2_d2_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU7_DIMM_GRPD_TEMP, "mb_cpu7_dimm_b3_d3_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU7_DIMM_GRPE_TEMP, "mb_cpu7_dimm_b4_d4_temp", NULL, false, 80, 5},
-  {MB_SNR_CPU7_DIMM_GRPF_TEMP, "mb_cpu7_dimm_b5_d5_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VCCIN_TEMP, "mb_cpu0_vr_vccin_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VSA_TEMP,   "mb_cpu0_vr_vccsa_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VCCIO_TEMP, "mb_cpu0_vr_vccio_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VDDQ_GRPABC_TEMP, "mb_cpu0_vr_vddq_abc_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VDDQ_GRPDEF_TEMP, "mb_cpu0_vr_vddq_def_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VCCIN_TEMP, "mb_cpu1_vr_vccin_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VSA_TEMP,   "mb_cpu1_vr_vccsa_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VCCIO_TEMP, "mb_cpu1_vr_vccio_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VDDQ_GRPABC_TEMP, "mb_cpu1_vr_vddq_abc_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP, "mb_cpu1_vr_vddq_def_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_PCH_P1V05_TEMP, "mb_pch_vr_p1v05_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_PCH_PVNN_TEMP, "mb_pch_vr_pvnn_temp", NULL, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPA_TEMP, "mb_cpu0_dimm_a0_c0_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPB_TEMP, "mb_cpu0_dimm_a1_c1_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPC_TEMP, "mb_cpu0_dimm_a2_c2_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPD_TEMP, "mb_cpu0_dimm_a3_c3_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPE_TEMP, "mb_cpu0_dimm_a4_c4_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU0_DIMM_GRPF_TEMP, "mb_cpu0_dimm_a5_c5_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPA_TEMP, "mb_cpu1_dimm_b0_d0_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPB_TEMP, "mb_cpu1_dimm_b1_d1_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPC_TEMP, "mb_cpu1_dimm_b2_d2_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPD_TEMP, "mb_cpu1_dimm_b3_d3_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPE_TEMP, "mb_cpu1_dimm_b4_d4_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU1_DIMM_GRPF_TEMP, "mb_cpu1_dimm_b5_d5_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPA_TEMP, "mb_cpu2_dimm_a0_c0_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPB_TEMP, "mb_cpu2_dimm_a1_c1_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPC_TEMP, "mb_cpu2_dimm_a2_c2_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPD_TEMP, "mb_cpu2_dimm_a3_c3_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPE_TEMP, "mb_cpu2_dimm_a4_c4_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU2_DIMM_GRPF_TEMP, "mb_cpu2_dimm_a5_c5_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPA_TEMP, "mb_cpu3_dimm_b0_d0_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPB_TEMP, "mb_cpu3_dimm_b1_d1_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPC_TEMP, "mb_cpu3_dimm_b2_d2_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPD_TEMP, "mb_cpu3_dimm_b3_d3_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPE_TEMP, "mb_cpu3_dimm_b4_d4_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU3_DIMM_GRPF_TEMP, "mb_cpu3_dimm_b5_d5_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU4_DIMM_GRPA_TEMP, "mb_cpu4_dimm_a0_c0_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU4_DIMM_GRPB_TEMP, "mb_cpu4_dimm_a1_c1_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU4_DIMM_GRPC_TEMP, "mb_cpu4_dimm_a2_c2_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU4_DIMM_GRPD_TEMP, "mb_cpu4_dimm_a3_c3_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU4_DIMM_GRPE_TEMP, "mb_cpu4_dimm_a4_c4_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU4_DIMM_GRPF_TEMP, "mb_cpu4_dimm_a5_c5_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU5_DIMM_GRPA_TEMP, "mb_cpu5_dimm_b0_d0_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU5_DIMM_GRPB_TEMP, "mb_cpu5_dimm_b1_d1_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU5_DIMM_GRPC_TEMP, "mb_cpu5_dimm_b2_d2_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU5_DIMM_GRPD_TEMP, "mb_cpu5_dimm_b3_d3_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU5_DIMM_GRPE_TEMP, "mb_cpu5_dimm_b4_d4_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU5_DIMM_GRPF_TEMP, "mb_cpu5_dimm_b5_d5_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU6_DIMM_GRPA_TEMP, "mb_cpu6_dimm_a0_c0_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU6_DIMM_GRPB_TEMP, "mb_cpu6_dimm_a1_c1_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU6_DIMM_GRPC_TEMP, "mb_cpu6_dimm_a2_c2_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU6_DIMM_GRPD_TEMP, "mb_cpu6_dimm_a3_c3_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU6_DIMM_GRPE_TEMP, "mb_cpu6_dimm_a4_c4_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU6_DIMM_GRPF_TEMP, "mb_cpu6_dimm_a5_c5_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU7_DIMM_GRPA_TEMP, "mb_cpu7_dimm_b0_d0_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU7_DIMM_GRPB_TEMP, "mb_cpu7_dimm_b1_d1_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU7_DIMM_GRPC_TEMP, "mb_cpu7_dimm_b2_d2_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU7_DIMM_GRPD_TEMP, "mb_cpu7_dimm_b3_d3_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU7_DIMM_GRPE_TEMP, "mb_cpu7_dimm_b4_d4_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_CPU7_DIMM_GRPF_TEMP, "mb_cpu7_dimm_b5_d5_temp", pal_check_dimm_prsnt, false, 80, 5},
+  {MB_SNR_VR_CPU0_VCCIN_TEMP, "mb_vr_cpu0_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VSA_TEMP,   "mb_vr_cpu0_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VCCIO_TEMP, "mb_vr_cpu0_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPABC_TEMP, "mb_vr_cpu0_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPDEF_TEMP, "mb_vr_cpu0_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIN_TEMP, "mb_vr_cpu1_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VSA_TEMP,   "mb_vr_cpu1_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIO_TEMP, "mb_vr_cpu1_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPABC_TEMP, "mb_vr_cpu1_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP, "mb_vr_cpu1_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_P1V05_TEMP, "mb_vr_pch_p1v05_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_PVNN_TEMP, "mb_vr_pch_pvnn_temp", NULL, false, 80, 5},
 };
 
 static struct fsc_monitor fsc_slave_snr_list[] =
 {
   {MB_SNR_INLET_TEMP,  "mb_inlet_temp",  NULL, false, 5, 5},
-  {NIC_MEZZ0_SNR_TEMP, "nic_mezz0_temp", pal_is_nic_prsnt, false, 5, 5},
-  {NIC_MEZZ1_SNR_TEMP, "nic_mezz1_temp", pal_is_nic_prsnt, false, 5, 5},
-  {MB_SNR_VR_CPU0_VCCIN_TEMP, "mb_cpu0_vr_vccin_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VSA_TEMP,   "mb_cpu0_vr_vccsa_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VCCIO_TEMP, "mb_cpu0_vr_vccio_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VDDQ_GRPABC_TEMP, "mb_cpu0_vr_vddq_abc_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU0_VDDQ_GRPDEF_TEMP, "mb_cpu0_vr_vddq_def_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VCCIN_TEMP, "mb_cpu1_vr_vccin_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VSA_TEMP,   "mb_cpu1_vr_vccsa_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VCCIO_TEMP, "mb_cpu1_vr_vccio_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VDDQ_GRPABC_TEMP, "mb_cpu1_vr_vddq_abc_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP, "mb_cpu1_vr_vddq_def_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_PCH_P1V05_TEMP, "mb_pch_vr_p1v05_temp", NULL, false, 80, 5},
-  {MB_SNR_VR_PCH_PVNN_TEMP, "mb_pch_vr_pvnn_temp", NULL, false, 80, 5},
+  {NIC_MEZZ0_SNR_TEMP, "nic_mezz0_temp", pal_check_nic_prsnt, false, 5, 5},
+  {NIC_MEZZ1_SNR_TEMP, "nic_mezz1_temp", pal_check_nic_prsnt, false, 5, 5},
+  {MB_SNR_VR_CPU0_VCCIN_TEMP, "mb_vr_cpu0_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VSA_TEMP,   "mb_vr_cpu0_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VCCIO_TEMP, "mb_vr_cpu0_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPABC_TEMP, "mb_vr_cpu0_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU0_VDDQ_GRPDEF_TEMP, "mb_vr_cpu0_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIN_TEMP, "mb_vr_cpu1_vccin_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VSA_TEMP,   "mb_vr_cpu1_vccsa_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VCCIO_TEMP, "mb_vr_cpu1_vccio_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPABC_TEMP, "mb_vr_cpu1_vddq_abc_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP, "mb_vr_cpu1_vddq_def_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_P1V05_TEMP, "mb_vr_pch_p1v05_temp", NULL, false, 80, 5},
+  {MB_SNR_VR_PCH_PVNN_TEMP, "mb_vr_pch_pvnn_temp", NULL, false, 80, 5},
 };
 
 static int fsc_8s_master_snr_list_size = sizeof(fsc_8s_master_snr_list) / sizeof(struct fsc_monitor);
@@ -3113,6 +3115,67 @@ static int pal_set_peci_mux(uint8_t select) {
 }
 
 void
+get_dimm_present_info(uint8_t fru, bool *dimm_sts_list) {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  int i;
+  size_t ret;
+
+  //check dimm info from /mnt/data/sys_config/
+  for (i=0; i<DIMM_SLOT_CNT; i++) {
+    sprintf(key, "sys_config/fru%d_dimm%d_location", fru, i);
+    if(kv_get(key, value, &ret, KV_FPERSIST) != 0 || ret < 4) {
+      syslog(LOG_WARNING,"[%s]Cannot get dimm_slot%d present info", __func__, i);
+      return;
+    }
+
+    if ( 0xff == value[0] ) {
+      dimm_sts_list[i] = false;
+    } else {
+      dimm_sts_list[i] = true;
+    }
+  }
+}
+
+bool
+pal_is_dimm_present(uint8_t dimm_id)
+{
+  static bool is_check = false;
+  static bool dimm_sts_list[96] = {0};
+  uint8_t fru = FRU_MB;
+
+  if (!pal_bios_completed(fru) ) {
+    return false;
+  }
+
+  if ( is_check == false ) {
+    is_check = true;
+    get_dimm_present_info(fru, dimm_sts_list);
+  }
+
+  if( dimm_sts_list[dimm_id] == true) {
+    return true;
+  }
+  return false;
+}
+
+bool
+pal_check_dimm_prsnt(uint8_t snr_num) {
+  uint8_t dimm_id = 0xFF;
+
+  dimm_id = (snr_num - MB_SNR_CPU0_DIMM_GRPA_TEMP) *2;
+  return pal_is_dimm_present(dimm_id);
+}
+
+bool
+pal_check_nic_prsnt(uint8_t fru) {
+  uint8_t status;
+  pal_is_fru_prsnt(fru, &status);
+
+  return status;
+}
+
+void
 pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char cmd[128];
   char thresh_name[10];
@@ -3257,10 +3320,13 @@ int pal_sensor_monitor_initial(void) {
 //Set HSC ControllerG
   if( mode == MB_2S_MODE ) {
     hsc_cnt = 1;
+    DIMM_SLOT_CNT = 24;
   } else if(mode == MB_4S_MODE && master == true) {
     hsc_cnt = 2;
+    DIMM_SLOT_CNT = 48;
   } else if(mode == MB_8S_MODE && master == true) {
     hsc_cnt = 4;
+    DIMM_SLOT_CNT = 96;
   } else {
     hsc_cnt = 0;
   }

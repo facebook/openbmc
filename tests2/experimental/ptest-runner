@@ -90,8 +90,13 @@ def main(args):
         subprocess.check_call(cmd)
     else:
         cmd += ["ptest-runner"] + args.recipes
-        out = subprocess.check_output(cmd).decode()
-        print(out)
+        try:
+            out = subprocess.check_output(cmd).decode()
+            print(out)
+        except subprocess.CalledProcessError as e:
+            print(e.output.decode())
+            if (e.stderr is not None):
+                print(e.stderr.decode())
         if args.log is not None:
             log = os.path.join(rootfs, args.log)
             with open(log) as f:

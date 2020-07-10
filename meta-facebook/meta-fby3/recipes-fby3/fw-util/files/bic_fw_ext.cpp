@@ -144,7 +144,7 @@ int BicFwExtBlComponent::print_version() {
     if ( get_ver_str(ver) < 0 ) {
       throw "Error in getting the version of " + board_name;
     }
-    cout << board_name << "  Bridge-IC Bootloader Version: " << ver << endl;
+    cout << board_name << " Bridge-IC Bootloader Version: " << ver << endl;
   } catch(string err) {
     printf("%s Bridge-IC Bootloader Version: NA (%s)\n", board_name.c_str(), err.c_str());
   }

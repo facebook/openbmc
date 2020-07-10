@@ -23,10 +23,19 @@
 #include "log-util.hpp"
 #include "rsyslogd.hpp"
 
+std::string get_fru_list()
+{
+  char c_fru_list[256] = {0};
+  if (pal_get_fru_list(c_fru_list)) {
+    return std::string(pal_fru_list);
+  }
+  return std::string(c_fru_list);
+}
+
 int main(int argc, char* argv[]) {
   bool print = false, clear = false, opt_json = false;
   std::set<std::string> fru_list;
-  std::string fru_list_str(pal_fru_list);
+  std::string fru_list_str = get_fru_list();
   std::regex pattern(R"(\s*,\s*)");
   std::string fru;
 

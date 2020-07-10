@@ -67,15 +67,28 @@ gpio_get() {
 # Store and Clear POR bit
 store_clear_por()
 {
-  local val
+  local rst sig val
 
   if [ -f /tmp/ast_por ]; then
     return
   fi
 
+  # 0x06: Panic event count; 0x07: Last Panic reason
+  for i in {1..3}; do
+    rst=$(/usr/sbin/i2cget -y 4 0x58 0x06 w 2>/dev/null)
+    if [ $? -eq 0 ]; then
+      break
+    fi
+    rst=0
+    sleep 0.2
+  done
+
+  # Read Boot Magic
+  sig=$(devmem 0x1e721208 2>/dev/null)
+
   # Read the Watch Dog Flag
   val=$(devmem 0x1e6e203c 2>/dev/null)
-  if [ "$((val & 0x1))" == "1" ]; then
+  if [[ "$((rst & 0xffff))" == "0" && "$sig" != "0xFB420054" && "$((val & 0x1))" == "1" ]]; then
       # Power ON Reset
       echo 1 > /tmp/ast_por
   else

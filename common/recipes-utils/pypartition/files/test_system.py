@@ -259,7 +259,10 @@ class TestSystem(unittest.TestCase):
             self.assertEqual(context_manager.exception.code, 1)
 
     @patch.object(system, "other_flasher_running", return_value=False)
-    def test_flash_retries(self, mocked_other_flasher_running):
+    @patch.object(system, "image_file_compatible", return_value=True)
+    def test_flash_retries(
+        self, mocked_image_file_compatible, mocked_other_flasher_running
+    ):
         for combination in range(100):
             attempts = combination % 10
             failures = combination // 10

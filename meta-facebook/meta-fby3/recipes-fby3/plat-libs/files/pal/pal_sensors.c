@@ -56,7 +56,7 @@ static bool sdr_init_done[MAX_NUM_FRUS] = {false};
 static uint8_t bic_dynamic_sensor_list[4][MAX_SENSOR_NUM] = {0};
 static uint8_t bic_dynamic_skip_sensor_list[4][MAX_SENSOR_NUM] = {0};
 
-int pwr_off_flag = 0;
+int pwr_off_flag[MAX_NODES] = {0};
 int temp_cnt = 0;
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
@@ -1592,19 +1592,19 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   }
 
   if (power_status != SERVER_POWER_ON) {
-    pwr_off_flag = 1;
+    pwr_off_flag[fru-1] = 1;
     //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);
     if (skip_bic_sensor_list(fru, sensor_num) < 0) {
       return READING_NA;
     }
-  } else if (power_status == SERVER_POWER_ON && pwr_off_flag) {
+  } else if (power_status == SERVER_POWER_ON && pwr_off_flag[fru-1]) {
     if ((skip_bic_sensor_list(fru, sensor_num) < 0) && (temp_cnt < skip_sensor_cnt)){
       temp_cnt ++;
       return READING_NA;
     }
 
     if (temp_cnt == skip_sensor_cnt) {
-      pwr_off_flag = 0;
+      pwr_off_flag[fru-1] = 0;
       temp_cnt = 0;
     }
   }
@@ -1714,7 +1714,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   }
 
   if ( bic_get_server_power_status(fru, &power_status) < 0 || power_status != SERVER_POWER_ON) {
-    pwr_off_flag = 1;
+    pwr_off_flag[fru-1] = 1;
     //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);
     if (skip_bic_sensor_list(fru, sensor_num) < 0) {
       return READING_NA;

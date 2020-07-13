@@ -58,7 +58,7 @@ def bmc_build():
     build_steps = [
         f"cd {openbmc}",
         "source ./openbmc-init-build-env qemux86 build-qemux86 > /dev/null",
-        "sed -i -e 's/IMAGE_INSTALL_append.*//' conf/local.conf",
+        "sed -i -n '/IMAGE_INSTALL_append/!p' conf/local.conf",
         f'echo IMAGE_INSTALL_append = \\"{recipe_arg}\\" >> conf/local.conf',
         "bitbake -q qemux86-image",
     ]

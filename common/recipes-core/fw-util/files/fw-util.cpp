@@ -148,14 +148,9 @@ void usage()
   cout << "       " << exec_name << " FRU --update [--]COMPONENT IMAGE_PATH" << endl;
   cout << "       " << exec_name << " FRU --force --update [--]COMPONENT IMAGE_PATH" << endl;
   cout << "       " << exec_name << " FRU --dump [--]COMPONENT IMAGE_PATH" << endl;
-  cout << "       " << exec_name << " FRU --update COMPONENT IMAGE_PATH --schedule \"TIME\"" << endl;
+  cout << "       " << exec_name << " FRU --update COMPONENT IMAGE_PATH --schedule now" << endl;
   cout << "       " << exec_name << " all --show-schedule" << endl;
   cout << "       " << exec_name << " all --delete-schedule TASK_ID" << endl;
-  cout << "Ex:    " << endl;
-  cout << " a) Update the BMC image after 30 min" << endl;
-  cout << "    fw-util bmc --update bmc $image --schedule \"now + 30 min\"" << endl;
-  cout << " b) Update the BMC image at 2:30 pm 10/21/2020" << endl;
-  cout << "    fw-util bmc --update bmc $image --schedule \"2:30 pm 10/21/2020\"" << endl;
   cout << endl;
   cout << left << setw(10) << "FRU" << " : Components" << endl;
   cout << "---------- : ----------" << endl;
@@ -244,6 +239,11 @@ int main(int argc, char *argv[])
       if ( argc == 7 ) {
         sub_action.assign(argv[5]);
         time.assign(argv[6]);
+        if (time != "now") { // only can set time to "now"
+          cerr << "Only can schedule update " << component << " now" << endl;
+          usage();
+          return -1;
+        }
       } else {
         task_id.assign(argv[3]);
       }
@@ -299,8 +299,18 @@ int main(int argc, char *argv[])
   } else if (action == "--version-json" ) {
     json_array = json::array();
   } else if ( action == "--show-schedule" ) {
+    if (fru != "all") {
+      cerr << "Invalid fru: " <<  fru <<" for showing schedule" << endl;
+      usage();
+      return -1;
+    }
     return tasker.show_task();
   } else if ( action == "--delete-schedule" ) {
+    if (fru != "all") {
+      cerr << "Invalid fru: " <<  fru <<" for deleting schedule" << endl;
+      usage();
+      return -1;
+    }
     return tasker.del_task(task_id);
   } else {
     cerr << "Invalid action: " << action << endl;

@@ -56,16 +56,6 @@ func CompareTestExitErrors(want utils.StepExitError, got utils.StepExitError, t 
 	}
 }
 
-// returns true if str contains all strings in all
-func StringContainsAll(str string, all []string) bool {
-	for _, s := range all {
-		if !strings.Contains(str, s) {
-			return false
-		}
-	}
-	return true
-}
-
 // check that logs are complete and contain all
 // strings in logContainsSeq in sequence
 func LogContainsSeqTest(logs string, logContainsSeq []string, t *testing.T) {
@@ -82,6 +72,8 @@ func LogContainsSeqTest(logs string, logContainsSeq []string, t *testing.T) {
 	}
 }
 
-func GetUint64Ptr(x uint64) *uint64    { return &x }
-func GetFloat32Ptr(x float32) *float32 { return &x }
-func GetBoolPtr(b bool) *bool          { return &b }
+// return true if the filename denotes a `_test.go` file
+func IsGoTestFileName(filename string) bool {
+	return len(filename) >= 8 &&
+		filename[len(filename)-8:] == "_test.go"
+}

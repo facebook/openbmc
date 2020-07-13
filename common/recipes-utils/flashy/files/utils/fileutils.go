@@ -26,7 +26,7 @@ import (
 	"runtime"
 )
 
-var sourceRootDir string
+var SourceRootDir string
 
 func init() {
 	// get the source root directory
@@ -35,7 +35,7 @@ func init() {
 		panic("No caller information")
 	}
 	// go up two paths, as this file is two directories deep
-	sourceRootDir = filepath.Dir(filepath.Dir(filename))
+	SourceRootDir = filepath.Dir(filepath.Dir(filename))
 }
 
 func GetExecutablePath() string {
@@ -72,10 +72,10 @@ func SanitizeBinaryName(arg string) string {
 
 // from the absolute path of a file, get the intended symlink path
 // e.g. /files/checks/abc.go => checks/abc
-func getSymlinkPathForSourceFile(path string) string {
+func GetSymlinkPathForSourceFile(path string) string {
 	// truncate to get the symlink path
 	// also truncate ".go"
-	symlinkPath := path[len(sourceRootDir)+1 : len(path)-3]
+	symlinkPath := path[len(SourceRootDir)+1 : len(path)-3]
 	return symlinkPath
 }
 

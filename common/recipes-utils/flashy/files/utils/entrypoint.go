@@ -38,6 +38,6 @@ func RegisterStepEntryPoint(step func(string, string) StepExitError) {
 		log.Fatalf("Unable to get filename for step.")
 	}
 
-	symlinkPath := getSymlinkPathForSourceFile(filename)
+	symlinkPath := GetSymlinkPathForSourceFile(filename)
 	EntryPointMap[symlinkPath] = step
 }

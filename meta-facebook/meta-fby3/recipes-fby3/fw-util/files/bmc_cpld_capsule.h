@@ -21,6 +21,8 @@ class BmcCpldCapsuleComponent : public Component {
   uint8_t pld_type;
   uint8_t bus;
   uint8_t addr;
+  private:
+    int get_pfr_recovery_ver_str(string& s);
   public:
     BmcCpldCapsuleComponent(string fru, string comp, uint8_t type, uint8_t _bus, uint8_t _addr)
       : Component(fru, comp), pld_type(type), bus(_bus), addr(_addr) {}

@@ -264,8 +264,83 @@ int CapsuleComponent::fupdate(string image) {
   return FW_STATUS_NOT_SUPPORTED;
 }
 
+int CapsuleComponent::get_pfr_recovery_ver_str(string& s) {
+  int ret = 0;
+  char ver[32] = {0};
+  uint32_t ver_reg = 0x60;
+  uint8_t tbuf[1] = {0x00};
+  uint8_t rbuf[4] = {0x00};
+  uint8_t tlen = 1;
+  uint8_t rlen = 4;
+  int i2cfd = 0;
+
+  memcpy(tbuf, (uint8_t *)&ver_reg, tlen);
+  string i2cdev = "/dev/i2c-" + to_string((slot_id+SLOT_BUS_BASE));
+
+  if ((i2cfd = open(i2cdev.c_str(), O_RDWR)) < 0) {
+    printf("Failed to open %s\n", i2cdev.c_str());
+    return -1;
+  }
+
+  if (ioctl(i2cfd, I2C_SLAVE, CPLD_INTENT_CTRL_ADDR) < 0) {
+    printf("Failed to talk to slave@0x%02X\n", CPLD_INTENT_CTRL_ADDR);
+  } else {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+    snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
+  }
+
+  if ( i2cfd > 0 ) close(i2cfd);
+  s = string(ver);
+  return ret;
+}
+
 int CapsuleComponent::print_version() {
-  return FW_STATUS_NOT_SUPPORTED;
+  int ret, i2cfd = 0, retry=0;;
+  uint8_t tbuf[2] = {0}, rbuf[1] = {0};
+  uint8_t tlen = 1, rlen = 1;
+  char path[128];
+  string fru_name = fru();
+  string ver("");
+
+  // IF PFR active , get the recovery capsule firmware version
+  // Check PFR provision status
+  snprintf(path, sizeof(path), "/dev/i2c-%d", (slot_id + SLOT_BUS_BASE));
+  i2cfd = open(path, O_RDWR);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
+    return -1;
+  }
+  retry = 0;
+  tbuf[0] = UFM_STATUS_OFFSET;
+  tlen = 1;
+  while (retry < RETRY_TIME) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  if ( i2cfd > 0 ) close(i2cfd);
+
+  if (!(rbuf[0] & UFM_PROVISIONED_MSK)) {
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+  try {
+    if (fw_comp == FW_CPLD_RCVY_CAPSULE) {
+      if ( get_pfr_recovery_ver_str(ver) < 0 ) {
+        throw "Error in getting the version of " + fru_name;
+      }
+      cout << "SB CPLD Recovery Capsule Version: " << ver << endl;
+    } else {
+      return FW_STATUS_NOT_SUPPORTED;
+    }
+  } catch(string& err) {
+    printf("SB CPLD Version: NA (%s)\n", err.c_str());
+  }
+
+  return 0;
 }
 
 #endif

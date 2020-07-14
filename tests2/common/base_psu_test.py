@@ -41,6 +41,8 @@ class CommonPsuTest(BasePsuTest):
     def get_psu_info(self):
         if self.psu_cmd is not None:
             self.psu_info = run_shell_cmd(self.psu_cmd)
+        if "not present" in self.psu_info:
+            self.skipTest("Skip test due to PSU{} is not present".format(self.psu_id))
         return self.psu_info
 
     def verify_psu_data(self, skip=0, ignores=None):

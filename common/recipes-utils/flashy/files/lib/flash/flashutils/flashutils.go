@@ -25,9 +25,7 @@ import (
 	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/lib/utils"
 	"github.com/pkg/errors"
-
 )
-
 
 /*
  e.g. “mtd:flash0” -> type=”mtd” specifier=”flash0”
@@ -49,7 +47,7 @@ var parseDeviceID = func(deviceID string) (string, string, error) {
 	return flashDeviceMap["type"], flashDeviceMap["specifier"], nil
 }
 
-func GetFlashDevice(deviceID string) (*devices.FlashDevice, error) {
+var GetFlashDevice = func(deviceID string) (*devices.FlashDevice, error) {
 	deviceType, deviceSpecifier, err := parseDeviceID(deviceID)
 	if err != nil {
 		return nil, errors.Errorf("Failed to get flash device: %v", err)

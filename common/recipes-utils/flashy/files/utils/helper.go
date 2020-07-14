@@ -19,6 +19,12 @@
 
 package utils
 
+import (
+	"regexp"
+
+	"github.com/pkg/errors"
+)
+
 func MaxUint64(x, y uint64) uint64 {
 	if x < y {
 		return y
@@ -35,4 +41,39 @@ func StringFind(val string, arr []string) int {
 		}
 	}
 	return -1
+}
+
+// given a regex with capturing groups and an input string
+// return a map of the regex subexpNames to their respective matched
+// values
+// e.g. regex: "(?P<type>[a-z]+):(?P<specifier>.+)"
+//      inputString: "mtd:flash0"
+// -> map[string]string { "type": "mtd", "specifier": "flash0" }
+// return error if match was not successful
+func getRegexSubexpMap(regEx, inputString string) (map[string]string, error) {
+	m := make(map[string]string)
+
+	reg, err := regexp.Compile(regEx)
+	if err != nil {
+		return m, err
+	}
+
+	match := reg.FindStringSubmatch(inputString)
+
+	if len(match) == 0 {
+		return m, errors.Errorf("No match for regex '%v' for input '%v'", regEx, inputString)
+	}
+
+	subexpNames := reg.SubexpNames()
+
+	for i, name := range subexpNames {
+		// i > 0 to skip the first empty string returned by
+		// FindStringSubmatch
+		// i < len(match) for the case of incomplete matches
+		if i > 0 && i < len(match) {
+			m[name] = match[i]
+		}
+	}
+
+	return m, nil
 }

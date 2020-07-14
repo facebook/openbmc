@@ -20,8 +20,7 @@
 package flash_procedure
 
 import (
-	"log"
-
+	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/lib/flash/flash_procedures"
 	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/lib/utils"
 )
 
@@ -29,7 +28,4 @@ func init() {
 	utils.RegisterStepEntryPoint(flashWedge100)
 }
 
-func flashWedge100(imageFilePath, deviceID string) utils.StepExitError {
-	log.Printf("Flashing wedge100")
-	return nil
-}
+var flashWedge100 = flash_procedures.FlashCp

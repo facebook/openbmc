@@ -1,0 +1,735 @@
+DHCPv6.SendVendorOption, backported from systemd latest as of 2020-07-06.
+
+diff --git a/src/basic/escape.c b/src/basic/escape.c
+index 5f715156fb..9b76a091b9 100644
+--- a/src/basic/escape.c
++++ b/src/basic/escape.c
+@@ -102,7 +102,7 @@ char *cescape(const char *s) {
+         return cescape_length(s, strlen(s));
+ }
+ 
+-int cunescape_one(const char *p, size_t length, char32_t *ret, bool *eight_bit) {
++int cunescape_one(const char *p, size_t length, char32_t *ret, bool *eight_bit, bool accept_nul) {
+         int r = 1;
+ 
+         assert(p);
+@@ -171,7 +171,7 @@ int cunescape_one(const char *p, size_t length, char32_t *ret, bool *eight_bit)
+                         return -EINVAL;
+ 
+                 /* Don't allow NUL bytes */
+-                if (a == 0 && b == 0)
++                if (a == 0 && b == 0 && !accept_nul)
+                         return -EINVAL;
+ 
+                 *ret = (a << 4U) | b;
+@@ -199,7 +199,7 @@ int cunescape_one(const char *p, size_t length, char32_t *ret, bool *eight_bit)
+                 c = ((uint32_t) a[0] << 12U) | ((uint32_t) a[1] << 8U) | ((uint32_t) a[2] << 4U) | (uint32_t) a[3];
+ 
+                 /* Don't allow 0 chars */
+-                if (c == 0)
++                if (c == 0 && !accept_nul)
+                         return -EINVAL;
+ 
+                 *ret = c;
+@@ -227,7 +227,7 @@ int cunescape_one(const char *p, size_t length, char32_t *ret, bool *eight_bit)
+                     ((uint32_t) a[4] << 12U) | ((uint32_t) a[5] <<  8U) | ((uint32_t) a[6] <<  4U) |  (uint32_t) a[7];
+ 
+                 /* Don't allow 0 chars */
+-                if (c == 0)
++                if (c == 0 && !accept_nul)
+                         return -EINVAL;
+ 
+                 /* Don't allow invalid code points */
+@@ -267,7 +267,7 @@ int cunescape_one(const char *p, size_t length, char32_t *ret, bool *eight_bit)
+                         return -EINVAL;
+ 
+                 /* don't allow NUL bytes */
+-                if (a == 0 && b == 0 && c == 0)
++                if (a == 0 && b == 0 && c == 0 && !accept_nul)
+                         return -EINVAL;
+ 
+                 /* Don't allow bytes above 255 */
+@@ -333,7 +333,7 @@ int cunescape_length_with_prefix(const char *s, size_t length, const char *prefi
+                         return -EINVAL;
+                 }
+ 
+-                k = cunescape_one(f + 1, remaining - 1, &u, &eight_bit);
++                k = cunescape_one(f + 1, remaining - 1, &u, &eight_bit, flags & UNESCAPE_ACCEPT_NUL);
+                 if (k < 0) {
+                         if (flags & UNESCAPE_RELAX) {
+                                 /* Invalid escape code, let's take it literal then */
+diff --git a/src/basic/escape.h b/src/basic/escape.h
+index 515620993d..fddeefc96b 100644
+--- a/src/basic/escape.h
++++ b/src/basic/escape.h
+@@ -29,7 +29,8 @@
+ #define SHELL_NEED_ESCAPE_POSIX "\\\'"
+ 
+ typedef enum UnescapeFlags {
+-        UNESCAPE_RELAX = 1,
++        UNESCAPE_RELAX      = 1 << 0,
++        UNESCAPE_ACCEPT_NUL = 1 << 1,
+ } UnescapeFlags;
+ 
+ typedef enum EscapeStyle {
+@@ -44,7 +45,7 @@ int cescape_char(char c, char *buf);
+ int cunescape(const char *s, UnescapeFlags flags, char **ret);
+ int cunescape_length(const char *s, size_t length, UnescapeFlags flags, char **ret);
+ int cunescape_length_with_prefix(const char *s, size_t length, const char *prefix, UnescapeFlags flags, char **ret);
+-int cunescape_one(const char *p, size_t length, char32_t *ret, bool *eight_bit);
++int cunescape_one(const char *p, size_t length, char32_t *ret, bool *eight_bit, bool accept_nul);
+ 
+ char *xescape(const char *s, const char *bad);
+ char *octescape(const char *s, size_t len);
+diff --git a/src/basic/extract-word.c b/src/basic/extract-word.c
+index a861b56653..9876f78f36 100644
+--- a/src/basic/extract-word.c
++++ b/src/basic/extract-word.c
+@@ -91,7 +91,7 @@ int extract_first_word(const char **p, char **ret, const char *separators, Extra
+                                 bool eight_bit = false;
+                                 char32_t u;
+ 
+-                                r = cunescape_one(*p, (size_t) -1, &u, &eight_bit);
++                                r = cunescape_one(*p, (size_t) -1, &u, &eight_bit, false);
+                                 if (r < 0) {
+                                         if (flags & EXTRACT_CUNESCAPE_RELAX) {
+                                                 s[sz++] = '\\';
+diff --git a/src/libsystemd-network/dhcp6-internal.h b/src/libsystemd-network/dhcp6-internal.h
+index 157fc0aadd..17b14e819a 100644
+--- a/src/libsystemd-network/dhcp6-internal.h
++++ b/src/libsystemd-network/dhcp6-internal.h
+@@ -11,9 +11,21 @@
+ #include "sd-event.h"
+ 
+ #include "list.h"
++#include "hashmap.h"
+ #include "macro.h"
+ #include "sparse-endian.h"
+ 
++typedef struct sd_dhcp6_option {
++        unsigned n_ref;
++        uint32_t enterprise_identifier;
++
++        uint16_t option;
++        void *data;
++        size_t length;
++} sd_dhcp6_option;
++
++extern const struct hash_ops dhcp6_option_hash_ops;
++
+ /* Common option header */
+ typedef struct DHCP6Option {
+         be16_t code;
+@@ -87,6 +99,7 @@ int dhcp6_option_append(uint8_t **buf, size_t *buflen, uint16_t code,
+ int dhcp6_option_append_ia(uint8_t **buf, size_t *buflen, const DHCP6IA *ia);
+ int dhcp6_option_append_pd(uint8_t *buf, size_t len, const DHCP6IA *pd);
+ int dhcp6_option_append_fqdn(uint8_t **buf, size_t *buflen, const char *fqdn);
++int dhcp6_option_append_vendor_option(uint8_t **buf, size_t *buflen, OrderedHashmap *vendor_options);
+ int dhcp6_option_parse(uint8_t **buf, size_t *buflen, uint16_t *optcode,
+                        size_t *optlen, uint8_t **optvalue);
+ int dhcp6_option_parse_status(DHCP6Option *option, size_t len);
+diff --git a/src/libsystemd-network/dhcp6-option.c b/src/libsystemd-network/dhcp6-option.c
+index a2aac9a793..cfa9f97cf1 100644
+--- a/src/libsystemd-network/dhcp6-option.c
++++ b/src/libsystemd-network/dhcp6-option.c
+@@ -79,6 +79,39 @@ int dhcp6_option_append(uint8_t **buf, size_t *buflen, uint16_t code,
+         return 0;
+ }
+ 
++int dhcp6_option_append_vendor_option(uint8_t **buf, size_t *buflen, OrderedHashmap *vendor_options) {
++        sd_dhcp6_option *options;
++        Iterator i;
++        int r;
++
++        assert(buf);
++        assert(*buf);
++        assert(buflen);
++        assert(vendor_options);
++
++        ORDERED_HASHMAP_FOREACH(options, vendor_options, i) {
++                _cleanup_free_ uint8_t *p = NULL;
++                size_t total;
++
++                total = 4 + 2 + 2 + options->length;
++
++                p = malloc(total);
++                if (!p)
++                        return -ENOMEM;
++
++                unaligned_write_be32(p, options->enterprise_identifier);
++                unaligned_write_be16(p + 4, options->option);
++                unaligned_write_be16(p + 6, options->length);
++                memcpy(p + 8, options->data, options->length);
++
++                r = dhcp6_option_append(buf, buflen, SD_DHCP6_OPTION_VENDOR_OPTS, total, p);
++                if (r < 0)
++                        return r;
++        }
++
++        return 0;
++}
++
+ int dhcp6_option_append_ia(uint8_t **buf, size_t *buflen, const DHCP6IA *ia) {
+         uint16_t len;
+         uint8_t *ia_hdr;
+@@ -590,3 +623,44 @@ int dhcp6_option_parse_domainname(const uint8_t *optval, uint16_t optlen, char *
+ 
+         return idx;
+ }
++
++static sd_dhcp6_option* dhcp6_option_free(sd_dhcp6_option *i) {
++        if (!i)
++                return NULL;
++
++        free(i->data);
++        return mfree(i);
++}
++
++int sd_dhcp6_option_new(uint16_t option, const void *data, size_t length, uint32_t enterprise_identifier, sd_dhcp6_option **ret) {
++        assert_return(ret, -EINVAL);
++        assert_return(length == 0 || data, -EINVAL);
++
++        _cleanup_free_ void *q = memdup(data, length);
++        if (!q)
++                return -ENOMEM;
++
++        sd_dhcp6_option *p = new(sd_dhcp6_option, 1);
++        if (!p)
++                return -ENOMEM;
++
++        *p = (sd_dhcp6_option) {
++                .n_ref = 1,
++                .option = option,
++                .enterprise_identifier = enterprise_identifier,
++                .length = length,
++                .data = TAKE_PTR(q),
++        };
++
++        *ret = p;
++        return 0;
++}
++
++DEFINE_TRIVIAL_REF_UNREF_FUNC(sd_dhcp6_option, sd_dhcp6_option, dhcp6_option_free);
++DEFINE_HASH_OPS_WITH_VALUE_DESTRUCTOR(
++                dhcp6_option_hash_ops,
++                void,
++                trivial_hash_func,
++                trivial_compare_func,
++                sd_dhcp6_option,
++                sd_dhcp6_option_unref);
+diff --git a/src/libsystemd-network/sd-dhcp6-client.c b/src/libsystemd-network/sd-dhcp6-client.c
+index 593ffd1b64..d5ad778dd9 100644
+--- a/src/libsystemd-network/sd-dhcp6-client.c
++++ b/src/libsystemd-network/sd-dhcp6-client.c
+@@ -70,6 +70,7 @@ struct sd_dhcp6_client {
+         void *userdata;
+         struct duid duid;
+         size_t duid_len;
++        OrderedHashmap *vendor_options;
+ };
+ 
+ static const uint16_t default_req_opts[] = {
+@@ -181,6 +182,25 @@ int sd_dhcp6_client_set_mac(
+         return 0;
+ }
+ 
++int sd_dhcp6_client_add_vendor_option(sd_dhcp6_client *client, sd_dhcp6_option *v) {
++        int r;
++
++        assert_return(client, -EINVAL);
++        assert_return(v, -EINVAL);
++
++        r = ordered_hashmap_ensure_allocated(&client->vendor_options, &dhcp6_option_hash_ops);
++        if (r < 0)
++                return r;
++
++        r = ordered_hashmap_put(client->vendor_options, v, v);
++        if (r < 0)
++                return r;
++
++        sd_dhcp6_option_ref(v);
++
++        return 1;
++}
++
+ static int client_ensure_duid(sd_dhcp6_client *client) {
+         if (client->duid_len != 0)
+                 return 0;
+@@ -485,6 +505,13 @@ static int client_send_message(sd_dhcp6_client *client, usec_t time_now) {
+                                 return r;
+                 }
+ 
++                if (!ordered_hashmap_isempty(client->vendor_options)) {
++                        r = dhcp6_option_append_vendor_option(&opt, &optlen,
++                                                       client->vendor_options);
++                        if (r < 0)
++                                return r;
++                }
++
+                 if (FLAGS_SET(client->request, DHCP6_REQUEST_IA_PD)) {
+                         r = dhcp6_option_append_pd(opt, optlen, &client->ia_pd);
+                         if (r < 0)
+@@ -523,6 +550,13 @@ static int client_send_message(sd_dhcp6_client *client, usec_t time_now) {
+                                 return r;
+                 }
+ 
++                if (!ordered_hashmap_isempty(client->vendor_options)) {
++                        r = dhcp6_option_append_vendor_option(&opt, &optlen,
++                                                       client->vendor_options);
++                        if (r < 0)
++                                return r;
++                }
++
+                 if (FLAGS_SET(client->request, DHCP6_REQUEST_IA_PD)) {
+                         r = dhcp6_option_append_pd(opt, optlen, &client->lease->pd);
+                         if (r < 0)
+@@ -549,6 +583,13 @@ static int client_send_message(sd_dhcp6_client *client, usec_t time_now) {
+                                 return r;
+                 }
+ 
++                if (!ordered_hashmap_isempty(client->vendor_options)) {
++                        r = dhcp6_option_append_vendor_option(&opt, &optlen,
++                                                       client->vendor_options);
++                        if (r < 0)
++                                return r;
++                }
++
+                 if (FLAGS_SET(client->request, DHCP6_REQUEST_IA_PD)) {
+                         r = dhcp6_option_append_pd(opt, optlen, &client->lease->pd);
+                         if (r < 0)
+@@ -1476,6 +1517,9 @@ static sd_dhcp6_client *dhcp6_client_free(sd_dhcp6_client *client) {
+ 
+         free(client->req_opts);
+         free(client->fqdn);
++
++        ordered_hashmap_free(client->vendor_options);
++
+         return mfree(client);
+ }
+ 
+diff --git a/src/network/meson.build b/src/network/meson.build
+index 8fe4854424..ac8512a432 100644
+--- a/src/network/meson.build
++++ b/src/network/meson.build
+@@ -47,6 +47,7 @@ sources = files('''
+         networkd-brvlan.h
+         networkd-conf.c
+         networkd-conf.h
++        networkd-dhcp-common.c
+         networkd-dhcp4.c
+         networkd-dhcp6.c
+         networkd-fdb.c
+diff --git a/src/network/networkd-dhcp-common.c b/src/network/networkd-dhcp-common.c
+new file mode 100644
+index 0000000000..78ddb835d7
+--- /dev/null
++++ b/src/network/networkd-dhcp-common.c
+@@ -0,0 +1,234 @@
++/* SPDX-License-Identifier: LGPL-2.1+ */
++
++#include "dhcp-internal.h"
++#include "dhcp6-internal.h"
++#include "escape.h"
++#include "in-addr-util.h"
++#include "networkd-dhcp-common.h"
++#include "networkd-network.h"
++#include "parse-util.h"
++#include "string-table.h"
++#include "strv.h"
++
++int config_parse_dhcp_send_option(
++                const char *unit,
++                const char *filename,
++                unsigned line,
++                const char *section,
++                unsigned section_line,
++                const char *lvalue,
++                int ltype,
++                const char *rvalue,
++                void *data,
++                void *userdata) {
++
++        _cleanup_(sd_dhcp6_option_unrefp) sd_dhcp6_option *opt6 = NULL, *old6 = NULL;
++        uint32_t uint32_data, enterprise_identifier = 0;
++        _cleanup_free_ char *word = NULL, *q = NULL;
++        OrderedHashmap **options = data;
++        uint16_t u16, uint16_data;
++        union in_addr_union addr;
++        DHCPOptionDataType type;
++        uint8_t u8, uint8_data;
++        const void *udata;
++        const char *p;
++        ssize_t sz;
++        int r;
++
++        assert(filename);
++        assert(lvalue);
++        assert(rvalue);
++        assert(data);
++
++        if (isempty(rvalue)) {
++                *options = ordered_hashmap_free(*options);
++                return 0;
++        }
++
++        p = rvalue;
++        if (ltype == AF_INET6 && streq(lvalue, "SendVendorOption")) {
++                r = extract_first_word(&p, &word, ":", 0);
++                if (r == -ENOMEM)
++                        return log_oom();
++                if (r <= 0 || isempty(p)) {
++                        log_syntax(unit, LOG_ERR, filename, line, r,
++                                   "Invalid DHCP option, ignoring assignment: %s", rvalue);
++                        return 0;
++                }
++
++                r = safe_atou32(word, &enterprise_identifier);
++                if (r < 0) {
++                        log_syntax(unit, LOG_ERR, filename, line, r,
++                                   "Failed to parse DHCPv6 enterprise identifier data, ignoring assignment: %s", p);
++                        return 0;
++                }
++                word = mfree(word);
++        }
++
++        r = extract_first_word(&p, &word, ":", 0);
++        if (r == -ENOMEM)
++                return log_oom();
++        if (r <= 0 || isempty(p)) {
++                log_syntax(unit, LOG_ERR, filename, line, r,
++                           "Invalid DHCP option, ignoring assignment: %s", rvalue);
++                return 0;
++        }
++
++        if (ltype == AF_INET6) {
++                r = safe_atou16(word, &u16);
++                if (r < 0) {
++                        log_syntax(unit, LOG_ERR, filename, line, r,
++                                   "Invalid DHCP option, ignoring assignment: %s", rvalue);
++                         return 0;
++                }
++                if (u16 < 1 || u16 >= UINT16_MAX) {
++                        log_syntax(unit, LOG_ERR, filename, line, 0,
++                                   "Invalid DHCP option, valid range is 1-65535, ignoring assignment: %s", rvalue);
++                        return 0;
++                }
++        } else {
++                r = safe_atou8(word, &u8);
++                if (r < 0) {
++                        log_syntax(unit, LOG_ERR, filename, line, r,
++                                   "Invalid DHCP option, ignoring assignment: %s", rvalue);
++                         return 0;
++                }
++                if (u8 < 1 || u8 >= UINT8_MAX) {
++                        log_syntax(unit, LOG_ERR, filename, line, 0,
++                                   "Invalid DHCP option, valid range is 1-254, ignoring assignment: %s", rvalue);
++                        return 0;
++                }
++        }
++
++        word = mfree(word);
++        r = extract_first_word(&p, &word, ":", 0);
++        if (r == -ENOMEM)
++                return log_oom();
++        if (r <= 0 || isempty(p)) {
++                log_syntax(unit, LOG_ERR, filename, line, r,
++                           "Invalid DHCP option, ignoring assignment: %s", rvalue);
++                return 0;
++        }
++
++        type = dhcp_option_data_type_from_string(word);
++        if (type < 0) {
++                log_syntax(unit, LOG_ERR, filename, line, 0,
++                           "Invalid DHCP option data type, ignoring assignment: %s", p);
++                return 0;
++        }
++
++        switch(type) {
++        case DHCP_OPTION_DATA_UINT8:{
++                r = safe_atou8(p, &uint8_data);
++                if (r < 0) {
++                        log_syntax(unit, LOG_ERR, filename, line, r,
++                                   "Failed to parse DHCP uint8 data, ignoring assignment: %s", p);
++                        return 0;
++                }
++
++                udata = &uint8_data;
++                sz = sizeof(uint8_t);
++                break;
++        }
++        case DHCP_OPTION_DATA_UINT16:{
++                r = safe_atou16(p, &uint16_data);
++                if (r < 0) {
++                        log_syntax(unit, LOG_ERR, filename, line, r,
++                                   "Failed to parse DHCP uint16 data, ignoring assignment: %s", p);
++                        return 0;
++                }
++
++                udata = &uint16_data;
++                sz = sizeof(uint16_t);
++                break;
++        }
++        case DHCP_OPTION_DATA_UINT32: {
++                r = safe_atou32(p, &uint32_data);
++                if (r < 0) {
++                        log_syntax(unit, LOG_ERR, filename, line, r,
++                                   "Failed to parse DHCP uint32 data, ignoring assignment: %s", p);
++                        return 0;
++                }
++
++                udata = &uint32_data;
++                sz = sizeof(uint32_t);
++
++                break;
++        }
++        case DHCP_OPTION_DATA_IPV4ADDRESS: {
++                r = in_addr_from_string(AF_INET, p, &addr);
++                if (r < 0) {
++                        log_syntax(unit, LOG_ERR, filename, line, r,
++                                   "Failed to parse DHCP ipv4address data, ignoring assignment: %s", p);
++                        return 0;
++                }
++
++                udata = &addr.in;
++                sz = sizeof(addr.in.s_addr);
++                break;
++        }
++        case DHCP_OPTION_DATA_IPV6ADDRESS: {
++                r = in_addr_from_string(AF_INET6, p, &addr);
++                if (r < 0) {
++                        log_syntax(unit, LOG_ERR, filename, line, r,
++                                   "Failed to parse DHCP ipv6address data, ignoring assignment: %s", p);
++                        return 0;
++                }
++
++                udata = &addr.in6;
++                sz = sizeof(addr.in6.s6_addr);
++                break;
++        }
++        case DHCP_OPTION_DATA_STRING:
++                sz = cunescape(p, UNESCAPE_ACCEPT_NUL, &q);
++                if (sz < 0) {
++                        log_syntax(unit, LOG_ERR, filename, line, sz,
++                                   "Failed to decode DHCP option data, ignoring assignment: %s", p);
++                }
++
++                udata = q;
++                break;
++        default:
++                return -EINVAL;
++        }
++
++        if (ltype == AF_INET6) {
++                r = sd_dhcp6_option_new(u16, udata, sz, enterprise_identifier, &opt6);
++                if (r < 0) {
++                        log_syntax(unit, LOG_ERR, filename, line, r,
++                                   "Failed to store DHCP option '%s', ignoring assignment: %m", rvalue);
++                        return 0;
++                }
++
++                r = ordered_hashmap_ensure_allocated(options, &dhcp6_option_hash_ops);
++                if (r < 0)
++                        return log_oom();
++
++                /* Overwrite existing option */
++                old6 = ordered_hashmap_get(*options, UINT_TO_PTR(u16));
++                r = ordered_hashmap_replace(*options, UINT_TO_PTR(u16), opt6);
++                if (r < 0) {
++                        log_syntax(unit, LOG_ERR, filename, line, r,
++                                   "Failed to store DHCP option '%s', ignoring assignment: %m", rvalue);
++                        return 0;
++                }
++                TAKE_PTR(opt6);
++        } else {
++                /* XXX Backported without support for IPv4 vendor options. */
++                log_syntax(unit, LOG_ERR, filename, line, r,
++                    "Failed to store DHCP option '%s', ignoring assignment: %m", rvalue);
++                return 0;
++        }
++        return 0;
++}
++
++static const char * const dhcp_option_data_type_table[_DHCP_OPTION_DATA_MAX] = {
++        [DHCP_OPTION_DATA_UINT8]       = "uint8",
++        [DHCP_OPTION_DATA_UINT16]      = "uint16",
++        [DHCP_OPTION_DATA_UINT32]      = "uint32",
++        [DHCP_OPTION_DATA_STRING]      = "string",
++        [DHCP_OPTION_DATA_IPV4ADDRESS] = "ipv4address",
++        [DHCP_OPTION_DATA_IPV6ADDRESS] = "ipv6address",
++};
++
++DEFINE_STRING_TABLE_LOOKUP(dhcp_option_data_type, DHCPOptionDataType);
+diff --git a/src/network/networkd-dhcp-common.h b/src/network/networkd-dhcp-common.h
+new file mode 100644
+index 0000000000..deddfbbbb0
+--- /dev/null
++++ b/src/network/networkd-dhcp-common.h
+@@ -0,0 +1,22 @@
++/* SPDX-License-Identifier: LGPL-2.1+ */
++#pragma once
++
++#include "conf-parser.h"
++#include "dhcp-identifier.h"
++#include "time-util.h"
++
++typedef enum DHCPOptionDataType {
++        DHCP_OPTION_DATA_UINT8,
++        DHCP_OPTION_DATA_UINT16,
++        DHCP_OPTION_DATA_UINT32,
++        DHCP_OPTION_DATA_STRING,
++        DHCP_OPTION_DATA_IPV4ADDRESS,
++        DHCP_OPTION_DATA_IPV6ADDRESS,
++        _DHCP_OPTION_DATA_MAX,
++        _DHCP_OPTION_DATA_INVALID,
++} DHCPOptionDataType;
++
++const char *dhcp_option_data_type_to_string(DHCPOptionDataType d) _const_;
++DHCPOptionDataType dhcp_option_data_type_from_string(const char *d) _pure_;
++
++CONFIG_PARSER_PROTOTYPE(config_parse_dhcp_send_option);
+diff --git a/src/network/networkd-dhcp6.c b/src/network/networkd-dhcp6.c
+index c1fba03f9f..05fd694be2 100644
+--- a/src/network/networkd-dhcp6.c
++++ b/src/network/networkd-dhcp6.c
+@@ -630,7 +630,9 @@ static int dhcp6_set_hostname(sd_dhcp6_client *client, Link *link) {
+ 
+ int dhcp6_configure(Link *link) {
+         _cleanup_(sd_dhcp6_client_unrefp) sd_dhcp6_client *client = NULL;
++        sd_dhcp6_option *vendor_option;
+         const DUID *duid;
++        Iterator i;
+         int r;
+ 
+         assert(link);
+@@ -686,6 +688,14 @@ int dhcp6_configure(Link *link) {
+                         return log_link_error_errno(link, r, "DHCP6 CLIENT: Failed to set request flag for rapid commit: %m");
+         }
+ 
++        ORDERED_HASHMAP_FOREACH(vendor_option, link->network->dhcp6_client_send_vendor_options, i) {
++                r = sd_dhcp6_client_add_vendor_option(client, vendor_option);
++                if (r == -EEXIST)
++                        continue;
++                if (r < 0)
++                        return log_link_error_errno(link, r, "DHCP6 CLIENT: Failed to set vendor option: %m");
++        }
++
+         r = sd_dhcp6_client_set_callback(client, dhcp6_handler, link);
+         if (r < 0)
+                 return log_link_error_errno(link, r, "DHCP6 CLIENT: Failed to set callback: %m");
+diff --git a/src/network/networkd-network-gperf.gperf b/src/network/networkd-network-gperf.gperf
+index 5d8aede593..54a3afe9d1 100644
+--- a/src/network/networkd-network-gperf.gperf
++++ b/src/network/networkd-network-gperf.gperf
+@@ -5,6 +5,7 @@ _Pragma("GCC diagnostic ignored \"-Wimplicit-fallthrough\"")
+ #include <stddef.h>
+ #include "conf-parser.h"
+ #include "network-internal.h"
++#include "networkd-dhcp-common.h"
+ #include "networkd-conf.h"
+ #include "networkd-network.h"
+ #include "vlan-util.h"
+@@ -199,3 +200,4 @@ DHCPv4.UseHostname,                     config_parse_bool,
+ DHCP.UseDomainName,                     config_parse_dhcp_use_domains,                  0,                             offsetof(Network, dhcp_use_domains)
+ DHCPv4.UseDomainName,                   config_parse_dhcp_use_domains,                  0,                             offsetof(Network, dhcp_use_domains)
+ DHCPv4.CriticalConnection,              config_parse_bool,                              0,                             offsetof(Network, dhcp_critical)
++DHCPv6.SendVendorOption,                config_parse_dhcp_send_option,                  AF_INET6,                      offsetof(Network, dhcp6_client_send_vendor_options)
+diff --git a/src/network/networkd-network.c b/src/network/networkd-network.c
+index 12344ec695..9c75b4dff3 100644
+--- a/src/network/networkd-network.c
++++ b/src/network/networkd-network.c
+@@ -228,7 +228,8 @@ int network_load_one(Manager *manager, const char *filename) {
+                               "BridgeVLAN\0"
+                               "IPv6PrefixDelegation\0"
+                               "IPv6Prefix\0"
+-                              "CAN\0",
++                              "CAN\0"
++                              "DHCPv6\0", /* FB: backported */
+                               config_item_perf_lookup, network_network_gperf_lookup,
+                               CONFIG_PARSE_WARN, network);
+         if (r < 0) {
+@@ -402,6 +403,8 @@ void network_free(Network *network) {
+ 
+         set_free_free(network->dnssec_negative_trust_anchors);
+ 
++        ordered_hashmap_free(network->dhcp6_client_send_vendor_options); 
++
+         free(network);
+ }
+ 
+diff --git a/src/network/networkd-network.h b/src/network/networkd-network.h
+index f6e62cdd79..f70c5f4e33 100644
+--- a/src/network/networkd-network.h
++++ b/src/network/networkd-network.h
+@@ -142,6 +142,7 @@ struct Network {
+         bool dhcp_use_hostname;
+         bool dhcp_route_table_set;
+         DHCPUseDomains dhcp_use_domains;
++        OrderedHashmap *dhcp6_client_send_vendor_options;
+ 
+         /* DHCP Server Support */
+         bool dhcp_server;
+diff --git a/src/systemd/sd-dhcp6-client.h b/src/systemd/sd-dhcp6-client.h
+index 43d38f5c7d..492a304edd 100644
+--- a/src/systemd/sd-dhcp6-client.h
++++ b/src/systemd/sd-dhcp6-client.h
+@@ -24,6 +24,7 @@
+ #include <sys/types.h>
+ 
+ #include "sd-dhcp6-lease.h"
++#include "sd-dhcp6-option.h"
+ #include "sd-event.h"
+ 
+ #include "_sd-common.h"
+@@ -133,6 +134,9 @@ int sd_dhcp6_client_get_lease(
+                 sd_dhcp6_client *client,
+                 sd_dhcp6_lease **ret);
+ 
++int sd_dhcp6_client_add_option(sd_dhcp6_client *client, sd_dhcp6_option *v);
++int sd_dhcp6_client_add_vendor_option(sd_dhcp6_client *client, sd_dhcp6_option *v);
++
+ int sd_dhcp6_client_stop(sd_dhcp6_client *client);
+ int sd_dhcp6_client_start(sd_dhcp6_client *client);
+ int sd_dhcp6_client_is_running(sd_dhcp6_client *client);
+diff --git a/src/systemd/sd-dhcp6-option.h b/src/systemd/sd-dhcp6-option.h
+new file mode 100644
+index 0000000000..88a4986315
+--- /dev/null
++++ b/src/systemd/sd-dhcp6-option.h
+@@ -0,0 +1,37 @@
++/* SPDX-License-Identifier: LGPL-2.1+ */
++#ifndef foosddhcp6optionhfoo
++#define foosddhcp6optionhfoo
++
++/***
++  systemd is free software; you can redistribute it and/or modify it
++  under the terms of the GNU Lesser General Public License as published by
++  the Free Software Foundation; either version 2.1 of the License, or
++  (at your option) any later version.
++
++  systemd is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  Lesser General Public License for more details.
++
++  You should have received a copy of the GNU Lesser General Public License
++  along with systemd; If not, see <http://www.gnu.org/licenses/>.
++***/
++
++#include <inttypes.h>
++#include <sys/types.h>
++
++#include "_sd-common.h"
++
++_SD_BEGIN_DECLARATIONS;
++
++typedef struct sd_dhcp6_option sd_dhcp6_option;
++
++int sd_dhcp6_option_new(uint16_t option, const void *data, size_t length, uint32_t enterprise_identifier, sd_dhcp6_option **ret);
++sd_dhcp6_option *sd_dhcp6_option_ref(sd_dhcp6_option *ra);
++sd_dhcp6_option *sd_dhcp6_option_unref(sd_dhcp6_option *ra);
++
++_SD_DEFINE_POINTER_CLEANUP_FUNC(sd_dhcp6_option, sd_dhcp6_option_unref);
++
++_SD_END_DECLARATIONS;
++
++#endif

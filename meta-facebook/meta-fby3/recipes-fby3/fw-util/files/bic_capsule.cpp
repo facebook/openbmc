@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <chrono>
+#include <sys/stat.h>
 #include "bic_capsule.h"
 #include <openbmc/pal.h>
 #include <openbmc/obmc-i2c.h>
@@ -33,7 +34,77 @@ using namespace std;
 #define BIT_VALUE(list, index) \
            ((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1\
 
-int CapsuleComponent::update(string image) {
+image_info CapsuleComponent::check_image(string image, bool force) {
+  string fru_name = fru();
+  string slot_str = "slot";
+  size_t slot_found = fru_name.find(slot_str);
+  struct stat f_stat;
+
+  image_info image_sts = {"", false};
+
+  if (fw_comp != FW_CPLD_CAPSULE && fw_comp != FW_CPLD_RCVY_CAPSULE) {
+    image_sts.result = true;
+    return image_sts;
+  }
+
+  //create a new tmp file
+  image_sts.new_path = image + "-tmp";
+
+  //open the binary
+  int fd_r = open(image.c_str(), O_RDONLY);
+  if (fd_r < 0) {
+    cerr << "Cannot open " << image << " for reading" << endl;
+    return image_sts;
+  }
+
+  // create a tmp file for writing.
+  int fd_w = open(image_sts.new_path.c_str(), O_WRONLY | O_CREAT, 0666);
+  if (fd_w < 0) {
+    cerr << "Cannot write to " << image_sts.new_path << endl;
+    close(fd_r);
+    return image_sts;
+  }
+
+  if (stat(image.c_str(), &f_stat) == -1) {
+    return image_sts;
+  }
+  long size = (long)f_stat.st_size;
+
+  uint8_t *memblock = new uint8_t [size];//data_size + signed byte
+  uint8_t signed_byte = 0;
+  size_t r_b = read(fd_r, memblock, size);
+  size_t w_b = 0;
+
+  signed_byte = memblock[size - 1] & 0xf;
+  r_b = r_b - 1;  //only write data to tmp file
+
+  w_b = write(fd_w, memblock, r_b);
+
+  //check size
+  if ( r_b != w_b ) {
+    cerr << "Cannot create the tmp file - " << image_sts.new_path << endl;
+    cerr << "Read: " << r_b << " Write: " << w_b << endl;
+    image_sts.result = false;
+  }
+
+  if ( force == false ) {
+    //CPLD is located on class 2(NIC_EXP)
+    if (signed_byte == BICDL && (slot_found != string::npos)) {
+      image_sts.result = true;
+    } else {
+      cout << "image is not a valid CPLD image for " << fru_name << endl;
+    }
+  }
+
+  //release the resource
+  close(fd_r);
+  close(fd_w);
+  delete[] memblock;
+
+  return image_sts;
+}
+
+int CapsuleComponent::bic_update_capsule(string image) {
   int ret;
   uint8_t status;
   uint8_t tbuf[2] = {0}, rbuf[1] = {0};
@@ -260,8 +331,33 @@ int CapsuleComponent::update(string image) {
   return ret;
 }
 
+int CapsuleComponent::update(string image) {
+  int ret;
+  image_info image_sts = check_image(image, false);
+
+  if ( image_sts.result == false ) {
+    remove(image_sts.new_path.c_str());
+    return FW_STATUS_FAILURE;
+  }
+
+  //use the new path
+  image = image_sts.new_path;
+
+  ret = bic_update_capsule(image);
+
+  //remove the tmp file
+  remove(image.c_str());
+  return ret;
+}
+
 int CapsuleComponent::fupdate(string image) {
-  return FW_STATUS_NOT_SUPPORTED;
+  int ret;
+
+  ret = bic_update_capsule(image);
+
+  //remove the tmp file
+  remove(image.c_str());
+  return ret;
 }
 
 int CapsuleComponent::get_pfr_recovery_ver_str(string& s) {

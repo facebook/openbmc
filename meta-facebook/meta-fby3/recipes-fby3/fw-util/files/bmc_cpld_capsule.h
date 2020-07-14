@@ -1,5 +1,6 @@
 #include <string>
 #include "fw-util.h"
+#include "bmc_cpld.h"
 
 using namespace std;
 
@@ -23,6 +24,8 @@ class BmcCpldCapsuleComponent : public Component {
   uint8_t addr;
   private:
     int get_pfr_recovery_ver_str(string& s);
+    image_info check_image(string image, bool force);
+    int bmc_update_capsule(string image);
   public:
     BmcCpldCapsuleComponent(string fru, string comp, uint8_t type, uint8_t _bus, uint8_t _addr)
       : Component(fru, comp), pld_type(type), bus(_bus), addr(_addr) {}

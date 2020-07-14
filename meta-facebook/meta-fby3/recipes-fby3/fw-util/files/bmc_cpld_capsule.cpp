@@ -16,8 +16,92 @@
 
 using namespace std;
 
-int BmcCpldCapsuleComponent::update(string image)
-{
+image_info BmcCpldCapsuleComponent::check_image(string image, bool force) {
+  uint8_t bmc_location = 0;
+  string fru_name = fru();
+  string bmc_str = "bmc";
+  size_t bmc_found = fru_name.find(bmc_str);
+  struct stat f_stat;
+  string comp = component();
+
+  image_info image_sts = {"", false};
+
+ if (comp != "cpld_cap" && comp != "cpld_cap_rcvy") {
+    image_sts.result = true;
+    return image_sts;
+  }
+
+  if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
+    printf("Failed to initialize the fw-util\n");
+    exit(EXIT_FAILURE);
+  }
+
+  //create a new tmp image
+  image_sts.new_path = image + "-tmp";
+
+  //open the binary
+  int fd_r = open(image.c_str(), O_RDONLY);
+  if (fd_r < 0) {
+    cerr << "Cannot open " << image << " for reading" << endl;
+    return image_sts;
+  }
+
+  // create a tmp image for writing.
+  int fd_w = open(image_sts.new_path.c_str(), O_WRONLY | O_CREAT, 0666);
+  if (fd_w < 0) {
+    cerr << "Cannot write to " << image_sts.new_path << endl;
+    close(fd_r);
+    return image_sts;
+  }
+
+  if (stat(image.c_str(), &f_stat) == -1) {
+    return image_sts;
+  }
+  long size = (long)f_stat.st_size;
+
+  uint8_t *memblock = new uint8_t [size];//data_size + signed byte
+  uint8_t signed_byte = 0;
+  size_t r_b = read(fd_r, memblock, size);
+  size_t w_b = 0;
+
+  signed_byte = memblock[size - 1] & 0xf;
+  r_b = r_b - 1;  //only write data to tmp image
+
+  w_b = write(fd_w, memblock, r_b);
+
+  //check size
+  if ( r_b != w_b ) {
+    cerr << "Cannot create the tmp image - " << image_sts.new_path << endl;
+    cerr << "Read: " << r_b << " Write: " << w_b << endl;
+    image_sts.result = false;
+  }
+
+  if ( force == false ) {
+    //CPLD is located on class 2(NIC_EXP)
+    if ( bmc_location == NIC_BMC ) {
+      if ( (signed_byte == NICEXP) && (bmc_found != string::npos) ) {
+        image_sts.result = true;
+      } else {
+        cout << "image is not a valid CPLD image for " << fru_name << endl;
+      }
+    } else if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+      if ( (signed_byte == BICBB) && (bmc_found != string::npos) ) {
+        image_sts.result = true;
+      } else {
+        cout << "image is not a valid CPLD image for " << fru_name << endl;
+      }
+    }
+  }
+
+  //release the resource
+  close(fd_r);
+  close(fd_w);
+  delete[] memblock;
+
+  return image_sts;
+}
+
+int BmcCpldCapsuleComponent::bmc_update_capsule(string image) {
   FILE *fp;
   int i2cfd = 0;
   int ret = 0;
@@ -28,16 +112,9 @@ int BmcCpldCapsuleComponent::update(string image)
   int pfr_adress = CPLD_INTENT_CTRL_ADDR;
   int mtd_no;
   char rbuf[256], mtd_name[32], dev[16] = {0}, cmd[256] = {0};
-  char *file;
   char path[128];
   string bmc_location_str;
   string comp = component();
-
-  file = (char *)image.c_str();
-  if (access(file, F_OK) == -1) {
-    printf("Missing firmware file\n");
-    return -1;
-  }
 
   if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
     printf("Failed to initialize the fw-util\n");
@@ -104,22 +181,22 @@ int BmcCpldCapsuleComponent::update(string image)
 
     if (comp == "bmc_cap_rcvy") {
       tbuf[1] = BMC_INTENT_RCVY_VALUE;
-      syslog(LOG_CRIT, "Updating BMC Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), file);
+      syslog(LOG_CRIT, "Updating BMC Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), image.c_str());
     } else {
       tbuf[1] = BMC_INTENT_VALUE;
-      syslog(LOG_CRIT, "Updating BMC Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), file);
+      syslog(LOG_CRIT, "Updating BMC Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), image.c_str());
     }
 
-    snprintf(cmd, sizeof(cmd), "/usr/sbin/flashcp -v %s %s", file, dev);
+    snprintf(cmd, sizeof(cmd), "/usr/sbin/flashcp -v %s %s", image.c_str(), dev);
     if (system(cmd) != 0) {
         syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
         return FW_STATUS_FAILURE;
     }
 
     if (comp == "bmc_cap_rcvy") {
-      syslog(LOG_CRIT, "Updated BMC Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), file);
+      syslog(LOG_CRIT, "Updated BMC Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), image.c_str());
     } else {
-      syslog(LOG_CRIT, "Updated BMC Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), file);
+      syslog(LOG_CRIT, "Updated BMC Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), image.c_str());
     }
   } else if (comp == "cpld_cap" || comp == "cpld_cap_rcvy") {
     if ((fp = fopen("/proc/mtd", "r"))) {
@@ -140,22 +217,22 @@ int BmcCpldCapsuleComponent::update(string image)
 
     if (comp == "cpld_cap_rcvy") {
       tbuf[1] = CPLD_INTENT_RCVY_VALUE;
-      syslog(LOG_CRIT, "Updating CPLD Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), file);
+      syslog(LOG_CRIT, "Updating CPLD Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), image.c_str());
     } else {
       tbuf[1] = CPLD_INTENT_VALUE;
-      syslog(LOG_CRIT, "Updating CPLD Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), file);
+      syslog(LOG_CRIT, "Updating CPLD Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), image.c_str());
     }
 
-    snprintf(cmd, sizeof(cmd), "/usr/sbin/flashcp -v %s %s", file, dev);
+    snprintf(cmd, sizeof(cmd), "/usr/sbin/flashcp -v %s %s", image.c_str(), dev);
     if (system(cmd) != 0) {
         syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
         return FW_STATUS_FAILURE;
     }
 
     if (comp == "cpld_cap_rcvy") {
-      syslog(LOG_CRIT, "Updated CPLD Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), file);
+      syslog(LOG_CRIT, "Updated CPLD Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), image.c_str());
     } else {
-      syslog(LOG_CRIT, "Updated CPLD Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), file);
+      syslog(LOG_CRIT, "Updated CPLD Capsule, Target to Active Region on %s. File: %s", bmc_location_str.c_str(), image.c_str());
     }
   } else {
     return FW_STATUS_NOT_SUPPORTED;
@@ -196,9 +273,33 @@ int BmcCpldCapsuleComponent::update(string image)
   return 0;
 }
 
-int BmcCpldCapsuleComponent::fupdate(string image) 
-{
-  return FW_STATUS_NOT_SUPPORTED;
+int BmcCpldCapsuleComponent::update(string image) {
+  int ret;
+  image_info image_sts = check_image(image, false);
+
+  if ( image_sts.result == false ) {
+    remove(image_sts.new_path.c_str());
+    return FW_STATUS_FAILURE;
+  }
+
+  //use the new path
+  image = image_sts.new_path;
+
+  ret = bmc_update_capsule(image);
+
+  //remove the tmp image
+  remove(image.c_str());
+  return ret;
+}
+
+int BmcCpldCapsuleComponent::fupdate(string image) {
+  int ret;
+
+  ret = bmc_update_capsule(image);
+
+  //remove the tmp image
+  remove(image.c_str());
+  return ret;
 }
 
 int BmcCpldCapsuleComponent::get_pfr_recovery_ver_str(string& s) {

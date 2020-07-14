@@ -98,7 +98,7 @@ func TestGetRegexMap(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := getRegexSubexpMap(tc.regEx, tc.input)
+			got, err := GetRegexSubexpMap(tc.regEx, tc.input)
 
 			tests.CompareTestErrors(tc.wantErr, err, t)
 			if !reflect.DeepEqual(tc.want, got) {

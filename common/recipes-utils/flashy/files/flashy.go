@@ -24,7 +24,7 @@ import (
 	"os"
 
 	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/install"
-	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/utils"
+	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/lib/utils"
 )
 
 func main() {

@@ -34,8 +34,8 @@ func init() {
 	if !ok {
 		panic("No caller information")
 	}
-	// go up two paths, as this file is two directories deep
-	SourceRootDir = filepath.Dir(filepath.Dir(filename))
+	// go up three paths, as this file is three directories deep
+	SourceRootDir = filepath.Dir(filepath.Dir(filepath.Dir(filename)))
 }
 
 func GetExecutablePath() string {

@@ -22,8 +22,8 @@ package common
 import (
 	"testing"
 
+	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/lib/utils"
 	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/tests"
-	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/utils"
 	"github.com/pkg/errors"
 )
 

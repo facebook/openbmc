@@ -17,19 +17,25 @@
  * Boston, MA 02110-1301 USA
  */
 
-package flash_procedure
+package devices
 
-import (
-	"log"
-
-	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/lib/utils"
-)
-
-func init() {
-	utils.RegisterStepEntryPoint(flashYosemite3)
+type FlashDevice struct {
+	Type      string
+	Specifier string
+	FilePath  string
+	FileSize  uint64
+	Offset    uint64
 }
 
-func flashYosemite3(imageFilePath, deviceID string) utils.StepExitError {
-	log.Printf("Flashing yosemite3")
-	return nil
+// takes in the specifier and returns the FlashDevice
+type FlashDeviceGetter = func(string) (*FlashDevice, error)
+
+// maps from the type of the device to the getter function
+// that gets & validates the information of the flash storage device
+// populated by each storage device in ./devices/ via the RegisterFlashDevice
+// function
+var FlashDeviceGetterMap map[string]FlashDeviceGetter = map[string]FlashDeviceGetter{}
+
+func registerFlashDevice(deviceType string, getter FlashDeviceGetter) {
+	FlashDeviceGetterMap[deviceType] = getter
 }

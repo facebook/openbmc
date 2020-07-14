@@ -23,7 +23,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/utils"
+	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/lib/utils"
 )
 
 // used to test and compare errors in testing

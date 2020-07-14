@@ -22,7 +22,7 @@ package flash_procedure
 import (
 	"log"
 
-	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/utils"
+	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/lib/utils"
 )
 
 func init() {

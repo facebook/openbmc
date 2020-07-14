@@ -24,7 +24,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/utils"
+	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/lib/utils"
 
 	// all entry point packages must be included to successfully run install
 	_ "github.com/facebook/openbmc/common/recipes-utils/flashy/files/checks_and_remediations/common"

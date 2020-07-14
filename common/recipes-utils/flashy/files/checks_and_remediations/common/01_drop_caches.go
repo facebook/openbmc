@@ -20,7 +20,7 @@
 package common
 
 import (
-	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/utils"
+	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/lib/utils"
 	"github.com/pkg/errors"
 )
 

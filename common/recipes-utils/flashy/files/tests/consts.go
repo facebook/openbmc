@@ -21,7 +21,7 @@
 package tests
 
 import (
-	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/utils"
+	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/lib/utils"
 )
 
 const ExampleWedge100MemInfo = `MemTotal:         246900 kB
@@ -286,3 +286,11 @@ var ExampleNoRebootHealthdConfig = utils.HealthdConfig{
 		},
 	},
 }
+
+const ExampleWedge100ProcMtdFile = `dev:    size   erasesize  name
+mtd0: 00060000 00010000 "u-boot"
+mtd1: 00020000 00010000 "env"
+mtd2: 00400000 00010000 "kernel"
+mtd3: 01780000 00010000 "rootfs"
+mtd4: 00400000 00010000 "data0"
+mtd5: 02000000 00010000 "flash0"`

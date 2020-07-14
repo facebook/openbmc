@@ -50,7 +50,7 @@ func StringFind(val string, arr []string) int {
 //      inputString: "mtd:flash0"
 // -> map[string]string { "type": "mtd", "specifier": "flash0" }
 // return error if match was not successful
-func getRegexSubexpMap(regEx, inputString string) (map[string]string, error) {
+func GetRegexSubexpMap(regEx, inputString string) (map[string]string, error) {
 	m := make(map[string]string)
 
 	reg, err := regexp.Compile(regEx)

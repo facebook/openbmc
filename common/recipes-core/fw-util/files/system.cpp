@@ -17,6 +17,8 @@
 
 using namespace std;
 
+#ifndef __TEST__
+
 int System::runcmd(const string &cmd)
 {
 #ifdef DEBUG
@@ -116,3 +118,5 @@ bool System::is_update_ongoing(uint8_t fru_id)
 {
   return pal_is_fw_update_ongoing(fru_id);
 }
+
+#endif

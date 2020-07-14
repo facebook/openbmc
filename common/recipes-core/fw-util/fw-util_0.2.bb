@@ -11,6 +11,7 @@ SRC_URI =+ "file://Makefile \
            file://fw-util.h \
            file://fw-util.cpp \
            file://system.cpp \
+           file://system_mock.cpp \
            file://system_intf.h \
            file://server.h \
            file://server.cpp \
@@ -43,11 +44,29 @@ SRC_URI =+ "file://Makefile \
            file://scheduler.cpp \
           "
 
+SRC_URI += "file://tests/bmc-test.cpp \
+            file://tests/fw-util-test.cpp \
+            "
+
 S = "${WORKDIR}"
+
+inherit ptest
+do_compile_ptest() {
+  make fw-util-test
+  cat <<EOF > ${WORKDIR}/run-ptest
+#!/bin/sh
+/usr/lib/fw-util/ptest/fw-util-test
+EOF
+}
+
+do_install_ptest() {
+  install -D -m 755 fw-util-test ${D}${libdir}/fw-util/ptest/fw-util-test
+}
 
 LDFLAGS =+ " -lpthread -lfdt -lcrypto -lz -lpal -lvbs -ldl -lgpio-ctrl -lkv -lobmc-i2c"
 DEPENDS += " nlohmann-json libpal dtc zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c"
 RDEPENDS_${PN} += " libpal zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c"
+RDEPENDS_${PN}-ptest += "${RDEPENDS_fw-util}"
 
 CXXFLAGS += "\
   ${@bb.utils.contains('MACHINE_FEATURES', 'tpm1', '-DCONFIG_TPM1', '', d)} \
@@ -62,3 +81,4 @@ do_install() {
 
 FILES_${PN} = "${prefix}/bin"
 FILES_${PN} += "${sysconfdir}/image_parts.json"
+FILES_${PN}-ptest = "${libdir}/fw-util/ptest"

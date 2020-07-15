@@ -1085,6 +1085,11 @@ app_master_write_read (unsigned char *request, unsigned char req_len,
       res->cc = CC_INVALID_DATA_FIELD;
       return;
     } else {
+      if ( pal_is_cmd_valid(req->data) ) {
+        res->cc = CC_INVALID_DATA_FIELD;
+        return;
+      }
+
       memcpy(buf, &req->data[3], writeCnt);
       bus_num = ((req->data[0] & 0x7E) >> 1); //extend bit[7:1] for bus ID
       //ret = pal_i2c_write_read(bus_num, req->data[1], buf, writeCnt, res->data, readCnt);

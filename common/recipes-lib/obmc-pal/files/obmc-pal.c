@@ -809,6 +809,12 @@ pal_set_sysfw_ver(uint8_t slot, uint8_t *ver)
   return PAL_EOK;
 }
 
+int __attribute__((weak))
+pal_is_cmd_valid(uint8_t *data)
+{
+  return PAL_EOK;
+}
+
 /*
  *  Default implementation if pal_is_fru_x86 is to always return true
  *  on all FRU, on all platform. This is because all uServers so far are X86.

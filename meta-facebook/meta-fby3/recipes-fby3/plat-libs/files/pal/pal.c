@@ -1191,6 +1191,20 @@ pal_is_slot_server(uint8_t fru)
   return 0;
 }
 
+int
+pal_is_cmd_valid(uint8_t *data)
+{
+  uint8_t bus_num = ((data[0] & 0x7E) >> 1); //extend bit[7:1] for bus ID;
+  uint8_t address = data[1];
+
+  // protect slot1,2,3,4 BIC
+  if ( address == 0x40 && bus_num >= 0 && bus_num <= 3) {
+    return -1;
+  }
+
+  return PAL_EOK;
+}
+
 static int
 pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   int ret = PAL_EOK;

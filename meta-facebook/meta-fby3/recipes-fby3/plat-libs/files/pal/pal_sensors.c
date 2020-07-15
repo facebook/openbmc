@@ -49,6 +49,7 @@ static int read_medusa_val(uint8_t snr_number, float *value);
 static int read_cached_val(uint8_t snr_number, float *value);
 static int read_fan_speed(uint8_t snr_number, float *value);
 static int read_fan_pwm(uint8_t pwm_id, float *value);
+static int read_curr_leakage(uint8_t snr_number, float *value);
 
 static int pal_sdr_init(uint8_t fru);
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
@@ -94,6 +95,7 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_MEDUSA_PWR,
   BMC_SENSOR_MEDUSA_VDELTA,
   BMC_SENSOR_PDB_VDELTA,
+  BMC_SENSOR_CURR_LEAKAGE,
   BMC_SENSOR_FAN_IOUT,
   BMC_SENSOR_NIC_P12V,
   BMC_SENSOR_NIC_IOUT,
@@ -119,6 +121,9 @@ const uint8_t nicexp_sensor_list[] = {
   BMC_SENSOR_P1V15_BMC_STBY,
   BMC_SENSOR_P1V2_BMC_STBY,
   BMC_SENSOR_P2V5_BMC_STBY,
+  BMC_SENSOR_NIC_P12V,
+  BMC_SENSOR_NIC_IOUT,
+  BMC_SENSOR_NIC_PWR,
 };
 
 const uint8_t bic_sensor_list[] = {
@@ -618,7 +623,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
+  {"BMC_SENSOR_CURR_LEAKAGE", 0xCD, read_curr_leakage, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xCD
   {"BMC_SENSOR_PDB_VDELTA", 0xCE, read_cached_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCE
   {"BMC_SENSOR_MEDUSA_VDELTA", 0xCF, read_cached_val, true, {0.5, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCF
 
@@ -647,10 +652,10 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_FAN5_TACH", 0xE5, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE5
   {"BMC_SENSOR_FAN6_TACH", 0xE6, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE6
   {"BMC_SENSOR_FAN7_TACH", 0xE7, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE7
-  {"BMC_SENSOR_PWM0", PWM_0, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xE8
-  {"BMC_SENSOR_PWM1", PWM_1, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xE9
-  {"BMC_SENSOR_PWM2", PWM_2, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xEA
-  {"BMC_SENSOR_PWM3", PWM_3, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xEB
+  {"BMC_SENSOR_PWM0", PWM_0, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xE8
+  {"BMC_SENSOR_PWM1", PWM_1, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xE9
+  {"BMC_SENSOR_PWM2", PWM_2, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xEA
+  {"BMC_SENSOR_PWM3", PWM_3, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xEB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEC
   {"BMC_INLET_TEMP",  TEMP_INLET,  read_temp, true, {50, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xED
   {"BMC_OUTLET_TEMP", TEMP_OUTLET, read_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEE
@@ -693,7 +698,7 @@ size_t bic_1ou_edsff_skip_sensor_cnt = sizeof(bic_1ou_edsff_skip_sensor_list)/si
 
 
 int
-get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt) {
+get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const uint8_t bmc_location, const uint8_t config_status) {
   uint8_t type = 0;
   static uint8_t current_cnt = 0;
 
@@ -701,8 +706,12 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt) {
 
     memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_skip_sensor_list, bic_skip_sensor_cnt);
     current_cnt = bic_skip_sensor_cnt;
-        
-    bic_get_1ou_type(fru, &type); 
+
+    //if 1OU board doesn't exist, use the default 1ou skip list.
+    if ( (bmc_location != NIC_BMC) && (config_status & PRESENT_1OU) == PRESENT_1OU ) {
+      bic_get_1ou_type(fru, &type);
+    }
+
     if (type == EDSFF_1U) {
       memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_1ou_edsff_skip_sensor_list, bic_1ou_edsff_skip_sensor_cnt);
       current_cnt += bic_1ou_edsff_skip_sensor_cnt;
@@ -757,7 +766,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
 
     // 1OU
-    if ( (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ( (config_status == PRESENT_1OU) || (config_status == (PRESENT_1OU + PRESENT_2OU))) ) {
+    if ( (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
       ret = (pal_is_fw_update_ongoing(fru) == false) ? bic_get_1ou_type(fru, &type):bic_get_1ou_type_cache(fru, &type);
       if (type == EDSFF_1U) {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_edsff_sensor_list, bic_1ou_edsff_sensor_cnt);
@@ -769,7 +778,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     }
 
     // 2OU
-    if ( (config_status == PRESENT_2OU) || (config_status == (PRESENT_1OU + PRESENT_2OU)) ) {
+    if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
       memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
       current_cnt += bic_2ou_sensor_cnt;
     }
@@ -1113,6 +1122,69 @@ apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value, uint8_t bmc
   } else {
     syslog(LOG_WARNING, "Failed to apply frontIO correction");
   }
+}
+
+// Calculate curr leakage
+static int
+read_curr_leakage(uint8_t snr_number, float *value) {
+#define CURR_LEAKAGE_THRESH  8.00
+#define MEDUSA_CURR_THRESH  10.00
+  static bool is_issued_sel = false;
+  static bool is_inited = false;
+  static uint8_t config = CONFIG_A;
+  static int retry = MAX_RETRY;
+  float medusa_curr = 0;
+  float bb_hsc_curr = 0;
+  float slot_hsc_iout = 0;
+  float temp_val = 0;
+  int i = 0;
+
+  //try to get the system type. The default config is CONFIG_A.
+  if ( is_inited == false ) {
+    char sys_conf[16] = {0};
+    if ( kv_get("sled_system_conf", sys_conf, NULL, KV_FPERSIST) < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to read sled_system_conf", __func__);
+      return READING_NA;
+    }
+
+    if ( strcmp(sys_conf, "Type_1") == 0 ) config = CONFIG_A;
+    else if ( strcmp(sys_conf, "Type_10") == 0 ) config = CONFIG_B;
+    else if ( strcmp(sys_conf, "Type_15") == 0 ) config = CONFIG_D;
+    else syslog(LOG_WARNING, "%s() Couldn't identiy the system type: %s", __func__, sys_conf);
+
+    syslog(LOG_WARNING, "%s() Get the system type: %s", __func__, sys_conf);
+    is_inited = true;
+  }
+
+  if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_MEDUSA_CURR, &medusa_curr) < 0) return READING_NA;
+  if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_HSC_IOUT, &bb_hsc_curr) < 0) return READING_NA;
+
+  for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
+    //Two slots are present on Config D. Skip slot2 and slot4.
+    if ( (config == CONFIG_D) && (i % 2 == 0) ) continue;
+
+    //If one of slots is failed to read, return READING_NA.
+    if ( sensor_cache_read(i, BIC_SENSOR_HSC_OUTPUT_CUR, &temp_val) < 0) return READING_NA;
+    else slot_hsc_iout += temp_val;
+  }
+
+  *value = (medusa_curr - bb_hsc_curr - slot_hsc_iout) / medusa_curr;
+  *value *= 100;
+  //syslog(LOG_WARNING, "%s() value: %.2f %%, medusa_curr: %.2f, bb_hsc_curr: %.2f, slot_hsc_iout: %.2f", __func__, *value, medusa_curr, bb_hsc_curr, slot_hsc_iout);
+
+  //If curr leakage >= 8% AND medusa_curr >= 10A, issue a SEL.
+  //sensord don't support mutiple conditions to issue the SEL. So, we do it here.
+  if ( is_issued_sel == false && ((*value >= CURR_LEAKAGE_THRESH) && (medusa_curr >= MEDUSA_CURR_THRESH)) ) {
+    syslog(LOG_CRIT, "ASSERT: Upper Critical threshold - raised - FRU: 7, num: 0x%2X "
+        "curr_val: %.2f %%, thresh_val: %.2f %%, snr: BMC_SENSOR_CURR_LEAKAGE", snr_number, *value, CURR_LEAKAGE_THRESH);
+    is_issued_sel = true;
+  } else if ( is_issued_sel == true && ((*value < CURR_LEAKAGE_THRESH) || (medusa_curr < MEDUSA_CURR_THRESH)) ) {
+    syslog(LOG_CRIT, "DEASSERT: Upper Critical threshold - settled - FRU: 7, num: 0x%2X "
+        "curr_val: %.2f %%, thresh_val: %.2f %%, snr: BMC_SENSOR_CURR_LEAKAGE", snr_number, *value, CURR_LEAKAGE_THRESH);
+    is_issued_sel = false;
+  }
+
+  return PAL_EOK;
 }
 
 // Provide the fan pwm to sensor-util
@@ -1548,12 +1620,12 @@ pal_nic_otp_check(float *value, float unr) {
 }
 
 static int
-skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num) {
+skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num, const uint8_t bmc_location, const uint8_t config_status) {
   uint8_t *bic_skip_list;
   int skip_sensor_cnt;
   int i = 0;
   
-  get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt);
+  get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt, bmc_location, config_status);
 
   switch(fru){
     case FRU_SLOT1:
@@ -1573,18 +1645,18 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num) {
 }
 
 static int
-pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t bmc_location){
+pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t bmc_location, const uint8_t config_status){
 #define BIC_SENSOR_READ_NA 0x20
 #define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
   int ret = 0;
-  uint8_t power_status = 0, config_status = 0;
+  uint8_t power_status = 0;
   ipmi_sensor_reading_t sensor = {0};
   sdr_full_t *sdr = NULL;
   char path[128];
   sprintf(path, SLOT_SENSOR_LOCK, fru);
   uint8_t *bic_skip_list;
-  int skip_sensor_cnt;
-  get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt);
+  int skip_sensor_cnt = 0;
+  get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt, bmc_location, config_status);
 
   ret = bic_get_server_power_status(fru, &power_status);
   if (ret < 0) {
@@ -1594,11 +1666,11 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   if (power_status != SERVER_POWER_ON) {
     pwr_off_flag[fru-1] = 1;
     //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);
-    if (skip_bic_sensor_list(fru, sensor_num) < 0) {
+    if (skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) {
       return READING_NA;
     }
   } else if (power_status == SERVER_POWER_ON && pwr_off_flag[fru-1]) {
-    if ((skip_bic_sensor_list(fru, sensor_num) < 0) && (temp_cnt < skip_sensor_cnt)){
+    if ((skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) && (temp_cnt < skip_sensor_cnt)){
       temp_cnt ++;
       return READING_NA;
     }
@@ -1609,41 +1681,26 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     }
   }
 
-  ret = bic_is_m2_exp_prsnt(fru);
-
-  if (ret < 0) {
-    return READING_NA;
-  }
-  config_status = (uint8_t) ret;
-
   ret = access(path, F_OK);
   if(ret == 0) {
     return READING_SKIP;
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-    if ( (config_status == PRESENT_1OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x50 && sensor_num <= 0x7F)) { // 1OU Exp
-      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
-    } else if ( (config_status == PRESENT_2OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x80 && sensor_num <= 0xCA)) { // 2OU Exp
-      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
-    } else if (sensor_num >= 0x0 && sensor_num <= 0x42) {
-      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
-    } else {
-      return READING_NA;
-    }
-  } else if (bmc_location == NIC_BMC) {
-    if (sensor_num >= 0xD1 && sensor_num <= 0xEC) { // BB
-      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);
-    } else if ( (config_status == PRESENT_2OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x50 && sensor_num <= 0xCA)) { // 2OU Exp
-      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
-    } else if (sensor_num >= 0x0 && sensor_num <= 0x42){
-      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
-    } else {
-      return READING_NA;
-    }
+  //check snr number first. If it not holds, it will move on
+  if ( (sensor_num >= 0x0) && (sensor_num <= 0x42) ) { //server board
+    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
+  } else if ( (sensor_num >= 0x50 && sensor_num <= 0x7F) && (bmc_location != NIC_BMC) && //1OU
+       ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
+    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
+  } else if ( (sensor_num >= 0x80 && sensor_num <= 0xCA) && //2OU
+       ((config_status & PRESENT_2OU) == PRESENT_2OU) ) {
+    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
+  } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xEC) ) { //BB
+    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF); 
   } else {
     return READING_NA;
   }
+
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);
     return READING_NA;
@@ -1716,7 +1773,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   if ( bic_get_server_power_status(fru, &power_status) < 0 || power_status != SERVER_POWER_ON) {
     pwr_off_flag[fru-1] = 1;
     //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);
-    if (skip_bic_sensor_list(fru, sensor_num) < 0) {
+    if (skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) {
       return READING_NA;
     }
   }
@@ -1732,6 +1789,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   int ret=0;
   uint8_t id=0;
   static uint8_t bmc_location = 0;
+  static uint8_t config_status[MAX_NODES] = {CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN};
 
   if ( bmc_location == 0 ) {
     if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
@@ -1758,8 +1816,20 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      if ( pal_sdr_init(fru) == ERR_NOT_READY ) ret = READING_NA;
-      else ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location);
+      //check a config status of a blade 
+      if ( config_status[fru-1] == CONFIG_UNKNOWN ) {
+        ret = bic_is_m2_exp_prsnt(fru);
+        if ( ret < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to run bic_is_m2_exp_prsnt", __func__);
+        } else config_status[fru-1] = (uint8_t)ret;
+        syslog(LOG_WARNING, "%s() fru: %02x. config:%02x", __func__, fru, config_status[fru-1]);
+      }
+
+      //if we can't get the config status of the blade, return READING_NA.
+      if ( config_status[fru-1] != CONFIG_UNKNOWN ) {
+        if ( pal_sdr_init(fru) == ERR_NOT_READY ) ret = READING_NA;
+        else ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[fru-1]);
+      } else ret = READING_NA;
       break;
     case FRU_BMC:
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
@@ -2033,7 +2103,7 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case FAN:
       sprintf(units, "RPM");
       break;
-    case PWM:
+    case PERCENT:
       sprintf(units, "%%");
       break;
     case VOLT:

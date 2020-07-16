@@ -23,7 +23,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/lib/utils"
 	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/tests"
@@ -110,7 +109,7 @@ func TestRestartServices(t *testing.T) {
 			utils.SystemdAvailable = func() (bool, error) {
 				return tc.systemdAvail, tc.systemdAvailErr
 			}
-			utils.RestartHealthd = func(wait bool, supervisor string, sleepFunc func(time.Duration)) error {
+			utils.RestartHealthd = func(wait bool, supervisor string) error {
 				return tc.restartHealthdErr
 			}
 			utils.HealthdExists = func() bool {

@@ -98,7 +98,7 @@ func (h *HealthdConfig) GetRebootThresholdPercentage() float32 {
 	return 100
 }
 
-var RestartHealthd = func(wait bool, supervisor string, sleepFunc func(time.Duration)) error {
+var RestartHealthd = func(wait bool, supervisor string) error {
 	if !FileExists("/etc/sv/healthd") {
 		return errors.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist")
 	}

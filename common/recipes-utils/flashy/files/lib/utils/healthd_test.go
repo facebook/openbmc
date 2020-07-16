@@ -212,12 +212,14 @@ func TestGetRebootThresholdPercentage(t *testing.T) {
 }
 
 func TestRestartHealthd(t *testing.T) {
-	// save and defer restore FileExists and RunCommand
+	// save and defer restore FileExists, RunCommand & sleepFunc
 	fileExistsOrig := FileExists
 	runCommandOrig := RunCommand
+	sleepFuncOrig := sleepFunc
 	defer func() {
 		FileExists = fileExistsOrig
 		RunCommand = runCommandOrig
+		sleepFunc = sleepFuncOrig
 	}()
 
 	cases := []struct {
@@ -279,7 +281,7 @@ func TestRestartHealthd(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var gotSleepTime time.Duration
-			var sleepFunc = func(t time.Duration) {
+			sleepFunc = func(t time.Duration) {
 				gotSleepTime = t
 			}
 			FileExists = func(filename string) bool {
@@ -300,7 +302,7 @@ func TestRestartHealthd(t *testing.T) {
 				// exit code ignored
 				return 0, tc.runCmdErr, "", ""
 			}
-			got := RestartHealthd(tc.wait, tc.supervisor, sleepFunc)
+			got := RestartHealthd(tc.wait, tc.supervisor)
 
 			tests.CompareTestErrors(tc.want, got, t)
 			if gotSleepTime != tc.wantSleepTime {

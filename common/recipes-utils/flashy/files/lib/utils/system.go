@@ -150,6 +150,39 @@ var RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string
 	return exitCode, err, stdoutStr, stderrStr
 }
 
+// calls RunCommand repeatedly until succeeded or maxAttempts is reached
+// between attempts, an interval is applied
+// returns the results from the first succeeding run or last tried run
+var RunCommandWithRetries = func(cmdArr []string, timeoutInSeconds int, maxAttempts int, intervalInSeconds int) (int, error, string, string) {
+	exitCode, err, stdoutStr, stderrStr := 1, errors.Errorf("Command failed to run"), "", ""
+
+	if maxAttempts < 1 {
+		err = errors.Errorf("Command failed to run: maxAttempts must be > 0 (got %v)", maxAttempts)
+		return exitCode, err, stdoutStr, stderrStr
+	}
+
+	fullCmdStr := strings.Join(cmdArr[:], " ")
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		log.Printf("Attempt %v of %v: Running command '%v' with timeout %vs and retry interval %vs",
+			attempt, maxAttempts, fullCmdStr, timeoutInSeconds, intervalInSeconds)
+
+		exitCode, err, stdoutStr, stderrStr = RunCommand(cmdArr, timeoutInSeconds)
+		if err == nil {
+			log.Printf("Attempt %v of %v succeeded", attempt, maxAttempts)
+			break
+		} else {
+			log.Printf("Attempt %v of %v failed", attempt, maxAttempts)
+			if attempt < maxAttempts {
+				log.Printf("Sleeping for %vs before retrying", intervalInSeconds)
+				sleepFunc(time.Duration(intervalInSeconds) * time.Second)
+			} else {
+				log.Printf("Max attempts (%v) reached. Returning with error.", maxAttempts)
+			}
+		}
+	}
+	return exitCode, err, stdoutStr, stderrStr
+}
+
 // check whether systemd is available
 var SystemdAvailable = func() (bool, error) {
 	const cmdlinePath = "/proc/1/cmdline"

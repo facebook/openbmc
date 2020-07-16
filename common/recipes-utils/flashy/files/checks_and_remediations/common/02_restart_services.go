@@ -21,7 +21,6 @@ package common
 
 import (
 	"log"
-	"time"
 
 	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/lib/utils"
 	"github.com/pkg/errors"
@@ -56,7 +55,7 @@ func restartServices(imageFilePath, deviceID string) utils.StepExitError {
 
 	if utils.HealthdExists() {
 		log.Printf("Healthd exists, attempting to restart healthd...")
-		err = utils.RestartHealthd(false, supervisor, time.Sleep)
+		err = utils.RestartHealthd(false, supervisor)
 		if err != nil {
 			errMsg := errors.Errorf("Could not restart healthd: %v", err)
 			return utils.ExitSafeToReboot{errMsg}

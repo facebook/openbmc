@@ -22,6 +22,7 @@ package utils
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -142,3 +143,6 @@ func GetAllRegexSubexpMap(regEx, inputString string) ([](map[string]string), err
 
 	return allSubexpMap, nil
 }
+
+// sleep function variable for mocking purposes
+var sleepFunc = time.Sleep

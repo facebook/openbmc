@@ -21,10 +21,12 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/facebook/openbmc/common/recipes-utils/flashy/files/tests"
 	"github.com/pkg/errors"
@@ -253,6 +255,19 @@ func TestRunCommand(t *testing.T) {
 				"stdout: PROG:#  \rPROG:## \rPROG:###\n",
 			},
 		},
+		{
+			name:             "Invalid timeout (negative)",
+			cmdArr:           []string{"sleep", "42"},
+			timeoutInSeconds: -1,
+			wantExitCode:     1,
+			wantErr:          errors.Errorf("context deadline exceeded"),
+			wantStdout:       "",
+			wantStderr:       "",
+			logContainsSeq: []string{
+				"Running command 'sleep 42' with -1s timeout",
+				"Command 'sleep 42' failed to start: context deadline exceeded",
+			},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -273,6 +288,129 @@ func TestRunCommand(t *testing.T) {
 			}
 
 			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
+		})
+	}
+}
+
+func TestRunCommandWithRetries(t *testing.T) {
+	// save log output into buf for testing
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	// mock and defer restore sleepFunc
+	sleepFuncOrig := sleepFunc
+	defer func() {
+		log.SetOutput(os.Stderr)
+		sleepFunc = sleepFuncOrig
+	}()
+
+	cases := []struct {
+		name              string
+		maxAttempts       int
+		intervalInSeconds int
+		runCommandErrs    []error
+		wantErr           error
+		wantSleepTimes    []time.Duration
+		logContainsSeq    []string
+	}{
+		{
+			name:              "Succeed on first try",
+			maxAttempts:       3,
+			intervalInSeconds: 1,
+			runCommandErrs:    []error{nil},
+			wantErr:           nil,
+			wantSleepTimes:    []time.Duration{},
+			logContainsSeq: []string{
+				fmt.Sprintf("Attempt %v of %v: Running command '%v' with timeout %vs and retry interval %vs",
+					1, 3, "echo 1", 10, 1),
+				"Attempt 1 of 3 succeeded",
+			},
+		},
+		{
+			name:              "Succeed on second try",
+			maxAttempts:       3,
+			intervalInSeconds: 1,
+			runCommandErrs:    []error{errors.Errorf("err"), nil},
+			wantErr:           nil,
+			wantSleepTimes:    []time.Duration{1 * time.Second},
+			logContainsSeq: []string{
+				fmt.Sprintf("Attempt %v of %v: Running command '%v' with timeout %vs and retry interval %vs",
+					1, 3, "echo 1", 10, 1),
+				"Attempt 1 of 3 failed",
+				"Sleeping for 1s before retrying",
+				"Attempt 2 of 3:",
+				"Attempt 2 of 3 succeeded",
+			},
+		},
+		{
+			name:              "Succeed on second try, different timeout",
+			maxAttempts:       3,
+			intervalInSeconds: 42,
+			runCommandErrs:    []error{errors.Errorf("err"), nil},
+			wantErr:           nil,
+			wantSleepTimes:    []time.Duration{42 * time.Second},
+			logContainsSeq: []string{
+				fmt.Sprintf("Attempt %v of %v: Running command '%v' with timeout %vs and retry interval %vs",
+					1, 3, "echo 1", 10, 42),
+				"Attempt 1 of 3 failed",
+				"Sleeping for 42s before retrying",
+				"Attempt 2 of 3:",
+				"Attempt 2 of 3 succeeded",
+			},
+		},
+		{
+			name:              "Fail on all retries",
+			maxAttempts:       3,
+			intervalInSeconds: 1,
+			runCommandErrs:    []error{errors.Errorf("err"), errors.Errorf("err"), errors.Errorf("err")},
+			wantErr:           errors.Errorf("err"),
+			wantSleepTimes:    []time.Duration{1 * time.Second, 1 * time.Second},
+			logContainsSeq: []string{
+				fmt.Sprintf("Attempt %v of %v: Running command '%v' with timeout %vs and retry interval %vs",
+					1, 3, "echo 1", 10, 1),
+				"Attempt 1 of 3 failed",
+				"Attempt 2 of 3 failed",
+				"Attempt 3 of 3 failed",
+				"Max attempts (3) reached. Returning with error.",
+			},
+		},
+		{
+			name:              "Invalid maxAttempts (<1)",
+			maxAttempts:       0,
+			intervalInSeconds: 1,
+			runCommandErrs:    []error{},
+			wantErr:           errors.Errorf("Command failed to run: maxAttempts must be > 0 (got 0)"),
+			wantSleepTimes:    []time.Duration{},
+			logContainsSeq:    []string{},
+		},
+	}
+
+	cmdArr := []string{"echo", "1"}
+	timeoutInSeconds := 10
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			attempt := 0
+			buf = bytes.Buffer{}
+			gotSleepTimes := []time.Duration{}
+
+			RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
+				// only error is used
+				cmdErr := tc.runCommandErrs[attempt]
+				attempt++
+				return 0, cmdErr, "", ""
+			}
+
+			sleepFunc = func(d time.Duration) {
+				gotSleepTimes = append(gotSleepTimes, d)
+			}
+
+			_, got, _, _ := RunCommandWithRetries(cmdArr, timeoutInSeconds, tc.maxAttempts, tc.intervalInSeconds)
+
+			tests.CompareTestErrors(tc.wantErr, got, t)
+			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
+			if !reflect.DeepEqual(tc.wantSleepTimes, gotSleepTimes) {
+				t.Errorf("sleeptimes: want '%v' got '%v'", tc.wantSleepTimes, gotSleepTimes)
+			}
 		})
 	}
 }

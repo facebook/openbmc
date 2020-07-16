@@ -114,7 +114,7 @@ class BmcComponentMock : public BmcComponent {
   public:
     BmcComponentMock(std::string fru, std::string comp, System &sys, std::string mtd, std::string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
       : BmcComponent(fru, comp, sys, mtd, vers, w_offset, skip_offset) {}
-  MOCK_METHOD1(is_valid, bool(string &image));
+  MOCK_METHOD2(is_valid, bool(string &image, bool pfr_active));
   MOCK_METHOD1(update, int(string &image));
   MOCK_METHOD0(print_version, int());
 
@@ -158,7 +158,7 @@ TEST(BmcComponentTest, MTDFlash) {
     .Times(4)
     .WillRepeatedly(Invoke(&b, &BmcComponentMock::real_update));
 
-  EXPECT_CALL(b, is_valid(dummy_image))
+  EXPECT_CALL(b, is_valid(dummy_image, false))
     .Times(4)
     .WillOnce(Return(false))
     .WillOnce(Return(true))
@@ -209,7 +209,7 @@ TEST(BmcComponentTest, MTDOffsetFlash) {
     .Times(1)
     .WillRepeatedly(Invoke(&b, &BmcComponentMock::real_update));
 
-  EXPECT_CALL(b, is_valid(image.name))
+  EXPECT_CALL(b, is_valid(image.name, false))
     .Times(1)
     .WillOnce(Return(true));
 

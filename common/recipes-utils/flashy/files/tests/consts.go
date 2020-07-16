@@ -294,3 +294,12 @@ mtd2: 00400000 00010000 "kernel"
 mtd3: 01780000 00010000 "rootfs"
 mtd4: 00400000 00010000 "data0"
 mtd5: 02000000 00010000 "flash0"`
+
+const ExampleWedge100ProcMountsFile = `rootfs / rootfs rw 0 0
+proc /proc proc rw,relatime 0 0
+sysfs /sys sysfs rw,relatime 0 0
+devtmpfs /dev devtmpfs rw,relatime,size=117120k,nr_inodes=29280,mode=755 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,mode=755 0 0
+tmpfs /var/volatile tmpfs rw,relatime 0 0
+/dev/mtdblock4 /mnt/data jffs2 rw,relatime 0 0
+devpts /dev/pts devpts rw,relatime,gid=5,mode=620 0 0`

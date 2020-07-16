@@ -28,9 +28,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+type WritableMountedMTD struct {
+	Device     string
+	Mountpoint string
+}
+
 func init() {
 	registerFlashDevice("mtd", getMTD)
 }
+
 /*
 TODO:-
 (1) Validate mtd
@@ -86,4 +92,37 @@ func getMTDMap(deviceSpecifier string) (map[string]string, error) {
 			deviceSpecifier)
 	}
 	return mtdMap, nil
+}
+
+// return all writable mounted MTDs as specified in /proc/mounts
+var GetWritableMountedMTDs = func() ([]WritableMountedMTD, error) {
+	writableMountedMTDs := []WritableMountedMTD{}
+
+	procMountsBuf, err := utils.ReadFile("/proc/mounts")
+	if err != nil {
+		return writableMountedMTDs,
+			errors.Errorf("Unable to get writable mounted MTDs: Cannot read /proc/mounts: %v", err)
+	}
+	procMounts := string(procMountsBuf)
+
+	// device, mountpoint, filesystem, options, dump_freq, fsck_pass
+	regEx := `(?m)^(?P<device>/dev/mtd(?:block)?[0-9]+) (?P<mountpoint>[^ ]+) [^ ]+ [^ ]*rw[^ ]* [0-9]+ [0-9]+$`
+
+	allMTDMaps, err := utils.GetAllRegexSubexpMap(regEx, procMounts)
+	if err != nil {
+		return writableMountedMTDs,
+			errors.Errorf("Unable to get writable mounted MTDs: %v", err)
+	}
+
+	for _, mtdMap := range allMTDMaps {
+		writableMountedMTDs =
+			append(writableMountedMTDs,
+				WritableMountedMTD{
+					mtdMap["device"],
+					mtdMap["mountpoint"],
+				},
+			)
+	}
+
+	return writableMountedMTDs, nil
 }

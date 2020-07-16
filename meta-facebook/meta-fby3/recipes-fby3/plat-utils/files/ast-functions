@@ -250,7 +250,7 @@ is_sb_bic_ready() {
   local slot_num=$1
   local cpld_bus=$(($slot_num+3))
 
-  if [[ $(is_server_prsnt 1) == "0" ]]; then
+  if [[ $(is_server_prsnt $slot_num) == "0" ]]; then
     ready=0
   else
     cpld_bic_ready_out=$(i2cget -y ${cpld_bus} 0x0f 0x02)

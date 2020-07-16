@@ -28,6 +28,7 @@ import rest_gb_freq
 import rest_sensors
 import rest_switch_reset
 import rest_vddcore
+import rest_modbus
 from aiohttp import web
 from rest_utils import dumps_bytestr
 
@@ -180,3 +181,10 @@ class boardApp_Handler:
         return web.json_response(
             rest_gb_freq.get_gb_freq(), dumps=dumps_bytestr
         )
+
+    # Handler for Modbus_registers resource endpoint
+    async def helper_modbus_registers_hdl(self, request):
+        return web.json_response(
+            rest_modbus.get_modbus_registers(), dumps=dumps_bytestr
+        )
+

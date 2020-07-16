@@ -1,6 +1,7 @@
 # Copyright 2018-present Facebook. All Rights Reserved.
 
 require recipes-core/images/fbobmc-image-meta.inc
+require fby3-image-layout.inc
 
 IMAGE_FSTYPES_remove = "cpio.lzma.u-boot"
 IMAGE_FSTYPES += "cpio.zst.u-boot"

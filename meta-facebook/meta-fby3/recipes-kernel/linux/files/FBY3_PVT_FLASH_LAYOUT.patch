@@ -1,0 +1,48 @@
+diff --git a/arch/arm/boot/dts/facebook-bmc-pfr-128M-layout.dtsi b/arch/arm/boot/dts/facebook-bmc-pfr-128M-layout.dtsi
+index ac5872f41d8..c750e3b5d7c 100644
+--- a/arch/arm/boot/dts/facebook-bmc-pfr-128M-layout.dtsi
++++ b/arch/arm/boot/dts/facebook-bmc-pfr-128M-layout.dtsi
+@@ -6,23 +6,23 @@ partitions {
+ 	#address-cells = <1>;
+ 	#size-cells = <1>;
+ 	u-boot@0 {
+-		reg = <0x0 0x60000>;
++		reg = <0x0 0xE0000>;
+ 		label = "u-boot";
+ 	};
+ 	/*
+ 	 * To keep backward compatible keep env
+ 	 * as second partition. exposed as mtd1
+ 	 */
+-	env@60000 {
+-		reg = <0x60000 0x20000>;
++	env@E0000 {
++		reg = <0xE0000 0x10000>;
+ 		label = "env";
+ 	};
+-	fit@80000 {
+-		reg = <0x80000 0x1b80000>;
++	fit@100000 {
++		reg = <0x100000 0x1F00000>;
+ 		label = "fit";
+ 	};
+-	data0@1c00000 {
+-		reg = <0x1c00000 0xde0000>;
++	data0@2000000 {
++		reg = <0x2000000 0x9E0000>;
+ 		label = "data0";
+ 	};
+ 	pfm@29e0000 {
+@@ -53,4 +53,12 @@ partitions {
+ 		reg = <0x0 0x8000000>;
+ 		label = "flash0";
+ 	};
++	/* define at last this is a new added partition
++	 * to avoid cause compatible issue to tools which
++	 * hardcode partion number in code
++	 */
++	meta@F0000 {
++		reg = <0xF0000 0x10000>;
++		lable = "meta";
++	};
+ };

@@ -16,6 +16,9 @@ python __anonymous () {
     d.setVar("FBOBMC_IMAGE_META_VER_PATCH", "0")
     d.setVar("FBOBMC_IMAGE_META_VER_PRERELEASE", "")
     d.setVar("FBOBMC_IMAGE_META_VER_BUILDMETA", "")
+
+    # meta partiton offset
+    d.setVar("FBOBMC_IMAGE_META_OFFSET", "0x000F0000")
 }
 
 python flash_image_generate() {
@@ -73,9 +76,9 @@ def fbobmc_get_normalized_part_table(d):
         # check the parition overlap or gap
         next_offset = curr_part[offset] + curr_part[size]
         if next_offset > next_part[offset]:
-            bb.fatal("%s %s overlapped" % curr_part, next_part)
+            bb.fatal("%s %s overlapped" % (curr_part, next_part))
         elif next_offset < next_part[offset] and "__END__" != next_part[name]:
-            bb.fatal("gap exists between %s %s" % curr_part, next_part)
+            bb.fatal("gap exists between %s %s" % (curr_part, next_part))
         else:
             nom_part_table.append(tuple(curr_part))
 
@@ -160,6 +163,7 @@ def fbobmc_generate_part_chksum(d, image_file, part_offset, part_size):
 
 
 def fbobmc_generate_image_meta(d, part_table, image_meta, image_file):
+    fixed_meta_partition_offset = int(d.expand("${FBOBMC_IMAGE_META_OFFSET}"), 0)
     part_infos = []
     for part_offset, part_name, part_size, part_type, _ in part_table:
         partition = dict()
@@ -170,6 +174,9 @@ def fbobmc_generate_image_meta(d, part_table, image_meta, image_file):
         if "meta" == part_type:
             meta_part_offset = part_offset
             meta_part_size = part_size
+            if meta_part_offset != fixed_meta_partition_offset:
+                bb.fatal("The 'meta' partition shall be fixed at 0x%08X", 
+                    fixed_meta_partition_offset)
         if "raw" == part_type or "rom" == part_type:
             partition["chksum"] = fbobmc_generate_part_chksum(
                 d, image_file, part_offset, part_size

@@ -187,10 +187,7 @@ int main(int argc, char *argv[])
 
 #ifdef __TEST__
   testing::InitGoogleTest(&argc, argv);
-  ret = RUN_ALL_TESTS();
-  if (ret != 0) {
-    return ret;
-  }
+  return RUN_ALL_TESTS();
 #endif
   exec_name = argv[0];
   if (argc < 3) {

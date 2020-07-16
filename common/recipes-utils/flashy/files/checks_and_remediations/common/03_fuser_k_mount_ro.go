@@ -53,10 +53,9 @@ func fuserKMountRo(imageFilePath, deviceID string) utils.StepExitError {
 			return utils.ExitSafeToReboot{errMsg}
 		}
 
-		// TODO:- add RunCommandRetry and retry this
 		remountCmd := []string{"mount", "-o", "remount,ro",
 			writableMountedMTD.Device, writableMountedMTD.Mountpoint}
-		_, err, _, _ = utils.RunCommand(remountCmd, 30)
+		_, err, _, _ = utils.RunCommandWithRetries(remountCmd, 30, 3, 30)
 		if err != nil {
 			errMsg := errors.Errorf("Remount command %v failed: %v", remountCmd, err)
 			return utils.ExitSafeToReboot{errMsg}

@@ -34,9 +34,11 @@ func TestFuserKMountRo(t *testing.T) {
 	// mock and defer restore GetWritableMountedMTDs and RunCommand
 	getWritableMountedMTDsOrig := devices.GetWritableMountedMTDs
 	runCommandOrig := utils.RunCommand
+	runCommandWithRetries := utils.RunCommandWithRetries
 	defer func() {
 		devices.GetWritableMountedMTDs = getWritableMountedMTDsOrig
 		utils.RunCommand = runCommandOrig
+		utils.RunCommandWithRetries = runCommandWithRetries
 	}()
 	cases := []struct {
 		name                   string
@@ -150,18 +152,18 @@ func TestFuserKMountRo(t *testing.T) {
 			devices.GetWritableMountedMTDs = func() ([]devices.WritableMountedMTD, error) {
 				return tc.writableMountedMTDs, tc.writableMountedMTDsErr
 			}
+			// fuser
 			utils.RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
 				gotCmds = append(gotCmds, strings.Join(cmdArr[:], " "))
-
 				// only err is checked
-				if cmdArr[0] == "fuser" {
-					return 0, tc.fuserCmdErr, "", ""
-				} else if cmdArr[0] == "mount" {
-					return 0, tc.remountCmdErr, "", ""
-				} else {
-					t.Errorf("Unknown command: '%v'", cmdArr)
-				}
-				return 0, nil, "", ""
+				return 0, tc.fuserCmdErr, "", ""
+			}
+
+			// remount
+			utils.RunCommandWithRetries = func(cmdArr []string, timeoutInSeconds int, maxAttempts int, intervalInSeconds int) (int, error, string, string) {
+				gotCmds = append(gotCmds, strings.Join(cmdArr[:], " "))
+				// only err is checked
+				return 0, tc.remountCmdErr, "", ""
 			}
 
 			got := fuserKMountRo("x", "x")

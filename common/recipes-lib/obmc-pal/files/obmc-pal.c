@@ -306,7 +306,7 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
                      "Memory correctable error (Patrol scrub)", "Memory uncorrectable error (Patrol scrub)",
                      "Memory Parity Error event", "Reserved"};
   char *upi_err[] = {"UPI Init error", "Reserved"};
-  char *post_err[] = {"System PXE boot fail", "CMOS/NRAM configuration cleared", "TPM Self-Test Fail", "Reserved"};
+  char *post_err[] = {"System PXE boot fail", "CMOS/NVRAM configuration cleared", "TPM Self-Test Fail", "Reserved"};
   char *pcie_event[] = {"PCIe DPC Event", "PCIe LER Event", "PCIe Link Retraining and Recovery",
                         "PCIe Link CRC Error Check and Retry", "PCIe Corrupt Data Containment", "PCIe Express ECRC",
                         "Reserved"};

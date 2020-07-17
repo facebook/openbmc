@@ -93,3 +93,21 @@ var FileExists = func(filename string) bool {
 	// check if it's a file
 	return !info.IsDir()
 }
+
+// append to end of file
+var AppendFile = func(filename, data string) error {
+	// create if non-existant
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	_, err = f.Write([]byte(data))
+	if err != nil {
+		return err
+	}
+	err = f.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}

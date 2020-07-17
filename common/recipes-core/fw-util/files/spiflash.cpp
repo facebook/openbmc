@@ -2,6 +2,7 @@
 #include <fstream>
 #include <thread>
 #include <chrono>
+#include <syslog.h>
 #include <openbmc/libgpio.h>
 
 using namespace std;
@@ -10,12 +11,22 @@ int MTDComponent::update(std::string image)
 {
   string dev;
   string cmd;
+  string comp = this->component();
+  int ret;
 
   if (!sys.get_mtd_name(_mtd_name, dev)) {
     return FW_STATUS_FAILURE;
   }
+  syslog(LOG_CRIT, "Component %s upgrade initiated", comp.c_str());
+
+  sys.output << "Flashing to device: " << dev << endl;
   cmd = "flashcp -v " + image + " " + dev;
-  return sys.runcmd(cmd) == 0 ? FW_STATUS_SUCCESS : FW_STATUS_FAILURE;
+  ret = sys.runcmd(cmd);
+  if (ret == 0) {
+    syslog(LOG_CRIT, "Component %s upgrade completed", comp.c_str());
+    return FW_STATUS_SUCCESS;
+  }
+  return FW_STATUS_FAILURE;
 }
 
 int SPIMTDComponent::update(std::string image)

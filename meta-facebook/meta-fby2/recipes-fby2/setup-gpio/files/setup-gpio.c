@@ -28,6 +28,7 @@
 #include <sys/mman.h>
 #include <openbmc/pal.h>
 #include <openbmc/libgpio.h>
+#include <facebook/fby2_common.h>
 
 #define SCU_BASE    	0x1E6E2000
 #define REG_SCU7C   	0x7C
@@ -169,7 +170,7 @@ error_exit:
 
 int
 main(int argc, char **argv) {
-	int ret = 0;
+	int ret = 0, spb_type = 0;
 	uint8_t slot_12v_on, slot_prsnt;
 	uint32_t reg[LASTEST_REG];
 
@@ -541,7 +542,24 @@ main(int argc, char **argv) {
 	
 	// MEZZ_PRSNTB2_N: GPIOL1
 	gpio_export_by_name(ASPPED_CHIP, "GPIOL1", "MEZZ_PRSNTB2_N");
-	
+
+	// BOARD_REV_ID0: GPIOY0
+	gpio_export_by_name(ASPPED_CHIP, "GPIOY0", "BOARD_REV_ID0");
+
+	// BOARD_REV_ID1: GPIOY1
+	gpio_export_by_name(ASPPED_CHIP, "GPIOY1", "BOARD_REV_ID1");
+
+	// BOARD_REV_ID2: GPIOY2
+	gpio_export_by_name(ASPPED_CHIP, "GPIOY2", "BOARD_REV_ID2");
+
+	// BOARD_ID: GPIOY3
+	gpio_export_by_name(ASPPED_CHIP, "GPIOY3", "BOARD_ID");
+
+	spb_type = fby2_common_get_spb_type();
+	if (spb_type == TYPE_SPB_YV250) {
+		gpio_export_by_name(ASPPED_CHIP, "GPIOG7", "YV250_USB_OCP_UART_SWITCH_N");
+	}
+
 	// Disable PWM reset during external reset
 	reg_clear_bit(SCU_BASE, REG_SCU9C, 17);
 

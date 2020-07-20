@@ -18,7 +18,7 @@
 all: setup-gpio
 
 setup-gpio: setup-gpio.c
-	$(CC) $(CFLAGS) -lpal -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -lpal -lfby2_common -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

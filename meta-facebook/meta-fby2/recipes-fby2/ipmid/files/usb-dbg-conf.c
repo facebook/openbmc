@@ -8,6 +8,7 @@
 #include <openbmc/gpio.h>
 #include <openbmc/pal_sensors.h>
 #include <facebook/bic.h>
+#include <facebook/fby2_common.h>
 #include <syslog.h>
 
 #include "usb-dbg-conf.h"
@@ -843,8 +844,11 @@ int plat_get_me_status(uint8_t fru, char *status)
 
 int plat_get_board_id(char *id)
 {
-  uint8_t board_id;
-  board_id = gpio_get(GPIO_BOARD_ID);
+  int board_id;
+  
+  if (fby2_common_get_gpio_val(GPIO_BOARD_ID, &board_id) != 0) {
+    return -1;
+  }
   sprintf(id, "%02d", board_id);
   return 0;
 }

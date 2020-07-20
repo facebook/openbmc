@@ -23,6 +23,7 @@ from subprocess import PIPE, Popen
 
 from fsc_util import Logger
 
+import libgpio
 
 lpal_hndl = CDLL("libpal.so.0")
 
@@ -179,16 +180,10 @@ def set_all_pwm(boost):
 
 
 def rc_stby_sensor_check(board):
-    with open(
-        gpio_path + fru_map[board]["slot_12v_status"] + "/value", "r"
-    ) as f:
-        slot_12v_sts = f.read(1)
-    if slot_12v_sts[0] == "1":
-        with open(
-            gpio_path + fru_map[board]["bic_ready_gpio"] + "/value", "r"
-        ) as f:
-            bic_rdy = f.read(1)
-        if bic_rdy[0] == "0":
+    f = libgpio.GPIO(shadow=fru_map[board]["slot_12v_status"])
+    if f.get_value() == libgpio.GPIOValue.HIGH:
+        f = libgpio.GPIO(shadow=fru_map[board]["bic_ready_gpio"])
+        if f.get_value() == libgpio.GPIOValue.LOW:
             return 1
         else:
             return 0

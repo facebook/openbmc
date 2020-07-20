@@ -57,8 +57,6 @@
 #define LED_ON_TIME_BMC_SELECT 500
 #define LED_OFF_TIME_BMC_SELECT 500
 
-#define GPIO_VAL "/sys/class/gpio/gpio%d/value"
-
 #define FW_UPDATE_ONGOING 1
 #define CRASHDUMP_ONGOING 2
 #define CPLDDUMP_ONGOING  3

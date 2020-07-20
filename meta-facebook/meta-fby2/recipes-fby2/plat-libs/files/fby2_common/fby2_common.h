@@ -125,97 +125,97 @@ typedef struct {
 #define GPIO_BASE_NUM                       0
 #endif
 
-#define GPIO_BMC_READY_N                    0 + GPIO_BASE_NUM
-#define GPIO_PE_BUFF_OE_0_R_N              12 + GPIO_BASE_NUM
-#define GPIO_PE_BUFF_OE_1_R_N              13 + GPIO_BASE_NUM
-#define GPIO_PE_BUFF_OE_2_R_N              14 + GPIO_BASE_NUM
-#define GPIO_PE_BUFF_OE_3_R_N              15 + GPIO_BASE_NUM
-#define GPIO_PWR_BTN                       24 + GPIO_BASE_NUM
-#define GPIO_PWR_SLOT1_BTN_N               25 + GPIO_BASE_NUM
-#define GPIO_PWR_SLOT2_BTN_N               27 + GPIO_BASE_NUM
-#define GPIO_PWR_SLOT3_BTN_N               29 + GPIO_BASE_NUM
-#define GPIO_PWR_SLOT4_BTN_N               31 + GPIO_BASE_NUM
-#define GPIO_UART_SEL0                     32 + GPIO_BASE_NUM
-#define GPIO_UART_SEL1                     33 + GPIO_BASE_NUM
-#define GPIO_UART_SEL2                     34 + GPIO_BASE_NUM
-#define GPIO_UART_RX                       35 + GPIO_BASE_NUM
-#define GPIO_USB_SW0                       36 + GPIO_BASE_NUM
-#define GPIO_USB_SW1                       37 + GPIO_BASE_NUM
-#define GPIO_SYSTEM_ID1_LED_N              40 + GPIO_BASE_NUM
-#define GPIO_SYSTEM_ID2_LED_N              41 + GPIO_BASE_NUM
-#define GPIO_SYSTEM_ID3_LED_N              42 + GPIO_BASE_NUM
-#define GPIO_SYSTEM_ID4_LED_N              43 + GPIO_BASE_NUM
-#define GPIO_POSTCODE_0                    48 + GPIO_BASE_NUM
-#define GPIO_POSTCODE_1                    49 + GPIO_BASE_NUM
-#define GPIO_POSTCODE_2                    50 + GPIO_BASE_NUM
-#define GPIO_POSTCODE_3                    51 + GPIO_BASE_NUM
-#define GPIO_DUAL_FAN_DETECT               54 + GPIO_BASE_NUM
-#define GPIO_YV250_USB_OCP_UART_SWITCH_N   55 + GPIO_BASE_NUM // YV2.50
-#define GPIO_FAN_LATCH_DETECT              61 + GPIO_BASE_NUM
-#define GPIO_SLOT1_POWER_EN                64 + GPIO_BASE_NUM
-#define GPIO_SLOT2_POWER_EN                65 + GPIO_BASE_NUM
-#define GPIO_SLOT3_POWER_EN                66 + GPIO_BASE_NUM
-#define GPIO_SLOT4_POWER_EN                67 + GPIO_BASE_NUM
-#define GPIO_CLK_BUFF1_PWR_EN_N            72 + GPIO_BASE_NUM
-#define GPIO_CLK_BUFF2_PWR_EN_N            73 + GPIO_BASE_NUM
-#define GPIO_VGA_SW0                       74 + GPIO_BASE_NUM
-#define GPIO_VGA_SW1                       75 + GPIO_BASE_NUM
-#define GPIO_MEZZ_PRSNTA2_N                88 + GPIO_BASE_NUM
-#define GPIO_MEZZ_PRSNTB2_N                89 + GPIO_BASE_NUM
-#define GPIO_PWR1_LED                      96 + GPIO_BASE_NUM
-#define GPIO_PWR2_LED                      97 + GPIO_BASE_NUM
-#define GPIO_PWR3_LED                      98 + GPIO_BASE_NUM
-#define GPIO_PWR4_LED                      99 + GPIO_BASE_NUM
-#define GPIO_I2C_SLOT1_ALERT_N            106 + GPIO_BASE_NUM
-#define GPIO_I2C_SLOT2_ALERT_N            107 + GPIO_BASE_NUM
-#define GPIO_I2C_SLOT3_ALERT_N            108 + GPIO_BASE_NUM
-#define GPIO_I2C_SLOT4_ALERT_N            109 + GPIO_BASE_NUM
-#define GPIO_UART_SEL                     115 + GPIO_BASE_NUM // YV2
-#define GPIO_P12V_STBY_SLOT1_EN           116 + GPIO_BASE_NUM
-#define GPIO_P12V_STBY_SLOT2_EN           117 + GPIO_BASE_NUM
-#define GPIO_P12V_STBY_SLOT3_EN           118 + GPIO_BASE_NUM
-#define GPIO_P12V_STBY_SLOT4_EN           119 + GPIO_BASE_NUM
-#define GPIO_SLOT1_EJECTOR_LATCH_DETECT_N 120 + GPIO_BASE_NUM
-#define GPIO_SLOT2_EJECTOR_LATCH_DETECT_N 121 + GPIO_BASE_NUM
-#define GPIO_SLOT3_EJECTOR_LATCH_DETECT_N 122 + GPIO_BASE_NUM
-#define GPIO_SLOT4_EJECTOR_LATCH_DETECT_N 123 + GPIO_BASE_NUM
-#define GPIO_POSTCODE_4                   124 + GPIO_BASE_NUM
-#define GPIO_POSTCODE_5                   125 + GPIO_BASE_NUM
-#define GPIO_POSTCODE_6                   126 + GPIO_BASE_NUM
-#define GPIO_POSTCODE_7                   127 + GPIO_BASE_NUM
-#define GPIO_DBG_CARD_PRSNT               139 + GPIO_BASE_NUM
-#define GPIO_RST_SLOT1_SYS_RESET_N        144 + GPIO_BASE_NUM
-#define GPIO_RST_SLOT2_SYS_RESET_N        145 + GPIO_BASE_NUM
-#define GPIO_RST_SLOT3_SYS_RESET_N        146 + GPIO_BASE_NUM
-#define GPIO_RST_SLOT4_SYS_RESET_N        147 + GPIO_BASE_NUM
-#define GPIO_BOARD_REV_ID0                192 + GPIO_BASE_NUM
-#define GPIO_BOARD_REV_ID1                193 + GPIO_BASE_NUM
-#define GPIO_BOARD_REV_ID2                194 + GPIO_BASE_NUM
-#define GPIO_BOARD_ID                     195 + GPIO_BASE_NUM
-#define GPIO_SLOT1_PRSNT_B_N              200 + GPIO_BASE_NUM
-#define GPIO_SLOT2_PRSNT_B_N              201 + GPIO_BASE_NUM
-#define GPIO_SLOT3_PRSNT_B_N              202 + GPIO_BASE_NUM
-#define GPIO_SLOT4_PRSNT_B_N              203 + GPIO_BASE_NUM
-#define GPIO_SLOT1_PRSNT_N                208 + GPIO_BASE_NUM
-#define GPIO_SLOT2_PRSNT_N                209 + GPIO_BASE_NUM
-#define GPIO_SLOT3_PRSNT_N                210 + GPIO_BASE_NUM
-#define GPIO_SLOT4_PRSNT_N                211 + GPIO_BASE_NUM
-#define GPIO_HAND_SW_ID1                  212 + GPIO_BASE_NUM
-#define GPIO_HAND_SW_ID2                  213 + GPIO_BASE_NUM
-#define GPIO_HAND_SW_ID4                  214 + GPIO_BASE_NUM
-#define GPIO_HAND_SW_ID8                  215 + GPIO_BASE_NUM
-#define GPIO_RST_BTN                      216 + GPIO_BASE_NUM
-#define GPIO_BMC_SELF_HW_RST              218 + GPIO_BASE_NUM
-#define GPIO_USB_MUX_EN_N                 219 + GPIO_BASE_NUM
-#define GPIOAB4_RESERVED_PIN              220 + GPIO_BASE_NUM //GPIOAB4 is reserved and could not be used
-#define GPIOAB5_RESERVED_PIN              221 + GPIO_BASE_NUM //GPIOAB5 is reserved and could not be used
-#define GPIOAB6_RESERVED_PIN              222 + GPIO_BASE_NUM //GPIOAB6 is reserved and could not be used
-#define GPIOAB7_RESERVED_PIN              223 + GPIO_BASE_NUM //GPIOAB7 is reserved and could not be used
-#define GPIO_SLOT1_LED                    224 + GPIO_BASE_NUM
-#define GPIO_SLOT2_LED                    225 + GPIO_BASE_NUM
-#define GPIO_SLOT3_LED                    226 + GPIO_BASE_NUM
-#define GPIO_SLOT4_LED                    227 + GPIO_BASE_NUM
-#define GPIO_SLED_SEATED_N                231 + GPIO_BASE_NUM //GPIOAC7
+#define GPIO_BMC_READY_N                  "BMC_READY_N"
+#define GPIO_PE_BUFF_OE_0_R_N             "PE_BUFF_OE_0_R_N"
+#define GPIO_PE_BUFF_OE_1_R_N             "PE_BUFF_OE_1_R_N"
+#define GPIO_PE_BUFF_OE_2_R_N             "PE_BUFF_OE_2_R_N"
+#define GPIO_PE_BUFF_OE_3_R_N             "PE_BUFF_OE_3_R_N"
+#define GPIO_PWR_BTN                      "PWR_BTN"
+#define GPIO_PWR_SLOT1_BTN_N              "PWR_SLOT1_BTN_N "
+#define GPIO_PWR_SLOT2_BTN_N              "PWR_SLOT2_BTN_N "
+#define GPIO_PWR_SLOT3_BTN_N              "PWR_SLOT3_BTN_N "
+#define GPIO_PWR_SLOT4_BTN_N              "PWR_SLOT4_BTN_N "
+#define GPIO_UART_SEL0                    "UART_SEL0"
+#define GPIO_UART_SEL1                    "UART_SEL1"
+#define GPIO_UART_SEL2                    "UART_SEL2"
+#define GPIO_UART_RX                      "UART_RX"
+#define GPIO_USB_SW0                      "USB_SW0"
+#define GPIO_USB_SW1                      "USB_SW1"
+#define GPIO_SYSTEM_ID1_LED_N             "SYSTEM_ID1_LED_N"
+#define GPIO_SYSTEM_ID2_LED_N             "SYSTEM_ID2_LED_N"
+#define GPIO_SYSTEM_ID3_LED_N             "SYSTEM_ID3_LED_N"
+#define GPIO_SYSTEM_ID4_LED_N             "SYSTEM_ID4_LED_N"
+#define GPIO_POSTCODE_0                   "POSTCODE_0"
+#define GPIO_POSTCODE_1                   "POSTCODE_1"
+#define GPIO_POSTCODE_2                   "POSTCODE_2"
+#define GPIO_POSTCODE_3                   "POSTCODE_3"
+#define GPIO_DUAL_FAN_DETECT              "DUAL_FAN_DETECT"
+#define GPIO_YV250_USB_OCP_UART_SWITCH_N  "YV250_USB_OCP_UART_SWITCH_N" // YV2.50
+#define GPIO_FAN_LATCH_DETECT             "FAN_LATCH_DETECT"
+#define GPIO_SLOT1_POWER_EN               "SLOT1_POWER_EN"
+#define GPIO_SLOT2_POWER_EN               "SLOT2_POWER_EN"
+#define GPIO_SLOT3_POWER_EN               "SLOT3_POWER_EN"
+#define GPIO_SLOT4_POWER_EN               "SLOT4_POWER_EN"
+#define GPIO_CLK_BUFF1_PWR_EN_N           "CLK_BUFF1_PWR_EN_N"
+#define GPIO_CLK_BUFF2_PWR_EN_N           "CLK_BUFF2_PWR_EN_N"
+#define GPIO_VGA_SW0                      "VGA_SW0"
+#define GPIO_VGA_SW1                      "VGA_SW1"
+#define GPIO_MEZZ_PRSNTA2_N               "MEZZ_PRSNTA2_N"
+#define GPIO_MEZZ_PRSNTB2_N               "MEZZ_PRSNTB2_N"
+#define GPIO_PWR1_LED                     "PWR1_LED"
+#define GPIO_PWR2_LED                     "PWR2_LED"
+#define GPIO_PWR3_LED                     "PWR3_LED"
+#define GPIO_PWR4_LED                     "PWR4_LED"
+#define GPIO_I2C_SLOT1_ALERT_N            "I2C_SLOT1_ALERT_N"
+#define GPIO_I2C_SLOT2_ALERT_N            "I2C_SLOT2_ALERT_N"
+#define GPIO_I2C_SLOT3_ALERT_N            "I2C_SLOT3_ALERT_N"
+#define GPIO_I2C_SLOT4_ALERT_N            "I2C_SLOT4_ALERT_N"
+#define GPIO_UART_SEL                     "UART_SEL"                     // YV2
+#define GPIO_P12V_STBY_SLOT1_EN           "P12V_STBY_SLOT1_EN"
+#define GPIO_P12V_STBY_SLOT2_EN           "P12V_STBY_SLOT2_EN"
+#define GPIO_P12V_STBY_SLOT3_EN           "P12V_STBY_SLOT3_EN"
+#define GPIO_P12V_STBY_SLOT4_EN           "P12V_STBY_SLOT4_EN"
+#define GPIO_SLOT1_EJECTOR_LATCH_DETECT_N "SLOT1_EJECTOR_LATCH_DETECT_N"
+#define GPIO_SLOT2_EJECTOR_LATCH_DETECT_N "SLOT2_EJECTOR_LATCH_DETECT_N"
+#define GPIO_SLOT3_EJECTOR_LATCH_DETECT_N "SLOT3_EJECTOR_LATCH_DETECT_N"
+#define GPIO_SLOT4_EJECTOR_LATCH_DETECT_N "SLOT4_EJECTOR_LATCH_DETECT_N"
+#define GPIO_POSTCODE_4                   "POSTCODE_4"
+#define GPIO_POSTCODE_5                   "POSTCODE_5"
+#define GPIO_POSTCODE_6                   "POSTCODE_6"
+#define GPIO_POSTCODE_7                   "POSTCODE_7"
+#define GPIO_DBG_CARD_PRSNT               "DBG_CARD_PRSNT"
+#define GPIO_RST_SLOT1_SYS_RESET_N        "RST_SLOT1_SYS_RESET_N"
+#define GPIO_RST_SLOT2_SYS_RESET_N        "RST_SLOT2_SYS_RESET_N"
+#define GPIO_RST_SLOT3_SYS_RESET_N        "RST_SLOT3_SYS_RESET_N"
+#define GPIO_RST_SLOT4_SYS_RESET_N        "RST_SLOT4_SYS_RESET_N"
+#define GPIO_BOARD_REV_ID0                "BOARD_REV_ID0"
+#define GPIO_BOARD_REV_ID1                "BOARD_REV_ID1"
+#define GPIO_BOARD_REV_ID2                "BOARD_REV_ID2"
+#define GPIO_BOARD_ID                     "BOARD_ID"
+#define GPIO_SLOT1_PRSNT_B_N              "SLOT1_PRSNT_B_N"
+#define GPIO_SLOT2_PRSNT_B_N              "SLOT2_PRSNT_B_N"
+#define GPIO_SLOT3_PRSNT_B_N              "SLOT3_PRSNT_B_N"
+#define GPIO_SLOT4_PRSNT_B_N              "SLOT4_PRSNT_B_N"
+#define GPIO_SLOT1_PRSNT_N                "SLOT1_PRSNT_N"
+#define GPIO_SLOT2_PRSNT_N                "SLOT2_PRSNT_N"
+#define GPIO_SLOT3_PRSNT_N                "SLOT3_PRSNT_N"
+#define GPIO_SLOT4_PRSNT_N                "SLOT4_PRSNT_N"
+#define GPIO_HAND_SW_ID1                  "HAND_SW_ID1"
+#define GPIO_HAND_SW_ID2                  "HAND_SW_ID2"
+#define GPIO_HAND_SW_ID4                  "HAND_SW_ID4"
+#define GPIO_HAND_SW_ID8                  "HAND_SW_ID8"
+#define GPIO_RST_BTN                      "RST_BTN"
+#define GPIO_BMC_SELF_HW_RST              "BMC_SELF_HW_RST"
+#define GPIO_USB_MUX_EN_N                 "USB_MUX_EN_N"
+#define GPIOAB4_RESERVED_PIN              //GPIOAB4 is reserved and could not be used
+#define GPIOAB5_RESERVED_PIN              //GPIOAB5 is reserved and could not be used
+#define GPIOAB6_RESERVED_PIN              //GPIOAB6 is reserved and could not be used
+#define GPIOAB7_RESERVED_PIN              //GPIOAB7 is reserved and could not be used
+#define GPIO_SLOT1_LED                    "SLOT1_LED"
+#define GPIO_SLOT2_LED                    "SLOT2_LED"
+#define GPIO_SLOT3_LED                    "SLOT3_LED"
+#define GPIO_SLOT4_LED                    "SLOT4_LED"
+#define GPIO_SLED_SEATED_N                "SLED_SEATED_N" //GPIOAC7
 
 #define BIC_CACHED_PID "/var/run/bic-cached_%d.lock"
 
@@ -230,6 +230,8 @@ int fby2_common_sboot_cpld_dump(uint8_t fru);
 int fby2_common_get_spb_type(void);
 int fby2_common_get_fan_type(void);
 int fby2_common_get_fan_config(void);
+int fby2_common_set_gpio_val(char *shadow, int val);
+int fby2_common_get_gpio_val(char *shadow, int *val);
 #ifdef __cplusplus
 } // extern "C"
 #endif

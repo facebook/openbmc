@@ -25,3 +25,7 @@ FILES_${PN} = "${libdir}/libfby2_common.so"
 FILES_${PN}-dev = "${includedir}/facebook/fby2_common.h"
 
 DEPENDS_append = "libkv"
+
+DEPENDS += " libgpio-ctrl "
+RDEPENDS_${PN} += " libgpio-ctrl "
+LDFLAGS += " -lgpio-ctrl "

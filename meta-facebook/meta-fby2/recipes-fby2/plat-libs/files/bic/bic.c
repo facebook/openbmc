@@ -35,6 +35,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/misc-utils.h>
+#include <openbmc/libgpio.h>
 
 #define FRUID_READ_COUNT_MAX 0x20
 #define FRUID_WRITE_COUNT_MAX 0x20
@@ -71,8 +72,6 @@
 #define CMD_RUN_SIZE 7
 #define CMD_STATUS_SIZE 3
 #define CMD_DATA_SIZE 0xFF
-
-#define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
 #define IMC_VER_SIZE 8
 
@@ -113,9 +112,9 @@ typedef struct _sdr_rec_hdr_t {
 } sdr_rec_hdr_t;
 #pragma pack(pop)
 
-const static uint32_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
-const static uint32_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
-const static uint32_t gpio_power_en[] = { 0, GPIO_SLOT1_POWER_EN, GPIO_SLOT2_POWER_EN, GPIO_SLOT3_POWER_EN, GPIO_SLOT4_POWER_EN };
+static char* gpio_bic_ready[] = { 0, "I2C_SLOT1_ALERT_N", "I2C_SLOT2_ALERT_N", "I2C_SLOT3_ALERT_N", "I2C_SLOT4_ALERT_N" };
+static char* gpio_12v[] = { 0, "P12V_STBY_SLOT1_EN", "P12V_STBY_SLOT2_EN", "P12V_STBY_SLOT3_EN", "P12V_STBY_SLOT4_EN" };
+static char* gpio_power_en[] = { 0, "SLOT1_POWER_EN", "SLOT2_POWER_EN", "SLOT3_POWER_EN", "SLOT4_POWER_EN" };
 
 // Helper Functions
 static void
@@ -244,19 +243,17 @@ read_device(const char *device, int *value) {
 
 uint8_t
 is_bic_ready(uint8_t slot_id) {
-  int val;
-  char path[64] = {0};
+  gpio_value_t val;
 
   if (slot_id < 1 || slot_id > 4) {
     return 0;
   }
 
-  sprintf(path, GPIO_VAL, gpio_bic_ready[slot_id]);
-  if (read_device(path, &val)) {
+  if (fby2_common_get_gpio_val(gpio_bic_ready[slot_id], &val) != 0) {
     return 0;
   }
 
-  if (val == 0x0) {
+  if (val == GPIO_VALUE_LOW) {
     return 1;
   } else {
     return 0;
@@ -265,19 +262,17 @@ is_bic_ready(uint8_t slot_id) {
 
 int
 bic_is_slot_12v_on(uint8_t slot_id) {
-  int val;
-  char path[64] = {0};
+  gpio_value_t val;
 
   if (slot_id < 1 || slot_id > 4) {
     return 0;
   }
 
-  sprintf(path, GPIO_VAL, gpio_12v[slot_id]);
-  if (read_device(path, &val)) {
+  if (fby2_common_get_gpio_val(gpio_12v[slot_id], &val) != 0) {
     return 0;
   }
 
-  if (val == 0x0) {
+  if (val == GPIO_VALUE_LOW) {
     return 0;
   } else {
     return 1;
@@ -286,14 +281,12 @@ bic_is_slot_12v_on(uint8_t slot_id) {
 
 int bic_set_slot_12v(uint8_t slot_id, uint8_t status)
 {
-  char path[64] = {0};
-  const char *val = status ? "1" : "0";
+  gpio_value_t val = status ? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
 
   if (slot_id < 1 || slot_id > 4) {
     return -1;
   }
-  sprintf(path, GPIO_VAL, gpio_12v[slot_id]);
-  if (write_device(path, val)) {
+  if (fby2_common_set_gpio_val(gpio_12v[slot_id], val) != 0) {
     return -1;
   }
   return 0;
@@ -301,19 +294,17 @@ int bic_set_slot_12v(uint8_t slot_id, uint8_t status)
 
 int
 bic_is_slot_power_en(uint8_t slot_id) {
-  int val;
-  char path[64] = {0};
+  gpio_value_t val;
 
   if (slot_id < 1 || slot_id > 4) {
     return 0;
   }
 
-  sprintf(path, GPIO_VAL, gpio_power_en[slot_id]);
-  if (read_device(path, &val)) {
+  if (fby2_common_get_gpio_val(gpio_power_en[slot_id], &val) != 0) {
     return 0;
   }
 
-  if (val == 0x0) {
+  if (val == GPIO_VALUE_LOW) {
     return 0;
   } else {
     return 1;

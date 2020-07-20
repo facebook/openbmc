@@ -4,7 +4,7 @@ DESCRIPTION = "Util for communicating to SOC PSP"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://apml-util.c;beginline=4;endline=16;md5=bc1f9dca8274e5d583a00785eeda8f10"
+LIC_FILES_CHKSUM = "file://apml-util.c;beginline=4;endline=16;md5=bd1371ec5d5f1f2a71a5549cb6bcbf2e"
 
 SRC_URI = "file://apml-util.c \
            file://Makefile \
@@ -17,8 +17,8 @@ binfiles = "apml-util \
 
 pkgdir = "apml-util"
 
-DEPENDS = " libbic "
-RDEPENDS_${PN} += "libbic "
+DEPENDS = " libbic libfby2-common"
+RDEPENDS_${PN} += "libbic libfby2-common"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

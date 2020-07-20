@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <getopt.h>
 #include <facebook/bic.h>
+#include <facebook/fby2_common.h>
 
 #define MAX_APML_DATA_LENGTH 4
 #define POWER_CAPPING_OPTION_NUM 4

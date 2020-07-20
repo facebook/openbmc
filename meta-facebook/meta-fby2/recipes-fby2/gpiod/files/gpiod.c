@@ -39,7 +39,6 @@
 #define DELAY_GPIOD_READ    1000000
 #define SOCK_PATH_GPIO      "/tmp/gpio_socket"
 
-#define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 
 /* To hold the gpio info and status */

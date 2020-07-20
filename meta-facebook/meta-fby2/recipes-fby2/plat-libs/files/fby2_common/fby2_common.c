@@ -31,6 +31,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <openbmc/kv.h>
+#include <openbmc/libgpio.h>
 #include "fby2_common.h"
 
 #define BIT(value, index) ((value >> index) & 1)
@@ -45,7 +46,6 @@
 #define SBOOT_CPLDDUMP_BIN       "/usr/local/bin/sboot-cpld-dump.sh"
 #define SBOOT_CPLDDUMP_PID       "/var/run/sbootcplddump%d.pid"
 
-#define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define SPB_REV_FILE "/tmp/spb_rev"
 
 #define FAN_CONFIG_FILE "/tmp/fan_config"
@@ -252,23 +252,20 @@ _get_spb_rev(void) {
 int
 fby2_common_get_spb_type() {
    int spb_type;
-   int board_id;
+   gpio_value_t board_id;
    uint8_t rev;
-   char path[64] = {0};
 
-   memset(path, 0, sizeof(path));
    // Board_ID
-   sprintf(path, GPIO_VAL, GPIO_BOARD_ID);
-   if (read_device(path, &board_id)) {
+   if (fby2_common_get_gpio_val("BOARD_ID", &board_id) != 0) {
       return -1;
    }
 
    // Rev_ID
    rev = _get_spb_rev();
 
-   if (1 == board_id && BIT(rev, 2)) {
+   if (GPIO_VALUE_HIGH == board_id && BIT(rev, 2)) {
      spb_type = TYPE_SPB_YV250;
-   } else if ((1 == board_id) && (0 == BIT(rev, 2))) {
+   } else if ((GPIO_VALUE_HIGH == board_id) && (0 == BIT(rev, 2))) {
      spb_type = TYPE_SPB_YV2ND;
    } else {
      spb_type = TYPE_SPB_YV2;
@@ -280,10 +277,8 @@ fby2_common_get_spb_type() {
 int
 fby2_common_get_fan_type() {
    int fan_type;
-   char path[64] = {0};
 
-   sprintf(path, GPIO_VAL, GPIO_DUAL_FAN_DETECT);
-   if (read_device(path, &fan_type)) {
+   if (fby2_common_get_gpio_val("DUAL_FAN_DETECT", &fan_type) != 0) {
       return -1;
    }
 
@@ -647,4 +642,44 @@ fby2_common_get_fan_config(void) {
   }
 
   return (type)?TYPE_15K_FAN:TYPE_10K_FAN;
+}
+
+int
+fby2_common_set_gpio_val(char *shadow, int val) {
+  int ret = 0;
+  gpio_desc_t *gdesc = NULL;
+
+  gdesc = gpio_open_by_shadow(shadow);
+  if (gdesc == NULL){
+    syslog(LOG_WARNING, "Fail to open GPIO shadow %s", shadow);
+    return -1;
+  }
+  ret = gpio_set_value(gdesc, val);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "Fail to set GPIO %s", shadow);
+    ret = -1;
+  }
+  gpio_close(gdesc);
+
+  return ret;
+}
+
+int
+fby2_common_get_gpio_val(char *shadow, int *val) {
+  int ret = 0;
+  gpio_desc_t *gdesc = NULL;
+
+  gdesc = gpio_open_by_shadow(shadow);
+  if (gdesc == NULL){
+    syslog(LOG_WARNING, "Fail to open GPIO shadow %s", shadow);
+    return -1;
+  }
+  ret = gpio_get_value(gdesc, val);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "Fail to get GPIO %s", shadow);
+    ret = -1;
+  }
+  gpio_close(gdesc);
+
+  return ret;
 }

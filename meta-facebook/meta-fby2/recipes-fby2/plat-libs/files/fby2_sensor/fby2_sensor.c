@@ -36,11 +36,11 @@
 #include <openbmc/obmc-sensors.h>
 #include "fby2_sensor.h"
 #include <openbmc/nvme-mi.h>
+#include <openbmc/libgpio.h>
 
 #define LARGEST_DEVICE_NAME 120
 
 #define MEZZ_TEMP_DEVICE "/sys/class/i2c-adapter/i2c-11/11-001f/hwmon/hwmon*"
-#define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
 #if defined(CONFIG_FBY2_KERNEL)
   #define I2C_BUS_1_DIR "/sys/bus/i2c/devices/i2c-1/"
@@ -2374,44 +2374,34 @@ fby2_sdr_init(uint8_t fru, bool force) {
 
 static bool
 is_server_prsnt(uint8_t fru) {
-  uint32_t gpio_prim, gpio_ext;
-  int val, val_prim, val_ext;
-  char path[64] = {0};
+  char gpio_prim[64] = {0}, gpio_ext[64] = {0};
+  gpio_value_t val, val_prim, val_ext;
+  char* prim_name = "SLOT%d_PRSNT_N";
+  char* ext_name = "SLOT%d_PRSNT_B_N";
 
   switch(fru) {
   case 1:
-    gpio_prim = GPIO_SLOT1_PRSNT_N;
-    gpio_ext = GPIO_SLOT1_PRSNT_B_N;
-    break;
   case 2:
-    gpio_prim = GPIO_SLOT2_PRSNT_N;
-    gpio_ext = GPIO_SLOT2_PRSNT_B_N;
-    break;
   case 3:
-    gpio_prim = GPIO_SLOT3_PRSNT_N;
-    gpio_ext = GPIO_SLOT3_PRSNT_B_N;
-    break;
   case 4:
-    gpio_prim = GPIO_SLOT4_PRSNT_N;
-    gpio_ext = GPIO_SLOT4_PRSNT_B_N;
+    sprintf(gpio_prim, prim_name, fru);
+    sprintf(gpio_ext, ext_name, fru);
     break;
   default:
     return 0;
   }
 
-  sprintf(path, GPIO_VAL, gpio_prim);
-  if (read_device(path, &val_prim)) {
+  if (fby2_common_get_gpio_val(gpio_prim, &val_prim) != 0) {
     return -1;
   }
 
-  sprintf(path, GPIO_VAL, gpio_ext);
-  if (read_device(path, &val_ext)) {
+  if (fby2_common_get_gpio_val(gpio_ext, &val_ext) != 0) {
     return -1;
   }
 
   val = (val_prim || val_ext);
 
-  if (val == 0x0) {
+  if (val == GPIO_VALUE_LOW) {
     return 1;
   } else {
     return 0;

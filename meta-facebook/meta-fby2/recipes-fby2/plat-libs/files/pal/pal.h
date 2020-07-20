@@ -160,7 +160,7 @@ int pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8
 void pal_power_policy_control(uint8_t slot_id, char *last_ps);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd);
-int pal_baseboard_clock_control(uint8_t slot_id, char *ctrl);
+int pal_baseboard_clock_control(uint8_t slot_id, int ctrl);
 int pal_is_server_12v_on(uint8_t slot_id, uint8_t *status);
 int pal_slot_pair_12V_off(uint8_t slot_id);
 bool pal_is_hsvc_ongoing(uint8_t slot_id);

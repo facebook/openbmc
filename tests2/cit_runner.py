@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse
 import os
 import unittest
@@ -117,6 +117,13 @@ def set_external(args):
         os.environ["TEST_BMC_HOSTNAME"] = args.bmc_host
 
 
+def set_fw_args(args):
+    """
+    Optional arguments for firmware upgrade test
+    """
+    os.environ["TEST_FW_OPT_ARGS"] = args.firmware_opt_args
+
+
 def get_tests(platform, start_dir, pattern=None):
     if pattern:
         return Tests(platform, start_dir, pattern).get_all_platform_tests()
@@ -206,6 +213,19 @@ def arg_parser():
     )  # find better way to represent this ?
 
     parser.add_argument(
+        "--firmware-opt-args",
+        help="Set optional arguments for external firmware upgrading \
+                        -To skip upgrading of desired components, please use the \
+                        component name e.g bios, scm ... etc with '--skip'. \
+                        -To show summary skipped components information, and \
+                        enable verbose mode , add '--verbose' to the argument string. \
+                        -To force to upgrade all components(except skipped comps) \
+                        , add '--force' to the argument string.\
+                        example: --firmware-opt-args='--skip=bios,scm --verbose --force'",
+        type=str,
+    )
+
+    parser.add_argument(
         "--fw-upgrade",
         help="Firmware upgrade test, these are tests that have \
                         pattern fw_test*.py, require --host to be set",
@@ -262,6 +282,9 @@ if __name__ == "__main__":
     if args.external:
         pattern = "external*.py"
         set_external(args)
+
+    if args.firmware_opt_args:
+        set_fw_args(args)
 
     if args.fw_upgrade:
         pattern = "fw*.py"

@@ -1,9 +1,9 @@
 #include <string>
 #include <list>
 #include <iostream>
+#include <fstream>
 #include <fcntl.h>
 #include <arpa/inet.h>
-#include <jansson.h>
 extern "C" {
   #include <libfdt.h>
 }
@@ -203,32 +203,32 @@ class PartitionDescriptor
     int     num_nodes;
     string  type;
   public:
-    PartitionDescriptor(string n, json_t *obj) : name(n), offset(0), size(0), num_nodes(1) {
-      json_t *tmp = json_object_get(obj, "offset");
-      if (!tmp || !json_is_number(tmp)) {
+    PartitionDescriptor(string n, json& obj) : name(n), offset(0), size(0), num_nodes(1) {
+      auto tmp = obj["offset"].get_ptr<const json::number_integer_t* const>();
+      if ( tmp == nullptr ) {
         throw "OFFSET not found parsing " + name;
       }
-      offset = json_integer_value(tmp) * 1024;
+      offset = (*tmp) * 1024;
 
-      tmp = json_object_get(obj, "size");
-      if (!tmp || !json_is_number(tmp)) {
+      tmp = obj["size"].get_ptr<const json::number_integer_t* const>();
+      if ( tmp == nullptr ) {
         throw "SIZE not found parsing " + name;
       }
-      size = json_integer_value(tmp) * 1024;
-      if (size == 0) {
+      size = (*tmp) * 1024;
+      if ( size == 0 ) {
         throw "SIZE cannot be zero parsing " + name;
       }
 
-      tmp = json_object_get(obj, "type");
-      if (!tmp || !json_is_string(tmp)) {
+      tmp = obj["num-nodes"].get_ptr<const json::number_integer_t* const>();
+      if ( tmp != nullptr ) {
+        num_nodes = *tmp;
+      }
+
+      auto tmp_str = obj["type"].get_ptr<const json::string_t* const>();
+      if ( tmp_str == nullptr ) {
         throw "TYPE not found parsing " + name;
       }
-      type = string(json_string_value(tmp));
-
-      tmp = json_object_get(obj, "num-nodes");
-      if (tmp && json_is_number(tmp)) {
-        num_nodes = json_integer_value(tmp);
-      }
+      type = *tmp_str;
 
       if (type == "fit") {
         checker = new FITChecker(name, offset, size, num_nodes);
@@ -254,22 +254,15 @@ class ImageDescriptor {
   string name;
   list<PartitionDescriptor *> partitions;
   public:
-  ImageDescriptor(string n, json_t *obj) : name(n), partitions() {
-    int num = json_object_size(obj);
-    if (num == 0) {
+  ImageDescriptor(string n, json& obj) : name(n), partitions() {
+    if (obj.size() == 0) {
       return;
     }
-    void *it;
-    int i;
-    for (i = 0, it = json_object_iter(obj);
-         i < num && it != NULL;
-         i++, it = json_object_iter_next(obj, it)) {
-      const char *name = json_object_iter_key(it);
-      json_t     *el   = json_object_iter_value(it);
+    for (auto& j : obj.items()) {
       try {
-        partitions.push_back(new PartitionDescriptor(string(name), el));
+        partitions.push_back(new PartitionDescriptor(j.key(), j.value()));
       } catch (string &ex) {
-        throw string("Exception received parsing ") + name + " (" + ex + ")";
+        throw "Exception received parsing " + j.key() + " (" + ex + ")";
       }
     }
   }
@@ -371,38 +364,34 @@ class Image {
 
 class ImageDescriptorList {
   list<ImageDescriptor *> images;
-  json_t *conf;
+  json conf;
   public:
-  ImageDescriptorList(const char *desc_file) : conf(NULL) {
-    json_t *conf;
-    json_error_t error;
-    int num;
-
-    conf = json_load_file(desc_file, 0, &error);
-    if (!conf) {
+  ImageDescriptorList(const char *desc_file) : conf(nullptr) {
+    ifstream ifs(desc_file);
+    if (!ifs) {
       throw "Cannot load file " + string(desc_file);
     }
-    num = json_object_size(conf);
-    if (num == 0) {
+
+    try {
+      conf = json::parse(ifs);
+    } catch (json::parse_error& e) {
+      cout << e.what() << endl;
+      throw "Cannot parse file " + string(desc_file);
+    }
+
+    if (conf.size() == 0) {
       throw "Unsupported number of images in " + string(desc_file);
     }
-    int i;
-    void *iter;
-    for (i = 0, iter = json_object_iter(conf);
-         i < num && iter;
-         i++, iter = json_object_iter_next(conf, iter)) {
-      const char *key = json_object_iter_key(iter);
-      json_t *obj = (json_t *)json_object_iter_value(iter);
+
+    for (auto& j : conf.items()) {
       try {
-        images.push_back(new ImageDescriptor(string(key), obj));
+        images.push_back(new ImageDescriptor(j.key(), j.value()));
       } catch (string &ex) {
-        throw "Parsing " + string(desc_file) + " invalid " + string(key) + " (" + ex + ")";
+        throw "Parsing " + string(desc_file) + " invalid " + j.key() + " (" + ex + ")";
       }
     }
   }
   ~ImageDescriptorList() {
-    if (conf)
-      json_decref(conf);
   }
   bool is_valid(Image &image)
   {

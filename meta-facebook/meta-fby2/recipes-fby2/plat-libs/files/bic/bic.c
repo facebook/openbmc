@@ -102,6 +102,8 @@
 
 #define PCIE_SW_MAX_RETRY 50
 
+#define PCIE_LINK_CHECK_MAX_RETRY 3
+
 #pragma pack(push, 1)
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
@@ -111,9 +113,9 @@ typedef struct _sdr_rec_hdr_t {
 } sdr_rec_hdr_t;
 #pragma pack(pop)
 
-const static uint8_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
-const static uint8_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
-const static uint8_t gpio_power_en[] = { 0, GPIO_SLOT1_POWER_EN, GPIO_SLOT2_POWER_EN, GPIO_SLOT3_POWER_EN, GPIO_SLOT4_POWER_EN };
+const static uint32_t gpio_bic_ready[] = { 0, GPIO_I2C_SLOT1_ALERT_N, GPIO_I2C_SLOT2_ALERT_N, GPIO_I2C_SLOT3_ALERT_N, GPIO_I2C_SLOT4_ALERT_N };
+const static uint32_t gpio_12v[] = { 0, GPIO_P12V_STBY_SLOT1_EN, GPIO_P12V_STBY_SLOT2_EN, GPIO_P12V_STBY_SLOT3_EN, GPIO_P12V_STBY_SLOT4_EN };
+const static uint32_t gpio_power_en[] = { 0, GPIO_SLOT1_POWER_EN, GPIO_SLOT2_POWER_EN, GPIO_SLOT3_POWER_EN, GPIO_SLOT4_POWER_EN };
 
 // Helper Functions
 static void
@@ -542,6 +544,12 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, 5, rbuf, &rlen);
 
+#if defined(CONFIG_FBY2_GPV2)
+  if ((spb_type == TYPE_SPB_YV250) && (status == 1)) {
+    // Check link state when power on
+    bic_check_pcie_link(slot_id);
+  }
+#endif
   return ret;
 }
 
@@ -956,6 +964,44 @@ _check_brcm_fw_status(uint8_t slot_id, uint8_t drv_num) {
     memcpy(&result,&rbuf[0], sizeof(uint32_t));
     syslog(LOG_DEBUG,"%s(): result=0x%X", __func__,result);
   }
+  return ret;
+}
+
+int
+bic_disable_brcm_parity_init(uint8_t slot_id, uint8_t drv_num) {
+  uint8_t bus, wbuf[256], rbuf[256];
+  int ret = 0;
+  int rlen = 0; // write
+
+  bic_disable_sensor_monitor(slot_id, 1); // disable sensor monitor
+  msleep(100);
+
+  // MUX select
+  bus = (2 + drv_num/2) * 2 + 1;
+  wbuf[0] = 1 << (drv_num%2);
+  ret = bic_master_write_read(slot_id, bus, 0xe2, wbuf, 1, rbuf, 0);
+  if (ret != 0) {
+    syslog(LOG_DEBUG,"%s(): bic_master_write_read offset=%d  failed", __func__,wbuf[0]);
+    bic_disable_sensor_monitor(slot_id, 0); // enable sensor monitor
+    return ret;
+  }
+
+  wbuf[0] = BRCM_WRITE_CMD;  // offset 130
+  wbuf[1] = 0x08;
+  wbuf[2] = 0x78;
+  wbuf[3] = 0x0c;
+  wbuf[4] = 0x07;
+  wbuf[5] = 0x40;
+  wbuf[6] = 0x04;
+  wbuf[7] = 0x00;
+  wbuf[8] = 0x40;
+  wbuf[9] = 0x00;
+  wbuf[10] = 0x00;
+  ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 11, rbuf, rlen);
+  if (ret != 0) {
+    syslog(LOG_DEBUG,"%s(): bic_master_write_read offset=%d  failed", __func__,wbuf[0]);
+  }
+  bic_disable_sensor_monitor(slot_id, 0); // enable sensor monitor
   return ret;
 }
 
@@ -3752,4 +3798,47 @@ bic_fget_device_info(uint8_t slot_id, uint8_t dev_num, uint8_t *ffi, uint8_t *me
   }
 
   return ret;
+}
+
+void
+bic_check_pcie_link(uint8_t fru) {
+  int ret = 0, slot_id = 0, retry = 0;
+  uint8_t rlen = 0;
+  uint8_t rbuf[255] = {0x0};
+
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+      slot_id = FRU_SLOT1;
+      break;
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      slot_id = FRU_SLOT3;
+      break;
+    default:
+       return;
+  }
+  while (retry < PCIE_LINK_CHECK_MAX_RETRY) {
+    if (!is_bic_ready(slot_id)) {
+      sleep(1);
+      retry++;
+    } else {
+      break;
+    }
+  }
+  if (retry == PCIE_LINK_CHECK_MAX_RETRY) {
+    syslog(LOG_WARNING, "FRU: %d, BIC is not ready to check PCIe link.", slot_id);
+    return;
+  }
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_STORAGE_REQ, CHECK_PCIE_LINK, NULL, 0, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: Fail to send IPMB command to slot%d", __func__, slot_id);
+    return;
+  }
+  if (rbuf[0] == CC_SUCCESS) {
+    syslog(LOG_INFO, "FRU: %d, Checking PCIe link successfully", slot_id);
+  } else {
+    syslog(LOG_WARNING, "FRU: %d, Fail to create PCIe link checking thread.", slot_id);
+  }
 }

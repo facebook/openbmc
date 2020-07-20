@@ -1,0 +1,66 @@
+{
+  "version": "1.0",
+  "sensors": [
+    {
+      "name": "SYSTEM_AIRFLOW",
+      "units": "CFM",
+      "composition": {
+        "type": "conditional_linear_expression",
+        "sources": {
+          "rpm0": {
+            "fru":       7,
+            "sensor_id": 224
+          },
+          "rpm1": {
+            "fru":       7,
+            "sensor_id": 225
+          },
+          "rpm2": {
+            "fru":       7,
+            "sensor_id": 226
+          },
+          "rpm3": {
+            "fru":       7,
+            "sensor_id": 227
+          },
+          "rpm4": {
+            "fru":       7,
+            "sensor_id": 228
+          },
+          "rpm5": {
+            "fru":       7,
+            "sensor_id": 229
+          },
+          "rpm6": {
+            "fru":       7,
+            "sensor_id": 230
+          },
+          "rpm7": {
+            "fru":       7,
+            "sensor_id": 231
+          },
+          "cfm0": {
+            "expression": "( rpm0 * 0.005075 ) + ( rpm1 * 0.005075 ) + ( rpm2 * 0.005075 ) + ( rpm3 * 0.005075 )"
+          }
+       },
+       "linear_expressions": {
+         "T1" : "cfm0 - 9.9157",
+         "T10": "cfm0 - 9.9157",
+         "T17": "cfm0 - 9.9157",
+         "T15": "cfm0 - 9.9157"
+       },
+       "condition": {
+         "key": "sled_system_conf",
+         "key_type": "persistent",
+         "default_expression": "T1",
+         "value_map": {
+           "Type_1" : "T1",
+           "Type_10": "T10",
+           "Type_17": "T17",
+           "Type_15": "T15"
+         }
+       }
+      }
+    }
+  ]
+}

@@ -424,6 +424,7 @@ main(int argc, char **argv) {
   int fupgrade = 0;
   struct utsname unamebuf;
   int ret = 0;
+  int sockettest = 0;
 
 
   if (argc < 2)
@@ -440,26 +441,8 @@ main(int argc, char **argv) {
     switch(argflag) {
     case 's':
             bufSize = (int)strtoul(optarg, NULL, 0);
-            printf("socket test, size =%d\n",bufSize);
-            char *buf = malloc(bufSize);
-            if (!buf) {
-              printf("error: buf malloc failed\n");
-              return -1;
-            }
-            msg->cmd = 0xDE;
-            msg->payload_length = bufSize;
-            for (i=0; i<msg->payload_length; ++i) {
-              msg->msg_payload[i] = i;
-            }
-            sprintf(msg->dev_name, "eth0");
-            msg->channel_id = channel;
-            rsp = send_nl_msg(msg);
-            if (rsp) {
-              print_ncsi_resp(rsp);
-              free(rsp);
-            }
-            free(msg);
-            return 0;
+            sockettest = 1;
+            break;
     case 'n':
             netdev = strdup(optarg);
             if (netdev == NULL) {
@@ -568,6 +551,15 @@ main(int argc, char **argv) {
     send_nl_msg = send_nl_msg_libnl;
 
 
+  if(sockettest) {
+    msg->cmd = 0xDE;
+    msg->payload_length = bufSize;
+    printf("socket test, size =%d\n",bufSize);
+    for (i=0; i<msg->payload_length; ++i) {
+      msg->msg_payload[i] = i;
+    }
+  }
+
  if (fupgrade) {
     // special case - invoke PLDM fw upgrade
     ret = pldm_update_fw(pfile, bufSize, msg->channel_id);
@@ -614,7 +606,8 @@ main(int argc, char **argv) {
         print_ncsi_resp(rsp);
       }
     } else {
-      goto free_err_exit;
+      if(!sockettest)
+        goto free_err_exit;
     }
   }
 

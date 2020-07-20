@@ -123,13 +123,13 @@ static inline void fbw_copy_assembly_number(
 {
   int i;
   const uint8_t *cur = *src;
-  /* 11 letter in the format of XXX-XXXXXX-XX, 3 additional letters */
+  /* 11 letter in the format of XX-XXXXXXX-XX, 3 additional letters */
   assert(dst_len >= src_len + 3);
-  for (i = 0; i < 3; i++) {
+  for (i = 0; i < 2; i++) {
     *dst++ = *cur++;
   }
   *dst++ = '-';
-  for (i = 0; i < 6; i++) {
+  for (i = 0; i < 7; i++) {
     *dst++ = *cur++;
   }
   *dst++ = '-';
@@ -273,7 +273,7 @@ static int fbw_parse_buffer(
                           sizeof(eeprom->fbw_product_number),
                           &cur, FBW_EEPROM_F_PRODUCT_NUMBER);
 
-  /* System Assembly Part Number: XXX-XXXXXX-XX */
+  /* System Assembly Part Number: XX-XXXXXXX-XX */
   fbw_copy_assembly_number(eeprom->fbw_assembly_number,
                            sizeof(eeprom->fbw_assembly_number),
                            &cur, FBW_EEPROM_F_ASSEMBLY_NUMBER);
@@ -365,7 +365,7 @@ static int fbw_parse_buffer(
   /* Location on Fabric: "LEFT"/"RIGHT", "WEDGE", "LC" */
   fbw_strcpy(eeprom->fbw_location,
              sizeof(eeprom->fbw_location),
-             &cur, 
+             &cur,
              (eeprom->fbw_version >= FBW_EEPROM_VERSION3)
              ? FBW_EEPROM_F_LOCATION_V3
              : FBW_EEPROM_F_LOCATION);

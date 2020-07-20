@@ -3,8 +3,6 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal:"
 SRC_URI += " \
     file://machine_config.c \
     file://plat/meson.build \
-    file://pal.c \
-    file://pal.h \
     "
 
 DEPENDS += " \

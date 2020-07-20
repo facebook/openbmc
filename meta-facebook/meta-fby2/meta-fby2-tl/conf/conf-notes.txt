@@ -1,2 +1,0 @@
-Common targets are:
-    fby2-tl-image

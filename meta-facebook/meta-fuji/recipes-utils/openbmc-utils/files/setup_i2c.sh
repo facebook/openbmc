@@ -91,7 +91,7 @@ i2c_device_add 72 0x33	fcbcpld #FCM CPLD
 i2c_device_add 73 0x53	24c02
 i2c_device_add 74 0x49 tmp75
 i2c_device_add 74 0x48 tmp75
-i2c_device_add 74 0x10 adm1278
+i2c_device_add 75 0x10 adm1278
 i2c_device_add 76 0x52 24c64    #fan 8 eeprom
 i2c_device_add 77 0x52 24c64    #fan 6 eeprom
 i2c_device_add 78 0x52 24c64    #fan 4 eeprom

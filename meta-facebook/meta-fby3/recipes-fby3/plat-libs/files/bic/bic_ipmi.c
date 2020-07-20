@@ -61,6 +61,9 @@ typedef struct _sdr_rec_hdr_t {
 #define MAX_VER_STR_LEN 80
 #define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
 
+#define KV_SLOT_IS_M2_EXP_PRESENT "slot%x_is_m2_exp_prsnt"
+#define KV_SLOT_GET_1OU_TYPE      "slot%x_get_1ou_type"
+
 // S/E - Get Sensor reading
 // Netfn: 0x04, Cmd: 0x2d
 int
@@ -440,6 +443,11 @@ bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
   uint8_t rlen = 0;
   int ret = 0;
   int retry = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char tmp_str[MAX_VALUE_LEN] = {0};
+  int val = 0;
+
+  snprintf(key, sizeof(key), KV_SLOT_GET_1OU_TYPE, slot_id);
   
   while (retry < 3) {
     ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_BOARD_ID, tbuf, 3, rbuf, &rlen, FEXP_BIC_INTF);
@@ -449,11 +457,33 @@ bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
   
   if (ret == 0) {
     *type = rbuf[3];
+    val = *type;
   } else {
     syslog(LOG_WARNING, "[%s] fail at slot%d", __func__, slot_id);
+    val = ret;
   }
   
+  snprintf(tmp_str, sizeof(tmp_str), "%d", val);
+  kv_set(key, tmp_str, 0, 0);
   return ret;
+}
+
+int
+bic_get_1ou_type_cache(uint8_t slot_id, uint8_t *type) {
+  char key[MAX_KEY_LEN] = {0};
+  char tmp_str[MAX_VALUE_LEN] = {0};
+  int val = 0;
+
+  snprintf(key, sizeof(key), KV_SLOT_GET_1OU_TYPE, slot_id);
+  if (kv_get(key, tmp_str, NULL, 0))
+    return -1;
+
+  val = atoi(tmp_str);
+  if (val < 0 && val > 255)
+    return -1;
+
+  *type = val;
+  return 0;
 }
 
 int
@@ -817,6 +847,11 @@ bic_is_m2_exp_prsnt(uint8_t slot_id) {
   uint8_t rlen = 0;
   int ret = 0;
   int present = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char tmp_str[MAX_VALUE_LEN] = {0};
+  int val = 0;
+
+  snprintf(key, sizeof(key), KV_SLOT_IS_M2_EXP_PRESENT, slot_id);
 
   tbuf[0] = 0x05; //bus id
   tbuf[1] = 0x42; //slave addr
@@ -828,18 +863,34 @@ bic_is_m2_exp_prsnt(uint8_t slot_id) {
   present = rbuf[0] & 0xC;
 
   if ( ret < 0 ) {
-    return -1;
+    val = -1;
   } else {
     if ( present == 0) {
-      return 3; //1OU+2OU present
+      val = 3; //1OU+2OU present
     } else if ( present == 8) {
-      return 1; //1OU present
+      val = 1; //1OU present
     } else if ( present == 4) {
-      return 2; //2OU present
+      val = 2; //2OU present
     }
   }
 
-  return 0;
+  snprintf(tmp_str, sizeof(tmp_str), "%d", val);
+  kv_set(key, tmp_str, 0, 0);
+  return val;
+}
+
+int
+bic_is_m2_exp_prsnt_cache(uint8_t slot_id) {
+  char key[MAX_KEY_LEN] = {0};
+  char tmp_str[MAX_VALUE_LEN] = {0};
+  int val = 0;
+
+  snprintf(key, sizeof(key), KV_SLOT_IS_M2_EXP_PRESENT, slot_id);
+  if (kv_get(key, tmp_str, NULL, 0))
+    return -1;
+
+  val = atoi(tmp_str);
+  return val;
 }
 
 /*
@@ -961,6 +1012,18 @@ bic_switch_mux_for_bios_spi(uint8_t slot_id, uint8_t mux) {
 }
 
 int
+bic_asd_init(uint8_t slot_id, uint8_t cmd) {
+  uint8_t tbuf[4] = {0x00};
+  uint8_t rbuf[8] = {0x00};
+  uint8_t tlen = 4;
+  uint8_t rlen = 0;
+
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  tbuf[3] = cmd;
+  return bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ASD_INIT, tbuf, tlen, rbuf, &rlen);
+}
+
+int
 bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data) {
   uint8_t tbuf[13] = {0x00};
   uint8_t rbuf[6] = {0x00};
@@ -1007,7 +1070,7 @@ bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data) {
 }
 
 int
-bic_set_gpio(uint8_t slot_id, uint8_t gpio_num,uint8_t value) {
+bic_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value) {
   uint8_t tbuf[6] = {0x9c, 0x9c, 0x00};
   uint8_t rbuf[1] = {0};
   uint8_t tlen = 6;
@@ -1027,6 +1090,7 @@ bic_set_gpio(uint8_t slot_id, uint8_t gpio_num,uint8_t value) {
   return 0;
 }
 
+// Get all GPIO pin status
 int
 bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
   uint8_t tbuf[4] = {0x9c, 0x9c, 0x00}; // IANA ID
@@ -1047,6 +1111,24 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
   // Ignore first 3 bytes of IANA ID
   memcpy((uint8_t*) gpio, &rbuf[3], rlen);
 
+  return ret;
+}
+
+// Get an GPIO pin status
+int
+bic_get_one_gpio_status(uint8_t slot_id, uint8_t gpio_num, uint8_t *value){
+  uint8_t tbuf[5] = {0x00};
+  uint8_t rbuf[5] = {0x00};
+  uint8_t tlen = 5;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  tbuf[3] = 0x00;
+  tbuf[4] = gpio_num;
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen);
+  *value = rbuf[4] & 0x01;
   return ret;
 }
 
@@ -1346,4 +1428,13 @@ bic_reset(uint8_t slot_id) {
   ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_COLD_RESET, tbuf, 0, rbuf, &rlen);
 
   return ret;
+}
+
+int
+bic_clear_cmos(uint8_t slot_id) {
+  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen = 0;
+
+  return bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_CLEAR_CMOS, tbuf, 3, rbuf, &rlen);
 }

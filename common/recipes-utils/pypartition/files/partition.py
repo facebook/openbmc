@@ -29,7 +29,7 @@ from virtualcat import VirtualCat
 # The typing module isn't installed on BMCs as of 2017-06-18 but it's only
 # needed when running mypy on a developer's machine.
 try:
-    from typing import Any, List, Optional
+    from typing import Any, List, Optional, Dict
 except ImportError:
     pass
 
@@ -149,12 +149,16 @@ class ExternalChecksumPartition(Partition):
 
             checksums.extend(checksums_json.keys())
             self.logger.info(
-                "U-Boot partition appended with MD5 checksums: %s", checksums_json
+                "U-Boot partition appended with MD5 checksums: {}".format(
+                    checksums_json
+                )
             )
         except (ValueError, AttributeError) as e:
             # There was no valid JSON object appended to the partition
             self.logger.info(
-                "Could not find MD5 checksums appended to U-Boot partition: %s", repr(e)
+                "Could not find MD5 checksums appended to U-Boot partition: {}".format(
+                    repr(e)
+                )
             )
             self.md5sum.update(self.checksums_data)
 
@@ -427,7 +431,7 @@ class DeviceTreePartition(Partition):
 
     @staticmethod
     def dict_from_node(images, strings, logger):
-        # type: (VirtualCat, bytes, object) -> Dict[bytes, Any]]
+        # type: (VirtualCat, bytes, object) -> Dict[bytes, Any]
         node_name = ""
         tree = {}
         while True:

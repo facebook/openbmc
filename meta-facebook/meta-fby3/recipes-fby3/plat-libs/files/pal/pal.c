@@ -123,16 +123,22 @@ struct pal_key_cfg {
 };
 
 MAPTOSTRING root_port_mapping[] = {
-    { 0xB2, 3, 0x3D, "0", "1OU"}, //Port 0x4D
-    { 0xB2, 2, 0x3C, "1", "1OU"}, //Port 0x4C
-    { 0xB2, 1, 0x3B, "2", "1OU"}, //Port 0x4B
-    { 0xB2, 0, 0x3A, "3", "1OU"}, //Port 0x4A
-    { 0x15, 0, 0x1A, "0", "2OU"}, //Port 0x1A
-    { 0x15, 1, 0x1B, "1", "2OU"}, //Port 0x1B
-    { 0x63, 1, 0x2B, "2", "2OU"}, //Port 0x2B
-    { 0x63, 0, 0x2A, "3", "2OU"}, //Port 0x2A
-    { 0x15, 2, 0x1C, "4", "2OU"}, //Port 0x1C
-    { 0x15, 3, 0x1D, "5", "2OU"}, //Port 0x1D
+    { 0xB2, 3, 0x3D, "Num 0", "1OU"}, //Port 0x4D
+    { 0xB2, 2, 0x3C, "Num 1", "1OU"}, //Port 0x4C
+    { 0xB2, 1, 0x3B, "Num 2", "1OU"}, //Port 0x4B
+    { 0xB2, 0, 0x3A, "Num 3", "1OU"}, //Port 0x4A
+    { 0x15, 0, 0x1A, "Num 0", "2OU"}, //Port 0x1A
+    { 0x15, 1, 0x1B, "Num 1", "2OU"}, //Port 0x1B
+    { 0x63, 1, 0x2B, "Num 2", "2OU"}, //Port 0x2B
+    { 0x63, 0, 0x2A, "Num 3", "2OU"}, //Port 0x2A
+    { 0x15, 2, 0x1C, "Num 4", "2OU"}, //Port 0x1C
+    { 0x15, 3, 0x1D, "Num 5", "2OU"}, //Port 0x1D
+    // NIC
+    { 0xB2, 0, 0x4A, "Class 2", "NIC"}, // Class 2 NIC    TODO check root port
+    { 0x63, 3, 0x2D, "Class 1", "NIC"}, // Class 1 NIC
+    // DL
+    { 0x63, 2, 0x2C, "Num 1", "SB" },
+    { 0x00, 0x1D, 0xFF, "Num 0", "SB"},
 };
 
 PCIE_ERR_DECODE pcie_err_tab[] = {
@@ -170,6 +176,29 @@ PCIE_ERR_DECODE pcie_err_tab[] = {
     {0xA1, "SERR (non-AER)"},
     {0xFF, "None"}
 };
+
+err_t minor_auth_error[] = {
+  /*MAJOR_ERROR_BMC_AUTH_FAILED or MAJOR_ERROR_PCH_AUTH_FAILED */
+  {0x01, "MINOR_ERROR_AUTH_ACTIVE"},
+  {0x02, "MINOR_ERROR_AUTH_RECOVERY"},
+  {0x03, "MINOR_ERROR_AUTH_ACTIVE_AND_RECOVERY"},
+  {0x04, "MINOR_ERROR_AUTH_ALL_REGIONS"},
+};
+err_t minor_update_error[] = {
+  /* MAJOR_ERROR_PCH_UPDATE_FAIELD or MAJOR_ERROR_BMC_UPDATE_FAIELD */
+  {0x01, "MINOR_ERROR_INVALID_UPDATE_INTENT"},
+  {0x02, "MINOR_ERROR_FW_UPDATE_INVALID_SVN"},
+  {0x03, "MINOR_ERROR_FW_UPDATE_AUTH_FAILED"},
+  {0x04, "MINOR_ERROR_FW_UPDATE_EXCEEDED_MAX_FAILED_ATTEMPTS"},
+  {0x05, "MINOR_ERROR_FW_UPDATE_ACTIVE_UPDATE_NOT_ALLOWED"},
+  /* MAJOR_ERROR_CPLD_UPDATE_FAIELD */
+  {0x06, "MINOR_ERROR_CPLD_UPDATE_INVALID_SVN"},
+  {0x07, "MINOR_ERROR_CPLD_UPDATE_AUTH_FAILED"},
+  {0x08, "MINOR_ERROR_CPLD_UPDATE_EXCEEDED_MAX_FAILED_ATTEMPTS"},
+};
+
+size_t minor_auth_size = sizeof(minor_auth_error)/sizeof(err_t);
+size_t minor_update_size = sizeof(minor_update_error)/sizeof(err_t);
 
 static int
 pal_key_index(char *key) {
@@ -646,6 +675,9 @@ pal_get_fru_name(uint8_t fru, char *name) {
     case FRU_NICEXP:
       sprintf(name, "nicexp");
       break;
+    case FRU_AGGREGATE:
+      ret = PAL_EOK; //it's the virtual FRU.
+      break;
     default:
       syslog(LOG_WARNING, "%s() unknown fruid %d", __func__, fru);
       ret = PAL_ENOTSUP;
@@ -835,6 +867,7 @@ int
 pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   int ret = PAL_EOK;
   uint8_t bmc_location = 0;
+  uint8_t status_12v = 1;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -847,8 +880,12 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      *status = 1;
-      //ret = fby3_common_is_bic_ready(fru, status);
+      ret = pal_get_server_12v_power(fru, &status_12v);
+      if(ret < 0 || status_12v == SERVER_12V_OFF) {
+        *status = 0;
+      } else {
+        *status = 1;
+      }
       break;
     case FRU_BB:
       *status = 1;
@@ -1154,6 +1191,20 @@ pal_is_slot_server(uint8_t fru)
   return 0;
 }
 
+int
+pal_is_cmd_valid(uint8_t *data)
+{
+  uint8_t bus_num = ((data[0] & 0x7E) >> 1); //extend bit[7:1] for bus ID;
+  uint8_t address = data[1];
+
+  // protect slot1,2,3,4 BIC
+  if ( address == 0x40 && bus_num >= 0 && bus_num <= 3) {
+    return -1;
+  }
+
+  return PAL_EOK;
+}
+
 static int
 pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   int ret = PAL_EOK;
@@ -1172,6 +1223,9 @@ pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           break;
         case ME_SENSOR_SMART_CLST:
           sprintf(name, "SmaRT&CLST");
+          break;
+        case BIC_SENSOR_PROC_FAIL:
+          sprintf(name, "PROC_FAIL");
           break;
         default:
           sprintf(name, "Unknown");
@@ -1207,6 +1261,24 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
 
   // Otherwise, translate it based on snr_num
   return pal_get_x86_event_sensor_name(fru, snr_num, name);
+}
+
+static int
+pal_parse_proc_fail(uint8_t fru, uint8_t *event_data, char *error_log) {
+  enum {
+    FRB3                  = 0x04,
+  };
+
+  switch(event_data[0]) {
+    case FRB3:
+      strcat(error_log, "FRB3, ");
+      break;
+    default:
+      strcat(error_log, "Undefined data, ");
+      break;
+  }
+
+  return PAL_EOK;
 }
 
 static int
@@ -1376,6 +1448,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_VR_WDT_TIMEOUT = 0x0A,
     SYS_M2_VPP         = 0x0B,
     SYS_M2_PGOOD       = 0x0C,
+    SYS_VCCIO_FAULT    = 0x0D,
   };
   uint8_t event = event_data[0];
 
@@ -1418,6 +1491,9 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       pal_get_m2pgood_str_name(event_data[1], event_data[2], error_log);
       strcat(error_log, "Power Good Fault");
       break;
+    case SYS_VCCIO_FAULT:
+      strcat(error_log, "VCCIO fault");
+      break;
     default:
       strcat(error_log, "Undefined system event");
       break;
@@ -1448,6 +1524,9 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
     case ME_SENSOR_SMART_CLST:
       pal_parse_smart_clst_event(fru, event_data, error_log);
       break;
+    case BIC_SENSOR_PROC_FAIL:
+      pal_parse_proc_fail(fru, event_data, error_log);
+      break;
     default:
       unknown_snr = true;
       break;
@@ -1468,21 +1547,28 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 int
 pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
+#define ERROR_LOG_LEN 256
+
   uint8_t general_info = (uint8_t) sel[3];
   uint8_t error_type = general_info & 0x0f;
   uint8_t plat;
   uint8_t dimm_failure_event = (uint8_t) sel[12];
   uint8_t mem_error_type;
   uint8_t channel;
+  uint8_t event_type;
+  uint8_t estr_idx;
   bool support_mem_mapping = false;
   char dimm_fail_event[][64] = {"Memory training failure", "Memory correctable error", "Memory uncorrectable error", "Reserved"};
   char mem_mapping_string[32];
   char temp_log[128] = {0};
+  char dimm_str[8] = {0};
   error_log[0] = '\0';
   int index = 0;
   char *sil = "NA";
   char *location = "NA";
   char *err1_descript = "NA", *err2_descript = "NA";
+  int ret = 0;
+  uint8_t bmc_location = 0;
 
   switch (error_type) {
     case UNIFIED_PCIE_ERR:
@@ -1492,6 +1578,16 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
           if ((sel[11] == root_port_mapping[index].bus_value) && ((sel[10] >> 3) == root_port_mapping[index].dev_value)) {
             location = root_port_mapping[index].location;
             sil = root_port_mapping[index].silk_screen;
+            if (!strcmp(location, "1OU")) {
+              ret = fby3_common_get_bmc_location(&bmc_location);
+              if ( ret < 0 ) {
+                syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+              }
+
+              if (bmc_location == NIC_BMC ) {
+                continue;
+              }
+            }
             break;
           }
         }
@@ -1508,11 +1604,11 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
             break;
           }
         }
-        sprintf(error_log, "GeneralInfo: x86/PCIeErr(0x%02X), Bus %02X/Dev %02X/Fun %02X, %s/Num %s,\
+        snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: x86/PCIeErr(0x%02X), Bus %02X/Dev %02X/Fun %02X, %s/%s,\
                             TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X(%s), ErrID1: 0x%02X(%s)",
                 general_info, sel[11], sel[10] >> 3, sel[10] & 0x7, location, sil, ((sel[13]<<8)|sel[12]), sel[14], err2_descript, sel[15], err1_descript);
       } else {
-        sprintf(error_log, "GeneralInfo: ARM/PCIeErr(0x%02X), Aux. Info: 0x%04X, Bus %02X/Dev %02X/Fun %02X, \
+        snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: ARM/PCIeErr(0x%02X), Aux. Info: 0x%04X, Bus %02X/Dev %02X/Fun %02X, \
                             TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
                 general_info, ((sel[9]<<8)|sel[8]),sel[11], sel[10] >> 3, sel[10] & 0x7, ((sel[13]<<8)|sel[12]), sel[14], sel[15]);
       }
@@ -1582,6 +1678,33 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
         char *post_failure_event[] = {"System PXE boot fail", "CMOS/NRAM configuration cleared", "TPM Self-Test Fail"};
         sprintf(error_log, "GeneralInfo: POST(0x%02X), FailureEvent: %s",
               error_type, post_failure_event[(sel[8]&0x0f)]);
+      }
+      break;
+    case UNIFIED_MEM_EVENT:
+      {
+        char *mem_event[] = {"Memory PPR event", "Memory Correctable Error logging limit reached", "Memory disable/map-out for FRB",
+                         "Memory SDDC", "Memory Address range/Partial mirroring", "Memory ADDDC", "Memory SMBus hang recovery", "No DIMM in System", "Reserved"};
+        event_type = sel[8] & 0xF;
+        switch (event_type) {
+          case MEM_PPR:
+            pal_convert_to_dimm_str(sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str);
+            sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, \
+                                Slot %02d, DIMM %s, DIMM Failure Event: %s",
+                    general_info, ((sel[9]>>4)&0x3), sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str,
+                    (sel[12]&0x1)?"PPR fail":"PPR success");
+            break;
+          case MEM_NO_DIMM:
+            sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Failure Event: %s",
+                    general_info, mem_event[event_type]);
+            break;
+          default:
+            pal_convert_to_dimm_str(sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str);
+            estr_idx = (event_type < ARRAY_SIZE(mem_event)) ? event_type : (ARRAY_SIZE(mem_event) - 1);
+            sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, \
+                                Slot %02d, DIMM %s, DIMM Failure Event: %s",
+                    general_info, ((sel[9]>>4)&0x3), sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str, mem_event[estr_idx]);
+            break;
+        }
       }
       break;
     default:
@@ -1959,6 +2082,94 @@ pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
 }
 
 int
+pal_is_pfr_active(void) {
+  int pfr_active = PFR_NONE;
+  int ifd, retry = 3;
+  uint8_t tbuf[8], rbuf[8];
+  char dev_i2c[16];
+  uint8_t bus, addr;
+  bool bridged;
+
+  if (pal_get_pfr_address(FRU_BMC, &bus, &addr, &bridged)) {
+    return pfr_active;
+  }
+
+  sprintf(dev_i2c, "/dev/i2c-%d", bus);
+  ifd = open(dev_i2c, O_RDWR);
+  if (ifd < 0) {
+    return pfr_active;
+  }
+
+  tbuf[0] = 0x0A;
+  do {
+    if (!i2c_rdwr_msg_transfer(ifd, addr, tbuf, 1, rbuf, 1)) {
+      pfr_active = (rbuf[0] & 0x20) ? PFR_ACTIVE : PFR_UNPROVISIONED;
+      break;
+    }
+
+#ifdef DEBUG
+    syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x", 4, tbuf[0]);
+#endif
+    if (--retry > 0)
+      msleep(20);
+  } while (retry > 0);
+  close(ifd);
+
+  return pfr_active;
+}
+
+int
+pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
+  int ret = 0;
+  int ifd, retry = 3;
+  uint8_t buf[16];
+  char dev_i2c[16];
+  uint8_t bus, addr;
+  bool bridged;
+
+  if (pal_get_pfr_address(FRU_BMC, &bus, &addr, &bridged)) {
+    return -1;
+  }
+
+  ret = status;
+  if (ret == 0) {
+    sprintf(dev_i2c, "/dev/i2c-%d", bus);
+    ifd = open(dev_i2c, O_RDWR);
+    if (ifd < 0) {
+      return -1;
+    }
+
+    buf[0] = 0x13;  // BMC update intent
+    if (!strcmp(comp, "bmc")) {
+      buf[1] = UPDATE_BMC_ACTIVE;
+      buf[1] |= UPDATE_AT_RESET;
+    } else if (!strcmp(comp, "pfr_cpld")) {
+      buf[1] = UPDATE_CPLD_ACTIVE;
+    } else {
+      close(ifd);
+      return -1;
+    }
+
+    sync();
+    printf("sending update intent to CPLD...\n");
+    fflush(stdout);
+    sleep(1);
+    do {
+      ret = i2c_rdwr_msg_transfer(ifd, addr, buf, 2, NULL, 0);
+      if (ret) {
+        syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x %02x", addr, buf[0], buf[1]);
+        if (--retry > 0) {
+          msleep(100);
+        }
+      }
+    } while (ret && retry > 0);
+    close(ifd);
+  }
+
+  return ret;
+}
+
+int
 pal_get_pfr_update_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
   int ret;
   uint8_t bmc_location = 0;
@@ -2164,4 +2375,154 @@ int
 pal_get_nic_fru_id(void)
 {
   return FRU_NIC;
+}
+
+int
+pal_check_pfr_mailbox(uint8_t fru) {
+  int ret = 0, i2cfd = 0, retry=0, index = 0;
+  int cpld_bus = 0;
+  uint8_t tbuf[1] = {0}, rbuf[1] = {0};
+  uint8_t tlen = 1, rlen = 1;
+  uint8_t major_err = 0, minor_err = 0;
+  char *major_str = "NA", *minor_str = "NA";
+  char dev[32] = {0};
+  char fru_str[32] = {0};
+  uint8_t bus, addr;
+  bool bridged;
+
+  if (pal_get_pfr_address(fru, &bus, &addr, &bridged)) {
+    syslog(LOG_WARNING, "%s() Failed to do pal_get_pfr_address(), FRU%d", __func__, fru);
+    return -1;
+  }
+
+  snprintf(dev, sizeof(dev), I2CDEV, bus);
+  i2cfd = open(dev, O_RDWR);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open %s", __func__, dev);
+    return -1;
+  }
+
+  tbuf[0] = MAJOR_ERR_OFFSET;
+  tlen = 1;
+  retry = 0;
+  while (retry < MAX_READ_RETRY) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, addr, tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      retry++;
+      sleep(1);
+    } else {
+      major_err = rbuf[0];
+      break;
+    }
+  }
+  if (retry == MAX_READ_RETRY) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+  }
+
+  tbuf[0] = MINOR_ERR_OFFSET;
+  tlen = 1;
+  retry = 0;
+  while (retry < MAX_READ_RETRY) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, addr, tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      retry++;
+      sleep(1);
+    } else {
+      minor_err = rbuf[0];
+      break;
+    }
+  }
+
+  if ( i2cfd > 0 ) close(i2cfd);
+
+  if ( (major_err != 0) || (minor_err != 0) ) {
+    if ( major_err == MAJOR_ERROR_PCH_AUTH_FAILED ) {
+      major_str = "MAJOR_ERROR_BMC_AUTH_FAILED";
+      for (index = 0; index < minor_auth_size; index++) {
+        if (minor_err == minor_auth_error[index].err_id) {
+          minor_str = minor_auth_error[index].err_des;
+          break;
+        }
+      }
+    } else if ( major_err == MAJOR_ERROR_PCH_AUTH_FAILED ) {
+      major_str = "MAJOR_ERROR_PCH_AUTH_FAILED";
+      for (index = 0; index < minor_auth_size; index++) {
+        if (minor_err == minor_auth_error[index].err_id) {
+          minor_str = minor_auth_error[index].err_des;
+          break;
+        }
+      }
+    } else if ( major_err == MAJOR_ERROR_UPDATE_FROM_PCH_FAILED ) {
+      major_str = "MAJOR_ERROR_UPDATE_FROM_PCH_FAILED";
+      for (index = 0; index < minor_update_size; index++) {
+        if (minor_err == minor_update_error[index].err_id) {
+          minor_str = minor_update_error[index].err_des;
+          break;
+        }
+      }
+    } else if ( major_err == MAJOR_ERROR_UPDATE_FROM_BMC_FAILED ) {
+      major_str = "MAJOR_ERROR_UPDATE_FROM_BMC_FAILED";
+      for (index = 0; index < minor_update_size; index++) {
+        if (minor_err == minor_update_error[index].err_id) {
+          minor_str = minor_update_error[index].err_des;
+          break;
+        }
+      }
+    } else {
+      major_str = "unknown major error";
+    }
+
+    switch (fru) {
+      case FRU_BMC:
+        snprintf(fru_str, sizeof(fru_str), "BMC");
+        break;
+      case FRU_SLOT1:
+      case FRU_SLOT2:
+      case FRU_SLOT3:
+      case FRU_SLOT4:
+        snprintf(fru_str, sizeof(fru_str), "FRU: %d", fru);
+        break;
+      default:
+        break;
+    }
+
+    syslog(LOG_CRIT, "%s, PFR - Major error: %s (0x%02X), Minor error: %s (0x%02X)", fru_str, major_str, major_err, minor_str, minor_err);
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+set_pfr_i2c_filter(uint8_t slot_id, uint8_t value) {
+  int ret;
+  uint8_t tbuf[2] = {0};
+  uint8_t tlen = 2;
+  char path[128];
+  int i2cfd = 0, retry=0;
+
+  snprintf(path, sizeof(path), "/dev/i2c-%d", (slot_id + SLOT_BUS_BASE));
+  i2cfd = open(path, O_RDWR);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
+    return -1;
+  }
+  retry = 0;
+  tbuf[0] = PFR_I2C_FILTER_OFFSET;
+  tbuf[1] = value;
+  while (retry < RETRY_TIME) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  if ( i2cfd > 0 ) close(i2cfd);
+
+  if ( retry == RETRY_TIME ) return -1;
+
+  return 0;
+
 }

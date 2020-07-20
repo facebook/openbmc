@@ -12,13 +12,25 @@ has_gpv2=0
 pwm_value=100
 
 spb_type=$(get_spb_type)
-if [ $spb_type == 1 ] ; then
-    # for Yv2.50
-    fan0_rpm=`cat /sys/devices/platform/ast_pwm_tacho.0/tacho2_rpm`
-    fan1_rpm=`cat /sys/devices/platform/ast_pwm_tacho.0/tacho3_rpm`
+kernel_ver=$(get_kernel_ver)
+if [ $kernel_ver == 5 ]; then
+    if [ $spb_type == 1 ] ; then
+        # for Yv2.50
+        fan0_rpm=`cat /sys/bus/platform/drivers/aspeed_pwm_tacho/1e786000.pwm-tacho-controller/hwmon/hwmon*/fan3_input`
+        fan1_rpm=`cat /sys/bus/platform/drivers/aspeed_pwm_tacho/1e786000.pwm-tacho-controller/hwmon/hwmon*/fan4_input`
+    else
+        fan0_rpm=`cat /sys/bus/platform/drivers/aspeed_pwm_tacho/1e786000.pwm-tacho-controller/hwmon/hwmon*/fan1_input`
+        fan1_rpm=`cat /sys/bus/platform/drivers/aspeed_pwm_tacho/1e786000.pwm-tacho-controller/hwmon/hwmon*/fan2_input`
+    fi
 else
-    fan0_rpm=`cat /sys/devices/platform/ast_pwm_tacho.0/tacho0_rpm`
-    fan1_rpm=`cat /sys/devices/platform/ast_pwm_tacho.0/tacho1_rpm`
+    if [ $spb_type == 1 ] ; then
+        # for Yv2.50
+        fan0_rpm=`cat /sys/devices/platform/ast_pwm_tacho.0/tacho2_rpm`
+        fan1_rpm=`cat /sys/devices/platform/ast_pwm_tacho.0/tacho3_rpm`
+    else
+        fan0_rpm=`cat /sys/devices/platform/ast_pwm_tacho.0/tacho0_rpm`
+        fan1_rpm=`cat /sys/devices/platform/ast_pwm_tacho.0/tacho1_rpm`
+    fi
 fi
 
 if [ $fan0_rpm -le "500" ] || [ $fan1_rpm -le "500" ]; then

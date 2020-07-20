@@ -17,7 +17,7 @@
           }
         },
         "linear_expressions": {
-          "A0": "( rpm0 * 0.00415 ) + ( rpm1 * 0.00415 ) - 3.7916"
+          "A0": "( rpm0 * 0.00445 ) + ( rpm1 * 0.00445 ) - 4.5394"
         },
         "condition": {
           "key": "mb_system_conf",

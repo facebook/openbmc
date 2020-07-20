@@ -1,14 +1,11 @@
 pal_headers += [
-    'pal.h',
     'pal_calibration.h',
     'pal_gpu.h',
     'pal_health.h',
-    'pal_sensors.h',
     'pal_switch.h',
     ]
 
 pal_sources += [
-    'pal.c',
     'pal_gpu.c',
     'pal_health.c',
     'pal_sensors.c',

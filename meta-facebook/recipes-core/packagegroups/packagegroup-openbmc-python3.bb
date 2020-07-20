@@ -16,6 +16,7 @@ RDEPENDS_${PN} += " \
   python3-fcntl \
   python3-io \
   python3-json \
+  python3-mmap \
   python3-mime \
   python3-misc \
   python3-multiprocessing \

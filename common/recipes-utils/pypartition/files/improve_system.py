@@ -23,6 +23,7 @@ import os
 import signal
 import sys
 import textwrap
+import traceback
 
 import system
 import virtualcat
@@ -236,4 +237,6 @@ if __name__ == "__main__":
         improve_system(logger)
     except Exception:
         logger.exception("Unhandled exception raised.")
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        logger.error(traceback.format_exc())
         sys.exit(1)

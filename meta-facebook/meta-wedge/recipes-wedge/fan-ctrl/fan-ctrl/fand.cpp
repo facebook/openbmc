@@ -49,10 +49,14 @@
 #include <syslog.h>
 #include <dirent.h>
 #include <assert.h>
+#include <ctype.h>
+#include <linux/limits.h>
+#include <linux/version.h>
 #include <facebook/wedge_eeprom.h>
 
 #include <openbmc/watchdog.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/misc-utils.h>
 
 #ifndef BITS_PER_BYTE
 #define BITS_PER_BYTE 8
@@ -61,6 +65,8 @@
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
 #endif
+
+#define HWMON_SYSFS_DIR "/sys/class/hwmon"
 
 #define MAX_FANS 4
 
@@ -109,12 +115,10 @@ static const char *slot_id_gpios[SLOT_ID_BITS] = {
     "BP_SLOT_ID3",
 };
 
-#define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
+#define PWM_TACHO_DIR_LEGACY "/sys/devices/platform/ast_pwm_tacho.0"
 
 #define PWM_UNIT_MAX 96
 #define FAN_READ_RPM_FORMAT "tacho%d_rpm"
-
-#define LARGEST_DEVICE_NAME 120
 
 #define FAN_LED_RED  GPIO_VALUE_LOW
 #define FAN_LED_BLUE GPIO_VALUE_HIGH
@@ -159,17 +163,111 @@ static struct {
 #define SIXPACK_FAN_HIGH 75
 #define SIXPACK_FAN_MAX 99
 
-/*
- * Mapping physical to hardware addresses for fans;  it's different for
- * RPM measuring and PWM setting, naturally.  Doh.
- */
-
-int fan_to_rpm_map[] = {3, 2, 0, 1};
-int fan_to_pwm_map[] = {7, 6, 0, 1};
 // Tacho offset between front and rear fans:
 #define REAR_FAN_OFFSET 4
 #define BACK_TO_BACK_FANS
 
+struct fan_controller {
+  const char *name;
+  char pwm_tacho_dir[PATH_MAX];
+
+  /*
+   * Mapping physical to hardware addresses for fans;  it's different for
+   * RPM measuring and PWM setting, naturally.  Doh.
+   */
+  const char *fan_pwm_map[MAX_FANS];
+  const char *fan_tacho_map[2 * MAX_FANS]; /* 4 front and 4 rear */
+
+  int (*init)(struct fan_controller *controller);
+  void (*cleanup)(struct fan_controller *controller);
+  int (*fan_rpm_read)(struct fan_controller *controller, int fan, int *rpm);
+  int (*fan_pwm_write)(struct fan_controller *controller, int fan, int duty);
+};
+
+static int fan_speed_sysfs_read(struct fan_controller *ctrl, int fan, int *rpm);
+static int fan_pwm_write_41(struct fan_controller *ctrl, int fan, int duty);
+static int fan_controller_init_41(struct fan_controller *ctrl);
+
+/*
+ * "fan_controller_41" is intended to be used in kernel 4.1.x.
+ */
+static struct fan_controller fan_controller_41 = {
+  .name = "fan_controller_41",
+  .pwm_tacho_dir = {},
+
+  /*
+   * 1 pwm drives 2 fans (front and rear), so we have 4 pwm for total 8 fans.
+   */
+  .fan_pwm_map = {
+    [0] = "pwm7",
+    [1] = "pwm6",
+    [2] = "pwm0",
+    [3] = "pwm1",
+  },
+
+  /*
+   * fan [0-3] are the 4 front fans and fan [4-7] are the corresponding
+   * rear fans.
+   */
+  .fan_tacho_map = {
+    [0] = "tacho3_rpm",
+    [1] = "tacho2_rpm",
+    [2] = "tacho0_rpm",
+    [3] = "tacho1_rpm",
+    [4] = "tacho7_rpm",
+    [5] = "tacho6_rpm",
+    [6] = "tacho4_rpm",
+    [7] = "tacho5_rpm",
+  },
+
+  .init = fan_controller_init_41,
+  .cleanup = NULL,
+  .fan_rpm_read = fan_speed_sysfs_read,
+  .fan_pwm_write = fan_pwm_write_41,
+};
+
+static int fan_pwm_write_5x(struct fan_controller *ctrl, int fan, int duty);
+static int fan_controller_init_5x(struct fan_controller *ctrl);
+
+/*
+ * "fan_controller_5x" is intended to be used in kernel 5.x.
+ */
+static struct fan_controller fan_controller_5x = {
+  .name = "fan_controller_5x",
+  .pwm_tacho_dir = {},
+  /*
+   * 1 pwm drives 2 fans (front and rear) and that's why there are 4 pwm
+   * for 8 fans.
+   */
+  .fan_pwm_map = {
+    [0] = "pwm8",
+    [1] = "pwm7",
+    [2] = "pwm1",
+    [3] = "pwm2",
+  },
+
+  /*
+   * fan [0-3] are the 4 front fans and fan [4-7] are the corresponding
+   * rear fans.
+   */
+  .fan_tacho_map = {
+    [0] = "fan4_input",
+    [1] = "fan3_input",
+    [2] = "fan1_input",
+    [3] = "fan2_input",
+    [4] = "fan8_input",
+    [5] = "fan7_input",
+    [6] = "fan5_input",
+    [7] = "fan6_input",
+  },
+
+  .init = fan_controller_init_5x,
+  .cleanup = NULL,
+  .fan_rpm_read = fan_speed_sysfs_read,
+  .fan_pwm_write = fan_pwm_write_5x,
+};
+
+static struct fan_controller *active_fan_ctrl = &fan_controller_41;
 
 /*
  * The measured RPM of the fans doesn't match linearly to the requested
@@ -248,6 +346,12 @@ int temp_top = TEMP_TOP;
 int report_temp = REPORT_TEMP;
 bool verbose = false;
 
+#define LOG_VERBOSE(fmt, args...)    \
+  do {                               \
+    if (verbose)                     \
+      syslog(LOG_INFO, fmt, ##args); \
+  } while (0)
+
 void usage() {
   fprintf(stderr,
           "fand [-v] [-l <low-pct>] [-m <medium-pct>] "
@@ -271,71 +375,195 @@ void usage() {
   exit(1);
 }
 
-/* We need to open the device each time to read a value */
-int read_device_internal(const char *device, int *value, int log) {
-  FILE *fp;
+static int read_fan_speed(int fan, int *rpm)
+{
   int rc;
 
-  fp = fopen(device, "r");
-  if (!fp) {
-    int err = errno;
-    if (log) {
-      syslog(LOG_INFO, "failed to open device %s", device);
-    }
-    return err;
+  assert(active_fan_ctrl != NULL);
+  assert(active_fan_ctrl->fan_rpm_read != NULL);
+
+  rc = active_fan_ctrl->fan_rpm_read(active_fan_ctrl, fan, rpm);
+  if (rc == 0) {
+    LOG_VERBOSE("fan %d, current speed (rpm): %d", fan, *rpm);
+  }
+
+  return rc;
+}
+
+static int write_fan_speed(int fan, int percent)
+{
+  int rc;
+
+  assert(active_fan_ctrl != NULL);
+  assert(active_fan_ctrl->fan_pwm_write != NULL);
+
+  rc = active_fan_ctrl->fan_pwm_write(active_fan_ctrl, fan, percent);
+  if (rc == 0) {
+    LOG_VERBOSE("fan %d, pwm is set to %d percent", fan, percent);
+  }
+
+  return rc;
+}
+
+static int fan_controller_init_41(struct fan_controller *controller)
+{
+  snprintf(controller->pwm_tacho_dir, sizeof(controller->pwm_tacho_dir),
+           "%s", PWM_TACHO_DIR_LEGACY);
+  return 0;
+}
+
+/*
+ * Read an integer from the beginning of the file.
+ * Return 0 for success, or errno on failures.
+ */
+static int device_read_integer(const char *pathname, int *value)
+{
+  FILE *fp;
+  int rc, saved_errno;
+
+  fp = fopen(pathname, "r");
+  if (fp == NULL) {
+    return errno;
   }
 
   rc = fscanf(fp, "%d", value);
-  fclose(fp);
-
   if (rc != 1) {
-    if (log) {
-      syslog(LOG_INFO, "failed to read device %s", device);
-    }
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-int read_device(const char *device, int *value) {
-  return read_device_internal(device, value, 1);
-}
-
-/* We need to open the device again each time to write a value */
-
-int write_device(const char *device, const char *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "w");
-  if (!fp) {
-    int err = errno;
-
-    syslog(LOG_INFO, "failed to open device for write %s", device);
-    return err;
+    saved_errno = errno;
+    fclose(fp);  /* ignore errors */
+    return saved_errno;
   }
 
-  rc = fputs(value, fp);
   fclose(fp);
+  return 0;
+}
 
-  if (rc < 0) {
-    syslog(LOG_INFO, "failed to write device %s", device);
-    return ENOENT;
-  } else {
-    return 0;
+/*
+ * Write an integer to the beginning of the given file.
+ * Return 0 for success, or errno on failures.
+ */
+int device_write_integer(const char *pathname, int value) {
+  FILE *fp;
+  int rc, saved_errno;
+  char data[64];
+
+  fp = fopen(pathname, "w");
+  if (!fp) {
+    return errno;
   }
+
+  snprintf(data, sizeof(data), "%d", value);
+  rc = fputs(data, fp);
+  if (rc < 0) {
+    saved_errno = errno;
+    fclose(fp); /* ignore errors */
+    return saved_errno;
+  }
+
+  fclose(fp);
+  return 0;
+}
+
+static int file_read_line(const char *pathname, char *buf, size_t size)
+{
+  int len;
+  FILE *fp;
+
+  fp = fopen(pathname, "r");
+  if (fp == NULL) {
+    return errno;
+  }
+
+  buf[0] = '\0';
+  if (fgets(buf, size, fp) != NULL) {
+    len = strlen(buf);
+
+    /* delete the newline character */
+    if (len > 0 && isspace(buf[len - 1])) {
+      buf[len - 1] = '\0';
+    }
+  }
+
+  fclose(fp);
+  return 0;
+}
+
+static int hwmon_lookup_by_name(const char *name, char *buf, size_t size)
+{
+  DIR *dir;
+  int rc = 0;
+  int found = 0;
+  struct dirent *dent;
+  char hwmon_name[NAME_MAX];
+  char hwmon_path[PATH_MAX];
+
+  dir = opendir(HWMON_SYSFS_DIR);
+  if (dir == NULL)
+    return errno;
+
+  while (1) {
+    errno = 0;
+    dent = readdir(dir);
+    if (dent == NULL) { /* Error or end of directory */
+      if (errno != 0) {
+        rc = errno;
+      }
+      break;
+    }
+
+    if (!str_startswith(dent->d_name, "hwmon")) {
+      continue;
+    }
+
+    snprintf(hwmon_path, sizeof(hwmon_path), "%s/%s/name",
+             HWMON_SYSFS_DIR, dent->d_name);
+    if (!path_isfile(hwmon_path)) {
+      continue;
+    }
+    if (file_read_line(hwmon_path, hwmon_name, sizeof(hwmon_name)) != 0) {
+      continue;
+    }
+
+    if (strcmp(hwmon_name, name) == 0) {
+      snprintf(buf, size, "%s/%s", HWMON_SYSFS_DIR, dent->d_name);
+      found = 1;
+      break;
+    }
+  } /* while */
+
+  closedir(dir);
+  if (found == 0 && rc == 0) {
+    rc = ENOENT;
+  }
+  return rc;
+}
+
+static int fan_controller_init_5x(struct fan_controller *controller)
+{
+  int rc;
+  char hwmon_path[PATH_MAX];
+  const char *name = "aspeed_pwm_tacho";
+
+  rc = hwmon_lookup_by_name(name, hwmon_path, sizeof(hwmon_path));
+  if (rc != 0) {
+    syslog(LOG_WARNING, "failed to find hwmon node for %s: %s",
+           name, strerror(rc));
+    return rc;
+  }
+
+  snprintf(controller->pwm_tacho_dir, sizeof(controller->pwm_tacho_dir),
+           "%s", hwmon_path);
+  return 0;
 }
 
 int read_temp(const char *device, int *value) {
-  char full_name[LARGEST_DEVICE_NAME + 1];
+  int rc;
+  char full_name[PATH_MAX];
 
   /* We set an impossible value to check for errors */
   *value = BAD_TEMP;
-  snprintf(
-      full_name, LARGEST_DEVICE_NAME, "%s/temp1_input", device);
+  snprintf(full_name, sizeof(full_name), "%s/temp1_input", device);
 
-  int rc = read_device_internal(full_name, value, 0);
+  rc = device_read_integer(full_name, value);
 
   /**
    * In the latest Linux kernel, lm75 temperature sysfs file is moved from
@@ -349,32 +577,29 @@ int read_temp(const char *device, int *value) {
    * with ENOENT, the code will try to probe device/hwmon/hwmon???.
    */
 
-  if (rc == ENOENT) {
+  if (rc != 0) {
     DIR *dir = NULL;
     struct dirent *ent;
+
     snprintf(full_name, sizeof(full_name), "%s/hwmon", device);
     dir = opendir(full_name);
-    if (dir == NULL) {
-      goto close_dir_out;
-    }
-    while ((ent = readdir(dir)) != NULL) {
-      if (strstr(ent->d_name, "hwmon")) {
-        // found the correct 'hwmon??' directory
-        snprintf(full_name, sizeof(full_name), "%s/hwmon/%s/temp1_input",
-                 device, ent->d_name);
-        rc = read_device_internal(full_name, value, 0);
-        goto close_dir_out;
+    if (dir != NULL) {
+      while ((ent = readdir(dir)) != NULL) {
+        if (strstr(ent->d_name, "hwmon")) {
+          // found the correct 'hwmon??' directory
+          snprintf(full_name, sizeof(full_name), "%s/hwmon/%s/temp1_input",
+                   device, ent->d_name);
+          rc = device_read_integer(full_name, value);
+          break;
+        }
       }
-    }
-
- close_dir_out:
-    if (dir) {
       closedir(dir);
-    }
-  }
+    } /* if (dir != NULL) */
+  } /* if (rc != 0) */
 
-  if (rc) {
-    syslog(LOG_INFO, "failed to read temperature from %s", device);
+  if (rc != 0) {
+    syslog(LOG_INFO, "failed to read temperature from %s: %s",
+           full_name, strerror(rc));
   }
 
   return rc;
@@ -456,25 +681,26 @@ bool is_two_fan_board(bool verbose) {
   }
 }
 
-int read_fan_value(const int fan, const char *device, int *value) {
-  char device_name[LARGEST_DEVICE_NAME];
-  char output_value[LARGEST_DEVICE_NAME];
-  char full_name[LARGEST_DEVICE_NAME];
+/*
+ * Read fan speed, used in kernel 4.1.x and 5.x.
+ */
+static int fan_speed_sysfs_read(struct fan_controller *controller, int fan,
+                                int *rpm)
+{
+  int rc;
+  char pathname[PATH_MAX];
 
-  snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR,device_name);
-  return read_device(full_name, value);
-}
+  assert(fan >= 0 && fan < ARRAY_SIZE(controller->fan_tacho_map));
 
-int write_fan_value(const int fan, const char *device, const int value) {
-  char full_name[LARGEST_DEVICE_NAME];
-  char device_name[LARGEST_DEVICE_NAME];
-  char output_value[LARGEST_DEVICE_NAME];
+  snprintf(pathname, sizeof(pathname), "%s/%s",
+           controller->pwm_tacho_dir, controller->fan_tacho_map[fan]);
+  rc = device_read_integer(pathname, rpm);
+  if (rc != 0) {
+      syslog(LOG_WARNING, "failed to read from %s: %s",
+             pathname, strerror(rc));
+  }
 
-  snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
-  snprintf(output_value, LARGEST_DEVICE_NAME, "%d", value);
-  return write_device(full_name, output_value);
+  return rc;
 }
 
 /* Return fan speed as a percentage of maximum -- not necessarily linear. */
@@ -513,9 +739,8 @@ int fan_rpm_to_pct(const struct rpm_to_pct_map *table,
 }
 
 int fan_speed_okay(const int fan, const int speed, const int slop) {
-  int front_fan, rear_fan;
+  int front_rpm, rear_rpm;
   int front_pct, rear_pct;
-  int real_fan;
   int okay;
 
   /*
@@ -523,15 +748,13 @@ int fan_speed_okay(const int fan, const int speed, const int slop) {
    * in the box, so we have to map them:
    */
 
-  real_fan = fan_to_rpm_map[fan];
-
-  front_fan = 0;
-  read_fan_value(real_fan, FAN_READ_RPM_FORMAT, &front_fan);
-  front_pct = fan_rpm_to_pct(rpm_front_map, FRONT_MAP_SIZE, front_fan);
+  front_rpm = 0;
+  read_fan_speed(fan, &front_rpm);
+  front_pct = fan_rpm_to_pct(rpm_front_map, FRONT_MAP_SIZE, front_rpm);
 #ifdef BACK_TO_BACK_FANS
-  rear_fan = 0;
-  read_fan_value(real_fan + REAR_FAN_OFFSET, FAN_READ_RPM_FORMAT, &rear_fan);
-  rear_pct = fan_rpm_to_pct(rpm_rear_map, REAR_MAP_SIZE, rear_fan);
+  rear_rpm = 0;
+  read_fan_speed(fan + REAR_FAN_OFFSET, &rear_rpm);
+  rear_pct = fan_rpm_to_pct(rpm_rear_map, REAR_MAP_SIZE, rear_rpm);
 #endif
 
 
@@ -561,10 +784,10 @@ int fan_speed_okay(const int fan, const int speed, const int slop) {
 #endif
            fan,
 #ifdef BACK_TO_BACK_FANS
-           rear_fan,
+           rear_rpm,
            rear_pct,
 #endif
-           front_fan,
+           front_rpm,
            front_pct,
            speed);
   }
@@ -574,31 +797,81 @@ int fan_speed_okay(const int fan, const int speed, const int slop) {
 
 /* Set fan speed as a percentage */
 
-int write_fan_speed(const int fan, const int value) {
+static int fan_pwm_write_41(struct fan_controller *controller, int fan,
+                            int percent)
+{
+  int rc = 0;
+  const char *pwm;
+  char pathname[PATH_MAX];
+
   /*
    * The hardware fan numbers for pwm control are different from
    * both the physical order in the box, and the mapping for reading
    * the RPMs per fan, above.
    */
+  pwm = controller->fan_pwm_map[fan % ARRAY_SIZE(controller->fan_pwm_map)];
 
-  int real_fan = fan_to_pwm_map[fan];
-
-  if (value == 0) {
-    return write_fan_value(real_fan, "pwm%d_en", 0);
+  if (percent == 0) {
+    snprintf(pathname, sizeof(pathname), "%s/%s_en",
+             controller->pwm_tacho_dir, pwm);
+    rc = device_write_integer(pathname, percent);
+    if (rc != 0) {
+      syslog(LOG_WARNING, "failed to write %d to %s: %s",
+             percent, pathname, strerror(rc));
+    }
   } else {
-    int unit = value * PWM_UNIT_MAX / 100;
-    int status;
+    int i, unit;
+    struct {
+      const char *key;
+      int value;
+    } pwm_kv_map[4];
 
+    unit = percent * PWM_UNIT_MAX / 100;
     if (unit == PWM_UNIT_MAX)
       unit = 0;
 
-    if ((status = write_fan_value(real_fan, "pwm%d_type", 0)) != 0 ||
-      (status = write_fan_value(real_fan, "pwm%d_rising", 0)) != 0 ||
-      (status = write_fan_value(real_fan, "pwm%d_falling", unit)) != 0 ||
-      (status = write_fan_value(real_fan, "pwm%d_en", 1)) != 0) {
-      return status;
-    }
+    pwm_kv_map[0] = {"type", 0};
+    pwm_kv_map[1] = {"rising", 0};
+    pwm_kv_map[2] = {"falling", unit};
+    pwm_kv_map[3] = {"en", 1};
+
+    for (i = 0; i < ARRAY_SIZE(pwm_kv_map); i++) {
+      snprintf(pathname, sizeof(pathname), "%s/%s_%s",
+               controller->pwm_tacho_dir, pwm, pwm_kv_map[i].key);
+      rc = device_write_integer(pathname, pwm_kv_map[i].value);
+      if (rc != 0) {
+        syslog(LOG_WARNING, "failed to write %d to %s: %s",
+               pwm_kv_map[i].value, pathname, strerror(rc));
+        break;
+      }
+    } /* for */
   }
+
+  return rc;
+}
+
+static int fan_pwm_write_5x(struct fan_controller *controller, int fan,
+                            int percent)
+{
+  int rc, pwm_value;
+  char pathname[PATH_MAX];
+
+  /*
+   * Duty cycle from 0 to 100% with 1/256 resolution incremental.
+   */
+  pwm_value = percent * 256 / 100;
+
+  fan %= ARRAY_SIZE(controller->fan_pwm_map);
+  snprintf(pathname, sizeof(pathname), "%s/%s",
+           controller->pwm_tacho_dir, controller->fan_pwm_map[fan]);
+
+  rc = device_write_integer(pathname, pwm_value);
+  if (rc != 0) {
+    syslog(LOG_WARNING, "failed to write %d to %s: %s",
+           pwm_value, pathname, strerror(rc));
+  }
+
+  return rc;
 }
 
 /* Set up fan LEDs */
@@ -724,6 +997,8 @@ int main(int argc, char **argv) {
 
   struct sigaction sa;
 
+  k_version_t k_version;
+
   sa.sa_handler = fand_interrupt;
   sa.sa_flags = 0;
   sigemptyset(&sa.sa_mask);
@@ -788,6 +1063,8 @@ int main(int argc, char **argv) {
             EXTERNAL_TEMPS(temp_bottom),
             EXTERNAL_TEMPS(temp_top));
   }
+  LOG_VERBOSE("temperature settings: bottom=%d, top=%d",
+              temp_bottom, temp_top);
 
   if (fan_low > fan_medium || fan_low > fan_high || fan_medium > fan_high) {
     fprintf(stderr,
@@ -797,13 +1074,31 @@ int main(int argc, char **argv) {
             fan_medium,
             fan_high);
   }
+  LOG_VERBOSE("fan speed settings: low=%d, medium=%d, high=%d",
+              fan_low, fan_medium, fan_high);
+
+  /*
+   * Determine which fan controller to be used based on kernel version.
+   */
+  k_version = get_kernel_version();
+  if (k_version > KERNEL_VERSION(4, 1, 51)) {
+    active_fan_ctrl = &fan_controller_5x;
+  }
+  LOG_VERBOSE("Setting up %s", active_fan_ctrl->name);
+  if (active_fan_ctrl->init != NULL) {
+    if (active_fan_ctrl->init(active_fan_ctrl) != 0) {
+      syslog(LOG_CRIT, "unable to initialize %s!", active_fan_ctrl->name);
+      /*
+       * fall through regardless of init results, because we wish fand
+       * can still read temp sensors and shutdown the chassis in case temp
+       * is too high.
+       */
+    }
+  }
 
   daemon(1, 0);
 
-  if (verbose) {
-    syslog(LOG_DEBUG, "Starting up;  system should have %d fans.",
-           total_fans);
-  }
+  LOG_VERBOSE("Starting up;  system should have %d fans.", total_fans);
 
   for (fan = 0; fan < total_fans; fan++) {
     fan_bad[fan] = 0;
@@ -824,8 +1119,8 @@ int main(int argc, char **argv) {
     int max_temp;
     old_speed = fan_speed;
 
+    LOG_VERBOSE("checking system temperature..");
     /* Read sensors */
-
     read_temp(INTAKE_TEMP_DEVICE, &intake_temp);
     read_temp(EXHAUST_TEMP_DEVICE, &exhaust_temp);
     read_temp(CHIP_TEMP_DEVICE, &switch_temp);
@@ -900,6 +1195,7 @@ int main(int argc, char **argv) {
       max_temp = userver_temp + USERVER_TEMP_FUDGE;
     }
 
+    LOG_VERBOSE("checking/adjusting fan speed..");
     /*
      * If recovering from a fan problem, spin down fans gradually in case
      * temperatures are still high. Gradual spin down also reduces wear on
@@ -1032,6 +1328,12 @@ int main(int argc, char **argv) {
     /* if everything is fine, restart the watchdog countdown. If this process
      * is terminated, the persistent watchdog setting will cause the system
      * to reboot after the watchdog timeout. */
+    LOG_VERBOSE("kicking watchdog");
     kick_watchdog();
   }
+
+  if (active_fan_ctrl->cleanup != NULL) {
+    active_fan_ctrl->cleanup(active_fan_ctrl);
+  }
+  return 0;
 }

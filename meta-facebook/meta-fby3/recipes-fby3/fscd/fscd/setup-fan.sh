@@ -33,26 +33,49 @@ default_fsc_config_path="/etc/fsc-config.json"
 
 function init_class1_fsc(){
   sys_config=$(/usr/local/bin/show_sys_config | grep -i "config:" | awk -F ": " '{print $3}')
-  fan0_type=$(gpio_get DUAL_FAN0_DETECT_BMC_N_R)
-  fan1_type=$(gpio_get DUAL_FAN1_DETECT_BMC_N_R)
-
-  if [ $fan0_type -ne $fan1_type ]; then
-    echo "fan type is not the same!"
-  fi
-
-  if [ $fan0_type -eq 1 ] && [ "$sys_config" = "A" ]; then
-    ln -s /etc/FSC_CLASS1_EVT_type1.json ${default_fsc_config_path}
-  elif [ $fan0_type -eq 0 ] && [ "$sys_config" = "A" ]; then
-    ln -s /etc/FSC_CLASS1_EVT_dualfan_type1.json ${default_fsc_config_path}
-  elif [ $fan0_type -eq 1 ] && [ "$sys_config" = "B" ]; then
-    ln -s /etc/FSC_CLASS1_EVT_type10.json ${default_fsc_config_path}
+  target_fsc_config=""
+  config_type=""
+  if [ "$sys_config" = "A" ]; then
+    config_type="1"
+    target_fsc_config="/etc/FSC_CLASS1_EVT_type1.json"
+  elif [ "$sys_config" = "B" ]; then
+    get_1ou_type
+    if [ "$type_1ou" = "EDSFF_1U" ]; then
+      echo "use EDSFF_1U fan table"
+      config_type="EDSFF_1U"
+      target_fsc_config="/etc/FSC_CLASS1_DVT_EDSFF_1U.json"
+    else
+      config_type="10"
+      target_fsc_config="/etc/FSC_CLASS1_EVT_type10.json"
+    fi
   else
-    ln -s /etc/FSC_CLASS1_EVT_dualfan_type10.json ${default_fsc_config_path}
+    config_type="15"
+    target_fsc_config="/etc/FSC_CLASS1_type15.json"
   fi
+
+  ln -s ${target_fsc_config} ${default_fsc_config_path}
+  echo -n "Type_${config_type}" > /mnt/data/kv_store/sled_system_conf
 }
 
 function init_class2_fsc(){
   ln -s /etc/FSC_CLASS2_EVT_config.json ${default_fsc_config_path}
+  echo -n "Type_17" > /mnt/data/kv_store/sled_system_conf
+}
+
+
+function get_1ou_type(){
+  for i in $(seq 1 4)
+  do
+    if [[ $(is_sb_bic_ready $i) == "1" ]]; then
+      output=$(bic-util slot$i 0xE0 2 0x9c 0x9c 0 0x5 0xe0 0xa0 0x9c 0x9c 0 | awk '{print $7" "$11}')
+      if [[ ${output} == "00 07" ]]; then
+        type_1ou=EDSFF_1U
+        break
+      elif [[ ${output} == "C1 " ]]; then
+        break
+      fi
+    fi
+  done
 }
 
 bmc_location=$(get_bmc_board_id)

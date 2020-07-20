@@ -82,12 +82,14 @@ function init_class1_sic(){
   for slot_num in $(seq 1 4); do
     slot_present=$(gpio_get PRSNT_MB_BMC_SLOT${slot_num}_BB_N)
     slot="slot${slot_num}"
-    if [[ "$slot_present" == "0" ]]; then
+    if [[ "$slot_present" == "1" ]]; then
+      echo "$slot is not present" >> $LOG
+    elif [[ $(is_sb_bic_ready ${slot_num}) == "0" ]]; then
+      echo "$slot bic is not ready" >> $LOG
+    else
       val=$(get_m2_prsnt_sts $slot)
       echo "$slot" >> $LOG
       check_class1_config $slot $val
-    else
-      echo "$slot is not present" >> $LOG
     fi
     echo "" >> $LOG
   done

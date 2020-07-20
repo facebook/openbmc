@@ -148,7 +148,14 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
       //rsp_buf[6] is the completion code
       if ( (ret < 0) || (ret == BIC_STATUS_SUCCESS && rsp_buf[6] != CC_SUCCESS) ) {
         syslog(LOG_WARNING, "%s() The 2nd BIC cannot be reached. CC: 0x%02X, intf: 0x%x, ret = %d\n", __func__, rsp_buf[6], intf, ret);
-        ret = BIC_STATUS_FAILURE;
+        switch(rsp_buf[6]) {
+        case CC_NOT_SUPP_IN_CURR_STATE:
+          ret = BIC_STATUS_NOT_SUPP_IN_CURR_STATE;
+          break;
+        default:
+          ret = BIC_STATUS_FAILURE;
+          break;
+        }
       } else { 
         //catch the data and ignore the packet of the bypass command.
         *rlen = rsp_len - 7;
@@ -173,6 +180,7 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   uint8_t bus_id;
   uint8_t dataCksum;
   int retry = 0;
+  uint8_t status_12v = 0;
 
 #if 0
   //TODO: implement the is_bic_ready funcitons
@@ -180,6 +188,12 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
     return -1;
   }
 #endif
+
+  // avoid waiting 5 seconds to do the retry
+  ret = fby3_common_server_stby_pwr_sts(slot_id, &status_12v);
+  if ( ret < 0 || status_12v == 0) {
+    return -1;
+  }
 
   ret = fby3_common_get_bus_id(slot_id);
   if (ret < 0) {

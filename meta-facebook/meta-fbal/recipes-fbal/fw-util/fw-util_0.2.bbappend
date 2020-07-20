@@ -24,6 +24,8 @@ SRC_URI += "file://mcu_fw.h \
             file://cm.cpp \
             file://bios.h \
             file://bios.cpp \
+            file://pfr_bios.h \
+            file://pfr_bios.cpp \
             file://platform.cpp \
             file://cpld.cpp \
             file://me.cpp \

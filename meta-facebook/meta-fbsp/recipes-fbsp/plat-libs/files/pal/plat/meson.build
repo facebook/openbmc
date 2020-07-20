@@ -1,12 +1,9 @@
 pal_headers += [
-    'pal.h',
     'pal_power.h',
-    'pal_sensors.h',
     'pal_health.h',
     ]
 
 pal_sources += [
-    'pal.c',
     'pal_power.c',
     'pal_sensors.c',
     'pal_health.c',

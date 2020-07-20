@@ -41,8 +41,19 @@ extern "C" {
 #define FRU_DEVICE_LIST 1
 #define GUID_FRU_LIST 1
 
+#define MAX_READ_RETRY 5
+#define CPLD_INTENT_CTRL_ADDR 0x70
+#define NIC_CPLD_BUS 9
+#define BB_CPLD_BUS 12
+#define SLOT_BUS_BASE 3
+
 // Baseboard PFR
 #define CPLD_UPDATE_ADDR (0x40)
+#define UFM_PROVISIONED_MSK 0x20
+
+#define PFR_I2C_FILTER_OFFSET 0x10
+#define DISABLE_PFR_I2C_FILTER 0
+#define ENABLE_PFR_I2C_FILTER 1
 
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
@@ -83,6 +94,7 @@ enum {
   CONFIG_C = 0x03,
   CONFIG_D = 0x04,
   CONFIG_B_E1S = 0x05,
+  CONFIG_UNKNOWN = 0xff,
 };
 
 enum {
@@ -122,10 +134,40 @@ typedef struct {
     char *err_descr;
 } PCIE_ERR_DECODE;
 
+enum {
+  PLATFORM_STATE_OFFSET = 0x03,
+  RCVY_CNT_OFFSET       = 0x04,
+  LAST_RCVY_OFFSET      = 0x05,
+  PANIC_CNT_OFFSET      = 0x06,
+  LAST_PANIC_OFFSET     = 0x07,
+  MAJOR_ERR_OFFSET      = 0x08,
+  MINOR_ERR_OFFSET      = 0x09,
+  UFM_STATUS_OFFSET     = 0x0A,
+};
+
+enum {
+  MAJOR_ERROR_BMC_AUTH_FAILED=0x01,
+  MAJOR_ERROR_PCH_AUTH_FAILED=0x02,
+  MAJOR_ERROR_UPDATE_FROM_PCH_FAILED=0x03,
+  MAJOR_ERROR_UPDATE_FROM_BMC_FAILED=0x04,
+};
+
+typedef struct {
+  uint8_t err_id;
+  char *err_des;
+} err_t;
+
+extern size_t minor_auth_size;
+extern size_t minor_update_size;
+extern err_t minor_auth_error[];
+extern err_t minor_update_error[];
+
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_get_uart_select_from_cpld(uint8_t *uart_select);
 int pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen);
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_check_pfr_mailbox(uint8_t fru);
+int set_pfr_i2c_filter(uint8_t slot_id, uint8_t value);
 
 #ifdef __cplusplus
 } // extern "C"

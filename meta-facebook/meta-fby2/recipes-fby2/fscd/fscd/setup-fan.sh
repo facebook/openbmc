@@ -272,7 +272,7 @@ runsv /etc/sv/fscd > /dev/null 2>&1 &
 logger -p user.info "fscd started"
 
 # Check SLED in/out
-if [ $(gpio_get H5) = 1 ]; then
+if [ $(gpio_get FAN_LATCH_DETECT H5) = 1 ]; then
    /usr/local/bin/fscd_end.sh $FSCD_END_SLED_OUT
 elif [ "$invalid_gpv2_config" == "1" ] ; then
    /usr/local/bin/fscd_end.sh $FSCD_END_INVALID_CONFIG

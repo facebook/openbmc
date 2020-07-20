@@ -33,7 +33,9 @@
 wedge_iso_buf_enable
 
 echo -n "Setup fan speed... "
-/usr/local/bin/init_pwm.sh
+if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
+    /usr/local/bin/init_pwm.sh
+fi
 /usr/local/bin/set_fan_speed.sh 50
 /usr/local/bin/fand
 echo "done."

@@ -34,7 +34,11 @@
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/pal.h>
+#if defined(CONFIG_FBY2_KERNEL)
+#include <openbmc/libgpio.h>
+#else
 #include <openbmc/gpio.h>
+#endif
 #include <openbmc/fruid.h>
 #include <openbmc/pal_sensors.h>
 #include <facebook/bic.h>
@@ -79,9 +83,9 @@ char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
  "", "Slot1 Removal Without 12V-OFF", "Slot2 Removal Without 12V-OFF", "Slot3 Removal Without 12V-OFF", "Slot4 Removal Without 12V-OFF",
 };
 
-const static uint8_t gpio_slot_latch[] = { 0, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N };
+const static uint32_t gpio_slot_latch[] = { 0, GPIO_SLOT1_EJECTOR_LATCH_DETECT_N, GPIO_SLOT2_EJECTOR_LATCH_DETECT_N, GPIO_SLOT3_EJECTOR_LATCH_DETECT_N, GPIO_SLOT4_EJECTOR_LATCH_DETECT_N };
 
-const static uint8_t gpv2_dev_nvme_temp[] = { 0, GPV2_SENSOR_DEV0_Temp, GPV2_SENSOR_DEV1_Temp, GPV2_SENSOR_DEV2_Temp, GPV2_SENSOR_DEV3_Temp, GPV2_SENSOR_DEV4_Temp, GPV2_SENSOR_DEV5_Temp,
+const static uint32_t gpv2_dev_nvme_temp[] = { 0, GPV2_SENSOR_DEV0_Temp, GPV2_SENSOR_DEV1_Temp, GPV2_SENSOR_DEV2_Temp, GPV2_SENSOR_DEV3_Temp, GPV2_SENSOR_DEV4_Temp, GPV2_SENSOR_DEV5_Temp,
                                                  GPV2_SENSOR_DEV6_Temp, GPV2_SENSOR_DEV7_Temp, GPV2_SENSOR_DEV8_Temp, GPV2_SENSOR_DEV9_Temp, GPV2_SENSOR_DEV10_Temp, GPV2_SENSOR_DEV11_Temp};
 
 struct threadinfo {
@@ -94,7 +98,7 @@ static struct threadinfo t_fru_cache[MAX_NUM_FRUS] = {0, };
 typedef struct {
   uint8_t def_val;
   char name[64];
-  uint8_t num;
+  uint32_t num;
   char log[256];
 } def_chk_info;
 
@@ -200,7 +204,30 @@ write_device(const char *device, const char *value) {
     return 0;
   }
 }
+#if defined(CONFIG_FBY2_KERNEL)
+static void log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay)
+{
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
 
+  if (log_delay == 0) {
+    syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
+  } else {
+    pthread_t tid_delay_log;
+    struct delayed_log *log = (struct delayed_log *)malloc(sizeof(struct delayed_log));
+    if (log) {
+      log->usec = log_delay;
+      snprintf(log->msg, 256, "%s: %s - %s\n", value ? "DEASSERT" : "ASSERT", cfg->description, cfg->shadow);
+      if (pthread_create(&tid_delay_log, NULL, delay_log, (void *)log)) {
+        free(log);
+        log = NULL;
+      }
+    }
+    if (!log) {
+      syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
+    }
+  }
+}
+#else
 static void log_gpio_change(gpio_poll_st *gp, useconds_t log_delay)
 {
   if (log_delay == 0) {
@@ -221,6 +248,7 @@ static void log_gpio_change(gpio_poll_st *gp, useconds_t log_delay)
     }
   }
 }
+#endif
 
 static void
 create_sensordump(void) {
@@ -496,7 +524,218 @@ static bool is_slot_missing()
   }
   return false;
 }
+#if defined(CONFIG_FBY2_KERNEL)
+static void gpio_event_handle(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  char cmd[128] = {0};
+  uint8_t slot_id;
+  uint8_t slot_12v = 1;
+  uint8_t server_type = 0;
+  int value;
+  char vpath[80] = {0};
+  char locstr[MAX_VALUE_LEN];
+  static bool prsnt_assert[MAX_NODES + 1]={0};
+  static pthread_t hsvc_action_tid[MAX_NODES + 1];
+  static pthread_t latch_open_tid[MAX_NODES + 1];
+  hot_service_info hsvc_info[MAX_NODES + 1];
+  struct timespec ts;
+  pthread_t hsc_alert_tid;
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
 
+  log_gpio_change(gp, curr, 0);
+  server_type = fby2_common_get_spb_type();
+  if (strncmp(cfg->shadow, "FAN_LATCH_DETECT", sizeof(cfg->shadow)) == 0) { // GPIO_FAN_LATCH_DETECT
+    if (curr == 1) { // low to high
+      syslog(LOG_CRIT, "ASSERT: SLED is not seated");
+      memset(cmd, 0, sizeof(cmd));
+      sprintf(cmd, "/usr/local/bin/fscd_end.sh 0");
+      system(cmd);
+    }
+    else { // high to low
+      syslog(LOG_CRIT, "DEASSERT: SLED is seated");
+      memset(cmd, 0, sizeof(cmd));
+      if (((server_type == TYPE_SPB_YV250) && (is_slot_missing() == true)) == false) {
+        sprintf(cmd, "/etc/init.d/setup-fan.sh");
+        system(cmd);
+      }
+    }
+  }
+  else if ((strncmp(cfg->shadow, "SLOT1_EJECTOR_LATCH_DETECT_N", sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "SLOT2_EJECTOR_LATCH_DETECT_N", sizeof(cfg->shadow)) == 0) ||
+           (strncmp(cfg->shadow, "SLOT3_EJECTOR_LATCH_DETECT_N", sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "SLOT4_EJECTOR_LATCH_DETECT_N", sizeof(cfg->shadow)) == 0)
+          ) //  GnPIO_SLOT1/2/3/4_EJECTOR_LATCH_DETECT_N
+  {
+    if (strncmp(cfg->shadow, "SLOT1_EJECTOR_LATCH_DETECT_N", sizeof(cfg->shadow)) == 0) {
+        slot_id = 1;
+    } else if (strncmp(cfg->shadow, "SLOT2_EJECTOR_LATCH_DETECT_N", sizeof(cfg->shadow)) == 0) {
+        slot_id = 2;
+    } else if (strncmp(cfg->shadow, "SLOT3_EJECTOR_LATCH_DETECT_N", sizeof(cfg->shadow)) == 0) {
+        slot_id = 3;
+    } else {
+        slot_id = 4;
+    }
+    
+    if (curr == 1) { // low to high
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      if (last_ejector_ts[slot_id].tv_sec && ((ts.tv_sec - last_ejector_ts[slot_id].tv_sec) < 5)) {
+        return;
+      }
+      last_ejector_ts[slot_id].tv_sec = ts.tv_sec;
+
+      sprintf(vpath, GPIO_VAL, GPIO_FAN_LATCH_DETECT);
+      read_device(vpath, &value);
+
+      // 12V action would be triggered when SLED is pulled out
+      // if SLED is seated, log the event that slot latch is open
+      if (!value) {
+        syslog(LOG_CRIT,"FRU: %u, SLOT%u_EJECTOR_LATCH is not closed while in VCubby", slot_id, slot_id);
+      } else {
+        syslog(LOG_CRIT,"FRU: %u, SLOT%u_EJECTOR_LATCH is not closed", slot_id, slot_id);
+        pthread_mutex_lock(&latch_open_mutex[slot_id]);
+        if ( IsLatchOpenStart[slot_id] )
+        {
+#ifdef DEBUG
+          syslog(LOG_WARNING, "[%s] Close the previous thread for slot%x\n", __func__, slot_id);
+#endif
+          pthread_cancel(latch_open_tid[slot_id]);
+        }
+        //Create thread for latch open detect
+        value = slot_id;
+        if (pthread_create(&latch_open_tid[slot_id], NULL, latch_open_handler, (void *)value) < 0) {
+          syslog(LOG_WARNING, "[%s] Create latch_open_handler thread failed for slot%u", __func__, slot_id);
+          pthread_mutex_unlock(&latch_open_mutex[slot_id]);
+          return;
+        }
+        IsLatchOpenStart[slot_id] = true;
+        pthread_mutex_unlock(&latch_open_mutex[slot_id]);
+      } // end of SLED seated check
+    } //End of low to high
+  } //End of GPIO_SLOT1/2/3/4_EJECTOR_LATCH_DETECT_N
+  else if ((strncmp(cfg->shadow, "SLOT1_PRSNT_B_N", sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "SLOT2_PRSNT_B_N", sizeof(cfg->shadow)) == 0) ||
+           (strncmp(cfg->shadow, "SLOT3_PRSNT_B_N", sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "SLOT4_PRSNT_B_N", sizeof(cfg->shadow)) == 0) ||
+           (strncmp(cfg->shadow, "SLOT1_PRSNT_N"  , sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "SLOT2_PRSNT_N"  , sizeof(cfg->shadow)) == 0) ||
+           (strncmp(cfg->shadow, "SLOT3_PRSNT_N"  , sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "SLOT4_PRSNT_N"  , sizeof(cfg->shadow)) == 0)
+          ) // GPIO_SLOT1/2/3/4_PRSNT_B_N, GPIO_SLOT1/2/3/4_PRSNT_N
+
+  {
+    if ((strncmp(cfg->shadow, "SLOT1_PRSNT_B_N", sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "SLOT1_PRSNT_N", sizeof(cfg->shadow)) == 0)) {
+        slot_id = 1;
+    } else if ((strncmp(cfg->shadow, "SLOT2_PRSNT_B_N", sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "SLOT2_PRSNT_N", sizeof(cfg->shadow)) == 0)) {
+        slot_id = 2;
+    } else if ((strncmp(cfg->shadow, "SLOT3_PRSNT_B_N", sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "SLOT3_PRSNT_N", sizeof(cfg->shadow)) == 0)) {
+        slot_id = 3;
+    } else {
+        slot_id = 4;
+    }
+
+    // Use flag to ignore the interrupt of pair present pin
+    if (prsnt_assert[slot_id])
+    {
+       prsnt_assert[slot_id] = false;
+       return;
+    }
+
+    // HOT SERVER event would be detected
+       prsnt_assert[slot_id] = true;
+
+       if (curr == 1) { // SLOT Removal
+          hsvc_info[slot_id].slot_id = slot_id;
+          hsvc_info[slot_id].action = REMOVAl;
+
+          pthread_mutex_lock(&hsvc_mutex[slot_id]);
+          if ( IsHotServiceStart[slot_id] )
+          {
+#ifdef DEBUG
+            syslog(LOG_WARNING, "[%s] Close the previous thread for slot%x\n", __func__, slot_id);
+#endif
+            pthread_cancel(hsvc_action_tid[slot_id]);
+          }
+
+          if (IsLatchOpenStart[slot_id]) {
+            pthread_cancel(latch_open_tid[slot_id]);
+            pthread_mutex_lock(&latch_open_mutex[slot_id]);
+            IsLatchOpenStart[slot_id] = false;
+            pthread_mutex_unlock(&latch_open_mutex[slot_id]);
+          }
+
+          //Create thread for hsvc event detect
+          if (pthread_create(&hsvc_action_tid[slot_id], NULL, hsvc_event_handler, &hsvc_info[slot_id]) < 0) {
+            syslog(LOG_WARNING, "[%s] Create hsvc_event_handler thread failed for slot%x\n",__func__, slot_id);
+            pthread_mutex_unlock(&hsvc_mutex[slot_id]);
+            return;
+          }
+          IsHotServiceStart[slot_id] = true;
+          pthread_mutex_unlock(&hsvc_mutex[slot_id]);
+       }
+       else { // SLOT INSERTION
+          hsvc_info[slot_id].slot_id = slot_id;
+          hsvc_info[slot_id].action = INSERTION;
+
+          pthread_mutex_lock(&hsvc_mutex[slot_id]);
+          if ( IsHotServiceStart[slot_id] )
+          {
+#ifdef DEBUG
+            syslog(LOG_WARNING, "[%s] Close the previous thread for slot%x\n", __func__, slot_id);
+#endif
+            pthread_cancel(hsvc_action_tid[slot_id]);
+          }
+
+          //Create thread for hsvc event detect
+          if (pthread_create(&hsvc_action_tid[slot_id], NULL, hsvc_event_handler, &hsvc_info[slot_id]) < 0) {
+            syslog(LOG_WARNING, "[%s] Create hsvc_event_handler thread failed for slot%x\n",__func__, slot_id);
+            pthread_mutex_unlock(&hsvc_mutex[slot_id]);
+            return;
+          }
+          IsHotServiceStart[slot_id] = true;
+          pthread_mutex_unlock(&hsvc_mutex[slot_id]);
+       }
+  } // End of GPIO_SLOT1/2/3/4_PRSNT_B_N, GPIO_SLOT1/2/3/4_PRSNT_N
+  else if ((strncmp(cfg->shadow, "UART_SEL", sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "YV250_USB_OCP_UART_SWITCH_N", sizeof(cfg->shadow)) == 0)) {
+    if (pal_get_hand_sw(&slot_id)) {
+      slot_id = HAND_SW_BMC;
+    }
+
+    slot_id = (slot_id >= HAND_SW_BMC) ? HAND_SW_SERVER1 : (slot_id + 1);
+    sprintf(locstr, "%u", slot_id);
+    kv_set("spb_hand_sw", locstr, 0, 0);
+    syslog(LOG_INFO, "change hand_sw location to FRU %s by button", locstr);
+  }
+  else if ((strncmp(cfg->shadow, "SLOT1_POWER_EN", sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "SLOT2_POWER_EN", sizeof(cfg->shadow)) == 0) ||
+           (strncmp(cfg->shadow, "SLOT3_POWER_EN", sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "SLOT4_POWER_EN", sizeof(cfg->shadow)) == 0) 
+          ) // SLOT1/2/3/4_POWER_EN
+  {
+    if (strncmp(cfg->shadow, "SLOT1_POWER_EN", sizeof(cfg->shadow)) == 0) {
+        slot_id = 1;
+    } else if (strncmp(cfg->shadow, "SLOT2_POWER_EN", sizeof(cfg->shadow)) == 0) {
+        slot_id = 2;
+    } else if (strncmp(cfg->shadow, "SLOT3_POWER_EN", sizeof(cfg->shadow)) == 0) {
+        slot_id = 3;
+    } else {
+        slot_id = 4;
+    }
+    if (curr == 1) { // low to high
+      syslog(LOG_WARNING, "[%s] slot%d power enable pin on", __func__,slot_id);
+#if defined(CONFIG_FBY2_GPV2)
+      if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
+        if (pal_is_server_12v_on(slot_id, &slot_12v))
+          syslog(LOG_WARNING, "%s : pal_is_server_12v_on failed for slot: %u", __func__, slot_id);
+        if (slot_12v)
+          fru_cahe_init(slot_id);
+      }
+#endif
+    } else { // high to low
+      syslog(LOG_WARNING, "[%s] slot%d power enable pin off", __func__,slot_id);
+      fby2_common_set_ierr(slot_id,false);
+    }
+  }
+  else if (strncmp(cfg->shadow, "SMB_HOTSWAP_ALERT_N", sizeof(cfg->shadow)) == 0) {
+    if (curr == 0) {
+      if (pthread_create(&hsc_alert_tid, NULL, hsc_alert_handler, NULL)) {
+        syslog(LOG_WARNING, "[%s] Create hsc_alert_handler thread failed", __func__);
+      }
+    }
+  }
+}
+#else
 // Generic Event Handler for GPIO changes
 static void gpio_event_handle(gpio_poll_st *gp)
 {
@@ -684,6 +923,7 @@ static void gpio_event_handle(gpio_poll_st *gp)
     }
   }
 }
+#endif
 
 static void *
 latch_open_handler(void *ptr) {
@@ -949,6 +1189,56 @@ hsvc_event_handler(void *ptr) {
   pthread_exit(0);
 }
 
+#if defined(CONFIG_FBY2_KERNEL)
+// YV2
+static struct gpiopoll_config g_gpios[] = {
+  // shadow, description, edge, handler,oneshot
+  {"FAN_LATCH_DETECT",             "GPIOH5",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT1_EJECTOR_LATCH_DETECT_N", "GPIOP0",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT2_EJECTOR_LATCH_DETECT_N", "GPIOP1",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT3_EJECTOR_LATCH_DETECT_N", "GPIOP2",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT4_EJECTOR_LATCH_DETECT_N", "GPIOP3",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT1_PRSNT_B_N",              "GPIOZ0",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT2_PRSNT_B_N",              "GPIOZ1",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT3_PRSNT_B_N",              "GPIOZ2",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT4_PRSNT_B_N",              "GPIOZ3",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT1_PRSNT_N",                "GPIOAA0", GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT2_PRSNT_N",                "GPIOAA1", GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT3_PRSNT_N",                "GPIOAA2", GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT4_PRSNT_N",                "GPIOAA3", GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"UART_SEL",                     "GPIOO3",  GPIO_EDGE_FALLING, gpio_event_handle, NULL},
+  {"SLOT1_POWER_EN",               "GPIOI0",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT2_POWER_EN",               "GPIOI1",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT3_POWER_EN",               "GPIOI2",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT4_POWER_EN",               "GPIOI3",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SMB_HOTSWAP_ALERT_N",          "GPION7",  GPIO_EDGE_FALLING, gpio_event_handle, NULL},
+};
+
+
+// YV2.50
+static struct gpiopoll_config g_gpios_yv250[] = {
+  // shadow, description, edge, handler,oneshot
+  {"FAN_LATCH_DETECT",             "GPIOH5",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT1_EJECTOR_LATCH_DETECT_N", "GPIOP0",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT2_EJECTOR_LATCH_DETECT_N", "GPIOP1",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT3_EJECTOR_LATCH_DETECT_N", "GPIOP2",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT4_EJECTOR_LATCH_DETECT_N", "GPIOP3",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT1_PRSNT_B_N",              "GPIOZ0",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT2_PRSNT_B_N",              "GPIOZ1",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT3_PRSNT_B_N",              "GPIOZ2",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT4_PRSNT_B_N",              "GPIOZ3",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT1_PRSNT_N",                "GPIOAA0", GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT2_PRSNT_N",                "GPIOAA1", GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT3_PRSNT_N",                "GPIOAA2", GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT4_PRSNT_N",                "GPIOAA3", GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"YV2_USB_OCP_UART_SWITCH_N",    "GPIOG7",  GPIO_EDGE_FALLING, gpio_event_handle, NULL},
+  {"SLOT1_POWER_EN",               "GPIOI0",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT2_POWER_EN",               "GPIOI1",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT3_POWER_EN",               "GPIOI2",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SLOT4_POWER_EN",               "GPIOI3",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
+  {"SMB_HOTSWAP_ALERT_N",          "GPION7",  GPIO_EDGE_FALLING, gpio_event_handle, NULL},
+};
+#else
 // YV2
 static gpio_poll_st g_gpios[] = {
   // {{gpio, fd}, edge, gpioValue, call-back function, GPIO description}
@@ -997,9 +1287,9 @@ static gpio_poll_st g_gpios_yv250[] = {
   {{0, 0}, GPIO_EDGE_FALLING, 0, gpio_event_handle, "GPION7",  "GPIO_SMB_HOTSWAP_ALERT_N"},
 };
 
-
 static int g_count = sizeof(g_gpios) / sizeof(gpio_poll_st);
 static int g_count_yv250 = sizeof(g_gpios_yv250) / sizeof(gpio_poll_st);
+#endif
 
 static def_chk_info def_gpio_chk[] = {
   // { default value, gpio name, gpio num, log }
@@ -1099,6 +1389,9 @@ main(int argc, void **argv) {
   uint8_t status = 0;
   int i;
   int spb_type;
+#if defined(CONFIG_FBY2_KERNEL)
+  gpiopoll_desc_t *polldesc = NULL;
+#endif
 
   for(i=1 ;i<MAX_NODES + 1; i++)
   {
@@ -1122,7 +1415,21 @@ main(int argc, void **argv) {
   } else {
     openlog("gpiointrd", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "gpiointrd: daemon started");
-
+#if defined(CONFIG_FBY2_KERNEL)
+    if (spb_type == TYPE_SPB_YV250) {
+      polldesc = gpio_poll_open(g_gpios_yv250, sizeof(g_gpios_yv250)/sizeof(g_gpios_yv250[0]));      
+    } else {
+      polldesc = gpio_poll_open(g_gpios, sizeof(g_gpios)/sizeof(g_gpios[0]));
+    }
+    if (!polldesc) {
+      syslog(LOG_CRIT, "Cannot start poll operation on GPIOs");
+    } else {
+      if (gpio_poll(polldesc, POLL_TIMEOUT)) {
+        syslog(LOG_CRIT, "Poll returned error");
+      }
+      gpio_poll_close(polldesc);
+    }
+#else
     if (spb_type == TYPE_SPB_YV250) {
       gpio_poll_open(g_gpios_yv250, g_count_yv250);
       gpio_poll(g_gpios_yv250, g_count_yv250, POLL_TIMEOUT);
@@ -1132,6 +1439,7 @@ main(int argc, void **argv) {
       gpio_poll(g_gpios, g_count, POLL_TIMEOUT);
       gpio_poll_close(g_gpios, g_count);
     }
+#endif
   }
 
   for(i=1; i<MAX_NODES + 1; i++)

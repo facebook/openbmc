@@ -47,6 +47,7 @@
 #define VENDOR_ID_FACEBOOK 0x1D9B
 #define VENDOR_ID_BROARDCOM 0x14E4
 #define VENDOR_ID_QUALCOMM 0x17CB
+#define VENDOR_ID_SSSTC 0x1E95
 
 /* NVMe-MI Management End Point Form Factor */
 #define MEFF_M_2_22110 0x35

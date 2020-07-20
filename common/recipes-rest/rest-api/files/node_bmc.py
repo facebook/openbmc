@@ -139,9 +139,10 @@ class bmcNode(node):
         name = pal.pal_get_platform_name()
 
         # Get MAC Address
-        mac_path = "/sys/class/net/eth0/address"
+        eth_intf = pal.pal_get_eth_intf_name()
+        mac_path = "/sys/class/net/%s/address" % (eth_intf)
         if os.path.isfile(mac_path):
-            mac = open("/sys/class/net/eth0/address").read()
+            mac = open(mac_path).read()
             mac_addr = mac[0:17].upper()
         else:
             mac = get_mac()
@@ -208,16 +209,24 @@ class bmcNode(node):
         kernel_version = data.strip("\n")
 
         # Get TPM version
-        tpm_path = "/sys/class/tpm/tpm0/device/caps"
         tpm_tcg_version = "NA"
         tpm_fw_version = "NA"
-        if os.path.isfile(tpm_path):
-            with open(tpm_path) as f:
-                for line in f:
-                    if "TCG version:" in line:
-                        tpm_tcg_version = line.strip("TCG version: ").strip("\n")
-                    elif "Firmware version:" in line:
-                        tpm_fw_version = line.strip("Firmware version: ").strip("\n")
+        if os.path.exists("/sys/class/tpm/tpm0"):
+            tpm1_caps = "/sys/class/tpm/tpm0/device/caps"
+            if os.path.isfile(tpm1_caps):
+                with open(tpm1_caps) as f:
+                    for line in f:
+                        if "TCG version:" in line:
+                            tpm_tcg_version = line.strip("TCG version: ").strip("\n")
+                        elif "Firmware version:" in line:
+                            tpm_fw_version = line.strip("Firmware version: ").strip("\n")
+            elif os.path.isfile("/usr/bin/tpm2_getcap"):
+                with Popen("/usr/bin/tpm2_getcap -c properties-fixed 2>/dev/null", shell=True, stdout=PIPE) as f:
+                    tpm_tcg_version = f.stdout.readlines()[2].decode().split("\"")[1]
+                with Popen("/usr/bin/tpm2_getcap -c properties-fixed 2>/dev/null", shell=True, stdout=PIPE) as f:
+                    value = f.stdout.readlines()[21].decode().strip("\n").split(":")[1]
+                    value = int(value, 16)
+                    tpm_fw_version = "%d.%d" % (value >> 16, value & 0xFFFF)
 
         spi0_vendor = getSPIVendor(0)
         spi1_vendor = getSPIVendor(1)

@@ -75,6 +75,16 @@ me_ipmb_process(NM_RW_INFO* info, uint8_t ipmi_cmd, uint8_t netfn,
   return 0;
 }
 
+int
+lib_dcmi_wrapper(NM_RW_INFO* info, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
+  ipmi_req_t *req = (ipmi_req_t*) txbuf;
+  uint8_t netfn = req->netfn_lun >> 2;
+  uint8_t cmd = req->cmd;
+  uint8_t tlen = txlen-2; //Discarding netfn, cmd bytes
+
+  return me_ipmb_process(info, cmd, netfn, req->data, tlen, rxbuf, rxlen);
+}
+
 // Get Device ID
 int
 cmd_NM_get_dev_id(NM_RW_INFO* info, ipmi_dev_id_t *dev_id) {

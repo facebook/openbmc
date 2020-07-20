@@ -12,17 +12,13 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-rest3 \
   ast-mdio \
   flashrom \
+  fscd \
   lldp-util \
   mterm \
   openbmc-gpio \
   openbmc-utils \
+  spatula \
   usb-console \
   wedge-eeprom \
+  weutil-dhcp-id \
   "
-# ELBERTTODO 447407 led-controld
-# ELBERTTODO 442091 fscd using inlet
-  # led-controld\
-  # wedge-eeprom \
-  # weutil-dhcp-id \
-  # fscd \
-  # spatula \

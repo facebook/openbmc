@@ -89,7 +89,9 @@ void cpu_vr_hot_init(char* shadow, char* desc, gpio_value_t value) {
 }
 
 void cpu_skt_init(char* shadow, char* desc, gpio_value_t value) {
-  syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", desc, shadow);
+  if(value == GPIO_VALUE_HIGH ) {
+    syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", desc, shadow);
+  }
   return;
 }
 
@@ -126,6 +128,7 @@ static gpio_value_t gpio_get(const char *shadow)
   return value;
 }
 
+/*
 static int gpio_set(const char *shadow, gpio_value_t val)
 {
   gpio_desc_t *desc = gpio_open_by_shadow(shadow);
@@ -142,6 +145,7 @@ static int gpio_set(const char *shadow, gpio_value_t val)
   gpio_close(desc);
   return 0;
 }
+*/
 
 static void* ioex0_monitor()
 {
@@ -158,8 +162,8 @@ static void* ioex0_monitor()
         if (pal_get_server_power(FRU_MB, &status) < 0 || status == SERVER_POWER_OFF) {
           continue;
         }
-      } 
-      
+      }
+
       curr = gpio_get(ioex0_gpios[i].shadow);
       if(curr == ioex0_gpios[i].last) {
         continue;
@@ -171,17 +175,17 @@ static void* ioex0_monitor()
         }
         ioex0_gpios[i].last = curr;
         init_flag[i] = true;
-#ifdef DEBUG        
+#ifdef DEBUG
         syslog(LOG_DEBUG, "gpio %s initial value=%x\n", ioex0_gpios[i].shadow, curr);
-#endif        
+#endif
         continue;
       }
 
 #ifdef DEBUG
       syslog(LOG_DEBUG, "edge gpio %s value=%x\n", ioex0_gpios[i].shadow, curr);
-#endif      
+#endif
       switch (ioex0_gpios[i].edge) {
-      case GPIO_EDGE_FALLING:          
+      case GPIO_EDGE_FALLING:
         if(curr == GPIO_VALUE_LOW) {
           assert = true;
         } else {
@@ -202,7 +206,7 @@ static void* ioex0_monitor()
         assert = false;
         break;
       }
-       
+
       if((assert == true) && (ioex0_gpios[i].handler != NULL)) {
         ioex0_gpios[i].handler(ioex0_gpios[i].shadow, ioex0_gpios[i].desc, curr);
       }
@@ -304,6 +308,42 @@ static void irq_uv_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t
   log_gpio_change(desc, curr, 20*1000);
 }
 
+
+//PROCHOT Handler
+static void prochot_reason(char *reason)
+{
+  if (gpio_get("IRQ_UV_DETECT_N") == GPIO_VALUE_LOW)
+    strcpy(reason, "UV");
+  if (gpio_get("IRQ_OC_DETECT_N") == GPIO_VALUE_LOW)
+    strcpy(reason, "OC");
+  if (gpio_get("FM_HSC_TIMER_EXP_N") == GPIO_VALUE_LOW)
+    strcpy(reason, "timer exp");
+  if (gpio_get("IRQ_SML1_PMBUS_BMC_ALERT_N") == GPIO_VALUE_LOW)
+    strcpy(reason, "PMBus alert");
+}
+
+static void cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  char cmd[128] = {0};
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+  assert(cfg);
+  SERVER_POWER_CHECK(3);
+  //LCD debug card critical SEL support
+  strcat(cmd, "CPU FPH");
+  if (curr) {
+    strcat(cmd, " DEASSERT");
+    syslog(LOG_CRIT, "DEASSERT: %s - %s\n", cfg->description, cfg->shadow);
+  } else {
+    char reason[32] = "";
+    strcat(cmd, " by ");
+    prochot_reason(reason);
+    strcat(cmd, reason);
+    syslog(LOG_CRIT, "ASSERT: %s - %s (reason: %s)\n", cfg->description, cfg->shadow, reason);
+    strcat(cmd, " ASSERT");
+  }
+  pal_add_cri_sel(cmd);
+}
+
 //Generic Event Handler for GPIO changes
 static void gpio_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
@@ -358,42 +398,6 @@ static void
 pwr_sysok_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   reset_timer(&g_power_on_sec);
   log_gpio_change(desc, curr, 0);
-}
-
-//SLP3 Event Handler
-static void
-slp3_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  gpio_value_t status;
-
-  status = (gpio_get("PRSNT_PCIE_CABLE_1_N")) & (gpio_get("PRSNT_PCIE_CABLE_2_N"));
-  if(status < 0 || status == GPIO_VALUE_HIGH) {
-    return;
-  }
-
-  if (curr == GPIO_VALUE_HIGH) {  
-    gpio_set("FM_ASIC_POWER_EN", GPIO_VALUE_HIGH);
-  } else {
-    gpio_set("FM_ASIC_POWER_EN", GPIO_VALUE_LOW);
-  }
-}
-
-static void init_slp3(gpiopoll_pin_t *desc, gpio_value_t value) {
-  gpio_value_t status;
-
-  if(value == GPIO_VALUE_LOW) {
-    return;
-  }
-
-  status = (gpio_get("PRSNT_PCIE_CABLE_1_N")) & (gpio_get("PRSNT_PCIE_CABLE_2_N"));
-  if(status < 0 || status == GPIO_VALUE_HIGH) {
-    return;
-  }
-
-  if (value == GPIO_VALUE_HIGH) {  
-    gpio_set("FM_ASIC_POWER_EN", GPIO_VALUE_HIGH);
-  } else {
-    gpio_set("FM_ASIC_POWER_EN", GPIO_VALUE_LOW);
-  }
 }
 
 //IERR and MCERR Event Handler
@@ -496,7 +500,6 @@ ierr_mcerr_event_handler() {
           g_caterr_irq--;
           pthread_mutex_unlock(&caterr_mutex);
           caterr_cnt = 0;
-          pal_set_fault_led(FRU_MB, FAULT_LED_ON);
           if (system("/usr/local/bin/autodump.sh &")) {
             syslog(LOG_WARNING, "Failed to start crashdump\n");
           }
@@ -534,7 +537,6 @@ ierr_mcerr_event_handler() {
           g_msmi_irq--;
           pthread_mutex_unlock(&caterr_mutex);
           msmi_cnt = 0;
-          pal_set_fault_led(FRU_MB, FAULT_LED_ON);
           if (system("/usr/local/bin/autodump.sh &")) {
             syslog(LOG_WARNING, "Failed to start crashdump\n");
           }
@@ -579,7 +581,7 @@ static void platform_reset_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
   clock_gettime(CLOCK_MONOTONIC, &ts);
   sprintf(value, "%ld", ts.tv_sec);
   kv_set("snr_polling_flag", value, 0, 0);
-  
+
   log_gpio_change(desc, curr, 0);
 }
 
@@ -656,7 +658,6 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_POST_CARD_PRES_BMC_N", "GPIOQ6", GPIO_EDGE_BOTH, usb_dbg_card_handler, NULL},
   {"FM_PCH_BMC_THERMTRIP_N", "GPIOG2", GPIO_EDGE_BOTH, pch_thermtrip_handler, NULL},
   {"RST_PLTRST_BMC_N", "GPIOF6", GPIO_EDGE_BOTH, platform_reset_handle, NULL},
-  {"FM_SLPS3_N", "GPIOY0", GPIO_EDGE_BOTH, slp3_handler, init_slp3},
   {"IRQ_UV_DETECT_N", "GPIOM0", GPIO_EDGE_BOTH, irq_uv_handler, NULL},
   {"IRQ_OC_DETECT_N", "GPIOM1", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
   {"IRQ_HSC_FAULT_N", "GPIOL2", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
@@ -673,10 +674,13 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_CPU_ERR1_LVT3_N", "GPIOF1", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
   {"FM_CPU_ERR2_LVT3_N", "GPIOF2", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
   {"FM_MEM_THERM_EVENT_CPU0_LVT3_N", "GPIOB0", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
-  {"FM_MEM_THERM_EVENT_CPU1_LVT3_N", "GPIOB1", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL}, 
-  {"FM_SYS_THROTTLE_LVC3", "GPIOR7", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL}, 
+  {"FM_MEM_THERM_EVENT_CPU1_LVT3_N", "GPIOB1", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
+  {"FM_SYS_THROTTLE_LVC3", "GPIOR7", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
   {"IRQ_DIMM_SAVE_LVT3_N", "GPION4", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
   {"FM_HSC_TIMER_EXP_N", "GPIOM2", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
+  {"FM_CPU0_PROCHOT_LVT3_BMC_N", "GPIOB5", GPIO_EDGE_BOTH, cpu_prochot_handler, NULL},
+  {"FM_CPU1_PROCHOT_LVT3_BMC_N", "GPIOB6", GPIO_EDGE_BOTH, cpu_prochot_handler, NULL},
+
 };
 
 int main(int argc, char **argv)

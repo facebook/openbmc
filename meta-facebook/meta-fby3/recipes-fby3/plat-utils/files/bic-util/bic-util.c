@@ -52,6 +52,7 @@ static const char *option_list[] = {
   "--get_sdr",
   "--read_sensor",
   "--perf_test [loop_count] (0 to run forever)",
+  "--clear_cmos",
   "--file [path]",
 };
 
@@ -516,6 +517,26 @@ util_get_postcode(uint8_t slot_id) {
   return ret;
 }
 
+static int
+util_bic_clear_cmos(uint8_t slot_id) {
+  int ret = 0;
+  uint8_t power_status = 0;
+
+  ret = pal_get_server_power(slot_id, &power_status);
+  if (ret < 0) {
+    printf("Failed to get server power status\n");
+    goto out;
+  } else if (power_status == SERVER_POWER_ON) {
+    printf("Can't performing CMOS clear while server is powered ON\n");
+    goto out;
+  }
+
+  ret = bic_clear_cmos(slot_id);
+  printf("Performing CMOS clear, status %d\n", ret);
+out:
+  return ret;
+}
+
 int
 main(int argc, char **argv) {
   uint8_t slot_id = 0;
@@ -596,6 +617,9 @@ main(int argc, char **argv) {
     } else if ( strcmp(argv[2], "--perf_test") == 0 ) {
       if ( argc != 4 ) goto err_exit;
       else return util_perf_test(slot_id, atoi(argv[3]));
+    } else if (!strcmp(argv[2], "--clear_cmos")) {
+      if (argc != 3) goto err_exit;
+      return util_bic_clear_cmos(slot_id);
     } else if ( strcmp(argv[2], "--file") == 0 ) {
       if ( argc != 4 ) goto err_exit;
       if ( slot_id == FRU_ALL ) {

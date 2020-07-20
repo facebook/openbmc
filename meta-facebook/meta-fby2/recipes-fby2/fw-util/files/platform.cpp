@@ -1,9 +1,15 @@
 #include "bic_fw.h"
 #include "usbdbg.h"
 #include "nic.h"
+#include "nic_ext.h"
+#include <facebook/fby2_common.h>
 
 // Shared NIC
+#if defined(CONFIG_FBY2_KERNEL)
+NicExtComponent nic("nic", "nic", "nic_fw_ver", FRU_NIC, 0x00);
+#else
 NicComponent nic("nic", "nic");
+#endif
 
 // Register BIC FW and BL components
 BicFwComponent bicfw1("slot1", "bic", 1);

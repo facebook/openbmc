@@ -7,6 +7,9 @@
 #include <atomic>
 #include <regex>
 #include "system_intf.h"
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 #define FW_STATUS_SUCCESS        0
 #define FW_STATUS_FAILURE       -1
@@ -75,7 +78,14 @@ class Component {
     virtual int fupdate(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int dump(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int print_version() { return FW_STATUS_NOT_SUPPORTED; }
-
+    virtual void get_version(std::string& str) {
+      str = "not_supported";
+    }
+    virtual void get_version(json &j) {
+      std::string ver;
+      get_version(ver);
+      j["VERSION"] = ver;
+    }
     virtual void set_update_ongoing(int timeout) {
       if (timeout > 0)
         update_initiated = true;

@@ -77,6 +77,8 @@
 #define AST_SRAM_BMC_REBOOT_BASE      0x1E721000
 #define BMC_REBOOT_BY_KERN_PANIC(base) *((uint32_t *)(base + 0x200))
 #define BMC_REBOOT_BY_CMD(base) *((uint32_t *)(base + 0x204))
+#define BMC_REBOOT_SIG(base) *((uint32_t *)(base + 0x208))
+#define BOOT_MAGIC                    0xFB420054
 #define BIT_RECORD_LOG                (1 << 8)
 // kernel panic
 #define FLAG_KERN_PANIC               (1 << 0)
@@ -1492,6 +1494,7 @@ log_reboot_cause(char *sled_off_time)
     // Initial BMC reboot flag
     BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base) = 0x0;
     BMC_REBOOT_BY_CMD(bmc_reboot_base) = 0x0;
+    BMC_REBOOT_SIG(bmc_reboot_base) = BOOT_MAGIC;
   } else {
     kern_panic_flag = BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base);
     reboot_detected_flag = BMC_REBOOT_BY_CMD(bmc_reboot_base);

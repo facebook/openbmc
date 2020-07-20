@@ -33,3 +33,5 @@ fi
 modprobe g_ether host_addr=02:00:00:00:00:02 dev_addr=$addr
 
 ifconfig usb0 up
+
+dhclient -d -pf /var/run/dhclient.usb0.pid usb0 > /dev/null 2>&1 &

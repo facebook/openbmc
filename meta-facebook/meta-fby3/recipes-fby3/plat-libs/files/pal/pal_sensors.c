@@ -24,6 +24,9 @@
 #define MAX_SDR_LEN 64
 #define SDR_PATH "/tmp/sdr_%s.bin"
 
+#define PWM_PLAT_SET 0x80
+#define PWM_MASK     0x0f
+
 enum {
   /* Fan Type */
   DUAL_TYPE    = 0x00,
@@ -44,19 +47,36 @@ static int read_hsc_pin(uint8_t hsc_id, float *value);
 static int read_hsc_iout(uint8_t hsc_id, float *value);
 static int read_medusa_val(uint8_t snr_number, float *value);
 static int read_cached_val(uint8_t snr_number, float *value);
-static int pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_fan_speed(uint8_t snr_number, float *value);
+static int read_fan_pwm(uint8_t pwm_id, float *value);
+static int read_curr_leakage(uint8_t snr_number, float *value);
 
+static int pal_sdr_init(uint8_t fru);
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 static bool sdr_init_done[MAX_NUM_FRUS] = {false};
 static uint8_t bic_dynamic_sensor_list[4][MAX_SENSOR_NUM] = {0};
 static uint8_t bic_dynamic_skip_sensor_list[4][MAX_SENSOR_NUM] = {0};
 
+int pwr_off_flag[MAX_NODES] = {0};
+int temp_cnt = 0;
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0, 1, 2, 3";
 const char pal_fan_opt_list[] = "enable, disable, status";
 
 const uint8_t bmc_sensor_list[] = {
+  BMC_SENSOR_FAN0_TACH,
+  BMC_SENSOR_FAN1_TACH,
+  BMC_SENSOR_FAN2_TACH,
+  BMC_SENSOR_FAN3_TACH,
+  BMC_SENSOR_FAN4_TACH,
+  BMC_SENSOR_FAN5_TACH,
+  BMC_SENSOR_FAN6_TACH,
+  BMC_SENSOR_FAN7_TACH,
+  BMC_SENSOR_PWM0,
+  BMC_SENSOR_PWM1,
+  BMC_SENSOR_PWM2,
+  BMC_SENSOR_PWM3,
   BMC_SENSOR_OUTLET_TEMP,
   BMC_SENSOR_INLET_TEMP,
   BMC_SENSOR_P5V,
@@ -75,6 +95,7 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_MEDUSA_PWR,
   BMC_SENSOR_MEDUSA_VDELTA,
   BMC_SENSOR_PDB_VDELTA,
+  BMC_SENSOR_CURR_LEAKAGE,
   BMC_SENSOR_FAN_IOUT,
   BMC_SENSOR_NIC_P12V,
   BMC_SENSOR_NIC_IOUT,
@@ -82,12 +103,27 @@ const uint8_t bmc_sensor_list[] = {
 };
 
 const uint8_t nicexp_sensor_list[] = {
+  BMC_SENSOR_FAN0_TACH,
+  BMC_SENSOR_FAN1_TACH,
+  BMC_SENSOR_FAN2_TACH,
+  BMC_SENSOR_FAN3_TACH,
+  BMC_SENSOR_FAN4_TACH,
+  BMC_SENSOR_FAN5_TACH,
+  BMC_SENSOR_FAN6_TACH,
+  BMC_SENSOR_FAN7_TACH,
+  BMC_SENSOR_PWM0,
+  BMC_SENSOR_PWM1,
+  BMC_SENSOR_PWM2,
+  BMC_SENSOR_PWM3,
   BMC_SENSOR_OUTLET_TEMP,
   BMC_SENSOR_P12V,
   BMC_SENSOR_P3V3_STBY,
   BMC_SENSOR_P1V15_BMC_STBY,
   BMC_SENSOR_P1V2_BMC_STBY,
   BMC_SENSOR_P2V5_BMC_STBY,
+  BMC_SENSOR_NIC_P12V,
+  BMC_SENSOR_NIC_IOUT,
+  BMC_SENSOR_NIC_PWR,
 };
 
 const uint8_t bic_sensor_list[] = {
@@ -99,12 +135,14 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_CPU_TEMP,
   BIC_SENSOR_CPU_THERM_MARGIN,
   BIC_SENSOR_CPU_TJMAX,
+  BIC_SENSOR_SOC_PKG_PWR,
   BIC_SENSOR_DIMMA0_TEMP,
   BIC_SENSOR_DIMMB0_TEMP,
   BIC_SENSOR_DIMMC0_TEMP,
   BIC_SENSOR_DIMMD0_TEMP,
   BIC_SENSOR_DIMME0_TEMP,
   BIC_SENSOR_DIMMF0_TEMP,
+  BIC_SENSOR_M2A_TEMP,
   BIC_SENSOR_M2B_TEMP,
   BIC_SENSOR_HSC_TEMP,
   BIC_SENSOR_VCCIN_VR_TEMP,
@@ -288,12 +326,16 @@ const uint8_t bic_1ou_skip_sensor_list[] = {
   BIC_1OU_EXP_SENSOR_P1V8_VOL,
   BIC_1OU_EXP_SENSOR_P3V3_M2A_PWR,
   BIC_1OU_EXP_SENSOR_P3V3_M2A_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2A_TMP,
   BIC_1OU_EXP_SENSOR_P3V3_M2B_PWR,
   BIC_1OU_EXP_SENSOR_P3V3_M2B_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2B_TMP,
   BIC_1OU_EXP_SENSOR_P3V3_M2C_PWR,
   BIC_1OU_EXP_SENSOR_P3V3_M2C_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2C_TMP,
   BIC_1OU_EXP_SENSOR_P3V3_M2D_PWR,
   BIC_1OU_EXP_SENSOR_P3V3_M2D_VOL,
+  BIC_1OU_EXP_SENSOR_P3V3_M2D_TMP,
 };
 
 const uint8_t bic_2ou_skip_sensor_list[] = {
@@ -301,16 +343,22 @@ const uint8_t bic_2ou_skip_sensor_list[] = {
   BIC_2OU_EXP_SENSOR_P1V8_VOL,
   BIC_2OU_EXP_SENSOR_P3V3_M2A_PWR,
   BIC_2OU_EXP_SENSOR_P3V3_M2A_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2A_TMP,
   BIC_2OU_EXP_SENSOR_P3V3_M2B_PWR,
   BIC_2OU_EXP_SENSOR_P3V3_M2B_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2B_TMP,
   BIC_2OU_EXP_SENSOR_P3V3_M2C_PWR,
   BIC_2OU_EXP_SENSOR_P3V3_M2C_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2C_TMP,
   BIC_2OU_EXP_SENSOR_P3V3_M2D_PWR,
   BIC_2OU_EXP_SENSOR_P3V3_M2D_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2D_TMP,
   BIC_2OU_EXP_SENSOR_P3V3_M2E_PWR,
   BIC_2OU_EXP_SENSOR_P3V3_M2E_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2E_TMP,
   BIC_2OU_EXP_SENSOR_P3V3_M2F_PWR,
   BIC_2OU_EXP_SENSOR_P3V3_M2F_VOL,
+  BIC_2OU_EXP_SENSOR_P3V3_M2F_TMP,
 };
 
 const uint8_t bic_1ou_edsff_skip_sensor_list[] = {
@@ -575,7 +623,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
+  {"BMC_SENSOR_CURR_LEAKAGE", 0xCD, read_curr_leakage, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xCD
   {"BMC_SENSOR_PDB_VDELTA", 0xCE, read_cached_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCE
   {"BMC_SENSOR_MEDUSA_VDELTA", 0xCF, read_cached_val, true, {0.5, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCF
 
@@ -596,23 +644,22 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDF
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEB
+  {"BMC_SENSOR_FAN0_TACH", 0xE0, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE0
+  {"BMC_SENSOR_FAN1_TACH", 0xE1, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE1
+  {"BMC_SENSOR_FAN2_TACH", 0xE2, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE2
+  {"BMC_SENSOR_FAN3_TACH", 0xE3, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE3
+  {"BMC_SENSOR_FAN4_TACH", 0xE4, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE4
+  {"BMC_SENSOR_FAN5_TACH", 0xE5, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE5
+  {"BMC_SENSOR_FAN6_TACH", 0xE6, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE6
+  {"BMC_SENSOR_FAN7_TACH", 0xE7, read_fan_speed, true, {11500, 8500, 0, 500, 0, 0, 0, 0}, FAN}, //0xE7
+  {"BMC_SENSOR_PWM0", PWM_0, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xE8
+  {"BMC_SENSOR_PWM1", PWM_1, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xE9
+  {"BMC_SENSOR_PWM2", PWM_2, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xEA
+  {"BMC_SENSOR_PWM3", PWM_3, read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xEB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEC
   {"BMC_INLET_TEMP",  TEMP_INLET,  read_temp, true, {50, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xED
   {"BMC_OUTLET_TEMP", TEMP_OUTLET, read_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEE
-  {"NIC_SENSOR_TEMP", TEMP_NIC, read_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEF
-
+  {"NIC_SENSOR_TEMP", TEMP_NIC, read_temp, true, {95, 85, 105, 0, 0, 0, 0, 0}, TEMP}, //0xEF
   {"BMC_SENSOR_P5V", ADC0, read_adc_val, true, {5.486, 0, 0, 4.524, 0, 0, 0, 0}, VOLT}, //0xF0
   {"BMC_SENSOR_P12V", ADC1, read_adc_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF1
   {"BMC_SENSOR_P3V3_STBY", ADC2, read_adc_val, true, {3.629, 0, 0, 2.976, 0, 0, 0, 0}, VOLT}, //0xF2
@@ -651,7 +698,7 @@ size_t bic_1ou_edsff_skip_sensor_cnt = sizeof(bic_1ou_edsff_skip_sensor_list)/si
 
 
 int
-get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt) {
+get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const uint8_t bmc_location, const uint8_t config_status) {
   uint8_t type = 0;
   static uint8_t current_cnt = 0;
 
@@ -659,8 +706,12 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt) {
 
     memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_skip_sensor_list, bic_skip_sensor_cnt);
     current_cnt = bic_skip_sensor_cnt;
-        
-    bic_get_1ou_type(fru, &type); 
+
+    //if 1OU board doesn't exist, use the default 1ou skip list.
+    if ( (bmc_location != NIC_BMC) && (config_status & PRESENT_1OU) == PRESENT_1OU ) {
+      bic_get_1ou_type(fru, &type);
+    }
+
     if (type == EDSFF_1U) {
       memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_1ou_edsff_skip_sensor_list, bic_1ou_edsff_skip_sensor_cnt);
       current_cnt += bic_1ou_edsff_skip_sensor_cnt;
@@ -712,29 +763,30 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_SLOT4:
     memcpy(bic_dynamic_sensor_list[fru-1], bic_sensor_list, bic_sensor_cnt);
     current_cnt = bic_sensor_cnt;
+    config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
 
-    if (pal_is_fw_update_ongoing(fru) == false) {
-      config_status = bic_is_m2_exp_prsnt(fru);
-      if ( (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ( (config_status == PRESENT_1OU) || (config_status == (PRESENT_1OU + PRESENT_2OU))) ) {
-        ret = bic_get_1ou_type(fru, &type); 
-        if (type == EDSFF_1U) {
-          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_edsff_sensor_list, bic_1ou_edsff_sensor_cnt);
-          current_cnt += bic_1ou_edsff_sensor_cnt;
-        } else {
-          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_sensor_list, bic_1ou_sensor_cnt);
-          current_cnt += bic_1ou_sensor_cnt;
-        }
+    // 1OU
+    if ( (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
+      ret = (pal_is_fw_update_ongoing(fru) == false) ? bic_get_1ou_type(fru, &type):bic_get_1ou_type_cache(fru, &type);
+      if (type == EDSFF_1U) {
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_edsff_sensor_list, bic_1ou_edsff_sensor_cnt);
+        current_cnt += bic_1ou_edsff_sensor_cnt;
+      } else {
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_sensor_list, bic_1ou_sensor_cnt);
+        current_cnt += bic_1ou_sensor_cnt;
       }
+    }
 
-      if ( (config_status == PRESENT_2OU) || (config_status == (PRESENT_1OU + PRESENT_2OU)) ) {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
-        current_cnt += bic_2ou_sensor_cnt;
-      }
+    // 2OU
+    if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
+      memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
+      current_cnt += bic_2ou_sensor_cnt;
+    }
 
-      if ( bmc_location == NIC_BMC ) {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_bb_sensor_list, bic_bb_sensor_cnt);
-        current_cnt += bic_bb_sensor_cnt;
-      }
+    // BB (for NIC_BMC only)
+    if ( bmc_location == NIC_BMC ) {
+      memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_bb_sensor_list, bic_bb_sensor_cnt);
+      current_cnt += bic_bb_sensor_cnt;
     }
 
     *sensor_list = (uint8_t *) bic_dynamic_sensor_list[fru-1];
@@ -765,27 +817,6 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 }
 
 static int
-get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask) {
-  int i;
-  *mask = 0;
-  for (i = 0; i < num; i++) {
-    int ret;
-    gpio_value_t value;
-    gpio_desc_t *gpio = gpio_open_by_shadow(shadows[i]);
-    if (!gpio) {
-      return -1;
-    }
-    ret = gpio_get_value(gpio, &value);
-    gpio_close(gpio);
-    if (ret != 0) {
-      return -1;
-    }
-    *mask |= (value == GPIO_VALUE_HIGH ? 1 : 0) << i;
-  }
-  return 0;
-}
-
-static int
 pal_get_fan_type(uint8_t *bmc_location, uint8_t *type) {
   static bool is_cached = false;
   static uint8_t cached_id = 0;
@@ -803,7 +834,7 @@ pal_get_fan_type(uint8_t *bmc_location, uint8_t *type) {
         "DUAL_FAN1_DETECT_BMC_N_R",
       };
 
-      if ( get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id) ) {
+      if ( fby3_common_get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id) ) {
         return PAL_ENOTSUP;
       }
 
@@ -899,6 +930,7 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
   return -1;
 }
 
+// Provide the fan speed to fan-util and it also will be called by read_fan_speed
 int pal_get_fan_speed(uint8_t fan, int *rpm)
 {
   char label[32] = {0};
@@ -914,7 +946,13 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
   }
 
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-    if ( fan_type == SINGLE_TYPE ) fan *= 2;
+    //8 fans are included in bmc_sensor_list. sensord will monitor all fans anyway.
+    //in order to avoid accessing invalid fans, we add a condition to filter them out.
+    if ( fan_type == SINGLE_TYPE ) {
+      //only supports FAN_0, FAN_1, FAN_2, and FAN_3
+      if ( fan < FAN_4 ) fan *= 2;
+      else return PAL_ENOTSUP;
+    }
 
     if (fan > pal_tach_cnt ||
         snprintf(label, sizeof(label), "fan%d", fan + 1) > sizeof(label)) {
@@ -945,12 +983,24 @@ int pal_get_fan_name(uint8_t num, char *name)
   return 0;
 }
 
-int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
-{
+static int
+_pal_get_pwm_value(uint8_t pwm, float *value, uint8_t bmc_location) {
+  if ( bmc_location == NIC_BMC ) {
+    return bic_get_fan_pwm(pwm, value);
+  }
+
   char label[32] = {0};
-  float value;
-  int ret;
+  snprintf(label, sizeof(label), "pwm%d", pwm + 1);
+  return sensors_read_fan(label, value);
+}
+
+// Provide the fan pwm to fan-util and it also will be called by read_fan_pwm
+int pal_get_pwm_value(uint8_t fan, uint8_t *pwm) {
+  char label[32] = {0};
+  float value = 0;
+  int ret = 0;
   uint8_t fan_src = 0;
+  uint8_t pwm_snr = 0;
   uint8_t fan_type = UNKNOWN_TYPE;
   uint8_t bmc_location = 0;
 
@@ -960,25 +1010,30 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
     fan_type = UNKNOWN_TYPE;
   }
 
-  if ( fan_type == SINGLE_TYPE ) fan *= 2;
-
-  fan_src = pal_get_fan_source(fan);
-  if (fan >= pal_tach_cnt || fan_src == 0xff ) {
-    syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
-    return -1;
+  if ( fan >= pal_tach_cnt ) {
+    syslog(LOG_WARNING, "%s() invalid fan#%d", __func__, fan);
+    return PAL_ENOTSUP;
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-    snprintf(label, sizeof(label), "pwm%d", fan_src + 1);
-    ret = sensors_read_fan(label, &value);
-  } else if (bmc_location == NIC_BMC) {
-    ret = bic_get_fan_pwm(fan_src, &value);
+  if ( NIC_BMC == bmc_location ) {
+    fan_src = pal_get_fan_source(fan);
+  } else {
+    //Config A and B use a single type of fan.
+    //Config D uses a dual type of fan.
+    if ( fan_type == SINGLE_TYPE) fan_src = fan;
+    else fan_src = pal_get_fan_source(fan);
   }
 
-  if (ret == 0) {
-    *pwm = (int)value;
+  //read cached value if it's available
+  pwm_snr = BMC_SENSOR_PWM0 + fan_src;
+  if ( sensor_cache_read(FRU_BMC, pwm_snr, &value) < 0 ) {
+    ret = _pal_get_pwm_value(fan_src, &value, bmc_location);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get the PWM%d of fan%d", __func__, fan_src, fan);
+    }
   }
 
+  *pwm = (uint8_t)value;
   return ret;
 }
 
@@ -1041,20 +1096,18 @@ pal_get_tach_cnt(void) {
 }
 
 static void
-apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value) {
-  int i = 0;
-  const uint8_t fan_num[4] = {FAN_0, FAN_1, FAN_2, FAN_3}; //Use fan# to get the PWM.
-  static uint8_t pwm[4] = {0};
-  static bool pwm_valid[4] = {false, false, false, false};
+apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value, uint8_t bmc_location) {
+  int pwm = 0;
   static bool inited = false;
+  float pwm_val = 0;
   float avg_pwm = 0;
   uint8_t cnt = 0;
 
   // Get PWM value
-  for (i = 0; i < pal_pwm_cnt; i ++) {
-    if (pal_get_pwm_value(fan_num[i], &pwm[i]) == 0 || pwm_valid[i] == true) {
-      pwm_valid[i] = true;
-      avg_pwm += (float)pwm[i];
+  for (pwm = 0; pwm < pal_pwm_cnt; pwm++) {
+    if ( _pal_get_pwm_value(pwm, &pwm_val, bmc_location) < 0 ) continue;
+    else {
+      avg_pwm += pwm_val;
       cnt++;
     }
   }
@@ -1066,7 +1119,106 @@ apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value) {
       sensor_correction_init("/etc/sensor-frontIO-correction.json");
     }
     sensor_correction_apply(fru, snr_num, avg_pwm, value);
+  } else {
+    syslog(LOG_WARNING, "Failed to apply frontIO correction");
   }
+}
+
+// Calculate curr leakage
+static int
+read_curr_leakage(uint8_t snr_number, float *value) {
+#define CURR_LEAKAGE_THRESH  8.00
+#define MEDUSA_CURR_THRESH  10.00
+  static bool is_issued_sel = false;
+  static bool is_inited = false;
+  static uint8_t config = CONFIG_A;
+  static int retry = MAX_RETRY;
+  float medusa_curr = 0;
+  float bb_hsc_curr = 0;
+  float slot_hsc_iout = 0;
+  float temp_val = 0;
+  int i = 0;
+
+  //try to get the system type. The default config is CONFIG_A.
+  if ( is_inited == false ) {
+    char sys_conf[16] = {0};
+    if ( kv_get("sled_system_conf", sys_conf, NULL, KV_FPERSIST) < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to read sled_system_conf", __func__);
+      return READING_NA;
+    }
+
+    if ( strcmp(sys_conf, "Type_1") == 0 ) config = CONFIG_A;
+    else if ( strcmp(sys_conf, "Type_10") == 0 ) config = CONFIG_B;
+    else if ( strcmp(sys_conf, "Type_15") == 0 ) config = CONFIG_D;
+    else syslog(LOG_WARNING, "%s() Couldn't identiy the system type: %s", __func__, sys_conf);
+
+    syslog(LOG_WARNING, "%s() Get the system type: %s", __func__, sys_conf);
+    is_inited = true;
+  }
+
+  if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_MEDUSA_CURR, &medusa_curr) < 0) return READING_NA;
+  if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_HSC_IOUT, &bb_hsc_curr) < 0) return READING_NA;
+
+  for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
+    //Two slots are present on Config D. Skip slot2 and slot4.
+    if ( (config == CONFIG_D) && (i % 2 == 0) ) continue;
+
+    //If one of slots is failed to read, return READING_NA.
+    if ( sensor_cache_read(i, BIC_SENSOR_HSC_OUTPUT_CUR, &temp_val) < 0) return READING_NA;
+    else slot_hsc_iout += temp_val;
+  }
+
+  *value = (medusa_curr - bb_hsc_curr - slot_hsc_iout) / medusa_curr;
+  *value *= 100;
+  //syslog(LOG_WARNING, "%s() value: %.2f %%, medusa_curr: %.2f, bb_hsc_curr: %.2f, slot_hsc_iout: %.2f", __func__, *value, medusa_curr, bb_hsc_curr, slot_hsc_iout);
+
+  //If curr leakage >= 8% AND medusa_curr >= 10A, issue a SEL.
+  //sensord don't support mutiple conditions to issue the SEL. So, we do it here.
+  if ( is_issued_sel == false && ((*value >= CURR_LEAKAGE_THRESH) && (medusa_curr >= MEDUSA_CURR_THRESH)) ) {
+    syslog(LOG_CRIT, "ASSERT: Upper Critical threshold - raised - FRU: 7, num: 0x%2X "
+        "curr_val: %.2f %%, thresh_val: %.2f %%, snr: BMC_SENSOR_CURR_LEAKAGE", snr_number, *value, CURR_LEAKAGE_THRESH);
+    is_issued_sel = true;
+  } else if ( is_issued_sel == true && ((*value < CURR_LEAKAGE_THRESH) || (medusa_curr < MEDUSA_CURR_THRESH)) ) {
+    syslog(LOG_CRIT, "DEASSERT: Upper Critical threshold - settled - FRU: 7, num: 0x%2X "
+        "curr_val: %.2f %%, thresh_val: %.2f %%, snr: BMC_SENSOR_CURR_LEAKAGE", snr_number, *value, CURR_LEAKAGE_THRESH);
+    is_issued_sel = false;
+  }
+
+  return PAL_EOK;
+}
+
+// Provide the fan pwm to sensor-util
+static int
+read_fan_pwm(uint8_t pwm_id, float *value) {
+  static uint8_t bmc_location = 0;
+  float pwm = 0;
+  int ret = 0;
+
+  if ( bmc_location == 0 ) {
+    if ( (pwm_id & PWM_PLAT_SET) == PWM_PLAT_SET ) bmc_location = NIC_BMC;
+    else bmc_location = DVT_BB_BMC;
+  }
+
+  ret = _pal_get_pwm_value((pwm_id&PWM_MASK), &pwm, bmc_location);
+  if ( ret < 0 ) {
+    ret = READING_NA;
+  }
+  *value = pwm;
+  return ret;
+}
+
+// Provide the fan speed to sensor-util
+static int
+read_fan_speed(uint8_t snr_number, float *value) {
+  int rpm = 0;
+  int ret = 0;
+  uint8_t fan = snr_number - BMC_SENSOR_FAN0_TACH;
+  ret = pal_get_fan_speed(fan, &rpm);
+  if ( ret < 0 ) {
+    ret = READING_NA;
+  }
+  *value = (float)rpm;
+  return ret;
 }
 
 static int
@@ -1291,6 +1443,7 @@ read_hsc_pin(uint8_t hsc_id, float *value) {
   }
 
   *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
+  *value *= 0.99;
 error_exit:
   if ( fd > 0 ) close(fd);
 
@@ -1332,7 +1485,7 @@ read_hsc_iout(uint8_t hsc_id, float *value) {
 
   *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
   //improve the accuracy of IOUT to +-2%
-  *value = *value * 0.98;
+  *value *= 0.99;
 error_exit:
   if ( fd > 0 ) close(fd);
 
@@ -1419,13 +1572,60 @@ error_exit:
   return ret;
 }
 
+static void
+pal_all_slot_power_ctrl(uint8_t opt, float *val) {
+  int i = 0;
+  uint8_t status = 0;
+  for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
+    if ( fby3_common_is_fru_prsnt(i, &status) < 0 || status == 0 ) {
+      continue;
+    }
+    syslog(LOG_CRIT, "FRU: %d, Turned %s 12V power of slot%d due to NIC temp is %s UNR. (val = %.2f)", i, (opt == SERVER_12V_ON)?"on":"off" \
+                                                                                                     , i, (opt == SERVER_12V_ON)?"under":"over", *val);
+    if ( pal_set_server_power(i, opt) < 0 ) {
+      syslog(LOG_CRIT, "Failed to turn %s 12V power of slot%d", (opt == SERVER_12V_ON)?"on":"off", i);
+    }
+  }
+}
+
+static void
+pal_nic_otp_check(float *value, float unr) {
+  static int retry = MAX_RETRY;
+  static bool is_otp_asserted = false;
+  if ( *value < unr ) {
+    if ( is_otp_asserted == false ) return; //it will move on when is_otp_asserted is true
+    if ( retry != MAX_RETRY ) {
+      retry++;
+      return;
+    }
+
+    //recover the system
+    is_otp_asserted = false;
+    pal_all_slot_power_ctrl(SERVER_12V_ON, value);
+    return;
+  }
+
+  if ( retry != 0 ) {
+    retry--;
+    return;
+  }
+
+  //need to turn off all slots since retry is reached
+  if ( is_otp_asserted == false ) {
+    is_otp_asserted = true;
+    pal_all_slot_power_ctrl(SERVER_12V_OFF, value);
+  }
+
+  return;
+}
+
 static int
-skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num) {
+skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num, const uint8_t bmc_location, const uint8_t config_status) {
   uint8_t *bic_skip_list;
   int skip_sensor_cnt;
   int i = 0;
   
-  get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt);
+  get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt, bmc_location, config_status);
 
   switch(fru){
     case FRU_SLOT1:
@@ -1445,64 +1645,62 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num) {
 }
 
 static int
-pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
+pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t bmc_location, const uint8_t config_status){
 #define BIC_SENSOR_READ_NA 0x20
 #define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
   int ret = 0;
-  uint8_t power_status = 0, config_status = 0;
+  uint8_t power_status = 0;
   ipmi_sensor_reading_t sensor = {0};
   sdr_full_t *sdr = NULL;
-  uint8_t bmc_location = 0;
   char path[128];
   sprintf(path, SLOT_SENSOR_LOCK, fru);
+  uint8_t *bic_skip_list;
+  int skip_sensor_cnt = 0;
+  get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt, bmc_location, config_status);
 
-  if ( bic_get_server_power_status(fru, &power_status) < 0 || power_status != SERVER_POWER_ON) {
-    //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);
-    if (skip_bic_sensor_list(fru, sensor_num) < 0) {
-      return READING_NA;
-    }
-  }
-
-  ret = bic_is_m2_exp_prsnt(fru);
-
+  ret = bic_get_server_power_status(fru, &power_status);
   if (ret < 0) {
     return READING_NA;
   }
-  config_status = (uint8_t) ret;
 
-  ret = fby3_common_get_bmc_location(&bmc_location);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+  if (power_status != SERVER_POWER_ON) {
+    pwr_off_flag[fru-1] = 1;
+    //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);
+    if (skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) {
+      return READING_NA;
+    }
+  } else if (power_status == SERVER_POWER_ON && pwr_off_flag[fru-1]) {
+    if ((skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) && (temp_cnt < skip_sensor_cnt)){
+      temp_cnt ++;
+      return READING_NA;
+    }
+
+    if (temp_cnt == skip_sensor_cnt) {
+      pwr_off_flag[fru-1] = 0;
+      temp_cnt = 0;
+    }
   }
-  
+
   ret = access(path, F_OK);
   if(ret == 0) {
     return READING_SKIP;
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-    if ( (config_status == PRESENT_1OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x50 && sensor_num <= 0x7F)) { // 1OU Exp
-      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
-    } else if ( (config_status == PRESENT_2OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x80 && sensor_num <= 0xCA)) { // 2OU Exp
-      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
-    } else if (sensor_num >= 0x0 && sensor_num <= 0x42) {
-      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
-    } else {
-      return READING_NA;
-    }
-  } else if (bmc_location == NIC_BMC) {
-    if (sensor_num >= 0xD1 && sensor_num <= 0xEC) { // BB
-      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);
-    } else if ( (config_status == PRESENT_2OU || config_status == (PRESENT_1OU + PRESENT_2OU)) && (sensor_num >= 0x50 && sensor_num <= 0xCA)) { // 2OU Exp
-      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
-    } else if (sensor_num >= 0x0 && sensor_num <= 0x42){
-      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
-    } else {
-      return READING_NA;
-    }
+  //check snr number first. If it not holds, it will move on
+  if ( (sensor_num >= 0x0) && (sensor_num <= 0x42) ) { //server board
+    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
+  } else if ( (sensor_num >= 0x50 && sensor_num <= 0x7F) && (bmc_location != NIC_BMC) && //1OU
+       ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
+    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
+  } else if ( (sensor_num >= 0x80 && sensor_num <= 0xCA) && //2OU
+       ((config_status & PRESENT_2OU) == PRESENT_2OU) ) {
+    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
+  } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xEC) ) { //BB
+    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF); 
   } else {
     return READING_NA;
   }
+
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);
     return READING_NA;
@@ -1565,11 +1763,19 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value){
   //correct the value
   switch (sensor_num) {
     case BIC_SENSOR_FIO_TEMP:
-      apply_frontIO_correction(fru, sensor_num, value);
+      apply_frontIO_correction(fru, sensor_num, value, bmc_location);
       break;
     case BIC_SENSOR_CPU_THERM_MARGIN:
       if ( *value > 0 ) *value = -(*value);
       break;
+  }
+
+  if ( bic_get_server_power_status(fru, &power_status) < 0 || power_status != SERVER_POWER_ON) {
+    pwr_off_flag[fru-1] = 1;
+    //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);
+    if (skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) {
+      return READING_NA;
+    }
   }
 
   return ret;
@@ -1583,6 +1789,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   int ret=0;
   uint8_t id=0;
   static uint8_t bmc_location = 0;
+  static uint8_t config_status[MAX_NODES] = {CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN};
 
   if ( bmc_location == 0 ) {
     if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
@@ -1590,6 +1797,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     } else {
       if ( bmc_location == NIC_BMC ) {
         sensor_map[BMC_SENSOR_OUTLET_TEMP].id = TEMP_NICEXP_OUTLET;
+        //Use to indicate that we need to handle PWM sensors especially.
+        //Also, use bit7 to represent class 1 or 2.
+        sensor_map[BMC_SENSOR_PWM0].id |= PWM_PLAT_SET;
+        sensor_map[BMC_SENSOR_PWM1].id |= PWM_PLAT_SET;
+        sensor_map[BMC_SENSOR_PWM2].id |= PWM_PLAT_SET;
+        sensor_map[BMC_SENSOR_PWM3].id |= PWM_PLAT_SET;
       }
     }
   }
@@ -1603,15 +1816,28 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      if (pal_is_fw_update_ongoing(fru)) {
-        return READING_SKIP;
-      } else {
-        ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value);
+      //check a config status of a blade 
+      if ( config_status[fru-1] == CONFIG_UNKNOWN ) {
+        ret = bic_is_m2_exp_prsnt(fru);
+        if ( ret < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to run bic_is_m2_exp_prsnt", __func__);
+        } else config_status[fru-1] = (uint8_t)ret;
+        syslog(LOG_WARNING, "%s() fru: %02x. config:%02x", __func__, fru, config_status[fru-1]);
       }
+
+      //if we can't get the config status of the blade, return READING_NA.
+      if ( config_status[fru-1] != CONFIG_UNKNOWN ) {
+        if ( pal_sdr_init(fru) == ERR_NOT_READY ) ret = READING_NA;
+        else ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[fru-1]);
+      } else ret = READING_NA;
       break;
     case FRU_BMC:
+      ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
+      break;
     case FRU_NIC:
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
+      //Over temperature protection
+      pal_nic_otp_check((float*)value, sensor_map[sensor_num].snr_thresh.unr_thresh);
       break;
 
     default:
@@ -1711,23 +1937,22 @@ pal_sensor_sdr_path(uint8_t fru, char *path) {
       sprintf(fru_name, "%s", "slot4");
     break;
     case FRU_BMC:
-      sprintf(fru_name, "%s", "bmc");
-    break;
     case FRU_NIC:
-      sprintf(fru_name, "%s", "nic");
+      //Both FRUs don't own SDRs.
+      return PAL_ENOTSUP;
     break;
 
     default:
       syslog(LOG_WARNING, "%s() Wrong fru id %d", __func__, fru);
-    return -1;
+    return PAL_ENOTSUP;
   }
 
   sprintf(path, SDR_PATH, fru_name);
   if (access(path, F_OK) == -1) {
-    return -1;
+    return PAL_ENOTSUP;
   }
 
-  return 0;
+  return PAL_EOK;
 }
 
 static int
@@ -1759,6 +1984,12 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
     goto error_exit;
   }
 
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    goto error_exit;
+  }
+
   while ((bytes_rd = read(fd, buf, sizeof(sdr_full_t))) > 0) {
     if (bytes_rd != sizeof(sdr_full_t)) {
       syslog(LOG_WARNING, "%s() read returns %d bytes\n", __func__, bytes_rd);
@@ -1768,16 +1999,16 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
     sdr = (sdr_full_t *) buf;
     snr_num = sdr->sensor_num;
     sinfo[snr_num].valid = true;
-    // If Class 2, threshold change
+    // If it is a system of class 2, change m_val and UCR of HSC.
     if (snr_num == BIC_SENSOR_HSC_OUTPUT_CUR) {
-      fby3_common_get_bmc_location(&bmc_location);
       if (bmc_location == NIC_BMC) {
-          sdr->uc_thresh = HSC_OUTPUT_CUR_UC_THRESHOLD;
+        sdr->uc_thresh = HSC_OUTPUT_CUR_UC_THRESHOLD;
+        sdr->m_val = 0x04;
       }
     } else if (snr_num == BIC_SENSOR_HSC_INPUT_PWR){
-      fby3_common_get_bmc_location(&bmc_location);
       if (bmc_location == NIC_BMC) {
         sdr->uc_thresh = HSC_INPUT_PWR_UC_THRESHOLD;
+        sdr->m_val = 0x04;
       }
     }
     memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));
@@ -1839,7 +2070,7 @@ error_exit:
   return ret;
 }
 
-int
+static int
 pal_sdr_init(uint8_t fru) {
 
   if ( false == pal_is_sdr_init(fru) ) {
@@ -1862,19 +2093,18 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   int ret = 0;
   uint8_t scale = sensor_map[sensor_num].units;
 
-  if (fru == FRU_SLOT1 || fru == FRU_SLOT2 || \
-      fru == FRU_SLOT3 || fru == FRU_SLOT4) {
-    ret = pal_sdr_init(fru);
-    strcpy(units, "");
-    return ret;
-  }
-
   switch(scale) {
+    case UNSET_UNIT:
+      strcpy(units, "");
+      break;
     case TEMP:
       sprintf(units, "C");
       break;
     case FAN:
       sprintf(units, "RPM");
+      break;
+    case PERCENT:
+      sprintf(units, "%%");
       break;
     case VOLT:
       sprintf(units, "Volts");

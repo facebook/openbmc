@@ -12,14 +12,15 @@ add_global_arguments('-D__MACHINE__=' + get_option('machine'),
 
 # Define header files.
 pal_headers = [
-    'obmc-pal.h',
-    'obmc_pal_sensors.h'
+    'pal.h',
+    'pal_sensors.h',
     ]
 
 # Add additional source files.
 pal_sources = [
     'obmc-pal.c',
-    'obmc_pal_sensors.c'
+    'obmc_pal_sensors.c',
+    'pal.c',
     ]
 
 # Add additional library dependencies.

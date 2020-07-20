@@ -306,13 +306,12 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
                      "Memory correctable error (Patrol scrub)", "Memory uncorrectable error (Patrol scrub)",
                      "Memory Parity Error event", "Reserved"};
   char *upi_err[] = {"UPI Init error", "Reserved"};
-  char *post_err[] = {"System PXE boot fail", "CMOS/NRAM configuration cleared", "TPM Self-Test Fail", "Reserved"};
+  char *post_err[] = {"System PXE boot fail", "CMOS/NVRAM configuration cleared", "TPM Self-Test Fail", "Reserved"};
   char *pcie_event[] = {"PCIe DPC Event", "PCIe LER Event", "PCIe Link Retraining and Recovery",
                         "PCIe Link CRC Error Check and Retry", "PCIe Corrupt Data Containment", "PCIe Express ECRC",
                         "Reserved"};
   char *mem_event[] = {"Memory PPR event", "Memory Correctable Error logging limit reached", "Memory disable/map-out for FRB",
-                       "Memory SDDC", "Memory Address range/Partial mirroring", "Memory Demand and Patrol Scrubbing",
-                       "Memory ADC", "Memory ADDDC", "Memory SMBus hang recovery", "No DIMM in System", "Reserved"};
+                       "Memory SDDC", "Memory Address range/Partial mirroring", "Memory ADDDC", "Memory SMBus hang recovery", "No DIMM in System", "Reserved"};
   char *upi_event[] = {"Intel UPI Protocol Protection via CRC", "Intel UPI Link Level Retry",
                        "Intel UPI Dynamic Link Width Reduction", "Reserved"};
   char dimm_str[8] = {0};
@@ -806,6 +805,12 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver)
 
 int __attribute__((weak))
 pal_set_sysfw_ver(uint8_t slot, uint8_t *ver)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_is_cmd_valid(uint8_t *data)
 {
   return PAL_EOK;
 }

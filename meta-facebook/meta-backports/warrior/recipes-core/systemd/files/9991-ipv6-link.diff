@@ -1,0 +1,81 @@
+Backport two revisions needed to fix IPv6 in systemd 241:
+
+- 9f6e82e6eb3b6e73d66d00d1d6eee60691fb702f
+
+  From: Yu Watanabe <watanabe.yu+github@gmail.com>
+  Date: Thu, 9 May 2019 14:39:46 +0900
+  Subject: network: do not send ipv6 token to kernel
+
+  We disabled kernel RA support. Then, we should not send
+  IFLA_INET6_TOKEN.
+  Thus, we do not need to send IFLA_INET6_ADDR_GEN_MODE twice.
+
+- 4eb086a38712ea98faf41e075b84555b11b54362
+
+  From: Susant Sahani <ssahani@gmail.com>
+  Date: Thu, 9 May 2019 07:35:35 +0530
+  Subject: networkd: fix link_up() (#12505)
+
+  Fillup IFLA_INET6_ADDR_GEN_MODE while we do link_up.
+
+diff --git a/src/network/networkd-link.c b/src/network/networkd-link.c
+index 22392d70bc..792862e6a5 100644
+--- a/src/network/networkd-link.c
++++ b/src/network/networkd-link.c
+@@ -1788,6 +1788,9 @@ static int link_configure_addrgen_mode(Link *link) {
+         assert(link->manager);
+         assert(link->manager->rtnl);
+ 
++        if (!socket_ipv6_is_supported())
++                return 0;
++
+         log_link_debug(link, "Setting address genmode for link");
+ 
+         r = sd_rtnl_message_new_link(link->manager->rtnl, &req, RTM_SETLINK, link->ifindex);
+@@ -1889,31 +1892,6 @@ static int link_up(Link *link) {
+                         return log_link_error_errno(link, r, "Could not set MAC address: %m");
+         }
+ 
+-        if (link_ipv6_enabled(link)) {
+-                r = sd_netlink_message_open_container(req, IFLA_AF_SPEC);
+-                if (r < 0)
+-                        return log_link_error_errno(link, r, "Could not open IFLA_AF_SPEC container: %m");
+-
+-                /* if the kernel lacks ipv6 support setting IFF_UP fails if any ipv6 options are passed */
+-                r = sd_netlink_message_open_container(req, AF_INET6);
+-                if (r < 0)
+-                        return log_link_error_errno(link, r, "Could not open AF_INET6 container: %m");
+-
+-                if (!in_addr_is_null(AF_INET6, &link->network->ipv6_token)) {
+-                        r = sd_netlink_message_append_in6_addr(req, IFLA_INET6_TOKEN, &link->network->ipv6_token.in6);
+-                        if (r < 0)
+-                                return log_link_error_errno(link, r, "Could not append IFLA_INET6_TOKEN: %m");
+-                }
+-
+-                r = sd_netlink_message_close_container(req);
+-                if (r < 0)
+-                        return log_link_error_errno(link, r, "Could not close AF_INET6 container: %m");
+-
+-                r = sd_netlink_message_close_container(req);
+-                if (r < 0)
+-                        return log_link_error_errno(link, r, "Could not close IFLA_AF_SPEC container: %m");
+-        }
+-
+         r = netlink_call_async(link->manager->rtnl, NULL, req, link_up_handler,
+                                link_netlink_destroy_callback, link);
+         if (r < 0)
+@@ -3001,11 +2979,9 @@ static int link_configure(Link *link) {
+                         return r;
+         }
+ 
+-        if (socket_ipv6_is_supported()) {
+-                r = link_configure_addrgen_mode(link);
+-                if (r < 0)
+-                        return r;
+-        }
++        r = link_configure_addrgen_mode(link);
++        if (r < 0)
++                return r;
+ 
+         return link_configure_after_setting_mtu(link);
+ }

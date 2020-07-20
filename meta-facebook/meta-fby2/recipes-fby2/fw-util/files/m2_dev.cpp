@@ -212,8 +212,21 @@ int M2_DevComponent::_update(string image, uint8_t force) {
 
           printf("* Please do 12V-power-cycle on Slot%u to activate new FPGA fw.\n", slot_id);
         } else {
-          printf("Can not get the device type, try again later.\n");
-          ret = FW_STATUS_NOT_SUPPORTED;
+          fby2_get_slot_dev_type(slot_id, &type); //get device type from bios
+          if (type == DEV_TYPE_BRCM_ACC) {
+            printf("start BRCM recovery update.\n");
+            server.ready();
+            bic_disable_brcm_parity_init(slot_id,dev_id);
+            ret = bic_update_dev_firmware(slot_id, dev_id, UPDATE_BRCM, (char *)image.c_str(),0);
+            if (ret == FW_STATUS_SUCCESS) {
+              pal_set_device_power(slot_id, dev_id+1, SERVER_POWER_CYCLE);
+            } else {
+              syslog(LOG_WARNING, "update: Slot%u Dev%d brcm vk failed", slot_id, dev_id);
+            }
+          } else {
+            printf("Get device type %d from BIOS info, does not support recovery update\n",type);
+            ret = FW_STATUS_NOT_SUPPORTED;
+          }
         }
       } else {
         printf("device%d: Not Present\n", dev_id);

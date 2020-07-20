@@ -31,19 +31,19 @@
 
 # Call "fw-util slotX --version" once to store vr information before sensor monitoring 
 echo "Get MB FW version... "
-if [[ $(is_server_prsnt 1) == "1" ]]; then
+if [[ $(is_sb_bic_ready 1) == "1" ]]; then
   /usr/bin/fw-util slot1 --version > /dev/null
 fi
 
-if [[ $(is_server_prsnt 2) == "1" ]]; then
+if [[ $(is_sb_bic_ready 2) == "1" ]]; then
   /usr/bin/fw-util slot2 --version > /dev/null
 fi
 
-if [[ $(is_server_prsnt 3) == "1" ]]; then
+if [[ $(is_sb_bic_ready 3) == "1" ]]; then
   /usr/bin/fw-util slot3 --version > /dev/null
 fi
 
-if [[ $(is_server_prsnt 4) == "1" ]]; then
+if [[ $(is_sb_bic_ready 4) == "1" ]]; then
   /usr/bin/fw-util slot4 --version > /dev/null
 fi
 

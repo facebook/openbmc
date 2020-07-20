@@ -1,0 +1,24 @@
+diff --git a/lib/tpm2_options.c b/lib/tpm2_options.c
+index 76f50cb..40e9b78 100644
+--- a/lib/tpm2_options.c
++++ b/lib/tpm2_options.c
+@@ -266,6 +266,8 @@ static char* parse_socket_tcti(void) {
+ 
+ static tcti_conf tcti_get_config(const char *optstr) {
+ 
++    const char *tcti_default = NULL;
++
+     /* set up the default configuration */
+     tcti_conf conf = { 0 };
+ 
+@@ -300,7 +302,9 @@ static tcti_conf tcti_get_config(const char *optstr) {
+     }
+ 
+     if (!conf.name) {
+-        conf.name = strdup(find_default_tcti());
++        tcti_default = find_default_tcti();
++        if (tcti_default != NULL)
++            conf.name = strdup(tcti_default);
+     }
+ 
+     return conf;

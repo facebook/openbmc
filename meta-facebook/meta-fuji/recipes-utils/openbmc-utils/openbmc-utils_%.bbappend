@@ -19,6 +19,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://setup-gpio.sh \
             file://board-utils.sh \
+            file://setup_board.sh \
             file://setup_i2c.sh \
             file://sol.sh \
             file://cpld_update.sh \
@@ -34,13 +35,18 @@ OPENBMC_UTILS_FILES += " \
 DEPENDS_append = " update-rc.d-native"
 
 do_install_board() {
-
+    # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
+    olddir="/usr/local/fbpackages/utils"
+    install -d ${D}${olddir}
+    ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 59 S .
     # Export GPIO pins and set initial directions/values.
     install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
     update-rc.d -r ${D} setup-gpio.sh start 59 S .
 
+    install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
+    update-rc.d -r ${D} setup_board.sh start 80 S .
 
 }
 

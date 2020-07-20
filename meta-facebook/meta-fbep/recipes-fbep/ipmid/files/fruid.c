@@ -93,9 +93,43 @@ err:
   return errno;
 }
 
+static int get_asic_manf_id()
+{
+  int ret, fd;
+  off_t offset = 1030;
+  char vendor_id;
+
+  fd = open(MB_EEPROM, O_RDWR);
+  if (fd < 0)
+    return -1;
+
+  ret = lseek(fd, offset, SEEK_SET);
+  if (ret < 0)
+    goto exit;
+
+  ret = read(fd, &vendor_id, 1);
+  if (ret != 1) {
+    ret = -1;
+    goto exit;
+  }
+
+  if (vendor_id == GPU_AMD)
+    pal_set_key_value("asic_manf", "AMD");
+  else if (vendor_id == GPU_NV)
+    pal_set_key_value("asic_manf", "NVIDIA");
+  else // default
+    pal_set_key_value("asic_manf", "AMD");
+exit:
+  close(fd);
+  return ret;
+}
+
 /* Populate the platform specific eeprom for fruid info */
 int plat_fruid_init(void)
 {
+  if (get_asic_manf_id())
+    syslog(LOG_WARNING, "[%s]Get ASIC ID Failed",__func__);
+
   if (copy_eeprom_to_bin(MB_EEPROM, MB_BIN))
     syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, MB_BIN);
 

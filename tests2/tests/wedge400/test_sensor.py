@@ -101,7 +101,8 @@ class SmbSensorTest(SensorUtilTest, unittest.TestCase):
             platform_type_rev == "Wedge400-EVT/EVT3"
             or platform_type_rev == "Wedge400-DVT"
             or platform_type_rev == "Wedge400-DVT2/PVT/PVT2"
-            or platform_type_rev == "Wedge400-PVT3/MP"
+            or platform_type_rev == "Wedge400-PVT3"
+            or platform_type_rev == "Wedge400-MP"
         ):
             SMB_SENSORS = SMB_SENSORS_W400
         elif platform_type_rev == "Wedge400C-EVT":
@@ -109,6 +110,7 @@ class SmbSensorTest(SensorUtilTest, unittest.TestCase):
         elif (
             platform_type_rev == "Wedge400C-EVT2"
             or platform_type_rev == "Wedge400C-DVT"
+            or platform_type_rev == "Wedge400C-DVT2"
         ):
             SMB_SENSORS = SMB_SENSORS_W400CEVT2
         else:

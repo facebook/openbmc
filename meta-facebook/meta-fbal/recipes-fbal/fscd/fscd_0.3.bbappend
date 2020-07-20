@@ -19,22 +19,26 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += "file://setup-fan.sh \
             file://fsc-config2s.json \
+            file://fsc-config4s_M.json\
             file://fsc-config8s_M.json\
-            file://fsc-config8s_S.json\
+            file://fsc-config_Slave.json\
             file://zone1_2s.fsc \
+            file://zone1_4s_M.fsc \
             file://zone1_8s_M.fsc \
-            file://zone1_8s_S.fsc \
+            file://zone1_Slave.fsc \
             file://fsc_board.py \
            "
 
 FSC_CONFIG += "fsc-config2s.json \
+               fsc-config4s_M.json \
                fsc-config8s_M.json \
-               fsc-config8s_S.json \
+               fsc-config_Slave.json \
               " 
 
 FSC_ZONE_CONFIG +="zone1_8s_M.fsc \
-                   zone1_8s_S.fsc \
+                   zone1_4s_M.fsc \
                    zone1_2s.fsc \
+                   zone1_Slave.fsc \
                   "
 
 FSC_INIT_FILE += "setup-fan.sh"

@@ -36,10 +36,10 @@ class BmcCpldComponent : public Component {
   uint8_t bus;
   uint8_t addr;
   altera_max10_attr_t attr;
-  int get_cpld_version(uint8_t *ver);
   private:
     image_info check_image(string image, bool force);
     int update_cpld(string image);
+    int get_ver_str(string& s);
   public:
     BmcCpldComponent(string fru, string comp, uint8_t type, uint8_t _bus, uint8_t _addr)
       : Component(fru, comp), pld_type(type), bus(_bus), addr(_addr), 
@@ -47,6 +47,7 @@ class BmcCpldComponent : public Component {
     int print_version();
     int update(string image);
     int fupdate(string image);
+    void get_version(json& j);
 };
 
 #endif

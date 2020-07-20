@@ -21,4 +21,16 @@
 #ifndef __FBY3_CONFIG_EXT_H
 #define __FBY3_CONFIG_EXT_H
 
+/* u-boot reset command and reset() is implemented via sysreset
+ * which will trigger the WDT to do full-chip reset by default
+ * on FBY3 platform, u-boot reset is used to driven the external
+ * WDTRST_N pin to TPM. But WDT Full-chip reset cannot successfully
+ * driven the WDTRST_N pin, so define AST_SYSRESET_WITH_SOC will
+ * make sysreset use SOC reset, and use AST_SYS_RESET_WITH_SOC as
+ * SOC reset mask.
+ * Notice: For system which loop back the WDTRST_N pin to BMC SRST pin.
+ * the value of AST_SYSRESET_WITH_SOC does not matter, because
+ * no matter how the BMC will get full reset by SRST pin.
+ */
+#define AST_SYSRESET_WITH_SOC 0x23FFFF3
 #endif

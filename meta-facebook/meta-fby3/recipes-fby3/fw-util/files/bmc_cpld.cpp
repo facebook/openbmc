@@ -15,6 +15,12 @@
 
 using namespace std;
 
+template<typename T, size_t S>
+void read_ver(T (&input)[S]) {
+    string str( input, input + S);
+    std::cout << str << std::endl;
+}
+
 image_info BmcCpldComponent::check_image(string image, bool force) {
 #define MAX10_RPD_SIZE 0x5C000
   string flash_image = image;
@@ -101,10 +107,12 @@ image_info BmcCpldComponent::check_image(string image, bool force) {
   return image_sts;
 }
 
-int BmcCpldComponent::get_cpld_version(uint8_t *ver) {
+int BmcCpldComponent::get_ver_str(string& s) {
   int ret = 0;
+  char ver[32] = {0};
   uint32_t ver_reg = ON_CHIP_FLASH_USER_VER;
   uint8_t tbuf[4] = {0x00};
+  uint8_t rbuf[4] = {0x00};
   uint8_t tlen = 4;
   uint8_t rlen = 4;
   int i2cfd = 0;
@@ -121,17 +129,18 @@ int BmcCpldComponent::get_cpld_version(uint8_t *ver) {
   if (ioctl(i2cfd, I2C_SLAVE, addr) < 0) {
     printf("Failed to talk to slave@0x%02X\n", addr);
   } else {
-    ret = i2c_rdwr_msg_transfer(i2cfd, addr << 1, tbuf, tlen, ver, rlen);
+    ret = i2c_rdwr_msg_transfer(i2cfd, addr << 1, tbuf, tlen, rbuf, rlen);
+    snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
   }
 
   if ( i2cfd > 0 ) close(i2cfd);
-
+  s = string(ver);
   return ret;
 }
 
 int BmcCpldComponent::print_version()
 {
-  uint8_t ver[4] = {0};
+  string ver("");
   string fru_name = fru();
   string slot_str = "slot";
   size_t slot_found = fru_name.find(slot_str);
@@ -141,15 +150,28 @@ int BmcCpldComponent::print_version()
     if (slot_found != string::npos) {
       fru_name = "SB";
     }
-    if ( get_cpld_version(ver) < 0 ) {
+    if ( get_ver_str(ver) < 0 ) {
       throw "Error in getting the version of " + fru_name;
-    } else {
-      printf("%s CPLD Version: %02X%02X%02X%02X\n", fru_name.c_str(), ver[3], ver[2], ver[1], ver[0]);
     }
-  } catch(string err) {
+    cout << fru_name << " CPLD Version: " << ver << endl;
+  } catch(string& err) {
     printf("%s CPLD Version: NA (%s)\n", fru_name.c_str(), err.c_str());
   }
   return 0;
+}
+
+void BmcCpldComponent::get_version(json& j) {
+  string ver("");
+  string fru_name = fru();
+  try {
+    if ( get_ver_str(ver) < 0 ) {
+      throw "Error in getting the version of " + fru_name;
+    }
+    j["VERSION"] = ver;
+  } catch(string& err) {
+    j["VERSION"] = "error_returned";
+    syslog(LOG_WARNING, "%s(): error: %s", __func__, err.c_str());
+  }
 }
 
 int BmcCpldComponent::update_cpld(string image) 

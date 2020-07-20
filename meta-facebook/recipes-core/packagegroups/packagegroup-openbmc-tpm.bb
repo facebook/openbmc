@@ -10,4 +10,5 @@ RDEPENDS_${PN} += "\
   ${@bb.utils.contains('MACHINE_FEATURES', 'tpm1', 'trousers', '', d)} \
   \
   ${@bb.utils.contains('MACHINE_FEATURES', 'tpm2', 'tpm2-tools', '', d)} \
+  ${@bb.utils.contains('MACHINE_FEATURES', 'tpm2', 'libtss2-tcti-device', '', d)} \
   "

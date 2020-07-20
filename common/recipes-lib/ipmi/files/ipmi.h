@@ -65,6 +65,8 @@ extern "C" {
 #define SIZE_SEL_REC 16
 #define SIZE_RAS_SEL 35
 
+#define SIZE_SELF_TEST_RESULT 2
+
 // PayloadID, NetFn, Command, IANAID(3 bytes), BIC Interface type
 #define BIC_INTF_HDR_SIZE 7
 
@@ -415,6 +417,7 @@ enum
   CMD_OEM_GET_PROC_INFO = 0x1B,
   CMD_OEM_SET_DIMM_INFO = 0x1C,
   CMD_OEM_GET_DIMM_INFO = 0x1D,
+  CMD_OEM_GET_SENSOR_REAL_READING = 0x20,
   CMD_OEM_BYPASS_CMD = 0x34,
   CMD_OEM_GET_BOARD_ID = 0x37,
   CMD_OEM_GET_80PORT_RECORD = 0x49,
@@ -458,10 +461,10 @@ enum
   CMD_OEM_STOR_ADD_STRING_SEL = 0x30,
 };
 
-//Device update
 enum
 {
-  DEV_UPDATE = 0x01,
+  DEV_UPDATE = 0x01, // SPH device update
+  CHECK_PCIE_LINK = 0x11, // Trigger the PCIe workaround for SPH
 };
 
 // OEM Command Codes for QC

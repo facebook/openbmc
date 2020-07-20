@@ -139,10 +139,7 @@
 #define DELAY_POWER_CYCLE 10
 #define DELAY_12V_CYCLE 5
 
-#ifdef CONFIG_FBTTN
-#define DELAY_FULL_POWER_DOWN 3
 #define RETRY_COUNT 5
-#endif
 
 #define CRASHDUMP_BIN       "/usr/local/bin/dump.sh"
 #define CRASHDUMP_FILE      "/mnt/data/crashdump_"
@@ -570,9 +567,6 @@ server_power_on(uint8_t slot_id) {
 static int
 server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
   char vpath[64] = {0};
-  uint8_t status;
-  int retry = 0;
-  int iom_board_id = BOARD_MP;
 
   if (slot_id != FRU_SLOT1) {
     return -1;
@@ -599,38 +593,6 @@ server_power_off(uint8_t slot_id, bool gs_flag, bool cycle_flag) {
   if (write_device(vpath, "1")) {
     return -1;
   }
-
-// TODO: Workaround for EVT only. Remove after PVT.
-#ifdef CONFIG_FBTTN
-  iom_board_id = pal_get_iom_board_id();
-  if(iom_board_id == BOARD_EVT) { // EVT only
-  // When ML-CPU is made sure shutdown that is not power-cycle, we should power-off M.2/IOC by BMC.
-  //if (cycle_flag == false) {
-    do {
-      if (pal_get_server_power(slot_id, &status) < 0) {
-        #ifdef DEBUG
-        syslog(LOG_WARNING, "server_power_off: pal_get_server_power status is %d\n", status);
-        #endif
-      }
-      sleep(DELAY_FULL_POWER_DOWN);
-      if (retry > RETRY_COUNT) {
-        #ifdef DEBUG
-        syslog(LOG_WARNING, "server_power_off: retry fail\n");
-        #endif
-        break;
-      }
-      else {
-        retry++;
-      }
-    } while (status != SERVER_POWER_OFF);
-    // M.2/IOC power-off
-    sprintf(vpath, GPIO_VAL, GPIO_IOM_FULL_PWR_EN);
-    if (write_device(vpath, "0")) {
-      return -1;
-    }
-  //}
-  }
-#endif
 
   return 0;
 }

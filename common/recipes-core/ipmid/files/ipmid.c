@@ -1085,6 +1085,11 @@ app_master_write_read (unsigned char *request, unsigned char req_len,
       res->cc = CC_INVALID_DATA_FIELD;
       return;
     } else {
+      if ( pal_is_cmd_valid(req->data) ) {
+        res->cc = CC_INVALID_DATA_FIELD;
+        return;
+      }
+
       memcpy(buf, &req->data[3], writeCnt);
       bus_num = ((req->data[0] & 0x7E) >> 1); //extend bit[7:1] for bus ID
       //ret = pal_i2c_write_read(bus_num, req->data[1], buf, writeCnt, res->data, readCnt);
@@ -3295,6 +3300,37 @@ oem_get_dev_card_sensor(unsigned char *request, unsigned char req_len, unsigned 
 }
 
 static void
+oem_get_sensor_real_reading(unsigned char *request, unsigned char req_len, unsigned char *response,
+                 unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  uint8_t fru, snr_num;
+  uint8_t ret = 0;
+  float val = 0;
+
+  if (req_len != 5) {
+    res->cc = CC_INVALID_LENGTH;
+    *res_len = 0;
+    return;
+  }
+  fru = req->data[0];
+  snr_num = req->data[1];
+  ret = pal_sensor_read_raw(fru, snr_num, &val);
+
+  if (ret == 0) {
+    res->cc = CC_SUCCESS;
+    *res_len = 3;
+    res->data[0] = ((int)val) >> 8;
+    res->data[1] = (int)val & 0xFF;
+    res->data[2] = (((int)(val*100)) % 100);
+  } else {
+    *res_len = 0;
+    res->cc = CC_UNSPECIFIED_ERROR;
+  }
+}
+
+static void
 oem_bbv_power_cycle ( unsigned char *request, unsigned char req_len,
                   unsigned char *response, unsigned char *res_len)
 {
@@ -3470,6 +3506,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_GET_DEV_CARD_SENSOR:
       oem_get_dev_card_sensor(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_SENSOR_REAL_READING:
+      oem_get_sensor_real_reading(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;
@@ -4046,6 +4085,7 @@ ipmi_handle_oem_zion(unsigned char *request, unsigned char req_len,
   {
     case CMD_OEM_ZION_GET_SYSTEM_MODE:
       oem_zion_get_system_mode(request, req_len, response, res_len);
+      break;
     case CMD_OEM_ZION_GET_SENSOR_VALUE:
       oem_zion_get_sensor_value(request, req_len, response, res_len);
       break;

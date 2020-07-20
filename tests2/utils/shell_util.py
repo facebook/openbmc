@@ -42,5 +42,5 @@ def run_shell_cmd(cmd=None, ignore_err=False):
                 raise Exception(err + " [FAILED]")
         info = data.decode("utf-8")
     except Exception as e:
-        raise Exception("Failed to run command = {} and exception {}".format(cmd), e)
+        raise Exception("Failed to run command = {} and exception {}".format(cmd, e))
     return info

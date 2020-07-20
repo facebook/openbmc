@@ -1,0 +1,2 @@
+Common targets are:
+    fby2-kernel-image

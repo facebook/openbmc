@@ -15,6 +15,8 @@
 
 using namespace std;
 
+#ifdef __TEST__
+
 // TODO Mocks are yet to be written
 
 int System::runcmd(const string &cmd)
@@ -91,3 +93,5 @@ bool System::is_update_ongoing(uint8_t fru_id)
 {
   return false;
 }
+
+#endif

@@ -1,11 +1,5 @@
-pal_headers += [  
-    'pal.h',
-    'pal_sensors.h',
-    ]
-
 pal_sources += [
     'machine_config.c',
-    'pal.c',
     ]
 
 pal_deps += [

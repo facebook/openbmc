@@ -1,6 +1,7 @@
 # Copyright 2018-present Facebook. All Rights Reserved.
 
-inherit kernel_fitimage
+require recipes-core/images/fbobmc-image-meta.inc
+require fby3-image-layout.inc
 
 IMAGE_FSTYPES_remove = "cpio.lzma.u-boot"
 IMAGE_FSTYPES += "cpio.zst.u-boot"
@@ -62,4 +63,5 @@ IMAGE_INSTALL += " \
   fpc-util \
   at \
   ncsid-v2 \
+  throttle-util \
   "

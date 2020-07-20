@@ -51,6 +51,11 @@ function init_class1_dev(){
   fi
 
   create_new_dev $chip 0x44 11
+
+  # /mnt/data/kv_store checking, and create one if not exist
+  if [ ! -d /mnt/data/kv_store ]; then
+    /bin/mkdir -p /mnt/data/kv_store
+  fi
   echo -n $chip > /mnt/data/kv_store/bb_hsc_conf
 }
 

@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
-import pxssh
+from pexpect import pxssh
 
 
 class OpenBMCSSHSession:

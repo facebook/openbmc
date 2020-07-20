@@ -4,6 +4,46 @@ max([
   linear_switch_remote(mb:mb_sensor_pax1_therm),
   linear_switch_remote(mb:mb_sensor_pax2_therm),
   linear_switch_remote(mb:mb_sensor_pax3_therm),
+  linear_gpu_edge(
+    max([
+      mb:mb_gpu0_edge_temp,
+      mb:mb_gpu1_edge_temp,
+      mb:mb_gpu2_edge_temp,
+      mb:mb_gpu3_edge_temp,
+      mb:mb_gpu4_edge_temp,
+      mb:mb_gpu4_edge_temp,
+      mb:mb_gpu6_edge_temp,
+      mb:mb_gpu7_edge_temp])) +
+  pid_gpu_edge(
+    max([
+      mb:mb_gpu0_edge_temp,
+      mb:mb_gpu1_edge_temp,
+      mb:mb_gpu2_edge_temp,
+      mb:mb_gpu3_edge_temp,
+      mb:mb_gpu4_edge_temp,
+      mb:mb_gpu4_edge_temp,
+      mb:mb_gpu6_edge_temp,
+      mb:mb_gpu7_edge_temp])),
+  linear_gpu_mem(
+    max([
+      mb:mb_gpu0_hbm_temp,
+      mb:mb_gpu1_hbm_temp,
+      mb:mb_gpu2_hbm_temp,
+      mb:mb_gpu3_hbm_temp,
+      mb:mb_gpu4_hbm_temp,
+      mb:mb_gpu4_hbm_temp,
+      mb:mb_gpu6_hbm_temp,
+      mb:mb_gpu7_hbm_temp])) +
+  pid_gpu_mem(
+    max([
+      mb:mb_gpu0_hbm_temp,
+      mb:mb_gpu1_hbm_temp,
+      mb:mb_gpu2_hbm_temp,
+      mb:mb_gpu3_hbm_temp,
+      mb:mb_gpu4_hbm_temp,
+      mb:mb_gpu4_hbm_temp,
+      mb:mb_gpu6_hbm_temp,
+      mb:mb_gpu7_hbm_temp])),
   linear_vicor(pdb:pdb_adc_1_vicor0_temp),
   linear_vicor(pdb:pdb_adc_1_vicor1_temp),
   linear_vicor(pdb:pdb_adc_1_vicor2_temp),

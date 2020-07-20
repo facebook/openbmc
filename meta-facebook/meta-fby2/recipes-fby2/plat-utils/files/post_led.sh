@@ -42,10 +42,10 @@ display_lower() {
     devmem_clear_bit $(scu_addr 84) 3
 
     # Now set the GPIOs to the right binary values
-    gpio_set 48 $bit0
-    gpio_set 49 $bit1
-    gpio_set 50 $bit2
-    gpio_set 51 $bit3
+    gpio_set LED_POSTCODE_0 G0 $bit0
+    gpio_set LED_POSTCODE_1 G1 $bit1
+    gpio_set LED_POSTCODE_2 G2 $bit2
+    gpio_set LED_POSTCODE_3 G3 $bit3
 }
 
 # Function to set the more significant hex digit
@@ -58,10 +58,10 @@ display_upper() {
     # Set the pins to the correct operating mode.
     # The relevant pins are GPIOP[4...7].
 
-    gpio_set 124 $bit0
-    gpio_set 125 $bit1
-    gpio_set 126 $bit2
-    gpio_set 127 $bit3
+    gpio_set LED_POSTCODE_4 P4 $bit0
+    gpio_set LED_POSTCODE_5 P5 $bit1
+    gpio_set LED_POSTCODE_6 P6 $bit2
+    gpio_set LED_POSTCODE_7 P7 $bit3
 }
 
 # Check number of parameters

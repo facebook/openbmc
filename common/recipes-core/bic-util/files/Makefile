@@ -1,10 +1,11 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
+
 all: bic-util
 
 CFLAGS += -Wall -Werror
 
 bic-util: bic-util.c
-	$(CC) -pthread $(CFLAGS) -lfby2_sensor -lpal -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

@@ -24,6 +24,8 @@ int main(int argc, char *argv[])
   printf("SUCCESS: Read of key succeeded!\n");
   assert(strcmp(value, "val") == 0);
   printf("SUCCESS: Read key is of value what was expected!\n");
+  assert(kv_set("test1", "val", 0, KV_FCREATE | KV_FPERSIST) != 0);
+  printf("SUCCESS: KV_FCREATE failed on existing persistent key.\n");
 
   assert(kv_set("test1", "val", 0, 0) == 0);
   printf("SUCCESS: Creating non-persist key func call\n");

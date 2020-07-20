@@ -148,14 +148,9 @@ void usage()
   cout << "       " << exec_name << " FRU --update [--]COMPONENT IMAGE_PATH" << endl;
   cout << "       " << exec_name << " FRU --force --update [--]COMPONENT IMAGE_PATH" << endl;
   cout << "       " << exec_name << " FRU --dump [--]COMPONENT IMAGE_PATH" << endl;
-  cout << "       " << exec_name << " FRU --update COMPONENT IMAGE_PATH --schedule \"TIME\"" << endl;
+  cout << "       " << exec_name << " FRU --update COMPONENT IMAGE_PATH --schedule now" << endl;
   cout << "       " << exec_name << " all --show-schedule" << endl;
   cout << "       " << exec_name << " all --delete-schedule TASK_ID" << endl;
-  cout << "Ex:    " << endl;
-  cout << " a) Update the BMC image after 30 min" << endl;
-  cout << "    fw-util bmc --update bmc $image --schedule \"now + 30 min\"" << endl;
-  cout << " b) Update the BMC image at 2:30 pm 10/21/2020" << endl;
-  cout << "    fw-util bmc --update bmc $image --schedule \"2:30 pm 10/21/2020\"" << endl;
   cout << endl;
   cout << left << setw(10) << "FRU" << " : Components" << endl;
   cout << "---------- : ----------" << endl;
@@ -192,10 +187,7 @@ int main(int argc, char *argv[])
 
 #ifdef __TEST__
   testing::InitGoogleTest(&argc, argv);
-  ret = RUN_ALL_TESTS();
-  if (ret != 0) {
-    return ret;
-  }
+  return RUN_ALL_TESTS();
 #endif
   exec_name = argv[0];
   if (argc < 3) {
@@ -210,6 +202,7 @@ int main(int argc, char *argv[])
   string sub_action("");
   string time("");
   string task_id("");
+  json json_array(nullptr);
   bool add_task = false;
   Scheduler tasker;
 
@@ -243,6 +236,11 @@ int main(int argc, char *argv[])
       if ( argc == 7 ) {
         sub_action.assign(argv[5]);
         time.assign(argv[6]);
+        if (time != "now") { // only can set time to "now"
+          cerr << "Only can schedule update " << component << " now" << endl;
+          usage();
+          return -1;
+        }
       } else {
         task_id.assign(argv[3]);
       }
@@ -295,9 +293,21 @@ int main(int argc, char *argv[])
       usage();
       return -1;
     }
+  } else if (action == "--version-json" ) {
+    json_array = json::array();
   } else if ( action == "--show-schedule" ) {
+    if (fru != "all") {
+      cerr << "Invalid fru: " <<  fru <<" for showing schedule" << endl;
+      usage();
+      return -1;
+    }
     return tasker.show_task();
   } else if ( action == "--delete-schedule" ) {
+    if (fru != "all") {
+      cerr << "Invalid fru: " <<  fru <<" for deleting schedule" << endl;
+      usage();
+      return -1;
+    }
     return tasker.del_task(task_id);
   } else {
     cerr << "Invalid action: " << action << endl;
@@ -314,7 +324,6 @@ int main(int argc, char *argv[])
   sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGTERM, &sa, NULL);
   sigaction(SIGPIPE, &sa, NULL); // for ssh terminate
-
   //print the fw version or do the fw update when the fru and the comp are found
   for (auto fkv : *Component::fru_list) {
     if (fru == "all" || fru == fkv.first) {
@@ -350,6 +359,10 @@ int main(int argc, char *argv[])
               cerr << "Error getting version of " << c->component()
                 << " on fru: " << c->fru() << endl;
             }
+          } else if ( action == "--version-json" ) {
+            json j_object = {{"FRU", c->fru()}, {"COMPONENT", c->component()}};
+            c->get_version(j_object);
+            json_array.push_back(j_object);
           } else {  // update or dump
             if (fru == "all") {
               usage();
@@ -395,6 +408,10 @@ int main(int argc, char *argv[])
   if (!find_comp) {
     usage();
     return -1;
+  }
+
+  if ( action == "--version-json" ) {
+    cout << json_array.dump(4) << endl;
   }
 
   return 0;

@@ -31,7 +31,14 @@ extern "C" {
 #define ARRAY_SIZE(a)   (sizeof(a) / sizeof((a)[0]))
 #endif
 
+#ifndef GETBIT
+#define GETBIT(x, y)  ((x & (1ULL << y)) > y)
+#endif
+
 #define BIC_CACHED_PID "/var/run/bic-cached_%d.lock"
+
+#define SOCK_PATH_ASD_BIC "/tmp/asd_bic_socket"
+#define SOCK_PATH_JTAG_MSG "/tmp/jtag_msg_socket"
 
 #define FRU_NIC_BIN    "/tmp/fruid_nic.bin"
 #define FRU_BMC_BIN    "/tmp/fruid_bmc.bin"
@@ -57,15 +64,16 @@ extern const char *slot_usage;
 
 #define MAX_NUM_FRUS 8
 enum {
-  FRU_ALL   = 0,
-  FRU_SLOT1 = 1,
-  FRU_SLOT2 = 2,
-  FRU_SLOT3 = 3,
-  FRU_SLOT4 = 4,
-  FRU_BB    = 5,
-  FRU_NIC   = 6,
-  FRU_BMC   = 7,
-  FRU_NICEXP = 8, //the fru is used when bmc is located on class 2
+  FRU_ALL       = 0,
+  FRU_SLOT1     = 1,
+  FRU_SLOT2     = 2,
+  FRU_SLOT3     = 3,
+  FRU_SLOT4     = 4,
+  FRU_BB        = 5,
+  FRU_NIC       = 6,
+  FRU_BMC       = 7,
+  FRU_NICEXP    = 8, //the fru is used when bmc is located on class 2
+  FRU_AGGREGATE = 0xff, //sensor-util will call pal_get_fru_name(). Add this virtual fru for sensor-util.
 };
 
 enum {
@@ -102,6 +110,17 @@ enum {
 enum {
   SERVER_TYPE_DL = 0x0,
   SERVER_TYPE_NONE = 0xFF,
+};
+
+enum {
+  UTIL_EXECUTION_OK = 0,
+  UTIL_EXECUTION_FAIL = -1,
+};
+
+enum {
+  STATUS_PRSNT = 0,
+  STATUS_NOT_PRSNT,
+  STATUS_ABNORMAL,
 };
 
 const static char *gpio_server_prsnt[] =
@@ -145,6 +164,7 @@ int fby3_common_crashdump(uint8_t fru, bool ierr, bool platform_reset);
 int fby3_common_dev_id(char *str, uint8_t *dev);
 int fby3_common_dev_name(uint8_t dev, char *str);
 int fby3_common_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uint8_t bmc_location);
+int fby3_common_get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask);
 #ifdef __cplusplus
 } // extern "C"
 #endif

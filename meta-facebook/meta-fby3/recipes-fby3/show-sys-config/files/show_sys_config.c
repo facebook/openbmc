@@ -37,27 +37,13 @@
 
 #define MAX_RETRY 3
 
-#define GET_BIT(data, index) ((data >> index) & 0x1)
-
 bool verbosed = false;
 bool output_json = false;
-
-enum {
-  UTIL_EXECUTION_OK = 0,
-  UTIL_EXECUTION_FAIL = -1,
-};
 
 enum {
   CLASS1 = 1,
   CLASS2,
   UNKNOWN_CONFIG = 0xff,
-};
-
-enum {
-  STATUS_PRSNT = 0,
-  STATUS_NOT_PRSNT,
-  STATUS_ABNORMAL,
-  STATUS_MGMT_CBL_NOT_INSTALLED,
 };
 
 typedef struct server {
@@ -85,10 +71,21 @@ get_server_config(uint8_t slot_id, uint8_t *data, uint8_t bmc_location) {
   uint8_t rbuf[1] = {0x00};
   uint8_t tlen = 4;
   uint8_t rlen = 0;
+  uint8_t bic_ready;
 
-  while ( ret < 0 && retry-- > 0 ) {
-    ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  ret = fby3_common_is_bic_ready(slot_id, &bic_ready);
+
+  if (ret < 0) {
+    return UTIL_EXECUTION_FAIL;
   }
+
+  if (bic_ready != 1) {
+    return UTIL_EXECUTION_FAIL;
+  }
+
+  do {
+    ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  } while ( ret < 0 && retry-- > 0 );
 
   if ( ret < 0 ) {
     return UTIL_EXECUTION_FAIL;
@@ -101,8 +98,7 @@ get_server_config(uint8_t slot_id, uint8_t *data, uint8_t bmc_location) {
     return UTIL_EXECUTION_FAIL;
   }
 
-  data[1] = (tbuf[0] == STATUS_MGMT_CBL_NOT_INSTALLED)?STATUS_NOT_PRSNT:STATUS_PRSNT;
-
+  data[1] = tbuf[0];
   return UTIL_EXECUTION_OK;
 }
 
@@ -239,8 +235,8 @@ main(int argc, char **argv) {
       if ( ret < 0 ) {
         sys_info.server_info[i-1].is_server_present = STATUS_ABNORMAL;
       } else {
-        uint8_t front_exp_bit = GET_BIT(data[0], 2);
-        uint8_t riser_exp_bit = GET_BIT(data[0], 3);
+        uint8_t front_exp_bit = GETBIT(data[0], 2);
+        uint8_t riser_exp_bit = GETBIT(data[0], 3);
         uint8_t server_config = UNKNOWN_CONFIG;
 
         sys_info.server_info[i-1].is_server_present = STATUS_PRSNT;
@@ -274,12 +270,6 @@ main(int argc, char **argv) {
     if ( sys_info.server_info[i-1].is_server_present != STATUS_PRSNT ) {
       continue;
     }
-
-    //handle a special case.
-    //SLOT1_ID0 and SLOT1_ID1 are held to 1 always.
-    //So, we use the other slots to check the mgmt cbl is used
-    if ( i != FRU_SLOT1 && (sys_info.server_info[i-1].is_server_present == STATUS_PRSNT) )
-      sys_info.server_info[FRU_SLOT1].is_mgmt_cbl_present &= sys_info.server_info[i-1].is_mgmt_cbl_present;
 
     if ( check_sys_config == UNKNOWN_CONFIG ) {
       check_sys_config = sys_info.server_info[i-1].config;

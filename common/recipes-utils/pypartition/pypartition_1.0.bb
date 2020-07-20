@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-inherit python3unittest distutils3
+inherit distutils3 ptest
 
 SUMMARY = "Check U-Boot partitions"
 DESCRIPTION = "Read, verify, and potentially modify U-Boot (firmware \
@@ -46,6 +46,23 @@ do_lint() {
   mypy *.py
   shellcheck bmc_pusher
 }
+
+do_compile_ptest() {
+  cat <<EOF > ${WORKDIR}/run-ptest
+#!/bin/sh
+python -m unittest discover /usr/local/fbpackages/pypartition
+EOF
+}
+
+do_install_class-target() {
+  dst="${D}/usr/local/fbpackages/pypartition"
+  install -d $dst
+  for f in ${S}/*.py; do
+    n=$(basename $f)
+    install -m 755 "$f" ${dst}/$n
+  done
+}
+
 # We don't have dependencies on flake8/mypy/shellcheck so we can't do this
 # right now otherwise we get something like:
 # pypartition-native/1.0-r3/temp/run.do_lint.1070986:
@@ -54,3 +71,6 @@ do_lint() {
 # addtask lint after do_compile before do_install
 
 BBCLASSEXTEND += "native nativesdk"
+FBPACKAGEDIR = "${prefix}/local/fbpackages"
+FILES_${PN} = "${FBPACKAGEDIR}/pypartition"
+FILES_${PN}-ptest = "${libdir}/pypartition/ptest/run-ptest"

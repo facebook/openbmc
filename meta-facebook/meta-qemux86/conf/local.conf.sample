@@ -8,6 +8,7 @@ MACHINE ??= "qemux86-64"
 # Do not build kernel since we are doing a chroot to execute
 # the binaries in the image.
 PREFERRED_PROVIDER_virtual/kernel = "linux-dummy"
+PREFERRED_VERSION_libpal = "0.2"
 
 # OpenBMC distro settings
 DISTRO ?= "openbmc-fb"

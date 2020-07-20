@@ -15,14 +15,27 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-all: log-util-v2
+all: log-util
 
-CXXFLAGS += -Wall -Werror
+TEST_SRCS := $(wildcard tests/*.cpp)
+COMMON_SRCS := log-util.cpp rsyslogd.cpp selformat.cpp selstream.cpp
+COMMON_OBJS := ${COMMON_SRCS:.cpp=.o}
+TEST_OBJS := ${TEST_SRCS:.cpp=.o}
+SRCS=$(COMMON_SRCS) $(TEST_SRCS) main.cpp
 
-log-util-v2: log-util-v2.cpp
-	$(CXX) -DJSMN_STRICT=1 $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -lpthread
+CXXFLAGS += -std=c++17 -Wall -Werror -g -I.
+LDFLAGS += -lpal
+
+log-util: $(COMMON_OBJS) main.o
+	$(CXX) -pthread -o log-util $^ $(LDFLAGS)
+
+log-util-test: $(COMMON_OBJS) $(TEST_OBJS)
+	$(CXX) -pthread -o log-util-test $^ $(LDFLAGS) -lgtest -lgmock -lgtest_main
+
+$(SRCS:.cpp=.d):%.d:%.cpp
+	$(CXX) $(CXXFLAGS) $< >$@
 
 .PHONY: clean
 
 clean:
-	rm -rf *.o log-util-v2
+	rm -rf *.o tests/*.o log-util log-util-test

@@ -1,8 +1,6 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal:"
 
 SRC_URI += " \
-    file://pal.c \
-    file://pal.h \
     file://pal_calibration.h \
     file://pal_gpu.c \
     file://pal_gpu.h \

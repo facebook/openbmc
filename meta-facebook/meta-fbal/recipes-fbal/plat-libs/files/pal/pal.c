@@ -36,14 +36,16 @@
 #include <openbmc/obmc-i2c.h>
 #include <facebook/fbal_fruid.h>
 #include <openbmc/ipmb.h>
+#include <openbmc/ncsi.h>
+#include <openbmc/nl-wrapper.h>
 #include "pal.h"
 
 #define FBAL_PLATFORM_NAME "angelslanding"
 #define LAST_KEY "last_key"
 
-#define GPIO_ID_LED "FP_ID_LED_N"
+#define GPIO_LOCATE_LED_ACT "FP_LOCATE_LED_ACT"
 #define GPIO_LOCATE_LED "FP_LOCATE_LED"
-#define GPIO_FAULT_LED "FM_BMC_LED_CATERR_N"
+#define GPIO_FAULT_LED "FP_FAULT_LED_N"
 #define GPIO_NIC0_PRSNT "HP_LVC3_OCP_V3_1_PRSNT2_N"
 #define GPIO_NIC1_PRSNT "HP_LVC3_OCP_V3_2_PRSNT2_N"
 #define GPIO_SKT_ID0 "FM_BMC_SKT_ID_0"
@@ -73,7 +75,9 @@ typedef enum {
   SLED_TIMESTAMP,
   SV_POR_CFG,
   SV_SNR_HEALTH,
-  NIC_SNR_HEALTH,
+  NIC0_SNR_HEALTH,
+  NIC1_SNR_HEALTH,
+  PDB_SNR_HEALTH,
   SV_SEL_ERR,
   SV_BOOT_ORDER,
   CPU0_PPIN,
@@ -101,7 +105,9 @@ struct pal_key_cfg {
   {SLED_TIMESTAMP, "timestamp_sled", "0", NULL},
   {SV_POR_CFG, "server_por_cfg", "lps", key_func_por_policy},
   {SV_SNR_HEALTH, "server_sensor_health", "1", NULL},
-  {NIC_SNR_HEALTH, "nic_sensor_health", "1", NULL},
+  {NIC0_SNR_HEALTH, "nic0_sensor_health", "1", NULL},
+  {NIC1_SNR_HEALTH, "nic1_sensor_health", "1", NULL},
+  {PDB_SNR_HEALTH, "pdb_sensor_health", "1", NULL},
   {SV_SEL_ERR, "server_sel_error", "1", NULL},
   {SV_BOOT_ORDER, "server_boot_order", "0100090203ff", NULL},
   {CPU0_PPIN, "cpu0_ppin", "", NULL},
@@ -328,28 +334,24 @@ pal_is_slot_server(uint8_t fru) {
 // Update the Identification LED for the given fru with the status
 int
 pal_set_id_led(uint8_t fru, uint8_t status) {
-  uint8_t sys_pwr;
+  int ret = -1;
   gpio_desc_t *gdesc_id = NULL, *gdesc_loc = NULL;
-  gpio_value_t val;
 
   do {
-    if (!(gdesc_id = gpio_open_by_shadow(GPIO_ID_LED)))
+    if (!(gdesc_id = gpio_open_by_shadow(GPIO_LOCATE_LED_ACT)))
       break;
-
-    if (status == 0xFF) {  // restore FP_ID_LED_N
-      gpio_set_value(gdesc_id, GPIO_VALUE_LOW);
-      break;
-    }
 
     if (!(gdesc_loc = gpio_open_by_shadow(GPIO_LOCATE_LED)))
       break;
 
-    if (!pal_get_server_power(fru, &sys_pwr)) {
-      val = sys_pwr ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
-      gpio_set_value(gdesc_id, val);
+    if (status == 0xFF) {  // restore FP_LOCATE_LED_ACT
+      ret = gpio_set_value(gdesc_id, GPIO_VALUE_LOW);
+      ret |= gpio_set_value(gdesc_loc, GPIO_VALUE_LOW);
+      break;
     }
-    val = status ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
-    gpio_set_value(gdesc_loc, val);
+
+    ret = gpio_set_value(gdesc_id, GPIO_VALUE_HIGH);
+    ret |= gpio_set_value(gdesc_loc, status ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
   } while (0);
 
   if (gdesc_id) {
@@ -359,30 +361,22 @@ pal_set_id_led(uint8_t fru, uint8_t status) {
     gpio_close(gdesc_loc);
   }
 
-  return 0;
+  return ret;
 }
 
 int
 pal_set_fault_led(uint8_t fru, uint8_t status) {
   int ret;
   gpio_desc_t *gdesc = NULL;
-  gpio_value_t val;
 
-  if (fru != FRU_MB)
+  if (!(gdesc = gpio_open_by_shadow(GPIO_FAULT_LED))) {
     return -1;
+  }
 
-  gdesc = gpio_open_by_shadow(GPIO_FAULT_LED);
-  if (gdesc == NULL)
-    return -1;
+  ret = gpio_set_value(gdesc, status ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
+  gpio_close(gdesc);
 
-  val = status? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
-  ret = gpio_set_value(gdesc, val);
-  if (ret != 0)
-    goto error;
-
-  error:
-    gpio_close(gdesc);
-    return ret;
+  return ret;
 }
 
 int
@@ -966,19 +960,18 @@ pal_get_platform_id(uint8_t *id) {
 
 int
 pal_get_host_system_mode(uint8_t* mode) {
-  gpio_desc_t *gdesc;
-  gpio_value_t val;
   static bool cached = false;
   static uint8_t cached_pos = 0;
 
   if (!cached) {
-    if ((gdesc = gpio_open_by_shadow(GPIO_SKT_ID2))) {
-      if (!gpio_get_value(gdesc, &val)) {
-        cached_pos = (val == GPIO_VALUE_LOW) ? MB_8S_MODE : MB_2S_MODE;
-        cached = true;
-      }
-      gpio_close(gdesc);
+    const char *shadows[] = {
+      "FM_BMC_SKT_ID_1",
+      "FM_BMC_SKT_ID_2"
+    };
+    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_pos)) {
+      return -1;
     }
+    cached = true;
   }
 
   *mode = cached_pos;
@@ -1607,6 +1600,56 @@ static int pal_ipmb_bypass (uint8_t *req_data, uint8_t req_len,
   return CC_SUCCESS;
 }
 
+static
+int pal_ncsi_bypass (uint8_t *req_data, uint8_t req_len,
+                     uint8_t *res_data, uint8_t *res_len) {
+  uint8_t cmd, tlen;
+  uint8_t channel = 0;
+  uint8_t netdev = 0;
+  int cc=CC_UNSPECIFIED_ERROR;
+  NCSI_NL_MSG_T *msg = NULL;
+  NCSI_NL_RSP_T *rsp = NULL;
+
+  tlen = req_len - 7; // payload_id, netfn, cmd, data[0] (select), netdev, channel, cmd
+  if (tlen < 0) {
+    return CC_INVALID_LENGTH;
+  }
+
+  netdev = req_data[1];
+  channel = req_data[2];
+  cmd = req_data[3];
+
+  msg = calloc(1, sizeof(NCSI_NL_MSG_T));
+  if (!msg) {
+    syslog(LOG_ERR, "%s Error: failed msg buffer allocation", __func__);
+    return cc;
+  }
+
+  memset(msg, 0, sizeof(NCSI_NL_MSG_T));
+
+  sprintf(msg->dev_name, "eth%d", netdev);
+  msg->channel_id = channel;
+  msg->cmd = cmd;
+  msg->payload_length = tlen;
+
+  for (int i=0; i<msg->payload_length; i++) {
+    msg->msg_payload[i] = req_data[4+i];
+  }
+
+  rsp = send_nl_msg_libnl(msg);
+  if (rsp) {
+    memcpy(&res_data[0], &rsp->msg_payload[0], rsp->hdr.payload_length);
+    *res_len = rsp->hdr.payload_length;
+    free(rsp);
+    cc = CC_SUCCESS;
+  } else {
+    cc = CC_UNSPECIFIED_ERROR;
+  }
+
+  free(msg);
+  return cc;
+}
+
 // OEM Command "CMD_OEM_BYPASS_CMD" 0x34 return: CC Code
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
   int ret;
@@ -1632,15 +1675,19 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
     case BRIDGE_2_MB_BMC3:   //MB BMC3
     case BRIDGE_2_ASIC_BMC:  //FBEP
       ret = pal_ipmb_bypass(req_data, req_len, res_data, res_len);
-
-      if(ret != CC_SUCCESS) {
-        return ret;
-      }
+      break;
+    case BYPASS_NCSI:
+      ret = pal_ncsi_bypass(req_data, req_len, res_data, res_len);
       break;
 
     default:
       return CC_UNSPECIFIED_ERROR;
   }
+
+  if(ret != CC_SUCCESS) {
+    return ret;
+  }
+
   return CC_SUCCESS;
 }
 
@@ -1660,7 +1707,7 @@ pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str) {
 
 int
 pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
-  if (fru != FRU_MB) {
+  if ((fru != FRU_MB) && (fru != FRU_BMC)) {
     return -1;
   }
   *bus = PFR_MAILBOX_BUS;
@@ -1671,67 +1718,68 @@ pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
 
 int
 pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
-  int ret = 0;
-  int ifd, retry = 3;
-  uint8_t buf[16];
+  int ret, ifd, retry = 3;
+  uint8_t buf[8];
   char dev_i2c[16];
 
   ret = status;
-  if (ret == 0) {
-    sprintf(dev_i2c, "/dev/i2c-%d", PFR_MAILBOX_BUS);
-    ifd = open(dev_i2c, O_RDWR);
-    if (ifd < 0) {
-      return -1;
-    }
-
-    buf[0] = 0x13;  // BMC update intent
-    if (!strcmp(comp, "bmc")) {
-      buf[1] = UPDATE_BMC_ACTIVE;
-    } else if (!strcmp(comp, "bios")) {
-      buf[1] = UPDATE_UPDATE_DYNAMIC | UPDATE_PCH_ACTIVE;
-      if (!pal_get_config_is_master()) {
-        buf[1] |= UPDATE_AT_RESET;
-      }
-    } else if (!strcmp(comp, "pfr_cpld")) {
-      buf[1] = UPDATE_CPLD_ACTIVE;
-      if (!pal_get_config_is_master()) {
-        buf[1] |= UPDATE_AT_RESET;
-      }
-    }
-
-    sync();
-    sleep(3);
-    ret = system("sv stop sensord > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_0 > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_2 > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_5 > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_6 > /dev/null 2>&1");
-    ret = system("sv stop ipmbd_8 > /dev/null 2>&1");
-
-    printf("sending update intent to CPLD...\n");
-    fflush(stdout);
-    sleep(1);
-    do {
-      ret = i2c_rdwr_msg_transfer(ifd, PFR_MAILBOX_ADDR, buf, 2, NULL, 0);
-      if (ret) {
-        syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x %02x", PFR_MAILBOX_BUS, buf[0], buf[1]);
-        if (--retry > 0) {
-          msleep(100);
-        }
-      }
-    } while (ret && retry > 0);
-    close(ifd);
+  if (ret) {
+    return ret;
   }
+
+  sync();
+  sleep(2);
+  printf("sending update intent to CPLD...\n");
+  fflush(stdout);
+
+  sprintf(dev_i2c, "/dev/i2c-%d", PFR_MAILBOX_BUS);
+  ifd = open(dev_i2c, O_RDWR);
+  if (ifd < 0) {
+    return -1;
+  }
+
+  buf[0] = 0x13;  // BMC update intent
+  if (!strcmp(comp, "bios")) {
+    buf[1] = UPDATE_UPDATE_DYNAMIC | UPDATE_PCH_ACTIVE;
+  } else if (!strcmp(comp, "bios_rc")) {
+    buf[1] = UPDATE_PCH_RECOVERY;
+  } else if (!strcmp(comp, "pfr_cpld")) {
+    buf[1] = UPDATE_CPLD_ACTIVE;
+  } else if (!strcmp(comp, "pfr_cpld_rc")) {
+    buf[1] = UPDATE_CPLD_RECOVERY;
+  } else {
+    close(ifd);
+    return -1;
+  }
+
+  if (!pal_get_config_is_master()) {
+    buf[1] |= UPDATE_AT_RESET;
+  }
+
+  do {
+    ret = i2c_rdwr_msg_transfer(ifd, PFR_MAILBOX_ADDR, buf, 2, NULL, 0);
+    if (ret) {
+      syslog(LOG_WARNING, "send update intent failed, cmd: %02x %02x", buf[0], buf[1]);
+      if (--retry > 0)
+        msleep(100);
+    }
+  } while (ret && retry > 0);
+  close(ifd);
 
   return ret;
 }
 
 int
 pal_is_pfr_active(void) {
-  int pfr_active = PFR_NONE;
   int ifd, retry = 3;
   uint8_t tbuf[8], rbuf[8];
   char dev_i2c[16];
+  static bool cached = false;
+  static int pfr_active = PFR_NONE;
+
+  if (cached) {
+    return pfr_active;
+  }
 
   sprintf(dev_i2c, "/dev/i2c-%d", PFR_MAILBOX_BUS);
   ifd = open(dev_i2c, O_RDWR);
@@ -1753,6 +1801,22 @@ pal_is_pfr_active(void) {
       msleep(20);
   } while (retry > 0);
   close(ifd);
+  cached = true;
 
   return pfr_active;
+}
+
+int
+pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
+  NM_RW_INFO info;
+  int ret;
+
+  info.bus = NM_IPMB_BUS_ID;
+  info.nm_addr = NM_SLAVE_ADDR;
+  ret = pal_get_bmc_ipmb_slave_addr(&info.bmc_addr, info.bus);
+  if (ret != 0) {
+    return PAL_ENOTSUP;
+  }
+
+  return lib_dcmi_wrapper(&info, request, req_len, response, rlen);
 }

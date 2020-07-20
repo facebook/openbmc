@@ -203,3 +203,9 @@ def pal_set_key_value(key, value):
         ret = lpal_hndl.pal_set_key_value(pkey, pvalue)
         if ret != 0:
             raise ValueError("failure")
+
+
+def pal_get_eth_intf_name():
+    name = create_string_buffer(8)
+    lpal_hndl.pal_get_eth_intf_name(name)
+    return name.value.decode()

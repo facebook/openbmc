@@ -326,10 +326,6 @@ elif [ $BOARD_ID -eq 14 ] || [ $BOARD_ID -eq 7 ]; then
   gpio_export FM_RESBTN_SLOT4_BMC_N GPIOI6
   gpio_export FM_RESBTN_SLOT1_BMC_N GPIOAC2
   gpio_export FM_RESBTN_SLOT2_BMC_N GPIOAC3
-  gpio_set FM_RESBTN_SLOT1_BMC_N 0
-  gpio_set FM_RESBTN_SLOT2_BMC_N 0
-  gpio_set FM_RESBTN_SLOT3_BMC_N 0
-  gpio_set FM_RESBTN_SLOT4_BMC_N 0
 else
   echo "Is board id correct(id=$BOARD_ID)?"
 fi

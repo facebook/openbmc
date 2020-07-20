@@ -35,22 +35,23 @@ echo "Setup fan speed... "
 default_fsc_config_path="/etc/fsc-config.json"
 
 host=$(gpio_get FM_BMC_SKT_ID_0)  #Master:host=1, Master:host=0
-mode=$(gpio_get FM_BMC_SKT_ID_2)  #8S:mode=0, 2S:mode=1
+mode=$(($(gpio_get FM_BMC_SKT_ID_1)<<1 | $(gpio_get FM_BMC_SKT_ID_2))) #8S:mode=00, 2S:mode=1 4S:mode=2
 
 #echo host = $host
 #echo mode = $mode
 
-if [ $mode == 0 ]; then
-  if [ $host == 0 ]; then 
-    echo probe 8s master fan table
-    ln -s /etc/fsc-config8s_M.json ${default_fsc_config_path}
-  else
-    echo probe 8s slave fan table
-    ln -s /etc/fsc-config8s_S.json ${default_fsc_config_path}
-  fi
-else
+if [ $mode == 1 ]; then
   echo probe 2s fan table
   ln -s /etc/fsc-config2s.json ${default_fsc_config_path}
+elif [[ "$mode" -eq 2 ]] && [[ "$host" -eq 0 ]]; then
+  echo probe 4s master fan table
+  ln -s /etc/fsc-config4s_M.json ${default_fsc_config_path}
+elif [[ "$mode" -eq 0 ]] && [[ "$host" -eq 0 ]]; then
+  echo probe 8s master fan table
+  ln -s /etc/fsc-config8s_M.json ${default_fsc_config_path}
+else
+  echo probe slave fan table
+  ln -s /etc/fsc-config_Slave.json ${default_fsc_config_path}
 fi
 
 runsv /etc/sv/fscd > /dev/null 2>&1 &

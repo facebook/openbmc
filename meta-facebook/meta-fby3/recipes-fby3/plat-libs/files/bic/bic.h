@@ -48,6 +48,9 @@ extern "C" {
 #define VR_PAGE60 0x60
 #define VR_PAGE62 0x62
 
+#define BIT_VALUE(list, index) \
+           ((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1\
+
 enum {
   FW_CPLD = 1,
   FW_BIC,
@@ -196,7 +199,7 @@ enum {
   FM_PEHPCPU_INT,
 };
 
-int bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio);
+int bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio, uint8_t intf);
 int bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt);
 
 #ifdef __cplusplus

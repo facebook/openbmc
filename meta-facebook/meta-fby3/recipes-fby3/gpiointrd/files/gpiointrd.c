@@ -92,28 +92,28 @@ static void
 slot1_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   const uint8_t slot_id = FRU_SLOT1;
   log_gpio_change(gpdesc, value, 0);
-  if ( value == GPIO_VALUE_LOW ) fby3_common_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+  if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
 static void
 slot2_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   const uint8_t slot_id = FRU_SLOT2;
   log_gpio_change(gpdesc, value, 0);
-  if ( value == GPIO_VALUE_LOW ) fby3_common_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+  if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
 static void
 slot3_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   const uint8_t slot_id = FRU_SLOT3;
   log_gpio_change(gpdesc, value, 0);
-  if ( value == GPIO_VALUE_LOW ) fby3_common_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+  if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
 static void
 slot4_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   const uint8_t slot_id = FRU_SLOT4;
   log_gpio_change(gpdesc, value, 0);
-  if ( value == GPIO_VALUE_LOW ) fby3_common_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+  if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
 static void 
@@ -133,7 +133,7 @@ slot1_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   const uint8_t slot_id = FRU_SLOT1;
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0);
-  if ( curr == GPIO_VALUE_LOW ) fby3_common_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+  if ( curr == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
 static void
@@ -141,7 +141,7 @@ slot2_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   const uint8_t slot_id = FRU_SLOT2;
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0);
-  if ( curr == GPIO_VALUE_LOW ) fby3_common_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+  if ( curr == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
 static void
@@ -149,7 +149,7 @@ slot3_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   const uint8_t slot_id = FRU_SLOT3;
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0);
-  if ( curr == GPIO_VALUE_LOW ) fby3_common_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+  if ( curr == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
 static void
@@ -157,7 +157,7 @@ slot4_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   const uint8_t slot_id = FRU_SLOT4;
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0);
-  if ( curr == GPIO_VALUE_LOW ) fby3_common_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+  if ( curr == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
 static void

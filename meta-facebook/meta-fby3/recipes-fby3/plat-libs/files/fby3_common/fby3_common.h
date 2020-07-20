@@ -163,8 +163,8 @@ int fby3_common_get_slot_type(uint8_t fru);
 int fby3_common_crashdump(uint8_t fru, bool ierr, bool platform_reset);
 int fby3_common_dev_id(char *str, uint8_t *dev);
 int fby3_common_dev_name(uint8_t dev, char *str);
-int fby3_common_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uint8_t bmc_location);
 int fby3_common_get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask);
+int get_gpio_value(const char *gpio_name, uint8_t *status);
 #ifdef __cplusplus
 } // extern "C"
 #endif

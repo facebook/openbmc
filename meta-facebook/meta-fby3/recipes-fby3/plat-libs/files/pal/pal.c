@@ -2526,3 +2526,108 @@ set_pfr_i2c_filter(uint8_t slot_id, uint8_t value) {
   return 0;
 
 }
+
+int
+pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uint8_t bmc_location) {
+  enum {
+    SLOT1_CBL = 0x03,
+    SLOT2_CBL = 0x02,
+    SLOT3_CBL = 0x01,
+    SLOT4_CBL = 0x00,
+  };
+  enum {
+    SLOT1_ID0_DETECT_BMC_N = 33,
+    SLOT1_ID1_DETECT_BMC_N = 34,
+    SLOT3_ID0_DETECT_BMC_N = 37,
+    SLOT3_ID1_DETECT_BMC_N = 38,
+  };
+  const uint8_t mapping_tbl[4] = {SLOT1_CBL, SLOT2_CBL, SLOT3_CBL, SLOT4_CBL};
+  const char *gpio_mgmt_cbl_tbl[] = {"SLOT%d_ID1_DETECT_BMC_N", "SLOT%d_ID0_DETECT_BMC_N"};
+  const int num_of_mgmt_pins = ARRAY_SIZE(gpio_mgmt_cbl_tbl);
+  int i = 0;
+  int ret = 0;
+  char dev[32] = {0};
+  uint8_t val = 0;
+  uint8_t gpio_vals = 0;
+  bic_gpio_t gpio = {0};
+  int i2cfd = 0;
+  char path[32] = {0};
+  uint8_t bus = 0;
+  uint8_t tbuf[1] = {0x06};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 1;
+  uint8_t rlen = 1;
+  uint8_t cpld_slot_cbl_val = 0;
+
+  if ( bmc_location == DVT_BB_BMC ) {
+    //read GPIO vals
+    for ( i = 0; i < num_of_mgmt_pins; i++ ) {
+      snprintf(dev, sizeof(dev), gpio_mgmt_cbl_tbl[i], slot_id);
+      if ( get_gpio_value(dev, &val) < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to read %s", __func__, dev);
+      }
+      gpio_vals |= (val << i);
+    }
+  } else {
+    //NIC EXP
+    //a bus starts from 4
+    ret = fby3_common_get_bus_id(slot_id) + 4;
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, slot_id);
+      return -1;
+    }
+
+    bus= (uint8_t)ret;
+    snprintf(path, sizeof(path), I2CDEV, bus);
+
+    //read 06h from SB CPLD
+    i2cfd = open(path, O_RDWR);
+    if ( i2cfd < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
+      if ( i2cfd > 0 ) close(i2cfd);
+      return -1;
+    }
+
+    ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+      if ( i2cfd > 0 ) close(i2cfd);
+      return -1;
+    }
+
+    if ( i2cfd > 0 ) close(i2cfd);
+
+    cpld_slot_cbl_val = rbuf[0];
+
+     //read GPIO from BB BIC
+    ret = bic_get_gpio(slot_id, &gpio, BB_BIC_INTF);
+    if ( ret < 0 ) {
+      printf("%s() bic_get_gpio returns %d\n", __func__, ret);
+      return ret;
+    }
+    if (cpld_slot_cbl_val == SLOT1_CBL) {
+      val = BIT_VALUE(gpio, SLOT1_ID1_DETECT_BMC_N);
+      gpio_vals |= (val << 0);
+      val = BIT_VALUE(gpio, SLOT1_ID0_DETECT_BMC_N);
+      gpio_vals |= (val << 1);
+    } else {
+      val = BIT_VALUE(gpio, SLOT3_ID1_DETECT_BMC_N);
+      gpio_vals |= (val << 0);
+      val = BIT_VALUE(gpio, SLOT3_ID0_DETECT_BMC_N);
+      gpio_vals |= (val << 1);
+    }
+  }
+
+  bool vals_match = (bmc_location == DVT_BB_BMC) ? (gpio_vals == mapping_tbl[slot_id-1]):(gpio_vals == cpld_slot_cbl_val);
+  if ( (log_evnt == true) && (vals_match == false) ) {
+    for ( i = 0; i < (sizeof(mapping_tbl)/sizeof(uint8_t)); i++ ) {
+      if(mapping_tbl[i] == gpio_vals) {
+        break;
+      }
+    }
+    syslog(LOG_CRIT, "The cable of slot%d should be plugged to slot%d", slot_id, (i+1));
+  }
+
+  if ( cbl_val != NULL ) *cbl_val = (vals_match == false)?STATUS_ABNORMAL:STATUS_PRSNT;
+  return ret;
+}

@@ -466,7 +466,7 @@ gpio_monitor_poll(void *ptr) {
   // Inform BIOS that BMC is ready
   bic_set_gpio(fru, BMC_READY, 1);
   
-  ret = bic_get_gpio(fru, &o_pin_val);
+  ret = bic_get_gpio(fru, &o_pin_val, NONE_INTF);
   if (ret) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for fru %u", fru);
@@ -482,7 +482,7 @@ gpio_monitor_poll(void *ptr) {
     pal_get_last_pwr_state(fru, pwr_state);
 
     /* Get the GPIO pins */
-    if ( (pal_is_fw_update_ongoing(fru) == true) || ((ret = bic_get_gpio(fru, &n_pin_val)) < 0) ) {
+    if ( (pal_is_fw_update_ongoing(fru) == true) || ((ret = bic_get_gpio(fru, &n_pin_val, NONE_INTF)) < 0) ) {
 #ifdef DEBUG
       /* log the error message only when the CPU is on but not reachable. */
       if (!(strcmp(pwr_state, "on"))) {

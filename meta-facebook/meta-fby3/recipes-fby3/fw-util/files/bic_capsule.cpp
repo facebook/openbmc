@@ -31,9 +31,6 @@ using namespace std;
 #define BIOS_UPDATE_TIMEOUT 50
 #define PLATFORM_STATE_ENTER_T0 0x09
 
-#define BIT_VALUE(list, index) \
-           ((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1\
-
 image_info CapsuleComponent::check_image(string image, bool force) {
   string fru_name = fru();
   string slot_str = "slot";
@@ -248,7 +245,7 @@ int CapsuleComponent::bic_update_capsule(string image) {
       time_cnt = 0;
       // Timeout mechanism to avoid updating failed
       while (time_cnt < update_timeout) {
-        ret = bic_get_gpio(slot_id, &gpio);
+        ret = bic_get_gpio(slot_id, &gpio, NONE_INTF);
         if ( ret < 0 ) {
           printf("%s() bic_get_gpio returns %d\n", __func__, ret);
           return ret;

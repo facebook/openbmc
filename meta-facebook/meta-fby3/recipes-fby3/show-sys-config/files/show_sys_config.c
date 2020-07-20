@@ -32,13 +32,14 @@
 #include <errno.h>
 #include <facebook/bic.h>
 #include <openbmc/ipmi.h>
-#include <facebook/fby3_common.h>
+#include <openbmc/pal.h>
 #include <jansson.h>
 
 #define MAX_RETRY 3
 
 bool verbosed = false;
 bool output_json = false;
+bool record_slot_mapping = false;
 
 enum {
   CLASS1 = 1,
@@ -93,7 +94,11 @@ get_server_config(uint8_t slot_id, uint8_t *data, uint8_t bmc_location) {
 
   data[0] = rbuf[0];
 
-  ret = fby3_common_check_sled_mgmt_cbl_id(slot_id, &tbuf[0], false, bmc_location);
+  if (record_slot_mapping) {
+    ret = pal_check_sled_mgmt_cbl_id(slot_id, &tbuf[0], true, bmc_location);
+  } else {
+    ret = pal_check_sled_mgmt_cbl_id(slot_id, &tbuf[0], false, bmc_location);
+  }
   if ( ret < 0 ) {
     return UTIL_EXECUTION_FAIL;
   }
@@ -203,6 +208,8 @@ main(int argc, char **argv) {
   while ( argc >= 2 && i < argc) {
     if ( strcmp("-v", argv[i]) == 0 ) {
       verbosed = true;
+    } else if ( strcmp("-r", argv[i]) == 0 ) {
+      record_slot_mapping = true;
     } else if ( strcmp("-json", argv[i]) == 0) {
       output_json = true;
     }

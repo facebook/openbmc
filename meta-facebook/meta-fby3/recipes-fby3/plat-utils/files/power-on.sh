@@ -67,6 +67,8 @@ function init_class2_server() {
       power-util slot1 on
     fi
   fi
+
+  show_sys_config -r > /dev/null
 }
 
 function init_class1_server() {

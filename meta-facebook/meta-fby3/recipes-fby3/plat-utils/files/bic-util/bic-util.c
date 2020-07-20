@@ -219,7 +219,7 @@ util_get_gpio(uint8_t slot_id) {
   char gpio_pin_name[32] = "\0";
   bic_gpio_t gpio = {0};
 
-  ret = bic_get_gpio(slot_id, &gpio);
+  ret = bic_get_gpio(slot_id, &gpio, NONE_INTF);
   if ( ret < 0 ) {
     printf("%s() bic_get_gpio returns %d\n", __func__, ret);
     return ret;

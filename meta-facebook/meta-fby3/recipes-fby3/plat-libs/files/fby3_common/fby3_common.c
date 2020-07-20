@@ -78,7 +78,7 @@ set_gpio_value(const char *gpio_name, gpio_value_t val) {
   return ret;
 }
 
-static int
+int
 get_gpio_value(const char *gpio_name, uint8_t *status) {
   int ret = 0;
   gpio_desc_t *gdesc = NULL;
@@ -258,47 +258,6 @@ error_exit:
     close(i2cfd);
   }
 
-  return ret;
-}
-
-int
-fby3_common_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uint8_t bmc_location) {
-  enum {
-    SLOT1_CBL = 0x03,
-    SLOT2_CBL = 0x02,
-    SLOT3_CBL = 0x01,
-    SLOT4_CBL = 0x00,
-  };
-  const uint8_t mapping_tbl[4] = {SLOT1_CBL, SLOT2_CBL, SLOT3_CBL, SLOT4_CBL};
-  const char *gpio_mgmt_cbl_tbl[] = {"SLOT%d_ID1_DETECT_BMC_N", "SLOT%d_ID0_DETECT_BMC_N"};
-  const int num_of_mgmt_pins = ARRAY_SIZE(gpio_mgmt_cbl_tbl);
-  int i = 0;
-  int ret = 0;
-  char dev[32] = {0};
-  uint8_t val = 0;
-  uint8_t gpio_vals = 0;
-
-  if ( bmc_location == DVT_BB_BMC ) {
-    //read GPIO vals
-    for ( i = 0; i < num_of_mgmt_pins; i++ ) {
-      snprintf(dev, sizeof(dev), gpio_mgmt_cbl_tbl[i], slot_id);
-      if ( get_gpio_value(dev, &val) < 0 ) {
-        syslog(LOG_WARNING, "%s() Failed to read %s", __func__, dev);
-      }
-      gpio_vals |= (val << i);
-    }
-  } else {
-    //NIC EXP
-    //read GPIO from BB BIC
-    //read 06h from SB CPLD
-  }
-
-  bool vals_match = (gpio_vals == mapping_tbl[slot_id-1]);
-  if ( log_evnt == true ) {
-    syslog(LOG_CRIT, "The cable of slot%d is %s", slot_id, (vals_match == false)?"mismatched":"matched");
-  }
-
-  if ( cbl_val != NULL ) *cbl_val = (vals_match == false)?STATUS_ABNORMAL:STATUS_PRSNT;
   return ret;
 }
 

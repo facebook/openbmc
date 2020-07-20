@@ -168,6 +168,7 @@ int pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uin
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_check_pfr_mailbox(uint8_t fru);
 int set_pfr_i2c_filter(uint8_t slot_id, uint8_t value);
+int pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uint8_t bmc_location);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -161,6 +161,43 @@ def fbobmc_generate_part_chksum(d, image_file, part_offset, part_size):
         fh.seek(part_offset)
         return hashlib.md5(fh.read(part_size)).hexdigest()
 
+# search all printable string with 8+ length
+def fbobmc_extract_strings_from_binary(data):
+    import re
+    regexp = b"[\x20-\x7E]{8,}"
+    str_pattern = re.compile(regexp)
+    return [s.decode("ascii") for s in str_pattern.findall(data)]
+
+# The safest way is parser the version info from uboot binary
+# although we can get the value from data-store
+# OPENBMC_VERSION and PREFERRED_VERSION_u-boot
+def fbobmc_parser_version_infos_from_first_part(d, uboot):
+    import re
+    version_infos = {}
+    version_infos["fw_ver"] = "unknown"
+    version_infos["uboot_ver"] = "unknown"
+    version_infos["uboot_build_time"] = "unknown"
+    uboot_strs = []
+    with open(uboot, "rb") as fh:
+        data = fh.read()
+        uboot_strs = fbobmc_extract_strings_from_binary(data)
+
+    uboot_ver_regex = [
+        r"^U-Boot",  # Leading
+        r"(SPL )?(?P<uboot_ver>20\d{2}\.\d{2})",  # uboot_ver
+        r"(?P<fw_ver>[^ ]+)",  # fw_ver
+        r"\((?P<uboot_build_time>[^)]+)\).*$",  # bld_time
+    ]
+
+    uboot_ver_re = re.compile(" ".join(uboot_ver_regex))
+    for uboot_str in uboot_strs:
+        matched = uboot_ver_re.match(uboot_str)
+        if matched:
+            version_infos["fw_ver"] = matched.group("fw_ver")
+            version_infos["uboot_ver"] = matched.group("uboot_ver")
+            version_infos["uboot_build_time"] = matched.group("uboot_build_time")
+            break
+    return version_infos
 
 def fbobmc_generate_image_meta(d, part_table, image_meta, image_file):
     fixed_meta_partition_offset = int(d.expand("${FBOBMC_IMAGE_META_OFFSET}"), 0)
@@ -175,7 +212,7 @@ def fbobmc_generate_image_meta(d, part_table, image_meta, image_file):
             meta_part_offset = part_offset
             meta_part_size = part_size
             if meta_part_offset != fixed_meta_partition_offset:
-                bb.fatal("The 'meta' partition shall be fixed at 0x%08X", 
+                bb.fatal("The 'meta' partition shall be fixed at 0x%08X",
                     fixed_meta_partition_offset)
         if "raw" == part_type or "rom" == part_type:
             partition["chksum"] = fbobmc_generate_part_chksum(
@@ -184,6 +221,8 @@ def fbobmc_generate_image_meta(d, part_table, image_meta, image_file):
         part_infos.append(partition)
 
     image_meta["part_infos"] = tuple(part_infos)
+    first_part_file = part_table[0][4]
+    image_meta["version_infos"] = fbobmc_parser_version_infos_from_first_part(d, first_part_file)
     fbobmc_save_meta_data(d, image_meta, image_file, meta_part_offset, meta_part_size)
 
 

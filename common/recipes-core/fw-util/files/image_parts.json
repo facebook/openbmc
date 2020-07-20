@@ -1,4 +1,27 @@
 {
+  "fit-meta": {
+    "uboot": {
+      "offset": 0,
+      "size":   896,
+      "type": "ignore"
+    },
+    "env": {
+      "offset": 896,
+      "size":   64,
+      "type": "ignore"
+    },
+    "meta": {
+      "offset": 960,
+      "size":   64,
+      "type": "ignore"
+    },
+    "unified-fit": {
+      "offset": 1024,
+      "size":   31744,
+      "type": "fit",
+      "num-nodes": 2
+    }
+  },
   "vboot": {
     "spl": {
       "offset": 0,

@@ -26,7 +26,8 @@ image_info BmcCpldCapsuleComponent::check_image(string image, bool force) {
 
   image_info image_sts = {"", false};
 
- if (comp != "cpld_cap" && comp != "cpld_cap_rcvy") {
+  if (comp != "cpld_cap" && comp != "cpld_cap_rcvy") {
+    image_sts.new_path = image;
     image_sts.result = true;
     return image_sts;
   }
@@ -275,6 +276,7 @@ int BmcCpldCapsuleComponent::bmc_update_capsule(string image) {
 
 int BmcCpldCapsuleComponent::update(string image) {
   int ret;
+  string comp = component();
   image_info image_sts = check_image(image, false);
 
   if ( image_sts.result == false ) {
@@ -288,7 +290,9 @@ int BmcCpldCapsuleComponent::update(string image) {
   ret = bmc_update_capsule(image);
 
   //remove the tmp image
-  remove(image.c_str());
+  if (comp == "cpld_cap" || comp == "cpld_cap_rcvy") {
+    remove(image.c_str());
+  }
   return ret;
 }
 
@@ -297,8 +301,6 @@ int BmcCpldCapsuleComponent::fupdate(string image) {
 
   ret = bmc_update_capsule(image);
 
-  //remove the tmp image
-  remove(image.c_str());
   return ret;
 }
 

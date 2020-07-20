@@ -43,6 +43,7 @@ image_info CapsuleComponent::check_image(string image, bool force) {
   image_info image_sts = {"", false};
 
   if (fw_comp != FW_CPLD_CAPSULE && fw_comp != FW_CPLD_RCVY_CAPSULE) {
+    image_sts.new_path = image;
     image_sts.result = true;
     return image_sts;
   }
@@ -346,7 +347,9 @@ int CapsuleComponent::update(string image) {
   ret = bic_update_capsule(image);
 
   //remove the tmp file
-  remove(image.c_str());
+  if (fw_comp == FW_CPLD_CAPSULE || fw_comp == FW_CPLD_RCVY_CAPSULE) {
+    remove(image.c_str());
+  }
   return ret;
 }
 
@@ -355,8 +358,6 @@ int CapsuleComponent::fupdate(string image) {
 
   ret = bic_update_capsule(image);
 
-  //remove the tmp file
-  remove(image.c_str());
   return ret;
 }
 

@@ -21,6 +21,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"time"
 
@@ -146,3 +147,11 @@ func GetAllRegexSubexpMap(regEx, inputString string) ([](map[string]string), err
 
 // sleep function variable for mocking purposes
 var sleepFunc = time.Sleep
+
+// LogAndIgnoreErr logs the error info and ignores the
+// error
+func LogAndIgnoreErr(err error) {
+	if err != nil {
+		log.Printf("%v", err)
+	}
+}

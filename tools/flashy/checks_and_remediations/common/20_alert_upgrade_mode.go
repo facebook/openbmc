@@ -24,7 +24,6 @@ package common
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
@@ -54,18 +53,13 @@ func init() {
 func alertUpgradeMode(imageFilePath, deviceID string) utils.StepExitError {
 	// as these are best-effort, the errors are ignored
 	// these won't affect the actual upgrade
-	logErr := func(err error) {
-		if err != nil {
-			log.Printf("%v", err)
-		}
-	}
 
 	// PS1 update to be enabled when there is confirmation
 	// that there will be no impact on other systems
-	// logErr(updatePS1())
+	// utils.LogAndIgnoreErr(updatePS1())
 
-	logErr(updateMOTD())
-	logErr(wallAlert())
+	utils.LogAndIgnoreErr(updateMOTD())
+	utils.LogAndIgnoreErr(wallAlert())
 	return nil
 }
 

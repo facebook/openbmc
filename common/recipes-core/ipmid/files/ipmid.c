@@ -553,7 +553,7 @@ app_get_device_id (unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
   FILE *fp=NULL;
-  int fv_major = 0x01, fv_minor = 0x03;
+  int fv_major = 0x01, fv_minor = 0x03, fv_patch = 0x00;
   char buffer[64];
 
   if(length_check(0, req_len, response, res_len))
@@ -567,7 +567,7 @@ app_get_device_id (unsigned char *request, unsigned char req_len,
     if (fgets(buffer, sizeof(buffer), fp)) {
       char *version = strstr(buffer, "-v");
       if (version != NULL) {
-        sscanf(version, "-v%d.%d", &fv_major, &fv_minor);
+        sscanf(version, "-v%d.%d.%d", &fv_major, &fv_minor, &fv_patch);
       }
     }
     fclose(fp);
@@ -595,10 +595,10 @@ app_get_device_id (unsigned char *request, unsigned char req_len,
   *data++ = 0x00;   // Manufacturer ID3
   *data++ = 0x46;   // Product ID1
   *data++ = 0x31;   // Product ID2
-  *data++ = 0x00;   // Aux. Firmware Version1
-  *data++ = 0x00;   // Aux. Firmware Version2
-  *data++ = 0x00;   // Aux. Firmware Version3
-  *data++ = 0x00;   // Aux. Firmware Version4
+  *data++ = (uint8_t) fv_patch; // Aux. Firmware Version1 (patch ver)
+  *data++ = 0x00;               // Aux. Firmware Version2
+  *data++ = 0x00;               // Aux. Firmware Version3
+  *data++ = 0x00;               // Aux. Firmware Version4
 
   *res_len = data - &res->data[0];
 }

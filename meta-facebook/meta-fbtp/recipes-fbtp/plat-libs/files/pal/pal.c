@@ -119,9 +119,6 @@ const char pal_tach_list[] = "0, 1";
 static uint8_t g_plat_id = 0x0;
 static uint8_t postcodes_last[256] = {0};
 
-static int key_func_por_policy (int event, void *arg);
-static int key_func_lps (int event, void *arg);
-
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
@@ -133,11 +130,11 @@ struct pal_key_cfg {
   int (*function)(int, void*);
 } key_cfg[] = {
   /* name, default value, function */
-  {"pwr_server_last_state", "on", key_func_lps},
+  {"pwr_server_last_state", "on", NULL},
   {"sysfw_ver_server", "0", NULL},
   {"identify_sled", "off", NULL},
   {"timestamp_sled", "0", NULL},
-  {"server_por_cfg", "lps", key_func_por_policy},
+  {"server_por_cfg", "lps", NULL},
   {"server_sensor_health", "1", NULL},
   {"nic_sensor_health", "1", NULL},
   {"server_sel_error", "1", NULL},
@@ -2820,94 +2817,6 @@ pal_set_key_value(char *key, char *value) {
   }
 
   return kv_set(key, value, 0, KV_FPERSIST);
-}
-
-static int fw_getenv(char *key, char *value)
-{
-  char cmd[MAX_KEY_LEN + 32] = {0};
-  char *p;
-  FILE *fp;
-
-  sprintf(cmd, "/sbin/fw_printenv -n %s", key);
-  fp = popen(cmd, "r");
-  if (!fp) {
-    return -1;
-  }
-  if (fgets(value, MAX_VALUE_LEN, fp) == NULL) {
-    pclose(fp);
-    return -1;
-  }
-  for (p = value; *p != '\0'; p++) {
-    if (*p == '\n' || *p == '\r') {
-      *p = '\0';
-      break;
-    }
-  }
-  pclose(fp);
-  return 0;
-}
-
-static int fw_setenv(char *key, char *value)
-{
-  char old_value[MAX_VALUE_LEN] = {0};
-  if (fw_getenv(key, old_value) != 0 ||
-      strcmp(old_value, value) != 0) {
-    /* Set the env key:value if either the key
-     * does not exist or the value is different from
-     * what we want set */
-    char cmd[MAX_VALUE_LEN] = {0};
-    snprintf(cmd, MAX_VALUE_LEN, "/sbin/fw_setenv %s %s", key, value);
-    return system(cmd);
-  }
-  return 0;
-}
-
-static int
-key_func_por_policy (int event, void *arg)
-{
-  char value[MAX_VALUE_LEN] = {0};
-  int ret = -1;
-
-  switch (event) {
-    case KEY_BEFORE_SET:
-      if (pal_is_fw_update_ongoing(FRU_MB))
-        return -1;
-      // sync to env
-      if ( !strcmp(arg,"lps") || !strcmp(arg,"on") || !strcmp(arg,"off")) {
-        ret = fw_setenv("por_policy", (char *)arg);
-      }
-      else
-        return -1;
-      break;
-    case KEY_AFTER_INI:
-      // sync to env
-      kv_get("server_por_cfg", value, NULL, KV_FPERSIST);
-      ret = fw_setenv("por_policy", value);
-      break;
-  }
-
-  return ret;
-}
-
-static int
-key_func_lps (int event, void *arg)
-{
-  char value[MAX_VALUE_LEN] = {0};
-  int ret = -1;
-
-  switch (event) {
-    case KEY_BEFORE_SET:
-      if (pal_is_fw_update_ongoing(FRU_MB))
-        return -1;
-      ret = fw_setenv("por_ls", (char *)arg);
-      break;
-    case KEY_AFTER_INI:
-      kv_get("pwr_server_last_state", value, NULL, KV_FPERSIST);
-      ret = fw_setenv("por_ls", value);
-      break;
-  }
-
-  return ret;
 }
 
 static void

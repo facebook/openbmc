@@ -28,6 +28,7 @@ SRC_URI = "file://ast-functions \
            file://setup-snoopdma.sh \
            file://setup-por.sh \
            file://COPYING \
+           file://power-on.sh \
           "
 
 pkgdir = "utils"
@@ -61,6 +62,8 @@ do_install() {
   update-rc.d -r ${D} sync_date.sh start 66 5 .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 70 S .
+  install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
+  update-rc.d -r ${D} power-on.sh start 66 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

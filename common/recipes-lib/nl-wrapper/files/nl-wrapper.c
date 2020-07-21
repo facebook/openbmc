@@ -360,6 +360,8 @@ int run_command_send(int ifindex, NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rsp)
 
 out:
 	free_ncsi_msg(&msg);
+	if (pData)
+		free(pData);
 	return rc;
 }
 

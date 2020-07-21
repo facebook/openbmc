@@ -47,10 +47,10 @@ and brick the device!
 `
 
 func init() {
-	utils.RegisterStepEntryPoint(alertUpgradeMode)
+	utils.RegisterStep(alertUpgradeMode)
 }
 
-func alertUpgradeMode(imageFilePath, deviceID string) utils.StepExitError {
+func alertUpgradeMode(stepParams utils.StepParams) utils.StepExitError {
 	// as these are best-effort, the errors are ignored
 	// these won't affect the actual upgrade
 

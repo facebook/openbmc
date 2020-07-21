@@ -138,7 +138,7 @@ func TestFlashCp(t *testing.T) {
 				return tc.runCmdExitCode, tc.runCmdErr, "", ""
 			}
 
-			got := FlashCp(tc.imageFilePath, tc.deviceID)
+			got := FlashCp(utils.StepParams{tc.imageFilePath, tc.deviceID})
 
 			tests.CompareTestExitErrors(tc.want, got, t)
 			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)

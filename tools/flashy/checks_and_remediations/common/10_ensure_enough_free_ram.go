@@ -27,7 +27,7 @@ import (
 )
 
 func init() {
-	utils.RegisterStepEntryPoint(ensureEnoughFreeRam)
+	utils.RegisterStep(ensureEnoughFreeRam)
 }
 
 // In the case of no reboot threshold, use a default limit
@@ -37,7 +37,7 @@ func init() {
 // This should be a generous limit to allow flashy and flashcp to run.
 const defaultThreshold = 45 * 1024 * 1024
 
-func ensureEnoughFreeRam(imageFilePath, deviceID string) utils.StepExitError {
+func ensureEnoughFreeRam(stepParams utils.StepParams) utils.StepExitError {
 	memInfo, err := utils.GetMemInfo()
 	if err != nil {
 		return utils.ExitSafeToReboot{err}

@@ -39,7 +39,7 @@ func main() {
 	if len(os.Args) < 3 {
 		log.Fatalf("Not enough arguments. Require `<step-name> <imageFilePath> <deviceID>`")
 	}
-	if _, exists := utils.EntryPointMap[binName]; !exists {
+	if _, exists := utils.StepMap[binName]; !exists {
 		log.Fatalf("Unknown binary '%v'", binName)
 	}
 
@@ -47,9 +47,14 @@ func main() {
 	deviceID := os.Args[2]
 
 	log.Printf("Starting: %v", binName)
-	err := utils.EntryPointMap[binName](imageFilePath, deviceID)
+	err := utils.StepMap[binName](
+		utils.StepParams{
+			imageFilePath,
+			deviceID,
+		},
+	)
 	if err != nil {
-		utils.HandleError(err)
+		utils.HandleStepError(err)
 	}
 	log.Printf("Finished: %v", binName)
 }

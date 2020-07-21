@@ -26,10 +26,10 @@ import (
 )
 
 func init() {
-	utils.RegisterStepEntryPoint(flashYosemite3)
+	utils.RegisterStep(flashYosemite3)
 }
 
-func flashYosemite3(imageFilePath, deviceID string) utils.StepExitError {
+func flashYosemite3(stepParams utils.StepParams) utils.StepExitError {
 	log.Printf("Flashing yosemite3")
 	return nil
 }

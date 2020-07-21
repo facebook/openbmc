@@ -27,7 +27,7 @@ import (
 )
 
 func init() {
-	utils.RegisterStepEntryPoint(truncateLogs)
+	utils.RegisterStep(truncateLogs)
 }
 
 // these files will be deleted
@@ -42,7 +42,7 @@ var truncateLogFilePatterns []string = []string{
 	"/var/log/messages",
 }
 
-func truncateLogs(imageFilePath, deviceID string) utils.StepExitError {
+func truncateLogs(stepParams utils.StepParams) utils.StepExitError {
 	logFilesToDelete, err := resolveFilePatterns(deleteLogFilePatterns)
 	if err != nil {
 		errMsg := errors.Errorf("Unable to resolve file patterns '%v': %v", deleteLogFilePatterns, err)

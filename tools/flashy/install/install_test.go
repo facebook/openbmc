@@ -29,31 +29,31 @@ import (
 )
 
 func init() {
-	populateEntryPointPaths()
+	populateStepPaths()
 }
 
-// entry point paths for each test, e.g.
+// step paths for each test, e.g.
 // "checks_and_remediations/common/00_truncate_logs"
-// populated by populateEntryPointPaths based on EntryPointMap keys
-var entryPointPaths []string
+// populated by populateStepPaths based on StepMap keys
+var stepPaths []string
 
 // directories to check
 // All non-`_test.go` .go files will be checked in these directories
-// to make sure the entry point step is registered correctly
+// to make sure the step is registered correctly
 var directoriesToTest = []string{
 	"checks_and_remediations",
 	"flash_procedure",
 }
 
-func populateEntryPointPaths() {
-	for path, _ := range utils.EntryPointMap {
-		entryPointPaths = append(entryPointPaths, path)
+func populateStepPaths() {
+	for path, _ := range utils.StepMap {
+		stepPaths = append(stepPaths, path)
 	}
 }
 
 // Check that all required files are registered correctly
-// in EntryPointMap
-func TestEntryPointMap(t *testing.T) {
+// in StepMap
+func TestStepMap(t *testing.T) {
 	for _, dir := range directoriesToTest {
 		absDirPath := filepath.Join(utils.SourceRootDir, dir)
 		err := filepath.Walk(absDirPath,
@@ -70,8 +70,8 @@ func TestEntryPointMap(t *testing.T) {
 
 				symlinkPath := utils.GetSymlinkPathForSourceFile(path)
 
-				if utils.StringFind(symlinkPath, entryPointPaths) < 0 {
-					stepGuide := `Please register the step using RegisterStepEntryPoint in init().
+				if utils.StringFind(symlinkPath, stepPaths) < 0 {
+					stepGuide := `Please register the step using RegisterStep in init().
 Check also that the package is imported in install.go.`
 
 					t.Errorf("'%v' not registered!\n%v",
@@ -81,7 +81,7 @@ Check also that the package is imported in install.go.`
 				return nil
 			})
 		if err != nil {
-			t.Errorf("TestEntryPointMap failed: %v", err)
+			t.Errorf("TestStepMap failed: %v", err)
 		}
 	}
 }

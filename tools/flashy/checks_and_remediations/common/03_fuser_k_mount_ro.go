@@ -28,7 +28,7 @@ import (
 )
 
 func init() {
-	utils.RegisterStepEntryPoint(fuserKMountRo)
+	utils.RegisterStep(fuserKMountRo)
 }
 
 // If /mnt/data is smaller in the new image, it must be made read-only
@@ -37,7 +37,7 @@ func init() {
 // files for one thing) and details may change over time, so just
 // remount every MTD read-only. Reboot is expected to restart the
 // killed processes.
-func fuserKMountRo(imageFilePath, deviceID string) utils.StepExitError {
+func fuserKMountRo(stepParams utils.StepParams) utils.StepExitError {
 	writableMountedMTDs, err := devices.GetWritableMountedMTDs()
 	if err != nil {
 		return utils.ExitSafeToReboot{err}

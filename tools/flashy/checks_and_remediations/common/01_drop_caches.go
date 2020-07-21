@@ -25,14 +25,14 @@ import (
 )
 
 func init() {
-	utils.RegisterStepEntryPoint(dropCaches)
+	utils.RegisterStep(dropCaches)
 }
 
 const dropCachesFilePath = "/proc/sys/vm/drop_caches"
 
 // frees pagecache, dentries and inodes
 // equivalent to `echo 3 > /proc/sys/vm/drop_caches`
-func dropCaches(imageFilePath, deviceID string) utils.StepExitError {
+func dropCaches(stepParams utils.StepParams) utils.StepExitError {
 	err := utils.WriteFile(dropCachesFilePath, []byte("3"), 0644)
 	if err != nil {
 		errMsg := errors.Errorf("Failed to write to drop_caches file '%v': %v", dropCachesFilePath, err)

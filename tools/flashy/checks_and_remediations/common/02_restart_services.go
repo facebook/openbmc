@@ -27,10 +27,10 @@ import (
 )
 
 func init() {
-	utils.RegisterStepEntryPoint(restartServices)
+	utils.RegisterStep(restartServices)
 }
 
-func restartServices(imageFilePath, deviceID string) utils.StepExitError {
+func restartServices(stepParams utils.StepParams) utils.StepExitError {
 	var supervisor string
 
 	systemdAvail, err := utils.SystemdAvailable()

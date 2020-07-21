@@ -25,7 +25,7 @@ import (
 )
 
 func init() {
-	utils.RegisterStepEntryPoint(flashWedge100)
+	utils.RegisterStep(flashWedge100)
 }
 
 var flashWedge100 = flash_procedures.FlashCp

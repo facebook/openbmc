@@ -24,14 +24,19 @@ import (
 	"runtime"
 )
 
-type EntryPointMapType = map[string]func(string, string) StepExitError
+type StepParams struct {
+	ImageFilePath string
+	DeviceID      string
+}
+
+type stepMapType = map[string]func(StepParams) StepExitError
 
 // maps from the sanitized binary name to the function to run
 // the file path keys are also used to symlink the paths (busybox style)
-var EntryPointMap = EntryPointMapType{}
+var StepMap = stepMapType{}
 
-// registers endpoints into EntryPointMap
-func RegisterStepEntryPoint(step func(string, string) StepExitError) {
+// registers endpoints into StepMap
+func RegisterStep(step func(StepParams) StepExitError) {
 	// get the filename 1 stack call above
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
@@ -39,5 +44,5 @@ func RegisterStepEntryPoint(step func(string, string) StepExitError) {
 	}
 
 	symlinkPath := GetSymlinkPathForSourceFile(filename)
-	EntryPointMap[symlinkPath] = step
+	StepMap[symlinkPath] = step
 }

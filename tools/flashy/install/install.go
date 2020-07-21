@@ -26,7 +26,7 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 
-	// all entry point packages must be included to successfully run install
+	// all packages containing steps must be included to successfully run install
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/common"
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/wedge100"
 	_ "github.com/facebook/openbmc/tools/flashy/flash_procedure"
@@ -91,7 +91,7 @@ func initSymlinks() {
 	exPath := utils.GetExecutablePath()
 	exDir := filepath.Dir(exPath)
 
-	for _symlinkPath, _ := range utils.EntryPointMap {
+	for _symlinkPath, _ := range utils.StepMap {
 		// absolute symlinkPath
 		symlinkPath := filepath.Join(exDir, _symlinkPath)
 

@@ -72,7 +72,7 @@ func encodeExitError(err StepExitError) {
 	enc.Encode(ae)
 }
 
-func HandleError(err StepExitError) {
+func HandleStepError(err StepExitError) {
 	// output stack trace
 	log.Printf("%+v", err)
 	switch err := err.(type) {

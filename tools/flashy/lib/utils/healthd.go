@@ -99,7 +99,7 @@ func (h *HealthdConfig) GetRebootThresholdPercentage() float32 {
 }
 
 var RestartHealthd = func(wait bool, supervisor string) error {
-	if !FileExists("/etc/sv/healthd") {
+	if !PathExists("/etc/sv/healthd") {
 		return errors.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist")
 	}
 

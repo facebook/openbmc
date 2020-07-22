@@ -213,11 +213,11 @@ func TestGetRebootThresholdPercentage(t *testing.T) {
 
 func TestRestartHealthd(t *testing.T) {
 	// save and defer restore FileExists, RunCommand & sleepFunc
-	fileExistsOrig := FileExists
+	pathExistsOrig := PathExists
 	runCommandOrig := RunCommand
 	sleepFuncOrig := sleepFunc
 	defer func() {
-		FileExists = fileExistsOrig
+		PathExists = pathExistsOrig
 		RunCommand = runCommandOrig
 		sleepFunc = sleepFuncOrig
 	}()
@@ -226,7 +226,7 @@ func TestRestartHealthd(t *testing.T) {
 		name          string
 		wait          bool
 		supervisor    string
-		fileExists    bool
+		pathExists    bool
 		runCmdErr     error
 		want          error
 		wantSleepTime time.Duration
@@ -235,7 +235,7 @@ func TestRestartHealthd(t *testing.T) {
 			name:          "Normal restart operation with sv, wait",
 			wait:          true,
 			supervisor:    "sv",
-			fileExists:    true,
+			pathExists:    true,
 			runCmdErr:     nil,
 			want:          nil,
 			wantSleepTime: 30 * time.Second,
@@ -244,7 +244,7 @@ func TestRestartHealthd(t *testing.T) {
 			name:          "Normal restart operation, no wait",
 			wait:          false,
 			supervisor:    "sv",
-			fileExists:    true,
+			pathExists:    true,
 			runCmdErr:     nil,
 			want:          nil,
 			wantSleepTime: 0 * time.Second,
@@ -253,7 +253,7 @@ func TestRestartHealthd(t *testing.T) {
 			name:          "Normal restart operation with systemctl, wait",
 			wait:          true,
 			supervisor:    "systemctl",
-			fileExists:    true,
+			pathExists:    true,
 			runCmdErr:     nil,
 			want:          nil,
 			wantSleepTime: 30 * time.Second,
@@ -262,7 +262,7 @@ func TestRestartHealthd(t *testing.T) {
 			name:          "/etc/sv/healthd does not exist",
 			wait:          true,
 			supervisor:    "sv",
-			fileExists:    false,
+			pathExists:    false,
 			runCmdErr:     nil,
 			want:          errors.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist"),
 			wantSleepTime: 0 * time.Second,
@@ -271,7 +271,7 @@ func TestRestartHealthd(t *testing.T) {
 			name:          "Restart command returned error",
 			wait:          true,
 			supervisor:    "systemctl",
-			fileExists:    true,
+			pathExists:    true,
 			runCmdErr:     errors.Errorf("RunCommand error"),
 			want:          errors.Errorf("RunCommand error"),
 			wantSleepTime: 0 * time.Second,
@@ -284,11 +284,11 @@ func TestRestartHealthd(t *testing.T) {
 			sleepFunc = func(t time.Duration) {
 				gotSleepTime = t
 			}
-			FileExists = func(filename string) bool {
+			PathExists = func(filename string) bool {
 				if filename != "/etc/sv/healthd" {
 					t.Errorf("filename: want %v got %v", "/etc/sv/healthd", filename)
 				}
-				return tc.fileExists
+				return tc.pathExists
 			}
 			RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
 				wantCmd := fmt.Sprintf("%v restart healthd", tc.supervisor)

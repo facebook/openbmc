@@ -21,6 +21,7 @@ package utils
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -80,23 +81,47 @@ func GetSymlinkPathForSourceFile(path string) string {
 }
 
 // basic file utilities as function variables for mocking purposes
+var osStat = os.Stat
 var RemoveFile = os.Remove
 var TruncateFile = os.Truncate
 var WriteFile = ioutil.WriteFile
 var ReadFile = ioutil.ReadFile
 
-var FileExists = func(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
+// PathExists returns true when the path exists
+// (can be file/directory)
+// defaults to `false` if os.Stat returns any other non-nil error
+var PathExists = func(path string) bool {
+	_, err := osStat(path)
+	if err == nil {
+		// exists for sure
+		return true
+	} else if os.IsNotExist(err) {
+		// does not exist for sure
+		return false
+	} else {
+		// may or may not exist
+		log.Printf("Existence check of path '%v' returned error '%v', defaulting to false",
+			path, err)
 		return false
 	}
-	// check if it's a file
-	return !info.IsDir()
+}
+
+// FileExists returns true when the file exists
+// also checks that the file is not a directory
+// defaults to `false` if os.Stat returns any other non-nil error
+var FileExists = func(filename string) bool {
+	if PathExists(filename) {
+		// err guaranteed to be nil by PathExists
+		info, _ := osStat(filename)
+		// confirm is not a directory
+		return !info.IsDir()
+	}
+	return false
 }
 
 // append to end of file
 var AppendFile = func(filename, data string) error {
-	// create if non-existant
+	// create if non-existent
 	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err

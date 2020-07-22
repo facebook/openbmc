@@ -7,7 +7,7 @@ MACHINE ??= "fby3"
 # VBoot w/ TPM1.2
 # MACHINE ??= "fby3-vboot1"
 # VBoot w/ TPM2.0
-# MACHINE ??= "fby3-vboot2"
+# MACHINE ??= "fby3vboot2"
 
 
 # OpenBMC distro settings

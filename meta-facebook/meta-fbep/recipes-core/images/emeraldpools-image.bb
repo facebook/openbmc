@@ -1,5 +1,8 @@
 # Copyright 2018-present Facebook. All Rights Reserved.
 
+require recipes-core/images/fbobmc-image-meta.inc
+require fbep-image-layout.inc
+
 inherit kernel_fitimage
 
 IMAGE_FSTYPES_remove = "cpio.lzma.u-boot"

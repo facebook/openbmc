@@ -157,7 +157,7 @@ int pal_is_slot_support_update(uint8_t fru);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type);
 int pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type, uint8_t force);
-void pal_power_policy_control(uint8_t slot_id, char *last_ps);
+void pal_power_policy_control(uint8_t slot_id, char *last_ps, bool force);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd);
 int pal_baseboard_clock_control(uint8_t slot_id, int ctrl);
@@ -299,6 +299,7 @@ int pal_get_update_sdr_flag(uint8_t fru, uint8_t *value);
 int8_t pal_init_dev_jtag_gpio(uint8_t fru, uint8_t dev);
 int8_t pal_is_dev_com_sel_en (uint8_t fru);
 int8_t pal_dev_jtag_gpio_to_bus(uint8_t fru);
+bool pal_is_all_fan_fail();
 #ifdef __cplusplus
 } // extern "C"
 #endif

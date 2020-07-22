@@ -154,6 +154,9 @@
 #define FAN_CONFIG_10K 0
 #define FAN_CONFIG_15K 1
 
+#define FAN_MIN_RPM 800
+#define FBY2_MAX_NUM_FANS 2
+
 #define NCSI_DATA_PAYLOAD     64
 #define NCSI_MIN_DATA_PAYLOAD 36
 #define NCSI_RETRY_MAX        2
@@ -2962,11 +2965,16 @@ pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
 
 //check power policy and power state to power on/off server after AC power restore
 void
-pal_power_policy_control(uint8_t slot_id, char *last_ps) {
+pal_power_policy_control(uint8_t slot_id, char *last_ps, bool force) {
   uint8_t chassis_status[5] = {0};
   uint8_t chassis_status_length;
   uint8_t power_policy = POWER_CFG_UKNOWN;
   char pwr_state[MAX_VALUE_LEN] = {0};
+
+  if (force) {
+    pal_set_server_power(slot_id, SERVER_FORCE_POWER_ON);
+    return;
+  }
 
   //get power restore policy
   //defined by IPMI Spec/Section 28.2.
@@ -3006,23 +3014,23 @@ server_12v_cycle_physically(uint8_t slot_id){
       case TYPE_GPV2_A_SV:
         pair_slot_id = slot_id + 1;
         pal_get_last_pwr_state(pair_slot_id, pwr_state);
-        if (server_12v_off(pair_slot_id))          //Need to 12V off server first when configuration type is pair config
+        if (pal_set_server_power(pair_slot_id, SERVER_12V_OFF)) //Need to 12V off server first when configuration type is pair config
           return -1;
         sleep(DELAY_12V_CYCLE);
-        if (server_12v_on(slot_id))
+        if (pal_set_server_power(slot_id, SERVER_12V_ON))
           return -1;
-        pal_power_policy_control(pair_slot_id, pwr_state);
+        pal_power_policy_control(pair_slot_id, pwr_state,false);
         return 0;
       default:
         break;
     }
   }
-  if (server_12v_off(slot_id))
+  if (pal_set_server_power(slot_id, SERVER_12V_OFF))
     return -1;
 
   sleep(DELAY_12V_CYCLE);
 
-  return (server_12v_on(slot_id));
+  return pal_set_server_power(slot_id, SERVER_12V_ON);
 }
 
 int
@@ -3144,6 +3152,7 @@ pal_set_pair_power_succees_sel(uint8_t slot_id, uint8_t cmd) {
     case SERVER_12V_OFF:
       syslog(LOG_CRIT, "PAIR_12V_OFF successful for FRU: %d", pair_slot_id);
       break;
+    case SERVER_FORCE_12V_ON:
     case SERVER_12V_ON:
       syslog(LOG_CRIT, "PAIR_12V_ON successful for FRU: %d", pair_slot_id);
       break;
@@ -3164,12 +3173,13 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
   bool gs_flag = false;
   uint8_t pair_slot_id;
   int pair_set_type=-1;
+  bool force = false;
 
   if (slot_id < 1 || slot_id > 4) {
     return -1;
   }
 
-  if ((cmd != SERVER_12V_OFF) && (cmd != SERVER_12V_ON) && (cmd != SERVER_12V_CYCLE)) {
+  if ((cmd != SERVER_12V_OFF) && (cmd != SERVER_12V_ON) && (cmd != SERVER_12V_CYCLE) && (cmd != SERVER_FORCE_12V_ON)) {
     ret = pal_is_fru_ready(slot_id, &status); //Break out if fru is not ready
     if ((ret < 0) || (status == 0)) {
       return -2;
@@ -3186,6 +3196,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
     case SERVER_POWER_RESET:
     case SERVER_GRACEFUL_SHUTDOWN:
     case SERVER_POWER_ON:
+    case SERVER_FORCE_POWER_ON:
       if(pal_is_slot_server(slot_id) == 0) {
         printf("Should not execute power on/off/graceful_shutdown/cycle/reset on device card\n");
         return -2;
@@ -3194,7 +3205,14 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
   }
 
   switch(cmd) {
+    case SERVER_FORCE_POWER_ON:
+      force = true;
     case SERVER_POWER_ON:
+      if (!force && pal_is_all_fan_fail(slot_id)) {
+        printf("Fail to power fru %u to ON state due to fan fail.\n", slot_id);
+        syslog(LOG_CRIT, "SERVER_POWER_ON fail for FRU: %d due to fan fail", slot_id);
+        return -3;
+      }
       if (status == SERVER_POWER_ON)
         return 1;
       else
@@ -3210,16 +3228,16 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
 
     case SERVER_POWER_CYCLE:
       if (status == SERVER_POWER_ON) {
-        if (server_power_off(slot_id, gs_flag))
+        if (pal_set_server_power(slot_id, SERVER_POWER_OFF))
           return -1;
 
         sleep(DELAY_POWER_CYCLE);
 
-        return server_power_on(slot_id);
+        return pal_set_server_power(slot_id, SERVER_POWER_ON);
 
       } else if (status == SERVER_POWER_OFF) {
 
-        return (server_power_on(slot_id));
+        return pal_set_server_power(slot_id, SERVER_POWER_ON);
       }
       break;
 
@@ -3249,8 +3267,14 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
         return server_power_off(slot_id, gs_flag);
       }
       break;
-
+    case SERVER_FORCE_12V_ON:
+      force = true;
     case SERVER_12V_ON:
+      if (!force && pal_is_all_fan_fail(slot_id)) {
+        printf("Fail to 12V Powering fru %u to ON state due to fan fail.\n", slot_id);
+        syslog(LOG_CRIT, "SERVER_12V_ON fail for FRU: %d due to fan fail", slot_id);
+        return -3;
+      }
       /* Check whether the system is 12V off or on */
       ret = pal_is_server_12v_on(slot_id, &status);
       if (ret < 0) {
@@ -3271,7 +3295,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
           case TYPE_GP_A_SV:
           case TYPE_GPV2_A_SV:
             pair_slot_id = slot_id + 1;
-            pal_power_policy_control(pair_slot_id, NULL);
+            pal_power_policy_control(pair_slot_id, NULL,force);
           default:
             break;
         }
@@ -7726,6 +7750,23 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
 }
 #endif
 
+bool
+pal_is_all_fan_fail() {
+  int i ,ret;
+  int rpm = 0;
+  for (i = 0;i < FBY2_MAX_NUM_FANS; i++) {
+    ret = pal_get_fan_speed(i,&rpm);
+    if (ret) {
+      syslog(LOG_INFO, "pal_is_all_fan_fail: Error while getting fan speed for Fan %d\n", i);
+      continue;
+    }
+    if (rpm > FAN_MIN_RPM)
+      return false;
+    syslog(LOG_INFO, "pal_is_all_fan_fail: Fan %d fail rpm=%d\n", i,rpm);
+  }
+  return true;
+}
+
 void
 pal_update_ts_sled()
 {
@@ -8216,7 +8257,7 @@ static void * slot_pwr_ctrl(void *ptr) {
         break;
       case SERVER_12V_CYCLE:
         syslog(LOG_CRIT, "SERVER_12V_CYCLE successful for FRU: %d", slot);
-        pal_power_policy_control(slot, pwr_state);
+        pal_power_policy_control(slot, pwr_state,false);
         break;
     }
   }
@@ -8546,7 +8587,7 @@ pal_nic_otp_disable (float val) {
           syslog(LOG_ERR, "server_12v_on() failed, slot%d", slot);
         } else {
           // Set power policy based on last power state
-          pal_power_policy_control(slot, pwr_state);
+          pal_power_policy_control(slot, pwr_state,false);
           otp_server_12v_off_flag[slot] = 0;
         }
       }

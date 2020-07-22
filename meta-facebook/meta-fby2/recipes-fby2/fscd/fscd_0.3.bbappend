@@ -84,5 +84,5 @@ FSC_ZONE_CONFIG +="FSC_FBY2_PVT_4TL_zone1.fsc \
 do_install_append() {
   install -d ${D}${sysconfdir}/init.d
   install -m 755 setup-fan.sh ${D}${sysconfdir}/init.d/setup-fan.sh
-  update-rc.d -r ${D} setup-fan.sh start 92 5 .
+  update-rc.d -r ${D} setup-fan.sh start 68 5 .
 }

@@ -54,6 +54,10 @@
 
 const char *pwr_option_list = PWR_OPTION_LIST;
 
+#ifdef ENABLE_FORCE_POWER_CMD
+const char *force_pwr_option_list = "on, 12V-on";
+#endif
+
 enum {
   PWR_STATUS = 1,
   PWR_GRACEFUL_SHUTDOWN,
@@ -93,6 +97,10 @@ print_usage() {
     printf("Usage: power-util [ %s ] [ %s ] [ %s ]\n",
       pal_server_list, pal_dev_list_power, dev_pwr_option_list);
   }
+  #ifdef ENABLE_FORCE_POWER_CMD
+    printf("Usage: power-util [ %s ] --force [ %s ]\n",
+      pal_server_list, force_pwr_option_list);
+  #endif
 }
 
 static bool
@@ -155,13 +163,18 @@ get_power_opt(char *option, uint8_t *opt) {
 
 //check power policy and power state to power on/off server after AC power restore
 void
-power_policy_control(uint8_t fru, char *last_ps) {
+power_policy_control(uint8_t fru, char *last_ps, bool force) {
   uint8_t chassis_status[5] = {0};
   uint8_t chassis_status_length;
   uint8_t power_policy = POWER_CFG_UKNOWN;
   char pwr_state[MAX_VALUE_LEN] = {0};
 
   if (pal_is_slot_server(fru) == 0) {
+    return;
+  }
+
+  if (force) { // ignore power policy, force power on
+    pal_set_server_power(fru, SERVER_FORCE_POWER_ON);
     return;
   }
 
@@ -280,7 +293,7 @@ dev_power_util(uint8_t fru, uint8_t dev_id ,uint8_t opt) {
 }
 
 static int
-power_util(uint8_t fru, uint8_t opt) {
+power_util(uint8_t fru, uint8_t opt, bool force) {
   int ret = 0;
   uint8_t status;
   int retries;
@@ -379,17 +392,21 @@ power_util(uint8_t fru, uint8_t opt) {
       break;
 
     case PWR_ON:
-
       printf("Powering fru %u to ON state...\n", fru);
 
-      ret = pal_set_server_power(fru, SERVER_POWER_ON);
+      if (force) {
+        ret = pal_set_server_power(fru, SERVER_FORCE_POWER_ON);
+      } else {
+        ret = pal_set_server_power(fru, SERVER_POWER_ON);
+      }
       if (ret == 1) {
         printf("fru %u is already powered ON...\n", fru);
         return 0;
-      }
-      else if (ret == -2) {  //check if fru is not ready
+      } else if (ret == -2) {  //check if fru is not ready
         syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
           " fru %u", fru);
+        return ret;
+      } else if (ret == -3) {  //block power on due to fan fail, do not retry power on
         return ret;
       }
 
@@ -400,7 +417,11 @@ power_util(uint8_t fru, uint8_t opt) {
            syslog(LOG_CRIT, "SERVER_POWER_ON successful for FRU: %d", fru);
            break;
          }
-         ret = pal_set_server_power(fru, SERVER_POWER_ON);
+         if (force) {
+           ret = pal_set_server_power(fru, SERVER_FORCE_POWER_ON);
+         } else {
+           ret = pal_set_server_power(fru, SERVER_POWER_ON);
+         }
       }
       if (ret < 0 || status != SERVER_POWER_ON) {
         syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
@@ -482,10 +503,12 @@ power_util(uint8_t fru, uint8_t opt) {
       break;
 
     case PWR_12V_ON:
-
       printf("12V Powering fru %u to ON state...\n", fru);
-
-      ret = pal_set_server_power(fru, SERVER_12V_ON);
+      if (force) {
+        ret = pal_set_server_power(fru, SERVER_FORCE_12V_ON);
+      } else {
+        ret = pal_set_server_power(fru, SERVER_12V_ON);
+      }
       if (ret < 0) {
         syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
           " fru %u", fru);
@@ -496,12 +519,11 @@ power_util(uint8_t fru, uint8_t opt) {
       } else {
         syslog(LOG_CRIT, "SERVER_12V_ON successful for FRU: %d", fru);
 
-        power_policy_control(fru, NULL);
+        power_policy_control(fru, NULL,force);
       }
       break;
 
     case PWR_12V_CYCLE:
-
       printf("12V Power cycling fru %u...\n", fru);
 
       pal_get_last_pwr_state(fru, pwr_state);
@@ -514,7 +536,7 @@ power_util(uint8_t fru, uint8_t opt) {
       } else {
         syslog(LOG_CRIT, "SERVER_12V_CYCLE successful for FRU: %d", fru);
 
-        power_policy_control(fru, pwr_state);
+        power_policy_control(fru, pwr_state,force);
       }
       break;
 
@@ -562,6 +584,32 @@ rm_process_running_flag(uint8_t slot_id, uint8_t opt) {
   }
 }
 
+int parse_args(int argc, char *argv[], bool *force) {
+  int ret;
+  int index;
+  static struct option opts[] = {
+    {"force", no_argument, 0, 'f'},
+    {0,0,0,0},
+  };
+
+  /* Set defaults */
+  *force = false;
+
+  while(-1 != (ret = getopt_long(argc, argv, "f", opts, &index))) {
+    switch(ret) {
+#ifdef ENABLE_FORCE_POWER_CMD
+      case 'f':
+        *force = true;
+        break;
+#endif
+      default:
+        return -1;
+    }
+  }
+
+  return 0;
+}
+
 int
 main(int argc, char **argv) {
 
@@ -569,13 +617,30 @@ main(int argc, char **argv) {
 
   uint8_t fru, status, opt;
   char *option;
+  bool force;
   uint8_t num_devs = 0;
   uint8_t dev_id = DEV_NONE;
 
-  if (argc > 2) {
-    ret = pal_get_fru_id(argv[1], &fru);
+  if (parse_args(argc, argv, &force)) {
+    print_usage();
+    exit(-1);
+  }
+
+  if (argc > optind + 1) {
+    ret = pal_get_fru_id(argv[optind], &fru);
     if (ret < 0) {
-      printf("Wrong fru: %s\n", argv[1]);
+      printf("Wrong fru: %s\n", argv[optind]);
+      print_usage();
+      exit(-1);
+    }
+    ret = pal_is_fru_prsnt(fru, &status);
+    if (ret < 0) {
+      printf("pal_is_fru_prsnt failed for fru: %d\n", fru);
+      print_usage();
+      exit(-1);
+    }
+    if (status == 0) {
+      printf("%s is empty!\n", argv[optind]);
       print_usage();
       exit(-1);
     }
@@ -586,29 +651,15 @@ main(int argc, char **argv) {
   pal_get_num_devs(fru,&num_devs);
 
   /* Check for sled-cycle */
-  if (argc < 2 || argc > 3) {
-    if ( argc != 4 || num_devs == 0) {
+  if (argc < optind+1 || argc > optind +2) {
+    if ( argc != optind + 3 || num_devs == 0) {
       print_usage();
       exit (-1);
     }
   }
 
-  if (argc > 2) {
-    ret = pal_is_fru_prsnt(fru, &status);
-    if (ret < 0) {
-      printf("pal_is_fru_prsnt failed for fru: %d\n", fru);
-      print_usage();
-      exit(-1);
-    }
-    if (status == 0) {
-      printf("%s is empty!\n", argv[1]);
-      print_usage();
-      exit(-1);
-    }
-  }
-
-  if (argc == 4) {
-    ret = pal_get_dev_id(argv[2], &dev_id);
+  if (argc == optind + 3) {
+    ret = pal_get_dev_id(argv[optind+1], &dev_id);
     if (ret < 0 || dev_id == DEV_ALL) {
       printf("pal_get_dev_id failed for %s %s\n", argv[1], argv[2]);
       print_usage();
@@ -616,17 +667,17 @@ main(int argc, char **argv) {
     }
   }
 
-  option =  argc == 2 ? argv[1] : argc == 3 ? argv [2] : argv[3];
+  option =  argc == optind+1 ? argv[optind] : argc == optind+2 ? argv [optind+1] : argv[optind+2];
 
   ret = get_power_opt(option, &opt);
   /* If argc is 2, the option is sled-cycle;  we should ignore power-util fru sled-cycle*/
-  if ((ret < 0) || (argc == 2 && opt != PWR_SLED_CYCLE) || (argc == 3 && opt == PWR_SLED_CYCLE)) {
+  if ((ret < 0) || (argc == optind+1 && opt != PWR_SLED_CYCLE) || (argc != optind+1 && opt == PWR_SLED_CYCLE)) {
     printf("Wrong option: %s\n", option);
     print_usage();
     exit(-1);
   }
 
-  if (argc == 4 && opt != PWR_ON && opt != PWR_OFF && opt != PWR_STATUS && opt != PWR_CYCLE) {
+  if (argc == optind+3 && opt != PWR_ON && opt != PWR_OFF && opt != PWR_STATUS && opt != PWR_CYCLE) {
     printf("Wrong option for %s: %s\n",argv [2] ,option);
     print_usage();
     exit(-1);
@@ -640,7 +691,7 @@ main(int argc, char **argv) {
   }
 
   if (dev_id == DEV_NONE) {
-    ret = power_util(fru, opt);
+    ret = power_util(fru, opt, force);
     if (ret < 0) {
       printf("ERROR: power-util fru[%d] [%s] failed\n", fru, option_list[opt]);
     }

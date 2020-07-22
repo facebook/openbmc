@@ -1,19 +1,42 @@
 #!/bin/bash
 set -e
 
+# Try to use the black executable, it it does not
+# exist, try the python module.
+BLACK=$(command -v black)
+if [ ! -x "$BLACK" ]; then
+  BLACK="python3 -m black"
+fi
+
+do_lint_py() {
+  echo "PY: $1"
+  $BLACK --diff --check "$1"
+}
+
+do_lint_sh() {
+  echo "SH: $1"
+  shellcheck "$1"
+}
+
 ORIGIN_COMMIT="$(git merge-base HEAD origin/helium 2>/dev/null)"
 
 MODIFIED_FILES="$(git diff --diff-filter=d --name-only "$ORIGIN_COMMIT" --)"
 
-MODIFIED_SH="$(echo "$MODIFIED_FILES" | xargs -n1 echo | grep -P '[.]sh$' || \
-    true)"
-MODIFIED_PY="$(echo "$MODIFIED_FILES" | xargs -n1 echo | grep -P '[.]py$' || \
-    true)"
 
-if [[ $MODIFIED_PY ]]; then
-    python3 -m black --diff --check "$MODIFIED_PY"
-fi
-
-if [[ $MODIFIED_SH ]]; then
-    shellcheck "$MODIFIED_SH"
-fi
+for f in $MODIFIED_FILES; do
+  if [[ "$f" =~ .*\.sh ]]; then
+    do_lint_sh "$f"
+  elif [[ "$f" =~ .*\.py ]]; then
+    do_lint_py "$f"
+  else
+    first=$(head -1 "$f")
+    if [[ "$first" =~ \#!/.*/sh  || "$first" =~ \#!/.*/bash ]]; then
+      do_lint_sh "$f"
+    elif [[ "$first" =~ \#!/.*/python  || "$first" =~ \#!/.*/python3 ]]; then
+      do_lint_py "$f"
+    else
+      echo "IGNORE: $f"
+    fi
+  fi
+done
+echo "PASS"

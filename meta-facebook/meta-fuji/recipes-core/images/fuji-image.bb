@@ -20,10 +20,36 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-base \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
+  packagegroup-openbmc-rest3 \
+  ipmid \
+  ipmbd \
+  ipmitool \
+  bic-cache \
+  bic-util \
+  bitbang \
   cpldupdate \
   libcpldupdate-dll-gpio \
+  flashrom \
+  fw-util \
+  bic-monitor \
   openbmc-utils \
   usb-console \
+  lldp-util \
+  log-util-v2 \
   mterm \
+  sensor-util \
+  sensor-mon \
+  threshold-util \
+  spatula \
   fscd \
+  wedge-eeprom \
+  weutil-dhcp-id \
   "
+
+def tpm_tools_recipe(d):
+  distro = d.getVar('DISTRO_CODENAME', True)
+  if distro == 'rocko':
+    return 'tpm2.0-tools'
+  return 'tpm2-tools'
+
+IMAGE_INSTALL += "${@tpm_tools_recipe(d)}"

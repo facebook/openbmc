@@ -98,3 +98,69 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 		tests.CompareTestErrors(tc.wantErr, err, t)
 	}
 }
+
+func TestGetOpenBMCVersionFromImageFile(t *testing.T) {
+	// mock and defer restore MmapFileRO
+	mmapOrig := utils.MmapFileRange
+	munmapOrig := utils.Munmap
+	defer func() {
+		utils.MmapFileRange = mmapOrig
+		utils.Munmap = munmapOrig
+	}()
+
+	utils.Munmap = func(b []byte) error {
+		return nil
+	}
+
+	cases := []struct {
+		name    string
+		fileBuf []byte
+		mmapErr error
+		want    string
+		wantErr error
+	}{
+		{
+			name:    "example tiogapass1 image U-Boot strings",
+			fileBuf: []byte(tests.ExampleTiogaPass1ImageUbootStrings),
+			mmapErr: nil,
+			want:    "fbtp-v2020.09.1",
+			wantErr: nil,
+		},
+		{
+			name:    "example wedge100 image U-Boot strings",
+			fileBuf: []byte(tests.ExampleWedge100ImageUbootStrings),
+			mmapErr: nil,
+			want:    "wedge100-v2020.07.1",
+			wantErr: nil,
+		},
+		{
+			name:    "no U-Boot entry",
+			fileBuf: []byte{},
+			mmapErr: nil,
+			want:    "",
+			wantErr: errors.Errorf("Unable to find OpenBMC version in image file 'x'"),
+		},
+		{
+			name:    "mmap err",
+			fileBuf: []byte{},
+			mmapErr: errors.Errorf("mmap err"),
+			want:    "",
+			wantErr: errors.Errorf("Unable to read and mmap image file 'x': mmap err"),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			utils.MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
+				if filename != "x" {
+					t.Errorf("want filename '%v' got '%v'", "x", filename)
+				}
+				return tc.fileBuf, tc.mmapErr
+			}
+			got, err := getOpenBMCVersionFromImageFile("x")
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+			tests.CompareTestErrors(tc.wantErr, err, t)
+		})
+	}
+}

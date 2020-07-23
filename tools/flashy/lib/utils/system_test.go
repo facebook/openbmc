@@ -296,11 +296,13 @@ func TestRunCommandWithRetries(t *testing.T) {
 	// save log output into buf for testing
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
-	// mock and defer restore sleepFunc
+	// mock and defer restore sleepFunc and RunCommand
 	sleepFuncOrig := sleepFunc
+	runCommandOrig := RunCommand
 	defer func() {
 		log.SetOutput(os.Stderr)
 		sleepFunc = sleepFuncOrig
+		RunCommand = runCommandOrig
 	}()
 
 	cases := []struct {

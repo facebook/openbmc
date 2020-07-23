@@ -21,12 +21,14 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
+	"syscall"
 
 	"github.com/pkg/errors"
 )
@@ -42,6 +44,17 @@ func init() {
 	// go up three paths, as this file is three directories deep
 	SourceRootDir = filepath.Dir(filepath.Dir(filepath.Dir(filename)))
 }
+
+// basic file utilities as function variables for mocking purposes
+var osStat = os.Stat
+var RemoveFile = os.Remove
+var TruncateFile = os.Truncate
+var WriteFile = ioutil.WriteFile
+var ReadFile = ioutil.ReadFile
+var RenameFile = os.Rename
+var CreateFile = os.Create
+var Mmap = syscall.Mmap
+var Munmap = syscall.Munmap
 
 func GetExecutablePath() string {
 	// get the executable's (flashy's) path
@@ -83,15 +96,6 @@ func GetSymlinkPathForSourceFile(path string) string {
 	symlinkPath := path[len(SourceRootDir)+1 : len(path)-3]
 	return symlinkPath
 }
-
-// basic file utilities as function variables for mocking purposes
-var osStat = os.Stat
-var RemoveFile = os.Remove
-var TruncateFile = os.Truncate
-var WriteFile = ioutil.WriteFile
-var ReadFile = ioutil.ReadFile
-var RenameFile = os.Rename
-var CreateFile = os.Create
 
 // PathExists returns true when the path exists
 // (can be file/directory)
@@ -204,4 +208,45 @@ var IsELFFile = func(filename string) bool {
 		return false
 	}
 	return bytes.Compare(buf, elfMagicNumber) == 0
+}
+
+// convenience function to mmap an entire file
+var MmapFile = func(filename string, prot, flags int) ([]byte, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, errors.Errorf("Unable to open '%v': %v",
+			filename, err)
+	}
+	defer f.Close()
+
+	// get size of file
+	fi, err := f.Stat()
+	if err != nil {
+		return nil, errors.Errorf("Unable to get file info of '%v': %v",
+			filename, err)
+	}
+
+	return Mmap(int(f.Fd()), 0, int(fi.Size()), prot, flags)
+}
+
+// convenience function to mmap range of a file
+var MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
+	if offset%int64(os.Getpagesize()) != 0 {
+		return nil, errors.Errorf(
+			"Unable to mmap file '%v': %v",
+			filename,
+			fmt.Sprintf("Offset must be a multiple of the system's page size (%v), got %v",
+				os.Getpagesize(),
+				offset,
+			),
+		)
+	}
+
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, errors.Errorf("Unable to open '%v': %v",
+			filename, err)
+	}
+
+	return Mmap(int(f.Fd()), offset, length, prot, flags)
 }

@@ -343,3 +343,24 @@ Status CRC: 0x76d9
 TPM status  (0)
 Status type (0) code (0)
 OpenBMC was verified correctly`
+
+// strings -n30 flash-wedge100 | grep U-Boot
+const ExampleWedge100ImageUbootStrings = `U-Boot executed from:    0x%08x
+U-Boot certificates:     0x%08x
+MU-Boot EFI: Relocation at %p is out of range (%lx)
+U-Boot 2016.07 wedge100-v2020.07.1 (Feb 12 2020 - 18:32:20 +0000)
+U-Boot fitImage for Facebook OpenBMC/1.0/wedge100`
+
+// strings -n30 flash-tiogapass1 | grep U-Boot
+const ExampleTiogaPass1ImageUbootStrings = `U-Boot SPL 2016.07 fbtp-v2020.09.1 (Feb 27 2020 - 23:35:02)
+U-Boot configuration was not verified.
+U-Boot executed from:    0x%08x
+U-Boot certificates:     0x%08x
+No valid device tree binary found - please append one to U-Boot binary, use u-boot-dtb.bin or define CONFIG_OF_EMBED. For sandbox, use -d <file.dtb>
+U-Boot 2016.07 fbtp-v2020.09.1 (Feb 27 2020 - 23:35:07 +0000)
+U-Boot fitImage for Facebook OpenBMC/1.0/fbtp
+U-Boot executed from:    0x%08x
+U-Boot certificates:     0x%08x
+No valid device tree binary found - please append one to U-Boot binary, use u-boot-dtb.bin or define CONFIG_OF_EMBED. For sandbox, use -d <file.dtb>
+U-Boot 2016.07 fbtp-v2020.09.1 (Feb 27 2020 - 23:35:02 +0000)
+U-Boot fitImage for Facebook OpenBMC/1.0/fbtp`

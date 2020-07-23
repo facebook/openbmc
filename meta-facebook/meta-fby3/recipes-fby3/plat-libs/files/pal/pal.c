@@ -1227,6 +1227,9 @@ pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case BIC_SENSOR_PROC_FAIL:
           sprintf(name, "PROC_FAIL");
           break;
+        case BIC_SENSOR_SSD_HOT_PLUG:
+          sprintf(name, "SSD_HOT_PLUG");
+          break;
         default:
           sprintf(name, "Unknown");
           ret = PAL_ENOTSUP;
@@ -1502,6 +1505,45 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   return PAL_EOK;
 }
 
+static int
+pal_parse_ssd_hot_plug_event(uint8_t fru, uint8_t *event_data, char *error_log) {
+  enum {
+    SSD0 = 0x00,
+    SSD1 = 0x01,
+    SSD2 = 0x02,
+    SSD3 = 0x03,
+    SSD4 = 0x04,
+    SSD5 = 0x05,
+  };
+  uint8_t event = event_data[0];
+
+  switch (event) {
+    case SSD0:
+      strcat(error_log, "SSD0");
+      break;
+    case SSD1:
+      strcat(error_log, "SSD1");
+      break;
+    case SSD2:
+      strcat(error_log, "SSD2");
+      break;
+    case SSD3:
+      strcat(error_log, "SSD3");
+      break;
+    case SSD4:
+      strcat(error_log, "SSD4");
+      break;
+    case SSD5:
+      strcat(error_log, "SSD5");
+      break;
+    default:
+      strcat(error_log, "Undefined hot plug event");
+      break;
+  }
+
+  return PAL_EOK;
+}
+
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   enum {
@@ -1526,6 +1568,9 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
     case BIC_SENSOR_PROC_FAIL:
       pal_parse_proc_fail(fru, event_data, error_log);
+      break;
+    case BIC_SENSOR_SSD_HOT_PLUG:
+      pal_parse_ssd_hot_plug_event(fru, event_data, error_log);
       break;
     default:
       unknown_snr = true;

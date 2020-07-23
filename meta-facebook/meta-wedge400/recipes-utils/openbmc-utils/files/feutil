@@ -22,10 +22,10 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 MAX_FAN_NUM=4
-FAN1_EEPROM_PATH="$(i2c_device_sysfs_abspath 34-0052)/eeprom"
-FAN2_EEPROM_PATH="$(i2c_device_sysfs_abspath 35-0052)/eeprom"
-FAN3_EEPROM_PATH="$(i2c_device_sysfs_abspath 36-0052)/eeprom"
-FAN4_EEPROM_PATH="$(i2c_device_sysfs_abspath 37-0052)/eeprom"
+FAN1_EEPROM_PATH="$(i2c_device_sysfs_abspath 37-0052)/eeprom"
+FAN2_EEPROM_PATH="$(i2c_device_sysfs_abspath 36-0052)/eeprom"
+FAN3_EEPROM_PATH="$(i2c_device_sysfs_abspath 35-0052)/eeprom"
+FAN4_EEPROM_PATH="$(i2c_device_sysfs_abspath 34-0052)/eeprom"
 FCM_EEPROM_PATH="$(i2c_device_sysfs_abspath 31-0051)/eeprom"
 
 usage() {

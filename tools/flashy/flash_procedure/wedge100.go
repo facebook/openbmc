@@ -25,7 +25,5 @@ import (
 )
 
 func init() {
-	utils.RegisterStep(flashWedge100)
+	utils.RegisterStep(flash_procedures.FlashCp)
 }
-
-var flashWedge100 = flash_procedures.FlashCp

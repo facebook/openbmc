@@ -21,10 +21,8 @@ package flash_procedures
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
@@ -34,16 +32,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-func TestFlashCp(t *testing.T) {
+func TestFlashCpVboot(t *testing.T) {
 	// save log output into buf for testing
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
-	// mock and defer restore GetFlashDevice, runFlashCpCmd
+	// mock and defer restore GetFlashDevice, RunVbootRemediation and runFlashCpCmd
 	getFlashDeviceOrig := flashutils.GetFlashDevice
+	vbootPatchOrig := flashutils.VbootPatchImageBootloaderIfNeeded
 	runFlashCpCmdOrig := runFlashCpCmd
 	defer func() {
 		log.SetOutput(os.Stderr)
 		flashutils.GetFlashDevice = getFlashDeviceOrig
+		flashutils.VbootPatchImageBootloaderIfNeeded = vbootPatchOrig
 		runFlashCpCmd = runFlashCpCmdOrig
 	}()
 
@@ -63,6 +63,7 @@ func TestFlashCp(t *testing.T) {
 		name             string
 		flashDevice      *devices.FlashDevice
 		flashDeviceErr   error
+		vbootRemErr      error
 		runFlashCpCmdErr utils.StepExitError
 		want             utils.StepExitError
 		logContainsSeq   []string
@@ -71,10 +72,11 @@ func TestFlashCp(t *testing.T) {
 			name:             "basic successful flash",
 			flashDevice:      exampleFlashDevice,
 			flashDeviceErr:   nil,
+			vbootRemErr:      nil,
 			runFlashCpCmdErr: nil,
 			want:             nil,
 			logContainsSeq: []string{
-				"Flashing using flashcp method",
+				"Flashing using flashcp vboot method",
 				"Attempting to flash 'mtd:flash0' with image file '/tmp/image",
 				"Flash device: {mtd flash0 /dev/mtd5 12345678}",
 			},
@@ -83,12 +85,13 @@ func TestFlashCp(t *testing.T) {
 			name:             "failed to get flash target file",
 			flashDevice:      nil,
 			flashDeviceErr:   errors.Errorf("GetFlashDevice error"),
+			vbootRemErr:      nil,
 			runFlashCpCmdErr: nil,
 			want: utils.ExitSafeToReboot{
 				errors.Errorf("GetFlashDevice error"),
 			},
 			logContainsSeq: []string{
-				"Flashing using flashcp method",
+				"Flashing using flashcp vboot method",
 				"Attempting to flash 'mtd:flash0' with image file '/tmp/image",
 				"GetFlashDevice error",
 			},
@@ -97,14 +100,29 @@ func TestFlashCp(t *testing.T) {
 			name:             "runFlashCpCmd failed",
 			flashDevice:      exampleFlashDevice,
 			flashDeviceErr:   nil,
+			vbootRemErr:      nil,
 			runFlashCpCmdErr: utils.ExitSafeToReboot{errors.Errorf("RunCommand error")},
 			want: utils.ExitSafeToReboot{
 				errors.Errorf("RunCommand error"),
 			},
 			logContainsSeq: []string{
-				"Flashing using flashcp method",
+				"Flashing using flashcp vboot method",
 				"Attempting to flash 'mtd:flash0' with image file '/tmp/image",
 				"Flash device: {mtd flash0 /dev/mtd5 12345678}",
+			},
+		},
+		{
+			name:             "vboot rem failed",
+			flashDevice:      exampleFlashDevice,
+			flashDeviceErr:   nil,
+			vbootRemErr:      errors.Errorf("vboot rem failed"),
+			runFlashCpCmdErr: nil,
+			want: utils.ExitSafeToReboot{
+				errors.Errorf("vboot rem failed"),
+			},
+			logContainsSeq: []string{
+				"Flashing using flashcp vboot method",
+				"Attempting to flash 'mtd:flash0' with image file '/tmp/image",
 			},
 		},
 	}
@@ -118,6 +136,12 @@ func TestFlashCp(t *testing.T) {
 				}
 				return tc.flashDevice, tc.flashDeviceErr
 			}
+			flashutils.VbootPatchImageBootloaderIfNeeded = func(imageFilePath string, flashDevice *devices.FlashDevice) error {
+				if imageFilePath != "/tmp/image" {
+					t.Errorf("imageFilePath: want '%v' got '%v'", "/tmp/image", imageFilePath)
+				}
+				return tc.vbootRemErr
+			}
 			runFlashCpCmd = func(imageFilePath, flashDevicePath string) utils.StepExitError {
 				if imageFilePath != "/tmp/image" {
 					t.Errorf("imageFilePath: want '%v' got '%v'", "/tmp/image", imageFilePath)
@@ -127,84 +151,8 @@ func TestFlashCp(t *testing.T) {
 				}
 				return tc.runFlashCpCmdErr
 			}
-			got := FlashCp(exampleStepParams)
+			got := FlashCpVboot(exampleStepParams)
 
-			tests.CompareTestExitErrors(tc.want, got, t)
-			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
-		})
-	}
-}
-
-func TestRunFlashCpCmd(t *testing.T) {
-	// save log output into buf for testing
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	// mock and defer restore RunCommand
-	runCommandOrig := utils.RunCommand
-	defer func() {
-		log.SetOutput(os.Stderr)
-		utils.RunCommand = runCommandOrig
-	}()
-
-	type cmdRetType struct {
-		exitCode int
-		err      error
-		stdout   string
-		stderr   string
-	}
-
-	cases := []struct {
-		name           string
-		cmdRet         cmdRetType
-		logContainsSeq []string
-		want           utils.StepExitError
-	}{
-		{
-			name: "basic succeeding",
-			cmdRet: cmdRetType{
-				0, nil, "", "",
-			},
-			logContainsSeq: []string{
-				"Flashing succeeded, safe to reboot",
-			},
-			want: nil,
-		},
-		{
-			name: "cmd failed",
-			cmdRet: cmdRetType{
-				1,
-				errors.Errorf("Flashcp failed"),
-				"failed (stdout)",
-				"failed (stderr)",
-			},
-			logContainsSeq: []string{
-				fmt.Sprintf(
-					"Flashing failed with exit code %v, error: %v, stdout: '%v', stderr: '%v'",
-					1, "Flashcp failed", "failed (stdout)", "failed (stderr)",
-				),
-			},
-			want: utils.ExitSafeToReboot{
-				errors.Errorf(
-					"Flashing failed with exit code %v, error: %v, stdout: '%v', stderr: '%v'",
-					1, "Flashcp failed", "failed (stdout)", "failed (stderr)",
-				),
-			},
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			buf = bytes.Buffer{}
-			utils.RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
-				cmdStr := strings.Join(cmdArr, " ")
-				if cmdStr != "flashcp a b" {
-					t.Errorf("cmd: want 'flashcp a b' got '%v'", cmdStr)
-				}
-				r := tc.cmdRet
-				return r.exitCode, r.err, r.stdout, r.stderr
-			}
-
-			got := runFlashCpCmd("a", "b")
 			tests.CompareTestExitErrors(tc.want, got, t)
 			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
 		})

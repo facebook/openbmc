@@ -20,16 +20,17 @@
 package flash_procedures
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
-func FlashCp(stepParams utils.StepParams) utils.StepExitError {
-	log.Printf("Flashing using flashcp method")
+// known vboot systems: yosemite2, brycecanyon1, tiogapass1, yosemitegpv2, northdome
+// these vboot devices expose only flash1
+func FlashCpVboot(stepParams utils.StepParams) utils.StepExitError {
+	log.Printf("Flashing using flashcp vboot method")
+
 	log.Printf("Attempting to flash '%v' with image file '%v'",
 		stepParams.DeviceID, stepParams.ImageFilePath)
 
@@ -43,27 +44,14 @@ func FlashCp(stepParams utils.StepParams) utils.StepExitError {
 
 	// TODO:- image validation here
 
+	// ==== WARNING: THIS STEP CAN ALTER THE IMAGE FILE ====
+	err = flashutils.VbootPatchImageBootloaderIfNeeded(stepParams.ImageFilePath, flashDevice)
+	if err != nil {
+		log.Printf(err.Error())
+		return utils.ExitSafeToReboot{err}
+	}
+
 	// run flashcp
 	flashCpErr := runFlashCpCmd(stepParams.ImageFilePath, flashDevice.FilePath)
 	return flashCpErr
-}
-
-var runFlashCpCmd = func(imageFilePath, flashDevicePath string) utils.StepExitError {
-	flashCmd := []string{
-		"flashcp", imageFilePath, flashDevicePath,
-	}
-
-	// timeout in 30 minutes
-	exitCode, err, stdout, stderr := utils.RunCommand(flashCmd, 1800)
-	if err != nil {
-		errMsg := fmt.Sprintf(
-			"Flashing failed with exit code %v, error: %v, stdout: '%v', stderr: '%v'",
-			exitCode, err, stdout, stderr,
-		)
-		log.Printf(errMsg)
-		return utils.ExitSafeToReboot{errors.Errorf(errMsg)}
-	}
-
-	log.Printf("Flashing succeeded, safe to reboot")
-	return nil
 }

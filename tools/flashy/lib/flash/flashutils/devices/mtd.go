@@ -40,11 +40,6 @@ func init() {
 /*
 TODO:-
 (1) Validate mtd
-(2) Check:
-	when mtd offset and vboot reinforcement are checked,
-	If MTD has a read-only offset, create a new image file with the
-	readonly offset from the device and the remaining from the image
-	file and use that for flashcp.
 */
 func getMTD(deviceSpecifier string) (*FlashDevice, error) {
 	mtdMap, err := getMTDMap(deviceSpecifier)
@@ -59,14 +54,11 @@ func getMTD(deviceSpecifier string) (*FlashDevice, error) {
 			deviceSpecifier, err)
 	}
 
-	var offset uint64 // TODO
-
 	mtd := FlashDevice{
 		"mtd",
 		deviceSpecifier,
 		filePath,
 		fileSize,
-		offset,
 	}
 
 	return &mtd, nil

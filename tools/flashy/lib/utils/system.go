@@ -34,6 +34,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const ProcMtdFilePath = "/proc/mtd"
+
 // memory information in bytes
 type MemInfo struct {
 	MemTotal uint64

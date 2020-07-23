@@ -17,24 +17,13 @@
  * Boston, MA 02110-1301 USA
  */
 
-package devices
+package flash_procedure
 
-type FlashDevice struct {
-	Type      string
-	Specifier string
-	FilePath  string
-	FileSize  uint64
-}
+import (
+	"github.com/facebook/openbmc/tools/flashy/lib/flash/flash_procedures"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+)
 
-// takes in the specifier and returns the FlashDevice
-type FlashDeviceGetter = func(string) (*FlashDevice, error)
-
-// maps from the type of the device to the getter function
-// that gets & validates the information of the flash storage device
-// populated by each storage device in ./devices/ via the RegisterFlashDevice
-// function
-var FlashDeviceGetterMap map[string]FlashDeviceGetter = map[string]FlashDeviceGetter{}
-
-func registerFlashDevice(deviceType string, getter FlashDeviceGetter) {
-	FlashDeviceGetterMap[deviceType] = getter
+func init() {
+	utils.RegisterStep(flash_procedures.FlashCpVboot)
 }

@@ -20,11 +20,15 @@
 package utils
 
 import (
+	"bytes"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/pkg/errors"
 )
 
 var SourceRootDir string
@@ -86,6 +90,8 @@ var RemoveFile = os.Remove
 var TruncateFile = os.Truncate
 var WriteFile = ioutil.WriteFile
 var ReadFile = ioutil.ReadFile
+var RenameFile = os.Rename
+var CreateFile = os.Create
 
 // PathExists returns true when the path exists
 // (can be file/directory)
@@ -135,4 +141,67 @@ var AppendFile = func(filename, data string) error {
 		return err
 	}
 	return nil
+}
+
+// read first n bytes in a file in path
+// N.B.: Use mmap if possible for large n
+var ReadFirstNBytes = func(path string, n int) ([]byte, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, errors.Errorf("Unable to open file '%v': %v", path, err)
+	}
+	defer f.Close()
+
+	// read first n bytes into memory
+	// number of bytes read is guaranteed by non-nil err
+	buf := make([]byte, n)
+	_, err = io.ReadFull(f, buf)
+	if err != nil {
+		return nil, errors.Errorf("Error reading from file '%v': %v", path, err)
+	}
+
+	return buf, nil
+}
+
+// replace first n bytes in dstPath with first n bytes in srcPath
+// WARNING: n bytes will be stored in memory, do not use for large n
+// if large n required, make a buffer and loop to replace block by block
+// or, use an mmap method. A non-mmap method is provided here because
+// it is not possible to mmap /dev/mtd* files
+var ReplaceFirstNBytes = func(dstPath, srcPath string, n int) error {
+	srcBuf, err := ReadFirstNBytes(srcPath, n)
+	if err != nil {
+		return errors.Errorf("Unable to read from src file '%v': %v", srcPath, err)
+	}
+
+	dst, err := os.OpenFile(dstPath, os.O_WRONLY, 0644)
+	if err != nil {
+		return errors.Errorf("Unable to open dst file '%v': %v", dstPath, err)
+	}
+	defer dst.Close()
+
+	// number of bytes wrote is guaranteed by non-nil err
+	// Write defaults to beginning of file
+	_, err = dst.Write(srcBuf)
+	if err != nil {
+		return errors.Errorf("Error writing to dst file '%v': %v", dstPath, err)
+	}
+
+	return nil
+}
+
+// read the 4 bytes in the header and check it against the ELF magic number
+// 0x7F 'E', 'L', 'F'
+// default to false for all other errors (e.g. file not found, no permission etc)
+var IsELFFile = func(filename string) bool {
+	elfMagicNumber := []byte{
+		0x7F, 'E', 'L', 'F',
+	}
+	buf, err := ReadFirstNBytes(filename, 4)
+	if err != nil {
+		log.Printf("Is ELF File Check: Unable to read from file '%v': %v, "+
+			"assuming that it is not an ELF file", filename, err)
+		return false
+	}
+	return bytes.Compare(buf, elfMagicNumber) == 0
 }

@@ -303,3 +303,43 @@ tmpfs /run tmpfs rw,nosuid,nodev,mode=755 0 0
 tmpfs /var/volatile tmpfs rw,relatime 0 0
 /dev/mtdblock4 /mnt/data jffs2 rw,relatime 0 0
 devpts /dev/pts devpts rw,relatime,gid=5,mode=620 0 0`
+
+const ExampleTiogapass1ProcMtdFile = `dev:    size   erasesize  name
+mtd0: 00060000 00010000 "romx"
+mtd1: 00020000 00010000 "env"
+mtd2: 00060000 00010000 "u-boot"
+mtd3: 01b20000 00010000 "fit"
+mtd4: 00400000 00010000 "data0"
+mtd5: 02000000 00010000 "flash1"
+mtd6: 01ff0000 00010000 "flash1rw"
+mtd7: 00060000 00010000 "rom"
+mtd8: 00020000 00010000 "envro"
+mtd9: 00060000 00010000 "u-bootro"
+mtd10: 01b20000 00010000 "fitro"
+mtd11: 00400000 00010000 "dataro"
+mtd12: 02000000 00010000 "flash0"`
+
+const ExampleTiogapass1VbootUtilFile = `ROM executed from:       0x00000058
+ROM KEK certificates:    0x00011544
+ROM handoff marker:      0x00000000
+U-Boot executed from:    0x28084350
+U-Boot certificates:     0x2808054c
+Certificates fallback:   Sat Jun 17 13:17:06 2017
+Certificates time:       Sat Jun 17 13:17:06 2017
+U-Boot fallback:         Wed Oct 30 18:54:54 2019
+U-Boot time:             Thu Feb 27 15:37:05 2020
+Kernel fallback:         not set
+Kernel time:             not set
+Flags force_recovery:    0x00
+Flags hardware_enforce:  0x01
+Flags software_enforce:  0x01
+Flags recovery_boot:     0x00
+Flags recovery_retried:  0x00
+
+ROM version:             fbtp-v7.2
+ROM U-Boot version:      2016.07
+
+Status CRC: 0x76d9
+TPM status  (0)
+Status type (0) code (0)
+OpenBMC was verified correctly`

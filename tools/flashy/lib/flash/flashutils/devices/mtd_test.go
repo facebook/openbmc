@@ -52,7 +52,6 @@ func TestGetMTD(t *testing.T) {
 				"flash0",
 				"/dev/mtd5",
 				uint64(33554432),
-				uint64(0),
 			},
 			wantErr: nil,
 		},

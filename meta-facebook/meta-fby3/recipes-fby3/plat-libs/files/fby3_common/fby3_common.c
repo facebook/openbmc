@@ -426,3 +426,35 @@ fby3_common_dev_name(uint8_t dev, char *str) {
   }
   return 0;
 }
+
+int
+fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
+  uint8_t bus_num = 0;
+  int fd = 0, ret = 0;
+  int tlen = 0, rlen = 0;
+  uint8_t tbuf[64], rbuf[64];
+  char fn[32];
+
+  bus_num = fby3_common_get_bus_id(fru_id) + 4;
+  i2c_cdev_master_abspath(fn, sizeof(fn), bus_num);
+  fd = open(fn, O_RDWR);
+  if (fd == -1) {
+    syslog(LOG_ERR, "Failed to open %s: %s", fn, strerror(errno));
+    return -1;
+  }
+
+  tbuf[0] = CPLD_BOARD_OFFSET;
+  tlen = 1;
+  rlen = 1;
+  ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d, errno: %s", __func__, tlen, strerror(errno));
+    goto error_exit;
+  }
+  *board_type = rbuf[0];
+
+error_exit:
+  close(fd);
+
+  return ret;
+}

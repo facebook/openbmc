@@ -285,6 +285,29 @@ const uint8_t bic_bb_sensor_list[] = {
   BIC_BB_SENSOR_MEDUSA_IOUT
 };
 
+//BIC Sierra Point Expansion Board Sensors
+const uint8_t bic_spe_sensor_list[] = {
+  BIC_SPE_SENSOR_SSD0_TEMP, 
+  BIC_SPE_SENSOR_SSD1_TEMP, 
+  BIC_SPE_SENSOR_SSD2_TEMP, 
+  BIC_SPE_SENSOR_SSD3_TEMP, 
+  BIC_SPE_SENSOR_SSD4_TEMP, 
+  BIC_SPE_SENSOR_SSD5_TEMP, 
+  BIC_SPE_SENSOR_INLET_TEMP,
+  BIC_SPE_SENSOR_12V_EDGE_VOL,
+  BIC_SPE_SENSOR_12V_MAIN_VOL,
+  BIC_SPE_SENSOR_3V3_EDGE_VOL,
+  BIC_SPE_SENSOR_3V3_MAIN_VOL,
+  BIC_SPE_SENSOR_3V3_STBY_VOL,
+  BIC_SPE_SENSOR_SSD0_CUR,
+  BIC_SPE_SENSOR_SSD1_CUR,
+  BIC_SPE_SENSOR_SSD2_CUR,
+  BIC_SPE_SENSOR_SSD3_CUR,
+  BIC_SPE_SENSOR_SSD4_CUR,
+  BIC_SPE_SENSOR_SSD5_CUR,
+  BIC_SPE_SENSOR_12V_MAIN_CUR,
+};
+
 const uint8_t bic_skip_sensor_list[] = {
   BIC_SENSOR_CPU_TEMP,
   BIC_SENSOR_DIMMA0_TEMP,
@@ -691,6 +714,7 @@ size_t bic_1ou_sensor_cnt = sizeof(bic_1ou_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_sensor_cnt = sizeof(bic_2ou_sensor_list)/sizeof(uint8_t);
 size_t bic_bb_sensor_cnt = sizeof(bic_bb_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_edsff_sensor_cnt = sizeof(bic_1ou_edsff_sensor_list)/sizeof(uint8_t);
+size_t bic_spe_sensor_cnt = sizeof(bic_spe_sensor_list)/sizeof(uint8_t);
 size_t bic_skip_sensor_cnt = sizeof(bic_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_skip_sensor_cnt = sizeof(bic_1ou_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_skip_sensor_cnt = sizeof(bic_2ou_skip_sensor_list)/sizeof(uint8_t);
@@ -734,7 +758,7 @@ int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   uint8_t bmc_location = 0, type = 0;
   int ret = 0;
-  uint8_t config_status = 0;
+  uint8_t config_status = 0, board_type = 0;
   uint8_t current_cnt = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
@@ -779,8 +803,17 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
     // 2OU
     if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
-      memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
-      current_cnt += bic_2ou_sensor_cnt;
+      ret = fby3_common_get_2ou_board_type(fru, &board_type);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+      }
+      if (board_type == E1S_BOARD) { // Sierra point expansion
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_spe_sensor_list, bic_spe_sensor_cnt);
+        current_cnt += bic_spe_sensor_cnt;
+      } else {
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
+        current_cnt += bic_2ou_sensor_cnt;
+      }
     }
 
     // BB (for NIC_BMC only)

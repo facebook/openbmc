@@ -60,6 +60,8 @@ extern "C" {
 #define I2C_PATH "/sys/class/i2c-dev/i2c-%d/device/new_device"
 #define EEPROM_PATH "/sys/bus/i2c/devices/%d-00%X/eeprom"
 
+#define CPLD_BOARD_OFFSET  0x0D
+
 extern const char *slot_usage;
 
 #define MAX_NUM_FRUS 8
@@ -123,6 +125,12 @@ enum {
   STATUS_ABNORMAL,
 };
 
+// 2OU Board type
+enum {
+  M2_BOARD = 0x01,
+  E1S_BOARD = 0x02,
+};
+
 const static char *gpio_server_prsnt[] =
 {
   "",
@@ -165,6 +173,8 @@ int fby3_common_dev_id(char *str, uint8_t *dev);
 int fby3_common_dev_name(uint8_t dev, char *str);
 int fby3_common_get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask);
 int get_gpio_value(const char *gpio_name, uint8_t *status);
+int fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

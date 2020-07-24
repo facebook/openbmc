@@ -22,10 +22,12 @@
 #include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
+#include <openbmc/obmc-i2c.h>
+
 #include "alert_control.h"
 
-#define PATH_ALERT_STATUS "/sys/bus/i2c/drivers/fb_panther_plus/4-0040/alert_status"
-#define PATH_ALERT_CONTROL "/sys/bus/i2c/drivers/fb_panther_plus/4-0040/alert_control"
+#define PATH_ALERT_STATUS  I2C_SYSFS_DEV_ENTRY(4-0040, alert_status)
+#define PATH_ALERT_CONTROL I2C_SYSFS_DEV_ENTRY(4-0040, alert_control)
 #define MASK_ALERT_SMS_KCS 0x01
 
 /*
@@ -46,6 +48,7 @@ alert_control(e_fbid_t id, e_flag_t cflag) {
   count = fread(rbuf, sizeof(unsigned char), sizeof(rbuf), fp);
   if (count == 0x0) {
     fclose(fp);
+    errno = EIO;
     return -1;
   }
 
@@ -71,6 +74,7 @@ alert_control(e_fbid_t id, e_flag_t cflag) {
   count = fwrite(tbuf, sizeof(unsigned char), sizeof(tbuf), fp);
   if (count != sizeof(tbuf)) {
     fclose(fp);
+    errno = EIO;
     return (-1);
   }
 
@@ -89,7 +93,6 @@ is_alert_present(e_fbid_t id) {
   int count = 0;
 
   fp = fopen(PATH_ALERT_STATUS, "r");
-
   if (!fp) {
     return false;
   }

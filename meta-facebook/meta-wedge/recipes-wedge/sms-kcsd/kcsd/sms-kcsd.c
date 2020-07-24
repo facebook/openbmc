@@ -29,11 +29,13 @@
 #include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
+#include <string.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/obmc-i2c.h>
 
 #include "alert_control.h"
 
-#define PATH_SMS_KCS "/sys/bus/i2c/drivers/fb_panther_plus/4-0040/sms_kcs"
+#define PATH_SMS_KCS I2C_SYSFS_DEV_ENTRY(4-0040, sms_kcs)
 #define MAX_ALERT_CONTROL_RETRIES 3
 
 typedef struct {
@@ -74,7 +76,7 @@ handle_kcs_msg(void) {
     return -1;
   }
 
-  count = fread(rbuf, sizeof(unsigned char), sizeof(rbuf), fp);
+  count = fread(rbuf, sizeof(rbuf[0]), sizeof(rbuf), fp);
   if (count == 0) {
     syslog(LOG_INFO, "fread returns zero bytes\n");
     fclose(fp);
@@ -98,7 +100,7 @@ handle_kcs_msg(void) {
     return -1;
   }
 
-  count = fwrite(tbuf, sizeof(unsigned char), tlen+1, fp);
+  count = fwrite(tbuf, sizeof(tbuf[0]), tlen+1, fp);
   if (count != tlen+1) {
     syslog(LOG_ALERT, "fwrite returns: %d, expected: %d\n", count, tlen+1);
     fclose(fp);
@@ -130,7 +132,7 @@ int main(int argc, char **argv) {
 
   // Exit with error in case we can not set the Alert
   if(ret) {
-    syslog(LOG_ALERT, "Can not enable SMS KCS Alert\n");
+    syslog(LOG_ALERT, "Can not enable SMS KCS Alert: %s\n", strerror(errno));
     exit(-1);
   }
 
@@ -141,4 +143,6 @@ int main(int argc, char **argv) {
     }
     sleep(1);
   }
+
+  return 0; /* Never reached at present. */
 }

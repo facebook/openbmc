@@ -55,7 +55,7 @@ usage() {
     echo
     echo "  reset: Power reset microserver ungracefully"
     echo "    options:"
-    echo "      -s: Power reset whole minipack system ungracefully"
+    echo "      -s: Power reset whole fuji system ungracefully"
     echo "      -s -t [1-2550]: Setting boot up time."
     echo "            From 1 to 249 the step is 1 second."
     echo "            From 250 to 2550 the step is 10 seconds"
@@ -314,18 +314,21 @@ fi
 command="$1"
 shift
 
+set_bic=0
 case "$command" in
     status)
         do_status "$@"
         ;;
     on)
         do_on "$@"
+        set_bic=1
         ;;
     off)
         do_off "$@"
         ;;
     reset)
         do_reset "$@"
+        set_bic=1
         ;;
     pimreset)
         do_pimreset "$@"
@@ -336,5 +339,10 @@ case "$command" in
         exit 1
         ;;
 esac
+
+if [ $set_bic -ne 0 ]; then
+# sleep 10 second to wait BIC & COMe ready
+    (sleep 10; setup_bic.sh) &
+fi
 
 exit $?

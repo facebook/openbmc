@@ -23,6 +23,7 @@ from abc import abstractmethod
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
+from utils.test_utils import running_systemd
 
 
 class BaseFscdTest(object):
@@ -50,7 +51,11 @@ class BaseFscdTest(object):
         self.power_host_on()
 
     def restart_fscd(self):
-        run_shell_cmd("sv restart fscd")
+        if running_systemd():
+            run_shell_cmd("/bin/systemctl restart fscd")
+        else:
+            run_shell_cmd("sv restart fscd")
+
         time.sleep(20)
 
     @abstractmethod

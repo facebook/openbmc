@@ -518,7 +518,7 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
     goto exit;
   }
 
-  snprintf(cmd, cmd_size, "/usr/local/bin/ipmbd -u %d %d > /dev/null 2>&1 &", bus_num, bus_num);
+  snprintf(cmd, cmd_size, "/usr/local/bin/ipmbd -u %d %d > /dev/null 2>&1 &", bus_num, slot_id);
   if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
       return BIC_ENOTSUP;
@@ -536,12 +536,12 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
   }
 
   //step5 - kill ipmbd
-  snprintf(cmd, cmd_size, "ps | grep -v 'grep' | grep 'ipmbd -u %d' |awk '{print $1}'| xargs kill", bus_num);
+  snprintf(cmd, cmd_size, "ps -w | grep -v 'grep' | grep 'ipmbd -u %d' |awk '{print $1}'| xargs kill", bus_num);
   if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
       return BIC_ENOTSUP;
   }
-  printf("stop ipmbd for slot %x..\n", slot_id);
+  printf("stop ipmbd -u for slot %x..\n", slot_id);
 
   //make sure that BIC enters bootloader
   sleep(3);

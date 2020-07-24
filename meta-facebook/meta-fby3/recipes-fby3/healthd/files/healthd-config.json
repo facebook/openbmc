@@ -77,6 +77,11 @@
     "monitor_interval": 2,
     "regenerating_interval": 1200
   },
+  "pfr_monitor": {
+    "enabled": true,
+    "monitor_interval": 10,
+    "fru": [7]
+  },
   "verified_boot": {
     "enabled": false
   },

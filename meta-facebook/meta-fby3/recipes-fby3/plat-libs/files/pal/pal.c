@@ -2168,6 +2168,7 @@ pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
   int ret = 0;
   int ifd, retry = 3;
   uint8_t buf[16];
+  uint8_t rbuf[16];
   char dev_i2c[16];
   uint8_t bus, addr;
   bool bridged;
@@ -2199,6 +2200,18 @@ pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
     printf("sending update intent to CPLD...\n");
     fflush(stdout);
     sleep(1);
+    do {
+      ret = i2c_rdwr_msg_transfer(ifd, addr, buf, 2, rbuf, 1);
+      if (ret) {
+        syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x", addr, buf[0]);
+        if (--retry > 0) {
+          msleep(100);
+        }
+      }
+    } while (ret && retry > 0);
+
+    buf[1] |= rbuf[0];
+
     do {
       ret = i2c_rdwr_msg_transfer(ifd, addr, buf, 2, NULL, 0);
       if (ret) {
@@ -2674,5 +2687,66 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
   }
 
   if ( cbl_val != NULL ) *cbl_val = (vals_match == false)?STATUS_ABNORMAL:STATUS_PRSNT;
+  return ret;
+}
+
+int pal_set_bios_cap_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  uint8_t *data = res_data;
+  int i2cfd = 0, ret = 0;
+  uint8_t bmc_location = 0;
+  uint8_t status;
+  uint8_t len;
+  uint8_t bus;
+  uint8_t retry = 0;
+  char path[128] = {0};
+  uint32_t ver_reg = BIOS_CAP_STAG_MAILBOX;
+  uint8_t tbuf[18] = {0};
+  uint8_t tlen = BIOS_CAP_VER_LEN;
+
+  ret = fby3_common_check_slot_id(slot);
+  if (ret < 0 ) {
+    ret = PAL_ENOTSUP;
+    goto error_exit;
+  }
+
+  ret = pal_is_fru_prsnt(slot, &status);
+  if ( ret < 0 || status == 0 ) {
+    ret = PAL_ENOTREADY;
+    goto error_exit;
+  }
+
+  ret = fby3_common_get_bus_id(slot) + 4;
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, slot);
+    goto error_exit;
+  }
+
+  bus= (uint8_t)ret;
+  snprintf(path, sizeof(path), I2CDEV, bus);
+  if ((i2cfd = open(path, O_RDWR)) < 0) {
+    printf("Failed to open %s\n", path);
+    goto error_exit;
+  }
+
+  memcpy(tbuf, (uint8_t *)&ver_reg, 1);
+  memcpy(&tbuf[1], req_data, tlen);
+  tlen = tlen + 1;
+
+  while (retry < MAX_READ_RETRY) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, NULL, 0);
+    if ( ret < 0 ) {
+      retry++;
+      sleep(1);
+    } else {
+      break;
+    }
+  }
+  if (retry == MAX_READ_RETRY) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+  }
+
+error_exit:
+  if ( i2cfd > 0 ) close(i2cfd);
+  *res_len = 0;
   return ret;
 }

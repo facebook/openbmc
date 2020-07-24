@@ -10,7 +10,8 @@ class CapsuleComponent : public Component {
   uint8_t fw_comp = 0;
   Server server;
   private:
-    int get_pfr_recovery_ver_str(string& s);
+    int get_pfr_cap_ver_str(string& s, uint8_t fw_comp);
+    int set_pfr_cap_ver_str(string image, uint8_t fw_comp);
     image_info check_image(string image, bool force);
     int bic_update_capsule(string image);
   public:

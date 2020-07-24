@@ -50,10 +50,16 @@ extern "C" {
 // Baseboard PFR
 #define CPLD_UPDATE_ADDR (0x40)
 #define UFM_PROVISIONED_MSK 0x20
+#define INTENT_UPDATE_AT_RESET_MASK 0x80
 
 #define PFR_I2C_FILTER_OFFSET 0x10
 #define DISABLE_PFR_I2C_FILTER 0
 #define ENABLE_PFR_I2C_FILTER 1
+
+#define BIOS_CAP_VER_OFFSET 0x80C
+#define BIOS_CAP_VER_LEN 16
+#define CPLD_CAP_VER_OFFSET 0x404
+#define CPLD_CAP_VER_LEN 4
 
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
@@ -150,6 +156,13 @@ enum {
   MAJOR_ERROR_PCH_AUTH_FAILED=0x02,
   MAJOR_ERROR_UPDATE_FROM_PCH_FAILED=0x03,
   MAJOR_ERROR_UPDATE_FROM_BMC_FAILED=0x04,
+};
+
+enum {
+  BIOS_CAP_STAG_MAILBOX = 0xE0,
+  BIOS_CAP_RCVY_MAILBOX = 0xD0,
+  CPLD_CAP_STAG_MAILBOX = 0x64,
+  CPLD_CAP_RCVY_MAILBOX = 0x60,
 };
 
 typedef struct {

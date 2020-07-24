@@ -102,17 +102,138 @@ image_info CapsuleComponent::check_image(string image, bool force) {
   return image_sts;
 }
 
+int CapsuleComponent::set_pfr_cap_ver_str(string image, uint8_t fw_comp) {
+  int ret = 0;
+  uint32_t ver_reg = CPLD_CAP_STAG_MAILBOX;
+  uint8_t tbuf[18] = {0x00};
+  uint8_t revert[18] = {0x00};
+  uint8_t tlen = 0;
+  int roffset = 0;
+  int frlen = 0;
+  int i2cfd = 0;
+
+  if (fw_comp == FW_BIOS_CAPSULE) {
+    ver_reg = BIOS_CAP_STAG_MAILBOX;
+    tlen = BIOS_CAP_VER_LEN;
+    roffset = BIOS_CAP_VER_OFFSET;
+    frlen = BIOS_CAP_VER_OFFSET + BIOS_CAP_VER_LEN;
+  } else if (fw_comp == FW_BIOS_RCVY_CAPSULE) {
+    ver_reg = BIOS_CAP_STAG_MAILBOX;
+    tlen = BIOS_CAP_VER_LEN;
+    roffset = BIOS_CAP_VER_OFFSET;
+    frlen = BIOS_CAP_VER_OFFSET + BIOS_CAP_VER_LEN;
+  } else if (fw_comp == FW_CPLD_CAPSULE) {
+    ver_reg = CPLD_CAP_STAG_MAILBOX;
+    tlen = CPLD_CAP_VER_LEN;
+    roffset = CPLD_CAP_VER_OFFSET;
+    frlen = CPLD_CAP_VER_OFFSET + CPLD_CAP_VER_LEN;
+  } else if (fw_comp == FW_CPLD_RCVY_CAPSULE) {
+    ver_reg = CPLD_CAP_STAG_MAILBOX;
+    tlen = CPLD_CAP_VER_LEN;
+    roffset = CPLD_CAP_VER_OFFSET;
+    frlen = CPLD_CAP_VER_OFFSET + CPLD_CAP_VER_LEN;
+  }
+
+  //open the binary
+  int fd_r = open(image.c_str(), O_RDONLY);
+  if (fd_r < 0) {
+    cerr << "Cannot open " << image << " for reading" << endl;
+    return -1;
+  }
+  uint8_t *memblock = new uint8_t [frlen];//data_size + signed byte
+  size_t r_b = read(fd_r, memblock, frlen);
+  close(fd_r);
+
+  if (r_b <= 0) return -1;
+
+  memcpy(tbuf, (uint8_t *)&ver_reg, 1);
+  memcpy(&tbuf[1], &memblock[roffset], tlen);
+
+  if (fw_comp == FW_BIOS_CAPSULE || fw_comp == FW_BIOS_RCVY_CAPSULE) {
+    for (int idx = 0; idx <= tlen; idx+=4) {
+          revert[idx + 0] = tbuf[idx + 4];
+          revert[idx + 1] = tbuf[idx + 3];
+          revert[idx + 2] = tbuf[idx + 2];
+          revert[idx + 3] = tbuf[idx + 1];
+    }
+    memcpy(&tbuf[1], &revert, tlen);
+  }
+  tlen = tlen + 1;
+
+  string i2cdev = "/dev/i2c-" + to_string((slot_id+SLOT_BUS_BASE));
+
+  if ((i2cfd = open(i2cdev.c_str(), O_RDWR)) < 0) {
+    printf("Failed to open %s\n", i2cdev.c_str());
+    return -1;
+  }
+
+  if (ioctl(i2cfd, I2C_SLAVE, CPLD_INTENT_CTRL_ADDR) < 0) {
+    printf("Failed to talk to slave@0x%02X\n", CPLD_INTENT_CTRL_ADDR);
+  } else {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, NULL, 0);
+  }
+
+  if ( i2cfd > 0 ) close(i2cfd);
+  return ret;
+}
+
+int CapsuleComponent::get_pfr_cap_ver_str(string& s, uint8_t fw_comp) {
+  int ret = 0;
+  char ver[48] = {0};
+  uint32_t ver_reg = 0x60;
+  uint8_t tbuf[1] = {0x00};
+  uint8_t rbuf[16] = {0x00};
+  uint8_t tlen = 1;
+  uint8_t rlen = 4;
+  int i2cfd = 0;
+
+  if (fw_comp == FW_BIOS_CAPSULE) {
+    ver_reg = BIOS_CAP_STAG_MAILBOX;
+    rlen = 16;
+  } else if (fw_comp == FW_BIOS_RCVY_CAPSULE) {
+    ver_reg = BIOS_CAP_RCVY_MAILBOX;
+    rlen = 16;
+  } else if (fw_comp == FW_CPLD_CAPSULE) {
+    ver_reg = CPLD_CAP_STAG_MAILBOX;
+  } else if (fw_comp == FW_CPLD_RCVY_CAPSULE) {
+    ver_reg = CPLD_CAP_RCVY_MAILBOX;
+  }
+
+  memcpy(tbuf, (uint8_t *)&ver_reg, tlen);
+  string i2cdev = "/dev/i2c-" + to_string((slot_id+SLOT_BUS_BASE));
+
+  if ((i2cfd = open(i2cdev.c_str(), O_RDWR)) < 0) {
+    printf("Failed to open %s\n", i2cdev.c_str());
+    return -1;
+  }
+
+  if (ioctl(i2cfd, I2C_SLAVE, CPLD_INTENT_CTRL_ADDR) < 0) {
+    printf("Failed to talk to slave@0x%02X\n", CPLD_INTENT_CTRL_ADDR);
+  } else {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+    if (rlen == 16) {
+      snprintf(ver, sizeof(ver), "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c", rbuf[0], rbuf[1], rbuf[2], rbuf[3],
+                                                                     rbuf[4], rbuf[5], rbuf[6], rbuf[7],
+                                                                     rbuf[8], rbuf[9], rbuf[10], rbuf[11],
+                                                                     rbuf[12], rbuf[13], rbuf[14], rbuf[15]);
+    } else {
+      snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
+    }
+  }
+
+  if ( i2cfd > 0 ) close(i2cfd);
+  s = string(ver);
+  return ret;
+}
+
 int CapsuleComponent::bic_update_capsule(string image) {
   int ret;
   uint8_t status;
   uint8_t tbuf[2] = {0}, rbuf[1] = {0};
   uint8_t tlen = 1, rlen = 1;
   char path[128];
-  int i2cfd = 0, retry=0;
-  bic_gpio_t gpio = {0};
-  uint32_t check_update_time = 0, time_cnt = 0, update_timeout = 0, retry_count = 0;
-  uint8_t plt_state = 0, panic_cnt_o = 0, panic_cnt_n = 0;
-  int is_check_panic_cnt = 1;
+  int i2cfd = 0, retry_count=0;
+  uint8_t intent_val_o = 0;
 
   // Check PFR provision status
   snprintf(path, sizeof(path), "/dev/i2c-%d", (slot_id+SLOT_BUS_BASE));
@@ -120,13 +241,13 @@ int CapsuleComponent::bic_update_capsule(string image) {
   if ( i2cfd < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
   }
-  retry = 0;
+  retry_count = 0;
   tbuf[0] = UFM_STATUS_OFFSET;
   tlen = 1;
-  while (retry < RETRY_TIME) {
+  while (retry_count < RETRY_TIME) {
     ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
     if ( ret < 0 ) {
-      retry++;
+      retry_count++;
       msleep(100);
     } else {
       break;
@@ -177,149 +298,56 @@ int CapsuleComponent::bic_update_capsule(string image) {
       syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
     }
 
-    // Take panic count before update
-    retry = 0;
-    tlen = 1;
-    tbuf[0] = PANIC_CNT_OFFSET;
-    tlen = 1;
-    while (retry < RETRY_TIME) {
-      ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
-      if ( ret < 0 ) {
-        retry++;
-        msleep(100);
-      } else {
-        break;
-      }
-    }
-    panic_cnt_o = rbuf[0];
-    if ( retry == RETRY_TIME ) return -1;
-
     // Defined update configuration
     tbuf[0] = UPDATE_INTENT_OFFSET;
     if (fw_comp == FW_BIOS_CAPSULE) {
       tbuf[1] = BIOS_UPDATE_INTENT;
-      check_update_time = 1;
-      update_timeout = BIOS_UPDATE_TIMEOUT;
     } else if (fw_comp == FW_CPLD_CAPSULE) {
       tbuf[1] = CPLD_UPDATE_INTENT;
-      check_update_time = 1;
-      update_timeout = CPLD_UPDATE_TIMEOUT;
     } else if (fw_comp == FW_BIOS_RCVY_CAPSULE) {
       tbuf[1] = BIOS_UPDATE_RCVY_INTENT;
-      check_update_time = 2;
-      update_timeout = BIOS_UPDATE_TIMEOUT*2;
     } else if (fw_comp == FW_CPLD_RCVY_CAPSULE) {
       tbuf[1] = CPLD_UPDATE_RCVY_INTENT;
-      check_update_time = 2;
-      update_timeout = CPLD_UPDATE_TIMEOUT*2;
     } else {
       return -1;
     }
 
-    // Update intent to CPLD
-    retry = 0;
-    tlen = 2;
-    while (retry < RETRY_TIME) {
-      ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, NULL, 0);
+    retry_count = 0;
+    tlen = 1;
+    while (retry_count < RETRY_TIME) {
+      ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
       if ( ret < 0 ) {
-        retry++;
+        retry_count++;
         msleep(100);
       } else {
         break;
       }
     }
-    if ( retry == RETRY_TIME ) return -1;
+    intent_val_o = rbuf[0];
+    if ( retry_count == RETRY_TIME ) return -1;
 
-    ret = pal_check_pfr_mailbox(slot_id);
-    if ( ret < 0 ) {
-      return -1;
-    }
+    tbuf[1] |= (intent_val_o | UPDATE_AT_RESET);
 
-    // Check update status
-    for (retry_count = 0; retry_count < check_update_time; retry_count++) {
-      if (retry_count == 0) {
-        printf("Capsule active update is ongoing ...\n");
+    // Update intent to CPLD
+    retry_count = 0;
+    tlen = 2;
+    while (retry_count < RETRY_TIME) {
+      ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, NULL, 0);
+      if ( ret < 0 ) {
+        retry_count++;
+        msleep(100);
       } else {
-        printf("Capsule recovery update is ongoing ...\n");
+        break;
       }
-      time_cnt = 0;
-      // Timeout mechanism to avoid updating failed
-      while (time_cnt < update_timeout) {
-        ret = bic_get_gpio(slot_id, &gpio, NONE_INTF);
-        if ( ret < 0 ) {
-          printf("%s() bic_get_gpio returns %d\n", __func__, ret);
-          return ret;
-        }
-
-        if (BIT_VALUE(gpio, RST_RSMRST_BMC_N_IDX)) {
-          // Take platform state
-          retry = 0;
-          tlen = 1;
-          tbuf[0] = PLATFORM_STATE_OFFSET;
-          tlen = 1;
-          while (retry < RETRY_TIME) {
-            ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
-            if ( ret < 0 ) {
-              retry++;
-              msleep(100);
-            } else {
-              break;
-            }
-          }
-          plt_state = rbuf[0];
-
-          // Take panic count after update
-          retry = 0;
-          tlen = 1;
-          tbuf[0] = PANIC_CNT_OFFSET;
-          tlen = 1;
-          while (retry < RETRY_TIME) {
-            ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
-            if ( ret < 0 ) {
-              retry++;
-              msleep(100);
-            } else {
-              break;
-            }
-          }
-          panic_cnt_n = rbuf[0];
-        }
-
-        // When PLATFORM_STATE_ENTER_T0 is 0x09 and panic count is changed, it means that firmware update successfully.
-        if (fw_comp != FW_CPLD_CAPSULE) {
-          if ((fw_comp == FW_CPLD_RCVY_CAPSULE) && (retry_count == 0)) {
-            is_check_panic_cnt = 1;
-          } else {
-            is_check_panic_cnt = (panic_cnt_n > panic_cnt_o);
-          }
-        }
-        if ((plt_state >= PLATFORM_STATE_ENTER_T0) && (is_check_panic_cnt)) {
-          break;
-        } else {
-          time_cnt++;
-          sleep(POLLING_INTERVAL);
-        }
-      }
-
-      if (time_cnt == update_timeout) {
-        printf("Get PFR update status timeout \n");
-        return -1;
-      }
-
-      panic_cnt_o = panic_cnt_n;
     }
+    if ( retry_count == RETRY_TIME ) return -1;
 
     auto end = chrono::steady_clock::now();
     cout << "Elapsed time:  " << chrono::duration_cast<chrono::seconds>(end - start).count() << "   sec." << endl;
 
-    pal_set_server_power(slot_id, SERVER_POWER_ON);
-
-    ret = pal_check_pfr_mailbox(slot_id);
-    if ( ret < 0 ) {
-      return -1;
-    }
-
     if ( i2cfd > 0 ) close(i2cfd);
+
+    set_pfr_cap_ver_str(image, fw_comp);
 
   } catch(string err) {
     if ( i2cfd > 0 ) close(i2cfd);
@@ -358,36 +386,6 @@ int CapsuleComponent::fupdate(string image) {
   return ret;
 }
 
-int CapsuleComponent::get_pfr_recovery_ver_str(string& s) {
-  int ret = 0;
-  char ver[32] = {0};
-  uint32_t ver_reg = 0x60;
-  uint8_t tbuf[1] = {0x00};
-  uint8_t rbuf[4] = {0x00};
-  uint8_t tlen = 1;
-  uint8_t rlen = 4;
-  int i2cfd = 0;
-
-  memcpy(tbuf, (uint8_t *)&ver_reg, tlen);
-  string i2cdev = "/dev/i2c-" + to_string((slot_id+SLOT_BUS_BASE));
-
-  if ((i2cfd = open(i2cdev.c_str(), O_RDWR)) < 0) {
-    printf("Failed to open %s\n", i2cdev.c_str());
-    return -1;
-  }
-
-  if (ioctl(i2cfd, I2C_SLAVE, CPLD_INTENT_CTRL_ADDR) < 0) {
-    printf("Failed to talk to slave@0x%02X\n", CPLD_INTENT_CTRL_ADDR);
-  } else {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
-    snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
-  }
-
-  if ( i2cfd > 0 ) close(i2cfd);
-  s = string(ver);
-  return ret;
-}
-
 int CapsuleComponent::print_version() {
   int ret, i2cfd = 0, retry=0;;
   uint8_t tbuf[2] = {0}, rbuf[1] = {0};
@@ -395,6 +393,7 @@ int CapsuleComponent::print_version() {
   char path[128];
   string fru_name = fru();
   string ver("");
+  string comp_name;
 
   // IF PFR active , get the recovery capsule firmware version
   // Check PFR provision status
@@ -422,16 +421,35 @@ int CapsuleComponent::print_version() {
     return FW_STATUS_NOT_SUPPORTED;
   }
   try {
-    if (fw_comp == FW_CPLD_RCVY_CAPSULE) {
-      if ( get_pfr_recovery_ver_str(ver) < 0 ) {
+    if (fw_comp == FW_BIOS_CAPSULE) {
+      comp_name = "BIOS Staging Capsule";
+      if ( get_pfr_cap_ver_str(ver, fw_comp) < 0 ) {
         throw "Error in getting the version of " + fru_name;
       }
-      cout << "SB CPLD Recovery Capsule Version: " << ver << endl;
+      cout << comp_name << " Version: " << ver << endl;
+    } else  if (fw_comp == FW_BIOS_RCVY_CAPSULE) {
+      comp_name = "BIOS Recovery Capsule";
+      if ( get_pfr_cap_ver_str(ver, fw_comp) < 0 ) {
+        throw "Error in getting the version of " + fru_name;
+      }
+      cout << comp_name << " Version: " << ver << endl;
+    } else if (fw_comp == FW_CPLD_CAPSULE) {
+      comp_name = "SB CPLD Staging Capsule";
+      if ( get_pfr_cap_ver_str(ver, fw_comp) < 0 ) {
+        throw "Error in getting the version of " + fru_name;
+      }
+      cout << comp_name << " Version: " << ver << endl;
+    } else  if (fw_comp == FW_CPLD_RCVY_CAPSULE) {
+      comp_name = "SB CPLD Recovery Capsule";
+      if ( get_pfr_cap_ver_str(ver, fw_comp) < 0 ) {
+        throw "Error in getting the version of " + fru_name;
+      }
+      cout << comp_name << " Version: " << ver << endl;
     } else {
       return FW_STATUS_NOT_SUPPORTED;
     }
   } catch(string& err) {
-    printf("SB CPLD Version: NA (%s)\n", err.c_str());
+    printf("%s Version: NA (%s)\n", comp_name.c_str(), err.c_str());
   }
 
   return 0;

@@ -2463,3 +2463,10 @@ int __attribute__((weak))
 pal_get_dev_card_sensor(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   return PAL_ENOTSUP;
 }
+
+int __attribute__((weak))
+pal_set_bios_cap_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+  return PAL_ENOTSUP;
+}
+

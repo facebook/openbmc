@@ -102,6 +102,143 @@ image_info BmcCpldCapsuleComponent::check_image(string image, bool force) {
   return image_sts;
 }
 
+int BmcCpldCapsuleComponent::set_pfr_cap_ver_str(string image, string comp) {
+  int ret = 0;
+  uint32_t ver_reg = 0x60;
+  uint8_t tbuf[18] = {0x00};
+  uint8_t tlen = 0;
+  int roffset = 0;
+  int frlen = 0;
+  int i2cfd = 0;
+
+  if (comp == "cpld_cap") {
+    ver_reg = 0x64;
+    tlen = CPLD_CAP_VER_LEN;
+    roffset = CPLD_CAP_VER_OFFSET;
+    frlen = CPLD_CAP_VER_OFFSET + CPLD_CAP_VER_LEN;
+  } else if (comp == "cpld_cap_rcvy") {
+    ver_reg = 0x64;
+    tlen = CPLD_CAP_VER_LEN;
+    roffset = CPLD_CAP_VER_OFFSET;
+    frlen = CPLD_CAP_VER_OFFSET + CPLD_CAP_VER_LEN;
+  }
+
+  //open the binary
+  int fd_r = open(image.c_str(), O_RDONLY);
+  if (fd_r < 0) {
+    cerr << "Cannot open " << image << " for reading" << endl;
+    return -1;
+  }
+  uint8_t *memblock = new uint8_t [frlen];//data_size + signed byte
+  size_t r_b = read(fd_r, memblock, frlen);
+  close(fd_r);
+
+  if (r_b <= 0) return -1;
+
+  memcpy(tbuf, (uint8_t *)&ver_reg, 1);
+  memcpy(&tbuf[1], &memblock[roffset], tlen);
+  tlen = tlen + 1;
+
+  string i2cdev = "/dev/i2c-" + to_string(bus);
+
+  if ((i2cfd = open(i2cdev.c_str(), O_RDWR)) < 0) {
+    printf("Failed to open %s\n", i2cdev.c_str());
+    return -1;
+  }
+
+  if (ioctl(i2cfd, I2C_SLAVE, CPLD_INTENT_CTRL_ADDR) < 0) {
+    printf("Failed to talk to slave@0x%02X\n", CPLD_INTENT_CTRL_ADDR);
+  } else {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, NULL, 0);
+  }
+
+  if ( i2cfd > 0 ) close(i2cfd);
+  return ret;
+}
+
+int BmcCpldCapsuleComponent::get_pfr_recovery_ver_str(string& s, string comp) {
+  int ret = 0;
+  char ver[32] = {0};
+  uint32_t ver_reg = 0x60;
+  uint8_t tbuf[1] = {0x00};
+  uint8_t rbuf[4] = {0x00};
+  uint8_t tlen = 1;
+  uint8_t rlen = 4;
+  int i2cfd = 0;
+
+  if (comp == "cpld_cap") {
+    ver_reg = 0x64;
+  } else if (comp == "cpld_cap_rcvy") {
+    ver_reg = 0x60;
+  }
+
+  memcpy(tbuf, (uint8_t *)&ver_reg, tlen);
+  string i2cdev = "/dev/i2c-" + to_string(bus);
+
+  if ((i2cfd = open(i2cdev.c_str(), O_RDWR)) < 0) {
+    printf("Failed to open %s\n", i2cdev.c_str());
+    return -1;
+  }
+
+  if (ioctl(i2cfd, I2C_SLAVE, CPLD_INTENT_CTRL_ADDR) < 0) {
+    printf("Failed to talk to slave@0x%02X\n", CPLD_INTENT_CTRL_ADDR);
+  } else {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+    snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
+  }
+
+  if ( i2cfd > 0 ) close(i2cfd);
+  s = string(ver);
+  return ret;
+}
+
+int BmcCpldCapsuleComponent::get_bmc_stg_cap_version(string& s) {
+  // parsering the image to get the version string
+  int mtd_no;
+  char rbuf[256], mtd_name[32], dev[16] = {0}, cmd[128];
+  FILE *fp;
+
+  if ((fp = fopen("/proc/mtd", "r"))) {
+    while (fgets(rbuf, sizeof(rbuf), fp)) {
+      if ((sscanf(rbuf, "mtd%d: %*x %*x %s", &mtd_no, mtd_name) == 2) &&
+          !strcmp("\"stg-bmc\"", mtd_name)) {
+        sprintf(dev, "/dev/mtd%d", mtd_no);
+        break;
+      }
+    }
+    fclose(fp);
+  }
+
+  if (!dev[0] || !(fp = fopen(dev, "rb"))) {
+    printf("stg-bmc not found\n");
+    return -1;
+  }
+  fclose(fp);
+
+  snprintf(cmd, sizeof(cmd),
+      "dd if=%s bs=64k count=6 2>/dev/null | strings | grep -E 'U-Boot 20[[:digit:]]{2}\\.[[:digit:]]{2}'",
+      dev);
+  fp = popen(cmd, "r");
+  if (fp) {
+    char line[256];
+    char *ver = 0;
+    while (fgets(line, sizeof(line), fp)) {
+      int ret;
+      ret = sscanf(line, "U-Boot 20%*2d.%*2d%*[ ]%m[^ \n]%*[ ](%*[^)])\n", &ver);
+      if (1 == ret) {
+        s = string(ver);
+        break;
+      }
+    }
+    if (ver) {
+       free(ver);
+    }
+    pclose(fp);
+  }
+
+  return 0;
+}
+
 int BmcCpldCapsuleComponent::bmc_update_capsule(string image) {
   FILE *fp;
   int i2cfd = 0;
@@ -116,6 +253,7 @@ int BmcCpldCapsuleComponent::bmc_update_capsule(string image) {
   char path[128];
   string bmc_location_str;
   string comp = component();
+  uint8_t intent_val_o = 0;
 
   if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
     printf("Failed to initialize the fw-util\n");
@@ -230,6 +368,8 @@ int BmcCpldCapsuleComponent::bmc_update_capsule(string image) {
         return FW_STATUS_FAILURE;
     }
 
+    set_pfr_cap_ver_str(image, comp);
+
     if (comp == "cpld_cap_rcvy") {
       syslog(LOG_CRIT, "Updated CPLD Capsule, Target to Recovery Region on %s. File: %s", bmc_location_str.c_str(), image.c_str());
     } else {
@@ -247,6 +387,25 @@ int BmcCpldCapsuleComponent::bmc_update_capsule(string image) {
   }
 
   retry = 0;
+  tlen = 1;
+  while (retry < RETRY_TIME) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, pfr_adress, tbuf, tlen, rdbuf, rlen);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  intent_val_o = rdbuf[0];
+  if ( retry == RETRY_TIME ) {
+    if ( i2cfd > 0 ) close(i2cfd);
+    return -1;
+  }
+
+  tbuf[1] |= (intent_val_o | UPDATE_AT_RESET);
+
+  retry = 0;
   tlen = 2;
   while (retry < RETRY_TIME) {
     ret = i2c_rdwr_msg_transfer(i2cfd, pfr_adress, tbuf, tlen, NULL, 0);
@@ -261,14 +420,6 @@ int BmcCpldCapsuleComponent::bmc_update_capsule(string image) {
   if (retry == RETRY_TIME) {
     syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
     return -1;
-  }
-
-  // If intent failed
-  // Check the error code
-  sleep(2);
-  ret = pal_check_pfr_mailbox(FRU_BMC);
-  if ( ret < 0 ) {
-      return -1;
   }
 
   return 0;
@@ -304,36 +455,6 @@ int BmcCpldCapsuleComponent::fupdate(string image) {
   return ret;
 }
 
-int BmcCpldCapsuleComponent::get_pfr_recovery_ver_str(string& s) {
-  int ret = 0;
-  char ver[32] = {0};
-  uint32_t ver_reg = 0x60;
-  uint8_t tbuf[1] = {0x00};
-  uint8_t rbuf[4] = {0x00};
-  uint8_t tlen = 1;
-  uint8_t rlen = 4;
-  int i2cfd = 0;
-
-  memcpy(tbuf, (uint8_t *)&ver_reg, tlen);
-  string i2cdev = "/dev/i2c-" + to_string(bus);
-
-  if ((i2cfd = open(i2cdev.c_str(), O_RDWR)) < 0) {
-    printf("Failed to open %s\n", i2cdev.c_str());
-    return -1;
-  }
-
-  if (ioctl(i2cfd, I2C_SLAVE, CPLD_INTENT_CTRL_ADDR) < 0) {
-    printf("Failed to talk to slave@0x%02X\n", CPLD_INTENT_CTRL_ADDR);
-  } else {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
-    snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
-  }
-
-  if ( i2cfd > 0 ) close(i2cfd);
-  s = string(ver);
-  return ret;
-}
-
 int BmcCpldCapsuleComponent::print_version()
 {
   int ret, i2cfd = 0, retry=0;;
@@ -342,6 +463,7 @@ int BmcCpldCapsuleComponent::print_version()
   char path[128];
   string comp = component();
   string ver("");
+  string comp_name;
 
   // IF PFR active , get the recovery capsule firmware version
   // Check PFR provision status
@@ -370,16 +492,29 @@ int BmcCpldCapsuleComponent::print_version()
   }
 
   try {
-    if (comp == "cpld_cap_rcvy") {
-      if ( get_pfr_recovery_ver_str(ver) < 0 ) {
+    if (comp == "cpld_cap") {
+      comp_name = "BMC Staging Capsule";
+      if ( get_bmc_stg_cap_version(ver) < 0 ) {
+        throw "Error in getting the version of Staging Capsule";
+      }
+      cout << comp_name << " Version: " << ver << endl;
+
+      comp_name = "BMC CPLD Staging Capsule";
+      if ( get_pfr_recovery_ver_str(ver, comp) < 0 ) {
+        throw "Error in getting the version of Staging Capsule";
+      }
+      cout << comp_name << " Version: " << ver << endl;
+    } else if (comp == "cpld_cap_rcvy") {
+      comp_name = "BMC CPLD Recovery Capsule";
+      if ( get_pfr_recovery_ver_str(ver, comp) < 0 ) {
         throw "Error in getting the version of BMC CPLD Recovery Capsule";
       }
-      cout << "BMC CPLD Recovery Capsule Version: " << ver << endl;
+      cout << comp_name << " Version: " << ver << endl;
     } else {
       return FW_STATUS_NOT_SUPPORTED;
     }
   } catch(string& err) {
-    printf("BMC CPLD Recovery Capsule Version: NA (%s)\n", err.c_str());
+    printf("%s Version: NA (%s)\n", comp_name.c_str(), err.c_str());
   }
 
   return 0;

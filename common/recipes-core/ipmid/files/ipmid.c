@@ -3376,6 +3376,23 @@ oem_stor_add_string_sel(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_set_bios_cap_fw_ver(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  int ret;
+
+  ret = pal_set_bios_cap_fw_ver(req->payload_id, req->data, req_len, res->data, res_len);
+
+  if(ret == 0) {
+    res->cc = CC_SUCCESS;
+  } else {
+    res->cc = CC_UNSPECIFIED_ERROR;
+  }
+}
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
      unsigned char *response, unsigned char *res_len)
 {
@@ -3509,6 +3526,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_GET_SENSOR_REAL_READING:
       oem_get_sensor_real_reading(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_BIOS_CAP_FW_VER:
+      oem_set_bios_cap_fw_ver(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

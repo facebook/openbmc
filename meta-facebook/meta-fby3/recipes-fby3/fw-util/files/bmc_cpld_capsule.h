@@ -23,7 +23,9 @@ class BmcCpldCapsuleComponent : public Component {
   uint8_t bus;
   uint8_t addr;
   private:
-    int get_pfr_recovery_ver_str(string& s);
+    int get_pfr_recovery_ver_str(string& s, string comp);
+    int get_bmc_stg_cap_version(string& s);
+    int set_pfr_cap_ver_str(string image, string comp);
     image_info check_image(string image, bool force);
     int bmc_update_capsule(string image);
   public:

@@ -42,9 +42,7 @@ class ClassConfig {
       if ( bmc_location == NIC_BMC ) {
         static BmcCpldComponent        cpld_bmc("bmc", "cpld", MAX10_10M25, 9, 0x40);
         static BmcCpldCapsuleComponent cpld_capsule("bmc", "cpld_cap", MAX10_10M25, 9, 0x40);
-        static BmcCpldCapsuleComponent bmc_capsule("bmc", "bmc_cap", 0, 0, 0);
         static BmcCpldCapsuleComponent cpld_capsule_rcvy("bmc", "cpld_cap_rcvy", MAX10_10M25, 9, 0x40);
-        static BmcCpldCapsuleComponent bmc_capsule_rcvy("bmc", "bmc_cap_rcvy", 0, 0, 0);
 
         //slot1 bb bic/bicbl/cpld
         static BicFwExtComponent     bic_bb_fw1("slot1", "bb_bic"  , FRU_SLOT1, "bb", FW_BB_BIC);
@@ -121,9 +119,7 @@ class ClassConfig {
 
         static BmcCpldComponent cpld_bmc("bmc", "cpld", MAX10_10M25, 12, 0x40);
         static BmcCpldCapsuleComponent cpld_capsule("bmc", "cpld_cap", MAX10_10M25, 12, 0x40);
-        static BmcCpldCapsuleComponent bmc_capsule("bmc", "bmc_cap", 0, 0, 0);
         static BmcCpldCapsuleComponent cpld_capsule_rcvy("bmc", "cpld_cap_rcvy", MAX10_10M25, 12, 0x40);
-        static BmcCpldCapsuleComponent bmc_capsule_rcvy("bmc", "bmc_cap_rcvy", 0, 0, 0);
         static MeComponent me_fw2("slot2", "me", FRU_SLOT2);
         static MeComponent me_fw3("slot3", "me", FRU_SLOT3);
         static MeComponent me_fw4("slot4", "me", FRU_SLOT4);

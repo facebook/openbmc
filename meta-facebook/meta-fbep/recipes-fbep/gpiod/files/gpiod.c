@@ -86,6 +86,9 @@ static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gp
         system("i2cset -f -y 17 0x10 0xd4 0x3f37 w > /dev/null") < 0) {
       syslog(LOG_CRIT, "Failed to enable P48V VOUT monitoring");
     }
+  } else {
+    if (pal_check_power_seq() < 0)
+      syslog(LOG_WARNING, "Failed to get power state from CPLD");
   }
 }
 

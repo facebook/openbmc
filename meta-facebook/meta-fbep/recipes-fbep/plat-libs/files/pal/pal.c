@@ -1204,3 +1204,63 @@ pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
   *bridged = false;
   return 0;
 }
+
+int pal_check_power_seq()
+{
+  struct power_seq {
+    char *name;
+    uint8_t offset;
+    uint8_t bit;
+  } cpld_power_seq[] = {
+    {"MODULE_PWRGD_ASIC0", 0, 0}, {"MODULE_PWRGD_ASIC1", 0, 1},
+    {"MODULE_PWRGD_ASIC2", 0, 2}, {"MODULE_PWRGD_ASIC3", 0, 3},
+    {"MODULE_PWRGD_ASIC4", 0, 4}, {"MODULE_PWRGD_ASIC5", 0, 5},
+    {"MODULE_PWRGD_ASIC6", 0, 6}, {"MODULE_PWRGD_ASIC7", 0, 7},
+    {"MB1_1_ASIC_PWR_EN", 1, 0}, {"MB2_ASIC_PWR_EN", 1, 1},
+    {"MB3_1_ASIC_PWR_EN", 1, 2}, {"MB0_ASIC_PWR_EN", 1, 3},
+    {"ASIC_MB1_1_PWRGOOD", 1, 4}, {"ASIC_MB2_PWRGOOD", 1, 5},
+    {"ASIC_MB3_1_PWRGOOD", 1, 6}, {"ASIC_MB0_PWRGOOD", 1, 7},
+    {"BMC_READY_CPLD", 2, 0}
+  };
+  char dev_cpld[16] = {0};
+  char event_str[64] = {0};
+  int fd, i;
+  int ret = 0, fail_addr = -1;
+  uint8_t tbuf[8], rbuf[8], value;
+  uint8_t power_seq_num = sizeof(cpld_power_seq)/sizeof(struct power_seq);
+
+  sprintf(dev_cpld, "/dev/i2c-%d", MAIN_CPLD_BUS);
+  fd = open(dev_cpld, O_RDWR);
+  if (fd < 0) {
+    return -1;
+  }
+
+  tbuf[0] = 0x31; // Error state
+  ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 1);
+  if (ret < 0 || rbuf[0] == 0xff) // Read error or power is turned off normally
+    goto exit;
+
+  tbuf[0] = 0x32;
+  ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 3);
+  if (ret < 0)
+    goto exit;
+
+  for (i = 0; i < power_seq_num; i++) {
+    value = rbuf[cpld_power_seq[i].offset] & (1 << cpld_power_seq[i].bit);
+    if (value == 0) {
+      fail_addr = i;
+      snprintf(event_str, sizeof(event_str), "%s power rail fails", cpld_power_seq[i].name);
+      syslog(LOG_CRIT, "%s", event_str);
+      pal_add_cri_sel(event_str);
+    }
+  }
+  if (fail_addr < 0) {
+      snprintf(event_str, sizeof(event_str), "Unknown power rail fails");
+      syslog(LOG_CRIT, "Unknown power rail fails");
+      pal_add_cri_sel(event_str);
+  }
+
+exit:
+  close(fd);
+  return ret;
+}

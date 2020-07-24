@@ -29,9 +29,9 @@
 #include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
-#include <facebook/alert_control.h>
 #include <openbmc/ipmi.h>
 
+#include "alert_control.h"
 
 #define PATH_SMS_KCS "/sys/bus/i2c/drivers/fb_panther_plus/4-0040/sms_kcs"
 #define MAX_ALERT_CONTROL_RETRIES 3

@@ -17,8 +17,8 @@
 
 all: sms-kcsd
 
-sms-kcsd: sms-kcsd.c
-	$(CC) $(CFLAGS) -pthread -lalert_control -lipmi -std=c99 -o $@ $^ $(LDFLAGS)
+sms-kcsd: sms-kcsd.c alert_control.c
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

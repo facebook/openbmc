@@ -89,9 +89,7 @@ void cpu_vr_hot_init(char* shadow, char* desc, gpio_value_t value) {
 }
 
 void cpu_skt_init(char* shadow, char* desc, gpio_value_t value) {
-  if(value == GPIO_VALUE_HIGH ) {
     syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", desc, shadow);
-  }
   return;
 }
 
@@ -229,7 +227,7 @@ set_smi_trigger(void) {
   static bool triggered = false;
   static gpio_desc_t *gpio = NULL;
   if (!gpio) {
-    gpio = gpio_open_by_shadow("BMC_PPIN"); // GPIOB5
+    gpio = gpio_open_by_shadow("IRQ_SMI_ACTIVE_BMC_N"); // GPIOAA6
     if (!gpio)
       return;
   }

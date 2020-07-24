@@ -23,7 +23,7 @@ import unittest
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-
+from utils.test_utils import running_systemd
 
 class PsumuxmonTest(unittest.TestCase):
     def setUp(self):
@@ -34,9 +34,14 @@ class PsumuxmonTest(unittest.TestCase):
         pass
 
     def test_psumuxmon_runit_sv_status(self):
-        cmd = ["/usr/bin/sv status psumuxmon"]
-        data = run_shell_cmd(cmd)
-        self.assertIn("run", data, "psumuxmon process not running")
+        if running_systemd():
+            cmd = ["/bin/systemctl status psumuxmon"]
+            data = run_shell_cmd(cmd)
+            self.assertIn("running", data, "psumuxmon unit not running")
+        else:
+            cmd = ["/usr/bin/sv status psumuxmon"]
+            data = run_shell_cmd(cmd)
+            self.assertIn("run", data, "psumuxmon process not running")
 
     def get_ltc_hwmon_path(self, path):
         result = re.split("hwmon", path)

@@ -118,7 +118,7 @@ static const i2c_dev_attr_st smb_syscpld_attr_table[] = {
     0x05, 1, 1,
   },
   {
-    "psu1_acok",
+    "psu1_ac_ok",
     fail_normal_help_str,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
@@ -518,7 +518,7 @@ static const i2c_dev_attr_st smb_syscpld_attr_table[] = {
     0x13, 7, 1,
   },
   {
-    "psu_pwrok_1_status_int",
+    "psu_pwrok_1_int",
     cpld_cpu_blk_help_str,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
@@ -567,7 +567,7 @@ static const i2c_dev_attr_st smb_syscpld_attr_table[] = {
     0x14, 6, 1,
   },
   {
-    "psu_ac0k_4_int",
+    "psu_acok_4_int",
     cpld_cpu_blk_help_str,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
@@ -1169,14 +1169,14 @@ static const i2c_dev_attr_st smb_syscpld_attr_table[] = {
     0x34, 1, 1,
   },
   {
-    "psu_acok1_status",
+    "psu_acok_1_status",
     intr_help_str,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,
     0x34, 2, 1,
   },
   {
-    "psu_acok2_status",
+    "psu_acok_2_status",
     intr_help_str,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
@@ -1315,7 +1315,7 @@ static const i2c_dev_attr_st smb_syscpld_attr_table[] = {
     "0: don't finish loading DOM FPGA image\n"
     "1: finsh loading DOM FPGA image",
     I2C_DEV_ATTR_SHOW_DEFAULT,
-    NULL,
+    I2C_DEV_ATTR_STORE_DEFAULT,
     0x47, 0, 1,
   },
   {
@@ -1323,7 +1323,7 @@ static const i2c_dev_attr_st smb_syscpld_attr_table[] = {
     "0: don't finish loading DOM FPGA image\n"
     "1: finsh loading DOM FPGA image",
     I2C_DEV_ATTR_SHOW_DEFAULT,
-    NULL,
+    I2C_DEV_ATTR_STORE_DEFAULT,
     0x47, 1, 1,
   },
   {

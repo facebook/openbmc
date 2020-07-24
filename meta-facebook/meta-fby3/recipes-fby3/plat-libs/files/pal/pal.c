@@ -2438,7 +2438,6 @@ pal_get_nic_fru_id(void)
 int
 pal_check_pfr_mailbox(uint8_t fru) {
   int ret = 0, i2cfd = 0, retry=0, index = 0;
-  int cpld_bus = 0;
   uint8_t tbuf[1] = {0}, rbuf[1] = {0};
   uint8_t tlen = 1, rlen = 1;
   uint8_t major_err = 0, minor_err = 0;

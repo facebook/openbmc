@@ -44,12 +44,14 @@ static int read_temp(uint8_t snr_id, float *value);
 static int read_hsc_vin(uint8_t hsc_id, float *value);
 static int read_hsc_temp(uint8_t hsc_id, float *value);
 static int read_hsc_pin(uint8_t hsc_id, float *value);
+static int read_hsc_ein(uint8_t hsc_id, float *value);
 static int read_hsc_iout(uint8_t hsc_id, float *value);
 static int read_medusa_val(uint8_t snr_number, float *value);
 static int read_cached_val(uint8_t snr_number, float *value);
 static int read_fan_speed(uint8_t snr_number, float *value);
 static int read_fan_pwm(uint8_t pwm_id, float *value);
 static int read_curr_leakage(uint8_t snr_number, float *value);
+static int read_pdb_dl_vdelta(uint8_t snr_number, float *value);
 
 static int pal_sdr_init(uint8_t fru);
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
@@ -88,15 +90,18 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_HSC_TEMP,
   BMC_SENSOR_HSC_VIN,
   BMC_SENSOR_HSC_PIN,
+  BMC_SENSOR_HSC_EIN,
   BMC_SENSOR_HSC_IOUT,
   BMC_SENSOR_MEDUSA_VOUT,
   BMC_SENSOR_MEDUSA_VIN,
   BMC_SENSOR_MEDUSA_CURR,
   BMC_SENSOR_MEDUSA_PWR,
   BMC_SENSOR_MEDUSA_VDELTA,
+  BMC_SENSOR_PDB_DL_VDELTA,
   BMC_SENSOR_PDB_VDELTA,
   BMC_SENSOR_CURR_LEAKAGE,
   BMC_SENSOR_FAN_IOUT,
+  BMC_SENSOR_FAN_PWR,
   BMC_SENSOR_NIC_P12V,
   BMC_SENSOR_NIC_IOUT,
   BMC_SENSOR_NIC_PWR,
@@ -643,9 +648,9 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
+  {"BMC_SENSOR_FAN_PWR", 0xCA, read_cached_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCA
+  {"BMC_SENSOR_HSC_EIN", HSC_ID0, read_hsc_ein, true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
+  {"BMC_SENSOR_PDB_DL_VDELTA", 0xCC, read_pdb_dl_vdelta, true, {0.9, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCC
   {"BMC_SENSOR_CURR_LEAKAGE", 0xCD, read_curr_leakage, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xCD
   {"BMC_SENSOR_PDB_VDELTA", 0xCE, read_cached_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCE
   {"BMC_SENSOR_MEDUSA_VDELTA", 0xCF, read_cached_val, true, {0.5, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCF
@@ -1029,7 +1034,6 @@ _pal_get_pwm_value(uint8_t pwm, float *value, uint8_t bmc_location) {
 
 // Provide the fan pwm to fan-util and it also will be called by read_fan_pwm
 int pal_get_pwm_value(uint8_t fan, uint8_t *pwm) {
-  char label[32] = {0};
   float value = 0;
   int ret = 0;
   uint8_t fan_src = 0;
@@ -1157,20 +1161,17 @@ apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value, uint8_t bmc
   }
 }
 
-// Calculate curr leakage
+enum {
+  GET_TOTAL_VAL = 0x00,
+  GET_MAX_VAL,
+  GET_MIN_VAL,
+};
+
+// Get the sum of slot sensor readings on a given sensor number
 static int
-read_curr_leakage(uint8_t snr_number, float *value) {
-#define CURR_LEAKAGE_THRESH  8.00
-#define MEDUSA_CURR_THRESH  10.00
-  static bool is_issued_sel = false;
+read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
   static bool is_inited = false;
   static uint8_t config = CONFIG_A;
-  static int retry = MAX_RETRY;
-  float medusa_curr = 0;
-  float bb_hsc_curr = 0;
-  float slot_hsc_iout = 0;
-  float temp_val = 0;
-  int i = 0;
 
   //try to get the system type. The default config is CONFIG_A.
   if ( is_inited == false ) {
@@ -1189,19 +1190,58 @@ read_curr_leakage(uint8_t snr_number, float *value) {
     is_inited = true;
   }
 
-  if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_MEDUSA_CURR, &medusa_curr) < 0) return READING_NA;
-  if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_HSC_IOUT, &bb_hsc_curr) < 0) return READING_NA;
-
+  int i = 0;
+  float temp_val = 0;
   for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
-    //Two slots are present on Config D. Skip slot2 and slot4.
+    //Only two slots are present on Config D. Skip slot2 and slot4.
     if ( (config == CONFIG_D) && (i % 2 == 0) ) continue;
 
     //If one of slots is failed to read, return READING_NA.
-    if ( sensor_cache_read(i, BIC_SENSOR_HSC_OUTPUT_CUR, &temp_val) < 0) return READING_NA;
-    else slot_hsc_iout += temp_val;
+    if ( sensor_cache_read(i, target_snr_num, &temp_val) < 0) return READING_NA;
+
+    if ( action == GET_MAX_VAL ) {
+      if ( temp_val > *val ) *val = temp_val;
+    } else if ( action == GET_MIN_VAL ) {
+      if ( ((int)(*val) == 0) || (temp_val < *val) ) *val = temp_val;
+    } else if ( action == GET_TOTAL_VAL ) {
+      *val += temp_val;
+    }
   }
 
-  *value = (medusa_curr - bb_hsc_curr - slot_hsc_iout) / medusa_curr;
+  return PAL_EOK;
+}
+
+// Calculate Deltalake vdelta
+static int
+read_pdb_dl_vdelta(uint8_t snr_number, float *value) {
+  float medusa_vout = 0;
+  float min_hsc_vin = 0;
+
+  if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_MEDUSA_VOUT, &medusa_vout) < 0) return READING_NA;
+  if ( read_snr_from_all_slots(BIC_SENSOR_HSC_INPUT_VOL, GET_MIN_VAL, &min_hsc_vin) < 0) return READING_NA;
+
+  //Calculate the Vdrop between BMC_SENSOR_MEDUSA_VOUT and each individual HSC_Input_Vol
+  //And return the max Vdrop. The UCR of Vdrop is 0.9V.
+  *value = medusa_vout - min_hsc_vin;
+
+  return PAL_EOK;
+}
+
+// Calculate curr leakage
+static int
+read_curr_leakage(uint8_t snr_number, float *value) {
+#define CURR_LEAKAGE_THRESH  8.00
+#define MEDUSA_CURR_THRESH  10.00
+  static bool is_issued_sel = false;
+  float medusa_curr = 0;
+  float bb_hsc_curr = 0;
+  float total_hsc_iout = 0;
+
+  if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_MEDUSA_CURR, &medusa_curr) < 0) return READING_NA;
+  if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_HSC_IOUT, &bb_hsc_curr) < 0) return READING_NA;
+  if ( read_snr_from_all_slots(BIC_SENSOR_HSC_OUTPUT_CUR, GET_TOTAL_VAL, &total_hsc_iout) < 0) return READING_NA;
+
+  *value = (medusa_curr - bb_hsc_curr - total_hsc_iout) / medusa_curr;
   *value *= 100;
   //syslog(LOG_WARNING, "%s() value: %.2f %%, medusa_curr: %.2f, bb_hsc_curr: %.2f, slot_hsc_iout: %.2f", __func__, *value, medusa_curr, bb_hsc_curr, slot_hsc_iout);
 
@@ -1260,6 +1300,10 @@ read_cached_val(uint8_t snr_number, float *value) {
   uint8_t snr1_num = 0, snr2_num = 0;
 
   switch (snr_number) {
+    case BMC_SENSOR_FAN_PWR:
+        snr1_num = BMC_SENSOR_MEDUSA_VOUT;
+        snr2_num = BMC_SENSOR_FAN_IOUT;
+      break;
     case BMC_SENSOR_NIC_PWR:
         snr1_num = BMC_SENSOR_NIC_P12V;
         snr2_num = BMC_SENSOR_NIC_IOUT;
@@ -1281,6 +1325,7 @@ read_cached_val(uint8_t snr_number, float *value) {
   if ( sensor_cache_read(FRU_BMC, snr2_num, &temp2) < 0) return READING_NA;
 
   switch (snr_number) {
+    case BMC_SENSOR_FAN_PWR:
     case BMC_SENSOR_NIC_PWR:
       *value = temp1 * temp2;
       break;
@@ -1432,177 +1477,128 @@ read_adc_val(uint8_t adc_id, float *value) {
   return ret;
 }
 
-static void
-get_hsc_info(uint8_t hsc_id, uint8_t type, uint8_t *addr, float* m, float* b, float* r) {
-  *addr = hsc_info_list[hsc_id].slv_addr;
-  *m = hsc_info_list[hsc_id].info[type].m;
-  *b = hsc_info_list[hsc_id].info[type].b;
-  *r = hsc_info_list[hsc_id].info[type].r;
+static int
+get_hsc_reading(uint8_t hsc_id, uint8_t type, uint8_t cmd, float *value, uint8_t *raw_data) {
+  const uint8_t adm1278_bus = 11;
+  uint8_t addr = hsc_info_list[hsc_id].slv_addr;
+  static int fd = -1;
 
-  return;
+  if ( fd < 0 ) {
+    fd = i2c_cdev_slave_open(adm1278_bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if ( fd < 0 ) {
+      syslog(LOG_WARNING, "Failed to open bus %d", adm1278_bus);
+      return READING_NA;
+    }
+  }
+
+  uint8_t rbuf[9] = {0x00};
+  uint8_t rlen = ( cmd != ADM1278_EIN_EXT )?2:9;
+  int retry = MAX_RETRY;
+  int ret = ERR_NOT_READY;
+  while ( ret < 0 && retry-- > 0 ) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, &cmd, 1, rbuf, rlen);
+  }
+
+  if ( ret < 0 ) {
+    if ( fd >= 0 ) {
+      close(fd);
+      fd = -1;
+    }
+    return READING_NA;
+  }
+
+  if ( cmd == ADM1278_EIN_EXT ) {
+    if ( raw_data != NULL ) memcpy(raw_data, rbuf, rlen);
+  } else {
+    float m = hsc_info_list[hsc_id].info[type].m;
+    float b = hsc_info_list[hsc_id].info[type].b;
+    float r = hsc_info_list[hsc_id].info[type].r;
+    *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
+  }
+  return PAL_EOK;
+}
+
+static int
+read_hsc_ein(uint8_t hsc_id, float *value) {
+#define EIN_ROLLOVER_CNT 0x10000
+#define EIN_SAMPLE_CNT 0x1000000
+#define EIN_ENERGY_CNT 0x800000
+#define PIN_COEF (0.0163318634656214)  // X = 1/m * (Y * 10^(-R) - b) = 1/6123 * (Y * 100)
+  uint8_t raw_data[9] = {0x00};
+
+  if ( get_hsc_reading(hsc_id, -1, ADM1278_EIN_EXT, value, raw_data) < 0 ) return READING_NA;
+  if ( raw_data[0] != 8 ) return READING_NA; //first byte is the num. of bytes. It should be 8.
+
+  uint32_t energy = 0, rollover = 0, sample = 0;
+  uint32_t pre_energy = 0, pre_rollover = 0, pre_sample = 0;
+  uint32_t sample_diff = 0;
+  double energy_diff = 0;
+  static uint32_t last_energy = 0, last_rollover = 0, last_sample = 0;
+  static bool pre_ein = false;
+
+  //record the previous data
+  pre_energy   = last_energy;
+  pre_rollover = last_rollover;
+  pre_sample   = last_sample;
+
+  //record the current data
+  last_energy   = energy   = (raw_data[3]<<16) | (raw_data[2]<<8) | raw_data[1];
+  last_rollover = rollover = (raw_data[5]<<8) | raw_data[4];
+  last_sample   = sample   = (raw_data[8]<<16) | (raw_data[7]<<8) | raw_data[6];
+
+  //return since data isn't enough
+  if ( pre_ein == false ) {
+    pre_ein = true;
+    return READING_NA;
+  }
+
+  if ((pre_rollover > rollover) || ((pre_rollover == rollover) && (pre_energy > energy))) {
+    rollover += EIN_ROLLOVER_CNT;
+  }
+  if (pre_sample > sample) {
+    sample += EIN_SAMPLE_CNT;
+  }
+
+  energy_diff = (double)(rollover-pre_rollover)*EIN_ENERGY_CNT + (double)energy - (double)pre_energy;
+  if (energy_diff < 0) {
+    return READING_NA;
+  }
+  sample_diff = sample - pre_sample;
+  if (sample_diff == 0) {
+    return READING_NA;
+  }
+  *value = (float)((energy_diff/sample_diff/256) * PIN_COEF/ADM1278_RSENSE);
+  return PAL_EOK;
 }
 
 static int
 read_hsc_pin(uint8_t hsc_id, float *value) {
-  uint8_t tbuf[1] = {0x00};
-  uint8_t rbuf[2] = {0x00};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  uint8_t addr = 0;
-  float m = 0, b = 0, r = 0;
-  int retry = MAX_RETRY;
-  int ret = ERR_NOT_READY;
-  int fd = 0;
 
-  fd = open("/dev/i2c-11", O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "Failed to open bus 11");
-    goto error_exit;
-  }
-
-  get_hsc_info(hsc_id, HSC_POWER, &addr, &m, &b, &r);
-
-  tbuf[0] = PMBUS_READ_PIN;
-  tlen = 1;
-  rlen = 2;
-
-  while ( ret < 0 && retry-- > 0 ) {
-    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
-  }
-
-  if ( ret < 0 ) {
-    ret = READING_NA;
-    goto error_exit;
-  }
-
-  *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
-  *value *= 0.99;
-error_exit:
-  if ( fd > 0 ) close(fd);
-
-  return ret;
+  if ( get_hsc_reading(hsc_id, HSC_POWER, PMBUS_READ_PIN, value, NULL) < 0 ) return READING_NA;
+  *value *= 0.99; //improve the accuracy of PIN to +-2%
+  return PAL_EOK;
 }
 
 static int
 read_hsc_iout(uint8_t hsc_id, float *value) {
-  uint8_t tbuf[1] = {0x00};
-  uint8_t rbuf[2] = {0x00};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  uint8_t addr = 0;
-  float m = 0, b = 0, r = 0;
-  int retry = MAX_RETRY;
-  int ret = ERR_NOT_READY;
-  int fd = 0;
 
-  fd = open("/dev/i2c-11", O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "Failed to open bus 11");
-    goto error_exit;
-  }
-
-  get_hsc_info(hsc_id, HSC_CURRENT, &addr, &m, &b, &r);
-
-  tbuf[0] = PMBUS_READ_IOUT;
-  tlen = 1;
-  rlen = 2;
-
-  while ( ret < 0 && retry-- > 0 ) {
-    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
-  }
-
-  if ( ret < 0 ) {
-    ret = READING_NA;
-    goto error_exit;
-  }
-
-  *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
-  //improve the accuracy of IOUT to +-2%
-  *value *= 0.99;
-error_exit:
-  if ( fd > 0 ) close(fd);
-
-  return ret;
+  if ( get_hsc_reading(hsc_id, HSC_CURRENT, PMBUS_READ_IOUT, value, NULL) < 0 ) return READING_NA;
+  *value *= 0.99; //improve the accuracy of IOUT to +-2%
+  return PAL_EOK;
 }
 
 static int
 read_hsc_temp(uint8_t hsc_id, float *value) {
-  uint8_t tbuf[1] = {0x00};
-  uint8_t rbuf[2] = {0x00};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  uint8_t addr = 0;
-  float m = 0, b = 0, r = 0;
-  int retry = MAX_RETRY;
-  int ret = ERR_NOT_READY;
-  int fd = 0;
 
-  fd = open("/dev/i2c-11", O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "Failed to open bus 11");
-    goto error_exit;
-  }
-
-  get_hsc_info(hsc_id, HSC_TEMP, &addr, &m, &b, &r);
-
-  tbuf[0] = PMBUS_READ_TEMP1;
-  tlen = 1;
-  rlen = 2;
-
-  while ( ret < 0 && retry-- > 0 ) {
-    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
-  }
-
-  if ( ret < 0 ) {
-    ret = READING_NA;
-    goto error_exit;
-  }
-
-  *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
-error_exit:
-  if ( fd > 0 ) close(fd);
-
-  return ret;
+  if ( get_hsc_reading(hsc_id, HSC_TEMP, PMBUS_READ_TEMP1, value, NULL) < 0 ) return READING_NA;
+  return PAL_EOK;
 }
 
 static int
 read_hsc_vin(uint8_t hsc_id, float *value) {
-  uint8_t tbuf[1] = {0x00};
-  uint8_t rbuf[2] = {0x00};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  uint8_t addr = 0;
-  float m = 0, b = 0, r = 0;
-  int retry = MAX_RETRY;
-  int ret = ERR_NOT_READY;
-  int fd = 0;
 
-  fd = open("/dev/i2c-11", O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "Failed to open bus 11");
-    goto error_exit;
-  }
-
-  get_hsc_info(hsc_id, HSC_VOLTAGE, &addr, &m, &b, &r);
-
-  tbuf[0] = PMBUS_READ_VIN;
-  tlen = 1;
-  rlen = 2;
-
-  while ( ret < 0 && retry-- > 0 ) {
-    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
-  }
-
-  if ( ret < 0 ) {
-    ret = READING_NA;
-    goto error_exit;
-  }
-
-  *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
-error_exit:
-  if ( fd > 0 ) close(fd);
-
-  return ret;
+  if ( get_hsc_reading(hsc_id, HSC_VOLTAGE, PMBUS_READ_VIN, value, NULL) < 0 ) return READING_NA;
+  return PAL_EOK;
 }
 
 static void
@@ -2123,7 +2119,6 @@ pal_sdr_init(uint8_t fru) {
 
 int
 pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
-  int ret = 0;
   uint8_t scale = sensor_map[sensor_num].units;
 
   switch(scale) {

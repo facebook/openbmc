@@ -21,15 +21,27 @@ import unittest
 
 from common.base_fans_test import CommonShellBasedFansTest
 from utils.cit_logger import Logger
-
+from utils.test_utils import running_systemd
 
 class FansTest(CommonShellBasedFansTest, unittest.TestCase):
     def setUp(self):
         Logger.start(name=self._testMethodName)
+        if running_systemd():
+            Logger.info("Running the systemd variant")
+            self.kill_fan_ctrl_cmd = [
+                "/bin/systemctl stop fscd",
+                "/usr/local/bin/wdtcli stop",
+            ]
+            self.start_fan_ctrl_cmd = ["/bin/systemctl start fscd"]
+        else:
+            self.kill_fan_ctrl_cmd = [
+                "/usr/bin/sv stop fscd",
+                "/usr/local/bin/wdtcli stop",
+            ]
+            self.start_fan_ctrl_cmd = ["/usr/bin/sv start fscd"]
+
         self.read_fans_cmd = "/usr/local/bin/get_fan_speed.sh"
         self.write_fans_cmd = "/usr/local/bin/set_fan_speed.sh"
-        self.kill_fan_ctrl_cmd = ["/usr/bin/sv stop fscd", "/usr/local/bin/wdtcli stop"]
-        self.start_fan_ctrl_cmd = ["/usr/bin/sv start fscd"]
 
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))

@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
+import os
 import re
 
 from utils.cit_logger import Logger
@@ -44,3 +44,7 @@ def read_data_from_filepath(path):
         return data
     except Exception:
         raise ("Failed to read path={}".format(path))
+
+
+def running_systemd():
+    return "systemd" in os.readlink("/proc/1/exe")

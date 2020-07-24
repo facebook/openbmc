@@ -20,12 +20,78 @@
 package validate
 
 import (
+	"log"
 	"regexp"
+	"strings"
 	"syscall"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
+
+// Deal with images that have changed names, but are otherwise compatible.
+// The version strings are free form, so to come up with regexes that safely
+// matches all possible formats would be tough. Instead, we use this to do
+// substitutions before matching in areVersionsCompatible().
+// NB: the values of this mapping CANNOT contain a dash!
+var compatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2"}
+
+var normalizeVersion = func(ver string) string {
+	for k, v := range compatibleVersionMapping {
+		ver = strings.Replace(ver, k, v, 1)
+	}
+	return ver
+}
+
+// check compatibility of images based on OpenBMC build name
+// obtained from (1) /etc/issue file and (2) image file (after normalization).
+// TODO:- introduce --force flag and allow forcing
+var IsImageBuildNameCompatible = func(imageFilePath string) bool {
+	log.Printf("Checking issue file and image file OpenBMC version compatibility...")
+	issueVer, err := getOpenBMCVersionFromIssueFile()
+	if err != nil {
+		log.Printf("%v", err)
+		return false
+	}
+	log.Printf("Issue file OpenBMC Version: '%v'", issueVer)
+	imageVer, err := getOpenBMCVersionFromImageFile(imageFilePath)
+	if err != nil {
+		log.Printf("%v", err)
+		return false
+	}
+	log.Printf("Image file OpenBMC Version: '%v'", imageVer)
+	return areVersionsCompatible(issueVer, imageVer)
+}
+
+// fby2-gpv2-v2019.43.1 -> fbgp2
+// yosemite-v1.2 -> yosemite
+var getNormalizedBuildNameFromVersion = func(ver string) (string, error) {
+	nVer := normalizeVersion(ver)
+
+	buildNameRegEx := `^(?P<buildname>\w+)`
+	verMap, err := utils.GetRegexSubexpMap(buildNameRegEx, nVer)
+	if err != nil {
+		return "", errors.Errorf("Unable to get build name from version '%v' (normalized: '%v'): %v",
+			ver, nVer, err)
+	}
+	return verMap["buildname"], nil
+}
+
+// check compatibility of OpenBMC version strings by comparing
+// the build name part AFTER normalizing
+var areVersionsCompatible = func(issueVer, imageVer string) bool {
+	issueBuildName, err := getNormalizedBuildNameFromVersion(issueVer)
+	if err != nil {
+		log.Printf("%v", err)
+		return false
+	}
+	imageBuildName, err := getNormalizedBuildNameFromVersion(imageVer)
+	if err != nil {
+		log.Printf("%v", err)
+		return false
+	}
+	return issueBuildName == imageBuildName
+}
 
 // get OpenBMC version from /etc/issue
 // examples: fbtp-v2020.09.1, wedge100-v2020.07.1

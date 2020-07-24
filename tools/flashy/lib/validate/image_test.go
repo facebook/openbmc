@@ -27,6 +27,127 @@ import (
 	"github.com/pkg/errors"
 )
 
+// also tests areVersionsCompatible
+func TestIsImageFileCompatible(t *testing.T) {
+	// save and defer restore getOpenBMCVersionFromIssueFile
+	// getOpenBMCVersionFromImageFile
+	// and compatibleVersionMapping
+	getOpenBMCVersionFromIssueFileOrig := getOpenBMCVersionFromIssueFile
+	getOpenBMCVersionFromImageFileOrig := getOpenBMCVersionFromImageFile
+	compatibleVersionMappingOrig := compatibleVersionMapping
+	defer func() {
+		getOpenBMCVersionFromIssueFile = getOpenBMCVersionFromIssueFileOrig
+		getOpenBMCVersionFromImageFile = getOpenBMCVersionFromImageFileOrig
+		compatibleVersionMapping = compatibleVersionMappingOrig
+	}()
+
+	type OpenBMCVersionFuncRet struct {
+		s string
+		e error
+	}
+
+	cases := []struct {
+		name         string
+		issueFileRet OpenBMCVersionFuncRet
+		imageFileRet OpenBMCVersionFuncRet
+		want         bool
+	}{
+		{
+			name:         "no errors in getting versions",
+			issueFileRet: OpenBMCVersionFuncRet{"x", nil},
+			imageFileRet: OpenBMCVersionFuncRet{"x", nil},
+			want:         true,
+		},
+		{
+			name:         "error getting issue file version",
+			issueFileRet: OpenBMCVersionFuncRet{"", errors.Errorf("oops")},
+			imageFileRet: OpenBMCVersionFuncRet{"x", nil},
+			want:         false,
+		},
+		{
+			name:         "error getting image file version",
+			issueFileRet: OpenBMCVersionFuncRet{"x", nil},
+			imageFileRet: OpenBMCVersionFuncRet{"", errors.Errorf("oops")},
+			want:         false,
+		},
+		{
+			name:         "no errors but build names don't match",
+			issueFileRet: OpenBMCVersionFuncRet{"x", nil},
+			imageFileRet: OpenBMCVersionFuncRet{"y", nil},
+			want:         false,
+		},
+	}
+
+	compatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2"}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			getOpenBMCVersionFromIssueFile = func() (string, error) {
+				return tc.issueFileRet.s, tc.issueFileRet.e
+			}
+			getOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) {
+				return tc.imageFileRet.s, tc.imageFileRet.e
+			}
+			got := IsImageBuildNameCompatible("x")
+			if tc.want != got {
+				t.Errorf("want %v got %v", tc.want, got)
+			}
+		})
+	}
+}
+
+// also tests normalizeVersion
+func TestGetNormalizedBuildNameFromVersion(t *testing.T) {
+	compatibleVersionMappingOrig := compatibleVersionMapping
+	defer func() {
+		compatibleVersionMapping = compatibleVersionMappingOrig
+	}()
+
+	cases := []struct {
+		name    string
+		ver     string
+		want    string
+		wantErr error
+	}{
+		{
+			name:    "wedge100 example",
+			ver:     "wedge100-v2020.07.1",
+			want:    "wedge100",
+			wantErr: nil,
+		},
+		{
+			name:    "tiogapass1 example",
+			ver:     "fbtp-v2020.09.1",
+			want:    "fbtp",
+			wantErr: nil,
+		},
+		{
+			name:    "normalization test (fby2-gpv2)",
+			ver:     "fby2-gpv2-v2019.43.1",
+			want:    "fbgp2",
+			wantErr: nil,
+		},
+		{
+			name: "rubbish version, no match",
+			ver:  "!@#$",
+			want: "",
+			wantErr: errors.Errorf("Unable to get build name from version '%v' (normalized: '%v'): %v",
+				"!@#$", "!@#$", "No match for regex '^(?P<buildname>\\w+)' for input '!@#$'"),
+		},
+	}
+
+	compatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2"}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := getNormalizedBuildNameFromVersion(tc.ver)
+
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+			tests.CompareTestErrors(tc.wantErr, err, t)
+		})
+	}
+}
+
 func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 	// save and defer restore ReadFile
 	readFileOrig := utils.ReadFile

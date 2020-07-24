@@ -20,6 +20,7 @@
 
 import os.path
 import re
+import json
 from subprocess import PIPE, Popen
 from uuid import getnode as get_mac
 
@@ -113,13 +114,23 @@ class bmcNode(node):
         uboot_version = None
         uboot_ver_regex = r"^U-Boot\W+(?P<uboot_ver>20\d{2}\.\d{2})\W+.*$"
         uboot_ver_re = re.compile(uboot_ver_regex)
-        mtd0_str_dump_cmd = ["/usr/bin/strings", "/dev/mtd0"]
-        with Popen(mtd0_str_dump_cmd, stdout=PIPE, universal_newlines=True) as proc:
-            for line in proc.stdout:
-                matched = uboot_ver_re.fullmatch(line.strip())
-                if matched:
-                    uboot_version = matched.group("uboot_ver")
-                    break
+        mtd_meta = getMTD("meta")
+        if mtd_meta == None:
+            mtd0_str_dump_cmd = ["/usr/bin/strings", "/dev/mtd0"]
+            with Popen(mtd0_str_dump_cmd, stdout=PIPE, universal_newlines=True) as proc:
+                for line in proc.stdout:
+                    matched = uboot_ver_re.fullmatch(line.strip())
+                    if matched:
+                        uboot_version = matched.group("uboot_ver")
+                        break
+        else:
+            mtd_dev = "/dev/" + mtd_meta
+            with open(mtd_dev, "r") as f:
+                raw_data = f.readline()
+                try:
+                    uboot_version = json.loads(raw_data)["version_infos"]["uboot_ver"]
+                except:
+                    uboot_version = None
         return uboot_version
 
     def getUbootVer(self):

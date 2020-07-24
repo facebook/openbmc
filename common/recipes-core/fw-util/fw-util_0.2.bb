@@ -42,6 +42,7 @@ SRC_URI =+ "file://Makefile \
            file://image_parts.json \
            file://scheduler.h \
            file://scheduler.cpp \
+           file://vr.cpp \
           "
 
 SRC_URI += "file://tests/bmc-test.cpp \

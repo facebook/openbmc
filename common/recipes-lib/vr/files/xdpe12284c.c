@@ -40,6 +40,12 @@ get_xdpe_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
     kv_set(key, checksum, 0, 0);
   } while (0);
 
+  tbuf[0] = VR_REG_PAGE;
+  tbuf[1] = 0x00;
+  if ((ret = i2c_io(fd, addr, tbuf, 2, rbuf, 0))) {
+    syslog(LOG_WARNING, "%s: set page to 0x%02X failed", __func__, tbuf[1]);
+  }
+
   close(fd);
   return ret;
 }
@@ -402,7 +408,13 @@ program_xdpe(uint8_t bus, uint8_t addr, uint8_t *data) {
     msleep(10);
   } while (0);
 
+  tbuf[0] = VR_REG_PAGE;
+  tbuf[1] = 0x00;
+  if ((ret = i2c_io(fd, addr, tbuf, 2, rbuf, 0))) {
+    syslog(LOG_WARNING, "%s: set page to 0x%02X failed", __func__, tbuf[1]);
+  }
   close(fd);
+
   return ret;
 }
 
@@ -467,6 +479,12 @@ xdpe_fw_verify(struct vr_info *info, void *args) {
       break;
     }
   } while (0);
+
+  tbuf[0] = VR_REG_PAGE;
+  tbuf[1] = 0x00;
+  if ((ret = i2c_io(fd, info->addr, tbuf, 2, rbuf, 0))) {
+    syslog(LOG_WARNING, "%s: set page to 0x%02X failed", __func__, tbuf[1]);
+  }
   close(fd);
 
   memcpy(&crc, rbuf, 4);

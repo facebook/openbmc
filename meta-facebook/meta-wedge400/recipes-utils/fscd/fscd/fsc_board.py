@@ -144,9 +144,9 @@ def set_fan_led(fan, color="led_blue"):
 
 
 def host_shutdown():
-    SCM_POWER_COMMAND = "/usr/local/bin/wedge_power.sh reset"
-    TH_SWITCH_POWER_COMMAND = "/usr/local/bin/reset_brcm.sh"
-    GB_SWITCH_POWER_COMMAND = "/usr/local/bin/switch_reset.sh cycle"
+    SCM_POWER_COMMAND = "/usr/local/bin/wedge_power.sh off"
+    TH_SWITCH_POWER_COMMAND = "source /usr/local/bin/openbmc-utils.sh; echo 0 > $SMBCPLD_SYSFS_DIR/th3_turn_on"
+    GB_SWITCH_POWER_COMMAND = "source /usr/local/bin/openbmc-utils.sh; echo 0 > $SMBCPLD_SYSFS_DIR/gb_turn_on"
     switch_reset_cmd = ""
     brd_type = pal_get_board_type()
     if brd_type == "Wedge400":

@@ -77,7 +77,7 @@ i2c_device_add 61 0x60 smb_pwrcpld  #PDB-R
 
 # # i2c-mux PCA9548 0x70, channel 3, mux PCA9548 0x76
 i2c_device_add 64 0x33	fcbcpld #CPLD
-i2c_device_add 65 0x53	24c02
+i2c_device_add 65 0x53	24c64
 i2c_device_add 66 0x49 tmp75
 i2c_device_add 66 0x48 tmp75
 i2c_device_add 67 0x10 adm1278
@@ -88,7 +88,7 @@ i2c_device_add 71 0x52 24c64    #fan 1 eeprom
 
 # # i2c-mux PCA9548 0x70, channel 4, mux PCA9548 0x76
 i2c_device_add 72 0x33	fcbcpld #FCM CPLD
-i2c_device_add 73 0x53	24c02
+i2c_device_add 73 0x53	24c64
 i2c_device_add 74 0x49 tmp75
 i2c_device_add 74 0x48 tmp75
 i2c_device_add 75 0x10 adm1278

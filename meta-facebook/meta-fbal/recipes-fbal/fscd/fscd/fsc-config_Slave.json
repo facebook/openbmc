@@ -36,6 +36,20 @@
           [95, 60]
         ]
       },
+      "linear_vr": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "data": [
+          [70, 20],
+          [75, 25],
+          [80, 30],
+          [85, 35],
+          [90, 60],
+          [95, 65]
+        ]
+      },    
       "linear_inlet": {
         "read_source" : {
           "util" : "/usr/local/bin/sensor-util"
@@ -50,20 +64,6 @@
         ]
       }
     },
-    "linear_vr": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "linear",
-      "data": [
-        [70, 20],
-        [75, 25],
-        [80, 30],
-        [85, 35],
-        [90, 60],
-        [95, 65]
-      ]
-    },     
     "fans": {
       "0": {
         "read_source" : {

@@ -30,7 +30,7 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 echo "Setup fan speed... "
-/usr/local/bin/ipmb-util 8 0x68 0xd8 0x08 0x05 0xff
+/usr/local/bin/ipmb-util 8 0x68 0xd8 0x08 0x46 0xff
 
 default_fsc_config_path="/etc/fsc-config.json"
 

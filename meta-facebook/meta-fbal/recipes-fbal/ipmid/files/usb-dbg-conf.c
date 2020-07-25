@@ -486,7 +486,7 @@ int plat_get_board_id(char *id)
 
 int plat_get_syscfg_text(uint8_t fru, char *syscfg)
 {
-//  pal_get_syscfg_text(syscfg);
+  pal_get_syscfg_text(syscfg);
   return 0;
 }
 

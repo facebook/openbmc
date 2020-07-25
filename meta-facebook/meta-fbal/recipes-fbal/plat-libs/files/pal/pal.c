@@ -1820,3 +1820,208 @@ pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *respons
 
   return lib_dcmi_wrapper(&info, request, req_len, response, rlen);
 }
+
+int
+pal_get_cpu_amount(uint8_t* amount) {
+  static uint8_t cache_amount;
+  static bool cached = false;
+  uint8_t mode;
+  int ret;
+
+  if(!cached) {
+  //Get Config
+    ret = pal_get_host_system_mode(&mode);
+    if (ret != 0) {
+      syslog(LOG_WARNING,"%s Wrong get system mode\n", __func__);
+      return ret;
+    } 
+
+    if( mode == MB_2S_MODE ) {
+      cache_amount = 2;
+    } else if( mode == MB_4S_MODE ) {
+      cache_amount = 4;
+    } else if( mode == MB_8S_MODE ) {
+      cache_amount = 8;
+    } else {
+      cache_amount = 0;
+    }
+  }
+  *amount = cache_amount;
+  return 0;
+}
+
+int
+pal_get_dimm_amount(uint8_t* amount) {
+  static uint8_t cache_amount;
+  static bool cached = false;
+  uint8_t mode;
+  int ret;
+
+  if(!cached) {
+  //Get Config
+    ret = pal_get_host_system_mode(&mode);
+    if (ret != 0) {
+      syslog(LOG_WARNING,"%s Wrong get system mode\n", __func__);
+      return ret;
+    } 
+
+    if( mode == MB_2S_MODE ) {
+      cache_amount = 24;
+    } else if( mode == MB_4S_MODE ) {
+      cache_amount = 48;
+    } else if( mode == MB_8S_MODE ) {
+      cache_amount = 96;
+    } else {
+      cache_amount = 0;
+    }
+  }
+  *amount = cache_amount;
+//  syslog(LOG_DEBUG,"DIMM Number=%d\n", cache_amount);
+
+  return 0;
+}
+
+static bool
+is_cpu_socket_occupy(unsigned int cpu_idx) {
+  static bool cached = false;
+  static uint8_t cached_id = 0;
+
+  if (!cached) {
+    const char *shadows[] = {
+      "FM_CPU0_SKTOCC_LVT3_PLD_N",
+      "FM_CPU1_SKTOCC_LVT3_PLD_N"
+    };
+    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+      return false;
+    }
+    cached = true;
+  }
+
+  // bit == 1 implies CPU is absent.
+  if (cached_id & (1 << cpu_idx)) {
+    return false;
+  }
+  return true;
+}
+
+int
+pal_get_syscfg_text (char *text) {
+  int rev;
+  int cnt=0;
+  char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
+  char *key_prefix = "sys_config/";
+  char *buf = NULL;
+  char str[16];
+
+  uint8_t cpu_num=0;
+  uint8_t cpu_index=0;
+  uint8_t cpu_core_num=0;
+  float cpu_speed=0;
+ 
+  uint8_t dimm_num=0;
+  uint8_t dimm_index=0;
+  uint16_t dimm_speed=0;
+  uint32_t dimm_capacity=0;
+  size_t ret;
+  static char *dimm_label[24] = {
+    "A0", "C0", "A1", "C1", "A2", "C2", "A3", "C3", "A4", "C4", "A5", "C5",
+    "B0", "D0", "B1", "D1", "B2", "D2", "B3", "D3", "B4", "D4", "B5", "D5"
+  };
+
+  if (text == NULL)
+    return -1;
+
+  // Clear string buffer
+  text[0] = '\0';
+
+  if(pal_get_cpu_amount(&cpu_num)) {
+    return -1;
+  }
+
+  if(pal_get_dimm_amount(&dimm_num)) {
+    return -1; 
+  }
+
+  // CPU information
+  for (cpu_index = 0; cpu_index < cpu_num; cpu_index++) {
+    if(cpu_num == 2) {
+      if (!is_cpu_socket_occupy((unsigned int)cpu_index))
+        continue;
+    }
+    sprintf(entry, "CPU%d:", cpu_index);
+
+    // Processor#
+    snprintf(key, MAX_KEY_LEN, "%sfru1_cpu%d_product_name", key_prefix, cpu_index);
+    if (kv_get(key, value, &ret, KV_FPERSIST) == 0 ) {
+      cnt = 0;
+      buf = strtok(value, " ");
+      while( buf != NULL ) {
+        if(cnt == 3) { //Full Name
+        // strncpy(str, buf, sizeof(str));
+         snprintf(&entry[strlen(entry)], sizeof(str), "%s", buf);
+         break;
+        }
+        cnt++;
+        buf = strtok(NULL, " ");
+      }
+    }
+
+    // Frequency & Core Number
+    snprintf(key, MAX_KEY_LEN, "%sfru1_cpu%d_basic_info", key_prefix, cpu_index);
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 5) {
+      cpu_speed = (float)(value[4] << 8 | value[3])/1000;
+      cpu_core_num = value[0];
+
+      sprintf(&entry[strlen(entry)], "/%.1fG/%dc", cpu_speed, cpu_core_num);
+    }
+
+    sprintf(&entry[strlen(entry)], "\n");
+    strcat(text, entry);
+  }
+
+
+  for (dimm_index=0; dimm_index<dimm_num; dimm_index++) { // 2S:DIMM=24, 4S:DIMM=48, 8S:DIMM=96;
+    sprintf(entry, "CPU%d_MEM%s:", dimm_index/12, dimm_label[dimm_index%24]);
+  
+    // Check Present
+    snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_location", key_prefix, dimm_index);
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 1) {
+//syslog(LOG_DEBUG, "CPU%d_MEM%s: Present=%d", dimm_index/12, dimm_label[dimm_index%24], value[0]);
+      // Skip if not present
+      if (value[0] != 0x01)
+        continue;
+    }
+  
+    // Module Manufacturer ID
+    snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_manufacturer_id", key_prefix, dimm_index);
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 2) {
+      switch (value[1]) {
+        case 0xce:
+          sprintf(&entry[strlen(entry)], "Samsung");
+          break;
+        case 0xad:
+          sprintf(&entry[strlen(entry)], "Hynix");
+          break;
+        case 0x2c:
+          sprintf(&entry[strlen(entry)], "Micron");
+          break;
+        default:
+          sprintf(&entry[strlen(entry)], "unknown");
+          break;
+      }
+    }
+  
+    // Speed
+    snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_speed",key_prefix, dimm_index);
+    if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 6) {
+      dimm_speed =  value[1]<<8 | value[0];
+      dimm_capacity = (value[5]<<24 | value[4]<<16 | value[3]<<8 | value[2])/1024; 
+      sprintf(&entry[strlen(entry)], "%dMhz/%dGB", dimm_speed, dimm_capacity);
+    }
+  
+    sprintf(&entry[strlen(entry)], "\n");
+    strcat(text, entry);
+  }
+
+  return 0;
+}

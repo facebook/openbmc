@@ -99,8 +99,8 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [58, 11],
-        [60, 13],
+        [58, 9],
+        [60, 12],
         [62, 15]
       ]
     },

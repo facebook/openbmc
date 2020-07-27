@@ -3,8 +3,9 @@
 #include <cstring>
 #include "server.h"
 #include <openbmc/pal.h>
-#include <facebook/bic.h>
 #include <syslog.h>
+#ifdef COMMON_BIC_SUPPORT
+#include <facebook/bic.h>
 
 using namespace std;
 
@@ -66,3 +67,4 @@ class VrComponent : public Component {
 };
 
 VrComponent vr("scm", "vr", 0);
+#endif

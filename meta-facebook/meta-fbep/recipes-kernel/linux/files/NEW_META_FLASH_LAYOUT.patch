@@ -1,13 +1,22 @@
+From 8c59d232aa40f94d6f081be834b6650df8dd5b9a Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@fb.com>
+Date: Mon, 27 Jul 2020 16:08:21 -0700
+Subject: [PATCH] Patch partition layout to use extended FIT and meta layer
+
+---
+ .../dts/facebook-bmc-pfr-128M-layout.dtsi     | 22 +++++++++++++------
+ 1 file changed, 15 insertions(+), 7 deletions(-)
+
 diff --git a/arch/arm/boot/dts/facebook-bmc-pfr-128M-layout.dtsi b/arch/arm/boot/dts/facebook-bmc-pfr-128M-layout.dtsi
-index ac5872f41d8..c750e3b5d7c 100644
+index 6ef5ffe..a908cac 100644
 --- a/arch/arm/boot/dts/facebook-bmc-pfr-128M-layout.dtsi
 +++ b/arch/arm/boot/dts/facebook-bmc-pfr-128M-layout.dtsi
 @@ -6,23 +6,23 @@ partitions {
  	#address-cells = <1>;
  	#size-cells = <1>;
  	u-boot@0 {
--		reg = <0x0 0x60000>;
-+		reg = <0x0 0xE0000>;
+-		reg = <0x10000 0x50000>;
++		reg = <0x10000 0xD0000>;
  		label = "u-boot";
  	};
  	/*
@@ -23,13 +32,13 @@ index ac5872f41d8..c750e3b5d7c 100644
 -	fit@80000 {
 -		reg = <0x80000 0x1b80000>;
 +	fit@100000 {
-+		reg = <0x100000 0x1F00000>;
++		reg = <0x100000 0x1f00000>;
  		label = "fit";
  	};
 -	data0@1c00000 {
 -		reg = <0x1c00000 0xde0000>;
 +	data0@2000000 {
-+		reg = <0x2000000 0x9E0000>;
++		reg = <0x2000000 0x9e0000>;
  		label = "data0";
  	};
  	pfm@29e0000 {
@@ -46,3 +55,6 @@ index ac5872f41d8..c750e3b5d7c 100644
 +		lable = "meta";
 +	};
  };
+-- 
+2.24.1
+

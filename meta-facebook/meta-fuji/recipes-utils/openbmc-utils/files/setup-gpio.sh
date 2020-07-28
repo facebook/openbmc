@@ -42,9 +42,6 @@
 . /usr/local/bin/openbmc-utils.sh
 
 setup_gpio_fuji_evt() {
-    # Export Group B GPIO
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOB2 GPO1
-
     # Export Group F GPIO
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOF0 BMC_JTAG_MUX_IN
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOF1 BMC_UART_SEL_0
@@ -64,12 +61,6 @@ setup_gpio_fuji_evt() {
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOG6 BMC_I2C_SEL
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOG7 BMC_GPIO53
 
-    # Export Group H GPIO
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOH0 GPIO5_SGPMCK
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOH1 GPIO0_SGPMLD
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOH2 GPIO3_SGPMO
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOH3 GPIO1_SGPMI
-
     # Export Group I GPIO
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOI1 JTAG_TDI
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOI2 JTAG_TCK
@@ -78,32 +69,21 @@ setup_gpio_fuji_evt() {
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOI5 FPGA_BMC_CONFIG_DONE
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOI7 FPGA_NSTATUS
 
-    # Export Group L GPIO
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOL6 VGAHS_GPIO2
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOL7 VGAVS_GPIO4
-
     # Export Group M GPIO
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOM0 BMC_UART1_NCTS
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOM2 BMC_UART1_NDSR
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOM3 BMC_UART_SEL_1
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOM4 BMC_UART1_NDTR
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOM5 BMC_UART1_NRTS
 
     # Export Group N GPIO
-    gpio_export_by_name  "${ASPEED_GPIO}" GPION0 TEMP_SENSOR_ALERT
-    gpio_export_by_name  "${ASPEED_GPIO}" GPION1 RESERVED_GPIO67
+    gpio_export_by_name  "${ASPEED_GPIO}" GPION0 LM75_ALERT
     gpio_export_by_name  "${ASPEED_GPIO}" GPION2 CPU_RST#
+    gpio_export_by_name  "${ASPEED_GPIO}" GPION3 GPIO123_USB2BVBUSSNS
+    gpio_export_by_name  "${ASPEED_GPIO}" GPION4 GPIO126_USB2APWREN
+    gpio_export_by_name  "${ASPEED_GPIO}" GPION5 GPIO125_USB2AVBUSSNS
    
     # Export Group P GPIO
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOP0 BMC_UART_SEL_2
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOP2 GPIO85_PASSTHRU1_IN
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOP3 GPIO45_PASSTHRU1_OUT
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOP4 GPIO109_PASSTHRU2_IN
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOP5 GPIO21_PASSTHRU2_OUT
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOP6 BMC_GPIO61
 
     # Export Group V GPIO
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOV0 GPIO37_INDICATOR#
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOV1 UCD90160A_2_GPI1
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOV2 UCD90160A_1_GPI1
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOV3 PWRMONITOR_BMC
@@ -112,34 +92,22 @@ setup_gpio_fuji_evt() {
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOV6 FPGA_DEV_OE
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOV7 FPGA_CONFIG_SEL
 
+    gpio_export_by_name  "${ASPEED_GPIO}" GPIOW0 LPCD0
+    gpio_export_by_name  "${ASPEED_GPIO}" GPIOW1 LPCD1
+    gpio_export_by_name  "${ASPEED_GPIO}" GPIOW2 LPCD2
+    gpio_export_by_name  "${ASPEED_GPIO}" GPIOW3 LPCD3
+    gpio_export_by_name  "${ASPEED_GPIO}" GPIOW4 LPCCLK
+    gpio_export_by_name  "${ASPEED_GPIO}" GPIOW5 LPCFRAME#
+    gpio_export_by_name  "${ASPEED_GPIO}" GPIOW6 LPCIRQ#
+    gpio_export_by_name  "${ASPEED_GPIO}" GPIOW7 LPCRST#
+
     # Export Group X GPIO
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOX0 BMC_TPM_SPI_CS_N
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOX1 SPI2CS1#_GPIO86
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOX2 SPI2CS2#_GPIO84
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOX3 SPI2CK_GPIO78
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOX4 SPI2MOSI_GPIO82
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOX5 SPI2MISO_GPIO80
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOX6 BMC_FPGA_JTAG_EN
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOX7 BMC_TPM_SPI_PIRQ_N
 
     # Export Group Y GPIO
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOY0 WDTRST1_GPIO59
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOY1 WDTRST2_GPIO51
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOY2 BMC_GPIO57
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOY3 BMC_GPIO55
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOY4 FWSPI_IO2_GPIO41
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOY5 FWSPI_IO3_GPIO43
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOY7 GPIO35_FWSPIWP#
-
-    # Export Group Z GPIO
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOZ0 SPI1CS1#_GPIO124
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOZ1 I2C_TPM_PP
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOZ2 I2C_TPM_INT_N
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOZ3 SPI1CK_GPIO122
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOZ4 SPI1MOSI_IO0_GPO3
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOZ5 SPI1MISO_IO1_GPO4
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOZ6 GPO5_SPI1_IO2
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOZ7 GPIO120_SPI1_IO3
 }
 
 setup_gpio_fuji_evt
@@ -160,13 +128,13 @@ gpio_set_direction BMC_I2C_SEL out
 gpio_set_direction BMC_GPIO53 out
 gpio_set_direction FPGA_BMC_CONFIG_DONE in
 gpio_set_direction FPGA_NSTATUS in
-gpio_set_direction BMC_UART1_NCTS in
-gpio_set_direction BMC_UART1_NDSR in
 gpio_set_direction BMC_UART_SEL_1 out
 gpio_set_direction SYS_CPLD_JTAG_EN_N out
-gpio_set_direction BMC_UART1_NDTR out
-gpio_set_direction BMC_UART1_NRTS out
+gpio_set_direction LM75_ALERT in
 gpio_set_direction CPU_RST# in
+gpio_set_direction GPIO123_USB2BVBUSSNS in
+gpio_set_direction GPIO125_USB2AVBUSSNS in
+gpio_set_direction GPIO126_USB2APWREN out
 gpio_set_direction BMC_UART_SEL_2 out
 gpio_set_direction BMC_GPIO61 out
 gpio_set_direction UCD90160A_2_GPI1 out
@@ -176,27 +144,61 @@ gpio_set_direction BMC_PWRGD in
 gpio_set_direction FPGA_DEV_CLR_N out
 gpio_set_direction FPGA_DEV_OE out
 gpio_set_direction FPGA_CONFIG_SEL out
-gpio_set_direction BMC_TPM_SPI_CS_N out
+gpio_set_direction LPCD0 in
+gpio_set_direction LPCD1 in
+gpio_set_direction LPCD2 in
+gpio_set_direction LPCD3 in
+gpio_set_direction LPCCLK in
+gpio_set_direction LPCFRAME# in
+gpio_set_direction LPCIRQ# in
+gpio_set_direction LPCRST# in
 gpio_set_direction BMC_FPGA_JTAG_EN out
 gpio_set_direction BMC_TPM_SPI_PIRQ_N in
-gpio_set_direction WDTRST1_GPIO59 out
-gpio_set_direction WDTRST2_GPIO51 out
 gpio_set_direction BMC_GPIO57 out
 gpio_set_direction BMC_GPIO55 out
-gpio_set_direction FWSPI_IO2_GPIO41 out
-gpio_set_direction FWSPI_IO3_GPIO43 out
-gpio_set_direction I2C_TPM_PP out
-gpio_set_direction I2C_TPM_INT_N in
-gpio_set_direction GPO5_SPI1_IO2 out
 gpio_set_direction JTAG_TDI out
 gpio_set_direction JTAG_TDO in
 gpio_set_direction JTAG_TCK out
 gpio_set_direction JTAG_TMS out
 
+
 # Once we set "out", output values will be random unless we set them
 # to something
-# Workaround: Set BMC_JTAG_MUX_IN high to prevnet RunBMC test board MAC3 RMII reset
-gpio_set_value BMC_JTAG_MUX_IN 1
 # Set UCD90160A_CNTRL high to provide the SMB power
 gpio_set_value UCD90160A_CNTRL 1
-
+# Set JTAG to Header (0:Header 1:BMC)
+gpio_set_value BMC_JTAG_MUX_IN 0
+# Set FPGA JTAG to Header (0:BMC 1:Header)
+gpio_set_value BMC_FPGA_JTAG_EN 1
+# Set PFR FPGA Image,Current Not Used,set Image1 as default (0:Image0 1:Image1)
+gpio_set_value FPGA_CONFIG_SEL 1
+# FPGA all register clear enable (0:enable 1:disable)
+gpio_set_value FPGA_DEV_CLR_N 1
+# FPGA all I/O pins tri-stated enable (0:enable 1:disbale)
+gpio_set_value FPGA_DEV_OE 1
+# USB Power Out enable(0:disable 1:enable)
+gpio_set_value GPIO126_USB2APWREN 1
+# UCD90160A set reserved
+gpio_set_value UCD90160A_2_GPI1 0
+gpio_set_value UCD90160A_1_GPI1 0
+# BMC UART SEL set reserved
+gpio_set_value BMC_UART_SEL_0 0
+gpio_set_value BMC_UART_SEL_1 0
+gpio_set_value BMC_UART_SEL_2 0
+gpio_set_value BMC_UART_SEL_3 0
+# BMC GPIO set reserved
+gpio_set_value BMC_GPIO53 0
+gpio_set_value BMC_GPIO55 0
+gpio_set_value BMC_GPIO57 0
+gpio_set_value BMC_GPIO61 0
+gpio_set_value BMC_GPIO63 0
+# CPLD JTAG Enable (0:enable 1:disable)
+gpio_set_value SYS_CPLD_JTAG_EN_N 1
+gpio_set_value FCM_2_CPLD_JTAG_EN_N 1
+gpio_set_value BMC_SCM_CPLD_JTAG_EN_N 1
+gpio_set_value FCM_1_CPLD_JTAG_EN_N 1
+# JTAG Connected (0:connected to JTAG 1:disconnected to JTAG)
+gpio_set_value BMC_FCM_1_SEL 1
+gpio_set_value BMC_FCM_2_SEL 1
+# PFR status by i2c bus (0:disconnect this bus 1:connect this bus)
+gpio_set_value BMC_I2C_SEL 0

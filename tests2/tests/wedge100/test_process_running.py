@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_process_running_test import BaseProcessRunningTest
+from utils.test_utils import running_systemd
 
 
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
@@ -29,8 +30,10 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "fscd",
             "psumuxmon",
             "rackmond",
-            "/var/run/dhclient.eth0.pid",
-            "/var/run/dhclient6.eth0.pid",
             "rest.py",
             "mTerm_server",
         ]
+        if not running_systemd():
+            self.expected_process.extend(
+                ["/var/run/dhclient.eth0.pid", "/var/run/dhclient6.eth0.pid"]
+            )

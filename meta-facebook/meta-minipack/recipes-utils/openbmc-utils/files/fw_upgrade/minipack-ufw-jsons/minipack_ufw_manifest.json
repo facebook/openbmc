@@ -11,7 +11,7 @@
     },
     "fcm" : {
         "get_version" : "cpld_ver.sh |grep FCM|grep Top|cut -d ' ' -f 3",
-        "upgrade_cmd" : "usr/local/bin/fcmcpld_update.sh {filename}",
+        "upgrade_cmd" : "/usr/local/bin/fcmcpld_update.sh {filename}",
         "priority": 8
     },
     "iob_fpga" : {

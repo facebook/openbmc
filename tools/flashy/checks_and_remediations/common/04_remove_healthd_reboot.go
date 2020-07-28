@@ -23,31 +23,28 @@ import (
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
-	utils.RegisterStep(ensureEnoughFreeRam)
+	utils.RegisterStep(removeHealthdReboot)
 }
 
-// This is 75% of the limit in pypartition, as flashy assumes
-// the image is already downloaded.
-// This should be a generous limit to allow flashy and flashcp to run.
-const minMemoryNeeded = 45 * 1024 * 1024
-
-func ensureEnoughFreeRam(stepParams utils.StepParams) utils.StepExitError {
-	memInfo, err := utils.GetMemInfo()
-	if err != nil {
-		return utils.ExitSafeToReboot{err}
+// remove the high mem utilisation reboot action in /etc/healthd-config.json
+// to prevent reboots mid-flash
+func removeHealthdReboot(stepParams utils.StepParams) utils.StepExitError {
+	if utils.HealthdExists() {
+		log.Printf("Healthd exists in this system, removing the high memory utilization " +
+			"\"reboot\" entry if it exists.")
+		healthdConfig, err := utils.GetHealthdConfig()
+		if err != nil {
+			return utils.ExitSafeToReboot{err}
+		}
+		err = utils.HealthdRemoveMemUtilRebootEntryIfExists(healthdConfig)
+		if err != nil {
+			return utils.ExitSafeToReboot{err}
+		}
+	} else {
+		log.Printf("Healthd does not exist in this system. Skipping step.")
 	}
-	log.Printf("Memory status: %v B total memory, %v B free memory", memInfo.MemTotal, memInfo.MemFree)
-	log.Printf("Minimum memory needed for update is %v B", minMemoryNeeded)
-
-	if memInfo.MemFree < minMemoryNeeded {
-		errMsg := errors.Errorf("Free memory (%v B) < minimum memory needed (%v B), reboot needed",
-			memInfo.MemFree, minMemoryNeeded)
-		return utils.ExitSafeToReboot{errMsg}
-	}
-
 	return nil
 }

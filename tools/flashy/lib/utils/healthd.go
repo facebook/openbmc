@@ -20,10 +20,9 @@
 package utils
 
 import (
-	"encoding/json"
-	"log"
 	"time"
 
+	"github.com/Jeffail/gabs"
 	"github.com/pkg/errors"
 )
 
@@ -43,11 +42,6 @@ minilaketb
 yosemite
 */
 
-// partial healthd config required for JSON unmarshaling
-type HealthdConfig struct {
-	BmcMemUtilization BmcMemUtil `json:"bmc_mem_utilization"`
-}
-
 type BmcMemUtil struct {
 	Threshold []BmcMemThres `json:"threshold"`
 }
@@ -63,39 +57,59 @@ var HealthdExists = func() bool {
 	return FileExists(healthdConfigFilePath)
 }
 
-// reads from healthd-config.json and tries to unmarshal and return
-// the healthdConfig
-var GetHealthdConfig = func() (*HealthdConfig, error) {
-	var healthdConfig HealthdConfig
-	if !HealthdExists() {
-		return nil, errors.Errorf("Unable to find healthd-config.json file")
-	}
+var GetHealthdConfig = func() (*gabs.Container, error) {
 	buf, err := ReadFile(healthdConfigFilePath)
 	if err != nil {
-		return nil, errors.Errorf("Unable to open healthd config: %v", err)
+		return nil, errors.Errorf("Unable to open healthd-config.json: %v", err)
 	}
-	err = json.Unmarshal(buf, &healthdConfig)
+	healthdConfig, err := gabs.ParseJSON(buf)
 	if err != nil {
-		return nil, errors.Errorf("Unable to unmarshal healthd-config.json: %v", err)
+		return nil, errors.Errorf("Unable to parse healthd-config.json: %v", err)
 	}
-	return &healthdConfig, nil
+	return healthdConfig, nil
 }
 
-// get the healthd reboot threshold percentage
-// healthd config specifies a mem utlization threshold (e.g. 80%, 95%)
-// that will trigger system reboot
-func (h *HealthdConfig) GetRebootThresholdPercentage() float32 {
-	thresholds := h.BmcMemUtilization.Threshold
+// remove the "reboot" entry that will trigger system reboot after
+// mem util reaches a threshold. this is to prevent healthd reboots during flashing
+// if the "reboot" entry exists, remove it and write back to the file
+func HealthdRemoveMemUtilRebootEntryIfExists(h *gabs.Container) error {
+	rebootExists := false
+	thresholds, err := h.Path("bmc_mem_utilization.threshold").Children()
+	if err != nil {
+		return errors.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config %v",
+			h.String())
+	}
 	for _, threshold := range thresholds {
-		if StringFind("reboot", threshold.Actions) != -1 {
-			log.Printf("Found healthd reboot threshold: %v percent", threshold.Value)
-			return threshold.Value
+		actions, err := threshold.Path("action").Children()
+		if err != nil {
+			return errors.Errorf("Can't get 'action' entry in healthd-config %v", h.String())
+		}
+		for i, action := range actions {
+			if action.Data().(string) == "reboot" {
+				threshold.ArrayRemove(i, "action")
+				rebootExists = true
+				break
+			}
 		}
 	}
-	// there is no guarantee that there is a reboot action
-	// default to 100 if so
-	log.Printf("No healthd reboot threshold found, defaulting to 100 percent")
-	return 100
+
+	if rebootExists {
+		return HealthdWriteConfigToFile(h)
+	}
+	return nil
+}
+
+// write back into /etc/healthd-config.json
+func HealthdWriteConfigToFile(h *gabs.Container) error {
+	buf := []byte(h.StringIndent("", "  "))
+
+	err := WriteFile(healthdConfigFilePath, buf, 0644)
+	if err != nil {
+		return errors.Errorf("Unable to write healthd config to file: %v",
+			err)
+	}
+
+	return nil
 }
 
 var RestartHealthd = func(wait bool, supervisor string) error {

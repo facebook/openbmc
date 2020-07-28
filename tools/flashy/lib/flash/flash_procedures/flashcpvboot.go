@@ -42,8 +42,6 @@ func FlashCpVboot(stepParams utils.StepParams) utils.StepExitError {
 	}
 	log.Printf("Flash device: %v", flashDevice)
 
-	// TODO:- image validation here
-
 	// ==== WARNING: THIS STEP CAN ALTER THE IMAGE FILE ====
 	err = flashutils.VbootPatchImageBootloaderIfNeeded(stepParams.ImageFilePath, flashDevice)
 	if err != nil {

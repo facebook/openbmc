@@ -20,10 +20,6 @@
 // constants/examples used for testing
 package tests
 
-import (
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-)
-
 const ExampleWedge100MemInfo = `MemTotal:         246900 kB
 MemFree:           88928 kB
 MemAvailable:     192496 kB
@@ -190,6 +186,136 @@ const ExampleMinilaketbHealthdConfigJSON = `{
 	}
 }`
 
+// minilaketb healthd-config.json, reboot removed
+const ExampleMinilaketbHealthdConfigJSONRemovedReboot = `{
+	"version": "1.0",
+	"heartbeat": {
+		"interval": 500
+	},
+	"bmc_cpu_utilization": {
+		"enabled": true,
+		"window_size": 120,
+		"monitor_interval": 1,
+		"threshold": [
+			{
+				"value": 80.0,
+				"hysteresis": 5.0,
+				"action": [
+					"log-warning",
+					"bmc-error-trigger"
+				]
+			}
+		]
+	},
+	"bmc_mem_utilization": {
+		"enabled": true,
+		"enable_panic_on_oom": true,
+		"window_size": 120,
+		"monitor_interval": 1,
+		"threshold": [
+			{
+				"value": 60.0,
+				"hysteresis": 5.0,
+				"action": [
+					"log-warning"
+				]
+			},
+			{
+				"value": 70.0,
+				"hysteresis": 5.0,
+				"action": [
+					"log-critical",
+					"bmc-error-trigger"
+				]
+			},
+			{
+				"value": 95.0,
+				"hysteresis": 5.0,
+				"action": [
+					"log-critical",
+					"bmc-error-trigger"
+				]
+			}
+		]
+	},
+	"i2c": {
+		"enabled": false,
+		"busses": [
+			0,
+			1,
+			2,
+			3,
+			4,
+			5,
+			6,
+			7,
+			8,
+			9,
+			10,
+			11,
+			12,
+			13
+		]
+	},
+	"ecc_monitoring": {
+		"enabled": false,
+		"ecc_address_log": false,
+		"monitor_interval": 2,
+		"recov_max_counter": 255,
+		"unrec_max_counter": 15,
+		"recov_threshold": [
+			{
+				"value": 0.0,
+				"action": [
+					"log-critical",
+					"bmc-error-trigger"
+				]
+			},
+			{
+				"value": 50.0,
+				"action": [
+					"log-critical"
+				]
+			},
+			{
+				"value": 90.0,
+				"action": [
+					"log-critical"
+				]
+			}
+		],
+		"unrec_threshold": [
+			{
+				"value": 0.0,
+				"action": [
+					"log-critical",
+					"bmc-error-trigger"
+				]
+			},
+			{
+				"value": 50.0,
+				"action": [
+					"log-critical"
+				]
+			},
+			{
+				"value": 90.0,
+				"action": [
+					"log-critical"
+				]
+			}
+		]
+	},
+	"bmc_health": {
+		"enabled": false,
+		"monitor_interval": 2,
+		"regenerating_interval": 1200
+	},
+	"verified_boot": {
+		"enabled": false
+	}
+}`
+
 // minimal part of minilaketb json
 const ExampleMinimalHealthdConfigJSON = `{
 	"bmc_mem_utilization": {
@@ -216,6 +342,37 @@ const ExampleMinimalHealthdConfigJSON = `{
 					"log-critical",
 					"bmc-error-trigger",
 					"reboot"
+				]
+			}
+		]
+	}
+}`
+
+// same as ExampleMinimalHealthdConfigJSON, but reboot entry removed
+const ExampleMinimalHealthdConfigJSONRemovedReboot = `{
+	"bmc_mem_utilization": {
+		"threshold": [
+			{
+				"value": 60.0,
+				"hysteresis": 5.0,
+				"action": [
+					"log-warning"
+				]
+			},
+			{
+				"value": 70.0,
+				"hysteresis": 5.0,
+				"action": [
+					"log-critical",
+					"bmc-error-trigger"
+				]
+			},
+			{
+				"value": 95.0,
+				"hysteresis": 5.0,
+				"action": [
+					"log-critical",
+					"bmc-error-trigger"
 				]
 			}
 		]
@@ -252,40 +409,6 @@ const ExampleCorruptedHealthdConfig = `{
 		]
 	}
 }`
-
-var ExampleMinilaketbHealthdConfig = utils.HealthdConfig{
-	utils.BmcMemUtil{
-		[]utils.BmcMemThres{
-			utils.BmcMemThres{
-				Value:   float32(60.0),
-				Actions: []string{"log-warning"},
-			},
-			utils.BmcMemThres{
-				Value:   float32(70.0),
-				Actions: []string{"log-critical", "bmc-error-trigger"},
-			},
-			utils.BmcMemThres{
-				Value:   float32(95.0),
-				Actions: []string{"log-critical", "bmc-error-trigger", "reboot"},
-			},
-		},
-	},
-}
-
-var ExampleNoRebootHealthdConfig = utils.HealthdConfig{
-	utils.BmcMemUtil{
-		[]utils.BmcMemThres{
-			utils.BmcMemThres{
-				Value:   float32(60.0),
-				Actions: []string{"log-warning"},
-			},
-			utils.BmcMemThres{
-				Value:   float32(70.0),
-				Actions: []string{"log-critical", "bmc-error-trigger"},
-			},
-		},
-	},
-}
 
 const ExampleWedge100ProcMtdFile = `dev:    size   erasesize  name
 mtd0: 00060000 00010000 "u-boot"

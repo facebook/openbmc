@@ -41,8 +41,6 @@ func FlashCp(stepParams utils.StepParams) utils.StepExitError {
 	}
 	log.Printf("Flash device: %v", flashDevice)
 
-	// TODO:- image validation here
-
 	// run flashcp
 	flashCpErr := runFlashCpCmd(stepParams.ImageFilePath, flashDevice.GetFilePath())
 	return flashCpErr

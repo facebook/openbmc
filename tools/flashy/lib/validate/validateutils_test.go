@@ -20,6 +20,7 @@
 package validate
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
@@ -27,71 +28,84 @@ import (
 	"github.com/pkg/errors"
 )
 
-// also tests areVersionsCompatible
-func TestIsImageFileCompatible(t *testing.T) {
-	// save and defer restore getOpenBMCVersionFromIssueFile
-	// getOpenBMCVersionFromImageFile
-	// and compatibleVersionMapping
-	getOpenBMCVersionFromIssueFileOrig := getOpenBMCVersionFromIssueFile
+func TestCompatibleVersionMapping(t *testing.T) {
+	// the values of compatibleVersionMapping cannot have a dash
+	for key, val := range compatibleVersionMapping {
+		if strings.ContainsAny(val, "-") {
+			t.Errorf("Invalid mapping (%v, %v), value %v cannot contain a dash",
+				key, val, val)
+		}
+	}
+}
+
+func TestCheckImageBuildNameCompatibility(t *testing.T) {
+	getOpenBMCVersionFromIssueFileOrig := utils.GetOpenBMCVersionFromIssueFile
 	getOpenBMCVersionFromImageFileOrig := getOpenBMCVersionFromImageFile
 	compatibleVersionMappingOrig := compatibleVersionMapping
 	defer func() {
-		getOpenBMCVersionFromIssueFile = getOpenBMCVersionFromIssueFileOrig
+		utils.GetOpenBMCVersionFromIssueFile = getOpenBMCVersionFromIssueFileOrig
 		getOpenBMCVersionFromImageFile = getOpenBMCVersionFromImageFileOrig
 		compatibleVersionMapping = compatibleVersionMappingOrig
 	}()
 
-	type OpenBMCVersionFuncRet struct {
-		s string
-		e error
-	}
-
 	cases := []struct {
 		name         string
-		issueFileRet OpenBMCVersionFuncRet
-		imageFileRet OpenBMCVersionFuncRet
-		want         bool
+		etcIssueVer  string
+		imageFileVer string
+		want         error
 	}{
 		{
-			name:         "no errors in getting versions",
-			issueFileRet: OpenBMCVersionFuncRet{"x", nil},
-			imageFileRet: OpenBMCVersionFuncRet{"x", nil},
-			want:         true,
+			name:         "match passing",
+			etcIssueVer:  "fbtp-v2020.09.1",
+			imageFileVer: "fbtp-v2019.01.3",
+			want:         nil,
 		},
 		{
-			name:         "error getting issue file version",
-			issueFileRet: OpenBMCVersionFuncRet{"", errors.Errorf("oops")},
-			imageFileRet: OpenBMCVersionFuncRet{"x", nil},
-			want:         false,
+			name:         "does not match",
+			etcIssueVer:  "fbtp-v2020.09.1",
+			imageFileVer: "yosemite-v1.2",
+			want: errors.Errorf("OpenBMC versions from /etc/issue ('fbtp') and " +
+				"image file ('yosemite') do not match!"),
 		},
 		{
-			name:         "error getting image file version",
-			issueFileRet: OpenBMCVersionFuncRet{"x", nil},
-			imageFileRet: OpenBMCVersionFuncRet{"", errors.Errorf("oops")},
-			want:         false,
+			name:         "compatible, uses normalized version",
+			etcIssueVer:  "fby2-gpv2-v2019.43.1",
+			imageFileVer: "fbgp2-v1234",
+			want:         nil,
 		},
 		{
-			name:         "no errors but build names don't match",
-			issueFileRet: OpenBMCVersionFuncRet{"x", nil},
-			imageFileRet: OpenBMCVersionFuncRet{"y", nil},
-			want:         false,
+			name:         "etc issue build name get error",
+			etcIssueVer:  "!@#$",
+			imageFileVer: "yfbgp2-v1234",
+			want: errors.Errorf("Image build name compatibility check failed: " +
+				"Unable to get build name from version '!@#$' (normalized: '!@#$'): " +
+				"No match for regex '^(?P<buildname>\\w+)' for input '!@#$'"),
+		},
+		{
+			name:         "image build name get error",
+			etcIssueVer:  "fby2-gpv2-v2019.43.1",
+			imageFileVer: "!@#$",
+			want: errors.Errorf("Image build name compatibility check failed: " +
+				"Unable to get build name from version '!@#$' (normalized: '!@#$'): " +
+				"No match for regex '^(?P<buildname>\\w+)' for input '!@#$'"),
 		},
 	}
 
 	compatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2"}
 	for _, tc := range cases {
+
 		t.Run(tc.name, func(t *testing.T) {
-			getOpenBMCVersionFromIssueFile = func() (string, error) {
-				return tc.issueFileRet.s, tc.issueFileRet.e
+			stepParams := utils.StepParams{}
+			utils.GetOpenBMCVersionFromIssueFile = func() (string, error) {
+				return tc.etcIssueVer, nil
 			}
 			getOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) {
-				return tc.imageFileRet.s, tc.imageFileRet.e
+				return tc.imageFileVer, nil
 			}
-			got := IsImageBuildNameCompatible("x")
-			if tc.want != got {
-				t.Errorf("want %v got %v", tc.want, got)
-			}
+			got := CheckImageBuildNameCompatibility(stepParams)
+			tests.CompareTestErrors(tc.want, got, t)
 		})
+
 	}
 }
 
@@ -148,78 +162,6 @@ func TestGetNormalizedBuildNameFromVersion(t *testing.T) {
 	}
 }
 
-func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
-	// save and defer restore ReadFile
-	readFileOrig := utils.ReadFile
-	defer func() {
-		utils.ReadFile = readFileOrig
-	}()
-
-	cases := []struct {
-		name             string
-		etcIssueContents string
-		etcIssueReadErr  error
-		want             string
-		wantErr          error
-	}{
-		{
-			name: "example fbtp /etc/issue",
-			etcIssueContents: `OpenBMC Release fbtp-v2020.09.1
- `,
-			etcIssueReadErr: nil,
-			want:            "fbtp-v2020.09.1",
-			wantErr:         nil,
-		},
-		{
-			name: "example wedge100 /etc/issue",
-			etcIssueContents: `OpenBMC Release wedge100-v2020.07.1
- `,
-			etcIssueReadErr: nil,
-			want:            "wedge100-v2020.07.1",
-			wantErr:         nil,
-		},
-		{
-			name:             "read error",
-			etcIssueContents: ``,
-			etcIssueReadErr:  errors.Errorf("/etc/issue read error"),
-			want:             "",
-			wantErr:          errors.Errorf("Error reading /etc/issue: /etc/issue read error"),
-		},
-		{
-			name:             "corrupt /etc/issue",
-			etcIssueContents: `OpenBMC Release`,
-			etcIssueReadErr:  nil,
-			want:             "",
-			wantErr: errors.Errorf("Unable to get version from /etc/issue: %v",
-				"No match for regex '^OpenBMC Release (?P<version>[^\\s]+)' for input 'OpenBMC Release'"),
-		},
-		{
-			name:             "openbmc wrong case ",
-			etcIssueContents: `openbmc Release wedge100-v2020.07.1`,
-			etcIssueReadErr:  nil,
-			want:             "",
-			wantErr: errors.Errorf("Unable to get version from /etc/issue: %v",
-				"No match for regex '^OpenBMC Release (?P<version>[^\\s]+)' for input 'openbmc Release wedge100-v2020.07.1'"),
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			utils.ReadFile = func(filename string) ([]byte, error) {
-				if filename != "/etc/issue" {
-					return []byte{}, errors.Errorf("filename: want '%v' got '%v'", "/etc/issue", filename)
-				}
-				return []byte(tc.etcIssueContents), tc.etcIssueReadErr
-			}
-		})
-		got, err := getOpenBMCVersionFromIssueFile()
-
-		if tc.want != got {
-			t.Errorf("want '%v' got '%v'", tc.want, got)
-		}
-		tests.CompareTestErrors(tc.wantErr, err, t)
-	}
-}
-
 func TestGetOpenBMCVersionFromImageFile(t *testing.T) {
 	// mock and defer restore MmapFileRO
 	mmapOrig := utils.MmapFileRange
@@ -259,7 +201,8 @@ func TestGetOpenBMCVersionFromImageFile(t *testing.T) {
 			fileBuf: []byte{},
 			mmapErr: nil,
 			want:    "",
-			wantErr: errors.Errorf("Unable to find OpenBMC version in image file 'x'"),
+			wantErr: errors.Errorf("Unable to find OpenBMC version in image file 'x': " +
+				"No match for regex 'U-Boot \\d+\\.\\d+ (?P<version>[^\\s]+)' for input"),
 		},
 		{
 			name:    "mmap err",

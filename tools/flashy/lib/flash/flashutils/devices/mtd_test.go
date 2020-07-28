@@ -61,14 +61,13 @@ func TestGetMmapFilePath(t *testing.T) {
 				tc.mtdFilePath,
 				uint64(123),
 			}
-			got, err := mtd.GetMmapFilePath()
+			got, err := mtd.getMmapFilePath()
 			if tc.want != got {
 				t.Errorf("want '%v' got '%v'", tc.want, got)
 			}
 			tests.CompareTestErrors(tc.wantErr, err, t)
 		})
 	}
-
 }
 
 func TestGetMTD(t *testing.T) {

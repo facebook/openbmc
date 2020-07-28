@@ -21,13 +21,14 @@ package validate
 
 import (
 	"log"
-	"regexp"
 	"strings"
 	"syscall"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
+
+const ubootVersionRegEx = `U-Boot \d+\.\d+ (?P<version>[^\s]+)`
 
 // Deal with images that have changed names, but are otherwise compatible.
 // The version strings are free form, so to come up with regexes that safely
@@ -43,24 +44,44 @@ var normalizeVersion = func(ver string) string {
 	return ver
 }
 
-// check compatibility of images based on OpenBMC build name
-// obtained from (1) /etc/issue file and (2) image file (after normalization).
-// TODO:- introduce --force flag and allow forcing
-var IsImageBuildNameCompatible = func(imageFilePath string) bool {
-	log.Printf("Checking issue file and image file OpenBMC version compatibility...")
-	issueVer, err := getOpenBMCVersionFromIssueFile()
+// check compatibility of the image file by comparing the "normalized" build name of
+// (1) the /etc/issue file and (2) the image file
+// return an error if they do not match
+var CheckImageBuildNameCompatibility = func(stepParams utils.StepParams) error {
+	etcIssueVer, err := utils.GetOpenBMCVersionFromIssueFile()
 	if err != nil {
-		log.Printf("%v", err)
-		return false
+		return errors.Errorf("Image build name compatibility check failed: %v", err)
 	}
-	log.Printf("Issue file OpenBMC Version: '%v'", issueVer)
-	imageVer, err := getOpenBMCVersionFromImageFile(imageFilePath)
+	log.Printf("OpenBMC Version from /etc/issue: '%v'", etcIssueVer)
+
+	imageFileVer, err := getOpenBMCVersionFromImageFile(stepParams.ImageFilePath)
 	if err != nil {
-		log.Printf("%v", err)
-		return false
+		return errors.Errorf("Image build name compatibility check failed: %v", err)
 	}
-	log.Printf("Image file OpenBMC Version: '%v'", imageVer)
-	return areVersionsCompatible(issueVer, imageVer)
+	log.Printf("OpenBMC Version from image file '%v': '%v'",
+		stepParams.ImageFilePath, imageFileVer)
+
+	// the two build names below are normalized versions
+	etcIssueBuildName, err := getNormalizedBuildNameFromVersion(etcIssueVer)
+	if err != nil {
+		return errors.Errorf("Image build name compatibility check failed: %v", err)
+	}
+	log.Printf("OpenBMC (normalized) build name from /etc/issue: '%v'", etcIssueBuildName)
+
+	imageFileBuildName, err := getNormalizedBuildNameFromVersion(imageFileVer)
+	if err != nil {
+		return errors.Errorf("Image build name compatibility check failed: %v", err)
+	}
+	log.Printf("OpenBMC (normalized) name from image file '%v': '%v'",
+		stepParams.ImageFilePath, imageFileBuildName)
+
+	// these build names might not match for old versions, as either /etc/isssue
+	// or the image file might not be well-formed
+	if etcIssueBuildName != imageFileBuildName {
+		return errors.Errorf("OpenBMC versions from /etc/issue ('%v') and image file ('%v')"+
+			" do not match!", etcIssueBuildName, imageFileBuildName)
+	}
+	return nil
 }
 
 // fby2-gpv2-v2019.43.1 -> fbgp2
@@ -77,75 +98,28 @@ var getNormalizedBuildNameFromVersion = func(ver string) (string, error) {
 	return verMap["buildname"], nil
 }
 
-// check compatibility of OpenBMC version strings by comparing
-// the build name part AFTER normalizing
-var areVersionsCompatible = func(issueVer, imageVer string) bool {
-	issueBuildName, err := getNormalizedBuildNameFromVersion(issueVer)
-	if err != nil {
-		log.Printf("%v", err)
-		return false
-	}
-	imageBuildName, err := getNormalizedBuildNameFromVersion(imageVer)
-	if err != nil {
-		log.Printf("%v", err)
-		return false
-	}
-	return issueBuildName == imageBuildName
-}
-
-// get OpenBMC version from /etc/issue
-// examples: fbtp-v2020.09.1, wedge100-v2020.07.1
-// WARNING: There is no guarantee that /etc/issue is well-formed
-// in old images
-var getOpenBMCVersionFromIssueFile = func() (string, error) {
-	versionRegEx := `^OpenBMC Release (?P<version>[^\s]+)`
-	version := ""
-
-	etcIssueBuf, err := utils.ReadFile("/etc/issue")
-	if err != nil {
-		return version, errors.Errorf("Error reading /etc/issue: %v", err)
-	}
-
-	etcIssueMap, err := utils.GetRegexSubexpMap(
-		versionRegEx, string(etcIssueBuf))
-
-	if err != nil {
-		// does not match regex
-		return version,
-			errors.Errorf("Unable to get version from /etc/issue: %v", err)
-	}
-
-	version = etcIssueMap["version"]
-
-	return version, nil
-}
-
 // gets OpenBMC version from image file
 // examples: fbtp-v2020.09.1, wedge100-v2020.07.1
 // WARNING: This relies on the U-Boot version string on the image
 // there is no guarantee that this will succeed
 var getOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) {
-	version := ""
-	versionRegEx := regexp.MustCompile(`U-Boot \d+\.\d+ (?P<version>[^\s]+)`)
-
 	// mmap the first 512kB of the image file
 	imageFileBuf, err := utils.MmapFileRange(
 		imageFilePath, 0, 512*1024, syscall.PROT_READ, syscall.MAP_SHARED,
 	)
 	if err != nil {
-		return version, errors.Errorf("Unable to read and mmap image file '%v': %v",
+		return "", errors.Errorf("Unable to read and mmap image file '%v': %v",
 			imageFilePath, err)
 	}
 	// unmap
 	defer utils.Munmap(imageFileBuf)
 
-	matches := versionRegEx.FindSubmatch(imageFileBuf)
-	if len(matches) < 2 {
-		return version, errors.Errorf("Unable to find OpenBMC version in image file '%v'",
-			imageFilePath)
+	imageFileVerMap, err := utils.GetBytesRegexSubexpMap(ubootVersionRegEx, imageFileBuf)
+	if err != nil {
+		return "", errors.Errorf("Unable to find OpenBMC version in image file '%v': %v",
+			imageFilePath, err)
 	}
-	// matches must have 2 entries, first one is empty, second one contains the version
-	version = string(matches[1])
+	version := imageFileVerMap["version"]
 
 	return version, nil
 }

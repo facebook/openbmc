@@ -66,7 +66,7 @@ func (m MemoryTechnologyDevice) GetFileSize() uint64 {
 // required to call Munmap to release the buffer
 func (m MemoryTechnologyDevice) MmapRO() ([]byte, error) {
 	// use mmap
-	mmapFilePath, err := m.GetMmapFilePath()
+	mmapFilePath, err := m.getMmapFilePath()
 	if err != nil {
 		return nil, errors.Errorf("Unable to read '%v': %v",
 			m.FilePath, err)
@@ -80,7 +80,7 @@ func (m MemoryTechnologyDevice) Munmap(buf []byte) error {
 
 // /dev/mtd5 cannot be mmap-ed, but /dev/mtdblock5 can
 // return the latter instead
-func (m MemoryTechnologyDevice) GetMmapFilePath() (string, error) {
+func (m MemoryTechnologyDevice) getMmapFilePath() (string, error) {
 	regEx := `^(?P<devmtdpath>/dev/mtd)(?P<mtdnum>[0-9]+)$`
 
 	mtdPathMap, err := utils.GetRegexSubexpMap(regEx, m.FilePath)

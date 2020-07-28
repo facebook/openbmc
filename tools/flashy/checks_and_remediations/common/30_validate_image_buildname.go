@@ -22,7 +22,6 @@ package common
 import (
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -30,8 +29,9 @@ func init() {
 }
 
 func validateImageBuildname(stepParams utils.StepParams) utils.StepExitError {
-	if !validate.IsImageBuildNameCompatible(stepParams.ImageFilePath) {
-		return utils.ExitUnknownError{errors.Errorf("Image file incompatible!")}
+	err := validate.CheckImageBuildNameCompatibility(stepParams)
+	if err != nil {
+		return utils.ExitUnknownError{err}
 	}
 	return nil
 }

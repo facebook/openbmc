@@ -145,6 +145,36 @@ func GetAllRegexSubexpMap(regEx, inputString string) ([](map[string]string), err
 	return allSubexpMap, nil
 }
 
+// bytes version of GetRegexSubexpMap for convenience, image/mtds have long slices of bytes.
+// For convenience, map[string]string is returned
+func GetBytesRegexSubexpMap(regEx string, buf []byte) (map[string]string, error) {
+	subexpMap := map[string]string{}
+
+	reg, err := regexp.Compile(regEx)
+	if err != nil {
+		return subexpMap, err
+	}
+
+	match := reg.FindSubmatch(buf)
+	if match == nil {
+		return subexpMap, errors.Errorf("No match for regex '%v' for input", regEx)
+	}
+
+	// convert the matches into string for convenience
+	matchStrings := make([]string, len(match))
+	for i, m := range match {
+		matchStrings[i] = string(m)
+	}
+
+	subexpNames := reg.SubexpNames()
+	subexpMap, err = regexSubexpMapHelper(matchStrings, subexpNames)
+	if err != nil {
+		return subexpMap, err
+	}
+
+	return subexpMap, nil
+}
+
 // sleep function variable for mocking purposes
 var sleepFunc = time.Sleep
 

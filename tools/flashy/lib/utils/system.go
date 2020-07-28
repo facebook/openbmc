@@ -202,3 +202,28 @@ var SystemdAvailable = func() (bool, error) {
 
 	return false, nil
 }
+
+// get OpenBMC version from /etc/issue
+// examples: fbtp-v2020.09.1, wedge100-v2020.07.1
+// WARNING: There is no guarantee that /etc/issue is well-formed
+// in old images
+var GetOpenBMCVersionFromIssueFile = func() (string, error) {
+	const etcIssueVersionRegEx = `^OpenBMC Release (?P<version>[^\s]+)`
+
+	etcIssueBuf, err := ReadFile("/etc/issue")
+	if err != nil {
+		return "", errors.Errorf("Error reading /etc/issue: %v", err)
+	}
+
+	etcIssueMap, err := GetRegexSubexpMap(
+		etcIssueVersionRegEx, string(etcIssueBuf))
+
+	if err != nil {
+		// does not match regex
+		return "",
+			errors.Errorf("Unable to get version from /etc/issue: %v", err)
+	}
+
+	version := etcIssueMap["version"]
+	return version, nil
+}

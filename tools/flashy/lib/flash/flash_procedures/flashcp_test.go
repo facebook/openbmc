@@ -130,7 +130,7 @@ func TestFlashCp(t *testing.T) {
 			}
 			got := FlashCp(exampleStepParams)
 
-			tests.CompareTestExitErrors(tc.want, got, t)
+			utils.CompareTestExitErrors(tc.want, got, t)
 			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
 		})
 	}
@@ -206,7 +206,7 @@ func TestRunFlashCpCmd(t *testing.T) {
 			}
 
 			got := runFlashCpCmd("a", "b")
-			tests.CompareTestExitErrors(tc.want, got, t)
+			utils.CompareTestExitErrors(tc.want, got, t)
 			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
 		})
 	}

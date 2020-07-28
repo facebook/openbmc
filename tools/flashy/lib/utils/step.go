@@ -22,6 +22,7 @@ package utils
 import (
 	"log"
 	"runtime"
+	"testing"
 )
 
 type StepParams struct {
@@ -47,4 +48,19 @@ func RegisterStep(step func(StepParams) StepExitError) {
 
 	symlinkPath := GetSymlinkPathForSourceFile(filename)
 	StepMap[symlinkPath] = step
+}
+
+// used to test and compare Exit Errors in testing
+func CompareTestExitErrors(want StepExitError, got StepExitError, t *testing.T) {
+	if got == nil {
+		if want != nil {
+			t.Errorf("want '%v' got '%v'", want, got)
+		}
+	} else {
+		if want == nil {
+			t.Errorf("want '%v' got '%v'", want, got)
+		} else if got.GetError() != want.GetError() {
+			t.Errorf("want '%v' got '%v'", want.GetError(), got.GetError())
+		}
+	}
 }

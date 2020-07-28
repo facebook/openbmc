@@ -146,7 +146,7 @@ func TestRemoveHealthdReboot(t *testing.T) {
 
 			got := removeHealthdReboot(utils.StepParams{})
 
-			tests.CompareTestExitErrors(tc.want, got, t)
+			utils.CompareTestExitErrors(tc.want, got, t)
 			if tc.writeConfigCalled != writeConfigCalled {
 				t.Errorf("writeConfigCalled: want '%v' got '%v'",
 					tc.writeConfigCalled, writeConfigCalled)

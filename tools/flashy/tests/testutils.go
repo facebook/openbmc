@@ -22,8 +22,6 @@ package tests
 import (
 	"strings"
 	"testing"
-
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
 // used to test and compare errors in testing
@@ -37,21 +35,6 @@ func CompareTestErrors(want error, got error, t *testing.T) {
 			t.Errorf("want '%v' got '%v'", want, got)
 		} else if got.Error() != want.Error() {
 			t.Errorf("want '%v' got '%v'", want.Error(), got.Error())
-		}
-	}
-}
-
-// used to test and compare Exit Errors in testing
-func CompareTestExitErrors(want utils.StepExitError, got utils.StepExitError, t *testing.T) {
-	if got == nil {
-		if want != nil {
-			t.Errorf("want '%v' got '%v'", want, got)
-		}
-	} else {
-		if want == nil {
-			t.Errorf("want '%v' got '%v'", want, got)
-		} else if got.GetError() != want.GetError() {
-			t.Errorf("want '%v' got '%v'", want.GetError(), got.GetError())
 		}
 	}
 }

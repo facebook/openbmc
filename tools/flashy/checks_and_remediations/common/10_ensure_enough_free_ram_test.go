@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
 
@@ -74,7 +73,7 @@ func TestEnsureEnoughFreeRam(t *testing.T) {
 			}
 
 			got := ensureEnoughFreeRam(utils.StepParams{false, "x", "x", false})
-			tests.CompareTestExitErrors(tc.want, got, t)
+			utils.CompareTestExitErrors(tc.want, got, t)
 		})
 	}
 

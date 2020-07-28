@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
 
@@ -119,7 +118,7 @@ func TestRestartServices(t *testing.T) {
 
 			got := restartServices(utils.StepParams{false, "x", "x", false})
 
-			tests.CompareTestExitErrors(tc.want, got, t)
+			utils.CompareTestExitErrors(tc.want, got, t)
 
 			if !reflect.DeepEqual(gotCmds, tc.wantCmds) {
 				t.Errorf("commands: want '%#v' got '%#v'", tc.wantCmds, gotCmds)

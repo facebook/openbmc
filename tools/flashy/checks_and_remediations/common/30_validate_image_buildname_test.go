@@ -24,7 +24,6 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate"
-	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
 
@@ -58,7 +57,7 @@ func TestValidateImageBuildname(t *testing.T) {
 				return tc.compatibilityErr
 			}
 			got := validateImageBuildname(utils.StepParams{})
-			tests.CompareTestExitErrors(tc.want, got, t)
+			utils.CompareTestExitErrors(tc.want, got, t)
 		})
 	}
 }

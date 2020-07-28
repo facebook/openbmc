@@ -154,7 +154,7 @@ func TestFlashCpVboot(t *testing.T) {
 			}
 			got := FlashCpVboot(exampleStepParams)
 
-			tests.CompareTestExitErrors(tc.want, got, t)
+			utils.CompareTestExitErrors(tc.want, got, t)
 			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
 		})
 	}

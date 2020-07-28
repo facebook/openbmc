@@ -22,6 +22,7 @@ import asyncio
 import rest_fw_ver
 import rest_i2cflush
 import rest_modbus
+import rest_presence
 import rest_usb2i2c_reset
 from aiohttp import web
 from rest_utils import dumps_bytestr, get_endpoints
@@ -78,3 +79,16 @@ class boardApp_Handler:
             "Resources": ["all", "fan", "sys", "internal_switch_config"],
         }
         return web.json_response(details, dumps=dumps_bytestr)
+
+    async def rest_presence_hdl(self, request):
+        return web.json_response(rest_presence.get_presence_info(), dumps=dumps_bytestr)
+
+    async def rest_presence_pem_hdl(self, request):
+        return web.json_response(
+            rest_presence.get_presence_info_pem(), dumps=dumps_bytestr
+        )
+
+    async def rest_presence_psu_hdl(self, request):
+        return web.json_response(
+            rest_presence.get_presence_info_psu(), dumps=dumps_bytestr
+        )

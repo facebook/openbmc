@@ -26,11 +26,14 @@ SRC_URI += "file://rest_i2cflush.py \
             file://board_setup_routes.py \
             file://rest_fw_ver.py \
             file://restapi.service \
+            file://rest_fw_ver.py \
+            file://rest_presence.py \
            "
 
 binfiles1 += "rest_i2cflush.py \
              rest_modbus.py \
              rest_fw_ver.py \
+             rest_presence.py \
              "
 binfiles += "board_endpoint.py \
              boardroutes.py \

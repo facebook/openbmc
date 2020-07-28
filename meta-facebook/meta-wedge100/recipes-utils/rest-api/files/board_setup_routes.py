@@ -33,3 +33,6 @@ def setup_board_routes(app: Application, write_enabed: bool):
     app.router.add_get(
         board_routes[6], bhandler.rest_firmware_info_internal_switch_config_hdl
     )
+    app.router.add_get(board_routes[7], bhandler.rest_presence_hdl)
+    app.router.add_get(board_routes[8], bhandler.rest_presence_pem_hdl)
+    app.router.add_get(board_routes[9], bhandler.rest_presence_psu_hdl)

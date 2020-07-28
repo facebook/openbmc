@@ -50,44 +50,66 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 
 	cases := []struct {
 		name         string
+		clowntown    bool
 		etcIssueVer  string
 		imageFileVer string
 		want         error
 	}{
 		{
 			name:         "match passing",
+			clowntown:    false,
 			etcIssueVer:  "fbtp-v2020.09.1",
 			imageFileVer: "fbtp-v2019.01.3",
 			want:         nil,
 		},
 		{
 			name:         "does not match",
+			clowntown:    false,
 			etcIssueVer:  "fbtp-v2020.09.1",
 			imageFileVer: "yosemite-v1.2",
-			want: errors.Errorf("OpenBMC versions from /etc/issue ('fbtp') and " +
-				"image file ('yosemite') do not match!"),
+			want: errors.Errorf("Image build name compatibility check failed: " +
+				"OpenBMC versions from /etc/issue ('fbtp') and image file ('yosemite') do not match!. " +
+				"Use the '--clowntown' flag if you wish to proceed at the risk of " +
+				"bricking the device",
+			),
 		},
 		{
 			name:         "compatible, uses normalized version",
+			clowntown:    false,
 			etcIssueVer:  "fby2-gpv2-v2019.43.1",
 			imageFileVer: "fbgp2-v1234",
 			want:         nil,
 		},
 		{
 			name:         "etc issue build name get error",
+			clowntown:    false,
 			etcIssueVer:  "!@#$",
 			imageFileVer: "yfbgp2-v1234",
 			want: errors.Errorf("Image build name compatibility check failed: " +
 				"Unable to get build name from version '!@#$' (normalized: '!@#$'): " +
-				"No match for regex '^(?P<buildname>\\w+)' for input '!@#$'"),
+				"No match for regex '^(?P<buildname>\\w+)' for input '!@#$'. " +
+				"Use the '--clowntown' flag if you wish to proceed at the risk of " +
+				"bricking the device",
+			),
 		},
 		{
 			name:         "image build name get error",
+			clowntown:    false,
 			etcIssueVer:  "fby2-gpv2-v2019.43.1",
 			imageFileVer: "!@#$",
 			want: errors.Errorf("Image build name compatibility check failed: " +
 				"Unable to get build name from version '!@#$' (normalized: '!@#$'): " +
-				"No match for regex '^(?P<buildname>\\w+)' for input '!@#$'"),
+				"No match for regex '^(?P<buildname>\\w+)' for input '!@#$'. " +
+				"Use the '--clowntown' flag if you wish to proceed at the risk of " +
+				"bricking the device",
+			),
+		},
+		{
+			name:         "error but clowntown-ed to proceed",
+			clowntown:    true,
+			etcIssueVer:  "%#*(",
+			imageFileVer: "!@#$",
+			want:         nil,
 		},
 	}
 
@@ -95,7 +117,9 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 	for _, tc := range cases {
 
 		t.Run(tc.name, func(t *testing.T) {
-			stepParams := utils.StepParams{}
+			stepParams := utils.StepParams{
+				false, "x", "x", tc.clowntown,
+			}
 			utils.GetOpenBMCVersionFromIssueFile = func() (string, error) {
 				return tc.etcIssueVer, nil
 			}
@@ -105,7 +129,6 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 			got := CheckImageBuildNameCompatibility(stepParams)
 			tests.CompareTestErrors(tc.want, got, t)
 		})
-
 	}
 }
 

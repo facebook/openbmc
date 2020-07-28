@@ -48,15 +48,29 @@ var normalizeVersion = func(ver string) string {
 // (1) the /etc/issue file and (2) the image file
 // return an error if they do not match
 var CheckImageBuildNameCompatibility = func(stepParams utils.StepParams) error {
+	if stepParams.Clowntown {
+		log.Printf("===== WARNING: Clowntown mode: Bypassing image build name compatibility check =====")
+		log.Printf("===== THERE IS RISK OF BRICKING THIS DEVICE =====")
+		return nil
+	}
+
+	// convenience function to return compatibilty check failed error
+	checkFailed := func(err error) error {
+		return errors.Errorf("Image build name compatibility check failed: %v. "+
+			"Use the '--clowntown' flag if you wish to proceed at the risk of "+
+			"bricking the device", err)
+	}
+
 	etcIssueVer, err := utils.GetOpenBMCVersionFromIssueFile()
+
 	if err != nil {
-		return errors.Errorf("Image build name compatibility check failed: %v", err)
+		return checkFailed(err)
 	}
 	log.Printf("OpenBMC Version from /etc/issue: '%v'", etcIssueVer)
 
 	imageFileVer, err := getOpenBMCVersionFromImageFile(stepParams.ImageFilePath)
 	if err != nil {
-		return errors.Errorf("Image build name compatibility check failed: %v", err)
+		return checkFailed(err)
 	}
 	log.Printf("OpenBMC Version from image file '%v': '%v'",
 		stepParams.ImageFilePath, imageFileVer)
@@ -64,13 +78,13 @@ var CheckImageBuildNameCompatibility = func(stepParams utils.StepParams) error {
 	// the two build names below are normalized versions
 	etcIssueBuildName, err := getNormalizedBuildNameFromVersion(etcIssueVer)
 	if err != nil {
-		return errors.Errorf("Image build name compatibility check failed: %v", err)
+		return checkFailed(err)
 	}
 	log.Printf("OpenBMC (normalized) build name from /etc/issue: '%v'", etcIssueBuildName)
 
 	imageFileBuildName, err := getNormalizedBuildNameFromVersion(imageFileVer)
 	if err != nil {
-		return errors.Errorf("Image build name compatibility check failed: %v", err)
+		return checkFailed(err)
 	}
 	log.Printf("OpenBMC (normalized) name from image file '%v': '%v'",
 		stepParams.ImageFilePath, imageFileBuildName)
@@ -78,8 +92,10 @@ var CheckImageBuildNameCompatibility = func(stepParams utils.StepParams) error {
 	// these build names might not match for old versions, as either /etc/isssue
 	// or the image file might not be well-formed
 	if etcIssueBuildName != imageFileBuildName {
-		return errors.Errorf("OpenBMC versions from /etc/issue ('%v') and image file ('%v')"+
-			" do not match!", etcIssueBuildName, imageFileBuildName)
+		err := errors.Errorf("OpenBMC versions from /etc/issue ('%v') and image file ('%v')"+
+			" do not match!",
+			etcIssueBuildName, imageFileBuildName)
+		return checkFailed(err)
 	}
 	return nil
 }

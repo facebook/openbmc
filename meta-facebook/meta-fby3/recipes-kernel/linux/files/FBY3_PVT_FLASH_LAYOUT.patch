@@ -6,8 +6,8 @@ index ac5872f41d8..c750e3b5d7c 100644
  	#address-cells = <1>;
  	#size-cells = <1>;
  	u-boot@0 {
--		reg = <0x0 0x60000>;
-+		reg = <0x0 0xE0000>;
+-		reg = <0x10000 0x50000>;
++		reg = <0x10000 0xD0000>;
  		label = "u-boot";
  	};
  	/*

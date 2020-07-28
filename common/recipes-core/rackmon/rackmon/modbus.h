@@ -18,41 +18,53 @@
 
 #ifndef MODBUS_H_
 #define MODBUS_H_
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-uint16_t modbus_crc16(char* buffer, size_t length);
+#include <string.h>
+#include <errno.h>
+
+#include <openbmc/log.h>
 
 #define DEFAULT_TTY "/dev/ttyS3"
 
+// Modbus errors
+#define MODBUS_RESPONSE_TIMEOUT -4
+#define MODBUS_BAD_CRC -5
+
+// Modbus constants
+#define MODBUS_READ_HOLDING_REGISTERS 3
+
 extern int verbose;
-#define dbg(...) if(verbose) { fprintf(stderr, __VA_ARGS__); }
-#define log(...) { fprintf(stderr, __VA_ARGS__); }
+#define dbg(fmt, args...) do {  \
+    if(verbose)                 \
+        OBMC_INFO(fmt, ##args); \
+} while (0)
+#define log(fmt, args...) OBMC_INFO(fmt, ##args)
 
-#define CHECK(expr) { int _check = expr; if((_check) < 0) { \
-    error = _check;  \
-    goto cleanup; \
-} }
-#define CHECKP(name, expr) { int _check = expr; if((_check) < 0) { \
-    error = _check;  \
-    perror(#name); \
-    goto cleanup; \
-} }
-#define BAIL(...) { \
-    fprintf(stderr, __VA_ARGS__); \
-    fflush(stderr); \
-    error = -1; \
-    goto cleanup; \
-}
+#define ERR_EXIT(expr) do { \
+    int _check = (expr);    \
+    if(_check < 0) {        \
+        error = _check;     \
+        goto cleanup;       \
+    }                       \
+} while (0)
 
-int waitfd(int fd);
-void decode_hex_in_place(char* buf, size_t* len);
-void append_modbus_crc16(char* buf, size_t* len);
-void print_hex(FILE* f, char* buf, size_t len);
+#define ERR_LOG_EXIT(expr, msg)  do { \
+    int _check = (expr);              \
+    if(_check < 0) {                  \
+        error = _check;               \
+        OBMC_ERROR(errno, msg);       \
+        goto cleanup;                 \
+    }                                 \
+} while (0)
 
-// Read until maxlen bytes or no bytes in mdelay_us microseconds
-size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us);
-
+#define BAIL(fmt, args...) do { \
+    OBMC_WARN(fmt, ##args);     \
+    error = -1;                 \
+    goto cleanup;               \
+} while (0)
 
 typedef struct _modbus_req {
   int tty_fd;
@@ -66,16 +78,16 @@ typedef struct _modbus_req {
   int scan;
 } modbus_req;
 
+int waitfd(int fd);
+void decode_hex_in_place(char* buf, size_t* len);
+void append_modbus_crc16(char* buf, size_t* len);
+void print_hex(FILE* f, char* buf, size_t len);
+
+// Read until maxlen bytes or no bytes in mdelay_us microseconds
+size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us);
+
 int modbuscmd(modbus_req *req);
-// Modbus errors
-
-#define MODBUS_RESPONSE_TIMEOUT -4
-#define MODBUS_BAD_CRC -5
-
+uint16_t modbus_crc16(char* buffer, size_t length);
 const char* modbus_strerror(int mb_err);
 
-// Modbus constants
-#define MODBUS_READ_HOLDING_REGISTERS 3
-
-
-#endif
+#endif /* MODBUS_H_ */

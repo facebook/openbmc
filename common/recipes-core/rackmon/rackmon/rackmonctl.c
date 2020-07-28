@@ -70,13 +70,18 @@ int main(int argc, char **argv) {
       exit(1);
     }
     clisock = socket(AF_UNIX, SOCK_STREAM, 0);
-    CHECKP(socket, clisock);
+    ERR_LOG_EXIT(clisock, "failed to create socket");
+
     rackmond_addr.sun_family = AF_UNIX;
     strcpy(rackmond_addr.sun_path, "/var/run/rackmond.sock");
     int addr_len = strlen(rackmond_addr.sun_path) + sizeof(rackmond_addr.sun_family);
-    CHECKP(connect, connect(clisock, (struct sockaddr*) &rackmond_addr, addr_len));
-    CHECKP(send, send(clisock, &wire_cmd_len, sizeof(wire_cmd_len), 0));
-    CHECKP(send, send(clisock, &cmd, wire_cmd_len, 0));
+    ERR_LOG_EXIT(connect(clisock, (struct sockaddr*) &rackmond_addr, addr_len),
+                 "failed to connect to socket");
+
+    ERR_LOG_EXIT(send(clisock, &wire_cmd_len, sizeof(wire_cmd_len), 0),
+                 "failed to send to socket");
+    ERR_LOG_EXIT(send(clisock, &cmd, wire_cmd_len, 0),
+                 "failed to send to socket");
     char readbuf[1024];
     ssize_t n_read;
     while((n_read = read(clisock, readbuf, sizeof(readbuf))) > 0) {

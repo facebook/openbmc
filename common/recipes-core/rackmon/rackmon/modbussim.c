@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
     if (verbose)
       fprintf(stderr, "[*] Opening TTY\n");
     fd = open(tty, O_RDWR | O_NOCTTY);
-    CHECK(fd);
+    ERR_EXIT(fd);
 
     struct serial_rs485 rs485conf = {};
     rs485conf.flags |= SER_RS485_ENABLED;
@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
     tio.c_iflag |= INPCK;
     tio.c_cc[VMIN] = 1;
     tio.c_cc[VTIME] = 0;
-    CHECK(tcsetattr(fd,TCSANOW,&tio));
+    ERR_EXIT(tcsetattr(fd,TCSANOW,&tio));
 
     //convert hex to bytes
     cmd_len = strlen(modbus_cmd);
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
 
     // Enable UART read
     tio.c_cflag |= CREAD;
-    CHECK(tcsetattr(fd,TCSANOW,&tio));
+    ERR_EXIT(tcsetattr(fd,TCSANOW,&tio));
 
     if(verbose)
       fprintf(stderr, "[*] Wait for matching command...\n");
@@ -163,7 +163,7 @@ wait_for_command:
 
     // Disable UART read
     tio.c_cflag &= ~CREAD;
-    CHECK(tcsetattr(fd,TCSANOW,&tio));
+    ERR_EXIT(tcsetattr(fd,TCSANOW,&tio));
     write(fd, modbus_reply, reply_len);
     waitfd(fd);
 

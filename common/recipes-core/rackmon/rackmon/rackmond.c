@@ -164,11 +164,11 @@ int bprintf(write_buffer* buf, const char* format, ...) {
   va_list args;
   va_start(args, format);
   ret = vsnprintf(tmpbuf, sizeof(tmpbuf), format, args);
-  CHECK(ret);
+  ERR_EXIT(ret);
   if(ret > sizeof(tmpbuf)) {
     BAIL("truncated bprintf (%d bytes truncated to %d)", ret, sizeof(tmpbuf));
   }
-  CHECK(buf_write(buf, tmpbuf, ret));
+  ERR_EXIT(buf_write(buf, tmpbuf, ret));
 cleanup:
   va_end(args);
   return error;
@@ -180,8 +180,8 @@ int buf_close(write_buffer* buf) {
   int cret = close(buf->fd);
   free(buf->buffer);
   buf->buffer = NULL;
-  CHECK(fret);
-  CHECKP(close, cret);
+  ERR_EXIT(fret);
+  ERR_LOG_EXIT(cret, "failed to close buf->fd");
 cleanup:
   return error;
 }
@@ -213,7 +213,7 @@ int modbus_command(rs485_dev* dev, int timeout, char* command, size_t len, char*
   if (delay != 0) {
     usleep(delay);
   }
-  CHECK(cmd_error);
+  ERR_EXIT(cmd_error);
 cleanup:
   lock_release(devlock);
   if (error >= 0) {
@@ -242,7 +242,7 @@ int read_registers(rs485_dev *dev, int timeout, uint8_t addr, uint16_t begin, ui
         dev, timeout,
         command, sizeof(addr) + 1 + sizeof(begin) + sizeof(num),
         response, sizeof(addr) + 1 + 1 + (2 * num) + 2, 0);
-  CHECK(dest_len);
+  ERR_EXIT(dest_len);
 
   if (dest_len >= 5) {
     memcpy(out, response + 3, num * 2);
@@ -520,17 +520,13 @@ int open_rs485_dev(const char* tty_filename, rs485_dev *dev) {
   int tty_fd;
   dbg("[*] Opening TTY\n");
   tty_fd = open(tty_filename, O_RDWR | O_NOCTTY);
-  CHECK(tty_fd);
+  ERR_EXIT(tty_fd);
 
   struct serial_rs485 rs485conf = {};
   rs485conf.flags |= SER_RS485_ENABLED;
   dbg("[*] Putting TTY in RS485 mode\n");
   error = ioctl(tty_fd, TIOCSRS485, &rs485conf);
-  if (error < 0) {
-    fprintf(stderr, "FATAL: could not set TTY to RS485 mode: %d %s\n",
-        error, strerror(error));
-    goto cleanup;
-  }
+  ERR_LOG_EXIT(error, "failed to turn on RS485 mode");
 
   dev->tty_fd = tty_fd;
   pthread_mutex_init(&dev->lock, NULL);
@@ -740,7 +736,7 @@ int handle_connection(int sock) {
   pfd.events = POLLIN | POLLERR | POLLHUP;
   // if you don't do anything for a whole second we bail
 next:
-  CHECKP(poll, poll(&pfd, 1, 1000));
+  ERR_LOG_EXIT(poll(&pfd, 1, 1000), "failed to poll fds");
   if (pfd.revents & (POLLERR | POLLHUP)) {
     goto cleanup;
   }
@@ -762,56 +758,67 @@ next:
     if (recvret == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
       goto next;
     }
-    CHECK(do_command(sock, (rackmond_command*) bodybuf));
+    ERR_EXIT(do_command(sock, (rackmond_command*) bodybuf));
   }
 cleanup:
   close(sock);
   if (error != 0) {
-    fprintf(stderr, "Warning: possible error handling user connection (%d)\n", error);
+    OBMC_WARN("handle connection failed, error=%d", error);
   }
   return 0;
 }
 
 int main(int argc, char** argv) {
+  int error = 0;
+
+  signal(SIGPIPE, SIG_IGN);
+
+  obmc_log_init("rackmond", LOG_INFO, 0);
   if (getenv("RACKMOND_FOREGROUND") == NULL) {
+    obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
+    obmc_log_unset_std_stream();
     daemon(0, 0);
   }
-  signal(SIGPIPE, SIG_IGN);
-  int error = 0;
+
   world.paused = 0;
   world.min_delay = 0;
   world.modbus_timeout = 300000;
   if (getenv("RACKMOND_TIMEOUT") != NULL) {
     world.modbus_timeout = atoll(getenv("RACKMOND_TIMEOUT"));
-    fprintf(stderr, "Timeout from env: %dms\n",
-        (world.modbus_timeout / 1000));
+    OBMC_INFO("set timeout to RACKMOND_TIMEOUT (%dms)",
+              world.modbus_timeout / 1000);
   }
   if (getenv("RACKMOND_MIN_DELAY") != NULL) {
     world.min_delay = atoll(getenv("RACKMOND_MIN_DELAY"));
-    fprintf(stderr, "Mindelay from env: %dus\n", world.min_delay);
+    OBMC_INFO("set mindelay to RACKMOND_MIN_DELAY(%dus)", world.min_delay);
   }
   world.config = NULL;
   pthread_mutex_init(&world.lock, NULL);
   verbose = getenv("RACKMOND_VERBOSE") != NULL ? 1 : 0;
   openlog("rackmond", 0, LOG_USER);
   syslog(LOG_INFO, "rackmon/modbus service starting");
-  CHECK(open_rs485_dev(DEFAULT_TTY, &world.rs485));
+  ERR_EXIT(open_rs485_dev(DEFAULT_TTY, &world.rs485));
   pthread_t monitoring_thread;
   pthread_create(&monitoring_thread, NULL, monitoring_loop, NULL);
   struct sockaddr_un local, client;
   int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  ERR_LOG_EXIT(sock, "failed to create socket");
+
   strcpy(local.sun_path, "/var/run/rackmond.sock");
   local.sun_family = AF_UNIX;
   int socknamelen = sizeof(local.sun_family) + strlen(local.sun_path);
   unlink(local.sun_path);
-  CHECKP(bind, bind(sock, (struct sockaddr *)&local, socknamelen));
-  CHECKP(listen, listen(sock, 20));
+  ERR_LOG_EXIT(bind(sock, (struct sockaddr *)&local, socknamelen),
+               "failed to bind socket");
+
+  ERR_LOG_EXIT(listen(sock, 20), "failed to set passive socket");
+
   syslog(LOG_INFO, "rackmon/modbus service listening");
   while(1) {
     socklen_t clisocklen = sizeof(struct sockaddr_un);
     int clisock = accept(sock, (struct sockaddr*) &client, &clisocklen);
-    CHECKP(accept, clisock);
-    CHECK(handle_connection(clisock));
+    ERR_LOG_EXIT(clisock, "failed to accept connect request");
+    ERR_EXIT(handle_connection(clisock));
   }
 
 cleanup:

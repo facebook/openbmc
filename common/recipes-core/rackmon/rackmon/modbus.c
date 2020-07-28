@@ -208,7 +208,7 @@ int modbuscmd(modbus_req *req) {
     tio.c_iflag |= INPCK;
     tio.c_cc[VMIN] = 1;
     tio.c_cc[VTIME] = 0;
-    CHECK(tcsetattr(req->tty_fd,TCSANOW,&tio));
+    ERR_EXIT(tcsetattr(req->tty_fd,TCSANOW,&tio));
 
     memcpy(modbus_cmd, req->modbus_cmd, cmd_len);
     append_modbus_crc16(modbus_cmd, &cmd_len);
@@ -228,7 +228,11 @@ int modbuscmd(modbus_req *req) {
     struct sched_param sp;
     sp.sched_priority = 50;
     int policy = SCHED_FIFO;
-    CHECKP(sched, pthread_setschedparam(pthread_self(), policy, &sp));
+    error = pthread_setschedparam(pthread_self(), policy, &sp);
+    if (error != 0) {
+        OBMC_ERROR(error, "failed to set schedparm to SCHED_FIFO");
+        goto cleanup;
+    }
     struct timespec write_begin;
     struct timespec wait_begin;
     struct timespec wait_end;
@@ -241,9 +245,13 @@ int modbuscmd(modbus_req *req) {
     sp.sched_priority = 0;
     // Enable UART read
     tio.c_cflag |= CREAD;
-    CHECK(tcsetattr(req->tty_fd,TCSANOW,&tio));
+    ERR_EXIT(tcsetattr(req->tty_fd,TCSANOW,&tio));
     policy = SCHED_OTHER;
-    CHECKP(sched, pthread_setschedparam(pthread_self(), policy, &sp));
+    error = pthread_setschedparam(pthread_self(), policy, &sp);
+    if (error != 0) {
+        OBMC_ERROR(error, "failed to set schedparm to SCHED_OTHER");
+        goto cleanup;
+    }
 
     dbg("[*] waitfd loops: %d\n", waitloops);
     dbg("[*] reading any response...\n");

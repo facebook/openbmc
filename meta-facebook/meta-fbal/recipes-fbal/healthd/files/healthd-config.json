@@ -44,6 +44,7 @@
   },
   "pfr_monitor": {
     "enabled": true,
+    "state_history": true,
     "monitor_interval": 10,
     "fru": [1]
   },

@@ -35,6 +35,14 @@
 
 #define PFR_STATE_SIZE 64
 
+#define PLATFORM_STATE 0x03
+#define LAST_RECOVERY  0x05
+#define LAST_PANIC     0x07
+#define MAJOR_ERROR    0x08
+#define MINOR_ERROR    0x09
+
+#define INIT_PFR_ERR(tbl, idx, str) tbl[idx] = str
+
 typedef struct _mailbox_t {
   int fd;
   uint8_t fru;
@@ -51,6 +59,7 @@ typedef struct {
 
 bool pfr_monitor_enabled = false;
 
+static bool pfr_monitor_ringbuf = false;
 static int pfr_monitor_interval = 10;
 static int mm_fd = -1;
 static uint8_t pfr_fru_count = 0;
@@ -58,6 +67,13 @@ static uint8_t *reboot_base = NULL;
 static mailbox_t pfr_mbox[MAX_NUM_FRUS];
 static pfr_state_t st_table[256];
 static bool is_magic_set = true;
+
+static const char *plat_state[256] = {0};
+static const char *last_recovery[256] = {0};
+static const char *last_panic[256] = {0};
+static const char *major_err[256] = {0};
+static const char *minor_auth_err[256] = {0};
+static const char *minor_update_err[256] = {0};
 
 
 static void
@@ -251,6 +267,11 @@ initialize_pfr_monitor_config(json_t *conf) {
       break;
     }
 
+    tmp = json_object_get(conf, "state_history");
+    if (tmp && json_is_boolean(tmp)) {
+      pfr_monitor_ringbuf = json_is_true(tmp);
+    }
+
     tmp = json_object_get(conf, "monitor_interval");
     if (tmp && json_is_number(tmp)) {
       if ((i = json_integer_value(tmp)) > 0) {
@@ -282,28 +303,30 @@ initialize_pfr_monitor_config(json_t *conf) {
       }
     }
 
-    if ((mm_fd = open("/dev/mem", O_RDWR | O_SYNC)) < 0) {
-      syslog(LOG_ERR, "%s: devmem open failed", __func__);
-      break;
-    }
-
-    if (!(reboot_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mm_fd, BMC_REBOOT_BASE))) {
-      syslog(LOG_ERR, "%s: mmap failed", __func__);
-      close(mm_fd);
-      break;
-    }
-
-    if (BMC_REBOOT_SIG(reboot_base) != BOOT_MAGIC) {
-      is_magic_set = false;
-      for (i = 0; i < pfr_fru_count; i++) {
-        set_last_offset(pfr_mbox[i].fru, 0x00, 0x01);
+    if (pfr_monitor_ringbuf) {
+      if ((mm_fd = open("/dev/mem", O_RDWR | O_SYNC)) < 0) {
+        syslog(LOG_ERR, "%s: devmem open failed", __func__);
+        break;
       }
-    }
 
-    munmap(reboot_base, PAGE_SIZE);
-    reboot_base = NULL;
-    close(mm_fd);
-    mm_fd = -1;
+      if (!(reboot_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mm_fd, BMC_REBOOT_BASE))) {
+        syslog(LOG_ERR, "%s: mmap failed", __func__);
+        close(mm_fd);
+        break;
+      }
+
+      if (BMC_REBOOT_SIG(reboot_base) != BOOT_MAGIC) {
+        is_magic_set = false;
+        for (i = 0; i < pfr_fru_count; i++) {
+          set_last_offset(pfr_mbox[i].fru, 0x00, 0x01);
+        }
+      }
+
+      munmap(reboot_base, PAGE_SIZE);
+      reboot_base = NULL;
+      close(mm_fd);
+      mm_fd = -1;
+    }
 
     return;
   } while (0);
@@ -311,8 +334,8 @@ initialize_pfr_monitor_config(json_t *conf) {
   pfr_monitor_enabled = false;
 }
 
-void *
-pfr_monitor() {
+static int
+monitor_ring_buffer() {
   uint8_t bus, addr;
   uint8_t i, j, idx;
   uint8_t tbuf[8], rbuf[80];
@@ -322,20 +345,16 @@ pfr_monitor() {
   bool bridged;
   int is_por;
 
-  if (!pal_is_pfr_active()) {
-    return NULL;
-  }
-
   if (!reboot_base) {
     if ((mm_fd = open("/dev/mem", O_RDWR | O_SYNC)) < 0) {
       syslog(LOG_ERR, "%s: devmem open failed", __func__);
-      return NULL;
+      return -1;
     }
 
     if (!(reboot_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mm_fd, BMC_REBOOT_BASE))) {
       syslog(LOG_ERR, "%s: mmap failed", __func__);
       close(mm_fd);
-      return NULL;
+      return -1;
     }
   }
 
@@ -435,6 +454,194 @@ pfr_monitor() {
     }
 
     sleep(pfr_monitor_interval);
+  }
+
+  return 0;
+}
+
+static int
+monitor_mailbox() {
+  uint8_t cmd[] = {
+    PLATFORM_STATE,  // Platform State
+    LAST_RECOVERY,   // Last Recovery Reason
+    LAST_PANIC,      // Last Panic Reason
+    MAJOR_ERROR,     // Major error code
+  };
+  uint8_t bus, addr;
+  uint8_t i, j, tbuf[8], rbuf[8];
+  uint8_t sts[MAX_NUM_FRUS][sizeof(cmd)] = {0}, sts2[MAX_NUM_FRUS] = {0};
+  uint8_t log_sel, sts_code, min_code;
+  char log_buf[256], minor_buf[128];
+  const char **log_str[] = {
+    plat_state,
+    last_recovery,
+    last_panic,
+    major_err
+  };
+  const char **log_str2[] = {
+    minor_auth_err,
+    minor_update_err
+  };
+  int ret;
+  bool bridged;
+
+  for (i = 0; i < pfr_fru_count; i++) {
+    if (pal_get_pfr_address(pfr_mbox[i].fru, &bus, &addr, &bridged)) {
+      syslog(LOG_WARNING, "%s: get PFR address failed, fru %d", __func__, pfr_mbox[i].fru);
+      continue;
+    }
+    pfr_mbox[i].bus = bus;
+    pfr_mbox[i].addr = addr;
+    pfr_mbox[i].transfer = bridged ? transfer_bridged : transfer_i2c;
+  }
+
+  INIT_PFR_ERR(plat_state, 0x01, "CPLD_NIOS_WAITING_TO_START");
+  INIT_PFR_ERR(plat_state, 0x02, "CPLD_NIOS_STARTED");
+  INIT_PFR_ERR(plat_state, 0x03, "ENTER_T-1");
+  INIT_PFR_ERR(plat_state, 0x06, "BMC_FLASH_AUTHENTICATION");
+  INIT_PFR_ERR(plat_state, 0x07, "PCH_FLASH_AUTHENTICATION");
+  INIT_PFR_ERR(plat_state, 0x08, "AUTHENTICATION_FAILED_LOCKDOWN");
+  INIT_PFR_ERR(plat_state, 0x09, "ENTER_T0");
+  INIT_PFR_ERR(plat_state, 0x0A, "T0_BMC_BOOTED");
+  INIT_PFR_ERR(plat_state, 0x0B, "T0_ME_BOOTED");
+  INIT_PFR_ERR(plat_state, 0x0C, "T0_ACM_BOOTED");
+  INIT_PFR_ERR(plat_state, 0x0D, "T0_BIOS_BOOTED");
+  INIT_PFR_ERR(plat_state, 0x0E, "T0_BOOT_COMPLETE");
+  INIT_PFR_ERR(plat_state, 0x10, "PCH_FW_UPDATE");
+  INIT_PFR_ERR(plat_state, 0x11, "BMC_FW_UPDATE");
+  INIT_PFR_ERR(plat_state, 0x12, "CPLD_UPDATE");
+  INIT_PFR_ERR(plat_state, 0x13, "CPLD_UPDATE_IN_RECOVERY_MODE");
+  INIT_PFR_ERR(plat_state, 0x40, "T-1_FW_RECOVERY");
+  INIT_PFR_ERR(plat_state, 0x41, "T-1_FORCED_ACTIVE_FW_RECOVERY");
+  INIT_PFR_ERR(plat_state, 0x42, "WDT_TIMEOUT_RECOVERY");
+  INIT_PFR_ERR(plat_state, 0x43, "CPLD_RECOVERY_IN_RECOVERY_MODE");
+  INIT_PFR_ERR(plat_state, 0x44, "PIT_L1_LOCKDOWN");
+  INIT_PFR_ERR(plat_state, 0x45, "PIT_L2_FW_SEALED");
+  INIT_PFR_ERR(plat_state, 0x46, "PIT_L2_PCH_HASH_MISMATCH_LOCKDOWN");
+  INIT_PFR_ERR(plat_state, 0x47, "PIT_L2_BMC_HASH_MISMATCH_LOCKDOWN");
+  INIT_PFR_ERR(plat_state, 0xF1, "CPLD_RECOVERY_FAILED_LOCKDOWN");
+  INIT_PFR_ERR(plat_state, 0xF2, "BMC_WDT_RECOVERY_3TIME_FAILED");
+
+  INIT_PFR_ERR(last_recovery, 0x01, "PCH_ACTIVE_FAIL");
+  INIT_PFR_ERR(last_recovery, 0x02, "PCH_RECOVERY_FAIL");
+  INIT_PFR_ERR(last_recovery, 0x03, "ME_LAUNCH_FAIL");
+  INIT_PFR_ERR(last_recovery, 0x04, "ACM_LAUNCH_FAIL");
+  INIT_PFR_ERR(last_recovery, 0x05, "IBB_LAUNCH_FAIL");
+  INIT_PFR_ERR(last_recovery, 0x06, "OBB_LAUNCH_FAIL");
+  INIT_PFR_ERR(last_recovery, 0x07, "BMC_ACTIVE_FAIL");
+  INIT_PFR_ERR(last_recovery, 0x08, "BMC_RECOVERY_FAIL");
+  INIT_PFR_ERR(last_recovery, 0x09, "BMC_LAUNCH_FAIL");
+  INIT_PFR_ERR(last_recovery, 0x0A, "FORCED_ACTIVE_FW_RECOVERY");
+
+  INIT_PFR_ERR(last_panic, 0x01, "PCH_UPDATE_INTENT");
+  INIT_PFR_ERR(last_panic, 0x02, "BMC_UPDATE_INTENT");
+  INIT_PFR_ERR(last_panic, 0x03, "BMC_RESET_DETECTED");
+  INIT_PFR_ERR(last_panic, 0x04, "BMC_WDT_EXPIRED");
+  INIT_PFR_ERR(last_panic, 0x05, "ME_WDT_EXPIRED");
+  INIT_PFR_ERR(last_panic, 0x06, "ACM_WDT_EXPIRED");
+  INIT_PFR_ERR(last_panic, 0x07, "IBB_WDT_EXPIRED");
+  INIT_PFR_ERR(last_panic, 0x08, "OBB_WDT_EXPIRED");
+  INIT_PFR_ERR(last_panic, 0x09, "ACM_IBB_OBB_AUTH_FAILED");
+
+  INIT_PFR_ERR(major_err, 0x01, "BMC_AUTH_FAILED");
+  INIT_PFR_ERR(major_err, 0x02, "PCH_AUTH_FAILED");
+  INIT_PFR_ERR(major_err, 0x03, "UPDATE_FROM_PCH_FAILED");
+  INIT_PFR_ERR(major_err, 0x04, "UPDATE_FROM_BMC_FAILED");
+
+  INIT_PFR_ERR(minor_auth_err, 0x01, "AUTH_ACTIVE");
+  INIT_PFR_ERR(minor_auth_err, 0x02, "AUTH_RECOVERY");
+  INIT_PFR_ERR(minor_auth_err, 0x03, "AUTH_ACTIVE_AND_RECOVERY");
+  INIT_PFR_ERR(minor_auth_err, 0x04, "AUTH_ALL_REGIONS");
+
+  INIT_PFR_ERR(minor_update_err, 0x01, "INVALID_UPDATE_INTENT");
+  INIT_PFR_ERR(minor_update_err, 0x02, "FW_UPDATE_INVALID_SVN");
+  INIT_PFR_ERR(minor_update_err, 0x03, "FW_UPDATE_AUTH_FAILED");
+  INIT_PFR_ERR(minor_update_err, 0x04, "FW_UPDATE_EXCEEDED_MAX_FAILED_ATTEMPTS");
+  INIT_PFR_ERR(minor_update_err, 0x05, "ACTIVE_FW_UPDATE_NOT_ALLOWED");
+  INIT_PFR_ERR(minor_update_err, 0x06, "RECOVERY_FW_UPDATE_AUTH_FAILED");
+  INIT_PFR_ERR(minor_update_err, 0x10, "CPLD_UPDATE_INVALID_SVN");
+  INIT_PFR_ERR(minor_update_err, 0x11, "CPLD_UPDATE_AUTH_FAILED");
+  INIT_PFR_ERR(minor_update_err, 0x12, "CPLD_UPDATE_EXCEEDED_MAX_FAILED_ATTEMPTS");
+
+  sleep(2);
+
+  while (1) {
+    for (i = 0; i < pfr_fru_count; i++) {
+      if (pfr_mbox[i].bus == 0xFF) {  // failed get PFR address
+        continue;
+      }
+
+      for (j = 0; j < sizeof(cmd); j++) {
+        tbuf[0] = cmd[j];
+        ret = pfr_mbox[i].transfer(&pfr_mbox[i], tbuf, 1, rbuf, 1);
+        if (ret) {
+          syslog(LOG_WARNING, "i2c%u xfer failed, offset = %x", pfr_mbox[i].bus, cmd[j]);
+          continue;
+        }
+
+        log_sel = 0;
+        if (sts[i][j] != rbuf[0]) {
+          sts[i][j] = rbuf[0];
+          if (sts[i][j]) {
+            log_sel = 1;
+          }
+        }
+        sts_code = sts[i][j];
+
+        if ((cmd[j] == MAJOR_ERROR) && sts_code && (sts_code <= 0x04)) {  // major error code: 0x01 ~ 0x04
+          tbuf[0] = MINOR_ERROR;  // minor error code
+          ret = pfr_mbox[i].transfer(&pfr_mbox[i], tbuf, 1, rbuf, 1);
+          if (ret) {
+            syslog(LOG_WARNING, "i2c%u xfer failed, offset = %x", pfr_mbox[i].bus, cmd[j]);
+            continue;
+          }
+
+          if (sts2[i] != rbuf[0]) {
+            sts2[i] = rbuf[0];
+            log_sel = 2;
+          }
+        }
+
+        if (log_sel) {
+          if (log_str[j][sts_code]) {
+            snprintf(log_buf, sizeof(log_buf), "%s (0x%02X, 0x%02X)", log_str[j][sts_code], cmd[j], sts_code);
+
+            if (cmd[j] == MAJOR_ERROR) {
+              min_code = sts2[i];
+              if ((sts_code <= 0x04) && (log_str2[(sts_code-1)/2][min_code])) {
+                snprintf(minor_buf, sizeof(minor_buf), ", %s (0x%02X, 0x%02X)",
+                                    log_str2[(sts_code-1)/2][min_code], MINOR_ERROR, min_code);
+              } else {
+                snprintf(minor_buf, sizeof(minor_buf), ", Unknown minor (0x%02X, 0x%02X)",
+                                    MINOR_ERROR, min_code);
+              }
+              strcat(log_buf, minor_buf);
+            }
+          } else {
+            snprintf(log_buf, sizeof(log_buf), "Unknown status (0x%02X, 0x%02X)", cmd[j], sts_code);
+          }
+
+          syslog(LOG_CRIT, "PFR: %s, FRU: %u", log_buf, pfr_mbox[i].fru);
+        }
+      }
+    }
+
+    sleep(pfr_monitor_interval);
+  }
+
+  return 0;
+}
+
+void *
+pfr_monitor() {
+  if (!pal_is_pfr_active()) {
+    return NULL;
+  }
+
+  if (pfr_monitor_ringbuf) {
+    monitor_ring_buffer();
+  } else {
+    monitor_mailbox();
   }
 
   return NULL;

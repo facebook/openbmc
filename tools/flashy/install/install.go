@@ -48,8 +48,8 @@ func Install() {
 func checkInstallPath() {
 	exPath := utils.GetExecutablePath()
 	if exPath != flashyInstallPath {
-		log.Fatalf(`Unable to install flashy. Flashy must be installed in '%v',
-currently installed in '%v' instead`, flashyInstallPath, exPath)
+		log.Fatalf(`Unable to install flashy. Flashy should be installed in '%v',
+currently installed in '%v' instead.`, flashyInstallPath, exPath)
 	}
 }
 

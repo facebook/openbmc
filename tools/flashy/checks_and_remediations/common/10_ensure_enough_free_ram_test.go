@@ -101,7 +101,7 @@ func TestEnsureEnoughFreeRam(t *testing.T) {
 				return tc.minMemoryNeeded, tc.minMemoryNeededErr
 			}
 
-			got := ensureEnoughFreeRam(utils.StepParams{"x", "x"})
+			got := ensureEnoughFreeRam(utils.StepParams{false, "x", "x", false})
 
 			tests.CompareTestExitErrors(tc.want, got, t)
 		})

@@ -46,7 +46,7 @@ func TestDropCaches(t *testing.T) {
 	}
 
 	t.Run("Test drop caches", func(t *testing.T) {
-		got := dropCaches(utils.StepParams{"x", "x"})
+		got := dropCaches(utils.StepParams{false, "x", "x", false})
 		if got != nil {
 			t.Errorf("want nil got %v", got)
 		}

@@ -20,6 +20,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
 
@@ -27,32 +28,54 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
+var (
+	installFlag   = flag.Bool("install", false, "Install flashy")
+	imageFilePath = flag.String("imagepath", "/opt/upgrade/image", "Path to image file")
+	deviceID      = flag.String("device", "", "Device ID (e.g. mtd:flash0")
+	clowntown     = flag.Bool("clowntown", false, "Clowntown mode (WARNING: RISK OF BRICKING DEVICE - WARRANTIES OFF)")
+)
+
+// exit if not empty
+func failIfFlagEmpty(flagName, value string) {
+	if len(value) == 0 {
+		log.Fatalf("%v flag must be specified. Use `--help` for a guide", flagName)
+	}
+}
+
 func main() {
+	flag.Parse()
+
+	if *clowntown {
+		log.Printf(`===== WARNING: CLOWNTOWN MODE ENABLED =====
+THERE IS RISK OF BRICKING THIS DEVICE!
+WARRANTIES OFF`)
+	}
+
 	binName := utils.SanitizeBinaryName(os.Args[0])
 
-	// initiation step
-	if len(os.Args) == 2 && binName == "flashy" && os.Args[1] == "--install" {
+	stepParams := utils.StepParams{
+		Install:       *installFlag,
+		ImageFilePath: *imageFilePath,
+		DeviceID:      *deviceID,
+		Clowntown:     *clowntown,
+	}
+
+	// install
+	if stepParams.Install {
 		install.Install()
 		return
 	}
 
-	if len(os.Args) < 3 {
-		log.Fatalf("Not enough arguments. Require `<step-name> <imageFilePath> <deviceID>`")
-	}
+	// at this point, imageFilePath and deviceID are required to be non empty
+	failIfFlagEmpty("imagepath", *imageFilePath)
+	failIfFlagEmpty("device", *deviceID)
+
 	if _, exists := utils.StepMap[binName]; !exists {
 		log.Fatalf("Unknown binary '%v'", binName)
 	}
 
-	imageFilePath := os.Args[1]
-	deviceID := os.Args[2]
-
 	log.Printf("Starting: %v", binName)
-	err := utils.StepMap[binName](
-		utils.StepParams{
-			imageFilePath,
-			deviceID,
-		},
-	)
+	err := utils.StepMap[binName](stepParams)
 	if err != nil {
 		utils.HandleStepError(err)
 	}

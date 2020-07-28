@@ -54,8 +54,10 @@ func TestFlashCpVboot(t *testing.T) {
 	}
 
 	exampleStepParams := utils.StepParams{
+		false,
 		"/tmp/image",
 		"mtd:flash0",
+		false,
 	}
 
 	cases := []struct {

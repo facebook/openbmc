@@ -25,8 +25,10 @@ import (
 )
 
 type StepParams struct {
+	Install       bool
 	ImageFilePath string
 	DeviceID      string
+	Clowntown     bool
 }
 
 type stepMapType = map[string]func(StepParams) StepExitError

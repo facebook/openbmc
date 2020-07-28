@@ -117,7 +117,7 @@ func TestRestartServices(t *testing.T) {
 				return true
 			}
 
-			got := restartServices(utils.StepParams{"x", "x"})
+			got := restartServices(utils.StepParams{false, "x", "x", false})
 
 			tests.CompareTestExitErrors(tc.want, got, t)
 

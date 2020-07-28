@@ -134,7 +134,7 @@ func TestTruncateLogs(t *testing.T) {
 			utils.RemoveFile = func(filename string) error {
 				return tc.removeFileErr
 			}
-			got := truncateLogs(utils.StepParams{"x", "x"})
+			got := truncateLogs(utils.StepParams{false, "x", "x", false})
 			tests.CompareTestExitErrors(tc.want, got, t)
 		})
 	}

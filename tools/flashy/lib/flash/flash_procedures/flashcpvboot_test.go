@@ -47,8 +47,7 @@ func TestFlashCpVboot(t *testing.T) {
 		runFlashCpCmd = runFlashCpCmdOrig
 	}()
 
-	exampleFlashDevice := &devices.FlashDevice{
-		"mtd",
+	exampleFlashDevice := devices.MemoryTechnologyDevice{
 		"flash0",
 		"/dev/mtd5",
 		uint64(12345678),
@@ -61,7 +60,7 @@ func TestFlashCpVboot(t *testing.T) {
 
 	cases := []struct {
 		name             string
-		flashDevice      *devices.FlashDevice
+		flashDevice      devices.FlashDevice
 		flashDeviceErr   error
 		vbootRemErr      error
 		runFlashCpCmdErr utils.StepExitError
@@ -78,7 +77,7 @@ func TestFlashCpVboot(t *testing.T) {
 			logContainsSeq: []string{
 				"Flashing using flashcp vboot method",
 				"Attempting to flash 'mtd:flash0' with image file '/tmp/image",
-				"Flash device: {mtd flash0 /dev/mtd5 12345678}",
+				"Flash device: {flash0 /dev/mtd5 12345678}",
 			},
 		},
 		{
@@ -108,7 +107,7 @@ func TestFlashCpVboot(t *testing.T) {
 			logContainsSeq: []string{
 				"Flashing using flashcp vboot method",
 				"Attempting to flash 'mtd:flash0' with image file '/tmp/image",
-				"Flash device: {mtd flash0 /dev/mtd5 12345678}",
+				"Flash device: {flash0 /dev/mtd5 12345678}",
 			},
 		},
 		{
@@ -130,13 +129,13 @@ func TestFlashCpVboot(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			buf = bytes.Buffer{}
-			flashutils.GetFlashDevice = func(deviceID string) (*devices.FlashDevice, error) {
+			flashutils.GetFlashDevice = func(deviceID string) (devices.FlashDevice, error) {
 				if deviceID != "mtd:flash0" {
 					t.Errorf("device: want '%v' got '%v'", "mtd:flash0", deviceID)
 				}
 				return tc.flashDevice, tc.flashDeviceErr
 			}
-			flashutils.VbootPatchImageBootloaderIfNeeded = func(imageFilePath string, flashDevice *devices.FlashDevice) error {
+			flashutils.VbootPatchImageBootloaderIfNeeded = func(imageFilePath string, flashDevice devices.FlashDevice) error {
 				if imageFilePath != "/tmp/image" {
 					t.Errorf("imageFilePath: want '%v' got '%v'", "/tmp/image", imageFilePath)
 				}

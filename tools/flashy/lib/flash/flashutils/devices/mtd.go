@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"syscall"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
@@ -33,15 +34,73 @@ type WritableMountedMTD struct {
 	Mountpoint string
 }
 
+type MemoryTechnologyDevice struct {
+	Specifier string
+	FilePath  string
+	FileSize  uint64
+}
+
+const MtdType = "mtd"
+
 func init() {
-	registerFlashDevice("mtd", getMTD)
+	registerFlashDevice(MtdType, getMTD)
+}
+
+func (m MemoryTechnologyDevice) GetType() string {
+	return MtdType
+}
+
+func (m MemoryTechnologyDevice) GetSpecifier() string {
+	return m.Specifier
+}
+
+func (m MemoryTechnologyDevice) GetFilePath() string {
+	return m.FilePath
+}
+
+func (m MemoryTechnologyDevice) GetFileSize() uint64 {
+	return m.FileSize
+}
+
+// mmaps the whole file, readonly
+// required to call Munmap to release the buffer
+func (m MemoryTechnologyDevice) MmapRO() ([]byte, error) {
+	// use mmap
+	mmapFilePath, err := m.GetMmapFilePath()
+	if err != nil {
+		return nil, errors.Errorf("Unable to read '%v': %v",
+			m.FilePath, err)
+	}
+	return utils.MmapFileRange(mmapFilePath, 0, int(m.FileSize), syscall.PROT_READ, syscall.MAP_SHARED)
+}
+
+func (m MemoryTechnologyDevice) Munmap(buf []byte) error {
+	return utils.Munmap(buf)
+}
+
+// /dev/mtd5 cannot be mmap-ed, but /dev/mtdblock5 can
+// return the latter instead
+func (m MemoryTechnologyDevice) GetMmapFilePath() (string, error) {
+	regEx := `^(?P<devmtdpath>/dev/mtd)(?P<mtdnum>[0-9]+)$`
+
+	mtdPathMap, err := utils.GetRegexSubexpMap(regEx, m.FilePath)
+	if err != nil {
+		return "", errors.Errorf("Unable to get block file path for '%v': %v",
+			m.FilePath, err)
+	}
+
+	return fmt.Sprintf(
+		"%vblock%v",
+		mtdPathMap["devmtdpath"],
+		mtdPathMap["mtdnum"],
+	), nil
 }
 
 /*
 TODO:-
 (1) Validate mtd
 */
-func getMTD(deviceSpecifier string) (*FlashDevice, error) {
+func getMTD(deviceSpecifier string) (FlashDevice, error) {
 	mtdMap, err := getMTDMap(deviceSpecifier)
 	if err != nil {
 		return nil, err
@@ -54,14 +113,11 @@ func getMTD(deviceSpecifier string) (*FlashDevice, error) {
 			deviceSpecifier, err)
 	}
 
-	mtd := FlashDevice{
-		"mtd",
+	return MemoryTechnologyDevice{
 		deviceSpecifier,
 		filePath,
 		fileSize,
-	}
-
-	return &mtd, nil
+	}, nil
 }
 
 // from mtd device specifier, get a map containing

@@ -19,15 +19,17 @@
 
 package devices
 
-type FlashDevice struct {
-	Type      string
-	Specifier string
-	FilePath  string
-	FileSize  uint64
+type FlashDevice interface {
+	GetType() string
+	GetSpecifier() string
+	GetFilePath() string
+	GetFileSize() uint64
+	MmapRO() ([]byte, error)
+	Munmap([]byte) error
 }
 
 // takes in the specifier and returns the FlashDevice
-type FlashDeviceGetter = func(string) (*FlashDevice, error)
+type FlashDeviceGetter = func(string) (FlashDevice, error)
 
 // maps from the type of the device to the getter function
 // that gets & validates the information of the flash storage device

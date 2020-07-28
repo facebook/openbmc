@@ -27,6 +27,50 @@ import (
 	"github.com/pkg/errors"
 )
 
+func TestGetMmapFilePath(t *testing.T) {
+	cases := []struct {
+		name        string
+		mtdFilePath string
+		want        string
+		wantErr     error
+	}{
+		{
+			name:        "/dev/mtd5 test",
+			mtdFilePath: "/dev/mtd5",
+			want:        "/dev/mtdblock5",
+			wantErr:     nil,
+		},
+		{
+			name:        "/dev/mtd12 test",
+			mtdFilePath: "/dev/mtd12",
+			want:        "/dev/mtdblock12",
+			wantErr:     nil,
+		},
+		{
+			name:        "invalid mtd file path",
+			mtdFilePath: "/dev/mtddddd",
+			want:        "",
+			wantErr: errors.Errorf("Unable to get block file path for '/dev/mtddddd': " +
+				"No match for regex '^(?P<devmtdpath>/dev/mtd)(?P<mtdnum>[0-9]+)$' for input '/dev/mtddddd'"),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			mtd := MemoryTechnologyDevice{
+				"foobar",
+				tc.mtdFilePath,
+				uint64(123),
+			}
+			got, err := mtd.GetMmapFilePath()
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+			tests.CompareTestErrors(tc.wantErr, err, t)
+		})
+	}
+
+}
+
 func TestGetMTD(t *testing.T) {
 	// mock and defer restore ReadFile
 	readFileOrig := utils.ReadFile
@@ -39,7 +83,7 @@ func TestGetMTD(t *testing.T) {
 		specifier       string
 		procMtdContents string
 		readFileErr     error
-		want            *FlashDevice
+		want            FlashDevice
 		wantErr         error
 	}{
 		{
@@ -47,8 +91,7 @@ func TestGetMTD(t *testing.T) {
 			specifier:       "flash0",
 			procMtdContents: tests.ExampleWedge100ProcMtdFile,
 			readFileErr:     nil,
-			want: &FlashDevice{
-				"mtd",
+			want: MemoryTechnologyDevice{
 				"flash0",
 				"/dev/mtd5",
 				uint64(33554432),
@@ -105,7 +148,7 @@ func TestGetMTD(t *testing.T) {
 			} else {
 				if tc.want == nil {
 					t.Errorf("want '%v' got '%v'", tc.want, got)
-				} else if !reflect.DeepEqual(*tc.want, *got) {
+				} else if !reflect.DeepEqual(tc.want, got) {
 					t.Errorf("want '%v', got '%v'", tc.want, got)
 				}
 			}

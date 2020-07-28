@@ -110,18 +110,34 @@ var getVbootEnforcement = func() (vbootEnforcementEnum, error) {
 // ==== WARNING: THIS STEP ALTERS THE IMAGE FILE ====
 // In vboot systems, there exists a 384K region in writable flash (flash1)
 // The image needs to be patched with an offset from the bootloader
-var patchImageWithLocalBootloader = func(imageFilePath, flashDeviceFilePath string, offsetBytes int) error {
+var patchImageWithLocalBootloader = func(imageFilePath string, flashDevice devices.FlashDevice, offsetBytes int) error {
 	log.Printf("===== WARNING: PATCHING IMAGE FILE =====")
 	log.Printf("This vboot system has %vB RO offset in mtd, patching image file "+
 		"with offset.", offsetBytes)
-	err := utils.ReplaceFirstNBytes(
-		imageFilePath,
-		flashDeviceFilePath,
-		offsetBytes,
-	)
-	if err != nil {
-		return errors.Errorf("Unable to patch image: %v", err)
+
+	// first check that offsetBytes is within flashDevice file size
+	flashDeviceSize := flashDevice.GetFileSize()
+	if uint64(offsetBytes) > flashDeviceSize {
+		return errors.Errorf("Unable to patch image: offset bytes required (%vB) larger than"+
+			"image file size (%vB)", offsetBytes, flashDeviceSize)
 	}
+	// read all bytes, then get a slice of n bytes to overwrite
+	// the image file
+	flashDeviceBuf, err := flashDevice.MmapRO()
+	if err != nil {
+		return errors.Errorf("Unable to patch image: Can't read from flash device: %v",
+			err)
+	}
+	defer flashDevice.Munmap(flashDeviceBuf)
+
+	offsetBuf := flashDeviceBuf[0:offsetBytes]
+
+	err = utils.WriteFileWithoutTruncate(imageFilePath, offsetBuf)
+	if err != nil {
+		return errors.Errorf("Unable to patch image file '%v': %v",
+			imageFilePath, err)
+	}
+
 	log.Printf("Successfully patched image file")
 	return nil
 }
@@ -141,21 +157,21 @@ var isVbootImagePatchingRequired = func(flashDeviceSpecifier string) (bool, erro
 }
 
 // ==== WARNING: THIS STEP CAN ALTER THE IMAGE FILE ====
-var VbootPatchImageBootloaderIfNeeded = func(imageFilePath string, flashDevice *devices.FlashDevice) error {
+var VbootPatchImageBootloaderIfNeeded = func(imageFilePath string, flashDevice devices.FlashDevice) error {
 	// check if vboot, fail if not a vboot system
 	if !isVbootSystem() {
 		return errors.Errorf("Not a vboot system, cannot run vboot remediation")
 	}
 
 	// check if image patching is required
-	patchRequired, err := isVbootImagePatchingRequired(flashDevice.Specifier)
+	patchRequired, err := isVbootImagePatchingRequired(flashDevice.GetSpecifier())
 	if err != nil {
 		return errors.Errorf("Unable to determine whether image patching is required: %v", err)
 	}
 
 	// if image patching required, patch the image
 	if patchRequired {
-		err = patchImageWithLocalBootloader(imageFilePath, flashDevice.FilePath, vbootOffset)
+		err = patchImageWithLocalBootloader(imageFilePath, flashDevice, vbootOffset)
 		if err != nil {
 			return errors.Errorf("Failed to patch image with local bootloader: %v", err)
 		}

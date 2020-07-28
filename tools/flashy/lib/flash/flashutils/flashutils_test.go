@@ -74,18 +74,17 @@ func TestGetFlashDevice(t *testing.T) {
 		devices.FlashDeviceGetterMap = flashDeviceGetterMapOrig
 	}()
 
-	sampleFlashDevice := devices.FlashDevice{
-		"mtd",
+	sampleFlashDevice := devices.MemoryTechnologyDevice{
 		"flash0",
 		"/dev/mtd5",
 		uint64(12345678),
 	}
 
-	sampleMtdGetterSuccess := func(specifier string) (*devices.FlashDevice, error) {
-		return &sampleFlashDevice, nil
+	sampleMtdGetterSuccess := func(specifier string) (devices.FlashDevice, error) {
+		return sampleFlashDevice, nil
 	}
 
-	sampleMtdGetterError := func(specifier string) (*devices.FlashDevice, error) {
+	sampleMtdGetterError := func(specifier string) (devices.FlashDevice, error) {
 		return nil, errors.Errorf("Error getting 'mtd:%v'", specifier)
 	}
 
@@ -93,7 +92,7 @@ func TestGetFlashDevice(t *testing.T) {
 		name                 string
 		deviceID             string
 		flashDeviceGetterMap map[string](devices.FlashDeviceGetter)
-		want                 *devices.FlashDevice
+		want                 devices.FlashDevice
 		wantErr              error
 	}{
 		{
@@ -102,7 +101,7 @@ func TestGetFlashDevice(t *testing.T) {
 			flashDeviceGetterMap: map[string](devices.FlashDeviceGetter){
 				"mtd": sampleMtdGetterSuccess,
 			},
-			want:    &sampleFlashDevice,
+			want:    sampleFlashDevice,
 			wantErr: nil,
 		},
 		{
@@ -148,8 +147,8 @@ func TestGetFlashDevice(t *testing.T) {
 			} else {
 				if tc.want == nil {
 					t.Errorf("want '%v' got '%v'", tc.want, got)
-				} else if !reflect.DeepEqual(*tc.want, *got) {
-					t.Errorf("want '%v' got '%v'", *tc.want, *got)
+				} else if !reflect.DeepEqual(tc.want, got) {
+					t.Errorf("want '%v' got '%v'", tc.want, got)
 				}
 			}
 

@@ -47,7 +47,7 @@ var parseDeviceID = func(deviceID string) (string, string, error) {
 	return flashDeviceMap["type"], flashDeviceMap["specifier"], nil
 }
 
-var GetFlashDevice = func(deviceID string) (*devices.FlashDevice, error) {
+var GetFlashDevice = func(deviceID string) (devices.FlashDevice, error) {
 	deviceType, deviceSpecifier, err := parseDeviceID(deviceID)
 	if err != nil {
 		return nil, errors.Errorf("Failed to get flash device: %v", err)

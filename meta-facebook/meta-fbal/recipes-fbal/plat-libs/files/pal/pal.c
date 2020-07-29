@@ -30,6 +30,7 @@
 #include <time.h>
 #include <sys/mman.h>
 #include <sys/time.h>
+#include <dirent.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/nm.h>
@@ -56,6 +57,8 @@
 #define OFFSET_DEV_GUID 0x1800
 
 #define MAX_CPU_NUM 8
+
+#define ETHERNET_BR0_INTERFACE_PATH "/sys/class/net/br0"
 
 const char pal_fru_list[] = "all, mb, nic0, nic1, pdb, bmc";
 const char pal_server_list[] = "mb";
@@ -2024,4 +2027,19 @@ pal_get_syscfg_text (char *text) {
   }
 
   return 0;
+}
+
+void pal_get_eth_intf_name(char* intf_name)
+{
+  char path[64] = {0};
+  DIR *dir;
+
+  snprintf(path, sizeof(path), ETHERNET_BR0_INTERFACE_PATH);
+  dir = opendir(path);
+  if (dir != NULL) {
+    snprintf(intf_name, 8, "br0");
+    closedir(dir);
+  } else {
+    snprintf(intf_name, 8, "eth0");
+  }
 }

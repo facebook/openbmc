@@ -9,7 +9,7 @@ using namespace std;
 
 int PfrBmcComponent::update(string image) {
   int ret, ifd, retry = 3;
-  uint8_t fruid = 1, bus, addr, buf[8];
+  uint8_t fruid = 1, bus, addr, buf[8], rbuf[8];
   char dev_i2c[16];
   bool bridged;
   string dev, cmd;
@@ -46,6 +46,16 @@ int PfrBmcComponent::update(string image) {
       buf[0] = 0x13;  // BMC update intent
       buf[1] = (_vers_mtd == "rc") ? UPDATE_BMC_RECOVERY : UPDATE_BMC_ACTIVE;
       buf[1] |= UPDATE_AT_RESET;
+
+      do {
+        ret = i2c_rdwr_msg_transfer(ifd, addr, buf, 1, rbuf, 1);
+        if (ret) {
+          syslog(LOG_WARNING, "i2c%u xfer failed, addr=%02x, cmd: %02x %02x", bus, addr, buf[0], buf[1]);
+          if (--retry > 0)
+            msleep(100);
+        }
+      } while (ret && retry > 0);
+      buf[1] |= rbuf[0];
 
       do {
         ret = i2c_rdwr_msg_transfer(ifd, addr, buf, 2, NULL, 0);

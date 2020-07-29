@@ -27,15 +27,16 @@ import (
 	"time"
 
 	"github.com/Jeffail/gabs"
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
 
 func TestGetHealthdConfig(t *testing.T) {
 	// save and defer restore ReadFile
-	readFileOrig := ReadFile
+	readFileOrig := fileutils.ReadFile
 	defer func() {
-		ReadFile = readFileOrig
+		fileutils.ReadFile = readFileOrig
 	}()
 
 	cases := []struct {
@@ -78,7 +79,7 @@ func TestGetHealthdConfig(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ReadFile = func(filename string) ([]byte, error) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
 				if filename != healthdConfigFilePath {
 					return []byte{}, errors.Errorf("filename: want '%v' got '%v'", healthdConfigFilePath, filename)
 				}
@@ -93,9 +94,9 @@ func TestGetHealthdConfig(t *testing.T) {
 
 func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 	// save and defer restore WriteFile
-	writeFileOrig := WriteFile
+	writeFileOrig := fileutils.WriteFile
 	defer func() {
-		WriteFile = writeFileOrig
+		fileutils.WriteFile = writeFileOrig
 	}()
 
 	cases := []struct {
@@ -166,7 +167,7 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			writeConfigCalled := false
-			WriteFile = func(filename string, data []byte, perm os.FileMode) error {
+			fileutils.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
 				writeConfigCalled = true
 				return nil
 			}
@@ -196,9 +197,9 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 
 func TestHealthdWriteConfigToFile(t *testing.T) {
 	// save and defer restore WriteFile
-	writeFileOrig := WriteFile
+	writeFileOrig := fileutils.WriteFile
 	defer func() {
-		WriteFile = writeFileOrig
+		fileutils.WriteFile = writeFileOrig
 	}()
 
 	cases := []struct {
@@ -221,7 +222,7 @@ func TestHealthdWriteConfigToFile(t *testing.T) {
 	mockGabsContainer := gabs.Container{}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			WriteFile = func(filename string, data []byte, perm os.FileMode) error {
+			fileutils.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
 				return tc.writeFileErr
 			}
 			got := HealthdWriteConfigToFile(&mockGabsContainer)
@@ -232,11 +233,11 @@ func TestHealthdWriteConfigToFile(t *testing.T) {
 
 func TestRestartHealthd(t *testing.T) {
 	// save and defer restore FileExists, RunCommand & sleepFunc
-	pathExistsOrig := PathExists
+	pathExistsOrig := fileutils.PathExists
 	runCommandOrig := RunCommand
 	sleepFuncOrig := sleepFunc
 	defer func() {
-		PathExists = pathExistsOrig
+		fileutils.PathExists = pathExistsOrig
 		RunCommand = runCommandOrig
 		sleepFunc = sleepFuncOrig
 	}()
@@ -303,7 +304,7 @@ func TestRestartHealthd(t *testing.T) {
 			sleepFunc = func(t time.Duration) {
 				gotSleepTime = t
 			}
-			PathExists = func(filename string) bool {
+			fileutils.PathExists = func(filename string) bool {
 				if filename != "/etc/sv/healthd" {
 					t.Errorf("filename: want %v got %v", "/etc/sv/healthd", filename)
 				}

@@ -24,7 +24,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 
 	// all packages containing steps must be included to successfully run install
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/common"
@@ -46,7 +47,7 @@ func Install() {
 
 // check whether flashy is installed in the right path
 func checkInstallPath() {
-	exPath := utils.GetExecutablePath()
+	exPath := fileutils.GetExecutablePath()
 	if exPath != flashyInstallPath {
 		log.Fatalf(`Unable to install flashy. Flashy should be installed in '%v',
 currently installed in '%v' instead.`, flashyInstallPath, exPath)
@@ -55,7 +56,7 @@ currently installed in '%v' instead.`, flashyInstallPath, exPath)
 
 // make sure the install directory is clean
 func cleanInstallPath() {
-	exPath := utils.GetExecutablePath()
+	exPath := fileutils.GetExecutablePath()
 	exDir := filepath.Dir(exPath)
 
 	d, err := os.Open(exDir)
@@ -88,10 +89,10 @@ func initSymlinks() {
 		}
 	}
 
-	exPath := utils.GetExecutablePath()
+	exPath := fileutils.GetExecutablePath()
 	exDir := filepath.Dir(exPath)
 
-	for _symlinkPath, _ := range utils.StepMap {
+	for _symlinkPath, _ := range step.StepMap {
 		// absolute symlinkPath
 		symlinkPath := filepath.Join(exDir, _symlinkPath)
 

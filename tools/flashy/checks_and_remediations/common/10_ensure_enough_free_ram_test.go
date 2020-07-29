@@ -21,6 +21,7 @@ package common
 import (
 	"testing"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
@@ -36,7 +37,7 @@ func TestEnsureEnoughFreeRam(t *testing.T) {
 		name       string
 		memInfo    *utils.MemInfo
 		memInfoErr error
-		want       utils.StepExitError
+		want       step.StepExitError
 	}{
 		{
 			name: "Enough free ram",
@@ -54,7 +55,7 @@ func TestEnsureEnoughFreeRam(t *testing.T) {
 				30 * 1024 * 1024,
 			},
 			memInfoErr: nil,
-			want: utils.ExitSafeToReboot{
+			want: step.ExitSafeToReboot{
 				errors.Errorf("Free memory (31457280 B) < minimum memory needed (47185920 B), reboot needed"),
 			},
 		},
@@ -62,7 +63,7 @@ func TestEnsureEnoughFreeRam(t *testing.T) {
 			name:       "Error in GetMemInfo",
 			memInfo:    nil,
 			memInfoErr: errors.Errorf("MemInfo error"),
-			want:       utils.ExitSafeToReboot{errors.Errorf("MemInfo error")},
+			want:       step.ExitSafeToReboot{errors.Errorf("MemInfo error")},
 		},
 	}
 
@@ -72,8 +73,8 @@ func TestEnsureEnoughFreeRam(t *testing.T) {
 				return tc.memInfo, tc.memInfoErr
 			}
 
-			got := ensureEnoughFreeRam(utils.StepParams{false, "x", "x", false})
-			utils.CompareTestExitErrors(tc.want, got, t)
+			got := ensureEnoughFreeRam(step.StepParams{false, "x", "x", false})
+			step.CompareTestExitErrors(tc.want, got, t)
 		})
 	}
 

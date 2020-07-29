@@ -26,6 +26,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
@@ -47,10 +49,10 @@ and brick the device!
 `
 
 func init() {
-	utils.RegisterStep(alertUpgradeMode)
+	step.RegisterStep(alertUpgradeMode)
 }
 
-func alertUpgradeMode(stepParams utils.StepParams) utils.StepExitError {
+func alertUpgradeMode(stepParams step.StepParams) step.StepExitError {
 	// as these are best-effort, the errors are ignored
 	// these won't affect the actual upgrade
 
@@ -64,7 +66,7 @@ func alertUpgradeMode(stepParams utils.StepParams) utils.StepExitError {
 }
 
 func updatePS1() error {
-	err := utils.AppendFile("/etc/profile", PS1Line)
+	err := fileutils.AppendFile("/etc/profile", PS1Line)
 	if err != nil {
 		return errors.Errorf("Warning: Unable to update PS1: %v", err)
 	}
@@ -82,7 +84,7 @@ func wallAlert() error {
 }
 
 func updateMOTD() error {
-	err := utils.WriteFile("/etc/motd", []byte(motdContents), 0644)
+	err := fileutils.WriteFile("/etc/motd", []byte(motdContents), 0644)
 	if err != nil {
 		return errors.Errorf("Warning: MOTD update failed, `wall` alert will not proceed: %v", err)
 	}

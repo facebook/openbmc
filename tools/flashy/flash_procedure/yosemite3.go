@@ -22,14 +22,14 @@ package flash_procedure
 import (
 	"log"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 )
 
 func init() {
-	utils.RegisterStep(flashYosemite3)
+	step.RegisterStep(flashYosemite3)
 }
 
-func flashYosemite3(stepParams utils.StepParams) utils.StepExitError {
+func flashYosemite3(stepParams step.StepParams) step.StepExitError {
 	log.Printf("Flashing yosemite3")
 	return nil
 }

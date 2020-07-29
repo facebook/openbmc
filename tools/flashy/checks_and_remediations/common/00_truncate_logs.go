@@ -22,12 +22,13 @@ package common
 import (
 	"path/filepath"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/pkg/errors"
 )
 
 func init() {
-	utils.RegisterStep(truncateLogs)
+	step.RegisterStep(truncateLogs)
 }
 
 // these files will be deleted
@@ -42,32 +43,32 @@ var truncateLogFilePatterns []string = []string{
 	"/var/log/messages",
 }
 
-func truncateLogs(stepParams utils.StepParams) utils.StepExitError {
+func truncateLogs(stepParams step.StepParams) step.StepExitError {
 	logFilesToDelete, err := resolveFilePatterns(deleteLogFilePatterns)
 	if err != nil {
 		errMsg := errors.Errorf("Unable to resolve file patterns '%v': %v", deleteLogFilePatterns, err)
-		return utils.ExitSafeToReboot{errMsg}
+		return step.ExitSafeToReboot{errMsg}
 	}
 
 	for _, f := range *logFilesToDelete {
-		err := utils.RemoveFile(f)
+		err := fileutils.RemoveFile(f)
 		if err != nil {
 			errMsg := errors.Errorf("Unable to remove log file '%v': %v", f, err)
-			return utils.ExitSafeToReboot{errMsg}
+			return step.ExitSafeToReboot{errMsg}
 		}
 	}
 
 	logFilesToTruncate, err := resolveFilePatterns(truncateLogFilePatterns)
 	if err != nil {
 		errMsg := errors.Errorf("Unable to resolve file patterns '%v': %v", deleteLogFilePatterns, err)
-		return utils.ExitSafeToReboot{errMsg}
+		return step.ExitSafeToReboot{errMsg}
 	}
 
 	for _, f := range *logFilesToTruncate {
-		err := utils.TruncateFile(f, 0)
+		err := fileutils.TruncateFile(f, 0)
 		if err != nil {
 			errMsg := errors.Errorf("Unable to truncate log file '%v': %v", f, err)
-			return utils.ExitSafeToReboot{errMsg}
+			return step.ExitSafeToReboot{errMsg}
 		}
 	}
 	return nil

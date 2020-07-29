@@ -24,6 +24,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
@@ -47,7 +49,7 @@ var normalizeVersion = func(ver string) string {
 // check compatibility of the image file by comparing the "normalized" build name of
 // (1) the /etc/issue file and (2) the image file
 // return an error if they do not match
-var CheckImageBuildNameCompatibility = func(stepParams utils.StepParams) error {
+var CheckImageBuildNameCompatibility = func(stepParams step.StepParams) error {
 	if stepParams.Clowntown {
 		log.Printf("===== WARNING: Clowntown mode: Bypassing image build name compatibility check =====")
 		log.Printf("===== THERE IS RISK OF BRICKING THIS DEVICE =====")
@@ -120,7 +122,7 @@ var getNormalizedBuildNameFromVersion = func(ver string) (string, error) {
 // there is no guarantee that this will succeed
 var getOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) {
 	// mmap the first 512kB of the image file
-	imageFileBuf, err := utils.MmapFileRange(
+	imageFileBuf, err := fileutils.MmapFileRange(
 		imageFilePath, 0, 512*1024, syscall.PROT_READ, syscall.MAP_SHARED,
 	)
 	if err != nil {
@@ -128,7 +130,7 @@ var getOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) 
 			imageFilePath, err)
 	}
 	// unmap
-	defer utils.Munmap(imageFileBuf)
+	defer fileutils.Munmap(imageFileBuf)
 
 	imageFileVerMap, err := utils.GetBytesRegexSubexpMap(ubootVersionRegEx, imageFileBuf)
 	if err != nil {

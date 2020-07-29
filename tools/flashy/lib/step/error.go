@@ -17,12 +17,12 @@
  * Boston, MA 02110-1301 USA
  */
 
-package utils
+package step
 
 import (
-	"encoding/json"
 	"log"
 	"os"
+	"testing"
 )
 
 // any other exit codes are programming errors
@@ -60,18 +60,6 @@ func (e ExitUnknownError) GetError() string {
 	return e.Err.Error()
 }
 
-// encode exit error
-func encodeExitError(err StepExitError) {
-	enc := json.NewEncoder(os.Stderr)
-
-	var ae = struct {
-		Reason string `json:"message"`
-	}{
-		Reason: err.GetError(),
-	}
-	enc.Encode(ae)
-}
-
 func HandleStepError(err StepExitError) {
 	// output stack trace
 	log.Printf("%+v", err)
@@ -92,5 +80,20 @@ func HandleStepError(err StepExitError) {
 		// this should not happen as there are no other types
 		log.Printf("Unknown error")
 		os.Exit(unknownErrorExitCode)
+	}
+}
+
+// used to test and compare Exit Errors in testing
+func CompareTestExitErrors(want StepExitError, got StepExitError, t *testing.T) {
+	if got == nil {
+		if want != nil {
+			t.Errorf("want '%v' got '%v'", want, got)
+		}
+	} else {
+		if want == nil {
+			t.Errorf("want '%v' got '%v'", want, got)
+		} else if got.GetError() != want.GetError() {
+			t.Errorf("want '%v' got '%v'", want.GetError(), got.GetError())
+		}
 	}
 }

@@ -27,7 +27,7 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
@@ -53,7 +53,7 @@ func TestFlashCpVboot(t *testing.T) {
 		uint64(12345678),
 	}
 
-	exampleStepParams := utils.StepParams{
+	exampleStepParams := step.StepParams{
 		false,
 		"/tmp/image",
 		"mtd:flash0",
@@ -65,8 +65,8 @@ func TestFlashCpVboot(t *testing.T) {
 		flashDevice      devices.FlashDevice
 		flashDeviceErr   error
 		vbootRemErr      error
-		runFlashCpCmdErr utils.StepExitError
-		want             utils.StepExitError
+		runFlashCpCmdErr step.StepExitError
+		want             step.StepExitError
 		logContainsSeq   []string
 	}{
 		{
@@ -88,7 +88,7 @@ func TestFlashCpVboot(t *testing.T) {
 			flashDeviceErr:   errors.Errorf("GetFlashDevice error"),
 			vbootRemErr:      nil,
 			runFlashCpCmdErr: nil,
-			want: utils.ExitSafeToReboot{
+			want: step.ExitSafeToReboot{
 				errors.Errorf("GetFlashDevice error"),
 			},
 			logContainsSeq: []string{
@@ -102,8 +102,8 @@ func TestFlashCpVboot(t *testing.T) {
 			flashDevice:      exampleFlashDevice,
 			flashDeviceErr:   nil,
 			vbootRemErr:      nil,
-			runFlashCpCmdErr: utils.ExitSafeToReboot{errors.Errorf("RunCommand error")},
-			want: utils.ExitSafeToReboot{
+			runFlashCpCmdErr: step.ExitSafeToReboot{errors.Errorf("RunCommand error")},
+			want: step.ExitSafeToReboot{
 				errors.Errorf("RunCommand error"),
 			},
 			logContainsSeq: []string{
@@ -118,7 +118,7 @@ func TestFlashCpVboot(t *testing.T) {
 			flashDeviceErr:   nil,
 			vbootRemErr:      errors.Errorf("vboot rem failed"),
 			runFlashCpCmdErr: nil,
-			want: utils.ExitSafeToReboot{
+			want: step.ExitSafeToReboot{
 				errors.Errorf("vboot rem failed"),
 			},
 			logContainsSeq: []string{
@@ -143,7 +143,7 @@ func TestFlashCpVboot(t *testing.T) {
 				}
 				return tc.vbootRemErr
 			}
-			runFlashCpCmd = func(imageFilePath, flashDevicePath string) utils.StepExitError {
+			runFlashCpCmd = func(imageFilePath, flashDevicePath string) step.StepExitError {
 				if imageFilePath != "/tmp/image" {
 					t.Errorf("imageFilePath: want '%v' got '%v'", "/tmp/image", imageFilePath)
 				}
@@ -154,7 +154,7 @@ func TestFlashCpVboot(t *testing.T) {
 			}
 			got := FlashCpVboot(exampleStepParams)
 
-			utils.CompareTestExitErrors(tc.want, got, t)
+			step.CompareTestExitErrors(tc.want, got, t)
 			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
 		})
 	}

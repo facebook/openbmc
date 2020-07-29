@@ -23,19 +23,20 @@ import (
 	"os"
 	"testing"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/pkg/errors"
 )
 
 func TestDropCaches(t *testing.T) {
-	// mock utils.WriteFile to return nil if the write is correct
-	writeFileOrig := utils.WriteFile
+	// mock fileutils.WriteFile to return nil if the write is correct
+	writeFileOrig := fileutils.WriteFile
 	defer func() {
-		utils.WriteFile = writeFileOrig
+		fileutils.WriteFile = writeFileOrig
 	}()
 	wantFilename := "/proc/sys/vm/drop_caches"
 	wantDataString := "3"
-	utils.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
+	fileutils.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
 		if filename != wantFilename {
 			return errors.Errorf("filename: want %v got %v", wantFilename, filename)
 		}
@@ -46,7 +47,7 @@ func TestDropCaches(t *testing.T) {
 	}
 
 	t.Run("Test drop caches", func(t *testing.T) {
-		got := dropCaches(utils.StepParams{false, "x", "x", false})
+		got := dropCaches(step.StepParams{false, "x", "x", false})
 		if got != nil {
 			t.Errorf("want nil got %v", got)
 		}

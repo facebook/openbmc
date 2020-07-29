@@ -31,6 +31,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/pkg/errors"
 )
 
@@ -46,7 +47,7 @@ type MemInfo struct {
 // note that this assumes kB units for MemFree and MemTotal
 // it will fail otherwise
 var GetMemInfo = func() (*MemInfo, error) {
-	buf, err := ReadFile("/proc/meminfo")
+	buf, err := fileutils.ReadFile("/proc/meminfo")
 	if err != nil {
 		return nil, errors.Errorf("Unable to open /proc/meminfo: %v", err)
 	}
@@ -189,8 +190,8 @@ var RunCommandWithRetries = func(cmdArr []string, timeoutInSeconds int, maxAttem
 var SystemdAvailable = func() (bool, error) {
 	const cmdlinePath = "/proc/1/cmdline"
 
-	if FileExists(cmdlinePath) {
-		buf, err := ReadFile(cmdlinePath)
+	if fileutils.FileExists(cmdlinePath) {
+		buf, err := fileutils.ReadFile(cmdlinePath)
 		if err != nil {
 			return false, errors.Errorf("%v exists but cannot be read: %v", cmdlinePath, err)
 		}
@@ -210,7 +211,7 @@ var SystemdAvailable = func() (bool, error) {
 var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 	const etcIssueVersionRegEx = `^OpenBMC Release (?P<version>[^\s]+)`
 
-	etcIssueBuf, err := ReadFile("/etc/issue")
+	etcIssueBuf, err := fileutils.ReadFile("/etc/issue")
 	if err != nil {
 		return "", errors.Errorf("Error reading /etc/issue: %v", err)
 	}

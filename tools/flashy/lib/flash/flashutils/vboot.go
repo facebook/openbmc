@@ -23,6 +23,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
@@ -46,7 +47,7 @@ const vbootOffset = 384 * 1024
 // Some firmware versions _may_ have this file but is not vboot,
 // but for now it is sufficient to use this check
 var isVbootSystem = func() bool {
-	return utils.FileExists(vbootUtilPath)
+	return fileutils.FileExists(vbootUtilPath)
 }
 
 var getVbootUtilContents = func() (string, error) {
@@ -59,14 +60,14 @@ var getVbootUtilContents = func() (string, error) {
 	// the cache first as a mitigation
 	// this is best-effort, as these files may have already been deleted
 	// or may not exist
-	utils.LogAndIgnoreErr(utils.RemoveFile("/tmp/cache_store/rom_version"))
-	utils.LogAndIgnoreErr(utils.RemoveFile("/tmp/cache_store/rom_uboot_version"))
+	utils.LogAndIgnoreErr(fileutils.RemoveFile("/tmp/cache_store/rom_version"))
+	utils.LogAndIgnoreErr(fileutils.RemoveFile("/tmp/cache_store/rom_uboot_version"))
 
 	// vboot-util on Tioga Pass 1 v1.9 (and possibly other versions) is a shell
 	// script without a shebang line.
 	// Check whether it is an ELF file first, if not, add bash in front
 	cmd := []string{vbootUtilPath}
-	if !utils.IsELFFile(vbootUtilPath) {
+	if !fileutils.IsELFFile(vbootUtilPath) {
 		// prepend "bash"
 		cmd = append([]string{"bash"}, cmd...)
 	}
@@ -86,7 +87,7 @@ var getVbootEnforcement = func() (vbootEnforcementEnum, error) {
 	}
 
 	// check if "romx" is in procMtdBuf
-	procMtdBuf, err := utils.ReadFile(utils.ProcMtdFilePath)
+	procMtdBuf, err := fileutils.ReadFile(utils.ProcMtdFilePath)
 	if err != nil {
 		return vbootNone, errors.Errorf("Unable to read '%v': %v",
 			utils.ProcMtdFilePath, err)
@@ -132,7 +133,7 @@ var patchImageWithLocalBootloader = func(imageFilePath string, flashDevice devic
 
 	offsetBuf := flashDeviceBuf[0:offsetBytes]
 
-	err = utils.WriteFileWithoutTruncate(imageFilePath, offsetBuf)
+	err = fileutils.WriteFileWithoutTruncate(imageFilePath, offsetBuf)
 	if err != nil {
 		return errors.Errorf("Unable to patch image file '%v': %v",
 			imageFilePath, err)

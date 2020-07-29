@@ -17,7 +17,7 @@
  * Boston, MA 02110-1301 USA
  */
 
-package utils
+package fileutils
 
 import (
 	"bytes"
@@ -102,37 +102,37 @@ func TestFileExists(t *testing.T) {
 		log.SetOutput(os.Stderr)
 		osStat = osStatOrig
 	}()
-	cases := []struct{
-		name string
-		isDir bool
-		osStatErr error
+	cases := []struct {
+		name           string
+		isDir          bool
+		osStatErr      error
 		logContainsSeq []string
-		want bool
+		want           bool
 	}{
 		{
-			name: "file exists and is not dir",
-			isDir: false,
-			osStatErr: nil,
+			name:           "file exists and is not dir",
+			isDir:          false,
+			osStatErr:      nil,
 			logContainsSeq: []string{},
-			want: true,
+			want:           true,
 		},
 		{
-			name: "file exists and is dir",
-			isDir: true,
-			osStatErr: nil,
+			name:           "file exists and is dir",
+			isDir:          true,
+			osStatErr:      nil,
 			logContainsSeq: []string{},
-			want: false,
+			want:           false,
 		},
 		{
-			name: "file surely does not exist",
-			isDir: false,
-			osStatErr: os.ErrNotExist,
+			name:           "file surely does not exist",
+			isDir:          false,
+			osStatErr:      os.ErrNotExist,
 			logContainsSeq: []string{},
-			want: false,
+			want:           false,
 		},
 		{
-			name: "ambiguous, log and default to false",
-			isDir: false,
+			name:      "ambiguous, log and default to false",
+			isDir:     false,
 			osStatErr: errors.Errorf("12345"),
 			logContainsSeq: []string{
 				"Existence check of path 'x' returned error '12345', defaulting to false",

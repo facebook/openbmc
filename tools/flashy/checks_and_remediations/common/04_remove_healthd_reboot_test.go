@@ -26,7 +26,8 @@ import (
 	"testing"
 
 	"github.com/Jeffail/gabs"
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
@@ -36,14 +37,14 @@ func TestRemoveHealthdReboot(t *testing.T) {
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
 	// mock and defer restore FileExists, ReadFile, WriteFile
-	fileExistsOrig := utils.FileExists
-	readFileOrig := utils.ReadFile
-	writeFileOrig := utils.WriteFile
+	fileExistsOrig := fileutils.FileExists
+	readFileOrig := fileutils.ReadFile
+	writeFileOrig := fileutils.WriteFile
 	defer func() {
 		log.SetOutput(os.Stderr)
-		utils.FileExists = fileExistsOrig
-		utils.ReadFile = readFileOrig
-		utils.WriteFile = writeFileOrig
+		fileutils.FileExists = fileExistsOrig
+		fileutils.ReadFile = readFileOrig
+		fileutils.WriteFile = writeFileOrig
 	}()
 
 	cases := []struct {
@@ -53,7 +54,7 @@ func TestRemoveHealthdReboot(t *testing.T) {
 		writeConfigCalled bool
 		wantConfig        string
 		logContainsSeq    []string
-		want              utils.StepExitError
+		want              step.StepExitError
 	}{
 		{
 			name:              "basic minilaketb example",
@@ -97,7 +98,7 @@ func TestRemoveHealthdReboot(t *testing.T) {
 			writeConfigCalled: false,
 			wantConfig:        "",
 			logContainsSeq:    []string{},
-			want: utils.ExitSafeToReboot{
+			want: step.ExitSafeToReboot{
 				errors.Errorf("Unable to parse healthd-config.json: " +
 					"invalid character 'F' looking for beginning of object key string"),
 			},
@@ -109,7 +110,7 @@ func TestRemoveHealthdReboot(t *testing.T) {
 			writeConfigCalled: false,
 			wantConfig:        "",
 			logContainsSeq:    []string{},
-			want: utils.ExitSafeToReboot{
+			want: step.ExitSafeToReboot{
 				errors.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config " +
 					"{\"foo\":\"foo\"}"),
 			},
@@ -120,13 +121,13 @@ func TestRemoveHealthdReboot(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			buf = bytes.Buffer{}
 			writeConfigCalled := false
-			utils.FileExists = func(filename string) bool {
+			fileutils.FileExists = func(filename string) bool {
 				return tc.healthdExists
 			}
-			utils.ReadFile = func(filename string) ([]byte, error) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
 				return []byte(tc.healthdContents), nil
 			}
-			utils.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
+			fileutils.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
 				writeConfigCalled = true
 				gotH, err := gabs.ParseJSON(data)
 				if err != nil {
@@ -144,9 +145,9 @@ func TestRemoveHealthdReboot(t *testing.T) {
 				return nil
 			}
 
-			got := removeHealthdReboot(utils.StepParams{})
+			got := removeHealthdReboot(step.StepParams{})
 
-			utils.CompareTestExitErrors(tc.want, got, t)
+			step.CompareTestExitErrors(tc.want, got, t)
 			if tc.writeConfigCalled != writeConfigCalled {
 				t.Errorf("writeConfigCalled: want '%v' got '%v'",
 					tc.writeConfigCalled, writeConfigCalled)

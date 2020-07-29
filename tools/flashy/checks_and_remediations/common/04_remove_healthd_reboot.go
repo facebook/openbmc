@@ -22,26 +22,27 @@ package common
 import (
 	"log"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
 func init() {
-	utils.RegisterStep(removeHealthdReboot)
+	step.RegisterStep(removeHealthdReboot)
 }
 
 // remove the high mem utilisation reboot action in /etc/healthd-config.json
 // to prevent reboots mid-flash
-func removeHealthdReboot(stepParams utils.StepParams) utils.StepExitError {
+func removeHealthdReboot(stepParams step.StepParams) step.StepExitError {
 	if utils.HealthdExists() {
 		log.Printf("Healthd exists in this system, removing the high memory utilization " +
 			"\"reboot\" entry if it exists.")
 		healthdConfig, err := utils.GetHealthdConfig()
 		if err != nil {
-			return utils.ExitSafeToReboot{err}
+			return step.ExitSafeToReboot{err}
 		}
 		err = utils.HealthdRemoveMemUtilRebootEntryIfExists(healthdConfig)
 		if err != nil {
-			return utils.ExitSafeToReboot{err}
+			return step.ExitSafeToReboot{err}
 		}
 	} else {
 		log.Printf("Healthd does not exist in this system. Skipping step.")

@@ -24,11 +24,12 @@ import (
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
 
-func FlashCp(stepParams utils.StepParams) utils.StepExitError {
+func FlashCp(stepParams step.StepParams) step.StepExitError {
 	log.Printf("Flashing using flashcp method")
 	log.Printf("Attempting to flash '%v' with image file '%v'",
 		stepParams.DeviceID, stepParams.ImageFilePath)
@@ -37,7 +38,7 @@ func FlashCp(stepParams utils.StepParams) utils.StepExitError {
 	flashDevice, err := flashutils.GetFlashDevice(stepParams.DeviceID)
 	if err != nil {
 		log.Printf(err.Error())
-		return utils.ExitSafeToReboot{err}
+		return step.ExitSafeToReboot{err}
 	}
 	log.Printf("Flash device: %v", flashDevice)
 
@@ -46,7 +47,7 @@ func FlashCp(stepParams utils.StepParams) utils.StepExitError {
 	return flashCpErr
 }
 
-var runFlashCpCmd = func(imageFilePath, flashDevicePath string) utils.StepExitError {
+var runFlashCpCmd = func(imageFilePath, flashDevicePath string) step.StepExitError {
 	flashCmd := []string{
 		"flashcp", imageFilePath, flashDevicePath,
 	}
@@ -59,7 +60,7 @@ var runFlashCpCmd = func(imageFilePath, flashDevicePath string) utils.StepExitEr
 			exitCode, err, stdout, stderr,
 		)
 		log.Printf(errMsg)
-		return utils.ExitSafeToReboot{errors.Errorf(errMsg)}
+		return step.ExitSafeToReboot{errors.Errorf(errMsg)}
 	}
 
 	log.Printf("Flashing succeeded, safe to reboot")

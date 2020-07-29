@@ -20,18 +20,18 @@
 package common
 
 import (
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate"
 )
 
 func init() {
-	utils.RegisterStep(validateImageBuildname)
+	step.RegisterStep(validateImageBuildname)
 }
 
-func validateImageBuildname(stepParams utils.StepParams) utils.StepExitError {
+func validateImageBuildname(stepParams step.StepParams) step.StepExitError {
 	err := validate.CheckImageBuildNameCompatibility(stepParams)
 	if err != nil {
-		return utils.ExitUnknownError{err}
+		return step.ExitUnknownError{err}
 	}
 	return nil
 }

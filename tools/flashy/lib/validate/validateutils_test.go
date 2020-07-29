@@ -23,6 +23,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
@@ -117,7 +119,7 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 	for _, tc := range cases {
 
 		t.Run(tc.name, func(t *testing.T) {
-			stepParams := utils.StepParams{
+			stepParams := step.StepParams{
 				false, "x", "x", tc.clowntown,
 			}
 			utils.GetOpenBMCVersionFromIssueFile = func() (string, error) {
@@ -187,14 +189,14 @@ func TestGetNormalizedBuildNameFromVersion(t *testing.T) {
 
 func TestGetOpenBMCVersionFromImageFile(t *testing.T) {
 	// mock and defer restore MmapFileRO
-	mmapOrig := utils.MmapFileRange
-	munmapOrig := utils.Munmap
+	mmapOrig := fileutils.MmapFileRange
+	munmapOrig := fileutils.Munmap
 	defer func() {
-		utils.MmapFileRange = mmapOrig
-		utils.Munmap = munmapOrig
+		fileutils.MmapFileRange = mmapOrig
+		fileutils.Munmap = munmapOrig
 	}()
 
-	utils.Munmap = func(b []byte) error {
+	fileutils.Munmap = func(b []byte) error {
 		return nil
 	}
 
@@ -237,7 +239,7 @@ func TestGetOpenBMCVersionFromImageFile(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			utils.MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
+			fileutils.MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
 				if filename != "x" {
 					t.Errorf("want filename '%v' got '%v'", "x", filename)
 				}

@@ -24,6 +24,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 )
@@ -46,7 +48,7 @@ var directoriesToTest = []string{
 }
 
 func populateStepPaths() {
-	for path, _ := range utils.StepMap {
+	for path, _ := range step.StepMap {
 		stepPaths = append(stepPaths, path)
 	}
 }
@@ -55,7 +57,7 @@ func populateStepPaths() {
 // in StepMap
 func TestStepMap(t *testing.T) {
 	for _, dir := range directoriesToTest {
-		absDirPath := filepath.Join(utils.SourceRootDir, dir)
+		absDirPath := filepath.Join(fileutils.SourceRootDir, dir)
 		err := filepath.Walk(absDirPath,
 			func(path string, info os.FileInfo, err error) error {
 				if err != nil {
@@ -68,7 +70,7 @@ func TestStepMap(t *testing.T) {
 					return nil
 				}
 
-				symlinkPath := utils.GetSymlinkPathForSourceFile(path)
+				symlinkPath := fileutils.GetSymlinkPathForSourceFile(path)
 
 				if utils.StringFind(symlinkPath, stepPaths) < 0 {
 					stepGuide := `Please register the step using RegisterStep in init().

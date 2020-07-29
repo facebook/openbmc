@@ -22,12 +22,13 @@ package common
 import (
 	"log"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
 
 func init() {
-	utils.RegisterStep(ensureEnoughFreeRam)
+	step.RegisterStep(ensureEnoughFreeRam)
 }
 
 // This is 75% of the limit in pypartition, as flashy assumes
@@ -35,10 +36,10 @@ func init() {
 // This should be a generous limit to allow flashy and flashcp to run.
 const minMemoryNeeded = 45 * 1024 * 1024
 
-func ensureEnoughFreeRam(stepParams utils.StepParams) utils.StepExitError {
+func ensureEnoughFreeRam(stepParams step.StepParams) step.StepExitError {
 	memInfo, err := utils.GetMemInfo()
 	if err != nil {
-		return utils.ExitSafeToReboot{err}
+		return step.ExitSafeToReboot{err}
 	}
 	log.Printf("Memory status: %v B total memory, %v B free memory", memInfo.MemTotal, memInfo.MemFree)
 	log.Printf("Minimum memory needed for update is %v B", minMemoryNeeded)
@@ -46,7 +47,7 @@ func ensureEnoughFreeRam(stepParams utils.StepParams) utils.StepExitError {
 	if memInfo.MemFree < minMemoryNeeded {
 		errMsg := errors.Errorf("Free memory (%v B) < minimum memory needed (%v B), reboot needed",
 			memInfo.MemFree, minMemoryNeeded)
-		return utils.ExitSafeToReboot{errMsg}
+		return step.ExitSafeToReboot{errMsg}
 	}
 
 	return nil

@@ -27,6 +27,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
@@ -41,19 +42,19 @@ type partialRunCommandReturn struct {
 func TestGetVbootUtilContents(t *testing.T) {
 	// mock and defer restore RemoveFile, RunCommand, IsVbootSystem and
 	// IsELFFile
-	removeFileOrig := utils.RemoveFile
+	removeFileOrig := fileutils.RemoveFile
 	runCommandOrig := utils.RunCommand
 	isVbootSystemOrig := isVbootSystem
-	isELFFileOrig := utils.IsELFFile
+	isELFFileOrig := fileutils.IsELFFile
 	defer func() {
-		utils.RemoveFile = removeFileOrig
+		fileutils.RemoveFile = removeFileOrig
 		utils.RunCommand = runCommandOrig
 		isVbootSystem = isVbootSystemOrig
-		utils.IsELFFile = isELFFileOrig
+		fileutils.IsELFFile = isELFFileOrig
 	}()
 
 	// removeFile is mocked to return nil
-	utils.RemoveFile = func(_ string) error {
+	fileutils.RemoveFile = func(_ string) error {
 		return nil
 	}
 
@@ -125,7 +126,7 @@ func TestGetVbootUtilContents(t *testing.T) {
 				stdout := tc.runCmdRet.stdout
 				return 0, retErr, stdout, ""
 			}
-			utils.IsELFFile = func(filename string) bool {
+			fileutils.IsELFFile = func(filename string) bool {
 				if filename != vbootUtilPath {
 					t.Errorf("want vboot util path '%v' got '%v'", vbootUtilPath, filename)
 				}
@@ -147,11 +148,11 @@ func TestGetVbootUtilContents(t *testing.T) {
 func TestGetVbootEnforcement(t *testing.T) {
 	// mock and defer restore IsVbootSystem, ReadFile and getVbootUtilContents
 	isVbootSystemOrig := isVbootSystem
-	readFileOrig := utils.ReadFile
+	readFileOrig := fileutils.ReadFile
 	getVbootUtilContentsOrig := getVbootUtilContents
 	defer func() {
 		isVbootSystem = isVbootSystemOrig
-		utils.ReadFile = readFileOrig
+		fileutils.ReadFile = readFileOrig
 		getVbootUtilContents = getVbootUtilContentsOrig
 	}()
 
@@ -233,7 +234,7 @@ Flags software_enforce:  0x01`,
 			isVbootSystem = func() bool {
 				return tc.isVbootSystem
 			}
-			utils.ReadFile = func(filename string) ([]byte, error) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
 				if filename != utils.ProcMtdFilePath {
 					t.Errorf("filename: want '%v' got '%v'",
 						utils.ProcMtdFilePath, filename)
@@ -274,10 +275,10 @@ func TestPatchImageWithLocalBootloader(t *testing.T) {
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
 	// mock and defer restore WriteFileWithoutTruncate
-	writeFileOrig := utils.WriteFileWithoutTruncate
+	writeFileOrig := fileutils.WriteFileWithoutTruncate
 	defer func() {
 		log.SetOutput(os.Stderr)
-		utils.WriteFileWithoutTruncate = writeFileOrig
+		fileutils.WriteFileWithoutTruncate = writeFileOrig
 	}()
 	const imageFilePath = "imageFilePath"
 	const flashDevicePath = "flashDevicePath"
@@ -332,7 +333,7 @@ func TestPatchImageWithLocalBootloader(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			buf = bytes.Buffer{}
-			utils.WriteFileWithoutTruncate = func(filename string, buf []byte) error {
+			fileutils.WriteFileWithoutTruncate = func(filename string, buf []byte) error {
 				if filename != imageFilePath {
 					t.Errorf("filename: want '%v' got '%v'", imageFilePath, filename)
 				}

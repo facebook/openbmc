@@ -20,12 +20,13 @@
 package remediations_wedge100
 
 import (
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
 
 func init() {
-	utils.RegisterStep(fixROMCS1)
+	step.RegisterStep(fixROMCS1)
 }
 
 // For wedge100, there was a bug that caused the CS1 pin to be configured
@@ -33,11 +34,11 @@ func init() {
 // to write to flash1.
 // N.B.: This should be fixed by D16911862, but there is no guarantee that
 // all wedge100s are upgraded.
-func fixROMCS1(stepParams utils.StepParams) utils.StepExitError {
+func fixROMCS1(stepParams step.StepParams) step.StepExitError {
 	_, err, _, _ := utils.RunCommand([]string{"/usr/local/bin/openbmc_gpio_util.py", "config", "ROMCS1#"}, 30)
 	if err != nil {
 		errMsg := errors.Errorf("Failed to run ROMCS1# fix: %v", err)
-		return utils.ExitSafeToReboot{errMsg}
+		return step.ExitSafeToReboot{errMsg}
 	}
 	return nil
 }

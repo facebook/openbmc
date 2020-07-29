@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
@@ -47,7 +48,7 @@ func TestRestartServices(t *testing.T) {
 		systemdAvailErr   error
 		runCmdErr         error
 		restartHealthdErr error
-		want              utils.StepExitError
+		want              step.StepExitError
 		wantCmds          []string // check RunCommand ran all wanted commands
 	}{
 		{
@@ -74,7 +75,7 @@ func TestRestartServices(t *testing.T) {
 			systemdAvailErr:   errors.Errorf("Systemd check error"),
 			runCmdErr:         nil,
 			restartHealthdErr: nil,
-			want:              utils.ExitSafeToReboot{errors.Errorf("Error checking systemd availability: Systemd check error")},
+			want:              step.ExitSafeToReboot{errors.Errorf("Error checking systemd availability: Systemd check error")},
 			wantCmds:          []string{},
 		},
 		{
@@ -83,7 +84,7 @@ func TestRestartServices(t *testing.T) {
 			systemdAvailErr:   nil,
 			runCmdErr:         errors.Errorf("Restapi restart error"),
 			restartHealthdErr: nil,
-			want:              utils.ExitSafeToReboot{errors.Errorf("Could not restart restapi: Restapi restart error")},
+			want:              step.ExitSafeToReboot{errors.Errorf("Could not restart restapi: Restapi restart error")},
 			wantCmds:          []string{"systemctl restart restapi"},
 		},
 		{
@@ -92,7 +93,7 @@ func TestRestartServices(t *testing.T) {
 			systemdAvailErr:   nil,
 			runCmdErr:         nil,
 			restartHealthdErr: errors.Errorf("Healthd restart error"),
-			want:              utils.ExitSafeToReboot{errors.Errorf("Could not restart healthd: Healthd restart error")},
+			want:              step.ExitSafeToReboot{errors.Errorf("Could not restart healthd: Healthd restart error")},
 			wantCmds:          []string{"systemctl restart restapi"},
 		},
 	}
@@ -116,9 +117,9 @@ func TestRestartServices(t *testing.T) {
 				return true
 			}
 
-			got := restartServices(utils.StepParams{false, "x", "x", false})
+			got := restartServices(step.StepParams{false, "x", "x", false})
 
-			utils.CompareTestExitErrors(tc.want, got, t)
+			step.CompareTestExitErrors(tc.want, got, t)
 
 			if !reflect.DeepEqual(gotCmds, tc.wantCmds) {
 				t.Errorf("commands: want '%#v' got '%#v'", tc.wantCmds, gotCmds)

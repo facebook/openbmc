@@ -22,7 +22,7 @@ package common
 import (
 	"testing"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate"
 	"github.com/pkg/errors"
 )
@@ -36,7 +36,7 @@ func TestValidateImageBuildname(t *testing.T) {
 	cases := []struct {
 		name             string
 		compatibilityErr error
-		want             utils.StepExitError
+		want             step.StepExitError
 	}{
 		{
 			name:             "passed",
@@ -46,18 +46,18 @@ func TestValidateImageBuildname(t *testing.T) {
 		{
 			name:             "compatibility failed",
 			compatibilityErr: errors.Errorf("compatibility failed"),
-			want: utils.ExitUnknownError{
+			want: step.ExitUnknownError{
 				errors.Errorf("compatibility failed"),
 			},
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			validate.CheckImageBuildNameCompatibility = func(stepParams utils.StepParams) error {
+			validate.CheckImageBuildNameCompatibility = func(stepParams step.StepParams) error {
 				return tc.compatibilityErr
 			}
-			got := validateImageBuildname(utils.StepParams{})
-			utils.CompareTestExitErrors(tc.want, got, t)
+			got := validateImageBuildname(step.StepParams{})
+			step.CompareTestExitErrors(tc.want, got, t)
 		})
 	}
 }

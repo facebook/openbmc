@@ -28,14 +28,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
 
 func TestGetMemInfo(t *testing.T) {
 	// save and defer restore ReadFile
-	readFileOrig := ReadFile
-	defer func() { ReadFile = readFileOrig }()
+	readFileOrig := fileutils.ReadFile
+	defer func() { fileutils.ReadFile = readFileOrig }()
 
 	cases := []struct {
 		name             string
@@ -80,7 +81,7 @@ MemTotal: 24`,
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ReadFile = func(filename string) ([]byte, error) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
 				if filename != "/proc/meminfo" {
 					return []byte{}, errors.Errorf("filename: want '%v' got '%v'", "/proc/meminfo", filename)
 				}
@@ -419,11 +420,11 @@ func TestRunCommandWithRetries(t *testing.T) {
 
 func TestSystemdAvailable(t *testing.T) {
 	// save and defer restore FileExists and ReadFile
-	fileExistsOrig := FileExists
-	readFileOrig := ReadFile
+	fileExistsOrig := fileutils.FileExists
+	readFileOrig := fileutils.ReadFile
 	defer func() {
-		FileExists = fileExistsOrig
-		ReadFile = readFileOrig
+		fileutils.FileExists = fileExistsOrig
+		fileutils.ReadFile = readFileOrig
 	}()
 
 	cases := []struct {
@@ -470,13 +471,13 @@ func TestSystemdAvailable(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			FileExists = func(filename string) bool {
+			fileutils.FileExists = func(filename string) bool {
 				if filename != "/proc/1/cmdline" {
 					t.Errorf("filename: want '%v' got '%v'", "/proc/1/cmdline", filename)
 				}
 				return tc.fileExists
 			}
-			ReadFile = func(filename string) ([]byte, error) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
 				if filename != "/proc/1/cmdline" {
 					return []byte{}, errors.Errorf("filename: want '%v' got '%v'", "/proc/meminfo", filename)
 				}
@@ -495,9 +496,9 @@ func TestSystemdAvailable(t *testing.T) {
 
 func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 	// save and defer restore ReadFile
-	readFileOrig := ReadFile
+	readFileOrig := fileutils.ReadFile
 	defer func() {
-		ReadFile = readFileOrig
+		fileutils.ReadFile = readFileOrig
 	}()
 
 	cases := []struct {
@@ -549,7 +550,7 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ReadFile = func(filename string) ([]byte, error) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
 				if filename != "/etc/issue" {
 					return []byte{}, errors.Errorf("filename: want '%v' got '%v'", "/etc/issue", filename)
 				}

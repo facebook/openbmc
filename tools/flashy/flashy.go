@@ -25,7 +25,8 @@ import (
 	"os"
 
 	"github.com/facebook/openbmc/tools/flashy/install"
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 )
 
 var (
@@ -51,9 +52,9 @@ THERE IS RISK OF BRICKING THIS DEVICE!
 WARRANTIES OFF`)
 	}
 
-	binName := utils.SanitizeBinaryName(os.Args[0])
+	binName := fileutils.SanitizeBinaryName(os.Args[0])
 
-	stepParams := utils.StepParams{
+	stepParams := step.StepParams{
 		Install:       *installFlag,
 		ImageFilePath: *imageFilePath,
 		DeviceID:      *deviceID,
@@ -70,14 +71,14 @@ WARRANTIES OFF`)
 	failIfFlagEmpty("imagepath", *imageFilePath)
 	failIfFlagEmpty("device", *deviceID)
 
-	if _, exists := utils.StepMap[binName]; !exists {
+	if _, exists := step.StepMap[binName]; !exists {
 		log.Fatalf("Unknown binary '%v'", binName)
 	}
 
 	log.Printf("Starting: %v", binName)
-	err := utils.StepMap[binName](stepParams)
+	err := step.StepMap[binName](stepParams)
 	if err != nil {
-		utils.HandleStepError(err)
+		step.HandleStepError(err)
 	}
 	log.Printf("Finished: %v", binName)
 }

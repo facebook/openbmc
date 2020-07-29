@@ -22,21 +22,22 @@ package common
 import (
 	"log"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
 
 func init() {
-	utils.RegisterStep(restartServices)
+	step.RegisterStep(restartServices)
 }
 
-func restartServices(stepParams utils.StepParams) utils.StepExitError {
+func restartServices(stepParams step.StepParams) step.StepExitError {
 	var supervisor string
 
 	systemdAvail, err := utils.SystemdAvailable()
 	if err != nil {
 		errMsg := errors.Errorf("Error checking systemd availability: %v", err)
-		return utils.ExitSafeToReboot{errMsg}
+		return step.ExitSafeToReboot{errMsg}
 	}
 
 	if systemdAvail {
@@ -49,7 +50,7 @@ func restartServices(stepParams utils.StepParams) utils.StepExitError {
 	_, err, _, _ = utils.RunCommand([]string{supervisor, "restart", "restapi"}, 60)
 	if err != nil {
 		errMsg := errors.Errorf("Could not restart restapi: %v", err)
-		return utils.ExitSafeToReboot{errMsg}
+		return step.ExitSafeToReboot{errMsg}
 	}
 	log.Printf("Finished restarting restapi")
 
@@ -58,7 +59,7 @@ func restartServices(stepParams utils.StepParams) utils.StepExitError {
 		err = utils.RestartHealthd(false, supervisor)
 		if err != nil {
 			errMsg := errors.Errorf("Could not restart healthd: %v", err)
-			return utils.ExitSafeToReboot{errMsg}
+			return step.ExitSafeToReboot{errMsg}
 		}
 		log.Printf("Finished restarting healthd")
 	}

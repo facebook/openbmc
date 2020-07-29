@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/Jeffail/gabs"
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/pkg/errors"
 )
 
@@ -54,11 +55,11 @@ type BmcMemThres struct {
 // returns if healthd exists in this system
 // checks existence of the healthd config file
 var HealthdExists = func() bool {
-	return FileExists(healthdConfigFilePath)
+	return fileutils.FileExists(healthdConfigFilePath)
 }
 
 var GetHealthdConfig = func() (*gabs.Container, error) {
-	buf, err := ReadFile(healthdConfigFilePath)
+	buf, err := fileutils.ReadFile(healthdConfigFilePath)
 	if err != nil {
 		return nil, errors.Errorf("Unable to open healthd-config.json: %v", err)
 	}
@@ -103,7 +104,7 @@ func HealthdRemoveMemUtilRebootEntryIfExists(h *gabs.Container) error {
 func HealthdWriteConfigToFile(h *gabs.Container) error {
 	buf := []byte(h.StringIndent("", "  "))
 
-	err := WriteFile(healthdConfigFilePath, buf, 0644)
+	err := fileutils.WriteFile(healthdConfigFilePath, buf, 0644)
 	if err != nil {
 		return errors.Errorf("Unable to write healthd config to file: %v",
 			err)
@@ -113,7 +114,7 @@ func HealthdWriteConfigToFile(h *gabs.Container) error {
 }
 
 var RestartHealthd = func(wait bool, supervisor string) error {
-	if !PathExists("/etc/sv/healthd") {
+	if !fileutils.PathExists("/etc/sv/healthd") {
 		return errors.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist")
 	}
 

@@ -20,23 +20,24 @@
 package common
 
 import (
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/pkg/errors"
 )
 
 func init() {
-	utils.RegisterStep(dropCaches)
+	step.RegisterStep(dropCaches)
 }
 
 const dropCachesFilePath = "/proc/sys/vm/drop_caches"
 
 // frees pagecache, dentries and inodes
 // equivalent to `echo 3 > /proc/sys/vm/drop_caches`
-func dropCaches(stepParams utils.StepParams) utils.StepExitError {
-	err := utils.WriteFile(dropCachesFilePath, []byte("3"), 0644)
+func dropCaches(stepParams step.StepParams) step.StepExitError {
+	err := fileutils.WriteFile(dropCachesFilePath, []byte("3"), 0644)
 	if err != nil {
 		errMsg := errors.Errorf("Failed to write to drop_caches file '%v': %v", dropCachesFilePath, err)
-		return utils.ExitSafeToReboot{errMsg}
+		return step.ExitSafeToReboot{errMsg}
 	}
 	return nil
 }

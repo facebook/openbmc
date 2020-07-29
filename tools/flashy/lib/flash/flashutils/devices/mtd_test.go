@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
@@ -72,9 +72,9 @@ func TestGetMmapFilePath(t *testing.T) {
 
 func TestGetMTD(t *testing.T) {
 	// mock and defer restore ReadFile
-	readFileOrig := utils.ReadFile
+	readFileOrig := fileutils.ReadFile
 	defer func() {
-		utils.ReadFile = readFileOrig
+		fileutils.ReadFile = readFileOrig
 	}()
 
 	cases := []struct {
@@ -134,7 +134,7 @@ func TestGetMTD(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			utils.ReadFile = func(filename string) ([]byte, error) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
 				return []byte(tc.procMtdContents), tc.readFileErr
 			}
 			got, err := getMTD(tc.specifier)
@@ -157,9 +157,9 @@ func TestGetMTD(t *testing.T) {
 
 func TestGetWritableMountedMTDs(t *testing.T) {
 	// mock and defer restore ReadFile
-	readFileOrig := utils.ReadFile
+	readFileOrig := fileutils.ReadFile
 	defer func() {
-		utils.ReadFile = readFileOrig
+		fileutils.ReadFile = readFileOrig
 	}()
 
 	cases := []struct {
@@ -218,7 +218,7 @@ func TestGetWritableMountedMTDs(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			utils.ReadFile = func(filename string) ([]byte, error) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
 				return []byte(tc.procMountsContents), tc.readFileErr
 			}
 

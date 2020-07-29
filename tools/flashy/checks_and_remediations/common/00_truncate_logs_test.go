@@ -22,7 +22,8 @@ package common
 import (
 	"testing"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
@@ -34,13 +35,13 @@ type ResolveFilePatternsReturnType struct {
 
 func TestTruncateLogs(t *testing.T) {
 	// save and defer restore TruncateFile, RemoveFile and resolveFilePatterns
-	truncateFileOrig := utils.TruncateFile
-	removeFileOrig := utils.RemoveFile
+	truncateFileOrig := fileutils.TruncateFile
+	removeFileOrig := fileutils.RemoveFile
 	resolveFilePatternsOrig := resolveFilePatterns
 
 	defer func() {
-		utils.TruncateFile = truncateFileOrig
-		utils.RemoveFile = removeFileOrig
+		fileutils.TruncateFile = truncateFileOrig
+		fileutils.RemoveFile = removeFileOrig
 		resolveFilePatterns = resolveFilePatternsOrig
 	}()
 
@@ -52,7 +53,7 @@ func TestTruncateLogs(t *testing.T) {
 		resolvedFilePatterns []ResolveFilePatternsReturnType
 		removeFileErr        error
 		truncateFileErr      error
-		want                 utils.StepExitError
+		want                 step.StepExitError
 	}{
 		{
 			name: "Normal operation",
@@ -84,7 +85,7 @@ func TestTruncateLogs(t *testing.T) {
 			},
 			removeFileErr:   errors.Errorf("RemoveFile Error"),
 			truncateFileErr: nil,
-			want:            utils.ExitSafeToReboot{errors.Errorf("Unable to remove log file '/tmp/test': RemoveFile Error")},
+			want:            step.ExitSafeToReboot{errors.Errorf("Unable to remove log file '/tmp/test': RemoveFile Error")},
 		},
 		{
 			name: "Truncate file error",
@@ -100,7 +101,7 @@ func TestTruncateLogs(t *testing.T) {
 			},
 			removeFileErr:   nil,
 			truncateFileErr: errors.Errorf("TruncateFile Error"),
-			want:            utils.ExitSafeToReboot{errors.Errorf("Unable to truncate log file '/tmp/test': TruncateFile Error")},
+			want:            step.ExitSafeToReboot{errors.Errorf("Unable to truncate log file '/tmp/test': TruncateFile Error")},
 		},
 		{
 			name: "Resolve file patterns error",
@@ -116,7 +117,7 @@ func TestTruncateLogs(t *testing.T) {
 			},
 			removeFileErr:   nil,
 			truncateFileErr: nil,
-			want:            utils.ExitSafeToReboot{errors.Errorf("Unable to resolve file patterns '%v': resolveFilePatterns Error", deleteLogFilePatterns)},
+			want:            step.ExitSafeToReboot{errors.Errorf("Unable to resolve file patterns '%v': resolveFilePatterns Error", deleteLogFilePatterns)},
 		},
 	}
 
@@ -128,14 +129,14 @@ func TestTruncateLogs(t *testing.T) {
 				resolveFilePatternsCalled++
 				return ret.files, ret.err
 			}
-			utils.TruncateFile = func(filename string, size int64) error {
+			fileutils.TruncateFile = func(filename string, size int64) error {
 				return tc.truncateFileErr
 			}
-			utils.RemoveFile = func(filename string) error {
+			fileutils.RemoveFile = func(filename string) error {
 				return tc.removeFileErr
 			}
-			got := truncateLogs(utils.StepParams{false, "x", "x", false})
-			utils.CompareTestExitErrors(tc.want, got, t)
+			got := truncateLogs(step.StepParams{false, "x", "x", false})
+			step.CompareTestExitErrors(tc.want, got, t)
 		})
 	}
 }

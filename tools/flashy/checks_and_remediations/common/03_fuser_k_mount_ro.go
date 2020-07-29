@@ -23,12 +23,13 @@ import (
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
 
 func init() {
-	utils.RegisterStep(fuserKMountRo)
+	step.RegisterStep(fuserKMountRo)
 }
 
 // If /mnt/data is smaller in the new image, it must be made read-only
@@ -37,10 +38,10 @@ func init() {
 // files for one thing) and details may change over time, so just
 // remount every MTD read-only. Reboot is expected to restart the
 // killed processes.
-func fuserKMountRo(stepParams utils.StepParams) utils.StepExitError {
+func fuserKMountRo(stepParams step.StepParams) step.StepExitError {
 	writableMountedMTDs, err := devices.GetWritableMountedMTDs()
 	if err != nil {
-		return utils.ExitSafeToReboot{err}
+		return step.ExitSafeToReboot{err}
 	}
 
 	log.Printf("Writable mounted MTDs: %v", writableMountedMTDs)
@@ -50,7 +51,7 @@ func fuserKMountRo(stepParams utils.StepParams) utils.StepExitError {
 		_, err, _, _ := utils.RunCommand(fuserCmd, 30)
 		if err != nil {
 			errMsg := errors.Errorf("Fuser command %v failed: %v", fuserCmd, err)
-			return utils.ExitSafeToReboot{errMsg}
+			return step.ExitSafeToReboot{errMsg}
 		}
 
 		remountCmd := []string{"mount", "-o", "remount,ro",
@@ -58,7 +59,7 @@ func fuserKMountRo(stepParams utils.StepParams) utils.StepExitError {
 		_, err, _, _ = utils.RunCommandWithRetries(remountCmd, 30, 3, 30)
 		if err != nil {
 			errMsg := errors.Errorf("Remount command %v failed: %v", remountCmd, err)
-			return utils.ExitSafeToReboot{errMsg}
+			return step.ExitSafeToReboot{errMsg}
 		}
 	}
 	return nil

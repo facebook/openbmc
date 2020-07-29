@@ -17,12 +17,16 @@
  * Boston, MA 02110-1301 USA
  */
 
-package utils
+package step
 
 import (
+	"encoding/json"
 	"log"
+	"os"
 	"runtime"
-	"testing"
+
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	_ "github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
 type StepParams struct {
@@ -46,21 +50,18 @@ func RegisterStep(step func(StepParams) StepExitError) {
 		log.Fatalf("Unable to get filename for step.")
 	}
 
-	symlinkPath := GetSymlinkPathForSourceFile(filename)
+	symlinkPath := fileutils.GetSymlinkPathForSourceFile(filename)
 	StepMap[symlinkPath] = step
 }
 
-// used to test and compare Exit Errors in testing
-func CompareTestExitErrors(want StepExitError, got StepExitError, t *testing.T) {
-	if got == nil {
-		if want != nil {
-			t.Errorf("want '%v' got '%v'", want, got)
-		}
-	} else {
-		if want == nil {
-			t.Errorf("want '%v' got '%v'", want, got)
-		} else if got.GetError() != want.GetError() {
-			t.Errorf("want '%v' got '%v'", want.GetError(), got.GetError())
-		}
+// encode exit error
+func encodeExitError(err StepExitError) {
+	enc := json.NewEncoder(os.Stderr)
+
+	var ae = struct {
+		Reason string `json:"message"`
+	}{
+		Reason: err.GetError(),
 	}
+	enc.Encode(ae)
 }

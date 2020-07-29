@@ -23,12 +23,12 @@ import (
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
 )
 
 // known vboot systems: yosemite2, brycecanyon1, tiogapass1, yosemitegpv2, northdome
 // these vboot devices expose only flash1
-func FlashCpVboot(stepParams utils.StepParams) utils.StepExitError {
+func FlashCpVboot(stepParams step.StepParams) step.StepExitError {
 	log.Printf("Flashing using flashcp vboot method")
 
 	log.Printf("Attempting to flash '%v' with image file '%v'",
@@ -38,7 +38,7 @@ func FlashCpVboot(stepParams utils.StepParams) utils.StepExitError {
 	flashDevice, err := flashutils.GetFlashDevice(stepParams.DeviceID)
 	if err != nil {
 		log.Printf(err.Error())
-		return utils.ExitSafeToReboot{err}
+		return step.ExitSafeToReboot{err}
 	}
 	log.Printf("Flash device: %v", flashDevice)
 
@@ -46,7 +46,7 @@ func FlashCpVboot(stepParams utils.StepParams) utils.StepExitError {
 	err = flashutils.VbootPatchImageBootloaderIfNeeded(stepParams.ImageFilePath, flashDevice)
 	if err != nil {
 		log.Printf(err.Error())
-		return utils.ExitSafeToReboot{err}
+		return step.ExitSafeToReboot{err}
 	}
 
 	// run flashcp

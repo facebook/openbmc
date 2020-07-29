@@ -120,6 +120,9 @@ var RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string
 		return exitCode, err, stdoutStr, stderrStr
 	}
 
+	<-stdoutDone
+	<-stderrDone
+
 	err := cmd.Wait()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -134,9 +137,6 @@ var RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string
 		waitStatus := cmd.ProcessState.Sys().(syscall.WaitStatus)
 		exitCode = waitStatus.ExitStatus()
 	}
-
-	<-stdoutDone
-	<-stderrDone
 
 	elapsed := time.Since(start)
 

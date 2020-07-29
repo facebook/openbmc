@@ -60,8 +60,8 @@ fi
 
 if [ "$(gpio_get HP_LVC3_OCP_V3_2_PRSNT2_N)" == "0" ]; then
   i2c_device_add 18 0x52 24c32
-  if [ "$(cat /mnt/data/kv_store/eth1_ipv6_autoconf)" != "1" ]; then
-    echo 0 > /proc/sys/net/ipv6/conf/eth1/autoconf
+  if [ "$(cat /mnt/data/kv_store/eth1_disable_ipv6 2>/dev/null)" != "0" ]; then
+    echo 1 > /proc/sys/net/ipv6/conf/eth1/disable_ipv6
   fi
   ifconfig eth1 up
 fi

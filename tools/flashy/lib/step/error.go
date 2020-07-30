@@ -34,6 +34,8 @@ const (
 
 type StepExitError interface {
 	GetError() string
+	GetExitCode() int
+	GetType() string
 }
 
 type ExitSafeToReboot struct {
@@ -52,29 +54,48 @@ func (e ExitSafeToReboot) GetError() string {
 	return e.Err.Error()
 }
 
+func (e ExitSafeToReboot) GetExitCode() int {
+	return safeToRebootExitCode
+}
+
+func (e ExitSafeToReboot) GetType() string {
+	return "ExitSafeToReboot"
+}
+
 func (e ExitUnsafeToReboot) GetError() string {
 	return e.Err.Error()
+}
+
+func (e ExitUnsafeToReboot) GetExitCode() int {
+	return unsafeToRebootExitCode
+}
+
+func (e ExitUnsafeToReboot) GetType() string {
+	return "ExitUnsafeToReboot"
 }
 
 func (e ExitUnknownError) GetError() string {
 	return e.Err.Error()
 }
 
+func (e ExitUnknownError) GetExitCode() int {
+	return unknownErrorExitCode
+}
+
+func (e ExitUnknownError) GetType() string {
+	return "ExitUnknownError"
+}
+
 func HandleStepError(err StepExitError) {
 	// output stack trace
 	log.Printf("%+v", err)
 	switch err := err.(type) {
-	case ExitSafeToReboot:
-		encodeExitError(err)
-		os.Exit(safeToRebootExitCode)
+	case ExitSafeToReboot,
+		ExitUnsafeToReboot,
+		ExitUnknownError:
 
-	case ExitUnsafeToReboot:
 		encodeExitError(err)
-		os.Exit(unsafeToRebootExitCode)
-
-	case ExitUnknownError:
-		encodeExitError(err)
-		os.Exit(unknownErrorExitCode)
+		os.Exit(err.GetExitCode())
 
 	default:
 		// this should not happen as there are no other types
@@ -92,8 +113,10 @@ func CompareTestExitErrors(want StepExitError, got StepExitError, t *testing.T) 
 	} else {
 		if want == nil {
 			t.Errorf("want '%v' got '%v'", want, got)
-		} else if got.GetError() != want.GetError() {
-			t.Errorf("want '%v' got '%v'", want.GetError(), got.GetError())
+		} else if got.GetError() != want.GetError() || got.GetType() != want.GetType() {
+			t.Errorf("want %v:'%v' got %v:'%v'",
+				want.GetType(), want.GetError(),
+				got.GetType(), got.GetError())
 		}
 	}
 }

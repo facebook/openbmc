@@ -1,0 +1,115 @@
+#!/bin/bash
+#
+# Copyright 2020-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+
+#shellcheck disable=SC1091,SC2034
+. /usr/local/bin/openbmc-utils.sh
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
+MAX_FAN_NUM=4
+FAN1_EEPROM_PATH="$(i2c_device_sysfs_abspath 55-0052)/eeprom"
+FAN2_EEPROM_PATH="$(i2c_device_sysfs_abspath 54-0052)/eeprom"
+FAN3_EEPROM_PATH="$(i2c_device_sysfs_abspath 53-0052)/eeprom"
+FAN4_EEPROM_PATH="$(i2c_device_sysfs_abspath 52-0052)/eeprom"
+FCM_EEPROM_PATH="$(i2c_device_sysfs_abspath 49-0051)/eeprom"
+
+usage() {
+    program=$(basename "$0")
+    echo "Usage:"
+    echo "  $program <all | fcm | fan_number>"
+    echo "  fan_number 1..${MAX_FAN_NUM}"
+}
+
+dump_eeprom() {
+    weutil "$1"
+    return $?
+}
+
+is_i2cdev_exist() {
+    weutil "$1" &> /dev/null
+    echo $?
+}
+
+get_fan_present_status() {
+    file="$FCMCPLD_SYSFS_DIR/fan${1}_present"
+    val=$(head -n 1 "$file" | awk '{print substr($0,0,3) }' | sed 's/.x//')
+    if [ -z "$val" ]; then
+        val=0
+    elif [ $val -eq 0 ]; then
+        val=1
+    else
+        val=0
+    fi
+    echo $val
+}
+
+dump_fan_eeprom() {
+    echo "Fan $1 eeprom:"
+    if [ "$(get_fan_present_status "$1" | tail -n 1)" != "1" ]; then
+        echo "Fan $1 not present"
+        return
+    fi
+    EEPROM_PATH=$(eval echo '$'"{FAN${1}_EEPROM_PATH}")
+    if [ "$(is_i2cdev_exist "${EEPROM_PATH}")" = "0" ]; then
+        dump_eeprom "$EEPROM_PATH"
+        return
+    else
+        echo "Cannot detect Fan $1 eeprom"
+        return
+    fi
+}
+
+dump_fcm_eeprom() {
+    if [ "$(is_i2cdev_exist "$FCM_EEPROM_PATH")" = "0" ]; then
+        echo "Fan FCM eeprom:"
+        dump_eeprom "$FCM_EEPROM_PATH"
+        return
+    else
+        echo "Cannot detect FCM eeprom"
+        return
+    fi
+}
+
+if [ $# -lt 1 ]; then
+    usage
+    exit 1
+fi
+
+case $1 in
+    all)
+        dump_fcm_eeprom
+        printf "\r\n"
+        for fan in $(seq 1 ${MAX_FAN_NUM})
+        do
+            dump_fan_eeprom "$fan"
+            printf "\r\n"
+        done
+        ;;
+    fcm)
+        dump_fcm_eeprom
+        ;;
+    '1'|'2'|'3'|'4')
+        dump_fan_eeprom "$1"
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac
+

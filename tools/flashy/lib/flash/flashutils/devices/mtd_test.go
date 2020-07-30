@@ -19,6 +19,7 @@
 package devices
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 
@@ -26,6 +27,68 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
+
+func TestMmapRO(t *testing.T) {
+	// mock and defer restore MmapFileRange
+	mmapFileRangeOrig := fileutils.MmapFileRange
+	defer func() {
+		fileutils.MmapFileRange = mmapFileRangeOrig
+	}()
+	cases := []struct {
+		name        string
+		mtdFilePath string
+		mmapRet     []byte
+		mmapErr     error
+		want        []byte
+		wantErr     error
+	}{
+		{
+			name:        "default sucessful operation",
+			mtdFilePath: "/dev/mtd5",
+			mmapRet:     []byte("abc"),
+			mmapErr:     nil,
+			want:        []byte("abc"),
+			wantErr:     nil,
+		},
+		{
+			name:        "mtd file path invalid causing mmap file path error",
+			mtdFilePath: "/dev/mtdx",
+			mmapRet:     []byte{},
+			mmapErr:     nil,
+			want:        []byte{},
+			wantErr: errors.Errorf("Unable to get block file path for '/dev/mtdx': " +
+				"No match for regex '^(?P<devmtdpath>/dev/mtd)(?P<mtdnum>[0-9]+)$' for " +
+				"input '/dev/mtdx'"),
+		},
+		{
+			name:        "mmap error",
+			mtdFilePath: "/dev/mtd5",
+			mmapRet:     []byte{},
+			mmapErr:     errors.Errorf("mmap error"),
+			want:        []byte{},
+			wantErr:     errors.Errorf("mmap error"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			testMtd := MemoryTechnologyDevice{
+				"flash0",
+				tc.mtdFilePath,
+				uint64(1234),
+			}
+			fileutils.MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
+				return tc.mmapRet, tc.mmapErr
+			}
+			got, err := testMtd.MmapRO()
+
+			tests.CompareTestErrors(tc.wantErr, err, t)
+			if bytes.Compare(tc.want, got) != 0 {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+		})
+	}
+}
 
 func TestGetMmapFilePath(t *testing.T) {
 	cases := []struct {

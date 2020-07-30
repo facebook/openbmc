@@ -56,8 +56,6 @@ func alertUpgradeMode(stepParams step.StepParams) step.StepExitError {
 	// as these are best-effort, the errors are ignored
 	// these won't affect the actual upgrade
 
-	// PS1 update to be enabled when there is confirmation
-	// that there will be no impact on other systems
 	// utils.LogAndIgnoreErr(updatePS1())
 
 	utils.LogAndIgnoreErr(updateMOTD())
@@ -65,15 +63,17 @@ func alertUpgradeMode(stepParams step.StepParams) step.StepExitError {
 	return nil
 }
 
-func updatePS1() error {
-	err := fileutils.AppendFile("/etc/profile", PS1Line)
-	if err != nil {
-		return errors.Errorf("Warning: Unable to update PS1: %v", err)
-	}
-	return nil
-}
+// PS1 update to be enabled when there is confirmation
+// that there will be no impact on other systems
+// func updatePS1() error {
+// 	err := fileutils.AppendFile("/etc/profile", PS1Line)
+// 	if err != nil {
+// 		return errors.Errorf("Warning: Unable to update PS1: %v", err)
+// 	}
+// 	return nil
+// }
 
-func wallAlert() error {
+var wallAlert = func() error {
 	escapedMsg := strings.ReplaceAll(motdContents, "\n", "\\n")
 	wallCmd := []string{"bash", "-c", fmt.Sprintf("echo -en \"%v\" | wall", escapedMsg)}
 	_, err, _, _ := utils.RunCommand(wallCmd, 30)
@@ -83,10 +83,10 @@ func wallAlert() error {
 	return nil
 }
 
-func updateMOTD() error {
+var updateMOTD = func() error {
 	err := fileutils.WriteFile("/etc/motd", []byte(motdContents), 0644)
 	if err != nil {
-		return errors.Errorf("Warning: MOTD update failed, `wall` alert will not proceed: %v", err)
+		return errors.Errorf("Warning: MOTD update failed: %v", err)
 	}
 	return nil
 }

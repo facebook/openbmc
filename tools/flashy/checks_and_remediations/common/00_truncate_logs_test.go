@@ -104,7 +104,7 @@ func TestTruncateLogs(t *testing.T) {
 			want:            step.ExitSafeToReboot{errors.Errorf("Unable to truncate log file '/tmp/test': TruncateFile Error")},
 		},
 		{
-			name: "Resolve file patterns error",
+			name: "Resolve file patterns error (1)",
 			resolvedFilePatterns: []ResolveFilePatternsReturnType{
 				ResolveFilePatternsReturnType{
 					nil,
@@ -113,6 +113,22 @@ func TestTruncateLogs(t *testing.T) {
 				ResolveFilePatternsReturnType{
 					&[]string{"/tmp/test"},
 					nil,
+				},
+			},
+			removeFileErr:   nil,
+			truncateFileErr: nil,
+			want:            step.ExitSafeToReboot{errors.Errorf("Unable to resolve file patterns '%v': resolveFilePatterns Error", deleteLogFilePatterns)},
+		},
+		{
+			name: "Resolve file patterns error (2)",
+			resolvedFilePatterns: []ResolveFilePatternsReturnType{
+				ResolveFilePatternsReturnType{
+					&[]string{"/tmp/test"},
+					nil,
+				},
+				ResolveFilePatternsReturnType{
+					nil,
+					errors.Errorf("resolveFilePatterns Error"),
 				},
 			},
 			removeFileErr:   nil,

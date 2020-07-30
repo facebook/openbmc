@@ -27,6 +27,34 @@ import (
 	"github.com/pkg/errors"
 )
 
+func TestStringFind(t *testing.T) {
+	cases := []struct {
+		name string
+		val  string
+		arr  []string
+		want int
+	}{
+		{
+			name: "found in array (index returned)",
+			val:  "foo",
+			arr:  []string{"bar", "foo", "baz"},
+			want: 1,
+		},
+		{
+			name: "not found in array (-1 returned)",
+			val:  "foo",
+			arr:  []string{"bar", "baz"},
+			want: -1,
+		},
+	}
+	for _, tc := range cases {
+		got := StringFind(tc.val, tc.arr)
+		if tc.want != got {
+			t.Errorf("want '%v' got '%v'", tc.want, got)
+		}
+	}
+}
+
 func TestRegexSubexpMapHelper(t *testing.T) {
 	cases := []struct {
 		name        string

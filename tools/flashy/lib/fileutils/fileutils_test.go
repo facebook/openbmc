@@ -153,3 +153,49 @@ func TestFileExists(t *testing.T) {
 		tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
 	}
 }
+
+func TestIsELFFile(t *testing.T) {
+	// mock and defer restore MmapFileRange
+	mmapFileRangeOrig := MmapFileRange
+	defer func() {
+		MmapFileRange = mmapFileRangeOrig
+	}()
+
+	cases := []struct {
+		name    string
+		mmapRet []byte
+		mmapErr error
+		want    bool
+	}{
+		{
+			name:    "ELF file",
+			mmapRet: []byte{0x7F, 'E', 'L', 'F'},
+			mmapErr: nil,
+			want:    true,
+		},
+		{
+			name:    "not ELF file",
+			mmapRet: []byte{0x7F, 'A', 'B', 'C'},
+			mmapErr: nil,
+			want:    false,
+		},
+		{
+			name:    "mmap error",
+			mmapRet: nil,
+			mmapErr: errors.Errorf("mmap error"),
+			want:    false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
+				return tc.mmapRet, tc.mmapErr
+			}
+			got := IsELFFile("x")
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+		})
+	}
+}

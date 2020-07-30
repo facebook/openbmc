@@ -17,61 +17,53 @@
  * Boston, MA 02110-1301 USA
  */
 
-package common
+package remediations_wedge100
 
 import (
-	"os"
+	"strings"
 	"testing"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
 
-func TestDropCaches(t *testing.T) {
-	// mock fileutils.WriteFile to return nil if the write is correct
-	writeFileOrig := fileutils.WriteFile
+func TestFixROMCS1(t *testing.T) {
+	// mock and defer restore RunCommand
+	runCommandOrig := utils.RunCommand
 	defer func() {
-		fileutils.WriteFile = writeFileOrig
+		utils.RunCommand = runCommandOrig
 	}()
-
 	cases := []struct {
-		name         string
-		writeFileErr error
-		want         step.StepExitError
+		name      string
+		runCmdErr error
+		want      step.StepExitError
 	}{
 		{
-			name:         "succeeded",
-			writeFileErr: nil,
-			want:         nil,
+			name:      "succeeded",
+			runCmdErr: nil,
+			want:      nil,
 		},
 		{
-			name:         "WriteFile failed",
-			writeFileErr: errors.Errorf("WriteFile failed"),
+			name:      "run command failed",
+			runCmdErr: errors.Errorf("command failed"),
 			want: step.ExitSafeToReboot{
-				errors.Errorf(
-					"Failed to write to drop_caches file '/proc/sys/vm/drop_caches': WriteFile failed",
-				),
+				errors.Errorf("Failed to run ROMCS1# fix: command failed"),
 			},
 		},
 	}
 
-	wantFilename := "/proc/sys/vm/drop_caches"
-	wantDataString := "3"
-
+	wantCmd := "/usr/local/bin/openbmc_gpio_util.py config ROMCS1#"
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			fileutils.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
-				if filename != wantFilename {
-					return errors.Errorf("filename: want %v got %v", wantFilename, filename)
+			utils.RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
+				gotCmd := strings.Join(cmdArr, " ")
+				if wantCmd != gotCmd {
+					t.Errorf("cmd: want '%v' got '%v'", wantCmd, gotCmd)
 				}
-				if string(data) != wantDataString {
-					return errors.Errorf("data: want %v got %v", wantDataString, string(data))
-				}
-				return tc.writeFileErr
+				return 0, tc.runCmdErr, "", ""
 			}
-
-			got := dropCaches(step.StepParams{false, "x", "x", false})
+			got := fixROMCS1(step.StepParams{})
 			step.CompareTestExitErrors(tc.want, got, t)
 		})
 	}

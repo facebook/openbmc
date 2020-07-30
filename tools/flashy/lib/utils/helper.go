@@ -28,13 +28,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-func MaxUint64(x, y uint64) uint64 {
-	if x < y {
-		return y
-	}
-	return x
-}
-
 // Takes a string slice and looks if a given item is in it. If found it will
 // return its index, otherwise it will return -1
 func StringFind(val string, arr []string) int {

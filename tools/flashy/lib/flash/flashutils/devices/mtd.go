@@ -64,13 +64,12 @@ func (m MemoryTechnologyDevice) GetFileSize() uint64 {
 }
 
 // mmaps the whole file, readonly
-// required to call Munmap to release the buffer
+// Munmap call required to release the buffer
 func (m MemoryTechnologyDevice) MmapRO() ([]byte, error) {
 	// use mmap
 	mmapFilePath, err := m.getMmapFilePath()
 	if err != nil {
-		return nil, errors.Errorf("Unable to read '%v': %v",
-			m.FilePath, err)
+		return nil, err
 	}
 	return fileutils.MmapFileRange(mmapFilePath, 0, int(m.FileSize), syscall.PROT_READ, syscall.MAP_SHARED)
 }

@@ -17,30 +17,39 @@
  * Boston, MA 02110-1301 USA
  */
 
-package remediations_wedge100
+package main
 
 import (
-	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"path"
+	"strconv"
+	"strings"
+	"testing"
+
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
-func init() {
-	step.RegisterStep(fixROMCS1)
-}
+// make sure that test coverage passes minimum coverage required
+const minimumCoverage = 90.0
 
-const gpioUtilPath = "/usr/local/bin/openbmc_gpio_util.py"
+var absTestCovScriptPath = path.Join(
+	fileutils.SourceRootDir,
+	"scripts",
+	"calculate_test_coverage.sh",
+)
 
-// For wedge100, there was a bug that caused the CS1 pin to be configured
-// for GPIO instead. Manually configure it for Chip Select before attempting
-// to write to flash1.
-// N.B.: This should be fixed by D16911862, but there is no guarantee that
-// all wedge100s are upgraded.
-func fixROMCS1(stepParams step.StepParams) step.StepExitError {
-	_, err, _, _ := utils.RunCommand([]string{gpioUtilPath, "config", "ROMCS1#"}, 30)
+func TestCoverage(t *testing.T) {
+	_, err, stdout, _ := utils.RunCommand([]string{absTestCovScriptPath}, 30)
 	if err != nil {
-		errMsg := errors.Errorf("Failed to run ROMCS1# fix: %v", err)
-		return step.ExitSafeToReboot{errMsg}
+		t.Error(err)
 	}
-	return nil
+	pctStr := strings.TrimSpace(stdout)
+	pct, err := strconv.ParseFloat(pctStr, 64)
+	if err != nil {
+		t.Error(err)
+	}
+	if pct < minimumCoverage {
+		t.Errorf("Current test coverage (%v%%) lower than required test coverage (%v%%)",
+			pct, minimumCoverage)
+	}
 }

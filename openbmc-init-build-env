@@ -16,6 +16,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-wedge400:warrior
   meta-fbal:zeus
   meta-fbep:zeus
+  meta-clearcreek:zeus
   meta-fbsp:zeus
   meta-fby3:warrior
   meta-fuji:warrior

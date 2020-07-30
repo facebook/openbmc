@@ -32,6 +32,7 @@ SRC_URI += "file://setup-gpio.sh \
             file://setup_avs.sh \
             file://eth0_mac_fixup.sh \
             file://setup_bic.sh \
+            file://setup_mgmt.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -46,6 +47,7 @@ OPENBMC_UTILS_FILES += " \
     setup_avs.sh \
     eth0_mac_fixup.sh \
     setup_bic.sh \
+    setup_mgmt.sh \
     "
 DEPENDS_append = " update-rc.d-native"
 

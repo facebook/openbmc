@@ -29,6 +29,9 @@ i2c_device_add 1 0x59 mp2978
 # # Bus 2
 i2c_device_add 2 0x35 scmcpld  #SCM CPLD
 
+# # Bus 13
+i2c_device_add 13 0x35 iobfpga #IOB FPGA
+
 # # i2c-mux 2, channel 1
 i2c_device_add 16 0x10 adm1278 #SCM Hotswap
 

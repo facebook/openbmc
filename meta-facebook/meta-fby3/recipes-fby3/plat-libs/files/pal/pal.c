@@ -141,6 +141,26 @@ MAPTOSTRING root_port_mapping[] = {
     { 0x00, 0x1D, 0xFF, "Num 0", "SB"},
 };
 
+MAPTOSTRING root_port_mapping_spe[] = {
+    // bus, device, port, silk screen, location
+    { 0xB2, 3, 0x3D, "Num 0", "1OU"},
+    { 0xB2, 2, 0x3C, "Num 1", "1OU"},
+    { 0xB2, 1, 0x3B, "Num 2", "1OU"},
+    { 0xB2, 0, 0x3A, "Num 3", "1OU"},
+    { 0x63, 0, 0x2A, "Num 0", "2OU"},
+    { 0x63, 1, 0x2B, "Num 1", "2OU"},
+    { 0x15, 3, 0x1D, "Num 2", "2OU"},
+    { 0x15, 2, 0x1C, "Num 3", "2OU"},
+    { 0x15, 1, 0x1B, "Num 4", "2OU"},
+    { 0x15, 0, 0x1A, "Num 5", "2OU"},
+    // NIC
+    { 0xB2, 0, 0x4A, "Class 2", "NIC"}, // Class 2 NIC    TODO check root port
+    { 0x63, 3, 0x2D, "Class 1", "NIC"}, // Class 1 NIC
+    // DL
+    { 0x63, 2, 0x2C, "Num 1", "SB" },
+    { 0x00, 0x1D, 0xFF, "Num 0", "SB"},
+};
+
 PCIE_ERR_DECODE pcie_err_tab[] = {
     {0x00, "Receiver Error"},
     {0x01, "Bad TLP"},
@@ -1602,6 +1622,8 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t channel;
   uint8_t event_type;
   uint8_t estr_idx;
+  uint8_t board_type = 0;
+  uint8_t port_cnt = 0;
   bool support_mem_mapping = false;
   char dimm_fail_event[][64] = {"Memory training failure", "Memory correctable error", "Memory uncorrectable error", "Reserved"};
   char mem_mapping_string[32];
@@ -1614,15 +1636,28 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   char *err1_descript = "NA", *err2_descript = "NA";
   int ret = 0;
   uint8_t bmc_location = 0;
+  MAPTOSTRING *mapping_table;
 
+  ret = fby3_common_get_2ou_board_type(fru, &board_type);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+    board_type = M2_BOARD;
+  }
+  if (board_type == M2_BOARD) {
+    mapping_table = root_port_mapping;
+    port_cnt = sizeof(root_port_mapping)/sizeof(MAPTOSTRING);
+  } else {
+    mapping_table = root_port_mapping_spe;
+    port_cnt = sizeof(root_port_mapping_spe)/sizeof(MAPTOSTRING);
+  }
   switch (error_type) {
     case UNIFIED_PCIE_ERR:
       plat = (general_info & 0x10) >> 4;
       if (plat == 0) {  //x86
-        for (index = 0; index < (sizeof(root_port_mapping)/sizeof(MAPTOSTRING)); index++) {
-          if ((sel[11] == root_port_mapping[index].bus_value) && ((sel[10] >> 3) == root_port_mapping[index].dev_value)) {
-            location = root_port_mapping[index].location;
-            sil = root_port_mapping[index].silk_screen;
+        for (index = 0; index < port_cnt; index++) {
+          if ((sel[11] == mapping_table[index].bus_value) && ((sel[10] >> 3) == mapping_table[index].dev_value)) {
+            location = mapping_table[index].location;
+            sil = mapping_table[index].silk_screen;
             if (!strcmp(location, "1OU")) {
               ret = fby3_common_get_bmc_location(&bmc_location);
               if ( ret < 0 ) {

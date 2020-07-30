@@ -23,6 +23,8 @@ source /usr/local/bin/openbmc-utils.sh
 
 # # Bus 1
 i2c_device_add 1 0x40 xdpe132g5c #ISL68137 DC-DC core
+i2c_device_add 1 0x53 mp2978
+i2c_device_add 1 0x59 mp2978
 
 # # Bus 2
 i2c_device_add 2 0x35 scmcpld  #SCM CPLD
@@ -108,6 +110,7 @@ i2c_device_add 83 0x4b tmp75
 i2c_device_add 84 0x4a tmp75
 i2c_device_add 84 0x10 adm1278
 i2c_device_add 86 0x34 ucd90160
+i2c_device_add 86 0x6b mp2975
 
 # # i2c-mux PCA9548 0x73, channel 2, mux PCA9548 0x77
 i2c_device_add 88 0x60 domfpga 	# DOM FPGA
@@ -117,6 +120,7 @@ i2c_device_add 91 0x4b tmp75
 i2c_device_add 92 0x4a tmp75
 i2c_device_add 92 0x10 adm1278
 i2c_device_add 94 0x34 ucd90160
+i2c_device_add 94 0x6b mp2975
 
 # # i2c-mux PCA9548 0x73, channel 3, mux PCA9548 0x77
 i2c_device_add 96 0x60 domfpga 	    # DOM FPGA
@@ -126,6 +130,7 @@ i2c_device_add 99 0x4b tmp75
 i2c_device_add 100 0x4a tmp75
 i2c_device_add 100 0x10 adm1278
 i2c_device_add 102 0x34 ucd90160
+i2c_device_add 102 0x6b mp2975
 
 # # i2c-mux PCA9548 0x73, channel 4, mux PCA9548 0x77
 i2c_device_add 104 0x60 domfpga 	# DOM FPGA
@@ -135,6 +140,7 @@ i2c_device_add 107 0x4b tmp75
 i2c_device_add 108 0x4a tmp75
 i2c_device_add 108 0x10 adm1278
 i2c_device_add 110 0x34 ucd90160
+i2c_device_add 110 0x6b mp2975
 
 # # i2c-mux PCA9548 0x73, channel 5, mux PCA9548 0x77
 i2c_device_add 112 0x60 domfpga 	# DOM FPGA
@@ -144,6 +150,7 @@ i2c_device_add 115 0x4b tmp75
 i2c_device_add 116 0x4a tmp75
 i2c_device_add 116 0x10 adm1278
 i2c_device_add 118 0x34 ucd90160
+i2c_device_add 118 0x6b mp2975
 
 # # i2c-mux PCA9548 0x73, channel 6, mux PCA9548 0x77
 i2c_device_add 120 0x60 domfpga 	# DOM FPGA
@@ -153,6 +160,7 @@ i2c_device_add 123 0x4b tmp75
 i2c_device_add 124 0x4a tmp75
 i2c_device_add 124 0x10 adm1278
 i2c_device_add 126 0x34 ucd90160
+i2c_device_add 126 0x6b mp2975
 
 # # i2c-mux PCA9548 0x73, channel 7, mux PCA9548 0x77
 i2c_device_add 128 0x60 domfpga 	# DOM FPGA
@@ -162,6 +170,7 @@ i2c_device_add 131 0x4b tmp75
 i2c_device_add 132 0x4a tmp75
 i2c_device_add 132 0x10 adm1278
 i2c_device_add 134 0x34 ucd90160
+i2c_device_add 134 0x6b mp2975
 
 # # i2c-mux PCA9548 0x73, channel 8, mux PCA9548 0x77
 i2c_device_add 136 0x60 domfpga 	# DOM FPGA
@@ -171,6 +180,7 @@ i2c_device_add 139 0x4b tmp75
 i2c_device_add 140 0x4a tmp75
 i2c_device_add 140 0x10 adm1278
 i2c_device_add 142 0x34 ucd90160
+i2c_device_add 142 0x6b mp2975
 
 
 # # Bus 12

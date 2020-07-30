@@ -57,6 +57,7 @@ extern "C" {
 #define PIM6_DOM_FPGA  "pim6_domfpga"
 #define PIM7_DOM_FPGA  "pim7_domfpga"
 #define PIM8_DOM_FPGA  "pim8_domfpga"
+#define IOB_FPGA  "iob_fpga"
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
@@ -80,6 +81,7 @@ extern "C" {
 #define PIM6_DOMFPGA_SYSFS   I2C_DEV_DIR(120, 60)"%s"
 #define PIM7_DOMFPGA_SYSFS   I2C_DEV_DIR(128, 60)"%s"
 #define PIM8_DOMFPGA_SYSFS   I2C_DEV_DIR(136, 60)"%s"
+#define IOBFPGA_SYSFS   I2C_DEV_DIR(13, 35)"%s"
 #define SENSORD_FILE_SMB "/tmp/cache_store/smb_sensor%d"
 #define SENSORD_FILE_PSU "/tmp/cache_store/psu%d_sensor%d"
 #define KV_PATH "/mnt/data/kv_store/%s"

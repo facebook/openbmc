@@ -831,6 +831,10 @@ pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver) {
         snprintf(ver_path, sizeof(ver_path), PIM8_DOMFPGA_SYSFS, "fpga_ver");
         snprintf(sub_ver_path, sizeof(sub_ver_path),
                  PIM8_DOMFPGA_SYSFS, "fpga_sub_ver");
+      } else if (!(strncmp(device, IOB_FPGA, strlen(IOB_FPGA)))) {
+        snprintf(ver_path, sizeof(ver_path), IOBFPGA_SYSFS, "fpga_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 IOBFPGA_SYSFS, "fpga_sub_ver");
       } else {
         return -1;
       }

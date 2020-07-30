@@ -20,6 +20,12 @@
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
+# Bus 0: Create i2c slave backend for ipmbd_0(BIC)
+i2c_mslave_add 0 0x10
+
+# Bus 4: Create i2c slave backend for ipmbd_4(Debug Card)
+i2c_mslave_add 4 0x10
+
 # Bus 16: i2c bus 1 mux, channel 0
 i2c_device_add 16 0x4d ir35215              # ir35215
 # Bus 17: i2c bus 1 mux, channel 1

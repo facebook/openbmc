@@ -44,6 +44,7 @@ IMAGE_INSTALL += " \
   fscd \
   wedge-eeprom \
   weutil-dhcp-id \
+  mdio-util \
   "
 
 def tpm_tools_recipe(d):

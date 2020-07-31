@@ -71,6 +71,9 @@ enum {
   FW_CPLD_CAPSULE,
   FW_BIOS_RCVY_CAPSULE,
   FW_CPLD_RCVY_CAPSULE,
+
+  // last id
+  FW_COMPONENT_LAST_ID
 };
 
 enum {

@@ -2784,3 +2784,134 @@ error_exit:
   *res_len = 0;
   return ret;
 }
+
+int
+pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
+{
+  uint8_t bmc_location = 0;
+  uint8_t config_status;
+  int ret;
+  const uint8_t cpld_addr = 0x40;
+  uint8_t bus;
+  uint8_t tlen = 4;
+  uint8_t rlen = 4;
+  uint8_t tbuf[4] = {0x00, 0x20, 0x00, 0x28};
+  char path[128] = {0};
+  int i2cfd = 0;
+  uint8_t tmp_cpld_swap[4];
+ 
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    goto error_exit;
+  }
+  
+  if (target == FW_CPLD) {
+    snprintf(path, sizeof(path), I2CDEV, fby3_common_get_bus_id(fru) + 4);
+    if ((i2cfd = open(path, O_RDWR)) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to open %s\n", __func__, path);
+      goto error_exit;
+    }
+
+    if (ioctl(i2cfd, I2C_SLAVE, cpld_addr) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to talk to slave@0x%02X\n", __func__, tlen);
+      goto error_exit;
+    } else {
+      ret = i2c_rdwr_msg_transfer(i2cfd, cpld_addr << 1, tbuf, tlen, res, rlen);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+        goto error_exit;
+      }
+    }
+  } else if(target == FW_BIOS) {
+    ret = pal_get_sysfw_ver(fru, res);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get sysfw ver", __func__);
+      goto error_exit;
+    }
+  } else if(target == FW_VR) {
+    // TODO
+    goto not_support;
+  } else {
+    switch(target) {
+    case FW_1OU_BIC:
+    case FW_1OU_BIC_BOOTLOADER:
+    case FW_1OU_CPLD:
+      config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
+      if (!((bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU))) {
+        goto not_support;
+      }
+      break;
+    case FW_2OU_BIC:
+    case FW_2OU_BIC_BOOTLOADER:
+    case FW_2OU_CPLD:
+      config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
+      if (!((config_status & PRESENT_2OU) == PRESENT_2OU)) {
+        goto not_support;
+      }
+      break;
+    case FW_BB_BIC:
+    case FW_BB_BIC_BOOTLOADER:
+    case FW_BB_CPLD:
+      if(bmc_location != NIC_BMC) {
+        goto not_support;
+      }
+      break;
+    case FW_BIOS_CAPSULE:
+    case FW_CPLD_CAPSULE:
+    case FW_BIOS_RCVY_CAPSULE:
+    case FW_CPLD_RCVY_CAPSULE:
+      // TODO
+      goto not_support;
+    default:
+      if (target >= FW_COMPONENT_LAST_ID)
+        goto not_support;
+      break;
+    }
+
+    ret = bic_get_fw_ver(fru, target, res);
+    if (ret != BIC_EOK) {
+      syslog(LOG_WARNING, "%s() bic_get_fw_ver returns %d\n", __func__, ret);
+      goto error_exit;
+    }
+  }
+
+  switch(target) {
+  case FW_CPLD:
+  case FW_1OU_CPLD:
+  case FW_2OU_CPLD:
+  case FW_BB_CPLD:
+    tmp_cpld_swap[0] = res[3];
+    tmp_cpld_swap[1] = res[2];
+    tmp_cpld_swap[2] = res[1];
+    tmp_cpld_swap[3] = res[0];
+    memcpy(res, tmp_cpld_swap, 4);
+    *res_len = 4;
+    break;
+  case FW_ME:
+    *res_len = 5;
+    break;
+  case FW_BIC:
+  case FW_1OU_BIC:
+  case FW_2OU_BIC:
+  case FW_BB_BIC:
+  case FW_BIC_BOOTLOADER:
+  case FW_1OU_BIC_BOOTLOADER:
+  case FW_2OU_BIC_BOOTLOADER:
+  case FW_BB_BIC_BOOTLOADER:
+    *res_len = 2;
+    break;
+  case FW_BIOS:
+    *res_len = 16;
+    break;
+  default:
+    goto not_support;
+  }
+
+  return PAL_EOK;
+
+not_support:
+  return PAL_ENOTSUP;
+error_exit:
+  return ret;
+}

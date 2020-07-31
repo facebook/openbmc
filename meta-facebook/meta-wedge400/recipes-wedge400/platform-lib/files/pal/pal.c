@@ -5442,7 +5442,7 @@ sensor_thresh_array_init(uint8_t fru) {
       pem_sensor_threshold[PEM1_SENSOR_FAN2_TACH + (fru_offset * PEM1_SENSOR_CNT)][LCR_THRESH] = 1000;
       pem_sensor_threshold[PEM1_SENSOR_TEMP1 + (fru_offset * PEM1_SENSOR_CNT)][UCR_THRESH] = 95;
       pem_sensor_threshold[PEM1_SENSOR_TEMP1 + (fru_offset * PEM1_SENSOR_CNT)][UNC_THRESH] = 85;
-      pem_sensor_threshold[PEM1_SENSOR_TEMP2 + (fru_offset * PEM1_SENSOR_CNT)][UCR_THRESH] = 45;
+      pem_sensor_threshold[PEM1_SENSOR_TEMP2 + (fru_offset * PEM1_SENSOR_CNT)][UCR_THRESH] = 65;
       pem_sensor_threshold[PEM1_SENSOR_TEMP3 + (fru_offset * PEM1_SENSOR_CNT)][UCR_THRESH] = 65;
       break;
     case FRU_PSU1:

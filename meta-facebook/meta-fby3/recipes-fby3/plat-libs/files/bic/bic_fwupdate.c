@@ -746,6 +746,7 @@ is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file
   uint8_t sel_comp = 0xff;
   uint8_t sel_tag = 0xff;
   uint32_t sel_offset = 0xffffffff;
+  uint8_t board_type = 0;
 
   switch (comp) {
     case UPDATE_BIC:
@@ -766,7 +767,17 @@ is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file
       sel_comp = BICBB;
       break;
     case REXP_BIC_INTF:
-      sel_comp = BIC2OU;
+      ret = fby3_common_get_2ou_board_type(slot_id, &board_type);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+        ret = BIC_STATUS_FAILURE;
+        goto error_exit;
+      }
+      if (board_type == M2_BOARD) {
+        sel_comp = BIC2OU;
+      } else {
+        sel_comp = BICSPE;
+      }      
       break;
     case NONE_INTF:
       sel_comp = BICDL;

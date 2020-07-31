@@ -19,8 +19,8 @@
 #include "test-defs.h"
 
 #define FILE_BUF_MAX	32
-#define TEST_FILE_RD	"/var/log/dmesg"
-#define TEST_FILE_WR	"/dev/null"
+#define TEST_FILE_RD	"/etc/issue"
+#define TEST_FILE_WR	"/tmp/this_is_a_file_created.txt"
 
 /*
  * test file_read_bytes() function.
@@ -63,6 +63,8 @@ void test_file_write(struct test_stats *stats)
 
 	LOG_DEBUG("test file_write_bytes()\n");
 	stats->num_total++;
+  fd = open(TEST_FILE_WR, O_WRONLY | O_CREAT, S_IRWXU);
+  close(fd);
 
 	fd = open(TEST_FILE_WR, O_RDWR);
 	if (fd < 0) {

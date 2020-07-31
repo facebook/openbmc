@@ -18,11 +18,11 @@
 
 #include "test-defs.h"
 
-#define TEST_PATH_EXISTS	"/var/log/dmesg"
-#define TEST_PATH_NON_EXISTS	"/var/log/does-not-exist.txt"
-#define	TEST_PATH_REG_FILE	"/var/log/messages"
+#define TEST_PATH_EXISTS	"/etc/issue"
+#define TEST_PATH_NON_EXISTS	"/etc/major_issues"
+#define	TEST_PATH_REG_FILE	"/etc/issue"
 #define	TEST_PATH_DIR_FILE	"/bin"
-#define	TEST_PATH_LINK_FILE	"/dev/fd"
+#define	TEST_PATH_LINK_FILE	"/etc/os-release"
 
 void test_path_exists(struct test_stats *stats)
 {

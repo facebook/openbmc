@@ -1,5 +1,5 @@
 {
-  "version": "fby3-dvt-v2020.04.22",
+  "version": "fby3-dvt-v2020.07.28",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 90,
@@ -44,12 +44,12 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [ 60, 10 ],
-        [ 61, 11 ],
-        [ 62, 12 ],
-        [ 63, 13 ],
-        [ 64, 14 ],
-        [ 65, 15 ]
+        [ -16, 10 ],
+        [ -15, 11 ],
+        [ -14, 12 ],
+        [ -13, 13 ],
+        [ -12, 14 ],
+        [ -11, 15 ]
       ]
     },
     "pid_cpu_margin": {
@@ -57,11 +57,11 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 68,
+      "setpoint": -8,
       "negative_hysteresis": 2,
       "positive_hysteresis": 0,
-      "kp": -1.25,
-      "ki": -0.035,
+      "kp": -1.35,
+      "ki": -0.01,
       "kd": 0
     },
     "linear_dimm": {
@@ -73,10 +73,10 @@
       "negative_hysteresis": 2,
       "data": [
         [65, 10],
-        [66, 12],
-        [67, 14],
-        [68, 16],
-        [69, 18]
+        [66, 11],
+        [67, 12],
+        [68, 13],
+        [69, 14]
       ]
     },
     "pid_dimm": {
@@ -87,8 +87,8 @@
       "setpoint": 75,
       "negative_hysteresis": 2,
       "positive_hysteresis": 0,
-      "kp": -1,
-      "ki": -0.035,
+      "kp": -3.5,
+      "ki": -0.01,
       "kd": 0
     },
     "linear_nic": {
@@ -99,20 +99,14 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [81, 10],
-        [82, 16],
-        [83, 18],
-        [84, 20],
-        [85, 21],
-        [86, 24],
-        [87, 27],
-        [88, 30],
-        [89, 32],
-        [90, 34],
-        [91, 36],
-        [92, 40],
-        [93, 50],
-        [94, 60]
+        [75, 10],
+        [76, 11],
+        [77, 11],
+        [78, 12],
+        [79, 12],
+        [80, 12],
+        [81, 13],
+        [82, 13]
       ]
     },
     "pid_nic": {
@@ -120,11 +114,11 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 88,
-      "negative_hysteresis": 2,
+      "setpoint": 85,
+      "negative_hysteresis": 3,
       "positive_hysteresis": 0,
-      "kp": -1,
-      "ki": -0.035,
+      "kp": -1.25,
+      "ki": -0.01,
       "kd": 0
     }
   },

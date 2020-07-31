@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2019-present Facebook. All Rights Reserved.
 #
@@ -18,6 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
+#shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
@@ -56,15 +57,16 @@ devmem_set_bit "$(scu_addr 88)" 31
 
 
 if [ "$1" = "led" ]; then
-    echo "Wait a few seconds to setup management port LED..."
+    echo -n "Wait a few seconds to setup management port LED..."
     # refer to BCM54616S Section 5, register 1C access
     # Register 1C (Shadow 00010): Spare Control 1
     # Bit0: 1: Enable link LED mode.
-    ast-mdio.py --mac 1 --phy 0xe write 0x1c 0x8801
+    mdio-util -m 1 -p 0xe -w 0x1c -d 0x8801 &> /dev/null
+
     # Register 1C (Shadow 01110): LED Selector 2
     # Bit7~4: LED4 Selector, b0011: Activity LED 
     # Bit3~0: LED4 Selector, b0101: Slave
-    ast-mdio.py --mac 1 --phy 0xe write 0x1c 0xb435
+    mdio-util -m 1 -p 0xe -w 0x1c -d 0xb435 &> /dev/null
     echo "Done!"
 else
     usage

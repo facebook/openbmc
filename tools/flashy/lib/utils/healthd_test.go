@@ -93,10 +93,12 @@ func TestGetHealthdConfig(t *testing.T) {
 }
 
 func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
-	// save and defer restore WriteFile
+	// save and defer restore WriteFile and RestartHealthd
 	writeFileOrig := fileutils.WriteFile
+	restartHealthdOrig := RestartHealthd
 	defer func() {
 		fileutils.WriteFile = writeFileOrig
+		RestartHealthd = restartHealthdOrig
 	}()
 
 	cases := []struct {
@@ -104,6 +106,8 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 		inputJson         string
 		wantJson          string
 		writeConfigCalled bool
+		writeConfigErr    error
+		restartHealthdErr error
 		wantErr           error
 	}{
 		{
@@ -111,6 +115,8 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 			inputJson:         tests.ExampleMinimalHealthdConfigJSON,
 			wantJson:          tests.ExampleMinimalHealthdConfigJSONRemovedReboot,
 			writeConfigCalled: true,
+			writeConfigErr:    nil,
+			restartHealthdErr: nil,
 			wantErr:           nil,
 		},
 		{
@@ -118,6 +124,8 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 			inputJson:         tests.ExampleMinilaketbHealthdConfigJSON,
 			wantJson:          tests.ExampleMinilaketbHealthdConfigJSONRemovedReboot,
 			writeConfigCalled: true,
+			writeConfigErr:    nil,
+			restartHealthdErr: nil,
 			wantErr:           nil,
 		},
 		{
@@ -125,6 +133,8 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 			inputJson:         tests.ExampleMinilaketbHealthdConfigJSONRemovedReboot,
 			wantJson:          tests.ExampleMinilaketbHealthdConfigJSONRemovedReboot,
 			writeConfigCalled: false,
+			writeConfigErr:    nil,
+			restartHealthdErr: nil,
 			wantErr:           nil,
 		},
 		{
@@ -132,6 +142,8 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 			inputJson:         "{}",
 			wantJson:          "",
 			writeConfigCalled: false,
+			writeConfigErr:    nil,
+			restartHealthdErr: nil,
 			wantErr:           errors.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config {}"),
 		},
 		{
@@ -143,6 +155,7 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 }`,
 			wantJson:          "",
 			writeConfigCalled: false,
+			writeConfigErr:    nil,
 			wantErr: errors.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config " +
 				`{"bmc_mem_utilization":{"threshold":42}}`),
 		},
@@ -159,8 +172,37 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 }`,
 			wantJson:          "",
 			writeConfigCalled: false,
+			writeConfigErr:    nil,
+			restartHealthdErr: nil,
 			wantErr: errors.Errorf("Can't get 'action' entry in healthd-config " +
 				"{\"bmc_mem_utilization\":{\"threshold\":[{\"action\":42}]}}"),
+		},
+		{
+			name:              "restart healthd failure",
+			inputJson:         tests.ExampleMinilaketbHealthdConfigJSON,
+			wantJson:          tests.ExampleMinilaketbHealthdConfigJSONRemovedReboot,
+			writeConfigCalled: true,
+			writeConfigErr:    nil,
+			restartHealthdErr: errors.Errorf("Restart healthd failed"),
+			wantErr:           errors.Errorf("Restart healthd failed"),
+		},
+		{
+			name:              "remove multiple reboot entries",
+			inputJson:         tests.ExampleMinimalHealthdConfigJSONMultipleReboots,
+			wantJson:          tests.ExampleMinimalHealthdConfigJSONRemovedReboot,
+			writeConfigCalled: true,
+			writeConfigErr:    nil,
+			restartHealthdErr: nil,
+			wantErr:           nil,
+		},
+		{
+			name:              "write config failed",
+			inputJson:         tests.ExampleMinimalHealthdConfigJSON,
+			wantJson:          tests.ExampleMinimalHealthdConfigJSONRemovedReboot,
+			writeConfigCalled: true,
+			writeConfigErr:    errors.Errorf("Write config failed"),
+			restartHealthdErr: nil,
+			wantErr:           errors.Errorf("Unable to write healthd config to file: Write config failed"),
 		},
 	}
 
@@ -169,7 +211,10 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 			writeConfigCalled := false
 			fileutils.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
 				writeConfigCalled = true
-				return nil
+				return tc.writeConfigErr
+			}
+			RestartHealthd = func(wait bool, supervisor string) error {
+				return tc.restartHealthdErr
 			}
 			h, err := gabs.ParseJSON([]byte(tc.inputJson))
 			if err != nil {

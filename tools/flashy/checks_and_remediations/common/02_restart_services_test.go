@@ -93,7 +93,7 @@ func TestRestartServices(t *testing.T) {
 			systemdAvailErr:   nil,
 			runCmdErr:         nil,
 			restartHealthdErr: errors.Errorf("Healthd restart error"),
-			want:              step.ExitSafeToReboot{errors.Errorf("Could not restart healthd: Healthd restart error")},
+			want:              nil,
 			wantCmds:          []string{"systemctl restart restapi"},
 		},
 	}

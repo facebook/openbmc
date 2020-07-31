@@ -410,6 +410,42 @@ const ExampleCorruptedHealthdConfig = `{
 	}
 }`
 
+// minimal part of minilaketb json
+// has multiple reboot entries
+// this does not exist in any image, but test for it
+const ExampleMinimalHealthdConfigJSONMultipleReboots = `{
+	"bmc_mem_utilization": {
+		"threshold": [
+			{
+				"value": 60.0,
+				"hysteresis": 5.0,
+				"action": [
+					"log-warning",
+					"reboot"
+				]
+			},
+			{
+				"value": 70.0,
+				"hysteresis": 5.0,
+				"action": [
+					"log-critical",
+					"bmc-error-trigger",
+					"reboot"
+				]
+			},
+			{
+				"value": 95.0,
+				"hysteresis": 5.0,
+				"action": [
+					"log-critical",
+					"bmc-error-trigger",
+					"reboot"
+				]
+			}
+		]
+	}
+}`
+
 const ExampleWedge100ProcMtdFile = `dev:    size   erasesize  name
 mtd0: 00060000 00010000 "u-boot"
 mtd1: 00020000 00010000 "env"

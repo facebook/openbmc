@@ -20,6 +20,7 @@
 package utils
 
 import (
+	"log"
 	"time"
 
 	"github.com/Jeffail/gabs"
@@ -89,13 +90,20 @@ func HealthdRemoveMemUtilRebootEntryIfExists(h *gabs.Container) error {
 			if action.Data().(string) == "reboot" {
 				threshold.ArrayRemove(i, "action")
 				rebootExists = true
-				break
 			}
 		}
 	}
 
 	if rebootExists {
-		return HealthdWriteConfigToFile(h)
+		err = HealthdWriteConfigToFile(h)
+		if err != nil {
+			return err
+		}
+		log.Printf("Healthd reboot action exists and was removed. Restarting healthd.")
+		err = RestartHealthd(true, "sv")
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

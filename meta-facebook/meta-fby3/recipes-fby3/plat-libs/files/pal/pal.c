@@ -1466,7 +1466,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_OC_DETECT      = 0x05,
     SYS_OCP_FAULT_WARN = 0x06,
     SYS_FW_TRIGGER     = 0x07,
-    SYS_OCP_FAULT      = 0x08,
+    SYS_HSC_FAULT      = 0x08,
     SYS_RSVD           = 0x09,
     SYS_VR_WDT_TIMEOUT = 0x0A,
     SYS_M2_VPP         = 0x0B,
@@ -1500,8 +1500,8 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     case SYS_FW_TRIGGER:
       strcat(error_log, "Firmware");
       break;
-    case SYS_OCP_FAULT:
-      strcat(error_log, "OCP fault");
+    case SYS_HSC_FAULT:
+      strcat(error_log, "HSC fault");
       break;
     case SYS_VR_WDT_TIMEOUT:
       strcat(error_log, "VR WDT");

@@ -59,4 +59,4 @@ async def _extract_identity(request) -> str:
         for candidate in peercert["subject"]:
             if candidate[0][0] == "commonName":
                 return candidate[0][1].split("/")[0].split(":")[-1]
-    raise HTTPForbidden()
+    return ""

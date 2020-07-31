@@ -32,5 +32,7 @@ int main(int argc, char **argv)
 
 	printf("total %d tests, failed %d\n",
 	       test_info.num_total, test_info.num_errors);
+  if (test_info.num_errors > 0)
+    return -1;
 	return 0;
 }

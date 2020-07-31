@@ -144,15 +144,15 @@ def set_fan_led(fan, color="led_blue"):
 
 
 def host_shutdown():
-    SCM_POWER_COMMAND = "/usr/local/bin/wedge_power.sh off"
+    SCM_POWER_COMMAND = "/usr/local/bin/wdtcli kick &> /dev/null; /usr/local/bin/wedge_power.sh off"
     TH_SWITCH_POWER_COMMAND = "source /usr/local/bin/openbmc-utils.sh; echo 0 > $SMBCPLD_SYSFS_DIR/th3_turn_on"
     GB_SWITCH_POWER_COMMAND = "source /usr/local/bin/openbmc-utils.sh; echo 0 > $SMBCPLD_SYSFS_DIR/gb_turn_on"
-    switch_reset_cmd = ""
+    switch_poweroff_cmd = ""
     brd_type = pal_get_board_type()
     if brd_type == "Wedge400":
-        switch_reset_cmd = TH_SWITCH_POWER_COMMAND
+        switch_poweroff_cmd = TH_SWITCH_POWER_COMMAND
     elif brd_type == "Wedge400C":
-        switch_reset_cmd = GB_SWITCH_POWER_COMMAND
+        switch_poweroff_cmd = GB_SWITCH_POWER_COMMAND
     else:
         Logger.crit("Cannot identify board type: %s" % brd_type)
         Logger.crit("Switch won't be resetting!")
@@ -160,7 +160,8 @@ def host_shutdown():
     Logger.info("host_shutdown() executing {}".format(SCM_POWER_COMMAND))
     response = Popen(SCM_POWER_COMMAND, shell=True, stdout=PIPE).stdout.read()
     time.sleep(5)
-    if switch_reset_cmd != "":
-        Logger.info("host_shutdown() executing {}".format(switch_reset_cmd))
-        response = Popen(switch_reset_cmd, shell=True, stdout=PIPE).stdout.read()
+    if switch_poweroff_cmd != "":
+        Logger.info("host_shutdown() executing {}".format(switch_poweroff_cmd))
+        response = Popen(switch_poweroff_cmd, shell=True, stdout=PIPE).stdout.read()
+
     return response

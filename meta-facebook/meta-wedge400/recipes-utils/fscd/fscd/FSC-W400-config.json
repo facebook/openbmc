@@ -22,7 +22,7 @@
   "profiles": {
     "SMB_LM75B_U28_TEMP": {
       "read_source" : {
-        "util" : "/usr/local/bin/sensor-util --force",
+        "util" : "/usr/local/bin/wdtcli kick &> /dev/null; /usr/local/bin/sensor-util --force",
         "offset_table": [
           [0,-12],
           [40,-9],
@@ -78,7 +78,7 @@
     },
     "TH3_DIE_TEMP1": {
       "read_source" : {
-        "util" : "/usr/local/bin/sensor-util --force"
+        "util" : "/usr/local/bin/wdtcli kick &> /dev/null; /usr/local/bin/sensor-util --force"
       },
       "read_limit": {
         "valid": {
@@ -104,7 +104,7 @@
     },
     "SOC_THERM_MARGIN_TEMP": {
       "read_source" : {
-        "util" : "/usr/local/bin/sensor-util --force"
+        "util" : "/usr/local/bin/wdtcli kick &> /dev/null; /usr/local/bin/sensor-util --force"
       },
       "read_limit": {
         "alarm_major": {
@@ -128,10 +128,10 @@
     "1": {
       "label" : "Fan 1 Front",
       "read_source" : {
-        "sysfs": "/sys/bus/i2c/devices/30-003e/fan1_input"
+        "sysfs": "/sys/bus/i2c/devices/30-003e/fan1_input; /usr/local/bin/wdtcli kick &> /dev/null"
       },
       "write_source" : {
-        "sysfs": "/sys/bus/i2c/devices/30-003e/fan1_pwm",
+        "sysfs": "/sys/bus/i2c/devices/30-003e/fan1_pwm; /usr/local/bin/wdtcli kick &> /dev/null",
         "max_duty_register": 63
       }
     },

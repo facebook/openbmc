@@ -10,7 +10,6 @@ EMMC_REQUIRED_PACKAGES = "\
   util-linux \
   mmc-utils \
   blktrace \
-  fio \
   mmc-raw \
   emmcd \
 "

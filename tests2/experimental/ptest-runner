@@ -17,7 +17,7 @@ def openbmc_path():
 
 def recipes_with_ptest():
     openbmc = openbmc_path()
-    blacklist = ["qemux86-image.bb", "ptest-meson-crosstarget-native_0.1.bb"]
+    avoidlist = ["qemux86-image.bb", "ptest-meson-crosstarget-native_0.1.bb", "rsyslog_8.34.0.bb"]
 
     def contains_ptest(f):
         with open(f) as fd:
@@ -46,15 +46,15 @@ def recipes_with_ptest():
                 f_full = os.path.join(root, f)
                 if f.endswith(".bb"):
                     total_recipes += 1
-                    if f not in blacklist and contains_ptest(f_full):
+                    if f not in avoidlist and contains_ptest(f_full):
                         recipes.add(recipe_name(f))
     print(f"Found {total_recipes} recipes of which {len(recipes)} define unit-tests")
     return list(recipes)
 
 
-def bmc_build():
+def bmc_build(recipes):
     openbmc = openbmc_path()
-    recipe_arg = " ".join(recipes_with_ptest())
+    recipe_arg = " ".join(recipes)
     build_steps = [
         f"cd {openbmc}",
         "source ./openbmc-init-build-env qemux86 build-qemux86 > /dev/null",
@@ -69,8 +69,9 @@ def bmc_build():
 
 
 def main(args):
+    all_recipes = recipes_with_ptest()
     if args.build is None:
-        args.build = bmc_build()
+        args.build = bmc_build(all_recipes)
 
     if not os.path.isdir(args.build):
         print(f"{args.build} does not exist")
@@ -89,7 +90,11 @@ def main(args):
     if args.shell:
         subprocess.check_call(cmd)
     else:
-        cmd += ["ptest-runner"] + args.recipes
+        cmd += ["ptest-runner"]
+        if args.recipes is None or len(args.recipes) == 0:
+            cmd += all_recipes
+        else:
+            cmd += args.recipes
         try:
             out = subprocess.check_output(cmd).decode()
             print(out)

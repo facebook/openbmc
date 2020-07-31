@@ -7175,7 +7175,7 @@ pal_is_nvme_time_out() {
     if (nvme_ready) // If NVMe is ready, do not have check NVMe is timeout or not
       continue;
 
-    if (post_start_timestamp != -1) {
+    if (post_start_timestamp != -1 && nvme_ready_timestamp != -1) {
       if (post_start_timestamp > nvme_ready_timestamp) {
         if (current_timestamp-post_start_timestamp > NVME_TIMEOUT) {
           return fru;

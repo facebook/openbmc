@@ -125,6 +125,7 @@ flash_image_generate() {
 
     if [ $(stat -L -c%s ${FIT_DESTINATION}) -gt ${FIT_MAX_SIZE} ]; then
         echo "FIT is too large to fit into its partition"
+        echo "    $(stat -L -c%s ${FIT_DESTINATION}) > ${FIT_MAX_SIZE}"
         return 1
     fi
 

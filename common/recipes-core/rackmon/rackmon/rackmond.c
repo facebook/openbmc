@@ -18,72 +18,80 @@
 #include <signal.h>
 #include <linux/serial.h>
 #include <sched.h>
+#include <assert.h>
 
 #define MAX_ACTIVE_ADDRS 24
+#define MAX_RACKS        3
+#define MAX_SHELVES      2
+#define MAX_PSUS         3
+
 #define REGISTER_PSU_STATUS 0x68
 
 #define READ_ERROR_RESPONSE -2
 
-struct _lock_holder {
-  pthread_mutex_t *lock;
-  int held;
-};
+#define TIME_UPDATE(_t)  do {                        \
+  struct timespec _ts;                               \
+  if (clock_gettime(CLOCK_REALTIME, &_ts) != 0) {    \
+    OBMC_ERROR(errno, "failed to get current time"); \
+    (_t) = 0;                                        \
+  } else {                                           \
+    (_t) = _ts.tv_sec;                               \
+  }                                                  \
+} while (0)
 
-#define lock_holder(holder_name, lock_expr) \
-  struct _lock_holder holder_name; \
-  holder_name.lock = lock_expr; \
-  holder_name.held = 0;
+static int scanning = 0;
 
-#define lock_take(holder_name) { \
-  pthread_mutex_lock(holder_name.lock); \
-  holder_name.held = 1; \
-}
-
-#define lock_release(holder_name) { \
-  if(holder_name.held) { \
-    pthread_mutex_unlock(holder_name.lock); \
-    holder_name.held = 0; \
-  } \
-}
-
-int scanning = 0;
-
-typedef struct _rs485_dev {
+typedef struct {
   // hold this for the duration of a command
   pthread_mutex_t lock;
+#define dev_lock(_d)   mutex_lock_helper(&((_d)->lock), "dev_lock")
+#define dev_unlock(_d) mutex_unlock_helper(&((_d)->lock), "dev_lock")
   int tty_fd;
-} rs485_dev;
+} rs485_dev_t;
 
-typedef struct _register_req {
-  uint16_t begin;
-  int num;
-} register_req;
+typedef struct {
+  uint16_t begin; /* starting register address */
+  int num;        /* number of registers */
+} reg_req_t;
 
-typedef struct register_range_data {
+typedef struct {
   monitor_interval* i;
   void* mem_begin;
   size_t mem_pos;
-} register_range_data;
+} reg_range_data_t;
 
-typedef struct monitoring_data {
+typedef struct {
   uint8_t addr;
   uint32_t crc_errors;
   uint32_t timeout_errors;
-  register_range_data range_data[1];
-} monitoring_data;
+  reg_range_data_t range_data[1];
+} psu_datastore_t;
 
-typedef struct _rackmond_data {
+typedef struct {
+  char* buffer;
+  size_t len;
+  size_t pos;
+  int fd;
+} write_buf_t;
+
+/*
+ * Global rackmond config structure, protected by its mutex lock.
+ */
+static struct {
   // global rackmond lock
   pthread_mutex_t lock;
+#define global_lock()   mutex_lock_helper(&rackmond_config.lock, "global_lock")
+#define global_unlock() mutex_unlock_helper(&rackmond_config.lock, "global_lock")
+
   // number of register read commands to send to each PSU
   int num_reqs;
   // register read commands (begin+length)
-  register_req *reqs;
+  reg_req_t *reqs;
   monitoring_config *config;
 
   uint8_t num_active_addrs;
   uint8_t active_addrs[MAX_ACTIVE_ADDRS];
-  monitoring_data* stored_data[MAX_ACTIVE_ADDRS];
+  psu_datastore_t* stored_data[MAX_ACTIVE_ADDRS];
   FILE *status_log;
 
   // timeout in nanosecs
@@ -94,19 +102,39 @@ typedef struct _rackmond_data {
 
   int paused;
 
-  rs485_dev rs485;
-} rackmond_data;
+  rs485_dev_t rs485;
+} rackmond_config = {
+  .lock = PTHREAD_MUTEX_INITIALIZER,
+  .modbus_timeout = 300000,
+};
 
-typedef struct _write_buffer {
-  char* buffer;
-  size_t len;
-  size_t pos;
-  int fd;
-} write_buffer;
+static int mutex_lock_helper(pthread_mutex_t *lock, const char *name)
+{
+  int error = pthread_mutex_lock(lock);
+  if (error != 0) {
+    OBMC_ERROR(error, "failed to acquire %s", name);
+    return -1;
+  }
 
-int buf_open(write_buffer* buf, int fd, size_t len) {
+  return 0;
+}
+
+static int mutex_unlock_helper(pthread_mutex_t *lock, const char *name)
+{
+  int error = pthread_mutex_unlock(lock);
+  if (error != 0) {
+    OBMC_ERROR(error, "failed to release %s", name);
+    return -1;
+  }
+
+  return 0;
+}
+
+static int buf_open(write_buf_t* buf, int fd, size_t len) {
   int error = 0;
-  char* bufmem = malloc(len);
+  char* bufmem;
+
+  bufmem = malloc(len);
   if(!bufmem) {
     BAIL("Couldn't allocate write buffer of len %zd for fd %d\n", len, fd);
   }
@@ -114,22 +142,26 @@ int buf_open(write_buffer* buf, int fd, size_t len) {
   buf->pos = 0;
   buf->len = len;
   buf->fd = fd;
+
 cleanup:
   return error;
 }
 
-ssize_t buf_flush(write_buffer* buf) {
+static ssize_t buf_flush(write_buf_t* buf) {
   int ret;
+
   ret = write(buf->fd, buf->buffer, buf->pos);
   if(ret > 0) {
     memmove(buf->buffer, buf->buffer + ret, buf->pos - ret);
     buf->pos -= ret;
   }
+
   return ret;
 }
 
-ssize_t buf_write(write_buffer* buf, void* from, size_t len) {
+static ssize_t buf_write(write_buf_t* buf, void* from, size_t len) {
   int ret;
+
   // write will not fill buffer, only memcpy
   if((buf->pos + len) < buf->len) {
     memcpy(buf->buffer + buf->pos, from, len);
@@ -139,16 +171,15 @@ ssize_t buf_write(write_buffer* buf, void* from, size_t len) {
 
   // write would exceed buffer, flush first
   ret = buf_flush(buf);
-  if (buf->pos != 0) {
-    if(ret < 0) {
-      return ret;
-    }
+  if (ret < 0) {
+    return ret;
+  } else if (buf->pos != 0) {
     // write() was interrupted but partially succeeded -- the buffer partially
     // flushed but no bytes of the requested buf_write went through
     return 0;
   }
 
-  if(len > buf->len) {
+  if (len > buf->len) {
     // write is larger than buffer, skip buffer
     return write(buf->fd, from, len);
   } else {
@@ -156,202 +187,265 @@ ssize_t buf_write(write_buffer* buf, void* from, size_t len) {
   }
 }
 
-int bprintf(write_buffer* buf, const char* format, ...) {
-  // eh.
+static int buf_printf(write_buf_t* buf, const char* format, ...) {
   char tmpbuf[512];
   int error = 0;
   int ret;
   va_list args;
+
   va_start(args, format);
   ret = vsnprintf(tmpbuf, sizeof(tmpbuf), format, args);
   ERR_EXIT(ret);
+
   if(ret > sizeof(tmpbuf)) {
-    BAIL("truncated bprintf (%d bytes truncated to %d)", ret, sizeof(tmpbuf));
+    BAIL("truncated buf_printf (%d bytes truncated to %d)",
+         ret, sizeof(tmpbuf));
   }
   ERR_EXIT(buf_write(buf, tmpbuf, ret));
+
 cleanup:
   va_end(args);
   return error;
 }
 
-int buf_close(write_buffer* buf) {
+static int buf_close(write_buf_t* buf) {
   int error = 0;
   int fret = buf_flush(buf);
   int cret = close(buf->fd);
+
   free(buf->buffer);
   buf->buffer = NULL;
   ERR_EXIT(fret);
   ERR_LOG_EXIT(cret, "failed to close buf->fd");
+
 cleanup:
   return error;
 }
 
-rackmond_data world;
+static char psu_address(int rack, int shelf, int psu) {
+  int rack_a = ((rack & 3) << 3);
+  int shelf_a = ((shelf & 1) << 2);
+  int psu_a = (psu & 3);
 
-char psu_address(int rack, int shelf, int psu) {
-    int rack_a = ((rack & 3) << 3);
-    int shelf_a = ((shelf & 1) << 2);
-    int psu_a = (psu & 3);
-    return 0xA0 | rack_a | shelf_a | psu_a;
+  return 0xA0 | rack_a | shelf_a | psu_a;
 }
 
-int modbus_command(rs485_dev* dev, int timeout, char* command, size_t len, char* destbuf, size_t dest_limit, size_t expect) {
-  int error = 0;
-  useconds_t delay = world.min_delay;
-  lock_holder(devlock, &dev->lock);
+static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
+                          size_t cmd_size, char* resp_buf, size_t resp_size,
+                          size_t exp_resp_len) {
   modbus_req req;
+  int error;
+  useconds_t delay = rackmond_config.min_delay;
+
   req.tty_fd = dev->tty_fd;
-  req.modbus_cmd = command;
-  req.cmd_len = len;
-  req.dest_buf = destbuf;
-  req.dest_limit = dest_limit;
+  req.modbus_cmd = cmd_buf;
+  req.cmd_len = cmd_size;
+  req.dest_buf = resp_buf;
+  req.dest_limit = resp_size;
   req.timeout = timeout;
-  req.expected_len = expect != 0 ? expect : dest_limit;
+  req.expected_len = (exp_resp_len != 0 ? exp_resp_len : resp_size);
   req.scan = scanning;
-  lock_take(devlock);
-  int cmd_error = modbuscmd(&req);
+
+  if (dev_lock(dev) != 0) {
+    return -1;
+  }
+
+  error = modbuscmd(&req);
   if (delay != 0) {
     usleep(delay);
   }
-  ERR_EXIT(cmd_error);
-cleanup:
-  lock_release(devlock);
-  if (error >= 0) {
-    return req.dest_len;
-  }
 
-  return error;
+  dev_unlock(dev);
+
+  if (error < 0) {
+    return -1;
+  }
+  return req.dest_len;
 }
 
-int read_registers(rs485_dev *dev, int timeout, uint8_t addr, uint16_t begin, uint16_t num, uint16_t* out) {
-  int error = 0;
-  // address, function, begin, length in # of regs
-  char command[sizeof(addr) + 1 + sizeof(begin) + sizeof(num)];
-  // address, function, length (1 byte), data (2 bytes per register), crc
-  // (VLA)
-  char response[sizeof(addr) + 1 + 1 + (2 * num) + 2];
-  command[0] = addr;
-  command[1] = MODBUS_READ_HOLDING_REGISTERS;
-  command[2] = begin >> 8;
-  command[3] = begin & 0xFF;
-  command[4] = num >> 8;
-  command[5] = num & 0xFF;
+/*
+ * Read Holding Register (Function 3) Request Header Size:
+ *   Slave_Addr (1-byte) + Function (1-byte) + Starting_Reg_Addr (2-bytes) +
+ *   Reg_Count (2-bytes).
+ */
+#define MODBUS_FUN3_REQ_HDR_SIZE        6
 
-  int dest_len =
-    modbus_command(
-        dev, timeout,
-        command, sizeof(addr) + 1 + sizeof(begin) + sizeof(num),
-        response, sizeof(addr) + 1 + 1 + (2 * num) + 2, 0);
+/*
+ * Read Holding Register (Function 3) Response packet size:
+ *   Slave_Addr (1-byte) + Function (1-byte) + Data_Byte_Count (1-byte) +
+ *   Reg_Value_Array (2 * Reg_Count) + CRC (2-byte)
+ */
+#define MODBUS_FUN3_RESP_PKT_SIZE(nreg) (2 * (nreg) + 5)
+
+static int read_holding_reg(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
+                            uint16_t reg_start_addr, uint16_t reg_count,
+                            uint16_t *out) {
+  int error = 0;
+  int dest_len;
+  char command[MODBUS_FUN3_REQ_HDR_SIZE];
+  size_t resp_len = MODBUS_FUN3_RESP_PKT_SIZE(reg_count);
+  char *resp_buf;
+
+  resp_buf = malloc(resp_len);
+  if (resp_buf == NULL) {
+    OBMC_WARN("failed to allocate response buffer");
+    return -1;
+  }
+
+  command[0] = slave_addr;
+  command[1] = MODBUS_READ_HOLDING_REGISTERS;
+  command[2] = reg_start_addr >> 8;
+  command[3] = reg_start_addr & 0xFF;
+  command[4] = reg_count >> 8;
+  command[5] = reg_count & 0xFF;
+
+  dest_len = modbus_command(dev, timeout, command, MODBUS_FUN3_REQ_HDR_SIZE,
+                            resp_buf, resp_len, 0);
   ERR_EXIT(dest_len);
 
   if (dest_len >= 5) {
-    memcpy(out, response + 3, num * 2);
+    memcpy(out, resp_buf + 3, reg_count * 2);
   } else {
-    log("Unexpected short but CRC correct response!\n");
+    OBMC_WARN("Unexpected short but CRC correct response!\n");
     error = -1;
     goto cleanup;
   }
-  if (response[0] != addr) {
-    log("Got response for addr %02x when expected %02x\n", response[0], addr);
+  if (resp_buf[0] != slave_addr) {
+    OBMC_WARN("Got response from addr %02x when expected %02x\n",
+              resp_buf[0], slave_addr);
     error = -1;
     goto cleanup;
   }
-  if (response[1] != MODBUS_READ_HOLDING_REGISTERS) {
+  if (resp_buf[1] != MODBUS_READ_HOLDING_REGISTERS) {
     // got an error response instead of a read regsiters response
-    // likely because the requested registers aren't available on this model (e.g. stingray)
+    // likely because the requested registers aren't available on
+    // this model (e.g. stingray)
     error = READ_ERROR_RESPONSE;
     goto cleanup;
   }
-  if (response[2] != (num * 2)) {
-    log("Got %d register data bytes when expecting %d\n", response[2], (num * 2));
+  if (resp_buf[2] != (reg_count * 2)) {
+    OBMC_WARN("Got %d register data bytes when expecting %d\n",
+              resp_buf[2], (reg_count * 2));
     error = -1;
     goto cleanup;
   }
+
 cleanup:
+  free(resp_buf);
   return error;
 }
 
-int sub_uint8s(const void* a, const void* b) {
+static int sub_uint8s(const void* a, const void* b) {
   return (*(uint8_t*)a) - (*(uint8_t*)b);
 }
 
-int check_active_psus() {
+/*
+ * Scan connected PSUs. Executed in monitoring thread.
+ */
+static int check_active_psus(void) {
   int error = 0;
-  lock_holder(worldlock, &world.lock);
-  lock_take(worldlock);
-  if (world.paused == 1) {
-    lock_release(worldlock);
-    usleep(1000);
-    goto cleanup;
-  }
-  if (world.config == NULL) {
-    lock_release(worldlock);
-    usleep(5000);
-    goto cleanup;
-  }
-  world.num_active_addrs = 0;
+  int rack, shelf, psu, offset;
 
+  if (global_lock() != 0) {
+    return -1;
+  }
+
+  if (rackmond_config.paused == 1) {
+    global_unlock();
+    usleep(1000);
+    return 0;
+  }
+  if (rackmond_config.config == NULL) {
+    global_unlock();
+    usleep(5000);
+    return 0;
+  }
+
+  offset = 0;
   scanning = 1;
-  for(int rack = 0; rack < 3; rack++) {
-    for(int shelf = 0; shelf < 2; shelf++) {
-      for(int psu = 0; psu < 3; psu++) {
+  for (rack = 0; rack < MAX_RACKS; rack++) {
+    for (shelf = 0; shelf < MAX_SHELVES; shelf++) {
+      for (psu = 0; psu < MAX_PSUS; psu++) {
+        int err;
+        uint16_t output = 0;
         char addr = psu_address(rack, shelf, psu);
-        uint16_t status = 0;
-        int err = read_registers(&world.rs485, world.modbus_timeout, addr, REGISTER_PSU_STATUS, 1, &status);
-        if (err == 0) {
-          world.active_addrs[world.num_active_addrs] = addr;
-          world.num_active_addrs++;
-        } else {
-          dbg("%02x - %d; ", addr, err);
+
+        err = read_holding_reg(&rackmond_config.rs485,
+                               rackmond_config.modbus_timeout, addr,
+                               REGISTER_PSU_STATUS, 1, &output);
+        if (err != 0) {
+          continue;
         }
+        if (offset >= ARRAY_SIZE(rackmond_config.active_addrs)) {
+          OBMC_WARN("Too many PSUs detected: addr %#02x ignored.", addr);
+          continue;
+        }
+
+        dbg("detected PSU at addr %#02x", addr);
+        rackmond_config.active_addrs[offset++] = addr;
       }
     }
   }
+  rackmond_config.num_active_addrs = offset;
+
   //its the only stdlib sort
-  qsort(world.active_addrs, world.num_active_addrs,
-      sizeof(uint8_t), sub_uint8s);
-cleanup:
+  qsort(rackmond_config.active_addrs, rackmond_config.num_active_addrs,
+        sizeof(uint8_t), sub_uint8s);
+
   scanning = 0;
-  lock_release(worldlock);
+  global_unlock();
+
   return error;
 }
 
-monitoring_data* alloc_monitoring_data(uint8_t addr) {
-  size_t size = sizeof(monitoring_data) +
-    sizeof(register_range_data) * world.config->num_intervals;
-  for(int i = 0; i < world.config->num_intervals; i++) {
-    monitor_interval *iv = &world.config->intervals[i];
-    int pitch = sizeof(uint32_t) + (sizeof(uint16_t) * iv->len);
-    int data_size = pitch * iv->keep;
+static psu_datastore_t* alloc_monitoring_data(uint8_t addr) {
+  void *mem;
+  size_t size;
+  psu_datastore_t *d;
+  monitor_interval *iv;
+  int i, pitch, data_size;
+
+  size = sizeof(psu_datastore_t) +
+         sizeof(reg_range_data_t) * rackmond_config.config->num_intervals;
+
+  for (i = 0; i < rackmond_config.config->num_intervals; i++) {
+    iv = &rackmond_config.config->intervals[i];
+    pitch = sizeof(uint32_t) + (sizeof(uint16_t) * iv->len);
+    data_size = pitch * iv->keep;
     size += data_size;
   }
-  monitoring_data* d = calloc(1, size);
+
+  d = calloc(1, size);
   if (d == NULL) {
-    log("Failed to allocate memory for sensor data.\n");
+    OBMC_WARN("Failed to allocate memory for sensor data.\n");
     return NULL;
   }
+
   d->addr = addr;
   d->crc_errors = 0;
   d->timeout_errors = 0;
-  void* mem = d;
-  mem = mem + (sizeof(monitoring_data) +
-    sizeof(register_range_data) * world.config->num_intervals);
-  for(int i = 0; i < world.config->num_intervals; i++) {
-    monitor_interval *iv = &world.config->intervals[i];
-    int pitch = sizeof(uint32_t) + (sizeof(uint16_t) * iv->len);
-    int data_size = pitch * iv->keep;
+  mem = d;
+  mem += (sizeof(psu_datastore_t) +
+          sizeof(reg_range_data_t) * rackmond_config.config->num_intervals);
+
+  for (i = 0; i < rackmond_config.config->num_intervals; i++) {
+    iv = &rackmond_config.config->intervals[i];
+    pitch = sizeof(uint32_t) + (sizeof(uint16_t) * iv->len);
+    data_size = pitch * iv->keep;
     d->range_data[i].i = iv;
     d->range_data[i].mem_begin = mem;
     d->range_data[i].mem_pos = 0;
-    mem = mem + data_size;
+    mem += data_size;
   }
+
   return d;
 }
 
-int sub_storeptrs(const void* va, const void *vb) {
+static int sub_storeptrs(const void* va, const void *vb) {
   //more *s than i like :/
-  monitoring_data* a = *(monitoring_data**)va;
-  monitoring_data* b = *(monitoring_data**)vb;
+  psu_datastore_t* a = *(psu_datastore_t**)va;
+  psu_datastore_t* b = *(psu_datastore_t**)vb;
+
   //nulls to the end
   if (b == NULL && a == NULL) {
     return 0;
@@ -362,48 +456,69 @@ int sub_storeptrs(const void* va, const void *vb) {
   if (a == NULL) {
     return 1;
   }
-  return a->addr - b->addr;
+  return (int)(a->addr - b->addr);
 }
 
-int alloc_monitoring_datas() {
+static int lookup_data_slot(uint8_t addr)
+{
+  int i;
+
+  for (i = 0; i < ARRAY_SIZE(rackmond_config.stored_data); i++) {
+    if (rackmond_config.stored_data[i] == NULL ||
+        rackmond_config.stored_data[i]->addr == addr) {
+      return i; /* Found the slot */
+    }
+  }
+
+  return -1; /* No slot available. */
+}
+
+static int alloc_monitoring_datas(void) {
+  int i;
   int error = 0;
-  lock_holder(worldlock, &world.lock);
-  lock_take(worldlock);
-  if (world.config == NULL) {
-    goto cleanup;
+
+  if (global_lock() != 0) {
+    return -1;
   }
-  qsort(world.stored_data, MAX_ACTIVE_ADDRS,
-      sizeof(monitoring_data*), sub_storeptrs);
-  int data_pos = 0;
-  for(int i = 0; i < world.num_active_addrs; i++) {
-    uint8_t addr = world.active_addrs[i];
-    while(world.stored_data[data_pos] != NULL &&
-          world.stored_data[data_pos]->addr != addr) {
-      data_pos++;
+
+  if (rackmond_config.config == NULL) {
+    global_unlock();
+    return 0;
+  }
+
+  qsort(rackmond_config.stored_data, MAX_ACTIVE_ADDRS,
+        sizeof(psu_datastore_t*), sub_storeptrs);
+
+  for (i = 0; i < rackmond_config.num_active_addrs; i++) {
+    int slot;
+    uint8_t addr = rackmond_config.active_addrs[i];
+
+    slot = lookup_data_slot(addr);
+    if (slot < 0) {
+      OBMC_WARN("no data space left for psu addr %#02x", addr);
+      error = -1;
+      break;
     }
-    if (world.stored_data[data_pos] == NULL) {
-      log("Detected PSU at address 0x%02x\n", addr);
+
+    if (rackmond_config.stored_data[slot] == NULL) {
       // this will only be logged once per address
-      syslog(LOG_INFO, "Detected PSU at address 0x%02x", addr);
-      world.stored_data[data_pos] = alloc_monitoring_data(addr);
-      if (world.stored_data[data_pos] == NULL) {
-        BAIL("allocation failed\n");
+      OBMC_INFO("Detected PSU at address 0x%02x", addr);
+
+      rackmond_config.stored_data[slot] = alloc_monitoring_data(addr);
+      if (rackmond_config.stored_data[slot] == NULL) {
+        OBMC_WARN("failed to allocate datastore for psu addr %#02x", addr);
+        error = -1;
+        break;
       }
-      //reset search pos after alloc (post-sorted addrs may already be alloc'd, need to check again)
-      data_pos = 0;
-      continue;
     }
-    if (world.stored_data[data_pos]->addr == addr) {
-      continue;
-    }
-    BAIL("shouldn't get here!\n");
-  }
-cleanup:
-  lock_release(worldlock);
+  } /* for */
+
+  global_unlock();
   return error;
 }
 
-void record_data(register_range_data* rd, uint32_t time, uint16_t* regs) {
+static void record_data(reg_range_data_t* rd, uint32_t time,
+                        uint16_t* regs) {
   int n_regs = (rd->i->len);
   int pitch = sizeof(time) + (sizeof(uint16_t) * n_regs);
   int mem_size = pitch * rd->i->keep;
@@ -415,49 +530,64 @@ void record_data(register_range_data* rd, uint32_t time, uint16_t* regs) {
   rd->mem_pos = rd->mem_pos % mem_size;
 }
 
-int fetch_monitored_data() {
+static int fetch_monitored_data(void) {
+  int pos;
   int error = 0;
-  int data_pos = 0;
-  lock_holder(worldlock, &world.lock);
-  lock_take(worldlock);
-  if (world.paused == 1) {
-    lock_release(worldlock);
+
+  if (global_lock() != 0) {
+    return -1;
+  }
+
+  if (rackmond_config.paused == 1) {
+    global_unlock();
     usleep(1000);
     goto cleanup;
   }
-  if (world.config == NULL) {
+  if (rackmond_config.config == NULL) {
+    global_unlock();
     goto cleanup;
   }
-  lock_release(worldlock);
+  global_unlock();
 
   usleep(1000); // wait a sec btween PSUs to not overload RT scheduling
                 // threshold
-  while(world.stored_data[data_pos] != NULL && data_pos < MAX_ACTIVE_ADDRS) {
-    uint8_t addr = world.stored_data[data_pos]->addr;
-    //log("readpsu %02x\n", addr);
-    for(int r = 0; r < world.config->num_intervals; r++) {
-      register_range_data* rd = &world.stored_data[data_pos]->range_data[r];
+  for (pos = 0; pos < ARRAY_SIZE(rackmond_config.stored_data); pos++) {
+    int r;
+    uint8_t addr;
+    psu_datastore_t *mdata = rackmond_config.stored_data[pos];
+
+    if (mdata == NULL) {
+      continue;
+    }
+
+    addr = mdata->addr;
+    for (r = 0; r < rackmond_config.config->num_intervals; r++) {
+      int err;
+      uint32_t timestamp;
+      reg_range_data_t* rd = &mdata->range_data[r];
       monitor_interval* i = rd->i;
       uint16_t regs[i->len];
-      int err = read_registers(&world.rs485,
-          world.modbus_timeout, addr, i->begin, i->len, regs);
+
+      err = read_holding_reg(&rackmond_config.rs485,
+                             rackmond_config.modbus_timeout, addr,
+                             i->begin, i->len, regs);
+
       sched_yield();
-      if (err) {
+      if (err != 0) {
         if (err != READ_ERROR_RESPONSE) {
           log("Error %d reading %02x registers at %02x from %02x\n",
               err, i->len, i->begin, addr);
           if(err == MODBUS_BAD_CRC) {
-            world.stored_data[data_pos]->crc_errors++;
+            mdata->crc_errors++;
           }
           if(err == MODBUS_RESPONSE_TIMEOUT) {
-            world.stored_data[data_pos]->timeout_errors++;
+            mdata->timeout_errors++;
           }
         }
         continue;
       }
-      struct timespec ts;
-      clock_gettime(CLOCK_REALTIME, &ts);
-      uint32_t timestamp = ts.tv_sec;
+
+      TIME_UPDATE(timestamp);
       if (rd->i->flags & MONITOR_FLAG_ONLY_CHANGES) {
         int pitch = sizeof(timestamp) + (sizeof(uint16_t) * i->len);
         int lastpos = rd->mem_pos - pitch;
@@ -470,39 +600,47 @@ int fetch_monitored_data() {
           continue;
         }
 
-        if (world.status_log) {
+        if (rackmond_config.status_log) {
           time_t rawt;
           struct tm* ti;
+          char timestr[80];
+
           time(&rawt);
           ti = localtime(&rawt);
-          char timestr[80];
           strftime(timestr, sizeof(timestr), "%b %e %T", ti);
-          fprintf(world.status_log,
-              "%s: Change to status register %02x on address %02x. New value: %02x\n",
-              timestr, i->begin, addr, regs[0]);
-          fflush(world.status_log);
+          fprintf(rackmond_config.status_log,
+                  "%s: Change to status register %02x on address %02x. "
+                  "New value: %02x\n",
+                  timestr, i->begin, addr, regs[0]);
+          fflush(rackmond_config.status_log);
         }
-
       }
-      lock_take(worldlock);
+
+      global_lock();
       record_data(rd, timestamp, regs);
-      lock_release(worldlock);
+      global_unlock();
     }
-    data_pos++;
-  }
+  } /* for */
+
 cleanup:
-  lock_release(worldlock);
   return error;
 }
 
+static time_t search_at = 0;
+
 // check for new psus every N seconds
-static int search_at = 0;
 #define SEARCH_PSUS_EVERY 120
 void* monitoring_loop(void* arg) {
-  (void) arg;
-  world.status_log = fopen("/var/log/psu-status.log", "a+");
+
+  rackmond_config.status_log = fopen(RACKMON_STAT_STORE, "a+");
+  if (rackmond_config.status_log == NULL) {
+    OBMC_ERROR(errno, "failed to open %s", RACKMON_STAT_STORE);
+    /* XXX shall we exit the thread??? */
+  }
+
   while(1) {
     struct timespec ts;
+
     clock_gettime(CLOCK_REALTIME, &ts);
     if (search_at < ts.tv_sec) {
       check_active_psus();
@@ -510,318 +648,461 @@ void* monitoring_loop(void* arg) {
       clock_gettime(CLOCK_REALTIME, &ts);
       search_at = ts.tv_sec + SEARCH_PSUS_EVERY;
     }
+
+    /*
+     * XXX do we really need this aggressive loop (without delay)???
+     */
     fetch_monitored_data();
   }
   return NULL;
 }
 
-int open_rs485_dev(const char* tty_filename, rs485_dev *dev) {
-  int error = 0;
-  int tty_fd;
-  dbg("[*] Opening TTY\n");
-  tty_fd = open(tty_filename, O_RDWR | O_NOCTTY);
-  ERR_EXIT(tty_fd);
+static void close_rs485_dev(rs485_dev_t *dev)
+{
+  if (dev->tty_fd >= 0) {
+    pthread_mutex_destroy(&dev->lock);
+    close(dev->tty_fd);
+  }
+}
 
+static int open_rs485_dev(const char* tty_filename, rs485_dev_t *dev) {
+  int error = 0;
   struct serial_rs485 rs485conf = {};
+
+  dbg("Opening %s\n", tty_filename);
+  dev->tty_fd = open(tty_filename, O_RDWR | O_NOCTTY);
+  ERR_EXIT(dev->tty_fd);
+
+  dbg("Putting %s in RS485 mode\n", tty_filename);
   rs485conf.flags |= SER_RS485_ENABLED;
-  dbg("[*] Putting TTY in RS485 mode\n");
-  error = ioctl(tty_fd, TIOCSRS485, &rs485conf);
+  error = ioctl(dev->tty_fd, TIOCSRS485, &rs485conf);
   ERR_LOG_EXIT(error, "failed to turn on RS485 mode");
 
-  dev->tty_fd = tty_fd;
-  pthread_mutex_init(&dev->lock, NULL);
+  error = pthread_mutex_init(&dev->lock, NULL);
+  if (error != 0) {
+    OBMC_ERROR(error, "failed to initialize rs485 dev mutex");
+    error = -1;
+  }
+
 cleanup:
   return error;
 }
 
-int do_command(int sock, rackmond_command* cmd) {
-  int error = 0;
-  write_buffer wb;
-  //128k write buffer
-  buf_open(&wb, sock, 128*1000);
-  lock_holder(worldlock, &world.lock);
-  switch(cmd->type) {
-    case COMMAND_TYPE_RAW_MODBUS:
-      {
-        uint16_t expected = cmd->raw_modbus.expected_response_length;
-        int timeout = world.modbus_timeout;
-        if (cmd->raw_modbus.custom_timeout) {
-          //ms to us
-          timeout = cmd->raw_modbus.custom_timeout * 1000;
-        }
-        if (expected == 0) {
-          expected = 1024;
-        }
-        char response[expected];
-        int response_len = modbus_command(
-            &world.rs485, timeout,
-            cmd->raw_modbus.data, cmd->raw_modbus.length,
-            response, expected, expected);
-        uint16_t response_len_wire = response_len;
-        if(response_len < 0) {
-          uint16_t error = -response_len;
-          response_len_wire = 0;
-          buf_write(&wb, &response_len_wire, sizeof(uint16_t));
-          buf_write(&wb, &error, sizeof(uint16_t));
-          break;
-        }
-        buf_write(&wb, &response_len_wire, sizeof(uint16_t));
-        buf_write(&wb, response, response_len);
-        break;
-      }
-    case COMMAND_TYPE_SET_CONFIG:
-      {
-        lock_take(worldlock);
-        if (world.config != NULL) {
-          BAIL("rackmond already configured\n");
-        }
-        size_t config_size = sizeof(monitoring_config) +
-          (sizeof(monitor_interval) * cmd->set_config.config.num_intervals);
-        world.config = calloc(1, config_size);
-        memcpy(world.config, &cmd->set_config.config, config_size);
-        syslog(LOG_INFO, "got configuration");
-        struct timespec ts;
-        clock_gettime(CLOCK_REALTIME, &ts);
-        uint32_t now = ts.tv_sec;
-        search_at = now;
-        lock_release(worldlock);
-        break;
-      }
-    case COMMAND_TYPE_DUMP_STATUS:
-      {
-        lock_take(worldlock);
-        if (world.config == NULL) {
-          bprintf(&wb, "Unconfigured\n");
-        } else {
-          struct timespec ts;
-          clock_gettime(CLOCK_REALTIME, &ts);
-          uint32_t now = ts.tv_sec;
-          int data_pos = 0;
-          bprintf(&wb, "Monitored PSUs:\n");
-          while(world.stored_data[data_pos] != NULL && data_pos < MAX_ACTIVE_ADDRS) {
-            bprintf(&wb, "PSU addr %02x - crc errors: %d, timeouts: %d\n",
-                world.stored_data[data_pos]->addr,
-                world.stored_data[data_pos]->crc_errors,
-                world.stored_data[data_pos]->timeout_errors);
-            data_pos++;
-          }
-          bprintf(&wb, "Active on last scan: ");
-          for(int i = 0; i < world.num_active_addrs; i++) {
-            bprintf(&wb, "%02x ", world.active_addrs[i]);
-          }
-          bprintf(&wb, "\n");
-          bprintf(&wb, "Next scan in %d seconds.\n", search_at - now);
-        }
-        lock_release(worldlock);
-        break;
-      }
-    case COMMAND_TYPE_FORCE_SCAN:
-      {
-        lock_take(worldlock);
-        if (world.config == NULL) {
-          bprintf(&wb, "Unconfigured\n");
-        } else {
-          struct timespec ts;
-          clock_gettime(CLOCK_REALTIME, &ts);
-          uint32_t now = ts.tv_sec;
-          search_at = now;
-          bprintf(&wb, "Triggering PSU scan...\n");
-        }
-        lock_release(worldlock);
-        break;
-      }
-    case COMMAND_TYPE_DUMP_DATA_JSON:
-      {
-        lock_take(worldlock);
-        if (world.config == NULL) {
-          buf_write(&wb, "[]", 2);
-        } else {
-          struct timespec ts;
-          clock_gettime(CLOCK_REALTIME, &ts);
-          uint32_t now = ts.tv_sec;
-          buf_write(&wb, "[", 1);
-          int data_pos = 0;
-          while(world.stored_data[data_pos] != NULL && data_pos < MAX_ACTIVE_ADDRS) {
-            bprintf(&wb, "{\"addr\":%d,\"crc_fails\":%d,\"timeouts\":%d,"
-                         "\"now\":%d,\"ranges\":[",
-                    world.stored_data[data_pos]->addr,
-                    world.stored_data[data_pos]->crc_errors,
-                    world.stored_data[data_pos]->timeout_errors, now);
-            for(int i = 0; i < world.config->num_intervals; i++) {
-              uint32_t time;
-              register_range_data *rd = &world.stored_data[data_pos]->range_data[i];
-              char* mem_pos = rd->mem_begin;
-              bprintf(&wb,"{\"begin\":%d,\"readings\":[", rd->i->begin);
-              // want to cut the list off early just before
-              // the first entry with time == 0
-              memcpy(&time, mem_pos, sizeof(time));
-              for(int j = 0; j < rd->i->keep && time != 0; j++) {
-                mem_pos += sizeof(time);
-                bprintf(&wb, "{\"time\":%d,\"data\":\"", time);
-                for(int c = 0; c < rd->i->len * 2; c++) {
-                  bprintf(&wb, "%02x", *mem_pos);
-                  mem_pos++;
-                }
-                buf_write(&wb, "\"}", 2);
-                memcpy(&time, mem_pos, sizeof(time));
-                if (time == 0) {
-                  break;
-                }
-                if ((j+1) < rd->i->keep) {
-                  buf_write(&wb, ",", 1);
-                }
-              }
-              buf_write(&wb, "]}", 2);
-              if ((i+1) < world.config->num_intervals) {
-                buf_write(&wb, ",", 1);
-              }
-            }
-            data_pos++;
-            if (data_pos < MAX_ACTIVE_ADDRS && world.stored_data[data_pos] != NULL) {
-              buf_write(&wb, "]},", 3);
-            } else {
-              buf_write(&wb, "]}", 2);
-            }
-          }
-          buf_write(&wb, "]", 1);
-        }
-        lock_release(worldlock);
-        break;
-      }
-    case COMMAND_TYPE_PAUSE_MONITORING:
-      {
-        lock_take(worldlock);
-        uint8_t was_paused = world.paused;
-        world.paused = 1;
-        buf_write(&wb, &was_paused, sizeof(was_paused));
-        lock_release(worldlock);
-        break;
-      }
-    case COMMAND_TYPE_START_MONITORING:
-      {
-        lock_take(worldlock);
-        uint8_t was_started = !world.paused;
-        world.paused = 0;
-        buf_write(&wb, &was_started, sizeof(was_started));
-        lock_release(worldlock);
-        break;
-      }
-    default:
-      BAIL("Unknown command type %d\n", cmd->type);
+static int run_cmd_raw_modbus(rackmond_command* cmd, write_buf_t *wb)
+{
+  char *resp_buf;
+  int timeout, resp_len;
+  uint16_t exp_resp_len, resp_len_wire;
+
+  if (cmd->raw_modbus.custom_timeout) {
+    timeout = cmd->raw_modbus.custom_timeout * 1000; // ms to us
+  } else {
+    timeout = rackmond_config.modbus_timeout;
   }
+
+  exp_resp_len = cmd->raw_modbus.expected_response_length;
+  if (exp_resp_len == 0) {
+    exp_resp_len = 1024;
+  }
+
+  resp_buf = malloc(exp_resp_len);
+  if (resp_buf == NULL) {
+    OBMC_WARN("failed to allocate resp_buf for raw_modbus command");
+    return -1;
+  }
+
+  resp_len = modbus_command(&rackmond_config.rs485, timeout,
+                            cmd->raw_modbus.data, cmd->raw_modbus.length,
+                            resp_buf, exp_resp_len, exp_resp_len);
+  if(resp_len < 0) {
+    uint16_t error = -resp_len;
+
+    resp_len_wire = 0;
+    buf_write(wb, &resp_len_wire, sizeof(uint16_t));
+    buf_write(wb, &error, sizeof(uint16_t));
+  } else {
+    resp_len_wire = resp_len;
+    buf_write(wb, &resp_len_wire, sizeof(uint16_t));
+    buf_write(wb, resp_buf, resp_len);
+  }
+
+  free(resp_buf);
+  return 0;
+}
+
+static int run_cmd_set_config(rackmond_command* cmd, write_buf_t *wb)
+{
+  int error;
+  size_t config_size;
+
+  if (global_lock() != 0) {
+    return -1;
+  }
+
+  if (rackmond_config.config != NULL) {
+    BAIL("rackmond already configured\n");
+  }
+
+  config_size = sizeof(monitoring_config) +
+          (sizeof(monitor_interval) * cmd->set_config.config.num_intervals);
+  rackmond_config.config = calloc(1, config_size);
+  if (rackmond_config.config == NULL) {
+    BAIL("failed to allocate config structure");
+  }
+
+  memcpy(rackmond_config.config, &cmd->set_config.config, config_size);
+  OBMC_INFO("got configuration");
+  TIME_UPDATE(search_at);
+
 cleanup:
-  lock_release(worldlock);
+  global_unlock();
+  return error;
+}
+
+static int run_cmd_dump_status(rackmond_command* cmd, write_buf_t *wb)
+{
+  if (global_lock() != 0) {
+    return -1;
+  }
+
+  if (rackmond_config.config == NULL) {
+    buf_printf(wb, "Unconfigured\n");
+  } else {
+    int i;
+    time_t now;
+
+    TIME_UPDATE(now);
+    buf_printf(wb, "Monitored PSUs:\n");
+    for (i = 0; i < ARRAY_SIZE(rackmond_config.stored_data); i++) {
+      if (rackmond_config.stored_data[i] == NULL) {
+        continue;
+      }
+
+      buf_printf(wb, "PSU addr %02x - crc errors: %d, timeouts: %d\n",
+                 rackmond_config.stored_data[i]->addr,
+                 rackmond_config.stored_data[i]->crc_errors,
+                 rackmond_config.stored_data[i]->timeout_errors);
+    }
+
+    buf_printf(wb, "Active on last scan: ");
+    for (i = 0; i < rackmond_config.num_active_addrs; i++) {
+      buf_printf(wb, "%02x ", rackmond_config.active_addrs[i]);
+    }
+    buf_printf(wb, "\n");
+    buf_printf(wb, "Next scan in %d seconds.\n", search_at - now);
+  }
+
+ global_unlock();
+ return 0;
+}
+
+static int run_cmd_force_scan(rackmond_command* cmd, write_buf_t *wb)
+{
+  if (global_lock() != 0) {
+    return -1;
+  }
+
+  if (rackmond_config.config == NULL) {
+    buf_printf(wb, "Unconfigured\n");
+  } else {
+    TIME_UPDATE(search_at);
+    buf_printf(wb, "Triggering PSU scan...\n");
+  }
+
+  global_unlock();
+  return 0;
+}
+
+static int run_cmd_dump_json(rackmond_command* cmd, write_buf_t *wb)
+{
+  if (global_lock() != 0) {
+    return -1;
+  }
+
+  if (rackmond_config.config == NULL) {
+    buf_write(wb, "[]", 2);
+  } else {
+    int i, j, c;
+    uint32_t now;
+    int data_pos = 0;
+
+    TIME_UPDATE(now);
+    buf_write(wb, "[", 1);
+    while (rackmond_config.stored_data[data_pos] != NULL &&
+           data_pos < MAX_ACTIVE_ADDRS) {
+      psu_datastore_t *pdata = rackmond_config.stored_data[data_pos];
+
+      buf_printf(wb, "{\"addr\":%d,\"crc_fails\":%d,\"timeouts\":%d,"
+                 "\"now\":%d,\"ranges\":[",
+                 pdata->addr, pdata->crc_errors, pdata->timeout_errors, now);
+
+      for (i = 0; i < rackmond_config.config->num_intervals; i++) {
+        uint32_t time;
+        reg_range_data_t *rd = &pdata->range_data[i];
+        char* mem_pos = rd->mem_begin;
+
+        buf_printf(wb,"{\"begin\":%d,\"readings\":[", rd->i->begin);
+        // want to cut the list off early just before
+        // the first entry with time == 0
+        memcpy(&time, mem_pos, sizeof(time));
+        for(j = 0; j < rd->i->keep && time != 0; j++) {
+          mem_pos += sizeof(time);
+          buf_printf(wb, "{\"time\":%d,\"data\":\"", time);
+          for(c = 0; c < rd->i->len * 2; c++) {
+            buf_printf(wb, "%02x", *mem_pos);
+            mem_pos++;
+          }
+          buf_write(wb, "\"}", 2);
+          memcpy(&time, mem_pos, sizeof(time));
+          if (time == 0) {
+            break;
+          }
+          if ((j+1) < rd->i->keep) {
+            buf_write(wb, ",", 1);
+          }
+        }
+        buf_write(wb, "]}", 2);
+        if ((i+1) < rackmond_config.config->num_intervals) {
+          buf_write(wb, ",", 1);
+        }
+      }
+
+      data_pos++;
+      if (data_pos < MAX_ACTIVE_ADDRS &&
+          rackmond_config.stored_data[data_pos] != NULL) {
+        buf_write(wb, "]},", 3);
+      } else {
+        buf_write(wb, "]}", 2);
+      }
+    }
+    buf_write(wb, "]", 1);
+  }
+
+  global_unlock();
+  return 0;
+}
+
+static int run_cmd_pause_monitoring(rackmond_command* cmd, write_buf_t *wb)
+{
+  uint8_t was_paused;
+
+  if (global_lock() != 0) {
+    return -1;
+  }
+
+  was_paused = rackmond_config.paused;
+  rackmond_config.paused = 1;
+  buf_write(wb, &was_paused, sizeof(was_paused));
+
+  global_unlock();
+  return 0;
+}
+
+static int run_cmd_start_monitoring(rackmond_command* cmd, write_buf_t *wb)
+{
+  uint8_t was_started;
+
+  if (global_lock() != 0) {
+    return -1;
+  }
+
+  was_started = !rackmond_config.paused;
+  rackmond_config.paused = 0;
+  buf_write(wb, &was_started, sizeof(was_started));
+
+  global_unlock();
+  return 0;
+}
+
+static struct {
+  const char *name;
+  int (*handler)(rackmond_command* cmd, write_buf_t *wb);
+} rackmond_cmds[COMMAND_TYPE_MAX] = {
+  [COMMAND_TYPE_RAW_MODBUS] = {
+    .name = "raw_modbus",
+    .handler = run_cmd_raw_modbus,
+  },
+  [COMMAND_TYPE_SET_CONFIG] = {
+    .name = "set_config",
+    .handler = run_cmd_set_config,
+  },
+  [COMMAND_TYPE_DUMP_DATA_JSON] = {
+    .name = "dump_data_json",
+    .handler = run_cmd_dump_json,
+  },
+  [COMMAND_TYPE_PAUSE_MONITORING] = {
+    .name = "pause_monitoring",
+    .handler = run_cmd_pause_monitoring,
+  },
+  [COMMAND_TYPE_START_MONITORING] = {
+    .name = "start_monitoring",
+    .handler = run_cmd_start_monitoring,
+  },
+  [COMMAND_TYPE_DUMP_STATUS] = {
+    .name = "dump_status",
+    .handler = run_cmd_dump_status,
+  },
+  [COMMAND_TYPE_FORCE_SCAN] = {
+    .name = "force_scan",
+    .handler = run_cmd_force_scan,
+  },
+};
+
+static int do_command(int sock, rackmond_command* cmd) {
+  int error = 0;
+  write_buf_t wb;
+  uint16_t type = cmd->type;
+
+  //128k write buffer
+  if (buf_open(&wb, sock, 128*1000) != 0) {
+    return -1;
+  }
+
+  if (type <= COMMAND_TYPE_NONE || type >= COMMAND_TYPE_MAX ||
+      rackmond_cmds[type].name == NULL) {
+    BAIL("Unknown command type %u\n", type);
+  }
+  dbg("processing command %s\n", rackmond_cmds[type].name);
+
+  assert(rackmond_cmds[type].handler != NULL);
+  error = rackmond_cmds[type].handler(cmd, &wb);
+  if (error != 0) {
+    OBMC_WARN("error while processing command %s", rackmond_cmds[type].name);
+  } else {
+    dbg("command %s was handled properly", rackmond_cmds[type].name);
+  }
+
+cleanup:
   buf_close(&wb);
   return error;
 }
-
-typedef enum {
-  CONN_WAITING_LENGTH,
-  CONN_WAITING_BODY
-} rackmond_connection_state;
 
 // receive the command as a length prefixed block
 // (uint16_t, followed by data)
 // this is all over a local socket, won't be doing
 // endian flipping, clients should only be local procs
 // compiled for the same arch
-int handle_connection(int sock) {
+
+static int recv_sock_message(int sock, void *buf, size_t size)
+{
+  int ret = 0;
+  struct pollfd pfd = {
+    .fd = sock,
+    .events = POLLIN | POLLERR | POLLHUP,
+  };
+
+  do {
+    ret = poll(&pfd, 1, 1000);
+    if (ret < 0) {
+      return -1;
+    } else if (ret == 0) {
+      dbg("poll socket (%d) timed out", sock);
+      continue;
+    } else if (pfd.revents & (POLLERR | POLLHUP)) {
+      errno = EIO;
+      return -1;
+    }
+
+    ret = recv(sock, buf, size, MSG_DONTWAIT);
+  } while (ret < 0 && (errno == EAGAIN || errno == EWOULDBLOCK));
+
+  return ret;
+}
+
+static int handle_connection(int sock) {
+  int ret;
   int error = 0;
-  rackmond_connection_state state = CONN_WAITING_LENGTH;
-  char bodybuf[1024];
-  uint16_t expected_len = 0;
-  struct pollfd pfd;
-  int recvret = 0;
-  pfd.fd = sock;
-  pfd.events = POLLIN | POLLERR | POLLHUP;
-  // if you don't do anything for a whole second we bail
-next:
-  ERR_LOG_EXIT(poll(&pfd, 1, 1000), "failed to poll fds");
-  if (pfd.revents & (POLLERR | POLLHUP)) {
-    goto cleanup;
+  char body_buf[1024];
+  uint16_t body_len = 0;
+
+  dbg("new connection established, socket=%d\n", sock);
+
+  ret = recv_sock_message(sock, &body_len, sizeof(body_len));
+  if (ret < 0) {
+    OBMC_ERROR(errno, "failed to recv message header from socket %d", sock);
+    return -1;
+  } else if (ret < sizeof(body_len)) {
+    OBMC_WARN("message header short read, expect %u, actual %u",
+              sizeof(body_len), ret);
+    return -1;
+  } else if (body_len > sizeof(body_buf)) {
+    OBMC_WARN("message body exceeds max size (%u > %u)",
+              body_len, sizeof(body_buf));
+    return -1;
   }
-  switch(state) {
-    case CONN_WAITING_LENGTH:
-    recvret = recv(sock, &expected_len, 2, MSG_DONTWAIT);
-    if (recvret == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-      goto next;
-    }
-    if (expected_len == 0 || expected_len > sizeof(bodybuf)) {
-      // bad length; bail
-      goto cleanup;
-    }
-    state = CONN_WAITING_BODY;
-    goto next;
-    break;
-    case CONN_WAITING_BODY:
-    recvret = recv(sock, &bodybuf, expected_len, MSG_DONTWAIT);
-    if (recvret == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-      goto next;
-    }
-    ERR_EXIT(do_command(sock, (rackmond_command*) bodybuf));
+
+  ret = recv_sock_message(sock, body_buf, body_len);
+  if (ret < 0) {
+    OBMC_ERROR(errno, "failed to recv message body from socket %d", sock);
+    return -1;
   }
-cleanup:
-  close(sock);
-  if (error != 0) {
-    OBMC_WARN("handle connection failed, error=%d", error);
-  }
-  return 0;
+
+  error = do_command(sock, (rackmond_command*)body_buf);
+
+  return error;
 }
 
 int main(int argc, char** argv) {
   int error = 0;
+  int sock, sock_len;
+  pthread_t monitoring_tid;
+  struct sockaddr_un local, client;
 
   signal(SIGPIPE, SIG_IGN);
 
   obmc_log_init("rackmond", LOG_INFO, 0);
+  obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
   if (getenv("RACKMOND_FOREGROUND") == NULL) {
-    obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
     obmc_log_unset_std_stream();
     daemon(0, 0);
   }
 
-  world.paused = 0;
-  world.min_delay = 0;
-  world.modbus_timeout = 300000;
   if (getenv("RACKMOND_TIMEOUT") != NULL) {
-    world.modbus_timeout = atoll(getenv("RACKMOND_TIMEOUT"));
+    rackmond_config.modbus_timeout = atoll(getenv("RACKMOND_TIMEOUT"));
     OBMC_INFO("set timeout to RACKMOND_TIMEOUT (%dms)",
-              world.modbus_timeout / 1000);
+              rackmond_config.modbus_timeout / 1000);
   }
   if (getenv("RACKMOND_MIN_DELAY") != NULL) {
-    world.min_delay = atoll(getenv("RACKMOND_MIN_DELAY"));
-    OBMC_INFO("set mindelay to RACKMOND_MIN_DELAY(%dus)", world.min_delay);
+    rackmond_config.min_delay = atoll(getenv("RACKMOND_MIN_DELAY"));
+    OBMC_INFO("set mindelay to RACKMOND_MIN_DELAY(%dus)",
+              rackmond_config.min_delay);
   }
-  world.config = NULL;
-  pthread_mutex_init(&world.lock, NULL);
   verbose = getenv("RACKMOND_VERBOSE") != NULL ? 1 : 0;
-  openlog("rackmond", 0, LOG_USER);
-  syslog(LOG_INFO, "rackmon/modbus service starting");
-  ERR_EXIT(open_rs485_dev(DEFAULT_TTY, &world.rs485));
-  pthread_t monitoring_thread;
-  pthread_create(&monitoring_thread, NULL, monitoring_loop, NULL);
-  struct sockaddr_un local, client;
-  int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+
+  OBMC_INFO("rackmon/modbus service starting");
+  ERR_EXIT(open_rs485_dev(DEFAULT_TTY, &rackmond_config.rs485));
+
+  error = pthread_create(&monitoring_tid, NULL, monitoring_loop, NULL);
+  if (error != 0) {
+    OBMC_ERROR(error, "failed to create monitor loop thread");
+    error = -1;
+    goto cleanup;
+  }
+
+  sock = socket(AF_UNIX, SOCK_STREAM, 0);
   ERR_LOG_EXIT(sock, "failed to create socket");
 
-  strcpy(local.sun_path, "/var/run/rackmond.sock");
+  unlink(RACKMON_IPC_SOCKET); /* ignore failures */
   local.sun_family = AF_UNIX;
-  int socknamelen = sizeof(local.sun_family) + strlen(local.sun_path);
-  unlink(local.sun_path);
-  ERR_LOG_EXIT(bind(sock, (struct sockaddr *)&local, socknamelen),
+  strcpy(local.sun_path, RACKMON_IPC_SOCKET);
+  sock_len = sizeof(local.sun_family) + strlen(local.sun_path);
+  ERR_LOG_EXIT(bind(sock, (struct sockaddr *)&local, sock_len),
                "failed to bind socket");
 
   ERR_LOG_EXIT(listen(sock, 20), "failed to set passive socket");
 
-  syslog(LOG_INFO, "rackmon/modbus service listening");
+  OBMC_INFO("rackmon/modbus service listening");
   while(1) {
     socklen_t clisocklen = sizeof(struct sockaddr_un);
     int clisock = accept(sock, (struct sockaddr*) &client, &clisocklen);
     ERR_LOG_EXIT(clisock, "failed to accept connect request");
-    ERR_EXIT(handle_connection(clisock));
+
+    handle_connection(clisock);
+    close(clisock);
   }
 
 cleanup:
+  close_rs485_dev(&rackmond_config.rs485);
   if (error != 0) {
     error = 1;
   }

@@ -1,4 +1,10 @@
+#ifndef _RACKMOND_H_
+#define _RACKMOND_H_
+
 #include <stdint.h>
+
+#define RACKMON_IPC_SOCKET "/var/run/rackmond.sock"
+#define RACKMON_STAT_STORE "/var/log/psu-status.log"
 
 //would've been nice to have thrift
 
@@ -31,13 +37,17 @@ typedef struct set_config_command {
   monitoring_config config;
 } set_config_command;
 
-#define COMMAND_TYPE_RAW_MODBUS         0x01
-#define COMMAND_TYPE_SET_CONFIG         0x02
-#define COMMAND_TYPE_DUMP_DATA_JSON     0x03
-#define COMMAND_TYPE_PAUSE_MONITORING   0x04
-#define COMMAND_TYPE_START_MONITORING   0x05
-#define COMMAND_TYPE_DUMP_STATUS        0x06
-#define COMMAND_TYPE_FORCE_SCAN         0x07
+enum {
+  COMMAND_TYPE_NONE = 0,
+  COMMAND_TYPE_RAW_MODBUS,
+  COMMAND_TYPE_SET_CONFIG,
+  COMMAND_TYPE_DUMP_DATA_JSON,
+  COMMAND_TYPE_PAUSE_MONITORING,
+  COMMAND_TYPE_START_MONITORING,
+  COMMAND_TYPE_DUMP_STATUS,
+  COMMAND_TYPE_FORCE_SCAN,
+  COMMAND_TYPE_MAX,
+};
 
 typedef struct rackmond_command {
   uint16_t type;
@@ -46,3 +56,5 @@ typedef struct rackmond_command {
     set_config_command set_config;
   };
 } rackmond_command;
+
+#endif /* _RACKMOND_H_ */

@@ -36,6 +36,10 @@
 // Modbus constants
 #define MODBUS_READ_HOLDING_REGISTERS 3
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
+#endif
+
 extern int verbose;
 #define dbg(fmt, args...) do {  \
     if(verbose)                 \

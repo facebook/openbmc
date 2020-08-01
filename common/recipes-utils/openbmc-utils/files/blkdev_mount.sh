@@ -34,7 +34,7 @@ if mount | grep "$BLK_DEVICE"; then
     exit 0
 fi
 
-SUPPORTED_FS_TYPE="ext4"
+SUPPORTED_FS_TYPE="btrfs"
 
 mount_btrfs() {
 

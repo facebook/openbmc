@@ -105,6 +105,12 @@ do_install() {
             update-rc.d -r ${D} mount_data1.sh start 05 S .
         fi
     fi
+
+    # If emmc-ext4 feature is enabled, we want to default to ext4 over btrfs.
+    # Update the blkdev_mount script to reflect this.
+    if ! echo ${MACHINE_FEATURES} | awk "/emmc-ext4/ {exit 1}"; then
+        sed -i 's/="btrfs"/="ext4"/' ${dstdir}/blkdev_mount.sh
+    fi
 }
 
 FILES_${PN} += "/usr/local"

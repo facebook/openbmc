@@ -34,31 +34,102 @@ if mount | grep "$BLK_DEVICE"; then
     exit 0
 fi
 
-#
-# Create ext4 if ext filesystem is not detected or corrupted.
-#
-if ! e2fsck -p "$BLK_DEVICE" > /dev/null 2>&1; then
-    echo "No filesystem found on $BLK_DEVICE. Creating ext4 filesystem.."
-    if ! output=$(mkfs.ext4 -F "$BLK_DEVICE" 2>&1); then
-        echo "Error: failed to create ext4 on $BLK_DEVICE:"
+SUPPORTED_FS_TYPE="ext4"
+
+mount_btrfs() {
+
+    #
+    # Use blkid to find the underlying filesystem type.
+    #
+    FS_TYPE="$(blkid "$BLK_DEVICE" || echo 'TYPE="unknown"')"
+    FS_TYPE="$(echo "$FS_TYPE" | sed 's/.*TYPE="\([^"]*\).*/\1/')"
+
+    #
+    # If filesystem is not btrfs already, convert or reformat.
+    #
+    case "$FS_TYPE" in
+        ext4)
+            echo "EXT4 filesystem found on $BLK_DEVICE.  Convert to btrfs.."
+            if ! output="$(btrfs-convert "$BLK_DEVICE" 2>&1)"; then
+                echo "Error: failed to convert to btrfs on $BLK_DEVICE:"
+                echo "$output"
+                exit 1
+            fi
+            ;;
+
+        btrfs)
+            ;;
+
+        *)
+            echo "No filesystem found on $BLK_DEVICE. Creating btrfs fs.."
+            if ! output=$(mkfs.btrfs -f "$BLK_DEVICE" 2>&1); then
+                echo "Error: failed to create btrfs on $BLK_DEVICE:"
+                echo "$output"
+                exit 1
+            fi
+            ;;
+    esac
+
+    #
+    # Run btrfs-check (same as btrfsck) to confirm filesystem integrity.
+    #
+    if ! output="$(btrfs check "$BLK_DEVICE" 2>&1)"; then
+        echo "Error: btrfs volume shows errors:"
         echo "$output"
         exit 1
     fi
-fi
 
-#
-# Mount block device to specified mount point.
-#
-echo "Mounting $BLK_DEVICE to $MOUNT_POINT.."
-if ! output=$(mount "$BLK_DEVICE" "$MOUNT_POINT" 2>&1); then
-    echo "Error: failed to mount $BLK_DEVICE to $MOUNT_POINT:"
-    echo "$output"
-    exit 1
-fi
+    #
+    # Mount btrfs.
+    #   Use zstd compression because we get faster speed and less wear.
+    #
+    echo "Mounting $BLK_DEVICE to $MOUNT_POINT.."
+    if ! output=$(mount -o compress=zstd,discard "$BLK_DEVICE" "$MOUNT_POINT" 2>&1);
+    then
+        echo "Error: failed to mount $BLK_DEVICE to $MOUNT_POINT:"
+        echo "$output"
+        exit 1
+    fi
 
-#
-# Dump summary information.
-#
-echo "$BLK_DEVICE mounted successfully, device usage:"
-df -h "$BLK_DEVICE"
-exit 0
+    #
+    # Mount successful.  Show some usage statstics.
+    #
+    echo "$MOUNT_POINT mounted successfully, device usage:"
+    df -h "$MOUNT_POINT"
+    btrfs filesystem df "$MOUNT_POINT"
+    exit 0
+}
+
+mount_ext4() {
+
+    #
+    # Create ext4 if ext filesystem is not detected or corrupted.
+    #
+    if ! e2fsck -p "$BLK_DEVICE" > /dev/null 2>&1; then
+        echo "No filesystem found on $BLK_DEVICE. Creating ext4 filesystem.."
+        if ! output=$(mkfs.ext4 -F "$BLK_DEVICE" 2>&1); then
+            echo "Error: failed to create ext4 on $BLK_DEVICE:"
+            echo "$output"
+            exit 1
+        fi
+    fi
+
+    #
+    # Mount block device to specified mount point.
+    #
+    echo "Mounting $BLK_DEVICE to $MOUNT_POINT.."
+    if ! output=$(mount "$BLK_DEVICE" "$MOUNT_POINT" 2>&1); then
+        echo "Error: failed to mount $BLK_DEVICE to $MOUNT_POINT:"
+        echo "$output"
+        exit 1
+    fi
+
+    #
+    # Dump summary information.
+    #
+    echo "$BLK_DEVICE mounted successfully, device usage:"
+    df -h "$BLK_DEVICE"
+    exit 0
+}
+
+mount_$SUPPORTED_FS_TYPE

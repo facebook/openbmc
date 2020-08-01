@@ -105,6 +105,15 @@ drive_status(ssd_data *ssd) {
   printf("%s: %s\n", pdlu_decoding.key, pdlu_decoding.value);
 
   nvme_sflgs_decode(ssd->sflgs, &status_flag_decoding);
+#if defined(CONFIG_FBY2_GPV2)
+  if (ssd->vendor == VENDOR_ID_INTEL) {
+    sprintf(status_flag_decoding.read_complete.value, "NA");
+    sprintf(status_flag_decoding.functional.value, "NA");
+    sprintf(status_flag_decoding.reset_required.value, "NA");
+    sprintf(status_flag_decoding.port0_link.value, "NA");
+    sprintf(status_flag_decoding.port1_link.value, "NA");
+  }
+#endif
   printf("%s: %s\n", status_flag_decoding.self.key, status_flag_decoding.self.value);
   printf("    %s: %s\n", status_flag_decoding.read_complete.key, status_flag_decoding.read_complete.value);
   printf("    %s: %s\n", status_flag_decoding.ready.key, status_flag_decoding.ready.value);

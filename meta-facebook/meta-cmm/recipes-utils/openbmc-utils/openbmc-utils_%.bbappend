@@ -55,6 +55,9 @@ DEPENDS_append = " update-rc.d-native"
 
 RDEPENDS_${PN} += "python3-core"
 
+# Disable automount because 'setup_persist_log' is used instead.
+OPENBMC_UTILS_CUSTOM_EMMC_MOUNT = "1"
+
 do_install_append() {
     # the script to mount emmc to /var/log
     install -m 0755 ${WORKDIR}/setup_persist_log.sh ${D}${sysconfdir}/init.d/setup_persist_log.sh

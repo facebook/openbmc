@@ -62,6 +62,8 @@ S = "${WORKDIR}"
 DEPENDS = "update-rc.d-native"
 RDEPENDS_${PN} += "bash"
 
+OPENBMC_UTILS_CUSTOM_EMMC_MOUNT ?= "0"
+
 do_install() {
     pkgdir="/usr/local/packages/utils"
     dstdir="${D}${pkgdir}"
@@ -94,6 +96,15 @@ do_install() {
 
     install -m 755 ${WORKDIR}/setup-reboot.sh ${D}${sysconfdir}/init.d/setup-reboot.sh
     update-rc.d -r ${D} setup-reboot.sh start 89 6 .
+
+    if ! echo ${MACHINE_FEATURES} | awk "/emmc/ {exit 1}"; then
+        if [ "x${OPENBMC_UTILS_CUSTOM_EMMC_MOUNT}" == "x0" ]; then
+            # auto-mount emmc to /mnt/data1
+            install -m 0755 ${WORKDIR}/mount_data1.sh \
+                ${D}${sysconfdir}/init.d/mount_data1.sh
+            update-rc.d -r ${D} mount_data1.sh start 05 S .
+        fi
+    fi
 }
 
 FILES_${PN} += "/usr/local"

@@ -45,6 +45,38 @@ def fix_wedge100_romcs1():
         system.run_verbosely(cmd, logger)
 
 
+def fix_galaxy100_mnt_data_partition(all_mtds):
+    """
+    Diag_LC and Diag_FAB in /mnt/data partition that results in
+    JFFS failures during upgrades
+    Galaxy has LCs(line cards) and FABs(fabric cards)
+    TODO: Remove logic after next galaxy card upgrade
+    """
+    diag_paths = ["/mnt/data/Diag_FAB", "/mnt/data/Diag_LC"]
+    data0_partition = None
+
+    if not system.is_galaxy100():
+        return
+    for mtd in all_mtds:
+        logger.info(mtd)
+        parts = mtd.__str__().split("(")
+        if "data0" in parts[0]:
+            data0_partition = parts[1].split(",")[0]
+            break
+
+    if data0_partition is not None:
+        for path in diag_paths:
+            if os.path.isdir(path):
+                logger.info(
+                    "Galaxy100 card with {} present, erase data partition {}".format(
+                        path, data0_partition
+                    )
+                )
+                cmd = ["flash_eraseall", "-j", data0_partition]
+                system.run_verbosely(cmd, logger)
+                return
+
+
 def free_mem_remediation(logger):
     # purge the logs
     system.flush_tmpfs_logs(logger)
@@ -170,6 +202,7 @@ def improve_system(logger):
         system.append_to_kernel_parameters(args.dry_run, mtdparts, logger)
         system.reboot(args.dry_run, "changing kernel parameters", logger)
 
+    fix_galaxy100_mnt_data_partition(all_mtds)
     reason = "potentially applying a latent update"
     if args.image:
         image_file_name = args.image

@@ -24,16 +24,14 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # Keep "power-util mb on" for debug purpose
 echo "Waiting for power up"
 pwr_ctrl=$(gpio_get PWR_CTRL keepdirection)
-for retry in {1..60};
+pwr_ready=$(gpio_get SYS_PWR_READY keepdirection)
+while [ "$pwr_ready" != "1" ]
 do
-  pwr_ready=$(gpio_get SYS_PWR_READY keepdirection)
-  if [[ "$pwr_ready" == "1" ]]; then
-    break
-  elif [[ "$pwr_ctrl" == "1" ]]; then
+  if [[ "$pwr_ctrl" == "1" ]]; then
     power-util mb on > /dev/null
-  else
-    sleep 1
   fi
+  sleep 1
+  pwr_ready=$(gpio_get SYS_PWR_READY keepdirection)
 done
 
 # Thermal sensors for PCIe switches
@@ -51,10 +49,16 @@ i2c_bind_driver mpq8645p 5-0036
 i2c_bind_driver mpq8645p 5-003b
 
 # P48V HSCs
-modprobe adm1275
+i2c_bind_driver adm1275 16-0013
+i2c_bind_driver adm1275 17-0010
 
 # i2c mux in front of OAMs
 i2c_mux_add_sync 11 0x70 pca9543 21
 i2c_mux_add_sync 10 0x70 pca9543 23
 i2c_mux_add_sync 9 0x70 pca9543 25
 i2c_mux_add_sync 8 0x70 pca9543 27
+
+# Reload lm_sensors config
+sv restart sensord
+# Mark driver loaded
+echo > /tmp/driver_probed

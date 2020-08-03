@@ -956,7 +956,9 @@ static int sensors_read_common_fan(uint8_t sensor_num, float *value)
 {
   int ret;
 
-  if (pal_is_server_off() || !is_fan_present(sensor_num))
+  // Although PWM controller driver had been loaded when BMC booted
+  // Some attributes are not accessible right after 12V is on
+  if (!is_device_ready() || !is_fan_present(sensor_num))
     return ERR_SENSOR_NA;
 
   switch (sensor_num) {
@@ -1095,7 +1097,7 @@ static int sensors_read_pax_therm(uint8_t sensor_num, float *value)
 {
   int ret;
 
-  if (pal_is_server_off())
+  if (!is_device_ready())
     return ERR_SENSOR_NA;
 
   switch (sensor_num) {
@@ -1128,7 +1130,7 @@ static int sensors_read_vr(uint8_t sensor_num, float *value)
 {
   int ret;
 
-  if (pal_is_server_off())
+  if (!is_device_ready())
     return ERR_SENSOR_NA;
 
   switch (sensor_num) {
@@ -1321,7 +1323,7 @@ static int sensors_read_48v_hsc(uint8_t sensor_num, float *value)
 {
   int ret;
 
-  if (pal_is_server_off())
+  if (!is_device_ready())
     return ERR_SENSOR_NA;
 
   switch (sensor_num) {

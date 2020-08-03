@@ -80,6 +80,7 @@ enum {
 int read_device(const char *device, int *value);
 int write_device(const char *device, int value);
 bool pal_is_server_off(void);
+bool is_device_ready(void);
 int pal_get_server_power(uint8_t fru, uint8_t *status);
 int pal_get_platform_id(uint8_t *id);
 int pal_set_id_led(uint8_t status);

@@ -36,6 +36,8 @@
 #include <openbmc/obmc-i2c.h>
 #include "pal.h"
 
+#define DRIVER_READY "/tmp/driver_probed"
+
 #define P12V_AUX_HWMON_DIR \
   "/sys/bus/i2c/drivers/adm1275/18-0042/hwmon"
 #define P12V_AUX_DIR \
@@ -680,6 +682,13 @@ bool pal_is_server_off()
     return false;
 
   return status == SERVER_POWER_OFF? true: false;
+}
+
+bool is_device_ready()
+{
+  if (access(DRIVER_READY, F_OK) != -1)
+    return !pal_is_server_off();
+  return false;
 }
 
 // Power Off, Power On, or Power Cycle

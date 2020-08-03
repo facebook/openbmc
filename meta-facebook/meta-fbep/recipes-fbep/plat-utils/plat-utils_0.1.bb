@@ -23,6 +23,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = "file://ast-functions \
            file://setup-gpio.sh \
+           file://check-i2c-pwr.sh \
            file://setup-i2c.sh \
            file://setup-usbnet.sh \
            file://setup-por.sh \
@@ -66,7 +67,8 @@ do_install() {
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 66 5 .
   install -m 755 setup-i2c.sh ${D}${sysconfdir}/init.d/setup-i2c.sh
-  update-rc.d -r ${D} setup-i2c.sh start 67 5 .
+  install -m 755 check-i2c-pwr.sh ${D}${sysconfdir}/init.d/check-i2c-pwr.sh
+  update-rc.d -r ${D} check-i2c-pwr.sh start 67 5 .
   install -m 755 setup-usbnet.sh ${D}${sysconfdir}/init.d/setup-usbnet.sh
   update-rc.d -r ${D} setup-usbnet.sh start 69 5 .
   install -m 755 setup-pfr.sh ${D}${sysconfdir}/init.d/setup-pfr.sh

@@ -31,9 +31,6 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-# Enable the isolation buffer between BMC and COMe i2c bus
-echo 0 > "${SCMCPLD_SYSFS_DIR}/com_exp_pwr_enable"
-
 # Make the backup BIOS flash connect to COMe instead of BMC
 #echo 0 > ${SCMCPLD_SYSFS_DIR}/com_spi_oe_n
 #echo 0 > ${SCMCPLD_SYSFS_DIR}/com_spi_sel
@@ -74,6 +71,6 @@ gpiocli export -c 4-0027 -o 9 --shadow ISO_PWR_BTN_N
 gpiocli export -c 4-0027 -o 10 --shadow PWRGD_PCH_PWROK
 gpiocli export -c 4-0027 -o 11 --shadow ISO_CB_RESET_N
 gpiocli export -c 4-0027 -o 12 --shadow COM_PWROK
-gpiocli export -c 4-0027 -o 13 --shadow CPU_CATERR_MSMI
+gpiocli export -c 4-0027 -o 13 --shadow CPU_CATERR_MSMI_EXT
 gpiocli export -c 4-0027 -o 14 --shadow ISO_COM_SUS_S3_N
 gpiocli export -c 4-0027 -o 15 --shadow DEBUG_UART_SELECT

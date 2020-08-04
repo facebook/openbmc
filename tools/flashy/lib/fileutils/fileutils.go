@@ -54,6 +54,7 @@ var RenameFile = os.Rename
 var CreateFile = os.Create
 var Mmap = syscall.Mmap
 var Munmap = syscall.Munmap
+var Glob = filepath.Glob
 
 func GetExecutablePath() string {
 	// get the executable's (flashy's) path
@@ -219,4 +220,21 @@ var WriteFileWithoutTruncate = func(filename string, buf []byte) error {
 		return errors.Errorf("Unable to write to file '%v': %v", filename, err)
 	}
 	return nil
+}
+
+// get all glob results froms a list of glob patterns
+// return error if pattern is invalid as determined by filepath.Glob
+var GlobAll = func(patterns []string) ([]string, error) {
+	results := []string{}
+
+	for _, pattern := range patterns {
+		gotFilePaths, err := Glob(pattern)
+		if err != nil {
+			return nil, errors.Errorf("Unable to resolve pattern '%v': %v", pattern, err)
+		} else {
+			results = append(results, gotFilePaths...)
+		}
+	}
+
+	return results, nil
 }

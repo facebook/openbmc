@@ -36,11 +36,11 @@ type StepParams struct {
 	Clowntown     bool
 }
 
-type stepMapType = map[string]func(StepParams) StepExitError
+type StepMapType = map[string]func(StepParams) StepExitError
 
 // maps from the sanitized binary name to the function to run
 // the file path keys are also used to symlink the paths (busybox style)
-var StepMap = stepMapType{}
+var StepMap = StepMapType{}
 
 // registers endpoints into StepMap
 func RegisterStep(step func(StepParams) StepExitError) {

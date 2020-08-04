@@ -199,3 +199,37 @@ func TestIsELFFile(t *testing.T) {
 		})
 	}
 }
+
+func TestGlobAll(t *testing.T) {
+	cases := []struct {
+		name     string
+		patterns []string
+		// these tests should be system agnostic so even if the
+		// path is valid we cannot test for how many files we got
+		// hence, we can only test for the error
+		want error
+	}{
+		{
+			name:     "Empty pattern",
+			patterns: []string{},
+			want:     nil,
+		},
+		{
+			name:     "Test multiple valid patterns",
+			patterns: []string{"/var/*", "/var/log/messages"},
+			want:     nil,
+		},
+		{
+			name:     "Invalid pattern",
+			patterns: []string{"["},
+			want:     errors.Errorf("Unable to resolve pattern '[': syntax error in pattern"),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, got := GlobAll(tc.patterns)
+
+			tests.CompareTestErrors(tc.want, got, t)
+		})
+	}
+}

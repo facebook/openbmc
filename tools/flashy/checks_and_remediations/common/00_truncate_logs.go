@@ -20,7 +20,7 @@
 package common
 
 import (
-	"path/filepath"
+	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
@@ -44,13 +44,14 @@ var truncateLogFilePatterns []string = []string{
 }
 
 func truncateLogs(stepParams step.StepParams) step.StepExitError {
-	logFilesToDelete, err := resolveFilePatterns(deleteLogFilePatterns)
+	logFilesToDelete, err := fileutils.GlobAll(deleteLogFilePatterns)
 	if err != nil {
 		errMsg := errors.Errorf("Unable to resolve file patterns '%v': %v", deleteLogFilePatterns, err)
 		return step.ExitSafeToReboot{errMsg}
 	}
 
-	for _, f := range *logFilesToDelete {
+	for _, f := range logFilesToDelete {
+		log.Printf("Removing '%v'", f)
 		err := fileutils.RemoveFile(f)
 		if err != nil {
 			errMsg := errors.Errorf("Unable to remove log file '%v': %v", f, err)
@@ -58,13 +59,14 @@ func truncateLogs(stepParams step.StepParams) step.StepExitError {
 		}
 	}
 
-	logFilesToTruncate, err := resolveFilePatterns(truncateLogFilePatterns)
+	logFilesToTruncate, err := fileutils.GlobAll(truncateLogFilePatterns)
 	if err != nil {
 		errMsg := errors.Errorf("Unable to resolve file patterns '%v': %v", deleteLogFilePatterns, err)
 		return step.ExitSafeToReboot{errMsg}
 	}
 
-	for _, f := range *logFilesToTruncate {
+	for _, f := range logFilesToTruncate {
+		log.Printf("Truncating '%v'", f)
 		err := fileutils.TruncateFile(f, 0)
 		if err != nil {
 			errMsg := errors.Errorf("Unable to truncate log file '%v': %v", f, err)
@@ -72,19 +74,4 @@ func truncateLogs(stepParams step.StepParams) step.StepExitError {
 		}
 	}
 	return nil
-}
-
-var resolveFilePatterns = func(patterns []string) (*[]string, error) {
-	results := []string{}
-
-	for _, pattern := range patterns {
-		gotFilePaths, err := filepath.Glob(pattern)
-		if err != nil {
-			return nil, errors.Errorf("Unable to resolve pattern '%v': %v", pattern, err)
-		} else {
-			results = append(results, gotFilePaths...)
-		}
-	}
-
-	return &results, nil
 }

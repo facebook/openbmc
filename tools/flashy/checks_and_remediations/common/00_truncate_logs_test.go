@@ -24,12 +24,11 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
 
-type ResolveFilePatternsReturnType struct {
-	files *[]string
+type GlobAllReturnType struct {
+	files []string
 	err   error
 }
 
@@ -37,12 +36,12 @@ func TestTruncateLogs(t *testing.T) {
 	// save and defer restore TruncateFile, RemoveFile and resolveFilePatterns
 	truncateFileOrig := fileutils.TruncateFile
 	removeFileOrig := fileutils.RemoveFile
-	resolveFilePatternsOrig := resolveFilePatterns
+	globAllOrig := fileutils.GlobAll
 
 	defer func() {
 		fileutils.TruncateFile = truncateFileOrig
 		fileutils.RemoveFile = removeFileOrig
-		resolveFilePatterns = resolveFilePatternsOrig
+		fileutils.GlobAll = globAllOrig
 	}()
 
 	cases := []struct {
@@ -50,20 +49,20 @@ func TestTruncateLogs(t *testing.T) {
 		// resolveFilePatterns is called twice
 		// return the first one when called the first time,
 		// and so on
-		resolvedFilePatterns []ResolveFilePatternsReturnType
+		resolvedFilePatterns []GlobAllReturnType
 		removeFileErr        error
 		truncateFileErr      error
 		want                 step.StepExitError
 	}{
 		{
 			name: "Normal operation",
-			resolvedFilePatterns: []ResolveFilePatternsReturnType{
-				ResolveFilePatternsReturnType{
-					&[]string{"/tmp/test"},
+			resolvedFilePatterns: []GlobAllReturnType{
+				GlobAllReturnType{
+					[]string{"/tmp/test"},
 					nil,
 				},
-				ResolveFilePatternsReturnType{
-					&[]string{"/tmp/test"},
+				GlobAllReturnType{
+					[]string{"/tmp/test"},
 					nil,
 				},
 			},
@@ -73,13 +72,13 @@ func TestTruncateLogs(t *testing.T) {
 		},
 		{
 			name: "Remove file error",
-			resolvedFilePatterns: []ResolveFilePatternsReturnType{
-				ResolveFilePatternsReturnType{
-					&[]string{"/tmp/test"},
+			resolvedFilePatterns: []GlobAllReturnType{
+				GlobAllReturnType{
+					[]string{"/tmp/test"},
 					nil,
 				},
-				ResolveFilePatternsReturnType{
-					&[]string{"/tmp/test"},
+				GlobAllReturnType{
+					[]string{"/tmp/test"},
 					nil,
 				},
 			},
@@ -89,13 +88,13 @@ func TestTruncateLogs(t *testing.T) {
 		},
 		{
 			name: "Truncate file error",
-			resolvedFilePatterns: []ResolveFilePatternsReturnType{
-				ResolveFilePatternsReturnType{
-					&[]string{"/tmp/test"},
+			resolvedFilePatterns: []GlobAllReturnType{
+				GlobAllReturnType{
+					[]string{"/tmp/test"},
 					nil,
 				},
-				ResolveFilePatternsReturnType{
-					&[]string{"/tmp/test"},
+				GlobAllReturnType{
+					[]string{"/tmp/test"},
 					nil,
 				},
 			},
@@ -105,13 +104,13 @@ func TestTruncateLogs(t *testing.T) {
 		},
 		{
 			name: "Resolve file patterns error (1)",
-			resolvedFilePatterns: []ResolveFilePatternsReturnType{
-				ResolveFilePatternsReturnType{
+			resolvedFilePatterns: []GlobAllReturnType{
+				GlobAllReturnType{
 					nil,
 					errors.Errorf("resolveFilePatterns Error"),
 				},
-				ResolveFilePatternsReturnType{
-					&[]string{"/tmp/test"},
+				GlobAllReturnType{
+					[]string{"/tmp/test"},
 					nil,
 				},
 			},
@@ -121,12 +120,12 @@ func TestTruncateLogs(t *testing.T) {
 		},
 		{
 			name: "Resolve file patterns error (2)",
-			resolvedFilePatterns: []ResolveFilePatternsReturnType{
-				ResolveFilePatternsReturnType{
-					&[]string{"/tmp/test"},
+			resolvedFilePatterns: []GlobAllReturnType{
+				GlobAllReturnType{
+					[]string{"/tmp/test"},
 					nil,
 				},
-				ResolveFilePatternsReturnType{
+				GlobAllReturnType{
 					nil,
 					errors.Errorf("resolveFilePatterns Error"),
 				},
@@ -140,7 +139,7 @@ func TestTruncateLogs(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			resolveFilePatternsCalled := 0
-			resolveFilePatterns = func(patterns []string) (*[]string, error) {
+			fileutils.GlobAll = func(patterns []string) ([]string, error) {
 				ret := tc.resolvedFilePatterns[resolveFilePatternsCalled]
 				resolveFilePatternsCalled++
 				return ret.files, ret.err
@@ -153,40 +152,6 @@ func TestTruncateLogs(t *testing.T) {
 			}
 			got := truncateLogs(step.StepParams{false, "x", "x", false})
 			step.CompareTestExitErrors(tc.want, got, t)
-		})
-	}
-}
-
-func TestResolveFilePatterns(t *testing.T) {
-	cases := []struct {
-		name     string
-		patterns []string
-		// these tests should be system agnostic so even if the
-		// path is valid we cannot test for how many files we got
-		// hence, we can only test for the error
-		want error
-	}{
-		{
-			name:     "Empty pattern",
-			patterns: []string{},
-			want:     nil,
-		},
-		{
-			name:     "Test multiple valid patterns",
-			patterns: []string{"/var/*", "/var/log/messages"},
-			want:     nil,
-		},
-		{
-			name:     "Invalid pattern",
-			patterns: []string{"["},
-			want:     errors.Errorf("Unable to resolve pattern '[': syntax error in pattern"),
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, got := resolveFilePatterns(tc.patterns)
-
-			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}
 }

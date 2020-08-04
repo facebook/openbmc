@@ -39,6 +39,32 @@ func StringFind(val string, arr []string) int {
 	return -1
 }
 
+// StringDifference returns the elements in 'a' not in 'b'
+func StringDifference(a, b []string) []string {
+	mb := make(map[string]struct{}, len(b))
+	for _, x := range b {
+		mb[x] = struct{}{}
+	}
+	var diff []string
+	for _, x := range a {
+		if _, found := mb[x]; !found {
+			diff = append(diff, x)
+		}
+	}
+	return diff
+}
+
+// get all the string keys in a string-keyed map
+func GetStringKeys(m map[string]interface{}) []string {
+	i := 0
+	keys := make([]string, len(m))
+	for k := range m {
+		keys[i] = k
+		i++
+	}
+	return keys
+}
+
 // helper function for GetRegexSubexpMap & GetAllRegexSubexpMap
 // `match` must already have matched with the subexpNames, otherwise an
 // error will be returned

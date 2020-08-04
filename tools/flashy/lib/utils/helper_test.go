@@ -21,6 +21,7 @@ package utils
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/tests"
@@ -52,6 +53,35 @@ func TestStringFind(t *testing.T) {
 		if tc.want != got {
 			t.Errorf("want '%v' got '%v'", tc.want, got)
 		}
+	}
+}
+
+func TestStringDifference(t *testing.T) {
+	a := []string{"a", "a", "b", "c", "d"}
+	b := []string{"b", "b", "c", "d", "e"}
+	want := []string{"a", "a"}
+	got := StringDifference(a, b)
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("want '%v' got '%v'", want, got)
+	}
+}
+
+func TestGetStringKeys(t *testing.T) {
+	input := map[string]interface{}{
+		"a": 1,
+		"b": 2,
+		"c": 3,
+	}
+	want := []string{"a", "b", "c"}
+
+	got := GetStringKeys(input)
+
+	// order is not guaranteed in a map, so we sort first
+	sort.Strings(want)
+	sort.Strings(got)
+
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("want '%v' got '%v'", want, got)
 	}
 }
 

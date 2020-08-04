@@ -1558,3 +1558,24 @@ pal_is_slot_server(uint8_t fru) {
   }
   return 0;
 }
+
+int
+pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
+
+  *addr = PFR_MAILBOX_ADDR;
+  *bus = PFR_MAILBOX_BUS;
+  *bridged = false;
+
+  return 0;
+}
+
+int
+pal_get_pfr_update_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
+
+  *addr = PFR_UPDATE_ADDR;
+  *bus = PFR_MAILBOX_BUS;
+  *bridged = false;
+
+  return 0;
+}
+

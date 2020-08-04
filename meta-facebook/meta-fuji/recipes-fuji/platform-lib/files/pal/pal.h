@@ -134,6 +134,10 @@ extern "C" {
 #define I2C_ADDR_PIM16Q 0x60
 #define I2C_ADDR_PIM4DD 0x61
 
+#define PFR_MAILBOX_BUS (10)
+#define PFR_MAILBOX_ADDR (0x70)
+#define PFR_UPDATE_ADDR (0x74)
+
 #define FPGA_STS_CLR_BLUE 0x01
 #define FPGA_STS_CLR_YELLOW 0x05
 #define IPMB_BUS 0

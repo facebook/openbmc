@@ -48,9 +48,15 @@
 #define PFM_PUBRK_X  0x10
 #define PFM_PUBRK_Y  0x40
 
+#ifndef BMC_PFM_OFFSET
 #define BMC_PFM_OFFSET 0x029e0000
+#endif
+#ifndef BMC_RC_OFFSET
 #define BMC_RC_OFFSET  0x02a00000
+#endif
+#ifndef BMC_STG_OFFSET
 #define BMC_STG_OFFSET 0x04a00000
+#endif
 
 #define PCH_PFM_OFFSET 0x02ff0000
 #define PCH_RC_OFFSET  0x01bf0000

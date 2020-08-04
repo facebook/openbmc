@@ -27,7 +27,14 @@ SRC_URI += " \
     file://rest-api-1/rest_switch_reset.py \
     file://rest-api-1/rest_vddcore.py \
     file://rest-api-1/rest_modbus.py \
+    file://acl_providers/wedge400_acl_provider.py\
+    file://acl_config.py\
+    file://run_rest \
 "
+
+aclfiles += "wedge400_acl_provider.py"
+
+binfiles += "acl_config.py"
 
 binfiles1 += " \
     rest_feutil.py \

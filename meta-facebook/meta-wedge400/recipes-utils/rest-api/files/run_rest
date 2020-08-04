@@ -1,0 +1,7 @@
+#!/bin/sh
+CONFIG_FILE=/mnt/data/etc/rest.cfg
+if [ -f "$CONFIG_FILE" ]; then
+    exec /usr/local/bin/rest.py -c $CONFIG_FILE
+else
+    exec /usr/local/bin/rest.py
+fi

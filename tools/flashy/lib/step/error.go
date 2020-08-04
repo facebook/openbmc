@@ -27,9 +27,9 @@ import (
 
 // any other exit codes are programming errors
 const (
-	unknownErrorExitCode   = 1
-	safeToRebootExitCode   = 42
-	unsafeToRebootExitCode = 52
+	FLASHY_ERROR_UNKNOWN          = 1
+	FLASHY_ERROR_SAFE_TO_REBOOT   = 42
+	FLASHY_ERROR_UNSAFE_TO_REBOOT = 52
 )
 
 type StepExitError interface {
@@ -55,7 +55,7 @@ func (e ExitSafeToReboot) GetError() string {
 }
 
 func (e ExitSafeToReboot) GetExitCode() int {
-	return safeToRebootExitCode
+	return FLASHY_ERROR_SAFE_TO_REBOOT
 }
 
 func (e ExitSafeToReboot) GetType() string {
@@ -67,7 +67,7 @@ func (e ExitUnsafeToReboot) GetError() string {
 }
 
 func (e ExitUnsafeToReboot) GetExitCode() int {
-	return unsafeToRebootExitCode
+	return FLASHY_ERROR_UNSAFE_TO_REBOOT
 }
 
 func (e ExitUnsafeToReboot) GetType() string {
@@ -79,7 +79,7 @@ func (e ExitUnknownError) GetError() string {
 }
 
 func (e ExitUnknownError) GetExitCode() int {
-	return unknownErrorExitCode
+	return FLASHY_ERROR_UNKNOWN
 }
 
 func (e ExitUnknownError) GetType() string {
@@ -100,7 +100,7 @@ func HandleStepError(err StepExitError) {
 	default:
 		// this should not happen as there are no other types
 		log.Printf("Unknown error")
-		os.Exit(unknownErrorExitCode)
+		os.Exit(FLASHY_ERROR_UNKNOWN)
 	}
 }
 

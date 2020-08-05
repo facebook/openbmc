@@ -184,27 +184,6 @@ struct gpio_attr{
   {"GPION5", "BMC_BIOS_FLASH_CTRL",            GPIO_DIRECTION_IN, GPIO_VALUE_INVALID}};
 int ngpios = (sizeof(gpio_list)/sizeof(struct gpio_attr));
 
-static int
-get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask) {
-  int i;
-  *mask = 0;
-  for (i = 0; i < num; i++) {
-    int ret;
-    gpio_value_t value;
-    gpio_desc_t *gpio = gpio_open_by_shadow(shadows[i]);
-    if (!gpio) {
-      return -1;
-    }
-    ret = gpio_get_value(gpio, &value);
-    gpio_close(gpio);
-    if (ret != 0) {
-      return -1;
-    }
-    *mask |= (value == GPIO_VALUE_HIGH ? 1 : 0) << i;
-  }
-  return 0;
-}
-
 int
 get_board_rev(uint8_t *board_rev) {
   const char *shadows[] = {
@@ -212,10 +191,13 @@ get_board_rev(uint8_t *board_rev) {
     "FM_BOARD_REV_ID1",
     "FM_BOARD_REV_ID2",
   };
+  unsigned int val;
 
-  if ( get_gpio_shadow_array(shadows, 3, board_rev) ) {
+  if ( gpio_get_value_by_shadow_list(shadows, 3, &val) ) {
     return -1;
   }
+  *board_rev = (uint8_t)val;
+  return 0;
 }
 
 int

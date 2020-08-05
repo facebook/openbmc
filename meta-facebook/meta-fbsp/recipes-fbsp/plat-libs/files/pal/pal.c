@@ -1085,30 +1085,6 @@ pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver) {
   return ret;
 }
 
-static int
-get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask) {
-  int i;
-  *mask = 0;
-
-  for (i = 0; i < num; i++) {
-    int ret;
-    gpio_value_t value;
-    gpio_desc_t *gpio = gpio_open_by_shadow(shadows[i]);
-    if (!gpio) {
-      return -1;
-    }
-
-    ret = gpio_get_value(gpio, &value);
-    gpio_close(gpio);
-
-    if (ret != 0) {
-      return -1;
-    }
-    *mask |= (value == GPIO_VALUE_HIGH ? 1 : 0) << i;
-  }
-  return 0;
-}
-
 int
 pal_uart_select (uint32_t base, uint8_t offset, int option, uint32_t para) {
   uint32_t mmap_fd;
@@ -1151,7 +1127,7 @@ pal_uart_select (uint32_t base, uint8_t offset, int option, uint32_t para) {
 int
 pal_uart_select_led_set(void) {
   static uint32_t pre_channel = 0xffffffff;
-  uint8_t vals;
+  unsigned int vals;
   uint32_t channel = 0;
   const char *shadows[] = {
     "FM_UARTSW_LSB_N",
@@ -1161,7 +1137,7 @@ pal_uart_select_led_set(void) {
   //UART Switch control by bmc
   pal_uart_select(AST_GPIO_BASE, UARTSW_OFFSET, UARTSW_BY_BMC, 0);
 
-  if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &vals)) {
+  if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &vals)) {
     return -1;
   }
   // The GPIOs are active-low. So, invert it.
@@ -1421,14 +1397,14 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 static bool
 is_cpu_socket_occupy(unsigned int cpu_idx) {
   static bool cached = false;
-  static uint8_t cached_id = 0;
+  static unsigned int cached_id = 0;
 
   if (!cached) {
     const char *shadows[] = {
       "FM_CPU0_SKTOCC_LVT3_PLD_N",
       "FM_CPU1_SKTOCC_LVT3_PLD_N"
     };
-    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+    if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_id)) {
       return false;
     }
     cached = true;

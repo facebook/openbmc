@@ -122,6 +122,7 @@ struct threshold_s {
   int log_level;
   bool reboot;
   bool bmc_error_trigger;
+  bool bmc_mem_clear;
 };
 
 enum {
@@ -259,6 +260,8 @@ initialize_threshold(const char *target, json_t *thres, struct threshold_s *t) {
       t->reboot = true;
     } else if(!strcmp(act, "bmc-error-trigger")) {
       t->bmc_error_trigger = true;
+    } else if(!strcmp(act, "bmc-mem-clear")) {
+      t->bmc_mem_clear = true;
     }
   }
 }
@@ -590,6 +593,11 @@ static void threshold_assert_check(const char *target, float value, struct thres
       }
       pthread_mutex_unlock(&global_error_mutex);
       pal_bmc_err_enable(target);
+    }
+    if (thres->bmc_mem_clear) {
+      if (system("sync;/sbin/sysctl vm.drop_caches=3 > /dev/null")){
+        syslog(LOG_ERR, "Clear BMC Memory failed\n");
+      }
     }
   }
 }

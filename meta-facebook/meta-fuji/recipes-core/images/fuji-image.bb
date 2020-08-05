@@ -44,6 +44,8 @@ IMAGE_INSTALL += " \
   fscd \
   wedge-eeprom \
   weutil-dhcp-id \
+  libpsu \
+  psu-util \
   mdio-util \
   "
 

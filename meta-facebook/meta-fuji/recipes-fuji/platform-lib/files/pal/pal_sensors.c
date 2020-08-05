@@ -187,6 +187,14 @@ const uint8_t smb_sensor_list[] = {
   SMB_XP0R84V_CSU,
   SMB_XP1R84V_CSU,
   SMB_XP3R3V_TCXO,
+  SMB_OUTPUT_VOLTAGE_XP0R75V_1,
+  SMB_OUTPUT_CURRENT_XP0R75V_1,
+  SMB_INPUT_VOLTAGE_1,
+  SMB_OUTPUT_VOLTAGE_XP1R2V,
+  SMB_OUTPUT_CURRENT_XP1R2V,
+  SMB_OUTPUT_VOLTAGE_XP0R75V_2,
+  SMB_OUTPUT_CURRENT_XP0R75V_2,
+  SMB_INPUT_VOLTAGE_2,
   SMB_TMP422_U20_1_TEMP,
   SMB_TMP422_U20_2_TEMP,
   SMB_TMP422_U20_3_TEMP,
@@ -257,6 +265,11 @@ const uint8_t pim1_sensor_list[] = {
   PIM1_XP1R8V_EARLY,
   PIM1_XP1R8V_PHYIO,
   PIM1_XP1R8V_PHYAVDD,
+  PIM1_MP2975_INPUT_VOLTAGE,
+  PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V,
+  PIM1_MP2975_OUTPUT_CURRENT_XP0R8V,
+  PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V,
+  PIM1_MP2975_OUTPUT_CURRENT_XP3R3V,
 };
 
 const uint8_t pim2_sensor_list[] = {
@@ -281,6 +294,11 @@ const uint8_t pim2_sensor_list[] = {
   PIM2_XP1R8V_EARLY,
   PIM2_XP1R8V_PHYIO,
   PIM2_XP1R8V_PHYAVDD,
+  PIM2_MP2975_INPUT_VOLTAGE,
+  PIM2_MP2975_OUTPUT_VOLTAGE_XP0R8V,
+  PIM2_MP2975_OUTPUT_CURRENT_XP0R8V,
+  PIM2_MP2975_OUTPUT_VOLTAGE_XP3R3V,
+  PIM2_MP2975_OUTPUT_CURRENT_XP3R3V,
 };
 
 const uint8_t pim3_sensor_list[] = {
@@ -305,6 +323,11 @@ const uint8_t pim3_sensor_list[] = {
   PIM3_XP1R8V_EARLY,
   PIM3_XP1R8V_PHYIO,
   PIM3_XP1R8V_PHYAVDD,
+  PIM3_MP2975_INPUT_VOLTAGE,
+  PIM3_MP2975_OUTPUT_VOLTAGE_XP0R8V,
+  PIM3_MP2975_OUTPUT_CURRENT_XP0R8V,
+  PIM3_MP2975_OUTPUT_VOLTAGE_XP3R3V,
+  PIM3_MP2975_OUTPUT_CURRENT_XP3R3V,
 };
 
 const uint8_t pim4_sensor_list[] = {
@@ -329,6 +352,11 @@ const uint8_t pim4_sensor_list[] = {
   PIM4_XP1R8V_EARLY,
   PIM4_XP1R8V_PHYIO,
   PIM4_XP1R8V_PHYAVDD,
+  PIM4_MP2975_INPUT_VOLTAGE,
+  PIM4_MP2975_OUTPUT_VOLTAGE_XP0R8V,
+  PIM4_MP2975_OUTPUT_CURRENT_XP0R8V,
+  PIM4_MP2975_OUTPUT_VOLTAGE_XP3R3V,
+  PIM4_MP2975_OUTPUT_CURRENT_XP3R3V,
 };
 
 const uint8_t pim5_sensor_list[] = {
@@ -353,6 +381,11 @@ const uint8_t pim5_sensor_list[] = {
   PIM5_XP1R8V_EARLY,
   PIM5_XP1R8V_PHYIO,
   PIM5_XP1R8V_PHYAVDD,
+  PIM5_MP2975_INPUT_VOLTAGE,
+  PIM5_MP2975_OUTPUT_VOLTAGE_XP0R8V,
+  PIM5_MP2975_OUTPUT_CURRENT_XP0R8V,
+  PIM5_MP2975_OUTPUT_VOLTAGE_XP3R3V,
+  PIM5_MP2975_OUTPUT_CURRENT_XP3R3V,
 };
 
 const uint8_t pim6_sensor_list[] = {
@@ -377,6 +410,11 @@ const uint8_t pim6_sensor_list[] = {
   PIM6_XP1R8V_EARLY,
   PIM6_XP1R8V_PHYIO,
   PIM6_XP1R8V_PHYAVDD,
+  PIM6_MP2975_INPUT_VOLTAGE,
+  PIM6_MP2975_OUTPUT_VOLTAGE_XP0R8V,
+  PIM6_MP2975_OUTPUT_CURRENT_XP0R8V,
+  PIM6_MP2975_OUTPUT_VOLTAGE_XP3R3V,
+  PIM6_MP2975_OUTPUT_CURRENT_XP3R3V,
 };
 
 const uint8_t pim7_sensor_list[] = {
@@ -401,6 +439,11 @@ const uint8_t pim7_sensor_list[] = {
   PIM7_XP1R8V_EARLY,
   PIM7_XP1R8V_PHYIO,
   PIM7_XP1R8V_PHYAVDD,
+  PIM7_MP2975_INPUT_VOLTAGE,
+  PIM7_MP2975_OUTPUT_VOLTAGE_XP0R8V,
+  PIM7_MP2975_OUTPUT_CURRENT_XP0R8V,
+  PIM7_MP2975_OUTPUT_VOLTAGE_XP3R3V,
+  PIM7_MP2975_OUTPUT_CURRENT_XP3R3V,
 };
 
 const uint8_t pim8_sensor_list[] = {
@@ -425,6 +468,11 @@ const uint8_t pim8_sensor_list[] = {
   PIM8_XP1R8V_EARLY,
   PIM8_XP1R8V_PHYIO,
   PIM8_XP1R8V_PHYAVDD,
+  PIM8_MP2975_INPUT_VOLTAGE,
+  PIM8_MP2975_OUTPUT_VOLTAGE_XP0R8V,
+  PIM8_MP2975_OUTPUT_CURRENT_XP0R8V,
+  PIM8_MP2975_OUTPUT_VOLTAGE_XP3R3V,
+  PIM8_MP2975_OUTPUT_CURRENT_XP3R3V,
 };
 
 const uint8_t psu1_sensor_list[] = {
@@ -549,74 +597,90 @@ pim_thresh_array_init(uint8_t fru) {
     case FRU_PIM7:
     case FRU_PIM8:
       i = fru - FRU_PIM1;
-      pim_sensor_threshold[PIM1_LM75_U37_TEMP_BASE+(i*0x14)][UCR_THRESH] = 80;
-      pim_sensor_threshold[PIM1_LM75_U26_TEMP+(i*0x14)][UCR_THRESH] = 85;
-      pim_sensor_threshold[PIM1_LM75_U37_TEMP_MEZZ+(i*0x14)][UCR_THRESH] = 85;
-      pim_sensor_threshold[PIM1_SENSOR_HSC_VOLT+(i*0x14)][UCR_THRESH] = 13.8;
-      pim_sensor_threshold[PIM1_SENSOR_HSC_VOLT+(i*0x14)][UNR_THRESH] = 13.28;
-      pim_sensor_threshold[PIM1_SENSOR_HSC_VOLT+(i*0x14)][LNR_THRESH] = 10.8;
-      pim_sensor_threshold[PIM1_SENSOR_HSC_VOLT+(i*0x14)][LCR_THRESH] = 10.2;
-      pim_sensor_threshold[PIM1_POWER_VOLTAGE+(i*0x14)][UCR_THRESH] = 13.8;
-      pim_sensor_threshold[PIM1_POWER_VOLTAGE+(i*0x14)][UNR_THRESH] = 13.28;
-      pim_sensor_threshold[PIM1_POWER_VOLTAGE+(i*0x14)][LNR_THRESH] = 10.8;
-      pim_sensor_threshold[PIM1_POWER_VOLTAGE+(i*0x14)][LCR_THRESH] = 10.2;
-      pim_sensor_threshold[PIM1_SENSOR_HSC_POWER+(i*0x14)][UCR_THRESH] = 346.654;
-      pim_sensor_threshold[PIM1_SENSOR_HSC_POWER+(i*0x14)][UNR_THRESH] = 315.14;
-      pim_sensor_threshold[PIM1_SENSOR_HSC_CURR+(i*0x14)][UCR_THRESH] = 28.89;
-      pim_sensor_threshold[PIM1_SENSOR_HSC_CURR+(i*0x14)][UNR_THRESH] = 26.26;
+      pim_sensor_threshold[PIM1_LM75_U37_TEMP_BASE+(i*0x19)][UCR_THRESH] = 80;
+      pim_sensor_threshold[PIM1_LM75_U26_TEMP+(i*0x19)][UCR_THRESH] = 85;
+      pim_sensor_threshold[PIM1_LM75_U37_TEMP_MEZZ+(i*0x19)][UCR_THRESH] = 85;
+      pim_sensor_threshold[PIM1_SENSOR_HSC_VOLT+(i*0x19)][UCR_THRESH] = 13.8;
+      pim_sensor_threshold[PIM1_SENSOR_HSC_VOLT+(i*0x19)][UNR_THRESH] = 13.28;
+      pim_sensor_threshold[PIM1_SENSOR_HSC_VOLT+(i*0x19)][LNR_THRESH] = 10.8;
+      pim_sensor_threshold[PIM1_SENSOR_HSC_VOLT+(i*0x19)][LCR_THRESH] = 10.2;
+      pim_sensor_threshold[PIM1_POWER_VOLTAGE+(i*0x19)][UCR_THRESH] = 13.8;
+      pim_sensor_threshold[PIM1_POWER_VOLTAGE+(i*0x19)][UNR_THRESH] = 13.28;
+      pim_sensor_threshold[PIM1_POWER_VOLTAGE+(i*0x19)][LNR_THRESH] = 10.8;
+      pim_sensor_threshold[PIM1_POWER_VOLTAGE+(i*0x19)][LCR_THRESH] = 10.2;
+      pim_sensor_threshold[PIM1_SENSOR_HSC_POWER+(i*0x19)][UCR_THRESH] = 346.654;
+      pim_sensor_threshold[PIM1_SENSOR_HSC_POWER+(i*0x19)][UNR_THRESH] = 315.14;
+      pim_sensor_threshold[PIM1_SENSOR_HSC_CURR+(i*0x19)][UCR_THRESH] = 28.89;
+      pim_sensor_threshold[PIM1_SENSOR_HSC_CURR+(i*0x19)][UNR_THRESH] = 26.26;
+      pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*0x19)][UCR_THRESH] = 13.8;
+      pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*0x19)][UNR_THRESH] = 13.2;
+      pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*0x19)][LNR_THRESH] = 10.8;
+      pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*0x19)][LCR_THRESH] = 10.2;
+      pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V+(i*0x19)][UCR_THRESH] = 0.862;
+      pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V+(i*0x19)][UNR_THRESH] = 0.825;
+      pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V+(i*0x19)][LNR_THRESH] = 0.675;
+      pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V+(i*0x19)][LCR_THRESH] = 0.638;
+      pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V+(i*0x19)][UCR_THRESH] = 3.795;
+      pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V+(i*0x19)][UNR_THRESH] = 3.63;
+      pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V+(i*0x19)][LNR_THRESH] = 2.97;
+      pim_sensor_threshold[PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V+(i*0x19)][LCR_THRESH] = 2.805;
+      pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP0R8V+(i*0x19)][UCR_THRESH] = 49.46;
+      pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP0R8V+(i*0x19)][UNR_THRESH] = 44.95;
+      pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP3R3V+(i*0x19)][UCR_THRESH] = 49.46;
+      pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP3R3V+(i*0x19)][UNR_THRESH] = 44.95;
       pim_sensor_threshold[PIM1_SENSOR_QSFP_TEMP+i][UCR_THRESH] = 58;
-      pim_sensor_threshold[PIM1_XP3R3V+(i*0x14)][UCR_THRESH] = 3.795;
-      pim_sensor_threshold[PIM1_XP3R3V+(i*0x14)][UNR_THRESH] = 3.63;
-      pim_sensor_threshold[PIM1_XP3R3V+(i*0x14)][LNC_THRESH] = 2.97;
-      pim_sensor_threshold[PIM1_XP3R3V+(i*0x14)][LCR_THRESH] = 2.805;
-      pim_sensor_threshold[PIM1_XP3R3V_EARLY+(i*0x14)][UCR_THRESH] = 3.795;
-      pim_sensor_threshold[PIM1_XP3R3V_EARLY+(i*0x14)][UNR_THRESH] = 3.63;
-      pim_sensor_threshold[PIM1_XP3R3V_EARLY+(i*0x14)][LNC_THRESH] = 2.97;
-      pim_sensor_threshold[PIM1_XP3R3V_EARLY+(i*0x14)][LCR_THRESH] = 2.805;
-      pim_sensor_threshold[PIM1_XP2R5V_EARLY+(i*0x14)][UCR_THRESH] = 2.875;
-      pim_sensor_threshold[PIM1_XP2R5V_EARLY+(i*0x14)][UNR_THRESH] = 2.75;
-      pim_sensor_threshold[PIM1_XP2R5V_EARLY+(i*0x14)][LNC_THRESH] = 2.25;
-      pim_sensor_threshold[PIM1_XP2R5V_EARLY+(i*0x14)][LCR_THRESH] = 2.125;
-      pim_sensor_threshold[PIM1_TXDRV_PHY+(i*0x14)][UCR_THRESH] = 0.92;
-      pim_sensor_threshold[PIM1_TXDRV_PHY+(i*0x14)][UNR_THRESH] = 0.88;
-      pim_sensor_threshold[PIM1_TXDRV_PHY+(i*0x14)][LNC_THRESH] = 0.72;
-      pim_sensor_threshold[PIM1_TXDRV_PHY+(i*0x14)][LCR_THRESH] = 0.68;
-      pim_sensor_threshold[PIM1_XP0R8V_PHY+(i*0x14)][UCR_THRESH] = 0.92;
-      pim_sensor_threshold[PIM1_XP0R8V_PHY+(i*0x14)][UNR_THRESH] = 0.88;
-      pim_sensor_threshold[PIM1_XP0R8V_PHY+(i*0x14)][LNC_THRESH] = 0.72;
-      pim_sensor_threshold[PIM1_XP0R8V_PHY+(i*0x14)][LCR_THRESH] = 0.68;
-      pim_sensor_threshold[PIM1_XP1R1V_EARLY+(i*0x14)][UCR_THRESH] = 1.265;
-      pim_sensor_threshold[PIM1_XP1R1V_EARLY+(i*0x14)][UNR_THRESH] = 1.21;
-      pim_sensor_threshold[PIM1_XP1R1V_EARLY+(i*0x14)][LNC_THRESH] = 0.99;
-      pim_sensor_threshold[PIM1_XP1R1V_EARLY+(i*0x14)][LCR_THRESH] = 0.935;
-      pim_sensor_threshold[PIM1_DVDD_PHY4+(i*0x14)][UCR_THRESH] = 0.92;
-      pim_sensor_threshold[PIM1_DVDD_PHY4+(i*0x14)][UNR_THRESH] = 0.88;
-      pim_sensor_threshold[PIM1_DVDD_PHY4+(i*0x14)][LNC_THRESH] = 0.72;
-      pim_sensor_threshold[PIM1_DVDD_PHY4+(i*0x14)][LCR_THRESH] = 0.68;
-      pim_sensor_threshold[PIM1_DVDD_PHY3+(i*0x14)][UCR_THRESH] = 0.92;
-      pim_sensor_threshold[PIM1_DVDD_PHY3+(i*0x14)][UNR_THRESH] = 0.88;
-      pim_sensor_threshold[PIM1_DVDD_PHY3+(i*0x14)][LNC_THRESH] = 0.72;
-      pim_sensor_threshold[PIM1_DVDD_PHY3+(i*0x14)][LCR_THRESH] = 0.68;
-      pim_sensor_threshold[PIM1_DVDD_PHY2+(i*0x14)][UCR_THRESH] = 0.92;
-      pim_sensor_threshold[PIM1_DVDD_PHY2+(i*0x14)][UNR_THRESH] = 0.88;
-      pim_sensor_threshold[PIM1_DVDD_PHY2+(i*0x14)][LNC_THRESH] = 0.72;
-      pim_sensor_threshold[PIM1_DVDD_PHY2+(i*0x14)][LCR_THRESH] = 0.68;
-      pim_sensor_threshold[PIM1_DVDD_PHY1+(i*0x14)][UCR_THRESH] = 0.92;
-      pim_sensor_threshold[PIM1_DVDD_PHY1+(i*0x14)][UNR_THRESH] = 0.88;
-      pim_sensor_threshold[PIM1_DVDD_PHY1+(i*0x14)][LNC_THRESH] = 0.72;
-      pim_sensor_threshold[PIM1_DVDD_PHY1+(i*0x14)][LCR_THRESH] = 0.68;
-      pim_sensor_threshold[PIM1_XP1R8V_EARLY+(i*0x14)][UCR_THRESH] = 2.07;
-      pim_sensor_threshold[PIM1_XP1R8V_EARLY+(i*0x14)][UNR_THRESH] = 1.98;
-      pim_sensor_threshold[PIM1_XP1R8V_EARLY+(i*0x14)][LNC_THRESH] = 1.62;
-      pim_sensor_threshold[PIM1_XP1R8V_EARLY+(i*0x14)][LCR_THRESH] = 1.53;
-      pim_sensor_threshold[PIM1_XP1R8V_PHYIO+(i*0x14)][UCR_THRESH] = 2.07;
-      pim_sensor_threshold[PIM1_XP1R8V_PHYIO+(i*0x14)][UNR_THRESH] = 1.98;
-      pim_sensor_threshold[PIM1_XP1R8V_PHYIO+(i*0x14)][LNC_THRESH] = 1.62;
-      pim_sensor_threshold[PIM1_XP1R8V_PHYIO+(i*0x14)][LCR_THRESH] = 1.53;
-      pim_sensor_threshold[PIM1_XP1R8V_PHYAVDD+(i*0x14)][UCR_THRESH] = 2.07;
-      pim_sensor_threshold[PIM1_XP1R8V_PHYAVDD+(i*0x14)][UNR_THRESH] = 1.98;
-      pim_sensor_threshold[PIM1_XP1R8V_PHYAVDD+(i*0x14)][LNC_THRESH] = 1.62;
-      pim_sensor_threshold[PIM1_XP1R8V_PHYAVDD+(i*0x14)][LCR_THRESH] = 1.53;
+      pim_sensor_threshold[PIM1_XP3R3V+(i*0x19)][UCR_THRESH] = 3.795;
+      pim_sensor_threshold[PIM1_XP3R3V+(i*0x19)][UNR_THRESH] = 3.63;
+      pim_sensor_threshold[PIM1_XP3R3V+(i*0x19)][LNC_THRESH] = 2.97;
+      pim_sensor_threshold[PIM1_XP3R3V+(i*0x19)][LCR_THRESH] = 2.805;
+      pim_sensor_threshold[PIM1_XP3R3V_EARLY+(i*0x19)][UCR_THRESH] = 3.795;
+      pim_sensor_threshold[PIM1_XP3R3V_EARLY+(i*0x19)][UNR_THRESH] = 3.63;
+      pim_sensor_threshold[PIM1_XP3R3V_EARLY+(i*0x19)][LNC_THRESH] = 2.97;
+      pim_sensor_threshold[PIM1_XP3R3V_EARLY+(i*0x19)][LCR_THRESH] = 2.805;
+      pim_sensor_threshold[PIM1_XP2R5V_EARLY+(i*0x19)][UCR_THRESH] = 2.875;
+      pim_sensor_threshold[PIM1_XP2R5V_EARLY+(i*0x19)][UNR_THRESH] = 2.75;
+      pim_sensor_threshold[PIM1_XP2R5V_EARLY+(i*0x19)][LNC_THRESH] = 2.25;
+      pim_sensor_threshold[PIM1_XP2R5V_EARLY+(i*0x19)][LCR_THRESH] = 2.125;
+      pim_sensor_threshold[PIM1_TXDRV_PHY+(i*0x19)][UCR_THRESH] = 0.92;
+      pim_sensor_threshold[PIM1_TXDRV_PHY+(i*0x19)][UNR_THRESH] = 0.88;
+      pim_sensor_threshold[PIM1_TXDRV_PHY+(i*0x19)][LNC_THRESH] = 0.72;
+      pim_sensor_threshold[PIM1_TXDRV_PHY+(i*0x19)][LCR_THRESH] = 0.68;
+      pim_sensor_threshold[PIM1_XP0R8V_PHY+(i*0x19)][UCR_THRESH] = 0.92;
+      pim_sensor_threshold[PIM1_XP0R8V_PHY+(i*0x19)][UNR_THRESH] = 0.88;
+      pim_sensor_threshold[PIM1_XP0R8V_PHY+(i*0x19)][LNC_THRESH] = 0.72;
+      pim_sensor_threshold[PIM1_XP0R8V_PHY+(i*0x19)][LCR_THRESH] = 0.68;
+      pim_sensor_threshold[PIM1_XP1R1V_EARLY+(i*0x19)][UCR_THRESH] = 1.265;
+      pim_sensor_threshold[PIM1_XP1R1V_EARLY+(i*0x19)][UNR_THRESH] = 1.21;
+      pim_sensor_threshold[PIM1_XP1R1V_EARLY+(i*0x19)][LNC_THRESH] = 0.99;
+      pim_sensor_threshold[PIM1_XP1R1V_EARLY+(i*0x19)][LCR_THRESH] = 0.935;
+      pim_sensor_threshold[PIM1_DVDD_PHY4+(i*0x19)][UCR_THRESH] = 0.92;
+      pim_sensor_threshold[PIM1_DVDD_PHY4+(i*0x19)][UNR_THRESH] = 0.88;
+      pim_sensor_threshold[PIM1_DVDD_PHY4+(i*0x19)][LNC_THRESH] = 0.72;
+      pim_sensor_threshold[PIM1_DVDD_PHY4+(i*0x19)][LCR_THRESH] = 0.68;
+      pim_sensor_threshold[PIM1_DVDD_PHY3+(i*0x19)][UCR_THRESH] = 0.92;
+      pim_sensor_threshold[PIM1_DVDD_PHY3+(i*0x19)][UNR_THRESH] = 0.88;
+      pim_sensor_threshold[PIM1_DVDD_PHY3+(i*0x19)][LNC_THRESH] = 0.72;
+      pim_sensor_threshold[PIM1_DVDD_PHY3+(i*0x19)][LCR_THRESH] = 0.68;
+      pim_sensor_threshold[PIM1_DVDD_PHY2+(i*0x19)][UCR_THRESH] = 0.92;
+      pim_sensor_threshold[PIM1_DVDD_PHY2+(i*0x19)][UNR_THRESH] = 0.88;
+      pim_sensor_threshold[PIM1_DVDD_PHY2+(i*0x19)][LNC_THRESH] = 0.72;
+      pim_sensor_threshold[PIM1_DVDD_PHY2+(i*0x19)][LCR_THRESH] = 0.68;
+      pim_sensor_threshold[PIM1_DVDD_PHY1+(i*0x19)][UCR_THRESH] = 0.92;
+      pim_sensor_threshold[PIM1_DVDD_PHY1+(i*0x19)][UNR_THRESH] = 0.88;
+      pim_sensor_threshold[PIM1_DVDD_PHY1+(i*0x19)][LNC_THRESH] = 0.72;
+      pim_sensor_threshold[PIM1_DVDD_PHY1+(i*0x19)][LCR_THRESH] = 0.68;
+      pim_sensor_threshold[PIM1_XP1R8V_EARLY+(i*0x19)][UCR_THRESH] = 2.07;
+      pim_sensor_threshold[PIM1_XP1R8V_EARLY+(i*0x19)][UNR_THRESH] = 1.98;
+      pim_sensor_threshold[PIM1_XP1R8V_EARLY+(i*0x19)][LNC_THRESH] = 1.62;
+      pim_sensor_threshold[PIM1_XP1R8V_EARLY+(i*0x19)][LCR_THRESH] = 1.53;
+      pim_sensor_threshold[PIM1_XP1R8V_PHYIO+(i*0x19)][UCR_THRESH] = 2.07;
+      pim_sensor_threshold[PIM1_XP1R8V_PHYIO+(i*0x19)][UNR_THRESH] = 1.98;
+      pim_sensor_threshold[PIM1_XP1R8V_PHYIO+(i*0x19)][LNC_THRESH] = 1.62;
+      pim_sensor_threshold[PIM1_XP1R8V_PHYIO+(i*0x19)][LCR_THRESH] = 1.53;
+      pim_sensor_threshold[PIM1_XP1R8V_PHYAVDD+(i*0x19)][UCR_THRESH] = 2.07;
+      pim_sensor_threshold[PIM1_XP1R8V_PHYAVDD+(i*0x19)][UNR_THRESH] = 1.98;
+      pim_sensor_threshold[PIM1_XP1R8V_PHYAVDD+(i*0x19)][LNC_THRESH] = 1.62;
+      pim_sensor_threshold[PIM1_XP1R8V_PHYAVDD+(i*0x19)][LCR_THRESH] = 1.53;
       break;
   }
 }
@@ -630,7 +694,7 @@ pal_set_pim_thresh(uint8_t fru) {
   switch(fru) {
     case FRU_PIM1:
       for (snr_num = PIM1_LM75_U37_TEMP_BASE;
-           snr_num <= PIM1_XP1R8V_PHYAVDD; snr_num++) {
+           snr_num <= PIM1_MP2975_OUTPUT_CURRENT_XP3R3V; snr_num++) {
         pal_sensor_thresh_modify(fru, snr_num, UCR_THRESH,
                              pim_sensor_threshold[snr_num][UCR_THRESH]);
         pal_sensor_thresh_modify(fru, snr_num, LCR_THRESH,
@@ -639,7 +703,7 @@ pal_set_pim_thresh(uint8_t fru) {
       break;
     case FRU_PIM2:
       for (snr_num = PIM2_LM75_U37_TEMP_BASE;
-           snr_num <= PIM2_XP1R8V_PHYAVDD; snr_num++) {
+           snr_num <= PIM2_MP2975_OUTPUT_CURRENT_XP3R3V; snr_num++) {
         pal_sensor_thresh_modify(fru, snr_num, UCR_THRESH,
                              pim_sensor_threshold[snr_num][UCR_THRESH]);
         pal_sensor_thresh_modify(fru, snr_num, LCR_THRESH,
@@ -648,7 +712,7 @@ pal_set_pim_thresh(uint8_t fru) {
       break;
     case FRU_PIM3:
       for (snr_num = PIM3_LM75_U37_TEMP_BASE;
-           snr_num <= PIM3_XP1R8V_PHYAVDD; snr_num++) {
+           snr_num <= PIM3_MP2975_OUTPUT_CURRENT_XP3R3V; snr_num++) {
         pal_sensor_thresh_modify(fru, snr_num, UCR_THRESH,
                              pim_sensor_threshold[snr_num][UCR_THRESH]);
         pal_sensor_thresh_modify(fru, snr_num, LCR_THRESH,
@@ -657,7 +721,7 @@ pal_set_pim_thresh(uint8_t fru) {
       break;
     case FRU_PIM4:
       for (snr_num = PIM4_LM75_U37_TEMP_BASE;
-           snr_num <= PIM4_XP1R8V_PHYAVDD; snr_num++) {
+           snr_num <= PIM4_MP2975_OUTPUT_CURRENT_XP3R3V; snr_num++) {
         pal_sensor_thresh_modify(fru, snr_num, UCR_THRESH,
                              pim_sensor_threshold[snr_num][UCR_THRESH]);
         pal_sensor_thresh_modify(fru, snr_num, LCR_THRESH,
@@ -666,7 +730,7 @@ pal_set_pim_thresh(uint8_t fru) {
       break;
     case FRU_PIM5:
       for (snr_num = PIM5_LM75_U37_TEMP_BASE;
-           snr_num <= PIM5_XP1R8V_PHYAVDD; snr_num++) {
+           snr_num <= PIM5_MP2975_OUTPUT_CURRENT_XP3R3V; snr_num++) {
         pal_sensor_thresh_modify(fru, snr_num, UCR_THRESH,
                              pim_sensor_threshold[snr_num][UCR_THRESH]);
         pal_sensor_thresh_modify(fru, snr_num, LCR_THRESH,
@@ -675,7 +739,7 @@ pal_set_pim_thresh(uint8_t fru) {
       break;
     case FRU_PIM6:
       for (snr_num = PIM6_LM75_U37_TEMP_BASE;
-           snr_num <= PIM6_XP1R8V_PHYAVDD; snr_num++) {
+           snr_num <= PIM6_MP2975_OUTPUT_CURRENT_XP3R3V; snr_num++) {
         pal_sensor_thresh_modify(fru, snr_num, UCR_THRESH,
                              pim_sensor_threshold[snr_num][UCR_THRESH]);
         pal_sensor_thresh_modify(fru, snr_num, LCR_THRESH,
@@ -684,7 +748,7 @@ pal_set_pim_thresh(uint8_t fru) {
       break;
     case FRU_PIM7:
       for (snr_num = PIM7_LM75_U37_TEMP_BASE;
-           snr_num <= PIM7_XP1R8V_PHYAVDD; snr_num++) {
+           snr_num <= PIM7_MP2975_OUTPUT_CURRENT_XP3R3V; snr_num++) {
         pal_sensor_thresh_modify(fru, snr_num, UCR_THRESH,
                              pim_sensor_threshold[snr_num][UCR_THRESH]);
         pal_sensor_thresh_modify(fru, snr_num, LCR_THRESH,
@@ -693,7 +757,7 @@ pal_set_pim_thresh(uint8_t fru) {
       break;
     case FRU_PIM8:
       for (snr_num = PIM8_LM75_U37_TEMP_BASE;
-           snr_num <= PIM8_XP1R8V_PHYAVDD; snr_num++) {
+           snr_num <= PIM8_MP2975_OUTPUT_CURRENT_XP3R3V; snr_num++) {
         pal_sensor_thresh_modify(fru, snr_num, UCR_THRESH,
                              pim_sensor_threshold[snr_num][UCR_THRESH]);
         pal_sensor_thresh_modify(fru, snr_num, LCR_THRESH,
@@ -1304,7 +1368,31 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       break;
     case SMB_XP3R3V_TCXO:
       ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(14), value);
-      break;      
+      break;
+    case SMB_OUTPUT_VOLTAGE_XP0R75V_1:
+      ret = read_attr(fru, sensor_num, SMB_MP2978_1_DEVICE, VOLT(2), value);
+      break;
+    case SMB_OUTPUT_CURRENT_XP0R75V_1:
+      ret = read_attr(fru, sensor_num, SMB_MP2978_1_DEVICE, CURR(2), value);
+      break;
+    case SMB_INPUT_VOLTAGE_1:
+      ret = read_attr(fru, sensor_num, SMB_MP2978_1_DEVICE, VOLT(1), value);
+      break;
+    case SMB_OUTPUT_VOLTAGE_XP1R2V:
+      ret = read_attr(fru, sensor_num, SMB_MP2978_1_DEVICE, VOLT(3), value);
+      break;
+    case SMB_OUTPUT_CURRENT_XP1R2V:
+      ret = read_attr(fru, sensor_num, SMB_MP2978_1_DEVICE, CURR(3), value);
+      break;
+    case SMB_OUTPUT_VOLTAGE_XP0R75V_2:
+      ret = read_attr(fru, sensor_num, SMB_MP2978_2_DEVICE, VOLT(2), value);
+      break;
+    case SMB_OUTPUT_CURRENT_XP0R75V_2:
+      ret = read_attr(fru, sensor_num, SMB_MP2978_2_DEVICE, CURR(2), value);
+      break;
+    case SMB_INPUT_VOLTAGE_2:
+      ret = read_attr(fru, sensor_num, SMB_MP2978_2_DEVICE, VOLT(1), value);
+      break;
     case SMB_SENSOR_FCM_T_HSC_VOLT:
       ret = read_hsc_volt(fru, sensor_num, SMB_FCM_T_HSC_DEVICE, 1, value);
       break;
@@ -1467,6 +1555,22 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM1_XP1R8V_PHYAVDD:
       ret = read_attr(fru, sensor_num, PIM1_UCD90160_DEVICE, VOLT(13), value);
       break;
+    case PIM1_MP2975_INPUT_VOLTAGE:
+       ret = read_attr(fru, sensor_num, PIM1_MP2975_DEVICE, VOLT(1), value);
+       break;
+    case PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM1_MP2975_DEVICE, VOLT(2), value);
+       break;
+    case PIM1_MP2975_OUTPUT_CURRENT_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM1_MP2975_DEVICE, CURR(2), value);
+       break;
+    case PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM1_MP2975_DEVICE, VOLT(3), value);
+	   *value = *value * 3;
+       break;
+    case PIM1_MP2975_OUTPUT_CURRENT_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM1_MP2975_DEVICE, CURR(3), value);
+       break;
     case PIM2_LM75_U37_TEMP_BASE:
       ret = read_attr(fru, sensor_num, PIM2_TEMP1_DEVICE, TEMP(1), value);
       break;
@@ -1546,6 +1650,22 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM2_XP1R8V_PHYAVDD:
       ret = read_attr(fru, sensor_num, PIM2_UCD90160_DEVICE, VOLT(13), value);
       break;
+    case PIM2_MP2975_INPUT_VOLTAGE:
+       ret = read_attr(fru, sensor_num, PIM2_MP2975_DEVICE, VOLT(1), value);
+       break;
+    case PIM2_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM2_MP2975_DEVICE, VOLT(2), value);
+       break;
+    case PIM2_MP2975_OUTPUT_CURRENT_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM2_MP2975_DEVICE, CURR(2), value);
+       break;
+    case PIM2_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM2_MP2975_DEVICE, VOLT(3), value);
+	   *value = *value * 3;
+       break;
+    case PIM2_MP2975_OUTPUT_CURRENT_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM2_MP2975_DEVICE, CURR(3), value);
+       break;
     case PIM3_LM75_U37_TEMP_BASE:
       ret = read_attr(fru, sensor_num, PIM3_TEMP1_DEVICE, TEMP(1), value);
       break;
@@ -1625,6 +1745,22 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM3_XP1R8V_PHYAVDD:
       ret = read_attr(fru, sensor_num, PIM3_UCD90160_DEVICE, VOLT(13), value);
       break;
+    case PIM3_MP2975_INPUT_VOLTAGE:
+       ret = read_attr(fru, sensor_num, PIM3_MP2975_DEVICE, VOLT(1), value);
+       break;
+    case PIM3_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM3_MP2975_DEVICE, VOLT(2), value);
+       break;
+    case PIM3_MP2975_OUTPUT_CURRENT_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM3_MP2975_DEVICE, CURR(2), value);
+       break;
+    case PIM3_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM3_MP2975_DEVICE, VOLT(3), value);
+	   *value = *value * 3;
+       break;
+    case PIM3_MP2975_OUTPUT_CURRENT_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM3_MP2975_DEVICE, CURR(3), value);
+       break;
     case PIM4_LM75_U37_TEMP_BASE:
       ret = read_attr(fru, sensor_num, PIM4_TEMP1_DEVICE, TEMP(1), value);
       break;
@@ -1704,6 +1840,22 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM4_XP1R8V_PHYAVDD:
       ret = read_attr(fru, sensor_num, PIM4_UCD90160_DEVICE, VOLT(13), value);
       break;
+    case PIM4_MP2975_INPUT_VOLTAGE:
+       ret = read_attr(fru, sensor_num, PIM4_MP2975_DEVICE, VOLT(1), value);
+       break;
+    case PIM4_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM4_MP2975_DEVICE, VOLT(2), value);
+       break;
+    case PIM4_MP2975_OUTPUT_CURRENT_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM4_MP2975_DEVICE, CURR(2), value);
+       break;
+    case PIM4_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM4_MP2975_DEVICE, VOLT(3), value);
+	   *value = *value * 3;
+       break;
+    case PIM4_MP2975_OUTPUT_CURRENT_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM4_MP2975_DEVICE, CURR(3), value);
+       break;
     case PIM5_LM75_U37_TEMP_BASE:
       ret = read_attr(fru, sensor_num, PIM5_TEMP1_DEVICE, TEMP(1), value);
       break;
@@ -1783,6 +1935,22 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_XP1R8V_PHYAVDD:
       ret = read_attr(fru, sensor_num, PIM5_UCD90160_DEVICE, VOLT(13), value);
       break;
+    case PIM5_MP2975_INPUT_VOLTAGE:
+       ret = read_attr(fru, sensor_num, PIM5_MP2975_DEVICE, VOLT(1), value);
+       break;
+    case PIM5_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM5_MP2975_DEVICE, VOLT(2), value);
+       break;
+    case PIM5_MP2975_OUTPUT_CURRENT_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM5_MP2975_DEVICE, CURR(2), value);
+       break;
+    case PIM5_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM5_MP2975_DEVICE, VOLT(3), value);
+	   *value = *value * 3;
+       break;
+    case PIM5_MP2975_OUTPUT_CURRENT_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM5_MP2975_DEVICE, CURR(3), value);
+       break;
     case PIM6_LM75_U37_TEMP_BASE:
       ret = read_attr(fru, sensor_num, PIM6_TEMP1_DEVICE, TEMP(1), value);
       break;
@@ -1862,6 +2030,22 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_XP1R8V_PHYAVDD:
       ret = read_attr(fru, sensor_num, PIM6_UCD90160_DEVICE, VOLT(13), value);
       break;
+    case PIM6_MP2975_INPUT_VOLTAGE:
+       ret = read_attr(fru, sensor_num, PIM6_MP2975_DEVICE, VOLT(1), value);
+       break;
+    case PIM6_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM6_MP2975_DEVICE, VOLT(2), value);
+       break;
+    case PIM6_MP2975_OUTPUT_CURRENT_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM6_MP2975_DEVICE, CURR(2), value);
+       break;
+    case PIM6_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM6_MP2975_DEVICE, VOLT(3), value);
+	   *value = *value * 3;
+       break;
+    case PIM6_MP2975_OUTPUT_CURRENT_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM6_MP2975_DEVICE, CURR(3), value);
+       break;
     case PIM7_LM75_U37_TEMP_BASE:
       ret = read_attr(fru, sensor_num, PIM7_TEMP1_DEVICE, TEMP(1), value);
       break;
@@ -1941,6 +2125,22 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM7_XP1R8V_PHYAVDD:
       ret = read_attr(fru, sensor_num, PIM7_UCD90160_DEVICE, VOLT(13), value);
       break;
+    case PIM7_MP2975_INPUT_VOLTAGE:
+       ret = read_attr(fru, sensor_num, PIM7_MP2975_DEVICE, VOLT(1), value);
+       break;
+    case PIM7_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM7_MP2975_DEVICE, VOLT(2), value);
+       break;
+    case PIM7_MP2975_OUTPUT_CURRENT_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM7_MP2975_DEVICE, CURR(2), value);
+       break;
+    case PIM7_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM7_MP2975_DEVICE, VOLT(3), value);
+	   *value = *value * 3;
+       break;
+    case PIM7_MP2975_OUTPUT_CURRENT_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM7_MP2975_DEVICE, CURR(3), value);
+       break;
     case PIM8_LM75_U37_TEMP_BASE:
       ret = read_attr(fru, sensor_num, PIM8_TEMP1_DEVICE, TEMP(1), value);
       break;
@@ -2020,6 +2220,22 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM8_XP1R8V_PHYAVDD:
       ret = read_attr(fru, sensor_num, PIM8_UCD90160_DEVICE, VOLT(13), value);
       break;
+    case PIM8_MP2975_INPUT_VOLTAGE:
+       ret = read_attr(fru, sensor_num, PIM8_MP2975_DEVICE, VOLT(1), value);
+       break;
+    case PIM8_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM8_MP2975_DEVICE, VOLT(2), value);
+       break;
+    case PIM8_MP2975_OUTPUT_CURRENT_XP0R8V:
+       ret = read_attr(fru, sensor_num, PIM8_MP2975_DEVICE, CURR(2), value);
+       break;
+    case PIM8_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM8_MP2975_DEVICE, VOLT(3), value);
+	   *value = *value * 3;
+       break;
+    case PIM8_MP2975_OUTPUT_CURRENT_XP3R3V:
+       ret = read_attr(fru, sensor_num, PIM8_MP2975_DEVICE, CURR(3), value);
+       break;
     default:
       ret = READING_NA;
       break;
@@ -2609,6 +2825,30 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_XP3R3V_TCXO:
       sprintf(name, "SMB_XP3R3V_TCXO");
       break;
+    case SMB_OUTPUT_VOLTAGE_XP0R75V_1:
+      sprintf(name, "SMB_OUTPUT_VOLTAGE_XP0R75V_1");
+      break;
+    case SMB_OUTPUT_CURRENT_XP0R75V_1:
+      sprintf(name, "SMB_OUTPUT_CURRENT_XP0R75V_1");
+      break;
+    case SMB_INPUT_VOLTAGE_1:
+      sprintf(name, "SMB_INPUT_VOLTAGE_1");
+      break;
+    case SMB_OUTPUT_VOLTAGE_XP1R2V:
+      sprintf(name, "SMB_OUTPUT_VOLTAGE_XP1R2V");
+      break;
+    case SMB_OUTPUT_CURRENT_XP1R2V:
+      sprintf(name, "SMB_OUTPUT_CURRENT_XP1R2V");
+      break;
+    case SMB_OUTPUT_VOLTAGE_XP0R75V_2:
+      sprintf(name, "SMB_OUTPUT_VOLTAGE_XP0R75V_2");
+      break;
+    case SMB_OUTPUT_CURRENT_XP0R75V_2:
+      sprintf(name, "SMB_OUTPUT_CURRENT_XP0R75V_2");
+      break;
+    case SMB_INPUT_VOLTAGE_2:
+      sprintf(name, "SMB_INPUT_VOLTAGE_2");
+      break;
     case SMB_SENSOR_FCM_T_HSC_VOLT:
       sprintf(name, "FCM-T CHIP INPUT VOLTAGE");
       break;
@@ -2748,6 +2988,21 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
     case PIM1_XP1R8V_PHYAVDD:
       sprintf(name, "PIM1_XP1R8V_PHYAVDD");
       break;
+    case PIM1_MP2975_INPUT_VOLTAGE:
+      sprintf(name, "PIM1_MP2975_INPUT_VOLTAGE");
+      break;
+    case PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+      sprintf(name, "PIM1_MP2975_OUTPUT_VOL_XP0R8V");
+      break;
+    case PIM1_MP2975_OUTPUT_CURRENT_XP0R8V:
+      sprintf(name, "PIM1_MP2975_OUTPUT_CURR_XP0R8V");
+      break;
+    case PIM1_MP2975_OUTPUT_CURRENT_XP3R3V:
+      sprintf(name, "PIM1_MP2975_OUTPUT_CURR_XP3R3V");
+      break;
+    case PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+      sprintf(name, "PIM1_MP2975_OUTPUT_VOL_XP3R3V");
+      break;
     case PIM2_LM75_U37_TEMP_BASE:
       sprintf(name, "PIM2_LM75_U37_TEMP_BASE");
       break;
@@ -2810,6 +3065,21 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case PIM2_XP1R8V_PHYAVDD:
       sprintf(name, "PIM2_XP1R8V_PHYAVDD");
+      break;
+    case PIM2_MP2975_INPUT_VOLTAGE:
+      sprintf(name, "PIM2_MP2975_INPUT_VOLTAGE");
+      break;
+    case PIM2_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+      sprintf(name, "PIM2_MP2975_OUTPUT_VOL_XP0R8V");
+      break;
+    case PIM2_MP2975_OUTPUT_CURRENT_XP0R8V:
+      sprintf(name, "PIM2_MP2975_OUTPUT_CURR_XP0R8V");
+      break;
+    case PIM2_MP2975_OUTPUT_CURRENT_XP3R3V:
+      sprintf(name, "PIM2_MP2975_OUTPUT_CURR_XP3R3V");
+      break;
+    case PIM2_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+      sprintf(name, "PIM2_MP2975_OUTPUT_VOL_XP3R3V");
       break;
     case PIM3_LM75_U37_TEMP_BASE:
       sprintf(name, "PIM3_LM75_U37_TEMP_BASE");
@@ -2874,6 +3144,21 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
     case PIM3_XP1R8V_PHYAVDD:
       sprintf(name, "PIM3_XP1R8V_PHYAVDD");
       break;
+    case PIM3_MP2975_INPUT_VOLTAGE:
+      sprintf(name, "PIM3_MP2975_INPUT_VOLTAGE");
+      break;
+    case PIM3_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+      sprintf(name, "PIM3_MP2975_OUTPUT_VOL_XP0R8V");
+      break;
+    case PIM3_MP2975_OUTPUT_CURRENT_XP0R8V:
+      sprintf(name, "PIM3_MP2975_OUTPUT_CUR_XP0R8V");
+      break;
+    case PIM3_MP2975_OUTPUT_CURRENT_XP3R3V:
+      sprintf(name, "PIM3_MP2975_OUTPUT_CURR_XP3R3V");
+      break;
+    case PIM3_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+      sprintf(name, "PIM3_MP2975_OUTPUT_VOL_XP3R3V");
+      break;
     case PIM4_LM75_U37_TEMP_BASE:
       sprintf(name, "PIM4_LM75_U37_TEMP_BASE");
       break;
@@ -2936,6 +3221,21 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case PIM4_XP1R8V_PHYAVDD:
       sprintf(name, "PIM4_XP1R8V_PHYAVDD");
+      break;
+    case PIM4_MP2975_INPUT_VOLTAGE:
+      sprintf(name, "PIM4_MP2975_INPUT_VOLTAGE");
+      break;
+    case PIM4_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+      sprintf(name, "PIM4_MP2975_OUTPUT_VOL_XP0R8V");
+      break;
+    case PIM4_MP2975_OUTPUT_CURRENT_XP0R8V:
+      sprintf(name, "PIM4_MP2975_OUTPUT_CURR_XP0R8V");
+      break;
+    case PIM4_MP2975_OUTPUT_CURRENT_XP3R3V:
+      sprintf(name, "PIM4_MP2975_OUTPUT_CURR_XP3R3V");
+      break;
+    case PIM4_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+      sprintf(name, "PIM4_MP2975_OUTPUT_VOL_XP3R3V");
       break;
     case PIM5_LM75_U37_TEMP_BASE:
       sprintf(name, "PIM5_LM75_U37_TEMP_BASE");
@@ -3000,6 +3300,21 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
     case PIM5_XP1R8V_PHYAVDD:
       sprintf(name, "PIM5_XP1R8V_PHYAVDD");
       break;
+    case PIM5_MP2975_INPUT_VOLTAGE:
+      sprintf(name, "PIM5_MP2975_INPUT_VOLTAGE");
+      break;
+    case PIM5_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+      sprintf(name, "PIM5_MP2975_OUTPUT_VOL_XP0R8V");
+      break;
+    case PIM5_MP2975_OUTPUT_CURRENT_XP0R8V:
+      sprintf(name, "PIM5_MP2975_OUTPUT_CURR_XP0R8V");
+      break;
+    case PIM5_MP2975_OUTPUT_CURRENT_XP3R3V:
+      sprintf(name, "PIM5_MP2975_OUTPUT_CURR_XP3R3V");
+      break;
+    case PIM5_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+      sprintf(name, "PIM5_MP2975_OUTPUT_VOL_XP3R3V");
+      break;
     case PIM6_LM75_U37_TEMP_BASE:
       sprintf(name, "PIM6_LM75_U37_TEMP_BASE");
       break;
@@ -3062,6 +3377,21 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case PIM6_XP1R8V_PHYAVDD:
       sprintf(name, "PIM6_XP1R8V_PHYAVDD");
+      break;
+    case PIM6_MP2975_INPUT_VOLTAGE:
+      sprintf(name, "PIM6_MP2975_INPUT_VOLTAGE");
+      break;
+    case PIM6_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+      sprintf(name, "PIM6_MP2975_OUTPUT_VOL_XP0R8V");
+      break;
+    case PIM6_MP2975_OUTPUT_CURRENT_XP0R8V:
+      sprintf(name, "PIM6_MP2975_OUTPUT_CURR_XP0R8V");
+      break;
+    case PIM6_MP2975_OUTPUT_CURRENT_XP3R3V:
+      sprintf(name, "PIM6_MP2975_OUTPUT_CURR_XP3R3V");
+      break;
+    case PIM6_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+      sprintf(name, "PIM6_MP2975_OUTPUT_VOL_XP3R3V");
       break;
     case PIM7_LM75_U37_TEMP_BASE:
       sprintf(name, "PIM7_LM75_U37_TEMP_BASE");
@@ -3126,6 +3456,21 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
     case PIM7_XP1R8V_PHYAVDD:
       sprintf(name, "PIM7_XP1R8V_PHYAVDD");
       break;
+    case PIM7_MP2975_INPUT_VOLTAGE:
+      sprintf(name, "PIM7_MP2975_INPUT_VOLTAGE");
+      break;
+    case PIM7_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+      sprintf(name, "PIM7_MP2975_OUTPUT_VOL_XP0R8V");
+      break;
+    case PIM7_MP2975_OUTPUT_CURRENT_XP0R8V:
+      sprintf(name, "PIM7_MP2975_OUTPUT_CURR_XP0R8V");
+      break;
+    case PIM7_MP2975_OUTPUT_CURRENT_XP3R3V:
+      sprintf(name, "PIM7_MP2975_OUTPUT_CURR_XP3R3V");
+      break;
+    case PIM7_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+      sprintf(name, "PIM7_MP2975_OUTPUT_VOL_XP3R3V");
+      break;
     case PIM8_LM75_U37_TEMP_BASE:
       sprintf(name, "PIM8_LM75_U37_TEMP_BASE");
       break;
@@ -3188,6 +3533,21 @@ get_pim_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case PIM8_XP1R8V_PHYAVDD:
       sprintf(name, "PIM8_XP1R8V_PHYAVDD");
+      break;
+    case PIM8_MP2975_INPUT_VOLTAGE:
+      sprintf(name, "PIM8_MP2975_INPUT_VOLTAGE");
+      break;
+    case PIM8_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+      sprintf(name, "PIM8_MP2975_OUTPUT_VOL_XP0R8V");
+      break;
+    case PIM8_MP2975_OUTPUT_CURRENT_XP0R8V:
+      sprintf(name, "PIM8_MP2975_OUTPUT_CURR_XP0R8V");
+      break;
+    case PIM8_MP2975_OUTPUT_CURRENT_XP3R3V:
+      sprintf(name, "PIM8_MP2975_OUTPUT_CURR_XP3R3V");
+      break;
+    case PIM8_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+      sprintf(name, "PIM8_MP2975_OUTPUT_VOL_XP3R3V");
       break;
     default:
       return -1;
@@ -3500,12 +3860,20 @@ get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case SMB_SENSOR_FCM_T_HSC_POWER_VOLT:
     case SMB_SENSOR_FCM_B_HSC_POWER_VOLT:
     case SMB_XP12R0V_VDDC_SW_IN:
+    case SMB_OUTPUT_VOLTAGE_XP0R75V_1:
+    case SMB_INPUT_VOLTAGE_1:
+    case SMB_OUTPUT_VOLTAGE_XP1R2V:
+    case SMB_OUTPUT_VOLTAGE_XP0R75V_2:
+    case SMB_INPUT_VOLTAGE_2:
       sprintf(units, "Volts");
       break;
     case SMB_SENSOR_FCM_T_HSC_CURR:
     case SMB_SENSOR_FCM_B_HSC_CURR:
     case SMB_VDDC_SW_CURR_IN:
     case SMB_VDDC_SW_CURR_OUT:
+    case SMB_OUTPUT_CURRENT_XP0R75V_1:
+    case SMB_OUTPUT_CURRENT_XP1R2V:
+    case SMB_OUTPUT_CURRENT_XP0R75V_2:
       sprintf(units, "Amps");
       break;
     case SMB_VDDC_SW_POWER_IN:
@@ -3582,6 +3950,22 @@ get_pim_sensor_units(uint8_t sensor_num, char *units) {
     case PIM6_SENSOR_HSC_CURR:
     case PIM7_SENSOR_HSC_CURR:
     case PIM8_SENSOR_HSC_CURR:
+    case PIM1_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM2_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM3_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM4_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM5_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM6_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM7_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM8_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM1_MP2975_OUTPUT_CURRENT_XP0R8V:
+    case PIM2_MP2975_OUTPUT_CURRENT_XP0R8V:
+    case PIM3_MP2975_OUTPUT_CURRENT_XP0R8V:
+    case PIM4_MP2975_OUTPUT_CURRENT_XP0R8V:
+    case PIM5_MP2975_OUTPUT_CURRENT_XP0R8V:
+    case PIM6_MP2975_OUTPUT_CURRENT_XP0R8V:
+    case PIM7_MP2975_OUTPUT_CURRENT_XP0R8V:
+    case PIM8_MP2975_OUTPUT_CURRENT_XP0R8V:
       sprintf(units, "Amps");
       break;
     case PIM1_SENSOR_HSC_POWER:
@@ -3714,6 +4098,30 @@ get_pim_sensor_units(uint8_t sensor_num, char *units) {
     case PIM8_XP1R8V_EARLY:
     case PIM8_XP1R8V_PHYIO:
     case PIM8_XP1R8V_PHYAVDD:
+    case PIM1_MP2975_INPUT_VOLTAGE:
+    case PIM2_MP2975_INPUT_VOLTAGE:
+    case PIM3_MP2975_INPUT_VOLTAGE:
+    case PIM4_MP2975_INPUT_VOLTAGE:
+    case PIM5_MP2975_INPUT_VOLTAGE:
+    case PIM6_MP2975_INPUT_VOLTAGE:
+    case PIM7_MP2975_INPUT_VOLTAGE:
+    case PIM8_MP2975_INPUT_VOLTAGE:
+    case PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM2_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM3_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM4_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM5_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM6_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM7_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM8_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM2_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM3_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM4_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM5_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM6_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM7_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM8_MP2975_OUTPUT_VOLTAGE_XP3R3V:
       sprintf(units, "Volts");
       break;
     default:
@@ -3950,6 +4358,10 @@ scm_thresh_done:
       smb_sensor_threshold[SMB_XP3R3V_TCXO][UNR_THRESH] = 3.465;
       smb_sensor_threshold[SMB_XP3R3V_TCXO][LNR_THRESH] = 3.165; 
       smb_sensor_threshold[SMB_XP3R3V_TCXO][LCR_THRESH] = 2.8;
+      smb_sensor_threshold[SMB_OUTPUT_VOLTAGE_XP0R75V_1][UCR_THRESH] = 0.862;
+      smb_sensor_threshold[SMB_OUTPUT_VOLTAGE_XP0R75V_1][UNR_THRESH] = 0.773;
+      smb_sensor_threshold[SMB_OUTPUT_VOLTAGE_XP0R75V_1][LNR_THRESH] = 0.728;
+      smb_sensor_threshold[SMB_OUTPUT_VOLTAGE_XP0R75V_1][LCR_THRESH] = 0.638;
       smb_sensor_threshold[SMB_SENSOR_FCM_T_HSC_VOLT][LCR_THRESH] = 7.5;
       smb_sensor_threshold[SMB_SENSOR_FCM_B_HSC_VOLT][LCR_THRESH] = 7.5;
       smb_sensor_threshold[SMB_SENSOR_FCM_T_HSC_POWER_VOLT][LCR_THRESH] = 7.5;
@@ -4305,6 +4717,14 @@ smb_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case SMB_SENSOR_FCM_B_HSC_CURR:
     case SMB_SENSOR_FCM_T_HSC_POWER_VOLT:
     case SMB_SENSOR_FCM_B_HSC_POWER_VOLT:
+    case SMB_OUTPUT_VOLTAGE_XP0R75V_1:
+    case SMB_OUTPUT_CURRENT_XP0R75V_1:
+    case SMB_INPUT_VOLTAGE_1:
+    case SMB_OUTPUT_VOLTAGE_XP1R2V:
+    case SMB_OUTPUT_CURRENT_XP1R2V:
+    case SMB_OUTPUT_VOLTAGE_XP0R75V_2:
+    case SMB_OUTPUT_CURRENT_XP0R75V_2:
+    case SMB_INPUT_VOLTAGE_2:
       *value = 30;
       break;
     case SMB_SENSOR_FAN1_FRONT_TACH:
@@ -4357,6 +4777,11 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM1_XP1R8V_EARLY:
     case PIM1_XP1R8V_PHYIO:
     case PIM1_XP1R8V_PHYAVDD:
+    case PIM1_MP2975_INPUT_VOLTAGE:
+    case PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM1_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM1_MP2975_OUTPUT_CURRENT_XP0R8V:
       *value = 60;
       break;
     case PIM2_LM75_U37_TEMP_BASE:
@@ -4381,6 +4806,11 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM2_XP1R8V_EARLY:
     case PIM2_XP1R8V_PHYIO:
     case PIM2_XP1R8V_PHYAVDD:
+    case PIM2_MP2975_INPUT_VOLTAGE:
+    case PIM2_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM2_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM2_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM2_MP2975_OUTPUT_CURRENT_XP0R8V:
       *value = 60;
       break;
     case PIM3_LM75_U37_TEMP_BASE:
@@ -4405,6 +4835,11 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM3_XP1R8V_EARLY:
     case PIM3_XP1R8V_PHYIO:
     case PIM3_XP1R8V_PHYAVDD:
+    case PIM3_MP2975_INPUT_VOLTAGE:
+    case PIM3_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM3_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM3_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM3_MP2975_OUTPUT_CURRENT_XP0R8V:
       *value = 60;
       break;
     case PIM4_LM75_U37_TEMP_BASE:
@@ -4429,6 +4864,11 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM4_XP1R8V_EARLY:
     case PIM4_XP1R8V_PHYIO:
     case PIM4_XP1R8V_PHYAVDD:
+    case PIM4_MP2975_INPUT_VOLTAGE:
+    case PIM4_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM4_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM4_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM4_MP2975_OUTPUT_CURRENT_XP0R8V:
       *value = 60;
       break;
     case PIM5_LM75_U37_TEMP_BASE:
@@ -4453,6 +4893,11 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM5_XP1R8V_EARLY:
     case PIM5_XP1R8V_PHYIO:
     case PIM5_XP1R8V_PHYAVDD:
+    case PIM5_MP2975_INPUT_VOLTAGE:
+    case PIM5_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM5_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM5_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM5_MP2975_OUTPUT_CURRENT_XP0R8V:
       *value = 60;
       break;
     case PIM6_LM75_U37_TEMP_BASE:
@@ -4477,6 +4922,11 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM6_XP1R8V_EARLY:
     case PIM6_XP1R8V_PHYIO:
     case PIM6_XP1R8V_PHYAVDD:
+    case PIM6_MP2975_INPUT_VOLTAGE:
+    case PIM6_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM6_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM6_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM6_MP2975_OUTPUT_CURRENT_XP0R8V:
       *value = 60;
       break;
     case PIM7_LM75_U37_TEMP_BASE:
@@ -4501,6 +4951,11 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM7_XP1R8V_EARLY:
     case PIM7_XP1R8V_PHYIO:
     case PIM7_XP1R8V_PHYAVDD:
+    case PIM7_MP2975_INPUT_VOLTAGE:
+    case PIM7_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM7_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM7_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM7_MP2975_OUTPUT_CURRENT_XP0R8V:
       *value = 60;
       break;
     case PIM8_LM75_U37_TEMP_BASE:
@@ -4525,6 +4980,11 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PIM8_XP1R8V_EARLY:
     case PIM8_XP1R8V_PHYIO:
     case PIM8_XP1R8V_PHYAVDD:
+    case PIM8_MP2975_INPUT_VOLTAGE:
+    case PIM8_MP2975_OUTPUT_VOLTAGE_XP0R8V:
+    case PIM8_MP2975_OUTPUT_VOLTAGE_XP3R3V:
+    case PIM8_MP2975_OUTPUT_CURRENT_XP3R3V:
+    case PIM8_MP2975_OUTPUT_CURRENT_XP0R8V:
       *value = 60;
       break;
     case PIM1_SENSOR_QSFP_TEMP:

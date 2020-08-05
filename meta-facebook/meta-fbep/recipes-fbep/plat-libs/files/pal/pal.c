@@ -970,31 +970,10 @@ exit:
   gpio_close(fan_fail);
 }
 
-static int get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask)
-{
-  int i;
-  *mask = 0;
-  for (i = 0; i < num; i++) {
-    int ret;
-    gpio_value_t value;
-    gpio_desc_t *gpio = gpio_open_by_shadow(shadows[i]);
-    if (!gpio) {
-      return -1;
-    }
-    ret = gpio_get_value(gpio, &value);
-    gpio_close(gpio);
-    if (ret != 0) {
-      return -1;
-    }
-    *mask |= (value == GPIO_VALUE_HIGH ? 1 : 0) << i;
-  }
-  return 0;
-}
-
 int pal_get_platform_id(uint8_t *id)
 {
   static bool cached = false;
-  static uint8_t cached_id = 0;
+  static unsigned int cached_id = 0;
 
   if (!cached) {
     const char *shadows[] = {
@@ -1002,19 +981,19 @@ int pal_get_platform_id(uint8_t *id)
       "BOARD_ID1",
       "BOARD_ID2"
     };
-    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+    if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_id)) {
       return -1;
     }
     cached = true;
   }
-  *id = cached_id;
+  *id = (uint8_t)cached_id;
   return 0;
 }
 
 static int get_board_rev_id(uint8_t *id)
 {
   static bool cached = false;
-  static uint8_t cached_id = 0;
+  static unsigned int cached_id = 0;
 
   if (!cached) {
     const char *shadows[] = {
@@ -1022,12 +1001,12 @@ static int get_board_rev_id(uint8_t *id)
       "REV_ID1",
       "REV_ID2"
     };
-    if (get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+    if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_id)) {
       return -1;
     }
     cached = true;
   }
-  *id = cached_id;
+  *id = (uint8_t)cached_id;
   return 0;
 }
 

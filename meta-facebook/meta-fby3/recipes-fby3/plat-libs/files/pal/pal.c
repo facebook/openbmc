@@ -2640,6 +2640,7 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
   int ret = 0;
   char dev[32] = {0};
   uint8_t val = 0;
+  gpio_value_t gval;
   uint8_t gpio_vals = 0;
   bic_gpio_t gpio = {0};
   int i2cfd = 0;
@@ -2655,9 +2656,10 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
     //read GPIO vals
     for ( i = 0; i < num_of_mgmt_pins; i++ ) {
       snprintf(dev, sizeof(dev), gpio_mgmt_cbl_tbl[i], slot_id);
-      if ( get_gpio_value(dev, &val) < 0 ) {
+      if ( (gval = gpio_get_value_by_shadow(dev)) == GPIO_VALUE_INVALID ) {
         syslog(LOG_WARNING, "%s() Failed to read %s", __func__, dev);
       }
+      val = (uint8_t)gval;
       gpio_vals |= (val << i);
     }
   } else {

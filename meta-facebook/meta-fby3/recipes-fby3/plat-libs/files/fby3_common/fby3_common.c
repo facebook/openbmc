@@ -38,71 +38,8 @@ const char *slot_usage = "slot1|slot2|slot3|slot4";
 const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp"};
 
 int
-fby3_common_get_gpio_shadow_array(const char **shadows, int num, uint8_t *mask) {
-  int i;
-  *mask = 0;
-  for (i = 0; i < num; i++) {
-    int ret;
-    gpio_value_t value;
-    gpio_desc_t *gpio = gpio_open_by_shadow(shadows[i]);
-    if (!gpio) {
-      return -1;
-    }
-    ret = gpio_get_value(gpio, &value);
-    gpio_close(gpio);
-    if (ret != 0) {
-      return -1;
-    }
-    *mask |= (value == GPIO_VALUE_HIGH ? 1 : 0) << i;
-  }
-  return 0;
-}
-
-static int
-set_gpio_value(const char *gpio_name, gpio_value_t val) {
-  int ret = 0;
-  gpio_desc_t *gdesc = NULL;
- 
-  gdesc = gpio_open_by_shadow(gpio_name);
-  if ( gdesc == NULL ) {
-    syslog(LOG_WARNING, "[%s] Cannot open %s", __func__, gpio_name);
-    return -1;
-  }
-
-  ret = gpio_set_value(gdesc, val);
-  gpio_close(gdesc);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "[%s] Cannot set %s to %d", __func__, gpio_name, val);
-  }
-
-  return ret;
-}
-
-int
-get_gpio_value(const char *gpio_name, uint8_t *status) {
-  int ret = 0;
-  gpio_desc_t *gdesc = NULL;
-  gpio_value_t val;
-
-  gdesc = gpio_open_by_shadow(gpio_name);
-  if ( gdesc == NULL ) {
-    syslog(LOG_WARNING, "[%s] Cannot open %s", __func__, gpio_name);
-    return -1;
-  }
-
-  ret = gpio_get_value(gdesc, &val);
-  gpio_close(gdesc);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "[%s] Cannot get the value of %s", __func__, gpio_name);
-  }
-
-  *status = (val == GPIO_VALUE_HIGH ? 1 : 0);
-  return ret;
-}
-
-int
 fby3_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val) {
-  return set_gpio_value(gpio_server_i2c_isolated[fru], (val==0)?GPIO_VALUE_LOW:GPIO_VALUE_HIGH);
+  return gpio_set_value_by_shadow(gpio_server_i2c_isolated[fru], (val==0)?GPIO_VALUE_LOW:GPIO_VALUE_HIGH);
 }
 
 int
@@ -163,6 +100,7 @@ int
 fby3_common_is_fru_prsnt(uint8_t fru, uint8_t *val) {
   int ret = 0;
   uint8_t bmc_location = 0;
+  gpio_value_t gpio_value;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -171,14 +109,14 @@ fby3_common_is_fru_prsnt(uint8_t fru, uint8_t *val) {
   }
 
   if ( bmc_location == BB_BMC || bmc_location == DVT_BB_BMC ) {
-    ret = get_gpio_value(gpio_server_prsnt[fru], val);
-    if ( ret < 0 ) {
-      return ret;
+    gpio_value = gpio_get_value_by_shadow(gpio_server_prsnt[fru]);
+    if ( gpio_value == GPIO_VALUE_INVALID ) {
+      return -1;
     }
 
     //0: the fru isn't present
     //1: the fru is present
-    *val = (*val == GPIO_VALUE_HIGH)?0:1;
+    *val = (gpio_value == GPIO_VALUE_HIGH)?0:1;
   } else {
     //1: a server is always existed on class2
     *val = 1;
@@ -191,6 +129,7 @@ int
 fby3_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val) {
   int ret = 0;
   uint8_t bmc_location = 0;
+  gpio_value_t gpio_value;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -199,10 +138,11 @@ fby3_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val) {
   }
 
   if ( bmc_location == BB_BMC || bmc_location == DVT_BB_BMC ) {
-    ret = get_gpio_value(gpio_server_stby_pwr_sts[fru], val);
-    if ( ret < 0 ) {
-      return ret;
+    gpio_value = gpio_get_value_by_shadow(gpio_server_stby_pwr_sts[fru]);
+    if ( gpio_value == GPIO_VALUE_INVALID ) {
+      return -1;
     }
+    *val = (uint8_t)gpio_value;
   } else {
     //1: a server is always existed on class2 
     *val = 1;
@@ -287,7 +227,7 @@ fby3_common_get_bus_id(uint8_t slot_id) {
 int
 fby3_common_get_bmc_location(uint8_t *id) {
   static bool is_cached = false;
-  static uint8_t cached_id = 0;
+  static unsigned int cached_id = 0;
 
   if ( is_cached == false ) {
     const char *shadows[] = {
@@ -297,14 +237,14 @@ fby3_common_get_bmc_location(uint8_t *id) {
       "BOARD_BMC_ID3_R",
     };
 
-    if ( fby3_common_get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id) ) {
+    if ( gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_id) ) {
       return -1;
     }
 
     is_cached = true;
   }
 
-  *id = cached_id;
+  *id = (uint8_t)cached_id;
 
   return 0;
 }

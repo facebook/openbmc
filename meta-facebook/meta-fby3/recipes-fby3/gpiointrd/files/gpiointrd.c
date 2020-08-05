@@ -354,7 +354,7 @@ static struct gpiopoll_config g_class2_gpios[] = {
 
 static void
 *ac_button_event() {
-  uint8_t gpio_vals = 0x0;
+  unsigned int gpio_vals = 0x0;
   /*
   Baseboard AC button:
   - Press it more than 4s or will do nothing.
@@ -403,14 +403,14 @@ static void
   memset(is_asserted, false, BTN_ARRAY_SIZE);
 
   //setup the default status
-  if ( fby3_common_get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &gpio_vals) < 0 ) {
+  if ( gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &gpio_vals) < 0 ) {
     syslog(LOG_CRIT, "AC_ON_OFF buttons are not functional");
     pthread_exit(0);
   }
 
   //start to poll each pin
   while (1) {
-    if ( fby3_common_get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &gpio_vals) < 0 ) {
+    if ( gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &gpio_vals) < 0 ) {
       syslog(LOG_WARNING, "Could not get the current values of all AC_ON_OFF buttons");
       sleep(1);
       continue;

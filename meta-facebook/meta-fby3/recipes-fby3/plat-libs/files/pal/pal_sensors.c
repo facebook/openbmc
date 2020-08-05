@@ -857,7 +857,7 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 static int
 pal_get_fan_type(uint8_t *bmc_location, uint8_t *type) {
   static bool is_cached = false;
-  static uint8_t cached_id = 0;
+  static unsigned int cached_id = 0;
   int ret = 0;
 
   ret = fby3_common_get_bmc_location(bmc_location);
@@ -872,14 +872,14 @@ pal_get_fan_type(uint8_t *bmc_location, uint8_t *type) {
         "DUAL_FAN1_DETECT_BMC_N_R",
       };
 
-      if ( fby3_common_get_gpio_shadow_array(shadows, ARRAY_SIZE(shadows), &cached_id) ) {
+      if ( gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_id) ) {
         return PAL_ENOTSUP;
       }
 
       is_cached = true;
     }
 
-    *type = cached_id;
+    *type = (uint8_t)cached_id;
   } else {
     *type = DUAL_TYPE;
   }

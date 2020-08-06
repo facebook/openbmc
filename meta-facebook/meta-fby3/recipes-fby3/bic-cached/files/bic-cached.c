@@ -43,11 +43,6 @@
 #define MAX_RETRY 6           // 180 secs = 1500 * 6
 #define MAX_RETRY_CNT 1500    // A senond can run about 50 times, 30 secs = 30 * 50
 
-#define PRESENT_1OU 1
-#define PRESENT_2OU 2
-#define DEV_ID_1U 11
-#define DEV_ID_2U 12
-
 int
 remote_fruid_cache_init(uint8_t slot_id, uint8_t intf) {
   int ret=0;

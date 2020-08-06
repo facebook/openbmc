@@ -46,8 +46,6 @@ extern "C" {
 #define FRU_NICEXP_BIN "/tmp/fruid_nicexp.bin"
 #define FRU_SLOT_BIN   "/tmp/fruid_slot%d.bin"
 
-#define I2CDEV "/dev/i2c-%d"
-
 #define SB_CPLD_ADDR 0x0f
 
 #define NIC_FRU_BUS     8

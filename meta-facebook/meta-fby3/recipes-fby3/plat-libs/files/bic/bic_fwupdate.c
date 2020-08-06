@@ -494,7 +494,7 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
   snprintf(cmd, cmd_size, "sv stop ipmbd_%d", bus_num);
   if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      return BIC_ENOTSUP;
+      return BIC_STATUS_FAILURE;
   }
   printf("stop ipmbd for slot %x..\n", slot_id);
 
@@ -502,7 +502,7 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
   snprintf(cmd, cmd_size, "devmem 0x1e78a%03X w 0xFFFFE303", I2CBASE + (I2CBASE * bus_num) + 4);
   if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      return BIC_ENOTSUP;
+      return BIC_STATUS_FAILURE;
   }
   sleep(1);
   printf("stopped ipmbd for slot %x..\n", slot_id);
@@ -521,7 +521,7 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
   snprintf(cmd, cmd_size, "/usr/local/bin/ipmbd -u %d %d > /dev/null 2>&1 &", bus_num, slot_id);
   if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      return BIC_ENOTSUP;
+      return BIC_STATUS_FAILURE;
   }
   printf("start ipmbd -u for this slot %x..\n", slot_id);
 
@@ -539,7 +539,7 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
   snprintf(cmd, cmd_size, "ps -w | grep -v 'grep' | grep 'ipmbd -u %d' |awk '{print $1}'| xargs kill", bus_num);
   if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      return BIC_ENOTSUP;
+      return BIC_STATUS_FAILURE;
   }
   printf("stop ipmbd -u for slot %x..\n", slot_id);
 
@@ -589,7 +589,7 @@ exit:
   snprintf(cmd, cmd_size, "devmem 0x1e78a%03X w 0xFFFCB300", I2CBASE + (I2CBASE * bus_num) + 4);
   if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      return BIC_ENOTSUP;
+      return BIC_STATUS_FAILURE;
   }
   msleep(500);
 
@@ -597,7 +597,7 @@ exit:
   snprintf(cmd, cmd_size, "sv start ipmbd_%d", bus_num);
   if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      return BIC_ENOTSUP;
+      return BIC_STATUS_FAILURE;
   }
 
   syslog(LOG_CRIT, "%s: updating bic firmware is exiting on slot %d\n", __func__, slot_id);

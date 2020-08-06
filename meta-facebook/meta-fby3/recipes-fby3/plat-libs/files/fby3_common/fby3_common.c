@@ -98,31 +98,15 @@ fby3_common_check_slot_id(uint8_t fru) {
 
 int
 fby3_common_is_fru_prsnt(uint8_t fru, uint8_t *val) {
-  int ret = 0;
-  uint8_t bmc_location = 0;
   gpio_value_t gpio_value;
-
-  ret = fby3_common_get_bmc_location(&bmc_location);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-    return ret;
+  gpio_value = gpio_get_value_by_shadow(gpio_server_prsnt[fru]);
+  if ( gpio_value == GPIO_VALUE_INVALID ) {
+    return -1;
   }
-
-  if ( bmc_location == BB_BMC || bmc_location == DVT_BB_BMC ) {
-    gpio_value = gpio_get_value_by_shadow(gpio_server_prsnt[fru]);
-    if ( gpio_value == GPIO_VALUE_INVALID ) {
-      return -1;
-    }
-
-    //0: the fru isn't present
-    //1: the fru is present
-    *val = (gpio_value == GPIO_VALUE_HIGH)?0:1;
-  } else {
-    //1: a server is always existed on class2
-    *val = 1;
-  }
-
-  return ret; 
+  //0: the fru isn't present
+  //1: the fru is present
+  *val = (gpio_value == GPIO_VALUE_HIGH)?0:1;
+  return 0; 
 }
 
 int
@@ -155,7 +139,6 @@ int
 fby3_common_is_bic_ready(uint8_t fru, uint8_t *val) {
   int i2cfd = 0;
   int ret = 0;
-  char path[32] = {0};
   uint8_t bmc_location = 0;
   uint8_t bus = 0;
   uint8_t tbuf[1] = {0x02};
@@ -176,12 +159,10 @@ fby3_common_is_bic_ready(uint8_t fru, uint8_t *val) {
     goto error_exit;
   }
 
-  bus= (uint8_t)ret;
-  snprintf(path, sizeof(path), I2CDEV, bus);
-
-  i2cfd = open(path, O_RDWR);
+  bus = (uint8_t)ret;
+  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
+    syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, bus, strerror(errno));
     goto error_exit;
   }
 
@@ -370,16 +351,14 @@ fby3_common_dev_name(uint8_t dev, char *str) {
 int
 fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
   uint8_t bus_num = 0;
-  int fd = 0, ret = 0;
+  int fd = -1, ret = 0;
   int tlen = 0, rlen = 0;
   uint8_t tbuf[64], rbuf[64];
-  char fn[32];
 
   bus_num = fby3_common_get_bus_id(fru_id) + 4;
-  i2c_cdev_master_abspath(fn, sizeof(fn), bus_num);
-  fd = open(fn, O_RDWR);
-  if (fd == -1) {
-    syslog(LOG_ERR, "Failed to open %s: %s", fn, strerror(errno));
+  fd = i2c_cdev_slave_open(bus_num, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  if ( fd < 0 ) {
+    syslog(LOG_ERR, "Failed to open bus %d: %s", bus_num, strerror(errno));
     return -1;
   }
 

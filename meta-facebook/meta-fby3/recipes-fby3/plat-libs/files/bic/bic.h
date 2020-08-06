@@ -97,13 +97,6 @@ enum {
 };
 
 enum {
-  BIC_EOK = 0,
-  BIC_ENOTSUP = -ENOTSUP,
-  BIC_ENOTREADY = -EAGAIN,
-  /* non system errors start from -256 downwards */
-};
-
-enum {
   RECOVERY_MODE = 1,
   RESTORE_FACTORY_DEFAULT,
 };

@@ -2477,7 +2477,6 @@ pal_check_pfr_mailbox(uint8_t fru) {
   uint8_t tlen = 1, rlen = 1;
   uint8_t major_err = 0, minor_err = 0;
   char *major_str = "NA", *minor_str = "NA";
-  char dev[32] = {0};
   char fru_str[32] = {0};
   uint8_t bus, addr;
   bool bridged;
@@ -2487,10 +2486,9 @@ pal_check_pfr_mailbox(uint8_t fru) {
     return -1;
   }
 
-  snprintf(dev, sizeof(dev), I2CDEV, bus);
-  i2cfd = open(dev, O_RDWR);
+  i2cfd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to open %s", __func__, dev);
+    syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, bus, strerror(errno));
     return -1;
   }
 
@@ -2644,7 +2642,6 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
   uint8_t gpio_vals = 0;
   bic_gpio_t gpio = {0};
   int i2cfd = 0;
-  char path[32] = {0};
   uint8_t bus = 0;
   uint8_t tbuf[1] = {0x06};
   uint8_t rbuf[1] = {0};
@@ -2671,29 +2668,24 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
       return -1;
     }
 
-    bus= (uint8_t)ret;
-    snprintf(path, sizeof(path), I2CDEV, bus);
+    bus = (uint8_t)ret;
+    i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+    if ( i2cfd < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, bus, strerror(errno));
+      return -1;
+    }
 
     //read 06h from SB CPLD
-    i2cfd = open(path, O_RDWR);
-    if ( i2cfd < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
-      if ( i2cfd > 0 ) close(i2cfd);
-      return -1;
-    }
-
     ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
+    if ( i2cfd > 0 ) close(i2cfd);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-      if ( i2cfd > 0 ) close(i2cfd);
       return -1;
     }
-
-    if ( i2cfd > 0 ) close(i2cfd);
 
     cpld_slot_cbl_val = rbuf[0];
 
-     //read GPIO from BB BIC
+    //read GPIO from BB BIC
     ret = bic_get_gpio(slot_id, &gpio, BB_BIC_INTF);
     if ( ret < 0 ) {
       printf("%s() bic_get_gpio returns %d\n", __func__, ret);
@@ -2727,14 +2719,10 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
 }
 
 int pal_set_bios_cap_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
-  uint8_t *data = res_data;
   int i2cfd = 0, ret = 0;
-  uint8_t bmc_location = 0;
   uint8_t status;
-  uint8_t len;
   uint8_t bus;
   uint8_t retry = 0;
-  char path[128] = {0};
   uint32_t ver_reg = BIOS_CAP_STAG_MAILBOX;
   uint8_t tbuf[18] = {0};
   uint8_t tlen = BIOS_CAP_VER_LEN;
@@ -2757,10 +2745,10 @@ int pal_set_bios_cap_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t req_len, ui
     goto error_exit;
   }
 
-  bus= (uint8_t)ret;
-  snprintf(path, sizeof(path), I2CDEV, bus);
-  if ((i2cfd = open(path, O_RDWR)) < 0) {
-    printf("Failed to open %s\n", path);
+  bus = (uint8_t)ret;
+  i2cfd = i2c_cdev_slave_open(bus, CPLD_INTENT_CTRL_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if ( i2cfd < 0) {
+    printf("Failed to open bus %d. Err: %s\n", bus, strerror(errno));
     goto error_exit;
   }
 
@@ -2791,16 +2779,9 @@ int
 pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
 {
   uint8_t bmc_location = 0;
-  uint8_t config_status;
-  int ret;
-  const uint8_t cpld_addr = 0x40;
-  uint8_t bus;
-  uint8_t tlen = 4;
-  uint8_t rlen = 4;
-  uint8_t tbuf[4] = {0x00, 0x20, 0x00, 0x28};
-  char path[128] = {0};
-  int i2cfd = 0;
-  uint8_t tmp_cpld_swap[4];
+  uint8_t config_status = CONFIG_UNKNOWN ;
+  int ret = PAL_ENOTSUP;
+  uint8_t tmp_cpld_swap[4] = {0};
  
   ret = fby3_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
@@ -2809,21 +2790,25 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
   }
   
   if (target == FW_CPLD) {
-    snprintf(path, sizeof(path), I2CDEV, fby3_common_get_bus_id(fru) + 4);
-    if ((i2cfd = open(path, O_RDWR)) < 0) {
-      syslog(LOG_WARNING, "%s() Failed to open %s\n", __func__, path);
+    const uint8_t cpld_addr = 0x80; /*8-bit addr*/
+    uint8_t tbuf[4] = {0x00, 0x20, 0x00, 0x28};
+    uint8_t tlen = 4;
+    uint8_t rlen = 4;
+    uint8_t i2c_bus = fby3_common_get_bus_id(fru) + 4;
+    int i2cfd = -1;
+    ret = i2c_cdev_slave_open(i2c_bus, cpld_addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to talk to slave@0x%02X on bus %d. Err: %s\n", \
+                                          __func__, cpld_addr, i2c_bus, strerror(errno));
       goto error_exit;
     }
 
-    if (ioctl(i2cfd, I2C_SLAVE, cpld_addr) < 0) {
-      syslog(LOG_WARNING, "%s() Failed to talk to slave@0x%02X\n", __func__, tlen);
+    i2cfd = ret;
+    ret = i2c_rdwr_msg_transfer(i2cfd, cpld_addr, tbuf, tlen, res, rlen);
+    if ( i2cfd > 0 ) close(i2cfd);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer to slave@0x%02X on bus %d", __func__, cpld_addr, i2c_bus);
       goto error_exit;
-    } else {
-      ret = i2c_rdwr_msg_transfer(i2cfd, cpld_addr << 1, tbuf, tlen, res, rlen);
-      if (ret < 0) {
-        syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-        goto error_exit;
-      }
     }
   } else if(target == FW_BIOS) {
     ret = pal_get_sysfw_ver(fru, res);
@@ -2872,7 +2857,7 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
     }
 
     ret = bic_get_fw_ver(fru, target, res);
-    if (ret != BIC_EOK) {
+    if (ret != BIC_STATUS_SUCCESS) {
       syslog(LOG_WARNING, "%s() bic_get_fw_ver returns %d\n", __func__, ret);
       goto error_exit;
     }

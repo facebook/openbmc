@@ -11,7 +11,7 @@ import argparse
 
 def openbmc_path():
     curr = os.path.abspath(__file__)
-    openbmc = os.path.dirname(curr) + "/../.."
+    openbmc = os.path.dirname(curr) + "/.."
     return os.path.abspath(openbmc)
 
 

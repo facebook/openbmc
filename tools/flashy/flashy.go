@@ -65,7 +65,7 @@ WARRANTIES OFF`)
 	// install
 	if stepParams.Install {
 		log.Println("Installing flashy...")
-		install.Install()
+		install.Install(stepParams)
 		log.Println("Finished installing flashy")
 		return
 	}

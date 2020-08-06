@@ -36,6 +36,7 @@ import (
 )
 
 const ProcMtdFilePath = "/proc/mtd"
+const etcIssueFilePath = "/etc/issue"
 
 // memory information in bytes
 type MemInfo struct {
@@ -193,7 +194,8 @@ var SystemdAvailable = func() (bool, error) {
 	if fileutils.FileExists(cmdlinePath) {
 		buf, err := fileutils.ReadFile(cmdlinePath)
 		if err != nil {
-			return false, errors.Errorf("%v exists but cannot be read: %v", cmdlinePath, err)
+			return false, errors.Errorf("%v exists but cannot be read: %v",
+				cmdlinePath, err)
 		}
 
 		contains := strings.Contains(string(buf), "systemd")
@@ -211,9 +213,10 @@ var SystemdAvailable = func() (bool, error) {
 var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 	const etcIssueVersionRegEx = `^OpenBMC Release (?P<version>[^\s]+)`
 
-	etcIssueBuf, err := fileutils.ReadFile("/etc/issue")
+	etcIssueBuf, err := fileutils.ReadFile(etcIssueFilePath)
 	if err != nil {
-		return "", errors.Errorf("Error reading /etc/issue: %v", err)
+		return "", errors.Errorf("Error reading %v: %v",
+			etcIssueFilePath, err)
 	}
 
 	etcIssueMap, err := GetRegexSubexpMap(
@@ -222,9 +225,25 @@ var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 	if err != nil {
 		// does not match regex
 		return "",
-			errors.Errorf("Unable to get version from /etc/issue: %v", err)
+			errors.Errorf("Unable to get version from %v: %v",
+				etcIssueFilePath, err)
 	}
 
 	version := etcIssueMap["version"]
 	return version, nil
+}
+
+// check whether the system is indeed an OpenBMC
+// by checking whether the string "OpenBMC" exists in /etc/issue
+var IsOpenBMC = func() (bool, error) {
+	const magic = "OpenBMC"
+
+	etcIssueBuf, err := fileutils.ReadFile(etcIssueFilePath)
+	if err != nil {
+		return false, errors.Errorf("Error reading '%v': %v",
+			etcIssueFilePath, err)
+	}
+
+	isOpenBMC := strings.Contains(string(etcIssueBuf), magic)
+	return isOpenBMC, nil
 }

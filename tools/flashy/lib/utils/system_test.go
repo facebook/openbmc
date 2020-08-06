@@ -58,7 +58,7 @@ func TestGetMemInfo(t *testing.T) {
 		{
 			name: "unit conversion fail",
 			readFileContents: `MemFree: 123 kB
-MemTotal: 24`,
+ MemTotal: 24`,
 			readFileErr: nil,
 			want:        nil,
 			wantErr:     errors.Errorf("Unable to get MemTotal in /proc/meminfo"),
@@ -511,7 +511,7 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 		{
 			name: "example fbtp /etc/issue",
 			etcIssueContents: `OpenBMC Release fbtp-v2020.09.1
- `,
+  `,
 			etcIssueReadErr: nil,
 			want:            "fbtp-v2020.09.1",
 			wantErr:         nil,
@@ -519,7 +519,7 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 		{
 			name: "example wedge100 /etc/issue",
 			etcIssueContents: `OpenBMC Release wedge100-v2020.07.1
- `,
+  `,
 			etcIssueReadErr: nil,
 			want:            "wedge100-v2020.07.1",
 			wantErr:         nil,
@@ -563,5 +563,61 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 			t.Errorf("want '%v' got '%v'", tc.want, got)
 		}
 		tests.CompareTestErrors(tc.wantErr, err, t)
+	}
+}
+
+func TestIsOpenBMC(t *testing.T) {
+	// mock and defer restore ReadFile
+	readFileOrig := fileutils.ReadFile
+	defer func() {
+		fileutils.ReadFile = readFileOrig
+	}()
+	cases := []struct {
+		name             string
+		readFileContents string
+		readFileError    error
+		want             bool
+		wantErr          error
+	}{
+		{
+			name: "Is OpenBMC",
+			readFileContents: `OpenBMC Release wedge100-v2020.07.1
+			 `,
+			readFileError: nil,
+			want:          true,
+			wantErr:       nil,
+		},
+		{
+			name:             "Not OpenBMC",
+			readFileContents: `foobar`,
+			readFileError:    nil,
+			want:             false,
+			wantErr:          nil,
+		},
+		{
+			name:             "/etc/issue file read error",
+			readFileContents: "",
+			readFileError:    errors.Errorf("file read error"),
+			want:             false,
+			wantErr: errors.Errorf("Error reading '/etc/issue': " +
+				"file read error"),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
+				if filename != "/etc/issue" {
+					t.Errorf("filename: want '%v' got '%v'",
+						"/etc/issue", filename)
+				}
+				return []byte(tc.readFileContents), tc.readFileError
+			}
+
+			got, err := IsOpenBMC()
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+			tests.CompareTestErrors(tc.wantErr, err, t)
+		})
 	}
 }

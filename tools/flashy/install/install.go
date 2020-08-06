@@ -26,6 +26,7 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 
 	// all packages containing steps must be included to successfully run install
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/common"
@@ -37,10 +38,38 @@ import (
 // checkInstallPath will confirm and error out if not
 const flashyInstallPath = "/opt/flashy/flashy"
 
-func Install() {
+func Install(stepParams step.StepParams) {
+	checkIsOpenBMC(stepParams.Clowntown)
 	checkInstallPath()
 	cleanInstallPath()
 	initSymlinks()
+}
+
+// check whether the system is an OpenBMC
+// allow 'clowntown' override to work around malformed /etc/issue
+func checkIsOpenBMC(clowntown bool) {
+	if clowntown {
+		log.Printf("===== WARNING: Clowntown mode: Bypassing OpenBMC device " +
+			"requirement check for installation =====")
+		log.Printf("===== THERE IS RISK OF BRICKING THIS DEVICE =====")
+		return
+	}
+
+	// instructions to bypass, appended to errors
+	bypassMsg := "If you are on an OpenBMC machine with a malformed /etc/issue, " +
+		"please reboot the device and try again. " +
+		"Supply the `--clowntown` flag to bypass this check."
+
+	isOpenBMC, err := utils.IsOpenBMC()
+	if err != nil {
+		log.Fatalf("Unable to check whether this device is an OpenBMC: %v. %v",
+			err, bypassMsg)
+	}
+
+	if !isOpenBMC {
+		log.Fatalf("Installation can only occur in an OpenBMC device! %v",
+			bypassMsg)
+	}
 }
 
 // check whether flashy is installed in the right path

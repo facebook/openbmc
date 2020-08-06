@@ -38,11 +38,9 @@ import (
 const flashyInstallPath = "/opt/flashy/flashy"
 
 func Install() {
-	log.Println("Installing flashy...")
 	checkInstallPath()
 	cleanInstallPath()
 	initSymlinks()
-	log.Println("Finished installing flashy")
 }
 
 // check whether flashy is installed in the right path
@@ -50,7 +48,7 @@ func checkInstallPath() {
 	exPath := fileutils.GetExecutablePath()
 	if exPath != flashyInstallPath {
 		log.Fatalf(`Unable to install flashy. Flashy should be installed in '%v',
-currently installed in '%v' instead.`, flashyInstallPath, exPath)
+ currently installed in '%v' instead.`, flashyInstallPath, exPath)
 	}
 }
 

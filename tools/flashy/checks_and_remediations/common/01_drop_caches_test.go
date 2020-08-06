@@ -71,7 +71,7 @@ func TestDropCaches(t *testing.T) {
 				return tc.writeFileErr
 			}
 
-			got := dropCaches(step.StepParams{false, "x", "x", false})
+			got := dropCaches(step.StepParams{})
 			step.CompareTestExitErrors(tc.want, got, t)
 		})
 	}

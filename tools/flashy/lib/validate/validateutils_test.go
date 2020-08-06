@@ -120,7 +120,7 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			stepParams := step.StepParams{
-				false, "x", "x", tc.clowntown,
+				Clowntown: tc.clowntown,
 			}
 			utils.GetOpenBMCVersionFromIssueFile = func() (string, error) {
 				return tc.etcIssueVer, nil

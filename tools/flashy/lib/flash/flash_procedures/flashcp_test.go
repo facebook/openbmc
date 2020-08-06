@@ -55,10 +55,8 @@ func TestFlashCp(t *testing.T) {
 	}
 
 	exampleStepParams := step.StepParams{
-		false,
-		"/tmp/image",
-		"mtd:flash0",
-		false,
+		ImageFilePath: "/tmp/image",
+		DeviceID:      "mtd:flash0",
 	}
 
 	cases := []struct {

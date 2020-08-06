@@ -31,45 +31,64 @@ import (
 
 var (
 	installFlag   = flag.Bool("install", false, "Install flashy")
+	checkImage    = flag.Bool("checkimage", false, "Validate image partitions")
 	imageFilePath = flag.String("imagepath", "/opt/upgrade/image", "Path to image file")
-	deviceID      = flag.String("device", "", "Device ID (e.g. mtd:flash0")
+	deviceID      = flag.String("device", "", "Device ID (e.g. mtd:flash0)")
 	clowntown     = flag.Bool("clowntown", false, "Clowntown mode (WARNING: RISK OF BRICKING DEVICE - WARRANTIES OFF)")
 )
 
 // exit if not empty
 func failIfFlagEmpty(flagName, value string) {
 	if len(value) == 0 {
-		log.Fatalf("%v flag must be specified. Use `--help` for a guide", flagName)
+		log.Fatalf("`%v` argument must be specified. Use `--help` for a guide",
+			flagName)
 	}
 }
 
 func main() {
 	flag.Parse()
 
-	if *clowntown {
-		log.Printf(`===== WARNING: CLOWNTOWN MODE ENABLED =====
-THERE IS RISK OF BRICKING THIS DEVICE!
-WARRANTIES OFF`)
-	}
-
-	binName := fileutils.SanitizeBinaryName(os.Args[0])
-
 	stepParams := step.StepParams{
 		Install:       *installFlag,
+		CheckImage:    *checkImage,
 		ImageFilePath: *imageFilePath,
 		DeviceID:      *deviceID,
 		Clowntown:     *clowntown,
 	}
 
+	if stepParams.Clowntown {
+		log.Printf(`===== WARNING: CLOWNTOWN MODE ENABLED =====
+THERE IS RISK OF BRICKING THIS DEVICE!
+WARRANTIES OFF`)
+	}
+
 	// install
 	if stepParams.Install {
+		log.Println("Installing flashy...")
 		install.Install()
+		log.Println("Finished installing flashy")
 		return
 	}
 
-	// at this point, imageFilePath and deviceID are required to be non empty
-	failIfFlagEmpty("imagepath", *imageFilePath)
-	failIfFlagEmpty("device", *deviceID)
+	// validate image
+	if stepParams.CheckImage {
+		log.Printf("Validating image...")
+		failIfFlagEmpty("imagepath", stepParams.ImageFilePath)
+
+		// TODO:- validating image
+
+		log.Printf("Finished validating image")
+		return
+	}
+
+	// code below this point is for a symlink-ed step
+	// (e.g. flash_procedure/flash_wedge100)
+	binName := fileutils.SanitizeBinaryName(os.Args[0])
+
+	// at this point, imageFilePath and deviceID
+	// are required to be non empty
+	failIfFlagEmpty("imagepath", stepParams.ImageFilePath)
+	failIfFlagEmpty("device", stepParams.DeviceID)
 
 	if _, exists := step.StepMap[binName]; !exists {
 		log.Fatalf("Unknown binary '%v'", binName)

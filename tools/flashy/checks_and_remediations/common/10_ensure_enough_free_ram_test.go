@@ -73,7 +73,7 @@ func TestEnsureEnoughFreeRam(t *testing.T) {
 				return tc.memInfo, tc.memInfoErr
 			}
 
-			got := ensureEnoughFreeRam(step.StepParams{false, "x", "x", false})
+			got := ensureEnoughFreeRam(step.StepParams{})
 			step.CompareTestExitErrors(tc.want, got, t)
 		})
 	}

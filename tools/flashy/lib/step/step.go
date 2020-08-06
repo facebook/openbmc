@@ -31,6 +31,7 @@ import (
 
 type StepParams struct {
 	Install       bool
+	CheckImage    bool
 	ImageFilePath string
 	DeviceID      string
 	Clowntown     bool

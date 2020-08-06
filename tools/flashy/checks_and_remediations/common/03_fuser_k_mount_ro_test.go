@@ -166,7 +166,7 @@ func TestFuserKMountRo(t *testing.T) {
 				return 0, tc.remountCmdErr, "", ""
 			}
 
-			got := fuserKMountRo(step.StepParams{false, "x", "x", false})
+			got := fuserKMountRo(step.StepParams{})
 
 			step.CompareTestExitErrors(tc.want, got, t)
 

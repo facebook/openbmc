@@ -26,64 +26,49 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 BOARD_ID=$(get_bmc_board_id)
 RCVY_CNT=0x0
 PANIC_CNT=0x0
+CPLD_BUS=0
 ret=0
 # NIC EXP BMC
 if [ $BOARD_ID -eq 9 ]; then
-    for i in {1..3}; do
-        /usr/sbin/i2craw 9 0x38 -w "0x0F 0x09" > /dev/null
-        ret=$?
-        if [[ "$ret" == "0" ]]; then
-            break
-        fi
-    done
-
-    for i in {1..3}; do
-        RCVY_CNT=$(/usr/sbin/i2cget -y 9 0x38 0x04)
-        ret=$?
-        if [[ "$ret" == "0" ]]; then
-            break
-        fi
-    done
-
-    for i in {1..3}; do
-        PANIC_CNT=$(/usr/sbin/i2cget -y 9 0x38 0x06)
-        ret=$?
-        if [[ "$ret" == "0" ]]; then
-            break
-        fi
-    done
-
+    CPLD_BUS=9
 # Baseboard BMC
 elif [ $BOARD_ID -eq 14 ] || [ $BOARD_ID -eq 7 ]; then
-    for i in {1..3}; do
-        /usr/sbin/i2craw 12 0x38 -w "0x0F 0x09" > /dev/null
-        ret=$?
-        if [[ "$ret" == "0" ]]; then
-            break
-        fi
-    done
-
-    for i in {1..3}; do
-        RCVY_CNT=$(/usr/sbin/i2cget -y 12 0x38 0x04)
-        ret=$?
-        if [[ "$ret" == "0" ]]; then
-            break
-        fi
-    done
-
-    for i in {1..3}; do
-        PANIC_CNT=$(/usr/sbin/i2cget -y 12 0x38 0x06)
-        ret=$?
-        if [[ "$ret" == "0" ]]; then
-            break
-        fi
-    done
-
+    CPLD_BUS=12
 else
   echo "Is board id correct(id=$BOARD_ID)?"
+  exit -1
+fi
+echo -n "Check PFR MailBox Status..."
+
+for i in {1..3}; do
+    /usr/sbin/i2cset -y $CPLD_BUS 0x38 0x0F 0x09 i 2> /dev/null
+    ret=$?
+    if [[ "$ret" == "0" ]]; then
+        break
+    fi
+done
+
+if ! [[ "$ret" == "0" ]]; then
+  echo "Exit"
+  exit -1
 fi
 
-echo "Check PFR MailBox Status..."
+for i in {1..3}; do
+    RCVY_CNT=$(/usr/sbin/i2cget -y $CPLD_BUS 0x38 0x04)
+    ret=$?
+    if [[ "$ret" == "0" ]]; then
+        break
+    fi
+done
+
+for i in {1..3}; do
+    PANIC_CNT=$(/usr/sbin/i2cget -y $CPLD_BUS 0x38 0x06)
+    ret=$?
+    if [[ "$ret" == "0" ]]; then
+        break
+    fi
+done
+
 if [[ "$RCVY_CNT" -ne "0x0" ]]; then
     logger -t "pfr" -p daemon.crit "BMC, PFR - Recovery count: $((RCVY_CNT))"
 fi
@@ -92,3 +77,5 @@ fi
 if [[ "$PANIC_CNT" -ne "0x0" ]]; then
     logger -t "pfr" -p daemon.crit "BMC, PFR - Panic event count: $((PANIC_CNT))"
 fi
+
+echo "Done"

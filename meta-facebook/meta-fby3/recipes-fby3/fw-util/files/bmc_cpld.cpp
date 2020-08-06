@@ -9,17 +9,12 @@
 #include <sys/mman.h>
 #include <syslog.h>
 #include <openbmc/obmc-i2c.h>
+#include "server.h"
 #include "bmc_cpld.h"
 #include <facebook/bic.h>
 #include <facebook/fby3_common.h>
 
 using namespace std;
-
-template<typename T, size_t S>
-void read_ver(T (&input)[S]) {
-    string str( input, input + S);
-    std::cout << str << std::endl;
-}
 
 image_info BmcCpldComponent::check_image(string image, bool force) {
 #define MAX10_RPD_SIZE 0x5C000
@@ -142,13 +137,16 @@ int BmcCpldComponent::print_version()
 {
   string ver("");
   string fru_name = fru();
-  string slot_str = "slot";
-  size_t slot_found = fru_name.find(slot_str);
+  size_t slot_found = fru_name.find("slot");
   try {
     // Print CPLD Version
-    transform(fru_name.begin(), fru_name.end(), fru_name.begin(), ::toupper);
     if (slot_found != string::npos) {
+      uint8_t slot_id = fru_name.at(4) - '0';
+      Server server(slot_id, fru_name);
       fru_name = "SB";
+      server.ready();
+    } else {
+     transform(fru_name.begin(), fru_name.end(), fru_name.begin(), ::toupper);
     }
     if ( get_ver_str(ver) < 0 ) {
       throw "Error in getting the version of " + fru_name;
@@ -163,14 +161,22 @@ int BmcCpldComponent::print_version()
 void BmcCpldComponent::get_version(json& j) {
   string ver("");
   string fru_name = fru();
+  size_t slot_found = fru_name.find("slot");
   try {
+    if (slot_found != string::npos) {
+      uint8_t slot_id = fru_name.at(4) - '0';
+      Server server(slot_id, fru_name);
+      fru_name = "SB";
+      server.ready();
+    }
+
     if ( get_ver_str(ver) < 0 ) {
       throw "Error in getting the version of " + fru_name;
     }
     j["VERSION"] = ver;
   } catch(string& err) {
-    j["VERSION"] = "error_returned";
-    syslog(LOG_WARNING, "%s(): error: %s", __func__, err.c_str());
+    if ( err.find("empty") != string::npos ) j["VERSION"] = "not_present";
+    else j["VERSION"] = "error_returned";
   }
 }
 

@@ -14,6 +14,7 @@
 #define CMD_CMC_GET_MB_POSITION           (0x0F)
 #define CMD_CMC_OEM_GET_SENSOR_READING    (0xF1)
 #define CMD_CMC_OEM_SET_BLOCK_COMMON_FLAG (0xF2)
+#define CMD_CMC_OEM_1S_BMC_RESET          (0x16)
 #define CM_IPMB_BUS_ID                    (8)
 #define CM_SLAVE_ADDR                     (0x68)
 
@@ -120,6 +121,7 @@ enum {
 int cmd_cmc_get_dev_id(ipmi_dev_id_t *dev_id);
 int cmd_cmc_get_config_mode(uint8_t *mode);
 int cmd_cmc_get_config_mode_ext(uint8_t *def_mode, uint8_t *cur_mode, uint8_t *ch_mode, uint8_t *jumpers);
+int cmd_cmc_reset_bmc(uint8_t pos);
 int cmd_cmc_get_mb_position(uint8_t *partion);
 int cmd_cmc_get_sensor_value(uint8_t snr_num, uint8_t *value, uint8_t* rlen);
 int cmd_cmc_set_system_mode(uint8_t master, bool do_cycle);

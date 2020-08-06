@@ -98,7 +98,7 @@ do_install() {
     update-rc.d -r ${D} setup-reboot.sh start 89 6 .
 
     if ! echo ${MACHINE_FEATURES} | awk "/emmc/ {exit 1}"; then
-        if [ "x${OPENBMC_UTILS_CUSTOM_EMMC_MOUNT}" == "x0" ]; then
+        if [ "x${OPENBMC_UTILS_CUSTOM_EMMC_MOUNT}" = "x0" ]; then
             # auto-mount emmc to /mnt/data1
             install -m 0755 ${WORKDIR}/mount_data1.sh \
                 ${D}${sysconfdir}/init.d/mount_data1.sh

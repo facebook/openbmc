@@ -106,6 +106,16 @@ static int sled_cycle()
   return rc;
 }
 
+static int
+get_pos() {
+  uint8_t pos;
+  if (cmd_cmc_get_mb_position(&pos)) {
+    return -1;
+  }
+  std::cout << int(pos) << std::endl;
+  return 0;
+}
+
 int
 main(int argc, char **argv) {
   int rc = -1;
@@ -130,10 +140,17 @@ main(int argc, char **argv) {
   bool get_mode_f = false;
   app.add_flag("--get-mode", get_mode_f, "Get Chassis Operating mode");
 
+  bool get_pos_f = false;
+  app.add_flag("--get-position", get_pos_f, "Get current tray position");
+
   CLI11_PARSE(app, argc, argv);
 
   if (get_mode_f) {
     return get_mode();
+  }
+
+  if (get_pos_f) {
+    return get_pos();
   }
 
   if (*mode) {

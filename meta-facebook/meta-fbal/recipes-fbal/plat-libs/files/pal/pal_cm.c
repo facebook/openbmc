@@ -68,7 +68,7 @@ cmd_cmc_get_dev_id(ipmi_dev_id_t *dev_id) {
 }
 
 int
-cmd_cmc_get_config_mode(uint8_t *mode) {
+cmd_cmc_get_config_mode_ext(uint8_t *def_mode, uint8_t *cur_mode, uint8_t *ch_mode, uint8_t *jumper) {
   uint8_t ipmi_cmd = CMD_CMC_GET_CONFIG_MODE;
   uint8_t netfn = NETFN_OEM_REQ;
   uint8_t rbuf[8] = {0x00};
@@ -76,11 +76,20 @@ cmd_cmc_get_config_mode(uint8_t *mode) {
   int ret;
 
   ret = cmc_ipmb_process(ipmi_cmd, netfn, NULL, 0, rbuf, &rlen);
-  *mode = rbuf[0];
+  *def_mode = rbuf[0];
+  *cur_mode = rbuf[1];
+  *ch_mode =  rbuf[2];
+  *jumper = rbuf[3];
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s mode=%d\n", __func__, *mode);
 #endif
   return ret;
+}
+
+int
+cmd_cmc_get_config_mode(uint8_t *mode) {
+  uint8_t def, changed, jumper;
+  return cmd_cmc_get_config_mode_ext(&def, mode, &changed, &jumper);
 }
 
 int

@@ -25,6 +25,22 @@
 #include <CLI/CLI.hpp>
 #include <openbmc/pal.h>
 
+struct ModeDesc {
+  uint8_t mode;
+  const std::string desc;
+};
+
+const std::map<std::string, ModeDesc> mode_map{
+    {"8S-0", {CM_MODE_8S_0, "8 Socket Mode, Tray 0 is primary"}},
+    {"8S-1", {CM_MODE_8S_1, "8 Socket Mode, Tray 1 is primary"}},
+    {"8S-2", {CM_MODE_8S_2, "8 Socket Mode, Tray 2 is primary"}},
+    {"8S-3", {CM_MODE_8S_3, "8 Socket Mode, Tray 3 is primary"}},
+    {"2S", {CM_MODE_2S, "2 Socket Mode"}},
+    {"4S-4OU", {CM_MODE_4S_4OU, "4 Socket mode, in 4OU mode"}},
+    {"4S-2OU-3", {CM_MODE_4S_2OU_3, "4 Socket mode with Tray 3 as primary"}},
+    {"4S-2OU-2", {CM_MODE_4S_2OU_2, "4 Socket mode with Tray 2 as primary"}},
+};
+
 static int set_mode(uint8_t slot)
 {
   int rc = 0;
@@ -38,6 +54,42 @@ static int set_mode(uint8_t slot)
     rc = -1;
   }
   return rc;
+}
+
+static int get_mode()
+{
+  uint8_t def, cur, ch, jp;
+  if (cmd_cmc_get_config_mode_ext(&def, &cur, &ch, &jp)) {
+    return -1;
+  }
+  auto get_mode_desc = [](uint8_t md) {
+    std::string desc = "Unknown mode: " + std::to_string(int(md));
+    for (const auto &pair : mode_map) {
+      if (md == pair.second.mode) {
+        desc = pair.first + ": " + pair.second.desc;
+        break;
+      }
+    }
+    return desc;
+  };
+
+  std::cout << "Default: " << get_mode_desc(def) << std::endl;
+  std::cout << "Current: " << get_mode_desc(cur) << std::endl;
+  if (ch != 0xff) {
+    std::cout << "Changed: " << get_mode_desc(ch) << std::endl;
+  }
+  const std::map<int, std::string> jumper_desc = {
+    {0, "JP3"},
+    {1, "JP4"},
+    {2, "JP5"},
+    {3, "JP6"},
+    {4, "JP7"}
+  };
+  for (const auto& pair : jumper_desc) {
+    bool st = jp & (1 << pair.first);
+    std::cout << pair.second << ": " << st << std::endl;
+  }
+  return 0;
 }
 
 static int sled_cycle()
@@ -61,28 +113,31 @@ main(int argc, char **argv) {
   CLI::App app("Chassis Management Utility");
   app.failure_message(CLI::FailureMessage::help);
 
-  const std::map<std::string, uint8_t> mode_map{
-    {"8S-0", 3},
-    {"8S-1", 2},
-    {"8S-2", 1},
-    {"8S-3", 0},
-    {"2S", 4}
-  };
   std::string op_mode;
+  std::set<std::string> allowed_modes;
+  std::string desc = "Set chassis operating mode\n";
+  for (const auto& pair : mode_map) {
+    allowed_modes.insert(pair.first);
+    desc += pair.first + ": " + pair.second.desc + "\n";
+  }
   auto mode = app.add_set("--set-mode", op_mode,
-                          {"8S-0", "8S-1", "8S-2", "8S-3", "2S"},
-                          "Chassis operating mode.\n"
-                          "2S: 4x2S Mode\n"
-                          "8S-N: 8S mode with tray N as the master"
+                          allowed_modes,
+                          desc
                          )->ignore_case();
   app.add_flag("--sled-cycle", do_cycle,
                "Perform a SLED cycle after operations (If any)");
   app.require_option();
+  bool get_mode_f = false;
+  app.add_flag("--get-mode", get_mode_f, "Get Chassis Operating mode");
 
   CLI11_PARSE(app, argc, argv);
 
+  if (get_mode_f) {
+    return get_mode();
+  }
+
   if (*mode) {
-    rc = set_mode(mode_map.at(op_mode));
+    rc = set_mode(mode_map.at(op_mode).mode);
   }
 
   if (do_cycle) {

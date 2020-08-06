@@ -58,6 +58,10 @@ def identity_handler(request):
     )
 
 
+async def auth_required_mock(request):
+    request["identity"] = "test_identity"
+
+
 class TestAclProvider(common_acl_provider_base.AclProviderBase):
     async def _get_permissions_for_identity(self, identity: str) -> t.List[str]:
         return ["test"]
@@ -78,9 +82,14 @@ class TestAuthEnforcer(test_utils.AioHTTPTestCase):
             patcher = unittest.mock.patch(original, return_value=return_value)
             patcher.start()
             self.addCleanup(patcher.stop)
+        authrequired_patcher = unittest.mock.patch(
+            "common_auth.auth_required", auth_required_mock
+        )
+        authrequired_patcher.start()
         aclrulepatcher = unittest.mock.patch.dict(acl_config.RULES, TEST_ACL_RULES)
         aclrulepatcher.start()
         self.addCleanup(aclrulepatcher.stop)
+        self.addCleanup(authrequired_patcher.stop)
 
     async def get_application(self):
         webapp = web.Application(middlewares=[auth_enforcer])

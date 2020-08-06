@@ -20,10 +20,10 @@
 import json
 from contextlib import suppress
 
+import common_auth
 from acl_config import RULES
 from aiohttp.log import server_logger
 from aiohttp.web_exceptions import HTTPException, HTTPForbidden, HTTPInternalServerError
-from common_auth import auth_required, permissions_required
 
 
 async def jsonerrorhandler(app, handler):
@@ -58,8 +58,8 @@ async def auth_enforcer(app, handler):
         if not acls and request.method != "GET":
             raise HTTPForbidden()
         if acls:
-            await auth_required(request)
-            await permissions_required(request, acls)
+            await common_auth.auth_required(request)
+            await common_auth.permissions_required(request, acls)
         resp = await handler(request)
         return resp
 

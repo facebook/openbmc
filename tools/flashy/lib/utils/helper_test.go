@@ -451,3 +451,72 @@ func TestSafeAppendBytes(t *testing.T) {
 		t.Errorf("c: want '%v' got '%v'", []byte{'x', 'y'}, c)
 	}
 }
+
+func TestGetWord(t *testing.T) {
+	cases := []struct {
+		name    string
+		data    []byte
+		offset  uint32
+		want    uint32
+		wantErr error
+	}{
+		{
+			name:    "normal operation",
+			data:    []byte{0x01, 0x02, 0x03, 0x04},
+			offset:  0,
+			want:    0x01020304,
+			wantErr: nil,
+		},
+		{
+			name:   "out of range",
+			data:   []byte{0x01, 0x02, 0x03, 0x04},
+			offset: 2,
+			want:   0,
+			wantErr: errors.Errorf("Required offset %v out of range of data size %v",
+				2, 4),
+		},
+	}
+	for _, tc := range cases {
+		got, err := GetWord(tc.data, tc.offset)
+		if tc.want != got {
+			t.Errorf("want '%v' got '%v'", tc.want, got)
+		}
+		tests.CompareTestErrors(tc.wantErr, err, t)
+	}
+}
+
+func TestSetWord(t *testing.T) {
+	cases := []struct {
+		name    string
+		data    []byte
+		word    uint32
+		offset  uint32
+		want    []byte
+		wantErr error
+	}{
+		{
+			name:    "normal operation",
+			data:    []byte{0x01, 0x02, 0x03, 0x04},
+			word:    0x12345678,
+			offset:  0,
+			want:    []byte{0x12, 0x34, 0x56, 0x78},
+			wantErr: nil,
+		},
+		{
+			name:   "out of range",
+			data:   []byte{0x01, 0x02, 0x03, 0x04},
+			word:   0x12345678,
+			offset: 2,
+			want:   nil,
+			wantErr: errors.Errorf("Required offset %v out of range of data size %v",
+				2, 4),
+		},
+	}
+	for _, tc := range cases {
+		got, err := SetWord(tc.data, tc.word, tc.offset)
+		if !reflect.DeepEqual(tc.want, got) {
+			t.Errorf("want '%v' got '%v'", tc.want, got)
+		}
+		tests.CompareTestErrors(tc.wantErr, err, t)
+	}
+}

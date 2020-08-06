@@ -22,10 +22,10 @@ package partition
 type PartitionConfigType = string
 
 const (
-	IGNORE PartitionConfigType = "IGNORE"
-	LEGACY                     = "LEGACY"
-	UBOOT                      = "UBOOT"
-	FIT                        = "FIT"
+	IGNORE       PartitionConfigType = "IGNORE"
+	LEGACY_UBOOT                     = "LEGACY_UBOOT"
+	UBOOT                            = "UBOOT"
+	FIT                              = "FIT"
 )
 
 // info for each partition in PartitionConfigs
@@ -43,14 +43,36 @@ type PartitionConfigInfo struct {
 // until one succeeds; if all fails, then the image is not valid.
 // Differences:
 // (1) flashy can support uboot validation, hence it is not ignored
+//     (only in certain cases)
 // (2) size and offset are in bytes
 var ImageFormats = map[string]([]PartitionConfigInfo){
-	"fit": {
+	// "fit": {
+	// 	{
+	// 		Name:   "u-boot",
+	// 		Offset: 0,
+	// 		Size:   384 * 1024,
+	// 		Type:   UBOOT,
+	// 	},
+	// 	{
+	// 		Name:   "env",
+	// 		Offset: 384 * 1024,
+	// 		Size:   128 * 1024,
+	// 		Type:   IGNORE,
+	// 	},
+	// 	{
+	// 		Name:     "unified-fit",
+	// 		Offset:   512 * 1024,
+	// 		Size:     27776 * 1024,
+	// 		Type:     FIT,
+	// 		FitNodes: 2,
+	// 	},
+	// },
+	"legacy-fido": {
 		{
 			Name:   "u-boot",
 			Offset: 0,
 			Size:   384 * 1024,
-			Type:   UBOOT,
+			Type:   IGNORE, // not in known checksums and no appended checksums
 		},
 		{
 			Name:   "env",
@@ -58,12 +80,17 @@ var ImageFormats = map[string]([]PartitionConfigInfo){
 			Size:   128 * 1024,
 			Type:   IGNORE,
 		},
-		// {
-		// 	Name:     "unified-fit",
-		// 	Offset:   512 * 1024,
-		// 	Size:     27776 * 1024,
-		// 	Type:     FIT,
-		// 	FitNodes: 2,
-		// },
+		{
+			Name:   "kernel",
+			Offset: 512 * 1024,
+			Size:   2560 * 1024,
+			Type:   LEGACY_UBOOT,
+		},
+		{
+			Name:   "rootfs",
+			Offset: 3072 * 1024,
+			Size:   12288 * 1024,
+			Type:   LEGACY_UBOOT,
+		},
 	},
 }

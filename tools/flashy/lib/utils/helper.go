@@ -20,6 +20,7 @@
 package utils
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log"
 	"regexp"
@@ -225,4 +226,31 @@ func SafeAppendBytes(a, b []byte) []byte {
 	copy(c, a)
 	c = append(c, b...)
 	return c
+}
+
+// get a 4 byte uint32 from a byte slice 'data' from offset to offset+4.
+// return an error if offset will cause an out of range read
+func GetWord(data []byte, offset uint32) (uint32, error) {
+	if offset+4 > uint32(len(data)) {
+		return 0, errors.Errorf("Required offset %v out of range of data size %v",
+			offset, len(data))
+	}
+	val := binary.BigEndian.Uint32(data[offset : offset+4])
+	return val, nil
+}
+
+// set a 4 byte uint32 in a byte slice 'data' from offset to offset+4.
+// return an error if offset will cause an out of range write.
+// Warning: make an explicit copy if the original array is required again after
+// SetWord.
+func SetWord(data []byte, word, offset uint32) ([]byte, error) {
+	if offset+4 > uint32(len(data)) {
+		return nil, errors.Errorf("Required offset %v out of range of data size %v",
+			offset, len(data))
+	}
+	for i := 0; i < 4; i++ {
+		b := byte(word >> ((3 - i) * 8))
+		data[offset+uint32(i)] = b
+	}
+	return data, nil
 }

@@ -24,6 +24,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/facebook/openbmc/tools/flashy/checks_and_remediations/common"
 	"github.com/facebook/openbmc/tools/flashy/install"
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
@@ -32,7 +33,7 @@ import (
 var (
 	installFlag   = flag.Bool("install", false, "Install flashy")
 	checkImage    = flag.Bool("checkimage", false, "Validate image partitions")
-	imageFilePath = flag.String("imagepath", "/opt/upgrade/image", "Path to image file")
+	imageFilePath = flag.String("imagepath", "", "Path to image file")
 	deviceID      = flag.String("device", "", "Device ID (e.g. mtd:flash0)")
 	clowntown     = flag.Bool("clowntown", false, "Clowntown mode (WARNING: RISK OF BRICKING DEVICE - WARRANTIES OFF)")
 )
@@ -75,7 +76,11 @@ WARRANTIES OFF`)
 		log.Printf("Validating image...")
 		failIfFlagEmpty("imagepath", stepParams.ImageFilePath)
 
-		// TODO:- validating image
+		err := common.ValidateImagePartitions(stepParams)
+		if err != nil {
+			log.Fatalf("Image '%v' failed validation: %v",
+				stepParams.ImageFilePath, err)
+		}
 
 		log.Printf("Finished validating image")
 		return

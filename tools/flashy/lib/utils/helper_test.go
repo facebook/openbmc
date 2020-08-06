@@ -85,6 +85,34 @@ func TestGetStringKeys(t *testing.T) {
 	}
 }
 
+func TestUint32Find(t *testing.T) {
+	cases := []struct {
+		name string
+		val  uint32
+		arr  []uint32
+		want int
+	}{
+		{
+			name: "found in array (index returned)",
+			val:  42,
+			arr:  []uint32{4, 42, 420},
+			want: 1,
+		},
+		{
+			name: "not found in array (-1 returned)",
+			val:  42,
+			arr:  []uint32{4, 420},
+			want: -1,
+		},
+	}
+	for _, tc := range cases {
+		got := Uint32Find(tc.val, tc.arr)
+		if tc.want != got {
+			t.Errorf("want '%v' got '%v'", tc.want, got)
+		}
+	}
+}
+
 func TestRegexSubexpMapHelper(t *testing.T) {
 	cases := []struct {
 		name        string
@@ -406,5 +434,20 @@ func TestGetAllRegexSubexpMap(t *testing.T) {
 				t.Errorf("want %v got %v", tc.want, got)
 			}
 		})
+	}
+}
+
+func TestSafeAppendBytes(t *testing.T) {
+	a := make([]byte, 1, 2)
+	a[0] = 'x'
+	b := make([]byte, 1, 1)
+	b[0] = 'y'
+	c := SafeAppendBytes(a, b)
+
+	if !reflect.DeepEqual(a, []byte{'x'}) {
+		t.Errorf("a: want '%v' got '%v'", []byte{'x'}, a)
+	}
+	if !reflect.DeepEqual(c, []byte{'x', 'y'}) {
+		t.Errorf("c: want '%v' got '%v'", []byte{'x', 'y'}, c)
 	}
 }

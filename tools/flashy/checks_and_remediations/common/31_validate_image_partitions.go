@@ -20,16 +20,37 @@
 package common
 
 import (
+	"log"
+	"syscall"
+
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/facebook/openbmc/tools/flashy/lib/validate/validateutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate"
+	"github.com/pkg/errors"
 )
 
 func init() {
-	step.RegisterStep(validateImageBuildname)
+	step.RegisterStep(ValidateImagePartitions)
 }
 
-func validateImageBuildname(stepParams step.StepParams) step.StepExitError {
-	err := validateutils.CheckImageBuildNameCompatibility(stepParams)
+func ValidateImagePartitions(stepParams step.StepParams) step.StepExitError {
+	if stepParams.Clowntown {
+		log.Printf("===== WARNING: Clowntown mode: Bypassing image partition validation =====")
+		log.Printf("===== THERE IS RISK OF BRICKING THIS DEVICE =====")
+		return nil
+	}
+
+	imageData, err := fileutils.MmapFile(stepParams.ImageFilePath,
+		syscall.PROT_READ, syscall.MAP_SHARED)
+	if err != nil {
+		return step.ExitSafeToReboot{
+			errors.Errorf("Unable to read image file '%v': %v",
+				stepParams.ImageFilePath, err),
+		}
+	}
+	defer fileutils.Munmap(imageData)
+
+	err = validate.ValidateImage(imageData)
 	if err != nil {
 		return step.ExitUnknownError{err}
 	}

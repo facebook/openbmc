@@ -48,6 +48,8 @@ done
 mapfile -t included_packages < \
     <(eval "go list ./... | grep -v ${invert_filters[*]}")
 
-go test ${included_packages[*]} -coverprofile ./cover.out > /dev/null
-go tool cover -func ./cover.out | grep total | awk '{print substr($3, 1, length($3)-1)}'
-rm cover.out
+tmp_dir=$(mktemp -d -t flashy-XXXXXXXXXXX)
+
+go test ${included_packages[*]} -coverprofile "${tmp_dir}/cover.out" > /dev/null
+go tool cover -func "${tmp_dir}/cover.out" | grep total | awk '{print substr($3, 1, length($3)-1)}'
+rm -r "${tmp_dir}"

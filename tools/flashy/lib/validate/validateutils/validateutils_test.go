@@ -17,7 +17,7 @@
  * Boston, MA 02110-1301 USA
  */
 
-package validate
+package validateutils
 
 import (
 	"strings"

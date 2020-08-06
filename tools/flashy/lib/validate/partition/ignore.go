@@ -17,21 +17,45 @@
  * Boston, MA 02110-1301 USA
  */
 
-package common
+package partition
 
-import (
-	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/facebook/openbmc/tools/flashy/lib/validate/validateutils"
-)
+import "log"
 
 func init() {
-	step.RegisterStep(validateImageBuildname)
+	registerPartitionFactory(IGNORE, ignorePartitionFactory)
 }
 
-func validateImageBuildname(stepParams step.StepParams) step.StepExitError {
-	err := validateutils.CheckImageBuildNameCompatibility(stepParams)
-	if err != nil {
-		return step.ExitUnknownError{err}
+var ignorePartitionFactory = func(args PartitionFactoryArgs) Partition {
+	return &IgnorePartition{
+		Name:   args.PInfo.Name,
+		Offset: args.PInfo.Offset,
+		Size:   args.PInfo.Size,
 	}
+}
+
+/**
+ * Ignored, validation always returns nil (success)
+ */
+type IgnorePartition struct {
+	Name string
+	// offset in the image file
+	Offset uint32
+	Size   uint32
+}
+
+func (p *IgnorePartition) GetName() string {
+	return p.Name
+}
+
+func (p *IgnorePartition) GetSize() uint32 {
+	return p.Size
+}
+
+func (p *IgnorePartition) Validate() error {
+	log.Printf("Ignore partition '%v' validation ignored", p.Name)
 	return nil
+}
+
+func (p *IgnorePartition) GetType() PartitionConfigType {
+	return IGNORE
 }

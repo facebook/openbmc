@@ -23,15 +23,15 @@ import (
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/facebook/openbmc/tools/flashy/lib/validate"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate/validateutils"
 	"github.com/pkg/errors"
 )
 
 func TestValidateImageBuildname(t *testing.T) {
 	// mock and defer restore CheckImageBuildNameCompatibility
-	checkImageBuildNameCompatibilityOrig := validate.CheckImageBuildNameCompatibility
+	checkImageBuildNameCompatibilityOrig := validateutils.CheckImageBuildNameCompatibility
 	defer func() {
-		validate.CheckImageBuildNameCompatibility = checkImageBuildNameCompatibilityOrig
+		validateutils.CheckImageBuildNameCompatibility = checkImageBuildNameCompatibilityOrig
 	}()
 	cases := []struct {
 		name             string
@@ -53,7 +53,7 @@ func TestValidateImageBuildname(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			validate.CheckImageBuildNameCompatibility = func(stepParams step.StepParams) error {
+			validateutils.CheckImageBuildNameCompatibility = func(stepParams step.StepParams) error {
 				return tc.compatibilityErr
 			}
 			got := validateImageBuildname(step.StepParams{})

@@ -65,6 +65,17 @@ func GetStringKeys(m map[string]interface{}) []string {
 	return keys
 }
 
+// Takes a uint32 slice and looks if a given item is in it. If found it will
+// return its index, otherwise it will return -1
+func Uint32Find(val uint32, arr []uint32) int {
+	for i, item := range arr {
+		if item == val {
+			return i
+		}
+	}
+	return -1
+}
+
 // helper function for GetRegexSubexpMap & GetAllRegexSubexpMap
 // `match` must already have matched with the subexpNames, otherwise an
 // error will be returned
@@ -203,4 +214,15 @@ func LogAndIgnoreErr(err error) {
 	if err != nil {
 		log.Printf("%v", err)
 	}
+}
+
+// c := append(a, b...) is unsafe, if a has enough capacity, b will be directly
+// appended.
+// SafeAppendBytes makes guarantees that a is not changed.
+func SafeAppendBytes(a, b []byte) []byte {
+	la := len(a)
+	c := make([]byte, la, la+len(b))
+	copy(c, a)
+	c = append(c, b...)
+	return c
 }

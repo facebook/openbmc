@@ -47,7 +47,39 @@ type PartitionConfigInfo struct {
 // (1) flashy can support uboot validation, hence it is not ignored
 //     (only in certain cases)
 // (2) size and offset are in bytes
+// (3) FitImageNodes (named num-nodes in fw-util) are explicitly 1 if not
+//     specified in fw-util.
+// (4) vboot spl+recovery can be treated as UBOOT. It will be ignored if the flash1
+//     header is RO (e.g. fbtp)
 var ImageFormats = map[string]([]PartitionConfigInfo){
+	"vboot": {
+		{
+			Name:   "spl+recovery",
+			Offset: 0,
+			Size:   384 * 1024,
+			Type:   UBOOT,
+		},
+		{
+			Name:   "env",
+			Offset: 384 * 1024,
+			Size:   128 * 1024,
+			Type:   IGNORE,
+		},
+		{
+			Name:          "uboot",
+			Offset:        512 * 1024,
+			Size:          384 * 1024,
+			Type:          FIT,
+			FitImageNodes: 1,
+		},
+		{
+			Name:          "unified-fit",
+			Offset:        896 * 1024,
+			Size:          27776 * 1024,
+			Type:          FIT,
+			FitImageNodes: 2,
+		},
+	},
 	"fit": {
 		{
 			Name:   "u-boot",

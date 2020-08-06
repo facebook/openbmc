@@ -29,7 +29,7 @@ import (
 )
 
 func TestValidateImagePartitions(t *testing.T) {
-	// mock and defer restore MmapFile, and
+	// mock and defer restore MmapFile and
 	// ValidateImage
 	validateImageOrig := validate.ValidateImage
 	mmapFileOrig := fileutils.MmapFile

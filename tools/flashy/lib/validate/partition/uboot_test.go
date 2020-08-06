@@ -26,7 +26,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
@@ -51,9 +50,10 @@ func TestUBootPartition(t *testing.T) {
 	}
 
 	wantP := &UBootPartition{
-		Name:   "foo",
-		Data:   randData,
-		Offset: 2048,
+		Name:      "foo",
+		Data:      randData,
+		Offset:    2048,
+		checksums: ubootKnownChecksums,
 	}
 
 	p := ubootPartitionFactory(args)
@@ -77,6 +77,12 @@ func TestUBootPartition(t *testing.T) {
 
 // tests checkMagic, getAppendedChecksums, getChecksum
 func TestUBootValidate(t *testing.T) {
+	// mock and defer restore ubootKnownChecksums
+	ubootKnownChecksumsOrig := ubootKnownChecksums
+	defer func() {
+		ubootKnownChecksums = ubootKnownChecksumsOrig
+	}()
+
 	exampleMagic := []byte{0x13, 0x00, 0x00, 0xEA}
 
 	// 4kB of x
@@ -102,17 +108,20 @@ func TestUBootValidate(t *testing.T) {
 
 	cases := []struct {
 		name string
-		// image content
-		data []byte
-		want error
+		// replaces ubootKnownChecksums
+		checksums []string
+		data      []byte
+		want      error
 	}{
 		{
-			name: "checksums appended, ok",
-			data: mockFullPartition,
-			want: nil,
+			name:      "checksums appended, ok",
+			checksums: []string{},
+			data:      mockFullPartition,
+			want:      nil,
 		},
 		{
-			name: "checksums appended, not OK",
+			name:      "checksums appended, not OK",
+			checksums: []string{},
 			// lose some bytes in the middle
 			data: utils.SafeAppendBytes(
 				mockFullPartition[:128],
@@ -124,23 +133,33 @@ func TestUBootValidate(t *testing.T) {
 			),
 		},
 		{
-			name: "checksums not appended",
-			data: mockPartitionData,
-			want: errors.Errorf("Unable to get appended checksums: " +
-				"Unable to unmarshal appended JSON bytes."),
+			name:      "checksums not appended, md5sum not OK",
+			checksums: []string{},
+			data:      mockPartitionData,
+			want: errors.Errorf("'u-boot' partition md5sum '%v' unrecognized",
+				md5_mockPartitionData),
 		},
 		{
-			name: "partition too small to have magic",
-			data: []byte("1"),
-			want: errors.Errorf("'u-boot' partition too small (1) to contain U-Boot magic"),
+			name:      "checksums not appended, md5sum matches with known checksums",
+			checksums: []string{md5_mockPartitionData},
+			data:      mockPartitionData,
+			want:      nil,
 		},
 		{
-			name: "partition too short to have appended checksum",
-			data: exampleMagic,
-			want: errors.Errorf("'u-boot' partition too small (4) to be a U-Boot partition"),
+			name:      "partition too small to have magic",
+			checksums: []string{},
+			data:      []byte("1"),
+			want:      errors.Errorf("'u-boot' partition too small (1) to contain U-Boot magic"),
 		},
 		{
-			name: "magic not in uboot magics",
+			name:      "partition too small to have appended checksums",
+			checksums: []string{"5b4b599718c1e0bb8fc67d671557fdb1"},
+			data:      exampleMagic,
+			want:      nil,
+		},
+		{
+			name:      "magic not in uboot magics",
+			checksums: []string{},
 			// lose the first byte
 			data: mockFullPartition[1:],
 			want: errors.Errorf("Magic '0x%X' does not match any U-Boot magic", 0xEA78),
@@ -148,49 +167,20 @@ func TestUBootValidate(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ubootPart := UBootPartition{
-				Name:   "u-boot",
-				Data:   tc.data,
-				Offset: 0,
-			}
+			ubootKnownChecksums = tc.checksums
+			ubootPart := ubootPartitionFactory(
+				PartitionFactoryArgs{
+					Data: tc.data,
+					PInfo: PartitionConfigInfo{
+						Name:   "u-boot",
+						Offset: 0,
+						Size:   uint32(len(tc.data)),
+						Type:   UBOOT,
+					},
+				},
+			)
 			got := ubootPart.Validate()
 			tests.CompareTestErrors(tc.want, got, t)
-		})
-	}
-}
-
-func TestGetAppendedUbootChecksums(t *testing.T) {
-	cases := []struct {
-		name         string
-		checksumsBuf []byte
-		want         []string
-		wantErr      error
-	}{
-		{
-			name: "normal operation",
-			// pad until it is 4096 byes
-			checksumsBuf: []byte("{\"a5ad8133574ceb63d492c5e7a75feb71\": " +
-				"\"Signed: Wednesday Jul 17 13:44:40  2017\"}" +
-				strings.Repeat("\x00", 4*1024-79),
-			),
-			want:    []string{"a5ad8133574ceb63d492c5e7a75feb71"},
-			wantErr: nil,
-		},
-		{
-			name:         "gibberish, no JSON",
-			checksumsBuf: []byte("1254yewruifhqreifriqfhru43r4"),
-			want:         nil,
-			wantErr:      errors.Errorf("Unable to unmarshal appended JSON bytes."),
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := getUBootChecksumsFromJSONData(tc.checksumsBuf)
-			tests.CompareTestErrors(tc.wantErr, err, t)
-			if !reflect.DeepEqual(tc.want, got) {
-				t.Errorf("want '%v' got '%v'", tc.want, got)
-			}
 		})
 	}
 }

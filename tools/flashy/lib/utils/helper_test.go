@@ -520,3 +520,57 @@ func TestSetWord(t *testing.T) {
 		tests.CompareTestErrors(tc.wantErr, err, t)
 	}
 }
+
+func TestGetStringKeysFromJSONData(t *testing.T) {
+	cases := []struct {
+		name    string
+		data    []byte
+		want    []string
+		wantErr error
+	}{
+		{
+			name: "normal operation 1 entry",
+			data: []byte("{\"a5ad8133574ceb63d492c5e7a75feb71\": " +
+				"\"Signed: Wednesday Jul 17 13:44:40  2017\"}",
+			),
+			want:    []string{"a5ad8133574ceb63d492c5e7a75feb71"},
+			wantErr: nil,
+		},
+		{
+			name: "normal operation 2 entries, complex objects",
+			data: []byte(`
+{
+	"hello": {
+		"world": 42,
+		"bigObject": {
+			"hello": "world",
+			"testing": {
+				"testing42": false
+			}
+		},
+		"thisIsNull": null
+	},
+	"testing123": 42
+}`),
+			want:    []string{"hello", "testing123"},
+			wantErr: nil,
+		},
+		{
+			name: "gibberish, no JSON",
+			data: []byte("1254yewruifhqreifriqfhru43r4"),
+			want: nil,
+			wantErr: errors.Errorf("Unable to unmarshal JSON: " +
+				"invalid character 'y' after top-level value"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := GetStringKeysFromJSONData(tc.data)
+			tests.CompareTestErrors(tc.wantErr, err, t)
+			if !reflect.DeepEqual(tc.want, got) {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+		})
+	}
+}

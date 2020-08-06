@@ -21,6 +21,7 @@ package utils
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
@@ -253,4 +254,17 @@ func SetWord(data []byte, word, offset uint32) ([]byte, error) {
 		data[offset+uint32(i)] = b
 	}
 	return data, nil
+}
+
+// given 'data' which contains JSON data, get all the string keys
+func GetStringKeysFromJSONData(data []byte) ([]string, error) {
+	var m map[string]interface{}
+
+	err := json.Unmarshal(data, &m)
+	if err != nil {
+		return nil, errors.Errorf("Unable to unmarshal JSON: %v", err)
+	}
+
+	checksums := GetStringKeys(m)
+	return checksums, nil
 }

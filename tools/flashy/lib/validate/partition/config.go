@@ -30,11 +30,13 @@ const (
 
 // info for each partition in PartitionConfigs
 type PartitionConfigInfo struct {
-	Name     string
-	Offset   uint32
-	Size     uint32
-	Type     PartitionConfigType
-	FitNodes uint32 // applicable only for FIT partitions
+	Name   string
+	Offset uint32
+	Size   uint32
+	Type   PartitionConfigType
+	// applicable only for FIT partitions
+	// this is the minimum number of children nodes of the 'images' node
+	FitImageNodes uint32
 }
 
 // taken from fw-util (common/recipes-core/fw-util/files/image_parts.json).
@@ -46,27 +48,27 @@ type PartitionConfigInfo struct {
 //     (only in certain cases)
 // (2) size and offset are in bytes
 var ImageFormats = map[string]([]PartitionConfigInfo){
-	// "fit": {
-	// 	{
-	// 		Name:   "u-boot",
-	// 		Offset: 0,
-	// 		Size:   384 * 1024,
-	// 		Type:   UBOOT,
-	// 	},
-	// 	{
-	// 		Name:   "env",
-	// 		Offset: 384 * 1024,
-	// 		Size:   128 * 1024,
-	// 		Type:   IGNORE,
-	// 	},
-	// 	{
-	// 		Name:     "unified-fit",
-	// 		Offset:   512 * 1024,
-	// 		Size:     27776 * 1024,
-	// 		Type:     FIT,
-	// 		FitNodes: 2,
-	// 	},
-	// },
+	"fit": {
+		{
+			Name:   "u-boot",
+			Offset: 0,
+			Size:   384 * 1024,
+			Type:   UBOOT,
+		},
+		{
+			Name:   "env",
+			Offset: 384 * 1024,
+			Size:   128 * 1024,
+			Type:   IGNORE,
+		},
+		{
+			Name:          "unified-fit",
+			Offset:        512 * 1024,
+			Size:          27776 * 1024,
+			Type:          FIT,
+			FitImageNodes: 2,
+		},
+	},
 	"legacy-fido": {
 		{
 			Name:   "u-boot",

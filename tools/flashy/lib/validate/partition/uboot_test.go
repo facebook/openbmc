@@ -28,6 +28,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
@@ -180,6 +181,55 @@ func TestUBootValidate(t *testing.T) {
 				},
 			)
 			got := ubootPart.Validate()
+			tests.CompareTestErrors(tc.want, got, t)
+		})
+	}
+}
+
+// validation tests related to VBoot Enforcement
+func TestUBootValidateVboot(t *testing.T) {
+	// mock and defer restore GetVbootEnforcement
+	getVbootEnforcementOrig := flashutils.GetVbootEnforcement
+	defer func() {
+		flashutils.GetVbootEnforcement = getVbootEnforcementOrig
+	}()
+
+	cases := []struct {
+		name        string
+		vbootEnf    flashutils.VbootEnforcementType
+		vbootEnfErr error
+		want        error
+	}{
+		{
+			name:        "hardware enforce, bypass uboot check",
+			vbootEnf:    flashutils.VBOOT_HARDWARE_ENFORCE,
+			vbootEnfErr: nil,
+			want:        nil,
+		},
+		{
+			name:        "error checking vboot enforcement",
+			vbootEnf:    flashutils.VBOOT_NONE,
+			vbootEnfErr: errors.Errorf("can't check vboot enf"),
+			want:        errors.Errorf("Unable to get vboot enforcement: can't check vboot enf"),
+		},
+		{
+			name:        "not hardware enforce",
+			vbootEnf:    flashutils.VBOOT_NONE,
+			vbootEnfErr: nil,
+			want:        errors.Errorf("'foobar' partition too small (0) to contain U-Boot magic"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			flashutils.GetVbootEnforcement = func() (flashutils.VbootEnforcementType, error) {
+				return tc.vbootEnf, tc.vbootEnfErr
+			}
+			p := &UBootPartition{
+				Name: "foobar",
+			}
+
+			got := p.Validate()
 			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}

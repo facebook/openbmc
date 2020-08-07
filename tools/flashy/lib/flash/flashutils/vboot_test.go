@@ -163,7 +163,7 @@ func TestGetVbootEnforcement(t *testing.T) {
 		procMtdReadErr    error
 		vbootUtilContents string
 		vbootUtilGetErr   error
-		want              vbootEnforcementEnum
+		want              VbootEnforcementType
 		wantErr           error
 	}{
 		{
@@ -173,7 +173,7 @@ func TestGetVbootEnforcement(t *testing.T) {
 			procMtdReadErr:    nil,
 			vbootUtilContents: "",
 			vbootUtilGetErr:   nil,
-			want:              vbootNone,
+			want:              VBOOT_NONE,
 			wantErr:           nil,
 		},
 		{
@@ -183,7 +183,7 @@ func TestGetVbootEnforcement(t *testing.T) {
 			procMtdReadErr:    nil,
 			vbootUtilContents: "",
 			vbootUtilGetErr:   nil,
-			want:              vbootNone,
+			want:              VBOOT_NONE,
 			wantErr:           nil,
 		},
 		{
@@ -193,7 +193,7 @@ func TestGetVbootEnforcement(t *testing.T) {
 			procMtdReadErr:    nil,
 			vbootUtilContents: tests.ExampleTiogapass1VbootUtilFile,
 			vbootUtilGetErr:   nil,
-			want:              vbootHardwareEnforce,
+			want:              VBOOT_HARDWARE_ENFORCE,
 			wantErr:           nil,
 		},
 		{
@@ -203,7 +203,7 @@ func TestGetVbootEnforcement(t *testing.T) {
 			procMtdReadErr:    errors.Errorf("proc mtd read err"),
 			vbootUtilContents: "",
 			vbootUtilGetErr:   nil,
-			want:              vbootNone,
+			want:              VBOOT_NONE,
 			wantErr:           errors.Errorf("Unable to read '/proc/mtd': proc mtd read err"),
 		},
 		{
@@ -213,7 +213,7 @@ func TestGetVbootEnforcement(t *testing.T) {
 			procMtdReadErr:    nil,
 			vbootUtilContents: "",
 			vbootUtilGetErr:   errors.Errorf("getVbootUtilContents err"),
-			want:              vbootNone,
+			want:              VBOOT_NONE,
 			wantErr:           errors.Errorf("Unable to read vboot-util contents: getVbootUtilContents err"),
 		},
 		{
@@ -224,7 +224,7 @@ func TestGetVbootEnforcement(t *testing.T) {
 			vbootUtilContents: `Flags hardware_enforce:  0x00
 Flags software_enforce:  0x01`,
 			vbootUtilGetErr: nil,
-			want:            vbootSoftwareEnforce,
+			want:            VBOOT_SOFTWARE_ENFORCE,
 			wantErr:         nil,
 		},
 	}
@@ -244,7 +244,7 @@ Flags software_enforce:  0x01`,
 			getVbootUtilContents = func() (string, error) {
 				return tc.vbootUtilContents, tc.vbootUtilGetErr
 			}
-			got, err := getVbootEnforcement()
+			got, err := GetVbootEnforcement()
 			if tc.want != got {
 				t.Errorf("want '%v' got '%v'", tc.want, got)
 			}
@@ -353,13 +353,13 @@ func TestPatchImageWithLocalBootloader(t *testing.T) {
 
 func TestIsVbootImagePatchingRequired(t *testing.T) {
 	// mock and defer restore getVbootReinforcement
-	getVbootEnforcementOrig := getVbootEnforcement
+	getVbootEnforcementOrig := GetVbootEnforcement
 	defer func() {
-		getVbootEnforcement = getVbootEnforcementOrig
+		GetVbootEnforcement = getVbootEnforcementOrig
 	}()
 	cases := []struct {
 		name                 string
-		vbootEnforcement     vbootEnforcementEnum
+		vbootEnforcement     VbootEnforcementType
 		vbootEnforcementErr  error
 		flashDeviceSpecifier string
 		want                 bool
@@ -367,7 +367,7 @@ func TestIsVbootImagePatchingRequired(t *testing.T) {
 	}{
 		{
 			name:                 "No vboot enforcement",
-			vbootEnforcement:     vbootNone,
+			vbootEnforcement:     VBOOT_NONE,
 			vbootEnforcementErr:  nil,
 			flashDeviceSpecifier: "flash1",
 			want:                 false,
@@ -375,7 +375,7 @@ func TestIsVbootImagePatchingRequired(t *testing.T) {
 		},
 		{
 			name:                 "software vboot enforcement",
-			vbootEnforcement:     vbootSoftwareEnforce,
+			vbootEnforcement:     VBOOT_SOFTWARE_ENFORCE,
 			vbootEnforcementErr:  nil,
 			flashDeviceSpecifier: "flash1",
 			want:                 false,
@@ -383,7 +383,7 @@ func TestIsVbootImagePatchingRequired(t *testing.T) {
 		},
 		{
 			name:                 "hardware vboot enforcement, flash1",
-			vbootEnforcement:     vbootHardwareEnforce,
+			vbootEnforcement:     VBOOT_HARDWARE_ENFORCE,
 			vbootEnforcementErr:  nil,
 			flashDeviceSpecifier: "flash1",
 			want:                 true,
@@ -391,7 +391,7 @@ func TestIsVbootImagePatchingRequired(t *testing.T) {
 		},
 		{
 			name:                 "hardware vboot enforcement, flash0 (not required)",
-			vbootEnforcement:     vbootHardwareEnforce,
+			vbootEnforcement:     VBOOT_HARDWARE_ENFORCE,
 			vbootEnforcementErr:  nil,
 			flashDeviceSpecifier: "flash0",
 			want:                 false,
@@ -399,7 +399,7 @@ func TestIsVbootImagePatchingRequired(t *testing.T) {
 		},
 		{
 			name:                 "error getting vboot enforcement",
-			vbootEnforcement:     vbootNone,
+			vbootEnforcement:     VBOOT_NONE,
 			vbootEnforcementErr:  errors.Errorf("vboot enforcement err"),
 			flashDeviceSpecifier: "flash0",
 			want:                 false,
@@ -408,7 +408,7 @@ func TestIsVbootImagePatchingRequired(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			getVbootEnforcement = func() (vbootEnforcementEnum, error) {
+			GetVbootEnforcement = func() (VbootEnforcementType, error) {
 				return tc.vbootEnforcement, tc.vbootEnforcementErr
 			}
 			got, err := isVbootImagePatchingRequired(tc.flashDeviceSpecifier)

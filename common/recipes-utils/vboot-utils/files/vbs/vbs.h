@@ -29,7 +29,7 @@ struct vbs {
   /* 1A */ uint8_t error_code;          /* Unique error code, or 0 for success */
   /* 1B */ uint8_t error_tpm;           /* The last-most-recent error from the TPM. */
   /* 1C */ uint16_t crc;                /* A CRC of the vbs structure */
-  /* 1E */ uint16_t rsvd;               /* reserved */
+  /* 1E */ uint16_t error_tpm2;         /* The last-most-recent error from the TPM2. */
   /* 20 */ uint32_t subordinate_last;   /* Status reporting only: the last booted subordinate. */
   /* 24 */ uint32_t uboot_last;         /* Status reporting only: the last booted U-Boot. */
   /* 28 */ uint32_t kernel_last;        /* Status reporting only: the last booted kernel. */

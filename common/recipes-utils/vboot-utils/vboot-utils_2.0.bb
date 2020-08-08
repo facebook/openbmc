@@ -16,6 +16,9 @@ SRC_URI += " \
 
 S = "${WORKDIR}"
 
+CFLAGS += '${@bb.utils.contains("MACHINE_FEATURES", "tpm2", "-DCONFIG_TPM_V2", "", d)}'
+CFLAGS += '${@bb.utils.contains("MACHINE_FEATURES", "tpm1", "-DCONFIG_TPM_V1", "", d)}'
+
 DEPENDS = "python3 libvbs libkv"
 RDEPENDS_${PN}-python3 += "python3-core"
 RDEPENDS_${PN} += "libvbs libkv"

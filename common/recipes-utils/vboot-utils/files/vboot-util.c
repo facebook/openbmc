@@ -222,7 +222,12 @@ int main(int argc, char *argv[])
     printf("\n");
   }
   printf("Status CRC: 0x%04x\n", v->crc);
+#ifdef CONFIG_TPM_V1
   printf("TPM status  (%d)\n", v->error_tpm);
+#endif
+#ifdef CONFIG_TPM_V2
+  printf("TPM2 status  (%d)\n", v->error_tpm2);
+#endif
   printf("Status type (%d) code (%d)\n", v->error_type, v->error_code);
   printf("%s\n", vboot_error(v->error_code));
 

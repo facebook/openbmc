@@ -43,7 +43,7 @@ enum {
 };
 
 #define MAX_NUM_FRUS (FRU_CNT-1)
-#define MAX_NODES    0
+#define MAX_NODES    1
 
 #ifdef __cplusplus
 } // extern "C"

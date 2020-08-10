@@ -23,6 +23,7 @@ IMAGE_INSTALL += " \
   cfg-util \
   threshold-util \
   healthd \
+  ipmid \
   ipmbd \
   ipmb-util\
   "

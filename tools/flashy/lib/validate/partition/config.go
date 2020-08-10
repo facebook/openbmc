@@ -101,12 +101,38 @@ var ImageFormats = map[string]([]PartitionConfigInfo){
 			FitImageNodes: 2,
 		},
 	},
+	"legacy": {
+		{
+			Name:   "u-boot",
+			Offset: 0,
+			Size:   384 * 1024,
+			Type:   UBOOT,
+		},
+		{
+			Name:   "env",
+			Offset: 384 * 1024,
+			Size:   128 * 1024,
+			Type:   IGNORE,
+		},
+		{
+			Name:   "kernel",
+			Offset: 512 * 1024,
+			Size:   4096 * 1024,
+			Type:   LEGACY_UBOOT,
+		},
+		{
+			Name:   "rootfs",
+			Offset: 4608 * 1024,
+			Size:   24064 * 1024,
+			Type:   LEGACY_UBOOT,
+		},
+	},
 	"legacy-fido": {
 		{
 			Name:   "u-boot",
 			Offset: 0,
 			Size:   384 * 1024,
-			Type:   IGNORE, // not in known checksums and no appended checksums
+			Type:   UBOOT,
 		},
 		{
 			Name:   "env",

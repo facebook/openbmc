@@ -21,6 +21,7 @@ package flashutils
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
@@ -59,4 +60,32 @@ var GetFlashDevice = func(deviceID string) (devices.FlashDevice, error) {
 	} else {
 		return factory(deviceSpecifier)
 	}
+}
+
+// return nil if any of the two flash devices (mtd:flash0, mtd:flash1)
+// are valid. Used to check whether it is actually safe to reboot;
+// if both flash devices are corrtupt, the device will brick upon reboot.
+// If the device only exposes one flash, the other flash is deemed invalid.
+var CheckAnyFlashDeviceValid = func() error {
+	flashDeviceIDs := []string{"mtd:flash0", "mtd:flash1"}
+
+	for _, f := range flashDeviceIDs {
+		flashDevice, err := GetFlashDevice(f)
+		if err != nil {
+			log.Printf("Flash device '%v' failed validation: %v",
+				f, err)
+			continue
+		}
+		err = flashDevice.Validate()
+		if err != nil {
+			log.Printf("Flash device '%v' failed validation: %v",
+				f, err)
+		} else {
+			// passed
+			log.Printf("Flash device '%v' passed validation.", f)
+			return nil
+		}
+	}
+
+	return errors.Errorf("UNSAFE TO REBOOT: No flash device is valid")
 }

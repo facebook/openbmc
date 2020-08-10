@@ -25,6 +25,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
@@ -149,6 +150,11 @@ var ensureSafeToReboot = func() error {
 
 	flashyStepBaseNames := GetFlashyStepBaseNames()
 	err := utils.CheckOtherFlasherRunning(flashyStepBaseNames)
+	if err != nil {
+		return err
+	}
+
+	err = flashutils.CheckAnyFlashDeviceValid()
 	if err != nil {
 		return err
 	}

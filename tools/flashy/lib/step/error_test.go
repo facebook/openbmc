@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
@@ -93,28 +94,39 @@ func TestHandleStepError(t *testing.T) {
 
 func TestEnsureSafeToReboot(t *testing.T) {
 	// mock and defer restore CheckOtherFlasherRunning,
-	// GetFlashyStepBaseNames
+	// GetFlashyStepBaseNames and CheckAnyFlashDeviceValid
 	getFlashyStepBaseNamesOrig := GetFlashyStepBaseNames
 	checkOtherFlasherRunningOrig := utils.CheckOtherFlasherRunning
+	checkAnyFlashDeviceValidOrig := flashutils.CheckAnyFlashDeviceValid
 	defer func() {
 		GetFlashyStepBaseNames = getFlashyStepBaseNamesOrig
 		utils.CheckOtherFlasherRunning = checkOtherFlasherRunningOrig
+		flashutils.CheckAnyFlashDeviceValid = checkAnyFlashDeviceValidOrig
 	}()
 
 	cases := []struct {
-		name                   string
-		otherFlasherRunningErr error
-		want                   error
+		name                     string
+		otherFlasherRunningErr   error
+		checkFlashDeviceValidErr error
+		want                     error
 	}{
 		{
-			name:                   "all checks passed",
-			otherFlasherRunningErr: nil,
-			want:                   nil,
+			name:                     "all checks passed",
+			otherFlasherRunningErr:   nil,
+			checkFlashDeviceValidErr: nil,
+			want:                     nil,
 		},
 		{
-			name:                   "other flasher running",
-			otherFlasherRunningErr: errors.Errorf("Found other flasher running"),
-			want:                   errors.Errorf("Found other flasher running"),
+			name:                     "other flasher running",
+			otherFlasherRunningErr:   errors.Errorf("Found other flasher running"),
+			checkFlashDeviceValidErr: nil,
+			want:                     errors.Errorf("Found other flasher running"),
+		},
+		{
+			name:                     "no flash device valid",
+			otherFlasherRunningErr:   nil,
+			checkFlashDeviceValidErr: errors.Errorf("No flash device is valid"),
+			want:                     errors.Errorf("No flash device is valid"),
 		},
 	}
 
@@ -130,6 +142,9 @@ func TestEnsureSafeToReboot(t *testing.T) {
 						exampleFlashyStepBaseNames, flashyStepBaseNames)
 				}
 				return tc.otherFlasherRunningErr
+			}
+			flashutils.CheckAnyFlashDeviceValid = func() error {
+				return tc.checkFlashDeviceValidErr
 			}
 
 			got := ensureSafeToReboot()

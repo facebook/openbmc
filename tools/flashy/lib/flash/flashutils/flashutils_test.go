@@ -155,3 +155,100 @@ func TestGetFlashDevice(t *testing.T) {
 		})
 	}
 }
+
+type mockValidationFlashDevice struct {
+	ValidationErr error
+}
+
+func (m *mockValidationFlashDevice) GetType() string         { return "mocktype" }
+func (m *mockValidationFlashDevice) GetSpecifier() string    { return "mockspec" }
+func (m *mockValidationFlashDevice) GetFilePath() string     { return "/dev/mock" }
+func (m *mockValidationFlashDevice) GetFileSize() uint64     { return uint64(1234) }
+func (m *mockValidationFlashDevice) MmapRO() ([]byte, error) { return nil, nil }
+func (m *mockValidationFlashDevice) Munmap([]byte) error     { return nil }
+func (m *mockValidationFlashDevice) Validate() error         { return m.ValidationErr }
+
+func TestCheckAnyFlashDeviceValid(t *testing.T) {
+	// mock and defer restore GetFlashDevice
+	getFlashDeviceOrig := GetFlashDevice
+	defer func() {
+		GetFlashDevice = getFlashDeviceOrig
+	}()
+
+	type getFlashDeviceReturnType struct {
+		FD       devices.FlashDevice
+		FDGetErr error
+	}
+
+	cases := []struct {
+		name   string
+		flash0 getFlashDeviceReturnType
+		flash1 getFlashDeviceReturnType
+		want   error
+	}{
+		{
+			name: "flash0 passed validation",
+			flash0: getFlashDeviceReturnType{
+				&mockValidationFlashDevice{nil},
+				nil,
+			},
+			flash1: getFlashDeviceReturnType{
+				&mockValidationFlashDevice{nil},
+				errors.Errorf("Not used"),
+			},
+			want: nil,
+		},
+		{
+			name: "flash0 failed to get but flash1 succeeded",
+			flash0: getFlashDeviceReturnType{
+				&mockValidationFlashDevice{nil},
+				errors.Errorf("Can't get"),
+			},
+			flash1: getFlashDeviceReturnType{
+				&mockValidationFlashDevice{nil},
+				nil,
+			},
+			want: nil,
+		},
+		{
+			name: "flash0 failed validation but flash1 succeeded",
+			flash0: getFlashDeviceReturnType{
+				&mockValidationFlashDevice{errors.Errorf("flash0 failed validation")},
+				nil,
+			},
+			flash1: getFlashDeviceReturnType{
+				&mockValidationFlashDevice{nil},
+				nil,
+			},
+			want: nil,
+		},
+		{
+			name: "both flash devices failed validaiton",
+			flash0: getFlashDeviceReturnType{
+				&mockValidationFlashDevice{errors.Errorf("flash0 failed validation")},
+				nil,
+			},
+			flash1: getFlashDeviceReturnType{
+				&mockValidationFlashDevice{errors.Errorf("flash1 failed validation")},
+				nil,
+			},
+			want: errors.Errorf("UNSAFE TO REBOOT: No flash device is valid"),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			GetFlashDevice = func(deviceID string) (devices.FlashDevice, error) {
+				if deviceID == "mtd:flash0" {
+					return tc.flash0.FD, tc.flash0.FDGetErr
+				} else if deviceID == "mtd:flash1" {
+					return tc.flash1.FD, tc.flash1.FDGetErr
+				}
+				t.Errorf("Unknown deviceID: %v", deviceID)
+				return nil, nil
+			}
+
+			got := CheckAnyFlashDeviceValid()
+			tests.CompareTestErrors(tc.want, got, t)
+		})
+	}
+}

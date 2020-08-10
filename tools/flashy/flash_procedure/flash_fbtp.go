@@ -20,10 +20,10 @@
 package flash_procedure
 
 import (
-	"github.com/facebook/openbmc/tools/flashy/lib/flash/flash_procedures"
+	"github.com/facebook/openbmc/tools/flashy/lib/flash"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 )
 
 func init() {
-	step.RegisterStep(flash_procedures.FlashCpVboot)
+	step.RegisterStep(flash.FlashCpVboot)
 }

@@ -667,14 +667,22 @@ static void close_rs485_dev(rs485_dev_t *dev)
 
 static int open_rs485_dev(const char* tty_filename, rs485_dev_t *dev) {
   int error = 0;
-  struct serial_rs485 rs485conf = {};
+  struct serial_rs485 rs485conf;
 
   dbg("Opening %s\n", tty_filename);
   dev->tty_fd = open(tty_filename, O_RDWR | O_NOCTTY);
   ERR_EXIT(dev->tty_fd);
 
+  /*
+   * NOTE: "SER_RS485_RTS_AFTER_SEND" and "SER_RS485_RX_DURING_TX" flags
+   * are not handled in kernel 4.1, but they are required in the latest
+   * kernel.
+   */
+  memset(&rs485conf, 0, sizeof(rs485conf));
+  rs485conf.flags = SER_RS485_ENABLED;
+  rs485conf.flags |= (SER_RS485_RTS_AFTER_SEND | SER_RS485_RX_DURING_TX);
+
   dbg("Putting %s in RS485 mode\n", tty_filename);
-  rs485conf.flags |= SER_RS485_ENABLED;
   error = ioctl(dev->tty_fd, TIOCSRS485, &rs485conf);
   ERR_LOG_EXIT(error, "failed to turn on RS485 mode");
 

@@ -24,9 +24,124 @@ import (
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
+
+// generic tests for MTD
+func TestMTD(t *testing.T) {
+	m := MemoryTechnologyDevice{
+		"flash0",
+		"/dev/mtd5",
+		uint64(42),
+	}
+
+	gotType := m.GetType()
+	if "mtd" != gotType {
+		t.Errorf("type: want '%v' got '%v'", "mtd", gotType)
+	}
+	gotSpecifier := m.GetSpecifier()
+	if "flash0" != gotSpecifier {
+		t.Errorf("specifier: want '%v' got '%v'", "flash0", gotSpecifier)
+	}
+	gotFilePath := m.GetFilePath()
+	if "/dev/mtd5" != gotFilePath {
+		t.Errorf("filepath: want '%v' got '%v'", "/dev/mtd5", gotFilePath)
+	}
+	gotFileSize := m.GetFileSize()
+	if uint64(42) != gotFileSize {
+		t.Errorf("filesize: want '%v' got '%v'", uint64(42), gotFileSize)
+	}
+}
+
+func TestGetMTD(t *testing.T) {
+	// mock and defer restore ReadFile
+	readFileOrig := fileutils.ReadFile
+	defer func() {
+		fileutils.ReadFile = readFileOrig
+	}()
+
+	cases := []struct {
+		name            string
+		specifier       string
+		procMtdContents string
+		readFileErr     error
+		want            FlashDevice
+		wantErr         error
+	}{
+		{
+			name:            "wedge100 example: find mtd:flash0",
+			specifier:       "flash0",
+			procMtdContents: tests.ExampleWedge100ProcMtdFile,
+			readFileErr:     nil,
+			want: &MemoryTechnologyDevice{
+				"flash0",
+				"/dev/mtd5",
+				uint64(33554432),
+			},
+			wantErr: nil,
+		},
+		{
+			name:            "ReadFile error",
+			specifier:       "flash0",
+			procMtdContents: "",
+			readFileErr:     errors.Errorf("ReadFile error"),
+			want:            nil,
+			wantErr:         errors.Errorf("Unable to read from /proc/mtd: ReadFile error"),
+		},
+		{
+			name:            "MTD not found in /proc/mtd",
+			specifier:       "flash1",
+			procMtdContents: tests.ExampleWedge100ProcMtdFile,
+			readFileErr:     nil,
+			want:            nil,
+			wantErr:         errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
+		},
+		{
+			name:            "size parse error",
+			specifier:       "flash1",
+			procMtdContents: `mtd0: 10000000000000000 00100000 "flash1"`, // larger than 64-bits
+			readFileErr:     nil,
+			want:            nil,
+			wantErr: errors.Errorf("Found MTD entry for flash device 'mtd:flash1' " +
+				"but got error 'strconv.ParseUint: parsing \"10000000000000000\": value out of range'"),
+		},
+		{
+			name:            "corrupt /proc/mtd file",
+			specifier:       "flash1",
+			procMtdContents: `mtd0: xxxxxxxx xxxxxxxx "flash1"`,
+			readFileErr:     nil,
+			want:            nil,
+			wantErr:         errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
+				if filename != "/proc/mtd" {
+					t.Errorf("filename: want '%v' got '%v'", "/proc/mtd", filename)
+				}
+				return []byte(tc.procMtdContents), tc.readFileErr
+			}
+			got, err := getMTD(tc.specifier)
+			tests.CompareTestErrors(tc.wantErr, err, t)
+
+			if got == nil {
+				if tc.want != nil {
+					t.Errorf("want '%v' got '%v'", tc.want, got)
+				}
+			} else {
+				if tc.want == nil {
+					t.Errorf("want '%v' got '%v'", tc.want, got)
+				} else if !reflect.DeepEqual(tc.want, got) {
+					t.Errorf("want '%v', got '%v'", tc.want, got)
+				}
+			}
+		})
+	}
+}
 
 func TestMmapRO(t *testing.T) {
 	// mock and defer restore MmapFileRange
@@ -133,87 +248,66 @@ func TestGetMmapFilePath(t *testing.T) {
 	}
 }
 
-func TestGetMTD(t *testing.T) {
-	// mock and defer restore ReadFile
-	readFileOrig := fileutils.ReadFile
+func TestValidate(t *testing.T) {
+	// mock and defer restore Validate & MmapFileRange
+	validateOrig := validate.Validate
+	mmapFileRangeOrig := fileutils.MmapFileRange
 	defer func() {
-		fileutils.ReadFile = readFileOrig
+		validate.Validate = validateOrig
+		fileutils.MmapFileRange = mmapFileRangeOrig
 	}()
 
 	cases := []struct {
-		name            string
-		specifier       string
-		procMtdContents string
-		readFileErr     error
-		want            FlashDevice
-		wantErr         error
+		name        string
+		mmapErr     error
+		validateErr error
+		want        error
 	}{
 		{
-			name:            "wedge100 example: find mtd:flash0",
-			specifier:       "flash0",
-			procMtdContents: tests.ExampleWedge100ProcMtdFile,
-			readFileErr:     nil,
-			want: MemoryTechnologyDevice{
-				"flash0",
-				"/dev/mtd5",
-				uint64(33554432),
-			},
-			wantErr: nil,
+			name:        "succeeded",
+			mmapErr:     nil,
+			validateErr: nil,
+			want:        nil,
 		},
 		{
-			name:            "ReadFile error",
-			specifier:       "flash0",
-			procMtdContents: "",
-			readFileErr:     errors.Errorf("ReadFile error"),
-			want:            nil,
-			wantErr:         errors.Errorf("Unable to read from /proc/mtd: ReadFile error"),
+			name:        "mmap failed",
+			mmapErr:     errors.Errorf("mmap failed"),
+			validateErr: nil,
+			want:        errors.Errorf("Can't mmap flash device: mmap failed"),
 		},
 		{
-			name:            "MTD not found in /proc/mtd",
-			specifier:       "flash1",
-			procMtdContents: tests.ExampleWedge100ProcMtdFile,
-			readFileErr:     nil,
-			want:            nil,
-			wantErr:         errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
-		},
-		{
-			name:            "size parse error",
-			specifier:       "flash1",
-			procMtdContents: `mtd0: 10000000000000000 00100000 "flash1"`, // larger than 64-bits
-			readFileErr:     nil,
-			want:            nil,
-			wantErr: errors.Errorf("Found MTD entry for flash device 'mtd:flash1' " +
-				"but got error 'strconv.ParseUint: parsing \"10000000000000000\": value out of range'"),
-		},
-		{
-			name:            "corrupt /proc/mtd file",
-			specifier:       "flash1",
-			procMtdContents: `mtd0: xxxxxxxx xxxxxxxx "flash1"`,
-			readFileErr:     nil,
-			want:            nil,
-			wantErr:         errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
+			name:        "validation failed",
+			mmapErr:     nil,
+			validateErr: errors.Errorf("Validation failed"),
+			want:        errors.Errorf("Validation failed"),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			fileutils.ReadFile = func(filename string) ([]byte, error) {
-				return []byte(tc.procMtdContents), tc.readFileErr
+			m := &MemoryTechnologyDevice{
+				"flash0",
+				"/dev/mtd5",
+				uint64(33554432),
 			}
-			got, err := getMTD(tc.specifier)
-			tests.CompareTestErrors(tc.wantErr, err, t)
-
-			if got == nil {
-				if tc.want != nil {
-					t.Errorf("want '%v' got '%v'", tc.want, got)
+			exampleData := []byte("abcd")
+			fileutils.MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
+				if filename != "/dev/mtdblock5" {
+					t.Errorf("filename: want '%v' got '%v'", "/dev/mtdblock5", filename)
 				}
-			} else {
-				if tc.want == nil {
-					t.Errorf("want '%v' got '%v'", tc.want, got)
-				} else if !reflect.DeepEqual(tc.want, got) {
-					t.Errorf("want '%v', got '%v'", tc.want, got)
+				if length != 33554432 {
+					t.Errorf("length: want '%v' got '%v'", 33554432, length)
 				}
+				return exampleData, tc.mmapErr
 			}
+			validate.Validate = func(data []byte) error {
+				if !reflect.DeepEqual(exampleData, data) {
+					t.Errorf("data: want '%v' got '%v'", exampleData, data)
+				}
+				return tc.validateErr
+			}
+			got := m.Validate()
+			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}
 }

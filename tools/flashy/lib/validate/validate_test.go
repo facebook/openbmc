@@ -278,7 +278,7 @@ func TestValidatePartitionsFromPartitionConfigs(t *testing.T) {
 	}
 }
 
-func TestValidateImage(t *testing.T) {
+func TestValidate(t *testing.T) {
 	// mock and defer restore ImageFormats, validatePartitionsFromPartitionConfigs
 	imageFormatsOrig := partition.ImageFormats
 	validatePartitionsFromPartitionConfigsOrig := validatePartitionsFromPartitionConfigs
@@ -320,7 +320,7 @@ func TestValidateImage(t *testing.T) {
 			name:                   "fail on all formats",
 			imageFormatsElems:      2,
 			validatePartitionsErrs: []error{errors.Errorf("'1' failed"), errors.Errorf("'2' failed")},
-			want:                   errors.Errorf("*** FAILED: Image validation failed ***"),
+			want:                   errors.Errorf("*** FAILED: Validation failed ***"),
 		},
 	}
 
@@ -337,7 +337,7 @@ func TestValidateImage(t *testing.T) {
 				return tc.validatePartitionsErrs[idx]
 			}
 
-			got := ValidateImage([]byte{})
+			got := Validate([]byte{})
 			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}

@@ -27,8 +27,33 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate"
 	"github.com/pkg/errors"
 )
+
+func init() {
+	registerFlashDeviceFactory(MtdType, getMTD)
+}
+
+func getMTD(deviceSpecifier string) (FlashDevice, error) {
+	mtdMap, err := getMTDMap(deviceSpecifier)
+	if err != nil {
+		return nil, err
+	}
+
+	filePath := filepath.Join("/dev", mtdMap["dev"])
+	fileSize, err := strconv.ParseUint(mtdMap["size"], 16, 64)
+	if err != nil {
+		return nil, errors.Errorf("Found MTD entry for flash device 'mtd:%v' but got error '%v'",
+			deviceSpecifier, err)
+	}
+
+	return &MemoryTechnologyDevice{
+		deviceSpecifier,
+		filePath,
+		fileSize,
+	}, nil
+}
 
 type WritableMountedMTD struct {
 	Device     string
@@ -43,29 +68,25 @@ type MemoryTechnologyDevice struct {
 
 const MtdType = "mtd"
 
-func init() {
-	registerFlashDevice(MtdType, getMTD)
-}
-
-func (m MemoryTechnologyDevice) GetType() string {
+func (m *MemoryTechnologyDevice) GetType() string {
 	return MtdType
 }
 
-func (m MemoryTechnologyDevice) GetSpecifier() string {
+func (m *MemoryTechnologyDevice) GetSpecifier() string {
 	return m.Specifier
 }
 
-func (m MemoryTechnologyDevice) GetFilePath() string {
+func (m *MemoryTechnologyDevice) GetFilePath() string {
 	return m.FilePath
 }
 
-func (m MemoryTechnologyDevice) GetFileSize() uint64 {
+func (m *MemoryTechnologyDevice) GetFileSize() uint64 {
 	return m.FileSize
 }
 
 // mmaps the whole file, readonly
 // Munmap call required to release the buffer
-func (m MemoryTechnologyDevice) MmapRO() ([]byte, error) {
+func (m *MemoryTechnologyDevice) MmapRO() ([]byte, error) {
 	// use mmap
 	mmapFilePath, err := m.getMmapFilePath()
 	if err != nil {
@@ -74,11 +95,19 @@ func (m MemoryTechnologyDevice) MmapRO() ([]byte, error) {
 	return fileutils.MmapFileRange(mmapFilePath, 0, int(m.FileSize), syscall.PROT_READ, syscall.MAP_SHARED)
 }
 
-func (m MemoryTechnologyDevice) Munmap(buf []byte) error {
+func (m *MemoryTechnologyDevice) Munmap(buf []byte) error {
 	return fileutils.Munmap(buf)
 }
 
-// /dev/mtd5 cannot be mmap-ed, but /dev/mtdblock5 can
+func (m *MemoryTechnologyDevice) Validate() error {
+	data, err := m.MmapRO()
+	if err != nil {
+		return errors.Errorf("Can't mmap flash device: %v", err)
+	}
+	return validate.Validate(data)
+}
+
+// /dev/mtd5 cannot be mmap-ed, but /dev/mtdblock5 can.
 // return the latter instead
 func (m MemoryTechnologyDevice) getMmapFilePath() (string, error) {
 	regEx := `^(?P<devmtdpath>/dev/mtd)(?P<mtdnum>[0-9]+)$`
@@ -94,30 +123,6 @@ func (m MemoryTechnologyDevice) getMmapFilePath() (string, error) {
 		mtdPathMap["devmtdpath"],
 		mtdPathMap["mtdnum"],
 	), nil
-}
-
-/*
-TODO:-
-(1) Validate mtd
-*/
-func getMTD(deviceSpecifier string) (FlashDevice, error) {
-	mtdMap, err := getMTDMap(deviceSpecifier)
-	if err != nil {
-		return nil, err
-	}
-
-	filePath := filepath.Join("/dev", mtdMap["dev"])
-	fileSize, err := strconv.ParseUint(mtdMap["size"], 16, 64)
-	if err != nil {
-		return nil, errors.Errorf("Found MTD entry for flash device 'mtd:%v' but got error '%v'",
-			deviceSpecifier, err)
-	}
-
-	return MemoryTechnologyDevice{
-		deviceSpecifier,
-		filePath,
-		fileSize,
-	}, nil
 }
 
 // from mtd device specifier, get a map containing

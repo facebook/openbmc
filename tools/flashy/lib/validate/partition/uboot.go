@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
@@ -254,11 +253,11 @@ func (p *UBootPartition) GetSize() uint32 {
 func (p *UBootPartition) Validate() error {
 	// check vboot enforcement. There is no point validating RO parts of
 	// vboot U-Boot (which in actuality is spl+recovery U-Boot)
-	vbootEnforcement, err := flashutils.GetVbootEnforcement()
+	vbootEnforcement, err := utils.GetVbootEnforcement()
 	if err != nil {
 		return errors.Errorf("Unable to get vboot enforcement: %v", err)
 	}
-	if vbootEnforcement == flashutils.VBOOT_HARDWARE_ENFORCE {
+	if vbootEnforcement == utils.VBOOT_HARDWARE_ENFORCE {
 		log.Printf("U-Boot partition '%v' validation bypassed: this is a VBoot system",
 			p.Name)
 		return nil

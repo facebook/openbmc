@@ -68,13 +68,13 @@ func TestParseDeviceID(t *testing.T) {
 }
 
 func TestGetFlashDevice(t *testing.T) {
-	// mock and defer restore FlashDeviceGetterMap
-	flashDeviceGetterMapOrig := devices.FlashDeviceGetterMap
+	// mock and defer restore FlashDeviceFactoryMap
+	flashDeviceFactoryMapOrig := devices.FlashDeviceFactoryMap
 	defer func() {
-		devices.FlashDeviceGetterMap = flashDeviceGetterMapOrig
+		devices.FlashDeviceFactoryMap = flashDeviceFactoryMapOrig
 	}()
 
-	sampleFlashDevice := devices.MemoryTechnologyDevice{
+	sampleFlashDevice := &devices.MemoryTechnologyDevice{
 		"flash0",
 		"/dev/mtd5",
 		uint64(12345678),
@@ -89,16 +89,16 @@ func TestGetFlashDevice(t *testing.T) {
 	}
 
 	cases := []struct {
-		name                 string
-		deviceID             string
-		flashDeviceGetterMap map[string](devices.FlashDeviceGetter)
-		want                 devices.FlashDevice
-		wantErr              error
+		name                  string
+		deviceID              string
+		flashDeviceFactoryMap map[string](devices.FlashDeviceFactory)
+		want                  devices.FlashDevice
+		wantErr               error
 	}{
 		{
 			name:     "basic passing",
 			deviceID: "mtd:flash0",
-			flashDeviceGetterMap: map[string](devices.FlashDeviceGetter){
+			flashDeviceFactoryMap: map[string](devices.FlashDeviceFactory){
 				"mtd": sampleMtdGetterSuccess,
 			},
 			want:    sampleFlashDevice,
@@ -107,7 +107,7 @@ func TestGetFlashDevice(t *testing.T) {
 		{
 			name:     "malformed device ID",
 			deviceID: "mtd-flash0",
-			flashDeviceGetterMap: map[string](devices.FlashDeviceGetter){
+			flashDeviceFactoryMap: map[string](devices.FlashDeviceFactory){
 				"mtd": sampleMtdGetterSuccess,
 			},
 			want: nil,
@@ -116,17 +116,17 @@ func TestGetFlashDevice(t *testing.T) {
 				"No match for regex '^(?P<type>[a-z]+):(?P<specifier>.+)$' for input 'mtd-flash0'"),
 		},
 		{
-			name:                 "Not present in GetterMap",
-			deviceID:             "mtd:flash0",
-			flashDeviceGetterMap: map[string](devices.FlashDeviceGetter){},
-			want:                 nil,
+			name:                  "Not present in GetterMap",
+			deviceID:              "mtd:flash0",
+			flashDeviceFactoryMap: map[string](devices.FlashDeviceFactory){},
+			want:                  nil,
 			wantErr: errors.Errorf("Failed to get flash device: " +
 				"'mtd' is not a valid registered flash device type"),
 		},
 		{
-			name:     "Error in FlashDeviceGetter",
+			name:     "Error in FlashDeviceFactory",
 			deviceID: "mtd:flash0",
-			flashDeviceGetterMap: map[string](devices.FlashDeviceGetter){
+			flashDeviceFactoryMap: map[string](devices.FlashDeviceFactory){
 				"mtd": sampleMtdGetterError,
 			},
 			want:    nil,
@@ -136,7 +136,7 @@ func TestGetFlashDevice(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			devices.FlashDeviceGetterMap = tc.flashDeviceGetterMap
+			devices.FlashDeviceFactoryMap = tc.flashDeviceFactoryMap
 			got, err := GetFlashDevice(tc.deviceID)
 
 			tests.CompareTestErrors(tc.wantErr, err, t)

@@ -21,10 +21,8 @@ package flashutils
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
@@ -33,225 +31,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
-
-type partialRunCommandReturn struct {
-	err    error
-	stdout string
-}
-
-func TestGetVbootUtilContents(t *testing.T) {
-	// mock and defer restore RemoveFile, RunCommand, IsVbootSystem and
-	// IsELFFile
-	removeFileOrig := fileutils.RemoveFile
-	runCommandOrig := utils.RunCommand
-	isVbootSystemOrig := isVbootSystem
-	isELFFileOrig := fileutils.IsELFFile
-	defer func() {
-		fileutils.RemoveFile = removeFileOrig
-		utils.RunCommand = runCommandOrig
-		isVbootSystem = isVbootSystemOrig
-		fileutils.IsELFFile = isELFFileOrig
-	}()
-
-	// removeFile is mocked to return nil
-	fileutils.RemoveFile = func(_ string) error {
-		return nil
-	}
-
-	cases := []struct {
-		name          string
-		isVbootSystem bool
-		isELF         bool
-		runCmdRet     partialRunCommandReturn
-		wantCmd       string
-		want          string
-		wantErr       error
-	}{
-		{
-			name:          "not a vboot system",
-			isVbootSystem: false,
-			isELF:         true,
-			runCmdRet:     partialRunCommandReturn{},
-			wantCmd:       "",
-			want:          "",
-			wantErr:       errors.Errorf("Not a vboot system"),
-		},
-		{
-			name:          "is ELF file",
-			isVbootSystem: true,
-			isELF:         true,
-			runCmdRet: partialRunCommandReturn{
-				nil,
-				"foobar",
-			},
-			wantCmd: vbootUtilPath,
-			want:    "foobar",
-			wantErr: nil,
-		},
-		{
-			name:          "not ELF",
-			isVbootSystem: true,
-			isELF:         false,
-			runCmdRet: partialRunCommandReturn{
-				nil,
-				"foobar",
-			},
-			wantCmd: fmt.Sprintf("bash %v", vbootUtilPath),
-			want:    "foobar",
-			wantErr: nil,
-		},
-		{
-			name:          "failed",
-			isVbootSystem: true,
-			isELF:         true,
-			runCmdRet: partialRunCommandReturn{
-				errors.Errorf("cmd err"),
-				"",
-			},
-			wantCmd: vbootUtilPath,
-			want:    "",
-			wantErr: errors.Errorf("Unable to get vboot-util info: cmd err"),
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			gotCmd := ""
-			isVbootSystem = func() bool {
-				return tc.isVbootSystem
-			}
-			utils.RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
-				gotCmd = strings.Join(cmdArr, " ")
-				retErr := tc.runCmdRet.err
-				stdout := tc.runCmdRet.stdout
-				return 0, retErr, stdout, ""
-			}
-			fileutils.IsELFFile = func(filename string) bool {
-				if filename != vbootUtilPath {
-					t.Errorf("want vboot util path '%v' got '%v'", vbootUtilPath, filename)
-				}
-				return tc.isELF
-			}
-			got, err := getVbootUtilContents()
-
-			if tc.want != got {
-				t.Errorf("want '%v' got '%v'", tc.want, got)
-			}
-			tests.CompareTestErrors(tc.wantErr, err, t)
-			if tc.wantCmd != gotCmd {
-				t.Errorf("want cmd '%v' got '%v'", tc.wantCmd, gotCmd)
-			}
-		})
-	}
-}
-
-func TestGetVbootEnforcement(t *testing.T) {
-	// mock and defer restore IsVbootSystem, ReadFile and getVbootUtilContents
-	isVbootSystemOrig := isVbootSystem
-	readFileOrig := fileutils.ReadFile
-	getVbootUtilContentsOrig := getVbootUtilContents
-	defer func() {
-		isVbootSystem = isVbootSystemOrig
-		fileutils.ReadFile = readFileOrig
-		getVbootUtilContents = getVbootUtilContentsOrig
-	}()
-
-	cases := []struct {
-		name              string
-		isVbootSystem     bool
-		procMtdContents   string
-		procMtdReadErr    error
-		vbootUtilContents string
-		vbootUtilGetErr   error
-		want              VbootEnforcementType
-		wantErr           error
-	}{
-		{
-			name:              "Not a vboot system",
-			isVbootSystem:     false,
-			procMtdContents:   "",
-			procMtdReadErr:    nil,
-			vbootUtilContents: "",
-			vbootUtilGetErr:   nil,
-			want:              VBOOT_NONE,
-			wantErr:           nil,
-		},
-		{
-			name:              "example wedge100 /proc/mtd, no romx, mock vboot system",
-			isVbootSystem:     true,
-			procMtdContents:   tests.ExampleWedge100ProcMtdFile,
-			procMtdReadErr:    nil,
-			vbootUtilContents: "",
-			vbootUtilGetErr:   nil,
-			want:              VBOOT_NONE,
-			wantErr:           nil,
-		},
-		{
-			name:              "tiogapass1 example",
-			isVbootSystem:     true,
-			procMtdContents:   tests.ExampleTiogapass1ProcMtdFile,
-			procMtdReadErr:    nil,
-			vbootUtilContents: tests.ExampleTiogapass1VbootUtilFile,
-			vbootUtilGetErr:   nil,
-			want:              VBOOT_HARDWARE_ENFORCE,
-			wantErr:           nil,
-		},
-		{
-			name:              "/proc/mtd read err",
-			isVbootSystem:     true,
-			procMtdContents:   "",
-			procMtdReadErr:    errors.Errorf("proc mtd read err"),
-			vbootUtilContents: "",
-			vbootUtilGetErr:   nil,
-			want:              VBOOT_NONE,
-			wantErr:           errors.Errorf("Unable to read '/proc/mtd': proc mtd read err"),
-		},
-		{
-			name:              "getVbootUtilContents err",
-			isVbootSystem:     true,
-			procMtdContents:   "romx",
-			procMtdReadErr:    nil,
-			vbootUtilContents: "",
-			vbootUtilGetErr:   errors.Errorf("getVbootUtilContents err"),
-			want:              VBOOT_NONE,
-			wantErr:           errors.Errorf("Unable to read vboot-util contents: getVbootUtilContents err"),
-		},
-		{
-			name:            "software enforce example",
-			isVbootSystem:   true,
-			procMtdContents: "romx",
-			procMtdReadErr:  nil,
-			vbootUtilContents: `Flags hardware_enforce:  0x00
-Flags software_enforce:  0x01`,
-			vbootUtilGetErr: nil,
-			want:            VBOOT_SOFTWARE_ENFORCE,
-			wantErr:         nil,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			isVbootSystem = func() bool {
-				return tc.isVbootSystem
-			}
-			fileutils.ReadFile = func(filename string) ([]byte, error) {
-				if filename != utils.ProcMtdFilePath {
-					t.Errorf("filename: want '%v' got '%v'",
-						utils.ProcMtdFilePath, filename)
-				}
-				return []byte(tc.procMtdContents), tc.procMtdReadErr
-			}
-			getVbootUtilContents = func() (string, error) {
-				return tc.vbootUtilContents, tc.vbootUtilGetErr
-			}
-			got, err := GetVbootEnforcement()
-			if tc.want != got {
-				t.Errorf("want '%v' got '%v'", tc.want, got)
-			}
-			tests.CompareTestErrors(tc.wantErr, err, t)
-		})
-	}
-}
 
 type mockFlashDevice struct {
 	ReadErr error
@@ -352,14 +131,14 @@ func TestPatchImageWithLocalBootloader(t *testing.T) {
 }
 
 func TestIsVbootImagePatchingRequired(t *testing.T) {
-	// mock and defer restore getVbootReinforcement
-	getVbootEnforcementOrig := GetVbootEnforcement
+	// mock and defer restore GetVbootEnforcement
+	getVbootEnforcementOrig := utils.GetVbootEnforcement
 	defer func() {
-		GetVbootEnforcement = getVbootEnforcementOrig
+		utils.GetVbootEnforcement = getVbootEnforcementOrig
 	}()
 	cases := []struct {
 		name                 string
-		vbootEnforcement     VbootEnforcementType
+		vbootEnforcement     utils.VbootEnforcementType
 		vbootEnforcementErr  error
 		flashDeviceSpecifier string
 		want                 bool
@@ -367,7 +146,7 @@ func TestIsVbootImagePatchingRequired(t *testing.T) {
 	}{
 		{
 			name:                 "No vboot enforcement",
-			vbootEnforcement:     VBOOT_NONE,
+			vbootEnforcement:     utils.VBOOT_NONE,
 			vbootEnforcementErr:  nil,
 			flashDeviceSpecifier: "flash1",
 			want:                 false,
@@ -375,7 +154,7 @@ func TestIsVbootImagePatchingRequired(t *testing.T) {
 		},
 		{
 			name:                 "software vboot enforcement",
-			vbootEnforcement:     VBOOT_SOFTWARE_ENFORCE,
+			vbootEnforcement:     utils.VBOOT_SOFTWARE_ENFORCE,
 			vbootEnforcementErr:  nil,
 			flashDeviceSpecifier: "flash1",
 			want:                 false,
@@ -383,7 +162,7 @@ func TestIsVbootImagePatchingRequired(t *testing.T) {
 		},
 		{
 			name:                 "hardware vboot enforcement, flash1",
-			vbootEnforcement:     VBOOT_HARDWARE_ENFORCE,
+			vbootEnforcement:     utils.VBOOT_HARDWARE_ENFORCE,
 			vbootEnforcementErr:  nil,
 			flashDeviceSpecifier: "flash1",
 			want:                 true,
@@ -391,7 +170,7 @@ func TestIsVbootImagePatchingRequired(t *testing.T) {
 		},
 		{
 			name:                 "hardware vboot enforcement, flash0 (not required)",
-			vbootEnforcement:     VBOOT_HARDWARE_ENFORCE,
+			vbootEnforcement:     utils.VBOOT_HARDWARE_ENFORCE,
 			vbootEnforcementErr:  nil,
 			flashDeviceSpecifier: "flash0",
 			want:                 false,
@@ -399,7 +178,7 @@ func TestIsVbootImagePatchingRequired(t *testing.T) {
 		},
 		{
 			name:                 "error getting vboot enforcement",
-			vbootEnforcement:     VBOOT_NONE,
+			vbootEnforcement:     utils.VBOOT_NONE,
 			vbootEnforcementErr:  errors.Errorf("vboot enforcement err"),
 			flashDeviceSpecifier: "flash0",
 			want:                 false,
@@ -408,7 +187,7 @@ func TestIsVbootImagePatchingRequired(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			GetVbootEnforcement = func() (VbootEnforcementType, error) {
+			utils.GetVbootEnforcement = func() (utils.VbootEnforcementType, error) {
 				return tc.vbootEnforcement, tc.vbootEnforcementErr
 			}
 			got, err := isVbootImagePatchingRequired(tc.flashDeviceSpecifier)
@@ -421,18 +200,18 @@ func TestIsVbootImagePatchingRequired(t *testing.T) {
 }
 
 func TestVbootPatchImageBootloaderIfNeeded(t *testing.T) {
-	// mock and defer restore isVbootSystem, isVbootImagePatchingRequired
+	// mock and defer restore IsVbootSystem, isVbootImagePatchingRequired
 	// and patchImageWithLocalBootloader
-	isVbootSystemOrig := isVbootSystem
+	isVbootSystemOrig := utils.IsVbootSystem
 	isVbootImagePatchingRequiredOrig := isVbootImagePatchingRequired
 	patchImageWithLocalBootloaderOrig := patchImageWithLocalBootloader
 	defer func() {
-		isVbootSystem = isVbootSystemOrig
+		utils.IsVbootSystem = isVbootSystemOrig
 		isVbootImagePatchingRequired = isVbootImagePatchingRequiredOrig
 		patchImageWithLocalBootloader = patchImageWithLocalBootloaderOrig
 	}()
 
-	exampleFlashDevice := devices.MemoryTechnologyDevice{
+	exampleFlashDevice := &devices.MemoryTechnologyDevice{
 		"flash1",
 		"/dev/mtd5",
 		uint64(42),
@@ -490,7 +269,7 @@ func TestVbootPatchImageBootloaderIfNeeded(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			isVbootSystem = func() bool {
+			utils.IsVbootSystem = func() bool {
 				return tc.isVboot
 			}
 			isVbootImagePatchingRequired = func(flashDeviceSpecifier string) (bool, error) {

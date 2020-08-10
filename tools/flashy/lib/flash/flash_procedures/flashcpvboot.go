@@ -30,7 +30,6 @@ import (
 // these vboot devices expose only flash1
 func FlashCpVboot(stepParams step.StepParams) step.StepExitError {
 	log.Printf("Flashing using flashcp vboot method")
-
 	log.Printf("Attempting to flash '%v' with image file '%v'",
 		stepParams.DeviceID, stepParams.ImageFilePath)
 
@@ -49,7 +48,12 @@ func FlashCpVboot(stepParams step.StepParams) step.StepExitError {
 		return step.ExitSafeToReboot{err}
 	}
 
-	// run flashcp
-	flashCpErr := runFlashCpCmd(stepParams.ImageFilePath, flashDevice.GetFilePath())
-	return flashCpErr
+	err = flashCpAndValidate(flashDevice, stepParams.ImageFilePath)
+	if err != nil {
+		// return safe to reboot here to retry.
+		// error handler (step.HandleStepError) will check if
+		// either flash device is valid.
+		return step.ExitSafeToReboot{err}
+	}
+	return nil
 }

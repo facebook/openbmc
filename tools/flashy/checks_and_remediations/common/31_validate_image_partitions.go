@@ -50,7 +50,7 @@ func ValidateImagePartitions(stepParams step.StepParams) step.StepExitError {
 	}
 	defer fileutils.Munmap(imageData)
 
-	err = validate.ValidateImage(imageData)
+	err = validate.Validate(imageData)
 	if err != nil {
 		return step.ExitUnknownError{err}
 	}

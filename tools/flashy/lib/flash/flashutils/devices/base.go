@@ -26,17 +26,18 @@ type FlashDevice interface {
 	GetFileSize() uint64
 	MmapRO() ([]byte, error)
 	Munmap([]byte) error
+	Validate() error
 }
 
 // takes in the specifier and returns the FlashDevice
-type FlashDeviceGetter = func(string) (FlashDevice, error)
+type FlashDeviceFactory = func(string) (FlashDevice, error)
 
-// maps from the type of the device to the getter function
+// maps from the type of the device to the factory function
 // that gets & validates the information of the flash storage device
-// populated by each storage device in ./devices/ via the RegisterFlashDevice
+// populated by each storage device via the registerFlashDeviceFactory
 // function
-var FlashDeviceGetterMap map[string]FlashDeviceGetter = map[string]FlashDeviceGetter{}
+var FlashDeviceFactoryMap map[string]FlashDeviceFactory = map[string]FlashDeviceFactory{}
 
-func registerFlashDevice(deviceType string, getter FlashDeviceGetter) {
-	FlashDeviceGetterMap[deviceType] = getter
+func registerFlashDeviceFactory(deviceType string, factory FlashDeviceFactory) {
+	FlashDeviceFactoryMap[deviceType] = factory
 }

@@ -20,6 +20,7 @@
 package common
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
@@ -30,11 +31,11 @@ import (
 
 func TestValidateImagePartitions(t *testing.T) {
 	// mock and defer restore MmapFile and
-	// ValidateImage
-	validateImageOrig := validate.ValidateImage
+	// Validate
+	validateOrig := validate.Validate
 	mmapFileOrig := fileutils.MmapFile
 	defer func() {
-		validate.ValidateImage = validateImageOrig
+		validate.Validate = validateOrig
 		fileutils.MmapFile = mmapFileOrig
 	}()
 
@@ -81,16 +82,24 @@ func TestValidateImagePartitions(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			validate.ValidateImage = func(data []byte) error {
+			imageFileName := "/opt/upgrade/image"
+			exampleData := []byte("abcd")
+			validate.Validate = func(data []byte) error {
+				if !reflect.DeepEqual(exampleData, data) {
+					t.Errorf("data: want '%v' got '%v'", exampleData, data)
+				}
 				return tc.validatePartitionsError
 			}
 			fileutils.MmapFile = func(filename string, prot, flags int) ([]byte, error) {
-				return nil, tc.mmapErr
+				if filename != imageFileName {
+					t.Errorf("filename: want '%v' got '%v'", imageFileName, filename)
+				}
+				return exampleData, tc.mmapErr
 			}
 
 			stepParams := step.StepParams{
 				Clowntown:     tc.clowntown,
-				ImageFilePath: "/opt/upgrade/image",
+				ImageFilePath: imageFileName,
 			}
 
 			got := ValidateImagePartitions(stepParams)

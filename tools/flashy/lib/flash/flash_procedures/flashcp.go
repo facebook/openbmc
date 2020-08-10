@@ -24,6 +24,7 @@ import (
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
@@ -41,13 +42,36 @@ func FlashCp(stepParams step.StepParams) step.StepExitError {
 		return step.ExitSafeToReboot{err}
 	}
 	log.Printf("Flash device: %v", flashDevice)
-
-	// run flashcp
-	flashCpErr := runFlashCpCmd(stepParams.ImageFilePath, flashDevice.GetFilePath())
-	return flashCpErr
+	err = flashCpAndValidate(flashDevice, stepParams.ImageFilePath)
+	if err != nil {
+		// return safe to reboot here to retry.
+		// error handler (step.HandleStepError) will check if
+		// either flash device is valid.
+		return step.ExitSafeToReboot{err}
+	}
+	return nil
 }
 
-var runFlashCpCmd = func(imageFilePath, flashDevicePath string) step.StepExitError {
+var flashCpAndValidate = func(flashDevice devices.FlashDevice, imageFilePath string) error {
+	log.Printf("Starting to flash")
+	err := runFlashCpCmd(imageFilePath, flashDevice.GetFilePath())
+	if err != nil {
+		log.Printf("Flashcp failed: %v", err)
+		return err
+	}
+	log.Printf("Flashcp succeeded")
+
+	log.Printf("Validating flash device")
+	err = flashDevice.Validate()
+	if err != nil {
+		log.Printf("Flash device validation failed: %v", err)
+		return err
+	}
+	log.Printf("Flash device validation passed")
+	return nil
+}
+
+var runFlashCpCmd = func(imageFilePath, flashDevicePath string) error {
 	flashCmd := []string{
 		"flashcp", imageFilePath, flashDevicePath,
 	}
@@ -59,10 +83,8 @@ var runFlashCpCmd = func(imageFilePath, flashDevicePath string) step.StepExitErr
 			"Flashing failed with exit code %v, error: %v, stdout: '%v', stderr: '%v'",
 			exitCode, err, stdout, stderr,
 		)
-		log.Printf(errMsg)
-		return step.ExitSafeToReboot{errors.Errorf(errMsg)}
+		return errors.Errorf(errMsg)
 	}
 
-	log.Printf("Flashing succeeded, safe to reboot")
 	return nil
 }

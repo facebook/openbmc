@@ -53,10 +53,10 @@ var GetFlashDevice = func(deviceID string) (devices.FlashDevice, error) {
 		return nil, errors.Errorf("Failed to get flash device: %v", err)
 	}
 
-	if getter, ok := devices.FlashDeviceGetterMap[deviceType]; !ok {
+	if factory, ok := devices.FlashDeviceFactoryMap[deviceType]; !ok {
 		errMsg := fmt.Sprintf("'%v' is not a valid registered flash device type", deviceType)
 		return nil, errors.Errorf("Failed to get flash device: %v", errMsg)
 	} else {
-		return getter(deviceSpecifier)
+		return factory(deviceSpecifier)
 	}
 }

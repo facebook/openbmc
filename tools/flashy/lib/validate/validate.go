@@ -57,7 +57,7 @@ var getAllPartitionsFromPartitionConfigs = func(
 		}
 
 		// flash size is 32MB, so pInfo may indicate a size
-		// larger than the image file.
+		// larger than the image file. (this is fine with flash devices are they are 32MB)
 		// In such a case, reduce the size of the partition in pInfo.
 		// The alternative would be to pad the image with zero bytes until 32MB,
 		// but that would require operating on a new copy of the image in memory.
@@ -112,8 +112,9 @@ var validatePartitionsFromPartitionConfigs = func(
 
 // try to validate partitions according to all configs defined in
 // partition.ImageFormats. If one succeeds, return nil. If none succeeds,
-// validation has failed, return the error
-var ValidateImage = func(data []byte) error {
+// validation has failed, return the error.
+// supports both data from image file and flash device
+var Validate = func(data []byte) error {
 	for imageFormatName, partitionConfigs := range partition.ImageFormats {
 		log.Printf("*** Attempting to validate using image format '%v' ***",
 			imageFormatName)
@@ -129,12 +130,12 @@ var ValidateImage = func(data []byte) error {
 			continue
 		}
 
-		log.Printf("*** PASSED: Image validation with image format '%v' ***",
+		log.Printf("*** PASSED: Validation with image format '%v' ***",
 			imageFormatName)
 		return nil
 	}
 
-	errMsg := "*** FAILED: Image validation failed ***"
+	errMsg := "*** FAILED: Validation failed ***"
 	log.Printf(errMsg)
 	return errors.Errorf(errMsg)
 }

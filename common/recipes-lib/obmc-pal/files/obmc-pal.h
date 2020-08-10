@@ -167,6 +167,7 @@ enum {
   UNIFIED_PCIE_EVENT = 0x9,
   UNIFIED_MEM_EVENT  = 0xA,
   UNIFIED_UPI_EVENT  = 0xB,
+  UNIFIED_BOOT_GUARD = 0xC,
 };
 
 enum {
@@ -274,6 +275,7 @@ void pal_set_post_start(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint
 void pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log);
+int pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log);
 int pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log);
 int pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_bmc_err_enable(const char *error_item);

@@ -298,6 +298,25 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 int __attribute__((weak))
 pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
+  //
+  // If a platform needs to process a specific type of SEL message
+  // differently from what the common code does,
+  // this function can be overriden to do such unique handling
+  // instead of calling the common SEL parsing logic (pal_parse_oem_unified_sel_common.)
+  //
+  // This default handler will not perform any special handling, and will
+  // just call the default handler (pal_parse_oem_unified_sel_common) for every type of
+  // SEL msessages.
+  //
+
+  pal_parse_oem_unified_sel_common(fru, sel, error_log);
+
+  return 0;
+}
+
+int __attribute__((weak))
+pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
+{
   uint8_t general_info = sel[3];
   uint8_t error_type = general_info & 0xF;
   uint8_t plat;
@@ -434,6 +453,11 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
       estr_idx = (event_type < ARRAY_SIZE(upi_event)) ? event_type : (ARRAY_SIZE(upi_event) - 1);
       sprintf(error_log, "GeneralInfo: UPIEvent(0x%02X), UPI Failure Event: %s",
               general_info, upi_event[estr_idx]);
+      break;
+
+    case UNIFIED_BOOT_GUARD:
+      sprintf(error_log, "GeneralInfo: Boot Guard ACM Failure Events(0x%02X), Error Class(0x%02X), Error Code(0x%02X)",
+              general_info, sel[8], sel[9]);
       break;
 
     default:
@@ -2463,4 +2487,3 @@ pal_set_bios_cap_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
 {
   return PAL_ENOTSUP;
 }
-

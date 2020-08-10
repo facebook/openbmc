@@ -24,7 +24,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -35,13 +37,36 @@ import (
 	"github.com/pkg/errors"
 )
 
-const ProcMtdFilePath = "/proc/mtd"
-const etcIssueFilePath = "/etc/issue"
-
 // memory information in bytes
 type MemInfo struct {
 	MemTotal uint64
 	MemFree  uint64
+}
+
+const ProcMtdFilePath = "/proc/mtd"
+const etcIssueFilePath = "/etc/issue"
+
+// other flashers + the "flashy" binary
+var otherFlasherBaseNames = []string{
+	"autodump.sh",
+	"cpld_upgrade.sh",
+	"dd",
+	"flash_eraseall",
+	"flashcp",
+	"flashrom",
+	"fw-util",
+	"fw_setenv",
+	"improve_system.py",
+	"jbi",
+	"psu-update-bel.py",
+	"psu-update-delta.py",
+	"flashy",
+}
+
+var ownCmdlines = []string{
+	"/proc/self/cmdline",
+	"/proc/thread-self/cmdline",
+	fmt.Sprintf("/proc/%v/cmdline", os.Getpid()),
 }
 
 // get memInfo
@@ -246,4 +271,52 @@ var IsOpenBMC = func() (bool, error) {
 
 	isOpenBMC := strings.Contains(string(etcIssueBuf), magic)
 	return isOpenBMC, nil
+}
+
+// return error if any other flashers are running.
+// takes in the baseNames of all flashy's steps (e.g. 00_truncate_logs)
+// to make sure no other instance of flashy is running
+var CheckOtherFlasherRunning = func(flashyStepBaseNames []string) error {
+	allFlasherBaseNames := SafeAppendString(otherFlasherBaseNames, flashyStepBaseNames)
+
+	otherProcCmdlinePaths := getOtherProcCmdlinePaths()
+
+	err := checkNoBaseNameExistsInProcCmdlinePaths(allFlasherBaseNames,
+		otherProcCmdlinePaths)
+	if err != nil {
+		return errors.Errorf("Another flasher running: %v", err)
+	}
+	return nil
+}
+
+var getOtherProcCmdlinePaths = func() []string {
+	allCmdlines, _ := fileutils.Glob("/proc/*/cmdline")
+	// ignore err as this Glob only returns bas pattern error
+
+	otherCmdlines := StringDifference(allCmdlines, ownCmdlines)
+	return otherCmdlines
+}
+
+// return error if a basename is found running in a proc/*/cmdline file
+var checkNoBaseNameExistsInProcCmdlinePaths = func(baseNames, procCmdlinePaths []string) error {
+	for _, procCmdlinePath := range procCmdlinePaths {
+		cmdlineBuf, err := fileutils.ReadFile(procCmdlinePath)
+		if err != nil {
+			// processes and their respective files in procfs naturally come and go
+			continue
+		}
+
+		// Consider all command line parameters so `python improve_system.py` and
+		// `improve_system.py` are both detected.
+		params := strings.Split(string(cmdlineBuf), "\x00")
+		for _, param := range params {
+			baseName := path.Base(param)
+			if StringFind(baseName, baseNames) >= 0 {
+				return errors.Errorf("'%v' found in cmdline '%v'",
+					baseName, strings.Join(params, " "))
+			}
+		}
+
+	}
+	return nil
 }

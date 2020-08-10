@@ -229,6 +229,15 @@ func SafeAppendBytes(a, b []byte) []byte {
 	return c
 }
 
+// String version of SafeAppendBytes
+func SafeAppendString(a, b []string) []string {
+	la := len(a)
+	c := make([]string, la, la+len(b))
+	copy(c, a)
+	c = append(c, b...)
+	return c
+}
+
 // get a 4 byte uint32 from a byte slice 'data' from offset to offset+4.
 // return an error if offset will cause an out of range read
 func GetWord(data []byte, offset uint32) (uint32, error) {

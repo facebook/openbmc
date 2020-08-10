@@ -20,13 +20,11 @@
 package step
 
 import (
-	"encoding/json"
 	"log"
-	"os"
+	"path"
 	"runtime"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
-	_ "github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
 type StepParams struct {
@@ -55,14 +53,12 @@ func RegisterStep(step func(StepParams) StepExitError) {
 	StepMap[symlinkPath] = step
 }
 
-// encode exit error
-func encodeExitError(err StepExitError) {
-	enc := json.NewEncoder(os.Stderr)
-
-	var ae = struct {
-		Reason string `json:"message"`
-	}{
-		Reason: err.GetError(),
+// get basenames of flashy's steps
+var GetFlashyStepBaseNames = func() []string {
+	flashyStepBaseNames := []string{}
+	for p, _ := range StepMap {
+		stepBasename := path.Base(p)
+		flashyStepBaseNames = append(flashyStepBaseNames, stepBasename)
 	}
-	enc.Encode(ae)
+	return flashyStepBaseNames
 }

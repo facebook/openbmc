@@ -20,9 +20,13 @@
 package step
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 	"testing"
+
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/pkg/errors"
 )
 
 // any other exit codes are programming errors
@@ -86,22 +90,71 @@ func (e ExitUnknownError) GetType() string {
 	return "ExitUnknownError"
 }
 
+var exit = os.Exit
+
 func HandleStepError(err StepExitError) {
 	// output stack trace
 	log.Printf("%+v", err)
 	switch err := err.(type) {
-	case ExitSafeToReboot,
-		ExitUnsafeToReboot,
+	case ExitSafeToReboot:
+
+		ensureSafeToRebootErr := ensureSafeToReboot()
+		if ensureSafeToRebootErr != nil {
+			// unsafe to reboot
+			// wrap the original error and convert
+			log.Printf("UNSAFE TO REBOOT: %v", ensureSafeToRebootErr)
+			newErr := ExitUnsafeToReboot{
+				errors.Errorf("Original error: %v.\n"+
+					"Error converted to Unsafe to Reboot because of: %v",
+					err.GetError(), ensureSafeToRebootErr),
+			}
+			HandleStepError(newErr)
+			return
+		}
+
+		// actually safe to reboot
+		encodeExitError(err)
+		exit(err.GetExitCode())
+
+	case ExitUnsafeToReboot,
 		ExitUnknownError:
 
 		encodeExitError(err)
-		os.Exit(err.GetExitCode())
-
+		exit(err.GetExitCode())
 	default:
 		// this should not happen as there are no other types
 		log.Printf("Unknown error")
-		os.Exit(FLASHY_ERROR_UNKNOWN)
+		exit(FLASHY_ERROR_UNKNOWN)
 	}
+}
+
+// encode exit error
+func encodeExitError(err StepExitError) {
+	enc := json.NewEncoder(os.Stderr)
+
+	var ae = struct {
+		Reason string `json:"message"`
+	}{
+		Reason: err.GetError(),
+	}
+	enc.Encode(ae)
+}
+
+// ensure that a SafeToReboot Error is actually safe to reboot
+// by checking
+// (1) no other flashers are running
+// TODO:- (2) Either flash0 or flash1 is valid
+var ensureSafeToReboot = func() error {
+	log.Printf("Ensuring that the system is safe to reboot")
+
+	flashyStepBaseNames := GetFlashyStepBaseNames()
+	err := utils.CheckOtherFlasherRunning(flashyStepBaseNames)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("System is safe to reboot.")
+	return nil
 }
 
 // used to test and compare Exit Errors in testing

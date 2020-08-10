@@ -621,3 +621,168 @@ func TestIsOpenBMC(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckOtherFlasherRunning(t *testing.T) {
+	// mock and defer restore
+	// getOtherCmdlines and checkNoBaseNameExistsInCmdlines
+	getOtherProcCmdlinePathsOrig := getOtherProcCmdlinePaths
+	checkNoBaseNameExistsInProcCmdlinePathsOrig := checkNoBaseNameExistsInProcCmdlinePaths
+	defer func() {
+		getOtherProcCmdlinePaths = getOtherProcCmdlinePathsOrig
+		checkNoBaseNameExistsInProcCmdlinePaths = checkNoBaseNameExistsInProcCmdlinePathsOrig
+	}()
+
+	cases := []struct {
+		name                     string
+		otherCmdlinesRet         []string
+		checkNoBaseNameExistsErr error
+		want                     error
+	}{
+		{
+			name: "basic succeeding",
+			otherCmdlinesRet: []string{
+				"/proc/42/cmdline",
+			},
+			checkNoBaseNameExistsErr: nil,
+			want:                     nil,
+		},
+		{
+			name:                     "baseName found in cmdline",
+			otherCmdlinesRet:         nil,
+			checkNoBaseNameExistsErr: errors.Errorf("Found another flasher"),
+			want:                     errors.Errorf("Another flasher running: Found another flasher"),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			getOtherProcCmdlinePaths = func() []string {
+				return tc.otherCmdlinesRet
+			}
+			exampleFlashyStepBaseNames := []string{"foo", "bar"}
+			checkNoBaseNameExistsInProcCmdlinePaths = func(baseNames, cmdlines []string) error {
+				wantBaseNames := SafeAppendString(otherFlasherBaseNames, exampleFlashyStepBaseNames)
+				if !reflect.DeepEqual(wantBaseNames, baseNames) {
+					t.Errorf("basenames: want '%v' got '%v'", wantBaseNames, baseNames)
+				}
+				if !reflect.DeepEqual(tc.otherCmdlinesRet, cmdlines) {
+					t.Errorf("cmdlines: want '%v' got '%v'",
+						tc.otherCmdlinesRet, cmdlines)
+				}
+				return tc.checkNoBaseNameExistsErr
+			}
+
+			got := CheckOtherFlasherRunning(exampleFlashyStepBaseNames)
+			tests.CompareTestErrors(tc.want, got, t)
+		})
+	}
+}
+
+func TestGetOtherProcCmdlinePaths(t *testing.T) {
+	// mock and defer restore Glob and ownCmdlines
+	globOrig := fileutils.Glob
+	ownCmdlinesOrig := ownCmdlines
+	defer func() {
+		fileutils.Glob = globOrig
+		ownCmdlines = ownCmdlinesOrig
+	}()
+
+	ownCmdlines = []string{
+		"/proc/self/cmdline",
+		"/proc/thread-self/cmdline",
+	}
+	globRet := []string{
+		"foo",
+		"bar",
+		"/proc/self/cmdline",
+		"/proc/thread-self/cmdline",
+	}
+	want := []string{"foo", "bar"}
+	fileutils.Glob = func(pattern string) (matches []string, err error) {
+		return globRet, nil
+	}
+	got := getOtherProcCmdlinePaths()
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("want '%v' got '%v'", want, got)
+	}
+}
+
+func TestCheckNoBaseNameExistsInProcCmdlinePaths(t *testing.T) {
+	// mock and defer restore ReadFile
+	readFileOrig := fileutils.ReadFile
+	defer func() {
+		fileutils.ReadFile = readFileOrig
+	}()
+
+	type ReadFileRetType struct {
+		Buf []byte
+		Err error
+	}
+
+	baseNames := []string{
+		"improve_system.py",
+		"fw-util",
+		"flashy",
+		"00_dummy_step",
+	}
+
+	cases := []struct {
+		name string
+		// map from file name to the return
+		// the keys of this map are cmdlines
+		readFileRet map[string]interface{}
+		want        error
+	}{
+		{
+			name: "no basename exists in cmdlines",
+			readFileRet: map[string]interface{}{
+				"/proc/42/cmdline":  ReadFileRetType{[]byte("python\x00test.py"), nil},
+				"/proc/420/cmdline": ReadFileRetType{[]byte("ls\x00-la"), nil},
+			},
+			want: nil,
+		},
+		{
+			name: "ignore readfile errors",
+			readFileRet: map[string]interface{}{
+				"/proc/42/cmdline":  ReadFileRetType{[]byte{}, errors.Errorf("!")},
+				"/proc/420/cmdline": ReadFileRetType{[]byte{}, errors.Errorf("!")},
+			},
+			want: nil,
+		},
+		{
+			name: "base name exists (1)",
+			readFileRet: map[string]interface{}{
+				"/proc/42/cmdline": ReadFileRetType{[]byte("python\x00/tmp/improve_system.py"), nil},
+			},
+			want: errors.Errorf("'improve_system.py' found in cmdline 'python /tmp/improve_system.py'"),
+		},
+		{
+			name: "base name exists (2)",
+			readFileRet: map[string]interface{}{
+				"/proc/42/cmdline": ReadFileRetType{[]byte("fw-util\x00-foobar"), nil},
+			},
+			want: errors.Errorf("'fw-util' found in cmdline 'fw-util -foobar'"),
+		},
+		{
+			name: "base name exists (3)",
+			readFileRet: map[string]interface{}{
+				"/proc/42/cmdline": ReadFileRetType{[]byte(
+					"/opt/flashy/checks_and_remediations/common/00_dummy_step\x00-device\x00mtd:flash0",
+				), nil},
+			},
+			want: errors.Errorf("'00_dummy_step' found in cmdline " +
+				"'/opt/flashy/checks_and_remediations/common/00_dummy_step -device mtd:flash0'"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
+				ret := tc.readFileRet[filename].(ReadFileRetType)
+				return ret.Buf, ret.Err
+			}
+			cmdlines := GetStringKeys(tc.readFileRet)
+			got := checkNoBaseNameExistsInProcCmdlinePaths(baseNames, cmdlines)
+			tests.CompareTestErrors(tc.want, got, t)
+		})
+	}
+}

@@ -452,6 +452,21 @@ func TestSafeAppendBytes(t *testing.T) {
 	}
 }
 
+func TestSafeAppendString(t *testing.T) {
+	a := make([]string, 1, 2)
+	a[0] = "x"
+	b := make([]string, 1, 1)
+	b[0] = "y"
+	c := SafeAppendString(a, b)
+
+	if !reflect.DeepEqual(a, []string{"x"}) {
+		t.Errorf("a: want '%v' got '%v'", []string{"x"}, a)
+	}
+	if !reflect.DeepEqual(c, []string{"x", "y"}) {
+		t.Errorf("c: want '%v' got '%v'", []string{"x", "y"}, c)
+	}
+}
+
 func TestGetWord(t *testing.T) {
 	cases := []struct {
 		name    string

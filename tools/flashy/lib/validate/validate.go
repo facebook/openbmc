@@ -115,23 +115,23 @@ var validatePartitionsFromPartitionConfigs = func(
 // validation has failed, return the error.
 // supports both data from image file and flash device
 var Validate = func(data []byte) error {
-	for imageFormatName, partitionConfigs := range partition.ImageFormats {
+	for _, imageFormat := range partition.ImageFormats {
 		log.Printf("*** Attempting to validate using image format '%v' ***",
-			imageFormatName)
+			imageFormat.Name)
 
 		err := validatePartitionsFromPartitionConfigs(
 			data,
-			partitionConfigs,
+			imageFormat.PartitionConfigs,
 		)
 		if err != nil {
 			log.Printf("Image format '%v' failed validation: %v "+
 				"\nTrying the next image format if there are any.",
-				imageFormatName, err)
+				imageFormat.Name, err)
 			continue
 		}
 
 		log.Printf("*** PASSED: Validation with image format '%v' ***",
-			imageFormatName)
+			imageFormat.Name)
 		return nil
 	}
 

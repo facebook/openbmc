@@ -19,7 +19,9 @@
 
 package partition
 
-import "testing"
+import (
+	"testing"
+)
 
 // Checks to make sure ImageFormat is properly entered
 // (1) Make sure two adjacent partitions don't overlap
@@ -28,27 +30,27 @@ import "testing"
 // (3) Make sure FIT partitions specify FitImageNodes (fw-util assumes 1 if not specified)
 // (4) Make sure final Size + Offset <= 32768 * 1024 (32MB)
 func TestImageFormats(t *testing.T) {
-	for format, configs := range ImageFormats {
+	for _, format := range ImageFormats {
 		lastEndOffset := uint32(0)
-		for _, config := range configs {
+		for _, config := range format.PartitionConfigs {
 			if config.Offset%1024 != 0 {
 				t.Errorf("'%v' format '%v' partition offset is not a multiple of 1024, "+
 					"did you forget to enter it in bytes?",
-					format, config.Name)
+					format.Name, config.Name)
 			}
 			if config.Size%1024 != 0 {
 				t.Errorf("'%v' format '%v' partition size is not a multiple of 1024, "+
 					"did you forget to enter it in bytes?",
-					format, config.Name)
+					format.Name, config.Name)
 			}
 			if config.Offset < lastEndOffset {
 				t.Errorf("'%v' format '%v' partition overlapped with previous partition region.",
-					format, config.Name)
+					format.Name, config.Name)
 			}
 			if config.Type == FIT {
 				if config.FitImageNodes == 0 {
 					t.Errorf("'%v' format '%v' partition is FIT but FitImageNodes is not specified",
-						format, config.Name)
+						format.Name, config.Name)
 				}
 			}
 

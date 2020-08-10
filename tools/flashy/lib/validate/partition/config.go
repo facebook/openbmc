@@ -28,6 +28,11 @@ const (
 	FIT                              = "FIT"
 )
 
+type ImageFormat struct {
+	Name             string
+	PartitionConfigs []PartitionConfigInfo
+}
+
 // info for each partition in PartitionConfigs
 type PartitionConfigInfo struct {
 	Name   string
@@ -51,106 +56,118 @@ type PartitionConfigInfo struct {
 //     specified in fw-util.
 // (4) vboot spl+recovery can be treated as UBOOT. It will be ignored if the flash1
 //     header is RO (e.g. fbtp)
-var ImageFormats = map[string]([]PartitionConfigInfo){
-	"vboot": {
-		{
-			Name:   "spl+recovery",
-			Offset: 0,
-			Size:   384 * 1024,
-			Type:   UBOOT,
-		},
-		{
-			Name:   "env",
-			Offset: 384 * 1024,
-			Size:   128 * 1024,
-			Type:   IGNORE,
-		},
-		{
-			Name:          "uboot",
-			Offset:        512 * 1024,
-			Size:          384 * 1024,
-			Type:          FIT,
-			FitImageNodes: 1,
-		},
-		{
-			Name:          "unified-fit",
-			Offset:        896 * 1024,
-			Size:          27776 * 1024,
-			Type:          FIT,
-			FitImageNodes: 2,
-		},
-	},
-	"fit": {
-		{
-			Name:   "u-boot",
-			Offset: 0,
-			Size:   384 * 1024,
-			Type:   UBOOT,
-		},
-		{
-			Name:   "env",
-			Offset: 384 * 1024,
-			Size:   128 * 1024,
-			Type:   IGNORE,
-		},
-		{
-			Name:          "unified-fit",
-			Offset:        512 * 1024,
-			Size:          27776 * 1024,
-			Type:          FIT,
-			FitImageNodes: 2,
+var ImageFormats = []ImageFormat{
+	{
+		Name: "vboot",
+		PartitionConfigs: []PartitionConfigInfo{
+			{
+				Name:   "spl+recovery",
+				Offset: 0,
+				Size:   384 * 1024,
+				Type:   UBOOT,
+			},
+			{
+				Name:   "env",
+				Offset: 384 * 1024,
+				Size:   128 * 1024,
+				Type:   IGNORE,
+			},
+			{
+				Name:          "uboot",
+				Offset:        512 * 1024,
+				Size:          384 * 1024,
+				Type:          FIT,
+				FitImageNodes: 1,
+			},
+			{
+				Name:          "unified-fit",
+				Offset:        896 * 1024,
+				Size:          27776 * 1024,
+				Type:          FIT,
+				FitImageNodes: 2,
+			},
 		},
 	},
-	"legacy": {
-		{
-			Name:   "u-boot",
-			Offset: 0,
-			Size:   384 * 1024,
-			Type:   UBOOT,
-		},
-		{
-			Name:   "env",
-			Offset: 384 * 1024,
-			Size:   128 * 1024,
-			Type:   IGNORE,
-		},
-		{
-			Name:   "kernel",
-			Offset: 512 * 1024,
-			Size:   4096 * 1024,
-			Type:   LEGACY_UBOOT,
-		},
-		{
-			Name:   "rootfs",
-			Offset: 4608 * 1024,
-			Size:   24064 * 1024,
-			Type:   LEGACY_UBOOT,
+	{
+		Name: "fit",
+		PartitionConfigs: []PartitionConfigInfo{
+			{
+				Name:   "u-boot",
+				Offset: 0,
+				Size:   384 * 1024,
+				Type:   UBOOT,
+			},
+			{
+				Name:   "env",
+				Offset: 384 * 1024,
+				Size:   128 * 1024,
+				Type:   IGNORE,
+			},
+			{
+				Name:          "unified-fit",
+				Offset:        512 * 1024,
+				Size:          27776 * 1024,
+				Type:          FIT,
+				FitImageNodes: 2,
+			},
 		},
 	},
-	"legacy-fido": {
-		{
-			Name:   "u-boot",
-			Offset: 0,
-			Size:   384 * 1024,
-			Type:   UBOOT,
+	{
+		Name: "legacy",
+		PartitionConfigs: []PartitionConfigInfo{
+			{
+				Name:   "u-boot",
+				Offset: 0,
+				Size:   384 * 1024,
+				Type:   UBOOT,
+			},
+			{
+				Name:   "env",
+				Offset: 384 * 1024,
+				Size:   128 * 1024,
+				Type:   IGNORE,
+			},
+			{
+				Name:   "kernel",
+				Offset: 512 * 1024,
+				Size:   4096 * 1024,
+				Type:   LEGACY_UBOOT,
+			},
+			{
+				Name:   "rootfs",
+				Offset: 4608 * 1024,
+				Size:   24064 * 1024,
+				Type:   LEGACY_UBOOT,
+			},
 		},
-		{
-			Name:   "env",
-			Offset: 384 * 1024,
-			Size:   128 * 1024,
-			Type:   IGNORE,
-		},
-		{
-			Name:   "kernel",
-			Offset: 512 * 1024,
-			Size:   2560 * 1024,
-			Type:   LEGACY_UBOOT,
-		},
-		{
-			Name:   "rootfs",
-			Offset: 3072 * 1024,
-			Size:   12288 * 1024,
-			Type:   LEGACY_UBOOT,
+	},
+	{
+		Name: "legacy-fido",
+		PartitionConfigs: []PartitionConfigInfo{
+			{
+				Name:   "u-boot",
+				Offset: 0,
+				Size:   384 * 1024,
+				Type:   UBOOT,
+			},
+			{
+				Name:   "env",
+				Offset: 384 * 1024,
+				Size:   128 * 1024,
+				Type:   IGNORE,
+			},
+			{
+				Name:   "kernel",
+				Offset: 512 * 1024,
+				Size:   2560 * 1024,
+				Type:   LEGACY_UBOOT,
+			},
+			{
+				Name:   "rootfs",
+				Offset: 3072 * 1024,
+				Size:   12288 * 1024,
+				Type:   LEGACY_UBOOT,
+			},
 		},
 	},
 }

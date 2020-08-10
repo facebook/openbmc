@@ -22,7 +22,6 @@ package validate
 import (
 	"crypto/rand"
 	"reflect"
-	"strconv"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/validate/partition"
@@ -279,7 +278,7 @@ func TestValidatePartitionsFromPartitionConfigs(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	// mock and defer restore ImageFormats, validatePartitionsFromPartitionConfigs
+	// mock and defer restore ImageFormats, ImageFormatsOrder, validatePartitionsFromPartitionConfigs
 	imageFormatsOrig := partition.ImageFormats
 	validatePartitionsFromPartitionConfigsOrig := validatePartitionsFromPartitionConfigs
 	defer func() {
@@ -287,38 +286,50 @@ func TestValidate(t *testing.T) {
 		validatePartitionsFromPartitionConfigs = validatePartitionsFromPartitionConfigsOrig
 	}()
 
-	// get a mock list of Image formats, the keys are incrementing integers from 1 to
-	// imageFormatsElems inclusive
-	var getMockImageFormats = func(imageFormatsElems int) map[string]([]partition.PartitionConfigInfo) {
-		m := make(map[string]([]partition.PartitionConfigInfo))
-		for i := 1; i <= imageFormatsElems; i++ {
-			m[strconv.Itoa(i)] = []partition.PartitionConfigInfo{}
-		}
-		return m
-	}
-
 	cases := []struct {
-		name string
-		// how many elements exists in the mocked ImageFormats
-		imageFormatsElems      int
+		name                   string
+		imageFormats           []partition.ImageFormat
 		validatePartitionsErrs []error
 		want                   error
 	}{
 		{
-			name:                   "succeed on first try",
-			imageFormatsElems:      1,
+			name: "succeed on first try",
+			imageFormats: []partition.ImageFormat{
+				{
+					Name:             "1",
+					PartitionConfigs: []partition.PartitionConfigInfo{},
+				},
+			},
 			validatePartitionsErrs: []error{nil},
 			want:                   nil,
 		},
 		{
-			name:                   "succeed on second format",
-			imageFormatsElems:      2,
+			name: "succeed on second format",
+			imageFormats: []partition.ImageFormat{
+				{
+					Name:             "1",
+					PartitionConfigs: []partition.PartitionConfigInfo{},
+				},
+				{
+					Name:             "2",
+					PartitionConfigs: []partition.PartitionConfigInfo{},
+				},
+			},
 			validatePartitionsErrs: []error{errors.Errorf("'1' failed"), nil},
 			want:                   nil,
 		},
 		{
-			name:                   "fail on all formats",
-			imageFormatsElems:      2,
+			name: "fail on all formats",
+			imageFormats: []partition.ImageFormat{
+				{
+					Name:             "1",
+					PartitionConfigs: []partition.PartitionConfigInfo{},
+				},
+				{
+					Name:             "2",
+					PartitionConfigs: []partition.PartitionConfigInfo{},
+				},
+			},
 			validatePartitionsErrs: []error{errors.Errorf("'1' failed"), errors.Errorf("'2' failed")},
 			want:                   errors.Errorf("*** FAILED: Validation failed ***"),
 		},
@@ -326,18 +337,23 @@ func TestValidate(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			exampleData := []byte("abcd")
 			i := 0
-			partition.ImageFormats = getMockImageFormats(tc.imageFormatsElems)
+			partition.ImageFormats = tc.imageFormats
 			validatePartitionsFromPartitionConfigs = func(
 				data []byte,
 				partitionConfigs []partition.PartitionConfigInfo,
 			) error {
+				if !reflect.DeepEqual(exampleData, data) {
+					t.Errorf("data: want '%v' got '%v'",
+						exampleData, data)
+				}
 				idx := i
 				i++
 				return tc.validatePartitionsErrs[idx]
 			}
 
-			got := Validate([]byte{})
+			got := Validate(exampleData)
 			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}

@@ -56,7 +56,8 @@ func StringDifference(a, b []string) []string {
 	return diff
 }
 
-// get all the string keys in a string-keyed map
+// get all the string keys in a string-keyed map.
+// the sequence of the keys is not guaranteed.
 func GetStringKeys(m map[string]interface{}) []string {
 	i := 0
 	keys := make([]string, len(m))
@@ -265,7 +266,8 @@ func SetWord(data []byte, word, offset uint32) ([]byte, error) {
 	return data, nil
 }
 
-// given 'data' which contains JSON data, get all the string keys
+// given 'data' which contains JSON data, get all the string keys.
+// the sequence of the keys is not guaranteed.
 func GetStringKeysFromJSONData(data []byte) ([]string, error) {
 	var m map[string]interface{}
 

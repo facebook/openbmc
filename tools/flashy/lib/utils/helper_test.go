@@ -583,6 +583,11 @@ func TestGetStringKeysFromJSONData(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := GetStringKeysFromJSONData(tc.data)
 			tests.CompareTestErrors(tc.wantErr, err, t)
+
+			// order is not guaranteed in a map, so we sort first
+			sort.Strings(tc.want)
+			sort.Strings(got)
+
 			if !reflect.DeepEqual(tc.want, got) {
 				t.Errorf("want '%v' got '%v'", tc.want, got)
 			}

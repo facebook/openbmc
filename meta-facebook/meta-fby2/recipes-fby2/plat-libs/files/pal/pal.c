@@ -12091,3 +12091,23 @@ pal_get_iana_id(uint8_t *id) {
   memcpy(id, iana_id, sizeof(iana_id));
   return PAL_EOK;
 }
+
+bool
+pal_is_host_snr_available(uint8_t fru, uint8_t snr_num) {
+  uint8_t ret = 0, pwr_status = 0, server_type = 0xFF;
+
+  ret = fby2_get_server_type(fru, &server_type);
+  if (ret != 0) {
+    return false;
+  }
+  if (server_type == SERVER_TYPE_TL && snr_num == HOST_BOOT_DRIVE_TEMP) {
+    ret = pal_get_server_power(fru, &pwr_status);
+    if (ret != 0) {
+      return false;
+    }
+    if ((pwr_status == SERVER_12V_ON) || (pwr_status == SERVER_POWER_ON)) {
+      return true;
+    }
+  }
+  return false;
+}

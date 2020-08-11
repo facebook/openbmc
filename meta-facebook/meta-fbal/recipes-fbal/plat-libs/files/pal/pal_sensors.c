@@ -2043,23 +2043,17 @@ get_nm_rw_info(uint8_t nm_id, uint8_t* nm_bus, uint8_t* nm_addr, uint16_t* bmc_a
 static int
 get_hsc_rw_info(uint8_t* extend, uint8_t* mode) {
   int ret=0;
-  uint8_t pos;
 
   ret = pal_get_host_system_mode(mode);
   if (ret != 0) {
     return ret; 
   } 
 
-  if(*mode == MB_8S_MODE) { 
+  if((*mode == MB_8S_MODE) || (*mode == MB_4S_MODE)) {
     *extend = true; 
   } else {
     *extend = false;
   }
-
-  ret = pal_get_mb_position(&pos);
-  if (ret != 0) {
-    return ret; 
-  } 
   return 0;
 }
 
@@ -3225,7 +3219,14 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
     case PDB_SNR_FAN1_INLET_SPEED:
     case PDB_SNR_FAN2_INLET_SPEED:
     case PDB_SNR_FAN3_INLET_SPEED:
-      fan_id = snr_num-PDB_SNR_FAN0_INLET_SPEED; 
+      fan_id = snr_num-PDB_SNR_FAN0_INLET_SPEED;
+      sprintf(cmd, "FAN%d %s %dRPM - Assert",fan_id ,thresh_name, (int)val);
+      break;
+    case PDB_SNR_FAN0_OUTLET_SPEED:
+    case PDB_SNR_FAN1_OUTLET_SPEED:
+    case PDB_SNR_FAN2_OUTLET_SPEED:
+    case PDB_SNR_FAN3_OUTLET_SPEED:
+      fan_id = snr_num-PDB_SNR_FAN0_INLET_SPEED;
       sprintf(cmd, "FAN%d %s %dRPM - Assert",fan_id ,thresh_name, (int)val);
       break;
     default:
@@ -3275,9 +3276,16 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
     case PDB_SNR_FAN1_INLET_SPEED:
     case PDB_SNR_FAN2_INLET_SPEED:
     case PDB_SNR_FAN3_INLET_SPEED:
-      fan_id = snr_num-PDB_SNR_FAN0_INLET_SPEED; 
+      fan_id = snr_num-PDB_SNR_FAN0_INLET_SPEED;
       sprintf(cmd, "FAN%d %s %dRPM - Deassert",fan_id ,thresh_name, (int)val);
       break;
+    case PDB_SNR_FAN0_OUTLET_SPEED:
+    case PDB_SNR_FAN1_OUTLET_SPEED:
+    case PDB_SNR_FAN2_OUTLET_SPEED:
+    case PDB_SNR_FAN3_OUTLET_SPEED:
+      fan_id = snr_num-PDB_SNR_FAN0_OUTLET_SPEED;
+      sprintf(cmd, "FAN%d %s %dRPM - Deassert",fan_id ,thresh_name, (int)val);
+      break;    
     default:
       return;
   }

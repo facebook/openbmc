@@ -26,6 +26,7 @@ const (
 	LEGACY_UBOOT                     = "LEGACY_UBOOT"
 	UBOOT                            = "UBOOT"
 	FIT                              = "FIT"
+	FBMETA_MD5                       = "FBMETA_MD5"
 )
 
 type ImageFormat struct {
@@ -42,6 +43,8 @@ type PartitionConfigInfo struct {
 	// applicable only for FIT partitions
 	// this is the minimum number of children nodes of the 'images' node
 	FitImageNodes uint32
+	// applicable only for partitions defined in image-meta
+	Checksum string
 }
 
 // taken from fw-util (common/recipes-core/fw-util/files/image_parts.json).

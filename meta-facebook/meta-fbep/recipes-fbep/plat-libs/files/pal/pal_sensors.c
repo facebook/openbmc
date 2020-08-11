@@ -568,7 +568,7 @@ struct sensor_map {
   [MB_GPU4_EDGE_TEMP] =
   {pal_read_edge_temp, "MB_GPU4_EDGE_TEMP", SNR_TEMP},
   [MB_GPU5_EDGE_TEMP] =
-  {pal_read_edge_temp, "MB_GPU4_EDGE_TEMP", SNR_TEMP},
+  {pal_read_edge_temp, "MB_GPU5_EDGE_TEMP", SNR_TEMP},
   [MB_GPU6_EDGE_TEMP] =
   {pal_read_edge_temp, "MB_GPU6_EDGE_TEMP", SNR_TEMP},
   [MB_GPU7_EDGE_TEMP] =

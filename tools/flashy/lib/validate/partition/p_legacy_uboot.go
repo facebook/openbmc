@@ -19,38 +19,33 @@
 
 package partition
 
-// /** legacy uboot header struct from
-//   *  https://elixir.bootlin.com/u-boot/v2020.07/source/include/image.h
-//   */
-// #define IH_NMLEN		32
-// #include <stdint.h>
-// typedef struct image_header {
-// 	uint32_t	Ih_magic;	/* Image Header Magic Number	*/
-// 	uint32_t	Ih_hcrc;	/* Image Header CRC Checksum	*/
-// 	uint32_t	Ih_time;	/* Image Creation Timestamp	*/
-// 	uint32_t	Ih_size;	/* Image Data Size		*/
-// 	uint32_t	Ih_load;	/* Data	 Load  Address		*/
-// 	uint32_t	Ih_ep;		/* Entry Point Address		*/
-// 	uint32_t	Ih_dcrc;	/* Image Data CRC Checksum	*/
-// 	uint8_t		Ih_os;		/* Operating System		*/
-// 	uint8_t		Ih_arch;	/* CPU architecture		*/
-// 	uint8_t		Ih_type;	/* Image Type			*/
-// 	uint8_t		Ih_comp;	/* Compression Type		*/
-// 	uint8_t		Ih_name[IH_NMLEN];	/* Image Name		*/
-// } image_header_t;
-import "C"
-
 import (
-	"bytes"
-	"encoding/binary"
 	"hash/crc32"
 	"log"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
 
 func init() {
 	registerPartitionFactory(LEGACY_UBOOT, legacyUbootPartitionFactory)
+}
+
+// keys for the header
+// we only get what we require for validation
+const (
+	legacyUboot_ih_magic = "magic"
+	legacyUboot_ih_hcrc  = "header_crc32"
+	legacyUboot_ih_size  = "size"
+	legacyUboot_ih_dcrc  = "data_crc32"
+)
+
+// offsets of values in the header
+var legacyHeaderOffsetMap = map[string]uint32{
+	legacyUboot_ih_magic: 0,
+	legacyUboot_ih_hcrc:  4,
+	legacyUboot_ih_size:  12,
+	legacyUboot_ih_dcrc:  24,
 }
 
 var legacyUbootPartitionFactory = func(args PartitionFactoryArgs) Partition {
@@ -61,15 +56,11 @@ var legacyUbootPartitionFactory = func(args PartitionFactoryArgs) Partition {
 	}
 }
 
-type LegacyUbootHeader struct {
-	Header C.image_header_t
-}
-
 const legacyUbootMagic = 0x27051956
 const legacyUbootHeaderSize = 64
 
 /**
- *  Partition class which parses a (legacy) U-Boot header. The data region
+ *  LegacyUbootPartition parses a (legacy) U-Boot header. The data region
  *  begins at the end of the header and ends where the size field in the header
  *  indicates. Used for "kernel" and "rootfs" partitions.
  */
@@ -78,7 +69,7 @@ type LegacyUbootPartition struct {
 	Data []byte
 	// offset in the image file
 	Offset uint32
-	header C.image_header_t
+	header map[string]uint32
 }
 
 func (p *LegacyUbootPartition) GetName() string {
@@ -113,12 +104,11 @@ func (p *LegacyUbootPartition) GetType() PartitionConfigType {
 	return LEGACY_UBOOT
 }
 
-// parse the header and verify it
+// parseAndCheckHeader parses the header and verifies it
 func (p *LegacyUbootPartition) parseAndCheckHeader() error {
 	// make sure partition is large enough
 	if len(p.Data) < legacyUbootHeaderSize {
-		return errors.Errorf("Partition size (%v) smaller than legacy "+
-			"U-Boot header size (%v)",
+		return errors.Errorf("Partition size (%v) smaller than legacy U-Boot header size (%v)",
 			len(p.Data), legacyUbootHeaderSize)
 	}
 
@@ -127,80 +117,68 @@ func (p *LegacyUbootPartition) parseAndCheckHeader() error {
 	copy(headerData, p.Data[:legacyUbootHeaderSize])
 
 	var err error
-	p.header, err = decodeLegacyUbootHeader(headerData)
+	p.header, err = parseLegacyUbootHeaders(headerData)
 	if err != nil {
-		return errors.Errorf("Unable to decode header: %v", err)
+		return errors.Errorf("Unable to parse legacy headers: %v", err)
 	}
 
-	headerChecksum := uint32(p.header.Ih_hcrc)
+	headerChecksum := p.header[legacyUboot_ih_hcrc]
 
-	// zero out the hcrc
-	p.header.Ih_hcrc = C.uint(0)
-	// encode the header
-	headerDataZeroHCRC, err := encodeLegacyUbootHeader(p.header)
+	// set the HEADER_CRC32 to 0 before calculating
+	headerData, err = utils.SetWord(headerData, 0, legacyHeaderOffsetMap[legacyUboot_ih_hcrc])
 	if err != nil {
-		return errors.Errorf("Unable to encode header: %v", err)
+		return errors.Errorf("Unable to parse legacy headers: %v", err)
 	}
 
-	calcHeaderChecksum := crc32.ChecksumIEEE(headerDataZeroHCRC)
+	calcHeaderChecksum := crc32.ChecksumIEEE(headerData)
 	if calcHeaderChecksum != headerChecksum {
 		return errors.Errorf("Calculated header checksum 0x%X does not match checksum in header 0x%X",
 			calcHeaderChecksum, headerChecksum)
 	}
 
-	// restore the hcrc
-	p.header.Ih_hcrc = C.uint(headerChecksum)
 	return nil
 }
 
-// verify that the magic in the header matches legacyUbootMagic
+// checkMagic verifies that the magic in the header matches legacyMagic
 func (p *LegacyUbootPartition) checkMagic() error {
-	ih_magic := uint32(p.header.Ih_magic)
-	if ih_magic != legacyUbootMagic {
+	if p.header[legacyUboot_ih_magic] != legacyUbootMagic {
 		return errors.Errorf("Partition magic 0x%X does not match legacy U-Boot magic 0x%X",
-			ih_magic, legacyUbootMagic)
+			p.header[legacyUboot_ih_magic], legacyUbootMagic)
 	}
 	return nil
 }
 
-// verify that data matches data crc32 in header
+// checkData verifies that data matches data crc32 in header
 func (p *LegacyUbootPartition) checkData() error {
-	// check that data + header is within p.Data's size
-	ih_size := uint32(p.header.Ih_size)
-	if ih_size+legacyUbootHeaderSize > uint32(len(p.Data)) {
+	// cheeck that data + header is within p.Data's size
+	if p.header[legacyUboot_ih_size]+legacyUbootHeaderSize > uint32(len(p.Data)) {
 		return errors.Errorf("Legacy U-Boot partition incomplete, data part too small.")
 	}
 
-	ih_dcrc := uint32(p.header.Ih_dcrc)
 	calcDataChecksum := crc32.ChecksumIEEE(
-		p.Data[legacyUbootHeaderSize : legacyUbootHeaderSize+ih_size],
+		p.Data[legacyUbootHeaderSize : legacyUbootHeaderSize+p.header[legacyUboot_ih_size]],
 	)
-	if calcDataChecksum != ih_dcrc {
+	if calcDataChecksum != p.header[legacyUboot_ih_dcrc] {
 		return errors.Errorf("Calculated legacy U-Boot data checksum 0x%X does not match checksum in header 0x%X",
-			calcDataChecksum, ih_dcrc)
+			calcDataChecksum, p.header[legacyUboot_ih_dcrc])
 	}
 
 	return nil
 }
 
-// encode a C.image_header_t into its byte representation
-var encodeLegacyUbootHeader = func(header C.image_header_t) ([]byte, error) {
-	var b bytes.Buffer
-	err := binary.Write(&b, binary.BigEndian, &header)
-	if err != nil {
-		return nil, err
+// parseLegacyUbootHeaders gets all the headers defined in legacyHeaderOffsetMap
+// given the header data.
+// Each header is assumed to be a 32-bit value. An error is returned
+// if the offset is too large compared to the given data.
+var parseLegacyUbootHeaders = func(data []byte) (map[string]uint32, error) {
+	var err error
+	m := make(map[string]uint32, len(legacyHeaderOffsetMap))
+	for key, offset := range legacyHeaderOffsetMap {
+		m[key], err = utils.GetWord(data, offset)
+		if err != nil {
+			return nil,
+				errors.Errorf("Unable to get header '%v': %v", key, err)
+		}
 	}
-	return b.Bytes(), nil
-}
-
-// deocde a slice of bytes into a C.image_header_t image header
-var decodeLegacyUbootHeader = func(data []byte) (C.image_header_t, error) {
-	var header C.image_header_t
-	r := bytes.NewReader(data)
-	err := binary.Read(r, binary.BigEndian, &header)
-	if err != nil {
-		return header, errors.Errorf("Can't parse legacy uboot header: %v",
-			err)
-	}
-	return header, nil
+	return m, nil
 }

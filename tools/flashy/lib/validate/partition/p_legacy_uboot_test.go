@@ -166,7 +166,7 @@ func TestLegacyUBootValidate(t *testing.T) {
 	}
 }
 
-func TestEncodeDecodeLegacyUbootHeaders(t *testing.T) {
+func TestParseLegacyUbootHeaders(t *testing.T) {
 	mockHeader := []byte{
 		0x27, 0x05, 0x19, 0x56, // 0: magic
 		0x06, 0x32, 0x0B, 0xB7, // 4: header CRC32
@@ -186,43 +186,45 @@ func TestEncodeDecodeLegacyUbootHeaders(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, // 60
 	}
 
-	got, err := decodeLegacyUbootHeader(mockHeader)
+	got, err := parseLegacyUbootHeaders(mockHeader)
 	if err != nil {
 		t.Error(err)
 	}
-	// test only what's required
-	gotIh_magic := uint32(got.Ih_magic)
+	gotIh_magic := uint32(got[legacyUboot_ih_magic])
 	wantIh_magic := uint32(0x27051956)
 	if wantIh_magic != gotIh_magic {
 		t.Errorf("Ih_magic: want 0x%x got 0x%x", wantIh_magic, gotIh_magic)
 	}
-	gotIh_hcrc := uint32(got.Ih_hcrc)
+	gotIh_hcrc := uint32(got[legacyUboot_ih_hcrc])
 	wantIh_hcrc := uint32(0x06320BB7)
 	if wantIh_hcrc != gotIh_hcrc {
 		t.Errorf("Ih_hcrc: want 0x%x got 0x%x", wantIh_hcrc, gotIh_hcrc)
 	}
-	gotIh_size := uint32(got.Ih_size)
+	gotIh_size := uint32(got[legacyUboot_ih_size])
 	wantIh_size := uint32(0x00000400)
 	if wantIh_size != gotIh_size {
 		t.Errorf("Ih_size: want 0x%x got 0x%x", wantIh_size, gotIh_size)
 	}
-	gotIh_dcrc := uint32(got.Ih_dcrc)
+	gotIh_dcrc := uint32(got[legacyUboot_ih_dcrc])
 	wantIh_drcrc := uint32(0x12345678)
 	if wantIh_drcrc != gotIh_dcrc {
 		t.Errorf("Ih_dcrc: want 0x%x got 0x%x", wantIh_drcrc, gotIh_dcrc)
 	}
 
-	// encode and make sure it's the same as before
-	encoded, err := encodeLegacyUbootHeader(got)
-	if err != nil {
-		t.Error(err)
+	// make it an error by adding a really large offset
+	legacyHeaderOffsetMapOrig := legacyHeaderOffsetMap
+	defer func() {
+		legacyHeaderOffsetMap = legacyHeaderOffsetMapOrig
+	}()
+	legacyHeaderOffsetMap = map[string]uint32{
+		"foo": 200,
 	}
-	if !reflect.DeepEqual(mockHeader, encoded) {
-		t.Errorf("encoded: want '%v' got '%v'", mockHeader, encoded)
-	}
+	_, err = parseLegacyUbootHeaders(mockHeader)
+	tests.CompareTestErrors(
+		err,
+		errors.Errorf("Unable to get header '%v': %v", "foo",
+			"Required offset 200 out of range of data size 64"),
+		t,
+	)
 
-	// expect error in decode
-	_, err = decodeLegacyUbootHeader([]byte{})
-	tests.CompareTestErrors(errors.Errorf("Can't parse legacy uboot header: EOF"),
-		err, t)
 }

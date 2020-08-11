@@ -131,7 +131,7 @@ send_cpld_data(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *data, uint8
   }
 
   return ret;
-    
+
 }
 
 static int
@@ -141,7 +141,7 @@ read_cpld_status_flag(uint8_t slot_id, uint8_t intf, uint8_t addr) {
   uint8_t data_len = sizeof(data);
   uint8_t rsp[16] = {0};
   uint8_t read_cnt = 4;
-  
+
   ret = send_cpld_data(slot_id, intf, addr, data, data_len, rsp, read_cnt);
 
   if ( ret < 0 ) {
@@ -204,7 +204,7 @@ read_cpld_dev_id(uint8_t slot_id, uint8_t intf, uint8_t addr) {
   for (i=0;i<read_cnt;i++)
     printf("%02X", rsp[i]);
   printf("\n");
-  
+
   return ret;
 }
 
@@ -435,7 +435,7 @@ detect_cpld_dev(uint8_t slot_id, uint8_t intf) {
 }
 
 /*reverse byte order*/
-static uint8_t 
+static uint8_t
 reverse_bit(uint8_t b) {
   b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
   b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
@@ -816,7 +816,7 @@ int update_bic_cpld_lattice(uint8_t slot_id, char *image, uint8_t intf, uint8_t 
   int ret = 0;
   uint32_t fsize = 0;
   uint32_t record_offset = 0;
-  CPLDInfo dev_info;
+  CPLDInfo dev_info = {0};
   FILE *fp = NULL;
   uint8_t addr = 0xff;
   uint8_t buf[16] = {0};
@@ -831,7 +831,7 @@ int update_bic_cpld_lattice(uint8_t slot_id, char *image, uint8_t intf, uint8_t 
     ret = -1;
     goto error_exit;
   }
-  
+
   memset(&dev_info, 0, sizeof(dev_info));
   ret = LCMXO2Family_JED_File_Parser(fp, &dev_info);
   if ( ret < 0 ) {
@@ -966,7 +966,7 @@ int update_bic_cpld_lattice(uint8_t slot_id, char *image, uint8_t intf, uint8_t 
     goto error_exit;
   }
 
-error_exit: 
+error_exit:
 
   if ( fp != NULL ) fclose(fp);
   if ( dev_info.CF != NULL ) free(dev_info.CF);

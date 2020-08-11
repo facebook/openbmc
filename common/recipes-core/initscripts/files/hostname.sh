@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ### BEGIN INIT INFO
 # Provides:          hostname
 # Required-Start:
@@ -22,19 +22,27 @@ set_hostname() {
 }
 
 update_hostname() {
-  # Wait till DHCP gets its IP addresses.
-  sleep 15
-  # Do a DNS lookup for each IP address on eth0 to find a hostname.
-  # If multiple hostnames are returned, the sled one, if present, is preferred.
-  FOUND_NAME=""
-  for ip in $(ip a s $INTERFACE | sed -nr 's, *inet6? ([0-9a-f:.]+)\/.*,\1,p'); do
-    dns_ptr=$(dig +short -x $ip | sed -nr '/sled.*-oob/ { p; q }; $ { p }')
-    dns_ptr=${dns_ptr%?}
-    if [ "${dns_ptr:0:2}" != ";;" ]; then
-        FOUND_NAME=$dns_ptr
-        break
+  RETRIES=10
+  while [ $RETRIES -gt 0 ]; do
+    RETRIES=$((RETRIES-1))
+    # Wait till DHCP gets its IP addresses.
+    sleep 15
+    # Do a DNS lookup for each IP address on eth0 to find a hostname.
+    # If multiple hostnames are returned, the sled one, if present, is preferred.
+    FOUND_NAME=""
+    for ip in $(ip a s $INTERFACE | sed -nr 's, *inet6? ([0-9a-f:.]+)\/.*,\1,p'); do
+      dns_ptr=$(dig +short -x "$ip" | sed -nr '/sled.*-oob/ { p; q }; $ { p }')
+      dns_ptr=${dns_ptr%?}
+      if [ "${dns_ptr:0:2}" != ";;" ]; then
+          FOUND_NAME=$dns_ptr
+          break
+      fi
+	  done
+
+    if [ -n "$FOUND_NAME" ]; then
+      break
     fi
-	done
+  done
 
   # dig didn't return anything. Do not update files.
   [[ -z $FOUND_NAME ]] && return 0

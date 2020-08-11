@@ -33,4 +33,6 @@
  * no matter how the BMC will get full reset by SRST pin.
  */
 #define AST_SYSRESET_WITH_SOC 0x23FFFF3
+
+#define CONFIG_ASPEED_WRITE_DEFAULT_ENV
 #endif

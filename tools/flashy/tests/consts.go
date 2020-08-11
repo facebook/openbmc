@@ -523,3 +523,9 @@ U-Boot certificates:     0x%08x
 No valid device tree binary found - please append one to U-Boot binary, use u-boot-dtb.bin or define CONFIG_OF_EMBED. For sandbox, use -d <file.dtb>
 U-Boot 2016.07 fbtp-v2020.09.1 (Feb 27 2020 - 23:35:02 +0000)
 U-Boot fitImage for Facebook OpenBMC/1.0/fbtp`
+
+// ExampleFBImageMetaJSON is an example JSON representation of image-meta data
+const ExampleFBImageMetaJSON = `{"FBOBMC_IMAGE_META_VER": 1, "version_infos": {"uboot_build_time": "Aug 09 2020 - 00:40:53 +0000", "fw_ver": "fby3vboot2-v2020.33.33", "uboot_ver": "2019.04"}, "meta_update_action": "Signed", "meta_update_time": "2020-08-09T00:43:48.620097", "part_infos": [{"size": 262144, "type": "rom", "name": "spl", "md5": "8a9fad3140022e5a81d4ba62b1a85602", "offset": 0}, {"size": 655360, "type": "raw", "name": "rec-u-boot", "md5": "d4d03a42cf64083ffb5e1befcee9529b", "offset": 262144}, {"size": 65536, "type": "data", "name": "u-boot-env", "md5": "", "offset": 917504}, {"size": 65536, "type": "meta", "name": "image-meta", "md5": "", "offset": 983040}, {"name": "u-boot-fit", "num-nodes": 1, "offset": 1048576, "md5": "", "type": "fit", "size": 655360}, {"name": "os-fit", "num-nodes": 3, "offset": 1703936, "md5": "", "type": "fit", "size": 31850496}, {"size": 4194304, "type": "mtdonly", "name": "data0", "md5": "", "offset": 33554432}]}`
+
+// ExampleFBImageMetaChecksumJSON contains the md5sum of ExampleImageMetaJSON
+const ExampleFBImageMetaChecksumJSON = `{ "meta_md5": "359fa683b4cbd70607362222f784e04b" }`

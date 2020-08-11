@@ -24,7 +24,7 @@ IMAGE_INSTALL += " \
   fruid \
   sensor-util \
   sensor-mon \
-  log-util \
+  log-util-v2 \
   healthd \
   fw-util \
   cfg-util \

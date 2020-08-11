@@ -168,6 +168,7 @@ func (m *mockValidationFlashDevice) MmapRO() ([]byte, error) { return nil, nil }
 func (m *mockValidationFlashDevice) Munmap([]byte) error     { return nil }
 func (m *mockValidationFlashDevice) Validate() error         { return m.ValidationErr }
 
+// covers CheckFlashDeviceValid as well
 func TestCheckAnyFlashDeviceValid(t *testing.T) {
 	// mock and defer restore GetFlashDevice
 	getFlashDeviceOrig := GetFlashDevice

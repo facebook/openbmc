@@ -27,12 +27,17 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/checks_and_remediations/common"
 	"github.com/facebook/openbmc/tools/flashy/install"
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 )
 
 var (
-	installFlag   = flag.Bool("install", false, "Install flashy")
-	checkImage    = flag.Bool("checkimage", false, "Validate image partitions")
+	// modes
+	installFlag = flag.Bool("install", false, "Install flashy")
+	checkImage  = flag.Bool("checkimage", false, "Validate image partitions (`imagepath` must be specified)")
+	checkDevice = flag.Bool("checkdevice", false, "Validate flash device (`device` must be specified)")
+
+	// step params
 	imageFilePath = flag.String("imagepath", "", "Path to image file")
 	deviceID      = flag.String("device", "", "Device ID (e.g. mtd:flash0)")
 	clowntown     = flag.Bool("clowntown", false, "Clowntown mode (WARNING: RISK OF BRICKING DEVICE - WARRANTIES OFF)")
@@ -50,8 +55,6 @@ func main() {
 	flag.Parse()
 
 	stepParams := step.StepParams{
-		Install:       *installFlag,
-		CheckImage:    *checkImage,
 		ImageFilePath: *imageFilePath,
 		DeviceID:      *deviceID,
 		Clowntown:     *clowntown,
@@ -64,15 +67,30 @@ WARRANTIES OFF`)
 	}
 
 	// install
-	if stepParams.Install {
+	if *installFlag {
 		log.Println("Installing flashy...")
 		install.Install(stepParams)
 		log.Println("Finished installing flashy")
 		return
 	}
 
+	// check flash device
+	if *checkDevice {
+		log.Printf("Validating flash device...")
+		failIfFlagEmpty("device", stepParams.DeviceID)
+
+		err := flashutils.CheckFlashDeviceValid(stepParams.DeviceID)
+		if err != nil {
+			log.Fatalf("Flash device '%v' failed validation: %v",
+				stepParams.DeviceID, err)
+		}
+
+		log.Printf("Finished validating flash device")
+		return
+	}
+
 	// validate image
-	if stepParams.CheckImage {
+	if *checkImage {
 		log.Printf("Validating image...")
 		failIfFlagEmpty("imagepath", stepParams.ImageFilePath)
 

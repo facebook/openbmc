@@ -48,6 +48,7 @@ var parseDeviceID = func(deviceID string) (string, string, error) {
 	return flashDeviceMap["type"], flashDeviceMap["specifier"], nil
 }
 
+// GetFlashDevice returns the FlashDevice given the device ID.
 var GetFlashDevice = func(deviceID string) (devices.FlashDevice, error) {
 	deviceType, deviceSpecifier, err := parseDeviceID(deviceID)
 	if err != nil {
@@ -62,27 +63,40 @@ var GetFlashDevice = func(deviceID string) (devices.FlashDevice, error) {
 	}
 }
 
-// return nil if any of the two flash devices (mtd:flash0, mtd:flash1)
-// are valid. Used to check whether it is actually safe to reboot;
+// CheckFlashDeviceValid validates the device specified by deviceID.
+// An error is returned if the device failed validation.
+var CheckFlashDeviceValid = func(deviceID string) error {
+	flashDevice, err := GetFlashDevice(deviceID)
+	if err != nil {
+		return errors.Errorf("Unable to get flash device '%v': %v",
+			deviceID, err)
+	}
+	err = flashDevice.Validate()
+	if err != nil {
+		return errors.Errorf("Flash device '%v' failed validation: %v",
+			deviceID, err)
+	}
+	// passed
+	return nil
+}
+
+// CheckAnyFlashDeviceValid returns nil if any of the two
+// flash devices (mtd:flash0, mtd:flash1) are valid.
+// This is used to check whether it is actually safe to reboot;
 // if both flash devices are corrtupt, the device will brick upon reboot.
 // If the device only exposes one flash, the other flash is deemed invalid.
 var CheckAnyFlashDeviceValid = func() error {
 	flashDeviceIDs := []string{"mtd:flash0", "mtd:flash1"}
 
-	for _, f := range flashDeviceIDs {
-		flashDevice, err := GetFlashDevice(f)
+	for _, deviceID := range flashDeviceIDs {
+		err := CheckFlashDeviceValid(deviceID)
 		if err != nil {
 			log.Printf("Flash device '%v' failed validation: %v",
-				f, err)
+				deviceID, err)
 			continue
-		}
-		err = flashDevice.Validate()
-		if err != nil {
-			log.Printf("Flash device '%v' failed validation: %v",
-				f, err)
 		} else {
 			// passed
-			log.Printf("Flash device '%v' passed validation.", f)
+			log.Printf("Flash device '%v' passed validation.", deviceID)
 			return nil
 		}
 	}

@@ -30,9 +30,10 @@ class GPIOSwitchedSPIMTDComponent : public SPIMTDComponent {
   protected:
     std::string gpio_shadow;
     bool access_level;
+    bool change_direction;
   public:
-  GPIOSwitchedSPIMTDComponent(std::string fru, std::string comp, std::string mtd, std::string dev, std::string shadow, bool level) :
-    SPIMTDComponent(fru, comp, mtd, dev), gpio_shadow(shadow), access_level(level) {}
+  GPIOSwitchedSPIMTDComponent(std::string fru, std::string comp, std::string mtd, std::string dev, std::string shadow, bool level, bool change = true) :
+    SPIMTDComponent(fru, comp, mtd, dev), gpio_shadow(shadow), access_level(level), change_direction(change) {}
   int update(std::string image) override;
 };
 

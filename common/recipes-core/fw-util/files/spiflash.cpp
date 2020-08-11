@@ -72,7 +72,7 @@ int GPIOSwitchedSPIMTDComponent::update(std::string  image)
   std::this_thread::sleep_for(std::chrono::seconds(1));
   rc = SPIMTDComponent::update(image);
   if (gpio_set_value(desc, access_level ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH) ||
-      gpio_set_direction(desc, GPIO_DIRECTION_IN)) {
+      (change_direction && gpio_set_direction(desc, GPIO_DIRECTION_IN))) {
     gpio_close(desc);
     sys.error << "ERROR: Cannot release control of SPI Dev"  << std::endl;
     return -1;

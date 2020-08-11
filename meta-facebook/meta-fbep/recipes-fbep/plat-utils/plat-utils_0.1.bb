@@ -32,6 +32,8 @@ SRC_URI = "file://ast-functions \
            file://asic-util \
            file://setup-pfr.sh \
            file://post-fan.sh \
+           file://sync-rtc.sh \
+           file://run-sync-rtc.sh \
            file://COPYING \
            file://workaround.sh \
           "
@@ -77,6 +79,9 @@ do_install() {
   update-rc.d -r ${D} setup-por.sh start 70 S .
   install -m 755 post-fan.sh ${D}${sysconfdir}/init.d/post-fan.sh
   update-rc.d -r ${D} post-fan.sh start 39 6 .
+  install -m 755 sync-rtc.sh ${D}${sysconfdir}/init.d/sync-rtc.sh
+  install -m 755 run-sync-rtc.sh ${D}${sysconfdir}/init.d/run-sync-rtc.sh
+  update-rc.d -r ${D} run-sync-rtc.sh start 99 5 .
   install -m 755 workaround.sh ${D}${sysconfdir}/init.d/workaround.sh
   update-rc.d -r ${D} workaround.sh start 71 S .
 }

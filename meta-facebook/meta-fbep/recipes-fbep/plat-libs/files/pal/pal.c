@@ -88,6 +88,7 @@ struct pal_key_cfg {
   {"fru_sel_error", "1", NULL},
   {"server_type", "8", NULL},
   {"asic_manf", MANF_AMD, key_set_asic_manf},
+  {"ntp_server", "", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };

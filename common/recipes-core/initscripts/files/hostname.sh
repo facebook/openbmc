@@ -8,6 +8,7 @@
 # Short-Description: Set hostname based on /etc/hostname
 ### END INIT INFO
 HOSTNAME="bmc-oob."
+INTERFACE=eth0
 
 set_hostname() {
   local name=$1
@@ -26,7 +27,7 @@ update_hostname() {
   # Do a DNS lookup for each IP address on eth0 to find a hostname.
   # If multiple hostnames are returned, the sled one, if present, is preferred.
   FOUND_NAME=""
-  for ip in $(ip a s eth0 | sed -nr 's, *inet6? ([0-9a-f:.]+)\/.*,\1,p'); do
+  for ip in $(ip a s $INTERFACE | sed -nr 's, *inet6? ([0-9a-f:.]+)\/.*,\1,p'); do
     dns_ptr=$(dig +short -x $ip | sed -nr '/sled.*-oob/ { p; q }; $ { p }')
     dns_ptr=${dns_ptr%?}
     if [ "${dns_ptr:0:2}" != ";;" ]; then

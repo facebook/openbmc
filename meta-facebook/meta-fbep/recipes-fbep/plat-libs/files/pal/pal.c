@@ -86,7 +86,7 @@ struct pal_key_cfg {
   {"timestamp_sled", "0", NULL},
   {"fru_sensor_health", "1", NULL},
   {"fru_sel_error", "1", NULL},
-  {"server_type", "8", NULL},
+  {"server_type", "4", NULL},
   {"asic_manf", MANF_AMD, key_set_asic_manf},
   {"ntp_server", "", NULL},
   /* Add more Keys here */
@@ -1070,7 +1070,9 @@ int pal_set_host_system_mode(uint8_t mode)
   if (mode == 0x00) {
     ret = kv_set("server_type", "8", 0, KV_FPERSIST); // 8S
   } else if (mode == 0x01) {
-    ret = kv_set("server_type", "2", 0, KV_FPERSIST); // 4*2S
+    ret = kv_set("server_type", "4", 0, KV_FPERSIST); // 4S
+  } else if (mode == 0x02) {
+    ret = kv_set("server_type", "2", 0, KV_FPERSIST); // 2S
   } else {
     return CC_INVALID_PARAM;
   }

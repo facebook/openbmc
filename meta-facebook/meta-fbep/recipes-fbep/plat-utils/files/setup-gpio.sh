@@ -623,6 +623,9 @@ else
       /usr/local/bin/cfg-util server_type 8
       break
     elif [[ "$server_type" == "1" ]]; then
+      /usr/local/bin/cfg-util server_type 4
+      break
+    elif [[ "$server_type" == "2" ]]; then
       /usr/local/bin/cfg-util server_type 2
       gpio_set PAX0_SKU_ID0 1
       gpio_set PAX1_SKU_ID0 1

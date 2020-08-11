@@ -20,8 +20,11 @@
 package common
 
 import (
+	"log"
+
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/facebook/openbmc/tools/flashy/lib/validate/validateutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate"
+	"github.com/pkg/errors"
 )
 
 func init() {
@@ -29,9 +32,19 @@ func init() {
 }
 
 func validateImageBuildname(stepParams step.StepParams) step.StepExitError {
-	err := validateutils.CheckImageBuildNameCompatibility(stepParams)
+	if stepParams.Clowntown {
+		log.Printf("===== WARNING: Clowntown mode: Bypassing image build name compatibility check =====")
+		log.Printf("===== THERE IS RISK OF BRICKING THIS DEVICE =====")
+		return nil
+	}
+
+	err := validate.CheckImageBuildNameCompatibility(stepParams.ImageFilePath)
 	if err != nil {
-		return step.ExitUnknownError{err}
+		return step.ExitUnknownError{
+			errors.Errorf("Image build name compatibility check failed: %v. "+
+				"Use the '--clowntown' flag if you wish to proceed at the risk of "+
+				"bricking the device", err),
+		}
 	}
 	return nil
 }

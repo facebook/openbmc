@@ -26,90 +26,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// calls validate for all partitions, and returns an error if a partition
-// failed validation. If all partitions pass validation, return nil
-var validatePartitions = func(partitions []partition.Partition) error {
-	for _, p := range partitions {
-		log.Printf("Validating partition '%v' using '%v' partition validator",
-			p.GetName(), p.GetType())
-		err := p.Validate()
-		if err != nil {
-			return errors.Errorf("Partition '%v' failed validation: %v",
-				p.GetName(), err)
-		}
-	}
-	return nil
-}
-
-// Try to get all partitions based on partition configs.
-// Return an error if unknown partition config type or failed to get.
-var getAllPartitionsFromPartitionConfigs = func(
-	data []byte,
-	partitionConfigs []partition.PartitionConfigInfo,
-) ([]partition.Partition, error) {
-	partitions := []partition.Partition{}
-
-	for _, pInfo := range partitionConfigs {
-		// make sure the beginning offset is not larger than the image
-		if pInfo.Offset > uint32(len(data)) {
-			return nil, errors.Errorf("Wanted start offset (%v) larger than image file size (%v)",
-				pInfo.Offset, len(data))
-		}
-
-		// flash size is 32MB, so pInfo may indicate a size
-		// larger than the image file. (this is fine with flash devices are they are 32MB)
-		// In such a case, reduce the size of the partition in pInfo.
-		// The alternative would be to pad the image with zero bytes until 32MB,
-		// but that would require operating on a new copy of the image in memory.
-		// Golang mmap unfortunately doesn't expose the addr argument to allow
-		// fixed mapping (we could map a 23MB image file over a 32MB /dev/zero file)
-		pOffsetEnd := pInfo.Size + pInfo.Offset
-		if uint32(len(data)) < pOffsetEnd {
-			actualPartitionSize := uint32(len(data)) - pInfo.Offset
-			pInfo.Size = actualPartitionSize
-			pOffsetEnd = uint32(len(data))
-		}
-
-		// only pass in region of data defined as the partition
-		pData := data[pInfo.Offset:pOffsetEnd]
-		args := partition.PartitionFactoryArgs{
-			Data:  pData,
-			PInfo: pInfo,
-		}
-
-		if factory, ok := partition.PartitionFactoryMap[pInfo.Type]; ok {
-			p := factory(args)
-			partitions = append(partitions, p)
-		} else {
-			return nil, errors.Errorf("Failed to get '%v' partition: "+
-				" Unknown partition validator type '%v'",
-				pInfo.Name, pInfo.Type)
-		}
-	}
-	return partitions, nil
-}
-
-// get all the partitions based on the partitionConfigs
-// then validate them. If all passed, return nil. Else return the error.
-var validatePartitionsFromPartitionConfigs = func(
-	data []byte,
-	partitionConfigs []partition.PartitionConfigInfo,
-) error {
-	partitions, err := getAllPartitionsFromPartitionConfigs(
-		data,
-		partitionConfigs,
-	)
-	if err != nil {
-		return errors.Errorf("Unable to get all partitions: %v",
-			err)
-	}
-	err = validatePartitions(partitions)
-	if err != nil {
-		return errors.Errorf("Validation failed: %v", err)
-	}
-	return nil
-}
-
 // try to validate partitions according to all configs defined in
 // partition.ImageFormats. If one succeeds, return nil. If none succeeds,
 // validation has failed, return the error.
@@ -119,7 +35,7 @@ var Validate = func(data []byte) error {
 		log.Printf("*** Attempting to validate using image format '%v' ***",
 			imageFormat.Name)
 
-		err := validatePartitionsFromPartitionConfigs(
+		err := partition.ValidatePartitionsFromPartitionConfigs(
 			data,
 			imageFormat.PartitionConfigs,
 		)

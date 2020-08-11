@@ -17,14 +17,13 @@
  * Boston, MA 02110-1301 USA
  */
 
-package validateutils
+package validate
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
-	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
@@ -52,66 +51,45 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 
 	cases := []struct {
 		name         string
-		clowntown    bool
 		etcIssueVer  string
 		imageFileVer string
 		want         error
 	}{
 		{
 			name:         "match passing",
-			clowntown:    false,
 			etcIssueVer:  "fbtp-v2020.09.1",
 			imageFileVer: "fbtp-v2019.01.3",
 			want:         nil,
 		},
 		{
 			name:         "does not match",
-			clowntown:    false,
 			etcIssueVer:  "fbtp-v2020.09.1",
 			imageFileVer: "yosemite-v1.2",
-			want: errors.Errorf("Image build name compatibility check failed: " +
-				"OpenBMC versions from /etc/issue ('fbtp') and image file ('yosemite') do not match!. " +
-				"Use the '--clowntown' flag if you wish to proceed at the risk of " +
-				"bricking the device",
-			),
+			want:         errors.Errorf("OpenBMC versions from /etc/issue ('fbtp') and image file ('yosemite') do not match!"),
 		},
 		{
 			name:         "compatible, uses normalized version",
-			clowntown:    false,
 			etcIssueVer:  "fby2-gpv2-v2019.43.1",
 			imageFileVer: "fbgp2-v1234",
 			want:         nil,
 		},
 		{
 			name:         "etc issue build name get error",
-			clowntown:    false,
 			etcIssueVer:  "!@#$",
 			imageFileVer: "yfbgp2-v1234",
-			want: errors.Errorf("Image build name compatibility check failed: " +
+			want: errors.Errorf(
 				"Unable to get build name from version '!@#$' (normalized: '!@#$'): " +
-				"No match for regex '^(?P<buildname>\\w+)' for input '!@#$'. " +
-				"Use the '--clowntown' flag if you wish to proceed at the risk of " +
-				"bricking the device",
+					"No match for regex '^(?P<buildname>\\w+)' for input '!@#$'",
 			),
 		},
 		{
 			name:         "image build name get error",
-			clowntown:    false,
 			etcIssueVer:  "fby2-gpv2-v2019.43.1",
 			imageFileVer: "!@#$",
-			want: errors.Errorf("Image build name compatibility check failed: " +
+			want: errors.Errorf(
 				"Unable to get build name from version '!@#$' (normalized: '!@#$'): " +
-				"No match for regex '^(?P<buildname>\\w+)' for input '!@#$'. " +
-				"Use the '--clowntown' flag if you wish to proceed at the risk of " +
-				"bricking the device",
+					"No match for regex '^(?P<buildname>\\w+)' for input '!@#$'",
 			),
-		},
-		{
-			name:         "error but clowntown-ed to proceed",
-			clowntown:    true,
-			etcIssueVer:  "%#*(",
-			imageFileVer: "!@#$",
-			want:         nil,
 		},
 	}
 
@@ -119,16 +97,17 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 	for _, tc := range cases {
 
 		t.Run(tc.name, func(t *testing.T) {
-			stepParams := step.StepParams{
-				Clowntown: tc.clowntown,
-			}
+			exampleImageFilePath := "/opt/upgrade/mock"
 			utils.GetOpenBMCVersionFromIssueFile = func() (string, error) {
 				return tc.etcIssueVer, nil
 			}
 			getOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) {
+				if exampleImageFilePath != imageFilePath {
+					t.Errorf("imageFilePath: want '%v' goot '%v'", exampleImageFilePath, imageFilePath)
+				}
 				return tc.imageFileVer, nil
 			}
-			got := CheckImageBuildNameCompatibility(stepParams)
+			got := CheckImageBuildNameCompatibility(exampleImageFilePath)
 			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}

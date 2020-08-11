@@ -59,6 +59,6 @@ i2c_mux_add_sync 9 0x70 pca9543 25
 i2c_mux_add_sync 8 0x70 pca9543 27
 
 # Reload lm_sensors config
-sv restart sensord
+sv restart sensord > /dev/null
 # Mark driver loaded
 echo > /tmp/driver_probed

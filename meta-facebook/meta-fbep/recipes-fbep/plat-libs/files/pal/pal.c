@@ -863,112 +863,53 @@ int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
   return 0;
 }
 
-void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
+static void fan_state_led_ctrl(uint8_t snr_num, bool assert)
 {
+  char blue_led[16] = {0};
+  char amber_led[16] = {0};
+  static uint8_t assert_flag[4] = {0};
   gpio_desc_t *fan_ok;
   gpio_desc_t *fan_fail;
+  uint8_t fan_id = snr_num >> 2;
 
-  switch (snr_num) {
-    case MB_FAN0_TACH_I:
-    case MB_FAN0_TACH_O:
-    case MB_FAN0_VOLT:
-    case MB_FAN0_CURR:
-      fan_ok = gpio_open_by_shadow("FAN0_OK");
-      fan_fail = gpio_open_by_shadow("FAN0_FAIL");
-      break;
-    case MB_FAN1_TACH_I:
-    case MB_FAN1_TACH_O:
-    case MB_FAN1_VOLT:
-    case MB_FAN1_CURR:
-      fan_ok = gpio_open_by_shadow("FAN1_OK");
-      fan_fail = gpio_open_by_shadow("FAN1_FAIL");
-      break;
-    case MB_FAN2_TACH_I:
-    case MB_FAN2_TACH_O:
-    case MB_FAN2_VOLT:
-    case MB_FAN2_CURR:
-      fan_ok = gpio_open_by_shadow("FAN2_OK");
-      fan_fail = gpio_open_by_shadow("FAN2_FAIL");
-      break;
-    case MB_FAN3_TACH_I:
-    case MB_FAN3_TACH_O:
-    case MB_FAN3_VOLT:
-    case MB_FAN3_CURR:
-      fan_ok = gpio_open_by_shadow("FAN3_OK");
-      fan_fail = gpio_open_by_shadow("FAN3_FAIL");
-      break;
-    default:
-      return;
-  }
-
+  snprintf(blue_led, sizeof(blue_led), "FAN%d_OK", (int)fan_id);
+  snprintf(amber_led, sizeof(amber_led), "FAN%d_FAIL", (int)fan_id);
+  fan_ok = gpio_open_by_shadow(blue_led);
+  fan_fail = gpio_open_by_shadow(amber_led);
   if (!fan_ok || !fan_fail) {
-    syslog(LOG_WARNING, "FAN LED open failed\n");
+    syslog(LOG_WARNING, "FAN LED open failed");
     goto exit;
   }
 
-  if (gpio_set_value(fan_fail, GPIO_VALUE_HIGH) ||
-      gpio_set_value(fan_ok, GPIO_VALUE_LOW)) {
-    syslog(LOG_WARNING, "FAN LED control failed\n");
-    goto exit;
+  if (!assert)
+    assert_flag[fan_id] &= ~(0x1 << (snr_num & ~(0xc)));
+
+  if (!assert_flag[fan_id]) {
+    // If all of assertion had been cleared or it is the first assertion
+    if (gpio_set_value(fan_fail, assert? GPIO_VALUE_HIGH: GPIO_VALUE_LOW) ||
+	gpio_set_value(fan_ok, assert? GPIO_VALUE_LOW: GPIO_VALUE_HIGH)) {
+      syslog(LOG_WARNING, "FAN LED control failed");
+    }
   }
+
+  if (assert)
+    assert_flag[fan_id] |= (0x1 << (snr_num & ~(0xc)));
 
 exit:
   gpio_close(fan_ok);
   gpio_close(fan_fail);
 }
 
+void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
+{
+  if (snr_num <= MB_FAN3_CURR)
+    fan_state_led_ctrl(snr_num, true);
+}
+
 void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
 {
-  gpio_desc_t *fan_ok;
-  gpio_desc_t *fan_fail;
-
-  switch (snr_num) {
-    case MB_FAN0_TACH_I:
-    case MB_FAN0_TACH_O:
-    case MB_FAN0_VOLT:
-    case MB_FAN0_CURR:
-      fan_ok = gpio_open_by_shadow("FAN0_OK");
-      fan_fail = gpio_open_by_shadow("FAN0_FAIL");
-      break;
-    case MB_FAN1_TACH_I:
-    case MB_FAN1_TACH_O:
-    case MB_FAN1_VOLT:
-    case MB_FAN1_CURR:
-      fan_ok = gpio_open_by_shadow("FAN1_OK");
-      fan_fail = gpio_open_by_shadow("FAN1_FAIL");
-      break;
-    case MB_FAN2_TACH_I:
-    case MB_FAN2_TACH_O:
-    case MB_FAN2_VOLT:
-    case MB_FAN2_CURR:
-      fan_ok = gpio_open_by_shadow("FAN2_OK");
-      fan_fail = gpio_open_by_shadow("FAN2_FAIL");
-      break;
-    case MB_FAN3_TACH_I:
-    case MB_FAN3_TACH_O:
-    case MB_FAN3_VOLT:
-    case MB_FAN3_CURR:
-      fan_ok = gpio_open_by_shadow("FAN3_OK");
-      fan_fail = gpio_open_by_shadow("FAN3_FAIL");
-      break;
-    default:
-      return;
-  }
-
-  if (!fan_ok || !fan_fail) {
-    syslog(LOG_WARNING, "FAN LED open failed\n");
-    goto exit;
-  }
-
-  if (gpio_set_value(fan_ok, GPIO_VALUE_HIGH) ||
-      gpio_set_value(fan_fail, GPIO_VALUE_LOW)) {
-    syslog(LOG_WARNING, "FAN LED control failed\n");
-    goto exit;
-  }
-
-exit:
-  gpio_close(fan_ok);
-  gpio_close(fan_fail);
+  if (snr_num <= MB_FAN3_CURR)
+    fan_state_led_ctrl(snr_num, false);
 }
 
 int pal_get_platform_id(uint8_t *id)

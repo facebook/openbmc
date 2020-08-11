@@ -44,7 +44,8 @@ const char pal_tach_list[] = "0..7";
 #define MAX_SENSOR_NUM FBEP_SENSOR_MAX
 #define MAX_SENSOR_THRESHOLD 8
 
-static int sensors_read_common_fan(uint8_t, float*);
+static int sensors_read_fan_speed(uint8_t, float*);
+static int sensors_read_fan_health(uint8_t, float*);
 static int sensors_read_common_adc(uint8_t, float*);
 static int sensors_read_12v_adc(uint8_t, float*);
 static int read_battery_value(uint8_t, float*);
@@ -468,37 +469,37 @@ struct sensor_map {
   int unit;
 } fbep_sensors_map[] = {
   [MB_FAN0_TACH_I] =
-  {sensors_read_common_fan, "MB_FAN0_TACH_I", SNR_TACH},
+  {sensors_read_fan_speed, "MB_FAN0_TACH_I", SNR_TACH},
   [MB_FAN0_TACH_O] =
-  {sensors_read_common_fan, "MB_FAN0_TACH_O", SNR_TACH},
+  {sensors_read_fan_speed, "MB_FAN0_TACH_O", SNR_TACH},
   [MB_FAN1_TACH_I] =
-  {sensors_read_common_fan, "MB_FAN1_TACH_I", SNR_TACH},
+  {sensors_read_fan_speed, "MB_FAN1_TACH_I", SNR_TACH},
   [MB_FAN1_TACH_O] =
-  {sensors_read_common_fan, "MB_FAN1_TACH_O", SNR_TACH},
+  {sensors_read_fan_speed, "MB_FAN1_TACH_O", SNR_TACH},
   [MB_FAN2_TACH_I] =
-  {sensors_read_common_fan, "MB_FAN2_TACH_I", SNR_TACH},
+  {sensors_read_fan_speed, "MB_FAN2_TACH_I", SNR_TACH},
   [MB_FAN2_TACH_O] =
-  {sensors_read_common_fan, "MB_FAN2_TACH_O", SNR_TACH},
+  {sensors_read_fan_speed, "MB_FAN2_TACH_O", SNR_TACH},
   [MB_FAN3_TACH_I] =
-  {sensors_read_common_fan, "MB_FAN3_TACH_I", SNR_TACH},
+  {sensors_read_fan_speed, "MB_FAN3_TACH_I", SNR_TACH},
   [MB_FAN3_TACH_O] =
-  {sensors_read_common_fan, "MB_FAN3_TACH_O", SNR_TACH},
+  {sensors_read_fan_speed, "MB_FAN3_TACH_O", SNR_TACH},
   [MB_FAN0_VOLT] =
-  {sensors_read_common_fan, "MB_FAN0_VOLT", SNR_VOLT},
+  {sensors_read_fan_health, "MB_FAN0_VOLT", SNR_VOLT},
   [MB_FAN1_VOLT] =
-  {sensors_read_common_fan, "MB_FAN1_VOLT", SNR_VOLT},
+  {sensors_read_fan_health, "MB_FAN1_VOLT", SNR_VOLT},
   [MB_FAN2_VOLT] =
-  {sensors_read_common_fan, "MB_FAN2_VOLT", SNR_VOLT},
+  {sensors_read_fan_health, "MB_FAN2_VOLT", SNR_VOLT},
   [MB_FAN3_VOLT] =
-  {sensors_read_common_fan, "MB_FAN3_VOLT", SNR_VOLT},
+  {sensors_read_fan_health, "MB_FAN3_VOLT", SNR_VOLT},
   [MB_FAN0_CURR] =
-  {sensors_read_common_fan, "MB_FAN0_CURR", SNR_CURR},
+  {sensors_read_fan_health, "MB_FAN0_CURR", SNR_CURR},
   [MB_FAN1_CURR] =
-  {sensors_read_common_fan, "MB_FAN1_CURR", SNR_CURR},
+  {sensors_read_fan_health, "MB_FAN1_CURR", SNR_CURR},
   [MB_FAN2_CURR] =
-  {sensors_read_common_fan, "MB_FAN2_CURR", SNR_CURR},
+  {sensors_read_fan_health, "MB_FAN2_CURR", SNR_CURR},
   [MB_FAN3_CURR] =
-  {sensors_read_common_fan, "MB_FAN3_CURR", SNR_CURR},
+  {sensors_read_fan_health, "MB_FAN3_CURR", SNR_CURR},
   [MB_ADC_P12V_AUX] =
   {sensors_read_common_adc, "MB_ADC_P12V_AUX", SNR_VOLT},
   [MB_ADC_P12V_1] =
@@ -815,38 +816,6 @@ static int sensors_read_vicor(uint8_t sensor_num, float *value)
   return 0;
 }
 
-bool pal_is_fan_prsnt(uint8_t fan)
-{
-  const char *shadow[] = {
-    "FAN0_PRESENT",
-    "FAN1_PRESENT",
-    "FAN2_PRESENT",
-    "FAN3_PRESENT"
-  };
-  static gpio_desc_t *desc[4] = {
-    NULL, NULL, NULL, NULL
-  };
-  gpio_value_t value;
-  int index = fan>>1;
-
-  if (desc[index] == NULL) {
-    desc[index] = gpio_open_by_shadow(shadow[index]);
-    if (!desc[index]) {
-#ifdef DEBUG
-      syslog(LOG_CRIT, "Open failed for GPIO: %s\n", shadow[index]);
-#endif
-      return false;
-    }
-  }
-
-  if (gpio_get_value(desc[index], &value)) {
-    syslog(LOG_CRIT, "Get failed for GPIO: %s\n", shadow[index]);
-    return false;
-  }
-
-  return value == GPIO_VALUE_LOW? true: false;
-}
-
 int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
 {
   char label[32] = {0};
@@ -870,8 +839,8 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
     return -1;
   }
   ret = sensors_read_fan(label, &value);
-  *rpm = (int)value;
-  return ret;
+  *rpm = ret < 0? 0: (int)value;
+  return 0;
 }
 
 int pal_get_fan_name(uint8_t num, char *name)
@@ -903,7 +872,7 @@ int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
   return ret;
 }
 
-static bool is_fan_present(uint8_t sensor_num)
+static bool is_fan_prsnt(uint8_t sensor_num)
 {
   gpio_value_t value;
   gpio_desc_t *desc;
@@ -952,68 +921,107 @@ static bool is_fan_present(uint8_t sensor_num)
   return value == GPIO_VALUE_LOW? true: false;
 }
 
-static int sensors_read_common_fan(uint8_t sensor_num, float *value)
+bool pal_is_fan_prsnt(uint8_t fan)
 {
-  int ret;
+  // fan id to sensor num
+  uint8_t sensor_num = fan + (fan & ~(0x1));
+  return is_fan_prsnt(sensor_num);
+}
+
+static int sensors_read_fan_speed(uint8_t sensor_num, float *value)
+{
+  int ret, i, retries = 5;
+  *value = 0.0;
 
   // Although PWM controller driver had been loaded when BMC booted
   // Some attributes are not accessible right after 12V is on
-  if (!is_device_ready() || !is_fan_present(sensor_num))
+  if (!is_device_ready() || !is_fan_prsnt(sensor_num))
     return ERR_SENSOR_NA;
 
-  switch (sensor_num) {
-    case MB_FAN0_TACH_I:
-      ret = sensors_read_fan("fan1", (float *)value);
+  for (i = 0; i < retries; i++) {
+    switch (sensor_num) {
+      case MB_FAN0_TACH_I:
+        ret = sensors_read_fan("fan1", (float *)value);
+        break;
+      case MB_FAN0_TACH_O:
+        ret = sensors_read_fan("fan2", (float *)value);
+        break;
+      case MB_FAN1_TACH_I:
+        ret = sensors_read_fan("fan3", (float *)value);
+        break;
+      case MB_FAN1_TACH_O:
+        ret = sensors_read_fan("fan4", (float *)value);
+        break;
+      case MB_FAN2_TACH_I:
+        ret = sensors_read_fan("fan5", (float *)value);
+        break;
+      case MB_FAN2_TACH_O:
+        ret = sensors_read_fan("fan6", (float *)value);
+        break;
+      case MB_FAN3_TACH_I:
+        ret = sensors_read_fan("fan7", (float *)value);
+        break;
+      case MB_FAN3_TACH_O:
+        ret = sensors_read_fan("fan8", (float *)value);
+        break;
+      default:
+        return ERR_SENSOR_NA;
+    }
+    if (*value <= sensors_threshold[sensor_num][LCR_THRESH]) {
+      // In case the fans just got installed, fans are still accelerating.
+      msleep(200);
+    } else {
       break;
-    case MB_FAN0_TACH_O:
-      ret = sensors_read_fan("fan2", (float *)value);
-      break;
-    case MB_FAN1_TACH_I:
-      ret = sensors_read_fan("fan3", (float *)value);
-      break;
-    case MB_FAN1_TACH_O:
-      ret = sensors_read_fan("fan4", (float *)value);
-      break;
-    case MB_FAN2_TACH_I:
-      ret = sensors_read_fan("fan5", (float *)value);
-      break;
-    case MB_FAN2_TACH_O:
-      ret = sensors_read_fan("fan6", (float *)value);
-      break;
-    case MB_FAN3_TACH_I:
-      ret = sensors_read_fan("fan7", (float *)value);
-      break;
-    case MB_FAN3_TACH_O:
-      ret = sensors_read_fan("fan8", (float *)value);
-      break;
-    case MB_FAN0_VOLT:
-      ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_VOLT", (float *)value);
-      break;
-    case MB_FAN0_CURR:
-      ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_CURR", (float *)value);
-      break;
-    case MB_FAN1_VOLT:
-      ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_VOLT", (float *)value);
-      break;
-    case MB_FAN1_CURR:
-      ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_CURR", (float *)value);
-      break;
-    case MB_FAN2_VOLT:
-      ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_VOLT", (float *)value);
-      break;
-    case MB_FAN2_CURR:
-      ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_CURR", (float *)value);
-      break;
-    case MB_FAN3_VOLT:
-      ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_VOLT", (float *)value);
-      break;
-    case MB_FAN3_CURR:
-      ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_CURR", (float *)value);
-      break;
-    default:
-      return ERR_SENSOR_NA;
+    }
   }
 
+  return 0;
+}
+
+static int sensors_read_fan_health(uint8_t sensor_num, float *value)
+{
+  int ret, i, retries = 3;
+  *value = 0.0;
+
+  if (pal_is_server_off() || !is_fan_prsnt(sensor_num))
+    return ERR_SENSOR_NA;
+
+  for (i = 0; i < retries; i++) {
+    switch (sensor_num) {
+      case MB_FAN0_VOLT:
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_VOLT", (float *)value);
+        break;
+      case MB_FAN0_CURR:
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_CURR", (float *)value);
+        break;
+      case MB_FAN1_VOLT:
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_VOLT", (float *)value);
+        break;
+      case MB_FAN1_CURR:
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_CURR", (float *)value);
+        break;
+      case MB_FAN2_VOLT:
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_VOLT", (float *)value);
+        break;
+      case MB_FAN2_CURR:
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_CURR", (float *)value);
+        break;
+      case MB_FAN3_VOLT:
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_VOLT", (float *)value);
+        break;
+      case MB_FAN3_CURR:
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_CURR", (float *)value);
+        break;
+      default:
+        return ERR_SENSOR_NA;
+    }
+    if (ret == 0 && *value <= sensors_threshold[sensor_num][LCR_THRESH]) {
+      // In case the fans just got installed, ADC might not finish sampling
+      msleep(100);
+    } else {
+      break;
+    }
+  }
   return ret < 0? ERR_SENSOR_NA: 0;
 }
 

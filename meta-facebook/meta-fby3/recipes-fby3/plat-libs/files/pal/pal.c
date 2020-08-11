@@ -2481,6 +2481,23 @@ pal_check_pfr_mailbox(uint8_t fru) {
 }
 
 int
+pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  uint8_t mfg_id[] = {0x9c, 0x9c, 0x00};
+  char temp_log[MAX_ERR_LOG_SIZE];
+
+  error_log[0] = '\0';
+  // Record Type: 0xC0 (OEM)
+  if ((sel[2] == 0xC0) && !memcmp(&sel[7], mfg_id, sizeof(mfg_id))) {
+    snprintf(temp_log, MAX_ERR_LOG_SIZE, "%s: Can not control SSD%d alert LED", sel[10] ? "Assert" : "Deassert", sel[11]);
+    strcat(error_log, temp_log);
+  }
+
+  return 0;
+}
+
+
+int
 set_pfr_i2c_filter(uint8_t slot_id, uint8_t value) {
   int ret;
   uint8_t tbuf[2] = {0};

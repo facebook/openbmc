@@ -56,6 +56,7 @@ extern "C" {
 #define DISABLE_PFR_I2C_FILTER 0
 #define ENABLE_PFR_I2C_FILTER 1
 
+#define MAX_ERR_LOG_SIZE 256
 #define BIOS_CAP_VER_OFFSET 0x80C
 #define BIOS_CAP_VER_LEN 16
 #define CPLD_CAP_VER_OFFSET 0x404
@@ -182,6 +183,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
 int pal_check_pfr_mailbox(uint8_t fru);
 int set_pfr_i2c_filter(uint8_t slot_id, uint8_t value);
 int pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uint8_t bmc_location);
+int pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log);
 int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
 
 #ifdef __cplusplus

@@ -135,7 +135,12 @@ sensor_raw_read_helper(uint8_t fru, uint8_t snr_num, float *val)
     }
 
   } else if (pal_sensor_is_source_host(fru, snr_num)) {
-    ret = sensor_cache_read(fru, snr_num, val);
+    if (pal_is_host_snr_available(fru, snr_num) == true) {
+      ret = sensor_cache_read(fru, snr_num, val);
+    } else {
+      sensor_cache_write(fru, snr_num, false, 0.0);
+      return ERR_SENSOR_NA;
+    }    
   } else {
     ret = sensor_raw_read(fru, snr_num, val);
   }

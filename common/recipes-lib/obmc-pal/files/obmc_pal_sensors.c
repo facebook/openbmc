@@ -561,6 +561,12 @@ pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id)
   return false;
 }
 
+bool __attribute__((weak))
+pal_is_host_snr_available(uint8_t fru, uint8_t sensor_id)
+{
+  return false;
+}
+
 int __attribute__((weak))
 pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value)
 {

@@ -234,7 +234,7 @@ func TestGetAllPartitionsFromPartitionConfigs(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			name: "start offset too large",
+			name: "start offset too large, non ignore",
 			partitionConfigs: []PartitionConfigInfo{
 				{
 					Name:   "foobar",
@@ -244,8 +244,21 @@ func TestGetAllPartitionsFromPartitionConfigs(t *testing.T) {
 				},
 			},
 			want: nil,
-			wantErr: errors.Errorf("Wanted start offset (%v) larger than image file size (%v)",
-				20*1024, 4*1024),
+			wantErr: errors.Errorf("Wanted start offset (%v) of '%v' partition larger than data size (%v)",
+				20*1024, "foobar", 4*1024),
+		},
+		{
+			name: "start offset too large, ignored",
+			partitionConfigs: []PartitionConfigInfo{
+				{
+					Name:   "foobar",
+					Offset: 20 * 1024,
+					Size:   1024,
+					Type:   IGNORE,
+				},
+			},
+			want:    []Partition{},
+			wantErr: nil,
 		},
 	}
 	// compare two partitions slices

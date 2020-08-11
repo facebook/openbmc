@@ -24,7 +24,9 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"log"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
 
@@ -52,13 +54,31 @@ type FBMetaInfo struct {
 	PartInfos             []FBMetaPartInfo `json:"part_infos"`
 }
 
+// FBMetaPartInfoType represents the "Type" defined in MetaPartInfo
+type FBMetaPartInfoType = string
+
+const (
+	// FBMETA_ROM : the u-boot SPL used in verified boot systems
+	FBMETA_ROM FBMetaPartInfoType = "rom"
+	// FBMETA_RAW : raw binary, normally U-Boot
+	FBMETA_RAW = "raw"
+	// FBMETA_FIT : U-Boot defined fit
+	FBMETA_FIT = "fit"
+	// FBMETA_MTDONLY : only in flash, not in firmware image, normally persistent data partition
+	FBMETA_MTDONLY = "mtdonly"
+	// FBMETA_META : the image meta partition
+	FBMETA_META = "meta"
+	// FBMETA_DATA : data partition
+	FBMETA_DATA = "data"
+)
+
 // FBMetaPartInfo is analogous to PartitionConfigInfo, but a shim is required
 // to convert it properly to use the correct "type".
 type FBMetaPartInfo struct {
-	Name   string `json:"name"`
-	Size   uint32 `json:"size"`
-	Offset uint32 `json:"offset"`
-	Type   string `json:"type"`
+	Name   string             `json:"name"`
+	Size   uint32             `json:"size"`
+	Offset uint32             `json:"offset"`
+	Type   FBMetaPartInfoType `json:"type"`
 	// For now, the only checksum used is MD5
 	Checksum string `json:"md5"`
 	// applicable only for FIT partitions
@@ -94,11 +114,45 @@ func (p *FBMetaImagePartition) GetSize() uint32 {
 }
 
 func (p *FBMetaImagePartition) Validate() error {
-	return errors.Errorf("TODO")
+	var err error
+
+	p.metaInfo, err = p.getMetaInfo()
+	if err != nil {
+		return err
+	}
+	log.Printf("Validating image following image-meta: \n%+v", p.metaInfo)
+
+	partitionConfigs, err := getPartitionConfigsFromFBMetaPartInfos(p.metaInfo.PartInfos)
+	if err != nil {
+		return err
+	}
+
+	err = ValidatePartitionsFromPartitionConfigs(p.Data, partitionConfigs)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Image-meta partition '%v' passed validation.", p.Name)
+	return nil
 }
 
 func (p *FBMetaImagePartition) GetType() PartitionConfigType {
 	return FBMETA_IMAGE
+}
+
+// getMetaInfo gets and validates the image-meta information
+// from the meta partition
+func (p *FBMetaImagePartition) getMetaInfo() (FBMetaInfo, error) {
+	var metaInfo FBMetaInfo
+	offsetEnd := fbmetaImageMetaPartitionSize + fbmetaImageMetaPartitionOffset
+	if uint32(offsetEnd) > p.GetSize() {
+		return metaInfo, errors.Errorf("Image/device size too small (%v B) to contain meta partition region",
+			p.GetSize())
+	}
+
+	metaPartitionData := p.Data[fbmetaImageMetaPartitionOffset:offsetEnd]
+
+	return parseAndValidateFBImageMetaJSON(metaPartitionData)
 }
 
 // parseAndValidateFBImageMetaJSON parses and validates MetaInfo given
@@ -145,4 +199,64 @@ var parseAndValidateFBImageMetaJSON = func(data []byte) (FBMetaInfo, error) {
 	}
 
 	return metaInfo, nil
+}
+
+var getPartitionConfigsFromFBMetaPartInfos = func(metaPartInfos []FBMetaPartInfo) ([]PartitionConfigInfo, error) {
+	// get vboot enforcement, required for getPartitionConfigFromFBMetaPartInfo
+	vbootEnforcement, err := utils.GetVbootEnforcement()
+	if err != nil {
+		return nil, errors.Errorf("Unable to get vboot enforcement: %v", err)
+	}
+
+	partitionConfigs := make([]PartitionConfigInfo, 0, len(metaPartInfos))
+	for _, metaPartInfo := range metaPartInfos {
+		partitionConfig, err := getPartitionConfigFromFBMetaPartInfo(
+			metaPartInfo,
+			vbootEnforcement,
+		)
+		if err != nil {
+			return nil, err
+		}
+		partitionConfigs = append(partitionConfigs, partitionConfig)
+	}
+	return partitionConfigs, nil
+}
+
+// getPartitionConfigFromFBMetaPartInfo is a shim function to convert MetaPartInfo
+// to PartitionConfigInfo
+var getPartitionConfigFromFBMetaPartInfo = func(m FBMetaPartInfo, vbootEnforcement utils.VbootEnforcementType) (PartitionConfigInfo, error) {
+	var partitionConfig PartitionConfigInfo
+	partitionConfigType, err := getPartitionConfigTypeFromFBMetaPartInfoType(m.Type, vbootEnforcement)
+	if err != nil {
+		return partitionConfig, err
+	}
+	partitionConfig = PartitionConfigInfo{
+		Name:     m.Name,
+		Offset:   m.Offset,
+		Size:     m.Size,
+		Type:     partitionConfigType,
+		Checksum: m.Checksum,
+	}
+	return partitionConfig, nil
+}
+
+var getPartitionConfigTypeFromFBMetaPartInfoType = func(t FBMetaPartInfoType, vbootEnforcement utils.VbootEnforcementType) (FBMetaPartInfoType, error) {
+	switch t {
+	case FBMETA_ROM:
+		if vbootEnforcement == utils.VBOOT_HARDWARE_ENFORCE {
+			// ignore this, as this ROM part will be Read-Only
+			return IGNORE, nil
+		}
+		return FBMETA_MD5, nil
+	case FBMETA_RAW:
+		return FBMETA_MD5, nil
+	case FBMETA_FIT:
+		return FIT, nil
+	case FBMETA_MTDONLY,
+		FBMETA_META,
+		FBMETA_DATA:
+		return IGNORE, nil
+	default:
+		return IGNORE, errors.Errorf("Unknown partition type in image-meta: '%v'", t)
+	}
 }

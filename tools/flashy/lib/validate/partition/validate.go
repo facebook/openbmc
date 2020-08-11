@@ -70,10 +70,19 @@ var getAllPartitionsFromPartitionConfigs = func(
 	partitions := []Partition{}
 
 	for _, pInfo := range partitionConfigs {
-		// make sure the beginning offset is not larger than the image
-		if pInfo.Offset > uint32(len(data)) {
-			return nil, errors.Errorf("Wanted start offset (%v) larger than image file size (%v)",
-				pInfo.Offset, len(data))
+		// Image format may contain mtd-only partitions (such as data partitions).
+		// These are not included in image files, and these partitions' validations are ignored anyway.
+		// TOOD:- for flash device: verify JFFS2 filesystem integrity
+		if pInfo.Offset >= uint32(len(data)) {
+			if pInfo.Type == IGNORE { // make sure it's IGNORE, otherwise fail it
+				log.Printf("Ignoring validation of '%v' partition: given offset %vB larger than "+
+					"size of data %vB", pInfo.Name, pInfo.Offset, uint32(len(data)))
+				continue
+			} else {
+				return nil, errors.Errorf("Wanted start offset (%v) of '%v' partition larger "+
+					"than data size (%v)",
+					pInfo.Offset, pInfo.Name, uint32(len(data)))
+			}
 		}
 
 		// flash size is 32MB, so pInfo may indicate a size

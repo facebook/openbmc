@@ -28,6 +28,18 @@ import (
 	"github.com/pkg/errors"
 )
 
+func init() {
+	registerPartitionFactory(FBMETA_IMAGE, fbmetaImagePartitionFactory)
+}
+
+var fbmetaImagePartitionFactory = func(args PartitionFactoryArgs) Partition {
+	return &FBMetaImagePartition{
+		Name:   args.PInfo.Name,
+		Data:   args.Data,
+		Offset: args.PInfo.Offset,
+	}
+}
+
 // supported FBOBMC_IMAGE_META_VER
 var fbmetaSupportedVersions = []int{1}
 
@@ -73,7 +85,23 @@ type FBMetaImagePartition struct {
 	metaInfo FBMetaInfo
 }
 
-// parseAndValidateFBImageMetaFBJSON parses and validates FBMetaInfo given
+func (p *FBMetaImagePartition) GetName() string {
+	return p.Name
+}
+
+func (p *FBMetaImagePartition) GetSize() uint32 {
+	return uint32(len(p.Data))
+}
+
+func (p *FBMetaImagePartition) Validate() error {
+	return errors.Errorf("TODO")
+}
+
+func (p *FBMetaImagePartition) GetType() PartitionConfigType {
+	return FBMETA_IMAGE
+}
+
+// parseAndValidateFBImageMetaJSON parses and validates MetaInfo given
 // the bytes containing the meta-partition region
 var parseAndValidateFBImageMetaJSON = func(data []byte) (FBMetaInfo, error) {
 	var metaInfo FBMetaInfo

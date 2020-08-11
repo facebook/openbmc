@@ -27,6 +27,7 @@ const (
 	UBOOT                            = "UBOOT"
 	FIT                              = "FIT"
 	FBMETA_MD5                       = "FBMETA_MD5"
+	FBMETA_IMAGE                     = "FBMETA_IMAGE"
 )
 
 type ImageFormat struct {
@@ -60,6 +61,20 @@ type PartitionConfigInfo struct {
 // (4) vboot spl+recovery can be treated as UBOOT. It will be ignored if the flash1
 //     header is RO (e.g. fbtp)
 var ImageFormats = []ImageFormat{
+	{
+		// covers both vboot-meta and fit-meta
+		Name: "meta",
+		PartitionConfigs: []PartitionConfigInfo{
+			{
+				// pass in the whole image and let MetaImagePartition deal with
+				// finding the partitionConfigs and checksums
+				Name:   "fbmeta-image",
+				Offset: 0,
+				Size:   32 * 1024 * 1024,
+				Type:   FBMETA_IMAGE,
+			},
+		},
+	},
 	{
 		Name: "vboot",
 		PartitionConfigs: []PartitionConfigInfo{

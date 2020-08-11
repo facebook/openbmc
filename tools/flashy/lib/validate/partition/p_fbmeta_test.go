@@ -29,6 +29,41 @@ import (
 	"github.com/pkg/errors"
 )
 
+// basic tests
+func TestFBMetaImagePartition(t *testing.T) {
+	exampleData := []byte("abcd")
+	args := PartitionFactoryArgs{
+		Data: exampleData,
+		PInfo: PartitionConfigInfo{
+			Name:   "foo",
+			Offset: 1024,
+			Size:   4,
+			Type:   FBMETA_IMAGE,
+		},
+	}
+	wantP := &FBMetaImagePartition{
+		Name:   "foo",
+		Offset: 1024,
+		Data:   exampleData,
+	}
+	p := fbmetaImagePartitionFactory(args)
+	if !reflect.DeepEqual(wantP, p) {
+		t.Errorf("partition: want '%v' got '%v'", wantP, p)
+	}
+	gotName := p.GetName()
+	if "foo" != gotName {
+		t.Errorf("name: want '%v' got '%v'", "foo", gotName)
+	}
+	gotSize := p.GetSize()
+	if uint32(4) != gotSize {
+		t.Errorf("size: want '%v' got '%v'", 4, gotSize)
+	}
+	gotValidatorType := p.GetType()
+	if gotValidatorType != FBMETA_IMAGE {
+		t.Errorf("validator type: want '%v' got '%v'", FBMETA_IMAGE, gotValidatorType)
+	}
+}
+
 // parse an example
 func TestParseAndValidateFBImageMetaJSONExample(t *testing.T) {
 	wantMetaInfo := FBMetaInfo{

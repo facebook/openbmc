@@ -64,6 +64,30 @@ typedef struct _sdr_rec_hdr_t {
 #define KV_SLOT_IS_M2_EXP_PRESENT "slot%x_is_m2_exp_prsnt"
 #define KV_SLOT_GET_1OU_TYPE      "slot%x_get_1ou_type"
 
+enum {
+  M2_PWR_OFF = 0x00,
+  M2_PWR_ON  = 0x01,
+  M2_REG_2OU = 0x04,
+  M2_REG_1OU = 0x05,
+};
+
+enum {
+  M2_ROOT_PORT0 = 0x0,
+  M2_ROOT_PORT1 = 0x1,
+  M2_ROOT_PORT2 = 0x2,
+  M2_ROOT_PORT3 = 0x3,
+  M2_ROOT_PORT4 = 0x4,
+  M2_ROOT_PORT5 = 0x5,
+};
+
+
+uint8_t mapping_m2_prsnt[2][6] = { {M2_ROOT_PORT0, M2_ROOT_PORT1, M2_ROOT_PORT5, M2_ROOT_PORT4, M2_ROOT_PORT2, M2_ROOT_PORT3},
+                                   {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1}};
+uint8_t mapping_e1s_prsnt[2][6] = { {M2_ROOT_PORT4, M2_ROOT_PORT5, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1, M2_ROOT_PORT0},
+                                    {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1}};
+uint8_t mapping_e1s_pwr[2][6] = { {M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT5, M2_ROOT_PORT4, M2_ROOT_PORT1, M2_ROOT_PORT0},
+                                  {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1} };
+
 // S/E - Get Sensor reading
 // Netfn: 0x04, Cmd: 0x2d
 int
@@ -1307,8 +1331,22 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
   uint8_t tlen = 5;
   uint8_t rlen = 0;
   int ret = 0;
+  uint8_t table = 0, board_type = 0;
 
-  tbuf[3] = dev_id;
+  ret = fby3_common_get_2ou_board_type(slot_id, &board_type);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+    board_type = M2_BOARD;
+  }
+
+  //Send the command
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+
+  if (board_type == M2_BOARD || intf == FEXP_BIC_INTF) {
+    tbuf[3] = dev_id;
+  } else {
+    tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control 
+  }
   tbuf[4] = 0x3;  //get power status
 
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, tlen, rbuf, &rlen, intf);
@@ -1324,34 +1362,21 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
 
 int
 bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_t intf) {
-  enum {
-    M2_PWR_OFF = 0x00,
-    M2_PWR_ON  = 0x01,
-    M2_REG_2OU = 0x04,
-    M2_REG_1OU = 0x05,
-  };
-
-  enum {
-    M2_ROOT_PORT0 = 0x0,
-    M2_ROOT_PORT1 = 0x1,
-    M2_ROOT_PORT2 = 0x2,
-    M2_ROOT_PORT3 = 0x3,
-    M2_ROOT_PORT4 = 0x4,
-    M2_ROOT_PORT5 = 0x5,
-  };
-
-  uint8_t mapping_m2_prsnt[2][6] = { {M2_ROOT_PORT0, M2_ROOT_PORT1, M2_ROOT_PORT5, M2_ROOT_PORT4, M2_ROOT_PORT2, M2_ROOT_PORT3},
-                                     {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1}};
   uint8_t tbuf[5]  = {0x00};
   uint8_t rbuf[10] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   uint8_t bus_num = 0;
-  uint8_t table = 0;
+  uint8_t table = 0, board_type = 0;
   uint8_t prsnt_bit = 0;
   int fd = 0;
   int ret = 0;
 
+  ret = fby3_common_get_2ou_board_type(slot_id, &board_type);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+    board_type = M2_BOARD;
+  }
   bus_num = fby3_common_get_bus_id(slot_id) + 4;
 
   //set the present status of M.2
@@ -1372,7 +1397,11 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
   }
 
   table = tbuf[0] - M2_REG_2OU;
-  prsnt_bit = mapping_m2_prsnt[table][dev_id - 1];
+  if (board_type == M2_BOARD || intf == FEXP_BIC_INTF) {
+    prsnt_bit = mapping_m2_prsnt[table][dev_id - 1];
+  } else {
+    prsnt_bit = mapping_e1s_prsnt[table][dev_id - 1];
+  }
   if ( status == M2_PWR_OFF ) {
     tbuf[1] = (rbuf[0] | (0x1 << (prsnt_bit)));
   } else {
@@ -1389,7 +1418,12 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
 
   //Send the command
   memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
-  tbuf[3] = dev_id;
+
+  if (board_type == M2_BOARD || intf == FEXP_BIC_INTF) {
+    tbuf[3] = dev_id;
+  } else {
+    tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control 
+  }
   tbuf[4] = status;  //set power status
   tlen = 5;
 

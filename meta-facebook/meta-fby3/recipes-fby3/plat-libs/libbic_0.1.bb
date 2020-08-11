@@ -16,7 +16,7 @@ HEADERS = "bic.h bic_xfer.h bic_power.h bic_ipmi.h bic_fwupdate.h bic_cpld_alter
 CFLAGS += " -Wall -Werror -fPIC "
 LDFLAGS = "-lobmc-i2c -lipmb -lgpio-ctrl -lusb-1.0"
 
-DEPENDS += "libipmi libipmb libobmc-i2c libgpio-ctrl libfby3-common libkv libusb1"
+DEPENDS += "libipmi libipmb libobmc-i2c libgpio-ctrl libfby3-common libkv libusb1 libfby3-common"
 RDEPENDS_${PN} += "libobmc-i2c libgpio-ctrl libfby3-common"
 
 S = "${WORKDIR}/bic"

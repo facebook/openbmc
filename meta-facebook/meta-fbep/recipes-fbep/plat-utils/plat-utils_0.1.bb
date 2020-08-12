@@ -30,7 +30,6 @@ SRC_URI = "file://ast-functions \
            file://sol-util \
            file://mac-util \
            file://asic-util \
-           file://setup-pfr.sh \
            file://post-fan.sh \
            file://sync-rtc.sh \
            file://run-sync-rtc.sh \
@@ -73,8 +72,6 @@ do_install() {
   update-rc.d -r ${D} check-i2c-pwr.sh start 67 5 .
   install -m 755 setup-usbnet.sh ${D}${sysconfdir}/init.d/setup-usbnet.sh
   update-rc.d -r ${D} setup-usbnet.sh start 69 5 .
-  install -m 755 setup-pfr.sh ${D}${sysconfdir}/init.d/setup-pfr.sh
-  update-rc.d -r ${D} setup-pfr.sh start 99 5 .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 70 S .
   install -m 755 post-fan.sh ${D}${sysconfdir}/init.d/post-fan.sh

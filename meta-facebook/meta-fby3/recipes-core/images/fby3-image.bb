@@ -37,7 +37,6 @@ IMAGE_INSTALL += " \
   fw-util \
   log-util-v2 \
   lldp-util \
-  spatula \
   openbmc-utils \
   ipmi-util \
   asd \

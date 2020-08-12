@@ -727,7 +727,7 @@ calc_bmc_hsc_value(float *value) {
   uint8_t hsc_snr_list[4] = {GPV2_SENSOR_INA230_POWER, BIC_SENSOR_INA230_POWER, 
                              GPV2_SENSOR_INA230_POWER, BIC_SENSOR_INA230_POWER}; // power sensor for 4 slots
 
-  ret = pal_sensor_read_raw(FRU_SPB, SP_SENSOR_HSC_IN_POWER, &val);
+  ret = pal_sensor_read_raw(FRU_SPB, SP_SENSOR_HSC_IN_POWERAVG, &val);
   if (ret != 0) {
     return ret;
   }
@@ -4393,7 +4393,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           power_value_adjust(curr_cali_table, (float *)value);
         }
       }
-      if (sensor_num == SP_SENSOR_HSC_IN_POWER || sensor_num == SP_SENSOR_HSC_PEAK_PIN) {
+      if (sensor_num == SP_SENSOR_HSC_IN_POWER || sensor_num == SP_SENSOR_HSC_PEAK_PIN || sensor_num == SP_SENSOR_HSC_IN_POWERAVG) {
         if (is_nd_board == 1) {
           power_value_adjust(nd_pwr_cali_table, (float *)value);
         } else {

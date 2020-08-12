@@ -204,6 +204,12 @@ main(int argc, char **argv) {
   	printf("SP_SENSOR_HSC_IN_POWER: %.2f Watts\n", fvalue);
   }
 
+  if (fby2_sensor_read(slot_id, SP_SENSOR_HSC_IN_POWERAVG, &fvalue)) {
+    printf("fby2_sensor_read failed: SP_SENSOR_HSC_IN_POWERAVG\n");
+  } else {
+  	printf("SP_SENSOR_HSC_IN_POWERAVG: %.2f Watts\n", fvalue);
+  }
+
   if (fby2_sensor_read(slot_id, SP_SENSOR_HSC_PEAK_IOUT, &fvalue)) {
     printf("fby2_sensor_read failed: SP_SENSOR_HSC_PEAK_IOUT\n");
   } else {

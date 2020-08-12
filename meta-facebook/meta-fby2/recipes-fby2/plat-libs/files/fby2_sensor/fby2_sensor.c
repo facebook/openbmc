@@ -438,6 +438,7 @@ const uint8_t spb_sensor_list[] = {
   SP_SENSOR_HSC_OUT_CURR,
   SP_SENSOR_HSC_TEMP,
   SP_SENSOR_HSC_IN_POWER,
+  SP_SENSOR_HSC_IN_POWERAVG,
   SP_SENSOR_HSC_PEAK_IOUT,
   SP_SENSOR_HSC_PEAK_PIN,
 #ifdef CONFIG_FBY2_GPV2
@@ -475,6 +476,7 @@ const uint8_t spb_sensor_dual_r_fan_list[] = {
   SP_SENSOR_HSC_OUT_CURR,
   SP_SENSOR_HSC_TEMP,
   SP_SENSOR_HSC_IN_POWER,
+  SP_SENSOR_HSC_IN_POWERAVG,
   SP_SENSOR_HSC_PEAK_IOUT,
   SP_SENSOR_HSC_PEAK_PIN,
 #ifdef CONFIG_FBY2_GPV2
@@ -818,13 +820,16 @@ sensor_thresh_array_init() {
     if ((fby2_get_slot_type(FRU_SLOT1)==SLOT_TYPE_GPV2) || (fby2_get_slot_type(FRU_SLOT3) == SLOT_TYPE_GPV2)) { // For GPv2 case
       spb_sensor_threshold[SP_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 63;
       spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 756;
+      spb_sensor_threshold[SP_SENSOR_HSC_IN_POWERAVG][UCR_THRESH] = 756;
     } else { // for ND case
       spb_sensor_threshold[SP_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 60;
       spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 720;
+      spb_sensor_threshold[SP_SENSOR_HSC_IN_POWERAVG][UCR_THRESH] = 720;
     }
   } else {
     spb_sensor_threshold[SP_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 52;
     spb_sensor_threshold[SP_SENSOR_HSC_IN_POWER][UCR_THRESH] = 625;
+    spb_sensor_threshold[SP_SENSOR_HSC_IN_POWERAVG][UCR_THRESH] = 625;
   }
 
   //DC
@@ -2563,6 +2568,9 @@ fby2_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case SP_SENSOR_HSC_IN_POWER:
           sprintf(units, "Watts");
           break;
+        case SP_SENSOR_HSC_IN_POWERAVG:
+          sprintf(units, "Watts");
+          break;
         case SP_SENSOR_HSC_PEAK_IOUT:
           sprintf(units, "Amps");
           break;
@@ -2936,6 +2944,9 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case SP_SENSOR_HSC_IN_POWER:
           sprintf(name, "SP_HSC_IN_POWER");
           break;
+        case SP_SENSOR_HSC_IN_POWERAVG:
+          sprintf(name, "SP_HSC_IN_POWERAVG");
+          break;
         case SP_SENSOR_HSC_PEAK_IOUT:
           sprintf(name, "SP_HSC_PEAK_IOUT");
           break;
@@ -3274,6 +3285,8 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
         case SP_SENSOR_HSC_TEMP:
           return read_hsc_value(0x8d, 42, 31880, -1, (float *)value);
         case SP_SENSOR_HSC_IN_POWER:
+          return read_hsc_value(0x97, (6123*hsc_r_sense), 0, -2, (float *)value);
+        case SP_SENSOR_HSC_IN_POWERAVG:
           return read_hsc_ein(hsc_r_sense, (float *)value);
         case SP_SENSOR_HSC_PEAK_IOUT:
           return read_hsc_value(0xd0, (800*hsc_r_sense), 20475, -1, (float *)value);

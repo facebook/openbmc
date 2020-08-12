@@ -342,7 +342,8 @@ enum {
 enum {
   FW_3V3_VR = 5,
   FW_0V92 = 6,
-  FW_PCIE_SWITCH = 7,
+  FW_PCIE_SWITCH_CFG = 7,
+  FW_PCIE_SWITCH_FW = 8,
 };
 
 // ND

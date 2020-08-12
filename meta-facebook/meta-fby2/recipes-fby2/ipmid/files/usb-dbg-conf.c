@@ -889,11 +889,19 @@ int plat_get_etra_fw_version(uint8_t slot_id, char *text)
       strcat(text, entry);
     }
 
-    //PCIE switch Version
-    if (bic_get_fw_ver(slot_id, FW_PCIE_SWITCH, ver)){
-      strcat(text,"PCIE_SW_ver:\nNA\n");
+    //PCIE switch Config Version
+    if (bic_get_fw_ver(slot_id, FW_PCIE_SWITCH_CFG, ver)){
+      strcat(text,"PCIE_SW_CFG_ver:\nNA\n");
     } else {
-      sprintf(entry,"PCIE_SW_ver:\n0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
+      sprintf(entry,"PCIE_SW_CFG_ver:\n0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
+      strcat(text, entry);
+    }
+
+    //PCIE switch Firmware Version
+    if (bic_get_fw_ver(slot_id, FW_PCIE_SWITCH_FW, ver)){
+      strcat(text,"PCIE_SW_FW_ver:\nNA\n");
+    } else {
+      sprintf(entry,"PCIE_SW_FW_ver:\n0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
       strcat(text, entry);
     }
   }

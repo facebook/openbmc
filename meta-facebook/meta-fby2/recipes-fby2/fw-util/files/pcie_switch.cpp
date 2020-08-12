@@ -31,11 +31,17 @@ class PcieSwitchComponent : public Component {
     if (fby2_get_slot_type(slot_id) != SLOT_TYPE_GPV2)
       return -1;
 
-    if (bic_get_fw_ver(slot_id, FW_PCIE_SWITCH, ver)){
-      printf("PCIE switch Version: NA\n");
+    if (bic_get_fw_ver(slot_id, FW_PCIE_SWITCH_CFG, ver)){
+      printf("PCIE switch Config Version: NA\n");
     } else {
-      printf("PCIE switch Version: 0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
+      printf("PCIE switch Config Version: 0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
     }
+    if (bic_get_fw_ver(slot_id, FW_PCIE_SWITCH_FW, ver)){
+      printf("PCIE switch Firmware Version: NA\n");
+    } else {
+      printf("PCIE switch Firmware Version: 0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
+    }
+
     return 0;
   }
 

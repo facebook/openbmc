@@ -49,8 +49,9 @@ func restartServices(stepParams step.StepParams) step.StepExitError {
 	log.Printf("Restarting restapi...")
 	_, err, _, _ = utils.RunCommand([]string{supervisor, "restart", "restapi"}, 60)
 	if err != nil {
-		errMsg := errors.Errorf("Could not restart restapi: %v", err)
-		return step.ExitSafeToReboot{errMsg}
+		log.Printf("Could not restart restapi: %v. "+
+			"Ignoring as this is best effort and not critical.",
+			err)
 	}
 	log.Printf("Finished restarting restapi")
 

@@ -47,6 +47,8 @@ extern "C" {
 #define BB_CPLD_BUS 12
 #define SLOT_BUS_BASE 3
 
+#define NIC_CARD_PERST_CTRL 0x16
+
 // Baseboard PFR
 #define CPLD_UPDATE_ADDR (0x40)
 #define UFM_PROVISIONED_MSK 0x20
@@ -166,6 +168,11 @@ enum {
   CPLD_CAP_RCVY_MAILBOX = 0x60,
 };
 
+enum {
+  NIC_PE_RST_LOW   = 0x00,
+  NIC_PE_RST_HIGH  = 0x01,
+};
+
 typedef struct {
   uint8_t err_id;
   char *err_des;
@@ -185,6 +192,7 @@ int set_pfr_i2c_filter(uint8_t slot_id, uint8_t value);
 int pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uint8_t bmc_location);
 int pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log);
 int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
+int pal_set_nic_perst(uint8_t fru, uint8_t val);
 
 #ifdef __cplusplus
 } // extern "C"

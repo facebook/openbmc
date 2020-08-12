@@ -41,7 +41,7 @@
 #define RESET_BTN_LOW  0x1
 
 //The delay of the value in S5 state
-#define DELAY_POWER_CYCLE 10
+#define DELAY_POWER_CYCLE 5
 #define DELAY_POWER_OFF 6
 #define DELAY_GRACEFUL_SHUTDOWN 1
 
@@ -156,6 +156,8 @@ bic_server_power_cycle(uint8_t slot_id) {
   int sts_cnt = (sizeof(pwr_seq)/sizeof(struct pwr_instance));
   int ret;
   int i;
+  int retry = 10;
+  uint8_t status;
 
   for (i = 0; i < sts_cnt; i++) {
     ret = pwr_seq[i].change_power(slot_id);
@@ -164,7 +166,26 @@ bic_server_power_cycle(uint8_t slot_id) {
       return ret;
     }
 
-    if ( POWER_BTN_LOW == pwr_seq[i].pwr_sts ) sleep(DELAY_POWER_CYCLE);
+    if ( POWER_BTN_LOW == pwr_seq[i].pwr_sts ) {
+      sleep(DELAY_POWER_CYCLE);
+      do {
+        if (bic_get_server_power_status(slot_id, &status) < 0) {
+            return -1;
+        }
+        if (status != 0) {
+          ret = pwr_seq[i].change_power(slot_id);
+          if ( ret < 0 ) {
+            printf("%s() Cannot set power state to %02X\n", __func__, pwr_seq[i].pwr_sts);
+            return ret;
+          }
+          sleep(1);
+        } else {
+          break;
+        }
+        retry--;
+        if (retry == 0) break;
+      } while (status != 0);
+    }
   }
 
   return ret; 
@@ -192,7 +213,9 @@ bic_get_server_power_status(uint8_t slot_id, uint8_t *power_status)
 int
 bic_do_12V_cycle(uint8_t slot_id) {
   uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
+  uint8_t rbuf[1] = {0};
   uint8_t tlen = 3;
+  uint8_t rlen = 0;
 
-  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_SET_12V_CYCLE, tbuf, tlen, NULL, 0, BB_BIC_INTF);
+  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_SET_12V_CYCLE, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
 }

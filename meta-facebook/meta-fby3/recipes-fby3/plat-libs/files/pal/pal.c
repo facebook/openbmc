@@ -1250,6 +1250,9 @@ pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case BIC_SENSOR_SSD_HOT_PLUG:
           sprintf(name, "SSD_HOT_PLUG");
           break;
+        case BB_BIC_SENSOR_POWER_DETECT:
+          sprintf(name, "POWER_DETECT");
+          break;
         default:
           sprintf(name, "Unknown");
           ret = PAL_ENOTSUP;
@@ -1564,6 +1567,26 @@ pal_parse_ssd_hot_plug_event(uint8_t fru, uint8_t *event_data, char *error_log) 
   return PAL_EOK;
 }
 
+static int
+pal_parse_pwr_detect_event(uint8_t fru, uint8_t *event_data, char *error_log) {
+  enum {
+    SLED_CYCLE = 0x00,
+  };
+  uint8_t event = event_data[0];
+
+  switch (event) {
+    case SLED_CYCLE:
+      pal_set_nic_perst(fru, NIC_PE_RST_LOW);
+      strcat(error_log, "SLED_CYCLE by other slot BMC");
+      break;
+    default:
+      strcat(error_log, "Undefined Baseboard BIC event");
+      break;
+  }
+
+  return PAL_EOK;
+}
+
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   enum {
@@ -1591,6 +1614,9 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
     case BIC_SENSOR_SSD_HOT_PLUG:
       pal_parse_ssd_hot_plug_event(fru, event_data, error_log);
+      break;
+    case BB_BIC_SENSOR_POWER_DETECT:
+      pal_parse_pwr_detect_event(fru, event_data, error_log);
       break;
     default:
       unknown_snr = true;
@@ -2814,5 +2840,48 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
 not_support:
   return PAL_ENOTSUP;
 error_exit:
+  return ret;
+}
+
+int
+pal_set_nic_perst(uint8_t fru, uint8_t val) {
+  int i2cfd = 0;
+  int ret = 0;
+  char path[32] = {0};
+  uint8_t bmc_location = 0;
+  uint8_t bus = 0;
+  uint8_t tbuf[2] = {NIC_CARD_PERST_CTRL, val};
+  uint8_t tlen = 2;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    goto error_exit;
+  }
+
+  if ( bmc_location == BB_BMC || bmc_location == DVT_BB_BMC ) {
+    return 0;
+  }
+
+  bus= (uint8_t)NIC_CPLD_BUS;
+  snprintf(path, sizeof(path), "/dev/i2c-%d", bus);
+
+  i2cfd = open(path, O_RDWR);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
+    goto error_exit;
+  }
+
+  ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+    goto error_exit;
+  }
+
+error_exit:
+  if ( i2cfd > 0 ) {
+    close(i2cfd);
+  }
+
   return ret;
 }

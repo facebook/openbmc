@@ -43,12 +43,34 @@ is_server_off(void) {
 // Power Off the server
 static int
 server_power_off(uint8_t fru) {
+  int ret = 0;
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return POWER_STATUS_ERR;
+  }
+  if ( bmc_location == NIC_BMC ) {
+    if ( pal_set_nic_perst(fru, NIC_PE_RST_LOW) < 0 ) return POWER_STATUS_ERR;
+  }
   return bic_server_power_off(fru);
 }
 
 // Power On the server
 static int
 server_power_on(uint8_t fru) {
+  int ret = 0;
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return POWER_STATUS_ERR;
+  }
+  if ( bmc_location == NIC_BMC ) {
+    if ( pal_set_nic_perst(fru, NIC_PE_RST_HIGH) < 0 ) return POWER_STATUS_ERR;
+  }
   return bic_server_power_on(fru);
 }
 
@@ -331,6 +353,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
           }
         }
       } else {
+        if ( pal_set_nic_perst(fru, NIC_PE_RST_LOW) < 0 ) return POWER_STATUS_ERR;
         if ( bic_do_12V_cycle(fru) < 0 ) {
           return POWER_STATUS_ERR;
         }
@@ -360,6 +383,12 @@ pal_sled_cycle(void) {
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
     ret = system("i2cset -y 11 0x40 0xd9 c &> /dev/null");
   } else {
+    if ( pal_set_nic_perst(1, NIC_PE_RST_LOW) < 0 ) return POWER_STATUS_ERR;
+    if ( bic_inform_sled_cycle() < 0 ) {
+      syslog(LOG_WARNING, "Inform another BMC for sled cycle failed.\n");
+    }
+    // Provide the time for inform another BMC
+    sleep(2);
     int i = 0;
     int retries = 3;
     for (i = 0 ; i < retries; i++) {

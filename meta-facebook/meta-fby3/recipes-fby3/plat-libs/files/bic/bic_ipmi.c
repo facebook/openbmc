@@ -1472,3 +1472,25 @@ bic_clear_cmos(uint8_t slot_id) {
 
   return bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_CLEAR_CMOS, tbuf, 3, rbuf, &rlen);
 }
+
+// Only For Class 2
+int
+bic_inform_sled_cycle(void) {
+  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
+  uint8_t rbuf[1] = {0x00};
+  uint8_t tlen = 3;
+  uint8_t rlen = 0;
+  int ret = 0;
+  int retry = 0;
+
+  while (retry < 3) {
+    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_INFORM_SLED_CYCLE, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    if (ret == 0) break;
+    retry++;
+  }
+  if (ret != 0) {
+    return -1;
+  }
+
+  return 0;
+}

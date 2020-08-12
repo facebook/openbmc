@@ -67,6 +67,7 @@ int bic_get_ifx_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, 
 int bic_get_isl_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes);
 int bic_reset(uint8_t slot_id);
 int bic_clear_cmos(uint8_t slot_id);
+int bic_inform_sled_cycle(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

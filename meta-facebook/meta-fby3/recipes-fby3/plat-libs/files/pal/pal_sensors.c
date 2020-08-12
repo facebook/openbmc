@@ -98,7 +98,7 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_MEDUSA_PWR,
   BMC_SENSOR_MEDUSA_VDELTA,
   BMC_SENSOR_PDB_DL_VDELTA,
-  BMC_SENSOR_PDB_VDELTA,
+  BMC_SENSOR_PDB_BB_VDELTA,
   BMC_SENSOR_CURR_LEAKAGE,
   BMC_SENSOR_FAN_IOUT,
   BMC_SENSOR_FAN_PWR,
@@ -653,7 +653,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_HSC_EIN", HSC_ID0, read_hsc_ein, true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
   {"BMC_SENSOR_PDB_DL_VDELTA", 0xCC, read_pdb_dl_vdelta, true, {0.9, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCC
   {"BMC_SENSOR_CURR_LEAKAGE", 0xCD, read_curr_leakage, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xCD
-  {"BMC_SENSOR_PDB_VDELTA", 0xCE, read_cached_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCE
+  {"BMC_SENSOR_PDB_BB_VDELTA", 0xCE, read_cached_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCE
   {"BMC_SENSOR_MEDUSA_VDELTA", 0xCF, read_cached_val, true, {0.5, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCF
 
   {"BMC_SENSOR_MEDUSA_CURR", 0xD0, read_medusa_val, 0, {144, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xD0
@@ -1248,6 +1248,10 @@ read_curr_leakage(uint8_t snr_number, float *value) {
 
   //If curr leakage >= 8% AND medusa_curr >= 10A, issue a SEL.
   //sensord don't support mutiple conditions to issue the SEL. So, we do it here.
+
+  /* Remove it to avoid issuing the false alarm event temporally.
+   * It will be added back when the false alarm event are clarified. */
+#if 0
   if ( is_issued_sel == false && ((*value >= CURR_LEAKAGE_THRESH) && (medusa_curr >= MEDUSA_CURR_THRESH)) ) {
     syslog(LOG_CRIT, "ASSERT: Upper Critical threshold - raised - FRU: 7, num: 0x%2X "
         "curr_val: %.2f %%, thresh_val: %.2f %%, snr: BMC_SENSOR_CURR_LEAKAGE", snr_number, *value, CURR_LEAKAGE_THRESH);
@@ -1257,7 +1261,7 @@ read_curr_leakage(uint8_t snr_number, float *value) {
         "curr_val: %.2f %%, thresh_val: %.2f %%, snr: BMC_SENSOR_CURR_LEAKAGE", snr_number, *value, CURR_LEAKAGE_THRESH);
     is_issued_sel = false;
   }
-
+#endif
   return PAL_EOK;
 }
 
@@ -1309,7 +1313,7 @@ read_cached_val(uint8_t snr_number, float *value) {
         snr1_num = BMC_SENSOR_NIC_P12V;
         snr2_num = BMC_SENSOR_NIC_IOUT;
       break;
-    case BMC_SENSOR_PDB_VDELTA:
+    case BMC_SENSOR_PDB_BB_VDELTA:
         snr1_num = BMC_SENSOR_MEDUSA_VOUT;
         snr2_num = BMC_SENSOR_HSC_VIN;
       break;
@@ -1330,7 +1334,7 @@ read_cached_val(uint8_t snr_number, float *value) {
     case BMC_SENSOR_NIC_PWR:
       *value = temp1 * temp2;
       break;
-    case BMC_SENSOR_PDB_VDELTA:
+    case BMC_SENSOR_PDB_BB_VDELTA:
     case BMC_SENSOR_MEDUSA_VDELTA:
       *value = temp1 - temp2;
       break;

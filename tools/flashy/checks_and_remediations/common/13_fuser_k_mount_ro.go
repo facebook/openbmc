@@ -24,6 +24,7 @@ import (
 	"os"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
+	"github.com/facebook/openbmc/tools/flashy/lib/logger"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
@@ -40,11 +41,15 @@ func init() {
 // remount every MTD read-only. Reboot is expected to restart the
 // killed processes.
 func fuserKMountRo(stepParams step.StepParams) step.StepExitError {
-	log.Printf("fuser will kill rsyslog and cause errors, turning off syslog logging now")
 	// rsyslog will be killed by fuser, direct logs to stderr only.
-	// Package logger will attempt to restart syslog in the next step,
-	// so this is fine.
+	// Try to restart syslog at the end of this function, but if this fails
+	// it is fine because syslog will try to be restarted in the start of the next
+	// step (as the CustomLogger gets the syslog writer)
+	log.Printf("fuser will kill rsyslog and cause errors, turning off syslog logging now")
 	log.SetOutput(os.Stderr)
+	defer func() {
+		logger.StartSyslog()
+	}()
 
 	writableMountedMTDs, err := devices.GetWritableMountedMTDs()
 	if err != nil {
@@ -56,10 +61,11 @@ func fuserKMountRo(stepParams step.StepParams) step.StepExitError {
 	for _, writableMountedMTD := range writableMountedMTDs {
 		fuserCmd := []string{"fuser", "-km", writableMountedMTD.Mountpoint}
 		_, err, _, _ := utils.RunCommand(fuserCmd, 30)
-		if err != nil {
-			errMsg := errors.Errorf("Fuser command %v failed: %v", fuserCmd, err)
-			return step.ExitSafeToReboot{errMsg}
-		}
+		// we ignore the error in fuser, as this might be thrown because nothing holds
+		// a file open on the file system (because of delayed log file open or because
+		// rsyslogd is not running for some reason).
+		// Retrying remount with a delay below should work around surviving processes.
+		utils.LogAndIgnoreErr(err)
 
 		remountCmd := []string{"mount", "-o", "remount,ro",
 			writableMountedMTD.Device, writableMountedMTD.Mountpoint}

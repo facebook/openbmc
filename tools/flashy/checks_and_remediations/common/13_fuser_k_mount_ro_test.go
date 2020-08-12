@@ -25,20 +25,22 @@ import (
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
+	"github.com/facebook/openbmc/tools/flashy/lib/logger"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
 
 func TestFuserKMountRo(t *testing.T) {
-	// mock and defer restore GetWritableMountedMTDs and RunCommand
 	getWritableMountedMTDsOrig := devices.GetWritableMountedMTDs
 	runCommandOrig := utils.RunCommand
 	runCommandWithRetries := utils.RunCommandWithRetries
+	startSyslogOrig := logger.StartSyslog
 	defer func() {
 		devices.GetWritableMountedMTDs = getWritableMountedMTDsOrig
 		utils.RunCommand = runCommandOrig
 		utils.RunCommandWithRetries = runCommandWithRetries
+		logger.StartSyslog = startSyslogOrig
 	}()
 	cases := []struct {
 		name                   string
@@ -108,7 +110,7 @@ func TestFuserKMountRo(t *testing.T) {
 			wantCmds:               []string{},
 		},
 		{
-			name: "Fuser error",
+			name: "Ignore fuser failed",
 			writableMountedMTDs: []devices.WritableMountedMTD{
 				devices.WritableMountedMTD{
 					"/dev/mtdblock4",
@@ -118,11 +120,10 @@ func TestFuserKMountRo(t *testing.T) {
 			writableMountedMTDsErr: nil,
 			fuserCmdErr:            errors.Errorf("fuser failed"),
 			remountCmdErr:          nil,
-			want: step.ExitSafeToReboot{
-				errors.Errorf("Fuser command [fuser -km /mnt/data] failed: fuser failed"),
-			},
+			want:                   nil,
 			wantCmds: []string{
 				"fuser -km /mnt/data",
+				"mount -o remount,ro /dev/mtdblock4 /mnt/data",
 			},
 		},
 		{
@@ -145,6 +146,7 @@ func TestFuserKMountRo(t *testing.T) {
 			},
 		},
 	}
+	logger.StartSyslog = func() {}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

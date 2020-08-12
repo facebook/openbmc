@@ -22,12 +22,12 @@
 package logger
 
 import (
-	"io"
 	"fmt"
+	"io"
 	"log"
-	"strings"
 	"log/syslog"
 	"os"
+	"strings"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
@@ -92,6 +92,6 @@ func getSyslogWriter() (syslogWriter io.Writer, err error) {
 // 0 if already started (common/recipes-extended/rsyslog/files/initscript).
 // However, busybox syslog returns 1 if already started, so we ignore the
 // error from RunCommand.
-func StartSyslog() {
+var StartSyslog = func() {
 	utils.RunCommand([]string{"/etc/init.d/syslog", "start"}, 30)
 }

@@ -418,7 +418,7 @@ pal_get_80port_record(uint8_t slot_id, uint8_t *res_data, size_t max_len, size_t
     goto error_exit;
   }
 
-  ret = fby3_common_is_fru_prsnt(slot_id, &status);
+  ret = pal_is_fru_prsnt(slot_id, &status);
   if ( ret < 0 || status == 0 ) {
     ret = PAL_ENOTREADY;
     goto error_exit;

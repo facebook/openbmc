@@ -233,7 +233,7 @@ main(int argc, char **argv) {
   sys_info.fru_cnt = total_fru;
 
   for ( i = FRU_SLOT1; i <= total_fru; i++ ) {
-    ret = fby3_common_is_fru_prsnt(i, &is_fru_present);
+    ret = pal_is_fru_prsnt(i, &is_fru_present);
     if ( ret < 0 || is_fru_present == 0 ) {
       //the server is not present
       sys_info.server_info[i-1].is_server_present = STATUS_NOT_PRSNT;

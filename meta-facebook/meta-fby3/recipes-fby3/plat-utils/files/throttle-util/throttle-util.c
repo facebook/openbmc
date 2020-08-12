@@ -187,7 +187,7 @@ main(int argc, char **argv) {
       return -1;
     }
 
-    ret = fby3_common_is_fru_prsnt(slot_id, &is_fru_present);
+    ret = pal_is_fru_prsnt(slot_id, &is_fru_present);
     if ( ret < 0 || is_fru_present == 0 ) {
       printf("%s is not present!\n", argv[1]);
       return -1;

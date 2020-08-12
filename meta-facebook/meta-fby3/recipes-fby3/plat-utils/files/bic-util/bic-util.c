@@ -568,7 +568,7 @@ main(int argc, char **argv) {
       return -1;
     }
 
-    ret = fby3_common_is_fru_prsnt(slot_id, &is_fru_present);
+    ret = pal_is_fru_prsnt(slot_id, &is_fru_present);
     if ( ret < 0 || is_fru_present == 0 ) {
       printf("%s is not present!\n", argv[1]);
       return -1;
@@ -625,7 +625,7 @@ main(int argc, char **argv) {
       if ( slot_id == FRU_ALL ) {
         if ( bmc_location != NIC_BMC ) {
           for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
-            ret = fby3_common_is_fru_prsnt(i, &is_fru_present);
+            ret = pal_is_fru_prsnt(i, &is_fru_present);
             if ( ret < 0 || is_fru_present == 0 ) {
               printf("slot%d is not present!\n", i);
             } else process_file(i, argv[3]);

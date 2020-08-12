@@ -133,7 +133,7 @@ get_mapping_parameter(uint8_t device_id, uint8_t type_1ou, uint8_t *bus, uint8_t
 }
 
 static int
-read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd) {
+read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd, uint8_t bmc_location) {
   int ret = 0;
   int offset_base = 0;
   char str[32];
@@ -148,8 +148,10 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd) {
   ssd_data ssd;
   
   memset(&ssd, 0x00, sizeof(ssd_data));
-  
-  bic_get_1ou_type(slot_id, &type_1ou);
+
+  //prevent the invalid access
+  if ( bmc_location != NIC_BMC )
+    bic_get_1ou_type(slot_id, &type_1ou);
    
   fby3_common_dev_name(device_id, str);
   
@@ -261,22 +263,11 @@ main(int argc, char **argv) {
     print_usage_help();
     return -1;
   }
-  
-  // need to check the slot present
-  fby3_common_get_bmc_location(&bmc_location);
-  if (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) {
-    ret = fby3_common_is_fru_prsnt(slot_id, &is_slot_present);
-    if (ret < 0 || is_slot_present == 0) {
-      printf("%s is not present!\n", argv[1]);
-      return -1;
-    }
-  } else if (bmc_location == NIC_BMC) {
-    if (slot_id != 1) {
-      printf("%s is not present!\n", argv[1]);
-      return -1;
-    }
-  } else {
-    printf("%s() : Cannot get the location of BMC \n", __func__);
+
+  // need to check slot present
+  ret = pal_is_fru_prsnt(slot_id, &is_slot_present); 
+  if (ret < 0 || is_slot_present == 0) {
+    printf("%s is not present!\n", argv[1]);
     return -1;
   }
 
@@ -299,40 +290,40 @@ main(int argc, char **argv) {
     }
   }
   
-  // check 1/2OU present status
-  present = bic_is_m2_exp_prsnt(slot_id);
-  
-  if (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) {
-    if (present == PRESENT_1OU) {
-      device_start = DEV_ID0_1OU;
-      device_end = DEV_ID3_1OU;
-    } else if (present == PRESENT_2OU) {
-      device_start = DEV_ID0_2OU;
-      device_end = DEV_ID5_2OU;
-    } else if (present == (PRESENT_1OU + PRESENT_2OU)) {
-      device_start = DEV_ID0_1OU;
-      device_end = DEV_ID5_2OU;
-    } else {
-      printf("Please check the board config \n");
-      goto exit;
-    }
-  } else if (bmc_location == NIC_BMC) {  
-    if (present == (PRESENT_1OU + PRESENT_2OU)) {
-      device_start = DEV_ID0_2OU;
-      device_end = DEV_ID5_2OU;
-    } else {
-      printf("Please check the board config \n");
-      goto exit;
-    }
-  } else { 
-    printf("%s() Cannot get the location of BMC", __func__);
-    return -1;
+  if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
+    printf("%s() Cannot get the location of BMC\n", __func__);
+    goto exit;
   }
-  
+
+  // check 1/2OU present status
+  ret = bic_is_m2_exp_prsnt(slot_id);
+  if ( ret < 0 ) {
+    printf("%s() Cannot get the m2 prsnt status\n", __func__);
+    goto exit; 
+  } 
+
+  present = (uint8_t)ret;
+  if ( bmc_location == NIC_BMC && ((present & PRESENT_2OU) == PRESENT_2OU) ) {
+    device_start = DEV_ID0_2OU;
+    device_end = DEV_ID5_2OU;
+  } else if ( present == PRESENT_1OU ) {
+    device_start = DEV_ID0_1OU;
+    device_end = DEV_ID3_1OU;
+  } else if ( present == PRESENT_2OU ) {
+    device_start = DEV_ID0_2OU;
+    device_end = DEV_ID5_2OU;
+  } else if ( present == (PRESENT_1OU + PRESENT_2OU) ) {
+    device_start = DEV_ID0_1OU;
+    device_end = DEV_ID5_2OU;
+  } else {
+    printf("Please check the board config \n");
+    goto exit;
+  }
+ 
   if ((argc == 4) && !strcmp(argv[2], "--drive-status")) {
     if (!strcmp(argv[3], "all")) {
       for (int i = device_start; i <= device_end; i++) {
-        read_nvme_data(slot_id, i, CMD_DRIVE_STATUS);
+        read_nvme_data(slot_id, i, CMD_DRIVE_STATUS, bmc_location);
       }
     } else {
       ret = pal_get_dev_id(argv[3], &dev_id);
@@ -345,11 +336,11 @@ main(int argc, char **argv) {
         printf("Please check the board config \n");
         goto exit;
       }
-      read_nvme_data(slot_id, dev_id, CMD_DRIVE_STATUS);
+      read_nvme_data(slot_id, dev_id, CMD_DRIVE_STATUS, bmc_location);
     }
   } else if ((argc == 3) && !strcmp(argv[2], "--drive-health")) {
     for (int i = device_start; i <= device_end; i++) {
-      read_nvme_data(slot_id, i, CMD_DRIVE_HEALTH);
+      read_nvme_data(slot_id, i, CMD_DRIVE_HEALTH, bmc_location);
     }
   } else {
     print_usage_help();

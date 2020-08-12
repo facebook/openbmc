@@ -30,9 +30,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
-#include <facebook/bic.h>
 #include <openbmc/ipmi.h>
-#include <facebook/fby3_common.h>
+#include <openbmc/pal.h>
 
 #define LOGFILE "/tmp/me-util.log"
 
@@ -205,7 +204,7 @@ main(int argc, char **argv) {
     goto err_exit;
   }
 
-  ret = fby3_common_is_fru_prsnt(slot_id, &is_fru_present);
+  ret = pal_is_fru_prsnt(slot_id, &is_fru_present);
   if ( ret < 0 || is_fru_present == 0 ) {
     printf("%s is not present!\n", argv[1]);
     return -1;

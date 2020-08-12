@@ -1606,7 +1606,7 @@ pal_all_slot_power_ctrl(uint8_t opt, float *val) {
   int i = 0;
   uint8_t status = 0;
   for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
-    if ( fby3_common_is_fru_prsnt(i, &status) < 0 || status == 0 ) {
+    if ( pal_is_fru_prsnt(i, &status) < 0 || status == 0 ) {
       continue;
     }
     syslog(LOG_CRIT, "FRU: %d, Turned %s 12V power of slot%d due to NIC temp is %s UNR. (val = %.2f)", i, (opt == SERVER_12V_ON)?"on":"off" \

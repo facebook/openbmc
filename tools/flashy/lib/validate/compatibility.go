@@ -36,7 +36,11 @@ const ubootVersionRegEx = `U-Boot \d+\.\d+ (?P<version>[^\s]+)`
 // matches all possible formats would be tough. Instead, we use this to do
 // substitutions before matching in areVersionsCompatible().
 // NB: the values of this mapping CANNOT contain a dash!
-var compatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2"}
+var compatibleVersionMapping = map[string]string{
+	"fby2-gpv2":  "fbgp2",
+	"fby3pvt":    "fby3",
+	"fby3vboot2": "fby3",
+}
 
 var normalizeVersion = func(ver string) string {
 	for k, v := range compatibleVersionMapping {

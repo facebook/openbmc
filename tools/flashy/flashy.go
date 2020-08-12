@@ -28,6 +28,7 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/install"
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/logger"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 )
 
@@ -52,6 +53,9 @@ func failIfFlagEmpty(flagName, value string) {
 }
 
 func main() {
+	// set logger output to CustomLogger to log to both syslog and stderr
+	log.SetOutput(logger.CustomLogger)
+
 	flag.Parse()
 
 	stepParams := step.StepParams{

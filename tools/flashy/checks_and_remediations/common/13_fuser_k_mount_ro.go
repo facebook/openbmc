@@ -21,6 +21,7 @@ package common
 
 import (
 	"log"
+	"os"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
@@ -39,6 +40,12 @@ func init() {
 // remount every MTD read-only. Reboot is expected to restart the
 // killed processes.
 func fuserKMountRo(stepParams step.StepParams) step.StepExitError {
+	log.Printf("fuser will kill rsyslog and cause errors, turning off syslog logging now")
+	// rsyslog will be killed by fuser, direct logs to stderr only.
+	// Package logger will attempt to restart syslog in the next step,
+	// so this is fine.
+	log.SetOutput(os.Stderr)
+
 	writableMountedMTDs, err := devices.GetWritableMountedMTDs()
 	if err != nil {
 		return step.ExitSafeToReboot{err}

@@ -182,6 +182,7 @@ const uint8_t bic_sensor_list[] = {
 
   //BIC - power sensors
   BIC_SENSOR_HSC_INPUT_PWR,
+  BIC_SENSOR_HSC_INPUT_AVGPWR,
   BIC_SENSOR_VCCIN_VR_POUT,
   BIC_SENSOR_VCCSA_VR_POUT,
   BIC_SENSOR_VCCIO_VR_POUT,

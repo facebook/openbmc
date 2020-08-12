@@ -11,11 +11,7 @@ python __anonymous () {
     # tools: pypartition, sign-tools etc.
 
     # provide the image meta JSON version
-    d.setVar("FBOBMC_IMAGE_META_VER_MAJOR", "1")
-    d.setVar("FBOBMC_IMAGE_META_VER_MINOR", "0")
-    d.setVar("FBOBMC_IMAGE_META_VER_PATCH", "0")
-    d.setVar("FBOBMC_IMAGE_META_VER_PRERELEASE", "")
-    d.setVar("FBOBMC_IMAGE_META_VER_BUILDMETA", "")
+    d.setVar("FBOBMC_IMAGE_META_VER", "1")
 
     # meta partiton offset
     d.setVar("FBOBMC_IMAGE_META_OFFSET", "0x000F0000")
@@ -23,14 +19,7 @@ python __anonymous () {
 
 python flash_image_generate() {
     # setup the image_meta_info with version
-    fbobmc_image_meta_ver = []
-    fbobmc_image_meta_ver.append( int(d.getVar("FBOBMC_IMAGE_META_VER_MAJOR"),0))
-    fbobmc_image_meta_ver.append( int(d.getVar("FBOBMC_IMAGE_META_VER_MINOR"),0))
-    fbobmc_image_meta_ver.append( int(d.getVar("FBOBMC_IMAGE_META_VER_PATCH"),0))
-    fbobmc_image_meta_ver.append( d.getVar("FBOBMC_IMAGE_META_VER_PRERELEASE") )
-    fbobmc_image_meta_ver.append( d.getVar("FBOBMC_IMAGE_META_VER_BUILDMETA")  )
-
-    image_meta_info = { "FBOBMC_IMAGE_META_VER" : tuple(fbobmc_image_meta_ver) }
+    image_meta_info = { "FBOBMC_IMAGE_META_VER" : int(d.getVar("FBOBMC_IMAGE_META_VER"),0) }
 
     fbobmc_generate_image(d, image_meta_info)
 }
@@ -134,12 +123,12 @@ def fbobmc_generate_image_according(d, part_table, image_file):
 def fbobmc_save_meta_data(d, image_meta, image_file, meta_part_offset, meta_part_size):
     import json, hashlib, datetime, pprint
 
+    image_meta["meta_update_action"] = "build"
+    image_meta["meta_update_time"] = datetime.datetime.utcnow().isoformat()
     bb.debug(1, "Image meta:")
-    bb.debug(1, pprint.pformat(image_meta))
-    today = datetime.datetime.now().strftime("%A %b %d %H:%M:%S %Z %Y")
-    desc = "%s: %s" % ("build", today)
+    bb.debug(1, pprint.pformat(image_meta, indent=4))
     meta_data = json.dumps(image_meta).encode("ascii")
-    meta_chksum = { hashlib.md5(meta_data).hexdigest() : desc }
+    meta_chksum = { "meta_md5": hashlib.md5(meta_data).hexdigest() }
     bb.debug(1, "meta checksum: ")
     bb.debug(1, pprint.pformat(meta_chksum))
     meta_chksum_data = json.dumps(meta_chksum).encode("ascii")
@@ -154,7 +143,7 @@ def fbobmc_save_meta_data(d, image_meta, image_file, meta_part_offset, meta_part
             )
 
 
-def fbobmc_generate_part_chksum(d, image_file, part_offset, part_size):
+def fbobmc_generate_part_md5(d, image_file, part_offset, part_size):
     import hashlib
 
     with open(image_file, "rb") as fh:
@@ -208,16 +197,31 @@ def fbobmc_generate_image_meta(d, part_table, image_meta, image_file):
         partition["offset"] = part_offset
         partition["size"] = part_size
         partition["type"] = part_type
+        # omit mtdonly partiton
+        if "mtdonly" == part_type:
+            continue
+        # sanity check the meta partition offset
         if "meta" == part_type:
             meta_part_offset = part_offset
             meta_part_size = part_size
             if meta_part_offset != fixed_meta_partition_offset:
                 bb.fatal("The 'meta' partition shall be fixed at 0x%08X",
                     fixed_meta_partition_offset)
+        # Add calculate md5 for raw or rom type partition
         if "raw" == part_type or "rom" == part_type:
-            partition["chksum"] = fbobmc_generate_part_chksum(
+            partition["md5"] = fbobmc_generate_part_md5(
                 d, image_file, part_offset, part_size
             )
+        # Add num of subnodes for FIT partition, now we hardcoded
+        # for os-fit subnode number is 3: kernel, rootfs and dtb
+        # for u-boot-fit subnode number is 1: u-boot only.
+        if "fit" == part_type:
+            if "os-fit" == part_name:
+                partition["num-nodes"] = 3 # kernel, rootfs, dtb
+            elif "u-boot-fit" == part_name:
+                partition["num-nodes"] = 1 # u-boot
+            else:
+                bb.fatal("unknown FIT partition name %s" % part_name)
         part_infos.append(partition)
 
     image_meta["part_infos"] = tuple(part_infos)

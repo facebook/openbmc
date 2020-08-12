@@ -25,24 +25,23 @@ from pyfdt import pkcs11
 
 FBOBMC_IMAGE_META_LOCATION = 0xF0000
 FBOBMC_IMAGE_META_SIZE = 64 * 1024
-FBOBMC_IMAGE_META_VER = (1, 0, 0, "", "")
 FBOBMC_PART_INFO_KEY = "part_infos"
 
 def update_rom_checksum():
     rom_changed = False
     with open(args.output, 'r') as fh:
         fh.seek(0)
-        current_checksum = hashlib.md5(fh.read(args.rom_size)).hexdigest()
-        if current_checksum != rom_part_info["chksum"]:
-            rom_part_info["chksum"] = current_checksum
+        current_md5 = hashlib.md5(fh.read(args.rom_size)).hexdigest()
+        if current_md5 != rom_part_info["md5"]:
+            rom_part_info["md5"] = current_md5
             rom_changed = True
     return rom_changed
 
 def save_meta_data(operation):
-    today = datetime.datetime.now().strftime("%A %b %d %H:%M:%S %Z %Y")
-    desc = "%s: %s" % ( operation , today)
+    image_meta["meta_update_action"] = operation
+    image_meta["meta_update_time"] = datetime.datetime.utcnow().isoformat()
     meta_data = json.dumps(image_meta).encode("ascii")
-    meta_chksum = { hashlib.md5(meta_data).hexdigest() : desc }
+    meta_chksum = { "meta_md5": hashlib.md5(meta_data).hexdigest() }
     meta_chksum_data = json.dumps(meta_chksum).encode("ascii")
     with open(args.output, "r+b") as fh:
         fh.seek(FBOBMC_IMAGE_META_LOCATION)
@@ -419,21 +418,9 @@ def load_image_meta():
         meta_data_md5 = hashlib.md5(meta_data.strip()).hexdigest()
         len_remain -= len(meta_data)
         meta_data_chksum = fh.readline(len_remain)
-        meta_chksum = json.loads(meta_data_chksum.strip())
-        if meta_data_md5 in meta_chksum:
-            print(
-                "loading image meta [%s] with chksum '%s' "
-                % (meta_chksum[meta_data_md5], meta_data_md5)
-            )
+        meta_md5 = json.loads(meta_data_chksum.strip())["meta_md5"]
+        if meta_data_md5 == meta_md5:
             meta_info = json.loads(meta_data.strip())
-            meta_info["FBOBMC_IMAGE_META_VER"] = tuple(
-                meta_info["FBOBMC_IMAGE_META_VER"]
-            )
-            assert (
-                FBOBMC_IMAGE_META_VER == meta_info["FBOBMC_IMAGE_META_VER"]
-            ), "Did not support meta_info with SemVer: %s" % repr(
-                meta_info["FBOBMC_IMAGE_META_VER"]
-            )
             assert FBOBMC_PART_INFO_KEY in meta_info, (
                 "meta_info does not cotain %s" % FBOBMC_PART_INFO_KEY
             )

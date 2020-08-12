@@ -20,7 +20,6 @@
 //#define DEBUG
 
 #define MAX_RETRY 3
-#define FAN_DIR "/sys/bus/platform/devices/1e786000.pwm-tacho-controller/hwmon/hwmon0"
 #define MAX_SDR_LEN 64
 #define SDR_PATH "/tmp/sdr_%s.bin"
 
@@ -46,6 +45,8 @@ static int read_hsc_temp(uint8_t hsc_id, float *value);
 static int read_hsc_pin(uint8_t hsc_id, float *value);
 static int read_hsc_ein(uint8_t hsc_id, float *value);
 static int read_hsc_iout(uint8_t hsc_id, float *value);
+static int read_hsc_peak_iout(uint8_t hsc_id, float *value);
+static int read_hsc_peak_pin(uint8_t hsc_id, float *value);
 static int read_medusa_val(uint8_t snr_number, float *value);
 static int read_cached_val(uint8_t snr_number, float *value);
 static int read_fan_speed(uint8_t snr_number, float *value);
@@ -92,6 +93,8 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_HSC_PIN,
   BMC_SENSOR_HSC_EIN,
   BMC_SENSOR_HSC_IOUT,
+  BMC_SENSOR_HSC_PEAK_IOUT,
+  BMC_SENSOR_HSC_PEAK_PIN,
   BMC_SENSOR_MEDUSA_VOUT,
   BMC_SENSOR_MEDUSA_VIN,
   BMC_SENSOR_MEDUSA_CURR,
@@ -647,8 +650,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC9
+  {"BMC_SENSOR_HSC_PEAK_IOUT", HSC_ID0, read_hsc_peak_iout, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC8
+  {"BMC_SENSOR_HSC_PEAK_PIN", HSC_ID0, read_hsc_peak_pin, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xC9
   {"BMC_SENSOR_FAN_PWR", 0xCA, read_cached_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCA
   {"BMC_SENSOR_HSC_EIN", HSC_ID0, read_hsc_ein, true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
   {"BMC_SENSOR_PDB_DL_VDELTA", 0xCC, read_pdb_dl_vdelta, true, {0.9, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCC
@@ -1603,6 +1606,18 @@ static int
 read_hsc_vin(uint8_t hsc_id, float *value) {
 
   if ( get_hsc_reading(hsc_id, HSC_VOLTAGE, PMBUS_READ_VIN, value, NULL) < 0 ) return READING_NA;
+  return PAL_EOK;
+}
+
+static int
+read_hsc_peak_iout(uint8_t hsc_id, float *value) {
+  if ( get_hsc_reading(hsc_id, HSC_CURRENT, ADM1278_PEAK_IOUT, value, NULL) < 0 ) return READING_NA;
+  return PAL_EOK;
+}
+
+static int
+read_hsc_peak_pin(uint8_t hsc_id, float *value) {
+  if ( get_hsc_reading(hsc_id, HSC_POWER, ADM1278_PEAK_PIN, value, NULL) < 0 ) return READING_NA;
   return PAL_EOK;
 }
 

@@ -31,22 +31,31 @@
 
 # Call "fw-util slotX --version" once to store vr information before sensor monitoring 
 echo "Get MB FW version... "
-if [[ $(is_sb_bic_ready 1) == "1" ]]; then
+
+bmc_location=$(get_bmc_board_id)
+if ! [ $bmc_location -eq 9 ]; then
+  if [[ $(is_sb_bic_ready 1) == "1" ]]; then
+    /usr/bin/fw-util slot1 --version > /dev/null
+  fi
+
+  if [[ $(is_sb_bic_ready 2) == "1" ]]; then
+    /usr/bin/fw-util slot2 --version > /dev/null
+  fi
+
+  if [[ $(is_sb_bic_ready 3) == "1" ]]; then
+    /usr/bin/fw-util slot3 --version > /dev/null
+  fi
+
+  if [[ $(is_sb_bic_ready 4) == "1" ]]; then
+    /usr/bin/fw-util slot4 --version > /dev/null
+  fi
+
+  # Clear PEAK_PIN & PEAK_IOUT register
+  /usr/sbin/i2cset -y 11 0x40 0xd0 0x0000 w
+  /usr/sbin/i2cset -y 11 0x40 0xda 0x0000 w
+else
   /usr/bin/fw-util slot1 --version > /dev/null
 fi
-
-if [[ $(is_sb_bic_ready 2) == "1" ]]; then
-  /usr/bin/fw-util slot2 --version > /dev/null
-fi
-
-if [[ $(is_sb_bic_ready 3) == "1" ]]; then
-  /usr/bin/fw-util slot3 --version > /dev/null
-fi
-
-if [[ $(is_sb_bic_ready 4) == "1" ]]; then
-  /usr/bin/fw-util slot4 --version > /dev/null
-fi
-
 
 echo -n "Setup sensor monitoring for FBYV3... "
 runsv /etc/sv/sensord > /dev/null 2>&1 &

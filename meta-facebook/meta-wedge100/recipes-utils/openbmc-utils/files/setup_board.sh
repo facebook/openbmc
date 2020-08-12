@@ -38,7 +38,7 @@ if [ $board_rev -ge 2 ]; then
     echo 1 > ${SYSCPLD_SYSFS_DIR}/com-e_i2c_isobuf_en
     # Enable the COM6_BUF_EN to open the isolation buffer between COMe BIOS
     # EEPROM with COMe
-    gpio_set COM6_BUF_EN 0
+    gpio_set_value COM6_BUF_EN 0
     # Make the BIOS EEPROM connect to COMe instead of BMC
-    gpio_set COM_SPI_SEL 0
+    gpio_set_value COM_SPI_SEL 0
 fi

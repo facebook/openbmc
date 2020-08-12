@@ -34,7 +34,7 @@ fi
 # are 'ff') by querying for the mac address several times and getting the min()
 # of each octet
 sample="$(for i in $(seq 1 ${SAMPLE_SIZE}); do
-  cat /sys/class/i2c-adapter/i2c-4/4-0033/mac
+  cat "${COME_SYSFS_DIR}/mac"
 done)"
 
 mac=""

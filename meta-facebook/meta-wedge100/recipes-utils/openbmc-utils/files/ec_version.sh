@@ -18,8 +18,10 @@
 # Boston, MA 02110-1301 USA
 #
 
-version=$(cat /sys/class/i2c-adapter/i2c-4/4-0033/version)
-released_date=$(cat /sys/class/i2c-adapter/i2c-4/4-0033/date)
+. /usr/local/bin/openbmc-utils.sh
+
+version=$(cat "${COME_SYSFS_DIR}/version")
+released_date=$(cat "${COME_SYSFS_DIR}/date")
 
 if [ "${version:(-4)}" == "0x80" ]; then
   echo "EC Test Version"

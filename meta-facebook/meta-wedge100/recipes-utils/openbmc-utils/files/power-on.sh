@@ -30,7 +30,7 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 # make power button high to prepare for power on sequence
-gpio_set BMC_PWR_BTN_OUT_N 1
+gpio_set_value BMC_PWR_BTN_OUT_N 1
 
 # First power on TH, and if Panther+ is used,
 # provide standby power to Panther+.

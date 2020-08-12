@@ -21,14 +21,16 @@ set -e
 set -o pipefail
 exit_code=2  
 
+. /usr/local/bin/openbmc-utils.sh
+
 cleanup () {
-  echo out > /tmp/gpionames/SWITCH_EEPROM1_WRT/direction 
-  echo 0 > /tmp/gpionames/SWITCH_EEPROM1_WRT/value
+  gpio_set_direction SWITCH_EEPROM1_WRT out
+  gpio_set_value SWITCH_EEPROM1_WRT 0
   exit $exit_code
 }
 trap cleanup EXIT ERR INT TERM
 
-echo out > /tmp/gpionames/SWITCH_EEPROM1_WRT/direction 
-echo 1 > /tmp/gpionames/SWITCH_EEPROM1_WRT/value
+gpio_set_direction SWITCH_EEPROM1_WRT out
+gpio_set_value SWITCH_EEPROM1_WRT 1
 /usr/local/bin/at93cx6_util_py3.py chip read | sha256sum | head -c 64
 exit_code=$?

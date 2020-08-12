@@ -1,7 +1,8 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 
-SYSCPLD_SYSFS_DIR="/sys/class/i2c-adapter/i2c-12/12-0031"
-FANCPLD_SYSFS_DIR="/sys/devices/platform/ast-i2c.8/i2c-8/8-0033"
+SYSCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-0031)
+FANCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 8-0033)
+COME_SYSFS_DIR=$(i2c_device_sysfs_abspath 4-0033)
 
 PWR_MAIN_SYSFS="${SYSCPLD_SYSFS_DIR}/pwr_main_n"
 PWR_USRV_SYSFS="${SYSCPLD_SYSFS_DIR}/pwr_usrv_en"
@@ -55,9 +56,9 @@ wedge_slot_id() {
 
 wedge_board_rev() {
     local val0 val1 val2
-    val0=$(gpio_get BOARD_REV_ID0)
-    val1=$(gpio_get BOARD_REV_ID1)
-    val2=$(gpio_get BOARD_REV_ID2)
+    val0=$(gpio_get_value BOARD_REV_ID0)
+    val1=$(gpio_get_value BOARD_REV_ID1)
+    val2=$(gpio_get_value BOARD_REV_ID2)
     echo $((val0 | (val1 << 1) | (val2 << 2)))
 }
 

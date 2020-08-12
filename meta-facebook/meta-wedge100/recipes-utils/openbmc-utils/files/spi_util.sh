@@ -123,8 +123,8 @@ resize_file() {
 
 config_bios_spi() {
   devmem_set_bit "$(scu_addr 70)" 12
-  gpio_set COM6_BUF_EN 0
-  gpio_set COM_SPI_SEL 1
+  gpio_set_value COM6_BUF_EN 0
+  gpio_set_value COM_SPI_SEL 1
 }
 
 read_flash_to_file() {
@@ -229,8 +229,8 @@ config_spi1_pin_and_path() {
     case "$dev" in
         "BACKUP_BIOS")
             devmem_set_bit "$(scu_addr 70)" 12
-            gpio_set COM6_BUF_EN 0
-            gpio_set COM_SPI_SEL 1
+            gpio_set_value COM6_BUF_EN 0
+            gpio_set_value COM_SPI_SEL 1
         ;;
         *)
             echo "Please enter {BACKUP_BIOS}"

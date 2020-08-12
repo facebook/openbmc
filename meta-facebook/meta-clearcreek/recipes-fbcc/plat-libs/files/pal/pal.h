@@ -49,4 +49,6 @@ enum {
 } // extern "C"
 #endif
 
+int pal_get_rst_btn(uint8_t *status);
+
 #endif /* __PAL_H__ */

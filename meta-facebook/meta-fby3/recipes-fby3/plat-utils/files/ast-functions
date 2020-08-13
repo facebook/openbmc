@@ -228,6 +228,18 @@ is_server_prsnt() {
   fi
 }
 
+set_nic_power() {
+  cnt=0
+  for i in $(seq 1 4); do
+    cnt=$((cnt + `is_server_prsnt $i`))
+  done
+
+  if [ $cnt -eq 0 ]; then
+    /usr/sbin/i2cset -y 12 0x0f 0x0f 0
+    logger -t "gpiod" -p daemon.crit "NIC Power is set to VAUX"
+  fi
+}
+
 read_file_retry() {
   retries=$1
   wait_time=$2

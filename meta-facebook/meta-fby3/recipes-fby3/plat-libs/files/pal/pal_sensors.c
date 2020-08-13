@@ -1235,7 +1235,7 @@ static int
 read_curr_leakage(uint8_t snr_number, float *value) {
 #define CURR_LEAKAGE_THRESH  8.00
 #define MEDUSA_CURR_THRESH  10.00
-  static bool is_issued_sel = false;
+  //static bool is_issued_sel = false;
   float medusa_curr = 0;
   float bb_hsc_curr = 0;
   float total_hsc_iout = 0;

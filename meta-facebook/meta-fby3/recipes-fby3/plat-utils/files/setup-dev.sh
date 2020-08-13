@@ -57,6 +57,9 @@ function init_class1_dev(){
     /bin/mkdir -p /mnt/data/kv_store
   fi
   echo -n $chip > /mnt/data/kv_store/bb_hsc_conf
+
+  # check nic power to see if it's need to be set to standby mode
+  set_nic_power
 }
 
 function init_class2_dev(){

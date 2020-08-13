@@ -35,3 +35,5 @@ RDEPENDS_${PN} += " \
     libobmc-sensors \
     libsensor-correction \
     "
+
+CFLAGS += " -Wall -Werror "

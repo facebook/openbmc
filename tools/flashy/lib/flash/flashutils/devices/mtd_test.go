@@ -249,12 +249,14 @@ func TestGetMmapFilePath(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	// mock and defer restore Validate & MmapFileRange
+	// mock and defer restore Validate, MmapFileRange & Munmap
 	validateOrig := validate.Validate
 	mmapFileRangeOrig := fileutils.MmapFileRange
+	munmapOrig := fileutils.Munmap
 	defer func() {
 		validate.Validate = validateOrig
 		fileutils.MmapFileRange = mmapFileRangeOrig
+		fileutils.Munmap = munmapOrig
 	}()
 
 	cases := []struct {
@@ -300,6 +302,12 @@ func TestValidate(t *testing.T) {
 				}
 				return exampleData, tc.mmapErr
 			}
+			wantMunmapCalled := tc.mmapErr == nil
+			munmapCalled := false
+			fileutils.Munmap = func(data []byte) error {
+				munmapCalled = true
+				return nil
+			}
 			validate.Validate = func(data []byte) error {
 				if !reflect.DeepEqual(exampleData, data) {
 					t.Errorf("data: want '%v' got '%v'", exampleData, data)
@@ -308,6 +316,10 @@ func TestValidate(t *testing.T) {
 			}
 			got := m.Validate()
 			tests.CompareTestErrors(tc.want, got, t)
+			if wantMunmapCalled != munmapCalled {
+				t.Errorf("munmapCalled: want '%v' got '%v'",
+					wantMunmapCalled, munmapCalled)
+			}
 		})
 	}
 }

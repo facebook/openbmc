@@ -104,6 +104,7 @@ func (m *MemoryTechnologyDevice) Validate() error {
 	if err != nil {
 		return errors.Errorf("Can't mmap flash device: %v", err)
 	}
+	defer m.Munmap(data)
 	return validate.Validate(data)
 }
 

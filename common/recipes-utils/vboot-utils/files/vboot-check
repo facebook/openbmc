@@ -23,7 +23,7 @@ import binascii
 import json
 import sys
 
-VBOOT_CHECK_VERSION = "1"
+VBOOT_CHECK_VERSION = "2"
 # Define the exit code
 EC_SUCCESS = 0
 EC_SPLROM_BAD = 1
@@ -31,6 +31,10 @@ EC_UBOOT_BAD = 2
 EC_KERNEL_BAD = 3
 EC_ROOTFS_BAD = 4
 EC_EXCEPTION = 255
+
+FBOBMC_IMAGE_META_LOCATION = 0xF0000
+FBOBMC_IMAGE_META_SIZE = 64 * 1024
+FBOBMC_PART_INFO_KEY = "part_infos"
 
 if sys.version_info[0] == 3:
     import io
@@ -132,9 +136,9 @@ def decode_flash(fh, data):
     print("")
 
     # Read the U-Boot FIT, the U-Boot data area (max)
-    data = data + fh.read(0x6B000)
-    uboot_fit = fh.read(0x4000)
-    uboot = fh.read(0x5C000)
+    fh.seek(args.uboot_fit_offset)
+    uboot_fit = fh.read(args.subkeystore_size)
+    uboot = fh.read(args.uboot_fit_size - args.subkeystore_size)
     uboot_fit = get_fdt(uboot_fit)
 
     # Print subordinate keys information
@@ -251,7 +255,7 @@ def decode_os(fh):
 
 def main():
     with open(args.filename, 'rb') as fh:
-        data = fh.read(84 * 1024)
+        data = fh.read(args.rom_size)
 
         data_size = len(data)
         if data_size < 4:
@@ -266,17 +270,74 @@ def main():
             return ret
         return decode_os(fh)
 
+def load_image_meta():
+    print("Try loading image meta from image %s" % args.filename)
+    len_remain = FBOBMC_IMAGE_META_SIZE
+    with open(args.filename, "rb") as fh:
+        fh.seek(FBOBMC_IMAGE_META_LOCATION)
+        meta_data = fh.readline(len_remain)
+        meta_data_md5 = hashlib.md5(meta_data.strip()).hexdigest()
+        len_remain -= len(meta_data)
+        meta_data_chksum = fh.readline(len_remain)
+        meta_md5 = json.loads(meta_data_chksum.strip())["meta_md5"]
+        if meta_data_md5 == meta_md5:
+            meta_info = json.loads(meta_data.strip())
+            assert FBOBMC_PART_INFO_KEY in meta_info, (
+                "meta_info does not cotain %s" % FBOBMC_PART_INFO_KEY
+            )
+            meta_info[FBOBMC_PART_INFO_KEY] = tuple(meta_info[FBOBMC_PART_INFO_KEY])
+
+            return meta_info
+
+def override_default_args_with_image_meta():
+    rom_part_info = None
+    for part_info in image_meta[FBOBMC_PART_INFO_KEY]:
+        if "rom" == part_info["type"]:
+            rom_part_info = part_info
+            print(
+                "override args.rom_size: 0x%x => 0x%x"
+                % (args.rom_size, part_info["size"])
+            )
+            args.rom_size = part_info["size"]
+        elif "fit" == part_info["type"] and "u-boot-fit" == part_info["name"]:
+            print(
+                "override args.uboot_fit_offset: 0x%x => 0x%x"
+                % (args.uboot_fit_offset, part_info["offset"])
+            )
+            args.uboot_fit_offset = part_info["offset"]
+            print(
+                "override args.uboot_fit_size: 0x%x => 0x%x"
+                % (args.uboot_fit_size, part_info["size"])
+            )
+            args.uboot_fit_size = part_info["size"]
+
+    return rom_part_info
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Show vboot info')
-    parser.add_argument('--rom-size', default=84 * 1024,
-        help="Size of ROM region")
-    parser.add_argument('--rom-fit-size', default=5120,
-        help="Size of the ROM FIT region")
+    parser.add_argument('--rom-size', default=84 * 1024, type=int,
+        help="Size of ROM region, default 84KB")
+    parser.add_argument('--rom-fit-size', default=5120, type=int,
+        help="Size of the ROM FIT region, default 5120")
+    parser.add_argument('--uboot-fit-offset', default=0x80000, type=int,
+        help="Location within filename to find firmware FIT DTB, default 0x80000")
+    parser.add_argument('--uboot-fit-size', default=384 * 1024, type=int,
+        help="U-Boot FIT partition size, default 384KB")
+    parser.add_argument('--subkeystore-size', default=16 * 1024, type=int,
+        help="Subordinate key store max size, default 16KB")
     parser.add_argument('--version', action='version',
                     version='%(prog)s-v{}'.format(VBOOT_CHECK_VERSION) )
     parser.add_argument('filename', help="Input firmware")
 
     args = parser.parse_args()
+
+    image_meta = None
+    try:
+        image_meta = load_image_meta()
+        override_default_args_with_image_meta()
+    except Exception as e:
+        print("No image meta found: %s" % repr(e))
+        print("verifying legacy image")
 
     try:
         sys.exit(main())

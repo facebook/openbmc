@@ -30,6 +30,17 @@
 #define READ_ERROR_RESPONSE -2
 
 /*
+ * check for new PSUs every "PSU_SCAN_INTERVAL" seconds
+ */
+#define PSU_SCAN_INTERVAL 120
+
+/*
+ * Fetch/refresh data from all PSUs every "PSU_REFRESH_DATA_INTERVAL"
+ * seconds.
+ */
+#define PSU_REFRESH_DATA_INTERVAL 1
+
+/*
  * REG_INT_DATA_SIZE defines the memory size required to store a specific
  * "Register Interval": uint32_t is reserved for timestamp, while the
  * remaining is to store register values (per_register_size=sizeof(u16),
@@ -594,8 +605,6 @@ static int fetch_monitored_data(void) {
   }
   global_unlock();
 
-  usleep(1000); // wait a sec btween PSUs to not overload RT scheduling
-                // threshold
   for (pos = 0; pos < ARRAY_SIZE(rackmond_config.stored_data); pos++) {
     int r;
     uint8_t addr;
@@ -673,8 +682,6 @@ cleanup:
 
 static time_t search_at = 0;
 
-// check for new psus every N seconds
-#define SEARCH_PSUS_EVERY 120
 void* monitoring_loop(void* arg) {
 
   rackmond_config.status_log = fopen(RACKMON_STAT_STORE, "a+");
@@ -691,13 +698,22 @@ void* monitoring_loop(void* arg) {
       check_active_psus();
       alloc_monitoring_datas();
       clock_gettime(CLOCK_REALTIME, &ts);
-      search_at = ts.tv_sec + SEARCH_PSUS_EVERY;
+      search_at = ts.tv_sec + PSU_SCAN_INTERVAL;
     }
 
     /*
-     * XXX do we really need this aggressive loop (without delay)???
+     * Please be aware it takes ~9 seconds for rackmond to go through 6
+     * PSUs and collect all the data, which means the minimum data refresh
+     * interval is 9 seconds (for a specific PSU register, when fetching
+     * data in a dead loop).
+     * Adding a small delay has little impact when 6 PSUs are connected,
+     * means CPU usage and data refresh interval is similar with or without
+     * delay. But such delay saves a lot of CPU resources when no PSU is
+     * connected: CPU usage goes from ~10% (dead loop) to ~0% when delay
+     * is introduced.
      */
     fetch_monitored_data();
+    sleep(PSU_REFRESH_DATA_INTERVAL);
   }
   return NULL;
 }

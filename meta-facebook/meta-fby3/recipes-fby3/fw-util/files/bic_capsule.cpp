@@ -46,7 +46,7 @@ image_info CapsuleComponent::check_image(string image, bool force) {
   }
 
   //create a new tmp file
-  image_sts.new_path = image + "-tmp";
+  image_sts.new_path = image + "-tmp" + "-" + fru() + "-" + component();
 
   //open the binary
   int fd_r = open(image.c_str(), O_RDONLY);

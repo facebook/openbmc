@@ -44,11 +44,31 @@
 #define BIOS_ERASE_PKT_SIZE (64*1024)
 #define BIOS_VERIFY_PKT_SIZE (32*1024)
 #define BIOS_VER_REGION_SIZE (4*1024*1024)
-#define BIOS_VER_STR "F09_"
 #define MAX_CHECK_DEVICE_TIME 8
 
 int interface_ref = 0;
 int alt_interface,interface_number;
+
+typedef struct 
+{
+  struct libusb_device**          devs;
+  struct libusb_device*           dev;
+  struct libusb_device_handle*    handle;
+  struct libusb_device_descriptor desc;
+  char    manufacturer[64];
+  char    product[64];
+  int     config;
+  int     ci;
+  uint8_t epaddr;
+  uint8_t path[8];
+} usb_dev;
+
+typedef struct {
+  uint8_t dummy;
+  uint32_t offset;
+  uint16_t length;
+  uint8_t data[USB_DAT_SIZE];
+} __attribute__((packed)) bic_usb_packet;
 
 static int
 _set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
@@ -195,35 +215,41 @@ int active_config(struct libusb_device *dev,struct libusb_device_handle *handle)
   return 0;
 }
 
-int
-update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
+static int
+_send_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt)
 {
-  struct timeval start, end;
-  struct libusb_device **devs;
-  struct libusb_device_handle *handle = NULL, *hDevice_expected = NULL;
-  struct libusb_device *dev,*dev_expected;
-  struct libusb_device_descriptor desc;
-  int config2;
+  const int transferlen = pkt->length + 7;
+  int transferred = 0;
+  int retries = 3;
+  int ret;
+
+  // _debug_bic_usb_packet(pkt);
+  while(true)
+  {
+    ret = libusb_bulk_transfer(udev->handle, udev->epaddr, (uint8_t*)pkt, transferlen, &transferred, 3000);
+    if(((ret != 0) || (transferlen != transferred))) {
+      printf("Error in transferring data! err = %d and transferred = %d(expected data length 64)\n",ret ,transferred);
+      printf("Retry since  %s\n", libusb_error_name(ret));
+      retries--;
+      if (!retries) {
+        return -1;
+      }
+      msleep(100);
+    } else
+      break;
+  }
+  return 0;
+}
+
+int
+bic_init_usb_dev(uint8_t slot_id, usb_dev* udev)
+{
+  int ret;
   int index = 0;
-  char str1[64], str2[64];
-  char key[64];
   char found = 0;
   ssize_t cnt;
-  int retries = 3, ret = -1;
-  struct stat st;
-  uint32_t fsize = 0;
-  uint32_t record_offset = 0;
-  uint32_t offset = 0, shift_offset = 0;
-  uint8_t data[USB_PKT_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-  int read_cnt;
-  int fd = 0;
-  char fpath[128];
-  uint8_t path[8];
-  int recheck = MAX_CHECK_DEVICE_TIME;
   uint8_t bmc_location = 0;
-  int remain = 0;
-  unsigned char buff[1];
-  char *update_target = "bios";
+  int recheck = MAX_CHECK_DEVICE_TIME;
 
   ret = libusb_init(NULL);
   if (ret < 0) {
@@ -234,32 +260,32 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
   }
 
   do {
-    cnt = libusb_get_device_list(NULL, &devs);
+    cnt = libusb_get_device_list(NULL, &udev->devs);
     if (cnt < 0) {
       printf("There are no USB devices on bus\n");
       goto error_exit;
     }
     index = 0;
-    while ((dev = devs[index++]) != NULL) {
-      ret = libusb_get_device_descriptor(dev, &desc);
+    while ((udev->dev = udev->devs[index++]) != NULL) {
+      ret = libusb_get_device_descriptor(udev->dev, &udev->desc);
       if ( ret < 0 ) {
         printf("Failed to get device descriptor -- exit\n");
-        libusb_free_device_list(devs,1);
+        libusb_free_device_list(udev->devs,1);
         goto error_exit;
       }
 
-      ret = libusb_open(dev,&handle);
+      ret = libusb_open(udev->dev,&udev->handle);
       if ( ret < 0 ) {
         printf("Error opening device -- exit\n");
-        libusb_free_device_list(devs,1);
+        libusb_free_device_list(udev->devs,1);
         goto error_exit;
       }
 
-      if( (TI_VENDOR_ID == desc.idVendor) && (TI_PRODUCT_ID == desc.idProduct) ) {
-        ret = libusb_get_string_descriptor_ascii(handle, desc.iManufacturer, (unsigned char*) str1, sizeof(str1));
+      if( (TI_VENDOR_ID == udev->desc.idVendor) && (TI_PRODUCT_ID == udev->desc.idProduct) ) {
+        ret = libusb_get_string_descriptor_ascii(udev->handle, udev->desc.iManufacturer, (unsigned char*) udev->manufacturer, sizeof(udev->manufacturer));
         if ( ret < 0 ) {
           printf("Error get Manufacturer string descriptor -- exit\n");
-          libusb_free_device_list(devs,1);
+          libusb_free_device_list(udev->devs,1);
           goto error_exit;
         }
 
@@ -269,48 +295,48 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
           goto error_exit;
         }
         
-        ret = libusb_get_port_numbers(dev, path, sizeof(path));
+        ret = libusb_get_port_numbers(udev->dev, udev->path, sizeof(udev->path));
         if (ret < 0) {
           printf("Error get port number\n");
-          libusb_free_device_list(devs,1);
+          libusb_free_device_list(udev->devs,1);
           goto error_exit;
         }
 
         if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-          if ( path[1] != slot_id) {
+          if ( udev->path[1] != slot_id) {
             continue;
           }
         }
-        printf("%04x:%04x (bus %d, device %d)",desc.idVendor, desc.idProduct, libusb_get_bus_number(dev), libusb_get_device_address(dev));
-        printf(" path: %d", path[0]);
+        printf("%04x:%04x (bus %d, device %d)",udev->desc.idVendor, udev->desc.idProduct, libusb_get_bus_number(udev->dev), libusb_get_device_address(udev->dev));
+        printf(" path: %d", udev->path[0]);
         for (index = 1; index < ret; index++) {
-          printf(".%d", path[index]);
+          printf(".%d", udev->path[index]);
         }
         printf("\n");
 
-        ret = libusb_get_string_descriptor_ascii(handle, desc.iProduct, (unsigned char*) str2, sizeof(str2));
+        ret = libusb_get_string_descriptor_ascii(udev->handle, udev->desc.iProduct, (unsigned char*) udev->product, sizeof(udev->product));
         if ( ret < 0 ) {
           printf("Error get Product string descriptor -- exit\n");
-          libusb_free_device_list(devs,1);
+          libusb_free_device_list(udev->devs,1);
           goto error_exit;
         }
 
-        printf("Manufactured : %s\n",str1);
-        printf("Product : %s\n",str2);
+        printf("Manufactured : %s\n",udev->manufacturer);
+        printf("Product : %s\n",udev->product);
         printf("----------------------------------------\n");
         printf("Device Descriptors:\n");
-        printf("Vendor ID : %x\n",desc.idVendor);
-        printf("Product ID : %x\n",desc.idProduct);
-        printf("Serial Number : %x\n",desc.iSerialNumber);
-        printf("Size of Device Descriptor : %d\n",desc.bLength);
-        printf("Type of Descriptor : %d\n",desc.bDescriptorType);
-        printf("USB Specification Release Number : %d\n",desc.bcdUSB);
-        printf("Device Release Number : %d\n",desc.bcdDevice);
-        printf("Device Class : %d\n",desc.bDeviceClass);
-        printf("Device Sub-Class : %d\n",desc.bDeviceSubClass);
-        printf("Device Protocol : %d\n",desc.bDeviceProtocol);
-        printf("Max. Packet Size : %d\n",desc.bMaxPacketSize0);
-        printf("No. of Configuraions : %d\n",desc.bNumConfigurations);
+        printf("Vendor ID : %x\n",udev->desc.idVendor);
+        printf("Product ID : %x\n",udev->desc.idProduct);
+        printf("Serial Number : %x\n",udev->desc.iSerialNumber);
+        printf("Size of Device Descriptor : %d\n",udev->desc.bLength);
+        printf("Type of Descriptor : %d\n",udev->desc.bDescriptorType);
+        printf("USB Specification Release Number : %d\n",udev->desc.bcdUSB);
+        printf("Device Release Number : %d\n",udev->desc.bcdDevice);
+        printf("Device Class : %d\n",udev->desc.bDeviceClass);
+        printf("Device Sub-Class : %d\n",udev->desc.bDeviceSubClass);
+        printf("Device Protocol : %d\n",udev->desc.bDeviceProtocol);
+        printf("Max. Packet Size : %d\n",udev->desc.bMaxPacketSize0);
+        printf("No. of Configuraions : %d\n",udev->desc.bNumConfigurations);
 
         found = 1;
         break;
@@ -327,162 +353,198 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
 
   if ( found == 0 ) {
     printf("Device NOT found -- exit\n");
-    libusb_free_device_list(devs,1);
+    libusb_free_device_list(udev->devs,1);
     ret = -1;
     goto error_exit;
   }
 
-  dev_expected = dev;
-  hDevice_expected = handle;
-
-  ret = libusb_get_configuration(handle,&config2);
+  ret = libusb_get_configuration(udev->handle, &udev->config);
   if ( ret != 0 ) {
     printf("Error in libusb_get_configuration -- exit\n");
-    libusb_free_device_list(devs,1);
+    libusb_free_device_list(udev->devs,1);
     goto error_exit;
   }
 
-  printf("Configured value : %d\n",config2);
-  if ( config2 != 1 ) {
-    libusb_set_configuration(handle, 1);
+  printf("Configured value : %d\n", udev->config);
+  if ( udev->config != 1 ) {
+    libusb_set_configuration(udev->handle, 1);
     if ( ret != 0 ) {
       printf("Error in libusb_set_configuration -- exit\n");
-      libusb_free_device_list(devs,1);
+      libusb_free_device_list(udev->devs,1);
       goto error_exit;
     }
     printf("Device is in configured state!\n");
   }
 
-  libusb_free_device_list(devs, 1);
+  libusb_free_device_list(udev->devs, 1);
 
-  int ci = 1;
-  uint8_t epaddr = 0x1;
-  if(libusb_kernel_driver_active(handle, ci) == 1) {
+  if(libusb_kernel_driver_active(udev->handle, udev->ci) == 1) {
     printf("Kernel Driver Active\n");
-    if(libusb_detach_kernel_driver(handle, ci) == 0) {
+    if(libusb_detach_kernel_driver(udev->handle, udev->ci) == 0) {
       printf("Kernel Driver Detached!");
     } else {
       printf("Couldn't detach kernel driver -- exit\n");
-      libusb_free_device_list(devs,1);
+      libusb_free_device_list(udev->devs,1);
       goto error_exit;
     }
   }
 
-  ret = libusb_claim_interface(handle, ci);
+  ret = libusb_claim_interface(udev->handle, udev->ci);
   if ( ret < 0 ) {
     printf("Couldn't claim interface -- exit. err:%s\n", libusb_error_name(ret));
-    libusb_free_device_list(devs,1);
+    libusb_free_device_list(udev->devs,1);
     goto error_exit;
   }
-  printf("Claimed Interface: %d, EP addr: 0x%02X\n", ci, epaddr);
+  printf("Claimed Interface: %d, EP addr: 0x%02X\n", udev->ci, udev->epaddr);
 
-  active_config(dev_expected,hDevice_expected);
+  active_config(udev->dev, udev->handle);
+  return 0;
+error_exit:
+  return -1;
+}
 
-  strcpy(fpath, image);
-  printf("Input: %s, USB timeout: 3000ms\n", fpath);
+int
+bic_update_fw_usb(uint8_t slot_id, uint8_t comp, const char *image_file, usb_dev* udev)
+{
+  struct stat st;
+  uint32_t chunk_sz = BIOS_PKT_SIZE;  // bic usb write block size
+  uint32_t file_sz = 0;
+  uint32_t actual_send_sz = 0;
+  uint32_t align_pkt_cnt = 0;
+  uint32_t dsize, offset, last_offset, shift_offset;
+  uint16_t count, read_count;
+  uint8_t buf[USB_PKT_SIZE] = {0};
+  bic_usb_packet *pkt = (bic_usb_packet *) buf;
+  int i, fd = -1;
+  char update_target[64] = {0};
+  uint32_t usb_pkt_cnt = 0;
+  int ret = -1;
 
-  // align 64K
-  if (stat(fpath, &st)) {
-    printf("ERROR: invalid file path!\n");
-    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", image);
+  if (comp == FW_BIOS) {
+    shift_offset = 0;
+    strcpy(update_target, "bios\0");
+  } else if ( (comp == FW_BIOS_CAPSULE) || (comp == FW_BIOS_RCVY_CAPSULE) ){
+    shift_offset = BIOS_CAPSULE_OFFSET;
+    strcpy(update_target, "bios capsule to PCH\0");
+  } else if ( (comp == FW_CPLD_CAPSULE) || (comp == FW_CPLD_RCVY_CAPSULE) ) {
+    shift_offset = CPLD_CAPSULE_OFFSET;
+    strcpy(update_target, "cpld capsule to PCH\0");
+  } else {
+    printf("ERROR: not supported component [comp:%u]!\n", comp);
     goto error_exit;
   }
 
-  if ((remain = (st.st_size % BIOS_PKT_SIZE))) {
-    remain = BIOS_PKT_SIZE - remain;
-  }
-
-  FILE *fp1 = fopen(fpath, "ab");
-  buff[0] = 0xFF;
-  while (remain) {
-    fwrite(buff, sizeof(unsigned char), 1, fp1);
-    remain -= 1;
-  }
-  fclose(fp1);
-
-  fd = open(fpath, O_RDONLY, 0666);
+  fd = open(image_file, O_RDONLY, 0666);
   if (fd < 0) {
     printf("ERROR: invalid file path!\n");
-    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", image);
+    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", image_file);
     goto error_exit;
   }
-  stat(fpath, &st);
-  fsize = st.st_size / 20;
+  fstat(fd, &st);
+  file_sz = st.st_size;  
+  align_pkt_cnt = (st.st_size/chunk_sz);
+  if (st.st_size % chunk_sz)
+    align_pkt_cnt += 1;
+  actual_send_sz = align_pkt_cnt * chunk_sz;
+  dsize = actual_send_sz / 20;
 
-  int transferlen = 0;
-  int transferred = 0;
-  int count = 1;
-  int per_size = 0;
-  gettimeofday(&start, NULL);
+  // Write chunks of binary data in a loop
+  offset = 0;
+  last_offset = 0;
+  i = 1;
   while (1) {
-    memset(data, 0xFF, sizeof(data));
+    memset(buf, 0xFF, sizeof(buf));
 
-    //check size
-    if ( (offset + USB_DAT_SIZE) > (count * BIOS_PKT_SIZE) ) {
-      per_size = (count * BIOS_PKT_SIZE) - offset;
-      transferlen = per_size + 7;
-      count++;
+    // For bic usb, send packets in blocks of 64K
+    if ((offset + USB_DAT_SIZE) > (i * BIOS_PKT_SIZE)) {
+      read_count = (i * BIOS_PKT_SIZE) - offset;
+      i++;
     } else {
-      per_size = USB_DAT_SIZE;
-      transferlen = USB_PKT_SIZE;
+      read_count = USB_DAT_SIZE; 
     }
 
-    read_cnt = read(fd, &data[7], per_size);
-
-    if ( read_cnt <= 0 ) break;
-
-    if (comp == FW_BIOS) {
-      shift_offset = 0;
-      update_target = "bios";
-    } else if ( (comp == FW_BIOS_CAPSULE) || (comp == FW_BIOS_RCVY_CAPSULE) ){
-      shift_offset = BIOS_CAPSULE_OFFSET;
-      update_target = "bios capsule to PCH";
-    } else if ( (comp == FW_CPLD_CAPSULE) || (comp == FW_CPLD_RCVY_CAPSULE) ) {
-      shift_offset = CPLD_CAPSULE_OFFSET;
-      update_target = "cpld capsule to PCH";
-    }
-
-    data[1] = (offset + shift_offset) & 0xFF;
-    data[2] = ((offset + shift_offset) >> 8) & 0xFF;
-    data[3] = ((offset + shift_offset) >> 16) & 0xFF;
-    data[4] = ((offset + shift_offset) >> 24) & 0xFF;
-    data[5] = read_cnt & 0xFF;
-    data[6] = (read_cnt >> 8) & 0xFF;
-
-resend:
-    ret = libusb_bulk_transfer(handle, epaddr, data, transferlen, &transferred, 3000);
-    if(((ret != 0) || (transferlen != transferred))) {
-      printf("Error in transferring data! err = %d and transferred = %d(expected data length 64)\n",ret ,transferred);
-      printf("Retry since  %s\n", libusb_error_name(ret));
-      retries--;
-      if (!retries) {
-        ret = -1;
-        break;
+    // Read from file
+    if (offset < file_sz) {
+      count = read(fd, &buf[7], read_count);
+      if (count < 0) {
+        syslog(errno, "failed to read %s", image_file);
+        goto error_exit;
       }
-      msleep(100);
-      goto resend;
+    } else if (offset < actual_send_sz) { /* padding */
+      count = read_count;
+    } else {
+      break;
     }
 
-    offset += read_cnt;
-    if ( (record_offset + fsize) <= offset ) {
+    pkt->offset = (offset + shift_offset);
+    pkt->length = count;
+
+    if (_send_bic_usb_packet(udev, pkt))
+      goto error_exit;
+
+    usb_pkt_cnt += 1;
+
+    offset += count;
+    if ( (last_offset + dsize) <= offset ) {
       _set_fw_update_ongoing(slot_id, 60);
-      printf("updated %s: %d %%\n", update_target, (offset/fsize)*5);
-      record_offset += fsize;
+      printf("updated %s: %d %%\n", update_target, (offset/dsize)*5);
+      last_offset += dsize;
     }
-  }
-
-  ret = libusb_release_interface(handle, ci);
-  if ( ret < 0 ) {
-    printf("Couldn't release the interface 0x%X\n", ci);
   }
 
   if (comp != FW_BIOS_CAPSULE && comp != FW_CPLD_CAPSULE && comp != FW_BIOS_RCVY_CAPSULE && comp != FW_CPLD_RCVY_CAPSULE) {
     _set_fw_update_ongoing(slot_id, 60 * 2);
-    if (verify_bios_image(slot_id, fd, st.st_size)) {
-      ret = -1;
+    if (verify_bios_image(slot_id, fd, file_sz)) {
       goto error_exit;
     }
   }
+
+  ret = 0;
+error_exit:
+  if (fd > 0)
+    close(fd);
+  return ret;
+}
+
+int
+bic_close_usb_dev(usb_dev* udev)
+{
+  if (libusb_release_interface(udev->handle, udev->ci) < 0) {
+    printf("Couldn't release the interface 0x%X\n", udev->ci);
+  }
+
+  if (udev->handle != NULL )
+    libusb_close(udev->handle);
+  libusb_exit(NULL);
+
+  return 0;
+}
+
+int
+update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
+{
+  struct timeval start, end;
+  char key[64];
+  int ret = -1;
+  usb_dev   bic_udev;
+  usb_dev*  udev = &bic_udev;
+
+  udev->ci = 1;
+  udev->epaddr = 0x1;
+
+  // init usb device
+  ret = bic_init_usb_dev(slot_id, udev);
+  if (ret < 0) {
+    goto error_exit;
+  }
+
+  printf("Input: %s, USB timeout: 3000ms\n", image);
+  gettimeofday(&start, NULL);
+
+  // sending file
+  ret = bic_update_fw_usb(slot_id, comp, image, udev);
+  if (ret < 0)
+    goto error_exit;
 
   gettimeofday(&end, NULL);
   if (comp == FW_BIOS) {
@@ -494,13 +556,7 @@ error_exit:
   sprintf(key, "fru%u_fwupd", slot_id);
   remove(key);
 
-  if ( handle != NULL )
-    libusb_close(handle);
-  libusb_exit(NULL);
-
-  if (fd > 0) {
-    close(fd);
-  }
-
+  // close usb device
+  bic_close_usb_dev(udev);
   return ret;
 }

@@ -31,10 +31,8 @@ upgrade_syscpld() {
   new_usercode=$(jbi -i "$1" | grep -i "\"USERCODE"\" | awk -F '"' '{ print $4 }')
   if [[ $sys_usercode != "$new_usercode" ]];
   then
-      # disable heartbeat
-      i2cset -f -y 12 0x31 0x2e 0x18
       #program syscpld
-      jbi -r -aPROGRAM -gc102 -gi101 -go103 -gs100 "$1"
+      jbi -r -aPROGRAM -dDO_REAL_TIME_ISP=1 -gc102 -gi101 -go103 -gs100 "$1"
       echo "Finished SYSCPLD upgrade: Pass"
   else
     echo "Finished SYSCPLD upgrade: No Action (Same usercode)"
@@ -53,7 +51,7 @@ upgrade_fancpld() {
   if [[ $sys_usercode != "$new_usercode" ]];
   then
       #program fancpld
-      jbi -aPROGRAM -gc77 -gi78 -go79 -gs76 "$1"
+      jbi -aPROGRAM -dDO_REAL_TIME_ISP=1 -gc77 -gi78 -go79 -gs76 "$1"
       echo "Finished FANCPLD upgrade: Pass"
   else
     echo "Finished FANCPLD upgrade: No Action (Same usercode)"

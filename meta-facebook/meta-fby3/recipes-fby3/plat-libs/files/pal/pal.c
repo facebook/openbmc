@@ -2651,7 +2651,7 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
         break;
       }
     }
-    syslog(LOG_CRIT, "The cable of slot%d should be plugged to slot%d", slot_id, (i+1));
+    syslog(LOG_CRIT, "Abnormal - slot%d instead of slot%d", slot_id, (i+1));
   }
 
   if ( cbl_val != NULL ) *cbl_val = (vals_match == false)?STATUS_ABNORMAL:STATUS_PRSNT;

@@ -89,9 +89,57 @@ log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay)
 }
 
 static void
+log_slot_present(uint8_t slot_id, gpio_value_t value)
+{
+  uint8_t bmc_location = 0;
+  int ret = 0;
+  int retry = 5;
+  uint8_t tbuf[4] = {0x05, 0x42, 0x01, 0x0d};
+  uint8_t rbuf[1] = {0x00};
+  uint8_t tlen = 4;
+  uint8_t rlen = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    return;
+  }
+
+  do {
+    ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  } while ( ret < 0 && retry-- > 0 );
+
+  uint8_t front_exp_bit = GETBIT(rbuf[0], 2);
+  uint8_t riser_exp_bit = GETBIT(rbuf[0], 3);
+
+  if (bmc_location == NIC_BMC) {
+    front_exp_bit = STATUS_NOT_PRSNT;
+  }
+
+  if ( (front_exp_bit == riser_exp_bit) && (front_exp_bit == 0) ) {
+    //Config D
+    if ((slot_id == FRU_SLOT2) || (slot_id == FRU_SLOT4)) {
+      return;
+    }
+  } else if ( front_exp_bit > riser_exp_bit ) {
+    //Config C
+    if (slot_id != FRU_SLOT1) {
+      return;
+    }
+  }
+
+  if ( value == GPIO_VALUE_LOW ) {
+    syslog(LOG_CRIT, "slot%d present", slot_id);
+  } else if ( value == GPIO_VALUE_HIGH ) {
+    syslog(LOG_CRIT, "Abnormal - slot%d not detected", slot_id);
+    return;
+  }
+}
+
+static void
 slot1_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   const uint8_t slot_id = FRU_SLOT1;
   log_gpio_change(gpdesc, value, 0);
+  log_slot_present(slot_id, value);
   if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
@@ -99,6 +147,7 @@ static void
 slot2_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   const uint8_t slot_id = FRU_SLOT2;
   log_gpio_change(gpdesc, value, 0);
+  log_slot_present(slot_id, value);
   if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
@@ -106,6 +155,7 @@ static void
 slot3_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   const uint8_t slot_id = FRU_SLOT3;
   log_gpio_change(gpdesc, value, 0);
+  log_slot_present(slot_id, value);
   if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
@@ -113,6 +163,7 @@ static void
 slot4_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   const uint8_t slot_id = FRU_SLOT4;
   log_gpio_change(gpdesc, value, 0);
+  log_slot_present(slot_id, value);
   if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
@@ -133,6 +184,7 @@ slot1_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   const uint8_t slot_id = FRU_SLOT1;
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0);
+  log_slot_present(slot_id, curr);
   if ( curr == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
@@ -141,6 +193,7 @@ slot2_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   const uint8_t slot_id = FRU_SLOT2;
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0);
+  log_slot_present(slot_id, curr);
   if ( curr == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
@@ -149,6 +202,7 @@ slot3_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   const uint8_t slot_id = FRU_SLOT3;
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0);
+  log_slot_present(slot_id, curr);
   if ( curr == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
@@ -157,6 +211,7 @@ slot4_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   const uint8_t slot_id = FRU_SLOT4;
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0);
+  log_slot_present(slot_id, curr);
   if ( curr == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
 }
 
@@ -226,7 +281,9 @@ issue_slot_plt_state_sel(uint8_t slot_id) {
         break;
       }
     }
-    syslog(LOG_CRIT, "FRU: %d, PFR - Platform state: %s (0x%02X)", slot_id, plat_str, n_plat_state);
+    if ( (n_plat_state != 0x01) && (n_plat_state != 0x02) ) {
+      syslog(LOG_CRIT, "FRU: %d, PFR - Platform state: %s (0x%02X)", slot_id, plat_str, n_plat_state);
+    }
     o_plat_state = n_plat_state;
   }
 }

@@ -171,6 +171,11 @@ show_sys_configuration(sys_conf system) {
     printf("Type : Class %d, Config: %s\n", system.type, config_str);
     printf("---------------------------\n");
     for ( i = FRU_SLOT1; i <= fru_cnt; i++) {
+      if ( (strcmp("C", config_str) == 0) || (strcmp("D", config_str) == 0) ) {
+        if ( i == FRU_SLOT2 || i == FRU_SLOT4) {
+          continue;
+        }
+      }
       sts = system.server_info[i-1].is_server_present;
       if ( sts != STATUS_PRSNT ) {
         printf("Slot%d : %s\n\n", i, prsnt_sts[sts]);

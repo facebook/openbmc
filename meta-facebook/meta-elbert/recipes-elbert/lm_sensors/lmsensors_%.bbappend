@@ -3,4 +3,8 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://elbert.conf \
            "
-# ELBERTTODO 442084 442085 ADD sensor support
+
+do_install_append() {
+    install -d ${D}${sysconfdir}/sensors.d
+    install -m 644 ../elbert.conf ${D}${sysconfdir}/sensors.d/elbert.conf
+}

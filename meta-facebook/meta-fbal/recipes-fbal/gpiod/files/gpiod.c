@@ -89,8 +89,19 @@ void cpu_vr_hot_init(char* shadow, char* desc, gpio_value_t value) {
 }
 
 void cpu_skt_init(char* shadow, char* desc, gpio_value_t value) {
+  int cpu_id = strcmp(shadow, "FM_CPU0_SKTOCC_LVT3_PLD_N") == 0 ? 0 : 1;
+  char key[MAX_KEY_LEN] = {0};
+  char kvalue[MAX_VALUE_LEN] = {0};
+  gpio_value_t prev_value = GPIO_VALUE_INVALID;
+  snprintf(key, sizeof(key), "cpu%d_skt_status", cpu_id);
+  if (kv_get(key, kvalue, NULL, KV_FPERSIST) == 0) {
+    prev_value = atoi( kvalue);
+  }
+  snprintf(kvalue, sizeof(kvalue), "%d", value);
+  kv_set(key, kvalue, 0, KV_FPERSIST);
+  if(value != prev_value ) {
     syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", desc, shadow);
-  return;
+  }
 }
 
 void ioex_gpios_event_handle(char* shadow, char* desc, gpio_value_t value) {

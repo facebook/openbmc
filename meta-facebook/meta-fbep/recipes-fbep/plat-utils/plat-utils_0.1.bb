@@ -30,7 +30,6 @@ SRC_URI = "file://ast-functions \
            file://sol-util \
            file://mac-util \
            file://asic-util \
-           file://post-fan.sh \
            file://sync-rtc.sh \
            file://run-sync-rtc.sh \
            file://COPYING \
@@ -63,7 +62,6 @@ do_install() {
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  install -d ${D}${sysconfdir}/rc6.d
   # the script to mount /mnt/data
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 66 5 .
@@ -74,8 +72,6 @@ do_install() {
   update-rc.d -r ${D} setup-usbnet.sh start 69 5 .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 70 S .
-  install -m 755 post-fan.sh ${D}${sysconfdir}/init.d/post-fan.sh
-  update-rc.d -r ${D} post-fan.sh start 39 6 .
   install -m 755 sync-rtc.sh ${D}${sysconfdir}/init.d/sync-rtc.sh
   install -m 755 run-sync-rtc.sh ${D}${sysconfdir}/init.d/run-sync-rtc.sh
   update-rc.d -r ${D} run-sync-rtc.sh start 99 5 .

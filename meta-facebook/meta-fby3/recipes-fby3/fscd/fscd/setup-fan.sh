@@ -37,7 +37,7 @@ function init_class1_fsc(){
   config_type=""
   if [ "$sys_config" = "A" ]; then
     config_type="1"
-    target_fsc_config="/etc/FSC_CLASS1_EVT_type1.json"
+    target_fsc_config="/etc/FSC_CLASS1_PVT_type1.json"
   elif [ "$sys_config" = "B" ]; then
     get_1ou_type
     if [ "$type_1ou" = "EDSFF_1U" ]; then

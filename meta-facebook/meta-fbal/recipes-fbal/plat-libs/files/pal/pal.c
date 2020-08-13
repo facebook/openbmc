@@ -2019,3 +2019,18 @@ void pal_get_eth_intf_name(char* intf_name)
     snprintf(intf_name, 8, "eth0");
   }
 }
+
+void
+pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) 
+{
+  // log the post end event
+  syslog (LOG_INFO, "POST End Event for Payload#%d\n", slot);
+  
+  // Sync time with system
+  if (system("/etc/init.d/sync_date.sh &") != 0) {
+    syslog(LOG_ERR, "Sync date failed!\n");
+  } else {
+    syslog(LOG_INFO, "Sync date success!\n"); 
+  }
+}
+

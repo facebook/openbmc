@@ -84,8 +84,9 @@ struct pal_key_cfg {
   /* name, default value, function */
   {"identify_sled", "off", NULL},
   {"timestamp_sled", "0", NULL},
-  {"fru_sensor_health", "1", NULL},
-  {"fru_sel_error", "1", NULL},
+  {KEY_MB_SNR_HEALTH, "1", NULL},
+  {KEY_PDB_SNR_HEALTH, "1", NULL},
+  {KEY_MB_SEL_ERROR, "1", NULL},
   {"server_type", "4", NULL},
   {"asic_manf", MANF_AMD, key_set_asic_manf},
   {"ntp_server", "", NULL},
@@ -198,17 +199,19 @@ int pal_set_def_key_value()
   /* Actions to be taken on Power On Reset */
   if (pal_is_bmc_por()) {
     /* Clear all the SEL errors */
-    memset(key, 0, MAX_KEY_LEN);
-    strcpy(key, "fru_sel_error");
-
     /* Write the value "1" which means FRU_STATUS_GOOD */
+    memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, KEY_MB_SEL_ERROR);
     pal_set_key_value(key, "1");
 
     /* Clear all the sensor health files*/
-    memset(key, 0, MAX_KEY_LEN);
-    strcpy(key, "fru_sensor_health");
-
     /* Write the value "1" which means FRU_STATUS_GOOD */
+    memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, KEY_MB_SNR_HEALTH);
+    pal_set_key_value(key, "1");
+
+    memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, KEY_PDB_SNR_HEALTH);
     pal_set_key_value(key, "1");
   }
   return 0;

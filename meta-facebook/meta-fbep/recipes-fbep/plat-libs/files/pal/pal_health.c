@@ -4,28 +4,27 @@
 #include <string.h>
 #include <time.h>
 #include "pal.h"
+#include "pal_health.h"
 
 static int pal_get_sensor_health_key(uint8_t fru, char *key)
 {
-  if (fru != FRU_MB)
-      return -1;
-
-  sprintf(key, "fru_sensor_health");
-
+  if (fru == FRU_MB)
+    sprintf(key, KEY_MB_SNR_HEALTH);
+  else if (fru == FRU_PDB)
+    sprintf(key, KEY_PDB_SNR_HEALTH);
+  else
+    return -1;
   return 0;
 }
 
 int pal_set_sensor_health(uint8_t fru, uint8_t value)
 {
   char key[MAX_KEY_LEN] = {0};
-  char cvalue[MAX_VALUE_LEN] = {0};
 
-  if (pal_get_sensor_health_key(fru, key))
+  if (pal_get_sensor_health_key(fru, key) < 0)
     return -1;
 
-  sprintf(cvalue, (value > 0) ? "1": "0");
-
-  return pal_set_key_value(key, cvalue);
+  return pal_set_key_value(key, value == FRU_STATUS_GOOD? "1": "0");
 }
 
 int pal_get_fru_health(uint8_t fru, uint8_t *value)
@@ -34,9 +33,9 @@ int pal_get_fru_health(uint8_t fru, uint8_t *value)
   char key[MAX_KEY_LEN] = {0};
   int ret;
 
-  if (pal_get_sensor_health_key(fru, key)) {
+  if (pal_get_sensor_health_key(fru, key))
     return ERR_NOT_READY;
-  }
+
   ret = pal_get_key_value(key, cvalue);
 
   if (ret) {
@@ -50,7 +49,7 @@ int pal_get_fru_health(uint8_t fru, uint8_t *value)
     return 0;
 
   // If Baseboard, get SEL error status.
-  sprintf(key, "fru_sel_error");
+  sprintf(key, KEY_MB_SEL_ERROR);
   memset(cvalue, 0, MAX_VALUE_LEN);
 
   ret = pal_get_key_value(key, cvalue);

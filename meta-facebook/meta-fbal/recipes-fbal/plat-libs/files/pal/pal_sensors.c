@@ -2544,7 +2544,9 @@ read_vr_vout(uint8_t vr_id, float *value) {
 
 static int
 read_vr_temp(uint8_t vr_id, float *value) {
-    const char *label[] = {
+  int ret=0;
+  static uint8_t retry[VR_NUM_CNT] = {0};
+  const char *label[] = {
     "MB_VR_CPU0_VCCIN_TEMP",
     "MB_VR_CPU0_VCCSA_TEMP",
     "MB_VR_CPU0_VCCIO_TEMP",
@@ -2561,7 +2563,16 @@ read_vr_temp(uint8_t vr_id, float *value) {
   if (vr_id >= ARRAY_SIZE(label)) {
     return -1;
   }
-  return sensors_read(vr_chips[vr_id], label[vr_id], value);
+  ret = sensors_read(vr_chips[vr_id], label[vr_id], value);
+  if( *value == 0 ) {
+    retry[vr_id]++;
+    if(retry[vr_id] < 3 ){
+      return READING_SKIP;
+    } 
+  }
+
+  retry[vr_id] = 0;  
+  return ret;  
 }
 
 static int

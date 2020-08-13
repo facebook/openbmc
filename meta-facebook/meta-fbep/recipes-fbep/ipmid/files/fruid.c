@@ -32,8 +32,9 @@
 #include <string.h>
 #include <stdint.h>
 #include <sys/stat.h>
-#include "fruid.h"
 #include <openbmc/pal.h>
+#include <facebook/asic.h>
+#include "fruid.h"
 
 #define FRUID_SIZE        512
 /*
@@ -93,7 +94,7 @@ err:
   return errno;
 }
 
-static int get_asic_manf_id()
+static int get_asic_mfr_id()
 {
   int ret, fd;
   off_t offset = 1030;
@@ -114,11 +115,11 @@ static int get_asic_manf_id()
   }
 
   if (vendor_id == GPU_AMD)
-    pal_set_key_value("asic_manf", "AMD");
+    pal_set_key_value("asic_mfr", "AMD");
   else if (vendor_id == GPU_NV)
-    pal_set_key_value("asic_manf", "NVIDIA");
+    pal_set_key_value("asic_mfr", "NVIDIA");
   else // default
-    pal_set_key_value("asic_manf", "AMD");
+    pal_set_key_value("asic_mfr", "AMD");
 exit:
   close(fd);
   return ret;
@@ -127,7 +128,7 @@ exit:
 /* Populate the platform specific eeprom for fruid info */
 int plat_fruid_init(void)
 {
-  if (get_asic_manf_id())
+  if (get_asic_mfr_id() < 0)
     syslog(LOG_WARNING, "[%s]Get ASIC ID Failed",__func__);
 
   if (copy_eeprom_to_bin(MB_EEPROM, MB_BIN))

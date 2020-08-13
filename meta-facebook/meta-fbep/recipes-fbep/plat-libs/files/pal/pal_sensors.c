@@ -26,6 +26,7 @@
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-sensors.h>
 #include <switchtec/switchtec.h>
+#include <facebook/asic.h>
 #include "pal.h"
 #include "pal_calibration.h"
 
@@ -56,6 +57,10 @@ static int sensors_read_vr(uint8_t, float*);
 static int sensors_read_12v_hsc(uint8_t, float*);
 static int sensors_read_12v_hsc_vout(uint8_t, float*);
 static int sensors_read_48v_hsc(uint8_t, float*);
+static int read_gpu_temp(uint8_t, float*);
+static int read_asic_board_temp(uint8_t, float*);
+static int read_asic_mem_temp(uint8_t, float*);
+static int read_gpu_pwcs(uint8_t, float*);
 
 /*
  * List of sensors to be monitored
@@ -543,69 +548,69 @@ struct sensor_map {
   [MB_SWITCH_PAX3_DIE_TEMP] =
   {pal_read_pax_dietemp, "MB_SWITCH_PAX3_DIE_TEMP", SNR_TEMP},
   [MB_GPU0_TEMP] =
-  {pal_read_gpu_temp, "MB_GPU0_TEMP", SNR_TEMP},
+  {read_gpu_temp, "MB_GPU0_TEMP", SNR_TEMP},
   [MB_GPU1_TEMP] =
-  {pal_read_gpu_temp, "MB_GPU1_TEMP", SNR_TEMP},
+  {read_gpu_temp, "MB_GPU1_TEMP", SNR_TEMP},
   [MB_GPU2_TEMP] =
-  {pal_read_gpu_temp, "MB_GPU2_TEMP", SNR_TEMP},
+  {read_gpu_temp, "MB_GPU2_TEMP", SNR_TEMP},
   [MB_GPU3_TEMP] =
-  {pal_read_gpu_temp, "MB_GPU3_TEMP", SNR_TEMP},
+  {read_gpu_temp, "MB_GPU3_TEMP", SNR_TEMP},
   [MB_GPU4_TEMP] =
-  {pal_read_gpu_temp, "MB_GPU4_TEMP", SNR_TEMP},
+  {read_gpu_temp, "MB_GPU4_TEMP", SNR_TEMP},
   [MB_GPU5_TEMP] =
-  {pal_read_gpu_temp, "MB_GPU5_TEMP", SNR_TEMP},
+  {read_gpu_temp, "MB_GPU5_TEMP", SNR_TEMP},
   [MB_GPU6_TEMP] =
-  {pal_read_gpu_temp, "MB_GPU6_TEMP", SNR_TEMP},
+  {read_gpu_temp, "MB_GPU6_TEMP", SNR_TEMP},
   [MB_GPU7_TEMP] =
-  {pal_read_gpu_temp, "MB_GPU7_TEMP", SNR_TEMP},
+  {read_gpu_temp, "MB_GPU7_TEMP", SNR_TEMP},
   [MB_GPU0_EDGE_TEMP] =
-  {pal_read_edge_temp, "MB_GPU0_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "MB_GPU0_EDGE_TEMP", SNR_TEMP},
   [MB_GPU1_EDGE_TEMP] =
-  {pal_read_edge_temp, "MB_GPU1_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "MB_GPU1_EDGE_TEMP", SNR_TEMP},
   [MB_GPU2_EDGE_TEMP] =
-  {pal_read_edge_temp, "MB_GPU2_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "MB_GPU2_EDGE_TEMP", SNR_TEMP},
   [MB_GPU3_EDGE_TEMP] =
-  {pal_read_edge_temp, "MB_GPU3_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "MB_GPU3_EDGE_TEMP", SNR_TEMP},
   [MB_GPU4_EDGE_TEMP] =
-  {pal_read_edge_temp, "MB_GPU4_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "MB_GPU4_EDGE_TEMP", SNR_TEMP},
   [MB_GPU5_EDGE_TEMP] =
-  {pal_read_edge_temp, "MB_GPU5_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "MB_GPU5_EDGE_TEMP", SNR_TEMP},
   [MB_GPU6_EDGE_TEMP] =
-  {pal_read_edge_temp, "MB_GPU6_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "MB_GPU6_EDGE_TEMP", SNR_TEMP},
   [MB_GPU7_EDGE_TEMP] =
-  {pal_read_edge_temp, "MB_GPU7_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "MB_GPU7_EDGE_TEMP", SNR_TEMP},
   [MB_GPU0_HBM_TEMP] =
-  {pal_read_hbm_temp, "MB_GPU0_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "MB_GPU0_HBM_TEMP", SNR_TEMP},
   [MB_GPU1_HBM_TEMP] =
-  {pal_read_hbm_temp, "MB_GPU1_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "MB_GPU1_HBM_TEMP", SNR_TEMP},
   [MB_GPU2_HBM_TEMP] =
-  {pal_read_hbm_temp, "MB_GPU2_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "MB_GPU2_HBM_TEMP", SNR_TEMP},
   [MB_GPU3_HBM_TEMP] =
-  {pal_read_hbm_temp, "MB_GPU3_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "MB_GPU3_HBM_TEMP", SNR_TEMP},
   [MB_GPU4_HBM_TEMP] =
-  {pal_read_hbm_temp, "MB_GPU4_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "MB_GPU4_HBM_TEMP", SNR_TEMP},
   [MB_GPU5_HBM_TEMP] =
-  {pal_read_hbm_temp, "MB_GPU5_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "MB_GPU5_HBM_TEMP", SNR_TEMP},
   [MB_GPU6_HBM_TEMP] =
-  {pal_read_hbm_temp, "MB_GPU6_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "MB_GPU6_HBM_TEMP", SNR_TEMP},
   [MB_GPU7_HBM_TEMP] =
-  {pal_read_hbm_temp, "MB_GPU7_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "MB_GPU7_HBM_TEMP", SNR_TEMP},
   [MB_GPU0_PWCS] =
-  {pal_read_gpu_pwcs, "MB_GPU0_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "MB_GPU0_PWCS", SNR_PWR},
   [MB_GPU1_PWCS] =
-  {pal_read_gpu_pwcs, "MB_GPU1_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "MB_GPU1_PWCS", SNR_PWR},
   [MB_GPU2_PWCS] =
-  {pal_read_gpu_pwcs, "MB_GPU2_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "MB_GPU2_PWCS", SNR_PWR},
   [MB_GPU3_PWCS] =
-  {pal_read_gpu_pwcs, "MB_GPU3_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "MB_GPU3_PWCS", SNR_PWR},
   [MB_GPU4_PWCS] =
-  {pal_read_gpu_pwcs, "MB_GPU4_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "MB_GPU4_PWCS", SNR_PWR},
   [MB_GPU5_PWCS] =
-  {pal_read_gpu_pwcs, "MB_GPU5_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "MB_GPU5_PWCS", SNR_PWR},
   [MB_GPU6_PWCS] =
-  {pal_read_gpu_pwcs, "MB_GPU6_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "MB_GPU6_PWCS", SNR_PWR},
   [MB_GPU7_PWCS] =
-  {pal_read_gpu_pwcs, "MB_GPU7_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "MB_GPU7_PWCS", SNR_PWR},
   [MB_VR_P0V8_VDD0_VIN] =
   {sensors_read_vr, "MB_VR_P0V8_VDD0_VIN", SNR_VOLT},
   [MB_VR_P0V8_VDD1_VIN] =
@@ -730,6 +735,77 @@ struct sensor_map {
   {sensors_read_common_therm, "PDB_SENSOR_OUTLET_TEMP", SNR_TEMP},
   [PDB_SENSOR_OUTLET_TEMP_REMOTE] =
   {sensors_read_common_therm, "PDB_SENSOR_OUTLET_TEMP_REMOTE", SNR_TEMP},
+};
+
+static const char* asic_sensor_name_by_mfr[MFR_MAX_NUM][32] = {
+  [GPU_AMD] = {
+    "MB_AMD_GPU0_TEMP",
+    "MB_AMD_GPU1_TEMP",
+    "MB_AMD_GPU2_TEMP",
+    "MB_AMD_GPU3_TEMP",
+    "MB_AMD_GPU4_TEMP",
+    "MB_AMD_GPU5_TEMP",
+    "MB_AMD_GPU6_TEMP",
+    "MB_AMD_GPU7_TEMP",
+    "MB_GPU0_EDGE_TEMP",
+    "MB_GPU1_EDGE_TEMP",
+    "MB_GPU2_EDGE_TEMP",
+    "MB_GPU3_EDGE_TEMP",
+    "MB_GPU4_EDGE_TEMP",
+    "MB_GPU5_EDGE_TEMP",
+    "MB_GPU6_EDGE_TEMP",
+    "MB_GPU7_EDGE_TEMP",
+    "MB_AMD_HBM0_TEMP",
+    "MB_AMD_HBM1_TEMP",
+    "MB_AMD_HBM2_TEMP",
+    "MB_AMD_HBM3_TEMP",
+    "MB_AMD_HBM4_TEMP",
+    "MB_AMD_HBM5_TEMP",
+    "MB_AMD_HBM6_TEMP",
+    "MB_AMD_HBM7_TEMP",
+    "MB_GPU0_PWCS",
+    "MB_GPU1_PWCS",
+    "MB_GPU2_PWCS",
+    "MB_GPU3_PWCS",
+    "MB_GPU4_PWCS",
+    "MB_GPU5_PWCS",
+    "MB_GPU6_PWCS",
+    "MB_GPU7_PWCS"
+  },
+  [GPU_NV] = {
+    "MB_NVIDIA_GPU0_TEMP",
+    "MB_NVIDIA_GPU1_TEMP",
+    "MB_NVIDIA_GPU2_TEMP",
+    "MB_NVIDIA_GPU3_TEMP",
+    "MB_NVIDIA_GPU4_TEMP",
+    "MB_NVIDIA_GPU5_TEMP",
+    "MB_NVIDIA_GPU6_TEMP",
+    "MB_NVIDIA_GPU7_TEMP",
+    "MB_GPU0_EDGE_TEMP",
+    "MB_GPU1_EDGE_TEMP",
+    "MB_GPU2_EDGE_TEMP",
+    "MB_GPU3_EDGE_TEMP",
+    "MB_GPU4_EDGE_TEMP",
+    "MB_GPU5_EDGE_TEMP",
+    "MB_GPU6_EDGE_TEMP",
+    "MB_GPU7_EDGE_TEMP",
+    "MB_NVIDIA_HBM0_TEMP",
+    "MB_NVIDIA_HBM1_TEMP",
+    "MB_NVIDIA_HBM2_TEMP",
+    "MB_NVIDIA_HBM3_TEMP",
+    "MB_NVIDIA_HBM4_TEMP",
+    "MB_NVIDIA_HBM5_TEMP",
+    "MB_NVIDIA_HBM6_TEMP",
+    "MB_NVIDIA_HBM7_TEMP",
+    "MB_GPU0_PWCS",
+    "MB_GPU1_PWCS",
+    "MB_GPU2_PWCS",
+    "MB_GPU3_PWCS",
+    "MB_GPU4_PWCS",
+    "MB_GPU5_PWCS",
+    "MB_GPU6_PWCS",
+    "MB_GPU7_PWCS"
+  }
 };
 
 size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
@@ -1377,6 +1453,54 @@ static int sensors_read_48v_hsc(uint8_t sensor_num, float *value)
   return ret < 0? ERR_SENSOR_NA: 0;
 }
 
+static int read_gpu_temp(uint8_t sensor_num, float *value)
+{
+  int ret;
+  uint8_t slot = sensor_num - MB_GPU0_TEMP;
+
+  if (!is_asic_prsnt(slot) || pal_is_server_off())
+    return ERR_SENSOR_NA;
+
+  ret = asic_read_gpu_temp(slot, value);
+  return ret < 0? ERR_SENSOR_NA: 0;
+}
+
+static int read_asic_board_temp(uint8_t sensor_num, float *value)
+{
+  int ret;
+  uint8_t slot = sensor_num - MB_GPU0_EDGE_TEMP;
+
+  if (!is_asic_prsnt(slot) || pal_is_server_off())
+    return ERR_SENSOR_NA;
+
+  ret = asic_read_board_temp(slot, value);
+  return ret < 0? ERR_SENSOR_NA: 0;
+}
+
+static int read_asic_mem_temp(uint8_t sensor_num, float *value)
+{
+  int ret;
+  uint8_t slot = sensor_num - MB_GPU0_HBM_TEMP;
+
+  if (!is_asic_prsnt(slot) || pal_is_server_off())
+    return ERR_SENSOR_NA;
+
+  ret = asic_read_mem_temp(slot, value);
+  return ret < 0? ERR_SENSOR_NA: 0;
+}
+
+static int read_gpu_pwcs(uint8_t sensor_num, float *value)
+{
+  int ret;
+  uint8_t slot = sensor_num - MB_GPU0_PWCS;
+
+  if (!is_asic_prsnt(slot) || pal_is_server_off())
+    return ERR_SENSOR_NA;
+
+  ret = asic_read_pwcs(slot, value);
+  return ret < 0? ERR_SENSOR_NA: 0;
+}
+
 int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 {
   if (fru == FRU_MB) {
@@ -1397,12 +1521,50 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
   return 0;
 }
 
+static void init_sensor_threshold_by_mfr(uint8_t vendor)
+{
+  int sensor;
+
+  if (vendor == GPU_AMD) {
+    for (sensor = MB_GPU0_TEMP; sensor < MB_GPU7_TEMP; sensor++) {
+      sensors_threshold[sensor][LCR_THRESH] = 10.0;
+      sensors_threshold[sensor][UCR_THRESH] = 100.0;
+    }
+    for (sensor = MB_GPU0_HBM_TEMP; sensor < MB_GPU7_HBM_TEMP; sensor++) {
+      sensors_threshold[sensor][LCR_THRESH] = 10.0;
+      sensors_threshold[sensor][UCR_THRESH] = 94.0;
+    }
+  } else if (vendor == GPU_NV) {
+    for (sensor = MB_GPU0_TEMP; sensor < MB_GPU7_TEMP; sensor++) {
+      sensors_threshold[sensor][LCR_THRESH] = 10.0;
+      sensors_threshold[sensor][UCR_THRESH] = 85.0;
+    }
+    for (sensor = MB_GPU0_HBM_TEMP; sensor < MB_GPU7_HBM_TEMP; sensor++) {
+      sensors_threshold[sensor][LCR_THRESH] = 10.0;
+      sensors_threshold[sensor][UCR_THRESH] = 95.0;
+    }
+  }
+  return;
+}
+
 int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value)
 {
   float *val = (float*) value;
+  char vendor[16] = {0};
+  static uint8_t vendor_id = GPU_UNKNOWN;
 
   if (fru > FRU_PDB || sensor_num >= FBEP_SENSOR_MAX)
     return -1;
+
+  if (vendor_id == GPU_UNKNOWN) {
+      pal_get_key_value("asic_mfr", vendor);
+      if (!strcmp(vendor, MFR_AMD)) {
+	vendor_id = GPU_AMD;
+      } else if (!strcmp(vendor, MFR_NV)) {
+	vendor_id = GPU_NV;
+      }
+      init_sensor_threshold_by_mfr(vendor_id);
+  }
 
   *val = sensors_threshold[sensor_num][thresh];
 
@@ -1411,13 +1573,28 @@ int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, vo
 
 int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name)
 {
+  char vendor[16] = {0};
+  static uint8_t vendor_id = GPU_UNKNOWN;
+
   if (fru > FRU_PDB)
     return -1;
 
-  if (sensor_num >= FBEP_SENSOR_MAX)
+  if (vendor_id == GPU_UNKNOWN) {
+      pal_get_key_value("asic_mfr", vendor);
+      if (!strcmp(vendor, MFR_AMD))
+	vendor_id = GPU_AMD;
+      else if (!strcmp(vendor, MFR_NV))
+	vendor_id = GPU_NV;
+  }
+
+  if (sensor_num >= FBEP_SENSOR_MAX) {
     sprintf(name, "INVAILD SENSOR");
-  else
+  } else if (vendor_id != GPU_UNKNOWN &&
+             sensor_num >= MB_GPU0_TEMP && sensor_num <= MB_GPU7_PWCS) {
+    sprintf(name, "%s", asic_sensor_name_by_mfr[vendor_id][sensor_num-MB_GPU0_TEMP]);
+  } else {
     sprintf(name, "%s", fbep_sensors_map[sensor_num].name);
+  }
 
   return 0;
 }

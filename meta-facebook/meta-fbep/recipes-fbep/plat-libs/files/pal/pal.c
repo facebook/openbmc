@@ -34,6 +34,7 @@
 #include <openbmc/libgpio.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/obmc-i2c.h>
+#include <facebook/asic.h>
 #include "pal.h"
 
 #define DRIVER_READY "/tmp/driver_probed"
@@ -69,7 +70,7 @@ const char pal_server_list[] = "mb";
 
 char g_dev_guid[GUID_SIZE] = {0};
 
-static int key_set_asic_manf(int, void*);
+static int key_set_asic_mfr(int, void*);
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -88,7 +89,7 @@ struct pal_key_cfg {
   {KEY_PDB_SNR_HEALTH, "1", NULL},
   {KEY_MB_SEL_ERROR, "1", NULL},
   {"server_type", "4", NULL},
-  {"asic_manf", MANF_AMD, key_set_asic_manf},
+  {"asic_mfr", MFR_AMD, key_set_asic_mfr},
   {"ntp_server", "", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
@@ -217,7 +218,7 @@ int pal_set_def_key_value()
   return 0;
 }
 
-static int key_set_asic_manf(int event, void *arg)
+static int key_set_asic_mfr(int event, void *arg)
 {
   int ret, fd;
   off_t offset = 1030;
@@ -236,9 +237,9 @@ static int key_set_asic_manf(int event, void *arg)
   if (ret < 0)
     goto exit;
 
-  if (!strcmp(vendor, MANF_AMD)) {
+  if (!strcmp(vendor, MFR_AMD)) {
     vendor_id = GPU_AMD;
-  } else if (!strcmp(vendor, MANF_NV)) {
+  } else if (!strcmp(vendor, MFR_NV)) {
     vendor_id = GPU_NV;
   } else {
     syslog(LOG_WARNING, "%s is not supported", vendor);

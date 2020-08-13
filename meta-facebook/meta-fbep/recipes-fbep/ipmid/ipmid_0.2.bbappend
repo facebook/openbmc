@@ -15,9 +15,9 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS += "libipmi libipmb libfruid update-rc.d-native"
-RDEPENDS_${PN} += "libipmi libfruid libipmb "
-LDFLAGS += "-lfruid -lipmb"
+DEPENDS += "libipmi libipmb libfruid libasic update-rc.d-native"
+RDEPENDS_${PN} += "libipmi libfruid libipmb libasic "
+LDFLAGS += "-lfruid -lipmb -lasic "
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://fruid.c \

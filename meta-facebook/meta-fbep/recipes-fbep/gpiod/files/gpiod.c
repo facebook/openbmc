@@ -29,6 +29,7 @@
 #include <sys/file.h>
 #include <openbmc/pal.h>
 #include <openbmc/libgpio.h>
+#include <facebook/asic.h>
 
 #define POLL_TIMEOUT -1 /* Forever */
 
@@ -206,7 +207,7 @@ static void* asic_status_monitor()
       continue;
 
     for (i = 0; i < 8; i++) {
-      if (!pal_is_asic_prsnt(i))
+      if (!is_asic_prsnt(i))
         continue;
 
       gp = &asic_gpios[i];

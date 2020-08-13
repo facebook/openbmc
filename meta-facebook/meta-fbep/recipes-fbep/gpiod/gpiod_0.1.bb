@@ -31,7 +31,10 @@ S = "${WORKDIR}"
 
 binfiles = "gpiod \
            "
-DEPENDS += " libpal libgpio-ctrl update-rc.d-native"
+
+LDFLAGS += "-lpal -lgpio-ctrl -lasic"
+DEPENDS += " libpal libgpio-ctrl libasic update-rc.d-native "
+RDEPENDS_${PN} = "libpal libgpio-ctrl libasic "
 
 pkgdir = "gpiod"
 
@@ -54,5 +57,5 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
 
-RDEPENDS_${PN} = "libpal libgpio-ctrl"
+
 

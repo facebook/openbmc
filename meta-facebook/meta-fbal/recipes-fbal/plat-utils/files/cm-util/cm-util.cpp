@@ -31,26 +31,41 @@ struct ModeDesc {
   const std::string desc;
 };
 
-const std::map<std::string, ModeDesc> mode_map{
+const std::map<std::string, ModeDesc> mode_map = {
     {"8S-0", {CM_MODE_8S_0, "8 Socket Mode, Tray 0 is primary"}},
     {"8S-1", {CM_MODE_8S_1, "8 Socket Mode, Tray 1 is primary"}},
     {"8S-2", {CM_MODE_8S_2, "8 Socket Mode, Tray 2 is primary"}},
     {"8S-3", {CM_MODE_8S_3, "8 Socket Mode, Tray 3 is primary"}},
     {"2S", {CM_MODE_2S, "2 Socket Mode"}},
     {"4S-4OU", {CM_MODE_4S_4OU, "4 Socket mode, in 4OU mode"}},
-    {"4S-2OU-3", {CM_MODE_4S_2OU_3, "4 Socket mode with Tray 3 as primary"}},
-    {"4S-2OU-2", {CM_MODE_4S_2OU_2, "4 Socket mode with Tray 2 as primary"}},
+    {"4S-2OU-0", {CM_MODE_4S_2OU_0, "4 Socket mode with Tray 0 as primary"}},
+    {"4S-2OU-1", {CM_MODE_4S_2OU_1, "4 Socket mode with Tray 1 as primary"}}
 };
 
-static int set_mode(uint8_t slot)
+static int set_mode(uint8_t mode)
 {
+  uint8_t sys_mode;
   int rc = 0;
-  if (pal_ep_set_system_mode(slot == 4 ? MB_2S_MODE : MB_8S_MODE)) {
+
+  if (mode == CM_MODE_8S_0 || mode == CM_MODE_8S_1 ||
+      mode == CM_MODE_8S_2 || mode == CM_MODE_8S_3) {
+    sys_mode = MB_8S_MODE;
+  } else if (mode == CM_MODE_2S) {
+    sys_mode = MB_2S_MODE;
+  } else if (mode == CM_MODE_4S_4OU || mode == CM_MODE_4S_2OU_0 ||
+             mode == CM_MODE_4S_2OU_1) {
+    sys_mode = MB_4S_MODE;
+  } else {
+    std::cerr << "Configuration is invaild" << std::endl;
+    return -1;
+  }
+
+  if (is_ep_present() && pal_ep_set_system_mode(sys_mode) < 0) {
     std::cerr << "Set JBOG system mode failed" << std::endl;
     rc = -1;
   }
 
-  if (cmd_cmc_set_system_mode(slot, false) < 0) {
+  if (cmd_cmc_set_system_mode(mode, false) < 0) {
     std::cerr << "Set CM system mode failed" << std::endl;
     rc = -1;
   }
@@ -115,7 +130,7 @@ static int get_mode()
 static int sled_cycle()
 {
   int rc = 0;
-  if (pal_ep_sled_cycle() < 0) {
+  if (is_ep_present() && pal_ep_sled_cycle() < 0) {
     std::cerr << "Request JBOG sled-cycle failed\n";
     rc = -1;
   }
@@ -139,7 +154,7 @@ get_pos() {
 static int
 reset_bmc(const std::string& bmc)
 {
-  if (bmc == "emeraldpools") {
+  if (bmc == "emeraldpools" && is_ep_present()) {
     int fd = i2c_cdev_slave_open(0x6, 0x41, 0);
     if (fd < 0)
       return -1;
@@ -200,7 +215,7 @@ main(int argc, char **argv) {
     return get_pos();
   }
 
-  if (rstbmc) {
+  if (*rstbmc) {
     return reset_bmc(bmc_to_reset);
   }
 

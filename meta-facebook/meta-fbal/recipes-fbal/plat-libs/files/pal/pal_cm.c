@@ -132,14 +132,14 @@ cmd_cmc_get_sensor_value(uint8_t snr_num, uint8_t *rbuf, uint8_t* rlen) {
 }
 
 int
-cmd_cmc_set_system_mode(uint8_t master, bool do_cycle) {
+cmd_cmc_set_system_mode(uint8_t mode, bool do_cycle) {
   uint8_t ipmi_cmd = CMD_CMC_SET_SYSTEM_MODE;
   uint8_t netfn = NETFN_OEM_REQ;
   uint8_t tbuf[8] = {0x00};
   uint8_t rbuf[8] = {0x00};
   uint8_t rlen;
 
-  tbuf[0] = master;
+  tbuf[0] = mode;
   tbuf[1] = do_cycle? 0x1: 0x0;
   return cmc_ipmb_process(ipmi_cmd, netfn, tbuf, 2, rbuf, &rlen);
 }

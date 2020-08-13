@@ -15,6 +15,7 @@ using namespace std;
 
 #define BMC_RW_OFFSET               (64 * 1024)
 #define ROMX_SIZE                   (84 * 1024)
+#define META_SIZE                   (64 * 1024)
 
 int BmcComponent::update(string image_path)
 {
@@ -126,6 +127,36 @@ std::string BmcComponent::get_bmc_version()
 {
   std::string bmc_ver = "NA";
   std::string mtd;
+
+  if ((_vers_mtd == "u-bootro" && system.get_mtd_name(string("metaro"), mtd)) ||
+      (_vers_mtd == "u-boot" && system.get_mtd_name(string("meta"), mtd))) {
+    FILE *fp = NULL;
+    char *line = NULL;
+    do {
+      if (!(fp = fopen(mtd.c_str(), "r")))
+        break;
+
+      if (!(line = (char *)malloc(META_SIZE)))
+        break;
+
+      if (fgets(line, META_SIZE, fp)) {
+        try {
+          json meta = json::parse(string(line));
+          bmc_ver = meta["version_infos"]["fw_ver"];
+        } catch (json::exception& e) {
+          syslog(LOG_ERR, "%s", e.what());
+        }
+      }
+    } while (0);
+    if (fp)
+      fclose(fp);
+    if (line)
+      free(line);
+
+    if (bmc_ver != "NA")
+      return bmc_ver;
+  }
+
   if (!system.get_mtd_name(_vers_mtd, mtd)) {
     return bmc_ver;
   }
@@ -140,7 +171,7 @@ std::string BmcComponent::get_bmc_version(const std::string &mtd)
   FILE *fp;
 
   snprintf(cmd, sizeof(cmd),
-      "dd if=%s bs=64k count=6 2>/dev/null | strings | grep -E 'U-Boot 20[[:digit:]]{2}\\.[[:digit:]]{2}'",
+      "dd if=%s bs=64k count=6 2>/dev/null | strings | grep -E 'U-Boot (SPL ){,}20[[:digit:]]{2}\\.[[:digit:]]{2}'",
       mtd.c_str());
   fp = popen(cmd, "r");
   if (fp) {
@@ -148,7 +179,7 @@ std::string BmcComponent::get_bmc_version(const std::string &mtd)
     char *ver = 0;
     while (fgets(line, sizeof(line), fp)) {
       int ret;
-      ret = sscanf(line, "U-Boot 20%*2d.%*2d%*[ ]%m[^ \n]%*[ ](%*[^)])\n", &ver);
+      ret = sscanf(line, "U-Boot%*[^2]20%*2d.%*2d%*[ ]%m[^ \n]%*[ ](%*[^)])\n", &ver);
       if (1 == ret) {
         bmc_ver = ver;
         break;

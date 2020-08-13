@@ -27,6 +27,11 @@
         "action": ["log-warning", "bmc-error-trigger"]
       },
       {
+        "value": 90.0,
+        "hysteresis" : 5.0,
+        "action": ["bmc-mem-clear"]
+      },
+      {
         "value": 95.0,
         "hysteresis" : 5.0,
         "action": ["log-critical", "bmc-error-trigger", "reboot"]
@@ -49,7 +54,7 @@
     "fru": [1]
   },
   "verified_boot": {
-    "enabled": false
+    "enabled": true
   },
   "bmc_timestamp": {
     "enabled": true

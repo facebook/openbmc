@@ -29,6 +29,15 @@
 
 #define READ_ERROR_RESPONSE -2
 
+/*
+ * REG_INT_DATA_SIZE defines the memory size required to store a specific
+ * "Register Interval": uint32_t is reserved for timestamp, while the
+ * remaining is to store register values (per_register_size=sizeof(u16),
+ * register_count=iv->len).
+ */
+#define REG_INT_DATA_SIZE(_iv) (sizeof(uint32_t) + \
+                                (sizeof(uint16_t) * (_iv)->len))
+
 #define TIME_UPDATE(_t)  do {                        \
   struct timespec _ts;                               \
   if (clock_gettime(CLOCK_REALTIME, &_ts) != 0) {    \
@@ -398,6 +407,42 @@ static int check_active_psus(void) {
   return error;
 }
 
+/*
+ * "psu_datastore_t" points to the memory area which stores all the
+ * monitored registers of a specific PSU (identified by address), and
+ * logically the memory area can be divided into 3 sub-areas:
+ *
+ * M = "config->num_intervals", and N = "iv->keep" in below picture:
+ *
+ * |--------------------------|
+ * |                          |
+ * | struct psu_datastore_t   |
+ * |                          |
+ * |--------------------------|
+ * | reg_range_data_t[0]      |
+ * | reg_range_data_t[1]      |
+ * | ......                   |
+ * | reg_range_data_t[M-1]    |
+ * |--------------------------|
+ * | timestamp(4-byte)        |
+ * | reg_interval_0,keep#0    |
+ * | timestamp(4-byte)        |
+ * | reg_interval_0,keep#1    |
+ * |......                    |
+ * | timestamp(4-byte)        |
+ * | reg_interval_0,keep#N-1] |
+ * | timestamp(4-byte)        |
+ * | reg_interval_1,keep#0    |
+ * | timestamp(4-byte)        |
+ * | reg_interval_1,keep#1    |
+ * |......                    |
+ * | timestamp(4-byte)        |
+ * | reg_interval_M-1,keep#0  |
+ * |......                    |
+ * | timestamp(4-byte)        |
+ * | reg_interval_M-1,keep#N-1|
+ * |--------------------------|
+ */
 static psu_datastore_t* alloc_monitoring_data(uint8_t addr) {
   void *mem;
   size_t size;
@@ -410,7 +455,7 @@ static psu_datastore_t* alloc_monitoring_data(uint8_t addr) {
 
   for (i = 0; i < rackmond_config.config->num_intervals; i++) {
     iv = &rackmond_config.config->intervals[i];
-    pitch = sizeof(uint32_t) + (sizeof(uint16_t) * iv->len);
+    pitch = REG_INT_DATA_SIZE(iv);
     data_size = pitch * iv->keep;
     size += data_size;
   }
@@ -430,7 +475,7 @@ static psu_datastore_t* alloc_monitoring_data(uint8_t addr) {
 
   for (i = 0; i < rackmond_config.config->num_intervals; i++) {
     iv = &rackmond_config.config->intervals[i];
-    pitch = sizeof(uint32_t) + (sizeof(uint16_t) * iv->len);
+    pitch = REG_INT_DATA_SIZE(iv);
     data_size = pitch * iv->keep;
     d->range_data[i].i = iv;
     d->range_data[i].mem_begin = mem;
@@ -520,7 +565,7 @@ static int alloc_monitoring_datas(void) {
 static void record_data(reg_range_data_t* rd, uint32_t time,
                         uint16_t* regs) {
   int n_regs = (rd->i->len);
-  int pitch = sizeof(time) + (sizeof(uint16_t) * n_regs);
+  int pitch = REG_INT_DATA_SIZE(rd->i);
   int mem_size = pitch * rd->i->keep;
 
   memcpy(rd->mem_begin + rd->mem_pos, &time, sizeof(time));
@@ -565,18 +610,18 @@ static int fetch_monitored_data(void) {
       int err;
       uint32_t timestamp;
       reg_range_data_t* rd = &mdata->range_data[r];
-      monitor_interval* i = rd->i;
-      uint16_t regs[i->len];
+      monitor_interval* iv = rd->i;
+      uint16_t regs[iv->len];
 
       err = read_holding_reg(&rackmond_config.rs485,
                              rackmond_config.modbus_timeout, addr,
-                             i->begin, i->len, regs);
+                             iv->begin, iv->len, regs);
 
       sched_yield();
       if (err != 0) {
         if (err != READ_ERROR_RESPONSE) {
           log("Error %d reading %02x registers at %02x from %02x\n",
-              err, i->len, i->begin, addr);
+              err, iv->len, iv->begin, addr);
           if(err == MODBUS_BAD_CRC) {
             mdata->crc_errors++;
           }
@@ -588,14 +633,14 @@ static int fetch_monitored_data(void) {
       }
 
       TIME_UPDATE(timestamp);
-      if (rd->i->flags & MONITOR_FLAG_ONLY_CHANGES) {
-        int pitch = sizeof(timestamp) + (sizeof(uint16_t) * i->len);
+      if (iv->flags & MONITOR_FLAG_ONLY_CHANGES) {
+        int pitch = REG_INT_DATA_SIZE(iv);
         int lastpos = rd->mem_pos - pitch;
         if (lastpos < 0) {
-          lastpos = (pitch * rd->i->keep) - pitch;
+          lastpos = (pitch * iv->keep) - pitch;
         }
         if (!memcmp(rd->mem_begin + lastpos + sizeof(timestamp),
-              regs, sizeof(uint16_t) * i->len) &&
+              regs, sizeof(uint16_t) * iv->len) &&
            memcmp(rd->mem_begin, "\x00\x00\x00\x00", 4)) {
           continue;
         }
@@ -611,7 +656,7 @@ static int fetch_monitored_data(void) {
           fprintf(rackmond_config.status_log,
                   "%s: Change to status register %02x on address %02x. "
                   "New value: %02x\n",
-                  timestr, i->begin, addr, regs[0]);
+                  timestr, iv->begin, addr, regs[0]);
           fflush(rackmond_config.status_log);
         }
       }
@@ -619,8 +664,8 @@ static int fetch_monitored_data(void) {
       global_lock();
       record_data(rd, timestamp, regs);
       global_unlock();
-    }
-  } /* for */
+    } /* for each monitor_interval */
+  } /* for each psu */
 
 cleanup:
   return error;

@@ -21,6 +21,14 @@ typedef struct raw_modbus_command {
 // (for watching changes to status flags registers)
 #define MONITOR_FLAG_ONLY_CHANGES 0x1
 
+/*
+ * "monitor_interval" doesn't refer to time interval, it defines a section
+ * or register space in PSU's register map.
+ *  - "begin" defines the register start address
+ *  - "len" is the register count
+ *  - "keep" tells rackmond how many sets of the data (register values)
+ *    need to be stored in memory.
+ */
 typedef struct monitor_interval {
   uint16_t begin;
   uint16_t len;

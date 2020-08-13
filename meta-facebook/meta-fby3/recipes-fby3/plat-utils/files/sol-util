@@ -21,20 +21,12 @@
 . /usr/local/fbpackages/utils/ast-functions
 LOGFILE="/var/log/mTerm_$1.log"
 LOGFILE_B="/var/log/mTerm_$1_backup.log"
-
+SLED_TYPE="/mnt/data/kv_store/sled_system_conf"
 I2CSET="/usr/sbin/i2cset -y "
 
-EXP_M2A_UART=0
-EXP_M2B_UART=1
-EXP_M2C_UART=2
-EXP_M2D_UART=3
-EXP_M2E_UART=4
-EXP_M2F_UART=5
-EXP_BIC_UART=6
-
 SB_CPLD_ADDR="0x0f"
-M2_CPLD_ADDR="0x5d"
-RISER_CPLD_ADDR="0x5c"
+FRONT_EXP_CPLD_ADDR="0x5d"
+RISER_EXP_CPLD_ADDR="0x5c"
 
 SLOT=
 SLOT_NUM=
@@ -62,16 +54,16 @@ function get_slot_num() {
   local slot_num=0
   case $1 in
     slot1)
-      slot_num=0
-    ;;
-    slot2)
       slot_num=1
     ;;
-    slot3)
+    slot2)
       slot_num=2
     ;;
-    slot4)
+    slot3)
       slot_num=3
+    ;;
+    slot4)
+      slot_num=4
     ;;
   esac
 
@@ -105,93 +97,101 @@ function set_uart_src() {
   $I2CSET $bus $addr $data
 }
 
-if [ "$1" == "slot1" ] || [ "$1" == "slot2" ] || [ "$1" == "slot3" ] || [ "$1" == "slot4" ]
-then
+# Only support slot[1|2|3|4]
+if [[ "$1" =~ ^(slot[1-4]{1})$ ]]; then
   SLOT=$1
 else
   show_usage
-  exit -1
+  exit -1;
+fi
+
+# If users want to read a history, there is no need to run the rest
+if [ $# -gt 1 ]; then
+  if [[ "$2" == "--history" ]]; then
+    cat $LOGFILE_B $LOGFILE 2>/dev/null
+    exit 0;
+  fi
 fi
 
 SLOT_NUM=$(get_slot_num $SLOT)
 I2C_NUM=$(get_bus_num $SLOT)
-BOARD_ID=$(get_bmc_board_id)
+SLED_TYPE=$(cat $SLED_TYPE)
+COMP=$2
+DEV=$3
+CPLD_ADDR=
+EXP_CPLD_ADDR=
+DEV_NUM=
 
-if [ $BOARD_ID -eq 14 ] || [ $BOARD_ID -eq 7 ]; then
-  if [ $(is_server_prsnt $[ $SLOT_NUM + 1 ]) == "0" ]; then
+if [ "$SLED_TYPE" == "Type_17" ]; then
+  if ! [ "$SLOT" == "slot1" ]; then
+    echo "$SLOT is empty"
+    exit -1;
+  else
+    # notify CPLD to set the uart src to class 2
+    set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x02"
+  fi
+else
+  if [ $(is_server_prsnt ${SLOT_NUM}) == "0" ]; then
     echo "The $SLOT is empty"
     exit -1;
+  else
+    # notify CPLD to set the uart src to class 1
+    set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x01"
   fi
-elif [ $BOARD_ID -eq 9 ]; then
-  if [ $SLOT_NUM != 0 ]; then
-    echo "The $SLOT is empty"
+fi
+
+# check COMP and DEV
+if [ -n "$COMP" ]; then
+  # check COMP first
+  if [ "$COMP" == "1ou" ] && [[ ! "$SLED_TYPE" =~ ^(Type_(1|17))$ ]]; then
+    EXP_CPLD_ADDR=${FRONT_EXP_CPLD_ADDR}
+  elif [ "$COMP" == "2ou" ] && [[ ! "$SLED_TYPE" =~ ^(Type_(1|10))$ ]]; then
+    EXP_CPLD_ADDR=${RISER_EXP_CPLD_ADDR}
+  elif [ "$COMP" == "sb" ]; then
+    CPLD_ADDR=${SB_CPLD_ADDR}
+  else
+    echo "$COMP is not supported!"
     exit -1;
   fi
+
+  # check DEV
+  if [[ "$DEV" =~ ^(dev[0-5]{1})$ ]]; then
+    DEV_NUM=${3:3:4}
+    if [ "$COMP" == "1ou" ] && [[ "$DEV" =~ ^(dev[4-5]{1})$ ]]; then
+      echo "$DEV is not supported!"
+      exit -1;
+    fi
+  elif [ "$DEV" == "bic" ]; then
+    if [ -n "$CPLD_ADDR" ]; then
+      [ "$SLED_TYPE" == "Type_17" ] && DEV_NUM="0x2" || DEV_NUM="0x4"
+    else
+      DEV_NUM="0x6"
+    fi
+  else
+    echo "$DEV is not supported!"
+    exit -1;
+  fi
+
+  if [ -n "$CPLD_ADDR" ]; then
+    set_uart_src $I2C_NUM $CPLD_ADDR "0x01 $DEV_NUM"
+  else
+    # redirect the uart src to an expansion board
+    if [ "$COMP" == "1ou" ]; then
+      set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x01"
+    else
+      [ "$SLED_TYPE" == "Type_17" ] &&
+        set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x01" ||
+        set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x02"
+    fi
+    select_expansion_uart $I2C_NUM $EXP_CPLD_ADDR $DEV_NUM
+  fi
+else
+  set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x03"
 fi
 
 if [ $(get_slot_type $SLOT_NUM) == "0" ]; then
   # set UART clock source 24MHz
   devmem_clear_bit $(scu_addr 4c) $((SLOT_NUM + 23))
-else
-  show_usage
-  exit -1
-fi
-
-
-#Check the board ID and setup the class information
-# reg    val
-#  00 [0x1|0x2]
-# val: 0x1=class1, 0x2=class2
-
-#Setup the uart console to host
-#Class1
-# reg    val
-#  01 [0x1|0x2|0x3|0x4]
-# val: 0x1=1ou, 0x2=2ou, 0x3=Host, 0x4=SB BIC
-#
-#Class2
-# reg    val
-#  01 [0x1|0x2|0x3]
-# val: 0x1=2ou, 0x2=Host, 0x3=SB BIC, 0x4=SB BIC
-
-
-if [ $BOARD_ID -eq 9 ]; then
-  set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x02"
-  set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x03"
-elif [ $BOARD_ID -eq 14 ] || [ $BOARD_ID -eq 7 ]; then
-  set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x01"
-  set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x03"
-else
-  echo "Is board id correct(id=$BOARD_ID)?"
-  exit -1
-fi
-
-if [ $# -gt 1 ]; then
-  if [[ "$2" == "--history" ]]; then
-    cat $LOGFILE_B $LOGFILE 2>/dev/null
-    exit 0
-  fi
-  
-  if [[ "$2" == "1ou" ]] && [[ "$3" == "bic" ]]; then
-    set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x01"     
-    select_expansion_uart $I2C_NUM $M2_CPLD_ADDR $EXP_BIC_UART 
-  elif [[ "$2" == "2ou" ]] && [[ "$3" == "bic" ]]; then
-    if [ $BOARD_ID -eq 9 ]; then
-      set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x01"
-    else
-      set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x02"
-    fi
-    select_expansion_uart $I2C_NUM $RISER_CPLD_ADDR $EXP_BIC_UART
-  elif [[ "$2" == "sb" ]] && [[ "$3" == "bic" ]]; then
-    if [ $BOARD_ID -eq 9 ]; then
-      set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x02"
-    else
-      set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x04"
-    fi
-  else
-    show_usage
-    exit -1
-  fi
 fi
 
 exec /usr/local/bin/mTerm_client $SLOT

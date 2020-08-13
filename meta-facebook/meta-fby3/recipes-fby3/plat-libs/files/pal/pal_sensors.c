@@ -243,7 +243,7 @@ const uint8_t bic_2ou_sensor_list[] = {
 };
 
 const uint8_t bic_1ou_edsff_sensor_list[] = {
-  //BIC 1OU EDSFF Sensors 
+  //BIC 1OU EDSFF Sensors
   BIC_1OU_EDSFF_SENSOR_NUM_T_MB_OUTLET_TEMP_T,
   BIC_1OU_EDSFF_SENSOR_NUM_V_12_AUX,
   BIC_1OU_EDSFF_SENSOR_NUM_V_12_EDGE,
@@ -296,12 +296,12 @@ const uint8_t bic_bb_sensor_list[] = {
 
 //BIC Sierra Point Expansion Board Sensors
 const uint8_t bic_spe_sensor_list[] = {
-  BIC_SPE_SENSOR_SSD0_TEMP, 
-  BIC_SPE_SENSOR_SSD1_TEMP, 
-  BIC_SPE_SENSOR_SSD2_TEMP, 
-  BIC_SPE_SENSOR_SSD3_TEMP, 
-  BIC_SPE_SENSOR_SSD4_TEMP, 
-  BIC_SPE_SENSOR_SSD5_TEMP, 
+  BIC_SPE_SENSOR_SSD0_TEMP,
+  BIC_SPE_SENSOR_SSD1_TEMP,
+  BIC_SPE_SENSOR_SSD2_TEMP,
+  BIC_SPE_SENSOR_SSD3_TEMP,
+  BIC_SPE_SENSOR_SSD4_TEMP,
+  BIC_SPE_SENSOR_SSD5_TEMP,
   BIC_SPE_SENSOR_INLET_TEMP,
   BIC_SPE_SENSOR_12V_EDGE_VOL,
   BIC_SPE_SENSOR_12V_MAIN_VOL,
@@ -657,8 +657,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_PDB_DL_VDELTA", 0xCC, read_pdb_dl_vdelta, true, {0.9, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCC
   {"BMC_SENSOR_CURR_LEAKAGE", 0xCD, read_curr_leakage, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xCD
   {"BMC_SENSOR_PDB_BB_VDELTA", 0xCE, read_cached_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCE
-  {"BMC_SENSOR_MEDUSA_VDELTA", 0xCF, read_cached_val, true, {0.5, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCF
-
+  {"BMC_SENSOR_MEDUSA_VDELTA", 0xCF, read_medusa_val, true, {0.5, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCF
   {"BMC_SENSOR_MEDUSA_CURR", 0xD0, read_medusa_val, 0, {144, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xD0
   {"BMC_SENSOR_MEDUSA_PWR", 0xD1, read_medusa_val, 0, {1800, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xD1
   {"BMC_SENSOR_NIC_P12V", ADC10, read_adc_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT},//0xD2
@@ -752,14 +751,14 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const ui
       memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_1ou_skip_sensor_list, bic_1ou_skip_sensor_cnt);
       current_cnt += bic_1ou_skip_sensor_cnt;
     }
-    
+
     memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_2ou_skip_sensor_list, bic_2ou_skip_sensor_cnt);
     current_cnt += bic_2ou_skip_sensor_cnt;
   }
-  
+
   *skip_sensor_list = (uint8_t *) bic_dynamic_skip_sensor_list[fru-1];
   *cnt = current_cnt;
-  
+
   return 0;
 }
 
@@ -1320,10 +1319,6 @@ read_cached_val(uint8_t snr_number, float *value) {
         snr1_num = BMC_SENSOR_MEDUSA_VOUT;
         snr2_num = BMC_SENSOR_HSC_VIN;
       break;
-    case BMC_SENSOR_MEDUSA_VDELTA:
-        snr1_num = BMC_SENSOR_MEDUSA_VIN;
-        snr2_num = BMC_SENSOR_MEDUSA_VOUT;
-      break;
     default:
       return READING_NA;
       break;
@@ -1338,7 +1333,6 @@ read_cached_val(uint8_t snr_number, float *value) {
       *value = temp1 * temp2;
       break;
     case BMC_SENSOR_PDB_BB_VDELTA:
-    case BMC_SENSOR_MEDUSA_VDELTA:
       *value = temp1 - temp2;
       break;
   }
@@ -1350,6 +1344,8 @@ static int
 read_medusa_val(uint8_t snr_number, float *value) {
   static bool is_cached = false;
   static bool is_ltc4282 = true;
+  static float medusa_vin = 0;
+  static float medusa_vout = 0;
   static char chip[20] = {0};
   int ret = READING_NA;
 
@@ -1371,10 +1367,12 @@ read_medusa_val(uint8_t snr_number, float *value) {
     case BMC_SENSOR_MEDUSA_VIN:
       ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_VIN", value);
       if ( is_ltc4282 == false ) *value *= 0.99;
+      medusa_vin = *value;
       break;
     case BMC_SENSOR_MEDUSA_VOUT:
       ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_VOUT", value);
       if ( is_ltc4282 == false ) *value *= 0.99;
+      medusa_vout = *value;
       break;
     case BMC_SENSOR_MEDUSA_CURR:
       ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_CURR", value);
@@ -1394,6 +1392,12 @@ read_medusa_val(uint8_t snr_number, float *value) {
           *value = (*value * 0.98) + 25;
         }
       }
+      break;
+    case BMC_SENSOR_MEDUSA_VDELTA:
+      *value = medusa_vin - medusa_vout;
+      //prevent sensor-util to show -0.00 volts
+      if ( *value < 0 ) *value = 0;
+      ret = PAL_EOK;
       break;
   }
 
@@ -1673,7 +1677,7 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num, const uint8_t bmc_location
   uint8_t *bic_skip_list;
   int skip_sensor_cnt;
   int i = 0;
-  
+
   get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt, bmc_location, config_status);
 
   switch(fru){
@@ -1681,7 +1685,7 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num, const uint8_t bmc_location
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      
+
       for (i = 0; i < skip_sensor_cnt; i++) {
         if ( sensor_num == bic_skip_list[i] ) {
           return PAL_ENOTSUP;
@@ -1745,7 +1749,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
        ((config_status & PRESENT_2OU) == PRESENT_2OU) ) {
     ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
   } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xEC) ) { //BB
-    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF); 
+    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);
   } else {
     return READING_NA;
   }
@@ -1865,7 +1869,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      //check a config status of a blade 
+      //check a config status of a blade
       if ( config_status[fru-1] == CONFIG_UNKNOWN ) {
         ret = bic_is_m2_exp_prsnt(fru);
         if ( ret < 0 ) {

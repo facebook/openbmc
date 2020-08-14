@@ -25,7 +25,9 @@ PR = "r0"
 PV = "0.1"
 
 SRC_URI = "file://Makefile \
-           file://supcpld.c \
+           file://fancpld.c \
+           file://smbcpld.c \
+           file://scmcpld.c \
            file://COPYING \
           "
 
@@ -36,5 +38,7 @@ DEPENDS += "kernel-module-i2c-dev-sysfs"
 RDEPENDS_${PN} += "kernel-module-i2c-dev-sysfs"
 
 KERNEL_MODULE_AUTOLOAD += "                     \
- supcpld                                        \
+ fancpld                                        \
+ smbcpld                                        \
+ scmcpld                                        \
 "

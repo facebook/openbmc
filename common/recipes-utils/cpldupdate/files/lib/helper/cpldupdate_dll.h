@@ -37,11 +37,15 @@ typedef int (* cpldupdate_dll_write_pin_fn)(void *ctx, cpldupdate_pin_en pin,
                                             cpldupdate_pin_value_en value);
 typedef int (* cpldupdate_dll_read_pin_fn)(void *ctx, cpldupdate_pin_en pin,
                                            cpldupdate_pin_value_en *value);
+typedef int (* cpldupdate_dll_do_io_fn)(void *ctx, cpldupdate_pin_value_en tms,
+                                        cpldupdate_pin_value_en tdi,
+                                        cpldupdate_pin_value_en *tdo);
 typedef void (* cpldupdate_dll_free_fn)(void *ctx);
 
 #define CPLDUPDATE_DLL_INIT_FN_NAME "cpldupdate_dll_init"
 #define CPLDUPDATE_DLL_WRITE_PIN_FN_NAME "cpldupdate_dll_write_pin"
 #define CPLDUPDATE_DLL_READ_PIN_FN_NAME "cpldupdate_dll_read_pin"
+#define CPLDUPDATE_DLL_DO_IO_FN_NAME "cpldupdate_dll_do_io"
 #define CPLDUPDATE_DLL_FREE_FN_NAME "cpldupdate_dll_free"
 
 struct cpldupdate_helper_st {
@@ -50,6 +54,7 @@ struct cpldupdate_helper_st {
   cpldupdate_dll_init_fn init;
   cpldupdate_dll_write_pin_fn write_pin;
   cpldupdate_dll_read_pin_fn read_pin;
+  cpldupdate_dll_do_io_fn do_io;
   cpldupdate_dll_free_fn free;
 };
 
@@ -71,6 +76,18 @@ static int cpldupdate_helper_read_pin(
     struct cpldupdate_helper_st *helper,
     cpldupdate_pin_en pin, cpldupdate_pin_value_en *value) {
   return helper->read_pin(helper->func_ctx, pin, value);
+}
+
+static int cpldupdate_helper_has_do_io(
+    struct cpldupdate_helper_st *helper) {
+  return helper->do_io == NULL ? 0 : 1;
+}
+
+static int cpldupdate_helper_do_io(
+    struct cpldupdate_helper_st *helper,
+    cpldupdate_pin_en tms, cpldupdate_pin_en tdi,
+    cpldupdate_pin_en *tdo) {
+  return helper->do_io(helper->func_ctx, tms, tdi, tdo);
 }
 
 #endif

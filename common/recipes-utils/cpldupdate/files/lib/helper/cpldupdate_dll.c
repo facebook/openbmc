@@ -40,9 +40,9 @@ int cpldupdate_helper_open(const char *dll_name,
     goto err_out;
   }
 
-#define _OPEN_SYM(field, sym) do {                            \
+#define _OPEN_SYM(field, sym, expected) do {                  \
   helper->field = dlsym(helper->dll_hdl, sym);                \
-  if (!helper->field) {                                       \
+  if ((expected) && !helper->field) {                           \
     rc = errno;                                               \
     fprintf(stderr, "Failed to find function %s in %s: %s\n", \
             sym, dll_name, dlerror());                        \
@@ -50,10 +50,11 @@ int cpldupdate_helper_open(const char *dll_name,
   }                                                           \
 } while(0)
 
-  _OPEN_SYM(init, CPLDUPDATE_DLL_INIT_FN_NAME);
-  _OPEN_SYM(write_pin, CPLDUPDATE_DLL_WRITE_PIN_FN_NAME);
-  _OPEN_SYM(read_pin, CPLDUPDATE_DLL_READ_PIN_FN_NAME);
-  _OPEN_SYM(free, CPLDUPDATE_DLL_FREE_FN_NAME);
+  _OPEN_SYM(init, CPLDUPDATE_DLL_INIT_FN_NAME, 1);
+  _OPEN_SYM(do_io, CPLDUPDATE_DLL_DO_IO_FN_NAME, 0);
+  _OPEN_SYM(write_pin, CPLDUPDATE_DLL_WRITE_PIN_FN_NAME, helper->do_io ? 0 : 1);
+  _OPEN_SYM(read_pin, CPLDUPDATE_DLL_READ_PIN_FN_NAME, helper->do_io ? 0 : 1);
+  _OPEN_SYM(free, CPLDUPDATE_DLL_FREE_FN_NAME, 1);
 
 #undef _OPEN_SYM
 

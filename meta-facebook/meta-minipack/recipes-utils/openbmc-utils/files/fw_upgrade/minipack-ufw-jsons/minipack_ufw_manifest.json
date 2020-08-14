@@ -7,7 +7,7 @@
     "bios" : {
         "get_version" : "fw-util scm --version |grep BIOS| cut -d ' ' -f 3",
         "priority" : 3,
-        "upgrade_cmd" : "/usr/bin/fw-util scm --update --bios {filename}"
+        "upgrade_cmd" : "/usr/bin/fw-util scm --update bios {filename}"
     },
     "fcm" : {
         "get_version" : "cpld_ver.sh |grep FCM|grep Top|cut -d ' ' -f 3",

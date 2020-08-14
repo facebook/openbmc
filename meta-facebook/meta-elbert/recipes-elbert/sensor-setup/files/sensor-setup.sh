@@ -39,10 +39,8 @@
 # detecting the NCP4200 buck converters after poweron.  This has not
 # been carefully explored.
 
-# ELBERTTODO 442084 442085 ADD sensor support
-# modprobe lm75
-# modprobe lm90
-# modprobe max6697
-# modprobe pmbus
-# modprobe ucd9000
-
+modprobe lm75
+modprobe lm90
+modprobe max6697
+modprobe pmbus
+modprobe ucd9000

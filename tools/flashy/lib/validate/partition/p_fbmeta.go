@@ -64,8 +64,6 @@ const (
 	FBMETA_RAW = "raw"
 	// FBMETA_FIT : U-Boot defined fit
 	FBMETA_FIT = "fit"
-	// FBMETA_MTDONLY : only in flash, not in firmware image, normally persistent data partition
-	FBMETA_MTDONLY = "mtdonly"
 	// FBMETA_META : the image meta partition
 	FBMETA_META = "meta"
 	// FBMETA_DATA : data partition
@@ -252,8 +250,7 @@ var getPartitionConfigTypeFromFBMetaPartInfoType = func(t FBMetaPartInfoType, vb
 		return FBMETA_MD5, nil
 	case FBMETA_FIT:
 		return FIT, nil
-	case FBMETA_MTDONLY,
-		FBMETA_META,
+	case FBMETA_META,
 		FBMETA_DATA:
 		return IGNORE, nil
 	default:

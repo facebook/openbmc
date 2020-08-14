@@ -10,7 +10,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
  * for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNeU General Public License
  * along with this program in a file named COPYING; if not, write to the
  * Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor,
@@ -234,7 +234,7 @@ func TestGetAllPartitionsFromPartitionConfigs(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			name: "start offset too large, non ignore",
+			name: "start offset too large",
 			partitionConfigs: []PartitionConfigInfo{
 				{
 					Name:   "foobar",
@@ -244,21 +244,8 @@ func TestGetAllPartitionsFromPartitionConfigs(t *testing.T) {
 				},
 			},
 			want: nil,
-			wantErr: errors.Errorf("Wanted start offset (%v) of '%v' partition larger than data size (%v)",
-				20*1024, "foobar", 4*1024),
-		},
-		{
-			name: "start offset too large, ignored",
-			partitionConfigs: []PartitionConfigInfo{
-				{
-					Name:   "foobar",
-					Offset: 20 * 1024,
-					Size:   1024,
-					Type:   IGNORE,
-				},
-			},
-			want:    []Partition{},
-			wantErr: nil,
+			wantErr: errors.Errorf("Wanted start offset (%v) larger than image file size (%v)",
+				20*1024, 4*1024),
 		},
 	}
 	// compare two partitions slices

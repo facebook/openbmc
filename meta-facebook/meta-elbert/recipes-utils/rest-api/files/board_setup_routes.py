@@ -18,8 +18,11 @@
 from board_endpoint import boardApp_Handler
 from boardroutes import *
 
+from aiohttp.web import Application
+
+
 # ELBERTTODO 442087 REST API SUPPORT
-def setup_board_routes(app):
+def setup_board_routes(app: Application, write_enabled: bool):
     bhandler = boardApp_Handler()
     app.router.add_get(board_routes[0], bhandler.rest_fruid_scm_hdl)
     app.router.add_get(board_routes[1], bhandler.rest_seutil_hdl)

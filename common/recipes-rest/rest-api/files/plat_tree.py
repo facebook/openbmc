@@ -17,7 +17,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+from aiohttp.web import Application
 
 # Initialize Platform specific Resource Tree
-def init_plat_tree():
+def setup_board_routes(app: Application, write_enabled: bool):
     return None

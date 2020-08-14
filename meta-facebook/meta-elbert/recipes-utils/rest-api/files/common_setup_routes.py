@@ -20,13 +20,14 @@
 from common_endpoint import commonApp_Handler
 from rest_utils import *
 
+from aiohttp.web import Application
 
-def setup_common_routes(app):
+def setup_common_routes(app: Application, write_enabled: bool):
     chandler = commonApp_Handler()
     app.router.add_get(common_routes[0], chandler.rest_api)
     app.router.add_get(common_routes[1], chandler.rest_sys)
     app.router.add_get(common_routes[2], chandler.rest_mb_sys)
-    app.router.add_get(common_routes[3], chandler.rest_fruid_hdl)
+    app.router.add_get(common_routes[3], chandler.rest_fruid_pim_hdl)
     app.router.add_get(common_routes[4], chandler.rest_bmc_hdl)
     app.router.add_get(common_routes[5], chandler.rest_server_hdl)
     app.router.add_post(common_routes[5], chandler.rest_server_act_hdl)
@@ -37,4 +38,3 @@ def setup_common_routes(app):
     app.router.add_post(common_routes[9], chandler.psu_update_hdl_post)
     app.router.add_get(common_routes[10], chandler.rest_slotid_hdl)
     app.router.add_get(common_routes[11], chandler.rest_mTerm_status)
-    app.router.add_get(common_routes[12], chandler.rest_ntp_status)

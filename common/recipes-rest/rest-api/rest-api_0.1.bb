@@ -27,9 +27,9 @@ DEPENDS_append = " update-rc.d-native aiohttp-native json-log-formatter-native"
 RDEPENDS_${PN} += "python3-core aiohttp json-log-formatter"
 
 
-SRC_URI = "file://rest-api-1/setup-rest-api.sh \
+SRC_URI = "file://setup-rest-api.sh \
            file://rest.py \
-           file://rest-api-1/common_endpoint.py \
+           file://common_endpoint.py \
            file://common_middlewares.py\
            file://common_logging.py\
            file://common_auth.py\
@@ -39,7 +39,7 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://acl_providers/common_acl_provider_base.py\
            file://acl_providers/dummy_acl_provider.py\
            file://board_endpoint.py \
-           file://rest-api-1/rest_watchdog.py \
+           file://rest_watchdog.py \
            file://rest_config.py \
            file://pal.py \
            file://node.py \
@@ -47,21 +47,21 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://vboot.py \
            file://run_rest \
            file://rest.cfg \
-           file://rest-api-1/rest_bmc.py \
-           file://rest-api-1/rest_fruid.py \
-           file://rest-api-1/rest_fruid_pim.py \
-           file://rest-api-1/rest_piminfo.py \
-           file://rest-api-1/rest_gpios.py \
-           file://rest-api-1/rest_server.py \
-           file://rest-api-1/rest_sensors.py \
-           file://rest-api-1/rest_slotid.py \
-           file://rest-api-1/rest_psu_update.py \
-           file://rest-api-1/rest_mTerm.py \
-           file://rest-api-1/eeprom_utils.py \
-           file://rest-api-1/rest_fcpresent.py \
-           file://rest-api-1/rest_ntpstatus.py \
-           file://rest-api-1/rest_helper.py \
-           file://rest-api-1/rest_utils.py \
+           file://rest_bmc.py \
+           file://rest_fruid.py \
+           file://rest_fruid_pim.py \
+           file://rest_piminfo.py \
+           file://rest_gpios.py \
+           file://rest_server.py \
+           file://rest_sensors.py \
+           file://rest_slotid.py \
+           file://rest_psu_update.py \
+           file://rest_mTerm.py \
+           file://eeprom_utils.py \
+           file://rest_fcpresent.py \
+           file://rest_ntpstatus.py \
+           file://rest_helper.py \
+           file://rest_utils.py \
            file://board_setup_routes.py \
            file://test_auth_enforcer.py \
            file://test_cached_acl_provider.py \
@@ -69,11 +69,11 @@ SRC_URI = "file://rest-api-1/setup-rest-api.sh \
            file://test_common_logging.py \
            file://test_rest_config.py \
            file://boardroutes.py \
-           file://rest-api-1/common_setup_routes.py \
-           file://rest-api-1/setup_plat_routes.py \
+           file://common_setup_routes.py \
+           file://setup_plat_routes.py \
           "
 
-S = "${WORKDIR}/rest-api-1"
+S = "${WORKDIR}"
 
 binfiles = "acl_config.py\
             board_setup_routes.py \
@@ -145,7 +145,7 @@ do_install_class-target() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 644 ${WORKDIR}/rest.cfg ${D}${sysconfdir}/rest.cfg
-  install -m 755 ${WORKDIR}/rest-api-1/setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh
+  install -m 755 ${WORKDIR}/setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh
   update-rc.d -r ${D} setup-rest-api.sh start 95 2 3 4 5  .
 }
 

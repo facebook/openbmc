@@ -17,7 +17,7 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://rest-api-1/rest_i2cflush.py \
+SRC_URI += "file://rest_i2cflush.py \
             file://board_endpoint.py \
             file://boardroutes.py \
             file://board_setup_routes.py \

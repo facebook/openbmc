@@ -13,12 +13,12 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
-    file://rest-api-1/eeprom_utils.py \
-    file://rest-api-1/rest_fruid_scm.py \
-    file://rest-api-1/rest_seutil.py \
-    file://rest-api-1/rest_firmware.py \
-    file://rest-api-1/rest_chassis_eeprom.py \
-    file://rest-api-1/rest_i2cflush.py \
+    file://eeprom_utils.py \
+    file://rest_fruid_scm.py \
+    file://rest_seutil.py \
+    file://rest_firmware.py \
+    file://rest_chassis_eeprom.py \
+    file://rest_i2cflush.py \
     file://board_endpoint.py \
     file://boardroutes.py \
     file://board_setup_routes.py \

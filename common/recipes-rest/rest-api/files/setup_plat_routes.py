@@ -20,11 +20,16 @@
 from typing import Dict
 
 from aiohttp import web
-from common_tree import init_common_tree
-from plat_tree import init_plat_tree
+
+
+try:
+    from common_tree import setup_common_routes
+    from plat_tree import setup_board_routes
+except ImportError:
+    from board_setup_routes import setup_board_routes
+    from common_setup_routes import setup_common_routes
 
 
 def setup_plat_routes(app: web.Application, config: Dict):
-    root = init_common_tree()
-    root.merge(init_plat_tree())
-    root.setup(app, config["writable"])
+    setup_common_routes(app, config["writable"])
+    setup_board_routes(app, config["writable"])

@@ -18,7 +18,9 @@
 from board_endpoint import boardApp_Handler
 from boardroutes import *
 
-def setup_board_routes(app):
+from aiohttp.web import Application
+
+def setup_board_routes(app: Application, write_enabled: bool):
     bhandler = boardApp_Handler()
     #app.router.add_get(board_routes[0], bhandler.rest_usb2i2c_reset_hdl)
     app.router.add_get(board_routes[1], bhandler.rest_i2cflush_hdl)

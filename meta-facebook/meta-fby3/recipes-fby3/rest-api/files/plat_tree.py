@@ -39,6 +39,8 @@ from node_spb import get_node_spb
 from pal import *
 from tree import tree
 
+from aiohttp.web import Application
+
 def populate_server_node(r_api, num):
     prsnt = pal_is_fru_prsnt(num)
     if prsnt == None or prsnt == 0:
@@ -79,7 +81,7 @@ def populate_server_node(r_api, num):
 
 
 # Initialize Platform specific Resource Tree
-def init_plat_tree():
+def setup_board_routes(app: Application, write_enabled: bool):
 
     # Create /api end point as root node
     r_api = tree("api", data=get_node_api())
@@ -95,7 +97,7 @@ def init_plat_tree():
     # Add servers /api/server[1-max]
     num = pal_get_num_slots()
     for i in range(1, num + 1):
-        r_server = populate_server_node(r_api, i)
+        populate_server_node(r_api, i)
 
     # Add /api/spb/fruid end point
     r_temp = tree("fruid", data=get_node_fruid("spb"))
@@ -123,4 +125,4 @@ def init_plat_tree():
     r_temp = tree("logs", data=get_node_logs("nic"))
     r_mezz.addChild(r_temp)
 
-    return r_api
+    r_api.setup(app, write_enabled)

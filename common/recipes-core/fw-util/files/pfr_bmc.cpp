@@ -27,7 +27,7 @@ int PfrBmcComponent::update(string image) {
   syslog(LOG_CRIT, "BMC %s upgrade initiated", (_vers_mtd == "rc") ? "Recovery" : "Active");
 
   sys.output << "Flashing to device: " << dev << endl;
-  cmd = "flashcp -v " + image + " " + dev;
+  cmd = "flashcp " + image + " " + dev;
   ret = sys.runcmd(cmd);
   if (ret) {
     return ret;

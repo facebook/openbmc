@@ -786,3 +786,73 @@ func TestCheckNoBaseNameExistsInProcCmdlinePaths(t *testing.T) {
 		})
 	}
 }
+
+func TestGetMTDMapFromSpecifier(t *testing.T) {
+	// mock and defer restore ReadFile
+	readFileOrig := fileutils.ReadFile
+	defer func() {
+		fileutils.ReadFile = readFileOrig
+	}()
+
+	cases := []struct {
+		name            string
+		specifier       string
+		procMtdContents string
+		readFileErr     error
+		want            map[string]string
+		wantErr         error
+	}{
+		{
+			name:            "wedge100 example: find mtd:flash0",
+			specifier:       "flash0",
+			procMtdContents: tests.ExampleWedge100ProcMtdFile,
+			readFileErr:     nil,
+			want: map[string]string{
+				"dev":       "mtd5",
+				"size":      "02000000",
+				"erasesize": "00010000",
+			},
+			wantErr: nil,
+		},
+		{
+			name:            "ReadFile error",
+			specifier:       "flash0",
+			procMtdContents: "",
+			readFileErr:     errors.Errorf("ReadFile error"),
+			want:            nil,
+			wantErr:         errors.Errorf("Unable to read from /proc/mtd: ReadFile error"),
+		},
+		{
+			name:            "MTD not found in /proc/mtd",
+			specifier:       "flash1",
+			procMtdContents: tests.ExampleWedge100ProcMtdFile,
+			readFileErr:     nil,
+			want:            nil,
+			wantErr:         errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
+		},
+		{
+			name:            "corrupt /proc/mtd file",
+			specifier:       "flash1",
+			procMtdContents: `mtd0: xxxxxxxx xxxxxxxx "flash1"`,
+			readFileErr:     nil,
+			want:            nil,
+			wantErr:         errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
+				if filename != "/proc/mtd" {
+					t.Errorf("filename: want '%v' got '%v'", "/proc/mtd", filename)
+				}
+				return []byte(tc.procMtdContents), tc.readFileErr
+			}
+			got, err := GetMTDMapFromSpecifier(tc.specifier)
+			tests.CompareTestErrors(tc.wantErr, err, t)
+			if !reflect.DeepEqual(tc.want, got) {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+		})
+	}
+}

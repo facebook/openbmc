@@ -338,7 +338,6 @@ func TestGetPartitionConfigsFromFBMetaPartInfos(t *testing.T) {
 		name             string
 		metaPartInfos    []FBMetaPartInfo
 		vbootEnforcement utils.VbootEnforcementType
-		vbootErr         error
 		want             []PartitionConfigInfo
 		wantErr          error
 	}{
@@ -349,7 +348,6 @@ func TestGetPartitionConfigsFromFBMetaPartInfos(t *testing.T) {
 				exampleValidMetaPartInfo2,
 			},
 			vbootEnforcement: utils.VBOOT_NONE,
-			vbootErr:         nil,
 			want: []PartitionConfigInfo{
 				exampleValidPartitionConfig1NoVboot,
 				exampleValidPartitionConfig2,
@@ -363,21 +361,11 @@ func TestGetPartitionConfigsFromFBMetaPartInfos(t *testing.T) {
 				exampleValidMetaPartInfo2,
 			},
 			vbootEnforcement: utils.VBOOT_HARDWARE_ENFORCE,
-			vbootErr:         nil,
 			want: []PartitionConfigInfo{
 				exampleValidPartitionConfig1Vboot,
 				exampleValidPartitionConfig2,
 			},
 			wantErr: nil,
-		},
-		{
-			name:             "failure getting vboot enforcement",
-			metaPartInfos:    []FBMetaPartInfo{},
-			vbootEnforcement: utils.VBOOT_NONE,
-			vbootErr:         errors.Errorf("unknown vboot error"),
-			want:             nil,
-			wantErr: errors.Errorf("Unable to get vboot enforcement: %v",
-				"unknown vboot error"),
 		},
 		{
 			name: "invalid meta part info type",
@@ -391,7 +379,6 @@ func TestGetPartitionConfigsFromFBMetaPartInfos(t *testing.T) {
 				},
 			},
 			vbootEnforcement: utils.VBOOT_NONE,
-			vbootErr:         nil,
 			want:             nil,
 			wantErr: errors.Errorf("Unknown partition type in image-meta: " +
 				"'the quick brown fox jumps over the lazy dog'"),
@@ -400,8 +387,8 @@ func TestGetPartitionConfigsFromFBMetaPartInfos(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			utils.GetVbootEnforcement = func() (utils.VbootEnforcementType, error) {
-				return tc.vbootEnforcement, tc.vbootErr
+			utils.GetVbootEnforcement = func() utils.VbootEnforcementType {
+				return tc.vbootEnforcement
 			}
 			got, err := getPartitionConfigsFromFBMetaPartInfos(tc.metaPartInfos)
 			tests.CompareTestErrors(tc.wantErr, err, t)

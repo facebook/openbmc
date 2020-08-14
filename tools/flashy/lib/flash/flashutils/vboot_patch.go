@@ -66,20 +66,17 @@ var patchImageWithLocalBootloader = func(imageFilePath string, flashDevice devic
 	return nil
 }
 
-var isVbootImagePatchingRequired = func(flashDeviceSpecifier string) (bool, error) {
-	vbootEnforcement, err := utils.GetVbootEnforcement()
-	if err != nil {
-		return false, errors.Errorf("Unable to get vboot enforcement: %v", err)
-	}
+var isVbootImagePatchingRequired = func(flashDeviceSpecifier string) bool {
+	vbootEnforcement := utils.GetVbootEnforcement()
 
 	// only patch if flash1 and hardware enforce
 	// (TODO:- if flash1rw, strip instead)
 	if vbootEnforcement == utils.VBOOT_HARDWARE_ENFORCE &&
 		flashDeviceSpecifier == "flash1" {
-		return true, nil
+		return true
 	}
 
-	return false, nil
+	return false
 }
 
 /*
@@ -103,20 +100,12 @@ In the future when pypartition is completely gone:
 */
 // ==== WARNING: THIS STEP CAN ALTER THE IMAGE FILE ====
 var VbootPatchImageBootloaderIfNeeded = func(imageFilePath string, flashDevice devices.FlashDevice) error {
-	// check if vboot, fail if not a vboot system
-	if !utils.IsVbootSystem() {
-		return errors.Errorf("Not a vboot system, cannot run vboot remediation")
-	}
-
 	// check if image patching is required (required if flash1 has 64K RO header)
-	patchRequired, err := isVbootImagePatchingRequired(flashDevice.GetSpecifier())
-	if err != nil {
-		return errors.Errorf("Unable to determine whether image patching is required: %v", err)
-	}
+	patchRequired := isVbootImagePatchingRequired(flashDevice.GetSpecifier())
 
 	// if image patching required, patch the image
 	if patchRequired {
-		err = patchImageWithLocalBootloader(imageFilePath, flashDevice, vbootOffset)
+		err := patchImageWithLocalBootloader(imageFilePath, flashDevice, vbootOffset)
 		if err != nil {
 			return errors.Errorf("Failed to patch image with local bootloader: %v", err)
 		}

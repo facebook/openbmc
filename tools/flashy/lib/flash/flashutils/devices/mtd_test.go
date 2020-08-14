@@ -128,16 +128,8 @@ func TestGetMTD(t *testing.T) {
 			got, err := getMTD(tc.specifier)
 			tests.CompareTestErrors(tc.wantErr, err, t)
 
-			if got == nil {
-				if tc.want != nil {
-					t.Errorf("want '%v' got '%v'", tc.want, got)
-				}
-			} else {
-				if tc.want == nil {
-					t.Errorf("want '%v' got '%v'", tc.want, got)
-				} else if !reflect.DeepEqual(tc.want, got) {
-					t.Errorf("want '%v', got '%v'", tc.want, got)
-				}
+			if !reflect.DeepEqual(tc.want, got) {
+				t.Errorf("want '%v' got '%v '", tc.want, got)
 			}
 		})
 	}

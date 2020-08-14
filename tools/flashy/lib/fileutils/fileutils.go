@@ -44,6 +44,8 @@ func init() {
 	SourceRootDir = filepath.Dir(filepath.Dir(filepath.Dir(filename)))
 }
 
+var Pagesize = os.Getpagesize()
+
 // basic file utilities as function variables for mocking purposes
 var osStat = os.Stat
 var RemoveFile = os.Remove
@@ -237,4 +239,16 @@ var GlobAll = func(patterns []string) ([]string, error) {
 	}
 
 	return results, nil
+}
+
+// GetPageOffsettedBase returns the page-aligned address that is smaller or
+// equals to addr.
+var GetPageOffsettedBase = func(addr uint32) uint32 {
+	return addr - GetPageOffsettedOffset(addr)
+}
+
+// GetPageOffsettedOffset returns the length in bytes between the page-aligned
+// address that is smaller or equals to addr.
+var GetPageOffsettedOffset = func(addr uint32) uint32 {
+	return addr & uint32(Pagesize-1)
 }

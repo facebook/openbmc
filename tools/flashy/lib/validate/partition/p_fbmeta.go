@@ -201,10 +201,7 @@ var parseAndValidateFBImageMetaJSON = func(data []byte) (FBMetaInfo, error) {
 
 var getPartitionConfigsFromFBMetaPartInfos = func(metaPartInfos []FBMetaPartInfo) ([]PartitionConfigInfo, error) {
 	// get vboot enforcement, required for getPartitionConfigFromFBMetaPartInfo
-	vbootEnforcement, err := utils.GetVbootEnforcement()
-	if err != nil {
-		return nil, errors.Errorf("Unable to get vboot enforcement: %v", err)
-	}
+	vbootEnforcement := utils.GetVbootEnforcement()
 
 	partitionConfigs := make([]PartitionConfigInfo, 0, len(metaPartInfos))
 	for _, metaPartInfo := range metaPartInfos {

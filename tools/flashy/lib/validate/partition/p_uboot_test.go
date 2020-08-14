@@ -194,35 +194,26 @@ func TestUBootValidateVboot(t *testing.T) {
 	}()
 
 	cases := []struct {
-		name        string
-		vbootEnf    utils.VbootEnforcementType
-		vbootEnfErr error
-		want        error
+		name     string
+		vbootEnf utils.VbootEnforcementType
+		want     error
 	}{
 		{
-			name:        "hardware enforce, bypass uboot check",
-			vbootEnf:    utils.VBOOT_HARDWARE_ENFORCE,
-			vbootEnfErr: nil,
-			want:        nil,
+			name:     "hardware enforce, bypass uboot check",
+			vbootEnf: utils.VBOOT_HARDWARE_ENFORCE,
+			want:     nil,
 		},
 		{
-			name:        "error checking vboot enforcement",
-			vbootEnf:    utils.VBOOT_NONE,
-			vbootEnfErr: errors.Errorf("can't check vboot enf"),
-			want:        errors.Errorf("Unable to get vboot enforcement: can't check vboot enf"),
-		},
-		{
-			name:        "not hardware enforce",
-			vbootEnf:    utils.VBOOT_NONE,
-			vbootEnfErr: nil,
-			want:        errors.Errorf("'foobar' partition too small (0) to contain U-Boot magic"),
+			name:     "not hardware enforce",
+			vbootEnf: utils.VBOOT_NONE,
+			want:     errors.Errorf("'foobar' partition too small (0) to contain U-Boot magic"),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			utils.GetVbootEnforcement = func() (utils.VbootEnforcementType, error) {
-				return tc.vbootEnf, tc.vbootEnfErr
+			utils.GetVbootEnforcement = func() utils.VbootEnforcementType {
+				return tc.vbootEnf
 			}
 			p := &UBootPartition{
 				Name: "foobar",

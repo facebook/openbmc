@@ -36,7 +36,7 @@ func init() {
 }
 
 func getMTD(deviceSpecifier string) (FlashDevice, error) {
-	mtdMap, err := getMTDMap(deviceSpecifier)
+	mtdMap, err := utils.GetMTDMapFromSpecifier(deviceSpecifier)
 	if err != nil {
 		return nil, err
 	}
@@ -124,28 +124,6 @@ func (m MemoryTechnologyDevice) getMmapFilePath() (string, error) {
 		mtdPathMap["devmtdpath"],
 		mtdPathMap["mtdnum"],
 	), nil
-}
-
-// from mtd device specifier, get a map containing
-// [dev, size, erasesize] values for the mtd obtained from
-// /proc/mtd
-func getMTDMap(deviceSpecifier string) (map[string]string, error) {
-	// read from /proc/mtd
-	procMTDBuf, err := fileutils.ReadFile("/proc/mtd")
-	if err != nil {
-		return nil, errors.Errorf("Unable to read from /proc/mtd: %v", err)
-	}
-	procMTD := string(procMTDBuf)
-
-	regEx := fmt.Sprintf("(?m)^(?P<dev>mtd[0-9a-f]+): (?P<size>[0-9a-f]+) (?P<erasesize>[0-9a-f]+) \"%v\"$",
-		deviceSpecifier)
-
-	mtdMap, err := utils.GetRegexSubexpMap(regEx, procMTD)
-	if err != nil {
-		return nil, errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:%v'",
-			deviceSpecifier)
-	}
-	return mtdMap, nil
 }
 
 // return all writable mounted MTDs as specified in /proc/mounts

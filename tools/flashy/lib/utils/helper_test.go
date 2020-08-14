@@ -594,3 +594,11 @@ func TestGetStringKeysFromJSONData(t *testing.T) {
 		})
 	}
 }
+
+func TestCRC16(t *testing.T) {
+	want := uint16(46124)
+	got := CRC16([]byte{0x12, 0x34, 0x56, 0x78})
+	if want != got {
+		t.Errorf("want '%v' got '%v'", want, got)
+	}
+}

@@ -253,10 +253,8 @@ func (p *UBootPartition) GetSize() uint32 {
 func (p *UBootPartition) Validate() error {
 	// check vboot enforcement. There is no point validating RO parts of
 	// vboot U-Boot (which in actuality is spl+recovery U-Boot)
-	vbootEnforcement, err := utils.GetVbootEnforcement()
-	if err != nil {
-		return errors.Errorf("Unable to get vboot enforcement: %v", err)
-	}
+	vbootEnforcement := utils.GetVbootEnforcement()
+
 	if vbootEnforcement == utils.VBOOT_HARDWARE_ENFORCE {
 		log.Printf("U-Boot partition '%v' validation bypassed: this is a VBoot system",
 			p.Name)
@@ -264,7 +262,7 @@ func (p *UBootPartition) Validate() error {
 	}
 
 	// check magic
-	err = p.checkMagic()
+	err := p.checkMagic()
 	if err != nil {
 		return err
 	}

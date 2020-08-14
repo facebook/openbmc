@@ -20,8 +20,7 @@
 package utils
 
 import (
-	"fmt"
-	"strings"
+	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
@@ -29,221 +28,228 @@ import (
 	"github.com/pkg/errors"
 )
 
-type partialRunCommandReturn struct {
-	err    error
-	stdout string
-}
-
-func TestGetVbootUtilContents(t *testing.T) {
-	// mock and defer restore RemoveFile, RunCommand, IsVbootSystem and
-	// IsELFFile
-	removeFileOrig := fileutils.RemoveFile
-	runCommandOrig := RunCommand
-	isVbootSystemOrig := IsVbootSystem
-	isELFFileOrig := fileutils.IsELFFile
-	defer func() {
-		fileutils.RemoveFile = removeFileOrig
-		RunCommand = runCommandOrig
-		IsVbootSystem = isVbootSystemOrig
-		fileutils.IsELFFile = isELFFileOrig
-	}()
-
-	// removeFile is mocked to return nil
-	fileutils.RemoveFile = func(_ string) error {
-		return nil
-	}
-
+// test decodeVbs error
+func TestDecodeVbs(t *testing.T) {
 	cases := []struct {
-		name          string
-		isVbootSystem bool
-		isELF         bool
-		runCmdRet     partialRunCommandReturn
-		wantCmd       string
-		want          string
-		wantErr       error
+		name    string
+		data    []byte
+		wantErr error
 	}{
 		{
-			name:          "not a vboot system",
-			isVbootSystem: false,
-			isELF:         true,
-			runCmdRet:     partialRunCommandReturn{},
-			wantCmd:       "",
-			want:          "",
-			wantErr:       errors.Errorf("Not a vboot system"),
+			name:    "not enough bytes",
+			data:    []byte{0x00, 0x01},
+			wantErr: errors.Errorf("Unable to decode vbs data into struct: unexpected EOF"),
 		},
 		{
-			name:          "is ELF file",
-			isVbootSystem: true,
-			isELF:         true,
-			runCmdRet: partialRunCommandReturn{
-				nil,
-				"foobar",
-			},
-			wantCmd: vbootUtilPath,
-			want:    "foobar",
-			wantErr: nil,
+			name:    "empty bytes",
+			data:    []byte{},
+			wantErr: errors.Errorf("Unable to decode vbs data into struct: EOF"),
 		},
 		{
-			name:          "not ELF",
-			isVbootSystem: true,
-			isELF:         false,
-			runCmdRet: partialRunCommandReturn{
-				nil,
-				"foobar",
-			},
-			wantCmd: fmt.Sprintf("bash %v", vbootUtilPath),
-			want:    "foobar",
-			wantErr: nil,
+			name: "invalid data",
+			data: SafeAppendBytes(
+				tests.ExampleVbsData[0:AST_SRAM_VBS_SIZE-4],
+				[]byte{0x49, 0x59, 0x69, 0x79},
+			),
+			wantErr: errors.Errorf("CRC16 of vboot data (30049) does not match reference (30425)"),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := decodeVbs(tc.data)
+			tests.CompareTestErrors(tc.wantErr, err, t)
+		})
+	}
+}
+
+func TestVbootPartitionExists(t *testing.T) {
+	// mock and defer restore ReadFile
+	readFileOrig := fileutils.ReadFile
+	defer func() {
+		fileutils.ReadFile = readFileOrig
+	}()
+
+	cases := []struct {
+		name            string
+		procMtdContents string
+		want            bool
+	}{
+		{
+			name:            "rom exists (tiogapass1)",
+			procMtdContents: tests.ExampleTiogapass1ProcMtdFile,
+			want:            true,
 		},
 		{
-			name:          "failed",
-			isVbootSystem: true,
-			isELF:         true,
-			runCmdRet: partialRunCommandReturn{
-				errors.Errorf("cmd err"),
-				"",
-			},
-			wantCmd: vbootUtilPath,
-			want:    "",
-			wantErr: errors.Errorf("Unable to get vboot-util info: cmd err"),
+			name:            "rom does not exist (wedge100)",
+			procMtdContents: tests.ExampleWedge100ProcMtdFile,
+			want:            false,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			gotCmd := ""
-			IsVbootSystem = func() bool {
-				return tc.isVbootSystem
-			}
-			RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
-				gotCmd = strings.Join(cmdArr, " ")
-				retErr := tc.runCmdRet.err
-				stdout := tc.runCmdRet.stdout
-				return 0, retErr, stdout, ""
-			}
-			fileutils.IsELFFile = func(filename string) bool {
-				if filename != vbootUtilPath {
-					t.Errorf("want vboot util path '%v' got '%v'", vbootUtilPath, filename)
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
+				if filename != ProcMtdFilePath {
+					t.Errorf("filename: want '%v' got '%v'", ProcMtdFilePath, filename)
 				}
-				return tc.isELF
+				return []byte(tc.procMtdContents), nil
 			}
-			got, err := getVbootUtilContents()
-
+			got := vbootPartitionExists()
 			if tc.want != got {
 				t.Errorf("want '%v' got '%v'", tc.want, got)
-			}
-			tests.CompareTestErrors(tc.wantErr, err, t)
-			if tc.wantCmd != gotCmd {
-				t.Errorf("want cmd '%v' got '%v'", tc.wantCmd, gotCmd)
 			}
 		})
 	}
 }
 
-func TestGetVbootEnforcement(t *testing.T) {
-	// mock and defer restore IsVbootSystem, ReadFile and getVbootUtilContents
-	isVbootSystemOrig := IsVbootSystem
-	readFileOrig := fileutils.ReadFile
-	getVbootUtilContentsOrig := getVbootUtilContents
+// also tests encode and decode
+func TestGetVbs(t *testing.T) {
+	// mock and defer restore MmapFileRange, GetPageOffsettedOffset & vbootPartitionExists
+	mmapFileRangeOrig := fileutils.MmapFileRange
+	getPageOffsettedOffsetOrig := fileutils.GetPageOffsettedOffset
+	vbootPartitionExistsOrig := vbootPartitionExists
 	defer func() {
-		IsVbootSystem = isVbootSystemOrig
-		fileutils.ReadFile = readFileOrig
-		getVbootUtilContents = getVbootUtilContentsOrig
+		fileutils.MmapFileRange = mmapFileRangeOrig
+		fileutils.GetPageOffsettedOffset = getPageOffsettedOffsetOrig
+		vbootPartitionExists = vbootPartitionExistsOrig
 	}()
-
-	cases := []struct {
-		name              string
-		isVbootSystem     bool
-		procMtdContents   string
-		procMtdReadErr    error
-		vbootUtilContents string
-		vbootUtilGetErr   error
-		want              VbootEnforcementType
-		wantErr           error
-	}{
-		{
-			name:              "Not a vboot system",
-			isVbootSystem:     false,
-			procMtdContents:   "",
-			procMtdReadErr:    nil,
-			vbootUtilContents: "",
-			vbootUtilGetErr:   nil,
-			want:              VBOOT_NONE,
-			wantErr:           nil,
-		},
-		{
-			name:              "example wedge100 /proc/mtd, no romx, mock vboot system",
-			isVbootSystem:     true,
-			procMtdContents:   tests.ExampleWedge100ProcMtdFile,
-			procMtdReadErr:    nil,
-			vbootUtilContents: "",
-			vbootUtilGetErr:   nil,
-			want:              VBOOT_NONE,
-			wantErr:           nil,
-		},
-		{
-			name:              "tiogapass1 example",
-			isVbootSystem:     true,
-			procMtdContents:   tests.ExampleTiogapass1ProcMtdFile,
-			procMtdReadErr:    nil,
-			vbootUtilContents: tests.ExampleTiogapass1VbootUtilFile,
-			vbootUtilGetErr:   nil,
-			want:              VBOOT_HARDWARE_ENFORCE,
-			wantErr:           nil,
-		},
-		{
-			name:              "/proc/mtd read err",
-			isVbootSystem:     true,
-			procMtdContents:   "",
-			procMtdReadErr:    errors.Errorf("proc mtd read err"),
-			vbootUtilContents: "",
-			vbootUtilGetErr:   nil,
-			want:              VBOOT_NONE,
-			wantErr:           errors.Errorf("Unable to read '/proc/mtd': proc mtd read err"),
-		},
-		{
-			name:              "getVbootUtilContents err",
-			isVbootSystem:     true,
-			procMtdContents:   "romx",
-			procMtdReadErr:    nil,
-			vbootUtilContents: "",
-			vbootUtilGetErr:   errors.Errorf("getVbootUtilContents err"),
-			want:              VBOOT_NONE,
-			wantErr:           errors.Errorf("Unable to read vboot-util contents: getVbootUtilContents err"),
-		},
-		{
-			name:            "software enforce example",
-			isVbootSystem:   true,
-			procMtdContents: "romx",
-			procMtdReadErr:  nil,
-			vbootUtilContents: `Flags hardware_enforce:  0x00
-Flags software_enforce:  0x01`,
-			vbootUtilGetErr: nil,
-			want:            VBOOT_SOFTWARE_ENFORCE,
-			wantErr:         nil,
-		},
+	vbootPartitionExists = func() bool {
+		return true
+	}
+	wantVbs := Vbs{
+		671630160,
+		88,
+		70980,
+		671614284,
+		0,
+		0,
+		1,
+		1,
+		0,
+		0,
+		0,
+		0,
+		0,
+		30425,
+		0,
+		1497730626,
+		1572486894,
+		0,
+		1497730626,
+		1582846625,
+		0,
+	}
+	fileutils.MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
+		if filename != "/dev/mem" {
+			t.Errorf("filename: want '%v' got '%v'", "/dev/mem", filename)
+		}
+		return tests.ExampleVbsData, nil
+	}
+	fileutils.GetPageOffsettedOffset = func(addr uint32) uint32 {
+		return 0
 	}
 
+	got, err := GetVbs()
+	if err != nil {
+		t.Error(err)
+	}
+	if !reflect.DeepEqual(wantVbs, got) {
+		t.Errorf("want '%v' got '%v'", wantVbs, got)
+	}
+
+	data, err := got.encodeVbs()
+	if err != nil {
+		t.Error(err)
+	}
+	if !reflect.DeepEqual(data, tests.ExampleVbsData) {
+		t.Errorf("encode failed: want '%v' got '%v'", tests.ExampleVbsData, data)
+	}
+
+	// mock mmap error
+	fileutils.MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
+		if filename != "/dev/mem" {
+			t.Errorf("filename: want '%v' got '%v'", "/dev/mem", filename)
+		}
+		return tests.ExampleVbsData, errors.Errorf("failed")
+	}
+
+	got, err = GetVbs()
+	tests.CompareTestErrors(errors.Errorf("Unable to mmap /dev/mem: failed"), err, t)
+
+	// vboot partition does not exist
+	vbootPartitionExists = func() bool {
+		return false
+	}
+
+	got, err = GetVbs()
+	tests.CompareTestErrors(errors.Errorf("Not a Vboot system: vboot partition (rom) does not exist."),
+		err, t)
+}
+
+func TestGetVbootEnforcement(t *testing.T) {
+	getVbsOrig := GetVbs
+	defer func() {
+		GetVbs = getVbsOrig
+	}()
+	cases := []struct {
+		name   string
+		vbs    Vbs
+		vbsErr error
+		want   VbootEnforcementType
+	}{
+		{
+			name:   "GetVbs failed",
+			vbs:    Vbs{},
+			vbsErr: errors.Errorf("GetVbs failed"),
+			want:   VBOOT_NONE,
+		},
+		{
+			name: "not enforced",
+			vbs: Vbs{
+				Hardware_enforce: 0,
+				Software_enforce: 0,
+			},
+			vbsErr: nil,
+			want:   VBOOT_NONE,
+		},
+		{
+			name: "software enforce",
+			vbs: Vbs{
+				Hardware_enforce: 0,
+				Software_enforce: 1,
+			},
+			vbsErr: nil,
+			want:   VBOOT_SOFTWARE_ENFORCE,
+		},
+		{
+			name: "none, invalid, hardware 1 software 0, (this does not make sense)",
+			vbs: Vbs{
+				Hardware_enforce: 1,
+				Software_enforce: 0,
+			},
+			vbsErr: nil,
+			want:   VBOOT_NONE,
+		},
+		{
+			name: "hardware enforce",
+			vbs: Vbs{
+				Hardware_enforce: 1,
+				Software_enforce: 1,
+			},
+			vbsErr: nil,
+			want:   VBOOT_HARDWARE_ENFORCE,
+		},
+	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			IsVbootSystem = func() bool {
-				return tc.isVbootSystem
+			GetVbs = func() (Vbs, error) {
+				return tc.vbs, tc.vbsErr
 			}
-			fileutils.ReadFile = func(filename string) ([]byte, error) {
-				if filename != ProcMtdFilePath {
-					t.Errorf("filename: want '%v' got '%v'",
-						ProcMtdFilePath, filename)
-				}
-				return []byte(tc.procMtdContents), tc.procMtdReadErr
-			}
-			getVbootUtilContents = func() (string, error) {
-				return tc.vbootUtilContents, tc.vbootUtilGetErr
-			}
-			got, err := GetVbootEnforcement()
+
+			got := GetVbootEnforcement()
 			if tc.want != got {
 				t.Errorf("want '%v' got '%v'", tc.want, got)
 			}
-			tests.CompareTestErrors(tc.wantErr, err, t)
 		})
 	}
 }

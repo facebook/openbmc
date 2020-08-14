@@ -279,3 +279,18 @@ func GetStringKeysFromJSONData(data []byte) ([]string, error) {
 	checksums := GetStringKeys(m)
 	return checksums, nil
 }
+
+// CRC16 returns the crc16 checksum of data.
+func CRC16(data []byte) uint16 {
+	var ret uint16
+	for i := 0; i < len(data); i++ {
+		var x uint8
+		x = uint8(ret>>8) ^ uint8(data[i])
+		x ^= x >> 4
+		x12 := (uint16(x)) << 12
+		x5 := (uint16(x)) << 5
+		x1 := uint16(x)
+		ret = (ret << 8) ^ x12 ^ x5 ^ x1
+	}
+	return ret
+}

@@ -20,7 +20,9 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -30,6 +32,7 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/logger"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
 var (
@@ -37,6 +40,7 @@ var (
 	installFlag = flag.Bool("install", false, "Install flashy")
 	checkImage  = flag.Bool("checkimage", false, "Validate image partitions (`imagepath` must be specified)")
 	checkDevice = flag.Bool("checkdevice", false, "Validate flash device (`device` must be specified)")
+	vbootInfo   = flag.Bool("vbootinfo", false, "Get system vboot information")
 
 	// step params
 	imageFilePath = flag.String("imagepath", "", "Path to image file")
@@ -50,6 +54,11 @@ func failIfFlagEmpty(flagName, value string) {
 		log.Fatalf("`%v` argument must be specified. Use `--help` for a guide",
 			flagName)
 	}
+}
+
+func prettyPrint(i interface{}) string {
+	s, _ := json.MarshalIndent(i, "", "\t")
+	return string(s)
 }
 
 func main() {
@@ -105,6 +114,16 @@ WARRANTIES OFF`)
 		}
 
 		log.Printf("Finished validating image")
+		return
+	}
+
+	// get vboot info
+	if *vbootInfo {
+		vbs, err := utils.GetVbs()
+		if err != nil {
+			log.Fatalf("Unable to get system vboot info: %v", err)
+		}
+		fmt.Printf("%v\n", prettyPrint(vbs))
 		return
 	}
 

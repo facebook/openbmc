@@ -139,74 +139,53 @@ func TestIsVbootImagePatchingRequired(t *testing.T) {
 	cases := []struct {
 		name                 string
 		vbootEnforcement     utils.VbootEnforcementType
-		vbootEnforcementErr  error
 		flashDeviceSpecifier string
 		want                 bool
-		wantErr              error
 	}{
 		{
 			name:                 "No vboot enforcement",
 			vbootEnforcement:     utils.VBOOT_NONE,
-			vbootEnforcementErr:  nil,
 			flashDeviceSpecifier: "flash1",
 			want:                 false,
-			wantErr:              nil,
 		},
 		{
 			name:                 "software vboot enforcement",
 			vbootEnforcement:     utils.VBOOT_SOFTWARE_ENFORCE,
-			vbootEnforcementErr:  nil,
 			flashDeviceSpecifier: "flash1",
 			want:                 false,
-			wantErr:              nil,
 		},
 		{
 			name:                 "hardware vboot enforcement, flash1",
 			vbootEnforcement:     utils.VBOOT_HARDWARE_ENFORCE,
-			vbootEnforcementErr:  nil,
 			flashDeviceSpecifier: "flash1",
 			want:                 true,
-			wantErr:              nil,
 		},
 		{
 			name:                 "hardware vboot enforcement, flash0 (not required)",
 			vbootEnforcement:     utils.VBOOT_HARDWARE_ENFORCE,
-			vbootEnforcementErr:  nil,
 			flashDeviceSpecifier: "flash0",
 			want:                 false,
-			wantErr:              nil,
-		},
-		{
-			name:                 "error getting vboot enforcement",
-			vbootEnforcement:     utils.VBOOT_NONE,
-			vbootEnforcementErr:  errors.Errorf("vboot enforcement err"),
-			flashDeviceSpecifier: "flash0",
-			want:                 false,
-			wantErr:              errors.Errorf("Unable to get vboot enforcement: vboot enforcement err"),
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			utils.GetVbootEnforcement = func() (utils.VbootEnforcementType, error) {
-				return tc.vbootEnforcement, tc.vbootEnforcementErr
+			utils.GetVbootEnforcement = func() utils.VbootEnforcementType {
+				return tc.vbootEnforcement
 			}
-			got, err := isVbootImagePatchingRequired(tc.flashDeviceSpecifier)
+			got := isVbootImagePatchingRequired(tc.flashDeviceSpecifier)
 			if tc.want != got {
 				t.Errorf("want %v got %v", tc.want, got)
 			}
-			tests.CompareTestErrors(tc.wantErr, err, t)
 		})
 	}
 }
 
 func TestVbootPatchImageBootloaderIfNeeded(t *testing.T) {
-	// mock and defer restore IsVbootSystem, isVbootImagePatchingRequired
+	// mock and defer restore isVbootImagePatchingRequired
 	// and patchImageWithLocalBootloader
-	isVbootSystemOrig := utils.IsVbootSystem
 	isVbootImagePatchingRequiredOrig := isVbootImagePatchingRequired
 	patchImageWithLocalBootloaderOrig := patchImageWithLocalBootloader
 	defer func() {
-		utils.IsVbootSystem = isVbootSystemOrig
 		isVbootImagePatchingRequired = isVbootImagePatchingRequiredOrig
 		patchImageWithLocalBootloader = patchImageWithLocalBootloaderOrig
 	}()
@@ -218,66 +197,39 @@ func TestVbootPatchImageBootloaderIfNeeded(t *testing.T) {
 	}
 
 	cases := []struct {
-		name             string
-		isVboot          bool
-		patchRequired    bool
-		patchRequiredErr error
-		patchErr         error
-		want             error
+		name          string
+		patchRequired bool
+		patchErr      error
+		want          error
 	}{
 		{
-			name:             "vboot patch required & succeeded",
-			isVboot:          true,
-			patchRequired:    true,
-			patchRequiredErr: nil,
-			patchErr:         nil,
-			want:             nil,
+			name:          "vboot patch required & succeeded",
+			patchRequired: true,
+			patchErr:      nil,
+			want:          nil,
 		},
 		{
-			name:             "vboot patch not required",
-			isVboot:          true,
-			patchRequired:    false,
-			patchRequiredErr: nil,
-			patchErr:         nil,
-			want:             nil,
+			name:          "vboot patch not required",
+			patchRequired: false,
+			patchErr:      nil,
+			want:          nil,
 		},
 		{
-			name:             "not a vboot system",
-			isVboot:          false,
-			patchRequired:    false,
-			patchRequiredErr: nil,
-			patchErr:         nil,
-			want:             errors.Errorf("Not a vboot system, cannot run vboot remediation"),
-		},
-		{
-			name:             "patch required check failed",
-			isVboot:          true,
-			patchRequired:    false,
-			patchRequiredErr: errors.Errorf("check fail"),
-			patchErr:         nil,
-			want:             errors.Errorf("Unable to determine whether image patching is required: check fail"),
-		},
-		{
-			name:             "patch required and failed",
-			isVboot:          true,
-			patchRequired:    true,
-			patchRequiredErr: nil,
-			patchErr:         errors.Errorf("patch fail"),
-			want:             errors.Errorf("Failed to patch image with local bootloader: patch fail"),
+			name:          "patch required and failed",
+			patchRequired: true,
+			patchErr:      errors.Errorf("patch fail"),
+			want:          errors.Errorf("Failed to patch image with local bootloader: patch fail"),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			utils.IsVbootSystem = func() bool {
-				return tc.isVboot
-			}
-			isVbootImagePatchingRequired = func(flashDeviceSpecifier string) (bool, error) {
+			isVbootImagePatchingRequired = func(flashDeviceSpecifier string) bool {
 				if flashDeviceSpecifier != exampleFlashDevice.Specifier {
 					t.Errorf("flash device specifier: want '%v' got '%v'",
 						exampleFlashDevice.Specifier, flashDeviceSpecifier)
 				}
-				return tc.patchRequired, tc.patchRequiredErr
+				return tc.patchRequired
 			}
 			patchImageWithLocalBootloader = func(imageFilePath string, flashDevice devices.FlashDevice, offsetBytes int) error {
 				if imageFilePath != "x" {

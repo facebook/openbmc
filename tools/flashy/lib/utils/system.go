@@ -320,3 +320,24 @@ var checkNoBaseNameExistsInProcCmdlinePaths = func(baseNames, procCmdlinePaths [
 	}
 	return nil
 }
+
+// GetMtdMap gets a map containing [dev, size, erasesize] values
+// for the mtd device specifier. Information is obtained from /proc/mtd
+var GetMTDMapFromSpecifier = func(deviceSpecifier string) (map[string]string, error) {
+	// read from /proc/mtd
+	procMTDBuf, err := fileutils.ReadFile(ProcMtdFilePath)
+	if err != nil {
+		return nil, errors.Errorf("Unable to read from /proc/mtd: %v", err)
+	}
+	procMTD := string(procMTDBuf)
+
+	regEx := fmt.Sprintf("(?m)^(?P<dev>mtd[0-9a-f]+): (?P<size>[0-9a-f]+) (?P<erasesize>[0-9a-f]+) \"%v\"$",
+		deviceSpecifier)
+
+	mtdMap, err := GetRegexSubexpMap(regEx, procMTD)
+	if err != nil {
+		return nil, errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:%v'",
+			deviceSpecifier)
+	}
+	return mtdMap, nil
+}

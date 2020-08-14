@@ -27,38 +27,41 @@
 #include <openbmc/log.h>
 
 // ELBERT definition
-#define ELBERT_EEPROM_PATH_BASE "/sys/bus/i2c/drivers/at24/"
-#define ELBERT_EEPROM_CHS_OBJ "CHASSIS"
-#define ELBERT_EEPROM_SCD_OBJ "SCD"
-#define ELBERT_EEPROM_SUP_OBJ "SUP"
-#define ELBERT_EEPROM_LC_OBJ "LC"
-#define ELBERT_EEPROM_SUP "12-0050"
-/* #define ELBERT_EEPROM_SUP_BMC "14-0050" */
-/* #define ELBERT_EEPROM_CHASSIS "8-0050" */
-/* #define ELBERT_EEPROM_SCD "4-0050" */
-/* #define ELBERT_EEPROM_SCD_EXTRA "4-0052" */
-#define ELBERT_LC_AT24_BUS_BASE 14
-#define ELBERT_LC_AT24_SLAVE_ADDR 0x50
+#define ELBERT_EEPROM_PATH_BASE     "/sys/bus/i2c/drivers/at24/"
+#define ELBERT_EEPROM_CHS_OBJ       "CHASSIS"
+#define ELBERT_EEPROM_SMB_OBJ       "SMB"
+#define ELBERT_EEPROM_SMB_EXTRA_OBJ "SMB_EXTRA"
+#define ELBERT_EEPROM_SCM_OBJ       "SCM"
+#define ELBERT_EEPROM_BMC_OBJ       "BMC"
+#define ELBERT_EEPROM_PIM_OBJ       "PIM"
+#define ELBERT_EEPROM_SCM           "12-0050"
+#define ELBERT_EEPROM_BMC           "0-0050"
+#define ELBERT_EEPROM_SMB           "4-0050"
+#define ELBERT_EEPROM_SMB_EXTRA     "4-0051"
+#define ELBERT_EEPROM_CHASSIS       "7-0050"
+#define ELBERT_PIM_AT24_SLAVE_ADDR   0x50
 
-#define ELBERT_EEPROM_SIZE_MAX 255
-#define ELBERT_EEPROM_FORMAT_V2 "0002"
-#define ELBERT_EEPROM_HEADER_B1 0x0
-#define ELBERT_EEPROM_HEADER_B2 0x0
-#define ELBERT_EEPROM_HEADER_B3 0x0
-#define ELBERT_EEPROM_HEADER_B4 0x3
-#define ELBERT_EEPROM_TYPE_SIZE 4
-#define ELBERT_EEPROM_PCA_SIZE 12
-#define ELBERT_EEPROM_SERIAL_SIZE 11
-#define ELBERT_EEPROM_KVN_SIZE 3
-#define ELBERT_EEPROM_FIELD_END          0x00
-#define ELBERT_EEPROM_FIELD_MFGTIME      0x02
-#define ELBERT_EEPROM_FIELD_SKU          0x03
-#define ELBERT_EEPROM_FIELD_ASY          0x04
-#define ELBERT_EEPROM_FIELD_MACBASE      0x05
-#define ELBERT_EEPROM_FIELD_FLDVAR       0x09
-#define ELBERT_EEPROM_FIELD_HWREV        0x0B
-#define ELBERT_EEPROM_FIELD_SERIAL       0x0E
-#define ELBERT_EEPROM_SIZE 256
+#define ELBERT_EEPROM_SIZE          256
+#define ELBERT_EEPROM_FORMAT_V2     "0002"
+#define ELBERT_EEPROM_HEADER_B1     0x0
+#define ELBERT_EEPROM_HEADER_B2     0x0
+#define ELBERT_EEPROM_HEADER_B3     0x0
+#define ELBERT_EEPROM_HEADER_B4     0x3
+#define ELBERT_EEPROM_TYPE_SIZE     4
+#define ELBERT_EEPROM_PCA_SIZE      12
+#define ELBERT_EEPROM_SERIAL_SIZE   11
+#define ELBERT_EEPROM_KVN_SIZE      3
+#define ELBERT_EEPROM_FIELD_END     0x00
+#define ELBERT_EEPROM_FIELD_MFGTIME 0x02
+#define ELBERT_EEPROM_FIELD_SKU     0x03
+#define ELBERT_EEPROM_FIELD_ASY     0x04
+#define ELBERT_EEPROM_FIELD_MACBASE 0x05
+#define ELBERT_EEPROM_FIELD_FLDVAR  0x09
+#define ELBERT_EEPROM_FIELD_HWREV   0x0B
+#define ELBERT_EEPROM_FIELD_SERIAL  0x0E
+
+// Map between PIM and SMBus channel
+static int pim_bus[8] = {16, 17, 18, 23, 20, 21, 22, 19};
 
 int elbert_htoi(char a)
 {
@@ -165,29 +168,28 @@ int elbert_parse_hexadecimal(int *read_pointer,
   return rc;
 }
 
-int elbert_get_lc_bus_name(const char *lc_name, char *bus_name)
+int elbert_get_pim_bus_name(const char *pim_name, char *bus_name)
 {
-  int lc_number = -1;
+  int pim_number = -1;
 
   // Boundary check
-  if (!lc_name || !bus_name)
+  if (!pim_name || !bus_name)
     return -1;
 
-  // If lc_name is LCx format where x is a number between 1 and 8
-  // translate this into lc_number (0-base)
-  if (strlen(lc_name) == 3) {
-    if ((lc_name[0] == 'L')&&(lc_name[1]=='C')) {
-      if ((lc_name[2] >= '1')&&(lc_name[2] <= '8')) {
-        lc_number = lc_name[2] - '1';  // it is 0-base
+  // If pim_name is PIMX format where x is a number between 2 and 9
+  // translate this into pim_number (0-base)
+  if (strlen(pim_name) == 4) {
+    if ((pim_name[0] == 'P')&&(pim_name[1]=='I')&&(pim_name[2]=='M')) {
+      if ((pim_name[3] >= '2')&&(pim_name[3] <= '9')) {
+        pim_number = pim_name[3] - '2';  // it is 0-base
       }
     }
   }
-  if (lc_number == -1)
+  if (pim_number == -1)
     return -1;
 
-  snprintf(bus_name, 12, "%2d-00%02x", lc_number + ELBERT_LC_AT24_BUS_BASE,
-          ELBERT_LC_AT24_SLAVE_ADDR);
-
+  snprintf(bus_name, 12, "%2d-00%02x", pim_bus[pim_number],
+          ELBERT_PIM_AT24_SLAVE_ADDR);
   return 0;
 }
 
@@ -208,6 +210,7 @@ int elbert_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
   int ver_major = 0;
   int ver_minor = 0;
   int dot_location = 0;
+  int sku_length = FBW_EEPROM_F_PRODUCT_NUMBER + 1; // Elbert uses 9 char fields
   char local_target[256];
   char field_value[ELBERT_EEPROM_SIZE]; // Will never overflow
   char fn[64];
@@ -224,23 +227,25 @@ int elbert_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
   snprintf(local_target, sizeof(local_target), "%s", target);
   elbert_str_toupper((char *)local_target);
 
-  if (!strcmp(local_target, ELBERT_EEPROM_SUP_OBJ)) {
+  if (!strcmp(local_target, ELBERT_EEPROM_SCM_OBJ)) {
     sprintf(fn, "%s%s/eeprom", ELBERT_EEPROM_PATH_BASE,
-                               ELBERT_EEPROM_SUP);
-/*
+                               ELBERT_EEPROM_SCM);
+  } else if (!strcmp(local_target, ELBERT_EEPROM_BMC_OBJ)) {
     sprintf(fn, "%s%s/eeprom", ELBERT_EEPROM_PATH_BASE,
-                               ELBERT_EEPROM_SUP_BMC);
-  } else if (!strcmp(local_target, ELBERT_EEPROM_CHASSIS_OBJ)) {
+                               ELBERT_EEPROM_BMC);
+    sku_length = 8; // BMC field is only 8 chars long
+  } else if (!strcmp(local_target, ELBERT_EEPROM_CHS_OBJ)) {
     sprintf(fn, "%s%s/eeprom", ELBERT_EEPROM_PATH_BASE,
                                ELBERT_EEPROM_CHASSIS);
-  } else if (!strcmp(local_target, ELBERT_EEPROM_SCD_OBJ)) {
+    sku_length = 4; // Chassis field is only 4 chars long
+  } else if (!strcmp(local_target, ELBERT_EEPROM_SMB_OBJ)) {
     sprintf(fn, "%s%s/eeprom", ELBERT_EEPROM_PATH_BASE,
-                               ELBERT_EEPROM_SCD);
+                               ELBERT_EEPROM_SMB);
+  } else if (!strcmp(local_target, ELBERT_EEPROM_SMB_EXTRA_OBJ)) {
     sprintf(fn, "%s%s/eeprom", ELBERT_EEPROM_PATH_BASE,
-                               ELBERT_EEPROM_SCD_EXTRA);
-  } else if (elbert_get_lc_bus_name((const char *)local_target, bus_name) == 0) {
+                               ELBERT_EEPROM_SMB_EXTRA);
+  } else if (elbert_get_pim_bus_name((const char *)local_target, bus_name) == 0) {
     sprintf(fn, "%s%s/eeprom", ELBERT_EEPROM_PATH_BASE, bus_name);
-*/
   } else {
     return -EINVAL;
   }
@@ -349,11 +354,10 @@ int elbert_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
           break;
 
       case ELBERT_EEPROM_FIELD_SKU:
-          memcpy(eeprom->fbw_product_number, field_value,
-              FBW_EEPROM_F_PRODUCT_NUMBER);
-          // Cutting off portion of SKU XXX-XXXX-XXX to XXX-XXXX-
+          memcpy(eeprom->fbw_product_number, field_value, sku_length);
+          // This cuts off the Product field into 9 characters max
           // We allocate FBW_EEPROM_F_PRODUCT_NUMBER + 2
-          eeprom->fbw_product_number[FBW_EEPROM_F_PRODUCT_NUMBER +1] = '\0';
+          eeprom->fbw_product_number[FBW_EEPROM_F_PRODUCT_NUMBER + 1] = '\0';
           break;
 
       case ELBERT_EEPROM_FIELD_MACBASE:

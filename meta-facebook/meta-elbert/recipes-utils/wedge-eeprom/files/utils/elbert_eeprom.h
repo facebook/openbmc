@@ -27,7 +27,7 @@ extern "C" {
 int elbert_eeprom_parse(const char *fn, struct wedge_eeprom_st *eeprom);
 void elbert_calculate_mac(uint8_t *base, int offset, uint8_t *result);
 void elbert_parse_mac(uint8_t *dest, char* src, int location);
-int elbert_get_lc_bus_name(const char *lc_name, char *bus_name);
+int elbert_get_pim_bus_name(const char *pim_name, char *bus_name);
 #ifdef __cplusplus
 }
 #endif

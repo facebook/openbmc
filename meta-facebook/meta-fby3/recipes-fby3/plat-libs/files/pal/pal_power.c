@@ -466,7 +466,9 @@ pal_sled_cycle(void) {
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
     ret = system("i2cset -y 11 0x40 0xd9 c &> /dev/null");
   } else {
-    if ( pal_set_nic_perst(1, NIC_PE_RST_LOW) < 0 ) return POWER_STATUS_ERR;
+    if ( pal_set_nic_perst(1, NIC_PE_RST_LOW) < 0 ) {
+      syslog(LOG_CRIT, "Set NIC PERST failed.\n");
+    }
     if ( bic_inform_sled_cycle() < 0 ) {
       syslog(LOG_WARNING, "Inform another BMC for sled cycle failed.\n");
     }

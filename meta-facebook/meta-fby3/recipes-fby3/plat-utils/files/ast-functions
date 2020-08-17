@@ -228,11 +228,16 @@ is_server_prsnt() {
   fi
 }
 
-set_nic_power() {
+get_all_server_prsnt() {
   cnt=0
   for i in $(seq 1 4); do
     cnt=$((cnt + `is_server_prsnt $i`))
   done
+  echo $cnt
+}
+
+set_nic_power() {
+  cnt=`get_all_server_prsnt`
 
   if [ $cnt -eq 0 ]; then
     /usr/sbin/i2cset -y 12 0x0f 0x0f 0

@@ -78,19 +78,74 @@ function get_1ou_type(){
   done
 }
 
-bmc_location=$(get_bmc_board_id)
-if [ $bmc_location -eq 9 ]; then
-  #The BMC of class2
-  init_class2_fsc
-elif [ $bmc_location -eq 14 ] || [ $bmc_location -eq 7 ]; then
-  #The BMC of class1
-  init_class1_fsc
-else
-  echo -n "Is board id correct(id=$bmc_location)?..."
-fi
+function start_sled_fsc() {
+  echo "Setup fan speed..."
+  /usr/local/bin/fan-util --set 70
 
-echo "Setup fan speed..."
-/usr/local/bin/fan-util --set 70
-echo -n "Setup fscd for fby3..."
-runsv /etc/sv/fscd > /dev/null 2>&1 &
-echo "Done."
+  bmc_location=$(get_bmc_board_id)
+  if [ $bmc_location -eq 9 ]; then
+    #The BMC of class2
+    init_class2_fsc
+  elif [ $bmc_location -eq 14 ] || [ $bmc_location -eq 7 ]; then
+    #The BMC of class1
+    init_class1_fsc
+  else
+    echo -n "Is board id correct(id=$bmc_location)?..."
+    exit -1
+  fi
+
+  echo -n "Setup fscd for fby3..."
+  runsv /etc/sv/fscd > /dev/null 2>&1 &
+  echo "Done."
+}
+
+function reload_sled_fsc() {
+  cnt=`get_all_server_prsnt`
+  run_fscd=false
+
+  #Config A and B or Config D
+  sys_config=$(cat /mnt/data/kv_store/sled_system_conf)
+  if [[ "$sys_config" =~ ^(Type_(1|10))$ ]]; then
+    if [ $cnt -eq 4 ]; then
+      run_fscd=true
+    fi
+  else
+    if [ $cnt -eq 2 ]; then
+      run_fscd=true
+    fi
+  fi
+
+  fscd_status=$(cat /etc/sv/fscd/supervise/stat)
+  if [ $run_fscd = false ]; then
+    if [ "$fscd_status" == "run" ]; then
+      sleep 1 && /usr/bin/sv stop fscd
+      echo "A sled is pulled out, stop fscd."
+    else
+      echo "fscd is already stopped."
+    fi
+  else
+    #if fscd has been running, there is no need to restart
+    if ! [ "$fscd_status" == "run" ]; then
+      sleep 1 && /usr/bin/sv restart fscd
+    fi
+  fi
+}
+
+case "$1" in
+  start)
+    start_sled_fsc
+    #if one of the blades is not present, stop fscd
+    reload_sled_fsc
+  ;;
+
+  reload)
+    #if one of the blades is pulled out, stop fscd
+    reload_sled_fsc
+  ;;
+
+  *)
+    echo "Usage: /etc/init.d/setup-fan.sh {start|reload}"
+  ;;
+esac
+
+exit 0

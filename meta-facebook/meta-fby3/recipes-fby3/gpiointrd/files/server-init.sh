@@ -30,6 +30,10 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
+# stop the service first
+sv stop gpiod
+sv stop sensord
+
 slot_num=$1
 PID=$$
 PID_FILE="/var/run/server-init.${slot_num}.pid"
@@ -47,6 +51,7 @@ if [ ! -z "$OLDPID" ] && (grep "server-init" /proc/$OLDPID/cmdline &> /dev/null)
   kill -s 9 $OLDPID
   ps | grep 'bic-cached' | grep "slot${slot_num}" | awk '{print $1}'| xargs kill -s 9 &> /dev/null
   ps | grep 'power-util' | grep "slot${slot_num}" | awk '{print $1}'| xargs kill -s 9 &> /dev/null
+  ps | grep 'setup-fan' | awk '{print $1}'| xargs kill -s 9 &> /dev/null
 fi
 unset OLDPID
 
@@ -66,6 +71,9 @@ else
   /etc/init.d/setup-sic.sh "slot${slot_num}" > /dev/null
 fi
 
-# restart the service
-sv restart gpiod
-sv restart sensord
+# reload fscd
+/etc/init.d/setup-fan.sh reload
+
+# start the services again
+sv start gpiod
+sv start sensord

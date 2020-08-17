@@ -28,4 +28,5 @@ IMAGE_INSTALL += " \
   ipmid \
   ipmbd \
   ipmb-util\
+  power-util \
   "

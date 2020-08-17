@@ -58,4 +58,9 @@ gpio_set SKU_ID1_PAX3 1
 gpio_export SKU_ID0_PAX3 GPIOB4
 gpio_set SKU_ID0_PAX3 1
 
+# System power good
+gpio_export SYS_PWR_READY GPIOB3
 
+# PDB 12V POWER (output)
+gpio_export BMC_IPMI_PWR_ON GPIOE1
+gpio_set BMC_IPMI_PWR_ON 1

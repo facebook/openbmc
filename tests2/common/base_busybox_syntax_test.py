@@ -97,6 +97,7 @@ KNOWN_USAGE_STRINGS = {
     "chattr": [
         "chattr [-R] [-+=AacDdijsStTu] [-v VERSION] [FILE]...",
         "chattr [-pRVf] [-+=aAcCdDeijPsStTu] [-v version] files...",  # BusyBox 1.30.1
+        "chattr [-pRVf] [-+=aAcCdDeijPsStTuF] [-v version] files...", # BusyBox 1.31.0
     ],
     "chgrp": ["chgrp [-RhLHP]... GROUP FILE..."],
     "chmod": ["chmod [-R] MODE[,MODE]... FILE..."],
@@ -283,7 +284,10 @@ KNOWN_USAGE_STRINGS = {
         "timeout [-t SECS] [-s SIG] PROG ARGS",  # noqa: B950
         "timeout [-s SIG] SECS PROG ARGS",  # BusyBox 1.30.1
     ],
-    "top": ["top [-b] [-nCOUNT] [-dSECONDS]"],
+    "top": [
+        "top [-b] [-nCOUNT] [-dSECONDS]",
+        "top [-b] [-n COUNT] [-d SECONDS]", # BusyBox 1.31.0
+    ],
     "touch": ["touch [-c] [-d DATE] [-t DATE] [-r FILE] FILE..."],
     "tr": ["tr [-cds] STRING1 [STRING2]"],
     "traceroute": [
@@ -308,7 +312,10 @@ KNOWN_USAGE_STRINGS = {
     "vi": ["vi [OPTIONS] [FILE]..."],
     "vlock": ["vlock [-a]"],
     "watch": ["watch [-n SEC] [-t] PROG ARGS"],
-    "wc": ["wc [-clwL] [FILE]..."],
+    "wc": [
+        "wc [-clwL] [FILE]...",
+        "wc [-cmlwL] [FILE]...", # BusyBox 1.31.0
+    ],
     "wget": [
         "wget [-c|--continue] [-s|--spider] [-q|--quiet] [-O|--output-document FILE]",  # noqa: B950
         "wget [-c|--continue] [--spider] [-q|--quiet] [-O|--output-document FILE]",  # BusyBox 1.30.1  # noqa: B950

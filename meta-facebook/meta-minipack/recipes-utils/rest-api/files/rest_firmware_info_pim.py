@@ -17,10 +17,12 @@ def _parse_fpga_ver_data(data) -> Dict:
     for sdata in data.splitlines():
         if re.match(r"^PIM", sdata):
             pim_id = int(sdata.replace("PIM ", "").replace(":", ""))
-            result[pim_id] = {}
-        if "DOMFPGA:" in sdata:
-            firmware_version = sdata.split(": ")[1]
-            result[pim_id] = firmware_version
+            result[pim_id] = {"status": "missing"}
+        matches = re.match(r"(?P<type>[^ ]+) DOMFPGA: (?P<version>[^ ]+)", sdata)
+        if matches:
+            result[pim_id]["status"] = "present"
+            result[pim_id]["version"] = matches.group("version")
+            result[pim_id]["type"] = matches.group("type")
     return result
 
 

@@ -37,6 +37,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     PIM_STATUS_ENDPOINT = "/api/sys/pimstatus"
     PIM_FIRMWARE_INFO = "/api/sys/firmware_info_pim"
     SCM_FIRMWARE_INFO = "/api/sys/firmware_info_scm"
+    PIM_DETAILS_ENDPOINT = "/api/sys/pimdetails"
     ALL_FIRMWARE_INFO = (
         "/api/sys/firmware_info_all"  # duplicate endpoint to firmware_info/all
     )
@@ -238,4 +239,12 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         self.set_endpoint_system_led_info_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.SYSTEM_LED_INFO, self.endpoint_system_led_info_attrb
+        )
+
+    # "/api/sys/pimdetails"
+    def test_endpoint_api_sys_pimdetails(self):
+        self.set_endpoint_firmware_info_pim_attributes()
+        self.verify_endpoint_attributes(
+            RestEndpointTest.PIM_DETAILS_ENDPOINT,
+            self.endpoint_firmware_info_pim_attributes,
         )

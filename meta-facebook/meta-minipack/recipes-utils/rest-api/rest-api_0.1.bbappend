@@ -22,6 +22,7 @@ SRC_URI += " \
     file://rest_firmware_info_scm.py \
     file://rest_fruid_scm.py \
     file://rest_peutil.py \
+    file://rest_pim_details.py \
     file://rest_piminfo.py \
     file://rest_pimserial.py \
     file://rest_pimstatus.py \
@@ -30,6 +31,7 @@ SRC_URI += " \
     file://rest_usb2i2c_reset.py \
     file://rest_fw_ver.py \
     file://rest_system_led_info.py \
+    file://test_rest_pim_details.py \
 "
 
 binfiles1 += " \
@@ -37,6 +39,7 @@ binfiles1 += " \
     rest_firmware_info_scm.py \
     rest_fruid_scm.py \
     rest_peutil.py \
+    rest_pim_details.py \
     rest_piminfo.py \
     rest_pimserial.py \
     rest_pimstatus.py \

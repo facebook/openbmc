@@ -19,8 +19,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse
+import hashlib
 import json
 import os
+import pprint
 import re
 import socket
 import subprocess
@@ -567,10 +569,274 @@ def get_partitions(images, checksums, logger):
     return partitions
 
 
+# The image meta schema refer to:
+# meta-facebook/recipes-core/images/image-meta-schema.json
+# The image-meta is designed to be a raw image partition in the BMC firmware.
+# located at 0x000F_0000, with maximum size 64KB.
+# This image-meta partition contains two lines of ASCII strings,
+# each ASCII string is a JSON:
+#   First line: The image-meta JSON
+#   Second line: A simple image-meta-chksum JSON which contain the checksum
+#                of image-meta JSON
+# Newline (b'\n') is append to both meta and meta-checksum JSON to simplify
+# the loading of the JSON objects.
+#
+# The example image meta partition dumpped as following with json.tool formatted
+# to help read:
+# strings /dev/mtd3 | while read line; do echo $line | python -m json.tool; done
+# {
+#     "FBOBMC_IMAGE_META_VER": 1,
+#     "version_infos": {
+#         "uboot_build_time": "Aug 11 2020 - 22:16:35 +0000",
+#         "fw_ver": "fby3vboot2-4f840058283c",
+#         "uboot_ver": "2019.04"
+#     },
+#     "meta_update_action": "Signed",
+#     "meta_update_time": "2020-08-11T22:20:40.844432",
+#     "part_infos": [
+#         {
+#             "size": 262144,
+#             "type": "rom",
+#             "name": "spl",
+#             "md5": "602f024562092ac69563f0268ac67265",
+#             "offset": 0
+#         },
+#         {
+#             "size": 655360,
+#             "type": "raw",
+#             "name": "rec-u-boot",
+#             "md5": "5036726386d728e1d37f32702a8f3701",
+#             "offset": 262144
+#         },
+#         {
+#             "size": 65536,
+#             "type": "data",
+#             "name": "u-boot-env",
+#             "offset": 917504
+#         },
+#         {
+#             "size": 65536,
+#             "type": "meta",
+#             "name": "image-meta",
+#             "offset": 983040
+#         },
+#         {
+#             "num-nodes": 1,
+#             "size": 655360,
+#             "type": "fit",
+#             "name": "u-boot-fit",
+#             "offset": 1048576
+#         },
+#         {
+#             "num-nodes": 3,
+#             "size": 31850496,
+#             "type": "fit",
+#             "name": "os-fit",
+#             "offset": 1703936
+#         }
+#     ]
+# }
+# {
+#     "meta_md5": "b5a716b8516b3e6e4abb0ca70a535269"
+# }
+#
+# PS.
+#  the python json module will encode(save) the tuple into array,
+#  and decode(load) the array as list
+
+FBOBMC_IMAGE_META_LOCATION = 0xF0000
+FBOBMC_IMAGE_META_SIZE = 64 * 1024
+FBOBMC_IMAGE_META_VER = 1
+FBOBMC_PART_INFO_KEY = "part_infos"
+
+
+class MetaPartitionNotFound(Exception):
+    pass
+
+
+class MetaPartitionCorrupted(Exception):
+    pass
+
+
+class MetaPartitionVerNotSupport(Exception):
+    pass
+
+
+class MetaPartitionMissingPartInfos(Exception):
+    pass
+
+
+def load_image_meta(full_image, logger):
+    # type: (ImageSourcesType, logging.Logger) -> dict
+    if full_image.size < (FBOBMC_IMAGE_META_LOCATION + FBOBMC_IMAGE_META_SIZE):
+        raise MetaPartitionNotFound(
+            "image meta is expected locate at 0x{l:08X} with size({s})".format(
+                l=FBOBMC_IMAGE_META_LOCATION, s=FBOBMC_IMAGE_META_SIZE
+            )
+        )
+
+    logger.info("Try loading image meta from full image %s" % full_image)
+    len_remain = FBOBMC_IMAGE_META_SIZE
+    with open(full_image.file_name, "rb") as fh:
+        try:
+            fh.seek(FBOBMC_IMAGE_META_LOCATION)
+            meta_data = fh.readline(len_remain)
+            meta_data_md5 = hashlib.md5(meta_data.strip()).hexdigest()
+            len_remain -= len(meta_data)
+            meta_data_chksum = fh.readline(len_remain)
+            meta_md5 = json.loads(meta_data_chksum.strip())["meta_md5"]
+        except Exception as e:
+            raise MetaPartitionNotFound(
+                "Error while attempting to load meta: {}".format(repr(e))
+            )
+
+        if meta_data_md5 != meta_md5:
+            raise MetaPartitionCorrupted(
+                "Meta partition md5 ({meta_data_md5}) does not match expected md5 {meta_md5}".format(
+                    meta_md5=meta_md5, meta_data_md5=meta_data_md5
+                )
+            )
+
+        meta_info = json.loads(meta_data.strip())
+        logger.info(
+            "loaded image meta ver(%d) %s at %s with chksum '%s' "
+            % (
+                meta_info["FBOBMC_IMAGE_META_VER"],
+                meta_info["meta_update_action"],
+                meta_info["meta_update_time"],
+                meta_data_md5,
+            )
+        )
+
+        if (
+            type(meta_info["FBOBMC_IMAGE_META_VER"]) is not int
+            or FBOBMC_IMAGE_META_VER < meta_info["FBOBMC_IMAGE_META_VER"]
+            or meta_info["FBOBMC_IMAGE_META_VER"] <= 0
+        ):
+            raise MetaPartitionVerNotSupport(
+                "Unsupported meta version {}".format(
+                    repr(meta_info["FBOBMC_IMAGE_META_VER"])
+                )
+            )
+
+        if FBOBMC_PART_INFO_KEY not in meta_info:
+            raise MetaPartitionMissingPartInfos(
+                "Required metadata entry '{}' not found".format(FBOBMC_PART_INFO_KEY)
+            )
+
+        meta_info[FBOBMC_PART_INFO_KEY] = tuple(meta_info[FBOBMC_PART_INFO_KEY])
+
+        return meta_info
+
+
+def get_partitions_according_meta(full_image, image_meta, logger):
+    # type: (ImageSourcesType, List[str], dict, logging.Logger) -> List[Partition]
+    logger.info(
+        "get partitions according to following image_meta:\n %s"
+        % pprint.pformat(image_meta, indent=4)
+    )
+
+    partitions = []
+    with VirtualCat([full_image]) as vc:
+        for part_info in image_meta[FBOBMC_PART_INFO_KEY]:
+            partition = None
+            if "raw" == part_info["type"]:
+                partition = ExternalChecksumPartition(
+                    part_info["size"],
+                    part_info["offset"],
+                    part_info["name"],
+                    vc,
+                    [part_info["md5"]],
+                    logger,
+                )
+            elif "fit" == part_info["type"]:
+                partition = DeviceTreePartition(
+                    [part_info["size"]],
+                    part_info["offset"],
+                    part_info["name"],
+                    vc,
+                    logger,
+                )
+            elif "data" == part_info["type"] or "meta" == part_info["type"]:
+                partition = Partition(
+                    part_info["size"],
+                    part_info["offset"],
+                    part_info["name"],
+                    vc,
+                    logger,
+                )
+            elif "mtdonly" == part_info["type"]:
+                if hasattr(full_image, "device_name"):
+                    partition = Partition(
+                        part_info["size"],
+                        part_info["offset"],
+                        part_info["name"],
+                        vc,
+                        logger,
+                    )
+            elif "rom" == part_info["type"]:
+                if get_vboot_enforcement() == "hardware-enforce":
+                    partition = Partition(
+                        part_info["size"],
+                        part_info["offset"],
+                        part_info["name"],
+                        vc,
+                        logger,
+                    )
+                else:
+                    partition = ExternalChecksumPartition(
+                        part_info["size"],
+                        part_info["offset"],
+                        part_info["name"],
+                        vc,
+                        [part_info["md5"]],
+                        logger,
+                    )
+            else:
+                raise AssertionError("Unknown partition %s " % repr(part_info))
+
+            if partition is not None:
+                partitions.append(partition)
+    return partitions
+
+
+def get_valid_partitions_according_meta(full_image, image_meta, logger):
+    partitions = get_partitions_according_meta(full_image, image_meta, logger)
+    logger.info("checked [%s]" % ", ".join(partition.name for partition in partitions))
+    for partition in partitions:
+        if not partition.valid:
+            exiting_msg = "Exiting due to invalid {} partition (details above)."
+            logger.error(exiting_msg.format(partition.name))
+            sys.exit(1)
+    return partitions
+
+
 def get_valid_partitions(images_or_mtds, checksums, logger):
     # type: (ImageSourcesType, List[str], logging.Logger) -> List[Partition]
+    image_meta = None
     if images_or_mtds == []:
         return []
+    elif 1 == len(images_or_mtds):
+        # image meta based validation only support single full image
+        # the case of multiple images_or_mtds, as each is independent partition
+        # the legacy code logic can handle
+        try:
+            image_meta = load_image_meta(images_or_mtds[0], logger)
+        except MetaPartitionNotFound as e:
+            logger.debug(repr(e))
+            logger.info("No image meta found, Validate as legacy format full image")
+        except (
+            MetaPartitionCorrupted,
+            MetaPartitionMissingPartInfos,
+            MetaPartitionVerNotSupport,
+        ) as e:
+            raise e
+
+    if image_meta is not None:
+        return get_valid_partitions_according_meta(
+            images_or_mtds[0], image_meta, logger
+        )
+
     logger.info(
         "Validating partitions in {}.".format(", ".join(map(str, images_or_mtds)))
     )

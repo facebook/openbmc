@@ -18,7 +18,10 @@
 # Intended to compatible with both Python 2.7 and Python 3.x.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import datetime
 import errno
+import hashlib
+import json
 import logging
 import os
 import subprocess
@@ -44,6 +47,127 @@ class TestSystem(unittest.TestCase):
         self.mock_mtd.size = 1
         self.mock_mtd.file_name = "/dev/mtd99"
         self.mock_mtd.offset = 0
+
+    @patch.object(system, "open", create=True)
+    def test_load_image_meta(self, mocked_open):
+        test_meta = {
+            "FBOBMC_IMAGE_META_VER": 1,
+            "meta_update_action": "test",
+            "meta_update_time": "2020-08-08T21:10:08.825194",
+            "part_infos": (
+                {
+                    "md5": "919ac6ac169f9a005636cc4eb04d4f79",
+                    "name": "spl",
+                    "offset": 0,
+                    "size": 262144,
+                    "type": "rom",
+                },
+                {
+                    "md5": "4e418c602b037e8b2b826d9c359cc0e3",
+                    "name": "rec-u-boot",
+                    "offset": 262144,
+                    "size": 655360,
+                    "type": "raw",
+                },
+                {"name": "u-boot-env", "offset": 917504, "size": 65536, "type": "data"},
+                {"name": "image-meta", "offset": 983040, "size": 65536, "type": "meta"},
+                {
+                    "name": "u-boot-fit",
+                    "num-nodes": 1,
+                    "offset": 1048576,
+                    "size": 655360,
+                    "type": "fit",
+                },
+                {
+                    "name": "os-fit",
+                    "num-nodes": 3,
+                    "offset": 1703936,
+                    "size": 31850496,
+                    "type": "fit",
+                },
+            ),
+            "version_infos": {
+                "fw_ver": "fby3vboot2-v2020.33.0",
+                "uboot_build_time": "Aug 08 2020 - 19:17:09 +0000",
+                "uboot_ver": "2019.04",
+            },
+        }
+
+        test_meta_data = json.dumps(test_meta).encode("ascii")
+        test_meta_chksum = {"meta_md5": hashlib.md5(test_meta_data).hexdigest()}
+        test_meta_chksum_data = json.dumps(test_meta_chksum).encode("ascii")
+        data = test_meta_data + b"\n" + test_meta_chksum_data + b"\n"
+        mocked_open.return_value = mock_open(read_data=data).return_value
+        self.mock_image.size = 32 * 1024 * 1024
+        meta_info = system.load_image_meta(self.mock_image, self.logger)
+        self.assertEqual(
+            meta_info["FBOBMC_IMAGE_META_VER"], test_meta["FBOBMC_IMAGE_META_VER"]
+        )
+        self.assertEqual(meta_info["part_infos"], tuple(test_meta["part_infos"]))
+        self.assertEqual(meta_info["version_infos"], test_meta["version_infos"])
+        self.assertEqual(meta_info["meta_update_time"], test_meta["meta_update_time"])
+        self.assertEqual(
+            meta_info["meta_update_action"], test_meta["meta_update_action"]
+        )
+
+    @patch.object(system, "open", create=True)
+    def test_load_image_meta_ver(self, mocked_open):
+        for badver in [2, 0, -1, 100000, 1.0]:
+            test_meta = {
+                "FBOBMC_IMAGE_META_VER": badver,
+                "meta_update_action": "test",
+                "meta_update_time": "2020-08-06T18:18",
+            }
+            test_meta_data = json.dumps(test_meta).encode("ascii")
+            test_meta_chksum = {"meta_md5": hashlib.md5(test_meta_data).hexdigest()}
+            test_meta_chksum_data = json.dumps(test_meta_chksum).encode("ascii")
+            data = test_meta_data + b"\n" + test_meta_chksum_data + b"\n"
+            mocked_open.return_value = mock_open(read_data=data).return_value
+            self.mock_image.size = 32 * 1024 * 1024
+            with self.assertRaises(system.MetaPartitionVerNotSupport):
+                system.load_image_meta(self.mock_image, self.logger)
+
+    @patch.object(system, "open", create=True)
+    def test_load_image_meta_size(self, mocked_open):
+        self.mock_image.size = 32
+        with self.assertRaises(system.MetaPartitionNotFound):
+            system.load_image_meta(self.mock_image, self.logger)
+
+    @patch.object(system, "open", create=True)
+    def test_load_image_meta_corrupt(self, mocked_open):
+        test_meta = {"FBOBMC_IMAGE_META_VER": 1}
+        test_meta_data = json.dumps(test_meta).encode("ascii")
+        test_meta_chksum = {"meta_md5": hashlib.md5(b"afdafa").hexdigest()}
+        test_meta_chksum_data = json.dumps(test_meta_chksum).encode("ascii")
+        data = test_meta_data + b"\n" + test_meta_chksum_data + b"\n"
+        mocked_open.return_value = mock_open(read_data=data).return_value
+        self.mock_image.size = 32 * 1024 * 1024
+        with self.assertRaises(system.MetaPartitionCorrupted):
+            system.load_image_meta(self.mock_image, self.logger)
+
+    @patch.object(system, "open", create=True)
+    def test_load_image_meta_notfound(self, mocked_open):
+        data = b"fdadfaefe#"
+        mocked_open.return_value = mock_open(read_data=data).return_value
+        self.mock_image.size = 32 * 1024 * 1024
+        with self.assertRaises(system.MetaPartitionNotFound):
+            system.load_image_meta(self.mock_image, self.logger)
+
+    @patch.object(system, "open", create=True)
+    def test_load_image_meta_missing_partinfo(self, mocked_open):
+        test_meta = {
+            "FBOBMC_IMAGE_META_VER": 1,
+            "meta_update_action": "test",
+            "meta_update_time": "2020-08-06T18:18",
+        }
+        test_meta_data = json.dumps(test_meta).encode("ascii")
+        test_meta_chksum = {"meta_md5": hashlib.md5(test_meta_data).hexdigest()}
+        test_meta_chksum_data = json.dumps(test_meta_chksum).encode("ascii")
+        data = test_meta_data + b"\n" + test_meta_chksum_data + b"\n"
+        mocked_open.return_value = mock_open(read_data=data).return_value
+        self.mock_image.size = 32 * 1024 * 1024
+        with self.assertRaises(system.MetaPartitionMissingPartInfos):
+            system.load_image_meta(self.mock_image, self.logger)
 
     @patch.object(system, "open", create=True)
     def test_is_openbmc(self, mocked_open):

@@ -26,6 +26,7 @@ IMAGE_INSTALL += " \
   front-paneld \
   plat-utils \
   ipmid \
+  ipmi-util \
   ipmbd \
   ipmb-util\
   power-util \

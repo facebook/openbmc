@@ -602,9 +602,14 @@ static int
 pfr_state_history(void) {
   uint8_t tbuf[8], rbuf[80];
   uint8_t i, idx;
+#ifdef CONFIG_FBY3
+  uint8_t start_offset = 0x80;
+#else
+  uint8_t start_offset = 0xC0;
+#endif
 
   for (i = 0; i < 64; i += 16) {
-    tbuf[0] = 0xC0 + i;
+    tbuf[0] = start_offset + i;
     if (pfr_transfer(tbuf, 1, &rbuf[i], 16)) {
       syslog(LOG_ERR, "%s: read state-history failed", __func__);
       return -1;
@@ -710,7 +715,7 @@ pfr_state_history(void) {
   for (i = rbuf[0]; i <= rbuf[1]; i++) {
     idx = i % 64;
     if ((idx > 1) && rbuf[idx] && st_table[rbuf[idx]]) {
-      printf("[%02X]    (0x%02X)  %s\n", 0xC0+idx, rbuf[idx], st_table[rbuf[idx]]);
+      printf("[%02X]    (0x%02X)  %s\n", start_offset+idx, rbuf[idx], st_table[rbuf[idx]]);
     }
   }
 

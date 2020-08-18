@@ -1071,7 +1071,7 @@ STATUS JTAG_init_passthrough(JTAG_Handler *state, uint8_t jflow, STATUS (*callba
 
     if (bic_asd_init(slot_id, jflow) < 0) {
         syslog(LOG_ERR, "1S_ASD_INIT failed, slot%d", slot_id);
-        //return ST_ERR;
+        return ST_ERR;
     }
 
     return ST_OK;

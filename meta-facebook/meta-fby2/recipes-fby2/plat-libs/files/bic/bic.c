@@ -3389,7 +3389,9 @@ bic_asd_init(uint8_t slot_id, uint8_t cmd) {
 
   tbuf[3] = cmd;
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ASD_INIT, tbuf, 4, rbuf, &rlen);
-
+  if (ret != CC_SUCCESS) {
+    ret = -1;
+  }
   return ret;
 }
 

@@ -3006,6 +3006,11 @@ server_12v_cycle_physically(uint8_t slot_id){
   int pair_set_type=-1;
   char pwr_state[MAX_VALUE_LEN] = {0};
 
+  if (pal_is_all_fan_fail(slot_id)) {
+    printf("Fail to 12V cycle fru %u due to fan fail.\n", slot_id);
+    return -3;
+  }
+
   if (slot_id == 1 || slot_id == 3) {
     pair_set_type = pal_get_pair_slot_type(slot_id);
     switch(pair_set_type) {
@@ -3014,10 +3019,10 @@ server_12v_cycle_physically(uint8_t slot_id){
       case TYPE_GPV2_A_SV:
         pair_slot_id = slot_id + 1;
         pal_get_last_pwr_state(pair_slot_id, pwr_state);
-        if (pal_set_server_power(pair_slot_id, SERVER_12V_OFF)) //Need to 12V off server first when configuration type is pair config
+        if (server_12v_off(pair_slot_id)) //Need to 12V off server first when configuration type is pair config
           return -1;
         sleep(DELAY_12V_CYCLE);
-        if (pal_set_server_power(slot_id, SERVER_12V_ON))
+        if (server_12v_on(slot_id))
           return -1;
         pal_power_policy_control(pair_slot_id, pwr_state,false);
         return 0;
@@ -3025,12 +3030,12 @@ server_12v_cycle_physically(uint8_t slot_id){
         break;
     }
   }
-  if (pal_set_server_power(slot_id, SERVER_12V_OFF))
+  if (server_12v_off(slot_id))
     return -1;
 
   sleep(DELAY_12V_CYCLE);
 
-  return pal_set_server_power(slot_id, SERVER_12V_ON);
+  return (server_12v_on(slot_id));
 }
 
 int

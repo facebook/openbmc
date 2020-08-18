@@ -21,6 +21,7 @@ package utils
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -103,11 +104,47 @@ var GetMemInfo = func() (*MemInfo, error) {
 	}, nil
 }
 
+// dropCR drops a terminal \r from the data.
+func dropCR(data []byte) []byte {
+	if len(data) > 0 && data[len(data)-1] == '\r' {
+		return data[0 : len(data)-1]
+	}
+	return data
+}
+
+// scanLinesRN is an implementation of bufio.ScanLines that treats end of line as
+// \r?\n or \r^\n.
+func scanLinesRN(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+
+	// \r^\n case
+	if i := bytes.IndexByte(data, '\r'); i >= 0 && i != len(data)-1 && data[i+1] != '\n' {
+		// We have a \r-terminated line
+		return i + 1, data[0:i], nil
+	}
+
+	// \r?\n case
+	if i := bytes.IndexByte(data, '\n'); i >= 0 {
+		// We have a full newline-terminated line.
+		return i + 1, dropCR(data[0:i]), nil
+	}
+
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		return len(data), dropCR(data), nil
+	}
+	// Request more data.
+	return 0, nil, nil
+}
+
 // function to aid logging and saving live stdout and stderr output
 // from running command
 // note that sequential execution is not guaranteed - race conditions
 // might still exist
 func logScanner(s *bufio.Scanner, ch chan struct{}, pre string, str *string) {
+	s.Split(scanLinesRN)
 	for s.Scan() {
 		t := fmt.Sprintf("%v\n", s.Text())
 		log.Printf("%v%v", pre, t)

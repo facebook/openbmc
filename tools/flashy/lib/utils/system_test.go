@@ -250,10 +250,12 @@ func TestRunCommand(t *testing.T) {
 			timeoutInSeconds: 30,
 			wantExitCode:     0,
 			wantErr:          nil,
-			wantStdout:       "PROG:#  \rPROG:## \rPROG:###\n",
+			wantStdout:       "PROG:#  \nPROG:## \nPROG:###\n",
 			wantStderr:       "",
 			logContainsSeq: []string{
-				"stdout: PROG:#  \rPROG:## \rPROG:###\n",
+				"stdout: PROG:#",
+				"stdout: PROG:##",
+				"stdout: PROG:###",
 			},
 		},
 		{

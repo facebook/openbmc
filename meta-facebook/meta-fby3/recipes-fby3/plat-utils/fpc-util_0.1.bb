@@ -16,7 +16,8 @@ do_install() {
     install -m 0755 fpc-util ${D}${bindir}/fpc-util
 }
 
-DEPENDS += "libpal"
-RDEPENDS_${PN} += "libipmi libipmb libbic libpal"
+DEPENDS += " libbic libpal libobmc-i2c libfby3-common "
+RDEPENDS_${PN} += " libbic libpal libobmc-i2c libfby3-common "
+CFLAGS += " -lbic -lpal -lobmc-i2c -lfby3_common "
 
 FILES_${PN} = "${bindir}"

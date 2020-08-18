@@ -2,7 +2,7 @@
 all: fpc-util
 
 fpc-util: fpc-util.c
-	$(CC) $(CFLAGS) -pthread -lipmi -lipmb -lbic -lpal -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

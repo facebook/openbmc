@@ -91,6 +91,7 @@ def main(args):
         subprocess.check_call(cmd)
     else:
         cmd += ["ptest-runner"]
+        exit_error = False;
         if args.recipes is None or len(args.recipes) == 0:
             cmd += all_recipes
         else:
@@ -102,10 +103,13 @@ def main(args):
             print(e.output.decode())
             if (e.stderr is not None):
                 print(e.stderr.decode())
+            exit_error = True
         if args.log is not None:
             log = os.path.join(rootfs, args.log)
             with open(log) as f:
                 print(f.read())
+        if exit_error:
+          sys.exit(1)
 
 
 parser = argparse.ArgumentParser(description="Helper to run unit-tests natively")

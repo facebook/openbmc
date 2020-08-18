@@ -2589,7 +2589,12 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
   uint8_t rlen = 1;
   uint8_t cpld_slot_cbl_val = 0;
 
-  if ( bmc_location == DVT_BB_BMC ) {
+  if ( bmc_location == BB_BMC ) {
+    // EVT BB_BMC HW not support cable management
+    // just return present to skip checking
+    cbl_val = STATUS_PRSNT;
+    return 0;
+  } else if ( bmc_location == DVT_BB_BMC ) {
     //read GPIO vals
     for ( i = 0; i < num_of_mgmt_pins; i++ ) {
       snprintf(dev, sizeof(dev), gpio_mgmt_cbl_tbl[i], slot_id);

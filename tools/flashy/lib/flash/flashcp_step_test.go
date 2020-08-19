@@ -30,6 +30,7 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
@@ -50,13 +51,16 @@ func TestFlashCp(t *testing.T) {
 	// save log output into buf for testing
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
-	// mock and defer restore GetFlashDevice, flashCpAndValidate
+	// mock and defer restore GetFlashDevice, flashCpAndValidate,
+	// CheckOtherFlasherRunning
 	getFlashDeviceOrig := flashutils.GetFlashDevice
 	flashCpAndValidateOrig := flashCpAndValidate
+	checkOtherFlasherRunningOrig := utils.CheckOtherFlasherRunning
 	defer func() {
 		log.SetOutput(os.Stderr)
 		flashutils.GetFlashDevice = getFlashDeviceOrig
 		flashCpAndValidate = flashCpAndValidateOrig
+		utils.CheckOtherFlasherRunning = checkOtherFlasherRunningOrig
 	}()
 
 	exampleStepParams := step.StepParams{
@@ -74,6 +78,7 @@ func TestFlashCp(t *testing.T) {
 		name                  string
 		getFlashDeviceErr     error
 		flashCpAndValidateErr error
+		otherFlasherErr       error
 		want                  step.StepExitError
 		logContainsSeq        []string
 	}{
@@ -81,6 +86,7 @@ func TestFlashCp(t *testing.T) {
 			name:                  "basic successful flash",
 			getFlashDeviceErr:     nil,
 			flashCpAndValidateErr: nil,
+			otherFlasherErr:       nil,
 			want:                  nil,
 			logContainsSeq: []string{
 				"Flashing using flashcp method",
@@ -92,6 +98,7 @@ func TestFlashCp(t *testing.T) {
 			name:                  "failed to get flash device",
 			getFlashDeviceErr:     errors.Errorf("GetFlashDevice error"),
 			flashCpAndValidateErr: nil,
+			otherFlasherErr:       nil,
 			want: step.ExitSafeToReboot{
 				errors.Errorf("GetFlashDevice error"),
 			},
@@ -105,6 +112,7 @@ func TestFlashCp(t *testing.T) {
 			name:                  "flashcp and validate failed",
 			getFlashDeviceErr:     nil,
 			flashCpAndValidateErr: errors.Errorf("RunCommand error"),
+			otherFlasherErr:       nil,
 			want: step.ExitSafeToReboot{
 				errors.Errorf("RunCommand error"),
 			},
@@ -112,6 +120,18 @@ func TestFlashCp(t *testing.T) {
 				"Flashing using flashcp method",
 				"Attempting to flash 'mtd:flash0' with image file '/tmp/image",
 				"Flash device: &{flash0 /dev/mtd5 12345678}",
+			},
+		},
+		{
+			name:                  "other flasher running",
+			getFlashDeviceErr:     nil,
+			flashCpAndValidateErr: nil,
+			otherFlasherErr:       errors.Errorf("Found other flasher!"),
+			want: step.ExitUnsafeToReboot{
+				errors.Errorf("Found other flasher!"),
+			},
+			logContainsSeq: []string{
+				"Flashing succeeded but found another flasher running",
 			},
 		},
 	}
@@ -133,6 +153,9 @@ func TestFlashCp(t *testing.T) {
 					t.Errorf("imageFilePath: want '%v' got '%v'", "/tmp/image", imageFilePath)
 				}
 				return tc.flashCpAndValidateErr
+			}
+			utils.CheckOtherFlasherRunning = func(flashyStepBaseNames []string) error {
+				return tc.otherFlasherErr
 			}
 			got := FlashCp(exampleStepParams)
 

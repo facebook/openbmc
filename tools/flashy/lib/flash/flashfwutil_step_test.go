@@ -36,11 +36,13 @@ func TestFlashFwUtil(t *testing.T) {
 	// save log output into buf for testing
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
-	// mock and defer restore runFwUtilCmd
+	// mock and defer restore runFwUtilCmd, CheckOtherFlasherRunning
 	runFwUtilCmdOrig := runFwUtilCmd
+	checkOtherFlasherRunningOrig := utils.CheckOtherFlasherRunning
 	defer func() {
 		log.SetOutput(os.Stderr)
 		runFwUtilCmd = runFwUtilCmdOrig
+		utils.CheckOtherFlasherRunning = checkOtherFlasherRunningOrig
 	}()
 
 	exampleStepParams := step.StepParams{
@@ -51,12 +53,14 @@ func TestFlashFwUtil(t *testing.T) {
 	cases := []struct {
 		name            string
 		runFwUtilCmdErr error
+		otherFlasherErr error
 		want            step.StepExitError
 		logContainsSeq  []string
 	}{
 		{
 			name:            "basic successful flash",
 			runFwUtilCmdErr: nil,
+			otherFlasherErr: nil,
 			want:            nil,
 			logContainsSeq: []string{
 				"Flashing using fw-util method",
@@ -66,12 +70,24 @@ func TestFlashFwUtil(t *testing.T) {
 		{
 			name:            "fw-util failed",
 			runFwUtilCmdErr: errors.Errorf("RunCommand error"),
+			otherFlasherErr: nil,
 			want: step.ExitSafeToReboot{
 				errors.Errorf("RunCommand error"),
 			},
 			logContainsSeq: []string{
 				"Flashing using fw-util method",
 				"Attempting to flash with image file '/tmp/image'",
+			},
+		},
+		{
+			name:            "other flasher running",
+			runFwUtilCmdErr: nil,
+			otherFlasherErr: errors.Errorf("Found other flasher!"),
+			want: step.ExitUnsafeToReboot{
+				errors.Errorf("Found other flasher!"),
+			},
+			logContainsSeq: []string{
+				"Flashing succeeded but found another flasher running",
 			},
 		},
 	}
@@ -84,6 +100,9 @@ func TestFlashFwUtil(t *testing.T) {
 					t.Errorf("imageFilePath: want '%v' got '%v'", "/tmp/image", imageFilePath)
 				}
 				return tc.runFwUtilCmdErr
+			}
+			utils.CheckOtherFlasherRunning = func(flashyStepBaseNames []string) error {
+				return tc.otherFlasherErr
 			}
 			got := FlashFwUtil(exampleStepParams)
 

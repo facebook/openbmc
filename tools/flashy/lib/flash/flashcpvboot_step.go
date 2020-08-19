@@ -24,6 +24,7 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
 // known vboot systems: yosemite2, brycecanyon1, tiogapass1, yosemitegpv2, northdome
@@ -55,5 +56,14 @@ func FlashCpVboot(stepParams step.StepParams) step.StepExitError {
 		// either flash device is valid.
 		return step.ExitSafeToReboot{err}
 	}
+
+	// make sure no other flasher is running
+	flashyStepBaseNames := step.GetFlashyStepBaseNames()
+	err = utils.CheckOtherFlasherRunning(flashyStepBaseNames)
+	if err != nil {
+		log.Printf("Flashing succeeded but found another flasher running: %v", err)
+		return step.ExitUnsafeToReboot{err}
+	}
+
 	return nil
 }

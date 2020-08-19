@@ -26,6 +26,7 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
 func FlashCp(stepParams step.StepParams) step.StepExitError {
@@ -47,6 +48,15 @@ func FlashCp(stepParams step.StepParams) step.StepExitError {
 		// either flash device is valid.
 		return step.ExitSafeToReboot{err}
 	}
+
+	// make sure no other flasher is running
+	flashyStepBaseNames := step.GetFlashyStepBaseNames()
+	err = utils.CheckOtherFlasherRunning(flashyStepBaseNames)
+	if err != nil {
+		log.Printf("Flashing succeeded but found another flasher running: %v", err)
+		return step.ExitUnsafeToReboot{err}
+	}
+
 	return nil
 }
 

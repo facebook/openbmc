@@ -113,7 +113,7 @@ def host_shutdown():
 
 
 def check_if_all_fantrays_ok():
-    FANTRAY_STATUS = "/sys/class/i2c-adapter/i2c-8/8-0033/fantray_failure"
+    FANTRAY_STATUS = "/sys/bus/i2c/devices/8-0033/fantray_failure"
 
     cmd = "cat " + FANTRAY_STATUS
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()

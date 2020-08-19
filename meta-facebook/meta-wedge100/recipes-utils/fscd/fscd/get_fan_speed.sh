@@ -17,11 +17,14 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+
+. /usr/local/bin/openbmc-utils.sh
+
 usage() {
     echo "Usage: $0 [Fan Unit (1..5)]" >&2
 }
 
-FAN_DIR=/sys/class/i2c-adapter/i2c-8/8-0033
+FAN_DIR=$(i2c_device_sysfs_abspath 8-0033)
 
 show_pwm()
 {

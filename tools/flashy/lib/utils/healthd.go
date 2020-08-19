@@ -135,6 +135,8 @@ var RestartHealthd = func(wait bool, supervisor string) error {
 	// after restart it may hard-reboot the system - it's better to be safe
 	// than sorry here, let's wait 30s before proceeding
 	if wait {
+		log.Printf("Sleeping for 30s after healthd restart to make sure " +
+			"healthd is stable.")
 		sleepFunc(30 * time.Second)
 	}
 	return nil

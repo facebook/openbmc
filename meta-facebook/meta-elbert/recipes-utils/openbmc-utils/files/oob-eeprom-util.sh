@@ -153,6 +153,8 @@ set_cpld_eeprom_mode() {
     DS4520_PROGRAMMED=1
     i2cset -y -m $DS4520_CONFIG_MASK $DS4520_BUS $DS4520_DEV $DS4520_CONFIG_REG \
                  $DS4520_VOLATILE
+    # A small delay is needed after toggling persistence setting.
+    sleep 1
     i2cset -y -m $DS4520_IO0_MASK $DS4520_BUS $DS4520_DEV $DS4520_PULL0_REG \
                  $CPLD_EEPROM_MODE_0
     i2cset -y -m $DS4520_IO1_MASK $DS4520_BUS $DS4520_DEV $DS4520_PULL1_REG \
@@ -261,6 +263,11 @@ send_cmd() {
             i2c_set $cpld_reg "$cpld_reg_val"
             reg_idx=$(( reg_idx + 1 ))
         done
+
+        # The FPGA requires 10ms prior to triggering the read request.
+        # Sleep for 20ms.
+        sleep 0.02
+
         if [ "$trig_opt" = "trig_read" ]
         then
             i2c_set $READ_TRIGGER_REG 0x0
@@ -331,11 +338,11 @@ get_response() {
 }
 
 i2c_set() {
-    echo "$2" > "$SUPCPLD_SYSFS_DIR/$1"
+    echo "$2" > "$SCMCPLD_SYSFS_DIR/$1"
 }
 
 i2c_get() {
-    head -n 1 "$SUPCPLD_SYSFS_DIR/$1"
+    head -n 1 "$SCMCPLD_SYSFS_DIR/$1"
 }
 
 eeprom_read() {
@@ -574,9 +581,9 @@ then
     exit 1
 fi
 
-if [ ! -d "$SUPCPLD_SYSFS_DIR" ]
+if [ ! -d "$SCMCPLD_SYSFS_DIR" ]
 then
-    echo "Error: Supervisor CPLD not detected" >&2
+    echo "Error: SCM CPLD not detected" >&2
     exit 1
 fi
 

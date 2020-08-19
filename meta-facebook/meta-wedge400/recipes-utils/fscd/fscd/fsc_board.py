@@ -129,7 +129,7 @@ def set_fan_led(fan, color="led_blue"):
             break
 
     fan = int(fan)
-    FAN_LED = "/sys/bus/i2c/drivers/fcbcpld/30-003e/"
+    FAN_LED = "/sys/bus/i2c/drivers/fcbcpld/32-003e/"
 
     fan_key = "fan%d_led_ctrl" % fan
     if "red" in color:

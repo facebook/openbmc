@@ -16,29 +16,25 @@ usage() {
 
 disconnect_spi() {
     # connect through CPLD
-    echo 0x0 > "${SUPCPLD_SYSFS_DIR}"/bios_select
+    echo 0x0 > "${SCMCPLD_SYSFS_DIR}"/bios_select
+    # Set GPIOV0 to 0 (default GPIO state)
+    gpio_set_value BMC_SPI1_CS0_MUX_SEL 0
 }
 
 connect_spi() {
-    # spi2 cs0
-    for bit in 26 27 28 29; do
-        if ! devmem_test_bit "$(scu_addr 88)" $bit; then
-           echo "pinctrl error: SPI2 function bits not enabled!"
-           exit 1
-        fi
-     done
-
+    # Set GPIOV0 to 0
+    gpio_set_value BMC_SPI1_CS0_MUX_SEL 0
     # connect through CPLD
-    echo 0x1 > "${SUPCPLD_SYSFS_DIR}"/bios_select
+    echo 0x1 > "${SCMCPLD_SYSFS_DIR}"/bios_select
 }
 
 # Depending on the flash source, we might need to retry the command without the -c option
 
 do_erase() {
     echo "Erasing flash content ..."
-    if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -E -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
+    if ! flashrom -p linux_spi:dev=/dev/spidev1.0 -E -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
       echo "flashrom failed. Retrying without -c"
-      if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -E; then
+      if ! flashrom -p linux_spi:dev=/dev/spidev1.0 -E; then
          echo "flashrom without -c also failed"
       fi
     fi
@@ -46,9 +42,9 @@ do_erase() {
 
 do_read() {
     echo "Reading flash content..."
-    if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -r "$1" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
+    if ! flashrom -p linux_spi:dev=/dev/spidev1.0 -r "$1" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
       echo "flashrom failed. Retrying without -c"
-      if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -r "$1"; then
+      if ! flashrom -p linux_spi:dev=/dev/spidev1.0 -r "$1"; then
          echo "flashrom without -c also failed"
       fi
     fi
@@ -56,9 +52,9 @@ do_read() {
 
 do_write() {
     echo "Writing flash content..."
-    if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -w "$1" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
+    if ! flashrom -p linux_spi:dev=/dev/spidev1.0 -w "$1" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
       echo "flashrom failed. Retrying without -c"
-      if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -w "$1"; then
+      if ! flashrom -p linux_spi:dev=/dev/spidev1.0 -w "$1"; then
          echo "flashrom without -c also failed"
       fi
     fi

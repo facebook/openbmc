@@ -5,13 +5,15 @@ SRC_URI += " \
     "
 
 DEPENDS += " \
-    libgpio \
+    libobmc-i2c \
     libsensor-correction \
     "
 
 # These shouldn't be needed but are because we aren't properly versioning the
 # shared libraries contained in these recipes.
 RDEPENDS_${PN} += " \
-    libgpio \
+    libobmc-i2c \
     libsensor-correction \
     "
+
+LDFLAGS += "-lobmc-i2c"

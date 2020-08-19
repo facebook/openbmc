@@ -23,6 +23,7 @@
 
 #include <openbmc/obmc-pal.h>
 #include <openbmc/kv.h>
+#include <openbmc/obmc-i2c.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,8 +38,8 @@ extern "C" {
 #define MAX_NUM_FRUS  2
 #define LAST_KEY "last_key"
 
-#define WEDGE100_SYSCPLD_RESTART_CAUSE "/sys/bus/i2c/drivers/syscpld/12-0031/reset_reason"
-#define FRU_EEPROM "/sys/class/i2c-adapter/i2c-6/6-0051/eeprom"
+#define WEDGE100_SYSCPLD_RESTART_CAUSE I2C_SYSFS_DEV_ENTRY(12-0031, reset_reason)
+#define FRU_EEPROM I2C_SYSFS_DEV_ENTRY(6-0051, eeprom)
 #define PAGE_SIZE  0x1000
 
 #define W100_PLATFORM_NAME "wedge100"

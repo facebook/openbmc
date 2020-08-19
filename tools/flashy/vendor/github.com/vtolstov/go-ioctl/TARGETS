@@ -1,0 +1,19 @@
+# This TARGETS file was created automatically by 'fbgo' and any manual changes
+# may be overwritten.
+
+load("@fbcode_macros//build_defs:go_library.bzl", "go_library")
+load("@fbcode_macros//build_defs:native_rules.bzl", "buck_filegroup")
+
+buck_filegroup(
+    name = "sources",
+    srcs = glob(["*.go"]),
+)
+
+go_library(
+    name = "go-ioctl",
+    srcs = glob([
+        "*.go",
+        "*.s",
+    ]),
+    package_name = "github.com/vtolstov/go-ioctl",
+)

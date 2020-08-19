@@ -20,10 +20,22 @@
 package flash_procedure
 
 import (
+	"log"
+
 	"github.com/facebook/openbmc/tools/flashy/lib/flash"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
 func init() {
-	step.RegisterStep(flash.FlashCp)
+	step.RegisterStep(yv3FlashStep)
+}
+
+func yv3FlashStep(stepParams step.StepParams) step.StepExitError {
+	if utils.IsPfrSystem() {
+		log.Printf("This is a PFR system: Using fw-util to flash.")
+		return flash.FlashFwUtil(stepParams)
+	}
+	log.Printf("Not a PFR system: Using flashcp vboot to flash.")
+	return flash.FlashCpVboot(stepParams)
 }

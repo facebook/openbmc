@@ -17,48 +17,43 @@
  * Boston, MA 02110-1301 USA
  */
 
-package common
+package flash
 
 import (
+	"fmt"
 	"log"
-	"syscall"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/facebook/openbmc/tools/flashy/lib/validate"
 	"github.com/pkg/errors"
 )
 
-func init() {
-	step.RegisterStep(ValidateImagePartitions)
+func FlashFwUtil(stepParams step.StepParams) step.StepExitError {
+	log.Printf("Flashing using fw-util method")
+	log.Printf("Attempting to flash with image file '%v'", stepParams.ImageFilePath)
+
+	err := runFwUtilCmd(stepParams.ImageFilePath)
+	if err != nil {
+		return step.ExitSafeToReboot{err}
+	}
+	return nil
 }
 
-func ValidateImagePartitions(stepParams step.StepParams) step.StepExitError {
-	if stepParams.Clowntown {
-		log.Printf("===== WARNING: Clowntown mode: Bypassing image partition validation =====")
-		log.Printf("===== THERE IS RISK OF BRICKING THIS DEVICE =====")
-		return nil
+var runFwUtilCmd = func(imageFilePath string) error {
+	log.Printf("Starting to run fw-util")
+
+	flashCmd := []string{
+		"fw-util", "bmc", "--update", "bmc", imageFilePath,
 	}
 
-	if utils.IsPfrSystem() {
-		log.Printf("This is a PFR system, validation is left to fw-util.")
-		return nil
-	}
-
-	imageData, err := fileutils.MmapFile(stepParams.ImageFilePath,
-		syscall.PROT_READ, syscall.MAP_SHARED)
+	exitCode, err, stdout, stderr := utils.RunCommand(flashCmd, 1800)
 	if err != nil {
-		return step.ExitSafeToReboot{
-			errors.Errorf("Unable to read image file '%v': %v",
-				stepParams.ImageFilePath, err),
-		}
+		errMsg := fmt.Sprintf(
+			"Flashing failed with exit code %v, error: %v, stdout: '%v', stderr: '%v'",
+			exitCode, err, stdout, stderr,
+		)
+		return errors.Errorf(errMsg)
 	}
-	defer fileutils.Munmap(imageData)
-
-	err = validate.Validate(imageData)
-	if err != nil {
-		return step.ExitUnknownError{err}
-	}
+	log.Printf("fw-util succeeded")
 	return nil
 }

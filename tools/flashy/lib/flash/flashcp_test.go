@@ -35,6 +35,18 @@ import (
 	"github.com/pkg/errors"
 )
 
+type mockFlashDevice struct {
+	ValidationErr error
+}
+
+func (m *mockFlashDevice) GetType() string         { return "mocktype" }
+func (m *mockFlashDevice) GetSpecifier() string    { return "mockspec" }
+func (m *mockFlashDevice) GetFilePath() string     { return "/dev/mock" }
+func (m *mockFlashDevice) GetFileSize() uint64     { return uint64(1234) }
+func (m *mockFlashDevice) MmapRO() ([]byte, error) { return nil, nil }
+func (m *mockFlashDevice) Munmap([]byte) error     { return nil }
+func (m *mockFlashDevice) Validate() error         { return m.ValidationErr }
+
 func TestFlashCp(t *testing.T) {
 	// save log output into buf for testing
 	var buf bytes.Buffer
@@ -130,18 +142,6 @@ func TestFlashCp(t *testing.T) {
 		})
 	}
 }
-
-type mockFlashDevice struct {
-	ValidationErr error
-}
-
-func (m *mockFlashDevice) GetType() string         { return "mocktype" }
-func (m *mockFlashDevice) GetSpecifier() string    { return "mockspec" }
-func (m *mockFlashDevice) GetFilePath() string     { return "/dev/mock" }
-func (m *mockFlashDevice) GetFileSize() uint64     { return uint64(1234) }
-func (m *mockFlashDevice) MmapRO() ([]byte, error) { return nil, nil }
-func (m *mockFlashDevice) Munmap([]byte) error     { return nil }
-func (m *mockFlashDevice) Validate() error         { return m.ValidationErr }
 
 func TestFlashCpAndValidate(t *testing.T) {
 	// mock and defer restore runFlashCpCmd

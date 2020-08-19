@@ -25,23 +25,26 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate"
 	"github.com/pkg/errors"
 )
 
 func TestValidateImagePartitions(t *testing.T) {
-	// mock and defer restore MmapFile and
-	// Validate
+	// mock and defer restore MmapFile, Validate and IsPfrSystem
 	validateOrig := validate.Validate
 	mmapFileOrig := fileutils.MmapFile
+	isPfrSystemOrig := utils.IsPfrSystem
 	defer func() {
 		validate.Validate = validateOrig
 		fileutils.MmapFile = mmapFileOrig
+		utils.IsPfrSystem = isPfrSystemOrig
 	}()
 
 	cases := []struct {
 		name                    string
 		clowntown               bool
+		isPfrSystem             bool
 		mmapErr                 error
 		validatePartitionsError error
 		want                    step.StepExitError
@@ -49,13 +52,23 @@ func TestValidateImagePartitions(t *testing.T) {
 		{
 			name:                    "successful validation",
 			clowntown:               false,
+			isPfrSystem:             false,
 			mmapErr:                 nil,
+			validatePartitionsError: nil,
+			want:                    nil,
+		},
+		{
+			name:                    "PFR system, bypass",
+			clowntown:               false,
+			isPfrSystem:             true,
+			mmapErr:                 errors.Errorf("mmap failed"),
 			validatePartitionsError: nil,
 			want:                    nil,
 		},
 		{
 			name:                    "mmap error",
 			clowntown:               false,
+			isPfrSystem:             false,
 			mmapErr:                 errors.Errorf("mmap failed"),
 			validatePartitionsError: nil,
 			want: step.ExitSafeToReboot{
@@ -66,6 +79,7 @@ func TestValidateImagePartitions(t *testing.T) {
 		{
 			name:                    "validation failed",
 			clowntown:               false,
+			isPfrSystem:             false,
 			mmapErr:                 nil,
 			validatePartitionsError: errors.Errorf("validation failed"),
 			want: step.ExitUnknownError{
@@ -75,6 +89,7 @@ func TestValidateImagePartitions(t *testing.T) {
 		{
 			name:                    "clowntown bypass",
 			clowntown:               true,
+			isPfrSystem:             false,
 			mmapErr:                 nil,
 			validatePartitionsError: errors.Errorf("validation failed"),
 			want:                    nil,
@@ -84,6 +99,9 @@ func TestValidateImagePartitions(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			imageFileName := "/opt/upgrade/image"
 			exampleData := []byte("abcd")
+			utils.IsPfrSystem = func() bool {
+				return tc.isPfrSystem
+			}
 			validate.Validate = func(data []byte) error {
 				if !reflect.DeepEqual(exampleData, data) {
 					t.Errorf("data: want '%v' got '%v'", exampleData, data)

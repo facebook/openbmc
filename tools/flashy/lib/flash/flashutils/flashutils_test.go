@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
@@ -170,10 +171,12 @@ func (m *mockValidationFlashDevice) Validate() error         { return m.Validati
 
 // covers CheckFlashDeviceValid as well
 func TestCheckAnyFlashDeviceValid(t *testing.T) {
-	// mock and defer restore GetFlashDevice
+	// mock and defer restore GetFlashDevice, IsPfrSYstem
 	getFlashDeviceOrig := GetFlashDevice
+	isPfrSystemOrig := utils.IsPfrSystem
 	defer func() {
 		GetFlashDevice = getFlashDeviceOrig
+		utils.IsPfrSystem = isPfrSystemOrig
 	}()
 
 	type getFlashDeviceReturnType struct {
@@ -182,13 +185,15 @@ func TestCheckAnyFlashDeviceValid(t *testing.T) {
 	}
 
 	cases := []struct {
-		name   string
-		flash0 getFlashDeviceReturnType
-		flash1 getFlashDeviceReturnType
-		want   error
+		name      string
+		pfrSystem bool
+		flash0    getFlashDeviceReturnType
+		flash1    getFlashDeviceReturnType
+		want      error
 	}{
 		{
-			name: "flash0 passed validation",
+			name:      "flash0 passed validation",
+			pfrSystem: false,
 			flash0: getFlashDeviceReturnType{
 				&mockValidationFlashDevice{nil},
 				nil,
@@ -200,7 +205,8 @@ func TestCheckAnyFlashDeviceValid(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "flash0 failed to get but flash1 succeeded",
+			name:      "flash0 failed to get but flash1 succeeded",
+			pfrSystem: false,
 			flash0: getFlashDeviceReturnType{
 				&mockValidationFlashDevice{nil},
 				errors.Errorf("Can't get"),
@@ -212,7 +218,8 @@ func TestCheckAnyFlashDeviceValid(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "flash0 failed validation but flash1 succeeded",
+			name:      "flash0 failed validation but flash1 succeeded",
+			pfrSystem: false,
 			flash0: getFlashDeviceReturnType{
 				&mockValidationFlashDevice{errors.Errorf("flash0 failed validation")},
 				nil,
@@ -224,7 +231,8 @@ func TestCheckAnyFlashDeviceValid(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "both flash devices failed validaiton",
+			name:      "both flash devices failed validaiton",
+			pfrSystem: false,
 			flash0: getFlashDeviceReturnType{
 				&mockValidationFlashDevice{errors.Errorf("flash0 failed validation")},
 				nil,
@@ -235,9 +243,26 @@ func TestCheckAnyFlashDeviceValid(t *testing.T) {
 			},
 			want: errors.Errorf("UNSAFE TO REBOOT: No flash device is valid"),
 		},
+		{
+			name:      "pfr system, skip validation",
+			pfrSystem: true,
+			flash0: getFlashDeviceReturnType{
+				&mockValidationFlashDevice{errors.Errorf("flash0 failed validation")},
+				nil,
+			},
+			flash1: getFlashDeviceReturnType{
+				&mockValidationFlashDevice{errors.Errorf("flash1 failed validation")},
+				nil,
+			},
+			want: nil,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			utils.IsPfrSystem = func() bool {
+				return tc.pfrSystem
+			}
+
 			GetFlashDevice = func(deviceID string) (devices.FlashDevice, error) {
 				if deviceID == "mtd:flash0" {
 					return tc.flash0.FD, tc.flash0.FDGetErr

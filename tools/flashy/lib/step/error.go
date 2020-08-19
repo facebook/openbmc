@@ -144,7 +144,7 @@ func encodeExitError(err StepExitError) {
 // ensure that a SafeToReboot Error is actually safe to reboot
 // by checking
 // (1) no other flashers are running
-// TODO:- (2) Either flash0 or flash1 is valid
+// (2) Either flash0 or flash1 is valid
 var ensureSafeToReboot = func() error {
 	log.Printf("Ensuring that the system is safe to reboot")
 

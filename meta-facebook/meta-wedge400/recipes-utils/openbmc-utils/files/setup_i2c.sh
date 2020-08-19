@@ -22,18 +22,22 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
-KERNEL_VERSION=$(uname -r)
-if [[ ${KERNEL_VERSION} != 4.1.* ]]; then
-#    i2c-mux 2-0070:  child bus 14-21
-#    i2c-mux 8-0070:  child bus 22-29
-#    i2c-mux 11-0070: child bus 30-37
-    start_of_mux_bus=14
-else
-    start_of_mux_bus=16
-fi
-
 get_mux_bus_num() {
-    echo $((start_of_mux_bus + $1))
+    i2c_switch=$1
+    channel=$2
+
+    if [ "$i2c_switch" = "2-0070" ]; then
+        start_bus_num=16
+    elif [ "$i2c_switch" = "8-0070" ]; then
+        start_bus_num=24
+    elif [ "$i2c_switch" = "11-0076" ]; then
+        start_bus_num=32
+    else
+        echo "Error: i2c switch $i2c_switch does not exist"
+        start_bus_num=200
+    fi
+
+    echo $((start_bus_num + channel))
 }
 
 brd_type=$(wedge_board_type)
@@ -46,8 +50,8 @@ i2c_device_add 2 0x3e scmcpld          # SCMCPLD
 # # Bus 12
 i2c_device_add 12 0x3e smb_syscpld     # SMB_SYSCPLD
 
-# # i2c-mux 8, channel 7
-i2c_device_add "$(get_mux_bus_num 15)" 0x3e smb_pwrcpld # SMB_PWRCPLD
+# # i2c-mux 8-0070, channel 8
+i2c_device_add "$(get_mux_bus_num 8-0070 7)" 0x3e smb_pwrcpld # SMB_PWRCPLD
 
 # # Bus 13
 i2c_device_add 13 0x60 domfpga        # DOM FPGA 1
@@ -91,79 +95,79 @@ if [ $((brd_type)) -eq 1 ]; then       # Only Wedge400C
 i2c_device_add 3 0x2a net_asic        # GB temp. sensor
 fi
 
-# # i2c-mux 2, channel 1
-i2c_device_add "$(get_mux_bus_num 0)" 0x10 adm1278 # SCM Hotswap
+# # i2c-mux 2-0070, channel 1
+i2c_device_add "$(get_mux_bus_num 2-0070 0)" 0x10 adm1278 # SCM Hotswap
 
-# # i2c-mux 2, channel 2
-i2c_device_add "$(get_mux_bus_num 1)" 0x4c tmp75   # SCM temp. sensor
-i2c_device_add "$(get_mux_bus_num 1)" 0x4d tmp75   # SCM temp. sensor
+# # i2c-mux 2-0070, channel 2
+i2c_device_add "$(get_mux_bus_num 2-0070 1)" 0x4c tmp75   # SCM temp. sensor
+i2c_device_add "$(get_mux_bus_num 2-0070 1)" 0x4d tmp75   # SCM temp. sensor
 
-# # i2c-mux 2, channel 4
-i2c_device_add "$(get_mux_bus_num 3)" 0x52 24c64   # EEPROM
+# # i2c-mux 2-0070, channel 4
+i2c_device_add "$(get_mux_bus_num 2-0070 3)" 0x52 24c64   # EEPROM
 
 # # i2c-mux 2, channel 5
-i2c_device_add "$(get_mux_bus_num 4)" 0x50 24c02   # BMC54616S EEPROM
+i2c_device_add "$(get_mux_bus_num 2-0070 4)" 0x50 24c02   # BMC54616S EEPROM
 
-# # i2c-mux 8, channel 1
+# # i2c-mux 8-0070, channel 1
 is_pem1=$(
     pem-util pem1 --get_pem_info | grep WEDGE400-PEM
     echo $?
 )
 # # ltc4282 only support registers 0~0x4f
 if [ "$is_pem1" = "1" ]; then
-    i2c_device_add "$(get_mux_bus_num 8)" 0x58 psu_driver   # PSU1 Driver
+    i2c_device_add "$(get_mux_bus_num 8-0070 0)" 0x58 psu_driver   # PSU1 Driver
 else
-    i2c_device_add "$(get_mux_bus_num 8)" 0x58 ltc4282      # PEM1 Driver
-    i2c_device_add "$(get_mux_bus_num 8)" 0x18 max6615      # PEM1 Driver
+    i2c_device_add "$(get_mux_bus_num 8-0070 0)" 0x58 ltc4282      # PEM1 Driver
+    i2c_device_add "$(get_mux_bus_num 8-0070 0)" 0x18 max6615      # PEM1 Driver
 fi
 
-# # i2c-mux 8, channel 2
+# # i2c-mux 8-0070, channel 2
 is_pem2=$(
     pem-util pem2 --get_pem_info | grep WEDGE400-PEM
     echo $?
 )
 if [ "$is_pem2" = "1" ]; then
-    i2c_device_add "$(get_mux_bus_num 9)" 0x58 psu_driver   # PSU2 Driver
+    i2c_device_add "$(get_mux_bus_num 8-0070 1)" 0x58 psu_driver   # PSU2 Driver
 else
-    i2c_device_add "$(get_mux_bus_num 9)" 0x58 ltc4282      # PEM2 Driver
-    i2c_device_add "$(get_mux_bus_num 9)" 0x18 max6615      # PEM2 Driver
+    i2c_device_add "$(get_mux_bus_num 8-0070 1)" 0x58 ltc4282      # PEM2 Driver
+    i2c_device_add "$(get_mux_bus_num 8-0070 1)" 0x18 max6615      # PEM2 Driver
 fi
 
 # BCM54616 EEPROMs are removed physically on Wedge400-C DVT units
 if [ "$brd_type_rev" != "WEDGE400-C_DVT" ]; then
-    # # i2c-mux 8, channel 3
-    i2c_device_add "$(get_mux_bus_num 10)" 0x50 24c02          # BCM54616 EEPROM
-    # # i2c-mux 8, channel 4
-    i2c_device_add "$(get_mux_bus_num 11)" 0x50 24c02          # BCM54616 EEPROM
+    # # i2c-mux 8-0070, channel 3
+    i2c_device_add "$(get_mux_bus_num 8-0070 2)" 0x50 24c02          # BCM54616 EEPROM
+    # # i2c-mux 8-0070, channel 4
+    i2c_device_add "$(get_mux_bus_num 8-0070 3)" 0x50 24c02          # BCM54616 EEPROM
 fi
 
-# # i2c-mux 8, channel 5
-i2c_device_add "$(get_mux_bus_num 12)" 0x54 24c02          # TH3 EEPROM
+# # i2c-mux 8-0070, channel 5
+i2c_device_add "$(get_mux_bus_num 8-0070 4)" 0x54 24c02          # TH3 EEPROM
 
-# # i2c-mux 11, channel 1
-i2c_device_add "$(get_mux_bus_num 16)" 0x3e fcbcpld # FCB CPLD
+# # i2c-mux 11-0076, channel 1
+i2c_device_add "$(get_mux_bus_num 11-0076 0)" 0x3e fcbcpld # FCB CPLD
 
-# # i2c-mux 11, channel 2
-i2c_device_add "$(get_mux_bus_num 17)" 0x51 24c64           # FCM EEPROM
+# # i2c-mux 11-0076, channel 2
+i2c_device_add "$(get_mux_bus_num 11-0076 1)" 0x51 24c64           # FCM EEPROM
 
-# # i2c-mux 11, channel 3
-i2c_device_add "$(get_mux_bus_num 18)" 0x48 tmp75           # Temp. sensor
-i2c_device_add "$(get_mux_bus_num 18)" 0x49 tmp75           # Temp. sensor
+# # i2c-mux 11-0076, channel 3
+i2c_device_add "$(get_mux_bus_num 11-0076 2)" 0x48 tmp75           # Temp. sensor
+i2c_device_add "$(get_mux_bus_num 11-0076 2)" 0x49 tmp75           # Temp. sensor
 
-# # i2c-mux 11, channel 4
-i2c_device_add "$(get_mux_bus_num 19)" 0x10 adm1278         # FCB hot swap
+# # i2c-mux 11-0076, channel 4
+i2c_device_add "$(get_mux_bus_num 11-0076 3)" 0x10 adm1278         # FCB hot swap
 
-# # i2c-mux 11, channel 5
-i2c_device_add "$(get_mux_bus_num 20)" 0x52 24c64           # FAN tray
+# # i2c-mux 11-0076, channel 5
+i2c_device_add "$(get_mux_bus_num 11-0076 4)" 0x52 24c64           # FAN tray
 
-# # i2c-mux 11, channel 6
-i2c_device_add "$(get_mux_bus_num 21)" 0x52 24c64           # FAN tray
+# # i2c-mux 11-0076, channel 6
+i2c_device_add "$(get_mux_bus_num 11-0076 5)" 0x52 24c64           # FAN tray
 
-# # i2c-mux 11, channel 7
-i2c_device_add "$(get_mux_bus_num 22)" 0x52 24c64           # FAN tray
+# # i2c-mux 11-0076, channel 7
+i2c_device_add "$(get_mux_bus_num 11-0076 6)" 0x52 24c64           # FAN tray
 
-# # i2c-mux 11, channel 8
-i2c_device_add "$(get_mux_bus_num 23)" 0x52 24c64           # FAN tray
+# # i2c-mux 11-0076, channel 8
+i2c_device_add "$(get_mux_bus_num 11-0076 7)" 0x52 24c64           # FAN tray
 
 #
 # Check if I2C devices are bound to drivers. A summary message (total #

@@ -25,7 +25,7 @@ is_i2cdev_exist() {
     echo $?
 }
 
-bus=17
+bus=19
 addr=0x52
 scm_prsnt=`cat $SMBCPLD_SYSFS_DIR/scm_present_int_status | sed -n 1p`
 if [ $scm_prsnt = "0x0" ]; then

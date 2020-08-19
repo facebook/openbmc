@@ -507,7 +507,7 @@ func TestGetDataFromImageNode(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := p.getDataFromImageNode(tc.imageNode)
-			if !reflect.DeepEqual(tc.want, got) {
+			if bytes.Compare(tc.want, got) != 0 {
 				t.Errorf("want '%v' got '%v'", tc.want, got)
 			}
 			tests.CompareTestErrors(tc.wantErr, err, t)
@@ -574,7 +574,7 @@ func TestGetDataFromImageNodeViaDataProp(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := p.getDataFromImageNodeViaDataProp(tc.imageNode)
 			tests.CompareTestErrors(tc.wantErr, err, t)
-			if !reflect.DeepEqual(tc.want, got) {
+			if bytes.Compare(tc.want, got) != 0 {
 				t.Errorf("want '%v', got '%v'", tc.want, got)
 			}
 		})
@@ -704,7 +704,7 @@ func TestGetDataFromImageNodeViaDataLink(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := p.getDataFromImageNodeViaDataLink(tc.imageNode)
 			tests.CompareTestErrors(tc.wantErr, err, t)
-			if !reflect.DeepEqual(tc.want, got) {
+			if bytes.Compare(tc.want, got) != 0 {
 				t.Errorf("want '%v' got '%v'", tc.want, got)
 			}
 		})
@@ -848,7 +848,7 @@ func TestFitGetSHA256ChecksumFromImageNode(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &FitPartition{}
 			got, err := p.getSHA256ChecksumFromImageNode(tc.imageNode)
-			if !reflect.DeepEqual(tc.want, got) {
+			if bytes.Compare(tc.want, got) != 0 {
 				t.Errorf("want '%x' got '%x'", tc.want, got)
 			}
 			tests.CompareTestErrors(tc.wantErr, err, t)

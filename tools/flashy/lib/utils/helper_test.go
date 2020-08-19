@@ -20,6 +20,7 @@
 package utils
 
 import (
+	"bytes"
 	"reflect"
 	"sort"
 	"testing"
@@ -444,10 +445,10 @@ func TestSafeAppendBytes(t *testing.T) {
 	b[0] = 'y'
 	c := SafeAppendBytes(a, b)
 
-	if !reflect.DeepEqual(a, []byte{'x'}) {
+	if bytes.Compare(a, []byte{'x'}) != 0 {
 		t.Errorf("a: want '%v' got '%v'", []byte{'x'}, a)
 	}
-	if !reflect.DeepEqual(c, []byte{'x', 'y'}) {
+	if bytes.Compare(c, []byte{'x', 'y'}) != 0 {
 		t.Errorf("c: want '%v' got '%v'", []byte{'x', 'y'}, c)
 	}
 }
@@ -529,7 +530,7 @@ func TestSetWord(t *testing.T) {
 	}
 	for _, tc := range cases {
 		got, err := SetWord(tc.data, tc.word, tc.offset)
-		if !reflect.DeepEqual(tc.want, got) {
+		if bytes.Compare(tc.want, got) != 0 {
 			t.Errorf("want '%v' got '%v'", tc.want, got)
 		}
 		tests.CompareTestErrors(tc.wantErr, err, t)

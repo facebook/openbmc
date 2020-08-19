@@ -20,6 +20,7 @@
 package utils
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 
@@ -161,7 +162,7 @@ func TestGetVbs(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !reflect.DeepEqual(data, tests.ExampleVbsData) {
+	if bytes.Compare(data, tests.ExampleVbsData) != 0 {
 		t.Errorf("encode failed: want '%v' got '%v'", tests.ExampleVbsData, data)
 	}
 

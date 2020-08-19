@@ -20,7 +20,7 @@
 package common
 
 import (
-	"reflect"
+	"bytes"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
@@ -103,7 +103,7 @@ func TestValidateImagePartitions(t *testing.T) {
 				return tc.isPfrSystem
 			}
 			validate.Validate = func(data []byte) error {
-				if !reflect.DeepEqual(exampleData, data) {
+				if bytes.Compare(exampleData, data) != 0 {
 					t.Errorf("data: want '%v' got '%v'", exampleData, data)
 				}
 				return tc.validatePartitionsError

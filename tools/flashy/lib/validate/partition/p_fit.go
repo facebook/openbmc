@@ -23,7 +23,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"log"
-	"reflect"
 
 	"github.com/pkg/errors"
 	"github.com/u-root/u-root/pkg/dt"
@@ -135,7 +134,7 @@ func (p *FitPartition) validateImageNode(imageNode *dt.Node) error {
 
 	calcChecksumDat := sha256.Sum256(data)
 	calcChecksum := calcChecksumDat[:]
-	if !reflect.DeepEqual(checksum, calcChecksum) {
+	if bytes.Compare(checksum, calcChecksum) != 0 {
 		return errors.Errorf("Calculated sha256 (0x%X) does not match that in FIT (0x%X)",
 			calcChecksum, checksum)
 	}

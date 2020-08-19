@@ -142,7 +142,7 @@ func TestFBMetaValidate(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			parseAndValidateFBImageMetaJSON = func(data []byte) (FBMetaInfo, error) {
-				if !reflect.DeepEqual(exampleMetaPartitionData, data) {
+				if bytes.Compare(exampleMetaPartitionData, data) != 0 {
 					t.Errorf("data passed into parseAndValidateImageMetaJSON incorrect")
 				}
 				return exampleMetaInfo, tc.parseAndValidateFBImageMetaJSONErr
@@ -158,7 +158,7 @@ func TestFBMetaValidate(t *testing.T) {
 				data []byte,
 				partitionConfigs []PartitionConfigInfo,
 			) error {
-				if !reflect.DeepEqual(exampleData, data) {
+				if bytes.Compare(exampleData, data) != 0 {
 					t.Errorf("data passed into ValidatePartitionsFromPartitionConfigs incorrect")
 				}
 				if !reflect.DeepEqual(examplePartitionConfigs, partitionConfigs) {

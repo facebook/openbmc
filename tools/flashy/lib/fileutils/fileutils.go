@@ -202,6 +202,7 @@ var MmapFileRange = func(filename string, offset int64, length, prot, flags int)
 		return nil, errors.Errorf("Unable to open '%v': %v",
 			filename, err)
 	}
+	defer f.Close()
 
 	return Mmap(int(f.Fd()), offset, length, prot, flags)
 }

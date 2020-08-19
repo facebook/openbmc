@@ -24,13 +24,12 @@ import (
 	"log"
 	"os"
 	"reflect"
-	"strings"
 	"testing"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashcp"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
@@ -144,42 +143,42 @@ func TestFlashCp(t *testing.T) {
 }
 
 func TestFlashCpAndValidate(t *testing.T) {
-	// mock and defer restore runFlashCpCmd
-	runFlashCpCmdOrig := runFlashCpCmd
+	// mock and defer restore flashcp.FlashCp
+	flashCpOrig := flashcp.FlashCp
 	defer func() {
-		runFlashCpCmd = runFlashCpCmdOrig
+		flashcp.FlashCp = flashCpOrig
 	}()
 
 	cases := []struct {
-		name             string
-		runFlashCpCmdErr error
-		validationErr    error
-		want             error
+		name          string
+		flashCpErr    error
+		validationErr error
+		want          error
 	}{
 		{
-			name:             "succeeded",
-			runFlashCpCmdErr: nil,
-			validationErr:    nil,
-			want:             nil,
+			name:          "succeeded",
+			flashCpErr:    nil,
+			validationErr: nil,
+			want:          nil,
 		},
 		{
-			name:             "runFlashCpCmd error",
-			runFlashCpCmdErr: errors.Errorf("flashing failed"),
-			validationErr:    nil,
-			want:             errors.Errorf("flashing failed"),
+			name:          "flashCpErr error",
+			flashCpErr:    errors.Errorf("flashing failed"),
+			validationErr: nil,
+			want:          errors.Errorf("flashing failed"),
 		},
 		{
-			name:             "validation error",
-			runFlashCpCmdErr: nil,
-			validationErr:    errors.Errorf("validation failed"),
-			want:             errors.Errorf("validation failed"),
+			name:          "validation error",
+			flashCpErr:    nil,
+			validationErr: errors.Errorf("validation failed"),
+			want:          errors.Errorf("validation failed"),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			exampleImageFilePath := "/img/mock"
-			runFlashCpCmd = func(imageFilePath, flashDevicePath string) error {
+			flashcp.FlashCp = func(imageFilePath, flashDevicePath string) error {
 				if exampleImageFilePath != imageFilePath {
 					t.Errorf("imageFilePath: want '%v' got '%v'",
 						exampleImageFilePath, imageFilePath)
@@ -188,70 +187,12 @@ func TestFlashCpAndValidate(t *testing.T) {
 					t.Errorf("flashDevicePath: want '%v' got '%v'", "/dev/mock",
 						flashDevicePath)
 				}
-				return tc.runFlashCpCmdErr
+				return tc.flashCpErr
 			}
 			flashDevice := &mockFlashDevice{
 				ValidationErr: tc.validationErr,
 			}
 			got := flashCpAndValidate(flashDevice, exampleImageFilePath)
-			tests.CompareTestErrors(tc.want, got, t)
-		})
-	}
-}
-
-func TestRunFlashCpCmd(t *testing.T) {
-	// mock and defer restore RunCommand
-	runCommandOrig := utils.RunCommand
-	defer func() {
-		utils.RunCommand = runCommandOrig
-	}()
-
-	type cmdRetType struct {
-		exitCode int
-		err      error
-		stdout   string
-		stderr   string
-	}
-
-	cases := []struct {
-		name   string
-		cmdRet cmdRetType
-		want   error
-	}{
-		{
-			name: "basic succeeding",
-			cmdRet: cmdRetType{
-				0, nil, "", "",
-			},
-			want: nil,
-		},
-		{
-			name: "cmd failed",
-			cmdRet: cmdRetType{
-				1,
-				errors.Errorf("Flashcp failed"),
-				"failed (stdout)",
-				"failed (stderr)",
-			},
-			want: errors.Errorf(
-				"Flashing failed with exit code %v, error: %v, stdout: '%v', stderr: '%v'",
-				1, "Flashcp failed", "failed (stdout)", "failed (stderr)",
-			),
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			utils.RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
-				cmdStr := strings.Join(cmdArr, " ")
-				if cmdStr != "flashcp a b" {
-					t.Errorf("cmd: want 'flashcp a b' got '%v'", cmdStr)
-				}
-				r := tc.cmdRet
-				return r.exitCode, r.err, r.stdout, r.stderr
-			}
-
-			got := runFlashCpCmd("a", "b")
 			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}

@@ -197,7 +197,7 @@ func TestMmapRO(t *testing.T) {
 	}
 }
 
-func TestGetMmapFilePath(t *testing.T) {
+func TestGetMTDBlockFilePath(t *testing.T) {
 	cases := []struct {
 		name        string
 		mtdFilePath string
@@ -226,12 +226,7 @@ func TestGetMmapFilePath(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			mtd := MemoryTechnologyDevice{
-				"foobar",
-				tc.mtdFilePath,
-				uint64(123),
-			}
-			got, err := mtd.getMmapFilePath()
+			got, err := GetMTDBlockFilePath(tc.mtdFilePath)
 			if tc.want != got {
 				t.Errorf("want '%v' got '%v'", tc.want, got)
 			}

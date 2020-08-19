@@ -20,14 +20,12 @@
 package flash
 
 import (
-	"fmt"
 	"log"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashcp"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func FlashCp(stepParams step.StepParams) step.StepExitError {
@@ -54,9 +52,9 @@ func FlashCp(stepParams step.StepParams) step.StepExitError {
 
 var flashCpAndValidate = func(flashDevice devices.FlashDevice, imageFilePath string) error {
 	log.Printf("Starting to flash")
-	err := runFlashCpCmd(imageFilePath, flashDevice.GetFilePath())
+	err := flashcp.FlashCp(imageFilePath, flashDevice.GetFilePath())
 	if err != nil {
-		log.Printf("Flashcp failed: %v", err)
+		log.Printf("FlashCp failed: %v", err)
 		return err
 	}
 	log.Printf("Flashcp succeeded")
@@ -68,23 +66,5 @@ var flashCpAndValidate = func(flashDevice devices.FlashDevice, imageFilePath str
 		return err
 	}
 	log.Printf("Flash device validation passed")
-	return nil
-}
-
-var runFlashCpCmd = func(imageFilePath, flashDevicePath string) error {
-	flashCmd := []string{
-		"flashcp", imageFilePath, flashDevicePath,
-	}
-
-	// timeout in 30 minutes
-	exitCode, err, stdout, stderr := utils.RunCommand(flashCmd, 1800)
-	if err != nil {
-		errMsg := fmt.Sprintf(
-			"Flashing failed with exit code %v, error: %v, stdout: '%v', stderr: '%v'",
-			exitCode, err, stdout, stderr,
-		)
-		return errors.Errorf(errMsg)
-	}
-
 	return nil
 }

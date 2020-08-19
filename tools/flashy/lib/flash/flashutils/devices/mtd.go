@@ -88,7 +88,7 @@ func (m *MemoryTechnologyDevice) GetFileSize() uint64 {
 // Munmap call required to release the buffer
 func (m *MemoryTechnologyDevice) MmapRO() ([]byte, error) {
 	// use mmap
-	mmapFilePath, err := m.getMmapFilePath()
+	mmapFilePath, err := GetMTDBlockFilePath(m.FilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -108,15 +108,16 @@ func (m *MemoryTechnologyDevice) Validate() error {
 	return validate.Validate(data)
 }
 
+// GetMTDBlockFilePath gets the /dev/mtdblock[0-9]+ file path
+// from the /dev/mtd[0-9]+ file path.
 // /dev/mtd5 cannot be mmap-ed, but /dev/mtdblock5 can.
-// return the latter instead
-func (m MemoryTechnologyDevice) getMmapFilePath() (string, error) {
+var GetMTDBlockFilePath = func(filepath string) (string, error) {
 	regEx := `^(?P<devmtdpath>/dev/mtd)(?P<mtdnum>[0-9]+)$`
 
-	mtdPathMap, err := utils.GetRegexSubexpMap(regEx, m.FilePath)
+	mtdPathMap, err := utils.GetRegexSubexpMap(regEx, filepath)
 	if err != nil {
 		return "", errors.Errorf("Unable to get block file path for '%v': %v",
-			m.FilePath, err)
+			filepath, err)
 	}
 
 	return fmt.Sprintf(

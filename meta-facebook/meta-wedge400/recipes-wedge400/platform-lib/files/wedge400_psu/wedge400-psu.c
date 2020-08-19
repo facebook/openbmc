@@ -22,8 +22,8 @@
 static delta_hdr_t delta_hdr;
 
 i2c_info_t psu[] = {
-  {-1, 22, 0x50, 0x58, PSU1_EEPROM},
-  {-1, 23, 0x50, 0x58, PSU2_EEPROM},
+  {-1, 24, 0x50, 0x58, PSU1_EEPROM},
+  {-1, 25, 0x50, 0x58, PSU2_EEPROM},
 };
 
 pmbus_info_t pmbus[] = {

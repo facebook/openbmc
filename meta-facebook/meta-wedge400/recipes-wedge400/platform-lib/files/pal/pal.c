@@ -1047,7 +1047,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     }
 
     if ( fru == FRU_PEM1 || fru == FRU_PSU1 ){
-      ext_prsnt = pal_detect_i2c_device(22,0x18); // 0 present -1 absent
+      ext_prsnt = pal_detect_i2c_device(24,0x18); // 0 present -1 absent
       if( fru == FRU_PEM1 && ext_prsnt == 0 ){ // for PEM 0x18 should present
         *status = 1;
       } else if ( fru == FRU_PSU1 && ext_prsnt < 0 ){ // for PSU 0x18 should absent
@@ -1057,7 +1057,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       }
     }
     else if ( fru == FRU_PEM2 || fru == FRU_PSU2 ){
-      ext_prsnt = pal_detect_i2c_device(23,0x18); // 0 present -1 absent
+      ext_prsnt = pal_detect_i2c_device(25,0x18); // 0 present -1 absent
       if( fru == FRU_PEM2 && ext_prsnt == 0 ){ // for PEM 0x18 should present
         *status = 1;
       } else if ( fru == FRU_PSU2 && ext_prsnt < 0 ){ // for PSU 0x18 should absent

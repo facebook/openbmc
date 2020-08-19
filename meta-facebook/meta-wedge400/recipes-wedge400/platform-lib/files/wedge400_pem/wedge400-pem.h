@@ -39,8 +39,8 @@ extern "C" {
 
 #define msleep(n) usleep(n*1000)
 
-#define PEM1_EEPROM  "/sys/bus/i2c/devices/22-0050/eeprom"
-#define PEM2_EEPROM  "/sys/bus/i2c/devices/23-0050/eeprom"
+#define PEM1_EEPROM  "/sys/bus/i2c/devices/24-0050/eeprom"
+#define PEM2_EEPROM  "/sys/bus/i2c/devices/25-0050/eeprom"
 /* define for DELTA PEM */
 #define DELTA_MODEL         "ECD24020003"
 #define DELTA_HDR_LENGTH    32

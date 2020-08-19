@@ -53,8 +53,8 @@ extern "C" {
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
 #define SCM_SYSFS        I2C_DEV_DIR(2, 3e)"%s"
 #define SMB_SYSFS        I2C_DEV_DIR(12, 3e)"%s"
-#define PWR_SYSFS        I2C_DEV_DIR(29, 3e)"%s"
-#define FCM_SYSFS        I2C_DEV_DIR(30, 3e)"%s"
+#define PWR_SYSFS        I2C_DEV_DIR(31, 3e)"%s"
+#define FCM_SYSFS        I2C_DEV_DIR(32, 3e)"%s"
 #define DOMFPGA1_SYSFS   I2C_DEV_DIR(13, 60)"%s"
 #define DOMFPGA2_SYSFS   I2C_DEV_DIR(5, 60)"%s"
 #define SENSORD_FILE_SMB "/tmp/cache_store/smb_sensor%d"
@@ -91,9 +91,9 @@ extern "C" {
 #define LAST_KEY "last_key"
 
 // SCM Sensor Devices
-#define SCM_HSC_DEVICE         I2C_DEV_DIR(14, 10)HW_MON_DIR
-#define SCM_OUTLET_TEMP_DEVICE I2C_DEV_DIR(15, 4d)HW_MON_DIR
-#define SCM_INLET_TEMP_DEVICE  I2C_DEV_DIR(15, 4c)HW_MON_DIR
+#define SCM_HSC_DEVICE         I2C_DEV_DIR(16, 10)HW_MON_DIR
+#define SCM_OUTLET_TEMP_DEVICE I2C_DEV_DIR(17, 4d)HW_MON_DIR
+#define SCM_INLET_TEMP_DEVICE  I2C_DEV_DIR(17, 4c)HW_MON_DIR
 
 // SMB Sensor Devices
 #define SMB_PXE1211_DEVICE            I2C_DEV_DIR(1, 0e)HW_MON_DIR
@@ -113,29 +113,29 @@ extern "C" {
 #define SMB_GB_TEMP_DEVICE            I2C_DEV_DIR(3, 2a)HW_MON_DIR
 #define SMB_DOM1_DEVICE               I2C_DEV_DIR(13, 60)
 #define SMB_DOM2_DEVICE               I2C_DEV_DIR(5, 60)
-#define SMB_FCM_TACH_DEVICE           I2C_DEV_DIR(30, 3e)
-#define SMB_FCM_LM75B_U1_DEVICE       I2C_DEV_DIR(32, 48)HW_MON_DIR
-#define SMB_FCM_LM75B_U2_DEVICE       I2C_DEV_DIR(32, 49)HW_MON_DIR
-#define SMB_FCM_HSC_DEVICE            I2C_DEV_DIR(33, 10)HW_MON_DIR
+#define SMB_FCM_TACH_DEVICE           I2C_DEV_DIR(32, 3e)
+#define SMB_FCM_LM75B_U1_DEVICE       I2C_DEV_DIR(34, 48)HW_MON_DIR
+#define SMB_FCM_LM75B_U2_DEVICE       I2C_DEV_DIR(34, 49)HW_MON_DIR
+#define SMB_FCM_HSC_DEVICE            I2C_DEV_DIR(35, 10)HW_MON_DIR
 
 //BMC Sensor Devices
 #define AST_ADC_DEVICE         SYS_PLATFROM_DIR("ast-adc-hwmon")HW_MON_DIR
 
 // PSU Sensor Devices
 #define PSU_DRIVER             "psu_driver"
-#define PSU1_DEVICE            I2C_DEV_DIR(22, 58)
-#define PSU2_DEVICE            I2C_DEV_DIR(23, 58)
+#define PSU1_DEVICE            I2C_DEV_DIR(24, 58)
+#define PSU2_DEVICE            I2C_DEV_DIR(25, 58)
 
-#define PEM1_LTC4282_DIR       I2C_DRIVER_DIR(ltc4282, 22, 58)
-#define PEM2_LTC4282_DIR       I2C_DRIVER_DIR(ltc4282, 23, 58)
-#define PEM1_MAX6615_DIR       I2C_DRIVER_DIR(max6615, 22, 18)
-#define PEM2_MAX6615_DIR       I2C_DRIVER_DIR(max6615, 23, 18)
+#define PEM1_LTC4282_DIR       I2C_DRIVER_DIR(ltc4282, 24, 58)
+#define PEM2_LTC4282_DIR       I2C_DRIVER_DIR(ltc4282, 25, 58)
+#define PEM1_MAX6615_DIR       I2C_DRIVER_DIR(max6615, 24, 18)
+#define PEM2_MAX6615_DIR       I2C_DRIVER_DIR(max6615, 25, 18)
 #define PEM_LTC4282_DRIVER     "ltc4282"
 #define PEM_MAX6615_DRIVER     "max6615"
-#define PEM1_DEVICE            I2C_DEV_DIR(22, 58)HW_MON_DIR
-#define PEM2_DEVICE            I2C_DEV_DIR(23, 58)HW_MON_DIR
-#define PEM1_DEVICE_EXT        I2C_DEV_DIR(22, 18)HW_MON_DIR
-#define PEM2_DEVICE_EXT        I2C_DEV_DIR(23, 18)HW_MON_DIR
+#define PEM1_DEVICE            I2C_DEV_DIR(24, 58)HW_MON_DIR
+#define PEM2_DEVICE            I2C_DEV_DIR(25, 58)HW_MON_DIR
+#define PEM1_DEVICE_EXT        I2C_DEV_DIR(24, 18)HW_MON_DIR
+#define PEM2_DEVICE_EXT        I2C_DEV_DIR(25, 18)HW_MON_DIR
 
 #define TEMP(x)                "temp"#x"_input"
 #define VOLT(x)                "in"#x"_input"

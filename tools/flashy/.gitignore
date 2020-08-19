@@ -2,6 +2,5 @@ dev.sh
 experimental
 build
 build_dev
-build_dev.sh
 files
 cover.out

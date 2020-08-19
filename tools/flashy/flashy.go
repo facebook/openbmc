@@ -38,7 +38,8 @@ import (
 var (
 	// modes
 	installFlag = flag.Bool("install", false, "Install flashy")
-	checkImage  = flag.Bool("checkimage", false, "Validate image partitions (`imagepath` must be specified)")
+	checkImage  = flag.Bool("checkimage", false,
+		"Validate image partitions (`imagepath` must be specified). Available on non-OpenBMC systems.")
 	checkDevice = flag.Bool("checkdevice", false, "Validate flash device (`device` must be specified)")
 	vbootInfo   = flag.Bool("vbootinfo", false, "Get system vboot information")
 

@@ -25,11 +25,11 @@
 SCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 2-003e)
 SMBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-003e)
 if [[ ${KERNEL_VERSION} != 4.1.* ]]; then
-    PWRCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 29-003e)
-    FCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 30-003e)
-else
     PWRCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 31-003e)
     FCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 32-003e)
+else
+    PWRCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 33-003e)
+    FCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 34-003e)
 fi
 PWR_USRV_SYSFS="${SCMCPLD_SYSFS_DIR}/com_exp_pwr_enable"
 PWR_USRV_FORCE_OFF="${SCMCPLD_SYSFS_DIR}/com_exp_pwr_force_off"

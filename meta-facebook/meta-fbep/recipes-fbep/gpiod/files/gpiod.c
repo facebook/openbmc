@@ -155,10 +155,11 @@ static void* fan_status_monitor()
   while (1) {
     sleep(1);
 
-    if (g_sys_pwr_off)
-      continue;
-
     for (i = 0; i < 8; i++) {
+
+      if (g_sys_pwr_off)
+	continue;
+
       gp = &fan_gpios[i];
       if (i>>2)
         gp->curr = gpio_get(gp->shadow);
@@ -203,11 +204,9 @@ static void* asic_status_monitor()
   while (1) {
     sleep(1);
 
-    if (g_sys_pwr_off)
-      continue;
-
     for (i = 0; i < 8; i++) {
-      if (!is_asic_prsnt(i))
+
+      if (g_sys_pwr_off || !is_asic_prsnt(i))
         continue;
 
       gp = &asic_gpios[i];

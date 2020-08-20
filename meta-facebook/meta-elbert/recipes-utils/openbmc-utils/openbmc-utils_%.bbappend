@@ -32,6 +32,7 @@ SRC_URI += "file://board-utils.sh \
             file://setup_i2c.sh \
             file://seutil \
             file://dpm_ver.sh \
+            file://pim_enable.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -46,6 +47,7 @@ OPENBMC_UTILS_FILES += " \
     setup_i2c.sh \
     seutil \
     dpm_ver.sh \
+    pim_enable.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

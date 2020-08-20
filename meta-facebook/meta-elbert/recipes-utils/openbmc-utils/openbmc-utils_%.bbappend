@@ -28,6 +28,7 @@ SRC_URI += "file://board-utils.sh \
             file://setup_board.sh \
             file://wedge_power.sh \
             file://wedge_us_mac.sh \
+            file://setup-gpio.sh \
             file://setup_i2c.sh \
             file://seutil \
             file://dpm_ver.sh \
@@ -63,6 +64,10 @@ do_install_board() {
     update-rc.d -r ${D} mount_data0.sh start 03 S .
     install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
+
+    # Export GPIO pins and set initial directions/values.
+    install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
+    update-rc.d -r ${D} setup-gpio.sh start 59 S .
 
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 60 S .

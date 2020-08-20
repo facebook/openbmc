@@ -322,6 +322,14 @@ int gpio_unexport(const char *shadow)
 	return GPIO_OPS()->unexport_pin(pin_num, shadow_path);
 }
 
+bool gpio_is_exported(const char * shadow)
+{
+	char path[64] = {0};
+
+	snprintf(path, sizeof(path), "%s/%s", GPIO_SHADOW_ROOT, shadow);
+	return (access(path, F_OK) == 0);
+}
+
 /*
  * Public functions to open/close a specific gpio pin.
  */
@@ -526,6 +534,20 @@ int gpio_set_value_by_shadow(const char *shadow, gpio_value_t value)
   }
   gpio_close(desc);
   return 0;
+}
+
+int gpio_set_init_value_by_shadow(const char *shadow, gpio_value_t value)
+{
+	gpio_desc_t *desc = gpio_open_by_shadow(shadow);
+	if (!desc) {
+		return -1;
+	}
+	if (gpio_set_init_value(desc, value)) {
+		gpio_close(desc);
+		return -1;
+	}
+	gpio_close(desc);
+	return 0;
 }
 
 gpiopoll_desc_t* gpio_poll_open(struct gpiopoll_config *config,

@@ -149,6 +149,17 @@ int gpio_export_by_offset(const char *chip, int offset,
  */
 int gpio_unexport(const char *shadow);
 
+
+/*
+ * Function to check given gpio is exported or not.
+ *
+ * Return:
+ *   true: exported, false: not exported.
+ */
+bool gpio_is_exported(const char * shadow);
+
+
+
 /*
  * Functions to open a gpio pin.
  * Although a gpio pin can be specified by global pin number, we don't
@@ -199,6 +210,13 @@ gpio_value_t gpio_get_value_by_shadow(const char *shadow);
  *   0 for success, or -1 on failures.
  */
 int gpio_set_value_by_shadow(const char *shadow, gpio_value_t);
+
+/* Set GPIO init value given the shadow name of the gpio-pin.
+ *
+ * Return:
+ *   0 for success, or -1 on failures.
+ */
+int gpio_set_init_value_by_shadow(const char *shadow, gpio_value_t);
 
 /* Get value of an array of GPIOs given their shadow names
  * as a bit-mask of their values

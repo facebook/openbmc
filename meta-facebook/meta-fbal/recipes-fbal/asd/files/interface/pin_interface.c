@@ -34,24 +34,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Output pins */
 gpio_desc_t *debug_en_gpio = NULL;
-#define DEBUG_EN_GPIO "GPIOB1"
-
-#define TCK_MUX_SEL_GPIO "GPIOR2"
 gpio_desc_t *tck_mux_sel_gpio = NULL;
-
-#define POWER_DEBUG_EN_GPIO "GPIOP6"
 gpio_desc_t *power_debug_en_gpio = NULL;
-
-#define PREQ_GPIO "GPIOP5"
 gpio_desc_t *preq_gpio = NULL;
 
 /* Input pins */
 static void gpio_handle(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr);
 static void *gpio_poll_thread(void *unused);
 static struct gpiopoll_config g_gpios[3] = {
-  {"RST_BMC_PLTRST_BUF_N", "0", GPIO_EDGE_BOTH, gpio_handle, NULL},
-  {"BMC_PRDY_N", "1", GPIO_EDGE_FALLING, gpio_handle, NULL},
-  {"BMC_XDP_PRSNT_IN_N", "2", GPIO_EDGE_BOTH, gpio_handle, NULL}
+  {"RST_PLTRST_BMC_N", "0", GPIO_EDGE_BOTH, gpio_handle, NULL},
+  {"IRQ_BMC_PRDY_N", "1", GPIO_EDGE_FALLING, gpio_handle, NULL},
+  {"DBP_PRESENT_N", "2", GPIO_EDGE_BOTH, gpio_handle, NULL}
 };
 static gpiopoll_desc_t *polldesc = NULL;
 static bool g_gpios_triggered[3] = {false, false, false};
@@ -88,7 +81,7 @@ int pin_initialize(const int fru)
      * was started. This most probably has no effect if the CPU is already
      * running.
      * */
-    debug_en_gpio = gpio_open_by_shadow("BMC_DEBUG_EN_N");
+    debug_en_gpio = gpio_open_by_shadow("FM_BMC_DEBUG_ENABLE_N");
     if (!debug_en_gpio) {
       goto bail;
     }
@@ -100,7 +93,7 @@ int pin_initialize(const int fru)
     /* In FBTP, POWER_DEBUG_EN Pin of the CPU is directly connected to the
      * BMC GPIOP6 which needs to be set to 0 (active-low) to enable power-debugging
      * needed to debug early-boot-stalls. */
-    power_debug_en_gpio = gpio_open_by_shadow("BMC_PWR_DEBUG_N");
+    power_debug_en_gpio = gpio_open_by_shadow("FM_BMC_CPU_PWR_DEBUG_N");
     if (!power_debug_en_gpio) {
       goto debug_en_bail;
     }
@@ -115,7 +108,7 @@ int pin_initialize(const int fru)
      * This choice is made based on the output value of GPIOR2 thus,
      * here we are selecting it to go to the CPU. Potentially unnecessary but
      * we want to be future proofed. */
-    tck_mux_sel_gpio = gpio_open_by_shadow("BMC_TCK_MUX_SEL");
+    tck_mux_sel_gpio = gpio_open_by_shadow("FM_JTAG_TCK_MUX_SEL");
     if (!tck_mux_sel_gpio) {
       goto power_dbg_bail;
     }
@@ -128,7 +121,7 @@ int pin_initialize(const int fru)
      * GPIOP5. It appears that the AST2500(or FBTP?) needs to have this 
      * set as an input until it's time to trigger otherwise it will cause a 
      * PREQ event For other setups, you may be able to set it to an output right away */
-    preq_gpio = gpio_open_by_shadow("BMC_PREQ_N");
+    preq_gpio = gpio_open_by_shadow("FM_BMC_PREQ_N");
     if (!preq_gpio) {
       goto tck_mux_bail;
     }
@@ -292,7 +285,7 @@ int platform_reset_is_asserted(const int fru, bool* asserted)
   gpio_value_t value;
 
   if (!platrst_gpio) {
-    platrst_gpio = gpio_open_by_shadow("RST_BMC_PLTRST_BUF_N");
+    platrst_gpio = gpio_open_by_shadow("RST_PLTRST_BMC_N");
     if (!platrst_gpio) {
       return ST_ERR;
     }
@@ -321,7 +314,7 @@ int prdy_is_asserted(const int fru, bool* asserted)
 {
   gpio_value_t value;
   if (!prdy_gpio) {
-    prdy_gpio = gpio_open_by_shadow("BMC_PRDY_N");
+    prdy_gpio = gpio_open_by_shadow("IRQ_BMC_PRDY_N");
     if (!prdy_gpio) {
       return ST_ERR;
     }
@@ -351,7 +344,7 @@ int xdp_present_is_asserted(const int fru, bool* asserted)
 {
     gpio_value_t value;
     if (!xdp_present_gpio) {
-      xdp_present_gpio = gpio_open_by_shadow("BMC_XDP_PRSNT_IN_N");
+      xdp_present_gpio = gpio_open_by_shadow("DBP_PRESENT_N");
       if (!xdp_present_gpio) {
         return ST_ERR;
       }

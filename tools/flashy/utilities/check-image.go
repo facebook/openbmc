@@ -23,9 +23,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/openbmc/tools/flashy/checks_and_remediations/common"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/pkg/errors"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate"
 )
 
 func init() {
@@ -48,14 +47,7 @@ func checkImage(args []string) error {
 		return nil
 	}
 
-	stepParams := step.StepParams{
-		ImageFilePath: args[1],
-	}
+	imageFilePath := args[1]
 
-	err := common.ValidateImagePartitions(stepParams)
-	if err != nil {
-		return errors.Errorf(err.GetError())
-	}
-
-	return nil
+	return validate.ValidateImageFile(imageFilePath)
 }

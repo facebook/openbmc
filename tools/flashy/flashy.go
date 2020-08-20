@@ -24,11 +24,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/facebook/openbmc/tools/flashy/checks_and_remediations/common"
 	"github.com/facebook/openbmc/tools/flashy/install"
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/logger"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate"
 )
 
 var (
@@ -92,7 +92,7 @@ WARRANTIES OFF`)
 		log.Printf("Validating image...")
 		failIfFlagEmpty("imagepath", stepParams.ImageFilePath)
 
-		err := common.ValidateImagePartitions(stepParams)
+		err := validate.ValidateImageFile(stepParams.ImageFilePath)
 		if err != nil {
 			log.Fatalf("Image '%v' failed validation: %v",
 				stepParams.ImageFilePath, err)

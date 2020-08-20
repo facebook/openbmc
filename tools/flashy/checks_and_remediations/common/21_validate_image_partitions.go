@@ -21,20 +21,17 @@ package common
 
 import (
 	"log"
-	"syscall"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate"
-	"github.com/pkg/errors"
 )
 
 func init() {
-	step.RegisterStep(ValidateImagePartitions)
+	step.RegisterStep(validateImagePartitions)
 }
 
-func ValidateImagePartitions(stepParams step.StepParams) step.StepExitError {
+func validateImagePartitions(stepParams step.StepParams) step.StepExitError {
 	if stepParams.Clowntown {
 		log.Printf("===== WARNING: Clowntown mode: Bypassing image partition validation =====")
 		log.Printf("===== THERE IS RISK OF BRICKING THIS DEVICE =====")
@@ -46,19 +43,11 @@ func ValidateImagePartitions(stepParams step.StepParams) step.StepExitError {
 		return nil
 	}
 
-	imageData, err := fileutils.MmapFile(stepParams.ImageFilePath,
-		syscall.PROT_READ, syscall.MAP_SHARED)
+	err := validate.ValidateImageFile(stepParams.ImageFilePath)
 	if err != nil {
-		return step.ExitSafeToReboot{
-			errors.Errorf("Unable to read image file '%v': %v",
-				stepParams.ImageFilePath, err),
-		}
-	}
-	defer fileutils.Munmap(imageData)
-
-	err = validate.Validate(imageData)
-	if err != nil {
-		return step.ExitUnknownError{err}
+		// the image could've been corrupted during copy,
+		// it is safe to reboot.
+		return step.ExitSafeToReboot{err}
 	}
 	return nil
 }

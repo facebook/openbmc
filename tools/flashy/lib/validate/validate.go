@@ -21,15 +21,17 @@ package validate
 
 import (
 	"log"
+	"syscall"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate/partition"
 	"github.com/pkg/errors"
 )
 
-// try to validate partitions according to all configs defined in
+// Validate tries to validate partitions according to all configs defined in
 // partition.ImageFormats. If one succeeds, return nil. If none succeeds,
 // validation has failed, return the error.
-// supports both data from image file and flash device
+// Supports both data from image file and flash device
 var Validate = func(data []byte) error {
 	for _, imageFormat := range partition.ImageFormats {
 		log.Printf("*** Attempting to validate using image format '%v' ***",
@@ -54,4 +56,18 @@ var Validate = func(data []byte) error {
 	errMsg := "*** FAILED: Validation failed ***"
 	log.Printf(errMsg)
 	return errors.Errorf(errMsg)
+}
+
+// ValidateImageFile takes in a path to an image file and runs
+// Validate over the data.
+var ValidateImageFile = func(imageFilePath string) error {
+	imageData, err := fileutils.MmapFile(imageFilePath,
+		syscall.PROT_READ, syscall.MAP_SHARED)
+	if err != nil {
+		return errors.Errorf("Unable to read image file '%v': %v",
+			imageFilePath, err)
+	}
+	defer fileutils.Munmap(imageData)
+
+	return Validate(imageData)
 }

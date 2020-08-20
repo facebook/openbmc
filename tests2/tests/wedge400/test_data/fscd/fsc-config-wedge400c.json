@@ -124,65 +124,65 @@
     "1": {
       "label" : "Fan 1 Front",
       "read_source" : {
-        "sysfs": "/sys/bus/i2c/devices/30-003e/fan1_input"
+        "sysfs": "/sys/bus/i2c/devices/32-003e/fan1_input"
       },
       "write_source" : {
-        "sysfs": "/sys/bus/i2c/devices/30-003e/fan1_pwm",
+        "sysfs": "/sys/bus/i2c/devices/32-003e/fan1_pwm",
         "max_duty_register": 63
       }
     },
     "2": {
       "label" : "Fan 1 Rear",
       "read_source" : {
-        "sysfs": "/sys/bus/i2c/devices/30-003e/fan2_input"
+        "sysfs": "/sys/bus/i2c/devices/32-003e/fan2_input"
       }
     },
     "3": {
       "label" : "Fan 2 Front",
       "read_source" : {
-        "sysfs": "/sys/bus/i2c/devices/30-003e/fan3_input"
+        "sysfs": "/sys/bus/i2c/devices/32-003e/fan3_input"
       },
       "write_source" : {
-        "sysfs": "/sys/bus/i2c/devices/30-003e/fan2_pwm",
+        "sysfs": "/sys/bus/i2c/devices/32-003e/fan2_pwm",
         "max_duty_register": 63
       }
     },
     "4": {
       "label" : "Fan 2 Rear",
       "read_source" : {
-        "sysfs": "/sys/bus/i2c/devices/30-003e/fan4_input"
+        "sysfs": "/sys/bus/i2c/devices/32-003e/fan4_input"
       }
     },
     "5": {
       "label" : "Fan 3 Front",
       "read_source" : {
-        "sysfs": "/sys/bus/i2c/devices/30-003e/fan5_input"
+        "sysfs": "/sys/bus/i2c/devices/32-003e/fan5_input"
       },
       "write_source" : {
-        "sysfs": "/sys/bus/i2c/devices/30-003e/fan3_pwm",
+        "sysfs": "/sys/bus/i2c/devices/32-003e/fan3_pwm",
         "max_duty_register": 63
       }
     },
     "6": {
       "label" : "Fan 3 Rear",
       "read_source" : {
-        "sysfs": "/sys/bus/i2c/devices/30-003e/fan6_input"
+        "sysfs": "/sys/bus/i2c/devices/32-003e/fan6_input"
       }
     },
     "7": {
       "label" : "Fan 4 Front",
       "read_source" : {
-        "sysfs": "/sys/bus/i2c/devices/30-003e/fan7_input"
+        "sysfs": "/sys/bus/i2c/devices/32-003e/fan7_input"
       },
       "write_source" : {
-        "sysfs": "/sys/bus/i2c/devices/30-003e/fan4_pwm",
+        "sysfs": "/sys/bus/i2c/devices/32-003e/fan4_pwm",
         "max_duty_register": 63
       }
     },
     "8": {
       "label" : "Fan 4 Rear",
       "read_source" : {
-        "sysfs": "/sys/bus/i2c/devices/30-003e/fan8_input"
+        "sysfs": "/sys/bus/i2c/devices/32-003e/fan8_input"
       }
     }
   },

@@ -50,6 +50,29 @@ print_usage() {
     printf("Options: [ %s ]\n", pal_fru_list);
 }
 
+static void sensor_fail_assert_check(uint8_t *fail_cnt, uint8_t fru, int snr_num, const char *name)
+{
+#ifdef SENSOR_FAIL_DETECT
+  if (*fail_cnt < MAX_SENSOR_CHECK_RETRY) {
+    (*fail_cnt)++;
+    if (*fail_cnt == MAX_SENSOR_CHECK_RETRY)
+      syslog(LOG_ERR, "FRU: %d, num: 0x%X, snr:%-16s, read failed",
+          fru, snr_num, name);
+  }
+#endif
+}
+
+static void sensor_fail_assert_clear(uint8_t *fail_cnt, uint8_t fru, int snr_num, const char *name)
+{
+#ifdef SENSOR_FAIL_DETECT
+  if (*fail_cnt == MAX_SENSOR_CHECK_RETRY) {
+    syslog(LOG_ERR, "FRU: %d, num: 0x%X, snr:%-16s, read recovered",
+        fru, snr_num, name);
+  }
+  *fail_cnt = 0;
+#endif
+}
+
 /*
  * Returns the pointer to the struct holding all sensor info and
  * calculated threshold values for the fru#
@@ -458,6 +481,7 @@ snr_monitor(void *arg) {
   uint8_t *sensor_list, *discrete_list;
   thresh_sensor_t *snr;
   uint32_t snr_poll_interval[MAX_SENSOR_NUM] = {0};
+  uint8_t snr_read_fail[MAX_SENSOR_NUM] = {0};
 
   ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
   if (ret < 0) {
@@ -519,7 +543,7 @@ snr_monitor(void *arg) {
         }
         snr_poll_interval[snr_num] = snr[snr_num].poll_interval;
         if (!(ret = sensor_raw_read_helper(fru, snr_num, &curr_val))) {
-
+          sensor_fail_assert_clear(&snr_read_fail[snr_num], fru, snr_num, snr[snr_num].name);
           check_thresh_assert(fru, snr_num, UNC_THRESH, &curr_val);
           check_thresh_assert(fru, snr_num, UCR_THRESH, &curr_val);
           check_thresh_assert(fru, snr_num, UNR_THRESH, &curr_val);
@@ -533,11 +557,8 @@ snr_monitor(void *arg) {
           check_thresh_deassert(fru, snr_num, LNR_THRESH, &curr_val);
           check_thresh_deassert(fru, snr_num, LCR_THRESH, &curr_val);
           check_thresh_deassert(fru, snr_num, LNC_THRESH, &curr_val);
-#ifdef DEBUG
         } else {
-          syslog(LOG_ERR, "FRU: %d, num: 0x%X, snr:%-16s, read failed",
-              fru, snr_num, snr[snr_num].name);
-#endif /* DEBUG */
+          sensor_fail_assert_check(&snr_read_fail[snr_num], fru, snr_num, snr[snr_num].name);
         } /* pal_sensor_read return check */
       } /* flag check */
     } /* loop for all sensors */
@@ -633,6 +654,7 @@ aggregate_snr_monitor(void *unused)
   uint8_t fru = AGGREGATE_SENSOR_FRU_ID;
   uint8_t snr_num;
   thresh_sensor_t *snr;
+  uint8_t snr_read_fail[MAX_SENSOR_NUM] = {0};
 
   if(aggregate_sensor_init(NULL)) {
     syslog(LOG_WARNING, "Initializing aggregate sensors failed!");
@@ -658,7 +680,7 @@ aggregate_snr_monitor(void *unused)
       curr_val = 0;
       if (snr[snr_num].flag) {
         if (!(ret = sensor_raw_read_helper(fru, snr_num, &curr_val))) {
-
+          sensor_fail_assert_clear(&snr_read_fail[snr_num], fru, snr_num, snr[snr_num].name);
           check_thresh_assert(fru, snr_num, UNC_THRESH, &curr_val);
           check_thresh_assert(fru, snr_num, UCR_THRESH, &curr_val);
           check_thresh_assert(fru, snr_num, UNR_THRESH, &curr_val);
@@ -672,11 +694,8 @@ aggregate_snr_monitor(void *unused)
           check_thresh_deassert(fru, snr_num, LNR_THRESH, &curr_val);
           check_thresh_deassert(fru, snr_num, LCR_THRESH, &curr_val);
           check_thresh_deassert(fru, snr_num, LNC_THRESH, &curr_val);
-#ifdef DEBUG
         } else {
-          syslog(LOG_ERR, "FRU: %d, num: 0x%X, snr:%-16s, read failed",
-              fru, snr_num, snr[snr_num].name);
-#endif /* DEBUG */
+          sensor_fail_assert_check(&snr_read_fail[snr_num], fru, snr_num, snr[snr_num].name);
         } /* pal_sensor_read return check */
       } /* flag check */
     } /* loop for all sensors */

@@ -20,19 +20,15 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 
 	"github.com/facebook/openbmc/tools/flashy/checks_and_remediations/common"
 	"github.com/facebook/openbmc/tools/flashy/install"
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
-	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/logger"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
 var (
@@ -40,9 +36,6 @@ var (
 	installFlag = flag.Bool("install", false, "Install flashy")
 	checkImage  = flag.Bool("checkimage", false,
 		"Validate image partitions (`imagepath` must be specified). Available on non-OpenBMC systems.")
-	checkDevice = flag.Bool("checkdevice", false, "Validate flash device (`device` must be specified)")
-	vbootInfo   = flag.Bool("vbootinfo", false, "Get system vboot information")
-
 	// step params
 	imageFilePath = flag.String("imagepath", "", "Path to image file")
 	deviceID      = flag.String("device", "", "Device ID (e.g. mtd:flash0)")
@@ -57,14 +50,20 @@ func failIfFlagEmpty(flagName, value string) {
 	}
 }
 
-func prettyPrint(i interface{}) string {
-	s, _ := json.MarshalIndent(i, "", "\t")
-	return string(s)
-}
-
 func main() {
 	// set logger output to CustomLogger to log to both syslog and stderr
 	log.SetOutput(logger.CustomLogger)
+
+	binName := fileutils.SanitizeBinaryName(os.Args[0])
+
+	// check if it's a utilities function
+	if _, exists := step.UtilitiesMap[binName]; exists {
+		err := step.UtilitiesMap[binName](os.Args)
+		if err != nil {
+			log.Fatalf("%v failed: %v", binName, err)
+		}
+		return
+	}
 
 	flag.Parse()
 
@@ -88,21 +87,6 @@ WARRANTIES OFF`)
 		return
 	}
 
-	// check flash device
-	if *checkDevice {
-		log.Printf("Validating flash device...")
-		failIfFlagEmpty("device", stepParams.DeviceID)
-
-		err := flashutils.CheckFlashDeviceValid(stepParams.DeviceID)
-		if err != nil {
-			log.Fatalf("Flash device '%v' failed validation: %v",
-				stepParams.DeviceID, err)
-		}
-
-		log.Printf("Finished validating flash device")
-		return
-	}
-
 	// validate image
 	if *checkImage {
 		log.Printf("Validating image...")
@@ -118,19 +102,8 @@ WARRANTIES OFF`)
 		return
 	}
 
-	// get vboot info
-	if *vbootInfo {
-		vbs, err := utils.GetVbs()
-		if err != nil {
-			log.Fatalf("Unable to get system vboot info: %v", err)
-		}
-		fmt.Printf("%v\n", prettyPrint(vbs))
-		return
-	}
-
 	// code below this point is for a symlink-ed step
 	// (e.g. flash_procedure/flash_wedge100)
-	binName := fileutils.SanitizeBinaryName(os.Args[0])
 
 	// at this point, imageFilePath and deviceID
 	// are required to be non empty

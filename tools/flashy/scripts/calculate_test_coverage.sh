@@ -40,6 +40,9 @@ excluded_packages=(
     "github.com/facebook/openbmc/tools/flashy/tests/facebook"
     # framework code (logger)
     "github.com/facebook/openbmc/tools/flashy/lib/logger"
+    # utilities (wrapper code)
+    "github.com/facebook/openbmc/tools/flashy/utilities"
+
 )
 
 invert_filters=()

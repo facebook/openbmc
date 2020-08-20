@@ -32,6 +32,8 @@ import (
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/common"
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/wedge100"
 	_ "github.com/facebook/openbmc/tools/flashy/flash_procedure"
+
+	_ "github.com/facebook/openbmc/tools/flashy/utilities"
 )
 
 // flashy _MUST_ be installed here
@@ -119,7 +121,19 @@ func initSymlinks() {
 	exPath := fileutils.GetExecutablePath()
 	exDir := filepath.Dir(exPath)
 
-	for _symlinkPath, _ := range step.StepMap {
+	stepPaths := make([]string, len(step.StepMap)+len(step.UtilitiesMap))
+
+	i := 0
+	for s := range step.StepMap {
+		stepPaths[i] = s
+		i++
+	}
+	for s := range step.UtilitiesMap {
+		stepPaths[i] = s
+		i++
+	}
+
+	for _, _symlinkPath := range stepPaths {
 		// absolute symlinkPath
 		symlinkPath := filepath.Join(exDir, _symlinkPath)
 

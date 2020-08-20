@@ -35,6 +35,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <syslog.h>
+#include <openbmc/libgpio.h>
 #include "mem_helper.h"
 
 #if 0
@@ -42,6 +44,10 @@ static const char* JtagStatesString[] = {
     "TLR",   "RTI",   "SelDR", "CapDR", "ShfDR", "Ex1DR", "PauDR", "Ex2DR",
     "UpdDR", "SelIR", "CapIR", "ShfIR", "Ex1IR", "PauIR", "Ex2IR", "UpdIR"};
 #endif
+enum {
+  JTAG_TARGET_CPU = 0,
+  JTAG_TARGET_CPLD
+};
 
 #ifdef JTAG_LEGACY_DRIVER
 STATUS JTAG_clock_cycle(int handle, unsigned char tms, unsigned char tdi);
@@ -107,6 +113,98 @@ STATUS JTAG_clock_cycle(int handle, unsigned char tms, unsigned char tdi)
 }
 #endif
 
+static STATUS JTAG_set_target(int target)
+{
+    gpio_value_t expected_value, value = GPIO_VALUE_INVALID;
+    gpio_desc_t *gpio;
+    STATUS ret = ST_ERR;
+    const char *mux_sel_gpios[2] = {
+      "JTAG_MUX_SEL_0",
+      "JTAG_MUX_SEL_1"
+    };
+    const unsigned int sel_values[2] = {
+      2, // CPU: JTAG_MUX_SEL_1 = High,  JTAG_MUX_SEL_0 = LOW
+      0, // CPU: JTAG_MUX_SEL_1 = Low,  JTAG_MUX_SEL_0 = LOW
+    };
+    unsigned int mux_sel_value = sel_values[target];
+
+    /* Change GPIOY2 to have the JTAG master communicating
+     * to the CPU instead of CPLD */
+    if (NULL == (gpio = gpio_open_by_shadow("JTAG_MUX_EN_N"))) {
+      syslog(LOG_ERR, "Failed to open JTAG_MUX_EN_N\n");
+      return ST_ERR;
+    }
+
+    if (gpio_set_direction(gpio, GPIO_DIRECTION_OUT)) {
+      syslog(LOG_ERR, "Failed to set GPIOY2 as an output\n");
+      goto bail;
+    }
+
+    if (target == JTAG_TARGET_CPU) {
+#if 0
+      // Check if this is still needed on Angelslanding.
+      // Set internal strap.
+      if (system("devmem 0x1E6E207C w 0x80000") != 0) {
+        syslog(LOG_ERR, "Failed to set Strap\n");
+        goto bail;
+      }
+#endif
+      expected_value = GPIO_VALUE_LOW;
+    } else {
+      expected_value = GPIO_VALUE_HIGH;
+    }
+
+    gpio_set_value(gpio, expected_value);
+    gpio_get_value(gpio, &value);
+    if (value != expected_value) {
+      syslog(LOG_WARNING, "Writing %d to GPIOY2 failed! ATSD is most probably disabled\n", expected_value);
+      goto bail;
+    }
+
+    if (gpio_set_value_by_shadow_list(mux_sel_gpios, 2, mux_sel_value)) {
+      //reset en gpio value.
+      gpio_set_value(gpio, expected_value == GPIO_VALUE_HIGH ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH);
+      goto bail;
+    }
+    ret = ST_OK;
+bail:
+    gpio_close(gpio);
+    return ret;
+}
+
+static STATUS JTAG_set_mux(void)
+{
+    gpio_value_t expected_value = GPIO_VALUE_LOW;
+    gpio_value_t value = GPIO_VALUE_INVALID;
+    gpio_desc_t *gpio;
+    STATUS ret = ST_ERR;
+
+    if (NULL == (gpio = gpio_open_by_shadow("FM_JTAG_TCK_MUX_SEL"))) {
+      syslog(LOG_ERR, "Failed to open FM_JTAG_TCK_MUX_SEL\n");
+      return ST_ERR;
+    }
+
+    if (gpio_set_direction(gpio, GPIO_DIRECTION_OUT)) {
+      syslog(LOG_ERR, "Failed to set FM_JTAG_TCK_MUX_SEL as an output\n");
+      goto bail;
+    }
+
+    // TODO Does this need to be switched?
+    gpio_set_value(gpio, expected_value);
+    gpio_get_value(gpio, &value);
+    if (value != expected_value) {
+      syslog(LOG_WARNING, "Writing %d to FM_JTAG_TCK_MUX_SEL failed! ASD is most probably disabled\n", expected_value);
+      goto bail;
+    }
+    ret = ST_OK;
+bail:
+    gpio_close(gpio);
+    return ret;
+
+}
+
+
+
 STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
 {
 #ifndef JTAG_LEGACY_DRIVER
@@ -117,6 +215,16 @@ STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
         return ST_ERR;
 
     state->sw_mode = sw_mode;
+
+    if (JTAG_set_target(JTAG_TARGET_CPU) != ST_OK) {
+      syslog(LOG_ERR, "Setting JTAG to CPU failed!\n");
+      return ST_ERR;
+    }
+    if (JTAG_set_mux() != ST_OK) {
+      syslog(LOG_ERR, "Setting TCK_MUX failed\n");
+      JTAG_set_target(JTAG_TARGET_CPLD);
+      return ST_ERR;
+    }
 //    ASD_log(ASD_LogLevel_Info, stream, option, "JTAG mode set to '%s'.",
 //            state->sw_mode ? "software" : "hardware");
 
@@ -129,6 +237,7 @@ STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
     {
 //        ASD_log(ASD_LogLevel_Error, stream, option,
 //                "Can't open /dev/jtag, please install driver");
+        JTAG_set_target(JTAG_TARGET_CPLD);
         return ST_ERR;
     }
 
@@ -141,6 +250,7 @@ STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
 //                "Failed JTAG_SIOCMODE to set xfer mode");
         close(state->JTAG_driver_handle);
         state->JTAG_driver_handle = -1;
+        JTAG_set_target(JTAG_TARGET_CPLD);
         return ST_ERR;
     }
 #endif
@@ -151,6 +261,7 @@ STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
 //                "Failed to reset tap state.");
         close(state->JTAG_driver_handle);
         state->JTAG_driver_handle = -1;
+        JTAG_set_target(JTAG_TARGET_CPLD);
         return ST_ERR;
     }
 
@@ -166,6 +277,7 @@ STATUS JTAG_deinitialize(JTAG_Handler* state)
     close(state->JTAG_driver_handle);
     state->JTAG_driver_handle = -1;
 
+    JTAG_set_target(JTAG_TARGET_CPLD);
     return ST_OK;
 }
 

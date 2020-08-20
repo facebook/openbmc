@@ -154,6 +154,7 @@ static int g_tck = -1;
 static int g_tms = -1;
 static int g_tdo = -1;
 static int g_tdi = -1;
+static int g_jtag_dev = -1;
 static gpio_st g_gpio_tck = {.gs_fd = -1};
 static gpio_st g_gpio_tms = {.gs_fd = -1};
 static gpio_st g_gpio_tdo = {.gs_fd = -1};
@@ -249,6 +250,8 @@ BOOL verbose = FALSE;
 
 #ifdef OPENBMC
 
+#define JTAG_CHAR_DEV "/dev/jtag0"
+
 #define JTAG_SYSFS_DIR "/sys/devices/platform/ahb/ahb\:apb/1e6e4000.jtag/"
 #define JTAG_SYSFS_TDI JTAG_SYSFS_DIR "tdi"
 #define JTAG_SYSFS_TDO JTAG_SYSFS_DIR "tdo"
@@ -282,6 +285,15 @@ static int jtag_swio_read(int fd) {
 }
 
 static int initialize_jtag_swio(void) {
+  /* Kernel 5.6 JTAG driver default let JTAG controller in slave mode,
+   * and only enable master mode when JTAG dev is opened.
+   * So add open() here for compatibility.
+   */
+  if ((g_jtag_dev = open(JTAG_CHAR_DEV, O_RDWR)) < 0) {
+    OBMC_ERROR(errno, "failed to open jtag device %s", JTAG_CHAR_DEV);
+  }
+  jbi_delay(1000);
+
   if (((g_gpio_tdi.gs_fd = open(JTAG_SYSFS_TDI, O_WRONLY)) < 0) ||
       ((g_gpio_tck.gs_fd = open(JTAG_SYSFS_TCK, O_WRONLY)) < 0) ||
       ((g_gpio_tms.gs_fd = open(JTAG_SYSFS_TMS, O_WRONLY)) < 0) ||
@@ -2027,6 +2039,8 @@ void close_jtag_hardware()
 			close(g_gpio_tdo.gs_fd);
 		if (g_gpio_tdi.gs_fd >= 0)
 			close(g_gpio_tdi.gs_fd);
+		if (g_jtag_dev >= 0)
+			close(g_jtag_dev);
 #endif
 	}
 }

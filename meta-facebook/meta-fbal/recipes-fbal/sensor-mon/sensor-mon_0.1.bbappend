@@ -27,6 +27,8 @@ DEPENDS_append = "update-rc.d-native"
 
 pkgdir = "sensor-mon"
 
+CFLAGS += "-DSENSOR_FAIL_DETECT"
+
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   bin="${D}/usr/local/bin"

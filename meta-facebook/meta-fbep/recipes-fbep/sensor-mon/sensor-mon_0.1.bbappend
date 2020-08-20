@@ -24,6 +24,7 @@ SRC_URI += "file://setup-sensord.sh \
 S = "${WORKDIR}"
 
 DEPENDS_append = "update-rc.d-native"
+CFLAGS += "-DSENSOR_FAIL_DETECT"
 
 do_install_append() {
   install -d ${D}${sysconfdir}/init.d

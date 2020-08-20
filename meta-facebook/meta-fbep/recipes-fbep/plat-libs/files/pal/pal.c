@@ -70,6 +70,7 @@ const char pal_server_list[] = "mb";
 
 char g_dev_guid[GUID_SIZE] = {0};
 
+static int get_board_rev_id(uint8_t*);
 static int key_set_asic_mfr(int, void*);
 
 enum key_event {
@@ -294,15 +295,21 @@ int pal_get_fruid_path(uint8_t fru, char *path)
 
 int pal_get_fruid_eeprom_path(uint8_t fru, char *path)
 {
-  if (fru == FRU_MB)
-    sprintf(path, MB_EEPROM);
-  else if (fru == FRU_PDB)
-    sprintf(path, PDB_EEPROM);
-  else if (fru == FRU_BSM)
-    sprintf(path, BSM_EEPROM);
-  else
-    return -1;
+  uint8_t rev_id;
 
+  if (fru == FRU_MB) {
+    sprintf(path, MB_EEPROM);
+  } else if (fru == FRU_PDB) {
+    sprintf(path, PDB_EEPROM);
+  } else if (fru == FRU_BSM) {
+    get_board_rev_id(&rev_id);
+    if (rev_id < 0x5)
+      sprintf(path, BSM_EEPROM, 13, 13);
+    else
+      sprintf(path, BSM_EEPROM, 4, 4);
+  } else {
+    return -1;
+  }
   return 0;
 }
 

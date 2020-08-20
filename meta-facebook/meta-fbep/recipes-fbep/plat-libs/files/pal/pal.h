@@ -37,7 +37,7 @@ extern "C" {
 #define PDB_BIN "/tmp/fruid_pdb.bin"
 #define PDB_EEPROM "/sys/class/i2c-dev/i2c-16/device/16-0054/eeprom"
 #define BSM_BIN "/tmp/fruid_bsm.bin"
-#define BSM_EEPROM "/sys/class/i2c-dev/i2c-13/device/13-0056/eeprom"
+#define BSM_EEPROM "/sys/class/i2c-dev/i2c-%d/device/%d-0056/eeprom"
 
 #define LARGEST_DEVICE_NAME 120
 #define ERR_NOT_READY -2

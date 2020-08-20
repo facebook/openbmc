@@ -23,6 +23,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = "file://ast-functions \
            file://setup-gpio.sh \
+           file://setup-switch.sh \
            file://check-i2c-pwr.sh \
            file://setup-i2c.sh \
            file://setup-usbnet.sh \
@@ -64,7 +65,9 @@ do_install() {
   install -d ${D}${sysconfdir}/rcS.d
   # the script to mount /mnt/data
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
-  update-rc.d -r ${D} setup-gpio.sh start 66 5 .
+  update-rc.d -r ${D} setup-gpio.sh start 63 5 .
+  install -m 755 setup-switch.sh ${D}${sysconfdir}/init.d/setup-switch.sh
+  update-rc.d -r ${D} setup-switch.sh start 66 5 .
   install -m 755 setup-i2c.sh ${D}${sysconfdir}/init.d/setup-i2c.sh
   install -m 755 check-i2c-pwr.sh ${D}${sysconfdir}/init.d/check-i2c-pwr.sh
   update-rc.d -r ${D} check-i2c-pwr.sh start 67 5 .

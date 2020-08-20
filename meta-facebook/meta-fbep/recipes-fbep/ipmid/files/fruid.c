@@ -128,6 +128,8 @@ exit:
 /* Populate the platform specific eeprom for fruid info */
 int plat_fruid_init(void)
 {
+  char path[64] = {0};
+
   if (get_asic_mfr_id() < 0)
     syslog(LOG_WARNING, "[%s]Get ASIC ID Failed",__func__);
 
@@ -137,7 +139,8 @@ int plat_fruid_init(void)
   if (copy_eeprom_to_bin(PDB_EEPROM, PDB_BIN))
     syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, PDB_BIN);
 
-  if (copy_eeprom_to_bin(BSM_EEPROM, BSM_BIN))
+  pal_get_fruid_eeprom_path(FRU_BSM, path);
+  if (copy_eeprom_to_bin(path, BSM_BIN))
     syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, BSM_BIN);
 
   return 0;

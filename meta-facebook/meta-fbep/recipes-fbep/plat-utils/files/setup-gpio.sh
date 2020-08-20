@@ -59,14 +59,6 @@ do
 done
 
 for i in {0..3};
- do
-  gpioexp_export 13-0020 MB${i}_P0_PRSNT0 $((i*4))
-  gpioexp_export 13-0020 MB${i}_P0_PRSNT1 $((i*4+1))
-  gpioexp_export 13-0020 MB${i}_P1_PRSNT0 $((i*4+2))
-  gpioexp_export 13-0020 MB${i}_P1_PRSNT1 $((i*4+3))
-done
-
-for i in {0..3};
 do
   gpioexp_export 18-0067 FAN${i}_PRESENT ${i}
   gpioexp_export 18-0067 FAN${i}_PWR_GOOD $((i+4))
@@ -219,6 +211,25 @@ gpio_export BMC_OAM_TEST8 GPIOG7
 gpio_export REV_ID0 GPIOG4
 gpio_export REV_ID1 GPIOG5
 gpio_export REV_ID2 GPIOG6
+
+ID0=$(gpio_get REV_ID0)
+ID1=$(gpio_get REV_ID1)
+ID2=$(gpio_get REV_ID2)
+REV_ID=$(($ID0 + $ID1*2 + $ID2*4))
+if [[ $REV_ID < 5 ]]; then
+  # FAB6
+  ioexp_bus=13
+else
+  ioexp_bus=4
+fi
+
+for i in {0..3};
+ do
+  gpioexp_export ${ioexp_bus}-0020 MB${i}_P0_PRSNT0 $((i*4))
+  gpioexp_export ${ioexp_bus}-0020 MB${i}_P0_PRSNT1 $((i*4+1))
+  gpioexp_export ${ioexp_bus}-0020 MB${i}_P1_PRSNT0 $((i*4+2))
+  gpioexp_export ${ioexp_bus}-0020 MB${i}_P1_PRSNT1 $((i*4+3))
+done
 
 # To enable GPIOH
 #devmem_clear_bit $(scu_addr 90) 7
@@ -596,48 +607,3 @@ gpio_export PAX1_ALERT GPIOAC3
 gpio_export BMC_GPIOAC5 GPIOAC5
 gpio_export BMC_GPIOAC6 GPIOAC6
 gpio_export BMC_GPIOAC7 GPIOAC7
-
-echo -n "Setup PCIe switch config "
-# 8S by default
-gpio_set PAX0_SKU_ID0 0
-gpio_set PAX1_SKU_ID0 0
-gpio_set PAX2_SKU_ID0 0
-gpio_set PAX3_SKU_ID0 0
-
-if [[ -f "/mnt/data/kv_store/server_type" ]]; then
-  # If KV had existed
-  server_type=$(cat /mnt/data/kv_store/server_type)
-  if [[ "$server_type" == "2" ]]; then
-    gpio_set PAX0_SKU_ID0 1
-    gpio_set PAX1_SKU_ID0 1
-    gpio_set PAX2_SKU_ID0 1
-    gpio_set PAX3_SKU_ID0 1
-  fi
-else
-  # Get config from MB0's BMC
-  for retry in {1..30};
-  do
-    server_type=$(/usr/local/bin/ipmb-util 2 0x20 0xE8 0x0)
-    server_type=${server_type:1:1}
-    if [[ "$server_type" == "0" ]]; then
-      /usr/local/bin/cfg-util server_type 8
-      break
-    elif [[ "$server_type" == "1" ]]; then
-      /usr/local/bin/cfg-util server_type 4
-      break
-    elif [[ "$server_type" == "2" ]]; then
-      /usr/local/bin/cfg-util server_type 2
-      gpio_set PAX0_SKU_ID0 1
-      gpio_set PAX1_SKU_ID0 1
-      gpio_set PAX2_SKU_ID0 1
-      gpio_set PAX3_SKU_ID0 1
-      break
-    else
-      echo -n "."
-      sleep 1
-    fi
-  done
-fi
-echo "done"
-
-gpio_set BMC_READY_N 0

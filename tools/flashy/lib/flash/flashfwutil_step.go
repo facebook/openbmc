@@ -25,6 +25,7 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 )
 
@@ -51,8 +52,14 @@ func FlashFwUtil(stepParams step.StepParams) step.StepExitError {
 var runFwUtilCmd = func(imageFilePath string) error {
 	log.Printf("Starting to run fw-util")
 
-	flashCmd := []string{
+	// fw-util has flashcp -v which is very verbose and makes it slow,
+	// redirect output to /dev/null
+	fwutilCmd := shellquote.Join(
 		"fw-util", "bmc", "--update", "bmc", imageFilePath,
+	)
+
+	flashCmd := []string{
+		"bash", "-c", fmt.Sprintf("%v > /dev/null", fwutilCmd),
 	}
 
 	exitCode, err, stdout, stderr := utils.RunCommand(flashCmd, 1800)

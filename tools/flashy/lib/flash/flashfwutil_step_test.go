@@ -127,45 +127,59 @@ func TestRunFwUtilCmd(t *testing.T) {
 	}
 
 	cases := []struct {
-		name   string
-		cmdRet cmdRetType
-		want   error
+		name          string
+		imageFilePath string
+		cmdRet        cmdRetType
+		wantCmd       string
+		want          error
 	}{
 		{
-			name: "basic succeeding",
+			name:          "basic succeeding",
+			imageFilePath: "/opt/upgrade/image",
 			cmdRet: cmdRetType{
 				0, nil, "", "",
 			},
-			want: nil,
+			wantCmd: "bash -c fw-util bmc --update bmc /opt/upgrade/image > /dev/null",
+			want:    nil,
 		},
 		{
-			name: "cmd failed",
+			name:          "cmd failed",
+			imageFilePath: "/opt/upgrade/image",
 			cmdRet: cmdRetType{
 				1,
 				errors.Errorf("fw-util failed"),
 				"failed (stdout)",
 				"failed (stderr)",
 			},
+			wantCmd: "bash -c fw-util bmc --update bmc /opt/upgrade/image > /dev/null",
 			want: errors.Errorf(
 				"Flashing failed with exit code %v, error: %v, stdout: '', stderr: ''",
 				1, "fw-util failed",
 			),
 		},
+		{
+			name:          "escape string",
+			imageFilePath: `; rm -rf /;`,
+			cmdRet: cmdRetType{
+				0, nil, "", "",
+			},
+			wantCmd: "bash -c fw-util bmc --update bmc '; rm -rf /;' > /dev/null",
+			want:    nil,
+		},
 	}
 
-	wantCmd := "fw-util bmc --update bmc a"
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			utils.RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
 				cmdStr := strings.Join(cmdArr, " ")
-				if cmdStr != wantCmd {
-					t.Errorf("cmd: want '%v' got '%v'", wantCmd, cmdStr)
+				if cmdStr != tc.wantCmd {
+					t.Errorf("cmd: want '%v' got '%v'", tc.wantCmd, cmdStr)
 				}
 				r := tc.cmdRet
 				return r.exitCode, r.err, "", ""
 			}
 
-			got := runFwUtilCmd("a")
+			got := runFwUtilCmd(tc.imageFilePath)
 			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}

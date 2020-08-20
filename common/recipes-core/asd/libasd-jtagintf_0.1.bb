@@ -10,6 +10,8 @@ SRC_URI = "file://interface/SoftwareJTAGHandler.c \
            file://interface/SoftwareJTAGHandler.h \
            file://interface/pin_interface.c \
            file://interface/pin_interface.h \
+           file://interface/mem_helper.c \
+           file://interface/mem_helper.h \
            file://interface/Makefile \
            "
 

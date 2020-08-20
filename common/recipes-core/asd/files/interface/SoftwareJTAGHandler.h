@@ -35,6 +35,9 @@ extern "C" {
 #endif
 
 #define MAXPADSIZE 512
+#define MAX_WAIT_CYCLES 256
+  // TODO This changed to 3000 in upstream
+#define MAX_DATA_SIZE                4106
 
 typedef enum {
     JtagTLR,
@@ -97,11 +100,19 @@ typedef struct JTAG_Chain_State {
     JTAGScanState scan_state;
 } JTAG_Chain_State;
 
+struct tck_bitbang
+{
+  unsigned char tms;
+  unsigned char tdi;
+  unsigned char tdo;
+} __attribute__((__packed__));
+
 typedef struct JTAG_Handler {
     JTAG_Chain_State chains[MAX_SCAN_CHAINS];
     JTAG_Chain_State* active_chain;
     unsigned char padDataOne[MAXPADSIZE];
     unsigned char padDataZero[MAXPADSIZE];
+    struct tck_bitbang bitbang_data[MAX_WAIT_CYCLES];
     int JTAG_driver_handle;
     int fru;
     bool sw_mode;

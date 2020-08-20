@@ -64,12 +64,6 @@ typedef enum xfer_mode {
     SW_MODE
 } xfer_mode;
 
-struct tck_bitbang {
-    unsigned char     tms;
-    unsigned char     tdi;        // TDI bit value to write
-    unsigned char     tdo;        // TDO bit value to read
-};
-
 struct scan_xfer {
     xfer_mode        mode;        // Hardware or software mode
     unsigned int     tap_state;   // Current tap state

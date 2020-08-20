@@ -62,12 +62,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAX(a,b)            (((a) > (b)) ? (a) : (b))
 #define MIN(a,b)            (((a) < (b)) ? (a) : (b))
 
-struct tck_bitbang {
-    unsigned char     tms;
-    unsigned char     tdi;        // TDI bit value to write
-    unsigned char     tdo;        // TDO bit value to read
-};
-
 struct scan_xfer {
     unsigned int     length;      // number of bits to clock
     unsigned char    *tdi;        // data to write to tap (optional)

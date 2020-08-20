@@ -204,7 +204,6 @@ typedef struct logging_configuration {
 #define EVENT_FD_INDEX               0
 #define HOST_FD_INDEX                1
 #define CLIENT_FD_INDEX              2
-#define MAX_DATA_SIZE                4106
 #ifdef CONFIG_JTAG_MSG_FLOW
 #define DEFAULT_NUM_IN_FLIGHT_BUFFERS_TO_USE 10
 #else

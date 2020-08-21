@@ -42,10 +42,10 @@ usage() {
     echo "    options:"
     echo "      -s: Power reset whole elbert system ungracefully"
     echo
-    echo "  lcreset: Power-cycle one or all LC(s)"
+    echo "  pimreset: Power-cycle one or all PIM(s)"
     echo "    options:"
-    echo "      -a  : Reset all LCs or "
-    echo "      -1 , -2 , ... , -8 : Reset a single LC (1, 2 ... 8) "
+    echo "      -a  : Reset all PIMs or "
+    echo "      -2 , -3 , ... , -9 : Reset a single PIM (2, 3 ... 9) "
     echo
 }
 
@@ -144,15 +144,91 @@ do_reset() {
 
 }
 
-# ELBERTTODO LC Reset Support
 toggle_pim_reset() {
-   echo "PIM RESET NOT IMPLEMENTED YET"
-   exit 1
+    pim=$1
+    # Set the selected PIM to powercycle
+    for slot in 2 3 4 5 6 7 8 9; do
+        if [ "$pim" -eq 0 ] || [ "$slot" -eq "$pim" ]; then
+            echo "Reset PIM${slot}..."
+            echo '1' > "$SMBCPLD_SYSFS_DIR"/pim"$slot"_reset
+        fi
+    done
+    echo 'Waiting for PIMs to be re-enabled...'
+
+    i=0
+    while true; do
+        i=$((i+1))
+        # Wait for all cards to be be re-enabled
+        if [ "$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim_reset)" == '0x0' ]; then
+            echo 'All cards enabled!'
+            break;
+        fi
+
+        if [ $i -gt 60 ]; then
+            echo 'Timed out waiting for cards to be re-enabled...'
+            exit 1
+        fi
+        sleep 1
+     done
+
+    # Re-initialize reset pims
+    for slot in 2 3 4 5 6 7 8 9; do
+        if [ "$pim" -eq 0 ] || [ "$slot" -eq "$pim" ]; then
+            pim_prsnt="$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$slot"_present)"
+            if [ "$pim_prsnt" == '0x1' ]; then
+                power_on_pim "$slot"
+            fi
+        fi
+    done
 }
 
 do_pimreset() {
-   echo "PIM RESET NOT IMPLEMENTED YET"
-   exit 1
+    local pim opt retval
+    retval=0
+    pim=-1
+    while getopts "23456789a" opt; do
+        case $opt in
+            a)
+                pim=0
+                ;;
+            2)
+                pim=2
+                ;;
+            3)
+                pim=3
+                ;;
+            4)
+                pim=4
+                ;;
+            5)
+                pim=5
+                ;;
+            6)
+                pim=6
+                ;;
+            7)
+                pim=7
+                ;;
+            8)
+                pim=8
+                ;;
+            9)
+                pim=9
+                ;;
+            *)
+                usage
+                exit 1
+                ;;
+        esac
+    done
+    if [ $pim -eq -1 ]; then
+      usage
+      exit 1
+    fi
+
+    toggle_pim_reset $pim
+
+    return $retval
 }
 
 if [ $# -lt 1 ]; then
@@ -177,9 +253,6 @@ case "$command" in
         do_reset "$@"
         ;;
     pimreset)
-        do_pimreset "$@"
-        ;;
-    lcreset)
         do_pimreset "$@"
         ;;
     *)

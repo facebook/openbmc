@@ -22,6 +22,7 @@ SRC_URI += "file://board-utils.sh \
             file://fpga_util.sh \
             file://fpga_ver.sh \
             file://eth0_mac_fixup.sh \
+            file://hclk_fixup.sh \
             file://oob-eeprom-util.sh \
             file://oob-mdio-util.sh \
             file://power-on.sh \
@@ -73,6 +74,10 @@ do_install_board() {
 
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 60 S .
+
+    # ELBERTTODO Remove P1 Hacks
+    install -m 755 hclk_fixup.sh ${D}${sysconfdir}/init.d/hclk_fixup.sh
+    update-rc.d -r ${D} hclk_fixup.sh start 70 S .
 
     # networking is done after rcS, any start level within rcS for
     # mac fixup should work

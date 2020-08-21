@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/logger"
@@ -155,14 +156,14 @@ func TestFuserKMountRo(t *testing.T) {
 				return tc.writableMountedMTDs, tc.writableMountedMTDsErr
 			}
 			// fuser
-			utils.RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
+			utils.RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
 				gotCmds = append(gotCmds, strings.Join(cmdArr[:], " "))
 				// only err is checked
 				return 0, tc.fuserCmdErr, "", ""
 			}
 
 			// remount
-			utils.RunCommandWithRetries = func(cmdArr []string, timeoutInSeconds int, maxAttempts int, intervalInSeconds int) (int, error, string, string) {
+			utils.RunCommandWithRetries = func(cmdArr []string, timeout time.Duration, maxAttempts int, interval time.Duration) (int, error, string, string) {
 				gotCmds = append(gotCmds, strings.Join(cmdArr[:], " "))
 				// only err is checked
 				return 0, tc.remountCmdErr, "", ""

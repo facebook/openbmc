@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
@@ -101,7 +102,7 @@ func TestRestartServices(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var gotCmds = []string{}
-			utils.RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
+			utils.RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
 				gotCmds = append(gotCmds, strings.Join(cmdArr, " "))
 				// does not matter what exit code is given here, as only err is checked
 				return 0, tc.runCmdErr, "", ""

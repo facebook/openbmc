@@ -22,6 +22,7 @@ package utils
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestIsPfrSystem(t *testing.T) {
@@ -50,7 +51,7 @@ func TestIsPfrSystem(t *testing.T) {
 	wantCmd := "i2craw 12 0x38 -r 1 -w 0x0A"
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
+			RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
 				gotCmd := strings.Join(cmdArr, " ")
 				if wantCmd != gotCmd {
 					t.Errorf("cmd: want '%v' got '%v'", wantCmd, gotCmd)

@@ -355,14 +355,11 @@ func TestRestartHealthd(t *testing.T) {
 				}
 				return tc.pathExists
 			}
-			RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
+			RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
 				wantCmd := fmt.Sprintf("%v restart healthd", tc.supervisor)
 				gotCmd := strings.Join(cmdArr, " ")
 				if wantCmd != gotCmd {
 					t.Errorf("command: want '%v' got '%v'", wantCmd, gotCmd)
-				}
-				if timeoutInSeconds != 60 {
-					t.Errorf("timeout: want 60 got %v", timeoutInSeconds)
 				}
 				// exit code ignored
 				return 0, tc.runCmdErr, "", ""

@@ -75,7 +75,7 @@ func TestWallAlert(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			utils.RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
+			utils.RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
 				return 0, tc.runCmdErr, "", ""
 			}
 			got := wallAlert()

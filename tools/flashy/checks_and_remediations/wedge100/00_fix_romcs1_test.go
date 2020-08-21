@@ -22,6 +22,7 @@ package remediations_wedge100
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
@@ -56,7 +57,7 @@ func TestFixROMCS1(t *testing.T) {
 	wantCmd := "/usr/local/bin/openbmc_gpio_util.py config ROMCS1#"
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			utils.RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
+			utils.RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
 				gotCmd := strings.Join(cmdArr, " ")
 				if wantCmd != gotCmd {
 					t.Errorf("cmd: want '%v' got '%v'", wantCmd, gotCmd)

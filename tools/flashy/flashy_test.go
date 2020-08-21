@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
@@ -39,7 +40,7 @@ var absTestCovScriptPath = path.Join(
 )
 
 func TestCoverage(t *testing.T) {
-	_, err, stdout, _ := utils.RunCommand([]string{absTestCovScriptPath}, 30)
+	_, err, stdout, _ := utils.RunCommand([]string{absTestCovScriptPath}, 30*time.Second)
 	if err != nil {
 		t.Error(err)
 	}

@@ -116,23 +116,23 @@ func TestRunCommand(t *testing.T) {
 	}()
 
 	cases := []struct {
-		name             string
-		cmdArr           []string
-		timeoutInSeconds int
-		wantExitCode     int
-		wantErr          error
-		wantStdout       string
-		wantStderr       string
-		logContainsSeq   []string // logs must contain all strings
+		name           string
+		cmdArr         []string
+		timeout        time.Duration
+		wantExitCode   int
+		wantErr        error
+		wantStdout     string
+		wantStderr     string
+		logContainsSeq []string // logs must contain all strings
 	}{
 		{
-			name:             "Run `bash -c \"echo openbmc\"`",
-			cmdArr:           []string{"bash", "-c", "echo openbmc"},
-			timeoutInSeconds: 30,
-			wantExitCode:     0,
-			wantErr:          nil,
-			wantStdout:       "openbmc\n",
-			wantStderr:       "",
+			name:         "Run `bash -c \"echo openbmc\"`",
+			cmdArr:       []string{"bash", "-c", "echo openbmc"},
+			timeout:      30 * time.Second,
+			wantExitCode: 0,
+			wantErr:      nil,
+			wantStdout:   "openbmc\n",
+			wantStderr:   "",
 			logContainsSeq: []string{
 				"Running command 'bash -c echo openbmc' with 30s timeout",
 				"stdout: openbmc\n",
@@ -140,13 +140,13 @@ func TestRunCommand(t *testing.T) {
 			},
 		},
 		{
-			name:             "Run `bash -c \"echo openbmc 1>&2\"` (to stderr)",
-			cmdArr:           []string{"bash", "-c", "echo openbmc 1>&2"},
-			timeoutInSeconds: 30,
-			wantExitCode:     0,
-			wantErr:          nil,
-			wantStdout:       "",
-			wantStderr:       "openbmc\n",
+			name:         "Run `bash -c \"echo openbmc 1>&2\"` (to stderr)",
+			cmdArr:       []string{"bash", "-c", "echo openbmc 1>&2"},
+			timeout:      30 * time.Second,
+			wantExitCode: 0,
+			wantErr:      nil,
+			wantStdout:   "",
+			wantStderr:   "openbmc\n",
 			logContainsSeq: []string{
 				"Running command 'bash -c echo openbmc 1>&2' with 30s timeout",
 				"stderr: openbmc\n",
@@ -154,13 +154,13 @@ func TestRunCommand(t *testing.T) {
 			},
 		},
 		{
-			name:             "Run `bash -c \"ech0 openbmc\"` (rubbish command)",
-			cmdArr:           []string{"bash", "-c", "ech0 openbmc"},
-			timeoutInSeconds: 30,
-			wantExitCode:     127,
-			wantErr:          errors.Errorf("exit status 127"),
-			wantStdout:       "",
-			wantStderr:       "bash: ech0: command not found\n",
+			name:         "Run `bash -c \"ech0 openbmc\"` (rubbish command)",
+			cmdArr:       []string{"bash", "-c", "ech0 openbmc"},
+			timeout:      30 * time.Second,
+			wantExitCode: 127,
+			wantErr:      errors.Errorf("exit status 127"),
+			wantStdout:   "",
+			wantStderr:   "bash: ech0: command not found\n",
 			logContainsSeq: []string{
 				"Running command 'bash -c ech0 openbmc' with 30s timeout",
 				"stderr: bash: ech0: command not found",
@@ -171,39 +171,39 @@ func TestRunCommand(t *testing.T) {
 			// NOTE:- this is different from bash -c "ech0 openbmc", as Golang's
 			// exec.Command takes the first argument as the name of an executable to execute
 			// this will have a different error, and expects the default failed exit code (1)
-			name:             "Run 'ech0 openbmc'` (rubbish command, not found in PATH)",
-			cmdArr:           []string{"ech0", "openbmc"},
-			timeoutInSeconds: 30,
-			wantExitCode:     1,
-			wantErr:          errors.Errorf("exec: \"ech0\": executable file not found in $PATH"),
-			wantStdout:       "",
-			wantStderr:       "",
+			name:         "Run 'ech0 openbmc'` (rubbish command, not found in PATH)",
+			cmdArr:       []string{"ech0", "openbmc"},
+			timeout:      30 * time.Second,
+			wantExitCode: 1,
+			wantErr:      errors.Errorf("exec: \"ech0\": executable file not found in $PATH"),
+			wantStdout:   "",
+			wantStderr:   "",
 			logContainsSeq: []string{
 				"Command 'ech0 openbmc' failed to start: exec: \"ech0\": executable file not found in $PATH",
 			},
 		},
 		{
-			name:             "Command timed out",
-			cmdArr:           []string{"sleep", "42"},
-			timeoutInSeconds: 1,
-			wantExitCode:     -1,
-			wantErr:          errors.Errorf("context deadline exceeded"),
-			wantStdout:       "",
-			wantStderr:       "",
+			name:         "Command timed out",
+			cmdArr:       []string{"sleep", "1"},
+			timeout:      10 * time.Millisecond,
+			wantExitCode: -1,
+			wantErr:      errors.Errorf("context deadline exceeded"),
+			wantStdout:   "",
+			wantStderr:   "",
 			logContainsSeq: []string{
-				"Running command 'sleep 42' with 1s timeout",
-				"Command 'sleep 42' timed out after 1s",
+				"Running command 'sleep 1' with 10ms timeout",
+				"Command 'sleep 1' timed out after 10ms",
 			},
 		},
 		{
 			name: "Check stream sequence: stderr -> stdout -> stderr",
 			// the sleeps are necessary as the scanners are concurrrent
-			cmdArr:           []string{"bash", "-c", "echo seq1 >&2; sleep 0.1; echo seq2; sleep 0.1; echo seq3 >&2"},
-			timeoutInSeconds: 30,
-			wantExitCode:     0,
-			wantErr:          nil,
-			wantStdout:       "seq2\n",
-			wantStderr:       "seq1\nseq3\n",
+			cmdArr:       []string{"bash", "-c", "echo seq1 >&2; sleep 0.1; echo seq2; sleep 0.1; echo seq3 >&2"},
+			timeout:      30 * time.Second,
+			wantExitCode: 0,
+			wantErr:      nil,
+			wantStdout:   "seq2\n",
+			wantStderr:   "seq1\nseq3\n",
 			logContainsSeq: []string{
 				"Running command 'bash -c echo seq1 >&2; sleep 0.1; echo seq2; sleep 0.1; echo seq3 >&2' with 30s timeout",
 				"stderr: seq1\n",
@@ -214,12 +214,12 @@ func TestRunCommand(t *testing.T) {
 		{
 			name: "Check stream sequence: stdout -> stderr -> stdout",
 			// the sleeps are necessary as the scanners are concurrrent
-			cmdArr:           []string{"bash", "-c", "echo seq1; sleep 0.1; echo seq2 >&2; sleep 0.1; echo seq3"},
-			timeoutInSeconds: 30,
-			wantExitCode:     0,
-			wantErr:          nil,
-			wantStdout:       "seq1\nseq3\n",
-			wantStderr:       "seq2\n",
+			cmdArr:       []string{"bash", "-c", "echo seq1; sleep 0.1; echo seq2 >&2; sleep 0.1; echo seq3"},
+			timeout:      30 * time.Second,
+			wantExitCode: 0,
+			wantErr:      nil,
+			wantStdout:   "seq1\nseq3\n",
+			wantStderr:   "seq2\n",
 			logContainsSeq: []string{
 				"Running command 'bash -c echo seq1; sleep 0.1; echo seq2 >&2; sleep 0.1; echo seq3' with 30s timeout",
 				"stdout: seq1\n",
@@ -228,13 +228,13 @@ func TestRunCommand(t *testing.T) {
 			},
 		},
 		{
-			name:             "Non utf-8 character",
-			cmdArr:           []string{"printf", "'\x87'"},
-			timeoutInSeconds: 30,
-			wantExitCode:     0,
-			wantErr:          nil,
-			wantStdout:       "'\x87'\n",
-			wantStderr:       "",
+			name:         "Non utf-8 character",
+			cmdArr:       []string{"printf", "'\x87'"},
+			timeout:      30 * time.Second,
+			wantExitCode: 0,
+			wantErr:      nil,
+			wantStdout:   "'\x87'\n",
+			wantStderr:   "",
 			logContainsSeq: []string{
 				"Running command 'printf '\x87'",
 				"stdout: '\x87'",
@@ -247,11 +247,11 @@ func TestRunCommand(t *testing.T) {
 				"-c",
 				"echo -ne 'PROG:#  \r'; echo -ne 'PROG:## \r'; echo -ne 'PROG:###\r'; echo -ne '\n'",
 			},
-			timeoutInSeconds: 30,
-			wantExitCode:     0,
-			wantErr:          nil,
-			wantStdout:       "PROG:#  \nPROG:## \nPROG:###\n",
-			wantStderr:       "",
+			timeout:      30 * time.Second,
+			wantExitCode: 0,
+			wantErr:      nil,
+			wantStdout:   "PROG:#  \nPROG:## \nPROG:###\n",
+			wantStderr:   "",
 			logContainsSeq: []string{
 				"stdout: PROG:#",
 				"stdout: PROG:##",
@@ -259,13 +259,13 @@ func TestRunCommand(t *testing.T) {
 			},
 		},
 		{
-			name:             "Invalid timeout (negative)",
-			cmdArr:           []string{"sleep", "42"},
-			timeoutInSeconds: -1,
-			wantExitCode:     1,
-			wantErr:          errors.Errorf("context deadline exceeded"),
-			wantStdout:       "",
-			wantStderr:       "",
+			name:         "Invalid timeout (negative)",
+			cmdArr:       []string{"sleep", "42"},
+			timeout:      -1 * time.Second,
+			wantExitCode: 1,
+			wantErr:      errors.Errorf("context deadline exceeded"),
+			wantStdout:   "",
+			wantStderr:   "",
 			logContainsSeq: []string{
 				"Running command 'sleep 42' with -1s timeout",
 				"Command 'sleep 42' failed to start: context deadline exceeded",
@@ -275,7 +275,7 @@ func TestRunCommand(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			buf = bytes.Buffer{}
-			exitCode, err, stdoutStr, stderrStr := RunCommand(tc.cmdArr, tc.timeoutInSeconds)
+			exitCode, err, stdoutStr, stderrStr := RunCommand(tc.cmdArr, tc.timeout)
 
 			if exitCode != tc.wantExitCode {
 				t.Errorf("exitCode: want %v got %v", tc.wantExitCode, exitCode)
@@ -309,21 +309,21 @@ func TestRunCommandWithRetries(t *testing.T) {
 	}()
 
 	cases := []struct {
-		name              string
-		maxAttempts       int
-		intervalInSeconds int
-		runCommandErrs    []error
-		wantErr           error
-		wantSleepTimes    []time.Duration
-		logContainsSeq    []string
+		name           string
+		maxAttempts    int
+		interval       time.Duration
+		runCommandErrs []error
+		wantErr        error
+		wantSleepTimes []time.Duration
+		logContainsSeq []string
 	}{
 		{
-			name:              "Succeed on first try",
-			maxAttempts:       3,
-			intervalInSeconds: 1,
-			runCommandErrs:    []error{nil},
-			wantErr:           nil,
-			wantSleepTimes:    []time.Duration{},
+			name:           "Succeed on first try",
+			maxAttempts:    3,
+			interval:       1 * time.Second,
+			runCommandErrs: []error{nil},
+			wantErr:        nil,
+			wantSleepTimes: []time.Duration{},
 			logContainsSeq: []string{
 				fmt.Sprintf("Attempt %v of %v: Running command '%v' with timeout %vs and retry interval %vs",
 					1, 3, "echo 1", 10, 1),
@@ -331,12 +331,12 @@ func TestRunCommandWithRetries(t *testing.T) {
 			},
 		},
 		{
-			name:              "Succeed on second try",
-			maxAttempts:       3,
-			intervalInSeconds: 1,
-			runCommandErrs:    []error{errors.Errorf("err"), nil},
-			wantErr:           nil,
-			wantSleepTimes:    []time.Duration{1 * time.Second},
+			name:           "Succeed on second try",
+			maxAttempts:    3,
+			interval:       1 * time.Second,
+			runCommandErrs: []error{errors.Errorf("err"), nil},
+			wantErr:        nil,
+			wantSleepTimes: []time.Duration{1 * time.Second},
 			logContainsSeq: []string{
 				fmt.Sprintf("Attempt %v of %v: Running command '%v' with timeout %vs and retry interval %vs",
 					1, 3, "echo 1", 10, 1),
@@ -347,12 +347,12 @@ func TestRunCommandWithRetries(t *testing.T) {
 			},
 		},
 		{
-			name:              "Succeed on second try, different timeout",
-			maxAttempts:       3,
-			intervalInSeconds: 42,
-			runCommandErrs:    []error{errors.Errorf("err"), nil},
-			wantErr:           nil,
-			wantSleepTimes:    []time.Duration{42 * time.Second},
+			name:           "Succeed on second try, different timeout",
+			maxAttempts:    3,
+			interval:       42 * time.Second,
+			runCommandErrs: []error{errors.Errorf("err"), nil},
+			wantErr:        nil,
+			wantSleepTimes: []time.Duration{42 * time.Second},
 			logContainsSeq: []string{
 				fmt.Sprintf("Attempt %v of %v: Running command '%v' with timeout %vs and retry interval %vs",
 					1, 3, "echo 1", 10, 42),
@@ -363,12 +363,12 @@ func TestRunCommandWithRetries(t *testing.T) {
 			},
 		},
 		{
-			name:              "Fail on all retries",
-			maxAttempts:       3,
-			intervalInSeconds: 1,
-			runCommandErrs:    []error{errors.Errorf("err"), errors.Errorf("err"), errors.Errorf("err")},
-			wantErr:           errors.Errorf("err"),
-			wantSleepTimes:    []time.Duration{1 * time.Second, 1 * time.Second},
+			name:           "Fail on all retries",
+			maxAttempts:    3,
+			interval:       1 * time.Second,
+			runCommandErrs: []error{errors.Errorf("err"), errors.Errorf("err"), errors.Errorf("err")},
+			wantErr:        errors.Errorf("err"),
+			wantSleepTimes: []time.Duration{1 * time.Second, 1 * time.Second},
 			logContainsSeq: []string{
 				fmt.Sprintf("Attempt %v of %v: Running command '%v' with timeout %vs and retry interval %vs",
 					1, 3, "echo 1", 10, 1),
@@ -379,18 +379,18 @@ func TestRunCommandWithRetries(t *testing.T) {
 			},
 		},
 		{
-			name:              "Invalid maxAttempts (<1)",
-			maxAttempts:       0,
-			intervalInSeconds: 1,
-			runCommandErrs:    []error{},
-			wantErr:           errors.Errorf("Command failed to run: maxAttempts must be > 0 (got 0)"),
-			wantSleepTimes:    []time.Duration{},
-			logContainsSeq:    []string{},
+			name:           "Invalid maxAttempts (<1)",
+			maxAttempts:    0,
+			interval:       1 * time.Second,
+			runCommandErrs: []error{},
+			wantErr:        errors.Errorf("Command failed to run: maxAttempts must be > 0 (got 0)"),
+			wantSleepTimes: []time.Duration{},
+			logContainsSeq: []string{},
 		},
 	}
 
 	cmdArr := []string{"echo", "1"}
-	timeoutInSeconds := 10
+	timeout := 10 * time.Second
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -398,7 +398,7 @@ func TestRunCommandWithRetries(t *testing.T) {
 			buf = bytes.Buffer{}
 			gotSleepTimes := []time.Duration{}
 
-			RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
+			RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
 				// only error is used
 				cmdErr := tc.runCommandErrs[attempt]
 				attempt++
@@ -409,7 +409,7 @@ func TestRunCommandWithRetries(t *testing.T) {
 				gotSleepTimes = append(gotSleepTimes, d)
 			}
 
-			_, got, _, _ := RunCommandWithRetries(cmdArr, timeoutInSeconds, tc.maxAttempts, tc.intervalInSeconds)
+			_, got, _, _ := RunCommandWithRetries(cmdArr, timeout, tc.maxAttempts, tc.interval)
 
 			tests.CompareTestErrors(tc.wantErr, got, t)
 			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)

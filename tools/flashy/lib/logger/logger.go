@@ -28,6 +28,7 @@ import (
 	"log/syslog"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
@@ -93,5 +94,5 @@ func getSyslogWriter() (syslogWriter io.Writer, err error) {
 // However, busybox syslog returns 1 if already started, so we ignore the
 // error from RunCommand.
 var StartSyslog = func() {
-	utils.RunCommand([]string{"/etc/init.d/syslog", "start"}, 30)
+	utils.RunCommand([]string{"/etc/init.d/syslog", "start"}, 30*time.Second)
 }

@@ -156,9 +156,8 @@ func logScanner(s *bufio.Scanner, ch chan struct{}, pre string, str *string) {
 // runs command and pipes live output
 // returns exitcode, error, stdout (string), stderr (string) if non-zero/error returned or timed out
 // returns 0, nil, stdout (string), stderr (string) if successfully run
-var RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
+var RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
 	start := time.Now()
-	timeout := time.Duration(timeoutInSeconds) * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -219,7 +218,7 @@ var RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string
 // calls RunCommand repeatedly until succeeded or maxAttempts is reached
 // between attempts, an interval is applied
 // returns the results from the first succeeding run or last tried run
-var RunCommandWithRetries = func(cmdArr []string, timeoutInSeconds int, maxAttempts int, intervalInSeconds int) (int, error, string, string) {
+var RunCommandWithRetries = func(cmdArr []string, timeout time.Duration, maxAttempts int, interval time.Duration) (int, error, string, string) {
 	exitCode, err, stdoutStr, stderrStr := 1, errors.Errorf("Command failed to run"), "", ""
 
 	if maxAttempts < 1 {
@@ -229,18 +228,18 @@ var RunCommandWithRetries = func(cmdArr []string, timeoutInSeconds int, maxAttem
 
 	fullCmdStr := strings.Join(cmdArr[:], " ")
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		log.Printf("Attempt %v of %v: Running command '%v' with timeout %vs and retry interval %vs",
-			attempt, maxAttempts, fullCmdStr, timeoutInSeconds, intervalInSeconds)
+		log.Printf("Attempt %v of %v: Running command '%v' with timeout %v and retry interval %v",
+			attempt, maxAttempts, fullCmdStr, timeout, interval)
 
-		exitCode, err, stdoutStr, stderrStr = RunCommand(cmdArr, timeoutInSeconds)
+		exitCode, err, stdoutStr, stderrStr = RunCommand(cmdArr, timeout)
 		if err == nil {
 			log.Printf("Attempt %v of %v succeeded", attempt, maxAttempts)
 			break
 		} else {
 			log.Printf("Attempt %v of %v failed", attempt, maxAttempts)
 			if attempt < maxAttempts {
-				log.Printf("Sleeping for %vs before retrying", intervalInSeconds)
-				sleepFunc(time.Duration(intervalInSeconds) * time.Second)
+				log.Printf("Sleeping for %v before retrying", interval)
+				sleepFunc(interval)
 			} else {
 				log.Printf("Max attempts (%v) reached. Returning with error.", maxAttempts)
 			}

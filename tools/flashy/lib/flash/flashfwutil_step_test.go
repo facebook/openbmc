@@ -25,6 +25,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
@@ -170,7 +171,7 @@ func TestRunFwUtilCmd(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			utils.RunCommand = func(cmdArr []string, timeoutInSeconds int) (int, error, string, string) {
+			utils.RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
 				cmdStr := strings.Join(cmdArr, " ")
 				if cmdStr != tc.wantCmd {
 					t.Errorf("cmd: want '%v' got '%v'", tc.wantCmd, cmdStr)

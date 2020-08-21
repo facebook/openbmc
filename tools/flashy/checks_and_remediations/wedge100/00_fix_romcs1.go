@@ -20,6 +20,8 @@
 package remediations_wedge100
 
 import (
+	"time"
+
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
@@ -37,7 +39,8 @@ const gpioUtilPath = "/usr/local/bin/openbmc_gpio_util.py"
 // N.B.: This should be fixed by D16911862, but there is no guarantee that
 // all wedge100s are upgraded.
 func fixROMCS1(stepParams step.StepParams) step.StepExitError {
-	_, err, _, _ := utils.RunCommand([]string{gpioUtilPath, "config", "ROMCS1#"}, 30)
+	_, err, _, _ := utils.RunCommand([]string{gpioUtilPath, "config", "ROMCS1#"},
+		30*time.Second)
 	if err != nil {
 		errMsg := errors.Errorf("Failed to run ROMCS1# fix: %v", err)
 		return step.ExitSafeToReboot{errMsg}

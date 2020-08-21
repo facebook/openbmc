@@ -126,7 +126,7 @@ var RestartHealthd = func(wait bool, supervisor string) error {
 		return errors.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist")
 	}
 
-	_, err, _, _ := RunCommand([]string{supervisor, "restart", "healthd"}, 60)
+	_, err, _, _ := RunCommand([]string{supervisor, "restart", "healthd"}, 60*time.Second)
 	if err != nil {
 		return err
 	}

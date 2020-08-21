@@ -22,6 +22,7 @@ package common
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/logger"
@@ -60,7 +61,7 @@ func fuserKMountRo(stepParams step.StepParams) step.StepExitError {
 
 	for _, writableMountedMTD := range writableMountedMTDs {
 		fuserCmd := []string{"fuser", "-km", writableMountedMTD.Mountpoint}
-		_, err, _, _ := utils.RunCommand(fuserCmd, 30)
+		_, err, _, _ := utils.RunCommand(fuserCmd, 30*time.Second)
 		// we ignore the error in fuser, as this might be thrown because nothing holds
 		// a file open on the file system (because of delayed log file open or because
 		// rsyslogd is not running for some reason).
@@ -69,7 +70,7 @@ func fuserKMountRo(stepParams step.StepParams) step.StepExitError {
 
 		remountCmd := []string{"mount", "-o", "remount,ro",
 			writableMountedMTD.Device, writableMountedMTD.Mountpoint}
-		_, err, _, _ = utils.RunCommandWithRetries(remountCmd, 30, 3, 30)
+		_, err, _, _ = utils.RunCommandWithRetries(remountCmd, 30*time.Second, 3, 30*time.Second)
 		if err != nil {
 			errMsg := errors.Errorf("Remount command %v failed: %v", remountCmd, err)
 			return step.ExitSafeToReboot{errMsg}

@@ -21,6 +21,7 @@ package common
 
 import (
 	"log"
+	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
@@ -47,7 +48,7 @@ func restartServices(stepParams step.StepParams) step.StepExitError {
 	}
 
 	log.Printf("Restarting restapi...")
-	_, err, _, _ = utils.RunCommand([]string{supervisor, "restart", "restapi"}, 60)
+	_, err, _, _ = utils.RunCommand([]string{supervisor, "restart", "restapi"}, 60*time.Second)
 	if err != nil {
 		log.Printf("Could not restart restapi: %v. "+
 			"Ignoring as this is best effort and not critical.",

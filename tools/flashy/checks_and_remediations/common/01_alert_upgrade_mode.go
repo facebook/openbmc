@@ -77,7 +77,7 @@ func alertUpgradeMode(stepParams step.StepParams) step.StepExitError {
 var wallAlert = func() error {
 	escapedMsg := strings.ReplaceAll(motdContents, "\n", "\\n")
 	wallCmd := []string{"bash", "-c", fmt.Sprintf("echo -en \"%v\" | wall", escapedMsg)}
-	_, err, _, _ := utils.RunCommand(wallCmd, 30)
+	_, err, _, _ := utils.RunCommand(wallCmd, 30*time.Second)
 	if err != nil {
 		return errors.Errorf("Warning: `wall` alert failed: %v", err)
 	}

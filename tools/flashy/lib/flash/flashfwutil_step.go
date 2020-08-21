@@ -22,6 +22,7 @@ package flash
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
@@ -62,7 +63,7 @@ var runFwUtilCmd = func(imageFilePath string) error {
 		"bash", "-c", fmt.Sprintf("%v > /dev/null", fwutilCmd),
 	}
 
-	exitCode, err, stdout, stderr := utils.RunCommand(flashCmd, 1800)
+	exitCode, err, stdout, stderr := utils.RunCommand(flashCmd, 1800*time.Second)
 	if err != nil {
 		errMsg := fmt.Sprintf(
 			"Flashing failed with exit code %v, error: %v, stdout: '%v', stderr: '%v'",

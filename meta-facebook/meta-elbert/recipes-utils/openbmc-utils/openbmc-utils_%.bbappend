@@ -21,6 +21,7 @@ SRC_URI += "file://board-utils.sh \
             file://bios_util.sh \
             file://fpga_util.sh \
             file://fpga_ver.sh \
+            file://dump_pim_serials.sh \
             file://eth0_mac_fixup.sh \
             file://hclk_fixup.sh \
             file://oob-eeprom-util.sh \
@@ -43,6 +44,7 @@ OPENBMC_UTILS_FILES += " \
     bios_util.sh \
     fpga_util.sh \
     fpga_ver.sh \
+    dump_pim_serials.sh \
     oob-eeprom-util.sh \
     oob-mdio-util.sh \
     wedge_power.sh \

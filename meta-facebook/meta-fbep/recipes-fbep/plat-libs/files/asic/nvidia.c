@@ -24,8 +24,9 @@
 #include <openbmc/obmc-i2c.h>
 #include "asic.h"
 
-#define SMBPBI_MAX_RETRY 3
+#define SMBPBI_MAX_RETRY 5
 
+#define SMBPBI_STATUS_ACCEPTED  0x1C
 #define SMBPBI_STATUS_INACTIVE  0x1D
 #define SMBPBI_STATUS_READY     0x1E
 #define SMBPBI_STATUS_SUCCESS   0x1F
@@ -50,6 +51,12 @@
 
 #define SMBPBI_GET_POWER        0x04
 #define SMBPBI_TOTAL_PWCS       0x00
+
+#define SMBPBI_READ_SCRMEM      0x0D
+#define SMBPBI_WRITE_SCRMEM     0x0E
+
+#define SMBPBI_ASYNC_REQUEST    0x10
+#define ASYNC_STATUS_SUCCESS    0x00
 
 static int nv_open_slot(uint8_t slot)
 {
@@ -97,6 +104,11 @@ static int nv_msgbox_read_data(int fd, uint8_t *buf)
   return 0;
 }
 
+static int nv_msgbox_write_data(int fd, uint8_t *buf)
+{
+  return i2c_smbus_write_block_data(fd, NV_DATA_REG, 4, buf);
+}
+
 static uint8_t nv_get_status(int fd)
 {
   uint8_t buf[4] = {0};
@@ -107,22 +119,31 @@ static uint8_t nv_get_status(int fd)
   return buf[3] & 0x1f; // reg[28:24]
 }
 
-static int nv_msgbox_cmd(int fd, uint8_t opcode, uint8_t arg1, uint8_t arg2, uint8_t *data)
+static int nv_msgbox_cmd(int fd, uint8_t opcode, uint8_t arg1, uint8_t arg2,
+                         uint8_t* data_in, uint8_t* data_out)
 {
   int i;
+  uint8_t status;
+
+  if (data_in && nv_msgbox_write_data(fd, data_in) < 0)
+    return -1;
 
   if (nv_msgbox_write_reg(fd, opcode, arg1, arg2) < 0)
     return -1;
 
   for (i = 0; i < SMBPBI_MAX_RETRY; i++) {
-    if (nv_get_status(fd) == SMBPBI_STATUS_SUCCESS)
+    status = nv_get_status(fd);
+    if (status == SMBPBI_STATUS_SUCCESS)
       break;
+    if (opcode == SMBPBI_ASYNC_REQUEST && status == SMBPBI_STATUS_ACCEPTED)
+      break;
+
     usleep(100);
   }
   if (i == SMBPBI_MAX_RETRY)
     return -1;
 
-  if (nv_msgbox_read_data(fd, data) < 0)
+  if (nv_msgbox_read_data(fd, data_out) < 0)
     return -1;
 
   return 0;
@@ -133,20 +154,19 @@ static uint32_t nv_get_cap(int fd, uint8_t page)
   uint8_t buf[4] = {0};
   uint32_t cap;
 
-  if (nv_msgbox_cmd(fd, SMBPBI_GET_CAPABILITY, page, 0x0, buf) < 0)
+  if (nv_msgbox_cmd(fd, SMBPBI_GET_CAPABILITY, page, 0x0, NULL, buf) < 0)
     return 0x0;
 
   memcpy(&cap, buf, 4);
   return cap;
 }
 
-static float nv_read_temp(uint8_t slot, uint8_t sensor)
+static float nv_read_temp(uint8_t slot, uint8_t sensor, float *temp)
 {
   int fd;
   uint32_t cap_mask;
   uint8_t buf[4] = {0};
   char value[16] = {0};
-  float temp;
 
   switch (sensor) {
     case SMBPBI_GPU0_TEMP:
@@ -159,66 +179,119 @@ static float nv_read_temp(uint8_t slot, uint8_t sensor)
       cap_mask = SMBPBI_CAP_MEM_TEMP;
       break;
     default:
-      return -1;
+      return ASIC_ERROR;
   };
 
   fd = nv_open_slot(slot);
   if (fd < 0)
-    return -1;
+    return ASIC_ERROR;
 
   if (!(nv_get_cap(fd, 0) & cap_mask))
     goto err;
 
-  if (nv_msgbox_cmd(fd, SMBPBI_GET_TEMPERATURE, sensor, 0x0, buf) < 0)
+  if (nv_msgbox_cmd(fd, SMBPBI_GET_TEMPERATURE, sensor, 0x0, NULL, buf) < 0)
     goto err;
 
   close(fd);
   snprintf(value, sizeof(value), "%d.%d", buf[1], buf[0]);
-  temp = atof(value);
-  return buf[3] & 0x80? -temp: temp;
+  *temp = atof(value);
+  if (buf[3] & 0x80)
+    *temp = -(*temp);
+  return ASIC_SUCCESS;
 
 err:
   close(fd);
-  return -1;
+  return ASIC_ERROR;
 }
 
-float nv_read_gpu_temp(uint8_t slot)
+int nv_read_gpu_temp(uint8_t slot, float *value)
 {
-  return nv_read_temp(slot, SMBPBI_GPU0_TEMP);
+  return nv_read_temp(slot, SMBPBI_GPU0_TEMP, value);
 }
 
-float nv_read_board_temp(uint8_t slot)
+int nv_read_board_temp(uint8_t slot, float *value)
 {
-  return nv_read_temp(slot, SMBPBI_BOARD_TEMP);
+  return nv_read_temp(slot, SMBPBI_BOARD_TEMP, value);
 }
 
-float nv_read_mem_temp(uint8_t slot)
+int nv_read_mem_temp(uint8_t slot, float *value)
 {
-  return nv_read_temp(slot, SMBPBI_MEM_TEMP);
+  return nv_read_temp(slot, SMBPBI_MEM_TEMP, value);
 }
 
-float nv_read_pwcs(uint8_t slot)
+int nv_read_pwcs(uint8_t slot, float *pwcs)
 {
   int fd = nv_open_slot(slot);
   uint8_t buf[4] = {0};
-  uint32_t pwcs;
+  uint32_t value;
 
   if (fd < 0)
-    return -1;
+    return ASIC_ERROR;
 
   if (!(nv_get_cap(fd, 0) & SMBPBI_CAP_PWCS))
     goto err;
 
-  if (nv_msgbox_cmd(fd, SMBPBI_GET_POWER, SMBPBI_TOTAL_PWCS, 0x0, buf) < 0)
+  if (nv_msgbox_cmd(fd, SMBPBI_GET_POWER, SMBPBI_TOTAL_PWCS, 0x0, NULL, buf) < 0)
     goto err;
 
   close(fd);
-  memcpy(&pwcs, buf, 4);
+  memcpy(&value, buf, 4);
 
-  return (float)pwcs / 1000; // mW -> W
+  *pwcs = (float)value / 1000; // mW -> W
+  return ASIC_SUCCESS;
 
 err:
   close(fd);
-  return -1;
+  return ASIC_ERROR;
 }
 
+int nv_set_power_limit(uint8_t slot, unsigned int watt)
+{
+  int fd, i;
+  unsigned int mwatt = watt * 1000;
+  uint8_t tbuf[4], rbuf[4];
+  uint8_t async_id;
+
+  fd = nv_open_slot(slot);
+  if (fd < 0)
+    return ASIC_ERROR;
+
+  tbuf[0] = 0x01; // Set presistence flag
+  tbuf[1] = 0x00;
+  tbuf[2] = 0x00;
+  tbuf[3] = 0x00;
+  if (nv_msgbox_cmd(fd, SMBPBI_WRITE_SCRMEM, 0x0, 0x0, tbuf, rbuf) < 0)
+    goto err;
+  if (nv_msgbox_cmd(fd, SMBPBI_READ_SCRMEM, 0x0, 0x0, NULL, rbuf) < 0)
+    goto err;
+  if (rbuf[0] != 0x01 || rbuf[1] != 0x00 || rbuf[2] != 0x00 || rbuf[3] != 0x00)
+    goto err;
+
+  tbuf[0] = (uint8_t)(mwatt & 0xff);
+  tbuf[1] = (uint8_t)((mwatt >> 8) & 0xff);
+  tbuf[2] = (uint8_t)((mwatt >> 16) & 0xff);
+  tbuf[3] = (uint8_t)((mwatt >> 24) & 0xff);
+  if (nv_msgbox_cmd(fd, SMBPBI_WRITE_SCRMEM, 0x1, 0x0, tbuf, rbuf) < 0)
+    goto err;
+  if (nv_msgbox_cmd(fd, SMBPBI_ASYNC_REQUEST, 0x1, 0x0, NULL, rbuf) < 0)
+    goto err;
+
+  usleep(1000);
+  async_id = rbuf[0];
+  // Retry until ASYNC_STATUS_SUCCESS
+  for (i = 0; i < SMBPBI_MAX_RETRY; i++) {
+    if (nv_msgbox_cmd(fd, SMBPBI_ASYNC_REQUEST, 0xff, async_id, NULL, rbuf) == 0 &&
+	rbuf[0] == ASYNC_STATUS_SUCCESS) {
+      break;
+    }
+  }
+  if (i == SMBPBI_MAX_RETRY)
+    goto err;
+
+  close(fd);
+  syslog(LOG_CRIT, "Set power limit of GPU on slot %d to %d Watts", (int)slot, watt);
+  return ASIC_SUCCESS;
+err:
+  close(fd);
+  return ASIC_ERROR;
+}

@@ -27,6 +27,29 @@
 #include "amd.h"
 #include "nvidia.h"
 
+struct asic_ops {
+  int (*read_gpu_temp)(uint8_t, float*);
+  int (*read_board_temp)(uint8_t, float*);
+  int (*read_mem_temp)(uint8_t, float*);
+  int (*read_pwcs)(uint8_t, float*);
+  int (*set_power_limit)(uint8_t, unsigned int);
+} ops[MFR_MAX_NUM] = {
+  [GPU_AMD] = {
+    .read_gpu_temp = amd_read_die_temp,
+    .read_board_temp = amd_read_edge_temp,
+    .read_mem_temp = amd_read_hbm_temp,
+    .read_pwcs = amd_read_pwcs,
+    .set_power_limit = NULL
+  },
+  [GPU_NV] = {
+    .read_gpu_temp = nv_read_gpu_temp,
+    .read_board_temp = nv_read_board_temp,
+    .read_mem_temp = nv_read_mem_temp,
+    .read_pwcs = nv_read_pwcs,
+    .set_power_limit = nv_set_power_limit
+  }
+};
+
 static uint8_t get_gpu_id()
 {
   static uint8_t vendor_id = GPU_UNKNOWN;
@@ -78,58 +101,58 @@ int asic_read_gpu_temp(uint8_t slot, float *value)
 {
   uint8_t vendor = get_gpu_id();
 
-  if (vendor == GPU_AMD) {
-    *value = amd_read_die_temp(slot);
-  } else if (vendor == GPU_NV){
-    *value = nv_read_gpu_temp(slot);
-  } else {
-    return -1;
-  }
+  if (vendor == GPU_UNKNOWN)
+    return ASIC_NOTSUP;
+  if (!ops[vendor].read_gpu_temp)
+    return ASIC_NOTSUP;
 
-  return *value < 0? -1: 0;
+  return ops[vendor].read_gpu_temp(slot, value);
 }
 
 int asic_read_board_temp(uint8_t slot, float *value)
 {
   uint8_t vendor = get_gpu_id();
 
-  if (vendor == GPU_AMD) {
-    *value = amd_read_edge_temp(slot);
-  } else if (vendor == GPU_NV){
-    *value = nv_read_board_temp(slot);
-  } else {
-    return -1;
-  }
+  if (vendor == GPU_UNKNOWN)
+    return ASIC_NOTSUP;
+  if (!ops[vendor].read_board_temp)
+    return ASIC_NOTSUP;
 
-  return *value < 0? -1: 0;
+  return ops[vendor].read_board_temp(slot, value);
 }
 
 int asic_read_mem_temp(uint8_t slot, float *value)
 {
   uint8_t vendor = get_gpu_id();
 
-  if (vendor == GPU_AMD) {
-    *value = amd_read_hbm_temp(slot);
-  } else if (vendor == GPU_NV){
-    *value = nv_read_mem_temp(slot);
-  } else {
-    return -1;
-  }
+  if (vendor == GPU_UNKNOWN)
+    return ASIC_NOTSUP;
+  if (!ops[vendor].read_mem_temp)
+    return ASIC_NOTSUP;
 
-  return *value < 0? -1: 0;
+  return ops[vendor].read_mem_temp(slot, value);
 }
 
 int asic_read_pwcs(uint8_t slot, float *value)
 {
   uint8_t vendor = get_gpu_id();
 
-  if (vendor == GPU_AMD) {
-    *value = amd_read_pwcs(slot);
-  } else if (vendor == GPU_NV){
-    *value = nv_read_pwcs(slot);
-  } else {
-    return -1;
-  }
+  if (vendor == GPU_UNKNOWN)
+    return ASIC_NOTSUP;
+  if (!ops[vendor].read_pwcs)
+    return ASIC_NOTSUP;
 
-  return *value < 0? -1: 0;
+  return ops[vendor].read_pwcs(slot, value);
+}
+
+int asic_set_power_limit(uint8_t slot, unsigned int value)
+{
+  uint8_t vendor = get_gpu_id();
+
+  if (vendor == GPU_UNKNOWN)
+    return ASIC_NOTSUP;
+  if (!ops[vendor].set_power_limit)
+    return ASIC_NOTSUP;
+
+  return ops[vendor].set_power_limit(slot, value);
 }

@@ -40,4 +40,5 @@ IMAGE_INSTALL += " \
   front-paneld \
   fpc-util \
   threshold-util \
+  asic-util \
   "

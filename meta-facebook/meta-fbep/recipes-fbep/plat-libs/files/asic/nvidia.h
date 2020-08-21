@@ -25,10 +25,11 @@
 extern "C" {
 #endif
 
-float nv_read_gpu_temp(uint8_t);
-float nv_read_board_temp(uint8_t);
-float nv_read_mem_temp(uint8_t);
-float nv_read_pwcs(uint8_t);
+int nv_read_gpu_temp(uint8_t, float*);
+int nv_read_board_temp(uint8_t, float*);
+int nv_read_mem_temp(uint8_t, float*);
+int nv_read_pwcs(uint8_t, float*);
+int nv_set_power_limit(uint8_t, unsigned int);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -25,10 +25,10 @@
 extern "C" {
 #endif
 
-float amd_read_die_temp(uint8_t);
-float amd_read_edge_temp(uint8_t);
-float amd_read_hbm_temp(uint8_t);
-float amd_read_pwcs(uint8_t);
+int amd_read_die_temp(uint8_t, float*);
+int amd_read_edge_temp(uint8_t, float*);
+int amd_read_hbm_temp(uint8_t, float*);
+int amd_read_pwcs(uint8_t, float*);
 
 #ifdef __cplusplus
 } // extern "C"

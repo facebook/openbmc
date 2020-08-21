@@ -698,7 +698,7 @@ bool pal_is_server_off()
 
 bool is_device_ready()
 {
-  if (access(DRIVER_READY, F_OK) != -1)
+  if (access(DRIVER_READY, F_OK) == 0)
     return !pal_is_server_off();
   return false;
 }

@@ -36,11 +36,18 @@ enum {
 
 #define MFR_MAX_NUM GPU_UNKNOWN
 
+enum {
+  ASIC_SUCCESS = 0,
+  ASIC_ERROR = -1,
+  ASIC_NOTSUP = -2
+};
+
 int asic_read_gpu_temp(uint8_t, float*);
 int asic_read_board_temp(uint8_t, float*);
 int asic_read_mem_temp(uint8_t, float*);
 int asic_read_pwcs(uint8_t, float*);
 bool is_asic_prsnt(uint8_t);
+int asic_set_power_limit(uint8_t, unsigned int);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -64,24 +64,27 @@ func (f *mockFlashDeviceFile) Name() string {
 }
 
 func TestFlashCp(t *testing.T) {
-	// mock and defer restore openFlashDeviceFile, getMtdInfoUser, MmapFile, Munmap
-	// and runFlashProcess
+	// mock and defer restore openFlashDeviceFile, getMtdInfoUser, MmapFile, Munmap,
+	// runFlashProcess & closeFlashDeviceFile
 	openFileOrig := openFlashDeviceFile
 	getMtdInfoUserOrig := getMtdInfoUser
 	mmapFileOrig := fileutils.MmapFile
 	munmapOrig := fileutils.Munmap
 	runFlashProcessOrig := runFlashProcess
+	closeFileOrig := closeFlashDeviceFile
 	defer func() {
 		openFlashDeviceFile = openFileOrig
 		getMtdInfoUser = getMtdInfoUserOrig
 		fileutils.MmapFile = mmapFileOrig
 		fileutils.Munmap = munmapOrig
 		runFlashProcess = runFlashProcessOrig
+		closeFlashDeviceFile = closeFileOrig
 	}()
 
 	cases := []struct {
 		name               string
 		openFileErr        error
+		closeFileErr       error
 		getMtdInfoError    error
 		mmapFileErr        error
 		runFlashProcessErr error
@@ -90,6 +93,7 @@ func TestFlashCp(t *testing.T) {
 		{
 			name:               "success",
 			openFileErr:        nil,
+			closeFileErr:       nil,
 			getMtdInfoError:    nil,
 			mmapFileErr:        nil,
 			runFlashProcessErr: nil,
@@ -98,6 +102,7 @@ func TestFlashCp(t *testing.T) {
 		{
 			name:               "open file failed",
 			openFileErr:        errors.Errorf("open file failed"),
+			closeFileErr:       nil,
 			getMtdInfoError:    nil,
 			mmapFileErr:        nil,
 			runFlashProcessErr: nil,
@@ -105,8 +110,19 @@ func TestFlashCp(t *testing.T) {
 				"'/dev/mtd42': open file failed"),
 		},
 		{
+			name:               "close file failed",
+			openFileErr:        nil,
+			closeFileErr:       errors.Errorf("close file failed"),
+			getMtdInfoError:    nil,
+			mmapFileErr:        nil,
+			runFlashProcessErr: nil,
+			want: errors.Errorf("Unable to close flash device file " +
+				"'/dev/mtd42': close file failed"),
+		},
+		{
 			name:               "get mtd info failed",
 			openFileErr:        nil,
+			closeFileErr:       nil,
 			getMtdInfoError:    errors.Errorf("get mtd info failed"),
 			mmapFileErr:        nil,
 			runFlashProcessErr: nil,
@@ -116,6 +132,7 @@ func TestFlashCp(t *testing.T) {
 		{
 			name:               "mmap failed",
 			openFileErr:        nil,
+			closeFileErr:       nil,
 			getMtdInfoError:    nil,
 			mmapFileErr:        errors.Errorf("mmap failed"),
 			runFlashProcessErr: nil,
@@ -125,6 +142,7 @@ func TestFlashCp(t *testing.T) {
 		{
 			name:               "flash process failed",
 			openFileErr:        nil,
+			closeFileErr:       nil,
 			getMtdInfoError:    nil,
 			mmapFileErr:        nil,
 			runFlashProcessErr: errors.Errorf("flash process failed"),
@@ -152,6 +170,10 @@ func TestFlashCp(t *testing.T) {
 						exampleDeviceFilePath, name)
 				}
 				return exampleMockFile, tc.openFileErr
+			}
+			closeFlashDeviceFile = func(f flashDeviceFile) error {
+				f.Close()
+				return tc.closeFileErr
 			}
 			getMtdInfoUser = func(fd uintptr) (mtd_info_user, error) {
 				if fd != 42 {
@@ -187,12 +209,14 @@ func TestFlashCp(t *testing.T) {
 
 func TestRunFlashProcess(t *testing.T) {
 	openFlashDeviceFileOrig := openFlashDeviceFile
+	closeFlashDeviceFileOrig := closeFlashDeviceFile
 	healthCheckOrig := healthCheck
 	eraseFlashDeviceOrig := eraseFlashDevice
 	flashImageOrig := flashImage
 	verifyFlashOrig := verifyFlash
 	defer func() {
 		openFlashDeviceFile = openFlashDeviceFileOrig
+		closeFlashDeviceFile = closeFlashDeviceFileOrig
 		healthCheck = healthCheckOrig
 		eraseFlashDevice = eraseFlashDeviceOrig
 		flashImage = flashImageOrig
@@ -203,6 +227,7 @@ func TestRunFlashProcess(t *testing.T) {
 		name string
 		// errors for the mocked functions
 		oErr error
+		cErr error
 		hErr error
 		eErr error
 		fErr error
@@ -238,6 +263,12 @@ func TestRunFlashProcess(t *testing.T) {
 			vErr: errors.Errorf("verifyFlash error"),
 			want: errors.Errorf("verifyFlash error"),
 		},
+		{
+			name: "closeFlashDevice error",
+			cErr: errors.Errorf("closeFlashDevice error"),
+			want: errors.Errorf("Unable to close flash device file '/dev/mtd42': " +
+				"closeFlashDevice error"),
+		},
 	}
 
 	exampleDeviceFilePath := "/dev/mtd42"
@@ -260,6 +291,10 @@ func TestRunFlashProcess(t *testing.T) {
 						exampleDeviceFilePath, deviceFilePath)
 				}
 				return exampleMockFile, tc.oErr
+			}
+			closeFlashDeviceFile = func(f flashDeviceFile) error {
+				f.Close()
+				return tc.cErr
 			}
 			healthCheck = func(deviceFile flashDeviceFile, m mtd_info_user, imFile imageFile) error {
 				return tc.hErr

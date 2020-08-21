@@ -107,7 +107,11 @@ var FlashCp = func(imageFilePath, deviceFilePath string) error {
 			deviceFilePath, err)
 	}
 	// close device file here explicitly
-	deviceFile.Close()
+	err = closeFlashDeviceFile(deviceFile)
+	if err != nil {
+		return errors.Errorf("Unable to close flash device file '%v': %v",
+			deviceFilePath, err)
+	}
 
 	// read image data
 	imageData, err := fileutils.MmapFile(
@@ -127,10 +131,14 @@ var FlashCp = func(imageFilePath, deviceFilePath string) error {
 	return runFlashProcess(deviceFilePath, m, imFile)
 }
 
-// openFlashDeviceFile is a wrapper around os.OpenFile intended to return
-// an os.File which implements flashDeviceFile
+// openFlashDeviceFile is a wrapper around OpenFileWithLock intended to return
+// an os.File which implements flashDeviceFile.
 var openFlashDeviceFile = func(deviceFilePath string) (flashDeviceFile, error) {
-	return os.OpenFile(deviceFilePath, os.O_SYNC|os.O_RDWR, 0755)
+	return fileutils.OpenFileWithLock(deviceFilePath, os.O_SYNC|os.O_RDWR, syscall.LOCK_EX)
+}
+
+var closeFlashDeviceFile = func(f flashDeviceFile) error {
+	return fileutils.CloseFileWithUnlock(f.(*os.File))
 }
 
 // runFlashProcess performs a simple health check then performs flashing in 3 steps:
@@ -158,7 +166,11 @@ var runFlashProcess = func(
 		return err
 	}
 	// make sure non-block device is closed before using block device
-	deviceFile.Close()
+	err = closeFlashDeviceFile(deviceFile)
+	if err != nil {
+		return errors.Errorf("Unable to close flash device file '%v': %v",
+			deviceFilePath, err)
+	}
 
 	err = verifyFlash(deviceFilePath, m, imFile)
 	if err != nil {

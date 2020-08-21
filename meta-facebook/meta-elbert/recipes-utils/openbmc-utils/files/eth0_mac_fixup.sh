@@ -29,8 +29,8 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-# get the MAC from Elbert SUP EEPROM
-mac_base=$(weutil sup | grep '^Extended MAC Base' | cut -d' ' -f4)
+# get the MAC from Elbert SCM EEPROM
+mac_base=$(weutil scm | grep '^Extended MAC Base' | cut -d' ' -f4)
 
 # get the MAC from u-boot environment
 ethaddr=$(fw_printenv ethaddr | cut -d'=' -f2)

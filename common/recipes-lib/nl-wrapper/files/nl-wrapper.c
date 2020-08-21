@@ -83,9 +83,10 @@ static int aen_cb(struct nl_msg *msg, void *arg)
 	}
 
 	data_len = nla_len(tb[NCSI_ATTR_DATA]);
-	if (data_len >= NCSI_MAX_RESPONSE) {
+	if (data_len > sizeof(dst_buf->msg_payload) - sizeof(struct eth_hdr)) {
 		syslog(LOG_ERR, "data_len (%d) exceeds max buffer size (%d)\n",
-            data_len, NCSI_MAX_RESPONSE);
+		       data_len,
+		       sizeof(dst_buf->msg_payload) - sizeof(struct eth_hdr));
 	} else {
 		ncsi_rsp = nla_data(tb[NCSI_ATTR_DATA]);
 		dst_buf->hdr.payload_length = data_len;
@@ -211,7 +212,7 @@ static int send_cb(struct nl_msg *msg, void *arg)
 {
 	struct nlmsghdr *hdr = nlmsg_hdr(msg);
 	struct nlattr *tb[NCSI_ATTR_MAX + 1] = {0};
-	int rc, data_len;
+	int rc, data_len, len;
 	char *ncsi_rsp;
 	struct ncsi_msg *ncsi_msg = (struct ncsi_msg *)arg;
 
@@ -241,21 +242,27 @@ static int send_cb(struct nl_msg *msg, void *arg)
 	}
 
 	data_len = nla_len(tb[NCSI_ATTR_DATA]);
-
-	if (data_len >= NCSI_MAX_RESPONSE) {
-		syslog(LOG_ERR, "data_len (%d) exceeds max buffer size (%d)\n",
-            data_len, NCSI_MAX_RESPONSE);
-	} else {
-		ncsi_rsp = nla_data(tb[NCSI_ATTR_DATA]);
-		// prase the first 16 bytes of NCSI response (the header area) to get
-		//  payload length
-		CTRL_MSG_HDR_t *pNcsiHdr = (CTRL_MSG_HDR_t *)(void*)(ncsi_rsp);
-		ncsi_msg->rsp->hdr.payload_length = ntohs(pNcsiHdr->Payload_Length);
-
-		// copy NC-SI response, skip NCSI header bytes
-		memcpy(ncsi_msg->rsp->msg_payload, (void*)(ncsi_rsp + sizeof(CTRL_MSG_HDR_t)),
-			data_len - sizeof(CTRL_MSG_HDR_t));
+	if (data_len < sizeof(CTRL_MSG_HDR_t)) {
+		syslog(LOG_ERR, "short ncsi data, %u\n", data_len);
+		errno = ERANGE;
+		return -1;
 	}
+
+	/* len includes payload + checksum + FCS */
+	len = data_len - sizeof(CTRL_MSG_HDR_t);
+	if (len > sizeof(ncsi_msg->rsp->msg_payload)) {
+		len = sizeof(ncsi_msg->rsp->msg_payload);
+	}
+
+	ncsi_rsp = nla_data(tb[NCSI_ATTR_DATA]);
+	// parse the first 16 bytes of NCSI response (the header area) to get
+	//  payload length
+	CTRL_MSG_HDR_t *pNcsiHdr = (CTRL_MSG_HDR_t *)(void*)(ncsi_rsp);
+	ncsi_msg->rsp->hdr.payload_length = ntohs(pNcsiHdr->Payload_Length);
+
+	// copy NC-SI response, skip NCSI header bytes
+	memcpy(ncsi_msg->rsp->msg_payload, (void*)(ncsi_rsp + sizeof(CTRL_MSG_HDR_t)),
+	       len);
 
 #ifdef DEBUG_LIBNL
 	int i = 0;

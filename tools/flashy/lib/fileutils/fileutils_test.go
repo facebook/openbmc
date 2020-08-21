@@ -24,6 +24,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
@@ -229,6 +230,59 @@ func TestGlobAll(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			_, got := GlobAll(tc.patterns)
 
+			tests.CompareTestErrors(tc.want, got, t)
+		})
+	}
+}
+
+func TestWriteFileWIthTimeout(t *testing.T) {
+	writeFileOrig := WriteFile
+	defer func() {
+		WriteFile = writeFileOrig
+	}()
+
+	cases := []struct {
+		name      string
+		writeErr  error
+		writeTime time.Duration
+		timeout   time.Duration
+		want      error
+	}{
+		{
+			name:      "within timeout",
+			writeErr:  nil,
+			writeTime: 1 * time.Millisecond,
+			timeout:   1 * time.Second,
+			want:      nil,
+		},
+		{
+			name:      "within timeout but write errored",
+			writeErr:  errors.Errorf("write error"),
+			writeTime: 1 * time.Millisecond,
+			timeout:   1 * time.Second,
+			want:      errors.Errorf("write error"),
+		},
+		{
+			name:      "timeout exceeded",
+			writeErr:  nil,
+			writeTime: 1 * time.Second,
+			timeout:   1 * time.Millisecond,
+			want:      errors.Errorf("Timed out after '1ms'"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			WriteFile = func(
+				filename string,
+				data []byte,
+				perm os.FileMode,
+			) error {
+				time.Sleep(tc.writeTime)
+				return tc.writeErr
+			}
+
+			got := WriteFileWithTimeout("x", []byte("abcd"), 0, tc.timeout)
 			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}

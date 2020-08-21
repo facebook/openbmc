@@ -112,7 +112,7 @@ func HealthdRemoveMemUtilRebootEntryIfExists(h *gabs.Container) error {
 func HealthdWriteConfigToFile(h *gabs.Container) error {
 	buf := []byte(h.StringIndent("", "  "))
 
-	err := fileutils.WriteFile(healthdConfigFilePath, buf, 0644)
+	err := fileutils.WriteFileWithTimeout(healthdConfigFilePath, buf, 0644, 10*time.Second)
 	if err != nil {
 		return errors.Errorf("Unable to write healthd config to file: %v",
 			err)

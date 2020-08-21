@@ -22,6 +22,7 @@ package common
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
@@ -29,10 +30,10 @@ import (
 )
 
 func TestDropCaches(t *testing.T) {
-	// mock fileutils.WriteFile to return nil if the write is correct
-	writeFileOrig := fileutils.WriteFile
+	// mock fileutils.WriteFileWithTimeout to return nil if the write is correct
+	writeFileOrig := fileutils.WriteFileWithTimeout
 	defer func() {
-		fileutils.WriteFile = writeFileOrig
+		fileutils.WriteFileWithTimeout = writeFileOrig
 	}()
 
 	cases := []struct {
@@ -61,7 +62,7 @@ func TestDropCaches(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			fileutils.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
+			fileutils.WriteFileWithTimeout = func(filename string, data []byte, perm os.FileMode, timeout time.Duration) error {
 				if filename != wantFilename {
 					return errors.Errorf("filename: want %v got %v", wantFilename, filename)
 				}

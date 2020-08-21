@@ -22,6 +22,7 @@ package common
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
@@ -84,10 +85,10 @@ func TestWallAlert(t *testing.T) {
 }
 
 func TestUpdateMOTD(t *testing.T) {
-	// mock and defer restore WriteFile
-	writeFileOrig := fileutils.WriteFile
+	// mock and defer restore WriteFileWithTimeout
+	writeFileOrig := fileutils.WriteFileWithTimeout
 	defer func() {
-		fileutils.WriteFile = writeFileOrig
+		fileutils.WriteFileWithTimeout = writeFileOrig
 	}()
 	cases := []struct {
 		name         string
@@ -108,7 +109,7 @@ func TestUpdateMOTD(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			fileutils.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
+			fileutils.WriteFileWithTimeout = func(filename string, data []byte, perm os.FileMode, timeout time.Duration) error {
 				if "/etc/motd" != filename {
 					t.Errorf("filename: want '%v' got '%v'", "/etc/motd", filename)
 				}

@@ -20,6 +20,8 @@
 package common
 
 import (
+	"time"
+
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/pkg/errors"
@@ -34,7 +36,9 @@ const dropCachesFilePath = "/proc/sys/vm/drop_caches"
 // frees pagecache, dentries and inodes
 // equivalent to `echo 3 > /proc/sys/vm/drop_caches`
 func dropCaches(stepParams step.StepParams) step.StepExitError {
-	err := fileutils.WriteFile(dropCachesFilePath, []byte("3"), 0644)
+	err := fileutils.WriteFileWithTimeout(
+		dropCachesFilePath, []byte("3"), 0644, 5*time.Second,
+	)
 	if err != nil {
 		errMsg := errors.Errorf("Failed to write to drop_caches file '%v': %v", dropCachesFilePath, err)
 		return step.ExitSafeToReboot{errMsg}

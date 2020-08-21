@@ -93,11 +93,11 @@ func TestGetHealthdConfig(t *testing.T) {
 }
 
 func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
-	// save and defer restore WriteFile and RestartHealthd
-	writeFileOrig := fileutils.WriteFile
+	// save and defer restore WriteFileWithTimeout and RestartHealthd
+	writeFileOrig := fileutils.WriteFileWithTimeout
 	restartHealthdOrig := RestartHealthd
 	defer func() {
-		fileutils.WriteFile = writeFileOrig
+		fileutils.WriteFileWithTimeout = writeFileOrig
 		RestartHealthd = restartHealthdOrig
 	}()
 
@@ -209,7 +209,7 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			writeConfigCalled := false
-			fileutils.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
+			fileutils.WriteFileWithTimeout = func(filename string, data []byte, perm os.FileMode, timeout time.Duration) error {
 				writeConfigCalled = true
 				return tc.writeConfigErr
 			}
@@ -241,10 +241,10 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 }
 
 func TestHealthdWriteConfigToFile(t *testing.T) {
-	// save and defer restore WriteFile
-	writeFileOrig := fileutils.WriteFile
+	// save and defer restore WriteFileWithTimeout
+	writeFileOrig := fileutils.WriteFileWithTimeout
 	defer func() {
-		fileutils.WriteFile = writeFileOrig
+		fileutils.WriteFileWithTimeout = writeFileOrig
 	}()
 
 	cases := []struct {
@@ -267,7 +267,7 @@ func TestHealthdWriteConfigToFile(t *testing.T) {
 	mockGabsContainer := gabs.Container{}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			fileutils.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
+			fileutils.WriteFileWithTimeout = func(filename string, data []byte, perm os.FileMode, timeout time.Duration) error {
 				return tc.writeFileErr
 			}
 			got := HealthdWriteConfigToFile(&mockGabsContainer)

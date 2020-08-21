@@ -28,6 +28,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"syscall"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -50,8 +51,8 @@ var Pagesize = os.Getpagesize()
 var osStat = os.Stat
 var RemoveFile = os.Remove
 var TruncateFile = os.Truncate
-var WriteFile = ioutil.WriteFile
 var ReadFile = ioutil.ReadFile
+var WriteFile = ioutil.WriteFile // prefer WriteFileWithTimeout
 var RenameFile = os.Rename
 var CreateFile = os.Create
 var Mmap = syscall.Mmap
@@ -276,4 +277,26 @@ var CloseFileWithUnlock = func(f *os.File) error {
 		return err
 	}
 	return f.Close()
+}
+
+// WriteFileWithTimeout wraps ioutil.WriteFile with a timeout.
+var WriteFileWithTimeout = func(
+	filename string,
+	data []byte,
+	perm os.FileMode,
+	timeout time.Duration,
+) error {
+	c := make(chan error, 1)
+
+	go func() {
+		err := WriteFile(filename, data, perm)
+		c <- err
+	}()
+
+	select {
+	case res := <-c:
+		return res
+	case <-time.After(timeout):
+		return errors.Errorf("Timed out after '%v'", timeout)
+	}
 }

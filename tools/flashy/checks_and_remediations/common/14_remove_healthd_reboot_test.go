@@ -24,6 +24,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/Jeffail/gabs"
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
@@ -37,17 +38,17 @@ func TestRemoveHealthdReboot(t *testing.T) {
 	// save log output into buf for testing
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
-	// mock and defer restore FileExists, ReadFile, WriteFile, RestartHealthd
+	// mock and defer restore FileExists, ReadFile, WriteFileWithTimeout, RestartHealthd
 	fileExistsOrig := fileutils.FileExists
 	readFileOrig := fileutils.ReadFile
-	writeFileOrig := fileutils.WriteFile
+	writeFileOrig := fileutils.WriteFileWithTimeout
 	restartHealthd := utils.RestartHealthd
 
 	defer func() {
 		log.SetOutput(os.Stderr)
 		fileutils.FileExists = fileExistsOrig
 		fileutils.ReadFile = readFileOrig
-		fileutils.WriteFile = writeFileOrig
+		fileutils.WriteFileWithTimeout = writeFileOrig
 		utils.RestartHealthd = restartHealthd
 	}()
 
@@ -131,7 +132,7 @@ func TestRemoveHealthdReboot(t *testing.T) {
 			fileutils.ReadFile = func(filename string) ([]byte, error) {
 				return []byte(tc.healthdContents), nil
 			}
-			fileutils.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
+			fileutils.WriteFileWithTimeout = func(filename string, data []byte, perm os.FileMode, timeout time.Duration) error {
 				writeConfigCalled = true
 				gotH, err := gabs.ParseJSON(data)
 				if err != nil {

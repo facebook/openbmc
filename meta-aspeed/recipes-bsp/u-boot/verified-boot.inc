@@ -83,14 +83,10 @@ EOF
 # $1 - FIT source
 # $2 - Image counter
 # $3 - Path to U-Boot image
-# $4 - Load address
-# $5 - Entry point
 fitimage_emit_section_firmware() {
     SOURCE=$1
     IMAGE_COUNTER=$2
     IMAGE_FIRMWARE=$3
-    LOAD_ADDRESS=$4
-    ENTRY_POINT=$5
 
     cat << EOF >> ${SOURCE}
         firmware@${IMAGE_COUNTER} {

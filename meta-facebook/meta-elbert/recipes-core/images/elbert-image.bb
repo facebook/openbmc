@@ -22,6 +22,7 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-rest3 \
   ast-mdio \
   cpldupdate \
+  libcpldupdate-dll-ioctl \
   flashrom \
   fscd \
   lldp-util \

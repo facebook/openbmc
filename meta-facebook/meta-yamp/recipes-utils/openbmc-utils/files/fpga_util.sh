@@ -74,7 +74,8 @@ do_scd() {
         exit 1
     fi
     connect_scd_jtag
-    jam -l/usr/lib/libcpldupdate_dll_ast_jtag.so -v -a"${1^^}" "$2"
+    jam -l/usr/lib/libcpldupdate_dll_ioctl.so -v -a"${1^^}" "$2" \
+      --ioctl RUN_CYCLE
 }
 
 do_sup() {
@@ -84,7 +85,8 @@ do_sup() {
         exit 1
     fi
     connect_sup_jtag
-    jam -l/usr/lib/libcpldupdate_dll_ast_jtag.so -v -a"${1^^}" "$2"
+    jam -l/usr/lib/libcpldupdate_dll_ioctl.so -v -a"${1^^}" "$2" \
+      --ioctl RUN_CYCLE
 }
 
 do_fan() {

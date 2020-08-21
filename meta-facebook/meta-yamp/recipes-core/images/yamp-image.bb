@@ -23,4 +23,5 @@ IMAGE_INSTALL += " \
   led-controld \
   spatula \
   ncsi-util \
+  libcpldupdate-dll-ioctl \
   "

@@ -37,6 +37,8 @@ SRC_URI += "file://board-utils.sh \
             file://show_tech.py \
             file://psu_show_tech.py \
             file://pim_enable.sh \
+            file://elbert_pim.layout \
+            file://peutil \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -55,6 +57,7 @@ OPENBMC_UTILS_FILES += " \
     show_tech.py \
     psu_show_tech.py \
     pim_enable.sh \
+    peutil \
     "
 
 DEPENDS_append = " update-rc.d-native"
@@ -99,7 +102,7 @@ do_install_board() {
     install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 
-    # install -m 0755 ${WORKDIR}/elbert_bios.layout ${D}${sysconfdir}/elbert_bios.layout
+    install -m 0755 ${WORKDIR}/elbert_pim.layout ${D}${sysconfdir}/elbert_pim.layout
 }
 
 do_install_append() {

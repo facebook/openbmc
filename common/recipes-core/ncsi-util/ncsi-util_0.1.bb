@@ -8,12 +8,15 @@ LIC_FILES_CHKSUM = "file://ncsi-util.c;beginline=4;endline=16;md5=b395943ba8a071
 
 SRC_URI = "file://Makefile \
            file://ncsi-util.c \
+           file://ncsi-util.h \
+           file://brcm-ncsi-util.c \
+           file://brcm-ncsi-util.h \
           "
 
 S = "${WORKDIR}"
 binfiles = "ncsi-util"
 
-LDFLAGS += "-lpal -lncsi -lpldm -lnl-wrapper"
+LDFLAGS += "-lpal -lncsi -lpldm -lnl-wrapper -lz"
 
 pkgdir = "ncsi-util"
 
@@ -26,8 +29,8 @@ do_install() {
   ln -snf ../fbpackages/${pkgdir}/ncsi-util ${bin}/ncsi-util
 }
 
-DEPENDS += "libpal libncsi libpldm libnl-wrapper"
-RDEPENDS_${PN} += "libpal libncsi libpldm libnl-wrapper"
+DEPENDS += "libpal libncsi libpldm libnl-wrapper zlib"
+RDEPENDS_${PN} += "libpal libncsi libpldm libnl-wrapper zlib"
 
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

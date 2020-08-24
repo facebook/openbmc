@@ -1640,7 +1640,7 @@ main(int argc, char **argv) {
 
   initialize_configuration();
 
-  if (vboot_state_check) {
+  if (vboot_state_check && vboot_supported()) {
     check_vboot_state();
     /* curr version is stored only when vboot is
      * successful */

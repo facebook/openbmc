@@ -91,11 +91,7 @@ UBOOT_ENV_BINARY ?= "${UBOOT_ENV}.${UBOOT_ENV_SUFFIX}"
 UBOOT_ENV_IMAGE ?= "${UBOOT_ENV}-${MACHINE}-${PV}-${PR}.${UBOOT_ENV_SUFFIX}"
 UBOOT_ENV_SYMLINK ?= "${UBOOT_ENV}-${MACHINE}.${UBOOT_ENV_SUFFIX}"
 
-do_compile () {
-    if [ "${@bb.utils.contains('DISTRO_FEATURES', 'ld-is-gold', 'ld-is-gold', '', d)}" = "ld-is-gold" ] ; then
-        sed -i 's/$(CROSS_COMPILE)ld$/$(CROSS_COMPILE)ld.bfd/g' config.mk
-    fi
-
+patch_mtdparts_for_oss () {
     #
     # Customize flash layout so /mnt/data won't be mounted in oss build.
     # NOTE:
@@ -114,6 +110,15 @@ do_compile () {
     sed -i 's/root=\/dev\/ram rw\"/root=\/dev\/ram rw mtdparts=spi0.0:32M@0x0(flash0),0x20000@0x60000(env);spi0.1:-(flash1) dual_flash=1\"/g' include/configs/fbwedge100.h
     sed -i 's/root=\/dev\/ram rw\"/root=\/dev\/ram rw mtdparts=spi0.0:32M@0x0(flash0),0x20000@0x60000(env);spi0.1:-(flash1) dual_flash=1\"/g' include/configs/fbwedge.h
     sed -i 's/root=\/dev\/ram rw\"/root=\/dev\/ram rw mtdparts=spi0.0:32M@0x0(flash0),0x20000@0x60000(env);spi0.1:-(flash1) dual_flash=1\"/g' include/configs/fbbackpack.h
+
+}
+
+do_compile () {
+    if [ "${@bb.utils.contains('DISTRO_FEATURES', 'ld-is-gold', 'ld-is-gold', '', d)}" = "ld-is-gold" ] ; then
+        sed -i 's/$(CROSS_COMPILE)ld$/$(CROSS_COMPILE)ld.bfd/g' config.mk
+    fi
+
+    patch_mtdparts_for_oss
 
     unset LDFLAGS
     unset CFLAGS

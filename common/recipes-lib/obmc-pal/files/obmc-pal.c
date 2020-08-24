@@ -1821,6 +1821,25 @@ pal_set_adr_trigger(uint8_t slot, bool trigger)
 }
 
 int __attribute__((weak))
+pal_flock_flag_retry(int fd, unsigned int flag)
+{
+  int ret = 0;
+  int retry_count = 0;
+
+  ret = flock(fd, flag);
+  while (ret && (retry_count < 3)) {
+    retry_count++;
+    msleep(100);
+    ret = flock(fd, flag);
+  }
+  if (ret) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int __attribute__((weak))
 pal_flock_retry(int fd)
 {
   int ret = 0;

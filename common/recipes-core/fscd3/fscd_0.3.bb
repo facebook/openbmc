@@ -35,12 +35,13 @@ SRC_URI = "\
           file://fsc_zone.py\
           file://setup.py\
           file://run-fscd.sh\
+          file://fscd.service\
           "
 
 S = "${WORKDIR}"
 
 inherit distutils3
-
+inherit systemd
 DEPENDS += "update-rc.d-native libkv"
 RDEPENDS_${PN} += "python3-syslog python3-ply libkv"
 
@@ -54,21 +55,11 @@ FSC_INIT_FILE = ""
 
 FSC_SV_FILE = "run-fscd.sh"
 
-do_install_append() {
-  bin="${D}/usr/local/bin"
-  install -d $bin
-  install -d ${D}${sysconfdir}
+do_work_sysv() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -d ${D}${sysconfdir}/sv
   install -d ${D}${sysconfdir}/sv/fscd
-  install -d ${D}${sysconfdir}/fsc
-  for f in ${FSC_CONFIG}; do
-    install -m 644 $f ${D}${sysconfdir}/$f
-  done
-  for f in ${FSC_ZONE_CONFIG}; do
-    install -m 644 $f ${D}${sysconfdir}/fsc/$f
-  done
   if [ ! -z ${FSC_INIT_FILE} ]; then
     install -m 755 ${FSC_INIT_FILE} ${D}${sysconfdir}/init.d/
     update-rc.d -r ${D} ${FSC_INIT_FILE} start 91 5 .
@@ -76,9 +67,38 @@ do_install_append() {
   if [ ! -z ${FSC_SV_FILE} ]; then
     install -m 755 ${FSC_SV_FILE} ${D}${sysconfdir}/sv/fscd/run
   fi
-  for f in ${FSC_BIN_FILES}; do
-    install -m 755 $f ${bin}/$f
-  done
 }
 
+do_work_systemd() {
+    install -d ${D}${systemd_system_unitdir}
+    install fscd.service ${D}${systemd_system_unitdir}
+}
+
+do_install_append() {
+    bin="${D}/usr/local/bin"
+    install -d $bin
+    install -d ${D}${sysconfdir}
+    install -d ${D}${sysconfdir}/fsc
+    for f in ${FSC_CONFIG}; do
+        install -m 644 $f ${D}${sysconfdir}/$f
+    done
+
+    for f in ${FSC_ZONE_CONFIG}; do
+        install -m 644 $f ${D}${sysconfdir}/fsc/$f
+    done
+
+    for f in ${FSC_BIN_FILES}; do
+        install -m 755 $f ${bin}/$f
+    done
+
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+        do_work_systemd
+    else
+        do_work_sysv
+    fi
+}
+
+
 FILES_${PN} += "${prefix}/local/bin ${sysconfdir} "
+
+SYSTEMD_SERVICE_${PN} = "fscd.service"

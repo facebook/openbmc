@@ -1,4 +1,3 @@
-
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://dhcp_vendor_info \
@@ -22,16 +21,19 @@ def dhc6_run(d):
     return "run-dhc6.sh"
 
 do_install_dhcp() {
-  # rules to request dhcpv6
-  install -d ${D}/${sysconfdir}/network/if-up.d
-  install -m 755 ${WORKDIR}/dhcpv6_up ${D}${sysconfdir}/network/if-up.d/dhcpv6_up
-  install -d ${D}/${sysconfdir}/network/if-down.d
-  install -m 755 ${WORKDIR}/dhcpv6_down ${D}${sysconfdir}/network/if-down.d/dhcpv6_down
-  install -d ${D}${sysconfdir}/sv
-  install -d ${D}${sysconfdir}/sv/dhc6
-  install -m 755 setup-dhc6.sh ${D}${sysconfdir}/init.d/setup-dhc6.sh
-  install -m 755 '${@dhc6_run(d)}' ${D}${sysconfdir}/sv/dhc6/run
-  update-rc.d -r ${D} setup-dhc6.sh start 03 5 .
+    # rules to request dhcpv6 - doesn't apply to images based on
+    # systemd
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'false', 'true', d)}; then
+        install -d ${D}/${sysconfdir}/network/if-up.d
+        install -m 755 ${WORKDIR}/dhcpv6_up ${D}${sysconfdir}/network/if-up.d/dhcpv6_up
+        install -d ${D}/${sysconfdir}/network/if-down.d
+        install -m 755 ${WORKDIR}/dhcpv6_down ${D}${sysconfdir}/network/if-down.d/dhcpv6_down
+        install -d ${D}${sysconfdir}/sv
+        install -d ${D}${sysconfdir}/sv/dhc6
+        install -m 755 setup-dhc6.sh ${D}${sysconfdir}/init.d/setup-dhc6.sh
+        install -m 755 '${@dhc6_run(d)}' ${D}${sysconfdir}/sv/dhc6/run
+        update-rc.d -r ${D} setup-dhc6.sh start 03 5 .
+    fi
 }
 
 do_install_dhcp_vendor_info() {
@@ -41,6 +43,7 @@ do_install_dhcp_vendor_info() {
 }
 
 do_install_append() {
+
   do_install_dhcp_vendor_info
   do_install_dhcp
 }

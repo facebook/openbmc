@@ -32,4 +32,9 @@ IMAGE_INSTALL += " \
   spatula \
   fscd  \
   recover-from-secondary \
+  udev-rules \
+  systemd-networkd \
   "
+
+IMAGE_INSTALL_remove += "init-ifupdown"
+SYSVINIT_SCRIPTS_remove += "init-ifupdown"

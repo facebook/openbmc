@@ -1,4 +1,4 @@
-# Copyright 2015-present Facebook. All Rights Reserved.
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,15 +14,19 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Match]
+Name=eth0
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+[Network]
+IPv6AcceptRA=yes
+DHCP=yes
+VLAN=eth0.4088
 
-SRC_URI += "file://mTerm/run \
-        file://mTerm_server.service \
-           "
-MTERM_SYSTEMD_SERVICES = "mTerm_server.service"
+[DHCP]
+UseDomains=yes
+UseNTP=yes
+VendorClassIdentifier=OpenBMC:VENDOR_SERIAL_HERE
 
-S = "${WORKDIR}"
-
-# Go with default names of mTerm for MTERM_SERVICES
-# since we have just one console.
+[DHCPv6]
+SendVendorOption=40981:1:string:OpenBMC:VENDOR_SERIAL_HERE

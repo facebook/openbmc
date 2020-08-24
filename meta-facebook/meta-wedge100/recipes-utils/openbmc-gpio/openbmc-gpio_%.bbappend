@@ -17,22 +17,27 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
+inherit systemd
+
 SRC_URI += " \
           file://openbmc-gpio-1/board_gpio_table_v1.py \
           file://openbmc-gpio-1/board_gpio_table_v2.py \
           file://openbmc-gpio-1/board_gpio_rev_table.py \
           file://openbmc-gpio-1/openbmc_gpio_setup.py \
           file://openbmc-gpio-1/setup_board.py \
-          "
-OPENBMC_GPIO_SOC_TABLE = "ast2400_gpio_table.py"
+          file://openbmc-gpio-1/openbmc_gpio_setup.service \
+"
 
-DEPENDS += "update-rc.d-native"
+OPENBMC_GPIO_SOC_TABLE = "ast2400_gpio_table.py"
 
 do_install_append() {
      install -d ${D}${sysconfdir}/init.d
      install -d ${D}${sysconfdir}/rcS.d
-     install -m 755 openbmc_gpio_setup.py ${D}${sysconfdir}/init.d/openbmc_gpio_setup.py
-     update-rc.d -r ${D} openbmc_gpio_setup.py start 59 S .
+     install -d ${D}${systemd_system_unitdir}
+     install -m 755 openbmc_gpio_setup.py ${D}/usr/local/bin/openbmc_gpio_setup.py
+     install -m 0644 openbmc_gpio_setup.service ${D}${systemd_system_unitdir}
 }
 
 FILES_${PN} += "/usr/local/bin ${sysconfdir}"
+
+SYSTEMD_SERVICE_${PN} = "openbmc_gpio_setup.service"

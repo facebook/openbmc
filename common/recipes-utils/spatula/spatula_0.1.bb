@@ -19,32 +19,50 @@ DESCRIPTION = "The script communicates with host and configures BMC."
 SECTION = "base"
 PR = "r3"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://spatula_wrapper.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
+LIC_FILES_CHKSUM = "file://spatula_wrapper.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
+inherit systemd
 
 DEPENDS_append = " update-rc.d-native"
 
 SRC_URI = "file://setup-spatula.sh \
            file://spatula.conf \
            file://spatula_wrapper.py \
+           file://spatula.service \
           "
 
 S = "${WORKDIR}"
 
 binfiles = "spatula_wrapper.py"
 
-do_install() {
-  bin="${D}/usr/local/bin"
-  install -d $bin
-  for f in ${binfiles}; do
-    install -m 755 $f ${bin}/$f
-  done
-  install -d ${D}${sysconfdir}/init.d
-  install -d ${D}${sysconfdir}/rcS.d
-  install -d ${D}${sysconfdir}/default
-  install -m 755 setup-spatula.sh ${D}${sysconfdir}/init.d/setup-spatula.sh
-  install -m 644 spatula.conf ${D}${sysconfdir}/default/spatula.conf
-  update-rc.d -r ${D} setup-spatula.sh start 95 2 3 4 5  .
+systemd_install() {
+    install -m 644 spatula.service ${D}${systemd_system_unitdir}
+    sed -i "s:@sysconfdir@:${sysconfdir}/default:" ${D}${systemd_system_unitdir}/spatula.service
 }
 
-FILES_${PN} = "${prefix}/local/bin ${sysconfdir} "
+sysv_install() {
+    install -d ${D}${sysconfdir}/init.d
+    install -d ${D}${sysconfdir}/rcS.d
+    install -m 755 setup-spatula.sh ${D}${sysconfdir}/init.d/setup-spatula.sh
+    update-rc.d -r ${D} setup-spatula.sh start 95 2 3 4 5  .
+}
+
+do_install() {
+    bin="${D}/usr/local/bin"
+    install -d $bin
+    install -d "${D}${systemd_system_unitdir}"
+    install -d "${D}${sysconfdir}/default"
+    install -m 644 spatula.conf ${D}${sysconfdir}/default/spatula.conf
+    for f in ${binfiles}; do
+        install -m 755 $f ${bin}/$f
+    done
+
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false',  d)}; then
+        systemd_install
+    else
+        sysv_install
+    fi
+}
+
+FILES_${PN} = "${prefix}/local/bin ${sysconfdir} ${systemd_system_unitdir}"
+SYSTEMD_SERVICE_${PN} = "spatula.service"

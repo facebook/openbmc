@@ -25,18 +25,39 @@ DEPENDS_append = " update-rc.d-native"
 
 SRC_URI = "file://usbcons.sh \
            file://usbmon.sh \
+           file://usbcons.service \
           "
 
 S = "${WORKDIR}"
 
+inherit systemd
+
+sysv_install() {
+    install -d ${D}${sysconfdir}/init.d
+    install -d ${D}${sysconfdir}/rcS.d
+    install -d ${D}${sysconfdir}/init.d
+    install -d ${D}${sysconfdir}/rcS.d
+    install -m 755 usbcons.sh ${D}${sysconfdir}/init.d/usbcons.sh
+    update-rc.d -r ${D} usbcons.sh start 90 S .
+}
+
+systemd_install() {
+    install -d "${D}${systemd_system_unitdir}"
+    install -m 0644 usbcons.service ${D}${systemd_system_unitdir}/usbcons.service
+}
+
 do_install() {
-  install -d ${D}${sysconfdir}/init.d
-  install -d ${D}${sysconfdir}/rcS.d
-  install -m 755 usbcons.sh ${D}${sysconfdir}/init.d/usbcons.sh
-  update-rc.d -r ${D} usbcons.sh start 90 S .
   localbindir="${D}/usr/local/bin"
   install -d ${localbindir}
   install -m 755 usbmon.sh ${localbindir}/usbmon.sh
+
+  if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false',  d)}; then
+      systemd_install
+  else
+      sysv_install
+  fi
 }
 
 FILES_${PN} = " ${sysconfdir} /usr/local"
+FILES_${PN} += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '${systemd_system_unitdir}', '', d)}"
+SYSTEMD_SERVICE_${PN} = "usbcons.service"

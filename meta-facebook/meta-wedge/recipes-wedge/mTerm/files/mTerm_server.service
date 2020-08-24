@@ -1,4 +1,6 @@
-# Copyright 2015-present Facebook. All Rights Reserved.
+#!/bin/sh
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,15 +16,15 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Unit]
+Description=mTerm server monitoring
+After=setup_board.service openbmc_gpio_setup.service setup_i2c.service
+Wants=setup_board.service
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+[Service]
+ExecStartPre=/usr/local/bin/us_console.sh connect
+ExecStart=/usr/local/bin/mTerm_server wedge /dev/ttyS1
 
-SRC_URI += "file://mTerm/run \
-        file://mTerm_server.service \
-           "
-MTERM_SYSTEMD_SERVICES = "mTerm_server.service"
-
-S = "${WORKDIR}"
-
-# Go with default names of mTerm for MTERM_SERVICES
-# since we have just one console.
+[Install]
+WantedBy=multi-user.target

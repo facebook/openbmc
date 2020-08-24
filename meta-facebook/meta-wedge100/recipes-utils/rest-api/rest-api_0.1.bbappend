@@ -15,6 +15,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+inherit systemd
+
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://rest_i2cflush.py \
@@ -23,6 +25,7 @@ SRC_URI += "file://rest_i2cflush.py \
             file://boardroutes.py \
             file://board_setup_routes.py \
             file://rest_fw_ver.py \
+            file://restapi.service \
            "
 
 binfiles1 += "rest_i2cflush.py \
@@ -33,3 +36,12 @@ binfiles += "board_endpoint.py \
              boardroutes.py \
              board_setup_routes.py \
             "
+
+do_install_append() {
+    # We don't want this one on systemd
+    rm -f ${D}/etc/init.d/setup-rest-api.sh
+    install -d ${D}${systemd_system_unitdir}
+    install -m 0644 ${WORKDIR}/restapi.service ${D}${systemd_system_unitdir}
+}
+
+SYSTEMD_SERVICE_${PN} = "restapi.service"

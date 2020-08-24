@@ -21,6 +21,7 @@ SRC_URI = "http://www.rsyslog.com/download/files/download/rsyslog/${BPN}-${PV}.t
            file://initscript \
            file://rsyslog.conf \
            file://rsyslog.logrotate \
+           file://rsyslog.service \
            file://use-pkgconfig-to-check-libgcrypt.patch \
 "
 
@@ -120,6 +121,13 @@ do_install_append() {
     install -m 755 ${WORKDIR}/initscript ${D}${sysconfdir}/init.d/syslog
     install -m 644 ${WORKDIR}/rsyslog.conf ${D}${sysconfdir}/rsyslog.conf
     install -m 644 ${WORKDIR}/rsyslog.logrotate ${D}${sysconfdir}/logrotate.d/logrotate.rsyslog
+    install -d ${D}${sysconfdir}/logrotate.d
+    ln -sf ${sysconfdir}/logrotate.rsyslog ${D}${sysconfdir}/logrotate.d/logrotate.rsyslog
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false',  d)}; then
+        mkdir -p "${D}/${systemd_unitdir}/system"
+        install -m 0644 ${WORKDIR}/rsyslog.service ${D}${systemd_unitdir}/system/
+        sed -i -e "s#@sbindir@#${sbindir}#g" ${D}${systemd_unitdir}/system/rsyslog.service
+    fi
 }
 
 FILES_${PN} += "${bindir}"

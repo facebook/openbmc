@@ -420,19 +420,16 @@ const uint8_t w400c_evt2_smb_sensor_list[] = {
   /* PXE1211C on Wedge400C-EVT2 or later */
   SMB_SENSOR_HBM_IN_VOLT,
   SMB_SENSOR_HBM_OUT_VOLT,
-  SMB_SENSOR_HBM_IN_CURR,
   SMB_SENSOR_HBM_OUT_CURR,
   SMB_SENSOR_HBM_OUT_POWER,
   SMB_SENSOR_HBM_TEMP,
   SMB_SENSOR_VDDCK_0_IN_VOLT,
   SMB_SENSOR_VDDCK_0_OUT_VOLT,
-  SMB_SENSOR_VDDCK_0_IN_CURR,
   SMB_SENSOR_VDDCK_0_OUT_CURR,
   SMB_SENSOR_VDDCK_0_OUT_POWER,
   SMB_SENSOR_VDDCK_0_TEMP,
   SMB_SENSOR_VDDCK_1_IN_VOLT,
   SMB_SENSOR_VDDCK_1_OUT_VOLT,
-  SMB_SENSOR_VDDCK_1_IN_CURR,
   SMB_SENSOR_VDDCK_1_OUT_CURR,
   SMB_SENSOR_VDDCK_1_OUT_POWER,
   SMB_SENSOR_VDDCK_1_TEMP,
@@ -3024,11 +3021,9 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_SW_SERDES_PVDD_OUT_CURR:
       ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, CURR(4), value);
-      *value = *value * 1.0433 + 0.3926;
       break;
     case SMB_SENSOR_SW_SERDES_TRVDD_OUT_CURR:
       ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, CURR(4), value);
-      *value = *value * 0.9994 + 1.0221;
       break;
     case SMB_SENSOR_IR3R3V_RIGHT_IN_CURR:
       ret = read_attr(SMB_SW_SERDES_TRVDD_DEVICE, CURR(1), value);
@@ -3169,10 +3164,6 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
     case SMB_SENSOR_HBM_IN_CURR:
       if( brd_type_rev == BOARD_WEDGE400C_EVT ){
         ret = read_attr(SMB_IR_HMB_DEVICE, CURR(1), value);
-      }else if( brd_type_rev == BOARD_WEDGE400C_EVT2 ||
-                brd_type_rev == BOARD_WEDGE400C_DVT ||
-                brd_type_rev == BOARD_WEDGE400C_DVT2 ){
-        ret = read_attr(SMB_PXE1211_DEVICE, CURR(1), value);
       }
       break;
     case SMB_SENSOR_HBM_OUT_CURR:
@@ -3230,10 +3221,6 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
     case SMB_SENSOR_VDDCK_0_IN_CURR:
       if( brd_type_rev == BOARD_WEDGE400C_EVT ){
         ret = read_attr(SMB_IR_HMB_DEVICE, CURR(2), value);
-      }else if( brd_type_rev == BOARD_WEDGE400C_EVT2 ||
-                brd_type_rev == BOARD_WEDGE400C_DVT ||
-                brd_type_rev == BOARD_WEDGE400C_DVT2 ){
-        ret = read_attr(SMB_PXE1211_DEVICE, CURR(2), value);
       }
       break;
     case SMB_SENSOR_VDDCK_0_OUT_CURR:
@@ -3286,13 +3273,6 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
           brd_type_rev == BOARD_WEDGE400C_DVT ||
           brd_type_rev == BOARD_WEDGE400C_DVT2 ){
         ret = read_attr(SMB_PXE1211_DEVICE, VOLT(6), value);
-      }
-      break;
-    case SMB_SENSOR_VDDCK_1_IN_CURR:
-      if( brd_type_rev == BOARD_WEDGE400C_EVT2 ||
-          brd_type_rev == BOARD_WEDGE400C_DVT ||
-          brd_type_rev == BOARD_WEDGE400C_DVT2 ){
-        ret = read_attr(SMB_PXE1211_DEVICE, CURR(3),value);
       }
       break;
     case SMB_SENSOR_VDDCK_1_OUT_CURR:
@@ -4373,10 +4353,6 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_VDDCK_0_IN_CURR:
       if( brd_type_rev == BOARD_WEDGE400C_EVT ){
         sprintf(name, "VDDCK_1P15V_IN_CURR");
-      }else if( brd_type_rev == BOARD_WEDGE400C_EVT2 ||
-                brd_type_rev == BOARD_WEDGE400C_DVT ||
-                brd_type_rev == BOARD_WEDGE400C_DVT2 ){
-        sprintf(name, "VDDCK_1P15V_0_IN_CURR");
       }
       break;
     case SMB_SENSOR_VDDCK_0_OUT_CURR:
@@ -4423,13 +4399,6 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
           brd_type_rev == BOARD_WEDGE400C_DVT ||
           brd_type_rev == BOARD_WEDGE400C_DVT2 ){
         sprintf(name, "VDDCK_1P15V_1_OUT_VOLT(1.15V)");
-      }
-      break;
-    case SMB_SENSOR_VDDCK_1_IN_CURR:
-      if( brd_type_rev == BOARD_WEDGE400C_EVT2 ||
-          brd_type_rev == BOARD_WEDGE400C_DVT ||
-          brd_type_rev == BOARD_WEDGE400C_DVT2 ){
-        sprintf(name, "VDDCK_1P15V_1_IN_CURR");
       }
       break;
     case SMB_SENSOR_VDDCK_1_OUT_CURR:
@@ -4979,7 +4948,6 @@ get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case SMB_SENSOR_HBM_OUT_CURR:
     case SMB_SENSOR_VDDCK_0_IN_CURR:
     case SMB_SENSOR_VDDCK_0_OUT_CURR:
-    case SMB_SENSOR_VDDCK_1_IN_CURR:
     case SMB_SENSOR_VDDCK_1_OUT_CURR:
       sprintf(units, "Amps");
       break;
@@ -5348,8 +5316,6 @@ sensor_thresh_array_init(uint8_t fru) {
           smb_sensor_threshold[SMB_SENSOR_VDDCK_0_IN_VOLT][LCR_THRESH] = 10.5;
           smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_VOLT][UCR_THRESH] = 1.298;
           smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_VOLT][LCR_THRESH] = 1.008;
-          smb_sensor_threshold[SMB_SENSOR_VDDCK_0_IN_CURR][UCR_THRESH] = 1;
-          smb_sensor_threshold[SMB_SENSOR_VDDCK_0_IN_CURR][LCR_THRESH] = 0;
           smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_CURR][UCR_THRESH] = 8.5;
           smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_CURR][LCR_THRESH] = 0;
           smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_POWER][UCR_THRESH] = 10;
@@ -5360,8 +5326,6 @@ sensor_thresh_array_init(uint8_t fru) {
           smb_sensor_threshold[SMB_SENSOR_VDDCK_1_IN_VOLT][LCR_THRESH] = 10.5;
           smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_VOLT][UCR_THRESH] = 1.298;
           smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_VOLT][LCR_THRESH] = 1.008;
-          smb_sensor_threshold[SMB_SENSOR_VDDCK_1_IN_CURR][UCR_THRESH] = 1;
-          smb_sensor_threshold[SMB_SENSOR_VDDCK_1_IN_CURR][LCR_THRESH] = 0;
           smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_CURR][UCR_THRESH] = 8.5;
           smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_CURR][LCR_THRESH] = 0;
           smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_POWER][UCR_THRESH] = 10;
@@ -5761,7 +5725,6 @@ smb_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case SMB_SENSOR_VDDCK_0_OUT_CURR:
     case SMB_SENSOR_VDDCK_1_IN_VOLT:
     case SMB_SENSOR_VDDCK_1_OUT_VOLT:
-    case SMB_SENSOR_VDDCK_1_IN_CURR:
     case SMB_SENSOR_VDDCK_1_OUT_CURR:
       *value = 30;
       break;

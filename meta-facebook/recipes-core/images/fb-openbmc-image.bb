@@ -15,7 +15,7 @@ CONVERSION_DEPENDS_zst = "zstd-native"
 # Base this image on core-image-minimal
 require recipes-core/images/core-image-minimal.bb
 
-ROOTFS_POSTPROCESS_COMMAND_append += " openbmc_rootfs_fixup; "
+ROOTFS_POSTPROCESS_COMMAND += "openbmc_rootfs_fixup;"
 
 OPENBMC_HOSTNAME ?= "bmc"
 
@@ -35,6 +35,7 @@ openbmc_rootfs_fixup() {
 
     # Remove all *.pyc files
     find ${IMAGE_ROOTFS} -type f -name "*.pyc" -exec rm -f {} \;
+
 }
 
 IMAGE_FEATURES_append = " \
@@ -42,9 +43,10 @@ IMAGE_FEATURES_append = " \
     tools-debug \
     "
 
-PACKAGE_EXCLUDE += "\ 
+PACKAGE_EXCLUDE += "\
     gnutls \
     perl \
+    u-boot \
     "
 
 # ca-certificates:

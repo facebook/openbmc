@@ -20,7 +20,6 @@ RDEPENDS_${PN} += " \
   rsyslog \
   sudo \
   tzdata \
-  u-boot \
   u-boot-fw-utils \
   wdtcli \
   udev-rules \

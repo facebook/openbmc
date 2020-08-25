@@ -278,7 +278,7 @@ static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
   dev_unlock(dev);
 
   if (error < 0) {
-    return -1;
+    return error;
   }
   return req.dest_len;
 }

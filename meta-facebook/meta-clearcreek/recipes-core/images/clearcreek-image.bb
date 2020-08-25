@@ -30,4 +30,5 @@ IMAGE_INSTALL += " \
   ipmbd \
   ipmb-util\
   power-util \
+  fruid \
   "

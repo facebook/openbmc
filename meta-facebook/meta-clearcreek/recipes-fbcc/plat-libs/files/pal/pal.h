@@ -39,11 +39,15 @@ enum {
   FRU_ALL = 0,
   FRU_MB,
   FRU_BSM,
+  FRU_PDB,
+  FRU_AVA1,
+  FRU_AVA2,
   FRU_CNT,
 };
 
 #define MAX_NUM_FRUS (FRU_CNT-1)
 #define MAX_NODES    1
+#define LARGEST_DEVICE_NAME 120
 
 #ifdef __cplusplus
 } // extern "C"

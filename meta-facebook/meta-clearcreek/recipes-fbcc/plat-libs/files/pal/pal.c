@@ -24,7 +24,18 @@
 #include <string.h>
 #include "pal.h"
 
-const char pal_fru_list[] = "all, mb, bsm";
+#define MB_BIN "/tmp/fruid_mb.bin"
+#define MB_EEPROM "/sys/class/i2c-dev/i2c-6/device/6-0054/eeprom"
+#define PDB_BIN "/tmp/fruid_pdb.bin"
+#define PDB_EEPROM "/sys/class/i2c-dev/i2c-5/device/5-0054/eeprom"
+#define BSM_BIN "/tmp/fruid_bsm.bin"
+#define BSM_EEPROM "/sys/class/i2c-dev/i2c-23/device/23-0056/eeprom"
+#define AVA1_BIN "/tmp/fruid_ava1.bin"
+#define AVA1_EEPROM "/sys/class/i2c-dev/i2c-21/device/21-0050/eeprom"
+#define AVA2_BIN "/tmp/fruid_ava2.bin"
+#define AVA2_EEPROM "/sys/class/i2c-dev/i2c-22/device/22-0050/eeprom"
+
+const char pal_fru_list[] = "all, mb, bsm, pdb, ava1, ava2";
 const char pal_server_list[] = "";
 
 int pal_get_fru_id(char *str, uint8_t *fru)
@@ -35,6 +46,10 @@ int pal_get_fru_id(char *str, uint8_t *fru)
     *fru = FRU_MB;
   } else if (!strcmp(str, "bsm")) {
     *fru = FRU_BSM;
+  } else if (!strcmp(str, "ava1")) {
+    *fru = FRU_AVA1;
+  } else if (!strcmp(str, "ava2")) {
+    *fru = FRU_AVA2;
   } else {
     syslog(LOG_WARNING, "%s: Wrong fru name %s", __func__, str);
     return -1;
@@ -49,6 +64,22 @@ int pal_get_fruid_name(uint8_t fru, char *name)
     sprintf(name, "Base Board");
   else if (fru == FRU_BSM)
     sprintf(name, "BSM");
+  else if (fru == FRU_AVA1)
+    sprintf(name, "M2 Carrier1");
+  else if (fru == FRU_AVA2)
+    sprintf(name, "M2 Carrier2");
+  else if (fru == FRU_PDB)
+    sprintf(name, "PDB");
+  else
+    return -1;
+
+  return 0;
+}
+
+int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
+{
+  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM || FRU_AVA1 || FRU_AVA2)
+    *status = 1;
   else
     return -1;
 
@@ -57,7 +88,7 @@ int pal_get_fruid_name(uint8_t fru, char *name)
 
 int pal_is_fru_ready(uint8_t fru, uint8_t *status)
 {
-  if (fru == FRU_MB || fru == FRU_BSM)
+  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM || FRU_AVA1 || FRU_AVA2)
     *status = 1;
   else
     return -1;
@@ -71,6 +102,12 @@ int pal_get_fru_name(uint8_t fru, char *name)
     strcpy(name, "mb");
   } else if (fru == FRU_BSM) {
     strcpy(name, "bsm");
+  } else if (fru == FRU_PDB) {
+    strcpy(name, "pdb");
+  } else if (fru == FRU_AVA1) {
+    strcpy(name, "ava1");
+  } else if (fru == FRU_AVA2) {
+    strcpy(name, "ava2");
   } else {
     syslog(LOG_WARNING, "%s: Wrong fruid %d", __func__, fru);
     return -1;
@@ -79,3 +116,44 @@ int pal_get_fru_name(uint8_t fru, char *name)
   return 0;
 }
 
+int pal_get_fruid_path(uint8_t fru, char *path)
+{
+  if (fru == FRU_MB)
+    sprintf(path, MB_BIN);
+  else if (fru == FRU_PDB)
+    sprintf(path, PDB_BIN);
+  else if (fru == FRU_BSM)
+    sprintf(path, BSM_BIN);
+  else if (fru == FRU_AVA1)
+    sprintf(path, AVA1_BIN);
+  else if (fru == FRU_AVA2)
+    sprintf(path, AVA2_BIN);
+  else
+    return -1;
+
+  return 0;
+}
+
+int pal_get_fruid_eeprom_path(uint8_t fru, char *path)
+{
+  if (fru == FRU_MB)
+    sprintf(path, MB_EEPROM);
+  else if (fru == FRU_PDB)
+    sprintf(path, PDB_EEPROM);
+  else if (fru == FRU_BSM)
+    sprintf(path, BSM_EEPROM);
+  else if (fru == FRU_AVA1)
+    sprintf(path, AVA1_EEPROM);
+  else if (fru == FRU_AVA2)
+    sprintf(path, AVA2_EEPROM);
+  else
+    return -1;
+
+  return 0;
+}
+
+int pal_get_fru_list(char *list)
+{
+  strcpy(list, pal_fru_list);
+  return 0;
+}

@@ -35,7 +35,7 @@
             "index": 3,
             "offset": "0x1c00000",
             "size": "0xde0000",
-            "prot_mask": 31,
+            "prot_mask": 30,
             "pfm": 1,
             "hash": 0,
             "compress": 0

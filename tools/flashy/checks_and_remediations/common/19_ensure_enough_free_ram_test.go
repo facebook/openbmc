@@ -26,8 +26,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func TestEnsureEnoughFreeRam(t *testing.T) {
-	// save and defer restore GetMemInfo and getMinMemoryNeeded
+func TestEnsureEnoughFreeRAM(t *testing.T) {
+	// save and defer restore GetMemInfo
 	getMemInfoOrig := utils.GetMemInfo
 	defer func() {
 		utils.GetMemInfo = getMemInfoOrig
@@ -73,7 +73,7 @@ func TestEnsureEnoughFreeRam(t *testing.T) {
 				return tc.memInfo, tc.memInfoErr
 			}
 
-			got := ensureEnoughFreeRam(step.StepParams{})
+			got := ensureEnoughFreeRAM(step.StepParams{})
 			step.CompareTestExitErrors(tc.want, got, t)
 		})
 	}

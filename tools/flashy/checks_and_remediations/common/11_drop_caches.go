@@ -33,8 +33,8 @@ func init() {
 
 const dropCachesFilePath = "/proc/sys/vm/drop_caches"
 
-// frees pagecache, dentries and inodes
-// equivalent to `echo 3 > /proc/sys/vm/drop_caches`
+// dropCaches frees pagecache, dentries and inodes. It is
+// equivalent to `echo 3 > /proc/sys/vm/drop_caches`.
 func dropCaches(stepParams step.StepParams) step.StepExitError {
 	err := fileutils.WriteFileWithTimeout(
 		dropCachesFilePath, []byte("3"), 0644, 5*time.Second,

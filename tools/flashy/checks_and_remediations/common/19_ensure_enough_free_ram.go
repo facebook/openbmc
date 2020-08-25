@@ -28,7 +28,7 @@ import (
 )
 
 func init() {
-	step.RegisterStep(ensureEnoughFreeRam)
+	step.RegisterStep(ensureEnoughFreeRAM)
 }
 
 // This is 75% of the limit in pypartition, as flashy assumes
@@ -36,7 +36,7 @@ func init() {
 // This should be a generous limit to allow flashy and flashcp to run.
 const minMemoryNeeded = 45 * 1024 * 1024
 
-func ensureEnoughFreeRam(stepParams step.StepParams) step.StepExitError {
+func ensureEnoughFreeRAM(stepParams step.StepParams) step.StepExitError {
 	memInfo, err := utils.GetMemInfo()
 	if err != nil {
 		return step.ExitSafeToReboot{err}

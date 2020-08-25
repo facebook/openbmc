@@ -49,7 +49,7 @@ var normalizeVersion = func(ver string) string {
 	return ver
 }
 
-// check compatibility of the image file by comparing the "normalized" build name of
+// CheckImageBuildNameCompatibility checks compatibility of the image file by comparing the "normalized" build name of
 // (1) the /etc/issue file and (2) the image file
 // return an error if they do not match
 var CheckImageBuildNameCompatibility = func(imageFilePath string) error {
@@ -91,6 +91,8 @@ var CheckImageBuildNameCompatibility = func(imageFilePath string) error {
 	return nil
 }
 
+// getNormalizedBuildNameFromVersion gets the normalized build name from the version using
+// compatibleVersionMapping.
 // fby2-gpv2-v2019.43.1 -> fbgp2
 // yosemite-v1.2 -> yosemite
 var getNormalizedBuildNameFromVersion = func(ver string) (string, error) {
@@ -105,7 +107,7 @@ var getNormalizedBuildNameFromVersion = func(ver string) (string, error) {
 	return verMap["buildname"], nil
 }
 
-// gets OpenBMC version from image file
+// getOpenBMCVersionFromImageFile gets OpenBMC version from the image file.
 // examples: fbtp-v2020.09.1, wedge100-v2020.07.1
 // WARNING: This relies on the U-Boot version string on the image
 // there is no guarantee that this will succeed

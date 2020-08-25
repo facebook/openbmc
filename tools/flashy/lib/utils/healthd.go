@@ -44,21 +44,24 @@ minilaketb
 yosemite
 */
 
+// BmcMemUtil is a struct for parsing the healthd-config.json.
 type BmcMemUtil struct {
 	Threshold []BmcMemThres `json:"threshold"`
 }
 
+// BmcMemThres is a struct for parsing the healthd-config.json.
 type BmcMemThres struct {
 	Value   float32  `json:"value"`
 	Actions []string `json:"action"`
 }
 
-// returns if healthd exists in this system
-// checks existence of the healthd config file
+// HealthdExists checks if healthd exists in this system by
+// checking existence of the healthd config file.
 var HealthdExists = func() bool {
 	return fileutils.FileExists(healthdConfigFilePath)
 }
 
+// GetHealthdConfig gets the healthd config in a JSON container.
 var GetHealthdConfig = func() (*gabs.Container, error) {
 	buf, err := fileutils.ReadFile(healthdConfigFilePath)
 	if err != nil {
@@ -71,9 +74,9 @@ var GetHealthdConfig = func() (*gabs.Container, error) {
 	return healthdConfig, nil
 }
 
-// remove the "reboot" entry that will trigger system reboot after
-// mem util reaches a threshold. this is to prevent healthd reboots during flashing
-// if the "reboot" entry exists, remove it and write back to the file
+// HealthdRemoveMemUtilRebootEntryIfExists remove thes "reboot" entry that will trigger system reboot after
+// mem util reaches a threshold. This is to prevent healthd reboots during flashing.
+// If the "reboot" entry exists, remove it and write back to the file.
 func HealthdRemoveMemUtilRebootEntryIfExists(h *gabs.Container) error {
 	rebootExists := false
 	thresholds, err := h.Path("bmc_mem_utilization.threshold").Children()
@@ -108,7 +111,7 @@ func HealthdRemoveMemUtilRebootEntryIfExists(h *gabs.Container) error {
 	return nil
 }
 
-// write back into /etc/healthd-config.json
+// HealthdWriteConfigToFile writes back into /etc/healthd-config.json.
 func HealthdWriteConfigToFile(h *gabs.Container) error {
 	buf := []byte(h.StringIndent("", "  "))
 
@@ -121,6 +124,7 @@ func HealthdWriteConfigToFile(h *gabs.Container) error {
 	return nil
 }
 
+// RestartHealthd restarts the healthd process.
 var RestartHealthd = func(wait bool, supervisor string) error {
 	if !fileutils.PathExists("/etc/sv/healthd") {
 		return errors.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist")

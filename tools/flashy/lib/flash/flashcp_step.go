@@ -29,6 +29,7 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
+// FlashCp is a step function that runs the flashcp procedure.
 func FlashCp(stepParams step.StepParams) step.StepExitError {
 	log.Printf("Flashing using flashcp method")
 	log.Printf("Attempting to flash '%v' with image file '%v'",

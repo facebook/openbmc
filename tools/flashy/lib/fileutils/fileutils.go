@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// SourceRootDir is the absolute directory of flashy's source code.
 var SourceRootDir string
 
 func init() {
@@ -59,8 +60,8 @@ var Mmap = syscall.Mmap
 var Munmap = syscall.Munmap
 var Glob = filepath.Glob
 
+// GetExecutablePath returns the executable's (flashy's) path.
 func GetExecutablePath() string {
-	// get the executable's (flashy's) path
 	exPath, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -69,10 +70,10 @@ func GetExecutablePath() string {
 	return exPath
 }
 
-// sanitize os.Args[0] to get exactly the binary name required
+// SanitizeBinaryName sanitizes os.Args[0] to get exactly the binary name required.
 // e.g. if flashy was placed as /tmp/flashy
 // and a call was made inside /var for ../tmp/abc/def
-// this should return abc/def
+// this will return abc/def.
 func SanitizeBinaryName(arg string) string {
 	// full path of the binary requested
 	fullPath, err := filepath.Abs(arg)
@@ -91,7 +92,8 @@ func SanitizeBinaryName(arg string) string {
 	return binName
 }
 
-// from the absolute path of a file, get the intended symlink path
+// GetSymlinkPathForSourceFile gets the intended symlink path
+// from the absolute path of a file.
 // e.g. /files/checks/abc.go => checks/abc
 func GetSymlinkPathForSourceFile(path string) string {
 	// truncate to get the symlink path
@@ -100,9 +102,8 @@ func GetSymlinkPathForSourceFile(path string) string {
 	return symlinkPath
 }
 
-// PathExists returns true when the path exists
-// (can be file/directory)
-// defaults to `false` if os.Stat returns any other non-nil error
+// PathExists returns true when the path exists (can be file/directory).
+// It defaults to `false` if os.Stat returns any other non-nil error.
 var PathExists = func(path string) bool {
 	_, err := osStat(path)
 	if err == nil {
@@ -119,9 +120,9 @@ var PathExists = func(path string) bool {
 	}
 }
 
-// FileExists returns true when the file exists
-// also checks that the file is not a directory
-// defaults to `false` if os.Stat returns any other non-nil error
+// FileExists returns true when the file exists and
+// also checks that the file is not a directory.
+// It defaults to `false` if os.Stat returns any other non-nil error.
 var FileExists = func(filename string) bool {
 	if PathExists(filename) {
 		// err guaranteed to be nil by PathExists
@@ -132,7 +133,7 @@ var FileExists = func(filename string) bool {
 	return false
 }
 
-// append to end of file
+// AppendFile appends to the end of a file. It creates one if it does not exist.
 var AppendFile = func(filename, data string) error {
 	// create if non-existent
 	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -150,9 +151,9 @@ var AppendFile = func(filename, data string) error {
 	return nil
 }
 
-// read the 4 bytes in the header and check it against the ELF magic number
-// 0x7F 'E', 'L', 'F'
-// default to false for all other errors (e.g. file not found, no permission etc)
+// IsELFFile reads the 4 bytes in the header and checks whether it matches the ELF magic number
+// 0x7F 'E', 'L', 'F'.
+// It defaults to false for all other errors (e.g. file not found, no permission etc).
 var IsELFFile = func(filename string) bool {
 	elfMagicNumber := []byte{
 		0x7F, 'E', 'L', 'F',
@@ -166,7 +167,7 @@ var IsELFFile = func(filename string) bool {
 	return bytes.Compare(buf, elfMagicNumber) == 0
 }
 
-// convenience function to mmap an entire file
+// MmapFile is a convenience function to mmap an entire file.
 var MmapFile = func(filename string, prot, flags int) ([]byte, error) {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -185,7 +186,7 @@ var MmapFile = func(filename string, prot, flags int) ([]byte, error) {
 	return Mmap(int(f.Fd()), 0, int(fi.Size()), prot, flags)
 }
 
-// convenience function to mmap range of a file
+// MmapFileRange is a convenience function to mmap a given range of a file.
 var MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
 	if offset%int64(os.Getpagesize()) != 0 {
 		return nil, errors.Errorf(
@@ -208,8 +209,8 @@ var MmapFileRange = func(filename string, offset int64, length, prot, flags int)
 	return Mmap(int(f.Fd()), offset, length, prot, flags)
 }
 
-// write to first part of file without truncating it (ioutil.WriteFile truncates it)
-// does not create a new file
+// WriteFileWithoutTruncate writes to the first part of file without truncating it
+// (ioutil.WriteFile truncates it). This function also does not create a new file.
 var WriteFileWithoutTruncate = func(filename string, buf []byte) error {
 	f, err := os.OpenFile(filename, os.O_WRONLY, 0644)
 	if err != nil {
@@ -226,8 +227,8 @@ var WriteFileWithoutTruncate = func(filename string, buf []byte) error {
 	return nil
 }
 
-// get all glob results froms a list of glob patterns
-// return error if pattern is invalid as determined by filepath.Glob
+// GlobAll gets all glob results froms a list of glob patterns.
+// Return error if pattern is invalid as determined by filepath.Glob.
 var GlobAll = func(patterns []string) ([]string, error) {
 	results := []string{}
 
@@ -235,9 +236,8 @@ var GlobAll = func(patterns []string) ([]string, error) {
 		gotFilePaths, err := Glob(pattern)
 		if err != nil {
 			return nil, errors.Errorf("Unable to resolve pattern '%v': %v", pattern, err)
-		} else {
-			results = append(results, gotFilePaths...)
 		}
+		results = append(results, gotFilePaths...)
 	}
 
 	return results, nil

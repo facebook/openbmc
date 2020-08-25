@@ -19,6 +19,7 @@
 
 package partition
 
+// PartitionConfigType is the type for the PartitionConfigType enum.
 type PartitionConfigType = string
 
 const (
@@ -30,12 +31,13 @@ const (
 	FBMETA_IMAGE                     = "FBMETA_IMAGE"
 )
 
+// ImageFormat represents a layout format for images.
 type ImageFormat struct {
 	Name             string
 	PartitionConfigs []PartitionConfigInfo
 }
 
-// info for each partition in PartitionConfigs
+// PartitionConfigInfo contains info for each partition in PartitionConfigs.
 type PartitionConfigInfo struct {
 	Name   string
 	Offset uint32
@@ -48,9 +50,9 @@ type PartitionConfigInfo struct {
 	Checksum string
 }
 
-// taken from fw-util (common/recipes-core/fw-util/files/image_parts.json).
-// maps from image format name to a array of partition configurations.
-// the idea is that the image is validated against every single format type
+// ImageFormats is taken from fw-util (common/recipes-core/fw-util/files/image_parts.json).
+// It maps from image format name to a array of partition configurations.
+// The idea is that the image is validated against every single format type
 // until one succeeds; if all fails, then the image is not valid.
 // Differences:
 // (1) flashy can support uboot validation, hence it is not ignored

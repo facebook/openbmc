@@ -30,6 +30,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+// FlashFwUtil is a step function that runs the fw-util flash procedure.
+// This is currently used for PFR systems.
 func FlashFwUtil(stepParams step.StepParams) step.StepExitError {
 	log.Printf("Flashing using fw-util method")
 	log.Printf("Attempting to flash with image file '%v'", stepParams.ImageFilePath)

@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// get all the partitions based on the partitionConfigs
+// ValidatePartitionsFromPartitionConfigs gets all the partitions based on the partitionConfigs
 // then validate them. If all passed, return nil. Else return the error.
 var ValidatePartitionsFromPartitionConfigs = func(
 	data []byte,
@@ -46,8 +46,8 @@ var ValidatePartitionsFromPartitionConfigs = func(
 	return nil
 }
 
-// calls validate for all partitions, and returns an error if a partition
-// failed validation. If all partitions pass validation, return nil
+// validatePartitions calls validate for all partitions, and returns an error if a partition
+// failed validation. If all partitions pass validation, return nil.
 var validatePartitions = func(partitions []Partition) error {
 	for _, p := range partitions {
 		log.Printf("Validating partition '%v' using '%v' partition validator",
@@ -61,7 +61,7 @@ var validatePartitions = func(partitions []Partition) error {
 	return nil
 }
 
-// Try to get all partitions based on partition configs.
+// getAllPartitionsFromPartitionConfigs tries to get all partitions based on partition configs.
 // Return an error if unknown partition config type or failed to get.
 var getAllPartitionsFromPartitionConfigs = func(
 	data []byte,

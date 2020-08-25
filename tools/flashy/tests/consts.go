@@ -17,9 +17,11 @@
  * Boston, MA 02110-1301 USA
  */
 
-// constants/examples used for testing
 package tests
 
+// This file contains constants/examples used for testing.
+
+// ExampleWedge100MemInfo contains /proc/meminfo contents from a wedge100.
 const ExampleWedge100MemInfo = `MemTotal:         246900 kB
 MemFree:           88928 kB
 MemAvailable:     192496 kB
@@ -55,7 +57,7 @@ VmallocTotal:     770048 kB
 VmallocUsed:        1280 kB
 VmallocChunk:     635736 kB`
 
-// minilaketb healthd-config.json
+// ExampleMinilaketbHealthdConfigJSON is the healthd-config.json from minilaketb.
 const ExampleMinilaketbHealthdConfigJSON = `{
 	"version": "1.0",
 	"heartbeat": {
@@ -186,7 +188,8 @@ const ExampleMinilaketbHealthdConfigJSON = `{
 	}
 }`
 
-// minilaketb healthd-config.json, reboot removed
+// ExampleMinilaketbHealthdConfigJSONRemovedReboot is healthd-config.json from a minilaketb,
+// with the reboot entry removed.
 const ExampleMinilaketbHealthdConfigJSONRemovedReboot = `{
 	"version": "1.0",
 	"heartbeat": {
@@ -316,7 +319,7 @@ const ExampleMinilaketbHealthdConfigJSONRemovedReboot = `{
 	}
 }`
 
-// minimal part of minilaketb json
+// ExampleMinimalHealthdConfigJSON is a minimal part of minilaketb healthd-config JSON for testing.
 const ExampleMinimalHealthdConfigJSON = `{
 	"bmc_mem_utilization": {
 		"threshold": [
@@ -348,7 +351,8 @@ const ExampleMinimalHealthdConfigJSON = `{
 	}
 }`
 
-// same as ExampleMinimalHealthdConfigJSON, but reboot entry removed
+// ExampleMinimalHealthdConfigJSONRemovedReboot is the same as ExampleMinimalHealthdConfigJSON,
+// but the reboot entry is removed.
 const ExampleMinimalHealthdConfigJSONRemovedReboot = `{
 	"bmc_mem_utilization": {
 		"threshold": [
@@ -379,6 +383,7 @@ const ExampleMinimalHealthdConfigJSONRemovedReboot = `{
 	}
 }`
 
+// ExampleCorruptedHealthdConfig is a corrupted healthd-config JSON.
 const ExampleCorruptedHealthdConfig = `{
 	"BMC_MEM_UTILIZATI: {
 		"threshold": [
@@ -410,9 +415,9 @@ const ExampleCorruptedHealthdConfig = `{
 	}
 }`
 
-// minimal part of minilaketb json
-// has multiple reboot entries
-// this does not exist in any image, but test for it
+// ExampleMinimalHealthdConfigJSONMultipleReboots is a minimal part of minilaketb
+// healthd-config JSON. It has multiple reboot entries, which not exist in any image,
+// but we test for it.
 const ExampleMinimalHealthdConfigJSONMultipleReboots = `{
 	"bmc_mem_utilization": {
 		"threshold": [
@@ -446,6 +451,7 @@ const ExampleMinimalHealthdConfigJSONMultipleReboots = `{
 	}
 }`
 
+// ExampleWedge100ProcMtdFile contains /proc/mtd contents from a wedge100.
 const ExampleWedge100ProcMtdFile = `dev:    size   erasesize  name
 mtd0: 00060000 00010000 "u-boot"
 mtd1: 00020000 00010000 "env"
@@ -454,6 +460,7 @@ mtd3: 01780000 00010000 "rootfs"
 mtd4: 00400000 00010000 "data0"
 mtd5: 02000000 00010000 "flash0"`
 
+// ExampleWedge100ProcMountsFile contains /proc/mounts contents from a wedge100.
 const ExampleWedge100ProcMountsFile = `rootfs / rootfs rw 0 0
 proc /proc proc rw,relatime 0 0
 sysfs /sys sysfs rw,relatime 0 0
@@ -463,6 +470,7 @@ tmpfs /var/volatile tmpfs rw,relatime 0 0
 /dev/mtdblock4 /mnt/data jffs2 rw,relatime 0 0
 devpts /dev/pts devpts rw,relatime,gid=5,mode=620 0 0`
 
+// ExampleTiogapass1ProcMtdFile contains /proc/mtd contents from a tiogapass1.
 const ExampleTiogapass1ProcMtdFile = `dev:    size   erasesize  name
 mtd0: 00060000 00010000 "romx"
 mtd1: 00020000 00010000 "env"
@@ -478,6 +486,7 @@ mtd10: 01b20000 00010000 "fitro"
 mtd11: 00400000 00010000 "dataro"
 mtd12: 02000000 00010000 "flash0"`
 
+// ExampleTiogapass1VbootUtilFile contains vboot-util output from a tiogapass1.
 const ExampleTiogapass1VbootUtilFile = `ROM executed from:       0x00000058
 ROM KEK certificates:    0x00011544
 ROM handoff marker:      0x00000000
@@ -503,14 +512,14 @@ TPM status  (0)
 Status type (0) code (0)
 OpenBMC was verified correctly`
 
-// strings -n30 flash-wedge100 | grep U-Boot
+// ExampleWedge100ImageUbootStrings is obtained frrom 'strings -n30 flash-wedge100 | grep U-Boot'
 const ExampleWedge100ImageUbootStrings = `U-Boot executed from:    0x%08x
 U-Boot certificates:     0x%08x
 MU-Boot EFI: Relocation at %p is out of range (%lx)
 U-Boot 2016.07 wedge100-v2020.07.1 (Feb 12 2020 - 18:32:20 +0000)
 U-Boot fitImage for Facebook OpenBMC/1.0/wedge100`
 
-// strings -n30 flash-tiogapass1 | grep U-Boot
+// ExampleTiogaPass1ImageUbootStrings is obtained from 'strings -n30 flash-tiogapass1 | grep U-Boot'
 const ExampleTiogaPass1ImageUbootStrings = `U-Boot SPL 2016.07 fbtp-v2020.09.1 (Feb 27 2020 - 23:35:02)
 U-Boot configuration was not verified.
 U-Boot executed from:    0x%08x
@@ -530,7 +539,7 @@ const ExampleFBImageMetaJSON = `{"FBOBMC_IMAGE_META_VER": 1, "meta_update_action
 // ExampleFBImageMetaChecksumJSON contains the md5sum of ExampleImageMetaJSON
 const ExampleFBImageMetaChecksumJSON = `{ "meta_md5": "db152c789e7ae9161bb29698a2309856" }`
 
-// ExmapleVbsData contains Vbs data from OpenBMC Release fbtp-v2020.09.1
+// ExampleVbsData contains Vbs data from OpenBMC Release fbtp-v2020.09.1
 var ExampleVbsData = []byte{
 	0x50, 0x43, 0x08, 0x28,
 	0x58, 0x00, 0x00, 0x00,

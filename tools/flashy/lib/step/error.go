@@ -93,6 +93,8 @@ func (e ExitUnknownError) GetType() string {
 
 var exit = os.Exit
 
+// HandleStepError handles errors returned by a step. If it is a safe to reboot error,
+// double confirm that it is safe to reboot by running more checks via ensureSafeToReboot.
 func HandleStepError(err StepExitError) {
 	// output stack trace
 	log.Printf("%+v", err)
@@ -129,7 +131,6 @@ func HandleStepError(err StepExitError) {
 	}
 }
 
-// encode exit error
 func encodeExitError(err StepExitError) {
 	enc := json.NewEncoder(os.Stderr)
 
@@ -141,10 +142,10 @@ func encodeExitError(err StepExitError) {
 	enc.Encode(ae)
 }
 
-// ensure that a SafeToReboot Error is actually safe to reboot
+// ensureSafeToReboot ensures that a SafeToReboot Error is actually safe to reboot
 // by checking
 // (1) no other flashers are running
-// (2) Either flash0 or flash1 is valid
+// (2) Either flash0 or flash1 is valid.
 var ensureSafeToReboot = func() error {
 	log.Printf("Ensuring that the system is safe to reboot")
 

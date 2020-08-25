@@ -226,13 +226,10 @@ var ubootKnownChecksums = []string{
 	"4d2181f1e1de31753d862f2af666f7b1",
 }
 
-/*
- * Calculates an md5sum for the whole partition and considers it valid if the
- * computed checksum matches any of the appended checksums/known checksums.
- * Currently used for u-boot partition
- *
- * The checksum is stored as json (appended, 4kB)
- */
+// UBootPartition represents U-Boot partitions.
+// Validation works by calculating an md5sum for the whole partition and considers it valid if the
+// computed checksum matches any of the appended checksums/known checksums.
+// The checksum is stored as json (appended, 4kB).
 type UBootPartition struct {
 	Name string
 	Data []byte

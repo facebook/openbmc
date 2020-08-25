@@ -30,8 +30,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Takes a string slice and looks if a given item is in it. If found it will
-// return its index, otherwise it will return -1
+// StringFind takes a string slice and looks if a given item is in it. If found it will
+// return its index, otherwise it will return -1.
 func StringFind(val string, arr []string) int {
 	for i, item := range arr {
 		if item == val {
@@ -56,8 +56,8 @@ func StringDifference(a, b []string) []string {
 	return diff
 }
 
-// get all the string keys in a string-keyed map.
-// the sequence of the keys is not guaranteed.
+// GetStringKeys gets all the string keys in a string-keyed map.
+// The sequence of the keys is not guaranteed.
 func GetStringKeys(m map[string]interface{}) []string {
 	i := 0
 	keys := make([]string, len(m))
@@ -68,8 +68,8 @@ func GetStringKeys(m map[string]interface{}) []string {
 	return keys
 }
 
-// Takes a uint32 slice and looks if a given item is in it. If found it will
-// return its index, otherwise it will return -1
+// Uint32Find takes a uint32 slice and looks if a given item is in it. If found it will
+// return its index, otherwise it will return -1.
 func Uint32Find(val uint32, arr []uint32) int {
 	for i, item := range arr {
 		if item == val {
@@ -79,9 +79,9 @@ func Uint32Find(val uint32, arr []uint32) int {
 	return -1
 }
 
-// helper function for GetRegexSubexpMap & GetAllRegexSubexpMap
+// regexSubexpMapHelper is a helper function for GetRegexSubexpMap & GetAllRegexSubexpMap.
 // `match` must already have matched with the subexpNames, otherwise an
-// error will be returned
+// error will be returned.
 // e.g. match: []string{"", "foo", "bar"}
 //      subexpNames: []string{"", "F", "B"}
 // -> map[string]string { "F": "foo", "B": "bar" }
@@ -121,16 +121,15 @@ func regexSubexpMapHelper(match, subexpNames []string) (map[string]string, error
 	return m, nil
 }
 
-// given a regex with capturing groups and an input string
-// return a map of the regex subexpNames to their respective matched
-// values
+// GetRegexSubexpMap takes a regex with capturing groups and an input string, and
+// returns a map of the regex subexpNames to their respective matched values.
 // NOTE: this function is used only for regex with valid capturing groups
 // uses beyond well-defined regexes with valid capturing groups will
 // result in errors or undefined behavior
 // e.g. regex: "(?P<type>[a-z]+):(?P<specifier>.+)"
 //      inputString: "mtd:flash0"
 // -> map[string]string { "type": "mtd", "specifier": "flash0" }
-// return error if match was not successful
+// Returns an error if match was not successful.
 func GetRegexSubexpMap(regEx, inputString string) (map[string]string, error) {
 	subexpMap := map[string]string{}
 
@@ -154,8 +153,9 @@ func GetRegexSubexpMap(regEx, inputString string) (map[string]string, error) {
 	return subexpMap, nil
 }
 
-// 'All' version of GetRegexSubexpMap that tries to match as many strings as possible
-// return empty list of subexpMap if no matches found
+// GetAllRegexSubexpMap is the 'All' version of GetRegexSubexpMap that tries
+// to match as many strings as possible.
+// Returns an empty list of subexpMap if no matches are found.
 func GetAllRegexSubexpMap(regEx, inputString string) ([](map[string]string), error) {
 	allSubexpMap := [](map[string]string){}
 
@@ -178,8 +178,9 @@ func GetAllRegexSubexpMap(regEx, inputString string) ([](map[string]string), err
 	return allSubexpMap, nil
 }
 
-// bytes version of GetRegexSubexpMap for convenience, image/mtds have long slices of bytes.
-// For convenience, map[string]string is returned
+// GetBytesRegexSubexpMap is the bytes version of GetRegexSubexpMap for convenience,
+// it is used on image/mtds that have long slices of bytes.
+// For convenience, map[string]string is returned.
 func GetBytesRegexSubexpMap(regEx string, buf []byte) (map[string]string, error) {
 	subexpMap := map[string]string{}
 
@@ -219,6 +220,7 @@ func LogAndIgnoreErr(err error) {
 	}
 }
 
+// SafeAppendBytes safely appends byte slices b to a.
 // c := append(a, b...) is unsafe, if a has enough capacity, b will be directly
 // appended.
 // SafeAppendBytes makes guarantees that a is not changed.
@@ -230,7 +232,7 @@ func SafeAppendBytes(a, b []byte) []byte {
 	return c
 }
 
-// String version of SafeAppendBytes
+// SafeAppendString is the string version of SafeAppendBytes.
 func SafeAppendString(a, b []string) []string {
 	la := len(a)
 	c := make([]string, la, la+len(b))
@@ -239,8 +241,8 @@ func SafeAppendString(a, b []string) []string {
 	return c
 }
 
-// get a 4 byte uint32 from a byte slice 'data' from offset to offset+4.
-// return an error if offset will cause an out of range read
+// GetWord gets a 4 byte uint32 from a byte slice 'data' from offset to offset+4.
+// It returns an error if the offset is out of range.
 func GetWord(data []byte, offset uint32) (uint32, error) {
 	if offset+4 > uint32(len(data)) {
 		return 0, errors.Errorf("Required offset %v out of range of data size %v",
@@ -250,8 +252,8 @@ func GetWord(data []byte, offset uint32) (uint32, error) {
 	return val, nil
 }
 
-// set a 4 byte uint32 in a byte slice 'data' from offset to offset+4.
-// return an error if offset will cause an out of range write.
+// SetWord sets a 4 byte uint32 in a byte slice 'data' from offset to offset+4.
+// It returns an error if offset will cause an out of range write.
 // Warning: make an explicit copy if the original array is required again after
 // SetWord.
 func SetWord(data []byte, word, offset uint32) ([]byte, error) {
@@ -266,8 +268,8 @@ func SetWord(data []byte, word, offset uint32) ([]byte, error) {
 	return data, nil
 }
 
-// given 'data' which contains JSON data, get all the string keys.
-// the sequence of the keys is not guaranteed.
+// GetStringKeysFromJSONData takes in data which contains JSON data and returns all the string keys.
+// The sequence of the keys is not guaranteed.
 func GetStringKeysFromJSONData(data []byte) ([]string, error) {
 	var m map[string]interface{}
 

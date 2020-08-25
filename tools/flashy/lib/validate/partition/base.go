@@ -19,7 +19,7 @@
 
 package partition
 
-// base interface definition for Partition validation
+// Partition is the base interface definition for Partition validation.
 type Partition interface {
 	GetName() string
 	GetSize() uint32
@@ -27,16 +27,16 @@ type Partition interface {
 	GetType() PartitionConfigType
 }
 
-// args for PartitionFactory
+// PartitionFactoryArgs contain args for PartitionFactory.
 type PartitionFactoryArgs struct {
 	Data  []byte
 	PInfo PartitionConfigInfo
 }
 
-// generic function type to get the corresponding Partition interface
+// PartitionFactory is a generic function type to get the corresponding Partition interface.
 type PartitionFactory = func(payload PartitionFactoryArgs) Partition
 
-// maps from PartitionConfigType to the factory function
+// PartitionFactoryMap maps from PartitionConfigType to the factory function
 // that gets the PartitionFactory for that interface.
 // Populated by each type of partititon in the corresponding init() function
 var PartitionFactoryMap map[PartitionConfigType]PartitionFactory = map[string]PartitionFactory{}

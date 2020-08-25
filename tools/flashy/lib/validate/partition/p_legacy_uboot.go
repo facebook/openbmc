@@ -61,11 +61,9 @@ const legacyUbootHeaderSize = 64
 
 const legacyUbootMagic = 0x27051956
 
-/**
- *  LegacyUbootPartition parses a (legacy) U-Boot header. The data region
- *  begins at the end of the header and ends where the size field in the header
- *  indicates. Used for "kernel" and "rootfs" partitions.
- */
+// LegacyUbootPartition parses a (legacy) U-Boot header. The data region
+// begins at the end of the header and ends where the size field in the header
+// indicates. Used for "kernel" and "rootfs" partitions.
 type LegacyUbootPartition struct {
 	Name string
 	Data []byte

@@ -103,8 +103,8 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 
 	cases := []struct {
 		name              string
-		inputJson         string
-		wantJson          string
+		inputJSON         string
+		wantJSON          string
 		writeConfigCalled bool
 		writeConfigErr    error
 		restartHealthdErr error
@@ -112,8 +112,8 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 	}{
 		{
 			name:              "basic minimal success",
-			inputJson:         tests.ExampleMinimalHealthdConfigJSON,
-			wantJson:          tests.ExampleMinimalHealthdConfigJSONRemovedReboot,
+			inputJSON:         tests.ExampleMinimalHealthdConfigJSON,
+			wantJSON:          tests.ExampleMinimalHealthdConfigJSONRemovedReboot,
 			writeConfigCalled: true,
 			writeConfigErr:    nil,
 			restartHealthdErr: nil,
@@ -121,8 +121,8 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 		},
 		{
 			name:              "minilaketb example",
-			inputJson:         tests.ExampleMinilaketbHealthdConfigJSON,
-			wantJson:          tests.ExampleMinilaketbHealthdConfigJSONRemovedReboot,
+			inputJSON:         tests.ExampleMinilaketbHealthdConfigJSON,
+			wantJSON:          tests.ExampleMinilaketbHealthdConfigJSONRemovedReboot,
 			writeConfigCalled: true,
 			writeConfigErr:    nil,
 			restartHealthdErr: nil,
@@ -130,8 +130,8 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 		},
 		{
 			name:              "minilaketb reboot already removed",
-			inputJson:         tests.ExampleMinilaketbHealthdConfigJSONRemovedReboot,
-			wantJson:          tests.ExampleMinilaketbHealthdConfigJSONRemovedReboot,
+			inputJSON:         tests.ExampleMinilaketbHealthdConfigJSONRemovedReboot,
+			wantJSON:          tests.ExampleMinilaketbHealthdConfigJSONRemovedReboot,
 			writeConfigCalled: false,
 			writeConfigErr:    nil,
 			restartHealthdErr: nil,
@@ -139,8 +139,8 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 		},
 		{
 			name:              "no bmc_mem_utilization entry in Json",
-			inputJson:         "{}",
-			wantJson:          "",
+			inputJSON:         "{}",
+			wantJSON:          "",
 			writeConfigCalled: false,
 			writeConfigErr:    nil,
 			restartHealthdErr: nil,
@@ -148,12 +148,12 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 		},
 		{
 			name: "invalid type for bmc_mem_utilization.threshold (not array)",
-			inputJson: `{
+			inputJSON: `{
 	"bmc_mem_utilization": {
 		"threshold": 42
 	}
 }`,
-			wantJson:          "",
+			wantJSON:          "",
 			writeConfigCalled: false,
 			writeConfigErr:    nil,
 			wantErr: errors.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config " +
@@ -161,7 +161,7 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 		},
 		{
 			name: "invalid type for bmc_mem_utilization.threshold[x].action (not interface array)",
-			inputJson: `{
+			inputJSON: `{
 	"bmc_mem_utilization": {
 		"threshold": [
 			{
@@ -170,7 +170,7 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 		]
 	}
 }`,
-			wantJson:          "",
+			wantJSON:          "",
 			writeConfigCalled: false,
 			writeConfigErr:    nil,
 			restartHealthdErr: nil,
@@ -179,8 +179,8 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 		},
 		{
 			name:              "restart healthd failure",
-			inputJson:         tests.ExampleMinilaketbHealthdConfigJSON,
-			wantJson:          tests.ExampleMinilaketbHealthdConfigJSONRemovedReboot,
+			inputJSON:         tests.ExampleMinilaketbHealthdConfigJSON,
+			wantJSON:          tests.ExampleMinilaketbHealthdConfigJSONRemovedReboot,
 			writeConfigCalled: true,
 			writeConfigErr:    nil,
 			restartHealthdErr: errors.Errorf("Restart healthd failed"),
@@ -188,8 +188,8 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 		},
 		{
 			name:              "remove multiple reboot entries",
-			inputJson:         tests.ExampleMinimalHealthdConfigJSONMultipleReboots,
-			wantJson:          tests.ExampleMinimalHealthdConfigJSONRemovedReboot,
+			inputJSON:         tests.ExampleMinimalHealthdConfigJSONMultipleReboots,
+			wantJSON:          tests.ExampleMinimalHealthdConfigJSONRemovedReboot,
 			writeConfigCalled: true,
 			writeConfigErr:    nil,
 			restartHealthdErr: nil,
@@ -197,8 +197,8 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 		},
 		{
 			name:              "write config failed",
-			inputJson:         tests.ExampleMinimalHealthdConfigJSON,
-			wantJson:          tests.ExampleMinimalHealthdConfigJSONRemovedReboot,
+			inputJSON:         tests.ExampleMinimalHealthdConfigJSON,
+			wantJSON:          tests.ExampleMinimalHealthdConfigJSONRemovedReboot,
 			writeConfigCalled: true,
 			writeConfigErr:    errors.Errorf("Write config failed"),
 			restartHealthdErr: nil,
@@ -216,7 +216,7 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 			RestartHealthd = func(wait bool, supervisor string) error {
 				return tc.restartHealthdErr
 			}
-			h, err := gabs.ParseJSON([]byte(tc.inputJson))
+			h, err := gabs.ParseJSON([]byte(tc.inputJSON))
 			if err != nil {
 				t.Errorf("%v", err)
 			}
@@ -226,8 +226,8 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 				t.Errorf("writeConfigCalled: want '%v' got '%v'",
 					tc.writeConfigCalled, writeConfigCalled)
 			}
-			if len(tc.wantJson) > 0 {
-				wantH, err := gabs.ParseJSON([]byte(tc.wantJson))
+			if len(tc.wantJSON) > 0 {
+				wantH, err := gabs.ParseJSON([]byte(tc.wantJSON))
 				if err != nil {
 					t.Errorf("%v", err)
 				}

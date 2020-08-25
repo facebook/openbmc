@@ -30,8 +30,8 @@ func init() {
 	step.RegisterStep(removeHealthdReboot)
 }
 
-// remove the high mem utilisation reboot action in /etc/healthd-config.json
-// to prevent reboots mid-flash
+// removeHealthdReboot removes the high mem utilisation reboot action
+// in /etc/healthd-config.json to prevent reboots mid-flash.
 func removeHealthdReboot(stepParams step.StepParams) step.StepExitError {
 	if utils.HealthdExists() {
 		log.Printf("Healthd exists in this system, removing the high memory utilization " +

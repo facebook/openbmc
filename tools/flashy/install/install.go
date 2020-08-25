@@ -32,7 +32,6 @@ import (
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/common"
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/wedge100"
 	_ "github.com/facebook/openbmc/tools/flashy/flash_procedure"
-
 	_ "github.com/facebook/openbmc/tools/flashy/utilities"
 )
 
@@ -40,6 +39,7 @@ import (
 // checkInstallPath will confirm and error out if not
 const flashyInstallPath = "/opt/flashy/flashy"
 
+// Install runs a few checks before running the installation procedure for flashy.
 func Install(stepParams step.StepParams) {
 	checkIsOpenBMC(stepParams.Clowntown)
 	checkInstallPath()
@@ -47,8 +47,8 @@ func Install(stepParams step.StepParams) {
 	initSymlinks()
 }
 
-// check whether the system is an OpenBMC
-// allow 'clowntown' override to work around malformed /etc/issue
+// checkIsOpenBMC checks whether the system is an OpenBMC.
+// It allows the 'clowntown' override to work around malformed /etc/issue files.
 func checkIsOpenBMC(clowntown bool) {
 	if clowntown {
 		log.Printf("===== WARNING: Clowntown mode: Bypassing OpenBMC device " +
@@ -74,7 +74,7 @@ func checkIsOpenBMC(clowntown bool) {
 	}
 }
 
-// check whether flashy is installed in the right path
+// checkInstallPath checks whether flashy is installed in the right path.
 func checkInstallPath() {
 	exPath := fileutils.GetExecutablePath()
 	if exPath != flashyInstallPath {
@@ -83,7 +83,7 @@ func checkInstallPath() {
 	}
 }
 
-// make sure the install directory is clean
+// cleanInstallPath makes sure the install directory is clean.
 func cleanInstallPath() {
 	exPath := fileutils.GetExecutablePath()
 	exDir := filepath.Dir(exPath)
@@ -109,7 +109,7 @@ func cleanInstallPath() {
 	}
 }
 
-// init all the busybox-style symlinks
+// initSymlinks inits all the busybox-style symlinks.
 func initSymlinks() {
 	// error handler
 	errHandler := func(symlinkPath string, err error) {

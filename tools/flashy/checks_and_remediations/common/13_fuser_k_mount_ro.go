@@ -35,6 +35,7 @@ func init() {
 	step.RegisterStep(fuserKMountRo)
 }
 
+// fuserKMountRo remounts /mnt/data read-only if required.
 // If /mnt/data is smaller in the new image, it must be made read-only
 // to prevent the tail of the FIT image from being corrupted.
 // Determining shrinkage isn't trivial (data0 is omitted from image

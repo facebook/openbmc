@@ -27,19 +27,21 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 )
 
+// StepParams contains arguments passed into steps.
 type StepParams struct {
 	ImageFilePath string
 	DeviceID      string
 	Clowntown     bool
 }
 
+// StepMapType is the type for StepMap.
 type StepMapType = map[string]func(StepParams) StepExitError
 
-// maps from the sanitized binary name to the function to run
-// the file path keys are also used to symlink the paths (busybox style)
+// StepMap maps from the sanitized binary name to the function to run
+// the file path keys are also used to symlink the paths (busybox style).
 var StepMap = StepMapType{}
 
-// registers endpoints into StepMap
+// RegisterStep registers endpoints into StepMap.
 func RegisterStep(step func(StepParams) StepExitError) {
 	// get the filename 1 stack call above
 	_, filename, _, ok := runtime.Caller(1)
@@ -51,7 +53,7 @@ func RegisterStep(step func(StepParams) StepExitError) {
 	StepMap[symlinkPath] = step
 }
 
-// get basenames of flashy's steps
+// GetFlashyStepBaseNames gets basenames of flashy's steps.
 var GetFlashyStepBaseNames = func() []string {
 	flashyStepBaseNames := []string{}
 	for p, _ := range StepMap {

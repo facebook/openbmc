@@ -41,11 +41,10 @@ var fitPartitionFactory = func(args PartitionFactoryArgs) Partition {
 	}
 }
 
-/**
- * Parses a device tree / flattened image tree header.
- * Both the beginning and end of the data region are determined from fields in
- * the header. Used for "kernel" and "rootfs" partitions.
- */
+// FitPartition represents a partition using the FIT format.
+// Validation works by parsing a device tree / flattened image tree header.
+// Both the beginning and end of the data region are determined from fields in
+// the header. Used for "kernel" and "rootfs" partitions.
 type FitPartition struct {
 	Name string
 	Data []byte

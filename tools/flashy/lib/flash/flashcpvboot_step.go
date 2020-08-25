@@ -27,8 +27,10 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
-// known vboot systems: yosemite2, brycecanyon1, tiogapass1, yosemitegpv2, northdome
-// these vboot devices expose only flash1
+// FlashCpVboot is a step function that runs the flashcp procedure with extra vboot
+// procedures.
+// Known vboot systems: yosemite2, brycecanyon1, tiogapass1, yosemitegpv2, northdome.
+// These vboot devices expose only flash1.
 func FlashCpVboot(stepParams step.StepParams) step.StepExitError {
 	log.Printf("Flashing using flashcp vboot method")
 	log.Printf("Attempting to flash '%v' with image file '%v'",

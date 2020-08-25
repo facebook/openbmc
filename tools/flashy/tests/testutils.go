@@ -24,7 +24,7 @@ import (
 	"testing"
 )
 
-// used to test and compare errors in testing
+// CompareTestErrors is used to test and compare errors in testing.
 func CompareTestErrors(want error, got error, t *testing.T) {
 	if got == nil {
 		if want != nil {
@@ -39,8 +39,8 @@ func CompareTestErrors(want error, got error, t *testing.T) {
 	}
 }
 
-// check that logs are complete and contain all
-// strings in logContainsSeq in sequence
+// LogContainsSeqTest checks that logs are complete and contain all
+// strings in logContainsSeq in sequence.
 func LogContainsSeqTest(logs string, logContainsSeq []string, t *testing.T) {
 	lastIndex := -1
 
@@ -55,7 +55,7 @@ func LogContainsSeqTest(logs string, logContainsSeq []string, t *testing.T) {
 	}
 }
 
-// return true if the filename denotes a `_test.go` file
+// IsGoTestFileName returns true if the filename denotes a `_test.go` file.
 func IsGoTestFileName(filename string) bool {
 	return len(filename) >= 8 &&
 		filename[len(filename)-8:] == "_test.go"

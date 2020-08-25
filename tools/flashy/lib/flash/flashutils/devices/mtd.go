@@ -55,17 +55,20 @@ func getMTD(deviceSpecifier string) (FlashDevice, error) {
 	}, nil
 }
 
+// WritableMountedMTD contains information of a mounted MTD that is writable.
 type WritableMountedMTD struct {
 	Device     string
 	Mountpoint string
 }
 
+// MemoryTechnologyDevice contains information of an MTD, and implements FlashDevice.
 type MemoryTechnologyDevice struct {
 	Specifier string
 	FilePath  string
 	FileSize  uint64
 }
 
+// MtdType represents a constant for the type of the flash device.
 const MtdType = "mtd"
 
 func (m *MemoryTechnologyDevice) GetType() string {
@@ -84,8 +87,8 @@ func (m *MemoryTechnologyDevice) GetFileSize() uint64 {
 	return m.FileSize
 }
 
-// mmaps the whole file, readonly
-// Munmap call required to release the buffer
+// MmapRO mmaps the whole file in readonly mode.
+// A Munmap call is required to release the buffer.
 func (m *MemoryTechnologyDevice) MmapRO() ([]byte, error) {
 	// use mmap
 	mmapFilePath, err := GetMTDBlockFilePath(m.FilePath)
@@ -127,7 +130,7 @@ var GetMTDBlockFilePath = func(filepath string) (string, error) {
 	), nil
 }
 
-// return all writable mounted MTDs as specified in /proc/mounts
+// GetWritableMountedMTDs returns all writable mounted MTDs as specified in /proc/mounts.
 var GetWritableMountedMTDs = func() ([]WritableMountedMTD, error) {
 	writableMountedMTDs := []WritableMountedMTD{}
 

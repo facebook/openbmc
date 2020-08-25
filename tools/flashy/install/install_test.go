@@ -48,13 +48,13 @@ var directoriesToTest = []string{
 }
 
 func populateStepPaths() {
-	for path, _ := range step.StepMap {
+	for path := range step.StepMap {
 		stepPaths = append(stepPaths, path)
 	}
 }
 
-// Check that all required files are registered correctly
-// in StepMap
+// TestStepMap checks that all required files are registered correctly
+// in StepMap.
 func TestStepMap(t *testing.T) {
 	for _, dir := range directoriesToTest {
 		absDirPath := filepath.Join(fileutils.SourceRootDir, dir)

@@ -33,9 +33,7 @@ var ignorePartitionFactory = func(args PartitionFactoryArgs) Partition {
 	}
 }
 
-/**
- * Ignored, validation always returns nil (success)
- */
+// IgnorePartition represents a partition whose validation is ignored.
 type IgnorePartition struct {
 	Name string
 	// offset in the image file

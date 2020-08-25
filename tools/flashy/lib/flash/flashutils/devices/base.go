@@ -19,6 +19,8 @@
 
 package devices
 
+// FlashDevice is an interface for different flash device implementations,
+// this may include MTDs, eMMCs, etc..
 type FlashDevice interface {
 	GetType() string
 	GetSpecifier() string
@@ -29,13 +31,13 @@ type FlashDevice interface {
 	Validate() error
 }
 
-// takes in the specifier and returns the FlashDevice
+// FlashDeviceFactory takes in the flash device and returns the FlashDevice.
 type FlashDeviceFactory = func(string) (FlashDevice, error)
 
-// maps from the type of the device to the factory function
+// FlashDeviceFactoryMap maps from the type of the device to the factory function
 // that gets & validates the information of the flash storage device
 // populated by each storage device via the registerFlashDeviceFactory
-// function
+// function.
 var FlashDeviceFactoryMap map[string]FlashDeviceFactory = map[string]FlashDeviceFactory{}
 
 func registerFlashDeviceFactory(deviceType string, factory FlashDeviceFactory) {

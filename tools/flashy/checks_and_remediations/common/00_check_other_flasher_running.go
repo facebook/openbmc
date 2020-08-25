@@ -31,7 +31,7 @@ func init() {
 	step.RegisterStep(checkOtherFlasherRunning)
 }
 
-// fail if any other flashers are running
+// checkOtherFlasherRunning fails if any other flashers are running
 func checkOtherFlasherRunning(stepParams step.StepParams) step.StepExitError {
 	if stepParams.Clowntown {
 		log.Printf("===== WARNING: Clowntown mode: Bypassing check for other running flashers =====")

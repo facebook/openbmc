@@ -41,13 +41,10 @@ var fbmetaMD5PartitionFactory = func(args PartitionFactoryArgs) Partition {
 	}
 }
 
-/**
- * FBMetaMD5Partition validates a partition by calculating the md5sum
- * of the whole partition and matches it against the checksum
- *
- * Similar to UbootPartition, but simpler as it does not try to look for
- * appended checksums nor use known UBoot checksums
- */
+// FBMetaMD5Partition validates a partition by calculating the md5sum
+// of the whole partition and matches it against the checksum.
+// It is similar to UbootPartition, but is simpler as it does not try to look for
+// appended checksums nor use known UBoot checksums.
 type FBMetaMD5Partition struct {
 	Name     string
 	Data     []byte

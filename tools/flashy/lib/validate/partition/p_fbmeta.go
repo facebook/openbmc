@@ -90,12 +90,10 @@ type FBMetaChecksum struct {
 	Checksum string `json:"meta_md5"`
 }
 
-/**
- * FBMetaImagePartition is a full image that contains the image-meta partition.
- * The image-meta partition contains the information
- * of the partitions and indicates the validation scheme
- * required
- */
+// FBMetaImagePartition is a full image that contains the image-meta partition.
+// The image-meta partition contains the information
+// of the partitions and indicates the validation scheme
+// required.
 type FBMetaImagePartition struct {
 	Name     string
 	Data     []byte

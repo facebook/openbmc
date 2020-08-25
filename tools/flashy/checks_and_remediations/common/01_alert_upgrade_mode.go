@@ -17,9 +17,6 @@
  * Boston, MA 02110-1301 USA
  */
 
-// change PS1 to [UPGRADE_MODE]u@\h:\w\$
-// change MOTD
-// wall alert
 package common
 
 import (
@@ -33,8 +30,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-const PS1Line = `
-export PS1="[UPGRADE_MODE]$PS1"`
+// const PS1Line = `
+// export PS1="[UPGRADE_MODE]$PS1"`
 
 // also used in wall
 const motdContents = `
@@ -53,6 +50,9 @@ func init() {
 	step.RegisterStep(alertUpgradeMode)
 }
 
+// alertUpgradeMode does the following actions:
+// - change MOTD
+// - wall alert
 func alertUpgradeMode(stepParams step.StepParams) step.StepExitError {
 	// as these are best-effort, the errors are ignored
 	// these won't affect the actual upgrade

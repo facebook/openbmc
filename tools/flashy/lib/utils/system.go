@@ -38,7 +38,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// memory information in bytes
+// MemInfo represents memory information in bytes.
 type MemInfo struct {
 	MemTotal uint64
 	MemFree  uint64
@@ -70,9 +70,9 @@ var ownCmdlines = []string{
 	fmt.Sprintf("/proc/%v/cmdline", os.Getpid()),
 }
 
-// get memInfo
-// note that this assumes kB units for MemFree and MemTotal
-// it will fail otherwise
+// GetMemInfo gets MemInfo from /proc/meminfo.
+// Note that this assumes kB units for MemFree and MemTotal
+// and will fail otherwise.
 var GetMemInfo = func() (*MemInfo, error) {
 	buf, err := fileutils.ReadFile("/proc/meminfo")
 	if err != nil {
@@ -139,10 +139,10 @@ func scanLinesRN(data []byte, atEOF bool) (advance int, token []byte, err error)
 	return 0, nil, nil
 }
 
-// function to aid logging and saving live stdout and stderr output
-// from running command
-// note that sequential execution is not guaranteed - race conditions
-// might still exist
+// logScanner is a function to aid logging and saving live stdout and stderr output
+// from a running command.
+// Note that sequential execution is not guaranteed - race conditions
+// might still exist.
 func logScanner(s *bufio.Scanner, ch chan struct{}, pre string, str *string) {
 	s.Split(scanLinesRN)
 	for s.Scan() {
@@ -153,9 +153,9 @@ func logScanner(s *bufio.Scanner, ch chan struct{}, pre string, str *string) {
 	close(ch)
 }
 
-// runs command and pipes live output
-// returns exitcode, error, stdout (string), stderr (string) if non-zero/error returned or timed out
-// returns 0, nil, stdout (string), stderr (string) if successfully run
+// RunCommand runs command and pipes live output.
+// Returns exitcode, error, stdout (string), stderr (string) if non-zero/error returned or timed out.
+// Returns 0, nil, stdout (string), stderr (string) if successfully run.
 var RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
 	start := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -215,9 +215,9 @@ var RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, strin
 	return exitCode, err, stdoutStr, stderrStr
 }
 
-// calls RunCommand repeatedly until succeeded or maxAttempts is reached
-// between attempts, an interval is applied
-// returns the results from the first succeeding run or last tried run
+// RunCommandWithRetries calls RunCommand repeatedly until succeeded or maxAttempts is reached.
+// Between attempts, an interval is applied.
+// Returns the results from the first succeeding run or last tried run.
 var RunCommandWithRetries = func(cmdArr []string, timeout time.Duration, maxAttempts int, interval time.Duration) (int, error, string, string) {
 	exitCode, err, stdoutStr, stderrStr := 1, errors.Errorf("Command failed to run"), "", ""
 
@@ -248,7 +248,7 @@ var RunCommandWithRetries = func(cmdArr []string, timeout time.Duration, maxAtte
 	return exitCode, err, stdoutStr, stderrStr
 }
 
-// check whether systemd is available
+// SystemdAvailable checks whether systemd is available.
 var SystemdAvailable = func() (bool, error) {
 	const cmdlinePath = "/proc/1/cmdline"
 
@@ -267,10 +267,10 @@ var SystemdAvailable = func() (bool, error) {
 	return false, nil
 }
 
-// get OpenBMC version from /etc/issue
+// GetOpenBMCVersionFromIssueFile gets OpenBMC version from /etc/issue.
 // examples: fbtp-v2020.09.1, wedge100-v2020.07.1
 // WARNING: There is no guarantee that /etc/issue is well-formed
-// in old images
+// in old images.
 var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 	const etcIssueVersionRegEx = `^OpenBMC Release (?P<version>[^\s]+)`
 
@@ -294,8 +294,8 @@ var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 	return version, nil
 }
 
-// check whether the system is indeed an OpenBMC
-// by checking whether the string "OpenBMC" exists in /etc/issue
+// IsOpenBMC check whether the system is an OpenBMC
+// by checking whether the string "OpenBMC" exists in /etc/issue.
 var IsOpenBMC = func() (bool, error) {
 	const magic = "OpenBMC"
 
@@ -309,9 +309,9 @@ var IsOpenBMC = func() (bool, error) {
 	return isOpenBMC, nil
 }
 
-// return error if any other flashers are running.
-// takes in the baseNames of all flashy's steps (e.g. 00_truncate_logs)
-// to make sure no other instance of flashy is running
+// CheckOtherFlasherRunning return an error if any other flashers are running.
+// It takes in the baseNames of all flashy's steps (e.g. 00_truncate_logs)
+// to make sure no other instance of flashy is running.
 var CheckOtherFlasherRunning = func(flashyStepBaseNames []string) error {
 	allFlasherBaseNames := SafeAppendString(otherFlasherBaseNames, flashyStepBaseNames)
 
@@ -333,7 +333,7 @@ var getOtherProcCmdlinePaths = func() []string {
 	return otherCmdlines
 }
 
-// return error if a basename is found running in a proc/*/cmdline file
+// checkNoBaseNameExistsInProcCmdlinePaths returns error if a basename is found running in a proc/*/cmdline file
 var checkNoBaseNameExistsInProcCmdlinePaths = func(baseNames, procCmdlinePaths []string) error {
 	for _, procCmdlinePath := range procCmdlinePaths {
 		cmdlineBuf, err := fileutils.ReadFile(procCmdlinePath)
@@ -357,8 +357,8 @@ var checkNoBaseNameExistsInProcCmdlinePaths = func(baseNames, procCmdlinePaths [
 	return nil
 }
 
-// GetMtdMap gets a map containing [dev, size, erasesize] values
-// for the mtd device specifier. Information is obtained from /proc/mtd
+// GetMTDMapFromSpecifier gets a map containing [dev, size, erasesize] values
+// for the mtd device specifier. Information is obtained from /proc/mtd.
 var GetMTDMapFromSpecifier = func(deviceSpecifier string) (map[string]string, error) {
 	// read from /proc/mtd
 	procMTDBuf, err := fileutils.ReadFile(ProcMtdFilePath)

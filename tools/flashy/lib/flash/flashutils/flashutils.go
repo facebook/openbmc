@@ -28,14 +28,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-/*
- e.g. “mtd:flash0” -> type=”mtd” specifier=”flash0”
- TODO:- e.g. “emmc:0” -> type=”emmc” specifier=”0”
- TODO:- e.g. “pfr:primary” -> type=”pfr” specifier=”primary”
- TODO:- e.g. “file:/dev/sda” -> type=”file” specifier=”/dev/sda”
-*/
-// parses device ID and returns (type, specifier, nil)
-// returns an error if parsing failed
+// parseDeviceID parses a given device ID and returns (type, specifier, nil).
+// It returns an error if parsing failed.
+// e.g. “mtd:flash0” -> type=”mtd” specifier=”flash0”
+// TODO:- e.g. “emmc:0” -> type=”emmc” specifier=”0”
+// TODO:- e.g. “pfr:primary” -> type=”pfr” specifier=”primary”
+// TODO:- e.g. “file:/dev/sda” -> type=”file” specifier=”/dev/sda”
 var parseDeviceID = func(deviceID string) (string, string, error) {
 	regEx := `^(?P<type>[a-z]+):(?P<specifier>.+)$`
 

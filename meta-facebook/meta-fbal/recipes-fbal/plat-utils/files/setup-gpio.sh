@@ -113,9 +113,11 @@ gpio_set FM_BMC_PWRBTN_OUT_R_N 1
 
 # JTAG_MUX_SEL_0
 gpio_export JTAG_MUX_SEL_0 GPIOE4
+gpio_set JTAG_MUX_SEL_0 1
 
 # JTAG_MUX_SEL_1
 gpio_export JTAG_MUX_SEL_1 GPIOE5
+gpio_set JTAG_MUX_SEL_1 1
 
 # FP_FAULT_LED_N
 gpio_export FP_FAULT_LED_N GPIOE6

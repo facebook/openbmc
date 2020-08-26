@@ -133,7 +133,6 @@ enum jtag_xfer_direction
 struct jtag_tap_state
 {
     __u8 reset;
-    __u8 from;
     __u8 endstate;
     __u8 tck;
 };
@@ -153,7 +152,6 @@ struct jtag_xfer
 {
     __u8 type;
     __u8 direction;
-    __u8 from;
     __u8 endstate;
     __u8 padding;
     __u32 length;

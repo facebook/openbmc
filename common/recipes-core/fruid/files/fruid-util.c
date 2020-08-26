@@ -232,8 +232,8 @@ print_json_fruid_info(fruid_info_t *fruid, const char *name,json_t *fru_array)
 }
 
 /* Populate and print fruid_info by parsing the fru's binary dump */
-void get_fruid_info(uint8_t fru, char *path, char* name, unsigned char print_format,json_t *fru_array) {
-  int ret;
+int get_fruid_info(uint8_t fru, char *path, char* name, unsigned char print_format,json_t *fru_array) {
+  int ret = 0;
   fruid_info_t fruid;
 
   ret = fruid_parse(path, &fruid);
@@ -248,12 +248,14 @@ void get_fruid_info(uint8_t fru, char *path, char* name, unsigned char print_for
     }
   } else {
     if (ret) {
-      fprintf(stderr, "Failed print FRUID for %s\nCheck syslog for errors!\n",name);
+      fprintf(stderr, "Failed print FRUID for %s\nCheck syslog for errors! (err %xh)\n",name, ret);
     } else {
       print_fruid_info(&fruid, name);
       free_fruid_info(&fruid);
     }
   }
+
+  return ret;
 }
 
 static void
@@ -514,7 +516,7 @@ int print_fru(int fru, char * device, unsigned char print_format, json_t * fru_a
     goto error;
   }
 
-  get_fruid_info(fru, path, name, print_format,fru_array);
+  ret = get_fruid_info(fru, path, name, print_format,fru_array);
 
   if (num_devs && dev_id == DEV_ALL) {
     for (uint8_t i=1;i<=num_devs;i++) {
@@ -527,7 +529,7 @@ int print_fru(int fru, char * device, unsigned char print_format, json_t * fru_a
           printf("%s is unavailable!\n\n", name);
         }
       } else {
-        get_fruid_info(fru, path, name, print_format,fru_array);
+        ret = get_fruid_info(fru, path, name, print_format,fru_array);
       }
     }
   }
@@ -553,17 +555,20 @@ int do_print_fru(int argc, char * argv[], unsigned char print_format)
   ret = check_print_arg(argc, argv);
   if (ret) {
     print_usage();
+    return ret;
   }
 
   ret = pal_get_fru_id(argv[optind], &fru);
   if (ret < 0) {
     print_usage();
+    return ret;
   }
 
   if (fru != FRU_ALL) {
     ret = print_fru(fru, device, print_format,fru_array);
     if (ret < 0) {
       print_usage();
+      return ret;
     }
   } else {
     fru = 1;
@@ -579,7 +584,7 @@ int do_print_fru(int argc, char * argv[], unsigned char print_format)
   }
   json_decref(fru_array);
 
-  return 0;
+  return ret;
 }
 
 int do_action(int argc, char * argv[], unsigned char action_flag) {
@@ -811,8 +816,8 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
         printf("Fail to modify %s FRU\n", name);
         return ret;
       }
-      get_fruid_info(fru, file_path, name, DEFAULT_FORMAT,NULL);
-      return 0;
+      ret = get_fruid_info(fru, file_path, name, DEFAULT_FORMAT,NULL);
+      return ret;
 
     default:
         return -1;
@@ -826,6 +831,7 @@ int main(int argc, char * argv[]) {
   int c;
   unsigned char print_format = DEFAULT_FORMAT;
   unsigned char action_flag = 0;
+  int ret = 0;
 
   if (!strncmp(pal_fru_list_rw_t, "all, ", strlen("all, "))) {
     pal_fru_list_rw_t = pal_fru_list_rw_t + strlen("all, ");
@@ -917,14 +923,15 @@ int main(int argc, char * argv[]) {
     case FLAG_DUMP:
     case FLAG_WRITE:
     case FLAG_MODIFY:
-      do_action(argc, argv, action_flag);
+      ret = do_action(argc, argv, action_flag);
       break;
     case FLAG_PRINT:
-      do_print_fru(argc, argv, print_format);
+      ret = do_print_fru(argc, argv, print_format);
       break;
     default:
       print_usage();
+      ret = -1;
   }
 
-  return 0;
+  return ret;
 }

@@ -174,22 +174,27 @@ const uint8_t pdb_sensor_list[] = {
   PDB_HSC_P12V_1_VOUT,
   PDB_HSC_P12V_1_CURR,
   PDB_HSC_P12V_1_PWR,
+  PDB_HSC_P12V_1_PWR_PEAK,
   PDB_HSC_P12V_2_VIN,
   PDB_HSC_P12V_2_VOUT,
   PDB_HSC_P12V_2_CURR,
   PDB_HSC_P12V_2_PWR,
+  PDB_HSC_P12V_2_PWR_PEAK,
   PDB_HSC_P12V_AUX_VIN,
   PDB_HSC_P12V_AUX_VOUT,
   PDB_HSC_P12V_AUX_CURR,
   PDB_HSC_P12V_AUX_PWR,
+  PDB_HSC_P12V_AUX_PWR_PEAK,
   PDB_HSC_P48V_1_VIN,
   PDB_HSC_P48V_1_VOUT,
   PDB_HSC_P48V_1_CURR,
   PDB_HSC_P48V_1_PWR,
+  PDB_HSC_P48V_1_PWR_PEAK,
   PDB_HSC_P48V_2_VIN,
   PDB_HSC_P48V_2_VOUT,
   PDB_HSC_P48V_2_CURR,
   PDB_HSC_P48V_2_PWR,
+  PDB_HSC_P48V_2_PWR_PEAK,
   PDB_ADC_1_VICOR0_TEMP,
   PDB_ADC_1_VICOR1_TEMP,
   PDB_ADC_1_VICOR2_TEMP,
@@ -695,10 +700,16 @@ struct sensor_map {
   {sensors_read_12v_hsc, "PDB_HSC_P12V_2_CURR", SNR_CURR},
   [PDB_HSC_P12V_AUX_PWR] =
   {sensors_read_12v_hsc, "PDB_HSC_P12V_AUX_PWR", SNR_PWR},
+  [PDB_HSC_P12V_AUX_PWR_PEAK] =
+  {sensors_read_12v_hsc, "PDB_HSC_P12V_AUX_PWR_PEAK", SNR_PWR},
   [PDB_HSC_P12V_1_PWR] =
   {sensors_read_12v_hsc, "PDB_HSC_P12V_1_PWR", SNR_PWR},
+  [PDB_HSC_P12V_1_PWR_PEAK] =
+  {sensors_read_12v_hsc, "PDB_HSC_P12V_1_PWR_PEAK", SNR_PWR},
   [PDB_HSC_P12V_2_PWR] =
   {sensors_read_12v_hsc, "PDB_HSC_P12V_2_PWR", SNR_PWR},
+  [PDB_HSC_P12V_2_PWR_PEAK] =
+  {sensors_read_12v_hsc, "PDB_HSC_P12V_2_PWR_PEAK", SNR_PWR},
   [PDB_HSC_P48V_1_VIN] =
   {sensors_read_48v_hsc, "PDB_HSC_P48V_1_VIN", SNR_VOLT},
   [PDB_HSC_P48V_1_VOUT] =
@@ -707,6 +718,8 @@ struct sensor_map {
   {sensors_read_48v_hsc, "PDB_HSC_P48V_1_CURR", SNR_CURR},
   [PDB_HSC_P48V_1_PWR] =
   {sensors_read_48v_hsc, "PDB_HSC_P48V_1_PWR", SNR_PWR},
+  [PDB_HSC_P48V_1_PWR_PEAK] =
+  {sensors_read_48v_hsc, "PDB_HSC_P48V_1_PWR_PEAK", SNR_PWR},
   [PDB_HSC_P48V_2_VIN] =
   {sensors_read_48v_hsc, "PDB_HSC_P48V_2_VIN", SNR_VOLT},
   [PDB_HSC_P48V_2_VOUT] =
@@ -715,6 +728,8 @@ struct sensor_map {
   {sensors_read_48v_hsc, "PDB_HSC_P48V_2_CURR", SNR_CURR},
   [PDB_HSC_P48V_2_PWR] =
   {sensors_read_48v_hsc, "PDB_HSC_P48V_2_PWR", SNR_PWR},
+  [PDB_HSC_P48V_2_PWR_PEAK] =
+  {sensors_read_48v_hsc, "PDB_HSC_P48V_2_PWR_PEAK", SNR_PWR},
   [PDB_ADC_1_VICOR0_TEMP] =
   {sensors_read_vicor, "PDB_ADC_1_VICOR0_TEMP", SNR_TEMP},
   [PDB_ADC_1_VICOR1_TEMP] =
@@ -1348,8 +1363,18 @@ static int sensors_read_12v_hsc(uint8_t sensor_num, float *value)
       if (ret == 0)
         hsc_value_adjust(power_table, value);
       break;
+    case PDB_HSC_P12V_1_PWR_PEAK:
+      ret = sensors_read("ltc4282-i2c-16-53", "power1_input_highest", value);
+      if (ret == 0)
+        hsc_value_adjust(power_table, value);
+      break;
     case PDB_HSC_P12V_2_PWR:
       ret = sensors_read("ltc4282-i2c-17-40", "P12V_2_PWR", value);
+      if (ret == 0)
+        hsc_value_adjust(power_table, value);
+      break;
+    case PDB_HSC_P12V_2_PWR_PEAK:
+      ret = sensors_read("ltc4282-i2c-17-40", "power1_input_highest", value);
       if (ret == 0)
         hsc_value_adjust(power_table, value);
       break;
@@ -1357,6 +1382,13 @@ static int sensors_read_12v_hsc(uint8_t sensor_num, float *value)
       ret = sensors_read("adm1278-i2c-18-42", "P12V_AUX_PWR", value);
       if (ret < 0)
         ret = sensors_read("ltc4282-i2c-18-43", "P12V_AUX_PWR", value);
+      if (ret == 0)
+        hsc_value_adjust(aux_power_table, value);
+      break;
+    case PDB_HSC_P12V_AUX_PWR_PEAK:
+      ret = sensors_read("adm1278-i2c-18-42", "power1_input_highest", value);
+      if (ret < 0)
+        ret = sensors_read("ltc4282-i2c-18-43", "power1_input_highest", value);
       if (ret == 0)
         hsc_value_adjust(aux_power_table, value);
       break;
@@ -1438,8 +1470,18 @@ static int sensors_read_48v_hsc(uint8_t sensor_num, float *value)
       if (ret == 0)
         hsc_value_adjust(p48v_power_table, value);
       break;
+    case PDB_HSC_P48V_1_PWR_PEAK:
+      ret = sensors_read("adm1272-i2c-16-13", "power1_input_highest", value);
+      if (ret == 0)
+        hsc_value_adjust(p48v_power_table, value);
+      break;
     case PDB_HSC_P48V_2_PWR:
       ret = sensors_read("adm1272-i2c-17-10", "P48V_2_PWR", value);
+      if (ret == 0)
+        hsc_value_adjust(p48v_power_table, value);
+      break;
+    case PDB_HSC_P48V_2_PWR_PEAK:
+      ret = sensors_read("adm1272-i2c-17-10", "power1_input_highest", value);
       if (ret == 0)
         hsc_value_adjust(p48v_power_table, value);
       break;

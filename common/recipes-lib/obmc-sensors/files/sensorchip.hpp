@@ -31,7 +31,7 @@ class SensorChip : public std::map<std::string, std::unique_ptr<Sensor>> {
 
     // Makes a sensor for the given chip.
     virtual std::unique_ptr<Sensor> make_sensor(const sensors_chip_name *chip,
-        const sensors_feature *feature);
+        const sensors_feature *feature, const sensors_subfeature *subfeature);
 
     // Adds the given sensor to the collection
     virtual void addsensor(std::unique_ptr<Sensor> snr);

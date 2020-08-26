@@ -48,8 +48,8 @@ class Sensor {
   std::string name;
   std::string label;
   public:
-    Sensor(const sensors_chip_name *_c, const sensors_feature *_feature)
-      : chip(_c), feature(_feature), subfeature(nullptr), name(), label("") {}
+    Sensor(const sensors_chip_name *_c, const sensors_feature *_feature, const sensors_subfeature *_subfeature)
+      : chip(_c), feature(_feature), subfeature(_subfeature), name(), label("") {}
     virtual ~Sensor() {}
 
     // Initialize a sensor.
@@ -72,7 +72,7 @@ class PWMSensor : public Sensor {
   std::string path;
   public:
     PWMSensor(const sensors_chip_name *fanchip, const std::string &_name)
-      : Sensor(fanchip, nullptr), path() {name = _name; label = _name;}
+      : Sensor(fanchip, nullptr, nullptr), path() {name = _name; label = _name;}
     virtual ~PWMSensor() {}
 
     // Initialize a sensor.
@@ -96,7 +96,7 @@ class LegacyPWMSensor : public Sensor {
   int unit_max();
   public:
     LegacyPWMSensor(const sensors_chip_name *fanchip, const std::string &_name)
-      : Sensor(fanchip, nullptr), en_path(),
+      : Sensor(fanchip, nullptr, nullptr), en_path(),
       rising_path(), falling_path(), type_path(), unit_path() {name = _name;}
     virtual ~LegacyPWMSensor() {}
 

@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <map>
 #include <cmath>
 #include <syslog.h>
 #include "sensor.hpp"
@@ -24,52 +23,27 @@ using namespace std;
 
 void Sensor::initialize()
 {
-  const std::map<sensors_feature_type, sensors_subfeature_type> interested_subfeatures = {
-    {SENSORS_FEATURE_IN, SENSORS_SUBFEATURE_IN_INPUT},
-    {SENSORS_FEATURE_FAN, SENSORS_SUBFEATURE_FAN_INPUT},
-    {SENSORS_FEATURE_TEMP, SENSORS_SUBFEATURE_TEMP_INPUT},
-    {SENSORS_FEATURE_POWER, SENSORS_SUBFEATURE_POWER_INPUT}, // SENSORS_SUBFEATURE_POWER_AVERAGE
-    {SENSORS_FEATURE_ENERGY, SENSORS_SUBFEATURE_ENERGY_INPUT},
-    {SENSORS_FEATURE_CURR, SENSORS_SUBFEATURE_CURR_INPUT},
-    {SENSORS_FEATURE_HUMIDITY, SENSORS_SUBFEATURE_HUMIDITY_INPUT}
-  };
-
-  if (!feature) {
+  if (feature == nullptr || chip == nullptr || subfeature == nullptr) {
+    throw system_error(EINVAL, std::generic_category(), "Initialize without chip|[sub]feature");
   }
 
-  if (feature == nullptr || chip == nullptr) {
-    throw system_error(EINVAL, std::generic_category(), "Initialize without chip|featire");
+  if (subfeature->type != SENSORS_SUBFEATURE_IN_INPUT &&
+      subfeature->type != SENSORS_SUBFEATURE_FAN_INPUT &&
+      subfeature->type != SENSORS_SUBFEATURE_TEMP_INPUT &&
+      subfeature->type != SENSORS_SUBFEATURE_POWER_INPUT &&
+      subfeature->type != SENSORS_SUBFEATURE_ENERGY_INPUT &&
+      subfeature->type != SENSORS_SUBFEATURE_CURR_INPUT &&
+      subfeature->type != SENSORS_SUBFEATURE_HUMIDITY_INPUT) {
+    label.assign(subfeature->name);
+  } else {
+    name.assign(feature->name);
+    const char *clabel = sensors_get_label(chip, feature);
+    if (clabel)
+      label.assign(clabel);
+    else
+      label.assign(name);
   }
-
-  if (interested_subfeatures.find(feature->type) == interested_subfeatures.end()) {
-    return;
-  }
-  name.assign(feature->name);
-  const char *clabel = sensors_get_label(chip, feature);
-  if (clabel)
-    label.assign(clabel);
-  else
-    label.assign(name);
-  for (int nsf = 0; ;) {
-    const sensors_subfeature *sub = sensors_get_all_subfeatures(chip, feature, &nsf);
-    if (!sub) {
-      break;
-    }
-    if (sub->type != interested_subfeatures.at(feature->type)) {
-      continue;
-    }
-    if (subfeature) {
-			syslog(LOG_ERR, "%s:%s Duplicate subfeature %s found while %s exists\n",
-				chip->path, feature->name, subfeature->name, sub->name);
-    } else {
-      subfeature = sub;
-    }
-  }
-	if (subfeature == nullptr) {
-    throw system_error(ENOENT, std::generic_category(), "Sensor Read Failure");
-	}
 }
-
 
 float Sensor::read()
 {

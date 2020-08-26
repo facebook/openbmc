@@ -2375,9 +2375,10 @@ sdr_init(char *path, sensor_info_t *sinfo) {
     return -1;
   }
 
-  ret = pal_flock_retry(fd);
+  ret = pal_flock_flag_retry(fd, LOCK_SH | LOCK_NB);
   if (ret == -1) {
-   OBMC_WARN("%s: failed to flock on %s", __func__, path);
+   OBMC_WARN("%s: failed to flock flag: %d on %s", __func__,
+              LOCK_SH | LOCK_NB, path);
    close(fd);
    return -1;
   }

@@ -81,7 +81,7 @@ static int get_mpq8645p_ver(struct vr_info *info, char *key, char *ver)
   if ((ret = read_attr(dev_name, &val)) < 0)
     goto exit;
 
-  snprintf(ver, MAX_VER_STR_LEN, "0x%x", val);
+  snprintf(ver, MAX_VER_STR_LEN, "MPS 0x%x", val);
   kv_set(key, ver, 0, 0);
 
 exit:

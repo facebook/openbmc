@@ -95,7 +95,7 @@ int vr_fw_version(int index, const char *vr_name, char *ver_str)
   return VR_STATUS_FAILURE;
 }
 
-int vr_fw_update(const char *vr_name, const char *path)
+int vr_fw_update(const char *vr_name, const char *path, bool force)
 {
   struct vr_info *info = dev_list;
   int ret, i;
@@ -128,6 +128,7 @@ int vr_fw_update(const char *vr_name, const char *path)
         }
       }
 
+      info->force = force;
       if ((ret = info->ops->fw_update(info, plat_configs)) < 0) {
         if (!vr_name && (ret == VR_STATUS_SKIP)) {
           continue;

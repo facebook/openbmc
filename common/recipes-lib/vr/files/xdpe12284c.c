@@ -12,13 +12,27 @@ extern int i2c_io(int, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t);
 static int
 get_xdpe_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
   int fd, ret = -1;
-  uint8_t tbuf[16], rbuf[16];
+  uint8_t tbuf[16], rbuf[16], remain;
 
   if ((fd = i2c_cdev_slave_open(bus, (addr>>1), I2C_SLAVE_FORCE_CLAIM)) < 0) {
     return -1;
   }
 
   do {
+    tbuf[0] = VR_REG_PAGE;
+    tbuf[1] = VR_XDPE_PAGE_50;
+    if ((ret = i2c_io(fd, addr, tbuf, 2, rbuf, 0))) {
+      syslog(LOG_WARNING, "%s: set page to 0x%02X failed", __func__, tbuf[1]);
+      break;
+    }
+
+    tbuf[0] = VR_XDPE_REG_REMAIN_WR;
+    if ((ret = i2c_io(fd, addr, tbuf, 1, rbuf, 2))) {
+      syslog(LOG_WARNING, "%s: read remaining writes failed", __func__);
+      break;
+    }
+    remain = (((rbuf[1] << 8) | rbuf[0]) >> 6) & 0x3F;
+
     tbuf[0] = VR_REG_PAGE;
     tbuf[1] = VR_XDPE_PAGE_62;
     if ((ret = i2c_io(fd, addr, tbuf, 2, rbuf, 0))) {
@@ -36,7 +50,8 @@ get_xdpe_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
       break;
     }
 
-    snprintf(checksum, MAX_VALUE_LEN, "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
+    snprintf(checksum, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %u",
+             rbuf[3], rbuf[2], rbuf[1], rbuf[0], remain);
     kv_set(key, checksum, 0, 0);
   } while (0);
 
@@ -173,7 +188,7 @@ check_xdpe_image(uint32_t crc_exp, uint8_t *data) {
 }
 
 static int
-program_xdpe(uint8_t bus, uint8_t addr, uint8_t *data) {
+program_xdpe(uint8_t bus, uint8_t addr, uint8_t *data, bool force) {
   int fd, i, ret = -1;
   uint8_t tbuf[32], rbuf[32], remain = 0, page = 0;
   uint16_t memptr;
@@ -209,6 +224,14 @@ program_xdpe(uint8_t bus, uint8_t addr, uint8_t *data) {
     printf("Remaining writes: %u\n", remain);
     if (!remain) {
       syslog(LOG_WARNING, "%s: no remaining writes", __func__);
+      ret = -1;
+      break;
+    }
+
+    if (!force && (remain <= VR_WARN_REMAIN_WR)) {
+      printf("WARNING: the remaining writes is below the threshold value %d!\n", VR_WARN_REMAIN_WR);
+      printf("Please use \"--force\" option to try again.\n");
+      syslog(LOG_WARNING, "%s: insufficient remaining writes %u", __func__, remain);
       ret = -1;
       break;
     }
@@ -434,7 +457,7 @@ xdpe_fw_update(struct vr_info *info, void *args) {
       break;
     }
 
-    ret = program_xdpe(info->bus, info->addr, config->data);
+    ret = program_xdpe(info->bus, info->addr, config->data, info->force);
     if (ret) {
       break;
     }

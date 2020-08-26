@@ -27,6 +27,9 @@ extern "C" {
 
 #include <openbmc/pmbus.h>
 #include <stdint.h>
+#include <stdbool.h>
+
+#define VR_WARN_REMAIN_WR 3
 
 #define MAX_VER_STR_LEN 80
 #define VR_REG_PAGE 0x00
@@ -81,6 +84,7 @@ struct vr_info {
   uint8_t padding[2];
   uint64_t dev_id;
   char dev_name[64];
+  bool force;
   struct vr_ops *ops;
   void *private_data;
 };
@@ -92,7 +96,7 @@ void vr_device_unregister(void);
 int vr_probe(void);
 void vr_remove(void);
 int vr_fw_version(int, const char*, char*);
-int vr_fw_update(const char*, const char*);
+int vr_fw_update(const char*, const char*, bool);
 
 extern int plat_vr_init(void);
 extern void plat_vr_exit(void);

@@ -24,7 +24,7 @@ get_tps_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
       break;
     }
 
-    snprintf(checksum, MAX_VALUE_LEN, "%02X%02X", rbuf[1], rbuf[0]);
+    snprintf(checksum, MAX_VALUE_LEN, "Texas Instruments %02X%02X", rbuf[1], rbuf[0]);
     kv_set(key, checksum, 0, 0);
   } while (0);
 

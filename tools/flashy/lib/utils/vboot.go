@@ -160,11 +160,9 @@ var GetVbootEnforcement = func() VbootEnforcementType {
 		return VBOOT_NONE
 	}
 
-	if vbs.Hardware_enforce == 1 &&
-		vbs.Software_enforce == 1 {
+	if vbs.Hardware_enforce == 1 {
 		return VBOOT_HARDWARE_ENFORCE
-	} else if vbs.Hardware_enforce == 0 &&
-		vbs.Software_enforce == 1 {
+	} else if vbs.Software_enforce == 1 {
 		return VBOOT_SOFTWARE_ENFORCE
 	}
 	return VBOOT_NONE

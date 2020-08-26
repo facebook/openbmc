@@ -223,13 +223,14 @@ func TestGetVbootEnforcement(t *testing.T) {
 			want:   VBOOT_SOFTWARE_ENFORCE,
 		},
 		{
-			name: "none, invalid, hardware 1 software 0, (this does not make sense)",
+			// this does not make sense, but we've seen it in the wild.
+			name: "hardware enforce but software enforce 0",
 			vbs: Vbs{
 				Hardware_enforce: 1,
 				Software_enforce: 0,
 			},
 			vbsErr: nil,
-			want:   VBOOT_NONE,
+			want:   VBOOT_HARDWARE_ENFORCE,
 		},
 		{
 			name: "hardware enforce",

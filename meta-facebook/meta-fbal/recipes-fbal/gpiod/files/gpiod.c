@@ -381,6 +381,14 @@ static void cpu_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
   log_gpio_change(desc, curr, 0);
 }
 
+static void cpu_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  if (server_power_status != GPIO_VALUE_HIGH) 
+    return;
+
+  log_gpio_change(desc, curr, 0);
+}
+
 static void mem_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
   if (server_power_status != GPIO_VALUE_HIGH) 
@@ -725,9 +733,9 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_CPU1_MEMHOT_OUT_N", "GPIOL3", GPIO_EDGE_BOTH, gpio_event_pson_3s_handler, NULL},
   {"FM_CPU0_FIVR_FAULT_LVT3_PLD", "GPIOB2", GPIO_EDGE_BOTH, fivr_fault_handler, NULL},
   {"FM_CPU1_FIVR_FAULT_LVT3_PLD", "GPIOB3", GPIO_EDGE_BOTH, fivr_fault_handler, NULL},
-  {"FM_CPU_ERR0_LVT3_N", "GPIOF0", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
-  {"FM_CPU_ERR1_LVT3_N", "GPIOF1", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
-  {"FM_CPU_ERR2_LVT3_N", "GPIOF2", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
+  {"FM_CPU_ERR0_LVT3_N", "GPIOF0", GPIO_EDGE_BOTH, cpu_event_handler, NULL},
+  {"FM_CPU_ERR1_LVT3_N", "GPIOF1", GPIO_EDGE_BOTH, cpu_event_handler, NULL},
+  {"FM_CPU_ERR2_LVT3_N", "GPIOF2", GPIO_EDGE_BOTH, cpu_event_handler, NULL},
   {"FM_MEM_THERM_EVENT_CPU0_LVT3_N", "GPIOB0", GPIO_EDGE_FALLING, mem_thermtrip_handler, NULL},
   {"FM_MEM_THERM_EVENT_CPU1_LVT3_N", "GPIOB1", GPIO_EDGE_FALLING, mem_thermtrip_handler, NULL},
   {"FM_SYS_THROTTLE_LVC3", "GPIOR7", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},

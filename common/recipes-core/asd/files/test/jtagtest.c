@@ -108,6 +108,7 @@ int main (int argc, char **argv) {
     unsigned int shiftSize = 0;
     unsigned int fFlag = 0;
     unsigned int qFlag = 0;
+    unsigned int mFlag = 0;
     unsigned int numIterations = 0;
     unsigned int shift_size_in_bits = 0;
     unsigned int c = 0, i = 0, j = 0, loopCnt = 0, fru=1;
@@ -119,7 +120,7 @@ int main (int argc, char **argv) {
     signal(SIGINT, intHandler);  // catch ctrl-c
 
     opterr = 0;
-    while ((c = getopt (argc, argv, "qfi:s:r:?")) != -1)
+    while ((c = getopt (argc, argv, "qfmi:s:r:?")) != -1)
         switch (c) {
             case 'q':
                 qFlag = 1;
@@ -128,11 +129,14 @@ int main (int argc, char **argv) {
                 fFlag = 1;
                 numIterations = 1;
                 break;
+            case 'm':
+                mFlag = 1;
+                break;
             case 'i':
                 if ((numIterations = atoi(optarg)) > 0)
                     break;
             case 's':
-                if ((fru = atoi(optarg)) > 0)
+                if ((fru = (unsigned int)strtoul(optarg, NULL, 0)) > 0)
                     break;
             case 'r':
                 if ((irSize = atoi(optarg)) > 0)
@@ -152,9 +156,9 @@ int main (int argc, char **argv) {
         return -1;
     }
 
-    printf("ASD: connect to fru %d, irSize=%d\n", fru, irSize);
-    syslog(LOG_WARNING, "ASD: ASD test on fru %d, irSize=%d\n",
-           fru, irSize);
+    printf("ASD: connect to fru %d, irSize=%d, %s mode\n", fru, irSize, (mFlag)?"HW":"SW");
+    syslog(LOG_WARNING, "ASD: ASD test on fru %d, irSize=%d, %s mode",
+           fru, irSize, (mFlag)?"HW":"SW");
 
     // load the driver
     handle = SoftwareJTAGHandler(fru); // TODO get from user
@@ -162,7 +166,7 @@ int main (int argc, char **argv) {
       printf("Setup of JTAG driver failed!\n");
       return -1;
     }
-    if (JTAG_initialize(handle, true) != ST_OK) {
+    if (JTAG_initialize(handle, !mFlag) != ST_OK) {
       printf("Initialize of JTAG driver failed!\n");
       return -1;
     }

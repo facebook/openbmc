@@ -94,5 +94,16 @@ func getSyslogWriter() (syslogWriter io.Writer, err error) {
 // However, busybox syslog returns 1 if already started, so we ignore the
 // error from RunCommand.
 var StartSyslog = func() {
-	utils.RunCommand([]string{"/etc/init.d/syslog", "start"}, 30*time.Second)
+	systemdAvail, err := utils.SystemdAvailable()
+	if err != nil {
+		log.Printf("Unable to decide if systemd is available: %v\n", err)
+		return
+	}
+	cmd := []string{}
+	if systemdAvail {
+		cmd = []string{"systemctl", "start", "syslog"}
+	} else {
+		cmd = []string{"/etc/init.d/syslog", "start"}
+	}
+	utils.RunCommand(cmd, 30*time.Second)
 }

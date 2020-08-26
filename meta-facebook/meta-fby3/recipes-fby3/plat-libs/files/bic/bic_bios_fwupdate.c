@@ -363,6 +363,7 @@ update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force) {
       last_offset += dsize;
     }
   }
+  printf("\n");
 
   if (comp != FW_BIOS_CAPSULE && comp != FW_CPLD_CAPSULE && comp != FW_BIOS_RCVY_CAPSULE && comp != FW_CPLD_RCVY_CAPSULE) {
     _set_fw_update_ongoing(slot_id, 60 * 2);

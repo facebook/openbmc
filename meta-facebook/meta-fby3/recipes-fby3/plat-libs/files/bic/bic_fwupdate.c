@@ -1090,7 +1090,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     case FW_BIOS_RCVY_CAPSULE:
     case FW_CPLD_RCVY_CAPSULE:
       if (loc != NULL) {
-        ret = update_bic_bios(slot_id, comp, path, force);
+        ret = update_bic_bios(slot_id, comp, path, FORCE_UPDATE_SET);
       } else {
         ret = update_bic_usb_bios(slot_id, comp, path);
       }

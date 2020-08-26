@@ -21,15 +21,11 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 . /usr/local/bin/openbmc-utils.sh
 
-# Keep "power-util mb on" for debug purpose
 echo "Waiting for power up"
 pwr_ctrl=$(gpio_get PWR_CTRL keepdirection)
 pwr_ready=$(gpio_get SYS_PWR_READY keepdirection)
 while [ "$pwr_ready" != "1" ]
 do
-  if [[ "$pwr_ctrl" == "1" ]]; then
-    power-util mb on > /dev/null
-  fi
   sleep 1
   pwr_ready=$(gpio_get SYS_PWR_READY keepdirection)
 done

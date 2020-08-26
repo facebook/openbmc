@@ -18,13 +18,24 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-# ELBERTTODO 442087 REST API SUPPORT
 SRC_URI += " \
     file://rest_fruid_scm.py \
     file://rest_seutil.py \
+    file://rest_peutil.py \
+    file://rest_piminfo.py \
+    file://rest_pim_present.py \
+    file://rest_pimserial.py \
+    file://rest_pimstatus.py \
+    file://rest_smbinfo.py \
 "
 
 binfiles1 += " \
     rest_fruid_scm.py \
     rest_seutil.py \
+    rest_peutil.py \
+    rest_piminfo.py \
+    rest_pim_present.py \
+    rest_pimserial.py \
+    rest_pimstatus.py \
+    rest_smbinfo.py \
 "

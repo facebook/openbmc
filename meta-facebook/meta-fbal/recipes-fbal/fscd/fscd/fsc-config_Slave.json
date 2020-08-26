@@ -1,5 +1,5 @@
 {
-    "version": "fbal-r03",
+    "version": "fbal-r06",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -16,7 +16,7 @@
       }
     },  
     "watchdog": false,
-    "min_rpm": 1500,
+    "min_rpm": 500,
     "profiles": {
       "linear_mezz": {
         "read_source" : {
@@ -24,16 +24,29 @@
         },
         "type": "linear",
         "data": [
-          [65, 8],
-          [70, 10],
-          [72, 13],
-          [75, 15],
-          [78, 18],
-          [80, 20],
-          [83, 25],
-          [85, 30],
-          [90, 35],
-          [95, 60]
+          [65, 10],
+          [70, 15],
+          [72, 20],
+          [75, 25],
+          [78, 30],
+          [80, 35],
+          [83, 40],
+          [85, 50],
+          [90, 65],
+          [95, 75]
+        ]
+      },
+      "linear_inlet": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "linear",
+        "data": [
+          [25, 30],
+          [30, 40],
+          [35, 50],
+          [38, 60],
+          [40, 80]
         ]
       },
       "linear_vr": {
@@ -42,25 +55,12 @@
         },
         "type": "linear",
         "data": [
-          [70, 20],
-          [75, 25],
-          [80, 30],
+          [70, 15],
+          [75, 20],
+          [80, 25],
           [85, 35],
           [90, 60],
           [95, 65]
-        ]
-      },    
-      "linear_inlet": {
-        "read_source" : {
-          "util" : "/usr/local/bin/sensor-util"
-        },
-        "type": "linear",
-        "data": [
-          [25, 10],
-          [30, 10],
-          [35, 15],
-          [38, 25],
-          [40, 70]
         ]
       }
     },

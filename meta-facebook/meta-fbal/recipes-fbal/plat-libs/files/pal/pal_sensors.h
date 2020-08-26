@@ -55,6 +55,7 @@ enum {
 #define ADM1278_RSENSE      (0.15)
 
 #define ADM1278_PMON_CONFIG         (0xD4)
+#define ADM1278_PEAK_PIN            (0xDA)
 #define PMON_CFG_VIN_EN             (1 << 2)
 #define PMON_CFG_TEPM1_EN           (1 << 3)
 #define PMON_CFG_CONTINUOUS_SAMPLE  (1 << 4)
@@ -136,7 +137,12 @@ enum {
   MB3_SNR_HSC_VIN = 0x4C,
   MB3_SNR_HSC_IOUT = 0x4D,
   MB3_SNR_HSC_PIN = 0x4E,
-  MB3_SNR_HSC_TEMP = 0x4F, 
+  MB3_SNR_HSC_TEMP = 0x4F,
+//HCS PEAK PIN
+  MB_SNR_HSC_PEAK_PIN = 0x50,
+  MB1_SNR_HSC_PEAK_PIN = 0x51,
+  MB2_SNR_HSC_PEAK_PIN = 0x52,
+  MB3_SNR_HSC_PEAK_PIN = 0x53,  
 //INA260
   MB_SNR_P12V_STBY_INA260_VOL = 0x5C,
   MB_SNR_P3V3_M2_1_INA260_VOL = 0x5D,

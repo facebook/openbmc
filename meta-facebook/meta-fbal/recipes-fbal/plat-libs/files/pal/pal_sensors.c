@@ -51,6 +51,7 @@ static int read_hsc_iout(uint8_t hsc_id, float *value);
 static int read_hsc_vin(uint8_t hsc_id, float *value);
 static int read_hsc_pin(uint8_t hsc_id, float *value);
 static int read_hsc_temp(uint8_t hsc_id, float *value);
+static int read_hsc_peak_pin(uint8_t hsc_id, float *value);
 static int read_cpu0_dimm_temp(uint8_t dimm_id, float *value);
 static int read_cpu1_dimm_temp(uint8_t dimm_id, float *value);
 static int read_cpu2_dimm_temp(uint8_t dimm_id, float *value);
@@ -99,18 +100,22 @@ const uint8_t mb_8s_m_sensor_list[] = {
   MB_SNR_HSC_IOUT,
   MB_SNR_HSC_PIN,
   MB_SNR_HSC_TEMP,
+  MB_SNR_HSC_PEAK_PIN,
   MB1_SNR_HSC_VIN,
   MB1_SNR_HSC_IOUT,
   MB1_SNR_HSC_PIN,
   MB1_SNR_HSC_TEMP,
+  MB1_SNR_HSC_PEAK_PIN, 
   MB2_SNR_HSC_VIN,
   MB2_SNR_HSC_IOUT,
   MB2_SNR_HSC_PIN,
   MB2_SNR_HSC_TEMP,
+  MB2_SNR_HSC_PEAK_PIN, 
   MB3_SNR_HSC_VIN,
   MB3_SNR_HSC_IOUT,
   MB3_SNR_HSC_PIN,
   MB3_SNR_HSC_TEMP,
+  MB3_SNR_HSC_PEAK_PIN,
   MB_SNR_PCH_TEMP,
   MB_SNR_CPU0_TEMP,
   MB_SNR_CPU1_TEMP,
@@ -275,10 +280,12 @@ const uint8_t mb_4s_m_sensor_list[] = {
   MB_SNR_HSC_IOUT,
   MB_SNR_HSC_PIN,
   MB_SNR_HSC_TEMP,
+  MB_SNR_HSC_PEAK_PIN,
   MB1_SNR_HSC_VIN,
   MB1_SNR_HSC_IOUT,
   MB1_SNR_HSC_PIN,
   MB1_SNR_HSC_TEMP,
+  MB1_SNR_HSC_PEAK_PIN, 
   MB_SNR_PCH_TEMP,
   MB_SNR_CPU0_TEMP,
   MB_SNR_CPU1_TEMP,
@@ -483,6 +490,7 @@ const uint8_t mb_2s_sensor_list[] = {
   MB_SNR_HSC_IOUT,
   MB_SNR_HSC_PIN,
   MB_SNR_HSC_TEMP,
+  MB_SNR_HSC_PEAK_PIN,
   MB_SNR_PCH_TEMP,
   MB_SNR_CPU0_DIMM_GRPA_TEMP,
   MB_SNR_CPU0_DIMM_GRPB_TEMP,
@@ -811,11 +819,11 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB3_HSC_IOUT", HSC_ID3, read_hsc_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x4D
   {"MB3_HSC_PIN",  HSC_ID3, read_hsc_pin,  true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x4E
   {"MB3_HSC_TEMP", HSC_ID3, read_hsc_temp, true, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x4F
+  {"MB_HSC_PEAK_PIN",  HSC_ID0, read_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x50
+  {"MB1_HSC_PEAK_PIN", HSC_ID1, read_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x51
+  {"MB2_HSC_PEAK_PIN", HSC_ID2, read_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x52
+  {"MB3_HSC_PEAK_PIN", HSC_ID3, read_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x53
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x50
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x51
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x52
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x53
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x54
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x55
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x56
@@ -830,14 +838,14 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_P3V3_M2_2_INA260_VOL", INA260_ID2, read_ina260_vol, false, {3.47, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0x5E
   {"MB_P3V3_M2_3_INA260_VOL", INA260_ID3, read_ina260_vol, false, {3.47, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0x5F
 
-  {"PDB_FAN0_INLET_SPEED", CM_FAN0_INLET_SPEED, read_cm_sensor, true, {11990, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x60
-  {"PDB_FAN1_INLET_SPEED", CM_FAN1_INLET_SPEED, read_cm_sensor, true, {11990, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x61
-  {"PDB_FAN2_INLET_SPEED", CM_FAN2_INLET_SPEED, read_cm_sensor, true, {11990, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x62
-  {"PDB_FAN3_INLET_SPEED", CM_FAN3_INLET_SPEED, read_cm_sensor, true, {11990, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x63
-  {"PDB_FAN0_OUTLET_SPEED", CM_FAN0_OUTLET_SPEED, read_cm_sensor, true, {10800, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x64
-  {"PDB_FAN1_OUTLET_SPEED", CM_FAN1_OUTLET_SPEED, read_cm_sensor, true, {10800, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x65
-  {"PDB_FAN2_OUTLET_SPEED", CM_FAN2_OUTLET_SPEED, read_cm_sensor, true, {10800, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x66
-  {"PDB_FAN3_OUTLET_SPEED", CM_FAN3_OUTLET_SPEED, read_cm_sensor, true, {10800, 0, 0, 1200, 0, 0, 0, 0}, FAN}, //0x67
+  {"PDB_FAN0_INLET_SPEED", CM_FAN0_INLET_SPEED, read_cm_sensor, true, {13500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x60
+  {"PDB_FAN1_INLET_SPEED", CM_FAN1_INLET_SPEED, read_cm_sensor, true, {13500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x61
+  {"PDB_FAN2_INLET_SPEED", CM_FAN2_INLET_SPEED, read_cm_sensor, true, {13500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x62
+  {"PDB_FAN3_INLET_SPEED", CM_FAN3_INLET_SPEED, read_cm_sensor, true, {13500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x63
+  {"PDB_FAN0_OUTLET_SPEED", CM_FAN0_OUTLET_SPEED, read_cm_sensor, true, {12500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x64
+  {"PDB_FAN1_OUTLET_SPEED", CM_FAN1_OUTLET_SPEED, read_cm_sensor, true, {12500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x65
+  {"PDB_FAN2_OUTLET_SPEED", CM_FAN2_OUTLET_SPEED, read_cm_sensor, true, {12500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x66
+  {"PDB_FAN3_OUTLET_SPEED", CM_FAN3_OUTLET_SPEED, read_cm_sensor, true, {12500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x67
   {"PDB_FAN0_VOLT", CM_FAN0_VOLT, read_cm_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x68
   {"PDB_FAN1_VOLT", CM_FAN1_VOLT, read_cm_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x69
   {"PDB_FAN2_VOLT", CM_FAN2_VOLT, read_cm_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x6A
@@ -902,7 +910,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_CPU7_DIMM_B3_D3_TEMP", DIMM_CRPD, read_cpu7_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9D
   {"MB_CPU7_DIMM_B4_D4_TEMP", DIMM_CRPE, read_cpu7_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9E
   {"MB_CPU7_DIMM_B5_D5_TEMP", DIMM_CRPF, read_cpu7_dimm_temp, false, {85, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x9F
-  {"MB_INLET_TEMP",    TEMP_INLET,    read_sensor, true, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA0
+  {"MB_INLET_TEMP",    TEMP_INLET,    read_sensor, true, {55, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA0
   {"MB_OUTLET_TEMP_R", TEMP_OUTLET_R, read_sensor, true, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA1
   {"MB_OUTLET_TEMP_L", TEMP_OUTLET_L, read_sensor, true, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA2
   {"MB_INLET_REMOTE_TEMP", TEMP_REMOTE_INLET, read_sensor, true, {55, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA3
@@ -953,7 +961,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
-
+ 
   {"MB_P5V",       ADC0, read_adc_val, false, {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0xD0
   {"MB_P5V_STBY",  ADC1, read_adc_val, true,  {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0xD1
   {"MB_P3V3_STBY", ADC2, read_adc_val, true,  {3.47, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0xD2
@@ -2219,6 +2227,17 @@ set_hsc_pmon_config(uint8_t hsc_id, uint16_t value) {
 }
 
 static int
+set_hsc_clr_peak_pin(uint8_t hsc_id) {
+  int ret=0;
+  ret = set_NM_hsc_word_data(hsc_id, ADM1278_PEAK_PIN, 0x0000);
+  if (ret != 0) {
+    return ret;
+  }
+
+  return 0;
+}
+
+static int
 set_hsc_iout_warn_limit(uint8_t hsc_id, float value) {
   int ret=0;
   float m, b, r;
@@ -2317,6 +2336,27 @@ read_hsc_temp(uint8_t hsc_id, float *value) {
  
   //Self BMC Read TEMP HSC
   ret = get_hsc_val_from_me(hsc_id, PMBUS_READ_TEMPERATURE_1, data);
+  if(ret != 0) {
+    return ret;
+  }
+  *value = ((float)(data[1] << 8 | data[0]) * r - b) / m;
+
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s: Value=%f\n", __func__, *value);
+#endif  
+  return ret;
+}
+
+static int
+read_hsc_peak_pin(uint8_t hsc_id, float *value) {
+  int ret;
+  uint8_t data[4];
+  float m, b, r;
+  
+  get_adm1278_info(hsc_id, ADM1278_POWER , &m, &b, &r);
+ 
+  //Self BMC Read PEAK PIN
+  ret = get_hsc_val_from_me(hsc_id, ADM1278_PEAK_PIN, data);
   if(ret != 0) {
     return ret;
   }
@@ -3360,6 +3400,10 @@ int pal_sensor_monitor_initial(void) {
     if(set_alter1_config(i, alert1_cfg) != 0) {
       syslog(LOG_WARNING, "Set MB%d Alert1 Config Fail\n", i);
     }
+
+    if(set_hsc_clr_peak_pin(i) != 0) {
+      syslog(LOG_WARNING, "Set MB%d Clear PEAK PIN Fail\n", i);
+    }   
   }
 
 //Config PECI Switch

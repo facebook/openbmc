@@ -578,6 +578,7 @@ int bic_sensor_sdr_path(uint8_t fru, char *path);
 int bic_get_sdr_thresh_val(uint8_t fru, uint8_t snr_num,
                        uint8_t thresh, void *value);
 int bic_sdr_init(uint8_t fru, bool reinit);
+int pal_get_sensor_util_timeout(uint8_t fru);
 #ifdef __cplusplus
 } // extern "C"
 #endif

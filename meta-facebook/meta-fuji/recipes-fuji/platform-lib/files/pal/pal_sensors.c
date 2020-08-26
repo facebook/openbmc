@@ -5699,3 +5699,39 @@ int bic_sensor_sdr_path(uint8_t fru, char *path) {
 
   return 0;
 }
+
+int pal_get_sensor_util_timeout(uint8_t fru) {
+  uint8_t brd_type;
+  uint8_t brd_type_rev;
+  size_t cnt = 0;
+
+  switch(fru) {
+    case FRU_SCM:
+      cnt = scm_all_sensor_cnt;
+      break;
+    case FRU_SMB:
+      cnt = smb_sensor_cnt;
+      break;
+    case FRU_PIM1:
+    case FRU_PIM2:
+    case FRU_PIM3:
+    case FRU_PIM4:
+    case FRU_PIM5:
+    case FRU_PIM6:
+    case FRU_PIM7:
+    case FRU_PIM8:
+      cnt = pim1_sensor_cnt;
+      break;
+    case FRU_PSU1:
+    case FRU_PSU2:
+    case FRU_PSU3:
+    case FRU_PSU4:
+      cnt = psu1_sensor_cnt;
+      break;
+    default:
+      if (fru > MAX_NUM_FRUS)
+      cnt = 5;
+      break;
+  }
+  return (READ_UNIT_SENSOR_TIMEOUT * cnt);
+}

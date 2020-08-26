@@ -45,7 +45,7 @@ int System::vboot_support_status(void)
   return VBOOT_NO_ENFORCE;
 }
 
-bool System::get_mtd_name(string name, string &dev)
+bool System::get_mtd_name(string name, string &dev, size_t& size, size_t& erasesize)
 {
   FILE* partitions = fopen("/proc/mtd", "r");
   char line[256], mnt_name[32];
@@ -60,11 +60,14 @@ bool System::get_mtd_name(string name, string &dev)
     return false;
   }
   while (fgets(line, sizeof(line), partitions)) {
-    if(sscanf(line, "mtd%d: %*x %*x %s",
-                &mtdno, mnt_name) == 2) {
+    size_t sz, esz;
+    if(sscanf(line, "mtd%d: %zx %zx %s",
+                &mtdno, &sz, &esz, mnt_name) == 4) {
       if(!strcmp(name.c_str(), mnt_name)) {
         dev = "/dev/mtd";
         dev.append(to_string(mtdno));
+        size = sz;
+        erasesize = esz;
         found = true;
         break;
       }

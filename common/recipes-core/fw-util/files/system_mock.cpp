@@ -42,7 +42,7 @@ int System::vboot_support_status(void)
   return VBOOT_NO_ENFORCE;
 }
 
-bool System::get_mtd_name(string name, string &dev)
+bool System::get_mtd_name(string name, string &dev, size_t& size, size_t& erasesize)
 {
   map<string, string> mtd_map = {
     {"flash0", "/dev/mtd5"},
@@ -57,6 +57,8 @@ bool System::get_mtd_name(string name, string &dev)
   if (mtd_map.find(name) == mtd_map.end())
     return false;
   dev = mtd_map[name];
+  size = 512 * 1024;
+  erasesize = 64 * 1024;
   return true;
 }
 

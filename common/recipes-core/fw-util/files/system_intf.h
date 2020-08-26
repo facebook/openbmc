@@ -18,11 +18,18 @@ class System {
 
     virtual int runcmd(const std::string &cmd);
     virtual int vboot_support_status();
-    virtual bool get_mtd_name(std::string name, std::string &dev);
-    bool get_mtd_name(std::string name) {
+    virtual bool get_mtd_name(std::string name, std::string &dev, size_t& size, size_t& esize);
+    virtual bool get_mtd_name(std::string name) {
       std::string unused;
-      return get_mtd_name(name, unused);
+      size_t sz, esz;
+      return get_mtd_name(name, unused, sz, esz);
     }
+    virtual bool get_mtd_name(std::string name, std::string& dev)
+    {
+      size_t sz, esz;
+      return get_mtd_name(name, dev, sz, esz);
+    }
+
     virtual std::string version();
     std::string name() {
       std::string vers = version();

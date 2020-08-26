@@ -325,22 +325,24 @@ class TestSystem(unittest.TestCase):
             mocked_check_output.assert_not_called()
             self.assertEqual(context_manager.exception.code, 1)
 
+    @patch.object(os.path, "exists", return_value=False)
     @patch.object(system, "open", create=True)
     @patch.object(
         system, "glob", return_value=["/proc/123/cmdline", "/proc/self/cmdline"]
     )
     @patch.object(os, "getpid", return_value=123)
     def test_other_flasher_running_skip_self(
-        self, mocked_getpid, mocked_glob, mocked_open
+        self, mocked_getpid, mocked_glob, mocked_open, mocked_exists
     ):
         self.assertEqual(system.other_flasher_running(self.logger), False)
         mocked_open.assert_not_called()
 
+    @patch.object(os.path, "exists", return_value=False)
     @patch.object(system, "open", create=True)
     @patch.object(system, "glob")
     @patch.object(os, "getpid", return_value=123)
     def test_other_flasher_running_return_false(
-        self, mocked_getpid, mocked_glob, mocked_open
+        self, mocked_getpid, mocked_glob, mocked_open, mocked_exists
     ):
         read_data = [
             b"runsv\x00/etc/sv/restapi\x00",
@@ -358,11 +360,12 @@ class TestSystem(unittest.TestCase):
         ]
         self.assertEqual(system.other_flasher_running(self.logger), False)
 
+    @patch.object(os.path, "exists", return_value=False)
     @patch.object(system, "open", create=True)
     @patch.object(system, "glob", return_value=["/proc/456/cmdline"])
     @patch.object(os, "getpid", return_value=123)
     def test_other_flasher_running_return_true(
-        self, mocked_getpid, mocked_glob, mocked_open
+        self, mocked_getpid, mocked_glob, mocked_open, mocked_exists
     ):
         read_data = [
             b"python\x00/usr/local/bin/psu-update-delta.py\x00",
@@ -371,6 +374,10 @@ class TestSystem(unittest.TestCase):
         for datum in read_data:
             mocked_open.return_value = mock_open(read_data=datum).return_value
             self.assertEqual(system.other_flasher_running(self.logger), True)
+
+    @patch.object(os.path, "exists", return_value=True)
+    def test_other_flasher_running_flashy_exists(self, mocked_exists):
+        self.assertEqual(system.other_flasher_running(self.logger), True)
 
     @patch.object(system, "other_flasher_running", return_value=True)
     @patch.object(subprocess, "check_call")

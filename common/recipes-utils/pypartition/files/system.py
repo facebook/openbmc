@@ -893,6 +893,10 @@ def get_valid_partitions(images_or_mtds, checksums, logger):
 
 
 def other_flasher_running(logger):
+    if os.path.exists("/opt/flashy"):
+        logger.error("Flashy found: /opt/flashy found in this system")
+        return True
+
     # type: (logging.Logger) -> bool
     basenames = [
         b"autodump.sh",

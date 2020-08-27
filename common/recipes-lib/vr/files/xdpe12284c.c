@@ -10,7 +10,38 @@
 extern int i2c_io(int, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t);
 
 static int
-get_xdpe_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
+get_xdpe_crc(int fd, uint8_t addr, uint32_t *crc) {
+  int ret = -1;
+  uint8_t tbuf[16], rbuf[16];
+
+  do {
+    tbuf[0] = VR_REG_PAGE;
+    tbuf[1] = VR_XDPE_PAGE_62;
+    if ((ret = i2c_io(fd, addr, tbuf, 2, rbuf, 0))) {
+      syslog(LOG_WARNING, "%s: set page to 0x%02X failed", __func__, tbuf[1]);
+      break;
+    }
+
+    tbuf[0] = VR_XDPE_REG_CRC_L;
+    if ((ret = i2c_io(fd, addr, tbuf, 1, rbuf, 2))) {
+      syslog(LOG_WARNING, "%s: read register 0x%02X failed", __func__, tbuf[0]);
+      break;
+    }
+
+    tbuf[0] = VR_XDPE_REG_CRC_H;
+    if ((ret = i2c_io(fd, addr, tbuf, 1, &rbuf[2], 2))) {
+      syslog(LOG_WARNING, "%s: read register 0x%02X failed", __func__, tbuf[0]);
+      break;
+    }
+
+    memcpy(crc, rbuf, 4);
+  } while (0);
+
+  return ret;
+}
+
+static int
+cache_xdpe_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
   int fd, ret = -1;
   uint8_t tbuf[16], rbuf[16], remain;
 
@@ -33,20 +64,7 @@ get_xdpe_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
     }
     remain = (((rbuf[1] << 8) | rbuf[0]) >> 6) & 0x3F;
 
-    tbuf[0] = VR_REG_PAGE;
-    tbuf[1] = VR_XDPE_PAGE_62;
-    if ((ret = i2c_io(fd, addr, tbuf, 2, rbuf, 0))) {
-      syslog(LOG_WARNING, "%s: set page to 0x%02X failed", __func__, tbuf[1]);
-      break;
-    }
-
-    tbuf[0] = VR_XDPE_REG_CRC_L;
-    if ((ret = i2c_io(fd, addr, tbuf, 1, rbuf, 2))) {
-      break;
-    }
-
-    tbuf[0] = VR_XDPE_REG_CRC_H;
-    if ((ret = i2c_io(fd, addr, tbuf, 1, &rbuf[2], 2))) {
+    if ((ret = get_xdpe_crc(fd, addr, (uint32_t *)rbuf))) {
       break;
     }
 
@@ -57,7 +75,7 @@ get_xdpe_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
 
   tbuf[0] = VR_REG_PAGE;
   tbuf[1] = 0x00;
-  if ((ret = i2c_io(fd, addr, tbuf, 2, rbuf, 0))) {
+  if (i2c_io(fd, addr, tbuf, 2, rbuf, 0)) {
     syslog(LOG_WARNING, "%s: set page to 0x%02X failed", __func__, tbuf[1]);
   }
 
@@ -71,7 +89,7 @@ get_xdpe_ver(struct vr_info *info, char *ver_str) {
 
   snprintf(key, sizeof(key), "vr_%02xh_crc", info->addr);
   if (kv_get(key, tmp_str, NULL, 0)) {
-    if (get_xdpe_crc(info->bus, info->addr, key, tmp_str))
+    if (cache_xdpe_crc(info->bus, info->addr, key, tmp_str))
       return -1;
   }
 
@@ -188,10 +206,12 @@ check_xdpe_image(uint32_t crc_exp, uint8_t *data) {
 }
 
 static int
-program_xdpe(uint8_t bus, uint8_t addr, uint8_t *data, bool force) {
+program_xdpe(uint8_t bus, uint8_t addr, struct xdpe_config *config, bool force) {
   int fd, i, ret = -1;
   uint8_t tbuf[32], rbuf[32], remain = 0, page = 0;
+  uint8_t *data = config->data;
   uint16_t memptr;
+  uint32_t crc = 0;
   float dsize, next_prog;
 
   if ((fd = i2c_cdev_slave_open(bus, (addr>>1), I2C_SLAVE_FORCE_CLAIM)) < 0) {
@@ -199,6 +219,18 @@ program_xdpe(uint8_t bus, uint8_t addr, uint8_t *data, bool force) {
   }
 
   do {
+    if ((ret = get_xdpe_crc(fd, addr, &crc))) {
+      break;
+    }
+
+    if (!force && (crc == config->crc_exp)) {
+      printf("WARNING: the CRC is the same as used now %08X!\n", crc);
+      printf("Please use \"--force\" option to try again.\n");
+      syslog(LOG_WARNING, "%s: redundant programming", __func__);
+      ret = -1;
+      break;
+    }
+
     // check remaining writes
     tbuf[0] = VR_REG_PAGE;
     tbuf[1] = VR_XDPE_PAGE_50;
@@ -433,7 +465,7 @@ program_xdpe(uint8_t bus, uint8_t addr, uint8_t *data, bool force) {
 
   tbuf[0] = VR_REG_PAGE;
   tbuf[1] = 0x00;
-  if ((ret = i2c_io(fd, addr, tbuf, 2, rbuf, 0))) {
+  if (i2c_io(fd, addr, tbuf, 2, rbuf, 0)) {
     syslog(LOG_WARNING, "%s: set page to 0x%02X failed", __func__, tbuf[1]);
   }
   close(fd);
@@ -457,7 +489,7 @@ xdpe_fw_update(struct vr_info *info, void *args) {
       break;
     }
 
-    ret = program_xdpe(info->bus, info->addr, config->data, info->force);
+    ret = program_xdpe(info->bus, info->addr, config, info->force);
     if (ret) {
       break;
     }
@@ -470,8 +502,8 @@ int
 xdpe_fw_verify(struct vr_info *info, void *args) {
   struct xdpe_config *config = (struct xdpe_config *)args;
   int fd, ret;
-  uint32_t crc;
-  uint8_t tbuf[64], rbuf[64];
+  uint32_t crc = 0;
+  uint8_t buf[64];
 
   if (info->addr != config->addr) {
     return VR_STATUS_SKIP;
@@ -481,42 +513,24 @@ xdpe_fw_verify(struct vr_info *info, void *args) {
     return -1;
   }
 
-  do {
-    // check CRC
-    tbuf[0] = VR_REG_PAGE;
-    tbuf[1] = VR_XDPE_PAGE_62;
-    if ((ret = i2c_io(fd, info->addr, tbuf, 2, rbuf, 0))) {
-      syslog(LOG_WARNING, "%s: set page to 0x%02X failed", __func__, tbuf[1]);
-      break;
-    }
-
-    tbuf[0] = VR_XDPE_REG_CRC_L;
-    if ((ret = i2c_io(fd, info->addr, tbuf, 1, rbuf, 2))) {
-      syslog(LOG_WARNING, "%s: read register 0x%02X failed", __func__, tbuf[0]);
-      break;
-    }
-
-    tbuf[0] = VR_XDPE_REG_CRC_H;
-    if ((ret = i2c_io(fd, info->addr, tbuf, 1, &rbuf[2], 2))) {
-      syslog(LOG_WARNING, "%s: read register 0x%02X failed", __func__, tbuf[0]);
-      break;
-    }
-  } while (0);
-
-  tbuf[0] = VR_REG_PAGE;
-  tbuf[1] = 0x00;
-  if ((ret = i2c_io(fd, info->addr, tbuf, 2, rbuf, 0))) {
-    syslog(LOG_WARNING, "%s: set page to 0x%02X failed", __func__, tbuf[1]);
+  // check CRC
+  ret = get_xdpe_crc(fd, info->addr, &crc);
+  buf[0] = VR_REG_PAGE;
+  buf[1] = 0x00;
+  if (i2c_io(fd, info->addr, buf, 2, buf, 0)) {
+    syslog(LOG_WARNING, "%s: set page to 0x%02X failed", __func__, buf[1]);
   }
   close(fd);
+  if (ret) {
+    return ret;
+  }
 
-  memcpy(&crc, rbuf, 4);
   if (crc != config->crc_exp) {
-    printf("CRC %04X mismatch, expect %04X\n", crc, config->crc_exp);
+    printf("CRC %08X mismatch, expect %08X\n", crc, config->crc_exp);
     ret = -1;
   } else {
-    snprintf((char *)tbuf, sizeof(tbuf), "/tmp/cache_store/vr_%02xh_crc", info->addr);
-    unlink((char *)tbuf);
+    snprintf((char *)buf, sizeof(buf), "/tmp/cache_store/vr_%02xh_crc", info->addr);
+    unlink((char *)buf);
   }
 
   return ret;

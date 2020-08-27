@@ -267,6 +267,8 @@ int pal_post_enable(uint8_t slot);
 int pal_post_disable(uint8_t slot);
 int pal_post_get_last(uint8_t slot, uint8_t *status);
 int pal_post_handle(uint8_t slot, uint8_t status);
+int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
+int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
 int pal_set_last_pwr_state(uint8_t fru, char *state);
 int pal_get_last_pwr_state(uint8_t fru, char *state);
 int pal_set_com_pwr_btn_n(char *status);

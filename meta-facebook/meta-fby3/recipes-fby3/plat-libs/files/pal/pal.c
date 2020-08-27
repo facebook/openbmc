@@ -2588,11 +2588,12 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
   uint8_t tlen = 1;
   uint8_t rlen = 1;
   uint8_t cpld_slot_cbl_val = 0;
+  uint8_t slot_id_tmp = slot_id;
 
   if ( bmc_location == BB_BMC ) {
     // EVT BB_BMC HW not support cable management
     // just return present to skip checking
-    cbl_val = STATUS_PRSNT;
+    cbl_val[0] = STATUS_PRSNT;
     return 0;
   } else if ( bmc_location == DVT_BB_BMC ) {
     //read GPIO vals
@@ -2646,20 +2647,30 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
       gpio_vals |= (val << 0);
       val = BIT_VALUE(gpio, SLOT3_ID0_DETECT_BMC_N);
       gpio_vals |= (val << 1);
+      slot_id_tmp = 3;
     }
   }
 
   bool vals_match = (bmc_location == DVT_BB_BMC) ? (gpio_vals == mapping_tbl[slot_id-1]):(gpio_vals == cpld_slot_cbl_val);
-  if ( (log_evnt == true) && (vals_match == false) ) {
+  if (vals_match == false) {
     for ( i = 0; i < (sizeof(mapping_tbl)/sizeof(uint8_t)); i++ ) {
       if(mapping_tbl[i] == gpio_vals) {
         break;
       }
     }
-    syslog(LOG_CRIT, "Abnormal - slot%d instead of slot%d", slot_id, (i+1));
+    if (log_evnt == true) {
+      syslog(LOG_CRIT, "Abnormal - slot%d instead of slot%d", slot_id_tmp, (i+1));
+    }
   }
 
-  if ( cbl_val != NULL ) *cbl_val = (vals_match == false)?STATUS_ABNORMAL:STATUS_PRSNT;
+  if ( cbl_val != NULL ) {
+    cbl_val[0] = (vals_match == false)?STATUS_ABNORMAL:STATUS_PRSNT;
+    if (cbl_val[0] == STATUS_ABNORMAL) {
+      cbl_val[1] = slot_id_tmp << 4 | (i+1);
+    } else {
+      cbl_val[1] = 0x00;
+    }
+  }
   return ret;
 }
 

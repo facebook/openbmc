@@ -51,6 +51,7 @@ typedef struct server {
   uint8_t is_server_present;
   uint8_t config;
   uint8_t is_mgmt_cbl_present;
+  uint8_t cbl_sts_val;
   uint8_t is_1ou_present;
   uint8_t is_2ou_present;
 } server_conf;
@@ -95,15 +96,16 @@ get_server_config(uint8_t slot_id, uint8_t *data, uint8_t bmc_location) {
   data[0] = rbuf[0];
 
   if (record_slot_mapping) {
-    ret = pal_check_sled_mgmt_cbl_id(slot_id, &tbuf[0], true, bmc_location);
+    ret = pal_check_sled_mgmt_cbl_id(slot_id, tbuf, true, bmc_location);
   } else {
-    ret = pal_check_sled_mgmt_cbl_id(slot_id, &tbuf[0], false, bmc_location);
+    ret = pal_check_sled_mgmt_cbl_id(slot_id, tbuf, false, bmc_location);
   }
   if ( ret < 0 ) {
     return UTIL_EXECUTION_FAIL;
   }
 
   data[1] = tbuf[0];
+  data[2] = tbuf[1];
   return UTIL_EXECUTION_OK;
 }
 
@@ -113,6 +115,8 @@ show_sys_configuration(sys_conf system) {
   uint8_t i = 0;
   uint8_t sts = 0;
   char config_str[8] = "\0";
+  char config_str_tmp[8] = "\0";
+  char cable_str[64] = "\0";
   json_t *root = NULL;
   json_t *server_info = NULL;
   json_t *data[4] = {NULL, NULL, NULL, NULL};
@@ -130,21 +134,32 @@ show_sys_configuration(sys_conf system) {
     
     //set the basic configuration
     json_object_set_new(root, "Type", json_string((system.type == CLASS1)?"Class 1":"Class 2"));
-    json_object_set_new(root, "Config", json_string(config_str));    
+    json_object_set_new(root, "Config", json_string(config_str));
+    snprintf(config_str_tmp, sizeof(config_str_tmp), "%s", config_str);
 
     //prepare the data
     for ( i = FRU_SLOT1; i <= fru_cnt; i++) {
+      if ( (strcmp("C", config_str_tmp) == 0) || (strcmp("D", config_str_tmp) == 0) ) {
+        if ( i == FRU_SLOT2 || i == FRU_SLOT4) {
+          continue;
+        }
+      }
       //create the object
       data[i-1] = json_object();
       sts = system.server_info[i-1].is_server_present;
       if ( sts != STATUS_PRSNT ) {
-        json_object_set_new(data[i-1], "Type", json_string(prsnt_sts[sts]));
+        json_object_set_new(data[i-1], "Type", json_string("Abnormal - slot not detected"));
       } else {        
         snprintf(config_str, sizeof(config_str), "%X", system.server_info[i-1].config);
         json_object_set_new(data[i-1], "Type", json_string(config_str));
 
         sts = system.server_info[i-1].is_mgmt_cbl_present;
-        json_object_set_new(data[i-1], "SledManagementCable", json_string(prsnt_sts[sts]));
+        if (sts == STATUS_ABNORMAL) {
+          snprintf(cable_str, sizeof(cable_str), "Abnormal - Slot%d instead of Slot%d", (system.server_info[i-1].cbl_sts_val >> 4), (system.server_info[i-1].cbl_sts_val & 0x0f));
+        } else {
+          snprintf(cable_str, sizeof(cable_str), "%s", prsnt_sts[sts]);
+        }
+        json_object_set_new(data[i-1], "SledManagementCable", json_string(cable_str));
 
         sts = system.server_info[i-1].is_1ou_present;
         json_object_set_new(data[i-1], "FrontExpansionCard", json_string(prsnt_sts[sts]));
@@ -178,14 +193,19 @@ show_sys_configuration(sys_conf system) {
       }
       sts = system.server_info[i-1].is_server_present;
       if ( sts != STATUS_PRSNT ) {
-        printf("Slot%d : %s\n\n", i, prsnt_sts[sts]);
+        printf("Slot%d : Abnormal - slot not detected\n\n", i);
         continue;
       }
     
       printf("Slot%d : %s, Config %X\n", i, prsnt_sts[sts], system.server_info[i-1].config);
       if ( verbosed == true ) {
         sts = system.server_info[i-1].is_mgmt_cbl_present;
-        printf("    SledManagementCable: %s\n", prsnt_sts[sts]);
+        if (sts == STATUS_ABNORMAL) {
+          snprintf(cable_str, sizeof(cable_str), "Abnormal - Slot%d instead of Slot%d", (system.server_info[i-1].cbl_sts_val >> 4), (system.server_info[i-1].cbl_sts_val & 0x0f));
+        } else {
+          snprintf(cable_str, sizeof(cable_str), "%s", prsnt_sts[sts]);
+        }
+        printf("    SledManagementCable: %s\n", cable_str);
         sts = system.server_info[i-1].is_1ou_present;
         printf("     FrontExpansionCard: %s\n", prsnt_sts[sts]);
         sts = system.server_info[i-1].is_2ou_present;
@@ -205,7 +225,7 @@ main(int argc, char **argv) {
   int ret = UTIL_EXECUTION_OK;
   int i = 0;
   uint8_t total_fru = 0;
-  uint8_t data[2] = {0};
+  uint8_t data[3] = {0};
   uint8_t check_sys_config = UNKNOWN_CONFIG;
   sys_conf sys_info = {0};
 
@@ -253,6 +273,7 @@ main(int argc, char **argv) {
 
         sys_info.server_info[i-1].is_server_present = STATUS_PRSNT;
         sys_info.server_info[i-1].is_mgmt_cbl_present = data[1];
+        sys_info.server_info[i-1].cbl_sts_val = data[2];
 
         if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
           sys_info.server_info[i-1].is_1ou_present = (front_exp_bit == 0)?STATUS_PRSNT:STATUS_NOT_PRSNT;

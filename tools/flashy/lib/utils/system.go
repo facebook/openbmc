@@ -239,7 +239,7 @@ var RunCommandWithRetries = func(cmdArr []string, timeout time.Duration, maxAtte
 			log.Printf("Attempt %v of %v failed", attempt, maxAttempts)
 			if attempt < maxAttempts {
 				log.Printf("Sleeping for %v before retrying", interval)
-				sleepFunc(interval)
+				Sleep(interval)
 			} else {
 				log.Printf("Max attempts (%v) reached. Returning with error.", maxAttempts)
 			}

@@ -141,7 +141,7 @@ var RestartHealthd = func(wait bool, supervisor string) error {
 	if wait {
 		log.Printf("Sleeping for 30s after healthd restart to make sure " +
 			"healthd is stable.")
-		sleepFunc(30 * time.Second)
+		Sleep(30 * time.Second)
 	}
 	return nil
 }

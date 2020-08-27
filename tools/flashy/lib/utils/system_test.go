@@ -299,12 +299,12 @@ func TestRunCommandWithRetries(t *testing.T) {
 	// save log output into buf for testing
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
-	// mock and defer restore sleepFunc and RunCommand
-	sleepFuncOrig := sleepFunc
+	// mock and defer restore Sleep and RunCommand
+	sleepFuncOrig := Sleep
 	runCommandOrig := RunCommand
 	defer func() {
 		log.SetOutput(os.Stderr)
-		sleepFunc = sleepFuncOrig
+		Sleep = sleepFuncOrig
 		RunCommand = runCommandOrig
 	}()
 
@@ -405,7 +405,7 @@ func TestRunCommandWithRetries(t *testing.T) {
 				return 0, cmdErr, "", ""
 			}
 
-			sleepFunc = func(d time.Duration) {
+			Sleep = func(d time.Duration) {
 				gotSleepTimes = append(gotSleepTimes, d)
 			}
 

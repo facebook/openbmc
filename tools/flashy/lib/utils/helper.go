@@ -209,8 +209,8 @@ func GetBytesRegexSubexpMap(regEx string, buf []byte) (map[string]string, error)
 	return subexpMap, nil
 }
 
-// sleep function variable for mocking purposes
-var sleepFunc = time.Sleep
+// Sleep function variable for mocking purposes.
+var Sleep = time.Sleep
 
 // LogAndIgnoreErr logs the error info and ignores the
 // error

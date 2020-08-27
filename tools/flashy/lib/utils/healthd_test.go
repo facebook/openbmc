@@ -277,14 +277,14 @@ func TestHealthdWriteConfigToFile(t *testing.T) {
 }
 
 func TestRestartHealthd(t *testing.T) {
-	// save and defer restore FileExists, RunCommand & sleepFunc
+	// save and defer restore FileExists, RunCommand & Sleep
 	pathExistsOrig := fileutils.PathExists
 	runCommandOrig := RunCommand
-	sleepFuncOrig := sleepFunc
+	sleepFuncOrig := Sleep
 	defer func() {
 		fileutils.PathExists = pathExistsOrig
 		RunCommand = runCommandOrig
-		sleepFunc = sleepFuncOrig
+		Sleep = sleepFuncOrig
 	}()
 
 	cases := []struct {
@@ -346,7 +346,7 @@ func TestRestartHealthd(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var gotSleepTime time.Duration
-			sleepFunc = func(t time.Duration) {
+			Sleep = func(t time.Duration) {
 				gotSleepTime = t
 			}
 			fileutils.PathExists = func(filename string) bool {

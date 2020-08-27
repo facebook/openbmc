@@ -326,6 +326,33 @@ error:
   return NULL;
 }
 
+static bool is_redundant_update(struct vr_info *info, struct mpq8645p_config *config)
+{
+  int *hwmon_idxp = (int*)info->private_data;
+  int hwmon_idx = *hwmon_idxp;
+  unsigned int curr_ver;
+  char dev_name[LARGEST_DEVICE_NAME] = {0};
+  struct config_data *data;
+
+  snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS, hwmon_idx, MPQ8645P_MFR_REVISION);
+  if (read_attr(dev_name, &curr_ver) < 0)
+    goto exit;
+
+  while (config != NULL) {
+    data = config->data;
+    if (data->reg == PMBUS_MFR_REVISION && info->addr == data->addr && data->value == curr_ver) {
+      printf("WARNING: the version is the same as used now 0x%02X!\n", curr_ver);
+      printf("Please use \"--force\" option to try again.\n");
+      syslog(LOG_WARNING, "%s: redundant programming", info->dev_name);
+      return true;
+    }
+    config = config->next;
+  }
+
+exit:
+  return false;
+}
+
 int mpq8645p_fw_update(struct vr_info *info, void *configs)
 {
   uint8_t addr = info->addr;
@@ -335,6 +362,10 @@ int mpq8645p_fw_update(struct vr_info *info, void *configs)
   char buf[64] = {0};
   struct mpq8645p_config *config = (struct mpq8645p_config *)configs;
   struct config_data *data;
+
+  if (!info->force && is_redundant_update(info, (struct mpq8645p_config *)configs)) {
+    return VR_STATUS_FAILURE;
+  }
 
   while (config != NULL) {
     data = config->data;

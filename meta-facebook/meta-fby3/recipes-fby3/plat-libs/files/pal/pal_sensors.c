@@ -656,7 +656,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_HSC_EIN", HSC_ID0, read_hsc_ein, true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
   {"BMC_SENSOR_PDB_DL_VDELTA", 0xCC, read_pdb_dl_vdelta, true, {0.9, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCC
   {"BMC_SENSOR_CURR_LEAKAGE", 0xCD, read_curr_leakage, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xCD
-  {"BMC_SENSOR_PDB_BB_VDELTA", 0xCE, read_cached_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCE
+  {"BMC_SENSOR_PDB_BB_VDELTA", 0xCE, read_cached_val, true, {0.8, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCE
   {"BMC_SENSOR_MEDUSA_VDELTA", 0xCF, read_medusa_val, true, {0.5, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCF
   {"BMC_SENSOR_MEDUSA_CURR", 0xD0, read_medusa_val, 0, {144, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xD0
   {"BMC_SENSOR_MEDUSA_PWR", 0xD1, read_medusa_val, 0, {1800, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xD1

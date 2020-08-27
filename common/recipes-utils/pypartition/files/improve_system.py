@@ -20,9 +20,12 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
+import re
 import signal
+import subprocess
 import sys
 import textwrap
+import time
 import traceback
 
 import system
@@ -45,6 +48,57 @@ def fix_wedge100_romcs1():
         system.run_verbosely(cmd, logger)
 
 
+def _unmount_mnt_data():
+    # If /mnt/data is mounted, try to unmount it as safely as possible
+    m = re.search(
+        "^(?P<device>[^ ]+) /mnt/data [^ ]+ [^ ]+ [0-9]+ [0-9]+$",
+        open("/proc/mounts").read(),
+        flags=re.MULTILINE,
+    )
+
+    if m:
+        device = m.group("device")
+        logger.info("/mnt/data is mounted, attempting to unmount ...")
+
+        logger.info("Bind mount /mnt to /tmp/mnt")
+        subprocess.check_output(["mkdir", "-p", "/tmp/mnt"])
+        subprocess.check_output(["mount", "--bind", "/mnt", "/tmp/mnt"])
+
+        logger.info("Copying /mnt/data contents to /tmp/mnt ...")
+        subprocess.check_output(["cp", "-r", "/mnt/data", "/tmp/mnt"])
+
+        # Sleep for a bit in case sshd is still referencing files in /mnt/data
+        # (and we don't kill sessions with fuser -k)
+        logger.info(
+            "Waiting a bit so that sshd closes any file descriptors on /mnt/data ..."
+        )
+        time.sleep(3)
+
+        logger.info("Remounting /mnt/data as RO ...")
+        system.fuser_k_mount_ro([(device, "/mnt/data")], logger)
+
+        logger.info("Unmounting /mnt/data ...")
+        subprocess.check_output(["umount", "/mnt/data"])
+
+        logger.info("Ensuring sshd config (including host keys) is still valid")
+        subprocess.check_output(["sshd", "-T"])
+
+        logger.info("/mnt/data unmounted")
+
+
+def unmount_mnt_data():
+    max_attempts = 5
+    for i in range(max_attempts):
+        try:
+            _unmount_mnt_data()
+
+        except Exception as e:
+            logger.error("Error while attempting to unmount /mnt/data: %s", repr(e))
+
+            if i == max_attempts - 1:
+                raise
+
+
 def fix_galaxy100_mnt_data_partition(all_mtds):
     """
     Diag_LC and Diag_FAB in /mnt/data partition that results in
@@ -57,6 +111,9 @@ def fix_galaxy100_mnt_data_partition(all_mtds):
 
     if not system.is_galaxy100():
         return
+
+    unmount_mnt_data()
+
     for mtd in all_mtds:
         logger.info(mtd)
         parts = mtd.__str__().split("(")

@@ -21,7 +21,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fby3:warrior
   meta-fuji:warrior
   meta-elbert:warrior
-  meta-grandcanyon:warrior
+  meta-grandcanyon:zeus
   meta-cmm:zeus
 )
 

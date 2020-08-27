@@ -55,12 +55,6 @@ func getMTD(deviceSpecifier string) (FlashDevice, error) {
 	}, nil
 }
 
-// WritableMountedMTD contains information of a mounted MTD that is writable.
-type WritableMountedMTD struct {
-	Device     string
-	Mountpoint string
-}
-
 // MemoryTechnologyDevice contains information of an MTD, and implements FlashDevice.
 type MemoryTechnologyDevice struct {
 	Specifier string
@@ -128,37 +122,4 @@ var GetMTDBlockFilePath = func(filepath string) (string, error) {
 		mtdPathMap["devmtdpath"],
 		mtdPathMap["mtdnum"],
 	), nil
-}
-
-// GetWritableMountedMTDs returns all writable mounted MTDs as specified in /proc/mounts.
-var GetWritableMountedMTDs = func() ([]WritableMountedMTD, error) {
-	writableMountedMTDs := []WritableMountedMTD{}
-
-	procMountsBuf, err := fileutils.ReadFile("/proc/mounts")
-	if err != nil {
-		return writableMountedMTDs,
-			errors.Errorf("Unable to get writable mounted MTDs: Cannot read /proc/mounts: %v", err)
-	}
-	procMounts := string(procMountsBuf)
-
-	// device, mountpoint, filesystem, options, dump_freq, fsck_pass
-	regEx := `(?m)^(?P<device>/dev/mtd(?:block)?[0-9]+) (?P<mountpoint>[^ ]+) [^ ]+ [^ ]*rw[^ ]* [0-9]+ [0-9]+$`
-
-	allMTDMaps, err := utils.GetAllRegexSubexpMap(regEx, procMounts)
-	if err != nil {
-		return writableMountedMTDs,
-			errors.Errorf("Unable to get writable mounted MTDs: %v", err)
-	}
-
-	for _, mtdMap := range allMTDMaps {
-		writableMountedMTDs =
-			append(writableMountedMTDs,
-				WritableMountedMTD{
-					mtdMap["device"],
-					mtdMap["mountpoint"],
-				},
-			)
-	}
-
-	return writableMountedMTDs, nil
 }

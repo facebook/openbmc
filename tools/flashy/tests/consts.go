@@ -470,6 +470,16 @@ tmpfs /var/volatile tmpfs rw,relatime 0 0
 /dev/mtdblock4 /mnt/data jffs2 rw,relatime 0 0
 devpts /dev/pts devpts rw,relatime,gid=5,mode=620 0 0`
 
+// ExampleWedge100ProcMountsFileUnmountedData contains /proc/mounts contents from a wedge100,
+// with the /mnt/data mount removed.
+const ExampleWedge100ProcMountsFileUnmountedData = `rootfs / rootfs rw 0 0
+proc /proc proc rw,relatime 0 0
+sysfs /sys sysfs rw,relatime 0 0
+devtmpfs /dev devtmpfs rw,relatime,size=117120k,nr_inodes=29280,mode=755 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,mode=755 0 0
+tmpfs /var/volatile tmpfs rw,relatime 0 0
+devpts /dev/pts devpts rw,relatime,gid=5,mode=620 0 0`
+
 // ExampleTiogapass1ProcMtdFile contains /proc/mtd contents from a tiogapass1.
 const ExampleTiogapass1ProcMtdFile = `dev:    size   erasesize  name
 mtd0: 00060000 00010000 "romx"

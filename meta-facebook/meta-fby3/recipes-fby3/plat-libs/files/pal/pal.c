@@ -1434,7 +1434,7 @@ pal_get_m2vpp_str_name(uint8_t comp, uint8_t root_port, char *error_log) {
     if ( root_port_mapping[i].root_port == root_port ) {
       char *silk_screen = root_port_mapping[i].silk_screen;
       char *location = root_port_mapping[i].location;
-      snprintf(error_log, 256, "%s/Num %s ", location, silk_screen);
+      snprintf(error_log, 256, "%s/%s ", location, silk_screen);
       return;
     }
   }

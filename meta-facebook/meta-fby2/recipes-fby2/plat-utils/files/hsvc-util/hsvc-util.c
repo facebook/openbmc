@@ -43,18 +43,6 @@ enum {
   OPT_ALL   = 5,
 };
 
-slot_kv_st slot_kv_list[] = {
-  // {slot_key, slot_def_val}
-  {"pwr_server%d_last_state", "on"},
-  {"sysfw_ver_slot%d",         "0"},
-  {"slot%d_por_cfg",         "lps"},
-  {"slot%d_sensor_health",     "1"},
-  {"slot%d_sel_error",         "1"},
-  {"slot%d_boot_order",  "0000000"},
-  {"slot%d_cpu_ppin",          "0"},
-  {"fru%d_restart_cause",      "3"},
-};
-
 static void
 print_usage_help(void) {
   printf("Usage: hsvc-util <all|slot1|slot2|slot3|slot4> <--start | --stop>\n");
@@ -162,30 +150,6 @@ activate_hsvc(uint8_t slot_id) {
   }
 
   return 0;
-}
-
-static int
-kv_list_load_default(uint8_t slot_id) {
-  int i;
-  int flag = 0;
-  char slot_kv[80] = {0};
-  int ret = 0;
-
-  // Re-init kv list
-  for(i=0; i < sizeof(slot_kv_list)/sizeof(slot_kv_st); i++) {
-    memset(slot_kv, 0, sizeof(slot_kv));
-    sprintf(slot_kv, slot_kv_list[i].slot_key, slot_id);
-    if ((ret = pal_set_key_value(slot_kv, slot_kv_list[i].slot_def_val)) < 0) {
-      syslog(LOG_WARNING, "%s %s: kv_set failed. %d", __func__, slot_kv_list[i].slot_key, ret);
-      flag = 1;
-    }
-  }
-
-  if (1 == flag) {
-    return -1;
-  } else {
-    return 0;
-  }
 }
 
 static int
@@ -327,10 +291,6 @@ main(int argc, char **argv) {
          goto err_exit;
        }
 
-       if (kv_list_load_default(slot_id) == -1) {
-         printf("hsvc-util: Fail to set key value to default for FRU:%d ...\n", slot_id);
-       }
-
        memset(cmd, 0, sizeof(cmd));
        sprintf(cmd, "/usr/local/bin/power-util slot%u 12V-on", slot_id);
        ret = run_command(cmd);
@@ -366,10 +326,6 @@ main(int argc, char **argv) {
          printf("hsvc-util: hsvc-util --start should be activated before hsvc-util --stop ...\n");
          flag = 1;
          continue;
-       }
-
-       if (kv_list_load_default(slot_id) == -1) {
-         printf("hsvc-util: Fail to set key value to default for FRU:%d ...\n", slot_id);
        }
 
        memset(cmd, 0, sizeof(cmd));

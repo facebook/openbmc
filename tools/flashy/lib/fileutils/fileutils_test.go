@@ -155,6 +155,68 @@ func TestFileExists(t *testing.T) {
 	}
 }
 
+func TestDirExists(t *testing.T) {
+	// save log output into buf for testing
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	// mock and defer restore osStat
+	osStatOrig := osStat
+	defer func() {
+		log.SetOutput(os.Stderr)
+		osStat = osStatOrig
+	}()
+	cases := []struct {
+		name           string
+		isDir          bool
+		osStatErr      error
+		logContainsSeq []string
+		want           bool
+	}{
+		{
+			name:           "path exists and is dir",
+			isDir:          true,
+			osStatErr:      nil,
+			logContainsSeq: []string{},
+			want:           true,
+		},
+		{
+			name:           "path exists and is not dir",
+			isDir:          false,
+			osStatErr:      nil,
+			logContainsSeq: []string{},
+			want:           false,
+		},
+		{
+			name:           "path surely does not exist",
+			isDir:          false,
+			osStatErr:      os.ErrNotExist,
+			logContainsSeq: []string{},
+			want:           false,
+		},
+		{
+			name:      "ambiguous, log and default to false",
+			isDir:     false,
+			osStatErr: errors.Errorf("12345"),
+			logContainsSeq: []string{
+				"Existence check of path 'x' returned error '12345', defaulting to false",
+			},
+			want: false,
+		},
+	}
+
+	for _, tc := range cases {
+		buf = bytes.Buffer{}
+		osStat = func(filename string) (os.FileInfo, error) {
+			return &mockFileInfo{tc.isDir, nil}, tc.osStatErr
+		}
+		got := DirExists("x")
+		if tc.want != got {
+			t.Errorf("want %v got %v", tc.want, got)
+		}
+		tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
+	}
+}
+
 func TestIsELFFile(t *testing.T) {
 	// mock and defer restore MmapFileRange
 	mmapFileRangeOrig := MmapFileRange

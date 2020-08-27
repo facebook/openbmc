@@ -133,6 +133,19 @@ var FileExists = func(filename string) bool {
 	return false
 }
 
+// DirExists returns true when the directory exists and
+// also checks that the directory is not a file.
+// It defaults to `false` if os.Stat returns any other non-nil error.
+var DirExists = func(filename string) bool {
+	if PathExists(filename) {
+		// err guaranteed to be nil by PathExists
+		info, _ := osStat(filename)
+		// confirm it is a directory
+		return info.IsDir()
+	}
+	return false
+}
+
 // AppendFile appends to the end of a file. It creates one if it does not exist.
 var AppendFile = func(filename, data string) error {
 	// create if non-existent

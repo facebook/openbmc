@@ -83,40 +83,20 @@ pal_power_button_override(uint8_t fru_id) {
 int
 pal_get_server_power(uint8_t fru, uint8_t *status) {
   int ret;
-  uint8_t mode;
   gpio_desc_t *gdesc = NULL;
   gpio_value_t val;
 
   if (fru != FRU_MB)
     return -1;
 
-  ret = pal_get_host_system_mode(&mode);
-  if(ret != 0) {
-    return ret;
-  }
+  gdesc = gpio_open_by_shadow(GPIO_CPU0_POWER_GOOD);
+  if (gdesc == NULL)
+    return -1;
 
-  ret = pal_get_config_is_master();
-  if(ret < 0) {
-    return ret;
-  }
+  ret = gpio_get_value(gdesc, &val);
+  if (ret != 0)
+    goto error;
 
-  if(ret || mode == MB_2S_MODE) { 
-    gdesc = gpio_open_by_shadow(GPIO_POWER_GOOD);
-    if (gdesc == NULL)
-      return -1;
- 
-    ret = gpio_get_value(gdesc, &val);
-    if (ret != 0)
-      goto error;
-  } else {
-    gdesc = gpio_open_by_shadow(GPIO_CPU0_POWER_GOOD);
-    if (gdesc == NULL)
-      return -1;
-
-    ret = gpio_get_value(gdesc, &val);
-    if (ret != 0)
-      goto error;
-  }
   *status = (int)val;
 error:
   gpio_close(gdesc);
@@ -193,15 +173,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
 int
 pal_sled_cycle(void) {
-  uint8_t mode=0;
-  int ret;
 
-  ret = pal_get_host_system_mode(&mode);
-  if (ret != 0) {
-    return -1;
-  }
- 
-  syslog(LOG_DEBUG, "system mode=%x\n", mode);
   // If JBOG is present, request power cycle
   // TODO:
   //      Add common interface for different JBOG platform
@@ -213,16 +185,7 @@ pal_sled_cycle(void) {
   }
 
   // Send command to HSC power cycle
-  if (mode == MB_8S_MODE ) {  
-    if( lib_cmc_power_cycle() ) {
-      return -1;
-    }
-  } else if (mode == MB_2S_MODE ) {
-    if (system("i2cset -y 7 0x11 0xd9 c &> /dev/null")) {
-      syslog(LOG_DEBUG, "DEbug1\n");
-      return -1;
-    }
-  } else {
+  if( lib_cmc_power_cycle() ) {
     return -1;
   }
   return 0;

@@ -52,7 +52,7 @@ func init() {
 	// syslog
 	syslogWriter, err := getSyslogWriter()
 	if err != nil {
-		log.Printf("Unable to get syslog: %v\n", err)
+		log.Printf("Unable to get syslog: %v", err)
 	} else {
 		streams = append(streams, syslogWriter)
 	}
@@ -96,7 +96,7 @@ func getSyslogWriter() (syslogWriter io.Writer, err error) {
 var StartSyslog = func() {
 	systemdAvail, err := utils.SystemdAvailable()
 	if err != nil {
-		log.Printf("Unable to decide if systemd is available: %v\n", err)
+		log.Printf("Unable to decide if systemd is available: %v", err)
 		return
 	}
 	cmd := []string{}

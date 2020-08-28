@@ -441,3 +441,17 @@ is_date_synced() {
     echo 0
   fi
 }
+
+# Get 2OU board type
+# M.2 board: 0x01
+# E1.S board: 0x02
+function get_2ou_board_type() {
+  local bus=$1
+  type=$(/usr/sbin/i2cget -y $bus $SB_CPLD_ADDR 0xD)
+  if [ $? -ne 0 ]; then
+    # if get board type fail, return M.2 board as default
+    echo "0x01"
+  else
+    echo $type
+  fi
+}

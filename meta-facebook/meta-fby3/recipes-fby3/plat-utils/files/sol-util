@@ -116,6 +116,7 @@ fi
 SLOT_NUM=$(get_slot_num $SLOT)
 I2C_NUM=$(get_bus_num $SLOT)
 SLED_TYPE=$(cat $SLED_TYPE)
+BOARD_TYPE_2OU=$(get_2ou_board_type $I2C_NUM)
 COMP=$2
 DEV=$3
 CPLD_ADDR=
@@ -146,7 +147,11 @@ if [ -n "$COMP" ]; then
   if [ "$COMP" == "1ou" ] && [[ ! "$SLED_TYPE" =~ ^(Type_(1|17))$ ]]; then
     EXP_CPLD_ADDR=${FRONT_EXP_CPLD_ADDR}
   elif [ "$COMP" == "2ou" ] && [[ ! "$SLED_TYPE" =~ ^(Type_(1|10))$ ]]; then
-    EXP_CPLD_ADDR=${RISER_EXP_CPLD_ADDR}
+    if [ $BOARD_TYPE_2OU == "0x02" ]; then     #E1.S board
+        EXP_CPLD_ADDR=""
+    else
+        EXP_CPLD_ADDR=${RISER_EXP_CPLD_ADDR}
+    fi
   elif [ "$COMP" == "sb" ]; then
     CPLD_ADDR=${SB_CPLD_ADDR}
   else
@@ -183,7 +188,9 @@ if [ -n "$COMP" ]; then
         set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x01" ||
         set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x02"
     fi
-    select_expansion_uart $I2C_NUM $EXP_CPLD_ADDR $DEV_NUM
+    if [ -n "$EXP_CPLD_ADDR" ]; then
+      select_expansion_uart $I2C_NUM $EXP_CPLD_ADDR $DEV_NUM
+    fi
   fi
 else
   set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x03"

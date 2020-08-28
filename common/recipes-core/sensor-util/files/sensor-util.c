@@ -692,23 +692,27 @@ print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool for
     }
     ret = pal_is_fru_prsnt(fru, &status);
     if (ret < 0) {
-      printf("pal_is_fru_prsnt failed for fru: %s\n", fruname);
+      if (json == 0)
+        printf("pal_is_fru_prsnt failed for fru: %s\n", fruname);
       return ret;
     }
     if (status == 0) {
-      printf("%s is not present!\n\n", fruname);
+      if (json == 0)
+        printf("%s is not present!\n\n", fruname);
       return -1;
     }
 
     ret = pal_is_fru_ready(fru, &status);
     if ((ret < 0) || (status == 0)) {
-      printf("%s is unavailable!\n\n", fruname);
+      if (json == 0)
+        printf("%s is unavailable!\n\n", fruname);
       return ret;
     }
 
     ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
     if (ret < 0) {
-      printf("%s get sensor list failed!\n", fruname);
+      if (json == 0)
+        printf("%s get sensor list failed!\n", fruname);
       return ret;
     }
   }

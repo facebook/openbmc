@@ -19,6 +19,8 @@ EXTRA_OEMAKE_class-target = 'CROSS_COMPILE=${TARGET_PREFIX} CC="${CC} ${CFLAGS} 
 EXTRA_OEMAKE_class-cross = 'ARCH=${TARGET_ARCH} CC="${CC} ${CFLAGS} ${LDFLAGS}" V=1'
 
 inherit uboot-config
+# default fw_env config file to be installed
+FW_ENV_CONFIG_FILE ??= "fw_env.config"
 
 do_compile () {
   oe_runmake ${UBOOT_MACHINE}
@@ -30,6 +32,8 @@ do_install () {
   install -d ${D}${sysconfdir}
   install -m 755 ${S}/tools/env/fw_printenv ${D}${base_sbindir}/fw_printenv
   install -m 755 ${S}/tools/env/fw_printenv ${D}${base_sbindir}/fw_setenv
+  bbdebug 1 "install ${FW_ENV_CONFIG_FILE}"
+  install -m 0644 ${WORKDIR}/${FW_ENV_CONFIG_FILE} ${D}${sysconfdir}/fw_env.config
 }
 
 do_install_class-cross () {

@@ -265,7 +265,10 @@ pal_server_set_nic_power(const uint8_t expected_pwr) {
         }
       } else if ( expected_pwr == SERVER_POWER_ON || \
                expected_pwr == SERVER_POWER_OFF ) {
-        ret = bic_get_server_power_status(i, &pwr_sts);
+        ret = pal_get_server_12v_power(i, &pwr_sts);
+        if (ret == PAL_EOK && pwr_sts == SERVER_12V_ON) {
+          ret = bic_get_server_power_status(i, &pwr_sts);
+        }
       } else return PAL_ENOTSUP;
 
       if ( ret < 0 ) {

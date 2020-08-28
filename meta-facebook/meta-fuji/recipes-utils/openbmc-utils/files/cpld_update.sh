@@ -31,11 +31,12 @@ DLL_AST_JTAG_PATH=/usr/lib/libcpldupdate_dll_ast_jtag.so
 usage() {
     echo "Usage: $prog -s <CPLD_TYPE> -f <img_file> <hw|sw>"
     echo
-    echo "CPLD_TYPE: ( FCM-T | FCM-B | SCM | SMB | PWR-L | PWR-R)"
+    echo "CPLD_TYPE: ( FCM-T | FCM-B | SCM | SMB | PWR-L | PWR-R | PFR)"
     echo
     echo "img_file: Image file for lattice CPLD"
     echo "  VME file for software mode"
     echo "  JED file for hardware mode"
+    echo "  JBC file for Intel PFR FPGA update"
     echo "options:"
     echo "  hw: Program the CPLD using JTAG hardware mode"
     echo "  sw: Program the CPLD using JTAG software mode"
@@ -57,6 +58,17 @@ enable_fct-t_jtag_chain(){
     gpio_set_value SYS_CPLD_JTAG_EN_N     1
     gpio_set_value BMC_SCM_CPLD_JTAG_EN_N 1
     gpio_set_value BMC_FPGA_JTAG_EN       1
+}
+
+enable_pfr_jtag_chain(){
+    gpio_set_value BMC_JTAG_MUX_IN        1
+    gpio_set_value FCM_1_CPLD_JTAG_EN_N   1
+    gpio_set_value BMC_FCM_1_SEL          1
+    gpio_set_value FCM_2_CPLD_JTAG_EN_N   1
+    gpio_set_value BMC_FCM_2_SEL          1
+    gpio_set_value SYS_CPLD_JTAG_EN_N     1
+    gpio_set_value BMC_SCM_CPLD_JTAG_EN_N 1
+    gpio_set_value BMC_FPGA_JTAG_EN       0
 }
 
 enable_fct-b_jtag_chain(){
@@ -137,6 +149,8 @@ if [ -e "$UPDATE_IMG" ];then
         enable_fct-t_jtag_chain
     elif [[  $CPLD_TYPE == "FCM-B" ]];then
         enable_fct-b_jtag_chain
+    elif [[  $CPLD_TYPE == "PFR" ]];then
+        enable_pfr_jtag_chain
     elif [[  $CPLD_TYPE == "SMB" ]];then
         enable_smb_jtag_chain
     elif [[  $CPLD_TYPE == "SCM" ]];then
@@ -163,6 +177,8 @@ case $5 in
             ispvm -f 100 dll $DLL_PATH "${UPDATE_IMG}" --tdo PDB_L_JTAG_TDO --tdi PDB_L_JTAG_TDI --tms PDB_L_JTAG_TMS --tck PDB_L_JTAG_TCK
         elif [[  $CPLD_TYPE == "PWR-R" ]];then
             ispvm -f 100 dll $DLL_PATH "${UPDATE_IMG}" --tdo PDB_R_JTAG_TDO --tdi PDB_R_JTAG_TDI --tms PDB_R_JTAG_TMS --tck PDB_R_JTAG_TCK
+        elif [[  $CPLD_TYPE == "PFR" ]];then
+            jbi -aPROGRAM -ddo_real_time_isp=1 -gc882 -gi881 -go884 -gs883 "${UPDATE_IMG}"
         else
             ispvm -f 100 dll $DLL_AST_JTAG_PATH "${UPDATE_IMG}"
         fi

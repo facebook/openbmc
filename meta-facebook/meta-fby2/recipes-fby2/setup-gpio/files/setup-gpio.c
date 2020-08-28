@@ -29,6 +29,7 @@
 #include <openbmc/pal.h>
 #include <openbmc/libgpio.h>
 #include <facebook/fby2_common.h>
+#include <openbmc/phymem.h>
 
 #define SCU_BASE    	0x1E6E2000
 #define REG_SCU7C   	0x7C
@@ -49,10 +50,8 @@
 
 #define GPIO_BASE		0x1E780000
 
-#define PAGE_SIZE   	0x1000
 
 #define ASPPED_CHIP   "aspeed-gpio"
-#define GPIO_TMP_PATH "/tmp/gpionames/%s"
 
 // Registers to set
 enum {
@@ -69,103 +68,15 @@ enum {
 	LASTEST_REG,
 };
 
-int
-get_register(uint32_t base, uint32_t offset, uint32_t *value) {
-	void *base_addr, *read_addr;
-	int ret = 0;
-	int fd = 0;
 
-	fd = open("/dev/mem", O_RDWR | O_SYNC );
-	if (fd < 0) {
-		syslog(LOG_ERR, "%s - cannot open /dev/mem", __FILE__);
-		return -1;
-	}
-	base_addr = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, base);
-	read_addr = (char*)base_addr + offset;
-	*value = *(volatile uint32_t*) read_addr;
-	close(fd);
-
-	return ret;
-}
-
-int
-set_register(uint32_t base, uint32_t offset, uint32_t value) {
-	void *base_addr, *write_addr;
-	int ret = 0;
-	int fd = 0;
-
-	fd = open("/dev/mem", O_RDWR | O_SYNC );
-	if (fd < 0) {
-		syslog(LOG_ERR, "%s - cannot open /dev/mem", __FILE__);
-		return -1;
-	}
-	base_addr = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, base);
-	write_addr = (char*)base_addr + offset;
-	*(volatile uint32_t*) write_addr = value;
-
-	close(fd);
-	return value;
-}
-
-int
-reg_set_bit(uint32_t base, uint32_t offset, uint8_t bit) {
-	int ret = 0;
-	uint32_t value = 0;
-
-	ret = get_register(base, offset, &value);
-	if (ret < 0) {
-		return -1;
-	}
-	value |= (0x1 << bit);
-	ret = set_register(base, offset, value);
-
-	return ret;
-}
-
-int
-reg_clear_bit(uint32_t base, uint32_t offset, uint8_t bit) {
-	int ret = 0;
-	uint32_t value = 0;
-
-	ret = get_register(base, offset, &value);
-	if (ret < 0) {
-		return -1;
-	}
-	value &= ~(0x1 << bit);
-	ret = set_register(base, offset, value);
-
-	return ret;
-}
-
-int
-gpio_set(char* name, char* shadow, uint8_t value) {
-	gpio_desc_t *gdesc = NULL;
-	int ret = 0;
-	char path[64] = {0};
-
-	sprintf(path, GPIO_TMP_PATH, shadow);
-	if (access(path, F_OK) != 0) {
-		gpio_export_by_name(ASPPED_CHIP, name, shadow);
-	}
-	gdesc = gpio_open_by_shadow(shadow);
-	if (gdesc == NULL) {
-		syslog(LOG_ERR, "Fail to open GPIO %s", shadow);
-		return -1;
-	}
-
-	if (value == 1) {
-		ret = gpio_set_init_value(gdesc, GPIO_VALUE_HIGH);
-	} else {
-		ret = gpio_set_init_value(gdesc, GPIO_VALUE_LOW);
-	}	
-	if (ret < 0) {
-		syslog(LOG_ERR, "Fail to set GPIO %s value", shadow);
-	}
-
-error_exit:
-	gpio_close(gdesc);
-
-	return ret;
+int set_gpio_init_value_after_export(const char * name, const char *shadow, gpio_value_t value)
+{
+  int ret;
+  if (gpio_is_exported(shadow) == false) {
+    gpio_export_by_name(GPIO_CHIP_ASPEED, name, shadow);
+  }
+  ret = gpio_set_init_value_by_shadow(shadow, value);
+  return ret;
 }
 
 int
@@ -176,16 +87,16 @@ main(int argc, char **argv) {
 
 	printf("Set up GPIO pins.....\n");
 	// Read register initial value
-	get_register(SCU_BASE, REG_SCU80, &reg[SCU80]);
-	get_register(SCU_BASE, REG_SCU84, &reg[SCU84]);
-	get_register(SCU_BASE, REG_SCU88, &reg[SCU88]);
-	get_register(SCU_BASE, REG_SCU8C, &reg[SCU8C]);
-	get_register(SCU_BASE, REG_SCU90, &reg[SCU90]);
-	get_register(SCU_BASE, REG_SCU94, &reg[SCU94]);
-	get_register(SCU_BASE, REG_SCU2C, &reg[SCU2C]);
-	get_register(SCU_BASE, REG_SCUA0, &reg[SCUA0]);
-	get_register(SCU_BASE, REG_SCUA4, &reg[SCUA4]);
-	get_register(SCU_BASE, REG_SCUA8, &reg[SCUA8]);
+	phymem_get_dword(SCU_BASE, REG_SCU80, &reg[SCU80]);
+	phymem_get_dword(SCU_BASE, REG_SCU84, &reg[SCU84]);
+	phymem_get_dword(SCU_BASE, REG_SCU88, &reg[SCU88]);
+	phymem_get_dword(SCU_BASE, REG_SCU8C, &reg[SCU8C]);
+	phymem_get_dword(SCU_BASE, REG_SCU90, &reg[SCU90]);
+	phymem_get_dword(SCU_BASE, REG_SCU94, &reg[SCU94]);
+	phymem_get_dword(SCU_BASE, REG_SCU2C, &reg[SCU2C]);
+	phymem_get_dword(SCU_BASE, REG_SCUA0, &reg[SCUA0]);
+	phymem_get_dword(SCU_BASE, REG_SCUA4, &reg[SCUA4]);
+	phymem_get_dword(SCU_BASE, REG_SCUA8, &reg[SCUA8]);
 
 	// To use GPIOE0~E5, SCU80[21:16] must be 0
 	// To use GPIOF0~F3, SCU80[27:24] must be 0
@@ -229,22 +140,22 @@ main(int argc, char **argv) {
 	// To use GPIOAB1~AB3, SCUA8[3:1] must be 0
 	reg[SCUA8] &= ~(0x0000000E);
 
-	set_register(SCU_BASE, REG_SCU80, reg[SCU80]);
-	set_register(SCU_BASE, REG_SCU84, reg[SCU84]);
-	set_register(SCU_BASE, REG_SCU88, reg[SCU88]);
-	set_register(SCU_BASE, REG_SCU8C, reg[SCU8C]);
-	set_register(SCU_BASE, REG_SCU90, reg[SCU90]);
-	set_register(SCU_BASE, REG_SCU94, reg[SCU94]);
-	set_register(SCU_BASE, REG_SCU2C, reg[SCU2C]);
-	set_register(SCU_BASE, REG_SCUA0, reg[SCUA0]);
-	set_register(SCU_BASE, REG_SCUA4, reg[SCUA4]);
-	set_register(SCU_BASE, REG_SCUA8, reg[SCUA8]);
+	phymem_set_dword(SCU_BASE, REG_SCU80, reg[SCU80]);
+	phymem_set_dword(SCU_BASE, REG_SCU84, reg[SCU84]);
+	phymem_set_dword(SCU_BASE, REG_SCU88, reg[SCU88]);
+	phymem_set_dword(SCU_BASE, REG_SCU8C, reg[SCU8C]);
+	phymem_set_dword(SCU_BASE, REG_SCU90, reg[SCU90]);
+	phymem_set_dword(SCU_BASE, REG_SCU94, reg[SCU94]);
+	phymem_set_dword(SCU_BASE, REG_SCU2C, reg[SCU2C]);
+	phymem_set_dword(SCU_BASE, REG_SCUA0, reg[SCUA0]);
+	phymem_set_dword(SCU_BASE, REG_SCUA4, reg[SCUA4]);
+	phymem_set_dword(SCU_BASE, REG_SCUA8, reg[SCUA8]);
 
 	// To use GPIOI0~GPIOI7, SCU70[13:12] must be 0
 	// To use GPIOD1, SCU70[21] shall be 0
 	// To use GPIOE0, GPIOE4, SCU70[22] must be 0
 	// To use GPIOB4, SCU70[23] must be 0
-	set_register(SCU_BASE, REG_SCU7C, 0x00E03000);
+	phymem_set_dword(SCU_BASE, REG_SCU7C, 0x00E03000);
 
 	// SLOT1_PRSNT_N, GPIOAA0 (208)
 	gpio_export_by_name(ASPPED_CHIP, "GPIOAA0", "SLOT1_PRSNT_N");
@@ -274,17 +185,17 @@ main(int argc, char **argv) {
 	gpio_export_by_name(ASPPED_CHIP, "GPIOD0", "BMC_PWR_BTN_IN_N");
 	
 	// PWR_SLOT1_BTN_N, 1S Server power out, on GPIO D1
-	gpio_set("GPIOD1", "PWR_SLOT1_BTN_N", 1);
+	set_gpio_init_value_after_export("GPIOD1", "PWR_SLOT1_BTN_N", 1);
 	
 	// PWR_SLOT2_BTN_N, 1S Server power out, on GPIO D3
 	// Make sure the Power Control Pin is Set properly
-	gpio_set("GPIOD3", "PWR_SLOT2_BTN_N", 1);
+	set_gpio_init_value_after_export("GPIOD3", "PWR_SLOT2_BTN_N", 1);
 	
 	// PWR_SLOT3_BTN_N, 1S Server power out, on GPIO D5
-	gpio_set("GPIOD5", "PWR_SLOT3_BTN_N", 1);
+	set_gpio_init_value_after_export("GPIOD5", "PWR_SLOT3_BTN_N", 1);
 	
 	// PWR_SLOT4_BTN_N, 1S Server power out, on GPIO D7
-	gpio_set("GPIOD7", "PWR_SLOT4_BTN_N", 1);
+	set_gpio_init_value_after_export("GPIOD7", "PWR_SLOT4_BTN_N", 1);
 	
 	// SMB_SLOT1_NIC_ALERT_N, alert for 1S Server NIC I2C, GPIO B0
 	gpio_export_by_name(ASPPED_CHIP, "GPIOB0", "SMB_SLOT1_NIC_ALERT_N");
@@ -299,10 +210,10 @@ main(int argc, char **argv) {
 	gpio_export_by_name(ASPPED_CHIP, "GPIOB3", "SMB_SLOT4_NIC_ALERT_N");
 
 	// Enable P3V3: GPIOAB1(217)
-	gpio_set("GPIOAB1", "P3V3_EN_R", 1);
+	set_gpio_init_value_after_export("GPIOAB1", "P3V3_EN_R", 1);
 	
 	// BMC_SELF_HW_RST: GPIOAB2(218)
-	gpio_set("GPIOAB2", "BMC_SELF_HW_RST", 0);
+	set_gpio_init_value_after_export("GPIOAB2", "BMC_SELF_HW_RST", 0);
 
 	// VGA Mux
 	gpio_export_by_name(ASPPED_CHIP, "GPIOJ2", "VGA_SELECT_ID0");
@@ -330,28 +241,28 @@ main(int argc, char **argv) {
 	gpio_export_by_name(ASPPED_CHIP, "GPIOE3", "DEBUG_UART_RX_SEL_N");
 	
 	// Power LED for Slot#2:
-	gpio_set("GPIOM0", "PWR1_LED", 1);
+	set_gpio_init_value_after_export("GPIOM0", "PWR1_LED", 1);
 	
 	// Power LED for Slot#1:
-	gpio_set("GPIOM1", "PWR2_LED", 1);
+	set_gpio_init_value_after_export("GPIOM1", "PWR2_LED", 1);
 
 	// Power LED for Slot#4:
-	gpio_set("GPIOM2", "PWR3_LED", 1);
+	set_gpio_init_value_after_export("GPIOM2", "PWR3_LED", 1);
 	
 	// Power LED for Slot#3:
-	gpio_set("GPIOM3", "PWR4_LED", 1);
+	set_gpio_init_value_after_export("GPIOM3", "PWR4_LED", 1);
 	
 	// Identify LED for Slot#2:
-	gpio_set("GPIOF0", "SYSTEM_ID1_LED_N", 1);
+	set_gpio_init_value_after_export("GPIOF0", "SYSTEM_ID1_LED_N", 1);
 	
 	// Identify LED for Slot#1:
-	gpio_set("GPIOF1", "SYSTEM_ID2_LED_N", 1);
+	set_gpio_init_value_after_export("GPIOF1", "SYSTEM_ID2_LED_N", 1);
 	
 	// Identify LED for Slot#4:
-	gpio_set("GPIOF2", "SYSTEM_ID3_LED_N", 1);
+	set_gpio_init_value_after_export("GPIOF2", "SYSTEM_ID3_LED_N", 1);
 	
 	// Identify LED for Slot#3:
-	gpio_set("GPIOF3", "SYSTEM_ID4_LED_N", 1);
+	set_gpio_init_value_after_export("GPIOF3", "SYSTEM_ID4_LED_N", 1);
 	
 	// MEZZ_PRSNTID_A_SEL_N: GPIOF4
 	gpio_export_by_name(ASPPED_CHIP, "GPIOF4", "MEZZ_PRSNTID_A_SEL_N");
@@ -389,50 +300,50 @@ main(int argc, char **argv) {
 
 	// LED POST CODES: 8 GPIO signals
 	// LED_POSTCODE_0: GPIOG0 (48)
-	gpio_set("GPIOG0", "LED_POSTCODE_0", 0);
+	set_gpio_init_value_after_export("GPIOG0", "LED_POSTCODE_0", 0);
 		
 	// LED_POSTCODE_1: GPIOG1 (49)
-	gpio_set("GPIOG1", "LED_POSTCODE_1", 0);
+	set_gpio_init_value_after_export("GPIOG1", "LED_POSTCODE_1", 0);
 	
 	// LED_POSTCODE_2: GPIOG2 (50)
-	gpio_set("GPIOG2", "LED_POSTCODE_2", 0);
+	set_gpio_init_value_after_export("GPIOG2", "LED_POSTCODE_2", 0);
 	
 	// LED_POSTCODE_3: GPIOG3 (51)
-	gpio_set("GPIOG3", "LED_POSTCODE_3", 0);
+	set_gpio_init_value_after_export("GPIOG3", "LED_POSTCODE_3", 0);
 	
 	// DUAL FAN DETECT: GPIOG6 (54)
 	gpio_export_by_name(ASPPED_CHIP, "GPIOG6", "DUAL_FAN_DETECT");
 
 	// LED_POSTCODE_4: GPIOP4 (124)
-	gpio_set("GPIOP4", "LED_POSTCODE_4", 0);
+	set_gpio_init_value_after_export("GPIOP4", "LED_POSTCODE_4", 0);
 
 	// LED_POSTCODE_5: GPIOP5 (125)
-	gpio_set("GPIOP5", "LED_POSTCODE_5", 0);
+	set_gpio_init_value_after_export("GPIOP5", "LED_POSTCODE_5", 0);
 
 	// LED_POSTCODE_6: GPIOP6 (126)
-	gpio_set("GPIOP6", "LED_POSTCODE_6", 0);
+	set_gpio_init_value_after_export("GPIOP6", "LED_POSTCODE_6", 0);
 
 	// LED_POSTCODE_7: GPIOP7 (127)
-	gpio_set("GPIOP7", "LED_POSTCODE_7", 0);
+	set_gpio_init_value_after_export("GPIOP7", "LED_POSTCODE_7", 0);
 
 	// BMC_READY_N: GPIOA0 (0)
-	gpio_set("GPIOA0", "BMC_READY_N", 0);
+	set_gpio_init_value_after_export("GPIOA0", "BMC_READY_N", 0);
 
 	// BMC_RST_BTN_IN_N: GPIOAB0 (216)
 	gpio_export_by_name(ASPPED_CHIP, "GPIOAB0", "BMC_RST_BTN_IN_N");
 
 	// RESET for all Slots
 	// RST_SLOT1_SYS_RESET_N: GPIOS0 (144)
-	gpio_set("GPIOS0", "RST_SLOT1_SYS_RESET_N", 1);
+	set_gpio_init_value_after_export("GPIOS0", "RST_SLOT1_SYS_RESET_N", 1);
 
 	// RST_SLOT2_SYS_RESET_N: GPIOS1 (145)
-	gpio_set("GPIOS1", "RST_SLOT2_SYS_RESET_N", 1);
+	set_gpio_init_value_after_export("GPIOS1", "RST_SLOT2_SYS_RESET_N", 1);
 
 	// RST_SLOT3_SYS_RESET_N: GPIOS2 (146)
-	gpio_set("GPIOS2", "RST_SLOT3_SYS_RESET_N", 1);
+	set_gpio_init_value_after_export("GPIOS2", "RST_SLOT3_SYS_RESET_N", 1);
 
 	// RST_SLOT4_SYS_RESET_N: GPIOS3 (147)
-	gpio_set("GPIOS3", "RST_SLOT4_SYS_RESET_N", 1);
+	set_gpio_init_value_after_export("GPIOS3", "RST_SLOT4_SYS_RESET_N", 1);
 
 	// UART_SEL: GPIOO3 (115)
 	gpio_export_by_name(ASPPED_CHIP, "GPIOO3", "UART_SEL");
@@ -443,7 +354,7 @@ main(int argc, char **argv) {
 	pal_is_fru_prsnt(FRU_SLOT1, &slot_prsnt);
 	pal_is_server_12v_on(FRU_SLOT1, &slot_12v_on);
 	if ((slot_prsnt == 1) && (slot_12v_on != 1)) {
-		gpio_set("GPIOO4", "P12V_STBY_SLOT1_EN", 1);
+		set_gpio_init_value_after_export("GPIOO4", "P12V_STBY_SLOT1_EN", 1);
 	}	
 	
 	// P12V_STBY_SLOT2_EN: GPIOO5 (117)
@@ -451,7 +362,7 @@ main(int argc, char **argv) {
 	pal_is_fru_prsnt(FRU_SLOT2, &slot_prsnt);
 	pal_is_server_12v_on(FRU_SLOT2, &slot_12v_on);
 	if ((slot_prsnt == 1) && (slot_12v_on != 1)) {
-		gpio_set("GPIOO5", "P12V_STBY_SLOT2_EN", 1);
+		set_gpio_init_value_after_export("GPIOO5", "P12V_STBY_SLOT2_EN", 1);
 	}
 	
 	// P12V_STBY_SLOT3_EN: GPIOO6 (118)
@@ -459,7 +370,7 @@ main(int argc, char **argv) {
 	pal_is_fru_prsnt(FRU_SLOT3, &slot_prsnt);
 	pal_is_server_12v_on(FRU_SLOT3, &slot_12v_on);
 	if ((slot_prsnt == 1) && (slot_12v_on != 1)) {
-		gpio_set("GPIOO6", "P12V_STBY_SLOT3_EN", 1);
+		set_gpio_init_value_after_export("GPIOO6", "P12V_STBY_SLOT3_EN", 1);
 	}
 	
 	// P12V_STBY_SLOT4_EN: GPIOO7 (119)
@@ -467,7 +378,7 @@ main(int argc, char **argv) {
 	pal_is_fru_prsnt(FRU_SLOT4, &slot_prsnt);
 	pal_is_server_12v_on(FRU_SLOT4, &slot_12v_on);
 	if ((slot_prsnt == 1) && (slot_12v_on != 1)) {
-		gpio_set("GPIOO7", "P12V_STBY_SLOT4_EN", 1);
+		set_gpio_init_value_after_export("GPIOO7", "P12V_STBY_SLOT4_EN", 1);
 	}
 
 	// SLOT1_EJECTOR_LATCH_DETECT_N: GPIOP0 (120)
@@ -503,21 +414,21 @@ main(int argc, char **argv) {
 
 	// Set SLOT throttle pin
 	// BMC_THROTTLE_SLOT1_N: GPIOI4 (68)
-	gpio_set("GPIOI4", "BMC_THROTTLE_SLOT1_N", 1);
+	set_gpio_init_value_after_export("GPIOI4", "BMC_THROTTLE_SLOT1_N", 1);
 	// BMC_THROTTLE_SLOT2_N: GPIOI5 (69)
-	gpio_set("GPIOI5", "BMC_THROTTLE_SLOT2_N", 1);
+	set_gpio_init_value_after_export("GPIOI5", "BMC_THROTTLE_SLOT2_N", 1);
 	// BMC_THROTTLE_SLOT3_N: GPIOI6 (70)
-	gpio_set("GPIOI6", "BMC_THROTTLE_SLOT3_N", 1);
+	set_gpio_init_value_after_export("GPIOI6", "BMC_THROTTLE_SLOT3_N", 1);
 	// BMC_THROTTLE_SLOT4_N: GPIOI7 (71)
-	gpio_set("GPIOI7", "BMC_THROTTLE_SLOT4_N", 1);
+	set_gpio_init_value_after_export("GPIOI7", "BMC_THROTTLE_SLOT4_N", 1);
 	
 	// Set FAN disable pin
 	// DISABLE_FAN_N: GPIOM4 (100)
-	gpio_set("GPIOM4", "DISABLE_FAN_N", 1);
+	set_gpio_init_value_after_export("GPIOM4", "DISABLE_FAN_N", 1);
 	
 	// Set FAST PROCHOT pin (Default Enable)
 	// FAST_PROCHOT_EN: GPIOR4 (140)
-	gpio_set("GPIOR4", "FAST_PROCHOT_EN", 1);
+	set_gpio_init_value_after_export("GPIOR4", "FAST_PROCHOT_EN", 1);
 
 	// PE_BUFF_OE_0_N: GPIOB4 (12)
 	gpio_export_by_name(ASPPED_CHIP, "GPIOB4", "PE_BUFF_OE_0_N");
@@ -561,22 +472,22 @@ main(int argc, char **argv) {
 	}
 
 	// Disable PWM reset during external reset
-	reg_clear_bit(SCU_BASE, REG_SCU9C, 17);
+	phymem_dword_clear_bit(SCU_BASE, REG_SCU9C, 17);
 
 	// Disable PWM reset during WDT1 reset
-	reg_clear_bit(WDT_BASE, REG_WDT1_RESET, 17);
+	phymem_dword_clear_bit(WDT_BASE, REG_WDT1_RESET, 17);
 	
 	// Set debounce timer #1 value to 0x179A7B0 ~= 2s
-	set_register(GPIO_BASE, 0x50, 0x179A7B0);
+	phymem_set_dword(GPIO_BASE, 0x50, 0x179A7B0);
 	
 	// Select debounce timer #1 for GPIOZ0~GPIOZ3 and GPIOAA0~GPIOAA3
-	set_register(GPIO_BASE, 0x194, 0xF0F00);
+	phymem_set_dword(GPIO_BASE, 0x194, 0xF0F00);
 	
 	// Set debounce timer #2 value to 0xBCD3D8 ~= 1s
-	set_register(GPIO_BASE, 0x54, 0xBCD3D8);
+	phymem_set_dword(GPIO_BASE, 0x54, 0xBCD3D8);
 	
 	// Select debounce timer #2 for GPIOP0~GPIOP3
-	set_register(GPIO_BASE, 0x100, 0xF000000);
+	phymem_set_dword(GPIO_BASE, 0x100, 0xF000000);
 	
 	return 0;
 }

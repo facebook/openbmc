@@ -14,10 +14,10 @@ S = "${WORKDIR}"
 
 binfiles = "setup-gpio \
            "
-DEPENDS += "libpal libgpio-ctrl libfby2-common "
+DEPENDS += "libpal libgpio-ctrl libfby2-common libphymem"
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += "libpal libgpio-ctrl libfby2-common "
-LDFLAGS += " -lgpio-ctrl "
+RDEPENDS_${PN} += "libpal libgpio-ctrl libfby2-common libphymem"
+LDFLAGS += " -lgpio-ctrl -lphymem"
 
 pkgdir = "setup-gpio"
 

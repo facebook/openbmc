@@ -12,7 +12,7 @@ SRC_URI = "file://bic-util \
 S = "${WORKDIR}/bic-util"
 
 CFLAGS += "-Wall -Werror -lbic -D_XOPEN_SOURCE"
-LDFLAGS = "-lbic -lpal -lfby3_common -lfby3_gpio"
+LDFLAGS = "-lbic -lpal -lfby3_common -lfby3_gpio -lusb-1.0"
 DEPENDS += "libbic libpal libfby3-common libfby3-gpio"
 RDEPENDS_${PN} += "libbic libpal libfby3-common libfby3-gpio"
 

@@ -30,7 +30,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <openbmc/kv.h>
-#include <libusb-1.0/libusb.h>
 #include "bic_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 
@@ -44,24 +43,9 @@
 #define BIOS_ERASE_PKT_SIZE (64*1024)
 #define BIOS_VERIFY_PKT_SIZE (32*1024)
 #define BIOS_VER_REGION_SIZE (4*1024*1024)
-#define MAX_CHECK_DEVICE_TIME 8
 
 int interface_ref = 0;
 int alt_interface,interface_number;
-
-typedef struct 
-{
-  struct libusb_device**          devs;
-  struct libusb_device*           dev;
-  struct libusb_device_handle*    handle;
-  struct libusb_device_descriptor desc;
-  char    manufacturer[64];
-  char    product[64];
-  int     config;
-  int     ci;
-  uint8_t epaddr;
-  uint8_t path[8];
-} usb_dev;
 
 typedef struct {
   uint8_t dummy;

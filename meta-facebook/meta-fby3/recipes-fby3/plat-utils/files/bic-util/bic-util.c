@@ -54,6 +54,7 @@ static const char *option_list[] = {
   "--perf_test [loop_count] (0 to run forever)",
   "--clear_cmos",
   "--file [path]",
+  "--check_usb_port [sb|1ou|2ou]",
 };
 
 static void
@@ -538,6 +539,231 @@ out:
 }
 
 int
+bic_comp_init_usb_dev(uint8_t slot_id, usb_dev* udev, char *comp)
+{
+#define TI_VENDOR_ID_SB  0x1CBE
+#define TI_VENDOR_ID_1U  0x1CBF
+#define TI_VENDOR_ID_2U  0x1CC0
+#define TI_PRODUCT_ID 0x0007
+  int ret;
+  int index = 0;
+  char found = 0;
+  ssize_t cnt;
+  uint8_t bmc_location = 0;
+  uint16_t vendor_id = TI_VENDOR_ID_SB;
+  int recheck = MAX_CHECK_DEVICE_TIME;
+
+  ret = libusb_init(NULL);
+  if (ret < 0) {
+    printf("Failed to initialise libusb\n");
+    goto error_exit;
+  } else {
+    printf("Init libusb Successful!\n");
+  }
+
+  if (strcmp("sb", comp) == 0) {
+    vendor_id = TI_VENDOR_ID_SB;
+  } else if (strcmp("1ou", comp)== 0) {
+    vendor_id = TI_VENDOR_ID_1U;
+  } else if (strcmp("2ou", comp)== 0) {
+    vendor_id = TI_VENDOR_ID_2U;
+  }
+
+  do {
+    cnt = libusb_get_device_list(NULL, &udev->devs);
+    if (cnt < 0) {
+      printf("There are no USB devices on bus\n");
+      goto error_exit;
+    }
+    index = 0;
+    while ((udev->dev = udev->devs[index++]) != NULL) {
+      ret = libusb_get_device_descriptor(udev->dev, &udev->desc);
+      if ( ret < 0 ) {
+        printf("Failed to get device descriptor -- exit\n");
+        libusb_free_device_list(udev->devs,1);
+        goto error_exit;
+      }
+
+      ret = libusb_open(udev->dev,&udev->handle);
+      if ( ret < 0 ) {
+        printf("Error opening device -- exit\n");
+        libusb_free_device_list(udev->devs,1);
+        goto error_exit;
+      }
+
+      if( (vendor_id == udev->desc.idVendor) && (TI_PRODUCT_ID == udev->desc.idProduct) ) {
+        ret = libusb_get_string_descriptor_ascii(udev->handle, udev->desc.iManufacturer, (unsigned char*) udev->manufacturer, sizeof(udev->manufacturer));
+        if ( ret < 0 ) {
+          printf("Error get Manufacturer string descriptor -- exit\n");
+          libusb_free_device_list(udev->devs,1);
+          goto error_exit;
+        }
+
+        ret = fby3_common_get_bmc_location(&bmc_location);
+        if (ret < 0) {
+          syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+          goto error_exit;
+        }
+
+        ret = libusb_get_port_numbers(udev->dev, udev->path, sizeof(udev->path));
+        if (ret < 0) {
+          printf("Error get port number\n");
+          libusb_free_device_list(udev->devs,1);
+          goto error_exit;
+        }
+
+        if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+          if ( udev->path[1] != slot_id) {
+            continue;
+          }
+        }
+        printf("%04x:%04x (bus %d, device %d)",udev->desc.idVendor, udev->desc.idProduct, libusb_get_bus_number(udev->dev), libusb_get_device_address(udev->dev));
+        printf(" path: %d", udev->path[0]);
+        for (index = 1; index < ret; index++) {
+          printf(".%d", udev->path[index]);
+        }
+        printf("\n");
+
+        ret = libusb_get_string_descriptor_ascii(udev->handle, udev->desc.iProduct, (unsigned char*) udev->product, sizeof(udev->product));
+        if ( ret < 0 ) {
+          printf("Error get Product string descriptor -- exit\n");
+          libusb_free_device_list(udev->devs,1);
+          goto error_exit;
+        }
+
+        printf("Manufactured : %s\n",udev->manufacturer);
+        printf("Product : %s\n",udev->product);
+        printf("----------------------------------------\n");
+        printf("Device Descriptors:\n");
+        printf("Vendor ID : %x\n",udev->desc.idVendor);
+        printf("Product ID : %x\n",udev->desc.idProduct);
+        printf("Serial Number : %x\n",udev->desc.iSerialNumber);
+        printf("Size of Device Descriptor : %d\n",udev->desc.bLength);
+        printf("Type of Descriptor : %d\n",udev->desc.bDescriptorType);
+        printf("USB Specification Release Number : %d\n",udev->desc.bcdUSB);
+        printf("Device Release Number : %d\n",udev->desc.bcdDevice);
+        printf("Device Class : %d\n",udev->desc.bDeviceClass);
+        printf("Device Sub-Class : %d\n",udev->desc.bDeviceSubClass);
+        printf("Device Protocol : %d\n",udev->desc.bDeviceProtocol);
+        printf("Max. Packet Size : %d\n",udev->desc.bMaxPacketSize0);
+        printf("No. of Configuraions : %d\n",udev->desc.bNumConfigurations);
+
+        found = 1;
+        break;
+      }
+    }
+
+    if ( found != 1) {
+      sleep(3);
+    } else {
+      break;
+    }
+  } while ((--recheck) > 0);
+
+
+  if ( found == 0 ) {
+    printf("Device NOT found -- exit\n");
+    libusb_free_device_list(udev->devs,1);
+    ret = -1;
+    goto error_exit;
+  }
+
+  ret = libusb_get_configuration(udev->handle, &udev->config);
+  if ( ret != 0 ) {
+    printf("Error in libusb_get_configuration -- exit\n");
+    libusb_free_device_list(udev->devs,1);
+    goto error_exit;
+  }
+
+  printf("Configured value : %d\n", udev->config);
+  if ( udev->config != 1 ) {
+    libusb_set_configuration(udev->handle, 1);
+    if ( ret != 0 ) {
+      printf("Error in libusb_set_configuration -- exit\n");
+      libusb_free_device_list(udev->devs,1);
+      goto error_exit;
+    }
+    printf("Device is in configured state!\n");
+  }
+
+  libusb_free_device_list(udev->devs, 1);
+
+  if(libusb_kernel_driver_active(udev->handle, udev->ci) == 1) {
+    printf("Kernel Driver Active\n");
+    if(libusb_detach_kernel_driver(udev->handle, udev->ci) == 0) {
+      printf("Kernel Driver Detached!");
+    } else {
+      printf("Couldn't detach kernel driver -- exit\n");
+      libusb_free_device_list(udev->devs,1);
+      goto error_exit;
+    }
+  }
+
+  ret = libusb_claim_interface(udev->handle, udev->ci);
+  if ( ret < 0 ) {
+    printf("Couldn't claim interface -- exit. err:%s\n", libusb_error_name(ret));
+    libusb_free_device_list(udev->devs,1);
+    goto error_exit;
+  }
+  printf("Claimed Interface: %d, EP addr: 0x%02X\n", udev->ci, udev->epaddr);
+
+  active_config(udev->dev, udev->handle);
+  return 0;
+error_exit:
+  return -1;
+}
+
+static int
+util_check_usb_port(uint8_t slot_id, char *comp) {
+  int ret = -1;
+  usb_dev   bic_udev;
+  usb_dev*  udev = &bic_udev;
+  int transferlen = 64;
+  int transferred = 0;
+  uint8_t tbuf[64] = {0};
+  int retries = 3;
+
+  bic_set_gpio(slot_id, RST_USB_HUB_N, GPIO_HIGH);
+
+  udev->ci = 1;
+  udev->epaddr = 0x1;
+
+  // init usb device
+  ret = bic_comp_init_usb_dev(slot_id, udev, comp);
+  if (ret < 0) {
+    return ret;
+  }
+
+  printf("Input test data, USB timeout: 3000ms\n");
+  while(true)
+  {
+    ret = libusb_bulk_transfer(udev->handle, udev->epaddr, tbuf, transferlen, &transferred, 3000);
+    if(((ret != 0) || (transferlen != transferred))) {
+      printf("Error in transferring data! err = %d and transferred = %d(expected data length 64)\n",ret ,transferred);
+      printf("Retry since  %s\n", libusb_error_name(ret));
+      retries--;
+      if (!retries) {
+        ret = -1;
+        break;
+      }
+      msleep(100);
+    } else
+      break;
+  }
+
+  if (ret != 0) {
+    printf("Check USB port Failed\n");
+  } else {
+    printf("Check USB port Successful\n");
+  }
+
+  bic_set_gpio(slot_id, RST_USB_HUB_N, GPIO_LOW);
+
+  printf("\n");
+  return ret;
+}
+
+int
 main(int argc, char **argv) {
   uint8_t slot_id = 0;
   uint8_t is_fru_present = 0;
@@ -633,6 +859,13 @@ main(int argc, char **argv) {
         } else process_file(FRU_SLOT1, argv[3]);
         return 0;
       } else return process_file(slot_id, argv[3]);
+    } else if ( strcmp(argv[2], "--check_usb_port") == 0 ) {
+      if ( argc != 4 ) goto err_exit;
+      if ( (strcmp("sb", argv[3]) != 0) && (strcmp("1ou", argv[3]) != 0) && (strcmp("2ou", argv[3]) != 0) ){
+        printf("Invalid component: %s\n", argv[3]);
+        goto err_exit;
+      }
+      return util_check_usb_port(slot_id, argv[3]);
     } else {
       printf("Invalid option: %s\n", argv[2]);
       goto err_exit;

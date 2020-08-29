@@ -31,6 +31,7 @@ extern "C" {
 #include "bic_ipmi.h"
 #include "error.h"
 #include <errno.h>
+#include <libusb-1.0/libusb.h>
 
 #define MAX_GPIO_PINS 96
 
@@ -41,6 +42,7 @@ extern "C" {
 #define RETRY_TIME 10
 #define IPMB_RETRY_DELAY_TIME 500
 
+#define MAX_CHECK_DEVICE_TIME 8
 /*IFX VR pages*/
 #define VR_PAGE   0x00
 #define VR_PAGE32 0x32
@@ -50,6 +52,20 @@ extern "C" {
 
 #define BIT_VALUE(list, index) \
            ((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1\
+
+typedef struct
+{
+  struct libusb_device**          devs;
+  struct libusb_device*           dev;
+  struct libusb_device_handle*    handle;
+  struct libusb_device_descriptor desc;
+  char    manufacturer[64];
+  char    product[64];
+  int     config;
+  int     ci;
+  uint8_t epaddr;
+  uint8_t path[8];
+} usb_dev;
 
 enum {
   FW_CPLD = 1,
@@ -195,6 +211,7 @@ enum {
   FM_PEHPCPU_INT,
 };
 
+int active_config(struct libusb_device *dev,struct libusb_device_handle *handle);
 int bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio, uint8_t intf);
 int bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt);
 

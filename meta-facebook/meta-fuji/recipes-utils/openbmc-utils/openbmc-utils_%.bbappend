@@ -35,6 +35,7 @@ SRC_URI += "file://setup-gpio.sh \
             file://setup_mgmt.sh \
             file://spi_util.sh \
             file://simutil \
+            file://beutil \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -52,6 +53,7 @@ OPENBMC_UTILS_FILES += " \
     setup_mgmt.sh \
     spi_util.sh \
     simutil \
+    beutil \
     "
 DEPENDS_append = " update-rc.d-native"
 

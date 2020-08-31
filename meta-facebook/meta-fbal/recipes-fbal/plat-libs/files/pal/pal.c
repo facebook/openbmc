@@ -1524,7 +1524,10 @@ static int get_dev_bridge_info(uint8_t slot, uint8_t* dev_addr,
       *dev_addr = ASIC_BMC_SLAVE_ADDR;
       *bus_num = ASIC_IPMB_BUS_ID;
       break;
-
+    case BRIDGE_2_IOX_BMC:
+      *dev_addr = IOX_BMC_SLAVE_ADDR;
+      *bus_num = IOX_IPMB_BUS_ID;
+      break;
     default:
       return -1;
   }
@@ -1653,6 +1656,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
     case BRIDGE_2_MB_BMC2:   //MB BMC2
     case BRIDGE_2_MB_BMC3:   //MB BMC3
     case BRIDGE_2_ASIC_BMC:  //FBEP
+    case BRIDGE_2_IOX_BMC:   //FBCC
       ret = pal_ipmb_bypass(req_data, req_len, res_data, res_len);
       break;
     case BYPASS_NCSI:

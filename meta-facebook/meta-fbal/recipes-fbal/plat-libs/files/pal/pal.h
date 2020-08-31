@@ -149,6 +149,8 @@ enum {
 #define BMC_IPMB_BUS_ID         (I2C_BUS_2)
 #define ASIC_BMC_SLAVE_ADDR     (0x2C)
 #define ASIC_IPMB_BUS_ID        (I2C_BUS_6)
+#define IOX_BMC_SLAVE_ADDR      (0x2E)
+#define IOX_IPMB_BUS_ID         (I2C_BUS_6)
 
 enum {
   MB_ID1 = 0,
@@ -200,6 +202,7 @@ enum {
   BRIDGE_2_MB_BMC2,
   BRIDGE_2_MB_BMC3,
   BRIDGE_2_ASIC_BMC,
+  BRIDGE_2_IOX_BMC,
 };
 
 enum {

@@ -430,16 +430,16 @@ static void
     BTN_ARRAY_SIZE,
 
     /*Get cmd_str*/
-    PWR_OFF = 0x0,
-    PWR_ON,
-    PWR_CYCLE,
+    PWR_12V_OFF = 0x0,
+    PWR_12V_ON,
+    PWR_12V_CYCLE,
     SLED_CYCLE,
     UNKNOWN_PWR_ACTION,
   };
   const char *cmd_list[] = {
-    "slot%c off",
-    "slot%c on",
-    "slot%c cycle",
+    "slot%c 12V-off",
+    "slot%c 12V-on",
+    "slot%c 12V-cycle",
     "sled%ccycle"
   };
   const char *shadows[] = {
@@ -453,6 +453,7 @@ static void
   bool is_asserted[BTN_ARRAY_SIZE] = {0};
   int time_elapsed[BTN_ARRAY_SIZE] = {0};
   int i = 0;
+  uint8_t pwr_sts = 0;
 
   pthread_detach(pthread_self());
 
@@ -486,21 +487,22 @@ static void
            is_asserted[i] = false;
         }
 
-        if ( time_elapsed[i] > 4 ) {
+        pal_get_server_12v_power(i, &pwr_sts);
+        if ( pwr_sts == SERVER_12V_OFF && time_elapsed[i] >= 1 ) {
+          //pwr 12V on since time_elpased >=1
+          action[i] = PWR_12V_ON;
+        } else if ( time_elapsed[i] > 4 ) {
           if ( i == BTN_BMC ) {
             action[i] = SLED_CYCLE;
           } else {
             if ( time_elapsed[i] <= 8 ) {
-              //pwr cycle since 4 < time_elapsed <= 8
-              action[i] = PWR_CYCLE;
+              //pwr 12V cycle since 4 < time_elapsed <= 8
+              action[i] = PWR_12V_CYCLE;
             } else {
-              //pwr off since time_elapsed > 8
-              action[i] = PWR_OFF;
+              //pwr 12V off since time_elapsed > 8
+              action[i] = PWR_12V_OFF;
             }
           }
-        } else {
-          //pwr on since time_elpased <= 4
-          action[i] = PWR_ON;
         }
 
         if ( action[i] != UNKNOWN_PWR_ACTION ) {

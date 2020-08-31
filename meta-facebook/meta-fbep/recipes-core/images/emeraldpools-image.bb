@@ -41,4 +41,5 @@ IMAGE_INSTALL += " \
   fpc-util \
   threshold-util \
   asic-util \
+  mac-util \
   "

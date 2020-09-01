@@ -51,13 +51,11 @@ int kv_set(const char *key, const char *value, size_t len, unsigned int flags) {
     kv::set(key, data, r, flags & KV_FCREATE);
 
   } catch (kv::key_already_exists& e) {
-    // Eat key-already-exists errors on KV_FPERSIST and just return a -1.
+    // Eat key-already-exists errors and set errno: callers will decide
+    // if it deserves an error message.
     // Too many callers are calling FCREATE as a way to initialize persistent
     // data and if we don't eat the error, we fill up the syslog.
-    if ((flags & KV_FPERSIST) && (flags & KV_FCREATE)) {
-      return -1;
-    }
-    KV_WARN("kv_set: %s", e.what());
+    errno = EEXIST;
     return -1;
   } catch (std::exception& e) {
     KV_WARN("kv_set: %s", e.what());

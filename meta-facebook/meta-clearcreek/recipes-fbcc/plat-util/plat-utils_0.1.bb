@@ -23,6 +23,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = "file://ast-functions \
            file://setup-gpio.sh \
+           file://setup-usbnet.sh \
            file://COPYING \
           "
 
@@ -49,6 +50,9 @@ do_install() {
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
+  install -m 755 setup-usbnet.sh ${D}${sysconfdir}/init.d/setup-usbnet.sh
+  update-rc.d -r ${D} setup-usbnet.sh start 90 S .
+  
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

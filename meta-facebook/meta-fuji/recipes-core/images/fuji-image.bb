@@ -29,6 +29,7 @@ IMAGE_INSTALL += " \
   bitbang \
   cpldupdate \
   libcpldupdate-dll-gpio \
+  libcpldupdate-dll-ast-jtag \
   flashrom \
   fw-util \
   bic-monitor \

@@ -49,9 +49,9 @@ mount_btrfs() {
     #
     case "$FS_TYPE" in
         ext4)
-            echo "EXT4 filesystem found on $BLK_DEVICE.  Convert to btrfs.."
-            if ! output="$(btrfs-convert "$BLK_DEVICE" 2>&1)"; then
-                echo "Error: failed to convert to btrfs on $BLK_DEVICE:"
+            echo "EXT4 filesystem found on $BLK_DEVICE.  Reformat as btrfs.."
+            if ! output="$(mkfs.btrfs -f "$BLK_DEVICE" 2>&1)"; then
+                echo "Error: failed to format as btrfs on $BLK_DEVICE:"
                 echo "$output"
                 exit 1
             fi

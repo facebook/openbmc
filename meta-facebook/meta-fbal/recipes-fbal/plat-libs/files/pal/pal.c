@@ -1018,7 +1018,7 @@ pal_uart_select (uint32_t base, uint8_t offset, int option, uint32_t para) {
   void *reg_base;
   void *reg_offset;
 
-  mmap_fd = open("/dev/mem", O_RDWR | O_SYNC );
+  mmap_fd = open("/dev/mem", O_RDWR | O_SYNC);
   if (mmap_fd < 0) {
     return -1;
   }
@@ -1689,107 +1689,6 @@ pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str) {
 }
 
 int
-pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
-  if ((fru != FRU_MB) && (fru != FRU_BMC)) {
-    return -1;
-  }
-  *bus = PFR_MAILBOX_BUS;
-  *addr = PFR_MAILBOX_ADDR;
-  *bridged = false;
-  return 0;
-}
-
-int
-pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
-  int ret, ifd, retry = 3;
-  uint8_t buf[8];
-  char dev_i2c[16];
-
-  ret = status;
-  if (ret) {
-    return ret;
-  }
-
-  sync();
-  sleep(2);
-  printf("sending update intent to CPLD...\n");
-  fflush(stdout);
-
-  sprintf(dev_i2c, "/dev/i2c-%d", PFR_MAILBOX_BUS);
-  ifd = open(dev_i2c, O_RDWR);
-  if (ifd < 0) {
-    return -1;
-  }
-
-  buf[0] = 0x13;  // BMC update intent
-  if (!strcmp(comp, "bios")) {
-    buf[1] = UPDATE_UPDATE_DYNAMIC | UPDATE_PCH_ACTIVE;
-  } else if (!strcmp(comp, "bios_rc")) {
-    buf[1] = UPDATE_PCH_RECOVERY;
-  } else if (!strcmp(comp, "pfr_cpld")) {
-    buf[1] = UPDATE_CPLD_ACTIVE;
-  } else if (!strcmp(comp, "pfr_cpld_rc")) {
-    buf[1] = UPDATE_CPLD_RECOVERY;
-  } else {
-    close(ifd);
-    return -1;
-  }
-
-  if (!pal_get_config_is_master()) {
-    buf[1] |= UPDATE_AT_RESET;
-  }
-
-  do {
-    ret = i2c_rdwr_msg_transfer(ifd, PFR_MAILBOX_ADDR, buf, 2, NULL, 0);
-    if (ret) {
-      syslog(LOG_WARNING, "send update intent failed, cmd: %02x %02x", buf[0], buf[1]);
-      if (--retry > 0)
-        msleep(100);
-    }
-  } while (ret && retry > 0);
-  close(ifd);
-
-  return ret;
-}
-
-int
-pal_is_pfr_active(void) {
-  int ifd, retry = 3;
-  uint8_t tbuf[8], rbuf[8];
-  char dev_i2c[16];
-  static bool cached = false;
-  static int pfr_active = PFR_NONE;
-
-  if (cached) {
-    return pfr_active;
-  }
-
-  sprintf(dev_i2c, "/dev/i2c-%d", PFR_MAILBOX_BUS);
-  ifd = open(dev_i2c, O_RDWR);
-  if (ifd < 0) {
-    return pfr_active;
-  }
-
-  tbuf[0] = 0x0A;
-  do {
-    if (!i2c_rdwr_msg_transfer(ifd, PFR_MAILBOX_ADDR, tbuf, 1, rbuf, 1)) {
-      pfr_active = (rbuf[0] & 0x20) ? PFR_ACTIVE : PFR_UNPROVISIONED;
-      break;
-    }
-
-#ifdef DEBUG
-    syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x", 4, tbuf[0]);
-#endif
-    if (--retry > 0)
-      msleep(20);
-  } while (retry > 0);
-  close(ifd);
-  cached = true;
-
-  return pfr_active;
-}
-
-int
 pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
   NM_RW_INFO info;
   int ret;
@@ -1817,7 +1716,7 @@ pal_get_cpu_amount(uint8_t* amount) {
     if (ret != 0) {
       syslog(LOG_WARNING,"%s Wrong get system mode\n", __func__);
       return ret;
-    } 
+    }
 
     if( mode == MB_2S_MODE ) {
       cache_amount = 2;
@@ -1846,7 +1745,7 @@ pal_get_dimm_amount(uint8_t* amount) {
     if (ret != 0) {
       syslog(LOG_WARNING,"%s Wrong get system mode\n", __func__);
       return ret;
-    } 
+    }
 
     if( mode == MB_2S_MODE ) {
       cache_amount = 24;
@@ -1900,7 +1799,7 @@ pal_get_syscfg_text (char *text) {
   uint8_t cpu_index=0;
   uint8_t cpu_core_num=0;
   float cpu_speed=0;
- 
+
   uint8_t dimm_num=0;
   uint8_t dimm_index=0;
   uint16_t dimm_speed=0;
@@ -1922,7 +1821,7 @@ pal_get_syscfg_text (char *text) {
   }
 
   if(pal_get_dimm_amount(&dimm_num)) {
-    return -1; 
+    return -1;
   }
 
   // CPU information
@@ -1965,7 +1864,7 @@ pal_get_syscfg_text (char *text) {
 
   for (dimm_index=0; dimm_index<dimm_num; dimm_index++) { // 2S:DIMM=24, 4S:DIMM=48, 8S:DIMM=96;
     sprintf(entry, "CPU%d_MEM%s:", dimm_index/12, dimm_label[dimm_index%24]);
-  
+
     // Check Present
     snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_location", key_prefix, dimm_index);
     if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 1) {
@@ -1974,7 +1873,7 @@ pal_get_syscfg_text (char *text) {
       if (value[0] != 0x01)
         continue;
     }
-  
+
     // Module Manufacturer ID
     snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_manufacturer_id", key_prefix, dimm_index);
     if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 2) {
@@ -1993,15 +1892,15 @@ pal_get_syscfg_text (char *text) {
           break;
       }
     }
-  
+
     // Speed
     snprintf(key, MAX_KEY_LEN, "%sfru1_dimm%d_speed",key_prefix, dimm_index);
     if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 6) {
       dimm_speed =  value[1]<<8 | value[0];
-      dimm_capacity = (value[5]<<24 | value[4]<<16 | value[3]<<8 | value[2])/1024; 
+      dimm_capacity = (value[5]<<24 | value[4]<<16 | value[3]<<8 | value[2])/1024;
       sprintf(&entry[strlen(entry)], "%dMhz/%dGB", dimm_speed, dimm_capacity);
     }
-  
+
     sprintf(&entry[strlen(entry)], "\n");
     strcat(text, entry);
   }
@@ -2025,16 +1924,16 @@ void pal_get_eth_intf_name(char* intf_name)
 }
 
 void
-pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) 
+pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)
 {
   // log the post end event
   syslog (LOG_INFO, "POST End Event for Payload#%d\n", slot);
-  
+
   // Sync time with system
   if (system("/etc/init.d/sync_date.sh &") != 0) {
     syslog(LOG_ERR, "Sync date failed!\n");
   } else {
-    syslog(LOG_INFO, "Sync date success!\n"); 
+    syslog(LOG_INFO, "Sync date success!\n");
   }
 }
 

@@ -47,12 +47,6 @@
     "monitor_interval": 1,
     "retry_threshold": 10
   },
-  "pfr_monitor": {
-    "enabled": false,
-    "state_history": true,
-    "monitor_interval": 10,
-    "fru": [1]
-  },
   "verified_boot": {
     "enabled": true
   },

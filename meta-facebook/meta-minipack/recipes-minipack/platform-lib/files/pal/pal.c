@@ -3804,11 +3804,15 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static int
 psu_init_acok_key(uint8_t fru) {
-  uint8_t psu_num = fru - 10;
+  uint8_t psu_num;
   char key[MAX_KEY_LEN + 1];
 
-  snprintf(key, MAX_KEY_LEN, "psu%d_acok_state", psu_num);
-  kv_set(key, "1", 0, KV_FCREATE);
+  if ((fru >= FRU_PSU1) && (fru <= FRU_PSU4)) {
+    psu_num = (fru - FRU_PSU1 + 1); /* 1-based index */
+
+    snprintf(key, MAX_KEY_LEN, "psu%d_acok_state", psu_num);
+    kv_set(key, "1", 0, KV_FCREATE);
+  }
 
   return 0;
 }

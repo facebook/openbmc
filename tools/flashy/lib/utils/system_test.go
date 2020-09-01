@@ -111,7 +111,25 @@ func TestRunCommand(t *testing.T) {
 	// save log output into buf for testing
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
+	// set locale (LC_ALL=C) to prevent tests from failing on differing locales
+	const lcAllKey = "LC_ALL"
+	origLCALL, setLCALL := os.LookupEnv(lcAllKey)
+	err := os.Setenv(lcAllKey, "C")
+	if err != nil {
+		panic(err)
+	}
 	defer func() {
+		if setLCALL {
+			err = os.Setenv(lcAllKey, origLCALL)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			err = os.Unsetenv(lcAllKey)
+			if err != nil {
+				panic(err)
+			}
+		}
 		log.SetOutput(os.Stderr)
 	}()
 

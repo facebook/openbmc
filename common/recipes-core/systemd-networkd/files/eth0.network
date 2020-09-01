@@ -20,7 +20,7 @@ Name=eth0
 
 [Network]
 IPv6AcceptRA=yes
-DHCP=yes
+DHCP=ipv6
 VLAN=eth0.4088
 
 [DHCP]
@@ -29,4 +29,6 @@ UseNTP=yes
 VendorClassIdentifier=OpenBMC:VENDOR_SERIAL_HERE
 
 [DHCPv6]
+UseDomains=yes
+UseNTP=yes
 SendVendorOption=40981:1:string:OpenBMC:VENDOR_SERIAL_HERE

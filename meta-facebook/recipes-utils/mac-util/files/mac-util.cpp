@@ -25,19 +25,18 @@
 #include <string>
 #include <vector>
 #include <CLI/CLI.hpp>
+#include "eeprom.h"
 
-#define MB_EEPROM "/sys/class/i2c-dev/i2c-6/device/6-0054/eeprom"
 #define MAC_LEN 6
-#define MAC_OFFSET 1024
 
 using namespace std;
 
 static int _set_mac(unsigned char *addr)
 {
   int ret = -1;
-  ofstream f(MB_EEPROM, ios::out | ios::binary);
+  ofstream f(EEPROM_PATH, ios::out | ios::binary);
   if (f) {
-    f.seekp(MAC_OFFSET, ios::beg);
+    f.seekp(EEPROM_OFFSET, ios::beg);
     if (!f.good())
       goto exit;
     f.write((char*)addr, MAC_LEN);
@@ -85,9 +84,9 @@ static int _show_mac()
 {
   int ret = -1;
   unsigned char addr[MAC_LEN] = {0};
-  ifstream f(MB_EEPROM, ios::in | ios::binary);
+  ifstream f(EEPROM_PATH, ios::in | ios::binary);
   if (f) {
-    f.seekg(MAC_OFFSET, ios::beg);
+    f.seekg(EEPROM_OFFSET, ios::beg);
     if (!f.good())
       goto exit;
     f.read((char*)addr, MAC_LEN);

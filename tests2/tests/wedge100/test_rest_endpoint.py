@@ -18,9 +18,13 @@
 # Boston, MA 02110-1301 USA
 #
 import json
+import os
 import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
+
+
+PATH = "/tmp/detect_power_module_type.txt"
 
 
 class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
@@ -32,6 +36,56 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     SYS_FW_INFO_ENDPOINT = "/api/sys/firmware_info/sys"
     FAN_FW_INFO_ENDPOINT = "/api/sys/firmware_info/fan"
     EEPROM_FW_INFO_ENDPOINT = "/api/sys/firmware_info/internal_switch_config"
+    PEM_PRESENT_ENDPOINT = "/api/sys/presence/pem"
+    PSU_PRESENT_ENDPOINT = "/api/sys/presence/psu"
+
+    def get_sensors_list(self, dev, presence_value):
+        """
+        check to see which power device is being used and
+        if it is being detected. Then we return the list
+        of the power device kernel driver modules that must
+        present in the image.
+        pem1 = 1 --> means pem with ltc4151 inserted
+        pem2 = 1 --> means pem with ltc4281 inserted
+        psu1 and psu2 = 1 -> means system with PSU inserted
+        """
+        kmods_list = []
+        if dev == "pem1" and presence_value == 1:
+            kmods_list.append("ltc4151-i2c-7-6f")
+        elif dev == "pem2" and presence_value == 1:
+            kmods_list.extend(["ltc4151-i2c-7-6f", "ltc4281-i2c-7-4a"])
+        elif dev == "psu1" or dev == "psu2":
+            if presence_value == 1:
+                # TODO: PFE driver unstable now. That section
+                # will be filled out after kernel upgrade which
+                # will hopefully lead to better drivcer stability
+                kmods_list = []
+        else:
+            raise Exception("file contains unknown module")
+
+        return kmods_list
+
+    def get_power_module(self):
+        """
+        Read appropriate path that contains the presence
+        status of various power module option.
+        """
+        power_module_list = []
+        if not os.path.exists(PATH):
+            raise Exception("Path for power type doesn't exist")
+        with open(PATH, "r") as fp:
+            lines = fp.readlines()
+            if lines:
+                for line in lines:
+                    dev = line.split(": ")[0]
+                    presence_status = line.split(": ")[1]
+                    if int(presence_status) == 1:
+                        power_module_list = self.get_sensors_list(
+                            dev, int(presence_status)
+                        )
+            else:
+                raise Exception("Power module file is empty")
+        return power_module_list
 
     # /api
     def set_endpoint_api_attributes(self):
@@ -64,10 +118,11 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "tmp75-i2c-3-4c",
             "fancpld-i2c-8-33",
             "com_e_driver-i2c-4-33",
-            "ltc4151-i2c-7-6f",
             "tmp75-i2c-8-48",
             "tmp75-i2c-8-49",
         ]
+        power_sensors_list = self.get_power_module()
+        self.endpoint_sensors_attrb.extend(power_sensors_list)
 
     # "/api/sys/mb"
     def set_endpoint_mb_attributes(self):
@@ -145,6 +200,24 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_firmware_info_fan_attributes(self):
         # TODO: what if this changes?
         self.endpoint_firmware_info_fan_attrb = ["1.11"]
+
+    def set_endpoint_pem_presence_attributes(self):
+        self.endpoint_pem_presence = ["pem1", "pem2"]
+
+    def set_endpoint_psu_presence_attributes(self):
+        self.endpoint_psu_presence = ["psu1", "psu2"]
+
+    def test_endpoint_api_pem_present(self):
+        self.set_endpoint_pem_presence_attributes()
+        self.verify_endpoint_attributes(
+            RestEndpointTest.PEM_PRESENT_ENDPOINT, self.endpoint_pem_presence
+        )
+
+    def test_endpoint_api_psu_present(self):
+        self.set_endpoint_psu_presence_attributes()
+        self.verify_endpoint_attributes(
+            RestEndpointTest.PSU_PRESENT_ENDPOINT, self.endpoint_psu_presence
+        )
 
     def test_endpoint_api_sys_firmware_info_fan(self):
         self.set_endpoint_firmware_info_fan_attributes()

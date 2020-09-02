@@ -18,7 +18,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fbep:zeus
   meta-clearcreek:zeus
   meta-fbsp:zeus
-  meta-fby3:warrior
+  meta-fby3:zeus
   meta-fuji:warrior
   meta-elbert:warrior
   meta-grandcanyon:zeus

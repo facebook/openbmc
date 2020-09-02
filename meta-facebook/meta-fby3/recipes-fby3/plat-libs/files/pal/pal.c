@@ -367,7 +367,17 @@ pal_set_boot_order(uint8_t slot_id, uint8_t *boot, uint8_t *res_data, uint8_t *r
     }
 
     snprintf(tstr, 3, "%02x", boot[i]);
+#pragma GCC diagnostic push
+// avoid the following compililatin error
+//     error: '__builtin___strncat_chk' output may be truncated copying 3 bytes from a string of length 9 [-Werror=stringop-truncation]
+//
+// per https://stackoverflow.com/questions/50198319/gcc-8-wstringop-truncation-what-is-the-good-practice
+// this warning was was added in gcc8
+//
+// here we do want to truncate the string
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncat(str, tstr, 3);
+#pragma GCC diagnostic pop
   }
 
   //not allow having more than 1 network boot device in the boot order
@@ -1713,7 +1723,7 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
       pal_add_cri_sel(temp_log);
       return 0;
   }
-  
+
   pal_parse_oem_unified_sel_common(fru, sel, error_log);
 
   return 0;
@@ -2738,13 +2748,13 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
   uint8_t config_status = CONFIG_UNKNOWN ;
   int ret = PAL_ENOTSUP;
   uint8_t tmp_cpld_swap[4] = {0};
- 
+
   ret = fby3_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
     goto error_exit;
   }
-  
+
   if (target == FW_CPLD) {
     const uint8_t cpld_addr = 0x80; /*8-bit addr*/
     uint8_t tbuf[4] = {0x00, 0x20, 0x00, 0x28};

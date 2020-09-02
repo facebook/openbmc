@@ -101,7 +101,7 @@ static int _show_mac()
          << setfill('0') << setw(2) << (int)addr[4] << ":"
          << setfill('0') << setw(2) << (int)addr[5] << endl;
   } else {
-    cerr << "Failed to open MB EEPROM" << endl;
+    cerr << "Failed to open " << EEPROM_PATH << endl;
     return -1;
   }
 

@@ -11,6 +11,7 @@ SRC_URI += "file://mac-util.cpp \
           "
 SRC_URI_append_${MACHINE} = "file://${MACHINE}/eeprom.h "
 CXXFLAGS_prepend_${MACHINE} += "-I${MACHINE}"
+LDFLAGS += "-lobmc-i2c"
 
 S = "${WORKDIR}"
 
@@ -19,6 +20,7 @@ do_install() {
     install -m 0755 mac-util ${D}${bindir}/mac-util
 }
 
-DEPENDS += "cli11 "
+DEPENDS += "cli11 libobmc-i2c"
+RDEPENDS_${PN} += "libobmc-i2c"
 
 FILES_${PN} = "${bindir}"

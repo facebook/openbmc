@@ -171,7 +171,8 @@ extern "C" {
 #define MAX_READ_RETRY 10
 #define DELAY_POWER_OFF 5
 #define DELAY_POWER_CYCLE 10
-#define DELAY_GRACEFUL_SHUTDOWN 1
+// During testing observed that 1sec was too less during server power off action.
+#define DELAY_GRACEFUL_SHUTDOWN 3
 
 #define MAX_POS_READING_MARGIN 127
 #define LARGEST_DEVICE_NAME 128

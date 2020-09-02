@@ -2090,6 +2090,7 @@ server_power_on(void) {
     if (pal_set_com_pwr_btn_n("1")) {
       return -1;
     }
+    sleep(1);
 
     if (pal_set_com_pwr_btn_n("0")) {
       return -1;
@@ -2132,6 +2133,7 @@ server_power_off(bool gs_flag) {
     if (ret) {
       return -1;
     }
+    sleep(1);
   } else {
     ret = write_device(SCM_COM_PWR_ENBLE, "0");
     if (ret) {

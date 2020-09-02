@@ -10,6 +10,9 @@ JTAG_FAN_WP="${SCDCPLD_SYSFS_DIR}/fancpld_wp"
 
 LINECARD=0
 
+SUP_PROGRAM=false
+SCD_PROGRAM=false
+
 trap disconnect_jtag INT TERM QUIT EXIT
 
 usage() {
@@ -23,12 +26,16 @@ usage() {
 
 disconnect_jtag() {
     gpio_set_value $CPLD_JTAG_SEL_L 1
-    echo 0 > "$JTAG_EN"
-    echo 0 > "$JTAG_SEL"
-    # enable fancpld write protection
-    echo 1 > "$JTAG_FAN_WP"
-    # do not select any linecard or fan
-    echo 0x0 > "$JTAG_LC_FAN_CTRL"
+    if [ "$SUP_PROGRAM" = false ]; then
+        echo 0 > "$JTAG_EN"
+        echo 0 > "$JTAG_SEL"
+    fi
+    if [ "$SCD_PROGRAM" = false ]; then
+        # enable fancpld write protection
+        echo 1 > "$JTAG_FAN_WP"
+        # do not select any linecard or fan
+        echo 0x0 > "$JTAG_LC_FAN_CTRL"
+    fi
     if [ $LINECARD -ne 0 ]; then
         # cycle the linecard FPGA
         gpio_set_value LC${LINECARD}_FAST_JTAG_EN 0
@@ -73,6 +80,7 @@ do_scd() {
         echo "$2 is not a vaild SCD FPGA file"
         exit 1
     fi
+    SCD_PROGRAM=true
     connect_scd_jtag
     jam -l/usr/lib/libcpldupdate_dll_ioctl.so -v -a"${1^^}" "$2" \
       --ioctl RUN_CYCLE
@@ -84,6 +92,7 @@ do_sup() {
         echo "$2 is not a vaild SUP FPGA file"
         exit 1
     fi
+    SUP_PROGRAM=true
     connect_sup_jtag
     jam -l/usr/lib/libcpldupdate_dll_ioctl.so -v -a"${1^^}" "$2" \
       --ioctl RUN_CYCLE

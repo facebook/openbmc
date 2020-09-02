@@ -570,80 +570,80 @@ static const i2c_dev_attr_st fancpld_attr_table[] = {
     0x77, 2, 1,
   },
   {
-    "fan1_id_change\n"
-    "(Write 1 to clear)",
+    "fan1_id_change",
+    "(Write 1 to clear)"
     fan_change_latched,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x78, 0, 1,
   },
   {
-    "fan2_id_change\n"
-    "(Write 1 to clear)",
+    "fan2_id_change",
+    "(Write 1 to clear)"
     fan_change_latched,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x78, 1, 1,
   },
   {
-    "fan3_id_change\n"
-    "(Write 1 to clear)",
+    "fan3_id_change",
+    "(Write 1 to clear)"
     fan_change_latched,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x78, 2, 1,
   },
   {
-    "fan4_id_change\n"
-    "(Write 1 to clear)",
+    "fan4_id_change",
+    "(Write 1 to clear)"
     fan_change_latched,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x78, 3, 1,
   },
   {
-    "fan5_id_change\n"
-    "(Write 1 to clear)",
+    "fan5_id_change",
+    "(Write 1 to clear)"
     fan_change_latched,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x78, 4, 1,
   },
   {
-    "fan1_present_change\n"
-    "(Write 1 to clear)",
+    "fan1_present_change",
+    "(Write 1 to clear)"
     fan_change_latched,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x80, 0, 1,
   },
   {
-    "fan2_present_change\n"
-    "(Write 1 to clear)",
+    "fan2_present_change",
+    "(Write 1 to clear)"
     fan_change_latched,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x80, 1, 1,
   },
   {
-    "fan3_present_change\n"
-    "(Write 1 to clear)",
+    "fan3_present_change",
+    "(Write 1 to clear)"
     fan_change_latched,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x80, 2, 1,
   },
   {
-    "fan4_present_change\n"
-    "(Write 1 to clear)",
+    "fan4_present_change",
+    "(Write 1 to clear)"
     fan_change_latched,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x80, 3, 1,
   },
   {
-    "fan5_present_change\n"
-    "(Write 1 to clear)",
+    "fan5_present_change",
+    "(Write 1 to clear)"
     fan_change_latched,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,

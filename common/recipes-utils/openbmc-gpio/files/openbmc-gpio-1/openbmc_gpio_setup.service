@@ -18,7 +18,7 @@
 [Unit]
 Description=Setup GPIOs in OpenBMC
 Wants=setup_i2c.service
-After=setup_i2c.service
+Before=setup_i2c.service
 
 [Service]
 Type=oneshot

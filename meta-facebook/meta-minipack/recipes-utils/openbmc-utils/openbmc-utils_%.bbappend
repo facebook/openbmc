@@ -50,6 +50,7 @@ SRC_URI += "file://board-utils.sh \
             file://reset_cp2112.sh \
             file://wedge_power.sh \
             file://wedge_us_mac.sh \
+            file://create_vlan_intf \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -91,6 +92,9 @@ do_install_board() {
     install -d ${D}${olddir}
     ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
 
+    # create VLAN intf automatically
+    install -d ${D}/${sysconfdir}/network/if-up.d
+    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
     # init
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d

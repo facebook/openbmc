@@ -75,6 +75,8 @@ while true; do
     ISL_VOUT_PMBUS_VALUE=$(printf "0x%04x" "$ISL_VOUT_mV") # Convert to HEX
 
     # Set VOUT to ISL68317
+    # AVS connect to isl68137 channel 2
+    i2cset -f -y 1 0x60 0x0 0x1
     if [ "$(i2cset -f -y 1 0x60 $ISL_VOUT_PMBUS_COMMAND $((ISL_VOUT_PMBUS_VALUE)) w)" ]; then
         echo "Cannot communicate with ISL68317."
         continue

@@ -33,7 +33,7 @@ IMAGE_INSTALL += " \
   ipmbd \
   me-util \
   ipmb-util \
-  log-util \
+  log-util-v2 \
   kcsd \
   healthd \
   fpc-util \

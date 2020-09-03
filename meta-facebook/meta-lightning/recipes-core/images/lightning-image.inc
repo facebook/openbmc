@@ -29,7 +29,7 @@ IMAGE_INSTALL += " \
   iproute2 \
   dhcp-client \
   fruid \
-  log-util \
+  log-util-v2 \
   fan-util \
   front-paneld \
   fpc-util \

@@ -30,7 +30,8 @@ S = "${WORKDIR}"
 
 inherit cmake
 
-DEPENDS += "libcpldupdate-dll-helper"
+DEPENDS += "libcpldupdate-dll-helper liblog libmisc-utils"
+RDEPENDS_${PN} += "liblog libmisc-utils"
 
 # The shared library is used as package instead of -dev
 FILES_SOLIBSDEV = ""

@@ -24,13 +24,21 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <linux/version.h>
+#include <openbmc/log.h>
+#include <openbmc/misc-utils.h>
 
 #include <openbmc/cpldupdate_dll.h>
 
+#ifndef JTAG_SYSFS_DIR
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(4,1,51)
 #define JTAG_SYSFS_DIR "/sys/devices/platform/ast-jtag.0/"
 #else
 #define JTAG_SYSFS_DIR "/sys/devices/platform/ahb/ahb:apb/1e6e4000.jtag/"
+#endif
+#endif
+
+#ifndef JTAG_CHAR_DEV
+#define JTAG_CHAR_DEV "/dev/jtag0"
 #endif
 
 #define JTAG_SYSFS_TDI JTAG_SYSFS_DIR "tdi"
@@ -39,38 +47,52 @@
 #define JTAG_SYSFS_TCK JTAG_SYSFS_DIR "tck"
 
 struct jtag_ctx {
+  int fd_chardev;
   int fd[CPLDUPDATE_PIN_MAX];
 };
 
 void cpldupdate_dll_free(void *ctx) {
   struct jtag_ctx *jctx = (struct jtag_ctx *)ctx;
-  int i;
 
-  if (!jctx) {
-    return;
-  }
+  if (jctx != NULL) {
+    int i;
 
-  for (i = 0; i < CPLDUPDATE_PIN_MAX; i++) {
-    if (jctx->fd[i] != -1) {
-      close(jctx->fd[i]);
+    if (jctx->fd_chardev >= 0) {
+      close(jctx->fd_chardev);
     }
+
+    for (i = 0; i < CPLDUPDATE_PIN_MAX; i++) {
+      if (jctx->fd[i] != -1) {
+        close(jctx->fd[i]);
+      }
+    }
+
+    free(jctx);
   }
-  free(jctx);
 }
 
 int cpldupdate_dll_init(int argc, const char *const argv[], void **ctx) {
   int rc = 0;
   int i = 0;
   struct jtag_ctx *new_ctx = NULL;
-
-  new_ctx = calloc(sizeof(*new_ctx), 1);
+  new_ctx = malloc(sizeof(*new_ctx));
   if (!new_ctx) {
-    rc = ENOMEM;
-    goto err_out;
+    return ENOMEM;
   }
-
-  /* init */
+  new_ctx->fd_chardev = -1;
   for (i = 0; i < CPLDUPDATE_PIN_MAX; new_ctx->fd[i++] = -1);
+
+  /* Kernel 5.6 JTAG driver default let JTAG controller in slave mode,
+   * and only enable master mode when JTAG dev is opened.
+   * So add open() here for compatibility.
+   */
+  if(get_kernel_version() >= KERNEL_VERSION(5, 6, 0)) {
+    new_ctx->fd_chardev = open(JTAG_CHAR_DEV, O_RDWR);
+    if (new_ctx->fd_chardev < 0) {
+      OBMC_ERROR(errno, "failed to open %s\n", JTAG_CHAR_DEV);
+      goto err_out;
+    }
+  }
 
   /* open files */
 #define OPEN_AND_CHECK(fd, dir, mode) do {      \

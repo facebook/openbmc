@@ -62,10 +62,6 @@ setup_gpio_fuji_evt() {
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOG7 BMC_GPIO53
 
     # Export Group I GPIO
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOI1 JTAG_TDI
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOI2 JTAG_TCK
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOI3 JTAG_TMS
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOI4 JTAG_TDO
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOI5 FPGA_BMC_CONFIG_DONE
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOI7 FPGA_NSTATUS
 
@@ -156,11 +152,6 @@ gpio_set_direction BMC_FPGA_JTAG_EN out
 gpio_set_direction BMC_TPM_SPI_PIRQ_N in
 gpio_set_direction BMC_GPIO57 out
 gpio_set_direction BMC_GPIO55 out
-gpio_set_direction JTAG_TDI out
-gpio_set_direction JTAG_TDO in
-gpio_set_direction JTAG_TCK out
-gpio_set_direction JTAG_TMS out
-
 
 # Once we set "out", output values will be random unless we set them
 # to something

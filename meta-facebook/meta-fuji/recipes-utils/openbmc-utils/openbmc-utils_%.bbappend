@@ -35,6 +35,7 @@ SRC_URI += "file://setup-gpio.sh \
             file://setup_mgmt.sh \
             file://spi_util.sh \
             file://simutil \
+            file://disable_watchdog.sh \
             file://beutil \
            "
 
@@ -53,6 +54,7 @@ OPENBMC_UTILS_FILES += " \
     setup_mgmt.sh \
     spi_util.sh \
     simutil \
+    disable_watchdog.sh \
     beutil \
     "
 DEPENDS_append = " update-rc.d-native"
@@ -97,6 +99,9 @@ do_install_board() {
 
     install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .
+
+    install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
+    update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
 
     install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .

@@ -79,6 +79,7 @@
                 {
                     "type": "some_file_matches_some_regexp",
                     "value": [
+                        "^openbmc-init-build-env",
                         "^common/.*",
                         "^facebook/.*",
                         "^tests2/.*",
@@ -782,6 +783,7 @@
                 {
                     "type": "some_file_matches_some_regexp",
                     "value": [
+                        "^openbmc-init-build-env",
                         "^common/.*",
                         "^facebook/.*",
                         "^tests2/.*",

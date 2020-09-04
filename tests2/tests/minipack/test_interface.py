@@ -31,3 +31,23 @@ class InterfaceTest(CommonInterfaceTest, unittest.TestCase):
         self.set_ifname("usb0")
         Logger.log_testname(self._testMethodName)
         self.assertEqual(self.ping_v6(), 0, "Ping test for usb0 v6 failed")
+
+    def test_eth0_4088_v6_interface(self):
+        """
+        Tests eth0 v6 interface
+        """
+        self.set_ifname("eth0.4088")
+        Logger.log_testname(self._testMethodName)
+        self.assertEqual(self.ping_v6(), 0, "Ping test for eth0.4088 v6 failed")
+
+    def test_eth0_4088_v6_interface_link_local(self):
+        """
+        Tests eth0 v6 interface
+        """
+        self.set_ifname("eth0.4088")
+        Logger.log_testname(self._testMethodName)
+        self.assertEqual(
+            self.ping_v6_link_local(),
+            0,
+            "Ping test for eth0.4088 v6 over link local failed",
+        )

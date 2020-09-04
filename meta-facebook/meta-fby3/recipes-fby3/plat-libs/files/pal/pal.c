@@ -137,8 +137,8 @@ MAPTOSTRING root_port_mapping[] = {
     { 0xB2, 0, 0x4A, "Class 2", "NIC"}, // Class 2 NIC    TODO check root port
     { 0x63, 3, 0x2D, "Class 1", "NIC"}, // Class 1 NIC
     // DL
-    { 0x63, 2, 0x2C, "Num 1", "SB" },
-    { 0x00, 0x1D, 0xFF, "Num 0", "SB"},
+    { 0x63, 2, 0x2C, "Num 0", "SB" },   // PVT switch Num 1 to 0
+    { 0x00, 0x1D, 0xFF, "Num 1", "SB"}, // PVT -> Remove
 };
 
 MAPTOSTRING root_port_mapping_spe[] = {

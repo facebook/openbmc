@@ -150,7 +150,6 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_DIMMD0_TEMP,
   BIC_SENSOR_DIMME0_TEMP,
   BIC_SENSOR_DIMMF0_TEMP,
-  BIC_SENSOR_M2A_TEMP,
   BIC_SENSOR_M2B_TEMP,
   BIC_SENSOR_HSC_TEMP,
   BIC_SENSOR_VCCIN_VR_TEMP,
@@ -1471,7 +1470,7 @@ read_adc_val(uint8_t adc_id, float *value) {
   //TODO: if devices are not installed, maybe we need to show NA instead of 0.01
   if ( ret == PAL_EOK ) {
     if ( ADC8 == adc_id ) {
-      *value = *value/0.22/0.237; // EVT: /0.22/0.237/4
+      *value = *value/0.22/0.665; // EVT: /0.22/0.237/4
       //when pwm is kept low, the current is very small or close to 0
       //BMC will show 0.00 amps. make it show 0.01 at least.
       if ( *value < 0.01 ) *value = 0.01;

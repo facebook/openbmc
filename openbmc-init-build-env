@@ -3,7 +3,7 @@
 if [ -n "$DISTRO_OVERRIDE" ]; then
   echo "WARNING: distro is set to ${DISTRO_OVERRIDE} based on DISTRO_OVERRIDE env variable"
 elif [ -z "$DISTRO_DEFAULT" ]; then
-  DISTRO_DEFAULT=rocko
+  DISTRO_DEFAULT=zeus
 else
   echo "WARNING: default distro is set to ${DISTRO_DEFAULT} based on DISTRO_DEFAULT env variable"
 fi
@@ -11,18 +11,35 @@ fi
 declare -a PLAT_DISTRO_OVERRIDES
 # Add overrides here on a per-platform basis.
 PLAT_DISTRO_OVERRIDES=(
+# Latest platforms
   meta-qemux86:zeus
-  meta-cloudripper:warrior
-  meta-wedge400:warrior
   meta-fbal:zeus
   meta-fbep:zeus
   meta-clearcreek:zeus
   meta-fbsp:zeus
   meta-fby3:zeus
-  meta-fuji:warrior
-  meta-elbert:warrior
   meta-grandcanyon:zeus
   meta-cmm:zeus
+# Pending upgrade
+  meta-cloudripper:warrior
+  meta-wedge400:warrior
+  meta-fuji:warrior
+  meta-elbert:warrior
+# Legacy platforms pending kernel upgrade
+  meta-fby2-nd:rocko
+  meta-fby2-gpv2:rocko
+  meta-fby2:rocko
+  meta-yosemite:rocko
+  meta-fbtp:rocko
+  meta-fbttn:rocko
+  meta-wedge:rocko
+  meta-minilaketb:rocko
+  meta-yamp:rocko
+  meta-lightning:rocko
+  meta-cmm:rocko
+  meta-wedge100:rocko
+  meta-minipack:rocko
+  meta-galaxy100:rocko
 )
 
 platform="$1"

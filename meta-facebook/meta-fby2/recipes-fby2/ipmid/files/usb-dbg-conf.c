@@ -904,6 +904,33 @@ int plat_get_etra_fw_version(uint8_t slot_id, char *text)
       sprintf(entry,"PCIE_SW_FW_ver:\n0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
       strcat(text, entry);
     }
+
+    //PCIE switch Bootloader Version
+    if (bic_get_fw_ver(slot_id, FW_PCIE_SWITCH_BL, ver)){
+      strncat(text,"PCIE_SW_BL_ver:\nNA\n", MAX_VALUE_LEN);
+    } else {
+      snprintf(entry, sizeof(entry), "PCIE_SW_BL_ver: 0x%02x%02x (%s, %s)\n", 
+              ver[2], ver[3], (ver[0]? "Active": "Inactive"), (ver[1]? "Valid": "Invalid"));
+      strncat(text, entry, MAX_VALUE_LEN);
+    }
+
+    //PCIE switch Partition0 Version
+    if (bic_get_fw_ver(slot_id, FW_PCIE_SWITCH_PARTMAP0, ver)){
+      strncat(text,"FW_PCIE_SWITCH_PARTMAP0:\nNA\n", MAX_VALUE_LEN);
+    } else {
+      snprintf(entry, sizeof(entry), "FW_PCIE_SWITCH_PARTMAP0: 0x%02x%02x (%s, %s)\n", 
+              ver[2], ver[3], (ver[0]? "Active": "Inactive"), (ver[1]? "Valid": "Invalid"));
+      strncat(text, entry, MAX_VALUE_LEN);
+    }
+
+    //PCIE switch Partition1 Version
+    if (bic_get_fw_ver(slot_id, FW_PCIE_SWITCH_PARTMAP1, ver)){
+      strncat(text,"FW_PCIE_SWITCH_PARTMAP1:\nNA\n", MAX_VALUE_LEN);
+    } else {
+      snprintf(entry, sizeof(entry), "FW_PCIE_SWITCH_PARTMAP1: 0x%02x%02x (%s, %s)\n", 
+              ver[2], ver[3], (ver[0]? "Active": "Inactive"), (ver[1]? "Valid": "Invalid"));
+      strncat(text, entry, MAX_VALUE_LEN);
+    }
   }
 
   return 0;

@@ -41,6 +41,21 @@ class PcieSwitchComponent : public Component {
     } else {
       printf("PCIE switch Firmware Version: 0x%02x%02x%02x%02x\n", ver[0], ver[1], ver[2], ver[3]);
     }
+    if (bic_get_fw_ver(slot_id, FW_PCIE_SWITCH_BL, ver)){
+      printf("PCIE switch Bootloader Version: NA\n");
+    } else {
+      printf("PCIE switch Bootloader Version: 0x%02x%02x (%s, %s)\n", ver[2], ver[3], (ver[0]? "Active": "Inactive"), (ver[1]? "Valid": "Invalid"));
+    }
+    if (bic_get_fw_ver(slot_id, FW_PCIE_SWITCH_PARTMAP0, ver)){
+      printf("PCIE switch Partition0 Version: NA\n");
+    } else {
+      printf("PCIE switch Partition0 Version: 0x%02x%02x (%s, %s)\n", ver[2], ver[3], (ver[0]? "Active": "Inactive"), (ver[1]? "Valid": "Invalid"));
+    }
+    if (bic_get_fw_ver(slot_id, FW_PCIE_SWITCH_PARTMAP1, ver)){
+      printf("PCIE switch Partition1 Version: NA\n");
+    } else {
+      printf("PCIE switch Partition1 Version: 0x%02x%02x (%s, %s)\n", ver[2], ver[3], (ver[0]? "Active": "Inactive"), (ver[1]? "Valid": "Invalid"));
+    }
 
     return 0;
   }

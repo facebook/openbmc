@@ -447,9 +447,11 @@ gpio_monitor_poll(void *ptr) {
   bool is_bmc_ready = false;
   bic_gpio_t revised_pins, n_pin_val, o_pin_val;
   gpio_pin_t *gpios;
-  //uint8_t chassis_sts[8] = {0};
-  //uint8_t chassis_sts_len;
-  //uint8_t power_policy = POWER_CFG_UKNOWN;
+  uint8_t chassis_sts[8] = {0};
+  uint8_t chassis_sts_len;
+  uint8_t power_policy = POWER_CFG_UKNOWN;
+  uint8_t bmc_location = 0;
+  char pwr_state[256] = {0};
 
   /* Check for initial Asserts */
   gpios = get_struct_gpio_pin(fru);
@@ -540,7 +542,7 @@ gpio_monitor_poll(void *ptr) {
             smi_count_start[fru-1] = false;
           } else if (i == RST_RSMRST_BMC_N) {
             printf("RST_RSMRST_BMC_N is DEASSERT !\n");
-#if 0
+
             //get power restore policy
             //defined by IPMI Spec/Section 28.2.
             pal_get_chassis_status(fru, NULL, chassis_sts, &chassis_sts_len);
@@ -556,15 +558,20 @@ gpio_monitor_poll(void *ptr) {
               //}
               if (!(strcmp(pwr_state, "on"))) {
                 sleep(3);
+                if ( bmc_location != NIC_BMC) {
+                  pal_server_set_nic_power(SERVER_POWER_ON);
+                }
                 pal_set_server_power(fru, SERVER_POWER_ON);
               }
             }
             else if (power_policy == POWER_CFG_ON) {
               sleep(3);
+              if ( bmc_location != NIC_BMC) {
+                pal_server_set_nic_power(SERVER_POWER_ON);
+              }
               pal_set_server_power(fru, SERVER_POWER_ON);
             }
-#endif
-            pal_set_server_power(fru, SERVER_POWER_ON);
+
             check_pfr_mailbox(fru);
           } else if (i == RST_PLTRST_BMC_N) {
             rst_timer(fru);
@@ -641,7 +648,7 @@ host_pwr_mon() {
     if ( host_off_flag == SLOTS_MASK ) {
       //Need to make sure the hosts are off instead of power cycle
       //delay to change the power mode of NIC
-      if ( is_util_run_flag > 0 ) {
+      if ( is_util_run_flag > 0 || access(SET_NIC_PWR_MODE_LOCK, F_OK) == 0) {
         retry = 0;
         continue;
       }

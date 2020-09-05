@@ -288,6 +288,11 @@ pal_server_set_nic_power(const uint8_t expected_pwr) {
   int fd = -1;
   uint8_t tbuf[2] = {0x0f, (expected_pwr&0x1)};
   uint8_t tlen = sizeof(tbuf);
+  int pid_file = 0;
+
+  if ( SERVER_POWER_ON == expected_pwr ) {
+    pid_file = open(SET_NIC_PWR_MODE_LOCK, O_CREAT | O_RDWR, 0666);
+  }
 
   fd = i2c_cdev_slave_open(CPLD_PWR_CTRL_BUS, CPLD_PWR_CTRL_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( fd < 0 ) {
@@ -297,13 +302,14 @@ pal_server_set_nic_power(const uint8_t expected_pwr) {
 
   ret = i2c_rdwr_msg_transfer(fd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
   if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Failed to chagne NIC Power mode");
+    syslog(LOG_WARNING, "Failed to change NIC Power mode");
   } else {
     //if one of them want to wake up, we need to set it and sleep 2s to wait for PERST#
     //2s is enough for CPLD
     if ( SERVER_POWER_ON == expected_pwr ) sleep(2);
   }
 
+  if ( pid_file > 0 ) remove(SET_NIC_PWR_MODE_LOCK);
   if ( fd > 0 ) close(fd);
 
   return (ret < 0)?PAL_ENOTSUP:PAL_EOK;

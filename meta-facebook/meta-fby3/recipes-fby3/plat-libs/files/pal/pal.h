@@ -64,6 +64,8 @@ extern "C" {
 #define CPLD_CAP_VER_OFFSET 0x404
 #define CPLD_CAP_VER_LEN 4
 
+#define SET_NIC_PWR_MODE_LOCK "/var/run/set_nic_power.lock"
+
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
 extern const char pal_fru_list_sensor_history[];

@@ -2182,6 +2182,13 @@ pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_da
   return 0xC1;
 }
 
+int __attribute__((weak))
+pal_bypass_dev_card(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
+{
+  // Completion Code Invalid Command
+  return 0xC1;
+}
+
 void __attribute__((weak))
 pal_set_def_restart_cause(uint8_t slot) {
   uint8_t cause;

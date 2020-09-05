@@ -1632,8 +1632,9 @@ pal_all_slot_power_ctrl(uint8_t opt, float *val) {
     if ( pal_is_fru_prsnt(i, &status) < 0 || status == 0 ) {
       continue;
     }
-    syslog(LOG_CRIT, "FRU: %d, Turned %s 12V power of slot%d due to NIC temp is %s UNR. (val = %.2f)", i, (opt == SERVER_12V_ON)?"on":"off" \
-                                                                                                     , i, (opt == SERVER_12V_ON)?"under":"over", *val);
+    syslog(LOG_CRIT, "FRU: %d, Turned %s 12V power of slot%d due to NIC temp is %s %s. (val = %.2f)", i, (opt == SERVER_12V_ON)?"on":"off" \
+                                                                                                     , i, (opt == SERVER_12V_ON)?"under":"over" \
+                                                                                                     , (opt == SERVER_12V_ON)?"UCR":"UNR", *val);
     if ( pal_set_server_power(i, opt) < 0 ) {
       syslog(LOG_CRIT, "Failed to turn %s 12V power of slot%d", (opt == SERVER_12V_ON)?"on":"off", i);
     }
@@ -1641,10 +1642,10 @@ pal_all_slot_power_ctrl(uint8_t opt, float *val) {
 }
 
 static void
-pal_nic_otp_check(float *value, float unr) {
+pal_nic_otp_check(float *value, float unr, float ucr) {
   static int retry = MAX_RETRY;
   static bool is_otp_asserted = false;
-  if ( *value < unr ) {
+  if ( *value < ucr ) {
     if ( is_otp_asserted == false ) return; //it will move on when is_otp_asserted is true
     if ( retry != MAX_RETRY ) {
       retry++;
@@ -1663,7 +1664,7 @@ pal_nic_otp_check(float *value, float unr) {
   }
 
   //need to turn off all slots since retry is reached
-  if ( is_otp_asserted == false ) {
+  if ( is_otp_asserted == false && *value >= unr ) {
     is_otp_asserted = true;
     pal_all_slot_power_ctrl(SERVER_12V_OFF, value);
   }
@@ -1889,7 +1890,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_NIC:
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
       //Over temperature protection
-      pal_nic_otp_check((float*)value, sensor_map[sensor_num].snr_thresh.unr_thresh);
+      pal_nic_otp_check((float*)value, sensor_map[sensor_num].snr_thresh.unr_thresh, sensor_map[sensor_num].snr_thresh.ucr_thresh);
       break;
 
     default:

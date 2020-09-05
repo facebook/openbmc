@@ -69,6 +69,7 @@ env:
     - BOARD=fby2
     - BOARD=fby3
     - BOARD=galaxy100
+    - BOARD=grandcanyon
     - BOARD=lightning
     - BOARD=minipack
     - BOARD=sonorapass

@@ -12116,3 +12116,46 @@ pal_is_host_snr_available(uint8_t fru, uint8_t snr_num) {
   }
   return false;
 }
+
+
+// OEM Command "CMD_OEM_BYPASS_DEV_CARD" 0x35
+int pal_bypass_dev_card(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
+  int ret = 0;
+  uint8_t netfn = 0xFF, cmd = 0xFF;
+  uint8_t tlen = 0;
+  uint8_t status = 0;
+  uint8_t target_slot = 0;
+
+  *res_len = 0;
+
+  if (!pal_is_slot_server(slot)) {
+    return CC_PARAM_OUT_OF_RANGE;
+  }
+
+  target_slot = slot - 1;
+  ret = pal_is_fru_prsnt(target_slot, &status);
+  if (ret < 0 || status == 0) { // FRU not present
+    return CC_UNSPECIFIED_ERROR;
+  } else {
+    if (fby2_get_slot_type(target_slot) != SLOT_TYPE_GPV2) {
+      return CC_UNSPECIFIED_ERROR;
+    }
+  }
+
+  tlen = req_len - 5; // payload_id, netfn, cmd, data[0] (bypass netfn), data[1] (bypass cmd)
+  if (tlen < 0) {
+    return CC_INVALID_LENGTH;
+
+  }
+  netfn = req_data[0];
+  cmd = req_data[1];
+
+  // Bypass command to device card
+  if (tlen != 0) {
+    ret = bic_ipmb_wrapper(target_slot, netfn, cmd, &req_data[2], tlen, res_data, res_len);
+  } else {
+    ret = bic_ipmb_wrapper(target_slot, netfn, cmd, NULL, 0, res_data, res_len);
+  }
+
+  return (ret == 0)? CC_SUCCESS: CC_UNSPECIFIED_ERROR;
+}

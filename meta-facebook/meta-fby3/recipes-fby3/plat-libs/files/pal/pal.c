@@ -1437,13 +1437,29 @@ pal_parse_vr_event(uint8_t fru, uint8_t *event_data, char *error_log) {
 }
 
 static void
-pal_get_m2vpp_str_name(uint8_t comp, uint8_t root_port, char *error_log) {
+pal_get_m2vpp_str_name(uint8_t fru, uint8_t comp, uint8_t root_port, char *error_log) {
   int i = 0;
-  int size = ARRAY_SIZE(root_port_mapping);
+  int size = 0;
+  int ret = 0;
+  uint8_t board_type = 0;
+  MAPTOSTRING *mapping_table;
+
+  ret = fby3_common_get_2ou_board_type(fru, &board_type);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+    board_type = M2_BOARD;
+  }
+  if (board_type == M2_BOARD) {
+    mapping_table = root_port_mapping;
+    size = sizeof(root_port_mapping)/sizeof(MAPTOSTRING);
+  } else {
+    mapping_table = root_port_mapping_spe;
+    size = sizeof(root_port_mapping_spe)/sizeof(MAPTOSTRING);
+  }
   for ( i = 0 ; i < size; i++ ) {
-    if ( root_port_mapping[i].root_port == root_port ) {
-      char *silk_screen = root_port_mapping[i].silk_screen;
-      char *location = root_port_mapping[i].location;
+    if ( mapping_table[i].root_port == root_port ) {
+      char *silk_screen = mapping_table[i].silk_screen;
+      char *location = mapping_table[i].location;
       snprintf(error_log, 256, "%s/%s ", location, silk_screen);
       return;
     }
@@ -1458,7 +1474,7 @@ pal_get_m2vpp_str_name(uint8_t comp, uint8_t root_port, char *error_log) {
 static void
 pal_get_m2pgood_str_name(uint8_t comp, uint8_t device_num, char *error_log) {
   uint8_t index = comp - 1;
-  char *comp_str[4] = {"1OU", "2OU", "SP", "GPv3"};
+  char *comp_str[4] = {"1OU", "2OU", "SPE", "GPv3"};
   if ( index < 4 ) {
     snprintf(error_log, 256, "%s/Num %d ", comp_str[index], device_num);
   } else {
@@ -1520,7 +1536,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       strcat(error_log, "VR WDT");
       break;
     case SYS_M2_VPP:
-      pal_get_m2vpp_str_name(event_data[1], event_data[2], error_log);
+      pal_get_m2vpp_str_name(fru, event_data[1], event_data[2], error_log);
       strcat(error_log, "VPP Power Control");
       break;
     case SYS_M2_PGOOD:

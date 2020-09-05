@@ -85,6 +85,11 @@
 // Dual-boot IP
 #define DUAL_BOOT_IP_BASE                (0x00200000)
 
+#define MBOX_ADDR_BMC_SCRATCHPAD          0xC0
+#ifndef MBOX_ADDR_ST_HISTORY
+#define MBOX_ADDR_ST_HISTORY              MBOX_ADDR_BMC_SCRATCHPAD
+#endif
+
 enum {
   CFM_IMAGE_NONE = 0,
   CFM_IMAGE_0,
@@ -602,11 +607,7 @@ static int
 pfr_state_history(void) {
   uint8_t tbuf[8], rbuf[80];
   uint8_t i, idx;
-#ifdef CONFIG_FBY3
-  uint8_t start_offset = 0x80;
-#else
-  uint8_t start_offset = 0xC0;
-#endif
+  uint8_t start_offset = MBOX_ADDR_ST_HISTORY;
 
   for (i = 0; i < 64; i += 16) {
     tbuf[0] = start_offset + i;

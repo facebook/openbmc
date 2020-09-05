@@ -85,6 +85,8 @@
   "pfr_monitor": {
     "enabled": true,
     "monitor_interval": 10,
+    "state_history": false,
+    "state_history_addr": "0x80",
     "fru": [7]
   },
   "verified_boot": {

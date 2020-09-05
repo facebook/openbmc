@@ -67,6 +67,7 @@ static uint8_t *reboot_base = NULL;
 static mailbox_t pfr_mbox[MAX_NUM_FRUS];
 static pfr_state_t st_table[256];
 static bool is_magic_set = true;
+static uint8_t state_history_mbox_offset = 0xC0;
 
 static const char *plat_state[256] = {0};
 static const char *last_recovery[256] = {0};
@@ -272,6 +273,13 @@ initialize_pfr_monitor_config(json_t *conf) {
       pfr_monitor_ringbuf = json_is_true(tmp);
     }
 
+    tmp = json_object_get(conf, "state_history_addr");
+    if (tmp && json_is_integer(tmp)) {
+      state_history_mbox_offset = json_integer_value(tmp);
+    } else if (tmp && json_is_string(tmp)) {
+      state_history_mbox_offset = strtol(json_string_value(tmp), NULL, 0);
+    }
+
     tmp = json_object_get(conf, "monitor_interval");
     if (tmp && json_is_number(tmp)) {
       if ((i = json_integer_value(tmp)) > 0) {
@@ -387,7 +395,7 @@ monitor_ring_buffer() {
         continue;
       }
 
-      tbuf[0] = 0xC0;  // get start/end offset of state-history
+      tbuf[0] = state_history_mbox_offset; // get start/end offset of state-history
       if (pfr_mbox[i].transfer(&pfr_mbox[i], tbuf, 1, &rbuf[0], 2)) {
         syslog(LOG_WARNING, "%s: read state-history index failed", __func__);
         continue;
@@ -403,7 +411,7 @@ monitor_ring_buffer() {
       }
 
       for (j = 0; j < PFR_STATE_SIZE; j += 16) {  // get whole state-history
-        tbuf[0] = 0xC0 + j;
+        tbuf[0] = state_history_mbox_offset + j;
         if (pfr_mbox[i].transfer(&pfr_mbox[i], tbuf, 1, &rbuf[j], 16)) {
           syslog(LOG_WARNING, "%s: read state-history failed", __func__);
           break;

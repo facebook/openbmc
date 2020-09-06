@@ -36,7 +36,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-minilaketb:rocko
   meta-yamp:rocko
   meta-lightning:rocko
-  meta-cmm:rocko
   meta-wedge100:rocko
   meta-minipack:rocko
   meta-galaxy100:rocko

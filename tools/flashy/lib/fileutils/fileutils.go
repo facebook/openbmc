@@ -59,6 +59,7 @@ var CreateFile = os.Create
 var Mmap = syscall.Mmap
 var Munmap = syscall.Munmap
 var Glob = filepath.Glob
+var Pwrite = syscall.Pwrite
 
 // GetExecutablePath returns the executable's (flashy's) path.
 func GetExecutablePath() string {

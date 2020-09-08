@@ -201,7 +201,7 @@ func TestFlashCpAndValidate(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			exampleImageFilePath := "/img/mock"
-			flashcp.FlashCp = func(imageFilePath, flashDevicePath string) error {
+			flashcp.FlashCp = func(imageFilePath, flashDevicePath string, offset uint32) error {
 				if exampleImageFilePath != imageFilePath {
 					t.Errorf("imageFilePath: want '%v' got '%v'",
 						exampleImageFilePath, imageFilePath)

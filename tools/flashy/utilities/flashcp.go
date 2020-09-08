@@ -50,5 +50,5 @@ func flashcp(args []string) error {
 	imageFilePath := args[1]
 	deviceFilePath := args[2]
 
-	return flash.FlashCp(imageFilePath, deviceFilePath)
+	return flash.FlashCp(imageFilePath, deviceFilePath, 0)
 }

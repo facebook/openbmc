@@ -30,28 +30,12 @@ import (
 )
 
 type mockFlashDeviceFile struct {
-	writeErr       error
-	seekErr        error
 	deviceFilePath string
 	closed         bool
-	seekedAddr     int64
-	writtenBytes   []byte
-	writesCalled   int
 }
 
 func (f *mockFlashDeviceFile) Fd() uintptr {
 	return 42
-}
-
-func (f *mockFlashDeviceFile) Write(a []byte) (int, error) {
-	f.writtenBytes = append(f.writtenBytes, a...)
-	f.writesCalled++
-	return 0, f.writeErr
-}
-
-func (f *mockFlashDeviceFile) Seek(addr int64, whence int) (int64, error) {
-	f.seekedAddr = addr
-	return addr, f.seekErr
 }
 
 func (f *mockFlashDeviceFile) Close() error {
@@ -83,6 +67,7 @@ func TestFlashCp(t *testing.T) {
 
 	cases := []struct {
 		name               string
+		roOffset           uint32
 		openFileErr        error
 		closeFileErr       error
 		getMtdInfoError    error
@@ -92,6 +77,7 @@ func TestFlashCp(t *testing.T) {
 	}{
 		{
 			name:               "success",
+			roOffset:           0,
 			openFileErr:        nil,
 			closeFileErr:       nil,
 			getMtdInfoError:    nil,
@@ -101,6 +87,7 @@ func TestFlashCp(t *testing.T) {
 		},
 		{
 			name:               "open file failed",
+			roOffset:           0,
 			openFileErr:        errors.Errorf("open file failed"),
 			closeFileErr:       nil,
 			getMtdInfoError:    nil,
@@ -111,6 +98,7 @@ func TestFlashCp(t *testing.T) {
 		},
 		{
 			name:               "close file failed",
+			roOffset:           0,
 			openFileErr:        nil,
 			closeFileErr:       errors.Errorf("close file failed"),
 			getMtdInfoError:    nil,
@@ -121,6 +109,7 @@ func TestFlashCp(t *testing.T) {
 		},
 		{
 			name:               "get mtd info failed",
+			roOffset:           0,
 			openFileErr:        nil,
 			closeFileErr:       nil,
 			getMtdInfoError:    errors.Errorf("get mtd info failed"),
@@ -131,6 +120,7 @@ func TestFlashCp(t *testing.T) {
 		},
 		{
 			name:               "mmap failed",
+			roOffset:           0,
 			openFileErr:        nil,
 			closeFileErr:       nil,
 			getMtdInfoError:    nil,
@@ -141,6 +131,7 @@ func TestFlashCp(t *testing.T) {
 		},
 		{
 			name:               "flash process failed",
+			roOffset:           0,
 			openFileErr:        nil,
 			closeFileErr:       nil,
 			getMtdInfoError:    nil,
@@ -148,11 +139,21 @@ func TestFlashCp(t *testing.T) {
 			runFlashProcessErr: errors.Errorf("flash process failed"),
 			want:               errors.Errorf("flash process failed"),
 		},
+		{
+			name:               "non-zero roOffset",
+			roOffset:           16,
+			openFileErr:        nil,
+			closeFileErr:       nil,
+			getMtdInfoError:    nil,
+			mmapFileErr:        nil,
+			runFlashProcessErr: nil,
+			want:               nil,
+		},
 	}
 
 	exampleDeviceFilePath := "/dev/mtd42"
 	exampleImageFilePath := "/opt/upgrade/image"
-	mtdinfouser := mtd_info_user{}
+	mtdinfouser := mtd_info_user{erasesize: 4}
 	exampleMockFile := &mockFlashDeviceFile{
 		deviceFilePath: exampleDeviceFilePath,
 	}
@@ -191,17 +192,22 @@ func TestFlashCp(t *testing.T) {
 			runFlashProcess = func(
 				deviceFilePath string,
 				m mtd_info_user,
-				imFile imageFile) error {
+				imFile imageFile,
+				roOffset uint32) error {
 				// make sure flashDeviceFile is closed
 				if !exampleMockFile.closed {
 					t.Errorf("flash device file should be closed before running " +
 						"flash process!")
 				}
 
+				if roOffset != tc.roOffset {
+					t.Errorf("roOffset: want '%v' got '%v'", tc.roOffset, roOffset)
+				}
+
 				return tc.runFlashProcessErr
 			}
 
-			err := FlashCp(exampleImageFilePath, exampleDeviceFilePath)
+			err := FlashCp(exampleImageFilePath, exampleDeviceFilePath, tc.roOffset)
 			tests.CompareTestErrors(tc.want, err, t)
 		})
 	}
@@ -296,22 +302,22 @@ func TestRunFlashProcess(t *testing.T) {
 				f.Close()
 				return tc.cErr
 			}
-			healthCheck = func(deviceFile flashDeviceFile, m mtd_info_user, imFile imageFile) error {
+			healthCheck = func(deviceFile flashDeviceFile, m mtd_info_user, imFile imageFile, roOffset uint32) error {
 				return tc.hErr
 			}
-			eraseFlashDevice = func(deviceFile flashDeviceFile, m mtd_info_user, imFile imageFile) error {
+			eraseFlashDevice = func(deviceFile flashDeviceFile, m mtd_info_user, imFile imageFile, roOffset uint32) error {
 				return tc.eErr
 			}
-			flashImage = func(deviceFile flashDeviceFile, m mtd_info_user, imFile imageFile) error {
+			flashImage = func(deviceFile flashDeviceFile, m mtd_info_user, imFile imageFile, roOffset uint32) error {
 				return tc.fErr
 			}
-			verifyFlash = func(deviceFilePath string, m mtd_info_user, imFile imageFile) error {
+			verifyFlash = func(deviceFilePath string, m mtd_info_user, imFile imageFile, roOffset uint32) error {
 				if !exampleMockFile.closed {
 					t.Errorf("flash device file must be closed before calling verifyFlash!")
 				}
 				return tc.vErr
 			}
-			err := runFlashProcess(exampleDeviceFilePath, mtdinfouser, exampleImFile)
+			err := runFlashProcess(exampleDeviceFilePath, mtdinfouser, exampleImFile, 0)
 			tests.CompareTestErrors(tc.want, err, t)
 		})
 	}
@@ -368,18 +374,21 @@ func TestHealthCheck(t *testing.T) {
 		name           string
 		deviceFilePath string
 		deviceFileSize uint32
+		roOffset       uint32
 		want           error
 	}{
 		{
 			name:           "success",
 			deviceFilePath: "/dev/mtd42",
 			deviceFileSize: 42,
+			roOffset:       0,
 			want:           nil,
 		},
 		{
 			name:           "deviceFilePath pattern wrong",
 			deviceFilePath: "/dev/mtd42a",
 			deviceFileSize: 42,
+			roOffset:       0,
 			want: errors.Errorf("Device file path '/dev/mtd42a' does not " +
 				"match required pattern '^/dev/mtd[0-9]+$'"),
 		},
@@ -387,7 +396,22 @@ func TestHealthCheck(t *testing.T) {
 			name:           "device too small for image",
 			deviceFilePath: "/dev/mtd42",
 			deviceFileSize: 1,
+			roOffset:       0,
 			want:           errors.Errorf("Image size (6B) larger than flash device size (1B)"),
+		},
+		{
+			name:           "non-zero roOffset OK",
+			deviceFilePath: "/dev/mtd42",
+			deviceFileSize: 42,
+			roOffset:       4,
+			want:           nil,
+		},
+		{
+			name:           "non-zero roOffset larger than image",
+			deviceFilePath: "/dev/mtd42",
+			deviceFileSize: 42,
+			roOffset:       8,
+			want:           errors.Errorf("Image size (6B) smaller than RO offset 8"),
 		},
 	}
 
@@ -399,7 +423,7 @@ func TestHealthCheck(t *testing.T) {
 			m := mtd_info_user{
 				size: tc.deviceFileSize,
 			}
-			err := healthCheck(deviceFile, m, imFile)
+			err := healthCheck(deviceFile, m, imFile, tc.roOffset)
 			tests.CompareTestErrors(tc.want, err, t)
 		})
 	}
@@ -420,35 +444,66 @@ func TestEraseFlashDevice(t *testing.T) {
 	}
 	cases := []struct {
 		name           string
+		roOffset       uint32
 		mtdErasesize   uint32
+		wantEraseStart uint32
 		wantEraseLen   uint32
-		wantIoctlCalls int
 		ioctlErr       error
 		want           error
 	}{
 		{
 			name:           "success",
+			roOffset:       0,
 			mtdErasesize:   4,
-			wantEraseLen:   4,
-			wantIoctlCalls: 2,
+			wantEraseStart: 0,
+			wantEraseLen:   8,
 			ioctlErr:       nil,
 			want:           nil,
 		},
 		{
 			name:           "invalid erasesize 0",
+			roOffset:       0,
 			mtdErasesize:   0,
+			wantEraseStart: 0,
 			wantEraseLen:   0,
-			wantIoctlCalls: 0,
 			ioctlErr:       nil,
 			want:           errors.Errorf("invalid mtd device erasesize: 0"),
 		},
 		{
 			name:           "erase failed",
+			roOffset:       0,
 			mtdErasesize:   4,
-			wantEraseLen:   4,
-			wantIoctlCalls: 1,
+			wantEraseStart: 0,
+			wantEraseLen:   8,
 			ioctlErr:       errors.Errorf("erase failed"),
-			want:           errors.Errorf("Flash device '/dev/mtd5' erase failed at 0x0: erase failed"),
+			want:           errors.Errorf("Flash device '/dev/mtd5' erase failed: erase failed"),
+		},
+		{
+			name:           "non-zero roOffset",
+			roOffset:       4,
+			mtdErasesize:   4,
+			wantEraseStart: 4,
+			wantEraseLen:   4,
+			ioctlErr:       nil,
+			want:           nil,
+		},
+		{
+			name:           "non-aligned roOffset",
+			roOffset:       2,
+			mtdErasesize:   4,
+			wantEraseStart: 0,
+			wantEraseLen:   8,
+			ioctlErr:       nil,
+			want:           nil,
+		},
+		{
+			name:           "non-aligned roOffset 2",
+			roOffset:       1,
+			mtdErasesize:   2,
+			wantEraseStart: 0,
+			wantEraseLen:   6,
+			ioctlErr:       nil,
+			want:           nil,
 		},
 	}
 
@@ -458,12 +513,10 @@ func TestEraseFlashDevice(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			gotIoctlCalls := 0
 			m := mtd_info_user{
 				erasesize: tc.mtdErasesize,
 			}
 			IOCTL = func(fd, name, data uintptr) error {
-				gotIoctlCalls++
 				if fd != 42 {
 					t.Errorf("fd: want '42' got '%v'", fd)
 				}
@@ -475,19 +528,24 @@ func TestEraseFlashDevice(t *testing.T) {
 					t.Errorf("erase length: want '%v' got '%v'",
 						tc.wantEraseLen, gotM.length)
 				}
+				if gotM.start != tc.wantEraseStart {
+					t.Errorf("erase start: want '%v' got '%v'",
+						tc.wantEraseStart, gotM.start)
+				}
 				return tc.ioctlErr
 			}
-			err := eraseFlashDevice(deviceFile, m, imFile)
+			err := eraseFlashDevice(deviceFile, m, imFile, tc.roOffset)
 			tests.CompareTestErrors(tc.want, err, t)
-			if tc.wantIoctlCalls != gotIoctlCalls {
-				t.Errorf("ioctl calls: want '%v' got '%v'",
-					tc.wantIoctlCalls, gotIoctlCalls)
-			}
 		})
 	}
 }
 
 func TestFlashImage(t *testing.T) {
+	pwriteOrig := fileutils.Pwrite
+	defer func() {
+		fileutils.Pwrite = pwriteOrig
+	}()
+
 	imData := []byte("foobar")
 	imFile := imageFile{
 		name: "/opt/upgrade/image",
@@ -497,58 +555,56 @@ func TestFlashImage(t *testing.T) {
 		erasesize: 4,
 	}
 	cases := []struct {
-		name         string
-		seekErr      error
-		writeErr     error
-		writesCalled int
-		want         error
+		name     string
+		roOffset uint32
+		writeErr error
+		want     error
 	}{
 		{
-			name:         "success",
-			seekErr:      nil,
-			writeErr:     nil,
-			writesCalled: 2,
-			want:         nil,
+			name:     "success",
+			roOffset: 0,
+			writeErr: nil,
+			want:     nil,
 		},
 		{
-			name:         "seek failed",
-			seekErr:      errors.Errorf("seek failed"),
-			writeErr:     nil,
-			writesCalled: 0,
-			want: errors.Errorf("Unable to seek to beginning of flash device " +
-				"'/dev/mtd5': seek failed"),
+			name:     "write failed",
+			roOffset: 0,
+			writeErr: errors.Errorf("write failed"),
+			want: errors.Errorf("Failed to flash image '/opt/upgrade/image' " +
+				"on to flash device '/dev/mtd5': 0B flashed: write failed"),
 		},
 		{
-			name:         "write failed",
-			seekErr:      nil,
-			writeErr:     errors.Errorf("write failed"),
-			writesCalled: 1,
-			want: errors.Errorf("Flashing image '/opt/upgrade/image' on " +
-				"to flash device '/dev/mtd5' failed at 0x0: write failed"),
+			name:     "nonzero roOffset",
+			roOffset: 4,
+			writeErr: nil,
+			want:     nil,
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			fileutils.Pwrite = func(fd int, p []byte, roOffset int64) (n int, err error) {
+				if fd != 42 {
+					t.Errorf("fd: want '%v' got '%v'", 42, fd)
+				}
+				if !bytes.Equal(p, imData[tc.roOffset:]) {
+					t.Errorf("pwrite data: want '%v' got '%v'",
+						imData[tc.roOffset], p)
+				}
+				if uint32(roOffset) != tc.roOffset {
+					t.Errorf("roOffset: want '%v' got '%v'",
+						tc.roOffset, roOffset)
+				}
+				nRet := len(p)
+				if tc.writeErr != nil {
+					nRet = 0
+				}
+				return nRet, tc.writeErr
+			}
 			deviceFile := &mockFlashDeviceFile{
 				deviceFilePath: "/dev/mtd5",
-				writeErr:       tc.writeErr,
-				seekErr:        tc.seekErr,
 			}
-			err := flashImage(deviceFile, m, imFile)
+			err := flashImage(deviceFile, m, imFile, tc.roOffset)
 			tests.CompareTestErrors(tc.want, err, t)
-			if tc.writesCalled != deviceFile.writesCalled {
-				t.Errorf("writes called: want '%v' got '%v'",
-					tc.writesCalled, deviceFile.writesCalled)
-			}
-			if err == nil {
-				if bytes.Compare(imData, deviceFile.writtenBytes) != 0 {
-					t.Errorf("written bytes: want '%v' got '%v'",
-						imData, deviceFile.writtenBytes)
-				}
-				if deviceFile.seekedAddr != 0 {
-					t.Errorf("want seek to 0, got to '%v'", deviceFile.seekedAddr)
-				}
-			}
 		})
 	}
 }
@@ -575,6 +631,7 @@ func TestVerifyFlash(t *testing.T) {
 
 	cases := []struct {
 		name           string
+		roOffset       uint32
 		deviceFileName string
 		deviceData     []byte
 		mmapErr        error
@@ -582,6 +639,7 @@ func TestVerifyFlash(t *testing.T) {
 	}{
 		{
 			name:           "success",
+			roOffset:       0,
 			deviceFileName: "/dev/mtd42",
 			deviceData:     imData,
 			mmapErr:        nil,
@@ -589,6 +647,7 @@ func TestVerifyFlash(t *testing.T) {
 		},
 		{
 			name:           "invalid device file name, get block file path failed",
+			roOffset:       0,
 			deviceFileName: "/dev/mtd42a",
 			deviceData:     imData,
 			mmapErr:        nil,
@@ -598,6 +657,7 @@ func TestVerifyFlash(t *testing.T) {
 		},
 		{
 			name:           "mmap failed",
+			roOffset:       0,
 			deviceFileName: "/dev/mtd42",
 			deviceData:     imData,
 			mmapErr:        errors.Errorf("mmap failed"),
@@ -605,26 +665,34 @@ func TestVerifyFlash(t *testing.T) {
 		},
 		{
 			name:           "device data does not match",
+			roOffset:       0,
 			deviceFileName: "/dev/mtd42",
 			deviceData:     []byte("foobrr"),
 			mmapErr:        nil,
-			want:           errors.Errorf("Verification failed: flash and image data mismatch at 0x4"),
+			want:           errors.Errorf("Verification failed: flash and image data mismatch."),
+		},
+		{
+			name:           "nonzero roOffset matched",
+			roOffset:       4,
+			deviceFileName: "/dev/mtd42",
+			deviceData:     []byte("XXXXar"),
+			mmapErr:        nil,
+			want:           nil,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-
-			fileutils.MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
+			fileutils.MmapFileRange = func(filename string, roOffset int64, length, prot, flags int) ([]byte, error) {
 				if length != 6 {
 					t.Errorf("length: want '6' got '%v'", length)
 				}
-				if offset != 0 {
-					t.Errorf("offset: want '0' got '%v'", offset)
+				if roOffset != 0 {
+					t.Errorf("roOffset: want '0' got '%v'", roOffset)
 				}
 				return tc.deviceData, tc.mmapErr
 			}
-			err := verifyFlash(tc.deviceFileName, m, imFile)
+			err := verifyFlash(tc.deviceFileName, m, imFile, tc.roOffset)
 			tests.CompareTestErrors(tc.want, err, t)
 		})
 	}

@@ -20,6 +20,8 @@
 // Package flashcp contains a reimplementation of busybox flashcp.
 // https://git.busybox.net/busybox/tree/miscutils/flashcp.c
 // 1ca9d158da7e2fefc910ff41fa88f8c35afa99da
+// A difference is that an RO roOffset argument is provided to skip parts in both
+// files, intended for devices with RO blocks.
 // N.B.: We use the block device (/dev/mtdblock[0-9]+) for RO operations
 // throughout flashy. There is a mysterious edge case in which if you keep
 // the non-block device (/dev/mtd[0-9]+) open, 0x00 blocks don't get sync-ed
@@ -50,8 +52,6 @@ import (
 // flashDeviceFile is an interface for the used flash device file functions, this is implemented by
 // os.File and is intended to make testing easier.
 type flashDeviceFile interface {
-	Write([]byte) (n int, err error)
-	Seek(int64, int) (int64, error)
 	Fd() uintptr
 	Close() error
 	Name() string
@@ -92,7 +92,17 @@ var MEMERASE = ioctl.IOW('M', 2, sizeof_erase_user_info)
 var IOCTL = ioctl.IOCTL
 
 // FlashCp copies an image file into a device file.
-var FlashCp = func(imageFilePath, deviceFilePath string) error {
+// roOffset is the beginning RO region in the MTD. roOffset bytes will be skipped
+// in both the image and the flash device. (In `dd` terms, this roOffset would be supplied
+// to both skip= and seek=).
+// Note that erase will still erase complete blocks, so if the roOffset is within an
+// erase block, the whole erase block is erased. Since the region is RO, there is no effect.
+// roOffset example case:
+// roOffset = 2
+// image contents = IIII
+// flash contents = OOOO
+// result         = OOII
+var FlashCp = func(imageFilePath, deviceFilePath string, roOffset uint32) error {
 	// open flash device
 	deviceFile, err := openFlashDeviceFile(deviceFilePath)
 	if err != nil {
@@ -113,6 +123,11 @@ var FlashCp = func(imageFilePath, deviceFilePath string) error {
 			deviceFilePath, err)
 	}
 
+	// log for clarity
+	if roOffset != 0 {
+		log.Printf("Flashcp RO roOffset mode: skipping %vB RO region", roOffset)
+	}
+
 	// read image data
 	imageData, err := fileutils.MmapFile(
 		imageFilePath, syscall.PROT_READ, syscall.MAP_SHARED,
@@ -128,7 +143,7 @@ var FlashCp = func(imageFilePath, deviceFilePath string) error {
 		data: imageData,
 	}
 
-	return runFlashProcess(deviceFilePath, m, imFile)
+	return runFlashProcess(deviceFilePath, m, imFile, roOffset)
 }
 
 // openFlashDeviceFile is a wrapper around OpenFileWithLock intended to return
@@ -146,22 +161,23 @@ var closeFlashDeviceFile = func(f flashDeviceFile) error {
 var runFlashProcess = func(
 	deviceFilePath string,
 	m mtd_info_user,
-	imFile imageFile) error {
+	imFile imageFile,
+	roOffset uint32) error {
 
 	deviceFile, err := openFlashDeviceFile(deviceFilePath)
 	if err != nil {
 		return errors.Errorf("Unable to open flash device file '%v': %v",
 			deviceFilePath, err)
 	}
-	err = healthCheck(deviceFile, m, imFile)
+	err = healthCheck(deviceFile, m, imFile, roOffset)
 	if err != nil {
 		return err
 	}
-	err = eraseFlashDevice(deviceFile, m, imFile)
+	err = eraseFlashDevice(deviceFile, m, imFile, roOffset)
 	if err != nil {
 		return err
 	}
-	err = flashImage(deviceFile, m, imFile)
+	err = flashImage(deviceFile, m, imFile, roOffset)
 	if err != nil {
 		return err
 	}
@@ -172,7 +188,7 @@ var runFlashProcess = func(
 			deviceFilePath, err)
 	}
 
-	err = verifyFlash(deviceFilePath, m, imFile)
+	err = verifyFlash(deviceFilePath, m, imFile, roOffset)
 	if err != nil {
 		return err
 	}
@@ -193,8 +209,12 @@ var getMtdInfoUser = func(fd uintptr) (mtd_info_user, error) {
 }
 
 // healthCheck makes sure that the device file path of the mtd matches /dev/mtd[0-9]+,
-// and the imageData is smaller than the device size
-var healthCheck = func(deviceFile flashDeviceFile, m mtd_info_user, imFile imageFile) error {
+// and the imageData is smaller than the device size and roOffset.
+var healthCheck = func(
+	deviceFile flashDeviceFile,
+	m mtd_info_user,
+	imFile imageFile,
+	roOffset uint32) error {
 	const mtdFilePathRegEx = "^/dev/mtd[0-9]+$"
 	regEx := regexp.MustCompile(mtdFilePathRegEx)
 	matched := regEx.MatchString(deviceFile.Name())
@@ -208,76 +228,78 @@ var healthCheck = func(deviceFile flashDeviceFile, m mtd_info_user, imFile image
 			len(imFile.data), m.size)
 	}
 
+	if uint32(len(imFile.data)) < roOffset {
+		return errors.Errorf("Image size (%vB) smaller than RO offset %v",
+			len(imFile.data), roOffset)
+	}
+
 	return nil
 }
 
 // eraseFlashDevice erases the flash device up to the block larger than the
-// image file size. We erase by blocks for better error granularity, and to
-// conform to the actual blocks in the device.
-var eraseFlashDevice = func(deviceFile flashDeviceFile, m mtd_info_user, imFile imageFile) error {
+// image file size. If roOffset is non-zero and within an eraseblock, the whole
+// block is erased. This is be a no-op for the hardware-enforced RO region,
+// and only the RW part is actually erased. We don't erase starting from the middle
+// of the block as this is bad MTD practice.
+var eraseFlashDevice = func(
+	deviceFile flashDeviceFile,
+	m mtd_info_user,
+	imFile imageFile,
+	roOffset uint32,
+) error {
 	log.Printf("Erasing flash device '%v'...", deviceFile.Name())
-	// make sure we erase up to a complete block
+
 	if m.erasesize == 0 {
 		// make sure first m.erasesize != 0
 		return errors.Errorf("invalid mtd device erasesize: 0")
 	}
-	imageSize := uint32(len(imFile.data))
-	// number of blocks we need to erase
-	numBlocks := uint32((imageSize + m.erasesize - 1) / m.erasesize)
 
+	// make sure we erase from a complete erasesize block
+	eraseStart := uint32(roOffset/m.erasesize) * m.erasesize
+
+	// make sure we erase up to a complete erasesize block
+	imageSize := uint32(len(imFile.data))
+	// length if erasesize is 0
+	imageErasesizeLength := uint32((imageSize+m.erasesize-1)/m.erasesize) * m.erasesize
+	eraseLength := imageErasesizeLength - eraseStart
+
+	log.Printf("Erasing flash device: start: %v, length: %v (end: %v)",
+		eraseStart, eraseLength, eraseStart+eraseLength)
 	e := erase_info_user{
-		start:  0,
-		length: m.erasesize,
+		start:  eraseStart,
+		length: eraseLength,
 	}
 
-	for i := uint32(0); i < numBlocks; i++ {
-		err := IOCTL(deviceFile.Fd(), MEMERASE, uintptr(unsafe.Pointer(&e)))
-		if err != nil {
-			errMsg := fmt.Sprintf("Flash device '%v' erase failed at 0x%x: %v",
-				deviceFile.Name(), e.start, err)
-			log.Print(errMsg)
-			return errors.Errorf("%v", errMsg)
-		}
-		e.start += m.erasesize
+	err := IOCTL(deviceFile.Fd(), MEMERASE, uintptr(unsafe.Pointer(&e)))
+	if err != nil {
+		errMsg := fmt.Sprintf("Flash device '%v' erase failed: %v",
+			deviceFile.Name(), err)
+		log.Print(errMsg)
+		return errors.Errorf("%v", errMsg)
 	}
 
 	log.Printf("Finished erasing flash device '%v'", deviceFile.Name())
 	return nil
 }
 
-// flashImage copies the image file into the device block by block.
-var flashImage = func(deviceFile flashDeviceFile, m mtd_info_user, imFile imageFile) error {
+// flashImage copies the image file into the device.
+var flashImage = func(
+	deviceFile flashDeviceFile,
+	m mtd_info_user,
+	imFile imageFile,
+	roOffset uint32,
+) error {
 	log.Printf("Flashing image '%v' on to flash device '%v'", imFile.name, deviceFile.Name())
 
-	imageSize := uint32(len(imFile.data))
-	// number of blocks we neded to write
-	numBlocks := uint32((imageSize + m.erasesize - 1) / m.erasesize)
+	activeImageData := imFile.data[roOffset:]
 
-	// seek to beginning of device file
-	_, err := deviceFile.Seek(0, 0)
+	// use Pwrite, WriteAt may call Pwrite multiple times under the hood
+	n, err := fileutils.Pwrite(int(deviceFile.Fd()), activeImageData, int64(roOffset))
 	if err != nil {
-		return errors.Errorf("Unable to seek to beginning of flash device '%v': %v",
-			deviceFile.Name(), err)
-	}
-
-	for i := uint32(0); i < numBlocks; i++ {
-		blockAddr := i * m.erasesize
-
-		imFileBlockEndAddr := blockAddr + m.erasesize
-		if imFileBlockEndAddr > imageSize {
-			imFileBlockEndAddr = imageSize
-		}
-		imFileBlockData := imFile.data[blockAddr:imFileBlockEndAddr]
-
-		_, err := deviceFile.Write(imFileBlockData)
-
-		if err != nil {
-			errMsg := fmt.Sprintf("Flashing image '%v' on to flash device "+
-				"'%v' failed at 0x%x: %v",
-				imFile.name, deviceFile.Name(), blockAddr, err)
-			log.Print(errMsg)
-			return errors.Errorf("%v", errMsg)
-		}
+		return errors.Errorf("Failed to flash image '%v' on to flash device '%v': "+
+			"%vB flashed: %v",
+			imFile.name, deviceFile.Name(), n, err,
+		)
 	}
 
 	log.Printf("Finished flashing image '%v' on to flash device '%v'",
@@ -286,13 +308,16 @@ var flashImage = func(deviceFile flashDeviceFile, m mtd_info_user, imFile imageF
 }
 
 // verifyFlash compares the image file with the device data block by block.
-var verifyFlash = func(deviceFilePath string, m mtd_info_user, imFile imageFile) error {
+var verifyFlash = func(
+	deviceFilePath string,
+	m mtd_info_user,
+	imFile imageFile,
+	roOffset uint32,
+) error {
 	log.Printf("Verifying copy on flash device '%v' with image file '%v'",
 		deviceFilePath, imFile.name)
 
 	imageSize := uint32(len(imFile.data))
-	// number of blocks we neded to verify
-	numBlocks := uint32((imageSize + m.erasesize - 1) / m.erasesize)
 
 	// use mmap here
 	mtdBlockFilePath, err := devices.GetMTDBlockFilePath(deviceFilePath)
@@ -309,22 +334,13 @@ var verifyFlash = func(deviceFilePath string, m mtd_info_user, imFile imageFile)
 	}
 	defer fileutils.Munmap(flashData)
 
-	for i := uint32(0); i < numBlocks; i++ {
-		blockAddr := i * m.erasesize
+	activeImageData := imFile.data[roOffset:]
+	activeFlashData := flashData[roOffset:]
 
-		imFileBlockEndAddr := blockAddr + m.erasesize
-		if imFileBlockEndAddr > imageSize {
-			imFileBlockEndAddr = imageSize
-		}
-		imFileBlockData := imFile.data[blockAddr:imFileBlockEndAddr]
-		flashBlockData := flashData[blockAddr:imFileBlockEndAddr]
-
-		if bytes.Compare(imFileBlockData, flashBlockData) != 0 {
-			errMsg := fmt.Sprintf("Verification failed: flash and image data mismatch "+
-				"at 0x%x", blockAddr)
-			log.Printf(errMsg)
-			return errors.Errorf("%v", errMsg)
-		}
+	if !bytes.Equal(activeFlashData, activeImageData) {
+		errMsg := fmt.Sprintf("Verification failed: flash and image data mismatch.")
+		log.Printf(errMsg)
+		return errors.Errorf("%v", errMsg)
 	}
 
 	log.Printf("Finished verifying copy on flash device '%v' with image file '%v'",

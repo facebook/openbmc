@@ -63,7 +63,7 @@ func FlashCp(stepParams step.StepParams) step.StepExitError {
 
 var flashCpAndValidate = func(flashDevice devices.FlashDevice, imageFilePath string) error {
 	log.Printf("Starting to flash")
-	err := flashcp.FlashCp(imageFilePath, flashDevice.GetFilePath())
+	err := flashcp.FlashCp(imageFilePath, flashDevice.GetFilePath(), 0)
 	if err != nil {
 		log.Printf("FlashCp failed: %v", err)
 		return err

@@ -616,6 +616,7 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
 
   ret = pal_get_fruid_name(fru, name);
   if (ret < 0) {
+    printf("pal_get_fruid_name failed for fru: %d\n", fru);
     return ret;
   }
 
@@ -688,29 +689,34 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
       // TODO: Add file size check before adding to the eeprom
       if (access(file_path, F_OK) == -1) {
         print_usage();
+        syslog(LOG_ERR, "Unable to access the %s file: %s", file_path, strerror(errno));
+        return -1;
       }
       // Verify the checksum of the new binary
       ret = fruid_parse(file_path, &fruid);
       if(ret != 0) {
+        printf("New FRU data checksum is invalid\n");
         syslog(LOG_CRIT, "New FRU data checksum is invalid");
         return -1;
       }
 
       fd_tmpbin = open(path, O_WRONLY);
       if (fd_tmpbin == -1) {
+        printf("Unable to open the %s file: %s\n", path, strerror(errno));
         syslog(LOG_ERR, "Unable to open the %s file: %s", path, strerror(errno));
         return errno;
       }
 
       fd_newbin = open(file_path, O_RDONLY);
       if (fd_newbin == -1) {
+        printf("Unable to open the %s file: %s\n", file_path, strerror(errno));
         syslog(LOG_ERR, "Unable to open the %s file: %s", file_path, strerror(errno));
         return errno;
       }
 
       fp = fopen(file_path, "rb");
-      if ( NULL == fp )
-      {
+      if ( NULL == fp ) {
+        printf("Unable to get the %s fp %s\n", file_path, strerror(errno));
         syslog(LOG_ERR, "Unable to get the %s fp %s", file_path, strerror(errno));
         return errno;
       }
@@ -739,6 +745,7 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
         }
 
         if (ret < 0) {
+          printf("FRU:%d Write failed!\n", fru);
           syslog(LOG_WARNING, "[%s] Please check the fruid: %d dev_id: %d file_path: %s", __func__, fru, dev_id, file_path);
           close(fd_newbin);
           close(fd_tmpbin);
@@ -746,6 +753,7 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
         }
       } else {
         if (access(eeprom_path, F_OK) == -1) {
+          printf("Fail to access eeprom file file : %s for fru %d\n", eeprom_path, fru);
           syslog(LOG_ERR, "cannot access the eeprom file : %s for fru %d",
               eeprom_path, fru);
           close(fd_newbin);
@@ -754,12 +762,14 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
         }
         sprintf(command, "dd if=%s of=%s bs=%d count=1", file_path, eeprom_path, fru_size);
         if (system(command) != 0) {
+          printf("Copy of %s to %s failed!\n", file_path, eeprom_path);
           syslog(LOG_ERR, "Copy of %s to %s failed!\n", file_path, eeprom_path);
+          return -1;
         }
 
         ret = pal_compare_fru_data(eeprom_path, file_path, fru_size);
-        if (ret < 0)
-        {
+        if (ret < 0) {
+          printf("Compare %s with %s failed!\n", file_path, eeprom_path);
           syslog(LOG_ERR, "[%s] FRU:%d Write Fail", __func__, fru);
           close(fd_newbin);
           close(fd_tmpbin);
@@ -769,8 +779,8 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
 
       ret = copy_file(fd_tmpbin, fd_newbin, fru_size);
       if (ret < 0) {
-        syslog(LOG_ERR, "copy: write to %s file failed: %s",
-            path, strerror(errno));
+        printf("Write to %s file failed: %s\n", path, strerror(errno));
+        syslog(LOG_ERR, "copy: write to %s file failed: %s", path, strerror(errno));
       }
 
       close(fd_newbin);

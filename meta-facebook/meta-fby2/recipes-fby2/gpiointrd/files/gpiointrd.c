@@ -58,12 +58,18 @@
 #define SYS_CONFIG_M2_DEV_FILE "/mnt/data/kv_store/sys_config/fru%d_m2_%d_info"
 #define SENSORDUMP_BIN "/usr/local/bin/sensordump.sh"
 
+#define FAN_LATCH_POLL_TIME 600
 
 #define DEBUG_ME_EJECTOR_LOG 0 // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
 
 static uint8_t IsHotServiceStart[MAX_NODES + 1] = {0};
+static uint8_t IsFanLatchAction = 0;
 static void *hsvc_event_handler(void *ptr);
+static void *fan_latch_event_handler(void *ptr);
 static pthread_mutex_t hsvc_mutex[MAX_NODES + 1];
+static pthread_mutex_t fan_latch_mutex;
+static pthread_t fan_latch_tid; // polling fan latch
+static pthread_t fan_latch_action_tid; // start/stop fscd
 static struct timespec last_ejector_ts[MAX_NODES + 1];
 static uint8_t IsLatchOpenStart[MAX_NODES + 1] = {0};
 static void *latch_open_handler(void *ptr);
@@ -113,6 +119,11 @@ enum {
 };
 
 enum {
+  OPEN = 0,
+  CLOSE =1,
+};
+
+enum {
   SLOT_PRESNT = 0,
   SLOT_MISSING = 1,
 };
@@ -128,6 +139,64 @@ slot_kv_st slot_kv_list[] = {
   {"slot%d_cpu_ppin",          "0"},
   {"fru%d_restart_cause",      "3"},
 };
+
+
+int
+fan_latch_action(int action) {
+  int ret = 0;
+  char cmd[128];
+
+  if ( IsFanLatchAction )
+  {
+    syslog(LOG_WARNING, "[%s] Close the previous thread for fan latch\n", __func__);
+    ret = pthread_cancel(fan_latch_action_tid);
+    if (ret == ESRCH) {
+      syslog(LOG_INFO, "fan_latch_action: No pthread exists");
+    } else {
+      sprintf(cmd, "ps | grep 'fscd_end.sh\\|setup-fan.sh' | awk '{print $1}'| xargs kill ");
+      system(cmd);
+      syslog(LOG_INFO, "fan_latch_action: Previous thread is cancelled");
+    }
+  }
+
+  //Create thread for fan latch event detect
+  if (pthread_create(&fan_latch_action_tid, NULL, fan_latch_event_handler, (void *)action) < 0) {
+    syslog(LOG_WARNING, "[%s] Create fan_latch_event_handler thread failed for fan latch\n",__func__);
+    return -1;
+  }
+  return 0;
+}
+
+void * fan_latch_poll_handler(void *priv) {
+  FILE* fp;
+  int value = 0;
+  int is_fscd_running = 0;
+  char cmd[128];
+  char buf[32];
+  int res;
+  sprintf(cmd, "ps -w | grep /usr/bin/fscd.py | wc -l");
+  while (1) {
+    fby2_common_get_gpio_val("FAN_LATCH_DETECT", &value);
+    is_fscd_running = 0;
+    if((fp = popen(cmd, "r")) != NULL) {
+      if(fgets(buf, sizeof(buf), fp) != NULL) {
+        res = atoi(buf);
+        if(res > 2) {
+          is_fscd_running = 1;
+        }
+      }
+      pclose(fp);
+    }
+    if (!value && !is_fscd_running) { // If sled in and fscd is not runnig, start fscd
+      syslog(LOG_WARNING,"Sled Fan Latch Clsoe: start fscd");
+      fan_latch_action(CLOSE);
+    } else if (value && is_fscd_running) { // If sled out and fscd is running, stop fscd
+      syslog(LOG_WARNING,"Sled Fan Latch Open: stop fscd");
+      fan_latch_action(OPEN);
+    }
+    sleep(FAN_LATCH_POLL_TIME);
+  }
+}
 
 // Thread for delay event
 static void *
@@ -479,7 +548,6 @@ static void gpio_event_handle(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_
   char cmd[128] = {0};
   uint8_t slot_id;
   uint8_t slot_12v = 1;
-  uint8_t server_type = 0;
   int value;
   char vpath[80] = {0};
   char locstr[MAX_VALUE_LEN];
@@ -487,26 +555,20 @@ static void gpio_event_handle(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_
   static pthread_t hsvc_action_tid[MAX_NODES + 1];
   static pthread_t latch_open_tid[MAX_NODES + 1];
   hot_service_info hsvc_info[MAX_NODES + 1];
+  uint8_t action;
   struct timespec ts;
   pthread_t hsc_alert_tid;
   const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
 
-  server_type = fby2_common_get_spb_type();
   if (strncmp(cfg->shadow, "FAN_LATCH_DETECT", sizeof(cfg->shadow)) == 0) { // GPIO_FAN_LATCH_DETECT
     if (curr == 1) { // low to high
       syslog(LOG_CRIT, "ASSERT: SLED is not seated");
-      memset(cmd, 0, sizeof(cmd));
-      sprintf(cmd, "/usr/local/bin/fscd_end.sh 0");
-      system(cmd);
-    }
-    else { // high to low
+      action = OPEN;
+    } else { // high to low
       syslog(LOG_CRIT, "DEASSERT: SLED is seated");
-      memset(cmd, 0, sizeof(cmd));
-      if (((server_type == TYPE_SPB_YV250) && (is_slot_missing() == true)) == false) {
-        sprintf(cmd, "/etc/init.d/setup-fan.sh");
-        system(cmd);
-      }
+      action = CLOSE;
     }
+    fan_latch_action(action);
   }
   else if ((strncmp(cfg->shadow, "SLOT1_EJECTOR_LATCH_DETECT_N", sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "SLOT2_EJECTOR_LATCH_DETECT_N", sizeof(cfg->shadow)) == 0) ||
            (strncmp(cfg->shadow, "SLOT3_EJECTOR_LATCH_DETECT_N", sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "SLOT4_EJECTOR_LATCH_DETECT_N", sizeof(cfg->shadow)) == 0)
@@ -745,6 +807,46 @@ latch_open_handler(void *ptr) {
   pthread_mutex_lock(&latch_open_mutex[slot_id]);
   IsLatchOpenStart[slot_id] = false;
   pthread_mutex_unlock(&latch_open_mutex[slot_id]);
+
+  pthread_exit(0);
+}
+
+static void *
+fan_latch_event_handler(void *ptr) {
+  char cmd[128] = {0};
+  uint8_t action = (int)ptr;
+  int ret = 0;
+
+  pthread_mutex_lock(&fan_latch_mutex);
+  IsFanLatchAction = true;
+  pthread_mutex_unlock(&fan_latch_mutex);
+
+  pthread_detach(pthread_self());
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+  syslog(LOG_WARNING,"%s : action: %u", __func__, action);
+
+  switch(action)
+  {
+    case OPEN :
+      memset(cmd, 0, sizeof(cmd));
+      sprintf(cmd, "/usr/local/bin/fscd_end.sh 0");
+      ret = system(cmd);
+      syslog(LOG_INFO, "fan_latch_event_handler: OPEN ret = %d",ret);
+      break;
+    case CLOSE :
+      memset(cmd, 0, sizeof(cmd));
+      if (((fby2_common_get_spb_type() == TYPE_SPB_YV250) && (is_slot_missing() == true)) == false) {
+        sprintf(cmd, "/etc/init.d/setup-fan.sh");
+        ret = system(cmd);
+        syslog(LOG_INFO, "fan_latch_event_handler: CLOSE ret = %d",ret);
+      }
+      break;
+  }
+
+  pthread_mutex_lock(&fan_latch_mutex);
+  IsFanLatchAction = false;
+  pthread_mutex_unlock(&fan_latch_mutex);
 
   pthread_exit(0);
 }
@@ -1088,6 +1190,7 @@ main(int argc, void **argv) {
   uint8_t status = 0;
   int i;
   int spb_type;
+  void *res;
   gpiopoll_desc_t *polldesc = NULL;
 
   for(i=1 ;i<MAX_NODES + 1; i++)
@@ -1096,6 +1199,7 @@ main(int argc, void **argv) {
     pthread_mutex_init(&latch_open_mutex[i], NULL);
     last_ejector_ts[i].tv_sec = 0;
   }
+  pthread_mutex_init(&fan_latch_mutex, NULL);
 
   default_gpio_check();
 
@@ -1120,8 +1224,17 @@ main(int argc, void **argv) {
     if (!polldesc) {
       syslog(LOG_CRIT, "Cannot start poll operation on GPIOs");
     } else {
+      if (pthread_create(&fan_latch_tid, NULL, fan_latch_poll_handler, NULL)) {
+        syslog(LOG_WARNING, "Poll Fan Latch returned error");
+      }
       if (gpio_poll(polldesc, POLL_TIMEOUT)) {
         syslog(LOG_CRIT, "Poll returned error");
+      }
+      rc = pthread_join(fan_latch_tid, &res);
+      if (rc != 0) {
+        syslog(LOG_WARNING,"Pthread_join fialed error:%s\n", strerror(rc));
+      } else if (res == PTHREAD_CANCELED) {
+        syslog(LOG_WARNING,"Potential race condition between close and poll");
       }
       gpio_poll_close(polldesc);
     }
@@ -1132,6 +1245,7 @@ main(int argc, void **argv) {
     pthread_mutex_destroy(&hsvc_mutex[i]);
     pthread_mutex_destroy(&latch_open_mutex[i]);
   }
+  pthread_mutex_destroy(&fan_latch_mutex);
 
   return 0;
 }

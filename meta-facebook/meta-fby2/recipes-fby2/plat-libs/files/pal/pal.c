@@ -7435,6 +7435,7 @@ pal_is_nvme_ready() {
   uint8_t setup = 0;
   uint8_t sdr_update = 0;
   char cmd[128] = {0};
+  int ret = 0;
 
   for (uint8_t fru=1;fru <= 4;fru+=2) {
     // get nvme ready from kv_store
@@ -7454,6 +7455,7 @@ pal_is_nvme_ready() {
       // fan config update after bios get device type
       pal_get_dev_config_setup(&setup);
       if (!setup && (type!= DEV_TYPE_UNKNOWN)) { // once a device is recognized via NVMe
+        ret = 0;
         syslog(LOG_WARNING, "pal_is_nvme_ready: device config change (slot%u type=%u)",fru ,type);
         if (type != DEV_TYPE_VSI_ACC && type != DEV_TYPE_BRCM_ACC) {
           type = DEV_TYPE_SSD;
@@ -7463,11 +7465,12 @@ pal_is_nvme_ready() {
           syslog(LOG_WARNING, "pal_is_nvme_ready: fan config change from type %u to type %u",fan_type ,type);
           memset(cmd, 0, sizeof(cmd));
           sprintf(cmd, "sv stop fscd ;/etc/init.d/setup-fan.sh %d;",type);
-          system(cmd);
+          ret = system(cmd);
         } else {
           syslog(LOG_WARNING, "pal_is_nvme_ready: fan config deoesn't change (type=%u)",type);
         }
-        pal_set_dev_config_setup(1);
+        if (!ret) // do not update fan config update flag if system fail/terminated
+          pal_set_dev_config_setup(1);
       }
 
       // SDR update after NVMe ready

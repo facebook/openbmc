@@ -488,6 +488,9 @@ main(int argc, char **argv) {
 	
 	// Select debounce timer #2 for GPIOP0~GPIOP3
 	phymem_set_dword(GPIO_BASE, 0x100, 0xF000000);
+
+	// Select debounce timer #2 for GPIOH5
+	phymem_set_dword(GPIO_BASE, 0x48, 0x20000000);
 	
 	return 0;
 }

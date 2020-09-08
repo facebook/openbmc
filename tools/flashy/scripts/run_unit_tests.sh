@@ -16,14 +16,16 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-# Run this script to get a list of all test commands for each test function
-set -e
+# Run this script to run each unit tests individually
+set -euo pipefail
 
 # Ensure we're in the project root
 cd "$(dirname "$0")" && cd ..
 
+echo "Getting all packages..." >&2
 all_packages=$(go list ./...)
 
+echo "Getting list of tests..." >&2
 for pkg in $all_packages
 do
     pkg_tests=$(go test "${pkg}" -list .* | grep Test || true)
@@ -33,10 +35,31 @@ do
     done
 done
 
-printf '%s\n' "${all_test_cmds[@]}"
+num_tests="${#all_test_cmds[@]}"
+echo "Found $num_tests tests." >&2
 
-# uncomment the below to run the tests
-# for test_cmd in "${all_test_cmds[@]}"
-# do
-#     $test_cmd
-# done
+echo "Starting to run tests" >&2
+
+passed=0
+failed=0
+idx=1
+for test_cmd in "${all_test_cmds[@]}"
+do
+    echo -n "[$idx/$num_tests] '$test_cmd': "
+
+    if output=$(eval "$test_cmd" 2>&1); then
+        echo "PASSED"
+        ((++passed))
+    else
+        echo "FAILED"
+        ((++failed))
+        echo "$output" >&2
+    fi
+
+    ((++idx))
+done
+
+echo "$passed/$num_tests tests passed"
+
+[[ $failed -ne 0 ]] && exit 1
+exit 0

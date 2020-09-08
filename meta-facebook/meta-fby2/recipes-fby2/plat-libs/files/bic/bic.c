@@ -2768,6 +2768,7 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size)
 #endif
       goto error_exit;
     }
+    msleep(10);
 
     // Ignore the first byte as it indicates length of response
     write(fd, &rbuf[1], rlen-1);
@@ -2847,6 +2848,7 @@ bic_write_fruid(uint8_t slot_id, uint8_t fru_id, const char *path) {
     if (ret) {
       break;
     }
+    msleep(10);
 
     // Update counter
     offset += count;

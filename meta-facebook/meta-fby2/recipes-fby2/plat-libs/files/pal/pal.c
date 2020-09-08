@@ -4137,6 +4137,7 @@ pal_read_nic_fruid(const char *path, int size) {
     if (ret) {
       break;
     }
+    msleep(10);
 
     count = write(fd, rbuf, 8);
     if (count != 8) {
@@ -4203,6 +4204,7 @@ _write_nic_fruid(const char *path) {
     if (ret) {
       break;
     }
+    msleep(10);
 
     offset += count;
   }
@@ -4221,10 +4223,82 @@ error_exit:
 
 int
 pal_fruid_write(uint8_t fru, char *path) {
-  if (fru == FRU_NIC) {
-    return _write_nic_fruid(path);
+  int ret, retry = 3;
+  int fru_size = FRUID_SIZE, new_fru_size = FRUID_SIZE;
+  char fruid_path[64] = {0};
+  FILE *fp;
+
+  fp = fopen(path, "rb");
+  if ( NULL == fp ) {
+    syslog(LOG_ERR, "Unable to get the %s fp %s", path, strerror(errno));
+    return errno;
   }
-  return bic_write_fruid(fru, 0, path);
+
+  // get the size of the new binary
+  fseek(fp, 0L, SEEK_END);
+  new_fru_size = ftell(fp);
+  rewind(fp);
+  fclose(fp);
+  syslog(LOG_WARNING, "pal_fruid_write: Write slot%d len=%d", fru, new_fru_size);
+
+  sprintf(fruid_path, "/tmp/tmp_fruid_slot%d.bin", fru);
+  if (fru == FRU_NIC) {
+    while ((--retry) >= 0) {
+      ret = _write_nic_fruid(path); // write from file path
+      if (ret) {
+        syslog(LOG_WARNING, "pal_fruid_write: Write NIC fail");
+        continue;
+      }
+
+      ret = pal_read_nic_fruid(fruid_path, new_fru_size); // write to fru path
+      if (ret) {
+        syslog(LOG_WARNING, "pal_fruid_write: Read NIC fail");
+        continue;
+      }
+
+      ret = pal_compare_fru_data(fruid_path,path,new_fru_size);  // compare frus
+      if (ret) {
+        syslog(LOG_WARNING, "pal_fruid_write: Compare NIC fail");
+        continue;
+      }
+      if (!ret)
+        break;
+
+      if (retry)
+        msleep(10);
+    }
+    remove(fruid_path);
+    return ret;
+  }
+  while ((--retry) >= 0) {
+    ret = bic_write_fruid(fru, 0, path);
+    if (ret) {
+      syslog(LOG_WARNING, "pal_fruid_write: Write slot%d fail", fru);
+      continue;
+    }
+
+    ret = bic_read_fruid(fru, 0, fruid_path, &fru_size);
+    if (ret) {
+      syslog(LOG_WARNING, "pal_fruid_write: Read slot%d fail", fru);
+      continue;
+    }
+
+    // select minimum size of 2 files for comparing frus
+    new_fru_size = (new_fru_size < fru_size)? new_fru_size :fru_size;
+
+    ret = pal_compare_fru_data(fruid_path,path,new_fru_size);  // compare frus
+    if (ret) {
+      syslog(LOG_WARNING, "pal_fruid_write: Compare slot%d fail", fru);
+      continue;
+    }
+    if (!ret)
+      break;
+
+    if (retry)
+      msleep(10);
+  }
+  remove(fruid_path);
+  return ret;
 }
 
 int

@@ -2010,7 +2010,7 @@ pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *respons
 
 int
 pal_set_fan_ctrl (char *ctrl_opt) {
-  FILE* fp;
+  FILE* fp = NULL;
   uint8_t bmc_location = 0;
   uint8_t ctrl_mode, status;
   int ret = 0;
@@ -2028,19 +2028,11 @@ pal_set_fan_ctrl (char *ctrl_opt) {
     snprintf(cmd, sizeof(cmd), "sv start fscd > /dev/null 2>&1");
   } else if (!strcmp(ctrl_opt, DISABLE_STR)) {
     ctrl_mode = MANUAL_MODE;
-    snprintf(cmd, sizeof(cmd), "sv stop fscd > /dev/null 2>&1");
+    snprintf(cmd, sizeof(cmd), "sv force-stop fscd > /dev/null 2>&1");
   } else if (!strcmp(ctrl_opt, STATUS_STR)) {
     ctrl_mode = GET_FAN_MODE;
   } else {
     return -1;
-  }
-
-  if (system(cmd) != 0) {
-    return -1;
-  }
-
-  if (bmc_location == NIC_BMC) {
-    ret = bic_set_fan_auto_mode(ctrl_mode, &status);
   }
 
   if (ctrl_mode == GET_FAN_MODE) {
@@ -2062,6 +2054,38 @@ pal_set_fan_ctrl (char *ctrl_opt) {
       if(fgets(buf, sizeof(buf), fp) != NULL) {
         printf("Auto Mode:%s",buf);
       }
+      if(fp != NULL) pclose(fp);
+    }
+  } else {  // AUTO_MODE or MANUAL_MODE
+    if(ctrl_mode == AUTO_MODE) {
+      if (system(cmd) != 0)
+        return -1;
+    } else if (ctrl_mode == MANUAL_MODE){
+      if (system(cmd) != 0) {
+        // Although sv force-stop sends kill (-9) signal after timeout,
+        // it still returns an error code.
+        // we will check status here to ensure that fscd has stopped completely.
+        syslog(LOG_WARNING, "%s() force-stop timeout", __func__);
+        snprintf(cmd, sizeof(cmd), "sv status fscd 2>/dev/null | cut -d: -f1");
+        if((fp = popen(cmd, "r")) == NULL) {
+          syslog(LOG_WARNING, "%s() popen failed, cmd: %s", __func__, cmd);
+          ret = -1;
+        } else if(fgets(buf, sizeof(buf), fp) == NULL) {
+          syslog(LOG_WARNING, "%s() read popen failed, cmd: %s", __func__, cmd);
+          ret = -1;
+        } else if(strncmp(buf, "down", 4) != 0) {
+          syslog(LOG_WARNING, "%s() failed to terminate fscd", __func__);
+          ret = -1;
+        }
+
+        if(fp != NULL) pclose(fp);
+        if(ret != 0) return ret;
+      }
+    }
+
+    // notify baseboard bic (Class 2)
+    if (bmc_location == NIC_BMC) {
+      ret = bic_set_fan_auto_mode(ctrl_mode, &status);
     }
   }
 

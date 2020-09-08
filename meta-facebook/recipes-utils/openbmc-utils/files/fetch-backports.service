@@ -18,14 +18,15 @@
 
 [Unit]
 Description=Persistent hook to be run after the network starts
-ConditionFileIsExecutable=/etc/rc.local
-After=network-online.target hostname.service
-Wants=network-online.target hostname.service
+After=nss-lookup.target hostname.service
+Wants=nss-lookup.target
+Before=sshdgenkeys.service restapi.service
+ConditionFileIsExecutable=/mnt/data/etc/rc.local
 
 [Service]
 Type=oneshot
-ExecStart=/etc/rc.local
-TimeoutSec=15
+ExecStart=/mnt/data/etc/rc.local
+TimeoutSec=180
 RemainAfterExit=yes
 GuessMainPID=no
 

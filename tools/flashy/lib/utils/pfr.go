@@ -19,15 +19,26 @@
 
 package utils
 
-import "time"
+import (
+	"log"
+	"time"
+)
 
 // IsPfrSystem checks whether the system is a PFR-enabled system or not.
 // This is just a temporary method, due to be replaced by pfr-util.
 var IsPfrSystem = func() bool {
+	log.Printf("Checking whether the system is PFR-enabled")
+
 	// i2craw 12 0x38 -r 1 -w "0x0A"
 	exitCode, _, _, _ := RunCommand(
 		[]string{"i2craw", "12", "0x38", "-r", "1", "-w", "0x0A"},
 		30*time.Second,
 	)
-	return exitCode == 0
+	isPfr := exitCode == 0
+	if isPfr {
+		log.Printf("This system is PFR-enabled")
+	} else {
+		log.Printf("This system is not PFR-enabled")
+	}
+	return isPfr
 }

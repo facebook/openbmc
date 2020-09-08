@@ -586,7 +586,7 @@ func TestGetDataFromImageNodeViaDataLink(t *testing.T) {
 	randData := make([]byte, 1024)
 	rand.Read(randData)
 
-	// initialise a fit partition with 1kb rand data
+	// initialize a fit partition with 1kb rand data
 	p := &FitPartition{
 		Data: randData,
 	}

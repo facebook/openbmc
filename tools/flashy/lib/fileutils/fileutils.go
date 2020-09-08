@@ -240,7 +240,7 @@ var WriteFileWithoutTruncate = func(filename string, buf []byte) error {
 	return nil
 }
 
-// GlobAll gets all glob results froms a list of glob patterns.
+// GlobAll gets all glob results from a list of glob patterns.
 // Return error if pattern is invalid as determined by filepath.Glob.
 var GlobAll = func(patterns []string) ([]string, error) {
 	results := []string{}

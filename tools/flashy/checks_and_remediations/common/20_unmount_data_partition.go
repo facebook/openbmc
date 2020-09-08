@@ -131,7 +131,7 @@ var runDataPartitionUnmountProcess = func() error {
 	// we ignore the error in fuser, as this might be thrown because nothing holds
 	// a file open on the file system (because of delayed log file open or because
 	// rsyslogd is not running for some reason).
-	// Retrying rumount with a delay below should work around surviving processes.
+	// Retrying umount with a delay below should work around surviving processes.
 	utils.LogAndIgnoreErr(err)
 
 	// umount /mnt/data

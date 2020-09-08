@@ -204,7 +204,7 @@ func TestGetRegexSubexpMap(t *testing.T) {
 			wantErr: errors.Errorf("No match for regex '(?P<type>[a-z]+)' for input '123'"),
 		},
 		{
-			name:  "mulitple groups, no match",
+			name:  "multiple groups, no match",
 			regEx: `(?P<type>[a-z]+):(?P<specifier>[0-9]+)`,
 			input: "123mtdabc:abc",
 			want:  map[string]string{},
@@ -299,7 +299,7 @@ func TestGetBytesRegexSubexpMap(t *testing.T) {
 			wantErr: errors.Errorf("No match for regex '(?P<type>[a-z]+)' for input"),
 		},
 		{
-			name:  "mulitple groups, no match",
+			name:  "multiple groups, no match",
 			regEx: `(?P<type>[a-z]+):(?P<specifier>[0-9]+)`,
 			input: "123mtdabc:abc",
 			want:  map[string]string{},

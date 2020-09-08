@@ -215,7 +215,7 @@ func TestRunCommand(t *testing.T) {
 		},
 		{
 			name: "Check stream sequence: stderr -> stdout -> stderr",
-			// the sleeps are necessary as the scanners are concurrrent
+			// the sleeps are necessary as the scanners are concurrent
 			cmdArr:       []string{"bash", "-c", "echo seq1 >&2; sleep 0.1; echo seq2; sleep 0.1; echo seq3 >&2"},
 			timeout:      30 * time.Second,
 			wantExitCode: 0,
@@ -231,7 +231,7 @@ func TestRunCommand(t *testing.T) {
 		},
 		{
 			name: "Check stream sequence: stdout -> stderr -> stdout",
-			// the sleeps are necessary as the scanners are concurrrent
+			// the sleeps are necessary as the scanners are concurrent
 			cmdArr:       []string{"bash", "-c", "echo seq1; sleep 0.1; echo seq2 >&2; sleep 0.1; echo seq3"},
 			timeout:      30 * time.Second,
 			wantExitCode: 0,

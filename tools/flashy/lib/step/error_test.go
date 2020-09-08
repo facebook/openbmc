@@ -57,7 +57,7 @@ func TestHandleStepError(t *testing.T) {
 			wantExitCode:          FLASHY_ERROR_UNSAFE_TO_REBOOT,
 		},
 		{
-			name:                  "safe to reboot, enusred OK",
+			name:                  "safe to reboot, ensured OK",
 			stepExitError:         ExitSafeToReboot{errors.Errorf("err")},
 			ensureSafeToRebootErr: nil,
 			wantExitCode:          FLASHY_ERROR_SAFE_TO_REBOOT,

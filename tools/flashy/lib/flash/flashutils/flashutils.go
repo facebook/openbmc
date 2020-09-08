@@ -81,7 +81,7 @@ var CheckFlashDeviceValid = func(deviceID string) error {
 // CheckAnyFlashDeviceValid returns nil if any of the two
 // flash devices (mtd:flash0, mtd:flash1) are valid.
 // This is used to check whether it is actually safe to reboot;
-// if both flash devices are corrtupt, the device will brick upon reboot.
+// if both flash devices are corrupt, the device will brick upon reboot.
 // If the device only exposes one flash, the other flash is deemed invalid.
 // For PFR devices, this step is skipped, since it is guaranteed to be safe to
 // reboot in this context.

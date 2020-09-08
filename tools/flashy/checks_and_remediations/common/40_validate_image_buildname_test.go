@@ -67,7 +67,7 @@ func TestValidateImageBuildname(t *testing.T) {
 			exampleImageFilePath := "/opt/upgrade/mock"
 			validate.CheckImageBuildNameCompatibility = func(imageFilePath string) error {
 				if exampleImageFilePath != imageFilePath {
-					t.Errorf("imageFilePath: want '%v' goot '%v'", exampleImageFilePath, imageFilePath)
+					t.Errorf("imageFilePath: want '%v' got '%v'", exampleImageFilePath, imageFilePath)
 				}
 				return tc.compatibilityErr
 			}

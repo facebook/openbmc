@@ -150,7 +150,7 @@ func TestMmapRO(t *testing.T) {
 		wantErr     error
 	}{
 		{
-			name:        "default sucessful operation",
+			name:        "default successful operation",
 			mtdFilePath: "/dev/mtd5",
 			mmapRet:     []byte("abc"),
 			mmapErr:     nil,

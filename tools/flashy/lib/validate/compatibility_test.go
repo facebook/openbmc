@@ -103,7 +103,7 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 			}
 			getOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) {
 				if exampleImageFilePath != imageFilePath {
-					t.Errorf("imageFilePath: want '%v' goot '%v'", exampleImageFilePath, imageFilePath)
+					t.Errorf("imageFilePath: want '%v' got '%v'", exampleImageFilePath, imageFilePath)
 				}
 				return tc.imageFileVer, nil
 			}

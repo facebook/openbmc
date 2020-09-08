@@ -74,7 +74,7 @@ var GetHealthdConfig = func() (*gabs.Container, error) {
 	return healthdConfig, nil
 }
 
-// HealthdRemoveMemUtilRebootEntryIfExists remove thes "reboot" entry that will trigger system reboot after
+// HealthdRemoveMemUtilRebootEntryIfExists removes the "reboot" entry that will trigger system reboot after
 // mem util reaches a threshold. This is to prevent healthd reboots during flashing.
 // If the "reboot" entry exists, remove it and write back to the file.
 func HealthdRemoveMemUtilRebootEntryIfExists(h *gabs.Container) error {

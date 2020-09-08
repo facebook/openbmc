@@ -71,7 +71,7 @@ func (p *FitPartition) Validate() error {
 		return errors.Errorf("Unable to read FIT: %v", err)
 	}
 
-	// we recognise two nodes, both of which must exist:
+	// we recognize two nodes, both of which must exist:
 	// 'images' and 'configurations'
 	// N.B. some images (e.g. tiogapass1) have three nodes, the third being 'keys';
 	// this is ignored.

@@ -171,7 +171,7 @@ func (m *mockValidationFlashDevice) Validate() error         { return m.Validati
 
 // covers CheckFlashDeviceValid as well
 func TestCheckAnyFlashDeviceValid(t *testing.T) {
-	// mock and defer restore GetFlashDevice, IsPfrSYstem
+	// mock and defer restore GetFlashDevice, IsPfrSystem
 	getFlashDeviceOrig := GetFlashDevice
 	isPfrSystemOrig := utils.IsPfrSystem
 	defer func() {
@@ -231,7 +231,7 @@ func TestCheckAnyFlashDeviceValid(t *testing.T) {
 			want: nil,
 		},
 		{
-			name:      "both flash devices failed validaiton",
+			name:      "both flash devices failed validation",
 			pfrSystem: false,
 			flash0: getFlashDeviceReturnType{
 				&mockValidationFlashDevice{errors.Errorf("flash0 failed validation")},

@@ -42,7 +42,7 @@ func FlashCp(stepParams step.StepParams) step.StepExitError {
 		return step.ExitSafeToReboot{err}
 	}
 	log.Printf("Flash device: %v", flashDevice)
-	err = flashCpAndValidate(flashDevice, stepParams.ImageFilePath)
+	err = flashCpAndValidate(flashDevice, stepParams.ImageFilePath, 0)
 	if err != nil {
 		// return safe to reboot here to retry.
 		// error handler (step.HandleStepError) will check if
@@ -61,9 +61,17 @@ func FlashCp(stepParams step.StepParams) step.StepExitError {
 	return nil
 }
 
-var flashCpAndValidate = func(flashDevice devices.FlashDevice, imageFilePath string) error {
+// flashCpAndValidate calls Flashy's internal implementation of FlashCp.
+// roOffset is the starting RO offset for FlashCp. It's used for vboot
+// flash devices with RO offsets. (In `dd` terms, roFfset is both seek=
+// and skip=).
+var flashCpAndValidate = func(
+	flashDevice devices.FlashDevice,
+	imageFilePath string,
+	roOffset uint32,
+) error {
 	log.Printf("Starting to flash")
-	err := flashcp.FlashCp(imageFilePath, flashDevice.GetFilePath(), 0)
+	err := flashcp.FlashCp(imageFilePath, flashDevice.GetFilePath(), roOffset)
 	if err != nil {
 		log.Printf("FlashCp failed: %v", err)
 		return err

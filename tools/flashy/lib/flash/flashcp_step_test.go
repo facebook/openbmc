@@ -145,12 +145,19 @@ func TestFlashCp(t *testing.T) {
 				}
 				return exampleFlashDevice, tc.getFlashDeviceErr
 			}
-			flashCpAndValidate = func(flashDevice devices.FlashDevice, imageFilePath string) error {
+			flashCpAndValidate = func(
+				flashDevice devices.FlashDevice,
+				imageFilePath string,
+				offset uint32,
+			) error {
 				if !reflect.DeepEqual(flashDevice, exampleFlashDevice) {
 					t.Errorf("flashDevice: want '%v' got '%v'", exampleFlashDevice, flashDevice)
 				}
 				if imageFilePath != "/tmp/image" {
 					t.Errorf("imageFilePath: want '%v' got '%v'", "/tmp/image", imageFilePath)
+				}
+				if offset != 0 {
+					t.Errorf("offset: want '%v' got '%v'", 0, offset)
 				}
 				return tc.flashCpAndValidateErr
 			}
@@ -202,6 +209,9 @@ func TestFlashCpAndValidate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			exampleImageFilePath := "/img/mock"
 			flashcp.FlashCp = func(imageFilePath, flashDevicePath string, offset uint32) error {
+				if offset != 42 {
+					t.Errorf("offset: want '%v' got '%v'", 42, offset)
+				}
 				if exampleImageFilePath != imageFilePath {
 					t.Errorf("imageFilePath: want '%v' got '%v'",
 						exampleImageFilePath, imageFilePath)
@@ -215,7 +225,7 @@ func TestFlashCpAndValidate(t *testing.T) {
 			flashDevice := &mockFlashDevice{
 				ValidationErr: tc.validationErr,
 			}
-			got := flashCpAndValidate(flashDevice, exampleImageFilePath)
+			got := flashCpAndValidate(flashDevice, exampleImageFilePath, 42)
 			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}

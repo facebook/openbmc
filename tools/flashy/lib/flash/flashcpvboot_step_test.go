@@ -34,20 +34,66 @@ import (
 	"github.com/pkg/errors"
 )
 
+func TestVbootRomxExists(t *testing.T) {
+	// mock and defer restore GetVbootEnforcement
+	getVbootEnforcementOrig := utils.GetVbootEnforcement
+	defer func() {
+		utils.GetVbootEnforcement = getVbootEnforcementOrig
+	}()
+
+	cases := []struct {
+		name                 string
+		flashDeviceSpecifier string
+		vbootEnforcement     utils.VbootEnforcementType
+		want                 bool
+	}{
+		{
+			name:                 "exists",
+			flashDeviceSpecifier: "flash1",
+			vbootEnforcement:     utils.VBOOT_HARDWARE_ENFORCE,
+			want:                 true,
+		},
+		{
+			name:                 "not hardware enforce",
+			flashDeviceSpecifier: "flash1",
+			vbootEnforcement:     utils.VBOOT_SOFTWARE_ENFORCE,
+			want:                 false,
+		},
+		{
+			name:                 "not flash1",
+			flashDeviceSpecifier: "flash1rw",
+			vbootEnforcement:     utils.VBOOT_HARDWARE_ENFORCE,
+			want:                 false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			utils.GetVbootEnforcement = func() utils.VbootEnforcementType {
+				return tc.vbootEnforcement
+			}
+			got := vbootRomxExists(tc.flashDeviceSpecifier)
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+		})
+	}
+}
+
 func TestFlashCpVboot(t *testing.T) {
 	// save log output into buf for testing
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
 	// mock and defer restore GetFlashDevice, flashCpAndValidate,
-	// VbootPatchImageBootloaderIfNeeded and CheckOtherFlasherRunning
+	// vbootROExists and CheckOtherFlasherRunning
 	getFlashDeviceOrig := flashutils.GetFlashDevice
-	vbootPatchOrig := flashutils.VbootPatchImageBootloaderIfNeeded
+	isVbootSkipNeededOrig := vbootRomxExists
 	flashCpAndValidateOrig := flashCpAndValidate
 	checkOtherFlasherRunningOrig := utils.CheckOtherFlasherRunning
 	defer func() {
 		log.SetOutput(os.Stderr)
 		flashutils.GetFlashDevice = getFlashDeviceOrig
-		flashutils.VbootPatchImageBootloaderIfNeeded = vbootPatchOrig
+		vbootRomxExists = isVbootSkipNeededOrig
 		flashCpAndValidate = flashCpAndValidateOrig
 		utils.CheckOtherFlasherRunning = checkOtherFlasherRunningOrig
 	}()
@@ -67,7 +113,7 @@ func TestFlashCpVboot(t *testing.T) {
 		name                  string
 		getFlashDeviceErr     error
 		flashCpAndValidateErr error
-		vbootPatchErr         error
+		vbootSkipNeeded       bool
 		otherFlasherErr       error
 		want                  step.StepExitError
 		logContainsSeq        []string
@@ -76,7 +122,7 @@ func TestFlashCpVboot(t *testing.T) {
 			name:                  "basic successful flash",
 			getFlashDeviceErr:     nil,
 			flashCpAndValidateErr: nil,
-			vbootPatchErr:         nil,
+			vbootSkipNeeded:       false,
 			otherFlasherErr:       nil,
 			want:                  nil,
 			logContainsSeq: []string{
@@ -89,7 +135,7 @@ func TestFlashCpVboot(t *testing.T) {
 			name:                  "failed to get flash device",
 			getFlashDeviceErr:     errors.Errorf("GetFlashDevice error"),
 			flashCpAndValidateErr: nil,
-			vbootPatchErr:         nil,
+			vbootSkipNeeded:       false,
 			otherFlasherErr:       nil,
 			want: step.ExitSafeToReboot{
 				errors.Errorf("GetFlashDevice error"),
@@ -101,25 +147,10 @@ func TestFlashCpVboot(t *testing.T) {
 			},
 		},
 		{
-			name:                  "vboot patch error",
-			getFlashDeviceErr:     nil,
-			flashCpAndValidateErr: nil,
-			vbootPatchErr:         errors.Errorf("failed to patch"),
-			otherFlasherErr:       nil,
-			want: step.ExitSafeToReboot{
-				errors.Errorf("failed to patch"),
-			},
-			logContainsSeq: []string{
-				"Flashing using flashcp vboot method",
-				"Attempting to flash 'mtd:flash0' with image file '/tmp/image",
-				"failed to patch",
-			},
-		},
-		{
 			name:                  "flashcp and validate failed",
 			getFlashDeviceErr:     nil,
 			flashCpAndValidateErr: errors.Errorf("RunCommand error"),
-			vbootPatchErr:         nil,
+			vbootSkipNeeded:       false,
 			otherFlasherErr:       nil,
 			want: step.ExitSafeToReboot{
 				errors.Errorf("RunCommand error"),
@@ -134,13 +165,24 @@ func TestFlashCpVboot(t *testing.T) {
 			name:                  "other flasher running",
 			getFlashDeviceErr:     nil,
 			flashCpAndValidateErr: nil,
-			vbootPatchErr:         nil,
+			vbootSkipNeeded:       false,
 			otherFlasherErr:       errors.Errorf("Found other flasher!"),
 			want: step.ExitUnsafeToReboot{
 				errors.Errorf("Found other flasher!"),
 			},
 			logContainsSeq: []string{
 				"Flashing succeeded but found another flasher running",
+			},
+		},
+		{
+			name:                  "vboot rom exists",
+			getFlashDeviceErr:     nil,
+			flashCpAndValidateErr: nil,
+			vbootSkipNeeded:       true,
+			otherFlasherErr:       nil,
+			want:                  nil,
+			logContainsSeq: []string{
+				"ROM part exists in flash device. Skipping 86016B ROM region.",
 			},
 		},
 	}
@@ -154,16 +196,27 @@ func TestFlashCpVboot(t *testing.T) {
 				}
 				return exampleFlashDevice, tc.getFlashDeviceErr
 			}
-			flashutils.VbootPatchImageBootloaderIfNeeded = func(imageFilePath string, flashDevice devices.FlashDevice) error {
-				if !reflect.DeepEqual(flashDevice, exampleFlashDevice) {
-					t.Errorf("flashDevice: want '%v' got '%v'", exampleFlashDevice, flashDevice)
+			vbootRomxExists = func(flashDeviceSpecifier string) bool {
+				if flashDeviceSpecifier != "flash0" {
+					t.Errorf("flashDeviceSpecifier: want '%v' got '%v'",
+						exampleFlashDevice.GetSpecifier(), flashDeviceSpecifier)
 				}
-				if imageFilePath != "/tmp/image" {
-					t.Errorf("imageFilePath: want '%v' got '%v'", "/tmp/image", imageFilePath)
-				}
-				return tc.vbootPatchErr
+				return tc.vbootSkipNeeded
 			}
-			flashCpAndValidate = func(flashDevice devices.FlashDevice, imageFilePath string) error {
+			flashCpAndValidate = func(
+				flashDevice devices.FlashDevice,
+				imageFilePath string,
+				roOffset uint32,
+			) error {
+				if tc.vbootSkipNeeded {
+					if roOffset != vbootRomxSize {
+						t.Errorf("roOffset: want '%v' got '%v'", vbootRomxSize, roOffset)
+					}
+				} else {
+					if roOffset != 0 {
+						t.Errorf("roOffset: want '%v' got '%v'", 0, roOffset)
+					}
+				}
 				if !reflect.DeepEqual(flashDevice, exampleFlashDevice) {
 					t.Errorf("flashDevice: want '%v' got '%v'", exampleFlashDevice, flashDevice)
 				}

@@ -223,25 +223,7 @@ var MmapFileRange = func(filename string, offset int64, length, prot, flags int)
 	return Mmap(int(f.Fd()), offset, length, prot, flags)
 }
 
-// WriteFileWithoutTruncate writes to the first part of file without truncating it
-// (ioutil.WriteFile truncates it). This function also does not create a new file.
-var WriteFileWithoutTruncate = func(filename string, buf []byte) error {
-	f, err := os.OpenFile(filename, os.O_WRONLY, 0644)
-	if err != nil {
-		return errors.Errorf("Unable to open file '%v': %v", filename, err)
-	}
-	defer f.Close()
-
-	// number of bytes wrote is guaranteed by non-nil err
-	// Write defaults to beginning of file
-	_, err = f.Write(buf)
-	if err != nil {
-		return errors.Errorf("Unable to write to file '%v': %v", filename, err)
-	}
-	return nil
-}
-
-// GlobAll gets all glob results from a list of glob patterns.
+// GlobAll gets all glob results froms a list of glob patterns.
 // Return error if pattern is invalid as determined by filepath.Glob.
 var GlobAll = func(patterns []string) ([]string, error) {
 	results := []string{}

@@ -155,3 +155,13 @@ int pal_set_server_power(uint8_t fru, uint8_t cmd)
 
   return 0;
 }
+
+bool pal_is_server_off()
+{
+  uint8_t status;
+
+  if (pal_get_server_power(FRU_MB, &status) < 0)
+    return false;
+
+  return status == SERVER_POWER_OFF? true: false;
+}

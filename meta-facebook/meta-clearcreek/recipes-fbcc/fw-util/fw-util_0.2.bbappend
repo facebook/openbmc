@@ -1,6 +1,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://cpld.cpp \
+            file://switch.cpp \
            "
 
 DEPENDS += "libfpga libast-jtag libkv libobmc-i2c"

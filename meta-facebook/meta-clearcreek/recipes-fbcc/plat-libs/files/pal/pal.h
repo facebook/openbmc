@@ -23,6 +23,8 @@
 
 #include <openbmc/obmc-pal.h>
 #include <openbmc/kv.h>
+#include "pal_sensors.h"
+#include "pal_switch.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,5 +56,6 @@ enum {
 #endif
 
 int pal_get_rst_btn(uint8_t *status);
+bool pal_is_server_off(void);
 
 #endif /* __PAL_H__ */

@@ -3,12 +3,11 @@
 #
 
 # Machine Selection
-MACHINE ??= "fby3"
-# VBoot w/ TPM1.2
-# MACHINE ??= "fby3-vboot1"
 # VBoot w/ TPM2.0
-# MACHINE ??= "fby3vboot2"
+MACHINE ??= "fby3"
 
+# PFR
+# MACHINE ??= "fby3s"
 
 # OpenBMC distro settings
 DISTRO ?= "openbmc-fb"

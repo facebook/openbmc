@@ -23,6 +23,8 @@ import (
 	"flag"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/facebook/openbmc/tools/flashy/install"
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
@@ -47,6 +49,21 @@ func failIfFlagEmpty(flagName, value string) {
 	if len(value) == 0 {
 		log.Fatalf("`%v` argument must be specified. Use `--help` for a guide",
 			flagName)
+	}
+}
+
+// ignoreSignals prevents things like dropped SSH connections or ^C from
+// interrupting flashy. This is important so we don't have dropped connections
+// leaving the device in a bricked state.
+func ignoreSignals() {
+	var signalsToIgnore = []os.Signal{
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	}
+
+	for _, sig := range signalsToIgnore {
+		signal.Ignore(sig)
 	}
 }
 
@@ -104,6 +121,9 @@ WARRANTIES OFF`)
 
 	// code below this point is for a symlink-ed step
 	// (e.g. flash_procedure/flash_wedge100)
+
+	// ignore signals for steps
+	ignoreSignals()
 
 	// at this point, imageFilePath and deviceID
 	// are required to be non empty

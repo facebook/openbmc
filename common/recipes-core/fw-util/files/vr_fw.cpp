@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include <syslog.h>
 #include <openbmc/vr.h>
 #include "vr_fw.h"
 
@@ -67,15 +68,19 @@ int VrComponent::print_version() {
 
 int VrComponent::update(string image, bool force) {
   int ret;
+  string comp = this->component();
 
   if (vr_probe() < 0) {
     cout << "VR probe failed!" << endl;
     return -1;
   }
 
+  syslog(LOG_CRIT, "Component %s upgrade initiated", comp.c_str());
   ret = vr_fw_update(dev_name.c_str(), (char *)image.c_str(), force);
   if (ret < 0) {
     cout << "ERROR: VR Firmware update failed!" << endl;
+  } else {
+    syslog(LOG_CRIT, "Component %s %s completed", comp.c_str(), force? "force upgrade": "upgrade");
   }
 
   vr_remove();

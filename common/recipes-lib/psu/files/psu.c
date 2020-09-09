@@ -452,7 +452,7 @@ update_delta_psu(uint8_t num, const char *file_path,
       return -1;
     }
 #endif
-    if (delta_fw_transmit(num, file_path)) {
+    if (delta_fw_transmit(num, file_path) < 0) {
       return -1;
     }
 

@@ -18,15 +18,23 @@
 # Boston, MA 02110-1301 USA
 #
 
+import signal
 import typing as t
+from types import FrameType
 
 from . import common_acl_provider_base
 
 
 class DummyAclProvider(common_acl_provider_base.AclProviderBase):
+    def __init__(self):
+        signal.signal(signal.SIGHUP, self.signal_handler)
+
     async def _get_permissions_for_identity(self, identity: str) -> t.List[str]:
         return []
 
     async def is_user_authorized(self, identity: str, permissions: t.List[str]) -> bool:
         self._get_permissions_for_identity(identity)
         return True
+
+    def signal_handler(self, sig: int, frame: FrameType):
+        pass

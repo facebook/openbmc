@@ -40,7 +40,7 @@ const gpioUtilPath = "/usr/local/bin/openbmc_gpio_util.py"
 // all wedge100s are upgraded.
 func fixROMCS1(stepParams step.StepParams) step.StepExitError {
 	_, err, _, _ := utils.RunCommand([]string{gpioUtilPath, "config", "ROMCS1#"},
-		30*time.Second)
+		60*time.Second)
 	if err != nil {
 		errMsg := errors.Errorf("Failed to run ROMCS1# fix: %v", err)
 		return step.ExitSafeToReboot{errMsg}

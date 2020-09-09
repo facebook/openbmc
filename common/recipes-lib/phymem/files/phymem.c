@@ -94,7 +94,7 @@ int phymem_read(off_t addr, size_t offset, memLength length, void *value)
 		*(uint32_t *)value = *(volatile uint32_t*)vir_addr;
 		break;
 	}
-	ret = phymem_close(vir_addr, mapped_size);
+	ret = phymem_close(map_base, mapped_size);
 	return ret;
 }
 
@@ -125,7 +125,7 @@ int phymem_write(off_t addr, size_t offset, memLength length, uint32_t value)
 		*(volatile uint32_t*)vir_addr = (uint32_t)value;
 		break;
 	}
-	ret = phymem_close(vir_addr, mapped_size);
+	ret = phymem_close(map_base, mapped_size);
 	return ret;
 }
 

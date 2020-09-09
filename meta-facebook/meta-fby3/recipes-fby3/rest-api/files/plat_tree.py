@@ -100,7 +100,7 @@ def setup_board_routes(app: Application, write_enabled: bool):
         populate_server_node(r_api, i)
 
     # Add /api/spb/fruid end point
-    r_temp = tree("fruid", data=get_node_fruid("spb"))
+    r_temp = tree("fruid", data=get_node_fruid("bmc"))
     r_spb.addChild(r_temp)
     # /api/spb/bmc end point
     r_temp = tree("bmc", data=get_node_bmc())

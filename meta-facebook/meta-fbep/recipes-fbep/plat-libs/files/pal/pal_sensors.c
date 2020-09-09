@@ -1568,20 +1568,20 @@ static void init_sensor_threshold_by_mfr(uint8_t vendor)
   int sensor;
 
   if (vendor == GPU_AMD) {
-    for (sensor = MB_GPU0_TEMP; sensor < MB_GPU7_TEMP; sensor++) {
+    for (sensor = MB_GPU0_TEMP; sensor <= MB_GPU7_TEMP; sensor++) {
       sensors_threshold[sensor][LCR_THRESH] = 10.0;
       sensors_threshold[sensor][UCR_THRESH] = 100.0;
     }
-    for (sensor = MB_GPU0_HBM_TEMP; sensor < MB_GPU7_HBM_TEMP; sensor++) {
+    for (sensor = MB_GPU0_HBM_TEMP; sensor <= MB_GPU7_HBM_TEMP; sensor++) {
       sensors_threshold[sensor][LCR_THRESH] = 10.0;
       sensors_threshold[sensor][UCR_THRESH] = 94.0;
     }
   } else if (vendor == GPU_NV) {
-    for (sensor = MB_GPU0_TEMP; sensor < MB_GPU7_TEMP; sensor++) {
+    for (sensor = MB_GPU0_TEMP; sensor <= MB_GPU7_TEMP; sensor++) {
       sensors_threshold[sensor][LCR_THRESH] = 10.0;
       sensors_threshold[sensor][UCR_THRESH] = 85.0;
     }
-    for (sensor = MB_GPU0_HBM_TEMP; sensor < MB_GPU7_HBM_TEMP; sensor++) {
+    for (sensor = MB_GPU0_HBM_TEMP; sensor <= MB_GPU7_HBM_TEMP; sensor++) {
       sensors_threshold[sensor][LCR_THRESH] = 10.0;
       sensors_threshold[sensor][UCR_THRESH] = 95.0;
     }

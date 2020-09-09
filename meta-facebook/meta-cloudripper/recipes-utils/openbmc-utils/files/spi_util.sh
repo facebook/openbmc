@@ -105,20 +105,20 @@ config_spi1_pin_and_path(){
             echo "[Setup] BIOS"
             echo 0x01 > "$SMBCPLD_SYSFS_DIR/spi_1_sel"
         ;;
-        "GB_PCIE")
-            echo "[Setup] GB_PCIE"
+        "GB_PCIE_FLASH")
+            echo "[Setup] GB_PCIE_FLASH"
             echo 0x03 > "$SMBCPLD_SYSFS_DIR/spi_1_sel"
         ;;
-        "FPGA1")
-            echo "[Setup] FPGA1"
+        "DOM_FPGA_FLASH1")
+            echo "[Setup] DOM_FPGA_FLASH1"
             echo 0x04 > "$SMBCPLD_SYSFS_DIR/spi_1_sel"
         ;;
-        "FPGA2")
-            echo "[Setup] FPGA2"
+        "DOM_FPGA_FLASH2")
+            echo "[Setup] DOM_FPGA_FLASH2"
             echo 0x05 > "$SMBCPLD_SYSFS_DIR/spi_1_sel"
         ;;
         *)
-            echo "Please enter {BIOS, GB_PCIE, FPGA1, FPGA2}"
+            echo "Please enter {BIOS, GB_PCIE_FLASH, DOM_FPGA_FLASH1, DOM_FPGA_FLASH2}"
             exit 1
         ;;
     esac
@@ -180,7 +180,7 @@ usage(){
     echo "Usage:"
     echo "  $program <op> <spi1> <spi device> <file>"
     echo "    <op>          : read, write, erase"
-    echo "    <spi1 device> : BIOS, GB_PCIE, FPGA1, FPGA2"
+    echo "    <spi1 device> : BIOS, GB_PCIE_FLASH, DOM_FPGA_FLASH1, DOM_FPGA_FLASH2"
     echo ""
     echo "Examples:"
     echo "  $program write spi1 BIOS bios.bin"
@@ -207,7 +207,7 @@ check_parameter(){
             dev=$3
             file=$4
             case ${dev} in
-                "BIOS"|"GB_PCIE"|"FPGA1"|"FPGA2")
+                "BIOS"|"GB_PCIE_FLASH"|"DOM_FPGA_FLASH1"|"DOM_FPGA_FLASH2")
                     case ${op} in
                         "read" | "write")
                             if [ $# -ne 4 ]; then

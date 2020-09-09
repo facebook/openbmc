@@ -1530,6 +1530,66 @@
             "tags": [
                 "openbmc_git"
             ]
+        },
+        {
+            "alias": "openbmc-utils-flashy-build",
+            "args": {
+                "job_descriptor": {
+                    "target": "flashy"
+                },
+                "name": "openbmc-utils-flashy-build",
+                "oncall": "openbmc",
+                "steps": []
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleOpenBMCBuilderCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^tools/flashy/*"
+                    ]
+                }
+            ],
+            "scheduleType": "landcastle",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-utils-flashy-unit-test",
+            "args": {
+                "job_descriptor": {
+                    "target": "flashy-unit-test"
+                },
+                "name": "openbmc-utils-flashy-unit-test",
+                "oncall": "openbmc",
+                "steps": []
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleOpenBMCBuilderCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^tools/flashy/*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
         }
     ]
 }

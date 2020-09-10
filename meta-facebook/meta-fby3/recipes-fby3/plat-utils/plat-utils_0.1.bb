@@ -30,6 +30,7 @@ SRC_URI = "file://ast-functions \
            file://sol-util \
            file://setup-pfr.sh \
            file://setup-sic.sh \
+           file://check_eth0_ipv4.sh \
           "
 
 pkgdir = "utils"
@@ -73,6 +74,10 @@ do_install() {
   # install power-on.sh
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
   update-rc.d -r ${D} power-on.sh start 70 5 .
+
+  # install check_eth0_ipv4.sh
+  install -m 755 check_eth0_ipv4.sh ${D}${sysconfdir}/init.d/check_eth0_ipv4.sh
+  update-rc.d -r ${D} check_eth0_ipv4.sh start 71 5 .
 
   # install setup-sic.sh
   install -m 755 setup-sic.sh ${D}${sysconfdir}/init.d/setup-sic.sh

@@ -42,12 +42,14 @@ var absTestCovScriptPath = path.Join(
 func TestCoverage(t *testing.T) {
 	_, err, stdout, _ := utils.RunCommand([]string{absTestCovScriptPath}, 30*time.Second)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("Couldn't calculate test coverage due to: %v. Check other failing tests.", err)
+		return
 	}
 	pctStr := strings.TrimSpace(stdout)
 	pct, err := strconv.ParseFloat(pctStr, 64)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("Couldn't parse test coverage script output: %v", err)
+		return
 	}
 	if pct < minimumCoverage {
 		t.Errorf("Current test coverage (%v%%) lower than required test coverage (%v%%)",

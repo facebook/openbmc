@@ -22,6 +22,16 @@ set -euo pipefail
 # Ensure we're in the project root
 cd "$(dirname "$0")" && cd ..
 
+echo "Running build test" >&2
+if output=$(./build.sh); then
+    echo "Build succeeded!"
+else
+    echo "Build failed!"
+    echo "$output" >&2
+    exit 1
+fi
+
+echo "Running unit tests" >&2
 echo "Getting all packages..." >&2
 all_packages=$(go list ./...)
 
@@ -59,7 +69,8 @@ do
     ((++idx))
 done
 
-echo "$passed/$num_tests tests passed"
+echo "$passed/$num_tests unit tests passed"
+
 
 [[ $failed -ne 0 ]] && exit 1
 exit 0

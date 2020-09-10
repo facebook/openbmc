@@ -20,6 +20,8 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://fuji.conf \
+            file://PIM16Q.conf \
+            file://PIM16O.conf \
            "
 
 DEPENDS_append = " update-rc.d-native"
@@ -29,5 +31,7 @@ do_install_append() {
     install -d ${D}${sysconfdir}/sensors.d
     install -d ${D}${sysconfdir}/sensors.d/custom
     install -m 644 ${WORKDIR}/fuji.conf ${D}${sysconfdir}/sensors.d/custom/fuji.conf
+    install -m 644 ${WORKDIR}/PIM16Q.conf ${D}${sysconfdir}/sensors.d/custom/PIM16Q.conf
+    install -m 644 ${WORKDIR}/PIM16O.conf ${D}${sysconfdir}/sensors.d/custom/PIM16O.conf
 
 }

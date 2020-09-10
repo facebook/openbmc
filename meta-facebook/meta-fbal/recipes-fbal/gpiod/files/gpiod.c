@@ -61,7 +61,8 @@ static long int g_reset_sec = 0;
 static long int g_power_on_sec = 0;
 static pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t caterr_mutex = PTHREAD_MUTEX_INITIALIZER;
-static gpio_value_t server_power_status;
+static gpio_value_t g_server_power_status;
+static bool g_cpu_pwrgd_trig = false;
 
 
 // For monitoring GPIOs on IO expender
@@ -110,14 +111,87 @@ void ioex_gpios_event_handle(char* shadow, char* desc, gpio_value_t value) {
   return;
 }
 
+static
+void cpu0_pvqq_abc_handler(char* shadow, char* desc, gpio_value_t value) {
+  syslog(LOG_CRIT, "CPU0 PVDDQ ABC VR HOST Warning %s\n", 
+         value ? "Deassertion": "Assertion");
+}
+
+static
+void cpu0_pvqq_def_handler(char* shadow, char* desc, gpio_value_t value) {
+  syslog(LOG_CRIT, "CPU0 PVDDQ DEF VR HOST Warning %s\n", 
+         value ? "Deassertion": "Assertion");
+}
+
+static
+void cpu1_pvqq_abc_handler(char* shadow, char* desc, gpio_value_t value) {
+  syslog(LOG_CRIT, "CPU1 PVDDQ ABC VR HOST Warning %s\n", 
+         value ? "Deassertion": "Assertion");
+}
+
+static
+void cpu1_pvqq_def_handler(char* shadow, char* desc, gpio_value_t value) {
+  syslog(LOG_CRIT, "CPU1 PVDDQ DEF VR HOST Warning %s\n", 
+         value ? "Deassertion": "Assertion");
+}
+
+static
+void cpu0_pvccin_vr_hot_handler(char* shadow, char* desc, gpio_value_t value) {
+  syslog(LOG_CRIT, "CPU0 PVCCIN VR HOT Warning %s\n", 
+         value ? "Deassertion": "Assertion");
+}
+
+static
+void cpu1_pvccin_vr_hot_handler(char* shadow, char* desc, gpio_value_t value) {
+  syslog(LOG_CRIT, "CPU1 PVCCIN VR HOT Warning %s\n", 
+         value ? "Deassertion": "Assertion");
+}
+
+static
+void cpu0_pvccin_pwr_in_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  syslog(LOG_CRIT, "CPU0 PVCCIN POWER FAULT %s\n", 
+         curr ? "Deassertion": "Assertion");
+}
+
+static
+void cpu1_pvccin_pwr_in_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  syslog(LOG_CRIT, "CPU1 PVCCIN POWER FAULT %s\n", 
+         curr ? "Deassertion": "Assertion");
+}
+
+
+static 
+void sml1_pmbus_alert_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  syslog(LOG_CRIT, "HSC OC Warning %s\n", 
+         curr ? "Deassertion": "Assertion");
+}
+
+static 
+void oc_detect_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  syslog(LOG_CRIT, "HSC Surge Current Warning %s\n", 
+         curr ? "Deassertion": "Assertion");
+}
+
+static 
+void uv_detect_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  syslog(LOG_CRIT, "HSC Under Voltage Warning %s\n", 
+         curr ? "Deassertion": "Assertion");
+}
+
+static 
+void hsc_timer_exp_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  syslog(LOG_CRIT, "HSC OCP Fault Warning %s\n", 
+         curr ? "Deassertion": "Assertion");
+}
+
 //PCA9539 Address 0XEE
 struct gpioexppoll_config ioex0_gpios[] = {
-  {"IRQ_PVCCIN_CPU0_VRHOT_LVC3_N", "ExIO_0", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, ioex_gpios_event_handle},
-  {"IRQ_PVCCIN_CPU1_VRHOT_LVC3_N", "ExIO_1", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, ioex_gpios_event_handle},
-  {"IRQ_PVDDQ_ABC_CPU0_VRHOT_LVC3_N", "ExIO_2", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, ioex_gpios_event_handle},
-  {"IRQ_PVDDQ_DEF_CPU0_VRHOT_LVC3_N", "ExIO_3", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, ioex_gpios_event_handle},
-  {"IRQ_PVDDQ_ABC_CPU1_VRHOT_LVC3_N", "ExIO_4", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, ioex_gpios_event_handle},
-  {"IRQ_PVDDQ_DEF_CPU1_VRHOT_LVC3_N", "ExIO_5", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, ioex_gpios_event_handle},
+  {"IRQ_PVCCIN_CPU0_VRHOT_LVC3_N", "ExIO_0", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, cpu0_pvccin_vr_hot_handler},
+  {"IRQ_PVCCIN_CPU1_VRHOT_LVC3_N", "ExIO_1", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, cpu1_pvccin_vr_hot_handler},
+  {"IRQ_PVDDQ_ABC_CPU0_VRHOT_LVC3_N", "ExIO_2", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, cpu0_pvqq_abc_handler},
+  {"IRQ_PVDDQ_DEF_CPU0_VRHOT_LVC3_N", "ExIO_3", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, cpu0_pvqq_def_handler},
+  {"IRQ_PVDDQ_ABC_CPU1_VRHOT_LVC3_N", "ExIO_4", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, cpu1_pvqq_abc_handler},
+  {"IRQ_PVDDQ_DEF_CPU1_VRHOT_LVC3_N", "ExIO_5", PS_ON, GPIO_EDGE_BOTH, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_vr_hot_init, cpu1_pvqq_def_handler},
   {"FM_CPU0_SKTOCC_LVT3_PLD_N", "ExIO_6", STBY, GPIO_EDGE_RISING, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_skt_init, ioex_gpios_event_handle},
   {"FM_CPU1_SKTOCC_LVT3_PLD_N", "ExIO_7", STBY, GPIO_EDGE_RISING, GPIO_VALUE_INVALID, GPIO_VALUE_INVALID, cpu_skt_init, ioex_gpios_event_handle},
 };
@@ -312,13 +386,6 @@ static void fivr_fault_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_val
   log_gpio_change(desc, curr, 0);
 }
 
-
-static void irq_uv_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
-{
-  log_gpio_change(desc, curr, 20*1000);
-}
-
-
 //PROCHOT Handler
 static void prochot_reason(char *reason)
 {
@@ -374,7 +441,7 @@ static void cpu_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
 {
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
 
-  if (server_power_status != GPIO_VALUE_HIGH) 
+  if (g_server_power_status != GPIO_VALUE_HIGH) 
     return;
 
   thermtrip_add_cri_sel(cfg->shadow, curr);
@@ -383,7 +450,7 @@ static void cpu_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
 
 static void cpu_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
-  if (server_power_status != GPIO_VALUE_HIGH) 
+  if (g_server_power_status != GPIO_VALUE_HIGH) 
     return;
 
   log_gpio_change(desc, curr, 0);
@@ -391,7 +458,7 @@ static void cpu_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_valu
 
 static void mem_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
-  if (server_power_status != GPIO_VALUE_HIGH) 
+  if (g_server_power_status != GPIO_VALUE_HIGH) 
     return;
   log_gpio_change(desc, curr, 0);
 }
@@ -455,7 +522,8 @@ pwr_sysok_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 //CPU Power Ok Event Handler
 static void
 cpu_pwr_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  server_power_status = curr;
+  g_server_power_status = curr;
+  g_cpu_pwrgd_trig = true;
 }
 
 //IERR and MCERR Event Handler
@@ -479,7 +547,8 @@ init_msmi(gpiopoll_pin_t *desc, gpio_value_t value) {
 
 static void
 init_cpu_pwrok(gpiopoll_pin_t *desc, gpio_value_t value) {
-  server_power_status = (value ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
+  g_server_power_status = (value ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
+  g_cpu_pwrgd_trig = true;
 }
 
 static void
@@ -710,6 +779,22 @@ static void
   return NULL;
 }
 
+// Thread for gpio timer
+static void
+*power_fail_monitor() {
+
+  while (1) {
+    if (g_cpu_pwrgd_trig == true ) {
+      sleep(1);
+      pal_check_cpld_power_fail();
+      g_cpu_pwrgd_trig = false; 
+    }
+    sleep(2);
+  }
+  return NULL;
+}
+
+
 // GPIO table to be monitored
 static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
@@ -721,10 +806,10 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_POST_CARD_PRES_BMC_N", "GPIOQ6", GPIO_EDGE_BOTH, usb_dbg_card_handler, NULL},
   {"FM_PCH_BMC_THERMTRIP_N", "GPIOG2", GPIO_EDGE_BOTH, pch_thermtrip_handler, NULL},
   {"RST_PLTRST_BMC_N", "GPIOF6", GPIO_EDGE_BOTH, platform_reset_handle, NULL},
-  {"IRQ_UV_DETECT_N", "GPIOM0", GPIO_EDGE_BOTH, irq_uv_handler, NULL},
-  {"IRQ_OC_DETECT_N", "GPIOM1", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
+  {"IRQ_UV_DETECT_N", "GPIOM0", GPIO_EDGE_BOTH, uv_detect_handler, NULL},
+  {"IRQ_OC_DETECT_N", "GPIOM1", GPIO_EDGE_BOTH, oc_detect_handler, NULL},
   {"IRQ_HSC_FAULT_N", "GPIOL2", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
-  {"IRQ_SML1_PMBUS_BMC_ALERT_N", "GPIOAA1", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
+  {"IRQ_SML1_PMBUS_BMC_ALERT_N", "GPIOAA1", GPIO_EDGE_BOTH, sml1_pmbus_alert_handler, NULL},
   {"FM_CPU_CATERR_LVT3_N", "GPIOZ0", GPIO_EDGE_FALLING, err_caterr_handler, init_caterr},
   {"FM_CPU_MSMI_LVT3_N", "GPIOZ2", GPIO_EDGE_FALLING, err_msmi_handler, init_msmi},
   {"FM_CPU0_THERMTRIP_LVT3_PLD_N", "GPIOA1", GPIO_EDGE_FALLING, cpu_thermtrip_handler, NULL},
@@ -740,9 +825,11 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_MEM_THERM_EVENT_CPU1_LVT3_N", "GPIOB1", GPIO_EDGE_FALLING, mem_thermtrip_handler, NULL},
   {"FM_SYS_THROTTLE_LVC3", "GPIOR7", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
   {"IRQ_DIMM_SAVE_LVT3_N", "GPION4", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
-  {"FM_HSC_TIMER_EXP_N", "GPIOM2", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
+  {"FM_HSC_TIMER_EXP_N", "GPIOM2", GPIO_EDGE_BOTH, hsc_timer_exp_handler, NULL},
   {"FM_CPU0_PROCHOT_LVT3_BMC_N", "GPIOB5", GPIO_EDGE_BOTH, cpu_prochot_handler, NULL},
   {"FM_CPU1_PROCHOT_LVT3_BMC_N", "GPIOB6", GPIO_EDGE_BOTH, cpu_prochot_handler, NULL},
+  {"FM_PVCCIN_CPU0_PWR_IN_ALERT_N", "GPIOAA2", GPIO_EDGE_FALLING, cpu0_pvccin_pwr_in_handler, NULL},
+  {"FM_PVCCIN_CPU1_PWR_IN_ALERT_N", "GPIOAA3", GPIO_EDGE_FALLING, cpu1_pvccin_pwr_in_handler, NULL},
   {"PWRGD_CPU0_LVC3", "GPIOZ1", GPIO_EDGE_BOTH, cpu_pwr_handler, init_cpu_pwrok},
 };
 
@@ -753,6 +840,7 @@ int main(int argc, char **argv)
   pthread_t tid_ierr_mcerr_event;
   pthread_t tid_gpio_timer;
   pthread_t tid_ioex0_monitor;
+  pthread_t tid_power_fail_monitor;
 
   pid_file = open("/var/run/gpiod.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
@@ -778,7 +866,12 @@ int main(int argc, char **argv)
     }
 
     if (pthread_create(&tid_ioex0_monitor, NULL, ioex0_monitor, NULL) < 0) {
-      syslog(LOG_CRIT, "pthread_create for fan monitor error");
+      syslog(LOG_CRIT, "pthread_create for io expender monitor error");
+      exit(1);
+    }
+
+    if (pthread_create(&tid_power_fail_monitor, NULL, power_fail_monitor, NULL) < 0) {
+      syslog(LOG_CRIT, "pthread_create for power fail monitor error");
       exit(1);
     }
 

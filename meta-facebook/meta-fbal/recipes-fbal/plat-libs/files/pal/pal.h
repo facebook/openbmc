@@ -140,6 +140,39 @@ enum {
   I2C_BUS_23,
 };
 
+//Other BMC Device INfo
+#define BMC_IPMB_BUS_ID            (I2C_BUS_2)
+#define BMC0_SLAVE_DEF_ADDR        (0x20)
+#define BMC1_SLAVE_DEF_ADDR        (0x22)
+#define BMC2_SLAVE_DEF_ADDR        (0x24)
+#define BMC3_SLAVE_DEF_ADDR        (0x26)
+
+//Main CPLD Device Info
+#define MAIN_CPLD_BUS_ID           (I2C_BUS_4)
+#define MAIN_CPLD_PWR_STATE_ADDR   (0x32)
+#define MAIN_CPLD_PWR_STATE_CMD    (0x0003)
+
+#define CPLD_PWR_CPU_FAULT            (1)
+#define CPLD_PWR_CPU_OFF              (2)
+#define CPLD_PWR_CPU_PVCCIO           (3)
+#define CPLD_PWR_P1V8_PCIE_P1V1       (4)
+#define CPLD_PWR_PVCCIN               (6)
+#define CPLD_PWR_PVCCSA               (7)
+#define CPLD_PWR_CPU_DOWN             (8)
+#define CPLD_PWR_PVCCSA_OFF           (9)
+#define CPLD_PWR_PVCCIN_OFF          (10)
+#define CPLD_PWR_P1V8_PCIE_P1V1_OFF  (12)
+#define CPLD_PWR_PVCCIO_OFF          (13)
+
+//NM Device Info
+#define NM_IPMB_BUS_ID             (I2C_BUS_5)
+#define NM_SLAVE_ADDR              (0x2C)
+
+//FBEP Device Info 
+#define ASIC_IPMB_BUS_ID           (I2C_BUS_6)
+#define ASIC_BMC_SLAVE_ADDR        (0x2C)
+
+
 #define NM_IPMB_BUS_ID          (I2C_BUS_5)
 #define NM_SLAVE_ADDR           (0x2C)
 #define BMC0_SLAVE_DEF_ADDR     (0x20)

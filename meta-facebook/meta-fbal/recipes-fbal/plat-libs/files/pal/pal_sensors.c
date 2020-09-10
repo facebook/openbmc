@@ -591,6 +591,10 @@ const uint8_t pdb_sensor_list[] = {
   PDB_SNR_FAN1_CURRENT,
   PDB_SNR_FAN2_CURRENT,
   PDB_SNR_FAN3_CURRENT,
+  PDB_SNR_FAN0_POWER,
+  PDB_SNR_FAN1_POWER,
+  PDB_SNR_FAN2_POWER,
+  PDB_SNR_FAN3_POWER, 
   PDB_SNR_HSC_VIN,
   PDB_SNR_HSC_VOUT,
   PDB_SNR_HSC_TEMP,
@@ -687,6 +691,10 @@ PAL_CM_SENSOR_HEAD cm_snr_head_list[] = {
  {CM_FAN1_CURR, CM_SNR_FAN1_CURR},
  {CM_FAN2_CURR, CM_SNR_FAN2_CURR},
  {CM_FAN3_CURR, CM_SNR_FAN3_CURR},
+ {CM_FAN0_POWER, CM_SNR_FAN0_POWER},
+ {CM_FAN1_POWER, CM_SNR_FAN1_POWER},
+ {CM_FAN2_POWER, CM_SNR_FAN2_POWER},
+ {CM_FAN3_POWER, CM_SNR_FAN3_POWER},
 };
 
 char *vr_ti_chips[] = {
@@ -957,10 +965,11 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"MB_VR_PCH_PVNN_TEMP", VR_ID11, read_vr_temp, true, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xC9
   {"MB_VR_PCH_PVNN_IOUT", VR_ID11, read_vr_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xCA
   {"MB_VR_PCH_PVNN_POUT", VR_ID11, read_vr_pout, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
+  
+  {"PDB_FAN0_POWER", CM_FAN0_POWER, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCC
+  {"PDB_FAN1_POWER", CM_FAN1_POWER, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCD
+  {"PDB_FAN2_POWER", CM_FAN2_POWER, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCE
+  {"PDB_FAN3_POWER", CM_FAN3_POWER, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCF
 
   {"MB_P5V",       ADC0, read_adc_val, false, {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0xD0
   {"MB_P5V_STBY",  ADC1, read_adc_val, true,  {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0xD1
@@ -1332,10 +1341,19 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
 int
 pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
+  uint8_t master;
+  master = pal_get_config_is_master();
+
+
   switch(fru) {
   case FRU_MB:
-    *sensor_list = (uint8_t *) mb_discrete_sensor_list;
-    *cnt = mb_discrete_sensor_cnt;
+    if (master == true) {
+      *sensor_list = (uint8_t *) mb_discrete_sensor_list;
+      *cnt = mb_discrete_sensor_cnt;
+    } else {
+      *sensor_list = NULL;
+      *cnt = 0;
+    }
     break;
   default:
     if (fru > MAX_NUM_FRUS)

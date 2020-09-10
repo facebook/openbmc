@@ -270,6 +270,11 @@ enum {
   MB_SNR_VR_PCH_PVNN_TEMP = 0xC9,
   MB_SNR_VR_PCH_PVNN_CURR = 0xCA,
   MB_SNR_VR_PCH_PVNN_POWER = 0xCB,
+//FAN POWER
+  PDB_SNR_FAN0_POWER = 0xCC,
+  PDB_SNR_FAN1_POWER = 0xCD,
+  PDB_SNR_FAN2_POWER = 0xCE,
+  PDB_SNR_FAN3_POWER = 0xCF,
 //ADC
   MB_SNR_P5V = 0xD0,
   MB_SNR_P5V_STBY = 0xD1,
@@ -496,6 +501,10 @@ enum {
   CM_FAN1_CURR,
   CM_FAN2_CURR,
   CM_FAN3_CURR,
+  CM_FAN0_POWER,
+  CM_FAN1_POWER,
+  CM_FAN2_POWER,
+  CM_FAN3_POWER,
 };
 
 typedef struct {
@@ -545,6 +554,8 @@ int cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr);
 int pal_sensor_monitor_initial(void);
 bool pal_check_nic_prsnt(uint8_t fru);
 bool pal_check_dimm_prsnt(uint8_t snr_num);
+bool check_cpu_present_pin_gpio(uint8_t cpu_id);
+
 
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;

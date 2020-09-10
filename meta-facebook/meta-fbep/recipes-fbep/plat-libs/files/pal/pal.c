@@ -637,20 +637,11 @@ exit:
 static int server_power_on()
 {
   int ret = -1;
-  gpio_desc_t *gpio, *pwr_ctrl;
-  gpio_value_t value;
+  gpio_desc_t *gpio = gpio_open_by_shadow("BMC_IPMI_PWR_ON");
 
-  gpio = gpio_open_by_shadow("BMC_IPMI_PWR_ON");
   if (!gpio) {
     return -1;
   }
-
-  pwr_ctrl = gpio_open_by_shadow("PWR_CTRL");
-  if (pwr_ctrl) {
-    gpio_set_direction(pwr_ctrl, GPIO_DIRECTION_OUT);
-    gpio_set_value(pwr_ctrl, GPIO_VALUE_HIGH);
-  }
-
   if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
     goto bail;
   }
@@ -666,28 +657,16 @@ static int server_power_on()
   ret = 0;
 bail:
   gpio_close(gpio);
-  if (pwr_ctrl) {
-    gpio_set_value(pwr_ctrl, GPIO_VALUE_LOW);
-    gpio_close(pwr_ctrl);
-  }
   return ret;
 }
 
 static int server_power_off()
 {
   int ret = -1;
-  gpio_desc_t *gpio, *pwr_ctrl;
-  gpio_value_t value;
+  gpio_desc_t *gpio = gpio_open_by_shadow("BMC_IPMI_PWR_ON");
 
-  gpio = gpio_open_by_shadow("BMC_IPMI_PWR_ON");
   if (!gpio) {
     return -1;
-  }
-
-  pwr_ctrl = gpio_open_by_shadow("PWR_CTRL");
-  if (pwr_ctrl) {
-    gpio_set_direction(pwr_ctrl, GPIO_DIRECTION_OUT);
-    gpio_set_value(pwr_ctrl, GPIO_VALUE_HIGH);
   }
 
   if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
@@ -704,10 +683,6 @@ static int server_power_off()
   ret = 0;
 bail:
   gpio_close(gpio);
-  if (pwr_ctrl) {
-    gpio_set_value(pwr_ctrl, GPIO_VALUE_LOW);
-    gpio_close(pwr_ctrl);
-  }
   return ret;
 }
 

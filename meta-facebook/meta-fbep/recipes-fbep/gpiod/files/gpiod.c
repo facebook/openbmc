@@ -61,28 +61,6 @@ static gpio_value_t gpio_get(const char *shadow)
   return value;
 }
 
-static int gpio_set(const char *shadow, gpio_value_t value, bool to_input)
-{
-  int ret = 0;
-  gpio_desc_t *desc = gpio_open_by_shadow(shadow);
-  if (!desc) {
-    syslog(LOG_CRIT, "Open failed for GPIO: %s\n", shadow);
-    return -1;
-  }
-  if (gpio_set_direction(desc, GPIO_DIRECTION_OUT) || gpio_set_value(desc, value)) {
-    syslog(LOG_CRIT, "Set failed for GPIO: %s\n", shadow);
-    ret = -1;
-  }
-  if (to_input) {
-    if (gpio_set_direction(desc, GPIO_DIRECTION_IN)) {
-      syslog(LOG_CRIT, "Set direction failed for GPIO: %s\n", shadow);
-      ret = -1;
-    }
-  }
-  gpio_close(desc);
-  return ret;
-}
-
 // Generic Event Handler for GPIO changes
 static void gpio_event_handle_low_active(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
@@ -97,7 +75,6 @@ static void gpio_event_handle_high_active(gpiopoll_pin_t *gp, gpio_value_t last,
 // Specific Event Handlers
 static void gpio_event_handle_power_btn(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  gpio_set("PWR_CTRL", curr == GPIO_VALUE_LOW? GPIO_VALUE_HIGH: GPIO_VALUE_LOW, false);
   log_gpio_change(gp, curr, 0, true);
 }
 

@@ -67,7 +67,9 @@ func (w LogWriter) Write(p []byte) (n int, err error) {
 	for _, stream := range w.Streams {
 		n, err = stream.Write(p)
 		if err != nil {
-			panic(err)
+			// don't panic, just log to stderr that this has failed.
+			// there are cases of syslog delivery failing and causing the whole upgrade to fail.
+			println(fmt.Sprintf("%v", err))
 		}
 	}
 	return

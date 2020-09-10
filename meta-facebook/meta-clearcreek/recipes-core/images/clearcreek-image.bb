@@ -31,4 +31,6 @@ IMAGE_INSTALL += " \
   ipmb-util\
   power-util \
   fruid \
+  mac-util \
+  ipmitool \
   "

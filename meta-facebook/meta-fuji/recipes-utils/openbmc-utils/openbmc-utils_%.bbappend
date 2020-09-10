@@ -37,6 +37,7 @@ SRC_URI += "file://setup-gpio.sh \
             file://simutil \
             file://disable_watchdog.sh \
             file://beutil \
+            file://set_sled.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -56,6 +57,7 @@ OPENBMC_UTILS_FILES += " \
     simutil \
     disable_watchdog.sh \
     beutil \
+    set_sled.sh \
     "
 DEPENDS_append = " update-rc.d-native"
 

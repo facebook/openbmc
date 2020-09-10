@@ -33,7 +33,7 @@ IMAGE_INSTALL += " \
   libcpldupdate-dll-ast-jtag \
   libfruid \
   lldp-util \
-  log-util \
+  log-util-v2 \
   mdio-util \
   me-util \
   mterm \

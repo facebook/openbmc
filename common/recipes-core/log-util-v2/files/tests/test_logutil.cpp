@@ -219,6 +219,7 @@ TEST_F(LogClearTest, BasicClearSys) {
   ifs.close();
   exp.str(std::string());
   exp << " 2020 May 18 10:18:38 bmc-oob. user.crit fbtp-9b6bf3961d-dirty: ncsid: FRU: 2 NIC AEN Supported: 0x7, AEN Enable Mask=0x7\n";
+  exp << "2020 May 21 17:29:55 log-util: User cleared FRU: 2 logs\n";
   exp << "2020 Jun 21 17:29:55 log-util: User cleared sys logs\n";
   EXPECT_EQ(str, exp.str());
 }

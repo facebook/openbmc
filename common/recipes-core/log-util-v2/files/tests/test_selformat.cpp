@@ -142,6 +142,7 @@ TEST(SELFormat, BasicClearFormatTests) {
   sel.set_clear(2);
   EXPECT_EQ(sel.is_self(), true);
   EXPECT_EQ(sel.is_bare(), true);
+  EXPECT_EQ(sel.fru_id(), 2);
   string raw("2020 May 21 17:29:55 log-util: User cleared FRU: 2 logs");
   EXPECT_EQ(sel.raw(), raw);
   EXPECT_EQ(sel.str(), raw);
@@ -156,6 +157,7 @@ TEST(SELFormat, BasicClearAllFormatTests) {
   sel.set_clear(SELFormat::FRU_ALL);
   EXPECT_EQ(sel.is_self(), true);
   EXPECT_EQ(sel.is_bare(), true);
+  EXPECT_EQ(sel.fru_id(), SELFormat::FRU_ALL);
   string raw("2020 May 21 17:29:55 log-util: User cleared all logs");
   EXPECT_EQ(sel.raw(), raw);
   EXPECT_EQ(sel.str(), raw);
@@ -170,6 +172,7 @@ TEST(SELFormat, BasicClearSysFormatTests) {
   sel.set_clear(SELFormat::FRU_SYS);
   EXPECT_EQ(sel.is_self(), true);
   EXPECT_EQ(sel.is_bare(), true);
+  EXPECT_EQ(sel.fru_id(), SELFormat::FRU_ALL);
   string raw("2020 May 21 17:29:55 log-util: User cleared sys logs");
   EXPECT_EQ(sel.raw(), raw);
   EXPECT_EQ(sel.str(), raw);

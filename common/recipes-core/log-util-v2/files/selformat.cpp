@@ -60,10 +60,16 @@ void SELFormat::set_raw(std::string&& line) {
   raw_.assign(line);
   if (raw_.find("log-util") != std::string::npos) {
     self_log_ = true;
+    if (raw_.find("all logs") != std::string::npos) {
+      fru_num_ = FRU_ALL;
+    } else if (raw_.find("sys logs") != std::string::npos) {
+      fru_num_ = FRU_SYS;
+    }
   } else if (raw_.find(".crit") == std::string::npos) {
     throw std::runtime_error("Invalid log: " + raw_);
+  } else {
+    fru_num_ = default_fru_num_;
   }
-  fru_num_ = default_fru_num_;
   static const std::regex find_fru_re(R"(FRU: (\d+))");
   std::smatch find_fru_match;
   if (regex_search(line, find_fru_match, find_fru_re)) {

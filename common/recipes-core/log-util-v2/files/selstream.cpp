@@ -22,7 +22,7 @@ void SELStream::start(
       : SELFormat::FRU_ALL;
   std::unique_ptr<SELFormat> sel = make_sel(default_fru_id);
   while (is >> *sel) {
-    if ((fmt_ == FORMAT_RAW || fmt_ == FORMAT_JSON) && sel->is_self()) {
+    if (fmt_ == FORMAT_JSON && sel->is_self()) {
       // RAW is used by clear and we filter out all previous
       // logs injected by this utility.
       // We do not send this as JSON format as well.

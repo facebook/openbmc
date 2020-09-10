@@ -18,4 +18,20 @@
 # Boston, MA 02110-1301 USA
 #
 
-modprobe g_ether host_addr=02:00:00:00:00:02 dev_addr=02:00:00:00:00:01
+mac=$(ipmitool i2c bus=6 0xa8 0x6 0x4 0x0)
+if [[ "$mac" == " ff ff ff ff ff ff" ]]
+then
+  addr="02:00:00:00:00:01"
+else
+  addr="$(echo $mac | cut -d " " -f 1)"
+  addr+=":$(echo $mac | cut -d " " -f 2)"
+  addr+=":$(echo $mac | cut -d " " -f 3)"
+  addr+=":$(echo $mac | cut -d " " -f 4)"
+  addr+=":$(echo $mac | cut -d " " -f 5)"
+  addr+=":$(echo $mac | cut -d " " -f 6)"
+fi
+modprobe g_ether host_addr=02:00:00:00:00:02 dev_addr=$addr
+
+ifconfig usb0 up
+
+dhclient -d -pf /var/run/dhclient.usb0.pid usb0 > /dev/null 2>&1 &

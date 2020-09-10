@@ -134,6 +134,11 @@ int pal_get_fruid_path(uint8_t fru, char *path)
   return 0;
 }
 
+void pal_get_eth_intf_name(char* intf_name)
+{
+  snprintf(intf_name, 8, "usb0");
+}
+
 int pal_get_fruid_eeprom_path(uint8_t fru, char *path)
 {
   if (fru == FRU_MB)

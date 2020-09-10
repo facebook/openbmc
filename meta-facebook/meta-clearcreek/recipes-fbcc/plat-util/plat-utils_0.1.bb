@@ -54,7 +54,7 @@ do_install() {
   install -m 755 setup-usbhub.sh ${D}${sysconfdir}/init.d/setup-usbhub.sh
   update-rc.d -r ${D} setup-usbhub.sh start 90 S .
   install -m 755 setup-usbnet.sh ${D}${sysconfdir}/init.d/setup-usbnet.sh
-  update-rc.d -r ${D} setup-usbnet.sh start 90 S .
+  update-rc.d -r ${D} setup-usbnet.sh start 69 5 .
   
 }
 

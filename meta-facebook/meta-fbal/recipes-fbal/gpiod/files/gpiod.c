@@ -743,7 +743,6 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_HSC_TIMER_EXP_N", "GPIOM2", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
   {"FM_CPU0_PROCHOT_LVT3_BMC_N", "GPIOB5", GPIO_EDGE_BOTH, cpu_prochot_handler, NULL},
   {"FM_CPU1_PROCHOT_LVT3_BMC_N", "GPIOB6", GPIO_EDGE_BOTH, cpu_prochot_handler, NULL},
-  {"IRQ_SMI_ACTIVE_BMC_N", "GPIOAA6", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},
   {"PWRGD_CPU0_LVC3", "GPIOZ1", GPIO_EDGE_BOTH, cpu_pwr_handler, init_cpu_pwrok},
 };
 

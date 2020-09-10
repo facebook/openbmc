@@ -208,13 +208,17 @@ lib_ipmb_send_request(uint8_t ipmi_cmd, uint8_t netfn,
   res = (ipmb_res_t*) rdata;
 
   if (rlen == 0) {
-    syslog(LOG_DEBUG, "%s: Zero bytes received cc=0x%x\n", __func__, res->cc);
+#ifdef DEBUG
+      syslog(LOG_DEBUG, "%s: Zero bytes received cc=0x%x\n", __func__, res->cc);
+#endif
     return CC_CAN_NOT_RESPOND;
   }
 
   // Handle IPMB response
   if (res->cc) {
+#ifdef DEBUG   
     syslog(LOG_ERR, "%s: Completion Code: 0x%X\n", __func__, res->cc);
+#endif    
     return res->cc;
   }
 

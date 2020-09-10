@@ -35,6 +35,8 @@
 #define AVA2_BIN "/tmp/fruid_ava2.bin"
 #define AVA2_EEPROM "/sys/class/i2c-dev/i2c-22/device/22-0050/eeprom"
 
+#define BMC_IPMB_SLAVE_ADDR 0x17
+
 const char pal_fru_list[] = "all, mb, bsm, pdb, ava1, ava2";
 const char pal_server_list[] = "";
 
@@ -160,5 +162,17 @@ int pal_get_fruid_eeprom_path(uint8_t fru, char *path)
 int pal_get_fru_list(char *list)
 {
   strcpy(list, pal_fru_list);
+  return 0;
+}
+
+int pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id)
+{
+  if (bus_id == 8) {
+    // DBG Card used default slave addr
+    *slave_addr = 0x10;
+  } else {
+    *slave_addr = BMC_IPMB_SLAVE_ADDR;
+  }
+
   return 0;
 }

@@ -7,6 +7,7 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <ctype.h>
+#include <pthread.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include "pal.h"
@@ -154,6 +155,69 @@ int pal_set_server_power(uint8_t fru, uint8_t cmd)
   }
 
   return 0;
+}
+
+int
+pal_sled_cycle(void) {
+  // Send command to HSC power cycle
+  return system("i2cset -y 5 0x11 0xd9 c &> /dev/null");
+}
+
+void* chassis_control_handler(void *arg)
+{
+  int cmd = (int)arg;
+
+  switch (cmd) {
+    case 0x00:  // power off
+      if (pal_set_server_power(FRU_MB, SERVER_POWER_OFF) < 0)
+        syslog(LOG_CRIT, "SERVER_POWER_OFF failed");
+      else
+	syslog(LOG_CRIT, "SERVER_POWER_OFF successful");
+      break;
+    case 0x01:  // power on
+      if (pal_set_server_power(FRU_MB, SERVER_POWER_ON) < 0)
+        syslog(LOG_CRIT, "SERVER_POWER_ON failed");
+      else
+	syslog(LOG_CRIT, "SERVER_POWER_ON successful");
+      break;
+    case 0x02:  // power cycle
+      if (pal_set_server_power(FRU_MB, SERVER_POWER_CYCLE) < 0)
+        syslog(LOG_CRIT, "SERVER_POWER_CYCLE failed");
+      else
+	syslog(LOG_CRIT, "SERVER_POWER_CYCLE successful");
+      break;
+    case 0xAC:  // sled-cycle with delay 4 secs
+      sleep(4);
+      pal_sled_cycle();
+      break;
+    default:
+      syslog(LOG_CRIT, "Invalid command 0x%x for chassis control", cmd);
+      break;
+  }
+
+  pthread_exit(0);
+}
+
+int pal_chassis_control(uint8_t fru, uint8_t *req_data, uint8_t req_len)
+{
+  int cmd;
+  pthread_t tid;
+  pthread_attr_t a;
+
+  if (req_len != 1) {
+    return CC_INVALID_LENGTH;
+  }
+
+  cmd = req_data[0];
+  pthread_attr_init(&a);
+  pthread_attr_setdetachstate(&a, PTHREAD_CREATE_DETACHED);
+
+  if (pthread_create(&tid, &a, chassis_control_handler, (void *)cmd) < 0) {
+    syslog(LOG_WARNING, "ipmid: chassis_control_handler pthread_create failed\n");
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  return CC_SUCCESS;
 }
 
 bool pal_is_server_off()

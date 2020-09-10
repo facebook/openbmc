@@ -21,6 +21,8 @@
 #ifndef __PAL_H__
 #define __PAL_H__
 
+#include "pal_power.h"
+#include "pal_sensors.h"
 #include <openbmc/obmc-pal.h>
 #include <openbmc/kv.h>
 #include "pal_sensors.h"

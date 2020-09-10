@@ -63,7 +63,7 @@ func FlashCp(stepParams step.StepParams) step.StepExitError {
 
 // flashCpAndValidate calls Flashy's internal implementation of FlashCp.
 // roOffset is the starting RO offset for FlashCp. It's used for vboot
-// flash devices with RO offsets. (In `dd` terms, roFfset is both seek=
+// flash devices with RO offsets. (In `dd` terms, roOffset is both seek=
 // and skip=).
 var flashCpAndValidate = func(
 	flashDevice devices.FlashDevice,

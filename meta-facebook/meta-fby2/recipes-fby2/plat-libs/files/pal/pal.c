@@ -12158,11 +12158,6 @@ pal_dev_jtag_gpio_to_bus(uint8_t fru) {
 
 bool 
 pal_sensor_is_cached(uint8_t fru, uint8_t sensor_num) {
-  if (fru == FRU_SPB) {
-    if (sensor_num == SP_SENSOR_BMC_HSC_PIN) {
-      return false;
-    }
-  }
   return true;
 }
 

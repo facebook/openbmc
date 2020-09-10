@@ -2,13 +2,10 @@
 #define __AST_JTAG_H__
 
 #include <stdint.h>
-
-/*
- * JTAG_XFER_HW_MODE: JTAG hardware mode. Used to set HW drived or bitbang
- * mode. This is bitmask param of ioctl JTAG_SIOCMODE command
- */
-#define  JTAG_XFER_SW_MODE 0
-#define  JTAG_XFER_HW_MODE 1
+typedef uint8_t __u8;
+typedef uint32_t __u32;
+typedef uint64_t __u64;
+#include "jtag.h"
 
 /******************************************************************************************************************/
 void ast_jtag_set_mode(unsigned int mode);

@@ -105,7 +105,7 @@ function reload_sled_fsc() {
 
   #Config A and B or Config D
   sys_config=$(cat /mnt/data/kv_store/sled_system_conf)
-  if [[ "$sys_config" =~ ^(Type_(1|10))$ ]]; then
+  if [[ "$sys_config" =~ ^(Type_(1|10|EDSFF_1U))$ ]]; then
     if [ $cnt -eq 4 ]; then
       run_fscd=true
     fi

@@ -942,7 +942,7 @@ update_murata_psu(uint8_t num, const char *file_path) {
 int
 is_psu_prsnt(uint8_t num, uint8_t *status) {
 
-  return pal_is_fru_prsnt(num + 11, status);
+  return pal_is_fru_prsnt(num + FRU_PSU1, status);
 }
 
 int

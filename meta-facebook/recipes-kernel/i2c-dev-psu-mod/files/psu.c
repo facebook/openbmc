@@ -47,11 +47,13 @@
 
 typedef enum {
   DELTA_1500,
+  DELTA_2000,
   BELPOWER_1100_NA,
   BELPOWER_1500_NAC,
   MURATA_1500,
   MURATA_2000,
   LITEON_1500,
+  LITEON_2000,
   UNKNOWN
 } model_name;
 
@@ -143,8 +145,12 @@ static int psu_convert(struct device *dev, struct device_attribute *attr)
 
   if (!strncmp(block, "ECD55020006", 11)) {
     model = DELTA_1500;
+  } else if (!strncmp(block, "ECD15020060", 11)) {
+    model = DELTA_2000;
   } else if (!strncmp(block, "PS-2152-5L", 10)) {
     model = LITEON_1500;
+  } else if (!strncmp(block, "PS-2202-6L", 10)) {
+    model = LITEON_2000;
   } else if (!strncmp(block, "PFE1100-12-054NA", 16)) {
     model = BELPOWER_1100_NA;
   } else if (!strncmp(block, "PFE1500-12-054NAC", 17)) {
@@ -173,7 +179,9 @@ static ssize_t psu_vin_show(struct device *dev,
 
   switch (model) {
     case DELTA_1500:
+    case DELTA_2000:
     case LITEON_1500:
+    case LITEON_2000:
     case MURATA_2000:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
@@ -202,7 +210,9 @@ static ssize_t psu_iin_show(struct device *dev,
 
   switch (model) {
     case DELTA_1500:
+    case DELTA_2000:
     case LITEON_1500:
+    case LITEON_2000:
     case MURATA_2000:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
@@ -233,6 +243,8 @@ static ssize_t psu_vout_show(struct device *dev,
 
   switch (model) {
     case DELTA_1500:
+    case DELTA_2000:
+    case LITEON_2000:
     case MURATA_2000:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
@@ -264,7 +276,9 @@ static ssize_t psu_iout_show(struct device *dev,
 
   switch (model) {
     case DELTA_1500:
+    case DELTA_2000:
     case LITEON_1500:
+    case LITEON_2000:
     case MURATA_2000:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
@@ -295,7 +309,9 @@ static ssize_t psu_temp_show(struct device *dev,
 
   switch (model) {
     case DELTA_1500:
+    case DELTA_2000:
     case LITEON_1500:
+    case LITEON_2000:
     case MURATA_1500:
     case MURATA_2000:
       result = linear_convert(LINEAR_11, result, NULL);
@@ -324,7 +340,9 @@ static ssize_t psu_fan_show(struct device *dev,
 
   switch (model) {
     case DELTA_1500:
+    case DELTA_2000:
     case LITEON_1500:
+    case LITEON_2000:
     case MURATA_2000:
       result = linear_convert(LINEAR_11, result, NULL) / 1000;
       break;
@@ -356,6 +374,8 @@ static ssize_t psu_power_show(struct device *dev,
     case LITEON_1500:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
+    case DELTA_2000:
+    case LITEON_2000:
     case MURATA_2000:
       result = linear_convert(LINEAR_11, result, NULL) * 1000;
       break;
@@ -384,6 +404,8 @@ static ssize_t psu_vstby_show(struct device *dev,
 
   switch (model) {
     case DELTA_1500:
+    case DELTA_2000:
+    case LITEON_2000:
     case MURATA_2000:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
@@ -417,7 +439,9 @@ static ssize_t psu_istby_show(struct device *dev,
 
   switch (model) {
     case DELTA_1500:
+    case DELTA_2000:
     case LITEON_1500:
+    case LITEON_2000:
     case MURATA_2000:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
@@ -453,6 +477,8 @@ static ssize_t psu_pstby_show(struct device *dev,
     case LITEON_1500:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
+    case DELTA_2000:
+    case LITEON_2000:
     case MURATA_2000:
       result = linear_convert(LINEAR_11, result, NULL) * 1000;
       break;

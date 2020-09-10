@@ -8,6 +8,17 @@
 
 using namespace std;
 
+enum {
+  CFM_IMAGE_NONE = 0,
+  CFM_IMAGE_1,
+  CFM_IMAGE_2,
+};
+
+enum {
+  CFM0_10M16 = 0,
+  CFM1_10M16
+};
+
 class CpldComponent : public Component {
   public:
     CpldComponent(string fru, string comp)
@@ -50,6 +61,43 @@ class CpldComponent : public Component {
     }
 };
 
+class DumbCpldComponent : public Component {
+  uint8_t pld_type;
+  altera_max10_attr_t attr;
+  public:
+    DumbCpldComponent(string fru, string comp, uint8_t type, uint8_t ctype, uint8_t bus, uint8_t addr)
+      : Component(fru, comp), pld_type(type), attr{bus, addr, 0, 0, 0, 0, 0, 0} {}
+    int print_version();
+};
+
+int DumbCpldComponent::print_version() {
+  int ret = -1;
+  uint8_t ver[4];
+  char strbuf[16];
+  string comp;
+
+  if (!cpld_intf_open(pld_type, INTF_I2C, &attr)) {
+    ret = cpld_get_ver((uint32_t *)ver);
+    cpld_intf_close(INTF_I2C);
+  }
+
+  if (ret) {
+    sprintf(strbuf, "NA");
+  } else {
+    sprintf(strbuf, "%02X%02X%02X%02X", ver[3], ver[2], ver[1], ver[0]);
+  }
+
+  comp = _component;
+  transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
+  sys.output << comp << " Version: " << string(strbuf) << endl;
+
+  return 0;
+}
+
+CpldComponent cpld("mb", "cpld");
+DumbCpldComponent pfr_cpld("mb", "pfr_cpld", MAX10_10M16, CFM0_10M16, 4, 0x5a);
+
+/*
 class PfrCpldComponent : public Component {
   public:
     PfrCpldComponent(string fru, string comp)
@@ -135,3 +183,4 @@ class CpldConfig {
 };
 
 CpldConfig cpld_conf;
+*/

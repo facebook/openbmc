@@ -58,7 +58,7 @@ static uint8_t get_gpu_id()
   if (vendor_id != GPU_UNKNOWN)
     goto exit;
   if (kv_get("asic_mfr", vendor, NULL, KV_FPERSIST) < 0) {
-    vendor_id = GPU_AMD; // default
+    vendor_id = GPU_NV; // default
     goto exit;
   }
 

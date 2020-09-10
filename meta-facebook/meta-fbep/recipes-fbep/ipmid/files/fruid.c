@@ -119,7 +119,7 @@ static int get_asic_mfr_id()
   else if (vendor_id == GPU_NV)
     pal_set_key_value("asic_mfr", "NVIDIA");
   else // default
-    pal_set_key_value("asic_mfr", "AMD");
+    pal_set_key_value("asic_mfr", "NVIDIA");
 exit:
   close(fd);
   return ret;

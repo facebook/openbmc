@@ -90,7 +90,7 @@ struct pal_key_cfg {
   {KEY_PDB_SNR_HEALTH, "1", NULL},
   {KEY_MB_SEL_ERROR, "1", NULL},
   {"server_type", "4", NULL},
-  {"asic_mfr", MFR_AMD, key_set_asic_mfr},
+  {"asic_mfr", MFR_NV, key_set_asic_mfr},
   {"ntp_server", "", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */

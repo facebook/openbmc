@@ -1031,10 +1031,10 @@ void pal_dump_key_value(void)
   while (strcmp(key_cfg[i].name, LAST_KEY)) {
     printf("%s:", key_cfg[i].name);
     if ((ret = kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST)) < 0) {
-    printf("\n");
-  } else {
-    printf("%s\n",  value);
-  }
+      printf("\n");
+    } else {
+      printf("%s\n",  value);
+    }
     i++;
     memset(value, 0, MAX_VALUE_LEN);
   }

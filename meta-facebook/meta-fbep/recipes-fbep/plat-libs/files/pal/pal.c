@@ -1207,3 +1207,53 @@ exit:
   close(fd);
   return ret;
 }
+
+int pal_check_pwr_brake()
+{
+  const char* cpld_power_brake[] = {
+    "PWRBRK_ASIC7", "PWRBRK_ASIC6",
+    "PWRBRK_ASIC5", "PWRBRK_ASIC4",
+    "PWRBRK_ASIC3", "PWRBRK_ASIC2",
+    "PWRBRK_ASIC1", "PWRBRK_ASIC0"
+  };
+  char dev_cpld[16] = {0};
+  char event_str[64] = {0};
+  int fd, i;
+  int ret = 0, fail_addr = -1;
+  uint8_t tbuf[8], rbuf[8], value;
+
+  // Check if power is on
+  if (pal_is_server_off())
+    return 0;
+
+  sprintf(dev_cpld, "/dev/i2c-%d", MAIN_CPLD_BUS);
+  fd = open(dev_cpld, O_RDWR);
+  if (fd < 0) {
+    return -1;
+  }
+
+  tbuf[0] = 0x0a; // Power Brake state
+  ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 1);
+  if (ret < 0)
+    goto exit;
+
+  for (i = 0; i < 8; i++) {
+    if (!is_asic_prsnt(7-i))
+      continue;
+
+    value = rbuf[0] & (0x1 << i);
+    if (value == 0) {
+      fail_addr = i;
+      snprintf(event_str, sizeof(event_str), "%s power brake", cpld_power_brake[i]);
+      syslog(LOG_CRIT, "%s", event_str);
+    }
+  }
+  if (fail_addr < 0) {
+      snprintf(event_str, sizeof(event_str), "Unknown GPU power brake");
+      syslog(LOG_CRIT, "Unknown GPU power brake");
+  }
+
+exit:
+  close(fd);
+  return ret;
+}

@@ -38,6 +38,44 @@ enum {
   SLOT_7,
 };
 
+static gpio_value_t gpio_get(std::string shadow)
+{
+  gpio_value_t value = GPIO_VALUE_INVALID;
+  gpio_desc_t *desc = gpio_open_by_shadow(shadow.c_str());
+  if (!desc) {
+    std::cerr << "Open GPIO " << shadow << " failed" << std::endl;
+    return GPIO_VALUE_INVALID;
+  }
+  if (gpio_get_value(desc, &value)) {
+    std::cerr << "Get GPIO " << shadow << " failed" << std::endl;
+    value = GPIO_VALUE_INVALID;
+  }
+  gpio_close(desc);
+  return value;
+}
+
+static int gpio_set(std::string shadow, gpio_value_t value, bool to_input)
+{
+  int ret = 0;
+  gpio_desc_t *desc = gpio_open_by_shadow(shadow.c_str());
+  if (!desc) {
+    std::cerr << "Open GPIO " << shadow << " failed" << std::endl;
+    return -1;
+  }
+  if (gpio_set_direction(desc, GPIO_DIRECTION_OUT) || gpio_set_value(desc, value)) {
+    std::cerr << "Set GPIO " << shadow << " failed" << std::endl;
+    ret = -1;
+  }
+  if (to_input) {
+    if (gpio_set_direction(desc, GPIO_DIRECTION_IN)) {
+      std::cerr << "Set direction failed for GPIO: " << shadow << std::endl;
+      ret = -1;
+    }
+  }
+  gpio_close(desc);
+  return ret;
+}
+
 static int show_linkconfig(int slot)
 {
   std::string shadow = "OAM" + std::to_string(slot) + "_LINK_CONFIG";
@@ -377,30 +415,70 @@ static int _show_info(int slot)
     return -1;
   }
   std::cout << "ASIC Manufacturer: " << vendor << std::endl;
+
+  gpio_value_t brk_on = gpio_get("OAM_FAST_BRK_ON_N");
+  if (brk_on == GPIO_VALUE_INVALID) {
+    std::cerr << "Failed to get GPU power brake status" << std::endl;
+    return -1;
+  }
+  std::cout << "GPU power brake: " << (brk_on == GPIO_VALUE_LOW? "Enabled":"Disabled") << std::endl;
   return 0;
+}
+
+static int _enable_power_brake(gpio_value_t value)
+{
+  int ret = gpio_set("OAM_FAST_BRK_ON_N", value, false);
+  if (ret == 0)
+    std::cout << (value == GPIO_VALUE_LOW? "Enable":"Disable") << " GPU power brake" << std::endl;
+  return ret;
+}
+
+static int _set_power_brake(gpio_value_t value)
+{
+  int ret;
+
+  if (gpio_get("OAM_FAST_BRK_ON_N") != GPIO_VALUE_LOW) {
+    std::cerr << "GPU power brake function is not enabled, try \"--enable-power-brake 1\"" << std::endl;
+    return -1;
+  }
+  ret = gpio_set("OAM_FAST_BRK_N", value, false);
+  if (ret == 0) {
+    std::cout << (value == GPIO_VALUE_LOW? "Set":"Unset") << " GPU power brake" << std::endl;
+    if (value == GPIO_VALUE_LOW)
+      pal_check_pwr_brake();
+  }
+
+  return ret;
 }
 
 int main(int argc, char **argv)
 {
-  int rc = -1;
   CLI::App app("Application-specific IC Utility");
   app.failure_message(CLI::FailureMessage::help);
 
-  int slot;
+
   unsigned int watts;
   auto power = app.add_option("--set-power", watts,
                               "The value of power limit in Watts [100..300]");
+  int slot;
   auto num = app.add_option("--slot", slot,
                             "Action to specified slot [0..7]\n"
 			    "If not specified, ALL slots by default");
 
-  app.require_option();
+  unsigned int enable_power_brake;
+  auto en_brk = app.add_option("--enable-brake", enable_power_brake,
+                              "Enable GPU Power brake function, 1 = Enable, 0 = Disable");
+
+  unsigned int set_power_brake;
+  auto set_brk = app.add_option("--set-brake", set_power_brake,
+                              "Manually trigger GPU Power brake, 1 = Enable, 0 = Disable");
   bool show_status = false;
   app.add_flag("--status", show_status, "Get ASIC status");
 
   bool show_info = false;
   app.add_flag("--info", show_info, "Get GPU information");
 
+  app.require_option();
   CLI11_PARSE(app, argc, argv);
 
   if (!(*num)) {
@@ -410,10 +488,12 @@ int main(int argc, char **argv)
   }
 
   if (*power) {
-    if (watts < 100 || watts > 300)
+    if (watts < 100 || watts > 300) {
       std::cerr << "Error: Power limit is out-of-range [100..300]" << std::endl;
-    else
-      rc = set_power_limit(slot, watts);
+      return -1;
+    } else {
+      return set_power_limit(slot, watts);
+    }
   }
 
   if (show_status)
@@ -423,5 +503,13 @@ int main(int argc, char **argv)
     return _show_info(slot);
   }
 
-  return rc;
+  if (*en_brk) {
+    return _enable_power_brake(enable_power_brake? GPIO_VALUE_LOW: GPIO_VALUE_HIGH);
+  }
+
+  if (*set_brk) {
+    return _set_power_brake(set_power_brake? GPIO_VALUE_LOW: GPIO_VALUE_HIGH);
+  }
+
+  return 0;
 }

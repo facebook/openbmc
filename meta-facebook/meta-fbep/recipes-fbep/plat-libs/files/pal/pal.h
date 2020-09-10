@@ -84,6 +84,7 @@ int pal_get_server_power(uint8_t fru, uint8_t *status);
 int pal_get_platform_id(uint8_t *id);
 int pal_set_id_led(uint8_t status);
 int pal_check_power_seq(void);
+int pal_check_pwr_brake(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

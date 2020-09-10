@@ -78,6 +78,24 @@ static void gpio_event_handle_power_btn(gpiopoll_pin_t *gp, gpio_value_t last, g
   log_gpio_change(gp, curr, 0, true);
 }
 
+static void gpio_event_handle_low_active_pwr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  if (g_sys_pwr_off)
+    return;
+
+  gpio_event_handle_low_active(gp, last, curr);
+}
+
+static void gpio_event_handle_pwr_brake(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  if (gpio_get("OAM_FAST_BRK_ON_N") == GPIO_VALUE_LOW &&
+      curr == GPIO_VALUE_LOW && pal_check_pwr_brake() < 0) {
+      syslog(LOG_WARNING, "Failed to get power brake state from CPLD");
+  }
+
+  gpio_event_handle_low_active(gp, last, curr);
+}
+
 static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
   g_sys_pwr_off = (curr == GPIO_VALUE_HIGH)? false: true;
@@ -91,6 +109,8 @@ static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gp
     if (pal_check_power_seq() < 0)
       syslog(LOG_WARNING, "Failed to get power state from CPLD");
   }
+
+  gpio_event_handle_low_active(gp, last, curr);
 }
 
 static void asic_def_prsnt(gpiopoll_pin_t *gp, gpio_value_t curr)
@@ -104,13 +124,20 @@ static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
   {"BMC_PWR_BTN_IN_N", "Power button", GPIO_EDGE_BOTH, gpio_event_handle_power_btn, NULL},
   {"SYS_PWR_READY", "System power off", GPIO_EDGE_BOTH, gpio_event_handle_pwr_good, NULL},
-  {"PMBUS_BMC_1_ALERT_N", "HSC 1 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
-  {"PMBUS_BMC_2_ALERT_N", "HSC 2 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
-  {"PMBUS_BMC_3_ALERT_N", "HSC AUX Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
-  {"SMB_ALERT_ASIC01", "ASIC01 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
-  {"SMB_ALERT_ASIC23", "ASIC23 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
-  {"SMB_ALERT_ASIC45", "ASIC45 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
-  {"SMB_ALERT_ASIC67", "ASIC67 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
+  {"PMBUS_BMC_1_ALERT_N", "HSC 1 Alert", GPIO_EDGE_BOTH, gpio_event_handle_pwr_brake, NULL},
+  {"PMBUS_BMC_2_ALERT_N", "HSC 2 Alert", GPIO_EDGE_BOTH, gpio_event_handle_pwr_brake, NULL},
+  {"PMBUS_BMC_3_ALERT_N", "HSC AUX Alert", GPIO_EDGE_BOTH, gpio_event_handle_pwr_brake, NULL},
+  {"HSC1_THROT_N", "HSC 1 Throttle", GPIO_EDGE_BOTH, gpio_event_handle_pwr_brake, NULL},
+  {"HSC2_THROT_N", "HSC 2 Throttle", GPIO_EDGE_BOTH, gpio_event_handle_pwr_brake, NULL},
+  {"SMB_ALERT_ASIC01", "ASIC01 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
+  {"SMB_ALERT_ASIC23", "ASIC23 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
+  {"SMB_ALERT_ASIC45", "ASIC45 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
+  {"SMB_ALERT_ASIC67", "ASIC67 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
+  {"CPLD_SMB_ALERT_N", "CPLD Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
+  {"PAX0_ALERT", "PAX0 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
+  {"PAX1_ALERT", "PAX1 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
+  {"PAX2_ALERT", "PAX2 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
+  {"PAX3_ALERT", "PAX3 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
   {"PRSNT0_N_ASIC0", "ASIC0 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
   {"PRSNT1_N_ASIC0", "ASIC0 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
   {"PRSNT0_N_ASIC1", "ASIC1 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},

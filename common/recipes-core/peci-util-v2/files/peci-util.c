@@ -61,6 +61,7 @@ static int
 process_command(int fd, int argc, char **argv) {
   struct peci_xfer_msg msg;
   uint8_t tlen = 0;
+  uint8_t tbuf[PECI_BUFFER_SIZE], rbuf[PECI_BUFFER_SIZE];
   char file_path[256];
   int i, opt, retry;
   int optind_long = 0;
@@ -109,6 +110,9 @@ process_command(int fd, int argc, char **argv) {
   if ((argc - i) != msg.tx_len || (msg.tx_len > PECI_BUFFER_SIZE) || (msg.rx_len > PECI_BUFFER_SIZE)) {
     goto err_exit;
   }
+
+  msg.tx_buf = tbuf;
+  msg.rx_buf = rbuf;
   while (i < argc) {
     msg.tx_buf[tlen++] = (uint8_t)strtoul(argv[i++], NULL, 0);
   }

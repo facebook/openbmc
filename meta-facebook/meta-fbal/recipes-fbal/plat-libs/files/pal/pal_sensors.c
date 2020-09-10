@@ -105,12 +105,12 @@ const uint8_t mb_8s_m_sensor_list[] = {
   MB1_SNR_HSC_IOUT,
   MB1_SNR_HSC_PIN,
   MB1_SNR_HSC_TEMP,
-  MB1_SNR_HSC_PEAK_PIN, 
+  MB1_SNR_HSC_PEAK_PIN,
   MB2_SNR_HSC_VIN,
   MB2_SNR_HSC_IOUT,
   MB2_SNR_HSC_PIN,
   MB2_SNR_HSC_TEMP,
-  MB2_SNR_HSC_PEAK_PIN, 
+  MB2_SNR_HSC_PEAK_PIN,
   MB3_SNR_HSC_VIN,
   MB3_SNR_HSC_IOUT,
   MB3_SNR_HSC_PIN,
@@ -243,9 +243,9 @@ const uint8_t mb_8s_m_sensor_list[] = {
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP,
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_CURR,
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_POWER,
-  MB_SNR_VR_PCH_P1V05_VOLT, 
-  MB_SNR_VR_PCH_P1V05_TEMP, 
-  MB_SNR_VR_PCH_P1V05_CURR, 
+  MB_SNR_VR_PCH_P1V05_VOLT,
+  MB_SNR_VR_PCH_P1V05_TEMP,
+  MB_SNR_VR_PCH_P1V05_CURR,
   MB_SNR_VR_PCH_P1V05_POWER,
   MB_SNR_VR_PCH_PVNN_VOLT,
   MB_SNR_VR_PCH_PVNN_TEMP,
@@ -285,7 +285,7 @@ const uint8_t mb_4s_m_sensor_list[] = {
   MB1_SNR_HSC_IOUT,
   MB1_SNR_HSC_PIN,
   MB1_SNR_HSC_TEMP,
-  MB1_SNR_HSC_PEAK_PIN, 
+  MB1_SNR_HSC_PEAK_PIN,
   MB_SNR_PCH_TEMP,
   MB_SNR_CPU0_TEMP,
   MB_SNR_CPU1_TEMP,
@@ -373,9 +373,9 @@ const uint8_t mb_4s_m_sensor_list[] = {
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP,
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_CURR,
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_POWER,
-  MB_SNR_VR_PCH_P1V05_VOLT, 
-  MB_SNR_VR_PCH_P1V05_TEMP, 
-  MB_SNR_VR_PCH_P1V05_CURR, 
+  MB_SNR_VR_PCH_P1V05_VOLT,
+  MB_SNR_VR_PCH_P1V05_TEMP,
+  MB_SNR_VR_PCH_P1V05_CURR,
   MB_SNR_VR_PCH_P1V05_POWER,
   MB_SNR_VR_PCH_PVNN_VOLT,
   MB_SNR_VR_PCH_PVNN_TEMP,
@@ -388,7 +388,7 @@ const uint8_t mb_slv_sensor_list[] = {
   MB_SNR_INLET_TEMP,
   MB_SNR_OUTLET_TEMP_R,
   MB_SNR_OUTLET_TEMP_L,
-  MB_SNR_INLET_REMOTE_TEMP, 
+  MB_SNR_INLET_REMOTE_TEMP,
   MB_SNR_OUTLET_REMOTE_TEMP_R,
   MB_SNR_OUTLET_REMOTE_TEMP_L,
   MB_SNR_P5V,
@@ -452,21 +452,21 @@ const uint8_t mb_slv_sensor_list[] = {
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP,
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_CURR,
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_POWER,
-  MB_SNR_VR_PCH_P1V05_VOLT, 
-  MB_SNR_VR_PCH_P1V05_TEMP, 
-  MB_SNR_VR_PCH_P1V05_CURR, 
+  MB_SNR_VR_PCH_P1V05_VOLT,
+  MB_SNR_VR_PCH_P1V05_TEMP,
+  MB_SNR_VR_PCH_P1V05_CURR,
   MB_SNR_VR_PCH_P1V05_POWER,
   MB_SNR_VR_PCH_PVNN_VOLT,
   MB_SNR_VR_PCH_PVNN_TEMP,
   MB_SNR_VR_PCH_PVNN_CURR,
-  MB_SNR_VR_PCH_PVNN_POWER, 
+  MB_SNR_VR_PCH_PVNN_POWER,
 };
 
 const uint8_t mb_2s_sensor_list[] = {
   MB_SNR_INLET_TEMP,
   MB_SNR_OUTLET_TEMP_R,
   MB_SNR_OUTLET_TEMP_L,
-  MB_SNR_INLET_REMOTE_TEMP, 
+  MB_SNR_INLET_REMOTE_TEMP,
   MB_SNR_OUTLET_REMOTE_TEMP_R,
   MB_SNR_OUTLET_REMOTE_TEMP_L,
   MB_SNR_P5V,
@@ -556,9 +556,9 @@ const uint8_t mb_2s_sensor_list[] = {
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_TEMP,
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_CURR,
   MB_SNR_VR_CPU1_VDDQ_GRPDEF_POWER,
-  MB_SNR_VR_PCH_P1V05_VOLT, 
-  MB_SNR_VR_PCH_P1V05_TEMP, 
-  MB_SNR_VR_PCH_P1V05_CURR, 
+  MB_SNR_VR_PCH_P1V05_VOLT,
+  MB_SNR_VR_PCH_P1V05_TEMP,
+  MB_SNR_VR_PCH_P1V05_CURR,
   MB_SNR_VR_PCH_P1V05_POWER,
   MB_SNR_VR_PCH_PVNN_VOLT,
   MB_SNR_VR_PCH_PVNN_TEMP,
@@ -701,7 +701,7 @@ char *vr_ti_chips[] = {
   "tps53688-i2c-1-76",  // CPU1_VDDQ_ABC
   "tps53688-i2c-1-6c",  // CPU1_VDDQ_DEF
   "pxe1110c-i2c-1-4a",  // PCH PVNN
-  "pxe1110c-i2c-1-4a",  // PCH 1V5 
+  "pxe1110c-i2c-1-4a",  // PCH 1V5
 };
 
 char *vr_infineon_chips[] = {
@@ -961,7 +961,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
- 
+
   {"MB_P5V",       ADC0, read_adc_val, false, {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0xD0
   {"MB_P5V_STBY",  ADC1, read_adc_val, true,  {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0xD1
   {"MB_P3V3_STBY", ADC2, read_adc_val, true,  {3.47, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0xD2
@@ -1243,8 +1243,8 @@ pal_sensor_is_valid(char *fru_name, char *sensor_name)
   ret = pal_get_host_system_mode(&mode);
   if (ret != 0) {
     syslog(LOG_WARNING,"%s Wrong get system mode\n", __func__);
-    return false; 
-  } 
+    return false;
+  }
 
   if( mode == MB_2S_MODE ) {
     //2S Master
@@ -1281,10 +1281,10 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
   ret = pal_get_host_system_mode(&mode);
   if (ret != 0) {
-    return ret; 
-  } 
+    return ret;
+  }
   master = pal_get_config_is_master();
- 
+
   switch(fru) {
   case FRU_MB:
     if (mode == MB_2S_MODE ) {
@@ -1294,7 +1294,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     } else if(mode == MB_4S_MODE && master == true) {
       //4S Master Mode
       *sensor_list = (uint8_t *) mb_4s_m_sensor_list;
-      *cnt = mb_4s_m_sensor_cnt;      
+      *cnt = mb_4s_m_sensor_cnt;
     } else if(mode == MB_8S_MODE && master == true) {
       //8S Master Mode
       *sensor_list = (uint8_t *) mb_8s_m_sensor_list;
@@ -1366,17 +1366,17 @@ check_cpu_present_pin_gpio(uint8_t cpu_id) {
     gdesc = gpio_open_by_shadow(GPIO_CPU0_PRESENT);
   else
     gdesc = gpio_open_by_shadow(GPIO_CPU1_PRESENT);
-  
+
   if (gdesc == NULL)
     return -1;
 
   ret = gpio_get_value(gdesc, &val);
 
   gpio_close(gdesc);
-  
+
   if(ret == 0)
     status = (int)val;
-  else 
+  else
       return -1;
 
   return status;
@@ -1580,11 +1580,14 @@ pal_get_peci_val(struct peci_xfer_msg *msg) {
 static int
 cmd_peci_rdpkgconfig(PECI_RD_PKG_CONFIG_INFO* info, uint8_t* rx_buf, uint8_t rx_len) {
   struct peci_xfer_msg msg;
+  uint8_t tbuf[PECI_BUFFER_SIZE], rbuf[PECI_BUFFER_SIZE];
   int ret;
 
   msg.addr = info->cpu_addr;
   msg.tx_len = 0x05;
   msg.rx_len = rx_len;
+  msg.tx_buf = tbuf;
+  msg.rx_buf = rbuf;
   msg.tx_buf[0] = PECI_CMD_RD_PKG_CONFIG;
   msg.tx_buf[1] = info->dev_info;
   msg.tx_buf[2] = info->index;
@@ -1593,10 +1596,10 @@ cmd_peci_rdpkgconfig(PECI_RD_PKG_CONFIG_INFO* info, uint8_t* rx_buf, uint8_t rx_
 
   ret = pal_get_peci_val(&msg);
   if (ret != PECI_SUCCESS ) {
-#ifdef DEBUG   
+#ifdef DEBUG
     syslog(LOG_WARNING, "%s err addr=0x%x index=%x, cc=0x%x",
                         __func__, info->cpu_addr, info->index, ret);
-#endif    
+#endif
     return -1;
   }
   memcpy(rx_buf, msg.rx_buf, msg.rx_len);
@@ -2054,11 +2057,11 @@ get_hsc_rw_info(uint8_t* extend, uint8_t* mode) {
 
   ret = pal_get_host_system_mode(mode);
   if (ret != 0) {
-    return ret; 
-  } 
+    return ret;
+  }
 
   if((*mode == MB_8S_MODE) || (*mode == MB_4S_MODE)) {
-    *extend = true; 
+    *extend = true;
   } else {
     *extend = false;
   }
@@ -2087,7 +2090,7 @@ get_hsc_val_from_me(uint8_t hsc_id, uint8_t pmbus_cmd, uint8_t *data) {
   int ret = 0;
   NM_RW_INFO info;
 
-  get_hsc_rw_info(&extend, &mode);  
+  get_hsc_rw_info(&extend, &mode);
 
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s extend=%d, mode=%d, ch=%d\n", __func__, extend, mode, mux_ch);
@@ -2129,7 +2132,7 @@ get_hsc_val_from_me(uint8_t hsc_id, uint8_t pmbus_cmd, uint8_t *data) {
     if (retry <= 5) {
       return READING_SKIP;
     }
-    return READING_NA;   
+    return READING_NA;
   }
 
   return 0;
@@ -2140,12 +2143,12 @@ set_NM_hsc_word_data(uint8_t hsc_id, uint8_t psu_cmd, uint16_t value) {
   uint8_t data[2] = {0x00};
   uint8_t buf[5] = {0x00};
   uint8_t extend=0;
-  uint8_t mode=0; 
+  uint8_t mode=0;
     int ret = 0;
   NM_RW_INFO info;
 
-  get_hsc_rw_info(&extend, &mode);  
-    
+  get_hsc_rw_info(&extend, &mode);
+
   buf[0] = psu_cmd;                          // psu_cmd;
   buf[1] = hsc_info_list[hsc_id].slv_addr;   // psu_addr;
   buf[2] = NM_PSU_MUX_ADDR;                  // mux_addr;
@@ -2155,12 +2158,12 @@ set_NM_hsc_word_data(uint8_t hsc_id, uint8_t psu_cmd, uint16_t value) {
   get_nm_rw_info(NM_ID0, &info.bus, &info.nm_addr, &info.bmc_addr);
 
   data[0] = value & 0x00FF;   //PMON data low byte
-  data[1] = value >> 8;       //PMON data high byte 
+  data[1] = value >> 8;       //PMON data high byte
 
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s cmd=%x lb =%x hb=%x\n", __func__, psu_cmd, data[0], data[1]);
-#endif 
-  if(extend == 0) { 
+#endif
+  if(extend == 0) {
     ret = cmd_NM_pmbus_standard_write_word(info, buf, data);
   } else {
     ret = cmd_NM_pmbus_extend_write_word(info, buf, data);
@@ -2177,12 +2180,12 @@ get_NM_hsc_word_data(uint8_t hsc_id, uint8_t psu_cmd, uint8_t* value) {
   uint8_t rbuf[32] = {0x00};
   uint8_t buf[5] = {0x00};
   uint8_t extend=0;
-  uint8_t mode=0; 
+  uint8_t mode=0;
     int ret = 0;
   NM_RW_INFO info;
 
-  get_hsc_rw_info(&extend, &mode);  
-    
+  get_hsc_rw_info(&extend, &mode);
+
   buf[0] = psu_cmd;                          // psu_cmd;
   buf[1] = hsc_info_list[hsc_id].slv_addr;   // psu_addr;
   buf[2] = NM_PSU_MUX_ADDR;                  // mux_addr;
@@ -2190,8 +2193,8 @@ get_NM_hsc_word_data(uint8_t hsc_id, uint8_t psu_cmd, uint8_t* value) {
   buf[4] = NM_SENSOR_BUS_SMLINK1;            // sensor_bus;
 
   get_nm_rw_info(NM_ID0, &info.bus, &info.nm_addr, &info.bmc_addr);
- 
-  if(extend == 0) { 
+
+  if(extend == 0) {
     ret = cmd_NM_pmbus_standard_read_word(info, buf, rbuf);
   } else {
     ret = cmd_NM_pmbus_extend_read_word(info, buf, rbuf);
@@ -2207,10 +2210,10 @@ get_NM_hsc_word_data(uint8_t hsc_id, uint8_t psu_cmd, uint8_t* value) {
   } else {
     syslog(LOG_DEBUG, "%s cc=%x\n", __func__, rbuf[6]);
   }
-#ifdef DEBUG 
+#ifdef DEBUG
   syslog(LOG_DEBUG, "%s id=%x cmd=%x data[0]=%x, [1]=%x\n",
           __func__, hsc_id, psu_cmd, value[0], value[1]);
-#endif  
+#endif
   return 0;
 }
 
@@ -2279,7 +2282,7 @@ read_hsc_iout(uint8_t hsc_id, float *value) {
     return ret;
   }
   *value = ((float)(data[1] << 8 | data[0]) * r - b) / m;
-  
+
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s: Value=%f\n", __func__, *value);
 #endif
@@ -2299,7 +2302,7 @@ read_hsc_vin(uint8_t hsc_id, float *value) {
     return ret;
   }
   *value = ((float)(data[1] << 8 | data[0]) * r - b) / m;
-   
+
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s: Value=%f\n", __func__, *value);
 #endif
@@ -2319,7 +2322,7 @@ read_hsc_pin(uint8_t hsc_id, float *value) {
     return ret;
   }
   *value = ((float)(data[1] << 8 | data[0]) * r - b) / m;
-  
+
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s: Value=%f\n", __func__, *value);
 #endif
@@ -2331,9 +2334,9 @@ read_hsc_temp(uint8_t hsc_id, float *value) {
   int ret;
   uint8_t data[4];
   float m, b, r;
-  
+
   get_adm1278_info(hsc_id, ADM1278_TEMP, &m, &b, &r);
- 
+
   //Self BMC Read TEMP HSC
   ret = get_hsc_val_from_me(hsc_id, PMBUS_READ_TEMPERATURE_1, data);
   if(ret != 0) {
@@ -2343,7 +2346,7 @@ read_hsc_temp(uint8_t hsc_id, float *value) {
 
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s: Value=%f\n", __func__, *value);
-#endif  
+#endif
   return ret;
 }
 
@@ -2352,9 +2355,9 @@ read_hsc_peak_pin(uint8_t hsc_id, float *value) {
   int ret;
   uint8_t data[4];
   float m, b, r;
-  
+
   get_adm1278_info(hsc_id, ADM1278_POWER , &m, &b, &r);
- 
+
   //Self BMC Read PEAK PIN
   ret = get_hsc_val_from_me(hsc_id, ADM1278_PEAK_PIN, data);
   if(ret != 0) {
@@ -2364,7 +2367,7 @@ read_hsc_peak_pin(uint8_t hsc_id, float *value) {
 
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s: Value=%f\n", __func__, *value);
-#endif  
+#endif
   return ret;
 }
 
@@ -2608,11 +2611,11 @@ read_vr_temp(uint8_t vr_id, float *value) {
     retry[vr_id]++;
     if(retry[vr_id] < 3 ){
       return READING_SKIP;
-    } 
+    }
   }
 
-  retry[vr_id] = 0;  
-  return ret;  
+  retry[vr_id] = 0;
+  return ret;
 }
 
 static int
@@ -2783,15 +2786,15 @@ static
 int read_frb3(uint8_t fru_id, float *value) {
   int ret = 0;
 
-#ifdef DEBUG 
-  syslog(LOG_INFO, "%s\n", __func__); 
-#endif  
+#ifdef DEBUG
+  syslog(LOG_INFO, "%s\n", __func__);
+#endif
   ret = check_frb3(fru_id, MB_SNR_PROCESSOR_FAIL, value);
   if(ret != 0 ) {
     return ret;
-  } 
-  
-  return ret;   
+  }
+
+  return ret;
 }
 
 int
@@ -2825,7 +2828,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       clock_gettime(CLOCK_MONOTONIC, &ts);
       if (!kv_get("snr_polling_flag", str, NULL, 0)) {
         if ( ts.tv_sec - strtoul(str, NULL, 10) > POLLING_DELAY_TIME ) {
-          pwr_polling_flag = true; 
+          pwr_polling_flag = true;
         } else {
           pwr_polling_flag = false;
         }
@@ -3000,18 +3003,18 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
     syslog(LOG_INFO, "%s: fan number is invalid - %d", __func__, fan);
     return -1;
   }
- 
+
   ret = lib_cmc_get_fan_speed(fan, &speed);
   if (ret != 0 ) {
     syslog(LOG_INFO, "%s: invalid fan#:%d",__func__, fan);
     return -1;
   }
-  
+
   *rpm = (int)speed;
   return ret;
 }
 
-int 
+int
 pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
   int ret;
   uint8_t pwm = 0;
@@ -3021,14 +3024,14 @@ pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
     syslog(LOG_INFO, "%s: fan number is invalid - %d", __func__, fan_num);
     return -1;
   }
- 
+
   fan_id = fan_num/2;
   ret = lib_cmc_get_fan_pwm(fan_id, &pwm);
   if (ret != 0 ) {
     syslog(LOG_INFO, "%s: invalid fan#:%d",__func__, fan_id);
     return -1;
   }
-  
+
   *value = pwm;
   return ret;
 }
@@ -3056,11 +3059,11 @@ fbal_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           sprintf(name, "PDB_FAN3_PRESENT");
           break;
         default:
-          return -1; 
+          return -1;
       }
       break;
    default:
-     return -1; 
+     return -1;
   }
   return 0;
 }
@@ -3118,7 +3121,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
           break;
         case PDB_EVENT_CM_EXTERNAL_RESET:
           strcat(error_log, "PDB_Event_CM_External_Reset");
-          break;         
+          break;
         default:
           parsed = false;
           strcat(error_log, "Unknown");
@@ -3153,7 +3156,7 @@ static int pal_set_peci_mux(uint8_t select) {
   desc = gpio_open_by_shadow("PECI_MUX_SELECT");
   if (!desc)
     return ret;
- 
+
   gpio_set_value(desc, select);
   gpio_close(desc);
   return 0;
@@ -3255,10 +3258,10 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
   switch(snr_num) {
     case MB_SNR_CPU0_TEMP:
     case MB_SNR_CPU1_TEMP:
-      cpu_id = snr_num - MB_SNR_CPU0_TEMP; 
+      cpu_id = snr_num - MB_SNR_CPU0_TEMP;
       sprintf(cmd, "P%d Temp %s %3.0fC - Assert",cpu_id, thresh_name, val);
       break;
-    case MB_SNR_P5V:  
+    case MB_SNR_P5V:
     case MB_SNR_P5V_STBY:
     case MB_SNR_P3V3_STBY:
     case MB_SNR_P3V3:
@@ -3320,7 +3323,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   switch(snr_num) {
     case MB_SNR_CPU0_TEMP:
     case MB_SNR_CPU1_TEMP:
-      cpu_id = snr_num - MB_SNR_CPU0_TEMP; 
+      cpu_id = snr_num - MB_SNR_CPU0_TEMP;
       sprintf(cmd, "P%d Temp %s %3.0fC - Deassert",cpu_id, thresh_name, val);
       break;
     case PDB_SNR_FAN0_INLET_SPEED:
@@ -3336,7 +3339,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
     case PDB_SNR_FAN3_OUTLET_SPEED:
       fan_id = snr_num-PDB_SNR_FAN0_OUTLET_SPEED;
       sprintf(cmd, "FAN%d %s %dRPM - Deassert",fan_id ,thresh_name, (int)val);
-      break;    
+      break;
     default:
       return;
   }
@@ -3346,26 +3349,26 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
 
 int pal_sensor_monitor_initial(void) {
   int i=0;
-  uint16_t pmon_cfg = 0; 
+  uint16_t pmon_cfg = 0;
   uint16_t alert1_cfg = 0;
   float iout_oc_warn_limit = 123;
   uint8_t mode;
   uint8_t sku_id = 0xFF;
   uint8_t hsc_cnt=0;
-  uint8_t master = pal_get_config_is_master(); 
+  uint8_t master = pal_get_config_is_master();
   int ret;
 
 //Get Config
   ret = pal_get_host_system_mode(&mode);
   if (ret != 0) {
     syslog(LOG_WARNING,"%s Wrong get system mode\n", __func__);
-  } 
+  }
 
 //Initial
   syslog(LOG_DEBUG,"Sensor Initial\n");
   pmon_cfg = PMON_CFG_TEPM1_EN | PMON_CFG_CONTINUOUS_SAMPLE | PMON_CFG_VIN_EN |
              PMON_CFG_VI_AVG(CFG_SAMPLE_128) | PMON_CFG_AVG_PWR(CFG_SAMPLE_128);
- 
+
   alert1_cfg = IOUT_OC_WARN_EN1;
 
   pal_get_platform_id(&sku_id);
@@ -3389,13 +3392,13 @@ int pal_sensor_monitor_initial(void) {
   } else {
     hsc_cnt = 0;
   }
-     
+
   for (i=0; i<hsc_cnt; i++) {
     if(set_hsc_pmon_config(i, pmon_cfg) != 0) {
       syslog(LOG_WARNING, "Set MB%d PMON CONFIG Fail\n", i);
     }
     if(set_hsc_iout_warn_limit(i, iout_oc_warn_limit) != 0) {
-      syslog(LOG_WARNING, "Set MB%d Iout OC Warning Limit Fail\n", i); 
+      syslog(LOG_WARNING, "Set MB%d Iout OC Warning Limit Fail\n", i);
     }
     if(set_alter1_config(i, alert1_cfg) != 0) {
       syslog(LOG_WARNING, "Set MB%d Alert1 Config Fail\n", i);
@@ -3403,12 +3406,12 @@ int pal_sensor_monitor_initial(void) {
 
     if(set_hsc_clr_peak_pin(i) != 0) {
       syslog(LOG_WARNING, "Set MB%d Clear PEAK PIN Fail\n", i);
-    }   
+    }
   }
 
 //Config PECI Switch
   if (master == true) {
-    pal_set_peci_mux(PECI_MUX_SELECT_BMC); 
+    pal_set_peci_mux(PECI_MUX_SELECT_BMC);
   } else {
     pal_set_peci_mux(PECI_MUX_SELECT_PCH);
   }

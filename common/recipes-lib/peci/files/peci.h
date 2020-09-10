@@ -39,8 +39,9 @@ struct peci_xfer_msg {
   uint8_t addr;
   uint8_t tx_len;
   uint8_t rx_len;
-  uint8_t tx_buf[PECI_BUFFER_SIZE];
-  uint8_t rx_buf[PECI_BUFFER_SIZE];
+  uint8_t padding;
+  uint8_t *tx_buf;
+  uint8_t *rx_buf;
 } __attribute__((__packed__));
 
 // IOCTL

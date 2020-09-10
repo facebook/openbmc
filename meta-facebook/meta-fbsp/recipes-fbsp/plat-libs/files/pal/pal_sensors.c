@@ -868,11 +868,14 @@ cmd_peci_get_temp(uint8_t cpu_addr, float *dts) {
   struct peci_xfer_msg msg;
   int ret;
   PAL_S10_6_FORMAT margin;
+  uint8_t tbuf[PECI_BUFFER_SIZE], rbuf[PECI_BUFFER_SIZE];
   uint16_t tmp;
 
   msg.addr = cpu_addr;
   msg.tx_len = 0x01;
   msg.rx_len = 0x02;
+  msg.tx_buf = tbuf;
+  msg.rx_buf = rbuf;
   msg.tx_buf[0] = 0x01;
 
   ret = pal_get_peci_val(&msg);
@@ -900,11 +903,14 @@ cmd_peci_get_temp(uint8_t cpu_addr, float *dts) {
 static int
 cmd_peci_rdpkgconfig(PECI_RD_PKG_CONFIG_INFO* info, uint8_t* rx_buf, uint8_t rx_len) {
   struct peci_xfer_msg msg;
+  uint8_t tbuf[PECI_BUFFER_SIZE], rbuf[PECI_BUFFER_SIZE];
   int ret;
 
   msg.addr = info->cpu_addr;
   msg.tx_len = 0x05;
   msg.rx_len = rx_len;
+  msg.tx_buf = tbuf;
+  msg.rx_buf = rbuf;
   msg.tx_buf[0] = PECI_CMD_RD_PKG_CONFIG;
   msg.tx_buf[1] = info->dev_info;
   msg.tx_buf[2] = info->index;

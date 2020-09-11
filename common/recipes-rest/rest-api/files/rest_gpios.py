@@ -18,26 +18,22 @@
 # Boston, MA 02110-1301 USA
 #
 
+import re
 from rest_fruid import get_fruid
-from rest_helper import read_gpio_sysfs
-
-
-WEDGES = ["Wedge-AC-F", "Wedge-DC-F"]
+from rest_helper import read_gpio_by_shadow
 
 
 def read_wedge_back_ports():
     bhinfo = {
         "port_1": {
-            "pin_1": read_gpio_sysfs(120),
-            "pin_2": read_gpio_sysfs(121),
-            "pin_3": read_gpio_sysfs(122),
-            "pin_4": read_gpio_sysfs(123),
+            "pin_1": read_gpio_by_shadow("RMON1_PF"),
+            "pin_2": read_gpio_by_shadow("RMON1_RF"),
+            "pin_3": read_gpio_by_shadow("RMON2_PF"),
+            "pin_4": read_gpio_by_shadow("RMON2_RF"),
         },
         "port_2": {
-            "pin_1": read_gpio_sysfs(124),
-            "pin_2": read_gpio_sysfs(125),
-            "pin_3": read_gpio_sysfs(126),
-            "pin_4": read_gpio_sysfs(52),
+            "pin_1": read_gpio_by_shadow("RMON3_PF"),
+            "pin_2": read_gpio_by_shadow("RMON3_RF"),
         },
     }
     return bhinfo
@@ -46,6 +42,6 @@ def read_wedge_back_ports():
 def get_gpios():
     fruinfo = get_fruid()
     gpioinfo = {}
-    if fruinfo["Information"]["Product Name"] in WEDGES:
+    if re.match("WEDGE.*", fruinfo["Information"]["Product Name"], re.IGNORECASE):
         gpioinfo["back_ports"] = read_wedge_back_ports()
     return gpioinfo

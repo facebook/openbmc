@@ -18,6 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 import subprocess
+from aiohttp.log import server_logger
 
 
 def read_gpio_sysfs(gpio):
@@ -29,6 +30,19 @@ def read_gpio_sysfs(gpio):
             if val_string == "0\n":
                 return 0
     except:
+        return None
+
+def read_gpio_by_shadow(gpioname: str) -> int:
+    try:
+        p = subprocess.Popen(
+            ["/usr/local/bin/gpiocli", "--shadow", gpioname, "get-value"],
+            stdout=subprocess.PIPE,
+        )
+        out, err = p.communicate()
+        out = out.decode()
+        return int(out.split("=")[1])
+    except Exception as exc:
+        server_logger.exception("Error getting gpio value %s " % gpioname, exc_info=exc)
         return None
 
 

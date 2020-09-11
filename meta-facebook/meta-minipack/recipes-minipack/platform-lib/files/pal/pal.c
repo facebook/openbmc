@@ -2067,6 +2067,22 @@ pal_set_com_pwr_btn_n(char *status) {
   return 0;
 }
 
+int
+pal_get_com_pwr_btn_n(void) {
+  int ret;
+  int val;
+  ret = read_device(SCM_COM_PWR_BTN, &val);
+  if (ret) {
+#ifdef DEBUG
+  syslog(LOG_WARNING, "read_device failed for %s\n", SCM_COM_PWR_BTN);
+#endif
+    return -1;
+  }
+
+  return val;
+}
+
+
 static bool
 is_server_on(void) {
   int ret;
@@ -2091,18 +2107,28 @@ server_power_on(void) {
       return -1;
     }
     sleep(1);
+    if (pal_get_com_pwr_btn_n() != 1){
+        syslog(LOG_WARNING, "%s: Failed to write to com_pwr_btn_n", __func__);
+        return -1;
+    }
 
     if (pal_set_com_pwr_btn_n("0")) {
       return -1;
     }
     sleep(1);
-
+    if (pal_get_com_pwr_btn_n() != 0){
+        syslog(LOG_WARNING, "%s: Failed to write to com_pwr_btn_n", __func__);
+        return -1;
+    }
     if (pal_set_com_pwr_btn_n("1")) {
       return -1;
     }
     /* Wait for server power good ready */
     sleep(1);
-
+    if (pal_get_com_pwr_btn_n() != 1){
+        syslog(LOG_WARNING, "%s: Failed to write to com_pwr_btn_n", __func__);
+        return -1;
+    }
     if (!is_server_on()) {
       return -1;
     }
@@ -2121,19 +2147,25 @@ server_power_on(void) {
 static int
 server_power_off(bool gs_flag) {
   int ret;
-
   if (gs_flag) {
     ret = pal_set_com_pwr_btn_n("0");
     if (ret) {
       return -1;
     }
     sleep(DELAY_GRACEFUL_SHUTDOWN);
-
+    if (pal_get_com_pwr_btn_n() != 0){
+        syslog(LOG_WARNING, "%s: Failed to write to com_pwr_btn_n", __func__);
+        return -1;
+    }
     ret = pal_set_com_pwr_btn_n("1");
     if (ret) {
       return -1;
     }
     sleep(1);
+    if (pal_get_com_pwr_btn_n() != 1){
+        syslog(LOG_WARNING, "%s: Failed to write to com_pwr_btn_n", __func__);
+        return -1;
+    }
   } else {
     ret = write_device(SCM_COM_PWR_ENBLE, "0");
     if (ret) {

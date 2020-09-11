@@ -18,31 +18,37 @@
 # Boston, MA 02110-1301 USA
 #
 import subprocess
+
 from aiohttp.log import server_logger
 
 
-def read_gpio_sysfs(gpio):
-    try:
-        with open("/sys/class/gpio/gpio%d/value" % gpio, "r") as f:
-            val_string = f.read()
-            if val_string == "1\n":
-                return 1
-            if val_string == "0\n":
-                return 0
-    except:
-        return None
+GPIOCLI_CMD = "/usr/local/bin/gpiocli"
 
-def read_gpio_by_shadow(gpioname: str) -> int:
+
+def read_gpio_by_name(name: str, chip: str = "aspeed-gpio") -> int:
     try:
         p = subprocess.Popen(
-            ["/usr/local/bin/gpiocli", "--shadow", gpioname, "get-value"],
+            [GPIOCLI_CMD, "--chip", chip, "--pin-name", name, "get-value"],
             stdout=subprocess.PIPE,
         )
         out, err = p.communicate()
         out = out.decode()
         return int(out.split("=")[1])
     except Exception as exc:
-        server_logger.exception("Error getting gpio value %s " % gpioname, exc_info=exc)
+        server_logger.exception("Error getting gpio value %s " % name, exc_info=exc)
+        return None
+
+
+def read_gpio_by_shadow(shadow: str) -> int:
+    try:
+        p = subprocess.Popen(
+            [GPIOCLI_CMD, "--shadow", shadow, "get-value"], stdout=subprocess.PIPE
+        )
+        out, err = p.communicate()
+        out = out.decode()
+        return int(out.split("=")[1])
+    except Exception as exc:
+        server_logger.exception("Error getting gpio value %s " % shadow, exc_info=exc)
         return None
 
 

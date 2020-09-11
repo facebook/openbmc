@@ -18,14 +18,15 @@
 # Boston, MA 02110-1301 USA
 #
 
-from rest_helper import get_wedge_slot, read_gpio_sysfs
+from rest_helper import get_wedge_slot, read_gpio_by_name
 
 
 def is_mon_fc_present():
     # read monitored PEER FC : GPIOU7 =  GPIO167
-    if read_gpio_sysfs(167) == 1:
+    value = read_gpio_by_name("GPIOU7")
+    if value == 1:
         return 0  # removed
-    elif read_gpio_sysfs(167) == 0:
+    elif value == 0:
         return 1  # present
     return None
 

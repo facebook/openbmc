@@ -238,44 +238,55 @@ class Pcard(object):
         """
         Power off userver and switching ASIC,
         reset QFFP, set fan PWM to 20% duty
+        We will only reduce power is userver is
+        already on. This will ensure that we don't
+        end up preventing a power sequence control
+        from kicking in which could cause 7-0070 not
+        to be detectable.
         """
-        syslog.syslog(syslog.LOG_CRIT, "Power consumption reduction start")
-        # Power off userver
-        sysfs_write(USERVER_POWER, 0)
-        # Wait for a while to make sure command execute done
-        time.sleep(1)
-
-        # Power off switching ASIC
-        sysfs_write(MAIN_POWER, 0)
-        # Wait for a while to make sure command execute done
-        time.sleep(1)
-
-        # Set QSFP to reset mode
-        for reg in [0x34, 0x35, 0x36, 0x37]:
-            cmd = I2C_SET_BYTE_DATA % (SYSCPLD_BUS, SYSCPLD_ADDR, reg, 0x00)
-            exec_check_return(cmd)
+        if self.server_power_is_on():
+            syslog.syslog(syslog.LOG_CRIT, "Power consumption reduction start")
+            # Power off userver
+            sysfs_write(USERVER_POWER, 0)
             # Wait for a while to make sure command execute done
-            time.sleep(0.05)
+            time.sleep(1)
 
-        # Set QSFP to normal mode
-        for reg in [0x34, 0x35, 0x36, 0x37]:
-            cmd = I2C_SET_BYTE_DATA % (SYSCPLD_BUS, SYSCPLD_ADDR, reg, 0xFF)
-            exec_check_return(cmd)
+            # Power off switching ASIC
+            sysfs_write(MAIN_POWER, 0)
             # Wait for a while to make sure command execute done
-            time.sleep(0.05)
+            time.sleep(1)
 
-        # Stop FSCD and watchdog
-        exec_check_return("sv stop fscd")
-        # Wait for a while to make sure command execute done
-        time.sleep(1)
-        exec_check_return("/usr/local/bin/wdtcli stop")
-        # Wait for a while to make sure command execute done
-        time.sleep(1)
+            # Set QSFP to reset mode
+            for reg in [0x34, 0x35, 0x36, 0x37]:
+                cmd = I2C_SET_BYTE_DATA % (SYSCPLD_BUS, SYSCPLD_ADDR, reg, 0x00)
+                exec_check_return(cmd)
+                # Wait for a while to make sure command execute done
+                time.sleep(0.05)
 
-        # Set FAN PWM duty to 20%
-        cmd = "/usr/local/bin/set_fan_speed.sh 20"
-        exec_check_return(cmd)
-        syslog.syslog(syslog.LOG_CRIT, "Power consumption reduction finish")
+            # Set QSFP to normal mode
+            for reg in [0x34, 0x35, 0x36, 0x37]:
+                cmd = I2C_SET_BYTE_DATA % (SYSCPLD_BUS, SYSCPLD_ADDR, reg, 0xFF)
+                exec_check_return(cmd)
+                # Wait for a while to make sure command execute done
+                time.sleep(0.05)
+
+            # Stop FSCD and watchdog
+            exec_check_return("sv stop fscd")
+            # Wait for a while to make sure command execute done
+            time.sleep(1)
+            exec_check_return("/usr/local/bin/wdtcli stop")
+            # Wait for a while to make sure command execute done
+            time.sleep(1)
+
+            # Set FAN PWM duty to 20%
+            cmd = "/usr/local/bin/set_fan_speed.sh 20"
+            exec_check_return(cmd)
+            syslog.syslog(syslog.LOG_CRIT, "Power consumption reduction finish")
+        else:
+            syslog.syslog(
+                syslog.LOG_CRIT,
+                "userver already off... skipping reducing power consumption",
+            )
 
     def present_detect(self) -> None:
         """

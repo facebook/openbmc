@@ -37,12 +37,12 @@ A16,GPIOH6_TXD6,BI,GPIO_H6,To debug card
 D18,GPIOH7_RXD6,BI,GPIO_H7,To debug card
 AA4,GPIOO6_TACH6_VPIR4,Out,PWR_CPLD_HITLESS,Hitless upgrade enable. High active.
 R2,GPIOJ0_SGPMCK,Out,PWR_CPLD_JTAG_EN_N,CPLD JTAG upgrade enable. Low active
-V2,GPION0_PWM0,BI,RMON_PF_1,RackMon board signal
-W2,GPION1_PWM1,BI,RMON_PF_2,RackMon board signal
-V3,GPION2_PWM2_VPIG2,BI,RMON_PF_3,RackMon board signal
-U3,GPION3_PWM3_VPIG3,BI,RMON_RF_1,RackMon board signal
-W3,GPION4_PWM4_VPIG4,BI,RMON_RF_2,RackMon board signal
-AA3,GPION5_PWM5_VPIG5,BI,RMON_RF_3,RackMon board signal
+V2,GPION0_PWM0,BI,RMON1_PF,RackMon board signal
+W2,GPION1_PWM1,BI,RMON2_PF,RackMon board signal
+V3,GPION2_PWM2_VPIG2,BI,RMON3_PF,RackMon board signal
+U3,GPION3_PWM3_VPIG3,BI,RMON1_RF,RackMon board signal
+W3,GPION4_PWM4_VPIG4,BI,RMON2_RF,RackMon board signal
+AA3,GPION5_PWM5_VPIG5,BI,RMON3_RF,RackMon board signal
 V4,GPIOP0_TACH8_VPIR6,Out,SCM_CPLD_HITLESS,Hitless upgrade enable. High active.
 N4,GPIOJ3_SGPMI,Out,FCM_CPLD_JTAG_EN_N,CPLD JTAG upgrade enable. Low active
 W5,GPIOP1_TACH9_VPIR7,Out,SMB_CPLD_HITLESS,Hitless upgrade enable. High active.

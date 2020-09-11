@@ -17,6 +17,7 @@
 
 from openbmc_gpio_table import BoardGPIO
 
+
 # The following table is generated using:
 # python openbmc_gpio_parser.py data/wedge400-bmc-gpio-evta.csv
 # DO NOT MODIFY THE TABLE!!!
@@ -62,12 +63,12 @@ board_gpio_table_v1_th3 = [
     BoardGPIO("GPIOM1", "BMC_CPLD_SPARE2"),
     BoardGPIO("GPIOM2", "BMC_CPLD_SPARE3"),
     BoardGPIO("GPIOM3", "BMC_CPLD_SPARE4"),
-    BoardGPIO("GPION0", "RMON_PF_1"),
-    BoardGPIO("GPION1", "RMON_PF_2"),
-    BoardGPIO("GPION2", "RMON_PF_3"),
-    BoardGPIO("GPION3", "RMON_RF_1"),
-    BoardGPIO("GPION4", "RMON_RF_2"),
-    BoardGPIO("GPION5", "RMON_RF_3"),
+    BoardGPIO("GPION0", "RMON1_PF"),
+    BoardGPIO("GPION1", "RMON2_PF"),
+    BoardGPIO("GPION2", "RMON3_PF"),
+    BoardGPIO("GPION3", "RMON1_RF"),
+    BoardGPIO("GPION4", "RMON2_RF"),
+    BoardGPIO("GPION5", "RMON3_RF"),
     BoardGPIO("GPIOO1", "BMC_FCM_SEL"),
     BoardGPIO("GPIOO2", "FCM_CARD_PRESENT"),
     BoardGPIO("GPIOO6", "PWR_CPLD_HITLESS"),
@@ -125,12 +126,12 @@ board_gpio_table_v1_gb = [
     BoardGPIO("GPIOM1", "BMC_CPLD_SPARE2"),
     BoardGPIO("GPIOM2", "BMC_CPLD_SPARE3"),
     BoardGPIO("GPIOM3", "BMC_CPLD_SPARE4"),
-    BoardGPIO("GPION0", "RMON_PF_1"),
-    BoardGPIO("GPION1", "RMON_PF_2"),
-    BoardGPIO("GPION2", "RMON_PF_3"),
-    BoardGPIO("GPION3", "RMON_RF_1"),
-    BoardGPIO("GPION4", "RMON_RF_2"),
-    BoardGPIO("GPION5", "RMON_RF_3"),
+    BoardGPIO("GPION0", "RMON1_PF"),
+    BoardGPIO("GPION1", "RMON2_PF"),
+    BoardGPIO("GPION2", "RMON3_PF"),
+    BoardGPIO("GPION3", "RMON1_RF"),
+    BoardGPIO("GPION4", "RMON2_RF"),
+    BoardGPIO("GPION5", "RMON3_RF"),
     BoardGPIO("GPIOO1", "BMC_FCM_SEL"),
     BoardGPIO("GPIOO6", "PWR_CPLD_HITLESS"),
     BoardGPIO("GPIOO7", "FCM_CPLD_HITLESS"),

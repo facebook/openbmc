@@ -292,42 +292,42 @@ GPIOS_COMMON = {
         "edge": "none",
         "value": "1",
     },
-    "RMON_PF_1": {
+    "RMON1_PF": {
         "active_low": "0",
         "direction": "in",
         "uevent": "",
         "edge": "none",
         "value": "1",
     },
-    "RMON_PF_2": {
+    "RMON2_PF": {
         "active_low": "0",
         "direction": "in",
         "uevent": "",
         "edge": "none",
         "value": "1",
     },
-    "RMON_PF_3": {
+    "RMON3_PF": {
         "active_low": "0",
         "direction": "in",
         "uevent": "",
         "edge": "none",
         "value": "1",
     },
-    "RMON_RF_1": {
+    "RMON1_RF": {
         "active_low": "0",
         "direction": "in",
         "uevent": "",
         "edge": "none",
         "value": "1",
     },
-    "RMON_RF_2": {
+    "RMON2_RF": {
         "active_low": "0",
         "direction": "in",
         "uevent": "",
         "edge": "none",
         "value": "1",
     },
-    "RMON_RF_3": {
+    "RMON3_RF": {
         "active_low": "0",
         "direction": "in",
         "uevent": "",

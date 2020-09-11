@@ -26,7 +26,7 @@ usage() {
     prog=$(basename "$0")
     echo "Usage: $prog -s <CPLD_TYPE> -f <img_file> <hw|sw>"
     echo
-    echo "CPLD_TYPE: ( FCM | SCM | SMB | PDB )"
+    echo "CPLD_TYPE: ( FCM | SCM | SMB | PWR )"
     echo
     echo "img_file: Image file for lattice CPLD"
     echo "  VME file for software mode"
@@ -138,7 +138,7 @@ if [ -e "$UPDATE_IMG" ];then
         enable_smb_jtag_chain
     elif [[  $CPLD_TYPE == "SCM" ]];then
         enable_scm_jtag_chain
-    elif [[  $CPLD_TYPE == "PDB" ]];then
+    elif [[  $CPLD_TYPE == "PWR" ]];then
         enable_pdb_jtag_chain
    else
         echo 'argument '"$CPLD_TYPE"' is wrong'

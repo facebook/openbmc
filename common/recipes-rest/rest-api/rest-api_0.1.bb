@@ -16,6 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 inherit python3unittest
+inherit systemd
 
 SUMMARY = "Rest API Daemon"
 DESCRIPTION = "Daemon to handle RESTful interface."
@@ -118,6 +119,23 @@ aclfiles = "__init__.py \
 
 pkgdir = "rest-api"
 
+
+install_systemd() {
+    install -d ${D}${systemd_system_unitdir}
+    install -m 0644 ${WORKDIR}/restapi.service ${D}${systemd_system_unitdir}
+}
+
+
+install_sysv() {
+    install -d ${D}${sysconfdir}/sv
+    install -d ${D}${sysconfdir}/sv/restapi
+    install -m 755 ${WORKDIR}/run_rest ${D}${sysconfdir}/sv/restapi/run
+    install -d ${D}${sysconfdir}/init.d
+    install -d ${D}${sysconfdir}/rcS.d
+    install -m 755 ${WORKDIR}/setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh
+    update-rc.d -r ${D} setup-rest-api.sh start 95 2 3 4 5  .
+}
+
 do_install_class-target() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   bin="${D}/usr/local/bin"
@@ -125,6 +143,7 @@ do_install_class-target() {
   install -d $dst
   install -d $bin
   install -d $acld
+  install -d ${D}${sysconfdir}
   for f in ${binfiles1}; do
     install -m 755 $f ${dst}/$f
     ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
@@ -139,14 +158,13 @@ do_install_class-target() {
   for f in ${aclfiles}; do
     install -m 755 ${WORKDIR}/acl_providers/$f ${dst}/acl_providers/$f
   done
-  install -d ${D}${sysconfdir}/sv
-  install -d ${D}${sysconfdir}/sv/restapi
-  install -m 755 ${WORKDIR}/run_rest ${D}${sysconfdir}/sv/restapi/run
-  install -d ${D}${sysconfdir}/init.d
-  install -d ${D}${sysconfdir}/rcS.d
   install -m 644 ${WORKDIR}/rest.cfg ${D}${sysconfdir}/rest.cfg
-  install -m 755 ${WORKDIR}/setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh
-  update-rc.d -r ${D} setup-rest-api.sh start 95 2 3 4 5  .
+
+  if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+      install_systemd
+  else
+      install_sysv
+  fi
 }
 
 
@@ -154,3 +172,5 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/rest-api ${prefix}/local/bin ${sysconfdir} "
 BBCLASSEXTEND += "native nativesdk"
+
+SYSTEMD_SERVICE_${PN} = "restapi.service"

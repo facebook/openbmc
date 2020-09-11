@@ -3298,7 +3298,7 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
     case PDB_SNR_FAN1_OUTLET_SPEED:
     case PDB_SNR_FAN2_OUTLET_SPEED:
     case PDB_SNR_FAN3_OUTLET_SPEED:
-      fan_id = snr_num-PDB_SNR_FAN0_INLET_SPEED;
+      fan_id = snr_num-PDB_SNR_FAN0_OUTLET_SPEED;
       sprintf(cmd, "FAN%d %s %dRPM - Assert",fan_id ,thresh_name, (int)val);
       break;
     default:

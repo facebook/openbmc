@@ -1677,9 +1677,12 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
 int
 pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str) {
   uint8_t idx;
+  uint8_t cpu_num;
   char label[] = {'A','C','B','D'};
 
-  if ((idx = cpu*2+slot) < sizeof(label)) {
+  cpu_num = cpu%2;
+
+  if ((idx = cpu_num*2+slot) < sizeof(label)) {
     sprintf(str, "%c%d", label[idx], channel);
   } else {
     sprintf(str, "NA");

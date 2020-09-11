@@ -3410,6 +3410,36 @@ oem_set_bios_cap_fw_ver(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_set_fscd(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  unsigned char data = req->data[0];
+  char cmd[100] = {0};
+
+  switch (data)
+  {
+    case 0x00:
+      sprintf(cmd, "sv stop fscd");
+      break;
+    case 0x01:
+      sprintf(cmd, "sv start fscd");
+      break;
+    default:
+      res->cc = CC_INVALID_CMD;
+      break;
+  }
+  
+  if (system(cmd)) {
+    syslog(LOG_WARNING, "set fscd cmd failed (%s)\n", cmd);
+    res->cc = CC_UNSPECIFIED_ERROR;
+  } else {
+    res->cc = CC_SUCCESS;
+  }
+}
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
      unsigned char *response, unsigned char *res_len)
 {
@@ -3549,6 +3579,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_SET_BIOS_CAP_FW_VER:
       oem_set_bios_cap_fw_ver(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_FSCD:
+      oem_set_fscd(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

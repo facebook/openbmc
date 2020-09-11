@@ -7,6 +7,7 @@ inherit packagegroup
 
 RDEPENDS_${PN} += " \
   fw-util \
+  obmc-dump \
   gpiocli \
   i2c-tools \
   kernel-modules \

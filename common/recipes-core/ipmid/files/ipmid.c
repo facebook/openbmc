@@ -670,6 +670,11 @@ app_manufacturing_test_on (unsigned char *request, unsigned char req_len,
     if (system("/usr/local/bin/power-util sled-cycle") != 0) {
       res->cc = CC_UNSPECIFIED_ERROR;
     }
+  } else if ((!memcmp(req->data, "obmc-dump", strlen("obmc-dump"))) &&
+      (req_len - ((void*)req->data - (void*)req)) == strlen("obmc-dump")) {
+    if (system("/usr/local/bin/obmc-dump") != 0) {
+      res->cc = CC_UNSPECIFIED_ERROR;
+    }
   } else {
     res->cc = CC_INVALID_PARAM;
   }

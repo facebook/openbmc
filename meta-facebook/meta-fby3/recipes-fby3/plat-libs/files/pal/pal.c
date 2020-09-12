@@ -2172,6 +2172,43 @@ pal_is_pfr_active(void) {
 }
 
 int
+pal_is_slot_pfr_active(uint8_t fru) {
+  int pfr_active = PFR_NONE;
+  int ifd, retry = 3;
+  uint8_t tbuf[8], rbuf[8];
+  char dev_i2c[16];
+  uint8_t bus, addr;
+  bool bridged;
+
+  if (pal_get_pfr_address(fru, &bus, &addr, &bridged)) {
+    return pfr_active;
+  }
+
+  sprintf(dev_i2c, "/dev/i2c-%d", bus);
+  ifd = open(dev_i2c, O_RDWR);
+  if (ifd < 0) {
+    return pfr_active;
+  }
+
+  tbuf[0] = 0x0A;
+  do {
+    if (!i2c_rdwr_msg_transfer(ifd, addr, tbuf, 1, rbuf, 1)) {
+      pfr_active = (rbuf[0] & 0x20) ? PFR_ACTIVE : PFR_UNPROVISIONED;
+      break;
+    }
+
+#ifdef DEBUG
+    syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x", 4, tbuf[0]);
+#endif
+    if (--retry > 0)
+      msleep(20);
+  } while (retry > 0);
+  close(ifd);
+
+  return pfr_active;
+}
+
+int
 pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
   int ret = 0;
   int ifd, retry = 3;

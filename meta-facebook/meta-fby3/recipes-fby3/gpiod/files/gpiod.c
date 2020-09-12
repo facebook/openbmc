@@ -590,7 +590,8 @@ static void *
 host_pwr_mon() {
 #define MAX_NIC_PWR_RETRY   15
 #define POWER_ON_DELAY       2
-#define POWER_OFF_DELAY     -2
+#define NON_PFR_POWER_OFF_DELAY  -2
+#define PFR_POWER_OFF_DELAY     -60
   char path[64] = {0};
   uint8_t host_off_flag = 0;
   uint8_t is_util_run_flag = 0;
@@ -600,6 +601,7 @@ host_pwr_mon() {
   int i = 0;
   int retry = 0;
   long int tick = 0;
+  int power_off_delay = NON_PFR_POWER_OFF_DELAY;
 
   pthread_detach(pthread_self());
 
@@ -608,8 +610,12 @@ host_pwr_mon() {
     bmc_location = NIC_BMC;//default value
   }
 
-  if ( bmc_location == NIC_BMC ) {
-    pthread_exit(0); //CPLD controls NIC directly on NIC_BMC
+  for ( i = 0; i < MAX_NUM_SLOTS; i++ ) {
+    if ( ((SLOTS_MASK >> i) & 0x1) != 0x1) continue; // skip since fru${i} is not present
+    fru = i + 1;
+    if (pal_is_slot_pfr_active(fru) == PFR_ACTIVE) {
+      power_off_delay = PFR_POWER_OFF_DELAY;
+    }
   }
 
   while (1) {
@@ -626,8 +632,8 @@ host_pwr_mon() {
       }
 
       //record which slot is off
-      if ( tick <= POWER_OFF_DELAY ) {
-        if ( (get_pwrgd_cpu_flag(fru) == true) && (tick == POWER_OFF_DELAY) ) {
+      if ( tick <= power_off_delay ) {
+        if ( (get_pwrgd_cpu_flag(fru) == true) && (tick == power_off_delay) ) {
           syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
           pal_set_last_pwr_state(fru, "off");
         }
@@ -640,9 +646,14 @@ host_pwr_mon() {
         host_off_flag &= ~(0x1 << i);
       }
 
-      if ( (tick == POWER_OFF_DELAY) || (tick == POWER_ON_DELAY) ) {
+      if ( (tick == power_off_delay) || (tick == POWER_ON_DELAY) ) {
         set_pwrgd_cpu_flag(fru, false); //recover the flag
       }
+    }
+
+    if ( bmc_location == NIC_BMC ) {
+      usleep(DELAY_GPIOD_READ);
+      continue; //CPLD controls NIC directly on NIC_BMC
     }
 
     if ( host_off_flag == SLOTS_MASK ) {

@@ -195,6 +195,7 @@ int pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt,
 int pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log);
 int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
 int pal_set_nic_perst(uint8_t fru, uint8_t val);
+int pal_is_slot_pfr_active(uint8_t fru);
 
 #ifdef __cplusplus
 } // extern "C"

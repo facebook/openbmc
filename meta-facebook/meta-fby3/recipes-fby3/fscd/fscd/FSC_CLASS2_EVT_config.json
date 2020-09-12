@@ -8,6 +8,18 @@
     "fan_fail": true,
     "sensor_fail": true
   },
+  "sensor_valid_check": {
+    "soc_cpu": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "soc_dimm": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    }
+  },
   "watchdog": false,
   "min_rpm": 800,
   "profiles": {

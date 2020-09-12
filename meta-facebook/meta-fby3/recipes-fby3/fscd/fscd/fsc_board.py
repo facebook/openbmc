@@ -17,15 +17,44 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from ctypes import CDLL
+from ctypes import CDLL, c_uint8, byref
 from re import match
 from subprocess import PIPE, Popen
 
 from fsc_util import Logger
 
+import re
 
 lpal_hndl = CDLL("libpal.so.0")
 
+fru_map = {
+    "slot1": {
+        "name": "fru1",
+        "slot_num": 1,
+    },
+    "slot2": {
+        "name": "fru2",
+        "slot_num": 2,
+    },
+    "slot3": {
+        "name": "fru3",
+        "slot_num": 3,
+    },
+    "slot4": {
+        "name": "fru4",
+        "slot_num": 4,
+    },
+}
+
+
+part_name_map = {
+    "a": "_dimm0_part_name",
+    "b": "_dimm2_part_name",
+    "c": "_dimm4_part_name",
+    "d": "_dimm6_part_name",
+    "e": "_dimm8_part_name",
+    "f": "_dimm10_part_name",
+}
 
 def board_fan_actions(fan, action="None"):
     """
@@ -79,7 +108,24 @@ def set_all_pwm(boost):
 
 
 def sensor_valid_check(board, sname, check_name, attribute):
+    status = c_uint8(0)
     try:
+        if attribute["type"] == "power_status":
+            lpal_hndl.pal_get_server_power(int(fru_map[board]["slot_num"]), byref(status))
+            if (status.value == 1):
+                if match(r"soc_cpu", sname) is not None:
+                    return 1
+                elif match(r"soc_dimm", sname) is not None:
+                    # check DIMM present
+                    file = "/mnt/data/kv_store/sys_config/" + fru_map[board]["name"] + part_name_map[sname[8]]
+                    with open(file, "r") as f:
+                        dimm_sts = f.readline()
+                    if re.search(r"([a-zA-Z0-9])", dimm_sts):
+                        return 1
+                    else:
+                        return 0
+            else:
+                return 0
         return 0
     except SystemExit:
         Logger.debug("SystemExit from sensor read")

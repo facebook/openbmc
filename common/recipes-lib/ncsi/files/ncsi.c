@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <syslog.h>
 #include <pthread.h>
 #include <string.h>
@@ -56,6 +57,7 @@ const char *ncsi_reason_string[NUM_NCSI_REASON_CODE] = {
   "CHANNEL_NOT_RDY",
   "PKG_NOT_RDY",
   "INVALID_PAYLOAD_LEN",
+  "INFO_NOT_AVAIL",
   "UNKNOWN_CMD_TYPE",
 };
 
@@ -110,6 +112,38 @@ const char *link_speed_string[] = {
   "2.5Gbps",
   "reserved",
 };
+
+// NC-SI lib logging function.
+// If the logging method is printf, it will add '\n' for the message.
+void (*ncsi_log)(int priority, const char *format, ...)
+          __attribute__ ((__format__ (__printf__, 2, 3))) = syslog;
+
+// NC-SI printf
+// priority - syslog priority, e.g. LOG_ERR, LOG_WARINING, ...
+static void ncsi_printf(int priority, const char *format, ...)
+{
+  va_list ap;
+
+  va_start(ap, format);
+  vprintf(format, ap);
+  va_end(ap);
+  printf("\n");
+}
+
+// Configure NC-SI lib logging
+void ncsi_config_log(int log_method)
+{
+  switch (log_method) {
+    case NCSI_LOG_METHOD_SYSLOG:
+      ncsi_log = syslog;
+      break;
+    case NCSI_LOG_METHOD_PRINTF:
+      ncsi_log = ncsi_printf;
+      break;
+    default:
+      break;
+  }
+}
 
 // reload kernel NC-SI driver and trigger NC-SI interface initialization
 int
@@ -297,6 +331,25 @@ ncsi_cc_reson_name(int cc_reason)
   }
 }
 
+// Print up to print_num of data bytes
+// If print_num is 0 or negative, print all data.
+// print_offset is the starting offset printed on each line.
+void print_ncsi_data(void *data, int size, int print_num, int print_offset)
+{
+  int n = (print_num <= 0 || size <= print_num) ? size : print_num;
+  int i;
+
+  for (i = 0; i < n; ++i) {
+  		if (i % 4 == 0)
+  			printf("\n%02d: ", print_offset + i);
+      printf("0x%02x ", ((uint8_t *)data)[i]);
+  }
+  printf("\n");
+
+  if (n < size)
+    printf("...\n");
+}
+
 void print_ncsi_completion_codes(NCSI_NL_RSP_T *rcv_buf)
 {
   uint8_t *pbuf = rcv_buf->msg_payload;
@@ -327,7 +380,6 @@ get_cmd_status(NCSI_NL_RSP_T *rcv_buf)
 void
 print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf)
 {
-  int i = 0;
   int cmd = rcv_buf->hdr.cmd;
 
   print_ncsi_completion_codes(rcv_buf);
@@ -357,13 +409,8 @@ print_ncsi_resp(NCSI_NL_RSP_T *rcv_buf)
     break;
   default:
     printf("Payload length = %d\n",rcv_buf->hdr.payload_length);
-    for (i = 4; i < rcv_buf->hdr.payload_length; ++i) {
-  		if (i && !(i%4))
-  			printf("\n%d: ", 16+i);
-      printf("0x%02x ", rcv_buf->msg_payload[i]);
-    }
-    printf("\n");
-
+    print_ncsi_data(&rcv_buf->msg_payload[4], rcv_buf->hdr.payload_length - 4,
+                    0 /* print all */, sizeof(CTRL_MSG_HDR_t) + 4 /* print off */);
   }
 
   return;
@@ -652,7 +699,7 @@ handle_get_version_id(NCSI_Response_Packet *resp)
   }
 
   lseek(fd, (long)&((Get_Version_ID_Response *)0)->fw_ver, SEEK_SET);
-  int version_length = read(fd, nic_fw_ver, sizeof(nic_fw_ver)); 
+  int version_length = read(fd, nic_fw_ver, sizeof(nic_fw_ver));
   if (version_length != 0 && version_length != sizeof(nic_fw_ver)) {
     close(fd);
     return -1;

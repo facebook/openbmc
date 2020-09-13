@@ -1,16 +1,16 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 lib: libncsi.so
 
-CFLAGS += -Wall -Werror
+C_SRCS := $(wildcard *.c)
+C_OBJS := ${C_SRCS:.c=.o}
 
-libncsi.so: ncsi.o aen.o
-	$(CC) -shared -o libncsi.so ncsi.o aen.o -lc -lrt $(LDFLAGS)
+CFLAGS += -Wall -Werror -fPIC
 
-ncsi.o: ncsi.c
-	$(CC) $(CFLAGS) -fPIC -c -o ncsi.o ncsi.c
+libncsi.so: $(C_OBJS)
+	$(CC) -shared -o libncsi.so $^ -lc -lrt $(LDFLAGS)
 
-aen.o: aen.c
-	$(CC) $(CFLAGS) -fPIC -c -o aen.o aen.c
+$(C_SRCS:.c=.d):%.d:%.c
+	$(CC) $(CFLAGS) $< >$@
 
 .PHONY: clean
 

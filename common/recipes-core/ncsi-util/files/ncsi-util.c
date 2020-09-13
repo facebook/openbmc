@@ -39,8 +39,8 @@
 #include <openbmc/pldm.h>
 #include <openbmc/pldm_base.h>
 #include <openbmc/pldm_fw_update.h>
-
-#define noDEBUG   /* debug printfs */
+#include "ncsi-util.h"
+#include "brcm-ncsi-util.h"
 
 #ifndef max
 #define max(a, b) ((a) > (b)) ? (a) : (b)
@@ -56,7 +56,7 @@ NCSI_NL_RSP_T * (*send_nl_msg)(NCSI_NL_MSG_T *nl_msg);
 
 // Sending data to kernel via NETLINK_USER  message type
 //    (legacy mode, only used in kernel v4.1)
-NCSI_NL_RSP_T *
+static NCSI_NL_RSP_T *
 send_nl_msg_netlink_user(NCSI_NL_MSG_T *nl_msg)
 {
   int sock_fd, ret;
@@ -140,7 +140,85 @@ close_and_exit:
   return ret_buf;
 }
 
-void print_pldm_resp_raw(NCSI_NL_RSP_T *nl_resp)
+// Determine NC-SI netlink send method
+static void determine_nl_method(int nl_conf)
+{
+  struct utsname unamebuf;
+
+  // netlink config - auto detection
+  if (nl_conf == -1) {
+    int ret = uname(&unamebuf);
+    if (!ret) {
+      if (!strcmp(unamebuf.release, "4.1.51"))
+        nl_conf = 0;
+      else
+        nl_conf = 1;
+    }
+  }
+
+  if (nl_conf == 0)
+    send_nl_msg = send_nl_msg_netlink_user;
+  else
+    send_nl_msg = send_nl_msg_libnl;
+}
+
+// Initialize util arguments
+static void ncsi_util_init_args(ncsi_util_args_t *util_args)
+{
+  memset(util_args, 0, sizeof(*util_args));
+}
+
+// Set NC-SI packet netdev
+//   - If user has specified one, use it;
+//   - Otherwise, if a default device is provided, use it;
+//   - Otherwise, do nothing.
+void ncsi_util_set_pkt_dev(NCSI_NL_MSG_T *nl_msg,
+                           const ncsi_util_args_t *util_args,
+                           const char *dflt_dev_name)
+{
+  const char *dev_name;
+
+  if (util_args->dev_name)
+    dev_name = util_args->dev_name;
+  else if (dflt_dev_name)
+    dev_name = dflt_dev_name;
+  else
+    return;
+
+  strncpy(nl_msg->dev_name, dev_name, sizeof(nl_msg->dev_name));
+  nl_msg->dev_name[sizeof(nl_msg->dev_name)-1] = '\0';
+}
+
+// Initialize NC-SI netlink message by util arguments
+void ncsi_util_init_pkt_by_args(NCSI_NL_MSG_T *nl_msg,
+                                const ncsi_util_args_t *util_args)
+{
+  ncsi_util_set_pkt_dev(nl_msg, util_args, NCSI_UTIL_DEFAULT_DEV_NAME);
+
+  nl_msg->channel_id = util_args->channel_id;
+}
+
+// Print progress. It return the printed percentage
+unsigned long ncsi_util_print_progress(unsigned long cur, unsigned long total,
+                                       unsigned long last_percent,
+                                       const char *prefix_str)
+{
+  unsigned long percent = ((unsigned long long)cur * 100) / total;
+
+  /* Only print when percentage changes */
+  if (cur && percent == last_percent)
+    return last_percent;
+
+  printf("\r%s %10lu/%lu (%lu%%)  ", prefix_str, cur, total, percent);
+  fflush(stdout);
+  if (percent == 100)
+    printf("\n");
+
+  return percent;
+}
+
+
+static void print_pldm_resp_raw(NCSI_NL_RSP_T *nl_resp)
 {
   int i;
   printf("PLDM Payload\n");
@@ -150,7 +228,7 @@ void print_pldm_resp_raw(NCSI_NL_RSP_T *nl_resp)
 }
 
 
-void print_pldm_cmd_status(NCSI_NL_RSP_T *nl_resp)
+static void print_pldm_cmd_status(NCSI_NL_RSP_T *nl_resp)
 {
   // Debug code to print complete NC-SI payload
   // print_ncsi_resp(nl_resp);
@@ -165,7 +243,7 @@ void print_pldm_cmd_status(NCSI_NL_RSP_T *nl_resp)
 // sends nl_msg containing PLDM command across NCSI interface and
 //  and returns response
 // Returns -1 if error occurs
-int sendPldmCmdAndCheckResp(NCSI_NL_MSG_T *nl_msg)
+static int sendPldmCmdAndCheckResp(NCSI_NL_MSG_T *nl_msg)
 {
   NCSI_NL_RSP_T *nl_resp;
   int ret = 0;
@@ -188,7 +266,7 @@ int sendPldmCmdAndCheckResp(NCSI_NL_MSG_T *nl_msg)
   return ret;
 }
 
-int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
+static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
 {
 #define SLEEP_TIME_MS               200  // wait time per loop in ms
   NCSI_NL_MSG_T *nl_msg = NULL;
@@ -384,20 +462,27 @@ free_exit:
   return ret;
 }
 
-static void
-showUsage(void) {
-  printf("Usage: ncsi-util [options] <cmd> \n\n");
-  printf("       -h             This help\n");
+// Help for common command line arguments
+void ncsi_util_common_usage(void)
+{
   printf("       -n netdev      Specifies the net device to send command to [default=\"eth0\"]\n");
   printf("       -c channel     Specifies the NC-SI channel on the net device [default=0]\n");
+  printf("       -l [config]    netlink protocol [default=auto-detect]\n");
+  printf("                        0 - use NETLINK_USER (kernel 4.1)\n");
+  printf("                        1 - use libnl (kernel 5.0 and above)\n");
+}
+
+static void default_ncsi_util_usage(void) {
+  printf("Usage: ncsi-util [options] <cmd> \n\n");
+  printf("       -h             This help\n");
+  ncsi_util_common_usage();
+  printf("       -m [vendor]    OEM vendor specific command. Use -h for vendor specific usage\n");
+  printf("                        brcm - Broadcom OEM command\n");
   printf("       -S             show adapter statistics\n");
   printf("       -p [file]      Update NIC firmware via PLDM\n");
   printf("           -b [n]     (optional) buffer size for PLDM FW update [default=1024]\n");
   printf("       -z             send \"PLDM Cancel Update\" cmd \n");
   printf("       -s [n]         socket test\n\n");
-  printf("       -l [config]    netlink protocol [default=auto-detect]\n");
-  printf("                        0 - use NETLINK_USER (kernel 4.1)\n");
-  printf("                        1 - use libnl (kernel 5.0 and above)\n");
   printf("Sample debug commands: \n");
   printf("       ncsi-util -n eth0 -c 0 0x50 0 0 0x81 0x19 0 0 0x1b 0\n");
   printf("       ncsi-util 0x8   (AEN Enable)\n");
@@ -408,54 +493,33 @@ showUsage(void) {
   printf("       ncsi-util 0x18/0x19/0x1a (Get Controller Packet/NC-SI/Pass-through statistics)\n\n");
 }
 
-int
-main(int argc, char **argv) {
+static int default_ncsi_util_handler(int argc, char **argv,
+                                     ncsi_util_args_t *util_args)
+{
   int i = 0;
   NCSI_NL_MSG_T *msg = NULL;
   NCSI_NL_RSP_T *rsp = NULL;
   int argflag;
-  char * netdev = NULL;
-  int channel = 0;
   int fshowethstats = 0;
   int cancelUpdate = 0;
   int bufSize = 0;
-  char *pfile = 0;
-  int nl_conf = -1;  // default value indicating auto-detection
+  char *pfile = NULL;
   int fupgrade = 0;
-  struct utsname unamebuf;
   int ret = 0;
   int sockettest = 0;
 
-
-  if (argc < 2)
-    goto err_exit;
-
-  msg = calloc(1, sizeof(NCSI_NL_MSG_T));
-  if (!msg) {
-    printf("Error: failed buffer allocation\n");
-    return -1;
-  }
-  memset(msg, 0, sizeof(NCSI_NL_MSG_T));
-  while ((argflag = getopt(argc, (char **)argv, "l:s:p:hSzn:c:?")) != -1)
+  /*
+   * Handle ncsi DMTF command options
+   */
+  while ((argflag = getopt(argc, argv, "hs:Sp:z?" NCSI_UTIL_COMMON_OPT_STR)) != -1)
   {
     switch(argflag) {
+    case 'h':
+            default_ncsi_util_usage();
+            return 0;
     case 's':
             bufSize = (int)strtoul(optarg, NULL, 0);
             sockettest = 1;
-            break;
-    case 'n':
-            netdev = strdup(optarg);
-            if (netdev == NULL) {
-              printf("Error: malloc fail\n");
-              goto free_err_exit;
-            }
-            break;
-    case 'c':
-            channel = (int)strtoul(optarg, NULL, 0);
-            if (channel < 0) {
-              printf("channel %d is out of range.\n", channel);
-              goto free_err_exit;
-            }
             break;
     case 'S':
             fshowethstats = 1;
@@ -491,25 +555,20 @@ main(int argc, char **argv) {
             cancelUpdate = 1;
             printf ("Cancel firmware update...\n");
             break;
-    case 'l':
-            nl_conf = (int)strtoul(optarg, NULL, 0);
-            if ((nl_conf < 0) || (nl_conf > 1)) {
-              printf("invalid nl_conf\n");
-              goto free_err_exit;
-            }
+    case NCSI_UTIL_GETOPT_COMMON_OPT_CHARS:
+            // Already handled
             break;
-    case 'h':
     default :
             goto free_err_exit;
     }
   }
 
-  if (netdev) {
-    sprintf(msg->dev_name, "%s", netdev);
-  } else {
-    sprintf(msg->dev_name, "eth0");
+  msg = calloc(1, sizeof(NCSI_NL_MSG_T));
+  if (!msg) {
+    printf("Error: failed buffer allocation\n");
+    return -1;
   }
-  msg->channel_id = channel;
+  ncsi_util_init_pkt_by_args(msg, util_args);
 
   if (fshowethstats) {
     msg->cmd = NCSI_GET_CONTROLLER_PACKET_STATISTICS;
@@ -533,23 +592,6 @@ main(int argc, char **argv) {
       msg->msg_payload[i] = (int)strtoul(argv[i + optind], NULL, 0);
     }
   }
-
- // netlink config - auto detection
- if (nl_conf == -1) {
-   ret = uname(&unamebuf);
-   if (!ret) {
-     if (!strcmp(unamebuf.release, "4.1.51"))
-       nl_conf = 0;
-     else
-       nl_conf = 1;
-   }
- }
-
- if (nl_conf == 0)
-    send_nl_msg = send_nl_msg_netlink_user;
- else
-    send_nl_msg = send_nl_msg_libnl;
-
 
   if(sockettest) {
     msg->cmd = 0xDE;
@@ -605,6 +647,7 @@ main(int argc, char **argv) {
       } else {
         print_ncsi_resp(rsp);
       }
+      free(rsp);
     } else {
       if(!sockettest)
         goto free_err_exit;
@@ -612,18 +655,106 @@ main(int argc, char **argv) {
   }
 
   free(msg);
-  if (rsp)
-    free(rsp);
   return ret;
 
 free_err_exit:
   if (msg)
     free(msg);
 
-  if (netdev)
-    free(netdev);
-
-err_exit:
-  showUsage();
+  default_ncsi_util_usage();
   return -1;
 }
+
+static ncsi_util_vendor_t vendors[NCSI_UTIL_VENDOR_MAX] = {
+  [NCSI_UTIL_VENDOR_DMTF] = {
+    .name       = "dmtf",
+    .handler    = default_ncsi_util_handler,
+  },
+  [NCSI_UTIL_VENDOR_BRCM] = {
+    .name       = "brcm",
+    .handler    = brcm_ncsi_util_handler,
+  },
+};
+
+// Find vendor by name
+static ncsi_util_vendor_t *find_vendor_by_name(const char *name)
+{
+  int i;
+
+  for (i = 0; i < NCSI_UTIL_VENDOR_MAX; i++) {
+    if (!strcmp(vendors[i].name, name))
+      return &vendors[i];
+  }
+
+  return NULL;
+}
+
+int main(int argc, char **argv)
+{
+  ncsi_util_vendor_t *vendor = &vendors[NCSI_UTIL_VENDOR_DMTF]; // default
+  int nl_conf = -1;  // default value indicating auto-detection
+  int argflag;
+  int i;
+  ncsi_util_args_t util_args;
+
+  if (argc < 2)
+    goto err_exit;
+
+  // Initialize util args
+  ncsi_util_init_args(&util_args);
+
+  /*
+   * Handle util common options.
+   * It ignores errors for other options and prefixes the option string
+   * with '-' to prevent getopt changing the order of the arguments in argv.
+   */
+  opterr = 0;
+  while ((argflag = getopt(argc, argv, "-"NCSI_UTIL_COMMON_OPT_STR)) != -1)
+  {
+    switch(argflag) {
+    case 'n':
+            util_args.dev_name = optarg;
+            break;
+    case 'c':
+            i = (int)strtoul(optarg, NULL, 0);
+            if (i < 0) {
+              printf("channel %d is out of range.\n", i);
+              goto err_exit;
+            }
+            util_args.channel_id = i;
+            break;
+    case 'l':
+            nl_conf = (int)strtoul(optarg, NULL, 0);
+            if ((nl_conf < 0) || (nl_conf > 1)) {
+              printf("invalid nl_conf\n");
+              goto err_exit;
+            }
+            break;
+    case 'm':
+            vendor = find_vendor_by_name(optarg);
+            if (!vendor) {
+              printf("unknown oem vendor\n");
+              goto err_exit;
+            }
+            break;
+    default :
+            break;
+    }
+  }
+
+  // Determine netlink send function
+  determine_nl_method(nl_conf);
+
+  // Configure NC-SI lib to use printf for logging for this util
+  ncsi_config_log(NCSI_LOG_METHOD_PRINTF);
+
+  optind = 0;
+  opterr = 1;
+  return vendor->handler(argc, argv, &util_args);
+
+err_exit:
+  default_ncsi_util_usage();
+  return -1;
+}
+
+

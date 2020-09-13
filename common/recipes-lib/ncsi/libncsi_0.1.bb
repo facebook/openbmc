@@ -12,6 +12,8 @@ SRC_URI = "file://Makefile \
            file://ncsi.h \
            file://aen.c \
            file://aen.h \
+           file://ncsi-brcm.c \
+           file://ncsi-brcm.h \
           "
 
 S = "${WORKDIR}"
@@ -26,6 +28,7 @@ do_install() {
     install -d ${D}${includedir}/openbmc
     install -m 0644 ncsi.h ${D}${includedir}/openbmc/ncsi.h
     install -m 0644 aen.h ${D}${includedir}/openbmc/aen.h
+    install -m 0644 ncsi-brcm.h ${D}${includedir}/openbmc/ncsi-brcm.h
 }
 
 DEPENDS += "libkv"

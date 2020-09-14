@@ -43,7 +43,11 @@ function init_class1_ipmb(){
     else
       enable_server_i2c_bus ${slot_num}
     fi
-  done  
+  done
+  
+  echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-9/new_device
+  runsv /etc/sv/ipmbd_9 > /dev/null 2>&1 &
+
 }
 
 function init_class2_ipmb(){

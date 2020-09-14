@@ -14,6 +14,8 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+inherit systemd
+
 SUMMARY = "Rackmon Functionality"
 DESCRIPTION = "Rackmon Functionality"
 SECTION = "base"
@@ -46,6 +48,8 @@ SRC_URI = "file://Makefile \
            file://pyrmd.py \
            file://srec.py \
            file://hexfile.py \
+           file://rackmond.service \
+           file://configure-rackmond.service \
           "
 
 S = "${WORKDIR}"
@@ -67,34 +71,55 @@ binfiles = "modbuscmd \
 
 pkgdir = "rackmon"
 
+install_systemd() {
+    install -d ${D}${systemd_system_unitdir}
+
+    install -m 0644 rackmond.service ${D}${systemd_system_unitdir}
+    install -m 0644 configure-rackmond.service ${D}${systemd_system_unitdir}
+}
+
+install_sysv() {
+    install -d ${D}${sysconfdir}/init.d
+    install -d ${D}${sysconfdir}/rcS.d
+    install -d ${D}${sysconfdir}/sv
+    install -d ${D}${sysconfdir}/sv/rackmond
+    install -m 755 run-rackmond.sh ${D}${sysconfdir}/sv/rackmond/run
+    install -m 755 setup-rackmond.sh ${D}${sysconfdir}/init.d/rackmond
+    update-rc.d -r ${D} rackmond start 95 2 3 4 5  .
+}
+
 do_install() {
-  dst="${D}/usr/local/fbpackages/${pkgdir}"
-  bin="${D}/usr/local/bin"
-  install -d $dst
-  install -d $bin
-  for f in ${binfiles}; do
-    install -m 755 $f ${dst}/$f
-    ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
-  done
-  ln -snf ../fbpackages/${pkgdir}/rackmonctl ${bin}/rackmondata
-  ln -snf ../fbpackages/${pkgdir}/rackmonctl ${bin}/rackmonstatus
-  ln -snf ../fbpackages/${pkgdir}/rackmonctl ${bin}/rackmonscan
-  install -d ${D}${sysconfdir}/init.d
-  install -d ${D}${sysconfdir}/rcS.d
-  install -d ${D}${sysconfdir}/sv
-  install -d ${D}${sysconfdir}/sv/rackmond
-  install -m 755 run-rackmond.sh ${D}${sysconfdir}/sv/rackmond/run
-  install -m 755 setup-rackmond.sh ${D}${sysconfdir}/init.d/rackmond
-  install -m 755 rackmon-config.py ${D}${sysconfdir}/rackmon-config.py
-  install -m 755 rackmond.py ${D}${sysconfdir}/rackmond.py
-  update-rc.d -r ${D} rackmond start 95 2 3 4 5  .
+    dst="${D}/usr/local/fbpackages/${pkgdir}"
+    bin="${D}/usr/local/bin"
+    install -d ${D}${sysconfdir}
+    install -d $dst
+    install -d $bin
+    for f in ${binfiles}; do
+        install -m 755 $f ${dst}/$f
+        ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
+    done
+    ln -snf ../fbpackages/${pkgdir}/rackmonctl ${bin}/rackmondata
+    ln -snf ../fbpackages/${pkgdir}/rackmonctl ${bin}/rackmonstatus
+    ln -snf ../fbpackages/${pkgdir}/rackmonctl ${bin}/rackmonscan
+    install -m 755 rackmon-config.py ${D}${sysconfdir}/rackmon-config.py
+    install -m 755 rackmond.py ${D}${sysconfdir}/rackmond.py
+
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+        install_systemd
+    else
+        install_sysv
+    fi
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/rackmon ${prefix}/local/bin ${sysconfdir} "
 
+FILES_${PN} += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '${systemd_system_unitdir}', '', d)}"
+
 # Inhibit complaints about .debug directories for the rackmon binaries:
 
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INHIBIT_PACKAGE_STRIP = "1"
+
+SYSTEMD_SERVICE_${PN} = "rackmond.service configure-rackmond.service"

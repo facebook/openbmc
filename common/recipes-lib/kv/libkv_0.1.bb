@@ -28,7 +28,7 @@ inherit ptest-meson
 SRC_URI = "\
     file://fileops.cpp \
     file://fileops.hpp \
-    file://kv \
+    file://kv-util.cpp \
     file://kv.cpp \
     file://kv.h \
     file://kv.hpp \

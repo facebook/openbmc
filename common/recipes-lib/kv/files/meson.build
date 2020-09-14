@@ -33,10 +33,10 @@ pkg.generate(libraries: [kv_lib],
     version: meson.project_version(),
     description: 'KV Store Library')
 
-# 'kv' shell script.
-install_data('kv',
-    install_dir: get_option('bindir'),
-    install_mode: 'rwxr-xr-x')
+# KV executable.
+kv_exe = executable('kv', 'kv-util.cpp',
+    link_with: kv_lib,
+    install: true)
 
 # Test cases.
 kv_test = executable('test-kv', 'test-kv.cpp', srcs,

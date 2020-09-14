@@ -57,6 +57,7 @@
 #include <openbmc/watchdog.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/misc-utils.h>
+#include <openbmc/obmc-i2c.h>
 
 #ifndef BITS_PER_BYTE
 #define BITS_PER_BYTE 8
@@ -91,16 +92,24 @@
 #define FAN_SHUTDOWN_THRESHOLD 20 /* How long fans can be failed before */
                                   /* we just shut down the whole thing. */
 
-#define LM75_DIR "/sys/bus/i2c/drivers/lm75/"
-#define PANTHER_PLUS_DIR "/sys/bus/i2c/drivers/fb_panther_plus/"
-
-#define INTAKE_TEMP_DEVICE LM75_DIR "3-0048"
-#define CHIP_TEMP_DEVICE LM75_DIR "3-0049"
-#define EXHAUST_TEMP_DEVICE LM75_DIR "3-004a"
-#define USERVER_TEMP_DEVICE PANTHER_PLUS_DIR "4-0040"
-
 #define REV_ID_BITS  3
 #define SLOT_ID_BITS 4
+
+/*
+ * The structure to manage a temperature sensor.
+ */
+typedef struct {
+  const char *name;  /* sensor name */
+  int *sensor_data;  /* sensor value read from sensor hardware */
+
+  const char *dev_path;  /* root directory of the sensor device */
+
+  /*
+   * <sensor_path> is dynamically allocated from heap at init time, so
+   * don't forget to free it when the structure reaches end of life.
+   */
+  char *sensor_path;
+} temp_sensor_t;
 
 static const char *board_rev_gpios[REV_ID_BITS] = {
     "BOARD_REV_ID0",
@@ -555,54 +564,28 @@ static int fan_controller_init_5x(struct fan_controller *controller)
   return 0;
 }
 
-int read_temp(const char *device, int *value) {
-  int rc;
-  char full_name[PATH_MAX];
+static int read_temp_sensors(temp_sensor_t *sensors) {
+  int i, rc;
+  int error = 0;
 
-  /* We set an impossible value to check for errors */
-  *value = BAD_TEMP;
-  snprintf(full_name, sizeof(full_name), "%s/temp1_input", device);
+  for (i = 0; sensors[i].name != NULL; i++) {
+    temp_sensor_t *ts = &sensors[i];
 
-  rc = device_read_integer(full_name, value);
+    assert(ts->sensor_path != NULL);
+    *(ts->sensor_data) = BAD_TEMP;
 
-  /**
-   * In the latest Linux kernel, lm75 temperature sysfs file is moved from
-   * the device directory to device/hwmon/hwmon???. The ??? is the index of
-   * hwmon device created in the system, which depends on the order when the
-   * device is registered with hwmon.
-   * For temperature reported by Facebook kernel module, i.e. fb_panther_plus
-   * or cpld, we still keep the temperature sysfs directly under the device
-   * directory.
-   * This code will try to read from the sysfs directory first. If it fails
-   * with ENOENT, the code will try to probe device/hwmon/hwmon???.
-   */
-
-  if (rc != 0) {
-    DIR *dir = NULL;
-    struct dirent *ent;
-
-    snprintf(full_name, sizeof(full_name), "%s/hwmon", device);
-    dir = opendir(full_name);
-    if (dir != NULL) {
-      while ((ent = readdir(dir)) != NULL) {
-        if (strstr(ent->d_name, "hwmon")) {
-          // found the correct 'hwmon??' directory
-          snprintf(full_name, sizeof(full_name), "%s/hwmon/%s/temp1_input",
-                   device, ent->d_name);
-          rc = device_read_integer(full_name, value);
-          break;
-        }
-      }
-      closedir(dir);
-    } /* if (dir != NULL) */
-  } /* if (rc != 0) */
-
-  if (rc != 0) {
-    syslog(LOG_INFO, "failed to read temperature from %s: %s",
-           full_name, strerror(rc));
+    LOG_VERBOSE("reading %s (path=%s)\n",
+                ts->name, ts->sensor_path);
+    rc = device_read_integer(ts->sensor_path, ts->sensor_data);
+    if (rc != 0) {
+      syslog(LOG_INFO, "failed to read %s from %s: %s",
+             ts->name, ts->sensor_path, strerror(rc));
+      error = rc;
+      /* fall through */
+    }
   }
 
-  return rc;
+  return error;
 }
 
 static int parse_gpio_ids(const char **shadows, size_t size, unsigned int *id)
@@ -974,14 +957,93 @@ void fand_interrupt(int sig)
   exit(3);
 }
 
+static char *dev_hwmon_path(const char *device, const char *entry)
+{
+  DIR *dir;
+  struct dirent *ent;
+  char path[PATH_MAX];
+  char *hwmon_path = NULL;
+
+  snprintf(path, sizeof(path), "%s/hwmon", device);
+  dir = opendir(path);
+  if (dir == NULL) {
+    return NULL;
+  }
+
+  while ((ent = readdir(dir)) != NULL) {
+    if (strstr(ent->d_name, "hwmon") != NULL) {
+      snprintf(path, sizeof(path), "%s/hwmon/%s/%s",
+               device, ent->d_name, entry);
+      LOG_VERBOSE("looking for path %s", path);
+      if (path_exists(path)) {
+        hwmon_path = strdup(path);
+        break;
+      }
+    }
+  }
+
+  closedir(dir);
+  return hwmon_path;
+}
+
+static void temp_sensors_destroy(temp_sensor_t *sensors)
+{
+  int i;
+
+  for (i = 0; sensors[i].name != NULL; i++) {
+    temp_sensor_t *ts = &sensors[i];
+
+    if (ts->sensor_path != NULL) {
+      free(ts->sensor_path);
+    }
+  }
+}
+
+static int temp_sensors_init(temp_sensor_t *sensors)
+{
+  int i, retry;
+  char path[PATH_MAX];
+  const char *sensor_entry = "temp1_input";
+
+  for (i = 0; sensors[i].name != NULL; i++) {
+    temp_sensor_t *ts = &sensors[i];
+
+    /*
+     * Let's see if the sensor_entry is located in the device directory.
+     */
+    snprintf(path, sizeof(path), "%s/%s", ts->dev_path, sensor_entry);
+    if (path_exists(path)) {
+      ts->sensor_path = strdup(path);
+      continue;
+    }
+
+    /*
+     * Then let's see if we can find the sensor entry in hwmon directory.
+     */
+    retry = 3;
+    do {
+      ts->sensor_path = dev_hwmon_path(ts->dev_path, sensor_entry);
+      if (ts->sensor_path != NULL) {
+        break;
+      }
+
+      sleep(1);
+      retry--;
+    } while (retry > 0);
+    if (ts->sensor_path == NULL) {
+      syslog(LOG_ERR, "failed to find <%s> node for %s (%s)",
+             sensor_entry, ts->name, ts->dev_path);
+      goto error;
+    }
+  }
+
+  return 0;
+error:
+  temp_sensors_destroy(sensors);
+  return -1;
+}
+
 int main(int argc, char **argv) {
-  /* Sensor values */
-
-  int intake_temp;
-  int exhaust_temp;
-  int switch_temp;
-  int userver_temp;
-
   int fan_speed = fan_high;
   int bad_reads = 0;
   int fan_failure = 0;
@@ -998,6 +1060,43 @@ int main(int argc, char **argv) {
   struct sigaction sa;
 
   k_version_t k_version;
+
+  int intake_temp;
+  int exhaust_temp;
+  int switch_temp;
+  int userver_temp;
+
+  temp_sensor_t temp_sensors[] = {
+    {
+      .name = "intake_temp",
+      .sensor_data = &intake_temp,
+      .dev_path = I2C_SYSFS_DEV_DIR(3-0048),
+      .sensor_path = NULL,
+    },
+    {
+      .name = "switch_temp",
+      .sensor_data = &switch_temp,
+      .dev_path = I2C_SYSFS_DEV_DIR(3-0049),
+      .sensor_path = NULL,
+    },
+    {
+      .name = "exhaust_temp",
+      .sensor_data = &exhaust_temp,
+      .dev_path = I2C_SYSFS_DEV_DIR(3-004a),
+      .sensor_path = NULL,
+    },
+    {
+      .name = "userver_temp",
+      .sensor_data = &userver_temp,
+      .dev_path = I2C_SYSFS_DEV_DIR(4-0040),
+      .sensor_path = NULL,
+    },
+
+    /* make sure it's the last entry */
+    {
+      .name = NULL,
+    },
+  };
 
   sa.sa_handler = fand_interrupt;
   sa.sa_flags = 0;
@@ -1096,6 +1195,13 @@ int main(int argc, char **argv) {
     }
   }
 
+  /*
+   * Look up sysfs path for temp sensors
+   */
+  if (temp_sensors_init(temp_sensors) < 0) {
+    return -1;
+  }
+
   daemon(1, 0);
 
   LOG_VERBOSE("Starting up;  system should have %d fans.", total_fans);
@@ -1120,11 +1226,7 @@ int main(int argc, char **argv) {
     old_speed = fan_speed;
 
     LOG_VERBOSE("checking system temperature..");
-    /* Read sensors */
-    read_temp(INTAKE_TEMP_DEVICE, &intake_temp);
-    read_temp(EXHAUST_TEMP_DEVICE, &exhaust_temp);
-    read_temp(CHIP_TEMP_DEVICE, &switch_temp);
-    read_temp(USERVER_TEMP_DEVICE, &userver_temp);
+    read_temp_sensors(temp_sensors);
 
     /*
      * uServer can be powered down, but all of the rest of the sensors
@@ -1332,6 +1434,7 @@ int main(int argc, char **argv) {
     kick_watchdog();
   }
 
+  temp_sensors_destroy(temp_sensors);
   if (active_fan_ctrl->cleanup != NULL) {
     active_fan_ctrl->cleanup(active_fan_ctrl);
   }

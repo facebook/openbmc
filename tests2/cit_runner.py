@@ -143,13 +143,16 @@ def arg_parser():
 
     Running tests on target BMC: test pattern "test_*"
     Running tests on target BMC & CPU from outside BMC: test pattern "external_*"
+    Running tests on target BMC & CPU from outside BMC: test pattern "external_fw_upgrade*"
     Running stress tests on target BMC: test pattern "stress_*"
 
     Usage Examples:
     On devserver:
     List tests : python cit_runner.py --platform wedge100 --list-tests --start-dir tests/
     List tests that need to connect to BMC: python cit_runner.py --platform wedge100 --list-tests --start-dir tests/ --external --host "NAME"
-    Run tests that need to connect to BMC: python cit_runner.py --platform wedge100 --start-dir tests/ --external --host "NAME"
+    List real upgrade firmware external tests that connect to BMC: python cit_runner.py --platform wedge100 --list-tests --start-dir tests/ --upgrade-fw
+    Run tests that need to connect to BMC: python cit_runner.py --platform wedge100 --start-dir tests/ --external --bmc-host "NAME"
+    Run real upgrade firmware external tests that connect to BMC: python cit_runner.py --platform wedge100 --run-tests "path" --upgrade --bmc-host "NAME" --firmware-opt-args="-f -v"
     Run single/test that need connect to BMC: python cit_runner.py --run-test "path" --external --host "NAME"
 
     On BMC:
@@ -213,6 +216,13 @@ def arg_parser():
         default=False,
     )  # find better way to represent this ?
 
+    parser.add_argument(
+        "--upgrade-fw",
+        help="Run tests from outside BMC, these are tests that have \
+                        pattern external_test*.py, require --host to be set",
+        action="store_true",
+        default=False,
+    )
     parser.add_argument(
         "--firmware-opt-args",
         help="Set optional arguments for external firmware upgrading \
@@ -280,8 +290,12 @@ if __name__ == "__main__":
     if args.platform == "wedge400c":
         args.platform = "wedge400"
 
+    if args.upgrade_fw:
+        pattern = "external_fw_upgrade*.py"
+        set_external(args)
+
     if args.external:
-        pattern = "external*.py"
+        pattern = "external_test*.py"
         set_external(args)
 
     if args.firmware_opt_args:

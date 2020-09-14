@@ -25,6 +25,7 @@ SRC_URI = "file://ast-functions \
            file://setup-gpio.sh \
            file://setup-usbnet.sh \
            file://setup-usbhub.sh \
+           file://setup-m2carrier.sh \
            file://COPYING \
           "
 
@@ -55,7 +56,8 @@ do_install() {
   update-rc.d -r ${D} setup-usbhub.sh start 90 S .
   install -m 755 setup-usbnet.sh ${D}${sysconfdir}/init.d/setup-usbnet.sh
   update-rc.d -r ${D} setup-usbnet.sh start 69 5 .
-  
+  install -m 755 setup-m2carrier.sh ${D}${sysconfdir}/init.d/setup-m2carrier.sh
+  update-rc.d -r ${D} setup-m2carrier.sh start 90 S .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

@@ -529,6 +529,39 @@
             ]
         },
         {
+            "alias": "openbmc-buildci-grandcanyon-determinator",
+            "args": {
+                "name": "openbmc-buildci-grandcanyon-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-grandcanyon-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform grandcanyon"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-grandcanyon/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-buildci-lightning-determinator",
             "args": {
                 "name": "openbmc-buildci-lightning-determinator",
@@ -1257,6 +1290,39 @@
                     "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-galaxy100/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-grandcanyon-determinator",
+            "args": {
+                "name": "openbmc-cit-grandcanyon-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-grandcanyon-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform grandcanyon"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-grandcanyon/.*"
                     ]
                 }
             ],

@@ -2176,7 +2176,6 @@ pal_is_slot_pfr_active(uint8_t fru) {
   int pfr_active = PFR_NONE;
   int ifd, retry = 3;
   uint8_t tbuf[8], rbuf[8];
-  char dev_i2c[16];
   uint8_t bus, addr;
   bool bridged;
 
@@ -2184,8 +2183,7 @@ pal_is_slot_pfr_active(uint8_t fru) {
     return pfr_active;
   }
 
-  sprintf(dev_i2c, "/dev/i2c-%d", bus);
-  ifd = open(dev_i2c, O_RDWR);
+  ifd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (ifd < 0) {
     return pfr_active;
   }

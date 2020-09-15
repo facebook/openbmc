@@ -36,12 +36,31 @@ create_pim_gpio() {
   pim=$1
   chip=$2
 
-  # ELBERTTODO: check if the name is already exported
+  # Check if GPIO name has already been exported
+  gpio_num=$(gpio_name2value PIM"${pim}"_FULL_POWER_EN)
+  if ! [[ "$gpio_num" =~ ^[0-9]+$ ]]; then
+    gpio_export_by_offset "${chip}" 4 PIM"${pim}"_FULL_POWER_EN
+  fi
 
-  gpio_export_by_offset "${chip}" 4 PIM"${pim}"_FULL_POWER_EN
-  gpio_export_by_offset "${chip}" 22 PIM"${pim}"_FPGA_RESET_L
+  gpio_num=$(gpio_name2value PIM"${pim}"_FPGA_RESET_L)
+  if ! [[ "$gpio_num" =~ ^[0-9]+$ ]]; then
+    gpio_export_by_offset "${chip}" 22 PIM"${pim}"_FPGA_RESET_L
+  fi
 
   logger pim_enable: registered PIM"${pim}" with GPIO chip "${chip}"
+}
+
+# Clear pimserial endpoint cache if pim doesn't exist but the pimserial file does
+clear_pimserial_cache() {
+  pimserial_number="${1}"
+  pimserial_path="$SMBCPLD_SYSFS_DIR/pim${pimserial_number}_present"
+  pimserial_present=$(head -n 1 < "$pimserial_path")
+  pimserial_cache_path=/tmp/pim${pimserial_number}_serial.txt
+
+  if [ "${pimserial_present}" == 0x0 ] && [ -f "${pimserial_cache_path}" ]; then
+    # Pim device doesn't exist but pimserial cache txt file exist, so remove it
+    rm -rf "${pimserial_cache_path}"
+  fi
 }
 
 while true; do
@@ -70,6 +89,10 @@ while true; do
     if [ "${pim_found[$i]}" -eq "1" ]; then
        power_on_pim $((i+2))
     fi
+
+    # Clear pimserial endpoint cache
+    clear_pimserial_cache $((i+2))
+
   done
   # Sleep 5 seconds until the next loop.
   # reduce to 5 seconds for faster scan.

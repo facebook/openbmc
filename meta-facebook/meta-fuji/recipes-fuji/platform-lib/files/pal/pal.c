@@ -324,12 +324,10 @@ pal_get_pim_type(uint8_t fru, int retry) {
   syslog(LOG_WARNING, "[%s] val: 0x%x", __func__, val);
 #endif
 
-  if (val == 0x0) {
+  if ((val & 0x80) == 0x0) {
     ret = PIM_TYPE_16Q;
-  } else if ((val & 0xf0) == 0xf0) {
+  } else if ((val & 0x80) == 0x80) {
     ret = PIM_TYPE_16O;
-  } else if (val == 0x10) {
-    ret = PIM_TYPE_4DD;
   } else {
     return -1;
   }
@@ -358,10 +356,6 @@ pal_get_pim_type_from_file(uint8_t fru) {
   sprintf(key, "%s_type", fru_name);
 
   if (kv_get(key, type, NULL, 0)) {
-#if DEBUG
-    syslog(LOG_WARNING,
-            "pal_get_pim_type_from_file: %s get tpye fail", fru_name);
-#endif
     return -1;
   }
 
@@ -369,10 +363,83 @@ pal_get_pim_type_from_file(uint8_t fru) {
     return PIM_TYPE_16Q;
   } else if (!strncmp(type, "16o", sizeof("16o"))) {
     return PIM_TYPE_16O;
-  } else if (!strncmp(type, "4dd", sizeof("4dd"))) {
-    return PIM_TYPE_4DD;
   } else if (!strncmp(type, "unplug", sizeof("unplug"))) {
     return PIM_TYPE_UNPLUG;
+  } else {
+    return PIM_TYPE_NONE;
+  }
+}
+
+int pal_get_pim_pedigree(uint8_t fru, int retry){
+  int val;
+  int ret = -1;
+  char path[PATH_MAX];
+  uint8_t bus;
+
+  if (fru < FRU_PIM1 || fru > FRU_PIM8)
+    return -1;
+
+  if (retry < 0) {
+    retry = 0;
+  }
+
+  bus = ((fru - FRU_PIM1) * 8) + 80;
+  snprintf(path, sizeof(path), I2C_SYSFS_DEVICES"/%d-0060/board_ver", bus);
+
+  while ((ret = read_device(path, &val)) != 0 && retry--) {
+    msleep(500);
+  }
+  if (ret) {
+    return -1;
+  }
+
+  if (val == 0xF0) {
+    ret = PIM_16O_SIMULATE;
+  } else if (val == 0xF1) {
+    ret = PIM_16O_ALPHA1;
+  } else {
+    ret = PIM_16O_NONE_VERSION;
+  }
+  // TODO: need to implement get for ALPHA2,BETA and PILOT
+
+  return ret;
+}
+
+
+int
+pal_set_pim_pedigree_to_file(uint8_t fru, char *type) {
+  char fru_name[16];
+  char key[MAX_KEY_LEN];
+
+  pal_get_fru_name(fru, fru_name);
+  snprintf(key, sizeof(key), "%s_pedigree", fru_name);
+
+  return kv_set(key, type, 0, 0);
+}
+
+int
+pal_get_pim_pedigree_from_file(uint8_t fru) {
+  char fru_name[16];
+  char key[MAX_KEY_LEN];
+  char type[12] = {0};
+
+  pal_get_fru_name(fru, fru_name);
+  snprintf(key, sizeof(key), "%s_pedigree", fru_name);
+
+  if (kv_get(key, type, NULL, 0)) {
+#ifdef DEBUG
+    syslog(LOG_WARNING,
+            "pal_get_pim_pedigree_from_file: %s get type fail", fru_name);
+#endif
+    return -1;
+  }
+
+  if (!strncmp(type, "simulate", sizeof("simulate"))) {
+    return PIM_16O_SIMULATE;
+  } else if (!strncmp(type, "alpha1", sizeof("alpha1"))) {
+    return PIM_16O_ALPHA1;
+  } else if (!strncmp(type, "alpha2", sizeof("alpha2"))) {
+    return PIM_16O_ALPHA2;
   } else {
     return PIM_TYPE_NONE;
   }
@@ -755,7 +822,7 @@ pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver) {
   char ver_path[PATH_MAX];
   char min_ver_path[PATH_MAX];
   char sub_ver_path[PATH_MAX];
-  
+
   switch(fru) {
     case FRU_CPLD:
       if (!(strncmp(device, SCM_CPLD, strlen(SCM_CPLD)))) {
@@ -1491,7 +1558,7 @@ pal_set_def_key_value(void) {
   int i, ret;
   char path[LARGEST_DEVICE_NAME + 1];
 
-  for (i = 0; strcmp(key_list[i], LAST_KEY) != 0; i++) {
+  for (i = 0; strncmp(key_list[i], LAST_KEY, strlen(LAST_KEY)) != 0; i++) {
     snprintf(path, LARGEST_DEVICE_NAME, KV_PATH, key_list[i]);
     if ((ret = kv_set(key_list[i], def_val_list[i],
 	                  0, KV_FPERSIST | KV_FCREATE)) < 0) {

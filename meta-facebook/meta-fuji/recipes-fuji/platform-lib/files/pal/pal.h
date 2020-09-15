@@ -224,6 +224,13 @@ enum {
 };
 
 enum {
+  PIM_16O_SIMULATE = 0,
+  PIM_16O_ALPHA1 = 1,
+  PIM_16O_ALPHA2 = 2,
+  PIM_16O_NONE_VERSION = -1,
+};
+
+enum {
   MODE_AUTO	= 0,
   MODE_QUICK = 1,
   MODE_READ = 2
@@ -284,6 +291,9 @@ int pal_del_i2c_device(uint8_t bus, uint8_t addr);
 int pal_get_pim_type(uint8_t fru, int retry);
 int pal_set_pim_type_to_file(uint8_t fru, char *type);
 int pal_get_pim_type_from_file(uint8_t fru);
+int pal_get_pim_pedigree(uint8_t fru, int retry);
+int pal_set_pim_pedigree_to_file(uint8_t fru, char *type);
+int pal_get_pim_pedigree_from_file(uint8_t fru);
 int pal_set_pim_thresh(uint8_t fru);
 int pal_clear_thresh_value(uint8_t fru);
 extern void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);

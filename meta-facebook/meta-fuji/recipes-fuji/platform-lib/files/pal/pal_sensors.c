@@ -77,6 +77,8 @@ typedef struct {
 
 static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 static sensor_path_t snr_path[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static uint8_t sdr_fru_update_flag[MAX_NUM_FRUS] = {0};
+static bool init_threshold_done[MAX_NUM_FRUS+1] = {false};
 
 // List of BIC sensors which need to do negative reading handle
 const uint8_t bic_neg_reading_sensor_support_list[] = {
@@ -3709,11 +3711,10 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 
 static void
 sensor_thresh_array_init(uint8_t fru) {
-  static bool init_done[MAX_NUM_FRUS] = {false};
   int i = 0, j;
   float fvalue;
 
-  if (init_done[fru])
+  if (init_threshold_done[fru])
     return;
 
   switch (fru) {
@@ -3917,7 +3918,7 @@ scm_thresh_done:
       pim_thresh_array_init(fru);
       break;
   }
-  init_done[fru] = true;
+  init_threshold_done[fru] = true;
 }
 
 int
@@ -4935,6 +4936,16 @@ sdr_init(char *path, sensor_info_t *sinfo) {
 
   close(fd);
   return 0;
+}
+
+int pal_set_sdr_update_flag(uint8_t slot, uint8_t update) {
+  sdr_fru_update_flag[slot] = update;
+  init_threshold_done[slot] = false;
+  return 0;
+}
+
+int pal_get_sdr_update_flag(uint8_t slot) {
+  return sdr_fru_update_flag[slot];
 }
 
 

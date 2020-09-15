@@ -1,0 +1,38 @@
+{
+    "bios" : {
+        "filename" : "elbert_coreboot.rom",
+        "version" : "4.10",
+        "hash" : "md5sum",
+        "hash_value" : "adf529146d67a95b6a1f2428d902f810"
+    },
+    "scm" : {
+        "filename" : "elbert_scm.astp",
+        "version" : "1.11",
+        "hash" : "md5sum",
+        "hash_value" : "b1552931295fd5dd9377f1942098e2fe"
+    },
+    "smb" : {
+        "filename" : "elbert_smb.astp",
+        "version" : "1.15",
+        "hash" : "md5sum",
+        "hash_value" : "4c400088de0eb9673d3e1a92617dc2d6"
+    },
+    "smb_cpld" : {
+        "filename" : "elbert_smb_cpld.astp",
+        "version" : "4.1",
+        "hash" : "md5sum",
+        "hash_value" : "4e2168025fecdc9fc39e53a5c6cf32e0"
+    },
+    "fan" : {
+        "filename" : "elbert_fan.astp",
+        "version" : "1.1",
+        "hash" : "md5sum",
+        "hash_value" : "6d332a920e1a4b37f5f9001a8ab3fed3"
+    },
+    "pim" : {
+        "filename" : "elbert_pim.abin",
+        "version" : "4.2",
+        "hash" : "md5sum",
+        "hash_value" : "9cb13b2597500b85ba42a29df252eaed"
+    }
+}

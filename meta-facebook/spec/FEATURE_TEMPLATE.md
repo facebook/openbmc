@@ -7,7 +7,7 @@ This document tracks the features planned for platform <PLATFORM>
 * P1 - Before DVT build
 * P2 - Before PVT Build
 * P3 - PVT exit gating
-* P4 - Optional 
+* P4 - Optional
 
 ## Infrastructure
 - [ ] P0 **U-boot Porting** Port platform specific u-boot changes
@@ -69,7 +69,7 @@ This document tracks the features planned for platform <PLATFORM>
 - [ ] P0 **Fan control (Manual)** Implement fan utility to set fan-speed
 - [ ] P1 **FSC configuration update** Allow user to update the fan configuration:- Allow to try out a new configuration and be able to restart the fscd
 - [ ] P3 **Persistent FSC configuration** Allow user to update the fan configuration to be persistent across BMC reboots
-- [ ] P2 **Sensor calibration** The sensor value needs to be adjusted/corrected based on the current PWM value. 
+- [ ] P2 **Sensor calibration** The sensor value needs to be adjusted/corrected based on the current PWM value.
 - [ ] P2 **Conditional Sensor calibration** Allow for sensor calibration which can change based on runtime detected configuration changes
 - [ ] P2 **System COnfiguration** Allow for BIOS to send the current system configuration to the BMC which can be used to determine various thermal calibrations.
 - [ ] P0 **Airflow Sensor** Calculate Airflow based on current configuration e.g. use BIOS OEM command to get information on number of DIMMs populated etc.
@@ -169,13 +169,13 @@ Support reading firmware versions of attached components including self.
 - [ ] P2 **ME Health** Sometimes, ME might be in a bad state. To detect this condition, BMC can send IPMI command to ME and if it does not respond, log appropriate event. Disabled on Slave BMCs
 - [ ] P1 **Memory Usage** When BMC's free memory goes below a threshold, BMC can reboot to function properly
 - [ ] P1 **CPU Usage** When CPU utilization goes above certain threshold, print a warning.
-- [ ] P1 **Healthd configuration** Allow configuration on whether healthd should reboot the BMC upon issues. 
+- [ ] P1 **Healthd configuration** Allow configuration on whether healthd should reboot the BMC upon issues.
 
-## Miscellaneous 
+## Miscellaneous
 - [ ] P3 **JSON Format** Allow the output of SSH-based utilites to be in JSON format (e.g sensor-util, power-util, fw-util, log-util etc..)
 - [ ] P4 **ODS/Scuba integration** BMC to log various data in to ODS directly. Allow configuration of remote service.
 - [ ] P4 **ODS sensor names** Sensor naming should be standardized across various server  platforms using different flavors of BMC(e.g. ODM, OEM or OpenBMC)
 - [ ] P2 **Reset Default factory settings** Allow user to clear all configurations
 - [ ] P1 **FRB 2/3 Monitoring** Support BIOS Fault Resilient boot.
 - [ ] P1 **guid-util** Utility to program Device GUID and System GUID to FRU EEPROM
-- [ ] P1 **ipmi-util** Utility to interact with OpenBMC's IPMI stack using raw commands 
+- [ ] P1 **ipmi-util** Utility to interact with OpenBMC's IPMI stack using raw commands

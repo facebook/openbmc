@@ -200,9 +200,9 @@ gpio_export PD_GPIOU3 GPIOU3
 gpio_set PD_GPIOU3 0
 
 gpio_export USB2_SEL0 GPIOZ0
-gpio_set USB2_SEL0 1
+gpio_set USB2_SEL0 0
 gpio_export USB2_SEL1 GPIOZ1
-gpio_set USB2_SEL1 1
+gpio_set USB2_SEL1 0
 
 gpio_export CPLD_BMC_GPIO_R_00 GPIOAC1
 gpio_set CPLD_BMC_GPIO_R_00 0

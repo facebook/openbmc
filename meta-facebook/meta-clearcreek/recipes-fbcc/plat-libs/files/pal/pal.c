@@ -22,6 +22,7 @@
 #include <syslog.h>
 #include <stdio.h>
 #include <string.h>
+#include <openbmc/libgpio.h>
 #include "pal.h"
 
 #define MB_BIN "/tmp/fruid_mb.bin"
@@ -175,4 +176,47 @@ int pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id)
   }
 
   return 0;
+}
+
+int pal_set_usb_path(uint8_t slot, uint8_t endpoint)
+{
+  int ret = CC_SUCCESS;
+  char gpio_name[16] = {0};
+  gpio_desc_t *desc;
+  gpio_value_t value;
+
+  if (slot > SERVER_2 || endpoint > PCH) {
+    ret = CC_PARAM_OUT_OF_RANGE;
+    goto exit;
+  }
+
+  strcpy(gpio_name ,"USB2_SEL0");
+  desc = gpio_open_by_shadow(gpio_name);
+  if (!desc) {
+    ret = CC_UNSPECIFIED_ERROR;
+    goto exit;
+  }
+  value = endpoint == PCH? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
+  if (gpio_set_value(desc, value)) {
+    ret = CC_UNSPECIFIED_ERROR;
+    goto bail;
+  }
+  gpio_close(desc);
+
+  strcpy(gpio_name ,"USB2_SEL1");
+  desc = gpio_open_by_shadow(gpio_name);
+  if (!desc) {
+    ret = CC_UNSPECIFIED_ERROR;
+    goto exit;
+  }
+  value = slot%2 == 0? GPIO_VALUE_HIGH: GPIO_VALUE_LOW;
+  if (gpio_set_value(desc, value)) {
+    ret = CC_UNSPECIFIED_ERROR;
+    goto bail;
+  }
+
+bail:
+  gpio_close(desc);
+exit:
+  return ret;
 }

@@ -49,6 +49,16 @@ enum {
   FRU_CNT,
 };
 
+enum {
+  SERVER_1 = 0x0,
+  SERVER_2,
+};
+
+enum {
+  BMC = 0x0,
+  PCH,
+};
+
 #define MAX_NUM_FRUS (FRU_CNT-1)
 #define MAX_NODES    1
 #define LARGEST_DEVICE_NAME 120

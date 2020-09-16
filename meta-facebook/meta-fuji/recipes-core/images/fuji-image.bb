@@ -31,6 +31,7 @@ IMAGE_INSTALL += " \
   libcpldupdate-dll-gpio \
   libcpldupdate-dll-ast-jtag \
   flashrom \
+  front-paneld \
   fw-util \
   bic-monitor \
   openbmc-utils \

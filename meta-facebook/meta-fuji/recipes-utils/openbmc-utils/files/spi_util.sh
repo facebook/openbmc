@@ -426,36 +426,90 @@ config_spi1_pin_and_path(){
         "TH4_PCIE_FLASH")
             echo "[Setup] TH4_PCIE_FLASH"
             echo 0x00 > /sys/bus/i2c/devices/12-003e/spi1_sel
-            i2cset -y -f 13 0x35 0x76 0x00 b
+            #
+            # FPGA 0x0074, [31:0] is 4 bytes address offset from 0x74 to 0x77 offset
+            #
+            # Set FPGA register offset 74h bit[15] SPI master mode to 1 - enable FPGA internal SPI masters
+            #
+            # Bit0 is for PIM#1; bit7 is for PIM#8.
+            # Bit8 is for the SPI Flash attached on IOB FPGA. For testing
+            #
+            # Set FPGA register offset 74h bit[8:0] SPI selection bitmap to 0 - select none
+            i2cset -y -f 13 0x35 0x76 0x80 b
             i2cset -y -f 13 0x35 0x77 0x00 b
         ;;
         "IOB_FPGA")
             echo "[Setup] IOB_FPGA"
             echo 0x01 > /sys/bus/i2c/devices/12-003e/spi1_sel
-            i2cset -y -f 13 0x35 0x76 0x00 b
+            #
+            # FPGA 0x0074, [31:0] is 4 bytes address offset from 0x74 to 0x77 offset
+            #
+            # Set FPGA register offset 74h bit[15] SPI master mode to 1 - enable FPGA internal SPI masters
+            #
+            # Bit0 is for PIM#1; bit7 is for PIM#8.
+            # Bit8 is for the SPI Flash attached on IOB FPGA. For testing
+            #
+            # Set FPGA register offset 74h bit[8:0] SPI selection bitmap to 0 - select none
+            i2cset -y -f 13 0x35 0x76 0x80 b
             i2cset -y -f 13 0x35 0x77 0x00 b
         ;;
         "PCIE_SW")
             echo "[Setup] PCIE_SW"
             echo 0x02 > /sys/bus/i2c/devices/12-003e/spi1_sel
-            i2cset -y -f 13 0x35 0x76 0x00 b
+            #
+            # FPGA 0x0074, [31:0] is 4 bytes address offset from 0x74 to 0x77 offset
+            #
+            # Set FPGA register offset 74h bit[15] SPI master mode to 1 - enable FPGA internal SPI masters
+            #
+            # Bit0 is for PIM#1; bit7 is for PIM#8.
+            # Bit8 is for the SPI Flash attached on IOB FPGA. For testing
+            #
+            # Set FPGA register offset 74h bit[8:0] SPI selection bitmap to 0 - select none
+            i2cset -y -f 13 0x35 0x76 0x80 b
             i2cset -y -f 13 0x35 0x77 0x00 b
         ;;
         "COME_BIOS")
             echo "[Setup] COME_BIOS"
             echo 0x03 > /sys/bus/i2c/devices/12-003e/spi1_sel
-            i2cset -y -f 13 0x35 0x76 0x00 b
+            #
+            # FPGA 0x0074, [31:0] is 4 bytes address offset from 0x74 to 0x77 offset
+            #
+            # Set FPGA register offset 74h bit[15] SPI master mode to 1 - enable FPGA internal SPI masters
+            #
+            # Bit0 is for PIM#1; bit7 is for PIM#8.
+            # Bit8 is for the SPI Flash attached on IOB FPGA. For testing
+            #
+            # Set FPGA register offset 74h bit[8:0] SPI selection bitmap to 0 - select none
+            i2cset -y -f 13 0x35 0x76 0x80 b
             i2cset -y -f 13 0x35 0x77 0x00 b
         ;;
         "DOM_FPGA_ALL")
             echo "[Setup] DOM_FPGA_ALL"
             echo 0x06 > /sys/bus/i2c/devices/12-003e/spi1_sel
+            #
+            # FPGA 0x0074, [31:0] is 4 bytes address offset from 0x74 to 0x77 offset
+            #
+            # Set FPGA register offset 74h bit[15] SPI master mode to 0 - SPI legacy mode, SPI master is BMC.
+            #
+            # Bit0 is for PIM#1; bit7 is for PIM#8.
+            # Bit8 is for the SPI Flash attached on IOB FPGA. For testing
+            #
+            # Set FPGA register offset 74h bit[8:0] SPI selection bitmap to 0x100 - Bit8 is for the SPI Flash attached on IOB FPGA. For testing
             i2cset -y -f 13 0x35 0x76 0x01 b
             i2cset -y -f 13 0x35 0x77 0x00 b
         ;;
         "DOM_FPGA_PIM1")
             echo "[Setup] DOM_FPGA_PIM1"
             echo 0x06 > /sys/bus/i2c/devices/12-003e/spi1_sel
+            #
+            # FPGA 0x0074, [31:0] is 4 bytes address offset from 0x74 to 0x77 offset
+            #
+            # Set FPGA register offset 74h bit[15] SPI master mode to 0 - SPI legacy mode, SPI master is BMC.
+            #
+            # Bit0 is for PIM#1; bit7 is for PIM#8.
+            # Bit8 is for the SPI Flash attached on IOB FPGA. For testing
+            #
+            # Set FPGA register offset 74h bit[8:0] SPI selection bitmap to 0x01 - Bit0 is for PIM#1
             i2cset -y -f 13 0x35 0x76 0x00 b
             i2cset -y -f 13 0x35 0x77 0x01 b
             setup_pims_switch_mux
@@ -463,6 +517,15 @@ config_spi1_pin_and_path(){
         "DOM_FPGA_PIM2")
             echo "[Setup] DOM_FPGA_PIM2"
             echo 0x06 > /sys/bus/i2c/devices/12-003e/spi1_sel
+            #
+            # FPGA 0x0074, [31:0] is 4 bytes address offset from 0x74 to 0x77 offset
+            #
+            # Set FPGA register offset 74h bit[15] SPI master mode to 0 - SPI legacy mode, SPI master is BMC.
+            #
+            # Bit0 is for PIM#1; bit7 is for PIM#8.
+            # Bit8 is for the SPI Flash attached on IOB FPGA. For testing
+            #
+            # Set FPGA register offset 74h bit[8:0] SPI selection bitmap to 0x02 - Bit1 is for PIM#2
             i2cset -y -f 13 0x35 0x76 0x10 b
             i2cset -y -f 13 0x35 0x77 0x02 b
             setup_pims_switch_mux
@@ -470,6 +533,15 @@ config_spi1_pin_and_path(){
         "DOM_FPGA_PIM3")
             echo "[Setup] DOM_FPGA_PIM3"
             echo 0x06 > /sys/bus/i2c/devices/12-003e/spi1_sel
+            #
+            # FPGA 0x0074, [31:0] is 4 bytes address offset from 0x74 to 0x77 offset
+            #
+            # Set FPGA register offset 74h bit[15] SPI master mode to 0 - SPI legacy mode, SPI master is BMC.
+            #
+            # Bit0 is for PIM#1; bit7 is for PIM#8.
+            # Bit8 is for the SPI Flash attached on IOB FPGA. For testing
+            #
+            # Set FPGA register offset 74h bit[8:0] SPI selection bitmap to 0x04 - Bit2 is for PIM#3
             i2cset -y -f 13 0x35 0x76 0x20 b
             i2cset -y -f 13 0x35 0x77 0x04 b
             setup_pims_switch_mux
@@ -477,6 +549,15 @@ config_spi1_pin_and_path(){
         "DOM_FPGA_PIM4")
             echo "[Setup] DOM_FPGA_PIM4"
             echo 0x06 > /sys/bus/i2c/devices/12-003e/spi1_sel
+            #
+            # FPGA 0x0074, [31:0] is 4 bytes address offset from 0x74 to 0x77 offset
+            #
+            # Set FPGA register offset 74h bit[15] SPI master mode to 0 - SPI legacy mode, SPI master is BMC.
+            #
+            # Bit0 is for PIM#1; bit7 is for PIM#8.
+            # Bit8 is for the SPI Flash attached on IOB FPGA. For testing
+            #
+            # Set FPGA register offset 74h bit[8:0] SPI selection bitmap to 0x08 - Bit3 is for PIM#4
             i2cset -y -f 13 0x35 0x76 0x30 b
             i2cset -y -f 13 0x35 0x77 0x08 b
             setup_pims_switch_mux
@@ -484,6 +565,15 @@ config_spi1_pin_and_path(){
         "DOM_FPGA_PIM5")
             echo "[Setup] DOM_FPGA_PIM5"
             echo 0x06 > /sys/bus/i2c/devices/12-003e/spi1_sel
+            #
+            # FPGA 0x0074, [31:0] is 4 bytes address offset from 0x74 to 0x77 offset
+            #
+            # Set FPGA register offset 74h bit[15] SPI master mode to 0 - SPI legacy mode, SPI master is BMC.
+            #
+            # Bit0 is for PIM#1; bit7 is for PIM#8.
+            # Bit8 is for the SPI Flash attached on IOB FPGA. For testing
+            #
+            # Set FPGA register offset 74h bit[8:0] SPI selection bitmap to 0x10 - Bit4 is for PIM#5
             i2cset -y -f 13 0x35 0x76 0x40 b
             i2cset -y -f 13 0x35 0x77 0x10 b
             setup_pims_switch_mux
@@ -491,6 +581,15 @@ config_spi1_pin_and_path(){
         "DOM_FPGA_PIM6")
             echo "[Setup] DOM_FPGA_PIM6"
             echo 0x06 > /sys/bus/i2c/devices/12-003e/spi1_sel
+            #
+            # FPGA 0x0074, [31:0] is 4 bytes address offset from 0x74 to 0x77 offset
+            #
+            # Set FPGA register offset 74h bit[15] SPI master mode to 0 - SPI legacy mode, SPI master is BMC.
+            #
+            # Bit0 is for PIM#1; bit7 is for PIM#8.
+            # Bit8 is for the SPI Flash attached on IOB FPGA. For testing
+            #
+            # Set FPGA register offset 74h bit[8:0] SPI selection bitmap to 0x20 - Bit5 is for PIM#6
             i2cset -y -f 13 0x35 0x76 0x50 b
             i2cset -y -f 13 0x35 0x77 0x20 b
             setup_pims_switch_mux
@@ -498,6 +597,15 @@ config_spi1_pin_and_path(){
         "DOM_FPGA_PIM7")
             echo "[Setup] DOM_FPGA_PIM7"
             echo 0x06 > /sys/bus/i2c/devices/12-003e/spi1_sel
+            #
+            # FPGA 0x0074, [31:0] is 4 bytes address offset from 0x74 to 0x77 offset
+            #
+            # Set FPGA register offset 74h bit[15] SPI master mode to 0 - SPI legacy mode, SPI master is BMC.
+            #
+            # Bit0 is for PIM#1; bit7 is for PIM#8.
+            # Bit8 is for the SPI Flash attached on IOB FPGA. For testing
+            #
+            # Set FPGA register offset 74h bit[8:0] SPI selection bitmap to 0x40 - Bit6 is for PIM#7
             i2cset -y -f 13 0x35 0x76 0x60 b
             i2cset -y -f 13 0x35 0x77 0x40 b
             setup_pims_switch_mux
@@ -505,6 +613,15 @@ config_spi1_pin_and_path(){
         "DOM_FPGA_PIM8")
             echo "[Setup] DOM_FPGA_PIM8"
             echo 0x06 > /sys/bus/i2c/devices/12-003e/spi1_sel
+            #
+            # FPGA 0x0074, [31:0] is 4 bytes address offset from 0x74 to 0x77 offset
+            #
+            # Set FPGA register offset 74h bit[15] SPI master mode to 0 - SPI legacy mode, SPI master is BMC.
+            #
+            # Bit0 is for PIM#1; bit7 is for PIM#8.
+            # Bit8 is for the SPI Flash attached on IOB FPGA. For testing
+            #
+            # Set FPGA register offset 74h bit[8:0] SPI selection bitmap to 0x80 - Bit7 is for PIM#8
             i2cset -y -f 13 0x35 0x76 0x70 b
             i2cset -y -f 13 0x35 0x77 0x80 b
             setup_pims_switch_mux

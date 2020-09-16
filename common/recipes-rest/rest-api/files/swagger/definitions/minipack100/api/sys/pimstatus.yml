@@ -1,44 +1,52 @@
 swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/pimstatus  
+info:
+  description: Swagger doc for /api/sys/pimstatus
   title: Swagger doc for /api/sys/pimstatus
   version: 1.0.0
-paths: 
-  /api/sys/pimserial: 
-    get: 
+paths:
+  /api/sys/pimserial:
+    get:
       produces: [application/json]
-      responses: 
-        200: 
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Resources: 
+            properties:
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Information: 
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  pim3: 
+                properties:
+                  PIM3:
                     type: string
-                  pim2: 
+                    pattern: "^[A-Z0-9]+$"
+                  PIM2:
                     type: string
-                  pim1: 
+                    pattern: "^[A-Z0-9]+$"
+                  PIM1:
                     type: string
-                  pim7: 
+                    pattern: "^[A-Z0-9]+$"
+                  PIM7:
                     type: string
-                  pim6: 
+                    pattern: "^[A-Z0-9]+$"
+                  PIM6:
                     type: string
-                  pim5: 
+                    pattern: "^[A-Z0-9]+$"
+                  PIM5:
                     type: string
-                  pim4: 
+                    pattern: "^[A-Z0-9]+$"
+                  PIM4:
                     type: string
-                  pim8: 
+                    pattern: "^[A-Z0-9]+$"
+                  PIM8:
                     type: string
+                    pattern: "^[A-Z0-9]+$"

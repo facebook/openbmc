@@ -1,21 +1,16 @@
 swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/modbus_registers  
-  title: Swagger doc for /api/sys/modbus_registers  
+info:
+  description: Swagger doc for /api/sys/modbus_registers
+  title: Swagger doc for /api/sys/modbus_registers
   version: 1.0.0
-paths: 
-  /api/sys/modbus_registers: 
-    get: 
+paths:
+  /api/sys/modbus_registers:
+    get:
       produces: [application/json]
-      responses: 
-        200: 
+      responses:
+        200:
           description: ok
-          schema: 
-            type: object
-            additionalProperties: false
-            properties: 
-              0: 
-                type: string
-              1: 
-                type: string
-            
+          schema:
+            type: string
+            # XXX: At some point in time, the output format of this endpoint changed
+            # from object ({int: string}) to the string output of /usr/local/bin/rackmondata

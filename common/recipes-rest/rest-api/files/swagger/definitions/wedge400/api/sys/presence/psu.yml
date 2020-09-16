@@ -18,10 +18,13 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  psu1 : 
+                  # XXX these are actual spaces in the key, likely a bug
+                  "psu1 ": 
                     type: string
-                  psu2 : 
+                    pattern: "^[0-9]+$"
+                  "psu2 ": 
                     type: string
+                    pattern: "^[0-9]+$"
               Actions: 
                 type: array
                 items: 
@@ -30,4 +33,3 @@ paths:
                 type: array
                 items: 
                   type: string
-            

@@ -1,77 +1,79 @@
 swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/fruid_scm  
-  title: Swagger doc for /api/sys/fruid_scm  
+info:
+  description: Swagger doc for /api/sys/fruid_scm
+  title: Swagger doc for /api/sys/fruid_scm
   version: 1.0.0
-paths: 
-  /api/sys/fruid_scm: 
-    get: 
+paths:
+  /api/sys/fruid_scm:
+    get:
       produces: [application/json]
-      responses: 
-        200: 
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  Product Asset Tag: 
+                properties:
+                  Product Asset Tag:
                     type: string
-                  ODM PCBA Part Number: 
+                  ODM PCBA Part Number:
                     type: string
-                  Facebook PCB Part Number: 
+                  Facebook PCB Part Number:
                     type: string
-                  ODM PCBA Serial Number: 
+                  ODM PCBA Serial Number:
                     type: string
-                  System Manufacturer: 
+                  System Manufacturer:
                     type: string
-                  Product Sub-Version: 
+                  Product Sub-Version:
                     type: string
-                  Extended MAC Address Size: 
+                  Extended MAC Address Size:
                     type: string
-                  Product Name: 
+                  Product Name:
                     type: string
-                  Product Part Number: 
+                  Product Part Number:
                     type: string
-                  Product Version: 
+                  Product Version:
                     type: string
-                  Local MAC: 
+                  Local MAC:
                     type: string
-                  Facebook PCBA Part Number: 
+                  Facebook PCBA Part Number:
                     type: string
-                  System Manufacturing Date: 
+                  System Manufacturing Date:
                     type: string
-                  System Assembly Part Number: 
+                  System Assembly Part Number:
                     type: string
-                  flashrom is free software get the source code at https: 
+                  # XXX this is likely a bug
+                  flashrom is free software get the source code at https:
                     type: string
-                  Version: 
+                  flashrom is free software, get the source code at https:
                     type: string
-                  Assembled At: 
+                  Version:
                     type: string
-                  Location on Fabric: 
+                  Assembled At:
                     type: string
-                  Product Serial Number: 
+                  Location on Fabric:
                     type: string
-                  Extended MAC Base: 
+                  Product Serial Number:
                     type: string
-                  PCB Manufacturer: 
+                  Extended MAC Base:
                     type: string
-                  Product Production State: 
+                  PCB Manufacturer:
                     type: string
-                  CRC8: 
+                  Product Production State:
                     type: string
-                  Wedge EEPROM SUP: 
+                  CRC8:
                     type: string
-              Resources: 
+                  Wedge EEPROM SUP:
+                    type: string
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-            

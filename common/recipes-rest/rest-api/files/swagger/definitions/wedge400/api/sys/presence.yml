@@ -20,8 +20,28 @@ paths:
                   type: object
                   additionalProperties: false
                   properties: 
-                    scm : 
+                    # XXX: These are actual spaces in the key, likely a bug
+                    "scm ":  
                       type: string
+                      pattern: "^[0-9]+$"
+                    "fan1 ": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "fan2 ": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "fan3 ": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "fan4 ": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "psu1 ": 
+                      type: string
+                      pattern: "^[0-9]+$"
+                    "psu2 ": 
+                      type: string
+                      pattern: "^[0-9]+$"
               Actions: 
                 type: array
                 items: 
@@ -30,4 +50,3 @@ paths:
                 type: array
                 items: 
                   type: string
-            

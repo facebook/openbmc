@@ -1,55 +1,34 @@
 swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/sensors  
-  title: Swagger doc for /api/sys/sensors  
+info:
+  description: Swagger doc for /api/sys/sensors
+  title: Swagger doc for /api/sys/sensors
   version: 1.0.0
-paths: 
-  /api/sys/sensors: 
-    get: 
+paths:
+  /api/sys/sensors:
+    get:
       produces: [application/json]
-      responses: 
-        200: 
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: array
-                items: 
+                items:
                   type: object
-                  additionalProperties: false
-                  properties: 
-                    PIM4 ECB_I: 
+                  additionalProperties: true
+                  properties:
+                    Adapter:
                       type: string
-                    PIM4 1v2: 
+                    name:
                       type: string
-                    PIM4 0v9_L: 
-                      type: string
-                    PIM4 1v8: 
-                      type: string
-                    Adapter: 
-                      type: string
-                    PIM4 12vEC: 
-                      type: string
-                    PIM4 12v_F: 
-                      type: string
-                    PIM4 3v3: 
-                      type: string
-                    PIM4 3v3_E: 
-                      type: string
-                    name: 
-                      type: string
-                    PIM4 0v9_R: 
-                      type: string
-                    PIM4 OVTMP: 
-                      type: string
-              Resources: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Actions: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

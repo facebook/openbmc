@@ -18,14 +18,19 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  fan4 : 
+                  # XXX these are actual spaces in the key, likely a bug
+                  "fan4 ": 
                     type: string
-                  fan1 : 
+                    pattern: "^[0-9]+$"
+                  "fan1 ": 
                     type: string
-                  fan3 : 
+                    pattern: "^[0-9]+$"
+                  "fan3 ": 
                     type: string
-                  fan2 : 
+                    pattern: "^[0-9]+$"
+                  "fan2 ": 
                     type: string
+                    pattern: "^[0-9]+$"
               Actions: 
                 type: array
                 items: 
@@ -34,4 +39,3 @@ paths:
                 type: array
                 items: 
                   type: string
-            

@@ -18,8 +18,10 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  scm : 
+                  # XXX These are actual spaces in the key, likely a bug
+                  "scm ": 
                     type: string
+                    pattern: "^[0-9]+$"
               Actions: 
                 type: array
                 items: 
@@ -28,4 +30,3 @@ paths:
                 type: array
                 items: 
                   type: string
-            

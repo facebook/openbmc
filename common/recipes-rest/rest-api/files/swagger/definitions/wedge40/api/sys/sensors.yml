@@ -1,51 +1,34 @@
 swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/sensors  
-  title: Swagger doc for /api/sys/sensors  
+info:
+  description: Swagger doc for /api/sys/sensors
+  title: Swagger doc for /api/sys/sensors
   version: 1.0.0
-paths: 
-  /api/sys/sensors: 
-    get: 
+paths:
+  /api/sys/sensors:
+    get:
       produces: [application/json]
-      responses: 
-        200: 
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: array
-                items: 
+                items:
                   type: object
-                  additionalProperties: false
-                  properties: 
-                    Fan 0 front: 
+                  additionalProperties: true
+                  properties:
+                    Adapter:
                       type: string
-                    Fan 3 rear: 
+                    name:
                       type: string
-                    Fan 1 rear: 
-                      type: string
-                    Adapter: 
-                      type: string
-                    Fan 3 front: 
-                      type: string
-                    Fan 2 front: 
-                      type: string
-                    Fan 1 front: 
-                      type: string
-                    Fan 0 rear: 
-                      type: string
-                    Fan 2 rear: 
-                      type: string
-                    name: 
-                      type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-            

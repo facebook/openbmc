@@ -18,13 +18,15 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  SMB_SYSCPLD: 
-                    type: string
                   SCMCPLD: 
                     type: string
                   SMB_PWRCPLD: 
                     type: string
                   FCMCPLD: 
+                    type: string
+                  PWRCPLD:
+                    type: string
+                  SMBCPLD:
                     type: string
               Actions: 
                 type: array
@@ -34,4 +36,3 @@ paths:
                 type: array
                 items: 
                   type: string
-            

@@ -26,6 +26,5 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  1: 
+                  "1": 
                     type: string
-            

@@ -56,6 +56,7 @@ static void* emmc_health_monitor()
       syslog(LOG_INFO, "eMMC life_A %d%% & life_B %d%% used", life_type_A*10, life_type_B*10);
 #endif
     }
+    rewind(fp);
     sleep(LIFE_TIME_INTERVAL);
   }
 

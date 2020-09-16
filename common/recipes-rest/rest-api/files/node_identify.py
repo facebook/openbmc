@@ -2,8 +2,10 @@
 
 from subprocess import *
 
+from kv import FPERSIST, kv_get
 from node import node
 from pal import *
+
 
 
 class identifyNode(node):
@@ -20,13 +22,7 @@ class identifyNode(node):
             self.actions = actions
 
     def getInformation(self, param={}):
-        identify_status = ""
-        data = (
-            Popen("cat /mnt/data/kv_store/identify_slot1", shell=True, stdout=PIPE)
-            .stdout.read()
-            .decode()
-        )
-        identify_status = data.strip("\n")
+        identify_status = kv_get("identify_slot1", FPERSIST)
         info = {"Status of identify LED": identify_status}
 
         return info

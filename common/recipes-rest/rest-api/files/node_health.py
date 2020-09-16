@@ -2,7 +2,7 @@
 
 from subprocess import *
 
-from kv import kv_get
+from kv import FPERSIST, kv_get
 from node import node
 from pal import *
 
@@ -27,43 +27,11 @@ class healthNode(node):
         result = "NA"
         # Enclosure health LED status (GOOD/BAD)
         if name == "FBTTN":
-            dpb_hlth = (
-                Popen(
-                    "cat /mnt/data/kv_store/dpb_sensor_health", shell=True, stdout=PIPE
-                )
-                .stdout.read()
-                .decode()
-            )
-            iom_hlth = (
-                Popen(
-                    "cat /mnt/data/kv_store/iom_sensor_health", shell=True, stdout=PIPE
-                )
-                .stdout.read()
-                .decode()
-            )
-            nic_hlth = (
-                Popen(
-                    "cat /mnt/data/kv_store/nic_sensor_health", shell=True, stdout=PIPE
-                )
-                .stdout.read()
-                .decode()
-            )
-            scc_hlth = (
-                Popen(
-                    "cat /mnt/data/kv_store/scc_sensor_health", shell=True, stdout=PIPE
-                )
-                .stdout.read()
-                .decode()
-            )
-            slot1_hlth = (
-                Popen(
-                    "cat /mnt/data/kv_store/slot1_sensor_health",
-                    shell=True,
-                    stdout=PIPE,
-                )
-                .stdout.read()
-                .decode()
-            )
+            dpb_hlth = kv_get("dpb_sensor_health", FPERSIST)
+            iom_hlth = kv_get("iom_sensor_health", FPERSIST)
+            nic_hlth = kv_get("nic_sensor_health", FPERSIST)
+            scc_hlth = kv_get("scc_sensor_health", FPERSIST)
+            slot1_hlth = kv_get("slot1_sensor_health", FPERSIST)
 
             if (
                 (dpb_hlth == "1")

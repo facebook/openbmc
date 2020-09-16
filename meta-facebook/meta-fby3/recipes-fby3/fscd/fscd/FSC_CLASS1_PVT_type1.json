@@ -1,6 +1,6 @@
 {
   "version": "FSC6.3",
-  "pwm_transition_value": 70,
+  "pwm_transition_value": 100,
   "pwm_boost_value": 60,
   "non_fanfail_limited_boost_value": 100,
   "sample_interval_ms": 3000,

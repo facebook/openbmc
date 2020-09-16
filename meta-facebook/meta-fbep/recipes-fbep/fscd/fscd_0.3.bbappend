@@ -18,13 +18,19 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += "file://setup-fan.sh \
-            file://fsc-config.json \
-            file://zone1.fsc \
+            file://fsc-config_AMD.json \
+            file://fsc-config_NVIDIA.json \
+            file://zone1_AMD.fsc \
+            file://zone1_NVIDIA.fsc \
             file://fsc_board.py \
            "
 
-FSC_CONFIG += "fsc-config.json"
+FSC_CONFIG += "fsc-config_AMD.json \
+               fsc-config_NVIDIA.json \
+	      "
 
-FSC_ZONE_CONFIG +="zone1.fsc"
+FSC_ZONE_CONFIG +="zone1_AMD.fsc \
+                   zone1_NVIDIA.fsc \
+                  "
 
 FSC_INIT_FILE += "setup-fan.sh"

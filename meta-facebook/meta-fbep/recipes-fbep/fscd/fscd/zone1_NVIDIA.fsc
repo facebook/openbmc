@@ -1,0 +1,55 @@
+max([
+  linear_inlet(mb:ep_mb_sensor_gpu_inlet_remote),
+  linear_switch_remote(mb:ep_mb_sensor_pax0_therm),
+  linear_switch_remote(mb:ep_mb_sensor_pax1_therm),
+  linear_switch_remote(mb:ep_mb_sensor_pax2_therm),
+  linear_switch_remote(mb:ep_mb_sensor_pax3_therm),
+  linear_gpu_spot(
+    max([
+      mb:ep_mb_nvidia_gpu0_temp,
+      mb:ep_mb_nvidia_gpu1_temp,
+      mb:ep_mb_nvidia_gpu2_temp,
+      mb:ep_mb_nvidia_gpu3_temp,
+      mb:ep_mb_nvidia_gpu4_temp,
+      mb:ep_mb_nvidia_gpu5_temp,
+      mb:ep_mb_nvidia_gpu6_temp,
+      mb:ep_mb_nvidia_gpu7_temp])) +
+  pid_gpu_spot(
+    max([
+      mb:ep_mb_nvidia_gpu0_temp,
+      mb:ep_mb_nvidia_gpu1_temp,
+      mb:ep_mb_nvidia_gpu2_temp,
+      mb:ep_mb_nvidia_gpu3_temp,
+      mb:ep_mb_nvidia_gpu4_temp,
+      mb:ep_mb_nvidia_gpu5_temp,
+      mb:ep_mb_nvidia_gpu6_temp,
+      mb:ep_mb_nvidia_gpu7_temp])),
+  linear_gpu_mem(
+    max([
+      mb:ep_mb_nvidia_hbm0_temp,
+      mb:ep_mb_nvidia_hbm1_temp,
+      mb:ep_mb_nvidia_hbm2_temp,
+      mb:ep_mb_nvidia_hbm3_temp,
+      mb:ep_mb_nvidia_hbm4_temp,
+      mb:ep_mb_nvidia_hbm5_temp,
+      mb:ep_mb_nvidia_hbm6_temp,
+      mb:ep_mb_nvidia_hbm7_temp])) +
+  pid_gpu_mem(
+    max([
+      mb:ep_mb_nvidia_hbm0_temp,
+      mb:ep_mb_nvidia_hbm1_temp,
+      mb:ep_mb_nvidia_hbm2_temp,
+      mb:ep_mb_nvidia_hbm3_temp,
+      mb:ep_mb_nvidia_hbm4_temp,
+      mb:ep_mb_nvidia_hbm5_temp,
+      mb:ep_mb_nvidia_hbm6_temp,
+      mb:ep_mb_nvidia_hbm7_temp])),
+  linear_vicor(pdb:ep_pdb_adc_1_vicor0_temp),
+  linear_vicor(pdb:ep_pdb_adc_1_vicor1_temp),
+  linear_vicor(pdb:ep_pdb_adc_1_vicor2_temp),
+  linear_vicor(pdb:ep_pdb_adc_1_vicor3_temp),
+  linear_vicor(pdb:ep_pdb_adc_2_vicor0_temp),
+  linear_vicor(pdb:ep_pdb_adc_2_vicor1_temp),
+  linear_vicor(pdb:ep_pdb_adc_2_vicor2_temp),
+  linear_vicor(pdb:ep_pdb_adc_2_vicor3_temp)
+])

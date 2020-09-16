@@ -479,347 +479,347 @@ struct sensor_map {
   int unit;
 } fbep_sensors_map[] = {
   [MB_FAN0_TACH_I] =
-  {sensors_read_fan_speed, "MB_FAN0_TACH_I", SNR_TACH},
+  {sensors_read_fan_speed, "EP_MB_FAN0_TACH_I", SNR_TACH},
   [MB_FAN0_TACH_O] =
-  {sensors_read_fan_speed, "MB_FAN0_TACH_O", SNR_TACH},
+  {sensors_read_fan_speed, "EP_MB_FAN0_TACH_O", SNR_TACH},
   [MB_FAN1_TACH_I] =
-  {sensors_read_fan_speed, "MB_FAN1_TACH_I", SNR_TACH},
+  {sensors_read_fan_speed, "EP_MB_FAN1_TACH_I", SNR_TACH},
   [MB_FAN1_TACH_O] =
-  {sensors_read_fan_speed, "MB_FAN1_TACH_O", SNR_TACH},
+  {sensors_read_fan_speed, "EP_MB_FAN1_TACH_O", SNR_TACH},
   [MB_FAN2_TACH_I] =
-  {sensors_read_fan_speed, "MB_FAN2_TACH_I", SNR_TACH},
+  {sensors_read_fan_speed, "EP_MB_FAN2_TACH_I", SNR_TACH},
   [MB_FAN2_TACH_O] =
-  {sensors_read_fan_speed, "MB_FAN2_TACH_O", SNR_TACH},
+  {sensors_read_fan_speed, "EP_MB_FAN2_TACH_O", SNR_TACH},
   [MB_FAN3_TACH_I] =
-  {sensors_read_fan_speed, "MB_FAN3_TACH_I", SNR_TACH},
+  {sensors_read_fan_speed, "EP_MB_FAN3_TACH_I", SNR_TACH},
   [MB_FAN3_TACH_O] =
-  {sensors_read_fan_speed, "MB_FAN3_TACH_O", SNR_TACH},
+  {sensors_read_fan_speed, "EP_MB_FAN3_TACH_O", SNR_TACH},
   [MB_FAN0_VOLT] =
-  {sensors_read_fan_health, "MB_FAN0_VOLT", SNR_VOLT},
+  {sensors_read_fan_health, "EP_MB_FAN0_VOLT", SNR_VOLT},
   [MB_FAN1_VOLT] =
-  {sensors_read_fan_health, "MB_FAN1_VOLT", SNR_VOLT},
+  {sensors_read_fan_health, "EP_MB_FAN1_VOLT", SNR_VOLT},
   [MB_FAN2_VOLT] =
-  {sensors_read_fan_health, "MB_FAN2_VOLT", SNR_VOLT},
+  {sensors_read_fan_health, "EP_MB_FAN2_VOLT", SNR_VOLT},
   [MB_FAN3_VOLT] =
-  {sensors_read_fan_health, "MB_FAN3_VOLT", SNR_VOLT},
+  {sensors_read_fan_health, "EP_MB_FAN3_VOLT", SNR_VOLT},
   [MB_FAN0_CURR] =
-  {sensors_read_fan_health, "MB_FAN0_CURR", SNR_CURR},
+  {sensors_read_fan_health, "EP_MB_FAN0_CURR", SNR_CURR},
   [MB_FAN1_CURR] =
-  {sensors_read_fan_health, "MB_FAN1_CURR", SNR_CURR},
+  {sensors_read_fan_health, "EP_MB_FAN1_CURR", SNR_CURR},
   [MB_FAN2_CURR] =
-  {sensors_read_fan_health, "MB_FAN2_CURR", SNR_CURR},
+  {sensors_read_fan_health, "EP_MB_FAN2_CURR", SNR_CURR},
   [MB_FAN3_CURR] =
-  {sensors_read_fan_health, "MB_FAN3_CURR", SNR_CURR},
+  {sensors_read_fan_health, "EP_MB_FAN3_CURR", SNR_CURR},
   [MB_ADC_P12V_AUX] =
-  {sensors_read_common_adc, "MB_ADC_P12V_AUX", SNR_VOLT},
+  {sensors_read_common_adc, "EP_MB_ADC_P12V_AUX", SNR_VOLT},
   [MB_ADC_P12V_1] =
-  {sensors_read_12v_adc, "MB_ADC_P12V_1", SNR_VOLT},
+  {sensors_read_12v_adc, "EP_MB_ADC_P12V_1", SNR_VOLT},
   [MB_ADC_P12V_2] =
-  {sensors_read_12v_adc, "MB_ADC_P12V_2", SNR_VOLT},
+  {sensors_read_12v_adc, "EP_MB_ADC_P12V_2", SNR_VOLT},
   [MB_ADC_P3V3_STBY] =
-  {sensors_read_common_adc, "MB_ADC_P3V3_STBY", SNR_VOLT},
+  {sensors_read_common_adc, "EP_MB_ADC_P3V3_STBY", SNR_VOLT},
   [MB_ADC_P3V3] =
-  {sensors_read_12v_adc, "MB_ADC_P3V3", SNR_VOLT},
+  {sensors_read_12v_adc, "EP_MB_ADC_P3V3", SNR_VOLT},
   [MB_ADC_P3V_BAT] =
-  {read_battery_value, "MB_ADC_P3V_BAT", SNR_VOLT},
+  {read_battery_value, "EP_MB_ADC_P3V_BAT", SNR_VOLT},
   [MB_ADC_P5V_STBY] =
-  {sensors_read_common_adc, "MB_ADC_P5V_STBY", SNR_VOLT},
+  {sensors_read_common_adc, "EP_MB_ADC_P5V_STBY", SNR_VOLT},
   [MB_SENSOR_GPU_INLET] =
-  {sensors_read_common_therm, "MB_SENSOR_GPU_INLET", SNR_TEMP},
+  {sensors_read_common_therm, "EP_MB_SENSOR_GPU_INLET", SNR_TEMP},
   [MB_SENSOR_GPU_INLET_REMOTE] =
-  {sensors_read_common_therm, "MB_SENSOR_GPU_INLET_REMOTE", SNR_TEMP},
+  {sensors_read_common_therm, "EP_MB_SENSOR_GPU_INLET_REMOTE", SNR_TEMP},
   [MB_SENSOR_GPU_OUTLET] =
-  {sensors_read_common_therm, "MB_SENSOR_GPU_OUTLET", SNR_TEMP},
+  {sensors_read_common_therm, "EP_MB_SENSOR_GPU_OUTLET", SNR_TEMP},
   [MB_SENSOR_GPU_OUTLET_REMOTE] =
-  {sensors_read_common_therm, "MB_SENSOR_GPU_OUTLET_REMOTE", SNR_TEMP},
+  {sensors_read_common_therm, "EP_MB_SENSOR_GPU_OUTLET_REMOTE", SNR_TEMP},
   [MB_SENSOR_PAX01_THERM] =
-  {sensors_read_pax_therm, "MB_SENSOR_PAX01_THERM", SNR_TEMP},
+  {sensors_read_pax_therm, "EP_MB_SENSOR_PAX01_THERM", SNR_TEMP},
   [MB_SENSOR_PAX23_THERM] =
-  {sensors_read_pax_therm, "MB_SENSOR_PAX23_THERM", SNR_TEMP},
+  {sensors_read_pax_therm, "EP_MB_SENSOR_PAX23_THERM", SNR_TEMP},
   [MB_SENSOR_PAX0_THERM_REMOTE] =
-  {sensors_read_pax_therm, "MB_SENSOR_PAX0_THERM", SNR_TEMP},
+  {sensors_read_pax_therm, "EP_MB_SENSOR_PAX0_THERM", SNR_TEMP},
   [MB_SENSOR_PAX1_THERM_REMOTE] =
-  {sensors_read_pax_therm, "MB_SENSOR_PAX1_THERM", SNR_TEMP},
+  {sensors_read_pax_therm, "EP_MB_SENSOR_PAX1_THERM", SNR_TEMP},
   [MB_SENSOR_PAX2_THERM_REMOTE] =
-  {sensors_read_pax_therm, "MB_SENSOR_PAX2_THERM", SNR_TEMP},
+  {sensors_read_pax_therm, "EP_MB_SENSOR_PAX2_THERM", SNR_TEMP},
   [MB_SENSOR_PAX3_THERM_REMOTE] =
-  {sensors_read_pax_therm, "MB_SENSOR_PAX3_THERM", SNR_TEMP},
+  {sensors_read_pax_therm, "EP_MB_SENSOR_PAX3_THERM", SNR_TEMP},
   [MB_SWITCH_PAX0_DIE_TEMP] =
-  {pal_read_pax_dietemp, "MB_SWITCH_PAX0_DIE_TEMP", SNR_TEMP},
+  {pal_read_pax_dietemp, "EP_MB_SWITCH_PAX0_DIE_TEMP", SNR_TEMP},
   [MB_SWITCH_PAX1_DIE_TEMP] =
-  {pal_read_pax_dietemp, "MB_SWITCH_PAX1_DIE_TEMP", SNR_TEMP},
+  {pal_read_pax_dietemp, "EP_MB_SWITCH_PAX1_DIE_TEMP", SNR_TEMP},
   [MB_SWITCH_PAX2_DIE_TEMP] =
-  {pal_read_pax_dietemp, "MB_SWITCH_PAX2_DIE_TEMP", SNR_TEMP},
+  {pal_read_pax_dietemp, "EP_MB_SWITCH_PAX2_DIE_TEMP", SNR_TEMP},
   [MB_SWITCH_PAX3_DIE_TEMP] =
-  {pal_read_pax_dietemp, "MB_SWITCH_PAX3_DIE_TEMP", SNR_TEMP},
+  {pal_read_pax_dietemp, "EP_MB_SWITCH_PAX3_DIE_TEMP", SNR_TEMP},
   [MB_GPU0_TEMP] =
-  {read_gpu_temp, "MB_GPU0_TEMP", SNR_TEMP},
+  {read_gpu_temp, "EP_MB_GPU0_TEMP", SNR_TEMP},
   [MB_GPU1_TEMP] =
-  {read_gpu_temp, "MB_GPU1_TEMP", SNR_TEMP},
+  {read_gpu_temp, "EP_MB_GPU1_TEMP", SNR_TEMP},
   [MB_GPU2_TEMP] =
-  {read_gpu_temp, "MB_GPU2_TEMP", SNR_TEMP},
+  {read_gpu_temp, "EP_MB_GPU2_TEMP", SNR_TEMP},
   [MB_GPU3_TEMP] =
-  {read_gpu_temp, "MB_GPU3_TEMP", SNR_TEMP},
+  {read_gpu_temp, "EP_MB_GPU3_TEMP", SNR_TEMP},
   [MB_GPU4_TEMP] =
-  {read_gpu_temp, "MB_GPU4_TEMP", SNR_TEMP},
+  {read_gpu_temp, "EP_MB_GPU4_TEMP", SNR_TEMP},
   [MB_GPU5_TEMP] =
-  {read_gpu_temp, "MB_GPU5_TEMP", SNR_TEMP},
+  {read_gpu_temp, "EP_MB_GPU5_TEMP", SNR_TEMP},
   [MB_GPU6_TEMP] =
-  {read_gpu_temp, "MB_GPU6_TEMP", SNR_TEMP},
+  {read_gpu_temp, "EP_MB_GPU6_TEMP", SNR_TEMP},
   [MB_GPU7_TEMP] =
-  {read_gpu_temp, "MB_GPU7_TEMP", SNR_TEMP},
+  {read_gpu_temp, "EP_MB_GPU7_TEMP", SNR_TEMP},
   [MB_GPU0_EDGE_TEMP] =
-  {read_asic_board_temp, "MB_GPU0_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "EP_MB_GPU0_EDGE_TEMP", SNR_TEMP},
   [MB_GPU1_EDGE_TEMP] =
-  {read_asic_board_temp, "MB_GPU1_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "EP_MB_GPU1_EDGE_TEMP", SNR_TEMP},
   [MB_GPU2_EDGE_TEMP] =
-  {read_asic_board_temp, "MB_GPU2_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "EP_MB_GPU2_EDGE_TEMP", SNR_TEMP},
   [MB_GPU3_EDGE_TEMP] =
-  {read_asic_board_temp, "MB_GPU3_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "EP_MB_GPU3_EDGE_TEMP", SNR_TEMP},
   [MB_GPU4_EDGE_TEMP] =
-  {read_asic_board_temp, "MB_GPU4_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "EP_MB_GPU4_EDGE_TEMP", SNR_TEMP},
   [MB_GPU5_EDGE_TEMP] =
-  {read_asic_board_temp, "MB_GPU5_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "EP_MB_GPU5_EDGE_TEMP", SNR_TEMP},
   [MB_GPU6_EDGE_TEMP] =
-  {read_asic_board_temp, "MB_GPU6_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "EP_MB_GPU6_EDGE_TEMP", SNR_TEMP},
   [MB_GPU7_EDGE_TEMP] =
-  {read_asic_board_temp, "MB_GPU7_EDGE_TEMP", SNR_TEMP},
+  {read_asic_board_temp, "EP_MB_GPU7_EDGE_TEMP", SNR_TEMP},
   [MB_GPU0_HBM_TEMP] =
-  {read_asic_mem_temp, "MB_GPU0_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "EP_MB_GPU0_HBM_TEMP", SNR_TEMP},
   [MB_GPU1_HBM_TEMP] =
-  {read_asic_mem_temp, "MB_GPU1_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "EP_MB_GPU1_HBM_TEMP", SNR_TEMP},
   [MB_GPU2_HBM_TEMP] =
-  {read_asic_mem_temp, "MB_GPU2_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "EP_MB_GPU2_HBM_TEMP", SNR_TEMP},
   [MB_GPU3_HBM_TEMP] =
-  {read_asic_mem_temp, "MB_GPU3_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "EP_MB_GPU3_HBM_TEMP", SNR_TEMP},
   [MB_GPU4_HBM_TEMP] =
-  {read_asic_mem_temp, "MB_GPU4_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "EP_MB_GPU4_HBM_TEMP", SNR_TEMP},
   [MB_GPU5_HBM_TEMP] =
-  {read_asic_mem_temp, "MB_GPU5_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "EP_MB_GPU5_HBM_TEMP", SNR_TEMP},
   [MB_GPU6_HBM_TEMP] =
-  {read_asic_mem_temp, "MB_GPU6_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "EP_MB_GPU6_HBM_TEMP", SNR_TEMP},
   [MB_GPU7_HBM_TEMP] =
-  {read_asic_mem_temp, "MB_GPU7_HBM_TEMP", SNR_TEMP},
+  {read_asic_mem_temp, "EP_MB_GPU7_HBM_TEMP", SNR_TEMP},
   [MB_GPU0_PWCS] =
-  {read_gpu_pwcs, "MB_GPU0_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "EP_MB_GPU0_PWCS", SNR_PWR},
   [MB_GPU1_PWCS] =
-  {read_gpu_pwcs, "MB_GPU1_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "EP_MB_GPU1_PWCS", SNR_PWR},
   [MB_GPU2_PWCS] =
-  {read_gpu_pwcs, "MB_GPU2_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "EP_MB_GPU2_PWCS", SNR_PWR},
   [MB_GPU3_PWCS] =
-  {read_gpu_pwcs, "MB_GPU3_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "EP_MB_GPU3_PWCS", SNR_PWR},
   [MB_GPU4_PWCS] =
-  {read_gpu_pwcs, "MB_GPU4_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "EP_MB_GPU4_PWCS", SNR_PWR},
   [MB_GPU5_PWCS] =
-  {read_gpu_pwcs, "MB_GPU5_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "EP_MB_GPU5_PWCS", SNR_PWR},
   [MB_GPU6_PWCS] =
-  {read_gpu_pwcs, "MB_GPU6_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "EP_MB_GPU6_PWCS", SNR_PWR},
   [MB_GPU7_PWCS] =
-  {read_gpu_pwcs, "MB_GPU7_PWCS", SNR_PWR},
+  {read_gpu_pwcs, "EP_MB_GPU7_PWCS", SNR_PWR},
   [MB_VR_P0V8_VDD0_VIN] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD0_VIN", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD0_VIN", SNR_VOLT},
   [MB_VR_P0V8_VDD1_VIN] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD1_VIN", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD1_VIN", SNR_VOLT},
   [MB_VR_P0V8_VDD2_VIN] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD2_VIN", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD2_VIN", SNR_VOLT},
   [MB_VR_P0V8_VDD3_VIN] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD3_VIN", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD3_VIN", SNR_VOLT},
   [MB_VR_P0V8_VDD0_VOUT] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD0_VOUT", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD0_VOUT", SNR_VOLT},
   [MB_VR_P0V8_VDD1_VOUT] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD1_VOUT", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD1_VOUT", SNR_VOLT},
   [MB_VR_P0V8_VDD2_VOUT] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD2_VOUT", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD2_VOUT", SNR_VOLT},
   [MB_VR_P0V8_VDD3_VOUT] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD3_VOUT", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD3_VOUT", SNR_VOLT},
   [MB_VR_P0V8_VDD0_CURR] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD0_CURR", SNR_CURR},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD0_CURR", SNR_CURR},
   [MB_VR_P0V8_VDD1_CURR] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD1_CURR", SNR_CURR},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD1_CURR", SNR_CURR},
   [MB_VR_P0V8_VDD2_CURR] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD2_CURR", SNR_CURR},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD2_CURR", SNR_CURR},
   [MB_VR_P0V8_VDD3_CURR] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD3_CURR", SNR_CURR},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD3_CURR", SNR_CURR},
   [MB_VR_P0V8_VDD0_TEMP] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD0_TEMP", SNR_TEMP},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD0_TEMP", SNR_TEMP},
   [MB_VR_P0V8_VDD1_TEMP] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD1_TEMP", SNR_TEMP},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD1_TEMP", SNR_TEMP},
   [MB_VR_P0V8_VDD2_TEMP] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD2_TEMP", SNR_TEMP},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD2_TEMP", SNR_TEMP},
   [MB_VR_P0V8_VDD3_TEMP] =
-  {sensors_read_vr, "MB_VR_P0V8_VDD3_TEMP", SNR_TEMP},
+  {sensors_read_vr, "EP_MB_VR_P0V8_VDD3_TEMP", SNR_TEMP},
   [MB_VR_P1V0_AVD0_VIN] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD0_VIN", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD0_VIN", SNR_VOLT},
   [MB_VR_P1V0_AVD1_VIN] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD1_VIN", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD1_VIN", SNR_VOLT},
   [MB_VR_P1V0_AVD2_VIN] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD2_VIN", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD2_VIN", SNR_VOLT},
   [MB_VR_P1V0_AVD3_VIN] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD3_VIN", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD3_VIN", SNR_VOLT},
   [MB_VR_P1V0_AVD0_VOUT] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD0_VOUT", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD0_VOUT", SNR_VOLT},
   [MB_VR_P1V0_AVD1_VOUT] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD1_VOUT", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD1_VOUT", SNR_VOLT},
   [MB_VR_P1V0_AVD2_VOUT] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD2_VOUT", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD2_VOUT", SNR_VOLT},
   [MB_VR_P1V0_AVD3_VOUT] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD3_VOUT", SNR_VOLT},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD3_VOUT", SNR_VOLT},
   [MB_VR_P1V0_AVD0_CURR] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD0_CURR", SNR_CURR},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD0_CURR", SNR_CURR},
   [MB_VR_P1V0_AVD1_CURR] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD1_CURR", SNR_CURR},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD1_CURR", SNR_CURR},
   [MB_VR_P1V0_AVD2_CURR] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD2_CURR", SNR_CURR},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD2_CURR", SNR_CURR},
   [MB_VR_P1V0_AVD3_CURR] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD3_CURR", SNR_CURR},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD3_CURR", SNR_CURR},
   [MB_VR_P1V0_AVD0_TEMP] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD0_TEMP", SNR_TEMP},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD0_TEMP", SNR_TEMP},
   [MB_VR_P1V0_AVD1_TEMP] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD1_TEMP", SNR_TEMP},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD1_TEMP", SNR_TEMP},
   [MB_VR_P1V0_AVD2_TEMP] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD2_TEMP", SNR_TEMP},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD2_TEMP", SNR_TEMP},
   [MB_VR_P1V0_AVD3_TEMP] =
-  {sensors_read_vr, "MB_VR_P1V0_AVD3_TEMP", SNR_TEMP},
+  {sensors_read_vr, "EP_MB_VR_P1V0_AVD3_TEMP", SNR_TEMP},
   [PDB_HSC_P12V_AUX_VIN] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_AUX_VIN", SNR_VOLT},
+  {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_AUX_VIN", SNR_VOLT},
   [PDB_HSC_P12V_1_VIN] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_1_VIN", SNR_VOLT},
+  {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_1_VIN", SNR_VOLT},
   [PDB_HSC_P12V_2_VIN] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_2_VIN", SNR_VOLT},
+  {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_2_VIN", SNR_VOLT},
   [PDB_HSC_P12V_AUX_VOUT] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_AUX_VOUT", SNR_VOLT},
+  {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_AUX_VOUT", SNR_VOLT},
   [PDB_HSC_P12V_1_VOUT] =
-  {sensors_read_12v_hsc_vout, "PDB_HSC_P12V_1_VOUT", SNR_VOLT},
+  {sensors_read_12v_hsc_vout, "EP_PDB_HSC_P12V_1_VOUT", SNR_VOLT},
   [PDB_HSC_P12V_2_VOUT] =
-  {sensors_read_12v_hsc_vout, "PDB_HSC_P12V_2_VOUT", SNR_VOLT},
+  {sensors_read_12v_hsc_vout, "EP_PDB_HSC_P12V_2_VOUT", SNR_VOLT},
   [PDB_HSC_P12V_AUX_CURR] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_AUX_CURR", SNR_CURR},
+  {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_AUX_CURR", SNR_CURR},
   [PDB_HSC_P12V_1_CURR] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_1_CURR", SNR_CURR},
+  {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_1_CURR", SNR_CURR},
   [PDB_HSC_P12V_2_CURR] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_2_CURR", SNR_CURR},
+  {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_2_CURR", SNR_CURR},
   [PDB_HSC_P12V_AUX_PWR] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_AUX_PWR", SNR_PWR},
+  {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_AUX_PWR", SNR_PWR},
   [PDB_HSC_P12V_AUX_PWR_PEAK] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_AUX_PWR_PEAK", SNR_PWR},
+  {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_AUX_PWR_PEAK", SNR_PWR},
   [PDB_HSC_P12V_1_PWR] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_1_PWR", SNR_PWR},
+  {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_1_PWR", SNR_PWR},
   [PDB_HSC_P12V_1_PWR_PEAK] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_1_PWR_PEAK", SNR_PWR},
+  {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_1_PWR_PEAK", SNR_PWR},
   [PDB_HSC_P12V_2_PWR] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_2_PWR", SNR_PWR},
+  {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_2_PWR", SNR_PWR},
   [PDB_HSC_P12V_2_PWR_PEAK] =
-  {sensors_read_12v_hsc, "PDB_HSC_P12V_2_PWR_PEAK", SNR_PWR},
+  {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_2_PWR_PEAK", SNR_PWR},
   [PDB_HSC_P48V_1_VIN] =
-  {sensors_read_48v_hsc, "PDB_HSC_P48V_1_VIN", SNR_VOLT},
+  {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_1_VIN", SNR_VOLT},
   [PDB_HSC_P48V_1_VOUT] =
-  {sensors_read_48v_hsc, "PDB_HSC_P48V_1_VOUT", SNR_VOLT},
+  {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_1_VOUT", SNR_VOLT},
   [PDB_HSC_P48V_1_CURR] =
-  {sensors_read_48v_hsc, "PDB_HSC_P48V_1_CURR", SNR_CURR},
+  {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_1_CURR", SNR_CURR},
   [PDB_HSC_P48V_1_PWR] =
-  {sensors_read_48v_hsc, "PDB_HSC_P48V_1_PWR", SNR_PWR},
+  {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_1_PWR", SNR_PWR},
   [PDB_HSC_P48V_1_PWR_PEAK] =
-  {sensors_read_48v_hsc, "PDB_HSC_P48V_1_PWR_PEAK", SNR_PWR},
+  {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_1_PWR_PEAK", SNR_PWR},
   [PDB_HSC_P48V_2_VIN] =
-  {sensors_read_48v_hsc, "PDB_HSC_P48V_2_VIN", SNR_VOLT},
+  {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_2_VIN", SNR_VOLT},
   [PDB_HSC_P48V_2_VOUT] =
-  {sensors_read_48v_hsc, "PDB_HSC_P48V_2_VOUT", SNR_VOLT},
+  {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_2_VOUT", SNR_VOLT},
   [PDB_HSC_P48V_2_CURR] =
-  {sensors_read_48v_hsc, "PDB_HSC_P48V_2_CURR", SNR_CURR},
+  {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_2_CURR", SNR_CURR},
   [PDB_HSC_P48V_2_PWR] =
-  {sensors_read_48v_hsc, "PDB_HSC_P48V_2_PWR", SNR_PWR},
+  {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_2_PWR", SNR_PWR},
   [PDB_HSC_P48V_2_PWR_PEAK] =
-  {sensors_read_48v_hsc, "PDB_HSC_P48V_2_PWR_PEAK", SNR_PWR},
+  {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_2_PWR_PEAK", SNR_PWR},
   [PDB_ADC_1_VICOR0_TEMP] =
-  {sensors_read_vicor, "PDB_ADC_1_VICOR0_TEMP", SNR_TEMP},
+  {sensors_read_vicor, "EP_PDB_ADC_1_VICOR0_TEMP", SNR_TEMP},
   [PDB_ADC_1_VICOR1_TEMP] =
-  {sensors_read_vicor, "PDB_ADC_1_VICOR1_TEMP", SNR_TEMP},
+  {sensors_read_vicor, "EP_PDB_ADC_1_VICOR1_TEMP", SNR_TEMP},
   [PDB_ADC_1_VICOR2_TEMP] =
-  {sensors_read_vicor, "PDB_ADC_1_VICOR2_TEMP", SNR_TEMP},
+  {sensors_read_vicor, "EP_PDB_ADC_1_VICOR2_TEMP", SNR_TEMP},
   [PDB_ADC_1_VICOR3_TEMP] =
-  {sensors_read_vicor, "PDB_ADC_1_VICOR3_TEMP", SNR_TEMP},
+  {sensors_read_vicor, "EP_PDB_ADC_1_VICOR3_TEMP", SNR_TEMP},
   [PDB_ADC_2_VICOR0_TEMP] =
-  {sensors_read_vicor, "PDB_ADC_2_VICOR0_TEMP", SNR_TEMP},
+  {sensors_read_vicor, "EP_PDB_ADC_2_VICOR0_TEMP", SNR_TEMP},
   [PDB_ADC_2_VICOR1_TEMP] =
-  {sensors_read_vicor, "PDB_ADC_2_VICOR1_TEMP", SNR_TEMP},
+  {sensors_read_vicor, "EP_PDB_ADC_2_VICOR1_TEMP", SNR_TEMP},
   [PDB_ADC_2_VICOR2_TEMP] =
-  {sensors_read_vicor, "PDB_ADC_2_VICOR2_TEMP", SNR_TEMP},
+  {sensors_read_vicor, "EP_PDB_ADC_2_VICOR2_TEMP", SNR_TEMP},
   [PDB_ADC_2_VICOR3_TEMP] =
-  {sensors_read_vicor, "PDB_ADC_2_VICOR3_TEMP", SNR_TEMP},
+  {sensors_read_vicor, "EP_PDB_ADC_2_VICOR3_TEMP", SNR_TEMP},
   [PDB_SENSOR_OUTLET_TEMP] =
-  {sensors_read_common_therm, "PDB_SENSOR_OUTLET_TEMP", SNR_TEMP},
+  {sensors_read_common_therm, "EP_PDB_SENSOR_OUTLET", SNR_TEMP},
   [PDB_SENSOR_OUTLET_TEMP_REMOTE] =
-  {sensors_read_common_therm, "PDB_SENSOR_OUTLET_TEMP_REMOTE", SNR_TEMP},
+  {sensors_read_common_therm, "EP_PDB_SENSOR_OUTLET_REMOTE", SNR_TEMP},
 };
 
 static const char* asic_sensor_name_by_mfr[MFR_MAX_NUM][32] = {
   [GPU_AMD] = {
-    "MB_AMD_GPU0_TEMP",
-    "MB_AMD_GPU1_TEMP",
-    "MB_AMD_GPU2_TEMP",
-    "MB_AMD_GPU3_TEMP",
-    "MB_AMD_GPU4_TEMP",
-    "MB_AMD_GPU5_TEMP",
-    "MB_AMD_GPU6_TEMP",
-    "MB_AMD_GPU7_TEMP",
-    "MB_GPU0_EDGE_TEMP",
-    "MB_GPU1_EDGE_TEMP",
-    "MB_GPU2_EDGE_TEMP",
-    "MB_GPU3_EDGE_TEMP",
-    "MB_GPU4_EDGE_TEMP",
-    "MB_GPU5_EDGE_TEMP",
-    "MB_GPU6_EDGE_TEMP",
-    "MB_GPU7_EDGE_TEMP",
-    "MB_AMD_HBM0_TEMP",
-    "MB_AMD_HBM1_TEMP",
-    "MB_AMD_HBM2_TEMP",
-    "MB_AMD_HBM3_TEMP",
-    "MB_AMD_HBM4_TEMP",
-    "MB_AMD_HBM5_TEMP",
-    "MB_AMD_HBM6_TEMP",
-    "MB_AMD_HBM7_TEMP",
-    "MB_GPU0_PWCS",
-    "MB_GPU1_PWCS",
-    "MB_GPU2_PWCS",
-    "MB_GPU3_PWCS",
-    "MB_GPU4_PWCS",
-    "MB_GPU5_PWCS",
-    "MB_GPU6_PWCS",
-    "MB_GPU7_PWCS"
+    "EP_MB_AMD_GPU0_TEMP",
+    "EP_MB_AMD_GPU1_TEMP",
+    "EP_MB_AMD_GPU2_TEMP",
+    "EP_MB_AMD_GPU3_TEMP",
+    "EP_MB_AMD_GPU4_TEMP",
+    "EP_MB_AMD_GPU5_TEMP",
+    "EP_MB_AMD_GPU6_TEMP",
+    "EP_MB_AMD_GPU7_TEMP",
+    "EP_MB_GPU0_EDGE_TEMP",
+    "EP_MB_GPU1_EDGE_TEMP",
+    "EP_MB_GPU2_EDGE_TEMP",
+    "EP_MB_GPU3_EDGE_TEMP",
+    "EP_MB_GPU4_EDGE_TEMP",
+    "EP_MB_GPU5_EDGE_TEMP",
+    "EP_MB_GPU6_EDGE_TEMP",
+    "EP_MB_GPU7_EDGE_TEMP",
+    "EP_MB_AMD_HBM0_TEMP",
+    "EP_MB_AMD_HBM1_TEMP",
+    "EP_MB_AMD_HBM2_TEMP",
+    "EP_MB_AMD_HBM3_TEMP",
+    "EP_MB_AMD_HBM4_TEMP",
+    "EP_MB_AMD_HBM5_TEMP",
+    "EP_MB_AMD_HBM6_TEMP",
+    "EP_MB_AMD_HBM7_TEMP",
+    "EP_MB_GPU0_PWCS",
+    "EP_MB_GPU1_PWCS",
+    "EP_MB_GPU2_PWCS",
+    "EP_MB_GPU3_PWCS",
+    "EP_MB_GPU4_PWCS",
+    "EP_MB_GPU5_PWCS",
+    "EP_MB_GPU6_PWCS",
+    "EP_MB_GPU7_PWCS"
   },
   [GPU_NV] = {
-    "MB_NVIDIA_GPU0_TEMP",
-    "MB_NVIDIA_GPU1_TEMP",
-    "MB_NVIDIA_GPU2_TEMP",
-    "MB_NVIDIA_GPU3_TEMP",
-    "MB_NVIDIA_GPU4_TEMP",
-    "MB_NVIDIA_GPU5_TEMP",
-    "MB_NVIDIA_GPU6_TEMP",
-    "MB_NVIDIA_GPU7_TEMP",
-    "MB_GPU0_EDGE_TEMP",
-    "MB_GPU1_EDGE_TEMP",
-    "MB_GPU2_EDGE_TEMP",
-    "MB_GPU3_EDGE_TEMP",
-    "MB_GPU4_EDGE_TEMP",
-    "MB_GPU5_EDGE_TEMP",
-    "MB_GPU6_EDGE_TEMP",
-    "MB_GPU7_EDGE_TEMP",
-    "MB_NVIDIA_HBM0_TEMP",
-    "MB_NVIDIA_HBM1_TEMP",
-    "MB_NVIDIA_HBM2_TEMP",
-    "MB_NVIDIA_HBM3_TEMP",
-    "MB_NVIDIA_HBM4_TEMP",
-    "MB_NVIDIA_HBM5_TEMP",
-    "MB_NVIDIA_HBM6_TEMP",
-    "MB_NVIDIA_HBM7_TEMP",
-    "MB_GPU0_PWCS",
-    "MB_GPU1_PWCS",
-    "MB_GPU2_PWCS",
-    "MB_GPU3_PWCS",
-    "MB_GPU4_PWCS",
-    "MB_GPU5_PWCS",
-    "MB_GPU6_PWCS",
-    "MB_GPU7_PWCS"
+    "EP_MB_NVIDIA_GPU0_TEMP",
+    "EP_MB_NVIDIA_GPU1_TEMP",
+    "EP_MB_NVIDIA_GPU2_TEMP",
+    "EP_MB_NVIDIA_GPU3_TEMP",
+    "EP_MB_NVIDIA_GPU4_TEMP",
+    "EP_MB_NVIDIA_GPU5_TEMP",
+    "EP_MB_NVIDIA_GPU6_TEMP",
+    "EP_MB_NVIDIA_GPU7_TEMP",
+    "EP_MB_GPU0_EDGE_TEMP",
+    "EP_MB_GPU1_EDGE_TEMP",
+    "EP_MB_GPU2_EDGE_TEMP",
+    "EP_MB_GPU3_EDGE_TEMP",
+    "EP_MB_GPU4_EDGE_TEMP",
+    "EP_MB_GPU5_EDGE_TEMP",
+    "EP_MB_GPU6_EDGE_TEMP",
+    "EP_MB_GPU7_EDGE_TEMP",
+    "EP_MB_NVIDIA_HBM0_TEMP",
+    "EP_MB_NVIDIA_HBM1_TEMP",
+    "EP_MB_NVIDIA_HBM2_TEMP",
+    "EP_MB_NVIDIA_HBM3_TEMP",
+    "EP_MB_NVIDIA_HBM4_TEMP",
+    "EP_MB_NVIDIA_HBM5_TEMP",
+    "EP_MB_NVIDIA_HBM6_TEMP",
+    "EP_MB_NVIDIA_HBM7_TEMP",
+    "EP_MB_GPU0_PWCS",
+    "EP_MB_GPU1_PWCS",
+    "EP_MB_GPU2_PWCS",
+    "EP_MB_GPU3_PWCS",
+    "EP_MB_GPU4_PWCS",
+    "EP_MB_GPU5_PWCS",
+    "EP_MB_GPU6_PWCS",
+    "EP_MB_GPU7_PWCS"
   }
 };
 

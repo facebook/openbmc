@@ -24,16 +24,16 @@
             "sensor_id": 12
           },
           "cfm0": {
-            "expression": "( rpm0 * 0.0117 ) + ( 0.00000004 * rpm0 * rpm0 ) - 0.864"
+            "expression": "( rpm0 * 0.0093 ) + ( 0.0000004 * rpm0 * rpm0 ) - ( 0.00000000002 * rpm0 * rpm0 * rpm0 ) - 0.4793"
           },
           "cfm1": {
-            "expression": "( rpm1 * 0.0117 ) + ( 0.00000004 * rpm1 * rpm1 ) - 0.864"
+            "expression": "( rpm1 * 0.0093 ) + ( 0.0000004 * rpm1 * rpm1 ) - ( 0.00000000002 * rpm1 * rpm1 * rpm1 ) - 0.4793"
           },
           "cfm2": {
-            "expression": "( rpm2 * 0.0117 ) + ( 0.00000004 * rpm2 * rpm2 ) - 0.864"
+            "expression": "( rpm2 * 0.0093 ) + ( 0.0000004 * rpm2 * rpm2 ) - ( 0.00000000002 * rpm2 * rpm2 * rpm2 ) - 0.4793"
           },
           "cfm3": {
-            "expression": "( rpm3 * 0.0117 ) + ( 0.00000004 * rpm3 * rpm3 ) - 0.864"
+            "expression": "( rpm3 * 0.0093 ) + ( 0.0000004 * rpm3 * rpm3 ) - ( 0.00000000002 * rpm3 * rpm3 * rpm3 ) - 0.4793"
           }
         },
 	"linear_expressions": {

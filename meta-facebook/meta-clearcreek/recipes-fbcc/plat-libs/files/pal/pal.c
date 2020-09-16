@@ -49,6 +49,8 @@ int pal_get_fru_id(char *str, uint8_t *fru)
     *fru = FRU_MB;
   } else if (!strcmp(str, "bsm")) {
     *fru = FRU_BSM;
+  } else if (!strcmp(str, "pdb")) {
+    *fru = FRU_PDB;
   } else if (!strcmp(str, "ava1")) {
     *fru = FRU_AVA1;
   } else if (!strcmp(str, "ava2")) {

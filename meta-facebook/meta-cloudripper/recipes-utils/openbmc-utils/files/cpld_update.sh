@@ -59,6 +59,7 @@ enable_fcm_jtag_chain(){
 
     gpio_set_value DOM_FPGA1_JTAG_EN_N_R  1
     gpio_set_value DOM_FPGA2_JTAG_EN_N_R  1
+    # set PWR_CPLD_HITLESS to 1 will disable wedge_power.sh reset -s
     gpio_set_value PWR_CPLD_HITLESS_R     1
 }
 
@@ -75,6 +76,7 @@ enable_smb_jtag_chain(){
 
     gpio_set_value DOM_FPGA1_JTAG_EN_N_R  1
     gpio_set_value DOM_FPGA2_JTAG_EN_N_R  1
+    # set PWR_CPLD_HITLESS to 1 will disable wedge_power.sh reset -s
     gpio_set_value PWR_CPLD_HITLESS_R     1
 }
 
@@ -91,6 +93,7 @@ enable_scm_jtag_chain(){
 
     gpio_set_value DOM_FPGA1_JTAG_EN_N_R  1
     gpio_set_value DOM_FPGA2_JTAG_EN_N_R  1
+    # set PWR_CPLD_HITLESS to 1 will disable wedge_power.sh reset -s
     gpio_set_value PWR_CPLD_HITLESS_R     1
 }
 
@@ -107,6 +110,7 @@ enable_pdb_jtag_chain(){
 
     gpio_set_value DOM_FPGA1_JTAG_EN_N_R  1
     gpio_set_value DOM_FPGA2_JTAG_EN_N_R  1
+    # set PWR_CPLD_HITLESS to 1 will disable wedge_power.sh reset -s
     gpio_set_value PWR_CPLD_HITLESS_R     1
 }
 
@@ -124,7 +128,8 @@ disable_jtag_chain(){
 
     gpio_set_value DOM_FPGA1_JTAG_EN_N_R  1
     gpio_set_value DOM_FPGA2_JTAG_EN_N_R  1
-    gpio_set_value PWR_CPLD_HITLESS_R     1
+    # set PWR_CPLD_HITLESS to 0 will enable wedge_power.sh reset -s
+    gpio_set_value PWR_CPLD_HITLESS_R     0
 }
 
 trap 'rm -rf /tmp/cpld_update' INT TERM QUIT EXIT

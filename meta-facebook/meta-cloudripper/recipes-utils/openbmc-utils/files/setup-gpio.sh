@@ -168,4 +168,5 @@ gpio_set_value DOM_FPGA2_JTAG_EN_N_R    1
 gpio_set_value BMC_SCM_CPLD_EN_R        1
 # Default set to 1. RST signal is active low, set it to high for normal operation
 gpio_set_value BMC_DOM_FPGA1_RST_L_R    1
-
+# Default set to 0. 0 to enable wedge_power.sh reset -s, 1 to disable wedge_power.sh reset -s
+gpio_set_value PWR_CPLD_HITLESS_R       0

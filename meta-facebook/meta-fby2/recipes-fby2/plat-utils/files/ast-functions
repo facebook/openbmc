@@ -1,7 +1,5 @@
 # Copyright 2014-present Facebook. All Rights Reserved.
 
-. /usr/bin/kv
-
 DEVMEM=/sbin/devmem
 
 FSCD_END_SLED_OUT=0

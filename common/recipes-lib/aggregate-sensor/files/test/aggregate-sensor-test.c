@@ -29,7 +29,7 @@
 #include <openbmc/pal_sensors.h>
 #include <openbmc/cmock.h>
 
-DECLARE_MOCK_FUNC(int, kv_get, char *, char *, size_t *, unsigned int);
+DECLARE_MOCK_FUNC(int, kv_get, const char *, char *, size_t *, unsigned int);
 DECLARE_MOCK_FUNC(int, sensor_cache_read, uint8_t, uint8_t, float *);
 
 static void init_sensors(const char *json_file, size_t exp_sensors)
@@ -142,7 +142,7 @@ DEFINE_TEST(test_cond_lexp)
   MOCK_END(kv_get);
   MOCK_END(sensor_cache_read);
 
-  int mocked_kv_get1(char *key, char *value, size_t *len, unsigned int flags)
+  int mocked_kv_get1(const char *key, char *value, size_t *len, unsigned int flags)
   {
     ASSERT_EQ(flags, 0, "Flags are for non-persistent kv");
     if (!strcmp(key, "my_key")) {
@@ -161,7 +161,7 @@ DEFINE_TEST(test_cond_lexp)
   MOCK_END(kv_get);
   MOCK_END(sensor_cache_read);
 
-  int mocked_kv_get2(char *key, char *value, size_t *len, unsigned int flags)
+  int mocked_kv_get2(const char *key, char *value, size_t *len, unsigned int flags)
   {
     ASSERT_EQ(flags, 0, "Flags are for non-persistent kv");
     if (!strcmp(key, "my_key")) {
@@ -199,7 +199,7 @@ DEFINE_TEST(test_cond_lexp)
   MOCK_END(sensor_cache_read);
 
   // kv_get succeeds, but returns an unknown value.
-  int mocked_kv_get3(char *key, char *value, size_t *len, unsigned int flags)
+  int mocked_kv_get3(const char *key, char *value, size_t *len, unsigned int flags)
   {
     ASSERT_EQ(flags, KV_FPERSIST, "Flags are for persistent kv");
     if (!strcmp(key, "my_key")) {
@@ -220,7 +220,7 @@ DEFINE_TEST(test_cond_lexp)
   MOCK_END(kv_get);
   MOCK_END(sensor_cache_read);
 
-  int mocked_kv_get4(char *key, char *value, size_t *len, unsigned int flags)
+  int mocked_kv_get4(const char *key, char *value, size_t *len, unsigned int flags)
   {
     ASSERT_EQ(flags, KV_FPERSIST, "Flags are for persistent kv");
     if (!strcmp(key, "my_key")) {
@@ -278,7 +278,10 @@ DEFINE_TEST(test_lexp_source_exp)
 
 int main(int argc, char *argv[])
 {
-  chdir(dirname(argv[0]));
+  if (chdir(dirname(argv[0])) != 0) {
+    printf("Cannot chdir into %s\n", dirname(argv[0]));
+    return -1;
+  }
 
   CALL_TEST(test_bad_source_exp);
   CALL_TEST(test_null);

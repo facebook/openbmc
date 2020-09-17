@@ -24,8 +24,6 @@ SRC_URI += " file://setup-ipmbd.sh \
            "
 RDEPENDS_${PN} += " libbic jansson libipmb"
 
-CFLAGS_prepend = " -DDEBUG "
-
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   bin="${D}/usr/local/bin"

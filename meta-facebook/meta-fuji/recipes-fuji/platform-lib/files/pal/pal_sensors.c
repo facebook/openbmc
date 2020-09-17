@@ -2370,6 +2370,8 @@ get_scm_sensor_name(uint8_t sensor_num, char *name) {
     case BIC_SENSOR_MB_OUTLET_TEMP:
       sprintf(name, "MB_OUTLET_TEMP");
       break;
+    case PIM3_MP2975_OUTPUT_CURRENT_XP0R8V:
+      sprintf(name, "PIM3_MP2975_OUTPUT_CURR_XP0R8V");
     case BIC_SENSOR_MB_INLET_TEMP:
       sprintf(name, "MB_INLET_TEMP");
       break;

@@ -218,18 +218,18 @@ index 017402c53b..ac77eee63a 100644
 +                sd_dhcp6_option,
 +                sd_dhcp6_option_unref);
 diff --git a/src/libsystemd-network/sd-dhcp6-client.c b/src/libsystemd-network/sd-dhcp6-client.c
-index d7a5349c70..29309d0d25 100644
+index 9773a067d5..c108f413c5 100644
 --- a/src/libsystemd-network/sd-dhcp6-client.c
 +++ b/src/libsystemd-network/sd-dhcp6-client.c
-@@ -71,6 +71,7 @@ struct sd_dhcp6_client {
-         void *userdata;
-         struct duid duid;
+@@ -76,6 +76,7 @@ struct sd_dhcp6_client {
          size_t duid_len;
+         usec_t information_request_time_usec;
+         usec_t information_refresh_time_usec;
 +        OrderedHashmap *vendor_options;
  };
  
  static const uint16_t default_req_opts[] = {
-@@ -182,6 +183,25 @@ int sd_dhcp6_client_set_mac(
+@@ -187,6 +188,25 @@ int sd_dhcp6_client_set_mac(
          return 0;
  }
  
@@ -255,7 +255,7 @@ index d7a5349c70..29309d0d25 100644
  static int client_ensure_duid(sd_dhcp6_client *client) {
          if (client->duid_len != 0)
                  return 0;
-@@ -486,6 +506,13 @@ static int client_send_message(sd_dhcp6_client *client, usec_t time_now) {
+@@ -491,6 +511,13 @@ static int client_send_message(sd_dhcp6_client *client, usec_t time_now) {
                                  return r;
                  }
  
@@ -269,7 +269,7 @@ index d7a5349c70..29309d0d25 100644
                  if (FLAGS_SET(client->request, DHCP6_REQUEST_IA_PD)) {
                          r = dhcp6_option_append_pd(opt, optlen, &client->ia_pd);
                          if (r < 0)
-@@ -524,6 +551,13 @@ static int client_send_message(sd_dhcp6_client *client, usec_t time_now) {
+@@ -529,6 +556,13 @@ static int client_send_message(sd_dhcp6_client *client, usec_t time_now) {
                                  return r;
                  }
  
@@ -283,7 +283,7 @@ index d7a5349c70..29309d0d25 100644
                  if (FLAGS_SET(client->request, DHCP6_REQUEST_IA_PD)) {
                          r = dhcp6_option_append_pd(opt, optlen, &client->lease->pd);
                          if (r < 0)
-@@ -550,6 +584,13 @@ static int client_send_message(sd_dhcp6_client *client, usec_t time_now) {
+@@ -555,6 +589,13 @@ static int client_send_message(sd_dhcp6_client *client, usec_t time_now) {
                                  return r;
                  }
  
@@ -297,7 +297,7 @@ index d7a5349c70..29309d0d25 100644
                  if (FLAGS_SET(client->request, DHCP6_REQUEST_IA_PD)) {
                          r = dhcp6_option_append_pd(opt, optlen, &client->lease->pd);
                          if (r < 0)
-@@ -1484,6 +1525,9 @@ static sd_dhcp6_client *dhcp6_client_free(sd_dhcp6_client *client) {
+@@ -1506,6 +1547,9 @@ static sd_dhcp6_client *dhcp6_client_free(sd_dhcp6_client *client) {
  
          free(client->req_opts);
          free(client->fqdn);
@@ -625,7 +625,7 @@ index d4d108ad25..30ed26abcc 100644
  IPv6AcceptRA.UseOnLinkPrefix,           config_parse_bool,                               0,                             offsetof(Network, ipv6_accept_ra_use_onlink_prefix)
  IPv6AcceptRA.UseDNS,                    config_parse_bool,                               0,                             offsetof(Network, ipv6_accept_ra_use_dns)
 diff --git a/src/network/networkd-network.c b/src/network/networkd-network.c
-index 2b8d0eb2fb..085020e915 100644
+index fe81f1b720..741b079279 100644
 --- a/src/network/networkd-network.c
 +++ b/src/network/networkd-network.c
 @@ -609,6 +609,8 @@ static Network *network_free(Network *network) {
@@ -650,7 +650,7 @@ index bc760744e5..f71f166715 100644
          /* DHCP Server Support */
          bool dhcp_server;
 diff --git a/src/systemd/sd-dhcp6-client.h b/src/systemd/sd-dhcp6-client.h
-index 43d38f5c7d..492a304edd 100644
+index 3aac3f14fe..eb2b1c980a 100644
 --- a/src/systemd/sd-dhcp6-client.h
 +++ b/src/systemd/sd-dhcp6-client.h
 @@ -24,6 +24,7 @@
@@ -661,7 +661,7 @@ index 43d38f5c7d..492a304edd 100644
  #include "sd-event.h"
  
  #include "_sd-common.h"
-@@ -133,6 +134,9 @@ int sd_dhcp6_client_get_lease(
+@@ -134,6 +135,9 @@ int sd_dhcp6_client_get_lease(
                  sd_dhcp6_client *client,
                  sd_dhcp6_lease **ret);
  

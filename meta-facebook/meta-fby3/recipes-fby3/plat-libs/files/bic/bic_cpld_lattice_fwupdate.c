@@ -105,6 +105,29 @@ send_cpld_data(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *data, uint8
   uint8_t txlen = 9;//start from 9
   uint8_t rxbuf[256] = {0};
   uint8_t rxlen = 0;
+  static uint8_t bus = 0xff;
+
+  if ( bus == 0xff ) {
+    if ( REXP_BIC_INTF == intf ) {
+      uint8_t board_type = 0;
+      ret = fby3_common_get_2ou_board_type(slot_id, &board_type);
+      if ( ret < 0 ) {
+        syslog(LOG_WARNING, "Failed to get 2ou board type\n");
+        return ret;
+      }
+
+      if ( board_type == GPV3_MCHP_BOARD ||
+           board_type == GPV3_BRCM_BOARD ) {
+        bus = 0x13;
+      } else {
+        bus = 0x01;
+      }
+    } else {
+      bus = 0x01;
+    }
+  }
+
+  txbuf[6] = bus;
 
   if ( data_len > 0 ) {
     memcpy(&txbuf[txlen], data, data_len);

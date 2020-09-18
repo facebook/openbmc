@@ -449,8 +449,24 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
       }
       break;
     case FW_1OU_CPLD:
-    case FW_2OU_CPLD:
       ret = bic_get_exp_cpld_ver(slot_id, fw_comp, ver, 0/*bus 0*/, 0x80/*8-bit addr*/, intf);
+      break;
+    case FW_2OU_CPLD:
+      {
+        uint8_t board_type = 0;
+        uint8_t bus = 0;
+        if ( fby3_common_get_2ou_board_type(slot_id, &board_type) < 0 ) {
+          syslog(LOG_WARNING, "Failed to get 2ou board type\n");
+        }
+
+        if ( board_type == GPV3_MCHP_BOARD ||
+             board_type == GPV3_BRCM_BOARD ) {
+          bus = 0x9;
+        } else {
+          bus = 0x0;
+        }
+        ret = bic_get_exp_cpld_ver(slot_id, fw_comp, ver, bus, 0x80/*8-bit addr*/, intf);
+      }
       break;
     case FW_BB_CPLD:
       ret = bic_get_cpld_ver(slot_id, fw_comp, ver, 0/*bus 0*/, 0x80/*8-bit addr*/, intf);

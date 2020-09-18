@@ -127,6 +127,8 @@ enum {
 enum {
   M2_BOARD = 0x01,
   E1S_BOARD = 0x02,
+  GPV3_MCHP_BOARD = 0x03,
+  GPV3_BRCM_BOARD = 0x00,
 };
 
 const static char *gpio_server_prsnt[] =

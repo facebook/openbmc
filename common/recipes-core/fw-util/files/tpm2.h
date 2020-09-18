@@ -6,12 +6,13 @@
 class Tpm2Component : public Component {
   public:
     std::string device;
-    std::string version_command;
+    std::vector<std::string> version_command;
     std::string verion_cache;
     Tpm2Component(std::string fru, std::string comp,
                   std::string dev = "/sys/class/tpm/tpm0",
-                  std::string ver_cmd = "/usr/bin/tpm2_getcap -c properties-fixed 2>/dev/null" \
-                  " | grep TPM_PT_FIRMWARE_VERSION_1",
+                  std::vector<std::string> ver_cmd = {
+                    "/usr/bin/tpm2_getcap -c properties-fixed 2>/dev/null | grep TPM_PT_FIRMWARE_VERSION_1",
+                    "/usr/bin/tpm2_getcap properties-fixed 2>/dev/null | grep -A1 TPM2_PT_FIRMWARE_VERSION_1"},
                   std::string ver_cache = "tpm2_version")
       : Component(fru, comp), device(dev), version_command(ver_cmd), verion_cache(ver_cache) {}
     int print_version();

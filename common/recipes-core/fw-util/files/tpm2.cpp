@@ -16,7 +16,7 @@ int tpm2_get_ver(char *ver, Tpm2Component *tpm2) {
   uint32_t fw_ver;
 
   if (ver == NULL || tpm2->device.c_str() == NULL ||
-      tpm2->version_command.c_str() == NULL ||
+      tpm2->version_command.size() == 0 ||
       tpm2->verion_cache.c_str() == NULL
      ) {
     return FW_STATUS_NOT_SUPPORTED;
@@ -27,22 +27,23 @@ int tpm2_get_ver(char *ver, Tpm2Component *tpm2) {
   }
 
   if (kv_get(tpm2->verion_cache.c_str(), value, NULL, 0)) {
-    fp = popen(tpm2->version_command.c_str(), "r");
-    if (!fp) {
-      syslog(LOG_WARNING, "Cannot open TPM2 file");
-      return FW_STATUS_FAILURE;
-    }
-
     match = false;
-    while (fgets(value, sizeof(value), fp)) {
-      if (sscanf(value, "%*s %x", &fw_ver) == 1) {
-        sprintf(value, "%d.%d", fw_ver >> 16, fw_ver & 0xFFFF);
-        kv_set(tpm2->verion_cache.c_str(), value, 0, 0);
-        match = true;
-        break;
+    for (size_t i = 0; !match && i < tpm2->version_command.size(); i++) {
+      fp = popen(tpm2->version_command[i].c_str(), "r");
+      if (!fp) {
+        syslog(LOG_WARNING, "Cannot open TPM2 file");
+        return FW_STATUS_FAILURE;
       }
+      while (fgets(value, sizeof(value), fp)) {
+        if (sscanf(value, "%*s %x", &fw_ver) == 1) {
+          sprintf(value, "%d.%d", fw_ver >> 16, fw_ver & 0xFFFF);
+          kv_set(tpm2->verion_cache.c_str(), value, 0, 0);
+          match = true;
+          break;
+        }
+      }
+      pclose(fp);
     }
-    pclose(fp);
 
     if (match != true) {
       return FW_STATUS_FAILURE;

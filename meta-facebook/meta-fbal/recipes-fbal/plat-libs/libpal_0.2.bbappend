@@ -5,6 +5,8 @@ SRC_URI += "\
     file://pal_cm.h \
     file://pal_ep.c \
     file://pal_ep.h \
+    file://pal_cc.c \
+    file://pal_cc.h \
     file://pal_health.c \
     file://pal_health.h \
     file://pal_power.c \

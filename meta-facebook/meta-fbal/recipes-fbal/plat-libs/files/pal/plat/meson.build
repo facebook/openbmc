@@ -1,6 +1,7 @@
 pal_headers += [
     'pal_cm.h',
     'pal_ep.h',
+    'pal_cc.h',
     'pal_health.h',
     'pal_power.h',
     'pal_sbmc.h',
@@ -9,6 +10,7 @@ pal_headers += [
 pal_sources += [
     'pal_cm.c',
     'pal_ep.c',
+    'pal_cc.c',
     'pal_health.c',
     'pal_power.c',
     'pal_sbmc.c',

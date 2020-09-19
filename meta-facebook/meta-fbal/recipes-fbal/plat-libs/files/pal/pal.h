@@ -31,6 +31,7 @@ extern "C" {
 #include "pal_power.h"
 #include "pal_cm.h"
 #include "pal_ep.h"
+#include "pal_cc.h"
 
 #define PWR_OPTION_LIST "status, graceful-shutdown, off, on, reset, cycle"
 #define FRU_EEPROM_MB_T  "/sys/class/i2c-dev/i2c-4/device/4-00%d/eeprom"

@@ -185,6 +185,12 @@ pal_sled_cycle(void) {
     }
   }
 
+  if(is_cc_present()) {
+    if (pal_cc_sled_cycle() < 0) {
+      syslog(LOG_ERR, "Request JBOG power-cycle failed");
+    }
+  }
+
   // Send command to HSC power cycle
   if( lib_cmc_power_cycle() ) {
     return -1;

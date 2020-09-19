@@ -27,6 +27,7 @@ SRC_URI = "file://Makefile \
            file://selformat.cpp \
            file://selstream.hpp \
            file://selstream.cpp \
+           file://selexception.hpp \
            file://log-util.hpp \
            file://log-util.cpp \
            file://rsyslogd.hpp \

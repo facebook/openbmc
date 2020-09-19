@@ -1,4 +1,5 @@
 #include "selformat.hpp"
+#include "selexception.hpp"
 #include <openbmc/pal.h>
 #include <time.h>
 #include <cstdio>
@@ -66,7 +67,7 @@ void SELFormat::set_raw(std::string&& line) {
       fru_num_ = FRU_SYS;
     }
   } else if (raw_.find(".crit") == std::string::npos) {
-    throw std::runtime_error("Invalid log: " + raw_);
+    throw SELParserError("Invalid log: " + raw_);
   } else {
     fru_num_ = default_fru_num_;
   }
@@ -136,6 +137,7 @@ std::istream& operator>>(std::istream& is, SELFormat& s) {
   std::istream& ret = getline(is, line);
   if (ret.fail())
     return is;
+  line.erase(std::remove(line.begin(), line.end(), '\0'), line.end());
   s.set_raw(std::move(line));
   return ret;
 }

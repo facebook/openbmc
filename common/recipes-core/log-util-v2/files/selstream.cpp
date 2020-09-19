@@ -1,4 +1,6 @@
 #include "selstream.hpp"
+#include "selexception.hpp"
+#include <iostream>
 
 void SELStream::flush(std::ostream& os) {
   if (fmt_ == FORMAT_JSON) {
@@ -16,30 +18,40 @@ std::unique_ptr<SELFormat> SELStream::make_sel(uint8_t default_fru) {
 void SELStream::start(
     std::istream& is,
     std::ostream& os,
-    const fru_set& filter_fru) {
+    const fru_set& filter_fru,
+    const ParserFlag flag) {
   uint8_t default_fru_id = filter_fru.count(SELFormat::FRU_SYS) > 0
       ? SELFormat::FRU_SYS
       : SELFormat::FRU_ALL;
   std::unique_ptr<SELFormat> sel = make_sel(default_fru_id);
-  while (is >> *sel) {
-    if (fmt_ == FORMAT_JSON && sel->is_self()) {
-      // RAW is used by clear and we filter out all previous
-      // logs injected by this utility.
-      // We do not send this as JSON format as well.
-      continue;
+  do {
+    try {
+      if (!(is >> *sel))
+        break;
+      if (fmt_ == FORMAT_JSON && sel->is_self()) {
+        // RAW is used by clear and we filter out all previous
+        // logs injected by this utility.
+        // We do not send this as JSON format as well.
+        continue;
+      }
+      bool blacklist = fmt_ == FORMAT_RAW;
+      if (!(sel->fru_matches(filter_fru) ^ blacklist))
+        continue;
+      if (fmt_ == FORMAT_RAW)
+        sel->force_bare();
+      if (fmt_ == FORMAT_JSON) {
+        nlohmann::json j(*sel);
+        sel_list_.push_back(j);
+      } else {
+        os << *sel;
+      }
+    } catch (SELException &e) {
+      if (flag & PARSE_STOP_ON_ERR) {
+        std::cerr << "[ERR] " << e.what() << std::endl;
+        break;
+      }
     }
-    bool blacklist = fmt_ == FORMAT_RAW;
-    if (!(sel->fru_matches(filter_fru) ^ blacklist))
-      continue;
-    if (fmt_ == FORMAT_RAW)
-      sel->force_bare();
-    if (fmt_ == FORMAT_JSON) {
-      nlohmann::json j(*sel);
-      sel_list_.push_back(j);
-    } else {
-      os << *sel;
-    }
-  }
+  } while (!is.eof());
 }
 
 void SELStream::log_cleared(std::ostream& os, const fru_set& frus) {

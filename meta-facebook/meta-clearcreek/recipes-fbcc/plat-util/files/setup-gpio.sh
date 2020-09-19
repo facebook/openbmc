@@ -209,3 +209,5 @@ gpio_set CPLD_BMC_GPIO_R_00 0
 
 gpio_export RST_FIO_IOEXP_R_N GPIOY1
 gpio_set RST_FIO_IOEXP_R_N 1
+
+gpio_export CPLD_BMC_GPIO_R_01 GPIOAC3

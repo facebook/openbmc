@@ -33,4 +33,5 @@ IMAGE_INSTALL += " \
   fruid \
   mac-util \
   ipmitool \
+  gpiod \
   "

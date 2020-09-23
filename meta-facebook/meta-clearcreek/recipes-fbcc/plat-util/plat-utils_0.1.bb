@@ -26,6 +26,7 @@ SRC_URI = "file://ast-functions \
            file://setup-usbnet.sh \
            file://setup-usbhub.sh \
            file://setup-m2carrier.sh \
+           file://setup-i2c.sh \
            file://COPYING \
           "
 
@@ -52,6 +53,8 @@ do_install() {
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
+  install -m 755 setup-i2c.sh ${D}${sysconfdir}/init.d/setup-i2c.sh
+  update-rc.d -r ${D} setup-i2c.sh start 60 5 .
   install -m 755 setup-usbhub.sh ${D}${sysconfdir}/init.d/setup-usbhub.sh
   update-rc.d -r ${D} setup-usbhub.sh start 90 S .
   install -m 755 setup-usbnet.sh ${D}${sysconfdir}/init.d/setup-usbnet.sh

@@ -34,4 +34,6 @@ IMAGE_INSTALL += " \
   mac-util \
   ipmitool \
   gpiod \
+  sensor-util \
+  sensor-mon \
   "

@@ -62,6 +62,9 @@ enum {
 #define MAX_NUM_FRUS (FRU_CNT-1)
 #define MAX_NODES    1
 #define LARGEST_DEVICE_NAME 120
+#define READING_SKIP    (1)
+#define READING_NA      (-2)
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 #ifdef __cplusplus
 } // extern "C"

@@ -10,6 +10,9 @@ class BiosComponent : public GPIOSwitchedSPIMTDComponent {
     virtual int check_image(const char *path);
     int update(std::string image, bool force);
   public:
+    BiosComponent(std::string fru, std::string comp, std::string mtd, std::string devpath, std::string dev,
+      std::string shadow, bool level, std::string verp) :
+      GPIOSwitchedSPIMTDComponent(fru, comp, mtd, dev, shadow, level), _ver_prefix(verp) { spipath = devpath; }
     BiosComponent(std::string fru, std::string comp, std::string mtd, std::string dev, std::string shadow, bool level, std::string verp) :
       GPIOSwitchedSPIMTDComponent(fru, comp, mtd, dev, shadow, level), _ver_prefix(verp) {}
     BiosComponent(std::string fru, std::string comp, std::string mtd, std::string verp) :

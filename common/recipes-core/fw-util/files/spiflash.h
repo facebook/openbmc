@@ -18,6 +18,7 @@ class MTDComponent : public Component {
 // Upgrade SPI Flash whose partitions need to be temporarily mounted as MTD
 class SPIMTDComponent : public MTDComponent {
   protected:
+    std::string spipath = "/sys/bus/spi/drivers/m25p80";
     std::string spidev;
   public:
     SPIMTDComponent(std::string fru, std::string comp, std::string mtd, std::string dev) :

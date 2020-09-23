@@ -35,7 +35,7 @@ int SPIMTDComponent::update(std::string image)
   std::ofstream ofs;
   int rc;
 
-  ofs.open("/sys/bus/spi/drivers/m25p80/bind");
+  ofs.open(spipath + "/bind");
   if (!ofs.is_open()) {
     return -1;
   }
@@ -47,7 +47,7 @@ int SPIMTDComponent::update(std::string image)
   }
   ofs.close();
   rc = MTDComponent::update(image);
-  ofs.open("/sys/bus/spi/drivers/m25p80/unbind");
+  ofs.open(spipath + "/unbind");
   if (!ofs.is_open()) {
     sys.error << "ERROR: Cannot unbind " << spidev << " rc=" << rc << std::endl;
     return -1;

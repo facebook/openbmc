@@ -33,9 +33,6 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-vendor=$(/usr/local/bin/cfg-util asic_mfr)
-echo "ASIC Manufacturer: $vendor"
-
 for i in {0..7};
 do
   for j in {0..4};

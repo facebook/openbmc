@@ -42,9 +42,9 @@
 #define SMBPBI_CAP_GPU0_TEMP    (1 << 0)
 #define SMBPBI_CAP_BOARD_TEMP   (1 << 4)
 #define SMBPBI_CAP_MEM_TEMP     (1 << 5)
-#define SMBPBI_CAP_PWCS	        (1 << 16)
+#define SMBPBI_CAP_PWCS         (1 << 16)
 
-#define SMBPBI_GET_TEMPERATURE  0x03
+#define SMBPBI_GET_TEMPERATURE  0x02
 #define SMBPBI_GPU0_TEMP        0x00
 #define SMBPBI_BOARD_TEMP       0x04
 #define SMBPBI_MEM_TEMP         0x05
@@ -119,34 +119,41 @@ static uint8_t nv_get_status(int fd)
   return buf[3] & 0x1f; // reg[28:24]
 }
 
+static int nv_check_status(int fd, uint8_t opcode)
+{
+  int retry = SMBPBI_MAX_RETRY;
+  uint8_t status;
+
+  while (retry--) {
+    status = nv_get_status(fd);
+    if (status != SMBPBI_STATUS_SUCCESS &&
+	(opcode != SMBPBI_ASYNC_REQUEST || status != SMBPBI_STATUS_ACCEPTED)) {
+      usleep(1000);
+      continue;
+    }
+    return 0;
+  }
+  syslog(LOG_WARNING, "Nvidia status error = 0x%x", status);
+  return -1;
+}
+
 static int nv_msgbox_cmd(int fd, uint8_t opcode, uint8_t arg1, uint8_t arg2,
                          uint8_t* data_in, uint8_t* data_out)
 {
-  int i;
-  uint8_t status;
+  int retry = SMBPBI_MAX_RETRY;
 
-  if (data_in && nv_msgbox_write_data(fd, data_in) < 0)
-    return -1;
-
-  if (nv_msgbox_write_reg(fd, opcode, arg1, arg2) < 0)
-    return -1;
-
-  for (i = 0; i < SMBPBI_MAX_RETRY; i++) {
-    status = nv_get_status(fd);
-    if (status == SMBPBI_STATUS_SUCCESS)
-      break;
-    if (opcode == SMBPBI_ASYNC_REQUEST && status == SMBPBI_STATUS_ACCEPTED)
-      break;
-
-    usleep(100);
+  while (retry--) {
+    if (data_in && nv_msgbox_write_data(fd, data_in) < 0)
+      continue;
+    if (nv_msgbox_write_reg(fd, opcode, arg1, arg2) < 0)
+      continue;
+    if (nv_check_status(fd, opcode) < 0)
+      continue;
+    if (nv_msgbox_read_data(fd, data_out) < 0)
+      continue;
+    return 0;
   }
-  if (i == SMBPBI_MAX_RETRY)
-    return -1;
-
-  if (nv_msgbox_read_data(fd, data_out) < 0)
-    return -1;
-
-  return 0;
+  return -1;
 }
 
 static uint32_t nv_get_cap(int fd, uint8_t page)
@@ -163,10 +170,9 @@ static uint32_t nv_get_cap(int fd, uint8_t page)
 
 static float nv_read_temp(uint8_t slot, uint8_t sensor, float *temp)
 {
-  int fd;
+  int fd, value;
   uint32_t cap_mask;
   uint8_t buf[4] = {0};
-  char value[16] = {0};
 
   switch (sensor) {
     case SMBPBI_GPU0_TEMP:
@@ -193,14 +199,15 @@ static float nv_read_temp(uint8_t slot, uint8_t sensor, float *temp)
     goto err;
 
   close(fd);
-  snprintf(value, sizeof(value), "%d.%d", buf[1], buf[0]);
-  *temp = atof(value);
-  if (buf[3] & 0x80)
-    *temp = -(*temp);
+  memcpy(&value, buf, sizeof(value));
+  value = value >> 8;  // Remove fractional bits(7:0 all zero)
+  *temp = (float)value;
+
   return ASIC_SUCCESS;
 
 err:
   close(fd);
+  syslog(LOG_WARNING, "Nvidia error on slot %d", slot);
   return ASIC_ERROR;
 }
 
@@ -247,7 +254,7 @@ err:
 
 int nv_set_power_limit(uint8_t slot, unsigned int watt)
 {
-  int fd, i;
+  int fd, retry = SMBPBI_MAX_RETRY;
   unsigned int mwatt = watt * 1000;
   uint8_t tbuf[4], rbuf[4];
   uint8_t async_id;
@@ -279,18 +286,17 @@ int nv_set_power_limit(uint8_t slot, unsigned int watt)
   usleep(1000);
   async_id = rbuf[0];
   // Retry until ASYNC_STATUS_SUCCESS
-  for (i = 0; i < SMBPBI_MAX_RETRY; i++) {
-    if (nv_msgbox_cmd(fd, SMBPBI_ASYNC_REQUEST, 0xff, async_id, NULL, rbuf) == 0 &&
-	rbuf[0] == ASYNC_STATUS_SUCCESS) {
-      break;
-    }
-  }
-  if (i == SMBPBI_MAX_RETRY)
-    goto err;
+  while (retry--) {
+    if (nv_msgbox_cmd(fd, SMBPBI_ASYNC_REQUEST, 0xff, async_id, NULL, rbuf) < 0)
+      continue;
+    if (rbuf[0] != ASYNC_STATUS_SUCCESS)
+      continue;
 
-  close(fd);
-  syslog(LOG_CRIT, "Set power limit of GPU on slot %d to %d Watts", (int)slot, watt);
-  return ASIC_SUCCESS;
+    close(fd);
+    syslog(LOG_CRIT, "Set power limit of GPU on slot %d to %d Watts", (int)slot, watt);
+    return ASIC_SUCCESS;
+  }
+
 err:
   close(fd);
   return ASIC_ERROR;

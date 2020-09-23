@@ -43,7 +43,7 @@ struct asic_ops {
   },
   [GPU_NV] = {
     .read_gpu_temp = nv_read_gpu_temp,
-    .read_board_temp = nv_read_board_temp,
+    .read_board_temp = NULL,
     .read_mem_temp = nv_read_mem_temp,
     .read_pwcs = nv_read_pwcs,
     .set_power_limit = nv_set_power_limit

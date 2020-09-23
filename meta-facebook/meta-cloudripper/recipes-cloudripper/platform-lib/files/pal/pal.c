@@ -1,0 +1,1422 @@
+/*
+ *
+ * Copyright 2020-present Facebook. All Rights Reserved.
+ *
+ * This file contains code to support IPMI2.0 Specificaton available @
+ * http://www.intel.com/content/www/us/en/servers/ipmi/ipmi-specifications.html
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+ /*
+  * This file contains functions and logics that depends on Cloudripper specific
+  * hardware and kernel drivers. Here, some of the empty "default" functions
+  * are overridden with simple functions that returns non-zero error code.
+  * This is for preventing any potential escape of failures through the
+  * default functions that will return 0 no matter what.
+  */
+
+// #define DEBUG
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/time.h>
+#include <time.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <math.h>
+#include <openbmc/log.h>
+#include <openbmc/libgpio.h>
+#include <openbmc/kv.h>
+#include <openbmc/obmc-i2c.h>
+#include <openbmc/sensor-correction.h>
+#include <openbmc/misc-utils.h>
+#include <facebook/bic.h>
+#include <facebook/wedge_eeprom.h>
+#include "pal-ipmi.h"
+#include "pal-led.h"
+#include "pal-power.h"
+#include "pal-sensors.h"
+#include "pal.h"
+
+uint8_t g_dev_guid[GUID_SIZE] = {0};
+
+struct threadinfo {
+  uint8_t is_running;
+  uint8_t fru;
+  pthread_t pt;
+};
+
+static struct threadinfo t_dump[MAX_NUM_FRUS] = {0};
+
+const char pal_fru_list[] = "all, scm, smb, fcm, "\
+                            "psu1, psu2, fan1, fan2, fan3, fan4 ";
+
+char *key_list[] = {
+  "pwr_server_last_state",
+  "sysfw_ver_server",
+  "timestamp_sled",
+  "server_por_cfg",
+  "server_sel_error",
+  "scm_sensor_health",
+  "smb_sensor_health",
+  "fcm_sensor_health",
+  "psu1_sensor_health",
+  "psu2_sensor_health",
+  "fan1_sensor_health",
+  "fan2_sensor_health",
+  "fan3_sensor_health",
+  "fan4_sensor_health",
+  "slot1_boot_order",
+  /* Add more Keys here */
+  LAST_KEY /* This is the last key of the list */
+};
+
+char *def_val_list[] = {
+  "on", /* pwr_server_last_state */
+  "0", /* sysfw_ver_server */
+  "0", /* timestamp_sled */
+  "lps", /* server_por_cfg */
+  "1", /* server_sel_error */
+  "1", /* scm_sensor_health */
+  "1", /* smb_sensor_health */
+  "1", /* fcm_sensor_health */
+  "1", /* psu1_sensor_health */
+  "1", /* psu2_sensor_health */
+  "1", /* fan1_sensor_health */
+  "1", /* fan2_sensor_health */
+  "1", /* fan3_sensor_health */
+  "1", /* fan4_sensor_health */
+  /* Add more def values for the correspoding keys*/
+  LAST_KEY /* Same as last entry of the key_list */
+};
+
+void pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
+  switch(mode) {
+  case BIC_MODE_NORMAL:
+    // Bridge IC entered normal mode
+    // Inform BIOS that BMC is ready
+    bic_set_gpio(fru, BMC_READY_N, 0);
+    break;
+  case BIC_MODE_UPDATE:
+    // Bridge IC entered update mode
+    // TODO: Might need to handle in future
+    break;
+  default:
+    break;
+  }
+}
+
+static int pal_key_check(char *key) {
+  int i = 0;
+
+  while(strcmp(key_list[i], LAST_KEY)) {
+    // If Key is valid, return success
+    if (!strcmp(key, key_list[i]))
+      return 0;
+
+    i++;
+  }
+
+  PAL_DEBUG("pal_key_check: invalid key - %s", key);
+
+  return -1;
+}
+
+int pal_get_key_value(char *key, char *value) {
+  int ret;
+  // Check is key is defined and valid
+  if (pal_key_check(key))
+    return -1;
+
+  ret = kv_get(key, value, NULL, KV_FPERSIST);
+  return ret;
+}
+
+int pal_set_key_value(char *key, char *value) {
+  // Check is key is defined and valid
+  if (pal_key_check(key))
+    return -1;
+
+  return kv_set(key, value, 0, KV_FPERSIST);
+}
+
+int pal_get_fru_list(char *list) {
+  strcpy(list, pal_fru_list);
+  return 0;
+}
+
+int pal_get_fru_id(char *str, uint8_t *fru) {
+  if (!strcmp(str, "all")) {
+    *fru = FRU_ALL;
+  } else if (!strcmp(str, "smb")) {
+    *fru = FRU_SMB;
+  } else if (!strcmp(str, "scm")) {
+    *fru = FRU_SCM;
+  } else if (!strcmp(str, "psu1")) {
+    *fru = FRU_PSU1;
+  } else if (!strcmp(str, "psu2")) {
+    *fru = FRU_PSU2;
+  } else if (!strcmp(str, "fan1")) {
+    *fru = FRU_FAN1;
+  } else if (!strcmp(str, "fan2")) {
+    *fru = FRU_FAN2;
+  } else if (!strcmp(str, "fan3")) {
+    *fru = FRU_FAN3;
+  } else if (!strcmp(str, "fan4")) {
+    *fru = FRU_FAN4;
+  } else if (!strcmp(str, "bmc")) {
+    *fru = FRU_BMC;
+  } else if (!strcmp(str, "cpld")) {
+    *fru = FRU_CPLD;
+  } else if (!strcmp(str, "fpga")) {
+    *fru = FRU_FPGA;
+  } else {
+    OBMC_WARN("pal_get_fru_id: Wrong fru#%s", str);
+    return -1;
+  }
+
+  return 0;
+}
+
+int pal_get_fru_name(uint8_t fru, char *name) {
+  switch(fru) {
+    case FRU_SMB:
+      strcpy(name, "smb");
+      break;
+    case FRU_SCM:
+      strcpy(name, "scm");
+      break;
+    case FRU_FCM:
+      strcpy(name, "fcm");
+      break;
+    case FRU_PSU1:
+      strcpy(name, "psu1");
+      break;
+    case FRU_PSU2:
+      strcpy(name, "psu2");
+      break;
+    case FRU_FAN1:
+      strcpy(name, "fan1");
+      break;
+    case FRU_FAN2:
+      strcpy(name, "fan2");
+      break;
+    case FRU_FAN3:
+      strcpy(name, "fan3");
+      break;
+    case FRU_FAN4:
+      strcpy(name, "fan4");
+      break;
+    default:
+      if (fru > MAX_NUM_FRUS)
+        return -1;
+      sprintf(name, "fru%d", fru);
+      break;
+  }
+  return 0;
+}
+
+// Platform Abstraction Layer (PAL) Functions
+int pal_get_platform_name(char *name) {
+  strcpy(name, PLATFORM_NAME);
+
+  return 0;
+}
+
+int pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
+  int val,ext_prsnt;
+  char tmp[LARGEST_DEVICE_NAME];
+  char path[LARGEST_DEVICE_NAME + 1];
+  *status = 0;
+
+  switch (fru) {
+    case FRU_SMB:
+      *status = 1;
+      return 0;
+    case FRU_SCM:
+      snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, SCM_PRSNT_STATUS);
+      break;
+    case FRU_FCM:
+      *status = 1;
+      return 0;
+    case FRU_PSU1:
+    case FRU_PSU2:
+      snprintf(tmp, LARGEST_DEVICE_NAME, SMB_SYSFS, PSU_PRSNT_STATUS);
+      snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PSU1 + 1);
+      break;
+    case FRU_FAN1:
+    case FRU_FAN2:
+    case FRU_FAN3:
+    case FRU_FAN4:
+      snprintf(tmp, LARGEST_DEVICE_NAME, FCM_SYSFS, FAN_PRSNT_STATUS);
+      snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_FAN1 + 1);
+      break;
+    default:
+      OBMC_INFO("unsupported fru id %d", fru);
+      return -1;
+    }
+
+    if (read_device(path, &val)) {
+      return -1;
+    }
+
+    if (val == 0x0) {
+      *status = 1;
+    } else {
+      *status = 0;
+      return 0;
+    }
+
+    return 0;
+}
+
+int pal_is_fru_ready(uint8_t fru, uint8_t *status) {
+  int ret = 0;
+
+  switch(fru) {
+    default:
+      *status = 1;
+
+      break;
+  }
+
+  return ret;
+}
+
+void pal_update_ts_sled() {
+  char key[MAX_KEY_LEN];
+  char tstr[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  clock_gettime(CLOCK_REALTIME, &ts);
+  sprintf(tstr, "%ld", ts.tv_sec);
+
+  sprintf(key, "timestamp_sled");
+
+  pal_set_key_value(key, tstr);
+}
+
+int pal_is_debug_card_prsnt(uint8_t *status) {
+  int val;
+  char path[LARGEST_DEVICE_NAME + 1];
+
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_DEBUG_PRSNT_N, "value");
+
+  if (read_device(path, &val)) {
+    return -1;
+  }
+
+  if (val) {
+    *status = 1;
+  } else {
+    *status = 0;
+  }
+
+  return 0;
+}
+
+// Return the Front panel Power Button
+int pal_get_board_rev(int *rev) {
+  char path[LARGEST_DEVICE_NAME + 1];
+  int val_id_0, val_id_1, val_id_2;
+
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_0, "value");
+  if (read_device(path, &val_id_0)) {
+    return -1;
+  }
+
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_1, "value");
+  if (read_device(path, &val_id_1)) {
+    return -1;
+  }
+
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_2, "value");
+  if (read_device(path, &val_id_2)) {
+    return -1;
+  }
+
+  *rev = val_id_0 | (val_id_1 << 1) | (val_id_2 << 2);
+
+  return 0;
+}
+
+int pal_get_board_type(uint8_t *brd_type) {
+  *brd_type = BOARD_TYPE_CLOUDRIPPER;
+  return CC_SUCCESS;
+}
+
+int pal_get_board_type_rev(uint8_t *brd_type_rev) {
+  *brd_type_rev = BOARD_CLOUDRIPPER;
+  return 0;
+}
+
+int pal_get_cpld_board_rev(int *rev, const char *device) {
+  char full_name[LARGEST_DEVICE_NAME + 1];
+
+  snprintf(full_name, LARGEST_DEVICE_NAME, device, "board_ver");
+  if (read_device(full_name, rev)) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver) {
+  int val = -1;
+  char ver_path[PATH_MAX];
+  char sub_ver_path[PATH_MAX];
+
+  switch(fru) {
+    case FRU_CPLD:
+      if (!(strncmp(device, SCM_CPLD, strlen(SCM_CPLD)))) {
+        snprintf(ver_path, sizeof(ver_path), SCM_SYSFS, "cpld_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 SCM_SYSFS, "cpld_sub_ver");
+      } else if (!(strncmp(device, SMB_CPLD, strlen(SMB_CPLD)))) {
+        snprintf(ver_path, sizeof(ver_path), SMB_SYSFS, "cpld_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 SMB_SYSFS, "cpld_sub_ver");
+      } else if (!(strncmp(device, PWR_CPLD, strlen(PWR_CPLD)))) {
+        snprintf(ver_path, sizeof(ver_path), PWR_SYSFS, "cpld_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 PWR_SYSFS, "cpld_sub_ver");
+      } else if (!(strncmp(device, FCM_CPLD, strlen(FCM_CPLD)))) {
+        snprintf(ver_path, sizeof(ver_path), FCM_SYSFS, "cpld_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 FCM_SYSFS, "cpld_sub_ver");
+      } else {
+        return -1;
+      }
+      break;
+    case FRU_FPGA:
+      if (!(strncmp(device, DOM_FPGA1, strlen(DOM_FPGA1)))) {
+        snprintf(ver_path, sizeof(ver_path), DOMFPGA1_SYSFS, "fpga_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 DOMFPGA1_SYSFS, "fpga_sub_ver");
+      } else if (!(strncmp(device, DOM_FPGA2, strlen(DOM_FPGA2)))) {
+        snprintf(ver_path, sizeof(ver_path), DOMFPGA2_SYSFS, "fpga_ver");
+        snprintf(sub_ver_path, sizeof(sub_ver_path),
+                 DOMFPGA2_SYSFS, "fpga_sub_ver");
+      } else {
+        return -1;
+      }
+      break;
+    default:
+      return -1;
+  }
+
+  if (!read_device(ver_path, &val)) {
+    ver[0] = (uint8_t)val;
+  } else {
+    return -1;
+  }
+
+  if (!read_device(sub_ver_path, &val)) {
+    ver[1] = (uint8_t)val;
+  } else {
+    printf("[debug][ver:%s]\n", ver_path);
+    printf("[debug][sub_ver:%s]\n", sub_ver_path);
+    OBMC_INFO("[debug][ver:%s]\n", ver_path);
+    OBMC_INFO("[debug][sub_ver:%s]\n", sub_ver_path);
+    return -1;
+  }
+
+  return 0;
+}
+
+int pal_get_num_slots(uint8_t *num)
+{
+  *num = MAX_NUM_SCM;
+  return PAL_EOK;
+}
+
+void *generate_dump(void *arg) {
+  uint8_t fru = *(uint8_t *) arg;
+  char cmd[256];
+  char fname[128];
+  char fruname[16];
+
+  // Usually the pthread cancel state are enable by default but
+  // here we explicitly would like to enable them
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+  pal_get_fru_name(fru, fruname);//scm
+
+  memset(fname, 0, sizeof(fname));
+  snprintf(fname, 128, "/var/run/autodump%d.pid", fru);
+  if (access(fname, F_OK) == 0) {
+    memset(cmd, 0, sizeof(cmd));
+    snprintf(cmd,sizeof(cmd),"rm %s",fname);
+    if (system(cmd)) {
+      OBMC_CRIT("Removing old crashdump: %s failed!\n", fname);
+    }
+  }
+
+  // Execute automatic crashdump
+  memset(cmd, 0, 128);
+  sprintf(cmd, "%s %s", CRASHDUMP_BIN, fruname);
+  if (system(cmd)) {
+    OBMC_CRIT("Crashdump for FRU: %d failed.", fru);
+  } else {
+    OBMC_CRIT("Crashdump for FRU: %d is generated.", fru);
+  }
+
+  t_dump[fru-1].is_running = 0;
+  return 0;
+}
+
+static int pal_store_crashdump(uint8_t fru) {
+  int ret;
+  char cmd[100];
+
+  // Check if the crashdump script exist
+  if (access(CRASHDUMP_BIN, F_OK) == -1) {
+    OBMC_CRIT("Crashdump for FRU: %d failed : "
+        "auto crashdump binary is not preset", fru);
+    return 0;
+  }
+
+  // Check if a crashdump for that fru is already running.
+  // If yes, kill that thread and start a new one.
+  if (t_dump[fru-1].is_running) {
+    ret = pthread_cancel(t_dump[fru-1].pt);
+    if (ret == ESRCH) {
+      OBMC_INFO("pal_store_crashdump: No Crashdump pthread exists");
+    } else {
+      pthread_join(t_dump[fru-1].pt, NULL);
+      sprintf(cmd,
+              "ps | grep '{dump.sh}' | grep 'scm' "
+              "| awk '{print $1}'| xargs kill");
+      if (system(cmd)) {
+        OBMC_INFO("Detection of existing crashdump failed!\n");
+      }
+      sprintf(cmd,
+              "ps | grep 'bic-util' | grep 'scm' "
+              "| awk '{print $1}'| xargs kill");
+      if (system(cmd)) {
+        OBMC_INFO("Detection of existing bic-util scm failed!\n");
+      }
+
+      PAL_DEBUG("pal_store_crashdump: Previous crashdump thread is cancelled");
+
+    }
+  }
+
+  // Start a thread to generate the crashdump
+  t_dump[fru-1].fru = fru;
+  if (pthread_create(&(t_dump[fru-1].pt), NULL, generate_dump,
+      (void*) &t_dump[fru-1].fru) < 0) {
+    OBMC_WARN("pal_store_crashdump: pthread_create for"
+        " FRU %d failed\n", fru);
+    return -1;
+  }
+
+  t_dump[fru-1].is_running = 1;
+
+  OBMC_INFO("Crashdump for FRU: %d is being generated.", fru);
+
+  return 0;
+}
+
+int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  static int assert_cnt[MAX_NUM_SLOTS] = {0};
+
+  switch(fru) {
+    case FRU_SCM:
+      switch(snr_num) {
+        case CATERR_B:
+          pal_store_crashdump(fru);
+          break;
+
+        case 0x00:  // don't care sensor number 00h
+          return 0;
+      }
+      sprintf(key, "server_sel_error");
+
+      if ((event_data[2] & 0x80) == 0) {  // 0: Assertion,  1: Deassertion
+         assert_cnt[fru-1]++;
+      } else {
+        if (--assert_cnt[fru-1] < 0)
+           assert_cnt[fru-1] = 0;
+      }
+      sprintf(cvalue, "%s", (assert_cnt[fru-1] > 0) ? "0" : "1");
+      break;
+
+    default:
+      return -1;
+  }
+
+  /* Write the value "0" which means FRU_STATUS_BAD */
+  return pal_set_key_value(key, cvalue);
+
+}
+
+int pal_mon_fw_upgrade
+(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug,
+              uint8_t *psu_ug, uint8_t *smb_ug)
+{
+  char cmd[5];
+  FILE *fp;
+  int ret=-1;
+  char *buf_ptr;
+  int buf_size = 1000;
+  int str_size = 200;
+  int tmp_size;
+  char str[200];
+  snprintf(cmd, sizeof(cmd), "ps w");
+  fp = popen(cmd, "r");
+  if (NULL == fp)
+     return -1;
+
+  buf_ptr = (char *)malloc(buf_size * sizeof(char) + sizeof(char));
+  memset(buf_ptr, 0, sizeof(char));
+  tmp_size = str_size;
+  while(fgets(str, str_size, fp) != NULL) {
+    tmp_size = tmp_size + str_size;
+    if (tmp_size + str_size >= buf_size) {
+      buf_ptr = realloc(buf_ptr, sizeof(char) * buf_size * 2 + sizeof(char));
+      buf_size *= 2;
+    }
+    if (!buf_ptr) {
+      OBMC_ERROR(-1,
+             "%s realloc() fail, please check memory remaining", __func__);
+      goto free_buf;
+    }
+    strncat(buf_ptr, str, str_size);
+  }
+
+  //check whether sys led need to blink
+  *sys_ug = strstr(buf_ptr, "write spi2") != NULL ? 1 : 0;
+  if (*sys_ug) goto fan_state;
+
+  *sys_ug = strstr(buf_ptr, "write spi1 BACKUP_BIOS") != NULL ? 1 : 0;
+  if (*sys_ug) goto fan_state;
+
+  *sys_ug = (strstr(buf_ptr, "scmcpld_update") != NULL) ? 1 : 0;
+  if (*sys_ug) goto fan_state;
+
+  *sys_ug = (strstr(buf_ptr, "fw-util") != NULL) ?
+          ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
+  if (*sys_ug) goto fan_state;
+
+  //check whether fan led need to blink
+fan_state:
+  *fan_ug = (strstr(buf_ptr, "fcmcpld_update") != NULL) ? 1 : 0;
+
+  //check whether fan led need to blink
+  *psu_ug = (strstr(buf_ptr, "psu-util") != NULL) ?
+          ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
+
+  //check whether smb led need to blink
+  *smb_ug = (strstr(buf_ptr, "smbcpld_update") != NULL) ? 1 : 0;
+  if (*smb_ug) goto close_fp;
+
+  *smb_ug = (strstr(buf_ptr, "pwrcpld_update") != NULL) ? 1 : 0;
+  if (*smb_ug) goto close_fp;
+
+  *smb_ug = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
+  if (*smb_ug) goto close_fp;
+
+  *smb_ug = strstr(buf_ptr, "write spi1 DOM_FPGA_FLASH") != NULL ? 1 : 0;
+  if (*smb_ug) goto close_fp;
+
+  *smb_ug = strstr(buf_ptr, "write spi1 GB_PCIE_FLASH") != NULL ? 1 : 0;
+  if (*smb_ug) goto close_fp;
+
+  *smb_ug = strstr(buf_ptr, "write spi1 BCM5389_EE") != NULL ? 1 : 0;
+  if (*smb_ug) goto close_fp;
+
+close_fp:
+  ret = pclose(fp);
+  if (-1 == ret)
+     OBMC_ERROR(-1, "%s pclose() fail ", __func__);
+
+free_buf:
+  free(buf_ptr);
+  return 0;
+}
+
+int pal_set_def_key_value(void) {
+  int i, ret;
+  char path[LARGEST_DEVICE_NAME + 1];
+
+  for (i = 0; strcmp(key_list[i], LAST_KEY) != 0; i++) {
+    snprintf(path, LARGEST_DEVICE_NAME, KV_PATH, key_list[i]);
+    if ((ret = kv_set(key_list[i], def_val_list[i],
+                    0, KV_FPERSIST | KV_FCREATE)) < 0) {
+      PAL_DEBUG("pal_set_def_key_value: kv_set failed. %d", ret);
+    }
+  }
+  return 0;
+ }
+
+int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
+  pal_set_def_key_value();
+  return 0;
+}
+
+int pal_get_fru_health(uint8_t fru, uint8_t *value) {
+  char cvalue[MAX_VALUE_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  int ret;
+
+  switch(fru) {
+  case FRU_SCM:
+    sprintf(key, "scm_sensor_health");
+    break;
+  case FRU_SMB:
+    sprintf(key, "smb_sensor_health");
+    break;
+  case FRU_FCM:
+    sprintf(key, "fcm_sensor_health");
+    break;
+  case FRU_PSU1:
+    sprintf(key, "psu1_sensor_health");
+    break;
+  case FRU_PSU2:
+    sprintf(key, "psu2_sensor_health");
+    break;
+  case FRU_FAN1:
+    sprintf(key, "fan1_sensor_health");
+    break;
+  case FRU_FAN2:
+    sprintf(key, "fan2_sensor_health");
+    break;
+  case FRU_FAN3:
+    sprintf(key, "fan3_sensor_health");
+    break;
+  case FRU_FAN4:
+    sprintf(key, "fan4_sensor_health");
+    break;
+  default:
+    return -1;
+  }
+
+  ret = pal_get_key_value(key, cvalue);
+  if (ret) {
+    return ret;
+  }
+
+  *value = atoi(cvalue);
+  *value = *value & atoi(cvalue);
+  return 0;
+}
+
+int pal_set_sensor_health(uint8_t fru, uint8_t value) {
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+
+  switch(fru) {
+  case FRU_SCM:
+    sprintf(key, "scm_sensor_health");
+    break;
+  case FRU_SMB:
+    sprintf(key, "smb_sensor_health");
+    break;
+  case FRU_PSU1:
+    sprintf(key, "psu1_sensor_health");
+    break;
+  case FRU_PSU2:
+    sprintf(key, "psu2_sensor_health");
+    break;
+  case FRU_FAN1:
+    sprintf(key, "fan1_sensor_health");
+    break;
+  case FRU_FAN2:
+    sprintf(key, "fan2_sensor_health");
+    break;
+  case FRU_FAN3:
+    sprintf(key, "fan3_sensor_health");
+    break;
+  case FRU_FAN4:
+    sprintf(key, "fan4_sensor_health");
+    break;
+  default:
+    return -1;
+  }
+
+  sprintf(cvalue, (value > 0) ? "1": "0");
+
+  return pal_set_key_value(key, cvalue);
+}
+
+int pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  uint8_t snr_num = sel[11];
+  uint8_t *event_data = &sel[10];
+  uint8_t *ed = &event_data[3];
+  char temp_log[512] = {0};
+  uint8_t sen_type = event_data[0];
+  uint8_t chn_num, dimm_num;
+  bool parsed = false;
+
+  switch(snr_num) {
+    case BIC_SENSOR_SYSTEM_STATUS:
+      strcpy(error_log, "");
+      switch (ed[0] & 0x0F) {
+        case 0x00:
+          strcat(error_log, "SOC_Thermal_Trip");
+          break;
+        case 0x01:
+          strcat(error_log, "SOC_FIVR_Fault");
+          break;
+        case 0x02:
+          strcat(error_log, "SOC_Throttle");
+          break;
+        case 0x03:
+          strcat(error_log, "PCH_HOT");
+          break;
+      }
+      parsed = true;
+      break;
+
+    case BIC_SENSOR_CPU_DIMM_HOT:
+      strcpy(error_log, "");
+      switch (ed[0] & 0x0F) {
+        case 0x01:
+          strcat(error_log, "SOC_MEMHOT");
+          break;
+      }
+      parsed = true;
+      break;
+
+    case MEMORY_ECC_ERR:
+    case MEMORY_ERR_LOG_DIS:
+      strcpy(error_log, "");
+      if (snr_num == MEMORY_ECC_ERR) {
+        // SEL from MEMORY_ECC_ERR Sensor
+        if ((ed[0] & 0x0F) == 0x0) {
+          if (sen_type == 0x0C) {
+            strcat(error_log, "Correctable");
+            sprintf(temp_log, "DIMM%02X ECC err", ed[2]);
+            pal_add_cri_sel(temp_log);
+          } else if (sen_type == 0x10)
+            strcat(error_log, "Correctable ECC error Logging Disabled");
+        } else if ((ed[0] & 0x0F) == 0x1) {
+          strcat(error_log, "Uncorrectable");
+          sprintf(temp_log, "DIMM%02X UECC err", ed[2]);
+          pal_add_cri_sel(temp_log);
+        } else if ((ed[0] & 0x0F) == 0x5)
+          strcat(error_log, "Correctable ECC error Logging Limit Reached");
+        else
+          strcat(error_log, "Unknown");
+      } else {
+        // SEL from MEMORY_ERR_LOG_DIS Sensor
+        if ((ed[0] & 0x0F) == 0x0)
+          strcat(error_log, "Correctable Memory Error Logging Disabled");
+        else
+          strcat(error_log, "Unknown");
+      }
+
+      // DIMM number (ed[2]):
+      // Bit[7:5]: Socket number  (Range: 0-7)
+      // Bit[4:3]: Channel number (Range: 0-3)
+      // Bit[2:0]: DIMM number    (Range: 0-7)
+      if (((ed[1] & 0xC) >> 2) == 0x0) {
+        /* All Info Valid */
+        chn_num = (ed[2] & 0x18) >> 3;
+        dimm_num = ed[2] & 0x7;
+
+        /* If critical SEL logging is available, do it */
+        if (sen_type == 0x0C) {
+          if ((ed[0] & 0x0F) == 0x0) {
+            sprintf(temp_log, "DIMM%c%d ECC err,FRU:%u", 'A'+chn_num,
+                    dimm_num, fru);
+            pal_add_cri_sel(temp_log);
+          } else if ((ed[0] & 0x0F) == 0x1) {
+            sprintf(temp_log, "DIMM%c%d UECC err,FRU:%u", 'A'+chn_num,
+                    dimm_num, fru);
+            pal_add_cri_sel(temp_log);
+          }
+        }
+        /* Then continue parse the error into a string. */
+        /* All Info Valid                               */
+        sprintf(temp_log, " DIMM %c%d Logical Rank %d (CPU# %d, CHN# %d, DIMM# %d)",
+            'A'+chn_num, dimm_num, ed[1] & 0x03, (ed[2] & 0xE0) >> 5, chn_num, dimm_num);
+      } else if (((ed[1] & 0xC) >> 2) == 0x1) {
+        /* DIMM info not valid */
+        sprintf(temp_log, " (CPU# %d, CHN# %d)",
+            (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3);
+      } else if (((ed[1] & 0xC) >> 2) == 0x2) {
+        /* CHN info not valid */
+        sprintf(temp_log, " (CPU# %d, DIMM# %d)",
+            (ed[2] & 0xE0) >> 5, ed[2] & 0x7);
+      } else if (((ed[1] & 0xC) >> 2) == 0x3) {
+        /* CPU info not valid */
+        sprintf(temp_log, " (CHN# %d, DIMM# %d)",
+            (ed[2] & 0x18) >> 3, ed[2] & 0x7);
+      }
+      strcat(error_log, temp_log);
+      parsed = true;
+      break;
+  }
+
+  if (parsed == true) {
+    if ((event_data[2] & 0x80) == 0) {
+      strcat(error_log, " Assertion");
+    } else {
+      strcat(error_log, " Deassertion");
+    }
+    return 0;
+  }
+
+  pal_parse_sel_helper(fru, sel, error_log);
+
+  return 0;
+}
+
+static int platform_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
+  switch(fru) {
+    case FRU_SCM:
+      switch(sensor_num) {
+        case BIC_SENSOR_SYSTEM_STATUS:
+          sprintf(name, "SYSTEM_STATUS");
+          break;
+        case BIC_SENSOR_SYS_BOOT_STAT:
+          sprintf(name, "SYS_BOOT_STAT");
+          break;
+        case BIC_SENSOR_CPU_DIMM_HOT:
+          sprintf(name, "CPU_DIMM_HOT");
+          break;
+        case BIC_SENSOR_PROC_FAIL:
+          sprintf(name, "PROC_FAIL");
+          break;
+        case BIC_SENSOR_VR_HOT:
+          sprintf(name, "VR_HOT");
+          break;
+        default:
+          return -1;
+      }
+      break;
+  }
+  return 0;
+}
+
+int pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
+  uint8_t snr_type = sel[10];
+  uint8_t snr_num = sel[11];
+
+  // If SNR_TYPE is OS_BOOT, sensor name is OS
+  switch (snr_type) {
+    case OS_BOOT:
+      // OS_BOOT used by OS
+      sprintf(name, "OS");
+      return 0;
+    default:
+      if (platform_sensor_name(fru, snr_num, name) != 0) {
+        break;
+      }
+      return 0;
+  }
+  // Otherwise, translate it based on snr_num
+  return pal_get_x86_event_sensor_name(fru, snr_num, name);
+}
+
+// Write GUID into EEPROM
+static int pal_set_guid(uint16_t offset, char *guid) {
+  int fd = 0;
+  ssize_t bytes_wr;
+  char eeprom_path[FBW_EEPROM_PATH_SIZE];
+  errno = 0;
+
+  wedge_eeprom_path(eeprom_path);
+
+  // Check for file presence
+  if (access(eeprom_path, F_OK) == -1) {
+      OBMC_ERROR(-1, "pal_set_guid: unable to access the %s file: %s",
+          eeprom_path, strerror(errno));
+      return errno;
+  }
+
+  // Open file
+  fd = open(eeprom_path, O_WRONLY);
+  if (fd == -1) {
+    OBMC_ERROR(-1, "pal_set_guid: unable to open the %s file: %s",
+        eeprom_path, strerror(errno));
+    return errno;
+  }
+
+  // Seek the offset
+  lseek(fd, offset, SEEK_SET);
+
+  // Write GUID data
+  bytes_wr = write(fd, guid, GUID_SIZE);
+  if (bytes_wr != GUID_SIZE) {
+    OBMC_ERROR(-1, "pal_set_guid: write to %s file failed: %s",
+        eeprom_path, strerror(errno));
+    goto err_exit;
+  }
+
+err_exit:
+  close(fd);
+  return errno;
+}
+
+// Read GUID from EEPROM
+static int pal_get_guid(uint16_t offset, char *guid) {
+  int fd = 0;
+  ssize_t bytes_rd;
+  char eeprom_path[FBW_EEPROM_PATH_SIZE];
+  errno = 0;
+
+  wedge_eeprom_path(eeprom_path);
+
+  // Check if file is present
+  if (access(eeprom_path, F_OK) == -1) {
+      OBMC_ERROR(-1, "pal_get_guid: unable to access the %s file: %s",
+          eeprom_path, strerror(errno));
+      return errno;
+  }
+
+  // Open the file
+  fd = open(eeprom_path, O_RDONLY);
+  if (fd == -1) {
+    OBMC_ERROR(-1, "pal_get_guid: unable to open the %s file: %s",
+        eeprom_path, strerror(errno));
+    return errno;
+  }
+
+  // seek to the offset
+  lseek(fd, offset, SEEK_SET);
+
+  // Read bytes from location
+  bytes_rd = read(fd, guid, GUID_SIZE);
+  if (bytes_rd != GUID_SIZE) {
+    OBMC_ERROR(-1, "pal_get_guid: read to %s file failed: %s",
+        eeprom_path, strerror(errno));
+    goto err_exit;
+  }
+
+err_exit:
+  close(fd);
+  return errno;
+}
+
+// GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
+static void pal_populate_guid(uint8_t *guid, char *str) {
+  unsigned int secs;
+  unsigned int usecs;
+  struct timeval tv;
+  uint8_t count;
+  uint8_t lsb, msb;
+  int i, r;
+
+  // Populate time
+  gettimeofday(&tv, NULL);
+
+  secs = tv.tv_sec;
+  usecs = tv.tv_usec;
+  guid[0] = usecs & 0xFF;
+  guid[1] = (usecs >> 8) & 0xFF;
+  guid[2] = (usecs >> 16) & 0xFF;
+  guid[3] = (usecs >> 24) & 0xFF;
+  guid[4] = secs & 0xFF;
+  guid[5] = (secs >> 8) & 0xFF;
+  guid[6] = (secs >> 16) & 0xFF;
+  guid[7] = (secs >> 24) & 0x0F;
+
+  // Populate version
+  guid[7] |= 0x10;
+
+  // Populate clock seq with randmom number
+  //getrandom(&guid[8], 2, 0);
+  srand(time(NULL));
+  //memcpy(&guid[8], rand(), 2);
+  r = rand();
+  guid[8] = r & 0xFF;
+  guid[9] = (r>>8) & 0xFF;
+
+  // Use string to populate 6 bytes unique
+  // e.g. LSP62100035 => 'S' 'P' 0x62 0x10 0x00 0x35
+  count = 0;
+  for (i = strlen(str)-1; i >= 0; i--) {
+    if (count == 6) {
+      break;
+    }
+
+    // If alphabet use the character as is
+    if (isalpha(str[i])) {
+      guid[15-count] = str[i];
+      count++;
+      continue;
+    }
+
+    // If it is 0-9, use two numbers as BCD
+    lsb = str[i] - '0';
+    if (i > 0) {
+      i--;
+      if (isalpha(str[i])) {
+        i++;
+        msb = 0;
+      } else {
+        msb = str[i] - '0';
+      }
+    } else {
+      msb = 0;
+    }
+    guid[15-count] = (msb << 4) | lsb;
+    count++;
+  }
+
+  // zero the remaining bytes, if any
+  if (count != 6) {
+    memset(&guid[10], 0, 6-count);
+  }
+
+}
+
+int pal_get_dev_guid(uint8_t fru, char *guid) {
+  pal_get_guid(OFFSET_DEV_GUID, (char *)g_dev_guid);
+  memcpy(guid, g_dev_guid, GUID_SIZE);
+
+  return 0;
+}
+
+int pal_set_dev_guid(uint8_t slot, char *guid) {
+  pal_populate_guid(g_dev_guid, guid);
+
+  return pal_set_guid(OFFSET_DEV_GUID, (char *)g_dev_guid);
+}
+
+int pal_get_sys_guid(uint8_t slot, char *guid) {
+  return 0;
+  // return bic_get_sys_guid(IPMB_BUS, (uint8_t *)guid);
+}
+
+int pal_set_sys_guid(uint8_t slot, char *str) {
+  uint8_t guid[GUID_SIZE] = {0x00};
+  return 0;
+  pal_populate_guid(guid, str);
+
+  // return bic_set_sys_guid(IPMB_BUS, guid);
+}
+
+int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len) {
+  int i;
+  int j = 0;
+  int ret;
+  int msb, lsb;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[4] = {0};
+
+  sprintf(key, "slot%d_boot_order", slot);
+  ret = pal_get_key_value(key, str);
+  if (ret) {
+    *res_len = 0;
+    return ret;
+  }
+
+  for (i = 0; i < 2*SIZE_BOOT_ORDER; i += 2) {
+    sprintf(tstr, "%c\n", str[i]);
+    msb = strtol(tstr, NULL, 16);
+
+    sprintf(tstr, "%c\n", str[i+1]);
+    lsb = strtol(tstr, NULL, 16);
+    boot[j++] = (msb << 4) | lsb;
+  }
+
+  *res_len = SIZE_BOOT_ORDER;
+  return 0;
+}
+
+int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len) {
+  int i, j, network_dev = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[10] = {0};
+  enum {
+    BOOT_DEVICE_IPV4 = 0x1,
+    BOOT_DEVICE_IPV6 = 0x9,
+  };
+
+  *res_len = 0;
+
+  for (i = 0; i < SIZE_BOOT_ORDER; i++) {
+    if (i > 0) {  // byte[0] is boot mode, byte[1:5] are boot order
+      for (j = i+1; j < SIZE_BOOT_ORDER; j++) {
+        if (boot[i] == boot[j])
+          return CC_INVALID_PARAM;
+      }
+
+      // If bit[2:0] is 001b (Network), bit[3] is IPv4/IPv6 order
+      // bit[3]=0b: IPv4 first
+      // bit[3]=1b: IPv6 first
+      if ((boot[i] == BOOT_DEVICE_IPV4) || (boot[i] == BOOT_DEVICE_IPV6))
+        network_dev++;
+    }
+
+    snprintf(tstr, 3, "%02x", boot[i]);
+    strncat(str, tstr, 3);
+  }
+
+  // not allow having more than 1 network boot device in the boot order
+  if (network_dev > 1) {
+    OBMC_ERROR(-1, "Network device are %d",network_dev);
+    return CC_INVALID_PARAM;
+  }
+  OBMC_WARN("pal_set_boot_order: %s",str);
+
+  sprintf(key, "slot%d_boot_order", slot);
+  return pal_set_key_value(key, str);
+}
+
+int pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id)
+{
+  *slave_addr = 0x10;
+  return 0;
+}
+
+int pal_ipmb_processing(int bus, void *buf, uint16_t size) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  struct timespec ts;
+  static time_t last_time = 0;
+  if ((bus == 4) && (((uint8_t *)buf)[0] == 0x20)) {  // OCP LCD debug card
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (ts.tv_sec >= (last_time + 5)) {
+      last_time = ts.tv_sec;
+      ts.tv_sec += 30;
+
+      snprintf(key, sizeof(key), "ocpdbg_lcd");
+      snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+      if (kv_set(key, value, 0, 0) < 0) {
+        return -1;
+      }
+    }
+  }
+  return 0;
+}
+
+bool
+pal_is_mcu_working(void) {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  snprintf(key, sizeof(key), "ocpdbg_lcd");
+  if (kv_get(key, value, NULL, 0)) {
+     return false;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec) {
+     return true;
+  }
+
+  return false;
+}
+
+/* Add button function for Debug Card */
+/* Read the Front Panel Hand Switch and return the position */
+int pal_get_hand_sw_physically(uint8_t *pos) {
+  char path[LARGEST_DEVICE_NAME + 1];
+  int loc;
+
+  snprintf(path, LARGEST_DEVICE_NAME, BMC_UART_SEL);
+  if (read_device(path, &loc)) {
+    return -1;
+  }
+  *pos = loc;
+
+  return 0;
+}
+
+int pal_get_hand_sw(uint8_t *pos) {
+  char value[MAX_VALUE_LEN];
+  uint8_t loc;
+  int ret;
+
+  ret = kv_get("scm_hand_sw", value, NULL, 0);
+  if (!ret) {
+    loc = atoi(value);
+    if (loc > HAND_SW_BMC) {
+      return pal_get_hand_sw_physically(pos);
+    }
+    *pos = loc;
+
+    return 0;
+  }
+
+  return pal_get_hand_sw_physically(pos);
+}
+
+/* Return the Front Panel Power Button */
+int pal_get_dbg_pwr_btn(uint8_t *status) {
+   char cmd[MAX_KEY_LEN + 32] = {0};
+  char value[MAX_VALUE_LEN];
+  char *p;
+  FILE *fp;
+  int val = 0;
+
+  sprintf(cmd, "/usr/sbin/i2cget -f -y 4 0x27 1");
+  fp = popen(cmd, "r");
+  if (!fp) {
+    return -1;
+  }
+
+  if (fgets(value, MAX_VALUE_LEN, fp) == NULL) {
+    pclose(fp);
+    return -1;
+  }
+
+  for (p = value; *p != '\0'; p++) {
+    if (*p == '\n' || *p == '\r') {
+      *p = '\0';
+      break;
+    }
+  }
+
+  sscanf(value, "%x", &val);
+  if ((!(val & 0x2)) && (val & 0x1)) {
+    *status = 1;      /* PWR BTN status pressed */
+    OBMC_WARN("%s PWR pressed  0x%x\n", __FUNCTION__, val);
+  } else {
+    *status = 0;      /* PWR BTN status cleared */
+  }
+  pclose(fp);
+  return 0;
+}
+
+/* Return the Debug Card Reset Button status */
+int pal_get_dbg_rst_btn(uint8_t *status) {
+  char cmd[MAX_KEY_LEN + 32] = {0};
+  char value[MAX_VALUE_LEN];
+  char *p;
+  FILE *fp;
+  int val = 0;
+
+  sprintf(cmd, "/usr/sbin/i2cget -f -y 4 0x27 1");
+  fp = popen(cmd, "r");
+  if (!fp) {
+    return -1;
+  }
+
+  if (fgets(value, MAX_VALUE_LEN, fp) == NULL) {
+    pclose(fp);
+    return -1;
+  }
+
+  for (p = value; *p != '\0'; p++) {
+    if (*p == '\n' || *p == '\r') {
+      *p = '\0';
+      break;
+    }
+  }
+
+  sscanf(value, "%x", &val);
+  if ((!(val & 0x1)) && (val & 0x2)) {
+    *status = 1;      /* RST BTN status pressed */
+  } else {
+    *status = 0;      /* RST BTN status cleared */
+  }
+  pclose(fp);
+  return 0;
+}
+
+/* Update the Reset button input to the server at given slot */
+int pal_set_rst_btn(uint8_t slot, uint8_t status) {
+  char *val;
+  char path[64];
+  int ret;
+  if (slot != FRU_SCM) {
+    return -1;
+  }
+
+  if (status) {
+    val = "1";
+  } else {
+    val = "0";
+  }
+
+  sprintf(path, SCM_SYSFS, SCM_COM_RST_BTN);
+
+  ret = write_device(path, val);
+  if (ret) {
+    return -1;
+  }
+  return 0;
+}
+
+/* Return the Debug Card UART Sel Button status */
+int pal_get_dbg_uart_btn(uint8_t *status) {
+  char cmd[MAX_KEY_LEN + 32] = {0};
+  char value[MAX_VALUE_LEN];
+  char *p;
+  FILE *fp;
+  int val = 0;
+
+  sprintf(cmd, "/usr/sbin/i2cget -f -y 4 0x27 3");
+  fp = popen(cmd, "r");
+  if (!fp) {
+    return -1;
+  }
+
+  if (fgets(value, MAX_VALUE_LEN, fp) == NULL) {
+    pclose(fp);
+    return -1;
+  }
+  pclose(fp);
+  for (p = value; *p != '\0'; p++) {
+    if (*p == '\n' || *p == '\r') {
+      *p = '\0';
+      break;
+    }
+  }
+  sscanf(value, "%x", &val);
+  if (!(val & 0x80)) {
+    *status = 1;      /* UART BTN status pressed */
+  } else {
+    *status = 0;      /* UART BTN status cleared */
+  }
+  return 0;
+}
+
+/* Clear Debug Card UART Sel Button status */
+int pal_clr_dbg_uart_btn() {
+  int ret;
+  ret = run_command("/usr/sbin/i2cset -f -y 4 0x27 3 0xff");
+  if (ret)
+    return -1;
+  return 0;
+}
+
+/* Switch the UART mux to userver or BMC */
+int pal_switch_uart_mux() {
+  char path[LARGEST_DEVICE_NAME + 1];
+  char *val;
+  int loc;
+  /* Refer the UART select status */
+  snprintf(path, LARGEST_DEVICE_NAME, BMC_UART_SEL);
+  if (read_device(path, &loc)) {
+    return -1;
+  }
+
+  if (loc == 3) {
+    val = "2";
+  } else {
+    val = "3";
+  }
+
+  if (write_device(path, val)) {
+    return -1;
+  }
+  return 0;
+}

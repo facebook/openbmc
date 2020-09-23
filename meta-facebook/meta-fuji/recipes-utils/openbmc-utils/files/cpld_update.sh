@@ -136,6 +136,7 @@ disable_jtag_chain(){
     gpio_set_value BMC_FCM_2_SEL          1
     gpio_set_value SYS_CPLD_JTAG_EN_N     1
     gpio_set_value BMC_SCM_CPLD_JTAG_EN_N 1
+    gpio_set_value BMC_FPGA_JTAG_EN       1
     gpio_set_value PDB_L_HITLESS    1
     gpio_set_value PDB_R_HITLESS    1
 }
@@ -168,18 +169,25 @@ else
     exit 1
 fi
 
+expect=0
 case $5 in
     hw)
         cpldprog -p "${UPDATE_IMG}"
         ;;
     sw)
         if [[  $CPLD_TYPE == "PWR-L" ]];then
+            # ispvm success return code is 1
+            expect=1
             ispvm -f 100 dll $DLL_PATH "${UPDATE_IMG}" --tdo PDB_L_JTAG_TDO --tdi PDB_L_JTAG_TDI --tms PDB_L_JTAG_TMS --tck PDB_L_JTAG_TCK
         elif [[  $CPLD_TYPE == "PWR-R" ]];then
+            # ispvm success return code is 1
+            expect=1
             ispvm -f 100 dll $DLL_PATH "${UPDATE_IMG}" --tdo PDB_R_JTAG_TDO --tdi PDB_R_JTAG_TDI --tms PDB_R_JTAG_TMS --tck PDB_R_JTAG_TCK
         elif [[  $CPLD_TYPE == "PFR" ]];then
-            jbi -aPROGRAM -ddo_real_time_isp=1 -gc882 -gi881 -go884 -gs883 "${UPDATE_IMG}"
+            jbi -aPROGRAM -ddo_real_time_isp=1 -W "${UPDATE_IMG}"
         else
+            # ispvm success return code is 1
+            expect=1
             ispvm -f 100 dll $DLL_AST_JTAG_PATH "${UPDATE_IMG}"
         fi
         ;;
@@ -190,12 +198,6 @@ case $5 in
 esac
 
 result=$?
-
-if [ "$5" = "sw" ]; then
-    expect=1
-else
-    expect=0
-fi
 
 disable_jtag_chain
 

@@ -1,0 +1,11 @@
+#
+# Local configuration file for building the OpenBMC image.
+#
+
+# Machine Selection
+# PFR
+MACHINE ??= "fby3s"
+
+# OpenBMC distro settings
+DISTRO ?= "openbmc-fb"
+

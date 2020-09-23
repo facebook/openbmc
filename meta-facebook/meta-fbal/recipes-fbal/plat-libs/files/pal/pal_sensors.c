@@ -10,9 +10,10 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <peci.h>
+#include <linux/peci-ioctl.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
-#include <openbmc/peci.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/nm.h>
 #include <openbmc/ipmb.h>
@@ -1538,89 +1539,24 @@ bail:
 }
 
 static int
-pal_get_peci_val(struct peci_xfer_msg *msg) {
-  int fd, ret = -1;
-  int retry;
-
-  if ((fd = open(PECI_DEVICE, O_RDWR)) < 0) {
-#ifdef DEBUG
-    syslog(LOG_WARNING, "Failed to open %s\n", PECI_DEVICE);
-#endif
-    return -1;
-  }
-
-  retry = 0;
-  do {
-    if ((ret = peci_cmd_xfer_fd(fd, msg))) {
-#ifdef DEBUG
-      syslog(LOG_WARNING, "peci_cmd_xfer_fd");
-#endif
-      break;
-    }
-
-    switch (msg->rx_buf[0]) {
-      case 0x40:  // command passed
-        break;
-
-      case 0x80:  // response timeout, Data not ready
-      case 0x81:  // response timeout, not able to allocate resource
-        if (retry < PECI_RETRY_TIMES) {
-#ifdef DEBUG
-          syslog(LOG_DEBUG, "CC: %02Xh, retry %d", msg->rx_buf[0], retry);
-#endif
-          msleep(100);
-          continue;
-        }
-        break;
-
-      case 0x82:  // low power state
-      case 0x90:  // unknown/invalid/illegal request
-      case 0x91:  // error
-      default:
-        break;
-    }
-    break;
-  } while (retry++ < PECI_RETRY_TIMES);
-
-#ifdef DEBUG
-{
-  int i;
-  for (i = 0; i < msg->rx_len; i++) {
-    syslog(LOG_DEBUG, "rx_buf=%02X ", msg->rx_buf[i]);
-  }
-}
-#endif
-
-  close(fd);
-  return msg->rx_buf[0];
-}
-
-static int
 cmd_peci_rdpkgconfig(PECI_RD_PKG_CONFIG_INFO* info, uint8_t* rx_buf, uint8_t rx_len) {
-  struct peci_xfer_msg msg;
-  uint8_t tbuf[PECI_BUFFER_SIZE], rbuf[PECI_BUFFER_SIZE];
   int ret;
+  uint8_t tbuf[PECI_BUFFER_SIZE];
 
-  msg.addr = info->cpu_addr;
-  msg.tx_len = 0x05;
-  msg.rx_len = rx_len;
-  msg.tx_buf = tbuf;
-  msg.rx_buf = rbuf;
-  msg.tx_buf[0] = PECI_CMD_RD_PKG_CONFIG;
-  msg.tx_buf[1] = info->dev_info;
-  msg.tx_buf[2] = info->index;
-  msg.tx_buf[3] = info->para_l;
-  msg.tx_buf[4] = info->para_h;
-
-  ret = pal_get_peci_val(&msg);
-  if (ret != PECI_SUCCESS ) {
+  tbuf[0] = PECI_CMD_RD_PKG_CONFIG;
+  tbuf[1] = info->dev_info;
+  tbuf[2] = info->index;
+  tbuf[3] = info->para_l;
+  tbuf[4] = info->para_h;
+  ret = peci_raw(info->cpu_addr, rx_len, tbuf, 5, rx_buf, rx_len);
+  if (ret != PECI_CC_SUCCESS) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "%s err addr=0x%x index=%x, cc=0x%x",
                         __func__, info->cpu_addr, info->index, ret);
 #endif
     return -1;
   }
-  memcpy(rx_buf, msg.rx_buf, msg.rx_len);
+
   return 0;
 }
 

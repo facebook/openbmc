@@ -27,14 +27,15 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <openbmc/peci.h>
+#include <peci.h>
+#include <linux/peci-ioctl.h>
 
 #define MAX_ARG_NUM 64
 
 int __attribute__((weak)) pal_before_peci(void) { return 0; }
 int __attribute__((weak)) pal_after_peci(void) { return 0; }
 
-static int process_file(int fd, char *file_path);
+static int process_file(char *file_path);
 
 static uint8_t retry_times = 0;
 static uint32_t retry_interval = 250;
@@ -58,10 +59,10 @@ print_usage_help(void) {
 }
 
 static int
-process_command(int fd, int argc, char **argv) {
-  struct peci_xfer_msg msg;
+process_command(int argc, char **argv) {
   uint8_t tlen = 0;
   uint8_t tbuf[PECI_BUFFER_SIZE], rbuf[PECI_BUFFER_SIZE];
+  uint8_t addr, tx_len, rx_len;
   char file_path[256];
   int i, opt, retry;
   int optind_long = 0;
@@ -86,7 +87,7 @@ process_command(int fd, int argc, char **argv) {
       break;
     case 'f':
       strncpy(file_path, optarg, sizeof(file_path) - 1);
-      return process_file(fd, file_path);
+      return process_file(file_path);
     case 'v':
       verbose = 1;
       break;
@@ -99,48 +100,45 @@ process_command(int fd, int argc, char **argv) {
     }
   }
 
-  // fill peci_xfer_msg
   if (argc - optind < 3) {
     goto err_exit;
   }
   i = optind;
-  msg.addr = (uint8_t)strtoul(argv[i++], NULL, 0);
-  msg.tx_len = (uint8_t)strtoul(argv[i++], NULL, 0);
-  msg.rx_len = (uint8_t)strtoul(argv[i++], NULL, 0);
-  if ((argc - i) != msg.tx_len || (msg.tx_len > PECI_BUFFER_SIZE) || (msg.rx_len > PECI_BUFFER_SIZE)) {
+  addr = (uint8_t)strtoul(argv[i++], NULL, 0);
+  tx_len = (uint8_t)strtoul(argv[i++], NULL, 0);
+  rx_len = (uint8_t)strtoul(argv[i++], NULL, 0);
+  if ((argc - i) != tx_len || (tx_len > PECI_BUFFER_SIZE) || (rx_len > PECI_BUFFER_SIZE)) {
     goto err_exit;
   }
 
-  msg.tx_buf = tbuf;
-  msg.rx_buf = rbuf;
   while (i < argc) {
-    msg.tx_buf[tlen++] = (uint8_t)strtoul(argv[i++], NULL, 0);
+    tbuf[tlen++] = (uint8_t)strtoul(argv[i++], NULL, 0);
   }
 
   if (verbose) {
-    printf("addr:%d,", msg.addr);
-    printf("tx(%d):", msg.tx_len);
-    for (i = 0; i < msg.tx_len; i++) {
-      printf("%02X ", msg.tx_buf[i]);
+    printf("addr:%d,", addr);
+    printf("tx(%d):", tx_len);
+    for (i = 0; i < tx_len; i++) {
+      printf("%02X ", tbuf[i]);
     }
-    printf("rx(%d)", msg.rx_len);
+    printf("rx(%d)", rx_len);
     printf("\n");
   }
 
   retry = 0;
   do {
-    if (peci_cmd_xfer_fd(fd, &msg) < 0) {
-      perror("peci_cmd_xfer_fd");
+    if (peci_raw(addr, rx_len, tbuf, tx_len, rbuf, rx_len) != PECI_CC_SUCCESS) {
+      perror("peci_raw");
       return -1;
     }
 
     if (retry_times) {
-      switch (msg.rx_buf[0]) {
+      switch (rbuf[0]) {
         case 0x80:  // response timeout, Data not ready
         case 0x81:  // response timeout, not able to allocate resource
           if (retry < retry_times) {
             if (verbose) {
-              printf("CC: %02Xh, retry...\n", msg.rx_buf[0]);
+              printf("CC: %02Xh, retry...\n", rbuf[0]);
             }
             retry++;
             usleep(retry_interval*1000);
@@ -158,8 +156,8 @@ process_command(int fd, int argc, char **argv) {
     break;
   } while (retry <= retry_times);
 
-  for (i = 0; i < msg.rx_len; i++) {
-    printf("%02X ", msg.rx_buf[i]);
+  for (i = 0; i < rx_len; i++) {
+    printf("%02X ", rbuf[i]);
   }
   printf("\n");
 
@@ -177,7 +175,7 @@ err_exit:
 }
 
 static int
-process_file(int fd, char *path) {
+process_file(char *path) {
   FILE *fp;
   int argc, ret, final_ret = 0;
   char buf[1024];
@@ -206,7 +204,7 @@ process_file(int fd, char *path) {
     if (argc == 1)
       continue;
 
-    ret = process_command(fd, argc, argv);
+    ret = process_command(argc, argv);
     if (ret) {  // return failure if any command failed
       final_ret = ret;
     }
@@ -218,17 +216,10 @@ process_file(int fd, char *path) {
 
 int
 main(int argc, char **argv) {
-  int fd, ret;
+  int ret;
 
   pal_before_peci();
-
-  if ((fd = open(PECI_DEVICE, O_RDWR)) < 0) {
-    fprintf(stderr, "Failed to open %s\n", PECI_DEVICE);
-    return -1;
-  }
-  ret = process_command(fd, argc, argv);
-  close(fd);
-
+  ret = process_command(argc, argv);
   pal_after_peci();
 
   return ret;

@@ -182,6 +182,7 @@ def arg_parser():
             "fbttn",
             "yamp",
             "elbert",
+            "fby3",
         ],
     )
     parser.add_argument(

@@ -252,7 +252,9 @@ BOOL verbose = FALSE;
 
 #define JTAG_CHAR_DEV "/dev/jtag0"
 
+#ifndef JTAG_SYSFS_DIR
 #define JTAG_SYSFS_DIR "/sys/devices/platform/ahb/ahb\:apb/1e6e4000.jtag/"
+#endif
 #define JTAG_SYSFS_TDI JTAG_SYSFS_DIR "tdi"
 #define JTAG_SYSFS_TDO JTAG_SYSFS_DIR "tdo"
 #define JTAG_SYSFS_TMS JTAG_SYSFS_DIR "tms"

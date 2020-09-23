@@ -24,6 +24,7 @@ SRC_URI += " \
     file://rest_firmware_info.py \
     file://rest_presence.py \
     file://rest_sensors.py \
+    file://run_rest \
 "
 
 binfiles1 += " \

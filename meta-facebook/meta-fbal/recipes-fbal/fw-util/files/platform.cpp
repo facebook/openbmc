@@ -20,4 +20,4 @@ VrComponent vr_cpu1_vccio("vr", "cpu1_vccio", "VR_CPU1_VCCIO");
 VrComponent vr_cpu1_vddq_abc("vr", "cpu1_vddq_abc", "VR_CPU1_VDDQ_ABC");
 VrComponent vr_cpu1_vddq_def("vr", "cpu1_vddq_def", "VR_CPU1_VDDQ_DEF");
 
-BiosComponent bios("mb", "bios", "pnor", "spi1.0", "FM_BIOS_SPI_BMC_CTRL", true, "(F0C_)(.*)");
+BiosComponent bios("mb", "bios", "pnor", "/sys/bus/platform/drivers/aspeed-smc", "1e630000.spi", "FM_BIOS_SPI_BMC_CTRL", true, "(F0C_)(.*)");

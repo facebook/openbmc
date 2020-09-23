@@ -21,6 +21,7 @@ RDEPENDS_${PN} += "bash"
 
 SRC_URI += "file://get_fan_speed.sh \
             file://set_fan_speed.sh \
+            file://setup-fan.sh \
            "
 
 FSC_BIN_FILES += "get_fan_speed.sh \

@@ -18,17 +18,10 @@
 # Boston, MA 02110-1301 USA
 #
 
-mac=$(ipmitool i2c bus=6 0xa8 0x6 0x4 0x0)
-if [[ "$mac" == " ff ff ff ff ff ff" ]]
+addr=$(/usr/bin/mac-util --get)
+if [[ "$addr" == "ff:ff:ff:ff:ff:ff" ]]
 then
   addr="02:00:00:00:00:01"
-else
-  addr="$(echo $mac | cut -d " " -f 1)"
-  addr+=":$(echo $mac | cut -d " " -f 2)"
-  addr+=":$(echo $mac | cut -d " " -f 3)"
-  addr+=":$(echo $mac | cut -d " " -f 4)"
-  addr+=":$(echo $mac | cut -d " " -f 5)"
-  addr+=":$(echo $mac | cut -d " " -f 6)"
 fi
 modprobe g_ether host_addr=02:00:00:00:00:02 dev_addr=$addr
 

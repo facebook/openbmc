@@ -99,16 +99,9 @@ static void gpio_event_handle_pwr_brake(gpiopoll_pin_t *gp, gpio_value_t last, g
 static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
   g_sys_pwr_off = (curr == GPIO_VALUE_HIGH)? false: true;
-  if (curr == GPIO_VALUE_HIGH) {
-    /* Enable ADM1272 Vout sampling (it is disabled by default) */
-    if (system("i2cset -f -y 16 0x13 0xd4 0x3f37 w > /dev/null") < 0 ||
-        system("i2cset -f -y 17 0x10 0xd4 0x3f37 w > /dev/null") < 0) {
-      syslog(LOG_CRIT, "Failed to enable P48V VOUT monitoring");
-    }
-  } else {
-    if (pal_check_power_seq() < 0)
-      syslog(LOG_WARNING, "Failed to get power state from CPLD");
-  }
+
+  if (curr == GPIO_VALUE_LOW && pal_check_power_seq() < 0)
+    syslog(LOG_WARNING, "Failed to get power state from CPLD");
 
   gpio_event_handle_low_active(gp, last, curr);
 }

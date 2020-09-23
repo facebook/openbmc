@@ -25,6 +25,7 @@
 #include <syslog.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-sensors.h>
+#include <openbmc/obmc-i2c.h>
 #include <switchtec/switchtec.h>
 #include <facebook/asic.h>
 #include "pal.h"
@@ -57,6 +58,7 @@ static int sensors_read_vr(uint8_t, float*);
 static int sensors_read_12v_hsc(uint8_t, float*);
 static int sensors_read_12v_hsc_vout(uint8_t, float*);
 static int sensors_read_48v_hsc(uint8_t, float*);
+static int sensors_read_48v_hsc_vout(uint8_t, float*);
 static int read_gpu_temp(uint8_t, float*);
 static int read_asic_board_temp(uint8_t, float*);
 static int read_asic_mem_temp(uint8_t, float*);
@@ -713,7 +715,7 @@ struct sensor_map {
   [PDB_HSC_P48V_1_VIN] =
   {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_1_VIN", SNR_VOLT},
   [PDB_HSC_P48V_1_VOUT] =
-  {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_1_VOUT", SNR_VOLT},
+  {sensors_read_48v_hsc_vout, "EP_PDB_HSC_P48V_1_VOUT", SNR_VOLT},
   [PDB_HSC_P48V_1_CURR] =
   {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_1_CURR", SNR_CURR},
   [PDB_HSC_P48V_1_PWR] =
@@ -723,7 +725,7 @@ struct sensor_map {
   [PDB_HSC_P48V_2_VIN] =
   {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_2_VIN", SNR_VOLT},
   [PDB_HSC_P48V_2_VOUT] =
-  {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_2_VOUT", SNR_VOLT},
+  {sensors_read_48v_hsc_vout, "EP_PDB_HSC_P48V_2_VOUT", SNR_VOLT},
   [PDB_HSC_P48V_2_CURR] =
   {sensors_read_48v_hsc, "EP_PDB_HSC_P48V_2_CURR", SNR_CURR},
   [PDB_HSC_P48V_2_PWR] =
@@ -1449,12 +1451,6 @@ static int sensors_read_48v_hsc(uint8_t sensor_num, float *value)
     case PDB_HSC_P48V_2_VIN:
       ret = sensors_read("adm1272-i2c-17-10", "P48V_2_VIN", value);
       break;
-    case PDB_HSC_P48V_1_VOUT:
-      ret = sensors_read("adm1272-i2c-16-13", "P48V_1_VOUT", value);
-      break;
-    case PDB_HSC_P48V_2_VOUT:
-      ret = sensors_read("adm1272-i2c-17-10", "P48V_2_VOUT", value);
-      break;
     case PDB_HSC_P48V_1_CURR:
       ret = sensors_read("adm1272-i2c-16-13", "P48V_1_CURR", value);
       if (ret == 0)
@@ -1484,6 +1480,70 @@ static int sensors_read_48v_hsc(uint8_t sensor_num, float *value)
       ret = sensors_read("adm1272-i2c-17-10", "power1_input_highest", value);
       if (ret == 0)
         hsc_value_adjust(p48v_power_table, value);
+      break;
+    default:
+      ret = ERR_SENSOR_NA;
+  }
+
+  if (*value < 0)
+    *value = 0.0;
+
+  return ret < 0? ERR_SENSOR_NA: 0;
+}
+
+static void enable_adm1272_vout(int bus, int addr)
+{
+  int fd;
+  char dev[64] = {0};
+  uint8_t tbuf[8] = {0};
+  uint8_t rbuf[8] = {0};
+
+  snprintf(dev, sizeof(dev), "/dev/i2c-%d", bus);
+  fd = open(dev, O_RDWR);
+  if (fd < 0)
+    goto exit;
+
+  // Enable Vout
+  tbuf[0] = 0xd4; // PMON_CONFIG
+  tbuf[1] = 0x37;
+  tbuf[2] = 0x3f;
+  i2c_rdwr_msg_transfer(fd, addr << 1, tbuf, 3, rbuf, 0);
+  // ADM127x don't recommend to read data just after modifying power monitor register
+  // The sampling probably was interrupted then reported wrong data.
+  close(fd);
+  return;
+exit:
+  syslog(LOG_CRIT, "Failed to enable P48V VOUT monitoring");
+}
+
+static int sensors_read_48v_hsc_vout(uint8_t sensor_num, float *value)
+{
+  int ret;
+  static int pwr_flag[2] = {0, 0};
+
+  if (!is_device_ready()) {
+    pwr_flag[0] = pwr_flag[1] = 0;
+    return ERR_SENSOR_NA;
+  }
+
+  switch (sensor_num) {
+    case PDB_HSC_P48V_1_VOUT:
+      if (pwr_flag[0] == 0) {
+        enable_adm1272_vout(16, 0x13);
+        pwr_flag[0] = 1;
+        return ERR_SENSOR_NA;
+      }
+
+      ret = sensors_read("adm1272-i2c-16-13", "P48V_1_VOUT", value);
+      break;
+    case PDB_HSC_P48V_2_VOUT:
+      if (pwr_flag[1] == 0) {
+        enable_adm1272_vout(17, 0x10);
+        pwr_flag[1] = 1;
+        return ERR_SENSOR_NA;
+      }
+
+      ret = sensors_read("adm1272-i2c-17-10", "P48V_2_VOUT", value);
       break;
     default:
       ret = ERR_SENSOR_NA;

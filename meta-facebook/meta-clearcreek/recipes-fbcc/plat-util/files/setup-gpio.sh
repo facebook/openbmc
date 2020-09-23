@@ -204,10 +204,23 @@ gpio_set USB2_SEL0 0
 gpio_export USB2_SEL1 GPIOZ1
 gpio_set USB2_SEL1 0
 
-gpio_export CPLD_BMC_GPIO_R_00 GPIOAC1
-gpio_set CPLD_BMC_GPIO_R_00 0
+# To enable GPIOP
+devmem_clear_bit $(scu_addr 88) 16
+devmem_clear_bit $(scu_addr 88) 17
+devmem_clear_bit $(scu_addr 88) 18
+devmem_clear_bit $(scu_addr 88) 19
+devmem_clear_bit $(scu_addr 88) 20
+devmem_clear_bit $(scu_addr 88) 21
+devmem_clear_bit $(scu_addr 88) 22
+devmem_clear_bit $(scu_addr 88) 23
+
+gpio_export BMC_FORCE_THROTTLE_N GPIOP6
+gpio_set BMC_FORCE_THROTTLE_N 1
 
 gpio_export RST_FIO_IOEXP_R_N GPIOY1
 gpio_set RST_FIO_IOEXP_R_N 1
 
 gpio_export CPLD_BMC_GPIO_R_01 GPIOAC3
+
+gpio_export CPLD_BMC_GPIO_R_00 GPIOAC1
+gpio_set CPLD_BMC_GPIO_R_00 0

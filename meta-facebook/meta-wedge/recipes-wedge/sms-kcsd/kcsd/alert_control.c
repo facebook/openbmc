@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/log.h>
 
 #include "alert_control.h"
 
@@ -64,8 +65,10 @@ alert_control(e_fbid_t id, e_flag_t cflag) {
 
     tbuf[2] = rbuf[3];
     break;
+
     // TODO: Add logic for other Function Blocks here
   default:
+    OBMC_WARN("unsupported FBID: 0x%02x\n", id);
     tbuf[0] = rbuf[2];
     tbuf[1] = rbuf[3];
     break;
@@ -112,8 +115,10 @@ is_alert_present(e_fbid_t id) {
       return true;
     else
       return false;
+
     //TODO: Add logic for other Function Blocks here
   default:
+    OBMC_WARN("unsupported FBID: 0x%02x\n", id);
     return false;
   }
 }

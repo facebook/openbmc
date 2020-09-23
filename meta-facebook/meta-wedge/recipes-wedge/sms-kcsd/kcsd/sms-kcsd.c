@@ -33,6 +33,8 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/obmc-i2c.h>
 
+#include <openbmc/log.h>
+
 #include "alert_control.h"
 
 #define PATH_SMS_KCS I2C_SYSFS_DEV_ENTRY(4-0040, sms_kcs)
@@ -67,7 +69,6 @@ handle_kcs_msg(void) {
   unsigned char tbuf[256] = {0};
   unsigned short tlen = 0;
   int count = 0;
-  int i = 0;
 
   // Reads incoming request
   fp = fopen(PATH_SMS_KCS, "r");
@@ -118,8 +119,11 @@ handle_kcs_msg(void) {
 int main(int argc, char **argv) {
   int i;
   int ret;
+
+  obmc_log_init("sms-kcs", LOG_INFO, 0);
+  obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
+  obmc_log_unset_std_stream();
   daemon(1, 0);
-  openlog("sms-kcs", LOG_CONS, LOG_DAEMON);
 
   // Enable alert for SMS KCS Function Block
   for (i = 0; i < MAX_ALERT_CONTROL_RETRIES; i++) {

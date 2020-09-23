@@ -17,6 +17,8 @@
 
 all: sms-kcsd
 
+CFLAGS += -Wall -Werror
+
 sms-kcsd: sms-kcsd.c alert_control.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 

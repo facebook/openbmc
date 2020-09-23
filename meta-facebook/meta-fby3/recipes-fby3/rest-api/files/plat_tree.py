@@ -106,13 +106,13 @@ def setup_board_routes(app: Application, write_enabled: bool):
     r_temp = tree("bmc", data=get_node_bmc())
     r_spb.addChild(r_temp)
     # /api/spb/sensors end point
-    r_temp = tree("sensors", data=get_node_sensors("spb"))
+    r_temp = tree("sensors", data=get_node_sensors("bmc"))
     r_spb.addChild(r_temp)
     # Add /api/spb/fans end point
     r_temp = tree("fans", data=get_node_fans())
     r_spb.addChild(r_temp)
     # /api/spb/logs end point
-    r_temp = tree("logs", data=get_node_logs("spb"))
+    r_temp = tree("logs", data=get_node_logs("bmc"))
     r_spb.addChild(r_temp)
 
     # Add /api/mezz/fruid end point

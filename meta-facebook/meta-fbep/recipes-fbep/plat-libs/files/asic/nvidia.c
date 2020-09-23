@@ -39,10 +39,13 @@
  * Opcodes and arguments
  */
 #define SMBPBI_GET_CAPABILITY   0x01
+// Page 0
 #define SMBPBI_CAP_GPU0_TEMP    (1 << 0)
 #define SMBPBI_CAP_BOARD_TEMP   (1 << 4)
 #define SMBPBI_CAP_MEM_TEMP     (1 << 5)
-#define SMBPBI_CAP_PWCS         (1 << 16)
+#define SMBPBI_CAP_PWCS	        (1 << 16)
+// Page 1
+#define SMBPBI_CAP_FW_VER       (1 << 8)
 
 #define SMBPBI_GET_TEMPERATURE  0x02
 #define SMBPBI_GPU0_TEMP        0x00
@@ -51,6 +54,9 @@
 
 #define SMBPBI_GET_POWER        0x04
 #define SMBPBI_TOTAL_PWCS       0x00
+
+#define SMBPBI_GET_GPU_INFO     0x05
+#define SMBPBI_FRIMWARE_VER     0x08
 
 #define SMBPBI_READ_SCRMEM      0x0D
 #define SMBPBI_WRITE_SCRMEM     0x0E
@@ -299,5 +305,33 @@ int nv_set_power_limit(uint8_t slot, unsigned int watt)
 
 err:
   close(fd);
+  return ASIC_ERROR;
+}
+
+int nv_show_vbios_ver(uint8_t slot, char *ver)
+{
+  int fd;
+  uint8_t buf[16] = {0};
+  uint8_t offset;
+
+  fd = nv_open_slot(slot);
+  if (fd < 0)
+    return ASIC_ERROR;
+
+  if (!(nv_get_cap(fd, 1) & SMBPBI_CAP_FW_VER))
+    goto err;
+
+  for (offset = 0; offset < 4; offset++) {
+    if (nv_msgbox_cmd(fd, SMBPBI_GET_GPU_INFO, SMBPBI_FRIMWARE_VER, offset, NULL, buf+offset*4) < 0)
+      goto err;
+  }
+
+  memcpy(ver, buf, 14);
+  close(fd);
+  return ASIC_SUCCESS;
+
+err:
+  close(fd);
+  syslog(LOG_WARNING, "%s: Nvidia error on slot %d", __func__, (int)slot);
   return ASIC_ERROR;
 }

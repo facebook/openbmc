@@ -29,8 +29,9 @@ SRC_URI += "file://nic.cpp \
             file://platform.cpp \
             file://tpm2.h \
             file://tpm2.cpp \
+            file://asic.cpp \
            "
 
-DEPENDS += "libmcu libfpga libast-jtag libvr libkv libobmc-i2c"
-RDEPENDS_${PN} += "libmcu libfpga libast-jtag libvr libkv libobmc-i2c"
-LDFLAGS += " -lmcu -lfpga -last-jtag -lvr -lkv -lobmc-i2c"
+DEPENDS += "libmcu libfpga libast-jtag libvr libkv libobmc-i2c libasic"
+RDEPENDS_${PN} += "libmcu libfpga libast-jtag libvr libkv libobmc-i2c libasic "
+LDFLAGS += " -lmcu -lfpga -last-jtag -lvr -lkv -lobmc-i2c -lasic"

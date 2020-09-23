@@ -30,6 +30,7 @@ int nv_read_board_temp(uint8_t, float*);
 int nv_read_mem_temp(uint8_t, float*);
 int nv_read_pwcs(uint8_t, float*);
 int nv_set_power_limit(uint8_t, unsigned int);
+int nv_show_vbios_ver(uint8_t, char*);
 
 #ifdef __cplusplus
 } // extern "C"

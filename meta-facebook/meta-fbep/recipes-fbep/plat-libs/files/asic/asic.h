@@ -48,6 +48,7 @@ int asic_read_mem_temp(uint8_t, float*);
 int asic_read_pwcs(uint8_t, float*);
 bool is_asic_prsnt(uint8_t);
 int asic_set_power_limit(uint8_t, unsigned int);
+int asic_show_version(uint8_t, char*);
 
 #ifdef __cplusplus
 } // extern "C"

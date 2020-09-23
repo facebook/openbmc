@@ -457,3 +457,41 @@ cmd_NM_cpu_err_num_get(NM_RW_INFO info, bool is_caterr)
   }
   return cpu_num;
 }
+
+int
+cmd_NM_get_nm_statistics(NM_RW_INFO info, uint8_t mode, uint8_t domain, 
+                         uint8_t policy, uint8_t *rbuf) {
+  uint8_t tbuf[64] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+  ipmb_req_t *req;
+
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s\n", __func__);
+#endif
+   
+  req = (ipmb_req_t*)tbuf;
+  set_NM_head(&info, NETFN_NM_REQ, req, CMD_NM_GET_NODE_MANAGER_STATISTICS);
+
+  req->data[0] = 0x57;
+  req->data[1] = 0x01;
+  req->data[2] = 0x00;
+  req->data[3] = mode;
+  req->data[4] = domain;
+  req->data[5] = policy;
+
+  tlen = MIN_IPMB_REQ_LEN + 6;
+
+  // Invoke IPMB library handler
+  lib_ipmb_handle(info.bus, tbuf, tlen, rbuf, &rlen);
+  if (rlen == 0) {
+  #ifdef DEBUG  
+    syslog(LOG_WARNING, "write_value: Zero bytes received\n");
+  #endif
+    return -1; 
+  }
+
+  return ret;
+}
+

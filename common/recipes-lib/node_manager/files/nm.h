@@ -23,6 +23,25 @@ extern "C" {
 #define TRANS_PROTOCOL_PMBUS       (0x00)
 #define TRANS_PROTOCOL_I2C         (0x01)
 
+//Get Node Manager Statistics 0xC8h
+enum {
+  NMS_GLOBAL_POWER = 1,
+  NMS_GLOBAL_INLET_TEMP, 
+  NMS_GLOBAL_THROTTLING,
+  NMS_GLOBAL_VOLUMETRIC_AIRFLOW,
+  NMS_GLOBAL_OUTLET_AIRFLOW,
+  NMS_GLOBAL_CHASSIS_POWER,
+};
+
+#define NMS_SIGNAL_COMPONENT       (0x80)
+enum {
+  NMS_DOMAIN_ID_ENTIRE_PLATFORM = 0,
+  NMS_DOMAIN_ID_CPU_SUBSYSTEM,
+  NMS_DOMAIN_ID_MEMORY_SUBSYSTEM,
+  NMS_DOMAIN_ID_HW_PROTECTION,
+  NMS_DOMAIN_ID_HIGH_POWER_IO_SUBSYSTEM,
+};
+
 
 enum {
   EXTENDED_MUX_CH0,
@@ -94,6 +113,7 @@ int cmd_NM_sensor_reading(NM_RW_INFO info, uint8_t snr_num, uint8_t* rbuf, uint8
 int cmd_NM_cpu_err_num_get(NM_RW_INFO info, bool is_caterr);
 int cmd_NM_get_dev_id(NM_RW_INFO* info, ipmi_dev_id_t *dev_id);
 int cmd_NM_get_self_test_result(NM_RW_INFO* info, uint8_t *rbuf, uint8_t *rlen);
+int cmd_NM_get_nm_statistics(NM_RW_INFO info, uint8_t mode, uint8_t domain, uint8_t policy, uint8_t *rbuf);
 int lib_dcmi_wrapper(NM_RW_INFO* info, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 
 static inline int cmd_NM_pmbus_read_word(NM_RW_INFO info, uint8_t dev_addr, uint8_t *rbuf)
@@ -113,7 +133,3 @@ static inline int cmd_NM_pmbus_write_word(NM_RW_INFO info, uint8_t dev_addr, uin
 
 
 #endif
-
-
-
-

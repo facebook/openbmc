@@ -401,7 +401,7 @@ void print_power_fail_log(uint8_t cpu_num, uint8_t cpu_sts)
     "Reserve",
     "CPLD_PWR_PVCCIN",
     "CPLD_PWR_PVCCSA",       
-    "CPLD_PWR_CPU_DOWN",
+    "CPLD_PWR_CPU_DONE",
     "CPLD_PWR_PVCCSA_OFF",
     "CPLD_PWR_PVCCIN_OFF",
     "Reserve", 

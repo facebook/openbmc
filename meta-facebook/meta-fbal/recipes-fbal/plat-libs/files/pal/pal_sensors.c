@@ -69,6 +69,7 @@ static int read_vr_iout(uint8_t vr_id, float  *value);
 static int read_vr_pout(uint8_t vr_id, float  *value);
 static int read_cm_sensor(uint8_t id, float *value);
 static int read_frb3(uint8_t fru_id, float *value);
+static int get_nm_rw_info(uint8_t nm_id, uint8_t* nm_bus, uint8_t* nm_addr, uint16_t* bmc_addr);
 
 static uint8_t m_TjMax[CPU_ID_NUM] = {0};
 static float m_Dts[CPU_ID_NUM] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
@@ -1754,66 +1755,43 @@ read_cpu_thermal_margin(uint8_t cpu_id, float *value) {
 
 static int
 read_cpu_pkg_pwr(uint8_t cpu_id, float *value) {
-  // Energy units: Intel Doc#554767, p37, 2^(-ENERGY UNIT) J, ENERGY UNIT defalut is 14
-  // Run Time units: Intel Doc#554767, p33, msec
-  float unit = 0.06103515625f; // 2^(-14)*1000 = 0.06103515625
-  uint32_t pkg_energy=0, run_time=0, diff_energy=0, diff_time=0;
-  uint8_t cpu_addr = cpu_info_list[cpu_id].cpu_addr;
-  static uint32_t last_pkg_energy[2] = {0}, last_run_time[2] = {0};
-  static uint8_t retry[CPU_ID_NUM] = {0}; // CPU0 and CPU1
-  int ret = READING_NA;
+  uint8_t rbuf[32] = {0x00};
+  uint8_t domain_id = NMS_SIGNAL_COMPONENT | NMS_DOMAIN_ID_CPU_SUBSYSTEM;
+  uint8_t policy_id = cpu_id;
+  static int retry = 0;
+  int ret = 0;
+  NM_RW_INFO info;
 
-  ret = cmd_peci_accumulated_energy(cpu_addr, &pkg_energy);
+  get_nm_rw_info(NM_ID0, &info.bus, &info.nm_addr, &info.bmc_addr);
+
+  ret = cmd_NM_get_nm_statistics(info, NMS_GLOBAL_POWER, domain_id, policy_id, rbuf);
+
   if (ret != 0) {
-    goto error_exit;
-  }
-
-  ret =  cmd_peci_total_time(cpu_addr, &run_time);
-  if (ret != 0) {
-    goto error_exit;
-  }
-
-  // need at least 2 entries to calculate
-  if (last_pkg_energy[cpu_id] == 0 && last_run_time[cpu_id] == 0) {
-    if (ret == 0) {
-      last_pkg_energy[cpu_id] = pkg_energy;
-      last_run_time[cpu_id] = run_time;
-    }
-    ret = READING_NA;
-  }
-
-  if (!ret) {
-    if (pkg_energy >= last_pkg_energy[cpu_id]) {
-      diff_energy = pkg_energy - last_pkg_energy[cpu_id];
-    } else {
-      diff_energy = pkg_energy + (0xffffffff - last_pkg_energy[cpu_id] + 1);
-    }
-    last_pkg_energy[cpu_id] = pkg_energy;
-
-    if (run_time >= last_run_time[cpu_id]) {
-      diff_time = run_time - last_run_time[cpu_id];
-    } else {
-      diff_time = run_time + (0xffffffff - last_run_time[cpu_id] + 1);
-    }
-    last_run_time[cpu_id] = run_time;
-
-    if (diff_time == 0) {
-      ret = READING_NA;
-    } else {
-      *value = ((float)diff_energy / (float)diff_time * unit);
-    }
-  }
-
-error_exit:
-  if (ret != 0) {
-    retry[cpu_id]++;
-    if (retry[cpu_id] <= 3) {
+    retry++;
+    if (retry <= 5) {
       return READING_SKIP;
     }
-  } else {
-    retry[cpu_id] = 0;
+    return READING_NA;
   }
-  return ret;
+
+  if (rbuf[6] == 0) {
+    *value = rbuf[10];
+//#ifdef DEBUG
+    syslog(LOG_DEBUG, "%s value_l=%f\n", __func__, *value);
+//#endif
+    retry = 0;
+  } else {
+#ifdef DEBUG
+    syslog(LOG_DEBUG, "%s cc=%x\n", __func__, rbuf[6]);
+#endif
+    retry++;
+    if (retry <= 5) {
+      return READING_SKIP;
+    }
+    return READING_NA;
+  }
+
+  return 0;
 }
 
 static int
@@ -2517,7 +2495,9 @@ read_ina260_vol(uint8_t ina260_id, float *value) {
 
 static int
 read_vr_vout(uint8_t vr_id, float *value) {
-    const char *label[] = {
+  int ret=0;
+  static uint8_t retry[VR_NUM_CNT] = {0};
+  const char *label[] = {
     "MB_VR_CPU0_VCCIN_VOUT",
     "MB_VR_CPU0_VCCSA_VOUT",
     "MB_VR_CPU0_VCCIO_VOUT",
@@ -2536,7 +2516,17 @@ read_vr_vout(uint8_t vr_id, float *value) {
   } else if (!check_cpu_present(label[vr_id])) {
     return READING_NA;
   }
-  return sensors_read(vr_chips[vr_id], label[vr_id], value);
+
+  ret = sensors_read(vr_chips[vr_id], label[vr_id], value);
+  if( *value == 0 ) {
+    retry[vr_id]++;
+    if(retry[vr_id] < 3 ){
+      return READING_SKIP;
+    }
+  }
+
+  retry[vr_id] = 0;
+  return ret;
 }
 
 static int

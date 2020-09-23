@@ -12,9 +12,14 @@ SRC_URI += " \
     file://Makefile \
     file://vboot-util.c \
     file://vboot-check \
-    "
+    file://vboot_common.py \
+    file://image_meta.py \
+    file://measure.py \
+  "
 
 S = "${WORKDIR}"
+
+PR = "r0"
 
 CFLAGS += '${@bb.utils.contains("MACHINE_FEATURES", "tpm2", "-DCONFIG_TPM_V2", "", d)}'
 CFLAGS += '${@bb.utils.contains("MACHINE_FEATURES", "tpm1", "-DCONFIG_TPM_V1", "", d)}'
@@ -41,12 +46,22 @@ do_install() {
   for file in ${S}/pyfdt/*.py; do
     install -m 644 "$file" ${D}${PYTHON_SITEPACKAGES_DIR}/pyfdt/
   done
+  install -m 644 vboot_common.py ${D}${PYTHON_SITEPACKAGES_DIR}/
+  install -m 644 image_meta.py ${D}${PYTHON_SITEPACKAGES_DIR}/
+  install -m 0755 measure.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 
   install -d ${D}/usr/local/bin
   install -m 0755 vboot-util ${D}/usr/local/bin/vboot-util
   install -m 0755 vboot-check ${D}/usr/local/bin/vboot-check
+
+  install -d ${D}/usr/bin
+  ln -snf ${PYTHON_SITEPACKAGES_DIR}/measure.py ${D}/usr/bin/mboot-check
+  ln -snf /usr/local/bin/vboot-util ${D}/usr/bin/vboot-util
+  ln -snf /usr/local/bin/vboot-check ${D}/usr/bin/vboot-check
+
+
 }
 
 FILES_${PN} += "${PYTHON_SITEPACKAGES_DIR}"
-FILES_${PN} += "/usr/local/bin/vboot-util"
-FILES_${PN} += "/usr/local/bin/vboot-check"
+FILES_${PN} += "/usr/local/bin/"
+FILES_${PN} += "/usr/bin/"

@@ -19,36 +19,31 @@
 #
 import subprocess
 
+import libgpio
 from aiohttp.log import server_logger
-
-
-GPIOCLI_CMD = "/usr/local/bin/gpiocli"
 
 
 def read_gpio_by_name(name: str, chip: str = "aspeed-gpio") -> int:
     try:
-        p = subprocess.Popen(
-            [GPIOCLI_CMD, "--chip", chip, "--pin-name", name, "get-value"],
-            stdout=subprocess.PIPE,
-        )
-        out, err = p.communicate()
-        out = out.decode()
-        return int(out.split("=")[1])
+        gpio = libgpio.GPIO(chip=chip, name=name)
+        val = gpio.get_value()
+        gpio.close()
+        return int(val)
     except Exception as exc:
         server_logger.exception("Error getting gpio value %s " % name, exc_info=exc)
         return None
 
 
-def read_gpio_by_shadow(shadow: str) -> int:
+def read_gpio_by_shadow(shadow_name: str) -> int:
     try:
-        p = subprocess.Popen(
-            [GPIOCLI_CMD, "--shadow", shadow, "get-value"], stdout=subprocess.PIPE
-        )
-        out, err = p.communicate()
-        out = out.decode()
-        return int(out.split("=")[1])
+        gpio = libgpio.GPIO(shadow=shadow_name)
+        val = gpio.get_value()
+        gpio.close()
+        return int(val)
     except Exception as exc:
-        server_logger.exception("Error getting gpio value %s " % shadow, exc_info=exc)
+        server_logger.exception(
+            "Error getting gpio value %s " % shadow_name, exc_info=exc
+        )
         return None
 
 

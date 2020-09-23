@@ -8,12 +8,40 @@
 
 static int pal_get_sensor_health_key(uint8_t fru, char *key)
 {
-  if (fru == FRU_MB)
-    sprintf(key, KEY_MB_SNR_HEALTH);
-  else if (fru == FRU_PDB)
-    sprintf(key, KEY_PDB_SNR_HEALTH);
-  else
-    return -1;
+  switch (fru) {
+    case FRU_MB:
+      sprintf(key, KEY_MB_SNR_HEALTH);
+      break;
+    case FRU_PDB:
+      sprintf(key, KEY_PDB_SNR_HEALTH);
+      break;
+    case FRU_ASIC0:
+      sprintf(key, KEY_ASIC0_SNR_HEALTH);
+      break;
+    case FRU_ASIC1:
+      sprintf(key, KEY_ASIC1_SNR_HEALTH);
+      break;
+    case FRU_ASIC2:
+      sprintf(key, KEY_ASIC2_SNR_HEALTH);
+      break;
+    case FRU_ASIC3:
+      sprintf(key, KEY_ASIC3_SNR_HEALTH);
+      break;
+    case FRU_ASIC4:
+      sprintf(key, KEY_ASIC4_SNR_HEALTH);
+      break;
+    case FRU_ASIC5:
+      sprintf(key, KEY_ASIC5_SNR_HEALTH);
+      break;
+    case FRU_ASIC6:
+      sprintf(key, KEY_ASIC6_SNR_HEALTH);
+      break;
+    case FRU_ASIC7:
+      sprintf(key, KEY_ASIC7_SNR_HEALTH);
+      break;
+    default:
+      return -1;
+  }
   return 0;
 }
 

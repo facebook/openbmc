@@ -59,6 +59,14 @@ enum {
   FRU_MB,
   FRU_PDB,
   FRU_BSM,
+  FRU_ASIC0,
+  FRU_ASIC1,
+  FRU_ASIC2,
+  FRU_ASIC3,
+  FRU_ASIC4,
+  FRU_ASIC5,
+  FRU_ASIC6,
+  FRU_ASIC7,
 };
 
 enum {
@@ -73,7 +81,7 @@ enum {
   PCH,
 };
 
-#define MAX_NUM_FRUS 3
+#define MAX_NUM_FRUS 11
 #define MAX_NODES    1
 
 int read_device(const char *device, int *value);

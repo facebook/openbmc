@@ -65,7 +65,9 @@
 
 #define LAST_KEY "last_key"
 
-const char pal_fru_list[] = "all, mb, pdb, bsm";
+const char pal_fru_list[] =
+"all, mb, pdb, bsm, asic0, asic1, asic2, asic3, asic4, asic5, asic6, asic7";
+
 const char pal_server_list[] = "mb";
 
 char g_dev_guid[GUID_SIZE] = {0};
@@ -87,8 +89,16 @@ struct pal_key_cfg {
   {"identify_sled", "off", NULL},
   {"timestamp_sled", "0", NULL},
   {KEY_MB_SNR_HEALTH, "1", NULL},
-  {KEY_PDB_SNR_HEALTH, "1", NULL},
   {KEY_MB_SEL_ERROR, "1", NULL},
+  {KEY_PDB_SNR_HEALTH, "1", NULL},
+  {KEY_ASIC0_SNR_HEALTH, "1", NULL},
+  {KEY_ASIC1_SNR_HEALTH, "1", NULL},
+  {KEY_ASIC2_SNR_HEALTH, "1", NULL},
+  {KEY_ASIC3_SNR_HEALTH, "1", NULL},
+  {KEY_ASIC4_SNR_HEALTH, "1", NULL},
+  {KEY_ASIC5_SNR_HEALTH, "1", NULL},
+  {KEY_ASIC6_SNR_HEALTH, "1", NULL},
+  {KEY_ASIC7_SNR_HEALTH, "1", NULL},
   {"server_type", "4", NULL},
   {"asic_mfr", MFR_NV, key_set_asic_mfr},
   {"ntp_server", "", NULL},
@@ -330,6 +340,22 @@ int pal_get_fru_id(char *str, uint8_t *fru)
     *fru = FRU_PDB;
   } else if (!strcmp(str, "bsm")) {
     *fru = FRU_BSM;
+  } else if (!strcmp(str, "asic0")) {
+    *fru = FRU_ASIC0;
+  } else if (!strcmp(str, "asic1")) {
+    *fru = FRU_ASIC1;
+  } else if (!strcmp(str, "asic2")) {
+    *fru = FRU_ASIC2;
+  } else if (!strcmp(str, "asic3")) {
+    *fru = FRU_ASIC3;
+  } else if (!strcmp(str, "asic4")) {
+    *fru = FRU_ASIC4;
+  } else if (!strcmp(str, "asic5")) {
+    *fru = FRU_ASIC5;
+  } else if (!strcmp(str, "asic6")) {
+    *fru = FRU_ASIC6;
+  } else if (!strcmp(str, "asic7")) {
+    *fru = FRU_ASIC7;
   } else {
     syslog(LOG_WARNING, "%s: Wrong fru name %s", __func__, str);
     return -1;
@@ -354,27 +380,53 @@ int pal_get_fruid_name(uint8_t fru, char *name)
 
 int pal_is_fru_ready(uint8_t fru, uint8_t *status)
 {
-  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM)
-    *status = 1;
-  else
+  if (fru > FRU_ASIC7)
     return -1;
 
+  *status = 1;
   return 0;
 }
 
 int pal_get_fru_name(uint8_t fru, char *name)
 {
-  if (fru == FRU_MB) {
-    strcpy(name, "mb");
-  } else if (fru == FRU_PDB) {
-    strcpy(name, "pdb");
-  } else if (fru == FRU_BSM) {
-    strcpy(name, "bsm");
-  } else {
-    syslog(LOG_WARNING, "%s: Wrong fruid %d", __func__, fru);
-    return -1;
+  switch (fru) {
+    case FRU_MB:
+      sprintf(name, "mb");
+      break;
+    case FRU_PDB:
+      sprintf(name, "pdb");
+      break;
+    case FRU_ASIC0:
+      sprintf(name, "asic0");
+      break;
+    case FRU_ASIC1:
+      sprintf(name, "asic1");
+      break;
+    case FRU_ASIC2:
+      sprintf(name, "asic2");
+      break;
+    case FRU_ASIC3:
+      sprintf(name, "asic3");
+      break;
+    case FRU_ASIC4:
+      sprintf(name, "asic4");
+      break;
+    case FRU_ASIC5:
+      sprintf(name, "asic5");
+      break;
+    case FRU_ASIC6:
+      sprintf(name, "asic6");
+      break;
+    case FRU_ASIC7:
+      sprintf(name, "asic7");
+      break;
+    case FRU_BSM:
+      sprintf(name, "bsm");
+      break;
+    default:
+      syslog(LOG_WARNING, "%s: Wrong fruid %d", __func__, fru);
+      return -1;
   }
-
   return 0;
 }
 
@@ -867,11 +919,25 @@ err_exit:
 
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
 {
-  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM)
-    *status = 1;
-  else
-    return -1;
-
+  switch (fru) {
+    case FRU_MB:
+    case FRU_PDB:
+    case FRU_BSM:
+      *status = 1;
+      break;
+    case FRU_ASIC0:
+    case FRU_ASIC1:
+    case FRU_ASIC2:
+    case FRU_ASIC3:
+    case FRU_ASIC4:
+    case FRU_ASIC5:
+    case FRU_ASIC6:
+    case FRU_ASIC7:
+      *status = is_asic_prsnt(fru-FRU_ASIC0)? 1: 0;
+      break;
+    default:
+      return -1;
+  }
   return 0;
 }
 

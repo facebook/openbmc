@@ -105,38 +105,6 @@ const uint8_t mb_sensor_list[] = {
   MB_SWITCH_PAX1_DIE_TEMP,
   MB_SWITCH_PAX2_DIE_TEMP,
   MB_SWITCH_PAX3_DIE_TEMP,
-  MB_GPU0_TEMP,
-  MB_GPU1_TEMP,
-  MB_GPU2_TEMP,
-  MB_GPU3_TEMP,
-  MB_GPU4_TEMP,
-  MB_GPU5_TEMP,
-  MB_GPU6_TEMP,
-  MB_GPU7_TEMP,
-  MB_GPU0_EDGE_TEMP,
-  MB_GPU1_EDGE_TEMP,
-  MB_GPU2_EDGE_TEMP,
-  MB_GPU3_EDGE_TEMP,
-  MB_GPU4_EDGE_TEMP,
-  MB_GPU5_EDGE_TEMP,
-  MB_GPU6_EDGE_TEMP,
-  MB_GPU7_EDGE_TEMP,
-  MB_GPU0_HBM_TEMP,
-  MB_GPU1_HBM_TEMP,
-  MB_GPU2_HBM_TEMP,
-  MB_GPU3_HBM_TEMP,
-  MB_GPU4_HBM_TEMP,
-  MB_GPU5_HBM_TEMP,
-  MB_GPU6_HBM_TEMP,
-  MB_GPU7_HBM_TEMP,
-  MB_GPU0_PWCS,
-  MB_GPU1_PWCS,
-  MB_GPU2_PWCS,
-  MB_GPU3_PWCS,
-  MB_GPU4_PWCS,
-  MB_GPU5_PWCS,
-  MB_GPU6_PWCS,
-  MB_GPU7_PWCS,
   MB_VR_P0V8_VDD0_VIN,
   MB_VR_P0V8_VDD0_VOUT,
   MB_VR_P0V8_VDD0_CURR,
@@ -207,6 +175,62 @@ const uint8_t pdb_sensor_list[] = {
   PDB_ADC_2_VICOR3_TEMP,
   PDB_SENSOR_OUTLET_TEMP,
   PDB_SENSOR_OUTLET_TEMP_REMOTE
+};
+
+const uint8_t asic0_sensor_list[] = {
+  MB_GPU0_TEMP,
+  MB_GPU0_EDGE_TEMP,
+  MB_GPU0_HBM_TEMP,
+  MB_GPU0_PWCS,
+};
+
+const uint8_t asic1_sensor_list[] = {
+  MB_GPU1_TEMP,
+  MB_GPU1_EDGE_TEMP,
+  MB_GPU1_HBM_TEMP,
+  MB_GPU1_PWCS,
+};
+
+const uint8_t asic2_sensor_list[] = {
+  MB_GPU2_TEMP,
+  MB_GPU2_EDGE_TEMP,
+  MB_GPU2_HBM_TEMP,
+  MB_GPU2_PWCS,
+};
+
+const uint8_t asic3_sensor_list[] = {
+  MB_GPU3_TEMP,
+  MB_GPU3_EDGE_TEMP,
+  MB_GPU3_HBM_TEMP,
+  MB_GPU3_PWCS,
+};
+
+const uint8_t asic4_sensor_list[] = {
+  MB_GPU4_TEMP,
+  MB_GPU4_EDGE_TEMP,
+  MB_GPU4_HBM_TEMP,
+  MB_GPU4_PWCS,
+};
+
+const uint8_t asic5_sensor_list[] = {
+  MB_GPU5_TEMP,
+  MB_GPU5_EDGE_TEMP,
+  MB_GPU5_HBM_TEMP,
+  MB_GPU5_PWCS,
+};
+
+const uint8_t asic6_sensor_list[] = {
+  MB_GPU6_TEMP,
+  MB_GPU6_EDGE_TEMP,
+  MB_GPU6_HBM_TEMP,
+  MB_GPU6_PWCS,
+};
+
+const uint8_t asic7_sensor_list[] = {
+  MB_GPU7_TEMP,
+  MB_GPU7_EDGE_TEMP,
+  MB_GPU7_HBM_TEMP,
+  MB_GPU7_PWCS,
 };
 
 float sensors_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {
@@ -827,6 +851,14 @@ static const char* asic_sensor_name_by_mfr[MFR_MAX_NUM][32] = {
 
 size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
 size_t pdb_sensor_cnt = sizeof(pdb_sensor_list)/sizeof(uint8_t);
+size_t asic0_sensor_cnt = sizeof(asic0_sensor_list)/sizeof(uint8_t);
+size_t asic1_sensor_cnt = sizeof(asic1_sensor_list)/sizeof(uint8_t);
+size_t asic2_sensor_cnt = sizeof(asic2_sensor_list)/sizeof(uint8_t);
+size_t asic3_sensor_cnt = sizeof(asic3_sensor_list)/sizeof(uint8_t);
+size_t asic4_sensor_cnt = sizeof(asic4_sensor_list)/sizeof(uint8_t);
+size_t asic5_sensor_cnt = sizeof(asic5_sensor_list)/sizeof(uint8_t);
+size_t asic6_sensor_cnt = sizeof(asic6_sensor_list)/sizeof(uint8_t);
+size_t asic7_sensor_cnt = sizeof(asic7_sensor_list)/sizeof(uint8_t);
 
 static void hsc_value_adjust(struct calibration_table *table, float *value)
 {
@@ -1605,21 +1637,56 @@ static int read_gpu_pwcs(uint8_t sensor_num, float *value)
 
 int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 {
-  if (fru == FRU_MB) {
-    *sensor_list = (uint8_t *) mb_sensor_list;
-    *cnt = mb_sensor_cnt;
-  } else if (fru == FRU_PDB) {
-    *sensor_list = (uint8_t *) pdb_sensor_list;
-    *cnt = pdb_sensor_cnt;
-  } else if (fru == FRU_BSM) {
-    *sensor_list = NULL;
-    *cnt = 0;
-  } else {
-    *sensor_list = NULL;
-    *cnt = 0;
-    return -1;
-  }
-
+  switch (fru) {
+    case FRU_MB:
+      *sensor_list = (uint8_t *) mb_sensor_list;
+      *cnt = mb_sensor_cnt;
+      break;
+    case FRU_PDB:
+      *sensor_list = (uint8_t *) pdb_sensor_list;
+      *cnt = pdb_sensor_cnt;
+      break;
+    case FRU_BSM:
+      *sensor_list = NULL;
+      *cnt = 0;
+      break;
+    case FRU_ASIC0:
+      *sensor_list = (uint8_t *) asic0_sensor_list;
+      *cnt = asic0_sensor_cnt;
+      break;
+    case FRU_ASIC1:
+      *sensor_list = (uint8_t *) asic1_sensor_list;
+      *cnt = asic1_sensor_cnt;
+      break;
+    case FRU_ASIC2:
+      *sensor_list = (uint8_t *) asic2_sensor_list;
+      *cnt = asic2_sensor_cnt;
+      break;
+    case FRU_ASIC3:
+      *sensor_list = (uint8_t *) asic3_sensor_list;
+      *cnt = asic3_sensor_cnt;
+      break;
+    case FRU_ASIC4:
+      *sensor_list = (uint8_t *) asic4_sensor_list;
+      *cnt = asic4_sensor_cnt;
+      break;
+    case FRU_ASIC5:
+      *sensor_list = (uint8_t *) asic5_sensor_list;
+      *cnt = asic5_sensor_cnt;
+      break;
+    case FRU_ASIC6:
+      *sensor_list = (uint8_t *) asic6_sensor_list;
+      *cnt = asic6_sensor_cnt;
+      break;
+    case FRU_ASIC7:
+      *sensor_list = (uint8_t *) asic7_sensor_list;
+      *cnt = asic7_sensor_cnt;
+      break;
+    default:
+      *sensor_list = NULL;
+      *cnt = 0;
+      return -1;
+  };
   return 0;
 }
 
@@ -1655,7 +1722,7 @@ int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, vo
   char vendor[16] = {0};
   static uint8_t vendor_id = GPU_UNKNOWN;
 
-  if (fru > FRU_PDB || sensor_num >= FBEP_SENSOR_MAX)
+  if (fru == FRU_BSM || fru > FRU_ASIC7 || sensor_num >= FBEP_SENSOR_MAX)
     return -1;
 
   if (vendor_id == GPU_UNKNOWN) {
@@ -1678,7 +1745,7 @@ int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name)
   char vendor[16] = {0};
   static uint8_t vendor_id = GPU_UNKNOWN;
 
-  if (fru > FRU_PDB)
+  if (fru == FRU_BSM || fru > FRU_ASIC7 || sensor_num >= FBEP_SENSOR_MAX)
     return -1;
 
   if (vendor_id == GPU_UNKNOWN) {
@@ -1703,7 +1770,7 @@ int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name)
 
 int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
 {
-  if (fru > FRU_PDB || sensor_num >= FBEP_SENSOR_MAX)
+  if (fru == FRU_BSM || fru > FRU_ASIC7 || sensor_num >= FBEP_SENSOR_MAX)
     return -1;
 
   switch(fbep_sensors_map[sensor_num].unit) {
@@ -1730,7 +1797,7 @@ int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units)
 
 int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value)
 {
-  if (fru > FRU_PDB)
+  if (fru == FRU_BSM || fru > FRU_ASIC7 || sensor_num >= FBEP_SENSOR_MAX)
     return -1;
 
   // default poll interval
@@ -1744,7 +1811,7 @@ int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *valu
 
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
 {
-  if (fru > FRU_PDB || sensor_num >= FBEP_SENSOR_MAX)
+  if (fru == FRU_BSM || fru > FRU_ASIC7 || sensor_num >= FBEP_SENSOR_MAX)
     return ERR_SENSOR_NA;
 
   return fbep_sensors_map[sensor_num].sensor_read(sensor_num, (float *)value);

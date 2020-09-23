@@ -39,7 +39,7 @@
 static void* led_sync_handler()
 {
   int ret;
-  uint8_t mb_status, pdb_status;
+  uint8_t status, fru;
   char identify[MAX_VALUE_LEN] = {0};
 
   while (1) {
@@ -54,13 +54,18 @@ static void* led_sync_handler()
       continue;
     }
 
-    ret = pal_get_fru_health(FRU_MB, &mb_status);
-    ret |= pal_get_fru_health(FRU_PDB, &pdb_status);
-    if (ret == 0 && mb_status == FRU_STATUS_GOOD && pdb_status == FRU_STATUS_GOOD)
-      pal_set_id_led(LED_OFF);
-    else
-      pal_set_id_led(LED_ON);
+    for (fru = FRU_MB; fru <= FRU_ASIC7; fru++) {
+      if (fru == FRU_BSM)
+        continue;
 
+      ret = pal_get_fru_health(fru, &status);
+      if (ret < 0 || status != FRU_STATUS_GOOD) {
+        pal_set_id_led(LED_ON);
+        break;
+      }
+    }
+    if (ret == 0 && status == FRU_STATUS_GOOD)
+      pal_set_id_led(LED_OFF);
     sleep(1);
   }
 

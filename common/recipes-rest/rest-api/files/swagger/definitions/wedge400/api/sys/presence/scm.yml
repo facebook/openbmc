@@ -18,8 +18,7 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  # XXX These are actual spaces in the key, likely a bug
-                  "scm ": 
+                  "scm": 
                     type: string
                     pattern: "^[0-9]+$"
               Actions: 

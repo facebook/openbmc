@@ -22,6 +22,7 @@ SRC_URI += " \
     file://rest_firmware_info.py \
     file://rest_gb_freq.py \
     file://rest_presence.py \
+    file://test_rest_presence.py \
     file://rest_seutil.py \
     file://rest_sensors.py \
     file://rest_switch_reset.py \

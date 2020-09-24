@@ -11,4 +11,5 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
   setup-gpio \
+  ipmbd \
   "

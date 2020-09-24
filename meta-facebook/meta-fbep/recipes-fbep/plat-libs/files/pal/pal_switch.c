@@ -143,10 +143,12 @@ int pal_read_pax_dietemp(uint8_t sensor_num, float *value)
   switchtec_close(dev);
   pax_unlock(fd);
 
-  if (ret == 0)
+  if (ret == 0) {
     *value = (float) temp / 100.0;
-
-  return ret < 0? ERR_SENSOR_NA: 0;
+    return 0;
+  } else {
+    return ERR_SENSOR_NA;
+  }
 }
 
 static struct switchtec_fw_part_summary* get_pax_ver_sum(uint8_t paxid)

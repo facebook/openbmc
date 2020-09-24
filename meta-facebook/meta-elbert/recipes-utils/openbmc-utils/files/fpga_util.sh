@@ -23,8 +23,9 @@ usage() {
     program=$(basename "$0")
     echo "Usage:"
     echo "$program <fpga> <action> <fpga file>"
-    echo "      <fpga> : scm, smb, smb_cpld, fan, pim, th4_qspi"
-    echo "      <action> : program, verify"
+    echo "      <fpga> : scm, smb, smb_cpld, fan, th4_qspi,"
+    echo "               pim, pim_base, pim16q, pim8ddm"
+    echo "      <action> : program, verify, erase (spi only)"
     exit 1
 }
 
@@ -165,14 +166,32 @@ program_spi_image() {
     ORIGINAL_IMAGE="$1" # Image path
     CHIP_TYPE="$2"      # Chip type
 
-    case "${3^^}" in # optional - defaults to primary partition
-        *)
-           PARTITION="primary"
+    case "${3^^}" in # Selects passed partition name
+        PIM_BASE)
+           PARTITION="pim_base"
            SKIP_MB=0
+           ;;
+        PIM16Q)
+           PARTITION="pim16q"
+           SKIP_MB=1
+           ;;
+        PIM8DDM)
+           PARTITION="pim8ddm"
+           SKIP_MB=2
+           ;;
+        FULL)
+           PARTITION="full" # Flash entire spi flash
+           SKIP_MB=0
+           ;;
+        *)
+           echo "Unknown region $3 specified"
+           exit 1
            ;;
     esac
 
-    # We need to 32 MB binary, we will zero fill if needed.
+    echo "Selected partition $PARTITION to program."
+
+    # We need to 32 MB binary, we will fill if needed with 1s.
     # We will only program/verify the specified image partition
     EEPROM_SIZE="33554432" # 32 MB
     IMAGE_SIZE="$(ls -l "$ORIGINAL_IMAGE" | awk '{print $5}')"
@@ -194,10 +213,10 @@ program_spi_image() {
         echo "$ORIGINAL_IMAGE size $IMAGE_SIZE < $EEPROM_SIZE (32MB)"
         echo "Resizing $ORIGINAL_IMAGE by $fill bytes to $TEMP_IMAGE"
 
-        # Let's make a copy of the program image and zero-fill it to 32MB
-        # Prepend/append zero bytes accordingly
+        # Let's make a copy of the program image and 0xff-fill it to 32MB
+        # Prepend/append 0x1 bytes accordingly
         {
-            dd if=/dev/zero bs=$bs count="$SKIP_MB"
+            dd if=/dev/zero bs=$bs count="$SKIP_MB" | tr "\000" "\377"
             dd if="$ORIGINAL_IMAGE"
         } 2>/dev/null > "$TEMP_IMAGE"
         # cp "$ORIGINAL_IMAGE" "$TEMP_IMAGE"
@@ -206,8 +225,8 @@ program_spi_image() {
         div=$((div - SKIP_MB))
         rem=$((fill%bs)) # Remaining
         {
-            dd if=/dev/zero bs=$bs count=$div
-            dd if=/dev/zero bs=$rem count=1
+            dd if=/dev/zero bs=$bs count=$div | tr "\000" "\377"
+            dd if=/dev/zero bs=$rem count=1 | tr "\000" "\377"
         } 2>/dev/null >> "$TEMP_IMAGE"
 
         TEMP_IMAGE_SIZE="$(ls -l "$TEMP_IMAGE" | awk '{print $5}')"
@@ -226,16 +245,47 @@ read_spi_partition_image() {
     DEST="$1" # READ Image output path
     TEMP="/tmp/tmp_pim_image" # Temporary path for 32MB read
     CHIP_TYPE="$2"   # Chip type
+    COUNT=1 # Default partition size is 1MB
+    SKIP_MB=0
 
-    case "${3^^}" in # Selects primary by default
+    case "${3^^}" in # Selects passed partition name
+        PIM_BASE)
+           PARTITION="pim_base"
+           ;;
+        HEADER_PIM_BASE)
+           PARTITION="header_pim_base"
+           ;;
+        PIM16Q)
+           PARTITION="pim16q"
+           SKIP_MB=1
+           ;;
+        HEADER_PIM16Q)
+           PARTITION="header_pim16q"
+           SKIP_MB=1
+           ;;
+        PIM8DDM)
+           PARTITION="pim8ddm"
+           SKIP_MB=2
+           ;;
+        HEADER_PIM8)
+           PARTITION="header_pim8ddm"
+           SKIP_MB=2
+           ;;
+        FULL)
+           PARTITION="full" # Read Entire SPI flash
+           COUNT=32 # Full 32MB image
+           ;;
         *)
-           PARTITION="primary"
-           SKIP_MB=0
+           echo "Unknown region $3 specified"
+           exit 1
            ;;
     esac
+
+    echo "Selected partition $PARTITION to read."
+
     flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "$CHIP_TYPE" \
         --layout /etc/elbert_pim.layout --image "$PARTITION" -r "$TEMP"
-    dd if="$TEMP" of="$DEST" bs=1M count=1 skip="$SKIP_MB"
+    dd if="$TEMP" of="$DEST" bs=1M count="$COUNT" skip="$SKIP_MB" 2> /dev/null
     rm "$TEMP"
 }
 
@@ -280,8 +330,17 @@ do_pim() {
                 read_spi_partition_image "$2" "MT25QL256" "$3"
             fi
             ;;
+        ERASE)
+            connect_pim_flash
+            if [ -z "$2" ]; then
+                flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c MT25QL256 -E
+            else
+                flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c MT25QL256 \
+                    --layout /etc/elbert_pim.layout --image "$2" -E
+            fi
+            ;;
         *)
-            echo "PIM only supports program/read action. Exiting..."
+            echo "PIM only supports program/read/erase action. Exiting..."
             exit 1
             ;;
     esac
@@ -304,7 +363,7 @@ do_th4_qspi() {
     esac
 }
 
-if [ $# -lt 3 ]; then
+if [ $# -lt 2 ]; then
     usage
 fi
 
@@ -319,7 +378,25 @@ case "$1" in
       do_scm "$@"
       ;;
    pim) shift 1
-      do_pim "$@"
+      do_pim "$@" full
+      ;;
+   pim_base) shift 1
+      do_pim "$@" pim_base
+      ;;
+   pim16q) shift 1
+      do_pim "$@" pim16q
+      ;;
+   pim8ddm) shift 1
+      do_pim "$@" pim8ddm
+      ;;
+   header_pim_base) shift 1
+      do_pim "$@" header_pim_base
+      ;;
+   header_pim16q) shift 1
+      do_pim "$@" header_pim16q
+      ;;
+   header_pim8ddm) shift 1
+      do_pim "$@" header_pim8ddm
       ;;
    fan) shift 1
       do_fan "$@"

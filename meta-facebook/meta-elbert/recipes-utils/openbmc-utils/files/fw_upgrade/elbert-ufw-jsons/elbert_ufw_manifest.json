@@ -24,8 +24,20 @@
         "upgrade_cmd" : "fpga_util.sh fan program {filename}",
         "priority" : 5
     },
-    "pim" : {
-        "get_version" : "fpga_ver.sh | grep 'PIM [2-9]: [^NOT]' | cut -f 3 -d ' ' | uniq",
+    "pim_base" : {
+        "get_version" : "spi_pim_ver.sh | grep 'HEADER_PIM_BASE: [^NOT]' | cut -f 3 -d ' ' | uniq",
+        "upgrade_cmd" : "fpga_util.sh pim program {filename}",
+        "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a",
+        "priority" : 5
+    },
+    "pim16q" : {
+        "get_version" : "fpga_ver.sh | grep 'HEADER_PIM16Q: [^NOT]' | cut -f 3 -d ' ' | uniq",
+        "upgrade_cmd" : "fpga_util.sh pim program {filename}",
+        "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 15;",
+        "priority" : 6
+    },
+    "pim8ddm" : {
+        "get_version" : "fpga_ver.sh | grep 'HEADER_PIM8DDM: [^NOT]' | cut -f 3 -d ' ' | uniq",
         "upgrade_cmd" : "fpga_util.sh pim program {filename}",
         "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 15;",
         "priority" : 6

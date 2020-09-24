@@ -29,10 +29,22 @@
         "hash" : "md5sum",
         "hash_value" : "6d332a920e1a4b37f5f9001a8ab3fed3"
     },
-    "pim" : {
-        "filename" : "elbert_pim.abin",
-        "version" : "4.2",
+    "pim_base" : {
+        "filename" : "elbert_pim_base.abin",
+        "version" : "0.0",
         "hash" : "md5sum",
-        "hash_value" : "9cb13b2597500b85ba42a29df252eaed"
+        "hash_value" : ""
+    },
+    "pim16q" : {
+        "filename" : "elbert_pim16q.abin",
+        "version" : "6.3",
+        "hash" : "md5sum",
+        "hash_value" : ""
+    },
+    "pim8ddm" : {
+        "filename" : "elbert_pim8ddm.abin",
+        "version" : "7.2",
+        "hash" : "md5sum",
+        "hash_value" : ""
     }
 }

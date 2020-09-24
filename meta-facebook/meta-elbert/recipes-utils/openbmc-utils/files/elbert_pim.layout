@@ -1,2 +1,8 @@
-00000000:000fffff primary
-00100000:01ffffff unused
+00000000:000fffff pim_base
+00000000:00000001 header_pim_base
+00100000:001fffff pim16q
+00100000:00100001 header_pim16q
+00200000:002fffff pim8ddm
+00200000:00200001 header_pim8ddm
+00400000:01ffffff unused
+00000000:01ffffff full

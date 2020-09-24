@@ -31,9 +31,10 @@
 #include <syslog.h>
 #include <string.h>
 #include <getopt.h>
+#include <linux/limits.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/obmc-i2c.h>
-
+#include <openbmc/misc-utils.h>
 #include <openbmc/log.h>
 
 #include "alert_control.h"
@@ -54,6 +55,22 @@ static int verbose_logging;
     if (verbose_logging)             \
       syslog(LOG_INFO, fmt, ##args); \
   } while (0)
+
+/*
+ * Function to sanity test if ipmid is ready for accepting messages.
+ */
+static bool
+is_ipmid_ready(void)
+{
+  char path[PATH_MAX];
+
+  /*
+   * NOTE: socket file exists doesn't necessarily mean ipmid is ready for
+   * accepting messages, but it's better than not checking anything.
+   */
+  snprintf(path, sizeof(path), "/tmp/%s", SOCK_PATH_IPMI);
+  return path_exists(path);
+}
 
 /*
  * Function to check if there is any new KCS message available
@@ -145,8 +162,8 @@ dump_usage(const char *prog_name)
  * Daemon Main loop
  */
 int main(int argc, char **argv) {
-  int i;
-  int ret;
+  int i, ret;
+  bool ipmid_ready = false;
   struct option long_opts[] = {
     {"help",       no_argument, NULL, 'h'},
     {"verbose",    no_argument, NULL, 'v'},
@@ -156,6 +173,7 @@ int main(int argc, char **argv) {
 
   while (1) {
     int opt_index = 0;
+
     ret = getopt_long(argc, argv, "hv", long_opts, &opt_index);
     if (ret == -1)
       break; /* end of arguments */
@@ -178,6 +196,30 @@ int main(int argc, char **argv) {
   obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
   obmc_log_unset_std_stream();
   daemon(1, 0);
+
+  /*
+   * Wait till ipmid is ready.
+   */
+  KCSD_VERBOSE("checking if ipmid is ready..");
+  for (i = 0; i < MAX_ALERT_CONTROL_RETRIES; i++) {
+    ipmid_ready = is_ipmid_ready();
+    if (ipmid_ready) {
+      /*
+       * sleep another 50 milliseconds just in case ipmid was de-scheduled
+       * right after creating the socket (but before setting it to passive
+       * socket).
+       */
+      usleep(50000);
+      break;
+    }
+
+    sleep(1);
+  }
+  if (!ipmid_ready) {
+    OBMC_WARN("ipmid is not ready after %d retries. Exiting",
+              MAX_ALERT_CONTROL_RETRIES);
+    return -1;
+  }
 
   // Enable alert for SMS KCS Function Block
   KCSD_VERBOSE("enabling SMS KCS function..");

@@ -23,9 +23,9 @@ LIC_FILES_CHKSUM = "file://sms-kcsd.c;beginline=12;endline=24;md5=da35978751a9d7
 
 DEPENDS_append = " update-rc.d-native"
 
-LDFLAGS += "-lipmi -lobmc-i2c -llog"
-DEPENDS += "libipmi libobmc-i2c liblog"
-RDEPENDS_${PN} += "libipmi libobmc-i2c liblog"
+LDFLAGS += "-lipmi -lobmc-i2c -llog -lmisc-utils"
+DEPENDS += "libipmi libobmc-i2c liblog libmisc-utils"
+RDEPENDS_${PN} += "libipmi libobmc-i2c liblog libmisc-utils"
 
 SRC_URI = "file://Makefile \
            file://setup-sms-kcs.sh \

@@ -727,6 +727,9 @@ size_t bic_1ou_skip_sensor_cnt = sizeof(bic_1ou_skip_sensor_list)/sizeof(uint8_t
 size_t bic_2ou_skip_sensor_cnt = sizeof(bic_2ou_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_edsff_skip_sensor_cnt = sizeof(bic_1ou_edsff_skip_sensor_list)/sizeof(uint8_t);
 
+static int compare(const void *arg1, const void *arg2) {
+  return(*(int *)arg2 - *(int *)arg1);
+}
 
 int
 get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const uint8_t bmc_location, const uint8_t config_status) {
@@ -1427,7 +1430,10 @@ read_adc_val(uint8_t adc_id, float *value) {
   int i = 0;
   int available_sampling = 0;
   float temp_val = 0;
-  const int sampling = 100;
+  uint8_t fan_type = UNKNOWN_TYPE;
+  uint8_t bmc_location = 0;
+  float arr[120] = {0};
+  int ignore_sample = 0;
   const char *adc_label[] = {
     "BMC_SENSOR_P5V",
     "BMC_SENSOR_P12V",
@@ -1442,6 +1448,16 @@ read_adc_val(uint8_t adc_id, float *value) {
     "BMC_SENSOR_NIC_P12V",
   };
 
+  ret = pal_get_fan_type(&bmc_location, &fan_type);
+  //Config A and B use a single type of fan.
+  //Config D uses a dual type of fan.
+  if ( fan_type == SINGLE_TYPE) {
+    ignore_sample = 20;
+  } else {
+    ignore_sample = 0;
+  }
+  int sampling = 100 + ignore_sample;
+
   if (adc_id >= ARRAY_SIZE(adc_label)) {
     return -1;
   }
@@ -1453,7 +1469,7 @@ read_adc_val(uint8_t adc_id, float *value) {
       if ( ret < 0 ) {
         syslog(LOG_WARNING,"%s() Failed to get val. i=%d", __func__, i);
       } else {
-        *value += temp_val;
+        arr[i] = temp_val;
         available_sampling++;
       }
     }
@@ -1461,7 +1477,14 @@ read_adc_val(uint8_t adc_id, float *value) {
     if ( available_sampling == 0 ) {
       ret = READING_NA;
     } else {
-      *value = *value / available_sampling;
+      if (fan_type == SINGLE_TYPE) {
+        qsort((void *)arr, sampling, sizeof(int), compare);
+      }
+      // Drop the last 20 lower value
+      for(i = 0; i < (sampling - ignore_sample); i++) {
+        *value += arr[i];
+      }
+      *value = *value / (available_sampling - ignore_sample);
     }
   } else {
     ret = sensors_read_adc(adc_label[adc_id], value);

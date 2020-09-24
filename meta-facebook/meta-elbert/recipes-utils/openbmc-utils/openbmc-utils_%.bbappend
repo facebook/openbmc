@@ -37,6 +37,7 @@ SRC_URI += "file://board-utils.sh \
             file://show_tech.py \
             file://psu_show_tech.py \
             file://pim_enable.sh \
+            file://pim_types.sh \
             file://elbert_pim.layout \
             file://peutil \
            "
@@ -57,6 +58,7 @@ OPENBMC_UTILS_FILES += " \
     show_tech.py \
     psu_show_tech.py \
     pim_enable.sh \
+    pim_types.sh \
     peutil \
     "
 

@@ -88,9 +88,10 @@ def prepare_piminfo():
                     _, part_number  = text_line.split(":")
             pim_ver[pim] = pim_version_str
 
-            # ELBERTTODO ADD 8Q PIM Support
-            if 'X-16C' in part_number:
+            if '88-16CD' in part_number:
                 pim_type[pim] = '16Q'
+            elif '88-8D' in part_number:
+                pim_type[pim] = '8DDM'
 
         except Exception:
             pass

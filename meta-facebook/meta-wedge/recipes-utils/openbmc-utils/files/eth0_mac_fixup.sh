@@ -27,8 +27,6 @@
 # Short-Description:  Fixup the MAC address for eth0 based on wedge EEPROM
 ### END INIT INFO
 
-set -x
-
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 # get the MAC from EEPROM
@@ -37,9 +35,15 @@ mac=$(weutil  | grep '^Local MAC' | cut -d' ' -f3)
 # get the MAC from u-boot environment
 ethaddr=$(fw_printenv | grep "^ethaddr=" | cut -d'=' -f2)
 
-if [ -z "$mac" ] && [ -n "$ethaddr" ]; then
-    # no MAC from EEPROM, use the one from u-boot environment
-    mac="$ethaddr"
+if [ -z "$mac" ]; then
+    if [ -n "$ethaddr" ]; then
+        # no MAC from EEPROM, use the one from u-boot environment
+        echo "No MAC address from EEPROM: use $ethaddr from uboot-env"
+        mac="$ethaddr"
+    else
+        echo "Error: unable to read MAC address from EEPROM or uboot-env!"
+        exit 1
+    fi
 fi
 
 if [ "$ethaddr" != "$mac" ]; then
@@ -48,13 +52,7 @@ if [ "$ethaddr" != "$mac" ]; then
     fw_setenv "ethaddr" "$mac"
 fi
 
-if [ -n "$mac" ]; then
-    #ifconfig eth0 hw ether $macifconfig
-    ip link set dev eth0 address "$mac"
-    exit $?
-else
-    # no MAC from either EEPROM or u-boot environment
-    mac=$(ifconfig eth0 |grep HWaddr |awk '{ print $5 }')
-    echo "No MAC from either EEPROM or u-boot environment"
-    echo "Current MAC: ${mac}"
-fi
+#ifconfig eth0 hw ether $macifconfig
+echo "Update BMC eth0 MAC address to $mac"
+ip link set dev eth0 address "$mac"
+exit $?

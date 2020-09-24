@@ -28,46 +28,29 @@ connect_spi() {
     echo 0x1 > "${SCMCPLD_SYSFS_DIR}"/bios_select
 }
 
-# Depending on the flash source, we might need to retry the command without the -c option
-
-do_erase() {
-    echo "Erasing flash content ..."
-    if ! flashrom -p linux_spi:dev=/dev/spidev1.0 -E -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
-      echo "flashrom failed. Retrying without -c"
-      if ! flashrom -p linux_spi:dev=/dev/spidev1.0 -E; then
-         echo "flashrom without -c also failed"
-      fi
-    fi
-}
-
-do_read() {
-    echo "Reading flash content..."
-    if ! flashrom -p linux_spi:dev=/dev/spidev1.0 -r "$1" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
-      echo "flashrom failed. Retrying without -c"
-      if ! flashrom -p linux_spi:dev=/dev/spidev1.0 -r "$1"; then
-         echo "flashrom without -c also failed"
-      fi
-    fi
-}
-
-do_write() {
-    echo "Writing flash content..."
-    if ! flashrom -p linux_spi:dev=/dev/spidev1.0 -w "$1" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
-      echo "flashrom failed. Retrying without -c"
-      if ! flashrom -p linux_spi:dev=/dev/spidev1.0 -w "$1"; then
-         echo "flashrom without -c also failed"
-      fi
-    fi
-}
-
 connect_spi
 
+# Depending on the flash source, we might need to retry the command with different -c options
+if flashrom -p linux_spi:dev=/dev/spidev1.0  | grep -q "MX25L12835F/MX25L12845E/MX25L12865E"; then
+    CHIPTYPE="MX25L12835F/MX25L12845E/MX25L12865E"
+elif flashrom -p linux_spi:dev=/dev/spidev1.0  | grep -q "N25Q128..3E"; then
+    CHIPTYPE="N25Q128..3E"
+else
+   echo "Unknown Flash type!"
+   echo "See flashrom output below:"
+   flashrom -p linux_spi:dev=/dev/spidev1.0
+   exit 1
+fi
+
 if [ "$1" = "erase" ]; then
-    do_erase
+    echo "Erasing flash content ..."
+    flashrom -p linux_spi:dev=/dev/spidev1.0 -E -c $CHIPTYPE
 elif [ "$1" = "read" ]; then
-    do_read "$2"
+    echo "Reading flash content..."
+    flashrom -p linux_spi:dev=/dev/spidev1.0 -r "$2" -c $CHIPTYPE
 elif [ "$1" = "write" ]; then
-    do_write "$2"
+    echo "Writing flash content..."
+    flashrom -p linux_spi:dev=/dev/spidev1.0 -w "$2" -c $CHIPTYPE
 else
     usage
 fi

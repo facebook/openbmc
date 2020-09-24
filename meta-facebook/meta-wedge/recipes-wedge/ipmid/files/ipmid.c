@@ -20,9 +20,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "platform/sdr.h"
-#include "platform/sel.h"
-#include "platform/fruid.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -37,6 +34,11 @@
 #include <sys/reboot.h>
 
 #include <openbmc/log.h>
+
+#include "platform/sdr.h"
+#include "platform/sel.h"
+#include "platform/fruid.h"
+#include "platform/sensor.h"
 
 #define SOCK_PATH "/tmp/ipmi_socket"
 
@@ -379,7 +381,7 @@ chassis_get_boot_options (unsigned char *request, unsigned char *response,
       *data++ = 0x00;
       *data++ = 0x00;
       break;
-    deault:
+    default:
       res->cc = CC_PARAM_OUT_OF_RANGE;
       break;
   }
@@ -1485,7 +1487,7 @@ dump_usage(const char *prog_name)
 int
 main (int argc, char **argv)
 {
-  int s, s2, t, len;
+  int s, s2, len;
   struct sockaddr_un local, remote;
   pthread_t tid;
 
@@ -1556,9 +1558,9 @@ main (int argc, char **argv)
 
   IPMID_VERBOSE("starting ipmid main loop\n");
   while(1) {
-    int n;
-    t = sizeof (remote);
-    if ((s2 = accept (s, (struct sockaddr *) &remote, &t)) < 0) {
+    socklen_t slen = sizeof(remote);
+
+    if ((s2 = accept(s, (struct sockaddr *)&remote, &slen)) < 0) {
       syslog(LOG_ALERT, "ipmid: accept() failed\n");
       break;
     }

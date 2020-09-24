@@ -62,9 +62,9 @@ static unsigned char g_fruid[WEDGE_FRUID_SIZE] = {0};
 static void
 populate_fruid(void) {
 
-  memset(&g_fruid, sizeof(g_fruid), 0);
+  fruid_common_hdr_t *chdr = (fruid_common_hdr_t*)g_fruid;
 
-  fruid_common_hdr_t *chdr = g_fruid;
+  memset(&g_fruid, 0, sizeof(g_fruid));
 
   // Set Common Header version
   chdr->ver = COMMON_HDR_VER;

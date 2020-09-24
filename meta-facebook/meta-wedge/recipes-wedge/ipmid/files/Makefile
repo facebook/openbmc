@@ -17,11 +17,13 @@
 
 all: ipmid
 
+CFLAGS += -Wall -Werror
+
 ipmid: ipmid.c \
 	platform/timestamp.c platform/sel.c platform/sdr.c \
 	platform/wedge/sensor.c \
 	platform/wedge/fruid.c
-	$(CC) $(CFLAGS) -pthread -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ -pthread $(LDFLAGS)
 
 .PHONY: clean
 

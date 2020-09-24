@@ -27,11 +27,41 @@ usage() {
     echo "read/write are equivalent to read8/write8"
 }
 
-mac0_base_reg=0x1e660000
-#mac1_base_reg=0x1e680000
-mdio_ctrl_reg=0x60
-mdio_data_reg=0x64
+mdio0_base_reg=0x1e650000
+mdio_ctrl_reg=0x0
+mdio_read_reg=0x4
 pseudo_phy_port_addr=0x1e
+
+scu_reset_set2=0x1e6e2050
+scu_reset_clear2=$((scu_reset_set2 + 0x4))
+scu_reset_mii_controller=$((1 << 3))
+scu_pin_control8=0x1e6e2430
+scu_mdcmdio_enable=$(( (1 << 16) | (1 << 17) ))
+
+trap cleanup EXIT INT TERM QUIT
+
+MDIO_INITIALIZED=0
+cleanup() {
+    if [ $MDIO_INITIALIZED -eq 1 ]
+    then
+        mdio_restore
+    fi
+}
+
+mdio_init() {
+    MDIO_INITIALIZED=1
+    devmem "$scu_reset_clear2" 32 "$scu_reset_mii_controller"
+
+    val=$(devmem "$scu_pin_control8")
+    devmem "$scu_pin_control8" 32 $((val | scu_mdcmdio_enable))
+}
+
+mdio_restore() {
+    devmem "$scu_reset_set2" 32 "$scu_reset_mii_controller"
+    val=$(devmem "$scu_pin_control8")
+    devmem "$scu_pin_control8" 32 $((val & ~scu_mdcmdio_enable))
+    MDIO_INITIALIZED=0
+}
 
 to_hex() {
     local val=$1
@@ -42,7 +72,7 @@ devmem_read() {
     local reg_addr=$1
     local mem_addr
 
-    mem_addr=$(to_hex $((mac0_base_reg + reg_addr)))
+    mem_addr=$(to_hex $((mdio0_base_reg + reg_addr)))
     devmem "$mem_addr"
 }
 
@@ -51,59 +81,58 @@ devmem_write() {
     local val mem_addr
 
     val=$(to_hex "$2")
-    mem_addr=$(to_hex $((mac0_base_reg + reg_addr)))
+    mem_addr=$(to_hex $((mdio0_base_reg + reg_addr)))
     devmem "$mem_addr" 32 "$val"
 }
 
 mdio_read() {
     local addr=$1
-    local reg_val read_request desc data_reg_val
+    local fire_busy clause_22 read_request reg_val read_reg_val ctrl_idle
 
-    reg_val=$(devmem_read $mdio_ctrl_reg)
-    # clear all bits except reserved and MDC cycle threshold
-    reg_val=$(( reg_val & 0xf000ffff ))
-
-    read_request=$(( 1 << 26 ))
-    reg_val=$(( reg_val \
+    fire_busy=$(( 1 << 31 ))
+    clause_22=$(( 1 << 28 ))
+    read_request=$(( 1 << 27 ))
+    reg_val=$(( fire_busy \
+              | clause_22 \
               | read_request \
-              | ( addr << 21 ) \
-              | ( pseudo_phy_port_addr << 16 ) ))
+              | ( pseudo_phy_port_addr << 21 ) \
+              | ( addr << 16 ) ))
 
     devmem_write $mdio_ctrl_reg $reg_val
+    ctrl_idle=$(( 1 << 16 ))
     desc=$(printf "read 0x%x" "$addr")
-    mdio_wait_op_complete $read_request "$desc"
+    mdio_wait_op_complete "$mdio_read_reg" "$ctrl_idle" "$ctrl_idle" "$desc"
 
-    data_reg_val=$(devmem_read $mdio_data_reg)
-    echo $(( data_reg_val >> 16 ))
+    read_reg_val=$(devmem_read $mdio_read_reg)
+    echo $(( read_reg_val & 0xffff ))
 }
 
 mdio_write() {
     local addr=$1
     local val=$2
-    local ctrl_reg_val write_request data_reg_val desc
+    local fire_busy clause_22 write_request reg_val
 
-    ctrl_reg_val=$(devmem_read $mdio_ctrl_reg)
-    # clear all bits except reserved and MDC cycle threshold
-    ctrl_reg_val=$(( ctrl_reg_val & 0xf000ffff ))
+    fire_busy=$(( 1 << 31 ))
+    clause_22=$(( 1 << 28 ))
+    write_request=$(( 1 << 26 ))
+    reg_val=$(( fire_busy \
+              | clause_22 \
+              | write_request \
+              | ( pseudo_phy_port_addr << 21 ) \
+              | ( addr << 16 ) \
+              | val ))
 
-    write_request=$(( 1 << 27 ))
-    ctrl_reg_val=$(( ctrl_reg_val \
-                   | write_request \
-                   | ( addr << 21 ) \
-                   | ( pseudo_phy_port_addr << 16 ) ))
-    data_reg_val=$val
-
-    # Write to the data register first
-    devmem_write $mdio_data_reg "$data_reg_val"
-    devmem_write $mdio_ctrl_reg "$ctrl_reg_val"
+    devmem_write $mdio_ctrl_reg "$reg_val"
 
     desc=$(printf "write 0x%x 0x%x" "$addr" "$val")
-    mdio_wait_op_complete $write_request "$desc"
+    mdio_wait_op_complete "$mdio_ctrl_reg" "$fire_busy" 0 "$desc"
 }
 
 mdio_wait_op_complete() {
-    local mask=$1
-    local desc=$2
+    local mdio_reg=$1 
+    local mask=$2
+    local wait_val=$3
+    local desc=$4
     local timeout=5
     local interval=0.1
     local val
@@ -111,15 +140,15 @@ mdio_wait_op_complete() {
     local time_limit=$(( $(date +%s) + timeout ))
     while [ "$(date +%s)" -lt $time_limit ]
     do
-        val=$(devmem_read $mdio_ctrl_reg)
-        if [ $(( mask & 0x1 )) -eq 0 ]
+        val=$(devmem_read "$mdio_reg")
+        if [ $(( val & "$mask" )) -eq "$wait_val" ]
         then
             return
         fi
         sleep $interval
     done
 
-    echo "Error: timed out waiting for operation to complete" >&2
+    echo "Error: timed out waiting for operation to complete: $desc" >&2
     exit 1
 }
 
@@ -154,7 +183,7 @@ reg_read() {
         reg_idx=$(( reg_idx + 1 ))
     done
 
-    binary_str=$(val_to_binary_str $val)
+    binary_str=$(val_to_binary_str "$val" "$data_size")
     printf "0x%x/0x%x 0x%x == $binary_str\n" "$page" "$addr" $val
 
     reg_clear_access_enable
@@ -234,7 +263,8 @@ reg_addr_data() {
 
 val_to_binary_str() {
     local val=$1
-    local i=32
+    local data_size=$2
+    local i=$(( data_size * 8 ))
 
     while [ $i -gt 0 ]
     do
@@ -301,6 +331,8 @@ case "$command" in
         exit 1
         ;;
 esac
+
+mdio_init
 
 if [ "$cmd_type" = "read" ]
 then

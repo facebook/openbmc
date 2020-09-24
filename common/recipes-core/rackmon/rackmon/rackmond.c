@@ -801,7 +801,7 @@ static int run_cmd_raw_modbus(rackmond_command* cmd, write_buf_t *wb)
 
 static int run_cmd_set_config(rackmond_command* cmd, write_buf_t *wb)
 {
-  int error;
+  int error = 0;
   size_t config_size;
 
   if (global_lock() != 0) {

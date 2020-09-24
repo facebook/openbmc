@@ -39,17 +39,20 @@ SRC_URI = "file://Makefile \
            file://tests/test_logutil.cpp \
           "
 
+PROVIDES += "log-util-v2"
+RPROVIDES_${PN} += "log-util-v2"
+
 inherit ptest
 do_compile_ptest() {
   make log-util-test
   cat <<EOF > ${WORKDIR}/run-ptest
 #!/bin/sh
-/usr/lib/log-util-v2/ptest/log-util-test
+/usr/lib/log-util/ptest/log-util-test
 EOF
 }
 
 do_install_ptest() {
-  install -D -m 755 log-util-test ${D}${libdir}/log-util-v2/ptest/log-util-test
+  install -D -m 755 log-util-test ${D}${libdir}/log-util/ptest/log-util-test
 }
 
 do_install() {
@@ -62,4 +65,4 @@ RDEPENDS_${PN} += "libpal"
 RDEPENDS_${PN}-ptest += "libpal"
 
 FILES_${PN} = "${prefix}/local/bin/log-util"
-FILES_${PN}-ptest = "${libdir}/log-util-v2/ptest"
+FILES_${PN}-ptest = "${libdir}/log-util/ptest"

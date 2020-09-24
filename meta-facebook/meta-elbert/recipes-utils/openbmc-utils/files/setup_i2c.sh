@@ -25,15 +25,31 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # Some devices occasionally fail to probe. Retry if this happens.
 hwmon_device_add() {
     bus="$1"
-    devId="$2"
+    devIdHex="$2"
     driver="$3"
-    i2c_device_add "$bus" "$devId" "$driver"
+    devId="${devIdHex//0x/}"
+    i2c_device_add "$bus" "$devIdHex" "$driver"
+
+    # Wait up to 2 seconds for the driver to load
+    i=0
+    while true; do
+        i=$((i+1))
+        # Check if device driver loaded successfully
+        if [ -d "/sys/bus/i2c/devices/$bus-00$devId/hwmon/" ]; then
+            break;
+        fi
+        if [ $i -gt 20 ]; then
+            echo "Timed out waiting for $driver-$bus-$devId"
+            break;
+        fi
+        sleep 0.1
+    done
 
     # If device isn't loaded sucessfully, retry one more time
-    if [ ! -d "/sys/bus/i2c/devices/$bus-00$driver/hwmon/" ]; then
-        echo "Probe of $bus-00 $driver failed. Retrying..."
-        i2c_device_delete "$bus" "$devId"
-        i2c_device_add "$bus" "$devId" "$driver"
+    if [ ! -d "/sys/bus/i2c/devices/$bus-00$devId/hwmon/" ]; then
+        echo "Probe of $driver-$bus-$devId failed. Retrying..."
+        i2c_device_delete "$bus" "$devIdHex"
+        i2c_device_add "$bus" "$devIdHex" "$driver"
     fi
 }
 

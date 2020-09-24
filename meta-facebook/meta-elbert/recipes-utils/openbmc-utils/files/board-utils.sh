@@ -109,5 +109,30 @@ power_on_pim() {
     fi
     gpio_set PIM"${pim}"_FULL_POWER_EN 1 # full power on
     gpio_set PIM"${pim}"_FPGA_RESET_L 1  # FPGA out of reset
+
+    skip_pim_off_cache=$2
+    pim_off_cache="/tmp/.pim${pim}_powered_off"
+    if [ -z "${skip_pim_off_cache}" ] && [ -f "${pim_off_cache}" ]; then
+       rm  "${pim_off_cache}"
+    fi
     logger pim_enable: powered on PIM"${pim}"
+}
+
+power_off_pim() {
+    pim=$1
+    old_value=$(gpio_get PIM"${pim}"_FULL_POWER_EN keepdirection)
+    if [ "$old_value" -eq 0 ]; then
+       logger pim_enable: PIM"${pim}" already powered off
+       # already powered off, skip
+       return
+    fi
+    gpio_set PIM"${pim}"_FPGA_RESET_L 0  # FPGA in reset
+    gpio_set PIM"${pim}"_FULL_POWER_EN 0 # full power off
+
+    skip_pim_off_cache=$2
+    pim_off_cache="/tmp/.pim${pim}_powered_off"
+    if [ -z "${skip_pim_off_cache}" ]; then
+       touch "${pim_off_cache}"
+    fi
+    logger pim_enable: powered off PIM"${pim}"
 }

@@ -87,7 +87,11 @@ while true; do
   for i in "${pim_index[@]}"
   do
     if [ "${pim_found[$i]}" -eq "1" ]; then
-       power_on_pim $((i+2))
+       if [ ! -f "/tmp/.pim$((i+2))_powered_off" ]; then
+          power_on_pim $((i+2)) y
+       else
+          power_off_pim $((i+2)) y
+       fi
     fi
 
     # Clear pimserial endpoint cache
@@ -95,6 +99,6 @@ while true; do
 
   done
   # Sleep 5 seconds until the next loop.
-  # reduce to 5 seconds for faster scan.
+  # reduce for faster scan.
   sleep 5
 done

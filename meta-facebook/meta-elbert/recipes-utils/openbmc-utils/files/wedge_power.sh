@@ -41,6 +41,9 @@ usage() {
     echo "  reset: Power reset microserver ungracefully"
     echo "    options:"
     echo "      -s: Power reset whole elbert system ungracefully"
+    echo "      -s -t [0-7]: Setting boot up time."
+    echo "            0: 10 seconds (default), 1: 20 seconds, 2: 30 seconds, 3: 40 seconds"
+    echo "            4: 1 minute, 5: 2 minutes, 6: 5 minutes, 7: 10 minutes"
     echo
     echo "  pimreset: Power-cycle one or all PIM(s)"
     echo "    options:"
@@ -113,13 +116,41 @@ do_off() {
     return $ret
 }
 
+do_config_reset_duration() {
+   # Check valid numeric value
+    duration=$1
+    echo "$duration" | grep -q '^[0-7]$'
+    ret=$?
+    if [ $ret -ne 0 ]; then
+        usage
+        exit -1
+    else
+        values=( 10 20 30 40 1 2 5 10 )
+        units="seconds"
+        if [ "$duration" -eq 4 ]; then
+            units="minute"
+        elif [ "$duration" -gt 4 ]; then
+            units="minutes"
+        fi
+        echo "$duration" > "$SMBCPLD_SYSFS_DIR"/powercycle_duration
+        logger "Waiting ${values[$duration]} $units for the system boot up"
+        echo "Waiting ${values[$duration]} $units for the system boot up"
+    fi
+}
+
 do_reset() {
     local system opt
     system=0
-    while getopts "s" opt; do
+    timer=0
+    duration=0
+    while getopts "st:" opt; do
         case $opt in
             s)
                 system=1
+                ;;
+            t)
+                timer=1
+                duration=$OPTARG
                 ;;
             *)
                 usage
@@ -128,6 +159,9 @@ do_reset() {
         esac
     done
     if [ $system -eq 1 ]; then
+        if [ $timer -eq 1 ]; then
+            do_config_reset_duration "$duration"
+        fi
         logger "Power reset the whole system ..."
         echo -n "Power reset the whole system ..."
         sleep 1

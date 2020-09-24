@@ -36,6 +36,8 @@
 #include <sys/un.h>
 #include <sys/reboot.h>
 
+#include <openbmc/log.h>
+
 #define SOCK_PATH "/tmp/ipmi_socket"
 
 #define MAX_NUM_DIMMS 4
@@ -1421,7 +1423,9 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
       res->netfn_lun = NETFN_OEM_RES << 2;
       ipmi_handle_oem (request, req_len, response, res_len);
       break;
+
     default:
+      OBMC_WARN("unsupported Network Function 0x%02x\n", netfn);
       res->netfn_lun = (netfn + 1) << 2;
       break;
   }
@@ -1512,8 +1516,10 @@ main (int argc, char **argv)
     }
   } /* while */
 
+  obmc_log_init("ipmid", LOG_INFO, 0);
+  obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
+  obmc_log_unset_std_stream();
   daemon(1, 0);
-  openlog("ipmid", LOG_CONS, LOG_DAEMON);
 
   plat_sel_init();
   plat_sensor_init();

@@ -31,4 +31,5 @@ board_routes = [
     "/api/sys/pimstatus",
     "/api/sys/pim_present",
     "/api/sys/smbinfo",
+    "/api/sys/firmware_info/all",
 ]

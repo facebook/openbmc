@@ -39,3 +39,4 @@ def setup_board_routes(app: Application, write_enabled: bool):
     app.router.add_get(board_routes[12], bhandler.rest_pimstatus_hdl)
     app.router.add_get(board_routes[13], bhandler.rest_pim_present_hdl)
     app.router.add_get(board_routes[14], bhandler.rest_smbinfo_hdl)
+    app.router.add_get(board_routes[15], bhandler.rest_firmware_info_all_hdl)

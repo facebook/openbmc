@@ -20,7 +20,7 @@
 
 import re
 
-#  import rest_fw_ver
+import rest_fw_ver
 import rest_fruid_scm
 import rest_peutil
 import rest_pim_present
@@ -70,3 +70,7 @@ class boardApp_Handler:
     # Handler for sys/smb_info resource endpoint (version)
     async def rest_smbinfo_hdl(self, request):
         return web.json_response(rest_smbinfo.get_smbinfo())
+
+    async def rest_firmware_info_all_hdl(self, request):
+        fws = await rest_fw_ver.get_all_fw_ver()
+        return web.json_response(fws, dumps=dumps_bytestr)

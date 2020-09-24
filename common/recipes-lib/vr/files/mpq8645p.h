@@ -14,6 +14,8 @@
 
 #define MPQ8645P_RESTORE_USER_ALL    "restore"
 #define MPQ8645P_VOUT_COMMAND        "vout_command"
+#define MPQ8645P_VOUT_MARGIN_HIGH    "vout_margin_high"
+#define MPQ8645P_VOUT_MARGIN_LOW     "vout_margin_low"
 #define MPQ8645P_VOUT_SCALE_LOOP     "vout_scale_loop"
 #define MPQ8645P_IOUT_OC_FAULT_LIMIT "oc_fault_limit"
 #define MPQ8645P_IOUT_OC_WARN_LIMIT  "oc_warn_limit"

@@ -147,6 +147,14 @@ static int program_mpq8645p(int hwmon_idx, struct config_data *data)
       snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
 	       hwmon_idx, MPQ8645P_VOUT_COMMAND);
       break;
+    case PMBUS_VOUT_MARGIN_HIGH:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_VOUT_MARGIN_HIGH);
+      break;
+    case PMBUS_VOUT_MARGIN_LOW:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_VOUT_MARGIN_LOW);
+      break;
     case PMBUS_VOUT_SCALE_LOOP:
       snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
 	       hwmon_idx, MPQ8645P_VOUT_SCALE_LOOP);
@@ -196,6 +204,14 @@ static int verify_mpq8645p(int hwmon_idx, struct config_data *data)
     case PMBUS_VOUT_COMMAND:
       snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
 	       hwmon_idx, MPQ8645P_VOUT_COMMAND);
+      break;
+    case PMBUS_VOUT_MARGIN_HIGH:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_VOUT_MARGIN_HIGH);
+      break;
+    case PMBUS_VOUT_MARGIN_LOW:
+      snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,
+	       hwmon_idx, MPQ8645P_VOUT_MARGIN_LOW);
       break;
     case PMBUS_VOUT_SCALE_LOOP:
       snprintf(dev_name, LARGEST_DEVICE_NAME, MPQ8645P_DEBUGFS,

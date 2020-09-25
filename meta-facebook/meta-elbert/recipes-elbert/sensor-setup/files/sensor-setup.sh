@@ -44,3 +44,6 @@ modprobe lm90
 modprobe max6697
 modprobe pmbus
 modprobe ucd9000
+
+# Ensure that set statements in lm_sensors config are applied.
+sensors -s

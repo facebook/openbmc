@@ -12,4 +12,6 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-python3 \
   setup-gpio \
   ipmbd \
+  ipmid \
+  ipmitool \
   "

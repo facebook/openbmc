@@ -15,6 +15,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+inherit systemd
+
 SUMMARY = "IPMI Daemon"
 DESCRIPTION = "Daemon to handle IPMI Messages."
 SECTION = "base"
@@ -48,9 +50,26 @@ SRC_URI = "file://Makefile \
            file://BBV.h \
            file://run-ipmid.sh \
            file://setup-ipmid.sh \
+           file://ipmid.service \
           "
 
 S = "${WORKDIR}"
+
+install_sysv() {
+    install -d ${D}${sysconfdir}/init.d
+    install -d ${D}${sysconfdir}/rcS.d
+    install -d ${D}${sysconfdir}/sv
+    install -d ${D}${sysconfdir}/sv/ipmid
+    install -d ${D}${sysconfdir}/ipmid
+    install -m 755 setup-ipmid.sh ${D}${sysconfdir}/init.d/setup-ipmid.sh
+    install -m 755 run-ipmid.sh ${D}${sysconfdir}/sv/ipmid/run
+    update-rc.d -r ${D} setup-ipmid.sh start 64 5 .
+}
+
+install_systemd() {
+    install -d ${D}${systemd_system_unitdir}
+    install -m 644 ipmid.service ${D}${systemd_system_unitdir}
+}
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -59,14 +78,12 @@ do_install() {
   install -d $bin
   install -m 755 ipmid ${dst}/ipmid
   ln -snf ../fbpackages/${pkgdir}/ipmid ${bin}/ipmid
-  install -d ${D}${sysconfdir}/init.d
-  install -d ${D}${sysconfdir}/rcS.d
-  install -d ${D}${sysconfdir}/sv
-  install -d ${D}${sysconfdir}/sv/ipmid
-  install -d ${D}${sysconfdir}/ipmid
-  install -m 755 setup-ipmid.sh ${D}${sysconfdir}/init.d/setup-ipmid.sh
-  install -m 755 run-ipmid.sh ${D}${sysconfdir}/sv/ipmid/run
-  update-rc.d -r ${D} setup-ipmid.sh start 64 5 .
+
+  if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+      install_systemd
+  else
+      install_sysv
+  fi
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
@@ -80,3 +97,5 @@ RDEPENDS_${PN} += " libpal libsdr libfruid libipc libkv libipmi libipmb libfruid
 binfiles = "ipmid"
 
 pkgdir = "ipmid"
+
+SYSTEMD_SERVICE_${PN} = "ipmid.service"

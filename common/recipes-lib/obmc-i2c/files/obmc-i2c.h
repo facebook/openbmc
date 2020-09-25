@@ -58,6 +58,7 @@ extern "C" {
  */
 #include <openbmc/i2c_cdev.h>
 #include <openbmc/i2c_core.h>
+#include <openbmc/i2c_device.h>
 #include <openbmc/i2c_mslave.h>
 #include <openbmc/i2c_sysfs.h>
 #include <openbmc/smbus.h>

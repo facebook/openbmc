@@ -28,6 +28,8 @@ SRC_URI = "file://obmc-i2c.h \
            file://i2c_cdev.c \
            file://i2c_cdev.h \
            file://i2c_core.h \
+           file://i2c_device.c \
+           file://i2c_device.h \
            file://i2c_mslave.c \
            file://i2c_mslave.h \
            file://i2c_sysfs.c \
@@ -52,6 +54,7 @@ I2C_HEADER_FILES = " \
     obmc-i2c.h \
     i2c_cdev.h \
     i2c_core.h \
+    i2c_device.h \
     i2c_mslave.h \
     i2c_sysfs.h \
     smbus.h \

@@ -14,4 +14,5 @@ IMAGE_INSTALL += " \
   ipmbd \
   ipmid \
   ipmitool \
+  expander-util \
   "

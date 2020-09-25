@@ -1095,15 +1095,15 @@ get_eeprom_info(uint8_t num) {
   fruid_info_t fruid;
 
   snprintf(eeprom, sizeof(eeprom), "%s", "24c02");
-  pal_add_i2c_device(psu[num].bus, psu[num].eeprom_addr, eeprom);
+  i2c_add_device(psu[num].bus, psu[num].eeprom_addr, eeprom);
   ret = fruid_parse(psu[num].eeprom_file, &fruid);
-  pal_del_i2c_device(psu[num].bus, psu[num].eeprom_addr);
+  i2c_delete_device(psu[num].bus, psu[num].eeprom_addr);
 
   if (ret) {
     snprintf(eeprom, sizeof(eeprom), "%s", "24c64");
-    pal_add_i2c_device(psu[num].bus, psu[num].eeprom_addr, eeprom);
+    i2c_add_device(psu[num].bus, psu[num].eeprom_addr, eeprom);
     ret = fruid_parse(psu[num].eeprom_file, &fruid);
-    pal_del_i2c_device(psu[num].bus, psu[num].eeprom_addr);
+    i2c_delete_device(psu[num].bus, psu[num].eeprom_addr);
     if (ret) {
       printf("Failed print EEPROM info!\n");
       return -1;

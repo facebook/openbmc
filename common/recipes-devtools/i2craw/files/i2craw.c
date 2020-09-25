@@ -39,15 +39,20 @@ void usage(const char *prog) {
          "\t\t how many bytes more to read\n"
          "\n\t-p:\n"
          "\t\t Use PEC\n"
+         "\n\t-f:\n"
+         "\t\t Add force flag when open the i2c\n"
          "\n\t-h:\n"
          "\t\t Print this help\n"
          "\n  Note: if both '-w' and '-r' are specified, write will be"
-         "\n        performed first, followed by read\n");
+         "\n        performed first, followed by read\n"
+         "\n  Example as:"
+         "\n        %s -f -w '0 0 0 4 4 3 2 1' -r4 3 0x2a\n", prog);
 }
 
 #define MAX_BYTES 255
 
 int g_use_pec = 0;
+int g_use_force = 0;
 int g_has_write = 0;
 int g_n_write = 0;
 uint8_t g_write_bytes[MAX_BYTES];
@@ -99,7 +104,7 @@ static int i2c_open() {
     return -1;
   }
 
-  rc = ioctl(fd, I2C_SLAVE, g_slave_addr);
+  rc = ioctl(fd, g_use_force ? I2C_SLAVE_FORCE : I2C_SLAVE, g_slave_addr);
   if (rc < 0) {
     OBMC_ERROR(errno, "Failed to open slave @ address 0x%x", g_slave_addr);
     close(fd);
@@ -160,13 +165,16 @@ int main(int argc, char * const argv[]) {
   int i;
   int fd;
   int opt;
-  while ((opt = getopt(argc, argv, "hpw:r:")) != -1) {
+  while ((opt = getopt(argc, argv, "hpfw:r:")) != -1) {
     switch (opt) {
     case 'h':
       usage(argv[0]);
       return 0;
     case 'p':
       g_use_pec = 1;
+      break;
+    case 'f':
+      g_use_force = 1;
       break;
     case 'w':
       g_has_write = 1;

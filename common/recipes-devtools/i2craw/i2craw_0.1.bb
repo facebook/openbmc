@@ -7,7 +7,7 @@ SRC_URI  = "file://i2craw.c \
 LDFLAGS = " -lobmc-i2c -llog "
 
 S = "${WORKDIR}"
-DEPENDS = " plat-utils libobmc-i2c liblog "
+DEPENDS = " libobmc-i2c liblog "
 RDEPENDS_${PN} = " libobmc-i2c liblog "
 
 do_install(){

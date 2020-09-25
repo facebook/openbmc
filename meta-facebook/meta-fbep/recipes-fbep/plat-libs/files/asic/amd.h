@@ -25,6 +25,7 @@
 extern "C" {
 #endif
 
+uint8_t amd_get_id(uint8_t);
 int amd_read_die_temp(uint8_t, float*);
 int amd_read_edge_temp(uint8_t, float*);
 int amd_read_hbm_temp(uint8_t, float*);

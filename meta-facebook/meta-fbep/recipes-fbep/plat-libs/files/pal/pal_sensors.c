@@ -813,7 +813,7 @@ static const char* asic_sensor_name_by_mfr[MFR_MAX_NUM][32] = {
     "EP_MB_GPU6_PWCS",
     "EP_MB_GPU7_PWCS"
   },
-  [GPU_NV] = {
+  [GPU_NVIDIA] = {
     "EP_MB_NVIDIA_GPU0_TEMP",
     "EP_MB_NVIDIA_GPU1_TEMP",
     "EP_MB_NVIDIA_GPU2_TEMP",
@@ -1703,7 +1703,7 @@ static void init_sensor_threshold_by_mfr(uint8_t vendor)
       sensors_threshold[sensor][LCR_THRESH] = 10.0;
       sensors_threshold[sensor][UCR_THRESH] = 94.0;
     }
-  } else if (vendor == GPU_NV) {
+  } else if (vendor == GPU_NVIDIA) {
     for (sensor = MB_GPU0_TEMP; sensor <= MB_GPU7_TEMP; sensor++) {
       sensors_threshold[sensor][LCR_THRESH] = 10.0;
       sensors_threshold[sensor][UCR_THRESH] = 85.0;
@@ -1729,8 +1729,8 @@ int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, vo
       pal_get_key_value("asic_mfr", vendor);
       if (!strcmp(vendor, MFR_AMD)) {
 	vendor_id = GPU_AMD;
-      } else if (!strcmp(vendor, MFR_NV)) {
-	vendor_id = GPU_NV;
+      } else if (!strcmp(vendor, MFR_NVIDIA)) {
+	vendor_id = GPU_NVIDIA;
       }
       init_sensor_threshold_by_mfr(vendor_id);
   }
@@ -1752,8 +1752,8 @@ int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name)
       pal_get_key_value("asic_mfr", vendor);
       if (!strcmp(vendor, MFR_AMD))
 	vendor_id = GPU_AMD;
-      else if (!strcmp(vendor, MFR_NV))
-	vendor_id = GPU_NV;
+      else if (!strcmp(vendor, MFR_NVIDIA))
+	vendor_id = GPU_NVIDIA;
   }
 
   if (sensor_num >= FBEP_SENSOR_MAX) {

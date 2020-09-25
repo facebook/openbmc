@@ -100,7 +100,7 @@ struct pal_key_cfg {
   {KEY_ASIC6_SNR_HEALTH, "1", NULL},
   {KEY_ASIC7_SNR_HEALTH, "1", NULL},
   {"server_type", "4", NULL},
-  {"asic_mfr", MFR_NV, key_set_asic_mfr},
+  {"asic_mfr", MFR_NVIDIA, key_set_asic_mfr},
   {"ntp_server", "", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
@@ -250,8 +250,8 @@ static int key_set_asic_mfr(int event, void *arg)
 
   if (!strcmp(vendor, MFR_AMD)) {
     vendor_id = GPU_AMD;
-  } else if (!strcmp(vendor, MFR_NV)) {
-    vendor_id = GPU_NV;
+  } else if (!strcmp(vendor, MFR_NVIDIA) || !strcmp(vendor, MFR_UNKNOWN)) {
+    vendor_id = GPU_NVIDIA;
   } else {
     syslog(LOG_WARNING, "%s is not supported", vendor);
     ret = -1;

@@ -25,12 +25,13 @@
 extern "C" {
 #endif
 
-#define MFR_AMD "AMD"
-#define MFR_NV  "NVIDIA"
+#define MFR_AMD      "AMD"
+#define MFR_NVIDIA   "NVIDIA"
+#define MFR_UNKNOWN  "UNKNOWN"
 
 enum {
-  GPU_AMD = 0,
-  GPU_NV,
+  GPU_NVIDIA = 0,
+  GPU_AMD,
   GPU_UNKNOWN
 };
 
@@ -42,6 +43,7 @@ enum {
   ASIC_NOTSUP = -2
 };
 
+uint8_t asic_get_vendor_id(uint8_t);
 int asic_read_gpu_temp(uint8_t, float*);
 int asic_read_board_temp(uint8_t, float*);
 int asic_read_mem_temp(uint8_t, float*);

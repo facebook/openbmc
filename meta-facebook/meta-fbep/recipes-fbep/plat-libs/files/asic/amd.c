@@ -31,6 +31,8 @@
 #define AMD_CMD_LD_SCRATCH_ADDR 0x21
 #define AMD_CMD_RD_SCRATCH_ADDR 0x23
 
+#define AMD_ID_MI100 0x81
+
 int amd_open_slot(uint8_t slot)
 {
   char dev[64] = {0};
@@ -72,6 +74,22 @@ static int amd_cmd_ldrd_scratch_addr(int fd, uint8_t offset, uint8_t words, uint
 
   memcpy(buf, rbuf+1, bytes);
   return 0;
+}
+
+uint8_t amd_get_id(uint8_t slot)
+{
+  int fd = amd_open_slot(slot);
+  uint8_t buf[4] = {0};
+  uint8_t id = GPU_AMD;
+
+  if (fd < 0)
+    return GPU_UNKNOWN;
+
+  if (amd_cmd_ldrd_scratch_addr(fd, 0, 1, buf) < 0 || buf[2] != AMD_ID_MI100)
+    id = GPU_UNKNOWN;
+
+  close(fd);
+  return id;
 }
 
 static bool is_amd_gpu_ready(int fd)

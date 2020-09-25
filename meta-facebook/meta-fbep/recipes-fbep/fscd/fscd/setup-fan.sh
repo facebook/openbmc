@@ -27,17 +27,6 @@
 # Short-Description: Set fan speed
 ### END INIT INFO
 
-default_fsc_config="/etc/fsc-config.json"
-
-vendor=$(/usr/local/bin/cfg-util asic_mfr)
-if [[ "$vendor" == "AMD" ]]; then
-  ln -s /etc/fsc-config_AMD.json ${default_fsc_config}
-elif [[ "$vendor" == "NVIDIA" ]]; then
-  ln -s /etc/fsc-config_NVIDIA.json ${default_fsc_config}
-else
-  ln -s /etc/fsc-config_NVIDIA.json ${default_fsc_config}
-fi
-
 echo -n "Setup fan speed... "
 runsv /etc/sv/fscd > /dev/null 2>&1 &
 echo "done."

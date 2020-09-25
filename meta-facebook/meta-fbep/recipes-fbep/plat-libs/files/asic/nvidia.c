@@ -35,6 +35,10 @@
 #define NV_COMMAND_STATUS_REG   0x5C
 #define NV_DATA_REG             0x5D
 
+#define NV_VNDID_LOWER_REG      0x62
+#define NV_VNDID_UPPER_REG      0x63
+#define NVIDIA_ID               0x10DE
+
 /*
  * Opcodes and arguments
  */
@@ -172,6 +176,24 @@ static uint32_t nv_get_cap(int fd, uint8_t page)
 
   memcpy(&cap, buf, 4);
   return cap;
+}
+
+uint8_t nv_get_id(uint8_t slot)
+{
+  int ret;
+  int fd = nv_open_slot(slot);
+  uint8_t id = GPU_UNKNOWN;
+
+  if (fd < 0)
+    return GPU_UNKNOWN;
+
+  ret = (i2c_smbus_read_byte_data(fd, NV_VNDID_UPPER_REG) & 0xFF) << 8 |
+        (i2c_smbus_read_byte_data(fd, NV_VNDID_LOWER_REG) & 0xFF);
+  if (ret == NVIDIA_ID)
+    id = GPU_NVIDIA;
+
+  close(fd);
+  return id;
 }
 
 static float nv_read_temp(uint8_t slot, uint8_t sensor, float *temp)

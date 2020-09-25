@@ -9,9 +9,9 @@ LIC_FILES_CHKSUM = "file://asic.c;beginline=8;endline=20;md5=df671c5f3a78585c161
 
 SRC_URI = "file://asic \
           "
-LDFLAGS += "-lobmc-i2c -lgpio-ctrl -lkv"
-DEPENDS += "libobmc-i2c libgpio-ctrl libkv"
-RDEPENDS_${PN} += "libobmc-i2c libkv"
+LDFLAGS += "-lobmc-i2c -lgpio-ctrl "
+DEPENDS += "libobmc-i2c libgpio-ctrl "
+RDEPENDS_${PN} += "libobmc-i2c "
 
 S = "${WORKDIR}/asic"
 

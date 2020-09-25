@@ -22,12 +22,12 @@
 #include <stdint.h>
 #include <syslog.h>
 #include <openbmc/libgpio.h>
-#include <openbmc/kv.h>
 #include "asic.h"
 #include "amd.h"
 #include "nvidia.h"
 
 struct asic_ops {
+  uint8_t (*get_gpu_id)(uint8_t);
   int (*read_gpu_temp)(uint8_t, float*);
   int (*read_board_temp)(uint8_t, float*);
   int (*read_mem_temp)(uint8_t, float*);
@@ -36,6 +36,7 @@ struct asic_ops {
   int (*show_ver)(uint8_t, char*);
 } ops[MFR_MAX_NUM] = {
   [GPU_AMD] = {
+    .get_gpu_id = amd_get_id,
     .read_gpu_temp = amd_read_die_temp,
     .read_board_temp = amd_read_edge_temp,
     .read_mem_temp = amd_read_hbm_temp,
@@ -43,7 +44,8 @@ struct asic_ops {
     .set_power_limit = NULL,
     .show_ver = NULL
   },
-  [GPU_NV] = {
+  [GPU_NVIDIA] = {
+    .get_gpu_id = nv_get_id,
     .read_gpu_temp = nv_read_gpu_temp,
     .read_board_temp = NULL,
     .read_mem_temp = nv_read_mem_temp,
@@ -53,24 +55,25 @@ struct asic_ops {
   }
 };
 
-static uint8_t get_gpu_id()
+uint8_t asic_get_vendor_id(uint8_t slot)
 {
-  static uint8_t vendor_id = GPU_UNKNOWN;
-  char vendor[MAX_VALUE_LEN] = {0};
+  static uint8_t vendor_id[8] = {
+    GPU_UNKNOWN, GPU_UNKNOWN, GPU_UNKNOWN, GPU_UNKNOWN,
+    GPU_UNKNOWN, GPU_UNKNOWN, GPU_UNKNOWN, GPU_UNKNOWN
+  };
 
-  if (vendor_id != GPU_UNKNOWN)
+  if (vendor_id[slot] != GPU_UNKNOWN)
     goto exit;
-  if (kv_get("asic_mfr", vendor, NULL, KV_FPERSIST) < 0) {
-    vendor_id = GPU_NV; // default
-    goto exit;
+
+  for (uint8_t i = GPU_NVIDIA; i < MFR_MAX_NUM; i++) {
+    if (!ops[i].get_gpu_id)
+      continue;
+    vendor_id[slot] = ops[i].get_gpu_id(slot);
+    if (vendor_id[slot] != GPU_UNKNOWN)
+      break;
   }
-
-  if (!strcmp(vendor, MFR_AMD))
-    return GPU_AMD;
-  else if (!strcmp(vendor, MFR_NV))
-    return GPU_NV;
 exit:
-  return vendor_id;
+  return vendor_id[slot];
 }
 
 bool is_asic_prsnt(uint8_t slot)
@@ -106,7 +109,7 @@ bool is_asic_prsnt(uint8_t slot)
 
 int asic_read_gpu_temp(uint8_t slot, float *value)
 {
-  uint8_t vendor = get_gpu_id();
+  uint8_t vendor = asic_get_vendor_id(slot);
 
   if (vendor == GPU_UNKNOWN)
     return ASIC_NOTSUP;
@@ -118,7 +121,7 @@ int asic_read_gpu_temp(uint8_t slot, float *value)
 
 int asic_read_board_temp(uint8_t slot, float *value)
 {
-  uint8_t vendor = get_gpu_id();
+  uint8_t vendor = asic_get_vendor_id(slot);
 
   if (vendor == GPU_UNKNOWN)
     return ASIC_NOTSUP;
@@ -130,7 +133,7 @@ int asic_read_board_temp(uint8_t slot, float *value)
 
 int asic_read_mem_temp(uint8_t slot, float *value)
 {
-  uint8_t vendor = get_gpu_id();
+  uint8_t vendor = asic_get_vendor_id(slot);
 
   if (vendor == GPU_UNKNOWN)
     return ASIC_NOTSUP;
@@ -142,7 +145,7 @@ int asic_read_mem_temp(uint8_t slot, float *value)
 
 int asic_read_pwcs(uint8_t slot, float *value)
 {
-  uint8_t vendor = get_gpu_id();
+  uint8_t vendor = asic_get_vendor_id(slot);
 
   if (vendor == GPU_UNKNOWN)
     return ASIC_NOTSUP;
@@ -154,7 +157,7 @@ int asic_read_pwcs(uint8_t slot, float *value)
 
 int asic_set_power_limit(uint8_t slot, unsigned int value)
 {
-  uint8_t vendor = get_gpu_id();
+  uint8_t vendor = asic_get_vendor_id(slot);
 
   if (vendor == GPU_UNKNOWN)
     return ASIC_NOTSUP;
@@ -166,7 +169,7 @@ int asic_set_power_limit(uint8_t slot, unsigned int value)
 
 int asic_show_version(uint8_t slot, char *ver)
 {
-  uint8_t vendor = get_gpu_id();
+  uint8_t vendor = asic_get_vendor_id(slot);
 
   if (vendor == GPU_UNKNOWN)
     return ASIC_NOTSUP;

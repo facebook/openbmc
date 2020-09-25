@@ -8,8 +8,9 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://front-paneld.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 
-DEPENDS_append = "libpal libgpio-ctrl update-rc.d-native"
-RDEPENDS_${PN} += "libpal libgpio-ctrl"
+LDFLAGS += "-lpal -lgpio-ctrl -lasic"
+DEPENDS_append = "libpal libgpio-ctrl libasic update-rc.d-native"
+RDEPENDS_${PN} += "libpal libgpio-ctrl libasic "
 
 SRC_URI = "file://Makefile \
            file://setup-front-paneld.sh \

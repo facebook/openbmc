@@ -29,6 +29,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
 #include <openbmc/libgpio.h>
+#include <facebook/asic.h>
 
 #define LED_ON 1
 #define LED_OFF 0
@@ -72,10 +73,76 @@ static void* led_sync_handler()
   return NULL;
 }
 
-static void* pwr_btn_handler()
+static void* get_asic_id_handler()
 {
-  // TODO:
-  //   Check if we need to block power button
+  char* mfr_list[MFR_MAX_NUM+1] = {
+    [GPU_NVIDIA] = MFR_NVIDIA,
+    [GPU_AMD] = MFR_AMD,
+    [GPU_UNKNOWN] = MFR_UNKNOWN
+  };
+  uint8_t asic_id[8] = {
+    GPU_UNKNOWN, GPU_UNKNOWN, GPU_UNKNOWN, GPU_UNKNOWN,
+    GPU_UNKNOWN, GPU_UNKNOWN, GPU_UNKNOWN, GPU_UNKNOWN
+  };
+  uint8_t count = 0x0;
+  bool id_err = false;
+  char curr_mfr[MAX_VALUE_LEN] = {0};
+
+  if (pal_get_key_value("asic_mfr", curr_mfr) < 0)
+    strncpy(curr_mfr, MFR_UNKNOWN, sizeof(curr_mfr));
+
+  while (1) {
+
+    sleep(1);
+
+    if (pal_is_server_off())
+      continue;
+
+    for (uint8_t slot = 0; slot < 8 && count != 0xFF; slot++) {
+      if (!is_asic_prsnt(slot) || asic_id[slot] != GPU_UNKNOWN) {
+        // Bypass if not present
+        count |= (0x1 << slot);
+        continue;
+      }
+
+      asic_id[slot] = asic_get_vendor_id(slot);
+      if (asic_id[slot] != GPU_UNKNOWN) {
+        syslog(LOG_WARNING, "Detected Vendor for OAM%d: %s, FRU:1",
+                             (int)slot, mfr_list[asic_id[slot]]);
+      }
+    }
+
+    if (count == 0xFF) {
+      for (int i = 1; i < 8; i++) {
+        if (asic_id[0] != asic_id[i]) {
+          syslog(LOG_CRIT, "Incompatible OAM Configuration Detected: OAM0-7: %s %s %s %s %s %s %s %s, FRU:1",
+                            mfr_list[asic_id[0]], mfr_list[asic_id[1]],
+                            mfr_list[asic_id[2]], mfr_list[asic_id[3]],
+                            mfr_list[asic_id[4]], mfr_list[asic_id[5]],
+                            mfr_list[asic_id[6]], mfr_list[asic_id[7]]);
+          id_err = true;
+          break;
+        }
+      }
+
+      if (!id_err) {
+        if (strcmp(curr_mfr, mfr_list[asic_id[0]]) != 0 && strcmp(curr_mfr, MFR_UNKNOWN)) {
+          syslog(LOG_CRIT, "Switching OAM Configuration from %s to %s, FRU:1",
+                            curr_mfr, mfr_list[asic_id[0]]);
+          pal_set_key_value("asic_mfr", mfr_list[asic_id[0]]);
+          // Reload sensor list
+          if (system("/usr/bin/sv restart sensord >> /dev/null") < 0)
+            syslog(LOG_CRIT, "%s: Failed to restart sensord", __func__);
+          // Reload FSC table
+          if (system("/usr/bin/sv restart fscd >> /dev/null") < 0)
+            syslog(LOG_CRIT, "%s: Failed to restart fscd", __func__);
+        }
+      }
+
+      break;
+    }
+
+  }
 
   return NULL;
 }
@@ -83,7 +150,7 @@ static void* pwr_btn_handler()
 int main (int argc, char * const argv[])
 {
   pthread_t tid_sync_led;
-  pthread_t tid_pwr_btn;
+  pthread_t tid_asic_id;
   int rc;
   int pid_file;
 
@@ -104,12 +171,12 @@ int main (int argc, char * const argv[])
     exit(1);
   }
 
-  if (pthread_create(&tid_pwr_btn, NULL, pwr_btn_handler, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for reset button error\n");
+  if (pthread_create(&tid_asic_id, NULL, get_asic_id_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for getting asic id error\n");
     exit(1);
   }
 
   pthread_join(tid_sync_led, NULL);
-  pthread_join(tid_pwr_btn, NULL);
+  pthread_join(tid_asic_id, NULL);
   return 0;
 }

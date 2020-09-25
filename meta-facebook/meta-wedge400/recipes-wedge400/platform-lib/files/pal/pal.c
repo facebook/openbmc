@@ -621,7 +621,7 @@ char * key_list[] = {
   "fan2_sensor_health",
   "fan3_sensor_health",
   "fan4_sensor_health",
-  "slot1_boot_order",
+  "server_boot_order",
   /* Add more Keys here */
   LAST_KEY /* This is the last key of the list */
 };
@@ -643,6 +643,7 @@ char * def_val_list[] = {
   "1", /* fan2_sensor_health */
   "1", /* fan3_sensor_health */
   "1", /* fan4_sensor_health */
+  "0000000",/* server_boot_order */
   /* Add more def values for the correspoding keys*/
   LAST_KEY /* Same as last entry of the key_list */
 };
@@ -6990,41 +6991,36 @@ pal_set_sys_guid(uint8_t slot, char *str) {
 }
 
 int
-pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len) {
-  int i;
-  int j = 0;
-  int ret;
-  int msb, lsb;
-  char key[MAX_KEY_LEN] = {0};
+pal_get_boot_order(uint8_t slot, uint8_t *req_data,
+                   uint8_t *boot, uint8_t *res_len) {
+  int ret, msb, lsb, i, j = 0;
   char str[MAX_VALUE_LEN] = {0};
   char tstr[4] = {0};
 
-  sprintf(key, "slot%d_boot_order", slot);
-  ret = pal_get_key_value(key, str);
+  ret = pal_get_key_value("server_boot_order", str);
   if (ret) {
     *res_len = 0;
     return ret;
   }
 
   for (i = 0; i < 2*SIZE_BOOT_ORDER; i += 2) {
-    sprintf(tstr, "%c\n", str[i]);
+    snprintf(tstr, sizeof(tstr), "%c\n", str[i]);
     msb = strtol(tstr, NULL, 16);
 
-    sprintf(tstr, "%c\n", str[i+1]);
+    snprintf(tstr, sizeof(tstr), "%c\n", str[i+1]);
     lsb = strtol(tstr, NULL, 16);
     boot[j++] = (msb << 4) | lsb;
   }
-
   *res_len = SIZE_BOOT_ORDER;
+
   return 0;
 }
 
 int
-pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len) {
-  int i, j, network_dev = 0;
-  char key[MAX_KEY_LEN] = {0};
+pal_set_boot_order(uint8_t slot, uint8_t *boot,
+                   uint8_t *res_data, uint8_t *res_len) {
+  int i, j, offset, network_dev = 0;
   char str[MAX_VALUE_LEN] = {0};
-  char tstr[10] = {0};
   enum {
     BOOT_DEVICE_IPV4 = 0x1,
     BOOT_DEVICE_IPV6 = 0x9,
@@ -7032,7 +7028,7 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
 
   *res_len = 0;
 
-  for (i = 0; i < SIZE_BOOT_ORDER; i++) {
+  for (i = offset = 0; i < SIZE_BOOT_ORDER && offset < sizeof(str); i++) {
     if (i > 0) {  // byte[0] is boot mode, byte[1:5] are boot order
       for (j = i+1; j < SIZE_BOOT_ORDER; j++) {
         if (boot[i] == boot[j])
@@ -7046,19 +7042,14 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
         network_dev++;
     }
 
-    snprintf(tstr, 3, "%02x", boot[i]);
-    strncat(str, tstr, 3);
+    offset += snprintf(str + offset, sizeof(str) - offset, "%02x", boot[i]);
   }
 
   // not allow having more than 1 network boot device in the boot order
-  if (network_dev > 1){
-    OBMC_ERROR(-1, "Network device are %d",network_dev);
+  if (network_dev > 1)
     return CC_INVALID_PARAM;
-  }
-  OBMC_WARN("pal_set_boot_order: %s",str);
 
-  sprintf(key, "slot%d_boot_order", slot);
-  return pal_set_key_value(key, str);
+  return pal_set_key_value("server_boot_order", str);
 }
 
 int pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id)

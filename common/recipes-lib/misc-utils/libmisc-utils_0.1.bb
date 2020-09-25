@@ -27,6 +27,7 @@ BBCLASSEXTEND = "native"
 inherit ptest
 
 SRC_URI = "file://Makefile \
+           file://device-utils.c \
            file://file-utils.c \
            file://path-utils.c \
            file://plat-utils.c \

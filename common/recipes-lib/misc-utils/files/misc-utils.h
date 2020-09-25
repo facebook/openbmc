@@ -82,6 +82,12 @@ bool str_startswith(const char *str, const char *pattern);
 bool str_endswith(const char *str, const char *pattern);
 
 /*
+ * Device IO utility functions.
+ */
+int device_read(const char *device, int *value);
+int device_write_buff(const char *device, const char *value);
+
+/*
  * File IO utility functions.
  */
 ssize_t file_read_bytes(int fd, void *buf, size_t count);

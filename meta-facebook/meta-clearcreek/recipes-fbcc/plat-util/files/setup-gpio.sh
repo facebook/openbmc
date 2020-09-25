@@ -153,6 +153,10 @@ gpio_export BOARD_ID0 GPION5
 gpio_export BOARD_ID1 GPION6
 gpio_export BOARD_ID2 GPION7
 
+# BATTERY_DETECT
+gpio_export BATTERY_DETECT GPIOQ6
+gpio_set BATTERY_DETECT 0
+
 gpio_export OCP_V3_6_PRSNTB_R_N GPIOS2
 gpio_export OCP_V3_7_PRSNTB_R_N GPIOS3
 gpio_export PD_GPIOS4 GPIOS4

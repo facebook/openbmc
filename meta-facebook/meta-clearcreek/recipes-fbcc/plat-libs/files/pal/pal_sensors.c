@@ -10,6 +10,7 @@
 #include "pal.h"
 
 #define PAL_FAN_CNT 4
+#define GPIO_BATTERY_DETECT "BATTERY_DETECT"
 
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
@@ -20,9 +21,23 @@ static int read_inlet_sensor(uint8_t snr_id, float *value);
 static int read_fan_volt(uint8_t fan_id, float *value);
 static int read_fan_curr(uint8_t fan_id, float *value);
 static int read_fan_pwr(uint8_t fan_id, float *value);
+static int read_adc_value(uint8_t adc_id, float *value);
+static int read_bat_value(uint8_t adc_id, float *value);
 
 static float fan_volt[PAL_FAN_CNT];
 static float fan_curr[PAL_FAN_CNT];
+
+const uint8_t mb_sensor_list[] = {
+  MB_P12V_AUX,
+  MB_P3V3_STBY,
+  MB_P5V_STBY,
+  MB_P3V3,
+  MB_P3V3_PAX,
+  MB_P3V_BAT,
+  MB_P2V5_AUX,
+  MB_P1V2_AUX,
+  MB_P1V15_AUX,
+};
 
 const uint8_t pdb_sensor_list[] = {
   PDB_FAN0_VOLT,
@@ -134,15 +149,15 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x51
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x52
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x53
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x54
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x55
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x56
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x57
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x58
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x59
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5A
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5B
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5C
+  {"BB_P12V_PUX" , ADC0, read_adc_value, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}    , VOLT}, //0x54
+  {"BB_P3V3_STBY", ADC1, read_adc_value, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}  , VOLT}, //0x55
+  {"BB_P5V_STBY" , ADC2, read_adc_value, true, {5.25, 0, 0, 4.75, 0, 0, 0, 0}    , VOLT}, //0x56
+  {"BB_P3V3"     , ADC3, read_adc_value, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}  , VOLT}, //0x57
+  {"BB_P3V3_PAX" , ADC4, read_adc_value, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}  , VOLT}, //0x58
+  {"BB_P3V_BAT"  , ADC5, read_bat_value, true, {3.15, 0, 0, 2.85, 0, 0, 0, 0}    , VOLT}, //0x59
+  {"BB_P2V5_AUX" , ADC6, read_adc_value, true, {2.625, 0, 0, 2.375, 0, 0, 0, 0}  , VOLT}, //0x5A
+  {"BB_P1V2_AUX" , ADC7, read_adc_value, true, {1.26, 0, 0, 1.14, 0, 0, 0, 0}    , VOLT}, //0x5B
+  {"BB_P1V15_AUX", ADC8, read_adc_value, true, {1.2075, 0, 0, 1.0925, 0, 0, 0, 0}, VOLT}, //0x5C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5F
@@ -318,6 +333,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFF
 };
 
+size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
 size_t pdb_sensor_cnt = sizeof(pdb_sensor_list)/sizeof(uint8_t);
 
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
@@ -333,6 +349,7 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
   id = sensor_map[sensor_num].id;
 
   switch(fru) {
+    case FRU_MB:
     case FRU_PDB:
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
       break;
@@ -363,6 +380,7 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
 int
 pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   switch(fru) {
+  case FRU_MB:
   case FRU_PDB:
     sprintf(name, "%s", sensor_map[sensor_num].snr_name);
     break;
@@ -376,6 +394,7 @@ int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
   float *val = (float*) value;
   switch(fru) {
+  case FRU_MB:
   case FRU_PDB:
     switch(thresh) {
     case UCR_THRESH:
@@ -418,6 +437,7 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   uint8_t scale = sensor_map[sensor_num].units;
 
   switch(fru) {
+    case FRU_MB:
     case FRU_PDB:
       switch(scale) {
         case TEMP:
@@ -447,7 +467,10 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 
 int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 {
-  if (fru == FRU_PDB) {
+  if (fru == FRU_MB) {
+    *sensor_list = (uint8_t *) mb_sensor_list;
+    *cnt = mb_sensor_cnt;
+  }else if (fru == FRU_PDB) {
     *sensor_list = (uint8_t *) pdb_sensor_list;
     *cnt = pdb_sensor_cnt;
   } else {
@@ -591,8 +614,7 @@ read_fan_volt(uint8_t fan_id, float *value) {
     return READING_NA;
   }
   ret = sensors_read(devs[fan_id].chip, devs[fan_id].label, value);
-  // Real voltage(V) = ((R1(ohm) + R2(ohm)) * ADC voltage(V)) / R2(ohm)
-  *value = ((ADC128_FAN_SCALED_R1 + ADC128_FAN_SCALED_R2) * (*value)) / ADC128_FAN_SCALED_R2;
+
   fan_volt[fan_id] = *value;
   return ret;
 }
@@ -617,8 +639,7 @@ read_fan_curr(uint8_t fan_id, float *value) {
     return READING_NA;
   }
   ret = sensors_read(devs[fan_id].chip, devs[fan_id].label, value);
-  // I_OUT(A) = V_IMON(V) * 10^6 / G_IMON(uA/A) / R_IMON(ohm)
-  *value = (*value) * 1000000 / ADC128_GIMON / ADC128_RIMON;
+
   fan_curr[fan_id] = *value;
   return ret;
 }
@@ -630,4 +651,50 @@ read_fan_pwr(uint8_t fan_id, float *value) {
   }
   *value = fan_volt[fan_id] * fan_curr[fan_id];
   return 0;
+}
+
+static int
+read_adc_value(uint8_t adc_id, float *value) {
+  const char *adc_label[] = {
+    "MB_P12V_AUX",
+    "MB_P3V3_STBY",
+    "MB_P5V_STBY",
+    "MB_P3V3",
+    "MB_P3V3_PAX",
+    "MB_P3V_BAT",
+    "MB_P2V5_AUX",
+    "MB_P1V2_AUX",
+    "MB_P1V15_AUX",
+  };
+  if (adc_id >= ARRAY_SIZE(adc_label)) {
+    return -1;
+  }
+
+  return sensors_read_adc(adc_label[adc_id], value);
+}
+
+static int
+read_bat_value(uint8_t adc_id, float *value) {
+  int ret = -1;
+  gpio_desc_t *gp_batt = gpio_open_by_shadow(GPIO_BATTERY_DETECT);
+  if (!gp_batt) {
+    return -1;
+  }
+  if (gpio_set_value(gp_batt, GPIO_VALUE_HIGH)) {
+    goto exit;
+  }
+
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s %s\n", __func__, path);
+#endif
+  msleep(10);
+
+  ret = read_adc_value(adc_id, value);
+  if (gpio_set_value(gp_batt, GPIO_VALUE_LOW)) {
+    goto exit;
+  }
+
+exit:
+  gpio_close(gp_batt);
+  return ret;
 }

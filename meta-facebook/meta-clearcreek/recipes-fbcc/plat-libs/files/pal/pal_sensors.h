@@ -10,14 +10,18 @@ extern "C" {
 #define MAX_SNR_READ_RETRY 3
 #define MAX_DEVICE_NAME_SIZE   (128)
 
-//ADC128 INFO
-#define ADC128_FAN_SCALED_R1 (5110) //unit: ohm
-#define ADC128_FAN_SCALED_R2 (1020) //unit: ohm
-#define ADC128_GIMON         (243)  //unit: (uA/A)
-#define ADC128_RIMON         (1820) //unit: ohm
-
 //Sensor Table
 enum {
+  MB_P12V_AUX  = 0X54,
+  MB_P3V3_STBY = 0X55,
+  MB_P5V_STBY  = 0X56,
+  MB_P3V3      = 0X57,
+  MB_P3V3_PAX  = 0X58,
+  MB_P3V_BAT   = 0X59,
+  MB_P2V5_AUX  = 0X5A,
+  MB_P1V2_AUX  = 0X5B,
+  MB_P1V15_AUX = 0X5C,
+
   //ADC128 VOLT/CURR/POWER
   PDB_FAN0_VOLT = 0x84,
   PDB_FAN0_CURR = 0x85,
@@ -36,6 +40,19 @@ enum {
   PDB_INLET_REMOTE_TEMP_L = 0x97,
   PDB_INLET_TEMP_R = 0x98,
   PDB_INLET_REMOTE_TEMP_R = 0x99,
+};
+
+//ADC INFO
+enum {
+  ADC0 = 0,
+  ADC1,
+  ADC2,
+  ADC3,
+  ADC4,
+  ADC5,
+  ADC6,
+  ADC7,
+  ADC8,
 };
 
 typedef struct {

@@ -29,10 +29,6 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-# Call "fw-util mb --version" once before sensor monitoring to store vr information
-echo "Get MB FW version... "
-/usr/bin/fw-util mb --version > /dev/null
-
 echo -n "Setup sensor monitoring for FBCC... "
 runsv /etc/sv/sensord > /dev/null 2>&1 &
 

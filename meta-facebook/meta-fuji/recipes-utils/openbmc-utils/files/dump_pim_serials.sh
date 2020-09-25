@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Copyright 2020-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -14,25 +16,20 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+. /usr/local/bin/openbmc-utils.sh
 
-SRC_URI += " \
-    file://rest_feutil.py \
-    file://rest_seutil.py \
-    file://rest_peutil.py \
-    file://rest_firmware_info.py \
-    file://rest_presence.py \
-    file://rest_sensors.py \
-    file://rest_pimserial.py \
-"
+for index in 1 2 3 4 5 6 7 8
+do
+    pim_path=${SMBCPLD_SYSFS_DIR}/pim${index}_present_L
+    pim_prsnt=$(cat $pim_path 2> /dev/null | head -n 1)
+    
+    #pimserial cache file doesn't exist, but pim is present
+    if [ ! -f /tmp/pim${index}_serial.txt ] && [ "${pim_prsnt}" == 0x0 ]; then
+        /usr/local/bin/peutil $index |grep Product|grep Serial|cut -d ' ' -f 4 > /tmp/pim${index}_serial.txt
+    fi
+    serial=$(cat /tmp/pim${index}_serial.txt)
+    echo PIM${index} : ${serial}
+done
 
-binfiles1 += " \
-    rest_feutil.py \
-    rest_seutil.py \
-    rest_peutil.py \
-    rest_firmware_info.py \
-    rest_presence.py \
-    rest_sensors.py \
-    rest_pimserial.py \
-"

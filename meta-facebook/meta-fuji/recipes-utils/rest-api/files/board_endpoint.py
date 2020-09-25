@@ -18,12 +18,13 @@
 # Boston, MA 02110-1301 USA
 #
 
-import rest_firmware_info
-import rest_presence
-import rest_seutil
 import rest_feutil
+import rest_firmware_info
 import rest_peutil
+import rest_pimserial
+import rest_presence
 import rest_sensors
+import rest_seutil
 from aiohttp import web
 from rest_utils import dumps_bytestr
 
@@ -266,3 +267,7 @@ class boardApp_Handler:
     # Handler for sys/sensors/pim8 resource endpoint
     async def rest_sensors_pim8_hdl(self, request):
         return web.json_response(rest_sensors.get_pim8_sensors(), dumps=dumps_bytestr)
+
+    # Handler for sys/pim_serial resource endpoint
+    async def rest_pimserial_hdl(self, request):
+        return web.json_response(rest_pimserial.get_pimserial(), dumps=dumps_bytestr)

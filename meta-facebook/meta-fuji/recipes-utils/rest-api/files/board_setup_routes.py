@@ -19,10 +19,9 @@
 #
 # flake8:noqa: F405
 
+from aiohttp.web import Application
 from board_endpoint import boardApp_Handler
 from boardroutes import *
-
-from aiohttp.web import Application
 
 
 def setup_board_routes(app: Application, write_enabled: bool):
@@ -73,3 +72,4 @@ def setup_board_routes(app: Application, write_enabled: bool):
     app.router.add_get(board_routes[43], bhandler.rest_sensors_pim6_hdl)
     app.router.add_get(board_routes[44], bhandler.rest_sensors_pim7_hdl)
     app.router.add_get(board_routes[45], bhandler.rest_sensors_pim8_hdl)
+    app.router.add_get(board_routes[46], bhandler.rest_pimserial_hdl)

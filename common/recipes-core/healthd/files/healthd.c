@@ -159,6 +159,7 @@ static size_t cpu_threshold_num = 0;
 static char *mem_monitor_name = "BMC Memory utilization";
 static bool mem_monitor_enabled = false;
 static bool mem_enable_panic = false;
+static int mem_min_free_kbytes = 0;
 static unsigned int mem_window_size = DEFAULT_WINDOW_SIZE;
 static unsigned int mem_monitor_interval = DEFAULT_MONITOR_INTERVAL;
 static struct threshold_s *mem_threshold;
@@ -345,6 +346,10 @@ initialize_mem_config(json_t *conf) {
   tmp = json_object_get(conf, "enable_panic_on_oom");
   if (tmp && json_is_true(tmp)) {
     mem_enable_panic = true;
+  }
+  tmp = json_object_get(conf, "min_free_kbytes");
+  if (tmp && json_is_number(tmp)) {
+    mem_min_free_kbytes = json_integer_value(tmp);
   }
   tmp = json_object_get(conf, "window_size");
   if (tmp && json_is_number(tmp)) {
@@ -948,11 +953,19 @@ memory_usage_monitor() {
   int i, error, timer = 0, ready_flag = 0, retry = 0;
   float mem_util_avg, mem_util_total;
   float mem_utilization[mem_window_size];
+  char cmd[128];
 
   memset(mem_utilization, 0, sizeof(float) * mem_window_size);
 
   if (mem_enable_panic) {
     set_panic_on_oom();
+  }
+
+  if (mem_min_free_kbytes > 0) {
+    snprintf(cmd, sizeof(cmd), "/sbin/sysctl -w vm.min_free_kbytes=%d >/dev/null", mem_min_free_kbytes);
+    if (system(cmd)) {
+      syslog(LOG_ERR, "set min_free_kbytes failed");
+    }
   }
 
   while (1) {

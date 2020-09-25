@@ -25,6 +25,13 @@ IMAGE_INSTALL += " \
   bic-util \
   cpldupdate \
   libcpldupdate-dll-ast-jtag \
+  flashrom \
+  fscd \
+  fw-util \
+  i2craw \
+  ipmid \
+  ipmbd \
+  ipmitool \
   mdio-util \
   mterm \
   openbmc-utils \

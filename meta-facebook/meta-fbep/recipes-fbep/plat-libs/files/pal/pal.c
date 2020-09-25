@@ -1222,15 +1222,13 @@ int pal_check_power_seq()
     uint8_t offset;
     uint8_t bit;
   } cpld_power_seq[] = {
-    {"MODULE_PWRGD_ASIC0", 0, 0}, {"MODULE_PWRGD_ASIC1", 0, 1},
-    {"MODULE_PWRGD_ASIC2", 0, 2}, {"MODULE_PWRGD_ASIC3", 0, 3},
-    {"MODULE_PWRGD_ASIC4", 0, 4}, {"MODULE_PWRGD_ASIC5", 0, 5},
-    {"MODULE_PWRGD_ASIC6", 0, 6}, {"MODULE_PWRGD_ASIC7", 0, 7},
-    {"MB1_1_ASIC_PWR_EN", 1, 0}, {"MB2_ASIC_PWR_EN", 1, 1},
-    {"MB3_1_ASIC_PWR_EN", 1, 2}, {"MB0_ASIC_PWR_EN", 1, 3},
-    {"ASIC_MB1_1_PWRGOOD", 1, 4}, {"ASIC_MB2_PWRGOOD", 1, 5},
-    {"ASIC_MB3_1_PWRGOOD", 1, 6}, {"ASIC_MB0_PWRGOOD", 1, 7},
-    {"BMC_READY_CPLD", 2, 0}
+    {"RST_CPLD_RSMRST_N", 0, 0}, {"PWRGD_P5V_STBY_R", 0, 1},
+    {"PWRGD_CPLD_VREFF", 0, 2}, {"PWRGD_P2V5_AUX_R", 0, 3},
+    {"PWRGD_P1V2_AUX_R", 0, 4}, {"PWRGD_P1V15_AUX_R", 0, 5},
+    {"P12V_HSC_PG_R_SYN2", 0, 6}, {"VICOR_PG_R", 0, 7},
+    {"P48V_HSC_PG_R_SYN2", 1, 0}, {"PWRGD_P3V3_CPLD_R", 1, 1},
+    {"HOST_PWRGD_ASIC", 1, 2}, {"PW_PAX_POWER_GOOD", 1, 3},
+    {"ASIC_ALL_DONE", 1, 4}
   };
   char dev_cpld[16] = {0};
   char event_str[64] = {0};
@@ -1245,13 +1243,13 @@ int pal_check_power_seq()
     return -1;
   }
 
-  tbuf[0] = 0x31; // Error state
+  tbuf[0] = 0x2f; // Error state
   ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 1);
-  if (ret < 0 || rbuf[0] == 0xff) // Read error or power is turned off normally
+  if (ret < 0 || (rbuf[0] & 0x80) == 0x0) // Read error or power is turned off normally
     goto exit;
 
-  tbuf[0] = 0x32;
-  ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 3);
+  tbuf[0] = 0x2e;
+  ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 2);
   if (ret < 0)
     goto exit;
 

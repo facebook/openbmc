@@ -24,6 +24,7 @@ IMAGE_INSTALL += " \
   flashrom \
   front-paneld \
   fw-util \
+  i2craw \
   gbi2ctool \
   gpiocli \
   gpiod \

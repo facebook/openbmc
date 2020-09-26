@@ -205,25 +205,11 @@ def main():
             "expect": measure_rcv_uboot(args.algo, flash0_meta).hex(),
             "measure": "NA",
         },
-        {  # rom-env
-            "component": "rom-env",
-            "pcr_id": 3,
-            "algo": args.algo,
-            "expect": measure_rom_env(args.algo, flash1_meta).hex(),
-            "measure": "NA",
-        },
         {  # u-boot-env
             "component": "u-boot-env",
-            "pcr_id": 5,
+            "pcr_id": 3,
             "algo": args.algo,
             "expect": measure_uboot_env(args.algo, flash1_meta).hex(),
-            "measure": "NA",
-        },
-        {  # u-boot-env
-            "component": "no-u-boot-env",
-            "pcr_id": 5,
-            "algo": args.algo,
-            "expect": measure_no_uboot_env(args.algo, flash1_meta).hex(),
             "measure": "NA",
         },
     ]

@@ -55,6 +55,7 @@ install_sysv() {
 install_systemd() {
     install -d ${D}${systemd_system_unitdir}
     install -m 644 sensord.service ${D}${systemd_system_unitdir}
+}
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

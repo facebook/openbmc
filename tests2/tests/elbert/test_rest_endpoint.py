@@ -52,9 +52,21 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def test_endpoint_api_sys_mb(self):
         pass
 
-    @unittest.skip("ELBERTTODO: Test not supported yet")
-    def test_endpoint_api_sys_firmware_info_all(self):
-        pass
+    def set_endpoint_firmware_info_all_attributes(self):
+        self.endpoint_firmware_info_all_attrb = [
+            "FAN",
+            "PIM2",
+            "PIM3",
+            "PIM4",
+            "PIM5",
+            "PIM6",
+            "PIM7",
+            "PIM8",
+            "PIM9",
+            "SCM",
+            "SMB",
+            "SMB_CPLD",
+        ]
 
     # "/api/sys/sensors"
     @unittest.skip("ELBERTTODO: Test not supported yet")

@@ -42,6 +42,7 @@
 #define FRU_ID_SERVER 0
 #define FRU_ID_BMC 1
 #define FRU_ID_NIC 2
+#define FRU_ID_2OU 6
 
 /*
  * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
@@ -185,6 +186,9 @@ int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count,
   } else if (fru_id == FRU_ID_NIC) {
     // Fill the file path for nic
     sprintf(fpath, FRU_NIC_BIN);
+  } else if (fru_id == FRU_ID_2OU) {
+    // Fill the file path for 2OU
+    snprintf(fpath, sizeof(fpath), FRU_2OU_BIN, payload_id);
   } else {
     return -1;
   }

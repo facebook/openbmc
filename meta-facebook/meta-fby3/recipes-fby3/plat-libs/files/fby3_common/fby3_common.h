@@ -45,6 +45,7 @@ extern "C" {
 #define FRU_BB_BIN     "/tmp/fruid_bb.bin"
 #define FRU_NICEXP_BIN "/tmp/fruid_nicexp.bin"
 #define FRU_SLOT_BIN   "/tmp/fruid_slot%d.bin"
+#define FRU_2OU_BIN    "/tmp/fruid_slot%d_dev12.bin"
 
 #define SB_CPLD_ADDR 0x0f
 

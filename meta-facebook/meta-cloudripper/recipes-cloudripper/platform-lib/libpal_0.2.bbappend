@@ -37,6 +37,7 @@ DEPENDS += " \
     libbic \
     libgpio-ctrl \
     liblog \
+    libmisc-utils \
     libobmc-i2c \
     libsensor-correction \
     libwedge-eeprom \
@@ -48,6 +49,7 @@ RDEPENDS_${PN} += " \
     libbic \
     libgpio-ctrl \
     liblog \
+    libmisc-utils \
     libobmc-i2c \
     libsensor-correction \
     libwedge-eeprom \

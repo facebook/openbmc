@@ -74,9 +74,9 @@ int pal_set_com_pwr_btn_n(char *status) {
   int ret;
   sprintf(path, SCM_SYSFS, COM_PWR_BTN_N);
 
-  ret = write_device(path, status);
+  ret = device_write_buff(path, status);
   if (ret) {
-    PAL_DEBUG("write_device failed for %s\n", path);
+    PAL_DEBUG("device_write_buff failed for %s\n", path);
     return -1;
   }
 
@@ -272,17 +272,17 @@ int pal_set_gb_power(int option) {
   switch(option) {
   case GB_POWER_ON:
     sprintf(path, SMB_SYSFS, sysfs);
-    ret = write_device(path, "1");
+    ret = device_write_buff(path, "1");
     break;
   case GB_POWER_OFF:
     sprintf(path, SMB_SYSFS, sysfs);
-    ret = write_device(path, "0");
+    ret = device_write_buff(path, "0");
     break;
   case GB_RESET:
     sprintf(path, SMB_SYSFS, sysfs);
-    ret = write_device(path, "0");
+    ret = device_write_buff(path, "0");
     sleep(1);
-    ret = write_device(path, "1");
+    ret = device_write_buff(path, "1");
     break;
   default:
     ret = -1;

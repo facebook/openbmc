@@ -270,7 +270,7 @@ int pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       return -1;
     }
 
-    if (read_device(path, &val)) {
+    if (device_read(path, &val)) {
       return -1;
     }
 
@@ -316,7 +316,7 @@ int pal_is_debug_card_prsnt(uint8_t *status) {
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_DEBUG_PRSNT_N, "value");
 
-  if (read_device(path, &val)) {
+  if (device_read(path, &val)) {
     return -1;
   }
 
@@ -335,17 +335,17 @@ int pal_get_board_rev(int *rev) {
   int val_id_0, val_id_1, val_id_2;
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_0, "value");
-  if (read_device(path, &val_id_0)) {
+  if (device_read(path, &val_id_0)) {
     return -1;
   }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_1, "value");
-  if (read_device(path, &val_id_1)) {
+  if (device_read(path, &val_id_1)) {
     return -1;
   }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_2, "value");
-  if (read_device(path, &val_id_2)) {
+  if (device_read(path, &val_id_2)) {
     return -1;
   }
 
@@ -368,7 +368,7 @@ int pal_get_cpld_board_rev(int *rev, const char *device) {
   char full_name[LARGEST_DEVICE_NAME + 1];
 
   snprintf(full_name, LARGEST_DEVICE_NAME, device, "board_ver");
-  if (read_device(full_name, rev)) {
+  if (device_read(full_name, rev)) {
     return -1;
   }
 
@@ -419,13 +419,13 @@ int pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver) {
       return -1;
   }
 
-  if (!read_device(ver_path, &val)) {
+  if (!device_read(ver_path, &val)) {
     ver[0] = (uint8_t)val;
   } else {
     return -1;
   }
 
-  if (!read_device(sub_ver_path, &val)) {
+  if (!device_read(sub_ver_path, &val)) {
     ver[1] = (uint8_t)val;
   } else {
     printf("[debug][ver:%s]\n", ver_path);
@@ -1231,7 +1231,7 @@ int pal_get_hand_sw_physically(uint8_t *pos) {
   int loc;
 
   snprintf(path, LARGEST_DEVICE_NAME, BMC_UART_SEL);
-  if (read_device(path, &loc)) {
+  if (device_read(path, &loc)) {
     return -1;
   }
   *pos = loc;
@@ -1348,7 +1348,7 @@ int pal_set_rst_btn(uint8_t slot, uint8_t status) {
 
   sprintf(path, SCM_SYSFS, SCM_COM_RST_BTN);
 
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     return -1;
   }
@@ -1405,7 +1405,7 @@ int pal_switch_uart_mux() {
   int loc;
   /* Refer the UART select status */
   snprintf(path, LARGEST_DEVICE_NAME, BMC_UART_SEL);
-  if (read_device(path, &loc)) {
+  if (device_read(path, &loc)) {
     return -1;
   }
 
@@ -1415,7 +1415,7 @@ int pal_switch_uart_mux() {
     val = "3";
   }
 
-  if (write_device(path, val)) {
+  if (device_write_buff(path, val)) {
     return -1;
   }
   return 0;

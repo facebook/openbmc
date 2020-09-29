@@ -555,7 +555,7 @@ static int read_attr_integer(const char *device, const char *attr, int *value) {
 
   snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, attr);
 
-  if (read_device(full_name, value)) {
+  if (device_read(full_name, value)) {
     return -1;
   }
 
@@ -574,7 +574,7 @@ static int read_attr(const char *device, const char *attr, float *value) {
 
   snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, attr);
 
-  if (read_device(full_name, &tmp)) {
+  if (device_read(full_name, &tmp)) {
     return -1;
   }
 
@@ -596,7 +596,7 @@ static int read_hsc_attr(const char *device, const char* attr,
   }
   snprintf(full_dir_name, sizeof(full_dir_name), "%s/%s", dir_name, attr);
 
-  if (read_device(full_dir_name, &tmp)) {
+  if (device_read(full_dir_name, &tmp)) {
     return -1;
   }
 
@@ -634,7 +634,7 @@ static int read_fan_rpm_f(const char *device, uint8_t fan, float *value) {
 
   snprintf(device_name, sizeof(device_name), "fan%d_input", fan);
   snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, device_name);
-  if (read_device(full_name, &tmp)) {
+  if (device_read(full_name, &tmp)) {
     return -1;
   }
 
@@ -656,7 +656,7 @@ static int read_fan_rpm(const char *device, uint8_t fan, int *value) {
 
   snprintf(device_name, sizeof(device_name), "fan%d_input", fan);
   snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, device_name);
-  if (read_device(full_name, &tmp)) {
+  if (device_read(full_name, &tmp)) {
     return -1;
   }
 

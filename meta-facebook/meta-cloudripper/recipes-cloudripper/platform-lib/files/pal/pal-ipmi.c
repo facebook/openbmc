@@ -300,56 +300,56 @@ int pal_set_post_gpio_out(void) {
     char *val = "out";
 
     snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_0, "direction");
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
 
     snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_1, "direction");
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
 
     snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_2, "direction");
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
 
     snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_3, "direction");
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
 
     snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_4, "direction");
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
 
     snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_5, "direction");
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
 
     snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_6, "direction");
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
 
     snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_7, "direction");
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
 
     post_exit:
     if (ret) {
-        PAL_DEBUG("write_device failed for %s\n", path);
+        PAL_DEBUG("device_write_buff failed for %s\n", path);
         return -1;
     } else {
         return 0;
@@ -376,7 +376,7 @@ int pal_post_display(uint8_t status) {
         val = "0";
     }
 
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
@@ -388,7 +388,7 @@ int pal_post_display(uint8_t status) {
         val = "0";
     }
 
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
@@ -400,7 +400,7 @@ int pal_post_display(uint8_t status) {
         val = "0";
     }
 
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
@@ -412,7 +412,7 @@ int pal_post_display(uint8_t status) {
         val = "0";
     }
 
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
@@ -424,7 +424,7 @@ int pal_post_display(uint8_t status) {
         val = "0";
     }
 
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
@@ -436,7 +436,7 @@ int pal_post_display(uint8_t status) {
         val = "0";
     }
 
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
@@ -448,7 +448,7 @@ int pal_post_display(uint8_t status) {
         val = "0";
     }
 
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
@@ -460,14 +460,14 @@ int pal_post_display(uint8_t status) {
         val = "0";
     }
 
-    ret = write_device(path, val);
+    ret = device_write_buff(path, val);
     if (ret) {
         goto post_exit;
     }
 
 post_exit:
     if (ret) {
-        PAL_DEBUG("write_device failed for %s\n", path);
+        PAL_DEBUG("device_write_buff failed for %s\n", path);
         return -1;
     } else {
         return 0;

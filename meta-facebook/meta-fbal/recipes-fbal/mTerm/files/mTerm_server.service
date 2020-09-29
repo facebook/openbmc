@@ -1,4 +1,5 @@
-# Copyright 2015-present Facebook. All Rights Reserved.
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,11 +15,15 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Unit]
+Description=mTerm server monitoring
+After=setup_i2c.service
+Wants=setup_i2c.service
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+[Service]
+ExecStartPre=/bin/sh -c 'val=$(/sbin/devmem 0x1e78909c);val=$((val & 0xFE07FFFF));val=$((val | 0x01A00000));/sbin/devmem 0x1e78909c 32 $val'
+ExecStart=/usr/local/bin/mTerm_server angelslanding /dev/ttyS3
 
-SRC_URI += "file://mTerm/run \
-           "
-S = "${WORKDIR}"
-
-MTERM_SYSTEMD_SERVICES := "mTerm_server.service"
+[Install]
+WantedBy=multi-user.target

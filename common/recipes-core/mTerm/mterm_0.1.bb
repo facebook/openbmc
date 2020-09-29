@@ -36,6 +36,8 @@ SRC_URI = "file://mTerm_server.c \
            file://mTerm-service-setup.sh \
           "
 
+SRC_URI += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'file://mTerm_server.service', '', d)}"
+
 S = "${WORKDIR}"
 
 CONS_BIN_FILES = "mTerm_server \

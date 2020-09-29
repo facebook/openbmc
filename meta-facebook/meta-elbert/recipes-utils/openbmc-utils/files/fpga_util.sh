@@ -267,7 +267,7 @@ read_spi_partition_image() {
            PARTITION="pim8ddm"
            SKIP_MB=2
            ;;
-        HEADER_PIM8)
+        HEADER_PIM8DDM)
            PARTITION="header_pim8ddm"
            SKIP_MB=2
            ;;

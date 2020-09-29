@@ -35,8 +35,8 @@ cleanup() {
 echo "------PIM-FLASH-CONFIG------"
 partition_list="header_pim_base header_pim16q header_pim8ddm"
 for partition in ${partition_list}; do
-    /usr/local/bin/fpga_util.sh pim read "$PIM_REVISION_FILE" \
-                                    "$partition" > /dev/null 2>&1
+    /usr/local/bin/fpga_util.sh "$partition" read \
+                                "$PIM_REVISION_FILE" > /dev/null 2>&1
     ver="$(hexdump -n2 $PIM_REVISION_FILE | cut -c 9-)"
     val_major="0x${ver:2:2}"
     val_minor="0x${ver:0:2}"

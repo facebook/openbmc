@@ -1427,7 +1427,7 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
       break;
 
     default:
-      OBMC_WARN("unsupported Network Function 0x%02x\n", netfn);
+      IPMID_VERBOSE("unsupported Network Function 0x%02x\n", netfn);
       res->netfn_lun = (netfn + 1) << 2;
       break;
   }

@@ -101,8 +101,9 @@ wedge_power_off_board() {
 
 power_on_pim() {
     pim=$1
-    old_value=$(gpio_get PIM"${pim}"_FULL_POWER_EN keepdirection)
-    if [ "$old_value" -eq 1 ]; then
+    old_pwr_value=$(gpio_get PIM"${pim}"_FULL_POWER_EN keepdirection)
+    old_rst_value=$(gpio_get PIM"${pim}"_FPGA_RESET_L keepdirection)
+    if [ "$old_pwr_value" -eq 1 ] && [ "$old_rst_value" -eq 1 ]; then
        logger pim_enable: PIM"${pim}" already powered on
        # already powered on, skip
        return
@@ -120,8 +121,9 @@ power_on_pim() {
 
 power_off_pim() {
     pim=$1
-    old_value=$(gpio_get PIM"${pim}"_FULL_POWER_EN keepdirection)
-    if [ "$old_value" -eq 0 ]; then
+    old_pwr_value=$(gpio_get PIM"${pim}"_FULL_POWER_EN keepdirection)
+    old_rst_value=$(gpio_get PIM"${pim}"_FPGA_RESET_L keepdirection)
+    if [ "$old_pwr_value" -eq 0 ] && [ "$old_rst_value" -eq 0 ]; then
        logger pim_enable: PIM"${pim}" already powered off
        # already powered off, skip
        return

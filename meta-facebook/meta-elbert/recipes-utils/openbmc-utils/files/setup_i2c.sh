@@ -90,7 +90,7 @@ i2c_device_add 6 0x4c max6658
 i2c_device_add 7 0x50 24c512
 
 # SMBus 9 SCM DPM UCD90320
-i2c_device_add 9 0x11 ucd90320
+hwmon_device_add 9 0x11 ucd90320
 
 # SMBus 10 SCM POWER
 i2c_device_add 10 0x30 cpupwr
@@ -104,7 +104,7 @@ i2c_device_add 12 0x43 scmcpld
 i2c_device_add 12 0x50 24c512
 
 # SMBus 15
-i2c_device_add 15 0x4a lm73
+hwmon_device_add 15 0x4a lm73
 i2c_device_add 15 0x43 pfrcpld
 
 # SMBus 2 PIM MUX, muxed as Bus 16-23

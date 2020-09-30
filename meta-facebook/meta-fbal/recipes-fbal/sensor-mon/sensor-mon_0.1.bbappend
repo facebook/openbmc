@@ -1,5 +1,3 @@
-#!/bin/sh
-#
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -16,19 +14,7 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
 
-### BEGIN INIT INFO
-# Provides:          setup-sensord
-# Required-Start:
-# Required-Stop:
-# Default-Start:     S
-# Default-Stop:
-# Short-Description: Setup sensor monitoring
-### END INIT INFO
-
-echo -n "Setup sensor monitoring for emeraldpools... "
-
-runsv /etc/sv/sensord > /dev/null 2>&1 &
-
-echo "done."
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+CFLAGS += "-DSENSOR_FAIL_DETECT"
+SENSORD_MONITORED_FRUS = "mb nic0 nic1 pdb"

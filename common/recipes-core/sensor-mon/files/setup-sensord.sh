@@ -1,4 +1,6 @@
-# Copyright 2014-present Facebook. All Rights Reserved.
+#!/bin/sh
+#
+# Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,15 +17,17 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-[Unit]
-Description=Sensor monitoring daemon
-Wants=setup_i2c.service
-After=setup_i2c.service
 
-[Service]
-ExecStart=/usr/local/bin/sensord SENSORD_LAUNCH_ARGS
-ExecReload=/bin/kill -HUP $MAINPID
-Restart=on-success
+### BEGIN INIT INFO
+# Provides:          setup-sensord
+# Required-Start:
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Setup sensor monitoring
+### END INIT INFO
 
-[Install]
-WantedBy=multi-user.target
+echo -n "Setup sensor monitoring... "
+runsv /etc/sv/sensord > /dev/null 2>&1 &
+
+echo "done."

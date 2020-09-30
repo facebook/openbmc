@@ -1474,10 +1474,10 @@ pal_get_m2vpp_str_name(uint8_t fru, uint8_t comp, uint8_t root_port, char *error
 
 static void
 pal_get_m2pgood_str_name(uint8_t comp, uint8_t device_num, char *error_log) {
-  uint8_t index = comp - 1;
-  char *comp_str[4] = {"1OU", "2OU", "SPE", "GPv3"};
-  if ( index < 4 ) {
-    snprintf(error_log, 256, "%s/Num %d ", comp_str[index], device_num);
+  const char *comp_str[5] = {"ServerBoard", "1OU", "2OU", "SPE", "GPv3"};
+  const uint8_t comp_size = ARRAY_SIZE(comp_str);
+  if ( comp < comp_size ) {
+    snprintf(error_log, 256, "%s/Num %d ", comp_str[comp], device_num);
   } else {
     snprintf(error_log, 256, "Undefined M2 DevNum %d ", device_num);
   }
@@ -1502,6 +1502,8 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_M2_VPP         = 0x0B,
     SYS_M2_PGOOD       = 0x0C,
     SYS_VCCIO_FAULT    = 0x0D,
+    SYS_SMI_STUCK_LOW  = 0x0E,
+    SYS_OV_DETECT      = 0x0F,
   };
   uint8_t event = event_data[0];
 
@@ -1546,6 +1548,12 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_VCCIO_FAULT:
       strcat(error_log, "VCCIO fault");
+      break;
+    case SYS_SMI_STUCK_LOW:
+      strcat(error_log, "SMI stuck low over 90s");
+      break;
+    case SYS_OV_DETECT:
+      strcat(error_log, "VCCIO Over Voltage Fault");
       break;
     default:
       strcat(error_log, "Undefined system event");

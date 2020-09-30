@@ -534,6 +534,10 @@ util_bic_clear_cmos(uint8_t slot_id) {
 
   ret = bic_clear_cmos(slot_id);
   printf("Performing CMOS clear, status %d\n", ret);
+  ret = pal_set_nic_perst(slot_id, NIC_PE_RST_HIGH);
+  if (ret < 0) {
+    printf("Failed to set nic card PERST high\n");
+  }
 out:
   return ret;
 }

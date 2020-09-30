@@ -470,9 +470,14 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
   if (fru == FRU_MB) {
     *sensor_list = (uint8_t *) mb_sensor_list;
     *cnt = mb_sensor_cnt;
-  }else if (fru == FRU_PDB) {
+  } else if (fru == FRU_PDB) {
     *sensor_list = (uint8_t *) pdb_sensor_list;
     *cnt = pdb_sensor_cnt;
+  } else if ( (fru == FRU_BSM)  ||
+              (fru == FRU_AVA1) ||
+              (fru == FRU_AVA2) ) {
+    *sensor_list = NULL;
+    *cnt = 0;
   } else {
     *sensor_list = NULL;
     *cnt = 0;

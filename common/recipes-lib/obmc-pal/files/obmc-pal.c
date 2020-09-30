@@ -405,7 +405,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
 
     case UNIFIED_IIO_ERR:
       sprintf(error_log, "GeneralInfo: IIOErr(0x%02X), IIO Port Location: Sled %02d/Socket %02d, Stack 0x%02X, Error ID: 0x%02X",
-              general_info, ((sel[8]>>4)&0x3), sel[8]&0xF, sel[9], sel[12]);
+              general_info, sel[10], ((sel[8]>>4)&0xF), sel[8]&0xF, sel[9] );
       break;
 
     case UNIFIED_POST_ERR:

@@ -142,6 +142,9 @@ else
   if [ $(is_server_prsnt ${SLOT_NUM}) == "0" ]; then
     echo "The $SLOT is empty"
     exit -1;
+  elif [ $(is_slot_12v_on ${SLOT_NUM}) == "0" ]; then
+    echo "The $SLOT is 12V-off"
+    exit -1;
   else
     # notify CPLD to set the uart src to class 1
     set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x01"

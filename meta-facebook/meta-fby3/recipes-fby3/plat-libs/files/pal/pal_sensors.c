@@ -273,6 +273,101 @@ const uint8_t bic_1ou_edsff_sensor_list[] = {
   BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2D,
 };
 
+const uint8_t bic_2ou_gpv3_sensor_list[] = {
+  // temperature
+  BIC_GPV3_INLET_TEMP,
+  BIC_GPV3_PCIE_SW_TEMP,
+
+  // voltage
+  BIC_GPV3_P12V_STBY_VOL,
+  BIC_GPV3_P3V3_STBY_AUX_VOL,
+
+  // P3V3 STBY1~3 
+  BIC_GPV3_P3V3_STBY1_POWER,
+  BIC_GPV3_P3V3_STBY1_VOLTAGE,
+  BIC_GPV3_P3V3_STBY1_CURRENT,
+  BIC_GPV3_P3V3_STBY1_TEMP,
+  BIC_GPV3_P3V3_STBY2_POWER,
+  BIC_GPV3_P3V3_STBY2_VOLTAGE,
+  BIC_GPV3_P3V3_STBY2_CURRENT,
+  BIC_GPV3_P3V3_STBY2_TEMP,
+  BIC_GPV3_P3V3_STBY3_POWER,
+  BIC_GPV3_P3V3_STBY3_VOLTAGE,
+  BIC_GPV3_P3V3_STBY3_CURRENT,
+  BIC_GPV3_P3V3_STBY3_TEMP,
+
+  //VR P0V84
+  BIC_GPV3_P0V84_POWER,
+  BIC_GPV3_P0V84_VOLTAGE,
+  BIC_GPV3_P0V84_CURRENT,
+  BIC_GPV3_P0V84_TEMP,
+
+  //VR P1V8
+  BIC_GPV3_P1V8_POWER,
+  BIC_GPV3_P1V8_VOLTAGE,
+  BIC_GPV3_P1V8_CURRENT,
+  BIC_GPV3_P1V8_TEMP,
+
+  //E1S
+  BIC_GPV3_E1S_1_12V_POWER,
+  BIC_GPV3_E1S_1_12V_VOLTAGE,
+  BIC_GPV3_E1S_1_12V_CURRENT,
+  BIC_GPV3_E1S_1_TEMP,
+  BIC_GPV3_E1S_2_12V_POWER,
+  BIC_GPV3_E1S_2_12V_VOLTAGE,
+  BIC_GPV3_E1S_2_12V_CURRENT,
+  BIC_GPV3_E1S_2_TEMP,
+
+  //INA233 DEV0~11
+  BIC_GPV3_INA233_PWR_DEV0,
+  BIC_GPV3_INA233_VOL_DEV0,
+  BIC_GPV3_NVME_TEMP_DEV0,
+
+  BIC_GPV3_INA233_PWR_DEV1,
+  BIC_GPV3_INA233_VOL_DEV1,
+  BIC_GPV3_NVME_TEMP_DEV1,
+
+  BIC_GPV3_INA233_VOL_DEV2,
+  BIC_GPV3_INA233_PWR_DEV2,
+  BIC_GPV3_NVME_TEMP_DEV2,
+
+  BIC_GPV3_INA233_PWR_DEV3,
+  BIC_GPV3_INA233_VOL_DEV3,
+  BIC_GPV3_NVME_TEMP_DEV3,
+
+  BIC_GPV3_INA233_PWR_DEV4,
+  BIC_GPV3_INA233_VOL_DEV4,
+  BIC_GPV3_NVME_TEMP_DEV4,
+
+  BIC_GPV3_INA233_PWR_DEV5,
+  BIC_GPV3_INA233_VOL_DEV5,
+  BIC_GPV3_NVME_TEMP_DEV5,
+
+  BIC_GPV3_INA233_PWR_DEV6,
+  BIC_GPV3_INA233_VOL_DEV6,
+  BIC_GPV3_NVME_TEMP_DEV6,
+
+  BIC_GPV3_INA233_PWR_DEV7,
+  BIC_GPV3_INA233_VOL_DEV7,
+  BIC_GPV3_NVME_TEMP_DEV7,
+
+  BIC_GPV3_INA233_PWR_DEV8,
+  BIC_GPV3_INA233_VOL_DEV8,
+  BIC_GPV3_NVME_TEMP_DEV8,
+
+  BIC_GPV3_INA233_PWR_DEV9,
+  BIC_GPV3_INA233_VOL_DEV9,
+  BIC_GPV3_NVME_TEMP_DEV9,
+
+  BIC_GPV3_INA233_PWR_DEV10,
+  BIC_GPV3_INA233_VOL_DEV10,
+  BIC_GPV3_NVME_TEMP_DEV10,
+  
+  BIC_GPV3_INA233_PWR_DEV11,
+  BIC_GPV3_INA233_VOL_DEV11,
+  BIC_GPV3_NVME_TEMP_DEV11,
+};
+
 //BIC BaseBoard Sensors
 const uint8_t bic_bb_sensor_list[] = {
   BIC_BB_SENSOR_INLET_TEMP,
@@ -721,6 +816,7 @@ size_t bic_1ou_sensor_cnt = sizeof(bic_1ou_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_sensor_cnt = sizeof(bic_2ou_sensor_list)/sizeof(uint8_t);
 size_t bic_bb_sensor_cnt = sizeof(bic_bb_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_edsff_sensor_cnt = sizeof(bic_1ou_edsff_sensor_list)/sizeof(uint8_t);
+size_t bic_2ou_gpv3_sensor_cnt = sizeof(bic_2ou_gpv3_sensor_list)/sizeof(uint8_t);
 size_t bic_spe_sensor_cnt = sizeof(bic_spe_sensor_list)/sizeof(uint8_t);
 size_t bic_skip_sensor_cnt = sizeof(bic_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_skip_sensor_cnt = sizeof(bic_1ou_skip_sensor_list)/sizeof(uint8_t);
@@ -820,6 +916,9 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       if (board_type == E1S_BOARD) { // Sierra point expansion
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_spe_sensor_list, bic_spe_sensor_cnt);
         current_cnt += bic_spe_sensor_cnt;
+      } else if (board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD){
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_gpv3_sensor_list, bic_2ou_gpv3_sensor_cnt);
+        current_cnt += bic_2ou_gpv3_sensor_cnt;
       } else {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
         current_cnt += bic_2ou_sensor_cnt;
@@ -1768,8 +1867,10 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   } else if ( (sensor_num >= 0x50 && sensor_num <= 0x7F) && (bmc_location != NIC_BMC) && //1OU
        ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
     ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
-  } else if ( (sensor_num >= 0x80 && sensor_num <= 0xCA) && //2OU
-       ((config_status & PRESENT_2OU) == PRESENT_2OU) ) {
+  } else if ( ((sensor_num >= 0x80 && sensor_num <= 0xCE) ||     //2OU
+               (sensor_num >= 0x49 && sensor_num <= 0x4D)) &&    //Many sensors are defined in GPv3.
+              ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { //The range from 0x80 to 0xCE is not enough for adding new sensors.
+                                                                 //So, we take 0x49 ~ 0x4D here
     ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
   } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xEC) ) { //BB
     ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);

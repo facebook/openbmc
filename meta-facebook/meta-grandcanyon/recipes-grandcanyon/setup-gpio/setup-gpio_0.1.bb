@@ -6,18 +6,19 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://setup-gpio.c;beginline=8;endline=20;md5=8e8a5829be6e215cdbf65cac2aa6ddc4"
 
+inherit meson
+
 SRC_URI = "file://setup-gpio.c \
-           file://Makefile \
+           file://meson.build \
            file://setup-gpio.sh \
           "
 S = "${WORKDIR}"
 
 binfiles = "setup-gpio \
            "
-DEPENDS += "libpal libgpio-ctrl libphymem"
+DEPENDS += "libpal libgpio-ctrl"
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += "libpal libgpio-ctrl libphymem"
-LDFLAGS += " -lgpio-ctrl -lphymem"
+RDEPENDS_${PN} += "libpal libgpio-ctrl"
 
 pkgdir = "setup-gpio"
 
@@ -31,7 +32,7 @@ do_install() {
     install -m 755 $f ${dst}/$f
     ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
   done
-  install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
+  install -m 755 ${S}/setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
 }
 

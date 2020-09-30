@@ -15,4 +15,5 @@ IMAGE_INSTALL += " \
   ipmid \
   ipmitool \
   expander-util \
+  mterm \
   "

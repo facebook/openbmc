@@ -232,6 +232,7 @@ int pal_is_bmc_por(void);
 int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
     uint8_t o_val, uint8_t n_val);
 int pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name);
+int pal_parse_mem_mapping_str(uint8_t map_of_dimm_num, char *mem_mapping_string);
 int pal_parse_sel(uint8_t fru, uint8_t *sel,
     char *error_log);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);

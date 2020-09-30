@@ -2146,6 +2146,31 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
 }
 
 int
+pal_parse_mem_mapping_str(uint8_t map_of_dimm_num, char *mem_mapping_string) {
+
+  mem_mapping_string[0] = '\0';
+  switch (map_of_dimm_num) {
+    case 0x00:
+      strcpy(mem_mapping_string, "A0");
+      break;
+    case 0x01:
+      strcpy(mem_mapping_string, "A1");
+      break;
+    case 0x08:
+      strcpy(mem_mapping_string, "B0");
+      break;
+    case 0x09:
+      strcpy(mem_mapping_string, "B1");
+      break;
+    default:
+      strcpy(mem_mapping_string, "Unknown");
+      break;
+  }
+
+  return 0;
+}
+
+int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   bool parsed;
   uint8_t snr_type = sel[10];
@@ -2154,6 +2179,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   uint8_t *ed = &event_data[3];
   char temp_log[512] = {0};
   char err_str[512] = {0};
+  char mem_mapping_string[512] = {0};
   uint8_t sen_type = event_data[0];
   uint8_t event_type = sel[12] & 0x7F;
   uint8_t event_dir = sel[12] & 0x80;
@@ -2222,16 +2248,18 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
           break;
         case MEMORY_ECC_ERR:
           parsed = true;
+          map_of_dimm_num = ed[2];
+          memset(mem_mapping_string, '\0', sizeof(mem_mapping_string));
+          pal_parse_mem_mapping_str(map_of_dimm_num, mem_mapping_string);
+
           if (sen_type == 0x0C) {
             // SEL from MEMORY_ECC_ERR
             if ((ed[0] & 0x0F) == 0x0) {
               strcat(error_log, "Correctable");
-              sprintf(temp_log, "DIMM%02X ECC err", ed[2]);
-              pal_add_cri_sel(temp_log);
+              snprintf(temp_log, sizeof(temp_log), "DIMM %s(%02X) ECC err", mem_mapping_string, map_of_dimm_num);
             } else if ((ed[0] & 0x0F) == 0x1) {
               strcat(error_log, "Uncorrectable");
-              sprintf(temp_log, "DIMM%02X UECC err", ed[2]);
-              pal_add_cri_sel(temp_log);
+              snprintf(temp_log, sizeof(temp_log), "DIMM %s(%02X) UECC err", mem_mapping_string, map_of_dimm_num);
             } else if ((ed[0] & 0x0F) == 0x5) {
               strcat(error_log, "Correctable ECC error Logging Limit Reached");
             } else {
@@ -2247,10 +2275,10 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
           }
 
           // Common routine for both MEM_ECC_ERR and MEMORY_ERR_LOG_DIS
-          sprintf(temp_log, " (DIMM %02X)", ed[2]);
+          snprintf(temp_log, sizeof(temp_log), " (DIMM %s)", mem_mapping_string);
           strcat(error_log, temp_log);
 
-          sprintf(temp_log, " Logical Rank %d", ed[1] & 0x03);
+          snprintf(temp_log, sizeof(temp_log), " Logical Rank %d", ed[1] & 0x03);
           strcat(error_log, temp_log);
 
           // Bit[7:5]: CPU number     (Range: 0-7)
@@ -2260,47 +2288,38 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
             /* All Info Valid */
             // uint8_t chn_num = (ed[2] & 0x18) >> 3;
             // uint8_t dimm_num = ed[2] & 0x7;
-            map_of_dimm_num = ed[2];
 
             /* If critical SEL logging is available, do it */
             if (sen_type == 0x0C) {
               if ((ed[0] & 0x0F) == 0x0) {
-                sprintf(err_str, "ECC err");
+                snprintf(err_str, sizeof(err_str), "ECC err");
               } else if ((ed[0] & 0x0F) == 0x1) {
-                sprintf(err_str, "UECC err");
+                snprintf(err_str, sizeof(err_str), "UECC err");
+              } else if ((ed[0] & 0x0F) == 0x5) {
+                snprintf(err_str, sizeof(err_str), "ECC err logging limit reached");
+              } else {
+                snprintf(err_str, sizeof(err_str), "Unknown err");
               }
-              switch (map_of_dimm_num) {
-                case 0x00:
-                  sprintf(temp_log, "DIMMA0(%02X) %s, FRU: %u", map_of_dimm_num, err_str, fru);
-                  break;
-                case 0x01:
-                  sprintf(temp_log, "DIMMA1(%02X) %s, FRU: %u", map_of_dimm_num, err_str, fru);
-                  break;
-                case 0x08:
-                  sprintf(temp_log, "DIMMB0(%02X) %s, FRU: %u", map_of_dimm_num, err_str, fru);
-                  break;
-                case 0x09:
-                  sprintf(temp_log, "DIMMB1(%02X) %s, FRU: %u", map_of_dimm_num, err_str, fru);
-                  break;
-              }
+
+              snprintf(temp_log, sizeof(temp_log), "DIMM %s(%02X) %s, FRU %u", mem_mapping_string, map_of_dimm_num, err_str, fru);
               pal_add_cri_sel(temp_log);
             }
             /* Then continue parse the error into a string. */
             /* All Info Valid                               */
             strcpy(temp_log, "");
-            sprintf(temp_log, " (CPU# %d, CHN# %d, DIMM# %d)",
+            snprintf(temp_log, sizeof(temp_log)," (CPU# %d, CHN# %d, DIMM# %d)",
                 (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3, ed[2] & 0x7);
           } else if (((ed[1] & 0xC) >> 2) == 0x1) {
             /* DIMM info not valid */
-            sprintf(temp_log, " (CPU# %d, CHN# %d)",
+            snprintf(temp_log, sizeof(temp_log), " (CPU# %d, CHN# %d)",
                 (ed[2] & 0xE0) >> 5, (ed[2] & 0x18) >> 3);
           } else if (((ed[1] & 0xC) >> 2) == 0x2) {
             /* CHN info not valid */
-            sprintf(temp_log, " (CPU# %d, DIMM# %d)",
+            snprintf(temp_log, sizeof(temp_log), " (CPU# %d, DIMM# %d)",
                 (ed[2] & 0xE0) >> 5, ed[2] & 0x7);
           } else if (((ed[1] & 0xC) >> 2) == 0x3) {
             /* CPU info not valid */
-            sprintf(temp_log, " (CHN# %d, DIMM# %d)",
+            snprintf(temp_log, sizeof(temp_log), " (CHN# %d, DIMM# %d)",
                 (ed[2] & 0x18) >> 3, ed[2] & 0x7);
           }
           strcat(error_log, temp_log);

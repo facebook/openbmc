@@ -17,6 +17,7 @@
  */
 #ifndef _CMOCK_H_
 #define _CMOCK_H_
+#include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>

@@ -16,4 +16,5 @@ IMAGE_INSTALL += " \
   ipmitool \
   expander-util \
   mterm \
+  plat-utils \
   "

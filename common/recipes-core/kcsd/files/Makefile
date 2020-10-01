@@ -1,10 +1,11 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 all: kcsd
 
-CFLAGS += -Wall -Werror
+CFLAGS += -Wall -Werror -std=gnu99
+LDFLAGS += -pthread -lipmi -lgpio-ctrl
 
 kcsd: kcsd.o
-	$(CC) $(CFLAGS) -pthread -lrt -lipmi -lgpio-ctrl -std=gnu99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

@@ -33,6 +33,7 @@ SRC_URI = " \
     file://rc.local \
     file://dhclient-exit-hooks \
     file://rm_poweroff_cmd.sh \
+    file://rm_poweroff_cmd.service \
     file://revise_inittab \
     file://blkdev_mount.sh \
     file://emmc_auto_mount.sh \
@@ -40,7 +41,10 @@ SRC_URI = " \
     file://mount_data1.sh \
     file://setup_persist_log.sh \
     file://setup-reboot.sh \
+    file://setup-reboot.service \
     "
+
+SRC_URI += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'file://eth0_mac_fixup.sh', '', d)}"
 
 OPENBMC_UTILS_FILES = " \
     mount_data0.sh \
@@ -59,21 +63,16 @@ OPENBMC_UTILS_FILES = " \
 
 S = "${WORKDIR}"
 
+inherit systemd
+
 DEPENDS = "update-rc.d-native"
 RDEPENDS_${PN} += "bash"
 
 OPENBMC_UTILS_CUSTOM_EMMC_MOUNT ?= "0"
 
-do_install() {
+install_sysv() {
     pkgdir="/usr/local/packages/utils"
     dstdir="${D}${pkgdir}"
-    install -d $dstdir
-    localbindir="${D}/usr/local/bin"
-    install -d ${localbindir}
-    for f in ${OPENBMC_UTILS_FILES}; do
-        install -m 755 $f ${dstdir}/${f}
-        ln -s ${pkgdir}/${f} ${localbindir}
-    done
 
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d
@@ -101,7 +100,7 @@ do_install() {
         if [ "x${OPENBMC_UTILS_CUSTOM_EMMC_MOUNT}" = "x0" ]; then
             # auto-mount emmc to /mnt/data1
             install -m 0755 ${WORKDIR}/mount_data1.sh \
-                ${D}${sysconfdir}/init.d/mount_data1.sh
+                    ${D}${sysconfdir}/init.d/mount_data1.sh
             update-rc.d -r ${D} mount_data1.sh start 05 S .
         fi
     fi
@@ -113,4 +112,44 @@ do_install() {
     fi
 }
 
+install_systemd() {
+    install -d ${D}${systemd_system_unitdir}
+    install -m 644 ${WORKDIR}/eth0_mac_fixup.sh ${D}${systemd_system_unitdir}
+    install -m 755 ${WORKDIR}/setup-reboot.sh ${D}/usr/local/bin
+    install -m 755 ${WORKDIR}/rc.local ${D}/usr/local/bin
+    install -m 755 ${WORKDIR}/rc.early ${D}/usr/local/bin
+    install -m 644 ${WORKDIR}/early.service ${D}${systemd_system_unitdir}
+    install -m 644 ${WORKDIR}/rm_poweroff_cmd.service ${D}${systemd_system_unitdir}
+    # No rm_poweroff_cmd.sh under systemd
+    install -m 644 ${WORKDIR}/setup-reboot.service ${D}${systemd_system_unitdir}
+    # data1 will be mounted via fstab in a different recipe
+}
+
+do_install() {
+    pkgdir="/usr/local/packages/utils"
+    dstdir="${D}${pkgdir}"
+    install -d $dstdir
+    localbindir="${D}/usr/local/bin"
+    install -d "${D}${sysconfdir}"
+    install -d ${localbindir}
+    for f in ${OPENBMC_UTILS_FILES}; do
+        install -m 755 $f ${dstdir}/${f}
+        ln -s ${pkgdir}/${f} ${localbindir}
+    done
+
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+        install_systemd
+    else
+        install_sysv
+    fi
+
+}
+
 FILES_${PN} += "/usr/local"
+
+SYSTEMD_SERVICE_${PN} = "setup-reboot.service \
+                      early.service \
+                      rm_poweroff_cmd.service \
+                      early.service \
+                      fetch-backports.service \
+                      "

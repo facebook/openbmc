@@ -68,3 +68,22 @@ int
 pal_cc_sled_cycle(void) {
   return is_cc_present()? cmd_cc_sled_cycle(): 0;
 }
+
+int
+pal_cc_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen)
+{
+  uint8_t netfn = NETFN_TRANSPORT_REQ;
+  uint8_t ipmi_cmd = CMD_TRANSPORT_GET_LAN_CONFIG;
+  uint8_t req[2] = {0x0, sel};
+  uint8_t resp[MAX_IPMI_MSG_SIZE];
+
+  if (!is_cc_present())
+    return -1;
+  if (cc_ipmb_process(ipmi_cmd, netfn, req, 2, resp, rlen))
+    return -1;
+  if (*rlen <= 1)
+    return -1;
+  *rlen = *rlen - 1;
+  memcpy(buf, resp + 1, *rlen);
+  return 0;
+}

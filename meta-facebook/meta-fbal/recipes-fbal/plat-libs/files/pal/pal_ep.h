@@ -9,6 +9,7 @@
 int pal_ep_set_system_mode(uint8_t);
 int pal_ep_sled_cycle(void);
 bool is_ep_present(void);
+int pal_ep_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen);
 
 #endif
 

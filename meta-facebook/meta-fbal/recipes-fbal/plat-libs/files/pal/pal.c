@@ -797,6 +797,43 @@ pal_get_bmc_ipmb_slave_addr(uint16_t* slave_addr, uint8_t bus_id) {
 }
 
 int
+pal_peer_tray_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen)
+{
+  uint8_t netfn = NETFN_TRANSPORT_REQ;
+  uint8_t ipmi_cmd = CMD_TRANSPORT_GET_LAN_CONFIG;
+  uint8_t req[2] = {0x0, sel};
+  uint8_t resp[MAX_IPMI_MSG_SIZE];
+  uint16_t bmc_addr;
+  uint16_t dest_bmc_addr;
+  uint8_t val;
+  int ret;
+  
+  ret = pal_get_blade_id(&val);
+  if (ret) {
+    return ret;
+  }
+  dest_bmc_addr = val ? 0x20 : 0x22;
+
+  ret = pal_get_bmc_ipmb_slave_addr(&bmc_addr, I2C_BUS_2);
+  if (ret) {
+    return ret;
+  }
+  ret = lib_ipmb_send_request(ipmi_cmd, netfn,
+                        req, 2, resp, rlen,
+                        I2C_BUS_2, dest_bmc_addr, bmc_addr);
+  
+  if (ret) {
+    return ret;
+  }
+  if (*rlen <= 1) {
+    return -1;
+  }
+  *rlen = *rlen - 1;
+  memcpy(buf, resp + 1, *rlen);
+  return 0;
+}
+
+int
 pal_ipmb_processing(int bus, void *buf, uint16_t size) {
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN];

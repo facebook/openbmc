@@ -8,5 +8,6 @@
 
 int pal_cc_sled_cycle(void);
 bool is_cc_present(void);
+int pal_cc_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen);
 
 #endif

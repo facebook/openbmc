@@ -222,6 +222,7 @@ int pal_get_mb_position(uint8_t* pos);
 int pal_get_board_rev_id(uint8_t *id);
 void fru_eeprom_mb_check(char* mb_path);
 int pal_get_syscfg_text (char *text);
+int pal_peer_tray_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen);
 
 enum {
   UARTSW_BY_BMC,

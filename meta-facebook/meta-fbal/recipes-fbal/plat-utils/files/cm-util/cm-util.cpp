@@ -79,14 +79,15 @@ static std::set<std::string> get_bmcs()
   if (cmd_cmc_get_config_mode(&mode)) {
     return ret;
   }
-  ret.insert("tray0");
   ret.insert("emeraldpools");
-  if (mode >= 0 && mode < 4) {
-    ret.insert("tray1");
-    ret.insert("tray2");
-    ret.insert("tray3");
-  } else if (mode >= 5 && mode <= 7) {
-    ret.insert("tray1");
+  if (mode > 4) {
+    ret.insert("clearcreek");
+    uint8_t pos;
+    if (cmd_cmc_get_mb_position(&pos) || pos == 0) {
+      ret.insert("tray1");
+    } else {
+      ret.insert("tray0");
+    }
   }
   return ret;
 }

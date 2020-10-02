@@ -10,14 +10,14 @@ if [ ! -z "$power_status" ]; then
 	M2_2_i2c_NVMe=`/usr/sbin/i2cdetect -y 8 | grep 6a`
 
 	if [ ! -z "$M2_1_i2c_NVMe" ]; then
-	    echo -n 1 > /tmp/cache_store/M2_1_NVMe
+      kv set M2_1_NVMe 1
 	else
-	    echo -n 0 > /tmp/cache_store/M2_1_NVMe
+      kv set M2_1_NVMe 0
 	fi
 
 	if [ ! -z "$M2_2_i2c_NVMe" ]; then
-	    echo -n 1 > /tmp/cache_store/M2_2_NVMe
+      kv set M2_2_NVMe 1
 	else
-	    echo -n 0 > /tmp/cache_store/M2_2_NVMe
+      kv set M2_2_NVMe 0
 	fi
 fi

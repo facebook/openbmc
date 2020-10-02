@@ -32,6 +32,7 @@
 #include <sys/file.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/pal.h>
+#include <openbmc/kv.h>
 #include <facebook/bic.h>
 #include <facebook/fbttn_gpio.h>
 
@@ -560,8 +561,10 @@ gpio_monitor_poll(uint8_t fru_flag) {
           }
           syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SLOT1);
 
-          //Run check_M2_nvme.sh only when any of the M2_NVMe file is not existing
-          if( (access( "/tmp/cache_store/M2_1_NVMe", F_OK ) == -1) || (access( "/tmp/cache_store/M2_2_NVMe", F_OK ) == -1) ) {
+          char value[MAX_VALUE_LEN];
+          //Run check_M2_nvme.sh only when any of the M2_NVMe key is not existing
+          if (kv_get("M2_1_NVMe", value, NULL, 0) || 
+              kv_get("M2_2_NVMe", value, NULL, 0)) {
             //Check M.2 NVMe surrpot, for fsc M2 sensor valid check
             system("nohup /etc/check_M2_nvme.sh &");
           }

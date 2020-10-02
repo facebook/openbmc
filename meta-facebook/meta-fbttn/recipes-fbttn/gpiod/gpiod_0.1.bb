@@ -33,11 +33,11 @@ S = "${WORKDIR}"
 binfiles = "gpiod \
            "
 
-CFLAGS += " -lbic -lfbttn_gpio -lpal "
+CFLAGS += " -lbic -lfbttn_gpio -lpal -lkv "
 
-DEPENDS += " libbic libfbttn-gpio libpal "
+DEPENDS += " libbic libfbttn-gpio libpal libkv "
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += " libbic libfbttn-gpio libpal "
+RDEPENDS_${PN} += " libbic libfbttn-gpio libpal libkv "
 
 pkgdir = "gpiod"
 

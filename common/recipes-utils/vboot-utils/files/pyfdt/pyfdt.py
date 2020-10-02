@@ -1034,7 +1034,7 @@ class FdtBlobParse(object):  # pylint: disable-msg=R0903
             # output the prop_start and prop_size
             value = (prop_start, prop_size)
             self.infile.seek(prop_size, 1)
-            print("skip blob", value)
+            # print("skip blob", value)
         else:
             value = self.infile.read(prop_size)
 
@@ -1052,7 +1052,7 @@ class FdtBlobParse(object):  # pylint: disable-msg=R0903
             data = self.infile.read(cell.size)
             if len(data) < cell.size:
                 break
-            tag, = cell.unpack_from(data)
+            (tag,) = cell.unpack_from(data)
             # print "*** %s" % self.__fdt_dt_tag_name.get(tag, '')
             if self.__fdt_dt_tag_name.get(tag, "") in "node_begin":
                 name = self.__extract_fdt_nodename()

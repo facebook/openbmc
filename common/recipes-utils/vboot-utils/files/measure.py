@@ -26,7 +26,7 @@ import sys
 import traceback
 
 from image_meta import FBOBMCImageMeta
-from vboot_common import EC_EXCEPTION, EC_SUCCESS, get_fdt
+from vboot_common import EC_EXCEPTION, EC_SUCCESS, get_fdt, get_fdt_from_file
 
 
 MBOOT_CHECK_VERSION = "1"
@@ -102,7 +102,31 @@ def get_uboot_hash_and_size(filename, offset, size):
         return (uboot_hash, uboot_size)
 
 
-def measure_uboot(algo, image_meta):
+def get_os_comps_hash_offset_size(filename, offset, size):
+    comps = []
+
+    with open(filename, "rb") as fh:
+        fh.seek(offset)
+        os_fit = get_fdt_from_file(fh)
+        # kernel
+        kernel_hash = os_fit.resolve_path("/images/kernel@1/hash@1/value").to_raw()
+        kernel_data = os_fit.resolve_path("/images/kernel@1/data")
+        comps.append((kernel_hash, kernel_data.blob_info[0], kernel_data.blob_info[1]))
+        # ramdisk
+        ramdisk_hash = os_fit.resolve_path("/images/ramdisk@1/hash@1/value").to_raw()
+        ramdisk_data = os_fit.resolve_path("/images/ramdisk@1/data")
+        comps.append(
+            (ramdisk_hash, ramdisk_data.blob_info[0], ramdisk_data.blob_info[1])
+        )
+        # fdt
+        fdt_hash = os_fit.resolve_path("/images/fdt@1/hash@1/value").to_raw()
+        fdt_data = os_fit.resolve_path("/images/fdt@1/data")
+        comps.append((fdt_hash, fdt_data.blob_info[0], fdt_data.blob_info[1]))
+
+    return comps
+
+
+def measure_uboot(algo, image_meta, recal=False):
     # PCR2: hash(sha256(uboot))
     # notice: to simplify SPL measure code, spl hash the "hash of uboot" read from fit
     pcr2 = Pcr(algo)
@@ -111,21 +135,22 @@ def measure_uboot(algo, image_meta):
         image_meta.image, fit["offset"], 0x4000
     )
 
-    uboot_measure = hash_comp(
-        image_meta.image, fit["offset"] + 0x4000, uboot_size, "sha256"
-    )
-    assert (
-        uboot_hash == uboot_measure
-    ), """Build, Signing or SPL code BUG!!!.
-        UBoot size:0x%08X.
-        Hash:
-            expected:[%s]
-            measured:[%s]
-        """ % (
-        uboot_size,
-        uboot_hash.hex(),
-        uboot_measure.hex(),
-    )
+    if recal:
+        uboot_measure = hash_comp(
+            image_meta.image, fit["offset"] + 0x4000, uboot_size, "sha256"
+        )
+        assert (
+            uboot_hash == uboot_measure
+        ), """Build, Signing or SPL code BUG!!!.
+            UBoot size:0x%08X.
+            Hash:
+                expected:[%s]
+                measured:[%s]
+            """ % (
+            uboot_size,
+            uboot_hash.hex(),
+            uboot_measure.hex(),
+        )
 
     uboot_measure = hashlib.sha256(uboot_hash).digest()
     return pcr2.extend(uboot_measure)
@@ -168,6 +193,40 @@ def measure_no_uboot_env(algo, image_meta):
     return pcr5.extend(null_uboot_measure)
 
 
+def measure_os(algo, image_meta, recal=False):
+    # PCR9: hash(sha256(kernel)), hash(sha256(rootfs)), hash(sha256(fdt))
+    # notice: to simplify the measure code, we extend
+    #         hash of the sha256(kernel),
+    #         hash of the sha256(rootfs),
+    #         hash of the sha256(fdt)
+    # in ORDER into PCR9.
+    pcr9 = Pcr(algo)
+    fit = image_meta.get_part_info("os-fit")
+    os_components = get_os_comps_hash_offset_size(
+        image_meta.image, fit["offset"], fit["size"]
+    )
+
+    for comp_hash, comp_offset, comp_size in os_components:
+        if recal:
+            comp_measure = hash_comp(image_meta.image, comp_offset, comp_size, algo)
+            assert (
+                comp_hash == comp_measure
+            ), """Build, Signing or uboot code BUG!!!.
+                size:0x%08X.
+                Hash:
+                expected:[%s]
+                measured:[%s]
+            """ % (
+                comp_size,
+                comp_hash.hex(),
+                comp_measure.hex(),
+            )
+        comp_measure = hashlib.sha256(comp_hash).digest()
+        pcr9.extend(comp_measure)
+
+    return pcr9.value
+
+
 def main():
     if args.image:
         flash0_meta = FBOBMCImageMeta(args.image)
@@ -195,7 +254,7 @@ def main():
             "component": "u-boot",
             "pcr_id": 2,
             "algo": args.algo,
-            "expect": measure_uboot(args.algo, flash1_meta).hex(),
+            "expect": measure_uboot(args.algo, flash1_meta, args.recal).hex(),
             "measure": "NA",
         },
         {  # Recovery u-boot
@@ -210,6 +269,20 @@ def main():
             "pcr_id": 3,
             "algo": args.algo,
             "expect": measure_uboot_env(args.algo, flash1_meta).hex(),
+            "measure": "NA",
+        },
+        {  # os
+            "component": "os",
+            "pcr_id": 9,
+            "algo": args.algo,
+            "expect": measure_os(args.algo, flash1_meta, args.recal).hex(),
+            "measure": "NA",
+        },
+        {  # recovery-os
+            "component": "recovery-os",
+            "pcr_id": 9,
+            "algo": args.algo,
+            "expect": measure_os(args.algo, flash0_meta, args.recal).hex(),
             "measure": "NA",
         },
     ]
@@ -253,6 +326,17 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--image", help="single image")
     parser.add_argument("-j", "--json", help="output as JSON", action="store_true")
     parser.add_argument("-t", "--tpm", help="read tpm pcr also", action="store_true")
+    parser.add_argument(
+        "-r",
+        "--recal",
+        help="""recalculate hash, this is normally used on dev-server.
+                be very careful to do this on BMC, it will took more than 30 mins
+                to recaludate hash for each measures.
+                If you really would like to try. Please BE PATIENT!!!
+                Take a coffee and check back after 30 mins.
+            """,
+        action="store_true",
+    )
 
     args = parser.parse_args()
 

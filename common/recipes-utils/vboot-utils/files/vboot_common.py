@@ -44,3 +44,9 @@ def get_fdt(content):
     dtb = pyfdt.FdtBlobParse(fit_io)
     fdt = dtb.to_fdt()
     return fdt
+
+
+def get_fdt_from_file(infile):
+    dtb = pyfdt.FdtBlobParse(infile, blob_limit=0x2000)
+    fdt = dtb.to_fdt()
+    return fdt

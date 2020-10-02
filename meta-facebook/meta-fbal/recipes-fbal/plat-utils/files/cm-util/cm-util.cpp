@@ -156,7 +156,17 @@ static int
 reset_bmc(const std::string& bmc)
 {
   if (bmc == "emeraldpools" && is_ep_present()) {
-    int fd = i2c_cdev_slave_open(0x6, 0x41, 0);
+    int fd = i2c_cdev_slave_open(EP_I2C_BUS_NUMBER, 0x41, 0);
+    if (fd < 0)
+      return -1;
+    int rc = i2c_smbus_write_byte_data(fd, 0x3, 0xfe);
+    rc |= i2c_smbus_write_byte_data(fd, 0x3, 0xff);
+    close(fd);
+    return rc ? -1 : 0;
+  }
+  if (bmc == "clearcreek" && is_cc_present()) {
+    // TODO Add correct CC IOExpander address.
+    int fd = i2c_cdev_slave_open(CC_I2C_BUS_NUMBER, 0x77, 0);
     if (fd < 0)
       return -1;
     int rc = i2c_smbus_write_byte_data(fd, 0x3, 0xfe);

@@ -21,7 +21,7 @@ After=setup_i2c.service openbmc_gpio_setup.service
 Wants=openbmc_gpio_setup.service setup_board.service configure-rackmond.service
 
 [Service]
-Environment=RACKMOND_MIN_DELAY=2000 RACKMOND_FOREGROUND=1
+Environment=RACKMOND_MIN_DELAY=2000 RACKMOND_FOREGROUND=1 RACKMOND_DESIRED_BAUDRATE=115200
 ExecStart=/usr/local/bin/rackmond
 
 [Install]

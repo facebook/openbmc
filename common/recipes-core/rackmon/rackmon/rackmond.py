@@ -4,6 +4,7 @@ import socket
 import struct
 import subprocess
 import time
+import traceback
 
 
 def configure_rackmond(reglist, verify_configure=False):
@@ -45,7 +46,8 @@ def configure_rackmond(reglist, verify_configure=False):
             o = subprocess.check_output(cmd)
             if "Monitored PSUs" in o.decode():
                 configured = True
-        except Exceptions as e:
+        except Exception:
+            traceback.print_exc()
             configured = False
         return configured
 

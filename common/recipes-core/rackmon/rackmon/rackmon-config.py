@@ -86,6 +86,7 @@ reglist = [
     {"begin": 0x9F, "length": 1},  # BBU Temp
     {"begin": 0xA0, "length": 1},  # Temp 1
     {"begin": 0xA1, "length": 1},  # BBU Max Error
+    {"begin": 0xA3, "length": 1},  # Communication baud rate
     {"begin": 0xD0, "length": 1},  # General Alarm Status Register
     {"begin": 0xD1, "length": 1},  # PFC Alarm Status Register
     {"begin": 0xD2, "length": 1},  # LLC Alarm Status Register

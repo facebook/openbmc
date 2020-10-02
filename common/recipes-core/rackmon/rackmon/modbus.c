@@ -18,7 +18,6 @@
 
 #include <time.h>
 #include "modbus.h"
-#include <termios.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -65,6 +64,30 @@ void append_modbus_crc16(char* buf, size_t* len) {
 void print_hex(FILE* f, char* buf, size_t len) {
   for(int i = 0; i < len; i++)
     fprintf(f, "%02x ", buf[i]);
+}
+
+const char* baud_to_str(speed_t baudrate) {
+  char* out = "<unknown>";
+  switch (baudrate) {
+    case B0:       out = "none"; break;
+    case B50:      out = "50"; break;
+    case B110:     out = "110"; break;
+    case B134:     out = "134"; break;
+    case B150:     out = "150"; break;
+    case B200:     out = "200"; break;
+    case B300:     out = "300"; break;
+    case B600:     out = "600"; break;
+    case B1200:    out = "1200"; break;
+    case B1800:    out = "1800"; break;
+    case B2400:    out = "2400"; break;
+    case B4800:    out = "4800"; break;
+    case B9600:    out = "9600"; break;
+    case B19200:   out = "19200"; break;
+    case B38400:   out = "38400"; break;
+    case B57600:   out = "57600"; break;
+    case B115200:  out = "115200"; break;
+  }
+  return out;
 }
 
 size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us) {
@@ -190,7 +213,7 @@ static long crcfail = 0;
 static long timeout = 0;
 static long stat_wait = 0;
 
-int modbuscmd(modbus_req *req) {
+int modbuscmd(modbus_req *req, speed_t baudrate) {
     int error = 0;
     struct termios tio;
     char modbus_cmd[req->cmd_len + 2];
@@ -201,7 +224,7 @@ int modbuscmd(modbus_req *req) {
     memset(&tio, 0, sizeof(tio));
     // CREAD should be left *off* until we've confirmed THRE
     // to avoid catching false character starts
-    cfsetspeed(&tio,B19200);
+    cfsetspeed(&tio,baudrate);
     tio.c_cflag |= PARENB;
     tio.c_cflag |= CLOCAL;
     tio.c_cflag |= CS8;
@@ -217,7 +240,7 @@ int modbuscmd(modbus_req *req) {
     if (verbose)  {
       fprintf(stderr, "Will send:  ");
       print_hex(stderr, modbus_cmd, cmd_len);
-      fprintf(stderr, "\n");
+      fprintf(stderr, "at baudrate %s\n", baud_to_str(baudrate));
     }
 
     dbg("[*] Writing!\n");

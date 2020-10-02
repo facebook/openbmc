@@ -1,36 +1,70 @@
-#include "modbus.h"
 #include "rackmond.h"
-#include <string.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <sys/ioctl.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <poll.h>
-#include <time.h>
-#include <stdarg.h>
-#include <syslog.h>
-#include <signal.h>
-#include <linux/serial.h>
-#include <sched.h>
+
 #include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <linux/serial.h>
+#include <poll.h>
+#include <pthread.h>
+#include <sched.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <syslog.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <termios.h>
+#include <time.h>
+#include <unistd.h>
+
+#include "modbus.h"
 
 #define MAX_ACTIVE_ADDRS 24
 #define MAX_RACKS        3
 #define MAX_SHELVES      2
 #define MAX_PSUS         3
 
-#define REGISTER_PSU_STATUS 0x68
+/*
+ * The PSUs understand baudrate as an integer.
+ * 0: unable to set baudrate (uses B19200 for comms)
+ * 1: B19200
+ * 2: B38400
+ * 3: B57600
+ * 4: B115200
+ *
+ * If possible, increase the baudrate of each PSU to
+ * the desired baudrate. If any PSUs are unable to set the
+ * baudrate, then keep them all at B19200 (the default).
+ */
+const static speed_t BAUDRATE_VALUES[] = {
+  B19200, B19200, B38400, B57600, B115200
+};
+#define DEFAULT_BAUDRATE_VALUE 1
+#define DEFAULT_BAUDRATE B19200
 
+// If a PSU has experience more than ALLOWABLE_CONSECUTIVE_BLIPS consecutive communication failures,
+// then put it in timeout for NON_COMMUNICATION_TIMEOUT seconds
+#define ALLOWABLE_CONSECUTIVE_BLIPS 10
+#define NON_COMMUNICATION_TIMEOUT 630
+
+#define REGISTER_PSU_STATUS 0x68
+#define REGISTER_PSU_BAUDRATE 0xA3
+
+// This list overlaps with Modbus constants in modbus.h; ensure there are no duplicates
 #define READ_ERROR_RESPONSE -2
+#define WRITE_ERROR_RESPONSE -3
+#define PSU_TIMEOUT_RESPONSE -6
+
+// baudrate-changing commands need a higher timeout (half a second)
+#define BAUDRATE_CMD_TIMEOUT 500000
 
 /*
- * check for new PSUs every "PSU_SCAN_INTERVAL" seconds
+ * Check for new PSUs every "PSU_SCAN_INTERVAL" seconds.
  */
 #define PSU_SCAN_INTERVAL 120
 
@@ -84,6 +118,11 @@ typedef struct {
   uint8_t addr;
   uint32_t crc_errors;
   uint32_t timeout_errors;
+  speed_t baudrate;
+  bool supports_baudrate;
+  int consecutive_failures;
+  bool timeout_mode;
+  time_t last_comms;
   reg_range_data_t range_data[1];
 } psu_datastore_t;
 
@@ -122,10 +161,14 @@ static struct {
 
   int paused;
 
+  // the value we will auto-adjust to if possible
+  speed_t desired_baudrate;
+
   rs485_dev_t rs485;
 } rackmond_config = {
   .lock = PTHREAD_MUTEX_INITIALIZER,
   .modbus_timeout = 300000,
+  .desired_baudrate = DEFAULT_BAUDRATE,
 };
 
 static int mutex_lock_helper(pthread_mutex_t *lock, const char *name)
@@ -242,6 +285,64 @@ cleanup:
   return error;
 }
 
+static speed_t int_to_baudrate(int val) {
+  speed_t baudrate = DEFAULT_BAUDRATE;
+  switch (val) {
+    case 19200:
+      baudrate = B19200;
+      break;
+    case 38400:
+      baudrate = B38400;
+      break;
+    case 57600:
+      baudrate = B57600;
+      break;
+    case 115200:
+      baudrate = B115200;
+      break;
+    default:
+      OBMC_WARN("Baudrate %d unknown", val);
+      break;
+  }
+  return baudrate;
+}
+
+static uint16_t baudrate_to_value(speed_t baudrate) {
+  uint16_t value = 0;
+  switch (baudrate) {
+    case B19200:
+      value = 1;
+      break;
+    case B38400:
+      value = 2;
+      break;
+    case B57600:
+      value = 3;
+      break;
+    case B115200:
+      value = 4;
+      break;
+    default:
+      OBMC_WARN("Baudrate %s has no corresponding value", baud_to_str(baudrate));
+      break;
+  }
+  return value;
+}
+
+static int lookup_data_slot(uint8_t addr)
+{
+  int i;
+
+  for (i = 0; i < ARRAY_SIZE(rackmond_config.stored_data); i++) {
+    if (rackmond_config.stored_data[i] == NULL ||
+        rackmond_config.stored_data[i]->addr == addr) {
+      return i; /* Found the slot */
+    }
+  }
+
+  return -1; /* No slot available. */
+}
+
 static char psu_address(int rack, int shelf, int psu) {
   int rack_a = ((rack & 3) << 3);
   int shelf_a = ((shelf & 1) << 2);
@@ -250,12 +351,67 @@ static char psu_address(int rack, int shelf, int psu) {
   return 0xA0 | rack_a | shelf_a | psu_a;
 }
 
+static int check_psu_comms(psu_datastore_t *psu) {
+  if (psu == NULL) {
+    return 0;
+  }
+
+  struct timespec now;
+  clock_gettime(CLOCK_REALTIME, &now);
+
+  if (now.tv_sec > psu->last_comms + NON_COMMUNICATION_TIMEOUT) {
+    psu->baudrate = DEFAULT_BAUDRATE;
+    psu->consecutive_failures = 0;
+    psu->timeout_mode = false;
+  }
+
+  if (psu->timeout_mode) {
+    return -1;
+  }
+
+  if (psu->consecutive_failures > ALLOWABLE_CONSECUTIVE_BLIPS) {
+    OBMC_INFO("Putting PSU %02x in timeout for the next %d seconds after %d consecutive communication failures",
+              psu->addr, NON_COMMUNICATION_TIMEOUT, psu->consecutive_failures);
+    psu->consecutive_failures = 0;
+    psu->baudrate = DEFAULT_BAUDRATE;
+    psu->timeout_mode = true;
+    psu->last_comms = now.tv_sec;
+    return -1;
+  }
+
+  return 0;
+}
+
+static void update_psu_comms(psu_datastore_t *psu, bool success) {
+  if (psu == NULL) {
+    return;
+  }
+
+  TIME_UPDATE(psu->last_comms);
+
+  if (success) {
+    psu->consecutive_failures = 0;
+  } else {
+    psu->consecutive_failures++;
+  }
+}
+
 static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
                           size_t cmd_size, char* resp_buf, size_t resp_size,
-                          size_t exp_resp_len) {
+                          size_t exp_resp_len, speed_t baudrate) {
   modbus_req req;
   int error;
   useconds_t delay = rackmond_config.min_delay;
+  psu_datastore_t* psu = NULL;
+
+  int slot = lookup_data_slot(cmd_buf[0]);
+  if (slot >= 0) {
+    psu = rackmond_config.stored_data[slot];
+  }
+
+  if (check_psu_comms(psu) < 0) {
+    return PSU_TIMEOUT_RESPONSE;
+  }
 
   req.tty_fd = dev->tty_fd;
   req.modbus_cmd = cmd_buf;
@@ -270,16 +426,18 @@ static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
     return -1;
   }
 
-  error = modbuscmd(&req);
+  error = modbuscmd(&req, baudrate);
   if (delay != 0) {
     usleep(delay);
   }
 
   dev_unlock(dev);
+  update_psu_comms(psu, (error >= 0));
 
   if (error < 0) {
     return error;
   }
+
   return req.dest_len;
 }
 
@@ -299,7 +457,7 @@ static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
 
 static int read_holding_reg(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
                             uint16_t reg_start_addr, uint16_t reg_count,
-                            uint16_t *out) {
+                            uint16_t *out, speed_t baudrate) {
   int error = 0;
   int dest_len;
   char command[MODBUS_FUN3_REQ_HDR_SIZE];
@@ -320,7 +478,7 @@ static int read_holding_reg(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
   command[5] = reg_count & 0xFF;
 
   dest_len = modbus_command(dev, timeout, command, MODBUS_FUN3_REQ_HDR_SIZE,
-                            resp_buf, resp_len, 0);
+                            resp_buf, resp_len, 0, baudrate);
   ERR_EXIT(dest_len);
 
   if (dest_len >= 5) {
@@ -337,7 +495,7 @@ static int read_holding_reg(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
     goto cleanup;
   }
   if (resp_buf[1] != MODBUS_READ_HOLDING_REGISTERS) {
-    // got an error response instead of a read regsiters response
+    // got an error response instead of a read registers response
     // likely because the requested registers aren't available on
     // this model (e.g. stingray)
     error = READ_ERROR_RESPONSE;
@@ -355,8 +513,133 @@ cleanup:
   return error;
 }
 
+/*
+ * Write Holding Register (Function 6) Request Header Size:
+ *   Slave_Addr (1-byte) + Function (1-byte) + Starting_Reg_Addr (2-bytes) +
+ *   Reg_Value_Arry (2 * Reg_Count).
+ */
+#define MODBUS_FUN6_REQ_HDR_SIZE(nreg)  (2 * (nreg) + 4)
+
+/*
+ * Write Holding Register (Function 6) Response packet size:
+ *   Same as request header size, plus CRC (2-bytes).
+ */
+#define MODBUS_FUN6_RESP_PKT_SIZE(nreg) (2 * (nreg) + 6)
+
+static int write_holding_reg(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
+                             uint16_t reg_start_addr, uint16_t reg_count,
+                             uint16_t *reg_values, uint16_t *out, speed_t baudrate) {
+  int error = 0;
+  int dest_len, i;
+  size_t cmd_len = MODBUS_FUN6_REQ_HDR_SIZE(reg_count);
+  char command[cmd_len];
+  size_t resp_len = MODBUS_FUN6_RESP_PKT_SIZE(reg_count);
+  char *resp_buf;
+
+  resp_buf = malloc(resp_len);
+  if (resp_buf == NULL) {
+    OBMC_WARN("failed to allocate response buffer");
+    return -1;
+  }
+
+  command[0] = slave_addr;
+  command[1] = MODBUS_WRITE_HOLDING_REGISTERS;
+  command[2] = reg_start_addr >> 8;
+  command[3] = reg_start_addr & 0xFF;
+
+  for (i = 0; i < reg_count; i++) {
+    command[i * 2 + 4] = reg_values[i] >> 8;
+    command[i * 2 + 5] = reg_values[i] & 0xFF;
+  }
+
+  dest_len = modbus_command(dev, timeout, command, cmd_len, resp_buf, resp_len,
+                            0, baudrate);
+  ERR_EXIT(dest_len);
+
+  if (dest_len >= 4) {
+    memcpy(out, resp_buf + 2, reg_count * 2 + 2);
+  } else {
+    OBMC_WARN("Unexpected short but CRC correct response!\n");
+    error = -1;
+    goto cleanup;
+  }
+  if (resp_buf[0] != slave_addr) {
+    OBMC_WARN("Got response from addr %02x when expected %02x\n",
+              resp_buf[0], slave_addr);
+    error = -1;
+    goto cleanup;
+  }
+  if (resp_buf[1] != MODBUS_WRITE_HOLDING_REGISTERS) {
+    // got an error response instead of a write registers response
+    error = WRITE_ERROR_RESPONSE;
+    goto cleanup;
+  }
+
+cleanup:
+  free(resp_buf);
+  return error;
+}
+
 static int sub_uint8s(const void* a, const void* b) {
   return (*(uint8_t*)a) - (*(uint8_t*)b);
+}
+
+/*
+ * Check the baudrate used by this PSU.
+ * If a higher baudrate is desired, and all PSUs in the rack support it,
+ * then raise the baudrate to the desired value for just this PSU.
+ */
+static int check_psu_baudrate(psu_datastore_t *psu, speed_t *baudrate_out) {
+  int pos, err;
+  bool supported = true;
+  uint16_t output[2];
+  uint16_t values[1];
+  psu_datastore_t *mdata;
+
+  if (psu == NULL) {
+    OBMC_WARN("check_psu_baudrate received a null PSU argument, assuming default baudrate");
+    *baudrate_out = DEFAULT_BAUDRATE;
+    return 0;
+  }
+
+  // only attempt to raise the baudrate if it doesn't already match the desired baudrate
+  if (psu->baudrate == rackmond_config.desired_baudrate) {
+    *baudrate_out = psu->baudrate;
+    return 0;
+  }
+
+  // only attempt to raise the baudrate if all connected PSUs support it
+  for (pos = 0; pos < ARRAY_SIZE(rackmond_config.stored_data); pos++) {
+    mdata = rackmond_config.stored_data[pos];
+    if (mdata == NULL) {
+      continue;
+    }
+    if (!mdata->supports_baudrate) {
+      supported = false;
+    }
+  }
+
+  if (!supported) {
+    *baudrate_out = psu->baudrate;
+    return 0;
+  }
+
+  // now attempt to raise the baudrate for this PSU
+  values[0] = baudrate_to_value(rackmond_config.desired_baudrate);
+  err = write_holding_reg(&rackmond_config.rs485, BAUDRATE_CMD_TIMEOUT,
+                          psu->addr, REGISTER_PSU_BAUDRATE, 1, values, output,
+                          psu->baudrate);
+
+  // if unsuccessful, assume that the unit's baudrate didn't change
+  if (err != 0) {
+    OBMC_WARN("Could not set PSU at addr %02x to desired baudrate", psu->addr);
+  } else {
+    pos = output[1] >> 8;
+    psu->baudrate = BAUDRATE_VALUES[pos];
+  }
+
+  *baudrate_out = psu->baudrate;
+  return err;
 }
 
 /*
@@ -386,13 +669,26 @@ static int check_active_psus(void) {
   for (rack = 0; rack < MAX_RACKS; rack++) {
     for (shelf = 0; shelf < MAX_SHELVES; shelf++) {
       for (psu = 0; psu < MAX_PSUS; psu++) {
-        int err;
+        int err, slot;
         uint16_t output = 0;
+        speed_t baudrate;
         char addr = psu_address(rack, shelf, psu);
+
+        slot = lookup_data_slot((uint8_t) addr);
+        if (slot < 0 || rackmond_config.stored_data[slot] == NULL) {
+          // No allocated slot exists for psu at this addr yet, not a real error
+          baudrate = DEFAULT_BAUDRATE;
+        } else {
+          err = check_psu_baudrate(rackmond_config.stored_data[slot], &baudrate);
+          if (err != 0) {
+            OBMC_WARN("Unable to check baudrate for PSU at addr %02x", addr);
+            continue;
+          }
+        }
 
         err = read_holding_reg(&rackmond_config.rs485,
                                rackmond_config.modbus_timeout, addr,
-                               REGISTER_PSU_STATUS, 1, &output);
+                               REGISTER_PSU_STATUS, 1, &output, baudrate);
         if (err != 0) {
           continue;
         }
@@ -480,6 +776,11 @@ static psu_datastore_t* alloc_monitoring_data(uint8_t addr) {
   d->addr = addr;
   d->crc_errors = 0;
   d->timeout_errors = 0;
+  d->baudrate = DEFAULT_BAUDRATE;
+  d->supports_baudrate = false;
+  d->consecutive_failures = 0;
+  d->timeout_mode = false;
+  TIME_UPDATE(d->last_comms);
   mem = d;
   mem += (sizeof(psu_datastore_t) +
           sizeof(reg_range_data_t) * rackmond_config.config->num_intervals);
@@ -513,20 +814,6 @@ static int sub_storeptrs(const void* va, const void *vb) {
     return 1;
   }
   return (int)(a->addr - b->addr);
-}
-
-static int lookup_data_slot(uint8_t addr)
-{
-  int i;
-
-  for (i = 0; i < ARRAY_SIZE(rackmond_config.stored_data); i++) {
-    if (rackmond_config.stored_data[i] == NULL ||
-        rackmond_config.stored_data[i]->addr == addr) {
-      return i; /* Found the slot */
-    }
-  }
-
-  return -1; /* No slot available. */
 }
 
 static int alloc_monitoring_datas(void) {
@@ -573,6 +860,102 @@ static int alloc_monitoring_datas(void) {
   return error;
 }
 
+static void close_rs485_dev(rs485_dev_t *dev)
+{
+  if (dev->tty_fd >= 0) {
+    pthread_mutex_destroy(&dev->lock);
+    close(dev->tty_fd);
+  }
+}
+
+static int open_rs485_dev(const char* tty_filename, rs485_dev_t *dev) {
+  int error = 0;
+  struct serial_rs485 rs485conf;
+
+  dbg("Opening %s\n", tty_filename);
+  dev->tty_fd = open(tty_filename, O_RDWR | O_NOCTTY);
+  ERR_EXIT(dev->tty_fd);
+
+  /*
+   * NOTE: "SER_RS485_RTS_AFTER_SEND" and "SER_RS485_RX_DURING_TX" flags
+   * are not handled in kernel 4.1, but they are required in the latest
+   * kernel.
+   */
+  memset(&rs485conf, 0, sizeof(rs485conf));
+  rs485conf.flags = SER_RS485_ENABLED;
+  rs485conf.flags |= (SER_RS485_RTS_AFTER_SEND | SER_RS485_RX_DURING_TX);
+
+  dbg("Putting %s in RS485 mode\n", tty_filename);
+  error = ioctl(dev->tty_fd, TIOCSRS485, &rs485conf);
+  ERR_LOG_EXIT(error, "failed to turn on RS485 mode");
+
+  error = pthread_mutex_init(&dev->lock, NULL);
+  if (error != 0) {
+    OBMC_ERROR(error, "failed to initialize rs485 dev mutex");
+    error = -1;
+  }
+
+cleanup:
+  return error;
+}
+
+// This flag is triggered by SIGTERM and SIGINT signal handlers
+// indicating that the program should finish up what it's doing and exit gracefully
+volatile sig_atomic_t should_exit;
+
+static void trigger_graceful_exit(int sig) {
+  should_exit = 1;
+}
+
+/*
+ * The primary purpose of graceful_exit is to reset PSUs to the default baud rate.
+ */
+static void graceful_exit() {
+  int pos, ret = 0, err;
+  uint16_t output[2];
+  uint16_t values[1];
+  psu_datastore_t *mdata;
+
+  OBMC_INFO("Exiting rackmond gracefully...");
+
+  global_lock();
+  rackmond_config.paused = 1;
+  rackmond_config.min_delay = BAUDRATE_CMD_TIMEOUT;
+
+  // set all connected PSUs back to the default baud rate
+  for (pos = 0; pos < ARRAY_SIZE(rackmond_config.stored_data); pos++) {
+    mdata = rackmond_config.stored_data[pos];
+    if (mdata == NULL) {
+      continue;
+    }
+    if (mdata->baudrate <= 0) {
+      continue;
+    }
+    if (mdata->baudrate != DEFAULT_BAUDRATE) {
+      values[0] = baudrate_to_value(DEFAULT_BAUDRATE);
+      err = write_holding_reg(&rackmond_config.rs485,
+                              BAUDRATE_CMD_TIMEOUT, mdata->addr,
+                              REGISTER_PSU_BAUDRATE, 1, values, output,
+                              mdata->baudrate);
+
+      if (err != 0) {
+        OBMC_WARN("Unable to reset PSU %02x to the original baudrate during graceful exit.", mdata->addr);
+        ret = 1;
+      }
+    }
+  }
+
+  close_rs485_dev(&rackmond_config.rs485);
+
+  exit(ret);
+}
+
+static void check_graceful_exit() {
+  if (should_exit) {
+    graceful_exit();
+  }
+}
+
 static void record_data(reg_range_data_t* rd, uint32_t time,
                         uint16_t* regs) {
   int n_regs = (rd->i->len);
@@ -606,16 +989,34 @@ static int fetch_monitored_data(void) {
   global_unlock();
 
   for (pos = 0; pos < ARRAY_SIZE(rackmond_config.stored_data); pos++) {
+    check_graceful_exit();
+
     int r;
     uint8_t addr;
     psu_datastore_t *mdata = rackmond_config.stored_data[pos];
+    speed_t baudrate;
 
     if (mdata == NULL) {
       continue;
     }
 
     addr = mdata->addr;
+
+    if (global_lock() != 0) {
+      return -1;
+    }
+
+    error = check_psu_baudrate(mdata, &baudrate);
+
+    global_unlock();
+
+    if (error != 0) {
+      OBMC_WARN("Unable to check baudrate for PSU at addr %02x", addr);
+      continue;
+    }
+
     for (r = 0; r < rackmond_config.config->num_intervals; r++) {
+
       int err;
       uint32_t timestamp;
       reg_range_data_t* rd = &mdata->range_data[r];
@@ -624,11 +1025,10 @@ static int fetch_monitored_data(void) {
 
       err = read_holding_reg(&rackmond_config.rs485,
                              rackmond_config.modbus_timeout, addr,
-                             iv->begin, iv->len, regs);
-
+                             iv->begin, iv->len, regs, baudrate);
       sched_yield();
       if (err != 0) {
-        if (err != READ_ERROR_RESPONSE) {
+        if (err != READ_ERROR_RESPONSE && err != PSU_TIMEOUT_RESPONSE) {
           log("Error %d reading %02x registers at %02x from %02x\n",
               err, iv->len, iv->begin, addr);
           if(err == MODBUS_BAD_CRC) {
@@ -671,6 +1071,11 @@ static int fetch_monitored_data(void) {
       }
 
       global_lock();
+      if (iv->begin == REGISTER_PSU_BAUDRATE) {
+        uint16_t baudrate_value = regs[0] >> 8;
+        mdata->supports_baudrate = (baudrate_value != 0);
+        mdata->baudrate = BAUDRATE_VALUES[baudrate_value];
+      }
       record_data(rd, timestamp, regs);
       global_unlock();
     } /* for each monitor_interval */
@@ -691,6 +1096,8 @@ void* monitoring_loop(void* arg) {
   }
 
   while(1) {
+    check_graceful_exit();
+
     struct timespec ts;
 
     clock_gettime(CLOCK_REALTIME, &ts);
@@ -718,55 +1125,44 @@ void* monitoring_loop(void* arg) {
   return NULL;
 }
 
-static void close_rs485_dev(rs485_dev_t *dev)
-{
-  if (dev->tty_fd >= 0) {
-    pthread_mutex_destroy(&dev->lock);
-    close(dev->tty_fd);
-  }
-}
-
-static int open_rs485_dev(const char* tty_filename, rs485_dev_t *dev) {
-  int error = 0;
-  struct serial_rs485 rs485conf;
-
-  dbg("Opening %s\n", tty_filename);
-  dev->tty_fd = open(tty_filename, O_RDWR | O_NOCTTY);
-  ERR_EXIT(dev->tty_fd);
-
-  /*
-   * NOTE: "SER_RS485_RTS_AFTER_SEND" and "SER_RS485_RX_DURING_TX" flags
-   * are not handled in kernel 4.1, but they are required in the latest
-   * kernel.
-   */
-  memset(&rs485conf, 0, sizeof(rs485conf));
-  rs485conf.flags = SER_RS485_ENABLED;
-  rs485conf.flags |= (SER_RS485_RTS_AFTER_SEND | SER_RS485_RX_DURING_TX);
-
-  dbg("Putting %s in RS485 mode\n", tty_filename);
-  error = ioctl(dev->tty_fd, TIOCSRS485, &rs485conf);
-  ERR_LOG_EXIT(error, "failed to turn on RS485 mode");
-
-  error = pthread_mutex_init(&dev->lock, NULL);
-  if (error != 0) {
-    OBMC_ERROR(error, "failed to initialize rs485 dev mutex");
-    error = -1;
-  }
-
-cleanup:
-  return error;
-}
-
 static int run_cmd_raw_modbus(rackmond_command* cmd, write_buf_t *wb)
 {
   char *resp_buf;
-  int timeout, resp_len;
-  uint16_t exp_resp_len, resp_len_wire;
+  int timeout, resp_len, err, slot;
+  uint16_t exp_resp_len, resp_len_wire, error_code;
+  speed_t baudrate;
+  psu_datastore_t *psu = NULL;
 
   if (cmd->raw_modbus.custom_timeout) {
     timeout = cmd->raw_modbus.custom_timeout * 1000; // ms to us
   } else {
     timeout = rackmond_config.modbus_timeout;
+  }
+
+  if (cmd->raw_modbus.length < 1) {
+    OBMC_WARN("Raw modbus command too short!");
+    return -1;
+  }
+
+  if (global_lock() != 0) {
+    return -1;
+  }
+
+  slot = lookup_data_slot((uint8_t) cmd->raw_modbus.data[0]);
+  if (slot >= 0) {
+    psu = rackmond_config.stored_data[slot];
+  }
+
+  err = check_psu_baudrate(psu, &baudrate);
+
+  global_unlock();
+
+  if (err != 0) {
+    error_code = -err;
+    resp_len_wire = 0;
+    buf_write(wb, &resp_len_wire, sizeof(uint16_t));
+    buf_write(wb, &error_code, sizeof(uint16_t));
+    return 0;
   }
 
   exp_resp_len = cmd->raw_modbus.expected_response_length;
@@ -782,13 +1178,12 @@ static int run_cmd_raw_modbus(rackmond_command* cmd, write_buf_t *wb)
 
   resp_len = modbus_command(&rackmond_config.rs485, timeout,
                             cmd->raw_modbus.data, cmd->raw_modbus.length,
-                            resp_buf, exp_resp_len, exp_resp_len);
+                            resp_buf, exp_resp_len, exp_resp_len, baudrate);
   if(resp_len < 0) {
-    uint16_t error = -resp_len;
-
+    error_code = -resp_len;
     resp_len_wire = 0;
     buf_write(wb, &resp_len_wire, sizeof(uint16_t));
-    buf_write(wb, &error, sizeof(uint16_t));
+    buf_write(wb, &error_code, sizeof(uint16_t));
   } else {
     resp_len_wire = resp_len;
     buf_write(wb, &resp_len_wire, sizeof(uint16_t));
@@ -847,10 +1242,17 @@ static int run_cmd_dump_status(rackmond_command* cmd, write_buf_t *wb)
         continue;
       }
 
-      buf_printf(wb, "PSU addr %02x - crc errors: %d, timeouts: %d\n",
+      speed_t baudrate = rackmond_config.stored_data[i]->baudrate;
+      buf_printf(wb, "PSU addr %02x - crc errors: %d, timeouts: %d, baud rate: %s",
                  rackmond_config.stored_data[i]->addr,
                  rackmond_config.stored_data[i]->crc_errors,
-                 rackmond_config.stored_data[i]->timeout_errors);
+                 rackmond_config.stored_data[i]->timeout_errors,
+                 baud_to_str(baudrate));
+      if (rackmond_config.stored_data[i]->timeout_mode) {
+        time_t until = rackmond_config.stored_data[i]->last_comms + NON_COMMUNICATION_TIMEOUT;
+        buf_printf(wb, " (in timeout mode for the next %d seconds)", until - now);
+      }
+      buf_printf(wb, "\n");
     }
 
     buf_printf(wb, "Active on last scan: ");
@@ -1118,6 +1520,8 @@ int main(int argc, char** argv) {
   struct sockaddr_un local, client;
 
   signal(SIGPIPE, SIG_IGN);
+  signal(SIGTERM, trigger_graceful_exit);
+  signal(SIGINT, trigger_graceful_exit);
 
   obmc_log_init("rackmond", LOG_INFO, 0);
   obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
@@ -1137,6 +1541,14 @@ int main(int argc, char** argv) {
               rackmond_config.min_delay);
   }
   verbose = getenv("RACKMOND_VERBOSE") != NULL ? 1 : 0;
+
+  if (getenv("RACKMOND_DESIRED_BAUDRATE") != NULL) {
+    int parsed_baudrate_int = atoi(getenv("RACKMOND_DESIRED_BAUDRATE"));
+    rackmond_config.desired_baudrate = int_to_baudrate(parsed_baudrate_int);
+    OBMC_INFO("set desired baudrate value to RACKMOND_DESIRED_BAUDRATE (%d -> %s)",
+              parsed_baudrate_int,
+              baud_to_str(rackmond_config.desired_baudrate));
+  }
 
   OBMC_INFO("rackmon/modbus service starting");
   ERR_EXIT(open_rs485_dev(DEFAULT_TTY, &rackmond_config.rs485));
@@ -1161,6 +1573,7 @@ int main(int argc, char** argv) {
   ERR_LOG_EXIT(listen(sock, 20), "failed to set passive socket");
 
   OBMC_INFO("rackmon/modbus service listening");
+
   while(1) {
     socklen_t clisocklen = sizeof(struct sockaddr_un);
     int clisock = accept(sock, (struct sockaddr*) &client, &clisocklen);

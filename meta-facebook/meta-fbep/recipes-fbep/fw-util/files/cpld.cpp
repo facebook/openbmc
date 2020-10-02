@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <syslog.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/pal.h>
 #include <openbmc/cpld.h>
@@ -47,13 +48,17 @@ class CpldComponent : public Component {
     }
     int update(string image) {
       int ret = -1;
+      string comp = this->component();
 
       if (!cpld_intf_open(LCMXO2_7000HC, INTF_JTAG, NULL)) {
+        syslog(LOG_CRIT, "Component %s upgrade initiated", comp.c_str());
         ret = cpld_program((char *)image.c_str(), NULL, false);
         cpld_intf_close(INTF_JTAG);
         if (ret < 0) {
           printf("Error Occur at updating CPLD FW!\n");
-        }
+        } else {
+          syslog(LOG_CRIT, "Component %s upgrade completed", comp.c_str());
+	}
       } else {
         printf("Cannot open JTAG!\n");
       }

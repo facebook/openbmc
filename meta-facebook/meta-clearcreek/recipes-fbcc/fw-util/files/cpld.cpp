@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <syslog.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/pal.h>
 #include <openbmc/cpld.h>
@@ -52,15 +53,17 @@ class CpldComponent : public Component {
     int update(string image) {
       int ret = -1;
       uint8_t i, cfm_cnt = 2;
+      string comp = this->component();
 
+      syslog(LOG_CRIT, "Component %s upgrade initiated", comp.c_str());
       for (i = 0; i < cfm_cnt; i++) {
         if (i == 1) {
-        // workaround for EVT boards that CONFIG_SEL of main CPLD is floating,
-        // so program both CFMs
-        attr.img_type = CFM_IMAGE_2;
-        attr.start_addr = CFM1_START_ADDR;
-        attr.end_addr = CFM1_END_ADDR;
-      }
+          // workaround for EVT boards that CONFIG_SEL of main CPLD is floating,
+          // so program both CFMs
+          attr.img_type = CFM_IMAGE_2;
+          attr.start_addr = CFM1_START_ADDR;
+          attr.end_addr = CFM1_END_ADDR;
+        }
 
         if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
           printf("Cannot open i2c!\n");
@@ -74,6 +77,9 @@ class CpldComponent : public Component {
           break;
         }
       }
+      if (ret == 0)
+        syslog(LOG_CRIT, "Component %s upgrade completed", comp.c_str());
+
       return ret;
     }
 };

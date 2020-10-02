@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include <syslog.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/pal.h>
 #include <openbmc/cpld.h>
@@ -87,6 +88,7 @@ int CpldComponent::_update(const char *path, uint8_t is_signed) {
     cfm_cnt = 2;
   }
 
+  syslog(LOG_CRIT, "Component %s%s upgrade initiated", _component.c_str(), is_signed? "": " force");
   for (i = 0; i < cfm_cnt; i++) {
     if (i == 1) {
       // workaround for EVT boards that CONFIG_SEL of main CPLD is floating,
@@ -110,6 +112,8 @@ int CpldComponent::_update(const char *path, uint8_t is_signed) {
       break;
     }
   }
+  if (ret == 0)
+    syslog(LOG_CRIT, "Component %s%s upgrade completed", _component.c_str(), is_signed? "": " force");
 
   return ret;
 }

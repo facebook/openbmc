@@ -19,6 +19,7 @@
  */
 
 #include <iostream>
+#include  <iomanip>
 #include <set>
 #include <map>
 #include <string>
@@ -186,6 +187,74 @@ reset_bmc(const std::string& bmc)
   return 0;
 }
 
+static void
+print_mac(uint8_t mac[6])
+{
+  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << int(mac[0]);
+  for (int i = 1; i < 6; i++) {
+    std::cout << ":" << std::setfill('0') << std::setw(2) << std::right << std::hex << int(mac[i]);
+  }
+  std::cout << std::endl;
+}
+
+static void
+print_linklocal(uint8_t mac[6])
+{
+  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << 0xfe80 << "::";
+  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << int(mac[0] ^ 2) << int(mac[1]) << ":";
+  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << int(mac[2]) << 0xff << ":";
+  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << 0xfe << int(mac[3]) << ":";
+  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << int(mac[4]) << int(mac[5]) << std::endl;
+}
+
+static void
+print_ip6_addr(uint8_t addr[SIZE_IP6_ADDR])
+{
+  uint16_t v = addr[1] | (addr[0] << 8);
+  std::cout << std::hex << int(v);
+  for (int i = 2; i < SIZE_IP6_ADDR; i+=2) {
+    v = addr[i+1] | (addr[i] << 8);
+    std::cout << ":" << std::hex << int(v);
+  }
+  std::cout << '\n';
+}
+
+static int
+print_lan_info(const std::string& bmc)
+{
+  int (*get_lan_cfg)(uint8_t sel, uint8_t *buf, uint8_t *rlen);
+  if (bmc == "emeraldpools") {
+    get_lan_cfg = pal_ep_get_lan_config;
+  } else if (bmc == "clearcreek") {
+    get_lan_cfg = pal_cc_get_lan_config;
+  } else if (bmc == "tray0" || bmc == "tray1") {
+    get_lan_cfg = pal_peer_tray_get_lan_config;
+  } else {
+    std::cout << "Unsupported for " << bmc << std::endl;
+    return -1;
+  }
+
+  uint8_t mac[6];
+  uint8_t len;
+  std::cout << "MAC: ";
+  if (get_lan_cfg(LAN_PARAM_MAC_ADDR, mac, &len) || len != 6) {
+    std::cout << "Unknown\n";
+    std::cout << "Link-Local: Unknown\n";
+  } else {
+    print_mac(mac);
+    std::cout << "Link-Local: ";
+    print_linklocal(mac);
+  }
+  uint8_t addr[SIZE_IP6_ADDR];
+  std::cout << "IP6 Address: ";
+  if (get_lan_cfg(LAN_PARAM_IP6_ADDR, addr, &len) || len != SIZE_IP6_ADDR) {
+    std::cout << "Unknown\n";
+  } else {
+    print_ip6_addr(addr);
+  }
+  return 0;
+}
+
 int
 main(int argc, char **argv) {
   int rc = -1;
@@ -216,6 +285,9 @@ main(int argc, char **argv) {
   std::string bmc_to_reset{};
   auto rstbmc = app.add_set("--reset-bmc", bmc_to_reset, get_bmcs(), "Reset BMC in the specified Tray");
 
+  std::string bmc_to_get_lan{};
+  auto laninfo = app.add_set("--get-lan", bmc_to_get_lan, get_bmcs(), "Get LAN/Network information of the given BMC");
+
   CLI11_PARSE(app, argc, argv);
 
   if (get_mode_f) {
@@ -228,6 +300,10 @@ main(int argc, char **argv) {
 
   if (*rstbmc) {
     return reset_bmc(bmc_to_reset);
+  }
+
+  if (*laninfo) {
+    return print_lan_info(bmc_to_get_lan);
   }
 
   if (*mode) {

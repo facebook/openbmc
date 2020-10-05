@@ -60,6 +60,7 @@
 #include <stdint.h>
 #include <signal.h>
 #include <time.h>
+#include <getopt.h>
 
 #include <openbmc/ipmi.h>
 #include <openbmc/libgpio.h>
@@ -100,6 +101,13 @@ typedef struct sel_node
 } sel_list;
 
 static sel_list *head_sel = NULL;
+
+static int verbose_logging = 0;
+#define KCSD_VERBOSE(fmt, args...) \
+  do {                             \
+    if (verbose_logging)           \
+      OBMC_INFO(fmt, ##args);      \
+  } while (0)
 
 static void handle_sel_list(uint8_t *buff, int buff_len)
 {
@@ -165,6 +173,8 @@ static void *handle_add_sel(void *unused)
   uint16_t sel_res_len = 0;
   sel_list *send_to_ipmi = NULL;
 
+  KCSD_VERBOSE("sel_handler thread started");
+
   while (1)
   {
 
@@ -184,6 +194,8 @@ static void *handle_add_sel(void *unused)
 
     //release the lock         
     pthread_mutex_unlock(&sel_lock.acquire_lock);
+
+    KCSD_VERBOSE("sel_handler: processing new SEL entry");
     
     memset(sel_res, 0, default_add_sel_res_len);
     
@@ -230,6 +242,8 @@ static void *kcs_thread(void *unused) {
   int i = 0;
 #endif
 
+  KCSD_VERBOSE("kcs_dev thread started");
+
   set_bmc_ready(true);
 
   // Setup wait time
@@ -257,6 +271,8 @@ static void *kcs_thread(void *unused) {
     TOUCH("/tmp/kcs_touch");
 
     if ( true == is_add_sel_req(req_buf)) {
+      KCSD_VERBOSE("kcs_dev: new SEL entry received");
+
       pthread_mutex_lock(&sel_lock.acquire_lock);
 
       //add the request data to list
@@ -269,6 +285,9 @@ static void *kcs_thread(void *unused) {
       res_len = default_add_sel_res_len;
       memcpy(res_buf, default_add_sel_resp, default_add_sel_res_len);
     } else {
+      KCSD_VERBOSE("kcs_dev: send message (netfn=0x%02x, cmd=0x%02x) to ipmid",
+                   req_buf[0], req_buf[1]);
+
       memmove(&req_buf[1], req_buf, req_len);
       req_buf[0] = FRU_SERVER;
 
@@ -315,6 +334,24 @@ static int kcs_open_legacy(uint8_t channel)
   return fd;
 }
 
+static void dump_usage(const char *prog_name)
+{
+  int i;
+  struct {
+    const char *opt;
+    const char *desc;
+  } options[] = {
+    {"-h|--help", "print this help message"},
+    {"-v|--verbose", "enable verbose logging"},
+    {NULL, NULL},
+  };
+
+  printf("Usage: %s [options]\n", prog_name);
+  for (i = 0; options[i].opt != NULL; i++) {
+    printf("    %-18s - %s\n", options[i].opt, options[i].desc);
+  }
+}
+
 int
 main(int argc, char * const argv[]) {
   int ret;
@@ -322,7 +359,43 @@ main(int argc, char * const argv[]) {
   pthread_t add_sel_tid;
   char device[PATH_MAX];
   uint8_t kcs_channel_num = 2;
-  const char *bmc_ready_n_shadow;
+  const char *bmc_ready_n_shadow = DEFAULT_BMC_READY_GPIO_SHADOW;
+  struct option long_opts[] = {
+    {"help",       no_argument, NULL, 'h'},
+    {"verbose",    no_argument, NULL, 'v'},
+    {NULL,         0,           NULL, 0},
+  };
+
+  while (1) {
+    int opt_index = 0;
+
+    ret = getopt_long(argc, argv, "hv", long_opts, &opt_index);
+    if (ret == -1)
+      break; /* end of arguments */
+
+    switch (ret) {
+    case 'h':
+      dump_usage(argv[0]);
+      return 0;
+
+    case 'v':
+      verbose_logging = 1;
+      break;
+
+    default:
+      return -1;
+    }
+  } /* while */
+
+  /*
+   * Parse remaining command line arguments.
+   */
+  if (optind < argc) {
+    kcs_channel_num = (uint8_t)strtoul(argv[optind++], NULL, 0);
+  }
+  if (optind < argc) {
+    bmc_ready_n_shadow = argv[optind];
+  }
 
   obmc_log_init("kcsd", LOG_INFO, 0);
   obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
@@ -335,12 +408,6 @@ main(int argc, char * const argv[]) {
   OBMC_INFO("kcsd started: kcs channel %d, bmc_ready_gpio %s",
             kcs_channel_num, bmc_ready_n_shadow);
 
-  if (argc > 2) {
-    kcs_channel_num = (uint8_t)strtoul(argv[1], NULL, 0);
-    bmc_ready_n_shadow = argv[2];
-  } else {
-    bmc_ready_n_shadow = DEFAULT_BMC_READY_GPIO_SHADOW;
-  }
   bmc_ready_n = gpio_open_by_shadow(bmc_ready_n_shadow);
   if (!bmc_ready_n) {
     OBMC_ERROR(errno, "failed to open BMC Ready PIN %s", bmc_ready_n_shadow);
@@ -359,12 +426,14 @@ main(int argc, char * const argv[]) {
 
   sleep(1);
 
+  KCSD_VERBOSE("creating kcs_dev thread");
   ret = pthread_create(&kcs_tid, NULL, kcs_thread, NULL);
   if (ret != 0) {
     OBMC_ERROR(ret, "failed to create kcs_dev_thread");
     return -1;
   }
 
+  KCSD_VERBOSE("creating sel_handler thread");
   ret = pthread_create(&add_sel_tid, NULL, handle_add_sel, NULL);
   if (ret != 0) {
     OBMC_ERROR(ret, "failed to create add_sel_thread");

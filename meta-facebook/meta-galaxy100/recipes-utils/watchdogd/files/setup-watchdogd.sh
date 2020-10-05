@@ -29,7 +29,6 @@
 
 . /usr/local/bin/openbmc-utils.sh
 
-# Disable the dual boot watch dog
-devmem_clear_bit 0x1e78502c 0
+# Disable the dual boot watch dog devmem_clear_bit 0x1e78502c 0
 
 /usr/bin/watchdogd.sh > /dev/null 2>&1 &

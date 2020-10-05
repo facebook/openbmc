@@ -23,8 +23,6 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   openbmc-gpio \
   po-eeprom \
-  repeater  \
-  retimer  \
   kcsd \
   spatula \
   stress  \
@@ -32,4 +30,9 @@ IMAGE_INSTALL += " \
   wedge-eeprom \
   weutil-dhcp-id \
   watchdogd \
+  systemd-networkd \
+  udev-rules \
   "
+
+IMAGE_INSTALL_remove += "init-ifupdown"
+SYSVINIT_SCRIPTS_remove += "init-ifupdown"

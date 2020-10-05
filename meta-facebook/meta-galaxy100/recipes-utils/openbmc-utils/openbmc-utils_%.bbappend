@@ -10,6 +10,8 @@
 # for more details.
 #
 
+inherit systemd
+
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://board-utils.sh \
@@ -25,7 +27,9 @@ SRC_URI += "file://board-utils.sh \
       file://lsb_release \
       file://seutil \
       file://sensors_config_fix.sh \
+      file://sensors_config_fix.service \
       file://fix_fru_eeprom.py \
+      file://fix_fru_eeprom.service \
       file://qsfp_cpld_ver.sh \
       file://ceutil.py \
       file://version_dump \
@@ -35,10 +39,10 @@ SRC_URI += "file://board-utils.sh \
       file://scm_cpld_rev.sh \
       file://ec_version.sh \
       file://create_vlan_intf \
+      file://us_monitor.service \
       "
 
 RDEPENDS_${PN} += " python3 bash"
-DEPENDS_append += " update-rc.d-native"
 
 do_install_board() {
     # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
@@ -64,48 +68,25 @@ do_install_board() {
     install -m 0755 scm_cpld_rev.sh ${D}${localbindir}/scm_cpld_rev.sh
     install -m 0755 ec_version.sh ${D}${localbindir}/ec_version.sh
 
-    # create VLAN intf automatically
-    install -d ${D}/${sysconfdir}/network/if-up.d
-    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
+    install -m 755 setup_i2c.sh ${D}${localbindir}
 
-    # init
-    install -d ${D}${sysconfdir}/init.d
-    install -d ${D}${sysconfdir}/rcS.d
+    install -m 755 fix_fru_eeprom.py ${D}${localbindir}/fix_fru_eeprom.py
+    install -m 644 fix_fru_eeprom.service ${D}${systemd_system_unitdir}
 
-    # rc.S
+    install -m 644 us_monitor.service ${D}${systemd_system_unitdir}
 
-    # the script to mount /mnt/data
-    install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
-    update-rc.d -r ${D} mount_data0.sh start 03 S .
+    install -m 755 eth0_mac_fixup.sh ${D}${localbindir}/eth0_mac_fixup.sh
 
-    install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
-    update-rc.d -r ${D} rc.early start 04 S .
+    install -m 755 power-on.sh ${D}${localbindir}/power-on.sh
 
-    install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
-    update-rc.d -r ${D} setup_i2c.sh start 60 S .
-
-    install -m 755 fix_fru_eeprom.py ${D}${sysconfdir}/init.d/fix_fru_eeprom.py
-    update-rc.d -r ${D} fix_fru_eeprom.py start 61 S .
-
-    # networking is done after rcS, any start level within rcS
-    # for mac fixup should work
-    install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
-    update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
-
-    install -m 755 start_us_monitor.sh ${D}${sysconfdir}/init.d/start_us_monitor.sh
-    update-rc.d -r ${D} start_us_monitor.sh start 84 S .
-
-    install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
-    update-rc.d -r ${D} power-on.sh start 85 S .
-
-    # rc.[2345]
-
-    install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
-    update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
-
-    install -m 755 sensors_config_fix.sh ${D}${sysconfdir}/init.d/sensors_config_fix.sh
-    update-rc.d -r ${D} sensors_config_fix.sh start 100 2 3 4 5 .
+    install -m 755 sensors_config_fix.sh ${D}${localbindir}
+    install -m 644 sensors_config_fix.service ${D}${systemd_system_unitdir}
 
 }
 
 FILES_${PN} += "${sysconfdir}"
+
+SYSTEMD_SERVICE_${PN} += "fix_fru_eeprom.service \
+                      us_monitor.service \
+                      sensors_config_fix.service \
+"

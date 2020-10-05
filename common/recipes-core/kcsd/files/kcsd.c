@@ -63,6 +63,7 @@
 
 #include <openbmc/ipmi.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/log.h>
 
 //#define DEBUG
 #define DEFAULT_BMC_READY_GPIO_SHADOW  "BMC_READY_N"
@@ -128,7 +129,7 @@ static void handle_sel_list(uint8_t *buff, int buff_len)
     snprintf(data, sizeof(data), "%s [%d]=%02X", data, i, temp_sel->sel[i]);
   }
 
-  syslog(LOG_WARNING,"[%s] Add SEL Get: %s", __func__, data);
+  OBMC_WARN("[%s] Add SEL Get: %s", __func__, data);
 #endif
 
   if ( NULL == head_sel )
@@ -199,8 +200,8 @@ static void *handle_add_sel(void *unused)
         snprintf(data, sizeof(data), "%02X ", send_to_ipmi->sel[i]);
       }
 
-      syslog(LOG_WARNING,"[Fail] Add SEL Fail. Completion Code = 0x%02X", sel_res[2]);
-      syslog(LOG_WARNING,"[Fail] SEL Raw: %s", data);
+      OBMC_WARN("[Fail] Add SEL Fail. Completion Code = 0x%02X", sel_res[2]);
+      OBMC_WARN("[Fail] SEL Raw: %s", data);
     }
 
     //free the sel buffer
@@ -249,8 +250,8 @@ static void *kcs_thread(void *unused) {
     for(i=0; i < req_len; i++) {
       snprintf(cmd, sizeof(cmd), "%s %02x", cmd, req_buf[i]);
     }
-    syslog(LOG_WARNING, "[ %ld.%ld ] KCS Req: %s, len=%d",
-           req_tv.tv_sec, req_tv.tv_nsec, cmd, req_len);
+    OBMC_WARN("[ %ld.%ld ] KCS Req: %s, len=%d",
+              req_tv.tv_sec, req_tv.tv_nsec, cmd, req_len);
 #endif
 
     TOUCH("/tmp/kcs_touch");
@@ -283,12 +284,11 @@ static void *kcs_thread(void *unused) {
     clock_gettime(CLOCK_REALTIME, &res_tv);
     for(i=0; i < res_len; i++)
       snprintf(cmd, sizeof(cmd), "%s %02x", cmd, res_buf[i]);
-    syslog(LOG_WARNING, "[ %ld.%ld ] KCS Res: %s",
-           res_tv.tv_sec, res_tv.tv_nsec, cmd);
+    OBMC_WARN("[ %ld.%ld ] KCS Res: %s", res_tv.tv_sec, res_tv.tv_nsec, cmd);
 
     temp = (res_tv.tv_sec - req_tv.tv_sec -1) * 1000 +
            (1000 + (float) ((res_tv.tv_nsec - req_tv.tv_nsec)/1000000) );
-    syslog(LOG_WARNING, "KCS transaction time: %f ms ", temp);
+    OBMC_WARN("KCS transaction time: %f ms ", temp);
 #endif
   } /* while (1) */
 
@@ -303,14 +303,13 @@ static int kcs_open_legacy(uint8_t channel)
   snprintf(cmd, sizeof(cmd),
            "echo 1 > /sys/devices/platform/ast-kcs.%d/enable", channel);
   if (system(cmd) != 0) {
-    syslog(LOG_ERR, "KCSD Enabling channel %d failed\n", channel);
+    OBMC_WARN("KCSD Enabling channel %d failed\n", channel);
   }
 
   snprintf(path, sizeof(path), "/dev/ast-kcs.%d", channel);
   fd = open(path, O_RDWR);
   if (fd < 0) {
-    syslog(LOG_WARNING, "can not open kcs device %s: %s",
-           path, strerror(errno));
+    OBMC_ERROR(errno, "failed to open kcs device %s", path);
   }
 
   return fd;
@@ -325,10 +324,16 @@ main(int argc, char * const argv[]) {
   uint8_t kcs_channel_num = 2;
   const char *bmc_ready_n_shadow;
 
+  obmc_log_init("kcsd", LOG_INFO, 0);
+  obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
+  obmc_log_unset_std_stream();
   if (daemon(1, 0) != 0) {
+    OBMC_ERROR(errno, "failed to enter daemon mode");
     return -1;
   }
-  openlog("kcsd", LOG_CONS, LOG_DAEMON);
+
+  OBMC_INFO("kcsd started: kcs channel %d, bmc_ready_gpio %s",
+            kcs_channel_num, bmc_ready_n_shadow);
 
   if (argc > 2) {
     kcs_channel_num = (uint8_t)strtoul(argv[1], NULL, 0);
@@ -338,7 +343,7 @@ main(int argc, char * const argv[]) {
   }
   bmc_ready_n = gpio_open_by_shadow(bmc_ready_n_shadow);
   if (!bmc_ready_n) {
-    syslog(LOG_WARNING, "BMC Ready PIN not open");
+    OBMC_ERROR(errno, "failed to open BMC Ready PIN %s", bmc_ready_n_shadow);
   }
 
   // 1-based channel number
@@ -350,21 +355,19 @@ main(int argc, char * const argv[]) {
       return -1;
     }
   }
-  syslog(LOG_INFO, "opened %s, fd=%d", device, kcs_fd);
+  OBMC_INFO("opened kcs device %s, fd=%d", device, kcs_fd);
 
   sleep(1);
 
   ret = pthread_create(&kcs_tid, NULL, kcs_thread, NULL);
   if (ret != 0) {
-    syslog(LOG_WARNING, "pthread_create failed for kcs_thread: %s\n",
-           strerror(ret));
+    OBMC_ERROR(ret, "failed to create kcs_dev_thread");
     return -1;
   }
 
   ret = pthread_create(&add_sel_tid, NULL, handle_add_sel, NULL);
   if (ret != 0) {
-    syslog(LOG_WARNING, "pthread_create failed for add_sel_thread: %s\n",
-           strerror(ret));
+    OBMC_ERROR(ret, "failed to create add_sel_thread");
     return -1;
   }
 
@@ -376,5 +379,6 @@ main(int argc, char * const argv[]) {
 
   close(kcs_fd);
 
+  OBMC_INFO("kcsd terminated!");
   return 0;
 }

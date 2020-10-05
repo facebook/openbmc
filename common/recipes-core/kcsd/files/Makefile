@@ -2,7 +2,7 @@
 all: kcsd
 
 CFLAGS += -Wall -Werror -std=gnu99
-LDFLAGS += -pthread -lipmi -lgpio-ctrl
+LDFLAGS += -pthread -lipmi -lgpio-ctrl -llog
 
 kcsd: kcsd.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)

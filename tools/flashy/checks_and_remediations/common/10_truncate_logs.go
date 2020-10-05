@@ -52,11 +52,8 @@ func truncateLogs(stepParams step.StepParams) step.StepExitError {
 
 	for _, f := range logFilesToDelete {
 		log.Printf("Removing '%v'", f)
-		err := fileutils.RemoveFile(f)
-		if err != nil {
-			errMsg := errors.Errorf("Unable to remove log file '%v': %v", f, err)
-			return step.ExitSafeToReboot{errMsg}
-		}
+		// ignore errors; this is best-effort only
+		fileutils.RemoveFile(f)
 	}
 
 	logFilesToTruncate, err := fileutils.GlobAll(truncateLogFilePatterns)
@@ -67,11 +64,8 @@ func truncateLogs(stepParams step.StepParams) step.StepExitError {
 
 	for _, f := range logFilesToTruncate {
 		log.Printf("Truncating '%v'", f)
-		err := fileutils.TruncateFile(f, 0)
-		if err != nil {
-			errMsg := errors.Errorf("Unable to truncate log file '%v': %v", f, err)
-			return step.ExitSafeToReboot{errMsg}
-		}
+		// ignore errors; this is best-effort only
+		fileutils.TruncateFile(f, 0)
 	}
 	return nil
 }

@@ -71,38 +71,6 @@ func TestTruncateLogs(t *testing.T) {
 			want:            nil,
 		},
 		{
-			name: "Remove file error",
-			resolvedFilePatterns: []GlobAllReturnType{
-				GlobAllReturnType{
-					[]string{"/tmp/test"},
-					nil,
-				},
-				GlobAllReturnType{
-					[]string{"/tmp/test"},
-					nil,
-				},
-			},
-			removeFileErr:   errors.Errorf("RemoveFile Error"),
-			truncateFileErr: nil,
-			want:            step.ExitSafeToReboot{errors.Errorf("Unable to remove log file '/tmp/test': RemoveFile Error")},
-		},
-		{
-			name: "Truncate file error",
-			resolvedFilePatterns: []GlobAllReturnType{
-				GlobAllReturnType{
-					[]string{"/tmp/test"},
-					nil,
-				},
-				GlobAllReturnType{
-					[]string{"/tmp/test"},
-					nil,
-				},
-			},
-			removeFileErr:   nil,
-			truncateFileErr: errors.Errorf("TruncateFile Error"),
-			want:            step.ExitSafeToReboot{errors.Errorf("Unable to truncate log file '/tmp/test': TruncateFile Error")},
-		},
-		{
 			name: "Resolve file patterns error (1)",
 			resolvedFilePatterns: []GlobAllReturnType{
 				GlobAllReturnType{

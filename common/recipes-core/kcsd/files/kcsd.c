@@ -162,9 +162,9 @@ static void set_bmc_ready(bool ready)
 {
   /* Active low */
   if (ready)
-    gpio_set_value(bmc_ready_n, GPIO_VALUE_LOW);
+    gpio_set_init_value(bmc_ready_n, GPIO_VALUE_LOW);
   else
-    gpio_set_value(bmc_ready_n, GPIO_VALUE_HIGH);
+    gpio_set_init_value(bmc_ready_n, GPIO_VALUE_HIGH);
 }
 
 static void *handle_add_sel(void *unused)

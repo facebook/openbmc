@@ -26,6 +26,7 @@
 #include <syslog.h>
 #include <errno.h>
 #include <assert.h>
+#include <limits.h>
 #include <openbmc/watchdog.h>
 
 #ifndef ARRAY_SIZE
@@ -33,6 +34,7 @@
 #endif /* ARRAY_SIZE */
 
 #define WDT_ERROR(fmt, args...)	fprintf(stderr, fmt, ##args)
+#define WDT_INFO(fmt, args...)	fprintf(stdout, fmt, ##args)
 #define WDT_VERBOSE(fmt, args...)		\
 	do {					\
 		if (verbose_logging) {		\
@@ -40,27 +42,64 @@
 		}				\
 	} while (0)
 
-typedef struct {
+typedef struct wdtcli_cmd_info {
 	char *cmd;
 	char *desc;
-	int (*func)(void);
+	int (*func)(struct wdtcli_cmd_info *info, int argc, char **argv);
 } wdtcli_cmd_t;
 
 static int verbose_logging;
 
-static int wdtcli_start_watchdog(void)
+static int wdtcli_start_watchdog(wdtcli_cmd_t *info, int argc, char **argv)
 {
 	return start_watchdog();
 }
 
-static int wdtcli_stop_watchdog(void)
+static int wdtcli_stop_watchdog(wdtcli_cmd_t *info, int argc, char **argv)
 {
 	return stop_watchdog();
 }
 
-static int wdtcli_kick_watchdog(void)
+static int wdtcli_kick_watchdog(wdtcli_cmd_t *info, int argc, char **argv)
 {
 	return kick_watchdog();
+}
+
+static int wdtcli_set_timeout(wdtcli_cmd_t *info, int argc, char **argv)
+{
+	unsigned long timeout;
+
+	if (argc <= 0) {
+		fprintf(stderr,
+			"Error: <timeout> is missing for %s command!\n",
+			info->cmd);
+		return -1;
+	}
+
+	timeout = strtoul(argv[0], NULL, 0);
+	if (timeout > UINT_MAX) {
+		fprintf(stderr,
+			"Error: <timeout> integer overflow (%lu > %u)!\n",
+			timeout, UINT_MAX);
+		return -1;
+	}
+
+	WDT_VERBOSE("set watchdog timeout value to %lu\n", timeout);
+	return watchdog_set_timeout((unsigned int)timeout);
+}
+
+static int wdtcli_get_timeout(wdtcli_cmd_t *info, int argc, char **argv)
+{
+	int ret;
+	unsigned int timeout;
+
+	WDT_VERBOSE("read the current watchdog timeout value\n");
+	ret = watchdog_get_timeout(&timeout);
+	if (ret == 0) {
+		WDT_INFO("watchdog_timeout=%u\n", timeout);
+	}
+
+	return ret;
 }
 
 static wdtcli_cmd_t wdtcli_cmds[] = {
@@ -78,6 +117,16 @@ static wdtcli_cmd_t wdtcli_cmds[] = {
 		"kick",
 		"kick watchdog",
 		wdtcli_kick_watchdog,
+	},
+	{
+		"set-timeout",
+		"set a new watchdog timeout value (in seconds)",
+		wdtcli_set_timeout,
+	},
+	{
+		"get-timeout",
+		"get the current watchdog timeout value (in seconds)",
+		wdtcli_get_timeout,
 	},
 
 	/* This is the last element. */
@@ -125,7 +174,7 @@ static void wdtcli_usage(const char *prog_name)
 		{"-h", "print this help message"},
 	};
 
-	printf("Usage: %s [-lvh] <command>\n", prog_name);
+	printf("Usage: %s [-lvh] <command> [arguments..]\n", prog_name);
 	for (i = 0; i < ARRAY_SIZE(options); i++) {
 		printf("    %s  %s\n", options[i].opt, options[i].desc);
 	}
@@ -137,6 +186,8 @@ int main(int argc, char **argv)
 	int opt, ret;
 	char *user_cmd = NULL;
 	wdtcli_cmd_t *cmd_info;
+	int arg_count = 0;
+	char **arg_list = NULL;
 
 	while ((opt = getopt(argc, argv, "vlh")) != -1) {
 		switch (opt) {
@@ -155,7 +206,11 @@ int main(int argc, char **argv)
 		}
 	}
 	if (optind < argc) {
-		user_cmd = argv[optind];
+		user_cmd = argv[optind++];
+		arg_count = argc - optind;
+		if (arg_count > 0) {
+			arg_list = &argv[optind];
+		}
 	} else {
 		fprintf(stderr,
 			"Error: <command> argument is missing!\n\n");
@@ -186,7 +241,7 @@ int main(int argc, char **argv)
 	/* Execute user supplied command. */
 	assert(cmd_info->desc != NULL);
 	assert(cmd_info->func != NULL);
-	ret = cmd_info->func();
+	ret = cmd_info->func(cmd_info, arg_count, arg_list);
 	if (ret < 0) {
 		WDT_ERROR("%s: failed\n", cmd_info->desc);
 	} else {

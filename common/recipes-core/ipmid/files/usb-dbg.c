@@ -736,7 +736,7 @@ udbg_get_cri_sensor (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count,
 static int
 udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
   int ret;
-  char line_buff[1000], *pres_dev = line_buff, *delim = "\n";
+  char line_buff[2048], *pres_dev = line_buff, *delim = "\n";
   FILE *fp;
   fruid_info_t fruid;
   lan_config_t lan_config = { 0 };

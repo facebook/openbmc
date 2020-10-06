@@ -20,6 +20,7 @@
 import argparse
 import hashlib
 import json
+import mmap
 import os
 import subprocess
 import sys
@@ -227,6 +228,35 @@ def measure_os(algo, image_meta, recal=False):
     return pcr9.value
 
 
+def read_vbs():
+    SRAM_OFFSET = 0x1E720000
+    SRAM_SIZE = 36 * 1024
+    VBS_OFFSET = 0x200
+    VBS_SIZE = 56
+    memfn = None
+    try:
+        memfn = os.open("/dev/mem", os.O_RDWR | os.O_SYNC)
+        with mmap.mmap(
+            memfn,
+            SRAM_SIZE,
+            mmap.MAP_SHARED,
+            mmap.PROT_READ | mmap.PROT_WRITE,
+            offset=SRAM_OFFSET,
+        ) as sram:
+            sram.seek(VBS_OFFSET)
+            return sram.read(VBS_SIZE)
+    finally:
+        if memfn is not None:
+            os.close(memfn)
+
+
+def measure_vbs(algo):
+    # PCR5: vbs structure
+    pcr5 = Pcr(algo)
+    vbs_measure = hashlib.new(algo, read_vbs()).digest()
+    return pcr5.extend(vbs_measure)
+
+
 def main():
     if args.image:
         flash0_meta = FBOBMCImageMeta(args.image)
@@ -269,6 +299,13 @@ def main():
             "pcr_id": 3,
             "algo": args.algo,
             "expect": measure_uboot_env(args.algo, flash1_meta).hex(),
+            "measure": "NA",
+        },
+        {  # vbs
+            "component": "vbs",
+            "pcr_id": 5,
+            "algo": args.algo,
+            "expect": measure_vbs(args.algo).hex() if args.tpm else "NA",
             "measure": "NA",
         },
         {  # os

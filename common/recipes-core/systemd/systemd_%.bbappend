@@ -24,3 +24,13 @@ ALTERNATIVE_${PN} += "init"
 ALTERNATIVE_TARGET[init] = "${rootlibexecdir}/systemd/systemd"
 ALTERNATIVE_LINK_NAME[init] = "${base_sbindir}/init"
 ALTERNATIVE_PRIORITY[init] ?= "300"
+
+FILESEXTRAPATHS_prepend := "${THISDIR}/policy.conf:"
+
+SRC_URI += " \
+        file://journald-maxlevel.conf \
+"
+
+do_install_append() {
+        install -m 644 -D ${WORKDIR}/journald-maxlevel.conf ${D}${systemd_unitdir}/journald.conf.d/maxlevel.conf
+}

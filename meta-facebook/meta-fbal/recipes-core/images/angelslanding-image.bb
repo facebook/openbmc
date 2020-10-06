@@ -49,4 +49,5 @@ IMAGE_INSTALL += " \
   crashdump \
   threshold-util \
   cm-util \
+  ncsid-v2 \
   "

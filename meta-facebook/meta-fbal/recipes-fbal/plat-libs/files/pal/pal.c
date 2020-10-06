@@ -807,7 +807,7 @@ pal_peer_tray_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen)
   uint16_t dest_bmc_addr;
   uint8_t val;
   int ret;
-  
+
   ret = pal_get_blade_id(&val);
   if (ret) {
     return ret;
@@ -821,7 +821,7 @@ pal_peer_tray_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen)
   ret = lib_ipmb_send_request(ipmi_cmd, netfn,
                         req, 2, resp, rlen,
                         I2C_BUS_2, dest_bmc_addr, bmc_addr);
-  
+
   if (ret) {
     return ret;
   }
@@ -1977,3 +1977,8 @@ pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *re
   }
 }
 
+int
+pal_get_nic_fru_id(void)
+{
+  return FRU_NIC0;
+}

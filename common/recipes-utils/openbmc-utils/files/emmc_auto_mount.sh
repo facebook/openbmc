@@ -60,7 +60,17 @@ emmc_mount_precheck() {
     fi
 
     if fw_printenv | grep "emmc_auto_mount=no" > /dev/null 2>&1; then
-        echo "emmc_auto_mount is disabled. Skip emmc mount."
+        echo "emmc_auto_mount is disabled by uboot env. Skip emmc mount."
+        exit 0
+    fi
+
+    if [ "x$(kv get emmc_auto_mount persistent || true)" = "xno" ]; then
+        echo "emmc_auto_mount is disabled by persistent kv. Skip emmc mount."
+        exit 0
+    fi
+
+    if [ "x$(kv get emmc_auto_mount || true)" = "xno" ]; then
+        echo "emmc_auto_mount is disabled by temporary kv. Skip emmc mount."
         exit 0
     fi
 }

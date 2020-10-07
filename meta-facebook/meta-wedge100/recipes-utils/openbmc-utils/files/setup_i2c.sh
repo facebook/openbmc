@@ -70,3 +70,7 @@ i2c_device_add 8 0x49 tmp75
 
 # Bus 12
 i2c_device_add 12 0x31 syscpld
+
+# Bus 14-21 from pca9548 mux_bus
+i2c_device_add 14 0x5a pfe1100
+i2c_device_add 15 0x59 pfe1100

@@ -21,20 +21,22 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://psumuxmon.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-inherit systemd
+DEPENDS_append = " update-rc.d-native"
 
 SRC_URI = "file://psumuxmon.py \
-           file://psumuxmon.service \
+           file://psumuxmon_service \
           "
 
 S = "${WORKDIR}"
 
 do_install() {
-  install -d ${D}${systemd_system_unitdir}
-  install -d ${D}/usr/local/bin
-  install -m 755 psumuxmon.py ${D}/usr/local/bin
-  install -m 644 psumuxmon.service ${D}${systemd_system_unitdir}/psumuxmon.service
+  install -d ${D}${sysconfdir}/init.d
+  install -d ${D}${sysconfdir}/rcS.d
+  install -d ${D}${sysconfdir}/sv
+  install -d ${D}${sysconfdir}/sv/psumuxmon
+  install -m 755 psumuxmon.py ${D}${sysconfdir}/sv/psumuxmon/run
+  install -m 755 psumuxmon_service ${D}${sysconfdir}/init.d/psumuxmon
+  update-rc.d -r ${D} psumuxmon start 95 2 3 4 5  .
 }
 
-FILES_${PN} = "${systemd_system_unitdir} /usr/local/bin "
-SYSTEMD_SERVICE_${PN} = "psumuxmon.service"
+FILES_${PN} = "${sysconfdir} "

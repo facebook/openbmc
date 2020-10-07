@@ -487,14 +487,16 @@ static void
            is_asserted[i] = false;
         }
 
-        pal_get_server_12v_power(i, &pwr_sts);
-        if ( pwr_sts == SERVER_12V_OFF && time_elapsed[i] >= 1 ) {
-          //pwr 12V on since time_elpased >=1
-          action[i] = PWR_12V_ON;
-        } else if ( time_elapsed[i] > 4 ) {
-          if ( i == BTN_BMC ) {
+        if ( i == BTN_BMC ) {
+          if ( time_elapsed[i] > 4 ) {
             action[i] = SLED_CYCLE;
-          } else {
+          }
+        } else {
+          pal_get_server_12v_power(i, &pwr_sts);
+          if (pwr_sts == SERVER_12V_OFF && time_elapsed[i] >= 1) {
+             //pwr 12V on since time_elpased >=1
+             action[i] = PWR_12V_ON;
+          } else if ( time_elapsed[i] > 4 ) {
             if ( time_elapsed[i] <= 8 ) {
               //pwr 12V cycle since 4 < time_elapsed <= 8
               action[i] = PWR_12V_CYCLE;

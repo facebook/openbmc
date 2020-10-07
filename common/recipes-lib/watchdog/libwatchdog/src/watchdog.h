@@ -88,6 +88,13 @@ int stop_watchdog(void);
 int watchdog_enable_magic_close(void);
 int watchdog_disable_magic_close(void);
 
+/*
+ * Function to set/get the timeout value of watchdog timer.
+ * Both functions return 0 for success, and -1 on failures.
+ */
+int watchdog_set_timeout(unsigned int timeout);
+int watchdog_get_timeout(unsigned int *timeout);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

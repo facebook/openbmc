@@ -22,6 +22,8 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <linux/watchdog.h>
 #include "watchdog.h"
 
 #define WATCHDOG_DEV_FILE		"/dev/watchdog"
@@ -286,5 +288,38 @@ int start_watchdog(void)
     syslog(LOG_WARNING, "failed to start watchdog: %s\n",
            strerror(errno));
   }
+  return status;
+}
+
+int watchdog_set_timeout(unsigned int timeout)
+{
+  int status;
+  unsigned long cmd = WDIOC_SETTIMEOUT;
+
+  pthread_mutex_lock(&watchdog_lock);
+  syslog(LOG_INFO, "setting watchdog timeout to %u seconds", timeout);
+  status = ioctl(watchdog_dev, cmd, &timeout);
+  if (status < 0) {
+    syslog(LOG_ERR, "failed to set watchdog timeout: %s", strerror(errno));
+  }
+  pthread_mutex_unlock(&watchdog_lock);
+
+  return status;
+}
+
+int watchdog_get_timeout(unsigned int *timeout)
+{
+  int status;
+  unsigned long cmd = WDIOC_GETTIMEOUT;
+
+  pthread_mutex_lock(&watchdog_lock);
+  syslog(LOG_INFO, "reading the current watchdog timeout value");
+  status = ioctl(watchdog_dev, cmd, timeout);
+  if (status < 0) {
+    syslog(LOG_ERR, "failed to get watchdog timeout value: %s",
+           strerror(errno));
+  }
+  pthread_mutex_unlock(&watchdog_lock);
+
   return status;
 }

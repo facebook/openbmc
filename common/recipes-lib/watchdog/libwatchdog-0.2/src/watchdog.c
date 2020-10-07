@@ -342,3 +342,35 @@ int watchdog_disable_magic_close(void)
 
 	return status;
 }
+
+int watchdog_set_timeout(unsigned int timeout)
+{
+	int status;
+	unsigned long cmd = WDIOC_SETTIMEOUT;
+
+	wdt_lock();
+	WDT_NOTICE("setting watchdog timeout to %u seconds", timeout);
+	status = ioctl(wdt_dev_fd, cmd, &timeout);
+	if (status < 0) {
+		WDT_ERROR(errno, "failed to set watchdog timeout");
+	}
+	wdt_unlock();
+
+	return status;
+}
+
+int watchdog_get_timeout(unsigned int *timeout)
+{
+	int status;
+	unsigned long cmd = WDIOC_GETTIMEOUT;
+
+	wdt_lock();
+	WDT_NOTICE("reading the current watchdog timeout value");
+	status = ioctl(wdt_dev_fd, cmd, timeout);
+	if (status < 0) {
+		WDT_ERROR(errno, "failed to get watchdog timeout value");
+	}
+	wdt_unlock();
+
+	return status;
+}

@@ -66,6 +66,10 @@ enum {
 #define READING_NA      (-2)
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
+#define KEY_MB_SNR_HEALTH  "mb_sensor_health"
+#define KEY_MB_SEL_ERROR   "mb_sel_error"
+#define KEY_PDB_SNR_HEALTH "pdb_sensor_health"
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

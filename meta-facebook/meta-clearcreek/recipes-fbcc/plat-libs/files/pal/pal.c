@@ -38,8 +38,31 @@
 
 #define BMC_IPMB_SLAVE_ADDR 0x17
 
+#define LAST_KEY "last_key"
+
 const char pal_fru_list[] = "all, mb, bsm, pdb, ava1, ava2";
 const char pal_server_list[] = "";
+
+struct pal_key_cfg {
+  char *name;
+  char *def_val;
+  int (*function)(int, void*);
+} key_cfg[] = {
+  /* name, default value, function */
+  {"identify_sled", "off", NULL},
+  {"timestamp_sled", "0", NULL},
+  {KEY_MB_SNR_HEALTH, "1", NULL},
+  {KEY_MB_SEL_ERROR, "1", NULL},
+  {KEY_PDB_SNR_HEALTH, "1", NULL},
+  {"ntp_server", "", NULL},
+  /* Add more Keys here */
+  {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
+};
+
+enum key_event {
+  KEY_BEFORE_SET,
+  KEY_AFTER_INI,
+};
 
 int pal_get_fru_id(char *str, uint8_t *fru)
 {
@@ -221,4 +244,105 @@ bail:
   gpio_close(desc);
 exit:
   return ret;
+}
+
+static int pal_key_index(char *key)
+{
+  int i = 0;
+
+  while (strcmp(key_cfg[i].name, LAST_KEY)) {
+
+    // If Key is valid, return success
+    if (!strcmp(key, key_cfg[i].name))
+      return i;
+
+    i++;
+  }
+
+#ifdef DEBUG
+  syslog(LOG_WARNING, "pal_key_index: invalid key - %s", key);
+#endif
+  return -1;
+}
+
+int pal_get_key_value(char *key, char *value)
+{
+  int index;
+
+  // Check is key is defined and valid
+  if ((index = pal_key_index(key)) < 0)
+    return -1;
+
+  return kv_get(key, value, NULL, KV_FPERSIST);
+}
+
+int pal_set_key_value(char *key, char *value)
+{
+  int index, ret;
+  // Check is key is defined and valid
+  if ((index = pal_key_index(key)) < 0)
+    return -1;
+
+  if (key_cfg[index].function) {
+    ret = key_cfg[index].function(KEY_BEFORE_SET, value);
+    if (ret < 0)
+      return ret;
+  }
+
+  return kv_set(key, value, 0, KV_FPERSIST);
+}
+
+int pal_set_def_key_value()
+{
+  int i;
+  char key[MAX_KEY_LEN] = {0};
+
+  for (i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; i++) {
+    if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed.");
+#endif
+    }
+    if (key_cfg[i].function) {
+      key_cfg[i].function(KEY_AFTER_INI, key_cfg[i].name);
+    }
+  }
+
+  /* Actions to be taken on Power On Reset */
+  if (pal_is_bmc_por()) {
+    /* Clear all the SEL errors */
+    /* Write the value "1" which means FRU_STATUS_GOOD */
+    memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, KEY_MB_SEL_ERROR);
+    pal_set_key_value(key, "1");
+
+    /* Clear all the sensor health files*/
+    /* Write the value "1" which means FRU_STATUS_GOOD */
+    memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, KEY_MB_SNR_HEALTH);
+    pal_set_key_value(key, "1");
+
+    memset(key, 0, MAX_KEY_LEN);
+    strcpy(key, KEY_PDB_SNR_HEALTH);
+    pal_set_key_value(key, "1");
+  }
+  return 0;
+}
+
+void pal_dump_key_value(void)
+{
+  int ret;
+  int i = 0;
+  char value[MAX_VALUE_LEN] = {0x0};
+
+  while (strcmp(key_cfg[i].name, LAST_KEY)) {
+    printf("%s:", key_cfg[i].name);
+    if ((ret = kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST)) < 0) {
+      printf("\n");
+    } else {
+      printf("%s\n",  value);
+    }
+    i++;
+    memset(value, 0, MAX_VALUE_LEN);
+  }
 }

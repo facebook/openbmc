@@ -26,6 +26,8 @@ SRC_URI = "file://ast-functions \
            file://setup-usbnet.sh \
            file://setup-usbhub.sh \
            file://setup-m2carrier.sh \
+           file://sync-rtc.sh \
+           file://run-sync-rtc.sh \
            file://setup-i2c.sh \
            file://COPYING \
           "
@@ -59,6 +61,9 @@ do_install() {
   update-rc.d -r ${D} setup-usbhub.sh start 90 S .
   install -m 755 setup-usbnet.sh ${D}${sysconfdir}/init.d/setup-usbnet.sh
   update-rc.d -r ${D} setup-usbnet.sh start 69 5 .
+  install -m 755 sync-rtc.sh ${D}${sysconfdir}/init.d/sync-rtc.sh
+  install -m 755 run-sync-rtc.sh ${D}${sysconfdir}/init.d/run-sync-rtc.sh
+  update-rc.d -r ${D} run-sync-rtc.sh start 99 5 .
   install -m 755 setup-m2carrier.sh ${D}${sysconfdir}/init.d/setup-m2carrier.sh
   update-rc.d -r ${D} setup-m2carrier.sh start 90 S .
 }

@@ -1239,6 +1239,7 @@ pal_is_cmd_valid(uint8_t *data)
 static int
 pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   int ret = PAL_EOK;
+  uint8_t board_type = 0;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -1259,7 +1260,15 @@ pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           sprintf(name, "PROC_FAIL");
           break;
         case BIC_SENSOR_SSD_HOT_PLUG:
-          sprintf(name, "SSD_HOT_PLUG");
+          if (fby3_common_get_2ou_board_type(fru, &board_type) < 0) {
+            syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+            board_type = M2_BOARD;
+          }
+          if (board_type == E1S_BOARD) {
+            snprintf(name, MAX_SNR_NAME, "E1S_NOT_PRESENT");
+          } else {
+            snprintf(name, MAX_SNR_NAME, "SSD_HOT_PLUG");
+          }
           break;
         case BB_BIC_SENSOR_POWER_DETECT:
           sprintf(name, "POWER_DETECT");

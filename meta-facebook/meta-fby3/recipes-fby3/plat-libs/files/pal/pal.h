@@ -66,6 +66,8 @@ extern "C" {
 
 #define SET_NIC_PWR_MODE_LOCK "/var/run/set_nic_power.lock"
 
+#define MAX_SNR_NAME 32
+
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
 extern const char pal_fru_list_sensor_history[];

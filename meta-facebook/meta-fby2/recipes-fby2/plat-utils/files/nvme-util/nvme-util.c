@@ -226,29 +226,31 @@ read_gp_nvme_data(uint8_t slot_id, uint8_t drv_num, uint8_t reg, int rlen, int a
       printf("%02X ", rbuf[i]);
     }
     printf("\n");
-  } 
+  }
 
   return 0;
 }
 
-static void
+static int
 ssd_monitor_enable(uint8_t slot_id, uint8_t slot_type, uint8_t en) {
+  int ret = 0;
   if ((slot_type == SLOT_TYPE_SERVER) || (slot_type == SLOT_TYPE_GPV2)) {
     if (en) {  // enable sensor monitor
-      bic_disable_sensor_monitor(slot_id, 0);
+      ret = bic_disable_sensor_monitor(slot_id, 0);
     } else {   // disable sensor monitor
-      bic_disable_sensor_monitor(slot_id, 1);
+      ret = bic_disable_sensor_monitor(slot_id, 1);
       msleep(100);
     }
   }
   else if (slot_type == SLOT_TYPE_GP) {
     if (en) {  // enable sensor monitor
-      fby2_disable_gp_m2_monior(slot_id, 0);
+      ret = fby2_disable_gp_m2_monior(slot_id, 0);
     } else {   // disable sensor monitor
-      fby2_disable_gp_m2_monior(slot_id, 1);
+      ret = fby2_disable_gp_m2_monior(slot_id, 1);
       msleep(100);
     }
   }
+  return ret;
 }
 
 static void
@@ -343,11 +345,13 @@ main(int argc, char **argv) {
   sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGTERM, &sa, NULL);
 
-  ssd_monitor_enable(slot_id, slot_type, 0);
-  read_write_nvme_data(slot_id, drv_num, reg, rlen, argc-5,argv+5);
-  ssd_monitor_enable(slot_id, slot_type, 1);
+  if (ssd_monitor_enable(slot_id, slot_type, 0))
+    printf("warning: failed disabling SSD monitoring\n");
+  ret = read_write_nvme_data(slot_id, drv_num, reg, rlen, argc-5,argv+5);
+  if (ssd_monitor_enable(slot_id, slot_type, 1))
+    printf("warning: failed enabling SSD monitoring\n");
 
-  return 0;
+  return ret;
 
 err_exit:
   print_usage_help();

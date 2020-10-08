@@ -81,7 +81,8 @@
         "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan1_input"
       },
       "write_source" : {
-        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan1_pwm"
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan1_pwm",
+        "max_duty_register": 255
       }
     },
     "2": {
@@ -90,7 +91,8 @@
         "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan2_input"
       },
       "write_source" : {
-        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan2_pwm"
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan2_pwm",
+        "max_duty_register": 255
       }
     },
     "3": {
@@ -99,7 +101,8 @@
         "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan3_input"
       },
       "write_source" : {
-        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan3_pwm"
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan3_pwm",
+        "max_duty_register": 255
       }
     },
     "4": {
@@ -108,7 +111,8 @@
         "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan4_input"
       },
       "write_source" : {
-        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan4_pwm"
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan4_pwm",
+        "max_duty_register": 255
       }
     },
     "5": {
@@ -117,7 +121,8 @@
         "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan5_input"
       },
       "write_source" : {
-        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan5_pwm"
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan5_pwm",
+        "max_duty_register": 255
       }
     }
   },

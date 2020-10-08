@@ -248,8 +248,7 @@ class Zone:
         if (not exprout) and (outmin == 0):
             if not self.transitional_assert_flag:
                 Logger.crit(
-                    "ASSERT: Zone%d No sane fan speed could be \
-                    calculated! Using transitional speed."
+                    "ASSERT: Zone%d No sane fan speed could be calculated! Using transitional speed."
                     % (self.counter)
                 )
             exprout = self.transitional
@@ -259,8 +258,7 @@ class Zone:
         else:
             if self.transitional_assert_flag:
                 Logger.crit(
-                    "DEASSERT: Zone%d No sane fan speed could be \
-                    calculated! Using transitional speed."
+                    "DEASSERT: Zone%d No sane fan speed could be calculated! Using transitional speed."
                     % (self.counter)
                 )
             self.transitional_assert_flag = False

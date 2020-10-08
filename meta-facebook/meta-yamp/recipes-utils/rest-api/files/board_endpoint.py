@@ -20,7 +20,6 @@
 
 import re
 
-import rest_fruid_scm
 import rest_fw_ver
 import rest_peutil
 import rest_pim_present
@@ -30,13 +29,13 @@ import rest_pimstatus
 import rest_scdinfo
 import rest_seutil
 from aiohttp import web
-from rest_utils import dumps_bytestr, get_endpoints
+from rest_utils import dumps_bytestr
 
 
 class boardApp_Handler:
     # Handler for sys/mb/fruid/scm resource endpoint
     async def rest_fruid_scm_hdl(self, request):
-        return web.json_response(rest_fruid_scm.get_fruid_scm(), dumps=dumps_bytestr)
+        return web.json_response(rest_seutil.get_seutil(), dumps=dumps_bytestr)
 
     # Handler for sys/mb/scdinfo resource endpoint
     async def rest_scdinfo_hdl(self, request):

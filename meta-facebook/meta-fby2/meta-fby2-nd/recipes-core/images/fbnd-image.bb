@@ -40,8 +40,6 @@ IMAGE_INSTALL += " \
   fpc-util \
   crashdump \
   log-util-v2 \
-  lldp-util \
-  spatula \
   openbmc-utils \
   ipmi-util \
   guid-util \

@@ -91,6 +91,7 @@ i2c_device_add 7 0x50 24c512
 
 # SMBus 9 SCM DPM UCD90320
 hwmon_device_add 9 0x11 ucd90320
+gpio_export_by_offset 9-0011 13 SCM_FPGA_LATCH_L
 
 # SMBus 10 SCM POWER
 i2c_device_add 10 0x30 cpupwr

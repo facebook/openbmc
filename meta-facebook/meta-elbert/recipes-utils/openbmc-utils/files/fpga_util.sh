@@ -6,6 +6,7 @@
 
 CPLD_JTAG_SEL_L="CPLD_JTAG_SEL_L"
 JTAG_TRST_L="JTAG_TRST_L"
+SCM_FPGA_LATCH_L="SCM_FPGA_LATCH_L"
 JTAG_EN="${SCMCPLD_SYSFS_DIR}/jtag_en"
 PROGRAM_SEL="${SCMCPLD_SYSFS_DIR}/program_sel"
 SPI_CTRL="${SMBCPLD_SYSFS_DIR}/spi_ctrl"
@@ -16,6 +17,7 @@ SMB_SPIDEV="spidev1.1"
 
 SCM_PROGRAM=false
 SMB_PROGRAM=false
+CACHED_SCM_PWR_ON_SYSFS="0x1"
 
 trap disconnect_program_paths INT TERM QUIT EXIT
 
@@ -33,10 +35,20 @@ disconnect_program_paths() {
     # Return values to defaults
     gpio_set_value $CPLD_JTAG_SEL_L 1
     gpio_set_value $JTAG_TRST_L 0
-    if [ "$SCM_PROGRAM" = false ]; then
+    if [ "$SCM_PROGRAM" = true ]; then
+        # Give SCM cpld time to come back on SMBus
+        sleep 2
+        # Restore x86 power state
+        echo "$CACHED_SCM_PWR_ON_SYSFS" > "$SCM_PWR_ON_SYSFS" || {
+           echo "Failed to recover CPU power state."
+        }
+        sleep 1
+        gpio_set_value $SCM_FPGA_LATCH_L 1
+    else
         echo 0 > "$JTAG_EN"
         echo 1 > "$PROGRAM_SEL"
     fi
+
     if [ "$SMB_PROGRAM" = false ]; then
         echo 0 > "$SPI_CTRL"
         echo 0 > "$JTAG_CTRL"
@@ -44,6 +56,10 @@ disconnect_program_paths() {
 }
 
 connect_scm_jtag() {
+    # Store initial state of x86 power in order to restore after programming
+    CACHED_SCM_PWR_ON_SYSFS="$(head -n 1 "$SCM_PWR_ON_SYSFS" 2> /dev/null)"
+    gpio_set_value $SCM_FPGA_LATCH_L 0
+
     gpio_set_value $CPLD_JTAG_SEL_L 0
     gpio_set_value $JTAG_TRST_L 1
     echo 0 > "$JTAG_EN"

@@ -744,47 +744,55 @@ static int mmc_read_report_cmd_sk(struct m_cmd_args *cmd_args)
         return 0;
 }
 
-static void regex_extract(char * buf, char * data, const char * pattern, size_t matchId)
+static void regex_extract(char * buf, char * data, const char * pattern,
+			  size_t matchId)
 {
-    int status, len, cflags = REG_EXTENDED | REG_ICASE;
-    const size_t nmatch = 10;
-    regmatch_t pmatch[nmatch];
-    regex_t reg;
-    
-    regcomp(&reg, pattern, cflags);
-    status = regexec(&reg, data, nmatch, pmatch, 0);
-    if (status == REG_NOMATCH) {
-        MMC_INFO("No Match\n");
-        buf[0] = '\0';
-    } else if (status == 0) {
-        len = pmatch[matchId].rm_eo - pmatch[matchId].rm_so;
-        strncpy(buf, data + pmatch[matchId].rm_so, len);
-        buf[len] = '\0';
-    }
-    regfree(&reg);
+	int status;
+	int cflags = REG_EXTENDED | REG_ICASE;
+	const size_t nmatch = 10;
+	regmatch_t pmatch[nmatch];
+	regex_t reg;
+
+	regcomp(&reg, pattern, cflags);
+	status = regexec(&reg, data, nmatch, pmatch, 0);
+	if (status == REG_NOMATCH) {
+		buf[0] = '\0';
+	} else if (status == 0) {
+		int len = pmatch[matchId].rm_eo - pmatch[matchId].rm_so;
+
+		strncpy(buf, data + pmatch[matchId].rm_so, len);
+		buf[len] = '\0';
+	}
+
+	regfree(&reg);
 }
 
-static __u8 get_kernel_mmc_data()
+static int mmc_bus_width_debugfs(__u8 *width)
 {
-    __u8 ret = 0;
-    char buf[1024], data[1024];
-    const char * bus_width_pattern = "bus width:\t([0-9]+)";
-    FILE *pFile = fopen("/sys/kernel/debug/mmc0/ios", "r");
-    
-    if (NULL == pFile) {
-        MMC_INFO("Open kernel mmc data failed.\n");
-    } else {
-        if (!fread(data, 1024, 1, pFile)) {
-            data[1023] = '\0';
-            buf[0] = '\0';
-            regex_extract(buf, data, bus_width_pattern, 1);
-            if (strlen(buf) > 0)
-                ret = (__u8)atoi(buf) - 1;
-        }
-    }
+	FILE *fp;
+	int ret = -1;
+	char data[1024];
+	const char *path = "/sys/kernel/debug/mmc0/ios";
+	const char *pattern = "bus width:\t([0-9]+)";
 
-    fclose(pFile);
-    return ret;
+	fp = fopen(path, "r");
+	if (fp == NULL)
+		return -1;
+
+	if (fread(data, sizeof(data), 1, fp) == 1) {
+		char buf[1024];
+
+		buf[0] = '\0';
+		data[sizeof(data) - 1] = '\0';
+		regex_extract(buf, data, pattern, 1);
+		if (strlen(buf) > 0) {
+			*width = (__u8)atoi(buf) - 1;
+			ret = 0;
+		}
+	}
+
+	fclose(fp);
+	return ret;
 }
 
 static char *mmc_extcsd_rev(__u8 rev, char *buf, size_t size)
@@ -953,7 +961,9 @@ static void mmc_dump_misc_info(__u8 *extcsd)
 	char buf[NAME_MAX];
 	__u8 width, rst_n, cache_ctrl;
 
-	width = get_kernel_mmc_data();
+	if (mmc_bus_width_debugfs(&width) != 0) {
+		width = extcsd[EXT_CSD_BUS_WIDTH];
+	}
 	MMC_INFO("- Bus Width: %s\n",
 		mmc_bus_width(width, buf, sizeof(buf)));
 

@@ -31,6 +31,7 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/libgpio.h>
 #include "bic_xfer.h"
@@ -52,24 +53,14 @@ void msleep(int msec) {
   }
 }
 
-int i2c_open(uint8_t bus_id) {
-  int fd;
-  char fn[32];
-  int rc;
+int i2c_open(uint8_t bus_id, uint8_t addr_7bit) {
+  int fd = -1;
 
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus_id);
-  fd = open(fn, O_RDWR);
-  if (fd == -1) {
-    syslog(LOG_ERR, "Failed to open i2c device %s", fn);
+  fd = i2c_cdev_slave_open(bus_id, addr_7bit, I2C_SLAVE_FORCE_CLAIM);
+  if ( fd < 0 ) {
+    syslog(LOG_ERR, "Failed to open /dev/i2c-%d\n", bus_id);
     return BIC_STATUS_FAILURE;
   }
-
-  rc = ioctl(fd, I2C_SLAVE, BRIDGE_SLAVE_ADDR);
-  if (rc < 0) {
-    syslog(LOG_ERR, "Failed to open slave @ address 0x%x", BRIDGE_SLAVE_ADDR);
-    close(fd);
-  }
-
   return fd;
 }
 
@@ -308,4 +299,23 @@ int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, 
   *rxlen = rlen-6;
 
   return BIC_STATUS_SUCCESS;
+}
+
+int
+_set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
+  char key[64];
+  char value[64] = {0};
+  struct timespec ts;
+
+  sprintf(key, "fru%u_fwupd", slot_id);
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += tmout;
+  sprintf(value, "%ld", ts.tv_sec);
+
+  if (kv_set(key, value, 0, 0) < 0) {
+     return -1;
+  }
+
+  return 0;
 }

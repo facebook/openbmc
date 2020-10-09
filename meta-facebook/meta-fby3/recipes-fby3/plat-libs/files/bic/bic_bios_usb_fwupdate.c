@@ -29,7 +29,6 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <openbmc/kv.h>
 #include "bic_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 
@@ -53,25 +52,6 @@ typedef struct {
   uint16_t length;
   uint8_t data[USB_DAT_SIZE];
 } __attribute__((packed)) bic_usb_packet;
-
-static int
-_set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
-  char key[64];
-  char value[64] = {0};
-  struct timespec ts;
-
-  sprintf(key, "fru%u_fwupd", slot_id);
-
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  ts.tv_sec += tmout;
-  sprintf(value, "%ld", ts.tv_sec);
-
-  if (kv_set(key, value, 0, 0) < 0) {
-     return -1;
-  }
-
-  return 0;
-}
 
 static int
 verify_bios_image(uint8_t slot_id, int fd, long size) {

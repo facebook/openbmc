@@ -32,7 +32,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#include <openbmc/kv.h>
 #include "bic_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 
@@ -82,25 +81,6 @@ bic_send:
   }
 
   return ret;
-}
-
-static int
-_set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
-  char key[64];
-  char value[64] = {0};
-  struct timespec ts;
-
-  sprintf(key, "fru%u_fwupd", slot_id);
-
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  ts.tv_sec += tmout;
-  sprintf(value, "%ld", ts.tv_sec);
-
-  if (kv_set(key, value, 0, 0) < 0) {
-     return -1;
-  }
-
-  return 0;
 }
 
 static int

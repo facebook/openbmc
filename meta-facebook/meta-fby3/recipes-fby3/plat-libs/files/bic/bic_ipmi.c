@@ -1396,7 +1396,7 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
   bus_num = fby3_common_get_bus_id(slot_id) + 4;
 
   //set the present status of M.2
-  fd = i2c_open(bus_num);
+  fd = i2c_open(bus_num, SB_CPLD_ADDR);
   if ( fd < 0 ) {
     printf("Cannot open /dev/i2c-%d\n", bus_num);
     ret = BIC_STATUS_FAILURE;

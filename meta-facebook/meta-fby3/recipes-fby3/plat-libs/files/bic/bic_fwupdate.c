@@ -484,7 +484,7 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
   bus_num = fby3_common_get_bus_id(slot_id);
   syslog(LOG_CRIT, "%s: update bic firmware on slot %d\n", __func__, slot_id);
 
-  i2cfd = i2c_open(bus_num);
+  i2cfd = i2c_open(bus_num, BRIDGE_SLAVE_ADDR);
   if ( i2cfd < 0 ) {
     printf("Cannot open /dev/i2c-%d\n", bus_num);
     goto exit;

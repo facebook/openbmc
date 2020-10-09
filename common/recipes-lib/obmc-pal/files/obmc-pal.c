@@ -2518,3 +2518,8 @@ pal_set_bios_cap_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
 {
   return PAL_ENOTSUP;
 }
+
+int __attribute__((weak))
+pal_is_sensor_valid(uint8_t fru, uint8_t snr_num) {
+  return 0;
+}

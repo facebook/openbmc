@@ -194,6 +194,15 @@ is_pldm_state_sensor(uint8_t snr_num, uint8_t fru)
   return 0;
 }
 
+static int
+is_supported_sensor(uint8_t snr_num, uint8_t fru)
+{
+  if (pal_is_sensor_valid(fru, snr_num)) {
+    return 1;
+  }
+  return 0;
+}
+
 const char *
 numeric_state_to_name(unsigned int state, const char *name_str[], size_t n, const char* error_str)
 {
@@ -486,6 +495,8 @@ get_sensor_reading(void *sensor_data) {
           }
         } else if (filter) {
           printf("%-28s (0x%X) : NA | (na)\n", filter_sensor_name, sensor_info->sensor_list[i]);
+        } else if (is_supported_sensor(snr_num, sensor_info->fru)) {
+          printf("%-28s (0x%X) : 0/NA | (na)\n", thresh.name, sensor_info->sensor_list[i]);
         } else {
           printf("%-28s (0x%X) : NA | (na)\n", thresh.name, sensor_info->sensor_list[i]);
         }

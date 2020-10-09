@@ -18,10 +18,11 @@
 # Boston, MA 02110-1301 USA
 #
 
-import subprocess
+import os
 from typing import Dict
 
-from rest_utils import DEFAULT_TIMEOUT_SEC
+
+PATH = "/tmp/sup_weutil.txt"
 
 
 # Handler for seutil resource endpoint
@@ -29,21 +30,19 @@ def get_seutil() -> Dict:
     return {"Information": get_seutil_data(), "Actions": [], "Resources": []}
 
 
-def _parse_seutil_data(data) -> Dict:
-    result = {}
-    # need to remove the first info line from seutil
-    adata = data.split("\n", 1)
-    for sdata in adata[1].split("\n"):
-        tdata = sdata.split(":", 1)
-        if len(tdata) < 2:
-            continue
-        result[tdata[0].strip()] = tdata[1].strip()
-    return result
-
-
 def get_seutil_data() -> Dict:
-    cmd = ["/usr/local/bin/seutil"]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
-    data = data.decode(errors="ignore")
-    return _parse_seutil_data(data)
+    result = {}
+    if not os.path.exists(PATH):
+        raise Exception("Path for sup_weutil doesn't exist")
+    with open(PATH, "r") as fp:
+        # start reading after lines 8
+        lines = fp.readlines()[8:]
+        if lines:
+            for line in lines:
+                tdata = line.split(":", 1)
+                if len(tdata) < 2:
+                    continue
+                result[tdata[0].strip()] = tdata[1].strip()
+        else:
+            raise Exception("sup_weutil file is empty")
+        return result

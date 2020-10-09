@@ -26,6 +26,8 @@
 #define PWM_PLAT_SET 0x80
 #define PWM_MASK     0x0f
 
+#define DEVICE_KEY "sys_config/fru%d_B_drive0_model_name"
+
 enum {
   /* Fan Type */
   DUAL_TYPE    = 0x00,
@@ -2295,6 +2297,41 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     default:
       syslog(LOG_WARNING, "%s() unknown sensor number %x", __func__, sensor_num);
     break;
+  }
+  return 0;
+}
+
+int
+pal_is_sensor_valid(uint8_t fru, uint8_t snr_num) {
+  struct {
+    const char *vendor_id;
+    const char *device_id;
+  } drives[] = { // Unsupported sensor reading drives
+    {"1344",  "5410"}, // Micron
+    {"15B7",  "5002"}, // WD
+    {"1179", "011a"}, // Toshiba
+  };
+  char key[100] = {0};
+  char drive_id[16] = {0};
+  char read_vid[16] = {0};
+  char read_did[16] = {0};
+  int i = 0;
+
+  if (snr_num == BIC_SENSOR_M2B_TEMP) {
+    snprintf(key, sizeof(key), DEVICE_KEY, fru);
+    if (kv_get(key, drive_id, NULL, KV_FPERSIST) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to read %s", __func__, key);
+      return 0;
+    }
+
+    snprintf(read_vid, sizeof(read_vid), "%02x%02x", drive_id[1], drive_id[0]);
+    snprintf(read_did, sizeof(read_did), "%02x%02x", drive_id[3], drive_id[2]);
+    for (i = 0; i < ARRAY_SIZE(drives) ; i++) {
+      if (0 == strcmp(read_vid,drives[i].vendor_id) && 0 == strcmp(read_did,drives[i].device_id)) {
+        return 1; // The Drive unsupport sensor reading
+      }
+    }
+    return 0;
   }
   return 0;
 }

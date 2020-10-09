@@ -1,3 +1,5 @@
+#!/bin/sh
+#
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -15,16 +17,19 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-[Unit]
-Description=Set up watchdogd
-After=setup_i2c.service
-Wants=setup_i2c.service
 
+### BEGIN INIT INFO
+# Provides:          setup-watchdogd
+# Required-Start:
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Set watchdogd handler
+### END INIT INFO
 
-[Service]
-Restart=on-failure
-ExecStartPre=/bin/sh -c 'source /usr/local/bin/openbmc-utils.sh; devmem_clear_bit 0x1e78502c 0'
-ExecStart=/usr/bin/watchdogd.sh
+. /usr/local/bin/openbmc-utils.sh
 
-[Install]
-WantedBy=multi-user.target
+# Disable the dual boot watch dog
+devmem_clear_bit 0x1e78502c 0
+
+/usr/bin/watchdogd.sh > /dev/null 2>&1 &

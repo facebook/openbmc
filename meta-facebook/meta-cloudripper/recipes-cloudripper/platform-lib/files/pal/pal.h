@@ -221,7 +221,8 @@ int pal_set_rst_btn(uint8_t slot, uint8_t status);
 int pal_get_dbg_uart_btn(uint8_t *status);
 int pal_clr_dbg_uart_btn();
 int pal_switch_uart_mux();
-
+int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
+int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
 #ifdef __cplusplus
 } // extern "C"
 #endif

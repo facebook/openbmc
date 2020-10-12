@@ -95,7 +95,10 @@ var runDataPartitionUnmountProcess = func() error {
 		logger.StartSyslog()
 	}()
 
+	remountOnly := false
+
 	// mkdir -p /tmp/mnt
+	// expected failures: none
 	cmd := []string{"mkdir", "-p", "/tmp/mnt"}
 	_, err, _, stderr := utils.RunCommand(cmd, 30*time.Second)
 	if err != nil {
@@ -104,43 +107,74 @@ var runDataPartitionUnmountProcess = func() error {
 	}
 
 	// mount --bind /mnt /tmp/mnt
+	// expected failures: --bind option to mount may not be available
 	log.Printf("Bind mount /mnt to /tmp/mnt")
 	cmd = []string{"mount", "--bind", "/mnt", "/tmp/mnt"}
 	_, err, _, stderr = utils.RunCommand(cmd, 30*time.Second)
 	if err != nil {
-		return errors.Errorf("'%v' failed: %v, stderr: %v",
-			strings.Join(cmd, " "), err, stderr)
+		utils.LogAndIgnoreErr(err)
+		remountOnly = true
 	}
 
 	// cp -r /mnt/data /tmp/mnt
-	log.Printf("Copying /mnt/data contents to /tmp/mnt.")
-	cmd = []string{"cp", "-r", "/mnt/data", "/tmp/mnt"}
-	_, err, _, stderr = utils.RunCommand(cmd, 2*time.Minute)
-	if err != nil {
-		return errors.Errorf("'%v', failed: %v, stderr: %v",
-			strings.Join(cmd, " "), err, stderr)
+	// expected failures: jffs2 may be corrupt and throw errors
+	if !remountOnly {
+		log.Printf("Copying /mnt/data contents to /tmp/mnt.")
+		cmd = []string{"cp", "-r", "/mnt/data", "/tmp/mnt"}
+		_, err, _, stderr = utils.RunCommand(cmd, 2*time.Minute)
+		if err != nil {
+			utils.LogAndIgnoreErr(err)
+			remountOnly = true
+		}
 	}
 
-	log.Printf("Sleeping for 3s so that sshd closes any file descriptions in /mnt/data")
-	utils.Sleep(3 * time.Second)
+	// unmount /mnt/data
+	// expected failures: fuser -km might not work, race conditions
+	i := 1
+	tries := 10
+	for !remountOnly {
+		log.Printf("Sleeping for 3s so that sshd closes any file descriptions in /mnt/data")
+		utils.Sleep(3 * time.Second)
 
-	// fuser -km /mnt/data
-	log.Printf("Killing all processes accessing /mnt/data.")
-	cmd = []string{"fuser", "-km", "/mnt/data"}
-	_, err, _, stderr = utils.RunCommand(cmd, 30*time.Second)
-	// we ignore the error in fuser, as this might be thrown because nothing holds
-	// a file open on the file system (because of delayed log file open or because
-	// rsyslogd is not running for some reason).
-	// Retrying umount with a delay below should work around surviving processes.
-	utils.LogAndIgnoreErr(err)
+		// fuser -km /mnt/data
+		log.Printf("Killing all processes accessing /mnt/data (try %d of %d)", i, tries)
+		cmd = []string{"fuser", "-km", "/mnt/data"}
+		_, err, _, stderr = utils.RunCommand(cmd, 30*time.Second)
+		// we ignore the error in fuser, as this might be thrown because nothing holds
+		// a file open on the file system (because of delayed log file open or because
+		// rsyslogd is not running for some reason).
+		utils.LogAndIgnoreErr(err)
 
-	// umount /mnt/data
-	log.Printf("Unmounting /mnt/data.")
-	cmd = []string{"umount", "/mnt/data"}
-	_, err, _, stderr = utils.RunCommandWithRetries(cmd, 30*time.Second, 3, 30*time.Second)
-	if err != nil {
-		return errors.Errorf("'%v', failed: %v, stderr: %v",
-			strings.Join(cmd, " "), err, stderr)
+		// give signalled processes a chance to run and close descriptors
+		if err == nil {
+			utils.Sleep(time.Second)
+		}
+
+		// umount /mnt/data
+		log.Printf("Trying to unmount /mnt/data (try %d of %d)", i, tries)
+		cmd = []string{"umount", "/mnt/data"}
+		_, err, _, stderr = utils.RunCommand(cmd, 30*time.Second)
+		utils.LogAndIgnoreErr(err)
+		if err == nil {
+			break
+		}
+
+		// eventually fall back to remounting R/O
+		if i >= tries {
+			remountOnly = true
+		}
+		i++
+	}
+
+	if remountOnly {
+		// fallback position: try to re-mount /mnt/data read only.
+		log.Printf("Remounting /mnt/data read only")
+		cmd = []string{"mount", "-o", "remount,ro", "/mnt/data"}
+		_, err, _, stderr = utils.RunCommand(cmd, 30*time.Second)
+		if (err != nil) {
+			return errors.Errorf("'%v', failed: %v, stderr: %v",
+				strings.Join(cmd, " "), err, stderr)
+		}
 	}
 
 	log.Printf("Making sure sshd config (including host keys) is still valid.")

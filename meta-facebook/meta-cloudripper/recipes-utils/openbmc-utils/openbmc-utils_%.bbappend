@@ -47,10 +47,8 @@ OPENBMC_UTILS_FILES += " \
     feutil \
     fpga_ver.sh \
     presence_util.sh \
-    reset_brcm.sh \
     set_sled.sh \
     set_vdd.sh \
-    setup_avs.sh \
     setup_bic.sh \
     setup_mgmt.sh \
     seutil \

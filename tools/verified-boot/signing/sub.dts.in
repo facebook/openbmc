@@ -1,6 +1,7 @@
 /dts-v1/;
 
 / {
+	description = "Subordinate key store";
 	images {
 {% for store in stores %}
 		fdt@{{store.i}} {

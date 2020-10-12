@@ -6976,21 +6976,6 @@ pal_set_dev_guid(uint8_t slot, char *guid) {
 }
 
 int
-pal_get_sys_guid(uint8_t slot, char *guid) {
-
-  return bic_get_sys_guid(IPMB_BUS, (uint8_t *)guid);
-}
-
-int
-pal_set_sys_guid(uint8_t slot, char *str) {
-  uint8_t guid[GUID_SIZE] = {0x00};
-
-  pal_populate_guid(guid, str);
-
-  return bic_set_sys_guid(IPMB_BUS, guid);
-}
-
-int
 pal_get_boot_order(uint8_t slot, uint8_t *req_data,
                    uint8_t *boot, uint8_t *res_len) {
   int ret, msb, lsb, i, j = 0;

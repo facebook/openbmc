@@ -21,6 +21,8 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 #shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
 
+# # Bus 0
+i2c_device_add 0 0x1010 slave-mqueue #IPMB 0
 # # Bus 1
 i2c_device_add 1 0x40 xdpe132g5c #ISL68137 DC-DC core
 i2c_device_add 1 0x53 mp2978
@@ -28,7 +30,8 @@ i2c_device_add 1 0x59 mp2978
 
 # # Bus 2
 i2c_device_add 2 0x35 scmcpld  #SCM CPLD
-
+# # Bus 4
+i2c_device_add 4 0x1010 slave-mqueue #IPMB 1
 # # Bus 13
 i2c_device_add 13 0x35 iobfpga #IOB FPGA
 

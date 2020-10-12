@@ -32,10 +32,16 @@ if __name__ == '__main__':
         help="Path to directory containing '.key' private key")
     pkey.add_argument('--token', metavar="SERIAL",
         help="Hardware token serial identifier")
+    pkey.add_argument('--keyname', metavar="HSMKEYNAME",
+        help="Use HSMKEYNAME hsm based key to sign")
     parser.add_argument('--token-hint', metavar="HINT")
+
     args = parser.parse_args()
 
-    if args.keydir is not None:
+    if args.keyname is not None:
+        # set keydir with pathname in hsm key name
+        args.keydir = os.path.dirname(args.keyname)
+    elif args.keydir is not None:
         pkcs11.clear_environment()
         if not os.path.isdir(args.keydir):
             print("The --keydir must be a directory containing a '.key' key.")
@@ -62,7 +68,10 @@ if __name__ == '__main__':
     if sub_image is None:
         print("This subordinate store does not contain a signature node")
         sys.exit(1)
-    requested_key_name = os.path.basename(args.keydir)
+    if args.keyname:
+        requested_key_name = os.path.basename(args.keyname)
+    else:
+        requested_key_name = os.path.basename(args.keydir)
     sub_image.strings = [requested_key_name]
 
     subordinate_source = fdt.to_dts()
@@ -74,6 +83,8 @@ if __name__ == '__main__':
             "-r", args.output]
         if args.token:
             cmd += ['-N', 'pkcs11']
+        elif args.keyname:
+            cmd += ['-N', 'FB-HSM']
         print(" ".join(cmd))
         spawn.spawn(cmd)
 

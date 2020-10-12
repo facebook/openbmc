@@ -15,27 +15,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-SUMMARY = "PSU Utility"
-DESCRIPTION = "Utility to update PSU and get PSU EEPROM."
-SECTION = "base"
-PR = "r1"
-LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://psu-util.c;beginline=5;endline=16;md5=69348da7e13c557a246cf7e5b163ea27"
-
-
-SRC_URI = "file://utils \
-          "
-
-S = "${WORKDIR}/utils"
-
-LDFLAGS = "-lfruid -lpal -lwedge400-psu "
-
-DEPENDS += "libwedge400-psu"
-RDEPENDS_${PN} += "libwedge400-psu"
-
-do_install() {
-  install -d ${D}${bindir}
-  install -m 755 psu-util ${D}${bindir}/psu-util
-}
-
-FILES_${PN} = "${bindir}"
+CFLAGS_prepend = "-DPSU_NUM=2"

@@ -29,10 +29,10 @@ class SysCpldRevisionTest(unittest.TestCase):
     def setUp(self):
         self.cpld_rev = "/usr/local/bin/cpld_rev.sh"
         self.cpld_paths = [
-            "/sys/bus/i2c/devices/i2c-12/12-0031/cpld_rev",
-            "/sys/bus/i2c/devices/i2c-12/12-0031/cpld_sub_rev",
-            "/sys/devices/platform/ast-i2c.8/i2c-8/8-0033/cpld_rev",
-            "/sys/devices/platform/ast-i2c.8/i2c-8/8-0033/cpld_sub_rev",
+            "/sys/bus/i2c/devices/12-0031/cpld_rev",
+            "/sys/bus/i2c/devices/12-0031/cpld_sub_rev",
+            "/sys/bus/i2c/devices/8-0033/cpld_rev",
+            "/sys/bus/i2c/devices/8-0033/cpld_sub_rev",
         ]
         Logger.start(name=self._testMethodName)
 

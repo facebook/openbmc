@@ -32,6 +32,11 @@ struct ModeDesc {
   const std::string desc;
 };
 
+struct UsbChDesc {
+  uint8_t channel;
+  const std::string desc;
+};
+
 const std::map<std::string, ModeDesc> mode_map = {
     {"8S-0", {CM_MODE_8S_0, "8 Socket Mode, Tray 0 is primary"}},
     {"8S-1", {CM_MODE_8S_1, "8 Socket Mode, Tray 1 is primary"}},
@@ -41,6 +46,21 @@ const std::map<std::string, ModeDesc> mode_map = {
     {"4S-4OU", {CM_MODE_4S_4OU, "4 Socket mode, in 4OU mode"}},
     {"4S-2OU-0", {CM_MODE_4S_2OU_0, "4 Socket mode with Tray 0 as primary"}},
     {"4S-2OU-1", {CM_MODE_4S_2OU_1, "4 Socket mode with Tray 1 as primary"}}
+};
+
+
+const std::map<std::string, UsbChDesc> cc_usb_ch_map = {
+    {"CC-BMC0", {CC_USB_BMC_MB0, "Set CC USB Channel to Tray 0 BMC"}},
+    {"CC-BMC1", {CC_USB_BMC_MB1, "Set CC USB Channel to Tray 1 BMC"}},
+    {"CC-PCH0", {CC_USB_PCH_MB0, "Set CC USB Channel to Tray 0 PCH"}},
+    {"CC-PCH1", {CC_USB_PCH_MB1, "Set CC USB Channel to Tray 1 PCH"}}
+};
+
+const std::map<std::string, UsbChDesc> ep_usb_ch_map = {
+    {"EP-BMC0", {EP_USB_BMC_MB0, "Set EP USB Channel to Tray 0 BMC"}},
+    {"EP-BMC1", {EP_USB_BMC_MB1, "Set EP USB Channel to Tray 1 BMC"}},
+    {"EP-PCH0", {EP_USB_PCH_MB0, "Set EP USB Channel to Tray 0 PCH"}},
+    {"EP-PCH1", {EP_USB_PCH_MB1, "Set EP USB Channel to Tray 1 PCH"}}
 };
 
 static int set_mode(uint8_t mode)
@@ -71,6 +91,53 @@ static int set_mode(uint8_t mode)
     rc = -1;
   }
   return rc;
+}
+
+static int set_cc_usb_ch(uint8_t ch)
+{
+  uint8_t dev=0;
+  uint8_t mb=0;
+
+  if (ch >= CC_USB_CH_CNT)
+    return -1;
+
+  //Device is PCH
+  if(ch >= CC_USB_PCH_MB0) {
+    mb = ch - CC_USB_PCH_MB0;
+    dev = 1;
+  } else {
+    mb = ch;
+    dev = 0;
+  }
+
+  if(pal_cc_set_usb_ch(dev, mb)) {
+    std::cerr << "Set CC usb channel failed" << std::endl;
+  }
+  return 0;
+}
+
+static int set_ep_usb_ch(uint8_t ch)
+{
+  uint8_t dev=0;
+  uint8_t mb=0;
+
+  if (ch >= EP_USB_CH_CNT)
+    return -1;
+
+  //Device is PCH
+  if(ch >= EP_USB_PCH_MB0) {
+    mb = ch - EP_USB_PCH_MB0;
+    dev = 1;
+  } else {
+    mb = ch;
+    dev = 0;
+  }
+
+  if(pal_ep_set_usb_ch(dev, mb)) {
+    std::cerr << "Set EP usb channel failed" << std::endl;
+  }
+ 
+  return 0;
 }
 
 static std::set<std::string> get_bmcs()
@@ -262,9 +329,10 @@ main(int argc, char **argv) {
   CLI::App app("Chassis Management Utility");
   app.failure_message(CLI::FailureMessage::help);
 
+//Set Mode Initial
   std::string op_mode;
   std::set<std::string> allowed_modes;
-  std::string desc = "Set chassis operating mode\n";
+  std::string desc = "Set chassis operating mode\n";  
   for (const auto& pair : mode_map) {
     allowed_modes.insert(pair.first);
     desc += pair.first + ": " + pair.second.desc + "\n";
@@ -273,6 +341,34 @@ main(int argc, char **argv) {
                           allowed_modes,
                           desc
                          )->ignore_case();
+//Set Usb Channel Initial
+  std::string op_cc;
+  std::set<std::string> allowed_cc;
+  std::string desc_cc = "Set CC USB Channel\n";
+
+  for (const auto& pair : cc_usb_ch_map) {
+    allowed_cc.insert(pair.first);
+    desc_cc += pair.first + ": " + pair.second.desc + "\n";
+  }
+  auto cc_usb_ch = app.add_set("--set-cc-usb", op_cc,
+                          allowed_cc,
+                          desc_cc
+                         )->ignore_case();
+                          
+//Set Usb Channel Initial
+  std::string op_ep;
+  std::set<std::string> allowed_ep;
+  std::string desc_ep = "Set EP USB Channel\n";
+
+  for (const auto& pair : ep_usb_ch_map) {
+    allowed_ep.insert(pair.first);
+    desc_ep += pair.first + ": " + pair.second.desc + "\n";
+  }
+  auto ep_usb_ch = app.add_set("--set-ep-usb", op_ep,
+                          allowed_ep,
+                          desc_ep
+                         )->ignore_case();
+
   app.add_flag("--sled-cycle", do_cycle,
                "Perform a SLED cycle after operations (If any)");
   app.require_option();
@@ -308,6 +404,14 @@ main(int argc, char **argv) {
 
   if (*mode) {
     rc = set_mode(mode_map.at(op_mode).mode);
+  }
+
+  if (*cc_usb_ch) {
+    rc = set_cc_usb_ch(cc_usb_ch_map.at(op_cc).channel);
+  }
+
+  if (*ep_usb_ch) {
+    rc = set_ep_usb_ch(ep_usb_ch_map.at(op_ep).channel);
   }
 
   if (do_cycle) {

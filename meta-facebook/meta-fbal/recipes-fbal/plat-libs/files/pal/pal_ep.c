@@ -104,3 +104,18 @@ pal_ep_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen)
   memcpy(buf, resp + 1, *rlen);
   return 0;
 }
+
+int
+pal_ep_set_usb_ch(uint8_t dev, uint8_t mb) {
+  uint8_t netfn = NETFN_OEM_ZION_REQ;
+  uint8_t ipmi_cmd = CMD_OEM_ZION_SET_USB_PATH;
+  uint8_t tbuf[8];
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen;
+
+  tbuf[0] = dev;
+  tbuf[1] = mb;
+
+  return ep_ipmb_process(ipmi_cmd, netfn, tbuf, 2, rbuf, &rlen);
+}
+

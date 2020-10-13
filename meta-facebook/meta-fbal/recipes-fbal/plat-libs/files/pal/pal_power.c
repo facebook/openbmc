@@ -283,9 +283,6 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
   int ret;
   uint8_t policy = *pwr_policy & 0x07;  // Power restore policy
   uint8_t mode;
-  uint8_t target_addr[3] = { BMC1_SLAVE_DEF_ADDR,
-                             BMC2_SLAVE_DEF_ADDR,
-                             BMC3_SLAVE_DEF_ADDR };
 
   switch (policy) {
     case 0:
@@ -313,16 +310,13 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
     return ret;
   }
 
-  if(mode == MB_8S_MODE) {
+  if(mode == MB_4S_MODE) {
     ret = pal_get_config_is_master(); 
     if(ret == false) {
       return CC_OEM_ONLY_SUPPORT_MASTER;
     } else {
-      for(i=0; i<2; i++) {
-        ret = cmd_set_smbc_restore_power_policy(policy, target_addr[i]);
-        if(ret != 0) {
-          return CC_OEM_DEVICE_SEND_SLAVE_RESTORE_POWER_POLICY_FAIL;
-        }
+      if( cmd_set_smbc_restore_power_policy(policy, BMC1_SLAVE_DEF_ADDR) ) {
+        return CC_OEM_DEVICE_SEND_SLAVE_RESTORE_POWER_POLICY_FAIL;
       }
     }
   }  

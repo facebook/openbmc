@@ -38,12 +38,3 @@ MTERM_SERVICES = "mTerm1 \
                   mTerm6 \
                   mTerm7 \
                  "
-
-
-do_install_append() {
- #remove the old setting
- update-rc.d -f -r ${D} mTerm-service-setup.sh remove
-  
- #install the new setting
- update-rc.d -r ${D} mTerm-service-setup.sh start 61 5 .
-}

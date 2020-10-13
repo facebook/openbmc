@@ -50,4 +50,5 @@ IMAGE_INSTALL += " \
   threshold-util \
   cm-util \
   ncsid-v2 \
+  name-util \
   "

@@ -17,4 +17,5 @@ IMAGE_INSTALL += " \
   expander-util \
   mterm \
   plat-utils \
+  fw-util \
   "

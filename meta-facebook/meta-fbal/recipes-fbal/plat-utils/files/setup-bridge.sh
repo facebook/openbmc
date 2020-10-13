@@ -49,11 +49,19 @@ echo "Initialize IP Bridge..."
 
 #Get EP MAC Address
 while [ 1 ]; do
-  mac=($(/usr/bin/ipmitool raw 0x30 0x34 0x0a 0x0c 0x02 0x00 0x05 2>/dev/null))
+  position=$(($(gpio_get FM_BLADE_ID_0)))
+
+  if [[ "$position" -eq 0 ]]; then
+    echo "Get JG7 MAC"
+    mac=($(/usr/bin/ipmitool raw 0x30 0x34 0x0a 0x0c 0x02 0x00 0x05 2>/dev/null))
+  else
+    echo "Get F0CE MAC" 
+    mac=($(/usr/bin/ipmitool raw 0x30 0x34 0x0b 0x0c 0x02 0x00 0x05 2>/dev/null)) 
+  fi
   #mac=(11 78 03 9B 96 FC 99)
   if [[ ${#mac[@]} -ge 7 && ${mac[0]} == "11" && $((16#${mac[1]} & 1)) -ne 1 ]]; then
     if [ "$(echo ${mac[@]:1})" != "00 00 00 00 00 00" ]; then
-      echo "==Get EP MAC address=="
+      echo "==Get MAC address Success=="
       break
     fi
   fi

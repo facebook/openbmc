@@ -12,6 +12,7 @@ POKY_BUILD=`pwd`
 KEYS=$(realpath $(dirname "$0"))
 SETUP=NO
 HELP=NO
+PLATFORM_TYPE=""
 
 PYTHON=/usr/local/bin/python
 if [ ! -x $PYTHON ]; then
@@ -42,6 +43,10 @@ case $key in
     -s|--setup)
     SETUP=YES
     ;;
+    -S|--HSM)
+    PLATFORM_TYPE=${2}
+    shift
+    ;;
     --help)
     HELP=YES
     ;;
@@ -63,24 +68,28 @@ if [ "$HELP" == "YES" ]; then
   echo "    Set the build directory to BUILD_DIR. Else the current working directory will be used"
   echo "-s|--setup"
   echo "    Generate the keys in KEYS_DIR (See above for default path)"
+  echo "-S|--HSM {compute|storage|network|training}"
+  echo "    Use FB HSM keyname ncipher/simple/obmc-<platform_type>-sub-0 key to sign"
   exit 0
 fi
 
 POKY_DIR=$(dirname $POKY_BUILD)
 SIGN_SCRIPT_HOME=$POKY_DIR/tools/verified-boot/signing
-CURRENT_DIR=`pwd`
 IMAGES_DIR=$POKY_BUILD/tmp/deploy/images
-if [ ! -d $IMAGES_DIR ]; then
+
+if [ ! -d "$IMAGES_DIR" ]; then
   echo "$POKY_BUILD is not a valid build directory!"
-  exit -1
+  exit 255
 fi
-IMAGE_NAME=$(ls $IMAGES_DIR)
+IMAGE_NAME=$(ls "$IMAGES_DIR")
 if [ "$IMAGE_NAME" == "" ]; then
   echo "Could not find any images in $IMAGE_DIR"
-  exit -1;
+  exit 255
 fi
 if [ "$IMAGE_PATH" == "" ]; then
   IMAGE_PATH=$POKY_BUILD/tmp/deploy/images/$IMAGE_NAME/flash-${IMAGE_NAME}
+else
+  IMAGE_PATH=$(realpath "$IMAGE_PATH")
 fi
 echo "POKY_BUILD=$POKY_BUILD"
 echo "POKY_DIR=$POKY_DIR"
@@ -89,52 +98,70 @@ echo "IMAGE_NAME=$IMAGE_NAME"
 
 MKIMAGE=$POKY_BUILD/tmp/sysroots/x86_64-linux/usr/bin/mkimage
 # Location is different for rocko
-if [ ! -x $MKIMAGE ]; then
+if [ ! -x "$MKIMAGE" ]; then
   MKIMAGE=$POKY_BUILD/tmp/sysroots-components/x86_64/u-boot-mkimage-native/usr/bin/mkimage
-  export LD_LIBRARY_PATH=$POKY_BUILD/tmp/sysroots-components/x86_64/openssl-native/usr/lib:$LD_LIBRARY_PATH
 fi
-if [ ! -x $MKIMAGE ]; then
+# Location is different for u-boot-tools
+if [ ! -x "$MKIMAGE" ]; then
+  echo "find mkimage in u-boot-tools-native"
+  MKIMAGE=$POKY_BUILD/tmp/sysroots-components/x86_64/u-boot-tools-native/usr/bin/mkimage
+fi
+
+if [ ! -x "$MKIMAGE" ]; then
+  echo "$MKIMAGE"
   echo "mkimage could not be found in build directory!"
   echo "Probably $POKY_BUILD is not a build directory?"
-  exit -1
+  exit 255
 fi
 
-cd $SIGN_SCRIPT_HOME
+pushd "$SIGN_SCRIPT_HOME" || { echo "change PWD to $SIGN_SCRIPT_HOME fail"; exit 1; }
 
 if [ "$SETUP" == "YES" ]; then
-  if [ ! -d $KEYS ]; then
-    mkdir $KEYS
+  mkdir -p "$KEYS"
+  if [ -n "$PLATFORM_TYPE" ]; then
+    echo "Setup signing content for HSM in $KEYS"
+    pushd "$KEYS" || { echo "switch CWD to $KEYS failed"; exit 1; }
+      secrets_tool get_from_group --out_file ks.zip SIGNING_CONTENT OPENBMC_VBOOT2_KS && unzip ks.zip && rm ks.zip
+    popd
+  else
+    echo "Setup signing content in $KEYS"
+    mkdir -p "$KEYS/kek"
+    mkdir -p "$KEYS/subordinate"
+    openssl genrsa -F4 -out "$KEYS/kek/kek.key" 4096
+    openssl rsa -in "$KEYS/kek/kek.key" -pubout > "$KEYS/kek/kek.pub"
+    openssl genrsa -F4 -out "$KEYS/subordinate/subordinate.key" 4096
+    openssl rsa -in "$KEYS/subordinate/subordinate.key" -pubout > "$KEYS/subordinate/subordinate.pub"
+    $PYTHON ./fit-cs --template ./store.dts.in "$KEYS/kek" "$KEYS/kek/kek.dtb"
+    $PYTHON ./fit-cs --template ./store.dts.in --subordinate --subtemplate ./sub.dts.in \
+      "$KEYS/subordinate" "$KEYS/subordinate/subordinate.dtb"
+    LD_LIBRARY_PATH=$POKY_BUILD/tmp/sysroots-components/x86_64/openssl-native/usr/lib:$LD_LIBRARY_PATH \
+    $PYTHON ./fit-signsub --keydir "$KEYS/kek" --mkimage "$MKIMAGE" \
+      "$KEYS/subordinate/subordinate.dtb" "$KEYS/subordinate/subordinate.dtb.signed"
   fi
-  if [ ! -d $KEYS/kek ]; then
-    mkdir $KEYS/kek
-  fi
-  if [ ! -d $KEYS/subordinate ]; then
-    mkdir $KEYS/subordinate
-  fi
-  openssl genrsa -F4 -out $KEYS/kek/kek.key 4096
-  openssl rsa -in $KEYS/kek/kek.key -pubout > $KEYS/kek/kek.pub
-  openssl genrsa -F4 -out $KEYS/subordinate/subordinate.key 4096
-  openssl rsa -in $KEYS/subordinate/subordinate.key -pubout > $KEYS/subordinate/subordinate.pub
-  $PYTHON ./fit-cs --template ./store.dts.in $KEYS/kek $KEYS/kek/kek.dtb
-  $PYTHON ./fit-cs --template ./store.dts.in --subordinate --subtemplate ./sub.dts.in $KEYS/subordinate $KEYS/subordinate/subordinate.dtb
-  $PYTHON ./fit-signsub --mkimage $MKIMAGE --keydir $KEYS/kek $KEYS/subordinate/subordinate.dtb $KEYS/subordinate/subordinate.dtb.signed
+
   echo "Keys are generated in $KEYS"
   exit 0
 fi
 
-if [ ! -d $KEYS ]; then
+if [ ! -d "$KEYS" ]; then
   echo "keys directory $KEYS does not exist!"
-  exit -1
+  exit 255
 fi
 
-$PYTHON ./fit-sign --mkimage $MKIMAGE \
-                  --kek $KEYS/kek/kek.dtb \
-                  --signed-subordinate $KEYS/subordinate/subordinate.dtb.signed \
-                  --keydir $KEYS/subordinate \
+if [ -n "$PLATFORM_TYPE" ]; then
+  SIGNKEY="--keyname ncipher/simple/obmc-${PLATFORM_TYPE}-sub-0"
+else
+  SIGNKEY="--keydir $KEYS/subordinate"
+fi
+
+LD_LIBRARY_PATH=$POKY_BUILD/tmp/sysroots-components/x86_64/openssl-native/usr/lib:$LD_LIBRARY_PATH \
+$PYTHON ./fit-sign $SIGNKEY \
+                  --mkimage "$MKIMAGE" \
+                  --kek "$KEYS/kek.dtb.${PLATFORM_TYPE}" \
+                  --signed-subordinate "$KEYS/subordinate.dtb.signed.${PLATFORM_TYPE}" \
                   --sign-os \
-                  $IMAGE_PATH \
-                  ${IMAGE_PATH}.signed
+                  "$IMAGE_PATH" \
+                  "${IMAGE_PATH}.signed"
+
 # Go back
-cd $CURRENT_DIR
-
-
+popd

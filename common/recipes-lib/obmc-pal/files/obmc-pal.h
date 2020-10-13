@@ -76,6 +76,13 @@ typedef struct _sensor_info_t {
   sdr_full_t sdr;
 } sensor_info_t;
 
+typedef enum {
+  FRU_TYPE_SERVER   = 0,
+  FRU_TYPE_NIC      = 1,
+  FRU_TYPE_BMC      = 2,
+  FRU_TYPE_DEVICE   = 3,
+} fru_type_t;
+
 enum {
   FRU_STATUS_BAD = 0,
   FRU_STATUS_GOOD = 1,
@@ -474,6 +481,7 @@ int pal_get_pfr_update_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *b
 int pal_get_dev_card_sensor(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_set_bios_cap_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_is_sensor_valid(uint8_t fru, uint8_t snr_num);
+int pal_get_fru_type_list(fru_type_t fru_type, const char ***fru_list, uint8_t* num_fru);
 
 #ifdef __cplusplus
 }

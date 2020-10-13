@@ -76,5 +76,6 @@ enum {
 
 int pal_get_rst_btn(uint8_t *status);
 bool pal_is_server_off(void);
+int pal_get_platform_id(uint8_t *id);
 
 #endif /* __PAL_H__ */

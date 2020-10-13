@@ -346,3 +346,23 @@ void pal_dump_key_value(void)
     memset(value, 0, MAX_VALUE_LEN);
   }
 }
+
+int pal_get_platform_id(uint8_t *id)
+{
+  static bool cached = false;
+  static unsigned int cached_id = 0;
+
+  if (!cached) {
+    const char *shadows[] = {
+      "BOARD_ID0",
+      "BOARD_ID1",
+      "BOARD_ID2"
+    };
+    if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_id)) {
+      return -1;
+    }
+    cached = true;
+  }
+  *id = (uint8_t)cached_id;
+  return 0;
+}

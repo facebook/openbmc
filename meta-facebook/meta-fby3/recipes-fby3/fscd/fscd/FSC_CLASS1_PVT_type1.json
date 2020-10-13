@@ -14,6 +14,11 @@
         "type" : "power_status"
       }
     },
+    "soc_therm": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
     "soc_dimm": {
       "attribute": {
         "type" : "power_status"

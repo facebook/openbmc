@@ -115,6 +115,8 @@ def sensor_valid_check(board, sname, check_name, attribute):
             if (status.value == 1):
                 if match(r"soc_cpu", sname) is not None:
                     return 1
+                elif match(r"soc_therm", sname) is not None:
+                    return 1
                 elif match(r"soc_dimm", sname) is not None:
                     # check DIMM present
                     file = "/mnt/data/kv_store/sys_config/" + fru_map[board]["name"] + part_name_map[sname[8]]

@@ -63,4 +63,5 @@ IMAGE_INSTALL += " \
   at \
   ncsid-v2 \
   throttle-util \
+  name-util \
   "

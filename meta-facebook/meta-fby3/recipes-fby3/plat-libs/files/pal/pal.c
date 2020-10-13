@@ -52,16 +52,26 @@
 #define PFR_NICEXP_BUS 9  // NICEXP PFR
 #define PFR_BB_BUS 12     // Baseboard PFR
 #define PFR_MAILBOX_ADDR (0x70)
+#define NUM_SERVER_FRU  4
+#define NUM_NIC_FRU     1
+#define NUM_BMC_FRU     1
 
 const char pal_fru_list_print[] = "all, slot1, slot2, slot3, slot4, bmc, nic, bb, nicexp";
 const char pal_fru_list_rw[] = "slot1, slot2, slot3, slot4, bmc, bb, nicexp";
 const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc nic";
-
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic";
 const char pal_guid_fru_list[] = "slot1, slot2, slot3, slot4, bmc";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 const char pal_dev_list[] = "all, 1U, 2U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5";
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
+const char *pal_server_fru_list[NUM_SERVER_FRU] = {"slot1", "slot2", "slot3", "slot4"};
+const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic"};
+const char *pal_bmc_fru_list[NUM_BMC_FRU] = {"bmc"};
+
+size_t server_fru_cnt = NUM_SERVER_FRU;
+size_t nic_fru_cnt  = NUM_NIC_FRU;
+size_t bmc_fru_cnt  = NUM_BMC_FRU;
+
 
 #define MAX_NUM_DEVS 12
 
@@ -3100,4 +3110,3 @@ pal_handle_oem_1s_asd_msg_in(uint8_t slot, uint8_t *data, uint8_t data_len)
   close(sock);
   return 0;
 }
-

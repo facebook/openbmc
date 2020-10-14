@@ -21,7 +21,6 @@ SRC_URI += " \
     file://board-utils.sh \
     file://cmmcpld_update.sh \
     file://create_vlan_intf \
-    file://eth0_mac_fixup.sh \
     file://fcbcpld_update.sh \
     file://fix_fru_eeprom.py \
     file://get_fan_speed.sh \

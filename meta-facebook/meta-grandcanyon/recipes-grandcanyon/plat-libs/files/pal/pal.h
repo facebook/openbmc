@@ -27,21 +27,28 @@ extern "C" {
 
 #include <openbmc/obmc-pal.h>
 #include <openbmc/kv.h>
+#include <facebook/fbgc_common.h>
+#include <facebook/fbgc_fruid.h>
 
-enum {
-  FRU_ALL = 0,
-  FRU_SERVER,
-  FRU_UIC,
-  FRU_DPB,
-  FRU_SCC,
-  FRU_NIC,
-  FRU_IOCM,
-  FRU_CNT,
-};
 
 #define MAX_NUM_FRUS (FRU_CNT-1)
 #define MAX_NODES    1
 
+#define CUSTOM_FRU_LIST 1
+
+#define MAX_FRU_CMD_STR   16
+
+extern const char pal_fru_list_print[];
+extern const char pal_fru_list_rw[];
+extern const char pal_fru_list_sensor_history[];
+extern const char pal_fru_list[];
+
+int pal_get_fru_id(char *str, uint8_t *fru);
+int pal_is_fru_ready(uint8_t fru, uint8_t *status);
+int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
+int pal_get_fruid_name(uint8_t fru, char *name);
+int pal_get_fruid_path(uint8_t fru, char *path);
+int pal_get_fruid_eeprom_path(uint8_t fru, char *path);
 
 #ifdef __cplusplus
 } // extern "C"

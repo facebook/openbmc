@@ -6467,6 +6467,8 @@ void set_scm_led(int brd_rev)
     }
   }else{
     OBMC_WARN("%s: micro server is power off\n",__func__);
+    set_sled(brd_rev, SLED_CLR_RED, SLED_SMB);
+    return;
   }
 cleanup:
   set_sled(brd_rev,SLED_CLR_YELLOW,SLED_SMB);

@@ -30,36 +30,6 @@ print_usage(void) {
   printf("fpc-util <slot1|slot2|slot3|slot4> <1U-dev0|1U-dev1|1U-dev2|1U-dev3> --identify <on/off>\n");
 }
 
-static int
-sb_set_amber_led(uint8_t fru, bool led_on) {
-  int ret = 0;
-  int i2cfd = -1;
-  uint8_t bus = 0;
-
-  ret = fby3_common_get_bus_id(fru);
-  if ( ret < 0 ) {
-    printf("%s() Couldn't get the bus id of fru%d\n", __func__, fru);
-    goto err_exit;
-  }
-  bus = (uint8_t)ret + 4;
-
-  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
-    printf("%s() Couldn't open i2c bus%d, err: %s\n", __func__, bus, strerror(errno));
-    goto err_exit;
-  }
-
-  uint8_t tbuf[2] = {0xf, (led_on == true)?0x01:0x00};
-  ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, 2, NULL, 0);
-  if ( ret < 0 ) {
-    printf("%s() Couldn't write data to addr %02X, err: %s\n",  __func__, SB_CPLD_ADDR, strerror(errno));
-  }
-
-err_exit:
-  if ( i2cfd > 0 ) close(i2cfd);
-  return ret;
-}
-
 int
 main(int argc, char **argv) {
   uint8_t fru = 0;
@@ -150,7 +120,7 @@ main(int argc, char **argv) {
     printf("fpc-util: identification for %s %s is set to %s %ssuccessfully\n", \
                          argv[1], argv[2], argv[4], (ret < 0)?"un":"");
   } else {
-    ret = sb_set_amber_led(fru, is_led_on);
+    ret = pal_sb_set_amber_led(fru, is_led_on);
     printf("fpc-util: identification for %s is set to %s %ssuccessfully\n", \
                          argv[1], argv[3], (ret < 0)?"un":"");
   }

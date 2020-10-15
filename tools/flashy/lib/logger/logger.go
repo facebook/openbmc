@@ -39,8 +39,7 @@ type LogWriter struct {
 	Streams []io.Writer
 }
 
-// InitCustomLogger sets CustomLogger to contain the stderr stream and tries to acquire the
-// syslog stream.
+// InitCustomLogger sets `log` to output to the stderr and syslog (if acquireable) streams
 var InitCustomLogger = func() {
 	// stderr
 	streams := []io.Writer{
@@ -60,7 +59,7 @@ var InitCustomLogger = func() {
 	})
 }
 
-// InitCustomLoggerStderrOnly sets CustomLogger to only contain the stderr stream.
+// InitCustomLoggerStderrOnly sets `log` to output to the stderr stream.
 // This is used for situations in which code may kill rsyslogd (e.g. fuser -km).
 var InitCustomLoggerStderrOnly = func() {
 	log.SetOutput(LogWriter{

@@ -23,6 +23,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
@@ -38,9 +39,10 @@ func init() {
 	step.RegisterStep(unmountDataPartition)
 }
 
-// unmountDataPartition unmounts /mnt/data, which is the data0 partition.
-// A binding is made into tmpfs (/tmp/mnt/data), as some processes, such as sshd, rely on data
-// inside /mnt/data.
+var mount = syscall.Mount
+
+// unmountDataPartition attempts to unmount /mnt/data, which is the data0 partition.
+// if unmount fails, it falls back to remounting /mnt/data RO.
 // This step is required, as if the image layout is changed, the image's tail
 // may be corrupted by the preexisting data0 partition.
 // Also, should there be a need to format data0, this step is necessary.
@@ -54,12 +56,36 @@ func unmountDataPartition(stepParams step.StepParams) step.StepExitError {
 	}
 
 	if dataMounted {
+		// rsyslog will be killed by fuser, direct logs to stderr only.
+		// Try to restart syslog at the end of this function, but if this fails
+		// it is fine, as syslog will be restarted in the start of the next
+		// step (as the CustomLogger gets the syslog writer).
+		log.Printf("fuser will kill rsyslog and cause errors, turning off syslog logging now")
+		log.SetOutput(os.Stderr)
+		defer func() {
+			logger.StartSyslog()
+		}()
+
+		// attempt to unmount first, if failed, remount RO.
 		log.Printf("Found /mnt/data mounted, unmounting now.")
 		err = runDataPartitionUnmountProcess()
 		if err != nil {
-			return step.ExitSafeToReboot{
-				errors.Errorf("Failed to unmount /mnt/data: %v",
-					err),
+			log.Printf("/mnt/data unmount failed: %v", err)
+			log.Printf("Falling back to remounting /mnt/data RO.")
+			err = remountRODataPartition()
+			if err != nil {
+				log.Printf("/mnt/data remount failed: %v", err)
+				return step.ExitSafeToReboot{
+					errors.Errorf("Failed to unmount or remount /mnt/data"),
+				}
+			}
+		}
+
+		// make sure sshd config still is valid
+		err = validateSshdConfig()
+		if err != nil {
+			return step.ExitUnsafeToReboot{
+				errors.Errorf("Validate sshd config failed: %v", err),
 			}
 		}
 	} else {
@@ -84,19 +110,8 @@ var isDataPartitionMounted = func() (bool, error) {
 	return len(regExMap) != 0, nil
 }
 
+// runDataPartitionUnmountProcess attempts (up to 10 times) to unmount /mnt/data
 var runDataPartitionUnmountProcess = func() error {
-	// rsyslog will be killed by fuser, direct logs to stderr only.
-	// Try to restart syslog at the end of this function, but if this fails
-	// it is fine, as syslog will be restarted in the start of the next
-	// step (as the CustomLogger gets the syslog writer).
-	log.Printf("fuser will kill rsyslog and cause errors, turning off syslog logging now")
-	log.SetOutput(os.Stderr)
-	defer func() {
-		logger.StartSyslog()
-	}()
-
-	remountOnly := false
-
 	// mkdir -p /tmp/mnt
 	// expected failures: none
 	cmd := []string{"mkdir", "-p", "/tmp/mnt"}
@@ -106,82 +121,87 @@ var runDataPartitionUnmountProcess = func() error {
 			strings.Join(cmd, " "), err, stderr)
 	}
 
-	// mount --bind /mnt /tmp/mnt
-	// expected failures: --bind option to mount may not be available
+	// equivalent to `mount --bind /mnt /tmp/mnt`, using a syscall as
+	// --bind option to mount may not be available
 	log.Printf("Bind mount /mnt to /tmp/mnt")
-	cmd = []string{"mount", "--bind", "/mnt", "/tmp/mnt"}
-	_, err, _, stderr = utils.RunCommand(cmd, 30*time.Second)
+	err = mount("/mnt", "/tmp/mnt", "", syscall.MS_BIND, "")
 	if err != nil {
-		utils.LogAndIgnoreErr(err)
-		remountOnly = true
+		return errors.Errorf("Bind mount /mnt to /tmp/mnt failed: %v", err)
 	}
 
 	// cp -r /mnt/data /tmp/mnt
 	// expected failures: jffs2 may be corrupt and throw errors
-	if !remountOnly {
-		log.Printf("Copying /mnt/data contents to /tmp/mnt.")
-		cmd = []string{"cp", "-r", "/mnt/data", "/tmp/mnt"}
-		_, err, _, stderr = utils.RunCommand(cmd, 2*time.Minute)
-		if err != nil {
-			utils.LogAndIgnoreErr(err)
-			remountOnly = true
-		}
+	log.Printf("Copying /mnt/data contents to /tmp/mnt.")
+	cmd = []string{"cp", "-r", "/mnt/data", "/tmp/mnt"}
+	_, err, _, stderr = utils.RunCommand(cmd, 2*time.Minute)
+	if err != nil {
+		return errors.Errorf("Copying /mnt/data contents to /tmp/mnt failed: "+
+			"%v, stderr: %v", err, stderr)
 	}
 
 	// unmount /mnt/data
 	// expected failures: fuser -km might not work, race conditions
-	i := 1
-	tries := 10
-	for !remountOnly {
+	const tries = 10
+	var lastAttemptError error
+	for i := 1; i <= tries; i++ {
 		log.Printf("Sleeping for 3s so that sshd closes any file descriptions in /mnt/data")
 		utils.Sleep(3 * time.Second)
 
-		// fuser -km /mnt/data
-		log.Printf("Killing all processes accessing /mnt/data (try %d of %d)", i, tries)
-		cmd = []string{"fuser", "-km", "/mnt/data"}
-		_, err, _, stderr = utils.RunCommand(cmd, 30*time.Second)
-		// we ignore the error in fuser, as this might be thrown because nothing holds
-		// a file open on the file system (because of delayed log file open or because
-		// rsyslogd is not running for some reason).
-		utils.LogAndIgnoreErr(err)
-
-		// give signalled processes a chance to run and close descriptors
-		if err == nil {
-			utils.Sleep(time.Second)
-		}
+		killDataPartitionProcesses()
 
 		// umount /mnt/data
 		log.Printf("Trying to unmount /mnt/data (try %d of %d)", i, tries)
 		cmd = []string{"umount", "/mnt/data"}
-		_, err, _, stderr = utils.RunCommand(cmd, 30*time.Second)
-		utils.LogAndIgnoreErr(err)
-		if err == nil {
-			break
+		_, lastAttemptError, _, _ = utils.RunCommand(cmd, 30*time.Second)
+		if lastAttemptError != nil {
+			log.Printf("umount (try %d of %d) failed: %v",
+				i, tries, lastAttemptError)
+		} else {
+			return nil
 		}
 
-		// eventually fall back to remounting R/O
-		if i >= tries {
-			remountOnly = true
-		}
-		i++
 	}
+	return lastAttemptError
+}
 
-	if remountOnly {
-		// fallback position: try to re-mount /mnt/data read only.
-		log.Printf("Remounting /mnt/data read only")
-		cmd = []string{"mount", "-o", "remount,ro", "/mnt/data"}
-		_, err, _, stderr = utils.RunCommand(cmd, 30*time.Second)
-		if (err != nil) {
-			return errors.Errorf("'%v', failed: %v, stderr: %v",
-				strings.Join(cmd, " "), err, stderr)
-		}
-	}
-
+var validateSshdConfig = func() error {
 	log.Printf("Making sure sshd config (including host keys) is still valid.")
-	cmd = []string{"bash", "-c", "sshd -T 1> /dev/null"} // silence stdout (too verbose)
-	_, err, _, stderr = utils.RunCommand(cmd, 30*time.Second)
+	cmd := []string{"bash", "-c", "sshd -T 1> /dev/null"} // silence stdout (too verbose)
+	_, err, _, stderr := utils.RunCommand(cmd, 30*time.Second)
 	if err != nil {
-		return errors.Errorf("'%v', failed: %v, stderr: %v",
+		return errors.Errorf("'%v' failed: %v, stderr: %v",
+			strings.Join(cmd, " "), err, stderr)
+	}
+	return nil
+}
+
+var killDataPartitionProcesses = func() {
+	// fuser -km /mnt/data
+	log.Printf("Killing all processes accessing /mnt/data")
+	cmd := []string{"fuser", "-km", "/mnt/data"}
+	_, err, _, _ := utils.RunCommand(cmd, 30*time.Second)
+
+	// we ignore the error in fuser, as this might be thrown because nothing holds
+	// a file open on the file system (because of delayed log file open or because
+	// rsyslogd is not running for some reason).
+	utils.LogAndIgnoreErr(err)
+
+	// give signalled processes a chance to run and close descriptors
+	if err == nil {
+		utils.Sleep(time.Second)
+	}
+}
+
+// remountRODataPartition remounts the data partition. This is a fallback
+// solution in case unmounting fails.
+var remountRODataPartition = func() error {
+	killDataPartitionProcesses()
+
+	log.Printf("Remounting /mnt/data read only")
+	cmd := []string{"mount", "-o", "remount,ro", "/mnt/data"}
+	_, err, _, stderr := utils.RunCommand(cmd, 30*time.Second)
+	if err != nil {
+		return errors.Errorf("'%v' failed: %v, stderr: %v",
 			strings.Join(cmd, " "), err, stderr)
 	}
 	return nil

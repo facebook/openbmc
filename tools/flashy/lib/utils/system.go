@@ -46,6 +46,7 @@ type MemInfo struct {
 
 const ProcMtdFilePath = "/proc/mtd"
 const etcIssueFilePath = "/etc/issue"
+const procMountsPath = "/proc/mounts"
 
 // other flashers + the "flashy" binary
 var otherFlasherBaseNames = []string{

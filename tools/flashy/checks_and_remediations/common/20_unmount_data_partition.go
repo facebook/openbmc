@@ -32,8 +32,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const procMountsPath = "/proc/mounts"
-
 func init() {
 	step.RegisterStep(unmountDataPartition)
 }

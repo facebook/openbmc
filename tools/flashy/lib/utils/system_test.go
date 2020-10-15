@@ -923,7 +923,7 @@ func TestIsDataPartitionMounted(t *testing.T) {
 				return []byte(tc.procMountContents), tc.procMountReadErr
 			}
 
-			got, err := isDataPartitionMounted()
+			got, err := IsDataPartitionMounted()
 			tests.CompareTestErrors(tc.wantErr, err, t)
 			if tc.want != got {
 				t.Errorf("want '%v' got '%v'", tc.want, got)

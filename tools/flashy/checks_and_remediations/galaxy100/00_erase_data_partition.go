@@ -55,12 +55,26 @@ func eraseDataPartition(stepParams step.StepParams) step.StepExitError {
 			log.Printf("Galaxy100 card with '%v' present, erasing data0 partition '%v'.",
 				p, data0)
 
+			mounted, err := utils.IsDataPartitionMounted()
+			if err != nil {
+				return step.ExitSafeToReboot{
+					errors.Errorf("Failed to check if /mnt/data is mounted: %v", err),
+				}
+			}
+			if mounted {
+				return step.ExitSafeToReboot{
+					errors.Errorf("/mnt/data is still mounted, this may mean that the " +
+						"unmount data partition step fell back to remounting RO. This current step " +
+						"needs /mnt/data to be completely unmounted!"),
+				}
+			}
+
 			eraseCmd := []string{
 				"flash_eraseall",
 				"-j",
 				data0.GetFilePath(),
 			}
-			_, err, _, _ := utils.RunCommand(eraseCmd, 15*time.Minute)
+			_, err, _, _ = utils.RunCommand(eraseCmd, 15*time.Minute)
 			if err != nil {
 				return step.ExitSafeToReboot{
 					errors.Errorf("Failed to erase data0 partition: %v", err),

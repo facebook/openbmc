@@ -68,8 +68,7 @@ func ignoreSignals() {
 }
 
 func main() {
-	// set logger output to CustomLogger to log to both syslog and stderr
-	log.SetOutput(logger.CustomLogger)
+	logger.InitCustomLogger()
 
 	binName := fileutils.SanitizeBinaryName(os.Args[0])
 

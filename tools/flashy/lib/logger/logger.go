@@ -39,13 +39,6 @@ type LogWriter struct {
 	Streams []io.Writer
 }
 
-// CustomLogger is the output for flashy's logs
-var CustomLogger LogWriter
-
-func init() {
-	InitCustomLogger()
-}
-
 // InitCustomLogger sets CustomLogger to contain the stderr stream and tries to acquire the
 // syslog stream.
 var InitCustomLogger = func() {
@@ -62,17 +55,17 @@ var InitCustomLogger = func() {
 		streams = append(streams, syslogWriter)
 	}
 
-	CustomLogger = LogWriter{
+	log.SetOutput(LogWriter{
 		Streams: streams,
-	}
+	})
 }
 
 // InitCustomLoggerStderrOnly sets CustomLogger to only contain the stderr stream.
 // This is used for situations in which code may kill rsyslogd (e.g. fuser -km).
 var InitCustomLoggerStderrOnly = func() {
-	CustomLogger = LogWriter{
+	log.SetOutput(LogWriter{
 		Streams: []io.Writer{os.Stderr},
-	}
+	})
 }
 
 // LogWriter implements io.Writer

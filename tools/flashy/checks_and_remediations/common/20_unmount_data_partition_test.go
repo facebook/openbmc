@@ -34,19 +34,15 @@ import (
 
 func TestUnmountDataPartition(t *testing.T) {
 	isDataPartitionMountedOrig := utils.IsDataPartitionMounted
-	startSyslogOrig := logger.StartSyslog
 	runDataPartitionUnmountProcessOrig := runDataPartitionUnmountProcess
 	remountRODataPartitionOrig := remountRODataPartition
 	validateSshdConfigOrig := validateSshdConfig
 	defer func() {
 		utils.IsDataPartitionMounted = isDataPartitionMountedOrig
-		logger.StartSyslog = startSyslogOrig
 		runDataPartitionUnmountProcess = runDataPartitionUnmountProcessOrig
 		remountRODataPartition = remountRODataPartitionOrig
 		validateSshdConfig = validateSshdConfigOrig
 	}()
-
-	logger.StartSyslog = func() {}
 
 	cases := []struct {
 		name           string
@@ -331,10 +327,18 @@ func TestValidateSshdConfig(t *testing.T) {
 func TestKillDataPartitionProcesses(t *testing.T) {
 	runCommandOrig := utils.RunCommand
 	sleepOrig := utils.Sleep
+	initCustomLoggerStderrOnlyOrig := logger.InitCustomLoggerStderrOnly
+	initCustomLoggerOrig := logger.InitCustomLogger
 	defer func() {
 		utils.RunCommand = runCommandOrig
 		utils.Sleep = sleepOrig
+		logger.InitCustomLoggerStderrOnly = initCustomLoggerStderrOnlyOrig
+		logger.InitCustomLogger = initCustomLoggerOrig
+
 	}()
+
+	logger.InitCustomLogger = func() {}
+	logger.InitCustomLoggerStderrOnly = func() {}
 
 	const fuserCmd = "fuser -km /mnt/data"
 

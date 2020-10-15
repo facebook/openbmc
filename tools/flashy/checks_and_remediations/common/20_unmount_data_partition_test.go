@@ -25,7 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/logger"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
@@ -34,13 +33,13 @@ import (
 )
 
 func TestUnmountDataPartition(t *testing.T) {
-	isDataPartitionMountedOrig := isDataPartitionMounted
+	isDataPartitionMountedOrig := utils.IsDataPartitionMounted
 	startSyslogOrig := logger.StartSyslog
 	runDataPartitionUnmountProcessOrig := runDataPartitionUnmountProcess
 	remountRODataPartitionOrig := remountRODataPartition
 	validateSshdConfigOrig := validateSshdConfig
 	defer func() {
-		isDataPartitionMounted = isDataPartitionMountedOrig
+		utils.IsDataPartitionMounted = isDataPartitionMountedOrig
 		logger.StartSyslog = startSyslogOrig
 		runDataPartitionUnmountProcess = runDataPartitionUnmountProcessOrig
 		remountRODataPartition = remountRODataPartitionOrig
@@ -124,7 +123,7 @@ func TestUnmountDataPartition(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			umountCalled := false
 			remountCalled := false
-			isDataPartitionMounted = func() (bool, error) {
+			utils.IsDataPartitionMounted = func() (bool, error) {
 				return tc.dataPartExists, tc.dataPartErr
 			}
 			runDataPartitionUnmountProcess = func() error {
@@ -150,61 +149,6 @@ func TestUnmountDataPartition(t *testing.T) {
 					t.Errorf("remount called: want '%v' got '%v'",
 						true, remountCalled)
 				}
-			}
-		})
-	}
-}
-
-func TestIsDataPartitionMounted(t *testing.T) {
-	readFileOrig := fileutils.ReadFile
-	defer func() {
-		fileutils.ReadFile = readFileOrig
-	}()
-
-	cases := []struct {
-		name              string
-		procMountContents string
-		procMountReadErr  error
-		want              bool
-		wantErr           error
-	}{
-		{
-			name:              "data partition exists",
-			procMountContents: tests.ExampleWedge100ProcMountsFile,
-			procMountReadErr:  nil,
-			want:              true,
-			wantErr:           nil,
-		},
-		{
-			name:              "data partition does not exist",
-			procMountContents: tests.ExampleWedge100ProcMountsFileUnmountedData,
-			procMountReadErr:  nil,
-			want:              false,
-			wantErr:           nil,
-		},
-		{
-			name:              "file read error",
-			procMountContents: "",
-			procMountReadErr:  errors.Errorf("file read error"),
-			want:              false,
-			wantErr:           errors.Errorf("Cannot read /proc/mounts: file read error"),
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			fileutils.ReadFile = func(filename string) ([]byte, error) {
-				if filename != "/proc/mounts" {
-					t.Errorf("filename: want '%v' got '%v'",
-						"/proc/mounts", filename)
-				}
-				return []byte(tc.procMountContents), tc.procMountReadErr
-			}
-
-			got, err := isDataPartitionMounted()
-			tests.CompareTestErrors(tc.wantErr, err, t)
-			if tc.want != got {
-				t.Errorf("want '%v' got '%v'", tc.want, got)
 			}
 		})
 	}

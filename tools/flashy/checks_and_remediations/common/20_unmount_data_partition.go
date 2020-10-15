@@ -26,7 +26,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/logger"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
@@ -47,7 +46,7 @@ var mount = syscall.Mount
 // may be corrupted by the preexisting data0 partition.
 // Also, should there be a need to format data0, this step is necessary.
 func unmountDataPartition(stepParams step.StepParams) step.StepExitError {
-	dataMounted, err := isDataPartitionMounted()
+	dataMounted, err := utils.IsDataPartitionMounted()
 	if err != nil {
 		return step.ExitSafeToReboot{
 			errors.Errorf("Unable to determine whether /mnt/data is mounted: %v",
@@ -93,21 +92,6 @@ func unmountDataPartition(stepParams step.StepParams) step.StepExitError {
 	}
 
 	return nil
-}
-
-var isDataPartitionMounted = func() (bool, error) {
-	procMountsDat, err := fileutils.ReadFile(procMountsPath)
-	if err != nil {
-		return false, errors.Errorf("Cannot read /proc/mounts: %v", err)
-	}
-
-	regEx := `(?m)^[^ ]+ /mnt/data [^ ]+ [^ ]+ [0-9]+ [0-9]+$`
-	regExMap, err := utils.GetAllRegexSubexpMap(regEx, string(procMountsDat))
-	if err != nil {
-		return false, errors.Errorf("regex error: %v", err)
-	}
-
-	return len(regExMap) != 0, nil
 }
 
 // runDataPartitionUnmountProcess attempts (up to 10 times) to unmount /mnt/data

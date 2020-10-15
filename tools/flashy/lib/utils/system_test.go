@@ -876,3 +876,58 @@ func TestGetMTDMapFromSpecifier(t *testing.T) {
 		})
 	}
 }
+
+func TestIsDataPartitionMounted(t *testing.T) {
+	readFileOrig := fileutils.ReadFile
+	defer func() {
+		fileutils.ReadFile = readFileOrig
+	}()
+
+	cases := []struct {
+		name              string
+		procMountContents string
+		procMountReadErr  error
+		want              bool
+		wantErr           error
+	}{
+		{
+			name:              "data partition exists",
+			procMountContents: tests.ExampleWedge100ProcMountsFile,
+			procMountReadErr:  nil,
+			want:              true,
+			wantErr:           nil,
+		},
+		{
+			name:              "data partition does not exist",
+			procMountContents: tests.ExampleWedge100ProcMountsFileUnmountedData,
+			procMountReadErr:  nil,
+			want:              false,
+			wantErr:           nil,
+		},
+		{
+			name:              "file read error",
+			procMountContents: "",
+			procMountReadErr:  errors.Errorf("file read error"),
+			want:              false,
+			wantErr:           errors.Errorf("Cannot read /proc/mounts: file read error"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
+				if filename != "/proc/mounts" {
+					t.Errorf("filename: want '%v' got '%v'",
+						"/proc/mounts", filename)
+				}
+				return []byte(tc.procMountContents), tc.procMountReadErr
+			}
+
+			got, err := isDataPartitionMounted()
+			tests.CompareTestErrors(tc.wantErr, err, t)
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+		})
+	}
+}

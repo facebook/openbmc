@@ -34,7 +34,6 @@ extern "C" {
 #include <stdbool.h>
 #include <math.h>
 #include <facebook/bic.h>
-#include <facebook/bic_platform.h>
 
 #include "pal-ipmi.h"
 #include "pal-led.h"

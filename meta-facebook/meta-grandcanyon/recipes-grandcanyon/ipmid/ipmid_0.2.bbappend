@@ -1,4 +1,4 @@
-# Copyright 2019-present Facebook. All Rights Reserved.
+# Copyright 2020-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,13 +15,11 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-lib: libwedge400_gpio.so
+DEPENDS += " libipmi libfruid libfbgc-common"
+RDEPENDS_${PN} += "libipmi libfruid libfbgc-common"
 
-libwedge400_gpio.so: wedge400_gpio.c
-	$(CC) $(CFLAGS) -fPIC -c -o wedge400_gpio.o wedge400_gpio.c
-	$(CC) -shared -o libwedge400_gpio.so wedge400_gpio.o $(LDFLAGS) -lc
+LDFLAGS += " -lipmb -lfbgc_common"
 
-.PHONY: clean
-
-clean:
-	rm -rf *.o libwedge400_gpio.so
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+SRC_URI += "file://fruid.c \
+           "

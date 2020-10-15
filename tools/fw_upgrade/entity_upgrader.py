@@ -35,7 +35,7 @@ from constants import (
 
 class FwEntityUpgrader(object):
     _REGEX_VERSION_PATTERN = r"^[v]?([0-9]*)\.([0-9]*)$"
-    _REGEX_STRING_PATTERN = r"^[0-9a-zA-Z]*$"
+    _REGEX_STRING_PATTERN = r"^[0-9a-zA-Z\-]+$"
 
     def __init__(
         self,

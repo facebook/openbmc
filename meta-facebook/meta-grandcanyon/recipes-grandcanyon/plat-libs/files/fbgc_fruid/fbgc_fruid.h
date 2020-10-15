@@ -1,4 +1,7 @@
-/* Copyright 2019-present Facebook. All Rights Reserved.
+/*
+ *
+ * Copyright 2020-present Facebook. All Rights Reserved.
+ *
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,24 +18,23 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __WEDGE400_GPIO_H__
-#define __WEDGE400_GPIO_H__
+#ifndef __FBGC_FRUID_H__
+#define __FBGC_FRUID_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <facebook/bic.h>
+#define MAX_FRU_NAME_STR  64
+#define MAX_BIN_FILE_STR  32
+#define MAX_FILE_PATH     64
 
-extern const uint8_t gpio_pin_list[];
-extern const char *gpio_pin_name[];
-extern const uint32_t gpio_ass_val;
-extern size_t gpio_pin_cnt;
-
-int wedge400_get_gpio_name(uint8_t gpio, char *name);
+int fbgc_get_fruid_name(uint8_t fru, char *name);
+int fbgc_get_fruid_path(uint8_t fru, char *path);
+int fbgc_get_fruid_eeprom_path(uint8_t fru, char *path);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-#endif /* __WEDGE400_GPIO_H__ */
+#endif /* __FBGC_FRUID_H__ */

@@ -18,4 +18,5 @@ IMAGE_INSTALL += " \
   mterm \
   plat-utils \
   fw-util \
+  fruid \
   "

@@ -1,4 +1,4 @@
-# Copyright 2019-present Facebook. All Rights Reserved.
+# Copyright 2018-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,27 +15,28 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-SUMMARY = "PSU Utility"
-DESCRIPTION = "Utility to update PSU and get PSU EEPROM."
+SUMMARY = "Lattice CPLD I2C update Utility."
+DESCRIPTION = "Update Lattice CPLD through I2C."
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://psu-util.c;beginline=5;endline=16;md5=69348da7e13c557a246cf7e5b163ea27"
+LIC_FILES_CHKSUM = "file://cpldupdate-i2c.c;beginline=5;endline=16;md5=69348da7e13c557a246cf7e5b163ea27"
 
 
-SRC_URI = "file://utils \
+SRC_URI = "file://cpldupdate-i2c.c \
+           file://Makefile \
           "
 
-S = "${WORKDIR}/utils"
+S = "${WORKDIR}"
 
-LDFLAGS = "-lfruid -lpal -lwedge400-psu "
-
-DEPENDS += "libwedge400-psu"
-RDEPENDS_${PN} += "libwedge400-psu"
 
 do_install() {
   install -d ${D}${bindir}
-  install -m 755 psu-util ${D}${bindir}/psu-util
+  install -m 755 cpldupdate-i2c ${D}${bindir}/cpldupdate-i2c
 }
+
+LDFLAGS += "-lobmc-i2c"
+DEPENDS += "libobmc-i2c"
+RDEPENDS_${PN} += "libobmc-i2c"
 
 FILES_${PN} = "${bindir}"

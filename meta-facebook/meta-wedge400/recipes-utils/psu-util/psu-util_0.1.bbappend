@@ -15,13 +15,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-lib: libwedge400-psu.so
-
-libwedge400-psu.so: wedge400-psu.c
-	$(CC) $(CFLAGS) -fPIC -c -o wedge400-psu.o wedge400-psu.c
-	$(CC) -shared -o libwedge400-psu.so wedge400-psu.o -lc $(LDFLAGS)
-
-.PHONY: clean
-
-clean:
-	rm -rf *.o libwedge400-psu.so
+CFLAGS_prepend = "-DPSU_NUM=2"

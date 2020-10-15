@@ -13,7 +13,8 @@ IMAGE_INSTALL += " \
   at93cx6-util \
   ast-mdio \
   bcm5396-util \
-  bic-cached \
+  bic-cache \
+  bic-monitor \
   bic-util \
   bitbang \
   cpldupdate \
@@ -27,7 +28,6 @@ IMAGE_INSTALL += " \
   i2craw \
   gbi2ctool \
   gpiocli \
-  gpiod \
   ipmbd \
   ipmid \
   ipmitool \

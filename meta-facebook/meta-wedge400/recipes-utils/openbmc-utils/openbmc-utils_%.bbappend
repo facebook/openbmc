@@ -23,7 +23,6 @@ SRC_URI += "file://board-utils.sh \
             file://cpld_ver.sh \
             file://create_vlan_intf \
             file://disable_watchdog.sh \
-            file://eth0_mac_fixup.sh \
             file://fcmcpld_update.sh \
             file://feutil \
             file://fpga_ver.sh \

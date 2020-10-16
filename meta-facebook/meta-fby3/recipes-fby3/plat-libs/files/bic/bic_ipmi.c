@@ -528,15 +528,14 @@ bic_get_1ou_type_cache(uint8_t slot_id, uint8_t *type) {
 
 int
 bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
-  // bic_set_amber_led(slot_id, dev_id, 0xFE);
   uint8_t tbuf[5] = {0x9c, 0x9c, 0x00, 0x00, 0x00};
   uint8_t rbuf[2] = {0};
   uint8_t rlen = 0;
   int ret = 0;
   int retry = 0;
   
-  tbuf[3] = dev_id;
-  tbuf[4] = status;
+  tbuf[3] = dev_id; // 0'base
+  tbuf[4] = status; // 0->off, 1->on
   while (retry < 3) {
     ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_SET_AMBER_LED, tbuf, 5, rbuf, &rlen, FEXP_BIC_INTF);
     if (ret == 0) break;

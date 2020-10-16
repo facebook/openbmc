@@ -47,6 +47,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define DEFAULT_PORT 5123
 #define DEFAULT_CERT_FILE "/etc/ssl/certs/https/server.pem"
 #define DEFAULT_LOG_TO_SYSLOG false
+#define DEFAULT_FORCE_JTAG_HW false
 #define DEFAULT_LOG_LEVEL ASD_LogLevel_Warning
 #define DEFAULT_LOG_STREAMS ASD_LogStream_All
 
@@ -66,6 +67,7 @@ typedef struct asd_args
     uint8_t fru;
     uint8_t msg_flow;
     bool use_syslog;
+    bool force_jtag_hw;
     ASD_LogLevel log_level;
     ASD_LogStream log_streams;
 } asd_args;

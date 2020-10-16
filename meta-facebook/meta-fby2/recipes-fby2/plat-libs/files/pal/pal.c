@@ -243,6 +243,10 @@ typedef struct {
 #define max(a, b) ((a) > (b)) ? (a) : (b)
 #endif
 
+#define NUM_SERVER_FRU  4
+#define NUM_NIC_FRU     1
+#define NUM_BMC_FRU     1
+
 
 static int nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type);
 
@@ -259,11 +263,18 @@ static char* gpio_slot_latch[] = { 0, "SLOT1_EJECTOR_LATCH_DETECT_N", "SLOT2_EJE
 
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, spb, nic";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
+const char *pal_server_fru_list[NUM_SERVER_FRU] = {"slot1", "slot2", "slot3", "slot4"};
+const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic"};
+const char *pal_bmc_fru_list[NUM_BMC_FRU] = {"spb"};
 
 #ifdef CONFIG_FBY2_GPV2
 const char pal_dev_list[] = "all, device0, device1, device2, device3, device4, device5, device6, device7, device8, device9, device10, device11";
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
 #endif
+
+size_t server_fru_cnt = NUM_SERVER_FRU;
+size_t nic_fru_cnt  = NUM_NIC_FRU;
+size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 2;
@@ -717,14 +728,14 @@ power_value_adjust(const struct power_coeff *table, float *value) {
   return;
 }
 
-// SP_BMC_HSC_PIN = SP_HSC_IN_POWER - (slot1 GPv2 INA230 Pwr + slot2 INA230 Power + slot3 GPv2 INA230 Pwr + slot4 INA230 Power) 
+// SP_BMC_HSC_PIN = SP_HSC_IN_POWER - (slot1 GPv2 INA230 Pwr + slot2 INA230 Power + slot3 GPv2 INA230 Pwr + slot4 INA230 Power)
 static int
 calc_bmc_hsc_value(float *value) {
   uint8_t ret = 0;
   float bmc_hsc_val = 0, val = 0;
   uint8_t status = 0;
   uint8_t i = 0;
-  uint8_t hsc_snr_list[4] = {GPV2_SENSOR_INA230_POWER, BIC_SENSOR_INA230_POWER, 
+  uint8_t hsc_snr_list[4] = {GPV2_SENSOR_INA230_POWER, BIC_SENSOR_INA230_POWER,
                              GPV2_SENSOR_INA230_POWER, BIC_SENSOR_INA230_POWER}; // power sensor for 4 slots
 
   ret = pal_sensor_read_raw(FRU_SPB, SP_SENSOR_HSC_IN_POWERAVG, &val);
@@ -1174,7 +1185,7 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
   }
 
   ret = fby2_common_set_gpio_val(gpio_rst_btn[slot], val);
-  
+
   return ret;
 }
 
@@ -1373,7 +1384,7 @@ power_on_server_physically(uint8_t slot_id){
     syslog(LOG_WARNING, "%s: Power on is failed for slot%d\n",__func__,slot_id);
     return -1;
   }
-  
+
 
   error:
   gpio_close(gdesc);
@@ -1429,9 +1440,9 @@ nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type) {
     msg->msg_payload[4] = 0x00; // OEM Playload Version
     msg->msg_payload[5] = BRCM_POWERUP_PRE_CMD ; // OEM Command Type
     msg->msg_payload[6] = 0x00; // 6~7: OEM Payload Length
-    msg->msg_payload[7] = oem_payload_length; 
+    msg->msg_payload[7] = oem_payload_length;
     msg->msg_payload[8] = 0x00; // 8~12: Reserved
-    msg->msg_payload[9] = 0x00; 
+    msg->msg_payload[9] = 0x00;
     msg->msg_payload[10] = 0x00;
     msg->msg_payload[11] = 0x00;
     msg->msg_payload[12] = 0x00;
@@ -1450,7 +1461,7 @@ nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type) {
 
     if (cc != RESP_COMMAND_COMPLETED) {
       printf("Power-up prepare command failed!\n");
-      ret = -1;      
+      ret = -1;
       print_ncsi_completion_codes(rsp);
     } else {
       syslog(LOG_INFO, "Power-up perpare is done");
@@ -2660,7 +2671,7 @@ pal_is_slot_latch_closed(uint8_t slot_id, uint8_t *status) {
     case FRU_SLOT4:
       if (fby2_common_get_gpio_val(gpio_slot_latch[slot_id], &val_latch) != 0) {
         return -1;
-      }     
+      }
 
       if (val_latch == GPIO_VALUE_LOW) {
         *status = 1;
@@ -2778,7 +2789,7 @@ pal_is_slot_support_update(uint8_t fru)
 
 int
 pal_is_debug_card_prsnt(uint8_t *status) {
-  gpio_value_t val;  
+  gpio_value_t val;
 
   if (fby2_common_get_gpio_val("FM_POST_CARD_PRES_BMC_N", &val) != 0) {
     return -1;
@@ -3533,10 +3544,10 @@ pal_set_led(uint8_t slot, uint8_t status) {
   } else {
     val = GPIO_VALUE_LOW;
   }
-  
+
   if (fby2_common_set_gpio_val(gpio_led[slot], val) != 0) {
     return -1;
-  }  
+  }
 
   return 0;
 }
@@ -12156,7 +12167,7 @@ pal_dev_jtag_gpio_to_bus(uint8_t fru) {
   return bus;
 }
 
-bool 
+bool
 pal_sensor_is_cached(uint8_t fru, uint8_t sensor_num) {
   return true;
 }

@@ -30,30 +30,45 @@ static struct gpiopoll_config g_gpios[3] = {
 static gpiopoll_desc_t *polldesc = NULL;
 static bool g_gpios_triggered[JTAG_EVENT_NUM] = {false, false, false};
 static pthread_mutex_t triggered_mutex = PTHREAD_MUTEX_INITIALIZER;
-         
+
 static const ASD_LogStream stream = ASD_LogStream_Pins;
 static const ASD_LogOption option = ASD_LogOption_None;
 
-void read_pin_value(uint8_t fru, Target_Control_GPIO gpio, int* value,
-                                  STATUS* result) {
-  *value = 0;
+void read_pin_value(uint8_t fru, Target_Control_GPIO gpio, int* value, STATUS* result) {
   gpio_value_t val = gpio_get_value_by_shadow(gpio.name);
+
   if (val == GPIO_VALUE_INVALID) {
     *result = ST_ERR;
     return;
   }
-  *value = val == GPIO_VALUE_HIGH ? 1 : 0;
+
+  switch (gpio.fd) {
+    case BMC_PREQ_N:
+    case BMC_PWR_DEBUG_N:
+      *value = (val == GPIO_VALUE_LOW) ? 1 : 0;
+      break;
+    default:
+      *value = (val == GPIO_VALUE_HIGH) ? 1 : 0;
+      break;
+  }
+
   *result = ST_OK;
 }
 
-void write_pin_value(uint8_t fru, Target_Control_GPIO gpio, int value,
-                                   STATUS* result) {
-  gpio_value_t val = value ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
-  if (gpio_set_value_by_shadow(gpio.name, val)) {
-    *result = ST_ERR;
-  } else {
-    *result = ST_OK;
+void write_pin_value(uint8_t fru, Target_Control_GPIO gpio, int value, STATUS* result) {
+  gpio_value_t val;
+
+  switch (gpio.fd) {
+    case BMC_PREQ_N:
+    case BMC_PWR_DEBUG_N:
+      val = (value) ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH;
+      break;
+    default:
+      val = (value) ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
+      break;
   }
+
+  *result = (!gpio_set_value_by_shadow(gpio.name, val)) ? ST_OK : ST_ERR;
 }
 
 void get_pin_events(Target_Control_GPIO gpio, short* events) {
@@ -65,19 +80,17 @@ static STATUS handle_preq_event(Target_Control_Handle* state, uint8_t fru) {
   ASD_log(ASD_LogLevel_Debug, stream, option,
           "BreakAll detected PRDY, asserting PREQ");
 
-  if (gpio_set_value_by_shadow("FM_BMC_PREQ_N", GPIO_VALUE_HIGH)) {
-     ASD_log(ASD_LogLevel_Error, stream, option,
-             "Failed to assert PREQ");
-    return ST_ERR;
+  write_pin_value(state->fru, state->gpios[BMC_PREQ_N], 1, &result);
+  if (result != ST_OK) {
+    ASD_log(ASD_LogLevel_Error, stream, option, "Failed to assert PREQ");
   }
-  else if ( !state->event_cfg.reset_break )
-  {
+  else if (!state->event_cfg.reset_break) {
     usleep(10000);
     ASD_log(ASD_LogLevel_Debug, stream, option,
             "CPU_PRDY, de-asserting PREQ");
-    if (gpio_set_value_by_shadow("FM_BMC_PREQ_N", GPIO_VALUE_LOW)) {
-      ASD_log(ASD_LogLevel_Error, stream, option,
-             "Failed to de-assert PREQ");
+    write_pin_value(state->fru, state->gpios[BMC_PREQ_N], 0, &result);
+    if (result != ST_OK) {
+      ASD_log(ASD_LogLevel_Error, stream, option, "Failed to de-assert PREQ");
       return ST_ERR;
     }
   }
@@ -91,21 +104,43 @@ STATUS bypass_jtag_message(uint8_t fru, struct asd_message* s_message) {
 STATUS pin_hndlr_deinit_asd_gpio(Target_Control_Handle *state) {
     STATUS result = ST_ERR;
     bool is_deinitialized = true;
+    gpio_desc_t *gpio;
+    int ret;
 
-    write_pin_value(state->fru, state->gpios[BMC_DEBUG_EN_N], 1, &result);
-    if (result == ST_OK) {
-        ASD_log(ASD_LogLevel_Warning, stream, option,
-                "BMC_DEBUG_EN_N is set to 1 successfully");
-    } else {
-        ASD_log(ASD_LogLevel_Error, stream, option,
-        "Failed to set BMC_DEBUG_EN_N");
+    ret = -1;
+    if ((gpio = gpio_open_by_shadow(state->gpios[BMC_PREQ_N].name))) {
+        ret = gpio_set_direction(gpio, GPIO_DIRECTION_IN);
+        gpio_close(gpio);
+    }
+    if (ret) {
+        ASD_log(ASD_LogLevel_Error, stream, option, "deinit BMC_PREQ_N failed");
         is_deinitialized = false;
     }
 
-    write_pin_value(state->fru, state->gpios[BMC_JTAG_SEL_N], 0, &result);
+    ret = -1;
+    if ((gpio = gpio_open_by_shadow(state->gpios[BMC_DEBUG_EN_N].name))) {
+        ret = gpio_set_direction(gpio, GPIO_DIRECTION_IN);
+        gpio_close(gpio);
+    }
+    if (ret) {
+        ASD_log(ASD_LogLevel_Error, stream, option, "deinit BMC_DEBUG_EN_N failed");
+        is_deinitialized = false;
+    }
+
+    write_pin_value(state->fru, state->gpios[BMC_TCK_MUX_SEL], 0, &result);
     if (result == ST_OK) {
         ASD_log(ASD_LogLevel_Warning, stream, option,
-                "BMC_JTAG_SEL_N is set to 0 successfully");
+                "BMC_TCK_MUX_SEL is set to 0 successfully");
+    } else {
+        ASD_log(ASD_LogLevel_Error, stream, option,
+        "Failed to set BMC_TCK_MUX_SEL");
+        is_deinitialized = false;
+    }
+
+    write_pin_value(state->fru, state->gpios[BMC_JTAG_SEL_N], 1, &result);
+    if (result == ST_OK) {
+        ASD_log(ASD_LogLevel_Warning, stream, option,
+                "BMC_JTAG_SEL_N is set to 1 successfully");
     } else {
         ASD_log(ASD_LogLevel_Error, stream, option,
                 "Failed to set BMC_JTAG_SEL_N");
@@ -138,6 +173,8 @@ static void *gpio_poll_thread(void *fru) {
 STATUS pin_hndlr_init_asd_gpio(Target_Control_Handle *state) {
     int value = 0;
     STATUS result = ST_ERR;
+    gpio_desc_t *gpio;
+    int ret;
 
     read_pin_value(state->fru, state->gpios[BMC_XDP_PRST_IN], &value, &result);
     if (result != ST_OK ) {
@@ -149,8 +186,26 @@ STATUS pin_hndlr_init_asd_gpio(Target_Control_Handle *state) {
       return ST_ERR;
     }
 
-    write_pin_value(state->fru, state->gpios[BMC_DEBUG_EN_N], 0, &result);
-    if (result == ST_OK) {
+    ret = -1;
+    if ((gpio = gpio_open_by_shadow(state->gpios[BMC_PREQ_N].name))) {
+        ret = gpio_set_init_value(gpio, GPIO_VALUE_HIGH);
+        gpio_close(gpio);
+    }
+    if (!ret) {
+        ASD_log(ASD_LogLevel_Warning, stream, option,
+                "BMC_PREQ_N is set to 1 successfully");
+    } else {
+        ASD_log(ASD_LogLevel_Error, stream, option,
+                "Failed to set BMC_PREQ_N");
+        return ST_ERR;
+    }
+
+    ret = -1;
+    if ((gpio = gpio_open_by_shadow(state->gpios[BMC_DEBUG_EN_N].name))) {
+        ret = gpio_set_init_value(gpio, GPIO_VALUE_LOW);
+        gpio_close(gpio);
+    }
+    if (!ret) {
         ASD_log(ASD_LogLevel_Warning, stream, option,
                 "BMC_DEBUG_EN_N is set to 0 successfully");
     } else {
@@ -159,10 +214,20 @@ STATUS pin_hndlr_init_asd_gpio(Target_Control_Handle *state) {
         return ST_ERR;
     }
 
-    write_pin_value(state->fru, state->gpios[BMC_JTAG_SEL_N], 1, &result);
+    write_pin_value(state->fru, state->gpios[BMC_TCK_MUX_SEL], 0, &result);
     if (result == ST_OK) {
         ASD_log(ASD_LogLevel_Warning, stream, option,
-                "BMC_JTAG_SEL_N is set to 1 successfully");
+                "BMC_TCK_MUX_SEL is set to 0 successfully");
+    } else {
+        ASD_log(ASD_LogLevel_Error, stream, option,
+                "Failed to set BMC_TCK_MUX_SEL");
+        return ST_ERR;
+    }
+
+    write_pin_value(state->fru, state->gpios[BMC_JTAG_SEL_N], 0, &result);
+    if (result == ST_OK) {
+        ASD_log(ASD_LogLevel_Warning, stream, option,
+                "BMC_JTAG_SEL_N is set to 0 successfully");
     } else {
         ASD_log(ASD_LogLevel_Error, stream, option,
                 "Failed to set BMC_JTAG_SEL_N");
@@ -308,64 +373,62 @@ STATUS pin_hndlr_init_target_gpios_attr(Target_Control_Handle *state) {
                 sizeof(state->gpios[BMC_TCK_MUX_SEL].name), "FM_JTAG_TCK_MUX_SEL",
                 sizeof("FM_JTAG_TCK_MUX_SEL"));
     state->gpios[BMC_TCK_MUX_SEL].number = 1;
-    state->gpios[BMC_TCK_MUX_SEL].fd = 1;
+    state->gpios[BMC_TCK_MUX_SEL].fd = BMC_TCK_MUX_SEL;
 
 
     strcpy_safe(state->gpios[BMC_PREQ_N].name,
                 sizeof(state->gpios[BMC_PREQ_N].name), "FM_BMC_PREQ_N",
                 sizeof("FM_BMC_PREQ_N"));
     state->gpios[BMC_PREQ_N].number = 1;
-    state->gpios[BMC_PREQ_N].fd = 1;
+    state->gpios[BMC_PREQ_N].fd = BMC_PREQ_N;
 
     strcpy_safe(state->gpios[BMC_PRDY_N].name,
                 sizeof(state->gpios[BMC_PRDY_N].name), "IRQ_BMC_PRDY_N",
                 sizeof("IRQ_BMC_PRDY_N"));
     state->gpios[BMC_PRDY_N].number = 1;
-    state->gpios[BMC_PRDY_N].fd = 1;
+    state->gpios[BMC_PRDY_N].fd = BMC_PRDY_N;
 
     strcpy_safe(state->gpios[BMC_JTAG_SEL_N].name,
                 sizeof(state->gpios[BMC_JTAG_SEL_N].name), "JTAG_MUX_SEL_0",
                 sizeof("JTAG_MUX_SEL_0"));
     state->gpios[BMC_JTAG_SEL_N].number = 1;
-    state->gpios[BMC_JTAG_SEL_N].fd = 1;
+    state->gpios[BMC_JTAG_SEL_N].fd = BMC_JTAG_SEL_N;
 
-#if 1
     strcpy_safe(state->gpios[BMC_CPU_PWRGD].name,
                 sizeof(state->gpios[BMC_CPU_PWRGD].name), "PWRGD_SYS_PWROK",
                 sizeof("PWRGD_SYS_PWROK"));
     state->gpios[BMC_CPU_PWRGD].number = 1;
-    state->gpios[BMC_CPU_PWRGD].fd = 1;
-#endif
+    state->gpios[BMC_CPU_PWRGD].fd = BMC_CPU_PWRGD;
 
     strcpy_safe(state->gpios[BMC_PLTRST_B].name,
                 sizeof(state->gpios[BMC_PLTRST_B].name), "RST_PLTRST_BMC_N",
                 sizeof("RST_PLTRST_BMC_N"));
     state->gpios[BMC_PLTRST_B].number = 1;
-    state->gpios[BMC_PLTRST_B].fd = 1;
+    state->gpios[BMC_PLTRST_B].fd = BMC_PLTRST_B;
 
     strcpy_safe(state->gpios[BMC_SYSPWROK].name,
                 sizeof(state->gpios[BMC_SYSPWROK].name), "PWRGD_SYS_PWROK",
                 sizeof("PWRGD_SYS_PWROK"));
     state->gpios[BMC_SYSPWROK].number = 1;
-    state->gpios[BMC_SYSPWROK].fd = 1;
+    state->gpios[BMC_SYSPWROK].fd = BMC_SYSPWROK;
 
     strcpy_safe(state->gpios[BMC_PWR_DEBUG_N].name,
                 sizeof(state->gpios[BMC_PWR_DEBUG_N].name), "FM_BMC_CPU_PWR_DEBUG_N",
                 sizeof("FM_BMC_CPU_PWR_DEBUG_N"));
     state->gpios[BMC_PWR_DEBUG_N].number = 1;
-    state->gpios[BMC_PWR_DEBUG_N].fd = 1;
+    state->gpios[BMC_PWR_DEBUG_N].fd = BMC_PWR_DEBUG_N;
 
     strcpy_safe(state->gpios[BMC_DEBUG_EN_N].name,
                 sizeof(state->gpios[BMC_DEBUG_EN_N].name), "FM_BMC_DEBUG_ENABLE_N",
                 sizeof("FM_BMC_DEBUG_ENABLE_N"));
     state->gpios[BMC_DEBUG_EN_N].number = 1;
-    state->gpios[BMC_DEBUG_EN_N].fd = 1;
+    state->gpios[BMC_DEBUG_EN_N].fd = BMC_DEBUG_EN_N;
 
     strcpy_safe(state->gpios[BMC_XDP_PRST_IN].name,
                 sizeof(state->gpios[BMC_XDP_PRST_IN].name), "DBP_PRESENT_N",
                 sizeof("DBP_PRESENT_N"));
     state->gpios[BMC_XDP_PRST_IN].number = 1;
-    state->gpios[BMC_XDP_PRST_IN].fd = 1;
+    state->gpios[BMC_XDP_PRST_IN].fd = BMC_XDP_PRST_IN;
 
     state->gpios[BMC_CPU_PWRGD].handler =
         (TargetHandlerEventFunctionPtr)on_power_event;
@@ -386,7 +449,7 @@ short pin_hndlr_pin_events(Target_Control_GPIO gpio) {
     return POLL_GPIO;
 }
 
-STATUS pin_hndlr_read_gpio_event(Target_Control_Handle* state, 
+STATUS pin_hndlr_read_gpio_event(Target_Control_Handle* state,
                                  struct pollfd poll_fd,
                                  ASD_EVENT* event) {
     //printf("state->gpios[poll_fd.fd].name :%s(%d)\n", state->gpios[poll_fd.fd].name, poll_fd.fd);
@@ -396,19 +459,18 @@ STATUS pin_hndlr_read_gpio_event(Target_Control_Handle* state,
 
 STATUS pin_hndlr_provide_GPIOs_list(Target_Control_Handle* state, target_fdarr_t* fds,
                       int* num_fds) {
-
     int index = 0;
     short events = 0;
+
     // Only monitor 3 pins
     get_pin_events(state->gpios[BMC_PRDY_N], &events);
-    // Tony
-    if ( state->event_cfg.report_PRDY && state->gpios[BMC_PRDY_N].fd != -1 )
+    if (state->event_cfg.report_PRDY && state->gpios[BMC_PRDY_N].fd != -1)
     {
         (*fds)[index].fd = state->gpios[BMC_PRDY_N].fd;
         (*fds)[index].events = events;
         index++;
     }
-    ASD_log(ASD_LogLevel_Info, stream, option,
+    ASD_log(ASD_LogLevel_Debug, stream, option,
             "report_PRDY: %d, fd:%d, events: %d, index:%d\n",
             state->event_cfg.report_PRDY, state->gpios[BMC_PRDY_N].fd, events, index);
 
@@ -419,7 +481,7 @@ STATUS pin_hndlr_provide_GPIOs_list(Target_Control_Handle* state, target_fdarr_t
         (*fds)[index].events = events;
         index++;
     }
-    ASD_log(ASD_LogLevel_Info, stream, option,
+    ASD_log(ASD_LogLevel_Debug, stream, option,
             "PLRST: fd:%d, events: %d, index:%d",
             state->gpios[BMC_PLTRST_B].fd, events, index);
 
@@ -430,7 +492,7 @@ STATUS pin_hndlr_provide_GPIOs_list(Target_Control_Handle* state, target_fdarr_t
         (*fds)[index].events = events;
         index++;
     }
-    ASD_log(ASD_LogLevel_Info, stream, option,
+    ASD_log(ASD_LogLevel_Debug, stream, option,
             "XDP_PRST_IN: fd:%d, events: %d, index:%d",
             state->gpios[BMC_XDP_PRST_IN].fd, events, index);
 

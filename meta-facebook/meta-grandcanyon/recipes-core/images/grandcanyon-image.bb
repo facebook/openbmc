@@ -19,4 +19,5 @@ IMAGE_INSTALL += " \
   plat-utils \
   fw-util \
   fruid \
+  name-util \
   "

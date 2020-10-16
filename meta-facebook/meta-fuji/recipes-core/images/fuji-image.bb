@@ -28,6 +28,7 @@ IMAGE_INSTALL += " \
   bic-util \
   bitbang \
   cpldupdate \
+  cpldupdate-i2c \
   libcpldupdate-dll-gpio \
   libcpldupdate-dll-ast-jtag \
   flashrom \

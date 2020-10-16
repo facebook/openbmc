@@ -1129,6 +1129,27 @@ bic_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value) {
   return 0;
 }
 
+int
+remote_bic_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value, uint8_t intf) {
+  uint8_t tbuf[6] = {0x9c, 0x9c, 0x00};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 6;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[3] = 0x01;
+  tbuf[4] = gpio_num;
+  tbuf[5] = value;
+
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, intf);
+
+  if ( ret < 0 ) {
+    return -1;
+  }
+
+  return 0;
+}
+
 // Get all GPIO pin status
 int
 bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio, uint8_t intf) {

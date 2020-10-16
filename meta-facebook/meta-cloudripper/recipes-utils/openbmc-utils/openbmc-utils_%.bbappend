@@ -20,7 +20,6 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://board-utils.sh \
             file://cpld_update.sh \
             file://cpld_ver.sh \
-            file://eth0_mac_fixup.sh \
             file://feutil \
             file://fpga_ver.sh \
             file://power-on.sh \

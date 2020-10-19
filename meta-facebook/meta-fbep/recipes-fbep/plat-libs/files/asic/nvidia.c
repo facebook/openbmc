@@ -143,7 +143,6 @@ static int nv_check_status(int fd, uint8_t opcode)
     }
     return 0;
   }
-  syslog(LOG_WARNING, "Nvidia status error = 0x%x", status);
   return -1;
 }
 
@@ -235,7 +234,6 @@ static float nv_read_temp(uint8_t slot, uint8_t sensor, float *temp)
 
 err:
   close(fd);
-  syslog(LOG_WARNING, "Nvidia error on slot %d", slot);
   return ASIC_ERROR;
 }
 
@@ -332,7 +330,7 @@ err:
 
 int nv_show_vbios_ver(uint8_t slot, char *ver)
 {
-  int fd;
+  int fd, retry = SMBPBI_MAX_RETRY;
   uint8_t buf[16] = {0};
   uint8_t offset;
 
@@ -340,7 +338,15 @@ int nv_show_vbios_ver(uint8_t slot, char *ver)
   if (fd < 0)
     return ASIC_ERROR;
 
-  if (!(nv_get_cap(fd, 1) & SMBPBI_CAP_FW_VER))
+  // Sometimes this capability would be turned off at run-time
+  // Add retry as workaround here
+  while (retry--) {
+    if (!(nv_get_cap(fd, 1) & SMBPBI_CAP_FW_VER))
+      continue;
+    else
+      break;
+  }
+  if (retry == 0)
     goto err;
 
   for (offset = 0; offset < 4; offset++) {
@@ -354,6 +360,5 @@ int nv_show_vbios_ver(uint8_t slot, char *ver)
 
 err:
   close(fd);
-  syslog(LOG_WARNING, "%s: Nvidia error on slot %d", __func__, (int)slot);
   return ASIC_ERROR;
 }

@@ -1708,3 +1708,19 @@ pal_get_pfr_update_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridg
   return 0;
 }
 
+int
+pal_get_80port_record(uint8_t slot, uint8_t *res_data, size_t max_len, size_t *res_len)
+{
+  int ret;
+  uint8_t len;
+
+  ret = bic_get_post_buf(IPMB_BUS, res_data, &len);
+  if (ret) {
+    return CC_NODE_BUSY;
+  } else {
+    *res_len = len;
+  }
+
+  return CC_SUCCESS;
+}
+

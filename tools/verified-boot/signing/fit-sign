@@ -489,6 +489,9 @@ if __name__ == '__main__':
         help="specify the PLATFORM to sign")
     parser.add_argument('--hsm-algo', metavar="HSMALGO",
         help="specify hsm signing algorithm as HSMALGO")
+    parser.add_argument('--force', default=False,
+        action='store_true',
+        help='skip the signing key and image sanity check, if know what you are doing')
 
     # specify signing key: exclusive
     # --keydir: the key in local directory
@@ -541,5 +544,15 @@ if __name__ == '__main__':
     except Exception as e:
         print("No image meta found: %s" % repr(e))
         print("Signing legacy image")
+
+    if not ( args.lock or args.force ):
+        if args.keyname is None and image_meta is not None:
+            print("Please use HSM key (--keyname <hsm/key/name>) to sign new image")
+            print("Or (--force) to sign without using HSM key")
+            sys.exit(2)
+        if args.keyname is not None and image_meta is None:
+            print("Please don't use HSM key to sign legacy image")
+            print("Or (--force) to sign using HSM key")
+            sys.exit(3)
 
     sys.exit(main())

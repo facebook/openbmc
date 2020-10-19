@@ -18,6 +18,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://board-utils.sh \
+            file://boot_info.sh \
             file://cpld_update.sh \
             file://cpld_ver.sh \
             file://feutil \
@@ -41,6 +42,7 @@ SRC_URI += "file://board-utils.sh \
 
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
+    boot_info.sh \
     cpld_update.sh \
     cpld_ver.sh \
     feutil \

@@ -83,6 +83,7 @@ typedef unsigned long DWORD;
 #include <openbmc/hr_nanosleep.h>
 #include <openbmc/log.h>
 #include <errno.h>
+#include <sys/ioctl.h>
 #endif
 
 #if PORT == DOS
@@ -253,12 +254,21 @@ BOOL verbose = FALSE;
 #define JTAG_CHAR_DEV "/dev/jtag0"
 
 #ifndef JTAG_SYSFS_DIR
-#define JTAG_SYSFS_DIR "/sys/devices/platform/ahb/ahb\:apb/1e6e4000.jtag/"
+#define JTAG_SYSFS_DIR "/sys/devices/platform/ahb/ahb:apb/1e6e4000.jtag/"
 #endif
 #define JTAG_SYSFS_TDI JTAG_SYSFS_DIR "tdi"
 #define JTAG_SYSFS_TDO JTAG_SYSFS_DIR "tdo"
 #define JTAG_SYSFS_TMS JTAG_SYSFS_DIR "tms"
 #define JTAG_SYSFS_TCK JTAG_SYSFS_DIR "tck"
+
+#define __JTAG_IOCTL_MAGIC 0xb2
+#define JTAG_IOCBITBANG _IOW(__JTAG_IOCTL_MAGIC, 6, unsigned int)
+
+struct tck_bitbang {
+  unsigned char tms;
+  unsigned char tdi;
+  unsigned char tdo;
+} __attribute__((__packed__));
 
 static void jtag_swio_write(int fd, int value) {
   if (lseek(fd, 0, SEEK_SET) < 0) {
@@ -287,14 +297,12 @@ static int jtag_swio_read(int fd) {
 }
 
 static int initialize_jtag_swio(void) {
-  /* Kernel 5.6 JTAG driver default let JTAG controller in slave mode,
-   * and only enable master mode when JTAG dev is opened.
-   * So add open() here for compatibility.
-   */
   if ((g_jtag_dev = open(JTAG_CHAR_DEV, O_RDWR)) < 0) {
     OBMC_ERROR(errno, "failed to open jtag device %s", JTAG_CHAR_DEV);
+  } else {
+    /* Use ioctl(JTAG_IOCBITBANG) if successfully open Kernel 5.6 JTAG driver */
+    return 0;
   }
-  jbi_delay(1000);
 
   if (((g_gpio_tdi.gs_fd = open(JTAG_SYSFS_TDI, O_WRONLY)) < 0) ||
       ((g_gpio_tck.gs_fd = open(JTAG_SYSFS_TCK, O_WRONLY)) < 0) ||
@@ -315,6 +323,7 @@ static int initialize_jtag_swio(void) {
 
 static int jbi_jtag_swio(int tms, int tdi, int read_tdo) {
   int tdo = 0;
+  struct tck_bitbang bitbang;
 
   if (!jtag_hardware_initialized) {
     if (initialize_jtag_swio()) {
@@ -324,23 +333,37 @@ static int jbi_jtag_swio(int tms, int tdi, int read_tdo) {
     jtag_hardware_initialized = TRUE;
   }
 
-  jtag_swio_write(g_gpio_tms.gs_fd, tms ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
-  jtag_swio_write(g_gpio_tdi.gs_fd, tdi ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
+  if (g_jtag_dev >= 0) {
+    bitbang.tms = tms ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
+    bitbang.tdi = tdi ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
+    bitbang.tdo = 0;
+    if (ioctl(g_jtag_dev, JTAG_IOCBITBANG, &bitbang) < 0) {
+      fprintf(stderr, "%s: ioctl(JTAG_IOCBITBANG) failed\n", __func__);
+      return -1;
+    }
 
-  /*
-   * if we need to read data, the data should be ready from the
-   * previous clock falling edge. Read it now.
-   */
-  if (read_tdo && ((tdo = jtag_swio_read(g_gpio_tdo.gs_fd)) < 0)) {
-    fprintf(stderr, "%s: jtag_swio_read() failed\n", __func__);
-    return -1;
+    if (read_tdo) {
+      tdo = bitbang.tdo;
+    }
+  } else {
+    jtag_swio_write(g_gpio_tms.gs_fd, tms ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
+    jtag_swio_write(g_gpio_tdi.gs_fd, tdi ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
+
+    /*
+     * if we need to read data, the data should be ready from the
+     * previous clock falling edge. Read it now.
+     */
+    if (read_tdo && ((tdo = jtag_swio_read(g_gpio_tdo.gs_fd)) < 0)) {
+      fprintf(stderr, "%s: jtag_swio_read() failed\n", __func__);
+      return -1;
+    }
+
+    /* do rising edge to clock out the data */
+    jtag_swio_write(g_gpio_tck.gs_fd, GPIO_VALUE_HIGH);
+
+    /* do falling edge clocking */
+    jtag_swio_write(g_gpio_tck.gs_fd, GPIO_VALUE_LOW);
   }
-
-  /* do rising edge to clock out the data */
-  jtag_swio_write(g_gpio_tck.gs_fd, GPIO_VALUE_HIGH);
-
-  /* do falling edge clocking */
-  jtag_swio_write(g_gpio_tck.gs_fd, GPIO_VALUE_LOW);
 
   OBMC_DEBUG("tms=%d tdi=%d do_read=%d tdo=%d", tms, tdi, read_tdo, tdo);
   return tdo;

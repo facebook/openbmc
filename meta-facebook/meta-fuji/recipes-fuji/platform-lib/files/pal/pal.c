@@ -1724,3 +1724,26 @@ pal_get_80port_record(uint8_t slot, uint8_t *res_data, size_t max_len, size_t *r
   return CC_SUCCESS;
 }
 
+int
+pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len,
+                 uint8_t *res_data, uint8_t *res_len)
+{
+  int board_sku_id = 0, board_rev = 0, val = 0, ret = 0;
+  unsigned char *data = res_data;
+  char path[PATH_MAX];
+
+  board_sku_id = pal_get_plat_sku_id();
+
+  snprintf(path, sizeof(path), IOBFPGA_PATH_FMT, "board_ver");
+  ret = read_device(path, &val);
+  if (ret) return CC_NODE_BUSY;
+  board_rev = val;
+
+  *data++ = board_sku_id;
+  *data++ = board_rev;
+  *data++ = slot;
+  *data++ = 0x00; // 1S Server.
+  *res_len = data - res_data;
+
+  return CC_SUCCESS;
+}

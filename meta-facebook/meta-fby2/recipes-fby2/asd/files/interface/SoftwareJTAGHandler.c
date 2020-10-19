@@ -194,6 +194,23 @@ void initialize_jtag_chains(JTAG_Handler* state) {
     }
 }
 
+static int save_dev_id(uint8_t fru, uint8_t dev_id) {
+    FILE *fp = NULL;
+    char file_path[128] = {0};
+
+    snprintf(file_path, sizeof(file_path), "%s_slot%d", ASD_DEV_CONFIG_FILE, fru);
+
+    fp = fopen(file_path, "w");
+    if (fp == NULL) {
+        return -1;
+    }
+
+    fprintf(fp, "%d", dev_id);
+    fclose(fp);
+
+    return 0;
+}
+
 STATUS JTAG_set_device(uint8_t fru, uint8_t dev_id) {
     int ret = 0, bus = 0;
 
@@ -207,6 +224,11 @@ STATUS JTAG_set_device(uint8_t fru, uint8_t dev_id) {
                 ret = pal_init_dev_jtag_gpio(fru, dev_id);
                 if (ret < 0) {
                     fprintf(stderr, "Setting Device%u failed.\n", dev_id);
+                    return ST_ERR;
+                }
+                ret = save_dev_id(fru, dev_id);
+                if (ret < 0) {
+                    fprintf(stderr, "Fail to save the ASD configuration to file for fru %u device %u (0-based)\n", fru, dev_id);
                     return ST_ERR;
                 }
             }

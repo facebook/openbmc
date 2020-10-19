@@ -58,11 +58,9 @@ func restartServices(stepParams step.StepParams) step.StepExitError {
 
 	if utils.HealthdExists() {
 		log.Printf("Healthd exists, attempting to restart healthd...")
-		err = utils.RestartHealthd(false, supervisor)
+		err = utils.RestartHealthd(true, supervisor)
 		if err != nil {
-			log.Printf("Could not restart healthd: %v. "+
-				"Ignoring as this is best effort and not critical.",
-				err)
+			return step.ExitSafeToReboot{err}
 		} else {
 			log.Printf("Finished restarting healthd")
 		}

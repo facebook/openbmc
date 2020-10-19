@@ -20,4 +20,6 @@ IMAGE_INSTALL += " \
   fw-util \
   fruid \
   name-util \
+  log-util-v2 \
+  openbmc-utils \
   "

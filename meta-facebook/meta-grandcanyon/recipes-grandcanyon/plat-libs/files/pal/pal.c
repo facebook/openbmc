@@ -123,3 +123,51 @@ int
 pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
   return fbgc_get_fruid_eeprom_path(fru, path);
 }
+
+int
+pal_get_fru_list(char *list) {
+  snprintf(list, sizeof(pal_fru_list), pal_fru_list);
+  return 0;
+}
+
+int
+pal_get_fru_name(uint8_t fru, char *name) {
+  uint8_t type = 0;
+
+  switch(fru) {
+    case FRU_SERVER:
+      snprintf(name, MAX_FRU_CMD_STR, "server");
+      break;
+    case FRU_BMC:
+      snprintf(name, MAX_FRU_CMD_STR, "bmc");
+      break;
+    case FRU_UIC:
+      snprintf(name, MAX_FRU_CMD_STR, "uic");
+      break;
+    case FRU_DPB:
+      snprintf(name, MAX_FRU_CMD_STR, "dpb");
+      break;
+    case FRU_SCC:
+      snprintf(name, MAX_FRU_CMD_STR, "scc");
+      break;
+    case FRU_NIC:
+      snprintf(name, MAX_FRU_CMD_STR, "nic");
+      break;
+    case FRU_E1S_IOCM:
+      fbgc_common_get_chassis_type(&type);
+      if (type == CHASSIS_TYPE7) {
+        snprintf(name, MAX_FRU_CMD_STR, "iocm");
+      } else {
+        snprintf(name, MAX_FRU_CMD_STR, "e1s");
+      }
+      break;
+    default:
+      if (fru > MAX_NUM_FRUS) {
+        return -1;
+      }
+      snprintf(name, MAX_FRU_CMD_STR, "fru%d", fru);
+      break;
+  }
+
+  return 0;
+}

@@ -1,0 +1,4 @@
+max([
+  linear_inlet(elbert:inlet_temp),
+  linear_th4(elbert:th4_temp)
+])

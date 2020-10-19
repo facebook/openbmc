@@ -1,0 +1,132 @@
+{
+  "pwm_transition_value": 50,
+  "pwm_boost_value": 100,
+  "sample_interval_ms": 3000,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": false,
+    "progressive": true
+  },
+  "fan_dead_boost": {
+    "data": [
+      [1,100]
+    ]
+  },
+  "watchdog": true,
+  "min_rpm": 800,
+  "profiles": {
+    "linear_inlet": {
+      "read_source" : {
+        "sysfs" : "/sys/bus/i2c/drivers/lm90/11-004c/hwmon/hwmon*/temp2_input"
+      },
+      "read_limit": {
+        "valid": {
+          "limit": 40,
+          "threshold": 20,
+          "action": "host_shutdown"
+        },
+        "invalid": {
+          "limit": -60,
+          "threshold": 10,
+          "action": "host_shutdown"
+        }
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
+      "data": [
+        [25, 100],
+        [30, 150],
+        [35, 185],
+        [36, 255]
+      ]
+    },
+    "linear_th4": {
+      "read_source" : {
+        "sysfs" : "/sys/bus/i2c/drivers/max6697/4-004d/hwmon/hwmon*/temp2_input"
+      },
+      "read_limit": {
+        "valid": {
+          "limit": 110,
+          "threshold": 20,
+          "action": "host_shutdown"
+        },
+        "invalid": {
+          "limit": -60,
+          "threshold": 10,
+          "action": "host_shutdown"
+        }
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
+      "data": [
+        [15, 100],
+        [110, 255]
+      ]
+    }
+  },
+  "fans": {
+    "1": {
+      "label" : "1",
+      "read_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/6-0060/fan1_input"
+      },
+      "write_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/6-0060/fan1_pwm",
+        "max_duty_register": 255
+      }
+    },
+    "2": {
+      "label" : "2",
+      "read_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/6-0060/fan2_input"
+      },
+      "write_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/6-0060/fan2_pwm",
+        "max_duty_register": 255
+      }
+    },
+    "3": {
+      "label" : "3",
+      "read_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/6-0060/fan3_input"
+      },
+      "write_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/6-0060/fan3_pwm",
+        "max_duty_register": 255
+      }
+    },
+    "4": {
+      "label" : "4",
+      "read_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/6-0060/fan4_input"
+      },
+      "write_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/6-0060/fan4_pwm",
+        "max_duty_register": 255
+      }
+    },
+    "5": {
+      "label" : "5",
+      "read_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/6-0060/fan5_input"
+      },
+      "write_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/6-0060/fan5_pwm",
+        "max_duty_register": 255
+      }
+    }
+  },
+  "zones": {
+    "zone_1": {
+      "pwm_output": [1, 2, 3, 4, 5],
+      "expr_file": "zone1.fsc"
+      }
+  },
+  "notes": {
+    "fanx_pwm": {
+      "0_to_255" : "the range that corresponds to 0_to_100 percent"
+    }
+  }
+}

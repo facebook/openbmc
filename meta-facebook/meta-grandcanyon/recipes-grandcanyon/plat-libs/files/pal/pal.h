@@ -42,6 +42,11 @@ extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
 extern const char pal_fru_list_sensor_history[];
 extern const char pal_fru_list[];
+extern const char pal_pwm_list[];
+extern const char pal_tach_list[];
+
+extern size_t pal_pwm_cnt;
+extern size_t pal_tach_cnt;
 
 int pal_get_fru_id(char *str, uint8_t *fru);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
@@ -51,6 +56,9 @@ int pal_get_fruid_path(uint8_t fru, char *path);
 int pal_get_fruid_eeprom_path(uint8_t fru, char *path);
 int pal_get_fru_list(char *list) ;
 int pal_get_fru_name(uint8_t fru, char *name);
+int pal_get_fan_name(uint8_t fan_id, char *name);
+int pal_set_fan_speed(uint8_t fan_id, uint8_t pwm);
+int pal_get_pwm_value(uint8_t fan_id, uint8_t *pwm);
 
 #ifdef __cplusplus
 } // extern "C"

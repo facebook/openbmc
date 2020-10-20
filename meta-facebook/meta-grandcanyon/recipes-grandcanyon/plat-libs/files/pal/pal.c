@@ -29,11 +29,13 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <pthread.h>
+#include <openbmc/obmc-sensors.h>
 #include "pal.h"
 
 #define NUM_SERVER_FRU  1
 #define NUM_NIC_FRU     1
 #define NUM_BMC_FRU     1
+#define MAX_FAN_NAME    32
 
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, iocm";
 const char pal_fru_list_print[] = "all, server, bmc, uic, dpb, scc, nic, iocm";
@@ -48,6 +50,14 @@ size_t server_fru_cnt = NUM_SERVER_FRU;
 size_t nic_fru_cnt  = NUM_NIC_FRU;
 size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
+const char pal_pwm_list[] = "0";
+const char pal_tach_list[] = "0...7";
+
+size_t pal_pwm_cnt = 1;
+size_t pal_tach_cnt = 8;
+
+// TODO: temporary mapping table, will get from fan config after fan table is ready
+uint8_t fanid2pwmid_mapping[] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 int
 pal_get_fru_id(char *str, uint8_t *fru) {
@@ -131,6 +141,17 @@ pal_get_fru_list(char *list) {
 }
 
 int
+pal_get_fan_name(uint8_t fan_id, char *name) {
+  if (fan_id >= pal_tach_cnt) {
+    syslog(LOG_WARNING, "%s: Invalid fan index: %d", __func__, fan_id);
+    return -1;
+  }
+  snprintf(name, MAX_FAN_NAME, "Fan %d %s", (fan_id / 2) + 1, fan_id % 2 == 0 ? "Front" : "Rear");
+
+  return 0;
+}
+
+int
 pal_get_fru_name(uint8_t fru, char *name) {
   uint8_t type = 0;
 
@@ -170,4 +191,40 @@ pal_get_fru_name(uint8_t fru, char *name) {
   }
 
   return 0;
+}
+
+int
+pal_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
+  char label[32] = {0};
+  int zone = 0;
+
+  if (fan_id >= pal_pwm_cnt) {
+    syslog(LOG_WARNING, "%s: Invalid fan index: %d", __func__, fan_id);
+    return -1;
+  }
+  zone = fanid2pwmid_mapping[fan_id];
+  snprintf(label, sizeof(label), "pwm%d", zone);
+
+  return sensors_write_fan(label, (float)pwm);
+}
+
+int
+pal_get_pwm_value(uint8_t fan_id, uint8_t *pwm) {
+  char label[32] = {0};
+  float value = 0;
+  int ret = 0;
+  int zone = 0;
+
+  if (fan_id >= pal_tach_cnt) {
+    syslog(LOG_WARNING, "%s: Invalid fan index: %d", __func__, fan_id);
+    return -1;
+  }
+  zone = fanid2pwmid_mapping[fan_id];
+  snprintf(label, sizeof(label), "pwm%d", zone);
+  ret = sensors_read_fan(label, &value);
+  if (ret == 0) {
+    *pwm = (uint8_t)value;
+  }
+
+  return ret;
 }

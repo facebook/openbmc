@@ -22,4 +22,6 @@ IMAGE_INSTALL += " \
   name-util \
   log-util-v2 \
   openbmc-utils \
+  fan-util \
+  fscd \
   "

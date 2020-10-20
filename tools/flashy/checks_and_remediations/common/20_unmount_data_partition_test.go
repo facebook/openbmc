@@ -21,6 +21,7 @@ package common
 import (
 	"reflect"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -34,17 +35,27 @@ import (
 
 func TestUnmountDataPartition(t *testing.T) {
 	isDataPartitionMountedOrig := isDataPartitionMounted
+	startSyslogOrig := logger.StartSyslog
 	runDataPartitionUnmountProcessOrig := runDataPartitionUnmountProcess
+	remountRODataPartitionOrig := remountRODataPartition
+	validateSshdConfigOrig := validateSshdConfig
 	defer func() {
 		isDataPartitionMounted = isDataPartitionMountedOrig
+		logger.StartSyslog = startSyslogOrig
 		runDataPartitionUnmountProcess = runDataPartitionUnmountProcessOrig
+		remountRODataPartition = remountRODataPartitionOrig
+		validateSshdConfig = validateSshdConfigOrig
 	}()
+
+	logger.StartSyslog = func() {}
 
 	cases := []struct {
 		name           string
 		dataPartExists bool
 		dataPartErr    error
 		unmountErr     error
+		remountErr     error
+		sshdConfigErr  error
 		want           step.StepExitError
 	}{
 		{
@@ -52,6 +63,8 @@ func TestUnmountDataPartition(t *testing.T) {
 			dataPartExists: true,
 			dataPartErr:    nil,
 			unmountErr:     nil,
+			remountErr:     nil,
+			sshdConfigErr:  nil,
 			want:           nil,
 		},
 		{
@@ -59,6 +72,8 @@ func TestUnmountDataPartition(t *testing.T) {
 			dataPartExists: false,
 			dataPartErr:    nil,
 			unmountErr:     nil,
+			remountErr:     nil,
+			sshdConfigErr:  nil,
 			want:           nil,
 		},
 		{
@@ -66,23 +81,49 @@ func TestUnmountDataPartition(t *testing.T) {
 			dataPartExists: false,
 			dataPartErr:    errors.Errorf("check failed"),
 			unmountErr:     nil,
+			remountErr:     nil,
+			sshdConfigErr:  nil,
 			want: step.ExitSafeToReboot{
 				errors.Errorf("Unable to determine whether /mnt/data is mounted: check failed"),
 			},
 		},
 		{
-			name:           "unmount failed",
+			name:           "unmount failed, remount passed",
 			dataPartExists: true,
 			dataPartErr:    nil,
 			unmountErr:     errors.Errorf("unmount failed"),
+			remountErr:     nil,
+			sshdConfigErr:  nil,
+			want:           nil,
+		},
+		{
+			name:           "unmount failed, remount failed",
+			dataPartExists: true,
+			dataPartErr:    nil,
+			unmountErr:     errors.Errorf("unmount failed"),
+			remountErr:     errors.Errorf("remount failed"),
+			sshdConfigErr:  nil,
 			want: step.ExitSafeToReboot{
-				errors.Errorf("Failed to unmount /mnt/data: unmount failed"),
+				errors.Errorf("Failed to unmount or remount /mnt/data"),
+			},
+		},
+		{
+			name:           "successfully unmounted but sshd config corrupt",
+			dataPartExists: true,
+			dataPartErr:    nil,
+			unmountErr:     nil,
+			remountErr:     nil,
+			sshdConfigErr:  errors.Errorf("sshd config corrupt"),
+			want: step.ExitUnsafeToReboot{
+				errors.Errorf("Validate sshd config failed: %v",
+					"sshd config corrupt"),
 			},
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			umountCalled := false
+			remountCalled := false
 			isDataPartitionMounted = func() (bool, error) {
 				return tc.dataPartExists, tc.dataPartErr
 			}
@@ -90,12 +131,25 @@ func TestUnmountDataPartition(t *testing.T) {
 				umountCalled = true
 				return tc.unmountErr
 			}
+			remountRODataPartition = func() error {
+				remountCalled = true
+				return tc.remountErr
+			}
+			validateSshdConfig = func() error {
+				return tc.sshdConfigErr
+			}
 
 			got := unmountDataPartition(step.StepParams{})
 			step.CompareTestExitErrors(tc.want, got, t)
 			if umountCalled != tc.dataPartExists {
 				t.Errorf("unmount called: want '%v' got '%v'",
 					tc.want, umountCalled)
+			}
+			if tc.dataPartExists && tc.unmountErr != nil {
+				if !remountCalled {
+					t.Errorf("remount called: want '%v' got '%v'",
+						true, remountCalled)
+				}
 			}
 		})
 	}
@@ -158,139 +212,93 @@ func TestIsDataPartitionMounted(t *testing.T) {
 
 func TestRunDataPartitionUnmountProcess(t *testing.T) {
 	runCommandOrig := utils.RunCommand
-	runCommandRetryOrig := utils.RunCommandWithRetries
-	startSyslogOrig := logger.StartSyslog
+	mountOrig := mount
 	sleepOrig := utils.Sleep
+	killDataPartitionProcessesOrig := killDataPartitionProcesses
 	defer func() {
 		utils.RunCommand = runCommandOrig
-		utils.RunCommandWithRetries = runCommandRetryOrig
-		logger.StartSyslog = startSyslogOrig
+		mount = mountOrig
 		utils.Sleep = sleepOrig
+		killDataPartitionProcesses = killDataPartitionProcessesOrig
 	}()
 
-	logger.StartSyslog = func() {}
 	utils.Sleep = func(t time.Duration) {}
+	killDataPartitionProcesses = func() {}
 
 	cases := []struct {
 		name string
 		// map from arg[0] of command to error
 		// if not present, nil assumed
 		cmdErrs  map[string]error
+		mountErr error
 		wantCmds []string
 		want     error
 	}{
 		{
-			name:    "succeeded",
-			cmdErrs: map[string]error{},
+			name:     "succeeded",
+			cmdErrs:  map[string]error{},
+			mountErr: nil,
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
-				"mount --bind /mnt /tmp/mnt",
 				"cp -r /mnt/data /tmp/mnt",
-				"fuser -km /mnt/data",
 				"umount /mnt/data",
-				"bash -c sshd -T 1> /dev/null",
 			},
 			want: nil,
-		},
-		{
-			name: "sshd error",
-			cmdErrs: map[string]error{
-				"bash": errors.Errorf("sshd failed"),
-			},
-			wantCmds: []string{
-				"mkdir -p /tmp/mnt",
-				"mount --bind /mnt /tmp/mnt",
-				"cp -r /mnt/data /tmp/mnt",
-				"fuser -km /mnt/data",
-				"umount /mnt/data",
-				"bash -c sshd -T 1> /dev/null",
-			},
-			want: errors.Errorf("'bash -c sshd -T 1> /dev/null', failed: sshd failed, stderr: "),
 		},
 		{
 			name: "umount error",
 			cmdErrs: map[string]error{
 				"umount": errors.Errorf("umount failed"),
 			},
+			mountErr: nil,
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
-				"mount --bind /mnt /tmp/mnt",
 				"cp -r /mnt/data /tmp/mnt",
-				"fuser -km /mnt/data",
 				"umount /mnt/data",
-				"fuser -km /mnt/data",
 				"umount /mnt/data",
-				"fuser -km /mnt/data",
 				"umount /mnt/data",
-				"fuser -km /mnt/data",
 				"umount /mnt/data",
-				"fuser -km /mnt/data",
 				"umount /mnt/data",
-				"fuser -km /mnt/data",
 				"umount /mnt/data",
-				"fuser -km /mnt/data",
 				"umount /mnt/data",
-				"fuser -km /mnt/data",
 				"umount /mnt/data",
-				"fuser -km /mnt/data",
 				"umount /mnt/data",
-				"fuser -km /mnt/data",
 				"umount /mnt/data",
-				"mount -o remount,ro /mnt/data",
-				"bash -c sshd -T 1> /dev/null",
 			},
-			want: nil,
-		},
-		{
-			name: "fuser error",
-			cmdErrs: map[string]error{
-				"fuser": errors.Errorf("fuser failed"),
-			},
-			wantCmds: []string{
-				"mkdir -p /tmp/mnt",
-				"mount --bind /mnt /tmp/mnt",
-				"cp -r /mnt/data /tmp/mnt",
-				"fuser -km /mnt/data",
-				"umount /mnt/data",
-				"bash -c sshd -T 1> /dev/null",
-			},
-			want: nil,
+			want: errors.Errorf("umount failed"),
 		},
 		{
 			name: "cp error",
 			cmdErrs: map[string]error{
 				"cp": errors.Errorf("cp failed"),
 			},
+			mountErr: nil,
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
-				"mount --bind /mnt /tmp/mnt",
 				"cp -r /mnt/data /tmp/mnt",
-				"mount -o remount,ro /mnt/data",
-				"bash -c sshd -T 1> /dev/null",
 			},
-			want: nil,
-		},
-		{
-			name: "mount error",
-			cmdErrs: map[string]error{
-				"mount": errors.Errorf("mount failed"),
-			},
-			wantCmds: []string{
-				"mkdir -p /tmp/mnt",
-				"mount --bind /mnt /tmp/mnt",
-				"mount -o remount,ro /mnt/data",
-			},
-			want: errors.Errorf("'mount -o remount,ro /mnt/data', failed: mount failed, stderr: "),
+			want: errors.Errorf("Copying /mnt/data contents to /tmp/mnt failed: cp failed, stderr: "),
 		},
 		{
 			name: "mkdir error",
 			cmdErrs: map[string]error{
 				"mkdir": errors.Errorf("mkdir failed"),
 			},
+			mountErr: nil,
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
 			},
 			want: errors.Errorf("'mkdir -p /tmp/mnt' failed: mkdir failed, stderr: "),
+		},
+		{
+			name:     "mount error",
+			cmdErrs:  map[string]error{},
+			mountErr: errors.Errorf("Bind mount failed"),
+			wantCmds: []string{
+				"mkdir -p /tmp/mnt",
+			},
+			want: errors.Errorf("Bind mount /mnt to /tmp/mnt failed: %v",
+				"Bind mount failed"),
 		},
 	}
 
@@ -314,8 +322,17 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 				return cmdHelper(cmdArr)
 			}
 
-			utils.RunCommandWithRetries = func(cmdArr []string, timeout time.Duration, maxAttempts int, interval time.Duration) (int, error, string, string) {
-				return cmdHelper(cmdArr)
+			mount = func(source string, target string, fstype string, flags uintptr, data string) (err error) {
+				if source != "/mnt" {
+					t.Errorf("source: want '%v' got '%v'", "/mnt", source)
+				}
+				if target != "/tmp/mnt" {
+					t.Errorf("source: want '%v' got '%v'", "/tmp/mnt", target)
+				}
+				if flags != syscall.MS_BIND {
+					t.Errorf("flags: want '%v' got '%v'", syscall.MS_BIND, flags)
+				}
+				return tc.mountErr
 			}
 
 			got := runDataPartitionUnmountProcess()
@@ -323,6 +340,141 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 			if !reflect.DeepEqual(tc.wantCmds, gotCmds) {
 				t.Errorf("cmds: want '%v' got '%v'", tc.wantCmds, gotCmds)
 			}
+		})
+	}
+}
+
+func TestValidateSshdConfig(t *testing.T) {
+	runCommandOrig := utils.RunCommand
+	defer func() {
+		utils.RunCommand = runCommandOrig
+	}()
+
+	const sshdCmd = "bash -c sshd -T 1> /dev/null"
+
+	cases := []struct {
+		name   string
+		cmdErr error
+		want   error
+	}{
+		{
+			name:   "ok",
+			cmdErr: nil,
+			want:   nil,
+		},
+		{
+			name:   "failed",
+			cmdErr: errors.Errorf("command failed"),
+			want:   errors.Errorf("'%v' failed: command failed, stderr: ", sshdCmd),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			utils.RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
+				gotCmd := strings.Join(cmdArr, " ")
+				if gotCmd != sshdCmd {
+					t.Errorf("cmd: want '%v' got '%v'", sshdCmd, gotCmd)
+				}
+				return 0, tc.cmdErr, "", ""
+			}
+			got := validateSshdConfig()
+			tests.CompareTestErrors(tc.want, got, t)
+		})
+	}
+}
+
+func TestKillDataPartitionProcesses(t *testing.T) {
+	runCommandOrig := utils.RunCommand
+	sleepOrig := utils.Sleep
+	defer func() {
+		utils.RunCommand = runCommandOrig
+		utils.Sleep = sleepOrig
+	}()
+
+	const fuserCmd = "fuser -km /mnt/data"
+
+	cases := []struct {
+		name   string
+		cmdErr error
+	}{
+		{
+			name:   "ok",
+			cmdErr: nil,
+		},
+		{
+			name:   "failed",
+			cmdErr: errors.Errorf("command failed"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			sleepCalled := false
+			utils.Sleep = func(t time.Duration) {
+				sleepCalled = true
+			}
+
+			utils.RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
+				gotCmd := strings.Join(cmdArr, " ")
+				if gotCmd != fuserCmd {
+					t.Errorf("cmd: want '%v' got '%v'", fuserCmd, gotCmd)
+				}
+				return 0, tc.cmdErr, "", ""
+			}
+
+			wantSleepCalled := (tc.cmdErr == nil)
+
+			killDataPartitionProcesses()
+
+			if sleepCalled != wantSleepCalled {
+				t.Errorf("sleep called: want '%v' got '%v'",
+					wantSleepCalled, sleepCalled)
+			}
+		})
+	}
+}
+
+func TestRemountRODataPartition(t *testing.T) {
+	runCommandOrig := utils.RunCommand
+	killDataPartitionProcessesOrig := killDataPartitionProcesses
+	defer func() {
+		utils.RunCommand = runCommandOrig
+		killDataPartitionProcesses = killDataPartitionProcessesOrig
+	}()
+
+	killDataPartitionProcesses = func() {}
+
+	const remountCmd = "mount -o remount,ro /mnt/data"
+
+	cases := []struct {
+		name   string
+		cmdErr error
+		want   error
+	}{
+		{
+			name:   "ok",
+			cmdErr: nil,
+			want:   nil,
+		},
+		{
+			name:   "failed",
+			cmdErr: errors.Errorf("command failed"),
+			want:   errors.Errorf("'%v' failed: command failed, stderr: ", remountCmd),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			utils.RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
+				gotCmd := strings.Join(cmdArr, " ")
+				if gotCmd != remountCmd {
+					t.Errorf("cmd: want '%v' got '%v'", remountCmd, gotCmd)
+				}
+				return 0, tc.cmdErr, "", ""
+			}
+			got := remountRODataPartition()
+			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}
 }

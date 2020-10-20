@@ -32,6 +32,9 @@
 #define DEFAULT_TTY "/dev/ttyS3"
 #endif
 
+// Modbus retry count
+#define MAX_RETRY   5
+
 // Modbus errors
 #define MODBUS_RESPONSE_TIMEOUT -4
 #define MODBUS_BAD_CRC -5

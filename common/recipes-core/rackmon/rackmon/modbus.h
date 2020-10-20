@@ -28,7 +28,9 @@
 
 #include <openbmc/log.h>
 
+#ifndef DEFAULT_TTY
 #define DEFAULT_TTY "/dev/ttyS3"
+#endif
 
 // Modbus errors
 #define MODBUS_RESPONSE_TIMEOUT -4

@@ -28,24 +28,41 @@
 // Thread for update the uart_select
 static void *
 debug_card_handler() {
-  int ret;
-  uint8_t uart_select;
-  char str[8];
+#define  DELAY_READ 500
+  int ret = 0;
+  uint8_t card_prsnt = 0x00;
+  uint8_t uart_select = 0x00;
+  uint8_t prev_uart_select = 0xff;
+  char str[8] = "\n";
 
   while (1) {
+    // we start updating uart position sts when card is present
+    if ( pal_is_debug_card_prsnt(&card_prsnt) < 0 || card_prsnt == 0 ) {
+      msleep(DELAY_READ); //sleep
+      continue;
+    }
+
+    // get the uart position
     ret = pal_get_uart_select_from_cpld(&uart_select);
-    if (ret) {
-      goto debug_card_out;
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() Failed to get debug_card_uart_select\n", __func__);
+      msleep(DELAY_READ); //sleep
+      continue;
     }
 
-    sprintf(str, "%u", uart_select);
-    ret = kv_set("debug_card_uart_select", str, 0, 0);
-    if (ret) {
-      goto debug_card_out;
+    // check if we need to update kv
+    if ( uart_select != prev_uart_select ) {
+      //detect the value has been changed
+      sprintf(str, "%u", uart_select);
+      ret = kv_set("debug_card_uart_select", str, 0, 0);
+      if (ret < 0)  {
+        syslog(LOG_WARNING, "%s() Failed to set debug_card_uart_select\n", __func__);
+      } else {
+        //update prev_uart_select
+        prev_uart_select = uart_select;
+      }
     }
-
-debug_card_out:
-    msleep(500);
+    msleep(DELAY_READ);
   }
 
   return 0;

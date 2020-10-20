@@ -1528,6 +1528,8 @@ int main(int argc, char** argv) {
   if (getenv("RACKMOND_FOREGROUND") == NULL) {
     obmc_log_unset_std_stream();
     daemon(0, 0);
+    if (daemon(0, 0) < 0)
+      OBMC_ERROR(errno, "daemon error");
   }
 
   if (getenv("RACKMOND_TIMEOUT") != NULL) {

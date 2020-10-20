@@ -30,13 +30,16 @@ extern "C" {
 #include <facebook/fbgc_common.h>
 #include <facebook/fbgc_fruid.h>
 
-
 #define MAX_NUM_FRUS (FRU_CNT-1)
 #define MAX_NODES    1
 
 #define CUSTOM_FRU_LIST 1
 
 #define MAX_FRU_CMD_STR   16
+
+#define GUID_SIZE 16
+#define OFFSET_SYS_GUID 0x17F0
+#define OFFSET_DEV_GUID 0x1800
 
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];

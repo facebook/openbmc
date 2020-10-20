@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2015-present Facebook. All Rights Reserved.
+ * Copyright 2020-present Facebook. All Rights Reserved.
  *
  * This file contains code to support IPMI2.0 Specification available @
  * http://www.intel.com/content/www/us/en/servers/ipmi/ipmi-specifications.html
@@ -26,7 +26,10 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
+#include <ctype.h>
+#include <time.h>
 #include <sys/mman.h>
+#include <sys/time.h>
 #include <string.h>
 #include <pthread.h>
 #include <openbmc/obmc-sensors.h>
@@ -227,4 +230,176 @@ pal_get_pwm_value(uint8_t fan_id, uint8_t *pwm) {
   }
 
   return ret;
+}
+
+// GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
+static void
+pal_populate_guid(char *guid, char *str) {
+  unsigned int secs = 0;
+  unsigned int usecs = 0;
+  struct timeval tv;
+  uint8_t count = 0;
+  uint8_t lsb = 0, msb = 0;
+  int i = 0, clock_seq = 0;
+  
+  // Populate time
+  gettimeofday(&tv, NULL);
+
+  secs = tv.tv_sec;
+  usecs = tv.tv_usec;
+  guid[0] = usecs & 0xFF;
+  guid[1] = (usecs >> 8) & 0xFF;
+  guid[2] = (usecs >> 16) & 0xFF;
+  guid[3] = (usecs >> 24) & 0xFF;
+  guid[4] = secs & 0xFF;
+  guid[5] = (secs >> 8) & 0xFF;
+  guid[6] = (secs >> 16) & 0xFF;
+  guid[7] = (secs >> 24) & 0x0F;
+
+  // Populate version
+  guid[7] |= 0x10;
+
+  // Populate clock seq with randmom number
+  srand(time(NULL));
+  clock_seq = rand();
+  guid[8] = clock_seq & 0xFF;
+  guid[9] = (clock_seq >> 8) & 0xFF;
+
+  // Use string to populate 6 bytes unique
+  // e.g. LSP62100035 => 'S' 'P' 0x62 0x10 0x00 0x35
+  count = 0;
+  for (i = strlen(str)-1; i >= 0; i--) {
+    if (count == 6) {
+      break;
+    }
+
+    // If alphabet use the character as is
+    if (isalpha(str[i])) {
+      guid[15-count] = str[i];
+      count++;
+      continue;
+    }
+
+    // If it is 0-9, use two numbers as BCD
+    lsb = str[i] - '0';
+    if (i > 0) {
+      i--;
+      if (isalpha(str[i])) {
+        i++;
+        msb = 0;
+      } else {
+        msb = str[i] - '0';
+      }
+    } else {
+      msb = 0;
+    }
+    guid[15-count] = (msb << 4) | lsb;
+    count++;
+  }
+
+  // zero the remaining bytes, if any
+  if (count != 6) {
+    memset(&guid[10], 0, 6-count);
+  }
+
+  return;
+}
+
+// GUID for System and Device
+static int
+pal_get_guid(uint16_t offset, char *guid) {
+  char path[MAX_FILE_PATH] = {0};
+  int fd = 0;
+  int ret = 0;
+  ssize_t bytes_rd = 0;
+
+  // Set path for UIC
+  snprintf(path, MAX_FILE_PATH, EEPROM_PATH, UIC_FRU_BUS, UIC_FRU_ADDR);
+
+  // check for file presence
+  if (access(path, F_OK)) {
+    syslog(LOG_ERR, "%s() unable to access %s: %s", __func__, path, strerror(errno));
+    return -1;
+  }
+
+  fd = open(path, O_RDONLY);
+  if (fd < 0) {
+    syslog(LOG_ERR, "%s() unable to open %s: %s", __func__, path, strerror(errno));
+    return -1;
+  }
+
+  lseek(fd, offset, SEEK_SET);
+
+  bytes_rd = read(fd, guid, GUID_SIZE);
+  if (bytes_rd != GUID_SIZE) {
+    syslog(LOG_ERR, "%s() read from %s failed: %s", __func__, path, strerror(errno));
+    ret = -1;
+  }
+
+  close(fd);
+  
+  return ret;
+}
+
+static int
+pal_set_guid(uint16_t offset, char *guid) {
+  char path[MAX_FILE_PATH] = {0};
+  int fd = 0;
+  int ret = 0;
+  ssize_t bytes_wr = 0;
+
+  // Set path for UIC
+  snprintf(path, MAX_FILE_PATH, EEPROM_PATH, UIC_FRU_BUS, UIC_FRU_ADDR);
+
+  // check for file presence
+  if (access(path, F_OK)) {
+    syslog(LOG_ERR, "%s() unable to access %s: %s", __func__, path, strerror(errno));
+    return -1;
+  }
+
+  fd = open(path, O_WRONLY);
+  if (fd < 0) {
+    syslog(LOG_ERR, "%s() unable to open %s: %s", __func__, path, strerror(errno));
+    return -1;
+  }
+
+  lseek(fd, offset, SEEK_SET);
+
+  bytes_wr = write(fd, guid, GUID_SIZE);
+  if (bytes_wr != GUID_SIZE) {
+    syslog(LOG_ERR, "%s() write to %s failed: %s", __func__, path, strerror(errno));
+    ret = -1;
+  }
+
+  close(fd);
+  
+  return ret;
+}
+
+int
+pal_get_sys_guid(uint8_t fru, char *guid) {
+  // TODO: the system GUID will get from BIC
+  return -1;
+}
+
+int
+pal_set_sys_guid(uint8_t fru, char *str) {
+  char guid[GUID_SIZE] = {0};
+
+  pal_populate_guid(guid, str);
+  // TODO: the system GUID will be set from BIC
+  return -1;
+}
+
+int
+pal_get_dev_guid(uint8_t fru, char *guid) {
+  return pal_get_guid(OFFSET_DEV_GUID, guid);
+}
+
+int
+pal_set_dev_guid(uint8_t fru, char *str) {
+  char guid[GUID_SIZE] = {0};
+  
+  pal_populate_guid(guid, str);
+  return pal_set_guid(OFFSET_DEV_GUID, guid);
 }

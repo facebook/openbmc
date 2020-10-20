@@ -24,4 +24,5 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   fan-util \
   fscd \
+  guid-util \
   "

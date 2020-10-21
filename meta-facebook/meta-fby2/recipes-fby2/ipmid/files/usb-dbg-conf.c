@@ -845,11 +845,14 @@ int plat_get_me_status(uint8_t fru, char *status)
 int plat_get_board_id(char *id)
 {
   int board_id;
-  
-  if (fby2_common_get_gpio_val(GPIO_BOARD_ID, &board_id) != 0) {
+
+  board_id = fby2_common_get_board_id();
+  if (board_id < 0) {
+    syslog(LOG_WARNING, "plat_get_board_id: fail to get spb board id");
     return -1;
   }
   sprintf(id, "%02d", board_id);
+
   return 0;
 }
 

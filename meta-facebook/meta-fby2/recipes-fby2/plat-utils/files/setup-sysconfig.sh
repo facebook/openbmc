@@ -5,9 +5,6 @@ echo -n "Setup System Configuration .."
 
 . /usr/local/fbpackages/utils/ast-functions
 
-SPB_REV=$(($(($(($(gpio_get BOARD_REV_ID2 Y2) * 4)) + $(($(gpio_get BOARD_REV_ID1 Y1) * 2)))) + $(gpio_get BOARD_REV_ID0 Y0)))
-echo $SPB_REV > /tmp/spb_rev
-
 if [ $(is_server_prsnt 2) == "1" ] ; then
    if [ $(get_slot_type 2) != "0" ] ; then
       gpio_set P12V_STBY_SLOT2_EN O5 0

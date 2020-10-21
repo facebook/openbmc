@@ -219,6 +219,11 @@ typedef struct {
 
 #define BIC_CACHED_PID "/var/run/bic-cached_%d.lock"
 
+#define SPB_REV_FILE "/tmp/spb_rev"
+#define SPB_TYPE_FILE "/tmp/spb_type"
+#define FAN_TYPE_FILE "/tmp/fan_type"
+#define SPB_BOARD_ID_FILE "/tmp/spb_board_id"
+
 int fby2_common_fru_name(uint8_t fru, char *str);
 int fby2_common_fru_id(char *str, uint8_t *fru);
 int fby2_common_dev_id(char *str, uint8_t *dev);
@@ -232,6 +237,8 @@ int fby2_common_get_fan_type(void);
 int fby2_common_get_fan_config(void);
 int fby2_common_set_gpio_val(char *shadow, int val);
 int fby2_common_get_gpio_val(char *shadow, int *val);
+int fby2_common_get_spb_rev(void);
+int fby2_common_get_board_id(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -31,7 +31,6 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 SPB_FRU_FILE="/tmp/fruid_spb.bin"
-SPB_TYPE="/tmp/spb_type"
 
 echo "Starting IPMB Rx/Tx Daemon"
 
@@ -77,17 +76,6 @@ if [[ $(is_server_prsnt 4) == "1" && $(get_slot_type 4) != "0" && $(get_slot_typ
   sv stop ipmbd_7
 elif [ $(is_server_prsnt 4) == "0" ]; then
   sv stop ipmbd_7
-fi
-
-if [ -f $SPB_FRU_FILE ]; then
-  str=$(/usr/local/bin/fruid-util spb | grep -i "Robinson Creek")
-  if [ "$str" != "" ]; then    #RC Baseboard
-    echo 1 > $SPB_TYPE
-  else
-    echo 0 > $SPB_TYPE
-  fi
-else
-  echo 0 > $SPB_TYPE
 fi
 
 runsv /etc/sv/ipmbd_13 > /dev/null 2>&1 &

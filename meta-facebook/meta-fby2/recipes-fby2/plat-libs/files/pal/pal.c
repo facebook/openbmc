@@ -124,7 +124,6 @@
   #define GMAC0_DIR "/sys/devices/platform/ftgmac100.0/net/eth0"
 #endif
 
-#define SPB_REV_FILE "/tmp/spb_rev"
 #define SPB_REV_PVT 3
 
 #define IMC_VER_SIZE 8
@@ -817,8 +816,6 @@ static inlet_corr_t g_ict_gpv2_15k[] = {
 static uint8_t g_ict_gpv2_10k_count = sizeof(g_ict_gpv2_10k)/sizeof(inlet_corr_t);
 static uint8_t g_ict_gpv2_15k_count = sizeof(g_ict_gpv2_15k)/sizeof(inlet_corr_t);
 
-int pal_check_board_type(uint8_t *status);
-
 static void apply_inlet_correction(float *value) {
   static float dt = 0;
   uint8_t pwm[2] = {0};
@@ -835,9 +832,9 @@ static void apply_inlet_correction(float *value) {
   pwm[0] = (pwm[0] + pwm[1]) / 2;
 
   if ((fby2_get_slot_type(FRU_SLOT1) != SLOT_TYPE_GPV2) || (fby2_get_slot_type(FRU_SLOT3) != SLOT_TYPE_GPV2)) {
-    uint8_t is_nd_board = 0;
-    pal_check_board_type(&is_nd_board);
-    if(is_nd_board == 1) {
+    int spb_type = 0;
+    spb_type = fby2_common_get_spb_type();
+    if(spb_type == TYPE_SPB_YV2ND) {
       ict = g_ict_nd;
       ict_cnt = g_ict_nd_count;
     } else {
@@ -1584,18 +1581,6 @@ error:
   return ret;
 }
 
-static uint8_t
-_get_spb_rev(void) {
-  int rev;
-
-  if (read_device(SPB_REV_FILE, &rev)) {
-    printf("Get spb revision failed\n");
-    return -1;
-  }
-
-  return rev;
-}
-
 static bool
 pal_is_device_pair(uint8_t slot_id) {
   int pair_set_type;
@@ -1619,7 +1604,7 @@ pal_baseboard_clock_control(uint8_t slot_id, int ctrl) {
   gpio_desc_t *v1gdesc = NULL, *v2gdesc = NULL, *v3gdesc = NULL;
 
   spb_type = fby2_common_get_spb_type();
-  rev = _get_spb_rev();
+  rev = fby2_common_get_spb_rev();
   switch(slot_id) {
     case FRU_SLOT1:
     case FRU_SLOT2:
@@ -4381,26 +4366,6 @@ pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id)
 }
 
 int
-pal_check_board_type(uint8_t *status) {
-  gpio_value_t val_board_id, val_rev_id2;
-
-  if (fby2_common_get_gpio_val("BOARD_ID", &val_board_id) != 0) {
-    return -1;
-  }
-
-  if (fby2_common_get_gpio_val("BOARD_REV_ID2", &val_rev_id2) != 0) {
-    return -1;
-  }
-
-  if ((1 == val_board_id) && (0 == val_rev_id2))
-    *status = 1;
-  else
-    *status = 0;
-
-  return 0;
-}
-
-int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   uint8_t status;
   char key[MAX_KEY_LEN] = {0};
@@ -4474,17 +4439,17 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   else {
     // On successful sensor read
     if (fru == FRU_SPB) {
-      uint8_t is_nd_board = 0;
-      pal_check_board_type(&is_nd_board);
+      int spb_type = 0;
+      spb_type = fby2_common_get_spb_type();
       if (sensor_num == SP_SENSOR_HSC_OUT_CURR || sensor_num == SP_SENSOR_HSC_PEAK_IOUT) {
-        if (is_nd_board == 1) {
+        if (spb_type == TYPE_SPB_YV2ND) {
           power_value_adjust(nd_curr_cali_table, (float *)value);
         } else {
           power_value_adjust(curr_cali_table, (float *)value);
         }
       }
       if (sensor_num == SP_SENSOR_HSC_IN_POWER || sensor_num == SP_SENSOR_HSC_PEAK_PIN || sensor_num == SP_SENSOR_HSC_IN_POWERAVG) {
-        if (is_nd_board == 1) {
+        if (spb_type == TYPE_SPB_YV2ND) {
           power_value_adjust(nd_pwr_cali_table, (float *)value);
         } else {
           power_value_adjust(pwr_cali_table, (float *)value);
@@ -8012,30 +7977,23 @@ pal_set_post_start(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *
 int
 pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
 {
-	gpio_value_t BOARD_ID, BOARD_REV_ID0, BOARD_REV_ID1, BOARD_REV_ID2, SLOT_TYPE;
+	int BOARD_ID, rev, SLOT_TYPE;
 	unsigned char *data = res_data;
 	int completion_code = CC_UNSPECIFIED_ERROR;
 
-	if (fby2_common_get_gpio_val("BOARD_ID", &BOARD_ID) != 0) {
-		*res_len = 0;
-		return completion_code;
-	}
+  BOARD_ID = fby2_common_get_board_id();
+  if (BOARD_ID < 0) {
+    syslog(LOG_WARNING, "pal_get_board_id: fail to get spb board id");
+    *res_len = 0;
+    return completion_code;
+  }
 
-	if (fby2_common_get_gpio_val("BOARD_REV_ID0", &BOARD_REV_ID0) != 0) {
-		*res_len = 0;
-		return completion_code;
-	}
-
-	if (fby2_common_get_gpio_val("BOARD_REV_ID1", &BOARD_REV_ID1) != 0) {
-		*res_len = 0;
-		return completion_code;
-	}
-
-	if (fby2_common_get_gpio_val("BOARD_REV_ID2", &BOARD_REV_ID2) != 0) {
-		*res_len = 0;
-		return completion_code;
-	}
-
+  rev = fby2_common_get_spb_rev();
+  if (rev < 0) {
+    syslog(LOG_WARNING, "pal_get_board_id: fail to get spb rev");
+    *res_len = 0;
+    return completion_code;
+  }
 
 	switch(fby2_get_slot_type(slot))
 	{
@@ -8057,7 +8015,7 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 	}
 
 	*data++ = BOARD_ID;
-	*data++ = (BOARD_REV_ID2 << 2) | (BOARD_REV_ID1 << 1) | BOARD_REV_ID0;
+	*data++ = rev;
 	*data++ = slot;
 	*data++ = SLOT_TYPE;
 	*res_len = data - res_data;

@@ -124,6 +124,7 @@ typedef struct JTAG_Handler
     struct tck_bitbang bitbang_data[MAX_WAIT_CYCLES];
     int JTAG_driver_handle;
     bool sw_mode;
+    bool force_jtag_hw;
     uint8_t fru;
     uint8_t msg_flow;
 } JTAG_Handler;

@@ -43,6 +43,11 @@ extern "C" {
 #define IPMB_RETRY_DELAY_TIME 500
 
 #define MAX_CHECK_DEVICE_TIME 8
+#define GPIO_RST_USB_HUB 0x10
+#define EXP_GPIO_RST_USB_HUB 0x9
+#define VALUE_LOW 0
+#define VALUE_HIGH 1
+
 /*IFX VR pages*/
 #define VR_PAGE   0x00
 #define VR_PAGE32 0x32

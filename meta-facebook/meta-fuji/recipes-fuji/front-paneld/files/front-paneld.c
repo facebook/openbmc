@@ -40,8 +40,8 @@
 #include <openbmc/obmc-i2c.h>
 
 #define ADM1278_NAME  "adm1278"
-
 #define ADM1278_ADDR 0x10
+#define SCM_ADM1278_BUS 16
 
 #define INTERVAL_MAX  5
 #define PIM_RETRY     10
@@ -376,8 +376,59 @@ pim_monitor_handler(void *unused) {
 pim_mon_out:
     sleep(1);
   }
-  return 0;
+  return NULL;
 }
+
+// Thread for monitoring scm plug
+static void *
+scm_monitor_handler(void *unused) {
+  int curr = -1;
+  int prev = -1;
+  int ret;
+  uint8_t prsnt = 0;
+  uint8_t power;
+
+  while (1) {
+    ret = pal_is_fru_prsnt(FRU_SCM, &prsnt);
+    if (ret) {
+      goto scm_mon_out;
+    }
+    curr = prsnt;
+    if (curr != prev) {
+      if (curr) {
+        // SCM was inserted
+        syslog(LOG_WARNING, "SCM Insertion\n");
+
+        ret = pal_get_server_power(FRU_SCM, &power);
+        if (ret) {
+          goto scm_mon_out;
+        }
+        if (power == SERVER_POWER_OFF) {
+          sleep(3);
+          syslog(LOG_WARNING, "SCM power on\n");
+          pal_set_server_power(FRU_SCM, SERVER_POWER_ON);
+          /* Setup management port LED */
+          run_command("/usr/local/bin/setup_mgmt.sh led");
+          /* Config ADM1278 power monitor averaging */
+          if (write_adm1278_conf(SCM_ADM1278_BUS, ADM1278_ADDR, 0xD4, 0x3F1E)) {
+            syslog(LOG_CRIT, "SCM Bus:%d Addr:0x%x Device:%s "
+                             "can't config register",
+                             SCM_ADM1278_BUS, ADM1278_ADDR, ADM1278_NAME);
+          }
+          goto scm_mon_out;
+        }
+      } else {
+        // SCM was removed
+        syslog(LOG_WARNING, "SCM Extraction\n");
+      }
+    }
+scm_mon_out:
+    prev = curr;
+    sleep(1);
+  }
+  return NULL;
+}
+
 
 void
 exithandler(int signum) {
@@ -390,6 +441,7 @@ exithandler(int signum) {
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_pim_monitor;
+  pthread_t tid_scm_monitor;
   int rc;
   int pid_file;
 
@@ -406,13 +458,22 @@ main (int argc, char * const argv[]) {
   }
 
   if ((rc = pthread_create(&tid_pim_monitor, NULL,
-                          pim_monitor_handler, NULL))) {
+                           pim_monitor_handler, NULL))) {
     syslog(LOG_WARNING, "failed to create pim monitor thread: %s",
            strerror(rc));
     exit(1);
   }
 
+  if ((rc = pthread_create(&tid_scm_monitor, NULL,
+                           scm_monitor_handler, NULL))) {
+    syslog(LOG_WARNING, "failed to create scm monitor thread: %s",
+           strerror(rc));
+    exit(1);
+  }
+
+
   pthread_join(tid_pim_monitor, NULL);
+  pthread_join(tid_scm_monitor, NULL);
 
   return 0;
 }

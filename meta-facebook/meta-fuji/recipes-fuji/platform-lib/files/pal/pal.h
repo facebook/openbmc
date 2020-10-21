@@ -316,6 +316,9 @@ int pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver);
 int pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log);
 int pal_get_cpld_board_rev(int *rev, const char *device);
 int write_device(const char *device, const char *value);
+int pal_get_80port_record(uint8_t slot, uint8_t *res_data, size_t max_len, size_t *res_len);
+int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len,
+                     uint8_t *res_data, uint8_t *res_len);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -26,8 +26,8 @@ board_rev=$(wedge_board_rev)
 #
 # instantiate all the i2c-muxes.
 # Note:
-#   - the step is not needed in kernel 4.1 because all the i2c-muxes
-#     are created in 4.1 kernel code.
+#   - the function may be skipped if i2c switches were already created
+#     in kernel space.
 #   - please do not modify the order of i2c-mux creation unless you've
 #     decided to fix bus-number of leaf i2c-devices.
 #
@@ -72,10 +72,21 @@ bulk_create_i2c_mux() {
     done
 }
 
+#
+# Let's check a few i2c switches to determine if these switches were
+# already created in kernel space.
+#
+I2C_MUX_PDB_LEFT="${SYSFS_I2C_DEVICES}/24-0071"
+I2C_MUX_FCM_TOP="${SYSFS_I2C_DEVICES}/26-0076"
+I2C_MUX_PIM1="${SYSFS_I2C_DEVICES}/40-0073"
+I2C_MUX_PIM6="${SYSFS_I2C_DEVICES}/45-0073"
+if [ ! -e "${I2C_MUX_PDB_LEFT}" ] && [ ! -e "${I2C_MUX_FCM_TOP}" ] && \
+   [ ! -e "${I2C_MUX_PIM1}" ] && [ ! -e "${I2C_MUX_PIM6}" ]; then
+    bulk_create_i2c_mux
+fi
+
 KERNEL_VERSION=`uname -r`
 if [[ ${KERNEL_VERSION} != 4.1.* ]]; then
-    bulk_create_i2c_mux
-
     # Create i2c slave backend on bus 0 and 4.
     i2c_mslave_add 0 0x10
     i2c_mslave_add 4 0x10

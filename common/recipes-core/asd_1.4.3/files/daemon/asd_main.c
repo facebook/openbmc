@@ -91,6 +91,7 @@ bool process_command_line(int argc, char** argv, asd_args* args)
     args->msg_flow = DEFAULT_JTAG_FLOW;
     args->fru = DEFAULT_FRU;
     args->use_syslog = DEFAULT_LOG_TO_SYSLOG;
+    args->force_jtag_hw = DEFAULT_FORCE_JTAG_HW;
     args->log_level = DEFAULT_LOG_LEVEL;
     args->log_streams = DEFAULT_LOG_STREAMS;
     args->session.n_port_number = DEFAULT_PORT;
@@ -113,7 +114,7 @@ bool process_command_line(int argc, char** argv, asd_args* args)
         {NULL, 0, NULL, 0},
     };
 
-    while ((c = getopt_long(argc, argv, "p:uk:n:si:f:j:", opts, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "p:uk:n:smi:f:j:", opts, NULL)) != -1)
     {
         switch (c)
         {
@@ -132,6 +133,11 @@ bool process_command_line(int argc, char** argv, asd_args* args)
             case 's':
             {
                 args->use_syslog = true;
+                break;
+            }
+            case 'm':
+            {
+                args->force_jtag_hw = true;
                 break;
             }
             case 'u':
@@ -192,6 +198,8 @@ bool process_command_line(int argc, char** argv, asd_args* args)
     fprintf(stderr, "Setting Port: %d, FRU: %d\n", args->session.n_port_number, args->fru);
     fprintf(stderr, "Msg Flow: %d\n", args->msg_flow);
     fprintf(stderr, "Log level: %s\n", ASD_LogLevelString[args->log_level]);
+    if (args->force_jtag_hw)
+        fprintf(stderr, "Force JTAG driver in HW mode\n");
     return true;
 }
 
@@ -204,6 +212,7 @@ void showUsage(char** argv)
         "  -f <number> FRU number (default=%d)\n"
         "  -j <number> JTAG flow (default=%d, BMC = 1, BIC = 2)\n"
         "  -s          Route log messages to the system log\n"
+        "  -m          Force JTAG driver in HW mode\n"
         //"  -u          Run in plain TCP, no SSL (default: SSL/Auth Mode)\n"
         //"  -k <file>   Specify SSL Certificate/Key file (default: %s)\n"
         "  -n <device> Bind only to specific network device (eth0, etc)\n"
@@ -751,6 +760,7 @@ STATUS on_client_connect(asd_state* state, extnet_conn_t* p_extcon)
         // Provide params to each handler
         state->asd_msg->jtag_handler->fru = state->args.fru;
         state->asd_msg->jtag_handler->msg_flow = state->args.msg_flow;
+        state->asd_msg->jtag_handler->force_jtag_hw = state->args.force_jtag_hw;
         state->asd_msg->target_handler->fru = state->args.fru;
         state->asd_msg->msg_flow = state->args.msg_flow;
         // init passthrough

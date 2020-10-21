@@ -95,10 +95,8 @@ func TestGetHealthdConfig(t *testing.T) {
 func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 	// save and defer restore WriteFileWithTimeout and RestartHealthd
 	writeFileOrig := fileutils.WriteFileWithTimeout
-	restartHealthdOrig := RestartHealthd
 	defer func() {
 		fileutils.WriteFileWithTimeout = writeFileOrig
-		RestartHealthd = restartHealthdOrig
 	}()
 
 	cases := []struct {
@@ -178,15 +176,6 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 				"{\"bmc_mem_utilization\":{\"threshold\":[{\"action\":42}]}}"),
 		},
 		{
-			name:              "restart healthd failure",
-			inputJSON:         tests.ExampleMinilaketbHealthdConfigJSON,
-			wantJSON:          tests.ExampleMinilaketbHealthdConfigJSONRemovedReboot,
-			writeConfigCalled: true,
-			writeConfigErr:    nil,
-			restartHealthdErr: errors.Errorf("Restart healthd failed"),
-			wantErr:           errors.Errorf("Restart healthd failed"),
-		},
-		{
 			name:              "remove multiple reboot entries",
 			inputJSON:         tests.ExampleMinimalHealthdConfigJSONMultipleReboots,
 			wantJSON:          tests.ExampleMinimalHealthdConfigJSONRemovedReboot,
@@ -212,9 +201,6 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 			fileutils.WriteFileWithTimeout = func(filename string, data []byte, perm os.FileMode, timeout time.Duration) error {
 				writeConfigCalled = true
 				return tc.writeConfigErr
-			}
-			RestartHealthd = func(wait bool, supervisor string) error {
-				return tc.restartHealthdErr
 			}
 			h, err := gabs.ParseJSON([]byte(tc.inputJSON))
 			if err != nil {
@@ -339,7 +325,7 @@ func TestRestartHealthd(t *testing.T) {
 			pathExists:    true,
 			runCmdErr:     errors.Errorf("RunCommand error"),
 			want:          errors.Errorf("RunCommand error"),
-			wantSleepTime: 0 * time.Second,
+			wantSleepTime: 30 * time.Second,
 		},
 	}
 

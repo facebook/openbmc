@@ -846,7 +846,7 @@ void* chassis_control_handler(void *arg)
       break;
     case 0xAC:  // sled-cycle with delay 4 secs
       sleep(4);
-      pal_sled_cycle();
+      pal_force_sled_cycle();
       break;
     default:
       syslog(LOG_CRIT, "Invalid command 0x%x for chassis control", cmd);
@@ -891,6 +891,11 @@ void pal_get_chassis_status(uint8_t fru, uint8_t *req_data, uint8_t *res_data, u
 }
 
 int pal_sled_cycle(void)
+{
+  return cpld_power_permission()? pal_force_sled_cycle(): -1;
+}
+
+int pal_force_sled_cycle(void)
 {
   int index;
   struct dirent *dp;

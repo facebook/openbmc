@@ -23,7 +23,7 @@ if [ "x${CIRCLE_PULL_REQUEST}" == "x" ]; then
 fi
 
 # Determine base commit.
-ORIGIN_COMMIT="$(git merge-base HEAD origin/helium 2>/dev/null)"
+ORIGIN_COMMIT="$(git merge-base HEAD origin/helium 2>/dev/null || git merge-base HEAD origin/master)"
 
 # Extract the machine-specific from TEMPLATECONF.  "meta-facebook/meta-foo"
 TEMPLATE_BASE=$(realpath --relative-to=.. "$TEMPLATECONF" | cut -d '/' -f1,2)

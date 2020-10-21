@@ -30,7 +30,6 @@ SRC_URI += "file://setup-gpio.sh \
             file://power-on.sh \
             file://presence_util.sh \
             file://setup_avs.sh \
-            file://eth0_mac_fixup.sh \
             file://setup_bic.sh \
             file://setup_mgmt.sh \
             file://spi_util.sh \
@@ -51,7 +50,6 @@ OPENBMC_UTILS_FILES += " \
     peutil \
     presence_util.sh\
     setup_avs.sh \
-    eth0_mac_fixup.sh \
     setup_bic.sh \
     setup_mgmt.sh \
     spi_util.sh \

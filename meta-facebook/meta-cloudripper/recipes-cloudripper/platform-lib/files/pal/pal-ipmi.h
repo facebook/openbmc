@@ -31,14 +31,10 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len,
                              uint8_t *res_data, uint8_t *res_len);
 int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
-
 int pal_post_enable(uint8_t slot);
 int pal_post_get_last(uint8_t slot, uint8_t *status);
 int pal_post_get_last_and_len(uint8_t slot, uint8_t *data, uint8_t *len);
 int pal_get_80port_record(uint8_t slot, uint8_t *res_data,
                           size_t max_len, size_t *res_len);
-int pal_set_post_gpio_out(void);
-int pal_post_display(uint8_t status);
-int pal_post_handle(uint8_t slot, uint8_t status);
 
 #endif /* __PAL_IPMI_H__ */

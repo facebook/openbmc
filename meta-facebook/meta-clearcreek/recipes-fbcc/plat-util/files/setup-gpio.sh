@@ -144,7 +144,7 @@ gpio_export NVME_2_3_PRSNTB_R_N GPIOL7
 gpio_export SMB_MB_BMC_MUX_OE_R GPIOM3
 gpio_set SMB_MB_BMC_MUX_OE_R 0
 gpio_export SMB_MB_BMC_MUX_S0_R GPIOM4
-gpio_set SMB_MB_BMC_MUX_S0_R 0
+gpio_set SMB_MB_BMC_MUX_S0_R 1
 gpio_export SMB_MB_BMC_MUX_S1_R GPIOM5
 gpio_set SMB_MB_BMC_MUX_S1_R 0
 

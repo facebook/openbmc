@@ -87,6 +87,8 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define SLOT4_POSTCODE_OFFSET 0x05
 #define DEBUG_CARD_UART_MUX 0x06
 
+#define BB_CPLD_IO_BASE_OFFSET 0x16
+
 #define ENABLE_STR "enable"
 #define DISABLE_STR "disable"
 #define STATUS_STR "status"
@@ -1796,6 +1798,50 @@ pal_is_debug_card_prsnt(uint8_t *status) {
   }
 
   return 0;
+}
+
+int
+pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts) {
+  const uint8_t UART_POS_BMC = 0x00;
+  const uint8_t MAX_RETRY = 3;
+  int i2cfd = -1;
+  int ret = PAL_EOK;
+  int retry = MAX_RETRY;
+  int st_idx = slot_id, end_idx = slot_id;
+  uint8_t tbuf[2] = {0x00};
+  uint8_t tlen = 2;
+
+  i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "Failed to open bus 12\n");
+    return i2cfd;
+  }
+
+  // adjust the st_idx and end_idx, we need to reset all reg values
+  // when uart_pos is at BMC position
+  if ( slot_id == UART_POS_BMC ) {
+    st_idx = FRU_SLOT1;
+    end_idx = FRU_SLOT4;
+  }
+
+  do {
+     tbuf[0] = BB_CPLD_IO_BASE_OFFSET + st_idx; //get the correspoding reg
+     tbuf[1] = io_sts; // data to be written
+     ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
+     if ( ret < 0 ) {
+       retry--;
+     } else {
+       st_idx++; //move on
+       retry = MAX_RETRY; //reset it
+     }
+  } while ( retry > 0 && st_idx <= end_idx );
+
+  if ( retry == 0 ) {
+    syslog(LOG_WARNING, "Failed to update IO sts after performed 3 time attempts. reg:%02X, data: %02X\n", tbuf[0], tbuf[1]);
+  }
+
+  if ( i2cfd > 0 ) close(i2cfd);
+  return ret;
 }
 
 int

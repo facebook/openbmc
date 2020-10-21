@@ -26,6 +26,7 @@ IMAGE_INSTALL += " \
   cpldupdate \
   libcpldupdate-dll-ast-jtag \
   flashrom \
+  front-paneld \
   fscd \
   fw-util \
   i2craw \

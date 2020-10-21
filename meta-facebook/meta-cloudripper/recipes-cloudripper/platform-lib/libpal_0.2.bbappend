@@ -29,6 +29,8 @@ SRC_URI += " \
     file://pal-power.h \
     file://pal-sensors.c \
     file://pal-sensors.h \
+    file://pal-debugcard.c \
+    file://pal-debugcard.h \
     file://pal.c \
     file://pal.h \
     "

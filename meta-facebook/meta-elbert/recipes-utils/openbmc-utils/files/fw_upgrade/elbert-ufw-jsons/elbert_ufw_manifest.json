@@ -1,6 +1,6 @@
 {
     "bios" : {
-        "get_version" : "strings /tmp/fw_upgrade/elbert_coreboot.rom | grep -w COREBOOT_VERSION | cut -d ' ' -f 3 | cut -d- -f1 | tr -d '\"'",
+        "get_version" : "strings /tmp/fw_upgrade/coreboot-elbert.rom | grep -w COREBOOT_VERSION | cut -d ' ' -f 3 | cut -d- -f1 | tr -d '\"'",
         "priority" : 1,
         "upgrade_cmd" : "/usr/local/bin/bios_util.sh write {filename}"
     },

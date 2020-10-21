@@ -1078,7 +1078,11 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       break;
     case FW_1OU_CPLD:
     case FW_2OU_CPLD:
-      ret = update_bic_cpld_lattice(slot_id, path, intf, force);
+      if (loc != NULL) {
+        ret = update_bic_cpld_lattice(slot_id, path, intf, force);
+      } else {
+        ret = update_bic_cpld_lattice_usb(slot_id, path, intf, force);
+      }
       break;
     case FW_BB_CPLD:
     case FW_CPLD:

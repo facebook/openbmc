@@ -58,6 +58,25 @@ static pthread_t poll_thread;
 
 static void *gpio_poll_thread(void *arg);
 
+static int g_dev_id = 0;
+
+static int get_asd_dev_config(uint8_t fru) {
+  FILE *fp = NULL;
+  int dev_id = 0;
+  char file_path[128] = {0};
+
+  snprintf(file_path, sizeof(file_path), "%s_slot%d", ASD_DEV_CONFIG_FILE, fru);
+
+  fp = fopen(file_path, "r");
+  if (fp == NULL) {
+    return -1;
+  }
+  fscanf(fp, "%d", &dev_id);
+  fclose(fp);
+
+  return dev_id;
+}
+
 static int sph_pin_conf(uint8_t slot_id) {
   int ret = 0, retry = 5, bus = 0;
   uint8_t tbuf[256] = {0x18, 0x52, 0x05, 0xD4, 0x05, 0x8E, 0x8, 0x08, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0xB, 0xB, 0x8, 0x8, 0x8, 0x8, 0x8, 0xB};
@@ -71,7 +90,7 @@ static int sph_pin_conf(uint8_t slot_id) {
 
   // Read existing FPGA Output pins status.
   while (retry >= 0) {
-    ret =  bic_ipmb_wrapper(slot_id, tbuf[0] >> 2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+    ret =  bic_ipmb_wrapper_with_dev_mux_selection(slot_id, g_dev_id, tbuf[0] >> 2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
     if (ret == 0) 
      break;
     retry--;
@@ -89,6 +108,12 @@ int pin_initialize(const int fru)
 {
   static bool gpios_polling = false;
   int ret = 0;
+
+  g_dev_id = get_asd_dev_config(fru);
+  if (g_dev_id < 0) {
+    syslog(LOG_ERR, "%s: Fail to get the ASD configuration for fru %d\n", __FUNCTION__, fru);
+  }
+
 
 #ifdef FBY2_DEBUG
     syslog(LOG_DEBUG, "%s, fru=%d", __FUNCTION__, fru);
@@ -258,7 +283,7 @@ static int sph_preq(uint8_t slot_id, uint8_t *gpio) {
 
   // Read existing FPGA Output pins status.
   while (retry >= 0) {
-    ret =  bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+    ret =  bic_ipmb_wrapper_with_dev_mux_selection(slot_id, g_dev_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
     if (ret == 0) 
      break;
     retry--;
@@ -283,7 +308,7 @@ sph_preq_set(uint8_t slot_id, uint8_t select) {
 
   // Read existing FPGA Output pins status.
   while (retry >= 0) {
-    ret =  bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+    ret =  bic_ipmb_wrapper_with_dev_mux_selection(slot_id, g_dev_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
     if (ret == 0) 
      break;
     retry--;
@@ -302,7 +327,7 @@ sph_preq_set(uint8_t slot_id, uint8_t select) {
   
     retry = 5;
     while (retry >= 0) {
-      ret = bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+      ret = bic_ipmb_wrapper_with_dev_mux_selection(slot_id, g_dev_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
       if (ret == 0)
         break;
 
@@ -385,7 +410,7 @@ sph_prdy_get(uint8_t slot_id, uint8_t* gpio) {
 
   // Read existing FPGA Output pins status.
   while (retry >= 0) {
-    ret =  bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+    ret =  bic_ipmb_wrapper_with_dev_mux_selection(slot_id, g_dev_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
     if (ret == 0) 
      break;
     retry--;
@@ -647,7 +672,7 @@ set_sph_mux_command(uint8_t slot_id, uint8_t select) {
 
   // Read existing FPGA Output pins status.
   while (retry >= 0) {
-    ret =  bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+    ret =  bic_ipmb_wrapper_with_dev_mux_selection(slot_id, g_dev_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
     if (ret == 0) 
      break;
     retry--;
@@ -669,7 +694,7 @@ set_sph_mux_command(uint8_t slot_id, uint8_t select) {
 
     retry = 5;
     while (retry >= 0) {
-      ret = bic_ipmb_wrapper(slot_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
+      ret = bic_ipmb_wrapper_with_dev_mux_selection(slot_id, g_dev_id, tbuf[0]>>2, tbuf[1], &tbuf[2], tlen-2, rbuf, &rlen);
       if (ret == 0) {
         break;
       }

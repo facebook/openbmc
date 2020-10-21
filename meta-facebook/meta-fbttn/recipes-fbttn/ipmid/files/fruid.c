@@ -51,52 +51,57 @@
  * @bin_file      : path for the binary file
  *
  * returns 0 on successful copy
- * returns non-zero on file operation errors
+ * returns -1 on file operation errors
  */
 int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
 
-  int eeprom;
-  int bin;
-  uint64_t tmp[FRUID_SIZE];
-  ssize_t bytes_rd, bytes_wr;
+  int eeprom = 0;
+  int bin = 0;
+  int ret = 0;
+  uint8_t tmp[FRUID_SIZE] = {0};
+  ssize_t bytes_rd = 0, bytes_wr = 0;
 
   errno = 0;
 
   if (access(eeprom_file, F_OK) != -1) {
 
     eeprom = open(eeprom_file, O_RDONLY);
-    if (eeprom == -1) {
+    if (eeprom < 0) {
       syslog(LOG_ERR, "copy_eeprom_to_bin: unable to open the %s file: %s",
           eeprom_file, strerror(errno));
-      return errno;
+      return -1;
     }
 
     bin = open(bin_file, O_WRONLY | O_CREAT, 0644);
-    if (bin == -1) {
+    if (bin < 0) {
       syslog(LOG_ERR, "copy_eeprom_to_bin: unable to create %s file: %s",
           bin_file, strerror(errno));
-      return errno;
+      ret = -1;
+      goto err;
     }
 
     bytes_rd = read(eeprom, tmp, FRUID_SIZE);
     if (bytes_rd != FRUID_SIZE) {
       syslog(LOG_ERR, "copy_eeprom_to_bin: write to %s file failed: %s",
           eeprom_file, strerror(errno));
-      return errno;
+      ret = -1;
+      goto exit;
     }
 
     bytes_wr = write(bin, tmp, bytes_rd);
     if (bytes_wr != bytes_rd) {
       syslog(LOG_ERR, "copy_eeprom_to_bin: write to %s file failed: %s",
           bin_file, strerror(errno));
-      return errno;
+      ret = -1;
     }
 
-    close(bin);
-    close(eeprom);
+    exit:
+      close(bin);
+    err:
+      close(eeprom);
   }
 
-  return 0;
+  return ret;
 }
 
 
@@ -165,14 +170,15 @@ int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count,
   // open file for read purpose
   fd = open(fpath, O_RDONLY);
   if (fd < 0) {
-    return fd;
+    syslog(LOG_ERR, "%s: unable to open the %s file: %s", __func__, fpath, strerror(errno));
+    return -1;
   }
 
   // seek position based on given offset
   ret = lseek(fd, offset, SEEK_SET);
   if (ret < 0) {
     close(fd);
-    return ret;
+    return -1;
   }
 
   // read the file content

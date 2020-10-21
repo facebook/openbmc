@@ -56,4 +56,5 @@ IMAGE_INSTALL += " \
   obmc-sensors-test \
   dimm-util \
   setup-gpio \
+  name-util \
   "

@@ -46,7 +46,6 @@ extern "C" {
 #define PAGE_SIZE  0x1000
 #define AST_GPIO_BASE 0x1e780000
 #define UARTSW_OFFSET 0x68
-#define SEVEN_SEGMENT_OFFSET 0x20
 
 #define PFR_MAILBOX_BUS  (4)
 #define PFR_MAILBOX_ADDR (0xB0)
@@ -211,7 +210,7 @@ int pal_set_id_led(uint8_t fru, uint8_t status);
 int pal_set_fault_led(uint8_t fru, uint8_t status);
 int read_device(const char *device, int *value);
 int pal_get_rst_btn(uint8_t *status);
-int pal_uart_select (uint32_t base, uint8_t offset, int option, uint32_t para);
+int pal_postcode_select(int option);
 int pal_uart_select_led_set(void);
 int pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver);
 int pal_get_platform_id(uint8_t *id);
@@ -225,9 +224,8 @@ int pal_get_syscfg_text (char *text);
 int pal_peer_tray_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen);
 
 enum {
-  UARTSW_BY_BMC,
-  UARTSW_BY_DEBUG,
-  SET_SEVEN_SEGMENT,
+  POSTCODE_BY_BMC,
+  POSTCODE_BY_HOST,
 };
 
 enum {

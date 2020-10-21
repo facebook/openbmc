@@ -18,7 +18,7 @@ do_lint_sh() {
   shellcheck "$1"
 }
 
-ORIGIN_COMMIT="$(git merge-base HEAD origin/helium 2>/dev/null)"
+ORIGIN_COMMIT="$(git merge-base HEAD origin/helium 2>/dev/null || git merge-base HEAD origin/master)"
 
 MODIFIED_FILES="$(git diff --diff-filter=d --name-only "$ORIGIN_COMMIT" --)"
 

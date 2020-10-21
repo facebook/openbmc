@@ -39,6 +39,8 @@ extern "C" {
   // TODO This changed to 3000 in upstream
 #define MAX_DATA_SIZE                4106
 
+#define ASD_DEV_CONFIG_FILE "/tmp/asd_dev_config"
+
 typedef enum {
     JtagTLR,
     JtagRTI,

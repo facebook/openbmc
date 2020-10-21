@@ -1,4 +1,6 @@
-# Copyright 2018-present Facebook. All Rights Reserved.
+#!/bin/sh
+#
+# Copyright 2020-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,29 +16,17 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-SUMMARY = "Lattice CPLD I2C update Utility."
-DESCRIPTION = "Update Lattice CPLD through I2C."
-SECTION = "base"
-PR = "r1"
-LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://cpldupdate-i2c.c;beginline=5;endline=16;md5=69348da7e13c557a246cf7e5b163ea27"
+### BEGIN INIT INFO
+# Provides:          setup-fan
+# Required-Start:    board-id
+# Required-Stop:
+# Default-Start:     5
+# Default-Stop:
+# Short-Description: Set fan speed
+### END INIT INFO
 
-
-SRC_URI = "file://cpldupdate-i2c.c \
-           file://Makefile \
-          "
-
-S = "${WORKDIR}"
-
-
-do_install() {
-  install -d ${D}${bindir}
-  install -m 755 cpldupdate-i2c ${D}${bindir}/cpldupdate-i2c
-}
-
-LDFLAGS += "-lobmc-i2c"
-DEPENDS += "libobmc-i2c"
-RDEPENDS_${PN} += "libobmc-i2c"
-
-FILES_${PN} = "${bindir}"
+echo "Setup fan speed... "
+/usr/local/bin/fan-util --set 70
+echo "done."

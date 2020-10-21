@@ -772,7 +772,7 @@ static void
     //Show Uart Debug Select Number 2sec
     if (g_uart_switch_count > 0) {
       if (--g_uart_switch_count == 0)
-        pal_uart_select(AST_GPIO_BASE, UARTSW_OFFSET, UARTSW_BY_DEBUG, 0);
+        pal_postcode_select(POSTCODE_BY_HOST);
     }
   }
 

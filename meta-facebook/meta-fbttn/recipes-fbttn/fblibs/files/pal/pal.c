@@ -164,6 +164,11 @@
 // SHIFT to 16
 #define UART1_TXD 0
 
+#define NUM_SERVER_FRU  1
+#define NUM_NIC_FRU     1
+#define NUM_BMC_FRU     1
+
+
 unsigned char g_err_code[ERROR_CODE_NUM];
 
  /* For fbttn Power Sequence (controlled by HW)
@@ -190,6 +195,15 @@ const char pal_fru_list_print[] = "all, server, iom, dpb, scc"; // Cannot read f
 const char pal_fru_list_rw[] = "server, iom"; // Cannot write fruid to "scc" and "dpb"
 const char pal_server_list[] = "server";
 const char pal_fru_list_sensor_history[] = "all, server, iom, nic"; // Cannot show sensor history to "scc" and "dpb"
+
+const char *pal_server_fru_list[NUM_SERVER_FRU] = {"server"};
+const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic"};
+const char *pal_bmc_fru_list[NUM_BMC_FRU] = {"bmc"};
+
+size_t server_fru_cnt = NUM_SERVER_FRU;
+size_t nic_fru_cnt  = NUM_NIC_FRU;
+size_t bmc_fru_cnt  = NUM_BMC_FRU;
+
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 8;

@@ -102,11 +102,7 @@ func HealthdRemoveMemUtilRebootEntryIfExists(h *gabs.Container) error {
 		if err != nil {
 			return err
 		}
-		log.Printf("Healthd reboot action exists and was removed. Restarting healthd.")
-		err = RestartHealthd(true, "sv")
-		if err != nil {
-			return err
-		}
+		log.Printf("Healthd reboot action exists and was removed.")
 	}
 	return nil
 }
@@ -131,9 +127,6 @@ var RestartHealthd = func(wait bool, supervisor string) error {
 	}
 
 	_, err, _, _ := RunCommand([]string{supervisor, "restart", "healthd"}, 60*time.Second)
-	if err != nil {
-		return err
-	}
 
 	// healthd is petting watchdog, if something goes wrong and it doesn't do so
 	// after restart it may hard-reboot the system - it's better to be safe
@@ -143,5 +136,9 @@ var RestartHealthd = func(wait bool, supervisor string) error {
 			"healthd is stable.")
 		Sleep(30 * time.Second)
 	}
-	return nil
+
+	// even in the error case, proceed only after waiting for the
+	// watchdog.  an error message is logged by RunCommand() on failure,
+	// so this does not cause loss of signal.
+	return err
 }

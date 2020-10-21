@@ -115,7 +115,7 @@ main(int argc, char **argv) {
       goto err_exit;
     }
 
-    if ( is_led_on == true ) ret = bic_set_amber_led(fru, dev_id, 0xFE);
+    if ( is_led_on == true ) ret = bic_set_amber_led(fru, dev_id, 0x01);
     else ret = bic_set_amber_led(fru, dev_id, 0x00);
     printf("fpc-util: identification for %s %s is set to %s %ssuccessfully\n", \
                          argv[1], argv[2], argv[4], (ret < 0)?"un":"");

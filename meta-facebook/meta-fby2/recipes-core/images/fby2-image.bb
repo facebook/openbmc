@@ -60,4 +60,5 @@ IMAGE_INSTALL += " \
   dimm-util \
   setup-gpio \
   at \
+  name-util \
   "

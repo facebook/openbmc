@@ -19,4 +19,10 @@ IMAGE_INSTALL += " \
   plat-utils \
   fw-util \
   fruid \
+  name-util \
+  log-util-v2 \
+  openbmc-utils \
+  fan-util \
+  fscd \
+  guid-util \
   "

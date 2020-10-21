@@ -17,36 +17,15 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
 ### BEGIN INIT INFO
-# Provides:          eth0_mac_fixup.sh
+# Provides:          setup-front-paneld
 # Required-Start:
 # Required-Stop:
 # Default-Start:     S
 # Default-Stop:
-# Short-Description:  Fixup the MAC address for eth0 based on wedge EEPROM
+# Short-Description: Start front panel control daemon
 ### END INIT INFO
 
-# get the MAC from EEPROM
-mac=$(weutil 2> /dev/null | grep '^Local MAC' | cut -d' ' -f3)
-
-# get the MAC from u-boot environment
-ethaddr=$(fw_printenv ethaddr | cut -d'=' -f2)
-
-if [ -z "$mac" ] && [ -n "$ethaddr" ]; then
-    # no MAC from EEPROM, use the one from u-boot environment
-    mac="$ethaddr"
-fi
-
-if [ -n "$mac" ]; then
-    ifconfig eth0 hw ether "$mac"
-else
-    # no MAC from either EEPROM or u-boot environment
-    mac=$(ifconfig eth0 | grep HWaddr | awk '{ print $5 }')
-fi
-
-if [ "$ethaddr" != "$mac" ]; then
-    # set the MAC from EEPROM or ifconfig back to u-boot environment so that u-boot
-    # can use it
-    fw_setenv "ethaddr" "$mac"
-fi
+echo -n "Setup Front Panel Daemon.."
+runsv /etc/sv/front-paneld > /dev/null 2>&1 &
+echo "done."

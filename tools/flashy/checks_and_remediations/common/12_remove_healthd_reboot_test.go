@@ -29,7 +29,6 @@ import (
 	"github.com/Jeffail/gabs"
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
@@ -42,14 +41,12 @@ func TestRemoveHealthdReboot(t *testing.T) {
 	fileExistsOrig := fileutils.FileExists
 	readFileOrig := fileutils.ReadFile
 	writeFileOrig := fileutils.WriteFileWithTimeout
-	restartHealthd := utils.RestartHealthd
 
 	defer func() {
 		log.SetOutput(os.Stderr)
 		fileutils.FileExists = fileExistsOrig
 		fileutils.ReadFile = readFileOrig
 		fileutils.WriteFileWithTimeout = writeFileOrig
-		utils.RestartHealthd = restartHealthd
 	}()
 
 	cases := []struct {
@@ -147,9 +144,6 @@ func TestRemoveHealthdReboot(t *testing.T) {
 					t.Errorf("resulting healthd-config.json: want '%v' got '%v'",
 						wantH.String(), gotH.String())
 				}
-				return nil
-			}
-			utils.RestartHealthd = func(wait bool, supervisor string) error {
 				return nil
 			}
 

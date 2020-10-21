@@ -7,6 +7,7 @@ SRC_URI += " \
 DEPENDS += " \
     libfbgc-common \
     libfbgc-fruid \
+    libobmc-sensors \
     "
 
 # These shouldn't be needed but are because we aren't properly versioning the
@@ -14,4 +15,5 @@ DEPENDS += " \
 RDEPENDS_${PN} += " \
     libfbgc-common \
     libfbgc-fruid \
+    libobmc-sensors \
     "

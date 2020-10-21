@@ -199,6 +199,8 @@ int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsig
 int pal_set_nic_perst(uint8_t fru, uint8_t val);
 int pal_is_slot_pfr_active(uint8_t fru);
 int pal_sb_set_amber_led(uint8_t fru, bool led_on);
+int pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts);
+int pal_is_debug_card_prsnt(uint8_t *status);
 #ifdef __cplusplus
 } // extern "C"
 #endif

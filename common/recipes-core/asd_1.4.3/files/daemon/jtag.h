@@ -144,7 +144,6 @@ enum jtag_xfer_direction
 struct jtag_tap_state
 {
     __u8 reset;
-    __u8 from;
     __u8 endstate;
     __u8 tck;
 };
@@ -164,7 +163,6 @@ struct jtag_xfer
 {
     __u8 type;
     __u8 direction;
-    __u8 from;
     __u8 endstate;
     __u8 padding;
     __u32 length;
@@ -225,7 +223,7 @@ struct jtag_mode
 #define JTAG_GIOCFREQ _IOR(__JTAG_IOCTL_MAGIC, 2, unsigned int)
 #define JTAG_IOCXFER _IOWR(__JTAG_IOCTL_MAGIC, 3, struct jtag_xfer)
 #define JTAG_GIOCSTATUS _IOWR(__JTAG_IOCTL_MAGIC, 4, enum jtag_tapstate)
-#define JTAG_SIOCMODE _IOW(__JTAG_IOCTL_MAGIC, 5, unsigned int)
+#define JTAG_SIOCMODE _IOW(__JTAG_IOCTL_MAGIC, 5, struct jtag_mode)
 #define JTAG_IOCBITBANG _IOW(__JTAG_IOCTL_MAGIC, 6, unsigned int)
 
 #endif /* __UAPI_LINUX_JTAG_H */

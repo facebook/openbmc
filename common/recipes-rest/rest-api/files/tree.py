@@ -22,7 +22,8 @@ import syslog
 
 from aiohttp import web
 
-
+# cache for endpoint_children
+ENDPOINT_CHILDREN = {}
 # aiohttp allows users to pass a "dumps" function, which will convert
 # different data types to JSON. This new dumps function will simply call
 # the original dumps function, along with the new type handler that can
@@ -59,6 +60,7 @@ class tree:
         self.data = data
         self.children = []
         self.path = "/" + self.name
+        self.app = None
 
     def addChild(self, child):
         self.children.append(child)
@@ -80,11 +82,19 @@ class tree:
         param = dict(request.query)
         info = self.data.getInformation(param)
         actions = self.data.getActions()
-        resources = []
-        ca = self.getChildren()
-        for t in ca:
-            resources.append(t.name)
-        result = {"Information": info, "Actions": actions, "Resources": resources}
+        resources = set()
+        if ENDPOINT_CHILDREN.get(request.path):
+            resources = ENDPOINT_CHILDREN[request.path]
+        else:
+            for resource in self.app.router.resources():
+                if (
+                    resource.url().startswith(request.path)
+                    and resource.url() != request.path
+                ):
+                    r = resource.url().replace(request.path, "").split("/")[1]
+                    resources.add(r)
+            ENDPOINT_CHILDREN[request.path] = resources
+        result = {"Information": info, "Actions": actions, "Resources": list(resources)}
         return web.json_response(result, dumps=dumps_bytestr)
 
     async def handlePost(self, request):
@@ -104,22 +114,4 @@ class tree:
         for child in self.children:
             child.path = self.path + "/" + child.name
             child.setup(app, support_post)
-
-    def merge(self, other):
-        if other is None:
-            return
-        if self.name != other.name:
-            raise ValueError("Nodes {} and {} differ".format(self.name, other.name))
-
-        # Check if self's node is a dummy node, if so update
-        # from other if it has a valid data.
-        if self.data is None and other.data is not None:
-            self.data = other.data
-
-        # Copy over the children from other. Merge if necessary.
-        for oc in other.getChildren():
-            c = self.getChildByName(oc.name)
-            if c is not None:
-                c.merge(oc)
-            else:
-                self.addChild(oc)
+        self.app = app

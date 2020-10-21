@@ -181,23 +181,30 @@ do_fan() {
 program_spi_image() {
     ORIGINAL_IMAGE="$1" # Image path
     CHIP_TYPE="$2"      # Chip type
+    ACTION="${4^^}"         # Program or verify
 
     case "${3^^}" in # Selects passed partition name
         PIM_BASE)
            PARTITION="pim_base"
            SKIP_MB=0
+           # TODO: Restrict PIM_BASE later
+           # FPGA_TYPE=0
+           FPGA_TYPE=-1
            ;;
         PIM16Q)
            PARTITION="pim16q"
            SKIP_MB=1
+           FPGA_TYPE=1
            ;;
         PIM8DDM)
            PARTITION="pim8ddm"
            SKIP_MB=2
+           FPGA_TYPE=2
            ;;
         FULL)
            PARTITION="full" # Flash entire spi flash
            SKIP_MB=0
+           FPGA_TYPE=-1
            ;;
         *)
            echo "Unknown region $3 specified"
@@ -206,6 +213,17 @@ program_spi_image() {
     esac
 
     echo "Selected partition $PARTITION to program."
+
+    if [ "$FPGA_TYPE" -ge 0 ] ; then
+        # Verify the image type
+        IMG_FPGA_TYPE=$(head -c3 "$ORIGINAL_IMAGE" | hexdump -v -e '/1 "%u\n"' | \
+                        tail -n1)
+        if [ "$IMG_FPGA_TYPE" != "$FPGA_TYPE" ]; then
+            echo "FPGA type in image, $IMG_FPGA_TYPE, does not match expected" \
+                 "FPGA type, $FPGA_TYPE, for partition $PARTITION"
+            exit 1
+        fi
+    fi
 
     # We need to 32 MB binary, we will fill if needed with 1s.
     # We will only program/verify the specified image partition
@@ -218,11 +236,17 @@ program_spi_image() {
         exit 1
     fi
 
+    OPERATION="-w"
+    if [ "$ACTION" = "VERIFY" ]
+    then
+        OPERATION="-v"
+    fi
+
     fill=$((EEPROM_SIZE - IMAGE_SIZE))
     if [ "$fill" = 0 ] ; then
         echo "$ORIGINAL_IMAGE already 32MB, no need to resize..."
         flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "$CHIP_TYPE" -N \
-            --layout /etc/elbert_pim.layout --image "$PARTITION" -w "$ORIGINAL_IMAGE"
+            --layout /etc/elbert_pim.layout --image "$PARTITION" $OPERATION "$ORIGINAL_IMAGE"
     else
         bs=1048576 # 1MB blocks
 
@@ -252,7 +276,7 @@ program_spi_image() {
         fi
         # Program the 32MB pim image
         flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "$CHIP_TYPE" -N \
-             --layout /etc/elbert_pim.layout --image "$PARTITION" -w "$TEMP_IMAGE"
+             --layout /etc/elbert_pim.layout --image "$PARTITION" $OPERATION "$TEMP_IMAGE"
         rm "$TEMP_IMAGE"
     fi
 }
@@ -330,12 +354,12 @@ strip_pim_header() {
 
 do_pim() {
     case "${1^^}" in
-        PROGRAM)
+        PROGRAM|VERIFY)
             # Image with header stripped
             BIN_IMAGE="/tmp/stripped_pim_image"
             connect_pim_flash
             strip_pim_header "$2" "$BIN_IMAGE"
-            program_spi_image "$BIN_IMAGE" "MT25QL256" "$3"
+            program_spi_image "$BIN_IMAGE" "MT25QL256" "$3" "$1"
             rm "$BIN_IMAGE"
             ;;
         READ)
@@ -356,7 +380,7 @@ do_pim() {
             fi
             ;;
         *)
-            echo "PIM only supports program/read/erase action. Exiting..."
+            echo "PIM only supports program/verify/read/erase action. Exiting..."
             exit 1
             ;;
     esac
@@ -364,16 +388,16 @@ do_pim() {
 
 do_th4_qspi() {
     case "${1^^}" in
-        PROGRAM)
+        PROGRAM|VERIFY)
             connect_th4_qspi_flash
-            program_spi_image "$2" "MT25QU256"
+            program_spi_image "$2" "MT25QU256" full "$1"
             ;;
         READ)
             connect_th4_qspi_flash
             flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "MT25QU256" -r "$2"
             ;;
         *)
-            echo "TH4 QSPI only supports program/read action. Exiting..."
+            echo "TH4 QSPI only supports program/verify/read action. Exiting..."
             exit 1
             ;;
     esac

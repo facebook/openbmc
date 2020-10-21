@@ -64,4 +64,5 @@ IMAGE_INSTALL += " \
   i2craw \
   setup-gpio \
   ncsid-v2 \
+  name-util \
   "

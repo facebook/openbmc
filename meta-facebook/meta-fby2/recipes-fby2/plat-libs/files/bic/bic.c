@@ -103,6 +103,9 @@
 
 #define PCIE_LINK_CHECK_MAX_RETRY 3
 
+#define DEVICE_MUX_ADDR 0xE2
+#define MAX_GPV2_DRIVE_NUM 12
+
 #pragma pack(push, 1)
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
@@ -460,6 +463,52 @@ bic_ipmb_limit_rlen_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 
   return 0;
 }
+
+int
+bic_ipmb_wrapper_with_dev_mux_selection(uint8_t slot_id, int dev_id, uint8_t netfn, uint8_t cmd,
+                  uint8_t *txbuf, uint16_t txlen,
+                  uint8_t *rxbuf, uint8_t *rxlen) {
+
+  int ret = 0, s_ret = 0, bus = 0;
+  uint8_t wbuf[256] = {0x00};
+  uint8_t rbuf[256] = {0x00};
+
+  if (dev_id < 0 || dev_id >= MAX_GPV2_DRIVE_NUM) {
+    syslog(LOG_ERR, "%s: Invalid dev_id: %d\n", __FUNCTION__, dev_id);
+    return -1;
+  }
+
+  s_ret = bic_disable_sensor_monitor(slot_id, BIC_SENSOR_MONITOR_DISABLE);
+  if (s_ret < 0) {
+    syslog(LOG_ERR, "%s: Fail to stop sensor monitor, error: %d\n", __FUNCTION__, s_ret);
+    return s_ret;
+  }
+  msleep(100);
+
+  // select MUX
+  wbuf[0] = 1 << (dev_id % 2);
+  bus = *txbuf;
+  ret = bic_master_write_read(slot_id, bus, DEVICE_MUX_ADDR, wbuf, 1, rbuf, 0);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s(): bic_master_write_read failed, error: %d\n", __FUNCTION__, ret);
+    goto Err;
+  }
+
+  ret = bic_ipmb_wrapper(slot_id, netfn, cmd, txbuf, txlen, rxbuf, rxlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: Fail to send IPMB command to slot%d, error: %d", __FUNCTION__, slot_id, ret);
+  }
+
+Err:
+  s_ret = bic_disable_sensor_monitor(slot_id, BIC_SENSOR_MONITOR_ENABLE);
+  if (s_ret < 0) {
+    syslog(LOG_ERR, "%s: Fail to start sensor monitor, error: %d\n", __FUNCTION__, s_ret);
+  }
+  msleep(100);
+
+  return ret;
+}
+
 
 // Get Self-Test result
 int

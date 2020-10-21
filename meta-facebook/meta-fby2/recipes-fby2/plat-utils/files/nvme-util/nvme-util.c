@@ -345,11 +345,15 @@ main(int argc, char **argv) {
   sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGTERM, &sa, NULL);
 
-  if (ssd_monitor_enable(slot_id, slot_type, 0))
-    printf("warning: failed disabling SSD monitoring\n");
+  if (ssd_monitor_enable(slot_id, slot_type, 0)) {
+    printf("err: failed disabling SSD monitoring\n");
+    return -1;
+  }
   ret = read_write_nvme_data(slot_id, drv_num, reg, rlen, argc-5,argv+5);
-  if (ssd_monitor_enable(slot_id, slot_type, 1))
-    printf("warning: failed enabling SSD monitoring\n");
+  if (ssd_monitor_enable(slot_id, slot_type, 1)) {
+    printf("err: failed enabling SSD monitoring\n");
+    return -1;
+  }
 
   return ret;
 

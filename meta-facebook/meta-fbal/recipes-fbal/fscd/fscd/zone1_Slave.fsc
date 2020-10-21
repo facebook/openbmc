@@ -1,19 +1,19 @@
 max([
-  linear_inlet(mb:mb_inlet_temp),
+  linear_inlet(mb:al_mb_inlet_temp),
   linear_vr(
     max([
-      mb:mb_vr_cpu0_vccin_temp,
-      mb:mb_vr_cpu0_vccsa_temp,
-      mb:mb_vr_cpu0_vccio_temp,
-      mb:mb_vr_cpu0_vddq_abc_temp,
-      mb:mb_vr_cpu0_vddq_def_temp,
-      mb:mb_vr_cpu1_vccin_temp,
-      mb:mb_vr_cpu1_vccsa_temp,
-      mb:mb_vr_cpu1_vccio_temp,
-      mb:mb_vr_cpu1_vddq_abc_temp,
-      mb:mb_vr_cpu1_vddq_def_temp,
-      mb:mb_vr_pch_p1v05_temp,
-      mb:mb_vr_pch_pvnn_temp])),
-  linear_mezz(nic0:nic_mezz0_temp),
-  linear_mezz(nic1:nic_mezz1_temp)
+      mb:al_mb_vr_cpu0_vccin_temp,
+      mb:al_mb_vr_cpu0_vccsa_temp,
+      mb:al_mb_vr_cpu0_vccio_temp,
+      mb:al_mb_vr_cpu0_vddq_abc_temp,
+      mb:al_mb_vr_cpu0_vddq_def_temp,
+      mb:al_mb_vr_cpu1_vccin_temp,
+      mb:al_mb_vr_cpu1_vccsa_temp,
+      mb:al_mb_vr_cpu1_vccio_temp,
+      mb:al_mb_vr_cpu1_vddq_abc_temp,
+      mb:al_mb_vr_cpu1_vddq_def_temp,
+      mb:al_mb_vr_pch_p1v05_temp,
+      mb:al_mb_vr_pch_pvnn_temp])),
+  linear_mezz(nic0:al_nic_mezz0_temp),
+  linear_mezz(nic1:al_nic_mezz1_temp)
 ])

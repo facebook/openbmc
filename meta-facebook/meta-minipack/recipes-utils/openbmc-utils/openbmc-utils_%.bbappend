@@ -21,7 +21,6 @@ SRC_URI += "file://board-utils.sh \
             file://boot_info.sh \
             file://cpld_ver.sh \
             file://disable_watchdog.sh \
-            file://eth0_mac_fixup.sh \
             file://fcmcpld_update.sh \
             file://fpga_ver.sh \
             file://feutil \

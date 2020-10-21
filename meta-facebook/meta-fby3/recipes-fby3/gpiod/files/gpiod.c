@@ -52,7 +52,7 @@ static gpio_pin_t gpio_slot2[MAX_GPIO_PINS] = {0};
 static gpio_pin_t gpio_slot3[MAX_GPIO_PINS] = {0};
 static gpio_pin_t gpio_slot4[MAX_GPIO_PINS] = {0};
 
-static bool smi_count_start[MAX_NUM_SLOTS] = {0};
+static uint8_t cpld_io_sts[MAX_NUM_SLOTS+1] = {0x10, 0};
 static long int pwr_on_sec[MAX_NUM_SLOTS] = {0};
 static bool is_pwrgd_cpu_chagned[MAX_NUM_SLOTS] = {false, false, false, false};
 static uint8_t SLOTS_MASK = 0x0;
@@ -130,81 +130,6 @@ static inline void decr_timer(uint8_t fru) {
   pwr_on_sec[fru-1]--;
 }
 
-static void *
-smi_timer(void *ptr) {
-  uint8_t fru = (int)ptr;
-  int smi_timeout_count = 1;
-  int smi_timeout_threshold = 90;
-  bool is_issue_event = false;
-  int ret;
-  uint8_t status;
-
-#ifdef SMI_DEBUG
-  syslog(LOG_WARNING, "[%s][%lu] Timer is started.\n", __func__, pthread_self());
-#endif
-
-  while(1)
-  {
-    // Check 12V status
-    if ( 0 == pal_get_server_12v_power(fru, &status) ) {
-      if ( status == SERVER_12V_OFF ) {
-        smi_count_start[fru-1] = false; // reset smi count
-      }
-    } else {
-      // If the code run into here, run `continue` since there is no need to continue.
-      syslog(LOG_ERR, "%s: pal_get_server_12v_power failed", __func__);
-      sleep(1); //don't repeat it quickly.
-      continue;
-    }
-
-    if ( true == pal_is_fw_update_ongoing(fru) ) {
-      sleep(1); //don't repeat it quickly
-      continue;
-    }
-
-    // Try to get the serve power
-    if ( 0 == pal_get_server_power(fru, &status) ) {
-      if ( status == SERVER_POWER_OFF ) {
-        smi_count_start[fru-1] = false; // reset smi count
-      }
-    } else {
-      syslog(LOG_ERR, "%s: Failed to get the server power. Maybe a firmware update was existing on slot%d or something went wrong.", __func__, fru);
-    }
-
-    if ( smi_count_start[fru-1] == true )
-    {
-      smi_timeout_count++;
-    }
-    else
-    {
-      smi_timeout_count = 0;
-    }
-
-#ifdef SMI_DEBUG
-    syslog(LOG_WARNING, "[%s][%lu] smi_timeout_count[%d] == smi_timeout_threshold[%d]\n", __func__, pthread_self(), smi_timeout_count, smi_timeout_threshold);
-#endif
-
-    if ( smi_timeout_count == smi_timeout_threshold )
-    {
-      syslog(LOG_CRIT, "ASSERT: SMI signal is stuck low for %d sec on slot%d\n", smi_timeout_threshold, fru);
-      is_issue_event = true;
-    }
-    else if ( (is_issue_event == true) && (smi_count_start[fru-1] == false) )
-    {
-      syslog(LOG_CRIT, "DEASSERT: SMI signal is stuck low for %d sec on slot%d\n", smi_timeout_threshold, fru);
-      is_issue_event = false;
-    }
-
-    //sleep periodically.
-    sleep(1);
-#ifdef SMI_DEBUG
-    syslog(LOG_WARNING, "[%s][%lu] smi_count_start flag is %d. count=%d\n", __func__, pthread_self(), smi_count_start[fru-1], smi_timeout_count);
-#endif
-  }
-
-  return NULL;
-}
-
 /* Returns the pointer to the struct holding all gpio info for the fru#. */
 static gpio_pin_t *
 get_struct_gpio_pin(uint8_t fru) {
@@ -245,8 +170,7 @@ populate_gpio_pins(uint8_t fru) {
     return;
   }
 
-  // Only monitor RST_PLTRST_BMC_N & IRQ_SMI_ACTIVE_BMC_N & RST_RSMRST_BMC_N
-  gpios[IRQ_SMI_ACTIVE_BMC_N].flag = 1; 
+  // Only monitor RST_PLTRST_BMC_N & RST_RSMRST_BMC_N
   gpios[RST_RSMRST_BMC_N].flag = 1; // CPLD PFR alert pin
   gpios[RST_PLTRST_BMC_N].flag = 1; // Platform reset pin
   for (i = 0; i < MAX_GPIO_PINS; i++) {
@@ -496,6 +420,13 @@ gpio_monitor_poll(void *ptr) {
       is_bmc_ready = true;
     }
 
+    // Get CPLD io sts
+    cpld_io_sts[fru] = (GET_BIT(n_pin_val, PWRGD_SYS_PWROK)  << 0x0) | \
+                       (GET_BIT(n_pin_val, RST_PLTRST_BMC_N) << 0x1) | \
+                       (GET_BIT(n_pin_val, RST_RSMRST_BMC_N) << 0x2) | \
+                       (GET_BIT(n_pin_val, FM_CPU_MSMI_CATERR_LVT3_N ) << 0x3) | \
+                       (GET_BIT(n_pin_val, FM_SLPS3_R_N) << 0x4);
+
     //check PWRGD_CPU_LVC3_R is changed
     if ( (get_pwrgd_cpu_flag(fru) == false) && 
          (GET_BIT(n_pin_val, PWRGD_CPU_LVC3_R) != GET_BIT(o_pin_val, PWRGD_CPU_LVC3_R))) {
@@ -527,20 +458,14 @@ gpio_monitor_poll(void *ptr) {
         // Check if the new GPIO val is ASSERT
         if (gpios[i].status == gpios[i].ass_val) {
     
-          if (i == IRQ_SMI_ACTIVE_BMC_N) {
-            printf("IRQ_SMI_ACTIVE_BMC_N is ASSERT !\n");
-            smi_count_start[fru-1] = true;
-          } else if (i == RST_RSMRST_BMC_N) {
+          if (i == RST_RSMRST_BMC_N) {
             printf("RST_RSMRST_BMC_N is ASSERT !\n");
           } else if (i == RST_PLTRST_BMC_N) {
             rst_timer(fru);
           } 
           
         } else {
-          if (i == IRQ_SMI_ACTIVE_BMC_N) {
-            printf("IRQ_SMI_ACTIVE_BMC_N is DEASSERT !\n");
-            smi_count_start[fru-1] = false;
-          } else if (i == RST_RSMRST_BMC_N) {
+          if (i == RST_RSMRST_BMC_N) {
             printf("RST_RSMRST_BMC_N is DEASSERT !\n");
 
             //get power restore policy
@@ -585,6 +510,50 @@ gpio_monitor_poll(void *ptr) {
     usleep(DELAY_GPIOD_READ);
   } /* while loop */
 } /* function definition*/
+
+static void *
+cpld_io_mon() {
+  uint8_t uart_pos = 0x00;
+  uint8_t card_prsnt = 0x00;
+  uint8_t prev_uart_pos = 0xff;
+  uint8_t prev_cpld_io_sts[MAX_NUM_SLOTS+1] = {0x00};
+  pthread_detach(pthread_self());
+
+  while (1) {
+    // we start updating IO sts when card is present
+    if ( pal_is_debug_card_prsnt(&card_prsnt) < 0 || card_prsnt == 0 ) {
+      usleep(DELAY_GPIOD_READ); //sleep
+      continue;
+    }
+
+    // Get the uart position
+    if ( pal_get_uart_select_from_kv(&uart_pos) < 0 ) {
+      usleep(DELAY_GPIOD_READ); //sleep
+      continue;
+    }
+
+    // If uart position is at slot1/2/3/4, cpld_io_sts[1/2/3/4] can't be 0.
+    // If it is still 0, it means BMC hasn't gotten GPIO value from BIC.
+    if ( cpld_io_sts[uart_pos] == 0 ) {
+      usleep(DELAY_GPIOD_READ); //sleep
+      continue;
+    }
+
+    //If uart_post or cpld_io_sts is updated, write the new value to cpld
+    //Because cpld_io_sts[BMC_uart_position] is always 0x10
+    //So, we need to two conditions to help
+    if ( prev_uart_pos != uart_pos || cpld_io_sts[uart_pos] != prev_cpld_io_sts[uart_pos] ) {
+      if ( pal_set_uart_IO_sts(uart_pos, cpld_io_sts[uart_pos]) < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to update uart IO sts\n", __func__);
+      } else {
+        prev_uart_pos = uart_pos;
+        prev_cpld_io_sts[uart_pos] = cpld_io_sts[uart_pos];
+      }
+    }
+
+    usleep(DELAY_GPIOD_READ);
+  }
+}
 
 static void *
 host_pwr_mon() {
@@ -701,7 +670,7 @@ run_gpiod(int argc, void **argv) {
   uint8_t fru_flag, fru;
   pthread_t tid_host_pwr_mon;
   pthread_t tid_gpio[MAX_NUM_SLOTS];
-  pthread_t tid_smi_timer[MAX_NUM_SLOTS];
+  pthread_t tid_cpld_io_mon;
 
   /* Check for which fru do we need to monitor the gpio pins */
   fru_flag = 0;
@@ -718,11 +687,6 @@ run_gpiod(int argc, void **argv) {
       fru_flag = SETBIT(fru_flag, fru);
       slot = fru;
 
-      // Create thread for SMI check
-      if (pthread_create(&tid_smi_timer[fru-1], NULL, smi_timer, (void *)fru) < 0) {
-        syslog(LOG_WARNING, "pthread_create for smi_handler fail fru%d\n", fru);
-      }
-      
       if (pthread_create(&tid_gpio[fru-1], NULL, gpio_monitor_poll, (void *)slot) < 0) {
         syslog(LOG_WARNING, "pthread_create for gpio_monitor_poll failed\n");
       }
@@ -734,9 +698,12 @@ run_gpiod(int argc, void **argv) {
     syslog(LOG_WARNING, "pthread_create for host_pwr_mon fail\n");
   }
 
+  if (pthread_create(&tid_cpld_io_mon, NULL, cpld_io_mon, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for cpld_io_mon fail\n");
+  }
+
   for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_SLOTS); fru++) {
     if (GETBIT(fru_flag, fru)) {
-      pthread_join(tid_smi_timer[fru-1], NULL);
       pthread_join(tid_gpio[fru-1], NULL);
     }
   }

@@ -1,5 +1,7 @@
-#include "fw-util.h"
+#include <unistd.h>
+#include <openbmc/pal.h>
 #include <facebook/asic.h>
+#include "fw-util.h"
 
 using namespace std;
 
@@ -13,13 +15,20 @@ class ASICComponent : public Component {
 
 int ASICComponent::print_version()
 {
-  int ret;
+  int lock, ret;
   char ver[16] = {0};
 
   if (!is_asic_prsnt(_slot))
     return 0;
 
   cout << "ASIC" << (int)_slot << " Version: ";
+
+  lock = open("/tmp/asic_lock", O_CREAT | O_RDWR, 0666);
+  if (lock < 0 || pal_flock_retry(lock) < 0) {
+    cout << "Not available" << endl;
+    return 0;
+  }
+
   ret = asic_show_version(_slot, ver);
 
   if (ret == ASIC_SUCCESS)
@@ -29,6 +38,8 @@ int ASICComponent::print_version()
   else
     cout << "NA" << endl;
 
+  pal_unflock_retry(lock);
+  close(lock);
   return 0;
 }
 

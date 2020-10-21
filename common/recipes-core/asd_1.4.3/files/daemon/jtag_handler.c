@@ -122,7 +122,7 @@ STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
     if (state == NULL)
         return ST_ERR;
 
-    state->sw_mode = sw_mode;
+    state->sw_mode = (state->force_jtag_hw) ? false : sw_mode;
     ASD_log(ASD_LogLevel_Info, stream, option, "JTAG mode set to '%s'.",
             state->sw_mode ? "software" : "hardware");
 
@@ -244,7 +244,6 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, enum jtag_states tap_state)
     params.to_state = tap_state;
 #else
     struct jtag_tap_state tap_state_t;
-    tap_state_t.from = state->active_chain->tap_state;
     tap_state_t.endstate = tap_state;
     tap_state_t.reset =
         (tap_state == jtag_tlr) ? JTAG_FORCE_RESET : JTAG_NO_RESET;
@@ -394,7 +393,6 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
     struct jtag_xfer xfer;
     unsigned char tdio[MAX_DATA_SIZE];
 
-    xfer.from = current_tap_state;
     xfer.endstate = end_tap_state;
     xfer.type =
         (current_tap_state == jtag_shf_ir) ? JTAG_SIR_XFER : JTAG_SDR_XFER;
@@ -409,7 +407,7 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
             ASD_log(ASD_LogLevel_Error, stream, option,
                     "memcpy_safe: input to output copy buffer failed.");
         }
-        xfer.tdio = (__u64)output;
+        xfer.tdio = (__u64)(uintptr_t)output;
     }
     else
     {
@@ -419,7 +417,7 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
             ASD_log(ASD_LogLevel_Error, stream, option,
                     "memcpy_safe: input to tdio buffer copy failed.");
         }
-        xfer.tdio = (__u64)tdio;
+        xfer.tdio = (__u64)(uintptr_t)tdio;
     }
     if (ioctl(state->JTAG_driver_handle, JTAG_IOCXFER, &xfer) < 0)
     {
@@ -467,8 +465,6 @@ STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles)
         }
     }
 #else
-    struct bitbang_packet bitbang = {NULL, 0};
-
     if (state == NULL)
         return ST_ERR;
 
@@ -477,14 +473,14 @@ STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles)
 
     if (state->sw_mode)
     {
-        bitbang.data = state->bitbang_data;
-        bitbang.length = number_of_cycles;
-
-        if (ioctl(state->JTAG_driver_handle, JTAG_IOCBITBANG, &bitbang) < 0)
+        for (unsigned int i = 0; i < number_of_cycles; i++)
         {
-            ASD_log(ASD_LogLevel_Error, stream, option,
-                    "ioctl JTAG_IOCBITBANG failed");
-            return ST_ERR;
+            if (ioctl(state->JTAG_driver_handle, JTAG_IOCBITBANG, &state->bitbang_data[i]) < 0)
+            {
+                ASD_log(ASD_LogLevel_Error, stream, option,
+                        "ioctl JTAG_IOCBITBANG failed");
+                return ST_ERR;
+            }
         }
     }
 #endif

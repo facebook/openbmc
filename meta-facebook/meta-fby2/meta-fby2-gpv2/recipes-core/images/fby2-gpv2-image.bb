@@ -60,4 +60,5 @@ IMAGE_INSTALL += " \
   sensordump \
   setup-gpio \
   at \
+  name-util \
   "

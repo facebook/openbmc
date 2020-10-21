@@ -29,7 +29,7 @@ DLL_PATH=/usr/lib/libcpldupdate_dll_gpio.so
 DLL_AST_JTAG_PATH=/usr/lib/libcpldupdate_dll_ast_jtag.so
 
 usage() {
-    echo "Usage: $prog -s <CPLD_TYPE> -f <img_file> <hw|sw>"
+    echo "Usage: $prog -s <CPLD_TYPE> -f <img_file> <hw|sw|i2c>"
     echo
     echo "CPLD_TYPE: ( FCM-T | FCM-B | SCM | SMB | PWR-L | PWR-R | PFR)"
     echo
@@ -37,9 +37,11 @@ usage() {
     echo "  VME file for software mode"
     echo "  JED file for hardware mode"
     echo "  JBC file for Intel PFR FPGA update"
+    echo "  HEX file for i2c mode"
     echo "options:"
     echo "  hw: Program the CPLD using JTAG hardware mode"
     echo "  sw: Program the CPLD using JTAG software mode"
+    echo "  i2c: Program the CPLD using hardware IP core mode"
     echo
     echo
 }
@@ -189,6 +191,15 @@ case $5 in
             # ispvm success return code is 1
             expect=1
             ispvm -f 100 dll $DLL_AST_JTAG_PATH "${UPDATE_IMG}"
+        fi
+        ;;
+    i2c)
+        if [[  $CPLD_TYPE == "PWR-L" ]];then
+                cpldupdate-i2c 53 0x40 "${UPDATE_IMG}"
+        elif [[  $CPLD_TYPE == "PWR-R" ]];then
+                cpldupdate-i2c 61 0x40 "${UPDATE_IMG}"
+        else
+            echo "Only Power CPLD support I2C Mode !!!"
         fi
         ;;
     *)

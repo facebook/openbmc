@@ -26,7 +26,6 @@ SRC_URI += "file://board-utils.sh \
            file://reset_cp2112.sh \
            file://setup-gpio.sh \
            file://setup_rov.sh \
-           file://eth0_mac_fixup.sh \
            file://wedge_power.sh \
            file://reset_brcm.sh \
            file://power-on.sh \

@@ -49,6 +49,7 @@ int bic_is_m2_exp_prsnt_cache(uint8_t slot_id);
 int me_recovery(uint8_t slot_id, uint8_t command);
 int bic_switch_mux_for_bios_spi(uint8_t slot_id, uint8_t mux);
 int bic_set_gpio(uint8_t slot_id, uint8_t gpio_num,uint8_t value);
+int remote_bic_set_gpio(uint8_t slot_id, uint8_t gpio_num,uint8_t value, uint8_t intf);
 int bic_get_one_gpio_status(uint8_t slot_id, uint8_t gpio_num, uint8_t *value);
 int bic_asd_init(uint8_t slot_id, uint8_t cmd);
 int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data);

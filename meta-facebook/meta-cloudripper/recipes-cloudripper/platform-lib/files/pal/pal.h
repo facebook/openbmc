@@ -34,12 +34,12 @@ extern "C" {
 #include <stdbool.h>
 #include <math.h>
 #include <facebook/bic.h>
-#include <facebook/bic_platform.h>
 
 #include "pal-ipmi.h"
 #include "pal-led.h"
 #include "pal-power.h"
 #include "pal-sensors.h"
+#include "pal-debugcard.h"
 
 #ifdef DEBUG
 #define PAL_DEBUG(fmt, args...) OBMC_INFO(fmt, ##args)
@@ -213,14 +213,6 @@ int pal_set_def_key_value(void);
 int pal_get_num_slots(uint8_t *num);
 int pal_ipmb_processing(int bus, void *buf, uint16_t size);
 bool pal_is_mcu_working(void);
-int pal_get_hand_sw_physically(uint8_t *pos);
-int pal_get_hand_sw(uint8_t *pos);
-int pal_get_dbg_pwr_btn(uint8_t *status);
-int pal_get_dbg_rst_btn(uint8_t *status);
-int pal_set_rst_btn(uint8_t slot, uint8_t status);
-int pal_get_dbg_uart_btn(uint8_t *status);
-int pal_clr_dbg_uart_btn();
-int pal_switch_uart_mux();
 int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
 int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
 #ifdef __cplusplus

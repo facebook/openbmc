@@ -11,10 +11,25 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <time.h>
+#include <openbmc/kv.h>
+#include <libusb-1.0/libusb.h>
 #include "bic_cpld_lattice_fwupdate.h"
+#include "bic_bios_fwupdate.h"
+
+#define EXP1_TI_VENDOR_ID 0x1CBF
+#define EXP1_TI_PRODUCT_ID 0x0007
+
+#define EXP2_TI_VENDOR_ID 0x1CC0
+#define EXP2_TI_PRODUCT_ID 0x0007
 
 #define MAX_RETRY  500
 #define LATTICE_COL_SIZE 128
+
+#define USB_PKT_SIZE 0x20
+#define USB_DAT_SIZE (USB_PKT_SIZE-7)
+#define BIOS_PKT_SIZE 32
+
+int alt_interface,interface_number;
 
 //#define CPLD_DEBUG
 typedef struct
@@ -36,7 +51,6 @@ enum {
 };
 
 
-#if 1
 static int
 _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf, uint8_t intf) {
   uint8_t tbuf[256] = {0x00};
@@ -73,6 +87,26 @@ _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8
   } while ( retries-- > 0 );
 
   return ret;
+}
+
+#if 0
+static int
+_set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
+  char key[64];
+  char value[64] = {0};
+  struct timespec ts;
+
+  sprintf(key, "fru%u_fwupd", slot_id);
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += tmout;
+  sprintf(value, "%ld", ts.tv_sec);
+
+  if (kv_set(key, value, 0, 0) < 0) {
+     return -1;
+  }
+
+  return 0;
 }
 #endif
 
@@ -912,13 +946,11 @@ int update_bic_cpld_lattice(uint8_t slot_id, char *image, uint8_t intf, uint8_t 
         printf("send cf data but ret < 0. exit.\n");
         goto error_exit;
       }
-
       if ( (record_offset + fsize) <= i ) {
         printf("updated cpld: %d %%\n", (i/fsize)*5);
         record_offset += fsize;
       }
     }
-
 #endif
 
     //step 6 - program user code
@@ -972,6 +1004,401 @@ error_exit:
 
   if ( fp != NULL ) fclose(fp);
   if ( dev_info.CF != NULL ) free(dev_info.CF);
+
+  return ret;
+}
+
+int
+bic_init_exp_usb_dev(uint8_t slot_id, uint8_t intf, usb_dev* udev)
+{
+  int ret;
+  int index = 0;
+  char found = 0;
+  ssize_t cnt;
+  uint8_t bmc_location = 0;
+  int recheck = MAX_CHECK_DEVICE_TIME;
+  uint16_t vid = EXP1_TI_VENDOR_ID;
+  uint16_t pid = EXP1_TI_PRODUCT_ID;
+
+  ret = libusb_init(NULL);
+  if (ret < 0) {
+    printf("Failed to initialise libusb\n");
+    goto error_exit;
+  } else {
+    printf("Init libusb Successful!\n");
+  }
+
+  if ( intf == FEXP_BIC_INTF) {
+    vid = EXP1_TI_VENDOR_ID;
+    pid = EXP1_TI_PRODUCT_ID;
+  } else if ( intf == REXP_BIC_INTF) {
+    vid = EXP2_TI_VENDOR_ID;
+    pid = EXP2_TI_PRODUCT_ID;
+  } else {
+    printf("Unknow update interface\n");
+    goto error_exit;
+  }
+
+  do {
+    cnt = libusb_get_device_list(NULL, &udev->devs);
+    if (cnt < 0) {
+      printf("There are no USB devices on bus\n");
+      goto error_exit;
+    }
+    index = 0;
+    while ((udev->dev = udev->devs[index++]) != NULL) {
+      ret = libusb_get_device_descriptor(udev->dev, &udev->desc);
+      if ( ret < 0 ) {
+        printf("Failed to get device descriptor -- exit\n");
+        libusb_free_device_list(udev->devs,1);
+        goto error_exit;
+      }
+
+      ret = libusb_open(udev->dev, &udev->handle);
+      if ( ret < 0 ) {
+        printf("Error opening device -- exit\n");
+        libusb_free_device_list(udev->devs,1);
+        goto error_exit;
+      }
+
+      if( (vid == udev->desc.idVendor) && (pid == udev->desc.idProduct) ) {
+        ret = libusb_get_string_descriptor_ascii(udev->handle, udev->desc.iManufacturer, (unsigned char*) udev->manufacturer, sizeof(udev->manufacturer));
+        if ( ret < 0 ) {
+          printf("Error get Manufacturer string descriptor -- exit\n");
+          libusb_free_device_list(udev->devs,1);
+          goto error_exit;
+        }
+
+        ret = fby3_common_get_bmc_location(&bmc_location);
+        if (ret < 0) {
+          syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+          goto error_exit;
+        }
+
+        ret = libusb_get_port_numbers(udev->dev, udev->path, sizeof(udev->path));
+        if (ret < 0) {
+          printf("Error get port number\n");
+          libusb_free_device_list(udev->devs,1);
+          goto error_exit;
+        }
+
+        if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+          if ( udev->path[1] != slot_id) {
+            continue;
+          }
+        }
+        printf("%04x:%04x (bus %d, device %d)",udev->desc.idVendor, udev->desc.idProduct, libusb_get_bus_number(udev->dev), libusb_get_device_address(udev->dev));
+        printf(" path: %d", udev->path[0]);
+        for (index = 1; index < ret; index++) {
+          printf(".%d", udev->path[index]);
+        }
+        printf("\n");
+
+        ret = libusb_get_string_descriptor_ascii(udev->handle, udev->desc.iProduct, (unsigned char*) udev->product, sizeof(udev->product));
+        if ( ret < 0 ) {
+          printf("Error get Product string descriptor -- exit\n");
+          libusb_free_device_list(udev->devs,1);
+          goto error_exit;
+        }
+
+        printf("Manufactured : %s\n",udev->manufacturer);
+        printf("Product : %s\n",udev->product);
+        printf("----------------------------------------\n");
+        printf("Device Descriptors:\n");
+        printf("Vendor ID : %x\n",udev->desc.idVendor);
+        printf("Product ID : %x\n",udev->desc.idProduct);
+        printf("Serial Number : %x\n",udev->desc.iSerialNumber);
+        printf("Size of Device Descriptor : %d\n",udev->desc.bLength);
+        printf("Type of Descriptor : %d\n",udev->desc.bDescriptorType);
+        printf("USB Specification Release Number : %d\n",udev->desc.bcdUSB);
+        printf("Device Release Number : %d\n",udev->desc.bcdDevice);
+        printf("Device Class : %d\n",udev->desc.bDeviceClass);
+        printf("Device Sub-Class : %d\n",udev->desc.bDeviceSubClass);
+        printf("Device Protocol : %d\n",udev->desc.bDeviceProtocol);
+        printf("Max. Packet Size : %d\n",udev->desc.bMaxPacketSize0);
+        printf("No. of Configuraions : %d\n",udev->desc.bNumConfigurations);
+
+        found = 1;
+        break;
+      }
+    }
+
+    if ( found != 1) {
+      sleep(3);
+    } else {
+      break;
+    }
+  } while ((--recheck) > 0);
+
+
+  if ( found == 0 ) {
+    printf("Device NOT found -- exit\n");
+    libusb_free_device_list(udev->devs,1);
+    ret = -1;
+    goto error_exit;
+  }
+
+  ret = libusb_get_configuration(udev->handle, &udev->config);
+  if ( ret != 0 ) {
+    printf("Error in libusb_get_configuration -- exit\n");
+    libusb_free_device_list(udev->devs,1);
+    goto error_exit;
+  }
+
+  printf("Configured value : %d\n", udev->config);
+  if ( udev->config != 1 ) {
+    libusb_set_configuration(udev->handle, 1);
+    if ( ret != 0 ) {
+      printf("Error in libusb_set_configuration -- exit\n");
+      libusb_free_device_list(udev->devs,1);
+      goto error_exit;
+    }
+    printf("Device is in configured state!\n");
+  }
+
+  libusb_free_device_list(udev->devs, 1);
+
+  if(libusb_kernel_driver_active(udev->handle, udev->ci) == 1) {
+    printf("Kernel Driver Active\n");
+    if(libusb_detach_kernel_driver(udev->handle, udev->ci) == 0) {
+      printf("Kernel Driver Detached!");
+    } else {
+      printf("Couldn't detach kernel driver -- exit\n");
+      libusb_free_device_list(udev->devs,1);
+      goto error_exit;
+    }
+  }
+
+  ret = libusb_claim_interface(udev->handle, udev->ci);
+  if ( ret < 0 ) {
+    printf("Couldn't claim interface -- exit. err:%s\n", libusb_error_name(ret));
+    libusb_free_device_list(udev->devs,1);
+    goto error_exit;
+  }
+  printf("Claimed Interface: %d, EP addr: 0x%02X\n", udev->ci, udev->epaddr);
+
+  active_config(udev->dev, udev->handle);
+  return 0;
+error_exit:
+  return -1;
+}
+
+int
+bic_update_cpld_lattice_usb(uint8_t slot_id, uint8_t intf, const char *image, usb_dev* udev) {
+  int ret = 0;
+  uint32_t fsize = 0;
+  uint32_t record_offset = 0;
+  CPLDInfo dev_info = {0};
+  FILE *fp = NULL;
+  uint8_t addr = 0xff;
+  uint8_t buf[16] = {0};
+  uint8_t transfer_buf[32] = {0};
+  uint32_t offset = 0;
+  const uint16_t read_count = 16;
+  int retry = 0;
+  int retries = 3;
+  uint8_t data[USB_PKT_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  char fpath[128];
+
+  strcpy(fpath, image);
+  fp = fopen(image, "r");
+  if ( fp == NULL ) {
+    ret = -1;
+    goto exit;
+  }
+
+  memset(&dev_info, 0, sizeof(dev_info));
+  ret = LCMXO2Family_JED_File_Parser(fp, &dev_info);
+  if ( ret < 0 ) {
+    goto exit;
+  }
+
+  fsize = dev_info.CF_Line / 20;
+
+  do {
+    // step 1 - detect CPLD
+    ret = detect_cpld_dev(slot_id, intf);
+    if ( ret < 0 ) {
+      printf("Device is not found!\n");
+      goto exit;
+    }
+
+    //step 1.5 - provide the addr
+    addr = CPLD;
+
+    //step 2 - enter transparent mode and check the status
+    ret = enter_transparent_mode(slot_id, intf, addr);
+    if ( ret < 0 ) {
+      printf("Couldn't enter transparent mode!\n");
+      goto exit;
+    }
+
+    //step 3 - erase the CF and check the status
+    ret = erase_flash(slot_id, intf, addr);
+    if ( ret < 0 ) {
+      printf("Couldn't erase the flash!\n");
+      goto exit;
+    }
+
+    //step 4 - Transmit Reset Configuration Address
+    ret = reset_config_addr(slot_id, intf, addr);
+    if ( ret < 0 ) {
+      printf("Couldn't reset the flash!\n");
+      goto exit;
+    }
+
+    int transferlen = 0;
+    int transferred = 0;
+    int data_idx, idx, i;
+    printf("[Update CPLD via USB]\n");
+    while (1) {
+      memset(data, 0xFF, sizeof(data));
+
+      for (i = 0, data_idx = 0; i < dev_info.CF_Line; i++, data_idx+=4) {
+        memcpy(buf, (uint8_t *)&dev_info.CF[data_idx], read_count);
+        for (idx = 0; idx <= 12; idx+=4) {
+            transfer_buf[idx + 0] = buf[idx + 3];
+            transfer_buf[idx + 1] = buf[idx + 2];
+            transfer_buf[idx + 2] = buf[idx + 1];
+            transfer_buf[idx + 3] = buf[idx + 0];
+        }
+
+        memcpy(&data[7], (uint8_t *)&transfer_buf, read_count);
+        transferlen = read_count + 7;
+
+        data[1] = offset & 0xFF;
+        data[2] = (offset >> 8) & 0xFF;
+        data[3] = (offset >> 16) & 0xFF;
+        data[4] = (offset >> 24) & 0xFF;
+        data[5] = read_count & 0xFF;
+        data[6] = (read_count >> 8) & 0xFF;
+
+resend:
+        ret = libusb_bulk_transfer(udev->handle, udev->epaddr, data, transferlen, &transferred, 3000);
+        msleep(1);
+        if(((ret != 0) || (transferlen != transferred))) {
+          printf("Error in transferring data! err = %d and transferred = %d(expected data length 64)\n",ret ,transferred);
+          printf("Retry since  %s\n", libusb_error_name(ret));
+          retries--;
+          if (!retries) {
+            ret = -1;
+            break;
+          }
+          msleep(100);
+          goto resend;
+        }
+
+        offset += read_count;
+        if ( (record_offset + fsize) <= i ) {
+          _set_fw_update_ongoing(slot_id, 60);
+          printf("updated cpld: %d %%\n", (i/fsize)*5);
+          record_offset += fsize;
+        }
+      }
+
+      if (i == dev_info.CF_Line) {
+        break;
+      }
+    }
+
+    //step 6 - program user code
+    ret = program_user_code(slot_id, intf, addr, (uint8_t *)&dev_info.Version);
+    if ( ret < 0 ) {
+      printf("Couldn't program the usercode!\n");
+      goto exit;
+    }
+
+    //step 7 - verify the CF data
+    //step 7.1 Transmit Reset Configuration Address again
+    ret = reset_config_addr(slot_id, intf, addr);
+    if ( ret < 0 ) {
+      printf("Couldn't reset the flash again!\n");
+      goto exit;
+    }
+
+    record_offset = 0;
+    //step 7.2 Transmit Read Command with Number of Pages
+    for (i = 0, data_idx = 0; i < dev_info.CF_Line; i++, data_idx+=4) {
+      ret = verify_cf(slot_id, intf, addr, (uint8_t *)&dev_info.CF[data_idx]);
+      if ( ret < 0 ) {
+        printf("Read cf data but ret < 0. exit\n");
+        goto exit;//break;
+      }
+
+      if ( (record_offset + fsize) <= i ) {
+        printf("verify cpld: %d %%\n", (i/fsize)*5);
+        record_offset += fsize;
+      }
+    }
+
+    if (i == dev_info.CF_Line) {
+      break;
+    }
+  } while ((++retry) < RETRY_TIME);
+
+  if (retry == RETRY_TIME) {
+    goto exit;
+  }
+
+  //step 8 - program done
+  ret = program_done(slot_id, intf, addr);
+  if ( ret < 0 ) {
+    printf("Couldn't finish the program!\n");
+    goto exit;
+  }
+
+exit:
+  if ( fp != NULL ) fclose(fp);
+  if ( dev_info.CF != NULL ) free(dev_info.CF);
+
+  return ret;
+}
+
+int
+bic_close_exp_usb_dev(usb_dev* udev) {
+  if (libusb_release_interface(udev->handle, udev->ci) < 0) {
+    printf("Couldn't release the interface 0x%X\n", udev->ci);
+  }
+
+  if (udev->handle != NULL )
+    libusb_close(udev->handle);
+  libusb_exit(NULL);
+
+  return 0;
+}
+
+int
+update_bic_cpld_lattice_usb(uint8_t slot_id, char *image, uint8_t intf, uint8_t force) {
+  struct timeval start, end;
+  int ret = 0;
+  usb_dev   bic_udev;
+  usb_dev*  udev = &bic_udev;
+
+  udev->ci = 1;
+  udev->epaddr = 0x1;
+
+  // init usb device
+  ret = bic_init_exp_usb_dev(slot_id, intf, udev);
+  if (ret < 0) {
+    goto error_exit;
+  }
+
+  printf("Input: %s, USB timeout: 3000ms\n", image);
+  gettimeofday(&start, NULL);
+
+  // sending file
+  ret = bic_update_cpld_lattice_usb(slot_id, intf, image, udev);
+  if (ret < 0) {
+    goto error_exit;
+  }
+
+  gettimeofday(&end, NULL);
+  printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
+  ret = 0;
+
+error_exit:
+  // close usb device
+  bic_close_exp_usb_dev(udev);
 
   return ret;
 }

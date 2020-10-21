@@ -1062,8 +1062,8 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
 }
 
 int
-pal_uart_select (uint32_t base, uint8_t offset, int option, uint32_t para) {
-  uint32_t mmap_fd;
+pal_postcode_select(int option) {
+  int mmap_fd;
   uint32_t ctrl;
   void *reg_base;
   void *reg_offset;
@@ -1073,26 +1073,22 @@ pal_uart_select (uint32_t base, uint8_t offset, int option, uint32_t para) {
     return -1;
   }
 
-  reg_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmap_fd, base);
-  reg_offset = (char*) reg_base + offset;
-  ctrl = *(volatile uint32_t*) reg_offset;
+  reg_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmap_fd, AST_GPIO_BASE);
+  reg_offset = (uint8_t *)reg_base + UARTSW_OFFSET;
+  ctrl = *(volatile uint32_t *)reg_offset;
 
   switch(option) {
-    case UARTSW_BY_BMC:                //UART Switch control by bmc
+    case POSTCODE_BY_BMC:   // POST code LED controlled by BMC
       ctrl &= 0x00ffffff;
       break;
-    case UARTSW_BY_DEBUG:           //UART Switch control by debug card
+    case POSTCODE_BY_HOST:  // POST code LED controlled by LPC
       ctrl |= 0x01000000;
-      break;
-    case SET_SEVEN_SEGMENT:      //set channel on the seven segment display
-      ctrl &= 0x00ffffff;
-      ctrl |= para;
       break;
     default:
       syslog(LOG_WARNING, "pal_mmap: unknown option");
       break;
   }
-  *(volatile uint32_t*) reg_offset = ctrl;
+  *(volatile uint32_t *)reg_offset = ctrl;
 
   munmap(reg_base, PAGE_SIZE);
   close(mmap_fd);
@@ -1102,33 +1098,39 @@ pal_uart_select (uint32_t base, uint8_t offset, int option, uint32_t para) {
 
 int
 pal_uart_select_led_set(void) {
-  static uint32_t pre_channel = 0xffffffff;
-  unsigned int vals;
-  uint32_t channel = 0;
-  const char *shadows[] = {
+  static uint32_t pre_channel = 0xFF;
+  uint32_t channel;
+  uint32_t vals;
+  const char *uartsw_pins[] = {
     "FM_UARTSW_LSB_N",
     "FM_UARTSW_MSB_N"
   };
+  const char *postcode_pins[] = {
+    "LED_POSTCODE_0",
+    "LED_POSTCODE_1",
+    "LED_POSTCODE_2",
+    "LED_POSTCODE_3",
+    "LED_POSTCODE_4",
+    "LED_POSTCODE_5",
+    "LED_POSTCODE_6",
+    "LED_POSTCODE_7"
+  };
 
-  //UART Switch control by bmc
-  pal_uart_select(AST_GPIO_BASE, UARTSW_OFFSET, UARTSW_BY_BMC, 0);
+  pal_postcode_select(POSTCODE_BY_BMC);
 
-  if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &vals)) {
+  if (gpio_get_value_by_shadow_list(uartsw_pins, ARRAY_SIZE(uartsw_pins), &vals)) {
     return -1;
   }
-  // The GPIOs are active-low. So, invert it.
-  channel = (uint32_t)(~vals & 0x3);
-  // Shift to get to the bit position of the led.
-  channel = channel << 24;
+  channel = ~vals & 0x3;  // the GPIOs are active-low, so invert it
 
-  // If the requested channel is the same as the previous, do nothing.
-  if (channel == pre_channel) {
-     return -1;
+  if (channel != pre_channel) {
+    // show channel on 7-segment display
+    if (gpio_set_value_by_shadow_list(postcode_pins, ARRAY_SIZE(postcode_pins), channel)) {
+      return -1;
+    }
+    pre_channel = channel;
   }
-  pre_channel = channel;
 
-  //show channel on 7-segment display
-  pal_uart_select(AST_GPIO_BASE, SEVEN_SEGMENT_OFFSET, SET_SEVEN_SEGMENT, channel);
   return 0;
 }
 

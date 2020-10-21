@@ -73,33 +73,14 @@ void initialize_jtag_chains(JTAG_Handler* state)
 
 static STATUS JTAG_set_mux(scanChain chain)
 {
-    gpio_value_t expected_value = (chain == SCAN_CHAIN_0) ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH;
-    gpio_value_t value = GPIO_VALUE_INVALID;
-    gpio_desc_t *gpio;
-    STATUS ret = ST_ERR;
+    gpio_value_t value = (chain == SCAN_CHAIN_0) ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH;
 
-    if (NULL == (gpio = gpio_open_by_shadow("FM_JTAG_TCK_MUX_SEL"))) {
-      syslog(LOG_ERR, "Failed to open FM_JTAG_TCK_MUX_SEL\n");
-      return ST_ERR;
+    if (gpio_set_value_by_shadow("FM_JTAG_TCK_MUX_SEL", value)) {
+        syslog(LOG_ERR, "Failed to set FM_JTAG_TCK_MUX_SEL as %d", value);
+        return ST_ERR;
     }
 
-    if (gpio_set_direction(gpio, GPIO_DIRECTION_OUT)) {
-      syslog(LOG_ERR, "Failed to set FM_JTAG_TCK_MUX_SEL as an output\n");
-      goto bail;
-    }
-
-    gpio_set_value(gpio, expected_value);
-    gpio_get_value(gpio, &value);
-    if (value != expected_value) {
-      syslog(LOG_WARNING, "Writing %d to FM_JTAG_TCK_MUX_SEL failed! ASD is most probably disabled\n",
-             expected_value);
-      gpio_set_direction(gpio, GPIO_DIRECTION_IN);
-      goto bail;
-    }
-    ret = ST_OK;
-bail:
-    gpio_close(gpio);
-    return ret;
+    return ST_OK;
 }
 
 JTAG_Handler* SoftwareJTAGHandler(uint8_t fru)
@@ -561,8 +542,6 @@ STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles)
         }
     }
 #else
-    struct bitbang_packet bitbang = {NULL, 0};
-
     if (state == NULL)
         return ST_ERR;
 
@@ -571,14 +550,14 @@ STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles)
 
     if (state->sw_mode)
     {
-        bitbang.data = state->bitbang_data;
-        bitbang.length = number_of_cycles;
-
-        if (ioctl(state->JTAG_driver_handle, JTAG_IOCBITBANG, &bitbang) < 0)
+        for (unsigned int i = 0; i < number_of_cycles; i++)
         {
-//            ASD_log(ASD_LogLevel_Error, stream, option,
-//                    "ioctl JTAG_IOCBITBANG failed");
-            return ST_ERR;
+            if (ioctl(state->JTAG_driver_handle, JTAG_IOCBITBANG, &state->bitbang_data[i]) < 0)
+            {
+//                ASD_log(ASD_LogLevel_Error, stream, option,
+//                        "ioctl JTAG_IOCBITBANG failed");
+                return ST_ERR;
+            }
         }
     }
 #endif

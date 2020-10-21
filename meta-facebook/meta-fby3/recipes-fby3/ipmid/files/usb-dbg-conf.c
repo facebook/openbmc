@@ -36,10 +36,10 @@ static post_desc_t pdesc_phase1[] = {
   { 0xAA, "STS_PROTOCOL_SET" },
   { 0xAE, "STS_COHERNCY_SETUP" },
   { 0xAF, "STS_KTI_COMPLETE" },
-  { 0xE0, "S3_RESUME_START" },
-  { 0xE1, "S3_BOOT_SCRIPT_EXE" },
-  { 0xE4, "AMI_PROG_CODE" },
-  { 0xE3, "S3_OS_WAKE" },
+  { 0xE0, "BMC" },
+  { 0xE1, "SLOT1" },
+  { 0xE4, "SLOT4" },
+  { 0xE3, "SLOT3" },
   { 0xE5, "AMI_PROG_CODE" },
   { 0xB0, "STS_DIMM_DETECT" },
   { 0xB1, "STS_CHECK_INIT" },
@@ -164,8 +164,8 @@ static post_desc_t pdesc_phase1[] = {
   { 0x5E, "AMI_ERR_CODE" },
   { 0x5F, "AMI_ERR_CODE" },
 
-  // S3 Resume Progress Code
-  { 0xE2, "S3_VIDEO_REPOST" },
+  // slot2
+  { 0xE2, "SLOT2" },
 
   // S3 Resume Error Code
   { 0xEA, "S3_BOOT_SCRIPT_ERR" },
@@ -352,9 +352,16 @@ static post_desc_t pdesc_phase2[] = {
   { 0xDA, "BOOT_OPT_FAIL" },
   { 0xDB, "FLASH_UPD_FAIL" },
   { 0xDC, "RST_PROT_NA" },
-  { 0xDD, "DEX_SELTEST_FAILs" }
+  { 0xDD, "DEX_SELTEST_FAILs" },
   /*--------------------- DXE Phase - End--------------------- */
 
+  /*--------------------- SLOT Info Start--------------------- */
+  { 0xE0, "BMC" },
+  { 0xE1, "SLOT1" },
+  { 0xE2, "SLOT2" },
+  { 0xE3, "SLOT3" },
+  { 0xE4, "SLOT4" }
+  /*--------------------- SLOT Info End--------------------- */
 };
 
 static post_phase_desc_t post_phase_desc[] = {
@@ -365,12 +372,12 @@ static post_phase_desc_t post_phase_desc[] = {
 static gpio_desc_t gdesc[] = {
  { 0x10, 0, 1, "RST_BTN_N" },
  { 0x11, 0, 1, "PWR_BTN_N" },
- { 0x12, 0, 0, "PWRGD_SYS_PWROK" },
- { 0x13, 0, 0, "RST_PLTRST_N" },
- { 0x14, 0, 0, "PWRGD_DSW_PWROK" },
- { 0x15, 0, 0, "FM_CPU_CATERR_MSMI_LVT3_N" },
- { 0x16, 0, 0, "FM_SLPS3_N" },
- { 0x17, 0, 1, "FM_SOL_UART_CH_SEL" },
+ { 0x12, 0, 0, "SYS_PWROK" },
+ { 0x13, 0, 0, "RST_PLTRST" },
+ { 0x14, 0, 0, "DSW_PWROK" },
+ { 0x15, 0, 0, "FM_CATERR_MSMI" },
+ { 0x16, 0, 0, "FM_SLPS3" },
+ { 0x17, 0, 1, "FM_UART_SWITCH" },
 };
 
 static sensor_desc_t cri_sensor_sb[] =
@@ -581,22 +588,6 @@ plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
   // Clear string buffer
   fw_text[0] = '\0';
 
-  //Bridge-IC Version
-  if (bic_get_fw_ver(slot_id, FW_BIC, ver)) {
-    strcat(fw_text,"BIC_ver:\nNA\n");
-  } else {
-    sprintf(entry,"BIC_ver:\nv%x.%02x\n", ver[0], ver[1]);
-    strcat(fw_text, entry);
-  }
-
-  // Print Bridge-IC Bootloader Version
-  if (bic_get_fw_ver(slot_id, FW_BIC_BOOTLOADER, ver)) {
-    strcat(fw_text,"BICbl_ver:\nNA\n");
-  } else {
-    sprintf(entry,"BICbl_ver:\nv%x.%02x\n", ver[0], ver[1]);
-    strcat(fw_text, entry);
-  }
-
   //CPLD Version
   if (slot_id == FRU_ALL) { //uart select BMC position
 
@@ -617,6 +608,22 @@ plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
     strcat(fw_text, entry);
 
   } else {
+    //Bridge-IC Version
+    if (bic_get_fw_ver(slot_id, FW_BIC, ver)) {
+      strcat(fw_text,"BIC_ver:\nNA\n");
+    } else {
+      sprintf(entry,"BIC_ver:\nv%x.%02x\n", ver[0], ver[1]);
+      strcat(fw_text, entry);
+    }
+
+    //Print Bridge-IC Bootloader Version
+    if (bic_get_fw_ver(slot_id, FW_BIC_BOOTLOADER, ver)) {
+      strcat(fw_text,"BICbl_ver:\nNA\n");
+    } else {
+      sprintf(entry,"BICbl_ver:\nv%x.%02x\n", ver[0], ver[1]);
+      strcat(fw_text, entry);
+    }
+
     if (pal_get_fw_info(slot_id, FW_CPLD, ver, &rlen)) {
       strcat(fw_text,"CPLD_ver:\nNA\n");
     } else {

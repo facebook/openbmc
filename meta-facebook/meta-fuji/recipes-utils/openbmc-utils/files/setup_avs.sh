@@ -18,24 +18,35 @@
 # Boston, MA 02110-1301 USA
 #
 
+# Check board version. Only set avs VOUT from EVT3
+# Since the TH4 AVS feature can't be enabled on EVT1,2 hardware units because of hardware factors. 
+# But we found the SMB EVT1 board ID is incorrect, it's the same as DVT1 board ID, 
+# and there are 3 EVT1 units(F301220170001, F301220170002, F301220240001) shipped to FB. 
+# So it seems FB can't upgrade the 3 EVT1 units to next package.
+
+BOARD_VER=$(i2cget -f -y 13 0x35 0x3 | awk '{printf "%d", $1}') #Get board version
+if [ "$BOARD_VER" -lt 66 ];then
+    echo "No need to set avs VOUT."
+    exit 1
+fi
+
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
-# Vcc_Max please refer to Voltage Regulator Module (VRM) and Enterprise
-# Voltage Regulator-Down (EVRD) 11.1 Design Guidelines Table 5-4. VR 11.1 
-# Voltage Identification (VID) Table ? Part 1 of 2.
-# HEX2DEC(VID_VCC_MAX)*2^(-12) = Vcc_Max
-VID_VCC_MAX=(0xE66 0xE4D 0xE33 0xE1A 0xE00 0xDE6 0xDCD 0xDB3 0xD9A 0xD80
-             0xD66 0xD4D 0xD33 0xD1A 0xD00 0xCE6 0xCCD 0xCB3 0xC9A 0xC80
-             0xC66 0xC4D 0xC33 0xC1A 0xC00 0xBE6 0xBCD 0xBB3 0xB9A 0xB80)
+
+VID_VCC_MAX=(0xE6B 0xE0C 0xDB2 0xD58 0xCF6)
 XDPE_VOUT_PMBUS_COMMAND=0x21
 
 TH4_ROV=$(i2cget -f -y 12 0x3e 0x56 | awk '{printf "%d", $1}') # Get TH4 AVS value from SYSCPLD
 
-if [[ $TH4_ROV -lt 114 || $TH4_ROV -gt 143 ]]; then 
-    echo "Invalid AVS value [0x72 - 0x90]."
-    exit 1
-fi
+case $TH4_ROV in
+    126|130|134|138|142) #0x7e,0x82,0x86,0x8a,0x8e
+        ;;
+    *)
+        echo "Invalid AVS value[126,130,134,138,142]"
+        exit 1
+        ;;
+esac
 
-TH4_INDEX=$((TH4_ROV - 114))
+TH4_INDEX=$(((TH4_ROV - 126) / 4))
 # Set VOUT to XDPE132G5C
 i2cset -f -y 1 0x40 0x00 0xff # Allows access all pages 
 XDPE_VDD_MAX_VALUE=$((VID_VCC_MAX[TH4_INDEX]))

@@ -314,6 +314,29 @@ static void *kcs_thread(void *unused) {
   return NULL;
 }
 
+/*
+ * "kcs_open_new" opens kcs device in upstream kernel.
+ */
+static int kcs_open_new(uint8_t channel)
+{
+  int fd;
+  char path[PATH_MAX];
+
+  channel++; /* convert to 1-based channel number */
+  snprintf(path, sizeof(path), "/dev/ipmi-kcs%d", channel);
+  fd = open(path, O_RDWR);
+  if (fd < 0) {
+    OBMC_ERROR(errno, "failed to open kcs device %s", path);
+  } else {
+    OBMC_INFO("opened kcs device %s, fd=%d", path, fd);
+  }
+
+  return fd;
+}
+
+/*
+ * "kcs_open_legacy" enables and opens kcs device in kernel 4.1.
+ */
 static int kcs_open_legacy(uint8_t channel)
 {
   int fd;
@@ -329,6 +352,8 @@ static int kcs_open_legacy(uint8_t channel)
   fd = open(path, O_RDWR);
   if (fd < 0) {
     OBMC_ERROR(errno, "failed to open kcs device %s", path);
+  } else {
+    OBMC_INFO("opened kcs device %s, fd=%d", path, fd);
   }
 
   return fd;
@@ -357,7 +382,6 @@ main(int argc, char * const argv[]) {
   int ret;
   pthread_t kcs_tid;
   pthread_t add_sel_tid;
-  char device[PATH_MAX];
   uint8_t kcs_channel_num = 2;
   const char *bmc_ready_n_shadow = DEFAULT_BMC_READY_GPIO_SHADOW;
   struct option long_opts[] = {
@@ -413,16 +437,13 @@ main(int argc, char * const argv[]) {
     OBMC_ERROR(errno, "failed to open BMC Ready PIN %s", bmc_ready_n_shadow);
   }
 
-  // 1-based channel number
-  snprintf(device, sizeof(device), "/dev/ipmi-kcs%d", kcs_channel_num + 1);
-  kcs_fd = open(device, O_RDWR);
+  kcs_fd = kcs_open_new(kcs_channel_num);
   if (kcs_fd < 0) {
     kcs_fd = kcs_open_legacy(kcs_channel_num);
     if (kcs_fd < 0) {
       return -1;
     }
   }
-  OBMC_INFO("opened kcs device %s, fd=%d", device, kcs_fd);
 
   sleep(1);
 

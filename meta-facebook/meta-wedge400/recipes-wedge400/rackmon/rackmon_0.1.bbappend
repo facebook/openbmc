@@ -17,4 +17,10 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
+SRC_URI += "file://rackmon_platform.c \
+           "
+
 CFLAGS += "-DDEFAULT_TTY=\\"/dev/ttyUSB0\\" "
+LDFLAGS += "-llog"
+DEPENDS += "liblog"
+RDEPENDS_${PN} += "liblog"

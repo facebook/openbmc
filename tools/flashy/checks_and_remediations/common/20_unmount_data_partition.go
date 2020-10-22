@@ -26,14 +26,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/logger"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
-
-const procMountsPath = "/proc/mounts"
 
 func init() {
 	step.RegisterStep(unmountDataPartition)
@@ -47,7 +44,7 @@ var mount = syscall.Mount
 // may be corrupted by the preexisting data0 partition.
 // Also, should there be a need to format data0, this step is necessary.
 func unmountDataPartition(stepParams step.StepParams) step.StepExitError {
-	dataMounted, err := isDataPartitionMounted()
+	dataMounted, err := utils.IsDataPartitionMounted()
 	if err != nil {
 		return step.ExitSafeToReboot{
 			errors.Errorf("Unable to determine whether /mnt/data is mounted: %v",
@@ -95,21 +92,6 @@ func unmountDataPartition(stepParams step.StepParams) step.StepExitError {
 	return nil
 }
 
-var isDataPartitionMounted = func() (bool, error) {
-	procMountsDat, err := fileutils.ReadFile(procMountsPath)
-	if err != nil {
-		return false, errors.Errorf("Cannot read /proc/mounts: %v", err)
-	}
-
-	regEx := `(?m)^[^ ]+ /mnt/data [^ ]+ [^ ]+ [0-9]+ [0-9]+$`
-	regExMap, err := utils.GetAllRegexSubexpMap(regEx, string(procMountsDat))
-	if err != nil {
-		return false, errors.Errorf("regex error: %v", err)
-	}
-
-	return len(regExMap) != 0, nil
-}
-
 // runDataPartitionUnmountProcess attempts (up to 10 times) to unmount /mnt/data
 var runDataPartitionUnmountProcess = func() error {
 	// mkdir -p /tmp/mnt
@@ -129,13 +111,22 @@ var runDataPartitionUnmountProcess = func() error {
 		return errors.Errorf("Bind mount /mnt to /tmp/mnt failed: %v", err)
 	}
 
-	// cp -r /mnt/data /tmp/mnt
+	// mkdir -p /tmp/mnt/data/etc
+	// expected failures: none
+	cmd = []string{"mkdir", "-p", "/tmp/mnt/data/etc"}
+	_, err, _, stderr = utils.RunCommand(cmd, 30*time.Second)
+	if err != nil {
+		return errors.Errorf("'%v' failed: %v, stderr: %v",
+			strings.Join(cmd, " "), err, stderr)
+	}
+
+	// cp -r /mnt/data/etc/ssh /tmp/mnt/data/etc
 	// expected failures: jffs2 may be corrupt and throw errors
-	log.Printf("Copying /mnt/data contents to /tmp/mnt.")
-	cmd = []string{"cp", "-r", "/mnt/data", "/tmp/mnt"}
+	log.Printf("Copying /mnt/data/etc/ssh to /tmp/mnt/data/etc.")
+	cmd = []string{"cp", "-r", "/mnt/data/etc/ssh", "/tmp/mnt/data/etc"}
 	_, err, _, stderr = utils.RunCommand(cmd, 2*time.Minute)
 	if err != nil {
-		return errors.Errorf("Copying /mnt/data contents to /tmp/mnt failed: "+
+		return errors.Errorf("Copying /mnt/data/etc/ssh to /tmp/mnt/data/etc failed: "+
 			"%v, stderr: %v", err, stderr)
 	}
 

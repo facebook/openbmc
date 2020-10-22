@@ -39,15 +39,12 @@ type LogWriter struct {
 	Streams []io.Writer
 }
 
-// CustomLogger is the output for flashy's logs to stderr and syslog
-var CustomLogger LogWriter
-
-func init() {
-	streams := []io.Writer{}
-
+// InitCustomLogger sets `log` to output to the stderr and syslog (if acquireable) streams
+var InitCustomLogger = func() {
 	// stderr
-	stderrWriter := os.Stderr
-	streams = append(streams, stderrWriter)
+	streams := []io.Writer{
+		os.Stderr,
+	}
 
 	// syslog
 	syslogWriter, err := getSyslogWriter()
@@ -57,9 +54,17 @@ func init() {
 		streams = append(streams, syslogWriter)
 	}
 
-	CustomLogger = LogWriter{
+	log.SetOutput(LogWriter{
 		Streams: streams,
-	}
+	})
+}
+
+// InitCustomLoggerStderrOnly sets `log` to output to the stderr stream.
+// This is used for situations in which code may kill rsyslogd (e.g. fuser -km).
+var InitCustomLoggerStderrOnly = func() {
+	log.SetOutput(LogWriter{
+		Streams: []io.Writer{os.Stderr},
+	})
 }
 
 // LogWriter implements io.Writer
@@ -76,13 +81,13 @@ func (w LogWriter) Write(p []byte) (n int, err error) {
 }
 
 // getSyslogWriter gets the syslog writer. If syslog.New fails,
-// call StartSyslog and try up to a maximum of 3 times
+// call startSyslog and try up to a maximum of 3 times
 func getSyslogWriter() (syslogWriter io.Writer, err error) {
 	prefixTag := fmt.Sprintf("[flashy|%v]", strings.Join(os.Args, " "))
 	for i := 0; i < 3; i++ {
 		syslogWriter, err = syslog.New(syslog.LOG_INFO, prefixTag)
 		if err != nil {
-			StartSyslog()
+			startSyslog()
 		} else {
 			return
 		}
@@ -90,12 +95,12 @@ func getSyslogWriter() (syslogWriter io.Writer, err error) {
 	return
 }
 
-// StartSyslog runs the init script to start rsyslog or BusyBox syslog.
+// startSyslog runs the init script to start rsyslog or BusyBox syslog.
 // rsyslog init has the `--oknodo flag` and will reliably return
 // 0 if already started (common/recipes-extended/rsyslog/files/initscript).
 // However, busybox syslog returns 1 if already started, so we ignore the
 // error from RunCommand.
-var StartSyslog = func() {
+var startSyslog = func() {
 	systemdAvail, err := utils.SystemdAvailable()
 	if err != nil {
 		log.Printf("Unable to decide if systemd is available: %v", err)

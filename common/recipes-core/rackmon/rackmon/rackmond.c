@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 #include "modbus.h"
+#include "rackmon_platform.h"
 
 #define MAX_ACTIVE_ADDRS 24
 #define MAX_RACKS        3
@@ -874,21 +875,16 @@ static int alloc_monitoring_datas(void) {
   return error;
 }
 
-static void close_rs485_dev(rs485_dev_t *dev)
+static int uart_rs485_open(struct rackmon_io_handler *handler)
 {
-  if (dev->tty_fd >= 0) {
-    pthread_mutex_destroy(&dev->lock);
-    close(dev->tty_fd);
-  }
-}
-
-static int open_rs485_dev(const char* tty_filename, rs485_dev_t *dev) {
-  int error = 0;
+  int fd, ret;
   struct serial_rs485 rs485conf;
 
-  dbg("Opening %s\n", tty_filename);
-  dev->tty_fd = open(tty_filename, O_RDWR | O_NOCTTY);
-  ERR_EXIT(dev->tty_fd);
+  fd = open(handler->dev_path, O_RDWR | O_NOCTTY);
+  if (fd < 0) {
+    OBMC_ERROR(errno, "failed to open %s", handler->dev_path);
+    return -1;
+  }
 
   /*
    * NOTE: "SER_RS485_RTS_AFTER_SEND" and "SER_RS485_RX_DURING_TX" flags
@@ -899,18 +895,61 @@ static int open_rs485_dev(const char* tty_filename, rs485_dev_t *dev) {
   rs485conf.flags = SER_RS485_ENABLED;
   rs485conf.flags |= (SER_RS485_RTS_AFTER_SEND | SER_RS485_RX_DURING_TX);
 
-  dbg("Putting %s in RS485 mode\n", tty_filename);
-  error = ioctl(dev->tty_fd, TIOCSRS485, &rs485conf);
-  ERR_LOG_EXIT(error, "failed to turn on RS485 mode");
+  ret = ioctl(fd, TIOCSRS485, &rs485conf);
+  if (ret < 0) {
+    int saved_errno = errno;
 
-  error = pthread_mutex_init(&dev->lock, NULL);
-  if (error != 0) {
-    OBMC_ERROR(error, "failed to initialize rs485 dev mutex");
-    error = -1;
+    OBMC_ERROR(errno, "failed to turn on RS485 mode");
+    close(fd);  /* ignore errors */
+    errno = saved_errno;
+
+    return -1;
   }
 
-cleanup:
-  return error;
+  return fd;
+}
+
+/*
+ * I/O operation handler for UART-RS485 transactions, used by wedge40 and
+ * wedge100 as of now.
+ */
+static struct rackmon_io_handler uart_rs485_io = {
+  .dev_path = DEFAULT_TTY,
+  .open = uart_rs485_open,
+};
+
+/*
+ * Set "rackmon_io" to "uart_rs485_io" by default, mainly because we want
+ * to minimize changes to the existing wedge40 and wedge100 platforms.
+ */
+struct rackmon_io_handler *rackmon_io = &uart_rs485_io;
+
+static void rs485_device_cleanup(rs485_dev_t *dev)
+{
+  if (dev->tty_fd >= 0) {
+    pthread_mutex_destroy(&dev->lock);
+    close(dev->tty_fd);
+  }
+}
+
+static int rs485_device_init(const char* tty_dev, rs485_dev_t *dev) {
+  int ret = 0;
+
+  dbg("Opening %s\n", tty_dev);
+  dev->tty_fd = rackmon_io->open(rackmon_io);
+  if (dev->tty_fd < 0)
+    return -1;
+
+  ret = pthread_mutex_init(&dev->lock, NULL);
+  if (ret != 0) {
+    OBMC_ERROR(ret, "failed to initialize rs485 dev mutex");
+    close(dev->tty_fd);  /* ignore errors */
+    dev->tty_fd = -1;
+    errno = ret;
+    return -1;
+  }
+
+  return 0;
 }
 
 // This flag is triggered by SIGTERM and SIGINT signal handlers
@@ -959,7 +998,7 @@ static void graceful_exit() {
     }
   }
 
-  close_rs485_dev(&rackmond_config.rs485);
+  rs485_device_cleanup(&rackmond_config.rs485);
 
   exit(ret);
 }
@@ -1567,7 +1606,12 @@ int main(int argc, char** argv) {
   }
 
   OBMC_INFO("rackmon/modbus service starting");
-  ERR_EXIT(open_rs485_dev(DEFAULT_TTY, &rackmond_config.rs485));
+  if (rackmon_plat_init() != 0) {
+    error = -1;
+    goto cleanup;
+  }
+
+  ERR_EXIT(rs485_device_init(DEFAULT_TTY, &rackmond_config.rs485));
 
   error = pthread_create(&monitoring_tid, NULL, monitoring_loop, NULL);
   if (error != 0) {
@@ -1600,7 +1644,8 @@ int main(int argc, char** argv) {
   }
 
 cleanup:
-  close_rs485_dev(&rackmond_config.rs485);
+  rs485_device_cleanup(&rackmond_config.rs485);
+  rackmon_plat_cleanup();
   if (error != 0) {
     error = 1;
   }

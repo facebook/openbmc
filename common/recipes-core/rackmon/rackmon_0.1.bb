@@ -38,6 +38,8 @@ SRC_URI = "file://Makefile \
            file://rackmond.c \
            file://rackmond.h \
            file://rackmonctl.c \
+           file://rackmon_platform.c \
+           file://rackmon_platform.h \
            file://setup-rackmond.sh \
            file://run-rackmond.sh \
            file://rackmon-config.py \

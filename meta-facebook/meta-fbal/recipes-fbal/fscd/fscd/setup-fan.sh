@@ -46,9 +46,6 @@ if [ $mode == 1 ]; then
 elif [[ "$mode" -eq 2 ]] && [[ "$host" -eq 0 ]]; then
   echo probe 4s master fan table
   ln -s /etc/fsc-config4s_M.json ${default_fsc_config_path}
-elif [[ "$mode" -eq 0 ]] && [[ "$host" -eq 0 ]]; then
-  echo probe 8s master fan table
-  ln -s /etc/fsc-config8s_M.json ${default_fsc_config_path}
 else
   echo probe slave fan table
   ln -s /etc/fsc-config_Slave.json ${default_fsc_config_path}

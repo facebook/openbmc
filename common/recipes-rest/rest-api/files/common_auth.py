@@ -21,6 +21,7 @@
 import datetime
 import typing as t
 
+from aiohttp.log import server_logger
 from aiohttp.web import HTTPForbidden, HTTPUnauthorized
 
 
@@ -34,6 +35,7 @@ async def auth_required(request) -> str:
     if await _validate_cert_date(request):
         identity = await _extract_identity(request)
         request["identity"] = identity
+        request.headers["identity"] = identity
         return identity
     raise HTTPUnauthorized()
 
@@ -45,16 +47,32 @@ async def permissions_required(request, permissions: t.List[str], context=None) 
     if await request.app["acl_provider"].is_user_authorized(identity, permissions):
         return True
     else:
+        server_logger.info(
+            "AUTH:Failed to authorize %s for endpoint [%s]%s . Required permissions :%s"
+            % (identity, request.method, request.path, str(permissions))
+        )
         raise HTTPForbidden()
 
 
 async def _validate_cert_date(request) -> bool:
     peercert = request.transport.get_extra_info("peercert")
-    return (
-        peercert
-        and datetime.datetime.strptime(peercert["notAfter"], "%b %d %H:%M:%S %Y %Z")
+    if not peercert:
+        server_logger.info(
+            "AUTH:Client did not send client certificates for request [%s]%s"
+            % (request.method, request.path)
+        )
+        return False
+    cert_valid = (
+        datetime.datetime.strptime(peercert["notAfter"], "%b %d %H:%M:%S %Y %Z")
         > datetime.datetime.now()
     )
+    if not cert_valid:
+        server_logger.info(
+            "AUTH:Client sent client certificates for request [%s]%s, but it expired at: %s"
+            % (request.method, request.path, peercert["notAfter"])
+        )
+        return False
+    return True
 
 
 async def _extract_identity(request) -> str:

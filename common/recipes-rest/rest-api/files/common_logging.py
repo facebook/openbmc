@@ -61,6 +61,11 @@ class JsonSyslogFormatter(OpenBMCJSONFormatter):
         return "rest-api: %s" % (super(JsonSyslogFormatter, self).format(record),)
 
 
+ACCESS_LOG_FORMAT = (
+    '%a %l %u %t "%r" %s %b "%{identity}i" "%{Referrer}i" "%{User-Agent}i"'
+)
+
+
 def get_logger_config(config):
     if os.path.exists("/dev/log"):
         rsyslog_config = {

@@ -49,6 +49,7 @@ extern "C" {
 #define MIN_IPMB_REQ_LEN 7
 #define MAX_IPMB_RES_LEN 1024
 #define MIN_IPMB_RES_LEN 8
+#define IPMB_PING_LEN 3
 
 typedef struct _ipmb_req_t {
   uint8_t res_slave_addr;

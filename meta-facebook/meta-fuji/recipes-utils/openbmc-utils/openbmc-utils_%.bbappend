@@ -19,6 +19,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://setup-gpio.sh \
             file://board-utils.sh \
+            file://boot_info.sh \
             file://setup_board.sh \
             file://setup_i2c.sh \
             file://sol.sh \
@@ -42,6 +43,7 @@ SRC_URI += "file://setup-gpio.sh \
 
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
+    boot_info.sh \
     sol.sh \
     cpld_update.sh \
     wedge_power.sh \

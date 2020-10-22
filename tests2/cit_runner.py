@@ -174,6 +174,7 @@ def arg_parser():
             "wedge100",
             "wedge400",
             "wedge400c",
+            "cloudripper",
             "galaxy100",
             "cmm",
             "minipack",

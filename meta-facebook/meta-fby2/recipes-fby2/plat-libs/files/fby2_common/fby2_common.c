@@ -46,8 +46,6 @@
 #define SBOOT_CPLDDUMP_BIN       "/usr/local/bin/sboot-cpld-dump.sh"
 #define SBOOT_CPLDDUMP_PID       "/var/run/sbootcplddump%d.pid"
 
-#define SPB_REV_FILE "/tmp/spb_rev"
-
 #define FAN_CONFIG_FILE "/tmp/fan_config"
 
 #define PTHREAD_SET_CANCEL_ENABLE() do {                                          \
@@ -228,16 +226,119 @@ read_device(const char *device, int *value) {
   }
 }
 
-static uint8_t
-_get_spb_rev(void) {
-  int rev;
+static int
+write_device(const char *device, const char *value) {
+  FILE *fp;
+  int rc;
+
+  fp = fopen(device, "w");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device for write %s", device);
+#endif
+    return err;
+  }
+
+  rc = fputs(value, fp);
+  fclose(fp);
+
+  if (rc < 0) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to write device %s", device);
+#endif
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
+
+int
+fby2_common_get_spb_rev(void) {
+  int rev, value;
+  int retry = 3;
+  char rev_value[MAX_VALUE_LEN] = {0};
 
   if (read_device(SPB_REV_FILE, &rev)) {
-    printf("Get spb revision failed\n");
-    return -1;
+    if(fby2_common_get_gpio_val("BOARD_REV_ID2", &value))
+      return -1;
+    rev = value * 4;
+    if (fby2_common_get_gpio_val("BOARD_REV_ID1", &value))
+      return -1;
+    rev += value * 2;
+    if (fby2_common_get_gpio_val("BOARD_REV_ID0", &value))
+      return -1;
+    rev += value;
+    snprintf(rev_value, sizeof(rev_value),"%d", rev);
+    do {
+      if (write_device(SPB_REV_FILE, rev_value) == 0)
+        break;
+      syslog(LOG_WARNING,"fby2_common_get_spb_rev write %s failed",SPB_REV_FILE);
+      usleep(10000); // 10 ms
+    } while (--retry);
+    syslog(LOG_WARNING, "fby2_common_get_spb_rev rev: %d",rev);
+    return rev;
   }
 
   return rev;
+}
+
+int
+fby2_common_get_board_id(void) {
+  int board_id;
+  int retry = 3;
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (read_device(SPB_BOARD_ID_FILE, &board_id)) {
+    if (fby2_common_get_gpio_val("BOARD_ID", &board_id) != 0)
+      return -1;
+
+    snprintf(value, sizeof(value),"%d", board_id);
+    do {
+      if (write_device(SPB_BOARD_ID_FILE, value) == 0)
+        break;
+      syslog(LOG_WARNING,"_get_board_id write %s failed",SPB_BOARD_ID_FILE);
+      usleep(10000); // 10 ms
+    } while (--retry);
+    syslog(LOG_WARNING, "_get_board_id board_id: %d",board_id);
+    return board_id;
+  }
+
+  return board_id;
+}
+
+int
+_get_spb_type(int *spb_type) {
+  int ret = 0;
+  int retry = 3;
+
+  do {
+    ret = read_device(SPB_TYPE_FILE, spb_type);
+    if (ret == 0)
+      break;
+    syslog(LOG_WARNING, "_get_spb_type failed");
+    usleep(10000); // 10 ms
+  } while (--retry);
+
+  return ret;
+}
+
+int
+_set_spb_type(int spb_type) {
+  int retry = 3;
+  int ret = 0;
+  char value[MAX_VALUE_LEN] = {0};
+
+  snprintf(value, sizeof(value),"%d", spb_type);
+  do {
+    ret = write_device(SPB_TYPE_FILE, value);
+    if (ret == 0)
+      break;
+    syslog(LOG_WARNING,"_set_spb_type failed");
+    usleep(10000); // 10 ms
+  } while (--retry);
+
+  return ret;
 }
 
 /* Baseboard        Board_ID Rev_ID[2] Rev_ID[1] Rev_ID[0]
@@ -255,13 +356,26 @@ fby2_common_get_spb_type() {
    gpio_value_t board_id;
    uint8_t rev;
 
-   // Board_ID
-   if (fby2_common_get_gpio_val("BOARD_ID", &board_id) != 0) {
-      return -1;
+   // Get SPB type from cache
+   if ( _get_spb_type(&spb_type) == 0) {
+     return spb_type;
    }
 
+   // Board_ID
+   board_id = fby2_common_get_board_id();
+   if (board_id < 0) {
+     syslog(LOG_WARNING, "fby2_common_get_spb_type: fail to get spb board id");
+     return -1;
+   }
+   syslog(LOG_WARNING, "fby2_common_get_spb_type: spb board id %d",board_id);
+
    // Rev_ID
-   rev = _get_spb_rev();
+   rev = fby2_common_get_spb_rev();
+   if (rev < 0) {
+     syslog(LOG_WARNING, "fby2_common_get_spb_type: fail to get spb rev");
+     return -1;
+   }
+   syslog(LOG_WARNING, "fby2_common_get_spb_type: spb rev %d",rev);
 
    if (GPIO_VALUE_HIGH == board_id && BIT(rev, 2)) {
      spb_type = TYPE_SPB_YV250;
@@ -271,16 +385,65 @@ fby2_common_get_spb_type() {
      spb_type = TYPE_SPB_YV2;
    }
 
+   // Set SPB type to cache
+   if (_set_spb_type(spb_type)) {
+     syslog(LOG_WARNING, "fby2_common_get_spb_type: fail to set spb type");
+   }
+   syslog(LOG_WARNING, "fby2_common_get_spb_type: spb type %d",spb_type);
+
    return spb_type;
+}
+
+int
+_get_fan_type(int *fan_type) {
+  int ret = 0;
+  int retry = 3;
+
+  do {
+    ret = read_device(FAN_TYPE_FILE, fan_type);
+    if (ret == 0)
+      break;
+    syslog(LOG_WARNING, "_get_fan_type failed");
+    usleep(10000); // 10 ms
+  } while (--retry);
+
+  return ret;
+}
+
+int
+_set_fan_type(int fan_type) {
+  int retry = 3;
+  int ret = 0;
+  char value[MAX_VALUE_LEN] = {0};
+
+  snprintf(value, sizeof(value),"%d", fan_type);
+  do {
+    ret = write_device(FAN_TYPE_FILE, value);
+    if (ret == 0)
+      break;
+    syslog(LOG_WARNING,"_set_fan_type failed");
+    usleep(10000); // 10 ms
+  } while (--retry);
+
+  return ret;
 }
 
 int
 fby2_common_get_fan_type() {
    int fan_type;
 
+   if (_get_fan_type(&fan_type) == 0) {
+     return fan_type;
+   }
+
    if (fby2_common_get_gpio_val("DUAL_FAN_DETECT", &fan_type) != 0) {
       return -1;
    }
+
+   if (_set_fan_type(fan_type) ) {
+     syslog(LOG_WARNING, "fby2_common_get_fan_type: fail to set fan type");
+   }
+   syslog(LOG_WARNING, "fby2_common_get_fan_type: fan type %d",fan_type);
 
    return fan_type;
 }

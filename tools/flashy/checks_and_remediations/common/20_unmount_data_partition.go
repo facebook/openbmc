@@ -100,13 +100,22 @@ var runDataPartitionUnmountProcess = func() error {
 		return errors.Errorf("Bind mount /mnt to /tmp/mnt failed: %v", err)
 	}
 
-	// cp -r /mnt/data /tmp/mnt
+	// mkdir -p /tmp/mnt/data/etc
+	// expected failures: none
+	cmd = []string{"mkdir", "-p", "/tmp/mnt/data/etc"}
+	_, err, _, stderr = utils.RunCommand(cmd, 30*time.Second)
+	if err != nil {
+		return errors.Errorf("'%v' failed: %v, stderr: %v",
+			strings.Join(cmd, " "), err, stderr)
+	}
+
+	// cp -r /mnt/data/etc/ssh /tmp/mnt/data/etc
 	// expected failures: jffs2 may be corrupt and throw errors
-	log.Printf("Copying /mnt/data contents to /tmp/mnt.")
-	cmd = []string{"cp", "-r", "/mnt/data", "/tmp/mnt"}
+	log.Printf("Copying /mnt/data/etc/ssh to /tmp/mnt/data/etc.")
+	cmd = []string{"cp", "-r", "/mnt/data/etc/ssh", "/tmp/mnt/data/etc"}
 	_, err, _, stderr = utils.RunCommand(cmd, 2*time.Minute)
 	if err != nil {
-		return errors.Errorf("Copying /mnt/data contents to /tmp/mnt failed: "+
+		return errors.Errorf("Copying /mnt/data/etc/ssh to /tmp/mnt/data/etc failed: "+
 			"%v, stderr: %v", err, stderr)
 	}
 

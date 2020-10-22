@@ -180,7 +180,8 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 			mountErr: nil,
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
-				"cp -r /mnt/data /tmp/mnt",
+				"mkdir -p /tmp/mnt/data/etc",
+				"cp -r /mnt/data/etc/ssh /tmp/mnt/data/etc",
 				"umount /mnt/data",
 			},
 			want: nil,
@@ -193,7 +194,8 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 			mountErr: nil,
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
-				"cp -r /mnt/data /tmp/mnt",
+				"mkdir -p /tmp/mnt/data/etc",
+				"cp -r /mnt/data/etc/ssh /tmp/mnt/data/etc",
 				"umount /mnt/data",
 				"umount /mnt/data",
 				"umount /mnt/data",
@@ -215,9 +217,10 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 			mountErr: nil,
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
-				"cp -r /mnt/data /tmp/mnt",
+				"mkdir -p /tmp/mnt/data/etc",
+				"cp -r /mnt/data/etc/ssh /tmp/mnt/data/etc",
 			},
-			want: errors.Errorf("Copying /mnt/data contents to /tmp/mnt failed: cp failed, stderr: "),
+			want: errors.Errorf("Copying /mnt/data/etc/ssh to /tmp/mnt/data/etc failed: cp failed, stderr: "),
 		},
 		{
 			name: "mkdir error",

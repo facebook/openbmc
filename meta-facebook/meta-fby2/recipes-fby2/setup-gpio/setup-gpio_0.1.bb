@@ -32,7 +32,7 @@ do_install() {
     ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
   done
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
-  update-rc.d -r ${D} setup-gpio.sh start 59 5 .
+  update-rc.d -r ${D} setup-gpio.sh start 50 S .
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

@@ -44,4 +44,5 @@ IMAGE_INSTALL += " \
   libpldm \
   slot-util \
   snapshot-util \
+  name-util \
   "

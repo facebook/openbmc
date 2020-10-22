@@ -99,31 +99,6 @@ if [ $kernel_ver == 4 ]; then
     config_adc 15    0  1000 0
 fi
 
-# Barseboard Yosemite V2 & Yosemite V2.50
-# Baseboard        Board_ID Rev_ID[2] Rev_ID[1] Rev_ID[0]
-# Test board PoC       1       0         0         0
-# Test board EVT       1       0         0         1
-# YV2 PoC              0       0         0         0
-# YV2 EVT              0       0         0         1
-# YV2 DVT              0       0         1         0
-# YV2 PVT              0       0         1         1
-# YV2.50               1       1         X         X
-
-# Enable GPIOY3: BoardId (Yosemite V2 or Yosemite V2.50)
-devmem_clear_bit $(scu_addr a4) 11
-devmem_clear_bit $(scu_addr 94) 11
-gpio_export BOARD_ID GPIOY3
-
-# Set up to read the board revision pins, GPIOY0, Y1, Y2
-devmem_clear_scu70_bit 19
-devmem_clear_bit $(scu_addr a4) 8
-devmem_clear_bit $(scu_addr a4) 9
-devmem_clear_bit $(scu_addr a4) 10
-
-gpio_export BOARD_REV_ID0 GPIOY0
-gpio_export BOARD_REV_ID1 GPIOY1
-gpio_export BOARD_REV_ID2 GPIOY2
-
 spb_type=$(get_spb_type)
 
 # ADM1278 Configuration

@@ -471,6 +471,8 @@ main(int argc, char **argv) {
 		gpio_export_by_name(ASPPED_CHIP, "GPIOG7", "YV250_USB_OCP_UART_SWITCH_N");
 	}
 
+	fby2_common_get_fan_type(); // initialize fan type
+
 	// Disable PWM reset during external reset
 	phymem_dword_clear_bit(SCU_BASE, REG_SCU9C, 17);
 

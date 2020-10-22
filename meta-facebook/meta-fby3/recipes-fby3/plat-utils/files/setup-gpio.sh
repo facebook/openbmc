@@ -95,13 +95,13 @@ devmem_clear_bit $(scu_addr 84) 3
 gpio_export SMB_RST_SECONDARY_BMC_N_R GPIOG3
 
 # GPIOM4-FM_PWRBRK_PRIMARY_R
-# GPIOM5-FM_PWRBRK_SECONDARY_R
 devmem_clear_bit $(scu_addr 84) 28
-devmem_clear_bit $(scu_addr 84) 29
 gpio_export FM_PWRBRK_PRIMARY_R GPIOM4
-gpio_export FM_PWRBRK_SECONDARY_R GPIOM5
 gpio_set FM_PWRBRK_PRIMARY_R 0
-gpio_set FM_PWRBRK_SECONDARY_R 0
+
+# GPIOM5-OCP_NIC_PRSNT_BMC_N
+devmem_clear_bit $(scu_addr 84) 29
+gpio_export OCP_NIC_PRSNT_BMC_N GPIOM5
 
 # GPIOQ7-FM_BMC_TPM_PRSNT_N
 devmem_clear_bit $(scu_addr 2C) 29

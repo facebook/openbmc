@@ -20,6 +20,8 @@
 
 import subprocess
 
+from utils.cit_logger import Logger
+
 
 def run_cmd(cmd=None):
     if not cmd:
@@ -32,6 +34,8 @@ def run_shell_cmd(cmd=None, ignore_err=False):
     if not cmd:
         raise Exception("cmd not set")
     try:
+        Logger.info("Executing cmd= {}".format(cmd))
+
         f = subprocess.Popen(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
@@ -40,6 +44,8 @@ def run_shell_cmd(cmd=None, ignore_err=False):
             err = err.decode("utf-8")
             if len(err) > 0:
                 raise Exception(err + " [FAILED]")
+        if f.returncode != 0:
+            raise Exception("{} exited with non-zero exit code".format(cmd))
         info = data.decode("utf-8")
     except Exception as e:
         raise Exception("Failed to run command = {} and exception {}".format(cmd, e))

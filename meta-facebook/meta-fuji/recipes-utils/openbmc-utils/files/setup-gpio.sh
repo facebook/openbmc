@@ -179,7 +179,8 @@ gpio_set_value BMC_UART_SEL_2 0
 gpio_set_value BMC_UART_SEL_3 0
 # BMC GPIO set reserved
 gpio_set_value BMC_GPIO53 0
-gpio_set_value BMC_GPIO55 0
+# set BMC_GPIO55 High to prevent EMMC disable
+gpio_set_value BMC_GPIO55 1
 gpio_set_value BMC_GPIO57 0
 gpio_set_value BMC_GPIO61 0
 gpio_set_value BMC_GPIO63 0

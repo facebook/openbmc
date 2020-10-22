@@ -47,10 +47,12 @@ func (m *mockFlashDevice) Validate() error         { return nil }
 func TestEraseDataPartition(t *testing.T) {
 	// mock and defer restore GetFlashDevice, DirExists and RunCommand
 	getFlashDeviceOrig := flashutils.GetFlashDevice
+	isDataPartitionMountedOrig := utils.IsDataPartitionMounted
 	dirExistsOrig := fileutils.DirExists
 	runCommandOrig := utils.RunCommand
 	defer func() {
 		flashutils.GetFlashDevice = getFlashDeviceOrig
+		utils.IsDataPartitionMounted = isDataPartitionMountedOrig
 		fileutils.DirExists = dirExistsOrig
 		utils.RunCommand = runCommandOrig
 	}()
@@ -61,6 +63,8 @@ func TestEraseDataPartition(t *testing.T) {
 		name              string
 		getFlashDeviceErr error
 		dirsExist         []string
+		dataPartMounted   bool
+		dataPartErr       error
 		wantCmds          []string
 		cmdErr            error
 		want              step.StepExitError
@@ -72,14 +76,18 @@ func TestEraseDataPartition(t *testing.T) {
 				"/mnt/data/Diag_FAB",
 				"/mnt/data/Diag_LC",
 			},
-			wantCmds: []string{"flash_eraseall -j /dev/mock"},
-			cmdErr:   nil,
-			want:     nil,
+			dataPartMounted: false,
+			dataPartErr:     nil,
+			wantCmds:        []string{"flash_eraseall -j /dev/mock"},
+			cmdErr:          nil,
+			want:            nil,
 		},
 		{
 			name:              "No 'data0' partition found",
 			getFlashDeviceErr: errors.Errorf("not found"),
 			dirsExist:         []string{},
+			dataPartMounted:   false,
+			dataPartErr:       nil,
 			wantCmds:          []string{},
 			cmdErr:            nil,
 			want:              nil,
@@ -88,6 +96,8 @@ func TestEraseDataPartition(t *testing.T) {
 			name:              "No Diag paths found",
 			getFlashDeviceErr: nil,
 			dirsExist:         []string{},
+			dataPartMounted:   false,
+			dataPartErr:       nil,
 			wantCmds:          []string{},
 			cmdErr:            nil,
 			want:              nil,
@@ -99,10 +109,42 @@ func TestEraseDataPartition(t *testing.T) {
 				"/mnt/data/Diag_FAB",
 				"/mnt/data/Diag_LC",
 			},
-			wantCmds: []string{"flash_eraseall -j /dev/mock"},
-			cmdErr:   errors.Errorf("flash_eraseall failed"),
+			dataPartMounted: false,
+			dataPartErr:     nil,
+			wantCmds:        []string{"flash_eraseall -j /dev/mock"},
+			cmdErr:          errors.Errorf("flash_eraseall failed"),
 			want: step.ExitSafeToReboot{
 				errors.Errorf("Failed to erase data0 partition: flash_eraseall failed"),
+			},
+		},
+		{
+			name:              "error checking /mnt/data mount status",
+			getFlashDeviceErr: nil,
+			dirsExist: []string{
+				"/mnt/data/Diag_FAB",
+			},
+			dataPartMounted: false,
+			dataPartErr:     errors.Errorf("check failed"),
+			wantCmds:        []string{},
+			cmdErr:          nil,
+			want: step.ExitSafeToReboot{
+				errors.Errorf("Failed to check if /mnt/data is mounted: check failed"),
+			},
+		},
+		{
+			name:              "/mnt/data still mounted (RO, possibly)",
+			getFlashDeviceErr: nil,
+			dirsExist: []string{
+				"/mnt/data/Diag_FAB",
+			},
+			dataPartMounted: true,
+			dataPartErr:     nil,
+			wantCmds:        []string{},
+			cmdErr:          nil,
+			want: step.ExitSafeToReboot{
+				errors.Errorf("/mnt/data is still mounted, this may mean that the " +
+					"unmount data partition step fell back to remounting RO. This current step " +
+					"needs /mnt/data to be completely unmounted!"),
 			},
 		},
 	}
@@ -122,6 +164,9 @@ func TestEraseDataPartition(t *testing.T) {
 			utils.RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
 				gotCmds = append(gotCmds, strings.Join(cmdArr, " "))
 				return 0, tc.cmdErr, "", ""
+			}
+			utils.IsDataPartitionMounted = func() (bool, error) {
+				return tc.dataPartMounted, tc.dataPartErr
 			}
 
 			got := eraseDataPartition(step.StepParams{})

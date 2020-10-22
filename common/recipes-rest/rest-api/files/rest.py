@@ -29,7 +29,8 @@ import ssl
 import sys
 
 from aiohttp import web
-from common_logging import get_logger_config
+from aiohttp.log import access_logger
+from common_logging import ACCESS_LOG_FORMAT, get_logger_config
 from common_middlewares import auth_enforcer, jsonerrorhandler
 from rest_config import load_acl_provider, parse_config
 from setup_plat_routes import setup_plat_routes
@@ -64,7 +65,9 @@ setup_plat_routes(app, config)
 
 
 loop = asyncio.get_event_loop()
-handler = app.make_handler()
+handler = app.make_handler(
+    access_log=access_logger, access_log_format=ACCESS_LOG_FORMAT
+)
 
 servers.extend([loop.create_server(handler, "*", port) for port in config["ports"]])
 

@@ -763,6 +763,19 @@ conn_handler(client_t *cli) {
     return -1;
   }
 
+  if (req_len == IPMB_PING_LEN) { // get IANA then sends back
+    res_len = IPMB_PING_LEN;
+    res_buf[0] = req_buf[0];
+    res_buf[1] = req_buf[1];
+    res_buf[2] = req_buf[2];
+    if (ipc_send_resp(cli, res_buf, res_len) != 0) {
+      OBMC_ERROR(errno, "%s: ipc_send_resp() failed", IPMBD_SVC_THREAD);
+      return -1;
+    }
+    syslog(LOG_WARNING, "%s IPMB BUS_ID=%x ping scuess\n", __func__,ipmbd_config.bus_id);
+    return 0;
+  }
+
   if(ipmbd_config.bic_update_enabled) {
     if(!((req_buf[1] == 0xe0) &&
         (req_buf[5] == CMD_OEM_1S_ENABLE_BIC_UPDATE))) {

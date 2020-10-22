@@ -46,6 +46,7 @@ type MemInfo struct {
 
 const ProcMtdFilePath = "/proc/mtd"
 const etcIssueFilePath = "/etc/issue"
+const procMountsPath = "/proc/mounts"
 
 // other flashers + the "flashy" binary
 var otherFlasherBaseNames = []string{
@@ -376,4 +377,20 @@ var GetMTDMapFromSpecifier = func(deviceSpecifier string) (map[string]string, er
 			deviceSpecifier)
 	}
 	return mtdMap, nil
+}
+
+// IsDataPartitionMounted checks if /mnt/data is mounted
+var IsDataPartitionMounted = func() (bool, error) {
+	procMountsDat, err := fileutils.ReadFile(procMountsPath)
+	if err != nil {
+		return false, errors.Errorf("Cannot read /proc/mounts: %v", err)
+	}
+
+	regEx := `(?m)^[^ ]+ /mnt/data [^ ]+ [^ ]+ [0-9]+ [0-9]+$`
+	regExMap, err := GetAllRegexSubexpMap(regEx, string(procMountsDat))
+	if err != nil {
+		return false, errors.Errorf("regex error: %v", err)
+	}
+
+	return len(regExMap) != 0, nil
 }

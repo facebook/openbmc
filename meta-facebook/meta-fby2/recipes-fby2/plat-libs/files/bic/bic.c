@@ -56,6 +56,7 @@
 
 #define BIC_SIGN_SIZE 32
 #define BIC_UPDATE_RETRIES 12
+#define PING_IPMB_RETRIES 5
 #define BIC_UPDATE_TIMEOUT 500
 #define GPV2_BIC_PLAT_STR "F09B"
 #define ND_BIC_PLAT_STR "ND"
@@ -929,6 +930,45 @@ bic_send:
   return ret;
 }
 
+// Check IPMB start or not
+static int
+_ping_ipmb(uint8_t slot_id) {
+  uint8_t rbuf[3] = {0};
+  uint8_t tbuf[3] = {0x15, 0xA0, 0x00}; // IANA
+  uint16_t tlen = 2;
+  uint8_t rlen = 2;
+  uint8_t bus_id;
+  int ret = 0;
+  int retry = 0;
+
+  if (!is_bic_ready(slot_id)) {
+    return -1;
+  }
+
+  ret = get_ipmb_bus_id(slot_id);
+  if (ret < 0) {
+    return ret;
+  }
+
+  bus_id = (uint8_t) ret;
+
+  while(retry < 3) {
+    // Invoke IPMB library handler
+    ret = lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
+    if (ret != 0) {
+      syslog(LOG_ERR, "%s: Failed to ping.\n", __func__);
+    }
+
+    if (rlen == IPMB_PING_LEN && !memcpy(tbuf,rbuf,IPMB_PING_LEN) ) {
+      break;
+    }
+
+    retry++;
+    msleep(20);
+  }
+  return ret;
+}
+
 // Read Firwmare Versions of various components
 static int
 _enable_bic_update(uint8_t slot_id) {
@@ -1422,17 +1462,33 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
     sprintf(cmd, "/usr/local/bin/ipmbd -u %d %d > /dev/null 2>&1 &", get_ipmb_bus_id(slot_id), slot_id);
     system(cmd);
     printf("start ipmbd -u for this slot %x..\n",slot_id);
+    syslog(LOG_WARNING, "start ipmbd -u for this slot %x..\n",slot_id);
 
-    sleep(2);
+    for (i = 0; i < PING_IPMB_RETRIES; i++) {
+      if (!_ping_ipmb(slot_id)) {
+        printf("ipmbd ready for update after %d tries\n", i);
+        break;
+      }
+      sleep(1);
+    }
 
-    // Enable Bridge-IC update
-    _enable_bic_update(slot_id);
+    if (i != PING_IPMB_RETRIES) { // ipmb ready
+      // Enable Bridge-IC update
+      syslog(LOG_WARNING, "_enable_bic_update slot %x..\n",slot_id);
+      _enable_bic_update(slot_id);
+    }
 
     // Kill ipmb daemon "--enable-bic-update" for this slot
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd, "ps -w | grep -v 'grep' | grep 'ipmbd -u %d' |awk '{print $1}'| xargs kill", get_ipmb_bus_id(slot_id));
     system(cmd);
     printf("stop ipmbd for slot %x..\n", slot_id);
+
+    if (i == BIC_UPDATE_RETRIES) { // ipmb not ready
+      printf("ipmbd is NOT ready for update\n");
+      syslog(LOG_CRIT, "bic_update_fw: ipmbd is NOT ready for update\n");
+      goto error_exit;
+    }
   }
 
   // Wait for SMB_BMC_3v3SB_ALRT_N

@@ -128,7 +128,10 @@ int main(int argc, char **argv) {
 
     /* Read and dump response from server. */
     while((n_read = read(clisock, readbuf, sizeof(readbuf))) > 0) {
-      write(STDOUT_FILENO, readbuf, n_read);
+        if (write(STDOUT_FILENO, readbuf, n_read) < 0) {
+            fprintf(stderr, "ERROR: could not write to STDOUT: %d %s\n",
+                    error, strerror(errno));
+        }
     }
 
 cleanup:

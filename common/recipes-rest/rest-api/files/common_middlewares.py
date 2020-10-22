@@ -56,10 +56,18 @@ async def auth_enforcer(app, handler):
         # We only allow GET endpoints without authorization.
         # Anything else will be forbidden.
         if not acls and request.method != "GET":
+            server_logger.info(
+                "AUTH:Missing acl config for non-get[%s] endpoint %s. Blocking access"
+                % (request.method, request.path)
+            )
             raise HTTPForbidden()
         if acls:
-            await common_auth.auth_required(request)
+            identity = await common_auth.auth_required(request)
             await common_auth.permissions_required(request, acls)
+            server_logger.info(
+                "AUTH:Authorized %s for [%s]%s"
+                % (identity, request.method, request.path)
+            )
         resp = await handler(request)
         return resp
 

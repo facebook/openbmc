@@ -426,9 +426,23 @@ static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
     return -1;
   }
 
-  error = modbuscmd(&req, baudrate);
-  if (delay != 0) {
-    usleep(delay);
+  /*
+   * Note: Some platform like Wedge400 has a lot of modbus timeout errors and
+   * sometimes BMC can not detect one of the Rack PSUs.
+   * We tried fix this issue with HW change to add external crystal, but this
+   * need to update FTDI eeprom to enable the external crystal. However, FTDI
+   * can not boot up if update FTDI chip eeprom fail, after communicate with
+   * vendor and FB, finally we choose software retry to fix the issue as a
+   * workaround solution.
+   */
+  for (int retry = 0; retry < MAX_RETRY; retry++) {
+    error = modbuscmd(&req, baudrate);
+    if (delay != 0) {
+      usleep(delay);
+    }
+    if (error >= 0) {
+      break;
+    }
   }
 
   dev_unlock(dev);
@@ -1528,6 +1542,8 @@ int main(int argc, char** argv) {
   if (getenv("RACKMOND_FOREGROUND") == NULL) {
     obmc_log_unset_std_stream();
     daemon(0, 0);
+    if (daemon(0, 0) < 0)
+      OBMC_ERROR(errno, "daemon error");
   }
 
   if (getenv("RACKMOND_TIMEOUT") != NULL) {

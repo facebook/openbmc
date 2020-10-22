@@ -54,18 +54,10 @@ if [ $kernel_ver == 4 ]; then
     # Fan 3: PWM 0, Tacho3
     
     fan_num=0
-    board_id=`cat /sys/class/gpio/gpio195/value`
-    rev_id2=`cat /sys/class/gpio/gpio194/value`
-    if [[ $board_id == "1" && $rev_id2 == "1" ]]; then
-       spb_type=1
-    else
-       spb_type=0
-    fi
-    fan_type=`cat /sys/class/gpio/gpio54/value`
-else
-    spb_type=$(get_spb_type)
-    fan_type=$(gpio_get DUAL_FAN_DETECT G6)
 fi
+
+spb_type=$(get_spb_type)
+fan_type=$(get_fan_type)
 
 if [[ $spb_type == "1" && $fan_type == "0" ]]; then
     # 0 base

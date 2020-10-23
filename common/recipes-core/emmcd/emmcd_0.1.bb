@@ -7,8 +7,9 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://emmcd.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
-
-DEPENDS_append = "update-rc.d-native"
+LDFLAGS += "-llog -lmisc-utils"
+RDEPENDS_${PN} += "liblog libmisc-utils"
+DEPENDS_append = "update-rc.d-native liblog libmisc-utils"
 
 SRC_URI = "file://Makefile \
            file://emmcd.c \
@@ -43,4 +44,3 @@ dst="${D}/usr/local/fbpackages/${pkgdir}"
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/emmcd ${prefix}/local/bin ${sysconfdir} "
-

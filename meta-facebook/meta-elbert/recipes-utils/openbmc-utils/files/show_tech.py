@@ -114,6 +114,16 @@ def switchcard_debuginfo(verbose=False):
     # ELBERTTODO
 
 
+def scm_debuginfo(verbose=False):
+    print("################################")
+    print("##### SUPERVISOR DEBUG INFO ####")
+    print("################################\n")
+    if verbose:
+        print("##### SCM CPLD I2CDUMP #####\n")
+        print(runCmd("i2cdump -f -y 12 0x43", echo=True))
+    # ELBERTTODO
+
+
 def pim_debuginfo():
     print("################################")
     print("######## PIM DEBUG INFO ########")
@@ -146,6 +156,10 @@ def logDump():
         )
     )
     print("#### DMESG LOG ####\n{}\n\n".format(runCmd("dmesg", echo=True)))
+    print("################################")
+    print("########## HOST (uServer) CPU LOGS ##########")
+    print("################################\n")
+    # ELBERTTODO Add backup logs as well
     print(
         "#### mTerm LOG ####\n{}\n\n".format(
             runCmd("cat /var/log/mTerm_wedge.log", echo=True, verbose=True)
@@ -231,6 +245,7 @@ def showtech(verbose=False):
         )
         fan_debuginfo(verbose=verbose)
         switchcard_debuginfo(verbose=verbose)
+        scm_debuginfo(verbose=verbose)
         pim_debuginfo()
         i2cDetectDump()
         gpioDump()

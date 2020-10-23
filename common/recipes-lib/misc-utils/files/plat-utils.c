@@ -23,7 +23,12 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <fcntl.h>
+#include <sys/file.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/utsname.h>
+#include <linux/limits.h>
 #include <linux/version.h>
 
 #include "misc-utils.h"
@@ -170,4 +175,45 @@ k_version_t get_kernel_version(void)
 	}
 
 	return KERNEL_VERSION(versions[0], versions[1], versions[2]);
+}
+
+/*
+ * Lock pid file to ensure there is no duplicated instance running.
+ *
+ * Returns file descriptor if the pid file can be locked; otherwise -1 is
+ * returned.
+ */
+int single_instance_lock(const char *prog_name)
+{
+	int fd, ret;
+	char path[PATH_MAX];
+
+	snprintf(path, sizeof(path), "/var/run/%s.pid", prog_name);
+
+	fd = open(path, O_CREAT | O_RDWR, 0666);
+	if (fd < 0)
+		return -1;
+
+	ret = flock(fd, LOCK_EX | LOCK_NB);
+	if (ret < 0) {
+		int saved_errno = errno;
+		close(fd);
+		errno = saved_errno;
+		return -1;
+	}
+
+	return fd;
+}
+
+/*
+ * Release the resources acquired by single_instance_lock().
+ *
+ * Callers don't have to call this function explicitly because all the
+ * file descriptors will be closed when the process is terminated.
+ *
+ * Returns 0 for success, and -1 on failures.
+ */
+int single_instance_unlock(int lock_fd)
+{
+	return close(lock_fd);
 }

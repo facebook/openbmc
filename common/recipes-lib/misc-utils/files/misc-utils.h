@@ -109,6 +109,8 @@ bool path_islink(const char *path);
 cpu_model_t get_cpu_model(void);
 soc_model_t get_soc_model(void);
 k_version_t get_kernel_version(void);
+int single_instance_lock(const char *name);
+int single_instance_unlock(int fd);
 
 #ifdef __cplusplus
 } /* extern "C" */

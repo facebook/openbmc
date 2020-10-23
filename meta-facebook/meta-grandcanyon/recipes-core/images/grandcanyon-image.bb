@@ -25,4 +25,6 @@ IMAGE_INSTALL += " \
   fan-util \
   fscd \
   guid-util \
+  sensor-util \
+  sensor-mon \
   "

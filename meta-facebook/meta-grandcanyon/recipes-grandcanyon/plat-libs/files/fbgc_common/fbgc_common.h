@@ -41,6 +41,10 @@ extern "C" {
 #define NIC_FRU_BUS  8
 #define NIC_FRU_ADDR 0x50
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(a)   (sizeof(a) / sizeof((a)[0]))
+#endif
+
 enum {
   FRU_ALL = 0,
   FRU_SERVER,

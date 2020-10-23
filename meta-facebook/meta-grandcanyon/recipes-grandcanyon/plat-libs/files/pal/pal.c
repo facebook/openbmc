@@ -43,6 +43,7 @@
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, iocm";
 const char pal_fru_list_print[] = "all, server, bmc, uic, dpb, scc, nic, iocm";
 const char pal_fru_list_rw[] = "server, bmc, uic, nic, iocm";
+const char pal_fru_list_sensor_history[] = "all, server, uic, nic, iocm";
 const char pal_server_list[] = "server";
 const char *fru_str_list[] = {"all", "server", "bmc", "uic", "dpb", "scc", "nic", "iocm"};
 const char *pal_server_fru_list[NUM_SERVER_FRU] = {"server"};

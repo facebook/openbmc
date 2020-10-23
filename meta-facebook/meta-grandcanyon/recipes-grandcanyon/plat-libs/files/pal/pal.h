@@ -29,6 +29,7 @@ extern "C" {
 #include <openbmc/kv.h>
 #include <facebook/fbgc_common.h>
 #include <facebook/fbgc_fruid.h>
+#include "pal_sensors.h"
 
 #define MAX_NUM_FRUS (FRU_CNT-1)
 #define MAX_NODES    1
@@ -40,6 +41,25 @@ extern "C" {
 #define GUID_SIZE 16
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
+
+enum {
+  I2C_BUS_0 = 0,
+  I2C_BUS_1,
+  I2C_BUS_2,
+  I2C_BUS_3,
+  I2C_BUS_4,
+  I2C_BUS_5,
+  I2C_BUS_6,
+  I2C_BUS_7,
+  I2C_BUS_8,
+  I2C_BUS_9,
+  I2C_BUS_10,
+  I2C_BUS_11,
+  I2C_BUS_12,
+  I2C_BUS_13,
+  I2C_BUS_14,
+  I2C_BUS_15,
+};
 
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
@@ -62,6 +82,11 @@ int pal_get_fru_name(uint8_t fru, char *name);
 int pal_get_fan_name(uint8_t fan_id, char *name);
 int pal_set_fan_speed(uint8_t fan_id, uint8_t pwm);
 int pal_get_pwm_value(uint8_t fan_id, uint8_t *pwm);
+int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
+int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
+int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
+int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value);
+int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
 
 #ifdef __cplusplus
 } // extern "C"

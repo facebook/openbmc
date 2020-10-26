@@ -33,7 +33,26 @@
 
 #define POLL_TIMEOUT -1 /* Forever */
 
+enum {
+  ERR_HSC_1_ALERT = 0,
+  ERR_HSC_2_ALERT,
+  ERR_HSC_AUX_ALERT,
+  ERR_HSC_1_THROT,
+  ERR_HSC_2_THROT,
+  ERR_ASIC_01_ALERT,
+  ERR_ASIC_23_ALERT,
+  ERR_ASIC_45_ALERT,
+  ERR_ASIC_67_ALERT,
+  ERR_PAX_0_ALERT,
+  ERR_PAX_1_ALERT,
+  ERR_PAX_2_ALERT,
+  ERR_PAX_3_ALERT,
+  ERR_CPLD_ALERT,
+  ERR_UNKNOWN
+};
+
 bool g_sys_pwr_off;
+pthread_mutex_t led_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay, bool low_active)
 {
@@ -61,6 +80,64 @@ static gpio_value_t gpio_get(const char *shadow)
   return value;
 }
 
+static int set_dbg_led(uint8_t num)
+{
+  const char *shadows[] = {
+    "LED_POSTCODE_0", "LED_POSTCODE_1", "LED_POSTCODE_2", "LED_POSTCODE_3",
+    "LED_POSTCODE_4", "LED_POSTCODE_5", "LED_POSTCODE_6", "LED_POSTCODE_7"
+  };
+  gpio_desc_t *gpio;
+
+  for (int i = 0; i < 8; i++) {
+    gpio = gpio_open_by_shadow(shadows[i]);
+    if (!gpio) {
+      syslog(LOG_WARNING, "%s: Open GPIO %s failed", __func__, shadows[i]);
+      return -1;
+    }
+    if (gpio_set_value(gpio, (num & (0x1 << i))? GPIO_VALUE_HIGH: GPIO_VALUE_LOW) < 0) {
+      syslog(LOG_WARNING, "%s: Set GPIO %s failed", __func__, shadows[i]);
+      gpio_close(gpio);
+      return -1;
+    }
+    gpio_close(gpio);
+  }
+  return 0;
+}
+
+static int sync_dbg_led(uint8_t err_bit, bool assert)
+{
+  static int err = 0;
+  static uint8_t err_code[] = {
+    0x01, // ERR_HSC_1_ALERT
+    0x02, // ERR_HSC_2_ALERT
+    0x03, // ERR_HSC_AUX_ALERT
+    0x04, // ERR_HSC_1_THROT
+    0x05, // ERR_HSC_2_THROT
+    0x10, // ERR_ASIC_01_ALERT
+    0x11, // ERR_ASIC_23_ALERT
+    0x12, // ERR_ASIC_45_ALERT
+    0x13, // ERR_ASIC_67_ALERT
+    0x20, // ERR_PAX_0_ALERT
+    0x21, // ERR_PAX_1_ALERT
+    0x22, // ERR_PAX_2_ALERT
+    0x23, // ERR_PAX_3_ALERT
+    0x30, // ERR_CPLD_ALERT
+  };
+
+  pthread_mutex_lock(&led_mutex);
+  if (assert)
+    err |= (0x1 << err_bit);
+  else
+    err &= ~(0x1 << err_bit);
+  pthread_mutex_unlock(&led_mutex);
+
+  for (int i = 0; i < ERR_UNKNOWN; i++) {
+    if (err & (0x1 << i))
+      return set_dbg_led(err_code[i]);
+  }
+  return set_dbg_led(0x00);
+}
+
 // Generic Event Handler for GPIO changes
 static void gpio_event_handle_low_active(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
@@ -70,20 +147,6 @@ static void gpio_event_handle_low_active(gpiopoll_pin_t *gp, gpio_value_t last, 
 static void gpio_event_handle_high_active(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
   log_gpio_change(gp, curr, 0, false);
-}
-
-// Specific Event Handlers
-static void gpio_event_handle_power_btn(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
-{
-  log_gpio_change(gp, curr, 0, true);
-}
-
-static void gpio_event_handle_low_active_pwr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
-{
-  if (g_sys_pwr_off)
-    return;
-
-  gpio_event_handle_low_active(gp, last, curr);
 }
 
 static void gpio_event_handle_pwr_brake(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
@@ -106,10 +169,128 @@ static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gp
   gpio_event_handle_low_active(gp, last, curr);
 }
 
+// Specific Event Handlers
+static void gpio_event_handle_power_btn(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  log_gpio_change(gp, curr, 0, true);
+}
+
 static void asic_def_prsnt(gpiopoll_pin_t *gp, gpio_value_t curr)
 {
   if (curr == GPIO_VALUE_HIGH)
     log_gpio_change(gp, curr, 0, false);
+}
+
+static void gpio_event_hsc_1_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  gpio_event_handle_pwr_brake(gp, last, curr);
+  sync_dbg_led(ERR_HSC_1_ALERT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+static void gpio_event_hsc_2_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  gpio_event_handle_pwr_brake(gp, last, curr);
+  sync_dbg_led(ERR_HSC_2_ALERT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+static void gpio_event_hsc_aux_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  gpio_event_handle_pwr_brake(gp, last, curr);
+  sync_dbg_led(ERR_HSC_AUX_ALERT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+static void gpio_event_hsc_1_throt(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  gpio_event_handle_pwr_brake(gp, last, curr);
+  sync_dbg_led(ERR_HSC_1_THROT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+static void gpio_event_hsc_2_throt(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  gpio_event_handle_pwr_brake(gp, last, curr);
+  sync_dbg_led(ERR_HSC_2_THROT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+static void gpio_event_asic01_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  if (g_sys_pwr_off)
+    return;
+  gpio_event_handle_low_active(gp, last, curr);
+  sync_dbg_led(ERR_ASIC_01_ALERT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+static void gpio_event_asic23_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  if (g_sys_pwr_off)
+    return;
+  gpio_event_handle_low_active(gp, last, curr);
+  sync_dbg_led(ERR_ASIC_23_ALERT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+static void gpio_event_asic45_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  if (g_sys_pwr_off)
+    return;
+  gpio_event_handle_low_active(gp, last, curr);
+  sync_dbg_led(ERR_ASIC_45_ALERT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+static void gpio_event_asic67_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  if (g_sys_pwr_off)
+    return;
+  gpio_event_handle_low_active(gp, last, curr);
+  sync_dbg_led(ERR_ASIC_67_ALERT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+static void gpio_event_pax_0_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  if (g_sys_pwr_off)
+    return;
+  if (pal_is_fw_update_ongoing(FRU_MB))
+    return;
+
+  gpio_event_handle_low_active(gp, last, curr);
+  sync_dbg_led(ERR_PAX_0_ALERT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+static void gpio_event_pax_1_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  if (g_sys_pwr_off)
+    return;
+  if (pal_is_fw_update_ongoing(FRU_MB))
+    return;
+
+  gpio_event_handle_low_active(gp, last, curr);
+  sync_dbg_led(ERR_PAX_1_ALERT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+static void gpio_event_pax_2_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  if (g_sys_pwr_off)
+    return;
+  if (pal_is_fw_update_ongoing(FRU_MB))
+    return;
+
+  gpio_event_handle_low_active(gp, last, curr);
+  sync_dbg_led(ERR_PAX_2_ALERT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+static void gpio_event_pax_3_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  if (g_sys_pwr_off)
+    return;
+  if (pal_is_fw_update_ongoing(FRU_MB))
+    return;
+
+  gpio_event_handle_low_active(gp, last, curr);
+  sync_dbg_led(ERR_PAX_3_ALERT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+static void gpio_event_cpld_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  gpio_event_handle_low_active(gp, last, curr);
+  sync_dbg_led(ERR_CPLD_ALERT, curr == GPIO_VALUE_LOW? true: false);
 }
 
 // GPIO table to be monitored
@@ -117,20 +298,20 @@ static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
   {"BMC_PWR_BTN_IN_N", "Power button", GPIO_EDGE_BOTH, gpio_event_handle_power_btn, NULL},
   {"SYS_PWR_READY", "System power off", GPIO_EDGE_BOTH, gpio_event_handle_pwr_good, NULL},
-  {"PMBUS_BMC_1_ALERT_N", "HSC 1 Alert", GPIO_EDGE_BOTH, gpio_event_handle_pwr_brake, NULL},
-  {"PMBUS_BMC_2_ALERT_N", "HSC 2 Alert", GPIO_EDGE_BOTH, gpio_event_handle_pwr_brake, NULL},
-  {"PMBUS_BMC_3_ALERT_N", "HSC AUX Alert", GPIO_EDGE_BOTH, gpio_event_handle_pwr_brake, NULL},
-  {"HSC1_THROT_N", "HSC 1 Throttle", GPIO_EDGE_BOTH, gpio_event_handle_pwr_brake, NULL},
-  {"HSC2_THROT_N", "HSC 2 Throttle", GPIO_EDGE_BOTH, gpio_event_handle_pwr_brake, NULL},
-  {"SMB_ALERT_ASIC01", "ASIC01 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
-  {"SMB_ALERT_ASIC23", "ASIC23 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
-  {"SMB_ALERT_ASIC45", "ASIC45 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
-  {"SMB_ALERT_ASIC67", "ASIC67 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
-  {"CPLD_SMB_ALERT_N", "CPLD Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
-  {"PAX0_ALERT", "PAX0 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
-  {"PAX1_ALERT", "PAX1 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
-  {"PAX2_ALERT", "PAX2 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
-  {"PAX3_ALERT", "PAX3 Alert", GPIO_EDGE_BOTH, gpio_event_handle_low_active_pwr, NULL},
+  {"PMBUS_BMC_1_ALERT_N", "HSC 1 Alert", GPIO_EDGE_BOTH, gpio_event_hsc_1_alert, NULL},
+  {"PMBUS_BMC_2_ALERT_N", "HSC 2 Alert", GPIO_EDGE_BOTH, gpio_event_hsc_2_alert, NULL},
+  {"PMBUS_BMC_3_ALERT_N", "HSC AUX Alert", GPIO_EDGE_BOTH, gpio_event_hsc_aux_alert, NULL},
+  {"HSC1_THROT_N", "HSC 1 Throttle", GPIO_EDGE_BOTH, gpio_event_hsc_1_throt, NULL},
+  {"HSC2_THROT_N", "HSC 2 Throttle", GPIO_EDGE_BOTH, gpio_event_hsc_2_throt, NULL},
+  {"SMB_ALERT_ASIC01", "ASIC01 Alert", GPIO_EDGE_BOTH, gpio_event_asic01_alert, NULL},
+  {"SMB_ALERT_ASIC23", "ASIC23 Alert", GPIO_EDGE_BOTH, gpio_event_asic23_alert, NULL},
+  {"SMB_ALERT_ASIC45", "ASIC45 Alert", GPIO_EDGE_BOTH, gpio_event_asic45_alert, NULL},
+  {"SMB_ALERT_ASIC67", "ASIC67 Alert", GPIO_EDGE_BOTH, gpio_event_asic67_alert, NULL},
+  {"CPLD_SMB_ALERT_N", "CPLD Alert", GPIO_EDGE_BOTH, gpio_event_cpld_alert, NULL},
+  {"PAX0_ALERT", "PAX0 Alert", GPIO_EDGE_BOTH, gpio_event_pax_0_alert, NULL},
+  {"PAX1_ALERT", "PAX1 Alert", GPIO_EDGE_BOTH, gpio_event_pax_1_alert, NULL},
+  {"PAX2_ALERT", "PAX2 Alert", GPIO_EDGE_BOTH, gpio_event_pax_2_alert, NULL},
+  {"PAX3_ALERT", "PAX3 Alert", GPIO_EDGE_BOTH, gpio_event_pax_3_alert, NULL},
   {"PRSNT0_N_ASIC0", "ASIC0 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
   {"PRSNT1_N_ASIC0", "ASIC0 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
   {"PRSNT0_N_ASIC1", "ASIC1 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},

@@ -32,6 +32,15 @@ if ! [[ -f $EXTCSD_CACHE ]]; then
 fi
 
 # Display eMMC device summary
-"$MMCRAW_CMD" show-summary "$MMC_DEVICE"
+EMMC_INFO=$("$MMCRAW_CMD" show-summary "$MMC_DEVICE")
+echo "$EMMC_INFO"
 
+if echo "$EMMC_INFO" | grep "Device Health.*Undefined" > /dev/null 2>&1 &&
+   echo "$EMMC_INFO" | grep "Life Time.*Undefined" > /dev/null 2>&1; then
+    echo "emmcd not started: device life time estimates not supported."
+    exit 1
+fi
+
+echo "Starting emmcd daemon.."
 runsv /etc/sv/emmcd > /dev/null 2>&1 &
+exit 0

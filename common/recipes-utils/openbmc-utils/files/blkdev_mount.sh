@@ -76,7 +76,12 @@ mount_btrfs() {
     if ! output="$(btrfs check "$BLK_DEVICE" 2>&1)"; then
         echo "Error: btrfs volume shows errors:"
         echo "$output"
-        exit 1
+        echo "Try to repair btrfs"
+        if ! output="$(btrfs check --repair "$BLK_DEVICE" 2>&1)"; then
+            echo "Error: btrfs volume shows errors:"
+            echo "$output"
+            exit 1
+        fi
     fi
 
     #

@@ -1580,7 +1580,6 @@ int main(int argc, char** argv) {
   obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
   if (getenv("RACKMOND_FOREGROUND") == NULL) {
     obmc_log_unset_std_stream();
-    daemon(0, 0);
     if (daemon(0, 0) < 0)
       OBMC_ERROR(errno, "daemon error");
   }

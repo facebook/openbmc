@@ -83,7 +83,7 @@ enum {
 uint8_t mapping_m2_prsnt[2][6] = { {M2_ROOT_PORT0, M2_ROOT_PORT1, M2_ROOT_PORT5, M2_ROOT_PORT4, M2_ROOT_PORT2, M2_ROOT_PORT3},
                                    {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1}};
 uint8_t mapping_e1s_prsnt[2][6] = { {M2_ROOT_PORT4, M2_ROOT_PORT5, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1, M2_ROOT_PORT0},
-                                    {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1}};
+                                    {M2_ROOT_PORT1, M2_ROOT_PORT2, M2_ROOT_PORT3, M2_ROOT_PORT4}};
 uint8_t mapping_e1s_pwr[2][6] = { {M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT5, M2_ROOT_PORT4, M2_ROOT_PORT1, M2_ROOT_PORT0},
                                   {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1} };
 
@@ -1368,20 +1368,37 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
   int ret = 0;
   uint8_t table = 0, board_type = 0;
 
-  ret = fby3_common_get_2ou_board_type(slot_id, &board_type);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
-    board_type = M2_BOARD;
+  if (intf == FEXP_BIC_INTF) {
+    table = 1;
+    bic_get_1ou_type(slot_id, &board_type);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Cannot get 1ou board_type", __func__);
+      board_type = M2_BOARD;
+    }
+  } else if (intf == REXP_BIC_INTF) {
+    table = 0;
+    ret = fby3_common_get_2ou_board_type(slot_id, &board_type);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Cannot get 2ou board_type", __func__);
+      board_type = M2_BOARD;
+    }
+  } else {
+    return -1;
   }
 
   //Send the command
   memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
-
-  if (board_type == M2_BOARD || intf == FEXP_BIC_INTF) {
-    tbuf[3] = dev_id;
-  } else {
+  if (board_type == EDSFF_1U) {
+    // case 1OU E1S
+    tbuf[3] = mapping_e1s_pwr[table][dev_id - 1];
+  } else if (board_type == E1S_BOARD) {
+    // case 2OU E1S
     tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control 
+  } else {
+    // case 1/2OU M.2
+    tbuf[3] = dev_id;
   }
+
   tbuf[4] = 0x3;  //get power status
 
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, tlen, rbuf, &rlen, intf);
@@ -1407,11 +1424,24 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
   int fd = 0;
   int ret = 0;
 
-  ret = fby3_common_get_2ou_board_type(slot_id, &board_type);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
-    board_type = M2_BOARD;
+  if (intf == FEXP_BIC_INTF) {
+    table = 1;
+    ret = bic_get_1ou_type(slot_id, &board_type);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Cannot get 1ou board_type", __func__);
+      board_type = M2_BOARD;
+    }
+  } else if (intf == REXP_BIC_INTF) {
+    table = 0;
+    ret = fby3_common_get_2ou_board_type(slot_id, &board_type);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Cannot get 2ou board_type", __func__);
+      board_type = M2_BOARD;
+    }
+  } else {
+    return -1;
   }
+
   bus_num = fby3_common_get_bus_id(slot_id) + 4;
 
   //set the present status of M.2
@@ -1431,11 +1461,12 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
     goto error_exit;
   }
 
-  table = tbuf[0] - M2_REG_2OU;
-  if (board_type == M2_BOARD || intf == FEXP_BIC_INTF) {
-    prsnt_bit = mapping_m2_prsnt[table][dev_id - 1];
-  } else {
+  if (board_type == EDSFF_1U || board_type == E1S_BOARD) {
+    // case 1/2OU E1S
     prsnt_bit = mapping_e1s_prsnt[table][dev_id - 1];
+  } else {
+    // case 1/2OU M.2
+    prsnt_bit = mapping_m2_prsnt[table][dev_id - 1];
   }
   if ( status == M2_PWR_OFF ) {
     tbuf[1] = (rbuf[0] | (0x1 << (prsnt_bit)));
@@ -1454,11 +1485,17 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
   //Send the command
   memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
 
-  if (board_type == M2_BOARD || intf == FEXP_BIC_INTF) {
-    tbuf[3] = dev_id;
-  } else {
+  if (board_type == EDSFF_1U) {
+    // case 1OU E1S
+    tbuf[3] = mapping_e1s_pwr[table][dev_id - 1];
+  } else if (board_type == E1S_BOARD) {
+    // case 2OU E1S
     tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control 
+  } else {
+    // case 1/2OU M.2
+    tbuf[3] = dev_id;
   }
+
   tbuf[4] = status;  //set power status
   tlen = 5;
 

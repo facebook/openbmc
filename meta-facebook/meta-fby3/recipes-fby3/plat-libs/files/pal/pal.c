@@ -154,12 +154,12 @@ MAPTOSTRING root_port_mapping[] = {
     { 0x00, 0x1D, 0xFF, "Num 1", "SB"}, // PVT -> Remove
 };
 
-MAPTOSTRING root_port_mapping_spe[] = {
+MAPTOSTRING root_port_mapping_e1s[] = {
     // bus, device, port, silk screen, location
-    { 0xB2, 3, 0x3D, "Num 0", "1OU"},
-    { 0xB2, 2, 0x3C, "Num 1", "1OU"},
-    { 0xB2, 1, 0x3B, "Num 2", "1OU"},
-    { 0xB2, 0, 0x3A, "Num 3", "1OU"},
+    { 0xB2, 0, 0x3A, "Num 0", "1OU"},
+    { 0xB2, 1, 0x3B, "Num 1", "1OU"},
+    { 0xB2, 2, 0x3C, "Num 2", "1OU"},
+    { 0xB2, 3, 0x3D, "Num 3", "1OU"},
     { 0x63, 0, 0x2A, "Num 0", "2OU"},
     { 0x63, 1, 0x2B, "Num 1", "2OU"},
     { 0x15, 3, 0x1D, "Num 2", "2OU"},
@@ -1463,21 +1463,31 @@ pal_get_m2vpp_str_name(uint8_t fru, uint8_t comp, uint8_t root_port, char *error
   int i = 0;
   int size = 0;
   int ret = 0;
-  uint8_t board_type = 0;
+  uint8_t board_type_1ou = 0, board_type_2ou = 0;
   MAPTOSTRING *mapping_table;
 
-  ret = fby3_common_get_2ou_board_type(fru, &board_type);
+  ret = bic_get_1ou_type(fru, &board_type_1ou);
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
-    board_type = M2_BOARD;
+    board_type_1ou = M2_BOARD;
   }
-  if (board_type == M2_BOARD) {
+
+  ret = fby3_common_get_2ou_board_type(fru, &board_type_2ou);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+    board_type_2ou = M2_BOARD;
+  }
+
+  if (board_type_1ou == EDSFF_1U || board_type_2ou == E1S_BOARD) {
+    // case 1/2OU E1S
+    mapping_table = root_port_mapping_e1s;
+    size = sizeof(root_port_mapping_e1s)/sizeof(MAPTOSTRING);
+  } else {
+    // case 1/2OU M.2
     mapping_table = root_port_mapping;
     size = sizeof(root_port_mapping)/sizeof(MAPTOSTRING);
-  } else {
-    mapping_table = root_port_mapping_spe;
-    size = sizeof(root_port_mapping_spe)/sizeof(MAPTOSTRING);
   }
+
   for ( i = 0 ; i < size; i++ ) {
     if ( mapping_table[i].root_port == root_port ) {
       char *silk_screen = mapping_table[i].silk_screen;
@@ -1699,7 +1709,7 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t general_info = (uint8_t) sel[3];
   uint8_t error_type = general_info & 0x0f;
   uint8_t plat;
-  uint8_t board_type = 0;
+  uint8_t board_type_1ou = 0, board_type_2ou = 0;
   uint8_t port_cnt = 0;
   char temp_log[128] = {0};
   error_log[0] = '\0';
@@ -1711,17 +1721,25 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t bmc_location = 0;
   MAPTOSTRING *mapping_table;
 
-  ret = fby3_common_get_2ou_board_type(fru, &board_type);
+  ret = bic_get_1ou_type(fru, &board_type_1ou);
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
-    board_type = M2_BOARD;
+    board_type_1ou = M2_BOARD;
   }
-  if (board_type == M2_BOARD) {
+
+  ret = fby3_common_get_2ou_board_type(fru, &board_type_2ou);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+    board_type_2ou = M2_BOARD;
+  }
+
+  if (board_type_1ou == EDSFF_1U || board_type_2ou == E1S_BOARD) {
+    // case 1/2OU E1S
+    mapping_table = root_port_mapping_e1s;
+    port_cnt = sizeof(root_port_mapping_e1s)/sizeof(MAPTOSTRING);
+  } else {
     mapping_table = root_port_mapping;
     port_cnt = sizeof(root_port_mapping)/sizeof(MAPTOSTRING);
-  } else {
-    mapping_table = root_port_mapping_spe;
-    port_cnt = sizeof(root_port_mapping_spe)/sizeof(MAPTOSTRING);
   }
   switch (error_type) {
     case UNIFIED_PCIE_ERR:

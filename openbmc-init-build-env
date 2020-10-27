@@ -109,6 +109,7 @@ if [ -z "$DISTRO_OVERRIDE" ]; then
         if [[ "${platform/${override_plat}/}" != "${platform}" ]]; then
             # override happens
             _distro="${override_distro}"
+            break
         fi
     done
 fi

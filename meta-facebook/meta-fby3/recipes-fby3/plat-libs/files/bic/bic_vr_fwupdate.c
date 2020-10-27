@@ -30,6 +30,7 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/file.h>
 #include "bic_vr_fwupdate.h"
 #include "bic_ipmi.h"
 
@@ -687,7 +688,9 @@ vr_IFX_program(uint8_t slot_id, vr *dev, uint8_t force) {
 #define REG1_STS_CHECK 0x1
 #define REG2_STS_CHECK 0xA
   int i = 0;
-  int ret = 0;
+  int ret = 0, rc = 0;
+  int fd = 0;
+  char path[128];
   uint8_t tbuf[64] = {0};
   uint8_t rbuf[64] = {0};
   uint8_t tlen = 0;
@@ -697,6 +700,18 @@ vr_IFX_program(uint8_t slot_id, vr *dev, uint8_t force) {
   uint8_t addr = dev->addr;
   int len = dev->data_cnt;
   vr_data *list = dev->pdata;
+  
+  //Infineon
+  //to avoid sensord changing the page of VRs, so use the LOCK file
+  //to stop monitoring sensors of VRs
+  sprintf(path, SLOT_SENSOR_LOCK, slot_id);
+  fd = open(path, O_CREAT | O_RDWR, 0666);
+  rc = flock(fd, LOCK_EX | LOCK_NB);
+  if(rc) {
+    if(EWOULDBLOCK == errno) {
+      return -1;
+    }
+  }
 
   // get the remaining writes of the VR
   ret = bic_get_ifx_vr_remaining_writes(slot_id, VR_BUS, addr, &remaining_writes);
@@ -870,6 +885,14 @@ vr_IFX_program(uint8_t slot_id, vr *dev, uint8_t force) {
 #endif
 
 error_exit:
+  rc = flock(fd, LOCK_UN);
+  if (rc == -1) {
+    syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
+    close(fd);
+    return rc;
+  }
+  close(fd);
+  remove(path);
   return ret;
 }
 

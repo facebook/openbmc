@@ -36,7 +36,6 @@
 #define NVME_SMART_WARNING_MASK_BIT 0x1F  // check bit 0~4
 #define MAX_SERIAL_NUM 20
 
-#define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
 
 char path[64] = {0};
 int fd;

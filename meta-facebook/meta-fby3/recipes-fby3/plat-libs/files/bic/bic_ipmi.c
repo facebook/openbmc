@@ -59,7 +59,6 @@ typedef struct _sdr_rec_hdr_t {
 #define SIZE_SYS_GUID 16
 
 #define MAX_VER_STR_LEN 80
-#define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
 
 #define KV_SLOT_IS_M2_EXP_PRESENT "slot%x_is_m2_exp_prsnt"
 #define KV_SLOT_GET_1OU_TYPE      "slot%x_get_1ou_type"

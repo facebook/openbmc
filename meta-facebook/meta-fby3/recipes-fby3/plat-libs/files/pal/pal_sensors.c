@@ -1825,7 +1825,6 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num, const uint8_t bmc_location
 static int
 pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t bmc_location, const uint8_t config_status){
 #define BIC_SENSOR_READ_NA 0x20
-#define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
   int ret = 0;
   uint8_t power_status = 0;
   ipmi_sensor_reading_t sensor = {0};

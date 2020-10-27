@@ -61,6 +61,8 @@ extern "C" {
 
 #define CPLD_BOARD_OFFSET  0x0D
 
+#define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
+
 extern const char *slot_usage;
 
 #define MAX_NUM_FRUS 8

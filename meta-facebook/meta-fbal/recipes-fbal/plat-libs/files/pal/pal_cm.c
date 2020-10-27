@@ -152,8 +152,13 @@ cmd_cmc_reset_bmc(uint8_t pos)
   uint8_t tbuf[8] = {0x00};
   uint8_t rbuf[8] = {0x00};
   uint8_t rlen;
-  tbuf[0] = pos;
-  return cmc_ipmb_process(ipmi_cmd, netfn, tbuf, 1, rbuf, &rlen);
+
+  tbuf[0] = 0x15;
+  tbuf[1] = 0xa0;
+  tbuf[2] = 0x00;
+  tbuf[3] = pos;
+
+  return cmc_ipmb_process(ipmi_cmd, netfn, tbuf, 4, rbuf, &rlen);
 }
 
 int

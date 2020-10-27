@@ -907,7 +907,8 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
              cmd, cmd_response_code, cmd_reason_code);
      /* if command fails for a specific signature (i.e. NCSI interface failure)
         try to re-init NCSI interface */
-    if ((cmd_response_code == RESP_COMMAND_UNAVAILABLE) &&
+    if (( (cmd_response_code == RESP_COMMAND_FAILED)    ||
+          (cmd_response_code == RESP_COMMAND_UNAVAILABLE)) &&
            ((cmd_reason_code == REASON_INTF_INIT_REQD)  ||
             (cmd_reason_code == REASON_CHANNEL_NOT_RDY) ||
             (cmd_reason_code == REASON_PKG_NOT_RDY))

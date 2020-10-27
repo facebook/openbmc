@@ -154,6 +154,26 @@ server_power_12v_on(uint8_t fru) {
     goto error_exit;
   }
   sleep(2);
+
+  // vr cached info was removed when 12v_off was performed
+  // we generate it again to avoid accessing VR devices at the same time.
+  snprintf(cmd, sizeof(cmd), "/usr/bin/fw-util slot%d --version vr > /dev/null 2>&1", fru);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    ret = PAL_ENOTSUP;
+    goto error_exit;
+  }
+
+  // SiC45X setting on 1/2ou was set in runtime
+  // it was lost when 12v_off was performed,
+  // need to reconfigure it again
+  snprintf(cmd, sizeof(cmd), "/etc/init.d/setup-sic.sh slot%d > /dev/null 2>&1", fru);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    ret = PAL_ENOTSUP;
+    goto error_exit;
+  }
+
   pal_power_policy_control(fru, NULL);
 
 error_exit:

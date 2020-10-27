@@ -49,7 +49,6 @@ main(int argc, char **argv) {
   ipmb_res_t *res;
   uint8_t req_len = 0;
   uint8_t res_len = 0;
-
   uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t tlen = 0;
@@ -57,7 +56,6 @@ main(int argc, char **argv) {
   uint8_t netfn;
   uint8_t cmd;
   int i;
-  int ret;
   int logfd;
   int len;
   char log[128];

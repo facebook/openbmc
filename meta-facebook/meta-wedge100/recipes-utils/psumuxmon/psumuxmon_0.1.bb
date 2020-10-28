@@ -23,20 +23,30 @@ LIC_FILES_CHKSUM = "file://psumuxmon.py;beginline=5;endline=18;md5=0b1ee7d6f844d
 
 DEPENDS_append = " update-rc.d-native"
 
+inherit systemd
+
 SRC_URI = "file://psumuxmon.py \
            file://psumuxmon_service \
-          "
-
+           file://psumuxmon.service \
+           "
 S = "${WORKDIR}"
 
 do_install() {
-  install -d ${D}${sysconfdir}/init.d
-  install -d ${D}${sysconfdir}/rcS.d
-  install -d ${D}${sysconfdir}/sv
-  install -d ${D}${sysconfdir}/sv/psumuxmon
-  install -m 755 psumuxmon.py ${D}${sysconfdir}/sv/psumuxmon/run
-  install -m 755 psumuxmon_service ${D}${sysconfdir}/init.d/psumuxmon
-  update-rc.d -r ${D} psumuxmon start 95 2 3 4 5  .
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+      install -d ${D}${systemd_system_unitdir}
+      install -d ${D}/usr/local/bin
+      install -m 755 psumuxmon.py ${D}/usr/local/bin
+      install -m 644 psumuxmon.service ${D}${systemd_system_unitdir}/psumuxmon.service
+    else
+      install -d ${D}${sysconfdir}/init.d
+      install -d ${D}${sysconfdir}/rcS.d
+      install -d ${D}${sysconfdir}/sv
+      install -d ${D}${sysconfdir}/sv/psumuxmon
+      install -m 755 psumuxmon.py ${D}${sysconfdir}/sv/psumuxmon/run
+      install -m 755 psumuxmon_service ${D}${sysconfdir}/init.d/psumuxmon
+      update-rc.d -r ${D} psumuxmon start 95 2 3 4 5  .
+    fi
 }
 
-FILES_${PN} = "${sysconfdir} "
+FILES_${PN} += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '${systemd_system_unitdir} /usr/local/bin ', '${sysconfdir} ', d)}"
+SYSTEMD_SERVICE_${PN} = "psumuxmon.service"

@@ -31,6 +31,7 @@ extern "C" {
 
 #include <openbmc/ipmi.h>
 #include <openbmc/obmc-pal.h>
+#include <openbmc/obmc-i2c.h>
 #include <stdbool.h>
 #include <math.h>
 #include <facebook/bic.h>
@@ -207,7 +208,7 @@ int pal_get_cpld_board_rev(int *rev, const char *device);
 void pal_update_ts_sled();
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 void *generate_dump(void *arg);
-int pal_mon_fw_upgrade(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug, uint8_t *psu_ug, uint8_t *smb_ug);
+int pal_mon_fw_upgrade(uint8_t *status_ug);
 int pal_get_fru_health(uint8_t fru, uint8_t *value);
 int pal_set_def_key_value(void);
 int pal_get_num_slots(uint8_t *num);

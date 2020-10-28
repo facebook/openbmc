@@ -565,9 +565,7 @@ int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
 }
 
-int pal_mon_fw_upgrade
-(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug,
-              uint8_t *psu_ug, uint8_t *smb_ug)
+int pal_mon_fw_upgrade(uint8_t *status)
 {
   char cmd[5];
   FILE *fp;
@@ -599,46 +597,22 @@ int pal_mon_fw_upgrade
     strncat(buf_ptr, str, str_size);
   }
 
-  //check whether sys led need to blink
-  *sys_ug = strstr(buf_ptr, "write spi2") != NULL ? 1 : 0;
-  if (*sys_ug) goto fan_state;
+  *status = strstr(buf_ptr, "spi_util.sh") != NULL ? 1 : 0;
+  if (*status) goto close_fp;
 
-  *sys_ug = strstr(buf_ptr, "write spi1 BACKUP_BIOS") != NULL ? 1 : 0;
-  if (*sys_ug) goto fan_state;
-
-  *sys_ug = (strstr(buf_ptr, "scmcpld_update") != NULL) ? 1 : 0;
-  if (*sys_ug) goto fan_state;
-
-  *sys_ug = (strstr(buf_ptr, "fw-util") != NULL) ?
+  *status = (strstr(buf_ptr, "fw-util") != NULL) ?
           ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
-  if (*sys_ug) goto fan_state;
+  if (*status) goto close_fp;
 
-  //check whether fan led need to blink
-fan_state:
-  *fan_ug = (strstr(buf_ptr, "fcmcpld_update") != NULL) ? 1 : 0;
-
-  //check whether fan led need to blink
-  *psu_ug = (strstr(buf_ptr, "psu-util") != NULL) ?
+  *status = (strstr(buf_ptr, "psu-util") != NULL) ?
           ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
+  if (*status) goto close_fp;
 
-  //check whether smb led need to blink
-  *smb_ug = (strstr(buf_ptr, "smbcpld_update") != NULL) ? 1 : 0;
-  if (*smb_ug) goto close_fp;
+  *status = (strstr(buf_ptr, "cpld_update.sh") != NULL) ? 1 : 0;
+  if (*status) goto close_fp;
 
-  *smb_ug = (strstr(buf_ptr, "pwrcpld_update") != NULL) ? 1 : 0;
-  if (*smb_ug) goto close_fp;
-
-  *smb_ug = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
-  if (*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 DOM_FPGA_FLASH") != NULL ? 1 : 0;
-  if (*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 GB_PCIE_FLASH") != NULL ? 1 : 0;
-  if (*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 BCM5389_EE") != NULL ? 1 : 0;
-  if (*smb_ug) goto close_fp;
+  *status = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
+  if (*status) goto close_fp;
 
 close_fp:
   ret = pclose(fp);

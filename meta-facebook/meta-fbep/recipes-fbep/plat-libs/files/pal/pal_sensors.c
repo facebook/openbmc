@@ -1092,7 +1092,7 @@ static int sensors_read_fan_speed(uint8_t sensor_num, float *value)
       default:
         return ERR_SENSOR_NA;
     }
-    if (*value <= sensors_threshold[sensor_num][LCR_THRESH]) {
+    if ((0 != ret) || (*value <= sensors_threshold[sensor_num][LCR_THRESH])) {
       // In case the fans just got installed, fans are still accelerating.
       msleep(200);
     } else {

@@ -950,7 +950,7 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
   int i, j, network_dev = 0;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
-  char tstr[10] = {0};
+  char *tstr = str;
   *res_len = 0;
   sprintf(key, "server_boot_order");
 
@@ -972,7 +972,7 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
     }
 
     snprintf(tstr, 3, "%02x", boot[i]);
-    strncat(str, tstr, 3);
+    tstr += 2;
   }
 
   //Not allow having more than 1 network boot device in the boot order.

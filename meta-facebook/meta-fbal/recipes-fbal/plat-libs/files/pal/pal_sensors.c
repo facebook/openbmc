@@ -596,7 +596,7 @@ const uint8_t pdb_sensor_list[] = {
   PDB_SNR_FAN0_POWER,
   PDB_SNR_FAN1_POWER,
   PDB_SNR_FAN2_POWER,
-  PDB_SNR_FAN3_POWER, 
+  PDB_SNR_FAN3_POWER,
   PDB_SNR_HSC_VIN,
   PDB_SNR_HSC_VOUT,
   PDB_SNR_HSC_TEMP,
@@ -962,7 +962,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"AL_MB_VR_PCH_PVNN_TEMP", VR_ID11, read_vr_temp, true, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xC9
   {"AL_MB_VR_PCH_PVNN_IOUT", VR_ID11, read_vr_iout, true, {26, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xCA
   {"AL_MB_VR_PCH_PVNN_POUT", VR_ID11, read_vr_pout, true, {33.6, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
-  
+
   {"AL_PDB_FAN0_POWER", CM_FAN0_POWER, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCC
   {"AL_PDB_FAN1_POWER", CM_FAN1_POWER, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCD
   {"AL_PDB_FAN2_POWER", CM_FAN2_POWER, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCE
@@ -1631,56 +1631,6 @@ cmd_peci_dimm_thermal_reading(uint8_t cpu_addr, uint8_t channel, uint8_t* temp) 
     *temp = rx_buf[PECI_THERMAL_DIMM0_BYTE];
   } else {
     *temp = rx_buf[PECI_THERMAL_DIMM1_BYTE];
-  }
-  return 0;
-}
-
-static int
-cmd_peci_accumulated_energy(uint8_t cpu_addr, uint32_t* value) {
-  PECI_RD_PKG_CONFIG_INFO info;
-  int ret=0;
-  int i=0;
-  uint8_t rx_len=5;
-  uint8_t rx_buf[rx_len];
-
-  info.cpu_addr= cpu_addr;
-  info.dev_info = 0x00;
-  info.index = PECI_INDEX_ACCUMULATED_ENERGY_STATUS;
-  info.para_l = 0xFF;
-  info.para_h = 0x00;
-
-  ret = cmd_peci_rdpkgconfig(&info, rx_buf, rx_len);
-  if (ret != 0) {
-    return -1;
-  }
-
-  for (i=0; i<4; i++) {
-    *value |= rx_buf[i] << (8*i);
-  }
-  return 0;
-}
-
-static int
-cmd_peci_total_time(uint8_t cpu_addr, uint32_t* value) {
-  PECI_RD_PKG_CONFIG_INFO info;
-  int ret=0;
-  int i=0;
-  uint8_t rx_len=5;
-  uint8_t rx_buf[rx_len];
-
-  info.cpu_addr= cpu_addr;
-  info.dev_info = 0x00;
-  info.index = PECI_INDEX_TOTAL_TIME;
-  info.para_l = 0x00;
-  info.para_h = 0x00;
-
-  ret = cmd_peci_rdpkgconfig(&info, rx_buf, rx_len);
-  if (ret != 0) {
-    return -1;
-  }
-
-  for (i=0; i<4; i++) {
-    *value |= rx_buf[i] << (8*i);
   }
   return 0;
 }

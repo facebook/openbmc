@@ -279,7 +279,6 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
 uint8_t
 pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data) {
   int cc = CC_SUCCESS;  // Fill response with default values
-  int i=0;
   int ret;
   uint8_t policy = *pwr_policy & 0x07;  // Power restore policy
   uint8_t mode;
@@ -311,7 +310,7 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
   }
 
   if(mode == MB_4S_MODE) {
-    ret = pal_get_config_is_master(); 
+    ret = pal_get_config_is_master();
     if(ret == false) {
       return CC_OEM_ONLY_SUPPORT_MASTER;
     } else {
@@ -319,7 +318,7 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
         return CC_OEM_DEVICE_SEND_SLAVE_RESTORE_POWER_POLICY_FAIL;
       }
     }
-  }  
+  }
   return cc;
 }
 
@@ -383,8 +382,8 @@ exit:
   return ret;
 }
 
-static 
-void print_power_fail_log(uint8_t cpu_num, uint8_t cpu_sts) 
+static
+void print_power_fail_log(uint8_t cpu_num, uint8_t cpu_sts)
 {
   const char* cpld_power_seq[] = {
     "Reserve",
@@ -394,17 +393,17 @@ void print_power_fail_log(uint8_t cpu_num, uint8_t cpu_sts)
     "CPLD_PWR_P1V8_PCIE_P1V1",
     "Reserve",
     "CPLD_PWR_PVCCIN",
-    "CPLD_PWR_PVCCSA",       
+    "CPLD_PWR_PVCCSA",
     "CPLD_PWR_CPU_DONE",
     "CPLD_PWR_PVCCSA_OFF",
     "CPLD_PWR_PVCCIN_OFF",
-    "Reserve", 
+    "Reserve",
     "CPLD_PWR_P1V8_PCIE_P1V1_OFF",
     "CPLD_PWR_PVCCIO_OFF",
   };
 
   if(strcmp(cpld_power_seq[cpu_sts], "Reserve") != 0) {
-    syslog(LOG_CRIT, "ASSERT: CPU%d %s power rail fails discrete - FRU: %d", 
+    syslog(LOG_CRIT, "ASSERT: CPU%d %s power rail fails discrete - FRU: %d",
            cpu_num, cpld_power_seq[cpu_sts], FRU_MB);
 
   }
@@ -418,14 +417,14 @@ int pal_check_cpld_power_fail(void)
   uint8_t pwr_off;
 
   pwr_off = is_server_off();
- 
+
   if( pal_get_cpld_power_sts(&pwr_st) ) {
     return -1;
   }
   cpu0_st = (pwr_st & 0xf0) >> 4;
-  cpu1_st = (pwr_st & 0x0f); 
+  cpu1_st = (pwr_st & 0x0f);
   cpu0_prsnt = check_cpu_present_pin_gpio(CPU_ID0);
-  cpu1_prsnt = check_cpu_present_pin_gpio(CPU_ID1);  
+  cpu1_prsnt = check_cpu_present_pin_gpio(CPU_ID1);
 
 //Check Power On
   if( pwr_off == false) {
@@ -446,6 +445,6 @@ int pal_check_cpld_power_fail(void)
       print_power_fail_log(CPU_ID1, cpu1_st);
     }
   }
- 
-  return 0; 
+
+  return 0;
 }

@@ -1843,7 +1843,6 @@ is_cpu_socket_occupy(unsigned int cpu_idx) {
 
 int
 pal_get_syscfg_text (char *text) {
-  int rev;
   int cnt=0;
   char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
   char *key_prefix = "sys_config/";

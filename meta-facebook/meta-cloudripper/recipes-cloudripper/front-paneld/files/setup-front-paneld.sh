@@ -26,6 +26,6 @@
 # Short-Description: Start front panel control daemon
 ### END INIT INFO
 
-echo -n "Setup Front Panel Daemon.."
+echo -n "Setup Front Panel Daemon..."
 runsv /etc/sv/front-paneld > /dev/null 2>&1 &
 echo "done."

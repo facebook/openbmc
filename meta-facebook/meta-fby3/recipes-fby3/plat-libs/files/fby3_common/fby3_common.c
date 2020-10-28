@@ -84,6 +84,17 @@ fby3_common_get_slot_id(char *str, uint8_t *fru) {
 
 int 
 fby3_common_check_slot_id(uint8_t fru) {
+  uint8_t bmc_location = 0;
+
+  if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    goto error_exit;
+  }
+
+  if (bmc_location == NIC_BMC && fru != FRU_SLOT1) {
+    goto error_exit;
+  }
+
   switch (fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
@@ -93,6 +104,7 @@ fby3_common_check_slot_id(uint8_t fru) {
     break;
   }
 
+error_exit:
   return -1;
 }
 

@@ -70,22 +70,22 @@ write_adm1278_conf(uint8_t bus, uint8_t addr, uint8_t cmd, uint16_t data) {
 
   dev = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
   if (dev < 0) {
-    OBMC_ERROR("%s: i2c_cdev_slave_open bus %d addr 0x%x failed", __func__,
-           bus, addr);
+    OBMC_ERROR(errno, "i2c_cdev_slave_open bus %u addr 0x%x failed",
+               bus, addr);
     return dev;
   }
 
   i2c_smbus_write_word_data(dev, cmd, data);
   read_back = i2c_smbus_read_word_data(dev, cmd);
   if (read_back < 0) {
+    OBMC_ERROR(errno, "failed to read from %u-00%02x", bus, addr);
     close(dev);
-    OBMC_ERROR("%s: i2c_smbus_read_word_data failed", __func__);
     return read_back;
   }
 
   if (((uint16_t) read_back) != data) {
-    OBMC_WARN("%s: data isn't expectd value (%04X, %04X)",
-                        __func__, data, read_back);
+    OBMC_WARN("unexpected data from %u-00%02x: (%04X, %04X)",
+              bus, addr, data, read_back);
     close(dev);
     return -1;
   }

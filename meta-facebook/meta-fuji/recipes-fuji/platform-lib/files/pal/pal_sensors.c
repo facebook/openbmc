@@ -937,7 +937,7 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[PIM1_UCD90160_VOLT13+(i*PIM_SENSOR_CNT)][UNR_THRESH] = 0; // unset
         pim_sensor_threshold[PIM1_UCD90160_VOLT13+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
         pim_sensor_threshold[PIM1_UCD90160_VOLT13+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0; // unset
-        
+
         pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0; //unset
         pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*PIM_SENSOR_CNT)][UNR_THRESH] = 0; //unset
         pim_sensor_threshold[PIM1_MP2975_INPUT_VOLTAGE+(i*PIM_SENSOR_CNT)][LNR_THRESH] = 0; //unset
@@ -2756,7 +2756,7 @@ get_pim_sensor_name(uint8_t sensor_num, uint8_t fru, char *name) {
     case PIM8_LM75_TEMP_48:
       if (type==PIM_TYPE_16Q)
         sprintf(name, "PIM%d_LM75_U37_TEMP_MEZZ",pimid);
-      else if (type==PIM_TYPE_16O)   
+      else if (type==PIM_TYPE_16O)
         sprintf(name, "PIM%d_LM75_U28_TEMP_REAR",pimid);
       break;
     case PIM1_SENSOR_QSFP_TEMP:
@@ -3827,11 +3827,11 @@ scm_thresh_done:
       smb_sensor_threshold[SMB_XP0R84V_CSU][LCR_THRESH] = 0.714;
       smb_sensor_threshold[SMB_XP1R84V_CSU][UCR_THRESH] = 2.07;
       smb_sensor_threshold[SMB_XP1R84V_CSU][UNR_THRESH] = 1.845;
-      smb_sensor_threshold[SMB_XP1R84V_CSU][LNR_THRESH] = 1.755;  
+      smb_sensor_threshold[SMB_XP1R84V_CSU][LNR_THRESH] = 1.755;
       smb_sensor_threshold[SMB_XP1R84V_CSU][LCR_THRESH] = 1.53;
       smb_sensor_threshold[SMB_XP3R3V_TCXO][UCR_THRESH] = 3.8;
       smb_sensor_threshold[SMB_XP3R3V_TCXO][UNR_THRESH] = 3.465;
-      smb_sensor_threshold[SMB_XP3R3V_TCXO][LNR_THRESH] = 3.165; 
+      smb_sensor_threshold[SMB_XP3R3V_TCXO][LNR_THRESH] = 3.165;
       smb_sensor_threshold[SMB_XP3R3V_TCXO][LCR_THRESH] = 2.8;
       smb_sensor_threshold[SMB_OUTPUT_VOLTAGE_XP0R75V_1][UCR_THRESH] = 0.862;
       smb_sensor_threshold[SMB_OUTPUT_VOLTAGE_XP0R75V_1][UNR_THRESH] = 0.773;
@@ -5186,8 +5186,6 @@ int bic_sensor_sdr_path(uint8_t fru, char *path) {
 
 int pal_get_sensor_util_timeout(uint8_t fru) {
   uint8_t pim_id = 0, pim_type = 0;
-  uint8_t brd_type;
-  uint8_t brd_type_rev;
   size_t cnt = 0;
 
   switch(fru) {

@@ -32,13 +32,9 @@ IMAGE_INSTALL += " \
   spatula \
   fscd  \
   recover-from-secondary \
+  udev-rules \
   "
 
-# For systemd (temporarily disabled):
-#
-#  udev-rules \
-#  systemd-networkd \
-#  "
-#
-#IMAGE_INSTALL_remove += "init-ifupdown"
-#SYSVINIT_SCRIPTS_remove += "init-ifupdown"
+IMAGE_INSTALL += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd-networkd', '', d)}"
+IMAGE_INSTALL_remove += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'init-ifupdown', '', d)}"
+SYSVINIT_SCRIPTS_remove += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'init-ifupdown', '', d)}"

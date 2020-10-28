@@ -8,6 +8,7 @@ SRC_URI += " \
     file://pal_sensors.h \
     file://pal_switch.c \
     file://pal_switch.h \
+    file://pal_calibration.h \
     "
 
 DEPENDS += " \

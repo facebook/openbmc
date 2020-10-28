@@ -27,3 +27,12 @@ i2c_device_add 6 0x4e tmp422
 
 echo "Setup TCA9539 input/output pin" 
 i2cset -y -f 5 0x77 0x07 0x0f
+
+echo "Setup TMP75"
+i2c_device_add 21 0x48 tmp75
+i2c_device_add 21 0x49 tmp75
+i2c_device_add 22 0x48 tmp75
+i2c_device_add 22 0x49 tmp75
+
+#Set PWR_AVR to 128 samples
+i2cset -y -f 5 0x11 0xd4 0x3F1C w

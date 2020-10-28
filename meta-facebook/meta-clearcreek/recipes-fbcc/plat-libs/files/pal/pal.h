@@ -59,11 +59,31 @@ enum {
   PCH,
 };
 
+enum {
+  I2C_BUS_0 = 0,
+  I2C_BUS_1,
+  I2C_BUS_2,
+  I2C_BUS_3,
+  I2C_BUS_4,
+  I2C_BUS_5,
+  I2C_BUS_6,
+  I2C_BUS_7,
+  I2C_BUS_8,
+  I2C_BUS_9,
+  I2C_BUS_10,
+  I2C_BUS_11,
+  I2C_BUS_12,
+  I2C_BUS_13,
+  I2C_BUS_21 = 21,
+  I2C_BUS_22,
+};
+
 #define MAX_NUM_FRUS (FRU_CNT-1)
 #define MAX_NODES    1
 #define LARGEST_DEVICE_NAME 120
 #define READING_SKIP    (1)
 #define READING_NA      (-2)
+#define ERR_NOT_READY   (-2)
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 #define KEY_MB_SNR_HEALTH  "mb_sensor_health"
@@ -75,6 +95,7 @@ enum {
 #endif
 
 int pal_get_rst_btn(uint8_t *status);
+int pal_control_mux_to_target_ch(uint8_t channel, uint8_t bus, uint8_t mux_addr);
 bool pal_is_server_off(void);
 int pal_get_platform_id(uint8_t *id);
 

@@ -9,9 +9,138 @@ extern "C" {
 
 #define MAX_SNR_READ_RETRY 3
 #define MAX_DEVICE_NAME_SIZE   (128)
+#define MAX_READ_RETRY 10
+
+//AMD1278 CMD INFO
+#define ADM1278_SLAVE_ADDR  (0x22)
+#define ADM1278_RSENSE      (0.15)
+
+//PMBus
+#define PMBUS_READ_VIN     (0x88)
+#define PMBUS_READ_IOUT    (0x8C)
+#define PMBUS_READ_TEMP1   (0x8D)
+#define PMBUS_READ_TEMP2   (0x8E)
+#define PMBUS_READ_PIN     (0x97)
+
+//NVMe INFO
+#define NVMe_SMBUS_ADDR           (0xD4)
+#define NVMe_GET_STATUS_CMD       (0x00)
+#define NVMe_GET_STATUS_LEN       (8)
+#define NVMe_TEMP_REG             (0x03)
+
+//ADM1278 INFO
+enum {
+  ADM1278_VOLTAGE = 0,
+  ADM1278_CURRENT,
+  ADM1278_POWER,
+  ADM1278_TEMP,
+};
+
+enum {
+  HSC_VOLTAGE = 0,
+  HSC_CURRENT,
+  HSC_POWER,
+  HSC_TEMP,
+};
+
+//NIC INFO
+enum {
+  MEZZ0 = 0,
+  MEZZ1,
+  MEZZ2,
+  MEZZ3,
+  MEZZ4,
+  MEZZ5,
+  MEZZ6,
+  MEZZ7,
+};
+
+//NVME INFO
+enum {
+  BAY0_FTEMP_ID = 0,
+  BAY0_RTEMP_ID,
+  BAY1_FTEMP_ID,
+  BAY1_RTEMP_ID,
+};
+
+//NVME INFO
+enum {
+  PAX_ID0 = 0,
+  PAX_ID1,
+  PAX_ID2,
+  PAX_ID3,
+};
 
 //Sensor Table
 enum {
+  MB_NIC_0_TEMP  = 0x10,
+  MB_NIC_0_VOLT  = 0x11,
+  MB_NIC_0_CURR  = 0x12,
+  MB_NIC_0_POWER = 0x13,
+  MB_NIC_1_TEMP  = 0x14,
+  MB_NIC_1_VOLT  = 0x15,
+  MB_NIC_1_CURR  = 0x16,
+  MB_NIC_1_POWER = 0x17,
+  MB_NIC_2_TEMP  = 0x18,
+  MB_NIC_2_VOLT  = 0x19,
+  MB_NIC_2_CURR  = 0x1A,
+  MB_NIC_2_POWER = 0x1B,
+  MB_NIC_3_TEMP  = 0x1C,
+  MB_NIC_3_VOLT  = 0x1D,
+  MB_NIC_3_CURR  = 0x1E,
+  MB_NIC_3_POWER = 0x1F,
+
+  MB_NIC_4_TEMP  = 0x20,
+  MB_NIC_4_VOLT  = 0x21,
+  MB_NIC_4_CURR  = 0x22,
+  MB_NIC_4_POWER = 0x23,
+  MB_NIC_5_TEMP  = 0x24,
+  MB_NIC_5_VOLT  = 0x25,
+  MB_NIC_5_CURR  = 0x26,
+  MB_NIC_5_POWER = 0x27,
+  MB_NIC_6_TEMP  = 0x28,
+  MB_NIC_6_VOLT  = 0x29,
+  MB_NIC_6_CURR  = 0x2A,
+  MB_NIC_6_POWER = 0x2B,
+  MB_NIC_7_TEMP  = 0x2C,
+  MB_NIC_7_VOLT  = 0x2D,
+  MB_NIC_7_CURR  = 0x2E,
+  MB_NIC_7_POWER = 0x2F,
+
+  BAY_0_FTEMP = 0x30,
+  BAY_0_RTEMP = 0x31,
+  BAY_0_NVME_CTEMP = 0x32,
+  BAY_0_0_NVME_CTEMP = 0x33,
+  BAY_0_1_NVME_CTEMP = 0x34,
+  BAY_0_2_NVME_CTEMP = 0x35,
+  BAY_0_3_NVME_CTEMP = 0x36,
+  BAY_0_4_NVME_CTEMP = 0x37,
+  BAY_0_5_NVME_CTEMP = 0x38,
+  BAY_0_6_NVME_CTEMP = 0x39,
+  BAY_0_7_NVME_CTEMP = 0x3A,
+  BAY_0_VOL  = 0x3B,
+  BAY_0_IOUT = 0x3C,
+  BAY_0_POUT = 0x3D,
+
+  BAY_1_FTEMP = 0x40,
+  BAY_1_RTEMP = 0x41,
+  BAY_1_NVME_CTEMP = 0x42,
+  BAY_1_0_NVME_CTEMP = 0x43,
+  BAY_1_1_NVME_CTEMP = 0x44,
+  BAY_1_2_NVME_CTEMP = 0x45,
+  BAY_1_3_NVME_CTEMP = 0x46,
+  BAY_1_4_NVME_CTEMP = 0x47,
+  BAY_1_5_NVME_CTEMP = 0x48,
+  BAY_1_6_NVME_CTEMP = 0x49,
+  BAY_1_7_NVME_CTEMP = 0x4A,
+  BAY_1_VOL  = 0x4B,
+  BAY_1_IOUT = 0x4C,
+  BAY_1_POUT = 0x4D,
+
+  PDB_HSC_TEMP = 0x50,
+  PDB_HSC_VIN = 0x51,
+  PDB_HSC_IOUT = 0x52,
+  PDB_HSC_PIN = 0x53,
   MB_P12V_AUX  = 0X54,
   MB_P3V3_STBY = 0X55,
   MB_P5V_STBY  = 0X56,
@@ -22,6 +151,10 @@ enum {
   MB_P1V2_AUX  = 0X5B,
   MB_P1V15_AUX = 0X5C,
 
+  MB_PAX_0_TEMP = 0x80,
+  MB_PAX_1_TEMP = 0x81,
+  MB_PAX_2_TEMP = 0x82,
+  MB_PAX_3_TEMP = 0x83,
   //ADC128 VOLT/CURR/POWER
   PDB_FAN0_VOLT = 0x84,
   PDB_FAN0_CURR = 0x85,
@@ -36,6 +169,8 @@ enum {
   PDB_FAN3_CURR = 0x8E,
   PDB_FAN3_PWR  = 0x8F,
 
+  SYSTEM_INLET_TEMP = 0x90,
+  SYSTEM_INLET_REMOTE_TEMP = 0x91,
   PDB_INLET_TEMP_L = 0x96,
   PDB_INLET_REMOTE_TEMP_L = 0x97,
   PDB_INLET_TEMP_R = 0x98,
@@ -53,6 +188,22 @@ enum {
   ADC6,
   ADC7,
   ADC8,
+};
+
+//NIC INFO
+enum {
+  NIC0 = 0,
+  NIC1,
+  NIC2,
+  NIC3,
+  NIC4,
+  NIC5,
+  NIC6,
+  NIC7,
+};
+
+enum {
+  HSC_ID0,
 };
 
 typedef struct {
@@ -81,6 +232,20 @@ typedef struct {
   uint8_t units;
 } PAL_SENSOR_MAP;
 
+typedef struct {
+  uint8_t type;
+  float m;
+  float b;
+  float r;
+} PAL_ADM1278_INFO;
+
+typedef struct {
+  uint8_t id;
+  uint8_t slv_addr;
+  PAL_ADM1278_INFO* info;
+} PAL_HSC_INFO;
+
+
 enum {
   TEMP = 1,
   CURR,
@@ -95,6 +260,8 @@ enum {
   INLET_REMOTE_TEMP_L,
   INLET_TEMP_R,
   INLET_REMOTE_TEMP_R,
+  SYS_TEMP,
+  SYS_REMOTE_TEMP,
 };
 
 enum {

@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/obmc-i2c.h>
 #include "pal.h"
 
 #define MB_BIN "/tmp/fruid_mb.bin"
@@ -365,4 +366,48 @@ int pal_get_platform_id(uint8_t *id)
   }
   *id = (uint8_t)cached_id;
   return 0;
+}
+
+int
+pal_control_mux_to_target_ch(uint8_t channel, uint8_t bus, uint8_t mux_addr)
+{
+  int ret;
+  int fd;
+  char fn[32];
+  uint8_t retry;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if(fd < 0) {
+    syslog(LOG_WARNING,"[%s]Cannot open bus %d", __func__, bus);
+    ret = PAL_ENOTSUP;
+    goto error_exit;
+  }
+
+  tbuf[0] = channel;
+
+  retry = MAX_READ_RETRY;
+  while(retry > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, mux_addr, tbuf, 1, rbuf, 0);
+    if (PAL_EOK == ret){
+      break;
+    }
+
+    msleep(50);
+    retry--;
+  }
+
+  if(ret < 0) {
+    syslog(LOG_WARNING,"[%s] Cannot switch the mux on bus %d", __func__, bus);
+    goto error_exit;
+  }
+
+error_exit:
+  if (fd > 0){
+    close(fd);
+  }
+
+  return ret;
 }

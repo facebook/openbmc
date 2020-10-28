@@ -39,6 +39,7 @@ SRC_URI += "file://setup-gpio.sh \
             file://beutil \
             file://set_sled.sh \
             file://dump_pim_serials.sh \
+            file://switch_pim_mux_to_fpga.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -60,6 +61,7 @@ OPENBMC_UTILS_FILES += " \
     beutil \
     set_sled.sh \
     dump_pim_serials.sh \
+    switch_pim_mux_to_fpga.sh \
     "
 DEPENDS_append = " update-rc.d-native"
 

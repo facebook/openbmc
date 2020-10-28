@@ -223,8 +223,12 @@ static gpio_desc_t* gpio_desc_alloc(int pin_num, const char *shadow_path)
 	memset(gdesc, 0, sizeof(*gdesc));
 	gdesc->pin_num = pin_num;
 	if (shadow_path != NULL)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
 		strncpy(gdesc->shadow_path, shadow_path,
 			sizeof(gdesc->shadow_path) - 1);
+#pragma GCC diagnostic pop
 	return gdesc;
 }
 

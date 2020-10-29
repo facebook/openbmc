@@ -30,7 +30,7 @@ extern "C" {
 
 #define DELAY_POWER_OFF 5
 #define DELAY_POWER_CYCLE 10
-#define DELAY_GRACEFUL_SHUTDOWN 1
+#define DELAY_GRACEFUL_SHUTDOWN 5
 #define SCM_COM_PWR_BTN      I2C_SYSFS_DEV_ENTRY(2-0035, cb_pwr_btn_n)
 #define SCM_COM_PWR_ENBLE    I2C_SYSFS_DEV_ENTRY(2-0035, com_exp_pwr_enable)
 #define SCM_COM_RST_BTN      I2C_SYSFS_DEV_ENTRY(2-0035, iso_com_rst_n)

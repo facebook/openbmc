@@ -61,6 +61,12 @@ enum {
   I2C_BUS_15,
 };
 
+typedef enum {
+  STATUS_LED_OFF,
+  STATUS_LED_YELLOW,
+  STATUS_LED_BLUE,
+} status_led_color;
+
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
 extern const char pal_fru_list_sensor_history[];
@@ -87,6 +93,10 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
 int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
 int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value);
 int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
+int pal_set_key_value(char *key, char *value);
+int pal_get_key_value(char *key, char *value);
+int pal_set_id_led(uint8_t slot, enum LED_HIGH_ACTIVE status);
+int pal_set_status_led(uint8_t fru, status_led_color color);
 
 #ifdef __cplusplus
 } // extern "C"

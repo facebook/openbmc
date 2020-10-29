@@ -27,4 +27,6 @@ IMAGE_INSTALL += " \
   guid-util \
   sensor-util \
   sensor-mon \
+  fpc-util \
+  front-paneld \
   "

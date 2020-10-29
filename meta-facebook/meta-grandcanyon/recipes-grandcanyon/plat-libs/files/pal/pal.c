@@ -33,12 +33,16 @@
 #include <string.h>
 #include <pthread.h>
 #include <openbmc/obmc-sensors.h>
+#include <openbmc/libgpio.h>
+#include <facebook/fbgc_gpio.h>
 #include "pal.h"
 
 #define NUM_SERVER_FRU  1
 #define NUM_NIC_FRU     1
 #define NUM_BMC_FRU     1
 #define MAX_FAN_NAME    32
+
+#define LAST_KEY "last_key"
 
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, iocm";
 const char pal_fru_list_print[] = "all, server, bmc, uic, dpb, scc, nic, iocm";
@@ -62,6 +66,68 @@ size_t pal_tach_cnt = 8;
 
 // TODO: temporary mapping table, will get from fan config after fan table is ready
 uint8_t fanid2pwmid_mapping[] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+enum key_event {
+  KEY_BEFORE_SET,
+  KEY_AFTER_INI,
+};
+
+struct pal_key_cfg {
+  char *name;
+  char *def_val;
+  int (*function)(int, void*);
+} key_cfg[] = {
+  /* name, default value, function */
+  {"system_identify", "off", NULL},
+  /* Add more Keys here */
+  {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
+};
+
+static int
+pal_key_index(char *key) {
+  int i = 0;
+
+  while(strncmp(key_cfg[i].name, LAST_KEY, strlen(key_cfg[i].name))) {
+    // If Key is valid, return index
+    if (!strncmp(key, key_cfg[i].name, strlen(key_cfg[i].name))) {
+      return i;
+    }
+    i++;
+  }
+
+#ifdef DEBUG
+  syslog(LOG_WARNING, "%s() invalid key - %s", __func__, key);
+#endif
+  return -1;
+}
+
+int
+pal_get_key_value(char *key, char *value) {
+  int index = 0;
+
+  // Check key is defined and valid
+  if ((index = pal_key_index(key)) < 0) {
+    return -1;
+  }
+  return kv_get(key, value, NULL, KV_FPERSIST);
+}
+
+int
+pal_set_key_value(char *key, char *value) {
+  int index = 0, ret = 0;
+  // Check key is defined and valid
+  if ((index = pal_key_index(key)) < 0) {
+    return -1;
+  }
+  if (key_cfg[index].function) {
+    ret = key_cfg[index].function(KEY_BEFORE_SET, value);
+    if (ret < 0) {
+      return ret;
+    }
+  }
+
+  return kv_set(key, value, 0, KV_FPERSIST);
+}
 
 int
 pal_get_fru_id(char *str, uint8_t *fru) {
@@ -403,4 +469,58 @@ pal_set_dev_guid(uint8_t fru, char *str) {
   
   pal_populate_guid(guid, str);
   return pal_set_guid(OFFSET_DEV_GUID, guid);
+}
+
+// Update the Identification LED for the given fru with the status
+int
+pal_set_id_led(uint8_t fru, enum LED_HIGH_ACTIVE status) {
+  int ret = 0;
+  gpio_value_t val = 0;
+
+  if (fru != FRU_UIC) {
+    return -1;
+  }
+
+  val = (status == LED_ON) ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
+  ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_BMC_LED_PWR_BTN_EN_R), val);
+
+  return ret;
+}
+
+
+int
+pal_set_status_led(uint8_t fru, status_led_color color) {
+  int ret = 0;
+  gpio_value_t val_yellow = 0, val_blue = 0;
+
+  if (fru != FRU_UIC) {
+    return -1;
+  }
+
+  switch (color) {
+  case STATUS_LED_OFF:
+    val_yellow = GPIO_VALUE_LOW;
+    val_blue   = GPIO_VALUE_LOW;
+    break;
+  case STATUS_LED_BLUE:
+    val_yellow = GPIO_VALUE_LOW;
+    val_blue   = GPIO_VALUE_HIGH;
+    break;
+  case STATUS_LED_YELLOW:
+    val_yellow = GPIO_VALUE_HIGH;
+    val_blue   = GPIO_VALUE_LOW;
+    break;
+  default:
+    syslog(LOG_ERR, "%s() Invalid LED color: %d\n", __func__, color);
+    return -1;
+  }
+
+  if (0 != (ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_BMC_LED_STATUS_YELLOW_EN_R), val_yellow))) {
+    syslog(LOG_ERR, "%s() Failed to set GPIO BMC_LED_STATUS_YELLOW_EN_R to %d\n", __func__, val_yellow);
+  }
+  if (0 != (ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_BMC_LED_STATUS_BLUE_EN_R), val_blue))) {
+    syslog(LOG_ERR, "%s() Failed to set GPIO BMC_LED_STATUS_BLUE_EN_R to %d\n", __func__, val_blue);
+  }
+
+  return ret;
 }

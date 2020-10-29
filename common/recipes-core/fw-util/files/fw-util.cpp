@@ -384,6 +384,7 @@ int main(int argc, char *argv[])
             c->set_update_ongoing(0);
             if (ret == 0) {
               cout << str_act << " of " << c->fru() << " : " << component << " succeeded" << endl;
+              c->update_finish();
             } else {
               cerr << str_act << " of " << c->fru() << " : " << component;
               if (ret == FW_STATUS_NOT_SUPPORTED) {

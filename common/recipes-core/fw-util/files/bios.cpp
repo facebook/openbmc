@@ -166,10 +166,7 @@ int BiosComponent::update(std::string image, bool force) {
   ret = GPIOSwitchedSPIMTDComponent::update(image);
 
   if (ret == 0) {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    pal_power_button_override(fruid);
-    std::this_thread::sleep_for(std::chrono::seconds(10));
-    pal_set_server_power(fruid, SERVER_POWER_ON);
+    reboot(fruid);
   }
   return ret;
 }
@@ -180,6 +177,13 @@ int BiosComponent::update(string image) {
 
 int BiosComponent::fupdate(string image) {
   return update(image, 1);
+}
+
+int BiosComponent::reboot(uint8_t fruid) {
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+  pal_power_button_override(fruid);
+  std::this_thread::sleep_for(std::chrono::seconds(10));
+  return pal_set_server_power(fruid, SERVER_POWER_ON);
 }
 
 int BiosComponent::print_version() {

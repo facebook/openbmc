@@ -76,6 +76,7 @@ class Component {
     virtual std::string &alias_fru(void) { return _fru; }
     virtual int update(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int fupdate(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
+    virtual int update_finish(void) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int dump(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int print_version() { return FW_STATUS_NOT_SUPPORTED; }
     virtual void get_version(std::string& str) {

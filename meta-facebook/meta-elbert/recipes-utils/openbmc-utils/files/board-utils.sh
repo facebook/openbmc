@@ -101,15 +101,34 @@ wedge_power_off_board() {
 
 power_on_pim() {
     pim=$1
-    old_pwr_value=$(gpio_get PIM"${pim}"_FULL_POWER_EN keepdirection)
     old_rst_value=$(gpio_get PIM"${pim}"_FPGA_RESET_L keepdirection)
-    if [ "$old_pwr_value" -eq 1 ] && [ "$old_rst_value" -eq 1 ]; then
-       logger pim_enable: PIM"${pim}" already powered on
+    if [ "$old_rst_value" -eq 1 ]; then
        # already powered on, skip
        return
     fi
-    gpio_set PIM"${pim}"_FULL_POWER_EN 1 # full power on
+
+    # Skip power_on if we are still powercycling
+    if [ "$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim_reset)" != '0x0' ]; then
+        logger pim_enable: skipping power_on_pim. PIM"$pim" is still powercycling
+        return
+    fi
+
+    # Skip power_on if the FPGA is still being programmed
+    pim_major=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$pim"_fpga_rev_major)
+    if [ "$((pim_major))" -eq 255 ]; then
+        logger pim_enable: skipping power_on_pim. PIM"$pim" is fpga loading is not complete
+        return
+    fi
+
+    fpga_done_value=$(gpio_get PIM"${pim}"_FPGA_DONE keepdirection)
+    if [ "$fpga_done_value" -eq 0 ]; then
+        logger pim_enable: skipping power_on_pim. PIM"$pim" is FPGA_DONE is not ready
+        return
+    fi
+
+    sleep 0.5 # Give FPGA some time to finish initialization
     gpio_set PIM"${pim}"_FPGA_RESET_L 1  # FPGA out of reset
+    sleep 0.1
 
     skip_pim_off_cache=$2
     pim_off_cache="/tmp/.pim${pim}_powered_off"
@@ -121,15 +140,14 @@ power_on_pim() {
 
 power_off_pim() {
     pim=$1
-    old_pwr_value=$(gpio_get PIM"${pim}"_FULL_POWER_EN keepdirection)
     old_rst_value=$(gpio_get PIM"${pim}"_FPGA_RESET_L keepdirection)
-    if [ "$old_pwr_value" -eq 0 ] && [ "$old_rst_value" -eq 0 ]; then
-       logger pim_enable: PIM"${pim}" already powered off
+    if [ "$old_rst_value" -eq 0 ]; then
        # already powered off, skip
        return
     fi
+
     gpio_set PIM"${pim}"_FPGA_RESET_L 0  # FPGA in reset
-    gpio_set PIM"${pim}"_FULL_POWER_EN 0 # full power off
+    sleep 0.1
 
     skip_pim_off_cache=$2
     pim_off_cache="/tmp/.pim${pim}_powered_off"

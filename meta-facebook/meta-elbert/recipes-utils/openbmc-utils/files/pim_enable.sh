@@ -31,23 +31,41 @@ pim_found=(0 0 0 0 0 0 0 0)
 pim_bus=(16 17 18 23 20 21 22 19)
 dpm_addr=4e
 
+try_create_gpio() {
+    chip="$1"
+    pin_id="$2"
+    gpioname="$3"
+
+    # Export GPIO if it doesn't exist
+    gpio_num=$(gpio_name2value "$gpioname")
+    if ! [[ "$gpio_num" =~ ^[0-9]+$ ]]; then
+        gpio_export_by_offset "${chip}" "$pin_id" "$gpioname"
+    fi
+}
+
 create_pim_gpio() {
   local pim
   pim=$1
   chip=$2
 
-  # Check if GPIO name has already been exported
-  gpio_num=$(gpio_name2value PIM"${pim}"_FULL_POWER_EN)
-  if ! [[ "$gpio_num" =~ ^[0-9]+$ ]]; then
-    gpio_export_by_offset "${chip}" 4 PIM"${pim}"_FULL_POWER_EN
+  fru="$(peutil "$pim" 2>&1)"
+  if echo "$fru" | grep -q '88-16CD'; then
+      pim_type='PIM16Q'
+      try_create_gpio "$chip" 22 PIM"$pim"_FPGA_RESET_L  # GPIO17 PIN26
+      try_create_gpio "$chip" 4  PIM"$pim"_FULL_POWER_EN # GPIO9  PIN14
+      try_create_gpio "$chip" 20 PIM"$pim"_FPGA_DONE     # GPIO15 PIN24
+      try_create_gpio "$chip" 21 PIM"$pim"_FPGA_INIT     # GPIO16 PIN25
+  elif echo "$fru" | grep -q '88-8D'; then
+      pim_type='PIM8DDM'
+      try_create_gpio "$chip" 22 PIM"$pim"_FPGA_RESET_L  # GPIO17 PIN26
+      try_create_gpio "$chip" 8  PIM"$pim"_FULL_POWER_EN # GPI1   PIN22
+      try_create_gpio "$chip" 20 PIM"$pim"_FPGA_DONE     # GPIO15 PIN24
+      try_create_gpio "$chip" 21 PIM"$pim"_FPGA_INIT     # GPIO16 PIN25
+  else
+      logger pim_enable: Could not identify PIM"${pim}" model
+      return
   fi
-
-  gpio_num=$(gpio_name2value PIM"${pim}"_FPGA_RESET_L)
-  if ! [[ "$gpio_num" =~ ^[0-9]+$ ]]; then
-    gpio_export_by_offset "${chip}" 22 PIM"${pim}"_FPGA_RESET_L
-  fi
-
-  logger pim_enable: registered PIM"${pim}" with GPIO chip "${chip}"
+  logger pim_enable: registered "${pim_type}" PIM"${pim}" with GPIO chip "${chip}"
 }
 
 # Clear pimserial endpoint cache if pim doesn't exist but the pimserial file does
@@ -83,6 +101,7 @@ while true; do
       fi
     fi
   done
+
   # 2. For discovered gpios, try turning it on
   for i in "${pim_index[@]}"
   do

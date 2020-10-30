@@ -34,5 +34,15 @@ i2c_device_add 21 0x49 tmp75
 i2c_device_add 22 0x48 tmp75
 i2c_device_add 22 0x49 tmp75
 
+echo "Setup VR sensor"
+i2c_device_add 5 0x30 mpq8645p
+i2c_device_add 5 0x31 mpq8645p
+i2c_device_add 5 0x32 mpq8645p
+i2c_device_add 5 0x33 mpq8645p
+i2c_device_add 5 0x34 mpq8645p
+i2c_device_add 5 0x35 mpq8645p
+i2c_device_add 5 0x36 mpq8645p
+i2c_device_add 5 0x3b mpq8645p
+
 #Set PWR_AVR to 128 samples
 i2cset -y -f 5 0x11 0xd4 0x3F1C w

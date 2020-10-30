@@ -35,9 +35,14 @@ static int read_nvme_temp(uint8_t sensor_num, float *value);
 static int read_bay_temp(uint8_t sensor_num, float *value);
 static int read_hsc_temp(uint8_t hsc_id, float *value);
 static int read_nic_temp(uint8_t nic_id, float *value);
+static int sensors_read_vr(uint8_t sensor_num, float *value);
 
 static float fan_volt[PAL_FAN_CNT];
 static float fan_curr[PAL_FAN_CNT];
+static float vr_vdd_volt[vr_NUM];
+static float vr_vdd_curr[vr_NUM];
+static float vr_avd_volt[vr_NUM];
+static float vr_avd_curr[vr_NUM];
 
 const uint8_t mb_sensor_list[] = {
   MB_NIC_0_TEMP,
@@ -48,6 +53,39 @@ const uint8_t mb_sensor_list[] = {
   MB_NIC_5_TEMP,
   MB_NIC_6_TEMP,
   MB_NIC_7_TEMP,
+  MB_VR_P0V8_VDD0_TEMP,
+  MB_VR_P0V8_VDD0_VOUT,
+  MB_VR_P0V8_VDD0_CURR,
+  MB_VR_P0V8_VDD0_POWER,
+  MB_VR_P1V0_AVD0_TEMP,
+  MB_VR_P1V0_AVD0_VOUT,
+  MB_VR_P1V0_AVD0_CURR,
+  MB_VR_P1V0_AVD0_POWER,
+  MB_VR_P0V8_VDD1_TEMP,
+  MB_VR_P0V8_VDD1_VOUT,
+  MB_VR_P0V8_VDD1_CURR,
+  MB_VR_P0V8_VDD1_POWER,
+  MB_VR_P1V0_AVD1_TEMP,
+  MB_VR_P1V0_AVD1_VOUT,
+  MB_VR_P1V0_AVD1_CURR,
+  MB_VR_P1V0_AVD1_POWER,
+  MB_VR_P0V8_VDD2_TEMP,
+  MB_VR_P0V8_VDD2_VOUT,
+  MB_VR_P0V8_VDD2_CURR,
+  MB_VR_P0V8_VDD2_POWER,
+  MB_VR_P1V0_AVD2_TEMP,
+
+  MB_VR_P1V0_AVD2_VOUT,
+  MB_VR_P1V0_AVD2_CURR,
+  MB_VR_P1V0_AVD2_POWER,
+  MB_VR_P0V8_VDD3_TEMP,
+  MB_VR_P0V8_VDD3_VOUT,
+  MB_VR_P0V8_VDD3_CURR,
+  MB_VR_P0V8_VDD3_POWER,
+  MB_VR_P1V0_AVD3_TEMP,
+  MB_VR_P1V0_AVD3_VOUT,
+  MB_VR_P1V0_AVD3_CURR,
+  MB_VR_P1V0_AVD3_POWER,
   MB_P12V_AUX,
   MB_P3V3_STBY,
   MB_P5V_STBY,
@@ -241,39 +279,39 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5F
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x60
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x61
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x62
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x63
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x64
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x65
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x66
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x67
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x68
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x69
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6A
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6B
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6C
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6D
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6E
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x6F
+  {"P0V8_VDD0_TEMP", MB_VR_P0V8_VDD0_TEMP , sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x60
+  {"P0V8_VDD0_VOLT" , MB_VR_P0V8_VDD0_VOUT , sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0}, VOLT}, //0x61
+  {"P0V8_VDD0_IOUT", MB_VR_P0V8_VDD0_CURR , sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x62
+  {"P0V8_VDD0_POUT", MB_VR_P0V8_VDD0_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x63
+  {"P0V8_AVD_PCIE0_TEMP", MB_VR_P1V0_AVD0_TEMP , sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x64
+  {"P0V8_AVD_PCIE0_VOLT", MB_VR_P1V0_AVD0_VOUT , sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x65
+  {"P0V8_AVD_PCIE0_IOUT", MB_VR_P1V0_AVD0_CURR , sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x66
+  {"P0V8_AVD_PCIE0_POUT", MB_VR_P1V0_AVD0_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x67
+  {"P0V8_VDD1_TEMP", MB_VR_P0V8_VDD1_TEMP , sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x68
+  {"P0V8_VDD1_VOLT", MB_VR_P0V8_VDD1_VOUT , sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x69
+  {"P0V8_VDD1_IOUT", MB_VR_P0V8_VDD1_CURR , sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6A
+  {"P0V8_VDD1_POUT", MB_VR_P0V8_VDD1_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x6B
+  {"P0V8_AVD_PCIE1_TEMP", MB_VR_P1V0_AVD1_TEMP , sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x6C
+  {"P0V8_AVD_PCIE1_VOL" , MB_VR_P1V0_AVD1_VOUT , sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x6D
+  {"P0V8_AVD_PCIE1_IOUT", MB_VR_P1V0_AVD1_CURR , sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6E
+  {"P0V8_AVD_PCIE1_POUT", MB_VR_P1V0_AVD1_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x6F
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x70
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x71
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x72
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x73
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x74
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x75
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x76
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x77
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x78
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x79
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7A
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7B
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7C
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7D
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7E
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7F
+  {"P0V8_VDD2_TEMP", MB_VR_P0V8_VDD2_TEMP, sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x70
+  {"P0V8_VDD2_VOL" , MB_VR_P0V8_VDD2_VOUT, sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x71
+  {"P0V8_VDD2_IOUT", MB_VR_P0V8_VDD2_CURR, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x72
+  {"P0V8_VDD2_POUT", MB_VR_P0V8_VDD2_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x73
+  {"P0V8_AVD_PCIE2_TEMP", MB_VR_P1V0_AVD2_TEMP, sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x74
+  {"P0V8_AVD_PCIE2_VOLT", MB_VR_P1V0_AVD2_VOUT, sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x75
+  {"P0V8_AVD_PCIE2_IOUT", MB_VR_P1V0_AVD2_CURR, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x76
+  {"P0V8_AVD_PCIE2_POUT", MB_VR_P1V0_AVD2_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x77
+  {"P0V8_VDD3_TEMP", MB_VR_P0V8_VDD3_TEMP, sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x78
+  {"P0V8_VDD3_VOLT", MB_VR_P0V8_VDD3_VOUT, sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x79
+  {"P0V8_VDD3_IOUT", MB_VR_P0V8_VDD3_CURR, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x7A
+  {"P0V8_VDD3_POUT", MB_VR_P0V8_VDD3_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x7B
+  {"P0V8_AVD_PCIE3_TEMP", MB_VR_P1V0_AVD3_TEMP, sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x7C
+  {"P0V8_AVD_PCIE3_VOLT", MB_VR_P1V0_AVD3_VOUT, sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x7D
+  {"P0V8_AVD_PCIE3_IOUT", MB_VR_P1V0_AVD3_CURR, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x7E
+  {"P0V8_AVD_PCIE3_POUT", MB_VR_P1V0_AVD3_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x7F
 
   {"BB_PAX_0_TEMP", PAX_ID0, read_pax_therm, 0, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x80
   {"BB_PAX_1_TEMP", PAX_ID1, read_pax_therm, 0, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x81
@@ -660,6 +698,7 @@ read_inlet_sensor(uint8_t id, float *value) {
   if (id >= ARRAY_SIZE(devs)) {
     return -1;
   }
+
   return sensors_read(devs[id].chip, devs[id].label, value);
 }
 
@@ -1055,4 +1094,129 @@ error_exit:
   close(fd);
 
   return PAL_EOK;
+}
+
+static int sensors_read_vr(uint8_t sensor_num, float *value)
+{
+  int ret;
+
+  switch (sensor_num) {
+    case MB_VR_P0V8_VDD0_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-30", "VR_P0V8_VDD0_TEMP", value);
+      break;
+    case MB_VR_P0V8_VDD0_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-30", "VR_P0V8_VDD0_VOUT", value);
+      vr_vdd_volt[VR_ID0] = *value;
+      break;
+    case MB_VR_P0V8_VDD0_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-30", "VR_P0V8_VDD0_CURR", value);
+      vr_vdd_curr[VR_ID0] = *value;
+      break;
+    case MB_VR_P0V8_VDD0_POWER:
+      *value = vr_vdd_volt[VR_ID0] * vr_vdd_curr[VR_ID0];
+      break;
+    case MB_VR_P0V8_VDD1_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-31", "VR_P0V8_VDD1_TEMP", value);
+      break;
+    case MB_VR_P0V8_VDD1_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-31", "VR_P0V8_VDD1_VOUT", value);
+      vr_vdd_volt[VR_ID1] = *value;
+      break;
+    case MB_VR_P0V8_VDD1_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-31", "VR_P0V8_VDD1_CURR", value);
+      vr_vdd_curr[VR_ID1] = *value;
+      break;
+    case MB_VR_P0V8_VDD1_POWER:
+      *value = vr_vdd_volt[VR_ID1] * vr_vdd_curr[VR_ID1];
+      break;
+    case MB_VR_P0V8_VDD2_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-32", "VR_P0V8_VDD2_TEMP", value);
+      break;
+    case MB_VR_P0V8_VDD2_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-32", "VR_P0V8_VDD2_VOUT", value);
+      vr_vdd_volt[VR_ID2] = *value;
+      break;
+    case MB_VR_P0V8_VDD2_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-32", "VR_P0V8_VDD2_CURR", value);
+      vr_vdd_curr[VR_ID2] = *value;
+      break;
+    case MB_VR_P0V8_VDD2_POWER:
+      *value = vr_vdd_volt[VR_ID2] * vr_vdd_curr[VR_ID2];
+      break;
+    case MB_VR_P0V8_VDD3_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-33", "VR_P0V8_VDD3_TEMP", value);
+      break;
+    case MB_VR_P0V8_VDD3_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-33", "VR_P0V8_VDD3_VOUT", value);
+      vr_vdd_volt[VR_ID3] = *value;
+      break;
+    case MB_VR_P0V8_VDD3_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-33", "VR_P0V8_VDD3_CURR", value);
+      vr_vdd_curr[VR_ID3] = *value;
+      break;
+    case MB_VR_P0V8_VDD3_POWER:
+      *value = vr_vdd_volt[VR_ID3] * vr_vdd_curr[VR_ID3];
+      break;
+    case MB_VR_P1V0_AVD0_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-34", "VR_P1V0_AVD0_TEMP", value);
+      break;
+    case MB_VR_P1V0_AVD0_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-34", "VR_P1V0_AVD0_VOUT", value);
+      vr_avd_volt[VR_ID0] = *value;
+      break;
+    case MB_VR_P1V0_AVD0_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-34", "VR_P1V0_AVD0_CURR", value);
+      vr_avd_curr[VR_ID0] = *value;
+      break;
+    case MB_VR_P1V0_AVD0_POWER:
+      *value = vr_avd_volt[VR_ID0] * vr_avd_curr[VR_ID0];
+      break;
+    case MB_VR_P1V0_AVD1_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-35", "VR_P1V0_AVD1_TEMP", value);
+      break;
+    case MB_VR_P1V0_AVD1_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-35", "VR_P1V0_AVD1_VOUT", value);
+      vr_avd_volt[VR_ID1] = *value;
+      break;
+    case MB_VR_P1V0_AVD1_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-35", "VR_P1V0_AVD1_CURR", value);
+      vr_avd_curr[VR_ID1] = *value;
+      break;
+    case MB_VR_P1V0_AVD1_POWER:
+      *value = vr_avd_volt[VR_ID1] * vr_avd_curr[VR_ID1];
+      break;
+    case MB_VR_P1V0_AVD2_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-36", "VR_P1V0_AVD2_TEMP", value);
+      break;
+    case MB_VR_P1V0_AVD2_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-36", "VR_P1V0_AVD2_VOUT", value);
+      vr_avd_volt[VR_ID2] = *value;
+      break;
+    case MB_VR_P1V0_AVD2_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-36", "VR_P1V0_AVD2_CURR", value);
+      vr_avd_curr[VR_ID2] = *value;
+      break;
+    case MB_VR_P1V0_AVD2_POWER:
+      *value = vr_avd_volt[VR_ID2] * vr_avd_curr[VR_ID2];
+      break;
+    case MB_VR_P1V0_AVD3_TEMP:
+      ret = sensors_read("mpq8645p-i2c-5-3b", "VR_P1V0_AVD3_TEMP", value);
+      break;
+    case MB_VR_P1V0_AVD3_VOUT:
+      ret = sensors_read("mpq8645p-i2c-5-3b", "VR_P1V0_AVD3_VOUT", value);
+      vr_avd_volt[VR_ID3] = *value;
+      break;
+    case MB_VR_P1V0_AVD3_CURR:
+      ret = sensors_read("mpq8645p-i2c-5-3b", "VR_P1V0_AVD3_CURR", value);
+      vr_avd_curr[VR_ID3] = *value;
+      break;
+    case MB_VR_P1V0_AVD3_POWER:
+      *value = vr_avd_volt[VR_ID3] * vr_avd_curr[VR_ID3];
+      break;
+
+    default:
+      ret = ERR_SENSOR_NA;
+  }
+
+  return ret < 0? ERR_SENSOR_NA: 0;
 }

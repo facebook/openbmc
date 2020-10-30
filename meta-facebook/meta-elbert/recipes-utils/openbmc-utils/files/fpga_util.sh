@@ -2,6 +2,7 @@
 
 # shellcheck disable=SC1091
 # shellcheck disable=SC2012
+# shellcheck disable=SC2034
 . /usr/local/bin/openbmc-utils.sh
 
 CPLD_JTAG_SEL_L="CPLD_JTAG_SEL_L"
@@ -14,6 +15,8 @@ SPI_PIM_SEL="${SMBCPLD_SYSFS_DIR}/spi_pim_en"
 SPI_TH4_QSPI_SEL="${SMBCPLD_SYSFS_DIR}/spi_th4_qspi_en"
 JTAG_CTRL="${SMBCPLD_SYSFS_DIR}/jtag_ctrl"
 SMB_SPIDEV="spidev1.1"
+SMB_SPI="spi1.1"
+SMB_MTD=""
 
 SCM_PROGRAM=false
 SMB_PROGRAM=false
@@ -46,13 +49,14 @@ disconnect_program_paths() {
         gpio_set_value $SCM_FPGA_LATCH_L 1
     else
         echo 0 > "$JTAG_EN"
-        echo 1 > "$PROGRAM_SEL"
+        echo 0 > "$PROGRAM_SEL"
     fi
 
     if [ "$SMB_PROGRAM" = false ]; then
         echo 0 > "$SPI_CTRL"
         echo 0 > "$JTAG_CTRL"
     fi
+    devmem_clear_bit 0x1e6e2438 8 # SPI1CS1 Function enable
 }
 
 connect_scm_jtag() {
@@ -90,25 +94,46 @@ connect_fan_jtag() {
     echo 0x1 > "$JTAG_CTRL"
 }
 
+bind_spi_nor() {
+    # Unbind spidev1.1
+    if [ -e /dev/spidev1.1 ]; then
+        echo "$SMB_SPI" > /sys/bus/spi/drivers/spidev/unbind
+    fi
+
+    # Bind
+    echo spi-nor  > /sys/bus/spi/devices/"$SMB_SPI"/driver_override
+    if [ ! -e /sys/bus/spi/drivers/spi-nor/"$SMB_SPI" ]; then
+        echo Binding "$SMB_SPI" to ...
+        echo "$SMB_SPI" > /sys/bus/spi/drivers/spi-nor/bind
+        sleep 0.5
+    fi
+    SMB_MTD="$(grep "$SMB_SPI" /proc/mtd |awk '{print$1}' | tr -d : | tr -d mtd)"
+    if test -z "$SMB_MTD"; then
+        echo "Failed to locate mtd partition for SPI Flash!"
+        exit 1
+    fi
+}
+
+unbind_spi_nor() {
+    # Method for unloading spi-nor driver dynamically back to spidev
+    echo > /sys/bus/spi/devices/"$SMB_SPI"/driver_override
+    if grep "$SMB_SPI" /proc/mtd > /dev/null 2>&1 ; then
+        echo "Unbinding spi-nor from $SMB_SPI"
+        echo "$SMB_SPI" > /sys/bus/spi/drivers/spi-nor/unbind
+    fi
+    if [ ! -e /dev/spidev1.1 ]; then
+        echo "Binding spidev back to $SMB_SPI"
+        echo "$SMB_SPI" > /sys/bus/spi/drivers/spidev/bind
+    fi
+}
+
 connect_pim_flash() {
     gpio_set_value $CPLD_JTAG_SEL_L 1
     echo 0 > "$PROGRAM_SEL"
     echo 1 > "$SPI_PIM_SEL"
     devmem_set_bit 0x1e6e2438 8 # SPI1CS1 Function enable
-
-    for i in $(seq 1 5); do
-        msg="$(flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "MT25QL256" 2>/dev/null)"
-        if echo "$msg" | grep -q "Found Micron flash chip"; then
-            echo "Detected PIM Flash device."
-            return 0;
-        else
-            echo "Attempt ${i} to detect pim flash failed..."
-        fi
-    done
-
-    echo "Failed to detect PIM Flash device with flashrom"
-    echo "$msg"
-    exit 1
+    sleep 0.1
+    bind_spi_nor
 }
 
 connect_th4_qspi_flash() {
@@ -116,20 +141,9 @@ connect_th4_qspi_flash() {
     echo 0 > "$PROGRAM_SEL"
     echo 1 > "$SPI_TH4_QSPI_SEL"
     devmem_set_bit 0x1e6e2438 8 # SPI1CS1 Function enable
-
-    for i in $(seq 1 5); do
-        msg="$(flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "MT25QU256" 2>/dev/null)"
-        if echo "$msg" | grep -q "Found Micron flash chip"; then
-            echo "Detected TH4 QSPI Flash device."
-            return 0;
-        else
-            echo "Attempt ${i} to detect TH4 QSPI flash failed..."
-        fi
-    done
-
-    echo "Failed to detect TH4 QSPI Flash device with flashrom"
-    echo "$msg"
-    exit 1
+    sleep 0.1
+    unbind_spi_nor # Force Re-bind SPI nor
+    bind_spi_nor
 }
 
 do_scm() {
@@ -245,7 +259,7 @@ program_spi_image() {
     fill=$((EEPROM_SIZE - IMAGE_SIZE))
     if [ "$fill" = 0 ] ; then
         echo "$ORIGINAL_IMAGE already 32MB, no need to resize..."
-        flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "$CHIP_TYPE" -N \
+        flashrom -p linux_mtd:dev="$SMB_MTD" -N \
             --layout /etc/elbert_pim.layout --image "$PARTITION" $OPERATION "$ORIGINAL_IMAGE"
     else
         bs=1048576 # 1MB blocks
@@ -275,7 +289,7 @@ program_spi_image() {
             exit 1
         fi
         # Program the 32MB pim image
-        flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "$CHIP_TYPE" -N \
+        flashrom -p linux_mtd:dev="$SMB_MTD" -N \
              --layout /etc/elbert_pim.layout --image "$PARTITION" $OPERATION "$TEMP_IMAGE"
         rm "$TEMP_IMAGE"
     fi
@@ -323,7 +337,7 @@ read_spi_partition_image() {
 
     echo "Selected partition $PARTITION to read."
 
-    flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "$CHIP_TYPE" \
+    flashrom -p linux_mtd:dev="$SMB_MTD" \
         --layout /etc/elbert_pim.layout --image "$PARTITION" -r "$TEMP"
     dd if="$TEMP" of="$DEST" bs=1M count="$COUNT" skip="$SKIP_MB" 2> /dev/null
     rm "$TEMP"
@@ -365,7 +379,7 @@ do_pim() {
         READ)
             connect_pim_flash
             if [ -z "$3" ]; then
-                flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c MT25QL256 -r "$2"
+                flashrom -p linux_mtd:dev="$SMB_MTD" -r "$2"
             else
                 read_spi_partition_image "$2" "MT25QL256" "$3"
             fi
@@ -373,9 +387,9 @@ do_pim() {
         ERASE)
             connect_pim_flash
             if [ -z "$2" ]; then
-                flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c MT25QL256 -E
+                flashrom -p linux_mtd:dev="$SMB_MTD" -E
             else
-                flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c MT25QL256 \
+                flashrom -p linux_mtd:dev="$SMB_MTD" \
                     --layout /etc/elbert_pim.layout --image "$2" -E
             fi
             ;;
@@ -391,10 +405,12 @@ do_th4_qspi() {
         PROGRAM|VERIFY)
             connect_th4_qspi_flash
             program_spi_image "$2" "MT25QU256" full "$1"
+            unbind_spi_nor
             ;;
         READ)
             connect_th4_qspi_flash
-            flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "MT25QU256" -r "$2"
+            flashrom -p linux_mtd:dev="$SMB_MTD" -r "$2"
+            unbind_spi_nor
             ;;
         *)
             echo "TH4 QSPI only supports program/verify/read action. Exiting..."

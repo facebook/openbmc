@@ -7,15 +7,15 @@
     },
     "scm" : {
         "filename" : "elbert_scm.astp",
-        "version" : "1.14",
+        "version" : "1.13",
         "hash" : "sha1sum",
         "hash_value" : "68993159e93575f102c63a19a3891c2630ee082b"
     },
     "smb" : {
         "filename" : "elbert_smb.astp",
-        "version" : "1.17",
+        "version" : "1.18",
         "hash" : "sha1sum",
-        "hash_value" : "acec3c725ebd05cccff6346f3ea4717c6bdc89f4"
+        "hash_value" : "2daf9def66e5907cb97f8522ec32adad61506e4d"
     },
     "smb_cpld" : {
         "filename" : "elbert_smb_cpld.astp",
@@ -31,20 +31,20 @@
     },
     "pim_base" : {
         "filename" : "elbert_pim_base.abin",
-        "version" : "0.0",
+        "version" : "1.1",
         "hash" : "sha1sum",
-        "hash_value" : ""
+        "hash_value" : "fcb3a867378ee06f15ba2e3dfd2bc878d5466f6a"
     },
     "pim16q" : {
         "filename" : "elbert_pim16q.abin",
         "version" : "6.4",
         "hash" : "sha1sum",
-        "hash_value" : "9bd8ce9df692e4e28b702596416b0ec54e273f2d"
+        "hash_value" : "dc1848b1aa4bf7f7b05a2f57555a4405f282da57"
     },
     "pim8ddm" : {
         "filename" : "elbert_pim8ddm.abin",
         "version" : "7.3",
         "hash" : "sha1sum",
-        "hash_value" : "090c6e9c28cd701254d57baa0a57030aed28253f"
+        "hash_value" : "b3b95abce62b978a7242089751b28def0d2a899a"
     }
 }

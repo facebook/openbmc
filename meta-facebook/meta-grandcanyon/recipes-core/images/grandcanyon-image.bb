@@ -29,4 +29,5 @@ IMAGE_INSTALL += " \
   sensor-mon \
   fpc-util \
   front-paneld \
+  i2craw \
   "

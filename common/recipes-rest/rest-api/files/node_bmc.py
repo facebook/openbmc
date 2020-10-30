@@ -188,6 +188,29 @@ class bmcNode(node):
                     pass
         return out_str
 
+    def getMemInfo(self):
+        desired_keys = (
+            "MemTotal",
+            "MemAvailable",
+            "MemFree",
+            "Shmem",
+            "Buffers",
+            "Cached",
+        )
+        meminfo = {}
+        with open("/proc/meminfo", "r") as mi:
+            for line in mi:
+                try:
+                    key, value = line.split(":", 1)
+                    key = key.strip()
+                    if key not in desired_keys:
+                        continue
+                    memval, _ = value.strip().split(" ", 1)
+                    meminfo[key] = int(memval)
+                except ValueError:
+                    pass
+        return meminfo
+
     def getInformation(self, param=None):
         # Get Platform Name
         name = pal.pal_get_platform_name()
@@ -238,6 +261,8 @@ class bmcNode(node):
         adata = data.split("\n")
         mem_usage = adata[0]
         cpu_usage = adata[1]
+
+        memory = self.getMemInfo()
 
         # Get OpenBMC version
         obc_version = ""
@@ -291,6 +316,7 @@ class bmcNode(node):
             # more pass-through proxy
             "uptime": uptime_seconds,
             "Memory Usage": mem_usage,
+            "memory": memory,
             "CPU Usage": cpu_usage,
             "OpenBMC Version": obc_version,
             "u-boot version": uboot_version,

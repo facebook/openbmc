@@ -86,8 +86,9 @@
                         "^meta-aspeed/.*",
                         "^meta-facebook/recipes-.*/.*",
                         "^meta-facebook/meta-python3/.*",
-                        "^meta-facebook/classes",
-                        "^meta-facebook/conf",
+                        "^meta-facebook/classes/.*",
+                        "^meta-facebook/conf/.*",
+                        "^meta-facebook/meta-backports/.*",
                         "^yocto/.*"
                     ]
                 }
@@ -856,8 +857,9 @@
                         "^meta-aspeed/.*",
                         "^meta-facebook/recipes-.*/.*",
                         "^meta-facebook/meta-python3/.*",
-                        "^meta-facebook/classes",
-                        "^meta-facebook/conf",
+                        "^meta-facebook/classes/.*",
+                        "^meta-facebook/conf/.*",
+                        "^meta-facebook/meta-backports/.*",
                         "^yocto/.*"
                     ]
                 }

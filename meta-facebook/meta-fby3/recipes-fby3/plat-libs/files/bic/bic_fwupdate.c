@@ -36,6 +36,7 @@
 #include "bic_cpld_lattice_fwupdate.h"
 #include "bic_vr_fwupdate.h"
 #include "bic_bios_fwupdate.h"
+#include "bic_mchp_pciesw_fwupdate.h"
 //#define DEBUG
 
 /****************************/
@@ -807,22 +808,6 @@ error_exit:
 }
 
 static int
-open_and_get_size(char *path, int *file_size) {
-  struct stat finfo;
-  int fd;
-
-  fd = open(path, O_RDONLY, 0666);
-  if ( fd < 0 ) {
-    return fd;
-  }
-
-  fstat(fd, &finfo);
-  *file_size = finfo.st_size;
-
-  return fd;
-}
-
-static int
 update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
   int ret = -1;
   int fd = 0;
@@ -872,39 +857,6 @@ exit:
   return ret;
 }
 
-static int
-send_image_data_via_bic(uint8_t slot_id, uint8_t comp, uint8_t intf, uint32_t offset, uint16_t len, uint8_t *buf)
-{
-  uint8_t tbuf[256] = {0};
-  uint8_t rbuf[16] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int ret = -1;
-  int retries = 3;
-
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
-  tbuf[3] = comp;
-  tbuf[4] = (offset) & 0xFF;
-  tbuf[5] = (offset >>  8) & 0xFF;
-  tbuf[6] = (offset >> 16) & 0xFF;
-  tbuf[7] = (offset >> 24) & 0xFF;
-  tbuf[8] = len & 0xFF;
-  tbuf[9] = (len >> 8) & 0xFF;
-  memcpy(&tbuf[10], buf, len);
-  tlen = len + 10;
-
-  do {
-    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
-    if (ret != BIC_STATUS_SUCCESS) {
-      if (ret == BIC_STATUS_NOT_SUPP_IN_CURR_STATE)
-        return ret;
-      printf("%s() slot: %d, target: %d, offset: %d, len: %d retrying..\n", __func__, slot_id, comp, offset, len);
-    }
-  } while( (ret < 0) && (retries--));
-
-  return ret;
-}
-
 #define IPMB_MAX_SEND 224
 static int
 update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file_size) {
@@ -936,7 +888,7 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, in
     if ((offset + read_bytes) >= file_size) {
       comp |= 0x80;
     }
-    ret = send_image_data_via_bic(slot_id, comp, intf, offset, read_bytes, buf);
+    ret = send_image_data_via_bic(slot_id, comp, intf, offset, read_bytes, 0x0, buf);
     if (ret != BIC_STATUS_SUCCESS)
       break;
 
@@ -1020,6 +972,10 @@ get_component_name(uint8_t comp) {
       return "CPLD Capsule, Target to Active Region";
     case FW_CPLD_RCVY_CAPSULE:
       return "CPLD Capsule, Target to Recovery Region";
+    case FW_2OU_PESW:
+      return "2OU PCIe Switch";
+    case FW_2OU_PESW_VR:
+      return "2OU PCIe VR";
     default:
       return "Unknown";
   }
@@ -1053,6 +1009,8 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     case FW_2OU_BIC:
     case FW_2OU_BIC_BOOTLOADER:
     case FW_2OU_CPLD:
+    case FW_2OU_PESW:
+    case FW_2OU_PESW_VR:
       intf = REXP_BIC_INTF;
       break;
     case FW_BB_BIC:
@@ -1101,6 +1059,9 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       break;
     case FW_VR:
       ret = update_bic_vr(slot_id, path, force);
+      break;
+    case FW_2OU_PESW:
+      ret = update_bic_mchp_pcie_fw(slot_id, comp, path, intf, force);
       break;
   }
 

@@ -80,6 +80,8 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *txbuf
 int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 int bic_set_fan_auto_mode(uint8_t crtl, uint8_t *status);
 int _set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout);
+int send_image_data_via_bic(uint8_t slot_id, uint8_t comp, uint8_t intf, uint32_t offset, uint16_t len, uint32_t image_len, uint8_t *buf);
+int open_and_get_size(char *path, int *file_size);
 #ifdef __cplusplus
 } // extern "C"
 #endif

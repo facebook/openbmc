@@ -7,6 +7,7 @@
 #include "bic_vr.h"
 #include "bic_capsule.h"
 #include "bmc_cpld_capsule.h"
+#include "bic_pcie_sw.h"
 #include <facebook/fby3_common.h>
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
@@ -48,6 +49,9 @@ class ClassConfig {
         static BicFwExtComponent     bic_bb_fw1("slot1", "bb_bic"  , FRU_SLOT1, "bb", FW_BB_BIC);
         static BicFwExtBlComponent bicbl_bb_fw1("slot1", "bb_bicbl", FRU_SLOT1, "bb", FW_BB_BIC_BOOTLOADER);
         static CpldExtComponent     cpld_bb_fw1("slot1", "bb_cpld" , FRU_SLOT1, "bb", FW_BB_CPLD);
+
+        static PCIESWComponent pciesw_2ou_fw1("slot1", "2ou_pciesw", FRU_SLOT1, "2ou", FW_2OU_PESW);
+        static VrExtComponent  vr_2ou_fw1("slot1", "2ou_vr", FRU_SLOT1, "2ou", FW_2OU_PESW_VR);
       } else {
         //slot1 1ou bic/bicbl/cpld
         static BicFwExtComponent     bic_1ou_fw1("slot1", "1ou_bic"  , FRU_SLOT1, "1ou", FW_1OU_BIC);

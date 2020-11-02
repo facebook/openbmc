@@ -319,3 +319,61 @@ _set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
 
   return 0;
 }
+
+int
+send_image_data_via_bic(uint8_t slot_id, uint8_t comp, uint8_t intf, uint32_t offset, uint16_t len, uint32_t image_len, uint8_t *buf)
+{
+  uint8_t tbuf[256] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = -1;
+  int retries = 3;
+
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  tbuf[3] = comp;
+  tbuf[4] = (offset) & 0xFF;
+  tbuf[5] = (offset >>  8) & 0xFF;
+  tbuf[6] = (offset >> 16) & 0xFF;
+  tbuf[7] = (offset >> 24) & 0xFF;
+  tbuf[8] = len & 0xFF;
+  tbuf[9] = (len >> 8) & 0xFF;
+  if ( image_len > 0 ) {
+    tbuf[10] = (image_len) & 0xFF;
+    tbuf[11] = (image_len >> 8) & 0xFF;
+    tbuf[12] = (image_len >> 16) & 0xFF;
+    tbuf[13] = (image_len >> 24) & 0xFF;
+    memcpy(&tbuf[14], buf, len);
+    tlen = len + 14;
+  } else {
+    memcpy(&tbuf[10], buf, len);
+    tlen = len + 10;
+  }
+
+  do {
+    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
+    if (ret != BIC_STATUS_SUCCESS) {
+      if (ret == BIC_STATUS_NOT_SUPP_IN_CURR_STATE)
+        return ret;
+      printf("%s() slot: %d, target: %d, offset: %d, len: %d retrying..\n", __func__, slot_id, comp, offset, len);
+    }
+  } while( (ret < 0) && (retries--));
+
+  return ret;
+}
+
+int
+open_and_get_size(char *path, int *file_size) {
+  struct stat finfo;
+  int fd;
+
+  fd = open(path, O_RDONLY, 0666);
+  if ( fd < 0 ) {
+    return fd;
+  }
+
+  fstat(fd, &finfo);
+  *file_size = finfo.st_size;
+
+  return fd;
+}

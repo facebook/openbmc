@@ -1191,16 +1191,14 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
   int ret = 0, config_status = 0;
   uint8_t bmc_location = 0;
   uint8_t type_1ou = 0;
-
+  uint8_t type_2ou = 0;
   ret = fby3_common_get_bmc_location(&bmc_location);
-
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
     return -1;
   }
 
   config_status = bic_is_m2_exp_prsnt(slot);
-
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
     if (config_status == 0) {
       pcie_conf = CONFIG_A;
@@ -1217,7 +1215,15 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
       pcie_conf = CONFIG_B;
     }
   } else {
-      pcie_conf = CONFIG_C;
+    pcie_conf = CONFIG_C;
+    //check if GPv3 is installed
+    if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
+      if ( fby3_common_get_2ou_board_type(slot, &type_2ou) < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
+      } else if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+        pcie_conf = CONFIG_C_GPV3;
+      }
+    }
   }
 
   *data++ = pcie_conf;
@@ -1504,7 +1510,7 @@ pal_get_m2vpp_str_name(uint8_t fru, uint8_t comp, uint8_t root_port, char *error
 }
 
 static void
-pal_get_m2pgood_str_name(uint8_t comp, uint8_t device_num, char *error_log) {
+pal_get_m2_str_name(uint8_t comp, uint8_t device_num, char *error_log) {
   const char *comp_str[5] = {"ServerBoard", "1OU", "2OU", "SPE", "GPv3"};
   const uint8_t comp_size = ARRAY_SIZE(comp_str);
   if ( comp < comp_size ) {
@@ -1535,6 +1541,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_VCCIO_FAULT    = 0x0D,
     SYS_SMI_STUCK_LOW  = 0x0E,
     SYS_OV_DETECT      = 0x0F,
+    SYS_M2_OCP_DETECT  = 0x10,
   };
   uint8_t event = event_data[0];
 
@@ -1574,7 +1581,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       strcat(error_log, "VPP Power Control");
       break;
     case SYS_M2_PGOOD:
-      pal_get_m2pgood_str_name(event_data[1], event_data[2], error_log);
+      pal_get_m2_str_name(event_data[1], event_data[2], error_log);
       strcat(error_log, "Power Good Fault");
       break;
     case SYS_VCCIO_FAULT:
@@ -1585,6 +1592,10 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_OV_DETECT:
       strcat(error_log, "VCCIO Over Voltage Fault");
+      break;
+    case SYS_M2_OCP_DETECT:
+      pal_get_m2_str_name(event_data[1], event_data[2], error_log);
+      strcat(error_log, "Load Switch Fault");
       break;
     default:
       strcat(error_log, "Undefined system event");

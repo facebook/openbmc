@@ -410,6 +410,16 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_2OU_BIC:
     case FW_2OU_BIC_BOOTLOADER:
     case FW_2OU_CPLD:
+    case FW_2OU_3V3_VR1:
+    case FW_2OU_3V3_VR2:
+    case FW_2OU_3V3_VR3:
+    case FW_2OU_PESW_VR:
+    case FW_2OU_PESW_CFG_VER:
+    case FW_2OU_PESW_FW_VER:
+    case FW_2OU_PESW_BL0_VER:
+    case FW_2OU_PESW_BL1_VER:
+    case FW_2OU_PESW_PART_MAP0_VER:
+    case FW_2OU_PESW_PART_MAP1_VER:
       intf = REXP_BIC_INTF;
       break;
     case FW_BB_BIC:
@@ -429,6 +439,16 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_1OU_BIC_BOOTLOADER:
     case FW_2OU_BIC:
     case FW_2OU_BIC_BOOTLOADER:
+    case FW_2OU_3V3_VR1:
+    case FW_2OU_3V3_VR2:
+    case FW_2OU_3V3_VR3:
+    case FW_2OU_PESW_VR:
+    case FW_2OU_PESW_CFG_VER:
+    case FW_2OU_PESW_FW_VER:
+    case FW_2OU_PESW_BL0_VER:
+    case FW_2OU_PESW_BL1_VER:
+    case FW_2OU_PESW_PART_MAP0_VER:
+    case FW_2OU_PESW_PART_MAP1_VER:
     case FW_BB_BIC:
     case FW_BB_BIC_BOOTLOADER:
       // File the IANA ID

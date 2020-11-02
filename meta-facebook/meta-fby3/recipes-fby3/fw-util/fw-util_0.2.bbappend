@@ -36,6 +36,9 @@ SRC_URI += "\
         file://bic_capsule.cpp \
         file://bmc_cpld_capsule.h \
         file://bmc_cpld_capsule.cpp \
+        file://bic_pcie_sw.cpp \
+        file://bic_pcie_sw.h \
+        file://bic_expansion_vr.cpp \
         "
 
 CXXFLAGS += " -DBIC_SUPPORT "

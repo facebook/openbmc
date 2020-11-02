@@ -1098,7 +1098,7 @@ error_exit:
 
 static int sensors_read_vr(uint8_t sensor_num, float *value)
 {
-  int ret;
+  int ret = 0;
 
   switch (sensor_num) {
     case MB_VR_P0V8_VDD0_TEMP:

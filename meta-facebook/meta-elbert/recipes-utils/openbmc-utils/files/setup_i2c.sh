@@ -57,8 +57,6 @@ hwmon_device_add() {
 # long or is in bad shape
 # Supvervisor Inlet
 hwmon_device_add 11 0x4c max6658
-# TH4 and board temp sensor
-hwmon_device_add 4 0x4d max6581
 
 # SMBus 0
 # Currently not using I2C TPM

@@ -1750,16 +1750,14 @@ read_hsc_peak_pin(uint8_t hsc_id, float *value) {
 }
 
 static void
-pal_all_slot_power_ctrl(uint8_t opt, float *val) {
+pal_all_slot_power_ctrl(uint8_t opt, char *sel_desc) {
   int i = 0;
   uint8_t status = 0;
   for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
     if ( pal_is_fru_prsnt(i, &status) < 0 || status == 0 ) {
       continue;
     }
-    syslog(LOG_CRIT, "FRU: %d, Turned %s 12V power of slot%d due to NIC temp is %s %s. (val = %.2f)", i, (opt == SERVER_12V_ON)?"on":"off" \
-                                                                                                     , i, (opt == SERVER_12V_ON)?"under":"over" \
-                                                                                                     , (opt == SERVER_12V_ON)?"UCR":"UNR", *val);
+    syslog(LOG_CRIT, "FRU: %d, Turned %s 12V power of slot%d due to %s", i, (opt == SERVER_12V_ON)?"on":"off", i, sel_desc);
     if ( pal_set_server_power(i, opt) < 0 ) {
       syslog(LOG_CRIT, "Failed to turn %s 12V power of slot%d", (opt == SERVER_12V_ON)?"on":"off", i);
     }
@@ -1770,6 +1768,7 @@ static void
 pal_nic_otp_check(float *value, float unr, float ucr) {
   static int retry = MAX_RETRY;
   static bool is_otp_asserted = false;
+  char sel_str[128] = {0};
   if ( *value < ucr ) {
     if ( is_otp_asserted == false ) return; //it will move on when is_otp_asserted is true
     if ( retry != MAX_RETRY ) {
@@ -1779,7 +1778,8 @@ pal_nic_otp_check(float *value, float unr, float ucr) {
 
     //recover the system
     is_otp_asserted = false;
-    pal_all_slot_power_ctrl(SERVER_12V_ON, value);
+    snprintf(sel_str, sizeof(sel_str), "NIC temp is under UCR. (val = %.2f)", *value);
+    pal_all_slot_power_ctrl(SERVER_12V_ON, sel_str);
     return;
   }
 
@@ -1791,7 +1791,29 @@ pal_nic_otp_check(float *value, float unr, float ucr) {
   //need to turn off all slots since retry is reached
   if ( is_otp_asserted == false && *value >= unr ) {
     is_otp_asserted = true;
-    pal_all_slot_power_ctrl(SERVER_12V_OFF, value);
+    snprintf(sel_str, sizeof(sel_str), "NIC temp is over UNR. (val = %.2f)", *value);
+    pal_all_slot_power_ctrl(SERVER_12V_OFF, sel_str);
+  }
+
+  return;
+}
+
+void
+pal_fan_fail_otp_check(void) {
+  uint8_t bmc_location = 0;
+  char sel_str[128] = {0};
+  static bool is_fan_fail_otp_asserted = false;
+
+  if (is_fan_fail_otp_asserted == true) return;
+
+  if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
+    syslog(LOG_WARNING, "Failed to get the location of BMC");
+  }
+
+  if ( is_fan_fail_otp_asserted == false && bmc_location != NIC_BMC){
+    is_fan_fail_otp_asserted = true;
+    snprintf(sel_str, sizeof(sel_str), "all fans failed");
+    pal_all_slot_power_ctrl(SERVER_12V_OFF, sel_str);
   }
 
   return;

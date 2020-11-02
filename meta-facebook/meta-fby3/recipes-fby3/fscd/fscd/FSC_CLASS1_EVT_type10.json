@@ -8,6 +8,10 @@
     "fan_fail": true,
     "sensor_fail": true
   },
+  "fan_dead_boost": {
+    "threshold": 20,
+    "action": "host_shutdown"
+  },
   "sensor_valid_check": {
     "soc_cpu": {
       "attribute": {
@@ -20,6 +24,11 @@
       }
     },
     "soc_dimm": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "1ou_m2": {
       "attribute": {
         "type" : "power_status"
       }

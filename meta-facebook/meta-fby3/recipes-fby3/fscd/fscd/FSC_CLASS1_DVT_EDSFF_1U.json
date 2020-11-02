@@ -8,6 +8,10 @@
     "fan_fail": true,
     "sensor_fail": false
   },
+  "fan_dead_boost": {
+    "threshold": 20,
+    "action": "host_shutdown"
+  },
   "sensor_valid_check": {
     "soc_cpu": {
       "attribute": {

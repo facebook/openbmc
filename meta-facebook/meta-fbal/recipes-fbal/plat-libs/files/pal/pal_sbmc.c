@@ -19,8 +19,8 @@ bmc_ipmb_swap_info_process(uint8_t ipmi_cmd, uint8_t netfn, uint8_t t_bmc_addr,
     return ret;
   }
 
-  return lib_ipmb_send_request(ipmi_cmd, netfn, 
-                               txbuf, txlen, 
+  return lib_ipmb_send_request(ipmi_cmd, netfn,
+                               txbuf, txlen,
                                rxbuf, rxlen,
                                BMC_IPMB_BUS_ID, t_bmc_addr, m_bmc_addr);
 }
@@ -40,3 +40,17 @@ cmd_set_smbc_restore_power_policy(uint8_t policy, uint8_t t_bmc_addr) {
   return bmc_ipmb_swap_info_process(ipmi_cmd, netfn, t_bmc_addr, tbuf, tlen, rbuf, &rlen);
 }
 
+int
+cmd_smbc_chassis_ctrl(uint8_t cmd, uint8_t t_bmc_addr) {
+  uint8_t ipmi_cmd = CMD_CHASSIS_CONTROL;
+  uint8_t netfn = NETFN_CHASSIS_REQ;
+  uint8_t tbuf[8];
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen;
+  uint8_t tlen;
+
+  tbuf[0] = cmd;
+  tlen = 1;
+
+  return bmc_ipmb_swap_info_process(ipmi_cmd, netfn, t_bmc_addr, tbuf, tlen, rbuf, &rlen);
+}

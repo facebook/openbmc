@@ -7,6 +7,7 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <ctype.h>
+#include <pthread.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/libgpio.h>
@@ -23,6 +24,8 @@
 #define DELAY_POWER_OFF 6
 #define DELAY_GRACEFUL_SHUTDOWN 1
 #define DELAY_POWER_CYCLE 10
+
+static bool m_chassis_ctrl = false;
 
 bool
 is_server_off(void) {
@@ -154,6 +157,10 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
    case SERVER_POWER_RESET:
       if (status == SERVER_POWER_ON) {
+        if (!pal_get_config_is_master()) {
+          return cmd_smbc_chassis_ctrl(0x03, BMC0_SLAVE_DEF_ADDR);
+        }
+
         ret = pal_set_rst_btn(fru, 0);
         if (ret < 0)
           return ret;
@@ -447,4 +454,83 @@ int pal_check_cpld_power_fail(void)
   }
 
   return 0;
+}
+
+static void *
+chassis_ctrl_hndlr(void *arg) {
+  int cmd = (int)arg;
+
+  pthread_detach(pthread_self());
+  msleep(500);
+
+  if (!pal_set_server_power(FRU_MB, cmd)) {
+    switch (cmd) {
+      case SERVER_POWER_OFF:
+        syslog(LOG_CRIT, "SERVER_POWER_OFF successful for FRU: %d", FRU_MB);
+        break;
+      case SERVER_POWER_ON:
+        syslog(LOG_CRIT, "SERVER_POWER_ON successful for FRU: %d", FRU_MB);
+        break;
+      case SERVER_POWER_CYCLE:
+        syslog(LOG_CRIT, "SERVER_POWER_CYCLE successful for FRU: %d", FRU_MB);
+        break;
+      case SERVER_POWER_RESET:
+        syslog(LOG_CRIT, "SERVER_POWER_RESET successful for FRU: %d", FRU_MB);
+        break;
+      case SERVER_GRACEFUL_SHUTDOWN:
+        syslog(LOG_CRIT, "SERVER_GRACEFUL_SHUTDOWN successful for FRU: %d", FRU_MB);
+        break;
+    }
+  }
+
+  m_chassis_ctrl = false;
+  pthread_exit(0);
+}
+
+int
+pal_chassis_control(uint8_t fru, uint8_t *req_data, uint8_t req_len) {
+  uint8_t comp_code = CC_SUCCESS;
+  int ret, cmd = 0xFF;
+  pthread_t tid;
+
+  if (req_len != 1) {
+    return CC_INVALID_LENGTH;
+  }
+
+  if (m_chassis_ctrl != false) {
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
+
+  switch (req_data[0]) {
+    case 0x00:  // power off
+      cmd = SERVER_POWER_OFF;
+      break;
+    case 0x01:  // power on
+      cmd = SERVER_POWER_ON;
+      break;
+    case 0x02:  // power cycle
+      cmd = SERVER_POWER_CYCLE;
+      break;
+    case 0x03:  // power reset
+      cmd = SERVER_POWER_RESET;
+      break;
+    case 0x05:  // graceful-shutdown
+      cmd = SERVER_GRACEFUL_SHUTDOWN;
+      break;
+    default:
+      comp_code = CC_INVALID_DATA_FIELD;
+      break;
+  }
+
+  if (comp_code == CC_SUCCESS) {
+    m_chassis_ctrl = true;
+    ret = pthread_create(&tid, NULL, chassis_ctrl_hndlr, (void *)cmd);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "[%s] Create chassis_ctrl_hndlr thread failed!", __func__);
+      m_chassis_ctrl = false;
+      return CC_NODE_BUSY;
+    }
+  }
+
+  return comp_code;
 }

@@ -58,13 +58,15 @@ main(int argc, char **argv) {
     is_dev = false;
   }
 
-  if ( strcmp(argv[identify_idx], "--identify") != 0 ) goto err_exit;
-  if ( strcmp(argv[on_off_idx], "on") == 0 ) is_led_on = true;
-  else if ( strcmp(argv[on_off_idx], "off") == 0 ) is_led_on = false;
-  else goto err_exit;
-
-  if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
-    printf("Couldn't get the location of BMC\n");
+  if ( strcmp(argv[identify_idx], "--identify") != 0 ) {
+    goto err_exit;
+  }
+  
+  if ( strcmp(argv[on_off_idx], "on") == 0 ) {
+    is_led_on = true;
+  } else if ( strcmp(argv[on_off_idx], "off") == 0 ) {
+    is_led_on = false;
+  } else {
     goto err_exit;
   }
 
@@ -83,23 +85,32 @@ main(int argc, char **argv) {
     uint8_t dev_id = DEV_NONE;
 
     // check the location
+    if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
+      printf("Couldn't get the location of BMC\n");
+      goto err_exit;
+    }
+    
     if ( bmc_location == NIC_BMC ) {
-      printf("1OU is not supported!\n");
+      printf("Config C is not supported!\n");
       goto err_exit;
     }
 
     // reset status and read bic_is_m2_exp_prsnt_cache
     status = CONFIG_UNKNOWN;
-    ret = bic_is_m2_exp_prsnt_cache(fru);
-    if ( ret < 0 ) {
+    status = bic_is_m2_exp_prsnt_cache(fru);
+    if ( status < 0 ) {
       printf("Couldn't read bic_is_m2_exp_prsnt_cache\n");
       goto err_exit;
     }
 
-    // is EDSFF_1U present?
-    status = (uint8_t)ret;
+    // is 1OU present?
+    if ( (status & PRESENT_1OU) != PRESENT_1OU ) {
+      printf("1OU board is not present, device identification only support in E1S 1OU board\n");
+      goto err_exit;
+    }
+
     if ( bic_get_1ou_type(fru, &type) < 0 || type != EDSFF_1U ) {
-      printf("Only support 1OU E1S board, get %02X(Expected: %02X)\n", type, EDSFF_1U);
+      printf("Device identification only support in E1S 1OU board, get %02X (Expected: %02X)\n", type, EDSFF_1U);
       goto err_exit;
     }
 
@@ -115,8 +126,11 @@ main(int argc, char **argv) {
       goto err_exit;
     }
 
-    if ( is_led_on == true ) ret = bic_set_amber_led(fru, dev_id, 0x01);
-    else ret = bic_set_amber_led(fru, dev_id, 0x00);
+    if ( is_led_on == true ) {
+      ret = bic_set_amber_led(fru, dev_id, 0x01);
+    } else {
+      ret = bic_set_amber_led(fru, dev_id, 0x00);
+    }
     printf("fpc-util: identification for %s %s is set to %s %ssuccessfully\n", \
                          argv[1], argv[2], argv[4], (ret < 0)?"un":"");
   } else {

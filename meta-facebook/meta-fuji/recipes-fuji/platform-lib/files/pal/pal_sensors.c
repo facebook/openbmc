@@ -2037,7 +2037,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static int
 psu_init_acok_key(uint8_t fru) {
-  uint8_t psu_num = fru - 10;
+  uint8_t psu_num = fru - FRU_PSU1 + 1;
   char key[MAX_KEY_LEN + 1];
 
   snprintf(key, MAX_KEY_LEN, "psu%d_acok_state", psu_num);
@@ -2048,7 +2048,7 @@ psu_init_acok_key(uint8_t fru) {
 
 static int
 psu_acok_log(uint8_t fru, uint8_t curr_state) {
-  uint8_t psu_num = fru - 10;
+  uint8_t psu_num = fru - FRU_PSU1 + 1;
   int ret, old_state;
   char key[MAX_KEY_LEN + 1];
   char cvalue[MAX_VALUE_LEN] = {0};
@@ -4584,7 +4584,16 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
   snr_desc->name[sizeof(snr_desc->name)-1] = 0;
 
   pal_set_def_key_value();
-  psu_init_acok_key(fru);
+
+  switch (fru) {
+    case FRU_PSU1:
+    case FRU_PSU2:
+    case FRU_PSU3:
+    case FRU_PSU4:
+      psu_init_acok_key(fru);
+      break;
+  }
+
   return 0;
 }
 

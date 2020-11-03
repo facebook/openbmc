@@ -41,6 +41,7 @@ SRC_URI += "file://setup-gpio.sh \
             file://dump_pim_serials.sh \
             file://switch_pim_mux_to_fpga.sh \
             file://reinit_all_pim.sh \
+            file://wedge_us_mac.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -64,6 +65,7 @@ OPENBMC_UTILS_FILES += " \
     dump_pim_serials.sh \
     switch_pim_mux_to_fpga.sh \
     reinit_all_pim.sh \
+    wedge_us_mac.sh \
     "
 DEPENDS_append = " update-rc.d-native"
 

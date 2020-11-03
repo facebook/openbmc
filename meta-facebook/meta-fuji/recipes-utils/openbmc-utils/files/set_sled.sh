@@ -26,13 +26,13 @@ usage(){
   echo "Usage:"
   echo "     $program <dev> <color>"
   echo ""
-  echo "     <dev>: sys/fan/psu/scm"
+  echo "     <dev>: sys/fan/psu/smb"
   echo "     <color>: off/red/blue/green/amber"
 }
 
 led=""
 case $dev in
-  "sys" | "fan" | "psu" | "scm")
+  "sys" | "fan" | "psu" | "smb")
     led="/sys/class/leds/$dev"
   ;;
   *)

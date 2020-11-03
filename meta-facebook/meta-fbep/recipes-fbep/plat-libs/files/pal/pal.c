@@ -845,7 +845,10 @@ void* chassis_control_handler(void *arg)
 	syslog(LOG_CRIT, "SERVER_POWER_CYCLE successful");
       break;
     case 0xAC:  // sled-cycle with delay 4 secs
-      sleep(4);
+      sleep(3);
+      pal_update_ts_sled();
+      sync();
+      sleep(1);
       pal_force_sled_cycle();
       break;
     default:

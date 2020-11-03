@@ -30,4 +30,5 @@ IMAGE_INSTALL += " \
   fpc-util \
   front-paneld \
   i2craw \
+  healthd \
   "

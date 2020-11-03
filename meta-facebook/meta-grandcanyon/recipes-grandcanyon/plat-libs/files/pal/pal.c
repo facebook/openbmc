@@ -42,8 +42,6 @@
 #define NUM_BMC_FRU     1
 #define MAX_FAN_NAME    32
 
-#define LAST_KEY "last_key"
-
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, iocm";
 const char pal_fru_list_print[] = "all, server, bmc, uic, dpb, scc, nic, iocm";
 const char pal_fru_list_rw[] = "server, bmc, uic, nic, iocm";
@@ -80,14 +78,14 @@ struct pal_key_cfg {
   /* name, default value, function */
   {"system_identify", "off", NULL},
   /* Add more Keys here */
-  {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
+  {NULL, NULL, NULL} /* This is the last key of the list */
 };
 
 static int
 pal_key_index(char *key) {
   int i = 0;
 
-  while(strncmp(key_cfg[i].name, LAST_KEY, strlen(key_cfg[i].name))) {
+  while(key_cfg[i].name != NULL) {
     // If Key is valid, return index
     if (!strncmp(key, key_cfg[i].name, strlen(key_cfg[i].name))) {
       return i;

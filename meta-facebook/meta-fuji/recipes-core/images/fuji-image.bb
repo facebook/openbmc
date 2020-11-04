@@ -50,6 +50,7 @@ IMAGE_INSTALL += " \
   libpsu \
   psu-util \
   mdio-util \
+  usb-fpga-util \
   "
 
 def tpm_tools_recipe(d):

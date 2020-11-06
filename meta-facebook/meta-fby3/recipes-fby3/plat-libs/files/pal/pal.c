@@ -1465,34 +1465,65 @@ pal_parse_vr_event(uint8_t fru, uint8_t *event_data, char *error_log) {
 }
 
 static void
+pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **tbl, uint8_t *cnt) {
+  uint8_t board_type = M2_BOARD;
+  uint8_t config_status = CONFIG_UNKNOWN;
+  int ret = 0;
+
+  do {
+    ret = fby3_common_get_bmc_location(bmc_location);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Cannot get the location of BMC\n", __func__);
+      break;
+    }
+
+    ret = bic_is_m2_exp_prsnt(fru);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Cannot get bic_is_m2_exp_prsnt\n", __func__);
+      break;
+    } else config_status = (uint8_t)ret;
+
+    // only check it when 1OU is present
+    if ( *bmc_location != NIC_BMC && ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
+      ret = bic_get_1ou_type(fru, &board_type);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() Cannot get 1ou_board_type\n", __func__);
+        break;
+      }
+    } else if ( ((config_status & PRESENT_2OU) == PRESENT_2OU) ) {
+      ret = fby3_common_get_2ou_board_type(fru, &board_type);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() Cannot get 2ou_board_type\n", __func__);
+        break;
+      }
+    }
+  } while(0);
+
+  if ( ret < 0 ) {
+    syslog(LOG_ERR, "%s() Use the default root_port_mapping\n", __func__);
+    board_type = M2_BOARD; //make sure the default is used
+  }
+
+  if (board_type == EDSFF_1U || board_type == E1S_BOARD) {
+    // case 1/2OU E1S
+    *tbl = root_port_mapping_e1s;
+    *cnt = sizeof(root_port_mapping_e1s)/sizeof(MAPTOSTRING);
+  } else {
+    *tbl = root_port_mapping;
+    *cnt = sizeof(root_port_mapping)/sizeof(MAPTOSTRING);
+  }
+  return;
+}
+
+static void
 pal_get_m2vpp_str_name(uint8_t fru, uint8_t comp, uint8_t root_port, char *error_log) {
   int i = 0;
-  int size = 0;
-  int ret = 0;
-  uint8_t board_type_1ou = 0, board_type_2ou = 0;
-  MAPTOSTRING *mapping_table;
+  uint8_t size = 0;
+  uint8_t bmc_location = 0;
+  MAPTOSTRING *mapping_table = NULL;
 
-  ret = bic_get_1ou_type(fru, &board_type_1ou);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
-    board_type_1ou = M2_BOARD;
-  }
-
-  ret = fby3_common_get_2ou_board_type(fru, &board_type_2ou);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
-    board_type_2ou = M2_BOARD;
-  }
-
-  if (board_type_1ou == EDSFF_1U || board_type_2ou == E1S_BOARD) {
-    // case 1/2OU E1S
-    mapping_table = root_port_mapping_e1s;
-    size = sizeof(root_port_mapping_e1s)/sizeof(MAPTOSTRING);
-  } else {
-    // case 1/2OU M.2
-    mapping_table = root_port_mapping;
-    size = sizeof(root_port_mapping)/sizeof(MAPTOSTRING);
-  }
+  // select root port mapping tbl first
+  pal_sel_root_port_mapping_tbl(fru, &bmc_location, &mapping_table, &size);
 
   for ( i = 0 ; i < size; i++ ) {
     if ( mapping_table[i].root_port == root_port ) {
@@ -1719,8 +1750,7 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
 
   uint8_t general_info = (uint8_t) sel[3];
   uint8_t error_type = general_info & 0x0f;
-  uint8_t plat;
-  uint8_t board_type_1ou = 0, board_type_2ou = 0;
+  uint8_t plat = 0;
   uint8_t port_cnt = 0;
   char temp_log[128] = {0};
   error_log[0] = '\0';
@@ -1728,47 +1758,20 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   char *sil = "NA";
   char *location = "NA";
   char *err1_descript = "NA", *err2_descript = "NA";
-  int ret = 0;
   uint8_t bmc_location = 0;
-  MAPTOSTRING *mapping_table;
+  MAPTOSTRING *mapping_table = NULL;
 
-  ret = bic_get_1ou_type(fru, &board_type_1ou);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
-    board_type_1ou = M2_BOARD;
-  }
-
-  ret = fby3_common_get_2ou_board_type(fru, &board_type_2ou);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
-    board_type_2ou = M2_BOARD;
-  }
-
-  if (board_type_1ou == EDSFF_1U || board_type_2ou == E1S_BOARD) {
-    // case 1/2OU E1S
-    mapping_table = root_port_mapping_e1s;
-    port_cnt = sizeof(root_port_mapping_e1s)/sizeof(MAPTOSTRING);
-  } else {
-    mapping_table = root_port_mapping;
-    port_cnt = sizeof(root_port_mapping)/sizeof(MAPTOSTRING);
-  }
   switch (error_type) {
     case UNIFIED_PCIE_ERR:
+      pal_sel_root_port_mapping_tbl(fru, &bmc_location, &mapping_table, &port_cnt);
       plat = (general_info & 0x10) >> 4;
       if (plat == 0) {  //x86
         for (index = 0; index < port_cnt; index++) {
           if ((sel[11] == mapping_table[index].bus_value) && ((sel[10] >> 3) == mapping_table[index].dev_value)) {
             location = mapping_table[index].location;
             sil = mapping_table[index].silk_screen;
-            if (!strcmp(location, "1OU")) {
-              ret = fby3_common_get_bmc_location(&bmc_location);
-              if ( ret < 0 ) {
-                syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-              }
-
-              if (bmc_location == NIC_BMC ) {
+            if (!strcmp(location, "1OU") && bmc_location == NIC_BMC ) {
                 continue;
-              }
             }
             break;
           }
@@ -1782,6 +1785,7 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
             err1_descript = pcie_err_tab[index].err_descr;
             continue;
           }
+
           if ( strcmp(err1_descript,"NA") && strcmp(err2_descript,"NA") ) {
             break;
           }

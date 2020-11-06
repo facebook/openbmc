@@ -109,7 +109,7 @@ int BiosComponent::check_image(const char *path)
 }
 
 int BiosComponent::update(std::string image, bool force) {
-  int retry = 0;
+  int retry = 0, poff_retry = 3;
   int ret = 0;
   uint8_t fruid = 1;
   uint8_t status;
@@ -128,40 +128,53 @@ int BiosComponent::update(std::string image, bool force) {
     }
   }
 
-  retry = max_retry_power_ctl;
-  pal_set_server_power(fruid, SERVER_POWER_OFF);
-  while (retry > 0) {
+  while (poff_retry > 0) {
+    retry = max_retry_power_ctl;
+    pal_set_server_power(fruid, SERVER_POWER_OFF);
+    while (retry > 0) {
+      if (!pal_get_server_power(fruid, &status) && (status == SERVER_POWER_OFF)) {
+        break;
+      }
+      if ((--retry) > 0) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+      }
+    }
+    if (retry <= 0) {
+      sys.error << "Failed to Power Off Server. Stopping the update!\n";
+      return -1;
+    }
+
+    retry = max_retry_me_recovery;
+    while (retry > 0) {
+      if (sys.runcmd("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null") == 0) {
+        break;
+      }
+      if ((--retry) > 0) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+      }
+    }
+    if (retry <= 0) {
+      sys.error << "ERROR: unable to put ME in recovery mode!" << endl;
+      syslog(LOG_ERR, "Unable to put ME in recovery mode!\n");
+      // If we are doing a forced update, ignore this error.
+      if (!force) {
+        return -1;
+      }
+    }
+    // wait for ME changing mode
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
     if (!pal_get_server_power(fruid, &status) && (status == SERVER_POWER_OFF)) {
       break;
     }
-    if ((--retry) > 0) {
-      std::this_thread::sleep_for(std::chrono::seconds(1));
+    if ((--poff_retry) > 0) {
+      syslog(LOG_WARNING, "System might wake from S5, try Power Off again");
     }
   }
-  if (retry <= 0) {
-    sys.error << "Failed to Power Off Server. Stopping the update!\n";
+  if (poff_retry <= 0) {
+    sys.error << "ERROR: failed to Power Off Server. Stopping the update!\n";
     return -1;
   }
-
-  retry = max_retry_me_recovery;
-  while (retry > 0) {
-    if (sys.runcmd("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null") == 0) {
-      break;
-    }
-    if ((--retry) > 0) {
-      std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-  }
-  if (retry <= 0) {
-    sys.error << "ERROR: unable to put ME in recovery mode!" << endl;
-    syslog(LOG_ERR, "Unable to put ME in recovery mode!\n");
-    // If we are doing a forced update, ignore this error.
-    if (!force) {
-      return -1;
-    }
-  }
-  // wait for ME changing mode
-  std::this_thread::sleep_for(std::chrono::seconds(5));
 
   ret = GPIOSwitchedSPIMTDComponent::update(image);
 

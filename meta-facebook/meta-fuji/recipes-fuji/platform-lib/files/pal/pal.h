@@ -92,7 +92,7 @@ extern "C" {
 
 #define SCM_PRSNT_STATUS "scm_present"
 #define PIM_PRSNT_STATUS "pim%d_present_L"
-#define FAN_PRSNT_STATUS "fantray%d_present"
+#define FAN_PRSNT_STATUS "fan%d_present"
 #define PSU_PRSNT_STATUS "psu_prnst_%d_N_status"
 #define KV_PIM_HEALTH "pim%d_sensor_health"
 #define CRASHDUMP_BIN       "/usr/local/bin/autodump.sh"
@@ -193,20 +193,31 @@ enum
   PSU_ACOK_UP = 1
 };
 
-enum
-{
-  SLED_CLR_BLUE = 0x3,
-  SLED_CLR_YELLOW = 0x4,
-  SLED_CLR_RED = 0x6,
-  SLED_CLR_OFF = 0x7,
+enum {
+  SIM_LED_OFF = 0,
+  SIM_LED_BLUE,
+  SIM_LED_AMBER,
+  SIM_LED_ALT_BLINK,
+  SIM_LED_AMBER_BLINK,
 };
 
 enum
 {
-  SLED_SYS = 1,
-  SLED_FAN = 2,
-  SLED_PSU = 3,
-  SLED_SMB = 4,
+  SLED_COLOR_OFF = 0,
+  SLED_COLOR_BLUE,
+  SLED_COLOR_GREEN,
+  SLED_COLOR_AMBER,
+  SLED_COLOR_RED,
+  SLED_COLOR_MAX,
+};
+
+enum
+{
+  SLED_NAME_SYS = 0,
+  SLED_NAME_FAN,
+  SLED_NAME_PSU,
+  SLED_NAME_SMB,
+  SLED_NAME_MAX,
 };
 
 enum
@@ -300,12 +311,8 @@ extern void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res
 extern uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 void *generate_dump(void *arg);
-int pal_mon_fw_upgrade(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug, uint8_t *psu_ug, uint8_t *smb_ug);
-void set_sys_led(int brd_rev);
-void set_fan_led(int brd_rev);
-void set_psu_led(int brd_rev);
-void set_smb_led(int brd_rev);
-int set_sled(int brd_rev, uint8_t color, int led_name);
+int pal_mon_fw_upgrade(int brd_rev, uint8_t *status);
+int set_sled(int brd_rev, uint8_t color, uint8_t led_name);
 void init_led(void);
 int pal_light_scm_led(uint8_t led_color);
 int pal_get_fru_health(uint8_t fru, uint8_t *value);

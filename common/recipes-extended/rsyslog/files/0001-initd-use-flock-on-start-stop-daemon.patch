@@ -1,0 +1,43 @@
+--- ./initscript.orig	2020-11-04 15:01:10.481473366 -0800
++++ ./initscript	2020-11-04 15:47:08.203970866 -0800
+@@ -16,6 +16,20 @@
+ [ -x "$RSYSLOGD_BIN" ] || exit 0
+ # Read configuration variable file if it is present
+ [ -r /etc/default/$NAME ] && . /etc/default/$NAME
++
++#
++# Uses "$SCRIPTNAME" as lockfile to execute arguments ("$@"). Useful to augument start-stop-daemon
++# with a lock and avoid daemons from starting more than once
++#
++with_lock()
++{
++        if [ $# -ne 1 ]; then
++                echo "Usage: with_lock <string command>" >&2
++                return 1
++        fi
++        flock "$SCRIPTNAME" -c "$1"
++}
++
+ #
+ # Function that starts the daemon/service
+ #
+@@ -29,8 +43,8 @@
+         #   1 if daemon could not be started
+         #   if daemon had already been started, start-stop-daemon will return 1
+         #   so add -o/--oknodo(if nothing is done, exit 0)
+-        start-stop-daemon -S --quiet --pidfile $PIDFILE --exec $DAEMON \
+-                             --oknodo -- $DAEMON_ARGS || return 1
++        with_lock "start-stop-daemon -S --quiet -R30 --pidfile $PIDFILE --exec $DAEMON \
++                             --oknodo -- $DAEMON_ARGS" || return 1
+ }
+ #
+ # Function that stops the daemon/service
+@@ -45,7 +59,7 @@
+         #   2 if daemon could not be stopped
+         #   other if a failure occurred
+         # QUIT/TERM/INT should work here, but they don't ????? 
+-        start-stop-daemon -K --quiet --signal KILL --pidfile $PIDFILE --name $NAME
++        with_lock "start-stop-daemon -K --quiet --signal KILL --pidfile $PIDFILE --name $NAME"
+         RETVAL="$?"
+         rm -f $PIDFILE
+         return "$RETVAL"

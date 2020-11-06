@@ -31,6 +31,7 @@
 #include <openbmc/pal.h>
 #include <openbmc/nm.h>
 #include <openbmc/kv.h>
+#include <openbmc/obmc-i2c.h>
 
 #define POLL_TIMEOUT -1
 #define POWER_ON_STR        "on"
@@ -75,6 +76,12 @@ struct gpioexppoll_config {
   gpio_value_t curr;
   void (*init_gpio)(char* shadow, char* desc, gpio_value_t value);
   void (*handler)(char* shadow, char* desc, gpio_value_t value);
+};
+
+// For thermaltrip config
+struct thermaltrip_config {
+  char shadow_name[32];
+  uint8_t offset;
 };
 
 enum {
@@ -421,6 +428,60 @@ static void cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_va
   pal_add_cri_sel(cmd);
 }
 
+struct thermaltrip_config thermaltrips[] = {
+  {"FM_CPU0_THERMTRIP_LVT3_PLD_N", 0x20},
+  {"FM_CPU1_THERMTRIP_LVT3_PLD_N", 0x21},
+  {"FM_MEM_THERM_EVENT_CPU0_LVT3_N", 0x22},
+  {"FM_MEM_THERM_EVENT_CPU1_LVT3_N", 0x23},
+};
+
+static int get_thermaltrip_offset (const char *shadow_name) {
+  int i, config_size = sizeof(thermaltrips) / sizeof(thermaltrips[0]);
+  for (i = 0; i < config_size; i++) {
+    if (strcmp(shadow_name, thermaltrips[i].shadow_name) == 0) 
+      return (int)thermaltrips[i].offset;
+  }
+  return -1;
+}
+
+static int thermtrip_hardware_check(const char *shadow_name)
+{
+  int fd = 0, retCode = -1;
+  char fn[32];
+  uint8_t bus = 4;
+  uint8_t addr = 0x1e;
+  uint8_t offset, tlen, rlen;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+ 
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s Can not read file /dev/i2c-%d\n", __func__, bus);
+    close(fd);
+    return retCode;
+  }
+
+  offset = (uint8_t)get_thermaltrip_offset(shadow_name); 
+  if (offset < 0) {
+    syslog(LOG_WARNING, "There is no thermaltrip offset match with %s\n", shadow_name);
+    close(fd);
+    return retCode;
+  }
+  tbuf[0] = offset;
+  tlen = 1;
+  rlen = 1;
+
+  retCode = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  if (retCode == -1) {
+    syslog(LOG_WARNING, "%s bus=%x slavaddr=%x offset=%x\n", __func__, bus, addr, offset);
+  } else {
+    retCode = (int)rbuf[0];
+  }
+
+  return retCode;
+}
+
 static void thermtrip_add_cri_sel(const char *shadow_name, gpio_value_t curr)
 {
   char cmd[128], log_name[16], log_descript[16] = "ASSERT\0";
@@ -444,6 +505,9 @@ static void cpu_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
   if (g_server_power_status != GPIO_VALUE_HIGH) 
     return;
 
+  if (thermtrip_hardware_check(cfg->shadow) <= 0)
+    return;
+  
   thermtrip_add_cri_sel(cfg->shadow, curr);
   log_gpio_change(desc, curr, 0);
 }

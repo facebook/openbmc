@@ -32,5 +32,5 @@ trap cleanup EXIT ERR INT TERM
 
 gpio_set_direction SWITCH_EEPROM1_WRT out
 gpio_set_value SWITCH_EEPROM1_WRT 1
-/usr/local/bin/at93cx6_util_py3.py chip read | sha256sum | head -c 64
+/usr/local/bin/at93cx6_util.sh chip read | sha256sum | head -c 64
 exit_code=$?

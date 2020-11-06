@@ -158,7 +158,7 @@ main(int argc, char **argv) {
     if (check_key == 0) {
       ret = pal_set_key_value(key, val);
     } else {
-      printf("cfg-util: %s cannot be set using\n", key);
+      printf("cfg-util: %s cannot be set using cfg-util\n", key);
       ret = -1;
     }
   }

@@ -868,6 +868,9 @@ int pal_chassis_control(uint8_t fru, uint8_t *req_data, uint8_t req_len)
   if (req_len != 1) {
     return CC_INVALID_LENGTH;
   }
+  if (pal_is_fw_update_ongoing(FRU_MB)) {
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
 
   cmd = req_data[0];
   pthread_attr_init(&a);

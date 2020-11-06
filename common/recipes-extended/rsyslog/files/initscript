@@ -17,6 +17,22 @@ SCRIPTNAME=/etc/init.d/$NAME
 # Read configuration variable file if it is present
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
+
+
+
+#
+# Uses "$SCRIPTNAME" as lockfile to execute arguments ("$@"). Useful to augument start-stop-daemon
+# with a lock and avoid daemons from starting more than once
+#
+with_lock()
+{
+        if [ $# -ne 1 ]; then
+                echo "Usage: with_lock <string command>" >&2
+                return 1
+        fi
+        flock "$SCRIPTNAME" -c "$1"
+}
+
 #
 # Modify the runtime configuration based on flags
 #
@@ -64,8 +80,10 @@ do_start()
         #   1 if daemon could not be started
         #   if daemon had already been started, start-stop-daemon will return 1
         #   so add -o/--oknodo(if nothing is done, exit 0)
-        start-stop-daemon -S --quiet --pidfile $PIDFILE --exec $DAEMON \
-                             --oknodo -- $DAEMON_ARGS || return 1
+        with_lock "
+                start-stop-daemon -S --quiet -R 30 --pidfile $PIDFILE --exec $DAEMON \
+                        --oknodo -- $DAEMON_ARGS && [[ -e $PIDFILE ]]
+        " || return 1
 }
 #
 # Function that stops the daemon/service
@@ -80,10 +98,14 @@ do_stop()
         #   2 if daemon could not be stopped
         #   other if a failure occurred
         # Shut down gracefully or your imfile statefile won't be written
-        start-stop-daemon -K --quiet --signal TERM --pidfile $PIDFILE --name $NAME
-        RETVAL="$?"
-        rm -f $PIDFILE
-        return "$RETVAL"
+        with_lock "
+                start-stop-daemon -K --quiet --signal TERM --pidfile $PIDFILE --name $NAME && sleep 5
+                if [[ -e $PIDFILE ]]; then
+                        echo 'WARNING: $PIDFILE still exists, killing $NAME ...' >&2
+                        start-stop-daemon -K --quiet --signal KILL --pidfile $PIDFILE --name $NAME && \
+                        rm -f $PIDFILE
+                fi
+        "
 }
 #
 # Function that sends a SIGHUP to the daemon/service

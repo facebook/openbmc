@@ -78,8 +78,14 @@ struct pal_key_cfg {
   /* name, default value, function */
   {"system_identify", "off", NULL},
   {"server_boot_order", "0100090203ff", NULL},
+  {"server_por_cfg", "on", NULL},
   /* Add more Keys here */
   {NULL, NULL, NULL} /* This is the last key of the list */
+};
+
+char * cfg_support_key_list[] = {
+  "server_por_cfg",
+  NULL /* This is the last key of the list */
 };
 
 static int
@@ -97,6 +103,24 @@ pal_key_index(char *key) {
 #ifdef DEBUG
   syslog(LOG_WARNING, "%s() invalid key - %s", __func__, key);
 #endif
+  return -1;
+}
+
+// Check what keys can be set by cfg-util
+int
+pal_cfg_key_check(char *key) {
+  int i = 0;
+
+  while(cfg_support_key_list[i] != NULL) {
+    // If Key is valid and can be set, return success
+    if (!strncmp(key, cfg_support_key_list[i], strlen(cfg_support_key_list[i]))) {
+      return 0;
+    }
+    i++;
+  }
+  // If Key could not be set, print syslog and return -1.
+  syslog(LOG_WARNING, "%s(): invalid key - %s", __func__, key);
+
   return -1;
 }
 
@@ -128,6 +152,24 @@ pal_set_key_value(char *key, char *value) {
   return kv_set(key, value, 0, KV_FPERSIST);
 }
 
+void
+pal_dump_key_value(void) {
+  int i = 0;
+  char value[MAX_VALUE_LEN] = {0x0};
+
+  while(key_cfg[i].name != NULL) {
+    memset(value, 0, MAX_VALUE_LEN);
+
+    printf("%s:", key_cfg[i].name);
+    if (kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST) < 0) {
+      printf("\n");
+    } else {
+      printf("%s\n",  value);
+    }
+    i++;
+  }
+}
+
 int
 pal_set_def_key_value() {
   int i = 0;
@@ -142,11 +184,11 @@ pal_set_def_key_value() {
       key_cfg[i].function(KEY_AFTER_INI, key_cfg[i].name);
     }
   }
-  
+
   if (failed_count != 0) {
     return -1;
   }
-  
+
   return 0;
 }
 
@@ -329,7 +371,7 @@ pal_populate_guid(char *guid, char *str) {
   uint8_t count = 0;
   uint8_t lsb = 0, msb = 0;
   int i = 0, clock_seq = 0;
-  
+
   // Populate time
   gettimeofday(&tv, NULL);
 
@@ -425,7 +467,7 @@ pal_get_guid(uint16_t offset, char *guid) {
   }
 
   close(fd);
-  
+
   return ret;
 }
 
@@ -460,7 +502,7 @@ pal_set_guid(uint16_t offset, char *guid) {
   }
 
   close(fd);
-  
+
   return ret;
 }
 
@@ -487,7 +529,7 @@ pal_get_dev_guid(uint8_t fru, char *guid) {
 int
 pal_set_dev_guid(uint8_t fru, char *str) {
   char guid[GUID_SIZE] = {0};
-  
+
   pal_populate_guid(guid, str);
   return pal_set_guid(OFFSET_DEV_GUID, guid);
 }
@@ -556,9 +598,9 @@ pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   char tmp_str[4] = {0};
-  
+
   tmp_len = sizeof(tmp_str);
-  
+
   snprintf(key, MAX_KEY_LEN, "server_boot_order");
 
   ret = pal_get_key_value(key, str);
@@ -588,10 +630,10 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   char tmp_str[4] = {0};
-  
+
   *res_len = 0;
   tmp_len = sizeof(tmp_str);
-  
+
   snprintf(key, MAX_KEY_LEN, "server_boot_order");
 
   for (i = 0; i < SIZE_BOOT_ORDER; i++) {

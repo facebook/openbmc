@@ -31,4 +31,5 @@ IMAGE_INSTALL += " \
   front-paneld \
   i2craw \
   healthd \
+  cfg-util \
   "

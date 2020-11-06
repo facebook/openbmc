@@ -24,11 +24,11 @@
 #define GPIO_P3V_BAT_SCALED_EN "P3V_BAT_SCALED_EN"
 #define GPIO_CPU0_PRESENT "FM_CPU0_SKTOCC_LVT3_PLD_N"
 #define GPIO_CPU1_PRESENT "FM_CPU1_SKTOCC_LVT3_PLD_N"
-#define MAX_READ_RETRY 10
-#define POLLING_DELAY_TIME  (10)
+#define MAX_READ_RETRY (10)
+#define POLLING_DELAY_TIME (10)
 
-#define PECI_MUX_SELECT_BMC                     (GPIO_VALUE_HIGH)
-#define PECI_MUX_SELECT_PCH                     (GPIO_VALUE_LOW)
+#define PECI_MUX_SELECT_BMC (GPIO_VALUE_HIGH)
+#define PECI_MUX_SELECT_PCH (GPIO_VALUE_LOW)
 
 uint8_t pwr_polling_flag=false;
 uint8_t DIMM_SLOT_CNT = 0;
@@ -699,7 +699,7 @@ PAL_CM_SENSOR_HEAD cm_snr_head_list[] = {
  {CM_FAN3_POWER, CM_SNR_FAN3_POWER},
 };
 
-char *vr_ti_chips[] = {
+char *vr_ti_chips[VR_NUM_CNT] = {
   "tps53688-i2c-1-60",  // CPU0_VCCIN
   "tps53688-i2c-1-60",  // CPU0_VCCSA
   "tps53688-i2c-1-62",  // CPU0_VCCIO
@@ -711,10 +711,10 @@ char *vr_ti_chips[] = {
   "tps53688-i2c-1-76",  // CPU1_VDDQ_ABC
   "tps53688-i2c-1-6c",  // CPU1_VDDQ_DEF
   "pxe1110c-i2c-1-4a",  // PCH PVNN
-  "pxe1110c-i2c-1-4a",  // PCH 1V5
+  "pxe1110c-i2c-1-4a",  // PCH 1V05
 };
 
-char *vr_infineon_chips[] = {
+char *vr_infineon_chips[VR_NUM_CNT] = {
   "xdpe12284-i2c-1-60",  // CPU0_VCCIN
   "xdpe12284-i2c-1-60",  // CPU0_VCCSA
   "xdpe12284-i2c-1-62",  // CPU0_VCCIO
@@ -726,9 +726,8 @@ char *vr_infineon_chips[] = {
   "xdpe12284-i2c-1-76",  // CPU1_VDDQ_ABC
   "xdpe12284-i2c-1-6c",  // CPU1_VDDQ_DEF
   "pxe1110c-i2c-1-4a",   // PCH PVNN
-  "pxe1110c-i2c-1-4a",   // PCH 1V5
+  "pxe1110c-i2c-1-4a",   // PCH 1V05
 };
-
 
 char **vr_chips = vr_ti_chips;
 
@@ -1484,7 +1483,7 @@ Read adc voltage sensor value.
 ============================================*/
 static int
 read_adc_val(uint8_t adc_id, float *value) {
-  const char *adc_label[] = {
+  const char *adc_label[ADC_NUM_CNT] = {
     "MB_P5V",
     "MB_P5V_STBY",
     "MB_P3V3_STBY",
@@ -1501,7 +1500,7 @@ read_adc_val(uint8_t adc_id, float *value) {
     "MB_CPU0_PVTT_DEF",
     "MB_CPU1_PVTT_DEF",
   };
-  if (adc_id >= ARRAY_SIZE(adc_label)) {
+  if (adc_id >= ADC_NUM_CNT) {
     return -1;
   } else if (!check_cpu_present(adc_label[adc_id])) {
     return READING_NA;
@@ -2440,9 +2439,9 @@ read_ina260_vol(uint8_t ina260_id, float *value) {
 
 static int
 read_vr_vout(uint8_t vr_id, float *value) {
-  int ret=0;
+  int ret = 0;
   static uint8_t retry[VR_NUM_CNT] = {0};
-  const char *label[] = {
+  const char *label[VR_NUM_CNT] = {
     "MB_VR_CPU0_VCCIN_VOUT",
     "MB_VR_CPU0_VCCSA_VOUT",
     "MB_VR_CPU0_VCCIO_VOUT",
@@ -2456,16 +2455,21 @@ read_vr_vout(uint8_t vr_id, float *value) {
     "MB_VR_PCH_P1V05_VOLT",
     "MB_VR_PCH_PVNN_VOLT",
   };
-  if (vr_id >= ARRAY_SIZE(label)) {
+
+  if (pal_is_fw_update_ongoing(FRU_MB)) {
+    return READING_SKIP;
+  }
+
+  if (vr_id >= VR_NUM_CNT) {
     return -1;
   } else if (!check_cpu_present(label[vr_id])) {
     return READING_NA;
   }
 
   ret = sensors_read(vr_chips[vr_id], label[vr_id], value);
-  if( *value == 0 ) {
+  if (*value == 0) {
     retry[vr_id]++;
-    if(retry[vr_id] < 3 ){
+    if (retry[vr_id] < 3) {
       return READING_SKIP;
     }
   }
@@ -2476,9 +2480,9 @@ read_vr_vout(uint8_t vr_id, float *value) {
 
 static int
 read_vr_temp(uint8_t vr_id, float *value) {
-  int ret=0;
+  int ret = 0;
   static uint8_t retry[VR_NUM_CNT] = {0};
-  const char *label[] = {
+  const char *label[VR_NUM_CNT] = {
     "MB_VR_CPU0_VCCIN_TEMP",
     "MB_VR_CPU0_VCCSA_TEMP",
     "MB_VR_CPU0_VCCIO_TEMP",
@@ -2492,13 +2496,19 @@ read_vr_temp(uint8_t vr_id, float *value) {
     "MB_VR_PCH_P1V05_TEMP",
     "MB_VR_PCH_PVNN_TEMP",
   };
-  if (vr_id >= ARRAY_SIZE(label)) {
+
+  if (pal_is_fw_update_ongoing(FRU_MB)) {
+    return READING_SKIP;
+  }
+
+  if (vr_id >= VR_NUM_CNT) {
     return -1;
   }
+
   ret = sensors_read(vr_chips[vr_id], label[vr_id], value);
-  if( *value == 0 ) {
+  if (*value == 0) {
     retry[vr_id]++;
-    if(retry[vr_id] < 3 ){
+    if (retry[vr_id] < 3) {
       return READING_SKIP;
     }
   }
@@ -2509,7 +2519,7 @@ read_vr_temp(uint8_t vr_id, float *value) {
 
 static int
 read_vr_iout(uint8_t vr_id, float *value) {
-    const char *label[] = {
+    const char *label[VR_NUM_CNT] = {
     "MB_VR_CPU0_VCCIN_IOUT",
     "MB_VR_CPU0_VCCSA_IOUT",
     "MB_VR_CPU0_VCCIO_IOUT",
@@ -2523,20 +2533,20 @@ read_vr_iout(uint8_t vr_id, float *value) {
     "MB_VR_PCH_P1V05_IOUT",
     "MB_VR_PCH_PVNN_IOUT",
   };
-  if (vr_id >= ARRAY_SIZE(label)) {
+
+  if (pal_is_fw_update_ongoing(FRU_MB)) {
+    return READING_SKIP;
+  }
+
+  if (vr_id >= VR_NUM_CNT) {
     return -1;
   }
   return sensors_read(vr_chips[vr_id], label[vr_id], value);
 }
 
-int
-read_vr_iin(uint8_t vr_id, float *value) {
-  return 0;
-}
-
 static int
 read_vr_pout(uint8_t vr_id, float *value) {
-  const char *label[] = {
+  const char *label[VR_NUM_CNT] = {
     "MB_VR_CPU0_VCCIN_POUT",
     "MB_VR_CPU0_VCCSA_POUT",
     "MB_VR_CPU0_VCCIO_POUT",
@@ -2550,23 +2560,15 @@ read_vr_pout(uint8_t vr_id, float *value) {
     "MB_VR_PCH_P1V05_POUT",
     "MB_VR_PCH_PVNN_POUT",
   };
-  if (vr_id >= ARRAY_SIZE(label)) {
+
+  if (pal_is_fw_update_ongoing(FRU_MB)) {
+    return READING_SKIP;
+  }
+
+  if (vr_id >= VR_NUM_CNT) {
     return -1;
   }
   return sensors_read(vr_chips[vr_id], label[vr_id], value);
-}
-
-int
-read_vr_pin(uint8_t vr_id, float *value) {
- // int ret = 0;
- // uint8_t cmd;
-
- // cmd = PMBUS_READ_PIN;
- // ret = get_tps53688_linear(vr_id, cmd, value);
- // if (ret != 0) {
- //   return ret;
- // }
-  return 0;
 }
 
 static void

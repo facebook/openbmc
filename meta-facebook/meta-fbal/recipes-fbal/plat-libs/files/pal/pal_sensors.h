@@ -361,6 +361,7 @@ enum {
   ADC12,
   ADC13,
   ADC14,
+  ADC_NUM_CNT,
 };
 
 //INA260 INFO

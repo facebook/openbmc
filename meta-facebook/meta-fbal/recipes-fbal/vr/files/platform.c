@@ -113,8 +113,12 @@ struct vr_info fbal_vr_list[] = {
 
 int plat_vr_init(void) {
   int ret, i;
-  int vr_cnt = sizeof(fbal_vr_list)/sizeof(fbal_vr_list[0]); 
+  int vr_cnt = sizeof(fbal_vr_list)/sizeof(fbal_vr_list[0]);
   uint8_t sku_id = 0xFF;
+
+  if (pal_is_fw_update_ongoing(FRU_MB)) {
+    msleep(500);  // wait the reading finish if going to do update
+  }
 
   pal_get_platform_id(&sku_id);
   //DVT SKU_ID[2:1] = 00 (TI), 01 (INFINEON), TODO: 10 (3rd Source)

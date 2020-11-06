@@ -36,4 +36,5 @@ IMAGE_INSTALL += " \
   gpiod \
   sensor-util \
   sensor-mon \
+  vboot-utils \
   "

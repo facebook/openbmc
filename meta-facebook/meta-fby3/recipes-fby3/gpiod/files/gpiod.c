@@ -33,6 +33,7 @@
 #include <openbmc/pal.h>
 #include <facebook/fby3_gpio.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/kv.h>
 
 #define MAX_NUM_SLOTS       4
 #define DELAY_GPIOD_READ    1000000
@@ -54,6 +55,7 @@ static gpio_pin_t gpio_slot4[MAX_GPIO_PINS] = {0};
 
 static uint8_t cpld_io_sts[MAX_NUM_SLOTS+1] = {0x10, 0};
 static long int pwr_on_sec[MAX_NUM_SLOTS] = {0};
+static bool bios_post_cmplt[MAX_NUM_SLOTS] = {false, false, false, false};
 static bool is_pwrgd_cpu_chagned[MAX_NUM_SLOTS] = {false, false, false, false};
 static uint8_t SLOTS_MASK = 0x0;
 pthread_mutex_t pwrgd_cpu_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
@@ -427,6 +429,8 @@ gpio_monitor_poll(void *ptr) {
                        (GET_BIT(n_pin_val, FM_CPU_MSMI_CATERR_LVT3_N ) << 0x3) | \
                        (GET_BIT(n_pin_val, FM_SLPS3_R_N) << 0x4);
 
+    bios_post_cmplt[fru-1] = (GET_BIT(n_pin_val, FM_BIOS_POST_CMPLT_BMC_N) == 0x0)? true:false;
+
     //check PWRGD_CPU_LVC3_R is changed
     if ( (get_pwrgd_cpu_flag(fru) == false) && 
          (GET_BIT(n_pin_val, PWRGD_CPU_LVC3_R) != GET_BIT(o_pin_val, PWRGD_CPU_LVC3_R))) {
@@ -462,8 +466,7 @@ gpio_monitor_poll(void *ptr) {
             printf("RST_RSMRST_BMC_N is ASSERT !\n");
           } else if (i == RST_PLTRST_BMC_N) {
             rst_timer(fru);
-          } 
-          
+          }
         } else {
           if (i == RST_RSMRST_BMC_N) {
             printf("RST_RSMRST_BMC_N is DEASSERT !\n");
@@ -561,6 +564,7 @@ host_pwr_mon() {
 #define POWER_ON_DELAY       2
 #define NON_PFR_POWER_OFF_DELAY  -2
 #define PFR_POWER_OFF_DELAY     -60
+#define HOST_READY 300
   char path[64] = {0};
   uint8_t host_off_flag = 0;
   uint8_t is_util_run_flag = 0;
@@ -571,6 +575,10 @@ host_pwr_mon() {
   int retry = 0;
   long int tick = 0;
   int power_off_delay = NON_PFR_POWER_OFF_DELAY;
+  char *host_key[] = {"fru1_host_ready",
+                      "fru2_host_ready",
+                      "fru3_host_ready",
+                      "fru4_host_ready"};
 
   pthread_detach(pthread_self());
 
@@ -613,6 +621,11 @@ host_pwr_mon() {
           pal_set_last_pwr_state(fru, "on");
         }
         host_off_flag &= ~(0x1 << i);
+        if ( tick == HOST_READY || (bios_post_cmplt[fru-1] == true && tick < HOST_READY && tick > 5)) {
+          kv_set(host_key[fru-1], "1", 0, 0);
+        }
+      } else {
+        if ( tick == 0 ) kv_set(host_key[fru-1], "0", 0, 0);
       }
 
       if ( (tick == power_off_delay) || (tick == POWER_ON_DELAY) ) {

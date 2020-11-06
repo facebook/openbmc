@@ -47,20 +47,28 @@ fru_map = {
     },
 }
 
-dimm_part_name_map = {
-    "a": "_dimm0_part_name",
-    "b": "_dimm2_part_name",
-    "c": "_dimm4_part_name",
-    "d": "_dimm6_part_name",
-    "e": "_dimm8_part_name",
-    "f": "_dimm10_part_name",
+dimm_location_name_map = {
+    "a": "_dimm0_location",
+    "b": "_dimm2_location",
+    "c": "_dimm4_location",
+    "d": "_dimm6_location",
+    "e": "_dimm8_location",
+    "f": "_dimm10_location",
 }
 
-m2_part_name_map = {
+# For now, it only supports 1OU
+m2_1ou_name_map = {
     "a": "_m2_0_info",
     "b": "_m2_1_info",
     "c": "_m2_2_info",
     "d": "_m2_3_info",
+}
+
+host_ready_map = {
+    "slot1": "fru1_host_ready",
+    "slot2": "fru2_host_ready",
+    "slot3": "fru3_host_ready",
+    "slot4": "fru4_host_ready",
 }
 
 def board_fan_actions(fan, action="None"):
@@ -117,46 +125,52 @@ def set_all_pwm(boost):
     return response
 
 
+def is_dev_prsnt(filename):
+    dev_prsnt = 0
+    if not os.path.exists(filename):
+        return False
+
+    # read byte1
+    with open(filename, "rb") as f:
+        dev_prsnt = f.read(1)
+
+    if dev_prsnt == b'\x01':
+        return True
+
+    return False
+
 def sensor_valid_check(board, sname, check_name, attribute):
     status = c_uint8(0)
+    is_valid_check = False
     try:
         if attribute["type"] == "power_status":
             lpal_hndl.pal_get_server_power(int(fru_map[board]["slot_num"]), byref(status))
             if (status.value == 1): # power on
-                if match(r"soc_cpu", sname) is not None:
-                    ret = 1
-                elif match(r"soc_therm", sname) is not None:
-                    ret = 1
-                elif match(r"1ou_m2", sname) is not None:
-                    # check m2 present
-                    file = "/mnt/data/kv_store/sys_config/" + fru_map[board]["name"] + part_name_map[sname[8]]
-                    if not os.path.exists(file):
-                        return 0
-                    with open(file, "r") as f:
-                        m2_prsnt = f.read(1)
-                    if (m2_prsnt == 0x01): # present
-                        ret = 1
-                    else:
-                        ret = 0
-                elif match(r"soc_dimm", sname) is not None:
-                    # check DIMM present
-                    file = "/mnt/data/kv_store/sys_config/" + fru_map[board]["name"] + dimm_part_name_map[sname[8]]
-                    if not os.path.exists(file):
-                        return 0
-                    with open(file, "r") as f:
-                        dimm_sts = f.readline()
-                    if re.search(r"([a-zA-Z0-9])", dimm_sts):
-                        ret = 1
-                    else:
-                        ret = 0
-                # Check power status again
-                # Sync with the pwr_off_flag global value in pal_sensor
-                if (lpal_hndl.pwr_off_flag[int(fru_map[board]["slot_num"])-1] == 0):
-                    return 1
+                if match(r"soc_cpu|soc_therm", sname) is not None:
+                    is_valid_check = True
                 else:
-                    return ret
-            else:
-                return 0
+                    suffix = ""
+                    if  match(r"1ou_m2", sname) is not None:
+                        # 1ou_m2_a_temp. key is at 7
+                        suffix = m2_1ou_name_map[sname[7]]
+                    elif match(r"soc_dimm", sname) is not None:
+                        # soc_dimma_temp. key is at 8
+                        suffix = dimm_location_name_map[sname[8]]
+
+                    file = "/mnt/data/kv_store/sys_config/" + fru_map[board]["name"] + suffix
+                    if is_dev_prsnt(file) == True:
+                        is_valid_check = True
+
+            if is_valid_check == True:
+                # Check power status again
+                file = "/tmp/cache_store/" + host_ready_map[board]
+                if not os.path.exists(file):
+                   return 0
+                with open(file,"r") as f:
+                    flag_status = f.read()
+                if (flag_status == "1"):
+                    return 1
+
         return 0
     except SystemExit:
         Logger.debug("SystemExit from sensor read")

@@ -77,6 +77,15 @@ extern const char pal_tach_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
 
+enum {
+  BOOT_DEVICE_IPV4     = 0x1,
+  BOOT_DEVICE_HDD      = 0x2,
+  BOOT_DEVICE_CDROM    = 0x3,
+  BOOT_DEVICE_OTHERS   = 0x4,
+  BOOT_DEVICE_IPV6     = 0x9,
+  BOOT_DEVICE_RESERVED = 0xff,
+};
+
 int pal_get_fru_id(char *str, uint8_t *fru);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);

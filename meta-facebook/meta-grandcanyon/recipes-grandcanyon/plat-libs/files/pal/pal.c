@@ -77,6 +77,7 @@ struct pal_key_cfg {
 } key_cfg[] = {
   /* name, default value, function */
   {"system_identify", "off", NULL},
+  {"server_boot_order", "0100090203ff", NULL},
   /* Add more Keys here */
   {NULL, NULL, NULL} /* This is the last key of the list */
 };
@@ -125,6 +126,28 @@ pal_set_key_value(char *key, char *value) {
   }
 
   return kv_set(key, value, 0, KV_FPERSIST);
+}
+
+int
+pal_set_def_key_value() {
+  int i = 0;
+  int ret = 0, failed_count = 0;
+
+  for (i = 0; key_cfg[i].name != NULL; i++) {
+    if ((ret = kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) < 0) {
+      syslog(LOG_WARNING, "%s(): kv_set failed. %d", __func__, ret);
+      failed_count ++;
+    }
+    if (key_cfg[i].function) {
+      key_cfg[i].function(KEY_AFTER_INI, key_cfg[i].name);
+    }
+  }
+  
+  if (failed_count != 0) {
+    return -1;
+  }
+  
+  return 0;
 }
 
 int
@@ -521,4 +544,60 @@ pal_set_status_led(uint8_t fru, status_led_color color) {
   }
 
   return ret;
+}
+
+int
+pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len) {
+  int i = 0;
+  int j = 0;
+  int ret = 0;
+  int msb = 0, lsb = 0;
+  int tmp_len = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tmp_str[4] = {0};
+  
+  tmp_len = sizeof(tmp_str);
+  
+  snprintf(key, MAX_KEY_LEN, "server_boot_order");
+
+  ret = pal_get_key_value(key, str);
+  if (ret != 0) {
+    *res_len = 0;
+    return ret;
+  }
+
+  for (i = 0; i < 2*SIZE_BOOT_ORDER; i += 2) {
+    snprintf(tmp_str, tmp_len, "%c\n", str[i]);
+    msb = strtol(tmp_str, NULL, 16);
+
+    snprintf(tmp_str, tmp_len, "%c\n", str[i+1]);
+    lsb = strtol(tmp_str, NULL, 16);
+    boot[j++] = (msb << 4) | lsb;
+  }
+
+  *res_len = SIZE_BOOT_ORDER;
+
+  return 0;
+}
+
+int
+pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len) {
+  int i = 0;
+  int tmp_len = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tmp_str[4] = {0};
+  
+  *res_len = 0;
+  tmp_len = sizeof(tmp_str);
+  
+  snprintf(key, MAX_KEY_LEN, "server_boot_order");
+
+  for (i = 0; i < SIZE_BOOT_ORDER; i++) {
+    snprintf(tmp_str, tmp_len, "%02x", boot[i]);
+    strncat(str, tmp_str, tmp_len);
+  }
+
+  return pal_set_key_value(key, str);
 }

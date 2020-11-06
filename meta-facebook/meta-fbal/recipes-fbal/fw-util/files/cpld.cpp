@@ -4,6 +4,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/pal.h>
 #include <openbmc/cpld.h>
+#include <openbmc/kv.h>
 #include "fw-util.h"
 
 using namespace std;
@@ -129,18 +130,27 @@ int CpldComponent::fupdate(string image) {
 int CpldComponent::print_version() {
   int ret = -1;
   uint8_t ver[4];
-  char strbuf[16];
+  char strbuf[MAX_VALUE_LEN];
   string comp;
 
-  if (!cpld_intf_open(pld_type, INTF_I2C, &attr)) {
-    ret = cpld_get_ver((uint32_t *)ver);
-    cpld_intf_close(INTF_I2C);
-  }
+  if (kv_get(_component.c_str(), strbuf, NULL, 0)) {
+    if (_component == "glb_cpld") {
+      if (!pal_get_config_is_master()) {
+        ret = cmd_smbc_get_glbcpld_ver(BMC0_SLAVE_DEF_ADDR, ver);
+      }
+    }
 
-  if (ret) {
-    sprintf(strbuf, "NA");
-  } else {
-    sprintf(strbuf, "%02X%02X%02X%02X", ver[3], ver[2], ver[1], ver[0]);
+    if (ret && !cpld_intf_open(pld_type, INTF_I2C, &attr)) {
+      ret = cpld_get_ver((uint32_t *)ver);
+      cpld_intf_close(INTF_I2C);
+    }
+
+    if (ret) {
+      sprintf(strbuf, "NA");
+    } else {
+      sprintf(strbuf, "%02X%02X%02X%02X", ver[3], ver[2], ver[1], ver[0]);
+      kv_set(_component.c_str(), strbuf, 0, 0);
+    }
   }
 
   comp = _component;

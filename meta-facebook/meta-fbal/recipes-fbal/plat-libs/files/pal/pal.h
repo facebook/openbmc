@@ -28,6 +28,7 @@ extern "C" {
 #endif
 #include "pal_sensors.h"
 #include "pal_health.h"
+#include "pal_sbmc.h"
 #include "pal_power.h"
 #include "pal_cm.h"
 #include "pal_ep.h"
@@ -158,7 +159,7 @@ enum {
 #define CPLD_PWR_P1V8_PCIE_P1V1       (4)
 #define CPLD_PWR_PVCCIN               (6)
 #define CPLD_PWR_PVCCSA               (7)
-#define CPLD_PWR_CPU_DOWN             (8)
+#define CPLD_PWR_CPU_DONE             (8)
 #define CPLD_PWR_PVCCSA_OFF           (9)
 #define CPLD_PWR_PVCCIN_OFF          (10)
 #define CPLD_PWR_P1V8_PCIE_P1V1_OFF  (12)
@@ -168,7 +169,7 @@ enum {
 #define NM_IPMB_BUS_ID             (I2C_BUS_5)
 #define NM_SLAVE_ADDR              (0x2C)
 
-//FBEP Device Info 
+//FBEP Device Info
 #define ASIC_IPMB_BUS_ID           (I2C_BUS_6)
 #define ASIC_BMC_SLAVE_ADDR        (0x2C)
 
@@ -220,7 +221,8 @@ int pal_get_blade_id(uint8_t *id);
 int pal_get_mb_position(uint8_t* pos);
 int pal_get_board_rev_id(uint8_t *id);
 void fru_eeprom_mb_check(char* mb_path);
-int pal_get_syscfg_text (char *text);
+bool is_cpu_socket_occupy(uint8_t cpu_idx);
+int pal_get_syscfg_text(char *text);
 int pal_peer_tray_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen);
 
 enum {

@@ -54,3 +54,21 @@ cmd_smbc_chassis_ctrl(uint8_t cmd, uint8_t t_bmc_addr) {
 
   return bmc_ipmb_swap_info_process(ipmi_cmd, netfn, t_bmc_addr, tbuf, tlen, rbuf, &rlen);
 }
+
+int
+cmd_smbc_get_glbcpld_ver(uint8_t t_bmc_addr, uint8_t *ver) {
+  uint8_t ipmi_cmd = CMD_APP_MASTER_WRITE_READ;
+  uint8_t netfn = NETFN_APP_REQ;
+  uint8_t tbuf[8] = {0x2f, 0xaa, 0x04, 0x00, 0x10, 0x00, 0x28}; // bus 23, addr 0x55
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen;
+  uint8_t tlen = 7;
+  int ret;
+
+  ret = bmc_ipmb_swap_info_process(ipmi_cmd, netfn, t_bmc_addr, tbuf, tlen, rbuf, &rlen);
+  if (!ret) {
+    memcpy(ver, rbuf, 4);
+  }
+
+  return ret;
+}

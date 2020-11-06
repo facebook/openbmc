@@ -1818,8 +1818,8 @@ pal_get_dimm_amount(uint8_t* amount) {
   return 0;
 }
 
-static bool
-is_cpu_socket_occupy(unsigned int cpu_idx) {
+bool
+is_cpu_socket_occupy(uint8_t cpu_idx) {
   static bool cached = false;
   static unsigned int cached_id = 0;
 
@@ -1842,7 +1842,7 @@ is_cpu_socket_occupy(unsigned int cpu_idx) {
 }
 
 int
-pal_get_syscfg_text (char *text) {
+pal_get_syscfg_text(char *text) {
   int cnt=0;
   char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
   char *key_prefix = "sys_config/";
@@ -1881,7 +1881,7 @@ pal_get_syscfg_text (char *text) {
   // CPU information
   for (cpu_index = 0; cpu_index < cpu_num; cpu_index++) {
     if(cpu_num == 2) {
-      if (!is_cpu_socket_occupy((unsigned int)cpu_index))
+      if (!is_cpu_socket_occupy(cpu_index))
         continue;
     }
     sprintf(entry, "CPU%d:", cpu_index);

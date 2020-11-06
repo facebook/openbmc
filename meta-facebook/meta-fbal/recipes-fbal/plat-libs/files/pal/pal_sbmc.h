@@ -3,5 +3,6 @@
 
 int cmd_set_smbc_restore_power_policy(uint8_t policy, uint8_t t_bmc_addr);
 int cmd_smbc_chassis_ctrl(uint8_t cmd, uint8_t t_bmc_addr);
+int cmd_smbc_get_glbcpld_ver(uint8_t t_bmc_addr, uint8_t *ver);
 #endif
 

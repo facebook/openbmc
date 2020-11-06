@@ -12,7 +12,6 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/libgpio.h>
 #include "pal.h"
-#include "pal_sbmc.h"
 
 #define GPIO_POWER "FM_BMC_PWRBTN_OUT_R_N"
 #define GPIO_POWER_GOOD "PWRGD_SYS_PWROK"
@@ -409,46 +408,41 @@ void print_power_fail_log(uint8_t cpu_num, uint8_t cpu_sts)
     "CPLD_PWR_PVCCIO_OFF",
   };
 
-  if(strcmp(cpld_power_seq[cpu_sts], "Reserve") != 0) {
+  if (strcmp(cpld_power_seq[cpu_sts], "Reserve") != 0) {
     syslog(LOG_CRIT, "ASSERT: CPU%d %s power rail fails discrete - FRU: %d",
            cpu_num, cpld_power_seq[cpu_sts], FRU_MB);
-
   }
 }
 
 int pal_check_cpld_power_fail(void)
 {
-  uint8_t pwr_st;
-  uint8_t cpu0_st, cpu1_st=0;
-  uint8_t cpu0_prsnt, cpu1_prsnt;
-  uint8_t pwr_off;
+  uint8_t pwr_off, pwr_st;
+  uint8_t cpu0_st, cpu1_st;
 
   pwr_off = is_server_off();
 
-  if( pal_get_cpld_power_sts(&pwr_st) ) {
+  if (pal_get_cpld_power_sts(&pwr_st)) {
     return -1;
   }
   cpu0_st = (pwr_st & 0xf0) >> 4;
   cpu1_st = (pwr_st & 0x0f);
-  cpu0_prsnt = check_cpu_present_pin_gpio(CPU_ID0);
-  cpu1_prsnt = check_cpu_present_pin_gpio(CPU_ID1);
 
 //Check Power On
-  if( pwr_off == false) {
-    if(cpu0_st != CPLD_PWR_CPU_DOWN && cpu0_prsnt == 0) {
+  if (pwr_off == false) {
+    if (cpu0_st != CPLD_PWR_CPU_DONE && is_cpu_socket_occupy(CPU_ID0)) {
       print_power_fail_log(CPU_ID0, cpu0_st);
     }
 
-    if(cpu1_st != CPLD_PWR_CPU_DOWN && cpu1_prsnt == 0) {
+    if (cpu1_st != CPLD_PWR_CPU_DONE && is_cpu_socket_occupy(CPU_ID1)) {
       print_power_fail_log(CPU_ID1, cpu1_st);
     }
 //Check Power Off
   } else {
-    if(cpu0_st != CPLD_PWR_CPU_OFF && cpu0_prsnt == 0) {
+    if (cpu0_st != CPLD_PWR_CPU_OFF && is_cpu_socket_occupy(CPU_ID0)) {
       print_power_fail_log(CPU_ID0, cpu0_st);
     }
 
-    if(cpu1_st != CPLD_PWR_CPU_OFF && cpu1_prsnt == 0) {
+    if (cpu1_st != CPLD_PWR_CPU_OFF && is_cpu_socket_occupy(CPU_ID1)) {
       print_power_fail_log(CPU_ID1, cpu1_st);
     }
   }

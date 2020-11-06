@@ -91,41 +91,7 @@ log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay)
 static void
 log_slot_present(uint8_t slot_id, gpio_value_t value)
 {
-  uint8_t bmc_location = 0;
-  int ret = 0;
-  int retry = 5;
-  uint8_t tbuf[4] = {0x05, 0x42, 0x01, 0x0d};
-  uint8_t rbuf[1] = {0x00};
-  uint8_t tlen = 4;
-  uint8_t rlen = 0;
-
-  ret = fby3_common_get_bmc_location(&bmc_location);
-  if ( ret < 0 ) {
-    return;
-  }
-
-  do {
-    ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  } while ( ret < 0 && retry-- > 0 );
-
-  uint8_t front_exp_bit = GETBIT(rbuf[0], 2);
-  uint8_t riser_exp_bit = GETBIT(rbuf[0], 3);
-
-  if (bmc_location == NIC_BMC) {
-    front_exp_bit = STATUS_NOT_PRSNT;
-  }
-
-  if ( (front_exp_bit == riser_exp_bit) && (front_exp_bit == 0) ) {
-    //Config D
-    if ((slot_id == FRU_SLOT2) || (slot_id == FRU_SLOT4)) {
-      return;
-    }
-  } else if ( front_exp_bit > riser_exp_bit ) {
-    //Config C
-    if (slot_id != FRU_SLOT1) {
-      return;
-    }
-  }
+  // no need to consider Config C, because the HW "PRSNT_MB_BMC_SLOTX_BB_N" is not connected to Config C BMC.
 
   if ( value == GPIO_VALUE_LOW ) {
     syslog(LOG_CRIT, "slot%d present", slot_id);

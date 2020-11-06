@@ -11,6 +11,7 @@ DEPENDS += " \
     libobmc-i2c \
     libgpio-ctrl \
     libfbgc-gpio \
+    libexp \
     "
 # These shouldn't be needed but are because we aren't properly versioning the
 # shared libraries contained in these recipes.
@@ -21,4 +22,5 @@ RDEPENDS_${PN} += " \
     libobmc-i2c \
     libgpio-ctrl \
     libfbgc-gpio \
+    libexp \
     "

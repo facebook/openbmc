@@ -31,6 +31,7 @@
 #include <syslog.h>
 #include <pthread.h>
 #include <string.h>
+#include <time.h>
 #include <openbmc/libgpio.h>
 #include "fbgc_common.h"
 
@@ -40,4 +41,16 @@ fbgc_common_get_chassis_type(uint8_t *type) {
   *type = CHASSIS_TYPE5;
 
   return 0;
+}
+
+void
+msleep(int msec) {
+  struct timespec req;
+
+  req.tv_sec = 0;
+  req.tv_nsec = msec * 1000 * 1000;
+
+  while(nanosleep(&req, &req) == -1 && errno == EINTR) {
+    continue;
+  }
 }

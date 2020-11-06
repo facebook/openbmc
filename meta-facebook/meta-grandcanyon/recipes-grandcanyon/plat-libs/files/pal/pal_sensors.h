@@ -2,13 +2,16 @@
 #define __PAL_SENSORS_H__
 
 #include <openbmc/obmc_pal_sensors.h>
-
+#include <facebook/exp.h>
 
 #define MAX_SENSOR_NUM         (0xFF)
 #define MAX_DEVICE_NAME_SIZE   (128)
+#define MAX_SENSOR_NAME_SIZE   (32)
 
 #define NIC_INFO_SLAVE_ADDR    (0x3E)
 #define NIC_INFO_TEMP_CMD      (0x1)
+
+#define MAX_EXP_IPMB_SENSOR_COUNT 40
 
 typedef struct {
   float ucr_thresh;
@@ -245,6 +248,11 @@ enum {
   MEZZ = 0,
 };
 
+// EXPANDER
+enum {
+  EXPANDER = 0,
+};
+
 typedef struct {
   uint8_t id;
   uint8_t bus;
@@ -255,5 +263,13 @@ typedef struct {
   char *chip;
   char *label;
 } PAL_TEMP_DEV_INFO;
+
+typedef struct {
+  uint8_t sensor_num;
+  uint8_t raw_data_1;
+  uint8_t raw_data_2;
+  uint8_t sensor_status;
+  uint8_t reserved;
+} EXPANDER_SENSOR_DATA;
 
 #endif

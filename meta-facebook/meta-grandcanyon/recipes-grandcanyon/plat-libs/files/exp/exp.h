@@ -18,55 +18,28 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __FBGC_COMMON_H__
-#define __FBGC_COMMON_H__
+#ifndef __EXPANDER_H__
+#define __EXPANDER_H__
 
-#include <stdbool.h>
+#include <openbmc/ipmi.h>
+#include <openbmc/ipmb.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define EEPROM_PATH     "/sys/bus/i2c/devices/%d-00%X/eeprom"
-#define COMMON_FRU_PATH "/tmp/fruid_%s.bin"
-#define FRU_BMC_BIN     "/tmp/fruid_bmc.bin"
-#define FRU_UIC_BIN     "/tmp/fruid_uic.bin"
-#define FRU_NIC_BIN     "/tmp/fruid_nic.bin"
+#define EXPANDER_IPMB_BUS_NUM           10
 
+// Expander slave address (7-bit)
+#define EXPANDER_SLAVE_ADDR             0x71
 
-#define BMC_FRU_BUS  6
-#define BMC_FRU_ADDR 0x54
-#define UIC_FRU_BUS  4
-#define UIC_FRU_ADDR 0x50
-#define NIC_FRU_BUS  8
-#define NIC_FRU_ADDR 0x50
+#define CMD_OEM_EXP_ERROR_CODE          0x11
+#define CMD_OEM_EXP_GET_SENSOR_READING  0x2D
 
-#ifndef ARRAY_SIZE
-#define ARRAY_SIZE(a)   (sizeof(a) / sizeof((a)[0]))
-#endif
-
-enum {
-  FRU_ALL = 0,
-  FRU_SERVER,
-  FRU_BMC,
-  FRU_UIC,
-  FRU_DPB,
-  FRU_SCC,
-  FRU_NIC,
-  FRU_E1S_IOCM,
-  FRU_CNT,
-};
-
-enum {
-  CHASSIS_TYPE5 = 0,
-  CHASSIS_TYPE7,
-};
-
-int fbgc_common_get_chassis_type(uint8_t *type);
-void msleep(int msec);
+int expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-#endif /* __FBGC_COMMON_H__ */
+#endif /* __EXPANDER_H__ */

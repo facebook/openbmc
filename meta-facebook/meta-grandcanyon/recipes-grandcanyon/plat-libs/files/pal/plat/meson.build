@@ -10,4 +10,5 @@ pal_deps += [
 
 pal_sources += [
     'pal_sensors.c',
+    'pal_power.c',
     ]

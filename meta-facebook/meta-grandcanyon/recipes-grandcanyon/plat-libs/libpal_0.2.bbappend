@@ -3,6 +3,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal:"
 SRC_URI += " \
     file://plat/meson.build \
     file://pal_sensors.c \
+    file://pal_power.c \
     "
 DEPENDS += " \
     libfbgc-common \

@@ -9,6 +9,7 @@
 #include "bmc_cpld_capsule.h"
 #include "bic_pcie_sw.h"
 #include <facebook/fby3_common.h>
+#include "usbdbg.h"
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
 
@@ -53,6 +54,10 @@ class ClassConfig {
         static PCIESWComponent pciesw_2ou_fw1("slot1", "2ou_pciesw", FRU_SLOT1, "2ou", FW_2OU_PESW);
         static VrExtComponent  vr_2ou_fw1("slot1", "2ou_vr", FRU_SLOT1, "2ou", FW_2OU_PESW_VR);
       } else {
+        // Register USB Debug Card components
+        static UsbDbgComponent usbdbg("ocpdbg", "mcu", "FBY3", 9, 0x60, false);
+        static UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 9, 0x60, 0x02);  // target ID of bootloader = 0x02
+
         //slot1 1ou bic/bicbl/cpld
         static BicFwExtComponent     bic_1ou_fw1("slot1", "1ou_bic"  , FRU_SLOT1, "1ou", FW_1OU_BIC);
         static BicFwExtBlComponent bicbl_1ou_fw1("slot1", "1ou_bicbl", FRU_SLOT1, "1ou", FW_1OU_BIC_BOOTLOADER);

@@ -4,6 +4,7 @@
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
     "fan_recovery_time": 2,
+    "sensor_filter_all": true,
     "boost": {
       "fan_fail": true,
       "sensor_fail": false
@@ -14,7 +15,7 @@
           "type" : "power_status"
         }
       }
-    },  
+    },
     "watchdog": false,
     "min_rpm": 500,
     "profiles": {
@@ -70,7 +71,7 @@
           "util" : "/usr/local/bin/fan-util --get 0"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 0"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "1": {
@@ -78,7 +79,7 @@
           "util" : "/usr/local/bin/fan-util --get 1"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 0"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "2": {
@@ -86,7 +87,7 @@
           "util" : "/usr/local/bin/fan-util --get 2"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 1"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "3": {
@@ -94,7 +95,7 @@
           "util" : "/usr/local/bin/fan-util --get 3"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 1"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "4": {
@@ -102,7 +103,7 @@
           "util" : "/usr/local/bin/fan-util --get 4"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 2"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "5": {
@@ -110,7 +111,7 @@
           "util" : "/usr/local/bin/fan-util --get 5"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 2"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "6": {
@@ -118,7 +119,7 @@
           "util" : "/usr/local/bin/fan-util --get 6"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 3"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "7": {
@@ -126,14 +127,14 @@
           "util" : "/usr/local/bin/fan-util --get 7"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 3"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       }
     },
     "zones": {
       "zone_1": {
-        "pwm_output": [0, 2, 4, 6],
+        "pwm_output": [0],
         "expr_file": "zone1_Slave.fsc"
       }
     }
-} 
+}

@@ -81,27 +81,20 @@ def bmc_read_power():
 def sensor_valid_check(board, sname, check_name, attribute):
     cmd = ""
     data = ""
+
+    if str(board) == "all":
+        sdata = sname.split("_")
+        board = sdata[0]
+        sname = sname.replace(board + "_", "")
+    Logger.debug("board=%s sname=%s" % (board, sname))
+
     try:
         if attribute["type"] == "power_status":
             # check power status first
             pwr_sts = bmc_read_power()
-            if pwr_sts != 1:
-                return 0
-
-            fru_name = c_char_p(board.encode("utf-8"))
-            snr_name = c_char_p(sname.encode("utf-8"))
-
-            is_snr_valid = lpal_hndl.pal_sensor_is_valid(fru_name, snr_name)
-
-            return int(is_snr_valid)
-
-        elif attribute["type"] == "gpio":
-            cmd = ["gpiocli", "get-value", "--shadow", attribute["shadow"]]
-            data = check_output(cmd).decode().split("=")
-            if int(data[1]) == 0:
+            if pwr_sts == 1:
                 return 1
-            else:
-                return 0
+            return 0
         else:
             Logger.debug("Sensor corresponding valid check funciton not found!")
             return -1

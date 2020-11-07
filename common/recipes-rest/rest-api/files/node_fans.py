@@ -35,6 +35,11 @@ class fansNode(node):
             if (skip_flag) and (kv[0].strip() != "Fan Fail"):
                 continue
 
+            if kv[0].strip() == "FSCD Driver":
+                if len(kv) == 3:
+                    # Format = FRU:SENSOR_NAME
+                    kv[1] = kv[1].strip()+":"+kv[2].strip()
+
             # 0: normal, 1: boost, 2: transitional
             if kv[0].strip() == "Fan Mode":
                 if kv[1].strip() == "Normal":

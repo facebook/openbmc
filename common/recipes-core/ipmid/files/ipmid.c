@@ -3440,6 +3440,22 @@ oem_set_fscd(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_set_slot_power_policy(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+  *data++ = 0x07;  // Power restore policy support(bitfield)
+
+  // Set specific slave addr device's power restore policy
+  res->cc = pal_set_slot_power_policy(req->data, res->data);
+  if (res->cc == CC_SUCCESS) {
+    *res_len = data - &res->data[0];
+  }
+}
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
      unsigned char *response, unsigned char *res_len)
 {
@@ -3447,7 +3463,6 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
 
   unsigned char cmd = req->cmd;
-
   pthread_mutex_lock(&m_oem);
   switch (cmd)
   {
@@ -3582,6 +3597,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_SET_FSCD:
       oem_set_fscd(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_POWER_POLICY:
+      oem_set_slot_power_policy(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

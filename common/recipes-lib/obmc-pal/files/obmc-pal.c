@@ -270,6 +270,11 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
   return 0;
 }
 
+uint8_t __attribute__((weak))
+pal_set_slot_power_policy(uint8_t *pwr_policy, uint8_t *res_data) {
+  return 0;
+}
+
 int __attribute__((weak))
 pal_bmc_err_disable(const char *error_item) {
   return 0;

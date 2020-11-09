@@ -289,6 +289,28 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
   uint8_t policy = *pwr_policy & 0x07;  // Power restore policy
   uint8_t mode;
 
+  ret = pal_get_host_system_mode(&mode);
+  if(ret != 0) {
+    return ret;
+  }
+
+  if (pal_get_config_is_master()) {
+    cc = (int)pal_set_slot_power_policy(pwr_policy, res_data);
+    if (mode == MB_4S_MODE && cmd_set_smbc_restore_power_policy(policy, BMC1_SLAVE_DEF_ADDR)) 
+      return CC_OEM_DEVICE_SEND_SLAVE_RESTORE_POWER_POLICY_FAIL;
+  } else {
+    return CC_OEM_ONLY_SUPPORT_MASTER;
+  }
+
+  return cc;
+}
+
+uint8_t 
+pal_set_slot_power_policy(uint8_t *pwr_policy, uint8_t *res_data)
+{
+  int cc = CC_SUCCESS;
+  uint8_t policy = *pwr_policy & 0x07;  // Power restore policy
+
   switch (policy) {
     case 0:
       if (pal_set_key_value("server_por_cfg", "off") != 0)
@@ -308,22 +330,6 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
     default:
       cc = CC_PARAM_OUT_OF_RANGE;
       break;
-  }
-
-  ret = pal_get_host_system_mode(&mode);
-  if(ret != 0) {
-    return ret;
-  }
-
-  if(mode == MB_4S_MODE) {
-    ret = pal_get_config_is_master();
-    if(ret == false) {
-      return CC_OEM_ONLY_SUPPORT_MASTER;
-    } else {
-      if( cmd_set_smbc_restore_power_policy(policy, BMC1_SLAVE_DEF_ADDR) ) {
-        return CC_OEM_DEVICE_SEND_SLAVE_RESTORE_POWER_POLICY_FAIL;
-      }
-    }
   }
   return cc;
 }

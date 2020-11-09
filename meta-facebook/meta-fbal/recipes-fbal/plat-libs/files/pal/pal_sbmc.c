@@ -27,8 +27,8 @@ bmc_ipmb_swap_info_process(uint8_t ipmi_cmd, uint8_t netfn, uint8_t t_bmc_addr,
 
 int
 cmd_set_smbc_restore_power_policy(uint8_t policy, uint8_t t_bmc_addr) {
-  uint8_t ipmi_cmd = CMD_CHASSIS_SET_POWER_RESTORE_POLICY;
-  uint8_t netfn = NETFN_CHASSIS_REQ;
+  uint8_t ipmi_cmd = CMD_OEM_SET_POWER_POLICY;
+  uint8_t netfn = NETFN_OEM_REQ;
   uint8_t tbuf[8];
   uint8_t rbuf[8] = {0x00};
   uint8_t rlen;

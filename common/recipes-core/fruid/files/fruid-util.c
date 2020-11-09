@@ -260,7 +260,9 @@ int get_fruid_info(uint8_t fru, char *path, char* name, unsigned char print_form
 
 static void
 print_usage() {
-  if (pal_dev_list_print_t != NULL || pal_dev_list_rw_t != NULL) {
+  if ((pal_dev_list_print_t != NULL && strlen(pal_dev_list_print_t) != 0) ||
+      (pal_dev_list_rw_t != NULL && strlen(pal_dev_list_rw_t) != 0)) {
+    // dev_list is not empty
     printf("Usage: fruid-util [ %s ] [ %s ] [--json]\n"
       "Usage: fruid-util [ %s ] [ %s ] [--dump | --write ] <file>\n",
       pal_fru_list_print_t, pal_dev_list_print_t, pal_fru_list_rw_t, pal_dev_list_rw_t);
@@ -359,7 +361,7 @@ int check_dump_arg(int argc, char * argv[]) {
     return -1;
   }
   if (argc == 5) {
-    if (pal_dev_list_rw_t == NULL) {
+    if (pal_dev_list_rw_t == NULL || strlen(pal_dev_list_rw_t) == 0) {
       return -1;
     }
     if (strstr(pal_dev_list_rw_t, argv[2]) == NULL) {
@@ -385,7 +387,7 @@ int check_write_arg(int argc, char * argv[])
     return -1;
   }
   if (argc == 5) {
-    if (pal_dev_list_rw_t == NULL) {
+    if (pal_dev_list_rw_t == NULL || strlen(pal_dev_list_rw_t) == 0) {
       return -1;
     }
     if (strstr(pal_dev_list_rw_t, argv[2]) == NULL) {
@@ -415,7 +417,7 @@ int check_modify_arg(int argc, char * argv[])
       return -1;
   }
   if (argc == 7) {
-    if (pal_dev_list_rw_t == NULL) {
+    if (pal_dev_list_rw_t == NULL || strlen(pal_dev_list_rw_t) == 0) {
       return -1;
     }
     if (strstr(pal_dev_list_rw_t, argv[2]) == NULL) {
@@ -443,7 +445,7 @@ int check_print_arg(int argc, char * argv[])
     return -1;
   }
   if (argv[optind+1] != NULL) {
-    if (pal_dev_list_print_t == NULL) {
+    if (pal_dev_list_print_t == NULL || strlen(pal_dev_list_print_t) == 0) {
       return -1;
     }
     if (strstr(pal_dev_list_print_t, argv[optind+1]) == NULL) {
@@ -846,7 +848,7 @@ int main(int argc, char * argv[]) {
   if (!strncmp(pal_fru_list_rw_t, "all, ", strlen("all, "))) {
     pal_fru_list_rw_t = pal_fru_list_rw_t + strlen("all, ");
   }
-  if (pal_dev_list_rw_t != NULL) {
+  if (pal_dev_list_rw_t != NULL && strlen(pal_dev_list_rw_t) != 0) {
     if (!strncmp(pal_dev_list_rw_t, "all, ", strlen("all, "))) {
       pal_dev_list_rw_t = pal_dev_list_rw_t + strlen("all, ");
     }

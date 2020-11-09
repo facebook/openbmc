@@ -22,13 +22,16 @@
 # A simple script to flush i2c clock signals to recover from I2C stuck issue.
 #
 
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
+
 #
 # Initialize variables, and define a helper function
 #
 
 iteration=0
 rc=0
-I2C_CMD='/sys/class/i2c-adapter/i2c-12/12-0031/i2c_sta_rst_raw'
+I2C_CMD="${SYSCPLD_SYSFS_DIR}/i2c_sta_rst_raw"
 
 force_stop() {
 	echo "Sending out START condition through I2C bus"

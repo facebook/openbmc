@@ -20,12 +20,10 @@
 
 import os
 
-
 EEPROMS = {
-    "Main board": "/sys/class/i2c-adapter/i2c-6/6-0051/eeprom",
-    "SCM": "/sys/class/i2c-adapter/i2c-0/0-0052/eeprom",
+    "Main board": "/sys/bus/i2c/devices/6-0051/eeprom",
+    "SCM": "/sys/bus/i2c/devices/0-0052/eeprom",
 }
-
 
 if __name__ == "__main__":
     for name, path in list(EEPROMS.items()):

@@ -11,24 +11,28 @@
 # FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
 # for more details.
 #
+
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
+
 #BMC version
 /usr/local/bin/lsb_release
 
 #EC version
 #enable I2c buffer to EC
 i2cset -f -y 0 0x3e 0x18 0x01 2> /dev/null
-ec_rev=$(cat /sys/class/i2c-adapter/i2c-0/0-0033/version | head -n 1)
+ec_rev=$(cat "${GALAXY_EC_SYSFS_DIR}/version" | head -n 1)
 echo "EC Version: $ec_rev"
 
 #systemp CPLD version
-cpld_major_rev=$(cat /sys/class/i2c-adapter/i2c-12/12-0031/cpld_rev | head -n 1 | awk -F "0x" '{print $2}')
+cpld_major_rev=$(cat "${SYSCPLD_SYSFS_DIR}/cpld_rev" | head -n 1 | awk -F "0x" '{print $2}')
 #cpld_major_rev=$((16#${temp}))
-cpld_sub_rev=$(cat /sys/class/i2c-adapter/i2c-12/12-0031/cpld_sub_rev | head -n 1 | awk -F "0x" '{print $2}')
+cpld_sub_rev=$(cat "${SYSCPLD_SYSFS_DIR}/cpld_sub_rev" | head -n 1 | awk -F "0x" '{print $2}')
 printf "SYS CPLD Version: V%02dS%02d\n" ${cpld_major_rev} ${cpld_sub_rev}
 
 #SCM CPLD version
-scm_cpld_major_rev=$(cat /sys/class/i2c-adapter/i2c-0/0-003e/cpld_rev | head -n 1 | awk -F "0x" '{print $2}')
-scm_cpld_sub_rev=$(cat /sys/class/i2c-adapter/i2c-0/0-003e/cpld_sub_rev | head -n 1 | awk -F "0x" '{print $2}')
+scm_cpld_major_rev=$(cat "${SCMCPLD_SYSFS_DIR}/cpld_rev" | head -n 1 | awk -F "0x" '{print $2}')
+scm_cpld_sub_rev=$(cat "${SCMCPLD_SYSFS_DIR}/cpld_sub_rev" | head -n 1 | awk -F "0x" '{print $2}')
 printf "SCM CPLD Version: V%02dS%02d\n" ${scm_cpld_major_rev} ${scm_cpld_sub_rev}
 
 #QSFP CPLD version

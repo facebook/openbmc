@@ -18,7 +18,10 @@
 # Boston, MA 02110-1301 USA
 #
 
-rev=$(head -n 1 /sys/class/i2c-adapter/i2c-0/0-003e/cpld_rev)
-sub_rev=$(head -n 1 /sys/class/i2c-adapter/i2c-0/0-003e/cpld_sub_rev)
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
+
+rev=$(head -n 1 "${SCMCPLD_SYSFS_DIR}/cpld_rev")
+sub_rev=$(head -n 1 "${SCMCPLD_SYSFS_DIR}/cpld_sub_rev")
 
 echo $(($rev)).$(($sub_rev))

@@ -330,6 +330,12 @@ int pal_set_def_key_value()
   return 0;
 }
 
+int pal_get_sysfw_ver(uint8_t fru, uint8_t *ver)
+{
+  // No BIOS
+  return -1;
+}
+
 void pal_dump_key_value(void)
 {
   int ret;

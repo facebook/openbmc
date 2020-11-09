@@ -633,7 +633,7 @@ bic_get_vr_device_id(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen
 }
 
 int
-bic_get_ifx_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes) {
+bic_get_ifx_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes, uint8_t intf) {
 #define REMAINING_TIMES(x) (((x[1] << 8) + x[0]) & 0xFC0) >> 6
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
@@ -647,7 +647,7 @@ bic_get_ifx_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint
   tbuf[3] = VR_PAGE;
   tbuf[4] = VR_PAGE50;
   tlen = 5;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
     goto error_exit;
@@ -656,7 +656,7 @@ bic_get_ifx_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint
   tbuf[2] = 0x02; //read cnt
   tbuf[3] = 0x82;
   tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Couldn't get data from 0x%02X", __func__, tbuf[3]);
     goto error_exit;
@@ -669,7 +669,7 @@ error_exit:
 }
 
 int
-bic_get_isl_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes) {
+bic_get_isl_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes, uint8_t intf) {
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
   uint8_t tlen = 0;
@@ -683,7 +683,7 @@ bic_get_isl_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint
   tbuf[4] = 0xC2; //data1
   tbuf[5] = 0x00; //data2
   tlen = 6;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to send command and data...", __func__);
     goto error_exit;
@@ -692,7 +692,7 @@ bic_get_isl_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint
   tbuf[2] = 0x04; //read cnt
   tbuf[3] = 0xC5; //command code
   tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to read NVM slots...", __func__);
     goto error_exit;
@@ -739,7 +739,7 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
     }
 
     //get the remaining writes of VRs
-    ret = bic_get_ifx_vr_remaining_writes(slot_id, bus, addr, &remaining_writes);
+    ret = bic_get_ifx_vr_remaining_writes(slot_id, bus, addr, &remaining_writes, intf);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr remaining writes. ret=%d", __func__,__LINE__, ret);
       goto error_exit;
@@ -804,7 +804,7 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
   } else {
     //ISL
     //get the reamaining write
-    ret = bic_get_isl_vr_remaining_writes(slot_id, bus, addr, &remaining_writes);
+    ret = bic_get_isl_vr_remaining_writes(slot_id, bus, addr, &remaining_writes, intf);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr remaining writes. ret=%d", __func__,__LINE__, ret);
       goto error_exit;
@@ -1444,63 +1444,69 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
   int fd = 0;
   int ret = 0;
 
-  if (intf == FEXP_BIC_INTF) {
-    table = 1;
-    ret = bic_get_1ou_type(slot_id, &board_type);
-    if (ret < 0) {
-      syslog(LOG_ERR, "%s() Cannot get 1ou board_type", __func__);
-      board_type = M2_BOARD;
+  do {
+    if (intf == FEXP_BIC_INTF) {
+      table = 1;
+      ret = bic_get_1ou_type(slot_id, &board_type);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() Cannot get 1ou board_type", __func__);
+        board_type = M2_BOARD;
+      }
+    } else if (intf == REXP_BIC_INTF) {
+      table = 0;
+      ret = fby3_common_get_2ou_board_type(slot_id, &board_type);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() Cannot get 2ou board_type", __func__);
+        board_type = M2_BOARD;
+      }
+
+      // No VPP and hotplug on GPv3, skip it
+      if ( board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD ) break;
+    } else {
+      return -1;
     }
-  } else if (intf == REXP_BIC_INTF) {
-    table = 0;
-    ret = fby3_common_get_2ou_board_type(slot_id, &board_type);
-    if (ret < 0) {
-      syslog(LOG_ERR, "%s() Cannot get 2ou board_type", __func__);
-      board_type = M2_BOARD;
+
+    bus_num = fby3_common_get_bus_id(slot_id) + 4;
+
+    //set the present status of M.2
+    fd = i2c_open(bus_num, SB_CPLD_ADDR);
+    if ( fd < 0 ) {
+      printf("Cannot open /dev/i2c-%d\n", bus_num);
+      ret = BIC_STATUS_FAILURE;
+      goto error_exit;
     }
-  } else {
-    return -1;
-  }
 
-  bus_num = fby3_common_get_bus_id(slot_id) + 4;
+    tbuf[0] = (intf == REXP_BIC_INTF )?M2_REG_2OU:M2_REG_1OU;
+    tlen = 1;
+    rlen = 1;
+    ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d, ret", __func__, tlen);
+      goto error_exit;
+    }
 
-  //set the present status of M.2
-  fd = i2c_open(bus_num, SB_CPLD_ADDR);
-  if ( fd < 0 ) {
-    printf("Cannot open /dev/i2c-%d\n", bus_num);
-    ret = BIC_STATUS_FAILURE;
-    goto error_exit;
-  }
+    if (board_type == EDSFF_1U || board_type == E1S_BOARD) {
+      // case 1/2OU E1S
+      prsnt_bit = mapping_e1s_prsnt[table][dev_id - 1];
+    } else {
+      // case 1/2OU M.2
+      prsnt_bit = mapping_m2_prsnt[table][dev_id - 1];
+    }
 
-  tbuf[0] = (intf == REXP_BIC_INTF )?M2_REG_2OU:M2_REG_1OU;
-  tlen = 1;
-  rlen = 1;
-  ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d, ret", __func__, tlen);
-    goto error_exit;
-  }
+    if ( status == M2_PWR_OFF ) {
+      tbuf[1] = (rbuf[0] | (0x1 << (prsnt_bit)));
+    } else {
+      tbuf[1] = (rbuf[0] & ~(0x1 << (prsnt_bit)));
+    }
 
-  if (board_type == EDSFF_1U || board_type == E1S_BOARD) {
-    // case 1/2OU E1S
-    prsnt_bit = mapping_e1s_prsnt[table][dev_id - 1];
-  } else {
-    // case 1/2OU M.2
-    prsnt_bit = mapping_m2_prsnt[table][dev_id - 1];
-  }
-  if ( status == M2_PWR_OFF ) {
-    tbuf[1] = (rbuf[0] | (0x1 << (prsnt_bit)));
-  } else {
-    tbuf[1] = (rbuf[0] & ~(0x1 << (prsnt_bit)));
-  }
-
-  tlen = 2;
-  rlen = 0;
-  ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-    goto error_exit;
-  }
+    tlen = 2;
+    rlen = 0;
+    ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+      goto error_exit;
+    }
+  } while(0);
 
   //Send the command
   memcpy(tbuf, (uint8_t *)&IANA_ID, 3);

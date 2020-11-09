@@ -152,7 +152,11 @@ int update_bic_mchp_pcie_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t 
     if ((last_offset + dsize) <= offset) {
       printf("updated 2OU PESW: %d %%\n", (offset/dsize)*5);
       fflush(stdout);
-      _set_fw_update_ongoing(slot_id, 60);
+      //when we update PESW fw but cfg fw, it spends 3 hrs for fw update
+      //If we set it to 60, it may timeout. we modify it to 1800 temporarily.
+      //It will be recovered by fw-util when fw update is done
+      //TODO: try to run it on USB
+      _set_fw_update_ongoing(slot_id, 1800);
       last_offset += dsize;
     }
 
@@ -175,6 +179,8 @@ int update_bic_mchp_pcie_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t 
             //In the middle of FW upfdate, wait for download status
             break;
           } else {
+            printf("Err: status[0]=%02X, status[1]=%02X\n", status[0], status[1]);
+            ret = BIC_STATUS_FAILURE;
             goto error_exit;
           }
         } else if (status[0] == FW_PCIE_SWITCH_DLSTAT_COMPLETES ||
@@ -186,9 +192,13 @@ int update_bic_mchp_pcie_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t 
             // At the end of FW update, after done then chenage to idle
             break;
           } else {
+            printf("Err: status[0]=%02X, status[1]=%02X\n", status[0], status[1]);
+            ret = BIC_STATUS_FAILURE;
             goto error_exit;
           }
         } else {
+          printf("Err: status[0]=%02X, status[1]=%02X\n", status[0], status[1]);
+          ret = BIC_STATUS_FAILURE;
           goto error_exit;
         }
 

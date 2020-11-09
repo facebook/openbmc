@@ -37,7 +37,7 @@ int VrExtComponent::print_version()
   map<uint8_t, string> list = {{FW_2OU_3V3_VR1, "VR P3V3_STBY1"},
                                {FW_2OU_3V3_VR2, "VR P3V3_STBY2"},
                                {FW_2OU_3V3_VR3, "VR P3V3_STBY3"},
-                               {FW_2OU_PESW_VR, "VR PESW"}};
+                               {FW_2OU_PESW_VR, "VR P0V84/P0V9"}};
   string ver("");
   string board_name = name;
   string err_msg("");
@@ -46,12 +46,6 @@ int VrExtComponent::print_version()
   try {
     server.ready();
     expansion.ready();
-    uint8_t type = 0xff;
-    if ( fby3_common_get_2ou_board_type(slot_id, &type) < 0 ) {
-      throw string("Failed to get 2OU board type");
-    } else if ( type != GPV3_MCHP_BOARD && type != GPV3_BRCM_BOARD ) {
-      throw string("Not present");
-    }
   } catch(string& err) {
     for ( auto& node:list ) {
       printf("%s %s Version: NA (%s)\n", board_name.c_str(), node.second.c_str(), err.c_str());
@@ -76,6 +70,15 @@ int VrExtComponent::print_version()
 
 int VrExtComponent::update(string image)
 {
-  return FW_STATUS_NOT_SUPPORTED;
+  int ret = 0;
+  try {
+    server.ready();
+    expansion.ready();
+    ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
+  } catch(string& err) {
+    cout << "Failed Reason: " << err << endl;
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+  return ret;
 }
 #endif

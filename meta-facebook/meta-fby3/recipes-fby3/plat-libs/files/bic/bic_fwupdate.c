@@ -999,6 +999,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     case FW_ME:
     case FW_BIC:
     case FW_BIC_BOOTLOADER:
+    case FW_VR:
       intf = NONE_INTF;
       break;
     case FW_1OU_BIC:
@@ -1058,7 +1059,8 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       }
       break;
     case FW_VR:
-      ret = update_bic_vr(slot_id, path, force);
+    case FW_2OU_PESW_VR:
+      ret = update_bic_vr(slot_id, comp, path, intf, force);
       break;
     case FW_2OU_PESW:
       ret = update_bic_mchp_pcie_fw(slot_id, comp, path, intf, force);

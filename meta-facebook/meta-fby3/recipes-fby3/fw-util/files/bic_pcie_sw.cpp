@@ -14,12 +14,6 @@ int PCIESWComponent::update(string image) {
   try {
     server.ready();
     expansion.ready();
-    uint8_t type = 0xff;
-    if ( fby3_common_get_2ou_board_type(slot_id, &type) < 0 ) {
-      throw string("Failed to get 2OU board type");
-    } else if ( type != GPV3_MCHP_BOARD && type != GPV3_BRCM_BOARD ) {
-      throw string("Not present");
-    }
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
   } catch (string& err) {
     cout << "Failed Reason: " << err << endl;
@@ -67,12 +61,6 @@ int PCIESWComponent::print_version() {
   try {
     server.ready();
     expansion.ready();
-    uint8_t type = 0xff;
-    if ( fby3_common_get_2ou_board_type(slot_id, &type) < 0 ) {
-      throw string("Failed to get 2OU board type");
-    } else if ( type != GPV3_MCHP_BOARD && type != GPV3_BRCM_BOARD ) {
-      throw string("Not present");
-    }
   } catch(string& err) {
     for ( auto& node:list ) {
       printf("%s %s Version: NA (%s)\n", board_name.c_str(), node.second.c_str(), err.c_str());

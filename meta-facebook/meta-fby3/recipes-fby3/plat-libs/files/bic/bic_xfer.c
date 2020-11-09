@@ -139,6 +139,7 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
       //rsp_buf[6] is the completion code
       if ( (ret < 0) || (ret == BIC_STATUS_SUCCESS && rsp_buf[6] != CC_SUCCESS) ) {
         syslog(LOG_WARNING, "%s() The 2nd BIC cannot be reached. CC: 0x%02X, intf: 0x%x, ret = %d\n", __func__, rsp_buf[6], intf, ret);
+        syslog(LOG_WARNING, "%s() Netfn:%02X, Cmd: %02X\n", __func__, netfn << 2, cmd);
         switch(rsp_buf[6]) {
         case CC_NOT_SUPP_IN_CURR_STATE:
           ret = BIC_STATUS_NOT_SUPP_IN_CURR_STATE;

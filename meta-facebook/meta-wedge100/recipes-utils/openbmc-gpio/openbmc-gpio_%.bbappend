@@ -45,6 +45,6 @@ do_install_append() {
      fi
 }
 
-FILES_${PN} += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '', '/usr/local/bin ${sysconfdir}', d)}"
+FILES_${PN} += "/usr/local/bin ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '', '${sysconfdir}', d)}"
 
 SYSTEMD_SERVICE_${PN} = "openbmc_gpio_setup.service"

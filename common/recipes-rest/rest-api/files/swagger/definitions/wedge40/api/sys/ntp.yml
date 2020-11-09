@@ -1,80 +1,82 @@
 swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/ntp  
-  title: Swagger doc for /api/sys/ntp  
+info:
+  description: Swagger doc for /api/sys/ntp
+  title: Swagger doc for /api/sys/ntp
   version: 1.0.0
-paths: 
-  /api/sys/ntp: 
-    get: 
+paths:
+  /api/sys/ntp:
+    get:
       produces: [application/json]
-      responses: 
-        200: 
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Resources: 
+            properties:
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Information: 
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  delay: 
+                properties:
+                  delay:
                     type: number
-                  when: 
+                  when:
                     type: number
-                  reach: 
+                  reach:
                     type: number
-                  stratum: 
+                  stratum:
                     type: number
-                  poll: 
+                  poll:
                     type: number
-                  jitter: 
+                  jitter:
                     type: number
-        404: 
+                  offset:
+                    type: number
+        404:
           description: No system peers
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Resources: 
+            properties:
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Information: 
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  reason: 
+                properties:
+                  reason:
                     type: string
-        500: 
+        500:
           description: Internal Server error
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Resources: 
+            properties:
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Information: 
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  reason: 
+                properties:
+                  reason:
                     type: string

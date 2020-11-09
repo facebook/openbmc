@@ -62,7 +62,8 @@ const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic";
 const char pal_guid_fru_list[] = "slot1, slot2, slot3, slot4, bmc";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
-const char pal_dev_list[] = "all, 1U, 2U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5";
+const char pal_dev_list[] = "all, 1U, 2U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
+                            "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11";
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
 const char *pal_server_fru_list[NUM_SERVER_FRU] = {"slot1", "slot2", "slot3", "slot4"};
 const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic"};
@@ -1628,7 +1629,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_M2_OCP_DETECT:
       pal_get_m2_str_name(event_data[1], event_data[2], error_log);
-      strcat(error_log, "Load Switch Fault");
+      strcat(error_log, "Load Switch OCP");
       break;
     case SYS_SLOT_PRSNT:
       snprintf(prsnt_str, sizeof(prsnt_str), "Slot%d present", event_data[1]);

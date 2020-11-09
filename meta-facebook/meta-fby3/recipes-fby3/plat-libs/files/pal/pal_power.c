@@ -559,13 +559,55 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
   return ret;
 }
 
+static int
+pal_is_valid_expansion_dev(uint8_t slot_id, uint8_t dev_id, uint8_t *rsp) {
+  const uint8_t st_2ou_idx = DEV_ID0_2OU;
+  const uint8_t end_2ou_yv3_idx = DEV_ID5_2OU;
+  const uint8_t end_2ou_gpv3_idx = DEV_ID11_2OU;
+  int ret = 0;
+  int config_status = 0;
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return POWER_STATUS_ERR;
+  }
+
+  config_status = bic_is_m2_exp_prsnt(slot_id);
+  if (config_status < 0) {
+    return POWER_STATUS_FRU_ERR;
+  }
+
+  // Is 1OU dev?
+  if ( (dev_id < st_2ou_idx) && ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
+    if ( bmc_location == NIC_BMC ) return POWER_STATUS_FRU_ERR;
+    rsp[0] = dev_id;
+    rsp[1] = FEXP_BIC_INTF;
+  } else if (( dev_id >= st_2ou_idx && dev_id <= end_2ou_gpv3_idx) && ((config_status & PRESENT_2OU) == PRESENT_2OU)) {
+    uint8_t type = 0xff;
+    if ( fby3_common_get_2ou_board_type(slot_id, &type) < 0 ) {
+      return POWER_STATUS_FRU_ERR;
+    } else if ( type != GPV3_MCHP_BOARD && type != GPV3_BRCM_BOARD ) {
+      //If dev doesn't belong to GPv3, return
+      if ( dev_id > end_2ou_yv3_idx ) return POWER_STATUS_FRU_ERR;
+    }
+    rsp[0] = dev_id - 4;
+    rsp[1] = REXP_BIC_INTF;
+  } else {
+    // dev not found
+    return POWER_STATUS_FRU_ERR;
+  }
+
+  return POWER_STATUS_OK;
+}
+
 int
 pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type) {
-  int ret;
+  int ret = 0;
   uint8_t nvme_ready = 0;
   uint8_t intf = 0;
-  uint8_t config_status = 0;
-  uint8_t bmc_location = 0;
+  uint8_t rsp[2] = {0}; //idx0 = dev id, idx1 = intf
 
   if (fby3_common_check_slot_id(slot_id) == 0) {
     /* Check whether the system is 12V off or on */
@@ -580,37 +622,13 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
       return 0;
     }
 
-    ret = fby3_common_get_bmc_location(&bmc_location);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-      return POWER_STATUS_ERR;
-    }
-
-    config_status = bic_is_m2_exp_prsnt(slot_id);
-    if (config_status < 0) {
+    if ( pal_is_valid_expansion_dev(slot_id, dev_id, rsp) < 0 ) {
+      printf("Device not found \n");
       return POWER_STATUS_FRU_ERR;
     }
 
-    if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-        if ((dev_id >= 1 && dev_id <= 4) && (config_status == 1 || config_status == 3)) { // 1OU Exp
-          intf = FEXP_BIC_INTF;
-        } else if ((dev_id >= 5 && dev_id <= 10) && ( config_status == 2 || config_status == 3)) { // 2OU Exp
-          intf = REXP_BIC_INTF;
-          dev_id = dev_id - 4; //shift to 2OU device id
-        } else {
-          printf("Device not found \n");
-          return POWER_STATUS_FRU_ERR;
-        }
-    } else {
-      if ((dev_id >= 5 && dev_id <= 10) && ( config_status == 2 || config_status == 3)) { // 2OU Exp
-        intf = REXP_BIC_INTF;
-        dev_id = dev_id - 4; //shift to 2OU device id
-      } else {
-        printf("Device not found \n");
-        return POWER_STATUS_FRU_ERR;
-      }
-    }
-
+    dev_id = rsp[0];
+    intf = rsp[1];
     ret = bic_get_dev_power_status(slot_id, dev_id, &nvme_ready, status, intf);
     if (ret < 0) {
       return -1;
@@ -634,8 +652,7 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
   int ret;
   uint8_t status, type, type_1ou = 0;
   uint8_t intf = 0;
-  uint8_t config_status = 0;
-  uint8_t bmc_location = 0;
+  uint8_t rsp[2] = {0}; //idx0 = dev id, idx1 = intf
 
   ret = fby3_common_check_slot_id(slot_id);
   if ( ret < 0 ) {
@@ -646,36 +663,13 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
     return -1;
   }
 
-  ret = fby3_common_get_bmc_location(&bmc_location);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-    return POWER_STATUS_ERR;
-  }
-
-  config_status = bic_is_m2_exp_prsnt(slot_id);
-  if (config_status < 0) {
+  if ( pal_is_valid_expansion_dev(slot_id, dev_id, rsp) < 0 ) {
+    printf("Device not found \n");
     return POWER_STATUS_FRU_ERR;
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-      if ((dev_id >= 1 && dev_id <= 4) && (config_status == 1 || config_status == 3)) { // 1OU Exp
-        intf = FEXP_BIC_INTF;
-      } else if ((dev_id >= 5 && dev_id <= 10) && ( config_status == 2 || config_status == 3)) { // 2OU Exp
-        intf = REXP_BIC_INTF;
-        dev_id = dev_id - 4; //shift to 2OU device id
-      } else {
-        printf("Device not found \n");
-        return POWER_STATUS_FRU_ERR;
-      }
-  } else {
-    if ((dev_id >= 5 && dev_id <= 10) && ( config_status == 2 || config_status == 3)) { // 2OU Exp
-      intf = REXP_BIC_INTF;
-      dev_id = dev_id - 4; //shift to 2OU device id
-    } else {
-      printf("Device not found \n");
-      return POWER_STATUS_FRU_ERR;
-    }
-  }
+  dev_id = rsp[0];
+  intf = rsp[1];
 
   switch(cmd) {
     case SERVER_POWER_ON:

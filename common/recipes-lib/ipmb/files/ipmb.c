@@ -92,7 +92,7 @@ ipmb_txb()
  */
 int
 lib_ipmb_handle(unsigned char bus_id,
-            unsigned char *request, unsigned short req_len,
+            unsigned char *request, unsigned int req_len,
             unsigned char *response, unsigned char *res_len) {
 
   size_t resp_len = MAX_IPMB_RES_LEN;

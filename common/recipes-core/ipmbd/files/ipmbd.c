@@ -752,9 +752,9 @@ struct ipmb_svc_cookie {
 static int
 conn_handler(client_t *cli) {
   struct ipmb_svc_cookie *svc = (struct ipmb_svc_cookie *)cli->svc_cookie;
-  unsigned char req_buf[MAX_IPMB_RES_LEN];
+  unsigned char req_buf[MAX_IPMB_REQ_LEN];
   unsigned char res_buf[MAX_IPMB_RES_LEN];
-  size_t req_len = MAX_IPMB_RES_LEN;
+  size_t req_len = MAX_IPMB_REQ_LEN;
   unsigned char res_len=0;
 
   SVC_VERBOSE("entering svc handler");
@@ -784,7 +784,7 @@ conn_handler(client_t *cli) {
   }
 
   ipmb_handle(svc->i2c_fd, req_buf,
-              (unsigned short)req_len, res_buf, &res_len);
+              (unsigned int)req_len, res_buf, &res_len);
 
   if(ipc_send_resp(cli, res_buf, res_len) != 0) {
     OBMC_ERROR(errno, "%s: ipc_send_resp() failed", IPMBD_SVC_THREAD);

@@ -35,7 +35,9 @@ extern "C" {
 #define DEV_SENSOR_INFO_LEN  6
 
 #define CC_BIC_RETRY 0x70
+#define CC_BIC_INVALID_CMD 0xC1
 #define BIC_RETRY_ACTION  -2
+#define BIC_INVALID_CMD  -3
 
 // Device fw update
 #define CFM1_START 0x00002000

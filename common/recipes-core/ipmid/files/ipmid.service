@@ -16,7 +16,7 @@
 # Boston, MA 02110-1301 USA
 #
 [Unit]
-Description=Health daemon
+Description=IPMI daemon
 Wants=setup_i2c.service
 After=setup_i2c.service
 

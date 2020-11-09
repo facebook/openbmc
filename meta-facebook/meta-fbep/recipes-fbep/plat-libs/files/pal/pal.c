@@ -865,6 +865,10 @@ int pal_chassis_control(uint8_t fru, uint8_t *req_data, uint8_t req_len)
   pthread_t tid;
   pthread_attr_t a;
 
+  if (fru == 0 && !cpld_power_permission()) {
+    // If came from BMC itself
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
   if (req_len != 1) {
     return CC_INVALID_LENGTH;
   }

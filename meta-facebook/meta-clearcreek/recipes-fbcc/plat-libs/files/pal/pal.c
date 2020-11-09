@@ -368,6 +368,11 @@ int pal_get_platform_id(uint8_t *id)
   return 0;
 }
 
+int pal_devnum_to_fruid(int devnum)
+{
+  return FRU_MB;
+}
+
 int
 pal_control_mux_to_target_ch(uint8_t channel, uint8_t bus, uint8_t mux_addr)
 {

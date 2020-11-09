@@ -1366,3 +1366,8 @@ int pal_slotid_to_fruid(int slotid)
   // FRU ID remapping, we start from FRU_MB = 1
   return slotid + 1;
 }
+
+int pal_devnum_to_fruid(int slotid)
+{
+  return FRU_MB;
+}

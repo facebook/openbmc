@@ -58,7 +58,13 @@ function init_class1_fsc(){
 }
 
 function init_class2_fsc(){
-  ln -s /etc/FSC_CLASS2_EVT_config.json ${default_fsc_config_path}
+  cpld_bus_num="4"
+  exp_board=$(get_2ou_board_type $cpld_bus_num)
+  if [ "$exp_board" == "0x02" ]; then # E1.S board
+    ln -s /etc/FSC_CLASS2_DVT_SPE_config.json ${default_fsc_config_path}
+  else
+    ln -s /etc/FSC_CLASS2_EVT_config.json ${default_fsc_config_path}
+  fi
   echo -n "Type_17" > /mnt/data/kv_store/sled_system_conf
 }
 
@@ -100,18 +106,30 @@ function start_sled_fsc() {
 }
 
 function reload_sled_fsc() {
-  cnt=`get_all_server_prsnt`
-  run_fscd=false
-
-  #Config A and B or Config D
-  sys_config=$(cat /mnt/data/kv_store/sled_system_conf)
-  if [[ "$sys_config" =~ ^(Type_(1|10|EDSFF_1U))$ ]]; then
-    if [ $cnt -eq 4 ]; then
+  bmc_location=$(get_bmc_board_id)
+  if [ $bmc_location -eq 9 ]; then
+    #The BMC of class2 need to check the present status from BB BIC
+    slot1_prsnt=$(bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xe0 0x41 0x9c 0x9c 0x0 0x0 27 | awk '{print $12}')
+    slot3_prsnt=$(bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xe0 0x41 0x9c 0x9c 0x0 0x0 28 | awk '{print $12}')
+    if [ "$slot1_prsnt" == "01" ] || [ "$slot3_prsnt" == "01" ]; then
+      run_fscd=false
+    else
       run_fscd=true
     fi
   else
-    if [ $cnt -eq 2 ]; then
-      run_fscd=true
+    cnt=`get_all_server_prsnt`
+    run_fscd=false
+  
+    #Config A and B or Config D
+    sys_config=$(cat /mnt/data/kv_store/sled_system_conf)
+    if [[ "$sys_config" =~ ^(Type_(1|10|EDSFF_1U))$ ]]; then
+      if [ $cnt -eq 4 ]; then
+        run_fscd=true
+      fi
+    else
+      if [ $cnt -eq 2 ]; then
+        run_fscd=true
+      fi
     fi
   fi
 

@@ -1,0 +1,27 @@
+max([
+  linear_cpu_margin(slot1:soc_therm_margin) + pid_cpu_margin(slot1:soc_therm_margin),
+  linear_frontIO_inlet(
+    max([
+      slot1:front_io_temp])),
+  linear_dimm(
+    max([
+      slot1:soc_dimma_temp,
+      slot1:soc_dimmc_temp,
+      slot1:soc_dimmd_temp,
+      slot1:soc_dimmf_temp])) +
+  pid_dimm(
+    max([
+      slot1:soc_dimma_temp,
+      slot1:soc_dimmc_temp,
+      slot1:soc_dimmd_temp,
+      slot1:soc_dimmf_temp])),
+  linear_nic(nic:nic_sensor_temp) + pid_nic(nic:nic_sensor_temp),
+  pid_e1s(
+    max([
+      slot1:spe_ssd0_temp,
+      slot1:spe_ssd1_temp,
+      slot1:spe_ssd2_temp,
+      slot1:spe_ssd3_temp,
+      slot1:spe_ssd4_temp,
+      slot1:spe_ssd5_temp]))
+])

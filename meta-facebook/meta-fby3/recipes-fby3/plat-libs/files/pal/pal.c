@@ -1573,8 +1573,10 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_SMI_STUCK_LOW  = 0x0E,
     SYS_OV_DETECT      = 0x0F,
     SYS_M2_OCP_DETECT  = 0x10,
+    SYS_SLOT_PRSNT     = 0x11,
   };
   uint8_t event = event_data[0];
+  char prsnt_str[32] = {0};
 
   switch (event) {
     case SYS_THERM_TRIP:
@@ -1627,6 +1629,10 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     case SYS_M2_OCP_DETECT:
       pal_get_m2_str_name(event_data[1], event_data[2], error_log);
       strcat(error_log, "Load Switch Fault");
+      break;
+    case SYS_SLOT_PRSNT:
+      snprintf(prsnt_str, sizeof(prsnt_str), "Slot%d present", event_data[1]);
+      strcat(error_log, prsnt_str);
       break;
     default:
       strcat(error_log, "Undefined system event");
@@ -2021,11 +2027,20 @@ pal_store_crashdump(uint8_t fru, bool ierr) {
 
 static int
 pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
+  int ret = 0;
 
   switch (snr_num) {
     case CATERR_B:
       pal_store_crashdump(fru, (event_data[3] == 0x00));  // 00h:IERR, 0Bh:MCERR
       break;
+    case BIC_SENSOR_SYSTEM_STATUS:
+      if (event_data[3] == 0x11) { // when another blade insert/remove, start/stop fscd
+        ret = system("/etc/init.d/setup-fan.sh reload &");
+        if (ret != 0) {
+          syslog(LOG_WARNING, "%s() can not reload setup-fan.sh", __func__);
+          return -1;
+        }
+      }
   }
 
   return PAL_EOK;

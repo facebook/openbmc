@@ -148,6 +148,21 @@ def sensor_valid_check(board, sname, check_name, attribute):
             if (status.value == 1): # power on
                 if match(r"soc_cpu|soc_therm", sname) is not None:
                     is_valid_check = True
+                elif match(r"spe_ssd", sname) is not None:
+                    # get SSD present status
+                    cmd = '/usr/bin/bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x15 0xe0 0x34 0x9c 0x9c 0x0 0x0 0x3'
+                    response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+                    response = response.decode()
+                    # check the completion code
+                    if response.split(' ')[6] != '00':
+                        return 0
+                    prsnt_bits = response.split(' ')[-3]
+                    int_val = int('0x' + prsnt_bits, 16)
+                    ssd_id = int(sname[7])
+                    if int_val & (1 << ssd_id):
+                        return 1
+                    else:
+                        return 0
                 else:
                     suffix = ""
                     if  match(r"1ou_m2", sname) is not None:

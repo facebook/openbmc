@@ -41,6 +41,7 @@
  */
 #define SEND_SIZE 5120
 #define FILE_SIZE_BYTES 300000
+#define FILE_SIZE_MAX_BYTES 10000000
 #define MAX_BYTE 5120
 
 typedef enum escMode {

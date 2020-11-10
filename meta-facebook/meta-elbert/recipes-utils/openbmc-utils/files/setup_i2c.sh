@@ -22,6 +22,11 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
+if ! wedge_is_bmc_personality; then
+    echo "uServer is not in BMC personality. Skipping all power-on sequences."
+    return
+fi
+
 # Some devices occasionally fail to probe. Retry if this happens.
 hwmon_device_add() {
     bus="$1"

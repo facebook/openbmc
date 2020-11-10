@@ -31,6 +31,11 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
+if ! wedge_is_bmc_personality; then
+    echo "uServer is not in BMC personality. Skipping all power-on sequences."
+    return
+fi
+
 # Only run board power up sequence is CPU is not up, otherwise this could
 # disrupt data plane
 if wedge_is_us_on; then

@@ -2158,6 +2158,11 @@ pal_set_fan_ctrl (char *ctrl_opt) {
     return -1;
   }
 
+  // notify baseboard bic (Class 2)
+  if (bmc_location == NIC_BMC) {
+    ret = bic_set_fan_auto_mode(ctrl_mode, &status);
+  }
+
   if (ctrl_mode == GET_FAN_MODE) {
     if (bmc_location == NIC_BMC) {
       if (status == AUTO_MODE) {
@@ -2206,10 +2211,6 @@ pal_set_fan_ctrl (char *ctrl_opt) {
       }
     }
 
-    // notify baseboard bic (Class 2)
-    if (bmc_location == NIC_BMC) {
-      ret = bic_set_fan_auto_mode(ctrl_mode, &status);
-    }
   }
 
   return ret;

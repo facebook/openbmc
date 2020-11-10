@@ -32,4 +32,10 @@
 # Disable the dual boot watch dog
 devmem_clear_bit 0x1e78502c 0
 
-/usr/bin/watchdogd.sh > /dev/null 2>&1 &
+#
+# "watchdogd" is only needed in legacy kernel (v4.1), and the watchdog can
+# be automatically kicked by a kernel thread in the latest kernel.
+#
+if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
+    /usr/bin/watchdogd.sh > /dev/null 2>&1 &
+fi

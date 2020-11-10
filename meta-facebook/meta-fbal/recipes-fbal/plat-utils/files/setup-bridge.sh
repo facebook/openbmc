@@ -50,8 +50,10 @@ echo "Initialize IP Bridge..."
 #Get EP MAC Address
 while [ 1 ]; do
   position=$(($(gpio_get FM_BLADE_ID_0)))
+  mode=$(($(gpio_get FM_BMC_SKT_ID_2)<<1 | $(gpio_get FM_BMC_SKT_ID_1))) #2S:mode=2 4S:mode=1
 
-  if [[ "$position" -eq 0 ]]; then
+
+  if [[ "$position" -eq 0 || "$mode" -eq 2 ]]; then
     echo "Get JG7 MAC"
     mac=($(/usr/bin/ipmitool raw 0x30 0x34 0x0a 0x0c 0x02 0x00 0x05 2>/dev/null))
   else

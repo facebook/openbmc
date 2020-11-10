@@ -187,10 +187,8 @@ enum {
 #define IOX_IPMB_BUS_ID         (I2C_BUS_6)
 
 enum {
-  MB_ID1 = 0,
-  MB_ID2,
-  MB_ID3,
-  MB_ID4,
+  MB_ID0 = 0,
+  MB_ID1
 };
 
 enum {

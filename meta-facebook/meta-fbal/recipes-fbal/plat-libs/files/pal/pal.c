@@ -767,10 +767,11 @@ int
 pal_get_blade_id(uint8_t *id) {
   static bool cached = false;
   static unsigned int cached_id = 0;
+  uint8_t mode;
 
   if (!cached) {
-    const char *shadows[] = {
-      "FM_BLADE_ID_0",
+    const char *shadows[] = {    //BLADE_ID[1:0] 00 MB0 Lowest
+      "FM_BLADE_ID_0",           //BLADE_ID[1:0] 10 MB1
       "FM_BLADE_ID_1"
     };
     if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_id)) {
@@ -778,6 +779,16 @@ pal_get_blade_id(uint8_t *id) {
     }
     cached = true;
   }
+
+  /*Workaround: 
+    The blade0 goto high when non plug upi board in standby mode.
+    After power on blade0 change to 0 in 2S Mode MB3.
+  */
+  if( !pal_get_host_system_mode(&mode) && mode == MB_2S_MODE ) {
+    cached_id = 0;
+    cached = true;
+  }
+
   *id = (uint8_t)cached_id;
   return 0;
 }
@@ -911,15 +922,9 @@ pal_get_mb_position(uint8_t* pos) {
 
     switch (cached_pos) {
       case 0:
-        cached_pos = MB_ID4;
+        cached_pos = MB_ID0;
         break;
       case 1:
-        cached_pos = MB_ID3;
-        break;
-      case 2:
-        cached_pos = MB_ID2;
-        break;
-      case 3:
         cached_pos = MB_ID1;
         break;
       default:
@@ -932,21 +937,6 @@ pal_get_mb_position(uint8_t* pos) {
 #ifdef DEBUG
   syslog(LOG_DEBUG,"%s BMC Position ID =%d\n", __func__, cached_pos);
 #endif
-  return 0;
-}
-
-int
-pal_get_mb_mode(uint8_t* mode) {
-  int ret=0;
-
-  ret = cmd_cmc_get_config_mode(mode);
-#ifdef DEBUG
-  syslog(LOG_DEBUG, "%s mode=%d\n", __func__, *mode);
-#endif
-  if(ret != 0) {
-    return ret;
-  }
-
   return 0;
 }
 
@@ -993,9 +983,9 @@ pal_get_host_system_mode(uint8_t* mode) {
   static unsigned int cached_pos = 0;
 
   if (!cached) {
-    const char *shadows[] = {
-      "FM_BMC_SKT_ID_1",
-      "FM_BMC_SKT_ID_2"
+    const char *shadows[] = {     //SKT_ID[2:1] 00
+      "FM_BMC_SKT_ID_1",          //SKT_ID[2:1] 01
+      "FM_BMC_SKT_ID_2"           //SKT_ID[2:1] 10
     };
     if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_pos)) {
       return -1;

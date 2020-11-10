@@ -18,6 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 #shellcheck disable=SC1091
+#shellcheck disable=SC2039
 #shellcheck disable=SC2086
 . /usr/local/bin/openbmc-utils.sh
 
@@ -146,6 +147,65 @@ operate_spi1_dev(){
     esac
 }
 
+read_spi2_dev(){
+    dev=$1
+    file=$2
+    echo -n "Reading ${dev} to $file ... "
+    dd if=/sys/bus/spi/devices/spi2.1/eeprom of="$file"
+    echo "Done"
+}
+
+write_spi2_dev(){
+    dev=$1
+    file=$2
+    echo -n "Writing $file to ${dev} ... "
+    dd if="$file" of=/sys/bus/spi/devices/spi2.1/eeprom
+    echo "Done"
+}
+
+erase_spi2_dev(){
+    echo -n "Erasing ${dev} ... "
+    echo 1 > /sys/bus/spi/devices/spi2.1/erase
+    echo "Done"
+}
+
+config_spi2_pin_and_path(){
+    dev=$1
+
+    case ${dev} in
+        "BCM5389_EE")
+            echo "[Setup] BCM5389_EE"
+            echo 0x02 > "$SMBCPLD_SYSFS_DIR/spi_1_sel"
+        ;;
+        *)
+            echo "Please enter {BCM5389_EE}"
+            exit 1
+        ;;
+    esac
+    echo "Config SPI2 Done."
+}
+
+operate_spi2_dev(){
+    op=$1
+    dev=$2
+    file=$3
+    ## Operate devices ##
+    case ${op} in
+        "read")
+            read_spi2_dev "$dev" "$file"
+        ;;
+        "write")
+            write_spi2_dev "$dev" "$file"
+        ;;
+        "erase")
+            erase_spi2_dev "$dev"
+        ;;
+        *)
+            echo "Operation $op is not defined."
+        ;;
+    esac
+}
+
 cleanup_spi(){
     if [ $ret -eq 1 ]; then
         exit 1
@@ -168,6 +228,12 @@ ui(){
             config_spi1_pin_and_path "$dev"
             operate_spi1_dev "$op" "$dev" "$file"
         ;;
+        "spi2")
+            dev=$3
+            file=$4
+            config_spi2_pin_and_path "$dev"
+            operate_spi2_dev "$op" "$dev" "$file"
+        ;;
         *)
             echo "No such SPI bus."
             return 1
@@ -181,6 +247,7 @@ usage(){
     echo "  $program <op> <spi1> <spi device> <file>"
     echo "    <op>          : read, write, erase"
     echo "    <spi1 device> : BIOS, GB_PCIE_FLASH, DOM_FPGA_FLASH1, DOM_FPGA_FLASH2"
+    echo "    <spi2 device> : BCM5389_EE"
     echo ""
     echo "Examples:"
     echo "  $program write spi1 BIOS bios.bin"
@@ -215,6 +282,30 @@ check_parameter(){
                             fi
                             ;;
                     "erase")
+                            if [ $# -ne 3 ]; then
+                                return 1
+                            fi
+                            ;;
+                    esac
+                    ;;
+                *)
+                    return 1
+                    ;;
+            esac
+            ;;
+        # check spi 2 device and parameters.
+        "spi2")
+            dev=$3
+            file=$4
+            case ${dev} in
+                "BCM5389_EE")
+                    case ${op} in
+                        "read" | "write")
+                            if [ $# -ne 4 ]; then
+                                return 1
+                            fi
+                            ;;
+                        "erase")
                             if [ $# -ne 3 ]; then
                                 return 1
                             fi

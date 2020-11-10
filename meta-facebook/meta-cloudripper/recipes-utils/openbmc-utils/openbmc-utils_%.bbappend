@@ -27,6 +27,7 @@ SRC_URI += "file://beutil \
             file://fpga_ver.sh \
             file://power-on.sh \
             file://presence_util.sh \
+            file://read_sled.sh \
             file://set_sled.sh \
             file://set_vdd.sh \
             file://setup_bic.sh \
@@ -51,6 +52,7 @@ OPENBMC_UTILS_FILES += " \
     feutil \
     fpga_ver.sh \
     presence_util.sh \
+    read_sled.sh \
     set_sled.sh \
     set_vdd.sh \
     setup_bic.sh \

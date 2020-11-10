@@ -20,6 +20,9 @@
 #ifndef __PAL_POWER_H__
 #define __PAL_POWER_H__
 
+#define DELAY_GRACEFUL_SHUTDOWN 5
+#define SCM_COM_PWR_ENBLE       I2C_SYSFS_DEV_ENTRY(2-003e, com_exp_pwr_enable)
+
 int pal_set_last_pwr_state(uint8_t fru, char *state);
 int pal_get_last_pwr_state(uint8_t fru, char *state);
 int pal_set_com_pwr_btn_n(char *status);

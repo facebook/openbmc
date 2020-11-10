@@ -25,6 +25,7 @@ import rest_feutil
 import rest_gb_freq
 import rest_sensors
 import rest_switch_reset
+import rest_system_led_info
 import rest_vddcore
 from aiohttp import web
 from rest_utils import dumps_bytestr
@@ -168,3 +169,9 @@ class boardApp_Handler:
     # Handler for sys/gb_freq endpoint
     async def rest_get_gb_freq_hdl(self, request):
         return web.json_response(rest_gb_freq.get_gb_freq(), dumps=dumps_bytestr)
+
+    # Handler for sys/system_led_info endpoint
+    async def rest_system_led_info_hdl(self, request):
+        return web.json_response(
+            rest_system_led_info.get_system_led_info(), dumps=dumps_bytestr
+        )

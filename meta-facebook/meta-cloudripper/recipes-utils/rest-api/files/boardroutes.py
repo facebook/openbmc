@@ -46,4 +46,5 @@ board_routes = [
     "/api/sys/switch_reset/cycle_reset",
     "/api/sys/switch_reset/only_reset",
     "/api/sys/gb_freq",
+    "/api/sys/system_led_info",
 ]

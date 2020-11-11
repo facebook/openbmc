@@ -39,6 +39,7 @@ common_routes = [
     "/api/sys/slotid",
     "/api/sys/mTerm_status",
     "/api/sys/ntp",
+    "/api/sys/fscd_sensor_data",
 ]
 
 

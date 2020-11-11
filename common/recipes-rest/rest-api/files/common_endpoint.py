@@ -32,6 +32,7 @@ import rest_psu_update
 import rest_sensors
 import rest_server
 import rest_slotid
+import rest_fscd_sensor_data
 from aiohttp import web
 from rest_utils import dumps_bytestr, get_endpoints
 
@@ -227,3 +228,8 @@ class commonApp_Handler:
     @common_force_async
     def rest_ntp_status(self, request):
         return self.helper_rest_ntp_status(request)
+
+    # Handler for additional fscd sensor data
+    @staticmethod
+    async def rest_fscd_sensor_data_post(request: web.Request) -> web.Response:
+        return await rest_fscd_sensor_data.post_fscd_sensor_data(request)

@@ -44,6 +44,7 @@ SRC_URI = "file://rest.py \
            file://vboot.py \
            file://rest.cfg \
            file://rest_config.py \
+           file://rest_fscd_sensor_data.py \
            file://node_bmc.py \
            file://node_api.py \
            file://node_dpb.py \
@@ -75,6 +76,7 @@ SRC_URI = "file://rest.py \
            file://test_auth_enforcer.py \
            file://test_common_logging.py \
            file://test_rest_config.py \
+           file://test_rest_fscd_sensor_data.py \
            file://restapi.service \
           "
 

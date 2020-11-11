@@ -1,0 +1,11 @@
+--- ./common_setup_routes.py.orig	2020-11-11 02:12:36.939009472 -0800
++++ ./common_setup_routes.py	2020-11-11 02:13:14.607122721 -0800
+@@ -27,7 +27,7 @@
+     app.router.add_get(common_routes[0], chandler.rest_api)
+     app.router.add_get(common_routes[1], chandler.rest_sys)
+     app.router.add_get(common_routes[2], chandler.rest_mb_sys)
+-    app.router.add_get(common_routes[3], chandler.rest_fruid_hdl)
++    app.router.add_get(common_routes[3], chandler.rest_fruid_pim_hdl)
+     app.router.add_get(common_routes[4], chandler.rest_bmc_hdl)
+     app.router.add_get(common_routes[5], chandler.rest_server_hdl)
+     app.router.add_post(common_routes[5], chandler.rest_server_act_hdl)

@@ -780,10 +780,17 @@ func TestCheckNoBaseNameExistsInProcCmdlinePaths(t *testing.T) {
 			readFileRet: map[string]interface{}{
 				"/proc/42/cmdline": ReadFileRetType{[]byte("fw-util\x00-foobar"), nil},
 			},
-			want: errors.Errorf("'fw-util' found in cmdline 'fw-util -foobar'"),
+			want: nil,
 		},
 		{
 			name: "base name exists (3)",
+			readFileRet: map[string]interface{}{
+				"/proc/42/cmdline": ReadFileRetType{[]byte("fw-util\x00bmc\x00--update"), nil},
+			},
+			want: errors.Errorf("'fw-util' found in cmdline 'fw-util bmc --update'"),
+ 		},
+		{
+			name: "base name exists (4)",
 			readFileRet: map[string]interface{}{
 				"/proc/42/cmdline": ReadFileRetType{[]byte(
 					"/opt/flashy/checks_and_remediations/common/00_dummy_step\x00-device\x00mtd:flash0",

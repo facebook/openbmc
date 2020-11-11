@@ -334,6 +334,17 @@ var getOtherProcCmdlinePaths = func() []string {
 	return otherCmdlines
 }
 
+// Examine arguments for well known base names and refine the match.
+var refineBaseNameMatch = func(baseName string, params []string) bool {
+	if baseName == "fw-util" {
+		// ignore fw-util unless doing an update.
+		return StringFind("--update", params) >= 0
+	} else {
+		// default: finding the name is enough
+		return true
+	}
+}
+
 // checkNoBaseNameExistsInProcCmdlinePaths returns error if a basename is found running in a proc/*/cmdline file
 var checkNoBaseNameExistsInProcCmdlinePaths = func(baseNames, procCmdlinePaths []string) error {
 	for _, procCmdlinePath := range procCmdlinePaths {
@@ -348,7 +359,7 @@ var checkNoBaseNameExistsInProcCmdlinePaths = func(baseNames, procCmdlinePaths [
 		params := strings.Split(string(cmdlineBuf), "\x00")
 		for _, param := range params {
 			baseName := path.Base(param)
-			if StringFind(baseName, baseNames) >= 0 {
+			if StringFind(baseName, baseNames) >= 0 && refineBaseNameMatch(baseName, params) {
 				return errors.Errorf("'%v' found in cmdline '%v'",
 					baseName, strings.Join(params, " "))
 			}

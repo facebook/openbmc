@@ -20,10 +20,12 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "\
         file://nic_ext.cpp \
         file://nic_ext.h \
+        file://bmc_fpga.cpp \
+        file://bmc_fpga.h \
         file://platform.cpp \
         "
 
 CXXFLAGS += " -DBIC_SUPPORT "
-DEPENDS += " libpal libbic libncsi libnl-wrapper libkv "
-RDEPENDS_${PN} += " libpal libbic libncsi libnl-wrapper libkv "
-LDFLAGS += " -lpal -lbic -lnl-wrapper -lkv "
+DEPENDS += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common "
+RDEPENDS_${PN} += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common "
+LDFLAGS += " -lpal -lbic -lnl-wrapper -lkv -lfpga "

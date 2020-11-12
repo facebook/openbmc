@@ -62,6 +62,18 @@ enum {
   CHASSIS_TYPE7,
 };
 
+enum {
+  I2C_BIC_BUS = 2,
+  I2C_BS_FPGA_BUS = 3,
+  I2C_UIC_FPGA_BUS = 5,
+  I2C_DBG_CARD_BUS = 7,
+  I2C_NIC_BUS = 8,
+  I2C_EXP_BUS = 10,
+  I2C_T5IOC_BUS = 11,
+  I2C_T5E1S1_T7IOC_BUS = 12,  // T5: E1.S 1; T7: IOC
+  I2C_T5E1S2_T7IOC_BUS = 13,  // T5: E1.S 2; T7: IOCM FRU, Voltage sensor, Temp sensor
+};
+
 int fbgc_common_get_chassis_type(uint8_t *type);
 void msleep(int msec);
 

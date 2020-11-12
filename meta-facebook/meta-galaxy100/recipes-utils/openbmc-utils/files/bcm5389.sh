@@ -1,6 +1,7 @@
 #!/bin/sh
 
-source /usr/local/fbpackages/utils/ast-functions
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
 
 status_switch() {
 	prompt=1
@@ -16,11 +17,9 @@ status_switch() {
 		esac
 	done
 	if [ "$1" = "mdio" ]; then
-		gpio_export R6
-		gpio_export R7
-		gpio_set E2 1
+		gpio_set_value SWITCH_EEPROM1_WRT 1
 	elif [ "$1" = "eeprom" ]; then
-		gpio_set E2 0
+		gpio_set_value SWITCH_EEPROM1_WRT 0
 	else
 		echo "Mode doesn't support!"
 		return 1

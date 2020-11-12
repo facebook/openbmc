@@ -81,6 +81,19 @@ typedef enum pldm_sensor_id_brcm {
   BRCM_LINK_STATE_SENSOR_PORT_1_ID = 0xA,
 } pldm_sensor_id_brcm;
 
+typedef enum pldm_sensor_id_brcm_2b {
+  /* Numeric Sensors */
+  BRCM_2B_THERMAL_SENSOR_ONCHIP_ID    = 300,
+  BRCM_2B_THERMAL_SENSOR_PORT_0_ID    = 500,
+  BRCM_2B_THERMAL_SENSOR_PORT_1_ID    = 501,
+  BRCM_2B_LINK_SPEED_SENSOR_PORT_0_ID = 100,
+  BRCM_2B_LINK_SPEED_SENSOR_PORT_1_ID = 101,
+
+  /* State Sensors */
+  BRCM_2B_DEVICE_STATE_SENSORS_ID     = 60,
+  BRCM_2B_LINK_STATE_SENSOR_PORT_0_ID = 200,
+  BRCM_2B_LINK_STATE_SENSOR_PORT_1_ID = 201,
+} pldm_sensor_id_brcm_2b;
 
 
 // cdb for pldm cmd CMD_GET_SENSOR_READING

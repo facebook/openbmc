@@ -260,6 +260,20 @@ slot_rst_hndler(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   log_gpio_change(gp, curr, 0);
 }
 
+static void
+ocp_nic_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+  if (curr == GPIO_VALUE_LOW)
+    syslog(LOG_CRIT, "OCP NIC Inserted");
+  else
+    syslog(LOG_CRIT, "OCP NIC Removed");
+}
+
+static void
+ocp_nic_init(gpiopoll_pin_t *gp, gpio_value_t value) {
+  if (value == GPIO_VALUE_HIGH)
+    syslog(LOG_CRIT, "OCP NIC Removed");
+}
+
 // GPIO table of the class 1
 static struct gpiopoll_config g_class1_gpios[] = {
   // shadow, description, edge, handler, oneshot
@@ -279,6 +293,7 @@ static struct gpiopoll_config g_class1_gpios[] = {
   {"HSC_FAULT_BMC_SLOT2_N_R", "GPIOM1",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
   {"HSC_FAULT_SLOT3_N",       "GPIOM2",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
   {"HSC_FAULT_BMC_SLOT4_N_R", "GPIOM3",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
+  {"OCP_NIC_PRSNT_BMC_N",     "GPIOM5",   GPIO_EDGE_BOTH,     ocp_nic_hotplug_hndlr,    ocp_nic_init},
 };
 
 // GPIO table of the class 2

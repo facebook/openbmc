@@ -1598,27 +1598,25 @@ pal_is_device_pair(uint8_t slot_id) {
 
 int
 pal_baseboard_clock_control(uint8_t slot_id, int ctrl) {
-  uint8_t rev;
   int spb_type;
   int ret = 0;
   gpio_desc_t *v1gdesc = NULL, *v2gdesc = NULL, *v3gdesc = NULL;
 
   spb_type = fby2_common_get_spb_type();
-  rev = fby2_common_get_spb_rev();
   switch(slot_id) {
     case FRU_SLOT1:
     case FRU_SLOT2:
-      if (rev < SPB_REV_PVT && spb_type != TYPE_SPB_YV250) {
-        v1gdesc = gpio_open_by_shadow("PE_BUFF_OE_0_R_N");
-        v2gdesc = gpio_open_by_shadow("PE_BUFF_OE_1_R_N");
+      if (spb_type != TYPE_SPB_YV250) {
+        v1gdesc = gpio_open_by_shadow("PE_BUFF_OE_0_N");
+        v2gdesc = gpio_open_by_shadow("PE_BUFF_OE_1_N");
       }
       v3gdesc = gpio_open_by_shadow("CLK_BUFF1_PWR_EN_N");
       break;
     case FRU_SLOT3:
     case FRU_SLOT4:
-      if (rev < SPB_REV_PVT && spb_type != TYPE_SPB_YV250) {
-        v1gdesc = gpio_open_by_shadow("PE_BUFF_OE_2_R_N");
-        v2gdesc = gpio_open_by_shadow("PE_BUFF_OE_3_R_N");
+      if (spb_type != TYPE_SPB_YV250) {
+        v1gdesc = gpio_open_by_shadow("PE_BUFF_OE_2_N");
+        v2gdesc = gpio_open_by_shadow("PE_BUFF_OE_3_N");
       }
       v3gdesc = gpio_open_by_shadow("CLK_BUFF2_PWR_EN_N");
       break;
@@ -1633,7 +1631,7 @@ pal_baseboard_clock_control(uint8_t slot_id, int ctrl) {
     }
   }
 
-  if (rev < SPB_REV_PVT && spb_type != TYPE_SPB_YV250) {
+  if (spb_type != TYPE_SPB_YV250) {
     if (gpio_set_value(v1gdesc, ctrl) || gpio_set_value(v2gdesc, ctrl)) {
       ret = -1;
     }

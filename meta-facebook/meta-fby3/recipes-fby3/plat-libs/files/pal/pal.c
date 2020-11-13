@@ -857,12 +857,19 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
 
   if ( (dev_id == BOARD_1OU) && ((config_status & PRESENT_1OU) == PRESENT_1OU) && (bmc_location != NIC_BMC) ) { // 1U
     return bic_write_fruid(fru, 0, path, FEXP_BIC_INTF);
-  } else if ( (dev_id == BOARD_2OU) && ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { // 2U
-    return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
+  } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
+    if ( dev_id == BOARD_2OU ) {
+      return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
+    } else if ( dev_id >= DEV_ID0_2OU && dev_id <= DEV_ID11_2OU ) {
+      return bic_write_fruid(fru, dev_id - DEV_ID0_2OU + 1, path, REXP_BIC_INTF);
+    } else {
+      printf("Dev%d is not supported on 2OU!\n", dev_id);
+    }
   } else {
     printf("%s is not present!\n", (dev_id == BOARD_1OU)?"1OU":"2OU");
     return PAL_ENOTSUP;
   }
+  return ret;
 }
 
 int

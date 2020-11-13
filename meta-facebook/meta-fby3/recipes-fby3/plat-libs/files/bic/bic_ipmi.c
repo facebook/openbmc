@@ -495,6 +495,53 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   return ret;
 }
 
+uint8_t
+get_gpv3_bus_number(uint8_t dev_id) {
+  switch(dev_id) {
+    case FW_2OU_M2_DEV0:
+    case FW_2OU_M2_DEV1:
+    case DEV_ID0_2OU:
+    case DEV_ID1_2OU:    
+      return 0x2;
+    case FW_2OU_M2_DEV2:
+    case FW_2OU_M2_DEV3:
+    case DEV_ID2_2OU:
+    case DEV_ID3_2OU:
+      return 0x4;
+    case FW_2OU_M2_DEV4:
+    case FW_2OU_M2_DEV5:
+    case DEV_ID4_2OU:
+    case DEV_ID5_2OU:
+      return 0x6;
+    case FW_2OU_M2_DEV6:
+    case FW_2OU_M2_DEV7:
+    case DEV_ID6_2OU:
+    case DEV_ID7_2OU:
+      return 0x5;
+    case FW_2OU_M2_DEV8:
+    case FW_2OU_M2_DEV9:
+    case DEV_ID8_2OU:
+    case DEV_ID9_2OU:
+      return 0x7;
+    case FW_2OU_M2_DEV10:
+    case FW_2OU_M2_DEV11:
+    case DEV_ID10_2OU:
+    case DEV_ID11_2OU:
+      return 0x3;
+  }
+
+  return 0xff;
+}
+
+int
+bic_enable_ssd_sensor_monitor(uint8_t slot_id, bool enable, uint8_t intf) {
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, ( enable == true )?0x1:0x0};
+  uint8_t tlen = 4;
+  uint8_t rbuf[16] = {0};
+  uint8_t rlen = 0;
+  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BIC_SNR_MONITOR, tbuf, tlen, rbuf, &rlen, intf); 
+}
+
 int 
 bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
   uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
@@ -1380,7 +1427,8 @@ bic_get_fan_pwm(uint8_t fan_id, float *value) {
 }
 
 int
-bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t intf) {
+bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, \
+                         uint8_t *ffi, uint8_t *meff, uint16_t *vendor_id, uint8_t *major_ver, uint8_t *minor_ver, uint8_t intf) {
   uint8_t tbuf[5] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[11] = {0x00};
   uint8_t tlen = 5;
@@ -1420,14 +1468,16 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
   }
 
   tbuf[4] = 0x3;  //get power status
-
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, tlen, rbuf, &rlen, intf);
 
   // Ignore first 3 bytes of IANA ID
-  if ( ret >= 0 ) {
-    *nvme_ready = 0x1;
-  }
   *status = rbuf[3];
+  *nvme_ready = (intf == REXP_BIC_INTF)?rbuf[4]:0x1; //1 is assigned directly. for REXP_EXP_INTF, we assige it from rbuf[4]
+  if ( ffi != NULL ) *ffi = rbuf[5];   // FFI_0 0:Storage 1:Accelerator
+  if ( meff != NULL ) *meff = rbuf[6];  // MEFF  0x35: M.2 22110 0xF0: Dual M.2
+  if ( vendor_id != NULL ) *vendor_id = (rbuf[7] << 8 ) | rbuf[8]; // PCIe Vendor ID
+  if ( major_ver != NULL ) *major_ver = rbuf[9];  //FW version Major Revision
+  if ( minor_ver != NULL ) *minor_ver = rbuf[10]; //FW version Minor Revision
 
   return ret;
 }

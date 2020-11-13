@@ -37,6 +37,7 @@
 #include "bic_vr_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 #include "bic_mchp_pciesw_fwupdate.h"
+#include "bic_m2_fwupdate.h"
 //#define DEBUG
 
 /****************************/
@@ -933,6 +934,24 @@ exit:
   return ret;
 }
 
+static int
+stop_bic_sensor_monitor(uint8_t slot_id, uint8_t intf) {
+  int ret = 0;
+  printf("* Turning off BIC sensor monitor...\n");
+  ret = bic_enable_ssd_sensor_monitor(slot_id, false, intf);
+  sleep(2);
+  return ret;
+}
+
+static int
+start_bic_sensor_monitor(uint8_t slot_id, uint8_t intf) {
+  int ret = 0;
+  printf("* Turning on BIC sensor monitor...\n");
+  ret = bic_enable_ssd_sensor_monitor(slot_id, true, intf);
+  sleep(2);
+  return ret;
+}
+
 static char*
 get_component_name(uint8_t comp) {
   switch (comp) {
@@ -976,6 +995,30 @@ get_component_name(uint8_t comp) {
       return "2OU PCIe Switch";
     case FW_2OU_PESW_VR:
       return "2OU PCIe VR";
+    case FW_2OU_M2_DEV0:
+      return "2OU M2 Dev0";
+    case FW_2OU_M2_DEV1:
+      return "2OU M2 Dev1";
+    case FW_2OU_M2_DEV2:
+      return "2OU M2 Dev2";
+    case FW_2OU_M2_DEV3:
+      return "2OU M2 Dev3";
+    case FW_2OU_M2_DEV4:
+      return "2OU M2 Dev4";
+    case FW_2OU_M2_DEV5:
+      return "2OU M2 Dev5";
+    case FW_2OU_M2_DEV6:
+      return "2OU M2 Dev6";
+    case FW_2OU_M2_DEV7:
+      return "2OU M2 Dev7";
+    case FW_2OU_M2_DEV8:
+      return "2OU M2 Dev8";
+    case FW_2OU_M2_DEV9:
+      return "2OU M2 Dev9";
+    case FW_2OU_M2_DEV10:
+      return "2OU M2 Dev10";
+    case FW_2OU_M2_DEV11:
+      return "2OU M2 Dev11";
     default:
       return "Unknown";
   }
@@ -989,9 +1032,18 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
   uint8_t intf = 0x0;
   char ipmb_content[] = "ipmb";
   char* loc = strstr(path, ipmb_content);
+  bool stop_bic_monitoring = false;
 
   printf("slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, path, force);
   syslog(LOG_CRIT, "Updating %s on slot%d. File: %s", get_component_name(comp), slot_id, path);
+
+  uint8_t board_type = 0;
+  if ( fby3_common_get_2ou_board_type(slot_id, &board_type) < 0 ) {
+    syslog(LOG_WARNING, "Failed to get 2ou board type\n");
+  } else if ( board_type == GPV3_MCHP_BOARD ||
+              board_type == GPV3_BRCM_BOARD ) {
+    stop_bic_monitoring = true; 
+  }
 
   //get the intf
   switch (comp) {
@@ -1012,6 +1064,18 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     case FW_2OU_CPLD:
     case FW_2OU_PESW:
     case FW_2OU_PESW_VR:
+    case FW_2OU_M2_DEV0:
+    case FW_2OU_M2_DEV1:
+    case FW_2OU_M2_DEV2:
+    case FW_2OU_M2_DEV3:
+    case FW_2OU_M2_DEV4:
+    case FW_2OU_M2_DEV5:
+    case FW_2OU_M2_DEV6:
+    case FW_2OU_M2_DEV7:
+    case FW_2OU_M2_DEV8:
+    case FW_2OU_M2_DEV9:
+    case FW_2OU_M2_DEV10:
+    case FW_2OU_M2_DEV11:
       intf = REXP_BIC_INTF;
       break;
     case FW_BB_BIC:
@@ -1038,7 +1102,17 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     case FW_1OU_CPLD:
     case FW_2OU_CPLD:
       if (loc != NULL) {
+        if ( stop_bic_monitoring == true && stop_bic_sensor_monitor(slot_id, intf) < 0 ) {
+          printf("* Failed to stop bic sensor monitor\n");
+          break;
+        }
         ret = update_bic_cpld_lattice(slot_id, path, intf, force);
+        //run it anyway
+        if ( stop_bic_monitoring == true && start_bic_sensor_monitor(slot_id, intf) < 0 ) {
+          printf("* Failed to start bic sensor monitor\n");
+          ret = BIC_STATUS_FAILURE;
+          break;
+        }
       } else {
         ret = update_bic_cpld_lattice_usb(slot_id, path, intf, force);
       }
@@ -1064,6 +1138,30 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       break;
     case FW_2OU_PESW:
       ret = update_bic_mchp_pcie_fw(slot_id, comp, path, intf, force);
+      break;
+    case FW_2OU_M2_DEV0:
+    case FW_2OU_M2_DEV1:
+    case FW_2OU_M2_DEV2:
+    case FW_2OU_M2_DEV3:
+    case FW_2OU_M2_DEV4:
+    case FW_2OU_M2_DEV5:
+    case FW_2OU_M2_DEV6:
+    case FW_2OU_M2_DEV7:
+    case FW_2OU_M2_DEV8:
+    case FW_2OU_M2_DEV9:
+    case FW_2OU_M2_DEV10:
+    case FW_2OU_M2_DEV11:
+      if ( stop_bic_monitoring == true && stop_bic_sensor_monitor(slot_id, intf) < 0 ) {
+        printf("* Failed to stop bic sensor monitor\n");
+        break;
+      }
+      ret = update_bic_m2_fw(slot_id, comp, path, intf, force);
+      //run it anyway
+      if ( stop_bic_monitoring == true && start_bic_sensor_monitor(slot_id, intf) < 0 ) {
+        printf("* Failed to start bic sensor monitor\n");
+        ret = BIC_STATUS_FAILURE;
+        break;
+      }
       break;
   }
 

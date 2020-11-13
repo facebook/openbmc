@@ -96,8 +96,8 @@ enum {
   DEV_ID9_2OU = 0xE,
   DEV_ID10_2OU = 0xF,
   DEV_ID11_2OU = 0x10,
-  BOARD_1OU   = 0xB,
-  BOARD_2OU   = 0xC,
+  BOARD_1OU,
+  BOARD_2OU,
 };
 
 enum {

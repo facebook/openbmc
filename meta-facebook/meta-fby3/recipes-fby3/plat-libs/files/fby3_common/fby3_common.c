@@ -359,6 +359,18 @@ fby3_common_dev_name(uint8_t dev, char *str) {
     strcpy(str, "2U-dev4");
   } else if (dev == DEV_ID5_2OU) {
     strcpy(str, "2U-dev5");
+  } else if (dev == DEV_ID6_2OU) {
+    strcpy(str, "2U-dev6");
+  } else if (dev == DEV_ID7_2OU) {
+    strcpy(str, "2U-dev7");
+  } else if (dev == DEV_ID8_2OU) {
+    strcpy(str, "2U-dev8");
+  } else if (dev == DEV_ID9_2OU) {
+    strcpy(str, "2U-dev9");
+  } else if (dev == DEV_ID10_2OU) {
+    strcpy(str, "2U-dev10");
+  } else if (dev == DEV_ID11_2OU) {
+    strcpy(str, "2U-dev11");
   } else if (dev == BOARD_1OU) {
     strcpy(str, "1U");
   } else if (dev == BOARD_2OU) {

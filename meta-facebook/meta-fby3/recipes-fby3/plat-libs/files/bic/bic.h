@@ -37,8 +37,6 @@ extern "C" {
 
 #define PRESENT_1OU 1
 #define PRESENT_2OU 2
-#define DEV_ID_1U 11
-#define DEV_ID_2U 12
 #define RETRY_TIME 10
 #define IPMB_RETRY_DELAY_TIME 500
 
@@ -133,6 +131,11 @@ enum {
   VDDQ_ABC_ADDR = 0xC8,
   VDDQ_DEF_ADDR = 0xCC,
   VR_PESW_ADDR = 0xC8,
+};
+
+// M2 info
+enum {
+  MEFF_DUAL_M2 = 0xF0,
 };
 
 enum {

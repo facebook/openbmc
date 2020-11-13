@@ -50,7 +50,7 @@ elif [ "$1" = "read" ]; then
     flashrom -p linux_spi:dev=/dev/spidev1.0 -r "$2" -c $CHIPTYPE
 elif [ "$1" = "write" ]; then
     echo "Writing flash content..."
-    flashrom -p linux_spi:dev=/dev/spidev1.0 -w "$2" -c $CHIPTYPE
+    flashrom -p linux_spi:dev=/dev/spidev1.0 -w "$2" -c $CHIPTYPE || exit 1
 else
     usage
 fi

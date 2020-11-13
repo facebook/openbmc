@@ -257,42 +257,53 @@ program_spi_image() {
     fi
 
     fill=$((EEPROM_SIZE - IMAGE_SIZE))
-    if [ "$fill" = 0 ] ; then
-        echo "$ORIGINAL_IMAGE already 32MB, no need to resize..."
-        flashrom -p linux_mtd:dev="$SMB_MTD" -N \
-            --layout /etc/elbert_pim.layout --image "$PARTITION" $OPERATION "$ORIGINAL_IMAGE"
-    else
-        bs=1048576 # 1MB blocks
+    bs=1048576 # 1MB blocks
 
-        echo "$ORIGINAL_IMAGE size $IMAGE_SIZE < $EEPROM_SIZE (32MB)"
-        echo "Resizing $ORIGINAL_IMAGE by $fill bytes to $TEMP_IMAGE"
+    echo "$ORIGINAL_IMAGE size $IMAGE_SIZE < $EEPROM_SIZE (32MB)"
+    echo "Resizing $ORIGINAL_IMAGE by $fill bytes to $TEMP_IMAGE"
 
-        # Let's make a copy of the program image and 0xff-fill it to 32MB
-        # Prepend/append 0x1 bytes accordingly
-        {
-            dd if=/dev/zero bs=$bs count="$SKIP_MB" | tr "\000" "\377"
-            dd if="$ORIGINAL_IMAGE"
-        } 2>/dev/null > "$TEMP_IMAGE"
-        # cp "$ORIGINAL_IMAGE" "$TEMP_IMAGE"
+    # Let's make a copy of the program image and 0xff-fill it to 32MB
+    # Prepend/append 0x1 bytes accordingly
+    {
+        dd if=/dev/zero bs=$bs count="$SKIP_MB" | tr "\000" "\377"
+        dd if="$ORIGINAL_IMAGE"
+    } 2>/dev/null > "$TEMP_IMAGE"
 
-        div=$((fill/bs)) # Number of 1MB blocks to write
-        div=$((div - SKIP_MB))
-        rem=$((fill%bs)) # Remaining
-        {
-            dd if=/dev/zero bs=$bs count=$div | tr "\000" "\377"
-            dd if=/dev/zero bs=$rem count=1 | tr "\000" "\377"
-        } 2>/dev/null >> "$TEMP_IMAGE"
+    div=$((fill/bs)) # Number of 1MB blocks to write
+    div=$((div - SKIP_MB))
+    rem=$((fill%bs)) # Remaining
+    {
+        dd if=/dev/zero bs=$bs count=$div | tr "\000" "\377"
+        dd if=/dev/zero bs=$rem count=1 | tr "\000" "\377"
+    } 2>/dev/null >> "$TEMP_IMAGE"
 
-        TEMP_IMAGE_SIZE="$(ls -l "$TEMP_IMAGE" | awk '{print $5}')"
-        if [ "$TEMP_IMAGE_SIZE" -ne "$EEPROM_SIZE" ] ; then
-            echo "Failed to resize $ORIGINAL_IMAGE to 32MB... exiting."
-            exit 1
-        fi
-        # Program the 32MB pim image
-        flashrom -p linux_mtd:dev="$SMB_MTD" -N \
-             --layout /etc/elbert_pim.layout --image "$PARTITION" $OPERATION "$TEMP_IMAGE"
-        rm "$TEMP_IMAGE"
+    TEMP_IMAGE_SIZE="$(ls -l "$TEMP_IMAGE" | awk '{print $5}')"
+    if [ "$TEMP_IMAGE_SIZE" -ne "$EEPROM_SIZE" ] ; then
+        echo "Failed to resize $ORIGINAL_IMAGE to 32MB... exiting."
+        exit 1
     fi
+
+    # Retry the programming if it fails up to 3 times
+    n=1
+    max=3
+    while true; do
+        # Program the 32MB pim image
+        if flashrom -p linux_mtd:dev="$SMB_MTD" -N --layout /etc/elbert_pim.layout \
+           --image "$PARTITION" $OPERATION "$TEMP_IMAGE" ; then
+            break
+        else
+            if [ $n -lt $max ]; then
+                echo "Programming SPI failed, retry attempt $n/$max"
+                n=$((n+1))
+            else
+                echo "Failed to program after $n attempts"
+                rm "$TEMP_IMAGE"
+                exit 1
+            fi
+        fi
+    done
+
+    rm "$TEMP_IMAGE"
 }
 
 read_spi_partition_image() {
@@ -387,10 +398,10 @@ do_pim() {
         ERASE)
             connect_pim_flash
             if [ -z "$2" ]; then
-                flashrom -p linux_mtd:dev="$SMB_MTD" -E
+                flashrom -p linux_mtd:dev="$SMB_MTD" -E || exit 1
             else
                 flashrom -p linux_mtd:dev="$SMB_MTD" \
-                    --layout /etc/elbert_pim.layout --image "$2" -E
+                    --layout /etc/elbert_pim.layout --image "$2" -E || exit 1
             fi
             ;;
         *)

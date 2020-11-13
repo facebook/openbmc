@@ -8,6 +8,7 @@
 #include "bic_capsule.h"
 #include "bmc_cpld_capsule.h"
 #include "bic_pcie_sw.h"
+#include "bic_m2_dev.h"
 #include <facebook/fby3_common.h>
 #include "usbdbg.h"
 #ifdef BIC_SUPPORT
@@ -53,6 +54,18 @@ class ClassConfig {
 
         static PCIESWComponent pciesw_2ou_fw1("slot1", "2ou_pciesw", FRU_SLOT1, "2ou", FW_2OU_PESW);
         static VrExtComponent  vr_2ou_fw1("slot1", "2ou_vr", FRU_SLOT1, "2ou", FW_2OU_PESW_VR);
+        static M2DevComponent  m2_2ou_dev0("slot1", "2ou_dev0", FRU_SLOT1, "2ou", FW_2OU_M2_DEV0);
+        static M2DevComponent  m2_2ou_dev1("slot1", "2ou_dev1", FRU_SLOT1, "2ou", FW_2OU_M2_DEV1);
+        static M2DevComponent  m2_2ou_dev2("slot1", "2ou_dev2", FRU_SLOT1, "2ou", FW_2OU_M2_DEV2);
+        static M2DevComponent  m2_2ou_dev3("slot1", "2ou_dev3", FRU_SLOT1, "2ou", FW_2OU_M2_DEV3);
+        static M2DevComponent  m2_2ou_dev4("slot1", "2ou_dev4", FRU_SLOT1, "2ou", FW_2OU_M2_DEV4);
+        static M2DevComponent  m2_2ou_dev5("slot1", "2ou_dev5", FRU_SLOT1, "2ou", FW_2OU_M2_DEV5);
+        static M2DevComponent  m2_2ou_dev6("slot1", "2ou_dev6", FRU_SLOT1, "2ou", FW_2OU_M2_DEV6);
+        static M2DevComponent  m2_2ou_dev7("slot1", "2ou_dev7", FRU_SLOT1, "2ou", FW_2OU_M2_DEV7);
+        static M2DevComponent  m2_2ou_dev8("slot1", "2ou_dev8", FRU_SLOT1, "2ou", FW_2OU_M2_DEV8);
+        static M2DevComponent  m2_2ou_dev9("slot1", "2ou_dev9", FRU_SLOT1, "2ou", FW_2OU_M2_DEV9);
+        static M2DevComponent  m2_2ou_dev10("slot1", "2ou_dev10", FRU_SLOT1, "2ou", FW_2OU_M2_DEV10);
+        static M2DevComponent  m2_2ou_dev11("slot1", "2ou_dev11", FRU_SLOT1, "2ou", FW_2OU_M2_DEV11);
       } else {
         // Register USB Debug Card components
         static UsbDbgComponent usbdbg("ocpdbg", "mcu", "FBY3", 9, 0x60, false);

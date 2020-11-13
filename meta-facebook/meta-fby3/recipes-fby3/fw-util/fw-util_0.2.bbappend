@@ -43,6 +43,8 @@ SRC_URI += "\
         file://usbdbg.cpp \
         file://mcu_fw.h \
         file://mcu_fw.cpp \
+        file://bic_m2_dev.cpp \
+        file://bic_m2_dev.h \
         "
 
 CXXFLAGS += " -DBIC_SUPPORT "

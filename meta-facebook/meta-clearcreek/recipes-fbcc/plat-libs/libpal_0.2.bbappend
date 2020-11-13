@@ -8,6 +8,8 @@ SRC_URI += " \
     file://pal_sensors.h \
     file://pal_switch.c \
     file://pal_switch.h \
+    file://pal_health.c \
+    file://pal_health.h \
     file://pal_calibration.h \
     "
 

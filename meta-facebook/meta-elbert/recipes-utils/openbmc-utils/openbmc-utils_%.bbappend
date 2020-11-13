@@ -18,9 +18,11 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://board-utils.sh \
+            file://boot_info.sh \
             file://bios_util.sh \
             file://fpga_util.sh \
             file://fpga_ver.sh \
+            file://disable_watchdog.sh \
             file://dump_pim_serials.sh \
             file://dump_gpios.sh \
             file://eth0_mac_fixup.sh \
@@ -47,6 +49,7 @@ SRC_URI += "file://board-utils.sh \
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
     bios_util.sh \
+    boot_info.sh \
     fpga_util.sh \
     fpga_ver.sh \
     dump_pim_serials.sh \
@@ -101,6 +104,9 @@ do_install_board() {
 
     install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .
+
+    install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
+    update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
 
     install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .

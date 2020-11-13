@@ -415,11 +415,12 @@ typedef struct {
 
 enum {
   DIMM_CRPA = 0,
-  DIMM_CRPB = 1,
-  DIMM_CRPC = 2,
-  DIMM_CRPD = 3,
-  DIMM_CRPE = 4,
-  DIMM_CRPF = 5,
+  DIMM_CRPB,
+  DIMM_CRPC,
+  DIMM_CRPD,
+  DIMM_CRPE,
+  DIMM_CRPF,
+  DIMM_CNT,
 };
 
 typedef struct {
@@ -555,8 +556,6 @@ int cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr);
 int pal_sensor_monitor_initial(void);
 bool pal_check_nic_prsnt(uint8_t fru);
 bool pal_check_dimm_prsnt(uint8_t snr_num);
-bool check_cpu_present_pin_gpio(uint8_t cpu_id);
-
 
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;

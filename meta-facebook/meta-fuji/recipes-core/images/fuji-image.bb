@@ -13,6 +13,8 @@ FLASH_FIT_OFFSET_KB = "1024"
 
 inherit kernel_fitimage
 
+require recipes-core/images/fbobmc-image-meta.inc
+require fuji-image-layout.inc
 require recipes-core/images/fb-openbmc-image.bb
 
 # Include modules in rootfs

@@ -44,6 +44,7 @@ SRC_URI += "file://setup-gpio.sh \
             file://switch_pim_mux_to_fpga.sh \
             file://reinit_all_pim.sh \
             file://wedge_us_mac.sh \
+            file://eth0_mac_fixup.sh \
            "
 
 OPENBMC_UTILS_FILES += " \

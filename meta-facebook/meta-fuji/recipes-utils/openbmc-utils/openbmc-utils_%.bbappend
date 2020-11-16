@@ -39,6 +39,7 @@ SRC_URI += "file://setup-gpio.sh \
             file://disable_watchdog.sh \
             file://beutil \
             file://set_sled.sh \
+            file://parallel_update_pims.sh \
             file://dump_pim_serials.sh \
             file://switch_pim_mux_to_fpga.sh \
             file://reinit_all_pim.sh \
@@ -64,6 +65,7 @@ OPENBMC_UTILS_FILES += " \
     disable_watchdog.sh \
     beutil \
     set_sled.sh \
+    parallel_update_pims.sh \
     dump_pim_serials.sh \
     switch_pim_mux_to_fpga.sh \
     reinit_all_pim.sh \

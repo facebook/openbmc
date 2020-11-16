@@ -34,7 +34,7 @@ class FscdTest(BaseFscdTest, unittest.TestCase):
         retry = 5
         for i in range(retry):
             # If host was already on, script takes care of just returning on
-            cmd = "/usr/local/bin/wedge_power.sh on"
+            cmd = "/usr/local/bin/wedge_power.sh on -f"
             data = run_shell_cmd(cmd)
             Logger.info("[FSCD Testing] Try {} Executing cmd= [{}]".format(i, cmd))
             Logger.info("[FSCD Testing] Received data= [{}]".format(data))

@@ -43,6 +43,7 @@ SRC_URI = " \
     file://setup-reboot.sh \
     file://setup-reboot.service \
     file://eth0_mac_fixup.sh \
+    file://create_vlan_intf \
     "
 
 SRC_URI += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'file://eth0_mac_fixup.sh', '', d)}"

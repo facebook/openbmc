@@ -10,10 +10,10 @@ enum {
   VR_P0V8_VDD1,
   VR_P0V8_VDD2,
   VR_P0V8_VDD3,
-  VR_P1V0_AVD0,
-  VR_P1V0_AVD1,
-  VR_P1V0_AVD2,
-  VR_P1V0_AVD3
+  VR_P0V8_AVD0,
+  VR_P0V8_AVD1,
+  VR_P0V8_AVD2,
+  VR_P0V8_AVD3
 };
 
 enum {
@@ -21,10 +21,10 @@ enum {
   ADDR_P0V8_VDD1 = 0x31,
   ADDR_P0V8_VDD2 = 0x32,
   ADDR_P0V8_VDD3 = 0x33,
-  ADDR_P1V0_AVD0 = 0x34,
-  ADDR_P1V0_AVD1 = 0x35,
-  ADDR_P1V0_AVD2 = 0x36,
-  ADDR_P1V0_AVD3 = 0x3b
+  ADDR_P0V8_AVD0 = 0x34,
+  ADDR_P0V8_AVD1 = 0x35,
+  ADDR_P0V8_AVD2 = 0x36,
+  ADDR_P0V8_AVD3 = 0x3b
 };
 
 struct vr_ops mpq8645p_ops = {
@@ -40,56 +40,56 @@ struct vr_info fbcc_vr_list[] = {
     .bus = 5,
     .addr = ADDR_P0V8_VDD0,
     .dev_id = MPQ8645P_ID,
-    .dev_name = "VR_P0V8_VDD0",
+    .dev_name = "P0V8_VDD0",
     .ops = &mpq8645p_ops,
   },
   [VR_P0V8_VDD1] = {
     .bus = 5,
     .addr = ADDR_P0V8_VDD1,
     .dev_id = MPQ8645P_ID,
-    .dev_name = "VR_P0V8_VDD1",
+    .dev_name = "P0V8_VDD1",
     .ops = &mpq8645p_ops,
   },
   [VR_P0V8_VDD2] = {
     .bus = 5,
     .addr = ADDR_P0V8_VDD2,
     .dev_id = MPQ8645P_ID,
-    .dev_name = "VR_P0V8_VDD2",
+    .dev_name = "P0V8_VDD2",
     .ops = &mpq8645p_ops,
   },
   [VR_P0V8_VDD3] = {
     .bus = 5,
     .addr = ADDR_P0V8_VDD3,
     .dev_id = MPQ8645P_ID,
-    .dev_name = "VR_P0V8_VDD3",
+    .dev_name = "P0V8_VDD3",
     .ops = &mpq8645p_ops,
   },
-  [VR_P1V0_AVD0] = {
+  [VR_P0V8_AVD0] = {
     .bus = 5,
-    .addr = ADDR_P1V0_AVD0,
+    .addr = ADDR_P0V8_AVD0,
     .dev_id = MPQ8645P_ID,
-    .dev_name = "VR_P1V0_AVD0",
+    .dev_name = "P0V8_AVD_PCIE0",
     .ops = &mpq8645p_ops,
   },
-  [VR_P1V0_AVD1] = {
+  [VR_P0V8_AVD1] = {
     .bus = 5,
-    .addr = ADDR_P1V0_AVD1,
+    .addr = ADDR_P0V8_AVD1,
     .dev_id = MPQ8645P_ID,
-    .dev_name = "VR_P1V0_AVD1",
+    .dev_name = "P0V8_AVD_PCIE1",
     .ops = &mpq8645p_ops,
   },
-  [VR_P1V0_AVD2] = {
+  [VR_P0V8_AVD2] = {
     .bus = 5,
-    .addr = ADDR_P1V0_AVD2,
+    .addr = ADDR_P0V8_AVD2,
     .dev_id = MPQ8645P_ID,
-    .dev_name = "VR_P1V0_AVD2",
+    .dev_name = "P0V8_AVD_PCIE2",
     .ops = &mpq8645p_ops,
   },
-  [VR_P1V0_AVD3] = {
+  [VR_P0V8_AVD3] = {
     .bus = 5,
-    .addr = ADDR_P1V0_AVD3,
+    .addr = ADDR_P0V8_AVD3,
     .dev_id = MPQ8645P_ID,
-    .dev_name = "VR_P1V0_AVD3",
+    .dev_name = "P0V8_AVD_PCIE3",
     .ops = &mpq8645p_ops,
   }
 };

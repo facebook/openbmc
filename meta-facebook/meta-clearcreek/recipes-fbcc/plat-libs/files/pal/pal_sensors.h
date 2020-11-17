@@ -79,6 +79,11 @@ enum {
   vr_NUM,
 };
 
+enum {
+  BAY_ID0 = 0,
+  BAY_ID1,
+};
+
 //Sensor Table
 enum {
   MB_NIC_0_TEMP  = 0x10,

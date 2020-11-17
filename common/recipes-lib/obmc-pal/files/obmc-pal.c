@@ -347,6 +347,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
   char *upi_event[] = {"Successful LLR without Phy Reinit", "Successful LLR with Phy Reinit",
                        "COR Phy Lane failure, recovery in x8 width", "Reserved"};
   char dimm_str[8] = {0};
+  char dimm_location_str[128] = {0};
   char temp_log[128] = {0};
   error_log[0] = '\0';
 
@@ -368,24 +369,31 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     case UNIFIED_MEM_ERR:
       plat = (sel[12] & 0x80) >> 7;
       event_type = sel[12] & 0xF;
-      pal_convert_to_dimm_str(sel[8]&0xF, sel[9]&0xF, sel[10]&0xF, dimm_str);
-
+      if (sel[9] == 0xFF && sel[10] == 0xFF) {
+        sprintf(dimm_str, "unknown");
+        sprintf(dimm_location_str, "DIMM Slot Location: Sled %02d/Socket %02d, Channel unknown, Slot unknown, DIMM unknown",
+                ((sel[8]>>4)&0x3), sel[8]&0xF);
+      } else {
+        pal_convert_to_dimm_str(sel[8]&0xF, sel[9]&0xF, sel[10]&0xF, dimm_str);
+        sprintf(dimm_location_str, "DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s",
+                ((sel[8]>>4)&0x3), sel[8]&0xF, sel[9]&0xF, sel[10]&0xF, dimm_str);
+      }
       switch (event_type) {
         case MEMORY_TRAINING_ERR:
           if (plat == 0) { //Intel
-            sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s, DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%02X",
-                    general_info, ((sel[8]>>4)&0x3), sel[8]&0xF, sel[9]&0xF, sel[10]&0xF,dimm_str,
+            sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%02X",
+                    general_info, dimm_location_str,
                     mem_err[event_type], sel[13], sel[14]);
           } else { //AMD
-            sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s, DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%04X",
-                    general_info, ((sel[8]>>4)&0x3), sel[8]&0xF, sel[9]&0xF, sel[10]&0xF, dimm_str,
+            sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%04X",
+                    general_info, dimm_location_str,
                     mem_err[event_type], sel[13], (sel[15]<<8)|sel[14]);
           }
           break;
         default:
           estr_idx = (event_type < ARRAY_SIZE(mem_err)) ? event_type : (ARRAY_SIZE(mem_err) - 1);
-          sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s, DIMM Failure Event: %s",
-                  general_info, ((sel[8]>>4)&0x3), sel[8]&0xF, sel[9]&0xF, sel[10]&0xF, dimm_str,
+          sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s",
+                  general_info, dimm_location_str,
                   mem_err[estr_idx]);
 
           if ((event_type == MEMORY_CORRECTABLE_ERR) || (event_type == MEMORY_CORR_ERR_PTRL_SCR)) {
@@ -445,11 +453,19 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
 
     case UNIFIED_MEM_EVENT:
       event_type = sel[8] & 0xF;
+      if (sel[10] == 0xFF && sel[11] == 0xFF) {
+        sprintf(dimm_str, "unknown");
+        sprintf(dimm_location_str, "DIMM Slot Location: Sled %02d/Socket %02d, Channel unknown, Slot unknown, DIMM unknown",
+                ((sel[9]>>4)&0x3), sel[9]&0xF);
+      } else {
+        pal_convert_to_dimm_str(sel[8]&0xF, sel[9]&0xF, sel[10]&0xF, dimm_str);
+        sprintf(dimm_location_str, "DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s",
+                ((sel[9]>>4)&0x3), sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str);
+      }
       switch (event_type) {
         case MEM_PPR:
-          pal_convert_to_dimm_str(sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str);
-          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s, DIMM Failure Event: %s",
-                  general_info, ((sel[9]>>4)&0x3), sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str,
+          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), %s, DIMM Failure Event: %s",
+                  general_info, dimm_location_str,
                   (sel[12]&0x1)?"PPR fail":"PPR success");
           break;
         case MEM_NO_DIMM:
@@ -457,10 +473,9 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
                   general_info, mem_event[event_type]);
           break;
         default:
-          pal_convert_to_dimm_str(sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str);
           estr_idx = (event_type < ARRAY_SIZE(mem_event)) ? event_type : (ARRAY_SIZE(mem_event) - 1);
-          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s, DIMM Failure Event: %s",
-                  general_info, ((sel[9]>>4)&0x3), sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str,
+          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), %s, DIMM Failure Event: %s",
+                  general_info, dimm_location_str,
                   mem_event[estr_idx]);
           break;
       }

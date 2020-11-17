@@ -470,7 +470,7 @@ gpio_monitor_poll(void *ptr) {
         } else {
           if (i == RST_RSMRST_BMC_N) {
             printf("RST_RSMRST_BMC_N is DEASSERT !\n");
-
+#if 0
             //get power restore policy
             //defined by IPMI Spec/Section 28.2.
             pal_get_chassis_status(fru, NULL, chassis_sts, &chassis_sts_len);
@@ -501,6 +501,7 @@ gpio_monitor_poll(void *ptr) {
             }
 
             check_pfr_mailbox(fru);
+#endif
           } else if (i == RST_PLTRST_BMC_N) {
             rst_timer(fru);
           }
@@ -565,6 +566,7 @@ host_pwr_mon() {
 #define NON_PFR_POWER_OFF_DELAY  -2
 #define PFR_POWER_OFF_DELAY     -60
 #define HOST_READY 300
+#define MONITOR_PLT_POST_DELAY  5
   char path[64] = {0};
   uint8_t host_off_flag = 0;
   uint8_t is_util_run_flag = 0;
@@ -621,7 +623,7 @@ host_pwr_mon() {
           pal_set_last_pwr_state(fru, "on");
         }
         host_off_flag &= ~(0x1 << i);
-        if ( tick == HOST_READY || (bios_post_cmplt[fru-1] == true && tick < HOST_READY && tick > 5)) {
+        if ( tick == HOST_READY || (bios_post_cmplt[fru-1] == true && tick < HOST_READY && tick > MONITOR_PLT_POST_DELAY)) {
           kv_set(host_key[fru-1], "1", 0, 0);
         }
       } else {

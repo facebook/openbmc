@@ -29,9 +29,99 @@
 #include <sys/file.h>
 #include <openbmc/pal.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/obmc-i2c.h>
 
 #define POLL_TIMEOUT -1 /* Forever */
 
+static void
+log_gpio_change(gpiopoll_pin_t *desc, gpio_value_t value, useconds_t log_delay) {
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+  assert(cfg);
+  syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
+}
+
+static void
+read_throttle_err_cnt(gpiopoll_pin_t *desc, gpio_value_t value, useconds_t log_delay) {
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+  char fn[32] = "/dev/i2c-23";
+  int fd, ret;
+  uint8_t tlen, rlen, cnt[4];
+  uint8_t addr = 0x2A;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t cmds[4] = {0x10, 0x11, 0x12, 0x13};
+
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_ERR, "can not open i2c device\n");
+    return;
+  }
+
+  tlen = 1;
+  rlen = 1;
+
+  for (int i = 0; i < sizeof(cmds); i++) {
+    tbuf[0] = cmds[i];
+    if ((ret =  i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen))) {
+      syslog(LOG_ERR, "i2c transfer fail\n");
+      break;
+    }
+    cnt[i] = rbuf[0];
+  }
+
+  syslog(LOG_CRIT, "%s - %s PMBUS_HSC_Cnt:%02x HSC_OC_Cnt:%02x HSC_UV_Cnt:%02x HSC_TIMER_Cnt:%02x\n", cfg->description, cfg->shadow, cnt[0], cnt[1], cnt[2], cnt[3]);
+
+  if (fd > 0) {
+    close(fd);
+  }
+}
+
+static void
+read_throttle_err_seq(gpiopoll_pin_t *desc, gpio_value_t value, useconds_t log_delay) {
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+  char fn[32] = "/dev/i2c-23";
+  int fd, ret;
+  uint8_t tlen, rlen, seq[4];
+  uint8_t addr = 0x2A;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t cmds[4] = {0x30, 0x31, 0x32, 0x33};
+
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_ERR, "can not open i2c device\n");
+    return;
+  }
+
+  tlen = 1;
+  rlen = 1;
+
+  for (int i = 0; i < sizeof(cmds); i++) {
+    tbuf[0] = cmds[i];
+    if ((ret =  i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen))) {
+      syslog(LOG_ERR, "i2c transfer fail\n");
+      break;
+    }
+    seq[i] = rbuf[0];
+  }
+  syslog(LOG_CRIT, "%s - %s PMBUS_HSC_Seq:%02x HSC_OC_Seq:%02x HSC_UV_Seq:%02x HSC_TIMER_Seq:%02x\n", cfg->description, cfg->shadow, seq[0], seq[1], seq[2], seq[3]);
+
+  if (fd > 0) {
+    close(fd);
+  }
+}
+
+static void gpio_event_log_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  log_gpio_change(desc, curr, 0);
+}
+
+static void gpio_throttle_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  log_gpio_change(desc, curr, 0);
+  read_throttle_err_cnt(desc, curr, 0);
+  read_throttle_err_seq(desc, curr, 0);
+}
 
 // Specific Event Handlers
 static void gpio_event_handle_power_state(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
@@ -44,7 +134,12 @@ static void gpio_event_handle_power_state(gpiopoll_pin_t *gp, gpio_value_t last,
 // GPIO table to be monitored
 static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
-  {"CPLD_BMC_GPIO_R_01", "POWER STSTE MON", GPIO_EDGE_RISING, gpio_event_handle_power_state, NULL}
+  {"CPLD_BMC_GPIO_R_01", "POWER STSTE MON", GPIO_EDGE_RISING, gpio_event_handle_power_state, NULL},
+  {"FM_SYS_THROTTLE_R", "GPIOP7", GPIO_EDGE_BOTH, gpio_event_log_handler, NULL},
+  {"HSC_TIMER_R_N", "GPIOP2", GPIO_EDGE_FALLING, gpio_throttle_handler, NULL},
+  {"HSC_OC_R_N", "GPIOP3", GPIO_EDGE_FALLING, gpio_throttle_handler, NULL},
+  {"HSC_UV_R_N", "GPIOP4", GPIO_EDGE_FALLING, gpio_throttle_handler, NULL},
+  {"PMBUS_HSC_ALERT_R_N", "GPIOP5", GPIO_EDGE_FALLING, gpio_throttle_handler, NULL},
 };
 
 int main(int argc, char **argv)

@@ -51,7 +51,6 @@ gpio_export SKU_ID1_PAX1 GPIOB7
 
 gpio_export SKU_ID0_PAX1 GPIOAC2
 
-
 gpio_export SKU_ID1_PAX2 GPIOM0
 
 gpio_export SKU_ID0_PAX2 GPIOB0
@@ -220,6 +219,11 @@ devmem_clear_bit $(scu_addr 88) 23
 
 gpio_export BMC_FORCE_THROTTLE_N GPIOP6
 gpio_set BMC_FORCE_THROTTLE_N 1
+gpio_export HSC_TIMER_R_N GPIOP2
+gpio_export HSC_OC_R_N GPIOP3
+gpio_export HSC_UV_R_N GPIOP4
+gpio_export PMBUS_HSC_ALERT_R_N GPIOP5
+gpio_export FM_SYS_THROTTLE_R GPIOP7
 
 gpio_export RST_FIO_IOEXP_R_N GPIOY1
 gpio_set RST_FIO_IOEXP_R_N 1

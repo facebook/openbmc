@@ -32,12 +32,12 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 invalid_mac="00:00:00:00:00:00"
 
 # From DVT Phase, MAC get from Chassis EEPROM
-mac=$(simutil  | grep '^Local MAC' | cut -d' ' -f3)
+mac=$(weutil  | grep '^Local MAC' | cut -d' ' -f3)
 
 # EVT Chassis can not get the MAC from Chassis EEPROM, insted of
 # get the MAC from SMB EEPROM.
 if [ "$mac" = "$invalid_mac" ]; then
-    mac=$(weutil  | grep '^Local MAC' | cut -d' ' -f3)
+    mac=$(smbutil  | grep '^Local MAC' | cut -d' ' -f3)
 fi
 
 # get the MAC from u-boot environment

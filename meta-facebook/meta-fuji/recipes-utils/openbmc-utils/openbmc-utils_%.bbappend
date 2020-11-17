@@ -35,7 +35,7 @@ SRC_URI += "file://setup-gpio.sh \
             file://setup_bic.sh \
             file://setup_mgmt.sh \
             file://spi_util.sh \
-            file://simutil \
+            file://smbutil \
             file://disable_watchdog.sh \
             file://beutil \
             file://set_sled.sh \
@@ -62,7 +62,7 @@ OPENBMC_UTILS_FILES += " \
     setup_bic.sh \
     setup_mgmt.sh \
     spi_util.sh \
-    simutil \
+    smbutil \
     disable_watchdog.sh \
     beutil \
     set_sled.sh \

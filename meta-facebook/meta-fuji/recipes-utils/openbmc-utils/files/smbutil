@@ -29,8 +29,8 @@ is_i2cdev_exist() {
 }
 
 
-if [ "$(is_i2cdev_exist 50 0x52)" -eq 0 ];then
-    dump_eeprom 50 0x52
+if [ "$(is_i2cdev_exist 28 0x50)" -eq 0 ];then
+    dump_eeprom 28 0x50
     exit $?
 else
     echo "Cannot detect SIM Card eeprom"

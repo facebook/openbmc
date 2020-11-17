@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <string>
+#include <syslog.h>
 #include <CLI/CLI.hpp>
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
@@ -351,9 +352,9 @@ static int _show_status(int slot)
   if (slot == SLOT_ALL) {
     for (int i = 0; i < 8; i++) {
       if (is_asic_prsnt((uint8_t)i))
-	show_asic_status(i);
+        show_asic_status(i);
       else
-	std::cout << "ASIC on slot " << i << " is not present" << std::endl;
+        std::cout << "ASIC on slot " << i << " is not present" << std::endl;
     }
   } else {
     if (is_asic_prsnt((uint8_t)slot))
@@ -385,15 +386,23 @@ static int _set_power_limit(int slot, unsigned int watts)
 static int set_power_limit(int slot, unsigned int watts)
 {
   int ret = -1;
+  int lock;
+
+  lock = open("/tmp/asic_lock", O_CREAT | O_RDWR, 0666);
+  if (lock < 0) {
+    syslog(LOG_WARNING, "Failed to open ASIC lock");
+    return -1;
+  }
+  flock(lock, LOCK_EX);
 
   if (slot == SLOT_ALL) {
     for (int i = 0; i < 8; i++) {
       if (is_asic_prsnt((uint8_t)i)) {
-	ret = _set_power_limit(i, watts);
-	if (ret < 0)
-	  break;
+        ret = _set_power_limit(i, watts);
+        if (ret < 0)
+          break;
       } else {
-	std::cout << "ASIC on slot " << i << " is not present" << std::endl;
+        std::cout << "ASIC on slot " << i << " is not present" << std::endl;
       }
     }
   } else {
@@ -403,6 +412,9 @@ static int set_power_limit(int slot, unsigned int watts)
       std::cout << "ASIC on slot " << slot << " is not present" << std::endl;
     }
   }
+
+  flock(lock, LOCK_UN);
+  close(lock);
   return ret; 
 }
 
@@ -463,7 +475,7 @@ int main(int argc, char **argv)
   int slot;
   auto num = app.add_option("--slot", slot,
                             "Action to specified slot [0..7]\n"
-			    "If not specified, ALL slots by default");
+                            "If not specified, ALL slots by default");
 
   unsigned int enable_power_brake;
   auto en_brk = app.add_option("--enable-brake", enable_power_brake,

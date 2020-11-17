@@ -33,13 +33,12 @@ extern "C" {
 #define FRU_UIC_BIN     "/tmp/fruid_uic.bin"
 #define FRU_NIC_BIN     "/tmp/fruid_nic.bin"
 
-
-#define BMC_FRU_BUS  6
 #define BMC_FRU_ADDR 0x54
-#define UIC_FRU_BUS  4
 #define UIC_FRU_ADDR 0x50
-#define NIC_FRU_BUS  8
 #define NIC_FRU_ADDR 0x50
+
+// Expander slave address (7-bit)
+#define EXPANDER_SLAVE_ADDR    0x71
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a)   (sizeof(a) / sizeof((a)[0]))
@@ -63,15 +62,21 @@ enum {
 };
 
 enum {
+  I2C_SYS_HSC_BUS = 1,
   I2C_BIC_BUS = 2,
   I2C_BS_FPGA_BUS = 3,
+  I2C_UIC_BUS = 4,
   I2C_UIC_FPGA_BUS = 5,
+  I2C_BSM_BUS = 6,
   I2C_DBG_CARD_BUS = 7,
   I2C_NIC_BUS = 8,
+  I2C_IOEXP_BUS = 9,
   I2C_EXP_BUS = 10,
   I2C_T5IOC_BUS = 11,
   I2C_T5E1S1_T7IOC_BUS = 12,  // T5: E1.S 1; T7: IOC
   I2C_T5E1S2_T7IOC_BUS = 13,  // T5: E1.S 2; T7: IOCM FRU, Voltage sensor, Temp sensor
+  I2C_SCC_BUS = 14,
+  I2C_TPM_BUS = 15,  // Reserved
 };
 
 int fbgc_common_get_chassis_type(uint8_t *type);

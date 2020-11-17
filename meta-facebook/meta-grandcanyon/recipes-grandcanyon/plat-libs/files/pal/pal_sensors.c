@@ -517,7 +517,7 @@ const uint8_t nic_sensor_list[] = {
 };
 
 PAL_I2C_BUS_INFO nic_info_list[] = {
-  {MEZZ, I2C_BUS_8, NIC_INFO_SLAVE_ADDR},
+  {MEZZ, I2C_NIC_BUS, NIC_INFO_SLAVE_ADDR},
 };
 
 const char *adc_label[] = {

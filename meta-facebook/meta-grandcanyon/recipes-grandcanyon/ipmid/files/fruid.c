@@ -112,19 +112,19 @@ plat_fruid_init() {
 
   //create the fru binary in /tmp/
   //fruid_bmc.bin
-  snprintf(path, path_len, EEPROM_PATH, BMC_FRU_BUS, BMC_FRU_ADDR);
+  snprintf(path, path_len, EEPROM_PATH, I2C_BSM_BUS, BMC_FRU_ADDR);
   if (copy_eeprom_to_bin(path, FRU_BMC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_BMC_BIN);
   }
 
   //fruid_uic.bin
-  snprintf(path, path_len, EEPROM_PATH, UIC_FRU_BUS, UIC_FRU_ADDR);
+  snprintf(path, path_len, EEPROM_PATH, I2C_UIC_BUS, UIC_FRU_ADDR);
   if (copy_eeprom_to_bin(path, FRU_UIC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_UIC_BIN);
   }
 
   //fruid_nic.bin
-  snprintf(path, path_len, EEPROM_PATH, NIC_FRU_BUS, NIC_FRU_ADDR);
+  snprintf(path, path_len, EEPROM_PATH, I2C_NIC_BUS, NIC_FRU_ADDR);
   if (copy_eeprom_to_bin(path, FRU_NIC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_NIC_BIN);
   }

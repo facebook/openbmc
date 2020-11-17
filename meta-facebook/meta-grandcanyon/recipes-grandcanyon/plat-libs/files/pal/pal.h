@@ -42,25 +42,6 @@ extern "C" {
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
-enum {
-  I2C_BUS_0 = 0,
-  I2C_BUS_1,
-  I2C_BUS_2,
-  I2C_BUS_3,
-  I2C_BUS_4,
-  I2C_BUS_5,
-  I2C_BUS_6,
-  I2C_BUS_7,
-  I2C_BUS_8,
-  I2C_BUS_9,
-  I2C_BUS_10,
-  I2C_BUS_11,
-  I2C_BUS_12,
-  I2C_BUS_13,
-  I2C_BUS_14,
-  I2C_BUS_15,
-};
-
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,

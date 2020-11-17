@@ -108,13 +108,13 @@ fbgc_get_fruid_eeprom_path(uint8_t fru, char *path) {
     case FRU_E1S_IOCM:
       return -1;
     case FRU_BMC:
-      snprintf(path, MAX_FILE_PATH, EEPROM_PATH, BMC_FRU_BUS, BMC_FRU_ADDR);
+      snprintf(path, MAX_FILE_PATH, EEPROM_PATH, I2C_BSM_BUS, BMC_FRU_ADDR);
       break;
     case FRU_UIC:
-      snprintf(path, MAX_FILE_PATH, EEPROM_PATH, UIC_FRU_BUS, UIC_FRU_ADDR);
+      snprintf(path, MAX_FILE_PATH, EEPROM_PATH, I2C_UIC_BUS, UIC_FRU_ADDR);
       break;
     case FRU_NIC:
-      snprintf(path, MAX_FILE_PATH, EEPROM_PATH, NIC_FRU_BUS, NIC_FRU_ADDR);
+      snprintf(path, MAX_FILE_PATH, EEPROM_PATH, I2C_NIC_BUS, NIC_FRU_ADDR);
       break;
     default:
       syslog(LOG_WARNING, "%s: wrong fruid", __func__);

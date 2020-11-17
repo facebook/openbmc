@@ -27,7 +27,6 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <time.h>
-#include <facebook/fbgc_common.h>
 #include "exp.h"
 
 int
@@ -62,7 +61,7 @@ expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen,
 
   while(retry < 5) {
     // Invoke IPMB library handler
-    ret = lib_ipmb_handle(EXPANDER_IPMB_BUS_NUM, tbuf, tlen, rbuf, &rlen);
+    ret = lib_ipmb_handle(I2C_EXP_BUS, tbuf, tlen, rbuf, &rlen);
     if (ret < 0) {
       syslog(LOG_ERR, "%s: Failed to send ipmb request, ret:%d netfn:%u cmd:%u\n", __func__, ret, netfn, cmd);
     }

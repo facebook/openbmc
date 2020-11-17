@@ -23,15 +23,11 @@
 
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
+#include <facebook/fbgc_common.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define EXPANDER_IPMB_BUS_NUM           10
-
-// Expander slave address (7-bit)
-#define EXPANDER_SLAVE_ADDR             0x71
 
 #define CMD_OEM_EXP_ERROR_CODE          0x11
 #define CMD_OEM_EXP_GET_SENSOR_READING  0x2D

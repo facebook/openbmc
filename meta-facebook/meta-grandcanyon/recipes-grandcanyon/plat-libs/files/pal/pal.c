@@ -444,7 +444,7 @@ pal_get_guid(uint16_t offset, char *guid) {
   ssize_t bytes_rd = 0;
 
   // Set path for UIC
-  snprintf(path, MAX_FILE_PATH, EEPROM_PATH, UIC_FRU_BUS, UIC_FRU_ADDR);
+  snprintf(path, MAX_FILE_PATH, EEPROM_PATH, I2C_UIC_BUS, UIC_FRU_ADDR);
 
   // check for file presence
   if (access(path, F_OK)) {
@@ -479,7 +479,7 @@ pal_set_guid(uint16_t offset, char *guid) {
   ssize_t bytes_wr = 0;
 
   // Set path for UIC
-  snprintf(path, MAX_FILE_PATH, EEPROM_PATH, UIC_FRU_BUS, UIC_FRU_ADDR);
+  snprintf(path, MAX_FILE_PATH, EEPROM_PATH, I2C_UIC_BUS, UIC_FRU_ADDR);
 
   // check for file presence
   if (access(path, F_OK)) {

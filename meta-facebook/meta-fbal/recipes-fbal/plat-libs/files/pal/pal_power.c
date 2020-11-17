@@ -12,6 +12,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/libgpio.h>
 #include "pal.h"
+#include "pal_cm.h"
 
 #define GPIO_POWER "FM_BMC_PWRBTN_OUT_R_N"
 #define GPIO_POWER_GOOD "PWRGD_SYS_PWROK"
@@ -23,6 +24,13 @@
 #define DELAY_POWER_OFF 6
 #define DELAY_GRACEFUL_SHUTDOWN 1
 #define DELAY_POWER_CYCLE 10
+
+#define BLOCK_DC_CYCLE (UPDATE_BIOS_BLOCK | UPDATE_CM_BLOCK | \
+                       UPDATE_VR_BLOCK | UPDATE_GLOB_PLD_BLOCK | \
+                       UPDATE_MAIN_PLD_BLOCK | UPDATE_MOD_PLD_BLOCK)
+
+#define BLOCK_AC_CYCLE  (0xFFFF)
+
 
 static bool m_chassis_ctrl = false;
 
@@ -106,6 +114,42 @@ error:
   return ret;
 }
 
+int
+pal_checkout_fw_update_block(uint16_t block_flag) {
+  uint8_t rbuf[16] = {0};
+  uint8_t rlen=0;
+  int cnt=0;
+
+  if(lib_cmc_get_block_command_flag(rbuf, &rlen))
+    return -1;
+
+  for(cnt=0; cnt < rlen; cnt+=2) {
+    if( ((rbuf[cnt] | rbuf[cnt+1] << 8) & block_flag) != 0 ) {
+      syslog(LOG_WARNING, "FW update on going Block Byte[%d]=%x\n", cnt, rbuf[cnt]);
+      return -1;
+    }
+  }
+
+  return 0;
+}
+
+int
+pal_block_dc(uint8_t fru) {
+  if (fru == FRU_MB) {
+    return pal_checkout_fw_update_block(BLOCK_DC_CYCLE);
+  }
+  return 0;
+}
+
+int
+pal_block_ac(void) {
+  if ( pal_checkout_fw_update_block(BLOCK_AC_CYCLE) ) {
+    printf("FW update is ongoing can't do AC cycle\n");
+    return -1;
+  }
+  return 0;
+}
+
 // Power Off, Power On, or Power Reset the server in given slot
 int
 pal_set_server_power(uint8_t fru, uint8_t cmd) {
@@ -180,25 +224,37 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
 int
 pal_sled_cycle(void) {
-
   // If JBOG is present, request power cycle
   // TODO:
-  //      Add common interface for different JBOG platform
+  // Add common interface for different JBOG platform
+  int cc;
+  uint8_t mode;
 
-  if(is_ep_present()) {
-    if (pal_ep_sled_cycle() < 0) {
-      syslog(LOG_ERR, "Request JBOG power-cycle failed");
-    }
+  if ( pal_block_ac() ) {
+    return -1;
   }
 
-  if(is_cc_present()) {
-    if (pal_cc_sled_cycle() < 0) {
-      syslog(LOG_ERR, "Request JBOG power-cycle failed");
-    }
+  if( pal_get_host_system_mode(&mode) ) {
+    return -1;
   }
 
-  // Send command to HSC power cycle
-  if( lib_cmc_power_cycle() ) {
+  cc = pal_ep_sled_cycle();
+  if ( cc != CC_SUCCESS ) {
+    syslog(LOG_ERR, "Request JG7 power-cycle failed CC=%x\n", cc);
+    return -1;
+  }
+
+  if ( mode == MB_4S_MODE ) {
+    cc = pal_cc_sled_cycle();
+    if ( cc != CC_SUCCESS ) {
+      syslog(LOG_ERR, "Request IOX power-cycle failed CC=%x\n", cc);
+      return -1;
+    }
+  }
+// Send command to CM power cycle
+  cc = lib_cmc_power_cycle();
+  if( cc != CC_SUCCESS ) {
+    syslog(LOG_ERR, "Request F0C power-cycle failed CC=%x\n", cc);
     return -1;
   }
   return 0;
@@ -533,4 +589,31 @@ pal_chassis_control(uint8_t fru, uint8_t *req_data, uint8_t req_len) {
   }
 
   return comp_code;
+}
+
+bool
+pal_can_change_power(uint8_t fru){
+  char fruname[32];
+  uint8_t mode;
+
+
+  if( pal_get_host_system_mode(&mode) ) {
+    return -1;
+  }
+
+  if (pal_get_fru_name(fru, fruname)) {
+    sprintf(fruname, "fru%d", fru);
+  }
+
+  if (pal_is_fw_update_ongoing(fru) || ((mode == MB_4S_MODE) && pal_block_dc(fru))) {
+    printf("FW update for %s is ongoing, block the power controlling.\n", fruname);
+    return false;
+  }
+
+  if (pal_is_crashdump_ongoing(fru)) {
+    printf("Crashdump for %s is ongoing, block the power controlling.\n", fruname);
+    return false;
+  }
+
+  return true;
 }

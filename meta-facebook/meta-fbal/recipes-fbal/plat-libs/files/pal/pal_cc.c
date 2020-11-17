@@ -5,6 +5,7 @@
 #include <openbmc/ipmb.h>
 #include <openbmc/libgpio.h>
 #include "pal.h"
+#include "pal_sbmc.h"
 
 #define GPIO_JBOG_PRSNT_1 "PRSNT_PCIE_CABLE_1_N"
 #define GPIO_JBOG_PRSNT_2 "PRSNT_PCIE_CABLE_2_N"
@@ -34,8 +35,28 @@ cmd_cc_sled_cycle(void) {
   uint8_t tbuf[8];
   uint8_t rbuf[8] = {0x00};
   uint8_t rlen;
+  uint8_t mode;
+  uint8_t pos;
+  int ret;
+
+  ret = pal_get_host_system_mode(&mode);
+  if (ret != 0) {
+    syslog(LOG_WARNING,"%s Wrong get system mode\n", __func__);
+    return ret;
+  }
+
+  ret = pal_get_mb_position (&pos);
+  if (ret != 0) {
+    syslog(LOG_WARNING,"%s Wrong get position\n", __func__);
+    return ret;
+  }
 
   tbuf[0] = 0xAC;
+
+  if( mode == MB_4S_MODE && pos == MB_ID0 ) {
+    return cmd_mb0_bridge_to_cc(CMD_CHASSIS_CONTROL, NETFN_CHASSIS_REQ, tbuf, 1);
+  }
+
   return cc_ipmb_process(ipmi_cmd, netfn, tbuf, 1, rbuf, &rlen);
 }
 
@@ -53,8 +74,8 @@ is_cc_present() {
     gdesc = gpio_open_by_shadow(shadow[i]);
     if (gdesc) {
       if (gpio_get_value(gdesc, &val) < 0) {
-	syslog(LOG_WARNING, "Get GPIO %s failed", shadow[i]);
-	val = GPIO_VALUE_INVALID;
+        syslog(LOG_WARNING, "Get GPIO %s failed", shadow[i]);
+        val = GPIO_VALUE_INVALID;
       }
       ret |= (val == GPIO_VALUE_LOW)? 1: 0;
       gpio_close(gdesc);

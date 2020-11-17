@@ -72,3 +72,21 @@ cmd_smbc_get_glbcpld_ver(uint8_t t_bmc_addr, uint8_t *ver) {
 
   return ret;
 }
+
+int
+cmd_mb0_bridge_to_cc(uint8_t ipmi_cmd, uint8_t ipmi_netfn, uint8_t *data, uint8_t data_len) {
+  uint8_t cmd = CMD_OEM_BYPASS_CMD;
+  uint8_t netfn = NETFN_OEM_REQ;
+  uint8_t tlen;
+  uint8_t rlen;
+  uint8_t tbuf[32];
+  uint8_t rbuf[32];
+
+  tbuf[0] = BRIDGE_2_IOX_BMC;
+  tbuf[1] = ipmi_netfn;
+  tbuf[2] = ipmi_cmd;
+  memcpy(tbuf+3, data, data_len);
+  tlen = 3 + data_len;
+
+  return bmc_ipmb_swap_info_process(cmd, netfn, BMC1_SLAVE_DEF_ADDR, tbuf, tlen, rbuf, &rlen);
+}

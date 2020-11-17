@@ -84,38 +84,75 @@ int CpldComponent::_update(const char *path, uint8_t is_signed) {
   int ret = -1;
   uint8_t i, cfm_cnt = 1, rev_id = 0xF;
   string comp;
+  uint8_t rbuf[16];
+  uint8_t rlen;
+  uint8_t pos;
+  uint8_t mode;
+  constexpr auto cpld_ident = "glb_cpld";
 
-  if ((pld_type == MAX10_10M25) && !pal_get_board_rev_id(&rev_id) && (rev_id < 2)) {
-    cfm_cnt = 2;
+  do {
+    if (_component == cpld_ident) {
+      if(pal_get_host_system_mode(&mode) || mode == MB_2S_MODE ) {
+        printf("Global CPLD update only in 4S Mode\n");
+        break;
+      }
+
+      if( lib_cmc_set_block_command_flag(4, CM_COMMAND_BLOCK) ) {  //BLOCK global CPLD Update
+        printf("Set cmc block flag fail,Global CPLD FW update is on going\n");
+        break;
+      }
+
+      if (lib_cmc_get_block_command_flag(rbuf, &rlen)) {
+        printf("Get cmc block flag fail\n");
+        break;
+      }
+
+      if ( pal_get_mb_position(&pos) )
+        break;
+
+      if ( (pos == MB_ID0 && ((rbuf[6] & UPDATE_GLOB_PLD_BLOCK) != 0)) ||
+           (pos == MB_ID1 && ((rbuf[4] & UPDATE_GLOB_PLD_BLOCK) != 0)) ) {
+        printf("Global CPLD FW update is on going.\n");
+        break;
+      }
+    }
+
+    if ((pld_type == MAX10_10M25) && !pal_get_board_rev_id(&rev_id) && (rev_id < 2)) {
+      cfm_cnt = 2;
+    }
+
+    syslog(LOG_CRIT, "Component %s%s upgrade initiated", _component.c_str(), is_signed? "": " force");
+    for (i = 0; i < cfm_cnt; i++) {
+      if (i == 1) {
+        // workaround for EVT boards that CONFIG_SEL of main CPLD is floating,
+        // so program both CFMs
+        attr.img_type = s_attrs[CFM1_10M25].img_type;
+        attr.start_addr = s_attrs[CFM1_10M25].start_addr;
+        attr.end_addr = s_attrs[CFM1_10M25].end_addr;
+      }
+ 
+      if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
+        printf("Cannot open i2c!\n");
+        break;
+      }
+ 
+      comp = _component;
+      transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
+      ret = cpld_program((char *)path, (char *)comp.substr(0, 4).c_str(), is_signed);
+      cpld_intf_close(INTF_I2C);
+      if (ret) {
+        printf("Error Occur at updating CPLD FW!\n");
+        break;
+      }
+    }
+    if (ret == 0)
+      syslog(LOG_CRIT, "Component %s%s upgrade completed",
+             _component.c_str(), is_signed? "": " force");
+  }while(0);
+
+  if (_component == cpld_ident) {
+    lib_cmc_set_block_command_flag(4, CM_COMMAND_UNBLOCK);
   }
-
-  syslog(LOG_CRIT, "Component %s%s upgrade initiated", _component.c_str(), is_signed? "": " force");
-  for (i = 0; i < cfm_cnt; i++) {
-    if (i == 1) {
-      // workaround for EVT boards that CONFIG_SEL of main CPLD is floating,
-      // so program both CFMs
-      attr.img_type = s_attrs[CFM1_10M25].img_type;
-      attr.start_addr = s_attrs[CFM1_10M25].start_addr;
-      attr.end_addr = s_attrs[CFM1_10M25].end_addr;
-    }
-
-    if (cpld_intf_open(pld_type, INTF_I2C, &attr)) {
-      printf("Cannot open i2c!\n");
-      return -1;
-    }
-
-    comp = _component;
-    transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
-    ret = cpld_program((char *)path, (char *)comp.substr(0, 4).c_str(), is_signed);
-    cpld_intf_close(INTF_I2C);
-    if (ret) {
-      printf("Error Occur at updating CPLD FW!\n");
-      break;
-    }
-  }
-  if (ret == 0)
-    syslog(LOG_CRIT, "Component %s%s upgrade completed", _component.c_str(), is_signed? "": " force");
-
   return ret;
 }
 

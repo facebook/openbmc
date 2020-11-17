@@ -90,7 +90,7 @@ static void* get_asic_id_handler()
   char curr_mfr[MAX_VALUE_LEN] = {0};
 
   if (pal_get_key_value("asic_mfr", curr_mfr) < 0)
-    strncpy(curr_mfr, MFR_UNKNOWN, sizeof(curr_mfr));
+    strncpy(curr_mfr, MFR_NVIDIA, sizeof(curr_mfr)-1);
 
   lock = open("/tmp/asic_lock", O_CREAT | O_RDWR, 0666);
   if (lock < 0) {
@@ -133,7 +133,7 @@ static void* get_asic_id_handler()
       }
 
       if (!id_err) {
-        if (strcmp(curr_mfr, mfr_list[asic_id[0]]) != 0 && strcmp(curr_mfr, MFR_UNKNOWN)) {
+        if (strcmp(curr_mfr, mfr_list[asic_id[0]]) != 0 && strcmp(mfr_list[asic_id[0]], MFR_UNKNOWN) != 0) {
           syslog(LOG_CRIT, "Switching OAM Configuration from %s to %s, FRU:1",
                             curr_mfr, mfr_list[asic_id[0]]);
           pal_set_key_value("asic_mfr", mfr_list[asic_id[0]]);

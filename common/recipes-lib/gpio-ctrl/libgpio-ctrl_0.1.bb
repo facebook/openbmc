@@ -24,64 +24,29 @@ LIC_FILES_CHKSUM = "file://gpio.c;beginline=4;endline=16;md5=da35978751a9d71b736
 
 BBCLASSEXTEND = "native"
 
-S = "${WORKDIR}"
-SRC_URI = "file://gpio.c \
+inherit meson python3-dir
+inherit ptest-meson
+
+SRC_URI = "file://meson.build \
+           file://gpio.c \
            file://gpio_int.h \
            file://gpio_sysfs.c \
            file://gpiochip.c \
            file://gpiochip_aspeed.c \
            file://libgpio.h \
            file://libgpio.hpp \
-           file://Makefile \
            file://libgpio.py \
-          "
+           file://gpio_test.cpp \
+         "
 
-# Add Test sources
-SRC_URI += "file://gpio_test.cpp \
-           "
-
-CFLAGS += "-Wall -Werror "
-LDFLAGS += " -lmisc-utils -lpthread -lobmc-i2c "
+S = "${WORKDIR}"
 
 DEPENDS += "libmisc-utils libobmc-i2c gtest gmock"
 RDEPENDS_${PN} += " libmisc-utils libobmc-i2c python3-core"
 RDEPENDS_${PN}-ptest += "libmisc-utils libobmc-i2c"
 
-inherit distutils3 python3-dir ptest
-distutils3_do_configure(){
-    :
-}
-
-do_compile() {
-  make
-}
-
-do_compile_ptest() {
-  make test-libgpio-ctrl
-  cat <<EOF > ${WORKDIR}/run-ptest
-#!/bin/sh
-
-/usr/lib/libgpio-ctrl/ptest/test-libgpio-ctrl
-EOF
-}
-
-do_install_ptest() {
-  install -D -m 755 test-libgpio-ctrl ${D}${libdir}/libgpio-ctrl/ptest/test-libgpio-ctrl
-}
-
-do_install() {
-    install -d ${D}${libdir}
-    install -m 0644 libgpio-ctrl.so ${D}${libdir}/libgpio-ctrl.so
-    ln -s libgpio-ctrl.so ${D}${libdir}/libgpio-ctrl.so.0
-
-    install -d ${D}${includedir}/openbmc
-    install -m 0644 libgpio.h ${D}${includedir}/openbmc/libgpio.h
-
+do_install_append() {
     install -d ${D}${PYTHON_SITEPACKAGES_DIR}
-    install -m 644 libgpio.py ${D}${PYTHON_SITEPACKAGES_DIR}/
-    install -m 0644 libgpio.hpp ${D}${includedir}/openbmc/libgpio.hpp
+    install -m 644 ${S}/libgpio.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
-
-FILES_${PN} = "${libdir}/libgpio-ctrl.so* ${PYTHON_SITEPACKAGES_DIR}/libgpio.py"
-FILES_${PN}-dev = "${includedir}/openbmc/libgpio.h ${includedir}/openbmc/libgpio.hpp"
-FILES_${PN}-ptest = "${libdir}/libgpio-ctrl/ptest"
+FILES_${PN} += "${PYTHON_SITEPACKAGES_DIR}/libgpio.py"

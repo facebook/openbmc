@@ -9,6 +9,7 @@
 #include "bmc_cpld_capsule.h"
 #include "bic_pcie_sw.h"
 #include "bic_m2_dev.h"
+#include <syslog.h>
 #include <facebook/fby3_common.h>
 #include "usbdbg.h"
 #ifdef BIC_SUPPORT
@@ -33,6 +34,7 @@ class ClassConfig {
   public:
     ClassConfig() {
       uint8_t bmc_location = 0;
+      uint8_t board_type = 0;
       if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
         printf("Failed to initialize the fw-util\n");
         exit(EXIT_FAILURE);
@@ -125,6 +127,19 @@ class ClassConfig {
         static MeComponent me_fw2("slot2", "me", FRU_SLOT2);
         static MeComponent me_fw3("slot3", "me", FRU_SLOT3);
         static MeComponent me_fw4("slot4", "me", FRU_SLOT4);
+
+        if ( fby3_common_get_2ou_board_type(FRU_SLOT1, &board_type) < 0) {
+          syslog(LOG_WARNING, "Failed to get slot1 2ou board type\n");
+        } else if ( board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD ) {
+          static PCIESWComponent pciesw_2ou_fw1("slot1", "2ou_pciesw", FRU_SLOT1, "2ou", FW_2OU_PESW);
+          static VrExtComponent  vr_2ou_fw1("slot1", "2ou_vr", FRU_SLOT1, "2ou", FW_2OU_PESW_VR);
+        }
+        if ( fby3_common_get_2ou_board_type(FRU_SLOT3, &board_type) < 0) {
+          syslog(LOG_WARNING, "Failed to get slot3 2ou board type\n");
+        } else if ( board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD ) {
+          static PCIESWComponent pciesw_2ou_fw3("slot3", "2ou_pciesw", FRU_SLOT3, "2ou", FW_2OU_PESW);
+          static VrExtComponent  vr_2ou_fw3("slot3", "2ou_vr", FRU_SLOT3, "2ou", FW_2OU_PESW_VR);
+        }
       }
   }
 };

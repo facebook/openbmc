@@ -23,11 +23,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <unistd.h>
 
 #include <openbmc/log.h>
 
 // ELBERT definition
 #define ELBERT_EEPROM_PATH_BASE     "/sys/bus/i2c/drivers/at24/"
+#define ELBERT_SMB_P1_BOARD_PATH    "/tmp/.smb_p1_board"
 #define ELBERT_EEPROM_CHS_OBJ       "CHASSIS"
 #define ELBERT_EEPROM_SMB_OBJ       "SMB"
 #define ELBERT_EEPROM_SMB_EXTRA_OBJ "SMB_EXTRA"
@@ -61,7 +63,8 @@
 #define ELBERT_EEPROM_FIELD_SERIAL  0x0E
 
 // Map between PIM and SMBus channel
-static int pim_bus[8] = {16, 17, 18, 23, 20, 21, 22, 19};
+static int pim_bus_p1[8] = {16, 17, 18, 23, 20, 21, 22, 19};
+static int pim_bus[8] = {16, 17, 18, 19, 20, 21, 22, 23};
 
 int elbert_htoi(char a)
 {
@@ -188,8 +191,14 @@ int elbert_get_pim_bus_name(const char *pim_name, char *bus_name)
   if (pim_number == -1)
     return -1;
 
-  snprintf(bus_name, 12, "%2d-00%02x", pim_bus[pim_number],
-          ELBERT_PIM_AT24_SLAVE_ADDR);
+  if (access(ELBERT_SMB_P1_BOARD_PATH, F_OK) != -1) {
+    // P1 SMB detected, use pim_bus_p1 smbus channel mapping
+    snprintf(bus_name, 12, "%2d-00%02x", pim_bus_p1[pim_number],
+               ELBERT_PIM_AT24_SLAVE_ADDR);
+  } else {
+    snprintf(bus_name, 12, "%2d-00%02x", pim_bus[pim_number],
+               ELBERT_PIM_AT24_SLAVE_ADDR);
+  }
   return 0;
 }
 

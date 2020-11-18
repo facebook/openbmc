@@ -164,6 +164,20 @@ do_smb() {
         echo "$2 is not a valid SMB FPGA file"
         exit 1
     fi
+    # P1 fpga - Revision <= 1, otherwise P2
+    if [ "$(printf "%d" "$(grep A_REVISION "$2" | \
+         awk '{print $3}' | tr -d '";')")" -le 1 ]; then
+        # We are using P1 fpga_file
+        if ! wedge_is_smb_p1; then
+            echo "P1 FPGA FILE not compatible with P2 Hardware!"
+            exit 1
+        fi
+    else
+        if wedge_is_smb_p1; then
+            echo "P2 FPGA FILE not compatible with P1 Hardware!"
+            exit 1
+        fi
+    fi
     SMB_PROGRAM=true
     connect_smb_jtag
     jam -l/usr/lib/libcpldupdate_dll_ioctl.so -v -a"${1^^}" "$2" \
@@ -175,6 +189,21 @@ do_smb_cpld() {
     if ! grep "DESIGN.*ide" "$2" > /dev/null; then
         echo "$2 is not a valid SMB CPLD file"
         exit 1
+    fi
+    # P1 fpga - Revision <= 4, otherwise P2
+    if [ "$(printf "%d" "$(grep A_REVISION "$2" | \
+         awk '{print $3}' | tr -d '";')")" -le 4 ]; then
+        # We are using P1 fpga binary
+        if ! wedge_is_smb_p1; then
+            echo "P1 FPGA FILE not compatible with P2 Hardware!"
+            exit 1
+        fi
+    else
+        # We are using P2 fpga binary
+        if wedge_is_smb_p1; then
+            echo "P2 FPGA FILE not compatible with P1 Hardware!"
+            exit 1
+        fi
     fi
     connect_smb_cpld_jtag
     jam -l/usr/lib/libcpldupdate_dll_ioctl.so -v -a"${1^^}" "$2" \

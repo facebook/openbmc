@@ -27,7 +27,11 @@ show_dpm_ver "SMB.:" "$smb_dpm_bus" "$smb_dpm_addr"
 pim_index=(0 1 2 3 4 5 6 7)
 # This is a map between PIM2-9 to associated i2c BUS
 # Currently, this doesn't map in order between PIM2-9 to bus 16-23
-pim_bus=(16 17 18 23 20 21 22 19)
+pim_bus=(16 17 18 19 20 21 22 23)
+if wedge_is_smb_p1; then
+    # P1 has different PIM bus mapping
+    pim_bus=(16 17 18 23 20 21 22 19)
+fi
 pim_dpm_addr='0x4e'
 
 for i in "${pim_index[@]}"

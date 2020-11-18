@@ -27,8 +27,12 @@
 . /usr/local/bin/openbmc-utils.sh
 
 pim_index=(0 1 2 3 4 5 6 7)
+pim_bus=(16 17 18 19 20 21 22 23)
+if wedge_is_smb_p1; then
+    # P1 has different PIM bus mapping
+    pim_bus=(16 17 18 23 20 21 22 19)
+fi
 pim_found=(0 0 0 0 0 0 0 0)
-pim_bus=(16 17 18 23 20 21 22 19)
 dpm_addr=4e
 
 try_create_gpio() {

@@ -113,7 +113,14 @@ i2c_device_add 15 0x43 pfrcpld
 
 # SMBus 2 PIM MUX, muxed as Bus 16-23
 pim_index=(0 1 2 3 4 5 6 7)
-pim_bus=(16 17 18 23 20 21 22 19)
+
+pim_bus=(16 17 18 19 20 21 22 23)
+if wedge_is_smb_p1; then
+    # P1 has different PIM bus mapping
+    pim_bus=(16 17 18 23 20 21 22 19)
+    echo "P1 SMB detected"
+fi
+
 for i in "${pim_index[@]}"
 do
     # PIM numbered 2-9

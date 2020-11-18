@@ -15,6 +15,8 @@ SMB_TH4_PCI_RST_ON_SYSFS="${SMBCPLD_SYSFS_DIR}/th4_pci_reset"
 SMB_FULL_POWER_SYSFS="${SMBCPLD_SYSFS_DIR}/smb_power_en"
 PIM_SMB_MUX_RST="${SMBCPLD_SYSFS_DIR}/pim_smb_mux_rst"
 PSU_SMB_MUX_RST="${SMBCPLD_SYSFS_DIR}/psu_smb_mux_rst"
+SMB_P1_DETECT_PATH="/tmp/.smb_p1_board"
+SMB_P2_DETECT_PATH="/tmp/.smb_p2_board"
 DS4520_BUS=8
 DS4520_DEV=$(( 0x50 ))
 DS4520_IO0_REG=0xf2
@@ -32,6 +34,23 @@ wedge_is_bmc_personality() {
     if [ "$((io_reg_val & 0x1))" = "0" ]; then
         return 0
     else
+        return 1
+    fi
+}
+
+wedge_is_smb_p1() {
+    # Check if we previously detected P1/P2 SMB
+    if [ -f "$SMB_P1_DETECT_PATH" ]; then
+        return 0
+    elif [ -f "$SMB_P2_DETECT_PATH" ]; then
+        return 1
+    fi
+    # Read SMB eeprom to determine if P1/P2
+    if weutil smb | grep -q 'PCA014590[1|5]0[1|5|6]'; then
+        touch "$SMB_P1_DETECT_PATH"
+        return 0
+    else
+        touch "$SMB_P2_DETECT_PATH"
         return 1
     fi
 }

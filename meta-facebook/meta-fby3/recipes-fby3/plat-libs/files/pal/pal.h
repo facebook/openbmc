@@ -108,6 +108,7 @@ enum {
   CONFIG_D = 0x04,
   CONFIG_B_E1S = 0x05,
   CONFIG_C_GPV3 = 0x06,
+  CONFIG_D_GPV3 = 0x07,
   CONFIG_UNKNOWN = 0xff,
 };
 

@@ -1219,6 +1219,13 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
       }
     } else if (config_status == 3) {
       pcie_conf = CONFIG_D;
+      if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
+        if ( fby3_common_get_2ou_board_type(slot, &type_2ou) < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
+        } else if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+          pcie_conf = CONFIG_D_GPV3;
+        }
+      }
     } else {
       pcie_conf = CONFIG_B;
     }

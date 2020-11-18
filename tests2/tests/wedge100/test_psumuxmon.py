@@ -143,7 +143,7 @@ class PsumuxmonTest(unittest.TestCase):
     def test_psumuxmon_runit_sv_status(self):
         if running_systemd():
             cmd = ["/bin/systemctl status psumuxmon"]
-            data = run_shell_cmd(cmd)
+            data = run_shell_cmd(cmd, ignore_err=True)
             self.assertIn("running", data, "psumuxmon unit not running")
         else:
             cmd = ["/usr/bin/sv status psumuxmon"]

@@ -446,29 +446,27 @@ static int get_thermaltrip_offset (const char *shadow_name) {
 
 static int thermtrip_hardware_check(const char *shadow_name)
 {
-  int fd = 0, retCode = -1;
-  char fn[32];
+  int fd = 0, retCode = -1, offset;
   uint8_t bus = 4;
   uint8_t addr = 0x1e;
-  uint8_t offset, tlen, rlen;
+  uint8_t tlen, rlen;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
  
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
-  fd = open(fn, O_RDWR);
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
-    syslog(LOG_WARNING, "%s Can not read file /dev/i2c-%d\n", __func__, bus);
-    close(fd);
+    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
     return retCode;
   }
 
-  offset = (uint8_t)get_thermaltrip_offset(shadow_name); 
+  offset = get_thermaltrip_offset(shadow_name); 
   if (offset < 0) {
-    syslog(LOG_WARNING, "There is no thermaltrip offset match with %s\n", shadow_name);
-    close(fd);
+    syslog(LOG_WARNING, "There is no thermaltrip offset match with %s\n", shadow_name);  
+    i2c_cdev_slave_close(fd);
     return retCode;
   }
-  tbuf[0] = offset;
+
+  tbuf[0] = (uint8_t)offset;
   tlen = 1;
   rlen = 1;
 
@@ -479,6 +477,7 @@ static int thermtrip_hardware_check(const char *shadow_name)
     retCode = (int)rbuf[0];
   }
 
+  i2c_cdev_slave_close(fd);
   return retCode;
 }
 

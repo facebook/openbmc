@@ -105,6 +105,10 @@ do_install_board() {
     install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .
 
+    # create VLAN intf automatically
+    install -d ${D}/${sysconfdir}/network/if-up.d
+    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
+
     install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
     update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
 

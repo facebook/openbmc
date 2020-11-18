@@ -21,7 +21,6 @@ SRC_URI += "file://board-utils.sh \
             file://boot_info.sh \
             file://bsm-eutil \
             file://cpld_ver.sh \
-            file://create_vlan_intf \
             file://disable_watchdog.sh \
             file://fcmcpld_update.sh \
             file://feutil \

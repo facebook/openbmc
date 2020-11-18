@@ -43,4 +43,17 @@ do
         echo "PIM${pim} not present... skipping."
     fi
 done
+
+# ISL68226 Revision
+isl_mdl=$(i2cdump -f -y 3 0x62 s 0x9a | grep 00: | awk '{print $5$4$3$2}')
+isl_mfr=$(i2cdump -f -y 3 0x62 s 0x9b | grep 00: | awk '{print $5$4$3$2}')
+isl_rstr="SFT${isl_mdl:1:5}${isl_mdl:6:2}$(printf "%02d" "0x$isl_mfr")"
+echo "SMB ISL68226: $isl_rstr"
+
+# RAA228228 Revision
+raa_mdl=$(i2cdump -f -y 3 0x60 s 0x9a | grep 00: | awk '{print $5$4$3$2}')
+raa_mfr=$(i2cdump -f -y 3 0x60 s 0x9b | grep 00: | awk '{print $5$4$3$2}')
+raa_rstr="SFT${raa_mdl:1:5}${raa_mdl:6:2}$(printf "%02d" "0x$raa_mfr")"
+echo "SMB RAA228228: $raa_rstr"
+
 echo "!!! Done."

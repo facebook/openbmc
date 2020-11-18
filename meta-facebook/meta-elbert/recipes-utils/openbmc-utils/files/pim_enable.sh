@@ -81,6 +81,21 @@ clear_pimserial_cache() {
   fi
 }
 
+# Update sensors labels based on PIM type
+update_pim_sensors() {
+  pim="${1}"
+  bus_id="${pim_bus[pim-2]}"
+  pim_sensors_path="/etc/sensors.d/pim${pim}.conf"
+  pim_type=$(pim_types.sh | grep "PIM ${pim}" | cut -d ' ' -f 3 |
+             tr '[:upper:]' '[:lower:]')
+
+  if [ "${pim_type}" == "pim16q" ] || [ "${pim_type}" == "pim8ddm" ]; then
+    template_path="/etc/sensors.d/.${pim_type}.conf"
+    pattern="s/{bus}/${bus_id}/g; s/{pim}/${pim}/g"
+    sed "${pattern}" "${template_path}" > "${pim_sensors_path}"
+  fi
+}
+
 while true; do
   # 1. For any uncovered PIM, try to discover
   for i in "${pim_index[@]}"
@@ -96,6 +111,7 @@ while true; do
          drv_path=/sys/bus/i2c/drivers/ucd9000/$pim_addr
          if [ -e "$drv_path"/gpio ]; then
            create_pim_gpio "$((i+2))" "${pim_addr}"
+           update_pim_sensors "$((i+2))"
            pim_found[$i]=1
          fi
       fi

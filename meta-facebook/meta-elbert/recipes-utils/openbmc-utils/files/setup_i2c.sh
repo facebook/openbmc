@@ -73,8 +73,8 @@ i2c_device_add 0 0x50 24c512
 i2c_device_add 3 0x40 pmbus
 i2c_device_add 3 0x41 pmbus
 hwmon_device_add 3 0x4e ucd90160 # UCD90160
-i2c_device_add 3 0x60 isl68137   # RA228228
-i2c_device_add 3 0x62 isl68137   # ISL68226
+i2c_device_add 3 0x60 raa228228  # RA228228
+i2c_device_add 3 0x62 isl68226   # ISL68226
 
 # SMBus 4
 i2c_device_add 4 0x23 smbcpld
@@ -127,6 +127,11 @@ do
         i2c_device_add "$bus_id" 0x4a lm73    # Temp sensor
         i2c_device_add "$bus_id" 0x4e ucd9090 # UCD9090A
         i2c_device_add "$bus_id" 0x50 24c512  # EEPROM
+
+        fru="$(peutil "$pim" 2>&1)"
+        if echo "$fru" | grep -q '88-8D'; then
+           i2c_device_add "$bus_id" 0x54 isl68224 # ISL68224
+        fi
     else
         echo "PIM${pim} not present... skipping."
     fi
@@ -145,3 +150,6 @@ do
         echo "PSU${id} not present... skipping."
     fi
 done
+
+# Apply lm_sensor threshold settings.
+sensors -s

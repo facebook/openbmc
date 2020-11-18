@@ -19,6 +19,13 @@ class palBiosComponent : public BiosComponent {
 };
 
 int palBiosComponent::reboot(uint8_t fruid) {
+  
+  // Let mb will be ON after AC cycle
+  if (sys.runcmd("/usr/bin/killall gpiod > /dev/null") != 0)
+    syslog(LOG_DEBUG, "killall gpiod failed");
+  if (sys.runcmd("/usr/local/bin/cfg-util pwr_server_last_state on > /dev/null") != 0)
+    syslog(LOG_DEBUG, "Set pwr_server_last_state on failed");
+
   return 0;
 }
 

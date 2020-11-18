@@ -25,8 +25,7 @@
 
 pim_list="2 3 4 5 6 7 8 9"
 for pim in ${pim_list}; do
-    pim_present=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$pim"_present)
-    if [ "$((pim_present))" -eq 0 ]; then
+    if ! wedge_is_pim_present "$pim"; then
         echo "PIM $pim: NOT INSERTED"
     else
         pim_type='NOT DETECTED'

@@ -208,8 +208,7 @@ toggle_pim_reset() {
     # Re-initialize reset pims
     for slot in 2 3 4 5 6 7 8 9; do
         if [ "$pim" -eq 0 ] || [ "$slot" -eq "$pim" ]; then
-            pim_prsnt="$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$slot"_present)"
-            if [ "$pim_prsnt" == '0x1' ]; then
+            if wedge_is_pim_present "$slot"; then
                 power_on_pim "$slot"
             fi
         fi

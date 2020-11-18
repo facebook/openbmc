@@ -108,9 +108,7 @@ while true; do
       pim_number="$((i+2))"
       pim_addr=${pim_bus[$i]}-00$dpm_addr  # 16-004e for example
       # Check if Switch card senses the PIM presence
-      pim_path="$SMBCPLD_SYSFS_DIR/pim${pim_number}_present"
-      pim_present="$(head -n 1 "$pim_path")"
-      if [ "$pim_present" == "0x1" ]; then
+      if wedge_is_pim_present "$pim_number"; then
          # Check if device was probed and driver was installed
          drv_path=/sys/bus/i2c/drivers/ucd9000/$pim_addr
          if [ -e "$drv_path"/gpio ]; then

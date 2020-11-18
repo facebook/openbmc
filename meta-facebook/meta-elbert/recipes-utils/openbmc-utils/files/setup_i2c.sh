@@ -125,8 +125,7 @@ for i in "${pim_index[@]}"
 do
     # PIM numbered 2-9
     pim=$((i+2))
-    pim_prsnt="$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$pim"_present)"
-    if [ "$((pim_prsnt))" -eq 1 ]; then
+    if wedge_is_pim_present "$pim"; then
         # PIM 2-9, SMBUS 16-23
         bus_id="${pim_bus[$i]}"
         i2c_device_add "$bus_id" 0x16 pmbus   # TPS546D24

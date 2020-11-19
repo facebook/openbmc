@@ -643,3 +643,16 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
 
   return pal_set_key_value(key, str);
 }
+
+bool
+pal_is_fw_update_ongoing_system(void) {
+  uint8_t i = 0;
+
+  for (i = FRU_SERVER; i < FRU_CNT; i++) {
+    if (pal_is_fw_update_ongoing(i) == true) {
+      return true;
+    }
+  }
+
+  return false;
+}

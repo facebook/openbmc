@@ -667,28 +667,29 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"AL_MB2_HSC_PEAK_PIN", HSC_ID2, read_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x52
   {"AL_MB3_HSC_PEAK_PIN", HSC_ID3, read_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x53
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x54
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x55
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x56
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x57
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x58
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x59
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5A
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5B
+  {"AL_PDB_FAN0_POWER", CM_FAN0_POWER, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x54
+  {"AL_PDB_FAN1_POWER", CM_FAN1_POWER, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x55
+  {"AL_PDB_FAN2_POWER", CM_FAN2_POWER, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x56
+  {"AL_PDB_FAN3_POWER", CM_FAN3_POWER, read_cm_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x57
+
+  {"AL_PDB_FAN0_DUTY", 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x58
+  {"AL_PDB_FAN1_DUTY", 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x59
+  {"AL_PDB_FAN2_DUTY", 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5A
+  {"AL_PDB_FAN3_DUTY", 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5B
 
   {"AL_MB_P12V_STBY_INA260_VOL", INA260_ID0, read_ina260_vol, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x5C
   {"AL_MB_P3V3_M2_1_INA260_VOL", INA260_ID1, read_ina260_vol, false, {3.47, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0x5D
   {"AL_MB_P3V3_M2_2_INA260_VOL", INA260_ID2, read_ina260_vol, false, {3.47, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0x5E
   {"AL_MB_P3V3_M2_3_INA260_VOL", INA260_ID3, read_ina260_vol, false, {3.47, 0, 0, 3.14, 0, 0, 0, 0}, VOLT}, //0x5F
 
-  {"AL_PDB_FAN0_INLET_SPEED", CM_FAN0_INLET_SPEED, read_cm_sensor, true, {13500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x60
-  {"AL_PDB_FAN1_INLET_SPEED", CM_FAN1_INLET_SPEED, read_cm_sensor, true, {13500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x61
-  {"AL_PDB_FAN2_INLET_SPEED", CM_FAN2_INLET_SPEED, read_cm_sensor, true, {13500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x62
-  {"AL_PDB_FAN3_INLET_SPEED", CM_FAN3_INLET_SPEED, read_cm_sensor, true, {13500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x63
-  {"AL_PDB_FAN0_OUTLET_SPEED", CM_FAN0_OUTLET_SPEED, read_cm_sensor, true, {12500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x64
-  {"AL_PDB_FAN1_OUTLET_SPEED", CM_FAN1_OUTLET_SPEED, read_cm_sensor, true, {12500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x65
-  {"AL_PDB_FAN2_OUTLET_SPEED", CM_FAN2_OUTLET_SPEED, read_cm_sensor, true, {12500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x66
-  {"AL_PDB_FAN3_OUTLET_SPEED", CM_FAN3_OUTLET_SPEED, read_cm_sensor, true, {12500, 0, 0, 500, 0, 0, 0, 0}, FAN}, //0x67
+  {"AL_PDB_FAN0_INLET_SPEED", CM_FAN0_INLET_SPEED, read_cm_sensor, true, {13500, 0, 0, 600, 0, 0, 0, 0}, FAN}, //0x60
+  {"AL_PDB_FAN1_INLET_SPEED", CM_FAN1_INLET_SPEED, read_cm_sensor, true, {13500, 0, 0, 600, 0, 0, 0, 0}, FAN}, //0x61
+  {"AL_PDB_FAN2_INLET_SPEED", CM_FAN2_INLET_SPEED, read_cm_sensor, true, {13500, 0, 0, 600, 0, 0, 0, 0}, FAN}, //0x62
+  {"AL_PDB_FAN3_INLET_SPEED", CM_FAN3_INLET_SPEED, read_cm_sensor, true, {13500, 0, 0, 600, 0, 0, 0, 0}, FAN}, //0x63
+  {"AL_PDB_FAN0_OUTLET_SPEED", CM_FAN0_OUTLET_SPEED, read_cm_sensor, true, {12500, 0, 0, 600, 0, 0, 0, 0}, FAN}, //0x64
+  {"AL_PDB_FAN1_OUTLET_SPEED", CM_FAN1_OUTLET_SPEED, read_cm_sensor, true, {12500, 0, 0, 600, 0, 0, 0, 0}, FAN}, //0x65
+  {"AL_PDB_FAN2_OUTLET_SPEED", CM_FAN2_OUTLET_SPEED, read_cm_sensor, true, {12500, 0, 0, 600, 0, 0, 0, 0}, FAN}, //0x66
+  {"AL_PDB_FAN3_OUTLET_SPEED", CM_FAN3_OUTLET_SPEED, read_cm_sensor, true, {12500, 0, 0, 600, 0, 0, 0, 0}, FAN}, //0x67
   {"AL_PDB_FAN0_VOLT", CM_FAN0_VOLT, read_cm_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x68
   {"AL_PDB_FAN1_VOLT", CM_FAN1_VOLT, read_cm_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x69
   {"AL_PDB_FAN2_VOLT", CM_FAN2_VOLT, read_cm_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x6A
@@ -956,6 +957,50 @@ get_cm_snr_num(uint8_t id) {
   return snr_num;
 }
 
+uint8_t map_fan_duty(uint16_t value) {
+  float fan_duty = 0;
+
+  struct {
+    uint16_t rpm;
+    uint8_t  duty;
+  } map[] = {
+    {1183, 0},
+    {1203, 10},
+    {1717, 15},
+    {2255, 20},
+    {2825, 25},
+    {3369, 30},
+    {3929, 35},
+    {4464, 40},
+    {5012, 45},
+    {5539, 50},
+    {6113, 55},
+    {6647, 60},
+    {7194, 65},
+    {7749, 70},
+    {8251, 75},
+    {8796, 80},
+    {9308, 85},
+    {9872, 90},
+    {10375, 95},
+    {10867, 100},
+  };
+
+
+  for( int i=0 ; i < ARRAY_SIZE(map); i++ ) {
+
+    if(value > map[i].rpm) {
+      continue;
+    } else if(value < map[0].rpm ) {
+      fan_duty = map[0].duty;
+    } else if( value < map[i].rpm && value > map[i-1].rpm ) {
+      fan_duty = map[i-1].duty;
+    }
+    return fan_duty;
+  }
+  return fan_duty = map[ARRAY_SIZE(map)-1].duty;
+}
+
 static int
 read_cm_sensor(uint8_t id, float *value) {
   int sdr=0;
@@ -963,6 +1008,10 @@ read_cm_sensor(uint8_t id, float *value) {
   uint8_t rlen=0;
   uint8_t rbuf[16];
   static uint8_t retry=0;
+  char fru_name[32];
+  float fan_duty=0;
+  char str[MAX_VALUE_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
 
   sdr = get_cm_snr_num(id);
   ret = cmd_cmc_get_sensor_value(sdr, rbuf, &rlen);
@@ -973,6 +1022,17 @@ read_cm_sensor(uint8_t id, float *value) {
 
   *value = (float)(rbuf[0] | rbuf[1]<<8) + (float)(rbuf[2] | rbuf[3]<<8)/1000;
   retry = 0;
+
+  if ( id <= CM_FAN3_INLET_SPEED ) {
+    pal_get_fru_name(FRU_PDB, fru_name);
+    sprintf(key, "%s_sensor%d", fru_name, PDB_SNR_FAN0_DUTY+id);
+    fan_duty = map_fan_duty((uint16_t)*value);
+    sprintf(str, "%.2f",fan_duty / 100);
+
+    if (kv_set(key, str, 0, 0) < 0) {
+      syslog(LOG_WARNING, "fan%d_duty cache_set key = %s, str = %s failed.", id, key, str);
+    } 
+  }
 #ifdef DEBUG
 {
   for(int i=0; i<*rlen; i++) {

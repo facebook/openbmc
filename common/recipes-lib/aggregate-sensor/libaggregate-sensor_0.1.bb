@@ -40,6 +40,8 @@ do_install_append() {
   install -D -m 644 ${WORKDIR}/aggregate-sensor-conf.json ${D}${sysconfdir}/aggregate-sensor-conf.json
 }
 
+LDFLAGS= "-lm"
+
 DEPENDS =+ "libpal libsdr jansson libkv cmock"
 RDEPENDS_${PN} =+ "libpal libsdr libkv jansson "
 FILES_${PN}-ptest += "${libdir}/libaggregate-sensors/ptest"

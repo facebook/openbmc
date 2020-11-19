@@ -1,5 +1,5 @@
 max([
-  linear_inlet(all:mb_al_mb_inlet_temp),
+  linear_inlet(all:mb_al_mb_inlet_remote_temp),
   linear_cpu_margin(all:mb_al_mb_cpu0_therm_margin) + pid_cpu_margin(all:mb_al_mb_cpu0_therm_margin),
   linear_cpu_margin(all:mb_al_mb_cpu1_therm_margin) + pid_cpu_margin(all:mb_al_mb_cpu1_therm_margin),
   linear_dimm(

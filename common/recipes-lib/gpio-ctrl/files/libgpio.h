@@ -56,6 +56,7 @@ extern "C" {
  */
 #define GPIO_SHADOW_ROOT	"/tmp/gpionames"
 #define GPIO_CHIP_ASPEED	"aspeed-gpio"
+#define GPIO_CHIP_I2C_IO_EXP	"i2c-io-expander"
 #define GPIO_CHIP_MAX		64
 
 /*

@@ -52,8 +52,8 @@
 /*
  * Types of gpio chips supported by this library.
  */
-#define GPIO_CHIP_ASPEED_SOC	GPIO_CHIP_ASPEED
-#define GPIO_CHIP_I2C_EXPANDER	"i2c-io-expander"
+#define GPIO_CHIP_ASPEED_SOC    GPIO_CHIP_ASPEED
+#define GPIO_CHIP_I2C_EXPANDER  GPIO_CHIP_I2C_IO_EXP
 
 /*
  * "gpio_sysfs_attr" is needed when accessing gpio via sysfs interface.

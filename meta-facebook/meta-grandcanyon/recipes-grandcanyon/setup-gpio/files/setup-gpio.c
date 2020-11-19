@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2014-present Facebook. All Rights Reserved.
+ * Copyright 2020-present Facebook. All Rights Reserved.
  *
  * This program file is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <syslog.h>
 #include <unistd.h>
 #include <openbmc/libgpio.h>
 
@@ -28,10 +29,142 @@ enum GPIO_VALUE {
 	GPIO_HIGH,
 };
 
+typedef struct gpio_info {
+	char *shadow_name;
+	char *pin_name;
+	gpio_direction_t direction;
+	gpio_value_t value;
+} gpio_cfg;
+
+/* expander gpio table */
+gpio_cfg exp_gpio_cfg[] = {
+	/* shadow_name, pin_name, direction, value */
+
+	// COMP_PRSNT_N: P00 (748)
+	{"COMP_PRSNT_N",         NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// FAN_0_INS_N: P01 (749)
+	{"FAN_0_INS_N",          NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// FAN_1_INS_N: P02 (750)
+	{"FAN_1_INS_N",          NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// FAN_2_INS_N: P03 (751)
+	{"FAN_2_INS_N",          NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// FAN_3_INS_N: P04 (752)
+	{"FAN_3_INS_N",          NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// UIC_RMT_INS_N: P05 (753)
+	{"UIC_RMT_INS_N",        NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// SCC_LOC_INS_N: P06 (754)
+	{"SCC_LOC_INS_N",        NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// SCC_RMT_INS_N: P07 (755)
+	{"SCC_RMT_INS_N",        NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// SCC_LOC_TYPE_0: P10 (756)
+	{"SCC_LOC_TYPE_0",       NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// SCC_RMT_TYPE_0: P11 (757)
+	{"SCC_RMT_TYPE_0",       NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// SCC_STBY_PGOOD: P12 (758)
+	{"SCC_STBY_PGOOD",       NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// SCC_FULL_PGOOD: P13 (759)
+	{"SCC_FULL_PGOOD",       NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// COMP_PGOOD: P14 (760)
+	{"COMP_PGOOD",           NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// DRAWER_CLOSED_N: P15 (761)
+	{"DRAWER_CLOSED_N",      NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// E1S_1_PRSNT_N: P16 (762)
+	{"E1S_1_PRSNT_N",        NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// E1S_2_PRSNT_N: P17 (763)
+	{"E1S_2_PRSNT_N",        NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// I2C_E1S_1_RST_N: P00 (764)
+	{"I2C_E1S_1_RST_N",      NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+	// I2C_E1S_2_RST_N: P01 (765)
+	{"I2C_E1S_2_RST_N",      NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+	// E1S_1_LED_ACT: P02 (766)
+	{"E1S_1_LED_ACT",        NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+	// E1S_2_LED_ACT: P03 (767)
+	{"E1S_2_LED_ACT",        NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+	// SCC_STBY_PWR_EN: P04 (768)
+	{"SCC_STBY_PWR_EN",      NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+	// SCC_FULL_PWR_EN: P05 (769)
+	{"SCC_FULL_PWR_EN",      NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+	// BMC_EXP_SOFT_RST_N: P06 (770)
+	{"BMC_EXP_SOFT_RST_N",   NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+	// UIC_COMP_BIC_RST_N: P07 (771)
+	{"UIC_COMP_BIC_RST_N",   NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+	// E1S_1_3V3EFUSE_PGOOD: P10 (772)
+	{"E1S_1_3V3EFUSE_PGOOD", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// E1S_2_3V3EFUSE_PGOOD: P11 (773)
+	{"E1S_2_3V3EFUSE_PGOOD", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// P12V_NIC_FAULT_N: P12 (774)
+	{"P12V_NIC_FAULT_N",     NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// P3V3_NIC_FAULT_N: P13 (775)
+	{"P3V3_NIC_FAULT_N",     NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// SCC_POR_RST_N: P14 (776)
+	{"SCC_POR_RST_N",        NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+	// IOC_T7_SYS_PGOOD: P15 (777)
+	{"IOC_T7_SYS_PGOOD",     NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+	// BMC_COMP_BLED: P16 (778)
+	{"BMC_COMP_BLED",        NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+	// BMC_COMP_YLED: P17 (779)
+	{"BMC_COMP_YLED",        NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+	{NULL, NULL, GPIO_DIRECTION_INVALID, GPIO_VALUE_INVALID}
+};
+
+int setup_gpio_with_value(const char *chip_name, const char *shadow_name, const char *pin_name, int offset, gpio_direction_t direction, gpio_value_t value)
+{
+	int ret = 0;
+	if (gpio_is_exported(shadow_name) == false) {
+		if (strncmp(chip_name, GPIO_CHIP_ASPEED, GPIO_CHIP_MAX) == 0) {
+			ret = gpio_export_by_name(GPIO_CHIP_ASPEED, pin_name, shadow_name);
+		}
+		else if (strncmp(chip_name, GPIO_CHIP_I2C_IO_EXP, GPIO_CHIP_MAX) == 0) {
+			ret = gpio_export_by_offset(GPIO_CHIP_I2C_IO_EXP, offset, shadow_name);
+		}
+		else {
+			printf("failed to recognize chip name: %s\n", chip_name);
+			syslog(LOG_ERR, "failed to recognize chip name: %s\n", chip_name);
+			return -1;
+		}
+
+		if (ret != 0) {
+			printf("failed to export %s\n", shadow_name);
+			syslog(LOG_ERR, "failed to export %s\n", shadow_name);
+			return ret;
+		}
+
+		if (direction == GPIO_DIRECTION_OUT) {
+			ret = gpio_set_init_value_by_shadow(shadow_name, value);
+
+			if (ret != 0) {
+				printf("failed to set initial value to %s\n", shadow_name);
+				syslog(LOG_ERR, "failed to set initial value to %s\n", shadow_name);
+				return ret;
+			}
+		}
+	}
+
+	return ret;
+}
+
+void setup_gpios_by_table(const char *chip_name, gpio_cfg *gpio_config) {
+	int ret = 0, offset = 0;
+
+	while (gpio_config[offset].shadow_name != NULL) {
+		ret = setup_gpio_with_value(chip_name,
+			gpio_config[offset].shadow_name,
+			gpio_config[offset].pin_name,
+			offset,
+			gpio_config[offset].direction,
+			gpio_config[offset].value);
+
+		if (ret != 0) {
+			printf("failed to setup %s\n", gpio_config[offset].shadow_name);
+			syslog(LOG_ERR, "failed to setup %s\n", gpio_config[offset].shadow_name);
+		}
+		offset += 1;
+	}
+}
 
 int set_gpio_init_value_after_export(const char * name, const char *shadow, gpio_value_t value)
 {
-	int ret;
+	int ret = 0;
 	if (gpio_is_exported(shadow) == false) {
 		gpio_export_by_name(GPIO_CHIP_ASPEED, name, shadow);
 	}
@@ -42,7 +175,7 @@ int set_gpio_init_value_after_export(const char * name, const char *shadow, gpio
 int
 main(int argc, char **argv) {
 
-	printf("Set up GPIO pins.....\n");
+	printf("Set up GPIO pins...\n");
 
 	// FPGA_CRCERROR, GPIOB0 (824)
 	gpio_export_by_name(GPIO_CHIP_ASPEED, "GPIOB0", "FPGA_CRCERROR");
@@ -220,6 +353,12 @@ main(int argc, char **argv) {
 
 	// EMMC_RST_N, GPIOY3 (1011)
 	set_gpio_init_value_after_export("GPIOY3", "EMMC_RST_N", GPIO_HIGH);
+
+
+	printf("Set up expander GPIO pins...\n");
+	setup_gpios_by_table(GPIO_CHIP_I2C_IO_EXP, exp_gpio_cfg);
+
+	printf("done.\n");
 
 	return 0;
 }

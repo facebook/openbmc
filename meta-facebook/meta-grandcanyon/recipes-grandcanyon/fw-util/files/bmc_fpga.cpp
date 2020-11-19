@@ -22,6 +22,7 @@ bool BmcFpgaComponent::is_valid_image(string image, bool force) {
   int size = 0;
   bool ret = false;
   ifstream fpgaFile;
+  uint8_t fpga_id_table[2] = {UIC_FPGA_ID, BS_FPGA_ID};
 
   fpgaFile.open(image, ios::in | ios::binary | ios::ate);
 
@@ -50,7 +51,7 @@ bool BmcFpgaComponent::is_valid_image(string image, bool force) {
   }
 
   identity = read_buffer[0] & 0xf;
-  if (identity != UIC_FPGA_ID) {
+  if (identity != fpga_id_table[location]) {
     cout << "Invalid id:" << (int)identity << endl;
     goto end;
   }

@@ -25,6 +25,7 @@
 #include <openbmc/kv.h>
 #include "pal_sensors.h"
 #include "pal_power.h"
+#include "pal-pim.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -305,6 +306,9 @@ int pal_get_pim_type_from_file(uint8_t fru);
 int pal_get_pim_pedigree(uint8_t fru, int retry);
 int pal_set_pim_pedigree_to_file(uint8_t fru, char *type);
 int pal_get_pim_pedigree_from_file(uint8_t fru);
+int pal_get_pim_phy_type(uint8_t fru, int retry);
+int pal_set_pim_phy_type_to_file(uint8_t fru, char *type);
+int pal_get_pim_phy_type_from_file(uint8_t fru);
 int pal_set_pim_thresh(uint8_t fru);
 int pal_clear_thresh_value(uint8_t fru);
 extern void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);

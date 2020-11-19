@@ -420,6 +420,76 @@ pal_get_pim_pedigree_from_file(uint8_t fru) {
   }
 }
 
+int
+pal_get_pim_phy_type(uint8_t fru, int retry) {
+  int ret = -1, val;
+  char path[LARGEST_DEVICE_NAME];
+  uint8_t bus = ((fru - FRU_PIM1) * PIM_I2C_OFFSET) + PIM_I2C_BASE;
+
+  snprintf(path, sizeof(path), I2C_SYSFS_DEVICES"/%d-0060/board_ver", bus);
+
+  if (retry < 0) {
+    retry = 0;
+  }
+
+  while ((ret = read_device(path, &val)) != 0 && retry--) {
+    msleep(500);
+  }
+  if (ret) {
+    return -1;
+  }
+
+  /* DVT or later is 7nm */
+  if (val > PIM_16Q_EVT3) {
+    ret = PIM_16Q_PHY_7NM;
+  /* EVT1 or EVT2 is 16nm */
+  } else if (val < PIM_16Q_EVT3) {
+    ret = PIM_16Q_PHY_16NM;
+  } else {
+    /* When PIM board rev is EVT3, some PIM is 16nm and some is 7nm,
+     * need to read Phy ID to identify 7nm or 16nm */
+    if (pal_pim_is_7nm(fru))
+      ret = PIM_16Q_PHY_7NM;
+    else
+      ret = PIM_16Q_PHY_16NM;
+  }
+
+  return ret;
+}
+
+int
+pal_set_pim_phy_type_to_file(uint8_t fru, char *type) {
+  char fru_name[16];
+  char key[MAX_KEY_LEN];
+
+  pal_get_fru_name(fru, fru_name);
+  snprintf(key, sizeof(key), "%s_phy_type", fru_name);
+
+  return kv_set(key, type, 0, 0);
+}
+
+int
+pal_get_pim_phy_type_from_file(uint8_t fru) {
+  char fru_name[16];
+  char key[MAX_KEY_LEN];
+  char type[12] = {0};
+
+  pal_get_fru_name(fru, fru_name);
+  snprintf(key, sizeof(key), "%s_phy_type", fru_name);
+
+  if (kv_get(key, type, NULL, 0)) {
+    return -1;
+  }
+
+  if (!strncmp(type, "7nm", sizeof("7nm"))) {
+    return PIM_16Q_PHY_7NM;
+  } else if (!strncmp(type, "16nm", sizeof("16nm"))) {
+    return PIM_16Q_PHY_16NM;
+  } else {
+    return PIM_16Q_PHY_UNKNOWN;
+  }
+}
+
 static int
 pal_key_check(char *key) {
   int i;

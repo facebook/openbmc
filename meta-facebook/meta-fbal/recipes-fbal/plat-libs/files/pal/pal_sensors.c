@@ -2632,6 +2632,8 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
   switch(snr_num) {
     case MB_SNR_CPU0_TEMP:
     case MB_SNR_CPU1_TEMP:
+    case MB_SNR_CPU2_TEMP:
+    case MB_SNR_CPU3_TEMP:
       cpu_id = snr_num - MB_SNR_CPU0_TEMP;
       sprintf(cmd, "P%d Temp %s %3.0fC - Assert",cpu_id, thresh_name, val);
       break;
@@ -2697,6 +2699,8 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   switch(snr_num) {
     case MB_SNR_CPU0_TEMP:
     case MB_SNR_CPU1_TEMP:
+    case MB_SNR_CPU2_TEMP:
+    case MB_SNR_CPU3_TEMP:
       cpu_id = snr_num - MB_SNR_CPU0_TEMP;
       sprintf(cmd, "P%d Temp %s %3.0fC - Deassert",cpu_id, thresh_name, val);
       break;

@@ -21,6 +21,8 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal:"
 
 SRC_URI += " \
     file://plat/meson.build \
+    file://pal-pim.c \
+    file://pal-pim.h \
     file://pal_power.c \
     file://pal_power.h \
     file://pal_sensors.c \
@@ -33,6 +35,7 @@ DEPENDS += " \
     libbic \
     libgpio-ctrl \
     liblog \
+    libmisc-utils \
     libobmc-i2c \
     libsensor-correction \
     libwedge-eeprom \
@@ -44,6 +47,7 @@ RDEPENDS_${PN} += " \
     libbic \
     libgpio-ctrl \
     liblog \
+    libmisc-utils \
     libobmc-i2c \
     libsensor-correction \
     libwedge-eeprom \

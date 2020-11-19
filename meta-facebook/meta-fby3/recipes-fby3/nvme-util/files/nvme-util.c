@@ -34,7 +34,7 @@ static uint8_t m_intf = 0;
 
 static void
 print_usage_help(void) {
-  printf("Usage: nvme-util slot1 <2U-dev[0..n]> <register> <read length> <[0..n]data_bytes_to_send>\n");
+  printf("Usage: nvme-util <slot1|slot3> <2U-dev[0..n]> <register> <read length> <[0..n]data_bytes_to_send>\n");
 }
 
 static int

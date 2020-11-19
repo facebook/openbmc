@@ -241,6 +241,8 @@ pim_monitor_handler(void *unused) {
   uint8_t curr_state = 0x00;
   uint8_t pim_type;
   uint8_t pim_pedigree;
+  uint8_t pim_phy_type;
+  char *pim_phy_type_str = NULL;
   uint8_t pim_type_old[10] = {PIM_TYPE_UNPLUG};
   uint8_t interval[10];
   bool thresh_first[10];
@@ -275,9 +277,25 @@ pim_monitor_handler(void *unused) {
               if (!pal_set_pim_pedigree_to_file(fru, "none")) {
                 syslog(LOG_WARNING,
                       "pal_set_pim_pedigree_to_file: PIM %d For PIM16Q set pedigree to none", num);
-              }else{
+              } else {
                 syslog(LOG_WARNING,
                       "pal_set_pim_pedigree_to_file: PIM %d set none failed", num);
+              }
+
+              pim_phy_type = pal_get_pim_phy_type(fru, PIM_RETRY);
+              if (pim_phy_type == PIM_16Q_PHY_7NM) {
+                pim_phy_type_str = "7nm";
+              } else if (pim_phy_type == PIM_16Q_PHY_16NM) {
+                pim_phy_type_str = "16nm";
+              } else {
+                pim_phy_type_str = "unknown";
+              }
+              if (!pal_set_pim_phy_type_to_file(fru, pim_phy_type_str)) {
+                syslog(LOG_INFO,
+                      "pal_set_pim_phy_type_to_file: PIM %d set phy type %s", num, pim_phy_type_str);
+              } else {
+                syslog(LOG_WARNING,
+                      "pal_set_pim_phy_type_to_file: PIM %d fail to set phy type", num);
               }
             } else if (pim_type == PIM_TYPE_16O) {
               if (!pal_set_pim_type_to_file(fru, "16o")) {

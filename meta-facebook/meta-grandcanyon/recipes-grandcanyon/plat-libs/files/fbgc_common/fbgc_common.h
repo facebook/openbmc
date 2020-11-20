@@ -44,6 +44,8 @@ extern "C" {
 #define ARRAY_SIZE(a)   (sizeof(a) / sizeof((a)[0]))
 #endif
 
+#define SERVER_SENSOR_LOCK "/var/run/sensor_read_server.lock"
+
 enum {
   FRU_ALL = 0,
   FRU_SERVER,

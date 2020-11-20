@@ -4,14 +4,24 @@
 #include <openbmc/obmc_pal_sensors.h>
 #include <facebook/exp.h>
 
-#define MAX_SENSOR_NUM         (0xFF)
-#define MAX_DEVICE_NAME_SIZE   (128)
-#define MAX_SENSOR_NAME_SIZE   (32)
+#define MAX_SENSOR_NUM               (0xFF)
+#define MAX_DEVICE_NAME_SIZE         (128)
+#define MAX_SENSOR_NAME_SIZE         (32)
 
-#define NIC_INFO_SLAVE_ADDR    (0x3E)
-#define NIC_INFO_TEMP_CMD      (0x1)
+#define NIC_INFO_SLAVE_ADDR          (0x3E)
+#define NIC_INFO_TEMP_CMD            (0x1)
 
-#define MAX_EXP_IPMB_SENSOR_COUNT 40
+#define MAX_EXP_IPMB_SENSOR_COUNT    40
+
+#define MAX_RETRY                    3
+#define MAX_SDR_PATH                 32
+#define SDR_PATH                     "/tmp/sdr_%s.bin"
+#define SDR_TYPE_FULL_SENSOR_RECORD  0x1
+
+// BIC read error
+#define BIC_SNR_FLAG_READ_NA         (1 << 5)
+
+#define READING_SKIP                 1
 
 typedef struct {
   float ucr_thresh;
@@ -41,6 +51,28 @@ enum {
   FAN,
   PERCENT,
   POWER,
+};
+
+// Sensors under Barton Springs (BS)
+enum {
+  BS_INLET_TEMP = 0x01,
+  BS_P12V_STBY = 0x02,
+  BS_P3V3_STBY = 0x03,
+  BS_P1V05_STBY = 0x04,
+  BS_P3V_BAT = 0x05,
+  BS_PVNN_PCH_STBY = 0x06,
+  BS_HSC_TEMP = 0x07,
+  BS_HSC_IN_VOLT = 0x08,
+  BS_HSC_IN_PWR = 0x09,
+  BS_HSC_OUT_CUR = 0x0A,
+  BS_BOOT_DRV_TEMP = 0x0B,
+  BS_PCH_TEMP = 0x0C,
+  BS_DIMM1_TEMP = 0x0D,
+  BS_DIMM2_TEMP = 0x0E,
+  BS_DIMM3_TEMP = 0x0F,
+  BS_DIMM4_TEMP = 0x10,
+  BS_VR_VCCIO_TEMP = 0x11,
+  BS_CPU_TEMP = 0x12,
 };
 
 // Sensors under User Interface Card (UIC)

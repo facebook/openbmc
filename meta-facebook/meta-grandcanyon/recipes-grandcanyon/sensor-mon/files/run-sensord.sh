@@ -2,6 +2,6 @@
 
 echo -n "Setup sensor monitoring for FBGC... "
 
-FRUS="uic nic"
+FRUS="server uic nic"
 
 exec /usr/local/bin/sensord $FRUS

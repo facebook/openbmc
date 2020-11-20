@@ -23,6 +23,9 @@ static int read_nic_temp(uint8_t nic_id, float *value);
 static bool is_dpb_sensor_cached = false;
 static bool is_scc_sensor_cached = false;
 
+static sensor_info_t g_sinfo[MAX_SENSOR_NUM] = {0};
+static bool is_sdr_init[FRU_CNT] = {false};
+
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}, unit}
 PAL_SENSOR_MAP uic_sensor_map[] = {
   [UIC_ADC_P12V_DPB] =
@@ -348,8 +351,29 @@ PAL_SENSOR_MAP nic_sensor_map[] = {
   {"MEZZ_SENSOR_TEMP", MEZZ, read_nic_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
 };
 
+const uint8_t server_sensor_list[] = {
+  BS_INLET_TEMP,
+  BS_P12V_STBY,
+  BS_P3V3_STBY,
+  BS_P1V05_STBY,
+  BS_P3V_BAT,
+  BS_PVNN_PCH_STBY,
+  BS_HSC_TEMP,
+  BS_HSC_IN_VOLT,
+  BS_HSC_IN_PWR,
+  BS_HSC_OUT_CUR,
+  BS_BOOT_DRV_TEMP,
+  BS_PCH_TEMP,
+  BS_DIMM1_TEMP,
+  BS_DIMM2_TEMP,
+  BS_DIMM3_TEMP,
+  BS_DIMM4_TEMP,
+  BS_VR_VCCIO_TEMP,
+  BS_CPU_TEMP,
+};
+
 const uint8_t uic_sensor_list[] = {
-  UIC_ADC_P12V_DPB ,
+  UIC_ADC_P12V_DPB,
   UIC_ADC_P12V_STBY,
   UIC_ADC_P5V_STBY,
   UIC_ADC_P3V3_STBY,
@@ -537,6 +561,7 @@ PAL_TEMP_DEV_INFO temp_dev_list[] = {
   {"tmp75-i2c-4-4a",  "UIC_INLET_TEMP"},
 };
 
+size_t server_sensor_cnt = ARRAY_SIZE(server_sensor_list);
 size_t uic_sensor_cnt = ARRAY_SIZE(uic_sensor_list);
 size_t dpb_sensor_cnt = ARRAY_SIZE(dpb_sensor_list);
 size_t scc_sensor_cnt = ARRAY_SIZE(scc_sensor_list);
@@ -545,6 +570,10 @@ size_t nic_sensor_cnt = ARRAY_SIZE(nic_sensor_list);
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   switch(fru) {
+  case FRU_SERVER:
+    *sensor_list = (uint8_t *) server_sensor_list;
+    *cnt = server_sensor_cnt;
+    break;
   case FRU_UIC:
     *sensor_list = (uint8_t *) uic_sensor_list;
     *cnt = uic_sensor_cnt;
@@ -800,6 +829,215 @@ expander_sensor_read_cache(uint8_t fru, uint8_t sensor_num, char *key, void *val
   return ret;
 }
 
+static int
+get_sdr_path(uint8_t fru, char *path) {
+  char fru_name[MAX_FRU_CMD_STR] = {0};
+
+  switch(fru) {
+  case FRU_SERVER:
+    if (pal_get_fru_name(fru, fru_name) < 0) {
+      return PAL_ENOTSUP;
+    }
+    break;
+  default:
+    syslog(LOG_WARNING, "%s() Wrong fru id %u\n", __func__, fru);
+    return PAL_ENOTSUP;
+  }
+
+  snprintf(path, MAX_SDR_PATH, SDR_PATH, fru_name);
+  if (access(path, F_OK) == -1) {
+    //Todo: enable it after BIC ready
+    //syslog(LOG_WARNING, "%s() Failed to access %s, err: %s\n", __func__, path, strerror(errno));
+    return PAL_ENOTSUP;
+  }
+
+  return PAL_EOK;
+}
+
+static int
+read_sdr_info(char *path, sensor_info_t *sinfo) {
+  int fd = 0, ret = 0;
+  uint8_t bytes_rd = 0, snr_num = 0;
+  sdr_full_t *sdr_buf = NULL;
+
+  if (access(path, F_OK) == -1) {
+    syslog(LOG_WARNING, "%s() Failed to access %s, err: %s\n", __func__, path, strerror(errno));
+    return -1;
+  }
+
+  fd = open(path, O_RDONLY);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open %s, err: %s\n", __func__, path, strerror(errno));
+    return -1;
+  }
+
+  ret = pal_flock_retry(fd);
+  if (ret == -1) {
+    syslog(LOG_WARNING, "%s() Failed to flock on %s, err: %s\n", __func__, path, strerror(errno));
+    goto end;
+  }
+
+  sdr_buf = calloc(1, sizeof(sdr_full_t));
+  if (sdr_buf == NULL) {
+    syslog(LOG_WARNING, "%s() Failed to calloc sdr structure, size: %d bytes\n", __func__, sizeof(sdr_full_t));
+    ret = -1;
+    goto end;
+  }
+
+  while ((bytes_rd = read(fd, sdr_buf, sizeof(sdr_full_t))) > 0) {
+    if (bytes_rd != sizeof(sdr_full_t)) {
+      syslog(LOG_WARNING, "%s() Read error: returns %u bytes\n", __func__, bytes_rd);
+      ret = -1;
+      goto end;
+    }
+
+    snr_num = sdr_buf->sensor_num;
+    sinfo[snr_num].valid = true;
+
+    memcpy(&sinfo[snr_num].sdr, sdr_buf, sizeof(sdr_full_t));
+  }
+
+end:
+  if (sdr_buf != NULL) {
+    free(sdr_buf);
+  }
+  if (fd >= 0) {
+    if (pal_unflock_retry(fd) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to unflock on %s, err: %s", __func__, path, strerror(errno));
+    }
+    close(fd);
+  }
+
+  return ret;
+}
+
+static int
+sdr_init(uint8_t fru) {
+  if (is_sdr_init[fru] == false) {
+    if (pal_sensor_sdr_init(fru, g_sinfo) < 0) {
+      return PAL_ENOTREADY;
+    }
+    is_sdr_init[fru] = true;
+  }
+
+  return 0;
+}
+
+/*
+ * Ref: IPMI spec v2 Section:36.3
+ *
+ * y = (mx + b * 10^b_exp) * 10^r_exp
+ */
+static int
+convert_sensor_reading(sdr_full_t *sdr, uint8_t sensor_value, float *out_value) {
+  int x = 0;
+  uint8_t m_lsb = 0, m_msb = 0;
+  uint16_t m = 0;
+  uint8_t b_lsb = 0, b_msb = 0;
+  uint16_t b = 0;
+  int8_t b_exp = 0, r_exp = 0;
+
+  if ((sdr->sensor_units1 & 0xC0) == 0x00) {  // unsigned
+    x = sensor_value;
+  } else if ((sdr->sensor_units1 & 0xC0) == 0x40) {  // 1's complements
+    x = (sensor_value & 0x80) ? (0-(~sensor_value)) : sensor_value;
+  } else if ((sdr->sensor_units1 & 0xC0) == 0x80) {  // 2's complements
+    x = (int8_t)sensor_value;
+  } else { // Does not return reading
+    return ERR_SENSOR_NA;
+  }
+
+  m_lsb = sdr->m_val;
+  m_msb = sdr->m_tolerance >> 6;
+  m = (m_msb << 8) | m_lsb;
+
+  b_lsb = sdr->b_val;
+  b_msb = sdr->b_accuracy >> 6;
+  b = (b_msb << 8) | b_lsb;
+
+  // exponents are 2's complement 4-bit number
+  b_exp = sdr->rb_exp & 0xF;
+  if (b_exp > 7) {
+    b_exp = (~b_exp + 1) & 0xF;
+    b_exp = -b_exp;
+  }
+
+  r_exp = (sdr->rb_exp >> 4) & 0xF;
+  if (r_exp > 7) {
+    r_exp = (~r_exp + 1) & 0xF;
+    r_exp = -r_exp;
+  }
+
+  *out_value = (float)(((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp)));
+
+  return 0;
+}
+
+static int
+pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value) {
+  ipmi_sensor_reading_t sensor = {0};
+  sdr_full_t *sdr = NULL;
+
+  if (access(SERVER_SENSOR_LOCK, F_OK) == 0) { // BIC is updating VR
+    return READING_SKIP;
+  }
+
+  /* Todo: Wait BIC lib ready
+  if (bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);
+    return ERR_SENSOR_NA;
+  } */
+
+  if (sensor.flags & BIC_SNR_FLAG_READ_NA) {
+    return ERR_SENSOR_NA;
+  }
+
+  sdr = &g_sinfo[sensor_num].sdr;
+  if (sdr->type != SDR_TYPE_FULL_SENSOR_RECORD) {
+    *value = sensor.value;
+    return 0;
+  }
+
+  return convert_sensor_reading(sdr, sensor.value, value);
+}
+
+int
+pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
+  char path[MAX_SDR_PATH] = {0};
+  int retry = MAX_RETRY;
+  int ret = 0;
+
+  if (fru != FRU_SERVER) {
+    return PAL_ENOTSUP;
+  }
+
+  if (is_sdr_init[fru] == true) {
+    memcpy(sinfo, g_sinfo, sizeof(sensor_info_t) * MAX_SENSOR_NUM);
+    goto end;
+  }
+
+  ret = get_sdr_path(fru, path);
+  if (ret < 0) {
+    goto end;
+  }
+
+  while (retry-- > 0) {
+    ret = read_sdr_info(path, sinfo);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() Failed to run _sdr_init, retry..%d\n", __func__, retry);
+      msleep(200);
+      continue;
+    } else {
+      memcpy(g_sinfo, sinfo, sizeof(sensor_info_t) * MAX_SENSOR_NUM);
+      is_sdr_init[fru] = true;
+      break;
+    }
+  }
+
+end:
+  return ret;
+}
+
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
@@ -816,6 +1054,13 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   snprintf(key, sizeof(key), "%s_sensor%d", fru_name, sensor_num);
 
   switch(fru) {
+  case FRU_SERVER:
+    if (sdr_init(fru) == PAL_ENOTREADY) {
+      ret = ERR_SENSOR_NA;
+    } else {
+      ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value);
+    }
+    break;
   case FRU_UIC:
     id = uic_sensor_map[sensor_num].id;
     ret = uic_sensor_map[sensor_num].read_sensor(id, (float*) value);

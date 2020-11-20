@@ -6,6 +6,7 @@ pal_deps += [
     cc.find_library('gpio-ctrl'),
     cc.find_library('fbgc_gpio'),
     cc.find_library('exp'),
+    cc.find_library('m'),
     ]
 
 pal_sources += [

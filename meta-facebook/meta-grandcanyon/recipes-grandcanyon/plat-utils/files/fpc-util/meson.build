@@ -8,7 +8,7 @@ cc = meson.get_compiler('c')
 
 dep_libs = [
     cc.find_library('pal'),
-    cc.find_library('ipmi'),
+    dependency('libipmi'),
     dependency('libipmb'),
 ]
 

@@ -25,11 +25,11 @@ pal_sources = [
 
 # Add additional library dependencies.
 pal_deps = [
-    cc.find_library('ipmi'),
     cc.find_library('rt'),
-    dependency('threads'),
     dependency('libipmb'),
+    dependency('libipmi'),
     dependency('libkv'),
+    dependency('threads'),
     ]
 
 # Import the plat-specific subdirectory for platform

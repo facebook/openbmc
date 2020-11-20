@@ -15,8 +15,17 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-SYSFS_I2C_DEVICES="/sys/bus/i2c/devices"
-SYSFS_I2C_DRIVERS="/sys/bus/i2c/drivers"
+SYSFS_I2C_ROOT="/sys/bus/i2c"
+SYSFS_I2C_DEVICES="${SYSFS_I2C_ROOT}/devices"
+SYSFS_I2C_DRIVERS="${SYSFS_I2C_ROOT}/drivers"
+
+#
+# Return the given i2c device's absolute sysfs path.
+# $1 - i2c device in <bus>-00<add> format (for example 0-0050).
+#
+i2c_device_sysfs_abspath() {
+    echo "${SYSFS_I2C_DEVICES}/${1}"
+}
 
 #
 # instantiate an i2c device.
@@ -25,13 +34,10 @@ SYSFS_I2C_DRIVERS="/sys/bus/i2c/drivers"
 # $3 - device name/type
 #
 i2c_device_add() {
-    local bus
-    local addr
-    local device
     bus=$"$1"
     addr="$2"
     device="$3"
-    echo ${device} ${addr} > /sys/class/i2c-dev/i2c-${bus}/device/new_device
+    echo "$device" "$addr" > "${SYSFS_I2C_DEVICES}/i2c-${bus}/new_device"
 }
 
 #
@@ -40,11 +46,9 @@ i2c_device_add() {
 # $2 - device address
 #
 i2c_device_delete() {
-    local bus
-    local addr
     bus=$"$1"
     addr="$2"
-    echo ${addr} > /sys/class/i2c-dev/i2c-${bus}/device/delete_device
+    echo "$addr" > "${SYSFS_I2C_DEVICES}/i2c-${bus}/delete_device"
 }
 
 #
@@ -53,11 +57,11 @@ i2c_device_delete() {
 # $2 - slave device address
 #
 i2c_mslave_add() {
-    local bus=$1
-    local addr=$2
+    bus=$1
+    addr=$2
 
     addr=$((addr | 0x1000))
-    i2c_device_add $bus $addr slave-mqueue
+    i2c_device_add "$bus" "$addr" slave-mqueue
 }
 
 #
@@ -66,23 +70,24 @@ i2c_mslave_add() {
 # $1 - parent bus number
 # $2 - i2c-mux device address
 # $3 - i2c-mux device name/type
-# $4 - bus number of the last i2c-mux channel
 #
 i2c_mux_add_sync() {
+    bus="$1"
+    addr="$2"
+    name="$3"
+
+    i2c_device_add "$bus" "$addr" "$name"
+
     retry=0
-    max_retry=100
-    bus_dir="/sys/class/i2c-dev/i2c-${4}"
-
-    i2c_device_add ${1} ${2} ${3}
-
-    until [ -d ${bus_dir} ]
-    do
-        usleep 2000 # sleep for 2 milliseconds
+    format_addr=$(printf "%04x" "$addr")
+    dev_entry="${bus}-${format_addr}"
+    last_channel="${SYSFS_I2C_DEVICES}/${dev_entry}/channel-7"
+    until [ -d "${last_channel}" ]; do
+        usleep 10000 # sleep for 10 milliseconds
 
         retry=$((retry + 1))
-        if [ $retry -ge ${max_retry} ]
-        then
-            echo "failed to create child buses for i2c-mux ${1}-${2}!"
+        if [ "$retry" -ge 10 ]; then
+            echo "failed to create child buses for i2c-mux $dev_entry!"
             return 1
         fi
     done
@@ -120,43 +125,36 @@ i2c_driver_map() {
 #
 # Trigger driver binding manually
 # $1 - driver name
-# $2 - device path in <bus>-<addr> format.
+# $2 - device path in <bus>-00<addr> format.
+# $3 - retry count, optional argument (default 1: no retry).
 #
 i2c_bind_driver() {
-    local retry=0
-    local retry_max=2
-    local sleep_cnt=0
-    local sleep_max=20
-    local driver_name=${1}
-    local i2c_dev=${2}
-    local driver_dir="${SYSFS_I2C_DRIVERS}/${driver_name}"
-    local driver_link="${SYSFS_I2C_DEVICES}/${i2c_dev}/driver"
+    driver_name="$1"
+    i2c_device="$2"
+    driver_dir="${SYSFS_I2C_DRIVERS}/${driver_name}"
+
+    if [ -n "$3" ]; then
+        retries="$3"
+    else
+        retries=1
+    fi
 
     if [ ! -d ${driver_dir} ]; then
         echo "unable to locate i2c driver ${driver_name} in sysfs"
         return 1
     fi
 
-    until [ -L ${driver_link} ]
-    do
-        if [ $retry -ge ${retry_max} ]; then
-            echo "failed to bind ${i2c_dev} after ${retry} retries"
-            return 1
+    retry=0
+    while [ "$retry" -lt "$retries" ]; do
+        if echo "${i2c_device}" > "${driver_dir}/bind"; then
+            return 0
         fi
-        echo ${i2c_dev} > "${driver_dir}/bind" 2> /dev/null
 
-        sleep_cnt=0
-        while [ ! -L ${driver_link} ] && [ ${sleep_cnt} -lt ${sleep_max} ]
-        do
-            usleep 500 # sleep for 500 microseconds
-            sleep_cnt=$((sleep_cnt + 1))
-        done
-
+        usleep 50000  # sleep for 50 milliseconds
         retry=$((retry + 1))
     done
 
-    echo "${i2c_dev} bound to driver ${driver_name} successfully"
-    return 0
+    return 1
 }
 
 #
@@ -164,20 +162,24 @@ i2c_bind_driver() {
 # are not claimed by drivers (due to scheduling delay, missing drivers,
 # intermittent i2c transaction errors in device_probe() function, and
 # etc.).
-# If callers pass "fix-binding" parameter, then the function will try to
-# manually bind devices (without drivers) to drivers if possible.
-# $1 - fix driver binding
+# $1 - "fix-binding" flag. Optional argument: if $1 is "fix-binding",
+#      the function will try to lookup drivers and fix driver binding.
+#      Otherwise, nothing is done for "missing-driver" devices.
+# $2 - retry count. It defines number of retries in case of driver
+#      binding failures.
 #
 i2c_check_driver_binding() {
-    local total_devs=0
-    local errors=0
-    local errors_fixed=0
-    local fix_binding
-    local sum_info result_info
-    local driver_name dev_name dev_path dev_uid
+    errors=0
+    errors_fixed=0
+    total_devs=0
 
-    if [ "$1" = "fix-binding" ]; then
+    if [ -n "$1" ] && [ "$1" = "fix-binding" ]; then
         fix_binding=1
+    fi
+    if [ -n "$2" ]; then
+        retries="$2"
+    else
+        retries=1
     fi
 
     echo "checking i2c driver binding status"
@@ -202,7 +204,7 @@ i2c_check_driver_binding() {
             fi
 
             echo "manually bind ${dev_uid} to driver ${driver_name}"
-            if i2c_bind_driver "${driver_name}" "${dev_uid}"; then
+            if i2c_bind_driver "${driver_name}" "${dev_uid}" "$retries"; then
                 errors_fixed=$((errors_fixed + 1))
             fi
         fi
@@ -220,12 +222,4 @@ i2c_check_driver_binding() {
         result_info="${result_info} ($errors_fixed manually fixed)"
     fi
     echo "${sum_info}: ${result_info}"
-}
-
-#
-# Return the given i2c device's absolute sysfs path.
-#
-i2c_device_sysfs_abspath() {
-    local i2c_dev=$1
-    echo "${SYSFS_I2C_DEVICES}/${i2c_dev}"
 }

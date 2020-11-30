@@ -106,6 +106,11 @@ err_t last_panic_err[] = {
   {0x09, "LAST_PANIC_ACM_BIOS_AUTH_FAILED"},
 };
 
+char *host_key[] = {"fru1_host_ready",
+                    "fru2_host_ready",
+                    "fru3_host_ready",
+                    "fru4_host_ready"};
+
 static inline void set_pwrgd_cpu_flag(uint8_t fru, bool val){
   pthread_mutex_lock(&pwrgd_cpu_mutex[fru-1]);
   is_pwrgd_cpu_chagned[fru-1] = val;
@@ -368,7 +373,7 @@ check_pfr_mailbox(uint8_t fru) {
 static void *
 gpio_monitor_poll(void *ptr) {
 
-  int i, ret = 0;
+  int i, ret = 0, retry = 0;
   uint8_t fru = (int)ptr;
   bool is_bmc_ready = false;
   bic_gpio_t revised_pins, n_pin_val, o_pin_val;
@@ -405,6 +410,7 @@ gpio_monitor_poll(void *ptr) {
     if ( bic_get_gpio(fru, &n_pin_val, NONE_INTF) < 0 ) {
       //rst timer
       rst_timer(fru);
+      kv_set(host_key[fru-1], "0", 0, 0);
 
       //rst old & new pin val
       memset(&o_pin_val, 0, sizeof(o_pin_val));
@@ -428,8 +434,15 @@ gpio_monitor_poll(void *ptr) {
                        (GET_BIT(n_pin_val, RST_RSMRST_BMC_N) << 0x2) | \
                        (GET_BIT(n_pin_val, FM_CPU_MSMI_CATERR_LVT3_N ) << 0x3) | \
                        (GET_BIT(n_pin_val, FM_SLPS3_R_N) << 0x4);
-
-    bios_post_cmplt[fru-1] = (GET_BIT(n_pin_val, FM_BIOS_POST_CMPLT_BMC_N) == 0x0)? true:false;
+    if (GET_BIT(n_pin_val, FM_BIOS_POST_CMPLT_BMC_N) == 0x0) {
+      if (retry == MAX_READ_RETRY*3) {
+        bios_post_cmplt[fru-1] = true;
+        retry = 0;
+      }
+      retry++;
+    } else {
+      bios_post_cmplt[fru-1] = false;
+    }
 
     //check PWRGD_CPU_LVC3_R is changed
     if ( (get_pwrgd_cpu_flag(fru) == false) && 
@@ -577,10 +590,6 @@ host_pwr_mon() {
   int retry = 0;
   long int tick = 0;
   int power_off_delay = NON_PFR_POWER_OFF_DELAY;
-  char *host_key[] = {"fru1_host_ready",
-                      "fru2_host_ready",
-                      "fru3_host_ready",
-                      "fru4_host_ready"};
 
   pthread_detach(pthread_self());
 
@@ -627,7 +636,9 @@ host_pwr_mon() {
           kv_set(host_key[fru-1], "1", 0, 0);
         }
       } else {
-        if ( tick == 0 ) kv_set(host_key[fru-1], "0", 0, 0);
+        if ( tick == 0 ) {
+          kv_set(host_key[fru-1], "0", 0, 0);
+        }
       }
 
       if ( (tick == power_off_delay) || (tick == POWER_ON_DELAY) ) {

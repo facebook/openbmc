@@ -1,7 +1,7 @@
 {
   "version": "FSC6.3",
-  "pwm_transition_value": 100,
-  "pwm_boost_value": 60,
+  "pwm_transition_value": 60,
+  "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
   "sample_interval_ms": 3000,
   "boost": {
@@ -13,6 +13,11 @@
     "action": "host_shutdown"
   },
   "sensor_valid_check": {
+    "front_io_temp": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
     "soc_cpu": {
       "attribute": {
         "type" : "power_status"

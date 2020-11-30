@@ -866,8 +866,8 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const ui
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   uint8_t bmc_location = 0, type = 0;
-  int ret = 0;
-  uint8_t config_status = 0, board_type = 0;
+  int ret = 0, config_status = 0;
+  uint8_t board_type = 0;
   uint8_t current_cnt = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
@@ -897,6 +897,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     memcpy(bic_dynamic_sensor_list[fru-1], bic_sensor_list, bic_sensor_cnt);
     current_cnt = bic_sensor_cnt;
     config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
+    if (config_status < 0) config_status = 0;
 
     // 1OU
     if ( (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {

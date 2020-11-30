@@ -205,7 +205,7 @@ int BmcCpldComponent::update_cpld(string image)
   }
 
   if (slot_found != string::npos) {
-    bmc_location_str = "SB";
+    bmc_location_str = fru_name+ " " + "SB";
   }
 
   syslog(LOG_CRIT, "Updating CPLD on %s. File: %s", bmc_location_str.c_str(), image_tmp.c_str());

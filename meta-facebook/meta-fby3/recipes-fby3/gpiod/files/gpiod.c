@@ -622,14 +622,20 @@ host_pwr_mon() {
       //record which slot is off
       if ( tick <= power_off_delay ) {
         if ( (get_pwrgd_cpu_flag(fru) == true) && (tick == power_off_delay) ) {
+          sprintf(path, PWR_UTL_LOCK, fru);
+          if (access(path, F_OK) != 0) {
+            pal_set_last_pwr_state(fru, "off");
+          }
           syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
-          pal_set_last_pwr_state(fru, "off");
         }
         host_off_flag |= 0x1 << i;
       } else if ( tick >= POWER_ON_DELAY ) {
         if ( (get_pwrgd_cpu_flag(fru) == true) && (tick == POWER_ON_DELAY) ) {
+          sprintf(path, PWR_UTL_LOCK, fru);
+          if (access(path, F_OK) != 0) {
+            pal_set_last_pwr_state(fru, "on");
+          }
           syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
-          pal_set_last_pwr_state(fru, "on");
         }
         host_off_flag &= ~(0x1 << i);
         if ( tick == HOST_READY || (bios_post_cmplt[fru-1] == true && tick < HOST_READY && tick > MONITOR_PLT_POST_DELAY)) {

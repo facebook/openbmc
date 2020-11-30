@@ -38,6 +38,21 @@ function run_cmd() {
   /usr/bin/bic-util $1 >> $LOG
 }
 
+function init_vishay_gpv3_ic() {
+  local slot=$1
+  local intf=$2
+  local VR_STBY1_ADDR="0x28"
+  local VR_STBY2_ADDR="0x2E"
+  local VR_STBY3_ADDR="0x30"
+  for addr in $VR_STBY1_ADDR $VR_STBY2_ADDR $VR_STBY3_ADDR; do
+    #Offset Vout 70mV
+    echo "$addr" >> $LOG
+    run_cmd "$slot 0xe0 0x02 0x9c 0x9c 0x0 $intf 0x18 0x52 0x03 $addr 0x00 0x22 0x09 0x00"
+    run_cmd "$slot 0xe0 0x02 0x9c 0x9c 0x0 $intf 0x18 0x52 0x03 $addr 0x00 0x03"
+    echo >> $LOG
+  done
+}
+
 function init_vishay_ic(){
   local slot=$1
   local intf=$2
@@ -104,7 +119,12 @@ function init_class2_sic(){
   echo "$slot" >> $LOG
   if [ $val = 0 ] || [ $val = 4 ]; then
     echo "2OU:" >> $LOG
-    init_vishay_ic $slot $REXP_INTF 
+    EXP_BOARD_TYPE=$(get_2ou_board_type 4) #only slot1
+    if ([ $EXP_BOARD_TYPE == "0x00" ] || [ $EXP_BOARD_TYPE == "0x03" ]); then
+      init_vishay_gpv3_ic $slot $REXP_INTF
+    else
+      init_vishay_ic $slot $REXP_INTF
+    fi
   else
     echo "2OU is not present" >> $LOG
   fi

@@ -46,8 +46,8 @@ PAL_SENSOR_MAP uic_sensor_map[] = {
   {"UIC_ADC_P1V2_STBY", ADC7, read_adc_val, true, {1.26, 0, 0, 1.08, 0, 0, 0, 0}, VOLT},
   [UIC_ADC_P1V0_STBY] =
   {"UIC_ADC_P1V0_STBY", ADC8, read_adc_val, true, {1.1, 0, 0, 0.9, 0, 0, 0, 0}, VOLT},
-  [UIC_P12V_UIC_ISENSE] =
-  {"UIC_P12V_UIC_ISENSE", ADC9, read_adc_val, true, {1.71, 0, 0, 0, 0, 0, 0, 0}, VOLT},
+  [UIC_P12V_ISENSE_CUR] =
+  {"UIC_P12V_ISENSE_CUR", ADC9, read_adc_val, true, {1.71, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [UIC_INLET_TEMP] =
   {"UIC_INLET_TEMP", TEMP_INLET, read_temp, true, {45, 0, 0, 0, 0, 0, 0, 0}, TEMP},
 };
@@ -382,7 +382,7 @@ const uint8_t uic_sensor_list[] = {
   UIC_ADC_P1V8_STBY,
   UIC_ADC_P1V2_STBY,
   UIC_ADC_P1V0_STBY,
-  UIC_P12V_UIC_ISENSE,
+  UIC_P12V_ISENSE_CUR,
   UIC_INLET_TEMP,
 };
 
@@ -554,7 +554,7 @@ const char *adc_label[] = {
   "ADC_P1V8_STBY",
   "ADC_P1V2_STBY",
   "ADC_P1V0_STBY",
-  "P12V_UIC_ISENSE",
+  "UIC_P12V_ISENSE_CUR",
 };
 
 PAL_TEMP_DEV_INFO temp_dev_list[] = {
@@ -605,10 +605,20 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 
 static int
 read_adc_val(uint8_t adc_id, float *value) {
+  int ret = 0;
+
   if (adc_id >= ARRAY_SIZE(adc_label)) {
     return ERR_SENSOR_NA;
   }
-  return sensors_read_adc(adc_label[adc_id], value);
+
+  ret = sensors_read_adc(adc_label[adc_id], value);
+
+  if (adc_id == ADC9) {
+    // Isense(A) = Vsense(V) * 10^6 / Igain(uA/A) / Rsense(ohm)
+    *value = (*value) * 1000000 / MAX15090_IGAIN / MAX15090_RSENSE;
+  }
+
+  return ret;
 }
 
 static int

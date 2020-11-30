@@ -23,6 +23,10 @@
 
 #define READING_SKIP                 1
 
+// MAX15090 INFO
+#define MAX15090_IGAIN               (220)  // unit: uA/A
+#define MAX15090_RSENSE              (4220) // unit: ohm
+
 typedef struct {
   float ucr_thresh;
   float unc_thresh;
@@ -86,7 +90,7 @@ enum {
   UIC_ADC_P1V8_STBY = 0x16,
   UIC_ADC_P1V2_STBY = 0x17,
   UIC_ADC_P1V0_STBY = 0x18,
-  UIC_P12V_UIC_ISENSE = 0x19,
+  UIC_P12V_ISENSE_CUR = 0x19,
   UIC_INLET_TEMP = 0x1A,
 };
 

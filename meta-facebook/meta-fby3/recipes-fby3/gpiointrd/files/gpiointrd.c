@@ -338,9 +338,9 @@ static void
   const char *shadows[] = {
     "ADAPTER_BUTTON_BMC_CO_N_R",
     "AC_ON_OFF_BTN_SLOT1_N",
-    "AC_ON_OFF_BTN_BMC_SLOT2_N_R",
+    "AC_ON_OFF_BTN_SLOT2_N",
     "AC_ON_OFF_BTN_SLOT3_N",
-    "AC_ON_OFF_BTN_BMC_SLOT4_N_R"
+    "AC_ON_OFF_BTN_SLOT4_N"
   };
   uint8_t action[BTN_ARRAY_SIZE] = {0};
   bool is_asserted[BTN_ARRAY_SIZE] = {0};

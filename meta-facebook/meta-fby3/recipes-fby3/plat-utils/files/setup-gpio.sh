@@ -213,9 +213,9 @@ elif [ $BOARD_ID -eq 14 ] || [ $BOARD_ID -eq 7 ]; then
   devmem_clear_bit $(scu_addr 84) 18
   devmem_clear_bit $(scu_addr 84) 19
   gpio_export AC_ON_OFF_BTN_SLOT1_N GPIOL0
-  gpio_export AC_ON_OFF_BTN_BMC_SLOT2_N_R GPIOL1
+  gpio_export AC_ON_OFF_BTN_SLOT2_N GPIOL1
   gpio_export AC_ON_OFF_BTN_SLOT3_N GPIOL2
-  gpio_export AC_ON_OFF_BTN_BMC_SLOT4_N_R GPIOL3
+  gpio_export AC_ON_OFF_BTN_SLOT4_N GPIOL3
 
   # GPIOL4-FAST_PROCHOT_BMC_N_R
   devmem_clear_bit $(scu_addr 84) 20

@@ -23,18 +23,16 @@ SRC_URI += "file://mTerm1/run \
             file://mTerm4/run \
             file://mTerm5/run \
             file://mTerm6/run \
-            file://mTerm7/run \
             file://mTerm-service-setup.sh \
            "
 
 S = "${WORKDIR}"
 
-# launch 7 mTerm services, 1 for each server
+# launch 6 mTerm services, 1 for each server
 MTERM_SERVICES = "mTerm1 \
                   mTerm2 \
                   mTerm3 \
                   mTerm4 \
                   mTerm5 \
                   mTerm6 \
-                  mTerm7 \
                  "

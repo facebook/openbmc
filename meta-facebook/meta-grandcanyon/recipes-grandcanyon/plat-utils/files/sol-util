@@ -21,21 +21,21 @@
 usage() {
   echo "Usage: sol-util server"
   echo "       sol-util server bic"
-  echo "       sol-util scc [ exp_smart | exp_sdb | ioc_smart | ioc_sdb] (baud rate)"
-  echo "       sol-util iocm [ ioc_smart | ioc_sdb]"
+  echo "       sol-util scc [ exp_smart | exp_sdb | ioc_smart ] (baud rate)"
+  echo "       sol-util iocm [ ioc_smart ]"
   echo "       sol-util server --history"
   exit -1
 }
 
 
-#                   BMC   Server   BIC   SCC Expander Smart   SCC Expander SDB   SCC IOC T5 Smart   SCC IOC T5 SDB   IOC T7
-#---------------------------------------------------------------------------------------------------------------------------------
-#UART select ID     0     1        2     3                    4                  5                  6                7
-#tty serial number  0     5        7     1                    2                  3                  6                8
-#option name        bmc   server   bic   scc_exp_smart        scc_exp_sdb        scc_ioc_smart      scc_ioc_sdb      iocm_ioc_smart
+#                   BMC   Server   BIC   SCC Expander Smart   SCC Expander SDB   SCC IOC T5 Smart   IOC T7
+#-----------------------------------------------------------------------------------------------------------------
+#UART select ID     0     1        2     3                    4                  5                  6
+#tty serial number  0     5        7     1                    2                  3                  8
+#option name        bmc   server   bic   scc_exp_smart        scc_exp_sdb        scc_ioc_smart      iocm_ioc_smart
 
-TTY_LIST=(0 5 7 1 2 3 6 8)
-OPTION_NAME=("bmc" "server" "bic" "scc_exp_smart" "scc_exp_sdb" "scc_ioc_smart" "scc_ioc_sdb" "iocm")
+TTY_LIST=(0 5 7 1 2 3 8)
+OPTION_NAME=("bmc" "server" "bic" "scc_exp_smart" "scc_exp_sdb" "scc_ioc_smart" "iocm_ioc_smart")
 
 # if mTerm server is running use mTerm_client to connect to userver
 # otherwise fallback to the old method
@@ -61,8 +61,6 @@ elif [ "$1" == "scc" ]; then
     ;;
     ioc_smart) UART_SEL_ID=5
     ;;
-    ioc_sdb) UART_SEL_ID=6
-    ;;
     *) usage
   esac
 
@@ -79,12 +77,8 @@ elif [ "$1" == "scc" ]; then
     usage
   fi
 elif [ "$1" == "iocm" ]; then
-  echo "For now, should manual send I2C command to UIC FPGA to select the UART MUX of IOC Module"
-  UART_SEL_ID=7
   case "$2" in
-    ioc_smart) # TODO: add command to select MUX
-    ;;
-    ioc_sdb) # TODO: add command to select MUX
+    ioc_smart) UART_SEL_ID=6
     ;;
     *) usage
   esac

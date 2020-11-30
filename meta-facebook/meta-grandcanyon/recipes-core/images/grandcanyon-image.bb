@@ -32,4 +32,5 @@ IMAGE_INSTALL += " \
   i2craw \
   healthd \
   cfg-util \
+  threshold-util \
   "

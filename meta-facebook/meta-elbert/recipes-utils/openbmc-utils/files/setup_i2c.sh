@@ -59,10 +59,19 @@ hwmon_device_add() {
     fi
 }
 
+# Calibrate TH4 MAX6581
+calibrate_th4_max6581() {
+    i2cset -f -y 4 0x4d 0x4a 0x03
+    i2cset -f -y 4 0x4d 0x4b 0x1f
+    i2cset -f -y 4 0x4d 0x4c 0x03
+}
+
 # Probe FSCD devices first in case one module is taking too
 # long or is in bad shape
 # Supvervisor Inlet
 hwmon_device_add 11 0x4c max6658
+hwmon_device_add 4 0x4d max6581
+calibrate_th4_max6581
 
 # SMBus 0
 # Currently not using I2C TPM

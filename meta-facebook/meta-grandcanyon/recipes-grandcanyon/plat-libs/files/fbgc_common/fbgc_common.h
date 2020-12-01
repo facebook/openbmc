@@ -46,6 +46,8 @@ extern "C" {
 
 #define SERVER_SENSOR_LOCK "/var/run/sensor_read_server.lock"
 
+#define MAX_PATH_LEN 128
+
 enum {
   FRU_ALL = 0,
   FRU_SERVER,

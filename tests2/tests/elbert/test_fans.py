@@ -30,10 +30,7 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         self.read_fans_cmd = "/usr/local/bin/get_fan_speed.sh"
         self.write_fans_cmd = "/usr/local/bin/set_fan_speed.sh"
         self.kill_fan_ctrl_cmd = ["/usr/bin/sv stop fscd", "/usr/local/bin/wdtcli stop"]
-        self.start_fan_ctrl_cmd = [
-            "/usr/local/bin/set_fan_speed.sh 40"
-        ]  # ELBERTTODO FSCD not enabled
-        #  self.start_fan_ctrl_cmd = ["/usr/bin/sv start fscd"]
+        self.start_fan_ctrl_cmd = ["/usr/bin/sv start fscd"]
 
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))

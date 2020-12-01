@@ -30,6 +30,6 @@
 
 echo "Setup fan speed..."
 /usr/local/bin/set_fan_speed.sh 30
-# ELBERTTODO Enable FSCD
-# runsv /etc/sv/fscd > /dev/null 2>&1 &
+# ELBERTTODO TUNE FSCD
+runsv /etc/sv/fscd > /dev/null 2>&1 &
 echo "done."

@@ -35,10 +35,11 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 1,
       "data": [
-        [25, 100],
-        [30, 150],
-        [35, 185],
-        [36, 255]
+        [25, 40],
+        [30, 50],
+        [35, 60],
+        [40, 80],
+        [45, 100]
       ]
     },
     "linear_th4": {
@@ -47,7 +48,7 @@
       },
       "read_limit": {
         "valid": {
-          "limit": 110,
+          "limit": 105,
           "threshold": 20,
           "action": "host_shutdown"
         },
@@ -61,8 +62,9 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 1,
       "data": [
-        [15, 100],
-        [110, 255]
+        [5, 40],
+        [95, 60],
+        [105, 100]
       ]
     }
   },

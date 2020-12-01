@@ -483,7 +483,7 @@ gpio_monitor_poll(void *ptr) {
         } else {
           if (i == RST_RSMRST_BMC_N) {
             printf("RST_RSMRST_BMC_N is DEASSERT !\n");
-#if 0
+
             //get power restore policy
             //defined by IPMI Spec/Section 28.2.
             pal_get_chassis_status(fru, NULL, chassis_sts, &chassis_sts_len);
@@ -512,7 +512,7 @@ gpio_monitor_poll(void *ptr) {
               }
               pal_set_server_power(fru, SERVER_POWER_ON);
             }
-
+#if 0
             check_pfr_mailbox(fru);
 #endif
           } else if (i == RST_PLTRST_BMC_N) {

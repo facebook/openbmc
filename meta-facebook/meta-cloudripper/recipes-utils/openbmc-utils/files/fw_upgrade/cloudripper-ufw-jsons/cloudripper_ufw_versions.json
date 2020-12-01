@@ -1,0 +1,50 @@
+{
+    "bic" : {
+        "filename":"bic.bin",
+        "version":"v1.11",
+        "hash":"sha1sum",
+        "hash_value":"c68590df17ee26a68d50e362a15062fe77444076"
+    },
+    "bios" : {
+        "filename":"bios.bin",
+        "version":"XG1_3A10",
+        "hash":"sha1sum",
+        "hash_value":"551423a4e9c12726750ea6c7c91b74ab1c3b044d"
+    },
+    "fcm" : {
+        "filename":"fcm_cpld.vme",
+        "version":"4.2",
+        "hash":"sha1sum",
+        "hash_value":"2c3321aba5ce4c82b75fb1ff647e8d7381cce338"
+    },
+    "pwr" : {
+        "filename":"pwr_cpld.vme",
+        "version":"1.0",
+        "hash":"sha1sum",
+        "hash_value":"606c4cd60030b49ab8b9fffb8b2d20eb7c4288ac"
+    },
+    "scm" : {
+        "filename":"scm_cpld.vme",
+        "version":"4.0",
+        "hash":"sha1sum",
+        "hash_value":"efb50fc075f9e636a946909ddb1b3e7941c1e434"
+    },
+    "smb" : {
+        "filename":"smb_cpld.vme",
+        "version":"1.4",
+        "hash":"sha1sum",
+        "hash_value":"bd7304ef43e43c6771cb5f180422e6d9dda5555d"
+    },
+    "fpga1" : {
+        "filename":"dom_fpga.bit",
+        "version":"1.4",
+        "hash":"sha1sum",
+        "hash_value":"24ddb5eb87c16f0e8417cd1e02ab068782ff3bb4"
+    },
+    "fpga2" : {
+        "filename":"dom_fpga.bit",
+        "version":"1.4",
+        "hash":"sha1sum",
+        "hash_value":"24ddb5eb87c16f0e8417cd1e02ab068782ff3bb4"
+    }
+}

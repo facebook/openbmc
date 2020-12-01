@@ -656,3 +656,9 @@ pal_is_fw_update_ongoing_system(void) {
 
   return false;
 }
+
+int
+pal_get_nic_fru_id(void)
+{
+  return FRU_NIC;
+}

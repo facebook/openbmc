@@ -33,4 +33,7 @@ IMAGE_INSTALL += " \
   healthd \
   cfg-util \
   threshold-util \
+  libncsi \
+  ncsid-v2 \
+  ncsi-util \
   "

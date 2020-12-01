@@ -22,6 +22,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
+i2c_device_add 0 0x50 24c512
 if ! wedge_is_bmc_personality; then
     echo "uServer is not in BMC personality. Skipping all power-on sequences."
     return
@@ -67,7 +68,6 @@ hwmon_device_add 11 0x4c max6658
 # Currently not using I2C TPM
 # i2c_device_add 0 0x20 tpm_i2c_infineon
 # i2c_device_add 0 0x2e tpm_i2c_infineon
-i2c_device_add 0 0x50 24c512
 
 # SMBus 3 - Switchcard ECB/VRD
 i2c_device_add 3 0x40 pmbus

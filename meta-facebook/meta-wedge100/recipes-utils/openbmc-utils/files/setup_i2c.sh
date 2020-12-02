@@ -33,7 +33,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # supplies are connected to channel #0 (14-005a) and #1 (15-0059).
 #
 if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
-    i2c_mux_add_sync 7 0x70 pca9548 21
+    i2c_mux_add_sync 7 0x70 pca9548 8
 fi
 
 # Bus 2

@@ -70,18 +70,21 @@ i2c_mslave_add() {
 # $1 - parent bus number
 # $2 - i2c-mux device address
 # $3 - i2c-mux device name/type
+# $4 - total number of channels provided by the i2c-mux
 #
 i2c_mux_add_sync() {
     bus="$1"
     addr="$2"
     name="$3"
+    nchans="$4"
 
     i2c_device_add "$bus" "$addr" "$name"
 
     retry=0
     format_addr=$(printf "%04x" "$addr")
     dev_entry="${bus}-${format_addr}"
-    last_channel="${SYSFS_I2C_DEVICES}/${dev_entry}/channel-7"
+    nchans=$((nchans - 1))
+    last_channel="${SYSFS_I2C_DEVICES}/${dev_entry}/channel-${nchans}"
     until [ -d "${last_channel}" ]; do
         usleep 10000 # sleep for 10 milliseconds
 

@@ -42,8 +42,8 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 #     decided to fix bus-number of leaf i2c-devices.
 #
 bulk_create_i2c_mux() {
-    last_child_bus=15
     i2c_mux_name="pca9548"
+    mux_channels=8
 
     # The first-level i2c-muxes which are directly connected to aspeed
     # i2c adapters are described in device tree, and the bus number of
@@ -61,8 +61,7 @@ bulk_create_i2c_mux() {
     mux_addresses="0x70 0x73"
     for bus in ${parent_buses}; do
         for addr in ${mux_addresses}; do
-            last_child_bus=$((last_child_bus + 8))
-            i2c_mux_add_sync ${bus} ${addr} ${i2c_mux_name} ${last_child_bus}
+            i2c_mux_add_sync "$bus" "$addr" "$i2c_mux_name" "$mux_channels"
         done
     done
 
@@ -72,8 +71,7 @@ bulk_create_i2c_mux() {
     # totally 32 i2c buses (168-199) will be registered.
     parent_buses="32 33 34 35"
     for bus in ${parent_buses}; do
-        last_child_bus=$((last_child_bus + 8))
-        i2c_mux_add_sync ${bus} 0x70 ${i2c_mux_name} ${last_child_bus}
+        i2c_mux_add_sync "$bus" 0x70 "$i2c_mux_name" "$mux_channels"
     done
 }
 

@@ -152,7 +152,7 @@ echo 0 > "$LC_SMB_MUX_RST"  # take the mux (2-0075) out of reset
 SMB_MUX_DEV="2-0075"
 SMB_MUX_PATH=$(i2c_device_sysfs_abspath "$SMB_MUX_DEV")
 if [ ! -d "$SMB_MUX_PATH" ]; then
-    i2c_mux_add_sync 2 0x75 pca9548
+    i2c_mux_add_sync 2 0x75 pca9548 8
 elif [ ! -L "${SMB_MUX_PATH}/driver" ]; then
     mux_driver="pca954x"
     echo "Manually bind $mux_driver to $SMB_MUX_DEV.."

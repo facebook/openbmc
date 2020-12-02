@@ -27,6 +27,16 @@
 #define MAX15090_IGAIN               (220)  // unit: uA/A
 #define MAX15090_RSENSE              (4220) // unit: ohm
 
+// NVMe INFO
+#define NVMe_SMBUS_ADDR              (0xD4)
+#define NVMe_GET_STATUS_CMD          (0x00)
+#define NVMe_GET_STATUS_LEN          (8)
+#define NVMe_TEMP_REG                (0x03)
+
+// ADC128 INFO
+#define ADC128_GIMON                 (52)    // unit: (uA/A)
+#define ADC128_RIMON                 (10000) // unit: (ohm)
+
 typedef struct {
   float ucr_thresh;
   float unc_thresh;
@@ -260,6 +270,14 @@ enum {
   PORT_0_LINK_STATE,
 };
 
+// E1.S sensors
+enum {
+  E1S1_CUR = 0x20,
+  E1S2_CUR = 0x21,
+  E1S1_TEMP = 0x22,
+  E1S2_TEMP = 0x23,
+};
+
 // ADC_INFO
 enum {
   ADC0 = 0,
@@ -289,6 +307,12 @@ enum {
   EXPANDER = 0,
 };
 
+// E1S INFO
+enum {
+  E1S1 = 0,
+  E1S2,
+};
+
 typedef struct {
   uint8_t id;
   uint8_t bus;
@@ -298,7 +322,7 @@ typedef struct {
 typedef struct {
   char *chip;
   char *label;
-} PAL_TEMP_DEV_INFO;
+} PAL_DEV_INFO;
 
 typedef struct {
   uint8_t sensor_num;

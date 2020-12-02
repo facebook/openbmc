@@ -240,8 +240,10 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_DPB:
     case FRU_SCC:
     case FRU_NIC:
-    case FRU_E1S_IOCM:
       *status = 1;
+      break;
+    case FRU_E1S_IOCM:
+      *status = (E1S1_PRESENT_BIT | E1S2_PRESENT_BIT);
       break;
     default:
       *status = 0;

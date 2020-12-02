@@ -47,6 +47,8 @@ extern "C" {
 #define SERVER_SENSOR_LOCK "/var/run/sensor_read_server.lock"
 
 #define MAX_PATH_LEN 128
+#define E1S1_PRESENT_BIT   (1 << 0)
+#define E1S2_PRESENT_BIT   (1 << 1)
 
 enum {
   FRU_ALL = 0,

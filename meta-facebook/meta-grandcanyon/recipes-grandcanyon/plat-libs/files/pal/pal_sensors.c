@@ -19,6 +19,9 @@
 static int read_adc_val(uint8_t adc_id, float *value);
 static int read_temp(uint8_t id, float *value);
 static int read_nic_temp(uint8_t nic_id, float *value);
+static int read_e1s_temp(uint8_t e1s_id, float *value);
+static int read_e1s_curr(uint8_t e1s_id, float *value);
+static bool is_e1s_present(uint8_t e1s_id);
 
 static bool is_dpb_sensor_cached = false;
 static bool is_scc_sensor_cached = false;
@@ -26,7 +29,7 @@ static bool is_scc_sensor_cached = false;
 static sensor_info_t g_sinfo[MAX_SENSOR_NUM] = {0};
 static bool is_sdr_init[FRU_CNT] = {false};
 
-//{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}, unit}
+//{SensorName, ID, FUNCTION, STBY_READ, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}, unit}
 PAL_SENSOR_MAP uic_sensor_map[] = {
   [UIC_ADC_P12V_DPB] =
   {"UIC_ADC_P12V_DPB", ADC0, read_adc_val, true, {13.7, 0, 0, 11.3, 0, 0, 0, 0}, VOLT},
@@ -351,6 +354,17 @@ PAL_SENSOR_MAP nic_sensor_map[] = {
   {"MEZZ_SENSOR_TEMP", MEZZ, read_nic_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
 };
 
+PAL_SENSOR_MAP e1s_sensor_map[] = {
+  [E1S1_CUR] =
+  {"E1S1_CUR", E1S1, read_e1s_curr, false, {1.1, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  [E1S2_CUR] =
+  {"E1S2_CUR", E1S2, read_e1s_curr, false, {1.1, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  [E1S1_TEMP] =
+  {"E1S1_TEMP", E1S1, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [E1S2_TEMP] =
+  {"E1S2_TEMP", E1S2, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+};
+
 const uint8_t server_sensor_list[] = {
   BS_INLET_TEMP,
   BS_P12V_STBY,
@@ -540,8 +554,20 @@ const uint8_t nic_sensor_list[] = {
   MEZZ_SENSOR_TEMP,
 };
 
+const uint8_t e1s_sensor_list[] = {
+  E1S1_CUR,
+  E1S2_CUR,
+  E1S1_TEMP,
+  E1S2_TEMP,
+};
+
 PAL_I2C_BUS_INFO nic_info_list[] = {
   {MEZZ, I2C_NIC_BUS, NIC_INFO_SLAVE_ADDR},
+};
+
+PAL_I2C_BUS_INFO e1s_info_list[] = {
+  {E1S1, I2C_T5E1S1_T7IOC_BUS, NVMe_SMBUS_ADDR},
+  {E1S2, I2C_T5E1S2_T7IOC_BUS, NVMe_SMBUS_ADDR},
 };
 
 const char *adc_label[] = {
@@ -557,8 +583,13 @@ const char *adc_label[] = {
   "UIC_P12V_ISENSE_CUR",
 };
 
-PAL_TEMP_DEV_INFO temp_dev_list[] = {
+PAL_DEV_INFO temp_dev_list[] = {
   {"tmp75-i2c-4-4a",  "UIC_INLET_TEMP"},
+};
+
+PAL_DEV_INFO adc128_dev_list[] = {
+  {"adc128d818-i2c-9-1d",  "E1S1_CUR"},
+  {"adc128d818-i2c-9-1d",  "E1S2_CUR"},
 };
 
 size_t server_sensor_cnt = ARRAY_SIZE(server_sensor_list);
@@ -566,9 +597,12 @@ size_t uic_sensor_cnt = ARRAY_SIZE(uic_sensor_list);
 size_t dpb_sensor_cnt = ARRAY_SIZE(dpb_sensor_list);
 size_t scc_sensor_cnt = ARRAY_SIZE(scc_sensor_list);
 size_t nic_sensor_cnt = ARRAY_SIZE(nic_sensor_list);
+size_t e1s_sensor_cnt = ARRAY_SIZE(e1s_sensor_list);
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
+  uint8_t chassis_type = 0;
+
   switch(fru) {
   case FRU_SERVER:
     *sensor_list = (uint8_t *) server_sensor_list;
@@ -590,6 +624,19 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) nic_sensor_list;
     *cnt = nic_sensor_cnt;
     break;
+  case FRU_E1S_IOCM:
+    if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to get chassis type\n", __func__);
+      return ERR_UNKNOWN_FRU;
+    }
+    if (chassis_type == CHASSIS_TYPE5) {
+      *sensor_list = (uint8_t *) e1s_sensor_list;
+      *cnt = e1s_sensor_cnt;
+      break;
+    } else { // Todo: CHASSIS_TYPE7
+      syslog(LOG_WARNING, "%s() Unknow chassis type %u\n", __func__, chassis_type);
+      return ERR_UNKNOWN_FRU;
+    }
   default:
     if (fru > MAX_NUM_FRUS) {
       return ERR_UNKNOWN_FRU;
@@ -632,11 +679,11 @@ read_temp(uint8_t id, float *value) {
 static int
 read_nic_temp(uint8_t nic_id, float *value) {
   int fd = 0, ret = -1;
-  uint8_t retry = 3, tlen = 0, rlen = 0, addr = 0, bus = 0;
+  uint8_t retry = MAX_RETRY, tlen = 0, rlen = 0, addr = 0, bus = 0;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
 
-  if (nic_id >= ARRAY_SIZE(nic_sensor_list)) {
+  if (nic_id >= ARRAY_SIZE(nic_info_list)) {
     return ERR_SENSOR_NA;
   }
 
@@ -666,6 +713,87 @@ read_nic_temp(uint8_t nic_id, float *value) {
     *value = (float)(rbuf[0]);
   }
   close(fd);
+
+  return ret;
+}
+
+static bool
+is_e1s_present(uint8_t e1s_id) {
+  uint8_t e1s_present_flag = 0;
+
+  if (pal_is_fru_prsnt(FRU_E1S_IOCM, &e1s_present_flag) < 0) {
+    syslog(LOG_WARNING, "%s()  pal_is_fru_prsnt error\n", __func__);
+    return false;
+  }
+
+  if (((e1s_id == E1S1) && (e1s_present_flag & E1S1_PRESENT_BIT) == 0) ||
+     (((e1s_id == E1S2) && (e1s_present_flag & E1S2_PRESENT_BIT) == 0))) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "%s() E1S1 not present, id: %u: flag: %d\n", __func__, e1s_id, e1s_present_flag);
+#endif
+    return false;
+  }
+
+  return true;
+}
+
+static int
+read_e1s_temp(uint8_t e1s_id, float *value) {
+  int ret = 0, fd = 0;
+  uint8_t tlen = 0, rlen = 0, bus = 0, addr = 0;
+  uint8_t retry = MAX_RETRY;
+  uint8_t tbuf[1] = {0};
+  uint8_t rbuf[NVMe_GET_STATUS_LEN] = {0};
+
+  if (e1s_id >= ARRAY_SIZE(e1s_info_list)) {
+    return ERR_SENSOR_NA;
+  }
+
+  if (is_e1s_present(e1s_id) == false) {
+    return ERR_SENSOR_NA;
+  }
+
+  bus = e1s_info_list[e1s_id].bus;
+  addr = e1s_info_list[e1s_id].slv_addr;
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open I2C bus %d\n", __func__, bus);
+    return ERR_SENSOR_NA;
+  }
+
+  tbuf[0] = NVMe_GET_STATUS_CMD;
+  tlen = sizeof(tbuf);
+  rlen = NVMe_GET_STATUS_LEN;
+
+  do {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+    retry--;
+  } while (ret < 0 && retry > 0 );
+
+  if (ret >= 0) {
+    *value = (float)(rbuf[NVMe_TEMP_REG]);
+  }
+  close(fd);
+
+  return ret;
+}
+
+static int
+read_e1s_curr(uint8_t e1s_id, float *value) {
+  int ret = 0;
+
+  if (e1s_id >= ARRAY_SIZE(adc128_dev_list)) {
+    return ERR_SENSOR_NA;
+  }
+
+  if (is_e1s_present(e1s_id) == false) {
+    return ERR_SENSOR_NA;
+  }
+
+  ret = sensors_read(adc128_dev_list[e1s_id].chip, adc128_dev_list[e1s_id].label, value);
+  // I_OUT(A) = V_IMON(V) * 10^6 / G_IMON(uA/A) / R_IMON(ohm)
+  *value = (*value) * 1000000 / ADC128_GIMON / ADC128_RIMON;
 
   return ret;
 }
@@ -1054,6 +1182,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char str[MAX_VALUE_LEN] = {0};
   char fru_name[32] = {0};
   int ret = 0;
+  uint8_t chassis_type = 0;
   uint8_t id = 0;
 
   if (pal_get_fru_name(fru, fru_name)) {
@@ -1089,6 +1218,19 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     id = nic_sensor_map[sensor_num].id;
     ret = nic_sensor_map[sensor_num].read_sensor(id, (float*) value);
     break;
+  case FRU_E1S_IOCM:
+    if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to get chassis type\n", __func__);
+      return ERR_UNKNOWN_FRU;
+    }
+    if (chassis_type == CHASSIS_TYPE5) {
+      id = e1s_sensor_map[sensor_num].id;
+      ret = e1s_sensor_map[sensor_num].read_sensor(id, (float*) value);
+      break;
+    } else { // Todo: CHASSIS_TYPE7
+      syslog(LOG_WARNING, "%s() Unknow chassis type %u\n", __func__, chassis_type);
+      return ERR_UNKNOWN_FRU;
+    }
   default:
     return ERR_SENSOR_NA;
   }
@@ -1113,6 +1255,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
 int
 pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
+  uint8_t chassis_type = 0;
+
   switch(fru) {
   case FRU_UIC:
     snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", uic_sensor_map[sensor_num].snr_name);
@@ -1126,6 +1270,18 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   case FRU_NIC:
     snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", nic_sensor_map[sensor_num].snr_name);
     break;
+  case FRU_E1S_IOCM:
+    if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to get chassis type\n", __func__);
+      return ERR_UNKNOWN_FRU;
+    }
+    if (chassis_type == CHASSIS_TYPE5) {
+      snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", e1s_sensor_map[sensor_num].snr_name);
+      break;
+    } else { // Todo: CHASSIS_TYPE7
+      syslog(LOG_WARNING, "%s() Unknow chassis type %u\n", __func__, chassis_type);
+      return ERR_UNKNOWN_FRU;
+    }
   default:
     return ERR_UNKNOWN_FRU;
   }
@@ -1136,6 +1292,7 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
   float *val = (float*) value;
+  uint8_t chassis_type = 0;
   PAL_SENSOR_MAP * sensor_map = NULL;
 
   switch (fru) {
@@ -1151,6 +1308,18 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
   case FRU_NIC:
     sensor_map = nic_sensor_map;
     break;
+  case FRU_E1S_IOCM:
+    if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to get chassis type\n", __func__);
+      return ERR_UNKNOWN_FRU;
+    }
+    if (chassis_type == CHASSIS_TYPE5) {
+      sensor_map = e1s_sensor_map;
+      break;
+    } else { // Todo: CHASSIS_TYPE7
+      syslog(LOG_WARNING, "%s() Unknow chassis type %u\n", __func__, chassis_type);
+      return ERR_UNKNOWN_FRU;
+    }
   default:
     return ERR_UNKNOWN_FRU;
   }
@@ -1191,6 +1360,7 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
 int
 pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   uint8_t sensor_units = 0;
+  uint8_t chassis_type = 0;
 
   switch (fru) {
   case FRU_UIC:
@@ -1205,6 +1375,18 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   case FRU_NIC:
     sensor_units = nic_sensor_map[sensor_num].units;
     break;
+  case FRU_E1S_IOCM:
+    if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to get chassis type\n", __func__);
+      return ERR_UNKNOWN_FRU;
+    }
+    if (chassis_type == CHASSIS_TYPE5) {
+      sensor_units = e1s_sensor_map[sensor_num].units;
+      break;
+    } else { // Todo: CHASSIS_TYPE7
+      syslog(LOG_WARNING, "%s() Unknow chassis type %u\n", __func__, chassis_type);
+      return ERR_UNKNOWN_FRU;
+    }
   default:
     return ERR_UNKNOWN_FRU;
   }

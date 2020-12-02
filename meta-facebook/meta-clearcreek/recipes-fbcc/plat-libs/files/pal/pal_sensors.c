@@ -42,6 +42,7 @@ static int read_nic_volt(uint8_t nic_id, float *value);
 static int read_nic_curr(uint8_t nic_id, float *value);
 static int read_nic_pwr(uint8_t nic_id, float *value);
 static int sensors_read_vr(uint8_t sensor_num, float *value);
+static int sensors_read_fan_speed(uint8_t, float*);
 
 static float fan_volt[PAL_FAN_CNT];
 static float fan_curr[PAL_FAN_CNT];
@@ -158,6 +159,14 @@ const uint8_t pdb_sensor_list[] = {
   PDB_INLET_REMOTE_TEMP_L,
   PDB_INLET_TEMP_R,
   PDB_INLET_REMOTE_TEMP_R,
+  PDB_FAN0_TACH_I,
+  PDB_FAN0_TACH_O,
+  PDB_FAN1_TACH_I,
+  PDB_FAN1_TACH_O,
+  PDB_FAN2_TACH_I,
+  PDB_FAN2_TACH_O,
+  PDB_FAN3_TACH_I,
+  PDB_FAN3_TACH_O,
 };
 
 const uint8_t ava1_sensor_list[] = {
@@ -387,14 +396,14 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9F
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA7
+  {"PDB_FAN0_TACH_I", PDB_FAN0_TACH_I, sensors_read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xA0
+  {"PDB_FAN0_TACH_O", PDB_FAN0_TACH_O, sensors_read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xA1
+  {"PDB_FAN1_TACH_I", PDB_FAN1_TACH_I, sensors_read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xA2
+  {"PDB_FAN1_TACH_O", PDB_FAN1_TACH_O, sensors_read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xA3
+  {"PDB_FAN2_TACH_I", PDB_FAN2_TACH_I, sensors_read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xA4
+  {"PDB_FAN2_TACH_O", PDB_FAN2_TACH_O, sensors_read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xA5
+  {"PDB_FAN3_TACH_I", PDB_FAN3_TACH_I, sensors_read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xA6
+  {"PDB_FAN3_TACH_O", PDB_FAN3_TACH_O, sensors_read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xA7
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA9
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAA
@@ -703,6 +712,46 @@ int pal_get_fan_name(uint8_t num, char *name)
   sprintf(name, "Fan %d %s", num/2, num%2==0? "In":"Out");
 
   return 0;
+}
+
+static int sensors_read_fan_speed(uint8_t sensor_num, float *value)
+{
+  int ret, i, retries = 5;
+  *value = 0.0;
+
+  for (i = 0; i < retries; i++) {
+    switch (sensor_num) {
+      case PDB_FAN0_TACH_I:
+        ret = sensors_read_fan("fan1", (float *)value);
+        break;
+      case PDB_FAN0_TACH_O:
+        ret = sensors_read_fan("fan2", (float *)value);
+        break;
+      case PDB_FAN1_TACH_I:
+        ret = sensors_read_fan("fan3", (float *)value);
+        break;
+      case PDB_FAN1_TACH_O:
+        ret = sensors_read_fan("fan4", (float *)value);
+        break;
+      case PDB_FAN2_TACH_I:
+        ret = sensors_read_fan("fan5", (float *)value);
+        break;
+      case PDB_FAN2_TACH_O:
+        ret = sensors_read_fan("fan6", (float *)value);
+        break;
+      case PDB_FAN3_TACH_I:
+        ret = sensors_read_fan("fan7", (float *)value);
+        break;
+      case PDB_FAN3_TACH_O:
+        ret = sensors_read_fan("fan8", (float *)value);
+        break;
+      default:
+        return ERR_SENSOR_NA;
+    }
+
+  }
+
+  return ret;
 }
 
 int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)

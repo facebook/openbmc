@@ -42,15 +42,34 @@
 #define NUM_BMC_FRU     1
 #define MAX_FAN_NAME    32
 
-const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, iocm";
-const char pal_fru_list_print[] = "all, server, bmc, uic, dpb, scc, nic, iocm";
-const char pal_fru_list_rw[] = "server, bmc, uic, nic, iocm";
-const char pal_fru_list_sensor_history[] = "all, server, uic, nic, iocm";
+const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
+
+// export to sensor-util
+const char pal_fru_list_sensor_history[] = "all, server, uic, nic, e1s_iocm";
+
+// export to power-util
 const char pal_server_list[] = "server";
-const char *fru_str_list[] = {"all", "server", "bmc", "uic", "dpb", "scc", "nic", "iocm"};
+
+// export to name-util
 const char *pal_server_fru_list[NUM_SERVER_FRU] = {"server"};
 const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic"};
 const char *pal_bmc_fru_list[NUM_BMC_FRU] = {"bmc"};
+
+// export to fruid-util, only support iocm of FRU_E1S_IOCM
+const char pal_fru_list_print[] = "all, server, bmc, uic, dpb, scc, nic, iocm";
+const char pal_fru_list_rw[] = "server, bmc, uic, nic, iocm";
+
+// fru name list for pal_get_fru_id(), the name of FRU_E1S_IOCM could be "iocm" or "e1s_iocm"
+const char *fru_str_list[][2] = {
+  { "all"   , "" },
+  { "server", "" },
+  { "bmc"   , "" },
+  { "uic"   , "" },
+  { "dpb"   , "" },
+  { "scc"   , "" },
+  { "nic"   , "" },
+  { "iocm"  , "e1s_iocm" }
+};
 
 size_t server_fru_cnt = NUM_SERVER_FRU;
 size_t nic_fru_cnt  = NUM_NIC_FRU;
@@ -198,7 +217,8 @@ pal_get_fru_id(char *str, uint8_t *fru) {
   bool found_id = false;
 
   for (fru_id = FRU_ALL; fru_id <= MAX_NUM_FRUS; fru_id++) {
-    if ( strncmp(str, fru_str_list[fru_id], MAX_FRU_CMD_STR) == 0 ) {
+    if ((strncmp(str, fru_str_list[fru_id][0], MAX_FRU_CMD_STR) == 0) ||
+        (strncmp(str, fru_str_list[fru_id][1], MAX_FRU_CMD_STR) == 0)) {
       *fru = fru_id;
       found_id = true;
       break;

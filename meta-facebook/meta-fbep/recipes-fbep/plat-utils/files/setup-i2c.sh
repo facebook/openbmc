@@ -53,10 +53,10 @@ i2c_bind_driver adm1275 16-0013
 i2c_bind_driver adm1275 17-0010
 
 # i2c mux in front of OAMs
-i2c_mux_add_sync 11 0x70 pca9543 21
-i2c_mux_add_sync 10 0x70 pca9543 23
-i2c_mux_add_sync 9 0x70 pca9543 25
-i2c_mux_add_sync 8 0x70 pca9543 27
+i2c_mux_add_sync 11 0x70 pca9543 2
+i2c_mux_add_sync 10 0x70 pca9543 2
+i2c_mux_add_sync 9 0x70 pca9543 2
+i2c_mux_add_sync 8 0x70 pca9543 2
 
 # Reload lm_sensors config
 sv restart sensord > /dev/null

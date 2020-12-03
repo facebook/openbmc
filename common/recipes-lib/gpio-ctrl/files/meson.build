@@ -8,7 +8,7 @@ project('libgpio-ctrl', 'c', 'cpp',
     meson_version: '>=0.40')
 
 install_headers(
-    'libgpio.h', 'libgpio.hpp', 
+    'libgpio.h', 'libgpio.hpp',
     subdir: 'openbmc')
 
 cc = meson.get_compiler('c')
@@ -19,9 +19,9 @@ libs = [
 ]
 
 srcs = files(
-  'gpio.c', 
-  'gpio_sysfs.c', 
-  'gpiochip.c', 
+  'gpio.c',
+  'gpio_sysfs.c',
+  'gpiochip.c',
   'gpiochip_aspeed.c',
 )
 
@@ -46,9 +46,7 @@ test_libs = [
 
 cppc = meson.get_compiler('cpp')
 
-if cppc.get_id() == 'gcc' and cppc.version().version_compare('>7')
-  gpio_ctrl_test = executable('test-gpio-control', 'gpio_test.cpp', srcs,
-      dependencies: [libs, test_libs],
-      cpp_args: ['-D__TEST__'])
-  test('gpio-control-tests', gpio_ctrl_test)
-endif
+gpio_ctrl_test = executable('test-gpio-control', 'gpio_test.cpp', srcs,
+  dependencies: [libs, test_libs],
+  cpp_args: ['-D__TEST__'])
+test('gpio-control-tests', gpio_ctrl_test)

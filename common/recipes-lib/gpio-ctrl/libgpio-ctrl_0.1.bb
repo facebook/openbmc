@@ -22,8 +22,6 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://gpio.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-BBCLASSEXTEND = "native"
-
 inherit meson python3-dir
 inherit ptest-meson
 

@@ -72,14 +72,20 @@ wedge_is_us_on() {
     return 0
 }
 
-wedge_board_type_rev(){
+wedge_board_type_rev() {
     rev=$(wedge_board_rev)
     case $rev in
         0)
             echo "Cloudripper_EVT"
             ;;
         1)
-            echo "Cloudripper_EVT"
+            echo "Cloudripper_EVT2"
+            ;;
+        2)
+            echo "Cloudripper_EVT3"
+            ;;
+        3)
+            echo "Cloudripper_DVT"
             ;;
         *)
             echo "Cloudripper (Undefine $rev)"
@@ -92,11 +98,7 @@ wedge_slot_id() {
 }
 
 wedge_board_rev() {
-    local val0 val1 val2
-    val0=$(gpio_get BMC_CPLD_BOARD_REV_ID0)
-    val1=$(gpio_get BMC_CPLD_BOARD_REV_ID1)
-    val2=$(gpio_get BMC_CPLD_BOARD_REV_ID2)
-    echo $((val0 | (val1 << 1) | (val2 << 2)))
+    echo "$(( $(head -n 1 "$SMBCPLD_SYSFS_DIR/board_ver") ))"
 }
 
 wedge_power_on_board() {

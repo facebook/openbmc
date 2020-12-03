@@ -90,3 +90,40 @@ cmd_mb0_bridge_to_cc(uint8_t ipmi_cmd, uint8_t ipmi_netfn, uint8_t *data, uint8_
 
   return bmc_ipmb_swap_info_process(cmd, netfn, BMC1_SLAVE_DEF_ADDR, tbuf, tlen, rbuf, &rlen);
 }
+
+int
+cmd_mb0_set_cc_reset(uint8_t t_bmc_addr) {
+  uint8_t ipmi_cmd = CMD_APP_MASTER_WRITE_READ;
+  uint8_t netfn = NETFN_APP_REQ;
+  uint8_t tbuf[8];
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen;
+  uint8_t tlen;
+
+  tbuf[0] = CC_I2C_BUS_NUMBER*2 +1;
+  tbuf[1] = CC_I2C_RESET_IOEXP_ADDR;
+  tbuf[2] = 0x00;
+  tbuf[3] = 0x07;
+  tbuf[4] = 0xfe;
+  tlen = 5;
+
+  if( bmc_ipmb_swap_info_process(ipmi_cmd, netfn, t_bmc_addr, tbuf, tlen, rbuf, &rlen) ) {
+    syslog(LOG_WARNING, "Set CC IO expender fail\n");
+    return -1;
+  }
+
+  tbuf[0] = CC_I2C_BUS_NUMBER*2 +1;
+  tbuf[1] = CC_I2C_RESET_IOEXP_ADDR;
+  tbuf[2] = 0x00;
+  tbuf[3] = 0x07;
+  tbuf[4] = 0xff;
+  tlen = 5;
+
+  if( bmc_ipmb_swap_info_process(ipmi_cmd, netfn, t_bmc_addr, tbuf, tlen, rbuf, &rlen) ) {
+    syslog(LOG_WARNING, "Set CC IO expender fail\n");
+    return -1;
+  }
+
+  return 0;
+}
+

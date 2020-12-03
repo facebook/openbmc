@@ -234,12 +234,7 @@ reset_bmc(const std::string& bmc)
   }
   if (bmc == "clearcreek" && is_cc_present()) {
     // TODO Add correct CC IOExpander address.
-    int fd = i2c_cdev_slave_open(CC_I2C_BUS_NUMBER, 0x77, 0);
-    if (fd < 0)
-      return -1;
-    int rc = i2c_smbus_write_byte_data(fd, 0x3, 0xfe);
-    rc |= i2c_smbus_write_byte_data(fd, 0x3, 0xff);
-    close(fd);
+    int rc = cmd_mb0_set_cc_reset(BMC1_SLAVE_DEF_ADDR);
     return rc ? -1 : 0;
   }
   const std::map<std::string, int> bmc_map = {

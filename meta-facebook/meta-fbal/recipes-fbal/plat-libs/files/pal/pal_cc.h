@@ -5,6 +5,7 @@
 
 #define CC_I2C_BUS_NUMBER                (6)
 #define CC_I2C_SLAVE_ADDR                (0x2E)
+#define CC_I2C_RESET_IOEXP_ADDR          (0xEE)
 
 
 enum {

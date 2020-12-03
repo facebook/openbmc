@@ -220,13 +220,58 @@ else
   ioexp_bus=4
 fi
 
-for i in {0..3};
- do
-  gpioexp_export ${ioexp_bus}-0020 MB${i}_P0_PRSNT0 $((i*4))
-  gpioexp_export ${ioexp_bus}-0020 MB${i}_P0_PRSNT1 $((i*4+1))
-  gpioexp_export ${ioexp_bus}-0020 MB${i}_P1_PRSNT0 $((i*4+2))
-  gpioexp_export ${ioexp_bus}-0020 MB${i}_P1_PRSNT1 $((i*4+3))
-done
+gpioexp_export ${ioexp_bus}-0020 CONN1_0_PRSNT0_N 8
+gpioexp_export ${ioexp_bus}-0020 CONN1_0_PRSNT1_N 9
+gpioexp_export ${ioexp_bus}-0020 CONN1_1_PRSNT0_N 12
+gpioexp_export ${ioexp_bus}-0020 CONN1_1_PRSNT1_N 13
+gpioexp_export ${ioexp_bus}-0020 CONN2_0_PRSNT0_N 0
+gpioexp_export ${ioexp_bus}-0020 CONN2_0_PRSNT1_N 1
+gpioexp_export ${ioexp_bus}-0020 CONN2_1_PRSNT0_N 4
+gpioexp_export ${ioexp_bus}-0020 CONN2_1_PRSNT1_N 5
+gpioexp_export ${ioexp_bus}-0020 CONN3_0_PRSNT0_N 2
+gpioexp_export ${ioexp_bus}-0020 CONN3_0_PRSNT1_N 3
+gpioexp_export ${ioexp_bus}-0020 CONN3_1_PRSNT0_N 6
+gpioexp_export ${ioexp_bus}-0020 CONN3_1_PRSNT1_N 7
+gpioexp_export ${ioexp_bus}-0020 CONN4_0_PRSNT0_N 10
+gpioexp_export ${ioexp_bus}-0020 CONN4_0_PRSNT1_N 11
+gpioexp_export ${ioexp_bus}-0020 CONN4_1_PRSNT0_N 14
+gpioexp_export ${ioexp_bus}-0020 CONN4_1_PRSNT1_N 15
+
+if [[ "$(gpio_get CONN2_0_PRSNT0_N)" == "0" && \
+      "$(gpio_get CONN2_0_PRSNT1_N)" == "0" && \
+      "$(gpio_get CONN3_0_PRSNT0_N)" == "0" && \
+      "$(gpio_get CONN3_0_PRSNT1_N)" == "0" ]]; then
+  MB0_PRSNT=1;
+else
+  MB0_PRSNT=0;
+fi
+
+if [[ "$(gpio_get CONN2_1_PRSNT0_N)" == "0" && \
+      "$(gpio_get CONN2_1_PRSNT1_N)" == "0" && \
+      "$(gpio_get CONN3_1_PRSNT0_N)" == "0" && \
+      "$(gpio_get CONN3_1_PRSNT1_N)" == "0" ]]; then
+  MB1_PRSNT=1;
+else
+  MB1_PRSNT=0;
+fi
+
+if [[ "$(gpio_get CONN1_0_PRSNT0_N)" == "0" && \
+      "$(gpio_get CONN1_0_PRSNT1_N)" == "0" && \
+      "$(gpio_get CONN4_0_PRSNT0_N)" == "0" && \
+      "$(gpio_get CONN4_0_PRSNT1_N)" == "0" ]]; then
+  MB2_PRSNT=1;
+else
+  MB2_PRSNT=0;
+fi
+
+if [[ "$(gpio_get CONN1_1_PRSNT0_N)" == "0" && \
+      "$(gpio_get CONN1_1_PRSNT1_N)" == "0" && \
+      "$(gpio_get CONN4_1_PRSNT0_N)" == "0" && \
+      "$(gpio_get CONN4_1_PRSNT1_N)" == "0" ]]; then
+  MB3_PRSNT=1;
+else
+  MB3_PRSNT=0;
+fi
 
 # To enable GPIOH
 #devmem_clear_bit $(scu_addr 90) 7
@@ -329,10 +374,8 @@ gpio_export PWR_CTRL GPIOM1
 
 for i in {0..3};
 do
-  if [[ "$(gpio_get MB${i}_P0_PRSNT0)" == "0" && \
-        "$(gpio_get MB${i}_P0_PRSNT1)" == "0" && \
-        "$(gpio_get MB${i}_P1_PRSNT0)" == "0" && \
-        "$(gpio_get MB${i}_P1_PRSNT1)" == "0" ]]; then
+  PRSNT=MB${i}_PRSNT
+  if [[ "${!PRSNT}" == "1" ]]; then
     echo "Server is detected"
     gpio_set PWR_CTRL 0
     break

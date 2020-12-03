@@ -36,4 +36,5 @@ IMAGE_INSTALL += " \
   libncsi \
   ncsid-v2 \
   ncsi-util \
+  ipmb-util \
   "

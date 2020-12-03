@@ -949,6 +949,12 @@ pal_get_x86_event_sensor_name(uint8_t fru, uint8_t snr_num,
       case CPU1_THERM_STATUS:
         sprintf(name, "CPU1_THERM_STATUS");
         break;
+      case CPU2_THERM_STATUS:
+        sprintf(name, "CPU2_THERM_STATUS");
+        break;
+      case CPU3_THERM_STATUS:
+        sprintf(name, "CPU3_THERM_STATUS");
+        break;
       case ME_POWER_STATE:
         sprintf(name, "ME_POWER_STATE");
         break;
@@ -1531,6 +1537,8 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
 
     case CPU0_THERM_STATUS:
     case CPU1_THERM_STATUS:
+    case CPU2_THERM_STATUS:
+    case CPU3_THERM_STATUS:
       if (ed[0] == 0x00)
         strcat(error_log, "CPU Critical Temperature");
       else if (ed[0] == 0x01)

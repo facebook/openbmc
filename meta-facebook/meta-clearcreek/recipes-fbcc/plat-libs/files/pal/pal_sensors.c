@@ -666,6 +666,12 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
   } else if (fru == FRU_BSM) {
     *sensor_list = NULL;
     *cnt = 0;
+  } else if (fru == FRU_E1S1) {
+    *sensor_list = NULL;
+    *cnt = 0;
+  } else if (fru == FRU_E1S2) {
+    *sensor_list = NULL;
+    *cnt = 0;
   } else {
     *sensor_list = NULL;
     *cnt = 0;

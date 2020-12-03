@@ -46,6 +46,8 @@ enum {
   FRU_PDB,
   FRU_AVA1,
   FRU_AVA2,
+  FRU_E1S1,
+  FRU_E1S2,
   FRU_CNT,
 };
 

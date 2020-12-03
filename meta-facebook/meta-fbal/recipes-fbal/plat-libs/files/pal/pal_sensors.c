@@ -69,6 +69,12 @@ static uint8_t m_TjMax[CPU_ID_NUM] = {0};
 static float m_Dts[CPU_ID_NUM] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 static uint8_t postcodes_last[256] = {0};
 
+// For DEBUG card sensor naming config
+struct debug_card_naming_config {
+  uint8_t offset;
+  char debug_card_name[32];
+};
+
 //4S Master BMC Sensor List
 const uint8_t mb_4s_m_sensor_list[] = {
   MB_SNR_INLET_TEMP,
@@ -2597,6 +2603,33 @@ pal_check_nic_prsnt(uint8_t fru) {
   return status;
 }
 
+static struct debug_card_naming_config debug_card_names[] = {
+  {0xD0, "P5V"},
+  {0xD1, "P5V_STBY"},
+  {0xD2, "P3V3_STBY"},
+  {0xD3, "P3V3"},
+  {0xD4, "P3V_BAT"},
+  {0xD5, "CPU_P1V8"},
+  {0xD6, "PCH_P1V8"},
+  {0x5C, "P12V_STBY"},
+  {0x5D, "P3V3_M2_1"},
+  {0x5E, "P3V3_M2_2"},
+  {0x5F, "P3V3_M2_3"},
+  {0x26, "PDB_P12V"},
+  {0x27, "PDB_P3V3"},
+};
+
+static void 
+get_debug_card_name (uint8_t offset, char *name) {
+  int i, config_size = sizeof(debug_card_names) / sizeof(debug_card_names[0]);
+  for (i = 0; i < config_size; i++) {
+    if (offset == debug_card_names[i].offset) {
+      sprintf(name, "%s", debug_card_names[i].debug_card_name);
+      return;
+    }
+  }
+}
+
 void
 pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char cmd[128];
@@ -2642,7 +2675,15 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
     case MB_SNR_P3V3_STBY:
     case MB_SNR_P3V3:
     case MB_SNR_P3V_BAT:
-      pal_get_sensor_name(fru, snr_num, snr_name);
+    case MB_SNR_CPU_P1V8:
+    case MB_SNR_PCH_P1V8:
+    case MB_SNR_P12V_STBY_INA260_VOL:
+    case MB_SNR_P3V3_M2_1_INA260_VOL:
+    case MB_SNR_P3V3_M2_2_INA260_VOL:
+    case MB_SNR_P3V3_M2_3_INA260_VOL:
+    case PDB_SNR_HSC_P12V:
+    case PDB_SNR_HSC_P3V:
+      get_debug_card_name(snr_num, snr_name);
       sprintf(cmd, "%s %s %.2fVolts - Assert", snr_name, thresh_name, val);
       break;
     case PDB_SNR_FAN0_INLET_SPEED:
@@ -2669,6 +2710,7 @@ void
 pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char cmd[128];
   char thresh_name[10];
+  char snr_name[32];
   uint8_t fan_id;
   uint8_t cpu_id;
 
@@ -2703,6 +2745,22 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
     case MB_SNR_CPU3_TEMP:
       cpu_id = snr_num - MB_SNR_CPU0_TEMP;
       sprintf(cmd, "P%d Temp %s %3.0fC - Deassert",cpu_id, thresh_name, val);
+      break;
+    case MB_SNR_P5V:
+    case MB_SNR_P5V_STBY:
+    case MB_SNR_P3V3_STBY:
+    case MB_SNR_P3V3:
+    case MB_SNR_P3V_BAT:
+    case MB_SNR_CPU_P1V8:
+    case MB_SNR_PCH_P1V8:
+    case MB_SNR_P12V_STBY_INA260_VOL:
+    case MB_SNR_P3V3_M2_1_INA260_VOL:
+    case MB_SNR_P3V3_M2_2_INA260_VOL:
+    case MB_SNR_P3V3_M2_3_INA260_VOL:
+    case PDB_SNR_HSC_P12V:
+    case PDB_SNR_HSC_P3V:
+      get_debug_card_name(snr_num, snr_name);
+      sprintf(cmd, "%s %s %.2fVolts - Deassert", snr_name, thresh_name, val);
       break;
     case PDB_SNR_FAN0_INLET_SPEED:
     case PDB_SNR_FAN1_INLET_SPEED:

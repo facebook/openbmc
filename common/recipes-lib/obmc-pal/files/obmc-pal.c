@@ -332,7 +332,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
 {
   uint8_t general_info = sel[3];
   uint8_t error_type = general_info & 0xF;
-  uint8_t plat;
+  uint8_t plat, sled, socket;
   uint8_t event_type, estr_idx;
   char *mem_err[] = {"Memory training failure", "Memory correctable error", "Memory uncorrectable error",
                      "Memory correctable error (Patrol scrub)", "Memory uncorrectable error (Patrol scrub)",
@@ -425,8 +425,12 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
       break;
 
     case UNIFIED_IIO_ERR:
+      sled = (sel[8]>>4) & 0x03;
+      socket = sel[8] & 0x0F;
       sprintf(error_log, "GeneralInfo: IIOErr(0x%02X), IIO Port Location: Sled %02d/Socket %02d, Stack 0x%02X, Error ID: 0x%02X",
-              general_info, sel[10], ((sel[8]>>4)&0xF), sel[8]&0xF, sel[9] );
+              general_info, sled, socket, sel[9], sel[12]);
+      sprintf(temp_log, "IIO_ERR CPU%d. Error ID(%02X)", sled*2 + socket, sel[12]);
+      pal_add_cri_sel(temp_log);
       break;
 
     case UNIFIED_POST_ERR:

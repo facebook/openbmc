@@ -2804,22 +2804,22 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
       sprintf(name, "SMB_INPUT_VOLTAGE_2");
       break;
     case SMB_SENSOR_FCM_T_HSC_VOLT:
-      sprintf(name, "FCM-T CHIP INPUT VOLTAGE");
+      sprintf(name, "FCM-T_CHIP_INPUT_VOLTAGE");
       break;
     case SMB_SENSOR_FCM_B_HSC_VOLT:
-      sprintf(name, "FCM-B CHIP INPUT VOLTAGE");
+      sprintf(name, "FCM-B_CHIP_INPUT_VOLTAGE");
       break;
     case SMB_SENSOR_FCM_T_HSC_CURR:
-      sprintf(name, "FCM-T POWER CURRENT");
+      sprintf(name, "FCM-T_POWER_CURRENT");
       break;
     case SMB_SENSOR_FCM_B_HSC_CURR:
-      sprintf(name, "FCM-B POWER CURRENT");
+      sprintf(name, "FCM-B_POWER_CURRENT");
       break;
     case SMB_SENSOR_FCM_T_HSC_POWER_VOLT:
-      sprintf(name, "FCM-T POWER VOLTAGE");
+      sprintf(name, "FCM-T_POWER_VOLTAGE");
       break;
     case SMB_SENSOR_FCM_B_HSC_POWER_VOLT:
-      sprintf(name, "FCM-B POWER VOLTAGE");
+      sprintf(name, "FCM-B_POWER_VOLTAGE");
       break;
     case SMB_SENSOR_FAN1_FRONT_TACH:
       sprintf(name, "FAN1_FRONT_SPEED");

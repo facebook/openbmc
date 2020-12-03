@@ -39,6 +39,7 @@ PWR_R_TIMER_COUNTER_SETTING_UPDATE_SYSFS="${RIGHT_PDBCPLD_SYSFS_DIR}/timer_count
 
 PIM_NAME="${PIM_RST_SYSFS}/pim"
 CPLD_RESET="_hw_rst_l"
+CPLD_PG="_smb_pg"
 
 usage() {
     echo "Usage: $prog <command> [command options]"
@@ -65,6 +66,11 @@ usage() {
     echo "    options:"
     echo "      -a  : Reset all PIMs or "
     echo "      -2 , -3 , ... , -9 : Reset a single PIM (2, 3 ... 9) "
+    echo
+    echo "  pim_power_on/off: Power-on/off one or all PIM(s)"
+    echo "    options:"
+    echo "      -a  : Power-on/off all PIMs or "
+    echo "      -2 , -3 , ... , -9 : Power-on/off a single PIM (2, 3 ... 9) "
     echo
 }
 
@@ -255,6 +261,30 @@ toggle_pim_reset() {
     return $retval
 }
 
+toggle_pim_power_onoff() {
+	retval=0
+	action=$1
+	pim=$2
+	for slot in 2 3 4 5 6 7 8 9; do
+		if [ "$pim" -eq 0 ] || [ $slot -eq "$pim" ]; then
+			index=$((slot - 1))
+			if [ "$action" = "on" ]; then
+				echo Power-on PIM in slot $slot
+				echo 1 > "$PIM_NAME$index$CPLD_PG"
+				result=$?
+			elif [ "$action" = "off" ]; then
+				echo Power-off PIM in slot $slot
+				echo 0 > "$PIM_NAME$index$CPLD_PG"
+				result=$?
+			fi
+			if [ "$result" -ne 0 ]; then
+				retval=$result
+			fi
+		fi
+	done
+	return $retval
+}
+
 do_pimreset() {
     local pim opt retval
     retval=0
@@ -305,6 +335,105 @@ do_pimreset() {
     return $retval
 }
 
+do_pim_power_on() {
+	local pim opt retval
+	retval=0
+	pim=-1
+	while getopts "23456789a" opt; do
+		case $opt in
+			a)
+				pim=0
+				;;
+			2)
+				pim=2
+				;;
+			3)
+				pim=3
+				;;
+			4)
+				pim=4
+				;;
+			5)
+				pim=5
+				;;
+			6)
+				pim=6
+				;;
+			7)
+				pim=7
+				;;
+			8)
+				pim=8
+				;;
+			9)
+				pim=9
+				;;
+			*)
+				usage
+				exit 1
+				;;
+		esac
+	done
+	if [ $pim -eq -1 ]; then
+		usage
+		exit 1
+	fi
+
+	toggle_pim_power_onoff on $pim
+	retval=$?
+
+	return $retval
+}
+
+do_pim_power_off() {
+	local pim opt retval
+	retval=0
+	pim=-1
+	while getopts "23456789a" opt; do
+		case $opt in
+			a)
+				pim=0
+				;;
+			2)
+				pim=2
+				;;
+			3)
+				pim=3
+				;;
+			4)
+				pim=4
+				;;
+			5)
+				pim=5
+				;;
+			6)
+				pim=6
+				;;
+			7)
+				pim=7
+				;;
+			8)
+				pim=8
+				;;
+			9)
+				pim=9
+				;;
+			*)
+				usage
+				exit 1
+				;;
+		esac
+	done
+	if [ $pim -eq -1 ]; then
+		usage
+		exit 1
+	fi
+
+	toggle_pim_power_onoff off $pim
+	retval=$?
+
+	return $retval
+}
 
 if [ $# -lt 1 ]; then
     usage
@@ -334,6 +463,14 @@ case "$command" in
         do_pimreset "$@"
         exit $?
         ;;
+	pim_power_on)
+		do_pim_power_on "$@"
+		exit $?
+		;;
+	pim_power_off)
+		do_pim_power_off "$@"
+		exit $?
+		;;
     *)
         usage
         exit 1

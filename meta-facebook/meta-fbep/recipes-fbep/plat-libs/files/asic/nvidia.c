@@ -26,10 +26,19 @@
 
 #define SMBPBI_MAX_RETRY 5
 
+#define SMBPBI_STATUS_MASK      0x1F
+
 #define SMBPBI_STATUS_ACCEPTED  0x1C
 #define SMBPBI_STATUS_INACTIVE  0x1D
 #define SMBPBI_STATUS_READY     0x1E
 #define SMBPBI_STATUS_SUCCESS   0x1F
+
+#define ASYNC_STATUS_SUCCESS    0x00
+#define ASYNC_STATUS_MORE_PROC  0x31
+#define ASYNC_STATUS_TIMEOUT    0x33
+#define ASYNC_STATUS_NOT_READY  0x34
+#define ASYNC_STATUS_IN_RESET   0x36
+#define ASYNC_STATUS_BUSY_RETRY 0x41
 
 #define NV_GPU_ADDR             0x4E
 #define NV_COMMAND_STATUS_REG   0x5C
@@ -47,7 +56,7 @@
 #define SMBPBI_CAP_GPU0_TEMP    (1 << 0)
 #define SMBPBI_CAP_BOARD_TEMP   (1 << 4)
 #define SMBPBI_CAP_MEM_TEMP     (1 << 5)
-#define SMBPBI_CAP_PWCS	        (1 << 16)
+#define SMBPBI_CAP_PWCS         (1 << 16)
 // Page 1
 #define SMBPBI_CAP_FW_VER       (1 << 8)
 
@@ -66,7 +75,7 @@
 #define SMBPBI_WRITE_SCRMEM     0x0E
 
 #define SMBPBI_ASYNC_REQUEST    0x10
-#define ASYNC_STATUS_SUCCESS    0x00
+#define SMBPBI_ASYNC_POLLREQ    0xFF
 
 static int nv_open_slot(uint8_t slot)
 {
@@ -123,10 +132,11 @@ static uint8_t nv_get_status(int fd)
 {
   uint8_t buf[4] = {0};
 
+  usleep(50000);
   if (nv_msgbox_read_reg(fd, buf) < 0)
     return SMBPBI_STATUS_INACTIVE;
 
-  return buf[3] & 0x1f; // reg[28:24]
+  return buf[3] & SMBPBI_STATUS_MASK; // reg[28:24]
 }
 
 static int nv_check_status(int fd, uint8_t opcode)
@@ -137,8 +147,7 @@ static int nv_check_status(int fd, uint8_t opcode)
   while (retry--) {
     status = nv_get_status(fd);
     if (status != SMBPBI_STATUS_SUCCESS &&
-	(opcode != SMBPBI_ASYNC_REQUEST || status != SMBPBI_STATUS_ACCEPTED)) {
-      usleep(1000);
+        (opcode != SMBPBI_ASYNC_REQUEST || status != SMBPBI_STATUS_ACCEPTED)) {
       continue;
     }
     return 0;
@@ -152,6 +161,7 @@ static int nv_msgbox_cmd(int fd, uint8_t opcode, uint8_t arg1, uint8_t arg2,
   int retry = SMBPBI_MAX_RETRY;
 
   while (retry--) {
+    usleep(50000);
     if (data_in && nv_msgbox_write_data(fd, data_in) < 0)
       continue;
     if (nv_msgbox_write_reg(fd, opcode, arg1, arg2) < 0)
@@ -284,43 +294,39 @@ int nv_set_power_limit(uint8_t slot, unsigned int watt)
   unsigned int mwatt = watt * 1000;
   uint8_t tbuf[4], rbuf[4];
   uint8_t async_id;
+  uint8_t scratch_offset = 0x0;
 
   fd = nv_open_slot(slot);
   if (fd < 0)
     return ASIC_ERROR;
 
-  tbuf[0] = 0x01; // Set presistence flag
-  tbuf[1] = 0x00;
-  tbuf[2] = 0x00;
-  tbuf[3] = 0x00;
-  if (nv_msgbox_cmd(fd, SMBPBI_WRITE_SCRMEM, 0x0, 0x0, tbuf, rbuf) < 0)
-    goto err;
-  if (nv_msgbox_cmd(fd, SMBPBI_READ_SCRMEM, 0x0, 0x0, NULL, rbuf) < 0)
-    goto err;
-  if (rbuf[0] != 0x01 || rbuf[1] != 0x00 || rbuf[2] != 0x00 || rbuf[3] != 0x00)
-    goto err;
-
   tbuf[0] = (uint8_t)(mwatt & 0xff);
   tbuf[1] = (uint8_t)((mwatt >> 8) & 0xff);
   tbuf[2] = (uint8_t)((mwatt >> 16) & 0xff);
   tbuf[3] = (uint8_t)((mwatt >> 24) & 0xff);
-  if (nv_msgbox_cmd(fd, SMBPBI_WRITE_SCRMEM, 0x1, 0x0, tbuf, rbuf) < 0)
+  // Write mWatts to scratch memory at offset 0x0
+  if (nv_msgbox_cmd(fd, SMBPBI_WRITE_SCRMEM, scratch_offset, 0x0, tbuf, rbuf) < 0)
     goto err;
-  if (nv_msgbox_cmd(fd, SMBPBI_ASYNC_REQUEST, 0x1, 0x0, NULL, rbuf) < 0)
+  // Request GPU to read scratch memory at offset 0x0
+  if (nv_msgbox_cmd(fd, SMBPBI_ASYNC_REQUEST, scratch_offset, 0x0, NULL, rbuf) < 0)
     goto err;
 
-  usleep(1000);
   async_id = rbuf[0];
-  // Retry until ASYNC_STATUS_SUCCESS
+  // Retry if needed
   while (retry--) {
-    if (nv_msgbox_cmd(fd, SMBPBI_ASYNC_REQUEST, 0xff, async_id, NULL, rbuf) < 0)
+    if (nv_msgbox_cmd(fd, SMBPBI_ASYNC_REQUEST, SMBPBI_ASYNC_POLLREQ, async_id, NULL, rbuf) < 0)
+      goto err;
+    if (rbuf[0] == ASYNC_STATUS_MORE_PROC || rbuf[0] == ASYNC_STATUS_TIMEOUT ||
+        rbuf[0] == ASYNC_STATUS_NOT_READY || rbuf[0] == ASYNC_STATUS_IN_RESET ||
+        rbuf[0] == ASYNC_STATUS_BUSY_RETRY ) {
       continue;
-    if (rbuf[0] != ASYNC_STATUS_SUCCESS)
-      continue;
-
-    close(fd);
-    syslog(LOG_CRIT, "Set power limit of GPU on slot %d to %d Watts", (int)slot, watt);
-    return ASIC_SUCCESS;
+    }
+    if (rbuf[0] == ASYNC_STATUS_SUCCESS) {
+      close(fd);
+      syslog(LOG_CRIT, "Set power limit of GPU on slot %d to %d Watts", (int)slot, watt);
+      return ASIC_SUCCESS;
+    }
+    break;
   }
 
 err:

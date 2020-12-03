@@ -827,7 +827,7 @@ int pal_chassis_control(uint8_t fru, uint8_t *req_data, uint8_t req_len)
   pthread_t tid;
   pthread_attr_t a;
 
-  if (fru == 0 && !cpld_power_permission()) {
+  if (fru == 2 && !cpld_power_permission()) {
     // If came from BMC itself
     return CC_NOT_SUPP_IN_CURR_STATE;
   }
@@ -1333,7 +1333,8 @@ int pal_slotid_to_fruid(int slotid)
   return slotid + 1;
 }
 
-int pal_devnum_to_fruid(int slotid)
+int pal_devnum_to_fruid(int devnum)
 {
-  return FRU_MB;
+  // 1 = server, 2 = BMC ifself
+  return devnum == 0? 2: devnum;
 }

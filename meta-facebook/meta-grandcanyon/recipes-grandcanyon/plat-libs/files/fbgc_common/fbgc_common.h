@@ -22,6 +22,7 @@
 #define __FBGC_COMMON_H__
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -83,10 +84,24 @@ enum {
   I2C_T5E1S2_T7IOC_BUS = 13,  // T5: E1.S 2; T7: IOCM FRU, Voltage sensor, Temp sensor
   I2C_SCC_BUS = 14,
   I2C_TPM_BUS = 15,  // Reserved
+
+};
+
+// IPMB payload ID
+enum {
+  PAYLOAD_BIC = 1,
+  PAYLOAD_DBG_CARD = 2,
+  PAYLOAD_EXP = 3,
 };
 
 int fbgc_common_get_chassis_type(uint8_t *type);
 void msleep(int msec);
+int fbgc_common_server_stby_pwr_sts(uint8_t *val);
+uint8_t cal_crc8(uint8_t crc, uint8_t const *data, uint8_t len);
+uint8_t hex_c2i(const char c);
+int string_2_byte(const char* c);
+bool start_with(const char *s, const char *p);
+int split(char **dst, char *src, char *delim, int max_size);
 
 #ifdef __cplusplus
 } // extern "C"

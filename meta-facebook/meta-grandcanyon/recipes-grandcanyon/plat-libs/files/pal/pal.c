@@ -98,6 +98,7 @@ struct pal_key_cfg {
   {"system_identify", "off", NULL},
   {"server_boot_order", "0100090203ff", NULL},
   {"server_por_cfg", "on", NULL},
+  {"sysfw_ver", "0", NULL},
   /* Add more Keys here */
   {NULL, NULL, NULL} /* This is the last key of the list */
 };

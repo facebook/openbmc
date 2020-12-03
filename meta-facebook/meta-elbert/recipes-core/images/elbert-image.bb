@@ -23,4 +23,7 @@ IMAGE_INSTALL += " \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \
+  kcsd \
+  ipmid \
+  ipmitool \
   "

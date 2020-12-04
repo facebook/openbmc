@@ -44,14 +44,24 @@
 #define P12V_AUX_DIR \
   P12V_AUX_HWMON_DIR"/hwmon%d/%s"
 
-#define ADM1278_REBOOT	"power_cycle"
+#define ADM1278_REBOOT  "power_cycle"
+
+#define P12V_1_HWMON_DIR \
+  "/sys/bus/i2c/drivers/ltc4282/16-0053/hwmon"
+#define P12V_1_DIR \
+  P12V_1_HWMON_DIR"/hwmon%d/%s"
+
+#define P12V_2_HWMON_DIR \
+  "/sys/bus/i2c/drivers/ltc4282/17-0040/hwmon"
+#define P12V_2_DIR \
+  P12V_2_HWMON_DIR"/hwmon%d/%s"
 
 #define LTC4282_AUX_HWMON_DIR \
   "/sys/bus/i2c/drivers/ltc4282/18-0043/hwmon"
 #define LTC4282_AUX_DIR \
   LTC4282_AUX_HWMON_DIR"/hwmon%d/%s"
 
-#define LTC4282_REBOOT	"reboot"
+#define LTC4282_REBOOT  "reboot"
 
 #define DELAY_POWER_CYCLE 10
 #define MAX_RETRY 10
@@ -792,19 +802,19 @@ void* chassis_control_handler(void *arg)
       if (pal_set_server_power(FRU_MB, SERVER_POWER_OFF) < 0)
         syslog(LOG_CRIT, "SERVER_POWER_OFF failed");
       else
-	syslog(LOG_CRIT, "SERVER_POWER_OFF successful");
+        syslog(LOG_CRIT, "SERVER_POWER_OFF successful");
       break;
     case 0x01:  // power on
       if (pal_set_server_power(FRU_MB, SERVER_POWER_ON) < 0)
         syslog(LOG_CRIT, "SERVER_POWER_ON failed");
       else
-	syslog(LOG_CRIT, "SERVER_POWER_ON successful");
+        syslog(LOG_CRIT, "SERVER_POWER_ON successful");
       break;
     case 0x02:  // power cycle
       if (pal_set_server_power(FRU_MB, SERVER_POWER_CYCLE) < 0)
         syslog(LOG_CRIT, "SERVER_POWER_CYCLE failed");
       else
-	syslog(LOG_CRIT, "SERVER_POWER_CYCLE successful");
+        syslog(LOG_CRIT, "SERVER_POWER_CYCLE successful");
       break;
     case 0xAC:  // sled-cycle with delay 4 secs
       sleep(3);
@@ -867,38 +877,58 @@ int pal_sled_cycle(void)
   return cpld_power_permission()? pal_force_sled_cycle(): -1;
 }
 
+// TODO:
+//   Remove evt_compat if all of EVT PDB are replaced
 int pal_force_sled_cycle(void)
 {
-  int index;
+  int index, i;
   struct dirent *dp;
   DIR *dir;
-  char path[128] = {0};
   char device[LARGEST_DEVICE_NAME] = {0};
+  const char *HSC_DIR[6] = {
+    P12V_1_HWMON_DIR, P12V_2_HWMON_DIR, P12V_AUX_HWMON_DIR,
+    P12V_1_DIR, P12V_2_DIR, P12V_AUX_DIR
+  };
 
-  snprintf(path, sizeof(path), P12V_AUX_HWMON_DIR);
-  dir = opendir(path);
-  if (dir == NULL)
-    goto evt_compat;
+  for (i = 0; i < 3; i++) {
+    dir = opendir(HSC_DIR[i]);
+    if (dir == NULL) {
+      if (i == 2)
+        goto evt_compat;
+      else
+        goto err_exit;
+    }
 
-  while ((dp = readdir(dir)) != NULL) {
-    if (sscanf(dp->d_name, "hwmon%d", &index))
-      break;
-  }
-  if (dp == NULL) {
+    while ((dp = readdir(dir)) != NULL) {
+      if (sscanf(dp->d_name, "hwmon%d", &index))
+        break;
+    }
+    if (dp == NULL) {
+      closedir(dir);
+      if (i == 2)
+        goto evt_compat;
+      else
+        goto err_exit;
+    }
+
     closedir(dir);
-    goto evt_compat;
+    // reboot HSC
+    if (i == 2)
+      snprintf(device, LARGEST_DEVICE_NAME, P12V_AUX_DIR, index, ADM1278_REBOOT);
+    else
+      snprintf(device, LARGEST_DEVICE_NAME, HSC_DIR[i+3], index, LTC4282_REBOOT);
+
+    if (write_device(device, 1) < 0) {
+      if (i == 2)
+        goto evt_compat;
+      else
+        goto err_exit;
+    }
   }
-
-  closedir(dir);
-  // reboot ADM1278 for 12V cycle
-  snprintf(device, LARGEST_DEVICE_NAME, P12V_AUX_DIR, index, ADM1278_REBOOT);
-  if (write_device(device, 1) < 0)
-    goto evt_compat;
-
   return 0;
+
 evt_compat:
-  snprintf(path, sizeof(path), LTC4282_AUX_HWMON_DIR);
-  dir = opendir(path);
+  dir = opendir(LTC4282_AUX_HWMON_DIR);
   if (dir == NULL)
     goto err_exit;
 
@@ -969,7 +999,7 @@ static void fan_state_led_ctrl(uint8_t snr_num, bool assert)
   if (!assert_flag[fan_id]) {
     // If all of assertion had been cleared or it is the first assertion
     if (gpio_set_value(fan_fail, assert? GPIO_VALUE_HIGH: GPIO_VALUE_LOW) ||
-	gpio_set_value(fan_ok, assert? GPIO_VALUE_LOW: GPIO_VALUE_HIGH)) {
+        gpio_set_value(fan_ok, assert? GPIO_VALUE_LOW: GPIO_VALUE_HIGH)) {
       syslog(LOG_WARNING, "FAN LED control failed");
     }
   }

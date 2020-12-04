@@ -131,6 +131,11 @@ static void gpio_event_handle_power_state(gpiopoll_pin_t *gp, gpio_value_t last,
     syslog(LOG_ERR, "setup m2carrier fail\n");
 }
 
+static void gpio_event_handle_power_btn(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  log_gpio_change(desc, curr, 0);
+}
+
 // GPIO table to be monitored
 static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
@@ -140,6 +145,7 @@ static struct gpiopoll_config g_gpios[] = {
   {"HSC_OC_R_N", "GPIOP3", GPIO_EDGE_FALLING, gpio_throttle_handler, NULL},
   {"HSC_UV_R_N", "GPIOP4", GPIO_EDGE_FALLING, gpio_throttle_handler, NULL},
   {"PMBUS_HSC_ALERT_R_N", "GPIOP5", GPIO_EDGE_FALLING, gpio_throttle_handler, NULL},
+  {"BMC_PWR_BTN_IN_N", "Power button", GPIO_EDGE_BOTH, gpio_event_handle_power_btn, NULL},
 };
 
 int main(int argc, char **argv)

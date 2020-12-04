@@ -1,5 +1,5 @@
 {
-  "version": "fbep-AMD-20y0915",
+  "version": "fbep-AMD-20y1202",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 1000,
@@ -75,6 +75,7 @@
       "positive_hysteresis": 2,
       "negative_hysteresis": 2,
       "data": [
+        [60, 10],
         [65, 15],
         [70, 20],
         [75, 25],
@@ -102,6 +103,7 @@
       "positive_hysteresis": 2,
       "negative_hysteresis": 2,
       "data": [
+        [55, 10],
         [60, 15],
         [65, 20],
         [70, 25],

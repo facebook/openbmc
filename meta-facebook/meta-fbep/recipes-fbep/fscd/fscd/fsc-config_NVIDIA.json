@@ -1,5 +1,5 @@
 {
-  "version": "fbep-Nvidia-20y0915",
+  "version": "fbep-Nvidia-20y1202",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 1000,
@@ -73,6 +73,7 @@
       "positive_hysteresis": 2,
       "negative_hysteresis": 2,
       "data": [
+        [53, 15],
         [58, 20],
         [63, 25],
         [68, 30],
@@ -99,6 +100,7 @@
       "positive_hysteresis": 2,
       "negative_hysteresis": 2,
       "data": [
+        [63, 15],
         [68, 20],
         [73, 25],
         [78, 30],

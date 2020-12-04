@@ -27,6 +27,9 @@ inherit meson
 SRC_URI = "file://fbgc_gpio \
           "
 
+DEPENDS += " libgpio-ctrl "
+RDEPENDS_${PN} += " libgpio-ctrl "
+
 S = "${WORKDIR}/fbgc_gpio"
 
 BBCLASSEXTEND = "native nativesdk"

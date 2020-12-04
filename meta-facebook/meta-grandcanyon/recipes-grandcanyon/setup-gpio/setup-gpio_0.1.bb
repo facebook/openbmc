@@ -16,9 +16,9 @@ S = "${WORKDIR}"
 
 binfiles = "setup-gpio \
            "
-DEPENDS += "libpal libgpio-ctrl"
-DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += "libpal libgpio-ctrl"
+DEPENDS += " libpal libgpio-ctrl libfbgc-gpio "
+DEPENDS += " update-rc.d-native "
+RDEPENDS_${PN} += " libpal libgpio-ctrl libfbgc-gpio "
 
 pkgdir = "setup-gpio"
 

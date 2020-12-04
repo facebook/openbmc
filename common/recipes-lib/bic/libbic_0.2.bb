@@ -10,23 +10,12 @@ SRC_URI = "file://bic.h \
            file://bic.c \
            file://bic_platform.h \
            file://bic_platform.c \
-           file://Makefile \
+           file://meson.build \
           "
-LDFLAGS += " -lmisc-utils -lobmc-i2c -lgpio-ctrl"
 
 DEPENDS += "libmisc-utils libipmi libipmb libkv libobmc-i2c libgpio-ctrl"
-RDEPENDS_${PN} += " libmisc-utils libobmc-i2c libgpio-ctrl libkv libipmb libipmi"
+RDEPENDS_${PN} += " libmisc-utils libobmc-i2c liblog "
 
 S = "${WORKDIR}"
 
-do_install() {
-    install -d ${D}${libdir}
-    install -m 0644 libbic.so ${D}${libdir}/libbic.so
-    ln -s libbic.so ${D}${libdir}/libbic.so.0
-
-    install -d ${D}${includedir}/facebook
-    install -m 0644 bic.h ${D}${includedir}/facebook/bic.h
-}
-
-FILES_${PN} = "${libdir}/libbic.so*"
-FILES_${PN}-dev = "${includedir}/facebook/bic.h"
+inherit meson

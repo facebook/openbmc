@@ -573,6 +573,22 @@ pal_set_id_led(uint8_t fru, enum LED_HIGH_ACTIVE status) {
   return ret;
 }
 
+int
+pal_set_hb_led(uint8_t status) {
+  int ret = 0;
+  gpio_value_t val = 0;
+  
+  if (status == LED_ON) {
+    val = GPIO_VALUE_HIGH;
+  } else {
+    val = GPIO_VALUE_LOW;
+  }
+   
+  ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_BMC_LOC_HEARTBEAT_R), val);
+  
+  return ret;
+}
+
 
 int
 pal_set_status_led(uint8_t fru, status_led_color color) {

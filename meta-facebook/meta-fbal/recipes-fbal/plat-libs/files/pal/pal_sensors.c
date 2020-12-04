@@ -634,10 +634,10 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2F
 
-  {"AL_MB_CPU0_PKG_POWER", CPU_ID0, read_cpu_pkg_pwr, false, {208, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x30
-  {"AL_MB_CPU1_PKG_POWER", CPU_ID1, read_cpu_pkg_pwr, false, {208, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x31
-  {"AL_MB_CPU2_PKG_POWER", CPU_ID2, read_cpu_pkg_pwr, false, {208, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x32
-  {"AL_MB_CPU3_PKG_POWER", CPU_ID3, read_cpu_pkg_pwr, false, {208, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x33
+  {"AL_MB_CPU0_PKG_POWER", CPU_ID0, read_cpu_pkg_pwr, false, {130, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x30
+  {"AL_MB_CPU1_PKG_POWER", CPU_ID1, read_cpu_pkg_pwr, false, {130, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x31
+  {"AL_MB_CPU2_PKG_POWER", CPU_ID2, read_cpu_pkg_pwr, false, {130, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x32
+  {"AL_MB_CPU3_PKG_POWER", CPU_ID3, read_cpu_pkg_pwr, false, {130, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x33
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x34
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x35
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x36
@@ -763,10 +763,10 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"AL_MB_OUTLET_L_REMOTE_TEMP", TEMP_REMOTE_OUTLET_L, read_sensor, true, {75, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA5
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA6
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA7
-  {"AL_MB_CPU0_TEMP", CPU_ID0, read_cpu_temp, false, {94, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA8
-  {"AL_MB_CPU1_TEMP", CPU_ID1, read_cpu_temp, false, {94, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA9
-  {"AL_MB_CPU2_TEMP", CPU_ID2, read_cpu_temp, false, {94, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAA
-  {"AL_MB_CPU3_TEMP", CPU_ID3, read_cpu_temp, false, {94, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAB
+  {"AL_MB_CPU0_TEMP", CPU_ID0, read_cpu_temp, false, {89, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA8
+  {"AL_MB_CPU1_TEMP", CPU_ID1, read_cpu_temp, false, {89, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xA9
+  {"AL_MB_CPU2_TEMP", CPU_ID2, read_cpu_temp, false, {89, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAA
+  {"AL_MB_CPU3_TEMP", CPU_ID3, read_cpu_temp, false, {89, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAB
   {"NULL", 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAC
   {"NULL", 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAD
   {"NULL", 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
@@ -2783,6 +2783,223 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
 
 }
 
+static
+int vr_block_rw (int fd, uint8_t addr, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t rlen) {
+  uint8_t retry=3;
+
+  while (i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen) && retry > 0) {
+    retry--;
+    if ( retry == 0) {
+      return -1;
+    }
+  }
+#ifdef DEBUG
+  if(rlen > 0) {
+    for (int i=0; i<rlen; i++) {
+      syslog(LOG_WARNING, "rbuf[%d] = %x\n", i, rbuf[i]);
+    }
+  }
+#endif
+  return 0;
+}
+
+static
+int vr_block_rw_check (int fd, uint8_t addr, uint8_t *tbuf, uint8_t tlen) {
+
+  uint8_t read_check = tbuf[0];
+  uint8_t rbuf[32];
+
+  if ( vr_block_rw(fd, addr, tbuf, tlen, rbuf, 0) ) {
+    syslog(LOG_WARNING, "slavaddr=%x cmd=%x\n", addr, tbuf[0]);
+    return -1;
+  }
+
+  if ( vr_block_rw(fd, addr, &read_check, 1, rbuf, tlen-1) ) {
+    syslog(LOG_WARNING, "read reg 0x%x fail\n", tbuf[0]);
+    return -1;
+  }
+  if( memcmp(tbuf+1, rbuf, tlen-1) != 0 ) {
+    syslog(LOG_WARNING, "compare reg 0x%x fail\n", tbuf[0]);
+    return -1;
+  }
+
+  return 0;
+}
+
+int remap_vr(uint8_t addr) { //8bit addr
+  int fd = 0, ret = -1;
+  uint8_t tbuf[64] = {0};
+  uint8_t rbuf[64] = {0};
+  uint8_t bus = I2C_BUS_1;
+  uint8_t ver[4];
+  uint8_t tmp[32] = {0};
+  uint8_t retry=5;
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
+    return ret;
+  }
+
+  do {
+    tbuf[0] = 0x00;
+    tbuf[1] = 0x00;
+    if ( vr_block_rw(fd, addr, tbuf, 2, rbuf, 0) ) {
+      syslog(LOG_WARNING, "set page fail slavaddr=%x cmd=%x\n", addr, tbuf[0]);
+      break;
+    }
+
+    while ( retry > 0 ) {
+      tbuf[0] = TI_ONLY_CONFIG2;
+      ret = vr_block_rw(fd, addr, tbuf, 1, rbuf, 32);
+      if ( ret != 0 ) {
+        retry--;
+        syslog(LOG_WARNING, "read vr id fail\n");
+        continue;
+      } else {
+        if ( memcmp(tmp, rbuf, 32) ==0 ) {
+#ifdef DEBUG
+          syslog(LOG_WARNING, "vr data compare success\n");
+#endif
+          break;
+        } else {
+          memcpy(tmp, rbuf, 32);
+          memset(rbuf, 0, sizeof(rbuf));
+          retry--;
+#ifdef DEBUG
+          syslog(LOG_WARNING, "vr data compare fail retry=%d\n", retry);
+#endif
+        }
+      }
+    }
+    if ( retry == 0) {
+      break;
+    }
+#ifdef DEBUG
+for(int i=0; i<32; i++) {
+  syslog(LOG_WARNING, "rbuf[%d] = %x\n", i, rbuf[i]);
+}
+#endif
+//Set TI Only config2
+    tbuf[0] = TI_ONLY_CONFIG2;
+    rbuf[10] = 0xC0;
+    memcpy(tbuf+1, rbuf, 32);
+
+    if ( vr_block_rw(fd, addr, tbuf, 33, rbuf, 0) ) {
+      syslog(LOG_WARNING, "err1 bus=%x slavaddr=%x cmd=%x\n", bus, addr, tbuf[0]);
+      break;
+    }
+
+//Read FW Version.
+    memset(tbuf,0,sizeof(tbuf));
+    tbuf[0] = 0xf5;
+    tbuf[1] = 0x04;
+    tbuf[2] = 0xf0;
+    tbuf[3] = 0x1F;
+    tbuf[4] = 0x2C;
+    tbuf[5] = 0x03;
+    if ( vr_block_rw(fd, addr, tbuf, 6, rbuf, 0) ) {
+      syslog(LOG_WARNING, "err2 bus=%x slavaddr=%x cmd=%x\n", bus, addr, tbuf[0]);
+      break;
+    }
+    memset(tbuf,0,sizeof(tbuf));
+    tbuf[0] = 0xf6;
+
+    if ( vr_block_rw(fd, addr, tbuf, 1, rbuf, 5) ) {
+      syslog(LOG_WARNING, "err3 bus=%x slavaddr=%x cmd=%x\n", bus, addr, tbuf[0]);
+      break;
+    }
+    ver[0] = rbuf[1];
+    ver[1] = rbuf[3];
+
+    memset(tbuf,0,sizeof(tbuf));
+    tbuf[0] = 0xf5;
+    tbuf[1] = 0x04;
+    tbuf[2] = 0xF4;
+    tbuf[3] = 0x1F;
+    tbuf[4] = 0x2C;
+    tbuf[5] = 0x03;
+
+    if ( vr_block_rw(fd, addr, tbuf, 6, rbuf, 0) ) {
+      syslog(LOG_WARNING, "err4 bus=%x slavaddr=%x cmd=%x\n", bus, addr, tbuf[0]);
+      break;
+    }
+
+    memset(tbuf,0,sizeof(tbuf));
+    tbuf[0] = 0xf6;
+
+    if ( vr_block_rw(fd, addr, tbuf, 1, rbuf, 5) ) {
+      syslog(LOG_WARNING, "err5 bus=%x slavaddr=%x cmd=%x\n", bus, addr, tbuf[0]);
+      break;
+    }
+
+    ver[2] = rbuf[1];
+    ver[3] = rbuf[3];
+
+#ifdef DEBUG
+for(int i=0; i<4; i++) {
+  syslog(LOG_WARNING, "ver[%d] = %x\n", i, ver[i]);
+}
+#endif
+//Set VR workaround version=2.7.10.0
+    if( (ver[0] == 2) && (ver[1] == 7) && (ver[2] == 10) && (ver[3] == 0) ) {
+      syslog(LOG_WARNING, "vr need workaround addr=0x%X version=2.7.10.0\n", addr);
+      memset(tbuf,0,sizeof(tbuf));
+      tbuf[0] = 0xf5;
+      tbuf[1] = 0x04;
+      tbuf[2] = 0xf0;
+      tbuf[3] = 0x86;
+      tbuf[4] = 0x64;
+      tbuf[5] = 0x03;
+      if ( vr_block_rw_check(fd, addr, tbuf, 6) ) {
+        break;
+      }
+
+      memset(tbuf,0,sizeof(tbuf));
+      tbuf[0] = 0xf6;
+      tbuf[1] = 0x04;
+      tbuf[2] = 0x01;
+      tbuf[3] = 0xAA;
+      tbuf[4] = 0x00;
+      tbuf[5] = 0x00;
+      if ( vr_block_rw_check(fd, addr, tbuf, 6) ) {
+        break;
+      }
+
+      memset(tbuf,0,sizeof(tbuf));
+      tbuf[0] = 0xf5;
+      tbuf[1] = 0x04;
+      tbuf[2] = 0xD8;
+      tbuf[3] = 0x8A;
+      tbuf[4] = 0x64;
+      tbuf[5] = 0x03;
+      if ( vr_block_rw_check(fd, addr, tbuf, 6) ) {
+        break;
+      }
+
+      memset(tbuf,0,sizeof(tbuf));
+      tbuf[0] = 0xf6;
+      tbuf[1] = 0x04;
+      tbuf[2] = 0x49;
+      tbuf[3] = 0x1A;
+      tbuf[4] = 0x00;
+      tbuf[5] = 0x00;
+      if ( vr_block_rw_check(fd, addr, tbuf, 6) ) {
+        break;
+      }
+//Recovery TI_ONLY_CONFIG2
+      tbuf[0] = TI_ONLY_CONFIG2;
+      memcpy(tbuf+1, tmp, 32);
+      if ( vr_block_rw_check(fd, addr, tbuf, 33) ) {
+        break;
+      }
+    }
+  } while(0);
+
+  i2c_cdev_slave_close(fd);
+  return ret;
+}
+
 int pal_sensor_monitor_initial(void) {
   int i=0;
   uint16_t pmon_cfg = 0;
@@ -2813,6 +3030,15 @@ int pal_sensor_monitor_initial(void) {
     vr_chips = vr_infineon_chips;
   } else {
     vr_chips = vr_ti_chips;
+     //Config VR
+    remap_vr(0xC0);
+    remap_vr(0xC4);
+    remap_vr(0xCC);
+    remap_vr(0xD0);
+    remap_vr(0xD8);
+    remap_vr(0xE0);
+    remap_vr(0xE4);
+    remap_vr(0xEC);
   }
 
 //Set HSC ControllerG

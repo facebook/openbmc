@@ -39,6 +39,9 @@
 #define PECI_CPU6_ADDR    (0x36)
 #define PECI_CPU7_ADDR    (0x37)
 
+//TI VR NVM INFO
+#define TI_ONLY_CONFIG2   (0xCE)
+
 enum {
   CFG_SAMPLE_DIABLE = 0,
   CFG_SAMPLE_2,

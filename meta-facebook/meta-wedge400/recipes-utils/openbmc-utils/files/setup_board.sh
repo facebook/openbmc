@@ -65,6 +65,14 @@ elif  [ $((brd_type)) -eq 1 ]; then
   cp /etc/sensors.d/custom/wedge400c.conf /etc/sensors.d/wedge400c.conf
 fi
 
+# For the time being, we set GB VDD Core to 825mv, to take care of
+# some of the early DVT W400c devices whose VRD default value upon power-up
+# is NOT 825. This will not harm newer devices with correct default value.
+if [ $((brd_type)) -eq 1 ]; then
+  echo "Running GB VDD Core fix routine."
+  /usr/local/bin/set_vdd.sh 825
+fi
+
 # export_gpio_pin for PCA9555 4-0027
 gpiocli export -c 4-0027 -o 8 --shadow ISO_DEBUG_RST_BTN_N
 gpiocli export -c 4-0027 -o 9 --shadow ISO_PWR_BTN_N

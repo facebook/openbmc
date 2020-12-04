@@ -27,6 +27,8 @@ extern "C" {
 
 #include "bic_xfer.h"
 #include "bic_ipmi.h"
+#include "bic_fwupdate.h"
+#include "bic_vr_fwupdate.h"
 #include "error.h"
 #include <errno.h>
 #include <libusb-1.0/libusb.h>

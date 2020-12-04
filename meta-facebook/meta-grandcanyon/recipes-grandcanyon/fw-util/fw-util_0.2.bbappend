@@ -23,6 +23,10 @@ SRC_URI += "\
         file://bmc_fpga.cpp \
         file://bmc_fpga.h \
         file://platform.cpp \
+        file://server.h \
+        file://bic_cpld.cpp \
+        file://bic_vr.cpp \
+        file://bic_vr.h \
         "
 
 CXXFLAGS += " -DBIC_SUPPORT "

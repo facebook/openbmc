@@ -701,3 +701,9 @@ pal_get_nic_fru_id(void)
 {
   return FRU_NIC;
 }
+
+int
+pal_is_slot_server(uint8_t fru) {
+  return (fru == FRU_SERVER) ? 1 : 0;
+}
+

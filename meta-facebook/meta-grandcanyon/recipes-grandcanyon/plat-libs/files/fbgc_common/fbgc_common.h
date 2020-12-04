@@ -51,6 +51,10 @@ extern "C" {
 #define E1S1_PRESENT_BIT   (1 << 0)
 #define E1S2_PRESENT_BIT   (1 << 1)
 
+#define I2C_BASE           0x1e78a000
+#define I2C_BASE_INTERVAL  0x80
+#define I2C_BASE_MAP(bus)  (I2C_BASE + (((bus) + 1) * I2C_BASE_INTERVAL))
+
 enum {
   FRU_ALL = 0,
   FRU_SERVER,

@@ -10,11 +10,17 @@ bic_headers = [
     'bic.h',
     'bic_xfer.h',
     'bic_ipmi.h',
+    'bic_fwupdate.h',
+    'bic_bios_fwupdate.h',
+    'bic_vr_fwupdate.h',
 ]
 
 bic_sources = [
     'bic_xfer.c',
     'bic_ipmi.c',
+    'bic_fwupdate.c',
+    'bic_bios_usb_fwupdate.c',
+    'bic_vr_fwupdate.c',
 ]
 
 bic_deps = [

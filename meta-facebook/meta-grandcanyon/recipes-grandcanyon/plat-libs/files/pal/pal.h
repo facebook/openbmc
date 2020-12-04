@@ -91,6 +91,7 @@ int pal_set_status_led(uint8_t fru, status_led_color color);
 int pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 int pal_get_nic_fru_id(void);
 bool pal_sensor_is_cached(uint8_t fru, uint8_t sensor_num);
+int pal_is_slot_server(uint8_t fru);
 
 #ifdef __cplusplus
 } // extern "C"

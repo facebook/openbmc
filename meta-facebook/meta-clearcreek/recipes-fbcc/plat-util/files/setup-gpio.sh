@@ -180,25 +180,25 @@ gpio_set PU_GPIOZ6 0
 gpio_export PU_GPIOZ7 GPIOZ7
 gpio_set PU_GPIOZ7 1
 
-gpio_export PD_GPIOT1 GPIOT1
-gpio_set PD_GPIOT1 0
-gpio_export NCSI_BMC_TX_EN GPIOT2
-gpio_set NCSI_BMC_TX_EN 1
-gpio_export NCSI_BMC_TXD0 GPIOT3
+gpio_export NCSI_BMC_TX_EN GPIOT1
+gpio_set NCSI_BMC_TX_EN 0
+gpio_export NCSI_BMC_TXD0 GPIOT2
 gpio_set NCSI_BMC_TXD0 0
-gpio_export NCSI_BMC_TXD1 GPIOT4
+gpio_export NCSI_BMC_TXD1 GPIOT3
 gpio_set NCSI_BMC_TXD1 0
+gpio_export PD_GPIOT4 GPIOT4
+gpio_set PD_GPIOT4 0
 gpio_export PD_GPIOT5 GPIOT5
 gpio_set PD_GPIOT5 0
 
-gpio_export PD_GPIOT7 GPIOT7
-gpio_set PD_GPIOT7 0
-gpio_export NCSI_BMC_2_TX_EN GPIOU0
+gpio_export NCSI_BMC_2_TX_EN GPIOT7
 gpio_set NCSI_BMC_2_TX_EN 0
-gpio_export NCSI_BMC_2_TXD0 GPIOU1
+gpio_export NCSI_BMC_2_TXD0 GPIOU0
 gpio_set NCSI_BMC_2_TXD0 0
-gpio_export NCSI_BMC_2_TXD1 GPIOU2
+gpio_export NCSI_BMC_2_TXD1 GPIOU1
 gpio_set NCSI_BMC_2_TXD1 0
+gpio_export PD_GPIOU2 GPIOU2
+gpio_set PD_GPIOU2 0
 gpio_export PD_GPIOU3 GPIOU3
 gpio_set PD_GPIOU3 0
 

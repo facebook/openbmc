@@ -11,7 +11,7 @@
 #define NIC_INFO_SLAVE_ADDR          (0x3E)
 #define NIC_INFO_TEMP_CMD            (0x1)
 
-#define MAX_EXP_IPMB_SENSOR_COUNT    40
+#define MAX_EXP_IPMB_SENSOR_COUNT    4
 
 #define MAX_RETRY                    3
 #define MAX_SDR_PATH                 32
@@ -65,6 +65,7 @@ enum {
   FAN,
   PERCENT,
   POWER,
+  FLOW,
 };
 
 // Sensors under Barton Springs (BS)
@@ -237,23 +238,25 @@ enum {
   DPB_OUTLET_TEMP = 0xD2,
   DPB_HSC_P12V = 0xD3,
   DPB_P3V3_STBY_SENSE = 0xD4,
-  DPB_P5V_1_SYS_SENSE = 0xD5,
-  DPB_P5V_2_SYS_SENSE = 0xD6,
-  DPB_P5V_3_SYS_SENSE = 0xD7,
-  DPB_P5V_4_SYS_SENSE = 0xD8,
-  DPB_HSC_P12V_CLIP = 0xD9,
-  DPB_HSC_CUR = 0xDA,
-  DPB_HSC_CUR_CLIP = 0xDB,
-  DPB_HSC_PWR = 0xDC,
-  DPB_HSC_PWR_CLIP = 0xDD,
-  FAN_1_FRONT = 0xE0,
-  FAN_1_REAR = 0xE1,
-  FAN_2_FRONT = 0xE2,
-  FAN_2_REAR = 0xE3,
-  FAN_3_FRONT = 0xE4,
-  FAN_3_REAR = 0xE5,
-  FAN_4_FRONT = 0xE6,
-  FAN_4_REAR = 0xE7,
+  DPB_P3V3_IN_SENSE = 0xD5,
+  DPB_P5V_1_SYS_SENSE = 0xD6,
+  DPB_P5V_2_SYS_SENSE = 0xD7,
+  DPB_P5V_3_SYS_SENSE = 0xD8,
+  DPB_P5V_4_SYS_SENSE = 0xD9,
+  DPB_HSC_P12V_CLIP = 0xDA,
+  DPB_HSC_CUR = 0xDB,
+  DPB_HSC_CUR_CLIP = 0xDC,
+  DPB_HSC_PWR = 0xDD,
+  DPB_HSC_PWR_CLIP = 0xDE,
+  FAN_0_FRONT = 0xE0,
+  FAN_0_REAR = 0xE1,
+  FAN_1_FRONT = 0xE2,
+  FAN_1_REAR = 0xE3,
+  FAN_2_FRONT = 0xE4,
+  FAN_2_REAR = 0xE5,
+  FAN_3_FRONT = 0xE6,
+  FAN_3_REAR = 0xE7,
+  AIRFLOW = 0xE8,
 };
 
 // NIC sensors

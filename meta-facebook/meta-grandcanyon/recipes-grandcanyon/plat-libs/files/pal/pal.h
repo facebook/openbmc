@@ -48,6 +48,11 @@ typedef enum {
   STATUS_LED_BLUE,
 } status_led_color;
 
+typedef enum {
+  ID_E1S0_LED,
+  ID_E1S1_LED,
+} e1s_led_id;
+
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
 extern const char pal_fru_list_sensor_history[];
@@ -88,6 +93,7 @@ int pal_get_key_value(char *key, char *value);
 int pal_set_id_led(uint8_t slot, enum LED_HIGH_ACTIVE status);
 int pal_set_hb_led(uint8_t status);
 int pal_set_status_led(uint8_t fru, status_led_color color);
+int pal_set_e1s_led(uint8_t fru, e1s_led_id id, enum LED_HIGH_ACTIVE status);
 int pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 int pal_get_nic_fru_id(void);
 bool pal_sensor_is_cached(uint8_t fru, uint8_t sensor_num);

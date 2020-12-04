@@ -30,6 +30,8 @@ static void
 print_usage_help(void) {
   printf("Usage: fpc-util --identify <on/off>\n");
   printf("Usage: fpc-util --status <yellow/blue/off>\n");
+  printf("Usage: fpc-util --e1s0 <on/off>\n");
+  printf("Usage: fpc-util --e1s1 <on/off>\n");
 }
 
 int
@@ -55,6 +57,22 @@ main(int argc, char **argv) {
       return pal_set_status_led(FRU_UIC, STATUS_LED_BLUE);
     } else if (!strncmp(argv[2], "off", strlen("off"))) {
       return pal_set_status_led(FRU_UIC, STATUS_LED_OFF);
+    } else {
+      goto err_exit;
+    }
+  } else if (!strncmp(argv[1], "--e1s0", strlen("--e1s0"))) {
+    if (!strncmp(argv[2], "on", strlen("on"))) {
+      return pal_set_e1s_led(FRU_E1S_IOCM, ID_E1S0_LED, LED_ON);
+    } else if (!strncmp(argv[2], "off", strlen("off"))) {
+      return pal_set_e1s_led(FRU_E1S_IOCM, ID_E1S0_LED, LED_OFF);
+    } else {
+      goto err_exit;
+    }
+  } else if (!strncmp(argv[1], "--e1s1", strlen("--e1s1"))) {
+    if (!strncmp(argv[2], "on", strlen("on"))) {
+      return pal_set_e1s_led(FRU_E1S_IOCM, ID_E1S1_LED, LED_ON);
+    } else if (!strncmp(argv[2], "off", strlen("off"))) {
+      return pal_set_e1s_led(FRU_E1S_IOCM, ID_E1S1_LED, LED_OFF);
     } else {
       goto err_exit;
     }

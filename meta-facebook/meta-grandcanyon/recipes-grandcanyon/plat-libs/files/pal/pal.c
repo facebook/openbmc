@@ -628,6 +628,32 @@ pal_set_status_led(uint8_t fru, status_led_color color) {
 }
 
 int
+pal_set_e1s_led(uint8_t fru, e1s_led_id id, enum LED_HIGH_ACTIVE status) {
+  int ret = 0;
+  gpio_value_t val = 0;
+
+  if (fru != FRU_E1S_IOCM) {
+    return -1;
+  }
+
+  if (status == LED_ON) {
+    val = GPIO_VALUE_HIGH;
+  } else {
+    val = GPIO_VALUE_LOW;
+  }
+
+  if (id == ID_E1S0_LED) {
+    ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_1_LED_ACT), val);
+  } else if (id == ID_E1S1_LED) {
+    ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_2_LED_ACT), val);
+  } else {
+    return -1;
+  }
+
+  return ret;
+}
+
+int
 pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len) {
   int i = 0;
   int j = 0;

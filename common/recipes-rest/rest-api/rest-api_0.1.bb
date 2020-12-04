@@ -25,8 +25,10 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 DEPENDS_append = " update-rc.d-native aiohttp-native json-log-formatter-native"
-RDEPENDS_${PN} += "python3-core aiohttp json-log-formatter"
-RDEPENDS_${PN}_class-target += "libgpio-ctrl"
+
+REST_API_RDEPENDS = "python3-core aiohttp json-log-formatter"
+RDEPENDS_${PN} += "${REST_API_RDEPENDS}"
+RDEPENDS_${PN}_class-target += "${REST_API_RDEPENDS} libgpio-ctrl"
 
 
 SRC_URI = "file://setup-rest-api.sh \

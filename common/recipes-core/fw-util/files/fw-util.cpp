@@ -259,7 +259,7 @@ int main(int argc, char *argv[])
         cerr << "Cannot access: " << image << endl;
         return -1;
       }
-    } 
+    }
     if (component == "all") {
       cerr << "Upgrading all components not supported" << endl;
       return -1;
@@ -320,8 +320,6 @@ int main(int argc, char *argv[])
   sigemptyset(&sa.sa_mask);
   sigaction(SIGHUP, &sa, NULL);
   sigaction(SIGINT, &sa, NULL);
-  sigaction(SIGQUIT, &sa, NULL);
-  sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGTERM, &sa, NULL);
   sigaction(SIGPIPE, &sa, NULL); // for ssh terminate
   //print the fw version or do the fw update when the fru and the comp are found

@@ -37,7 +37,7 @@ int jtag_interface_run_test_idle(int jtag_fd,
                                  unsigned char endstate, 
                                  unsigned char tck);
 
-int jtag_interface_set_mode(int jtag_fd, unsigned int mode);
+int jtag_interface_set_xfer_mode(int jtag_fd, unsigned int mode);
 int jtag_interface_get_status(int jtag_fd, enum jtag_endstate *endstate);
 
 int jtag_interface_xfer(int jtag_fd, 

@@ -61,7 +61,7 @@ jtag_object_t *jtag_init(const char *dev_name, unsigned char mode, unsigned int 
  
     pobj->fd = retcode;
 
-    retcode = jtag_interface_set_mode(pobj->fd, mode);
+    retcode = jtag_interface_set_xfer_mode(pobj->fd, mode);
     if(retcode < 0){
         printf("%s(%d) - %s: faild to set mode %d!\n", \
                        __FILE__, __LINE__, __FUNCTION__, mode);

@@ -92,15 +92,15 @@ int jtag_interface_run_test_idle(int jtag_fd,
 
 {
     int retval;
-    jtag_run_test_idle_t run_idle;
+    struct jtag_end_tap_state run_idle;
 
     run_idle.endstate = endstate;
     run_idle.reset = reset;
     run_idle.tck = tck;
 
-    retval = ioctl(jtag_fd, JTAG_IOCRUNTEST, &run_idle);
+    retval = ioctl(jtag_fd, JTAG_SIOCSTATE, &run_idle);
     if (retval < 0) {
-        printf("%s(%d) - %s: ioctl JTAG_IOCRUNTEST failure!\n", \
+        printf("%s(%d) - %s: ioctl JTAG_SIOCSTATE failure!\n", \
                        __FILE__, __LINE__, __FUNCTION__);
         return -1;
     }

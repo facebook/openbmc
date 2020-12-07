@@ -123,7 +123,7 @@ static int read_status_register(unsigned int *status, int ustime)
     
     usleep(ustime);
     
-    ret = read_data_register(0, &dr_data, 32);
+    ret = read_data_register(JTAG_STATE_IDLE, &dr_data, 32);
     if(ret < 0){
         printf("%s(%d) - failed to write data from cpld\n", __FILE__, __LINE__);
         return -1;
@@ -145,7 +145,7 @@ static int read_busy_register(unsigned int *status, int ustime)
     
     usleep(ustime);
     
-    ret = read_data_register(0, &dr_data, 8);
+    ret = read_data_register(JTAG_STATE_IDLE, &dr_data, 8);
     if(ret < 0){
         printf("%s(%d) - failed to write data from cpld\n", __FILE__, __LINE__);
         return -1;
@@ -544,7 +544,7 @@ int program_feature_row(unsigned int a0, unsigned int a1)
 
     dr_data[0] = 0x00000000;
     dr_data[1] = 0x00000000;
-    rc = read_data_register(0, dr_data, 64);
+    rc = read_data_register(JTAG_STATE_IDLE, dr_data, 64);
     if(rc < 0){
         printf("%s(%d) - failed to read data register\n", __FUNCTION__, __LINE__);
         return -1;
@@ -626,7 +626,7 @@ int program_done()
     for (i = 0; i < 10; i++) {
         usleep(3000);
         dr_data = 0;
-        rc = read_data_register(0, &dr_data, 1);
+        rc = read_data_register(JTAG_STATE_IDLE, &dr_data, 1);
         if(rc < 0) return rc;
     }
 

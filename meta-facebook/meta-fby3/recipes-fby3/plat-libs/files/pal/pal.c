@@ -1199,7 +1199,7 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
   int ret = 0, config_status = 0;
   uint8_t bmc_location = 0;
   uint8_t type_1ou = 0;
-  uint8_t type_2ou = 0;
+  uint8_t type_2ou = UNKNOWN_BOARD;
   ret = fby3_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
@@ -1207,8 +1207,17 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
   }
 
   config_status = bic_is_m2_exp_prsnt(slot);
+  if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
+    //check if GPv3 is installed
+    if ( fby3_common_get_2ou_board_type(slot, &type_2ou) < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
+    }
+  }
+
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-    if (config_status == 0) {
+    if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+      pcie_conf = CONFIG_D_GPV3;
+    } else if (config_status == 0) {
       pcie_conf = CONFIG_A;
     } else if (config_status == 1) {
       bic_get_1ou_type(slot, &type_1ou);
@@ -1219,25 +1228,14 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
       }
     } else if (config_status == 3) {
       pcie_conf = CONFIG_D;
-      if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
-        if ( fby3_common_get_2ou_board_type(slot, &type_2ou) < 0 ) {
-          syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
-        } else if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
-          pcie_conf = CONFIG_D_GPV3;
-        }
-      }
     } else {
       pcie_conf = CONFIG_B;
     }
   } else {
-    pcie_conf = CONFIG_C;
-    //check if GPv3 is installed
-    if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
-      if ( fby3_common_get_2ou_board_type(slot, &type_2ou) < 0 ) {
-        syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
-      } else if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
-        pcie_conf = CONFIG_C_GPV3;
-      }
+    if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+      pcie_conf = CONFIG_C_GPV3;
+    } else {
+      pcie_conf = CONFIG_C;
     }
   }
 

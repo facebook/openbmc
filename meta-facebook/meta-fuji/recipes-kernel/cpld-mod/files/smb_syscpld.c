@@ -1818,6 +1818,14 @@ static const i2c_dev_attr_st smb_syscpld_attr_table[] = {
     0x57, 7, 1,
   },
   {
+    "th4_read_N",
+    "0: Disable TH4 I2C access\n"
+    "1: Enable TH4 I2C access",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x59, 0, 1,
+  },
+  {
     "upgrade_run",
     "0: No upgrade\n"
     "1: Start the upgrade",

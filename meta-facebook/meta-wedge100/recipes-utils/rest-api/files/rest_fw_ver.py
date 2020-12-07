@@ -5,7 +5,10 @@ import subprocess
 from asyncio.subprocess import PIPE, create_subprocess_exec
 from typing import List
 
-import kv
+try:
+    import kv
+except Exception:
+    import fake_kv as kv
 
 
 async def __run_cmd(cmd: List[str]) -> str:

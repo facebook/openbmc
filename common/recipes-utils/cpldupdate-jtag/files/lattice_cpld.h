@@ -114,11 +114,13 @@ int enter_configuration_mode(int mode);
 int exit_configuration_mode();
 int erase_cpld(unsigned char option, int num_of_loops);
 int program_configuration(int bytes_per_page, int num_of_pages, progress_func_t progress);
+int verify_configuration(int bytes_per_page, int num_of_pages);
 int program_feature_row(unsigned int a, unsigned int b);
 int program_feabits(unsigned short feabits);
 int program_user_code(unsigned int code);
 int program_done();
-int transmit_refesh();
+int transmit_refresh();
+int preload(void);
 #ifdef __cplusplus
 }
 #endif

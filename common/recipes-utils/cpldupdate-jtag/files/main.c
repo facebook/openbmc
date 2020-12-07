@@ -84,19 +84,18 @@ static const struct option
 };
 
 static unsigned short prog_option = 0;
-static int debug = 1;
 
-static int print_progess_bar(long pecent)
+static void print_progress_bar(int pecent)
 {
     int i = 0;
     static int prev_pecent = 0;
 
     if(prev_pecent == pecent){
         /* To avoid the duplicated print */
-        return 0;
-    }else{
-        prev_pecent = pecent;
+        return;
     }
+
+    prev_pecent = pecent;
 
     printf("\033[?251");
     printf("\r");
@@ -114,8 +113,6 @@ static int print_progess_bar(long pecent)
     if(pecent == 100) {
         printf("\n");
     }
-
-    return 0;
 }
 
 static void printf_pass()
@@ -245,7 +242,7 @@ int cpld_program(cpld_t *pcpld, const char *file_name)
 
     rc = program_configuration(pcpld->pcpld_device->page_bits/BITS_OF_ONE_BYTE, 
          pcpld->pcpld_device->num_of_cfg_pages,
-         print_progess_bar);
+         print_progress_bar);
     if(rc < 0){
         printf("%s(%d) - failed to program configuration\n", __FUNCTION__, __LINE__);
         goto end_of_func;
@@ -280,15 +277,12 @@ int cpld_program(cpld_t *pcpld, const char *file_name)
     rc = exit_configuration_mode();
 
 end_of_func:
-    if(rc == 0) print_progess_bar(100);
+    if(rc == 0) print_progress_bar(100);
     return rc;
 }
 
 int cpld_erase(cpld_t *pcpld, unsigned char flash_block){
     int rc;
-    unsigned int dr_data;
-    unsigned int status;
-    int i;
     
     rc = cpld_init(pcpld);
     if(rc < 0){
@@ -396,7 +390,7 @@ end_of_func:
 int cpld_read(cpld_t *pcpld, const char *file_name)
 {
     int i;
-    unsigned int *dr_data;
+    unsigned int *dr_data = NULL;
     unsigned int jed_data;
     unsigned int row  = 0;
     int bytes_per_page = 0;
@@ -409,7 +403,7 @@ int cpld_read(cpld_t *pcpld, const char *file_name)
 
     rc = check_file(file_name);
     if(rc < 0){
-        printf("%s(%d) - JED file %s is invalid file\n", file_name);
+        printf("JED file %s is invalid file\n", file_name);
         return -1;
     }
 
@@ -458,6 +452,12 @@ int cpld_read(cpld_t *pcpld, const char *file_name)
 
     printf("Read config pages: %d \n", pcpld->pcpld_device->num_of_cfg_pages);
     bytes_per_page = (pcpld->pcpld_device->page_bits / BITS_OF_ONE_BYTE);
+
+    dr_data = malloc(bytes_per_page);
+    if (dr_data == NULL) {
+        perror("malloc error");
+        goto end_of_func;
+    }
     
     FILE *cpld_fp = fopen("cpld_data", "w");
     FILE *jed_fp = fopen("jed_data", "w");
@@ -479,7 +479,8 @@ int cpld_read(cpld_t *pcpld, const char *file_name)
     rc = exit_configuration_mode();
 
 end_of_func:
-    if(dr_data) free(dr_data);
+    if(dr_data)
+        free(dr_data);
     return rc;
 }
 
@@ -487,9 +488,8 @@ int main(int argc, char *argv[]){
     char option;
     char in_name[100]  = "";
     char out_name[100] = "";
-
     cpld_t cpld;
-    int rc;
+    int rc = -1;
 
     printf( "\n******************************************************************\n" );
     printf( "                 Celestica Corp.\n" );

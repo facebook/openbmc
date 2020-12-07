@@ -15,6 +15,8 @@ TARGET   = cpldprog
 # OBJECTS += main.o lattice.o ast-jtag.o machxo2.o jedecfile.o
 OBJECTS += main.o lattice_cpld.o jedecfile.o jtag_common.o jtag_interface.o
 
+CFLAGS += -Wall -Werror
+
 .c.o:
 	$(CC) -c $(CFLAGS) $(INCPATH) -o $@ $<
 $(TARGET):$(OBJECTS)

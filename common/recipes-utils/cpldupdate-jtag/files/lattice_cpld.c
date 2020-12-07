@@ -337,8 +337,7 @@ int exit_configuration_mode()
 int erase_cpld(unsigned char option, int num_of_loops)
 {
     int rc;
-    int i;
-    unsigned int dr_data;
+
     rc = write_onebyte_instruction(JTAG_STATE_IDLE, ISC_ERASE);
     if(rc < 0){
         printf("%s(%d) - failed to write instruction ISC_ERASE\n", __FUNCTION__, __LINE__);
@@ -443,7 +442,7 @@ int program_configuration(int bytes_per_page, int num_of_pages, progress_func_t 
         }
 
         if (page_buffer[0] != 0){
-            printf("%S(%d) - Prgram failure row %d: failure data [%08x] \n", row, page_buffer[0]);
+            printf("Prgram failure row %d: failure data [%08x] \n", row, page_buffer[0]);
             rc = -1;
             break;
         } else {

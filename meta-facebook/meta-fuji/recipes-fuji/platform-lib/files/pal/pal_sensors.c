@@ -165,7 +165,7 @@ const uint8_t scm_all_sensor_list[] = {
 };
 
 /* List of SMB sensors to be monitored */
-const uint8_t smb_sensor_list[] = {
+const uint8_t smb_sensor_list_evt[] = {
   SMB_XP3R3V_BMC,
   SMB_XP2R5V_BMC,
   SMB_XP1R8V_BMC,
@@ -243,6 +243,87 @@ const uint8_t smb_sensor_list[] = {
   SMB_SENSOR_FAN7_REAR_TACH,
   SMB_SENSOR_FAN8_FRONT_TACH,
   SMB_SENSOR_FAN8_REAR_TACH,
+};
+
+const uint8_t smb_sensor_list_dvt[] = {
+  SMB_XP3R3V_BMC,
+  SMB_XP2R5V_BMC,
+  SMB_XP1R8V_BMC,
+  SMB_XP1R2V_BMC,
+  SMB_XP1R0V_FPGA,
+  SMB_XP3R3V_USB,
+  SMB_XP5R0V,
+  SMB_XP3R3V_EARLY,
+  SMB_LM57_VTEMP,
+  SMB_XP1R8,
+  SMB_XP1R2,
+  SMB_VDDC_SW,
+  SMB_XP3R3V,
+  SMB_XP1R8V_AVDD,
+  SMB_XP1R2V_TVDD,
+  SMB_XP0R75V_1_PVDD,
+  SMB_XP0R75V_2_PVDD,
+  SMB_XP0R75V_3_PVDD,
+  SMB_VDD_PCIE,
+  SMB_XP0R84V_DCSU,
+  SMB_XP0R84V_CSU,
+  SMB_XP1R84V_CSU,
+  SMB_XP3R3V_TCXO,
+  SMB_OUTPUT_VOLTAGE_XP0R75V_1,
+  SMB_OUTPUT_CURRENT_XP0R75V_1,
+  SMB_INPUT_VOLTAGE_1,
+  SMB_OUTPUT_VOLTAGE_XP1R2V,
+  SMB_OUTPUT_CURRENT_XP1R2V,
+  SMB_OUTPUT_VOLTAGE_XP0R75V_2,
+  SMB_OUTPUT_CURRENT_XP0R75V_2,
+  SMB_INPUT_VOLTAGE_2,
+  SMB_TMP422_U20_1_TEMP,
+  SMB_TMP422_U20_2_TEMP,
+  SMB_TMP422_U20_3_TEMP,
+  SIM_LM75_U1_TEMP,
+  SMB_SENSOR_TEMP1,
+  SMB_SENSOR_TEMP2,
+  SMB_SENSOR_TEMP3,
+  SMB_VDDC_SW_TEMP,
+  SMB_XP12R0V_VDDC_SW_IN,
+  SMB_VDDC_SW_POWER_IN,
+  SMB_VDDC_SW_POWER_OUT,
+  SMB_VDDC_SW_CURR_IN,
+  SMB_VDDC_SW_CURR_OUT,
+  /* Sensors on PDB */
+  SMB_SENSOR_PDB_L_TEMP1,
+  SMB_SENSOR_PDB_L_TEMP2,
+  SMB_SENSOR_PDB_R_TEMP1,
+  SMB_SENSOR_PDB_R_TEMP2,
+  /* Sensors on FCM */
+  SMB_SENSOR_FCM_T_TEMP1,
+  SMB_SENSOR_FCM_T_TEMP2,
+  SMB_SENSOR_FCM_B_TEMP1,
+  SMB_SENSOR_FCM_B_TEMP2,
+  SMB_SENSOR_FCM_T_HSC_VOLT,
+  SMB_SENSOR_FCM_T_HSC_CURR,
+  SMB_SENSOR_FCM_T_HSC_POWER_VOLT,
+  SMB_SENSOR_FCM_B_HSC_VOLT,
+  SMB_SENSOR_FCM_B_HSC_CURR,
+  SMB_SENSOR_FCM_B_HSC_POWER_VOLT,
+  /* Sensors FAN Speed */
+  SMB_SENSOR_FAN1_FRONT_TACH,
+  SMB_SENSOR_FAN1_REAR_TACH,
+  SMB_SENSOR_FAN2_FRONT_TACH,
+  SMB_SENSOR_FAN2_REAR_TACH,
+  SMB_SENSOR_FAN3_FRONT_TACH,
+  SMB_SENSOR_FAN3_REAR_TACH,
+  SMB_SENSOR_FAN4_FRONT_TACH,
+  SMB_SENSOR_FAN4_REAR_TACH,
+  SMB_SENSOR_FAN5_FRONT_TACH,
+  SMB_SENSOR_FAN5_REAR_TACH,
+  SMB_SENSOR_FAN6_FRONT_TACH,
+  SMB_SENSOR_FAN6_REAR_TACH,
+  SMB_SENSOR_FAN7_FRONT_TACH,
+  SMB_SENSOR_FAN7_REAR_TACH,
+  SMB_SENSOR_FAN8_FRONT_TACH,
+  SMB_SENSOR_FAN8_REAR_TACH,
+  SMB_SENSOR_TH4_HIGH,
 };
 
 const uint8_t pim16q_sensor_list[8][PIM_SENSOR_CNT+1] = {
@@ -701,7 +782,8 @@ float psu_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
 size_t bic_discrete_cnt = sizeof(bic_discrete_list)/sizeof(uint8_t);
 size_t scm_sensor_cnt = sizeof(scm_sensor_list)/sizeof(uint8_t);
 size_t scm_all_sensor_cnt = sizeof(scm_all_sensor_list)/sizeof(uint8_t);
-size_t smb_sensor_cnt = sizeof(smb_sensor_list)/sizeof(uint8_t);
+size_t smb_sensor_cnt_evt = sizeof(smb_sensor_list_evt)/sizeof(uint8_t);
+size_t smb_sensor_cnt_dvt = sizeof(smb_sensor_list_dvt)/sizeof(uint8_t);
 size_t psu1_sensor_cnt = sizeof(psu1_sensor_list)/sizeof(uint8_t);
 size_t psu2_sensor_cnt = sizeof(psu2_sensor_list)/sizeof(uint8_t);
 size_t psu3_sensor_cnt = sizeof(psu3_sensor_list)/sizeof(uint8_t);
@@ -1085,14 +1167,24 @@ pal_clear_thresh_value(uint8_t fru) {
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   uint8_t pim_type, pim_id;
+  int brd_type_rev;
+  pal_get_board_rev(&brd_type_rev);
+
   switch(fru) {
   case FRU_SCM:
     *sensor_list = (uint8_t *) scm_all_sensor_list;
     *cnt = scm_all_sensor_cnt;
     break;
   case FRU_SMB:
-    *sensor_list = (uint8_t *) smb_sensor_list;
-    *cnt = smb_sensor_cnt;
+    if(brd_type_rev == BOARD_FUJI_EVT1 ||
+      brd_type_rev == BOARD_FUJI_EVT2 ||
+      brd_type_rev == BOARD_FUJI_EVT3) {
+      *sensor_list = (uint8_t *) smb_sensor_list_evt;
+      *cnt = smb_sensor_cnt_evt;
+    } else if (brd_type_rev == BOARD_FUJI_DVT1) {
+      *sensor_list = (uint8_t *) smb_sensor_list_dvt;
+      *cnt = smb_sensor_cnt_dvt;
+    }
     break;
   case FRU_PIM1:
   case FRU_PIM2:
@@ -1512,6 +1604,12 @@ static int
 smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
 
   int ret = -1;
+  float read_val;
+  int num = 0;
+  char path[PATH_MAX ];
+
+#define TH4_SENSOR_NUM  15
+
   switch(sensor_num) {
     case SMB_TMP422_U20_1_TEMP:
       ret = read_attr(fru, sensor_num, SMB_TMP422_DEVICE, TEMP(1), value);
@@ -1739,6 +1837,33 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_FAN8_FRONT_TACH:
       ret = read_fan_rpm_f(SMB_FCM_B_TACH_DEVICE, 8, value);
+      break;
+    case SMB_SENSOR_TH4_HIGH:
+      /* Enable the hardware lock in SMB CPLD to th4 access */
+      snprintf(path, sizeof(path), SMBCPLD_PATH_FMT, "th4_read_N");
+      write_device(path, "1");
+      *value = 0;
+      for ( int id = 1; id <= TH4_SENSOR_NUM; id++ ){
+        sprintf(path,"temp%d_input",id);
+        ret = read_attr(fru, sensor_num, SMB_TH4_DEVICE, path, &read_val);
+        if(ret){
+          continue;
+        }else{
+          num++;
+        }
+
+        if(read_val > *value){
+          *value = read_val;
+        }
+      }
+      /* Disable the hardware lock in SMB CPLD to avoid invalid th4 access */
+      snprintf(path, sizeof(path), SMBCPLD_PATH_FMT, "th4_read_N");
+      write_device(path, "0");
+      if(num == TH4_SENSOR_NUM){
+        ret = 0;
+      }else{
+        ret = READING_NA;
+      }
       break;
     default:
       ret = READING_NA;
@@ -2744,6 +2869,9 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_FAN8_REAR_TACH:
       sprintf(name, "FAN8_REAR_SPEED");
       break;
+    case SMB_SENSOR_TH4_HIGH:
+      sprintf(name, "SMB_SENSOR_TH4_HIGH");
+      break;
     default:
       return -1;
   }
@@ -3341,6 +3469,7 @@ get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case SMB_SENSOR_FCM_T_TEMP2:
     case SMB_SENSOR_FCM_B_TEMP1:
     case SMB_SENSOR_FCM_B_TEMP2:
+    case SMB_SENSOR_TH4_HIGH:
       sprintf(units, "C");
       break;
     case SMB_XP3R3V_BMC:
@@ -4235,6 +4364,7 @@ smb_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case SMB_OUTPUT_VOLTAGE_XP0R75V_2:
     case SMB_OUTPUT_CURRENT_XP0R75V_2:
     case SMB_INPUT_VOLTAGE_2:
+    case SMB_SENSOR_TH4_HIGH:
       *value = 30;
       break;
     case SMB_SENSOR_FAN1_FRONT_TACH:
@@ -5231,13 +5361,21 @@ int bic_sensor_sdr_path(uint8_t fru, char *path) {
 int pal_get_sensor_util_timeout(uint8_t fru) {
   uint8_t pim_id = 0, pim_type = 0;
   size_t cnt = 0;
+  int brd_type_rev = 0;
 
+  pal_get_board_rev(&brd_type_rev);
   switch(fru) {
     case FRU_SCM:
       cnt = scm_all_sensor_cnt;
       break;
     case FRU_SMB:
-      cnt = smb_sensor_cnt;
+      if(brd_type_rev == BOARD_FUJI_EVT1 ||
+        brd_type_rev == BOARD_FUJI_EVT2 ||
+        brd_type_rev == BOARD_FUJI_EVT3) {
+        cnt = smb_sensor_cnt_evt;
+      } else if (brd_type_rev == BOARD_FUJI_DVT1) {
+        cnt = smb_sensor_cnt_dvt;
+      }
       break;
     case FRU_PIM1:
     case FRU_PIM2:

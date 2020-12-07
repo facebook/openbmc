@@ -826,25 +826,15 @@ char tstr[MAX_VALUE_LEN] = {0};
 int
 pal_get_board_rev(int *rev) {
   char path[LARGEST_DEVICE_NAME + 1];
-  int val_id_0, val_id_1, val_id_2;
+  int val;
+  int ret = -1;
 
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_0, "value");
-  if (read_device(path, &val_id_0)) {
+  snprintf(path, sizeof(path), IOBFPGA_PATH_FMT, "board_ver");
+  ret = read_device(path, &val);
+  if (ret) {
     return -1;
   }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_1, "value");
-  if (read_device(path, &val_id_1)) {
-    return -1;
-  }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_2, "value");
-  if (read_device(path, &val_id_2)) {
-    return -1;
-  }
-
-  *rev = val_id_0 | (val_id_1 << 1) | (val_id_2 << 2);
-  syslog(LOG_ERR, "Board rev: %d\n", *rev);
+  *rev = val;
 
   return 0;
 }

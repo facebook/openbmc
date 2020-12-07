@@ -265,6 +265,13 @@ enum {
   HAND_SW_BMC = 1
 };
 
+enum {
+  BOARD_FUJI_EVT1       = 0x40,
+  BOARD_FUJI_EVT2       = 0x41,
+  BOARD_FUJI_EVT3       = 0x42,
+  BOARD_FUJI_DVT1       = 0x43,
+};
+
 extern sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM];
 
 int read_device(const char *device, int *value);

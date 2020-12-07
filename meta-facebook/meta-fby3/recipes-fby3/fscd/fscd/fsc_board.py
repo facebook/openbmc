@@ -27,6 +27,8 @@ import re
 import os
 import time
 
+fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
+
 lpal_hndl = CDLL("libpal.so.0")
 
 fru_map = {
@@ -214,3 +216,13 @@ def sensor_valid_check(board, sname, check_name, attribute):
     except Exception:
         Logger.warn("Exception with board=%s, sensor_name=%s" % (board, sname))
     return 0
+
+def get_fan_mode(scenario="None"):
+    if "one_fan_failure" in scenario:
+        pwm = 60
+        return fan_mode["trans_mode"], pwm
+    elif "sensor_hit_UCR" in scenario:
+        pwm = 100
+        return fan_mode["boost_mode"], pwm
+
+    pass

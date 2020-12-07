@@ -27,6 +27,7 @@ import time
 import traceback
 
 import fsc_expr
+import fsc_board
 from fsc_bmcmachine import BMCMachine
 from fsc_board import board_callout, board_fan_actions, board_host_actions
 from fsc_profile import Sensor, profile_constructor
@@ -104,6 +105,10 @@ class Fscd(object):
         self.sensor_filter_all = False
         self.pwm_sensor_boost_value = None
         self.output_max_boost_pwm = False
+        if "get_fan_mode" in dir(fsc_board):
+            self.get_fan_mode = True
+        else:
+            self.get_fan_mode = False
 
     # TODO: Add checks for invalid config file path
     def get_fsc_config(self, fsc_config):
@@ -620,12 +625,23 @@ class Fscd(object):
                             "Failed fans: %s"
                             % (", ".join([str(i.label) for i in dead_fans]))
                         )
-                        # choose the higher PWM
-                        if self.output_max_boost_pwm:
-                            pwmval = self.boost if pwmval < self.boost else pwmval
+                        if self.get_fan_mode:
+                            set_fan_mode, set_fan_pwm = fsc_board.get_fan_mode(
+                                "one_fan_failure"
+                            )
+                            # choose the higher PWM
+                            if self.output_max_boost_pwm:
+                                pwmval = set_fan_pwm if pwmval < set_fan_pwm else pwmval
+                            else:
+                                pwmval = set_fan_pwm
+                            mode = set_fan_mode
                         else:
-                            pwmval = self.boost
-                        mode = fan_mode["boost_mode"]
+                            # choose the higher PWM
+                            if self.output_max_boost_pwm:
+                                pwmval = self.boost if pwmval < self.boost else pwmval
+                            else:
+                                pwmval = self.boost
+                            mode = fan_mode["boost_mode"]
                         if not os.path.isfile(boost_record_path):
                             fan_fail_boost_record = open(boost_record_path, "w")
                             fan_fail_boost_record.close()

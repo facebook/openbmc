@@ -106,6 +106,10 @@ class Zone:
         self.missing_sensor_assert_retry = [0] * len(self.expr_meta["ext_vars"])
         self.sensor_valid_pre = [0] * len(self.expr_meta["ext_vars"])
         self.sensor_valid_cur = [0] * len(self.expr_meta["ext_vars"])
+        if "get_fan_mode" in dir(fsc_board):
+            self.get_fan_mode = True
+        else:
+            self.get_fan_mode = False
 
     def get_set_fan_mode(self, mode, action):
         fan_mode_path = RECORD_DIR + "fan_mode"
@@ -184,9 +188,17 @@ class Zone:
                             "Sensor %s reporting status %s"
                             % (sensor.name, sensor.status)
                         )
-                        outmin = max(outmin, self.transitional)
-                        if outmin == self.transitional:
-                            mode = fan_mode["trans_mode"]
+                        if self.get_fan_mode:
+                            set_fan_mode, set_fan_pwm = fsc_board.get_fan_mode(
+                                "sensor_hit_UCR"
+                            )
+                            outmin = max(outmin, set_fan_pwm)
+                            if outmin == set_fan_pwm:
+                                mode = set_fan_mode
+                        else:
+                            outmin = max(outmin, self.transitional)
+                            if outmin == self.transitional:
+                                mode = fan_mode["trans_mode"]
                     else:
                         if self.sensor_fail == True:
                             sensor_fail_record_path = SENSOR_FAIL_RECORD_DIR + v

@@ -87,11 +87,6 @@ do_install_board() {
     # init
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d
-    # the script to mount /mnt/data
-    install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
-    update-rc.d -r ${D} mount_data0.sh start 03 S .
-    install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
-    update-rc.d -r ${D} rc.early start 04 S .
 
     install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .

@@ -14,9 +14,9 @@ SOURCES = "bic_xfer.c bic_power.c bic_ipmi.c bic_fwupdate.c bic_cpld_altera_fwup
 HEADERS = "bic.h bic_xfer.h bic_power.h bic_ipmi.h bic_fwupdate.h bic_cpld_altera_fwupdate.h bic_cpld_lattice_fwupdate.h bic_vr_fwupdate.h bic_bios_fwupdate.h bic_mchp_pciesw_fwupdate.h bic_m2_fwupdate.h"
 
 CFLAGS += " -Wall -Werror -fPIC "
-LDFLAGS = "-lobmc-i2c -lipmb -lgpio-ctrl -lusb-1.0"
+LDFLAGS = "-lobmc-i2c -lipmb -lcrypto -lgpio-ctrl -lusb-1.0"
 
-DEPENDS += "libipmi libipmb libobmc-i2c libgpio-ctrl libfby3-common libkv libusb1 libfby3-common"
+DEPENDS += "libipmi libipmb libobmc-i2c libgpio-ctrl libfby3-common libkv libusb1 libfby3-common openssl"
 RDEPENDS_${PN} += "libobmc-i2c libgpio-ctrl libfby3-common"
 
 S = "${WORKDIR}/bic"

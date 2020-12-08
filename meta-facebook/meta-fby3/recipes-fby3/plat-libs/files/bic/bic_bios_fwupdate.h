@@ -34,7 +34,8 @@ extern "C" {
 
 int print_configuration(struct libusb_device_handle *hDevice,struct libusb_config_descriptor *config);
 int active_config(struct libusb_device *dev,struct libusb_device_handle *handle);
-int bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *ver);
+int bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum);
+int bic_get_fw_cksum_sha256(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum);
 int update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force);
 int update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image);
 

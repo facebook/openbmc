@@ -37,6 +37,7 @@ extern const uint32_t IANA_ID;
 enum {
   BIC_CMD_OEM_SET_AMBER_LED     = 0x39,
   BIC_CMD_OEM_GET_SET_GPIO      = 0x41,
+  BIC_CMD_OEM_FW_CKSUM_SHA256   = 0x43,
   BIC_CMD_OEM_BMC_FAN_CTRL      = 0x50,
   BIC_CMD_OEM_GET_FAN_DUTY      = 0x51,
   BIC_CMD_OEM_GET_FAN_RPM       = 0x52,
@@ -69,7 +70,7 @@ enum {
   BIC1OU = 0x05,
   NICEXP = 0x06,
   BICSPE = 0x07,
-  BICGPV3 = 0x08, 
+  BICGPV3 = 0x08,
 };
 
 void msleep(int msec);

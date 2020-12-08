@@ -51,11 +51,13 @@ int BiosComponent::update_internal(const std::string &image, bool force) {
   me_recovery(slot_id, RECOVERY_MODE);
   cerr << "Enabling USB..." << endl;
   bic_set_gpio(slot_id, RST_USB_HUB_N, GPIO_HIGH);
-  sleep(3);
+  sleep(1);
   cerr << "Switching BIOS SPI MUX for update..." << endl;
   bic_switch_mux_for_bios_spi(slot_id, MUX_SWITCH_CPLD);
   sleep(1);
   ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
+  cerr << "Disabling USB..." << endl;
+  bic_set_gpio(slot_id, RST_USB_HUB_N, GPIO_LOW);
   if (ret != 0) {
     return -1;
   }
@@ -64,8 +66,6 @@ int BiosComponent::update_internal(const std::string &image, bool force) {
   pal_set_server_power(slot_id, SERVER_12V_CYCLE);
   sleep(5);
   pal_set_server_power(slot_id, SERVER_POWER_ON);
-  cerr << "Disabling USB..." << endl;
-  bic_set_gpio(slot_id, RST_USB_HUB_N, GPIO_LOW);
   return ret;
 }
 

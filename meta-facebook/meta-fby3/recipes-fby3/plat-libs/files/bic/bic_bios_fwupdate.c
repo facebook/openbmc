@@ -183,6 +183,42 @@ bic_send:
   return ret;
 }
 
+struct bic_get_fw_cksum_sha256_req {
+  uint8_t iana_id[3];
+  uint8_t target;
+  uint32_t offset;
+  uint32_t length;
+} __attribute__((packed));
+
+struct bic_get_fw_cksum_sha256_res {
+  uint8_t iana_id[3];
+  uint8_t cksum[32];
+} __attribute__((packed));
+
+int
+bic_get_fw_cksum_sha256(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum) {
+  int ret;
+  struct bic_get_fw_cksum_sha256_req req = {
+    .iana_id = {0x9c, 0x9c, 0x00},
+    .target = target,
+    .offset = offset,
+    .length = len,
+  };
+  struct bic_get_fw_cksum_sha256_res res = {0};
+  uint8_t rlen = sizeof(res);
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_FW_CKSUM_SHA256, (uint8_t *) &req, sizeof(req), (uint8_t *) &res, &rlen);
+  if (ret != 0) {
+    return -1;
+  }
+  if (rlen != sizeof(res)) {
+    return -2;
+  }
+
+  memcpy(cksum, res.cksum, sizeof(res.cksum));
+
+  return 0;
+}
 
 static int
 verify_bios_image(uint8_t slot_id, int fd, long size) {

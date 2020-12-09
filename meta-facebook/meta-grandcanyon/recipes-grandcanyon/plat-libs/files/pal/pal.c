@@ -37,10 +37,11 @@
 #include <facebook/fbgc_gpio.h>
 #include "pal.h"
 
-#define NUM_SERVER_FRU  1
-#define NUM_NIC_FRU     1
-#define NUM_BMC_FRU     1
-#define MAX_FAN_NAME    32
+#define NUM_SERVER_FRU       1
+#define NUM_NIC_FRU          1
+#define NUM_BMC_FRU          1
+#define MAX_FAN_NAME_LEN     32 // include the string terminal
+#define MAX_PWM_LABEL_LEN    32 // include the string terminal
 
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
 
@@ -302,7 +303,7 @@ pal_get_fan_name(uint8_t fan_id, char *name) {
     syslog(LOG_WARNING, "%s: Invalid fan index: %d", __func__, fan_id);
     return -1;
   }
-  snprintf(name, MAX_FAN_NAME, "Fan %d %s", (fan_id / 2) + 1, fan_id % 2 == 0 ? "Front" : "Rear");
+  snprintf(name, MAX_FAN_NAME_LEN, "Fan %d %s", (fan_id / 2), fan_id % 2 == 0 ? "Front" : "Rear");
 
   return 0;
 }
@@ -351,7 +352,7 @@ pal_get_fru_name(uint8_t fru, char *name) {
 
 int
 pal_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
-  char label[32] = {0};
+  char label[MAX_PWM_LABEL_LEN] = {0};
   int zone = 0;
 
   if (fan_id >= pal_pwm_cnt) {
@@ -366,7 +367,7 @@ pal_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
 
 int
 pal_get_pwm_value(uint8_t fan_id, uint8_t *pwm) {
-  char label[32] = {0};
+  char label[MAX_PWM_LABEL_LEN] = {0};
   float value = 0;
   int ret = 0;
   int zone = 0;

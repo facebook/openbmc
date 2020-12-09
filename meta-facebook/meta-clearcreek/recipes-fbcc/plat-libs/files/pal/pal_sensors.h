@@ -237,6 +237,10 @@ enum {
   PDB_FAN2_TACH_O = 0xA5,
   PDB_FAN3_TACH_I = 0xA6,
   PDB_FAN3_TACH_O = 0xA7,
+  PDB_FAN0_PWM = 0xA8,
+  PDB_FAN1_PWM = 0xA9,
+  PDB_FAN2_PWM = 0xAA,
+  PDB_FAN3_PWM = 0xAB,
 };
 
 //ADC INFO
@@ -315,6 +319,7 @@ enum {
   FAN,
   POWER,
   STATE,
+  PWM,
 };
 
 enum {

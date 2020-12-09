@@ -20,6 +20,7 @@ size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0..3";
 const char pal_tach_list[] = "0..7";
 
+static int sensors_read_fan_pwm(uint8_t sensor_num, float *value);
 static int read_inlet_sensor(uint8_t snr_id, float *value);
 static int read_fan_volt(uint8_t fan_id, float *value);
 static int read_fan_curr(uint8_t fan_id, float *value);
@@ -167,6 +168,10 @@ const uint8_t pdb_sensor_list[] = {
   PDB_FAN2_TACH_O,
   PDB_FAN3_TACH_I,
   PDB_FAN3_TACH_O,
+  PDB_FAN0_PWM,
+  PDB_FAN1_PWM,
+  PDB_FAN2_PWM,
+  PDB_FAN3_PWM,
 };
 
 const uint8_t ava1_sensor_list[] = {
@@ -408,6 +413,18 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA9
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAB
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA0
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA1
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA2
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA3
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA4
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA5
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA6
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA7
+  {"FAN_0_PWM", PDB_FAN0_PWM, sensors_read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xA8
+  {"FAN_1_PWM", PDB_FAN0_PWM, sensors_read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xA9
+  {"FAN_2_PWM", PDB_FAN0_PWM, sensors_read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xAA
+  {"FAN_3_PWM", PDB_FAN0_PWM, sensors_read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xAB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
@@ -555,6 +572,30 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
   return 0;
 }
 
+static int sensors_read_fan_pwm(uint8_t sensor_num, float *value) {
+  int ret = 0;
+  uint8_t pwm = 0;
+
+  switch (sensor_num) {
+    case PDB_FAN0_PWM:
+      ret = pal_get_pwm_value(0, &pwm);
+      break;
+    case PDB_FAN1_PWM:
+      ret = pal_get_pwm_value(2, &pwm);
+      break;
+    case PDB_FAN2_PWM:
+      ret = pal_get_pwm_value(4, &pwm);
+      break;
+    case PDB_FAN3_PWM:
+      ret = pal_get_pwm_value(6, &pwm);
+      break;
+    default:
+      return ERR_SENSOR_NA;
+  }
+  *value = (float)pwm;
+  return ret;
+}
+
 int
 pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   switch(fru) {
@@ -639,6 +680,8 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
         case POWER:
           sprintf(units, "Watts");
           break;
+        case PWM:
+          sprintf(units, "PCT");
         default:
           return -1;
       }

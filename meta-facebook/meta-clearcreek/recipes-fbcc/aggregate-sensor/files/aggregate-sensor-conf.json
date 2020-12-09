@@ -1,0 +1,53 @@
+{
+    "version": "1.0",
+    "sensors": [
+      {
+        "name": "SYSTEM_AIRFLOW",
+        "units": "CFM",
+        "composition": {
+          "type": "conditional_linear_expression",
+          "sources": {
+            "pwm0": {
+              "fru":       3,
+              "sensor_id": 168
+            },
+            "pwm1": {
+              "fru":       3,
+              "sensor_id": 169
+            },
+            "pwm2": {
+              "fru":       3,
+              "sensor_id": 170
+            },
+            "pwm3": {
+              "fru":       3,
+              "sensor_id": 171
+            },
+            "cfm0": {
+              "expression": "( 106.03 * ( ( pwm0 * 0.01 ) ^ 4 ) ) - ( 249.88 * ( ( pwm0 * 0.01 ) ^ 3 ) ) + ( 204.1 * ( ( pwm0 * 0.01 ) ^ 2 ) ) - ( 5.5225 * ( pwm0 * 0.01 ) ) + 4.5605"
+            },
+            "cfm1": {
+              "expression": "( 106.03 * ( ( pwm1 * 0.01 ) ^ 4 ) ) - ( 249.88 * ( ( pwm1 * 0.01 ) ^ 3 ) ) + ( 204.1 * ( ( pwm1 * 0.01 ) ^ 2 ) ) - ( 5.5225 * ( pwm1 * 0.01 ) ) + 4.5605"
+            },
+            "cfm2": {
+              "expression": "( 106.03 * ( ( pwm2 * 0.01 ) ^ 4 ) ) - ( 249.88 * ( ( pwm2 * 0.01 ) ^ 3 ) ) + ( 204.1 * ( ( pwm2 * 0.01 ) ^ 2 ) ) - ( 5.5225 * ( pwm2 * 0.01 ) ) + 4.5605"
+            },
+            "cfm3": {
+              "expression": "( 106.03 * ( ( pwm3 * 0.01 ) ^ 4 ) ) - ( 249.88 * ( ( pwm3 * 0.01 ) ^ 3 ) ) + ( 204.1 * ( ( pwm3 * 0.01 ) ^ 2 ) ) - ( 5.5225 * ( pwm3 * 0.01 ) ) + 4.5605"
+            }
+          },
+      "linear_expressions": {
+            "A0": "cfm0 + cfm1 + cfm2 + cfm3"
+          },
+          "condition": {
+            "key": "mb_system_conf",
+            "value_map": {
+              "SS_D": "A0"
+            },
+            "default_expression": "A0"
+          }
+        }
+      }
+    ]
+  }
+  

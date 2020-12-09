@@ -251,8 +251,46 @@ pal_sled_cycle(void) {
       return -1;
     }
   }
-// Send command to CM power cycle
+  // Send command to CM power cycle
   cc = lib_cmc_power_cycle();
+  if( cc != CC_SUCCESS ) {
+    syslog(LOG_ERR, "Request F0C power-cycle failed CC=%x\n", cc);
+    return -1;
+  }
+  return 0;
+}
+
+int
+pal_bios_update_ac(void) {
+  // If JBOG is present, request power cycle
+  // TODO:
+  // Add common interface for different JBOG platform
+  int cc;
+  uint8_t mode;
+
+  if ( pal_block_ac() ) {
+    return -1;
+  }
+
+  if( pal_get_host_system_mode(&mode) ) {
+    return -1;
+  }
+
+  cc = pal_ep_sled_cycle();
+  if ( cc != CC_SUCCESS ) {
+    syslog(LOG_ERR, "Request JG7 power-cycle failed CC=%x\n", cc);
+    return -1;
+  }
+
+  if ( mode == MB_4S_MODE ) {
+    cc = pal_cc_sled_cycle();
+    if ( cc != CC_SUCCESS ) {
+      syslog(LOG_ERR, "Request IOX power-cycle failed CC=%x\n", cc);
+      return -1;
+    }
+  }
+  // Send command to CM power cycle
+  cc = lib_cmc_bios_update_ac();
   if( cc != CC_SUCCESS ) {
     syslog(LOG_ERR, "Request F0C power-cycle failed CC=%x\n", cc);
     return -1;

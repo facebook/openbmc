@@ -115,6 +115,7 @@ int BiosComponent::update(std::string image, bool force) {
   uint8_t status;
   const int max_retry_power_ctl = 3;
   const int max_retry_me_recovery = 15;
+  bool setLow = true;
 
   if (pal_get_fru_id((char *)_fru.c_str(), &fruid)) {
     return -1;
@@ -161,6 +162,10 @@ int BiosComponent::update(std::string image, bool force) {
         return -1;
       }
     }
+
+    if (setDeepSleepWell(setLow))
+      syslog(LOG_DEBUG, "Set PWRGD_DSW_PWROK low failed");
+    
     // wait for ME changing mode
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
@@ -177,7 +182,7 @@ int BiosComponent::update(std::string image, bool force) {
   }
 
   ret = GPIOSwitchedSPIMTDComponent::update(image);
-
+  
   if (ret == 0) {
     reboot(fruid);
   }
@@ -190,6 +195,10 @@ int BiosComponent::update(string image) {
 
 int BiosComponent::fupdate(string image) {
   return update(image, 1);
+}
+
+int BiosComponent::setDeepSleepWell(bool setting) {
+  return 0;
 }
 
 int BiosComponent::reboot(uint8_t fruid) {

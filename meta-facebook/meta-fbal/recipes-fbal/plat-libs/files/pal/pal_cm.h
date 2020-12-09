@@ -11,6 +11,7 @@
 #define CMD_CMC_SET_SYSTEM_MODE           (0x64)
 #define CMD_CMC_SLED_CYCLE                (0x66)
 #define CMD_CMC_REQ_DC_ON                 (0x68)
+#define CMD_CMC_BIOS_UPDATE_AC            (0x70)
 #define CMD_CMC_GET_MB_POSITION           (0x0F)
 #define CMD_CMC_OEM_GET_SENSOR_READING    (0xF1)
 #define CMD_CMC_OEM_SET_BLOCK_COMMON_FLAG (0xF2)
@@ -142,6 +143,7 @@ int lib_cmc_get_fan_speed(uint8_t fan_id, uint16_t* speed);
 int lib_cmc_set_fan_ctrl(uint8_t fan_mode, uint8_t* status);
 int lib_cmc_get_fan_id(uint8_t fan_sdr);
 int lib_cmc_power_cycle(void);
+int lib_cmc_bios_update_ac(void);
 int lib_cmc_set_block_command_flag(uint8_t index, uint8_t flag);
 int lib_cmc_get_block_command_flag(uint8_t* rbuf, uint8_t* rlen);
 int lib_cmc_get_block_index(uint8_t fru);

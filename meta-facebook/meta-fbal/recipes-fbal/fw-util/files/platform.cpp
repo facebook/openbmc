@@ -2,6 +2,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <openbmc/pal.h>
+#include <openbmc/obmc-i2c.h>
 #include <syslog.h>
 #include "usbdbg.h"
 #include "nic_ext.h"
@@ -14,9 +15,48 @@ class palBiosComponent : public BiosComponent {
                      std::string devpath, std::string dev, std::string shadow,
                      bool level, std::string verp) :
       BiosComponent(fru, comp, mtd, devpath, dev, shadow, level, verp) {}
-    int reboot(uint8_t fruid) override;
     int update_finish(void) override;
+    int setDeepSleepWell(bool setting) override;
+    int reboot(uint8_t fruid) override;
 };
+
+int palBiosComponent::update_finish(void) {
+  int ret = 0;
+  if(pal_get_config_is_master()){
+    ret = pal_bios_update_ac();
+  }
+  return ret;
+}
+
+int palBiosComponent::setDeepSleepWell(bool setting) {
+  int fd = 0, retCode = 0;
+  uint8_t bus = 0x00;
+  uint8_t addr = 0x27;
+  uint8_t tbuf[16] = {0}, tlen = 2;
+  uint8_t rbuf[16] = {0}, rlen = 0;
+  bool setLow = true;
+  
+  fd = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
+    i2c_cdev_slave_close(fd);
+    return retCode;
+  }
+  
+  if (setting == setLow) {
+    // Set DeepSleepWell pin's direction to output and value to 0
+    tbuf[0] = 0x07; tbuf[1] = 0xEF;
+    retCode |= i2c_rdwr_msg_transfer(fd, addr << 1, tbuf, tlen, rbuf, rlen);
+    tbuf[0] = 0x03; tbuf[1] = 0xEF;
+    retCode |= i2c_rdwr_msg_transfer(fd, addr << 1, tbuf, tlen, rbuf, rlen);
+  } else {
+    // Reset DeepSleepWell, set DeepSleepWell pin's direction to input
+    tbuf[0] = 0x07; tbuf[1] = 0xFF;
+    retCode |= i2c_rdwr_msg_transfer(fd, addr << 1, tbuf, tlen, rbuf, rlen);
+  }
+  i2c_cdev_slave_close(fd);
+  return retCode;
+} 
 
 int palBiosComponent::reboot(uint8_t fruid) {
   
@@ -27,14 +67,6 @@ int palBiosComponent::reboot(uint8_t fruid) {
     syslog(LOG_DEBUG, "Set pwr_server_last_state on failed");
 
   return 0;
-}
-
-int palBiosComponent::update_finish(void) {
-  int ret = 0;
-  if(pal_get_config_is_master()){
-    ret = pal_sled_cycle();
-  }
-  return ret;
 }
 
 NicExtComponent nic0("nic", "nic0", "nic0_fw_ver", FRU_NIC0, 0, 0x00);  // fru_name, component, kv, fru_id, eth_index, ch_id

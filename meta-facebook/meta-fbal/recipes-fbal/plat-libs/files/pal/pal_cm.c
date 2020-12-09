@@ -331,6 +331,29 @@ lib_cmc_power_cycle(void) {
 }
 
 int
+lib_cmc_bios_update_ac(void) {
+  uint8_t ipmi_cmd = CMD_CMC_BIOS_UPDATE_AC;
+  uint8_t netfn = NETFN_OEM_REQ;
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen;
+  int ret;
+
+  ret = cmc_ipmb_process(ipmi_cmd, netfn, NULL, 0, rbuf, &rlen);
+#ifdef DEBUG
+{
+  int i;
+  for(i=0; i<rlen; i++) {
+    syslog(LOG_DEBUG, "%s rbuf[%d]=%d\n", __func__, i, *(rbuf+i));
+  }
+}
+#endif
+  if(ret != 0) {
+    return ret;
+  }
+  return CC_SUCCESS;
+}
+
+int
 lib_cmc_get_block_index(uint8_t fru) {
   uint8_t index;
 

@@ -126,7 +126,14 @@ var RestartHealthd = func(wait bool, supervisor string) error {
 		return errors.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist")
 	}
 
-	_, err, _, _ := RunCommand([]string{supervisor, "restart", "healthd"}, 60*time.Second)
+	// stop healthd, forcing it to close /dev/watchdog.  ignore errors.
+	RunCommand([]string{supervisor, "stop", "healthd"}, 60*time.Second)
+
+	// now try to pet the watchdog and extend its timeout.
+	PetWatchdog()
+
+	// re-start healthd
+	_, err, _, _ := RunCommand([]string{supervisor, "start", "healthd"}, 60*time.Second)
 
 	// healthd is petting watchdog, if something goes wrong and it doesn't do so
 	// after restart it may hard-reboot the system - it's better to be safe

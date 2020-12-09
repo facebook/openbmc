@@ -71,7 +71,10 @@ static int get_asd_dev_config(uint8_t fru) {
   if (fp == NULL) {
     return -1;
   }
-  fscanf(fp, "%d", &dev_id);
+  if (fscanf(fp, "%d", &dev_id) != 1) {
+    syslog(LOG_WARNING, "%s: read file failed, file: %s", __func__, file_path);
+    dev_id = -1;
+  }
   fclose(fp);
 
   return dev_id;

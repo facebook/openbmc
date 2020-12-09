@@ -57,6 +57,14 @@
   }                                                                               \
 } while(0)
 
+#define log_system(cmd)                                                     \
+do {                                                                        \
+  int sysret = system(cmd);                                                 \
+  if (sysret)                                                               \
+    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
+            __func__, cmd, sysret);                                         \
+} while(0)
+
 struct threadinfo {
   uint8_t is_running;
   uint8_t fru;
@@ -453,7 +461,7 @@ generate_dump(void *arg) {
 
   uint8_t fru = *(uint8_t *) arg;
   char cmd[128];
-  char fname[128];
+  char fname[112];
   char fruname[16];
   bool ierr;
 
@@ -464,23 +472,23 @@ generate_dump(void *arg) {
   fby2_common_fru_name(fru, fruname);
 
   memset(fname, 0, sizeof(fname));
-  snprintf(fname, 128, "/var/run/autodump%d.pid", fru);
+  snprintf(fname, 112, "/var/run/autodump%d.pid", fru);
   if (access(fname, F_OK) == 0) {
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd,"rm %s",fname);
-    system(cmd);
+    log_system(cmd);
   }
 
   // Execute automatic crashdump
   memset(cmd, 0, 128);
   sprintf(cmd, "%s %s", CRASHDUMP_BIN, fruname);
-  system(cmd);
+  log_system(cmd);
 
   t_dump[fru-1].is_running = 0;
 
   if (!fby2_common_get_ierr(fru, &ierr) && ierr && trigger_hpr(fru)) {
     sprintf(cmd, "/usr/local/bin/power-util %s reset", fruname);
-    system(cmd);
+    log_system(cmd);
   }
   pthread_exit(NULL);
 }
@@ -490,7 +498,7 @@ second_dwr_dump(void *arg) {
 
   uint8_t fru = *(uint8_t *) arg;
   char cmd[128];
-  char fname[128];
+  char fname[112];
   char fruname[16];
 
   // Usually the pthread cancel state are enable by default but
@@ -500,18 +508,18 @@ second_dwr_dump(void *arg) {
   fby2_common_fru_name(fru, fruname);
 
   memset(fname, 0, sizeof(fname));
-  snprintf(fname, 128, "/var/run/autodump%d.pid", fru);
+  snprintf(fname, 112, "/var/run/autodump%d.pid", fru);
   if (access(fname, F_OK) == 0) {
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd,"rm %s",fname);
-    system(cmd);
+    log_system(cmd);
   }
 
   // Execute automatic crashdump
   memset(cmd, 0, 128);
   syslog(LOG_WARNING, "Start Second/DWR Autodump");
   sprintf(cmd, "%s %s --second", CRASHDUMP_BIN, fruname);
-  system(cmd);
+  log_system(cmd);
 
   t_dump[fru-1].is_running = 0;
 
@@ -549,17 +557,17 @@ fby2_common_crashdump(uint8_t fru, bool ierr, bool platform_reset) {
     } else {
       pthread_join(t_dump[fru-1].pt, NULL);
       sprintf(cmd, "ps | grep '{dump.sh}' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
-      system(cmd);
+      log_system(cmd);
       sprintf(cmd, "ps | grep 'me-util' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
-      system(cmd);
+      log_system(cmd);
       sprintf(cmd, "ps | grep 'bic-util' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
-      system(cmd);
+      log_system(cmd);
 #ifdef DEBUG
       syslog(LOG_INFO, "fby2_common_crashdump: Previous crashdump thread is cancelled");
 #endif
       if (platform_reset) {
         sprintf(cmd, "tar zcf %suncompleted_slot%d.tar.gz -C /mnt/data crashdump_slot%d", CRASHDUMP_FILE,fru,fru);
-        system(cmd);
+        log_system(cmd);
       }
     }
   }
@@ -644,7 +652,7 @@ generate_cpld_dump(void *arg) {
 
   uint8_t fru = *(uint8_t *) arg;
   char cmd[128];
-  char fname[128];
+  char fname[112];
   char fruname[16];
 
   // Usually the pthread cancel state are enable by default but
@@ -658,13 +666,13 @@ generate_cpld_dump(void *arg) {
   if (access(fname, F_OK) == 0) {
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd,"rm %s",fname);
-    system(cmd);
+    log_system(cmd);
   }
 
   // Execute automatic CPLD dump
   memset(cmd, 0, 128);
   sprintf(cmd, "%s %s", CPLDDUMP_BIN, fruname);
-  system(cmd);
+  log_system(cmd);
 
   t_cpld_dump[fru-1].is_running = 0;
 
@@ -676,7 +684,7 @@ generate_sboot_cpld_dump(void *arg) {
 
   uint8_t fru = *(uint8_t *) arg;
   char cmd[128];
-  char fname[128];
+  char fname[120];
   char fruname[16];
 
   // Usually the pthread cancel state are enable by default but
@@ -690,13 +698,13 @@ generate_sboot_cpld_dump(void *arg) {
   if (access(fname, F_OK) == 0) {
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd,"rm %s",fname);
-    system(cmd);
+    log_system(cmd);
   }
 
   // Execute automatic CPLD dump for slow boot
   memset(cmd, 0, 128);
   sprintf(cmd, "%s %s", SBOOT_CPLDDUMP_BIN, fruname);
-  system(cmd);
+  log_system(cmd);
 
   t_sboot_cpld_dump[fru-1].is_running = 0;
 
@@ -725,7 +733,7 @@ fby2_common_cpld_dump(uint8_t fru) {
     } else {
       pthread_join(t_cpld_dump[fru-1].pt, NULL);
       sprintf(cmd, "ps | grep '{cpld-dump.sh}' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
-      system(cmd);
+      log_system(cmd);
 #ifdef DEBUG
       syslog(LOG_INFO, "fby2_common_cpld_dump: Previous CPLD dump thread is cancelled");
 #endif
@@ -770,7 +778,7 @@ fby2_common_sboot_cpld_dump(uint8_t fru) {
     } else {
       pthread_join(t_sboot_cpld_dump[fru-1].pt, NULL);
       sprintf(cmd, "ps | grep '{sboot-cpld-dump}' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
-      system(cmd);
+      log_system(cmd);
 #ifdef DEBUG
       syslog(LOG_INFO, "fby2_common_sboot_cpld_dump: Previous CPLD dump thread is cancelled for slow boot");
 #endif
@@ -800,11 +808,16 @@ fby2_common_get_fan_config(void) {
 
   fp = fopen(FAN_CONFIG_FILE, "r");
   if (fp != NULL) {
-    fscanf(fp, "%d", &type);
+    if (fscanf(fp, "%d", &type) != 1)
+      goto error_out;
     fclose(fp);
   }
 
   return (type)?TYPE_15K_FAN:TYPE_10K_FAN;
+error_out:
+  if (fp != NULL)
+    fclose(fp);
+  return -1;
 }
 
 int

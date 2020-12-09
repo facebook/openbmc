@@ -140,7 +140,11 @@ sdr_cache_init(uint8_t slot_id) {
       }
     }
 
-    write(fd, sdr, sizeof(sdr_full_t));
+    if (write(fd, sdr, sizeof(sdr_full_t)) != sizeof(sdr_full_t)){
+      syslog(LOG_WARNING, "%s: write file failed, file: %s", __func__, path);
+      close(fd);
+      return -1;
+    }
 
     req.rec_id = res->next_rec_id;
     if (req.rec_id == LAST_RECORD_ID) {

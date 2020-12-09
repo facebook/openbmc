@@ -110,6 +110,14 @@
 #define DEVICE_MUX_ADDR 0xE2
 #define MAX_GPV2_DRIVE_NUM 12
 
+#define log_system(cmd)                                                     \
+do {                                                                        \
+  int sysret = system(cmd);                                                 \
+  if (sysret)                                                               \
+    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
+            __func__, cmd, sysret);                                         \
+} while(0)
+
 #pragma pack(push, 1)
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
@@ -1429,7 +1437,7 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
 
   // Kill ipmb daemon for this slot
   sprintf(cmd, "sv stop ipmbd_%d", get_ipmb_bus_id(slot_id));
-  system(cmd);
+  log_system(cmd);
   printf("stop ipmbd for slot %x..\n", slot_id);
 
   // The I2C high speed clock (1M) could cause to read BIC data abnormally.
@@ -1437,16 +1445,16 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
   switch(slot_id)
   {
      case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF77304");
+       log_system("devmem 0x1e78a084 w 0xFFF77304");
        break;
      case FRU_SLOT2:
-       system("devmem 0x1e78a104 w 0xFFF77304");
+       log_system("devmem 0x1e78a104 w 0xFFF77304");
        break;
      case FRU_SLOT3:
-       system("devmem 0x1e78a184 w 0xFFF77304");
+       log_system("devmem 0x1e78a184 w 0xFFF77304");
        break;
      case FRU_SLOT4:
-       system("devmem 0x1e78a304 w 0xFFF77304");
+       log_system("devmem 0x1e78a304 w 0xFFF77304");
        break;
      default:
        syslog(LOG_CRIT, "bic_update_fw: incorrect slot_id %d\n", slot_id);
@@ -1466,7 +1474,7 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
     // Restart ipmb daemon with "-u|--enable-bic-update" for bic update
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd, "/usr/local/bin/ipmbd -u %d %d > /dev/null 2>&1 &", get_ipmb_bus_id(slot_id), slot_id);
-    system(cmd);
+    log_system(cmd);
     printf("start ipmbd -u for this slot %x..\n",slot_id);
     syslog(LOG_WARNING, "start ipmbd -u for this slot %x..\n",slot_id);
 
@@ -1487,7 +1495,7 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
     // Kill ipmb daemon "--enable-bic-update" for this slot
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd, "ps -w | grep -v 'grep' | grep 'ipmbd -u %d' |awk '{print $1}'| xargs kill", get_ipmb_bus_id(slot_id));
-    system(cmd);
+    log_system(cmd);
     printf("stop ipmbd for slot %x..\n", slot_id);
 
     if (i == BIC_UPDATE_RETRIES) { // ipmb not ready
@@ -1718,16 +1726,16 @@ error_exit:
   switch(slot_id)
   {
      case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF5E700");
+       log_system("devmem 0x1e78a084 w 0xFFF5E700");
        break;
      case FRU_SLOT2:
-       system("devmem 0x1e78a104 w 0xFFF5E700");
+       log_system("devmem 0x1e78a104 w 0xFFF5E700");
        break;
      case FRU_SLOT3:
-       system("devmem 0x1e78a184 w 0xFFF5E700");
+       log_system("devmem 0x1e78a184 w 0xFFF5E700");
        break;
      case FRU_SLOT4:
-       system("devmem 0x1e78a304 w 0xFFF5E700");
+       log_system("devmem 0x1e78a304 w 0xFFF5E700");
        break;
      default:
        syslog(LOG_ERR, "bic_update_fw: incorrect slot_id %d\n", slot_id);
@@ -1738,7 +1746,7 @@ error_exit:
   sleep(1);
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "sv start ipmbd_%d", get_ipmb_bus_id(slot_id));
-  system(cmd);
+  log_system(cmd);
 
 error_exit2:
   syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting on slot %d\n", slot_id);
@@ -1755,7 +1763,7 @@ error_exit2:
   if (done == 1) {    //update successfully
     memset(cmd, 0, sizeof(cmd));
     snprintf(cmd, MAX_CMD_LEN, "(/usr/local/bin/bic-cached %d; echo 1 >/tmp/cache_store/slot%d_sdr_thresh_update) &", slot_id, slot_id);   //retrieve SDR data after BIC FW update
-    system(cmd);
+    log_system(cmd);
   }
 
   return ret;
@@ -2999,7 +3007,10 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size)
     msleep(10);
 
     // Ignore the first byte as it indicates length of response
-    write(fd, &rbuf[1], rlen-1);
+    if (write(fd, &rbuf[1], rlen-1) < (rlen-1)) {
+      syslog(LOG_WARNING, "%s: write file failed, file: %s\n", __func__, path);
+      goto error_exit;
+    }
 
     // Update offset
     offset += (rlen-1);

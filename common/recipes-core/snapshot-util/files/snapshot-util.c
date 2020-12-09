@@ -56,6 +56,13 @@
 #define EEPROM_BUS  3     // i2c_1
 #define EEPROM_ADDR 0xA2  // 8-bit address
 
+#define log_system(cmd)                                                     \
+do {                                                                        \
+  int sysret = system(cmd);                                                 \
+  if (sysret)                                                               \
+    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
+            __func__, cmd, sysret);                                         \
+} while(0)
 
 typedef struct _info_hdr {
   uint8_t magic_tag[8];
@@ -269,24 +276,27 @@ util_store_snapshot(uint8_t slot_id, uint8_t info_type, char *cmdline_opt) {
   }
 
   snprintf(cmd, sizeof(cmd), "rm -rf %s", TMP_SS_PATH);
-  system(cmd);
+  log_system(cmd);
   mkdir(TMP_SS_PATH, 0755);
 
   snprintf(cmd, sizeof(cmd), "cp %s %s/", reason_file, TMP_SS_PATH);
-  system(cmd);
+  log_system(cmd);
 
   printf("Getting logs...\n");
   snprintf(cmd, sizeof(cmd), "/usr/local/bin/log-util all --print | egrep '(slot%u|spb|nic|all)' | /usr/bin/tail -n 50 > %s",
            slot_id, TMP_LOG_FILE);
-  system(cmd);
+  log_system(cmd);
 
   printf("Getting POST codes...\n");
   snprintf(cmd, sizeof(cmd), "/usr/bin/bic-util slot%u --get_post_code > %s", slot_id, TMP_POST_FILE);
-  system(cmd);
+  log_system(cmd);
 
-  chdir(TMP_SS_PATH);
+  if (chdir(TMP_SS_PATH)) {
+    syslog(LOG_WARNING, "chdir failed, dir path: %s", TMP_SS_PATH);
+    return -1;
+  }
   snprintf(cmd, sizeof(cmd), "tar czf %s ./*", TMP_TARBALL);
-  system(cmd);
+  log_system(cmd);
 
   fp = fopen(TMP_TARBALL, "rb");
   if (fp == NULL) {

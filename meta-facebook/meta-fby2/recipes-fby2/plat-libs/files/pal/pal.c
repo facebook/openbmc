@@ -86,6 +86,7 @@
 #define DELAY_12V_CYCLE 20
 #endif
 
+#define LARGEST_FILEPATH_LEN 256
 #define LARGEST_DEVICE_NAME 120
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 
@@ -160,6 +161,14 @@
 #define NCSI_MIN_DATA_PAYLOAD 36
 #define NCSI_RETRY_MAX        2
 #define BRCM_POWERUP_PRE_CMD  0x1A
+
+#define log_system(cmd)                                                     \
+do {                                                                        \
+  int sysret = system(cmd);                                                 \
+  if (sysret)                                                               \
+    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
+            __func__, cmd, sysret);                                         \
+} while(0)
 
 #if defined CONFIG_FBY2_ND
 /* MCA bank data format */
@@ -1921,7 +1930,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
        if (access(vpath, F_OK) == 0) {
          unlink(vpath);
          sprintf(vpath, "%s slot%u start", HOTSERVICE_SCRPIT, pair_slot_id);
-         system(vpath);
+         log_system(vpath);
        }
 
        // Check BIC Self Test Result
@@ -2042,7 +2051,7 @@ pal_hot_service_action(uint8_t slot_id) {
     sleep(2);
 
     sprintf(cmd, "/usr/local/bin/check_slot_type.sh slot%u", slot_id);
-    system(cmd);
+    log_system(cmd);
 
     unlink(hspath);
     block_12v = (pal_is_device_pair(slot_id) && pal_is_hsvc_ongoing(pair_slot_id));
@@ -2051,7 +2060,7 @@ pal_hot_service_action(uint8_t slot_id) {
     } else {
       sprintf(cmd, "touch "HOTSERVICE_BLOCK, slot_id);
     }
-    system(cmd);
+    log_system(cmd);
 
     if (0 != pal_fruid_init(slot_id)) {
       syslog(LOG_ERR, "%s: pal_fruid_init failed", __func__);
@@ -2348,7 +2357,7 @@ server_12v_on(uint8_t slot_id) {
   if (pal_is_slot_support_update(slot_id)) {
     char vpath[128];
     snprintf(vpath, sizeof(vpath), "/usr/local/bin/bic-cached -f %d &", slot_id);  // retrieve FRU data
-    system(vpath);
+    log_system(vpath);
   }
 
   if (pal_is_device_pair(slot_id)) {
@@ -2373,7 +2382,7 @@ server_12v_on(uint8_t slot_id) {
     if (pal_is_slot_support_update(pair_slot_id)) {
       char vpath[128];
       snprintf(vpath, sizeof(vpath), "/usr/local/bin/bic-cached -f %d &", pair_slot_id);  // retrieve FRU data
-      system(vpath);
+      log_system(vpath);
     }
   }
 
@@ -3371,11 +3380,11 @@ int
 pal_sled_cycle(void) {
 #if !defined(CONFIG_FBY2_KERNEL)
   // Remove the adm1275 module as the HSC device is busy
-  system("rmmod adm1275");
+  log_system("rmmod adm1275");
 #endif
 
   // Send command to HSC power cycle
-  system("i2cset -y 10 0x40 0xd9 c");
+  log_system("i2cset -y 10 0x40 0xd9 c");
 
   return 0;
 }
@@ -3963,11 +3972,12 @@ pal_get_fru_name(uint8_t fru, char *name) {
 int
 pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
 {
-  int ret = fby2_get_fruid_name(fru, name);
+  char tmp_name[64] = {0};
+  int ret = fby2_get_fruid_name(fru, tmp_name);
   if (ret < 0)
     return ret;
 
-  sprintf(name, "%s Device %u", name, dev-1);
+  sprintf(name, "%s Device %u", tmp_name, dev-1);
   return 0;
 }
 
@@ -5291,10 +5301,11 @@ int
 pal_is_bmc_por(void) {
   FILE *fp;
   int por = 0;
-
-  fp = fopen("/tmp/ast_por", "r");
+  const char fpath[] = "/tmp/ast_por";
+  fp = fopen(fpath, "r");
   if (fp != NULL) {
-    fscanf(fp, "%d", &por);
+    if(fscanf(fp, "%d", &por) != 1)
+      syslog(LOG_WARNING, "%s: read file failed, file: %s", __func__, fpath);
     fclose(fp);
   }
 
@@ -5620,7 +5631,7 @@ pal_store_crashdump(uint8_t fru, bool ierr) {
 
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "sys_runtime=$(awk '{print $1}' /proc/uptime) ; sys_runtime=$(printf \"%%0.f\" $sys_runtime) ; echo $((sys_runtime+1200)) > /tmp/cache_store/fru%d_crashdump", fru);
-  system(cmd);
+  log_system(cmd);
 
   return fby2_common_crashdump(fru, ierr, false);
 }
@@ -7702,12 +7713,12 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
 #else
 static int
 write_fan_value(const int fan, const char *device, const int value) {
-  char full_name[LARGEST_DEVICE_NAME];
+  char full_name[LARGEST_FILEPATH_LEN];
   char device_name[LARGEST_DEVICE_NAME];
   char output_value[LARGEST_DEVICE_NAME];
 
   snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
+  snprintf(full_name, LARGEST_FILEPATH_LEN, "%s/%s", PWM_DIR, device_name);
   snprintf(output_value, LARGEST_DEVICE_NAME, "%d", value);
   return write_device(full_name, output_value);
 }
@@ -8099,7 +8110,14 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
     }
 
     snprintf(tstr, 3, "%02x", boot[i]);
+#if __GNUC__ >= 8
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncat(str, tstr, 3);
+#pragma GCC diagnostic pop
+#else
+    strncat(str, tstr, 3);
+#endif
   }
 
   // not allow having more than 1 network boot device in the boot order
@@ -9567,7 +9585,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
       } else {
         sprintf(sendcmd, "ifdown eth%d", netdev);
       }
-      system(sendcmd);
+      log_system(sendcmd);
       completion_code = CC_SUCCESS;
       break;
     default:
@@ -11162,7 +11180,7 @@ static void* generate_dump(void* arg) {
     int slot_id = *(int*)arg;
     memset(cmd, 0, MAX_CRASHDUMP_CMD_SIZE);
     snprintf(cmd, MAX_CRASHDUMP_CMD_SIZE, "%s slot%d", CRASHDUMP_ND_BIN, slot_id);
-    system(cmd);
+    log_system(cmd);
 
     free(cmd);
     free(arg);
@@ -11484,7 +11502,7 @@ pal_add_imc_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_d
   if (status == IMC_DUMP_START) {
     sprintf(path, IMC_START_FILE, slot);
     sprintf(cmd, "touch %s", path);
-    system(cmd);
+    log_system(cmd);
     syslog(LOG_INFO, "IMC Log Start on slot%u", slot);
   }
 
@@ -11494,7 +11512,7 @@ pal_add_imc_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_d
       syslog(LOG_INFO, "IMC Log Start on slot%u", slot);
     } else {
       sprintf(cmd, "rm %s", path);
-      system(cmd);
+      log_system(cmd);
     }
   }
 
@@ -11512,11 +11530,11 @@ pal_add_imc_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_d
     if(st.st_size > IMC_LOG_FILE_SIZE) {   //Do IMC log backup action
       sprintf(path, IMC_LOG_FILE_BAK, slot);
       sprintf(cmd, "mv %s %s", imc_log_path[slot], path);
-      system(cmd);
+      log_system(cmd);
 
       memset(cmd, 0, sizeof(cmd));
       sprintf(cmd, "touch %s", imc_log_path[slot]);
-      system(cmd);
+      log_system(cmd);
     }
   }
 

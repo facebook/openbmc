@@ -52,7 +52,7 @@ do {                                       \
 {\
   int fd = creat(path, 0644);\
   if (fd) close(fd);\
-}
+}               
 
 static uint8_t g_caterr_irq = 0;
 static uint8_t g_msmi_irq = 0;
@@ -64,7 +64,6 @@ static pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t caterr_mutex = PTHREAD_MUTEX_INITIALIZER;
 static gpio_value_t g_server_power_status;
 static bool g_cpu_pwrgd_trig = false;
-
 
 // For monitoring GPIOs on IO expender
 struct gpioexppoll_config {
@@ -79,8 +78,9 @@ struct gpioexppoll_config {
 };
 
 // For thermaltrip config
-struct thermaltrip_config {
-  char shadow_name[32];
+struct cpld_register_config {
+  char shadow[32];
+  uint8_t addr;
   uint8_t offset;
 };
 
@@ -428,27 +428,35 @@ static void cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_va
   pal_add_cri_sel(cmd);
 }
 
-struct thermaltrip_config thermaltrips[] = {
-  {"FM_CPU0_THERMTRIP_LVT3_PLD_N", 0x20},
-  {"FM_CPU1_THERMTRIP_LVT3_PLD_N", 0x21},
-  {"FM_MEM_THERM_EVENT_CPU0_LVT3_N", 0x22},
-  {"FM_MEM_THERM_EVENT_CPU1_LVT3_N", 0x23},
+static struct cpld_register_config cpld_registers[] = {
+  {"FM_CPU0_THERMTRIP_LVT3_PLD_N", 0x1e, 0x20}, // GPIOA1
+  {"FM_CPU1_THERMTRIP_LVT3_PLD_N", 0x1e, 0x21}, // GPIOD0
+  {"FM_MEM_THERM_EVENT_CPU0_LVT3_N", 0x1e, 0x22}, // GPIOB0
+  {"FM_MEM_THERM_EVENT_CPU1_LVT3_N", 0x1e, 0x23}, // GPIOB1
+  {"FM_CPU_CATERR_LVT3_N", 0x16, 0x10}, // GPIOZ0
+  {"FM_CPU_MSMI_LVT3_N", 0x16, 0x11}, // GPIOZ2
+  {"FM_CPU_ERR0_LVT3_N", 0x16, 0x12}, // GPIOF0
+  {"FM_CPU_ERR1_LVT3_N", 0x16, 0x13}, // GPIOF1
+  {"FM_CPU_ERR2_LVT3_N", 0x16, 0x14}, // GPIOF2
 };
 
-static int get_thermaltrip_offset (const char *shadow_name) {
-  int i, config_size = sizeof(thermaltrips) / sizeof(thermaltrips[0]);
+static void get_cpld_register_data (const char *shadow, uint8_t *addr, uint8_t *offset) {
+  int i, config_size = sizeof(cpld_registers) / sizeof(cpld_registers[0]);
   for (i = 0; i < config_size; i++) {
-    if (strcmp(shadow_name, thermaltrips[i].shadow_name) == 0) 
-      return (int)thermaltrips[i].offset;
+    if (strcmp(shadow, cpld_registers[i].shadow) == 0) {
+      *addr = cpld_registers[i].addr;
+      *offset = cpld_registers[i].offset;
+      return;
+    }
   }
-  return -1;
 }
 
-static int thermtrip_hardware_check(const char *shadow_name)
+static int cpld_register_check(const char *shadow)
 {
-  int fd = 0, retCode = -1, offset;
+  int fd = 0, retCode = -1;
   uint8_t bus = 4;
-  uint8_t addr = 0x1e;
+  uint8_t addr = 0x00;
+  uint8_t offset = 0x00;
   uint8_t tlen, rlen;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
@@ -459,9 +467,9 @@ static int thermtrip_hardware_check(const char *shadow_name)
     return retCode;
   }
 
-  offset = get_thermaltrip_offset(shadow_name); 
-  if (offset < 0) {
-    syslog(LOG_WARNING, "There is no thermaltrip offset match with %s\n", shadow_name);  
+  get_cpld_register_data(shadow, &addr, &offset); 
+  if (addr == 0 || offset == 0) {
+    syslog(LOG_WARNING, "There is no cpld register can check with %s\n", shadow);  
     i2c_cdev_slave_close(fd);
     return retCode;
   }
@@ -472,11 +480,10 @@ static int thermtrip_hardware_check(const char *shadow_name)
 
   retCode = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
   if (retCode == -1) {
-    syslog(LOG_WARNING, "%s bus=%x slavaddr=%x offset=%x\n", __func__, bus, addr, offset);
-  } else {
+    syslog(LOG_WARNING, "%s bus=%x slavaddr=%x offset=%x\n", __func__, bus, addr >> 1, offset);
+  } else {  
     retCode = (int)rbuf[0];
   }
-
   i2c_cdev_slave_close(fd);
   return retCode;
 }
@@ -504,7 +511,7 @@ static void cpu_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
   if (g_server_power_status != GPIO_VALUE_HIGH) 
     return;
 
-  if (thermtrip_hardware_check(cfg->shadow) <= 0)
+  if (cpld_register_check(cfg->shadow) <= 0)
     return;
   
   thermtrip_add_cri_sel(cfg->shadow, curr);
@@ -513,10 +520,19 @@ static void cpu_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
 
 static void cpu_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
+  int cpld_register_count = 0;
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+  
   if (g_server_power_status != GPIO_VALUE_HIGH) 
     return;
 
-  log_gpio_change(desc, curr, 0);
+  cpld_register_count = cpld_register_check(cfg->shadow);
+  if (cpld_register_count == 0)
+    return;
+
+  assert(cfg);
+  syslog(LOG_CRIT, "%s: %s - %s, %d time%s\n", curr ? "DEASSERT": "ASSERT", cfg->description, 
+    cfg->shadow, cpld_register_count, cpld_register_count > 1 ? "s": "");
 }
 
 static void mem_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
@@ -616,7 +632,13 @@ init_cpu_pwrok(gpiopoll_pin_t *desc, gpio_value_t value) {
 
 static void
 err_caterr_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+  
   SERVER_POWER_CHECK(1);
+
+  if (cpld_register_check(cfg->shadow) == 0)
+    return;
+
   pthread_mutex_lock(&caterr_mutex);
   g_caterr_irq++;
   pthread_mutex_unlock(&caterr_mutex);
@@ -624,7 +646,13 @@ err_caterr_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 
 static void
 err_msmi_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+  
   SERVER_POWER_CHECK(1);
+
+  if (cpld_register_check(cfg->shadow) <= 0)
+    return;
+   
   pthread_mutex_lock(&caterr_mutex);
   g_msmi_irq++;
   pthread_mutex_unlock(&caterr_mutex);
@@ -881,9 +909,9 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_CPU1_MEMHOT_OUT_N", "GPIOL3", GPIO_EDGE_BOTH, gpio_event_pson_3s_handler, NULL},
   {"FM_CPU0_FIVR_FAULT_LVT3_PLD", "GPIOB2", GPIO_EDGE_BOTH, fivr_fault_handler, NULL},
   {"FM_CPU1_FIVR_FAULT_LVT3_PLD", "GPIOB3", GPIO_EDGE_BOTH, fivr_fault_handler, NULL},
-  {"FM_CPU_ERR0_LVT3_N", "GPIOF0", GPIO_EDGE_BOTH, cpu_event_handler, NULL},
-  {"FM_CPU_ERR1_LVT3_N", "GPIOF1", GPIO_EDGE_BOTH, cpu_event_handler, NULL},
-  {"FM_CPU_ERR2_LVT3_N", "GPIOF2", GPIO_EDGE_BOTH, cpu_event_handler, NULL},
+  {"FM_CPU_ERR0_LVT3_N", "GPIOF0", GPIO_EDGE_FALLING, cpu_event_handler, NULL},
+  {"FM_CPU_ERR1_LVT3_N", "GPIOF1", GPIO_EDGE_FALLING, cpu_event_handler, NULL},
+  {"FM_CPU_ERR2_LVT3_N", "GPIOF2", GPIO_EDGE_FALLING, cpu_event_handler, NULL},
   {"FM_MEM_THERM_EVENT_CPU0_LVT3_N", "GPIOB0", GPIO_EDGE_FALLING, mem_thermtrip_handler, NULL},
   {"FM_MEM_THERM_EVENT_CPU1_LVT3_N", "GPIOB1", GPIO_EDGE_FALLING, mem_thermtrip_handler, NULL},
   {"FM_SYS_THROTTLE_LVC3", "GPIOR7", GPIO_EDGE_BOTH, gpio_event_pson_handler, NULL},

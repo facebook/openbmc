@@ -317,6 +317,22 @@ int pal_set_key_value(char *key, char *value)
   return kv_set(key, value, 0, KV_FPERSIST);
 }
 
+int
+pal_is_bmc_por(void) {
+  FILE *fp;
+  int por = 0;
+
+  fp = fopen("/tmp/ast_por", "r");
+  if (fp != NULL) {
+    if (fscanf(fp, "%d", &por) != 1) {
+      por = 0;
+    }
+    fclose(fp);
+  }
+
+  return (por)?1:0;
+}
+
 int pal_set_def_key_value()
 {
   int i;

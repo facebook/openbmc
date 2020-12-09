@@ -28,8 +28,29 @@
 #include <sys/types.h>
 #include <sys/file.h>
 #include <openbmc/pal.h>
+#include <openbmc/obmc-i2c.h>
 #include <openbmc/libgpio.h>
 #include <facebook/asic.h>
+
+#define MAIN_CPLD_BUS  (4)
+#define MAIN_CPLD_ADDR (0x84)
+
+#define LTC4282_REG_FAULT_LOG    0x04
+#define FET_BAD_FAULT            (0x1 << 6)
+#define FET_SHORT_FAULT          (0x1 << 5)
+#define ON_FAULT                 (0x1 << 4)
+#define POWER_BAD_FAULT          (0x1 << 3)
+#define OC_FAULT                 (0x1 << 2)
+#define UV_FAULT                 (0x1 << 1)
+#define OV_FAULT                 (0x1 << 0)
+
+#define ADM127x_REG_STATUS_IOUT  0x7B
+#define IOUT_OC_FAULT            (0x1 << 7)
+#define IOUT_OC_WARN             (0x1 << 5)
+
+#define ADM127x_REG_STATUS_INPUT 0x7C
+#define VIN_UV_WARN              (0x1 << 5)
+#define VIN_UV_FAULT             (0x1 << 4)
 
 #define POLL_TIMEOUT -1 /* Forever */
 
@@ -138,6 +159,170 @@ static int sync_dbg_led(uint8_t err_bit, bool assert)
   return set_dbg_led(0x00);
 }
 
+int check_power_seq()
+{
+  struct power_seq {
+    char *name;
+    uint8_t offset;
+    uint8_t bit;
+  } cpld_power_seq[] = {
+    {"RST_CPLD_RSMRST_N", 0, 0}, {"PWRGD_P5V_STBY_R", 0, 1},
+    {"PWRGD_CPLD_VREFF", 0, 2}, {"PWRGD_P2V5_AUX_R", 0, 3},
+    {"PWRGD_P1V2_AUX_R", 0, 4}, {"PWRGD_P1V15_AUX_R", 0, 5},
+    {"P12V_HSC_PG_R_SYN2", 0, 6}, {"VICOR_PG_R", 0, 7},
+    {"P48V_HSC_PG_R_SYN2", 1, 0}, {"PWRGD_P3V3_CPLD_R", 1, 1},
+    {"HOST_PWRGD_ASIC", 1, 2}, {"PW_PAX_POWER_GOOD", 1, 3},
+    {"ASIC_ALL_DONE", 1, 4}
+  };
+  char dev_cpld[16] = {0};
+  char event_str[64] = {0};
+  int fd, i;
+  int ret = 0, fail_addr = -1;
+  uint8_t tbuf[8], rbuf[8], value;
+  uint8_t power_seq_num = sizeof(cpld_power_seq)/sizeof(struct power_seq);
+
+  sprintf(dev_cpld, "/dev/i2c-%d", MAIN_CPLD_BUS);
+  fd = open(dev_cpld, O_RDWR);
+  if (fd < 0) {
+    return -1;
+  }
+
+  tbuf[0] = 0x2f; // Error state
+  ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 1);
+  if (ret < 0 || (rbuf[0] & 0x80) == 0x0) // Read error or power is turned off normally
+    goto exit;
+
+  tbuf[0] = 0x2e;
+  ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 2);
+  if (ret < 0)
+    goto exit;
+
+  for (i = 0; i < power_seq_num; i++) {
+    value = rbuf[cpld_power_seq[i].offset] & (1 << cpld_power_seq[i].bit);
+    if (value == 0) {
+      fail_addr = i;
+      snprintf(event_str, sizeof(event_str), "%s power rail fails", cpld_power_seq[i].name);
+      syslog(LOG_CRIT, "%s", event_str);
+      pal_add_cri_sel(event_str);
+    }
+  }
+  if (fail_addr < 0) {
+      snprintf(event_str, sizeof(event_str), "Unknown power rail fails");
+      syslog(LOG_CRIT, "Unknown power rail fails");
+      pal_add_cri_sel(event_str);
+  }
+
+exit:
+  close(fd);
+  return ret;
+}
+
+int check_pwr_brake()
+{
+  const char* cpld_power_brake[] = {
+    "PWRBRK_ASIC7", "PWRBRK_ASIC6",
+    "PWRBRK_ASIC5", "PWRBRK_ASIC4",
+    "PWRBRK_ASIC3", "PWRBRK_ASIC2",
+    "PWRBRK_ASIC1", "PWRBRK_ASIC0"
+  };
+  char dev_cpld[16] = {0};
+  char event_str[64] = {0};
+  int fd, i;
+  int ret = 0, fail_addr = -1;
+  uint8_t tbuf[8], rbuf[8], value;
+
+  // Check if power is on
+  if (g_sys_pwr_off)
+    return 0;
+
+  sprintf(dev_cpld, "/dev/i2c-%d", MAIN_CPLD_BUS);
+  fd = open(dev_cpld, O_RDWR);
+  if (fd < 0) {
+    return -1;
+  }
+
+  tbuf[0] = 0x0a; // Power Brake state
+  ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 1);
+  if (ret < 0)
+    goto exit;
+
+  for (i = 0; i < 8; i++) {
+    if (!is_asic_prsnt(7-i))
+      continue;
+
+    value = rbuf[0] & (0x1 << i);
+    if (value == 0) {
+      fail_addr = i;
+      snprintf(event_str, sizeof(event_str), "%s power brake", cpld_power_brake[i]);
+      syslog(LOG_CRIT, "%s", event_str);
+    }
+  }
+  if (fail_addr < 0) {
+      snprintf(event_str, sizeof(event_str), "Unknown GPU power brake");
+      syslog(LOG_CRIT, "Unknown GPU power brake");
+  }
+
+exit:
+  close(fd);
+  return ret;
+}
+
+int check_hsc_alert(gpiopoll_pin_t *gp, int bus_id, uint8_t addr, uint8_t reg)
+{
+  char dev[16] = {0};
+  int fd, ret;
+  uint8_t tbuf[8], rbuf[8];
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
+  assert(cfg);
+
+  sprintf(dev, "/dev/i2c-%d", bus_id);
+  fd = open(dev, O_RDWR);
+  if (fd < 0) {
+    return -1;
+  }
+
+  tbuf[0] = reg;
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 1);
+  close(fd);
+  if (ret < 0)
+    return -1;
+
+  switch (reg)
+  {
+    case LTC4282_REG_FAULT_LOG:
+      if (rbuf[0] & FET_BAD_FAULT)
+	syslog(LOG_CRIT, "%s: FET-BAD", cfg->description);
+      if (rbuf[0] & FET_SHORT_FAULT)
+	syslog(LOG_CRIT, "%s: FET-short", cfg->description);
+      if (rbuf[0] & ON_FAULT)
+	syslog(LOG_CRIT, "%s: ON pin changing", cfg->description);
+      if (rbuf[0] & POWER_BAD_FAULT)
+	syslog(LOG_CRIT, "%s: Power-bad", cfg->description);
+      if (rbuf[0] & OC_FAULT)
+	syslog(LOG_CRIT, "%s: Overcurrent", cfg->description);
+      if (rbuf[0] & UV_FAULT)
+	syslog(LOG_CRIT, "%s: Undervoltage", cfg->description);
+      if (rbuf[0] & OV_FAULT)
+	syslog(LOG_CRIT, "%s: Overvoltage", cfg->description);
+      break;
+    case ADM127x_REG_STATUS_IOUT:
+      if (rbuf[0] & IOUT_OC_FAULT)
+	syslog(LOG_CRIT, "%s: Overcurrent fault", cfg->description);
+      if (rbuf[0] & IOUT_OC_WARN)
+	syslog(LOG_CRIT, "%s: Overcurrent warning", cfg->description);
+      break;
+    case ADM127x_REG_STATUS_INPUT:
+      if (rbuf[0] & VIN_UV_FAULT)
+	syslog(LOG_CRIT, "%s: Undervoltage fault", cfg->description);
+      if (rbuf[0] & VIN_UV_WARN)
+	syslog(LOG_CRIT, "%s: Undervoltage warning", cfg->description);
+      break;
+    default:
+      break;
+  }
+  return 0;
+}
+
 // Generic Event Handler for GPIO changes
 static void gpio_event_handle_low_active(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
@@ -152,7 +337,7 @@ static void gpio_event_handle_high_active(gpiopoll_pin_t *gp, gpio_value_t last,
 static void gpio_event_handle_pwr_brake(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
   if (gpio_get("OAM_FAST_BRK_ON_N") == GPIO_VALUE_LOW &&
-      curr == GPIO_VALUE_LOW && pal_check_pwr_brake() < 0) {
+      curr == GPIO_VALUE_LOW && check_pwr_brake() < 0) {
       syslog(LOG_WARNING, "Failed to get power brake state from CPLD");
   }
 
@@ -163,7 +348,7 @@ static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gp
 {
   g_sys_pwr_off = (curr == GPIO_VALUE_HIGH)? false: true;
 
-  if (curr == GPIO_VALUE_LOW && pal_check_power_seq() < 0)
+  if (curr == GPIO_VALUE_LOW && check_power_seq() < 0)
     syslog(LOG_WARNING, "Failed to get power state from CPLD");
 
   gpio_event_handle_low_active(gp, last, curr);
@@ -185,12 +370,30 @@ static void gpio_event_hsc_1_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_v
 {
   gpio_event_handle_pwr_brake(gp, last, curr);
   sync_dbg_led(ERR_HSC_1_ALERT, curr == GPIO_VALUE_LOW? true: false);
+  if (curr == GPIO_VALUE_LOW) {
+    if (check_hsc_alert(gp, 16, 0x53, LTC4282_REG_FAULT_LOG) < 0)
+      syslog(LOG_WARNING, "Failed to get alert status from P12V HSC_1");
+    if (!g_sys_pwr_off &&
+	(check_hsc_alert(gp, 16, 0x13, ADM127x_REG_STATUS_IOUT) < 0 ||
+        check_hsc_alert(gp, 16, 0x13, ADM127x_REG_STATUS_INPUT) < 0)) {
+      syslog(LOG_WARNING, "Failed to get alert status from P48V HSC_1");
+    }
+  }
 }
 
 static void gpio_event_hsc_2_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
   gpio_event_handle_pwr_brake(gp, last, curr);
   sync_dbg_led(ERR_HSC_2_ALERT, curr == GPIO_VALUE_LOW? true: false);
+  if (curr == GPIO_VALUE_LOW) {
+    if (check_hsc_alert(gp, 17, 0x40, LTC4282_REG_FAULT_LOG) < 0)
+      syslog(LOG_WARNING, "Failed to get alert status from P12V HSC_2");
+    if (!g_sys_pwr_off &&
+	(check_hsc_alert(gp, 17, 0x10, ADM127x_REG_STATUS_IOUT) < 0 ||
+        check_hsc_alert(gp, 17, 0x10, ADM127x_REG_STATUS_INPUT) < 0)) {
+      syslog(LOG_WARNING, "Failed to get alert status from P48V HSC_2");
+    }
+  }
 }
 
 static void gpio_event_hsc_aux_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
@@ -328,6 +531,8 @@ static struct gpiopoll_config g_gpios[] = {
   {"PRSNT1_N_ASIC6", "ASIC6 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
   {"PRSNT0_N_ASIC7", "ASIC7 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
   {"PRSNT1_N_ASIC7", "ASIC7 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
+  {"OAM_FAST_BRK_N", "Trigger Power Brake", GPIO_EDGE_BOTH, gpio_event_handle_pwr_brake, NULL},
+  {"OAM_FAST_BRK_ON_N", "Enable Power Brake", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
 };
 
 // For monitoring GPIOs on IO expender

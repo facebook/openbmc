@@ -32,9 +32,9 @@ S = "${WORKDIR}"
 binfiles = "gpiod \
            "
 
-LDFLAGS += "-lpal -lgpio-ctrl -lasic"
-DEPENDS += " libpal libgpio-ctrl libasic update-rc.d-native "
-RDEPENDS_${PN} = "libpal libgpio-ctrl libasic "
+LDFLAGS += "-lpal -lgpio-ctrl -lasic -lobmc-i2c "
+DEPENDS += " libpal libgpio-ctrl libasic libobmc-i2c update-rc.d-native "
+RDEPENDS_${PN} = "libpal libgpio-ctrl libasic libobmc-i2c"
 
 pkgdir = "gpiod"
 

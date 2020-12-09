@@ -454,11 +454,8 @@ static int _set_power_brake(gpio_value_t value)
     return -1;
   }
   ret = gpio_set("OAM_FAST_BRK_N", value, false);
-  if (ret == 0) {
+  if (ret == 0)
     std::cout << (value == GPIO_VALUE_LOW? "Set":"Unset") << " GPU power brake" << std::endl;
-    if (value == GPIO_VALUE_LOW)
-      pal_check_pwr_brake();
-  }
 
   return ret;
 }

@@ -44,8 +44,6 @@ extern "C" {
 
 #define PFR_MAILBOX_BUS  (4)
 #define PFR_MAILBOX_ADDR (0xB0)
-#define MAIN_CPLD_BUS  (4)
-#define MAIN_CPLD_ADDR (0x84)
 
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
@@ -91,8 +89,6 @@ bool is_device_ready(void);
 int pal_get_server_power(uint8_t fru, uint8_t *status);
 int pal_get_platform_id(uint8_t *id);
 int pal_set_id_led(uint8_t status);
-int pal_check_power_seq(void);
-int pal_check_pwr_brake(void);
 int pal_force_sled_cycle(void);
 #ifdef __cplusplus
 } // extern "C"

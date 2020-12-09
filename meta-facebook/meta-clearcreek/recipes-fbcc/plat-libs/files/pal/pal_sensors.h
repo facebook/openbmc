@@ -33,6 +33,11 @@ extern "C" {
 #define INA219_POWER     (0x03)
 #define INA219_CURRENT   (0x04)
 
+//MP5023 INFO
+#define MP5023_VOUT     (0x8B)
+#define MP5023_IOUT     (0x8C)
+#define MP5023_POUT     (0x97)
+
 //ADM1278 INFO
 enum {
   ADM1278_VOLTAGE = 0,

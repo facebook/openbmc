@@ -33,9 +33,7 @@ static int read_hsc_pin(uint8_t hsc_id, float *value);
 static void hsc_value_adjust(struct calibration_table *table, float *value);
 static int read_pax_therm(uint8_t, float*);
 static int read_nvme_temp(uint8_t sensor_num, float *value);
-static int read_nvme_volt(uint8_t nvme_id, float *value);
-static int read_nvme_curr(uint8_t nvme_id, float *value);
-static int read_nvme_pwr(uint8_t nvme_id, float *value);
+static int read_nvme_sensor(uint8_t sensor_num, float *value);
 static int read_bay_temp(uint8_t sensor_num, float *value);
 static int read_hsc_temp(uint8_t hsc_id, float *value);
 static int read_nic_temp(uint8_t nic_id, float *value);
@@ -50,8 +48,6 @@ static float fan_volt[PAL_FAN_CNT];
 static float fan_curr[PAL_FAN_CNT];
 static float nic_volt[PAL_NIC_CNT];
 static float nic_curr[PAL_NIC_CNT];
-static float nvme_volt[2];
-static float nvme_curr[2];
 static float vr_vdd_volt[vr_NUM];
 static float vr_vdd_curr[vr_NUM];
 static float vr_avd_volt[vr_NUM];
@@ -138,6 +134,12 @@ const uint8_t mb_sensor_list[] = {
   MB_PAX_3_TEMP,
   SYSTEM_INLET_TEMP,
   SYSTEM_INLET_REMOTE_TEMP,
+  BAY_0_VOL,
+  BAY_0_IOUT,
+  BAY_0_POUT,
+  BAY_1_VOL,
+  BAY_1_IOUT,
+  BAY_1_POUT,
 };
 
 const uint8_t pdb_sensor_list[] = {
@@ -186,9 +188,6 @@ const uint8_t ava1_sensor_list[] = {
   BAY_0_5_NVME_CTEMP,
   BAY_0_6_NVME_CTEMP,
   BAY_0_7_NVME_CTEMP,
-  BAY_0_VOL,
-  BAY_0_IOUT,
-  BAY_0_POUT,
   BAY0_INA219_VOLT,
   BAY0_INA219_CURR,
   BAY0_INA219_PWR,
@@ -205,9 +204,6 @@ const uint8_t ava2_sensor_list[] = {
   BAY_1_5_NVME_CTEMP,
   BAY_1_6_NVME_CTEMP,
   BAY_1_7_NVME_CTEMP,
-  BAY_1_VOL,
-  BAY_1_IOUT,
-  BAY_1_POUT,
   BAY1_INA219_VOLT,
   BAY1_INA219_CURR,
   BAY1_INA219_PWR,
@@ -306,9 +302,9 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"SSD_BAY_0_5_NVME_CTEMP", BAY_0_5_NVME_CTEMP, read_nvme_temp, 0, {60, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x38
   {"SSD_BAY_0_6_NVME_CTEMP", BAY_0_6_NVME_CTEMP, read_nvme_temp, 0, {60, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x39
   {"SSD_BAY_0_7_NVME_CTEMP", BAY_0_7_NVME_CTEMP, read_nvme_temp, 0, {60, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x3A
-  {"SSD_BAY_0_VOL" , BAY_ID0, read_nvme_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x3B
-  {"SSD_BAY_0_IOUT", BAY_ID0, read_nvme_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x3C
-  {"SSD_BAY_0_POUT", BAY_ID0, read_nvme_pwr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x3D
+  {"CC_MB_BAY_0_VOLT", BAY_1_VOL , read_nvme_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x3B
+  {"CC_MB_BAY_0_IOUT", BAY_1_IOUT, read_nvme_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x3C
+  {"CC_MB_BAY_0_POUT", BAY_1_POUT, read_nvme_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x3D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x3E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x3F
 
@@ -323,9 +319,9 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"SSD_BAY_1_5_NVME_CTEMP", BAY_1_5_NVME_CTEMP, read_nvme_temp, 0, {60, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x48
   {"SSD_BAY_1_6_NVME_CTEMP", BAY_1_6_NVME_CTEMP, read_nvme_temp, 0, {60, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x49
   {"SSD_BAY_1_7_NVME_CTEMP", BAY_1_7_NVME_CTEMP, read_nvme_temp, 0, {60, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x4A
-  {"SSD_BAY_1_VOL" , BAY_ID1, read_nvme_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x4B
-  {"SSD_BAY_1_IOUT", BAY_ID1, read_nvme_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x4C
-  {"SSD_BAY_1_POUT", BAY_ID1, read_nvme_pwr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x4D
+  {"CC_MB_BAY_1_VOLT", BAY_1_VOL , read_nvme_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x4B
+  {"CC_MB_BAY_1_IOUT", BAY_1_IOUT, read_nvme_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x4C
+  {"CC_MB_BAY_1_POUT", BAY_1_POUT, read_nvme_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x4D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x4E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x4F
 
@@ -1434,43 +1430,81 @@ read_nic_pwr(uint8_t nic_id, float *value) {
 }
 
 static int
-read_nvme_volt(uint8_t nvme_id, float *value) {
-  struct {
-    const char *chip;
-    const char *label;
-  } devs[] = {
-    {"adc128d818-i2c-23-37", "NVME1_VOLT"},
-    {"adc128d818-i2c-23-37", "NVME2_VOLT"},
-  };
-  int ret = 0;
+read_nvme_sensor(uint8_t sensor_num, float *value) {
+  int fd = 0, ret = -1;
+  char fn[32];
+  float scale, volt_scale = 0.03125;
+  float curr_scale = 0.0625, pwr_scale = 1;
+  uint8_t retry = 3, tlen, rlen, addr=0, bus, cmd;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint16_t tmp;
 
-  ret = sensors_read(devs[nvme_id].chip, devs[nvme_id].label, value);
+  switch(sensor_num) {
+    case BAY_0_VOL:
+    case BAY_0_IOUT:
+    case BAY_0_POUT:
+      addr = 0x88;
+      break;
+    case BAY_1_VOL:
+    case BAY_1_IOUT:
+    case BAY_1_POUT:
+      addr = 0x86;
+      break;
+    default:
+      return READING_NA;
+  }
 
-  nvme_volt[nvme_id] = *value;
+  bus = I2C_BUS_5;
+
+  switch(sensor_num) {
+    case BAY_0_VOL:
+    case BAY_1_VOL:
+      cmd = MP5023_VOUT;
+      scale = volt_scale;
+      break;
+    case BAY_0_IOUT:
+    case BAY_1_IOUT:
+      cmd = MP5023_IOUT;
+      scale = curr_scale;
+      break;
+    case BAY_0_POUT:
+    case BAY_1_POUT:
+      cmd = MP5023_POUT;
+      scale = pwr_scale;
+      break;
+    default:
+      return READING_NA;
+  }
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    goto err_exit;
+  }
+
+  tbuf[0] = cmd;
+  tlen = 1;
+  rlen = 2;
+
+  while (ret < 0 && retry-- > 0 ) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "%s ret=%d", __FUNCTION__, ret);
+    goto err_exit;
+  }
+
+  tmp = ((rbuf[1] & 0x03) << 8) | (rbuf[0]);
+  *value = (float)tmp * scale;
+
+err_exit:
+  if (fd > 0) {
+    close(fd);
+  }
+
   return ret;
-}
-
-static int
-read_nvme_curr(uint8_t nvme_id, float *value) {
-  struct {
-    const char *chip;
-    const char *label;
-  } devs[] = {
-    {"adc128d818-i2c-23-37", "NVME1_CURR"},
-    {"adc128d818-i2c-23-37", "NVME2_CURR"},
-  };
-  int ret = 0;
-
-  ret = sensors_read(devs[nvme_id].chip, devs[nvme_id].label, value);
-
-  nvme_curr[nvme_id] = *value;
-  return ret;
-}
-
-static int
-read_nvme_pwr(uint8_t nvme_id, float *value) {
-  *value = nvme_volt[nvme_id] * nvme_curr[nvme_id];
-  return 0;
 }
 
 static int

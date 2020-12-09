@@ -144,13 +144,18 @@ fruid_cache_init(uint8_t slot_id) {
     }
     return (remote_f_ret + remote_r_ret);
   } else { // Baseboard BMC
-    if (present == PRESENT_1OU) {
+    if (PRESENT_1OU == (PRESENT_1OU & present)) {
+      // dump 1ou board fru
       remote_f_ret = remote_fruid_cache_init(slot_id, FEXP_BIC_INTF);
-    } else if (present == PRESENT_2OU) {
+    }
+    if (PRESENT_2OU == (PRESENT_2OU & present)) {
+      // dump 2ou board fru
       remote_r_ret = remote_fruid_cache_init(slot_id, REXP_BIC_INTF);
-    } else if (present == (PRESENT_1OU + PRESENT_2OU)) {
-      remote_f_ret = remote_fruid_cache_init(slot_id, FEXP_BIC_INTF);
-      remote_r_ret = remote_fruid_cache_init(slot_id, REXP_BIC_INTF);
+      // do not check device fru success or not now, for we're still using GPv2 device for testing now
+      // Since GPv2 devices' FRU only accessible after NVMe is ready (drviver is ready),
+      // it is expectable that fail to get device FRU if NVMe is not ready
+      // let gpiod monitor GPv2 device NVMe ready or not, then get the GPv2 dev FRU now
+      (remote_r_ret < 0)?remote_r_ret:remote_fruid_dev_cache_init(slot_id, REXP_BIC_INTF);
     }
     return (remote_f_ret + remote_r_ret);
   }
@@ -429,7 +434,7 @@ main (int argc, char * const argv[])
   uint8_t slot_id = 0;
   uint8_t self_test_result[2] = {0};
   int retry = 0;
-  int max_retry = 3;
+  int max_retry = MAX_RETRY; // need more time for accessing GPv3 FRU after sled cycle
   char path[128];
   bool fruid_dump = true, sdr_dump = true, remote_dump = false;
   int index = 0;
@@ -494,7 +499,7 @@ main (int argc, char * const argv[])
         break;
 
       retry++;
-      sleep(1);
+      sleep(10);
     } while (retry < max_retry);
 
     if (ret != 0) {

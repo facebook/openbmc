@@ -17,16 +17,6 @@
 #define CPLD_PWR_CTRL_ADDR 0x1F
 
 enum {
-  DEVICE_POWER_OFF = 0x0,
-  DEVICE_POWER_ON = 0x1,
-};
-
-enum {
-  DEV_TYPE_UNKNOWN,
-  DEV_TYPE_M2,
-};
-
-enum {
   POWER_STATUS_ALREADY_OK = 1,
   POWER_STATUS_OK = 0,
   POWER_STATUS_ERR = -1,

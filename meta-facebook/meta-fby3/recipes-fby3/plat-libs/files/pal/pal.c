@@ -74,7 +74,7 @@ size_t nic_fru_cnt  = NUM_NIC_FRU;
 size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
 
-#define MAX_NUM_DEVS 12
+#define MAX_NUM_DEVS 18
 
 #define SYSFW_VER "sysfw_ver_slot"
 #define SYSFW_VER_STR SYSFW_VER "%d"
@@ -3288,4 +3288,59 @@ pal_set_slot_led(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 
   if ( rsp_cc < 0 ) rsp_cc = CC_UNSPECIFIED_ERROR;
   return rsp_cc;
+}
+
+int
+pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type) {
+  int ret = 0;
+  uint8_t retry = MAX_READ_RETRY;
+  uint16_t vendor_id = 0;
+  uint8_t ffi = 0 ,meff = 0 ,major_ver = 0, minor_ver = 0;
+  uint8_t type_2ou = UNKNOWN_BOARD;
+
+  if ( (bic_is_m2_exp_prsnt(slot_id) & PRESENT_2OU) != PRESENT_2OU ) {
+    syslog(LOG_WARNING,"%s() Cannot get 2ou board", __func__);
+    *type = DEV_TYPE_UNKNOWN;
+    return -1;
+  }
+  ret = fby3_common_get_2ou_board_type(slot_id, &type_2ou);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING,"%s() Cannot get 2ou board type", __func__);
+    *type = DEV_TYPE_UNKNOWN;
+    return -1;
+  }
+  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+
+    while (retry) {
+      ret = bic_get_dev_power_status(slot_id, dev_id, nvme_ready, status, &ffi, &meff, &vendor_id, &major_ver,&minor_ver, REXP_BIC_INTF);
+      if (!ret)
+        break;
+      msleep(50);
+      retry--;
+    }
+    syslog(LOG_WARNING, "bic_get_dev_power_status: dev_id %d nvme_ready %d status %d",dev_id, *nvme_ready, *status);
+
+    if (*nvme_ready) {
+      if ( meff == MEFF_DUAL_M2 ) {
+        *type = DEV_TYPE_DUAL_M2;
+      } else{
+        if (ffi == FFI_ACCELERATOR) {
+          if (vendor_id == VENDOR_BRCM) {
+            *type = DEV_TYPE_BRCM_ACC;
+          } else {
+            *type = DEV_TYPE_M2;
+          }
+        } else {
+          *type = DEV_TYPE_SSD;
+        }
+      }
+    } else {
+      *type = DEV_TYPE_UNKNOWN;
+    }
+    return 0;
+  }
+
+  *type = DEV_TYPE_UNKNOWN;
+
+  return -1;
 }

@@ -37,4 +37,5 @@ IMAGE_INSTALL += " \
   sensor-util \
   sensor-mon \
   vboot-utils \
+  fscd \
   "

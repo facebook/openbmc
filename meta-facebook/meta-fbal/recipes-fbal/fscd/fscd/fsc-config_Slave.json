@@ -1,5 +1,5 @@
 {
-    "version": "fbal-r08",
+    "version": "fbal-r09",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -27,13 +27,22 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
-          [80, 15],
-          [83, 18],
-          [85, 21],
-          [87, 25],
-          [90, 40],
+          [79, 15],
+          [81, 18],
           [95, 70]
         ]
+      },
+      "pid_mezz": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "setpoint": 83,
+        "kp": -3,
+        "ki": -0.0035,
+        "kd": 0
       },
       "linear_inlet": {
         "read_source" : {

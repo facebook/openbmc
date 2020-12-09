@@ -18,75 +18,48 @@
 # Boston, MA 02110-1301 USA
 #
 
+BAUDRATE_115200=115200
+TTYS_SCC_EXP_SDB=2
+TTYS_SCC_IOC_SMART=3
+
 usage() {
-  echo "Usage: sol-util server"
-  echo "       sol-util server bic"
-  echo "       sol-util scc [ exp_smart | exp_sdb | ioc_smart ] (baud rate)"
-  echo "       sol-util iocm [ ioc_smart ]"
-  echo "       sol-util server --history"
-  exit -1
+  echo "Usage: sol-util { server | bic | scc_exp_smart | scc_exp_sdb | scc_ioc_smart | iocm_ioc_smart }  [--history]"
+  exit 1
 }
 
-
-#                   BMC   Server   BIC   SCC Expander Smart   SCC Expander SDB   SCC IOC T5 Smart   IOC T7
-#-----------------------------------------------------------------------------------------------------------------
-#UART select ID     0     1        2     3                    4                  5                  6
-#tty serial number  0     5        7     1                    2                  3                  8
-#option name        bmc   server   bic   scc_exp_smart        scc_exp_sdb        scc_ioc_smart      iocm_ioc_smart
-
-TTY_LIST=(0 5 7 1 2 3 8)
-OPTION_NAME=("bmc" "server" "bic" "scc_exp_smart" "scc_exp_sdb" "scc_ioc_smart" "iocm_ioc_smart")
-
-# if mTerm server is running use mTerm_client to connect to userver
-# otherwise fallback to the old method
-
-# The default ID is set to server
-UART_SEL_ID=1
-
-if [ "$1" == "server" ]; then
-  if [ $# -gt 1 ]; then 
-    if [ "$2" == "bic" ]; then 
-      UART_SEL_ID=2
-    else
-      usage
-    fi  
-  else
-    UART_SEL_ID=1
-  fi
-elif [ "$1" == "scc" ]; then
-  case "$2" in
-    exp_smart) UART_SEL_ID=3
-    ;;
-    exp_sdb) UART_SEL_ID=4
-    ;;
-    ioc_smart) UART_SEL_ID=5
+show_history(){
+  OPTION_NAME=$1
+  CHECK=$2
+  case "$CHECK" in
+    "--history")
+      LOGFILE="/var/log/mTerm_$OPTION_NAME.log"
+      echo "$LOGFILE"
+      cat "$LOGFILE" 2>/dev/null
+      exit 0
     ;;
     *) usage
   esac
+}
 
-  # Set back to default baud rate 57600
-  /bin/stty -F /dev/ttyS${TTY_LIST[$UART_SEL_ID]} 57600 >/dev/null 2>&1
+case "$1" in
+  "server");;
+  "bic");;
+  "scc_exp_smart");;
+  "iocm_ioc_smart");;
+  "scc_exp_sdb")
+    /bin/stty -F /dev/ttyS$TTYS_SCC_EXP_SDB $BAUDRATE_115200 >/dev/null 2>&1
+  ;;
+  "scc_ioc_smart")
+    /bin/stty -F /dev/ttyS$TTYS_SCC_IOC_SMART $BAUDRATE_115200 >/dev/null 2>&1
+  ;;
+  *) usage
+esac
 
-  if [ $# -eq 3 ]; then
-    baud=$3
-      /bin/stty -F /dev/ttyS${TTY_LIST[$UART_SEL_ID]} $baud >/dev/null 2>&1
-      if [ $? -ne 0 ]; then
-        usage
-      fi
-  elif [ $# -gt 3 ]; then
-    usage
-  fi
-elif [ "$1" == "iocm" ]; then
-  case "$2" in
-    ioc_smart) UART_SEL_ID=6
-    ;;
-    *) usage
-  esac
-else
-  usage
+if [ $# -gt 1 ]; then
+  show_history "$1" "$2"
 fi
 
-exec /usr/local/bin/mTerm_client ${OPTION_NAME[$UART_SEL_ID]}
+exec /usr/local/bin/mTerm_client "$1"
 
 echo
 echo

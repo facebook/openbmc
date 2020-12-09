@@ -44,6 +44,7 @@ static int read_nic_curr(uint8_t nic_id, float *value);
 static int read_nic_pwr(uint8_t nic_id, float *value);
 static int sensors_read_vr(uint8_t sensor_num, float *value);
 static int sensors_read_fan_speed(uint8_t, float*);
+static int read_ina219_sensor(uint8_t sensor_num, float *value);
 
 static float fan_volt[PAL_FAN_CNT];
 static float fan_curr[PAL_FAN_CNT];
@@ -188,6 +189,9 @@ const uint8_t ava1_sensor_list[] = {
   BAY_0_VOL,
   BAY_0_IOUT,
   BAY_0_POUT,
+  BAY0_INA219_VOLT,
+  BAY0_INA219_CURR,
+  BAY0_INA219_PWR,
 };
 
 const uint8_t ava2_sensor_list[] = {
@@ -204,6 +208,9 @@ const uint8_t ava2_sensor_list[] = {
   BAY_1_VOL,
   BAY_1_IOUT,
   BAY_1_POUT,
+  BAY1_INA219_VOLT,
+  BAY1_INA219_CURR,
+  BAY1_INA219_PWR,
 };
 
 PAL_I2C_BUS_INFO nic_info_list[] = {
@@ -227,6 +234,12 @@ PAL_ADM1278_INFO adm1278_info_list[] = {
 
 PAL_HSC_INFO hsc_info_list[] = {
   {HSC_ID0, ADM1278_SLAVE_ADDR, adm1278_info_list },
+};
+
+//INA219
+PAL_I2C_BUS_INFO ina219_info_list[] = {
+  {INA219_ID0, I2C_BUS_21, 0x8A},
+  {INA219_ID1, I2C_BUS_22, 0x8A},
 };
 
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNR, UNC, LCR, LNR, LNC, Pos, Neg}
@@ -394,12 +407,12 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"PDB_INLET_REMOTE_TEMP_L", INLET_REMOTE_TEMP_L, read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x97
   {"PDB_INLET_TEMP_R"       , INLET_TEMP_R       , read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x98
   {"PDB_INLET_REMOTE_TEMP_R", INLET_REMOTE_TEMP_R, read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x99
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9A
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9B
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9C
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9D
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9E
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9F
+  {"CC_BAY0_INA219_VOLT", BAY0_INA219_VOLT, read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x9A
+  {"CC_BAY0_INA219_CURR", BAY0_INA219_CURR, read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0x9B
+  {"CC_BAY0_INA219_PWR" , BAY0_INA219_PWR , read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x9C
+  {"CC_BAY1_INA219_VOLT", BAY1_INA219_VOLT, read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x9D
+  {"CC_BAY1_INA219_CURR", BAY1_INA219_CURR, read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0x9E
+  {"CC_BAY1_INA219_PWR" , BAY1_INA219_PWR , read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x9F
 
   {"PDB_FAN0_TACH_I", PDB_FAN0_TACH_I, sensors_read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xA0
   {"PDB_FAN0_TACH_O", PDB_FAN0_TACH_O, sensors_read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xA1
@@ -1458,4 +1471,93 @@ static int
 read_nvme_pwr(uint8_t nvme_id, float *value) {
   *value = nvme_volt[nvme_id] * nvme_curr[nvme_id];
   return 0;
+}
+
+static int
+read_ina219_sensor(uint8_t sensor_num, float *value) {
+  int fd = 0, ret = -1;
+  char fn[32];
+  float scale, vol_scale = 0.004;
+  float curr_scale = 0.0002, pwr_scale = 0.004;
+  uint8_t retry = 3, tlen, rlen, addr, bus, cmd;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint16_t ina219_id, tmp;
+
+  switch(sensor_num) {
+    case  BAY0_INA219_VOLT:
+    case  BAY0_INA219_CURR:
+    case  BAY0_INA219_PWR:
+      ina219_id = 0;
+      break;
+    case  BAY1_INA219_VOLT:
+    case  BAY1_INA219_CURR:
+    case  BAY1_INA219_PWR:
+      ina219_id = 1;
+      break;
+    default:
+      return READING_NA;
+  }
+
+  bus = ina219_info_list[ina219_id].bus;
+  addr = ina219_info_list[ina219_id].slv_addr;
+
+  if (strstr(sensor_map[sensor_num].snr_name, "CURR")) {
+    cmd = INA219_CURRENT;
+    scale = curr_scale;
+  }
+  else if (strstr(sensor_map[sensor_num].snr_name, "VOLT")) {
+    cmd = INA219_VOLTAGE;
+    scale = vol_scale;
+  }
+  else if (strstr(sensor_map[sensor_num].snr_name, "PWR")) {
+    cmd = INA219_POWER;
+    scale = pwr_scale;
+  }
+  else {
+    return READING_NA;
+  }
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    goto err_exit;
+  }
+
+  tbuf[0] = cmd;
+  tlen = 1;
+  rlen = 2;
+
+  while (ret < 0 && retry-- > 0 ) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "ret=%d", ret);
+    goto err_exit;
+  }
+
+  switch(sensor_num) {
+    case BAY0_INA219_VOLT:
+    case BAY1_INA219_VOLT:
+      //only bit 15:3 represent Bus voltage
+      tmp = ((rbuf[0] << 8) | (rbuf[1])) >> 3;
+      *value = (float)tmp * scale;
+      break;
+    case BAY0_INA219_CURR:
+    case BAY1_INA219_CURR:
+    case BAY0_INA219_PWR:
+    case BAY1_INA219_PWR:
+      tmp = (rbuf[1] << 8) | (rbuf[0]);
+      *value = (float)tmp * scale;
+      break;
+    default:
+      return READING_NA;
+  }
+
+  err_exit:
+  if (fd > 0) {
+    close(fd);
+  }
+  return ret;
 }

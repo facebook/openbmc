@@ -28,6 +28,11 @@ extern "C" {
 #define NVMe_GET_STATUS_LEN       (8)
 #define NVMe_TEMP_REG             (0x03)
 
+//INA219 CMD INFO
+#define INA219_VOLTAGE   (0x02)
+#define INA219_POWER     (0x03)
+#define INA219_CURRENT   (0x04)
+
 //ADM1278 INFO
 enum {
   ADM1278_VOLTAGE = 0,
@@ -82,6 +87,11 @@ enum {
 enum {
   BAY_ID0 = 0,
   BAY_ID1,
+};
+
+enum {
+  INA219_ID0 = 0,
+  INA219_ID1
 };
 
 //Sensor Table
@@ -228,6 +238,12 @@ enum {
   PDB_INLET_REMOTE_TEMP_L = 0x97,
   PDB_INLET_TEMP_R = 0x98,
   PDB_INLET_REMOTE_TEMP_R = 0x99,
+  BAY0_INA219_VOLT,
+  BAY0_INA219_CURR,
+  BAY0_INA219_PWR,
+  BAY1_INA219_VOLT,
+  BAY1_INA219_CURR,
+  BAY1_INA219_PWR,
 
   PDB_FAN0_TACH_I = 0xA0,
   PDB_FAN0_TACH_O = 0xA1,

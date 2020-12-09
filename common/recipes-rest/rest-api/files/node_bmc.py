@@ -124,13 +124,13 @@ class bmcNode(node):
                         uboot_version = matched.group("uboot_ver")
                         break
         else:
-            mtd_dev = "/dev/" + mtd_meta
-            with open(mtd_dev, "r") as f:
-                raw_data = f.readline()
-                try:
-                    uboot_version = json.loads(raw_data)["version_infos"]["uboot_ver"]
-                except:
-                    uboot_version = None
+            try:
+                mtd_dev = "/dev/" + mtd_meta
+                with open(mtd_dev, "r") as f:
+                    raw_data = f.readline()
+                uboot_version = json.loads(raw_data)["version_infos"]["uboot_ver"]
+            except Exception:
+                uboot_version = None
         return uboot_version
 
     def getUbootVer(self):

@@ -212,3 +212,22 @@ power_off_pim() {
     fi
     logger pim_enable: powered off PIM"${pim}"
 }
+
+retry_command() {
+    # Retry command up to $1 attempts
+    local retries=$1
+    shift
+
+    local count=0
+    until "$@"; do
+        exit=$?
+        count=$((count+1))
+        if [ "$count" -lt "$retries" ]; then
+            echo "Attempt $count/$retries failed with $exit, retrying..."
+        else
+            echo "Retry $count/$retries failed with $exit, no more retries left"
+            return $exit
+        fi
+    done
+    return 0
+}

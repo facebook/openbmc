@@ -21,6 +21,9 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 #shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
 
+# Board Version EVT2 0x41, EVT3 0x42, DVT1 0x43
+BOARD_VER=$(i2cget -f -y 13 0x35 0x3 | awk '{printf "%d", $1}') #Get board version
+
 # # Bus 0
 i2c_device_add 0 0x1010 slave-mqueue #IPMB 0
 # # Bus 1
@@ -64,6 +67,11 @@ i2c_device_add 5 0x36 ucd90160		  # Power Sequence
 # Bus 8
 i2c_device_add 8 0x51 24c64
 i2c_device_add 8 0x4a lm75
+
+# net_brcm driver only support DVT1 and later
+if [ "$BOARD_VER" -gt 66 ];then
+    i2c_device_add 29 0x47 net_brcm
+fi
 
 # # i2c-mux PCA9548 0x70, channel 1, mux PCA9548 0x71
 i2c_device_add 48 0x58 psu_driver

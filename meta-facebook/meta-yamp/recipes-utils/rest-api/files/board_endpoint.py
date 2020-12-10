@@ -29,7 +29,7 @@ import rest_pimstatus
 import rest_scdinfo
 import rest_seutil
 from aiohttp import web
-from rest_utils import dumps_bytestr
+from rest_utils import dumps_bytestr, get_endpoints
 
 
 class boardApp_Handler:
@@ -72,3 +72,23 @@ class boardApp_Handler:
     async def rest_firmware_info_all_hdl(self, request):
         fws = await rest_fw_ver.get_all_fw_ver()
         return web.json_response(fws, dumps=dumps_bytestr)
+
+    # /api/sys/firmware_info
+    async def rest_firmware_info_hdl(self, request):
+        path = request.rel_url.path
+        details = {
+            "Information": {"Description": "Firmware versions"},
+            "Actions": [],
+            "Resources": get_endpoints(path),
+        }
+        return web.json_response(details, dumps=dumps_bytestr)
+
+    # /api/sys/mb/pim$
+    async def rest_pim_endpoint_info_hdl(self, request):
+        path = request.rel_url.path
+        details = {
+            "Information": {"Description": "Plug-in Module"},
+            "Actions": [],
+            "Resources": get_endpoints(path),
+        }
+        return web.json_response(details, dumps=dumps_bytestr)

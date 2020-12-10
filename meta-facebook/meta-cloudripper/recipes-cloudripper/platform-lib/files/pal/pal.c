@@ -329,24 +329,11 @@ int pal_is_debug_card_prsnt(uint8_t *status) {
 // Return the Front panel Power Button
 int pal_get_board_rev(int *rev) {
   char path[LARGEST_DEVICE_NAME + 1];
-  int val_id_0, val_id_1, val_id_2;
 
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_0, "value");
-  if (device_read(path, &val_id_0)) {
+  snprintf(path, sizeof(path), SMB_SYSFS, "board_ver");
+  if (device_read(path, rev)) {
     return -1;
   }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_1, "value");
-  if (device_read(path, &val_id_1)) {
-    return -1;
-  }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_2, "value");
-  if (device_read(path, &val_id_2)) {
-    return -1;
-  }
-
-  *rev = val_id_0 | (val_id_1 << 1) | (val_id_2 << 2);
 
   return 0;
 }

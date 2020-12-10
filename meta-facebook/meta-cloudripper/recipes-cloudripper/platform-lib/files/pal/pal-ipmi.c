@@ -48,49 +48,18 @@
 int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len,
                      uint8_t *res_data, uint8_t *res_len)
 {
-    int board_id = 0, board_rev;
+    int board_sku_id = 0, board_rev;
     unsigned char *data = res_data;
     int completion_code = CC_UNSPECIFIED_ERROR;
 
-
-    int i = 0, num_chips, num_pins;
-    char device[64], path[32];
-    gpiochip_desc_t *chips[GPIO_CHIP_MAX];
-    gpiochip_desc_t *gcdesc;
-    gpio_desc_t *gdesc;
-    gpio_value_t value;
-
-    num_chips = gpiochip_list(chips, ARRAY_SIZE(chips));
-    if (num_chips < 0) {
-        *res_len = 0;
-        return completion_code;
-    }
-
-    gcdesc = gpiochip_lookup(SCM_BRD_ID);
-    if (gcdesc == NULL) {
-        *res_len = 0;
-        return completion_code;
-    }
-
-    num_pins = gpiochip_get_ngpio(gcdesc);
-    gpiochip_get_device(gcdesc, device, sizeof(device));
-
-    for(i = 0; i < num_pins; i++) {
-        sprintf(path, "%s%d", "BRD_ID_", i);
-        gpio_export_by_offset(device, i, path);
-        gdesc = gpio_open_by_shadow(path);
-        if (gpio_get_value(gdesc, &value) == 0) {
-            board_id |= (((int)value) << i);
-        }
-        gpio_unexport(path);
-    }
+    board_sku_id = pal_get_plat_sku_id();
 
     if (pal_get_board_rev(&board_rev) == -1) {
         *res_len = 0;
         return completion_code;
     }
 
-    *data++ = board_id;
+    *data++ = board_sku_id;
     *data++ = board_rev;
     *data++ = slot;
     *data++ = 0x00; // 1S Server.

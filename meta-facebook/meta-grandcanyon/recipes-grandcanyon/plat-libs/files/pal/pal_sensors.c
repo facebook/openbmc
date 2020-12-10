@@ -823,8 +823,8 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
   }
 
   tbuf[0] = sensor_cnt;
-  for(i = index ; i < sensor_cnt; i++) {
-    tbuf[i + 1] = sensor_list[i];  //feed sensor number to tbuf
+  for(i = 0 ; i < sensor_cnt; i++) {
+    tbuf[i + 1] = sensor_list[i + index];  //feed sensor number to tbuf
   }
   tlen = sensor_cnt + 1;
 

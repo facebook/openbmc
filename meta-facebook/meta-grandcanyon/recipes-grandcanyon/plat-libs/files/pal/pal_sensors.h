@@ -11,7 +11,7 @@
 #define NIC_INFO_SLAVE_ADDR          (0x3E)
 #define NIC_INFO_TEMP_CMD            (0x1)
 
-#define MAX_EXP_IPMB_SENSOR_COUNT    4
+#define MAX_EXP_IPMB_SENSOR_COUNT    40
 
 #define MAX_RETRY                    3
 #define MAX_SDR_PATH                 32

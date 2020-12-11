@@ -25,6 +25,7 @@ IMAGE_INSTALL += " \
   bic-util \
   cpldupdate \
   libcpldupdate-dll-ast-jtag \
+  fio \
   flashrom \
   front-paneld \
   fscd \

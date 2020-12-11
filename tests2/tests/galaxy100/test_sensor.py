@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import os
 import unittest
 
 from common.base_sensor_test import LmSensorsTest
@@ -31,7 +32,10 @@ class AstAdcIsa0000SensorTest(LmSensorsTest, unittest.TestCase):
     ]
 
     def set_sensors_cmd(self):
-        self.sensors_cmd = ["sensors ast_adc-isa-0000"]
+        if os.path.exists("/sys/devices/platform/ast-adc-hwmon/"):
+            self.sensors_cmd = ["sensors ast_adc_hwmon-isa-0000"]
+        else:
+            self.sensors_cmd = ["sensors ast_adc-isa-0000"]
 
     def test_ast_adc_isa_0000_sensor_keys(self):
         result = self.get_parsed_result()

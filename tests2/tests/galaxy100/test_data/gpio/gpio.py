@@ -222,7 +222,7 @@ GPIOS = {
         "value": "0",
         "edge": "none",
     },
-    "UNNAMED_46_AST2400A1TFBGA408__1": {
+    "SWITCH_EEPROM1_WRT": {
         "active_low": "0",
         "uevent": "",
         "direction": "in",

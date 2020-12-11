@@ -138,9 +138,7 @@ function reload_sled_fsc() {
     if [ "$fscd_status" == "run" ]; then
       sleep 1 && /usr/bin/sv stop fscd
       echo "slot is pulled out, stop fscd."
-      if [ "$sys_config" == "Type_EDSFF_1U" ]; then
-        /usr/local/bin/fan-util --set 100
-      fi
+      /usr/local/bin/fan-util --set 100
     else
       echo "fscd is already stopped."
     fi

@@ -2,7 +2,7 @@
     "version": "1.0",
     "sensors": [
       {
-        "name": "SYSTEM_AIRFLOW",
+        "name": "CC_SYSTEM_AIRFLOW",
         "units": "CFM",
         "composition": {
           "type": "conditional_linear_expression",

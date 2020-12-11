@@ -5,7 +5,6 @@
 #include <facebook/exp.h>
 
 #define MAX_SENSOR_NUM               (0xFF)
-#define MAX_DEVICE_NAME_SIZE         (128)
 #define MAX_SENSOR_NAME_SIZE         (32)
 
 #define NIC_INFO_SLAVE_ADDR          (0x3E)
@@ -36,6 +35,12 @@
 // ADC128 INFO
 #define ADC128_GIMON                 (52)    // unit: (uA/A)
 #define ADC128_RIMON                 (10000) // unit: (ohm)
+
+// ADS1015 INFO
+#define IOCM_VOLTAGE_SENSOR_DIR      "/sys/bus/i2c/devices/13-0049/iio\\:device*"
+#define IOCM_VOLTAGE_SENSOR_PATH     "%s/in_voltage%d_raw"
+#define ADS1015_PGA_DEFAULT          (2048)  // unit: mV
+#define ADS1015_DIV_UNIT             (1000)  // mV -> V
 
 typedef struct {
   float ucr_thresh;
@@ -281,6 +286,17 @@ enum {
   E1S2_TEMP = 0x23,
 };
 
+// IOC Module sensors
+enum {
+  IOCM_P3V3_STBY = 0x20,
+  IOCM_P1V8 = 0x21,
+  IOCM_P1V5 = 0x22,
+  IOCM_P0V865 = 0x23,
+  IOCM_CUR = 0x24,
+  IOCM_TEMP = 0x25,
+  IOCM_IOC_TEMP = 0x26,
+};
+
 // ADC_INFO
 enum {
   ADC0 = 0,
@@ -295,9 +311,16 @@ enum {
   ADC9,
 };
 
+// ADC128 INFO
+enum {
+  ADC128_IN0 = 0,
+  ADC128_IN1 = 0,
+};
+
 // GENERIC I2C Sensors
 enum {
   TEMP_INLET = 0,
+  TEMP_IOCM,
 };
 
 // NIC INFO
@@ -310,10 +333,18 @@ enum {
   EXPANDER = 0,
 };
 
-// E1S INFO
+// E1S/IOCM INFO
 enum {
-  E1S1 = 0,
-  E1S2,
+  T5_E1S0_T7_IOC_AVENGER = 0,
+  T5_E1S1_T7_IOCM_VOLT,
+};
+
+// ADS1015 INFO
+enum {
+  ADS1015_IN0 = 0,
+  ADS1015_IN1,
+  ADS1015_IN2,
+  ADS1015_IN3,
 };
 
 typedef struct {

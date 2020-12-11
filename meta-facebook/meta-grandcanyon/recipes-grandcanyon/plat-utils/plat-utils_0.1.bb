@@ -23,6 +23,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = "file://sol-util \
            file://COPYING \
+           file://ast-functions \
           "
 
 pkgdir = "utils"
@@ -39,6 +40,9 @@ do_install() {
   # install the package dir
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   install -d $dst
+
+  # install ast-functions
+  install -m 644 ast-functions ${dst}/ast-functions
 
   # create linkages to those binaries
   localbindir="${D}/usr/local/bin"

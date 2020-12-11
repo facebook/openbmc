@@ -1,0 +1,45 @@
+# Copyright 2020-present Facebook. All Rights Reserved.
+
+GPIOCLI_CMD=/usr/local/bin/gpiocli
+
+gpio_set() {
+  local shadow val
+  shadow=$1
+  val=$2
+  $GPIOCLI_CMD set-init-value --shadow $shadow $val
+}
+
+gpio_get() {
+  local shadow
+  shadow=$1
+  $GPIOCLI_CMD get-value --shadow $shadow | awk -F= '{print $2}'
+}
+
+is_e1s_iocm_i2c_enabled() {
+  if [[ $(gpio_get E1S_1_P3V3_PG_R) == "1" && $(gpio_get E1S_2_P3V3_PG_R) == "1" ]]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+#             UIC_LOC_TYPE_IN   UIC_RMT_TYPE_IN   SCC_LOC_TYPE_0   SCC_RMT_TYPE_0
+#  Type 5                   0                 0                0                0
+#  Type 7 Headnode          0                 1                0                1
+is_chassis_type7() {
+  if [[ $(gpio_get UIC_LOC_TYPE_IN) == "0" && $(gpio_get UIC_RMT_TYPE_IN) == "1" && $(gpio_get SCC_LOC_TYPE_0) == "0" && $(gpio_get SCC_RMT_TYPE_0) == "1" ]]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+is_module_loaded() {
+  local module
+  module=$1
+  if lsmod | grep "$module" &> /dev/null ; then
+    echo 1
+  else
+    echo 0
+  fi
+}

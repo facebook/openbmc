@@ -47,9 +47,9 @@ extern "C" {
 
 #define SERVER_SENSOR_LOCK "/var/run/sensor_read_server.lock"
 
-#define MAX_PATH_LEN 128
-#define E1S1_PRESENT_BIT   (1 << 0)
-#define E1S2_PRESENT_BIT   (1 << 1)
+#define MAX_PATH_LEN 128  // include the string terminal
+#define E1S0_IOCM_PRESENT_BIT   (1 << 0)
+#define E1S1_IOCM_PRESENT_BIT   (1 << 1)
 
 #define I2C_BASE           0x1e78a000
 #define I2C_BASE_INTERVAL  0x80
@@ -84,8 +84,8 @@ enum {
   I2C_IOEXP_BUS = 9,
   I2C_EXP_BUS = 10,
   I2C_T5IOC_BUS = 11,
-  I2C_T5E1S1_T7IOC_BUS = 12,  // T5: E1.S 1; T7: IOC
-  I2C_T5E1S2_T7IOC_BUS = 13,  // T5: E1.S 2; T7: IOCM FRU, Voltage sensor, Temp sensor
+  I2C_T5E1S0_T7IOC_BUS = 12,  // T5: E1.S 1; T7: IOC
+  I2C_T5E1S1_T7IOC_BUS = 13,  // T5: E1.S 2; T7: IOCM FRU, Voltage sensor, Temp sensor
   I2C_SCC_BUS = 14,
   I2C_TPM_BUS = 15,  // Reserved
 

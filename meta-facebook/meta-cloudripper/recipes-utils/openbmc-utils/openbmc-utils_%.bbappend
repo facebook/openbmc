@@ -41,6 +41,7 @@ SRC_URI += "file://beutil \
             file://switch_reset.sh \
             file://wedge_power.sh \
             file://wedge_us_mac.sh \
+            file://xdpe12284-hack.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -63,6 +64,7 @@ OPENBMC_UTILS_FILES += " \
     switch_reset.sh \
     wedge_power.sh \
     wedge_us_mac.sh \
+    xdpe12284-hack.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

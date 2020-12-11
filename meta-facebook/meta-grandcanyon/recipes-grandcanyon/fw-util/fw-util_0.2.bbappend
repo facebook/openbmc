@@ -27,9 +27,11 @@ SRC_URI += "\
         file://bic_cpld.cpp \
         file://bic_vr.cpp \
         file://bic_vr.h \
+        file://scc_exp.cpp \
+        file://scc_exp.h \
         "
 
 CXXFLAGS += " -DBIC_SUPPORT "
-DEPENDS += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common "
-RDEPENDS_${PN} += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common "
-LDFLAGS += " -lpal -lbic -lnl-wrapper -lkv -lfpga "
+DEPENDS += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common libexp "
+RDEPENDS_${PN} += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common libexp "
+LDFLAGS += " -lpal -lbic -lnl-wrapper -lkv -lfpga -lexp "

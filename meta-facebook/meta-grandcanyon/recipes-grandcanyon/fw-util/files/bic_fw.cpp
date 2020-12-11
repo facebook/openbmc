@@ -188,7 +188,7 @@ int BicFwBlComponent::print_version() {
     if (get_ver_str(ver) < 0) {
       throw "Error in getting the version of server BIC Bootloader";
     }
-    cout << " Bridge-IC Bootloader Version: " << ver << endl;
+    cout << "Bridge-IC Bootloader Version: " << ver << endl;
   } catch(string err) {
     printf("Bridge-IC Bootloader Version: NA (%s)\n", err.c_str());
   }

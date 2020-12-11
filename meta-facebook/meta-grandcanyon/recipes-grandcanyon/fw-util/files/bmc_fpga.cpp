@@ -106,7 +106,7 @@ int BmcFpgaComponent::print_version()
   if (get_ver_str(ver) < 0) {
     cout << "Error in getting the version of " + fru_name << endl;
   } else {
-    cout << fru_name << " FPGA Version: " << ver << endl;
+    cout << fru_name << " FPGA Version: 0x" << ver << endl;
   }
 
   return 0;

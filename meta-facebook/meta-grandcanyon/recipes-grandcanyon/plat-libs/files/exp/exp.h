@@ -32,7 +32,26 @@ extern "C" {
 #define CMD_OEM_EXP_ERROR_CODE          0x11
 #define CMD_OEM_EXP_GET_SENSOR_READING  0x2D
 
+#define CMD_GET_EXP_VERSION             0x12
+#define EXP_VERSION_RES_LEN             20
+
+typedef struct Version {
+  uint8_t status;
+  uint8_t major_ver;
+  uint8_t minor_ver;
+  uint8_t unit_ver;
+  uint8_t dev_ver;
+} ver_set;
+
+typedef struct ExpanderVersion {
+  ver_set bootloader;
+  ver_set firmware_region1;
+  ver_set firmware_region2;
+  ver_set configuration;
+} exp_ver;
+
 int expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
+int expander_get_fw_ver(uint8_t *ver, uint8_t ver_len);
 
 #ifdef __cplusplus
 } // extern "C"

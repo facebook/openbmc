@@ -94,4 +94,37 @@ expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen,
   return 0;
 }
 
+// Read Firwmare Versions of Expander via IPMB, and save to cache
+int
+expander_get_fw_ver(uint8_t *ver, uint8_t ver_len) {
+  uint8_t tbuf[MAX_IPMB_RES_LEN] = {0x00};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
+  uint8_t rlen = 0;
+  uint8_t tlen = 0;
+  int ret = 0;
+  exp_ver expander_ver;
+
+  if (ver == NULL) {
+    syslog(LOG_ERR, "%s: Firmware version pointer is null...\n", __func__);
+    return -1;
+  }
+
+  memset(&expander_ver, 0, sizeof(expander_ver));
+
+  ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_GET_EXP_VERSION, tbuf, tlen, rbuf, &rlen);
+  if ((ret != 0) || (rlen != EXP_VERSION_RES_LEN)) {
+    syslog(LOG_ERR, "%s: expander_ipmb_wrapper failed...\n", __func__);
+    return -1;
+  }
+
+  memcpy(&expander_ver, rbuf, sizeof(expander_ver));
+
+  if (expander_ver.firmware_region1.status != 0) {
+    memcpy(ver, &expander_ver.firmware_region2.major_ver, ver_len);
+  } else {
+    memcpy(ver, &expander_ver.firmware_region1.major_ver, ver_len);
+  }
+
+  return 0;
+}
 

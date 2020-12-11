@@ -32,6 +32,7 @@
 #include <string.h>
 #include <time.h>
 #include <openbmc/libgpio.h>
+#include <facebook/fbgc_gpio.h>
 #include "fbgc_common.h"
 
 int
@@ -56,8 +57,24 @@ msleep(int msec) {
 
 int
 fbgc_common_server_stby_pwr_sts(uint8_t *val) {
-  // TODO: get server standby power status from CPLD register
-  return -1;
+  gpio_value_t pg_gpio = GPIO_VALUE_LOW;
+
+  if (val == NULL) {
+    syslog(LOG_WARNING, "%s() NULL pointer: *val", __func__);
+    return -1;
+  }
+
+  pg_gpio = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_COMP_STBY_PG_IN));
+  if (pg_gpio == GPIO_VALUE_INVALID) {
+    syslog(LOG_WARNING, "%s() Can not get 12V power status via GPIO pin", __func__);
+    return -1;
+  } else if (pg_gpio == GPIO_VALUE_HIGH){
+    *val = STAT_12V_ON;
+  } else {
+    *val = STAT_12V_OFF;
+  }
+
+  return 0;
 }
 
 uint8_t

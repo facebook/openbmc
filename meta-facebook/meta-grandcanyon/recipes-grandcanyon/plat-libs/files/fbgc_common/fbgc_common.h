@@ -98,6 +98,12 @@ enum {
   PAYLOAD_EXP = 3,
 };
 
+// server 12v power status
+enum {
+  STAT_12V_OFF = 0,
+  STAT_12V_ON = 1,
+};
+
 int fbgc_common_get_chassis_type(uint8_t *type);
 void msleep(int msec);
 int fbgc_common_server_stby_pwr_sts(uint8_t *val);

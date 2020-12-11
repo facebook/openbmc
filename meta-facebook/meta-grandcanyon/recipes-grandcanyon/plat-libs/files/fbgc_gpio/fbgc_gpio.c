@@ -19,7 +19,6 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <syslog.h>
 #include <openbmc/libgpio.h>
 #include "fbgc_gpio.h"

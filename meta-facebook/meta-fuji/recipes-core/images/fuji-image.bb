@@ -33,6 +33,7 @@ IMAGE_INSTALL += " \
   cpldupdate-i2c \
   libcpldupdate-dll-gpio \
   libcpldupdate-dll-ast-jtag \
+  fio \
   flashrom \
   front-paneld \
   fw-util \

@@ -63,6 +63,7 @@
 #define CMD_RUN_SIZE 7
 #define CMD_DOWNLOAD_SIZE 11
 #define CMD_STATUS_SIZE 3
+#define MIN_CMD_SIZE 3
 
 #define FRU_SCM 1
 
@@ -751,6 +752,60 @@ static int run_shell_cmd(const char* cmd) {
   return system(cmd);
 }
 
+static int send_bic_image_data(int ifd, int xcount, uint8_t* xbuf) {
+  uint8_t tbuf[MAX_IPMI_MSG_SIZE] = {0};
+  uint8_t rbuf[MAX_IPMI_MSG_SIZE] = {0};
+  uint8_t tcount = 0;
+  uint8_t rcount = 0;
+  int i = 0, rc = 0, retry = 5;
+
+  while( retry-- )
+  {
+    //Setup Command to Set Update Data
+    tbuf[0] = xcount + MIN_CMD_SIZE;           //Command Length
+    tbuf[1] = BIC_CMD_DATA;                    //Checksum
+    tbuf[2] = BIC_CMD_DATA;                    //Command Number
+    memcpy(&tbuf[MIN_CMD_SIZE], xbuf, xcount); //Image Data
+    //Checksum calculation
+    for (i = 0; i < xcount; i++) {
+      tbuf[1] += xbuf[i];
+    }
+    tcount = tbuf[0];
+    rcount = 0;
+    //Send Command to Set Update Data
+    rc = bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount);
+    if (rc) {
+      OBMC_ERROR(errno, "fail to send bic update command. retry...");
+      continue;
+    }
+
+    //Waittig for bic to do command's action
+    msleep(10);
+
+    //Setup Command to Get Response
+    tcount = 0;
+    rcount = 2;
+    //Send Command to Get Response
+    rc = bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount);
+    if (rc) {
+      OBMC_ERROR(errno, "fail to get command response. retry...");
+      continue;
+    }
+
+    //Check Set Update Data's Response
+    if (rbuf[0] != 0x00 || rbuf[1] != 0xcc) {
+      OBMC_WARN("check bic res. data error, expect 0x00,0xcc but receive : %#x:%#x\n", rbuf[0], rbuf[1]);
+      continue;
+    }
+    break;
+  }
+
+  if(retry)
+    return 0;
+  else
+    return 1;
+}
+
 static int prepare_update_bic(uint8_t slot_id, int ifd, int size) {
   int i = 0;
   uint8_t tbuf[MAX_IPMI_MSG_SIZE] = {0};
@@ -917,6 +972,7 @@ static int _update_bic_main(uint8_t slot_id, const char* path) {
       lseek(fd, 0, SEEK_SET);
       prepare_update_bic(slot_id, ifd, size);
     }
+
     if (rc) {
       goto error_exit;
     }
@@ -931,48 +987,23 @@ static int _update_bic_main(uint8_t slot_id, const char* path) {
       goto error_exit;
     }
 
-    // send next packet
+    // read data from update image
     xcount = read(fd, xbuf, BIC_PKT_MAX);
     if (xcount <= 0) {
       break;
     }
 
+    // calc percentage
     offset += xcount;
     if ((last_offset + dsize) <= offset) {
       OBMC_INFO("updated bic: %d %%\n", offset / dsize * 5);
       last_offset += dsize;
     }
 
-    tbuf[0] = xcount + 3;
-    tbuf[1] = BIC_CMD_DATA;
-    tbuf[2] = BIC_CMD_DATA;
-    memcpy(&tbuf[3], xbuf, xcount);
-
-    for (i = 0; i < xcount; i++) {
-      tbuf[1] += xbuf[i];
-    }
-
-    tcount = tbuf[0];
-    rcount = 0;
-
-    rc = bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount);
+    // send update image data to bic
+    rc = send_bic_image_data(ifd, xcount, xbuf);
     if (rc) {
-      OBMC_ERROR(errno, "error send data");
-      goto error_exit;
-    }
-
-    msleep(10);
-    tcount = 0;
-    rcount = 2;
-
-    rc = bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount);
-    if (rc) {
-      OBMC_ERROR(errno, "error send data ack");
-      goto error_exit;
-    }
-
-    if (rbuf[0] != 0x00 || rbuf[1] != 0xcc) {
-      OBMC_WARN("data error: %#x:%#x\n", rbuf[0], rbuf[1]);
+      OBMC_ERROR(errno, "failed send update bic command, please check bic's status");
       goto error_exit;
     }
   }

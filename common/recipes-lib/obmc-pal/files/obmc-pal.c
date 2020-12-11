@@ -332,8 +332,9 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
 {
   uint8_t general_info = sel[3];
   uint8_t error_type = general_info & 0xF;
-  uint8_t plat, sled, socket;
+  uint8_t plat, sled, socket, channel, slot;
   uint8_t event_type, estr_idx;
+
   char *mem_err[] = {"Memory training failure", "Memory correctable error", "Memory uncorrectable error",
                      "Memory correctable error (Patrol scrub)", "Memory uncorrectable error (Patrol scrub)",
                      "Memory Parity Error event", "Reserved"};
@@ -369,14 +370,19 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     case UNIFIED_MEM_ERR:
       plat = (sel[12] & 0x80) >> 7;
       event_type = sel[12] & 0xF;
+      sled = (sel[8]>>4) & 0x3;
+      socket = sel[8] & 0xF;
+      channel = sel[9] & 0xF;
+      slot = sel[10] & 0xF;
+
       if (sel[9] == 0xFF && sel[10] == 0xFF) {
         sprintf(dimm_str, "unknown");
         sprintf(dimm_location_str, "DIMM Slot Location: Sled %02d/Socket %02d, Channel unknown, Slot unknown, DIMM unknown",
-                ((sel[8]>>4)&0x3), sel[8]&0xF);
+                sled, socket);
       } else {
-        pal_convert_to_dimm_str(sel[8]&0xF, sel[9]&0xF, sel[10]&0xF, dimm_str);
+        pal_convert_to_dimm_str(socket, channel, slot, dimm_str);
         sprintf(dimm_location_str, "DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s",
-                ((sel[8]>>4)&0x3), sel[8]&0xF, sel[9]&0xF, sel[10]&0xF, dimm_str);
+                sled, socket, channel, slot, dimm_str);
       }
       switch (event_type) {
         case MEMORY_TRAINING_ERR:
@@ -457,14 +463,19 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
 
     case UNIFIED_MEM_EVENT:
       event_type = sel[8] & 0xF;
+      sled = (sel[9]>>4) & 0x3;
+      socket = sel[9] & 0xF;
+      channel = sel[10] & 0xF;
+      slot = sel[11] & 0xF;
+
       if (sel[10] == 0xFF && sel[11] == 0xFF) {
         sprintf(dimm_str, "unknown");
         sprintf(dimm_location_str, "DIMM Slot Location: Sled %02d/Socket %02d, Channel unknown, Slot unknown, DIMM unknown",
-                ((sel[9]>>4)&0x3), sel[9]&0xF);
+                sled, socket);
       } else {
-        pal_convert_to_dimm_str(sel[8]&0xF, sel[9]&0xF, sel[10]&0xF, dimm_str);
+        pal_convert_to_dimm_str(socket, channel, slot, dimm_str);
         sprintf(dimm_location_str, "DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s",
-                ((sel[9]>>4)&0x3), sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str);
+                sled, socket, channel, slot, dimm_str);
       }
       switch (event_type) {
         case MEM_PPR:

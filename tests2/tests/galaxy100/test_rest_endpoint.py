@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import os
 import re
 import unittest
 
@@ -105,8 +106,12 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "IR3581-i2c-1-70",
             "IR3584-i2c-1-72",
             "pwr1014a-i2c-2-40",
-            "ast_adc-isa-0000",
         ]
+        if os.path.exists("/sys/devices/platform/ast-adc-hwmon/"):
+            self.endpoint_sensors_attrb.append("ast_adc_hwmon-isa-0000")
+        else:
+            self.endpoint_sensors_attrb.append("ast_adc-isa-0000")
+
 
     # "/api/sys/mb"
     def set_endpoint_mb_attributes(self):

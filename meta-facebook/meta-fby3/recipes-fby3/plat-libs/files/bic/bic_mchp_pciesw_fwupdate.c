@@ -129,9 +129,8 @@ int update_bic_mchp_pcie_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t 
       } else {
         per_read = bytes_per_read;
       }
-      i++;
     }
-
+    i++;
     read_bytes = read(fd, buf, per_read);
     if ( read_bytes <= 0 ) {
       //no more bytes can be read

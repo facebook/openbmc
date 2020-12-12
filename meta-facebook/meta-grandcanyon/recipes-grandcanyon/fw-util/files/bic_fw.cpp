@@ -103,10 +103,10 @@ int BicFwComponent::print_version() {
     server.ready();
     // Print Bridge-IC Version
     if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of server BIC";
+      throw string("Error in getting the version of server BIC");
     }
     cout << "Bridge-IC Version: " << ver << endl;
-  } catch(string err) {
+  } catch (string err) {
     printf("Bridge-IC Version: NA (%s)\n", err.c_str());
   }
 

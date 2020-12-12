@@ -72,9 +72,14 @@
 #define BIC_IMG_DATA_LEN 256
 #define BIC_VALIDATE_READ_LEN 2
 
-#define MAX_SYS_CMD_LEN 100
+#define MAX_SYS_CMD_REQ_LEN  100  // include the string terminal
+#define MAX_SYS_CMD_RESP_LEN 100  // include the string terminal
 
 #define GET_BIC_UPDATE_STAT 0xCC
+
+#define DEVMEM_READ_CMD  "/sbin/devmem 0x%08x | cut -c 3-" // skip "0x"
+#define DEVMEM_WRITE_CMD "/sbin/devmem 0x%08x w 0x%08x"
+
 
 // I2C frequncy
 enum {
@@ -347,17 +352,22 @@ static int
 update_bic(int fd, int file_size) {
   int ret = -1;
   int i2cfd = 0;
-  char cmd[MAX_SYS_CMD_LEN] = {0};
+  int i = 0;
+  char cmd[MAX_SYS_CMD_REQ_LEN] = {0};
+  char buf[MAX_SYS_CMD_RESP_LEN] = {0};
   size_t cmd_size = sizeof(cmd);
   uint8_t bus_num = 0;
+  uint8_t ret_byte = 0;
   const uint8_t bytes_per_read = 252;
   struct rlimit mqlim;
-  uint32_t mmap_fd = 0;
+  FILE* fp = NULL;
   uint32_t orig_i2c_ctl_reg = 0;
   uint32_t set_i2c_ctl_reg = 0;
+#if 0
+  uint32_t mmap_fd = 0;
   void *reg_base;
   void *reg_offset;
-
+#endif
 
   //step1 -get the bus number and open the dev of i2c
   bus_num = I2C_BIC_BUS;
@@ -377,6 +387,8 @@ update_bic(int fd, int file_size) {
   printf("stop ipmbd for bus %d..\n", bus_num);
 
   //step3 - adjust the i2c speed to 100k and set properties of mqlim
+// TODO: Use memory mapping here will cause segmentation fault. Use devmem instead as quick workaround. will find out the solution.
+#if 0 
   mmap_fd = open("/dev/mem", O_RDWR | O_SYNC );
   if (mmap_fd < 0) {
     printf("%s(): fail to open /dev/mem\n", __func__);
@@ -395,7 +407,41 @@ update_bic(int fd, int file_size) {
   set_i2c_ctl_reg |= 0x000FF005;
   *(volatile uint32_t*) reg_offset = set_i2c_ctl_reg; 
   munmap(reg_base, PAGE_SIZE);
- 
+#else
+  
+  snprintf(cmd, sizeof(cmd), DEVMEM_READ_CMD, I2C_BASE_MAP(bus_num) + I2C_CLK_CTRL_REG);
+  if ((fp = popen(cmd, "r")) == NULL) {
+    ret = BIC_STATUS_FAILURE;
+    printf("%s(): command %s failed\n", __func__, cmd);
+    goto exit;
+  }
+  
+  if (fgets(buf, sizeof(buf), fp) != NULL) {
+    for (i = 0; i < 8; i += 2) { // 8 characters for one word, 2 characters for one byte
+      ret_byte = string_2_byte(&buf[i]);
+      if (ret_byte < 0) {
+        pclose(fp);
+        ret = BIC_STATUS_FAILURE;
+        goto exit;
+      }
+      orig_i2c_ctl_reg = (orig_i2c_ctl_reg << 8) | ret_byte;
+    }
+  }
+  pclose(fp);
+
+  // 1M: 0xXXXCBXX2 => 100K: 0xXXXFFXX5
+  // Bit [3:0]: base clock divisor
+  // Bit [15:12]: tCKLow
+  // Bit [19:16]: tCKHigh
+  set_i2c_ctl_reg = orig_i2c_ctl_reg & 0xFFF00FF0;
+  set_i2c_ctl_reg |= 0x000FF005;
+  snprintf(cmd, sizeof(cmd), DEVMEM_WRITE_CMD, I2C_BASE_MAP(bus_num) + I2C_CLK_CTRL_REG, set_i2c_ctl_reg);
+  if (system(cmd) != 0) {
+      printf("%s(): command %s failed\n", __func__, cmd);
+      ret = BIC_STATUS_FAILURE;
+      goto exit;
+  }
+#endif
   sleep(1);
 
   if (is_bic_ready() < 0) {
@@ -477,6 +523,7 @@ update_bic(int fd, int file_size) {
 
 exit:
   //step11 - recover the i2c speed to 1M
+#if 0
   reg_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmap_fd, I2C_BASE_MAP(bus_num));
   reg_offset = (char*) reg_base + I2C_CLK_CTRL_REG;
   *(volatile uint32_t*) reg_offset = orig_i2c_ctl_reg;
@@ -484,6 +531,14 @@ exit:
   if (mmap_fd >= 0) {
       close(mmap_fd);
   }
+#else
+  snprintf(cmd, sizeof(cmd), DEVMEM_WRITE_CMD, I2C_BASE_MAP(bus_num) + I2C_CLK_CTRL_REG, orig_i2c_ctl_reg);
+  if (system(cmd) != 0) {
+      printf("%s(): command %s failed\n", __func__, cmd);
+      ret = BIC_STATUS_FAILURE;
+  }
+#endif
+
   msleep(500);
   //step12 - restart the ipmbd
   snprintf(cmd, cmd_size, "sv start ipmbd_%d", bus_num);

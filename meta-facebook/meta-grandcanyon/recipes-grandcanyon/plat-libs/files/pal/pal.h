@@ -72,6 +72,11 @@ enum {
   BOOT_DEVICE_RESERVED = 0xff,
 };
 
+enum {
+  FRU_ABSENT           = 0,
+  FRU_PRESENT,
+};
+
 int pal_get_fru_id(char *str, uint8_t *fru);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
@@ -98,6 +103,7 @@ int pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 int pal_get_nic_fru_id(void);
 bool pal_sensor_is_cached(uint8_t fru, uint8_t sensor_num);
 int pal_is_slot_server(uint8_t fru);
+int pal_check_gpio_prsnt(uint8_t gpio, int presnt_expect);
 
 #ifdef __cplusplus
 } // extern "C"

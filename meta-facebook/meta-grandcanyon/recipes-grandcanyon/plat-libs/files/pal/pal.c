@@ -252,20 +252,84 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   return 0;
 }
 
+int pal_check_gpio_prsnt(uint8_t gpio, int presnt_expect) {
+
+  int ret = GPIO_VALUE_INVALID;
+
+  ret = gpio_get_value_by_shadow(fbgc_get_gpio_name(gpio));
+
+  if (ret == GPIO_VALUE_INVALID) {
+    syslog(LOG_ERR, "%s: failed to get gpio value: gpio%d\n",__func__, gpio);
+    return -1;
+  }
+
+  if (ret == presnt_expect) {
+    return FRU_PRESENT;
+  } else {
+    return FRU_ABSENT;
+  }
+}
+
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
-  // TODO: implement SERVER, SCC, NIC, E1S/IOCM present determination
+  int ret = 0;
+  int e1s_0_ret = 0, e1s_1_ret = 0;
+  uint8_t chasis_type = 0x0;
+
   switch (fru) {
     case FRU_SERVER:
+      ret = pal_check_gpio_prsnt(GPIO_COMP_PRSNT_N, GPIO_VALUE_LOW);
+      if (ret == -1) {
+        *status = 0;
+        return PAL_ENOTSUP;
+      }
+      *status = ret;
+      break;
+    case FRU_SCC:
+      ret = pal_check_gpio_prsnt(GPIO_SCC_LOC_INS_N, GPIO_VALUE_LOW);
+      if (ret == -1) {
+        *status = 0;
+        return PAL_ENOTSUP;
+      }
+      *status = ret;
+      break;
+    case FRU_NIC:
+      ret = pal_check_gpio_prsnt(GPIO_NIC_PRSNTB3_N, GPIO_VALUE_LOW);
+      if (ret == -1) {
+        *status = 0;
+        return PAL_ENOTSUP;
+      }
+      *status = ret;
+      break;
+    case FRU_E1S_IOCM:
+      e1s_0_ret = pal_check_gpio_prsnt(GPIO_E1S_1_PRSNT_N, GPIO_VALUE_LOW);
+      e1s_1_ret = pal_check_gpio_prsnt(GPIO_E1S_2_PRSNT_N, GPIO_VALUE_LOW);
+      if (e1s_0_ret == -1 || e1s_1_ret == -1) {
+        *status = 0;
+        return PAL_ENOTSUP;
+      }
+
+      ret = fbgc_common_get_chassis_type(&chasis_type);
+      if (ret == -1) {
+        return PAL_ENOTSUP;
+      }
+
+      if (chasis_type == CHASSIS_TYPE5) {
+        *status = 0;
+        if ( e1s_0_ret == FRU_PRESENT) {
+          *status |= E1S0_IOCM_PRESENT_BIT;
+        }
+        if ( e1s_1_ret == FRU_PRESENT) {
+          *status |= E1S1_IOCM_PRESENT_BIT;
+        }
+      } else if (chasis_type == CHASSIS_TYPE7) {
+        *status = (e1s_0_ret & e1s_1_ret);
+      }
+      break;
     case FRU_BMC:
     case FRU_UIC:
     case FRU_DPB:
-    case FRU_SCC:
-    case FRU_NIC:
       *status = 1;
-      break;
-    case FRU_E1S_IOCM:
-      *status = (E1S0_IOCM_PRESENT_BIT | E1S1_IOCM_PRESENT_BIT);
       break;
     default:
       *status = 0;
@@ -578,15 +642,15 @@ int
 pal_set_hb_led(uint8_t status) {
   int ret = 0;
   gpio_value_t val = 0;
-  
+
   if (status == LED_ON) {
     val = GPIO_VALUE_HIGH;
   } else {
     val = GPIO_VALUE_LOW;
   }
-   
+
   ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_BMC_LOC_HEARTBEAT_R), val);
-  
+
   return ret;
 }
 

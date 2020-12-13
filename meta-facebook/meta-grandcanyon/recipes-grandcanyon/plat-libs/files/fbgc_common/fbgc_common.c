@@ -34,11 +34,44 @@
 #include <openbmc/libgpio.h>
 #include <facebook/fbgc_gpio.h>
 #include "fbgc_common.h"
+#include <openbmc/libgpio.h>
+#include <facebook/fbgc_gpio.h>
 
 int
 fbgc_common_get_chassis_type(uint8_t *type) {
-  // TODO: determine chassis type via checking GPIO pins.
-  *type = CHASSIS_TYPE5;
+  int chassis_type_value = 0x0;
+
+  gpio_value_t uic_loc_type_in = GPIO_VALUE_INVALID;
+  gpio_value_t uic_rmt_type_in = GPIO_VALUE_INVALID;
+  gpio_value_t scc_loc_type_0 = GPIO_VALUE_INVALID;
+  gpio_value_t scc_rmt_type_0 = GPIO_VALUE_INVALID;
+
+  uic_loc_type_in = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_UIC_LOC_TYPE_IN));
+  uic_rmt_type_in = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_UIC_RMT_TYPE_IN));
+  scc_loc_type_0  = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_LOC_TYPE_0));
+  scc_rmt_type_0  = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_RMT_TYPE_0));
+
+  if ((uic_loc_type_in == GPIO_VALUE_INVALID) || (uic_rmt_type_in == GPIO_VALUE_INVALID) ||
+      (scc_loc_type_0 == GPIO_VALUE_INVALID)  || (scc_rmt_type_0 == GPIO_VALUE_INVALID)) {
+    syslog(LOG_WARNING, "%s() failed to get chassis type.", __func__);
+    return -1;
+  }
+
+  //                 UIC_LOC_TYPE_IN   UIC_RMT_TYPE_IN   SCC_LOC_TYPE_0   SCC_RMT_TYPE_0
+  // Type 5                        0                 0                0                0
+  // Type 7 Headnode               0                 1                0                1
+
+  chassis_type_value = CHASSIS_TYPE_BIT_3(uic_loc_type_in) | CHASSIS_TYPE_BIT_2(uic_rmt_type_in) |
+                       CHASSIS_TYPE_BIT_1(scc_loc_type_0)  | CHASSIS_TYPE_BIT_0(scc_rmt_type_0);
+
+  if (chassis_type_value == CHASSIS_TYPE_5_VALUE) {
+    *type = CHASSIS_TYPE5;
+  } else if (chassis_type_value == CHASSIS_TYPE_7_VALUE) {
+    *type = CHASSIS_TYPE7;
+  } else {
+    syslog(LOG_WARNING, "%s() Unknown chassis type.", __func__);
+    return -1;
+  }
 
   return 0;
 }
@@ -80,7 +113,7 @@ fbgc_common_server_stby_pwr_sts(uint8_t *val) {
 uint8_t
 cal_crc8(uint8_t crc, uint8_t const *data, uint8_t len) {
   uint8_t const *end = data + len;
-  static uint8_t const crc8_table[] = 
+  static uint8_t const crc8_table[] =
   { 0x00, 0x07, 0x0E, 0x09, 0x1C, 0x1B, 0x12, 0x15, 0x38, 0x3F, 0x36, 0x31, 0x24, 0x23, 0x2A, 0x2D,
     0x70, 0x77, 0x7E, 0x79, 0x6C, 0x6B, 0x62, 0x65, 0x48, 0x4F, 0x46, 0x41, 0x54, 0x53, 0x5A, 0x5D,
     0xE0, 0xE7, 0xEE, 0xE9, 0xFC, 0xFB, 0xF2, 0xF5, 0xD8, 0xDF, 0xD6, 0xD1, 0xC4, 0xC3, 0xCA, 0xCD,
@@ -102,16 +135,16 @@ cal_crc8(uint8_t crc, uint8_t const *data, uint8_t len) {
     return 0;
   }
 
-  crc &= 0xff;  
+  crc &= 0xff;
 
   while (data < end) {
     crc = crc8_table[crc ^ *data++];
   }
 
-  return crc;  
+  return crc;
 }
 
-uint8_t 
+uint8_t
 hex_c2i(const char c) {
   if (c && (c >= '0') && (c <= '9')) {
     return (c - '0');
@@ -126,7 +159,7 @@ hex_c2i(const char c) {
   return 0xFF;
 }
 
-int 
+int
 string_2_byte(const char* c) {
   uint8_t h_nibble = hex_c2i(c[0]);
   if (h_nibble > 0xF) {
@@ -144,7 +177,7 @@ bool
 start_with(const char *s, const char *p) {
   if ((0 == s) || (0 == p)) {
     return false;
-  }        
+  }
   while (*p && *s && (*p == *s)) {
     p++;
     s++;

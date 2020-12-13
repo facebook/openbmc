@@ -55,6 +55,18 @@ extern "C" {
 #define I2C_BASE_INTERVAL  0x80
 #define I2C_BASE_MAP(bus)  (I2C_BASE + (((bus) + 1) * I2C_BASE_INTERVAL))
 
+#define CHASSIS_TYPE_BIT_0(value)   (value << 0)
+#define CHASSIS_TYPE_BIT_1(value)   (value << 1)
+#define CHASSIS_TYPE_BIT_2(value)   (value << 2)
+#define CHASSIS_TYPE_BIT_3(value)   (value << 3)
+
+//                 UIC_LOC_TYPE_IN   UIC_RMT_TYPE_IN   SCC_LOC_TYPE_0   SCC_RMT_TYPE_0
+// Type 5                        0                 0                0                0
+// Type 7 Headnode               0                 1                0                1
+
+#define CHASSIS_TYPE_5_VALUE (CHASSIS_TYPE_BIT_3(0) | CHASSIS_TYPE_BIT_2(0) | CHASSIS_TYPE_BIT_1(0) | CHASSIS_TYPE_BIT_0(0)) // 0000b
+#define CHASSIS_TYPE_7_VALUE (CHASSIS_TYPE_BIT_3(0) | CHASSIS_TYPE_BIT_2(1) | CHASSIS_TYPE_BIT_1(0) | CHASSIS_TYPE_BIT_0(1)) // 0101b
+
 enum {
   FRU_ALL = 0,
   FRU_SERVER,

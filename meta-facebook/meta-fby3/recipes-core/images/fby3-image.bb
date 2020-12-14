@@ -65,4 +65,5 @@ IMAGE_INSTALL += " \
   throttle-util \
   name-util \
   nvme-util \
+  usb2jtag-util \
   "

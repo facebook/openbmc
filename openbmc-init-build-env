@@ -80,7 +80,7 @@ if [ -z "$TEMPLATECONF" ]; then
     elif [ -d "$(pwd)/meta-$1" ]; then
         TEMPLATECONF="$(pwd)/meta-$1/conf"
     else
-        machines=$(find . -maxdepth 6 -wholename "*/machine/*" -type f)
+        machines=$(find . -maxdepth 6 -wholename "*/machine/*" -type f -or -type l)
         for md in ${machines}; do
             machine=$(basename "$md" | sed 's/\.conf//')
             meta=$(dirname "$(dirname "$md")")

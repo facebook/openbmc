@@ -1,33 +1,45 @@
 swagger: "2.0"
-info: 
-  description: Swagger doc for /api/scc/logs  
-  title: Swagger doc for /api/scc/logs  
+info:
+  description: Swagger doc for /api/scc/logs
+  title: Swagger doc for /api/scc/logs
   version: 1.0.0
-paths: 
-  /api/scc/logs: 
-    get: 
+paths:
+  /api/scc/logs:
+    get:
       produces: [application/json]
-      responses: 
-        200: 
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  Logs: 
+                properties:
+                  Logs:
                     type: array
-                    items: 
+                    items:
+                      type: object
+                      additionalProperties: false
+                      properties:
+                        FRU_NAME:
+                          type: string
+                        APP_NAME:
+                          type: string
+                        MESSAGE:
+                          type: string
+                        FRU#:
+                          type: string
+                        TIME_STAMP:
                       type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-            
+

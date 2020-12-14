@@ -29,9 +29,9 @@
 extern "C" {
 #endif
 
-#define CMD_OEM_EXP_ERROR_CODE          0x11
+#define CMD_OEM_EXP_ERROR_CODE          0x11   // NetFn: OEM (0x30)
 #define CMD_OEM_EXP_GET_SENSOR_READING  0x2D
-
+#define CMD_GET_EXP_FRUID               0x11   // NetFn: Storage (0x0A)
 #define CMD_GET_EXP_VERSION             0x12
 #define EXP_VERSION_RES_LEN             20
 
@@ -52,6 +52,7 @@ typedef struct ExpanderVersion {
 
 int expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 int expander_get_fw_ver(uint8_t *ver, uint8_t ver_len);
+int exp_read_fruid(const char *path, uint8_t fru_id);
 
 #ifdef __cplusplus
 } // extern "C"

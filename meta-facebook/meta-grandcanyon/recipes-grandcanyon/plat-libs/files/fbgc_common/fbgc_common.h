@@ -33,10 +33,12 @@ extern "C" {
 #define FRU_BMC_BIN     "/tmp/fruid_bmc.bin"
 #define FRU_UIC_BIN     "/tmp/fruid_uic.bin"
 #define FRU_NIC_BIN     "/tmp/fruid_nic.bin"
+#define FRU_IOCM_BIN    "/tmp/fruid_iocm.bin"
 
-#define BMC_FRU_ADDR 0x54
-#define UIC_FRU_ADDR 0x50
-#define NIC_FRU_ADDR 0x50
+#define BMC_FRU_ADDR  0x54
+#define UIC_FRU_ADDR  0x50
+#define NIC_FRU_ADDR  0x50
+#define IOCM_FRU_ADDR 0x50
 
 // Expander slave address (7-bit)
 #define EXPANDER_SLAVE_ADDR    0x71

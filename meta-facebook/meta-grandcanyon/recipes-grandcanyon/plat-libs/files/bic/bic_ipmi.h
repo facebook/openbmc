@@ -50,6 +50,12 @@ int bic_get_isl_vr_remaining_writes(uint8_t bus, uint8_t addr, uint8_t *writes);
 int bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str);
 int bic_get_vr_ver_cache(uint8_t bus, uint8_t addr, char *ver_str);
 int bic_switch_mux_for_bios_spi(uint8_t mux);
+int bic_get_fruid_info(uint8_t fru_id, ipmi_fruid_info_t *info);
+int bic_read_fruid(uint8_t fru_id, char *path, int *fru_size);
+int bic_write_fruid(uint8_t fru_id, const char *path);
+int bic_get_sdr(ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen);
+int bic_get_sensor_reading(uint8_t sensor_num, ipmi_sensor_reading_t *sensor);
+int bic_get_self_test_result(uint8_t *self_test_result);
 
 #ifdef __cplusplus
 } // extern "C"

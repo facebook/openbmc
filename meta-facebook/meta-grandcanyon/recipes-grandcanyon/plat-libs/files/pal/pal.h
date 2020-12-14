@@ -83,6 +83,7 @@ int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_get_fruid_name(uint8_t fru, char *name);
 int pal_get_fruid_path(uint8_t fru, char *path);
 int pal_get_fruid_eeprom_path(uint8_t fru, char *path);
+int pal_fruid_write(uint8_t fru, char *path);
 int pal_get_fru_list(char *list) ;
 int pal_get_fru_name(uint8_t fru, char *name);
 int pal_get_fan_name(uint8_t fan_id, char *name);

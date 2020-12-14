@@ -25,7 +25,7 @@
 #include <string.h>
 #include <facebook/fbgc_common.h>
 #include "fbgc_fruid.h"
-
+#include <facebook/bic.h>
 
 int
 fbgc_get_fruid_name(uint8_t fru, char *name) {
@@ -101,12 +101,23 @@ fbgc_get_fruid_path(uint8_t fru, char *path) {
 
 int
 fbgc_get_fruid_eeprom_path(uint8_t fru, char *path) {
+  uint8_t type = 0;
   switch(fru) {
     case FRU_SERVER:
     case FRU_DPB:
     case FRU_SCC:
-    case FRU_E1S_IOCM:
       return -1;
+    case FRU_E1S_IOCM:
+      if (fbgc_common_get_chassis_type(&type) < 0) {
+        syslog(LOG_WARNING, "%s() Failed to get chassis type\n", __func__);
+        return -1;
+      }
+      if (type == CHASSIS_TYPE5) {
+        syslog(LOG_WARNING, "%s: FRU iocm not supported by type 5 system", __func__);
+        return -1;
+      }
+      snprintf(path, MAX_FILE_PATH, EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
+      break;
     case FRU_BMC:
       snprintf(path, MAX_FILE_PATH, EEPROM_PATH, I2C_BSM_BUS, BMC_FRU_ADDR);
       break;
@@ -122,4 +133,9 @@ fbgc_get_fruid_eeprom_path(uint8_t fru, char *path) {
   }
 
   return 0;
+}
+
+int
+fbgc_fruid_write(uint8_t fru, char *path) {
+  return bic_write_fruid(fru, path);
 }

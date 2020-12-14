@@ -9,7 +9,8 @@ install_headers('fbgc_fruid.h', subdir: 'facebook')
 cc = meson.get_compiler('c')
 
 fbgc_fruid_deps = [
-    cc.find_library('fbgc_common')
+    cc.find_library('fbgc_common'),
+    cc.find_library('bic'),
 ]
 
 # FBGC fruid library.

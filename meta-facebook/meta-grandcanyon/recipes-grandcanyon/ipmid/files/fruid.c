@@ -42,7 +42,7 @@
 #define FRU_ID_BMC    1
 #define FRU_ID_UIC    2
 #define FRU_ID_NIC    3
-
+#define FRU_ID_IOCM   4
 
 /*
  * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
@@ -129,6 +129,12 @@ plat_fruid_init() {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_NIC_BIN);
   }
 
+  //fruid_iocm.bin
+  snprintf(path, path_len, EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
+  if (copy_eeprom_to_bin(path, FRU_IOCM_BIN) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_IOCM_BIN);
+  }
+
   return 0;
 }
 
@@ -145,6 +151,8 @@ plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count, uns
     snprintf(fpath, sizeof(fpath), FRU_UIC_BIN);
   } else if (fru_id == FRU_ID_NIC) {
     snprintf(fpath, sizeof(fpath), FRU_NIC_BIN);
+  } else if (fru_id == FRU_ID_IOCM) {
+    snprintf(fpath, sizeof(fpath), FRU_IOCM_BIN);
   } else {
     return -1;
   }
@@ -187,8 +195,10 @@ plat_fruid_size(unsigned char payload_id) {
     snprintf(fpath, sizeof(fpath), FRU_UIC_BIN);
   } else if (payload_id == FRU_ID_NIC) {
     snprintf(fpath, sizeof(fpath), FRU_NIC_BIN);
+  } else if (payload_id == FRU_ID_IOCM) {
+    snprintf(fpath, sizeof(fpath), FRU_IOCM_BIN);
   } else {
-  	return -1;
+    return -1;
   }
 
   // check the size of the file and return size

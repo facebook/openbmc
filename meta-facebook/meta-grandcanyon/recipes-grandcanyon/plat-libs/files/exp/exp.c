@@ -27,7 +27,12 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 #include "exp.h"
+
+#define CMD_BUF_SIZE           4
+#define FRUID_DATA_SIZE        256
+#define MAX_FRUID_QUERY_SIZE   16
 
 int
 expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
@@ -128,3 +133,58 @@ expander_get_fw_ver(uint8_t *ver, uint8_t ver_len) {
   return 0;
 }
 
+int
+exp_read_fruid(const char *path, uint8_t fru_id) {
+  uint8_t tbuf[CMD_BUF_SIZE] = {0x00};
+  uint8_t rbuf[FRUID_DATA_SIZE] = {0x00};
+  uint8_t fruid_buf[FRUID_DATA_SIZE] = {0x00};
+  uint8_t rlen = 0;
+  uint8_t tlen = 0;
+  int fd = 0;
+  int ret = 0;
+  int remain = FRUID_DATA_SIZE;
+  int index = 0;
+  ssize_t write_length = 0;
+
+  tbuf[0] = fru_id;
+  tbuf[2] = 0; // Offset to read, High byte
+  tbuf[3] = MAX_FRUID_QUERY_SIZE;
+  tlen = CMD_BUF_SIZE;
+
+  while (remain > 0) {
+    tbuf[1] = index; // Offset to read, Low byte
+    ret = expander_ipmb_wrapper(NETFN_STORAGE_REQ, CMD_GET_EXP_FRUID, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() expander_ipmb_wrapper failed. ret: %d\n", __func__, ret);
+      goto end;
+    }
+    if (rlen != MAX_FRUID_QUERY_SIZE + 1) {
+      syslog(LOG_WARNING, "%s() expander_ipmb_wrapper incorrect rlen: %d\n", __func__, rlen);
+      ret = -1;
+      goto end;
+    }
+    memcpy(fruid_buf + index, rbuf + 1, MAX_FRUID_QUERY_SIZE);
+    index += MAX_FRUID_QUERY_SIZE;
+    remain-= MAX_FRUID_QUERY_SIZE;
+  }
+
+  // Remove the file if exists already
+  unlink(path);
+
+  // Open the file exclusively for write
+  fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
+  if (fd < 0) {
+    syslog(LOG_ERR, "%s: open: %s\n", __func__, strerror(errno));
+    return -1;
+  }
+  write_length = write(fd, fruid_buf, FRUID_DATA_SIZE);
+  if (write_length != FRUID_DATA_SIZE) {
+    syslog(LOG_ERR, "%s: write fruid failed, len: %d, error: %s\n", __func__, write_length, strerror(errno));
+    ret = -1;
+  }
+
+  close(fd);
+end:
+
+  return ret;
+}

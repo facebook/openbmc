@@ -13,6 +13,7 @@ DEPENDS += " \
     libgpio-ctrl \
     libfbgc-gpio \
     libexp \
+    libbic \
     "
 # These shouldn't be needed but are because we aren't properly versioning the
 # shared libraries contained in these recipes.
@@ -24,4 +25,5 @@ RDEPENDS_${PN} += " \
     libgpio-ctrl \
     libfbgc-gpio \
     libexp \
+    libbic \
     "

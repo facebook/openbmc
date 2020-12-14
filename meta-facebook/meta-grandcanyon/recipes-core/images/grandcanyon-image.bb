@@ -37,4 +37,6 @@ IMAGE_INSTALL += " \
   ncsid-v2 \
   ncsi-util \
   ipmb-util \
+  exp-cached \
+  bic-cached \
   "

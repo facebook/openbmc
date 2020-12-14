@@ -274,7 +274,6 @@ int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   int ret = 0;
   int e1s_0_ret = 0, e1s_1_ret = 0;
-  uint8_t chasis_type = 0x0;
 
   switch (fru) {
     case FRU_SERVER:
@@ -308,22 +307,12 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
         *status = 0;
         return PAL_ENOTSUP;
       }
-
-      ret = fbgc_common_get_chassis_type(&chasis_type);
-      if (ret == -1) {
-        return PAL_ENOTSUP;
+      *status = 0;
+      if ( e1s_0_ret == FRU_PRESENT) {
+        *status |= E1S0_IOCM_PRESENT_BIT;
       }
-
-      if (chasis_type == CHASSIS_TYPE5) {
-        *status = 0;
-        if ( e1s_0_ret == FRU_PRESENT) {
-          *status |= E1S0_IOCM_PRESENT_BIT;
-        }
-        if ( e1s_1_ret == FRU_PRESENT) {
-          *status |= E1S1_IOCM_PRESENT_BIT;
-        }
-      } else if (chasis_type == CHASSIS_TYPE7) {
-        *status = (e1s_0_ret & e1s_1_ret);
+      if ( e1s_1_ret == FRU_PRESENT) {
+        *status |= E1S1_IOCM_PRESENT_BIT;
       }
       break;
     case FRU_BMC:
@@ -353,6 +342,11 @@ pal_get_fruid_path(uint8_t fru, char *path) {
 int
 pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
   return fbgc_get_fruid_eeprom_path(fru, path);
+}
+
+int
+pal_fruid_write(uint8_t fru, char *path) {
+  return fbgc_fruid_write(0, path);
 }
 
 int

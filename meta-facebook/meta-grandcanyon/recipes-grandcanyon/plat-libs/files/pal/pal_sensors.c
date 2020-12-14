@@ -15,6 +15,7 @@
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/obmc-i2c.h>
 #include <facebook/fbgc_gpio.h>
+#include <facebook/bic.h>
 #include "pal.h"
 
 static int read_adc_val(uint8_t adc_id, float *value);
@@ -1303,11 +1304,10 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value) {
     return READING_SKIP;
   }
 
-  /* Todo: Wait BIC lib ready
-  if (bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF) < 0) {
+  if (bic_get_sensor_reading(sensor_num, &sensor) < 0) {
     syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);
     return ERR_SENSOR_NA;
-  } */
+  }
 
   if (sensor.flags & BIC_SNR_FLAG_READ_NA) {
     return ERR_SENSOR_NA;

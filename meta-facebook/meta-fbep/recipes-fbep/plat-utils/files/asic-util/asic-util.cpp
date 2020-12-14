@@ -468,7 +468,7 @@ int main(int argc, char **argv)
 
   unsigned int watts;
   auto power = app.add_option("--set-power", watts,
-                              "The value of power limit in Watts [100..300]");
+                              "The value of power limit in Watts [100..400]");
   int slot;
   auto num = app.add_option("--slot", slot,
                             "Action to specified slot [0..7]\n"
@@ -497,8 +497,8 @@ int main(int argc, char **argv)
   }
 
   if (*power) {
-    if (watts < 100 || watts > 300) {
-      std::cerr << "Error: Power limit is out-of-range [100..300]" << std::endl;
+    if (watts < 100 || watts > 400) {
+      std::cerr << "Error: Power limit is out-of-range [100..400]" << std::endl;
       return -1;
     } else {
       return set_power_limit(slot, watts);

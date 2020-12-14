@@ -109,7 +109,6 @@ const uint8_t bic_neg_reading_sensor_support_list[] = {
 const uint8_t scm_sensor_list[] = {
   SCM_SENSOR_OUTLET_TEMP,
   SCM_SENSOR_INLET_TEMP,
-  SCM_SENSOR_HSC_IN_VOLT,
   SCM_SENSOR_HSC_OUT_VOLT,
   SCM_SENSOR_HSC_OUT_CURR,
 };
@@ -118,7 +117,6 @@ const uint8_t scm_sensor_list[] = {
 const uint8_t scm_all_sensor_list[] = {
   SCM_SENSOR_OUTLET_TEMP,
   SCM_SENSOR_INLET_TEMP,
-  SCM_SENSOR_HSC_IN_VOLT,
   SCM_SENSOR_HSC_OUT_VOLT,
   SCM_SENSOR_HSC_OUT_CURR,
   BIC_SENSOR_MB_OUTLET_TEMP,
@@ -970,9 +968,6 @@ static int scm_sensor_read(uint8_t sensor_num, float *value) {
       case SCM_SENSOR_INLET_TEMP:
         ret = read_attr(SCM_INLET_TEMP_DEVICE, TEMP(1), value);
         break;
-      case SCM_SENSOR_HSC_IN_VOLT:
-        ret = read_hsc_volt_1(SCM_HSC_DEVICE, 1, value);
-        break;
       case SCM_SENSOR_HSC_OUT_CURR:
         ret = read_hsc_curr(SCM_HSC_DEVICE, SCM_RSENSE, value);
         *value = *value * 1.0036 - 0.1189;
@@ -1737,9 +1732,6 @@ static int get_scm_sensor_name(uint8_t sensor_num, char *name) {
     case SCM_SENSOR_INLET_TEMP:
       sprintf(name, "SCM_INLET_TEMP");
       break;
-    case SCM_SENSOR_HSC_IN_VOLT:
-      sprintf(name, "SCM_HSC_INPUT_12V_VOLT");
-      break;
     case SCM_SENSOR_HSC_OUT_VOLT:
       sprintf(name, "SCM_HSC_OUTPUT_12V_VOLT");
       break;
@@ -2448,7 +2440,6 @@ static int get_scm_sensor_units(uint8_t sensor_num, char *units) {
     case BIC_SENSOR_SOC_TJMAX:
       sprintf(units, "C");
       break;
-    case SCM_SENSOR_HSC_IN_VOLT:
     case SCM_SENSOR_HSC_OUT_VOLT:
     case BIC_SENSOR_P3V3_MB:
     case BIC_SENSOR_P12V_MB:
@@ -2759,8 +2750,8 @@ static void sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[SMB_SENSOR_1220_VMON7][LCR_THRESH] = 1.62;
       smb_sensor_threshold[SMB_SENSOR_1220_VMON8][UCR_THRESH] = 2.75;
       smb_sensor_threshold[SMB_SENSOR_1220_VMON8][LCR_THRESH] = 2.25;
-      smb_sensor_threshold[SMB_SENSOR_1220_VMON9][UCR_THRESH] = 1.04;
-      smb_sensor_threshold[SMB_SENSOR_1220_VMON9][LCR_THRESH] = 0.84;
+      smb_sensor_threshold[SMB_SENSOR_1220_VMON9][UCR_THRESH] = 1.06;
+      smb_sensor_threshold[SMB_SENSOR_1220_VMON9][LCR_THRESH] = 0.86;
       smb_sensor_threshold[SMB_SENSOR_1220_VMON10][UCR_THRESH] = 0.91;
       smb_sensor_threshold[SMB_SENSOR_1220_VMON10][LCR_THRESH] = 0.74;
       smb_sensor_threshold[SMB_SENSOR_1220_VMON11][UCR_THRESH] = 0.83;
@@ -2800,10 +2791,10 @@ static void sensor_thresh_array_init(uint8_t fru) {
 
       smb_sensor_threshold[SMB_SENSOR_VDDA_IN_VOLT][UCR_THRESH] = 12.6;
       smb_sensor_threshold[SMB_SENSOR_VDDA_IN_VOLT][LCR_THRESH] = 11.4;
-      smb_sensor_threshold[SMB_SENSOR_VDDA_OUT_VOLT][UCR_THRESH] = 0.97;
-      smb_sensor_threshold[SMB_SENSOR_VDDA_OUT_VOLT][LCR_THRESH] = 0.91;
+      smb_sensor_threshold[SMB_SENSOR_VDDA_OUT_VOLT][UCR_THRESH] = 0.99;
+      smb_sensor_threshold[SMB_SENSOR_VDDA_OUT_VOLT][LCR_THRESH] = 0.93;
       smb_sensor_threshold[SMB_SENSOR_VDDA_OUT_CURR][UCR_THRESH] = 54;
-      smb_sensor_threshold[SMB_SENSOR_VDDA_OUT_POWER][UCR_THRESH] = 52.38;
+      smb_sensor_threshold[SMB_SENSOR_VDDA_OUT_POWER][UCR_THRESH] = 53.46;
       smb_sensor_threshold[SMB_SENSOR_VDDA_TEMP1][UCR_THRESH] = 85;
       smb_sensor_threshold[SMB_SENSOR_VDDA_TEMP1][LCR_THRESH] = -40;
 
@@ -2856,24 +2847,24 @@ static void sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[SMB_SENSOR_VDDCK_0_IN_VOLT][LCR_THRESH] = 11.4;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_VOLT][UCR_THRESH] = 1.19;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_VOLT][LCR_THRESH] = 1.11;
-      smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_CURR][UCR_THRESH] = 8;
-      smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_POWER][UCR_THRESH] = 9.52;
+      smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_CURR][UCR_THRESH] = 8.5;
+      smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_POWER][UCR_THRESH] = 9.86;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_0_TEMP][UCR_THRESH] = 85;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_0_TEMP][LCR_THRESH] = -5;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_1_IN_VOLT][UCR_THRESH] = 12.6;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_1_IN_VOLT][LCR_THRESH] = 11.4;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_VOLT][UCR_THRESH] = 1.19;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_VOLT][LCR_THRESH] = 1.11;
-      smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_CURR][UCR_THRESH] = 8;
-      smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_POWER][UCR_THRESH] = 9.52;
+      smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_CURR][UCR_THRESH] = 8.5;
+      smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_POWER][UCR_THRESH] = 9.86;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_1_TEMP][UCR_THRESH] = 85;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_1_TEMP][LCR_THRESH] = -5;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_2_IN_VOLT][UCR_THRESH] = 12.6;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_2_IN_VOLT][LCR_THRESH] = 11.4;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_2_OUT_VOLT][UCR_THRESH] = 1.19;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_2_OUT_VOLT][LCR_THRESH] = 1.11;
-      smb_sensor_threshold[SMB_SENSOR_VDDCK_2_OUT_CURR][UCR_THRESH] = 8;
-      smb_sensor_threshold[SMB_SENSOR_VDDCK_2_OUT_POWER][UCR_THRESH] = 9.52;
+      smb_sensor_threshold[SMB_SENSOR_VDDCK_2_OUT_CURR][UCR_THRESH] = 8.5;
+      smb_sensor_threshold[SMB_SENSOR_VDDCK_2_OUT_POWER][UCR_THRESH] = 9.86;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_2_TEMP][UCR_THRESH] = 85;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_2_TEMP][LCR_THRESH] = -5;
 

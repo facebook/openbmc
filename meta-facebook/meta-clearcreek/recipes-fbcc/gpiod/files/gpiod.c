@@ -146,6 +146,9 @@ static struct gpiopoll_config g_gpios[] = {
   {"HSC_UV_R_N", "GPIOP4", GPIO_EDGE_FALLING, gpio_throttle_handler, NULL},
   {"PMBUS_HSC_ALERT_R_N", "GPIOP5", GPIO_EDGE_FALLING, gpio_throttle_handler, NULL},
   {"BMC_PWR_BTN_IN_N", "Power button", GPIO_EDGE_BOTH, gpio_event_handle_power_btn, NULL},
+  {"CARRIER_0_ALERT_R_N", "CARRIER_0", GPIO_EDGE_BOTH, gpio_event_log_handler, NULL},
+  {"CARRIER_1_ALERT_R_N", "CARRIER_1", GPIO_EDGE_BOTH, gpio_event_log_handler, NULL},
+  {"SYS_PWR_READY", "SYS_PWR_READY", GPIO_EDGE_BOTH, gpio_event_log_handler, NULL},
 };
 
 int main(int argc, char **argv)

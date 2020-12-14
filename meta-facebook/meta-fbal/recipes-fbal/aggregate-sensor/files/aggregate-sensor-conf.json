@@ -54,6 +54,7 @@
         },
         "condition": {
           "key": "mb_system_conf",
+          "key_type": "persistent",
           "value_map": {
             "Type_2S" : "T2S",
             "Type_4S" : "T4S"

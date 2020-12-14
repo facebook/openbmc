@@ -3045,9 +3045,15 @@ int pal_sensor_monitor_initial(void) {
   if( mode == MB_2S_MODE ) {
     hsc_cnt = 1;
     DIMM_SLOT_CNT = 24;
+    if (kv_set("mb_system_conf", "Type_2S", 0, KV_FPERSIST ) < 0) {
+      syslog(LOG_WARNING, "Set 2S Air Flow Config Fail\n");
+    }
   } else if(mode == MB_4S_MODE && master) {
     hsc_cnt = 2;
     DIMM_SLOT_CNT = 48;
+    if (kv_set("mb_system_conf", "Type_4S", 0, KV_FPERSIST ) < 0) {
+      syslog(LOG_WARNING, "Set 4S Air Flow Config Fail\n");
+    }
   } else {
     hsc_cnt = 0;
   }

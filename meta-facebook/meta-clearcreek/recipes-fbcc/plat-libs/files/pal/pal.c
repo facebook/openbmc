@@ -319,18 +319,25 @@ int pal_set_key_value(char *key, char *value)
 
 int
 pal_is_bmc_por(void) {
-  FILE *fp;
-  int por = 0;
-
-  fp = fopen("/tmp/ast_por", "r");
-  if (fp != NULL) {
-    if (fscanf(fp, "%d", &por) != 1) {
-      por = 0;
-    }
-    fclose(fp);
+  char por[MAX_VALUE_LEN] = {0};
+  int rc;
+ 
+  rc = kv_get("ast_por", por, NULL, 0);
+  if (rc < 0) {
+    syslog(LOG_DEBUG, "%s(): kv_get for ast_por failed", __func__);
+    return -1;
   }
 
-  return (por)?1:0;
+  if (!strcmp(por, "1"))
+    return 1;
+  else if (!strcmp(por, "0"))
+    return 0;
+  else {
+    syslog(LOG_WARNING, "%s(): Cannot find corresponding ast_por", __func__);
+    return -1;
+  }
+
+  return 0;
 }
 
 int pal_set_def_key_value()

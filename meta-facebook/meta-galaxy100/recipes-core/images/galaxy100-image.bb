@@ -23,8 +23,6 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   openbmc-gpio \
   po-eeprom \
-  repeater  \
-  retimer  \
   kcsd \
   spatula \
   stress  \
@@ -32,4 +30,9 @@ IMAGE_INSTALL += " \
   wedge-eeprom \
   weutil-dhcp-id \
   watchdogd \
+  udev-rules \
   "
+
+IMAGE_INSTALL += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd-networkd', '', d)}"
+IMAGE_INSTALL_remove += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'init-ifupdown', '', d)}"
+SYSVINIT_SCRIPTS_remove += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'init-ifupdown', '', d)}"

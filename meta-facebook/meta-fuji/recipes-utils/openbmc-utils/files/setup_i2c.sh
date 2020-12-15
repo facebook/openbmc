@@ -81,7 +81,12 @@ i2c_device_add 50 0x52 24c64 	#SIM
 i2c_device_add 51 0x48 tmp75
 i2c_device_add 52 0x49 tmp75
 i2c_device_add 54 0x21 pca9534	#PCA9534
-i2c_device_add 55 0x60 smb_pwrcpld 	#PDB-L
+if i2cget -y -f 55 0x60 > /dev/null;then
+    i2c_device_add 55 0x60 smb_pwrcpld 	#PDB-L
+else
+    i2c_device_add 53 0x60 smb_pwrcpld 	#PDB-L
+fi
+
 # # i2c-mux PCA9548 0x70, channel 2, mux PCA9548 0x72
 i2c_device_add 56 0x58 psu_driver 	#PSU4
 i2c_device_add 57 0x5a psu_driver 	#PSU3
@@ -89,7 +94,11 @@ i2c_device_add 57 0x5a psu_driver 	#PSU3
 i2c_device_add 59 0x48 tmp75
 i2c_device_add 60 0x49 tmp75
 i2c_device_add 62 0x21 pca9534
-i2c_device_add 63 0x60 smb_pwrcpld  #PDB-R
+if i2cget -y -f 63 0x60 > /dev/null;then
+    i2c_device_add 63 0x60 smb_pwrcpld 	#PDB-R
+else
+    i2c_device_add 61 0x60 smb_pwrcpld  #PDB-R
+fi
 
 # # i2c-mux PCA9548 0x70, channel 3, mux PCA9548 0x76
 i2c_device_add 64 0x33	fcbcpld #CPLD

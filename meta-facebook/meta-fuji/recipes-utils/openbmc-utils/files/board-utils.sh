@@ -9,8 +9,18 @@ SCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 2-0035)
 SMBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-003e)
 TOP_FCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 64-0033)
 BOTTOM_FCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 72-0033)
-LEFT_PDBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 55-0060)
-RIGHT_PDBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 63-0060)
+
+if i2cget -y -f 55 0x60 > /dev/null;then
+    LEFT_PDBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 55-0060)
+else
+    LEFT_PDBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 53-0060)
+fi
+
+if i2cget -y -f 63 0x60 > /dev/null;then
+    RIGHT_PDBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 63-0060)
+else
+    RIGHT_PDBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 61-0060)
+fi
 
 #
 # I2C paths of FPGAs

@@ -5,6 +5,15 @@ PR = "r1"
 
 inherit packagegroup
 
+# After dunfell (gatesgarth and above), python3-typing is included in \
+# python3-core and no longer exists.
+def pg_python3_typing(d):
+    distro = d.getVar('DISTRO_CODENAME', True)
+    if distro == 'rocko' or distro == 'warrior' or \
+            distro == 'zeus' or distro == 'dunfell':
+        return "python3-typing"
+    return ""
+
 RDEPENDS_${PN} += " \
   python3-asyncio \
   python3-compression \
@@ -27,5 +36,5 @@ RDEPENDS_${PN} += " \
   python3-threading \
   python3-pkgutil \ 
   python3-unittest \
-  python3-typing \
+  ${@pg_python3_typing(d)} \
 "

@@ -178,6 +178,14 @@ static const i2c_dev_attr_st smbcpld_attr_table[] = {
     0x12, 4, 2,
   },
   {
+    "th4_i2c_bsc2_en",
+    "0x1: I2C Enabled\n"
+    "0x0: I2C Disabled (default)",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x12, 6, 1,
+  },
+  {
     "smb_reset",
     "0x1: Reset SMB on PCIe intf to COMe CPU\n"
     "0x0: Out of reset",

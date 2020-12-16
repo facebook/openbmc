@@ -87,11 +87,13 @@ i2c_device_add 3 0x62 isl68226   # ISL68226
 
 # SMBus 4
 i2c_device_add 4 0x23 smbcpld
+echo 0 > "$PIM_SMB_MUX_RST"
+echo 0 > "$PSU_SMB_MUX_RST"
+echo 1 > "$SMB_TH4_I2C_EN_SYSFS"
 # Switchcard EEEPROMs
 i2c_device_add 4 0x50 24c512
 i2c_device_add 4 0x51 24c512
-echo 0 > "$PIM_SMB_MUX_RST"
-echo 0 > "$PSU_SMB_MUX_RST"
+i2c_device_add 4 0x44 net_brcm
 
 # SMBus 6
 i2c_device_add 6 0x60 fancpld

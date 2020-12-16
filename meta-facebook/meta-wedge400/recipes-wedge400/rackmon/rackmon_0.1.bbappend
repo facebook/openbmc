@@ -18,6 +18,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://rackmon_platform.c \
+            file://setup-rackmond.sh \
            "
 
 CFLAGS += "-DDEFAULT_TTY=\\"/dev/ttyUSB0\\" "

@@ -22,10 +22,11 @@
 
 import argparse
 import subprocess
+import string
 import time
 
 
-VERSION = "0.4"
+VERSION = "0.5"
 SC_POWERGOOD = "/sys/bus/i2c/drivers/scmcpld/12-0043/switchcard_powergood"
 
 
@@ -73,6 +74,26 @@ def dumpWeutil(target="CHASSIS", verbose=False):
     )
 
 
+def dumpEmmc():
+    print("################################")
+    print("######## eMMC debug log ########")
+    print("################################\n")
+    cmdBase = '/usr/local/bin/mmcraw {} /dev/mmcblk0'
+    print(runCmd(cmdBase.format('show-summary'), echo=True, verbose=True))
+    print(runCmd(cmdBase.format('read-cid'), echo=True, verbose=True))
+
+
+def dumpBootInfo():
+    print("################################")
+    print("######## BMC BOOT INFO  ########")
+    print("################################\n")
+    print(runCmd('/usr/local/bin/boot_info.sh bmc', echo=True, verbose=True))
+    print("##### FLASH0 META_INFO #####\n{}".format(
+        runCmd('/usr/local/bin/meta_info.sh flash0', echo=True, verbose=True))
+    print("##### FLASH1 META_INFO #####\n{}".format(
+        runCmd('/usr/local/bin/meta_info.sh flash1', echo=True, verbose=True))
+
+
 def fan_debuginfo(verbose=False):
     print("################################")
     print("######## FAN DEBUG INFO ########")
@@ -82,19 +103,11 @@ def fan_debuginfo(verbose=False):
         fanPrefix = "/sys/bus/i2c/devices/6-0060/fan{}".format(_)
         log = "##### FAN {} DEBUG INFO #####\n".format(_)
         log += runCmd("head -n 1 {}_pwm".format(fanPrefix), echo=True)
-        log += runCmd("head -n 1 {}_tach".format(fanPrefix), echo=True)
         log += runCmd("head -n 1 {}_present".format(fanPrefix), echo=True)
-        log += runCmd("head -n 1 {}_id".format(fanPrefix), echo=True)
-        log += runCmd("head -n 1 {}_present_change".format(fanPrefix), echo=True)
-        log += "### FAN {} LED INFO ### 0x0 - ON, 0x1 - OFF\n".format(_)
-        log += runCmd("head -n 1 {}_led_red".format(fanPrefix), echo=True)
-        log += runCmd("head -n 1 {}_led_green".format(fanPrefix), echo=True)
-        log += runCmd("head -n 1 {}_led_amber".format(fanPrefix), echo=True)
-        log += runCmd("head -n 1 {}_led_blue".format(fanPrefix), echo=True)
         print(log)
 
     print("##### FAN SPEED LOGS #####")
-    for _ in range(3):
+    for _ in range(2):
         print(runCmd("/usr/local/bin/get_fan_speed.sh", echo=True))
         print("sleeping 0.5 seconds...")
         time.sleep(0.5)
@@ -199,7 +212,7 @@ def showtech(verbose=False):
 
     print(
         "##### USER PWR STATUS #####\n{}".format(
-            runCmd("/usr/local/bin/wedge_power.sh status")
+            runCmd("/usr/local/bin/wedge_power.sh status", verbose=True)
         )
     )
     print(
@@ -208,7 +221,8 @@ def showtech(verbose=False):
         )
     )
     print("##### BMC SYSTEM TIME #####\n{}".format(runCmd("date")))
-    print("##### BMC version #####\n{}".format(runCmd("cat /etc/issue")))
+    print("##### BMC version #####\nbuilt: {}{}".format(
+            runCmd("cat /etc/version"), runCmd("cat /etc/issue")))
     print("##### BMC UPTIME #####\n{}".format(runCmd("uptime")))
     print(
         "##### FPGA VERSIONS #####\n{}".format(
@@ -247,6 +261,8 @@ def showtech(verbose=False):
         switchcard_debuginfo(verbose=verbose)
         scm_debuginfo(verbose=verbose)
         pim_debuginfo()
+        dumpEmmc()
+        dumpBootInfo()
         i2cDetectDump()
         gpioDump()
         logDump()

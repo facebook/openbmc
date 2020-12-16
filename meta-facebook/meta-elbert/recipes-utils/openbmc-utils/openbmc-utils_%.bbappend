@@ -44,6 +44,7 @@ SRC_URI += "file://board-utils.sh \
             file://elbert_pim.layout \
             file://peutil \
             file://spi_pim_ver.sh \
+            file://meta_info.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -67,6 +68,7 @@ OPENBMC_UTILS_FILES += " \
     pim_types.sh \
     peutil \
     spi_pim_ver.sh \
+    meta_info.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

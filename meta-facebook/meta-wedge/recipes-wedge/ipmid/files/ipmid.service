@@ -21,6 +21,7 @@ Wants=setup_i2c.service
 After=setup_i2c.service
 
 [Service]
+Type=forking
 ExecStart=/usr/local/bin/ipmid
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-success

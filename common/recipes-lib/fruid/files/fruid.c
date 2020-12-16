@@ -116,10 +116,10 @@ static int verify_chksum(uint8_t * area, uint8_t len, uint8_t chksum_read)
  */
 static char * get_chassis_type(uint8_t type_hex)
 {
-  int type, ret;
+  int type;
   char type_int[4];
 
-  ret = sprintf(type_int, "%u", type_hex);
+  sprintf(type_int, "%u", type_hex);
   type = atoi(type_int) - 1;
 
   /* If the type is not in the list defined.*/
@@ -528,7 +528,6 @@ int parse_fruid_area_board(uint8_t * board,
       fruid_area_board_t * fruid_board)
 {
   int ret, index, i;
-  time_t unix_time;
 
   index = 0;
 
@@ -760,30 +759,30 @@ int parse_fruid_area_chassis(uint8_t * chassis,
 }
 
 /* Calculate the area offsets and populate the fruid_eeprom_t struct */
-void set_fruid_eeprom_offsets(uint8_t * eeprom, fruid_header_t * header,
+void set_fruid_eeprom_offsets(const uint8_t * eeprom, fruid_header_t * header,
       fruid_eeprom_t * fruid_eeprom)
 {
-  fruid_eeprom->header = eeprom + 0x00;
+  fruid_eeprom->header = (uint8_t *)eeprom + 0x00;
 
-  header->offset_area.chassis ? (fruid_eeprom->chassis = eeprom + \
+  header->offset_area.chassis ? (fruid_eeprom->chassis = (uint8_t *)eeprom + \
     (header->offset_area.chassis * FRUID_OFFSET_MULTIPLIER)) : \
     (fruid_eeprom->chassis = NULL);
 
-  header->offset_area.board ? (fruid_eeprom->board = eeprom + \
+  header->offset_area.board ? (fruid_eeprom->board = (uint8_t *)eeprom + \
     (header->offset_area.board * FRUID_OFFSET_MULTIPLIER)) : \
     (fruid_eeprom->board = NULL);
 
-  header->offset_area.product ? (fruid_eeprom->product = eeprom + \
+  header->offset_area.product ? (fruid_eeprom->product = (uint8_t *)eeprom + \
     (header->offset_area.product * FRUID_OFFSET_MULTIPLIER)) : \
     (fruid_eeprom->product = NULL);
 
-  header->offset_area.multirecord ? (fruid_eeprom->multirecord = eeprom + \
+  header->offset_area.multirecord ? (fruid_eeprom->multirecord = (uint8_t *)eeprom + \
     (header->offset_area.multirecord * FRUID_OFFSET_MULTIPLIER)) : \
     (fruid_eeprom->multirecord = NULL);
 }
 
 /* Populate the common header struct */
-int parse_fruid_header(uint8_t * eeprom, fruid_header_t * header)
+int parse_fruid_header(const uint8_t * eeprom, fruid_header_t * header)
 {
   int ret;
 
@@ -951,7 +950,7 @@ int fruid_parse(const char * bin, fruid_info_t * fruid)
   fruid_len = (uint32_t) ftell(fruid_fd);
   if (fruid_len == 0) {
     fclose(fruid_fd);
-    syslog(LOG_WARNING, "fruid: file %s is empty");
+    syslog(LOG_WARNING, "fruid: file %s is empty", bin);
     return -1;
   }
 
@@ -967,7 +966,11 @@ int fruid_parse(const char * bin, fruid_info_t * fruid)
   }
 
   /* Read the binary file */
-  fread(eeprom, sizeof(uint8_t), fruid_len, fruid_fd);
+  ret = fread(eeprom, sizeof(uint8_t), fruid_len, fruid_fd);
+  if (ret != fruid_len) {
+    printf("Failed to read binary file, inconsistent length\n");
+    return -1;
+  }
 
   /* Close the FRUID binary file */
   fclose(fruid_fd);
@@ -1012,14 +1015,14 @@ int fruid_parse_eeprom(const uint8_t * eeprom, int eeprom_len, fruid_info_t * fr
   return ret;
 }
 
-static 
+static
 char *extract_content(const char *content) {
   int i = 0, j = 0;
   char *tmp_str = (char *) malloc ((strlen(content) + 1) * sizeof(char));
-  
+
   while(content[i] != '\0') {
     if(content[i] != '\"') {
-      tmp_str[j++] = content[i];  
+      tmp_str[j++] = content[i];
     }
     i++;
   }
@@ -1042,16 +1045,16 @@ int calculate_chksum(uint8_t * start_offset, uint8_t area_length) {
   chksum = ~(chksum) + 1;
 
   /* Update new checksum */
-  start_offset[area_length - 1] = chksum; 
+  start_offset[area_length - 1] = chksum;
 
   ret = verify_chksum((uint8_t *) start_offset, area_length, start_offset[area_length - 1]);
-      
+
   return ret;
 }
 
 static
 int set_mfg_time( uint8_t * time_field , char * set_time) {
-  uint32_t time_value; 
+  uint32_t time_value;
   uint32_t datetime;
   time_t ipmi_time;
   char *ptr = NULL;
@@ -1067,7 +1070,7 @@ int set_mfg_time( uint8_t * time_field , char * set_time) {
   }
 
   time_value = (uint32_t)atoi(set_time);
-   
+
   ipmi_time = UNIX_TIMESTAMP_1996;
 
   datetime = (time_value - ipmi_time) / 60;
@@ -1081,7 +1084,6 @@ int set_mfg_time( uint8_t * time_field , char * set_time) {
 
 static
 int alter_field_content(char **fru_field , char *content) {
-  int content_len = strlen(content);
   if (*fru_field != NULL)
     free(*fru_field);
   *fru_field = content;
@@ -1095,7 +1097,7 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
   uint8_t *old_eeprom, *eeprom = NULL;
   int total_field_opt_size = sizeof(fruid_field_all_opt)/sizeof(fruid_field_all_opt[0]);
   fruid_info_t fruid;
-  int i, j, len;
+  int i, len;
   int target = -1;
   char *tmp_content = NULL;
   int content_len;
@@ -1129,7 +1131,11 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
   }
 
   /* Read the binary file */
-  fread(old_eeprom, sizeof(uint8_t), fruid_len, fruid_fd);
+  ret = fread(old_eeprom, sizeof(uint8_t), fruid_len, fruid_fd);
+  if (ret != fruid_len) {
+    printf("Failed to read binary file, inconsistent length\n");
+    return -1;
+  }
 
   /* Close the FRUID binary file */
   fclose(fruid_fd);
@@ -1143,7 +1149,7 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
   if (ret) {
     printf("Failed to parse FRU!\n");
     return -1;
-  } 
+  }
 
   for(i = 0; i < total_field_opt_size; i++) {
     if (!strcmp(field, fruid_field_all_opt[i])) {
@@ -1220,7 +1226,7 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
     case CPN:
       fruid.chassis.part_type_len = type_length;
       alter_field_content(&fruid.chassis.part,tmp_content);
-      break; 
+      break;
     case CSN:
       fruid.chassis.serial_type_len = type_length;
       alter_field_content(&fruid.chassis.serial,tmp_content);
@@ -1765,7 +1771,7 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
 
   /* Close the FRUID binary file */
   fclose(fruid_fd);
- 
+
 error_exit:
   /* Free the eeprom malloced memory */
   free(eeprom);

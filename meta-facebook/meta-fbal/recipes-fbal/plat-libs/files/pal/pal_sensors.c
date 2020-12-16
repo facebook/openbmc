@@ -1013,7 +1013,7 @@ read_cm_sensor(uint8_t id, float *value) {
   int ret = 0;
   uint8_t rlen=0;
   uint8_t rbuf[16];
-  static uint8_t retry=0;
+  static uint8_t retry[CM_SNR_CNT]= {0};
   char fru_name[32];
   float fan_duty=0;
   char str[MAX_VALUE_LEN] = {0};
@@ -1022,12 +1022,12 @@ read_cm_sensor(uint8_t id, float *value) {
   sdr = get_cm_snr_num(id);
   ret = cmd_cmc_get_sensor_value(sdr, rbuf, &rlen);
   if (ret != 0) {
-    retry++;
-    return retry_err_handle(retry, 5);
+    retry[id]++;
+    return retry_err_handle(retry[id], 3);
   }
 
   *value = (float)(rbuf[0] | rbuf[1]<<8) + (float)(rbuf[2] | rbuf[3]<<8)/1000;
-  retry = 0;
+  retry[id] = 0;
 
   if ( id <= CM_FAN3_INLET_SPEED ) {
     pal_get_fru_name(FRU_PDB, fru_name);
@@ -1362,7 +1362,7 @@ read_cpu0_dimm_temp(uint8_t dimm_id, float *value) {
   static uint8_t retry[DIMM_CNT] = {0};
 
   ret = get_dimm_temp(PECI_CPU0_ADDR, dimm_id, value);
-  if (ret != 0) {
+  if ( (ret != 0) || (*value == 0) ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 5);
   }
@@ -1380,7 +1380,7 @@ read_cpu1_dimm_temp(uint8_t dimm_id, float *value) {
   static uint8_t retry[DIMM_CNT] = {0};
 
   ret = get_dimm_temp(PECI_CPU1_ADDR, dimm_id, value);
-  if (ret != 0) {
+  if ( (ret != 0) || (*value == 0) ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 5);
   }
@@ -1397,7 +1397,7 @@ read_cpu2_dimm_temp(uint8_t dimm_id, float *value) {
   static uint8_t retry[DIMM_CNT] = {0};
 
   ret = get_dimm_temp(PECI_CPU2_ADDR, dimm_id, value);
-  if (ret != 0) {
+  if ( (ret != 0) || (*value == 0) ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 5);
   }
@@ -1414,7 +1414,7 @@ read_cpu3_dimm_temp(uint8_t dimm_id, float *value) {
   static uint8_t retry[DIMM_CNT] = {0};
 
   ret = get_dimm_temp(PECI_CPU3_ADDR, dimm_id, value);
-  if (ret != 0) {
+  if ( (ret != 0) || (*value == 0) ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 5);
   }

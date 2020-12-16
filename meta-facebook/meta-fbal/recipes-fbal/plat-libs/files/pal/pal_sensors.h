@@ -518,6 +518,7 @@ enum {
   CM_FAN1_POWER,
   CM_FAN2_POWER,
   CM_FAN3_POWER,
+  CM_SNR_CNT,
 };
 
 typedef struct {

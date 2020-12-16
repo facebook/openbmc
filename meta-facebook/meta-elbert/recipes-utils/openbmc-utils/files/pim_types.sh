@@ -29,7 +29,7 @@ for pim in ${pim_list}; do
         echo "PIM $pim: NOT INSERTED"
     else
         pim_type='NOT DETECTED'
-        fru="$(peutil "$pim" 2>&1)"
+        fru="$(/usr/local/bin/peutil "$pim" 2>&1)"
         if echo "$fru" | grep -q '88-16CD'; then
             pim_type='PIM16Q'
         elif echo "$fru" | grep -q '88-8D'; then

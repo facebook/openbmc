@@ -36,8 +36,7 @@ distutils3_do_configure(){
 }
 
 do_compile() {
-  # No-op
-  make
+  oe_runmake -C ${S}
 }
 
 do_install() {
@@ -46,13 +45,13 @@ do_install() {
   for file in ${S}/pyfdt/*.py; do
     install -m 644 "$file" ${D}${PYTHON_SITEPACKAGES_DIR}/pyfdt/
   done
-  install -m 644 vboot_common.py ${D}${PYTHON_SITEPACKAGES_DIR}/
-  install -m 644 image_meta.py ${D}${PYTHON_SITEPACKAGES_DIR}/
-  install -m 0755 measure.py ${D}${PYTHON_SITEPACKAGES_DIR}/
+  install -m 644 ${S}/vboot_common.py ${D}${PYTHON_SITEPACKAGES_DIR}/
+  install -m 644 ${S}/image_meta.py ${D}${PYTHON_SITEPACKAGES_DIR}/
+  install -m 0755 ${S}/measure.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 
   install -d ${D}/usr/local/bin
-  install -m 0755 vboot-util ${D}/usr/local/bin/vboot-util
-  install -m 0755 vboot-check ${D}/usr/local/bin/vboot-check
+  install -m 0755 ${S}/vboot-util ${D}/usr/local/bin/vboot-util
+  install -m 0755 ${S}/vboot-check ${D}/usr/local/bin/vboot-check
 
   install -d ${D}/usr/bin
   ln -snf ${PYTHON_SITEPACKAGES_DIR}/measure.py ${D}/usr/bin/mboot-check

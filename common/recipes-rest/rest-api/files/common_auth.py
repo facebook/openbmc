@@ -48,19 +48,15 @@ RE_CERT_COMMON_NAME = re.compile(r"^(?P<type>[^:]+):(?P<user>[^/]+)/(?P<host>[^/
 
 
 def auth_required(request) -> Identity:
-    # Only expiration date is validated here,
-    # since authenticity of client cert is validated on the TLS level
-    if _validate_cert_date(request):
-        identity = _extract_identity(request)
-        request["identity"] = identity
-        request.headers["identity"] = identity
-        return identity
-    raise HTTPUnauthorized()
+    identity = _extract_identity(request)
+    request["identity"] = identity
+    request.headers["identity"] = identity
+    return identity
 
 
 def permissions_required(request, permissions: t.List[str], context=None) -> bool:
     identity = _extract_identity(request)
-    if request.app["acl_provider"].is_user_authorized(identity, permissions):
+    if request.app["acl_provider"].is_authorized(identity, permissions):
         return True
     else:
         server_logger.info(
@@ -71,6 +67,8 @@ def permissions_required(request, permissions: t.List[str], context=None) -> boo
 
 
 def _validate_cert_date(request) -> bool:
+    # Only expiration date is validated here,
+    # since authenticity of client cert is validated on the TLS level
     peercert = request.transport.get_extra_info("peercert")
     if not peercert:
         server_logger.info(
@@ -108,6 +106,9 @@ def _extract_identity_from_peercert(request: Request) -> Identity:
     peercert = request.transport.get_extra_info("peercert")
     if not peercert or not peercert.get("subject"):
         raise ValueError("No identity found in request")
+
+    if not _validate_cert_date(request):
+        raise ValueError("Peer certificate's date is invalid/expired")
 
     for key, value in peercert["subject"][0]:
         if key == "commonName":

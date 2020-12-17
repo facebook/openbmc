@@ -118,6 +118,19 @@ class TestCommonAuth(AioHTTPTestCase):
         res = common_auth._extract_identity(req)
         self.assertEqual(res, common_auth.NO_IDENTITY)
 
+    def test_extract_identity_from_peercert_cert_expired(self):
+        req = make_mocked_request("GET", "/")
+        req.transport.get_extra_info = mock.Mock(
+            return_value={**EXAMPLE_USER_CERT, "notAfter": "Jan  1 00:00:00 1969 GMT"}
+        )
+
+        with self.assertRaises(ValueError) as cm:
+            common_auth._extract_identity_from_peercert(req)
+
+        self.assertEqual(
+            str(cm.exception), "Peer certificate's date is invalid/expired"
+        )
+
     def test_extract_identity_no_identity(self):
         req = make_mocked_request("GET", "/")
         res = common_auth._extract_identity(req)
@@ -186,7 +199,7 @@ class TestCommonAuth(AioHTTPTestCase):
                 spec=acl_providers.cached_acl_provider.CachedAclProvider
             )
         }
-        req.app["acl_provider"].is_user_authorized.return_value = False
+        req.app["acl_provider"].is_authorized.return_value = False
 
         with mock.patch(
             "common_auth._extract_identity", autospec=True, return_value="<user>"

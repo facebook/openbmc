@@ -415,6 +415,7 @@ const uint8_t bic_spe_sensor_list[] = {
 };
 
 const uint8_t bic_skip_sensor_list[] = {
+  BIC_SENSOR_PCH_TEMP,
   BIC_SENSOR_CPU_TEMP,
   BIC_SENSOR_DIMMA0_TEMP,
   BIC_SENSOR_DIMMB0_TEMP,
@@ -423,7 +424,6 @@ const uint8_t bic_skip_sensor_list[] = {
   BIC_SENSOR_DIMME0_TEMP,
   BIC_SENSOR_DIMMF0_TEMP,
   BIC_SENSOR_M2B_TEMP,
-  BIC_SENSOR_HSC_TEMP,
   BIC_SENSOR_VCCIN_VR_TEMP,
   BIC_SENSOR_VCCSA_VR_TEMP,
   BIC_SENSOR_VCCIO_VR_Temp,
@@ -433,7 +433,6 @@ const uint8_t bic_skip_sensor_list[] = {
   BIC_SENSOR_VCCIN_VR_VOL,
   BIC_SENSOR_VCCSA_VR_VOL,
   BIC_SENSOR_VCCIO_VR_VOL,
-  BIC_SENSOR_P3V3_STBY_VR_VOL,
   BIC_PVDDQ_ABC_VR_VOL,
   BIC_PVDDQ_DEF_VR_VOL,
   //BIC - current sensors
@@ -2207,7 +2206,7 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
         sdr->uc_thresh = HSC_OUTPUT_CUR_UC_THRESHOLD;
         sdr->m_val = 0x04;
       }
-    } else if (snr_num == BIC_SENSOR_HSC_INPUT_PWR){
+    } else if (snr_num == BIC_SENSOR_HSC_INPUT_PWR || snr_num == BIC_SENSOR_HSC_INPUT_AVGPWR){
       if (bmc_location == NIC_BMC) {
         sdr->uc_thresh = HSC_INPUT_PWR_UC_THRESHOLD;
         sdr->m_val = 0x04;

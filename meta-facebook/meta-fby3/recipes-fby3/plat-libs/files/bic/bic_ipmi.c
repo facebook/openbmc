@@ -413,6 +413,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_2OU_3V3_VR1:
     case FW_2OU_3V3_VR2:
     case FW_2OU_3V3_VR3:
+    case FW_2OU_1V8_VR:
     case FW_2OU_PESW_VR:
     case FW_2OU_PESW_CFG_VER:
     case FW_2OU_PESW_FW_VER:
@@ -442,6 +443,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_2OU_3V3_VR1:
     case FW_2OU_3V3_VR2:
     case FW_2OU_3V3_VR3:
+    case FW_2OU_1V8_VR:
     case FW_2OU_PESW_VR:
     case FW_2OU_PESW_CFG_VER:
     case FW_2OU_PESW_FW_VER:

@@ -37,6 +37,7 @@ int VrExtComponent::print_version()
   map<uint8_t, string> list = {{FW_2OU_3V3_VR1, "VR P3V3_STBY1"},
                                {FW_2OU_3V3_VR2, "VR P3V3_STBY2"},
                                {FW_2OU_3V3_VR3, "VR P3V3_STBY3"},
+                               {FW_2OU_1V8_VR, "VR P1V8"},
                                {FW_2OU_PESW_VR, "VR P0V84/P0V9"}};
   string ver("");
   string board_name = name;

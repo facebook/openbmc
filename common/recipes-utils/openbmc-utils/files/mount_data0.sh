@@ -83,6 +83,98 @@ mnt_point_health_check() {
     return "$mnt_error"
 }
 
+ubifs_format() {
+    mtd_chardev="$1"
+    ubi_dev="$2"
+
+    if ! ubiformat -y "$mtd_chardev"; then
+        return 1
+    fi
+
+    if ! ubiattach -p "$mtd_chardev"; then
+        return 1
+    fi
+
+    if ! ubimkvol "$ubi_dev" -N data0 -m; then
+        return 1
+    fi
+}
+
+ubifs_mount() {
+    ubi_vol="$1"
+    mnt_point="$2"
+
+    echo "ubifs_mount $ubi_vol to $mnt_point.."
+    mount -t ubifs "$ubi_vol" "$mnt_point"
+}
+
+do_mount_ubifs() {
+    mtd_chardev="$1"
+    mnt_point="$2"
+    ubi_dev="/dev/ubi0"
+    ubi_vol="${ubi_dev}_0"
+    need_recovery=0
+
+    #
+    # Blindly load ubi module just in case it's compiled as a module.
+    # Ignore modprobe failures and we will run more check later.
+    #
+    modprobe ubi mtd=data0 > /dev/null 2>&1
+
+    #
+    # Attached ubi device manually if ubi is compiled into kernel but
+    # "ubi.mtd=data0" bootargs is not supplied.
+    #
+    if ! [ -e "$ubi_dev" ]; then
+        ubiattach -p "$mtd_chardev"
+        # Fall through regardless of attach results: we will start
+        # filesystem recovery if the ubi volume doesn't show up after
+        # attach.
+    fi
+
+    #
+    # ubifs "recovery" is needed when:
+    #   1) the mtd partition is never formatted, for example, when people
+    #      migrate a BMC from jffs2 to ubifs for the first time.
+    #   2) the mtd partition or ubi volume is corrupted for some reasons.
+    #
+    if [ -e "$ubi_vol" ]; then
+        if ubifs_mount "$ubi_vol" "$mnt_point"; then
+            echo "Check ubifs filesystem health on $ubi_vol.."
+
+            if ! mnt_point_health_check "$mnt_point"; then
+                need_recovery=$((need_recovery+1))
+            fi
+
+            if [ "$need_recovery" -gt 0 ]; then
+                echo "ubifs health check failed. Unmount $ubi_vol and start recovery.."
+                umount "$mnt_point"
+                ubidetach -p "$mtd_chardev"
+            else
+                echo "ubifs health check passed: no error found."
+            fi
+        else
+            echo "unable to mount $ubi_vol. Start recovery soon.."
+            need_recovery=1
+        fi
+    else
+        echo "$ubi_vol does not exist. Start recovery soon.."
+        need_recovery=1
+    fi
+
+    if [ "$need_recovery" -gt 0 ]; then
+        if ! ubifs_format "$mtd_chardev" "$ubi_dev"; then
+            echo "ubifs_format failed. Exiting!"
+            exit 1
+        fi
+
+        if ! ubifs_mount "$ubi_vol" "$mnt_point"; then
+            echo "ubifs_mount failed after recovery. Exiting!"
+            exit 1
+        fi
+    fi
+}
+
 jffs2_format() {
     mtd_chardev="$1"
 

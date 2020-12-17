@@ -44,7 +44,7 @@ NO_IDENTITY = Identity(user=None, host=None)
 
 # Certificate commonName regex
 # e.g. "host:root/example.com" -> type="host", user="root", host="example.com"
-RE_CERT_COMMON_NAME = re.compile(r"^(?P<type>[^:]+):(?P<user>[^/]+)/(?P<host>[^/]+)$")
+RE_CERT_COMMON_NAME = re.compile(r"^(?P<type>[^:]+):(?P<user>[^/]*)/(?P<host>[^/]*)$")
 
 
 def auth_required(request) -> Identity:

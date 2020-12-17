@@ -109,6 +109,32 @@ class TestCommonAuth(AioHTTPTestCase):
         res = common_auth._extract_identity(req)
         self.assertEqual(res, common_auth.NO_IDENTITY)
 
+    def test_extract_identity_from_peercert_empty_user(self):
+        req = make_mocked_request("GET", "/")
+        req.transport.get_extra_info = mock.Mock(
+            return_value={
+                **EXAMPLE_HOST_CERT,
+                "subject": ((("commonName", "host:/a_hostname.example.com"),),),
+            }
+        )
+
+        res = common_auth._extract_identity(req)
+        self.assertEqual(
+            res, common_auth.Identity(user=None, host="a_hostname.example.com")
+        )
+
+    def test_extract_identity_from_peercert_empty_host(self):
+        req = make_mocked_request("GET", "/")
+        req.transport.get_extra_info = mock.Mock(
+            return_value={
+                **EXAMPLE_HOST_CERT,
+                "subject": ((("commonName", "user:a_username/"),),),
+            }
+        )
+
+        res = common_auth._extract_identity(req)
+        self.assertEqual(res, common_auth.Identity(user="a_username", host=None))
+
     def test_extract_identity_from_peercert_no_subject_field(self):
         req = make_mocked_request("GET", "/")
         req.transport.get_extra_info = mock.Mock(

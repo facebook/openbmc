@@ -155,6 +155,13 @@ do_install() {
     localbindir="${D}/usr/local/bin"
     install -d "${D}${sysconfdir}"
     install -d ${localbindir}
+
+    # If mtd-ubifs feature is enabled, we want ubifs on top of the mtd
+    # data0 partition. Update the "mount_data0.sh" to reflect this.
+    if ! echo ${MACHINE_FEATURES} | awk "/mtd-ubifs/ {exit 1}"; then
+        sed -i 's/FLASH_FS_TYPE=jffs2/FLASH_FS_TYPE=ubifs/' ${WORKDIR}/mount_data0.sh
+    fi
+
     for f in ${OPENBMC_UTILS_FILES}; do
         install -m 755 $f ${dstdir}/${f}
         ln -s ${pkgdir}/${f} ${localbindir}

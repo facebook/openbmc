@@ -1,7 +1,8 @@
-import aiohttp.web
 import json
-import tempfile
 import os
+import tempfile
+
+import aiohttp.web
 
 DESTINATION_FILE_PATH = "/tmp/incoming_fscd_sensor_data.json"
 
@@ -65,135 +66,135 @@ def _schema_match(payload, schema):
 PAYLOAD_SCHEMA = {
     "global_ts": int,
     "data": {
-        "th4_1": {
+        "th4_1_temp": {  # Tomahawk 4 core temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_1": {
+        "qsfp_1_temp": {  # QSFP port 1 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_2": {
+        "qsfp_2_temp": {  # QSFP port 2 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_3": {
+        "qsfp_3_temp": {  # QSFP port 3 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_4": {
+        "qsfp_4_temp": {  # QSFP port 4 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_5": {
+        "qsfp_5_temp": {  # QSFP port 5 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_6": {
+        "qsfp_6_temp": {  # QSFP port 6 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_7": {
+        "qsfp_7_temp": {  # QSFP port 7 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_8": {
+        "qsfp_8_temp": {  # QSFP port 8 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_9": {
+        "qsfp_9_temp": {  # QSFP port 9 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_10": {
+        "qsfp_10_temp": {  # QSFP port 10 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_11": {
+        "qsfp_11_temp": {  # QSFP port 11 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_12": {
+        "qsfp_12_temp": {  # QSFP port 12 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_13": {
+        "qsfp_13_temp": {  # QSFP port 13 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_14": {
+        "qsfp_14_temp": {  # QSFP port 14 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_15": {
+        "qsfp_15_temp": {  # QSFP port 15 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_16": {
+        "qsfp_16_temp": {  # QSFP port 16 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_17": {
+        "qsfp_17_temp": {  # QSFP port 17 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_18": {
+        "qsfp_18_temp": {  # QSFP port 18 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_19": {
+        "qsfp_19_temp": {  # QSFP port 19 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_20": {
+        "qsfp_20_temp": {  # QSFP port 20 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_21": {
+        "qsfp_21_temp": {  # QSFP port 21 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_22": {
+        "qsfp_22_temp": {  # QSFP port 22 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_23": {
+        "qsfp_23_temp": {  # QSFP port 23 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_24": {
+        "qsfp_24_temp": {  # QSFP port 24 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_25": {
+        "qsfp_25_temp": {  # QSFP port 25 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_26": {
+        "qsfp_26_temp": {  # QSFP port 26 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_27": {
+        "qsfp_27_temp": {  # QSFP port 27 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_28": {
+        "qsfp_28_temp": {  # QSFP port 28 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_29": {
+        "qsfp_29_temp": {  # QSFP port 29 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_30": {
+        "qsfp_30_temp": {  # QSFP port 30 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_31": {
+        "qsfp_31_temp": {  # QSFP port 31 temperature
             "value": float,
             "ts": int,
         },
-        "qsfp_32": {
+        "qsfp_32_temp": {  # QSFP port 32 temperature
             "value": float,
             "ts": int,
         },

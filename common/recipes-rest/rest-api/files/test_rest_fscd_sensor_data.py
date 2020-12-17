@@ -1,9 +1,10 @@
-import rest_fscd_sensor_data
-import tempfile
-import unittest
-import aiohttp.web
 import json
 import os
+import tempfile
+import unittest
+
+import aiohttp.web
+import rest_fscd_sensor_data
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 
 
@@ -135,38 +136,38 @@ class TestRestFscdSensorData(AioHTTPTestCase):
 EXAMPLE_PAYLOAD = {
     "global_ts": 1604676343,
     "data": {
-        "th4_1": {"value": 69.7, "ts": 1604676372},
-        "qsfp_1": {"value": 68.7, "ts": 1604676372},
-        "qsfp_2": {"value": 70.7, "ts": 1604676372},
-        "qsfp_3": {"value": 72.3, "ts": 1604676372},
-        "qsfp_4": {"value": 71.6, "ts": 1604676372},
-        "qsfp_5": {"value": 69.7, "ts": 1604676372},
-        "qsfp_6": {"value": 69.7, "ts": 1604676372},
-        "qsfp_7": {"value": 69.7, "ts": 1604676372},
-        "qsfp_8": {"value": 69.7, "ts": 1604676372},
-        "qsfp_9": {"value": 69.7, "ts": 1604676372},
-        "qsfp_10": {"value": 69.7, "ts": 1604676372},
-        "qsfp_11": {"value": 69.7, "ts": 1604676372},
-        "qsfp_12": {"value": 69.7, "ts": 1604676372},
-        "qsfp_13": {"value": 69.7, "ts": 1604676372},
-        "qsfp_14": {"value": 69.7, "ts": 1604676372},
-        "qsfp_15": {"value": 69.7, "ts": 1604676372},
-        "qsfp_16": {"value": 69.7, "ts": 1604676372},
-        "qsfp_17": {"value": 69.7, "ts": 1604676372},
-        "qsfp_18": {"value": 69.7, "ts": 1604676372},
-        "qsfp_19": {"value": 69.7, "ts": 1604676372},
-        "qsfp_20": {"value": 69.7, "ts": 1604676372},
-        "qsfp_21": {"value": 69.7, "ts": 1604676372},
-        "qsfp_22": {"value": 69.7, "ts": 1604676372},
-        "qsfp_23": {"value": 69.7, "ts": 1604676372},
-        "qsfp_24": {"value": 69.7, "ts": 1604676372},
-        "qsfp_25": {"value": 69.7, "ts": 1604676372},
-        "qsfp_26": {"value": 69.7, "ts": 1604676372},
-        "qsfp_27": {"value": 69.7, "ts": 1604676372},
-        "qsfp_28": {"value": 69.7, "ts": 1604676372},
-        "qsfp_29": {"value": 69.7, "ts": 1604676372},
-        "qsfp_30": {"value": 69.7, "ts": 1604676372},
-        "qsfp_31": {"value": 69.7, "ts": 1604676372},
-        "qsfp_32": {"value": 69.7, "ts": 1604676372},
+        "th4_1_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_1_temp": {"value": 68.7, "ts": 1604676372},
+        "qsfp_2_temp": {"value": 70.7, "ts": 1604676372},
+        "qsfp_3_temp": {"value": 72.3, "ts": 1604676372},
+        "qsfp_4_temp": {"value": 71.6, "ts": 1604676372},
+        "qsfp_5_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_6_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_7_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_8_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_9_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_10_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_11_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_12_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_13_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_14_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_15_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_16_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_17_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_18_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_19_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_20_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_21_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_22_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_23_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_24_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_25_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_26_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_27_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_28_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_29_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_30_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_31_temp": {"value": 69.7, "ts": 1604676372},
+        "qsfp_32_temp": {"value": 69.7, "ts": 1604676372},
     },
 }

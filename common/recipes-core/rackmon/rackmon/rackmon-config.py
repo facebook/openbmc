@@ -1,3 +1,6 @@
+import fcntl
+import sys
+
 from rackmond import configure_rackmond
 
 
@@ -107,10 +110,32 @@ reglist = [
     {"begin": 0x121, "length": 1},  # SoH results
 ]
 
+pid_file_handle = None
+pid_file_path = "/var/lock/rackmon-config.pid"
+
+
+def file_is_locked(pathname):
+    global pid_file_handle
+
+    # Note: the file handle is not closed in the program, and it is by
+    # design because we need to hold the file lock as long as the process
+    # is running. The file will be automatically closed (and lock released)
+    # when the process is terminated.
+    pid_file_handle = open(pathname, "w")
+    try:
+        fcntl.lockf(pid_file_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return False
+    except IOError:
+        return True
+
 
 def main():
     configure_rackmond(reglist, verify_configure=True)
 
 
 if __name__ == "__main__":
+    if file_is_locked(pid_file_path):
+        print("another instance is running. Exiting!")
+        sys.exit(0)
+
     main()

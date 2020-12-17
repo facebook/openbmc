@@ -35,7 +35,6 @@ SRC_URI = "file://rest.py \
            file://acl_providers/__init__.py\
            file://acl_providers/cached_acl_provider.py\
            file://acl_providers/common_acl_provider_base.py\
-           file://acl_providers/dummy_acl_provider.py\
            file://plat_tree.py \
            file://rest_crawler.py \
            file://node.py \

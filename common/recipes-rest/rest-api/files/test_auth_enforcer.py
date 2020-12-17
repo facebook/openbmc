@@ -24,6 +24,7 @@ import typing as t
 import unittest
 
 import acl_config
+import common_middlewares
 from acl_providers import common_acl_provider_base
 from aiohttp import test_utils, web
 from common_middlewares import auth_enforcer
@@ -53,7 +54,7 @@ def good_handler(request):
 
 def identity_handler(request):
     return web.Response(
-        body=json.dumps({"identity": request["identity"]}),
+        body=json.dumps({"identity": request.get("identity")}),
         content_type="application/json",
     )
 
@@ -77,6 +78,7 @@ class TestAuthEnforcer(test_utils.AioHTTPTestCase):
         p = {
             "common_auth._validate_cert_date": async_return(True),
             "common_auth._extract_identity": async_return("test_identity"),
+            "common_middlewares._is_request_from_localhost": False,
         }
         for original, return_value in p.items():
             patcher = unittest.mock.patch(original, return_value=return_value)
@@ -120,6 +122,12 @@ class TestAuthEnforcer(test_utils.AioHTTPTestCase):
     async def test_authorization_fails_with_disjunct_roles(self):
         request = await self.client.request("GET", "/youshallnotpass")
         self.assertEqual(request.status, 403)
+
+    @test_utils.unittest_run_loop
+    async def test_authorization_override_if_localhost(self):
+        common_middlewares._is_request_from_localhost.return_value = True
+        request = await self.client.request("GET", "/youshallnotpass")
+        self.assertEqual(request.status, 200)
 
     @test_utils.unittest_run_loop
     async def test_authorization_denies_post_without_rules(self):

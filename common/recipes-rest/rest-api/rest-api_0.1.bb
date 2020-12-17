@@ -41,7 +41,6 @@ SRC_URI = "file://setup-rest-api.sh \
            file://acl_providers/__init__.py\
            file://acl_providers/cached_acl_provider.py\
            file://acl_providers/common_acl_provider_base.py\
-           file://acl_providers/dummy_acl_provider.py\
            file://board_endpoint.py \
            file://rest_watchdog.py \
            file://rest_config.py \
@@ -122,7 +121,7 @@ binfiles1 = "setup-rest-api.sh \
 aclfiles = "__init__.py \
             cached_acl_provider.py \
             common_acl_provider_base.py \
-            dummy_acl_provider.py"
+"
 
 pkgdir = "rest-api"
 

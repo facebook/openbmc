@@ -79,7 +79,7 @@ def parse_config(configpath):
         "acl_provider": RestConfig.get(
             "acl",
             "provider",
-            fallback="acl_providers.dummy_acl_provider.DummyAclProvider",
+            fallback="acl_providers.cached_acl_provider.CachedAclProvider",
         ),
         "acl_settings": acl_settings,
     }

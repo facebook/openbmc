@@ -23,7 +23,13 @@ from contextlib import suppress
 import common_auth
 from acl_config import RULES
 from aiohttp.log import server_logger
+from aiohttp.web import Request
 from aiohttp.web_exceptions import HTTPException, HTTPForbidden, HTTPInternalServerError
+
+LOCALHOST_ADDRS = {
+    "::1",
+    "127.0.0.1",
+}
 
 
 async def jsonerrorhandler(app, handler):
@@ -50,6 +56,11 @@ async def jsonerrorhandler(app, handler):
 
 async def auth_enforcer(app, handler):
     async def middleware_handler(request):
+        # Assume all requests originating from localhost are privileged
+        if _is_request_from_localhost(request):
+            resp = await handler(request)
+            return resp
+
         acls = []
         with suppress(KeyError):
             acls = RULES[request.path][request.method]
@@ -72,3 +83,8 @@ async def auth_enforcer(app, handler):
         return resp
 
     return middleware_handler
+
+
+def _is_request_from_localhost(request: Request) -> bool:
+    peer_ip = request.transport.get_extra_info("peername")[0]
+    return peer_ip in LOCALHOST_ADDRS

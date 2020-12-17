@@ -28,10 +28,6 @@ from aiohttp.web import HTTPForbidden, HTTPUnauthorized
 async def auth_required(request) -> str:
     # Only expiration date is validated here,
     # since authenticity of client cert is validated on the TLS level
-    # If request is not secure return early with empty identity. ACL provider will catch
-    # request as unauthorized due to empty client identity.
-    if not request.secure:
-        return ""
     if await _validate_cert_date(request):
         identity = await _extract_identity(request)
         request["identity"] = identity
@@ -41,8 +37,6 @@ async def auth_required(request) -> str:
 
 
 async def permissions_required(request, permissions: t.List[str], context=None) -> bool:
-    if not permissions:
-        return True
     identity = await _extract_identity(request)
     if await request.app["acl_provider"].is_user_authorized(identity, permissions):
         return True

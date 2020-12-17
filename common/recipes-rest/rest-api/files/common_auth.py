@@ -19,11 +19,27 @@
 #
 
 import datetime
+import ipaddress
 import re
 import typing as t
+from contextlib import suppress
 
 from aiohttp.log import server_logger
 from aiohttp.web import Request, HTTPForbidden, HTTPUnauthorized
+
+Identity = t.NamedTuple(
+    "Identity",
+    [
+        # A user as identified by a TLS certificate
+        ("user", t.Optional[str]),
+        # The hostname string as identified by a TLS certificate OR the
+        # source ip address
+        ("host", t.Union[None, str, ipaddress.IPv6Address, ipaddress.IPv4Address]),
+    ],
+)
+
+
+NO_IDENTITY = Identity(user=None, host=None)
 
 
 # Certificate commonName regex
@@ -31,7 +47,7 @@ from aiohttp.web import Request, HTTPForbidden, HTTPUnauthorized
 RE_CERT_COMMON_NAME = re.compile(r"^(?P<type>[^:]+):(?P<user>[^/]+)/(?P<host>[^/]+)$")
 
 
-def auth_required(request) -> str:
+def auth_required(request) -> Identity:
     # Only expiration date is validated here,
     # since authenticity of client cert is validated on the TLS level
     if _validate_cert_date(request):
@@ -74,18 +90,36 @@ def _validate_cert_date(request) -> bool:
     return True
 
 
-def _extract_identity(request: Request) -> str:
+def _extract_identity(request: Request) -> Identity:
+    # Try extracting identity from TLS peer certificate
+    with suppress(ValueError):
+        return _extract_identity_from_peercert(request)
+
+    # If there's no cert identity, try setting the host identity as the
+    # peer ip address
+    with suppress(ValueError, IndexError, KeyError, TypeError):
+        addr = request.transport.get_extra_info("peername")[0]
+        return Identity(user=None, host=ipaddress.ip_address(addr))
+
+    return NO_IDENTITY
+
+
+def _extract_identity_from_peercert(request: Request) -> Identity:
     peercert = request.transport.get_extra_info("peercert")
     if not peercert or not peercert.get("subject"):
-        return ""
+        raise ValueError("No identity found in request")
 
     for key, value in peercert["subject"][0]:
         if key == "commonName":
             m = RE_CERT_COMMON_NAME.match(value)
 
             if m and m.group("type") == "user":
-                return m.group("user")
-    return ""
+                return Identity(user=m.group("user"), host=None)
+
+            if m and m.group("type") == "host":
+                return Identity(user=None, host=m.group("host"))
+
+    raise ValueError("No identity found in request")
 
 
 def now() -> datetime.datetime:

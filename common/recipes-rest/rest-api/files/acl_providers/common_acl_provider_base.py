@@ -21,11 +21,13 @@
 import abc
 import typing as t
 
+from common_auth import Identity
+
 
 class AclProviderBase(metaclass=abc.ABCMeta):
     def __init__(self):
         super().__init__()
 
     @abc.abstractmethod
-    def is_user_authorized(self, identity: str, permissions: t.List[str]) -> bool:
+    def is_user_authorized(self, identity: Identity, permissions: t.List[str]) -> bool:
         pass

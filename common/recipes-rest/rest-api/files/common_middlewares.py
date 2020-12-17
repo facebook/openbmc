@@ -73,7 +73,7 @@ async def auth_enforcer(app, handler):
             )
             raise HTTPForbidden()
         if acls:
-            identity = common_auth.auth_required(request)
+            identity = common_auth.auth_required(request)  # type: common_auth.Identity
             common_auth.permissions_required(request, acls)
             server_logger.info(
                 "AUTH:Authorized %s for [%s]%s"

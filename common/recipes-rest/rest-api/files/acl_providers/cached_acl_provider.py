@@ -27,6 +27,7 @@ from types import FrameType
 from typing import Optional
 
 from aiohttp.log import server_logger
+from common_auth import Identity
 
 from . import common_acl_provider_base
 
@@ -41,7 +42,7 @@ def load_acl_cache(cpath: str) -> t.Dict[str, t.List[str]]:
 class CachedAclProvider(common_acl_provider_base.AclProviderBase):
     def __init__(self, cachepath: Optional[str] = None):
         self.cachepath = cachepath
-        self.aclrules = {}
+        self.aclrules = {}  # type: t.Dict[str, t.List[str]]
         self._load_aclrules()
 
         self.oldhandler = signal.getsignal(signal.SIGHUP)
@@ -54,14 +55,12 @@ class CachedAclProvider(common_acl_provider_base.AclProviderBase):
     def signal_handler(self, sig: int, frame: FrameType):
         self._load_aclrules()
 
-    def _get_permissions_for_identity(self, identity: str) -> t.List[str]:
-        with suppress(KeyError):
-            return self.aclrules[identity]
-        return []
+    def _get_permissions_for_user_identity(self, identity: Identity) -> t.List[str]:
+        return self.aclrules.get(identity.user, [])
 
-    def is_user_authorized(self, identity: str, permissions: t.List[str]) -> bool:
-        roles = self._get_permissions_for_identity(identity)
-        return any(value for value in roles if value in permissions)
+    def is_user_authorized(self, identity: Identity, permissions: t.List[str]) -> bool:
+        user_roles = self._get_permissions_for_user_identity(identity)
+        return any(role in permissions for role in user_roles)
 
     def _load_aclrules(self) -> None:
         if not self.cachepath:

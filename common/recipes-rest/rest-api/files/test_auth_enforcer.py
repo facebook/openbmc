@@ -23,6 +23,7 @@ import json
 import typing as t
 import unittest
 
+import common_auth
 import common_middlewares
 from acl_providers import common_acl_provider_base
 from aiohttp import test_utils, web
@@ -63,12 +64,10 @@ def add_identity_to_request(request):
 
 
 class TestAclProvider(common_acl_provider_base.AclProviderBase):
-    def _get_permissions_for_identity(self, identity: str) -> t.List[str]:
-        return ["test"]
-
-    def is_user_authorized(self, identity: str, permissions: t.List[str]) -> bool:
-        id_permissions = self._get_permissions_for_identity(identity)
-        return bool([value for value in id_permissions if value in permissions])
+    def is_user_authorized(
+        self, identity: common_auth.Identity, permissions: t.List[str]
+    ) -> bool:
+        return "test" in permissions
 
 
 class TestAuthEnforcer(test_utils.AioHTTPTestCase):
@@ -77,11 +76,6 @@ class TestAuthEnforcer(test_utils.AioHTTPTestCase):
         self.patches = [
             unittest.mock.patch(
                 "common_auth._validate_cert_date", autospec=True, return_value=True
-            ),
-            unittest.mock.patch(
-                "common_auth._extract_identity",
-                autospec=True,
-                return_value="test_identity",
             ),
             unittest.mock.patch(
                 "common_middlewares._is_request_from_localhost",

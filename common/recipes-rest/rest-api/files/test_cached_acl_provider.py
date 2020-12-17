@@ -26,6 +26,7 @@ import signal
 import tempfile
 import unittest
 
+import common_auth
 from acl_providers import cached_acl_provider
 from aiohttp.test_utils import unittest_run_loop
 
@@ -39,22 +40,28 @@ class TestCachedAclProvider(unittest.TestCase):
             tmpfile.seek(0)
             self.subject = cached_acl_provider.CachedAclProvider(cachepath=tmpfile.name)
 
-    def testAclProviderExtractsRulesForIdentity(self):
-        rules = self.subject._get_permissions_for_identity("deathowl")
+    def testAclProviderExtractsRulesForUserIdentity(self):
+        identity = common_auth.Identity(user="deathowl", host=None)
+        rules = self.subject._get_permissions_for_user_identity(identity)
         self.assertEqual(["test", "awesome"], rules)
 
-    def testAclProviderReturnsEmptyDictForNonexistentIdentity(self):
-        rules = self.subject._get_permissions_for_identity("nosuchthing")
+    def testAclProviderReturnsEmptyDictForNonexistentUserIdentity(self):
+        rules = self.subject._get_permissions_for_user_identity(
+            common_auth.Identity(user="nosuchthing", host=None)
+        )
         self.assertEqual([], rules)
 
     def testAclProviderGrantsPermissionIfMatching(self):
-        self.assertTrue(self.subject.is_user_authorized("deathowl", ["awesome"]))
+        identity = common_auth.Identity(user="deathowl", host=None)
+        self.assertTrue(self.subject.is_user_authorized(identity, ["awesome"]))
 
     def testAclProviderDeniesPermissionIfNotMatching(self):
-        self.assertFalse(self.subject.is_user_authorized("deathowl", ["derp"]))
+        identity = common_auth.Identity(user="deathowl", host=None)
+        self.assertFalse(self.subject.is_user_authorized(identity, ["derp"]))
 
     def testAclProviderDeniesPermissionIfIdentityIsInvalid(self):
-        self.assertFalse(self.subject.is_user_authorized("nosuchthing", ["derp"]))
+        identity = common_auth.Identity(user="nosuchthing", host=None)
+        self.assertFalse(self.subject.is_user_authorized(identity, ["derp"]))
 
     def test_signal_handler(self):
         with tempfile.NamedTemporaryFile("wb") as tmpfile:
@@ -69,5 +76,8 @@ class TestCachedAclProvider(unittest.TestCase):
             tmpfile.seek(0)
             os.kill(os.getpid(), signal.SIGHUP)
             self.assertEqual(
-                ["cats"], subject._get_permissions_for_identity("deathowl")
+                ["cats"],
+                subject._get_permissions_for_user_identity(
+                    common_auth.Identity(user="deathowl", host=None)
+                ),
             )

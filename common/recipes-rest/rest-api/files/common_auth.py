@@ -19,10 +19,16 @@
 #
 
 import datetime
+import re
 import typing as t
 
 from aiohttp.log import server_logger
-from aiohttp.web import HTTPForbidden, HTTPUnauthorized
+from aiohttp.web import Request, HTTPForbidden, HTTPUnauthorized
+
+
+# Certificate commonName regex
+# e.g. "host:root/example.com" -> type="host", user="root", host="example.com"
+RE_CERT_COMMON_NAME = re.compile(r"^(?P<type>[^:]+):(?P<user>[^/]+)/(?P<host>[^/]+)$")
 
 
 async def auth_required(request) -> str:
@@ -57,8 +63,7 @@ async def _validate_cert_date(request) -> bool:
         )
         return False
     cert_valid = (
-        datetime.datetime.strptime(peercert["notAfter"], "%b %d %H:%M:%S %Y %Z")
-        > datetime.datetime.now()
+        datetime.datetime.strptime(peercert["notAfter"], "%b %d %H:%M:%S %Y %Z") > now()
     )
     if not cert_valid:
         server_logger.info(
@@ -69,10 +74,21 @@ async def _validate_cert_date(request) -> bool:
     return True
 
 
-async def _extract_identity(request) -> str:
+async def _extract_identity(request: Request) -> str:
     peercert = request.transport.get_extra_info("peercert")
-    if peercert:
-        for candidate in peercert["subject"]:
-            if candidate[0][0] == "commonName":
-                return candidate[0][1].split("/")[0].split(":")[-1]
+    if not peercert or not peercert.get("subject"):
+        return ""
+
+    for key, value in peercert["subject"][0]:
+        if key == "commonName":
+            m = RE_CERT_COMMON_NAME.match(value)
+
+            if m and m.group("type") == "user":
+                return m.group("user")
     return ""
+
+
+def now() -> datetime.datetime:
+    # Just a simple wrapper so it's easier to mock (as datetime.datetime.now
+    # is a built-in)
+    return datetime.datetime.now()

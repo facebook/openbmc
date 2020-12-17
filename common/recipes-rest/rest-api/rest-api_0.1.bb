@@ -73,6 +73,7 @@ SRC_URI = "file://setup-rest-api.sh \
            file://test_common_logging.py \
            file://test_rest_config.py \
            file://test_rest_fscd_sensor_data.py \
+           file://test_common_auth.py \
            file://boardroutes.py \
            file://common_setup_routes.py \
            file://setup_plat_routes.py \

@@ -39,30 +39,24 @@ class TestCachedAclProvider(unittest.TestCase):
             tmpfile.seek(0)
             self.subject = cached_acl_provider.CachedAclProvider(cachepath=tmpfile.name)
 
-    @unittest_run_loop
-    async def testAclProviderExtractsRulesForIdentity(self):
-        rules = await self.subject._get_permissions_for_identity("deathowl")
+    def testAclProviderExtractsRulesForIdentity(self):
+        rules = self.subject._get_permissions_for_identity("deathowl")
         self.assertEqual(["test", "awesome"], rules)
 
-    @unittest_run_loop
-    async def testAclProviderReturnsEmptyDictForNonexistentIdentity(self):
-        rules = await self.subject._get_permissions_for_identity("nosuchthing")
+    def testAclProviderReturnsEmptyDictForNonexistentIdentity(self):
+        rules = self.subject._get_permissions_for_identity("nosuchthing")
         self.assertEqual([], rules)
 
-    @unittest_run_loop
-    async def testAclProviderGrantsPermissionIfMatching(self):
-        self.assertTrue(await self.subject.is_user_authorized("deathowl", ["awesome"]))
+    def testAclProviderGrantsPermissionIfMatching(self):
+        self.assertTrue(self.subject.is_user_authorized("deathowl", ["awesome"]))
 
-    @unittest_run_loop
-    async def testAclProviderDeniesPermissionIfNotMatching(self):
-        self.assertFalse(await self.subject.is_user_authorized("deathowl", ["derp"]))
+    def testAclProviderDeniesPermissionIfNotMatching(self):
+        self.assertFalse(self.subject.is_user_authorized("deathowl", ["derp"]))
 
-    @unittest_run_loop
-    async def testAclProviderDeniesPermissionIfIdentityIsInvalid(self):
-        self.assertFalse(await self.subject.is_user_authorized("nosuchthing", ["derp"]))
+    def testAclProviderDeniesPermissionIfIdentityIsInvalid(self):
+        self.assertFalse(self.subject.is_user_authorized("nosuchthing", ["derp"]))
 
-    @unittest_run_loop
-    async def test_signal_handler(self):
+    def test_signal_handler(self):
         with tempfile.NamedTemporaryFile("wb") as tmpfile:
             rules = {"deathowl": ["test", "awesome"]}
             tmpfile.write(gzip.compress(bytes(json.dumps(rules), encoding="utf-8")))
@@ -75,5 +69,5 @@ class TestCachedAclProvider(unittest.TestCase):
             tmpfile.seek(0)
             os.kill(os.getpid(), signal.SIGHUP)
             self.assertEqual(
-                ["cats"], await subject._get_permissions_for_identity("deathowl")
+                ["cats"], subject._get_permissions_for_identity("deathowl")
             )

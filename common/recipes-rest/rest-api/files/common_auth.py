@@ -31,20 +31,20 @@ from aiohttp.web import Request, HTTPForbidden, HTTPUnauthorized
 RE_CERT_COMMON_NAME = re.compile(r"^(?P<type>[^:]+):(?P<user>[^/]+)/(?P<host>[^/]+)$")
 
 
-async def auth_required(request) -> str:
+def auth_required(request) -> str:
     # Only expiration date is validated here,
     # since authenticity of client cert is validated on the TLS level
-    if await _validate_cert_date(request):
-        identity = await _extract_identity(request)
+    if _validate_cert_date(request):
+        identity = _extract_identity(request)
         request["identity"] = identity
         request.headers["identity"] = identity
         return identity
     raise HTTPUnauthorized()
 
 
-async def permissions_required(request, permissions: t.List[str], context=None) -> bool:
-    identity = await _extract_identity(request)
-    if await request.app["acl_provider"].is_user_authorized(identity, permissions):
+def permissions_required(request, permissions: t.List[str], context=None) -> bool:
+    identity = _extract_identity(request)
+    if request.app["acl_provider"].is_user_authorized(identity, permissions):
         return True
     else:
         server_logger.info(
@@ -54,7 +54,7 @@ async def permissions_required(request, permissions: t.List[str], context=None) 
         raise HTTPForbidden()
 
 
-async def _validate_cert_date(request) -> bool:
+def _validate_cert_date(request) -> bool:
     peercert = request.transport.get_extra_info("peercert")
     if not peercert:
         server_logger.info(
@@ -74,7 +74,7 @@ async def _validate_cert_date(request) -> bool:
     return True
 
 
-async def _extract_identity(request: Request) -> str:
+def _extract_identity(request: Request) -> str:
     peercert = request.transport.get_extra_info("peercert")
     if not peercert or not peercert.get("subject"):
         return ""

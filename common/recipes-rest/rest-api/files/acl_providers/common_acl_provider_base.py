@@ -27,9 +27,5 @@ class AclProviderBase(metaclass=abc.ABCMeta):
         super().__init__()
 
     @abc.abstractmethod
-    async def _get_permissions_for_identity(self, identity: str) -> t.List[str]:
-        raise abc.NotImplemented
-
-    @abc.abstractmethod
-    async def is_user_authorized(self, identity: str, permissions: t.List[str]) -> bool:
+    def is_user_authorized(self, identity: str, permissions: t.List[str]) -> bool:
         pass

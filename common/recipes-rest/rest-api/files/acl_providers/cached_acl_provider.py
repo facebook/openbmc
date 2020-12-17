@@ -54,13 +54,13 @@ class CachedAclProvider(common_acl_provider_base.AclProviderBase):
     def signal_handler(self, sig: int, frame: FrameType):
         self._load_aclrules()
 
-    async def _get_permissions_for_identity(self, identity: str) -> t.List[str]:
+    def _get_permissions_for_identity(self, identity: str) -> t.List[str]:
         with suppress(KeyError):
             return self.aclrules[identity]
         return []
 
-    async def is_user_authorized(self, identity: str, permissions: t.List[str]) -> bool:
-        roles = await self._get_permissions_for_identity(identity)
+    def is_user_authorized(self, identity: str, permissions: t.List[str]) -> bool:
+        roles = self._get_permissions_for_identity(identity)
         return any(value for value in roles if value in permissions)
 
     def _load_aclrules(self) -> None:

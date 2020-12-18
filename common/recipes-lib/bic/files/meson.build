@@ -12,11 +12,11 @@ cc = meson.get_compiler('c')
 libs = [
   cc.find_library('misc-utils'),
   cc.find_library('obmc-i2c'),
-  cc.find_library('log'),
   dependency('libgpio-ctrl'),
   dependency('libipmb'),
   dependency('libipmi'),
   dependency('libkv'),
+  dependency('liblog'),
 ]
 
 srcs = files(

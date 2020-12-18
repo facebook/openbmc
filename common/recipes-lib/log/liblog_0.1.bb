@@ -26,16 +26,7 @@ BBCLASSEXTEND = "native"
 S = "${WORKDIR}"
 SRC_URI += "file://log.h \
             file://log.c \
-            file://Makefile \
+            file://meson.build \
            "
 
-do_install() {
-    install -d ${D}${includedir}/openbmc
-    install -m 0644 log.h ${D}${includedir}/openbmc/log.h
-
-    install -d ${D}${libdir}
-    install -m 0644 liblog.so ${D}${libdir}/liblog.so
-}
-
-FILES_${PN} = "${libdir}/liblog.so"
-FILES_${PN}-dev = "${includedir}/openbmc/log.h"
+inherit meson

@@ -14,7 +14,7 @@ SRC_URI = "file://bic.h \
           "
 
 DEPENDS += "libmisc-utils libipmi libipmb libkv libobmc-i2c libgpio-ctrl"
-RDEPENDS_${PN} += " libmisc-utils libobmc-i2c liblog "
+RDEPENDS_${PN} += " libmisc-utils libobmc-i2c "
 
 S = "${WORKDIR}"
 

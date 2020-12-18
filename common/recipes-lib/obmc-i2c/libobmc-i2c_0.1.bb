@@ -43,5 +43,5 @@ SRC_URI = "file://obmc-i2c.h \
 S = "${WORKDIR}"
 
 DEPENDS += "libmisc-utils liblog"
-RDEPENDS_${PN} += "libmisc-utils liblog"
+RDEPENDS_${PN} += "libmisc-utils"
 

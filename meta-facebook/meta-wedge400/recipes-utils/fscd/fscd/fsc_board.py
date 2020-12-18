@@ -52,7 +52,7 @@ def board_fan_actions(fan, action="None"):
     if "led" in action:
         set_fan_led(fan.label, color=action)
     else:
-        Logger.warn("%s needs action %s" % (fan.label, str(action)))
+        Logger.info("%s needs action %s" % (fan.label, str(action)))
     pass
 
 
@@ -103,10 +103,10 @@ def board_callout(callout="None", **kwargs):
                     psu_presence += 1
 
         if fan_presence < 4:
-            Logger.warn("chassis_intrusion Found Fan absent (%d/4)" % (fan_presence))
+            Logger.info("chassis_intrusion Found Fan absent (%d/4)" % (fan_presence))
             tray_pull_out = 1
         if psu_presence < 2:
-            Logger.warn("chassis_intrusion Found PSU absent (%d/2)" % (psu_presence))
+            Logger.info("chassis_intrusion Found PSU absent (%d/2)" % (psu_presence))
         return tray_pull_out
     else:
         Logger.warn("Need to perform callout action %s" % callout)

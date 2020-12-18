@@ -87,12 +87,16 @@ enum {
   BS_HSC_OUT_CUR = 0x0A,
   BS_BOOT_DRV_TEMP = 0x0B,
   BS_PCH_TEMP = 0x0C,
-  BS_DIMM1_TEMP = 0x0D,
-  BS_DIMM2_TEMP = 0x0E,
-  BS_DIMM3_TEMP = 0x0F,
-  BS_DIMM4_TEMP = 0x10,
+  BS_DIMM0_TEMP = 0x0D,
+  BS_DIMM1_TEMP = 0x0E,
+  BS_DIMM2_TEMP = 0x0F,
+  BS_DIMM3_TEMP = 0x10,
   BS_VR_VCCIO_TEMP = 0x11,
   BS_CPU_TEMP = 0x12,
+  BS_THERMAL_MARGIN = 0x13,
+  BS_CPU_TJMAX = 0x14,     
+  BS_CPU_PKG_PWR = 0x15,      
+  BS_HSC_IN_AVGPWR = 0x16,
 };
 
 // Sensors under User Interface Card (UIC)

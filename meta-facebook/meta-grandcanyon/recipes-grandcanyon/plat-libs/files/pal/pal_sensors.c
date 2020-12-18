@@ -406,12 +406,16 @@ const uint8_t server_sensor_list[] = {
   BS_HSC_OUT_CUR,
   BS_BOOT_DRV_TEMP,
   BS_PCH_TEMP,
+  BS_DIMM0_TEMP,
   BS_DIMM1_TEMP,
   BS_DIMM2_TEMP,
   BS_DIMM3_TEMP,
-  BS_DIMM4_TEMP,
   BS_VR_VCCIO_TEMP,
   BS_CPU_TEMP,
+  BS_THERMAL_MARGIN,
+  BS_CPU_TJMAX,
+  BS_CPU_PKG_PWR,    
+  BS_HSC_IN_AVGPWR,
 };
 
 const uint8_t uic_sensor_list[] = {

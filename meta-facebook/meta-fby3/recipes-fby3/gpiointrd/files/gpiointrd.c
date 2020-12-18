@@ -110,6 +110,7 @@ slot_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   log_gpio_change(gpdesc, value, 0);
   log_slot_present(slot_id, value);
   if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+  pal_check_slot_cpu_present(slot_id);
 }
 
 static void 
@@ -133,7 +134,12 @@ slot_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0);
   log_slot_present(slot_id, curr);
-  if ( curr == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+  if ( curr == GPIO_VALUE_LOW ) {
+    pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+    // Wait for IPMB ready
+    sleep(6);
+    pal_check_slot_cpu_present(slot_id);
+  }
 }
 
 static void

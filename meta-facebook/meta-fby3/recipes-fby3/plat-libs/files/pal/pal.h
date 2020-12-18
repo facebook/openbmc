@@ -222,6 +222,7 @@ int pal_sb_set_amber_led(uint8_t fru, bool led_on);
 int pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts);
 int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type);
+int pal_check_slot_cpu_present(uint8_t slot_id);
 #ifdef __cplusplus
 } // extern "C"
 #endif

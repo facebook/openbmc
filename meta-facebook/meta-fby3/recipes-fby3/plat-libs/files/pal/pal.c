@@ -3344,3 +3344,23 @@ pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
 
   return -1;
 }
+
+int
+pal_check_slot_cpu_present(uint8_t slot_id) {
+  int ret = 0;
+  bic_gpio_t gpio = {0};
+
+  ret = bic_get_gpio(slot_id, &gpio, NONE_INTF);
+  if ( ret < 0 ) {
+    printf("%s() bic_get_gpio returns %d\n", __func__, ret);
+    return ret;
+  }
+
+  if (BIT_VALUE(gpio, FM_CPU_SKTOCC_LVT3_N)) {
+    syslog(LOG_CRIT, "FRU: %d, CPU absence", slot_id);
+  } else {
+    syslog(LOG_CRIT, "FRU: %d, CPU presence", slot_id);
+  }
+
+  return ret;
+}

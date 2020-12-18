@@ -41,7 +41,6 @@ extern "C" {
 
 #define MAX_IPMB_BUFFER           256
 
-
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 int bic_me_recovery(uint8_t command);
 int bic_get_vr_device_id(uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr);
@@ -56,6 +55,8 @@ int bic_write_fruid(uint8_t fru_id, const char *path);
 int bic_get_sdr(ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen);
 int bic_get_sensor_reading(uint8_t sensor_num, ipmi_sensor_reading_t *sensor);
 int bic_get_self_test_result(uint8_t *self_test_result);
+int bic_get_sys_guid(uint8_t slot_id, uint8_t *guid, uint8_t guid_size);
+int bic_set_sys_guid(uint8_t slot_id, uint8_t *guid, uint8_t guid_size);
 
 #ifdef __cplusplus
 } // extern "C"

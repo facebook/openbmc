@@ -590,17 +590,45 @@ pal_set_guid(uint16_t offset, char *guid) {
 
 int
 pal_get_sys_guid(uint8_t fru, char *guid) {
-  // TODO: the system GUID will get from BIC
-  return -1;
+  int ret = 0;
+
+  if (guid == NULL) {
+    return -1;
+  }
+
+  if (fru == FRU_SERVER) {
+    ret = bic_get_sys_guid(fru, (uint8_t *)guid, GUID_SIZE);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Failed to get system GUID\n", __func__);
+    }
+  } else {
+    ret = -1;
+  }
+
+  return ret;
 }
 
 int
 pal_set_sys_guid(uint8_t fru, char *str) {
+  int ret = 0;
   char guid[GUID_SIZE] = {0};
 
-  pal_populate_guid(guid, str);
-  // TODO: the system GUID will be set from BIC
-  return -1;
+  if (str == NULL) {
+    return -1;
+  }
+
+  if (fru == FRU_SERVER) {
+    pal_populate_guid(guid, str);
+
+    ret = bic_set_sys_guid(fru, (uint8_t *)guid, GUID_SIZE);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Failed to set system GUID\n", __func__);
+    }
+  } else {
+    ret = -1;
+  }
+
+  return ret;
 }
 
 int

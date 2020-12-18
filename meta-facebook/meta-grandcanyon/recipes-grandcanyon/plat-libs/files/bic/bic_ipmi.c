@@ -699,3 +699,50 @@ bic_get_self_test_result(uint8_t *self_test_result) {
 
   return ret;
 }
+
+int
+bic_get_sys_guid(uint8_t slot_id, uint8_t *guid, uint8_t guid_size) {
+  int ret = 0;
+  uint8_t rlen = 0;
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
+
+  if (guid == NULL) {
+    syslog(LOG_ERR, "%s: get pointer guid failed\n", __func__);
+    
+    return BIC_STATUS_FAILURE;
+  }
+ 
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_GET_SYSTEM_GUID, NULL, 0, rbuf, &rlen);
+  if ((ret < 0) || (rlen != guid_size)) {
+    syslog(LOG_ERR, "%s: ret: %d, rlen: %d\n", __func__, ret, rlen);
+    ret = BIC_STATUS_FAILURE;
+  } else {
+    memcpy(guid, rbuf, guid_size);
+  } 
+
+  return ret;
+}
+
+int
+bic_set_sys_guid(uint8_t slot_id, uint8_t *guid, uint8_t guid_size) {
+  int ret = 0;
+  uint8_t rlen = 0;
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
+
+  if (guid == NULL) {
+    syslog(LOG_ERR, "%s: get pointer guid failed\n", __func__);
+    
+    return BIC_STATUS_FAILURE;
+  }
+  
+  ret = bic_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_SET_SYSTEM_GUID, guid, guid_size, rbuf, &rlen);
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: ret: %d\n", __func__, ret);
+    
+    ret = BIC_STATUS_FAILURE;
+  }
+
+  return ret;
+}
+

@@ -29,6 +29,7 @@ extern "C" {
 #include <openbmc/kv.h>
 #include <facebook/fbgc_common.h>
 #include <facebook/fbgc_fruid.h>
+#include <facebook/bic.h>
 #include "pal_sensors.h"
 
 #define MAX_NUM_FRUS (FRU_CNT-1)

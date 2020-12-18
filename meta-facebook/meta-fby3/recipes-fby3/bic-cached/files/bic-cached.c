@@ -45,46 +45,6 @@
 #define MAX_RETRY_CNT 1500    // A senond can run about 50 times, 30 secs = 30 * 50
 
 int
-remote_fruid_dev_cache_init(uint8_t slot_id, uint8_t intf) {
-  uint8_t st_idx = 0;
-  uint8_t end_idx = 0;
-  uint8_t offset = 0;
-  int ret=0;
-  int fru_size=0;
-  char fruid_temp_path[64] = {0};
-  char fruid_path[64] = {0};
-  uint8_t type = 0;
-
-  ret = fby3_common_get_2ou_board_type(slot_id, &type);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING,"%s() Cannot get 2ou board type", __func__);
-  }
-
-  if ( type != GPV3_MCHP_BOARD && type != GPV3_BRCM_BOARD ) return 0;
-
-  if ( intf == REXP_BIC_INTF ) {
-    st_idx = DEV_ID0_2OU;
-    end_idx = DEV_ID11_2OU;
-    offset = DEV_ID0_2OU - 1;
-  }
-
-  struct stat st;
-  while (st_idx <= end_idx) {
-    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, st_idx);
-    sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.%d.bin", slot_id, intf);
-    ret = bic_read_fruid(slot_id, st_idx - offset , fruid_temp_path, &fru_size, intf);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() slot%d dev%d is not present, fru_size: %d\n", __func__, slot_id, st_idx - offset, fru_size);
-    }
-
-    if (stat(fruid_temp_path, &st) == 0 && st.st_size == 0 ) remove(fruid_temp_path);
-    else rename(fruid_temp_path, fruid_path);
-    st_idx++;
-  }
-  return 0;
-}
-
-int
 remote_fruid_cache_init(uint8_t slot_id, uint8_t intf) {
   int ret=0;
   int fru_size=0;
@@ -140,7 +100,6 @@ fruid_cache_init(uint8_t slot_id) {
     if (PRESENT_2OU == (PRESENT_2OU & present)) {
       // dump 2ou board fru
       remote_r_ret = remote_fruid_cache_init(slot_id, REXP_BIC_INTF);
-      remote_r_ret = (remote_r_ret < 0)?remote_r_ret:remote_fruid_dev_cache_init(slot_id, REXP_BIC_INTF);
     }
     return (remote_f_ret + remote_r_ret);
   } else { // Baseboard BMC
@@ -151,11 +110,6 @@ fruid_cache_init(uint8_t slot_id) {
     if (PRESENT_2OU == (PRESENT_2OU & present)) {
       // dump 2ou board fru
       remote_r_ret = remote_fruid_cache_init(slot_id, REXP_BIC_INTF);
-      // do not check device fru success or not now, for we're still using GPv2 device for testing now
-      // Since GPv2 devices' FRU only accessible after NVMe is ready (drviver is ready),
-      // it is expectable that fail to get device FRU if NVMe is not ready
-      // let gpiod monitor GPv2 device NVMe ready or not, then get the GPv2 dev FRU now
-      (remote_r_ret < 0)?remote_r_ret:remote_fruid_dev_cache_init(slot_id, REXP_BIC_INTF);
     }
     return (remote_f_ret + remote_r_ret);
   }

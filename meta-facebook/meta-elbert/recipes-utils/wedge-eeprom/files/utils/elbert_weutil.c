@@ -19,7 +19,8 @@
 #include <errno.h>
 #include <stdio.h>
 
-#include "elbert_eeprom.h"
+#include <facebook/wedge_eeprom.h>
+#include <facebook/elbert_eeprom.h>
 #include <string.h>
 #define BMC_MGMT_MACADDR "/sys/class/net/eth0/address"
 

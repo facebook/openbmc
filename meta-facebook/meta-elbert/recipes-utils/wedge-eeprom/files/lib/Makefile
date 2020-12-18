@@ -15,12 +15,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-utils: weutil
+lib: libelbert_eeprom.so
 
-weutil: elbert_weutil.o
-	$(CC) -o $@ $^ -lwedge_eeprom -lelbert_eeprom $(LDFLAGS)
+libelbert_eeprom.so: elbert_eeprom.c
+	$(CC) $(CFLAGS) -fPIC -c -o elbert_eeprom.o elbert_eeprom.c
+	$(CC) -shared -o libelbert_eeprom.so elbert_eeprom.o -lc $(LDFLAGS)
 
 .PHONY: clean
 
 clean:
-	rm -rf *.o weutil
+	rm -rf *.o libelbert_eeprom.so

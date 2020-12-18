@@ -61,6 +61,7 @@
 #define ELBERT_EEPROM_FIELD_FLDVAR  0x09
 #define ELBERT_EEPROM_FIELD_HWREV   0x0B
 #define ELBERT_EEPROM_FIELD_SERIAL  0x0E
+#define ELBERT_PIM8DDM "7388-8D"
 
 // Map between PIM and SMBus channel
 static int pim_bus_p1[8] = {16, 17, 18, 23, 20, 21, 22, 19};
@@ -367,6 +368,14 @@ int elbert_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
           // This cuts off the Product field into 9 characters max
           // We allocate FBW_EEPROM_F_PRODUCT_NUMBER + 2
           eeprom->fbw_product_number[FBW_EEPROM_F_PRODUCT_NUMBER + 1] = '\0';
+
+          // Remove garbage characters from the end of 7388-8D
+          if(!strncmp(
+                   eeprom->fbw_product_number,
+                   ELBERT_PIM8DDM,
+                   strlen(ELBERT_PIM8DDM))) {
+            eeprom->fbw_product_number[FBW_EEPROM_F_PRODUCT_NUMBER - 1] = '\0';
+          }
           break;
 
       case ELBERT_EEPROM_FIELD_MACBASE:

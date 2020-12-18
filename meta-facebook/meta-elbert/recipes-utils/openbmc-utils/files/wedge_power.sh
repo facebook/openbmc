@@ -138,6 +138,20 @@ do_config_reset_duration() {
     fi
 }
 
+do_sync() {
+   # Try to flush all data to MMC and remount the drive read-only. Sync again
+   # because the remount is asynchronous.
+   partition="/dev/mmcblk0"
+   mountpoint="/mnt/data1"
+
+   sync
+   if [ -e $mountpoint ]; then
+      retry_command 5 mount -o remount,ro $partition $mountpoint
+      sleep 1
+   fi
+   sync
+}
+
 do_reset() {
     local system opt
     system=0
@@ -162,6 +176,7 @@ do_reset() {
         if [ $timer -eq 1 ]; then
             do_config_reset_duration "$duration"
         fi
+        do_sync
         logger "Power reset the whole system ..."
         echo -n "Power reset the whole system ..."
         sleep 1

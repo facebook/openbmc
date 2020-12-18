@@ -83,7 +83,8 @@
       "read_limit": {
         "valid": {
           "limit": 105,
-          "threshold": 20,
+          "threshold": 3,
+          "fault_tolerant": true,
           "action": "host_shutdown"
         },
         "alarm_major": {

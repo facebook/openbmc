@@ -91,3 +91,6 @@ if timeout --help 2>&1 | grep "Usage:.*\[\-t " > /dev/null 2>&1; then
 else
     timeout "$MOUNT_TIMEOUT" "$MOUNT_SCRIPT" "$MMC_DEVICE" "$MOUNT_POINT"
 fi
+
+# Create the rsyslog directory, in case it doesn't exist.
+mkdir -p "$MOUNT_POINT/log"

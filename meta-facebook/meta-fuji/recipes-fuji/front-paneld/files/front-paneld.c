@@ -621,6 +621,7 @@ static int smb_check(int brd_rev) {
       SIM_LM75_U1_TEMP,                 SMB_SENSOR_TEMP1,
       SMB_SENSOR_TEMP2,                 SMB_SENSOR_TEMP3,
       SMB_VDDC_SW_TEMP,                 SMB_XP12R0V_VDDC_SW_IN,
+      SMB_VDDC_SW_IN_SENS,
       SMB_VDDC_SW_POWER_IN,             SMB_VDDC_SW_POWER_OUT,
       SMB_VDDC_SW_CURR_IN,              SMB_VDDC_SW_CURR_OUT,
       /* Sensors on PDB */

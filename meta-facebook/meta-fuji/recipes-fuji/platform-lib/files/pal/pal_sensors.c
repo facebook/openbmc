@@ -206,6 +206,7 @@ const uint8_t smb_sensor_list_evt[] = {
   SMB_SENSOR_TEMP3,
   SMB_VDDC_SW_TEMP,
   SMB_XP12R0V_VDDC_SW_IN,
+  SMB_VDDC_SW_IN_SENS,
   SMB_VDDC_SW_POWER_IN,
   SMB_VDDC_SW_POWER_OUT,
   SMB_VDDC_SW_CURR_IN,
@@ -286,6 +287,7 @@ const uint8_t smb_sensor_list_dvt[] = {
   SMB_SENSOR_TEMP3,
   SMB_VDDC_SW_TEMP,
   SMB_XP12R0V_VDDC_SW_IN,
+  SMB_VDDC_SW_IN_SENS,
   SMB_VDDC_SW_POWER_IN,
   SMB_VDDC_SW_POWER_OUT,
   SMB_VDDC_SW_CURR_IN,
@@ -1637,6 +1639,9 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case SMB_XP12R0V_VDDC_SW_IN:
       ret = read_attr(fru, sensor_num, SMB_VDDC_SW_DEVICE, VOLT(1), value);
       break;
+    case SMB_VDDC_SW_IN_SENS:
+      ret = read_attr(fru, sensor_num, SMB_VDDC_SW_DEVICE, VOLT(3), value);
+      break;
     case SMB_VDDC_SW_POWER_IN:
       ret = read_attr(fru, sensor_num, SMB_VDDC_SW_DEVICE, POWER(1), value);
       *value = *value / hsc_power_div;
@@ -2674,6 +2679,9 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_XP12R0V_VDDC_SW_IN:
       sprintf(name, "SMB_XP12R0V_VDDC_SW_IN");
       break;
+    case SMB_VDDC_SW_IN_SENS:
+      sprintf(name, "SMB_VDDC_SW_IN_SENS");
+      break;
     case SMB_VDDC_SW_POWER_IN:
       sprintf(name, "SMB_VDDC_SW_POWER_IN");
       break;
@@ -3500,6 +3508,7 @@ get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case SMB_SENSOR_FCM_T_HSC_POWER_VOLT:
     case SMB_SENSOR_FCM_B_HSC_POWER_VOLT:
     case SMB_XP12R0V_VDDC_SW_IN:
+    case SMB_VDDC_SW_IN_SENS:
     case SMB_OUTPUT_VOLTAGE_XP0R75V_1:
     case SMB_INPUT_VOLTAGE_1:
     case SMB_OUTPUT_VOLTAGE_XP1R2V:
@@ -4314,6 +4323,7 @@ smb_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case SMB_SENSOR_TEMP3:
     case SMB_VDDC_SW_TEMP:
     case SMB_XP12R0V_VDDC_SW_IN:
+    case SMB_VDDC_SW_IN_SENS:
     case SMB_VDDC_SW_POWER_IN:
     case SMB_VDDC_SW_POWER_OUT:
     case SMB_VDDC_SW_CURR_IN:

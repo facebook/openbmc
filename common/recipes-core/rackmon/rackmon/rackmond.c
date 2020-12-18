@@ -22,8 +22,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <openbmc/misc-utils.h>
+
 #include "modbus.h"
 #include "rackmon_platform.h"
+
+#define DAEMON_NAME  "rackmond"
 
 #define MAX_ACTIVE_ADDRS 24
 #define MAX_RACKS        3
@@ -969,7 +973,7 @@ static void graceful_exit() {
   uint16_t values[1];
   psu_datastore_t *mdata;
 
-  OBMC_INFO("Exiting rackmond gracefully...");
+  OBMC_INFO("Exiting %s gracefully...", DAEMON_NAME);
 
   global_lock();
   rackmond_config.paused = 1;
@@ -1576,7 +1580,13 @@ int main(int argc, char** argv) {
   signal(SIGTERM, trigger_graceful_exit);
   signal(SIGINT, trigger_graceful_exit);
 
-  obmc_log_init("rackmond", LOG_INFO, 0);
+  if (single_instance_lock(DAEMON_NAME) < 0) {
+    fprintf(stderr, "Another %s instance is running. Exiting!\n",
+            DAEMON_NAME);
+    return -1;
+  }
+
+  obmc_log_init(DAEMON_NAME, LOG_INFO, 0);
   obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
   if (getenv("RACKMOND_FOREGROUND") == NULL) {
     obmc_log_unset_std_stream();

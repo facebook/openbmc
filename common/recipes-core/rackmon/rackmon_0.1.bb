@@ -25,9 +25,9 @@ LIC_FILES_CHKSUM = "file://modbus.c;beginline=4;endline=16;md5=da35978751a9d71b7
 
 DEPENDS_append = " update-rc.d-native"
 
-LDFLAGS += "-llog"
-DEPENDS += "libgpio liblog"
-RDEPENDS_${PN} = "libgpio liblog python3-core bash"
+LDFLAGS += "-llog -lmisc-utils"
+DEPENDS += "libgpio liblog libmisc-utils"
+RDEPENDS_${PN} = "libgpio liblog libmisc-utils python3-core bash"
 
 SRC_URI = "file://Makefile \
            file://modbuscmd.c \

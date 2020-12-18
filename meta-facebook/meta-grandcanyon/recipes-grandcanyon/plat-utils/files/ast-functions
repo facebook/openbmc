@@ -1,6 +1,28 @@
 # Copyright 2020-present Facebook. All Rights Reserved.
 
 GPIOCLI_CMD=/usr/local/bin/gpiocli
+POWERUTIL_CMD=/usr/local/bin/power-util
+IPMBUTIL_CMD=/usr/local/bin/ipmb-util
+
+I2C_BIC_BUS="2"
+BIC_SLAVE_ADDR="0x40"
+NETFN_OEM_1S_REQ="0xe0"
+BIC_CMD_OEM_GET_SET_GPIO="0x41"
+GPIO_GET_OUTPUT_STATUS="0"
+BIC_PWR_STATUS_GPIO_NUM="36"
+IANA_ID_2="0x9c"
+IANA_ID_1="0x9c"
+IANA_ID_0="0x00"
+POWER_STATUS_BYTE=5
+
+SERVER_PRESENT=1
+SERVER_ABSENT=0
+SERVER_STATUS_DC_ON=1
+SERVER_STATUS_DC_OFF=0
+GPIO_VALUE_LOW=0
+GPIO_VALUE_HIGH=1
+
+SERVER_PRSNT_PIN="COMP_PRSNT_N"
 
 gpio_set() {
   local shadow val
@@ -41,5 +63,38 @@ is_module_loaded() {
     echo 1
   else
     echo 0
+  fi
+}
+
+#Check server power status
+server_power_status() {
+  output=$("$IPMBUTIL_CMD" \
+           "$I2C_BIC_BUS" \
+           "$BIC_SLAVE_ADDR" \
+           "$NETFN_OEM_1S_REQ" \
+           "$BIC_CMD_OEM_GET_SET_GPIO" \
+           "$IANA_ID_2" "$IANA_ID_1" "$IANA_ID_0" \
+           "$GPIO_GET_OUTPUT_STATUS" \
+           "$BIC_PWR_STATUS_GPIO_NUM")
+
+  status=$(echo $output | cut -d' ' -f $POWER_STATUS_BYTE)
+  #Convert string to integer
+  status=$((16#${status}))
+  
+  if [ "$((status&1))" = "$SERVER_STATUS_DC_ON" ]; then
+    echo "$SERVER_STATUS_DC_ON"
+  elif [ "$((status&1))" = "$SERVER_STATUS_DC_OFF" ]; then
+    echo "$SERVER_STATUS_DC_OFF"
+  fi
+}
+
+# Check to see if server is present or not
+is_server_prsnt() {
+  prsnt=$(gpio_get "$SERVER_PRSNT_PIN")
+  if [ "$prsnt" = "$GPIO_VALUE_LOW" ]; then
+    # Server is prsent
+    echo $SERVER_PRESENT
+  else                                       
+    echo $SERVER_ABSENT
   fi
 }

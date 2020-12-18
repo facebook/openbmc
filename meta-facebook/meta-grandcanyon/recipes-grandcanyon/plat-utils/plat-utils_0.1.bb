@@ -24,6 +24,8 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 SRC_URI = "file://sol-util \
            file://COPYING \
            file://ast-functions \
+           file://power-on.sh \
+           file://run_power_on.sh \
           "
 
 pkgdir = "utils"
@@ -31,10 +33,10 @@ pkgdir = "utils"
 S = "${WORKDIR}"
 
 # the tools for BMC will be installed in the image
-binfiles = " sol-util "
+binfiles = " sol-util power-on.sh "
 
 DEPENDS_append = "update-rc.d-native"
-RDEPENDS_${PN} += "bash python3 "
+RDEPENDS_${PN} += "bash python3 gpiocli "
 
 do_install() {
   # install the package dir
@@ -51,6 +53,12 @@ do_install() {
       install -m 755 $f ${dst}/${f}
       ln -s ../fbpackages/${pkgdir}/${f} ${localbindir}/${f}
   done
+  
+  # init
+  install -d ${D}${sysconfdir}/init.d
+  install -d ${D}${sysconfdir}/rcS.d
+  install -m 755 run_power_on.sh ${D}${sysconfdir}/init.d/run_power_on.sh
+  update-rc.d -r ${D} run_power_on.sh start 99 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

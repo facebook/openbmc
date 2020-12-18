@@ -18,18 +18,15 @@
 # Boston, MA 02110-1301 USA
 #
 import os
-import re
 import unittest
 
+from tests.wedge400.helper.libpal import pal_detect_power_supply_present, BoardRevision
 from tests.wedge400.test_data.sysfs_nodes.sysfs_nodes import LTC4282_SYSFS_NODES
 from tests.wedge400.test_data.sysfs_nodes.sysfs_nodes import MAX6615_SYSFS_NODES
-
 from utils.cit_logger import Logger
 
-from tests.wedge400.helper.libpal import pal_get_power_module_type
 
-
-class PsumuxmonTest(unittest.TestCase):
+class PowerModuleDetectionTest(unittest.TestCase):
     def setUp(self):
         Logger.start(name=self._testMethodName)
 
@@ -95,12 +92,12 @@ class PsumuxmonTest(unittest.TestCase):
             raise Exception("{} directory is not found".format(path_dir))
         return [True, None, None, None]
 
-    def test_psumuxmon_ltc4282_sensor_sysfs_nodes_exists(self):
-        # check to see if the sysfs path for ltc4282 has
-        # been created
-        power_module_type = pal_get_power_module_type()
+    def test_power_module_ltc4282_sensor_sysfs_nodes_exists(self):
+        # via fru id in pal_detect_power_supply_present() to
+        # check weather the pems are present
+        # if not ,do not need to run this test
 
-        if power_module_type == "pem1":
+        if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM1) == "pem1":
             cmd = "/sys/bus/i2c/devices/24-0058/hwmon/hwmon21/"
             sysfs_nodes_results = self.check_ltc4282_sysfs_nodes(cmd)
             self.assertTrue(
@@ -112,7 +109,7 @@ class PsumuxmonTest(unittest.TestCase):
                 ),
             )
 
-        if power_module_type == "pem2":
+        if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM2) == "pem2":
             cmd = "/sys/bus/i2c/devices/25-0058/hwmon/hwmon21/"
             sysfs_nodes_results = self.check_ltc4282_sysfs_nodes(cmd)
             self.assertTrue(
@@ -124,15 +121,19 @@ class PsumuxmonTest(unittest.TestCase):
                 ),
             )
 
-        if power_module_type == "psu":
+        if (
+            pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PSU1) == "psu1"
+            or pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PSU2)
+            == "psu2"
+        ):
             self.skipTest("ltc4282 eeprom i2c addr not detected. skipping this test...")
 
     def test_fanctlr_max6615_fan_sysfs_nodes_exists(self):
-        # check to see if the sysfs path for max6615 has
-        # been created
-        power_module_type = pal_get_power_module_type()
+        # via fru id in pal_detect_power_supply_present() to
+        # check weather the pems are present
+        # if not ,do not need to run this test
 
-        if power_module_type == "pem1":
+        if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM1) == "pem1":
             path = "/sys/bus/i2c/devices/24-0018/hwmon/hwmon22/"
             sysfs_nodes_results = self.check_max6615_sysfs_nodes(path)
             self.assertTrue(
@@ -144,7 +145,7 @@ class PsumuxmonTest(unittest.TestCase):
                 ),
             )
 
-        if power_module_type == "pem2":
+        if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM2) == "pem2":
             path = "/sys/bus/i2c/devices/25-0018/hwmon/hwmon22/"
             sysfs_nodes_results = self.check_max6615_sysfs_nodes(path)
             self.assertTrue(
@@ -155,5 +156,10 @@ class PsumuxmonTest(unittest.TestCase):
                     sysfs_nodes_results[3],
                 ),
             )
-        if power_module_type == "psu":
+
+        if (
+            pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PSU1) == "psu1"
+            or pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PSU2)
+            == "psu2"
+        ):
             self.skipTest("max6615 eeprom i2c addr not detected. skipping this test...")

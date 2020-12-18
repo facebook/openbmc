@@ -320,6 +320,10 @@ fby3_common_dev_id(char *str, uint8_t *dev) {
     *dev = DEV_ID10_2OU;
   } else if (!strcmp(str, "2U-dev11")) {
     *dev = DEV_ID11_2OU;
+  } else if (!strcmp(str, "2U-dev12")) {
+    *dev = DEV_ID12_2OU;
+  } else if (!strcmp(str, "2U-dev13")) {
+    *dev = DEV_ID13_2OU;
   } else if (!strcmp(str, "1U")) {
     *dev = BOARD_1OU;
   } else if (!strcmp(str, "2U")) {

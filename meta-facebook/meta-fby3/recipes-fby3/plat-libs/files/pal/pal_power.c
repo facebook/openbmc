@@ -553,7 +553,7 @@ static int
 pal_is_valid_expansion_dev(uint8_t slot_id, uint8_t dev_id, uint8_t *rsp) {
   const uint8_t st_2ou_idx = DEV_ID0_2OU;
   const uint8_t end_2ou_yv3_idx = DEV_ID5_2OU;
-  const uint8_t end_2ou_gpv3_idx = DEV_ID11_2OU;
+  const uint8_t end_2ou_gpv3_idx = DEV_ID13_2OU;
   int ret = 0;
   int config_status = 0;
   uint8_t bmc_location = 0;

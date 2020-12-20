@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 #
-# Copyright 2020-present Facebook. All Rights Reserved.
+# Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -21,5 +21,5 @@
 # shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
 
-# Disable the fmc dual boot watch dog
-devmem_clear_bit 0x1e620064 0
+# Disable the dual boot watch dog
+devmem_clear_bit 0x1e78502c 0

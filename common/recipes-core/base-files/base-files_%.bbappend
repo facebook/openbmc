@@ -18,7 +18,7 @@ do_install_append() {
     fi
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false',  d)}; then
         cat <<EOF >> ${D}/${sysconfdir}/fstab
-/dev/data0   /mnt/data   jffs2  defaults,nofail,x-systemd.device-timeout=1,x-systemd.makefs
+/dev/data0   /mnt/data   jffs2  defaults,nofail,x-systemd.device-timeout=1
 EOF
         if ${@bb.utils.contains('MACHINE_FEATURES', 'emmc-ext4', 'true', 'false', d)}; then
             cat <<EOF >> ${D}/${sysconfdir}/fstab

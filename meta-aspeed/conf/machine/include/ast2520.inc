@@ -3,6 +3,9 @@
 #@DESCRIPTION: Machine configuration for Aspeed AST2520 SoC
 
 SOC_MODEL ?= "ast2520"
+SOC_FAMILY = "aspeed-g5"
+
+include conf/machine/include/soc-family.inc
 
 # Ship all kernel modules by default
 MACHINE_EXTRA_RRECOMMENDS = "kernel-modules"

@@ -34,7 +34,3 @@ IMAGE_INSTALL += " \
   recover-from-secondary \
   udev-rules \
   "
-
-IMAGE_INSTALL += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd-networkd', '', d)}"
-IMAGE_INSTALL_remove += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'init-ifupdown', '', d)}"
-SYSVINIT_SCRIPTS_remove += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'init-ifupdown', '', d)}"

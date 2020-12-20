@@ -82,6 +82,12 @@ DEPENDS += "${NATIVE_UNIT_TESTS}"
 # to native systemd services.
 SYSTEMD_DEFAULT_TARGET = "graphical.target"
 
+# systemd uses systemd-networkd, so make minor tweaks to use it instead of
+# 'init-ifupdown'.
+IMAGE_INSTALL += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd-networkd', '', d)}"
+IMAGE_INSTALL_remove += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'init-ifupdown', '', d)}"
+SYSVINIT_SCRIPTS_remove += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'init-ifupdown', '', d)}"
+
 #
 # "openssl-bin" (which provides "/usr/bin/openssl") is needed by backport
 # and it needs to be explicitly included after yocto rocko.

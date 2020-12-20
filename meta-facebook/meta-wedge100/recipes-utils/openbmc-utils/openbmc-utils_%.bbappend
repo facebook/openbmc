@@ -17,8 +17,9 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://disable_watchdog.sh \
-            file://enable_watchdog_ext_signal.sh \
+PACKAGECONFIG += "disable-watchdog"
+
+SRC_URI += "file://enable_watchdog_ext_signal.sh \
             file://ec_version.sh \
             file://board-utils.sh \
             file://setup_board.sh \
@@ -39,7 +40,6 @@ SRC_URI += "file://disable_watchdog.sh \
             "
 
 OPENBMC_UTILS_FILES += " \
-    disable_watchdog.sh \
     enable_watchdog_ext_signal.sh \
     cpld_upgrade.sh \
     cpld_rev.sh \
@@ -88,9 +88,6 @@ do_work_sysv() {
     install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 
-    install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
-    update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
-
     install -m 0755 ${WORKDIR}/enable_watchdog_ext_signal.sh ${D}${sysconfdir}/init.d/enable_watchdog_ext_signal.sh
     update-rc.d -r ${D} enable_watchdog_ext_signal.sh start 99 2 3 4 5 .
 }
@@ -109,8 +106,6 @@ do_work_systemd() {
     install -m 755 setup_board.sh ${D}/usr/local/bin/setup_board.sh
 
     install -m 755 power-on.sh ${D}/usr/local/bin/power-on.sh
-
-    install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}/usr/local/bin/disable_watchdog.sh
 
     install -m 0755 ${WORKDIR}/enable_watchdog_ext_signal.sh ${D}/usr/local/bin/enable_watchdog_ext_signal.sh
 }

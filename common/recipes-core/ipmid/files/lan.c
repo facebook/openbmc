@@ -53,7 +53,7 @@ void plat_lan_init(lan_config_t *lan)
   int sd;
   struct ifreq ifr;
   uint8_t eui_64_addr[8] = {0x0};
-  char intf_name[8] = {0};
+  char intf_name[10] = {0};
 
   if (getifaddrs(&ifaddr) == -1) {
     return;

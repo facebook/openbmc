@@ -26,4 +26,5 @@ IMAGE_INSTALL += " \
   kcsd \
   ipmid \
   ipmitool \
+  guid-util \
   "

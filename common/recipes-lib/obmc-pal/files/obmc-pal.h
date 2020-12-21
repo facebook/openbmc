@@ -76,6 +76,13 @@ typedef struct _sensor_info_t {
   sdr_full_t sdr;
 } sensor_info_t;
 
+typedef struct _dimm_info {
+  uint8_t sled;
+  uint8_t socket;
+  uint8_t channel;
+  uint8_t slot;
+} _dimm_info;
+
 typedef enum {
   FRU_TYPE_SERVER   = 0,
   FRU_TYPE_NIC      = 1,

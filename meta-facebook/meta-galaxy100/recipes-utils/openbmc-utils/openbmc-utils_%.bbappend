@@ -35,10 +35,15 @@ SRC_URI += "file://board-utils.sh \
       file://scm_cpld_rev.sh \
       file://ec_version.sh \
       file://create_vlan_intf \
+      file://us_monitor.service \
+      file://fix_fru_eeprom.service \
+      file://sensors_config_fix.service \
       "
 
 RDEPENDS_${PN} += " python3 bash"
 DEPENDS_append += " update-rc.d-native"
+
+inherit systemd
 
 install_board_sysv() {
     # create VLAN intf automatically

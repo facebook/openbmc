@@ -120,6 +120,10 @@ i2c_driver_map() {
             echo "fancpld";;
         "cmmcpld")
             echo "cmmcpld";;
+        "mp2978")
+            echo "mp2978";;
+        "xdpe132g5c")
+            echo "xdpe132g5c";;
         *)
             echo "";;
     esac

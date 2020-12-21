@@ -214,4 +214,4 @@ i2c_device_add 12 0x3e smb_syscpld     # SYSTEM CPLD
 # of devices and # of devices without drivers) will be dumped at the end
 # of this function.
 #
-i2c_check_driver_binding
+i2c_check_driver_binding "fix-binding"

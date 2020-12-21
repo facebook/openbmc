@@ -91,6 +91,11 @@ enum {
 #define KEY_MB_SNR_HEALTH  "mb_sensor_health"
 #define KEY_MB_SEL_ERROR   "mb_sel_error"
 #define KEY_PDB_SNR_HEALTH "pdb_sensor_health"
+#define KEY_AVA1_SNR_HEALTH "ava1_sensor_health"
+#define KEY_AVA2_SNR_HEALTH "ava2_sensor_health"
+#define KEY_E1S1_SNR_HEALTH "e1s1_sensor_health"
+#define KEY_E1S2_SNR_HEALTH "e1s2_sensor_health"
+
 
 #ifdef __cplusplus
 } // extern "C"

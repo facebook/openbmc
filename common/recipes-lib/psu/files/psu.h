@@ -44,6 +44,7 @@ extern "C" {
 
 /* define for DELTA PSU */
 #define DELTA_MODEL         "ECD55020006"
+#define DELTA_MODEL_2K      "ECD15020060"
 #define DELTA_HDR_LENGTH    32
 #define UNLOCK_UPGRADE      0xf0
 #define BOOT_FLAG           0xf1
@@ -144,6 +145,7 @@ enum {
 
 enum {
   DELTA_1500,
+  DELTA_2000,
   LITEON_1500,
   BELPOWER_1500_NAC,
   MURATA_1500,

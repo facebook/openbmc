@@ -243,6 +243,9 @@ delta_img_hdr_parse(const char *file_path) {
   if (!strncmp((char *)delta_hdr.fw_id, DELTA_MODEL, strlen(DELTA_MODEL))) {
     ret = DELTA_1500;
     printf("Vendor: Delta\n");
+  } else if (!strncmp((char *)delta_hdr.fw_id, DELTA_MODEL_2K, strlen(DELTA_MODEL_2K))) {
+    ret = DELTA_2000;
+    printf("Vendor: Delta\n");
   } else if (!strncmp((char *)delta_hdr.fw_id, LITEON_MODEL, strlen(LITEON_MODEL))) {
     ret = LITEON_1500;
     printf("Vendor: Liteon\n");
@@ -386,8 +389,8 @@ delta_fw_transmit(uint8_t num, const char *path) {
       }
 #endif
     } else {
-      block[1] = page_num_lo;
-      block[2] = 0;
+      block[1] = (page_num_lo & 0xff);
+      block[2] = ((page_num_lo >> 8) & 0xff);
       i2c_smbus_write_block_data(psu[num].fd, DATA_TO_FLASH,
                                       3, block);
       msleep(90);
@@ -397,6 +400,7 @@ delta_fw_transmit(uint8_t num, const char *path) {
       } else {
         page_num_lo++;
         block[1] = 0;
+        block[2] = 0;
       }
     }
   }
@@ -429,7 +433,7 @@ update_delta_psu(uint8_t num, const char *file_path,
       return UPDATE_SKIP;
     }
   }
-  if (ret == DELTA_1500 || ret == LITEON_1500) {
+  if (ret == DELTA_1500 || ret == LITEON_1500 || ret == DELTA_2000) {
     if (delta_hdr.byte_per_blk != 16) {
       printf("Image block size invalid!\n");
       return UPDATE_SKIP;
@@ -992,6 +996,8 @@ do_update_psu(uint8_t num, const char *file_path, const char *vendor) {
 
     if (!strncmp((char *)block, DELTA_MODEL, strlen(DELTA_MODEL))) {
       ret = update_delta_psu(num, file_path, DELTA_1500, vendor);
+    } else if (!strncmp((char *)block, DELTA_MODEL_2K, strlen(DELTA_MODEL_2K))) {
+      ret = update_delta_psu(num, file_path, DELTA_2000, vendor);
     } else if (!strncmp((char *)block, LITEON_MODEL, strlen(LITEON_MODEL))) {
       ret = update_delta_psu(num, file_path, LITEON_1500, vendor);
     } else if (!strncmp((char *)block, BEL_MODEL, strlen(BEL_MODEL))) {
@@ -1005,6 +1011,8 @@ do_update_psu(uint8_t num, const char *file_path, const char *vendor) {
   } else {
     if (!strncasecmp(vendor, "delta", strlen("delta"))) {
       ret = update_delta_psu(num, file_path, DELTA_1500, vendor);
+    } else if (!strncasecmp(vendor, "2k-delta", strlen("2k-delta"))){
+      ret = update_delta_psu(num, file_path, DELTA_2000, vendor);
     } else if (!strncasecmp(vendor, "liteon", strlen("liteon"))){
       ret = update_delta_psu(num, file_path, LITEON_1500, vendor);
     } else if (!strncasecmp(vendor, "belpower", strlen("belpower"))) {
@@ -1138,6 +1146,7 @@ get_psu_info(uint8_t num) {
   }
 
   if (!strncmp((char *)block, DELTA_MODEL, strlen(DELTA_MODEL)) ||
+      !strncmp((char *)block, DELTA_MODEL_2K, strlen(DELTA_MODEL_2K)) ||
       !strncmp((char *)block, LITEON_MODEL, strlen(LITEON_MODEL))) {
     size = OPTN_TIME_PRESENT;
   } else {
@@ -1241,6 +1250,7 @@ get_blackbox_info(uint8_t num, const char *option) {
   }
 
   if (strncmp((char *)block, DELTA_MODEL, strlen(DELTA_MODEL)) &&
+      strncmp((char *)block, DELTA_MODEL_2K, strlen(DELTA_MODEL_2K)) &&
       strncmp((char *)block, LITEON_MODEL, strlen(LITEON_MODEL))) {
     printf("PSU%d not support blackbox!\n", psu_num);
     close(psu[num].fd);

@@ -34,6 +34,7 @@ size_t pal_pwm_cnt = FAN_PWM_ALL_NUM;
 size_t pal_tach_cnt = FAN_TACH_ALL_NUM;
 const char pal_pwm_list[] = "0,1,2,3";
 const char pal_tach_list[] = "0,1,2,3,4,5,6,7";
+static float InletCalibration = 0;
 
 bool pal_bios_completed(uint8_t fru);
 
@@ -963,50 +964,6 @@ get_cm_snr_num(uint8_t id) {
   return snr_num;
 }
 
-uint8_t map_fan_duty(uint16_t value) {
-  float fan_duty = 0;
-
-  struct {
-    uint16_t rpm;
-    uint8_t  duty;
-  } map[] = {
-    {1183, 0},
-    {1203, 10},
-    {1717, 15},
-    {2255, 20},
-    {2825, 25},
-    {3369, 30},
-    {3929, 35},
-    {4464, 40},
-    {5012, 45},
-    {5539, 50},
-    {6113, 55},
-    {6647, 60},
-    {7194, 65},
-    {7749, 70},
-    {8251, 75},
-    {8796, 80},
-    {9308, 85},
-    {9872, 90},
-    {10375, 95},
-    {10867, 100},
-  };
-
-
-  for( int i=0 ; i < ARRAY_SIZE(map); i++ ) {
-
-    if(value > map[i].rpm) {
-      continue;
-    } else if(value < map[0].rpm ) {
-      fan_duty = map[0].duty;
-    } else if( value < map[i].rpm && value > map[i-1].rpm ) {
-      fan_duty = map[i-1].duty;
-    }
-    return fan_duty;
-  }
-  return fan_duty = map[ARRAY_SIZE(map)-1].duty;
-}
-
 static int
 read_cm_sensor(uint8_t id, float *value) {
   int sdr=0;
@@ -1015,7 +972,7 @@ read_cm_sensor(uint8_t id, float *value) {
   uint8_t rbuf[16];
   static uint8_t retry[CM_SNR_CNT]= {0};
   char fru_name[32];
-  float fan_duty=0;
+  uint8_t fan_duty=0;
   char str[MAX_VALUE_LEN] = {0};
   char key[MAX_KEY_LEN] = {0};
 
@@ -1032,12 +989,21 @@ read_cm_sensor(uint8_t id, float *value) {
   if ( id <= CM_FAN3_INLET_SPEED ) {
     pal_get_fru_name(FRU_PDB, fru_name);
     sprintf(key, "%s_sensor%d", fru_name, PDB_SNR_FAN0_DUTY+id);
-    fan_duty = map_fan_duty((uint16_t)*value);
-    sprintf(str, "%.2f",fan_duty / 100);
 
+    if ( lib_cmc_get_fan_pwm(id, &fan_duty) ) {
+      syslog(LOG_WARNING, "read fan%d duty fail\n", id);
+    }
+
+    if( fan_duty <= 20 ) {
+      InletCalibration = -1.5;
+    } else {
+      InletCalibration = 0.5;
+    }
+
+    sprintf(str, "%.2f",(float)fan_duty / 100);
     if (kv_set(key, str, 0, 0) < 0) {
       syslog(LOG_WARNING, "fan%d_duty cache_set key = %s, str = %s failed.", id, key, str);
-    } 
+    }
   }
 #ifdef DEBUG
 {
@@ -1778,6 +1744,8 @@ Interface: temp_id: temperature id
 ============================================*/
 static int
 read_sensor(uint8_t id, float *value) {
+  int ret;
+
   struct {
     const char *chip;
     const char *label;
@@ -1792,7 +1760,16 @@ read_sensor(uint8_t id, float *value) {
   if (id >= ARRAY_SIZE(devs)) {
     return -1;
   }
-  return sensors_read(devs[id].chip, devs[id].label, value);
+
+  ret = sensors_read(devs[id].chip, devs[id].label, value);
+
+  if( id == TEMP_REMOTE_INLET) {
+#ifdef DEBUG
+    syslog(LOG_DEBUG, "Temp Calibration Bef=%f, Cal=%f\n", *value, InletCalibration);
+#endif
+    *value = *value + InletCalibration;
+  }
+  return ret;
 }
 
 static int

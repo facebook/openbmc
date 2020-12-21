@@ -43,6 +43,11 @@ static int read_nic_pwr(uint8_t nic_id, float *value);
 static int sensors_read_vr(uint8_t sensor_num, float *value);
 static int sensors_read_fan_speed(uint8_t, float*);
 static int read_ina219_sensor(uint8_t sensor_num, float *value);
+static int read_bay0_ssd_volt(uint8_t nic_id, float *value);
+static int read_bay0_ssd_curr(uint8_t nic_id, float *value);
+static int read_bay1_ssd_volt(uint8_t nic_id, float *value);
+static int read_bay1_ssd_curr(uint8_t nic_id, float *value);
+static int read_ina260_sensor(uint8_t sensor_num, float *value);
 
 static float fan_volt[PAL_FAN_CNT];
 static float fan_curr[PAL_FAN_CNT];
@@ -177,7 +182,7 @@ const uint8_t pdb_sensor_list[] = {
   PDB_FAN3_PWM,
 };
 
-const uint8_t ava1_sensor_list[] = {
+const uint8_t m2_1_sensor_list[] = {
   BAY_0_FTEMP,
   BAY_0_RTEMP,
   BAY_0_0_NVME_CTEMP,
@@ -188,12 +193,28 @@ const uint8_t ava1_sensor_list[] = {
   BAY_0_5_NVME_CTEMP,
   BAY_0_6_NVME_CTEMP,
   BAY_0_7_NVME_CTEMP,
+  M2_0_SSD_0_VOLT,
+  M2_0_SSD_0_CURR,
+  M2_0_SSD_1_VOLT,
+  M2_0_SSD_1_CURR,
+  M2_0_SSD_2_VOLT,
+  M2_0_SSD_2_CURR,
+  M2_0_SSD_3_VOLT,
+  M2_0_SSD_3_CURR,
+  M2_0_SSD_4_VOLT,
+  M2_0_SSD_4_CURR,
+  M2_0_SSD_5_VOLT,
+  M2_0_SSD_5_CURR,
+  M2_0_SSD_6_VOLT,
+  M2_0_SSD_6_CURR,
+  M2_0_SSD_7_VOLT,
+  M2_0_SSD_7_CURR,
   BAY0_INA219_VOLT,
   BAY0_INA219_CURR,
   BAY0_INA219_PWR,
 };
 
-const uint8_t ava2_sensor_list[] = {
+const uint8_t m2_2_sensor_list[] = {
   BAY_1_FTEMP,
   BAY_1_RTEMP,
   BAY_1_0_NVME_CTEMP,
@@ -204,9 +225,97 @@ const uint8_t ava2_sensor_list[] = {
   BAY_1_5_NVME_CTEMP,
   BAY_1_6_NVME_CTEMP,
   BAY_1_7_NVME_CTEMP,
+  M2_1_SSD_0_VOLT,
+  M2_1_SSD_0_CURR,
+  M2_1_SSD_1_VOLT,
+  M2_1_SSD_1_CURR,
+  M2_1_SSD_2_VOLT,
+  M2_1_SSD_2_CURR,
+  M2_1_SSD_3_VOLT,
+  M2_1_SSD_3_CURR,
+  M2_1_SSD_4_VOLT,
+  M2_1_SSD_4_CURR,
+  M2_1_SSD_5_VOLT,
+  M2_1_SSD_5_CURR,
+  M2_1_SSD_6_VOLT,
+  M2_1_SSD_6_CURR,
+  M2_1_SSD_7_VOLT,
+  M2_1_SSD_7_CURR,
   BAY1_INA219_VOLT,
   BAY1_INA219_CURR,
   BAY1_INA219_PWR,
+};
+
+const uint8_t e1s_1_sensor_list[] = {
+  BAY_0_FTEMP,
+  BAY_0_0_NVME_CTEMP,
+  BAY_0_1_NVME_CTEMP,
+  BAY_0_2_NVME_CTEMP,
+  BAY_0_3_NVME_CTEMP,
+  BAY_0_4_NVME_CTEMP,
+  BAY_0_5_NVME_CTEMP,
+  BAY_0_6_NVME_CTEMP,
+  BAY_0_7_NVME_CTEMP,
+  E1S_0_0_NVME_VOLT,
+  E1S_0_0_NVME_CURR,
+  E1S_0_0_NVME_PWR,
+  E1S_0_1_NVME_VOLT,
+  E1S_0_1_NVME_CURR,
+  E1S_0_1_NVME_PWR,
+  E1S_0_2_NVME_VOLT,
+  E1S_0_2_NVME_CURR,
+  E1S_0_2_NVME_PWR,
+  E1S_0_3_NVME_VOLT,
+  E1S_0_3_NVME_CURR,
+  E1S_0_3_NVME_PWR,
+  E1S_0_4_NVME_VOLT,
+  E1S_0_4_NVME_CURR,
+  E1S_0_4_NVME_PWR,
+  E1S_0_5_NVME_VOLT,
+  E1S_0_5_NVME_CURR,
+  E1S_0_5_NVME_PWR,
+  E1S_0_6_NVME_VOLT,
+  E1S_0_6_NVME_CURR,
+  E1S_0_6_NVME_PWR,
+  E1S_0_7_NVME_VOLT,
+  E1S_0_7_NVME_CURR,
+  E1S_0_7_NVME_PWR,
+};
+
+const uint8_t e1s_2_sensor_list[] = {
+  BAY_1_FTEMP,
+  BAY_1_0_NVME_CTEMP,
+  BAY_1_1_NVME_CTEMP,
+  BAY_1_2_NVME_CTEMP,
+  BAY_1_3_NVME_CTEMP,
+  BAY_1_4_NVME_CTEMP,
+  BAY_1_5_NVME_CTEMP,
+  BAY_1_6_NVME_CTEMP,
+  BAY_1_7_NVME_CTEMP,
+  E1S_1_0_NVME_VOLT,
+  E1S_1_0_NVME_CURR,
+  E1S_1_0_NVME_PWR,
+  E1S_1_1_NVME_VOLT,
+  E1S_1_1_NVME_CURR,
+  E1S_1_1_NVME_PWR,
+  E1S_1_2_NVME_VOLT,
+  E1S_1_2_NVME_CURR,
+  E1S_1_2_NVME_PWR,
+  E1S_1_3_NVME_VOLT,
+  E1S_1_3_NVME_CURR,
+  E1S_1_3_NVME_PWR,
+  E1S_1_4_NVME_VOLT,
+  E1S_1_4_NVME_CURR,
+  E1S_1_4_NVME_PWR,
+  E1S_1_5_NVME_VOLT,
+  E1S_1_5_NVME_CURR,
+  E1S_1_5_NVME_PWR,
+  E1S_1_6_NVME_VOLT,
+  E1S_1_6_NVME_CURR,
+  E1S_1_6_NVME_PWR,
+  E1S_1_7_NVME_VOLT,
+  E1S_1_7_NVME_CURR,
+  E1S_1_7_NVME_PWR,
 };
 
 PAL_I2C_BUS_INFO nic_info_list[] = {
@@ -334,7 +443,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"CC_BB_P5V_STBY" , ADC2, read_adc_value, true, {5.25, 0, 0, 4.75, 0, 0, 0, 0}    , VOLT}, //0x56
   {"CC_BB_P3V3"     , ADC3, read_adc_value, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}  , VOLT}, //0x57
   {"CC_BB_P3V3_PAX" , ADC4, read_adc_value, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}  , VOLT}, //0x58
-  {"CC_BB_P3V_BAT"  , ADC5, read_bat_value, true, {3.3, 0, 0, 2.85, 0, 0, 0, 0}    , VOLT}, //0x59
+  {"CC_BB_P3V_BAT"  , ADC5, read_bat_value, true, {3.4, 0, 0, 2.85, 0, 0, 0, 0}    , VOLT}, //0x59
   {"CC_BB_P2V5_AUX" , ADC6, read_adc_value, true, {2.625, 0, 0, 2.375, 0, 0, 0, 0}  , VOLT}, //0x5A
   {"CC_BB_P1V2_AUX" , ADC7, read_adc_value, true, {1.26, 0, 0, 1.14, 0, 0, 0, 0}    , VOLT}, //0x5B
   {"CC_BB_P1V15_AUX", ADC8, read_adc_value, true, {1.2075, 0, 0, 1.0925, 0, 0, 0, 0}, VOLT}, //0x5C
@@ -425,98 +534,100 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAF
+  {"CC_E1S_1_NVME_7_PWR" , E1S_1_7_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xAF
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xB9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBF
+  {"CC_M2_0_NVME_0_VOLT", NVME_ID0, read_bay0_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xB0
+  {"CC_M2_0_NVME_0_CURR", NVME_ID0, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB1
+  {"CC_M2_0_NVME_1_VOLT", NVME_ID1, read_bay0_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xB2
+  {"CC_M2_0_NVME_1_CURR", NVME_ID1, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB3
+  {"CC_M2_0_NVME_2_VOLT", NVME_ID2, read_bay0_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xB4
+  {"CC_M2_0_NVME_2_CURR", NVME_ID2, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB5
+  {"CC_M2_0_NVME_3_VOLT", NVME_ID3, read_bay0_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xB6
+  {"CC_M2_0_NVME_3_CURR", NVME_ID3, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB7
+  {"CC_M2_0_NVME_4_VOLT", NVME_ID4, read_bay0_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xB8
+  {"CC_M2_0_NVME_4_CURR", NVME_ID4, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB9
+  {"CC_M2_0_NVME_5_VOLT", NVME_ID5, read_bay0_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBA
+  {"CC_M2_0_NVME_5_CURR", NVME_ID5, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xBB
+  {"CC_M2_0_NVME_6_VOLT", NVME_ID6, read_bay0_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBC
+  {"CC_M2_0_NVME_6_CURR", NVME_ID6, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xBD
+  {"CC_M2_0_NVME_7_VOLT", NVME_ID7, read_bay0_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xBE
+  {"CC_M2_0_NVME_7_CURR", NVME_ID7, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xBF
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
+  {"CC_M2_1_NVME_0_VOLT", NVME_ID0, read_bay1_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xC0
+  {"CC_M2_1_NVME_0_CURR", NVME_ID0, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC1
+  {"CC_M2_1_NVME_1_VOLT", NVME_ID1, read_bay1_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xC2
+  {"CC_M2_1_NVME_1_CURR", NVME_ID1, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC3
+  {"CC_M2_1_NVME_2_VOLT", NVME_ID2, read_bay1_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xC4
+  {"CC_M2_1_NVME_2_CURR", NVME_ID2, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC5
+  {"CC_M2_1_NVME_3_VOLT", NVME_ID3, read_bay1_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xC6
+  {"CC_M2_1_NVME_3_CURR", NVME_ID3, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC7
+  {"CC_M2_1_NVME_4_VOLT", NVME_ID4, read_bay1_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xC8
+  {"CC_M2_1_NVME_4_CURR", NVME_ID4, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC9
+  {"CC_M2_1_NVME_5_VOLT", NVME_ID5, read_bay1_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCA
+  {"CC_M2_1_NVME_5_CURR", NVME_ID5, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xCB
+  {"CC_M2_1_NVME_6_VOLT", NVME_ID6, read_bay1_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCC
+  {"CC_M2_1_NVME_6_CURR", NVME_ID6, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xCD
+  {"CC_M2_1_NVME_7_VOLT", NVME_ID7, read_bay1_ssd_volt, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCE
+  {"CC_M2_1_NVME_7_CURR", NVME_ID7, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xCF
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDF
+  {"CC_E1S_0_NVME_0_VOLT", E1S_0_0_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xD0
+  {"CC_E1S_0_NVME_0_CURR", E1S_0_0_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xD1
+  {"CC_E1S_0_NVME_0_PWR" , E1S_0_0_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xD2
+  {"CC_E1S_0_NVME_1_VOLT", E1S_0_1_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xD3
+  {"CC_E1S_0_NVME_1_CURR", E1S_0_1_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xD4
+  {"CC_E1S_0_NVME_1_PWR" , E1S_0_1_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xD5
+  {"CC_E1S_0_NVME_2_VOLT", E1S_0_2_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xD6
+  {"CC_E1S_0_NVME_2_CURR", E1S_0_2_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xD7
+  {"CC_E1S_0_NVME_2_PWR" , E1S_0_2_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xD8
+  {"CC_E1S_0_NVME_3_VOLT", E1S_0_3_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xD9
+  {"CC_E1S_0_NVME_3_CURR", E1S_0_3_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xDA
+  {"CC_E1S_0_NVME_3_PWR" , E1S_0_3_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xDB
+  {"CC_E1S_0_NVME_4_VOLT", E1S_0_4_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xDC
+  {"CC_E1S_0_NVME_4_CURR", E1S_0_4_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xDD
+  {"CC_E1S_0_NVME_4_PWR" , E1S_0_4_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xDE
+  {"CC_E1S_0_NVME_5_VOLT", E1S_0_5_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xDF
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xE9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xED
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xEF
+  {"CC_E1S_0_NVME_5_CURR", E1S_0_5_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xE0
+  {"CC_E1S_0_NVME_5_PWR" , E1S_0_5_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xE1
+  {"CC_E1S_0_NVME_6_VOLT", E1S_0_6_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xE2
+  {"CC_E1S_0_NVME_6_CURR", E1S_0_6_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xE3
+  {"CC_E1S_0_NVME_6_PWR" , E1S_0_6_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xE4
+  {"CC_E1S_0_NVME_7_VOLT", E1S_0_7_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xE5
+  {"CC_E1S_0_NVME_7_CURR", E1S_0_7_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xE6
+  {"CC_E1S_0_NVME_7_PWR" , E1S_0_7_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xE7
+  {"CC_E1S_1_NVME_0_VOLT", E1S_1_0_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xE8
+  {"CC_E1S_1_NVME_0_CURR", E1S_1_0_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xE9
+  {"CC_E1S_1_NVME_0_PWR" , E1S_1_0_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xEA
+  {"CC_E1S_1_NVME_1_VOLT", E1S_1_1_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xEB
+  {"CC_E1S_1_NVME_1_CURR", E1S_1_1_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xEC
+  {"CC_E1S_1_NVME_1_PWR" , E1S_1_1_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xED
+  {"CC_E1S_1_NVME_2_VOLT", E1S_1_2_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xEE
+  {"CC_E1S_1_NVME_2_CURR", E1S_1_2_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xEF
 
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF0
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF1
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF2
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF3
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF4
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF5
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF6
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF7
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF8
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF9
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFA
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFE
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFF
+  {"CC_E1S_1_NVME_2_PWR" , E1S_1_2_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF0
+  {"CC_E1S_1_NVME_3_VOLT", E1S_1_3_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xF1
+  {"CC_E1S_1_NVME_3_CURR", E1S_1_3_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xF2
+  {"CC_E1S_1_NVME_3_PWR" , E1S_1_3_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF3
+  {"CC_E1S_1_NVME_4_VOLT", E1S_1_4_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xF4
+  {"CC_E1S_1_NVME_4_CURR", E1S_1_4_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xF5
+  {"CC_E1S_1_NVME_4_PWR" , E1S_1_4_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF6
+  {"CC_E1S_1_NVME_5_VOLT", E1S_1_5_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xF7
+  {"CC_E1S_1_NVME_5_CURR", E1S_1_5_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xF8
+  {"CC_E1S_1_NVME_5_PWR" , E1S_1_5_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF9
+  {"CC_E1S_1_NVME_6_VOLT", E1S_1_6_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xFA
+  {"CC_E1S_1_NVME_6_CURR", E1S_1_6_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xFB
+  {"CC_E1S_1_NVME_6_PWR" , E1S_1_6_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xFC
+  {"CC_E1S_1_NVME_7_VOLT", E1S_1_7_NVME_VOLT, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xFD
+  {"CC_E1S_1_NVME_7_CURR", E1S_1_7_NVME_CURR, read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xFE
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0} //0xFF
 };
 
 size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
 size_t pdb_sensor_cnt = sizeof(pdb_sensor_list)/sizeof(uint8_t);
-size_t ava1_sensor_cnt = sizeof(ava1_sensor_list)/sizeof(uint8_t);
-size_t ava2_sensor_cnt = sizeof(ava2_sensor_list)/sizeof(uint8_t);
+size_t m2_1_sensor_cnt = sizeof(m2_1_sensor_list)/sizeof(uint8_t);
+size_t m2_2_sensor_cnt = sizeof(m2_2_sensor_list)/sizeof(uint8_t);
+size_t e1s_1_sensor_cnt = sizeof(e1s_1_sensor_list)/sizeof(uint8_t);
+size_t e1s_2_sensor_cnt = sizeof(e1s_2_sensor_list)/sizeof(uint8_t);
 
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
 {
@@ -535,6 +646,8 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
     case FRU_PDB:
     case FRU_AVA1:
     case FRU_AVA2:
+    case FRU_E1S1:
+    case FRU_E1S2:
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
       break;
     default:
@@ -600,6 +713,8 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   case FRU_PDB:
   case FRU_AVA1:
   case FRU_AVA2:
+  case FRU_E1S1:
+  case FRU_E1S2:
     sprintf(name, "%s", sensor_map[sensor_num].snr_name);
     break;
   default:
@@ -616,6 +731,8 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
   case FRU_PDB:
   case FRU_AVA1:
   case FRU_AVA2:
+  case FRU_E1S1:
+  case FRU_E1S2:
     switch(thresh) {
     case UCR_THRESH:
       *val = sensor_map[sensor_num].snr_thresh.ucr_thresh;
@@ -661,6 +778,8 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case FRU_PDB:
     case FRU_AVA1:
     case FRU_AVA2:
+    case FRU_E1S1:
+    case FRU_E1S2:
       switch(scale) {
         case TEMP:
           sprintf(units, "C");
@@ -691,32 +810,62 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 
 int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 {
-  if (fru == FRU_MB) {
-    *sensor_list = (uint8_t *) mb_sensor_list;
-    *cnt = mb_sensor_cnt;
-  } else if (fru == FRU_PDB) {
-    *sensor_list = (uint8_t *) pdb_sensor_list;
-    *cnt = pdb_sensor_cnt;
-  } else if (fru == FRU_AVA1) {
-    *sensor_list = (uint8_t *) ava1_sensor_list;
-    *cnt = ava1_sensor_cnt;
-  } else if (fru == FRU_AVA2) {
-    *sensor_list = (uint8_t *) ava2_sensor_list;
-    *cnt = ava2_sensor_cnt;
-  } else if (fru == FRU_BSM) {
-    *sensor_list = NULL;
-    *cnt = 0;
-  } else if (fru == FRU_E1S1) {
-    *sensor_list = NULL;
-    *cnt = 0;
-  } else if (fru == FRU_E1S2) {
-    *sensor_list = NULL;
-    *cnt = 0;
-  } else {
-    *sensor_list = NULL;
-    *cnt = 0;
-    return -1;
+  char key[MAX_VALUE_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  int ret = 0;
+
+  *sensor_list = NULL;
+  *cnt = 0;
+
+  if(fru == FRU_AVA1 || fru == FRU_E1S1) {
+    sprintf(key, "carrier_0");
+    ret = kv_get(key, value, NULL, 0);
+  } else if (fru == FRU_AVA2 || fru == FRU_E1S2) {
+    sprintf(key, "carrier_1");
+    ret = kv_get(key, value, NULL, 0);
   }
+
+  if(ret) {
+    syslog(LOG_WARNING, "%s kv_get fail! ret = %d", __FUNCTION__, ret);
+  }
+
+  switch (fru) {
+    case FRU_MB:
+      *sensor_list = (uint8_t *) mb_sensor_list;
+      *cnt = mb_sensor_cnt;
+      break;
+    case FRU_PDB:
+      *sensor_list = (uint8_t *) pdb_sensor_list;
+      *cnt = pdb_sensor_cnt;
+      break;
+    case FRU_AVA1:
+      if(!strcmp(value, "m.2")) {
+          *sensor_list = (uint8_t *) m2_1_sensor_list;
+          *cnt = m2_1_sensor_cnt;
+      }
+      break;
+    case FRU_AVA2:
+      if(!strcmp(value, "m.2")) {
+          *sensor_list = (uint8_t *) m2_2_sensor_list;
+          *cnt = m2_2_sensor_cnt;
+      }
+      break;
+    case FRU_E1S1:
+      if(!strcmp(value, "e1.s")) {
+          *sensor_list = (uint8_t *) e1s_1_sensor_list;
+          *cnt = e1s_1_sensor_cnt;
+      }
+      break;
+    case FRU_E1S2:
+      if(!strcmp(value, "e1.s")) {
+          *sensor_list = (uint8_t *) e1s_2_sensor_list;
+          *cnt = e1s_2_sensor_cnt;
+      }
+      break;
+    default:
+      syslog(LOG_WARNING, "%s, get key fail", __FUNCTION__);
+      return -1;
+    }
 
   return 0;
 }
@@ -1583,3 +1732,166 @@ read_ina219_sensor(uint8_t sensor_num, float *value) {
   }
   return ret;
 }
+
+static int
+read_bay0_ssd_curr(uint8_t ssd_id, float *value) {
+  int ret = 0;
+  struct {
+    const char *chip;
+    const char *label;
+  } devs[] = {
+    {"adc128d818-i2c-21-1f", "SSD1_CURR"},
+    {"adc128d818-i2c-21-1f", "SSD0_CURR"},
+    {"adc128d818-i2c-21-1f", "SSD3_CURR"},
+    {"adc128d818-i2c-21-1f", "SSD2_CURR"},
+    {"adc128d818-i2c-21-1d", "SSD5_CURR"},
+    {"adc128d818-i2c-21-1d", "SSD4_CURR"},
+    {"adc128d818-i2c-21-1d", "SSD7_CURR"},
+    {"adc128d818-i2c-21-1d", "SSD6_CURR"},
+  };
+
+  ret = sensors_read(devs[ssd_id].chip, devs[ssd_id].label, value);
+
+  return ret;
+}
+
+static int
+read_bay0_ssd_volt(uint8_t ssd_id, float *value) {
+  int ret = 0;
+  struct {
+    const char *chip;
+    const char *label;
+  } devs[] = {
+    {"adc128d818-i2c-21-1f", "SSD1_VOLT"},
+    {"adc128d818-i2c-21-1f", "SSD0_VOLT"},
+    {"adc128d818-i2c-21-1f", "SSD3_VOLT"},
+    {"adc128d818-i2c-21-1f", "SSD2_VOLT"},
+    {"adc128d818-i2c-21-1d", "SSD5_VOLT"},
+    {"adc128d818-i2c-21-1d", "SSD4_VOLT"},
+    {"adc128d818-i2c-21-1d", "SSD7_VOLT"},
+    {"adc128d818-i2c-21-1d", "SSD6_VOLT"},
+  };
+
+  ret = sensors_read(devs[ssd_id].chip, devs[ssd_id].label, value);
+
+  return ret;
+}
+
+static int
+read_bay1_ssd_curr(uint8_t ssd_id, float *value) {
+  int ret = 0;
+  struct {
+    const char *chip;
+    const char *label;
+  } devs[] = {
+    {"adc128d818-i2c-22-1f", "SSD1_CURR"},
+    {"adc128d818-i2c-22-1f", "SSD0_CURR"},
+    {"adc128d818-i2c-22-1f", "SSD3_CURR"},
+    {"adc128d818-i2c-22-1f", "SSD2_CURR"},
+    {"adc128d818-i2c-22-1d", "SSD5_CURR"},
+    {"adc128d818-i2c-22-1d", "SSD4_CURR"},
+    {"adc128d818-i2c-22-1d", "SSD7_CURR"},
+    {"adc128d818-i2c-22-1d", "SSD6_CURR"},
+  };
+
+  ret = sensors_read(devs[ssd_id].chip, devs[ssd_id].label, value);
+
+  return ret;
+}
+
+static int
+read_bay1_ssd_volt(uint8_t ssd_id, float *value) {
+  int ret = 0;
+  struct {
+    const char *chip;
+    const char *label;
+  } devs[] = {
+    {"adc128d818-i2c-22-1f", "SSD1_VOLT"},
+    {"adc128d818-i2c-22-1f", "SSD0_VOLT"},
+    {"adc128d818-i2c-22-1f", "SSD3_VOLT"},
+    {"adc128d818-i2c-22-1f", "SSD2_VOLT"},
+    {"adc128d818-i2c-22-1d", "SSD5_VOLT"},
+    {"adc128d818-i2c-22-1d", "SSD4_VOLT"},
+    {"adc128d818-i2c-22-1d", "SSD7_VOLT"},
+    {"adc128d818-i2c-22-1d", "SSD6_VOLT"},
+  };
+
+  ret = sensors_read(devs[ssd_id].chip, devs[ssd_id].label, value);
+
+  return ret;
+}
+
+static int
+read_ina260_sensor(uint8_t sensor_num, float *value) {
+  int fd = 0, ret = -1;
+  char fn[32];
+  float scale, vol_scale = 0.00125, curr_scale = 0.00125, pwr_scale = 0.01;
+  uint8_t retry = 3, tlen, rlen, addr = 0, bus, cmd;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint16_t tmp;
+
+  if(sensor_num >= E1S_0_0_NVME_VOLT && sensor_num <= E1S_0_7_NVME_PWR) {
+    bus = I2C_BUS_21;
+    addr = ((sensor_num - E1S_0_0_NVME_VOLT)/3)*2 + 0x80;
+  }
+  else if(sensor_num >= E1S_1_0_NVME_VOLT && sensor_num < SENSOR_END){
+    bus = I2C_BUS_22;
+    addr = ((sensor_num - E1S_1_0_NVME_VOLT)/3)*2 + 0x80;
+  }
+  else if (sensor_num == E1S_1_7_NVME_PWR){
+    bus = I2C_BUS_22;
+    addr = 0x8e;
+    cmd = INA260_POWER;
+    scale = pwr_scale;
+  }
+  else {
+    syslog(LOG_WARNING, "%s Unknown sensor id: %d", __FUNCTION__, sensor_num);
+    return READING_NA;
+  }
+
+  if (strstr(sensor_map[sensor_num].snr_name, "CURR")) {
+    cmd = INA260_CURRENT;
+    scale = curr_scale;
+  }
+  else if (strstr(sensor_map[sensor_num].snr_name, "VOLT")) {
+    cmd = INA260_VOLTAGE;
+    scale = vol_scale;
+  }
+  else if (strstr(sensor_map[sensor_num].snr_name, "PWR")) {
+    cmd = INA260_POWER;
+    scale = pwr_scale;
+  }
+  else {
+    return READING_NA;
+  }
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    goto err_exit;
+  }
+
+  tbuf[0] = cmd;
+  tlen = 1;
+  rlen = 2;
+
+  while (ret < 0 && retry-- > 0 ) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "%s ret=%d", __FUNCTION__, ret);
+    goto err_exit;
+  }
+
+  tmp = (rbuf[0] << 8) | (rbuf[1]);
+  *value = (float)tmp * scale;
+
+  err_exit:
+  if (fd > 0) {
+    close(fd);
+  }
+  return ret;
+}
+

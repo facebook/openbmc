@@ -2,7 +2,7 @@
 DEVMEM=/sbin/devmem
 GPIOCLI_CMD=/usr/local/bin/gpiocli
 ASPEEDCHIP="aspeed-gpio"
-KVSET_CMD=/usr/bin/kv/kv_set
+KVSET_CMD=/usr/bin/kv
 
 devmem_set_bit() {
     local addr
@@ -68,15 +68,18 @@ gpio_get() {
 # Store and Clear POR bit
 store_clear_por()
 {
-  local val
+  local sig val
+
+  # Read Boot Magic
+  sig=$(devmem 0x1e721208 2>/dev/null)
 
   # Read the Watch Dog Flag
   val=$(devmem 0x1e6e203c 2>/dev/null)
-  if [ "$((val & 0x1))" == "1" ]; then
+  if [[ "$sig" != "0xFB420054" && "$((val & 0x1))" == "1" ]]; then
       # Power ON Reset
-      KVSET_CMD "ast_por" "1"
+      $KVSET_CMD set "ast_por" "1"
   else
-      KVSET_CMD "ast_por" "0"
+      $KVSET_CMD set "ast_por" "0"
   fi
 
   # Clear Power On Reset bit

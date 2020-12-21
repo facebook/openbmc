@@ -1986,3 +1986,18 @@ pal_get_nic_fru_id(void)
 {
   return FRU_NIC0;
 }
+
+int
+pal_get_target_bmc_addr(uint8_t *tar_bmc_addr) {
+  uint16_t m_bmc_addr;
+
+  if ( pal_get_bmc_ipmb_slave_addr(&m_bmc_addr, BMC_IPMB_BUS_ID) )
+    return -1;
+
+  if (m_bmc_addr == 0x10)
+    *tar_bmc_addr = BMC1_SLAVE_DEF_ADDR;
+  else
+    *tar_bmc_addr = BMC0_SLAVE_DEF_ADDR;
+
+  return 0;
+}

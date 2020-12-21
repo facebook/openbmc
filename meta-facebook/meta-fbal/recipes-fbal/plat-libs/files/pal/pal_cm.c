@@ -51,6 +51,7 @@ cmc_ipmb_process(uint8_t ipmi_cmd, uint8_t netfn,
   }
 
   if(ret != 0) {
+    syslog(LOG_WARNING,"%s cmd=0x%x netfn=0x%x cc=0x%x\n", __func__, ipmi_cmd, netfn, ret);
     return ret;
   }
 
@@ -166,12 +167,10 @@ int
 cmd_cmc_sled_cycle(void) {
   uint8_t ipmi_cmd = CMD_CMC_SLED_CYCLE;
   uint8_t netfn = NETFN_OEM_REQ;
-  uint8_t tbuf[8] = {0x00};
   uint8_t rbuf[8] = {0x00};
   uint8_t rlen;
 
-  tbuf[0] = 0x0;
-  return cmc_ipmb_process(ipmi_cmd, netfn, tbuf, 1, rbuf, &rlen);
+  return cmc_ipmb_process(ipmi_cmd, netfn, NULL, 0, rbuf, &rlen);
 }
 
 int
@@ -311,11 +310,13 @@ int
 lib_cmc_power_cycle(void) {
   uint8_t ipmi_cmd = CMD_CMC_POWER_CYCLE;
   uint8_t netfn = NETFN_OEM_REQ;
-  uint8_t rbuf[8] = {0x00};
+  uint8_t tbuf[8] = {0};
+  uint8_t rbuf[8] = {0};
   uint8_t rlen;
   int ret;
 
-  ret = cmc_ipmb_process(ipmi_cmd, netfn, NULL, 0, rbuf, &rlen);
+  tbuf[0] = 0x00;
+  ret = cmc_ipmb_process(ipmi_cmd, netfn, tbuf, 1, rbuf, &rlen);
 #ifdef DEBUG
 {
   int i;
@@ -325,29 +326,7 @@ lib_cmc_power_cycle(void) {
 }
 #endif
   if(ret != 0) {
-    return ret;
-  }
-  return CC_SUCCESS;
-}
-
-int
-lib_cmc_bios_update_ac(void) {
-  uint8_t ipmi_cmd = CMD_CMC_BIOS_UPDATE_AC;
-  uint8_t netfn = NETFN_OEM_REQ;
-  uint8_t rbuf[8] = {0x00};
-  uint8_t rlen;
-  int ret;
-
-  ret = cmc_ipmb_process(ipmi_cmd, netfn, NULL, 0, rbuf, &rlen);
-#ifdef DEBUG
-{
-  int i;
-  for(i=0; i<rlen; i++) {
-    syslog(LOG_DEBUG, "%s rbuf[%d]=%d\n", __func__, i, *(rbuf+i));
-  }
-}
-#endif
-  if(ret != 0) {
+    syslog(LOG_DEBUG, "%s cc=0x%x\n", __func__, ret);
     return ret;
   }
   return CC_SUCCESS;

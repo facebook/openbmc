@@ -74,13 +74,13 @@ cmd_smbc_get_glbcpld_ver(uint8_t t_bmc_addr, uint8_t *ver) {
 }
 
 int
-cmd_mb0_bridge_to_cc(uint8_t ipmi_cmd, uint8_t ipmi_netfn, uint8_t *data, uint8_t data_len) {
+cmd_mb0_bridge_to_cc(uint8_t ipmi_cmd, uint8_t ipmi_netfn, 
+                     uint8_t *data, uint8_t data_len,
+                     uint8_t *rbuf, uint8_t *rlen) {
   uint8_t cmd = CMD_OEM_BYPASS_CMD;
   uint8_t netfn = NETFN_OEM_REQ;
   uint8_t tlen;
-  uint8_t rlen;
   uint8_t tbuf[32];
-  uint8_t rbuf[32];
 
   tbuf[0] = BRIDGE_2_IOX_BMC;
   tbuf[1] = ipmi_netfn;
@@ -88,7 +88,25 @@ cmd_mb0_bridge_to_cc(uint8_t ipmi_cmd, uint8_t ipmi_netfn, uint8_t *data, uint8_
   memcpy(tbuf+3, data, data_len);
   tlen = 3 + data_len;
 
-  return bmc_ipmb_swap_info_process(cmd, netfn, BMC1_SLAVE_DEF_ADDR, tbuf, tlen, rbuf, &rlen);
+  return bmc_ipmb_swap_info_process(cmd, netfn, BMC1_SLAVE_DEF_ADDR, tbuf, tlen, rbuf, rlen);
+}
+
+int
+cmd_mb1_bridge_to_ep(uint8_t ipmi_cmd, uint8_t ipmi_netfn, 
+                     uint8_t *data, uint8_t data_len,
+                     uint8_t *rbuf, uint8_t *rlen) {
+  uint8_t cmd = CMD_OEM_BYPASS_CMD;
+  uint8_t netfn = NETFN_OEM_REQ;
+  uint8_t tlen;
+  uint8_t tbuf[32];
+
+  tbuf[0] = BRIDGE_2_ASIC_BMC;
+  tbuf[1] = ipmi_netfn;
+  tbuf[2] = ipmi_cmd;
+  memcpy(tbuf+3, data, data_len);
+  tlen = 3 + data_len;
+
+  return bmc_ipmb_swap_info_process(cmd, netfn, BMC0_SLAVE_DEF_ADDR, tbuf, tlen, rbuf, rlen);
 }
 
 int
@@ -127,3 +145,24 @@ cmd_mb0_set_cc_reset(uint8_t t_bmc_addr) {
   return 0;
 }
 
+//Send Master ME to recovery mode from slave
+int
+cmd_smbc_me_entry_recovery_mode(uint8_t t_bmc_addr) {
+  uint8_t cmd = CMD_OEM_BYPASS_CMD;
+  uint8_t netfn = NETFN_OEM_REQ;
+  uint8_t tlen;
+  uint8_t rlen;
+  uint8_t tbuf[64];
+  uint8_t rbuf[64];
+
+  tbuf[0] = BYPASS_ME;
+  tbuf[1] = NETFN_NM_REQ;
+  tbuf[2] = CMD_NM_FORCE_ME_RECOVERY;
+  tbuf[3] = 0x57;
+  tbuf[4] = 0x01;
+  tbuf[5] = 0x00;
+  tbuf[6] = 0x01;
+
+  tlen = 7;
+  return bmc_ipmb_swap_info_process(cmd, netfn, t_bmc_addr, tbuf, tlen, rbuf, &rlen);
+}

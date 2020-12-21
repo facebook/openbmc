@@ -127,20 +127,6 @@ static int get_mode()
   return 0;
 }
 
-static int sled_cycle()
-{
-  int rc = 0;
-  if (is_ep_present() && pal_ep_sled_cycle() < 0) {
-    std::cerr << "Request JBOG sled-cycle failed\n";
-    rc = -1;
-  }
-  if (cmd_cmc_sled_cycle()) {
-    std::cerr << "Request chassis manager for a sled cycle failed\n";
-    rc = -1;
-  }
-  return rc;
-}
-
 static int
 get_pos() {
   uint8_t pos;
@@ -268,7 +254,7 @@ main(int argc, char **argv) {
                           desc
                          )->ignore_case();
 
-  app.add_flag("--sled-cycle", do_cycle,
+  app.add_flag("--recfg-cycle", do_cycle,
                "Perform a SLED cycle after operations (If any)");
   app.require_option();
   bool get_mode_f = false;
@@ -306,7 +292,7 @@ main(int argc, char **argv) {
   }
 
   if (do_cycle) {
-    rc = sled_cycle();
+    rc = pal_recfg_sled_cycle();
   }
 
   return rc;

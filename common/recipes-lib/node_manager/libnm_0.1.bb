@@ -19,7 +19,7 @@ DESCRIPTION = "library for Node Manager"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://nm.c;beginline=8;endline=20;md5=270dd1648712d50c22109374fdab0010"
+LIC_FILES_CHKSUM = "file://nm.c;beginline=8;endline=20;md5=27847d7d9f5479b7daedf10f19911e78"
 
 
 SRC_URI = "file://Makefile \

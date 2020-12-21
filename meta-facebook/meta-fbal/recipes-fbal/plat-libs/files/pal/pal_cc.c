@@ -12,29 +12,9 @@
 
 static int
 cc_ipmb_process(uint8_t ipmi_cmd, uint8_t netfn,
-              uint8_t *txbuf, uint8_t txlen,
-              uint8_t *rxbuf, uint8_t *rxlen ) {
-  int ret = 0;
+                uint8_t *txbuf, uint8_t txlen,
+                uint8_t *rxbuf, uint8_t *rxlen) {
   uint16_t bmc_addr;
-
-  ret = pal_get_bmc_ipmb_slave_addr(&bmc_addr, CC_I2C_BUS_NUMBER);
-  if(ret != 0) {
-    return ret;
-  }
-
-  return lib_ipmb_send_request(ipmi_cmd, netfn,
-                               txbuf, txlen,
-                               rxbuf, rxlen,
-                               CC_I2C_BUS_NUMBER, CC_I2C_SLAVE_ADDR, bmc_addr);
-}
-
-static int
-cmd_cc_sled_cycle(void) {
-  uint8_t ipmi_cmd = CMD_CHASSIS_CONTROL;
-  uint8_t netfn = NETFN_CHASSIS_REQ;
-  uint8_t tbuf[8];
-  uint8_t rbuf[8] = {0x00};
-  uint8_t rlen;
   uint8_t mode;
   uint8_t pos;
   int ret;
@@ -51,13 +31,71 @@ cmd_cc_sled_cycle(void) {
     return ret;
   }
 
-  tbuf[0] = 0xAC;
-
-  if( mode == MB_4S_MODE && pos == MB_ID0 ) {
-    return cmd_mb0_bridge_to_cc(CMD_CHASSIS_CONTROL, NETFN_CHASSIS_REQ, tbuf, 1);
+  ret = pal_get_bmc_ipmb_slave_addr(&bmc_addr, CC_I2C_BUS_NUMBER);
+  if(ret != 0) {
+    return ret;
   }
 
-  return cc_ipmb_process(ipmi_cmd, netfn, tbuf, 1, rbuf, &rlen);
+  if( mode == MB_4S_MODE && pos == MB_ID0 ) {
+    ret = cmd_mb0_bridge_to_cc(ipmi_cmd, netfn, txbuf, txlen, rxbuf, rxlen);
+  } else {
+    ret = lib_ipmb_send_request(ipmi_cmd, netfn, txbuf, txlen, rxbuf, rxlen,
+                                CC_I2C_BUS_NUMBER, CC_I2C_SLAVE_ADDR, bmc_addr);
+  }
+
+#ifdef DEBUG
+  for(int i=0; i<txlen; i++) {
+    syslog(LOG_WARNING, "cc txbuf[%d]=0x%x\n", i, txbuf[i]);
+  }
+
+  for(int i=0; i<*rxlen; i++) {
+    syslog(LOG_WARNING, "cc rxbuf[%d]=0x%x\n", i, rxbuf[i]);
+  }
+#endif
+  return ret;
+}
+
+static int
+cmd_cc_get_snr_reading(float *value, uint8_t snr_num) {
+  uint8_t ipmi_cmd = CMD_OEM_GET_SENSOR_REAL_READING;
+  uint8_t netfn = NETFN_OEM_REQ;
+  uint8_t tbuf[8] = {0};
+  uint8_t rbuf[8] = {0};
+  uint8_t rlen;
+  int ret;
+
+  tbuf[0] = 0x01;
+  tbuf[1] = snr_num;
+  ret =  cc_ipmb_process(ipmi_cmd, netfn, tbuf, 2, rbuf, &rlen);
+  if( ret != 0 )
+    return ret;
+
+  *value = rbuf[1] + ((float)rbuf[2] / 100);
+#ifdef DEBUG
+  syslog(LOG_WARNING, "%s reading value=%f\n", __func__, *value);
+#endif
+  return 0;
+}
+
+static int
+cmd_cc_sled_cycle(void) {
+  uint8_t ipmi_cmd = CMD_CHASSIS_CONTROL;
+  uint8_t netfn = NETFN_CHASSIS_REQ;
+  uint8_t tbuf[8] = {0};
+  uint8_t rbuf[8] = {0};
+  uint8_t rlen;
+  float value;
+  int ret;
+
+  ret = cmd_cc_get_snr_reading(&value, CC_PDB_SNR_HSC);
+  if( ret != 0) {
+    syslog(LOG_CRIT, "Access IOX HSC Fail, CCode=0x%x\n", ret);
+    return ret;
+  }
+
+  tbuf[0] = 0xAC;
+  ret = cc_ipmb_process(ipmi_cmd, netfn, tbuf, 1, rbuf, &rlen);
+  return ret;
 }
 
 bool

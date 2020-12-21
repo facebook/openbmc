@@ -1315,6 +1315,9 @@ read_pax_therm(uint8_t pax_id, float *value) {
     {"tmp422-i2c-6-4e", "PAX3_THERM_REMOTE"},
   };
 
+  if (!is_device_ready())
+    return ERR_SENSOR_NA;
+
   ret = sensors_read(devs[pax_id].chip, devs[pax_id].label, value);
 
   return ret;

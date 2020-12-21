@@ -23,11 +23,11 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 KVSET_CMD=/usr/bin/kv
 
-echo "Setup TMP422" 
+echo "Setup TMP422"
 i2c_device_add 6 0x4d tmp422
 i2c_device_add 6 0x4e tmp422
 
-echo "Setup TCA9539 input/output pin" 
+echo "Setup TCA9539 input/output pin"
 i2cset -y -f 5 0x77 0x07 0x0f
 
 echo "Setup VR sensor"
@@ -78,3 +78,6 @@ elif [ $carrier1 = "44" ]; then
     $KVSET_CMD set "carrier_1" "e1.s"
     i2cset -y -f 22 0x77 0x02 0x00
 fi
+
+# Mark driver loaded
+echo > /tmp/driver_probed

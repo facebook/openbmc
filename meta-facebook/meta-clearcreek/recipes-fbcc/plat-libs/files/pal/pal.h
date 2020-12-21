@@ -104,6 +104,7 @@ enum {
 int pal_get_rst_btn(uint8_t *status);
 int pal_control_mux_to_target_ch(uint8_t channel, uint8_t bus, uint8_t mux_addr);
 bool pal_is_server_off(void);
+bool is_device_ready(void);
 int pal_get_platform_id(uint8_t *id);
 
 #endif /* __PAL_H__ */

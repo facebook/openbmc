@@ -18,6 +18,8 @@
 #define GPIO_POWER_RESET "RST_BMC_RSTBTN_OUT_R_N"
 #define GPIO_RESET_BTN_IN "FP_BMC_RST_BTN_N"
 
+#define DRIVER_READY "/tmp/driver_probed"
+
 #define DELAY_POWER_ON 1
 #define DELAY_POWER_OFF 6
 #define DELAY_GRACEFUL_SHUTDOWN 1
@@ -261,4 +263,11 @@ bool pal_is_server_off()
     return false;
 
   return status == SERVER_POWER_OFF? true: false;
+}
+
+bool is_device_ready()
+{
+  if (access(DRIVER_READY, F_OK) == 0)
+    return !pal_is_server_off();
+  return false;
 }

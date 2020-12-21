@@ -40,30 +40,7 @@ SRC_URI += "file://board-utils.sh \
 RDEPENDS_${PN} += " python3 bash"
 DEPENDS_append += " update-rc.d-native"
 
-do_install_board() {
-    # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
-    olddir="/usr/local/fbpackages/utils"
-    localbindir="/usr/local/bin"
-    bindir="/usr/bin"
-    install -d ${D}${olddir}
-    install -d ${D}${localbindir}
-    install -d ${D}${bindir}
-    ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
-
-    install -m 0755 bios_flash.sh ${D}${localbindir}/bios_flash.sh
-    install -m 0755 bcm5389.sh ${D}${localbindir}/bcm5389.sh
-    install -m 0755 at93cx6_util.sh ${D}${localbindir}/at93cx6_util.sh
-    install -m 0755 lsb_release ${D}${localbindir}/lsb_release
-    install -m 0755 cpldupgrade ${D}${localbindir}/cpldupgrade
-    install -m 0755 us_refresh.sh ${D}${localbindir}/us_refresh.sh
-    install -m 0755 repeater_verify.sh ${D}${localbindir}/repeater_verify.sh
-    install -m 0755 seutil ${D}${bindir}/seutil
-    install -m 0755 version_dump ${D}${bindir}/version_dump
-    install -m 0755 qsfp_cpld_ver.sh ${D}${localbindir}/qsfp_cpld_ver.sh
-    install -m 0755 ceutil.py ${D}${localbindir}/ceutil
-    install -m 0755 scm_cpld_rev.sh ${D}${localbindir}/scm_cpld_rev.sh
-    install -m 0755 ec_version.sh ${D}${localbindir}/ec_version.sh
-
+install_board_sysv() {
     # create VLAN intf automatically
     install -d ${D}/${sysconfdir}/network/if-up.d
     install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
@@ -105,7 +82,54 @@ do_install_board() {
 
     install -m 755 sensors_config_fix.sh ${D}${sysconfdir}/init.d/sensors_config_fix.sh
     update-rc.d -r ${D} sensors_config_fix.sh start 100 2 3 4 5 .
+}
 
+install_board_systemd() {
+    install -d ${D}${systemd_system_unitdir}
+    install -m 644 us_monitor.service ${D}${systemd_system_unitdir}
+    install -m 644 fix_fru_eeprom.service ${D}${systemd_system_unitdir}
+    install -m 644 sensors_config_fix.service ${D}${systemd_system_unitdir}
+    install -m 755 eth0_mac_fixup.sh ${D}${localbindir}
+    install -m 755 setup_i2c.sh ${D}${localbindir}
+    # This one comes from the wedge layer but we don't want it on galaxy
+    systemctl --root=${D} mask setup_board.service
+}
+
+do_install_board() {
+    # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
+    olddir="/usr/local/fbpackages/utils"
+    localbindir="/usr/local/bin"
+    bindir="/usr/bin"
+    install -d ${D}${olddir}
+    install -d ${D}${localbindir}
+    install -d ${D}${bindir}
+    ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
+
+    install -m 0755 bios_flash.sh ${D}${localbindir}/bios_flash.sh
+    install -m 0755 bcm5389.sh ${D}${localbindir}/bcm5389.sh
+    install -m 0755 at93cx6_util.sh ${D}${localbindir}/at93cx6_util.sh
+    install -m 0755 lsb_release ${D}${localbindir}/lsb_release
+    install -m 0755 cpldupgrade ${D}${localbindir}/cpldupgrade
+    install -m 0755 us_refresh.sh ${D}${localbindir}/us_refresh.sh
+    install -m 0755 repeater_verify.sh ${D}${localbindir}/repeater_verify.sh
+    install -m 0755 seutil ${D}${bindir}/seutil
+    install -m 0755 version_dump ${D}${bindir}/version_dump
+    install -m 0755 qsfp_cpld_ver.sh ${D}${localbindir}/qsfp_cpld_ver.sh
+    install -m 0755 ceutil.py ${D}${localbindir}/ceutil
+    install -m 0755 scm_cpld_rev.sh ${D}${localbindir}/scm_cpld_rev.sh
+    install -m 0755 ec_version.sh ${D}${localbindir}/ec_version.sh
+
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+        install_board_systemd
+    else
+        install_board_sysv
+    fi
 }
 
 FILES_${PN} += "${sysconfdir}"
+
+SYSTEMD_SERVICES_${PN} += "us_monitor.service \
+                       fix_fru_eeprom.service \
+                        sensors_config_fix.service"
+
+SYSTEMD_SERVICES_${PN}_remove += "setup_board.service"

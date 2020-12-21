@@ -61,7 +61,7 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x01, 0, 8,
   },
   {
-    "cpld_min_ver",
+    "cpld_minor_ver",
     NULL,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     NULL,

@@ -157,10 +157,36 @@ int pal_set_server_power(uint8_t fru, uint8_t cmd)
   return 0;
 }
 
-int
-pal_sled_cycle(void) {
+int check_server_present(void) {
+  bool ret = false;
+  gpio_value_t value;
+  gpio_desc_t *gpio = gpio_open_by_shadow("MB1_CBL_PRSNT_P1_R1");
+
+  if (!gpio) {
+    return false;
+  }
+
+  if (gpio_get_value(gpio, &value) < 0) {
+    goto bail;
+  }
+
+  if (value == GPIO_VALUE_LOW)
+    ret = true;
+  else
+    printf("Block power change while server is present\n");
+
+bail:
+  gpio_close(gpio);
+  return ret; 
+}
+ 
+int pal_force_sled_cycle(void) {
   // Send command to HSC power cycle
   return system("i2cset -y 5 0x11 0xd9 c &> /dev/null");
+}
+
+int pal_sled_cycle(void) {
+  return check_server_present()? pal_force_sled_cycle(): -1;
 }
 
 void* chassis_control_handler(void *arg)
@@ -188,7 +214,7 @@ void* chassis_control_handler(void *arg)
       break;
     case 0xAC:  // sled-cycle with delay 4 secs
       sleep(4);
-      pal_sled_cycle();
+      pal_force_sled_cycle();
       break;
     default:
       syslog(LOG_CRIT, "Invalid command 0x%x for chassis control", cmd);
@@ -204,8 +230,15 @@ int pal_chassis_control(uint8_t fru, uint8_t *req_data, uint8_t req_len)
   pthread_t tid;
   pthread_attr_t a;
 
+  if (fru == 2 && !check_server_present()) {
+    // If came from BMC itself
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
   if (req_len != 1) {
     return CC_INVALID_LENGTH;
+  }
+  if (pal_is_fw_update_ongoing(FRU_MB)) {
+    return CC_NOT_SUPP_IN_CURR_STATE;
   }
 
   cmd = req_data[0];

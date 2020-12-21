@@ -458,7 +458,8 @@ pal_get_board_rev_id(uint8_t *id) {
 
 int pal_devnum_to_fruid(int devnum)
 {
-  return FRU_MB;
+  // 1 = server, 2 = BMC ifself
+  return devnum == 0? 2: devnum;
 }
 
 int

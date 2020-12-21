@@ -3,7 +3,7 @@
 #
 
 # Machine Selection
-MACHINE ??= "fbnd"
+MACHINE ??= "northdome"
 
 # OpenBMC distro settings
 DISTRO ?= "openbmc-fb"

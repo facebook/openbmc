@@ -63,7 +63,6 @@ env:
     - BOARD=clearcreek
     - BOARD=elbert
     - BOARD=fbgp2
-    - BOARD=fbnd
     - BOARD=fbtp
     - BOARD=fbttn
     - BOARD=fby2
@@ -72,6 +71,7 @@ env:
     - BOARD=grandcanyon
     - BOARD=lightning
     - BOARD=minipack
+    - BOARD=northdome
     - BOARD=sonorapass
     - BOARD=wedge
     - BOARD=wedge100

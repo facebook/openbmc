@@ -2833,7 +2833,7 @@ int remap_vr(uint8_t addr) { //8bit addr
   uint8_t bus = I2C_BUS_1;
   uint8_t ver[4];
   uint8_t tmp[32] = {0};
-  uint8_t retry=5;
+  uint8_t retry = 5, clr_mode = 0;
 
   fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
@@ -2857,7 +2857,7 @@ int remap_vr(uint8_t addr) { //8bit addr
         syslog(LOG_WARNING, "read vr id fail\n");
         continue;
       } else {
-        if ( memcmp(tmp, rbuf, 32) ==0 ) {
+        if ( memcmp(tmp, rbuf, 32) == 0 ) {
 #ifdef DEBUG
           syslog(LOG_WARNING, "vr data compare success\n");
 #endif
@@ -2872,23 +2872,24 @@ int remap_vr(uint8_t addr) { //8bit addr
         }
       }
     }
-    if ( retry == 0) {
+    if ( retry == 0 ) {
       break;
     }
 #ifdef DEBUG
-for(int i=0; i<32; i++) {
-  syslog(LOG_WARNING, "rbuf[%d] = %x\n", i, rbuf[i]);
-}
+    for (int i=0; i<32; i++) {
+      syslog(LOG_WARNING, "rbuf[%d] = %x\n", i, rbuf[i]);
+    }
 #endif
+
 //Set TI Only config2
     tbuf[0] = TI_ONLY_CONFIG2;
-    rbuf[10] = 0xC0;
+    rbuf[10] |= 0x40;
     memcpy(tbuf+1, rbuf, 32);
-
     if ( vr_block_rw(fd, addr, tbuf, 33, rbuf, 0) ) {
       syslog(LOG_WARNING, "err1 bus=%x slavaddr=%x cmd=%x\n", bus, addr, tbuf[0]);
       break;
     }
+    clr_mode = 1;
 
 //Read FW Version.
     memset(tbuf,0,sizeof(tbuf));
@@ -2902,9 +2903,9 @@ for(int i=0; i<32; i++) {
       syslog(LOG_WARNING, "err2 bus=%x slavaddr=%x cmd=%x\n", bus, addr, tbuf[0]);
       break;
     }
+
     memset(tbuf,0,sizeof(tbuf));
     tbuf[0] = 0xf6;
-
     if ( vr_block_rw(fd, addr, tbuf, 1, rbuf, 5) ) {
       syslog(LOG_WARNING, "err3 bus=%x slavaddr=%x cmd=%x\n", bus, addr, tbuf[0]);
       break;
@@ -2919,7 +2920,6 @@ for(int i=0; i<32; i++) {
     tbuf[3] = 0x1F;
     tbuf[4] = 0x2C;
     tbuf[5] = 0x03;
-
     if ( vr_block_rw(fd, addr, tbuf, 6, rbuf, 0) ) {
       syslog(LOG_WARNING, "err4 bus=%x slavaddr=%x cmd=%x\n", bus, addr, tbuf[0]);
       break;
@@ -2927,74 +2927,75 @@ for(int i=0; i<32; i++) {
 
     memset(tbuf,0,sizeof(tbuf));
     tbuf[0] = 0xf6;
-
     if ( vr_block_rw(fd, addr, tbuf, 1, rbuf, 5) ) {
       syslog(LOG_WARNING, "err5 bus=%x slavaddr=%x cmd=%x\n", bus, addr, tbuf[0]);
       break;
     }
-
     ver[2] = rbuf[1];
     ver[3] = rbuf[3];
 
-#ifdef DEBUG
-for(int i=0; i<4; i++) {
-  syslog(LOG_WARNING, "ver[%d] = %x\n", i, ver[i]);
-}
-#endif
 //Set VR workaround version=2.7.10.0
-    if( (ver[0] == 2) && (ver[1] == 7) && (ver[2] == 10) && (ver[3] == 0) ) {
-      syslog(LOG_WARNING, "vr need workaround addr=0x%X version=2.7.10.0\n", addr);
-      memset(tbuf,0,sizeof(tbuf));
-      tbuf[0] = 0xf5;
-      tbuf[1] = 0x04;
-      tbuf[2] = 0xf0;
-      tbuf[3] = 0x86;
-      tbuf[4] = 0x64;
-      tbuf[5] = 0x03;
-      if ( vr_block_rw_check(fd, addr, tbuf, 6) ) {
-        break;
-      }
-
-      memset(tbuf,0,sizeof(tbuf));
-      tbuf[0] = 0xf6;
-      tbuf[1] = 0x04;
-      tbuf[2] = 0x01;
-      tbuf[3] = 0xAA;
-      tbuf[4] = 0x00;
-      tbuf[5] = 0x00;
-      if ( vr_block_rw_check(fd, addr, tbuf, 6) ) {
-        break;
-      }
-
-      memset(tbuf,0,sizeof(tbuf));
-      tbuf[0] = 0xf5;
-      tbuf[1] = 0x04;
-      tbuf[2] = 0xD8;
-      tbuf[3] = 0x8A;
-      tbuf[4] = 0x64;
-      tbuf[5] = 0x03;
-      if ( vr_block_rw_check(fd, addr, tbuf, 6) ) {
-        break;
-      }
-
-      memset(tbuf,0,sizeof(tbuf));
-      tbuf[0] = 0xf6;
-      tbuf[1] = 0x04;
-      tbuf[2] = 0x49;
-      tbuf[3] = 0x1A;
-      tbuf[4] = 0x00;
-      tbuf[5] = 0x00;
-      if ( vr_block_rw_check(fd, addr, tbuf, 6) ) {
-        break;
-      }
-//Recovery TI_ONLY_CONFIG2
-      tbuf[0] = TI_ONLY_CONFIG2;
-      memcpy(tbuf+1, tmp, 32);
-      if ( vr_block_rw_check(fd, addr, tbuf, 33) ) {
-        break;
-      }
+    if( (ver[0] != 2) || (ver[1] != 7) || (ver[2] != 10) || (ver[3] != 0) ) {
+      syslog(LOG_WARNING, "vr addr=0x%X version=%u.%u.%u.%u", addr, ver[0], ver[1], ver[2], ver[3]);
+      break;
     }
+
+    memset(tbuf,0,sizeof(tbuf));
+    tbuf[0] = 0xf5;
+    tbuf[1] = 0x04;
+    tbuf[2] = 0xf0;
+    tbuf[3] = 0x86;
+    tbuf[4] = 0x64;
+    tbuf[5] = 0x03;
+    if ( vr_block_rw_check(fd, addr, tbuf, 6) ) {
+      break;
+    }
+
+    memset(tbuf,0,sizeof(tbuf));
+    tbuf[0] = 0xf6;
+    tbuf[1] = 0x04;
+    tbuf[2] = 0x01;
+    tbuf[3] = 0xAA;
+    tbuf[4] = 0x00;
+    tbuf[5] = 0x00;
+    if ( vr_block_rw_check(fd, addr, tbuf, 6) ) {
+      break;
+    }
+
+    memset(tbuf,0,sizeof(tbuf));
+    tbuf[0] = 0xf5;
+    tbuf[1] = 0x04;
+    tbuf[2] = 0xD8;
+    tbuf[3] = 0x8A;
+    tbuf[4] = 0x64;
+    tbuf[5] = 0x03;
+    if ( vr_block_rw_check(fd, addr, tbuf, 6) ) {
+      break;
+    }
+
+    memset(tbuf,0,sizeof(tbuf));
+    tbuf[0] = 0xf6;
+    tbuf[1] = 0x04;
+    tbuf[2] = 0x49;
+    tbuf[3] = 0x1A;
+    tbuf[4] = 0x00;
+    tbuf[5] = 0x00;
+    if ( vr_block_rw_check(fd, addr, tbuf, 6) ) {
+      break;
+    }
+
+    syslog(LOG_WARNING, "vr workaround addr=0x%X version=%u.%u.%u.%u", addr, ver[0], ver[1], ver[2], ver[3]);
   } while(0);
+
+//Restore TI_ONLY_CONFIG2
+  if (clr_mode) {
+    tbuf[0] = TI_ONLY_CONFIG2;
+    tmp[10] &= 0xBF;
+    memcpy(tbuf+1, tmp, 32);
+    if ( vr_block_rw_check(fd, addr, tbuf, 33) ) {
+      syslog(LOG_WARNING, "restore vr failed, addr=0x%X", addr);
+    }
+  }
 
   i2c_cdev_slave_close(fd);
   return ret;

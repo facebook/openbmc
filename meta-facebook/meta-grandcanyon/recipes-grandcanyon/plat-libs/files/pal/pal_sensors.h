@@ -370,4 +370,6 @@ typedef struct {
   uint8_t reserved;
 } EXPANDER_SENSOR_DATA;
 
+int pal_get_fan_speed(uint8_t fan, int *rpm);
+
 #endif

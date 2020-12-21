@@ -1631,3 +1631,26 @@ pal_sensor_is_cached(uint8_t fru, uint8_t sensor_num) {
   }
   return true;
 }
+
+int
+pal_get_fan_speed(uint8_t fan, int *rpm) {
+  int ret = 0;
+  float value = 0;
+
+  if (rpm == NULL) {
+    syslog(LOG_WARNING, "%s() pointer \"rpm\" is NULL\n", __func__);
+    return -1;
+  }
+
+  // Fan value have to be fetch real value from DPB, so have to use pal_sensor_read_raw to force updating cache value
+  ret = pal_sensor_read_raw(FRU_DPB, FAN_0_FRONT + fan, &value);
+
+  if (ret == 0) {
+    *rpm = (int) value;
+  } else {
+    syslog(LOG_ERR, "%s() failed to get fan%d speed\n", __func__, fan);
+  }
+
+  return ret;
+}
+

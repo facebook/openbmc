@@ -130,7 +130,7 @@ install_sysv() {
 
 install_systemd() {
     install -d ${D}${systemd_system_unitdir}
-    install -m 644 ${WORKDIR}/eth0_mac_fixup.sh ${D}${systemd_system_unitdir}
+    install -m 644 ${WORKDIR}/eth0_mac_fixup.sh ${D}/usr/local/bin
     install -m 755 ${WORKDIR}/setup-reboot.sh ${D}/usr/local/bin
     install -m 755 ${WORKDIR}/rc.local ${D}/usr/local/bin
     install -m 755 ${WORKDIR}/rc.early ${D}/usr/local/bin

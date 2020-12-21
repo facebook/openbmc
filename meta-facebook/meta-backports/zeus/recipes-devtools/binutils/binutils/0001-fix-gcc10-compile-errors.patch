@@ -1,0 +1,25 @@
+From 057b5aedf03facbd8c91831b4d2dd596ac71e714 Mon Sep 17 00:00:00 2001
+From: Patrick Williams <patrick@stwcx.xyz>
+Date: Fri, 23 Oct 2020 15:23:29 -0500
+Subject: [PATCH] fix gcc10 compile errors
+
+Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
+---
+ gold/errors.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/gold/errors.h b/gold/errors.h
+index c26b558637..ac681e965b 100644
+--- a/gold/errors.h
++++ b/gold/errors.h
+@@ -24,6 +24,7 @@
+ #define GOLD_ERRORS_H
+ 
+ #include <cstdarg>
++#include <string>
+ 
+ #include "gold-threads.h"
+ 
+-- 
+2.26.2
+

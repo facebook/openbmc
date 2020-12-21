@@ -421,6 +421,21 @@ int pal_get_platform_id(uint8_t *id)
   return 0;
 }
 
+int
+pal_get_board_rev_id(uint8_t *id) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+
+  sprintf(key, "mb_rev");
+  if (kv_get(key, value, NULL, 0)) {
+    return false;
+  }
+
+  *id = atoi(value);
+
+  return 0;
+}
+
 int pal_devnum_to_fruid(int devnum)
 {
   return FRU_MB;

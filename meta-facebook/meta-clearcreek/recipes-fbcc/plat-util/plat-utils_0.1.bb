@@ -68,7 +68,6 @@ do_install() {
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 70 S .
   install -m 755 setup-m2carrier.sh ${D}${sysconfdir}/init.d/setup-m2carrier.sh
-  update-rc.d -r ${D} setup-m2carrier.sh start 90 S .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

@@ -1,6 +1,8 @@
 #include <cstdio>
 #include <cstring>
 #include <unistd.h>
+#include <chrono>
+#include <thread>
 #include <openbmc/pal.h>
 #include <openbmc/obmc-i2c.h>
 #include <syslog.h>
@@ -22,45 +24,84 @@ class palBiosComponent : public BiosComponent {
 
 int palBiosComponent::update_finish(void) {
   int ret = 0;
-  if(pal_get_config_is_master()){
-    ret = pal_bios_update_ac();
-  }
+
+  ret = pal_bios_update_ac();
+  if( ret != 0)
+    syslog(LOG_CRIT, "BIOS update finished AC FAIL\n");
+
   return ret;
 }
 
 int palBiosComponent::setDeepSleepWell(bool setting) {
   int fd = 0, retCode = 0;
-  uint8_t bus = 0x00;
-  uint8_t addr = 0x27;
+  uint8_t bus, addr;
   uint8_t tbuf[16] = {0}, tlen = 2;
   uint8_t rbuf[16] = {0}, rlen = 0;
   bool setLow = true;
-  
-  fd = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
-    i2c_cdev_slave_close(fd);
-    return retCode;
-  }
-  
+
   if (setting == setLow) {
-    // Set DeepSleepWell pin's direction to output and value to 0
-    tbuf[0] = 0x07; tbuf[1] = 0xEF;
+    // Set RST_RSMRST_BMC_N low
+    bus = 0x04;
+    addr = 0x0D;
+    fd = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
+      return retCode;
+    }
+    tbuf[0] = 0x02;
+    tbuf[1] = 0xBF;
     retCode |= i2c_rdwr_msg_transfer(fd, addr << 1, tbuf, tlen, rbuf, rlen);
-    tbuf[0] = 0x03; tbuf[1] = 0xEF;
+    i2c_cdev_slave_close(fd);
+
+    // Set PWRGD_DSW_PWROK
+    bus = 0x00;
+    addr = 0x27;
+    fd = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
+      return retCode;
+    }
+    tbuf[0] = 0x07;
+    tbuf[1] = 0xEF;
     retCode |= i2c_rdwr_msg_transfer(fd, addr << 1, tbuf, tlen, rbuf, rlen);
+    tbuf[0] = 0x03;
+    tbuf[1] = 0xEF;
+    retCode |= i2c_rdwr_msg_transfer(fd, addr << 1, tbuf, tlen, rbuf, rlen);
+    i2c_cdev_slave_close(fd);
   } else {
-    // Reset DeepSleepWell, set DeepSleepWell pin's direction to input
-    tbuf[0] = 0x07; tbuf[1] = 0xFF;
+    // Reset PWRGD_DSW_PWROK
+    bus = 0x00;
+    addr = 0x27;
+    fd = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
+      return retCode;
+    }
+
+    tbuf[0] = 0x07;
+    tbuf[1] = 0xFF;
     retCode |= i2c_rdwr_msg_transfer(fd, addr << 1, tbuf, tlen, rbuf, rlen);
+    i2c_cdev_slave_close(fd);
+
+    // Reset RST_RSMRST_BMC_N
+    bus = 0x04;
+    addr = 0x0D;
+    fd = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
+      return retCode;
+    }
+
+    tbuf[0] = 0x02;
+    tbuf[1] = 0xFF;
+    retCode |= i2c_rdwr_msg_transfer(fd, addr << 1, tbuf, tlen, rbuf, rlen);
+    i2c_cdev_slave_close(fd);
   }
-  i2c_cdev_slave_close(fd);
   return retCode;
-} 
+}
 
 int palBiosComponent::reboot(uint8_t fruid) {
-  
-  // Let mb will be ON after AC cycle
+
   if (sys.runcmd("/usr/bin/killall gpiod > /dev/null") != 0)
     syslog(LOG_DEBUG, "killall gpiod failed");
   if (sys.runcmd("/usr/local/bin/cfg-util pwr_server_last_state on > /dev/null") != 0)

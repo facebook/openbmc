@@ -165,7 +165,7 @@ int BiosComponent::update(std::string image, bool force) {
 
     if (setDeepSleepWell(setLow))
       syslog(LOG_DEBUG, "Set PWRGD_DSW_PWROK low failed");
-    
+
     // wait for ME changing mode
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
@@ -182,7 +182,7 @@ int BiosComponent::update(std::string image, bool force) {
   }
 
   ret = GPIOSwitchedSPIMTDComponent::update(image);
-  
+
   if (ret == 0) {
     reboot(fruid);
   }

@@ -15,7 +15,7 @@ warrior_repos=(
     poky:d865ce7154 # python3: Upgrade 3.7.4 -> 3.7.5
 )
 zeus_repos=(
-    meta-openembedded:9e60d3066
-    meta-security:ecd8c30
-    poky:ca9dd4b8ea # mesa: fix meson configure fix when 'dri' is excluded from PACKAGECONFIG
+    meta-openembedded:2b5dd1eb8
+    meta-security:52e83e6
+    poky:d88d62c20d # selftest/signing: Ensure build path relocation is safe
 )

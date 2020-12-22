@@ -545,7 +545,7 @@ power_util(uint8_t fru, uint8_t opt, bool force) {
       pal_update_ts_sled();
       sync();
       sleep(1);
-      pal_sled_cycle();
+      ret = pal_sled_cycle();
       break;
 
     default:

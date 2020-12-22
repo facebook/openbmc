@@ -179,7 +179,7 @@ server_power_12v_off(uint8_t fru) {
   uint8_t tbuf[2] = {0};
   uint8_t tlen = 0;
   int ret = 0, retry= 0;
-  
+
   snprintf(cmd, 64, "rm -f /tmp/cache_store/slot%d_vr*", fru);
   if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
@@ -505,6 +505,7 @@ pal_sled_cycle(void) {
 
     if ( i == retries ) {
       printf("Failed to do the sled cycle. Please check the BIC is alive.\n");
+      ret = -1;
     }
   }
 

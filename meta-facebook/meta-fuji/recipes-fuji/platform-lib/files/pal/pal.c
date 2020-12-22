@@ -858,6 +858,120 @@ pal_get_cpld_board_rev(int *rev, const char *device) {
   return 0;
 }
 
+int cpld_name_to_path(const char *name, char *ver_path,char *min_ver_path,
+                      char *sub_ver_path, size_t size)
+{
+  int i, j;
+  static struct {
+  const char *name;
+  const char *sysfs_dir[2];
+  } cpld_sysfs_map[] = {
+    {
+      SCM_CPLD,
+      {SCM_SYSFS, NULL},
+    },
+    {
+      SMB_CPLD,
+      {SMB_SYSFS, NULL},
+    },
+    {
+      PWR_CPLD_L,
+      {PWR_L_SYSFS_DVT, PWR_L_SYSFS_EVT},
+    },
+    {
+      PWR_CPLD_R,
+      {PWR_R_SYSFS_DVT, PWR_R_SYSFS_EVT},
+    },
+    {
+      FCM_CPLD_T,
+      {FCM_T_SYSFS, NULL},
+    },
+    {
+      FCM_CPLD_B,
+      {FCM_B_SYSFS, NULL},
+    },
+    {NULL, {NULL, NULL}}, /* always the last entry. */
+  };
+
+  for (i = 0; cpld_sysfs_map[i].name != NULL; i++) {
+    if (strcmp(name, cpld_sysfs_map[i].name) != 0)
+      continue;
+
+    for (j = 0; j < ARRAY_SIZE(cpld_sysfs_map->sysfs_dir); j++) {
+      if (cpld_sysfs_map[i].sysfs_dir[j] != NULL &&
+            path_exists(cpld_sysfs_map[i].sysfs_dir[j])) {
+            snprintf(ver_path, size, "%scpld_ver", cpld_sysfs_map[i].sysfs_dir[j]);
+            snprintf(min_ver_path, size, "%scpld_minor_ver", cpld_sysfs_map[i].sysfs_dir[j]);
+            snprintf(sub_ver_path, size, "%scpld_sub_ver", cpld_sysfs_map[i].sysfs_dir[j]);
+            return 0;
+      }
+    }
+  }
+  return -1; /* no matched CPLD. */
+}
+
+int fpga_name_to_path(const char *name, char *ver_path, char *sub_ver_path, size_t size)
+{
+  int i, j;
+  static struct {
+  const char *name;
+  const char *sysfs_dir[2];
+  } fpga_sysfs_map[] = {
+    {
+      PIM1_DOM_FPGA,
+      {PIM1_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      PIM2_DOM_FPGA,
+      {PIM2_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      PIM3_DOM_FPGA,
+      {PIM3_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      PIM4_DOM_FPGA,
+      {PIM4_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      PIM5_DOM_FPGA,
+      {PIM5_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      PIM6_DOM_FPGA,
+      {PIM6_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      PIM7_DOM_FPGA,
+      {PIM7_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      PIM8_DOM_FPGA,
+      {PIM8_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      IOB_FPGA,
+      {IOBFPGA_SYSFS, NULL},
+    },
+    {NULL, {NULL, NULL}}, /* always the last entry. */
+  };
+
+  for (i = 0; fpga_sysfs_map[i].name != NULL; i++) {
+    if (strcmp(name, fpga_sysfs_map[i].name) != 0)
+      continue;
+
+    for (j = 0; j < ARRAY_SIZE(fpga_sysfs_map->sysfs_dir); j++) {
+      if (fpga_sysfs_map[i].sysfs_dir[j] != NULL &&
+            path_exists(fpga_sysfs_map[i].sysfs_dir[j])) {
+            snprintf(ver_path, size, "%sfpga_ver", fpga_sysfs_map[i].sysfs_dir[j]);
+            snprintf(sub_ver_path, size, "%sfpga_sub_ver", fpga_sysfs_map[i].sysfs_dir[j]);
+            return 0;
+      }
+    }
+  }
+  return -1; /* no matched CPLD. */
+}
+
 int
 pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver) {
   int val = -1;
@@ -865,89 +979,21 @@ pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver) {
   char min_ver_path[PATH_MAX];
   char sub_ver_path[PATH_MAX];
 
-  switch(fru) {
+  memset(ver_path, 0, sizeof(ver_path));
+  memset(min_ver_path, 0, sizeof(min_ver_path));
+  memset(sub_ver_path, 0, sizeof(sub_ver_path));
+
+  switch (fru) {
     case FRU_CPLD:
-      if (!(strncmp(device, SCM_CPLD, strlen(SCM_CPLD)))) {
-        snprintf(ver_path, sizeof(ver_path), SCM_SYSFS, "cpld_ver");
-        snprintf(min_ver_path, sizeof(min_ver_path),
-                 SCM_SYSFS, "cpld_min_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 SCM_SYSFS, "cpld_sub_ver");
-      } else if (!(strncmp(device, SMB_CPLD, strlen(SMB_CPLD)))) {
-        snprintf(ver_path, sizeof(ver_path), SMB_SYSFS, "cpld_ver");
-        snprintf(min_ver_path, sizeof(min_ver_path),
-                 SMB_SYSFS, "cpld_minor_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 SMB_SYSFS, "cpld_sub_ver");
-      } else if (!(strncmp(device, PWR_CPLD_L, strlen(PWR_CPLD_L)))) {
-        snprintf(ver_path, sizeof(ver_path), PWR_L_SYSFS, "cpld_ver");
-        snprintf(min_ver_path, sizeof(min_ver_path),
-                 PWR_L_SYSFS, "cpld_minor_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PWR_L_SYSFS, "cpld_sub_ver");
-      } else if (!(strncmp(device, PWR_CPLD_R, strlen(PWR_CPLD_R)))) {
-        snprintf(ver_path, sizeof(ver_path), PWR_R_SYSFS, "cpld_ver");
-        snprintf(min_ver_path, sizeof(min_ver_path),
-                 PWR_R_SYSFS, "cpld_minor_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PWR_R_SYSFS, "cpld_sub_ver");
-      }else if (!(strncmp(device, FCM_CPLD_T, strlen(FCM_CPLD_T)))) {
-        snprintf(ver_path, sizeof(ver_path), FCM_T_SYSFS, "cpld_ver");
-        snprintf(min_ver_path, sizeof(min_ver_path),
-                 FCM_T_SYSFS, "cpld_minor_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 FCM_T_SYSFS, "cpld_sub_ver");
-      } else if (!(strncmp(device, FCM_CPLD_B, strlen(FCM_CPLD_B)))) {
-        snprintf(ver_path, sizeof(ver_path), FCM_B_SYSFS, "cpld_ver");
-        snprintf(min_ver_path, sizeof(min_ver_path),
-                 FCM_B_SYSFS, "cpld_minor_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 FCM_B_SYSFS, "cpld_sub_ver");
-      } else {
+      if (cpld_name_to_path(device, ver_path, min_ver_path, sub_ver_path, PATH_MAX) < 0)
         return -1;
-      }
       break;
+
     case FRU_FPGA:
-      if (!(strncmp(device, PIM1_DOM_FPGA, strlen(PIM1_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM1_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM1_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, PIM2_DOM_FPGA, strlen(PIM2_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM2_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM2_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, PIM3_DOM_FPGA, strlen(PIM3_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM3_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM3_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, PIM4_DOM_FPGA, strlen(PIM4_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM4_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM4_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, PIM5_DOM_FPGA, strlen(PIM5_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM5_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM5_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, PIM6_DOM_FPGA, strlen(PIM6_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM6_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM6_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, PIM7_DOM_FPGA, strlen(PIM7_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM7_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM7_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, PIM8_DOM_FPGA, strlen(PIM8_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM8_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM8_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, IOB_FPGA, strlen(IOB_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), IOBFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 IOBFPGA_SYSFS, "fpga_sub_ver");
-      } else {
+      if (fpga_name_to_path(device, ver_path, sub_ver_path, PATH_MAX) < 0)
         return -1;
-      }
       break;
+
     default:
       return -1;
   }

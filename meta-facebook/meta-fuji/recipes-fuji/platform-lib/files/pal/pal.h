@@ -62,27 +62,29 @@ extern "C" {
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 #define GPIO_DIR "/sys/class/gpio/gpio%d/direction"
-#define SCM_SYSFS        I2C_DEV_DIR(2, 35)"%s"
+#define SCM_SYSFS        I2C_DEV_DIR(2, 35)
 #define SMBCPLD_PATH_FMT I2C_SYSFS_DEV_DIR(12-003e)"/%s"
 #define TOP_FCMCPLD_PATH_FMT I2C_SYSFS_DEV_DIR(64-0033)"/%s"
 #define BOTTOM_FCMCPLD_PATH_FMT I2C_SYSFS_DEV_DIR(72-0033)"/%s"
 #define LEFT_PDBCPLD_PATH_FMT I2C_SYSFS_DEV_DIR(55-0060)"/%s"
 #define RIGHT_PDBCPLD_PATH_FMT I2C_SYSFS_DEV_DIR(63-0060)"/%s"
 #define IOBFPGA_PATH_FMT I2C_SYSFS_DEV_DIR(13-0035)"/%s"
-#define SMB_SYSFS        I2C_DEV_DIR(12, 3e)"%s"
-#define PWR_L_SYSFS      I2C_DEV_DIR(55, 60)"%s"
-#define PWR_R_SYSFS      I2C_DEV_DIR(63, 60)"%s"
-#define FCM_T_SYSFS      I2C_DEV_DIR(64, 33)"%s"
-#define FCM_B_SYSFS      I2C_DEV_DIR(72, 33)"%s"
-#define PIM1_DOMFPGA_SYSFS   I2C_DEV_DIR(80, 60)"%s"
-#define PIM2_DOMFPGA_SYSFS   I2C_DEV_DIR(88, 60)"%s"
-#define PIM3_DOMFPGA_SYSFS   I2C_DEV_DIR(96, 60)"%s"
-#define PIM4_DOMFPGA_SYSFS   I2C_DEV_DIR(104, 60)"%s"
-#define PIM5_DOMFPGA_SYSFS   I2C_DEV_DIR(112, 60)"%s"
-#define PIM6_DOMFPGA_SYSFS   I2C_DEV_DIR(120, 60)"%s"
-#define PIM7_DOMFPGA_SYSFS   I2C_DEV_DIR(128, 60)"%s"
-#define PIM8_DOMFPGA_SYSFS   I2C_DEV_DIR(136, 60)"%s"
-#define IOBFPGA_SYSFS   I2C_DEV_DIR(13, 35)"%s"
+#define SMB_SYSFS        I2C_DEV_DIR(12, 3e)
+#define PWR_L_SYSFS_DVT  I2C_DEV_DIR(55, 60)
+#define PWR_R_SYSFS_DVT  I2C_DEV_DIR(63, 60)
+#define PWR_L_SYSFS_EVT  I2C_DEV_DIR(53, 60)
+#define PWR_R_SYSFS_EVT  I2C_DEV_DIR(61, 60)
+#define FCM_T_SYSFS      I2C_DEV_DIR(64, 33)
+#define FCM_B_SYSFS      I2C_DEV_DIR(72, 33)
+#define PIM1_DOMFPGA_SYSFS   I2C_DEV_DIR(80, 60)
+#define PIM2_DOMFPGA_SYSFS   I2C_DEV_DIR(88, 60)
+#define PIM3_DOMFPGA_SYSFS   I2C_DEV_DIR(96, 60)
+#define PIM4_DOMFPGA_SYSFS   I2C_DEV_DIR(104, 60)
+#define PIM5_DOMFPGA_SYSFS   I2C_DEV_DIR(112, 60)
+#define PIM6_DOMFPGA_SYSFS   I2C_DEV_DIR(120, 60)
+#define PIM7_DOMFPGA_SYSFS   I2C_DEV_DIR(128, 60)
+#define PIM8_DOMFPGA_SYSFS   I2C_DEV_DIR(136, 60)
+#define IOBFPGA_SYSFS   I2C_DEV_DIR(13, 35)
 #define SENSORD_FILE_SMB "/tmp/cache_store/smb_sensor%d"
 #define SENSORD_FILE_PSU "/tmp/cache_store/psu%d_sensor%d"
 #define KV_PATH "/mnt/data/kv_store/%s"

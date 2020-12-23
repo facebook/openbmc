@@ -267,6 +267,8 @@ class Fscd(object):
                             valid_read_limit = valid_table["limit"]
                             valid_read_action = valid_table["action"]
                             valid_read_th = valid_table["threshold"]
+                            # Use dict.get(key, None) avoid exception when no configuration
+                            valid_fault_tolerant = valid_table.get("fault_tolerant", None)
                             if isinstance(
                                 self.sensors[tuple.name].source, FscSensorSourceUtil
                             ):
@@ -287,6 +289,12 @@ class Fscd(object):
                                             + str(valid_read_limit)
                                             + ") reached"
                                         )
+                                        if valid_fault_tolerant:
+                                            Logger.info(
+                                                "%s without action since fault_tolerant is enabled"
+                                                % (reason)
+                                            )
+                                            continue
                                         self.fsc_host_action(
                                             action=valid_read_action, cause=reason
                                         )

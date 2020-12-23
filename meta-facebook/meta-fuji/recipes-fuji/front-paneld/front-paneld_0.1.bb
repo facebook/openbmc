@@ -42,8 +42,8 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "
-RDEPENDS_${PN} += " libpal libbic libkv libsdr libobmc-i2c "
-
+RDEPENDS_${PN} += " libpal libbic libkv libsdr libobmc-i2c libmisc-utils"
+LDFLAGS += "-lmisc-utils"
 
 # Inhibit complaints about .debug directories:
 

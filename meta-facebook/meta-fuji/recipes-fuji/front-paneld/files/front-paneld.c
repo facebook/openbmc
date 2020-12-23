@@ -37,6 +37,7 @@
 #include <openbmc/ipmb.h>
 #include <openbmc/pal.h>
 #include <openbmc/pal_sensors.h>
+#include <openbmc/misc-utils.h>
 #include <openbmc/sdr.h>
 #include <openbmc/obmc-i2c.h>
 
@@ -149,7 +150,7 @@ pim_driver_add(uint8_t num, uint8_t pim_type) {
   uint8_t bus = ((num - 1) * 8) + 80;
   add_pim_lmsensor_conf(num, bus, pim_type);
 
-  state = pal_detect_i2c_device(bus + 4, ADM1278_ADDR, MODE_AUTO, 1);
+  state = i2c_detect_device(bus + 4, ADM1278_ADDR);
   if (state) {
     pim_device_detect_log(num, bus + 4, ADM1278_ADDR, ADM1278_NAME, state);
   }
@@ -507,7 +508,7 @@ static int psu_check(int brd_rev) {
 
   for (int i = 0; i < sizeof(sysfs) / sizeof(sysfs[0]); i++) {
     snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, sysfs[i]);
-    if (read_device(path, (int*)&status)) {
+    if (device_read(path, (int*)&status)) {
       syslog(LOG_CRIT, "cannot access %s", sysfs[i]);
       ret = -1;
       continue;

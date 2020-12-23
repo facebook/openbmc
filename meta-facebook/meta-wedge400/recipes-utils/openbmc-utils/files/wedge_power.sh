@@ -93,6 +93,7 @@ do_on() {
                 ;;
         esac
     done
+    logger -p user.crit "Power on microserver ..."
     echo -n "Power on microserver ..."
     if [ $force -eq 0 ]; then
         # need to check if uS is on or not
@@ -109,10 +110,8 @@ do_on() {
     ret=$?
     if [ $ret -eq 0 ]; then
         echo " Done"
-	logger "Successfully power on micro-server"
     else
         echo " Failed"
-        logger "Failed to power on micro-server"
     fi
     return $ret
 }
@@ -124,6 +123,7 @@ do_off_com_e() {
 
 do_off() {
     local ret
+    logger -p user.crit "Power off microserver ..."
     echo -n "Power off microserver ..."
     do_off_com_e
     ret=$?
@@ -189,19 +189,19 @@ do_reset() {
         if [ $timer -eq 1 ]; then
             do_config_reset_timer "$wake_t"
         fi
+        logger -p user.crit "Power reset the whole system ..."
+        echo  "Power reset the whole system ..."
         # Synchronize cached writes to persistent storage
         # We found somethimes /mnt/data data lost after wedge_power.sh reset -s,
         # add sync in case of file system will be broken by random power cycle.
         sync
-        logger "Power reset the whole system ..."
-        echo  "Power reset the whole system ..."
         echo 1 > "$PWR_CYCLE_SYSFS"
         sleep 3
         # Control should not reach here, but if it failed to reset
         # the system through PSU, then run a workaround to reset
         # most of the system instead (if not all)
-        logger "Failed to reset the system. Will sleep for 3 sec then running a workaround"
-        echo "Failed to reset the system. Will sleep for 3 sec then running a workaround"
+        logger -p user.crit "Failed to reset the system. Will start workaround in 3 sec.."
+        echo "Failed to reset the system. Will start workaround in 3 sec.."
         i2cset -f -y 1 0x3a 0x12 0
     else
         if ! wedge_is_us_on; then
@@ -211,13 +211,13 @@ do_reset() {
         fi
         # reset TH first
         # reset_brcm.sh
+        logger -p user.crit "Power reset microserver ..."
         echo -n "Power reset microserver ..."
         echo 0 > "$PWR_USRV_RST_SYSFS"
         sleep 1
         echo 1 > "$PWR_USRV_RST_SYSFS"
-        logger "Successfully power reset micro-server"
+        echo "Done"
     fi
-    echo " Done"
     return 0
 }
 

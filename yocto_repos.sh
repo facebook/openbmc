@@ -2,6 +2,8 @@ branches=(
     rocko
     warrior
     zeus
+    lf-master
+    lf-dunfell
 )
 
 rocko_repos=(
@@ -18,4 +20,10 @@ zeus_repos=(
     meta-openembedded:2b5dd1eb8
     meta-security:52e83e6
     poky:d88d62c20d # selftest/signing: Ensure build path relocation is safe
+)
+lf_master_repos=(
+    lf-openbmc:54040004f
+)
+lf_dunfell_repos=(
+    lf-openbmc:94a70a0f7
 )

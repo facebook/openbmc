@@ -189,6 +189,10 @@ do_reset() {
         if [ $timer -eq 1 ]; then
             do_config_reset_timer "$wake_t"
         fi
+        # Synchronize cached writes to persistent storage
+        # We found somethimes /mnt/data data lost after wedge_power.sh reset -s,
+        # add sync in case of file system will be broken by random power cycle.
+        sync
         logger "Power reset the whole system ..."
         echo  "Power reset the whole system ..."
         echo 1 > "$PWR_CYCLE_SYSFS"

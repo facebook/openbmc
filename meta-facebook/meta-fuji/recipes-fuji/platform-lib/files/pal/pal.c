@@ -125,156 +125,6 @@ char * def_val_list[] = {
 
 sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
-// Helper Functions
-int read_device(const char *device, int *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "r");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to open device %s", device);
-#endif
-    return err;
-  }
-
-  rc = fscanf(fp, "%i", value);
-  fclose(fp);
-  if (rc != 1) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to read device %s", device);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-int
-write_device(const char *device, const char *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "w");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to open device for write %s", device);
-#endif
-    return err;
-  }
-
-  rc = fputs(value, fp);
-  fclose(fp);
-
-  if (rc < 0) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to write device %s", device);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-int
-pal_detect_i2c_device(uint8_t bus, uint8_t addr, uint8_t mode, uint8_t force) {
-
-  int fd = -1, rc = -1;
-  char fn[32];
-  uint32_t funcs;
-
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
-  fd = open(fn, O_RDWR);
-  if (fd == -1) {
-    syslog(LOG_WARNING, "Failed to open i2c device %s", fn);
-    return I2C_BUS_ERROR;
-  }
-
-  if (ioctl(fd, I2C_FUNCS, &funcs) < 0) {
-    syslog(LOG_WARNING, "Failed to get %s functionality matrix", fn);
-    close(fd);
-    return I2C_FUNC_ERROR;
-  }
-
-  if (force) {
-    if (ioctl(fd, I2C_SLAVE_FORCE, addr)) {
-      syslog(LOG_WARNING, "Failed to open slave @ address 0x%x", addr);
-      close(fd);
-      return I2C_DEVICE_ERROR;
-    }
-   } else {
-    if (ioctl(fd, I2C_SLAVE, addr) < 0) {
-      syslog(LOG_WARNING, "Failed to open slave @ address 0x%x", addr);
-      close(fd);
-      return I2c_DRIVER_EXIST;
-    }
-  }
-
-  /* Probe this address */
-  switch (mode) {
-    case MODE_QUICK:
-      /* This is known to corrupt the Atmel AT24RF08 EEPROM */
-      rc = i2c_smbus_write_quick(fd, I2C_SMBUS_WRITE);
-      break;
-    case MODE_READ:
-      /* This is known to lock SMBus on various
-         write-only chips (mainly clock chips) */
-      rc = i2c_smbus_read_byte(fd);
-      break;
-    default:
-      if ((addr >= 0x30 && addr <= 0x37) || (addr >= 0x50 && addr <= 0x5F))
-        rc = i2c_smbus_read_byte(fd);
-      else
-        rc = i2c_smbus_write_quick(fd, I2C_SMBUS_WRITE);
-  }
-  close(fd);
-
-  if (rc < 0) {
-    return I2C_DEVICE_ERROR;
-  } else {
-    return 0;
-  }
-}
-
-int
-pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name) {
-
-  int ret = -1;
-  char cmd[64];
-
-  snprintf(cmd, sizeof(cmd),
-            "echo %s %d > /sys/bus/i2c/devices/i2c-%d/new_device",
-              device_name, addr, bus);
-
-#if DEBUG
-  syslog(LOG_WARNING, "[%s] Cmd: %s", __func__, cmd);
-#endif
-
-  ret = run_command(cmd);
-
-  return ret;
-}
-
-int
-pal_del_i2c_device(uint8_t bus, uint8_t addr) {
-
-  int ret = -1;
-  char cmd[64];
-
-  sprintf(cmd, "echo %d > /sys/bus/i2c/devices/i2c-%d/delete_device",
-           addr, bus);
-
-#if DEBUG
-  syslog(LOG_WARNING, "[%s] Cmd: %s", __func__, cmd);
-#endif
-
-  ret = run_command(cmd);
-
-  return ret;
-}
-
 int
 pal_get_pim_type(uint8_t fru, int retry) {
   int ret = -1, val;
@@ -288,7 +138,7 @@ pal_get_pim_type(uint8_t fru, int retry) {
     retry = 0;
   }
 
-  while ((ret = read_device(path, &val)) != 0 && retry--) {
+  while ((ret = device_read(path, &val)) != 0 && retry--) {
     msleep(500);
   }
   if (ret) {
@@ -361,7 +211,7 @@ int pal_get_pim_pedigree(uint8_t fru, int retry){
   bus = ((fru - FRU_PIM1) * 8) + 80;
   snprintf(path, sizeof(path), I2C_SYSFS_DEVICES"/%d-0060/board_ver", bus);
 
-  while ((ret = read_device(path, &val)) != 0 && retry--) {
+  while ((ret = device_read(path, &val)) != 0 && retry--) {
     msleep(500);
   }
   if (ret) {
@@ -432,7 +282,7 @@ pal_get_pim_phy_type(uint8_t fru, int retry) {
     retry = 0;
   }
 
-  while ((ret = read_device(path, &val)) != 0 && retry--) {
+  while ((ret = device_read(path, &val)) != 0 && retry--) {
     msleep(500);
   }
   if (ret) {
@@ -796,7 +646,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       return -1;
     }
 
-    if (read_device(path, &val)) {
+    if (device_read(path, &val)) {
       return -1;
     }
 
@@ -837,7 +687,7 @@ pal_get_board_rev(int *rev) {
   int ret = -1;
 
   snprintf(path, sizeof(path), IOBFPGA_PATH_FMT, "board_ver");
-  ret = read_device(path, &val);
+  ret = device_read(path, &val);
   if (ret) {
     return -1;
   }
@@ -851,7 +701,7 @@ pal_get_cpld_board_rev(int *rev, const char *device) {
   char full_name[LARGEST_DEVICE_NAME + 1];
 
   snprintf(full_name, LARGEST_DEVICE_NAME, device, "board_ver");
-  if (read_device(full_name, rev)) {
+  if (device_read(full_name, rev)) {
     return -1;
   }
 
@@ -998,21 +848,21 @@ pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver) {
       return -1;
   }
 
-  if (!read_device(ver_path, &val)) {
+  if (!device_read(ver_path, &val)) {
     ver[0] = (uint8_t)val;
   } else {
     return -1;
   }
 
   if (fru == FRU_CPLD) {
-    if (!read_device(min_ver_path, &val)) {
+    if (!device_read(min_ver_path, &val)) {
       ver[1] = (uint8_t)val;
     } else {
       return -1;
     }
   }
 
-  if (!read_device(sub_ver_path, &val)) {
+  if (!device_read(sub_ver_path, &val)) {
     if(fru == FRU_CPLD) {
       ver[2] = (uint8_t)val;
     } else {
@@ -1041,9 +891,9 @@ _set_pim_sts_led(uint8_t fru, uint8_t color)
            I2C_SYSFS_DEVICES"/%d-0060/system_led", bus);
 
   if(color == FPGA_STS_CLR_BLUE)
-    write_device(path, "1");
+    device_write_buff(path, "1");
   else if(color == FPGA_STS_CLR_YELLOW)
-    write_device(path, "0");
+    device_write_buff(path, "0");
 
   return 0;
 }
@@ -1058,7 +908,7 @@ pal_set_pim_sts_led(uint8_t fru)
   /* FRU_PIM1 = 3, FRU_PIM2 = 4, ...., FRU_PIM8 = 10 */
   /* KV_PIM1 = 1, KV_PIM2 = 2, ...., KV_PIM8 = 8 */
   snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - 2);
-  if(read_device(path, &val)) {
+  if(device_read(path, &val)) {
     syslog(LOG_ERR, "%s cannot get value from %s", __func__, path);
     return;
   }
@@ -1226,9 +1076,9 @@ set_sled(int brd_rev, uint8_t color, uint8_t name)
   }
   
   sprintf(led_path,"/sys/class/leds/%s/multi_intensity", led_names[name]);
-  write_device(led_path, led_colors[color].color);
+  device_write_buff(led_path, led_colors[color].color);
   sprintf(led_path,"/sys/class/leds/%s/brightness", led_names[name]);
-  write_device(led_path, led_colors[color].brightness);
+  device_write_buff(led_path, led_colors[color].brightness);
 
   return 0;
 }
@@ -1368,10 +1218,10 @@ pal_light_scm_led(uint8_t led_color)
     val = "0";
   else
     val = "1";
-  ret = write_device(SCM_SYS_LED_COLOR, val);
+  ret = device_write_buff(SCM_SYS_LED_COLOR, val);
   if (ret) {
 #ifdef DEBUG
-  syslog(LOG_WARNING, "write_device failed for %s\n", SCM_SYS_LED_COLOR);
+  syslog(LOG_WARNING, "device_write_buff failed for %s\n", SCM_SYS_LED_COLOR);
 #endif
     return -1;
   }
@@ -1562,7 +1412,7 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len,
   board_sku_id = pal_get_plat_sku_id();
 
   snprintf(path, sizeof(path), IOBFPGA_PATH_FMT, "board_ver");
-  ret = read_device(path, &val);
+  ret = device_read(path, &val);
   if (ret) return CC_NODE_BUSY;
   board_rev = val;
 

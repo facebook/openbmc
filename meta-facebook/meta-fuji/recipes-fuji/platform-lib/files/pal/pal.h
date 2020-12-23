@@ -276,7 +276,6 @@ enum {
 
 extern sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM];
 
-int read_device(const char *device, int *value);
 int pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data);
 void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
 int pal_get_plat_sku_id(void);
@@ -306,9 +305,6 @@ int pal_get_board_rev(int *rev);
 bool pal_is_fw_update_ongoing(uint8_t fru);
 int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
 void pal_update_ts_sled(void);
-int pal_detect_i2c_device(uint8_t bus, uint8_t addr, uint8_t mode, uint8_t force);
-int pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name);
-int pal_del_i2c_device(uint8_t bus, uint8_t addr);
 int pal_get_pim_type(uint8_t fru, int retry);
 int pal_set_pim_type_to_file(uint8_t fru, char *type);
 int pal_get_pim_type_from_file(uint8_t fru);
@@ -335,7 +331,6 @@ int pal_is_slot_server(uint8_t fru);
 int pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver);
 int pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log);
 int pal_get_cpld_board_rev(int *rev, const char *device);
-int write_device(const char *device, const char *value);
 int pal_get_80port_record(uint8_t slot, uint8_t *res_data, size_t max_len, size_t *res_len);
 int pal_get_num_slots(uint8_t *num);
 int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len,

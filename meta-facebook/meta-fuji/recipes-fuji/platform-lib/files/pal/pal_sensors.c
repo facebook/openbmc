@@ -1371,7 +1371,7 @@ check_and_read_sensor_value(uint8_t fru, uint8_t snr_num, const char *device,
   char dir_name[LARGEST_DEVICE_NAME + 1];
 
   if (snr_path[fru][snr_num].name != NULL) {
-    if (!read_device(snr_path[fru][snr_num].name, value))
+    if (!device_read(snr_path[fru][snr_num].name, value))
       return 0;
   }
 
@@ -1387,7 +1387,7 @@ check_and_read_sensor_value(uint8_t fru, uint8_t snr_num, const char *device,
              "%s/%s", device, attr);
   }
 
-  if (read_device(snr_path[fru][snr_num].name, value)) {
+  if (device_read(snr_path[fru][snr_num].name, value)) {
     return -1;
   }
 
@@ -1478,7 +1478,7 @@ read_fan_rpm_f(const char *device, uint8_t fan, float *value) {
 
   snprintf(device_name, 11, "fan%d_input", fan);
   snprintf(full_name, sizeof(full_name), "%s/%s", device, device_name);
-  if (read_device(full_name, &tmp)) {
+  if (device_read(full_name, &tmp)) {
     return -1;
   }
 
@@ -1846,7 +1846,7 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case SMB_SENSOR_TH4_HIGH:
       /* Enable the hardware lock in SMB CPLD to th4 access */
       snprintf(path, sizeof(path), SMBCPLD_PATH_FMT, "th4_read_N");
-      write_device(path, "1");
+      device_write_buff(path, "1");
       *value = 0;
       for ( int id = 1; id <= TH4_SENSOR_NUM; id++ ){
         sprintf(path,"temp%d_input",id);
@@ -1863,7 +1863,7 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       }
       /* Disable the hardware lock in SMB CPLD to avoid invalid th4 access */
       snprintf(path, sizeof(path), SMBCPLD_PATH_FMT, "th4_read_N");
-      write_device(path, "0");
+      device_write_buff(path, "0");
       if(num == TH4_SENSOR_NUM){
         ret = 0;
       }else{
@@ -2258,7 +2258,7 @@ psu_acok_check(uint8_t fru) {
     snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, "psu_R1_input_ok");
   }
 
-  if (read_device(path, &val)) {
+  if (device_read(path, &val)) {
     syslog(LOG_ERR, "%s cannot get value from %s", __func__, path);
     return 0;
   }

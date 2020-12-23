@@ -84,10 +84,10 @@ int
 pal_set_com_pwr_btn_n(char *status) {
   int ret;
 
-  ret = write_device(SCM_COM_PWR_BTN, status);
+  ret = device_write_buff(SCM_COM_PWR_BTN, status);
   if (ret) {
 #ifdef DEBUG
-  syslog(LOG_WARNING, "write_device failed for %s\n", SCM_COM_PWR_BTN);
+  syslog(LOG_WARNING, "device_write_buff failed for %s\n", SCM_COM_PWR_BTN);
 #endif
     return -1;
   }
@@ -113,7 +113,7 @@ static int
 server_power_on(void) {
   int ret, val;
 
-  ret = read_device(SCM_COM_PWR_ENBLE, &val);
+  ret = device_read(SCM_COM_PWR_ENBLE, &val);
   if (ret || val) {
     if (pal_set_com_pwr_btn_n("1")) {
       return -1;
@@ -134,7 +134,7 @@ server_power_on(void) {
       return -1;
     }
   } else {
-    ret = write_device(SCM_COM_PWR_ENBLE, "1");
+    ret = device_write_buff(SCM_COM_PWR_ENBLE, "1");
     if (ret) {
       syslog(LOG_WARNING, "%s: Power on is failed", __func__);
       return -1;
@@ -161,7 +161,7 @@ server_power_off(bool gs_flag) {
       return -1;
     }
   } else {
-    ret = write_device(SCM_COM_PWR_ENBLE, "0");
+    ret = device_write_buff(SCM_COM_PWR_ENBLE, "0");
     if (ret) {
       syslog(LOG_WARNING, "%s: Power off is failed",__func__);
       return -1;

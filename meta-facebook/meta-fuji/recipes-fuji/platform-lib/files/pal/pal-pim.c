@@ -78,7 +78,7 @@ static int pim_dom_fpga_indirect_read(int fru, u_int32_t reg, int *value)
 
     snprintf(path, sizeof(path), I2C_SYSFS_DEVICES"/%d-0060/indirect_read", bus);
 
-    if (read_device(path, value))
+    if (device_read(path, value))
         return -1;
 
     return 0;

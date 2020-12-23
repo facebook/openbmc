@@ -11,7 +11,11 @@ fi
 declare -a PLAT_DISTRO_OVERRIDES
 # Add overrides here on a per-platform basis.
 PLAT_DISTRO_OVERRIDES=(
-# Latest platforms
+# master / rolling-release platforms
+#   -- none --
+# dunfell platforms (latest)
+#   -- none --
+# zeus platforms (pending upgrade)
   meta-qemux86:zeus
   meta-fbal:zeus
   meta-fbep:zeus
@@ -21,7 +25,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-grandcanyon:zeus
   meta-cmm:zeus
   meta-elbert:zeus
-# Pending upgrade
+# warrior platforms (pending upgrade)
   meta-cloudripper:warrior
   meta-wedge400:warrior
   meta-fuji:warrior

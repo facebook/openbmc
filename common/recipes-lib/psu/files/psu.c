@@ -26,6 +26,7 @@
 
 static delta_hdr_t delta_hdr;
 static murata_hdr_t murata_hdr;
+static murata2k_hdr_t murata2k_hdr;
 
 pmbus_info_t pmbus[] = {
   {"MFR_ID", 0x99},
@@ -943,6 +944,275 @@ update_murata_psu(uint8_t num, const char *file_path) {
   return ret;
 }
 
+static int
+murata2k_img_hdr_parse(const char *file_path) {
+  int i = 0, ret = 0;
+  int fd_file = -1;
+  int readnum = 0;
+  int index = 0;
+  uint8_t hdr_buf[MURATA2K_HDR_LENGTH];
+
+  fd_file = open(file_path, O_RDONLY, 0666);
+  if (fd_file < 0) {
+    OBMC_ERROR(errno, "Open file %s failed\n", file_path);
+    return -1;
+  }
+
+  readnum = read(fd_file, hdr_buf, sizeof(hdr_buf));
+  if (readnum < sizeof(hdr_buf)) {
+    OBMC_ERROR(errno, "Read file %d failed\n", fd_file);
+    close(fd_file);
+    return -1;
+  }
+
+  memset(&murata2k_hdr, 0, sizeof(murata2k_hdr));
+  murata2k_hdr.crc[0] = hdr_buf[index++];
+  murata2k_hdr.crc[1] = hdr_buf[index++];
+  murata2k_hdr.page_start = hdr_buf[index++];
+  murata2k_hdr.page_start |= hdr_buf[index++] << 8;
+  murata2k_hdr.page_end = hdr_buf[index++];
+  murata2k_hdr.page_end |= hdr_buf[index++] << 8;
+  murata2k_hdr.byte_per_blk = hdr_buf[index++];
+  murata2k_hdr.byte_per_blk |= hdr_buf[index++] << 8;
+  murata2k_hdr.blk_per_page = hdr_buf[index++];
+  murata2k_hdr.blk_per_page |= hdr_buf[index++] << 8;
+  murata2k_hdr.uc = hdr_buf[index++];
+  murata2k_hdr.app_fw_major = hdr_buf[index++];
+  murata2k_hdr.app_fw_minor = hdr_buf[index++];
+  murata2k_hdr.bl_fw_major = hdr_buf[index++];
+  murata2k_hdr.bl_fw_minor = hdr_buf[index++];
+  murata2k_hdr.fw_id_len = hdr_buf[index++];
+
+  if (MURATA2K_FWID_LENGTH != murata2k_hdr.fw_id_len) {
+    OBMC_WARN("Error FWID length: %d!\n", murata2k_hdr.fw_id_len);
+    close(fd_file);
+    return -1;
+  }
+
+  for (i = 0; i < murata2k_hdr.fw_id_len; i++) {
+    murata2k_hdr.fw_id[i] = hdr_buf[index++];
+  }
+  murata2k_hdr.compatibility = hdr_buf[index];
+
+  if (index >= sizeof(hdr_buf)) {
+    OBMC_WARN("Buffer hdr_buf overflow, index: %d, hdr_buf size: %d!\n",
+              index, sizeof(hdr_buf));
+    close(fd_file);
+    return -1;
+  }
+
+  if (!strncmp((char *)murata2k_hdr.fw_id,
+      MURATA_FWID_2K, strlen(MURATA_FWID_2K))) {
+    ret = MURATA_2000;
+    OBMC_INFO("Vendor: Murata\n");
+  } else {
+    OBMC_WARN("Get image header fail, error FW ID: %s!\n", murata2k_hdr.fw_id);
+    close(fd_file);
+    return -1;
+  }
+
+  OBMC_INFO("FW ID: %s\n", murata2k_hdr.fw_id);
+  OBMC_INFO("HW Compatibility: %d\n", murata2k_hdr.compatibility);
+  if (murata2k_hdr.uc == 0x10) {
+    OBMC_INFO("MCU: primary\n");
+  } else if (murata2k_hdr.uc == 0x20) {
+    OBMC_INFO("MCU: secondary\n");
+  } else {
+    OBMC_WARN("MCU: unknown number 0x%x\n", murata2k_hdr.uc);
+    ret = -1;
+  }
+  OBMC_INFO("Ver: %d.%d\n", murata2k_hdr.app_fw_major, murata2k_hdr.app_fw_minor);
+  close(fd_file);
+
+  return ret;
+}
+
+static int
+murata2k_unlock_upgrade(uint8_t num) {
+  uint8_t i = 0, j = 0;
+  uint8_t block[murata2k_hdr.fw_id_len + 2];
+
+  block[0] = murata2k_hdr.uc;
+  block[murata2k_hdr.fw_id_len + 1] = murata2k_hdr.compatibility;
+
+  for (i = 1, j = murata2k_hdr.fw_id_len - 1;
+       i <= murata2k_hdr.fw_id_len; i++, j--) {
+    block[i] = murata2k_hdr.fw_id[j];
+  }
+
+  i2c_smbus_write_block_data(psu[num].fd, UNLOCK_UPGRADE, sizeof(block), block);
+  return 0;
+}
+
+static int
+murata2k_boot_flag(uint8_t num, uint16_t mode, uint8_t op) {
+  uint16_t word = (mode << 8) | murata2k_hdr.uc;
+
+  if (op == WRITE) {
+    if (mode == BOOT_MODE) {
+      OBMC_INFO("-- Bootloader Mode --\n");
+    } else {
+      OBMC_INFO("-- Reset PSU --\n");
+    }
+    return i2c_smbus_write_word_data(psu[num].fd, BOOT_FLAG, word);
+  } else {
+    return i2c_smbus_read_byte_data(psu[num].fd, BOOT_FLAG);
+  }
+}
+
+static int
+murata2k_fw_transmit(uint8_t num, const char *path) {
+  FILE* fp = NULL;
+  int fw_len = 0;
+  int block_total = 0;
+  int byte_index = 0;
+  uint16_t page_num_lo = murata2k_hdr.page_start;
+  uint16_t block_size = murata2k_hdr.blk_per_page;
+  uint16_t page_num_max = murata2k_hdr.page_end;
+  uint32_t fw_block = block_size * (page_num_max - page_num_lo + 1);
+  uint8_t block[MURATA2K_BYTE_PER_BLK + 3] = {0};
+  uint8_t fw_buf[MURATA2K_BYTE_PER_BLK];
+  uint8_t *fw_data = NULL;
+  int ret = 0;
+
+  fw_len = check_file_len(path);
+  if (fw_len < 0) {
+    OBMC_ERROR(errno, "failed to get %s size\n", path);
+    return -1;
+  } else if (fw_len <= MURATA2K_HDR_LENGTH) {
+    OBMC_WARN("%s size is too small (%d < 32)\n", path, fw_len);
+    return -1;
+  }
+
+  fw_len -= MURATA2K_HDR_LENGTH;
+  fw_data = malloc(fw_len);
+  if (fw_data == NULL) {
+    OBMC_ERROR(errno, "failed to allocate %d bytes\n", fw_len);
+    return -1;
+  }
+
+  fp = fopen(path, "rb");
+  if (fp == NULL) {
+    OBMC_ERROR(errno, "failed to open %s\n", path);
+    ret = -1;
+    goto exit;
+  }
+  ret = fseek(fp, MURATA2K_HDR_LENGTH, SEEK_SET);
+  if (ret != 0) {
+    OBMC_ERROR(errno, "fseek %s failed\n", path);
+    goto exit;
+  }
+  ret = fread(fw_data, sizeof(*fw_data), fw_len, fp);
+  if (ret != fw_len) {
+    OBMC_WARN("failed to read %d items from %s\n", fw_len, path);
+    ret = -1;
+    goto exit;
+  }
+
+  if (murata2k_hdr.uc == 0x10) {
+    OBMC_INFO("-- Transmit Primary Firmware --\n");
+  } else if (murata2k_hdr.uc == 0x20) {
+    OBMC_INFO("-- Transmit Secondary Firmware --\n");
+  }
+
+  while (block_total <= fw_block) {
+    block[0] = murata2k_hdr.uc;
+
+    /* block[1] - Block Num LO
+       block[2] - Block Num HI */
+    if (block[1] < block_size) {
+      memcpy(&fw_buf[0], &fw_data[byte_index], MURATA2K_BYTE_PER_BLK);
+      memcpy(&block[3], &fw_buf, MURATA2K_BYTE_PER_BLK);
+      i2c_smbus_write_block_data(psu[num].fd, DATA_TO_RAM,
+                                 sizeof(block), block);
+      if (murata2k_hdr.uc == 0x10) {
+        msleep(60);
+      } else if (murata2k_hdr.uc == 0x20) {
+        msleep(10);
+      }
+
+      block[1]++;
+      block[2] = 0;
+      block_total++;
+      byte_index = byte_index + MURATA2K_BYTE_PER_BLK;
+      /* This printf can not be replaced by OBMC_INFO
+      because OBMC_INFO treats the \r as \n */
+      printf("-- (%d/%d) (%d%%/100%%) --\r",
+             block_total, fw_block, (100 * block_total) / fw_block);
+    } else {
+      block[1] = (page_num_lo & 0xff);
+      block[2] = ((page_num_lo >> 8) & 0xff);
+      i2c_smbus_write_block_data(psu[num].fd, DATA_TO_FLASH, 3, block);
+      msleep(90);
+      if (page_num_lo == page_num_max) {
+        OBMC_INFO("\n");
+        goto exit;
+      } else {
+        page_num_lo++;
+        block[1] = 0;
+        block[2] = 0;
+      }
+    }
+  }
+exit:
+  if (fp != NULL)
+    fclose(fp);
+  free(fw_data);
+  return ret;
+}
+
+static int
+murata2k_crc_transmit(uint8_t num) {
+  uint8_t block[] = {murata2k_hdr.uc,
+                     murata2k_hdr.crc[0],
+                     murata2k_hdr.crc[1]};
+
+  OBMC_INFO("-- Transmit CRC --\n");
+  i2c_smbus_write_block_data(psu[num].fd, CRC_CHECK, sizeof(block), block);
+
+  return 0;
+}
+
+static int
+update_murata2k_psu(uint8_t num, const char *file_path) {
+  int ret = -1;
+
+  ret = murata2k_img_hdr_parse(file_path);
+  if (ret == MURATA_2000) {
+    if (murata2k_hdr.byte_per_blk != MURATA2K_BYTE_PER_BLK) {
+      OBMC_WARN("Image block size %d invalid!\n", murata2k_hdr.byte_per_blk);
+      return UPDATE_SKIP;
+    }
+
+    if (ioctl(psu[num].fd, I2C_PEC, 1) < 0) {
+      OBMC_ERROR(errno, "psu%d ioctl error!\n", num);
+      return UPDATE_SKIP;
+    }
+
+    murata2k_unlock_upgrade(num);
+    msleep(20);
+    murata2k_boot_flag(num, BOOT_MODE, WRITE);
+    msleep(2500);
+    if (murata2k_fw_transmit(num, file_path) < 0) {
+      return -1;
+    }
+
+    murata2k_crc_transmit(num);
+    msleep(1500);
+    murata2k_boot_flag(num, NORMAL_MODE, WRITE);
+
+    if (murata2k_hdr.uc == 0x10) {
+      msleep(4000);
+    } else if (murata2k_hdr.uc == 0x20) {
+      msleep(2000);
+    }
+    OBMC_INFO("-- Upgrade Done --\n");
+    return 0;
+  } else {
+    return UPDATE_SKIP;
+  };
+}
+
 int
 is_psu_prsnt(uint8_t num, uint8_t *status) {
 
@@ -1004,6 +1274,9 @@ do_update_psu(uint8_t num, const char *file_path, const char *vendor) {
       ret = update_belpower_psu(num, file_path);
     } else if (!strncmp((char *)block, MURATA_MODEL, strlen(MURATA_MODEL))) {
       ret = update_murata_psu(num, file_path);
+    } else if (!strncmp((char *)block, MURATA_MODEL_2K,
+               strlen(MURATA_MODEL_2K))) {
+      ret = update_murata2k_psu(num, file_path);
     } else {
       printf("Unsupported device: %s\n", block);
       ret = UPDATE_SKIP;
@@ -1019,6 +1292,8 @@ do_update_psu(uint8_t num, const char *file_path, const char *vendor) {
       ret = update_belpower_psu(num, file_path);
     } else if (!strncasecmp(vendor, "murata", strlen("murata"))) {
       ret = update_murata_psu(num ,file_path);
+    } else if (!strncasecmp(vendor, "2k-murata", strlen("2k-murata"))) {
+      ret = update_murata2k_psu(num ,file_path);
     } else {
       printf("Unsupported vendor: %s\n", vendor);
       ret = UPDATE_SKIP;

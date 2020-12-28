@@ -34,30 +34,42 @@
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
 
-#define LED_ON_TIME_IDENTIFY 500
-#define LED_OFF_TIME_IDENTIFY 500
+#define LED_INTERVAL_DEFAULT 500 //millisecond
 
 // Thread to handle LED state of the SLED
 static void *
 led_sync_handler() {
-  int ret = 0;
+  int ret = 0, ret2 = 0;
   char identify[MAX_VALUE_LEN] = {0};
+  char interval[MAX_VALUE_LEN] = {0};
 
   while (1) {
     // Handle Slot IDENTIFY condition
     memset(identify, 0x0, sizeof(identify));
+    memset(interval, 0x0, sizeof(interval));
+    
     ret = pal_get_key_value("system_identify", identify);
-    if (ret == 0 && !strncmp(identify, "on", sizeof(identify))) {
+    ret2 = pal_get_key_value("system_identify_led_interval", interval);
+    
+    if ((ret == 0) && (strcmp(identify, "on") == 0)) {
       // Start blinking the ID LED
       pal_set_id_led(FRU_UIC, LED_ON);
-
-      msleep(LED_ON_TIME_IDENTIFY);
-
+      
+      if ((ret2 == 0) && (strcmp(interval, "default") == 0)) {
+        msleep(LED_INTERVAL_DEFAULT);
+      } else if (ret2 == 0) {
+        sleep(atoi(interval));
+      }
+      
       pal_set_id_led(FRU_UIC, LED_OFF);
 
-      msleep(LED_OFF_TIME_IDENTIFY);
+      if ((ret2 == 0) && (strcmp(interval, "default") == 0)) {
+        msleep(LED_INTERVAL_DEFAULT);
+      } else if (ret2 == 0) {
+        sleep(atoi(interval));
+      }
       continue;
-    } else if (ret == 0 && !strncmp(identify, "off", sizeof(identify))) {
+    } else if ((ret == 0) && (strcmp(identify, "off") == 0)) {
       pal_set_id_led(FRU_UIC, LED_ON);
     }
     sleep(1);

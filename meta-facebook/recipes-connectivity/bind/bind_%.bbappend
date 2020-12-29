@@ -30,5 +30,14 @@ do_install_append() {
     if [ -e "$nslookup_path" ]; then
         rm "$nslookup_path"
     fi
+
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+        /bin/systemctl --root=${D} mask named.service
+    fi
 }
+
+FILES_${PN} += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '${systemd_system_unitdir}', '', d)}"
+
+#SYSTEMD_SERVICES_{$PN} += "named.service"
+
 ALTERNATIVE_${PN}-utils_remove = "nslookup"

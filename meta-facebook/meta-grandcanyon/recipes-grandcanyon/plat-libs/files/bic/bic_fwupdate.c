@@ -671,9 +671,8 @@ update_fw_bic_bootloader(uint8_t comp, int fd, int file_size) {
     if (ret != BIC_STATUS_SUCCESS) {
       break;
     }
-
-    if ((last_offset + dsize) <= offset) {
-      offset += read_bytes;
+    offset += read_bytes;
+    if ((last_offset + dsize) <= offset) {      
       printf("updated bic bootloader: %d %%\n", (offset / dsize) * 5);
       fflush(stdout);
       last_offset += dsize;

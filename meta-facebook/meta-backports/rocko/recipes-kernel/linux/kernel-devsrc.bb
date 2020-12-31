@@ -76,6 +76,12 @@ do_install() {
                 fi
         done
 
+	# although module.lds can be regenerated on target via 'make modules_prepare'
+	# there are several places where 'makes scripts prepare' is done, and that won't
+	# regenerate the file. So we copy it onto the target as a migration to using
+	# modules_prepare
+	cp -a --parents scripts/module.lds $kerneldir/build/ 2>/dev/null || :
+
         chown -R root:root ${D}
 }
 # Ensure we don't race against "make scripts" during cpio

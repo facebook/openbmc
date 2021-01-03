@@ -28,7 +28,7 @@ class EepromTest(CommonEepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ["/usr/bin/weutil"]
+        self.eeprom_cmd = ["/usr/local/bin/smbutil"]
 
     def set_product_name(self):
         self.product_name = ["MINIPACK2-SMB"]
@@ -58,7 +58,7 @@ class SIMEepromTest(CommonEepromTest, unittest.TestCase):
     """
 
     def set_eeprom_cmd(self):
-        self.eeprom_cmd = ["/usr/local/bin/simutil"]
+        self.eeprom_cmd = ["/usr/bin/weutil"]
 
     def set_product_name(self):
         self.product_name = ["MINIPACK2"]
@@ -91,7 +91,7 @@ class PIM1EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 1"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2_PIM_16QDD"]
+        self.product_name = ["MINIPACK2-PIM16Q"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -106,7 +106,7 @@ class PIM2EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 2"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2_PIM_16QDD"]
+        self.product_name = ["MINIPACK2-PIM16Q"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -121,7 +121,7 @@ class PIM3EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 3"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2_PIM_16QDD"]
+        self.product_name = ["MINIPACK2-PIM16Q"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -136,7 +136,7 @@ class PIM4EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 4"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2_PIM_16QDD"]
+        self.product_name = ["MINIPACK2-PIM16Q"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -151,7 +151,7 @@ class PIM5EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 5"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2_PIM_16QDD"]
+        self.product_name = ["MINIPACK2-PIM16Q"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -166,7 +166,7 @@ class PIM6EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 6"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2_PIM_16QDD"]
+        self.product_name = ["MINIPACK2-PIM16Q"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -181,7 +181,7 @@ class PIM7EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 7"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2_PIM_16QDD"]
+        self.product_name = ["MINIPACK2-PIM16Q"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -196,7 +196,7 @@ class PIM8EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 8"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2_PIM_16QDD"]
+        self.product_name = ["MINIPACK2-PIM16Q"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -211,7 +211,7 @@ class FCMTEepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/feutil fcm-t"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2_FCM"]
+        self.product_name = ["MINIPACK2-FCM"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["FCM"]
@@ -226,7 +226,7 @@ class FCMBEepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/feutil fcm-b"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2_FCM"]
+        self.product_name = ["MINIPACK2-FCM"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["FCM"]

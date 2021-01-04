@@ -862,6 +862,12 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
           *cnt = e1s_2_sensor_cnt;
       }
       break;
+    case FRU_BSM:
+      if(!strcmp(value, "bsm")) {
+          *sensor_list = NULL;
+          *cnt = 0;
+      }
+      break;
     default:
       syslog(LOG_WARNING, "%s, get key fail", __FUNCTION__);
       return -1;

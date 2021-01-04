@@ -21,6 +21,8 @@
 
 // Collection of sensor-chips. Provides efficient look-up of sensor chips.
 class SensorList : public std::map<std::string, std::unique_ptr<SensorChip>> {
+  private:
+    void _sensor_list_build(const char* conf_file = nullptr);
   protected:
     // Allocates a chip object
     virtual std::unique_ptr<SensorChip> make_chip(const sensors_chip_name *chip, const std::string &name);
@@ -30,6 +32,9 @@ class SensorList : public std::map<std::string, std::unique_ptr<SensorChip>> {
 
     // enumerate all sensor chips.
     void enumerate();
+
+    // re_enumerate all sensor chips.
+    void re_enumerate(const char *conf_file = nullptr);
 };
 
 #endif

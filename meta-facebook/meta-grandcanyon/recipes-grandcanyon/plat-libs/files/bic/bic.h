@@ -44,6 +44,8 @@ extern "C" {
 #define MAX_USB_MANUFACTURER_LEN 64
 #define MAX_USB_PRODUCT_LEN      64
 
+#define MAX_BIC_VER_STR_LEN      32
+
 /*IFX VR pages*/
 #define VR_PAGE   0x00
 #define VR_PAGE32 0x32

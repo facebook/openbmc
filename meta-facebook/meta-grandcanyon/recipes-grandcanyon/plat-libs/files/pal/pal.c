@@ -43,6 +43,8 @@
 #define MAX_FAN_NAME_LEN     32 // include the string terminal
 #define MAX_PWM_LABEL_LEN    32 // include the string terminal
 
+#define MAX_TEMP_STR_SIZE    16
+
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
 
 // export to sensor-util
@@ -822,3 +824,61 @@ pal_is_slot_server(uint8_t fru) {
   return (fru == FRU_SERVER) ? 1 : 0;
 }
 
+int
+pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
+  int i = 0, ret = 0; 
+  int tmp_len = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tmp_str[MAX_TEMP_STR_SIZE] = {0};
+
+  if (ver == NULL) {
+    syslog(LOG_ERR, "%s() Pointer \"ver\" is NULL.\n", __func__);
+    return -1;
+  }
+
+  snprintf(key, sizeof(key), "sysfw_ver");
+
+  for (i = 0; i < SIZE_SYSFW_VER; i++) {
+    tmp_len = sizeof(tmp_str);
+
+    memset(tmp_str, 0, sizeof(tmp_str));
+    snprintf(tmp_str, sizeof(tmp_str), "%02x", ver[i]);
+    strncat(str, tmp_str, tmp_len);
+  }
+
+  ret = pal_set_key_value(key, str);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: failed to set key value %s.", __func__, key);
+  }
+  
+  return ret;
+}
+
+int
+pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
+  int i = 0, j = 0;
+  int ret = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+  char tmp_str[MAX_TEMP_STR_SIZE] = {0};
+
+  if (ver == NULL) {
+    syslog(LOG_ERR, "%s() Pointer \"ver\" is NULL.\n", __func__);
+    return -1;
+  }
+
+  snprintf(key, sizeof(key), "sysfw_ver");
+  ret = pal_get_key_value(key, str);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s() Failed to run pal_get_key_value. key:%s", __func__, key);
+    return PAL_ENOTSUP;
+  }
+
+  for (i = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
+    snprintf(tmp_str, sizeof(tmp_str), "%c%c\n", str[i], str[i+1]);
+    ver[j++] = (uint8_t) strtol(tmp_str, NULL, 16);
+  }
+
+  return ret;
+}

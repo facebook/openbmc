@@ -108,6 +108,8 @@ int pal_get_nic_fru_id(void);
 bool pal_sensor_is_cached(uint8_t fru, uint8_t sensor_num);
 int pal_is_slot_server(uint8_t fru);
 int pal_check_gpio_prsnt(uint8_t gpio, int presnt_expect);
+int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
+int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
 
 #ifdef __cplusplus
 } // extern "C"

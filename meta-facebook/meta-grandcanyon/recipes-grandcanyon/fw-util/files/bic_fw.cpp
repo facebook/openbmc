@@ -7,8 +7,6 @@
 
 using namespace std;
 
-#define MAX_BIC_VER_STR_LEN 32
-
 enum {
   BIC_FW_UPDATE_SUCCESS                =  0,
   BIC_FW_UPDATE_FAILED                 = -1,
@@ -186,10 +184,10 @@ int BicFwBlComponent::print_version() {
 
     // Print Bridge-IC Bootloader Version
     if (get_ver_str(ver) < 0) {
-      throw "Error in getting the version of server BIC Bootloader";
+      throw string("Error in getting the version of server BIC Bootloader");
     }
     cout << "Bridge-IC Bootloader Version: " << ver << endl;
-  } catch(string err) {
+  } catch (string err) {
     printf("Bridge-IC Bootloader Version: NA (%s)\n", err.c_str());
   }
 

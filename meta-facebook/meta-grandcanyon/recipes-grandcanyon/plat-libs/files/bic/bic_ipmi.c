@@ -53,28 +53,48 @@ typedef struct _sdr_rec_hdr_t {
 } sdr_rec_hdr_t;
 #pragma pack(pop)
 
+//BIC and BIC bootloader firmware version
+typedef struct _bic_get_fw_ver_req {
+  uint8_t IANA[SIZE_IANA_ID];
+  uint8_t component;
+} bic_get_fw_ver_req;
+
+typedef struct _bic_get_fw_ver_resp {
+  uint8_t IANA[SIZE_IANA_ID];
+  uint8_t ver_response[MAX_BIC_VER_STR_LEN];
+} bic_get_fw_ver_resp;
+
 int
 bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
-  uint8_t tbuf[MAX_IPMB_BUFFER] = {0x00};
   uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
-  uint8_t tlen = 4;
   uint8_t rlen = 0;
   int ret = BIC_STATUS_FAILURE;
+  bic_get_fw_ver_req ver_req;
+  bic_get_fw_ver_resp ver_resp;
 
-  // File the IANA ID
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  if (ver == NULL) {
+    syslog(LOG_ERR, "%s: pointer is NULL\n", __func__);
+    return BIC_STATUS_FAILURE;
+  }
 
+  memset(&ver_req, 0, sizeof(ver_req));
+  memset(&ver_resp, 0, sizeof(ver_resp));
+
+  // Fill the IANA ID
+  memcpy(&ver_req, (uint8_t *)&IANA_ID, SIZE_IANA_ID);
   // Fill the component for which firmware is requested
-  tbuf[3] = FW_BIC;
+  ver_req.component = comp;
 
-  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, tlen, rbuf, &rlen);
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, (uint8_t *)&ver_req, sizeof(ver_req), rbuf, &rlen);
+
   // rlen should be greater than or equal to 4 (IANA + Data1 +...+ DataN)
-  if ( ret < 0 || rlen < 4 ) {
+  if ((ret < 0) || (rlen < 4) || (rlen > (MAX_BIC_VER_STR_LEN + SIZE_IANA_ID))) {
     syslog(LOG_ERR, "%s: ret: %d, rlen: %d, comp: %d\n", __func__, ret, rlen, comp);
     ret = BIC_STATUS_FAILURE;
   } else {
+    memcpy(&ver_resp, rbuf, rlen);
     //Ignore IANA ID
-    memcpy(ver, &rbuf[3], rlen - 3);
+    memcpy(ver, &(ver_resp.ver_response), sizeof(ver_resp.ver_response));
   }
 
   return ret;

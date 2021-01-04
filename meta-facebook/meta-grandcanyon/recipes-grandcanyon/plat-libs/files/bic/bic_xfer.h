@@ -30,6 +30,8 @@
 extern "C" {
 #endif
 
+#define SIZE_IANA_ID 3
+
 extern const uint32_t IANA_ID;
 
 enum NETFN_OEM_38 {

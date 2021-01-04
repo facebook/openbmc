@@ -634,15 +634,22 @@ class Fscd(object):
                             % (", ".join([str(i.label) for i in dead_fans]))
                         )
                         if self.get_fan_mode:
+                            # user define
                             set_fan_mode, set_fan_pwm = fsc_board.get_fan_mode(
                                 "one_fan_failure"
                             )
                             # choose the higher PWM
-                            if self.output_max_boost_pwm:
-                                pwmval = set_fan_pwm if pwmval < set_fan_pwm else pwmval
+                            pwmval = max(set_fan_pwm, pwmval)
+                            if int(pwmval) == int(set_fan_pwm):
+                                mode = set_fan_mode
                             else:
-                                pwmval = set_fan_pwm
-                            mode = set_fan_mode
+                                pwmval = zone.run(
+                                    sensors=sensors_tuples,
+                                    ctx=ctx, ignore_mode=False
+                                )
+                                mode = zone.get_set_fan_mode(
+                                    mode, action="read"
+                                )
                         else:
                             # choose the higher PWM
                             if self.output_max_boost_pwm:

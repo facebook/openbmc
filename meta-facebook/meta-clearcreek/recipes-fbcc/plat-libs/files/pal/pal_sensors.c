@@ -644,10 +644,8 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
   switch(fru) {
     case FRU_MB:
     case FRU_PDB:
-    case FRU_AVA1:
-    case FRU_AVA2:
-    case FRU_E1S1:
-    case FRU_E1S2:
+    case FRU_CARRIER1:
+    case FRU_CARRIER2:
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
       break;
     default:
@@ -711,10 +709,8 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   switch(fru) {
   case FRU_MB:
   case FRU_PDB:
-  case FRU_AVA1:
-  case FRU_AVA2:
-  case FRU_E1S1:
-  case FRU_E1S2:
+  case FRU_CARRIER1:
+  case FRU_CARRIER2:
     sprintf(name, "%s", sensor_map[sensor_num].snr_name);
     break;
   default:
@@ -729,10 +725,8 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
   switch(fru) {
   case FRU_MB:
   case FRU_PDB:
-  case FRU_AVA1:
-  case FRU_AVA2:
-  case FRU_E1S1:
-  case FRU_E1S2:
+  case FRU_CARRIER1:
+  case FRU_CARRIER2:
     switch(thresh) {
     case UCR_THRESH:
       *val = sensor_map[sensor_num].snr_thresh.ucr_thresh;
@@ -776,10 +770,8 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   switch(fru) {
     case FRU_MB:
     case FRU_PDB:
-    case FRU_AVA1:
-    case FRU_AVA2:
-    case FRU_E1S1:
-    case FRU_E1S2:
+    case FRU_CARRIER1:
+    case FRU_CARRIER2:
       switch(scale) {
         case TEMP:
           sprintf(units, "C");
@@ -817,10 +809,10 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
   *sensor_list = NULL;
   *cnt = 0;
 
-  if(fru == FRU_AVA1 || fru == FRU_E1S1) {
+  if(fru == FRU_CARRIER1) {
     sprintf(key, "carrier_0");
     ret = kv_get(key, value, NULL, 0);
-  } else if (fru == FRU_AVA2 || fru == FRU_E1S2) {
+  } else if (fru == FRU_CARRIER2) {
     sprintf(key, "carrier_1");
     ret = kv_get(key, value, NULL, 0);
   }
@@ -838,26 +830,20 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
       *sensor_list = (uint8_t *) pdb_sensor_list;
       *cnt = pdb_sensor_cnt;
       break;
-    case FRU_AVA1:
+    case FRU_CARRIER1:
       if(!strcmp(value, "m.2")) {
           *sensor_list = (uint8_t *) m2_1_sensor_list;
           *cnt = m2_1_sensor_cnt;
-      }
-      break;
-    case FRU_AVA2:
-      if(!strcmp(value, "m.2")) {
-          *sensor_list = (uint8_t *) m2_2_sensor_list;
-          *cnt = m2_2_sensor_cnt;
-      }
-      break;
-    case FRU_E1S1:
-      if(!strcmp(value, "e1.s")) {
+      } else if(!strcmp(value, "e1.s")) {
           *sensor_list = (uint8_t *) e1s_1_sensor_list;
           *cnt = e1s_1_sensor_cnt;
       }
       break;
-    case FRU_E1S2:
-      if(!strcmp(value, "e1.s")) {
+    case FRU_CARRIER2:
+      if(!strcmp(value, "m.2")) {
+          *sensor_list = (uint8_t *) m2_2_sensor_list;
+          *cnt = m2_2_sensor_cnt;
+      } else if(!strcmp(value, "e1.s")) {
           *sensor_list = (uint8_t *) e1s_2_sensor_list;
           *cnt = e1s_2_sensor_cnt;
       }

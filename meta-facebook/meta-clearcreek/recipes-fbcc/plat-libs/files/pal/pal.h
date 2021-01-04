@@ -44,10 +44,8 @@ enum {
   FRU_MB,
   FRU_BSM,
   FRU_PDB,
-  FRU_AVA1,
-  FRU_AVA2,
-  FRU_E1S1,
-  FRU_E1S2,
+  FRU_CARRIER1,
+  FRU_CARRIER2,
   FRU_CNT,
 };
 
@@ -59,6 +57,11 @@ enum {
 enum {
   BMC = 0x0,
   PCH,
+};
+
+enum {
+  M2 = 0,
+  E1S,
 };
 
 enum {
@@ -106,5 +109,6 @@ int pal_control_mux_to_target_ch(uint8_t channel, uint8_t bus, uint8_t mux_addr)
 bool pal_is_server_off(void);
 bool is_device_ready(void);
 int pal_get_platform_id(uint8_t *id);
+int pal_check_carrier_type(int index);
 
 #endif /* __PAL_H__ */

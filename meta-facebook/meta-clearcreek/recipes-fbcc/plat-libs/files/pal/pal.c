@@ -45,7 +45,7 @@
 
 #define LAST_KEY "last_key"
 
-const char pal_fru_list[] = "all, mb, bsm, pdb, ava1, ava2, e1s1, e1s2";
+const char pal_fru_list[] = "all, mb, bsm, pdb, carrier1, carrier2";
 const char pal_server_list[] = "";
 
 struct pal_key_cfg {
@@ -73,6 +73,28 @@ enum key_event {
   KEY_AFTER_INI,
 };
 
+int pal_check_carrier_type(int index)
+{
+  char type[64] = {0};
+
+  if(index == 0) {
+    if(kv_get("carrier_0", type, NULL, 0) < 0) {
+      syslog(LOG_WARNING, "%s: not find carrier type", __func__);
+    }
+  } else if (index == 1) {
+    if(kv_get("carrier_1", type, NULL, 0) < 0) {
+      syslog(LOG_WARNING, "%s: not find carrier type", __func__);
+    }
+  }
+
+  if (!strcmp(type, "m.2")) {
+    return M2;
+  } else if (!strcmp(type, "e1.s")) {
+    return E1S;
+  }
+  return 0;
+}
+
 int pal_get_fru_id(char *str, uint8_t *fru)
 {
   if (!strcmp(str, "all")) {
@@ -83,14 +105,10 @@ int pal_get_fru_id(char *str, uint8_t *fru)
     *fru = FRU_BSM;
   } else if (!strcmp(str, "pdb")) {
     *fru = FRU_PDB;
-  } else if (!strcmp(str, "ava1")) {
-    *fru = FRU_AVA1;
-  } else if (!strcmp(str, "ava2")) {
-    *fru = FRU_AVA2;
-  } else if (!strcmp(str, "e1s1")) {
-    *fru = FRU_E1S1;
-  } else if (!strcmp(str, "e1s2")) {
-    *fru = FRU_E1S2;
+  } else if (!strcmp(str, "carrier1")) {
+    *fru = FRU_CARRIER1;
+  } else if (!strcmp(str, "carrier2")) {
+    *fru = FRU_CARRIER2;
   } else {
     syslog(LOG_WARNING, "%s: Wrong fru name %s", __func__, str);
     return -1;
@@ -105,16 +123,20 @@ int pal_get_fruid_name(uint8_t fru, char *name)
     sprintf(name, "Base Board");
   else if (fru == FRU_BSM)
     sprintf(name, "BSM");
-  else if (fru == FRU_AVA1)
-    sprintf(name, "M2 Carrier1");
-  else if (fru == FRU_AVA2)
-    sprintf(name, "M2 Carrier2");
   else if (fru == FRU_PDB)
     sprintf(name, "PDB");
-  else if (fru == FRU_E1S1)
-    sprintf(name, "E1.s Carrier1");
-  else if (fru == FRU_E1S2)
-    sprintf(name, "E1.s Carrier2");
+  else if (fru == FRU_CARRIER1) {
+    if( pal_check_carrier_type(0) == M2 )
+      sprintf(name, "M2 Carrier1");
+    else
+      sprintf(name, "E1.s Carrier1");
+  }
+  else if (fru == FRU_CARRIER2) {
+    if( pal_check_carrier_type(1) == M2 )
+      sprintf(name, "M2 Carrier2");
+    else
+      sprintf(name, "E1.s Carrier2");
+  }
   else
     return -1;
 
@@ -123,7 +145,7 @@ int pal_get_fruid_name(uint8_t fru, char *name)
 
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
 {
-  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM || FRU_AVA1 || FRU_AVA2 || FRU_E1S1 || FRU_E1S2)
+  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM || FRU_CARRIER1 || FRU_CARRIER2)
     *status = 1;
   else
     return -1;
@@ -133,7 +155,7 @@ int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
 
 int pal_is_fru_ready(uint8_t fru, uint8_t *status)
 {
-  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM || FRU_AVA1 || FRU_AVA2 || FRU_E1S1 || FRU_E1S2)
+  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM || FRU_CARRIER1 || FRU_CARRIER2)
     *status = 1;
   else
     return -1;
@@ -149,14 +171,10 @@ int pal_get_fru_name(uint8_t fru, char *name)
     strcpy(name, "bsm");
   } else if (fru == FRU_PDB) {
     strcpy(name, "pdb");
-  } else if (fru == FRU_AVA1) {
-    strcpy(name, "ava1");
-  } else if (fru == FRU_AVA2) {
-    strcpy(name, "ava2");
-  } else if (fru == FRU_E1S1) {
-    strcpy(name, "e1s1");
-  } else if (fru == FRU_E1S2) {
-    strcpy(name, "e1s2");
+  } else if (fru == FRU_CARRIER1) {
+    strcpy(name, "carrier1");
+  } else if (fru == FRU_CARRIER2) {
+    strcpy(name, "carrier2");
   } else {
     syslog(LOG_WARNING, "%s: Wrong fruid %d", __func__, fru);
     return -1;
@@ -173,14 +191,18 @@ int pal_get_fruid_path(uint8_t fru, char *path)
     sprintf(path, PDB_BIN);
   else if (fru == FRU_BSM)
     sprintf(path, BSM_BIN);
-  else if (fru == FRU_AVA1)
-    sprintf(path, AVA1_BIN);
-  else if (fru == FRU_AVA2)
-    sprintf(path, AVA2_BIN);
-  else if (fru == FRU_E1S1)
-    sprintf(path, E1S1_BIN);
-  else if (fru == FRU_E1S2)
-    sprintf(path, E1S2_BIN);
+  else if (fru == FRU_CARRIER1) {
+    if( pal_check_carrier_type(0) == M2 )
+      sprintf(path, AVA1_BIN);
+    else
+      sprintf(path, E1S1_BIN);
+  }
+  else if (fru == FRU_CARRIER2) {
+    if( pal_check_carrier_type(1) == M2 )
+      sprintf(path, AVA2_BIN);
+    else
+      sprintf(path, E1S2_BIN);
+  }
   else
     return -1;
 
@@ -200,14 +222,18 @@ int pal_get_fruid_eeprom_path(uint8_t fru, char *path)
     sprintf(path, PDB_EEPROM);
   else if (fru == FRU_BSM)
     sprintf(path, BSM_EEPROM);
-  else if (fru == FRU_AVA1)
-    sprintf(path, AVA1_EEPROM);
-  else if (fru == FRU_AVA2)
-    sprintf(path, AVA2_EEPROM);
-  else if (fru == FRU_E1S1)
-    sprintf(path, E1S1_EEPROM);
-  else if (fru == FRU_E1S2)
-    sprintf(path, E1S2_EEPROM);
+  else if (fru == FRU_CARRIER1) {
+    if( pal_check_carrier_type(0) == M2 )
+      sprintf(path, AVA1_EEPROM);
+    else
+      sprintf(path, E1S1_EEPROM);
+  }
+  else if (fru == FRU_CARRIER2) {
+    if( pal_check_carrier_type(1) == M2 )
+      sprintf(path, AVA2_EEPROM);
+    else
+      sprintf(path, E1S2_EEPROM);
+  }
   else
     return -1;
 

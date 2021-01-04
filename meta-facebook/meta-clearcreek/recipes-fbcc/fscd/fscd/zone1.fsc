@@ -22,44 +22,44 @@ max([
     mb:cc_nic_7_temp])),
   linear_bay0(
    max([
-    ava1:cc_ssd_bay_0_0_nvme_ctemp,
-    ava1:cc_ssd_bay_0_1_nvme_ctemp,
-    ava1:cc_ssd_bay_0_2_nvme_ctemp,
-    ava1:cc_ssd_bay_0_3_nvme_ctemp,
-    ava1:cc_ssd_bay_0_4_nvme_ctemp,
-    ava1:cc_ssd_bay_0_5_nvme_ctemp,
-    ava1:cc_ssd_bay_0_6_nvme_ctemp,
-    ava1:cc_ssd_bay_0_7_nvme_ctemp])) +
+    carrier1:cc_ssd_bay_0_0_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_1_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_2_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_3_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_4_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_5_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_6_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_7_nvme_ctemp])) +
   pid_bay0(
    max([
-    ava1:cc_ssd_bay_0_0_nvme_ctemp,
-    ava1:cc_ssd_bay_0_1_nvme_ctemp,
-    ava1:cc_ssd_bay_0_2_nvme_ctemp,
-    ava1:cc_ssd_bay_0_3_nvme_ctemp,
-    ava1:cc_ssd_bay_0_4_nvme_ctemp,
-    ava1:cc_ssd_bay_0_5_nvme_ctemp,
-    ava1:cc_ssd_bay_0_6_nvme_ctemp,
-    ava1:cc_ssd_bay_0_7_nvme_ctemp])),
+    carrier1:cc_ssd_bay_0_0_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_1_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_2_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_3_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_4_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_5_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_6_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_7_nvme_ctemp])),
   linear_bay1(
    max([
-    ava1:cc_ssd_bay_0_0_nvme_ctemp,
-    ava1:cc_ssd_bay_0_1_nvme_ctemp,
-    ava1:cc_ssd_bay_0_2_nvme_ctemp,
-    ava1:cc_ssd_bay_0_3_nvme_ctemp,
-    ava1:cc_ssd_bay_0_4_nvme_ctemp,
-    ava1:cc_ssd_bay_0_5_nvme_ctemp,
-    ava1:cc_ssd_bay_0_6_nvme_ctemp,
-    ava1:cc_ssd_bay_0_7_nvme_ctemp])) +
+    carrier1:cc_ssd_bay_0_0_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_1_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_2_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_3_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_4_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_5_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_6_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_7_nvme_ctemp])) +
   pid_bay1(
    max([
-    ava1:cc_ssd_bay_0_0_nvme_ctemp,
-    ava1:cc_ssd_bay_0_1_nvme_ctemp,
-    ava1:cc_ssd_bay_0_2_nvme_ctemp,
-    ava1:cc_ssd_bay_0_3_nvme_ctemp,
-    ava1:cc_ssd_bay_0_4_nvme_ctemp,
-    ava1:cc_ssd_bay_0_5_nvme_ctemp,
-    ava1:cc_ssd_bay_0_6_nvme_ctemp,
-    ava1:cc_ssd_bay_0_7_nvme_ctemp])),
+    carrier1:cc_ssd_bay_0_0_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_1_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_2_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_3_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_4_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_5_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_6_nvme_ctemp,
+    carrier1:cc_ssd_bay_0_7_nvme_ctemp])),
   linear_switch(
    max([
     mb:cc_bb_pax_0_temp,

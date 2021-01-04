@@ -162,14 +162,18 @@ int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count,
     snprintf(fru_dev, LARGEST_DEVICE_NAME, PDB_BIN);
   else if (fru_id == FRU_BSM-1)
     snprintf(fru_dev, LARGEST_DEVICE_NAME, BSM_BIN);
-  else if (fru_id == FRU_AVA1-1)
-    snprintf(fru_dev, LARGEST_DEVICE_NAME, AVA1_BIN);
-  else if (fru_id == FRU_AVA2-1)
-    snprintf(fru_dev, LARGEST_DEVICE_NAME, AVA2_BIN);
-  else if (fru_id == FRU_E1S1-1)
-    snprintf(fru_dev, LARGEST_DEVICE_NAME, E1S1_BIN);
-  else if (fru_id == FRU_E1S2-1)
-    snprintf(fru_dev, LARGEST_DEVICE_NAME, E1S2_BIN);
+  else if (fru_id == FRU_CARRIER1-1) {
+    if( pal_check_carrier_type(0) == M2 )
+      snprintf(fru_dev, LARGEST_DEVICE_NAME, AVA1_BIN);
+    else
+      snprintf(fru_dev, LARGEST_DEVICE_NAME, E1S1_BIN);
+  }
+  else if (fru_id == FRU_CARRIER2-1) {
+    if( pal_check_carrier_type(1) == M2 )
+      snprintf(fru_dev, LARGEST_DEVICE_NAME, AVA2_BIN);
+    else
+      snprintf(fru_dev, LARGEST_DEVICE_NAME, E1S2_BIN);
+  }
   else
     return -1;
 

@@ -3364,3 +3364,18 @@ pal_check_slot_cpu_present(uint8_t slot_id) {
 
   return ret;
 }
+
+int
+pal_get_sensor_util_timeout(uint8_t fru) {
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      return 10;
+    case FRU_BMC:
+    case FRU_NIC:
+    default:
+      return 4;
+  }
+}

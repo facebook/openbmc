@@ -29,11 +29,20 @@
 extern "C" {
 #endif
 
-#define CMD_OEM_EXP_ERROR_CODE          0x11   // NetFn: OEM (0x30)
-#define CMD_OEM_EXP_GET_SENSOR_READING  0x2D
-#define CMD_GET_EXP_FRUID               0x11   // NetFn: Storage (0x0A)
-#define CMD_GET_EXP_VERSION             0x12
-#define EXP_VERSION_RES_LEN             20
+#define EXP_VERSION_RES_LEN   20
+
+// NetFn: OEM (0x30)
+enum NETFN_OEM_30 {
+  CMD_OEM_EXP_ERROR_CODE             = 0x11,
+  CMD_OEM_EXP_GET_SENSOR_READING     = 0x2D,
+};
+
+// NetFn: Storage (0x0A)
+enum NETFN_STORAGE {
+  CMD_GET_EXP_FRUID       = 0x11,
+  CME_OEM_EXP_SLED_CYCLE  = 0x30,
+  CMD_GET_EXP_VERSION     = 0x12,
+};
 
 typedef struct Version {
   uint8_t status;

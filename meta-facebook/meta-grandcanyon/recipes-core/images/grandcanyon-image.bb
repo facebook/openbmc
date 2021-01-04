@@ -39,4 +39,5 @@ IMAGE_INSTALL += " \
   ipmb-util \
   exp-cached \
   bic-cached \
+  power-util \
   "

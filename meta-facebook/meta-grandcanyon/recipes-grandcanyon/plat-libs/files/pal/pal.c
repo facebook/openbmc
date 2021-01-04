@@ -101,6 +101,7 @@ struct pal_key_cfg {
   {"server_por_cfg", "on", NULL},
   {"sysfw_ver", "0", NULL},
   {"system_identify_led_interval", "default", NULL},
+  {"pwr_server_last_state", "on", NULL},
   /* Add more Keys here */
   {NULL, NULL, NULL} /* This is the last key of the list */
 };

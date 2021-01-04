@@ -4,6 +4,7 @@ SRC_URI += " \
     file://plat/meson.build \
     file://pal_sensors.c \
     file://pal_power.c \
+    file://pal_power.h \
     "
 DEPENDS += " \
     libfbgc-common \

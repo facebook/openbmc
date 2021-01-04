@@ -13,6 +13,7 @@ bic_headers = [
     'bic_fwupdate.h',
     'bic_bios_fwupdate.h',
     'bic_vr_fwupdate.h',
+    'bic_power.h',
 ]
 
 bic_sources = [
@@ -21,6 +22,7 @@ bic_sources = [
     'bic_fwupdate.c',
     'bic_bios_usb_fwupdate.c',
     'bic_vr_fwupdate.c',
+    'bic_power.c',
 ]
 
 bic_deps = [
@@ -29,6 +31,8 @@ bic_deps = [
     cc.find_library('libusb-1.0'),
     cc.find_library('libkv'),
     cc.find_library('obmc-i2c'),
+    cc.find_library('gpio-ctrl'),
+    cc.find_library('fbgc_gpio'),
 ]
 
 install_headers(bic_headers, subdir: 'facebook')

@@ -31,6 +31,7 @@ extern "C" {
 #include <facebook/fbgc_fruid.h>
 #include <facebook/bic.h>
 #include "pal_sensors.h"
+#include "pal_power.h"
 
 #define MAX_NUM_FRUS (FRU_CNT-1)
 #define MAX_NODES    1
@@ -60,6 +61,7 @@ extern const char pal_fru_list_sensor_history[];
 extern const char pal_fru_list[];
 extern const char pal_pwm_list[];
 extern const char pal_tach_list[];
+extern const char pal_server_list[];
 
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;

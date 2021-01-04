@@ -40,6 +40,9 @@ extern "C" {
 #define NIC_FRU_ADDR  0x50
 #define IOCM_FRU_ADDR 0x50
 
+//UIC FPGA slave address (8-bit)
+#define UIC_FPGA_SLAVE_ADDR 0x1e
+
 // Expander slave address (7-bit)
 #define EXPANDER_SLAVE_ADDR    0x71
 
@@ -62,6 +65,8 @@ extern "C" {
 #define CHASSIS_TYPE_BIT_2(value)   (value << 2)
 #define CHASSIS_TYPE_BIT_3(value)   (value << 3)
 
+#define WAIT_POWER_STATUS_CHANGE_TIME 30 // second
+
 //                 UIC_LOC_TYPE_IN   UIC_RMT_TYPE_IN   SCC_LOC_TYPE_0   SCC_RMT_TYPE_0
 // Type 5                        0                 0                0                0
 // Type 7 Headnode               0                 1                0                1
@@ -79,6 +84,18 @@ enum {
   FRU_NIC,
   FRU_E1S_IOCM,
   FRU_CNT,
+};
+
+// AC Power status
+enum {
+  STAT_AC_OFF = 0,
+  STAT_AC_ON = 1,
+};
+
+// DC power status
+enum {
+  STAT_DC_OFF = 0,
+  STAT_DC_ON = 1,
 };
 
 enum {

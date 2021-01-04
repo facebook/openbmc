@@ -29,6 +29,7 @@ extern "C" {
 #include "bic_ipmi.h"
 #include "bic_fwupdate.h"
 #include "bic_vr_fwupdate.h"
+#include "bic_power.h"
 #include "error.h"
 #include <errno.h>
 #include <libusb-1.0/libusb.h>
@@ -49,7 +50,6 @@ extern "C" {
 #define VR_PAGE50 0x50
 #define VR_PAGE60 0x60
 #define VR_PAGE62 0x62
-
 
 typedef struct {
   struct  libusb_device**          devs;

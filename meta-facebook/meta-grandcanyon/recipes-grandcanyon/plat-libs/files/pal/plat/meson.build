@@ -1,3 +1,7 @@
+pal_headers += [
+    'pal_power.h',
+    ]
+
 pal_deps += [
     cc.find_library('fbgc_common'),
     cc.find_library('fbgc_fruid'),
@@ -8,6 +12,7 @@ pal_deps += [
     cc.find_library('exp'),
     cc.find_library('m'),
     cc.find_library('bic'),
+    cc.find_library('libbic'),
     ]
 
 pal_sources += [

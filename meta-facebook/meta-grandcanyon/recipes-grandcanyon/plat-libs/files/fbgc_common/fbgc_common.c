@@ -101,7 +101,7 @@ fbgc_common_server_stby_pwr_sts(uint8_t *val) {
   if (pg_gpio == GPIO_VALUE_INVALID) {
     syslog(LOG_WARNING, "%s() Can not get 12V power status via GPIO pin", __func__);
     return -1;
-  } else if (pg_gpio == GPIO_VALUE_HIGH){
+  } else if (pg_gpio == GPIO_VALUE_HIGH) {
     *val = STAT_12V_ON;
   } else {
     *val = STAT_12V_OFF;

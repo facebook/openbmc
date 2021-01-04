@@ -32,12 +32,32 @@ extern "C" {
 
 extern const uint32_t IANA_ID;
 
+enum NETFN_OEM_38 {
+  BIC_CMD_OEM_GET_SET_GPIO      = 0x41,
+  BIC_CMD_OEM_BMC_FAN_CTRL      = 0x50,
+  BIC_CMD_OEM_SET_FAN_DUTY      = 0xF1,
+  BIC_CMD_OEM_FAN_CTRL_STAT     = 0xF2,
+  BIC_CMD_OEM_GET_FAN_DUTY      = 0x51,
+  BIC_CMD_OEM_GET_FAN_RPM       = 0x52,
+  BIC_CMD_OEM_SET_12V_CYCLE     = 0x64,
+  BIC_CMD_OEM_INFORM_SLED_CYCLE = 0x66,
+  BIC_CMD_OEM_GET_BOARD_ID      = 0xA0,
+  BIC_CMD_OEM_SET_AMBER_LED     = 0xA1,
+};
+
 enum {
   BIC_STATUS_SUCCESS                =  0,
   BIC_STATUS_FAILURE                = -1,
   BIC_STATUS_NOT_SUPP_IN_CURR_STATE = -2,
 };
 
+// BIC GPIO action
+enum {
+  BIC_GPIO_GET_OUTPUT_STATUS,
+  BIC_GPIO_SET_OUTPUT_STATUS,
+  BIC_GPIO_GET_DIRECTION_STATUS,
+  BIC_GPIO_SET_DIRECTION_STATUS,
+};
 
 int i2c_open(uint8_t bus_id, uint8_t addr_7bit);
 int i2c_io(int fd, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount);

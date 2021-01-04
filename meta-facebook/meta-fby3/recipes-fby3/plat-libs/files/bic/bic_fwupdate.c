@@ -859,6 +859,7 @@ exit:
 }
 
 #define IPMB_MAX_SEND 224
+#define IPMB_BIC_RETRY 3
 static int
 update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file_size) {
   const uint8_t bytes_per_read = IPMB_MAX_SEND;
@@ -868,7 +869,8 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, in
   uint32_t offset = 0;
   uint32_t last_offset = 0;
   uint32_t dsize = 0;
-  int ret = -1;
+  int ret = -1, retry = IPMB_BIC_RETRY;
+  uint8_t self_test_result[2] = {0};
 
   dsize = file_size / 20;
 
@@ -900,6 +902,19 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, in
       last_offset += dsize;
     }
   }
+
+  // Wait for warm reset finished
+  sleep(3);
+  while (retry > 0){
+    sleep(1);
+    ret = bic_get_self_test_result(slot_id, (uint8_t *)&self_test_result, NONE_INTF);
+    if (ret == 0) {
+      break;
+    } else {
+      retry--;
+    }
+  }
+
   return ret;
 }
 

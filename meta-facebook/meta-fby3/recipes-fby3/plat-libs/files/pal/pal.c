@@ -1553,16 +1553,28 @@ pal_get_m2vpp_str_name(uint8_t fru, uint8_t comp, uint8_t root_port, char *error
   return;
 }
 
-static void
-pal_get_m2_str_name(uint8_t comp, uint8_t device_num, char *error_log) {
+static const char*
+pal_get_board_name(uint8_t comp) {
   const char *comp_str[5] = {"ServerBoard", "1OU", "2OU", "SPE", "GPv3"};
   const uint8_t comp_size = ARRAY_SIZE(comp_str);
   if ( comp < comp_size ) {
-    snprintf(error_log, 256, "%s/Num %d ", comp_str[comp], device_num);
-  } else {
-    snprintf(error_log, 256, "Undefined M2 DevNum %d ", device_num);
+    return comp_str[comp];
   }
 
+  return "Undefined board";
+}
+
+static void
+pal_get_m2_str_name(uint8_t comp, uint8_t device_num, char *error_log) {
+  snprintf(error_log, 256, "%s/Num %d ", pal_get_board_name(comp), device_num);
+  return;
+}
+
+static void
+pal_get_2ou_vr_str_name(uint8_t comp, uint8_t vr_num, char *error_log) {
+  const char *vr_list_str[5] = {"P3V3_STBY1", "P3V3_STBY2", "P3V3_STBY3", "P1V8", "PESW VR"};
+  const uint8_t vr_list_size = ARRAY_SIZE(vr_list_str);
+  snprintf(error_log, 256, "%s/%s ", pal_get_board_name(comp), (vr_num < vr_list_size)?vr_list_str[vr_num]:"Undefined VR");
   return;
 }
 
@@ -1587,6 +1599,8 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_OV_DETECT      = 0x0F,
     SYS_M2_OCP_DETECT  = 0x10,
     SYS_SLOT_PRSNT     = 0x11,
+    SYS_PESW_ERR       = 0x12,
+    SYS_2OU_VR_FAULT   = 0x13,
   };
   uint8_t event = event_data[0];
   char prsnt_str[32] = {0};
@@ -1646,6 +1660,13 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     case SYS_SLOT_PRSNT:
       snprintf(prsnt_str, sizeof(prsnt_str), "Slot%d present", event_data[1]);
       strcat(error_log, prsnt_str);
+      break;
+    case SYS_PESW_ERR:
+      strcat(error_log, "2OU PESW error");
+      break;
+    case SYS_2OU_VR_FAULT:
+      pal_get_2ou_vr_str_name(event_data[1], event_data[2], error_log);
+      strcat(error_log, "2OU VR fault");
       break;
     default:
       strcat(error_log, "Undefined system event");

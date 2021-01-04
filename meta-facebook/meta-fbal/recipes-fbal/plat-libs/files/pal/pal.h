@@ -53,12 +53,16 @@ extern "C" {
 
 enum {
   FRU_ALL  = 0,
-  FRU_MB,
+  FRU_TRAY0_MB,
   FRU_PDB,
-  FRU_NIC0,
-  FRU_NIC1,
+  FRU_TRAY0_NIC0,
+  FRU_TRAY0_NIC1,
   FRU_DBG,
-  FRU_BMC,
+  FRU_TRAY0_BMC,
+  FRU_TRAY1_MB,
+  FRU_TRAY1_NIC0,
+  FRU_TRAY1_NIC1,
+  FRU_TRAY1_BMC,
   FRU_CNT,
 };
 
@@ -69,6 +73,12 @@ enum {
   REV_PVT,
   REV_MP,
 };
+
+extern uint8_t FRU_MB;
+extern uint8_t FRU_NIC0;
+extern uint8_t FRU_NIC1;
+extern uint8_t FRU_BMC;
+
 
 #define MAX_NUM_FRUS    (FRU_CNT-1)
 #define MAX_NODES       (1)

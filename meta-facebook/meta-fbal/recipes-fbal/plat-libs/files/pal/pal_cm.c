@@ -337,14 +337,18 @@ lib_cmc_get_block_index(uint8_t fru) {
   uint8_t index;
 
   switch(fru) {
-    case FRU_MB:
+    case FRU_TRAY0_MB:
+    case FRU_TRAY1_MB:
       index = COMP_BIOS;
       break;
-    case FRU_BMC:
+    case FRU_TRAY0_BMC:
+    case FRU_TRAY1_BMC:
       index = COMP_BMC;
       break;
-    case FRU_NIC0:
-    case FRU_NIC1:
+    case FRU_TRAY0_NIC0:
+    case FRU_TRAY0_NIC1:
+    case FRU_TRAY1_NIC0:
+    case FRU_TRAY1_NIC1:
       index = COMP_NIC;
       break;
     case FRU_DBG:

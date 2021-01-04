@@ -77,7 +77,7 @@ struct debug_card_naming_config {
 };
 
 //4S Master BMC Sensor List
-const uint8_t mb_4s_m_sensor_list[] = {
+const uint8_t mb_4s_m_tray0_sensor_list[] = {
   MB_SNR_INLET_TEMP,
   MB_SNR_OUTLET_TEMP_R,
   MB_SNR_OUTLET_TEMP_L,
@@ -112,8 +112,6 @@ const uint8_t mb_4s_m_sensor_list[] = {
   MB_SNR_PCH_TEMP,
   MB_SNR_CPU0_TEMP,
   MB_SNR_CPU1_TEMP,
-  MB_SNR_CPU2_TEMP,
-  MB_SNR_CPU3_TEMP,
   MB_SNR_CPU0_DIMM_GRPA_TEMP,
   MB_SNR_CPU0_DIMM_GRPB_TEMP,
   MB_SNR_CPU0_DIMM_GRPC_TEMP,
@@ -126,32 +124,14 @@ const uint8_t mb_4s_m_sensor_list[] = {
   MB_SNR_CPU1_DIMM_GRPD_TEMP,
   MB_SNR_CPU1_DIMM_GRPE_TEMP,
   MB_SNR_CPU1_DIMM_GRPF_TEMP,
-  MB_SNR_CPU2_DIMM_GRPA_TEMP,
-  MB_SNR_CPU2_DIMM_GRPB_TEMP,
-  MB_SNR_CPU2_DIMM_GRPC_TEMP,
-  MB_SNR_CPU2_DIMM_GRPD_TEMP,
-  MB_SNR_CPU2_DIMM_GRPE_TEMP,
-  MB_SNR_CPU2_DIMM_GRPF_TEMP,
-  MB_SNR_CPU3_DIMM_GRPA_TEMP,
-  MB_SNR_CPU3_DIMM_GRPB_TEMP,
-  MB_SNR_CPU3_DIMM_GRPC_TEMP,
-  MB_SNR_CPU3_DIMM_GRPD_TEMP,
-  MB_SNR_CPU3_DIMM_GRPE_TEMP,
-  MB_SNR_CPU3_DIMM_GRPF_TEMP,
   MB_SNR_DATA0_DRIVE_TEMP,
   MB_SNR_DATA1_DRIVE_TEMP,
   MB_SNR_CPU0_PKG_POWER,
   MB_SNR_CPU1_PKG_POWER,
-  MB_SNR_CPU2_PKG_POWER,
-  MB_SNR_CPU3_PKG_POWER,
   MB_SNR_CPU0_TJMAX,
   MB_SNR_CPU1_TJMAX,
-  MB_SNR_CPU2_TJMAX,
-  MB_SNR_CPU3_TJMAX,
   MB_SNR_CPU0_THERM_MARGIN,
   MB_SNR_CPU1_THERM_MARGIN,
-  MB_SNR_CPU2_THERM_MARGIN,
-  MB_SNR_CPU3_THERM_MARGIN,
   MB_SNR_P12V_STBY_INA260_VOL,
   MB_SNR_P3V3_M2_1_INA260_VOL,
   MB_SNR_P3V3_M2_2_INA260_VOL,
@@ -204,6 +184,30 @@ const uint8_t mb_4s_m_sensor_list[] = {
   MB_SNR_VR_PCH_PVNN_TEMP,
   MB_SNR_VR_PCH_PVNN_CURR,
   MB_SNR_VR_PCH_PVNN_POWER,
+};
+
+//4S Master BMC Sensor List
+const uint8_t mb_4s_m_tray1_sensor_list[] = {
+  MB_SNR_CPU2_TEMP,
+  MB_SNR_CPU3_TEMP,
+  MB_SNR_CPU2_DIMM_GRPA_TEMP,
+  MB_SNR_CPU2_DIMM_GRPB_TEMP,
+  MB_SNR_CPU2_DIMM_GRPC_TEMP,
+  MB_SNR_CPU2_DIMM_GRPD_TEMP,
+  MB_SNR_CPU2_DIMM_GRPE_TEMP,
+  MB_SNR_CPU2_DIMM_GRPF_TEMP,
+  MB_SNR_CPU3_DIMM_GRPA_TEMP,
+  MB_SNR_CPU3_DIMM_GRPB_TEMP,
+  MB_SNR_CPU3_DIMM_GRPC_TEMP,
+  MB_SNR_CPU3_DIMM_GRPD_TEMP,
+  MB_SNR_CPU3_DIMM_GRPE_TEMP,
+  MB_SNR_CPU3_DIMM_GRPF_TEMP,
+  MB_SNR_CPU2_PKG_POWER,
+  MB_SNR_CPU3_PKG_POWER,
+  MB_SNR_CPU2_TJMAX,
+  MB_SNR_CPU3_TJMAX,
+  MB_SNR_CPU2_THERM_MARGIN,
+  MB_SNR_CPU3_THERM_MARGIN,
 };
 
 //Slave BMC Sensor List
@@ -825,7 +829,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"AL_MB_CPU1_PVTT_ABC", ADC12, read_adc_val, false, {0.66, 0, 0, 0.55, 0, 0, 0, 0}, VOLT}, //0xDC
   {"AL_MB_CPU0_PVTT_DEF", ADC13, read_adc_val, false, {0.66, 0, 0, 0.55, 0, 0, 0, 0}, VOLT}, //0xDD
   {"AL_MB_CPU1_PVTT_DEF", ADC14, read_adc_val, false, {0.66, 0, 0, 0.55, 0, 0, 0, 0}, VOLT}, //0xDE
-  {"AL_MB_PROCESSOR_FAIL", FRU_MB, read_frb3, 0, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xDF
+  {"AL_MB_PROCESSOR_FAIL", FRU_TRAY0_MB, read_frb3, 0, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0xDF
 
   {"AL_MB_VR_CPU1_VCCIN_VOUT", VR_ID5, read_vr_vout, false, {2.1, 0, 0, 1.33, 0, 0, 0, 0}, VOLT}, //0xE0
   {"AL_MB_VR_CPU1_VCCIN_TEMP", VR_ID5, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xE1
@@ -861,7 +865,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFF
 };
 
-size_t mb_4s_m_sensor_cnt = sizeof(mb_4s_m_sensor_list)/sizeof(uint8_t);
+size_t mb_4s_m_tray0_sensor_cnt = sizeof(mb_4s_m_tray0_sensor_list)/sizeof(uint8_t);
+size_t mb_4s_m_tray1_sensor_cnt = sizeof(mb_4s_m_tray1_sensor_list)/sizeof(uint8_t);
 size_t mb_slv_sensor_cnt = sizeof(mb_slv_sensor_list)/sizeof(uint8_t);
 size_t mb_2s_sensor_cnt = sizeof(mb_2s_sensor_list)/sizeof(uint8_t);
 size_t nic0_sensor_cnt = sizeof(nic0_sensor_list)/sizeof(uint8_t);
@@ -881,41 +886,40 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   }
   master = pal_get_config_is_master();
 
-  switch(fru) {
-  case FRU_MB:
+  if (mode == MB_4S_MODE && master) {
+    if (fru == FRU_TRAY0_MB) {
+      *sensor_list = (uint8_t *)mb_4s_m_tray0_sensor_list;
+      *cnt = mb_4s_m_tray0_sensor_cnt;
+      return 0;
+    } else if (fru == FRU_TRAY1_MB) {
+      *sensor_list = (uint8_t *)mb_4s_m_tray1_sensor_list;
+      *cnt = mb_4s_m_tray1_sensor_cnt;
+      return 0;
+    }
+  }
+
+  if (fru == FRU_MB) {
     if (mode == MB_2S_MODE ) {
       //2S Mode
       *sensor_list = (uint8_t *) mb_2s_sensor_list;
       *cnt = mb_2s_sensor_cnt;
-    } else if(mode == MB_4S_MODE && master == true) {
-      //4S Master Mode
-      *sensor_list = (uint8_t *) mb_4s_m_sensor_list;
-      *cnt = mb_4s_m_sensor_cnt;
     } else {
       //4S Slave Mode
       *sensor_list = (uint8_t *) mb_slv_sensor_list;
       *cnt = mb_slv_sensor_cnt;
     }
-    break;
-
-  case FRU_NIC0:
+  } else if (fru == FRU_NIC0) {
     *sensor_list = (uint8_t *) nic0_sensor_list;
     *cnt = nic0_sensor_cnt;
-    break;
-
-  case FRU_NIC1:
+  } else if (fru == FRU_NIC1) {
     *sensor_list = (uint8_t *) nic1_sensor_list;
     *cnt = nic1_sensor_cnt;
-    break;
-
-  case FRU_PDB:
+  } else if (fru == FRU_PDB) {
     *sensor_list = (uint8_t *) pdb_sensor_list;
     *cnt = pdb_sensor_cnt;
-    break;
-  default:
-    if (fru > MAX_NUM_FRUS)
-      return -1;
-    // Nothing to read yet.
+  } else if (fru > MAX_NUM_FRUS) {
+    return -1;
+  } else {
     *sensor_list = NULL;
     *cnt = 0;
   }
@@ -934,10 +938,7 @@ int
 pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   uint8_t master;
   master = pal_get_config_is_master();
-
-
-  switch(fru) {
-  case FRU_MB:
+  if (fru == FRU_MB) {
     if (master == true) {
       *sensor_list = (uint8_t *) mb_discrete_sensor_list;
       *cnt = mb_discrete_sensor_cnt;
@@ -945,15 +946,14 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       *sensor_list = NULL;
       *cnt = 0;
     }
-    break;
-  default:
-    if (fru > MAX_NUM_FRUS)
+  } else if (fru > MAX_NUM_FRUS) {
       return -1;
+  } else {
     // Nothing to read yet.
     *sensor_list = NULL;
     *cnt = 0;
   }
-    return 0;
+  return 0;
 }
 
 static int
@@ -2093,7 +2093,7 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
   char sensor_name[32] = {0};
   char error[32] = {0};
 
-  if (fru_id != 1) {
+  if (fru_id != FRU_TRAY0_MB) {
     syslog(LOG_ERR, "Not Supported Operation for fru %d", fru_id);
     return READING_NA;
   }
@@ -2173,12 +2173,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
   server_off = is_server_off();
   id = sensor_map[sensor_num].id;
-
-  switch(fru) {
-  case FRU_MB:
-  case FRU_NIC0:
-  case FRU_NIC1:
-  case FRU_PDB:
+  if (fru == FRU_MB || fru == FRU_NIC0 || fru == FRU_NIC1 ||
+      fru == FRU_PDB || fru == FRU_TRAY1_MB) {
     if (server_off) {
       pwr_polling_flag = false;
       if (sensor_map[sensor_num].stby_read == true) {
@@ -2207,9 +2203,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
        * this sensor is potentially NA. */
       return pal_sensor_read_raw(fru, sensor_num, value);
     }
-    break;
-
-  default:
+  } else {
     return -1;
   }
 
@@ -2234,15 +2228,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
 int
 pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
-  switch(fru) {
-  case FRU_MB:
-  case FRU_NIC0:
-  case FRU_NIC1:
-  case FRU_PDB:
+  if (fru == FRU_MB || fru == FRU_NIC0 || fru == FRU_NIC1 ||
+      fru == FRU_PDB || fru == FRU_TRAY1_MB) {
     sprintf(name, "%s", sensor_map[sensor_num].snr_name);
-    break;
-
-  default:
+  } else {
     return -1;
   }
   return 0;
@@ -2251,12 +2240,14 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
   float *val = (float*) value;
-  switch(fru) {
-  case FRU_MB:
-  case FRU_NIC0:
-  case FRU_NIC1:
-  case FRU_PDB:
-    switch(thresh) {
+
+  if (fru != FRU_MB && fru != FRU_NIC0 && fru != FRU_NIC1 && 
+      fru != FRU_PDB && fru != FRU_TRAY1_MB) {
+    syslog(LOG_WARNING, "Threshold type error value=%d\n", thresh);
+    return -1;
+  }
+
+  switch(thresh) {
     case UCR_THRESH:
       *val = sensor_map[sensor_num].snr_thresh.ucr_thresh;
       break;
@@ -2282,12 +2273,7 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
       *val = sensor_map[sensor_num].snr_thresh.neg_hyst;
       break;
     default:
-      syslog(LOG_WARNING, "Threshold type error value=%d\n", thresh);
       return -1;
-    }
-    break;
-  default:
-    return -1;
   }
   return 0;
 }
@@ -2296,30 +2282,26 @@ int
 pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   uint8_t scale = sensor_map[sensor_num].units;
 
-  switch(fru) {
-    case FRU_MB:
-    case FRU_NIC0:
-    case FRU_NIC1:
-    case FRU_PDB:
-      switch(scale) {
-        case TEMP:
-          sprintf(units, "C");
-          break;
-        case FAN:
-          sprintf(units, "RPM");
-          break;
-        case VOLT:
-          sprintf(units, "Volts");
-          break;
-        case CURR:
-          sprintf(units, "Amps");
-          break;
-        case POWER:
-          sprintf(units, "Watts");
-          break;
-        default:
-          return -1;
-      }
+  if (fru != FRU_MB && fru != FRU_NIC0 && fru != FRU_NIC1 &&
+      fru != FRU_PDB && fru != FRU_TRAY1_MB) {
+    return -1;
+  }
+
+  switch(scale) {
+    case TEMP:
+      sprintf(units, "C");
+      break;
+    case FAN:
+      sprintf(units, "RPM");
+      break;
+    case VOLT:
+      sprintf(units, "Volts");
+      break;
+    case CURR:
+      sprintf(units, "Amps");
+      break;
+    case POWER:
+      sprintf(units, "Watts");
       break;
     default:
       return -1;

@@ -64,8 +64,7 @@
 #define NUM_NIC_FRU     2
 #define NUM_BMC_FRU     1
 
-
-const char pal_fru_list[] = "all, mb, nic0, nic1, pdb, bmc";
+const char pal_fru_list[] = "all, mb, nic0, nic1, pdb, bmc, tray0_mb, tray1_mb, tray0_nic0, tray0_nic1, tray1_nic0, tray1_nic1, tray0_bmc, tray1_bmc";
 const char pal_server_list[] = "mb";
 const char *pal_server_fru_list[NUM_SERVER_FRU] = {"mb"};
 const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic0", "nic1"};
@@ -78,6 +77,11 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
+
+uint8_t FRU_MB = FRU_TRAY0_MB;
+uint8_t FRU_NIC0 = FRU_TRAY0_NIC0;
+uint8_t FRU_NIC1 = FRU_TRAY0_NIC1;
+uint8_t FRU_BMC = FRU_TRAY0_BMC;
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -301,42 +305,40 @@ int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   gpio_desc_t *gdesc = NULL;
   gpio_value_t val;
-
+  uint8_t mode;
+  bool master;
+  if (pal_get_host_system_mode(&mode)) {
+    return -1;
+  }
+  master = pal_get_config_is_master();
   *status = 0;
-
-  switch (fru) {
-  case FRU_MB:
+  // This MB, PDB, BMC && DBG
+  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BMC || fru == FRU_DBG) {
     *status = 1;
-    break;
-  case FRU_NIC0:
+  } else if ((mode == MB_4S_MODE || mode == MB_8S_MODE)
+      && master
+      && (fru == FRU_TRAY0_MB || fru == FRU_TRAY1_MB)) {
+    // Support tray1 MB in master BMC.
+    *status = 1;
+  } else if (fru == FRU_NIC0) {
     if ((gdesc = gpio_open_by_shadow(GPIO_NIC0_PRSNT))) {
       if (!gpio_get_value(gdesc, &val)) {
         *status = !val;
       }
       gpio_close(gdesc);
     }
-    break;
-  case FRU_NIC1:
+  } else if (fru == FRU_NIC1) {
     if ((gdesc = gpio_open_by_shadow(GPIO_NIC1_PRSNT))) {
       if (!gpio_get_value(gdesc, &val)) {
         *status = !val;
       }
       gpio_close(gdesc);
     }
-    break;
-  case FRU_PDB:
-    *status = 1;
-    break;
-  case FRU_BMC:
-    *status = 1;
-    break;
-  case FRU_DBG:
-    *status = 1;
-    break;
-  default:
+  } else if (fru > FRU_ALL && fru < FRU_CNT) {
+    *status = 0;
+  } else {
     return -1;
   }
-
   return 0;
 }
 
@@ -401,44 +403,71 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_ALL;
   } else if (!strcmp(str, "mb") || !strcmp(str, "cpld") || !strcmp(str, "vr")) {
     *fru = FRU_MB;
+  } else if (!strcmp(str, "tray0_mb")) {
+    *fru = FRU_TRAY0_MB;
+  } else if (!strcmp(str, "tray1_mb")) {
+    *fru = FRU_TRAY1_MB;
   } else if (!strcmp(str, "pdb")) {
     *fru = FRU_PDB;
   } else if (!strcmp(str, "nic0") || !strcmp(str, "nic")) {
     *fru = FRU_NIC0;
   } else if (!strcmp(str, "nic1")) {
     *fru = FRU_NIC1;
+  } else if (!strcmp(str, "tray0_nic0")) {
+    *fru = FRU_TRAY0_NIC0;
+  } else if (!strcmp(str, "tray0_nic1")) {
+    *fru = FRU_TRAY0_NIC1;
+  } else if (!strcmp(str, "tray1_nic0")) {
+    *fru = FRU_TRAY1_NIC0;
+  } else if (!strcmp(str, "tray1_nic1")) {
+    *fru = FRU_TRAY1_NIC1;
   } else if (!strcmp(str, "ocpdbg")) {
     *fru = FRU_DBG;
   } else if (!strcmp(str, "bmc")) {
     *fru = FRU_BMC;
+  } else if (!strcmp(str, "tray0_bmc")) {
+    *fru = FRU_TRAY0_BMC;
+  } else if (!strcmp(str, "tray1_bmc")) {
+    *fru = FRU_TRAY1_BMC;
   } else {
     syslog(LOG_WARNING, "pal_get_fru_id: Wrong fru#%s", str);
     return -1;
   }
-
   return 0;
 }
 
 int
 pal_get_fru_name(uint8_t fru, char *name) {
   switch (fru) {
-    case FRU_MB:
-      strcpy(name, "mb");
+    case FRU_TRAY0_MB:
+      strcpy(name, "tray0_mb");
+      break;
+    case FRU_TRAY1_MB:
+      strcpy(name, "tray1_mb");
       break;
     case FRU_PDB:
       strcpy(name, "pdb");
       break;
-    case FRU_NIC0:
-      strcpy(name, "nic0");
+    case FRU_TRAY0_NIC0:
+      strcpy(name, "tray0_nic0");
       break;
-    case FRU_NIC1:
-      strcpy(name, "nic1");
+    case FRU_TRAY0_NIC1:
+      strcpy(name, "tray0_nic1");
+      break;
+    case FRU_TRAY1_NIC0:
+      strcpy(name, "tray1_nic0");
+      break;
+    case FRU_TRAY1_NIC1:
+      strcpy(name, "tray1_nic1");
       break;
     case FRU_DBG:
       strcpy(name, "ocpdbg");
       break;
-    case FRU_BMC:
-      strcpy(name, "bmc");
+    case FRU_TRAY0_BMC:
+      strcpy(name, "tray0_bmc");
+      break;
+    case FRU_TRAY1_BMC:
+      strcpy(name, "tray1_bmc");
       break;
     default:
       if (fru > MAX_NUM_FRUS)
@@ -521,26 +550,19 @@ int
 pal_get_fruid_path(uint8_t fru, char *path) {
   char fname[16] = {0};
 
-  switch(fru) {
-  case FRU_MB:
+  if (fru == FRU_MB) {
     sprintf(fname, "mb");
-    break;
-  case FRU_NIC0:
+  } else if (fru == FRU_NIC0) {
     sprintf(fname, "nic0");
-    break;
-  case FRU_NIC1:
+  } else if (fru == FRU_NIC1) {
     sprintf(fname, "nic1");
-    break;
-  case FRU_PDB:
+  } else if (fru == FRU_PDB) {
     sprintf(fname, "pdb");
-    break;
-  case FRU_BMC:
+  } else if (fru == FRU_BMC) {
     sprintf(fname, "bmc");
-    break;
-  default:
+  } else {
     return -1;
   }
-
   sprintf(path, "/tmp/fruid_%s.bin", fname);
   return 0;
 }
@@ -562,48 +584,58 @@ int
 pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
   char FRU_EEPROM_MB[64];
 
-  switch(fru) {
-  case FRU_MB:
+  if (fru == FRU_MB) {
     fru_eeprom_mb_check(FRU_EEPROM_MB);
     sprintf(path, "%s", FRU_EEPROM_MB);
-    break;
-  case FRU_NIC0:
+  } else if (fru == FRU_NIC0) {
     sprintf(path, FRU_EEPROM_NIC0);
-    break;
-  case FRU_NIC1:
+  } else if (fru == FRU_NIC1) {
     sprintf(path, FRU_EEPROM_NIC1);
-    break;
-  case FRU_BMC:
+  } else if (fru == FRU_BMC) {
     sprintf(path, FRU_EEPROM_BMC);
-    break;
-  default:
+  } else {
     return -1;
   }
-
   return 0;
 }
 
 int
 pal_get_fruid_name(uint8_t fru, char *name) {
   switch(fru) {
-  case FRU_MB:
-    sprintf(name, "Mother Board");
+  case FRU_TRAY0_MB:
+    sprintf(name, "Tray0 Mother Board");
     break;
 
-  case FRU_NIC0:
-    sprintf(name, "Mezz Card 0");
+  case FRU_TRAY0_NIC0:
+    sprintf(name, "Tray0 Mezz Card 0");
     break;
 
-  case FRU_NIC1:
-    sprintf(name, "Mezz Card 1");
+  case FRU_TRAY0_NIC1:
+    sprintf(name, "Tray0 Mezz Card 1");
+    break;
+
+  case FRU_TRAY1_MB:
+    sprintf(name, "Tray1 Mother Board");
+    break;
+
+  case FRU_TRAY1_NIC0:
+    sprintf(name, "Tray1 Mezz Card 0");
+    break;
+
+  case FRU_TRAY1_NIC1:
+    sprintf(name, "Tray1 Mezz Card 1");
     break;
 
   case FRU_PDB:
     sprintf(name, "PDB");
     break;
 
-  case FRU_BMC:
-    sprintf(name, "BMC");
+  case FRU_TRAY0_BMC:
+    sprintf(name, "Tray0 BMC");
+    break;
+
+  case FRU_TRAY1_BMC:
+    sprintf(name, "Tray1 BMC");
     break;
 
   default:
@@ -2000,4 +2032,14 @@ pal_get_target_bmc_addr(uint8_t *tar_bmc_addr) {
     *tar_bmc_addr = BMC0_SLAVE_DEF_ADDR;
 
   return 0;
+}
+
+void __attribute__((constructor))
+update_local_fruid(void) {
+  if (!pal_get_config_is_master()) {
+    FRU_MB = FRU_TRAY1_MB;
+    FRU_NIC0 = FRU_TRAY1_NIC0;
+    FRU_NIC1 = FRU_TRAY1_NIC1;
+    FRU_BMC = FRU_TRAY1_BMC;
+  }
 }

@@ -227,9 +227,13 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 #endif
       retry++;
       msleep(IPMB_RETRY_DELAY_TIME);
+    } else {
+      res  = (ipmb_res_t*) rbuf;
+      if ( res->cc == CC_NODE_BUSY ) {
+        retry++;
+        msleep(IPMB_RETRY_DELAY_TIME);
+      } else break;
     }
-    else
-      break;
   }
 
   if (rlen == 0) {
@@ -238,8 +242,6 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   }
 
   // Handle IPMB response
-  res  = (ipmb_res_t*) rbuf;
-
   if (res->cc) {
     syslog(LOG_ERR, "bic_ipmb_wrapper: Completion Code: 0x%X\n", res->cc);
     return BIC_STATUS_FAILURE;

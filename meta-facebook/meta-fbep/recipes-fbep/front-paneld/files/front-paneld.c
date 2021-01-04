@@ -88,16 +88,11 @@ static void* get_asic_id_handler()
   uint8_t count = 0x0;
   bool id_err = false;
   char curr_mfr[MAX_VALUE_LEN] = {0};
+  char asic_lock[32] = {0};
 
   if (pal_get_key_value("asic_mfr", curr_mfr) < 0)
     strncpy(curr_mfr, MFR_NVIDIA, sizeof(curr_mfr)-1);
 
-  lock = open("/tmp/asic_lock", O_CREAT | O_RDWR, 0666);
-  if (lock < 0) {
-    syslog(LOG_WARNING, "Failed to open ASIC lock");
-    return NULL;
-  }
-  flock(lock, LOCK_EX);
   while (1) {
 
     sleep(1);
@@ -112,7 +107,17 @@ static void* get_asic_id_handler()
         continue;
       }
 
+      snprintf(asic_lock, sizeof(asic_lock), "/tmp/asic_lock%d", (int)slot);
+      lock = open(asic_lock, O_CREAT | O_RDWR, 0666);
+      if (lock < 0) {
+	syslog(LOG_WARNING, "Failed to open ASIC lock %d", (int)slot);
+	return NULL;
+      }
+      flock(lock, LOCK_EX);
       asic_id[slot] = asic_get_vendor_id(slot);
+      flock(lock, LOCK_UN);
+      close(lock);
+
       if (asic_id[slot] != GPU_UNKNOWN) {
         syslog(LOG_WARNING, "Detected Vendor for OAM%d: %s, FRU:1",
                              (int)slot, mfr_list[asic_id[slot]]);
@@ -151,8 +156,7 @@ static void* get_asic_id_handler()
 
   }
 
-  flock(lock, LOCK_UN);
-  close(lock);
+
   return NULL;
 }
 

@@ -367,7 +367,17 @@ static int _show_status(int slot)
 
 static int _set_power_limit(int slot, unsigned int watts)
 {
-  int ret;
+  int ret, lock;
+  unsigned int val;
+  char asic_lock[32] = {0};
+
+  snprintf(asic_lock, sizeof(asic_lock), "/tmp/asic_lock%d", slot);
+  lock = open(asic_lock, O_CREAT | O_RDWR, 0666);
+  if (lock < 0) {
+    syslog(LOG_WARNING, "Failed to open ASIC lock %d", slot);
+    return -1;
+  }
+  flock(lock, LOCK_EX);
 
   ret = asic_set_power_limit((uint8_t)slot, watts);
   if (ret < 0) {
@@ -375,25 +385,36 @@ static int _set_power_limit(int slot, unsigned int watts)
       std::cerr << "Power capping is not supported" << std::endl;
     else
       std::cerr << "Failed to set power limit of GPU on slot " << slot << std::endl;
-    return ret;
+    goto bail;
   }
 
-  std::cout << "Set power limit of GPU on slot " << slot
-            << " to " << watts << " Watts"<< std::endl;
-  return 0;
+  ret = asic_get_power_limit((uint8_t)slot, &val);
+  if (ret < 0) {
+    if (ret == ASIC_NOTSUP)
+      std::cerr << "Get power limit is not supported" << std::endl;
+    else
+      std::cerr << "Failed to get power limit of GPU on slot " << slot << std::endl;
+    goto bail;
+  }
+
+  if (watts != val) {
+    std::cerr << "Failed to set power limit of GPU on slot " << slot << std::endl;
+    ret = -1;
+  } else {
+    std::cout << "Set power limit of GPU on slot " << slot
+              << " to " << watts << " Watts" << std::endl;
+    syslog(LOG_CRIT, "Set power limit of GPU on slot %d to %d Watts", (int)slot, watts);
+  }
+
+bail:
+  flock(lock, LOCK_UN);
+  close(lock);
+  return ret;
 }
 
 static int set_power_limit(int slot, unsigned int watts)
 {
   int ret = -1;
-  int lock;
-
-  lock = open("/tmp/asic_lock", O_CREAT | O_RDWR, 0666);
-  if (lock < 0) {
-    syslog(LOG_WARNING, "Failed to open ASIC lock");
-    return -1;
-  }
-  flock(lock, LOCK_EX);
 
   if (slot == SLOT_ALL) {
     for (int i = 0; i < 8; i++) {
@@ -413,10 +434,68 @@ static int set_power_limit(int slot, unsigned int watts)
     }
   }
 
+  return ret;
+}
+
+/*
+ * BMC can't get the limit before setting it
+ * Refer table 3.9-Async Request in DG-06034-002
+ *
+static int _get_power_limit(int slot)
+{
+  int ret, lock;
+  unsigned int watts;
+  char asic_lock[32] = {0};
+
+  snprintf(asic_lock, sizeof(asic_lock), "/tmp/asic_lock%d", slot);
+  lock = open(asic_lock, O_CREAT | O_RDWR, 0666);
+  if (lock < 0) {
+    syslog(LOG_WARNING, "Failed to open ASIC lock %d", slot);
+    return -1;
+  }
+  flock(lock, LOCK_EX);
+
+  ret = asic_get_power_limit((uint8_t)slot, &watts);
+  if (ret < 0) {
+    if (ret == ASIC_NOTSUP)
+      std::cerr << "Get power limit is not supported" << std::endl;
+    else
+      std::cerr << "Failed to get power limit of GPU on slot " << slot << std::endl;
+    goto bail;
+  }
+  std::cout << "Current power limit of GPU on slot " << slot
+            << " is " << watts << " Watts" << std::endl;
+bail:
   flock(lock, LOCK_UN);
   close(lock);
-  return ret; 
+  return ret;
 }
+
+static int get_power_limit(int slot)
+{
+  int ret = -1;
+
+  if (slot == SLOT_ALL) {
+    for (int i = 0; i < 8; i++) {
+      if (is_asic_prsnt((uint8_t)i)) {
+        ret = _get_power_limit(i);
+        if (ret < 0)
+          break;
+      } else {
+        std::cout << "ASIC on slot " << i << " is not present" << std::endl;
+      }
+    }
+  } else {
+    if (is_asic_prsnt((uint8_t)slot)) {
+      ret = _get_power_limit(slot);
+    } else {
+      std::cout << "ASIC on slot " << slot << " is not present" << std::endl;
+    }
+  }
+
+  return ret;
+}
+*/
 
 static int _show_info(int slot)
 {
@@ -434,6 +513,8 @@ static int _show_info(int slot)
     return -1;
   }
   std::cout << "GPU power brake: " << (brk_on == GPIO_VALUE_LOW? "Enabled":"Disabled") << std::endl;
+
+//  get_power_limit(slot);
   return 0;
 }
 

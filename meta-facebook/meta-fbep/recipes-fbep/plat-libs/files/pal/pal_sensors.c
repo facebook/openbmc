@@ -1822,25 +1822,31 @@ int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *valu
 
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
 {
-  int asic_lock;
+  int ret, lock;
+  char asic_lock[32] = {0};
 
   if (fru == FRU_BSM || fru > FRU_ASIC7 || sensor_num >= FBEP_SENSOR_MAX)
     return ERR_SENSOR_NA;
 
   if (fru >= FRU_ASIC0 && fru <= FRU_ASIC7) {
-    asic_lock = open("/tmp/asic_lock", O_CREAT | O_RDWR, 0666);
-    if (asic_lock < 0) {
+    snprintf(asic_lock, sizeof(asic_lock), "/tmp/asic_lock%d", (int)fru-FRU_ASIC0);
+    lock = open(asic_lock, O_CREAT | O_RDWR, 0666);
+    if (lock < 0) {
       return ERR_FAILURE; // Skip
     }
-    if (flock(asic_lock, LOCK_EX | LOCK_NB) && errno == EWOULDBLOCK) {
-      close(asic_lock);
+    if (flock(lock, LOCK_EX | LOCK_NB) && errno == EWOULDBLOCK) {
+      close(lock);
       return ERR_FAILURE; // Skip
-    } else {
-      flock(asic_lock, LOCK_UN);
-      close(asic_lock);
     }
   }
 
-  return fbep_sensors_map[sensor_num].sensor_read(sensor_num, (float *)value);
+  ret = fbep_sensors_map[sensor_num].sensor_read(sensor_num, (float *)value);
+
+  if (fru >= FRU_ASIC0 && fru <= FRU_ASIC7) {
+    flock(lock, LOCK_UN);
+    close(lock);
+  }
+
+  return ret;
 }
 

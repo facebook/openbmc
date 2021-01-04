@@ -29,6 +29,8 @@ extern "C" {
 #define MFR_NVIDIA   "NVIDIA"
 #define MFR_UNKNOWN  "UNKNOWN"
 
+#define asic_slot_to_bus(x) ((~(x) >> 1) & 0xB)
+
 enum {
   GPU_NVIDIA = 0,
   GPU_AMD,
@@ -50,6 +52,7 @@ int asic_read_mem_temp(uint8_t, float*);
 int asic_read_pwcs(uint8_t, float*);
 bool is_asic_prsnt(uint8_t);
 int asic_set_power_limit(uint8_t, unsigned int);
+int asic_get_power_limit(uint8_t, unsigned int*);
 int asic_show_version(uint8_t, char*);
 
 #ifdef __cplusplus

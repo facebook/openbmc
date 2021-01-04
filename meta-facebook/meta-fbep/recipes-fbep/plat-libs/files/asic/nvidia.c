@@ -20,7 +20,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <syslog.h>
 #include <openbmc/obmc-i2c.h>
 #include "asic.h"
 
@@ -75,6 +74,8 @@
 #define SMBPBI_WRITE_SCRMEM     0x0E
 
 #define SMBPBI_ASYNC_REQUEST    0x10
+#define SMBPBI_GET_POWER_LIMIT  0x00
+#define SMBPBI_SET_POWER_LIMIT  0x01
 #define SMBPBI_ASYNC_POLLREQ    0xFF
 
 static int nv_open_slot(uint8_t slot)
@@ -288,27 +289,77 @@ err:
   return ASIC_ERROR;
 }
 
+int nv_get_power_limit(uint8_t slot, unsigned int *watt)
+{
+  int fd, retry = SMBPBI_MAX_RETRY;
+  uint8_t rbuf[4];
+  uint8_t async_id;
+  uint8_t offset = 0x1;
+
+  fd = nv_open_slot(slot);
+  if (fd < 0)
+    return ASIC_ERROR;
+
+  // Request GPU to write data into scratch memory at offset 0x0
+  if (nv_msgbox_cmd(fd, SMBPBI_ASYNC_REQUEST, SMBPBI_GET_POWER_LIMIT, offset, NULL, rbuf) < 0)
+    goto err;
+
+  async_id = rbuf[0];
+  // Retry if needed
+  while (retry--) {
+    if (nv_msgbox_cmd(fd, SMBPBI_ASYNC_REQUEST, SMBPBI_ASYNC_POLLREQ, async_id, NULL, rbuf) < 0)
+      goto err;
+    if (rbuf[0] == ASYNC_STATUS_MORE_PROC || rbuf[0] == ASYNC_STATUS_TIMEOUT ||
+        rbuf[0] == ASYNC_STATUS_NOT_READY || rbuf[0] == ASYNC_STATUS_IN_RESET ||
+        rbuf[0] == ASYNC_STATUS_BUSY_RETRY ) {
+      continue;
+    }
+    if (rbuf[0] == ASYNC_STATUS_SUCCESS) {
+      if (nv_msgbox_cmd(fd, SMBPBI_READ_SCRMEM, offset, 0x0, NULL, rbuf) < 0)
+        goto err;
+
+      memcpy(watt, rbuf, 4);
+      *watt /= 1000;
+      close(fd);
+      return ASIC_SUCCESS;
+    }
+    break;
+  }
+
+err:
+  close(fd);
+  return ASIC_ERROR;
+}
+
 int nv_set_power_limit(uint8_t slot, unsigned int watt)
 {
   int fd, retry = SMBPBI_MAX_RETRY;
   unsigned int mwatt = watt * 1000;
   uint8_t tbuf[4], rbuf[4];
   uint8_t async_id;
-  uint8_t scratch_offset = 0x0;
+  uint8_t offset = 0x0;
 
   fd = nv_open_slot(slot);
   if (fd < 0)
     return ASIC_ERROR;
 
+  tbuf[0] = 0x01; // Set presistence flag
+  tbuf[1] = 0x00;
+  tbuf[2] = 0x00;
+  tbuf[3] = 0x00;
+  // Write flag to scratch memory at offset 0x0 to indicate to set limit immediately
+  if (nv_msgbox_cmd(fd, SMBPBI_WRITE_SCRMEM, offset, 0x0, tbuf, rbuf) < 0)
+    goto err;
+
   tbuf[0] = (uint8_t)(mwatt & 0xff);
   tbuf[1] = (uint8_t)((mwatt >> 8) & 0xff);
   tbuf[2] = (uint8_t)((mwatt >> 16) & 0xff);
   tbuf[3] = (uint8_t)((mwatt >> 24) & 0xff);
-  // Write mWatts to scratch memory at offset 0x0
-  if (nv_msgbox_cmd(fd, SMBPBI_WRITE_SCRMEM, scratch_offset, 0x0, tbuf, rbuf) < 0)
+  // Write mWatts to scratch memory at offset 0x1
+  if (nv_msgbox_cmd(fd, SMBPBI_WRITE_SCRMEM, offset+1, 0x0, tbuf, rbuf) < 0)
     goto err;
-  // Request GPU to read scratch memory at offset 0x0
-  if (nv_msgbox_cmd(fd, SMBPBI_ASYNC_REQUEST, scratch_offset, 0x0, NULL, rbuf) < 0)
+  // Request GPU to read scratch memory which starts at offset 0x0
+  if (nv_msgbox_cmd(fd, SMBPBI_ASYNC_REQUEST, SMBPBI_SET_POWER_LIMIT, offset, NULL, rbuf) < 0)
     goto err;
 
   async_id = rbuf[0];
@@ -323,7 +374,6 @@ int nv_set_power_limit(uint8_t slot, unsigned int watt)
     }
     if (rbuf[0] == ASYNC_STATUS_SUCCESS) {
       close(fd);
-      syslog(LOG_CRIT, "Set power limit of GPU on slot %d to %d Watts", (int)slot, watt);
       return ASIC_SUCCESS;
     }
     break;

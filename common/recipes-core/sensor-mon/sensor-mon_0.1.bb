@@ -83,3 +83,5 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/sensor-mon ${prefix}/local/bin ${sysconfdir} ${systemd_system_unitdir}"
+
+SYSTEMD_SERVICE_${PN} = "sensord.service"

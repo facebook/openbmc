@@ -1116,20 +1116,20 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       break;
     case FW_1OU_CPLD:
     case FW_2OU_CPLD:
-      if (loc != NULL) {
-        if ( stop_bic_monitoring == true && stop_bic_sensor_monitor(slot_id, intf) < 0 ) {
-          printf("* Failed to stop bic sensor monitor\n");
-          break;
-        }
-        ret = update_bic_cpld_lattice(slot_id, path, intf, force);
-        //run it anyway
-        if ( stop_bic_monitoring == true && start_bic_sensor_monitor(slot_id, intf) < 0 ) {
-          printf("* Failed to start bic sensor monitor\n");
-          ret = BIC_STATUS_FAILURE;
-          break;
-        }
-      } else {
-        ret = update_bic_cpld_lattice_usb(slot_id, path, intf, force);
+      if ( stop_bic_monitoring == true && (ret = stop_bic_sensor_monitor(slot_id, intf)) < 0 ) {
+        printf("* Failed to stop bic sensor monitor\n");
+        break;
+      }
+
+      ret = (loc != NULL)?update_bic_cpld_lattice(slot_id, path, intf, force): \
+                          update_bic_cpld_lattice_usb(slot_id, path, intf, force);
+
+      //check ret first and then check stop_bic_monitoring flag
+      //run start_bic_sensor_monitor() and assgin a new val to ret in the end
+      if ( (ret == BIC_STATUS_SUCCESS) && (stop_bic_monitoring == true) && \
+           (ret = start_bic_sensor_monitor(slot_id, intf)) < 0 ) {
+        printf("* Failed to start bic sensor monitor\n");
+        break;
       }
       break;
     case FW_BB_CPLD:

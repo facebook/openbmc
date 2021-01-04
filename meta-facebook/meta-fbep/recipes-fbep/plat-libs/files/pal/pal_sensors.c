@@ -1093,19 +1093,22 @@ static int sensors_read_fan_speed(uint8_t sensor_num, float *value)
       return ERR_SENSOR_NA;
   }
 
-  index = sensor_num - MB_FAN0_TACH_I;
-  index = index/2 + index%2;
-  if ((ret == 0) && (*value <= sensors_threshold[sensor_num][LCR_THRESH])) {
-    if (!checked[index]) {
-      // In case the fans just got installed, fans are still accelerating.
-      // Ignore this reading
-      checked[index] = true;
-      return ERR_SENSOR_NA;
+  if (ret == 0) {
+    index = sensor_num - MB_FAN0_TACH_I;
+    index = index/2 + index%2;
+    if (*value <= sensors_threshold[sensor_num][LCR_THRESH]) {
+      if (!checked[index]) {
+        // In case the fans just got installed, fans are still accelerating.
+        // Ignore this reading
+        checked[index] = true;
+        return ERR_SENSOR_NA;
+      }
+    } else {
+      checked[index] = false;
     }
   }
 
-  checked[index] = false;
-  return ret < 0? ERR_SENSOR_NA: 0;
+  return 0;
 }
 
 static int sensors_read_fan_health(uint8_t sensor_num, float *value)
@@ -1146,18 +1149,21 @@ static int sensors_read_fan_health(uint8_t sensor_num, float *value)
       return ERR_SENSOR_NA;
   }
 
-  index = sensor_num - MB_FAN0_VOLT;
-  index = index/2 + index%2;
-  if ((ret == 0) && (*value <= sensors_threshold[sensor_num][LCR_THRESH])) {
-    if (!checked[index]) {
-      // In case the fans just got installed, ADC might not finish sampling
-      // Ignore this reading
-      checked[index] = true;
-      return ERR_SENSOR_NA;
+  if (ret == 0) {
+    index = sensor_num - MB_FAN0_VOLT;
+    index = index/2 + index%2;
+    if (*value <= sensors_threshold[sensor_num][LCR_THRESH]) {
+      if (!checked[index]) {
+        // In case the fans just got installed, ADC might not finish sampling
+        // Ignore this reading
+        checked[index] = true;
+        return ERR_SENSOR_NA;
+      }
+    } else {
+      checked[index] = false;
     }
   }
 
-  checked[index] = false;
   return ret < 0? ERR_SENSOR_NA: 0;
 }
 

@@ -264,8 +264,7 @@ gpio_export FM_SOL_UART_CH_SEL GPION3
 gpio_export IRQ_DIMM_SAVE_LVT3_N GPION4
 
 # LED_8S_2S_MODE_N
-gpio_export LED_8S_2S_MODE_N GPION5
-gpio_set LED_8S_2S_MODE_N 1
+gpio_export LED_4S_2S_MODE_N GPION5
 
 # Set debounce timer #1 value to 0x12E1FC ~= 100ms
 $DEVMEM 0x1e780050 32 0x12E1FC
@@ -506,3 +505,11 @@ gpio_export_ioexp 4-0077 FM_CPU0_SKTOCC_LVT3_PLD_N 6
 gpio_export_ioexp 4-0077 FM_CPU1_SKTOCC_LVT3_PLD_N 7
 gpio_export_ioexp 4-0077 HP_LVC3_OCP_V3_2_PRSNT2_N 8
 gpio_export_ioexp 4-0077 HP_LVC3_OCP_V3_1_PRSNT2_N 9
+
+# Mode Setting (2S: mode=1 4S: mode=0)
+mode=$(gpio_get FM_BMC_SKT_ID_2)
+if [ "$mode" == "1" ]; then
+    gpio_set LED_4S_2S_MODE_N 0
+else
+    gpio_set LED_4S_2S_MODE_N 1
+fi

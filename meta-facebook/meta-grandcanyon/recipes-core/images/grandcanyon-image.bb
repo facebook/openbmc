@@ -40,4 +40,6 @@ IMAGE_INSTALL += " \
   exp-cached \
   bic-cached \
   power-util \
+  usbutils \
+  usb-console \
   "

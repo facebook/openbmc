@@ -39,3 +39,14 @@ def pal_is_slot_server(fru):
     if ret != 1:
         return False
     return True
+
+
+def pal_is_fru_prsnt(fru):
+    status = c_ubyte(0)
+    ret = CDLL(libpal_name).pal_is_fru_prsnt(c_ubyte(fru), byref(status))
+    if ret != 0:
+        return False
+    elif status.value == 0:
+        return False
+    else:
+        return True

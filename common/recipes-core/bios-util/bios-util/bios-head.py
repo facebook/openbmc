@@ -32,6 +32,9 @@ def bios_main():
         if fru < 0:
             print("%s is not a known FRU on this platform" % (fruname))
             return
+        if pal_is_fru_prsnt(fru) == False:
+            print("%s is not present!" % (fruname))
+            return
         if pal_is_slot_server(fru) == False:
             print("%s is not a server" % (fruname))
             return

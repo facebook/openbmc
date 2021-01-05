@@ -1495,6 +1495,22 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
           case 0x13:
             strcat(error_log, "UMA operation error");
             return 1;
+          //0x14 and 0x15 are reserved
+          case 0x16:
+            strcat(error_log, "Intel PTT Health");
+            return 1;
+          case 0x17:
+            strcat(error_log, "Intel Boot Guard Health");
+            return 1;
+          case 0x18:
+            strcat(error_log, "Restricted mode information");
+            return 1;
+          case 0x19:
+            strcat(error_log, "MultiPCH mode misconfiguration");
+            return 1;
+          case 0x1A:
+            strcat(error_log, "Flash Descriptor Region Verification Error");
+            return 1;
           default:
             strcat(error_log, "Unknown");
             break;

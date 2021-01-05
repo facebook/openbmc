@@ -307,10 +307,14 @@ else
 fi
 
 # If users want to read a history, there is no need to run the rest
-if [ $# -gt 1 ]; then
-  if [[ "$2" == "--history" ]]; then
+
+if [[ "$2" == "--history" ]]; then
+  if [ $# -eq 2 ]; then
     cat $LOGFILE_B $LOGFILE 2>/dev/null
     exit 0;
+  else
+    show_usage
+    exit -1;
   fi
 fi
 
@@ -347,6 +351,12 @@ fi
 
 # check COMP and DEV
 if [ -n "$COMP" ]; then
+  # block invalid command, e.g. sol-util 2ou bic xxx
+  if [ $# -ne 3 ]; then
+    show_usage
+    exit -1;
+  fi
+
   # check COMP first
   if [ "$COMP" == "1ou" ] && [[ ! "$SLED_TYPE" =~ ^(Type_(1|17))$ ]]; then
     EXP_CPLD_ADDR=${FRONT_EXP_CPLD_ADDR}

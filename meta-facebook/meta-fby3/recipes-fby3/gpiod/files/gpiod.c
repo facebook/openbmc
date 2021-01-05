@@ -642,7 +642,6 @@ gpio_monitor_poll(void *ptr) {
 
   int i, ret = 0, retry = 0;
   uint8_t fru = (int)ptr;
-  bool is_bmc_ready = false;
   bic_gpio_t revised_pins, n_pin_val, o_pin_val;
   gpio_pin_t *gpios;
   uint8_t chassis_sts[8] = {0};
@@ -684,15 +683,15 @@ gpio_monitor_poll(void *ptr) {
       memset(&n_pin_val, 0, sizeof(n_pin_val));
 
       //Normally, BIC can always be accessed except 12V-off or 12V-cycle
-      is_bmc_ready = false;
+
       usleep(DELAY_GPIOD_READ);
       continue;
     }
 
-    //Inform BIOS that BMC is ready
-    if ( is_bmc_ready == false ) {
+    // Inform BIOS that BMC is ready
+    // handle case : BIC FW update & BIC resets unexpectedly
+    if (GET_BIT(n_pin_val, BMC_READY) == 0) {
       bic_set_gpio(fru, BMC_READY, 1);
-      is_bmc_ready = true;
     }
 
     // Get CPLD io sts

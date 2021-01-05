@@ -50,6 +50,8 @@ extern "C" {
 #define ARRAY_SIZE(a)   (sizeof(a) / sizeof((a)[0]))
 #endif
 
+#define MIN(a , b)      ((a) < (b) ? (a) : (b))
+
 #define SERVER_SENSOR_LOCK "/var/run/sensor_read_server.lock"
 
 #define MAX_PATH_LEN 128  // include the string terminal

@@ -80,6 +80,16 @@ enum {
   FRU_PRESENT,
 };
 
+enum {
+  PCIE_CONFIG_TYPE5    = 0x6,
+  PCIE_CONFIG_TYPE7    = 0x8,
+};
+
+typedef struct {	
+	uint8_t pcie_cfg;
+	uint8_t completion_code;
+} get_pcie_config_response;
+
 int pal_get_fru_id(char *str, uint8_t *fru);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
@@ -110,6 +120,7 @@ int pal_is_slot_server(uint8_t fru);
 int pal_check_gpio_prsnt(uint8_t gpio, int presnt_expect);
 int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
+int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 
 #ifdef __cplusplus
 } // extern "C"

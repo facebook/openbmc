@@ -840,8 +840,7 @@ pal_is_fw_update_ongoing_system(void) {
 }
 
 int
-pal_get_nic_fru_id(void)
-{
+pal_get_nic_fru_id(void) {
   return FRU_NIC;
 }
 
@@ -908,3 +907,45 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
 
   return ret;
 }
+
+// Use part of the function for IPMI OEM Command "CMD_OEM_GET_POSS_PCIE_CONFIG" 0xF4
+int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  int ret = 0;
+  uint8_t chassis_type = 0;
+  get_pcie_config_response response;
+  
+  memset(&response, 0, sizeof(response));
+  response.completion_code = CC_UNSPECIFIED_ERROR;
+  
+  if (req_data == NULL) {
+    syslog(LOG_WARNING, "%s(): fail to get PCIe configuration beacuse parameter: *req_data is NULL pointer", __func__);
+    return response.completion_code;
+  }
+  
+  if (res_data == NULL) {
+    syslog(LOG_WARNING, "%s(): fail to get PCIe configuration beacuse parameter: *res_data is NULL pointer", __func__);
+    return response.completion_code;
+  }
+  
+  if (res_len == NULL) {
+    syslog(LOG_WARNING, "%s(): fail to get PCIe configuration beacuse parameter: *res_len is NULL pointer", __func__);
+    return response.completion_code;
+  }
+  
+  ret = fbgc_common_get_chassis_type(&chassis_type);
+  if ((ret == 0) && (chassis_type == CHASSIS_TYPE5)) {
+    response.pcie_cfg = PCIE_CONFIG_TYPE5;
+  } else if ((ret == 0) && (chassis_type == CHASSIS_TYPE7)) {
+    response.pcie_cfg = PCIE_CONFIG_TYPE7;
+  } else {
+    syslog(LOG_WARNING, "%s(): fail to get PCIe configuration because fbgc_common_get_chassis_type() error", __func__);
+    return response.completion_code;
+  }
+  
+  memcpy(res_data, &response.pcie_cfg, MIN(MAX_IPMI_MSG_SIZE, sizeof(response.pcie_cfg)));
+  *res_len = sizeof(response.pcie_cfg);
+  response.completion_code = CC_SUCCESS;
+  
+  return response.completion_code; 
+}
+

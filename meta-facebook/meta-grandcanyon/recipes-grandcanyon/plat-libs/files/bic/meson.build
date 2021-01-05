@@ -20,6 +20,7 @@ bic_sources = [
     'bic_xfer.c',
     'bic_ipmi.c',
     'bic_fwupdate.c',
+    'bic_bios_fwupdate.c',
     'bic_bios_usb_fwupdate.c',
     'bic_vr_fwupdate.c',
     'bic_power.c',

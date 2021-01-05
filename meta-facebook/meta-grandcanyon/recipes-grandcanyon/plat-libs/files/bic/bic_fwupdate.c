@@ -731,7 +731,15 @@ get_component_name(uint8_t comp) {
 int
 bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
   int ret = BIC_STATUS_SUCCESS;
+  char ipmb_content[] = "ipmb";
+  char* loc = NULL;
 
+  if (path == NULL) {
+    syslog(LOG_ERR, "%s(): Update aborted due to NULL parameter: *path", __func__);
+    return -1;
+  }
+
+  loc = strstr(path, ipmb_content);
   printf("comp: %x, img: %s, force: %x\n", comp, path, force);
   syslog(LOG_CRIT, "Updating %s. File: %s", get_component_name(comp), path);
 
@@ -744,7 +752,11 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       ret = update_bic_bootloader_fw(UPDATE_BIC_BOOTLOADER, path, force);
       break;
     case FW_BIOS:
-      ret = update_bic_usb_bios(comp, path);
+      if (loc != NULL) {
+        ret = update_bic_bios(comp, path, force);
+      } else {
+        ret = update_bic_usb_bios(comp, path);
+      }
       break;
     case FW_VR:
       ret = update_bic_vr(path, force);

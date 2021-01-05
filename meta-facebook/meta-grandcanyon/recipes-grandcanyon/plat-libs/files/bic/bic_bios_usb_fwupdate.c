@@ -38,10 +38,6 @@
 
 #define USB_PKT_SIZE 0x200
 #define USB_DAT_SIZE (USB_PKT_SIZE-7)
-#define BIOS_PKT_SIZE (64 * 1024)
-#define BIOS_ERASE_PKT_SIZE (64*1024)
-#define BIOS_VERIFY_PKT_SIZE (32*1024)
-#define BIOS_VER_REGION_SIZE (4*1024*1024)
 
 #define MAX_USB_CFG_DATA_SIZE 512
 #define MAX_USB_UPDATE_TARGET_LEN 64
@@ -103,7 +99,7 @@ bic_send:
   return ret;
 }
 
-static int
+int
 verify_bios_image(int fd, long size) {
   int ret = -1;
   int rc = 0, i = 0;

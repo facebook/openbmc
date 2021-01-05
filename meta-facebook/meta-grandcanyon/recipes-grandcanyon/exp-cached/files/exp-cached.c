@@ -35,44 +35,37 @@
 
 #define MAX_FRU_PATH 64
 
-void
-fruid_cache_init(void) {
+uint8_t expander_fruid_list[] = {FRU_SCC, FRU_DPB, FRU_FAN0, FRU_FAN1, FRU_FAN2, FRU_FAN3};
+
+static void
+exp_read_fruid_wrapper(uint8_t fru) {
   int ret = 0;
   char fruid_temp_path[MAX_FRU_PATH] = {0};
   char fruid_path[MAX_FRU_PATH] = {0};
+  char fru_name[MAX_FRU_CMD_STR] = {0};
   int retry = 0;
+  uint8_t present_status = 0;
 
-  snprintf(fruid_temp_path, sizeof(fruid_temp_path), "/tmp/tfruid_scc.bin");
-  snprintf(fruid_path, sizeof(fruid_path), "/tmp/fruid_scc.bin");
-
-  while(retry < MAX_RETRY) {
-    ret = exp_read_fruid(fruid_temp_path, FRU_SCC);
-    if (ret != 0) {
-      retry++;
-      msleep(20);
-    }
-    else {
-      break;
-    }
+  if (pal_get_fru_name(fru, fru_name) < 0) {
+    syslog(LOG_WARNING, "%s() Fail to get fru%d name\n", __func__, fru);
+    return;
   }
 
-  if(retry == MAX_RETRY) {
-    syslog(LOG_CRIT, "%s: exp_read_fruid failed with FRU:%d\n", __func__, FRU_SCC);
-  } else {
-    syslog(LOG_INFO, "SCC FRU initial is done.\n");
+  if (pal_is_fru_prsnt(fru, &present_status) < 0) {
+    syslog(LOG_WARNING, "%s()  pal_is_fru_prsnt error\n", __func__);
+    return;
   }
 
-  rename(fruid_temp_path, fruid_path);
+  if (present_status == FRU_ABSENT) {
+    syslog(LOG_WARNING, "%s()  FRU: %s is not present, skip fruid reading\n", __func__, fru_name);
+    return;
+  }
 
-  retry = 0;
-  snprintf(fruid_temp_path, sizeof(fruid_temp_path), "/tmp/tfruid_dpb.bin");
-  snprintf(fruid_path, sizeof(fruid_path), "/tmp/fruid_dpb.bin");
-
-  //delay 3 seconds between for two continuous commands
-  sleep(3);
+  snprintf(fruid_temp_path, sizeof(fruid_temp_path), "/tmp/tfruid_%s.bin", fru_name);
+  snprintf(fruid_path, sizeof(fruid_path), "/tmp/fruid_%s.bin", fru_name);
 
   while(retry < MAX_RETRY) {
-    ret = exp_read_fruid(fruid_temp_path, FRU_DPB);
+    ret = exp_read_fruid(fruid_temp_path, fru);
     if (ret != 0) {
       retry++;
       msleep(20);
@@ -82,12 +75,20 @@ fruid_cache_init(void) {
   }
 
   if(retry == MAX_RETRY) {
-    syslog(LOG_CRIT, "%s: exp_read_fruid failed with FRU:%d\n", __func__, FRU_DPB);
+    syslog(LOG_CRIT, "%s: exp_read_fruid failed with FRU: %s\n", __func__, fru_name);
   } else {
-    syslog(LOG_INFO, "DPB FRU initial is done.\n");
+    syslog(LOG_INFO, "FRU: %s initial is done.\n", fru_name);
   }
 
   rename(fruid_temp_path, fruid_path);
+}
+
+void
+fruid_cache_init(void) {
+  int i = 0;
+  for (i = 0; i < ARRAY_SIZE(expander_fruid_list); i++) {
+    exp_read_fruid_wrapper(expander_fruid_list[i]);
+  }
   return;
 }
 

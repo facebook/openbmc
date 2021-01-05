@@ -59,7 +59,7 @@ const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic"};
 const char *pal_bmc_fru_list[NUM_BMC_FRU] = {"bmc"};
 
 // export to fruid-util, only support iocm of FRU_E1S_IOCM
-const char pal_fru_list_print[] = "all, server, bmc, uic, dpb, scc, nic, iocm";
+const char pal_fru_list_print[] = "all, server, bmc, uic, dpb, scc, nic, iocm, fan0, fan1, fan2, fan3";
 const char pal_fru_list_rw[] = "server, bmc, uic, nic, iocm";
 
 // fru name list for pal_get_fru_id(), the name of FRU_E1S_IOCM could be "iocm" or "e1s_iocm"
@@ -71,7 +71,11 @@ const char *fru_str_list[][2] = {
   { "dpb"   , "" },
   { "scc"   , "" },
   { "nic"   , "" },
-  { "iocm"  , "e1s_iocm" }
+  { "iocm"  , "e1s_iocm" },
+  { "fan0"  , "" },
+  { "fan1"  , "" },
+  { "fan2"  , "" },
+  { "fan3"  , "" },
 };
 
 size_t server_fru_cnt = NUM_SERVER_FRU;
@@ -112,6 +116,22 @@ char * cfg_support_key_list[] = {
   "server_por_cfg",
   NULL /* This is the last key of the list */
 };
+
+typedef struct {
+  uint8_t gpio;
+  gpio_value_t present_gpio_value;
+} fru_present_gpio;
+
+fru_present_gpio fru_present_gpio_table[] = {
+  [FRU_SERVER] = {GPIO_COMP_PRSNT_N, GPIO_VALUE_LOW},
+  [FRU_SCC]    = {GPIO_SCC_LOC_INS_N, GPIO_VALUE_LOW},
+  [FRU_NIC]    = {GPIO_NIC_PRSNTB3_N, GPIO_VALUE_LOW},
+  [FRU_FAN0]   = {GPIO_FAN_0_INS_N, GPIO_VALUE_LOW},
+  [FRU_FAN1]   = {GPIO_FAN_1_INS_N, GPIO_VALUE_LOW},
+  [FRU_FAN2]   = {GPIO_FAN_2_INS_N, GPIO_VALUE_LOW},
+  [FRU_FAN3]   = {GPIO_FAN_3_INS_N, GPIO_VALUE_LOW}
+};
+
 
 static int
 pal_key_index(char *key) {
@@ -245,6 +265,10 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
     case FRU_SCC:
     case FRU_NIC:
     case FRU_E1S_IOCM:
+    case FRU_FAN0:
+    case FRU_FAN1:
+    case FRU_FAN2:
+    case FRU_FAN3:
       *status = 1;
       break;
     default:
@@ -281,23 +305,13 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
 
   switch (fru) {
     case FRU_SERVER:
-      ret = pal_check_gpio_prsnt(GPIO_COMP_PRSNT_N, GPIO_VALUE_LOW);
-      if (ret == -1) {
-        *status = 0;
-        return PAL_ENOTSUP;
-      }
-      *status = ret;
-      break;
     case FRU_SCC:
-      ret = pal_check_gpio_prsnt(GPIO_SCC_LOC_INS_N, GPIO_VALUE_LOW);
-      if (ret == -1) {
-        *status = 0;
-        return PAL_ENOTSUP;
-      }
-      *status = ret;
-      break;
     case FRU_NIC:
-      ret = pal_check_gpio_prsnt(GPIO_NIC_PRSNTB3_N, GPIO_VALUE_LOW);
+    case FRU_FAN0:
+    case FRU_FAN1:
+    case FRU_FAN2:
+    case FRU_FAN3:
+      ret = pal_check_gpio_prsnt(fru_present_gpio_table[fru].gpio, fru_present_gpio_table[fru].present_gpio_value);
       if (ret == -1) {
         *status = 0;
         return PAL_ENOTSUP;
@@ -401,7 +415,19 @@ pal_get_fru_name(uint8_t fru, char *name) {
         snprintf(name, MAX_FRU_CMD_STR, "e1s");
       }
       break;
-    default:
+   case FRU_FAN0:
+      snprintf(name, MAX_FRU_CMD_STR, "fan0");
+      break;
+   case FRU_FAN1:
+      snprintf(name, MAX_FRU_CMD_STR, "fan1");
+      break;
+   case FRU_FAN2:
+      snprintf(name, MAX_FRU_CMD_STR, "fan2");
+      break;
+   case FRU_FAN3:
+      snprintf(name, MAX_FRU_CMD_STR, "fan3");
+      break;
+   default:
       if (fru > MAX_NUM_FRUS) {
         return -1;
       }

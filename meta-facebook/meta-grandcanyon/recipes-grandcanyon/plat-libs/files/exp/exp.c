@@ -31,8 +31,8 @@
 #include "exp.h"
 
 #define CMD_BUF_SIZE           4
-#define FRUID_DATA_SIZE        256
-#define MAX_FRUID_QUERY_SIZE   16
+#define FRUID_DATA_SIZE        512
+#define MAX_FRUID_QUERY_SIZE   32
 
 int
 expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
@@ -139,21 +139,21 @@ exp_read_fruid(const char *path, uint8_t fru_id) {
   uint8_t rbuf[FRUID_DATA_SIZE] = {0x00};
   uint8_t fruid_buf[FRUID_DATA_SIZE] = {0x00};
   uint8_t rlen = 0;
-  uint8_t tlen = 0;
   int fd = 0;
   int ret = 0;
   int remain = FRUID_DATA_SIZE;
   int index = 0;
   ssize_t write_length = 0;
+  ExpanderGetFruidCommand *cmd = NULL;
 
-  tbuf[0] = fru_id;
-  tbuf[2] = 0; // Offset to read, High byte
-  tbuf[3] = MAX_FRUID_QUERY_SIZE;
-  tlen = CMD_BUF_SIZE;
+  cmd = (ExpanderGetFruidCommand*)tbuf;
+  cmd->fruid = fru_id;
+  cmd->query_size = MAX_FRUID_QUERY_SIZE;
 
   while (remain > 0) {
-    tbuf[1] = index; // Offset to read, Low byte
-    ret = expander_ipmb_wrapper(NETFN_STORAGE_REQ, CMD_GET_EXP_FRUID, tbuf, tlen, rbuf, &rlen);
+    cmd->offset_low = (index & 0xFF);
+    cmd->offset_high = (index >> 8) & 0xFF;
+    ret = expander_ipmb_wrapper(NETFN_STORAGE_REQ, CMD_GET_EXP_FRUID, tbuf, sizeof(tbuf), rbuf, &rlen);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s() expander_ipmb_wrapper failed. ret: %d\n", __func__, ret);
       goto end;

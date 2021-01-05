@@ -59,6 +59,13 @@ typedef struct ExpanderVersion {
   ver_set configuration;
 } exp_ver;
 
+typedef struct _ExpanderGetFruidCommand {
+  uint8_t fruid;
+  uint8_t offset_low;
+  uint8_t offset_high;
+  uint8_t query_size;
+} ExpanderGetFruidCommand;
+
 int expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 int expander_get_fw_ver(uint8_t *ver, uint8_t ver_len);
 int exp_read_fruid(const char *path, uint8_t fru_id);

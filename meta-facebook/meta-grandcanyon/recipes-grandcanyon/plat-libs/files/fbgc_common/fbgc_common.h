@@ -83,6 +83,10 @@ enum {
   FRU_SCC,
   FRU_NIC,
   FRU_E1S_IOCM,
+  FRU_FAN0,
+  FRU_FAN1,
+  FRU_FAN2,
+  FRU_FAN3,
   FRU_CNT,
 };
 

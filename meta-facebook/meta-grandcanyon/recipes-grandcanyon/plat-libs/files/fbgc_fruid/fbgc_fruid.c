@@ -51,6 +51,18 @@ fbgc_get_fruid_name(uint8_t fru, char *name) {
     case FRU_E1S_IOCM:
       snprintf(name, MAX_FRU_NAME_STR, "IOC Module");
       break;
+    case FRU_FAN0:
+      snprintf(name, MAX_FRU_NAME_STR, "FAN0");
+      break;
+    case FRU_FAN1:
+      snprintf(name, MAX_FRU_NAME_STR, "FAN1");
+      break;
+    case FRU_FAN2:
+      snprintf(name, MAX_FRU_NAME_STR, "FAN2");
+      break;
+    case FRU_FAN3:
+      snprintf(name, MAX_FRU_NAME_STR, "FAN3");
+      break;
     default:
       syslog(LOG_WARNING, "%s: wrong fruid", __func__);
       return -1;
@@ -90,6 +102,18 @@ fbgc_get_fruid_path(uint8_t fru, char *path) {
         syslog(LOG_WARNING, "%s: FRU iocm not supported by type 5 system", __func__);
       }
       break;
+    case FRU_FAN0:
+      snprintf(fname, sizeof(fname), "fan0");
+      break;
+    case FRU_FAN1:
+      snprintf(fname, sizeof(fname), "fan1");
+      break;
+    case FRU_FAN2:
+      snprintf(fname, sizeof(fname), "fan2");
+      break;
+    case FRU_FAN3:
+      snprintf(fname, sizeof(fname), "fan3");
+      break;
     default:
       syslog(LOG_WARNING, "%s: wrong fruid", __func__);
       return -1;
@@ -106,6 +130,10 @@ fbgc_get_fruid_eeprom_path(uint8_t fru, char *path) {
     case FRU_SERVER:
     case FRU_DPB:
     case FRU_SCC:
+    case FRU_FAN0:
+    case FRU_FAN1:
+    case FRU_FAN2:
+    case FRU_FAN3:
       return -1;
     case FRU_E1S_IOCM:
       if (fbgc_common_get_chassis_type(&type) < 0) {

@@ -11,7 +11,9 @@
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/obmc-sensors.h>
 #include <facebook/exp.h>
+#include <facebook/fbgc_gpio.h>
 #include "pal.h"
 
 static int
@@ -198,6 +200,34 @@ pal_get_chassis_status(uint8_t fru, uint8_t *req_data, uint8_t *res_data, uint8_
   *res_len = data - res_data;
 }
 
+static int
+power_off_pre_actions() {
+  if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_LOW) < 0) {
+    syslog(LOG_ERR, "%s() Failed to disable E1S0/IOCM I2C\n", __func__);
+    return -1;
+  }
+  if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_2_P3V3_PG_R), GPIO_VALUE_LOW) < 0) {
+    syslog(LOG_ERR, "%s() Failed to disable E1S1/IOCM I2C\n", __func__);
+    return -1;
+  }
+
+  return 0;
+}
+
+static int
+power_on_post_actions() {
+  if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_HIGH) < 0) {
+    syslog(LOG_ERR, "%s() Failed to enable E1S0/IOCM I2C\n", __func__);
+    return -1;
+  }
+  if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_2_P3V3_PG_R), GPIO_VALUE_HIGH) < 0) {
+    syslog(LOG_ERR, "%s() Failed to enable E1S1/IOCM I2C\n", __func__);
+    return -1;
+  }
+
+  return 0;
+}
+
 int
 pal_get_server_12v_power(uint8_t *status) {
   int ret = 0;
@@ -256,6 +286,7 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
 int
 pal_set_server_power(uint8_t fru, uint8_t cmd) {
   uint8_t status = 0;
+  int ret = 0;
 
   if (fru != FRU_SERVER) {
     syslog(LOG_WARNING, "%s: fru %u not a server\n", __func__, fru);
@@ -286,23 +317,43 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_POWER_ON) {
         return POWER_STATUS_ALREADY_OK;
       }
-      return bic_server_power_ctrl(SET_DC_POWER_ON);
+      ret = bic_server_power_ctrl(SET_DC_POWER_ON);
+      if (ret == 0) {
+        power_on_post_actions();
+      }
+      return ret;
       
     case SERVER_POWER_OFF:
       if (status == SERVER_POWER_OFF) {
         return POWER_STATUS_ALREADY_OK;
       }
+      if (power_off_pre_actions() < 0 ) {
+        return POWER_STATUS_ERR;
+      }
       return bic_server_power_ctrl(SET_DC_POWER_OFF);
 
     case SERVER_POWER_CYCLE:
       if (status == SERVER_POWER_ON) {
-        return bic_server_power_cycle();
+        if (power_off_pre_actions() < 0 ) {
+          return POWER_STATUS_ERR;
+        }
+        ret = bic_server_power_cycle();
+        if (ret == 0) {
+          power_on_post_actions();
+        }
       }
-      return bic_server_power_ctrl(SET_DC_POWER_ON);
+      ret = bic_server_power_ctrl(SET_DC_POWER_ON);
+      if (ret == 0) {
+        power_on_post_actions();
+      }
+      return ret;
 
     case SERVER_GRACEFUL_SHUTDOWN:
       if (status == SERVER_POWER_OFF) {
         return POWER_STATUS_ALREADY_OK;
+      }
+      if (power_off_pre_actions() < 0 ) {
+        return POWER_STATUS_ERR;
       }
       return bic_server_power_ctrl(SET_GRACEFUL_POWER_OFF);
 

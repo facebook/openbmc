@@ -851,7 +851,7 @@ pal_is_slot_server(uint8_t fru) {
 
 int
 pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
-  int i = 0, ret = 0; 
+  int i = 0, ret = 0;
   int tmp_len = 0;
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
@@ -876,7 +876,7 @@ pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
   if (ret < 0) {
     syslog(LOG_WARNING, "%s: failed to set key value %s.", __func__, key);
   }
-  
+
   return ret;
 }
 
@@ -913,25 +913,25 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
   int ret = 0;
   uint8_t chassis_type = 0;
   get_pcie_config_response response;
-  
+
   memset(&response, 0, sizeof(response));
   response.completion_code = CC_UNSPECIFIED_ERROR;
-  
+
   if (req_data == NULL) {
     syslog(LOG_WARNING, "%s(): fail to get PCIe configuration beacuse parameter: *req_data is NULL pointer", __func__);
     return response.completion_code;
   }
-  
+
   if (res_data == NULL) {
     syslog(LOG_WARNING, "%s(): fail to get PCIe configuration beacuse parameter: *res_data is NULL pointer", __func__);
     return response.completion_code;
   }
-  
+
   if (res_len == NULL) {
     syslog(LOG_WARNING, "%s(): fail to get PCIe configuration beacuse parameter: *res_len is NULL pointer", __func__);
     return response.completion_code;
   }
-  
+
   ret = fbgc_common_get_chassis_type(&chassis_type);
   if ((ret == 0) && (chassis_type == CHASSIS_TYPE5)) {
     response.pcie_cfg = PCIE_CONFIG_TYPE5;
@@ -941,11 +941,97 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
     syslog(LOG_WARNING, "%s(): fail to get PCIe configuration because fbgc_common_get_chassis_type() error", __func__);
     return response.completion_code;
   }
-  
+
   memcpy(res_data, &response.pcie_cfg, MIN(MAX_IPMI_MSG_SIZE, sizeof(response.pcie_cfg)));
   *res_len = sizeof(response.pcie_cfg);
   response.completion_code = CC_SUCCESS;
-  
-  return response.completion_code; 
+
+  return response.completion_code;
+}
+
+int
+pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name) {
+  int ret = -1;
+  char cmd[MAX_PATH_LEN] = {0};
+
+  if (device_name == NULL) {
+    syslog(LOG_ERR, "%s device name is null", __func__);
+    return -1;
+  }
+
+  snprintf(cmd, sizeof(cmd),
+            "echo %s %d > /sys/class/i2c-dev/i2c-%d/device/new_device",
+              device_name, addr, bus);
+
+#if DEBUG
+  syslog(LOG_WARNING, "%s Cmd: %s", __func__, cmd);
+#endif
+
+  ret = run_command(cmd);
+
+  return ret;
+}
+
+int
+pal_del_i2c_device(uint8_t bus, uint8_t addr) {
+  int ret = -1;
+  char cmd[MAX_PATH_LEN] = {0};
+
+  snprintf(cmd, sizeof(cmd), "echo %d > /sys/class/i2c-dev/i2c-%d/device/delete_device",
+           addr, bus);
+
+#if DEBUG
+  syslog(LOG_WARNING, "%s Cmd: %s", __func__, cmd);
+#endif
+
+  ret = run_command(cmd);
+
+  return ret;
+}
+
+int
+pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name) {
+  int ret = -1;
+  char cmd[MAX_PATH_LEN] = {0};
+
+  if (driver_name == NULL) {
+    syslog(LOG_ERR, "%s driver name is null", __func__);
+    return -1;
+  }
+
+  snprintf(cmd, sizeof(cmd),
+            "echo %d-00%d > /sys/bus/i2c/drivers/%s/bind",
+              bus, addr, driver_name);
+
+#if DEBUG
+  syslog(LOG_WARNING, "%s Cmd: %s", __func__, cmd);
+#endif
+
+  ret = run_command(cmd);
+
+  return ret;
+}
+
+int
+pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name) {
+  int ret = -1;
+  char cmd[MAX_PATH_LEN] = {0};
+
+  if (driver_name == NULL) {
+    syslog(LOG_ERR, "%s driver name is null", __func__);
+    return -1;
+  }
+
+  snprintf(cmd, sizeof(cmd),
+            "echo %d-00%d > /sys/bus/i2c/drivers/%s/unbind",
+              bus, addr, driver_name);
+
+#if DEBUG
+  syslog(LOG_WARNING, "%s Cmd: %s", __func__, cmd);
+#endif
+
+  ret = run_command(cmd);
+
+  return ret;
 }
 

@@ -32,7 +32,6 @@
 #include <sys/types.h>
 #include <openbmc/libgpio.h>
 #include <facebook/fbgc_gpio.h>
-#include <facebook/fbgc_common.h>
 #include "bic_power.h"
 
 #define BS_FPGA_PWR_BTN_BIT 0

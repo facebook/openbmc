@@ -727,12 +727,26 @@ read_adc_val(uint8_t adc_id, float *value) {
 
 static int
 read_temp(uint8_t id, float *value) {
+  int ret = 0;
+
   if (id >= ARRAY_SIZE(temp_dev_list)) {
     return ERR_SENSOR_NA;
   }
 
-  if ((id == TEMP_IOCM) && (is_e1s_iocm_i2c_enabled(T5_E1S1_T7_IOCM_VOLT) == false)) {
-    return ERR_SENSOR_NA;
+  if (id == TEMP_IOCM) { // type 7
+    if (is_e1s_iocm_i2c_enabled(T5_E1S1_T7_IOCM_VOLT) == false) {
+      return ERR_SENSOR_NA;
+    }
+    if (access(IOCM_TMP75_DEVICE_DIR, F_OK) == -1) {
+      ret = pal_add_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_TMP75_ADDR, IOCM_TMP75_DEVICE_NAME);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s() Failed to add i2c device on bus: %u, addr: 0x%X, device: %s, ret : %d\n",
+           __func__, I2C_T5E1S1_T7IOC_BUS, IOCM_TMP75_ADDR, IOCM_TMP75_DEVICE_NAME, ret);
+        syslog(LOG_WARNING, "%s() Cannot read temperature sensors of IOC Module\n", __func__);
+        return ERR_SENSOR_NA;
+      }
+      sensors_reinit();
+    }
   }
 
   return sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
@@ -868,12 +882,22 @@ read_e1s_temp(uint8_t e1s_id, float *value) {
 static int
 read_adc128(uint8_t id, float *value) {
   int ret = 0;
+  uint8_t status = 0;
 
   if (id >= ARRAY_SIZE(adc128_dev_list)) {
     return ERR_SENSOR_NA;
   }
 
   if (is_e1s_iocm_present(id) == false) {
+    return ERR_SENSOR_NA;
+  }
+
+  if (pal_get_server_power(FRU_SERVER, &status) < 0) {
+    syslog(LOG_WARNING, "%s: fru %u get sever power error %u\n", __func__, FRU_SERVER, status);
+    return ERR_SENSOR_NA;
+  }
+
+  if (status != SERVER_POWER_ON) {
     return ERR_SENSOR_NA;
   }
 
@@ -952,13 +976,32 @@ read_ads1015(uint8_t id, float *value) {
   int read_value = 0;
   char full_dir_name[MAX_PATH_LEN * 2] = {0};
   char dir_name[MAX_PATH_LEN] = {0};
+  int ret = 0;
 
   if (is_e1s_iocm_present(T5_E1S1_T7_IOCM_VOLT) == false) {
     return ERR_SENSOR_NA;
   }
 
   if (is_e1s_iocm_i2c_enabled(T5_E1S1_T7_IOCM_VOLT) == false) {
+    if (access(IOCM_ADS1015_BIND_DIR, F_OK) != -1) { // unbind device if bound
+      ret = pal_unbind_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_ADS1015_ADDR, IOCM_ADS1015_DRIVER_NAME);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s() Failed to unbind i2c device on bus: %u, addr: 0x%X, device: %s, ret : %d\n",
+           __func__, I2C_T5E1S1_T7IOC_BUS, IOCM_ADS1015_ADDR, IOCM_ADS1015_DRIVER_NAME, ret);
+        syslog(LOG_WARNING, "%s() Cannot read voltage sensors of IOC Module\n", __func__);
+      }
+    }
     return ERR_SENSOR_NA;
+  }
+
+  if (access(IOCM_ADS1015_BIND_DIR, F_OK) == -1) { // bind device if not bound
+    ret = pal_bind_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_ADS1015_ADDR, IOCM_ADS1015_DRIVER_NAME);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() Failed to bind i2c device on bus: %u, addr: 0x%X, device: %s, ret : %d\n",
+        __func__, I2C_T5E1S1_T7IOC_BUS, IOCM_ADS1015_ADDR, IOCM_ADS1015_DRIVER_NAME, ret);
+      syslog(LOG_WARNING, "%s() Cannot read voltage sensors of IOC Module\n", __func__);
+      return ERR_SENSOR_NA;
+    }
   }
 
   if (get_current_dir(IOCM_VOLTAGE_SENSOR_DIR, dir_name) < 0) {

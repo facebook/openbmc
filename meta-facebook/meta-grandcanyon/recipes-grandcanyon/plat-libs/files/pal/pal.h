@@ -44,6 +44,17 @@ extern "C" {
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
+// ADS1015
+#define IOCM_ADS1015_DRIVER_BIND_NAME     "ti_ads1015"
+#define IOCM_ADS1015_DRIVER_NAME          "ads1015"
+#define IOCM_ADS1015_BIND_DIR             "/sys/bus/i2c/drivers/ads1015/13-0049/"
+#define IOCM_ADS1015_ADDR                 (49) // unit: hex
+
+// IOCM TMP75
+#define IOCM_TMP75_DEVICE_DIR             "/sys/class/i2c-dev/i2c-13/device/13-004a"
+#define IOCM_TMP75_DEVICE_NAME            "tmp75"
+#define IOCM_TMP75_ADDR                   (0x4a)
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,
@@ -85,7 +96,7 @@ enum {
   PCIE_CONFIG_TYPE7    = 0x8,
 };
 
-typedef struct {	
+typedef struct {
 	uint8_t pcie_cfg;
 	uint8_t completion_code;
 } get_pcie_config_response;
@@ -121,6 +132,10 @@ int pal_check_gpio_prsnt(uint8_t gpio, int presnt_expect);
 int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
 int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name);
+int pal_del_i2c_device(uint8_t bus, uint8_t addr);
+int pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name);
+int pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name);
 
 #ifdef __cplusplus
 } // extern "C"

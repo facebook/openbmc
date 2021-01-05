@@ -4559,7 +4559,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           } else {
             // POST is not ongoing
             if (check_flag == POST_END_CHECK) {
-              if (post_end_counter > 0) {
+              if (post_end_counter > 0) { // handle fscd ready after post end
                 // check counter change
                 current_counter = pal_get_fscd_counter();
                 if (last_counter != current_counter) {
@@ -4577,7 +4577,17 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
                   // fscd watchdog counter update
                   pal_check_fscd_watchdog();
                 }
-              } else if (post_end_counter < 0) {
+              } else if (post_end_counter == POST_END_COUNTER_IGNORE_LOG) { // handle initial case after post end
+                // If POST is not ongoing at the beginning, keep ignore_thresh at initial case
+                // fix sensor-util force read alter fan UNC/UCR block event
+                syslog(LOG_WARNING,"fscd handle initial case after post end");
+                if (pal_get_ignore_thresh(&ignore_thresh)) {
+                  // If sensord hasn't create ignore_thresh for fan UNC/UCR block event
+                  // block fan UNC/UCR for 4 fscd cycle
+                  pal_check_fscd_watchdog();
+                }
+                post_end_counter = POST_END_COUNTER_SHOW_LOG; // end of initial case after post end
+              } else if (post_end_counter < 0) { // handle fscd not ready after post end
                 // fscd not start yet or fscd hangs up at the first run
                 pal_check_fscd_watchdog();
               }

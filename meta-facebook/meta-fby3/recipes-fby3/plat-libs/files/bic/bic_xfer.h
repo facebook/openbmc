@@ -45,6 +45,7 @@ enum {
   BIC_CMD_OEM_INFORM_SLED_CYCLE = 0x66,
   BIC_CMD_OEM_BIC_SNR_MONITOR   = 0x68,
   BIC_CMD_OEM_GET_BOARD_ID      = 0xA0,
+  BIC_CMD_OEM_GET_MB_INDEX      = 0xF0,
   BIC_CMD_OEM_SET_FAN_DUTY      = 0xF1,
   BIC_CMD_OEM_FAN_CTRL_STAT     = 0xF2,
 };
@@ -58,6 +59,7 @@ enum {
 enum {
   FEXP_BIC_INTF = 0x05,
   BB_BIC_INTF   = 0x10,
+  BMC_INTF      = 0x1a,
   REXP_BIC_INTF = 0x15,
   NONE_INTF     = 0xff,
 };

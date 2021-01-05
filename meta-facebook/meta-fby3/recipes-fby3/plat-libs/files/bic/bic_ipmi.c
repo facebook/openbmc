@@ -63,6 +63,10 @@ typedef struct _sdr_rec_hdr_t {
 #define KV_SLOT_IS_M2_EXP_PRESENT "slot%x_is_m2_exp_prsnt"
 #define KV_SLOT_GET_1OU_TYPE      "slot%x_get_1ou_type"
 
+#define MIN(x,y) (((x) < (y)) ? (x) : (y))
+
+#define BIC_SENSOR_SYSTEM_STATUS  0x46
+
 enum {
   M2_PWR_OFF = 0x00,
   M2_PWR_ON  = 0x01,
@@ -1424,6 +1428,61 @@ bic_get_fan_pwm(uint8_t fan_id, float *value) {
   }
 
   *value = (float)rbuf[3];
+
+  return 0;
+}
+
+// Only For Class 2
+int
+bic_notify_fan_mode(int mode) {
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  char iana_id[IANA_LEN] = {0x9c, 0x9c, 0x0};
+  BYPASS_MSG req;
+  IPMI_SEL_MSG sel;
+  GET_MB_INDEX_RESP resp;
+  FAN_SERVICE_EVENT fan_event;
+
+  memset(&req, 0, sizeof(req));
+  memset(&sel, 0, sizeof(sel));
+  memset(&fan_event, 0, sizeof(fan_event));
+  memset(tbuf, 0, sizeof(tbuf));
+  memset(rbuf, 0, sizeof(rbuf));
+
+  sel.netfn = NETFN_STORAGE_REQ;
+  sel.cmd = CMD_STORAGE_ADD_SEL;
+  sel.record_type = SEL_SYS_EVENT_RECORD;
+  sel.slave_addr = BRIDGE_SLAVE_ADDR << 1; // 8 bit
+  sel.rev = SEL_IPMI_V2_REV;
+  sel.snr_type = SEL_SNR_TYPE_FAN;
+  sel.snr_num = BIC_SENSOR_SYSTEM_STATUS;
+  sel.event_dir_type = SEL_ASSERT;
+  fan_event.type = SYS_FAN_EVENT;
+  if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_GET_MB_INDEX, tbuf, 0, (uint8_t*) &resp, &rlen, BB_BIC_INTF) < 0) {
+    syslog(LOG_WARNING, "%s(): fail to get MB index", __func__);
+    return -1;
+  }
+  if (rlen == sizeof(GET_MB_INDEX_RESP)) {
+    fan_event.slot = resp.index;
+  } else {
+    fan_event.slot = UNKNOWN_SLOT;
+    syslog(LOG_WARNING, "%s(): wrong response while getting MB index", __func__);
+  }
+  
+  memcpy(req.iana_id, iana_id, MIN(sizeof(req.iana_id), sizeof(iana_id)));
+  req.bypass_intf = BMC_INTF;
+  fan_event.mode = mode;
+
+  memcpy(sel.event_data, (uint8_t*) &fan_event, MIN(sizeof(sel.event_data), sizeof(fan_event)));
+  memcpy(req.bypass_data, (uint8_t*) &sel, MIN(sizeof(req.bypass_data), sizeof(sel)));
+
+  tlen = sizeof(iana_id) + 1 + sizeof(sel); // IANA ID + interface + add SEL command
+  if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, (uint8_t*) &req, tlen, rbuf, &rlen, BB_BIC_INTF) < 0) {
+    syslog(LOG_WARNING, "%s(): fail to notify another BMC fan mode changed", __func__);
+    return -1;
+  }
 
   return 0;
 }

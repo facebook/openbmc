@@ -94,10 +94,17 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define DISABLE_STR "disable"
 #define STATUS_STR "status"
 #define FAN_MODE_FILE "/tmp/cache_store/fan_mode"
+#define FAN_MODE_STR_LEN 8 // include the string terminal
 
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
+};
+
+enum sel_event_data_index {
+  DATA_INDEX_0 = 3,
+  DATA_INDEX_1 = 4,
+  DATA_INDEX_2 = 5,
 };
 
 struct pal_key_cfg {
@@ -1601,9 +1608,12 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_SLOT_PRSNT     = 0x11,
     SYS_PESW_ERR       = 0x12,
     SYS_2OU_VR_FAULT   = 0x13,
+    SYS_FAN_SERVICE    = 0x14,
   };
   uint8_t event = event_data[0];
   char prsnt_str[32] = {0};
+  char log_msg[MAX_ERR_LOG_SIZE] = {0};
+  char fan_mode_str[FAN_MODE_STR_LEN] = {0};
 
   switch (event) {
     case SYS_THERM_TRIP:
@@ -1667,6 +1677,20 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     case SYS_2OU_VR_FAULT:
       pal_get_2ou_vr_str_name(event_data[1], event_data[2], error_log);
       strcat(error_log, "2OU VR fault");
+      break;
+    case SYS_FAN_SERVICE:
+      if (event_data[2] == FAN_MANUAL_MODE) {
+        snprintf(fan_mode_str, sizeof(fan_mode_str), "manual");
+      } else {
+        snprintf(fan_mode_str, sizeof(fan_mode_str), "auto");
+      }
+      if ((event_data[1] == FRU_SLOT1) || (event_data[1] == FRU_SLOT3)) {
+        snprintf(log_msg, sizeof(log_msg), "Fan mode changed to %s mode by slot%d", fan_mode_str, event_data[1]);
+      } else {
+        snprintf(log_msg, sizeof(log_msg), "Fan mode changed to %s mode by unknown slot", fan_mode_str);
+      }
+      
+      strcat(error_log, log_msg);
       break;
     default:
       strcat(error_log, "Undefined system event");
@@ -2074,6 +2098,12 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
           syslog(LOG_WARNING, "%s() can not reload setup-fan.sh", __func__);
           return -1;
         }
+      } else if (event_data[3] == SYS_FAN_EVENT) {
+        if (pal_is_fw_update_ongoing(fru) == true) {
+          return PAL_EOK;
+        }
+        // start/stop fscd according fan mode change
+        fby3_common_fscd_ctrl(event_data[DATA_INDEX_2]);
       }
   }
 
@@ -2191,9 +2221,12 @@ pal_set_fan_ctrl (char *ctrl_opt) {
     return -1;
   }
 
-  // notify baseboard bic (Class 2)
+  // notify baseboard bic and another slot BMC (Class 2)
   if (bmc_location == NIC_BMC) {
     ret = bic_set_fan_auto_mode(ctrl_mode, &status);
+    if (bic_notify_fan_mode(ctrl_mode) < 0) {
+      return -1;
+    }    
   }
 
   if (ctrl_mode == GET_FAN_MODE) {

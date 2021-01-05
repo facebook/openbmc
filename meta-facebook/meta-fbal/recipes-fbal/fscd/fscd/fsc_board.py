@@ -82,12 +82,6 @@ def sensor_valid_check(board, sname, check_name, attribute):
     cmd = ""
     data = ""
 
-    if str(board) == "all":
-        sdata = sname.split("_")
-        board = sdata[0]
-        sname = sname.replace(board + "_", "")
-    Logger.debug("board=%s sname=%s" % (board, sname))
-
     try:
         if attribute["type"] == "power_status":
             # check power status first

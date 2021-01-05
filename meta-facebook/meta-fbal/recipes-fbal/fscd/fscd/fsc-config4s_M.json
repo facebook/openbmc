@@ -10,7 +10,7 @@
       "sensor_fail": false
     },
     "sensor_valid_check": {
-      "mb": {
+      "(.*)cpu": {
         "attribute": {
           "type" : "power_status"
         }

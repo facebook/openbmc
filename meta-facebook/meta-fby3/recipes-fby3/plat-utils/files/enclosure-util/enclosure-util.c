@@ -115,7 +115,10 @@ get_mapping_parameter(uint8_t device_id, uint8_t type_1ou, uint8_t *bus, uint8_t
     REXP_BIC_INTF,  // DEV_ID4_2OU
     REXP_BIC_INTF   // DEV_ID5_2OU
   };
-  const uint8_t BUS_EDSFF1U[] = { 0, 2, 3, 4, 6, 0, 0, 0, 0, 0, 0};
+
+  // M.2 1OU device ->   3  2  1  0
+  // E1S 1OU device ->   0  1  2  3
+  const uint8_t BUS_EDSFF1U[] = { 0, 6, 4, 3, 2, 0, 0, 0, 0, 0, 0};
   const uint8_t BUS_1OU_2OU[] = { 0, 2, 2, 4, 4, 2, 2, 4, 4, 6, 6};
   const uint8_t MUX_1OU_2OU[] = { 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
 

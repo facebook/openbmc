@@ -50,8 +50,8 @@ enum format{
 #endif /* CUSTOM_FRU_LIST */
 
 #ifdef FRU_DEVICE_LIST
-  static const char * pal_dev_list_print_t = pal_dev_list;
-  static const char * pal_dev_list_rw_t =  pal_dev_list;
+  static const char * pal_dev_list_print_t = pal_dev_fru_list;
+  static const char * pal_dev_list_rw_t =  pal_dev_fru_list;
 #else
   static const char * pal_dev_list_print_t = "";
   static const char * pal_dev_list_rw_t = "";

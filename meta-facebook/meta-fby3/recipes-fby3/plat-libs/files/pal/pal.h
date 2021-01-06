@@ -79,7 +79,8 @@ extern const char pal_tach_list[];
 extern const char pal_fru_list[];
 extern const char pal_guid_fru_list[];
 extern const char pal_server_list[];
-extern const char pal_dev_list[];
+extern const char pal_dev_fru_list[];
+extern const char pal_dev_pwr_list[];
 extern const char pal_dev_pwr_option_list[];
 extern const char pal_fan_opt_list[];
 

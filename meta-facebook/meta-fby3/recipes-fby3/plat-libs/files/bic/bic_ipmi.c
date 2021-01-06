@@ -371,12 +371,29 @@ error_exit:
 
 // OEM - Get Firmware Version
 // Netfn: 0x38, Cmd: 0x0B
+static int
+_bic_get_fw_ver(uint8_t slot_id, uint8_t fw_comp, uint8_t *ver, uint8_t intf) {
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, fw_comp}; //IANA ID + FW_COMP
+  uint8_t rbuf[16] = {0x00};
+  uint8_t rlen = 0;
+  int ret = BIC_STATUS_FAILURE;
+
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, 4, rbuf, &rlen, intf);
+  // rlen should be greater than or equal to 4 (IANA + Data1 +...+ DataN)
+  if ( ret < 0 || rlen < 4 ) {
+    syslog(LOG_ERR, "%s: ret: %d, rlen: %d, slot_id:%x, intf:%x\n", __func__, ret, rlen, slot_id, intf);
+  } else {
+    //Ignore IANA ID
+    memcpy(ver, &rbuf[3], rlen-3);
+    ret = BIC_STATUS_SUCCESS;
+  }
+
+  return ret;
+}
+
+// It's an API and provided to fw-util
 int
 bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
-  uint8_t tbuf[4] = {0x00};
-  uint8_t rbuf[16] = {0x00};
-  uint8_t tlen = 4;
-  uint8_t rlen = 0;
   uint8_t fw_comp = 0x0;
   uint8_t intf = 0x0;
   int ret = BIC_STATUS_FAILURE;
@@ -457,21 +474,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_2OU_PESW_PART_MAP1_VER:
     case FW_BB_BIC:
     case FW_BB_BIC_BOOTLOADER:
-      // File the IANA ID
-      memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
-
-      // Fill the component for which firmware is requested
-      tbuf[3] = fw_comp;
-
-      ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, tlen, rbuf, &rlen, intf);
-      // rlen should be greater than or equal to 4 (IANA + Data1 +...+ DataN)
-      if ( ret < 0 || rlen < 4 ) {
-        syslog(LOG_ERR, "%s: ret: %d, rlen: %d, slot_id:%x, intf:%x\n", __func__, ret, rlen, slot_id, intf);
-        ret = BIC_STATUS_FAILURE;
-      } else {
-        //Ignore IANA ID
-        memcpy(ver, &rbuf[3], rlen-3);
-      }
+      ret = _bic_get_fw_ver(slot_id, fw_comp, ver, intf);
       break;
     case FW_1OU_CPLD:
       ret = bic_get_exp_cpld_ver(slot_id, fw_comp, ver, 0/*bus 0*/, 0x80/*8-bit addr*/, intf);
@@ -479,18 +482,16 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_2OU_CPLD:
       {
         uint8_t board_type = 0;
-        uint8_t bus = 0;
         if ( fby3_common_get_2ou_board_type(slot_id, &board_type) < 0 ) {
           syslog(LOG_WARNING, "Failed to get 2ou board type\n");
         }
 
         if ( board_type == GPV3_MCHP_BOARD ||
              board_type == GPV3_BRCM_BOARD ) {
-          bus = 0x9;
+          ret = _bic_get_fw_ver(slot_id, fw_comp, ver, intf);
         } else {
-          bus = 0x0;
+          ret = bic_get_exp_cpld_ver(slot_id, fw_comp, ver, 0/*bus 0*/, 0x80/*8-bit addr*/, intf);
         }
-        ret = bic_get_exp_cpld_ver(slot_id, fw_comp, ver, bus, 0x80/*8-bit addr*/, intf);
       }
       break;
     case FW_BB_CPLD:
@@ -914,7 +915,6 @@ bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, u
   uint8_t rbuf[4] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  int i = 0;
   int ret = 0;
 
   //mux
@@ -943,8 +943,6 @@ bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, u
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to send the command code to get cpld ver. ret=%d", __func__, ret);
   }
-
-  for (i = 0; i < 4; i++) ver[i] = rbuf[3-i];
 
 error_exit:
   return ret;

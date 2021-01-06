@@ -1,0 +1,151 @@
+{
+  "pwm_transition_value": 50,
+  "pwm_boost_value": 100,
+  "fan_limit_upper_pwm": 100,
+  "fan_limit_lower_pwm": 10,
+  "sample_interval_ms": 3000,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": false,
+    "progressive": true
+  },
+  "fan_dead_boost": {
+    "data": [
+      [1,60],
+      [2,100]
+    ]
+  },
+  "watchdog": true ,
+  "min_rpm": 800,
+  "profiles": {
+    "linear_inlet": {
+      "read_source" : {
+        "sysfs" : "/usr/local/bin/tests2/tests/yamp/test_data/fscd/inlet/temp2_input"
+      },
+      "read_limit": {
+        "valid": {
+          "limit": 40,
+          "threshold": 20,
+          "action": "host_shutdown"
+        },
+        "invalid": {
+          "limit": -60,
+          "threshold": 10,
+          "action": "host_shutdown"
+        }
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
+      "data": [
+        [15, 10],
+        [18, 11],
+        [20, 13],
+        [22, 15],
+        [24, 19],
+        [26, 24],
+        [28, 28],
+        [30, 35],
+        [32, 45],
+        [34, 56],
+        [36, 73]
+      ]
+    },
+    "linear_th3": {
+      "read_source" : {
+        "sysfs" : "/usr/local/bin/tests2/tests/yamp/test_data/fscd/th3/temp2_input"
+      },
+      "read_limit": {
+        "valid": {
+          "limit": 110,
+          "threshold": 20,
+          "action": "host_shutdown"
+        },
+        "invalid": {
+          "limit": -60,
+          "threshold": 10,
+          "action": "host_shutdown"
+        }
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
+      "data": [
+        [15, 10],
+        [110, 100]
+      ]
+    }
+  },
+  "fans": {
+    "1": {
+      "label" : "1",
+      "read_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan1_input"
+      },
+      "write_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan1_pwm",
+        "max_duty_register": 255
+      }
+    },
+    "2": {
+      "label" : "2",
+      "read_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan2_input"
+      },
+      "write_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan2_pwm",
+        "max_duty_register": 255
+      }
+    },
+    "3": {
+      "label" : "3",
+      "read_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan3_input"
+      },
+      "write_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan3_pwm",
+        "max_duty_register": 255
+      }
+    },
+    "4": {
+      "label" : "4",
+      "read_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan4_input"
+      },
+      "write_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan4_pwm",
+        "max_duty_register": 255
+      }
+    },
+    "5": {
+      "label" : "5",
+      "read_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan5_input"
+      },
+      "write_source" : {
+        "sysfs": "/sys/bus/i2c/drivers/fancpld/13-0060/fan5_pwm",
+        "max_duty_register": 255
+      }
+    }
+  },
+  "zones": {
+    "zone_1": {
+      "pwm_output": [1, 2, 3, 4, 5],
+      "expr_file": "zone1.fsc"
+      }
+  },
+  "notes": {
+    "fanx_pwm": {
+      "41" : "Fan value normal of 41 correspong to a duty cycle of 16.1%",
+      "48" : "Fan value normal of 48 correspong to a duty cycle of 18.8%",
+      "60" : "Fan value normal of 60 correspong to a duty cycle of 23.5%",
+      "77" : "Fan value normal of 77 correspong to a duty cycle of 30.2%",
+      "98" : "Fan value normal of 98 correspong to a duty cycle of 38.4%",
+      "125" : "Fan value normal of 125 correspong to a duty cycle of 49.1%",
+      "141" : "Fan value normal of 141 correspong to a duty cycle of 55.3%",
+      "181" : "Fan value normal of 181 correspong to a duty cycle of 71.0%",
+      "231" : "Fan value normal of 231 correspong to a duty cycle of 90.6%",
+      "255" : "Fan value normal of 255 correspong to a duty cycle of 100.0%"
+    }
+  }
+}

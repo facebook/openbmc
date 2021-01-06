@@ -284,11 +284,11 @@ main(int argc, char **argv) {
 
         sys_info.server_info[i-1].is_2ou_present = (riser_exp_bit == 0)?STATUS_PRSNT:STATUS_NOT_PRSNT;
 
-        if ( (front_exp_bit == riser_exp_bit) && (front_exp_bit == 0) ) {
-          server_config = 0xD; 
-        } else if ( front_exp_bit > riser_exp_bit ) {
+        if ( bmc_location == NIC_BMC ) {
           server_config = 0xC;
-        } else if ( front_exp_bit < riser_exp_bit ) {
+        } else if ( riser_exp_bit == STATUS_PRSNT ) {
+          server_config = 0xD;
+        } else if ( front_exp_bit == STATUS_PRSNT && riser_exp_bit == STATUS_NOT_PRSNT ) {
           server_config = 0xB;
         } else {
           server_config = 0xA;

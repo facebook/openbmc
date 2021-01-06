@@ -48,6 +48,15 @@ function init_class1_fsc(){
       config_type="10"
       target_fsc_config="/etc/FSC_CLASS1_EVT_type10.json"
     fi
+  elif [ "$sys_config" = "D" ]; then
+    get_2ou_type
+    config_type="15"
+    if ([ $type_2ou == "0x00" ] || [ $type_2ou == "0x03" ]); then
+      echo "use Config D GPv3 fan table"
+      target_fsc_config="/etc/FSC_CLASS1_POC_CONFIG_D_GPV3.json"
+    else
+      target_fsc_config="/etc/FSC_CLASS1_type15.json"
+    fi
   else
     config_type="15"
     target_fsc_config="/etc/FSC_CLASS1_type15.json"
@@ -80,6 +89,17 @@ function get_1ou_type(){
       elif [[ ${output} == "C1 " ]]; then
         break
       fi
+    fi
+  done
+}
+
+function get_2ou_type(){
+  for i in {1..4..2}
+  do
+    I2C_NUM=$(($i+3))
+    type_2ou=$(get_2ou_board_type $I2C_NUM)
+    if [ $type_2ou != "0xff" ]; then
+      break
     fi
   done
 }

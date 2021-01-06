@@ -181,12 +181,6 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   }
 #endif
 
-  // avoid waiting 5 seconds to do the retry
-  ret = fby3_common_server_stby_pwr_sts(slot_id, &status_12v);
-  if ( ret < 0 || status_12v == 0) {
-    return -1;
-  }
-
   ret = fby3_common_get_bus_id(slot_id);
   if (ret < 0) {
     syslog(LOG_ERR, "%s: Wrong Slot ID %d\n", __func__, slot_id);
@@ -215,6 +209,13 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
 
   while(retry < RETRY_TIME) {
+
+    // avoid meaningless retry
+    ret = fby3_common_server_stby_pwr_sts(slot_id, &status_12v);
+    if ( ret < 0 || status_12v == 0) {
+      return -BIC_STATUS_FAILURE;
+    }
+
     // Invoke IPMB library handler
     lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
 

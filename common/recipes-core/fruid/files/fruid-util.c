@@ -855,6 +855,7 @@ int main(int argc, char * argv[]) {
   }
 
   struct option opts[] = {
+    {"help", 0, NULL, 'h'},
     {"dump", 1, NULL, 'd'},
     {"write", 1, NULL, 'w'},
     {"modify", 0, NULL, 'm'},
@@ -892,6 +893,7 @@ int main(int argc, char * argv[]) {
     {"PCD4", 1, NULL, 'f'},
     {"PCD5", 1, NULL, 'f'},
     {"PCD6", 1, NULL, 'f'},
+    {NULL, 0, NULL, 0},
   };
 
   const char *optstring = "";   //not support short option
@@ -924,6 +926,9 @@ int main(int argc, char * argv[]) {
         break;
       case '?':
         printf("unknown option !!!\n\n");
+        print_usage();
+        break;
+      case 'h':
         print_usage();
         break;
       default:

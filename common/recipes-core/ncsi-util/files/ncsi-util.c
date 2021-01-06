@@ -46,6 +46,15 @@
 #define max(a, b) ((a) > (b)) ? (a) : (b)
 #endif
 
+enum {
+  STATE_IDLE=0,
+  STATE_LEARN_COMPONENTS,
+  STATE_READY_XFER,
+  STATE_DOWNLOAD,
+  STATE_VERIFY,
+  STATE_APPLY,
+  STATE_ACTIVATE,
+};
 
 // ncsi-util API for communicating with kernel
 //
@@ -275,10 +284,11 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
   pldm_cmd_req pldmReq = {0};
   pldm_response *pldmRes = NULL;
   int pldmCmdStatus = 0;
-  int i = 0;
+  int i = 0, j = 0;
   int ret = 0;
   int waitcycle = 0;
   int waitTOsec = 0;
+  int currnet_state = -1, previous_state = -1;
 #define MAX_WAIT_CYCLE 1000
 
   nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
@@ -427,8 +437,35 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
       goto free_exit;
     }
     if (sendPldmCmdAndCheckResp(nl_msg) != CC_SUCCESS) {
-      ret = -1;
-      goto free_exit;
+      for (j=0; j<5; j++) {
+        sleep(2);
+        memset(&pldmReq, 0, sizeof(pldm_cmd_req));
+        pldmCreateGetStatusCmd(&pldmReq);
+        ret = create_ncsi_ctrl_pkt(nl_msg, ch, NCSI_PLDM_REQUEST, pldmReq.payload_size,
+                            &(pldmReq.common[0]));
+        if (ret) {
+          printf("\nPldmGetStatus fail ret=%d\n",ret);
+          goto free_exit;
+        }
+        nl_resp = send_nl_msg(nl_msg);
+        if (!nl_resp) {
+          printf("\nPldmGetStatus send_nl_msg fail\n");
+          ret = -1;
+          goto free_exit;
+        }
+        print_pldm_cmd_status(nl_resp);
+        print_pldm_resp_raw(nl_resp);
+        currnet_state = nl_resp->msg_payload[8];
+        previous_state = nl_resp->msg_payload[9];
+        free(nl_resp);
+        nl_resp = NULL;
+        if (currnet_state == STATE_IDLE && previous_state == STATE_ACTIVATE) {
+          ret = 0;
+          break;
+        } else {
+          ret = -1;
+        }
+      }
     }
   } else {
     printf("PLDM cmd (%d) failed (status %d), abort update\n",

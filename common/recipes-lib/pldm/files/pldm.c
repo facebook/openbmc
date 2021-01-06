@@ -359,6 +359,14 @@ void pldmCreateActivateFirmwareCmd(pldm_cmd_req *pPldmCdb)
         sizeof(PLDM_ActivateFirmware_t);
 }
 
+void pldmCreateGetStatusCmd(pldm_cmd_req *pPldmCdb)
+{
+  printf("\n\nCMD_GET_STATUS\n");
+
+  genReqCommonFields(PLDM_TYPE_FIRMWARE_UPDATE, CMD_GET_STATUS, &(pPldmCdb->common[0]));
+  pPldmCdb->payload_size = PLDM_COMMON_REQ_LEN;
+}
+
 
 void pldmCreateCancelUpdateCmd(pldm_cmd_req *pPldmCdb)
 {

@@ -1,1 +1,0 @@
-./northdome-image.bb

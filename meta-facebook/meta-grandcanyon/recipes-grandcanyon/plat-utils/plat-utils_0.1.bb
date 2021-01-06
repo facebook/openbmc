@@ -26,6 +26,8 @@ SRC_URI = "file://sol-util \
            file://ast-functions \
            file://power-on.sh \
            file://run_power_on.sh \
+           file://check_pal_sku.sh \
+           file://setup-platform.sh \
           "
 
 pkgdir = "utils"
@@ -33,7 +35,7 @@ pkgdir = "utils"
 S = "${WORKDIR}"
 
 # the tools for BMC will be installed in the image
-binfiles = " sol-util power-on.sh "
+binfiles = " sol-util power-on.sh check_pal_sku.sh "
 
 DEPENDS_append = "update-rc.d-native"
 RDEPENDS_${PN} += "bash python3 gpiocli "
@@ -59,6 +61,8 @@ do_install() {
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 run_power_on.sh ${D}${sysconfdir}/init.d/run_power_on.sh
   update-rc.d -r ${D} run_power_on.sh start 99 5 .
+  install -m 755 setup-platform.sh ${D}${sysconfdir}/init.d/setup-platform.sh
+  update-rc.d -r ${D} setup-platform.sh start 92 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

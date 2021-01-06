@@ -55,6 +55,11 @@ extern "C" {
 #define IOCM_TMP75_DEVICE_NAME            "tmp75"
 #define IOCM_TMP75_ADDR                   (0x4a)
 
+#define SKU_UIC_ID_SIZE       2
+#define SKU_UIC_TYPE_SIZE     4
+#define SKU_SIZE              (SKU_UIC_ID_SIZE + SKU_UIC_TYPE_SIZE)
+#define MAX_SKU_VALUE         (1 << SKU_SIZE)
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,
@@ -101,6 +106,22 @@ typedef struct {
 	uint8_t completion_code;
 } get_pcie_config_response;
 
+typedef struct _platformInformation {
+  char uicId[SKU_UIC_ID_SIZE];
+  char uicType[SKU_UIC_TYPE_SIZE];
+} platformInformation;
+
+enum {
+  UIC_SIDEA          = 1,
+  UIC_SIDEB          = 2,
+};
+
+enum {
+  PLAT_INFO_SKUID_TYPE5A          = 2,
+  PLAT_INFO_SKUID_TYPE5B          = 3,
+  PLAT_INFO_SKUID_TYPE7_HEADNODE  = 4,
+};
+
 int pal_get_fru_id(char *str, uint8_t *fru);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
@@ -136,6 +157,9 @@ int pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name);
 int pal_del_i2c_device(uint8_t bus, uint8_t addr);
 int pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name);
 int pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name);
+int pal_get_sku(platformInformation *pal_sku);
+int pal_get_uic_location(uint8_t *uic_id);
+int pal_get_plat_sku_id(void);
 
 #ifdef __cplusplus
 } // extern "C"

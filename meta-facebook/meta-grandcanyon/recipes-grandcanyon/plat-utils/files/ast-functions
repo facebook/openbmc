@@ -3,6 +3,8 @@
 GPIOCLI_CMD=/usr/local/bin/gpiocli
 POWERUTIL_CMD=/usr/local/bin/power-util
 IPMBUTIL_CMD=/usr/local/bin/ipmb-util
+EXPANDERUTIL_CMD=/usr/bin/expander-util
+CFGUTIL_CMD=/usr/local/bin/cfg-util
 
 I2C_BIC_BUS="2"
 BIC_SLAVE_ADDR="0x40"
@@ -23,6 +25,24 @@ GPIO_VALUE_LOW=0
 GPIO_VALUE_HIGH=1
 
 SERVER_PRSNT_PIN="COMP_PRSNT_N"
+
+NETFN_EXPANDER_REQ="0x30"
+CMD_GET_UIC_LOCATION="0x40"
+
+UIC_LOCATION_A="1"
+UIC_LOCATION_B="2"
+UIC_LOCATION_SIZE=2
+UIC_LOCATION_MASK=0x3
+
+#Type 5: 0000b, Type 7 Headnode: 0101b
+UIC_TYPE_5="0"
+UIC_TYPE_7_HEADNODE="5"
+UIC_TYPE_SIZE=4
+UIC_TYPE_MASK=0xf
+
+PAL_SKU_SIZE=6
+
+KEY_SYSTEM_INFO="system_info"
 
 gpio_set() {
   local shadow val

@@ -108,12 +108,14 @@ struct pal_key_cfg {
   {"sysfw_ver", "0", NULL},
   {"system_identify_led_interval", "default", NULL},
   {"pwr_server_last_state", "on", NULL},
+  {"system_info", "0", NULL},
   /* Add more Keys here */
   {NULL, NULL, NULL} /* This is the last key of the list */
 };
 
 char * cfg_support_key_list[] = {
   "server_por_cfg",
+  "system_info",
   NULL /* This is the last key of the list */
 };
 
@@ -1033,5 +1035,102 @@ pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name) {
   ret = run_command(cmd);
 
   return ret;
+}
+
+// To get the platform sku
+int pal_get_sku(platformInformation *pal_sku) {
+  int i = 0;
+  int ret = 0;
+  int pal_sku_size = 0, pal_sku_value = 0;
+  uint8_t tmp_pal_sku[SKU_SIZE] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+
+  if (pal_sku == NULL) {
+    syslog(LOG_ERR, "%s(): Failed to get platform SKU because parameter is NULL\n", __func__);
+    return -1;
+  }
+
+  pal_sku_size = sizeof(platformInformation);
+
+  // PAL_SKU[0:1] = {UIC_ID0, UIC_ID1}
+  // PAL_SKU[2:5] = {UIC_TYPE0, UIC_TYPE1, UIC_TYPE2, UIC_TYPE3}
+  snprintf(key, MAX_KEY_LEN, "system_info");
+  ret = pal_get_key_value(key, str);
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s(): Failed to get platform SKU because failed to get key value of %s\n", __func__, key);
+    return -1;
+  }
+
+  pal_sku_value = atoi(str);
+
+  if (pal_sku_value >= MAX_SKU_VALUE) {
+    syslog(LOG_WARNING, "%s(): Failed to get platform SKU because SKU value is wrong\n", __func__);
+    return -1;
+  } else {
+    for (i = pal_sku_size - 1; i >= 0; i--) {
+      tmp_pal_sku[i] = (pal_sku_value & 1) + '0';
+      pal_sku_value = pal_sku_value >> 1;
+    }
+
+    memcpy(pal_sku, tmp_pal_sku, pal_sku_size);
+  }
+
+  return ret;
+}
+
+// To get the UIC location
+int pal_get_uic_location(uint8_t *uic_id){
+  int ret = 0;
+
+  // Add one byte of NULL for converting string to integer.
+  char tmp_uic_id[SKU_UIC_ID_SIZE + 1] = {0};
+  platformInformation pal_sku;
+  memset(&pal_sku, 0, sizeof(pal_sku));
+
+  if (uic_id == NULL) {
+    syslog(LOG_ERR, "%s(): Failed to get UIC location because parameter is NULL\n", __func__);
+    return -1;
+  }
+
+  // UIC_ID[0:1]: 01=UIC_A; 10=UIC_B
+  ret = pal_get_sku(&pal_sku);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): Failed to get UIC location because failed to get sku value\n", __func__);
+    return -1;
+  }
+  
+  memcpy(tmp_uic_id, pal_sku.uicId, MIN(sizeof(tmp_uic_id), sizeof(pal_sku.uicId)));
+  *uic_id = (uint8_t) strtol(tmp_uic_id, NULL, 2);
+
+  return ret;
+}
+
+//For IPMI OEM command "CMD_OEM_GET_PLAT_INFO" 0x7E
+int pal_get_plat_sku_id(void){
+  uint8_t uic_type = 0;
+  uint8_t uic_location = 0;
+  int platform_info = 0;
+
+  if ((fbgc_common_get_chassis_type(&uic_type) < 0) || (pal_get_uic_location(&uic_location) < 0)) {
+    return -1;
+  }
+
+  if(uic_type == CHASSIS_TYPE5) {
+    if(uic_location == UIC_SIDEA) {
+      platform_info = PLAT_INFO_SKUID_TYPE5A;
+    } else if(uic_location == UIC_SIDEB) {
+      platform_info = PLAT_INFO_SKUID_TYPE5B;
+    } else {
+      return -1;
+    }
+  } else if (uic_type == CHASSIS_TYPE7) {
+    platform_info = PLAT_INFO_SKUID_TYPE7_HEADNODE;
+  } else {
+    return -1;
+  }
+
+  return platform_info;
 }
 

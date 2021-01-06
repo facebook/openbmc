@@ -36,74 +36,12 @@
 #include <openbmc/fruid.h>
 #include <facebook/fbgc_common.h>
 
-#define FRUID_SIZE   512
-
 #define FRU_ID_SERVER 0
 #define FRU_ID_BMC    1
 #define FRU_ID_UIC    2
 #define FRU_ID_NIC    3
 #define FRU_ID_IOCM   4
 
-/*
- * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
- *
- * @eeprom_file   : path for the eeprom of the device
- * @bin_file      : path for the binary file
- *
- * returns 0 on successful copy
- * returns non-zero on file operation errors
- */
-int 
-copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file) {
-  int eeprom = 0;
-  int bin = 0;
-  int ret = 0;
-  uint8_t tmp[FRUID_SIZE] = {0};
-  ssize_t bytes_rd = 0, bytes_wr = 0;
-
-  errno = 0;
-
-  eeprom = open(eeprom_file, O_RDONLY);
-  if (eeprom < 0) {
-    syslog(LOG_ERR, "%s: unable to open the %s file: %s",
-	__func__, eeprom_file, strerror(errno));
-    return -1;
-  }
-
-  bin = open(bin_file, O_WRONLY | O_CREAT, 0644);
-  if (bin < 0) {
-    syslog(LOG_ERR, "%s: unable to create %s file: %s",
-	__func__, bin_file, strerror(errno));
-    ret = -1;
-    goto err;
-  }
-
-  bytes_rd = read(eeprom, tmp, FRUID_SIZE);
-  if (bytes_rd < 0) {
-    syslog(LOG_ERR, "%s: read %s file failed: %s",
-	__func__, eeprom_file, strerror(errno));
-    ret = -1;
-    goto exit;
-  } else if (bytes_rd < FRUID_SIZE) {
-    syslog(LOG_ERR, "%s: less than %d bytes", __func__, FRUID_SIZE);
-    ret = -1;
-    goto exit;
-  }
-
-  bytes_wr = write(bin, tmp, bytes_rd);
-  if (bytes_wr != bytes_rd) {
-    syslog(LOG_ERR, "%s: write to %s file failed: %s",
-	__func__, bin_file, strerror(errno));
-    ret = -1;
-  }
-
-exit:
-  close(bin);
-err:
-  close(eeprom);
-
-  return ret;
-}
 
 int
 plat_fruid_init() {
@@ -113,25 +51,25 @@ plat_fruid_init() {
   //create the fru binary in /tmp/
   //fruid_bmc.bin
   snprintf(path, path_len, EEPROM_PATH, I2C_BSM_BUS, BMC_FRU_ADDR);
-  if (copy_eeprom_to_bin(path, FRU_BMC_BIN) < 0) {
+  if (pal_copy_eeprom_to_bin(path, FRU_BMC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_BMC_BIN);
   }
 
   //fruid_uic.bin
   snprintf(path, path_len, EEPROM_PATH, I2C_UIC_BUS, UIC_FRU_ADDR);
-  if (copy_eeprom_to_bin(path, FRU_UIC_BIN) < 0) {
+  if (pal_copy_eeprom_to_bin(path, FRU_UIC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_UIC_BIN);
   }
 
   //fruid_nic.bin
   snprintf(path, path_len, EEPROM_PATH, I2C_NIC_BUS, NIC_FRU_ADDR);
-  if (copy_eeprom_to_bin(path, FRU_NIC_BIN) < 0) {
+  if (pal_copy_eeprom_to_bin(path, FRU_NIC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_NIC_BIN);
   }
 
   //fruid_iocm.bin
   snprintf(path, path_len, EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
-  if (copy_eeprom_to_bin(path, FRU_IOCM_BIN) < 0) {
+  if (pal_copy_eeprom_to_bin(path, FRU_IOCM_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_IOCM_BIN);
   }
 

@@ -33,9 +33,9 @@ extern "C" {
 #include "pal_sensors.h"
 #include "pal_power.h"
 
-#define MAX_NUM_FRUS (FRU_CNT-1)
-#define MAX_NODES    1
-
+#define MAX_NUM_FRUS    (FRU_CNT-1)
+#define MAX_NODES       1
+#define FRUID_SIZE      512
 #define CUSTOM_FRU_LIST 1
 
 #define MAX_FRU_CMD_STR   16
@@ -59,6 +59,11 @@ extern "C" {
 #define SKU_UIC_TYPE_SIZE     4
 #define SKU_SIZE              (SKU_UIC_ID_SIZE + SKU_UIC_TYPE_SIZE)
 #define MAX_SKU_VALUE         (1 << SKU_SIZE)
+
+// IOCM EEPROM
+#define IOCM_EEPROM_BIND_DIR         "/sys/bus/i2c/drivers/at24/13-0050"
+#define IOCM_EEPROM_DRIVER_NAME      "at24"
+#define IOCM_EEPROM_ADDR             (50) //unit: hex
 
 typedef enum {
   STATUS_LED_OFF,
@@ -160,6 +165,7 @@ int pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name);
 int pal_get_sku(platformInformation *pal_sku);
 int pal_get_uic_location(uint8_t *uic_id);
 int pal_get_plat_sku_id(void);
+int pal_copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file);
 
 #ifdef __cplusplus
 } // extern "C"

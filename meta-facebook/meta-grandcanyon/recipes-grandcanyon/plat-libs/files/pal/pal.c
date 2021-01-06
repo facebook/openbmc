@@ -1100,7 +1100,7 @@ int pal_get_uic_location(uint8_t *uic_id){
     syslog(LOG_WARNING, "%s(): Failed to get UIC location because failed to get sku value\n", __func__);
     return -1;
   }
-  
+
   memcpy(tmp_uic_id, pal_sku.uicId, MIN(sizeof(tmp_uic_id), sizeof(pal_sku.uicId)));
   *uic_id = (uint8_t) strtol(tmp_uic_id, NULL, 2);
 
@@ -1132,5 +1132,62 @@ int pal_get_plat_sku_id(void){
   }
 
   return platform_info;
+}
+
+int
+pal_copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file) {
+  int eeprom = 0;
+  int bin = 0;
+  int ret = 0;
+  uint8_t tmp[FRUID_SIZE] = {0};
+  ssize_t bytes_rd = 0, bytes_wr = 0;
+
+  errno = 0;
+
+  if (eeprom_file == NULL || bin_file == NULL) {
+    syslog(LOG_ERR, "%s: invalid parameter", __func__);
+    return -1;
+  }
+
+  eeprom = open(eeprom_file, O_RDONLY);
+  if (eeprom < 0) {
+    syslog(LOG_ERR, "%s: unable to open the %s file: %s",
+	__func__, eeprom_file, strerror(errno));
+    return -1;
+  }
+
+  bin = open(bin_file, O_WRONLY | O_CREAT, 0644);
+  if (bin < 0) {
+    syslog(LOG_ERR, "%s: unable to create %s file: %s",
+	__func__, bin_file, strerror(errno));
+    ret = -1;
+    goto err;
+  }
+
+  bytes_rd = read(eeprom, tmp, FRUID_SIZE);
+  if (bytes_rd < 0) {
+    syslog(LOG_ERR, "%s: read %s file failed: %s",
+	__func__, eeprom_file, strerror(errno));
+    ret = -1;
+    goto exit;
+  } else if (bytes_rd < FRUID_SIZE) {
+    syslog(LOG_ERR, "%s: less than %d bytes", __func__, FRUID_SIZE);
+    ret = -1;
+    goto exit;
+  }
+
+  bytes_wr = write(bin, tmp, bytes_rd);
+  if (bytes_wr != bytes_rd) {
+    syslog(LOG_ERR, "%s: write to %s file failed: %s",
+	__func__, bin_file, strerror(errno));
+    ret = -1;
+  }
+
+exit:
+  close(bin);
+err:
+  close(eeprom);
+
+  return ret;
 }
 

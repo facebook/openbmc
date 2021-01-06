@@ -15,10 +15,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS += " libipmi libfruid libfbgc-common"
-RDEPENDS_${PN} += "libipmi libfruid libfbgc-common"
+DEPENDS += " libipmi libfruid libfbgc-common libpal "
+RDEPENDS_${PN} += "libipmi libfruid libfbgc-common libpal "
 
-LDFLAGS += " -lipmb -lfbgc_common"
+LDFLAGS += " -lipmb -lfbgc_common -lpal "
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://fruid.c \

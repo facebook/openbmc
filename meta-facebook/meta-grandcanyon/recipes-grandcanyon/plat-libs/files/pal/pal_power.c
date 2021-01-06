@@ -216,6 +216,10 @@ power_off_pre_actions() {
 
 static int
 power_on_post_actions() {
+  char path[MAX_PATH_LEN] = {0};
+  int ret = 0;
+  uint8_t chassis_type = 0;
+
   if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_HIGH) < 0) {
     syslog(LOG_ERR, "%s() Failed to enable E1S0/IOCM I2C\n", __func__);
     return -1;
@@ -223,6 +227,29 @@ power_on_post_actions() {
   if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_2_P3V3_PG_R), GPIO_VALUE_HIGH) < 0) {
     syslog(LOG_ERR, "%s() Failed to enable E1S1/IOCM I2C\n", __func__);
     return -1;
+  }
+
+  if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get chassis type. If the system is Type 7, will not get IOCM FRU information.\n", __func__);
+    return -2;
+  }
+
+  if (chassis_type == CHASSIS_TYPE7) {
+    if (access(IOCM_EEPROM_BIND_DIR, F_OK) == -1) { // bind device if not bound
+      ret = pal_bind_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_EEPROM_ADDR, IOCM_EEPROM_DRIVER_NAME);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s() Failed to bind i2c device on bus: %u, addr: 0x%X, device: %s, ret : %d\n",
+          __func__, I2C_T5E1S1_T7IOC_BUS, IOCM_EEPROM_ADDR, IOCM_EEPROM_DRIVER_NAME, ret);
+        syslog(LOG_WARNING, "%s() Will not get IOCM FRU information", __func__);
+        return -2;
+      }
+    }
+
+    snprintf(path, sizeof(path), EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
+    if (pal_copy_eeprom_to_bin(path, FRU_IOCM_BIN) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_IOCM_BIN);
+      return -2;
+    }
   }
 
   return 0;

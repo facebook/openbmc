@@ -13,7 +13,9 @@ declare -a PLAT_DISTRO_OVERRIDES
 PLAT_DISTRO_OVERRIDES=(
 # master / rolling-release platforms
 #   -- none --
-# dunfell platforms (latest)
+# gatesgarth platforms (latest)
+#   -- none --
+# dunfell platforms (pending upgrade)
 #   -- none --
 # zeus platforms (pending upgrade)
   meta-qemux86:zeus

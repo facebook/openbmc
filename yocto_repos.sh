@@ -4,6 +4,7 @@ branches=(
     zeus
     lf-master
     lf-dunfell
+    lf-gatesgarth
 )
 
 rocko_repos=(
@@ -26,4 +27,7 @@ lf_master_repos=(
 )
 lf_dunfell_repos=(
     lf-openbmc:94a70a0f7
+)
+lf_gatesgarth_repos=(
+    lf-openbmc:835472cca
 )

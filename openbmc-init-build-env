@@ -124,10 +124,15 @@ unset override override_plat override_distro
 
 echo "Init build environment for platform '${platform}' with distro ${_distro}..."
 unset platform
+
+# Sourcing the Yocto script causes the pwd to change to the build directory.
+# Keep it around so that we can source scripts out of our tree afterward.
+REPO_ROOT="$(pwd)"
+
 # shellcheck disable=SC1090
 # distro can vary, so we can't use a shellcheck directive to point to next
 . "yocto/${_distro}/poky/oe-init-build-env" "$@"
 
-if [ -d "../facebook" ]; then
-  ../facebook/facebookify.sh "$(pwd)"
+if [ -d "${REPO_ROOT}/facebook" ]; then
+  "${REPO_ROOT}/facebook/facebookify.sh" "$(pwd)"
 fi

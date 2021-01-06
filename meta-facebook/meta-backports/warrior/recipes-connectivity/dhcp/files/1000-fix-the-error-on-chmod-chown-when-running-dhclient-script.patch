@@ -1,0 +1,26 @@
+diff --git a/client/scripts/linux b/client/scripts/linux
+index 5fb1612..69b6dee 100644
+--- a/client/scripts/linux
++++ b/client/scripts/linux
+@@ -74,8 +74,8 @@ make_resolv_conf() {
+         fi
+ 
+ 	if [ -f /etc/resolv.conf ]; then
+-	    chown --reference=/etc/resolv.conf $new_resolv_conf
+-	    chmod --reference=/etc/resolv.conf $new_resolv_conf
++	    chown $(stat -c %u -L /etc/resolv.conf) $new_resolv_conf
++	    chmod $(stat -c %a -L /etc/resolv.conf) $new_resolv_conf
+ 	fi
+         mv -f $new_resolv_conf /etc/resolv.conf
+     # DHCPv6
+@@ -101,8 +101,8 @@ make_resolv_conf() {
+         fi
+ 
+ 	if [ -f /etc/resolv.conf ]; then
+-            chown --reference=/etc/resolv.conf $new_resolv_conf
+-            chmod --reference=/etc/resolv.conf $new_resolv_conf
++	    chown $(stat -c %u -L /etc/resolv.conf) $new_resolv_conf
++	    chmod $(stat -c %a -L /etc/resolv.conf) $new_resolv_conf
+ 	fi
+         mv -f $new_resolv_conf /etc/resolv.conf
+     fi

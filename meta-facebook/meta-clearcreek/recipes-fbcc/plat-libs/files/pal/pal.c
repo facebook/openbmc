@@ -40,12 +40,14 @@
 #define E1S1_EEPROM "/sys/class/i2c-dev/i2c-21/device/21-0050/eeprom"
 #define E1S2_BIN "/tmp/fruid_e1s2.bin"
 #define E1S2_EEPROM "/sys/class/i2c-dev/i2c-22/device/22-0050/eeprom"
+#define FIO_EEPROM "/sys/class/i2c-dev/i2c-8/device/8-0051/eeprom"
+#define FIO_BIN "/tmp/fruid_fio.bin"
 
 #define BMC_IPMB_SLAVE_ADDR 0x17
 
 #define LAST_KEY "last_key"
 
-const char pal_fru_list[] = "all, mb, bsm, pdb, carrier1, carrier2";
+const char pal_fru_list[] = "all, mb, bsm, pdb, carrier1, carrier2, fio";
 const char pal_server_list[] = "";
 
 struct pal_key_cfg {
@@ -109,6 +111,8 @@ int pal_get_fru_id(char *str, uint8_t *fru)
     *fru = FRU_CARRIER1;
   } else if (!strcmp(str, "carrier2")) {
     *fru = FRU_CARRIER2;
+  } else if (!strcmp(str, "fio")) {
+    *fru = FRU_FIO;
   } else {
     syslog(LOG_WARNING, "%s: Wrong fru name %s", __func__, str);
     return -1;
@@ -137,6 +141,8 @@ int pal_get_fruid_name(uint8_t fru, char *name)
     else
       sprintf(name, "E1.s Carrier2");
   }
+  else if (fru == FRU_FIO)
+    sprintf(name, "Front IO");
   else
     return -1;
 
@@ -145,7 +151,7 @@ int pal_get_fruid_name(uint8_t fru, char *name)
 
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
 {
-  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM || FRU_CARRIER1 || FRU_CARRIER2)
+  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM || FRU_CARRIER1 || FRU_CARRIER2 || FRU_FIO)
     *status = 1;
   else
     return -1;
@@ -155,7 +161,7 @@ int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
 
 int pal_is_fru_ready(uint8_t fru, uint8_t *status)
 {
-  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM || FRU_CARRIER1 || FRU_CARRIER2)
+  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM || FRU_CARRIER1 || FRU_CARRIER2 || FRU_FIO)
     *status = 1;
   else
     return -1;
@@ -203,6 +209,8 @@ int pal_get_fruid_path(uint8_t fru, char *path)
     else
       sprintf(path, E1S2_BIN);
   }
+  else if (fru == FRU_FIO)
+    sprintf(path, FIO_BIN);
   else
     return -1;
 
@@ -234,6 +242,8 @@ int pal_get_fruid_eeprom_path(uint8_t fru, char *path)
     else
       sprintf(path, E1S2_EEPROM);
   }
+  else if (fru == FRU_FIO)
+    sprintf(path, FIO_EEPROM);
   else
     return -1;
 

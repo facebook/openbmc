@@ -51,6 +51,8 @@
 #define E1S1_EEPROM "/sys/class/i2c-dev/i2c-21/device/21-0050/eeprom"
 #define E1S2_BIN "/tmp/fruid_e1s2.bin"
 #define E1S2_EEPROM "/sys/class/i2c-dev/i2c-22/device/22-0050/eeprom"
+#define FIO_EEPROM "/sys/class/i2c-dev/i2c-8/device/8-0051/eeprom"
+#define FIO_BIN "/tmp/fruid_fio.bin"
 
 /*
  * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
@@ -133,6 +135,9 @@ int plat_fruid_init(void)
   if (copy_eeprom_to_bin(E1S2_EEPROM, E1S2_BIN))
     syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, E1S2_BIN);
 
+  if (copy_eeprom_to_bin(FIO_EEPROM, FIO_BIN))
+    syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, FIO_BIN);
+
   return 0;
 }
 
@@ -174,6 +179,8 @@ int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count,
     else
       snprintf(fru_dev, LARGEST_DEVICE_NAME, E1S2_BIN);
   }
+  else if (fru_id == FRU_FIO-1)
+    snprintf(fru_dev, LARGEST_DEVICE_NAME, FIO_BIN);
   else
     return -1;
 

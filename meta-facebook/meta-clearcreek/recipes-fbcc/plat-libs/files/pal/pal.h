@@ -46,6 +46,7 @@ enum {
   FRU_PDB,
   FRU_CARRIER1,
   FRU_CARRIER2,
+  FRU_FIO,
   FRU_CNT,
 };
 

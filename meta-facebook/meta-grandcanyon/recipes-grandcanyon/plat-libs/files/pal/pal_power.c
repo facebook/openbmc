@@ -201,6 +201,44 @@ pal_get_chassis_status(uint8_t fru, uint8_t *req_data, uint8_t *res_data, uint8_
 }
 
 static int
+set_nic_power_mode(nic_power_control_mode nic_mode) {
+  SET_NIC_POWER_MODE_CMD cmd = {0};
+  int fd = 0, ret = 0, retry = 0;
+
+  cmd.nic_power_control_cmd_code = CMD_CODE_NIC_POWER_CONTROL;
+  cmd.nic_power_control_mode = (uint8_t)nic_mode;
+
+  fd = i2c_cdev_slave_open(I2C_UIC_FPGA_BUS, UIC_FPGA_SLAVE_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open i2c bus %d", __func__, I2C_UIC_FPGA_BUS);
+    return -1;
+  }
+
+  while (retry < MAX_RETRY) {
+    ret = i2c_rdwr_msg_transfer(fd, UIC_FPGA_SLAVE_ADDR, (uint8_t *)&cmd, sizeof(cmd), NULL, 0);
+    if (ret < 0) {
+      retry++;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  if (retry == MAX_RETRY) {
+    syslog(LOG_WARNING, "%s() Failed to send \"set NIC power mode\" command to UIC FPGA", __func__);
+  }
+
+  if (fd >= 0) {
+    close(fd);
+  }
+
+  if (ret == 0 && nic_mode == NIC_VMAIN_MODE) {
+    sleep(2); //sleep 2s to wait for PERST, 2s is enough for FPGA
+  }
+
+  return ret;
+}
+
+static int
 power_off_pre_actions() {
   if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_LOW) < 0) {
     syslog(LOG_ERR, "%s() Failed to disable E1S0/IOCM I2C\n", __func__);
@@ -212,6 +250,30 @@ power_off_pre_actions() {
   }
 
   return 0;
+}
+
+static int
+power_off_post_actions() {
+  int ret = 0;
+
+  ret = set_nic_power_mode(NIC_VAUX_MODE);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to set NIC to VAUX mode\n", __func__);
+  }
+
+  return ret;
+}
+
+static int
+power_on_pre_actions() {
+  int ret = 0;
+
+  ret = set_nic_power_mode(NIC_VMAIN_MODE);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to set NIC to VMAIN mode, stop power on host\n", __func__);
+  }
+
+  return ret;
 }
 
 static int
@@ -325,6 +387,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
     return POWER_STATUS_ERR;
   }
 
+  // Discard all the non-12V power control commands if 12V is off
   switch (cmd) {
     case SERVER_12V_OFF:
     case SERVER_12V_ON:
@@ -344,6 +407,10 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_POWER_ON) {
         return POWER_STATUS_ALREADY_OK;
       }
+      ret = power_on_pre_actions();
+      if (ret < 0) {
+        return POWER_STATUS_ERR;
+      }
       ret = bic_server_power_ctrl(SET_DC_POWER_ON);
       if (ret == 0) {
         power_on_post_actions();
@@ -357,7 +424,11 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (power_off_pre_actions() < 0 ) {
         return POWER_STATUS_ERR;
       }
-      return bic_server_power_ctrl(SET_DC_POWER_OFF);
+      ret = bic_server_power_ctrl(SET_DC_POWER_OFF);
+      if (ret == 0) {
+        power_off_post_actions();
+      }
+      return ret;
 
     case SERVER_POWER_CYCLE:
       if (status == SERVER_POWER_ON) {
@@ -382,7 +453,11 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (power_off_pre_actions() < 0 ) {
         return POWER_STATUS_ERR;
       }
-      return bic_server_power_ctrl(SET_GRACEFUL_POWER_OFF);
+      ret = bic_server_power_ctrl(SET_GRACEFUL_POWER_OFF);
+      if (ret == 0) {
+        power_off_post_actions();
+      }
+      return ret;
 
     case SERVER_POWER_RESET:
       if (status == SERVER_POWER_OFF) {
@@ -400,7 +475,11 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_12V_OFF) {
         return POWER_STATUS_ALREADY_OK;
       }
-      return server_power_12v_off();
+      ret = server_power_12v_off();
+      if (ret == 0) {
+        power_off_post_actions();
+      }
+      return ret;
 
     case SERVER_12V_CYCLE:
       if (status == SERVER_12V_OFF) {

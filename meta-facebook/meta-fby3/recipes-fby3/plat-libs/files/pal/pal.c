@@ -98,6 +98,10 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define FAN_MODE_FILE "/tmp/cache_store/fan_mode"
 #define FAN_MODE_STR_LEN 8 // include the string terminal
 
+#define IPMI_GET_VER_FRU_NUM  5
+#define IPMI_GET_VER_MAX_COMP 9
+#define MAX_FW_VER_LEN        32  //include the string terminal 
+
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
@@ -3435,3 +3439,128 @@ pal_get_sensor_util_timeout(uint8_t fru) {
       return 4;
   }
 }
+
+// IPMI OEM Command 
+// netfn: NETFN_OEM_1S_REQ (0x38)
+// command code: CMD_OEM_1S_GET_SYS_FW_VER (0x40)
+int
+pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
+  int ret = 0;
+  uint8_t type_2ou = 0;
+  uint8_t fru = 0;
+  uint8_t comp = 0;
+  FILE* fp = NULL;
+  char buf[MAX_FW_VER_LEN] = {0};
+  // To keep the format consistent with fw-util, get version from fw-util directly.
+  static const char* cmd_table[IPMI_GET_VER_FRU_NUM][IPMI_GET_VER_MAX_COMP] = {
+    // BMC
+    {
+      "/usr/bin/fw-util bmc --version bmc | awk '{print $NF}'",
+      "/usr/bin/fw-util bmc --version rom | awk '{print $NF}'",
+      "/usr/bin/fw-util bmc --version cpld | awk '{print $NF}'",
+      "/usr/bin/fw-util bmc --version fscd | awk '{print $NF}'",
+      "/usr/bin/fw-util bmc --version tpm | awk '{print $NF}'",
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL
+    },
+    // NIC
+    {
+      "/usr/bin/fw-util nic --version | awk '{print $NF}'",
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL
+    },
+    // Base board
+    {
+      "/usr/bin/fw-util slot1 --version bb_bic | awk '{print $NF}'",
+      "/usr/bin/fw-util slot1 --version bb_bicbl | awk '{print $NF}'",
+      "/usr/bin/fw-util slot1 --version bb_cpld | awk '{print $NF}'",
+      NULL,
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL
+    },
+    // Server board
+    {
+      "/usr/bin/fw-util slot1 --version bic | awk '{print $NF}'",
+      "/usr/bin/fw-util slot1 --version bicbl | awk '{print $NF}'",
+      "/usr/bin/fw-util slot1 --version bios | awk '{print $NF}'",
+      "/usr/bin/fw-util slot1 --version cpld | awk '{print $NF}'",
+      "/usr/bin/fw-util slot1 --version me | awk '{print $NF}'",
+      "/usr/bin/fw-util slot1 --version vr | grep 'VCCIN_VSA' | awk '{print $5}' | cut -c -8",
+      "/usr/bin/fw-util slot1 --version vr | grep 'VCCIO' | awk '{print $5}' | cut -c -8",
+      "/usr/bin/fw-util slot1 --version vr | grep 'VDDQ_ABC' | awk '{print $5}' | cut -c -8",
+      "/usr/bin/fw-util slot1 --version vr | grep 'VDDQ_DEF' | awk '{print $5}' | cut -c -8"
+    },
+    // 2OU
+    {
+      "/usr/bin/fw-util slot1 --version 2ou_bic | awk '{print $NF}'",
+      "/usr/bin/fw-util slot1 --version 2ou_bicbl | awk '{print $NF}'",
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL
+    }
+  };
+
+  *res_len = 0;
+  if (req_data == NULL) {
+    syslog(LOG_ERR, "%s(): IPMI request failed due to NULL parameter: *req_data", __func__);
+    return CC_INVALID_PARAM;
+  }
+  if (res_data == NULL) {
+    syslog(LOG_ERR, "%s(): IPMI request failed due to NULL parameter: *res_data", __func__);
+    return CC_INVALID_PARAM;
+  }
+  if (res_len == NULL) {
+    syslog(LOG_ERR, "%s(): IPMI request failed due to NULL parameter: *res_len", __func__);
+    return CC_INVALID_PARAM;
+  }
+
+  ret = fby3_common_get_2ou_board_type(slot, &type_2ou);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s(): Not support CMD_OEM_1S_GET_SYS_FW_VER IPMI command due to get 2ou board type failed", __func__);
+    return CC_UNSPECIFIED_ERROR;
+  }
+  if (type_2ou != E1S_BOARD) {
+    syslog(LOG_ERR, "%s(): CMD_OEM_1S_GET_SYS_FW_VER IPMI command only support by Sierra Point system", __func__);
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
+
+  fru = ((GET_FW_VER_REQ*)req_data)->fru;
+  comp = ((GET_FW_VER_REQ*)req_data)->component;
+  if ((fru >= IPMI_GET_VER_FRU_NUM) || (comp >= IPMI_GET_VER_MAX_COMP) || (cmd_table[fru][comp] == NULL)) {
+    syslog(LOG_ERR, "%s(): wrong FRU or component, fru = %x, comp = %x", __func__, fru, comp);
+    return CC_PARAM_OUT_OF_RANGE;
+  }
+
+  if((fp = popen(cmd_table[fru][comp], "r")) == NULL) {
+    syslog(LOG_ERR, "%s(): fail to send command: %s, errno: %s", __func__, cmd_table[fru][comp], strerror(errno));
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  memset(buf, 0, sizeof(buf));
+  if(fgets(buf, sizeof(buf), fp) != NULL) {
+    *res_len = strlen(buf);
+    strncpy((char*)res_data, buf, MAX_FW_VER_LEN);
+  }
+
+  if (fp != NULL) {
+    pclose(fp);
+  }
+
+  return CC_SUCCESS;
+}
+

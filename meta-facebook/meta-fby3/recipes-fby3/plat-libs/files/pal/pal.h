@@ -150,6 +150,11 @@ typedef struct {
     char *err_descr;
 } PCIE_ERR_DECODE;
 
+typedef struct {
+    uint8_t fru;
+    uint8_t component;
+} GET_FW_VER_REQ;
+
 enum {
   PLATFORM_STATE_OFFSET = 0x03,
   RCVY_CNT_OFFSET       = 0x04,

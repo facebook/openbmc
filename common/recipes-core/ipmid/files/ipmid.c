@@ -3869,6 +3869,16 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
       memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
       *res_len = 3;
       break;
+    case CMD_OEM_1S_GET_SYS_FW_VER:
+      if (req_len == 8) { // payload_id, netfn, cmd, IANA[3], data[0] (fru), data[1] (component)
+        memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
+        res->cc = pal_get_fw_ver(req->payload_id, &req->data[3], &res->data[3], res_len);
+        *res_len += SIZE_IANA_ID;        
+      } else {
+        res->cc = CC_INVALID_LENGTH;
+        *res_len = SIZE_IANA_ID;
+      }
+      break;
     default:
       res->cc = CC_INVALID_CMD;
       memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID

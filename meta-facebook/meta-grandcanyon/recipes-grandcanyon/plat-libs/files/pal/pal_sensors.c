@@ -29,6 +29,7 @@ static bool is_e1s_iocm_present(uint8_t id);
 static bool is_e1s_iocm_i2c_enabled(uint8_t id);
 static int get_current_dir(const char *device, char *dir_name);
 static int read_device(const char *device, int *value);
+static int set_e1s_sensor_name(char *sensor_name, char side);
 
 static bool is_dpb_sensor_cached = false;
 static bool is_scc_sensor_cached = false;
@@ -366,14 +367,14 @@ PAL_SENSOR_MAP nic_sensor_map[] = {
 };
 
 PAL_SENSOR_MAP e1s_sensor_map[] = {
+  [E1S0_CUR] =
+  {"E1S_?0_CUR", ADC128_IN0, read_adc128, false, {1.1, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [E1S1_CUR] =
-  {"E1S1_CUR", ADC128_IN0, read_adc128, false, {1.1, 0, 0, 0, 0, 0, 0, 0}, CURR},
-  [E1S2_CUR] =
-  {"E1S2_CUR", ADC128_IN1, read_adc128, false, {1.1, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"E1S_?1_CUR", ADC128_IN1, read_adc128, false, {1.1, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  [E1S0_TEMP] =
+  {"E1S_?0_TEMP", T5_E1S0_T7_IOC_AVENGER, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [E1S1_TEMP] =
-  {"E1S1_TEMP", T5_E1S0_T7_IOC_AVENGER, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
-  [E1S2_TEMP] =
-  {"E1S2_TEMP", T5_E1S1_T7_IOCM_VOLT, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"E1S_?1_TEMP", T5_E1S1_T7_IOCM_VOLT, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
 };
 
 PAL_SENSOR_MAP iocm_sensor_map[] = {
@@ -589,10 +590,10 @@ const uint8_t nic_sensor_list[] = {
 };
 
 const uint8_t e1s_sensor_list[] = {
+  E1S0_CUR,
   E1S1_CUR,
-  E1S2_CUR,
+  E1S0_TEMP,
   E1S1_TEMP,
-  E1S2_TEMP,
 };
 
 const uint8_t iocm_sensor_list[] = {
@@ -633,8 +634,8 @@ PAL_DEV_INFO temp_dev_list[] = {
 };
 
 PAL_DEV_INFO adc128_dev_list[] = {
+  {"adc128d818-i2c-9-1d",  "E1S0_CUR"},
   {"adc128d818-i2c-9-1d",  "E1S1_CUR"},
-  {"adc128d818-i2c-9-1d",  "E1S2_CUR"},
 };
 
 // ADS1015 PGA settings in DTS of each channel, unit: mV
@@ -1343,6 +1344,27 @@ convert_sensor_reading(sdr_full_t *sdr, uint8_t sensor_value, float *out_value) 
 }
 
 static int
+set_e1s_sensor_name(char *sensor_name, char side) {
+  char *index = NULL;
+
+  if (sensor_name == NULL) {
+    syslog(LOG_WARNING, "%s() failed to set E1.S sensor name due to NULL parameter", __func__);
+    return -1;
+  }
+
+  index = strchr(sensor_name, E1S_SENSOR_NAME_WILDCARD);
+
+  if (index == NULL) {
+    syslog(LOG_WARNING, "%s() failed to set E1.S sensor name because didn't find the replaced character.", __func__);
+    return -1;
+  }
+
+  *index = side;
+
+  return 0;
+}
+
+static int
 pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value) {
   ipmi_sensor_reading_t sensor = {0};
   sdr_full_t *sdr = NULL;
@@ -1490,6 +1512,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 int
 pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   uint8_t chassis_type = 0;
+  uint8_t uic_location = 0;
 
   switch(fru) {
   case FRU_UIC:
@@ -1510,7 +1533,27 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       return ERR_UNKNOWN_FRU;
     }
     if (chassis_type == CHASSIS_TYPE5) {
+      if (pal_get_uic_location(&uic_location) < 0) {
+        syslog(LOG_WARNING, "%s() Failed to get uic location\n", __func__);
+        return ERR_FAILURE;
+      }
+
       snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", e1s_sensor_map[sensor_num].snr_name);
+
+      if(uic_location == UIC_SIDEA) {
+        if (set_e1s_sensor_name(name, E1S_SENSOR_NAME_SIDE_A) < 0) {
+          syslog(LOG_WARNING, "%s() Failed to set E1.S sensor name with A side\n", __func__);
+          return ERR_FAILURE;
+        }
+      } else if(uic_location == UIC_SIDEB) {
+        if (set_e1s_sensor_name(name, E1S_SENSOR_NAME_SIDE_B) < 0) {
+          syslog(LOG_WARNING, "%s() Failed to set E1.S sensor name with B side\n", __func__);
+          return ERR_FAILURE;
+        }
+      } else {
+        syslog(LOG_WARNING, "%s() Failed to set E1.S sensor name because the UIC location is unknown\n", __func__);
+        return ERR_FAILURE;
+      }
       break;
     } else if (chassis_type == CHASSIS_TYPE7) {
       snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", iocm_sensor_map[sensor_num].snr_name);

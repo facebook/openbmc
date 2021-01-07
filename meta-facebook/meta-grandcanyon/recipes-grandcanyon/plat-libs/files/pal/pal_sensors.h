@@ -42,6 +42,10 @@
 #define ADS1015_PGA_DEFAULT          (2048)  // unit: mV
 #define ADS1015_DIV_UNIT             (1000)  // mV -> V
 
+#define E1S_SENSOR_NAME_WILDCARD     '?'
+#define E1S_SENSOR_NAME_SIDE_A       'A'
+#define E1S_SENSOR_NAME_SIDE_B       'B'
+
 typedef struct {
   float ucr_thresh;
   float unc_thresh;
@@ -284,10 +288,10 @@ enum {
 
 // E1.S sensors
 enum {
-  E1S1_CUR = 0x20,
-  E1S2_CUR = 0x21,
-  E1S1_TEMP = 0x22,
-  E1S2_TEMP = 0x23,
+  E1S0_CUR = 0x20,
+  E1S1_CUR = 0x21,
+  E1S0_TEMP = 0x22,
+  E1S1_TEMP = 0x23,
 };
 
 // IOC Module sensors

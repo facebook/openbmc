@@ -81,7 +81,7 @@ int set_gpio_init_value_after_export(const char * name, const char *shadow, gpio
 
 int
 main(int argc, char **argv) {
-	int ret = 0, spb_type = 0;
+	int spb_type = 0;
 	uint8_t slot_12v_on, slot_prsnt;
 	uint32_t reg[LASTEST_REG];
 

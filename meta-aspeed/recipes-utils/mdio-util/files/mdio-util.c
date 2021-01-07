@@ -215,16 +215,13 @@ void print_usage()
 static int check_chip()
 {
     uint32_t cpu_silicon_rev_id_0;
-    uint32_t cpu_silicon_rev_id_1;
     uint32_t chip = INVALID_CHIP;
     if(debug)
         printf("Debug: detecting chip ...\n");
     run_devmem(SCU_BASE_ADDR + SILICON_REVISION_ID_0_OFFSET_AST_G6,
                &cpu_silicon_rev_id_0, READ_OP);
-    run_devmem(SCU_BASE_ADDR + SILICON_REVISION_ID_1_OFFSET_AST_G6,
-               &cpu_silicon_rev_id_1, READ_OP);
-    if(cpu_silicon_rev_id_0 == cpu_silicon_rev_id_1 && 
-      (cpu_silicon_rev_id_0 & AST_G6_REV_ID) == AST_G6_REV_ID) {
+
+    if((cpu_silicon_rev_id_0 & AST_G6_REV_ID) == AST_G6_REV_ID) {
         chip = AST_G6; //AST_G6
         goto exit;
     }

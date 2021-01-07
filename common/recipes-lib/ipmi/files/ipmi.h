@@ -458,6 +458,8 @@ enum
   CMD_OEM_SET_M2_INFO = 0x92,
   CMD_OEM_GET_80_PORT_DWORD_BUFFER = 0x93,
   CMD_OEM_GET_DEV_CARD_SENSOR = 0xA0,
+  CMD_OEM_GET_USB_CDC_STATUS = 0xB0,
+  CMD_OEM_CTRL_USB_CDC = 0xB1,
 };
 
 // OEM Command Codes for Storage (netfn = 0x32/0x33)
@@ -664,6 +666,11 @@ enum RESTART_CAUSE {
   RESTART_CAUSE_PWR_CYCLE_PEF = 0x9,
   RESTART_CAUSE_SOFT_RESET = 0xA,
   RESTART_CAUSE_RTC_WAKEUP = 0xB,
+};
+
+enum USB_CDC_CTRL_STATUS {
+  DISABLE_USB_CDC = 0x0,
+  ENABLE_USB_CDC = 0x1,
 };
 
 void lib_ipmi_handle(unsigned char *request, unsigned char req_len,

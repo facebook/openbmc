@@ -3456,6 +3456,77 @@ oem_set_slot_power_policy(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_get_usb_cdc_status (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  int ret = 0;
+
+  if (length_check(0, req_len, response, res_len)) {
+    return;
+  }
+
+  ret = system("lsmod | grep -q g_cdc");
+  if (ret != 0) {
+    res->data[0] = DISABLE_USB_CDC;
+  } else {
+    res->data[0] = ENABLE_USB_CDC;
+  }
+
+  res->cc = CC_SUCCESS;
+  *res_len = 1;
+}
+
+static void
+oem_control_usb_cdc (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  uint8_t status_ctrl = req->data[0]; // 0 - disable, 1 - enable
+  int ret = 0;
+
+  if (length_check(1, req_len, response, res_len)) {
+    return;
+  }
+
+  res->cc = CC_SUCCESS;
+
+  if (status_ctrl == DISABLE_USB_CDC) {
+    // Disable USB serial console by usbcons.sh, then unload USB CDC driver
+    ret = run_command("/etc/init.d/usbcons.sh stop");
+    if (ret == 0) {
+      ret = system("modprobe -qr g_cdc");
+      if (WIFEXITED(ret) == 0) {
+        syslog(LOG_ERR, "%s: failed to disable ether-over-usb (usb0), ret: %d\n", __func__, ret);
+        res->cc = CC_UNSPECIFIED_ERROR;
+      }
+    } else {
+      syslog(LOG_ERR, "%s: failed to disable USB serial console, ret: %d\n", __func__, ret);
+      res->cc = CC_UNSPECIFIED_ERROR;
+    }
+  } else if (status_ctrl == ENABLE_USB_CDC){
+    // Enable USB serial console and reload USB CDC driver by usbcons.sh, then link up usb0
+    // The 'restart' action will kill all usbmod.sh processes then start usbmon.sh
+    ret = run_command("/etc/init.d/usbcons.sh restart");
+    if (ret == 0) {
+      ret = system("sleep 1; ifconfig usb0 up");
+      if (WIFEXITED(ret) == 0) {
+        syslog(LOG_ERR, "%s: failed to link up ether-over-usb (usb0), ret: %d\n", __func__, ret);
+        res->cc = CC_UNSPECIFIED_ERROR;
+      }
+    } else {
+      syslog(LOG_ERR, "%s: failed to enable ether-over-usb (usb0), ret: %d\n", __func__, ret);
+      res->cc = CC_UNSPECIFIED_ERROR;
+    }
+  } else {
+    res->cc = CC_INVALID_PARAM;
+  }
+
+  *res_len = 0;
+}
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
      unsigned char *response, unsigned char *res_len)
 {
@@ -3600,6 +3671,12 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_SET_POWER_POLICY:
       oem_set_slot_power_policy(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_USB_CDC_STATUS:
+      oem_get_usb_cdc_status(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_CTRL_USB_CDC:
+      oem_control_usb_cdc(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

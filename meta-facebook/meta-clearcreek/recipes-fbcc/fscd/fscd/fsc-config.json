@@ -1,7 +1,7 @@
 {
-  "version": "fbcc-dvt-r01",
+  "version": "fbcc-pvt-r01",
   "pwm_transition_value": 70,
-  "pwm_boost_value": 70,
+  "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
   "fan_recovery_time": 1,
   "boost": {
@@ -16,19 +16,19 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "linear",
-      "negative_hysteresis":2,
+      "negative_hysteresis":1,
       "data": [
-        [24, 22],
-        [27, 24],
-        [29, 26],
-        [31, 27],
-        [34, 30],
-        [35, 30],
-        [37, 32],
-        [39, 36],
-        [40, 38],
-        [45, 43],
-        [50, 70]
+        [24, 25],
+        [27, 27],
+        [29, 29],
+        [31, 30],
+        [34, 33],
+        [35, 33],
+        [37, 35],
+        [39, 39],
+        [40, 41],
+        [45, 46],
+        [50, 73]
       ]
     },
     "linear_mezz": {
@@ -38,9 +38,7 @@
       "type": "linear",
       "negative_hysteresis":2,
       "data": [
-        [82, 20],
-        [85, 30],
-        [86, 31]
+        [82, 20]
       ]
     },
     "pid_mezz": {
@@ -51,7 +49,7 @@
       "setpoint": 87,
       "negative_hysteresis": 1,
       "positive_hysteresis": 1,
-      "kp": -2,
+      "kp": -0.2,
       "ki": -0.015,
       "kd": 0
     },
@@ -62,8 +60,7 @@
       "type": "linear",
       "negative_hysteresis":6,
       "data": [
-        [50, 20],
-        [62, 31]
+        [50, 20]
       ]
     },
     "pid_bay0": {
@@ -85,8 +82,7 @@
       "type": "linear",
       "negative_hysteresis":6,
       "data": [
-        [50, 20],
-        [62, 31]
+        [50, 20]
       ]
     },
     "pid_bay1": {
@@ -108,8 +104,7 @@
       "type": "linear",
       "negative_hysteresis":7,
       "data": [
-        [60, 20],
-        [75, 31]
+        [60, 20]
       ]
     },
     "pid_switch": {

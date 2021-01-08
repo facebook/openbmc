@@ -590,7 +590,7 @@ sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr) {
   char fpath[64] = {0};
   char initpath[64] = {0};
   char initflag[64] = {0};
-  char fru_name[8];
+  char fru_name[16];
 
   sensor_info_t sinfo[MAX_SENSOR_NUM] = {0};
 

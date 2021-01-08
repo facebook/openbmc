@@ -719,7 +719,7 @@ pal_get_all_thresh_from_file(uint8_t fru, thresh_sensor_t *sinfo, int mode) {
   uint8_t bytes_rd = 0;
   int ret;
   uint8_t snr_num = 0;
-  char fru_name[8];
+  char fru_name[16];
   int sensor_cnt;
   uint8_t *sensor_list;
   char fpath[128] = {0};
@@ -797,7 +797,7 @@ pal_get_thresh_from_file(uint8_t fru, uint8_t snr_num, thresh_sensor_t *sinfo) {
   uint8_t buf[MAX_THERSH_LEN] = {0};
   uint8_t bytes_rd = 0;
   int ret;
-  char fru_name[8];
+  char fru_name[16];
   int sensor_cnt;
   uint8_t *sensor_list;
   char fpath[64] = {0};
@@ -847,7 +847,7 @@ pal_copy_thresh_to_file(uint8_t fru, uint8_t snr_num, thresh_sensor_t *sinfo) {
   int cnt = 0;
   uint8_t bytes_wd = 0;
   int ret;
-  char fru_name[8];
+  char fru_name[16];
   int sensor_cnt;
   uint8_t *sensor_list;
   char fpath[64] = {0};
@@ -892,7 +892,7 @@ int __attribute__((weak))
 pal_sensor_thresh_modify(uint8_t fru,  uint8_t sensor_num, uint8_t thresh_type, float value) {
   int ret = -1;
   thresh_sensor_t snr;
-  char fru_name[8];
+  char fru_name[16];
   char fpath[128] = {0};
   char initpath[128] = {0};
   char cmd[512] = {0};

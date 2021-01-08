@@ -26,12 +26,13 @@ int PCIESWComponent::fupdate(string image) {
   return FW_STATUS_NOT_SUPPORTED;
 }
 
-int PCIESWComponent::get_ver_str(string& s, const uint8_t alt_fw_comp) {
+int PCIESWComponent::get_ver_str(string& s, const uint8_t alt_fw_comp, const uint8_t board_type) {
   char ver[32] = {0};
   uint8_t rbuf[4] = {0};
   int ret = 0;
   ret = bic_get_fw_ver(slot_id, alt_fw_comp, rbuf);
-  snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
+  snprintf(ver, sizeof(ver), (board_type == GPV3_BRCM_BOARD)?"%d.%d.%d.%d":"%02X%02X%02X%02X",\
+                                                           rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
   s = string(ver);
   if ( alt_fw_comp != FW_2OU_PESW_CFG_VER && alt_fw_comp != FW_2OU_PESW_FW_VER ) {
     string tmp("(");
@@ -56,22 +57,25 @@ int PCIESWComponent::print_version() {
   string ver("");
   string board_name = name;
   string err_msg("");
+  uint8_t board_type = 0xff;
 
   transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
   try {
     server.ready();
     expansion.ready();
+    // if 2OU is present and it's ready, get its type
+    fby3_common_get_2ou_board_type(slot_id, &board_type);
   } catch(string& err) {
-    for ( auto& node:list ) {
-      printf("%s %s Version: NA (%s)\n", board_name.c_str(), node.second.c_str(), err.c_str());
-    }
+    // if we failed to get its version, we print FW_2OU_PESW_FW_VER
+    printf("%s %s Version: NA (%s)\n", board_name.c_str(), list[FW_2OU_PESW_FW_VER].c_str(), err.c_str());
     return FW_STATUS_SUCCESS;   
   }
 
   for ( auto& node:list ) {
+    if ( board_type == GPV3_BRCM_BOARD && node.first !=  FW_2OU_PESW_FW_VER ) continue;
     try {
       //Print PESW FWs
-      if ( get_ver_str(ver, node.first) < 0 ) {
+      if ( get_ver_str(ver, node.first, board_type) < 0 ) {
         throw "Error in getting the version of " + board_name;
       }
       cout << board_name << " " << node.second << " Version: " << ver << endl;

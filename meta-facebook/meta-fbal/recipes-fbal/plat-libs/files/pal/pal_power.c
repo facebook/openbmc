@@ -569,7 +569,7 @@ exit:
 }
 
 static
-void print_power_fail_log(uint8_t cpu_num, uint8_t cpu_sts)
+int print_power_fail_log(uint8_t cpu_num, uint8_t cpu_sts, uint8_t pwr_st)
 {
   const char* cpld_power_seq[] = {
     "Reserve",
@@ -587,11 +587,19 @@ void print_power_fail_log(uint8_t cpu_num, uint8_t cpu_sts)
     "CPLD_PWR_P1V8_PCIE_P1V1_OFF",
     "CPLD_PWR_PVCCIO_OFF",
   };
+  uint8_t pwr_off;
 
-  if (strcmp(cpld_power_seq[cpu_sts], "Reserve") != 0) {
-    syslog(LOG_CRIT, "ASSERT: CPU%d %s power rail fails discrete - FRU: %d",
-           cpu_num, cpld_power_seq[cpu_sts], FRU_MB);
+  pwr_off = is_server_off();
+
+  if ( pwr_off == pwr_st ) {
+    if (strcmp(cpld_power_seq[cpu_sts], "Reserve") != 0) {
+      syslog(LOG_CRIT, "ASSERT: CPU%d %s power rail fails discrete - FRU: %d",
+             cpu_num, cpld_power_seq[cpu_sts], FRU_MB);
+      return 0;
+    }
   }
+
+  return -1;
 }
 
 int pal_check_cpld_power_fail(void)
@@ -607,23 +615,32 @@ int pal_check_cpld_power_fail(void)
   cpu0_st = (pwr_st & 0xf0) >> 4;
   cpu1_st = (pwr_st & 0x0f);
 
+
+#ifdef DEBUG
+  syslog(LOG_CRIT, "cpu0_st=%d cpu1_st=%d pwr_st=%d\n", cpu0_st, cpu1_st, pwr_off);
+#endif
+
 //Check Power On
   if (pwr_off == false) {
     if (cpu0_st != CPLD_PWR_CPU_DONE && is_cpu_socket_occupy(CPU_ID0)) {
-      print_power_fail_log(CPU_ID0, cpu0_st);
+      if ( print_power_fail_log(CPU_ID0, cpu0_st, pwr_off) )
+        return -1;
     }
 
     if (cpu1_st != CPLD_PWR_CPU_DONE && is_cpu_socket_occupy(CPU_ID1)) {
-      print_power_fail_log(CPU_ID1, cpu1_st);
+      if ( print_power_fail_log(CPU_ID1, cpu1_st, pwr_off) )
+        return -1;
     }
 //Check Power Off
   } else {
     if (cpu0_st != CPLD_PWR_CPU_OFF && is_cpu_socket_occupy(CPU_ID0)) {
-      print_power_fail_log(CPU_ID0, cpu0_st);
+      if ( print_power_fail_log(CPU_ID0, cpu0_st, pwr_off) )
+        return -1;
     }
 
     if (cpu1_st != CPLD_PWR_CPU_OFF && is_cpu_socket_occupy(CPU_ID1)) {
-      print_power_fail_log(CPU_ID1, cpu1_st);
+      if ( print_power_fail_log(CPU_ID1, cpu1_st, pwr_off) )
+        return -1;
     }
   }
 

@@ -27,6 +27,8 @@
 
 #define PECI_MUX_SELECT_BMC (GPIO_VALUE_HIGH)
 #define PECI_MUX_SELECT_PCH (GPIO_VALUE_LOW)
+#define SENSOR_SKIP_MAX (1)
+
 
 uint8_t pwr_polling_flag=false;
 uint8_t DIMM_SLOT_CNT = 0;
@@ -789,7 +791,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"AL_MB_VR_CPU0_VCCIO_VOUT", VR_ID2, read_vr_vout, false, {1.25, 0, 0, 0.85, 0, 0, 0, 0}, VOLT}, //0xB8
   {"AL_MB_VR_CPU0_VCCIO_TEMP", VR_ID2, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xB9
   {"AL_MB_VR_CPU0_VCCIO_IOUT", VR_ID2, read_vr_iout, false, {28.8, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XBA
-  {"AL_MB_VR_CPU0_VCCIO_POUT", VR_ID2, read_vr_pout, false, {40.7, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xBB
+  {"AL_MB_VR_CPU0_VCCIO_POUT", VR_ID2, read_vr_pout, false, {71.24, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xBB
   {"AL_MB_VR_CPU0_VDDQ_ABC_VOUT", VR_ID3, read_vr_vout, false, {1.4, 0, 0, 1.13, 0, 0, 0, 0}, VOLT}, //0xBC
   {"AL_MB_VR_CPU0_VDDQ_ABC_TEMP", VR_ID3, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xBD
   {"AL_MB_VR_CPU0_VDDQ_ABC_IOUT", VR_ID3, read_vr_iout, false, {77, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XBE
@@ -842,7 +844,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"AL_MB_VR_CPU1_VCCIO_VOUT", VR_ID7, read_vr_vout, false, {1.25, 0, 0, 0.85, 0, 0, 0, 0}, VOLT}, //0xE8
   {"AL_MB_VR_CPU1_VCCIO_TEMP", VR_ID7, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xE9
   {"AL_MB_VR_CPU1_VCCIO_IOUT", VR_ID7, read_vr_iout, false, {28.8, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XEA
-  {"AL_MB_VR_CPU1_VCCIO_POUT", VR_ID7, read_vr_pout, false, {40.7, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xEB
+  {"AL_MB_VR_CPU1_VCCIO_POUT", VR_ID7, read_vr_pout, false, {71.24, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xEB
   {"AL_MB_VR_CPU1_VDDQ_ABC_VOUT", VR_ID8, read_vr_vout, false, {1.4, 0, 0, 1.13, 0, 0, 0, 0}, VOLT}, //0xEC
   {"AL_MB_VR_CPU1_VDDQ_ABC_TEMP", VR_ID8, read_vr_temp, false, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xED
   {"AL_MB_VR_CPU1_VDDQ_ABC_IOUT", VR_ID8, read_vr_iout, false, {77, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0XEE
@@ -932,6 +934,34 @@ static int retry_err_handle(uint8_t retry_curr, uint8_t retry_max) {
     return READING_SKIP;
   }
   return READING_NA;
+}
+
+static int retry_skip_handle(uint8_t retry_curr, uint8_t retry_max) {
+
+  if( retry_curr <= retry_max) {
+    return READING_SKIP;
+  }
+  return 0;
+}
+
+bool check_pwron_time(int time) {
+  char str[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+  long pwron_time;
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (!kv_get("snr_pwron_flag", str, NULL, 0)) {
+    pwron_time = strtoul(str, NULL, 10);
+   // syslog(LOG_WARNING, "power on time =%ld\n", pwron_time);
+    if ( (ts.tv_sec - pwron_time > time ) && ( pwron_time != 0 ) ) {
+      return true;
+    }
+  } else {
+     sprintf(str, "%ld", ts.tv_sec);
+     kv_set("snr_pwron_flag", str, 0, 0);
+  }
+
+  return false;
 }
 
 int
@@ -1312,10 +1342,6 @@ get_dimm_temp(uint8_t cpu_addr, uint8_t dimm_id, float *value) {
   uint8_t temp=0;
   int ret;
 
-  if(pal_bios_completed(FRU_MB) != true) {
-    return READING_NA;
-  }
-
   ret = cmd_peci_dimm_thermal_reading(cpu_addr, dimm_id, &temp);
   *value = (float)temp;
 
@@ -1327,8 +1353,12 @@ read_cpu0_dimm_temp(uint8_t dimm_id, float *value) {
   int ret;
   static uint8_t retry[DIMM_CNT] = {0};
 
+  if(pal_bios_completed(FRU_MB) != true) {
+    return READING_NA;
+  }
+
   ret = get_dimm_temp(PECI_CPU0_ADDR, dimm_id, value);
-  if ( (ret != 0) || (*value == 0) ) {
+  if ( ret != 0 || *value == 255 ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 5);
   }
@@ -1345,8 +1375,12 @@ read_cpu1_dimm_temp(uint8_t dimm_id, float *value) {
   int ret;
   static uint8_t retry[DIMM_CNT] = {0};
 
+  if(pal_bios_completed(FRU_MB) != true) {
+    return READING_NA;
+  }
+
   ret = get_dimm_temp(PECI_CPU1_ADDR, dimm_id, value);
-  if ( (ret != 0) || (*value == 0) ) {
+  if ( ret != 0 || *value == 255 ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 5);
   }
@@ -1362,8 +1396,12 @@ read_cpu2_dimm_temp(uint8_t dimm_id, float *value) {
   int ret;
   static uint8_t retry[DIMM_CNT] = {0};
 
+  if(pal_bios_completed(FRU_MB) != true) {
+    return READING_NA;
+  }
+
   ret = get_dimm_temp(PECI_CPU2_ADDR, dimm_id, value);
-  if ( (ret != 0) || (*value == 0) ) {
+  if ( ret != 0 || *value == 255 ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 5);
   }
@@ -1379,8 +1417,12 @@ read_cpu3_dimm_temp(uint8_t dimm_id, float *value) {
   int ret;
   static uint8_t retry[DIMM_CNT] = {0};
 
+  if(pal_bios_completed(FRU_MB) != true) {
+    return READING_NA;
+  }
+
   ret = get_dimm_temp(PECI_CPU3_ADDR, dimm_id, value);
-  if ( (ret != 0) || (*value == 0) ) {
+  if ( ret != 0 || *value == 255 ) {
     retry[dimm_id]++;
     return retry_err_handle(retry[dimm_id], 5);
   }
@@ -1777,7 +1819,7 @@ read_nic_temp(uint8_t nic_id, float *value) {
   int fd = 0, ret = -1;
   char fn[32];
   uint8_t tlen, rlen, addr, bus;
-  static uint8_t retry=0;
+  static uint8_t retry[MEZZ_CNT]= {0};
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
 
@@ -1797,8 +1839,8 @@ read_nic_temp(uint8_t nic_id, float *value) {
 
   ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
   if( ret < 0 || (rbuf[0] == 0x80) ) {
-    retry++;
-    ret = retry_err_handle(retry, 5);
+    retry[nic_id]++;
+    ret = retry_err_handle(retry[nic_id], 5);
     goto err_exit;
   }
 
@@ -1807,7 +1849,7 @@ read_nic_temp(uint8_t nic_id, float *value) {
 #endif
 
   *value = (float)rbuf[0];
-  retry=0;
+  retry[nic_id]=0;
 
 err_exit:
   if (fd > 0) {
@@ -2067,7 +2109,7 @@ pal_bios_completed(uint8_t fru)
   }
 
 //BIOS COMPLT need time to inital when platform reset.
-  if(pwr_polling_flag != true) {
+  if( !check_pwron_time(10) ) {
     return false;
   }
 
@@ -2166,8 +2208,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char fru_name[32];
   int ret=0;
   bool server_off;
+  static uint8_t retry[256] = {0};
   uint8_t id=0;
-  struct timespec ts;
 
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
@@ -2176,32 +2218,50 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   if (fru == FRU_MB || fru == FRU_NIC0 || fru == FRU_NIC1 ||
       fru == FRU_PDB || fru == FRU_TRAY1_MB) {
     if (server_off) {
-      pwr_polling_flag = false;
       if (sensor_map[sensor_num].stby_read == true) {
         ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
       } else {
         ret = READING_NA;
       }
     } else {
-      clock_gettime(CLOCK_MONOTONIC, &ts);
-      if (!kv_get("snr_polling_flag", str, NULL, 0)) {
-        if ( ts.tv_sec - strtoul(str, NULL, 10) > POLLING_DELAY_TIME ) {
-          pwr_polling_flag = true;
-        } else {
-          pwr_polling_flag = false;
-        }
+      if ( check_pwron_time(1) ) {
+        ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
       } else {
-         sprintf(str, "%ld", ts.tv_sec);
-         kv_set("snr_polling_flag", str, 0, 0);
-         pwr_polling_flag = false;
+        ret = READING_NA;
       }
-      ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
     }
 
-    if (is_server_off() != server_off) {
-      /* server power status changed while we were reading the sensor.
-       * this sensor is potentially NA. */
-      return pal_sensor_read_raw(fru, sensor_num, value);
+    if ( ret == 0 ) {
+      if( (sensor_map[sensor_num].snr_thresh.ucr_thresh <= *(float*)value) &&
+          (sensor_map[sensor_num].snr_thresh.ucr_thresh != 0) ) {
+        ret = retry_skip_handle(retry[sensor_num], SENSOR_SKIP_MAX);
+        if ( ret == READING_SKIP ) {
+          retry[sensor_num]++;
+#ifdef DEBUG
+          syslog(LOG_CRIT,"sensor retry=%d touch ucr thres=%f snrnum=0x%x value=%f\n",
+                 retry[sensor_num],
+                 sensor_map[sensor_num].snr_thresh.ucr_thresh,
+                 sensor_num,
+                  *(float*)value );
+#endif
+        }
+
+      } else if( (sensor_map[sensor_num].snr_thresh.lcr_thresh >= *(float*)value) &&
+                 (sensor_map[sensor_num].snr_thresh.lcr_thresh != 0) ) {
+        ret = retry_skip_handle(retry[sensor_num], SENSOR_SKIP_MAX);
+        if ( ret == READING_SKIP ) {
+          retry[sensor_num]++;
+#ifdef DEBUG
+          syslog(LOG_CRIT,"sensor retry=%d touch lcr thres=%f snrnum=0x%x value=%f\n",
+                 retry[sensor_num],
+                 sensor_map[sensor_num].snr_thresh.lcr_thresh,
+                 sensor_num,
+                 *(float*)value );
+#endif
+        }
+      } else {
+        retry[sensor_num] = 0;
+      }
     }
   } else {
     return -1;

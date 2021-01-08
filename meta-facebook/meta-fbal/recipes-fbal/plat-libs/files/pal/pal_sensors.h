@@ -397,6 +397,7 @@ enum {
 enum {
   MEZZ0 = 0,
   MEZZ1,
+  MEZZ_CNT,
 };
 
 //HARD DISK INFO

@@ -594,18 +594,12 @@ pwr_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   log_gpio_change(desc, curr, 0);
 }
 
-//System Power Ok Event Handler
-static void
-pwr_sysok_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  reset_timer(&g_power_on_sec);
-  log_gpio_change(desc, curr, 0);
-}
-
 //CPU Power Ok Event Handler
 static void
 cpu_pwr_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   g_server_power_status = curr;
   g_cpu_pwrgd_trig = true;
+  log_gpio_change(desc, curr, 0);
 }
 
 //IERR and MCERR Event Handler
@@ -628,15 +622,9 @@ init_msmi(gpiopoll_pin_t *desc, gpio_value_t value) {
 }
 
 static void
-init_cpu_pwrok(gpiopoll_pin_t *desc, gpio_value_t value) {
-  g_server_power_status = (value ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
-  g_cpu_pwrgd_trig = true;
-}
-
-static void
 err_caterr_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
-  
+
   SERVER_POWER_CHECK(1);
 
   if (cpld_register_check(cfg->shadow) == 0)
@@ -795,8 +783,7 @@ uart_select_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 }
 
 // Event Handler for GPIOF6 platform reset changes
-static void platform_reset_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
-{
+static void platform_reset_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   struct timespec ts;
   char value[MAX_VALUE_LEN];
 
@@ -806,11 +793,30 @@ static void platform_reset_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
   sprintf(value, "%ld", ts.tv_sec);
-  kv_set("snr_polling_flag", value, 0, 0);
+
+  if( curr == GPIO_VALUE_HIGH )
+    kv_set("snr_pwron_flag", value, 0, 0);
+  else
+    kv_set("snr_pwron_flag", 0, 0, 0);
 
   log_gpio_change(desc, curr, 0);
 }
 
+static void
+platform_reset_init(gpiopoll_pin_t *desc, gpio_value_t value) {
+  struct timespec ts;
+  char data[MAX_VALUE_LEN];
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  sprintf(data, "%ld", ts.tv_sec);
+
+  if( value == GPIO_VALUE_HIGH )
+    kv_set("snr_pwron_flag", data, 0, 0);
+  else
+    kv_set("snr_pwron_flag", 0, 0, 0);
+
+  return;
+}
 
 // Thread for gpio timer
 static void
@@ -876,12 +882,29 @@ static void
 // Thread for gpio timer
 static void
 *power_fail_monitor() {
+  static uint8_t init_cache=0;
+  static uint8_t retry=1;
 
   while (1) {
-    if (g_cpu_pwrgd_trig == true ) {
-      sleep(1);
-      pal_check_cpld_power_fail();
-      g_cpu_pwrgd_trig = false; 
+    if ( init_cache == 0 ) {
+      if ( g_power_on_sec != 0 ) {
+        g_cpu_pwrgd_trig = true;
+        init_cache = 1;
+      }
+    }
+
+    if ( g_cpu_pwrgd_trig == true ) {
+      sleep(2);
+      while ( pal_check_cpld_power_fail()) {
+        if( retry == 0) {
+          syslog(LOG_CRIT, "Check CPLD Power Fail Falure\n");
+          break;
+        }
+        retry--;
+        sleep(1);
+      }
+      g_cpu_pwrgd_trig = false;
+      retry=1;
     }
     sleep(2);
   }
@@ -894,12 +917,11 @@ static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
   {"FP_BMC_RST_BTN_N", "GPIOE0", GPIO_EDGE_BOTH, pwr_reset_handler, NULL},
   {"FM_BMC_PWR_BTN_R_N", "GPIOE2", GPIO_EDGE_BOTH, pwr_button_handler, NULL},
-  {"PWRGD_SYS_PWROK", "GPIOY2", GPIO_EDGE_BOTH, pwr_sysok_handler, NULL},
   {"FM_UARTSW_LSB_N", "GPIOL0", GPIO_EDGE_BOTH, uart_select_handle, NULL},
   {"FM_UARTSW_MSB_N", "GPIOL1", GPIO_EDGE_BOTH, uart_select_handle, NULL},
   {"FM_POST_CARD_PRES_BMC_N", "GPIOQ6", GPIO_EDGE_BOTH, usb_dbg_card_handler, NULL},
   {"FM_PCH_BMC_THERMTRIP_N", "GPIOG2", GPIO_EDGE_BOTH, pch_thermtrip_handler, NULL},
-  {"RST_PLTRST_BMC_N", "GPIOF6", GPIO_EDGE_BOTH, platform_reset_handle, NULL},
+  {"RST_PLTRST_BMC_N", "GPIOF6", GPIO_EDGE_BOTH, platform_reset_handle, platform_reset_init},
   {"IRQ_UV_DETECT_N", "GPIOM0", GPIO_EDGE_BOTH, uv_detect_handler, NULL},
   {"IRQ_OC_DETECT_N", "GPIOM1", GPIO_EDGE_BOTH, oc_detect_handler, NULL},
   {"IRQ_HSC_FAULT_N", "GPIOL2", GPIO_EDGE_BOTH, gpio_event_handler, NULL},
@@ -924,7 +946,7 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_CPU1_PROCHOT_LVT3_BMC_N", "GPIOB7", GPIO_EDGE_BOTH, cpu_prochot_handler, NULL},
   {"FM_PVCCIN_CPU0_PWR_IN_ALERT_N", "GPIOAA2", GPIO_EDGE_FALLING, cpu0_pvccin_pwr_in_handler, NULL},
   {"FM_PVCCIN_CPU1_PWR_IN_ALERT_N", "GPIOAA3", GPIO_EDGE_FALLING, cpu1_pvccin_pwr_in_handler, NULL},
-  {"PWRGD_CPU0_LVC3", "GPIOZ1", GPIO_EDGE_BOTH, cpu_pwr_handler, init_cpu_pwrok},
+  {"PWRGD_CPU0_LVC3", "GPIOZ1", GPIO_EDGE_BOTH, cpu_pwr_handler, NULL},
 };
 
 int main(int argc, char **argv)

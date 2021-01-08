@@ -319,7 +319,10 @@ pal_server_set_nic_power(const uint8_t expected_pwr) {
     if ( SERVER_POWER_ON == expected_pwr ) sleep(2);
   }
 
-  if ( pid_file > 0 ) remove(SET_NIC_PWR_MODE_LOCK);
+  if ( pid_file > 0 ) {
+    close(pid_file);
+    remove(SET_NIC_PWR_MODE_LOCK);
+  }
   if ( fd > 0 ) close(fd);
 
   return (ret < 0)?PAL_ENOTSUP:PAL_EOK;

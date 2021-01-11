@@ -31,8 +31,7 @@ int PCIESWComponent::get_ver_str(string& s, const uint8_t alt_fw_comp, const uin
   uint8_t rbuf[4] = {0};
   int ret = 0;
   ret = bic_get_fw_ver(slot_id, alt_fw_comp, rbuf);
-  snprintf(ver, sizeof(ver), (board_type == GPV3_BRCM_BOARD)?"%d.%d.%d.%d":"%02X%02X%02X%02X",\
-                                                           rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
+  snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
   s = string(ver);
   if ( alt_fw_comp != FW_2OU_PESW_CFG_VER && alt_fw_comp != FW_2OU_PESW_FW_VER ) {
     string tmp("(");
@@ -51,8 +50,8 @@ int PCIESWComponent::print_version() {
                                {FW_2OU_PESW_FW_VER,  "PCIE Switch Firmware"},
                                {FW_2OU_PESW_BL0_VER, "PCIE Bootloader0"},
                                {FW_2OU_PESW_BL1_VER, "PCIE Bootloader1"},
-                               {FW_2OU_PESW_PART_MAP0_VER, "PCIE switch Partition0"},
-                               {FW_2OU_PESW_PART_MAP1_VER, "PCIE switch Partition1"}};
+                               {FW_2OU_PESW_PART_MAP0_VER, "PCIE Switch Partition0"},
+                               {FW_2OU_PESW_PART_MAP1_VER, "PCIE Switch Partition1"}};
 
   string ver("");
   string board_name = name;
@@ -71,16 +70,21 @@ int PCIESWComponent::print_version() {
     return FW_STATUS_SUCCESS;   
   }
 
+  string pesw_vendor((board_type == GPV3_BRCM_BOARD)?"BRCM":"MCHP");
+
   for ( auto& node:list ) {
-    if ( board_type == GPV3_BRCM_BOARD && node.first !=  FW_2OU_PESW_FW_VER ) continue;
+    //BRCM supports to show CFG and FW only.
+    if ( (board_type == GPV3_BRCM_BOARD) && \
+         ((node.first !=  FW_2OU_PESW_FW_VER) && (node.first !=  FW_2OU_PESW_CFG_VER)) ) continue;
     try {
       //Print PESW FWs
       if ( get_ver_str(ver, node.first, board_type) < 0 ) {
         throw "Error in getting the version of " + board_name;
       }
-      cout << board_name << " " << node.second << " Version: " << ver << endl;
+      cout << board_name << " " << pesw_vendor << " " << node.second << " Version: " << ver << endl;
     } catch(string& err) {
-      printf("%s %s Version: NA (%s)\n", board_name.c_str(), node.second.c_str(), err.c_str());
+      printf("%s %s %s Version: NA (%s)\n", board_name.c_str(), pesw_vendor.c_str()
+                                          , node.second.c_str(), err.c_str());
     }
   }
   return FW_STATUS_SUCCESS;

@@ -168,6 +168,7 @@ issue_slot_ocp_fault_sel(uint8_t slot_id) {
   lib_ipmi_handle(tbuf, tlen, rbuf, &rlen);
 }
 
+#if 0
 static void
 issue_slot_plt_state_sel(uint8_t slot_id) {
   char path[128];
@@ -214,6 +215,7 @@ issue_slot_plt_state_sel(uint8_t slot_id) {
     o_plat_state = n_plat_state;
   }
 }
+#endif
 
 static void
 slot_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
@@ -227,6 +229,7 @@ slot_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   issue_slot_ocp_fault_sel(slot_id);
 }
 
+#if 0
 static void
 slot_pfr_plt_state_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   uint32_t slot_id;
@@ -244,6 +247,7 @@ slot_pfr_plt_state_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t cur
   }
   issue_slot_plt_state_sel(slot_id);
 }
+#endif
 
 static void
 slot_power_control(char *opt) {
@@ -283,10 +287,6 @@ ocp_nic_init(gpiopoll_pin_t *gp, gpio_value_t value) {
 // GPIO table of the class 1
 static struct gpiopoll_config g_class1_gpios[] = {
   // shadow, description, edge, handler, oneshot
-  {"SMB_BMC_SLOT1_ALT_N",     "GPIOB0",   GPIO_EDGE_FALLING,  slot_pfr_plt_state_hndlr, NULL},
-  {"SMB_BMC_SLOT2_ALT_N",     "GPIOB1",   GPIO_EDGE_FALLING,  slot_pfr_plt_state_hndlr, NULL},
-  {"SMB_BMC_SLOT3_ALT_N",     "GPIOB2",   GPIO_EDGE_FALLING,  slot_pfr_plt_state_hndlr, NULL},
-  {"SMB_BMC_SLOT4_ALT_N",     "GPIOB3",   GPIO_EDGE_FALLING,  slot_pfr_plt_state_hndlr, NULL},
   {"PRSNT_MB_BMC_SLOT1_BB_N", "GPIOB4",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
   {"PRSNT_MB_BMC_SLOT2_BB_N", "GPIOB5",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
   {"PRSNT_MB_BMC_SLOT3_BB_N", "GPIOB6",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
@@ -305,7 +305,6 @@ static struct gpiopoll_config g_class1_gpios[] = {
 // GPIO table of the class 2
 static struct gpiopoll_config g_class2_gpios[] = {
   // shadow, description, edge, handler, oneshot
-  {"SMB_MUX_ALT_N",           "GPIOB0",   GPIO_EDGE_FALLING,  slot_pfr_plt_state_hndlr, NULL},
 };
 
 static void

@@ -140,6 +140,10 @@ const uint8_t mb_sensor_list[] = {
   MB_PAX_3_TEMP,
   SYSTEM_INLET_TEMP,
   SYSTEM_INLET_REMOTE_TEMP,
+  MB_INLET_TEMP_L,
+  MB_INLET_REMOTE_TEMP_L,
+  MB_INLET_TEMP_R,
+  MB_INLET_REMOTE_TEMP_R,
   BAY_0_VOL,
   BAY_0_IOUT,
   BAY_0_POUT,
@@ -505,14 +509,14 @@ PAL_SENSOR_MAP sensor_map[] = {
 
   {"CC_SYSTEM_INLET_TEMP"       , SYS_TEMP       , read_inlet_sensor, 0, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x90
   {"CC_SYSTEM_INLET_REMOTE_TEMP", SYS_REMOTE_TEMP, read_inlet_sensor, 0, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x91
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x92
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x93
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x94
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x95
-  {"CC_PDB_INLET_TEMP_L"       , INLET_TEMP_L       , read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x96
-  {"CC_PDB_INLET_REMOTE_TEMP_L", INLET_REMOTE_TEMP_L, read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x97
-  {"CC_PDB_INLET_TEMP_R"       , INLET_TEMP_R       , read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x98
-  {"CC_PDB_INLET_REMOTE_TEMP_R", INLET_REMOTE_TEMP_R, read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x99
+  {"CC_BB_INLET_TEMP_L"       , INLET_TEMP_L       , read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x92
+  {"CC_BB_INLET_REMOTE_TEMP_L", INLET_REMOTE_TEMP_L, read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x93
+  {"CC_BB_INLET_TEMP_R"       , INLET_TEMP_R       , read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x94
+  {"CC_BB_INLET_REMOTE_TEMP_R", INLET_REMOTE_TEMP_R, read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x95
+  {"CC_PDB_INLET_TEMP_L"       , PDB_INLET_TEMP_L_ID       , read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x96
+  {"CC_PDB_INLET_REMOTE_TEMP_L", PDB_INLET_REMOTE_TEMP_L_ID, read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x97
+  {"CC_PDB_INLET_TEMP_R"       , PDB_INLET_TEMP_R_ID       , read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x98
+  {"CC_PDB_INLET_REMOTE_TEMP_R", PDB_INLET_REMOTE_TEMP_R_ID, read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x99
   {"CC_BAY0_INA219_VOLT", BAY0_INA219_VOLT, read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x9A
   {"CC_BAY0_INA219_CURR", BAY0_INA219_CURR, read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0x9B
   {"CC_BAY0_INA219_PWR" , BAY0_INA219_PWR , read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x9C
@@ -1013,12 +1017,16 @@ read_inlet_sensor(uint8_t id, float *value) {
     const char *chip;
     const char *label;
   } devs[] = {
-    {"tmp421-i2c-6-4c", "INLET_TEMP_L"},
-    {"tmp421-i2c-6-4c", "INLET_REMOTE_TEMP_L"},
-    {"tmp421-i2c-6-4f", "INLET_TEMP_R"},
-    {"tmp421-i2c-6-4f", "INLET_REMOTE_TEMP_R"},
+    {"tmp421-i2c-6-4f", "INLET_TEMP_L"},
+    {"tmp421-i2c-6-4f", "INLET_REMOTE_TEMP_L"},
+    {"tmp421-i2c-6-4c", "INLET_TEMP_R"},
+    {"tmp421-i2c-6-4c", "INLET_REMOTE_TEMP_R"},
     {"tmp421-i2c-8-4f", "SYSTEM_INLET_TEMP"},
     {"tmp421-i2c-8-4f", "SYSTEM_INLET_REMOTE_TEMP"},
+    {"tmp421-i2c-5-4c", "PDB_INLET_TEMP_L_ID"},
+    {"tmp421-i2c-5-4c", "PDB_INLET_REMOTE_TEMP_L_ID"},
+    {"tmp421-i2c-5-4d", "PDB_INLET_TEMP_R_ID"},
+    {"tmp421-i2c-5-4d", "PDB_INLET_REMOTE_TEMP_R_ID"},
   };
   if (id >= ARRAY_SIZE(devs)) {
     return -1;

@@ -109,7 +109,7 @@ function is_gpv3_board() {
   local board_type=$1
   local result=0
   if [ -n "$board_type" ] &&
-      ([ $board_type == "0x00" ] || [ $board_type == "0x03" ]); then
+      ([ "$board_type" == "0x00" ] || [ "$board_type" == "0x03" ]); then
     result=1
   fi
   echo $result
@@ -153,10 +153,12 @@ function get_usb_dev() {
   local usb_path=""
   local baudrate="57600"
   local prefix="/dev/serial/by-path/"
+  local vendor="$2"
+
   case $1 in
     pesw)
     usb_path="platform-1e6b0000.usb-usb-0:1.3.2.4:1.1-port0"
-    baudrate="230400"
+    [ "$vendor" == "0x00" ] && baudrate="115200" || baudrate="230400"
   ;;
     dev0) # a
     usb_path="platform-1e6b0000.usb-usb-0:1.3.4.2.4:1.2-port0"
@@ -203,12 +205,13 @@ function get_usb_dev_by_slot() {
   local usb_path=""
   local baudrate="57600"
   local prefix="/dev/serial/by-path/"
+  local vendor="$3"
 
   if [ "$SLOT" == "slot1" ]; then
       case $2 in
         pesw)
         usb_path="platform-1e6b0000.usb-usb-0:1.1.3.2.4:1.1-port0" # 14
-        baudrate="230400"
+        [ "$vendor" == "0x00" ] && baudrate="115200" || baudrate="230400"
       ;;
         dev0) # a
         usb_path="platform-1e6b0000.usb-usb-0:1.1.3.4.2.4:1.2-port0" # 11
@@ -251,7 +254,7 @@ function get_usb_dev_by_slot() {
       case $2 in
         pesw)
         usb_path="platform-1e6b0000.usb-usb-0:1.3.3.2.4:1.1-port0" #14
-        baudrate="230400"
+        [ "$vendor" == "0x00" ] && baudrate="115200" || baudrate="230400"
       ;;
         dev0) # a
         usb_path="platform-1e6b0000.usb-usb-0:1.3.3.4.2.4:1.2-port0" # 11
@@ -382,21 +385,18 @@ if [ -n "$COMP" ]; then
       exit -1;
     elif [ "$COMP" == "2ou" ]; then
       if [[ $(is_gpv3_board $EXP_BOARD_TYPE) ]]; then
+        enable_usb_hub $SLOT 1
+        show_microcom_usage
+
         if [ $BOARD_ID -eq 9 ]; then
-          enable_usb_hub $SLOT 1
-          show_microcom_usage
-          /usr/bin/microcom $(get_usb_dev $DEV)
-          echo
-          enable_usb_hub $SLOT 0
-          exit 0;
+          /usr/bin/microcom $(get_usb_dev "$DEV" "$EXP_BOARD_TYPE")
         else
-          enable_usb_hub $SLOT 1
-          show_microcom_usage
-          /usr/bin/microcom $(get_usb_dev_by_slot $SLOT $DEV)
-          echo
-          enable_usb_hub $SLOT 0
-          exit 0;
+          /usr/bin/microcom $(get_usb_dev_by_slot "$SLOT" "$DEV" "$EXP_BOARD_TYPE")
         fi
+
+        echo
+        enable_usb_hub $SLOT 0
+        exit 0;
       fi
     fi
   elif [ "$DEV" == "bic" ]; then

@@ -89,9 +89,9 @@ def dumpBootInfo():
     print("################################\n")
     print(runCmd('/usr/local/bin/boot_info.sh bmc', echo=True, verbose=True))
     print("##### FLASH0 META_INFO #####\n{}".format(
-        runCmd('/usr/local/bin/meta_info.sh flash0', echo=True, verbose=True))
+        runCmd('/usr/local/bin/meta_info.sh flash0', echo=True, verbose=True)))
     print("##### FLASH1 META_INFO #####\n{}".format(
-        runCmd('/usr/local/bin/meta_info.sh flash1', echo=True, verbose=True))
+        runCmd('/usr/local/bin/meta_info.sh flash1', echo=True, verbose=True)))
 
 
 def fan_debuginfo(verbose=False):

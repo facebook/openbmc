@@ -23,6 +23,8 @@ SRC_URI += " file://setup-ipmbd.sh \
              file://run-ipmbd_4.sh \
            "
 
+RDEPENDS_${PN} += "bash"
+
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   bin="${D}/usr/local/bin"

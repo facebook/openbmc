@@ -2157,7 +2157,8 @@ pal_sensor_sdr_path(uint8_t fru, char *path) {
 }
 
 static int
-_sdr_init(char *path, sensor_info_t *sinfo) {
+_sdr_init(char *path, sensor_info_t *sinfo, uint8_t bmc_location, \
+          const uint8_t config_status, const uint8_t board_type) {
   int fd;
   int ret = 0;
   uint8_t buf[MAX_SDR_LEN] = {0};
@@ -2165,7 +2166,6 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
   uint8_t snr_num = 0;
   sdr_full_t *sdr;
   int retry = MAX_RETRY;
-  uint8_t bmc_location = 0;
 
   while ( access(path, F_OK) == -1 && retry > 0 ) {
     syslog(LOG_WARNING, "%s() Failed to access %s, wait a second.\n", __func__, path);
@@ -2182,12 +2182,6 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
   ret = pal_flock_retry(fd);
   if (ret == -1) {
     syslog(LOG_WARNING, "%s() Failed to flock on %s", __func__, path);
-    goto error_exit;
-  }
-
-  ret = fby3_common_get_bmc_location(&bmc_location);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
     goto error_exit;
   }
 
@@ -2211,7 +2205,16 @@ _sdr_init(char *path, sensor_info_t *sinfo) {
         sdr->uc_thresh = HSC_INPUT_PWR_UC_THRESHOLD;
         sdr->m_val = 0x04;
       }
+    } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU && (board_type == GPV3_BRCM_BOARD) \
+                                       && (snr_num == BIC_GPV3_VR_P1V8_CURRENT || \
+                                           snr_num == BIC_GPV3_VR_P1V8_POWER) ) {
+      sdr->uc_thresh = 0x00; //NA
+    } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU && (board_type == GPV3_BRCM_BOARD) \
+                                       && (snr_num == BIC_GPV3_VR_P0V84_VOLTAGE) ) {
+      sdr->uc_thresh = 0xB8;
+      sdr->lc_thresh = 0xB0;
     }
+
     memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));
     //syslog(LOG_WARNING, "%s() copy num: 0x%x:%s success", __func__, snr_num, sdr->str);
   }
@@ -2241,6 +2244,9 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   char path[64] = {0};
   int retry = MAX_RETRY;
   int ret = 0;
+  uint8_t bmc_location = 0;
+  uint8_t config_status = 0;
+  uint8_t board_type = 0;
 
   //syslog(LOG_WARNING, "%s() pal_is_sdr_init  bool %d, fru %d, snr_num: %x\n", __func__, pal_is_sdr_init(fru), fru, g_sinfo[fru-1][1].sdr.sensor_num);
   if ( true == pal_is_sdr_init(fru) ) {
@@ -2254,8 +2260,27 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
     goto error_exit;
   }
 
+  // get the location
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    goto error_exit;
+  }
+
+  // get the status of m2 board
+  ret = bic_is_m2_exp_prsnt(fru);
+  if ( ret < 0 ) {
+    syslog(LOG_ERR, "%s() Couldn't get the status of 1OU/2OU\n", __func__);
+    goto error_exit;
+  } else config_status = (uint8_t) ret;
+
+  if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
+    //if it's present, get its type
+    fby3_common_get_2ou_board_type(fru, &board_type);
+  }
+
   while ( retry-- > 0 ) {
-    ret = _sdr_init(path, sinfo);
+    ret = _sdr_init(path, sinfo, bmc_location, config_status, board_type);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to run _sdr_init, retry..%d\n", __func__, retry);
       sleep(1);

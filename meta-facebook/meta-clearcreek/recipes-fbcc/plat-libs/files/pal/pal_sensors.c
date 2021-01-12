@@ -14,6 +14,7 @@
 #define PAL_NIC_CNT 8
 #define GPIO_BATTERY_DETECT "BATTERY_DETECT"
 #define GPIO_NIC_PRSNT "OCP_V3_%d_PRSNTB_R_N"
+#define SENSOR_SKIP_MAX (1)
 
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
@@ -622,6 +623,14 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0} //0xFF
 };
 
+static int retry_skip_handle(uint8_t retry_curr, uint8_t retry_max) {
+
+  if( retry_curr <= retry_max) {
+    return READING_SKIP;
+  }
+  return 0;
+}
+
 size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
 size_t pdb_sensor_cnt = sizeof(pdb_sensor_list)/sizeof(uint8_t);
 size_t m2_1_sensor_cnt = sizeof(m2_1_sensor_list)/sizeof(uint8_t);
@@ -635,6 +644,7 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
   char str[MAX_VALUE_LEN] = {0};
   char fru_name[32];
   int ret=0;
+  static uint8_t retry[256] = {0};
   uint8_t id=0;
 
   pal_get_fru_name(fru, fru_name);
@@ -650,6 +660,39 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
       break;
     default:
       return -1;
+  }
+
+  if ( ret == 0 ) {
+    if( (sensor_map[sensor_num].snr_thresh.ucr_thresh <= *(float*)value) &&
+        (sensor_map[sensor_num].snr_thresh.ucr_thresh != 0) ) {
+      ret = retry_skip_handle(retry[sensor_num], SENSOR_SKIP_MAX);
+      if ( ret == READING_SKIP ) {
+        retry[sensor_num]++;
+#ifdef DEBUG
+        syslog(LOG_CRIT,"sensor retry=%d touch ucr thres=%f snrnum=0x%x value=%f\n",
+               retry[sensor_num],
+               sensor_map[sensor_num].snr_thresh.ucr_thresh,
+               sensor_num,
+                *(float*)value );
+#endif
+      }
+    } else if( (sensor_map[sensor_num].snr_thresh.lcr_thresh >= *(float*)value) &&
+              (sensor_map[sensor_num].snr_thresh.lcr_thresh != 0) ) {
+      ret = retry_skip_handle(retry[sensor_num], SENSOR_SKIP_MAX);
+      if ( ret == READING_SKIP ) {
+        retry[sensor_num]++;
+#ifdef DEBUG
+        syslog(LOG_CRIT,"sensor retry=%d touch lcr thres=%f snrnum=0x%x value=%f\n",
+              retry[sensor_num],
+              sensor_map[sensor_num].snr_thresh.lcr_thresh,
+              sensor_num,
+              *(float*)value );
+      
+#endif
+      }
+    } else {
+      retry[sensor_num] = 0;
+    }
   }
 
   if (ret) {

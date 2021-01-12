@@ -315,9 +315,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   // This MB, PDB, BMC && DBG
   if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BMC || fru == FRU_DBG) {
     *status = 1;
-  } else if ((mode == MB_4S_MODE || mode == MB_8S_MODE)
-      && master
-      && (fru == FRU_TRAY0_MB || fru == FRU_TRAY1_MB)) {
+  } else if ( master && (mode == MB_4S_MODE) && (fru == FRU_TRAY1_MB) ) {
     // Support tray1 MB in master BMC.
     *status = 1;
   } else if (fru == FRU_NIC0) {
@@ -1598,6 +1596,7 @@ static int get_dev_bridge_info(uint8_t slot, uint8_t* dev_addr,
       *dev_addr = ASIC_BMC_SLAVE_ADDR;
       *bus_num = ASIC_IPMB_BUS_ID;
       break;
+
     case BRIDGE_2_IOX_BMC:
       *dev_addr = IOX_BMC_SLAVE_ADDR;
       *bus_num = IOX_IPMB_BUS_ID;
@@ -1713,7 +1712,9 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
   uint8_t status;
 
   *res_len = 0;
-  ret = pal_is_fru_prsnt(slot, &status);
+
+  ret = pal_is_fru_prsnt(FRU_MB, &status);
+
   if (ret < 0) {
     return CC_OEM_DEVICE_NOT_PRESENT;
   }

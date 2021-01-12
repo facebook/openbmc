@@ -120,25 +120,25 @@ void ioex_gpios_event_handle(char* shadow, char* desc, gpio_value_t value) {
 
 static
 void cpu0_pvqq_abc_handler(char* shadow, char* desc, gpio_value_t value) {
-  syslog(LOG_CRIT, "FRU: %d CPU0 PVDDQ ABC VR HOST Warning %s\n", FRU_MB,
+  syslog(LOG_CRIT, "FRU: %d CPU0 PVDDQ ABC VR HOT Warning %s\n", FRU_MB,
          value ? "Deassertion": "Assertion");
 }
 
 static
 void cpu0_pvqq_def_handler(char* shadow, char* desc, gpio_value_t value) {
-  syslog(LOG_CRIT, "FRU: %d CPU0 PVDDQ DEF VR HOST Warning %s\n", FRU_MB,
+  syslog(LOG_CRIT, "FRU: %d CPU0 PVDDQ DEF VR HOT Warning %s\n", FRU_MB,
          value ? "Deassertion": "Assertion");
 }
 
 static
 void cpu1_pvqq_abc_handler(char* shadow, char* desc, gpio_value_t value) {
-  syslog(LOG_CRIT, "FRU: %d CPU1 PVDDQ ABC VR HOST Warning %s\n", FRU_MB,
+  syslog(LOG_CRIT, "FRU: %d CPU1 PVDDQ ABC VR HOT Warning %s\n", FRU_MB,
          value ? "Deassertion": "Assertion");
 }
 
 static
 void cpu1_pvqq_def_handler(char* shadow, char* desc, gpio_value_t value) {
-  syslog(LOG_CRIT, "FRU: %d CPU1 PVDDQ DEF VR HOST Warning %s\n", FRU_MB,
+  syslog(LOG_CRIT, "FRU: %d CPU1 PVDDQ DEF VR HOT Warning %s\n", FRU_MB,
          value ? "Deassertion": "Assertion");
 }
 

@@ -1615,6 +1615,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_PESW_ERR       = 0x12,
     SYS_2OU_VR_FAULT   = 0x13,
     SYS_FAN_SERVICE    = 0x14,
+    E1S_1OU_HSC_PWR_ALERT = 0x82,
   };
   uint8_t event = event_data[0];
   char prsnt_str[32] = {0};
@@ -1697,6 +1698,9 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       }
       
       strcat(error_log, log_msg);
+      break;
+    case E1S_1OU_HSC_PWR_ALERT:
+      strcat(error_log, "E1S 1OU HSC Power");
       break;
     default:
       strcat(error_log, "Undefined system event");
@@ -3563,4 +3567,3 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
 
   return CC_SUCCESS;
 }
-

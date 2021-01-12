@@ -2249,13 +2249,13 @@ psu_acok_check(uint8_t fru) {
   char path[LARGEST_DEVICE_NAME + 1];
 
   if (fru == FRU_PSU1) {
-    snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, "psu_L2_input_ok");
+    snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, "psu1_ac_ok");
   } else if (fru == FRU_PSU2) {
-    snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, "psu_L1_input_ok");
+    snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, "psu2_ac_ok");
   } else if (fru == FRU_PSU3) {
-    snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, "psu_R2_input_ok");
+    snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, "psu3_ac_ok");
   } else if (fru == FRU_PSU4) {
-    snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, "psu_R1_input_ok");
+    snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, "psu4_ac_ok");
   }
 
   if (device_read(path, &val)) {

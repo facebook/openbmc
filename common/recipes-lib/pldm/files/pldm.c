@@ -287,7 +287,7 @@ void pldmCreatePassComponentTblCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx
   genReqCommonFields(PLDM_TYPE_FIRMWARE_UPDATE, CMD_PASS_COMPONENT_TABLE, &(pPldmCdb->common[0]));
 
   pCmdPayload->transferFlag = TFLAG_STATRT_END;  // only support 1 pass for now
-  pCmdPayload->class = pCompImgInfo->class;
+  pCmdPayload->_class = pCompImgInfo->_class;
   pCmdPayload->id = pCompImgInfo->id;
   pCmdPayload->classIndex = 0;  // TBD - needs to query for this from NIC
   pCmdPayload->compStamp = pCompImgInfo->compStamp;
@@ -321,7 +321,7 @@ void pldmCreateUpdateComponentCmd(pldm_fw_pkg_hdr_t *pFwPkgHdr, uint8_t compIdx,
 
   genReqCommonFields(PLDM_TYPE_FIRMWARE_UPDATE, CMD_UPDATE_COMPONENT, &(pPldmCdb->common[0]));
 
-  pCmdPayload->class = pCompImgInfo->class;
+  pCmdPayload->_class = pCompImgInfo->_class;
   pCmdPayload->id = pCompImgInfo->id;
   pCmdPayload->classIndex = 0;  // TBD - needs to query for this from NIC
   pCmdPayload->compStamp = pCompImgInfo->compStamp;
@@ -468,7 +468,7 @@ void printComponentImgInfo(pldm_fw_pkg_hdr_t *pFwPkgHdr, int index)
 
   printf("\n\nComponent[%d] Info\n", index);
   printf("  Component[%d].classification: %d (%s)\n", index,
-          pComp->class, pldm_comp_class_to_name(pComp->class));
+          pComp->_class, pldm_comp_class_to_name(pComp->_class));
   printf("  Component[%d].identifier: 0x%x\n", index,
           pComp->id);
   printf("  Component[%d].comparison stamp: 0x%x\n", index,

@@ -190,7 +190,7 @@ typedef struct {
 // Component image Information, defined in DSP0267 Table 5
 // Most of this record is fixed length except for the version string
 typedef struct {
-  uint16_t   class;
+  uint16_t   _class;
   uint16_t   id;
   uint32_t   compStamp;
   uint16_t   options;
@@ -255,7 +255,7 @@ typedef struct {
 #define TFLAG_STATRT_END 0x05
 typedef struct {
   uint8_t  transferFlag;
-  uint16_t class;
+  uint16_t _class;
   uint16_t id;
   uint8_t  classIndex;
   uint32_t compStamp;
@@ -274,7 +274,7 @@ typedef struct {
 
 // cdb for pldm cmd 0x14 Update Component
 typedef struct {
-  uint16_t class;
+  uint16_t _class;
   uint16_t id;
   uint8_t  classIndex;
   uint32_t compStamp;

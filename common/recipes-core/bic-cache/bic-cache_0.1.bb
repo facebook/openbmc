@@ -38,7 +38,7 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 FILES_${PN} = "${FBPACKAGEDIR}/bic-cache ${prefix}/local/bin ${sysconfdir} "
 
 DEPENDS += " libbic libpal liblog update-rc.d-native"
-RDEPENDS_${PN} += " libbic libpal liblog"
+RDEPENDS_${PN} += " libbic libpal liblog bash"
 
 # Inhibit complaints about .debug directories:
 

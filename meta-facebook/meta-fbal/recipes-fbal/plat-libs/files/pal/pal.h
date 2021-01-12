@@ -81,7 +81,7 @@ extern uint8_t FRU_BMC;
 
 
 #define MAX_NUM_FRUS    (FRU_CNT-1)
-#define MAX_NODES       (1)
+#define MAX_NODES       FRU_PDB
 #define READING_SKIP    (1)
 #define READING_NA      (-2)
 

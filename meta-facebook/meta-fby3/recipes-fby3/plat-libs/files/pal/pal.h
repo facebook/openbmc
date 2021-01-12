@@ -191,18 +191,6 @@ enum {
   DEV_FRU_IGNORE,
 };
 
-enum {
-  FFI_STORAGE,
-  FFI_ACCELERATOR,
-};
-
-enum {
-  VENDOR_SAMSUNG = 0x144D,
-  VENDOR_VSI = 0x1D9B,
-  VENDOR_BRCM = 0x14E4,
-  VENDOR_SPH = 0x8086,
-};
-
 typedef struct {
   uint8_t err_id;
   char *err_des;

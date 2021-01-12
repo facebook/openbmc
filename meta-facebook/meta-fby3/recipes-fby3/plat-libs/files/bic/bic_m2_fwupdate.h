@@ -28,7 +28,7 @@ extern "C" {
 #include "bic_xfer.h"
 #include "bic.h"
 
-int update_bic_m2_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force);
+int update_bic_m2_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force, uint8_t type);
 
 #ifdef __cplusplus
 } // extern "C"

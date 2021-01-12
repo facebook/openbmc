@@ -1485,6 +1485,64 @@ bic_notify_fan_mode(int mode) {
   return 0;
 }
 
+int 
+bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type) {
+  int ret = 0;
+  uint8_t retry = MAX_READ_RETRY;
+  uint16_t vendor_id = 0, reversed_vender_sph = 0;
+  uint8_t ffi = 0 ,meff = 0 ,major_ver = 0, minor_ver = 0;
+  uint8_t type_2ou = UNKNOWN_BOARD;
+
+  if ( (bic_is_m2_exp_prsnt(slot_id) & PRESENT_2OU) != PRESENT_2OU ) {
+    syslog(LOG_WARNING,"%s() Cannot get 2ou board", __func__);
+    *type = DEV_TYPE_UNKNOWN;
+    return -1;
+  }
+  ret = fby3_common_get_2ou_board_type(slot_id, &type_2ou);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING,"%s() Cannot get 2ou board type", __func__);
+    *type = DEV_TYPE_UNKNOWN;
+    return -1;
+  }
+  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+
+    while (retry) {
+      ret = bic_get_dev_power_status(slot_id, dev_id, nvme_ready, status, &ffi, &meff, &vendor_id, &major_ver,&minor_ver, REXP_BIC_INTF);
+      if (!ret)
+        break;
+      msleep(50);
+      retry--;
+    }
+    //syslog(LOG_WARNING, "bic_get_dev_power_status: dev_id %d nvme_ready %d status %d",dev_id, *nvme_ready, *status);
+    reversed_vender_sph = (((VENDOR_SPH << 8) & 0xFF00) | ((VENDOR_SPH >> 8) & 0x00FF));
+
+    if (*nvme_ready) {
+      if ( meff == MEFF_DUAL_M2 ) {
+        *type = DEV_TYPE_DUAL_M2;
+      } else{
+        if (ffi == FFI_ACCELERATOR) {
+          if (vendor_id == VENDOR_BRCM) {
+            *type = DEV_TYPE_BRCM_ACC;
+          } else if (vendor_id == VENDOR_SPH || vendor_id == reversed_vender_sph) {
+            *type = DEV_TYPE_SPH_ACC;
+          } else {
+            *type = DEV_TYPE_M2;
+          }
+        } else {
+          *type = DEV_TYPE_SSD;
+        }
+      }
+    } else {
+      *type = DEV_TYPE_UNKNOWN;
+    }
+    return 0;
+  }
+
+  *type = DEV_TYPE_UNKNOWN;
+
+  return -1;
+}
+
 int
 bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, \
                          uint8_t *ffi, uint8_t *meff, uint16_t *vendor_id, uint8_t *major_ver, uint8_t *minor_ver, uint8_t intf) {

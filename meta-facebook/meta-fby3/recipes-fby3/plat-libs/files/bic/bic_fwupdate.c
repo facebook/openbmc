@@ -1228,7 +1228,15 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
         printf("* Failed to stop bic sensor monitor\n");
         break;
       }
-      ret = update_bic_m2_fw(slot_id, comp, path, intf, force);
+      uint8_t nvme_ready = 0, status = 0, type = 0;
+      ret = bic_get_dev_info(slot_id, (comp - FW_2OU_M2_DEV0) + 1, &nvme_ready ,&status, &type);
+      if (ret) {
+        printf("* Failed to read m.2 device's info\n");
+        ret = BIC_STATUS_FAILURE;
+        break;
+      } else {
+        ret = update_bic_m2_fw(slot_id, comp, path, intf, force, type);
+      }
       //run it anyway
       if ( stop_bic_monitoring == true && start_bic_sensor_monitor(slot_id, intf) < 0 ) {
         printf("* Failed to start bic sensor monitor\n");

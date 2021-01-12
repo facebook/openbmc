@@ -73,19 +73,40 @@ int M2DevComponent::print_version()
 int M2DevComponent::update(string image)
 {
   int ret = 0;
-  uint8_t nvme_ready = 0, status = 0, ffi = 0, meff = 0, major_ver = 0, minor_ver = 0;
+  uint8_t nvme_ready = 0, status = 0, type = DEV_TYPE_UNKNOWN;
   uint8_t idx = (fw_comp - FW_2OU_M2_DEV0) + 1;
-  uint16_t vendor_id = 0;
 
   try {
     server.ready();
     expansion.ready();
-    ret = bic_get_dev_power_status(slot_id, idx, &nvme_ready, &status, \
-                                   &ffi, &meff, &vendor_id, &major_ver,&minor_ver, REXP_BIC_INTF);
-    if ( ret < 0 ) {
-      throw string("Error in getting the m2 version");
+    ret = pal_get_dev_info(slot_id, idx, &nvme_ready ,&status, &type);
+    if (!ret) {
+      if (status != 0) {
+        syslog(LOG_WARNING, "update: Slot%u Dev%d power=%u nvme_ready=%u type=%u", slot_id, idx, status, nvme_ready, type);
+        if ( nvme_ready == 0 ) {
+          ret = FW_STATUS_NOT_SUPPORTED;
+          throw string("The m2 device's NVMe is not ready");
+        } else if ( type == DEV_TYPE_BRCM_ACC ) {
+          ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
+          if (ret == FW_STATUS_SUCCESS) {
+            pal_set_device_power(slot_id, DEV_ID0_2OU + idx -1, SERVER_POWER_CYCLE);
+          } else {
+            syslog(LOG_WARNING, "update: Slot%u Dev%d brcm vk failed", slot_id, idx);
+          }
+        } else if ( type == DEV_TYPE_SPH_ACC ) {
+          ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
+        } else {
+          ret = FW_STATUS_NOT_SUPPORTED;
+          throw string("The m2 device does not support update");
+        }
+      } else {
+        ret = FW_STATUS_NOT_SUPPORTED;
+        throw string("The m2 device is not present");
+      }
+    } else {
+      ret = FW_STATUS_NOT_SUPPORTED;
+      throw string("Error in getting the m2 device info");
     }
-    ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET); 
   } catch (string& err) {
     printf("Failed reason: %s\n", err.c_str()); 
   }

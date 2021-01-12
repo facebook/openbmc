@@ -27,6 +27,29 @@
 extern "C" {
 #endif
 
+enum {
+  DEV_TYPE_UNKNOWN,
+  DEV_TYPE_M2,
+  DEV_TYPE_SSD,
+  DEV_TYPE_BRCM_ACC,
+  DEV_TYPE_SPH_ACC,
+  DEV_TYPE_DUAL_M2,
+};
+
+enum {
+  FFI_STORAGE,
+  FFI_ACCELERATOR,
+};
+
+enum {
+  VENDOR_SAMSUNG = 0x144D,
+  VENDOR_VSI = 0x1D9B,
+  VENDOR_BRCM = 0x14E4,
+  VENDOR_SPH = 0x8086,
+};
+
+#define MAX_READ_RETRY 5
+
 int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id, uint8_t intf);
 int bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result, uint8_t intf);
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info, uint8_t intf);
@@ -62,6 +85,7 @@ int bic_manual_set_fan_speed(uint8_t fan_id, uint8_t pwm);
 int bic_get_fan_speed(uint8_t fan_id, float *value);
 int bic_get_fan_pwm(uint8_t fan_id, float *value);
 int bic_do_12V_cycle(uint8_t slot_id);
+int bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type);
 int bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, \
                              uint8_t *ffi, uint8_t *meff, uint16_t *vendor_id, uint8_t *major_ver, uint8_t *minor_ver, uint8_t intf);
 int bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_t intf);

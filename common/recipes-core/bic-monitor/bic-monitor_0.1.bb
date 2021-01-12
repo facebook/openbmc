@@ -37,7 +37,7 @@ CFLAGS += " -Werror "
 LDFLAGS += " -lbic -lpal -llog "
 
 DEPENDS += " libbic libpal liblog update-rc.d-native"
-RDEPENDS_${PN} += " libbic libpal liblog "
+RDEPENDS_${PN} += " libbic libpal liblog bash"
 
 pkgdir = "bicmond"
 

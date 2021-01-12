@@ -19,6 +19,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
+    file://rest_fruid_pim.py \
     file://rest_fruid_scm.py \
     file://rest_seutil.py \
     file://rest_peutil.py \
@@ -31,6 +32,7 @@ SRC_URI += " \
 "
 
 binfiles1 += " \
+    rest_fruid_pim.py \
     rest_fruid_scm.py \
     rest_seutil.py \
     rest_peutil.py \

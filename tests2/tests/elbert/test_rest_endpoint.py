@@ -87,11 +87,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         ]
         self.endpoint_fruid_attrb = self.FRUID_ATTRIBUTES + platform_specific
 
-    # "/api/sys/mb/fruid"
-    @unittest.skip("ELBERTTODO: Test not supported yet")
-    def test_endpoint_api_sys_mb_fruid(self):
-        pass
-
     # "/api/sys/server"
     def set_endpoint_server_attributes(self):
         self.endpoint_server_attrb = ["BIC_ok", "status"]

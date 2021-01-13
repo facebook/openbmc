@@ -3,16 +3,16 @@
 
 #include "fw-util.h"
 
-#define NIC_FW_VER_PATH "/tmp/cache_store/nic_fw_ver"
+#define NIC_FW_VER_KEY "nic_fw_ver"
 
 class NicComponent : public Component {
   protected:
-    std::string _ver_path = NIC_FW_VER_PATH;
+    std::string _ver_key = NIC_FW_VER_KEY;
   public:
     NicComponent(std::string fru, std::string comp)
       : Component(fru, comp) {}
-    NicComponent(std::string fru, std::string comp, std::string path)
-      : Component(fru, comp), _ver_path(path) {}
+    NicComponent(std::string fru, std::string comp, std::string ver_key_store)
+      : Component(fru, comp), _ver_key(ver_key_store) {}
     int print_version();
 };
 

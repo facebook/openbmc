@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <openbmc/kv.hpp>
 #include "nic.h"
 
 #define NCSI_DATA_PAYLOAD 64
@@ -55,21 +56,19 @@ int NicComponent::print_version() {
   std::string display_nic_str{};
   std::string vendor{};
   std::string version{};
-  uint8_t buf[NCSI_DATA_PAYLOAD] = {0};
   uint32_t nic_mfg_id = 0;
-  FILE *fp = NULL;
   bool is_unknown_mfg_id = true;
   int current_nic;
+  std::string buf;
 
-  fp = fopen(_ver_path.c_str(), "rb");
-  if (!fp) {
+  try {
+    buf = kv::get(_ver_key, kv::region::temp);
+    if (buf.size() < NCSI_MIN_DATA_PAYLOAD) {
+      return FW_STATUS_FAILURE;
+    }
+  } catch(std::exception& e) {
     return FW_STATUS_FAILURE;
   }
-  if (fread(buf, sizeof(uint8_t), NCSI_DATA_PAYLOAD, fp) < NCSI_MIN_DATA_PAYLOAD) {
-    fclose(fp);
-    return FW_STATUS_FAILURE;
-  }
-  fclose(fp);
 
   // get the manufcture id
   nic_mfg_id = (buf[35]<<24) | (buf[34]<<16) | (buf[33]<<8) | buf[32];
@@ -78,7 +77,7 @@ int NicComponent::print_version() {
     // check the nic on the system is supported or not
     if (support_nic_list[current_nic].mfg_id == nic_mfg_id) {
       vendor = support_nic_list[current_nic].mfg_name;
-      version = support_nic_list[current_nic].get_nic_fw(buf);
+      version = support_nic_list[current_nic].get_nic_fw((uint8_t *)buf.data());
       is_unknown_mfg_id = false;
       break;
     }

@@ -1083,12 +1083,11 @@ set_sled(int brd_rev, uint8_t color, uint8_t name)
   return 0;
 }
 
-int
-pal_mon_fw_upgrade(int brd_rev, uint8_t *status)
-{
+bool pal_is_fw_update_ongoing(uint8_t fru){
   char cmd[5];
   FILE *fp;
-  int ret=-1;
+  bool ret=true;
+  uint8_t status=0;
   char *buf_ptr;
   int buf_size = 1000;
   int str_size = 200;
@@ -1117,33 +1116,33 @@ pal_mon_fw_upgrade(int brd_rev, uint8_t *status)
   }
 
   //check whether sys led need to blink
-  *status = strstr(buf_ptr, "spi_util.sh") != NULL ? 1 : 0;
-  if(*status) goto close_fp;
+  status = strstr(buf_ptr, "spi_util.sh") != NULL ? 1 : 0;
+  if(status) goto close_fp;
 
-  *status = (strstr(buf_ptr, "cpld_update.sh") != NULL) ? 1 : 0;
-  if(*status) goto close_fp;
+  status = (strstr(buf_ptr, "cpld_update.sh") != NULL) ? 1 : 0;
+  if(status) goto close_fp;
 
-  *status = (strstr(buf_ptr, "fw-util") != NULL) ?
+  status = (strstr(buf_ptr, "fw-util") != NULL) ?
           ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
-  if(*status) goto close_fp;
+  if(status) goto close_fp;
 
-  *status = (strstr(buf_ptr, "psu-util") != NULL) ?
+  status = (strstr(buf_ptr, "psu-util") != NULL) ?
           ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
-  if(*status) goto close_fp;
+  if(status) goto close_fp;
 
-  *status = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
-  if(*status) goto close_fp;
+  status = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
+  if(status) goto close_fp;
 
 
 close_fp:
   ret = pclose(fp);
-  if(-1 == ret)
+  if(ret)
      syslog(LOG_ERR, "%s pclose() fail ", __func__);
 
 
 free_buf:
   free(buf_ptr);
-  return 0;
+  return status ? true: false;
 }
 
 int

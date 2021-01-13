@@ -320,7 +320,6 @@ extern void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res
 extern uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 void *generate_dump(void *arg);
-int pal_mon_fw_upgrade(int brd_rev, uint8_t *status);
 int set_sled(int brd_rev, uint8_t color, uint8_t led_name);
 void init_led(void);
 int pal_light_scm_led(uint8_t led_color);

@@ -449,6 +449,8 @@ const uint8_t w400c_evt2_smb_sensor_list[] = {
 const uint8_t pem1_sensor_list[] = {
   PEM1_SENSOR_IN_VOLT,
   PEM1_SENSOR_OUT_VOLT,
+  PEM1_SENSOR_FET_BAD,
+  PEM1_SENSOR_FET_SHORT,
   PEM1_SENSOR_CURR,
   PEM1_SENSOR_POWER,
   PEM1_SENSOR_FAN1_TACH,
@@ -499,6 +501,8 @@ const uint8_t pem1_discrete_list[] = {
 const uint8_t pem2_sensor_list[] = {
   PEM2_SENSOR_IN_VOLT,
   PEM2_SENSOR_OUT_VOLT,
+  PEM2_SENSOR_FET_BAD,
+  PEM2_SENSOR_FET_SHORT,
   PEM2_SENSOR_CURR,
   PEM2_SENSOR_POWER,
   PEM2_SENSOR_FAN1_TACH,
@@ -3318,6 +3322,12 @@ pem_sensor_read(uint8_t sensor_num, void *value) {
     case PEM1_SENSOR_OUT_VOLT:
       ret = read_attr(PEM1_DEVICE, VOLT(2), value);
       break;
+    case PEM1_SENSOR_FET_BAD:
+      ret = read_attr(PEM1_DEVICE, VOLT(3), value);
+      break;
+    case PEM1_SENSOR_FET_SHORT:
+      ret = read_attr(PEM1_DEVICE, VOLT(4), value);
+      break;
     case PEM1_SENSOR_CURR:
       ret = read_attr(PEM1_DEVICE, CURR(1), value);
       break;
@@ -3442,6 +3452,12 @@ pem_sensor_read(uint8_t sensor_num, void *value) {
       break;
     case PEM2_SENSOR_OUT_VOLT:
       ret = read_attr(PEM2_DEVICE, VOLT(2), value);
+      break;
+    case PEM2_SENSOR_FET_BAD:
+      ret = read_attr(PEM2_DEVICE, VOLT(3), value);
+      break;
+    case PEM2_SENSOR_FET_SHORT:
+      ret = read_attr(PEM2_DEVICE, VOLT(4), value);
       break;
     case PEM2_SENSOR_CURR:
       ret = read_attr(PEM2_DEVICE, CURR(1), value);
@@ -4440,6 +4456,12 @@ get_pem_sensor_name(uint8_t sensor_num, char *name) {
     case PEM1_SENSOR_OUT_VOLT:
       sprintf(name, "PEM1_OUT_VOLT");
       break;
+    case PEM1_SENSOR_FET_BAD:
+      sprintf(name, "PEM1_FET_BAD");
+      break;
+    case PEM1_SENSOR_FET_SHORT:
+      sprintf(name, "PEM1_FET_SHORT");
+      break;
     case PEM1_SENSOR_CURR:
       sprintf(name, "PEM1_CURR");
       break;
@@ -4566,6 +4588,12 @@ get_pem_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case PEM2_SENSOR_OUT_VOLT:
       sprintf(name, "PEM2_OUT_VOLT");
+      break;
+    case PEM2_SENSOR_FET_BAD:
+      sprintf(name, "PEM2_FET_BAD");
+      break;
+    case PEM2_SENSOR_FET_SHORT:
+      sprintf(name, "PEM2_FET_SHORT");
       break;
     case PEM2_SENSOR_CURR:
       sprintf(name, "PEM2_CURR");
@@ -4991,8 +5019,12 @@ get_pem_sensor_units(uint8_t sensor_num, char *units) {
   switch(sensor_num) {
     case PEM1_SENSOR_IN_VOLT:
     case PEM1_SENSOR_OUT_VOLT:
+    case PEM1_SENSOR_FET_BAD:
+    case PEM1_SENSOR_FET_SHORT:
     case PEM2_SENSOR_IN_VOLT:
     case PEM2_SENSOR_OUT_VOLT:
+    case PEM2_SENSOR_FET_BAD:
+    case PEM2_SENSOR_FET_SHORT:
       sprintf(units, "Volts");
       break;
     case PEM1_SENSOR_CURR:
@@ -5752,6 +5784,8 @@ pem_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
   switch(sensor_num) {
     case PEM1_SENSOR_IN_VOLT:
     case PEM1_SENSOR_OUT_VOLT:
+    case PEM1_SENSOR_FET_BAD:
+    case PEM1_SENSOR_FET_SHORT:
     case PEM1_SENSOR_CURR:
     case PEM1_SENSOR_POWER:
     case PEM1_SENSOR_FAN1_TACH:
@@ -5762,6 +5796,8 @@ pem_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
 
     case PEM2_SENSOR_IN_VOLT:
     case PEM2_SENSOR_OUT_VOLT:
+    case PEM2_SENSOR_FET_BAD:
+    case PEM2_SENSOR_FET_SHORT:
     case PEM2_SENSOR_CURR:
     case PEM2_SENSOR_POWER:
     case PEM2_SENSOR_FAN1_TACH:

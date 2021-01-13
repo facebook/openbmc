@@ -130,7 +130,7 @@ static void m_header(int ch, struct state_mach *m)
             {
                 char * ptr = strchr( m_H_string, ':');
                 if (ptr){
-                    strncpy(m->jed->date, ptr, MAX_SIZE);
+                    strncpy(m->jed->date, ptr, MAX_SIZE - 1);
                 }
             }
             m->state = m_startup;

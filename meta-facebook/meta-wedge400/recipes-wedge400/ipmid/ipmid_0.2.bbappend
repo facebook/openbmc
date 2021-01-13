@@ -25,7 +25,7 @@ LIC_FILES_CHKSUM = "file://ipmid.c;beginline=8;endline=20;md5=da35978751a9d71b73
 LDFLAGS_append = " -lwedge_eeprom -lfruid -lpal -lobmc-i2c -llog -lbic"
 
 DEPENDS_append = " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog libbic update-rc.d-native libgpio"
-RDEPENDS_${PN} += " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog libgpio libbic"
+RDEPENDS_${PN} += " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog libgpio libbic bash"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://fruid.c \

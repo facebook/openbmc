@@ -351,7 +351,7 @@ static ssize_t ec_cpu_vol_show(struct device *dev,
   result = (msb_val << 8) + lsb_val;
 
   //scnprintf(buf, PAGE_SIZE, "%d.%d V\n", result / 341, (((result % 341) * 10) / 341));
-  scnprintf(buf, PAGE_SIZE, "%d\n", result);
+  return scnprintf(buf, PAGE_SIZE, "%d\n", result);
 }
 
 static ssize_t ec_3v_vol_show(struct device *dev,

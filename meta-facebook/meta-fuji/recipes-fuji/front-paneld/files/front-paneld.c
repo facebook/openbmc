@@ -682,7 +682,7 @@ simLED_monitor_handler(void *unused) {
   struct timeval timeval;
   long curr_time;
   long last_time = 0;
-  uint8_t status_ug = 0;
+  bool status_ug = false;
   pal_get_board_rev(&brd_rev);
   while (1) {
     gettimeofday(&timeval, NULL);
@@ -696,10 +696,10 @@ simLED_monitor_handler(void *unused) {
       // AMBER           one or more FRU not present and have alarm
       // ALTERNATE       firmware upgrade in process
       // AMBER FLASHING  need technicial required,
+      status_ug = pal_is_fw_update_ongoing(FRU_ALL);
       if (sys_present_check(brd_rev)) {
         leds[SLED_NAME_SYS] = SIM_LED_AMBER;
       } else {
-        pal_mon_fw_upgrade(brd_rev, &status_ug);
         if(status_ug) {
           syslog(LOG_WARNING, "firmware is upgrading");
           leds[SLED_NAME_SYS] = SIM_LED_ALT_BLINK;
@@ -711,28 +711,34 @@ simLED_monitor_handler(void *unused) {
       //FAN LED
       // BLUE   all presence and sensor normal
       // AMBER  one or more absence or sensor out-of-range RPM
-      if (fan_check(brd_rev) == 0) {
-        leds[SLED_NAME_FAN] = SIM_LED_BLUE;
-      } else {
-        leds[SLED_NAME_FAN] = SIM_LED_AMBER;
+      if (!status_ug) { // skip sensor check when firmware is upgrading
+        if (fan_check(brd_rev) == 0) {
+          leds[SLED_NAME_FAN] = SIM_LED_BLUE;
+        } else {
+          leds[SLED_NAME_FAN] = SIM_LED_AMBER;
+        }
       }
 
       //PSU LED
       // BLUE     all PSUs present and INPUT OK,PWR OK
       // AMBER    one or more not present or INPUT OK or PWR OK de-asserted
-      if (psu_check(brd_rev) == 0) {
-        leds[SLED_NAME_PSU] = SIM_LED_BLUE;
-      } else {
-        leds[SLED_NAME_PSU] = SIM_LED_AMBER;
+      if (!status_ug) { // skip sensor check when firmware is upgrading
+        if (psu_check(brd_rev) == 0) {
+          leds[SLED_NAME_PSU] = SIM_LED_BLUE;
+        } else {
+          leds[SLED_NAME_PSU] = SIM_LED_AMBER;
+        }
       }
 
       //SMB LED
       // BLUE   sensor ok
       // AMBER  fail
-      if (smb_check(brd_rev) == 0) {
-        leds[SLED_NAME_SMB] = SIM_LED_BLUE;
-      } else {
-        leds[SLED_NAME_SMB] = SIM_LED_AMBER;
+      if (!status_ug)  { // skip sensor check when firmware is upgrading
+        if (smb_check(brd_rev) == 0) {
+          leds[SLED_NAME_SMB] = SIM_LED_BLUE;
+        } else {
+          leds[SLED_NAME_SMB] = SIM_LED_AMBER;
+        }
       }
     }
     sleep(1);

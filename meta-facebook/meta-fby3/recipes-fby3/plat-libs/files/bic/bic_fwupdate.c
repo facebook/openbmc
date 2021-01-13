@@ -487,7 +487,6 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
 
   //step1 -get the bus number and open the dev of i2c
   bus_num = fby3_common_get_bus_id(slot_id);
-  syslog(LOG_CRIT, "%s: update bic firmware on slot %d\n", __func__, slot_id);
 
   i2cfd = i2c_open(bus_num, BRIDGE_SLAVE_ADDR);
   if ( i2cfd < 0 ) {
@@ -605,7 +604,7 @@ exit:
       return BIC_STATUS_FAILURE;
   }
 
-  syslog(LOG_CRIT, "%s: updating bic firmware is exiting on slot %d\n", __func__, slot_id);
+  sleep(3);
 
   if ( i2cfd > 0 ) {
     close(i2cfd);
@@ -1069,7 +1068,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     syslog(LOG_WARNING, "Failed to get 2ou board type\n");
   } else if ( board_type == GPV3_MCHP_BOARD ||
               board_type == GPV3_BRCM_BOARD ) {
-    stop_bic_monitoring = true; 
+    stop_bic_monitoring = true;
   }
 
   //get the intf

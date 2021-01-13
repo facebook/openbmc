@@ -49,10 +49,10 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t dev_id, int argc, char **argv) {
 
   sprintf(stype_str, "Glacier Point V3");
 
-  printf("%s %u Drive%d\n", stype_str, slot_id, dev_id);
+  printf("%s %u Drive%d\n", stype_str, slot_id, dev_id - DEV_ID0_2OU + 1); //1-based number
   
   tlen = 0;
-  tbuf[tlen++] = (get_gpv3_bus_number(dev_id) << 2) + 1;
+  tbuf[tlen++] = (get_gpv3_bus_number(dev_id) << 1) + 1;
   tbuf[tlen++] = 0xD4;
   tbuf[tlen++] = (uint8_t)strtoul(argv[1], NULL, 0); //read cnt
   tbuf[tlen++] = (uint8_t)strtoul(argv[0], NULL, 0); //register
@@ -142,7 +142,6 @@ main(int argc, char **argv) {
       break;
     }
 
-    dev_id = dev_id - DEV_ID0_2OU + 1; //1-based number
     read_write_nvme_data = read_bic_nvme_data;
     m_slot_id = slot_id;
 

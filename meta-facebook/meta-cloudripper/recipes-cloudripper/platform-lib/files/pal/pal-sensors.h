@@ -360,6 +360,7 @@ void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t
 int pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag);
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 int wedge400_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
+int pal_sensor_thresh_init(void);
 
 #ifdef __cplusplus
 } // extern "C"

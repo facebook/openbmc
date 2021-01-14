@@ -3019,6 +3019,12 @@ static void sensor_thresh_array_init(uint8_t fru) {
   init_done[fru] = true;
 }
 
+int pal_sensor_thresh_init(void) {
+  for (uint8_t fru = FRU_SCM; fru <= MAX_NUM_FRUS; fru++) {
+    sensor_thresh_array_init(fru);
+  }
+}
+
 int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num,
                              uint8_t thresh, void *value) {
   float *val = (float*) value;

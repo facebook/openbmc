@@ -483,6 +483,7 @@ void pal_get_eth_intf_name(char *intf_name);
 int pal_get_host_system_mode(uint8_t *mode);
 int pal_get_altered_comp_name(char *comp_name);
 int pal_sensor_monitor_initial(void);
+int pal_sensor_thresh_init(void);
 uint8_t pal_ipmb_get_sensor_val(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_set_host_system_mode(uint8_t mode);
 int pal_is_pfr_active(void);

@@ -2581,6 +2581,12 @@ pal_sensor_monitor_initial(void) {
 }
 
 int __attribute__((weak))
+pal_sensor_thresh_init(void)
+{
+  return 0;
+}
+
+int __attribute__((weak))
 pal_set_host_system_mode(uint8_t mode) {
   return PAL_ENOTSUP;
 }

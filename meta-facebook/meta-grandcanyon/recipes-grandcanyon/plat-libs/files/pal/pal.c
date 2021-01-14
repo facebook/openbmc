@@ -45,6 +45,10 @@
 
 #define MAX_TEMP_STR_SIZE    16
 
+#define MAX_NUM_GPIO_LED_POSTCODE       8
+
+#define MAX_NUM_GPIO_BMC_FPGA_UART_SEL  4
+
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
 
 // export to sensor-util
@@ -134,6 +138,23 @@ fru_present_gpio fru_present_gpio_table[] = {
   [FRU_FAN3]   = {GPIO_FAN_3_INS_N, GPIO_VALUE_LOW}
 };
 
+uint8_t GPIO_LED_POSTCODE_TABLE[MAX_NUM_GPIO_LED_POSTCODE] = {
+  GPIO_LED_POSTCODE_0,
+  GPIO_LED_POSTCODE_1,
+  GPIO_LED_POSTCODE_2,
+  GPIO_LED_POSTCODE_3,
+  GPIO_LED_POSTCODE_4,
+  GPIO_LED_POSTCODE_5,
+  GPIO_LED_POSTCODE_6,
+  GPIO_LED_POSTCODE_7,
+};
+
+uint8_t GPIO_BMC_FPGA_UART_SEL_TABLE[MAX_NUM_GPIO_BMC_FPGA_UART_SEL] = {
+  GPIO_BMC_FPGA_UART_SEL3_R,
+  GPIO_BMC_FPGA_UART_SEL2_R,
+  GPIO_BMC_FPGA_UART_SEL1_R,
+  GPIO_BMC_FPGA_UART_SEL0_R,
+};
 
 static int
 pal_key_index(char *key) {
@@ -1187,6 +1208,107 @@ exit:
   close(bin);
 err:
   close(eeprom);
+
+  return ret;
+}
+
+static int
+pal_post_display(uint8_t status) {
+  int ret = 0, i = 0;
+  gpio_value_t value = GPIO_VALUE_INVALID;
+
+  for (i = 0; i < MAX_NUM_GPIO_LED_POSTCODE; i++) {
+    if (BIT(status, i) != 0) {
+      value = GPIO_VALUE_HIGH;
+    } else {
+      value = GPIO_VALUE_LOW;
+    }
+    ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_LED_POSTCODE_TABLE[i]), value);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s fail to display post code to debug card, failed gpio: LED_POSTCODE_%d, ret: %d\n", __func__, i, ret);
+      break;
+    }
+  }
+
+  return ret;
+}
+
+int
+pal_get_debug_card_uart_sel(uint8_t *uart_sel) {
+  int i = 0;
+  gpio_value_t val = GPIO_VALUE_INVALID;
+
+  if (uart_sel == NULL) {
+    syslog(LOG_ERR, "%s Invalid parameter: UART selection\n", __func__);
+    return -1;
+  }
+
+  *uart_sel = 0;
+
+  for (i = 0; i < MAX_NUM_GPIO_BMC_FPGA_UART_SEL; i++) {
+    val = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_BMC_FPGA_UART_SEL_TABLE[i]));
+    if (val == GPIO_VALUE_INVALID) {
+      syslog(LOG_WARNING, "%s() Can not get GPIO_BMC_FPGA_UART_SEL%d", __func__, i);
+      return -1;
+    }
+    (*uart_sel) <<= 1;
+    (*uart_sel) |= (uint8_t)val;
+  }
+
+  return 0;
+}
+
+int
+pal_is_debug_card_present(uint8_t *status) {
+  int present_status = 0;
+  int ret = 0;
+
+  if (status == NULL) {
+    syslog(LOG_ERR, "%s Invalid parameter: present status\n", __func__);
+    return -1;
+  }
+
+  present_status = pal_check_gpio_prsnt(GPIO_DEBUG_CARD_PRSNT_N, GPIO_VALUE_LOW);
+
+  switch (present_status) {
+    case FRU_PRESENT:
+    case FRU_ABSENT:
+      *status = present_status;
+      break;
+    default:
+      syslog(LOG_ERR, "%s failed to get debug card present gpio, status: %d\n", __func__, present_status);
+      ret = -1;
+      break;
+  }
+
+  return ret;
+}
+
+int
+pal_post_handle(uint8_t slot, uint8_t postcode) {
+  uint8_t present_status = 0, uart_sel = 0;
+  int ret = 0;
+
+  ret = pal_is_debug_card_present(&present_status);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: failed to get debug card present status. ret code: %d\n", __func__, ret);
+    return ret;
+  }
+
+  if (present_status == FRU_ABSENT) {
+    return 0;
+  }
+
+  ret = pal_get_debug_card_uart_sel(&uart_sel);
+  if (ret < 0) {
+    return ret;
+  }
+
+  if (uart_sel == DEBUG_UART_SEL_BMC) { // Do not overwrite BMC error code
+    return 0;
+  }
+
+  ret = pal_post_display(postcode);
 
   return ret;
 }

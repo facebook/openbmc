@@ -22,8 +22,12 @@
 #include <stdlib.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <openbmc/phymem.h>
 #include <openbmc/libgpio.h>
 #include <facebook/fbgc_gpio.h>
+
+#define SCU_BASE    	0x1E6E2000
+#define REG_SCU61C   	0x61C
 
 int setup_gpio_with_value(const char *chip_name, const char *shadow_name, const char *pin_name, int offset, gpio_direction_t direction, gpio_value_t value)
 {
@@ -86,11 +90,19 @@ void setup_gpios_by_table(const char *chip_name, gpio_cfg *gpio_config) {
 
 int
 main(int argc, char **argv) {
+	uint32_t reg_value = 0;
+
 	printf("Set up BMC GPIO pins...\n");
 	setup_gpios_by_table(GPIO_CHIP_ASPEED, bmc_gpio_table);
 
 	printf("Set up GPIO-expander GPIO pins...\n");
 	setup_gpios_by_table(GPIO_CHIP_I2C_IO_EXP, gpio_expander_gpio_table);
+
+	// Because GPIO high value of debug card is not enough high, internal pull-down will cause it can't change from low to high.
+	// Disable internal pull-down of debug card GPIO (GPION0-N5: SCU61C[8:13]).
+	phymem_get_dword(SCU_BASE, REG_SCU61C, &reg_value);
+	reg_value = reg_value | 0x00003F00;
+	phymem_set_dword(SCU_BASE, REG_SCU61C, reg_value);
 
 	printf("done.\n");
 

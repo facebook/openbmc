@@ -9,6 +9,7 @@ cc = meson.get_compiler('c')
 dep_libs = [
     cc.find_library('gpio-ctrl'),
     cc.find_library('fbgc_gpio'),
+    cc.find_library('phymem'),
 ]
 
 executable('setup-gpio', 'setup-gpio.c', dependencies : dep_libs)

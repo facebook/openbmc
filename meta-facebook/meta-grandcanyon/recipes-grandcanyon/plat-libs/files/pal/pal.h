@@ -127,6 +127,16 @@ enum {
   PLAT_INFO_SKUID_TYPE7_HEADNODE  = 4,
 };
 
+enum {
+  DEBUG_UART_SEL_BMC = 0,
+  DEBUG_UART_SEL_HOST,
+  DEBUG_UART_SEL_BIC,
+  DEBUG_UART_SEL_EXP_SMART,
+  DEBUG_UART_SEL_EXP_SDB,
+  DEBUG_UART_SEL_IOC_T5_SMART,
+  DEBUG_UART_SEL_IOC_T7_SMART,
+};
+
 int pal_get_fru_id(char *str, uint8_t *fru);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
@@ -166,6 +176,9 @@ int pal_get_sku(platformInformation *pal_sku);
 int pal_get_uic_location(uint8_t *uic_id);
 int pal_get_plat_sku_id(void);
 int pal_copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file);
+int pal_get_debug_card_uart_sel(uint8_t *uart_sel);
+int pal_is_debug_card_present(uint8_t *status);
+int pal_post_handle(uint8_t slot, uint8_t postcode);
 
 #ifdef __cplusplus
 } // extern "C"

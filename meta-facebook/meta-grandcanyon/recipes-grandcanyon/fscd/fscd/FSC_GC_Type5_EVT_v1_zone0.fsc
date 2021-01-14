@@ -1,0 +1,9 @@
+max_e1s_temp = max([
+  e1s_iocm:e1s_?0_temp,
+  e1s_iocm:e1s_?1_temp]);
+
+max([
+  linear_soc_therm_margin(server:bs_therm_margin),
+  linear_mezz_sensor_temp(nic:mezz_sensor_temp),
+  linear_e1s_sensor_temp(max_e1s_temp)
+]) 

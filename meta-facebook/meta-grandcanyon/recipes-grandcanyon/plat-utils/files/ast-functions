@@ -6,6 +6,8 @@ IPMBUTIL_CMD=/usr/local/bin/ipmb-util
 EXPANDERUTIL_CMD=/usr/bin/expander-util
 CFGUTIL_CMD=/usr/local/bin/cfg-util
 
+MAX_RETRY=3
+
 I2C_BIC_BUS="2"
 BIC_SLAVE_ADDR="0x40"
 NETFN_OEM_1S_REQ="0xe0"

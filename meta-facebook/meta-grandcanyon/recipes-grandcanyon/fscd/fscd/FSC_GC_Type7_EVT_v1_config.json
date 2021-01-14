@@ -1,0 +1,136 @@
+{
+  "version": "fbgc-type7-evt-v1",
+  "pwm_transition_value": 80,
+  "pwm_boost_value": 80,
+  "sample_interval_ms": 3000,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": true,
+    "progressive": true
+  },
+  "fan_dead_boost": {
+    "data": [
+      [1,20],
+      [8,100]
+    ]
+  },
+  "sensor_valid_check": {
+    "SOC": {
+      "attribute": {
+        "type" : "host_power_status",
+        "fru" : "server",
+        "bic_ready_pin" : "BIC_READY_IN"
+      }
+    }
+  },
+  "watchdog": false,
+  "chassis_intrusion": false,
+  "min_rpm": 400,
+  "profiles": {
+    "linear_soc_therm_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 14, 30 ],
+        [ 13, 34 ],
+        [ 12, 38 ],
+        [ 11, 42 ],
+        [ 10, 48 ],
+        [ 9, 50 ],
+        [ 8, 52 ],
+        [ 7, 54 ],
+        [ 6, 56 ],
+        [ 5, 58 ],
+        [ 4, 60 ],
+        [ 3, 65 ],
+        [ 2, 70 ],
+        [ 1, 75 ],
+        [ 0, 80 ]
+      ]
+    },
+    "linear_mezz_sensor_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "data": [
+        [ 60, 30 ],
+        [ 65, 35 ],
+        [ 70, 40 ],
+        [ 75, 45 ],
+        [ 80, 50 ],
+        [ 82, 55 ],
+        [ 84, 60 ],
+        [ 86, 65 ],
+        [ 88, 70 ],
+        [ 90, 75 ],
+        [ 92, 80 ]
+      ]
+    }
+  },
+  "fans": {
+    "0": {
+      "label" : "0 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 0"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 0"
+      }
+    },
+    "1": {
+      "label" : "0 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 1"
+      }
+    },
+    "2": {
+      "label" : "1 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 2"
+      }
+    },
+    "3": {
+      "label" : "1 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 3"
+      }
+    },
+    "4": {
+      "label" : "2 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 4"
+      }
+    },
+    "5": {
+      "label" : "2 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 5"
+      }
+    },
+    "6": {
+      "label" : "3 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 6"
+      }
+    },
+    "7": {
+      "label" : "3 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 7"
+      }
+    }
+  },
+  "zones": {
+    "zone_0": {
+      "pwm_output": [0],
+      "expr_file": "FSC_GC_Type7_EVT_v1_zone0.fsc"
+    }
+  }
+}

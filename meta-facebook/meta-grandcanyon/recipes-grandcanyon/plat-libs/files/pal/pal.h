@@ -137,6 +137,11 @@ enum {
   DEBUG_UART_SEL_IOC_T7_SMART,
 };
 
+enum {
+  CHASSIS_IN          = 0,
+  CHASSIS_OUT         = 1,
+};
+
 int pal_get_fru_id(char *str, uint8_t *fru);
 int pal_is_fru_ready(uint8_t fru, uint8_t *status);
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
@@ -179,6 +184,8 @@ int pal_copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file);
 int pal_get_debug_card_uart_sel(uint8_t *uart_sel);
 int pal_is_debug_card_present(uint8_t *status);
 int pal_post_handle(uint8_t slot, uint8_t postcode);
+int pal_get_fan_latch(uint8_t *chassis_status);
+void pal_specific_plat_fan_check(bool status);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -1313,3 +1313,47 @@ pal_post_handle(uint8_t slot, uint8_t postcode) {
   return ret;
 }
 
+int
+pal_get_fan_latch(uint8_t *chassis_status) {
+  gpio_value_t fan_latch_status = GPIO_VALUE_INVALID;
+
+  if (chassis_status == NULL) {
+    syslog(LOG_WARNING, "%s() failed to get the status of fan latch due to the NULL parameter.", __func__);
+    return -1;
+  }
+
+  fan_latch_status = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_DRAWER_CLOSED_N));
+
+  if (fan_latch_status == GPIO_VALUE_INVALID) {
+    syslog(LOG_WARNING, "%s() failed to get the status of fan latch due to the invalid gpio value.", __func__);
+    return -1;
+  }
+
+  if (fan_latch_status == GPIO_VALUE_HIGH) {
+    *chassis_status = CHASSIS_OUT;
+  } else {
+    *chassis_status = CHASSIS_IN;
+  }
+
+  return 0;
+}
+
+void
+pal_specific_plat_fan_check(bool status)
+{
+  uint8_t chassis_status = 0;
+
+  if (pal_get_fan_latch(&chassis_status) < 0) {
+    syslog(LOG_WARNING, "%s: Get chassis status in/out failed.", __func__);
+    return;
+  }
+
+  if(chassis_status == CHASSIS_OUT) {
+    printf("Chassis Fan Latch Open: True\n");
+  } else {
+    printf("Chassis Fan Latch Open: False\n");
+  }
+
+  return;
+}
+

@@ -18,6 +18,21 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += "file://setup-fan.sh \
+            file://setup-fsc-config.sh \
+            file://FSC_GC_Type5_EVT_v1_zone0.fsc \
+            file://FSC_GC_Type5_EVT_v1_config.json \
+            file://FSC_GC_Type7_EVT_v1_zone0.fsc \
+            file://FSC_GC_Type7_EVT_v1_config.json \
+            file://fsc_board.py \
            "
+FSC_CONFIG += "FSC_GC_Type5_EVT_v1_config.json \
+               FSC_GC_Type7_EVT_v1_config.json \
+              "
+
+FSC_ZONE_CONFIG += "FSC_GC_Type5_EVT_v1_zone0.fsc \
+                    FSC_GC_Type7_EVT_v1_zone0.fsc \
+                   "
+
+FSC_BIN_FILES += "setup-fsc-config.sh"
 
 FSC_INIT_FILE += "setup-fan.sh"

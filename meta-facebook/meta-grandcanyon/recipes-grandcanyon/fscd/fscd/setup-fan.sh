@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2020-present Facebook. All Rights Reserved.
+# Copyright 2021-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -28,5 +28,5 @@
 ### END INIT INFO
 
 echo "Setup fan speed... "
-/usr/local/bin/fan-util --set 70
-echo "done."
+
+sh /usr/local/bin/setup-fsc-config.sh &

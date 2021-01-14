@@ -120,6 +120,11 @@ populate_mgmt_sensors(void) {
 }
 
 static void
+populate_thresh_sensors(void) {
+  pal_sensor_thresh_init();
+}
+
+static void
 populate_disc_sensors(void) {
 
   sensor_disc_t sensor = {0};
@@ -405,6 +410,7 @@ plat_sensor_init(void) {
   // Populate all Sensors
   populate_mgmt_sensors();
   populate_disc_sensors();
+  populate_thresh_sensors();
 
   return 0;
 }

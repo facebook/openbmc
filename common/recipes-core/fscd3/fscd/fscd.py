@@ -614,15 +614,13 @@ class Fscd(object):
                             if dead <= fan_count:
                                 pwmval = clamp(pwmval + (dead * rate), 0, 100)
                                 mode = fan_mode["normal_mode"]
-                                if os.path.isfile(boost_record_path):
-                                    os.remove(boost_record_path)
                                 break
                         else:
                             pwmval = self.boost
                             mode = fan_mode["boost_mode"]
-                            if not os.path.isfile(boost_record_path):
-                                fan_fail_boost_record = open(boost_record_path, "w")
-                                fan_fail_boost_record.close()
+                        if not os.path.isfile(boost_record_path):
+                            fan_fail_boost_record = open(boost_record_path, "w")
+                            fan_fail_boost_record.close()
                     else:
                         if os.path.isfile(boost_record_path):
                             os.remove(boost_record_path)

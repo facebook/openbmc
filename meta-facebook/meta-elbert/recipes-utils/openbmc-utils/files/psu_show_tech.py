@@ -145,6 +145,13 @@ class PowerSupply(object):
             except Exception:
                 value = "Error"
             print(name + ":", value)
+            if name == "MFR_MODEL":
+                model = 'UNKNOWN'
+                for key in mfrModelMap:
+                    if key in value:
+                        model = mfrModelMap[key]
+                # Add field for model name
+                print("MODEL_NAME:", model)
 
 
 class Generic(PowerSupply):
@@ -184,6 +191,11 @@ class Generic(PowerSupply):
 
 
 PROFILES = {"generic": Generic}
+mfrModelMap = {
+      # MFR_NAME: MODEL_NAME
+      'ECD15020056': 'PWR-2421-HV-RED',
+      'PS-2242-3A': 'PWR-2411-AC-RED',
+      }
 
 
 def parseArgs():

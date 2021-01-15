@@ -1,4 +1,4 @@
-EXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://fby2_ext.h \
            "

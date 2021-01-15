@@ -984,6 +984,8 @@ run_gpiod(int argc, void **argv) {
     }
 
     SLOTS_MASK |= 0x1 << (fru - 1);
+    //init GPv3 device FRU after BMC start or hot service
+    fru_cahe_init(fru);
 
     if ((fru >= FRU_SLOT1) && (fru < (FRU_SLOT1 + MAX_NUM_SLOTS))) {
       fru_flag = SETBIT(fru_flag, fru);
@@ -1030,9 +1032,6 @@ main(int argc, void **argv) {
   } else {
 
     init_gpio_pins();
-    // init GPv3 device FRU after BMC start or hot service
-    fru_cahe_init(FRU_SLOT1); 
-    fru_cahe_init(FRU_SLOT3);
 
     openlog("gpiod", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "gpiod: daemon started");

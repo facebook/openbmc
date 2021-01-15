@@ -136,10 +136,14 @@ main(int argc, char **argv) {
 	// enable I2C ctrl reg (SCUA4),  SCUA4[15:12] must be 1
 	reg[SCUA4] &= ~(0xFF0F0000);
 	reg[SCUA4] |= 0x0000F000;
-	
+
+#ifndef WDTRST1_KERNEL_DRIVER
 	// To use GPIOAB1~AB3, SCUA8[3:1] must be 0
 	reg[SCUA8] &= ~(0x0000000E);
-
+#else
+	// reserve GPIOAB2 for WDTRST1, SCUA8[2] must be 1
+	reg[SCUA8] &= ~(0x0000000A);
+#endif
 	phymem_set_dword(SCU_BASE, REG_SCU80, reg[SCU80]);
 	phymem_set_dword(SCU_BASE, REG_SCU84, reg[SCU84]);
 	phymem_set_dword(SCU_BASE, REG_SCU88, reg[SCU88]);
@@ -212,8 +216,10 @@ main(int argc, char **argv) {
 	// Enable P3V3: GPIOAB1(217)
 	set_gpio_init_value_after_export("GPIOAB1", "P3V3_EN_R", 1);
 	
+#ifndef WDTRST1_KERNEL_DRIVER
 	// BMC_SELF_HW_RST: GPIOAB2(218)
 	set_gpio_init_value_after_export("GPIOAB2", "BMC_SELF_HW_RST", 0);
+#endif
 
 	// VGA Mux
 	gpio_export_by_name(ASPPED_CHIP, "GPIOJ2", "VGA_SELECT_ID0");

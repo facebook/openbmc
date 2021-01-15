@@ -56,6 +56,31 @@ extern "C" {
 #define BIT_VALUE(list, index) \
            ((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1\
 
+#define REVISION_ID(x) ((x >> 4) & 0x0f)
+#define COMPONENT_ID(x) (x & 0x0f)
+
+#define NIC_CPLD_BUS 9
+#define BB_CPLD_BUS 12
+#define CPLD_ADDRESS 0x1E
+#define SLOT_BUS_BASE 3
+#define BB_CPLD_BOARD_REV_ID_REGISTER 0x08
+#define SB_CPLD_BOARD_REV_ID_REGISTER 0x07
+#define CPLD_BOARD_PVT_REV 3
+#define CPLD_FLAG_REG_ADDR 0x1F
+#define CPLD_BB_BUS 0x01
+#define CPLD_SB_BUS 0x05
+/*Revision Number:
+  BOARD_REV_EVT = 2
+  BOARD_REV_DVT = 3
+  BOARD_REV_PVT = 4
+  BOARD_REV_MP  = 5
+  FW_REV_EVT = 1
+  FW_REV_DVT = 2
+  FW_REV_PVT = 3
+  FW_REV_MP  = 4
+*/
+extern const char *board_stage[];
+
 typedef struct
 {
   struct libusb_device**          devs;

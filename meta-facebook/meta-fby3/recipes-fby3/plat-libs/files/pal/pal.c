@@ -83,7 +83,6 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define BOOR_ORDER_STR "slot%d_boot_order"
 #define GPIO_OCP_DEBUG_BMC_PRSNT_N "OCP_DEBUG_BMC_PRSNT_N"
 
-#define CPLD_ADDRESS 0x1E
 #define SLOT1_POSTCODE_OFFSET 0x02
 #define SLOT2_POSTCODE_OFFSET 0x03
 #define SLOT3_POSTCODE_OFFSET 0x04

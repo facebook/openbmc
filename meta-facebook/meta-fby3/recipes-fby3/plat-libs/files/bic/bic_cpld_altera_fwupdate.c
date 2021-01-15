@@ -32,6 +32,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <time.h>
+#include <openbmc/obmc-i2c.h>
 #include "bic_cpld_altera_fwupdate.h"
 
 //#define DEBUG
@@ -41,9 +42,8 @@
 /****************************/
 #define MAX_RETRY 3
 #define CPLD_UPDATE_ADDR 0x80
-#define CPLD_FLAG_REG_ADDR 0x1F
-#define CPLD_BB_BUS 0x01
-#define CPLD_SB_BUS 0x05
+
+const char *board_stage[] = {"Unknown", "EVT", "DVT", "PVT", "MP"};
 
 #define SET_READ_DATA(buf, reg, offset) \
                      do { \
@@ -332,18 +332,112 @@ Max10_erase_sector(uint8_t slot_id, SectorType_t secType, uint8_t intf) {
 }
 
 static int
-is_valid_cpld_image(uint8_t signed_byte, uint8_t intf) {
+is_valid_cpld_image(uint8_t slot_id, uint8_t signed_byte, uint8_t intf) {
   int ret = -1;
+  int i2cfd = 0;
+  uint8_t tbuf[4] = {0};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int retry= 0;
+  int board_type_index = 0;
+  bool board_rev_is_invalid = false;
 
   switch (intf) {
     case BB_BIC_INTF:
-        return (signed_byte == BICBB)?0:-1;
+        // Read Board Revision from BB CPLD
+        tbuf[0] = CPLD_BB_BUS;
+        tbuf[1] = CPLD_FLAG_REG_ADDR;
+        tbuf[2] = 0x01;
+        tbuf[3] = BB_CPLD_BOARD_REV_ID_REGISTER;
+        tlen = 4;
+        retry = 0;
+        while (retry < RETRY_TIME) {
+          ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+          if ( ret < 0 ) {
+            retry++;
+            msleep(100);
+          } else {
+            break;
+          }
+        }
+        if (retry == RETRY_TIME) {
+          syslog(LOG_WARNING, "%s() Failed to get board revision via BB CPLD, tlen=%d", __func__, tlen);
+          goto error_exit;
+        }
+
+        board_type_index = rbuf[0] - 1;
+        if (board_type_index < 0) {
+          board_type_index = 0;
+        }
+
+        // PVT & MP firmware could be used in common
+        if (board_type_index < CPLD_BOARD_PVT_REV) {
+          if (REVISION_ID(signed_byte) != board_type_index) {
+            board_rev_is_invalid = true;
+          }
+        } else {
+          if (REVISION_ID(signed_byte) < CPLD_BOARD_PVT_REV) {
+            board_rev_is_invalid = true;
+          }
+        }
+
+        if (board_rev_is_invalid) {
+          printf("To prevent this update on slot%d , please use the f/w of %s on the %s system\n",
+                  slot_id, board_stage[board_type_index], board_stage[board_type_index]);
+          printf("To force the update, please use the --force option.\n");
+        }
+
+        return ((COMPONENT_ID(signed_byte) == BICBB) && !board_rev_is_invalid)?0:-1;
       break;
     case NONE_INTF:
-        return (signed_byte == BICDL)?0:-1;
+        // Read Board Revision from SB CPLD
+        i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+        if ( i2cfd < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
+          goto error_exit;
+        }
+
+        tbuf[0] = SB_CPLD_BOARD_REV_ID_REGISTER;
+        tlen = 1;
+        rlen = 1;
+        retry = 0;
+        while (retry < RETRY_TIME) {
+          ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+          if ( ret < 0 ) {
+            retry++;
+            msleep(100);
+          } else {
+            break;
+          }
+        }
+        if (retry == RETRY_TIME) {
+          syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+          goto error_exit;
+        }
+
+        // PVT & MP firmware could be used in common
+        if (board_type_index < CPLD_BOARD_PVT_REV) {
+          if (REVISION_ID(signed_byte) != board_type_index) {
+            board_rev_is_invalid = true;
+          }
+        } else {
+          if (REVISION_ID(signed_byte) < CPLD_BOARD_PVT_REV) {
+            board_rev_is_invalid = true;
+          }
+        }
+
+        if (board_rev_is_invalid) {
+          printf("To prevent this update on slot%d , please use the f/w of %s on the %s system\n",
+                  slot_id, board_stage[board_type_index], board_stage[board_type_index]);
+          printf("To force the update, please use the --force option.\n");
+        }
+
+        return ((COMPONENT_ID(signed_byte) == BICDL) && !board_rev_is_invalid)?0:-1;
       break;
   }
 
+error_exit:
   return ret;
 }
 
@@ -542,7 +636,7 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
       if ( rpd_filesize == MAX10_RPD_SIZE ) {
         printf("The image is the unsigned CPLD image!\n");
       } else if ( (MAX10_RPD_SIZE + 1) == rpd_filesize ) {
-        ret = is_valid_cpld_image((rpd_file[MAX10_RPD_SIZE]&0xf), intf);
+        ret = is_valid_cpld_image(slot_id, rpd_file[MAX10_RPD_SIZE] & 0xff, intf);
         if ( ret < 0 ) {
           printf("The image is not the valid CPLD image for this component.\n");
         } else {

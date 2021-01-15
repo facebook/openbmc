@@ -43,9 +43,6 @@ extern "C" {
 
 #define MAX_READ_RETRY 5
 #define CPLD_INTENT_CTRL_ADDR 0x70
-#define NIC_CPLD_BUS 9
-#define BB_CPLD_BUS 12
-#define SLOT_BUS_BASE 3
 
 #define NIC_CARD_PERST_CTRL 0x16
 

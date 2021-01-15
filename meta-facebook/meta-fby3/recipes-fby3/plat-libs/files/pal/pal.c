@@ -148,6 +148,16 @@ struct pal_key_cfg {
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
 
+MAPTOSTRING root_port_common_mapping[] = {
+    // NIC
+    { 0xB2, 0, 0x4A, "Class 2", "NIC"}, // Class 2 NIC
+    { 0x63, 3, 0x2D, "Class 1", "NIC"}, // Class 1 NIC
+
+    // DL
+    { 0x63, 2, 0x2C, "Num 0", "SB" },   // PVT switch Num 1 to 0
+    { 0x00, 0x1D, 0xFF, "Num 1", "SB"}, // PVT -> Remove
+};
+
 MAPTOSTRING root_port_mapping[] = {
     { 0xB2, 3, 0x3D, "Num 0", "1OU"}, //Port 0x4D
     { 0xB2, 2, 0x3C, "Num 1", "1OU"}, //Port 0x4C
@@ -159,12 +169,24 @@ MAPTOSTRING root_port_mapping[] = {
     { 0x63, 0, 0x2A, "Num 3", "2OU"}, //Port 0x2A
     { 0x15, 2, 0x1C, "Num 4", "2OU"}, //Port 0x1C
     { 0x15, 3, 0x1D, "Num 5", "2OU"}, //Port 0x1D
-    // NIC
-    { 0xB2, 0, 0x4A, "Class 2", "NIC"}, // Class 2 NIC    TODO check root port
-    { 0x63, 3, 0x2D, "Class 1", "NIC"}, // Class 1 NIC
-    // DL
-    { 0x63, 2, 0x2C, "Num 0", "SB" },   // PVT switch Num 1 to 0
-    { 0x00, 0x1D, 0xFF, "Num 1", "SB"}, // PVT -> Remove
+};
+
+MAPTOSTRING root_port_mapping_gpv3[] = {
+    // bus, device, port, silk screen, location
+    { 0x17, 0, 0x01, "Num 0", "2OU"},
+    { 0x17, 1, 0x02, "Num 1", "2OU"},
+    { 0x17, 2, 0x03, "Num 2", "2OU"},
+    { 0x17, 3, 0x04, "Num 3", "2OU"},
+    { 0x17, 4, 0x05, "Num 4", "2OU"},
+    { 0x17, 5, 0x06, "Num 5", "2OU"},
+    { 0x17, 6, 0x07, "Num 6", "2OU"},
+    { 0x17, 7, 0x08, "Num 7", "2OU"},
+    { 0x65, 0, 0x09, "Num 8", "2OU"},
+    { 0x65, 1, 0x0A, "Num 9", "2OU"},
+    { 0x65, 2, 0x0B, "Num 10", "2OU"},
+    { 0x65, 3, 0x0C, "Num 11", "2OU"},
+    { 0x17, 8, 0x0D, "E1S 0", "2OU"},
+    { 0x65, 4, 0x0E, "E1S 1", "2OU"},
 };
 
 MAPTOSTRING root_port_mapping_e1s[] = {
@@ -179,12 +201,6 @@ MAPTOSTRING root_port_mapping_e1s[] = {
     { 0x15, 2, 0x1C, "Num 3", "2OU"},
     { 0x15, 1, 0x1B, "Num 4", "2OU"},
     { 0x15, 0, 0x1A, "Num 5", "2OU"},
-    // NIC
-    { 0xB2, 0, 0x4A, "Class 2", "NIC"}, // Class 2 NIC    TODO check root port
-    { 0x63, 3, 0x2D, "Class 1", "NIC"}, // Class 1 NIC
-    // DL
-    { 0x63, 2, 0x2C, "Num 1", "SB" },
-    { 0x00, 0x1D, 0xFF, "Num 0", "SB"},
 };
 
 PCIE_ERR_DECODE pcie_err_tab[] = {
@@ -1491,7 +1507,8 @@ pal_parse_vr_event(uint8_t fru, uint8_t *event_data, char *error_log) {
 
 static void
 pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **tbl, uint8_t *cnt) {
-  uint8_t board_type = M2_BOARD;
+  uint8_t board_1u = M2_BOARD;
+  uint8_t board_2u = M2_BOARD;
   uint8_t config_status = CONFIG_UNKNOWN;
   int ret = 0;
 
@@ -1508,15 +1525,20 @@ pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **
       break;
     } else config_status = (uint8_t)ret;
 
+    // For Config C and D, there are EDSFF_1U, E1S_BOARD and GPv3 architecture
+    // BMC should select the corresponding table.
+    // For Config B and A, root_port_mapping should be selected.
     // only check it when 1OU is present
     if ( *bmc_location != NIC_BMC && ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
-      ret = bic_get_1ou_type(fru, &board_type);
+      ret = bic_get_1ou_type(fru, &board_1u);
       if (ret < 0) {
         syslog(LOG_ERR, "%s() Cannot get 1ou_board_type\n", __func__);
         break;
       }
-    } else if ( ((config_status & PRESENT_2OU) == PRESENT_2OU) ) {
-      ret = fby3_common_get_2ou_board_type(fru, &board_type);
+    }
+    // only check it when 2OU is present
+    if ( ((config_status & PRESENT_2OU) == PRESENT_2OU) ) {
+      ret = fby3_common_get_2ou_board_type(fru, &board_2u);
       if (ret < 0) {
         syslog(LOG_ERR, "%s() Cannot get 2ou_board_type\n", __func__);
         break;
@@ -1526,17 +1548,87 @@ pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **
 
   if ( ret < 0 ) {
     syslog(LOG_ERR, "%s() Use the default root_port_mapping\n", __func__);
-    board_type = M2_BOARD; //make sure the default is used
+    board_1u = M2_BOARD; //make sure the default is used
+    board_2u = M2_BOARD;
   }
 
-  if (board_type == EDSFF_1U || board_type == E1S_BOARD) {
+  if ( board_1u == EDSFF_1U || board_2u == E1S_BOARD ) {
     // case 1/2OU E1S
     *tbl = root_port_mapping_e1s;
     *cnt = sizeof(root_port_mapping_e1s)/sizeof(MAPTOSTRING);
+  } else if ( (board_2u == GPV3_MCHP_BOARD || board_2u == GPV3_BRCM_BOARD) && \
+              (*bmc_location == NIC_BMC) ) {
+    *tbl = root_port_mapping_gpv3;
+    *cnt = sizeof(root_port_mapping_gpv3)/sizeof(MAPTOSTRING);
   } else {
     *tbl = root_port_mapping;
     *cnt = sizeof(root_port_mapping)/sizeof(MAPTOSTRING);
   }
+  return;
+}
+
+static void
+pal_search_pcie_err(uint8_t err1_id, uint8_t err2_id, char **err1_desc, char **err2_desc) {
+  int i = 0;
+  int size = (sizeof(pcie_err_tab)/sizeof(PCIE_ERR_DECODE));
+
+  for ( i = 0; i < size; i++ ) {
+    if ( err2_id == pcie_err_tab[i].err_id ) {
+      *err2_desc = pcie_err_tab[i].err_descr;
+      continue;
+    } else if ( err1_id == pcie_err_tab[i].err_id ) {
+      *err1_desc = pcie_err_tab[i].err_descr;
+      continue;
+    }
+
+    if ( strcmp(*err1_desc,"NA") && strcmp(*err2_desc,"NA") ) {
+      break;
+    }
+  }
+  return;
+}
+
+static bool
+pal_search_pcie_dev(MAPTOSTRING *tbl, int size, uint8_t bmc_location, uint8_t dev, uint8_t bus, char **sil, char **location) {
+  int i = 0;
+  for ( i = 0; i < size; i++ ) {
+    // check bus and dev are match
+    if ( (bus == tbl[i].bus_value) && \
+         (dev == tbl[i].dev_value) ) {
+      *location = tbl[i].location;
+      // 1OU is not expected on class 2, skip
+      if ( !strcmp(*location, "1OU") && bmc_location == NIC_BMC ) {
+        continue;
+      }
+      *sil = tbl[i].silk_screen;
+      return true;
+    }
+  }
+  return false;
+}
+
+static void
+pal_get_pcie_err_string(uint8_t fru, uint8_t *pdata, char **sil, char **location, char **err1_str, char **err2_str) {
+  uint8_t bmc_location = 0;
+  uint8_t dev = pdata[0] >> 3;
+  uint8_t bus = pdata[1];
+  uint8_t err1_id = pdata[5];
+  uint8_t err2_id = pdata[4];
+  uint8_t size = 0;
+  MAPTOSTRING *mapping_table = NULL;
+
+  // get the table first
+  pal_sel_root_port_mapping_tbl(fru, &bmc_location, &mapping_table, &size);
+
+  // search for the device table first
+  if ( pal_search_pcie_dev(mapping_table, size, bmc_location, dev, bus, sil, location) == false ) {
+    // if dev is not found in the device table, search for the common table
+    size = sizeof(root_port_common_mapping)/sizeof(MAPTOSTRING);
+    pal_search_pcie_dev(root_port_common_mapping, size, bmc_location, dev, bus, sil, location);
+  }
+
+  // parse err
+  pal_search_pcie_err(err1_id, err2_id, err1_str, err2_str);
   return;
 }
 
@@ -1824,45 +1916,18 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   uint8_t general_info = (uint8_t) sel[3];
   uint8_t error_type = general_info & 0x0f;
   uint8_t plat = 0;
-  uint8_t port_cnt = 0;
   char temp_log[128] = {0};
   error_log[0] = '\0';
-  int index = 0;
   char *sil = "NA";
   char *location = "NA";
   char *err1_descript = "NA", *err2_descript = "NA";
-  uint8_t bmc_location = 0;
-  MAPTOSTRING *mapping_table = NULL;
 
   switch (error_type) {
     case UNIFIED_PCIE_ERR:
-      pal_sel_root_port_mapping_tbl(fru, &bmc_location, &mapping_table, &port_cnt);
       plat = (general_info & 0x10) >> 4;
       if (plat == 0) {  //x86
-        for (index = 0; index < port_cnt; index++) {
-          if ((sel[11] == mapping_table[index].bus_value) && ((sel[10] >> 3) == mapping_table[index].dev_value)) {
-            location = mapping_table[index].location;
-            sil = mapping_table[index].silk_screen;
-            if (!strcmp(location, "1OU") && bmc_location == NIC_BMC ) {
-                continue;
-            }
-            break;
-          }
-        }
+        pal_get_pcie_err_string(fru, &sel[10], &sil, &location, &err1_descript, &err2_descript);
 
-        for (index = 0; index < (sizeof(pcie_err_tab)/sizeof(PCIE_ERR_DECODE)); index++) {
-          if (sel[14] == pcie_err_tab[index].err_id) {
-            err2_descript = pcie_err_tab[index].err_descr;
-            continue;
-          } else if (sel[15] == pcie_err_tab[index].err_id) {
-            err1_descript = pcie_err_tab[index].err_descr;
-            continue;
-          }
-
-          if ( strcmp(err1_descript,"NA") && strcmp(err2_descript,"NA") ) {
-            break;
-          }
-        }
         snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: x86/PCIeErr(0x%02X), Bus %02X/Dev %02X/Fun %02X, %s/%s,"
                             "TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X(%s), ErrID1: 0x%02X(%s)",
                 general_info, sel[11], sel[10] >> 3, sel[10] & 0x7, location, sil, ((sel[13]<<8)|sel[12]), sel[14], err2_descript, sel[15], err1_descript);

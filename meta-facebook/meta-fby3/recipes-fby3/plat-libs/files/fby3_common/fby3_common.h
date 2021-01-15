@@ -158,6 +158,7 @@ enum {
   E1S_BOARD = 0x02,
   GPV3_MCHP_BOARD = 0x03,
   GPV3_BRCM_BOARD = 0x00,
+  DP_RISER_BOARD = 0x06,
   UNKNOWN_BOARD = 0xff,
 };
 

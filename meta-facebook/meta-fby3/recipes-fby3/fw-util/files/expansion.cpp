@@ -10,6 +10,7 @@ using namespace std;
 
 void ExpansionBoard::ready()
 {
+  uint8_t type_2ou = 0xff;
   uint8_t config_status = 0;
   bool is_present = true;
   int ret = 0;
@@ -44,7 +45,10 @@ void ExpansionBoard::ready()
     case FW_2OU_BIC:
     case FW_2OU_BIC_BOOTLOADER:
     case FW_2OU_CPLD:
-      if ( (config_status & PRESENT_2OU) != PRESENT_2OU )
+      if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {
+        throw string("Failed to get 2OU board type");
+      }
+      if ( (config_status & PRESENT_2OU) != PRESENT_2OU || type_2ou == DP_RISER_BOARD)
         is_present = false;
       break;
     case FW_2OU_PESW:

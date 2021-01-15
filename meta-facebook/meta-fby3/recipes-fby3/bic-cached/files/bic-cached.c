@@ -45,7 +45,7 @@
 #define MAX_RETRY_CNT 1500    // A senond can run about 50 times, 30 secs = 30 * 50
 
 int
-remote_fruid_cache_init(uint8_t slot_id, uint8_t intf) {
+remote_fruid_cache_init(uint8_t slot_id, uint8_t fru_id, uint8_t intf) {
   int ret=0;
   int fru_size=0;
   char fruid_temp_path[64] = {0};
@@ -60,13 +60,17 @@ remote_fruid_cache_init(uint8_t slot_id, uint8_t intf) {
     sprintf(fruid_path, "/tmp/fruid_slot%d.%d.bin", slot_id, intf);
   }
 
-  ret = bic_read_fruid(slot_id, 0, fruid_temp_path, &fru_size, intf);
+  ret = bic_read_fruid(slot_id, fru_id, fruid_temp_path, &fru_size, intf);
   if (ret) {
     syslog(LOG_WARNING, "%s(): slot%d returns %d, fru_size: %d\n", __func__, slot_id, ret, fru_size);
   }
 
   if (intf == BB_BIC_INTF) {
     sprintf(fruid_path, FRU_BB_BIN);
+  }
+
+  if (intf == NONE_INTF && fru_id == 1) {
+    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_2OU);
   }
 
   rename(fruid_temp_path, fruid_path);
@@ -81,6 +85,7 @@ fruid_cache_init(uint8_t slot_id) {
   char fruid_temp_path[64] = {0};
   char fruid_path[64] = {0};
   uint8_t bmc_location = 0;
+  uint8_t type_2ou = UNKNOWN_BOARD;
 
   sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.bin", slot_id);
   sprintf(fruid_path, "/tmp/fruid_slot%d.bin", slot_id);
@@ -96,20 +101,27 @@ fruid_cache_init(uint8_t slot_id) {
   present = bic_is_m2_exp_prsnt(slot_id);
   fby3_common_get_bmc_location(&bmc_location);
   if (bmc_location == NIC_BMC) { //NIC BMC
-    remote_f_ret = remote_fruid_cache_init(slot_id, BB_BIC_INTF);
+    remote_f_ret = remote_fruid_cache_init(slot_id, 0, BB_BIC_INTF);
     if (PRESENT_2OU == (PRESENT_2OU & present)) {
       // dump 2ou board fru
-      remote_r_ret = remote_fruid_cache_init(slot_id, REXP_BIC_INTF);
+      remote_r_ret = remote_fruid_cache_init(slot_id, 0, REXP_BIC_INTF);
     }
     return (remote_f_ret + remote_r_ret);
   } else { // Baseboard BMC
     if (PRESENT_1OU == (PRESENT_1OU & present)) {
       // dump 1ou board fru
-      remote_f_ret = remote_fruid_cache_init(slot_id, FEXP_BIC_INTF);
+      remote_f_ret = remote_fruid_cache_init(slot_id, 0, FEXP_BIC_INTF);
     }
     if (PRESENT_2OU == (PRESENT_2OU & present)) {
-      // dump 2ou board fru
-      remote_r_ret = remote_fruid_cache_init(slot_id, REXP_BIC_INTF);
+      if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
+      }
+      if (type_2ou == DP_RISER_BOARD) {
+        // read riser board fru form sb_bic, fruid = 1
+        remote_r_ret = remote_fruid_cache_init(slot_id, 1, NONE_INTF);
+      } else {
+        remote_r_ret = remote_fruid_cache_init(slot_id, 0, REXP_BIC_INTF);
+      }
     }
     return (remote_f_ret + remote_r_ret);
   }
@@ -234,6 +246,7 @@ sdr_cache_init(uint8_t slot_id) {
   char sdr_path[64] = {0};
   ssize_t bytes_wr;
   uint8_t bmc_location = 0;
+  uint8_t type_2ou = UNKNOWN_BOARD;
 
   sprintf(sdr_temp_path, "/tmp/tsdr_slot%d.bin", slot_id);
   sprintf(sdr_path, "/tmp/sdr_slot%d.bin", slot_id);
@@ -310,13 +323,16 @@ sdr_cache_init(uint8_t slot_id) {
       remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
     }
   } else {
-    if (present == 1) {
+    if (PRESENT_1OU == (PRESENT_1OU & present)) {
       remote_f_ret = remote_sdr_cache_init(slot_id, FEXP_BIC_INTF);
-    } else if (present == 2) {
-      remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
-    } else if (present == 3) {
-      remote_f_ret = remote_sdr_cache_init(slot_id, FEXP_BIC_INTF);
-      remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
+    }
+    if (PRESENT_2OU == (PRESENT_2OU & present)) {
+      if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
+      }
+      if (type_2ou != DP_RISER_BOARD) {
+        remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
+      }
     }
   }
 

@@ -268,6 +268,16 @@ enum {
   FM_PEHPCPU_INT,
 };
 
+enum {
+  DP_RETIMER_X4 = 0x00,
+  DP_RETIMER_X8 = 0x01,
+  DP_RETIMER_X16 = 0x04,
+  DP_PCIE_X4 = 0x0e,
+  DP_PCIE_X8 = 0x0d,
+  DP_PCIE_X16 = 0x0b,
+  DP_PCIE_UNKNOW = 0xff,
+};
+
 int active_config(struct libusb_device *dev,struct libusb_device_handle *handle);
 int bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio, uint8_t intf);
 int bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt);

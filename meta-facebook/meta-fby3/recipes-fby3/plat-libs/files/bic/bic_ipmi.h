@@ -97,6 +97,7 @@ int bic_inform_sled_cycle(void);
 int bic_enable_ssd_sensor_monitor(uint8_t slot_id, bool enable, uint8_t intf);
 uint8_t get_gpv3_bus_number(uint8_t dev_id);
 int bic_notify_fan_mode(int mode);
+int bic_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config);
 #ifdef __cplusplus
 } // extern "C"
 #endif

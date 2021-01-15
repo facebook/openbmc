@@ -78,6 +78,14 @@ function init_vishay_ic(){
 function check_class1_config() {
   local slot=$1
   local val=$2
+  local i2c_num=$(get_cpld_bus ${slot:4:1})
+  local type_2ou=$(get_2ou_board_type $i2c_num)
+
+  if [[ $((val & 0x08)) = "0" && $type_2ou == "0x06" ]]; then
+    # waive 2OU present if 2OU type is dp riser card (0x06)
+    val=$((val | 0x08))
+  fi
+
   if [ $val = 0 ]; then
     echo "2OU:" >> $LOG
     init_vishay_ic $slot $REXP_INTF 

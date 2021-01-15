@@ -1759,3 +1759,26 @@ bic_inform_sled_cycle(void) {
 
   return 0;
 }
+
+// For Discovery Point, get pcie config
+int
+bic_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
+  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
+  uint8_t rbuf[4] = {0x00};
+  uint8_t tlen = 3;
+  uint8_t rlen = 0;
+  int ret = 0;
+  int retry = 0;
+
+  while (retry < 3) {
+    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_PCIE_CONFIG, tbuf, tlen, rbuf, &rlen);
+    if (ret == 0) break;
+    retry++;
+  }
+  if (ret != 0) {
+    return -1;
+  }
+
+  (*pcie_config) = rbuf[3];
+  return 0;
+}

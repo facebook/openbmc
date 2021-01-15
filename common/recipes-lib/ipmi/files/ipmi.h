@@ -527,6 +527,8 @@ enum
   CMD_OEM_1S_GET_PCIE_SWITCH_STATUS = 0x38,
   CMD_OEM_1S_GET_SYS_FW_VER = 0x40,
   CMD_OEM_1S_GET_SHA256 = 0x43,
+
+  CMD_OEM_1S_GET_PCIE_CONFIG = 0x67,
 };
 
 // OEM Command Codes for USB basded Debug Card

@@ -1221,6 +1221,36 @@ pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
   return CC_SUCCESS;
 }
 
+static int pal_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
+  uint8_t dp_pcie_conf;
+  if (bic_get_dp_pcie_config(slot_id, &dp_pcie_conf)) {
+    syslog(LOG_ERR, "%s() Cannot get DP PCIE configuration\n", __func__);
+    return -1;
+  }
+
+  syslog(LOG_INFO, "%s() DP PCIE config: %u\n", __func__, dp_pcie_conf);
+
+  switch(dp_pcie_conf) {
+    case DP_RETIMER_X16:
+    case DP_PCIE_X16:
+      (*pcie_config) = CONFIG_D_DP_X16;
+      break;
+    case DP_RETIMER_X8:
+    case DP_PCIE_X8:
+      (*pcie_config) = CONFIG_D_DP_X8;
+      break;
+    case DP_RETIMER_X4:
+    case DP_PCIE_X4:
+      (*pcie_config) = CONFIG_D_DP_X4;
+      break;
+    default:
+      syslog(LOG_ERR, "%s() Unable to get correct DP PCIE configuration\n", __func__);
+      return -1;
+  }
+
+  return 0;
+}
+
 int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   uint8_t pcie_conf = 0xff;
   uint8_t *data = res_data;
@@ -1245,6 +1275,12 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
     if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
       pcie_conf = CONFIG_D_GPV3;
+    } else if (type_2ou == DP_RISER_BOARD) {
+      if (pal_get_dp_pcie_config(slot, &pcie_conf)) {
+        // Unable to get correct DP PCIE configuration
+        pcie_conf = CONFIG_UNKNOWN;
+      }
+      syslog(LOG_INFO, "%s() pcie_conf = %u\n", __func__, pcie_conf);
     } else if (config_status == 0) {
       pcie_conf = CONFIG_A;
     } else if (config_status == 1) {
@@ -3087,6 +3123,7 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
   uint8_t config_status = CONFIG_UNKNOWN ;
   int ret = PAL_ENOTSUP;
   uint8_t tmp_cpld_swap[4] = {0};
+  uint8_t type_2ou = UNKNOWN_BOARD;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
@@ -3138,7 +3175,12 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
     case FW_2OU_BIC_BOOTLOADER:
     case FW_2OU_CPLD:
       config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
+      if ( fby3_common_get_2ou_board_type(fru, &type_2ou) < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
+      }
       if (!((config_status & PRESENT_2OU) == PRESENT_2OU)) {
+        goto not_support;
+      } else if (type_2ou == DP_RISER_BOARD) {
         goto not_support;
       }
       break;

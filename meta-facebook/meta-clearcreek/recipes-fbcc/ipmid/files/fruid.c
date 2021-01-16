@@ -32,10 +32,11 @@
 #include <string.h>
 #include <stdint.h>
 #include <sys/stat.h>
-#include "fruid.h"
+#include <openbmc/fruid.h>
 #include <openbmc/pal.h>
 
 #define FRUID_SIZE        512
+#define MAX_RELOAD_FRU 3
 
 #define MB_BIN "/tmp/fruid_mb.bin"
 #define MB_EEPROM "/sys/class/i2c-dev/i2c-6/device/6-0054/eeprom"
@@ -69,8 +70,10 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
   int bin;
   uint64_t tmp[FRUID_SIZE];
   ssize_t bytes_rd, bytes_wr;
+  int reload = 0;
 
   errno = 0;
+  fruid_info_t fruid;
 
   eeprom = open(eeprom_file, O_RDONLY);
   if (eeprom == -1) {
@@ -86,22 +89,25 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
     goto err;
   }
 
-  bytes_rd = read(eeprom, tmp, FRUID_SIZE);
-  if (bytes_rd < 0) {
-    syslog(LOG_ERR, "%s: read %s file failed: %s",
-	__func__, eeprom_file, strerror(errno));
-    goto exit;
-  } else if (bytes_rd < FRUID_SIZE) {
-    syslog(LOG_ERR, "%s: less than %d bytes", __func__, FRUID_SIZE);
-    goto exit;
-  }
-
-  bytes_wr = write(bin, tmp, bytes_rd);
-  if (bytes_wr != bytes_rd) {
-    syslog(LOG_ERR, "%s: write to %s file failed: %s",
-	__func__, bin_file, strerror(errno));
-    goto exit;
-  }
+  do {
+    bytes_rd = read(eeprom, tmp, FRUID_SIZE);
+    if (bytes_rd < 0) {
+      syslog(LOG_ERR, "%s: read %s file failed: %s",
+    __func__, eeprom_file, strerror(errno));
+      goto exit;
+    } else if (bytes_rd < FRUID_SIZE) {
+      syslog(LOG_ERR, "%s: less than %d bytes", __func__, FRUID_SIZE);
+      goto exit;
+    }
+    
+    bytes_wr = write(bin, tmp, bytes_rd);
+    if (bytes_wr != bytes_rd) {
+      syslog(LOG_ERR, "%s: write to %s file failed: %s",
+    __func__, bin_file, strerror(errno));
+      goto exit;
+    }
+    reload++;
+  } while(fruid_parse(bin_file, &fruid) && reload <= MAX_RELOAD_FRU);
 
 exit:
   close(bin);

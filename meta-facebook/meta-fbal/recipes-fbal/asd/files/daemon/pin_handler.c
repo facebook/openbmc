@@ -61,6 +61,7 @@ void write_pin_value(uint8_t fru, Target_Control_GPIO gpio, int value, STATUS* r
   switch (gpio.fd) {
     case BMC_PREQ_N:
     case BMC_PWR_DEBUG_N:
+    case RESET_BTN:
       val = (value) ? GPIO_VALUE_LOW : GPIO_VALUE_HIGH;
       break;
     default:
@@ -429,6 +430,12 @@ STATUS pin_hndlr_init_target_gpios_attr(Target_Control_Handle *state) {
                 sizeof("DBP_PRESENT_N"));
     state->gpios[BMC_XDP_PRST_IN].number = 1;
     state->gpios[BMC_XDP_PRST_IN].fd = BMC_XDP_PRST_IN;
+
+    strcpy_safe(state->gpios[RESET_BTN].name,
+                sizeof(state->gpios[RESET_BTN].name), "RST_BMC_RSTBTN_OUT_R_N",
+                sizeof("RST_BMC_RSTBTN_OUT_R_N"));
+    state->gpios[RESET_BTN].number = 1;
+    state->gpios[RESET_BTN].fd = RESET_BTN;
 
     state->gpios[BMC_CPU_PWRGD].handler =
         (TargetHandlerEventFunctionPtr)on_power_event;

@@ -160,16 +160,16 @@ static void populate_fruid(unsigned char id)
     memset(&frupsu, 0, sizeof(fruid_info_t));
 
     sprintf(eeprom,"24c02");
-    pal_add_i2c_device(fruid->bus,fruid->addr,eeprom);
+    i2c_add_device(fruid->bus,fruid->addr,eeprom);
     rc = fruid_parse(filename, &frupsu);
-    pal_del_i2c_device(fruid->bus,fruid->addr);
+    i2c_delete_device(fruid->bus,fruid->addr);
 
     if (rc)
     {
       sprintf(eeprom,"24c64");
-      pal_add_i2c_device(fruid->bus,fruid->addr,eeprom);
+      i2c_add_device(fruid->bus,fruid->addr,eeprom);
       rc = fruid_parse(filename, &frupsu);
-      pal_del_i2c_device(fruid->bus,fruid->addr);
+      i2c_delete_device(fruid->bus,fruid->addr);
       if (rc) {
         OBMC_WARN(
               "populate_fruid: wedge_eeprom_parse fruid_parse fail %d returns %d\n",

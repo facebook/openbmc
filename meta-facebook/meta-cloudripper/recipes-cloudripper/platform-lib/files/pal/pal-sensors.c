@@ -545,24 +545,6 @@ static int get_current_dir(const char *device, char *dir_name) {
   return 0;
 }
 
-static int read_attr_integer(const char *device, const char *attr, int *value) {
-  char full_name[LARGEST_DEVICE_NAME * 2];
-  char dir_name[LARGEST_DEVICE_NAME + 1];
-
-  // Get current working directory
-  if (get_current_dir(device, dir_name)) {
-    return -1;
-  }
-
-  snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, attr);
-
-  if (device_read(full_name, value)) {
-    return -1;
-  }
-
-  return 0;
-}
-
 static int read_attr(const char *device, const char *attr, float *value) {
   char full_name[LARGEST_DEVICE_NAME * 2];
   char dir_name[LARGEST_DEVICE_NAME + 1];
@@ -1012,20 +994,10 @@ static int scm_sensor_read(uint8_t sensor_num, float *value) {
   return ret;
 }
 
-static int cor_gb_volt(uint8_t board_type) {
-  /*
-   * Currently, skip to set vdd core with sysfs nodes because sysfs node exposed
-   * has no write permission. Laterly we will fix this.
-   */
-  return 0;
-}
-
 static int smb_sensor_read(uint8_t sensor_num, float *value) {
-  int ret = -1, th3_ret = -1;
-  static uint8_t bootup_check = 0;
+  int ret = -1;
   char path[32];
   int num = 0;
-  float total = 0;
   float read_val = 0;
 
   switch (sensor_num) {
@@ -3023,6 +2995,8 @@ int pal_sensor_thresh_init(void) {
   for (uint8_t fru = FRU_SCM; fru <= MAX_NUM_FRUS; fru++) {
     sensor_thresh_array_init(fru);
   }
+
+  return 0;
 }
 
 int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num,

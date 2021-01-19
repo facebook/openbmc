@@ -235,7 +235,7 @@ int pal_get_platform_name(char *name) {
 }
 
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
-  int val,ext_prsnt;
+  int val;
   char tmp[LARGEST_DEVICE_NAME];
   char path[LARGEST_DEVICE_NAME + 1];
   *status = 0;

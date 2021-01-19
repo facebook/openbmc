@@ -272,7 +272,6 @@ bool is_server_on(void) {
 int pal_set_gb_power(int option) {
   char path[256];
   int ret;
-  uint8_t brd_type;
   char sysfs[128];
 
   sprintf(sysfs, GB_POWER);

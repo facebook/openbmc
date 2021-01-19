@@ -2035,6 +2035,16 @@ pal_get_target_bmc_addr(uint8_t *tar_bmc_addr) {
   return 0;
 }
 
+int
+pal_get_sensor_util_timeout(uint8_t fru) {
+
+  if ( fru == FRU_MB ) {
+    return 10;
+  } else {
+    return 4;
+  }
+}
+
 void __attribute__((constructor))
 update_local_fruid(void) {
   if (!pal_get_config_is_master()) {

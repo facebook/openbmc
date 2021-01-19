@@ -2130,12 +2130,12 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
   static time_t rst_time = 0;
   uint8_t postcodes[256] = {0};
   struct stat file_stat;
-  int ret = READING_NA, rc;
+  int rc;
   size_t len = 0;
   char sensor_name[32] = {0};
   char error[32] = {0};
 
-  if (fru_id != FRU_TRAY0_MB) {
+  if (fru_id != FRU_MB) {
     syslog(LOG_ERR, "Not Supported Operation for fru %d", fru_id);
     return READING_NA;
   }
@@ -2181,9 +2181,7 @@ check_frb3(uint8_t fru_id, uint8_t sensor_num, float *value) {
   }
 
   *value = (float)frb3_fail;
-  ret = 0;
-
-  return ret;
+  return 0;
 }
 
 static
@@ -2194,10 +2192,6 @@ int read_frb3(uint8_t fru_id, float *value) {
   syslog(LOG_INFO, "%s\n", __func__);
 #endif
   ret = check_frb3(fru_id, MB_SNR_PROCESSOR_FAIL, value);
-  if(ret != 0 ) {
-    return ret;
-  }
-
   return ret;
 }
 
@@ -2224,11 +2218,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         ret = READING_NA;
       }
     } else {
-      if ( check_pwron_time(1) ) {
-        ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
-      } else {
-        ret = READING_NA;
-      }
+      ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
     }
 
     if ( ret == 0 ) {

@@ -68,7 +68,16 @@ sync_date()
       fi
       usleep 300
     done
-    date -s @$((16#$(echo "$output" | awk '{print $4$3$2$1}')))
+
+    sys_date=$(date +%s)
+    set_date=$((16#$(echo "$output" | awk '{print $4$3$2$1}')))
+
+    if [ $sys_date -ge $set_date ]; then
+      echo "Use BMC date"
+      let set_date=$sys_date
+    fi
+
+    date -s @$set_date
     test -x /etc/init.d/hwclock.sh && /etc/init.d/hwclock.sh stop
   fi
 }

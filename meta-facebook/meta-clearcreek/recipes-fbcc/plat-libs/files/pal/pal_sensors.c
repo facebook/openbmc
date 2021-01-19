@@ -1444,6 +1444,13 @@ static int sensors_read_vr(uint8_t sensor_num, float *value)
 {
   int ret = 0;
 
+  if (pal_is_fw_update_ongoing(FRU_MB)) {
+#ifdef DEBUG
+    syslog(LOG_DEBUG,"%s, Skip reading VR sensor when FW update", __func__);
+#endif
+    return READING_SKIP;
+  }
+
   switch (sensor_num) {
     case MB_VR_P0V8_VDD0_TEMP:
       ret = sensors_read("mpq8645p-i2c-5-30", "VR_P0V8_VDD0_TEMP", value);

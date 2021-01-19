@@ -47,8 +47,8 @@ get_bcm_fw_version(uint8_t *buf) {
 }
 
 static const nic_info_st support_nic_list[] = {
-  {"Mellanox", 0x19810000, get_mlx_fw_version},
-  {"Broadcom", 0x3d110000, get_bcm_fw_version},
+  {"Mellanox", MLX_MFG_ID, get_mlx_fw_version},
+  {"Broadcom", BCM_MFG_ID, get_bcm_fw_version},
 };
 static int nic_list_size = sizeof(support_nic_list) / sizeof(nic_info_st);
 

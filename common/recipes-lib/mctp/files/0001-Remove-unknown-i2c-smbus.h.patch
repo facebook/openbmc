@@ -1,0 +1,24 @@
+From dd64eb446b9327477162b1b4e459d338c0c22e06 Mon Sep 17 00:00:00 2001
+From: Howard Chiu <howard.chiu@quantatw.com>
+Date: Wed, 18 Nov 2020 17:27:26 +0800
+Subject: [PATCH 1/2] Remove unknown i2c/smbus.h
+
+---
+ smbus.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/smbus.c b/smbus.c
+index 70bea4e..0388d61 100644
+--- a/smbus.c
++++ b/smbus.c
+@@ -13,7 +13,6 @@
+ 
+ #define pr_fmt(x) "smbus: " x
+ 
+-#include <i2c/smbus.h>
+ #include <linux/i2c-dev.h>
+ #include <linux/i2c.h>
+ #include <sys/ioctl.h>
+-- 
+2.7.4
+

@@ -47,6 +47,14 @@ enum {
   FRU_CARRIER1,
   FRU_CARRIER2,
   FRU_FIO,
+  FRU_NIC0,
+  FRU_NIC1,
+  FRU_NIC2,
+  FRU_NIC3,
+  FRU_NIC4,
+  FRU_NIC5,
+  FRU_NIC6,
+  FRU_NIC7,
   FRU_CNT,
 };
 

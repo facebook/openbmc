@@ -4,6 +4,8 @@
 #include "fw-util.h"
 
 #define NIC_FW_VER_KEY "nic_fw_ver"
+#define MLX_MFG_ID 0x19810000
+#define BCM_MFG_ID 0x3d110000
 
 class NicComponent : public Component {
   protected:

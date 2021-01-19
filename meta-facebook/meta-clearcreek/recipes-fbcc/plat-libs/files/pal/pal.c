@@ -101,7 +101,8 @@ int pal_get_fru_id(char *str, uint8_t *fru)
 {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;
-  } else if (!strcmp(str, "mb") || !strcmp(str, "vr") || !strcmp(str, "bmc")) {
+  } else if (!strcmp(str, "mb") || !strcmp(str, "vr") ||
+             !strcmp(str, "bmc") || !strcmp(str, "nic")) {
     *fru = FRU_MB;
   } else if (!strcmp(str, "bsm")) {
     *fru = FRU_BSM;
@@ -151,21 +152,60 @@ int pal_get_fruid_name(uint8_t fru, char *name)
 
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
 {
-  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM || FRU_CARRIER1 || FRU_CARRIER2 || FRU_FIO)
-    *status = 1;
-  else
-    return -1;
+  int ret = -1;
+  gpio_desc_t *desc = NULL;
+  gpio_value_t value;
 
-  return 0;
+  switch (fru) {
+    case FRU_MB:
+    case FRU_PDB:
+    case FRU_BSM:
+    case FRU_CARRIER1:
+    case FRU_CARRIER2:
+    case FRU_FIO:
+      *status = 1;
+      return 0;
+    case FRU_NIC0:
+      desc = gpio_open_by_shadow("OCP_V3_0_PRSNTB_R_N");
+      break;
+    case FRU_NIC1:
+      desc = gpio_open_by_shadow("OCP_V3_4_PRSNTB_R_N");
+      break;
+    case FRU_NIC2:
+      desc = gpio_open_by_shadow("OCP_V3_1_PRSNTB_R_N");
+      break;
+    case FRU_NIC3:
+      desc = gpio_open_by_shadow("OCP_V3_5_PRSNTB_R_N");
+      break;
+    case FRU_NIC4:
+      desc = gpio_open_by_shadow("OCP_V3_2_PRSNTB_R_N");
+      break;
+    case FRU_NIC5:
+      desc = gpio_open_by_shadow("OCP_V3_6_PRSNTB_R_N");
+      break;
+    case FRU_NIC6:
+      desc = gpio_open_by_shadow("OCP_V3_3_PRSNTB_R_N");
+      break;
+    case FRU_NIC7:
+      desc = gpio_open_by_shadow("OCP_V3_7_PRSNTB_R_N");
+      break;
+    default:
+      return -1;
+  }
+  if (desc == NULL)
+    return -1;
+  if (gpio_get_value(desc, &value) == 0 && value == GPIO_VALUE_LOW) {
+    *status = 1;
+    ret = 0;
+  }
+
+  gpio_close(desc);
+  return ret;
 }
 
 int pal_is_fru_ready(uint8_t fru, uint8_t *status)
 {
-  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BSM || FRU_CARRIER1 || FRU_CARRIER2 || FRU_FIO)
-    *status = 1;
-  else
-    return -1;
-
+  *status = 1;
   return 0;
 }
 
@@ -177,6 +217,22 @@ int pal_get_fru_name(uint8_t fru, char *name)
     strcpy(name, "bsm");
   } else if (fru == FRU_PDB) {
     strcpy(name, "pdb");
+  } else if (fru == FRU_NIC0) {
+    strcpy(name, "nic0");
+  } else if (fru == FRU_NIC1) {
+    strcpy(name, "nic1");
+  } else if (fru == FRU_NIC2) {
+    strcpy(name, "nic2");
+  } else if (fru == FRU_NIC3) {
+    strcpy(name, "nic3");
+  } else if (fru == FRU_NIC4) {
+    strcpy(name, "nic4");
+  } else if (fru == FRU_NIC5) {
+    strcpy(name, "nic5");
+  } else if (fru == FRU_NIC6) {
+    strcpy(name, "nic6");
+  } else if (fru == FRU_NIC7) {
+    strcpy(name, "nic7");
   } else if (fru == FRU_CARRIER1) {
     strcpy(name, "carrier1");
   } else if (fru == FRU_CARRIER2) {
@@ -258,11 +314,10 @@ int pal_get_fru_list(char *list)
 
 int pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id)
 {
-  if (bus_id == 8) {
-    // DBG Card used default slave addr
-    *slave_addr = 0x10;
-  } else {
+  if (bus_id == 0) {
     *slave_addr = BMC_IPMB_SLAVE_ADDR;
+  } else {
+    *slave_addr = 0x10;
   }
 
   return 0;

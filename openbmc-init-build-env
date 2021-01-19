@@ -27,10 +27,10 @@ PLAT_DISTRO_OVERRIDES=(
   meta-grandcanyon:zeus
   meta-cmm:zeus
   meta-elbert:zeus
+  meta-cloudripper:zeus
+  meta-fuji:zeus
 # warrior platforms (pending upgrade)
-  meta-cloudripper:warrior
   meta-wedge400:warrior
-  meta-fuji:warrior
 # Legacy platforms pending kernel upgrade
   meta-fby2-nd:rocko
   meta-fby2-gpv2:rocko

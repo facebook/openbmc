@@ -121,10 +121,36 @@ bail:
   return ret;
 }
 
+int check_server_present(void) {
+  bool ret = false;
+  gpio_value_t value;
+  gpio_desc_t *gpio = gpio_open_by_shadow("MB1_CBL_PRSNT_P1_R1");
+
+  if (!gpio) {
+    return false;
+  }
+
+  if (gpio_get_value(gpio, &value) < 0) {
+    goto bail;
+  }
+
+  if (value == GPIO_VALUE_LOW)
+    ret = true;
+  else
+    printf("Block power change while server is present\n");
+
+bail:
+  gpio_close(gpio);
+  return ret; 
+}
+
 // Power Off, Power On, or Power Cycle
 int pal_set_server_power(uint8_t fru, uint8_t cmd)
 {
   uint8_t status;
+
+  if (!check_server_present())
+    return -2; // make power-util not to retry
 
   if (pal_get_server_power(fru, &status) < 0) {
     return -1;
@@ -159,28 +185,7 @@ int pal_set_server_power(uint8_t fru, uint8_t cmd)
   return 0;
 }
 
-int check_server_present(void) {
-  bool ret = false;
-  gpio_value_t value;
-  gpio_desc_t *gpio = gpio_open_by_shadow("MB1_CBL_PRSNT_P1_R1");
 
-  if (!gpio) {
-    return false;
-  }
-
-  if (gpio_get_value(gpio, &value) < 0) {
-    goto bail;
-  }
-
-  if (value == GPIO_VALUE_LOW)
-    ret = true;
-  else
-    printf("Block power change while server is present\n");
-
-bail:
-  gpio_close(gpio);
-  return ret; 
-}
  
 int pal_force_sled_cycle(void) {
   // Send command to HSC power cycle

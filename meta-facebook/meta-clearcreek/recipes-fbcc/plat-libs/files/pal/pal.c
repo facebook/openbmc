@@ -67,10 +67,8 @@ struct pal_key_cfg {
   {KEY_MB_SNR_HEALTH, "1", NULL},
   {KEY_MB_SEL_ERROR, "1", NULL},
   {KEY_PDB_SNR_HEALTH, "1", NULL},
-  {KEY_AVA1_SNR_HEALTH, "1", NULL},
-  {KEY_AVA2_SNR_HEALTH, "1", NULL},
-  {KEY_E1S1_SNR_HEALTH, "1", NULL},
-  {KEY_E1S2_SNR_HEALTH, "1", NULL},
+  {KEY_CARRIER1_SNR_HEALTH, "1", NULL},
+  {KEY_CARRIER2_SNR_HEALTH, "1", NULL},
   {"ntp_server", "", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
@@ -524,20 +522,13 @@ int pal_set_def_key_value()
     pal_set_key_value(key, "1");
 
     memset(key, 0, MAX_KEY_LEN);
-    strcpy(key, KEY_AVA1_SNR_HEALTH);
+    strcpy(key, KEY_CARRIER1_SNR_HEALTH);
     pal_set_key_value(key, "1");
 
     memset(key, 0, MAX_KEY_LEN);
-    strcpy(key, KEY_AVA2_SNR_HEALTH);
+    strcpy(key, KEY_CARRIER2_SNR_HEALTH);
     pal_set_key_value(key, "1");
 
-    memset(key, 0, MAX_KEY_LEN);
-    strcpy(key, KEY_E1S1_SNR_HEALTH);
-    pal_set_key_value(key, "1");
-
-    memset(key, 0, MAX_KEY_LEN);
-    strcpy(key, KEY_E1S2_SNR_HEALTH);
-    pal_set_key_value(key, "1");
   }
   return 0;
 }

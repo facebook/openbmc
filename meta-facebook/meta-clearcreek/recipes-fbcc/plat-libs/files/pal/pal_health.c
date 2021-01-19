@@ -21,16 +21,10 @@ pal_get_sensor_health_key(uint8_t fru, char *key) {
       sprintf(key, "pdb_sensor_health");
       break;
     case FRU_CARRIER1:
-      if( pal_check_carrier_type(0) == M2 )
-        sprintf(key, "ava1_sensor_health");
-      else
-        sprintf(key, "e1s1_sensor_health");
+      sprintf(key, "carrier1_sensor_health");
       break;
     case FRU_CARRIER2:
-      if( pal_check_carrier_type(1) == M2 )
-        sprintf(key, "ava2_sensor_health");
-      else
-        sprintf(key, "e1s2_sensor_health");
+      sprintf(key, "carrier2_sensor_health");
       break;
     default:
       return -1;

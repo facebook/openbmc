@@ -17,6 +17,7 @@ extern "C" {
 
 //PMBus
 #define PMBUS_READ_VIN     (0x88)
+#define PMBUS_READ_VOUT    (0x8B)
 #define PMBUS_READ_IOUT    (0x8C)
 #define PMBUS_READ_TEMP1   (0x8D)
 #define PMBUS_READ_TEMP2   (0x8E)
@@ -194,6 +195,7 @@ enum {
   MB_P2V5_AUX  = 0X5A,
   MB_P1V2_AUX  = 0X5B,
   MB_P1V15_AUX = 0X5C,
+  PDB_HSC_VOUT = 0x5D,
 
   MB_VR_P0V8_VDD0_TEMP = 0x60,
   MB_VR_P0V8_VDD0_VOUT,

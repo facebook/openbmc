@@ -30,6 +30,7 @@ static int read_adc_value(uint8_t adc_id, float *value);
 static int read_bat_value(uint8_t adc_id, float *value);
 static int read_hsc_iout(uint8_t hsc_id, float *value);
 static int read_hsc_vin(uint8_t hsc_id, float *value);
+static int read_hsc_vout(uint8_t hsc_id, float *value);
 static int read_hsc_pin(uint8_t hsc_id, float *value);
 static void hsc_value_adjust(struct calibration_table *table, float *value);
 static int read_pax_therm(uint8_t, float*);
@@ -155,6 +156,7 @@ const uint8_t mb_sensor_list[] = {
 const uint8_t pdb_sensor_list[] = {
   PDB_HSC_TEMP,
   PDB_HSC_VIN,
+  PDB_HSC_VOUT,
   PDB_HSC_IOUT,
   PDB_HSC_PIN,
   PDB_FAN0_VOLT,
@@ -452,7 +454,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"CC_BB_P2V5_AUX" , ADC6, read_adc_value, true, {2.625, 0, 0, 2.375, 0, 0, 0, 0}  , VOLT}, //0x5A
   {"CC_BB_P1V2_AUX" , ADC7, read_adc_value, true, {1.26, 0, 0, 1.14, 0, 0, 0, 0}    , VOLT}, //0x5B
   {"CC_BB_P1V15_AUX", ADC8, read_adc_value, true, {1.2075, 0, 0, 1.0925, 0, 0, 0, 0}, VOLT}, //0x5C
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5D
+  {"CC_PDB_HSC_VOUT", HSC_ID0, read_hsc_vout, true, {13.4, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, //0x5D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5F
 
@@ -1316,6 +1318,12 @@ read_hsc_iout(uint8_t hsc_id, float *value) {
 static int
 read_hsc_vin(uint8_t hsc_id, float *value) {
   if ( get_hsc_reading(hsc_id, HSC_VOLTAGE, PMBUS_READ_VIN, value, NULL) < 0 ) return READING_NA;
+  return PAL_EOK;
+}
+
+static int
+read_hsc_vout(uint8_t hsc_id, float *value) {
+  if (get_hsc_reading(hsc_id, HSC_VOLTAGE, PMBUS_READ_VOUT, value, NULL) < 0 ) return READING_NA;
   return PAL_EOK;
 }
 

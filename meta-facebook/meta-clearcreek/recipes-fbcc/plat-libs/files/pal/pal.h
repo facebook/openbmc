@@ -111,5 +111,6 @@ bool pal_is_server_off(void);
 bool is_device_ready(void);
 int pal_get_platform_id(uint8_t *id);
 int pal_check_carrier_type(int index);
+int pal_set_id_led(uint8_t status);
 
 #endif /* __PAL_H__ */

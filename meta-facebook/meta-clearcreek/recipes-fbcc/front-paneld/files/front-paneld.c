@@ -27,13 +27,52 @@
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
 
-#define LED_ON_TIME_IDENTIFY 500
-#define LED_OFF_TIME_IDENTIFY 500
-
 #define BTN_MAX_SAMPLES   200
 #define FW_UPDATE_ONGOING 1
 #define CRASHDUMP_ONGOING 2
 
+#define LED_ON 1
+#define LED_OFF 0
+
+#define LED_IDENTIFY_INTERVAL 500
+
+// Thread to handle STATUS/ID LED state of the SLED
+static void* led_sync_handler()
+{
+  int ret;
+  uint8_t status, fru;
+  char identify[MAX_VALUE_LEN] = {0};
+
+  while (1) {
+    // Handle IDENTIFY LED
+    memset(identify, 0x0, sizeof(identify));
+    ret = pal_get_key_value("identify_sled", identify);
+    if (ret == 0 && !strcmp(identify, "on")) {
+      pal_set_id_led(LED_ON);
+      msleep(LED_IDENTIFY_INTERVAL);
+      pal_set_id_led(LED_OFF);
+      msleep(LED_IDENTIFY_INTERVAL);
+      continue;
+    }
+
+    for (fru = FRU_MB; fru <= FRU_CARRIER2; fru++) {
+      if (fru == FRU_BSM)
+        continue;
+
+      ret = pal_get_fru_health(fru, &status);
+      if (ret < 0 || status != FRU_STATUS_GOOD) {
+        pal_set_id_led(LED_ON);
+        break;
+      }
+    }
+    if (ret == 0 && status == FRU_STATUS_GOOD)
+      pal_set_id_led(LED_OFF);
+
+    sleep(1);
+  }
+
+  return NULL;
+}
 
 static int
 is_btn_blocked(uint8_t fru) {
@@ -129,6 +168,7 @@ int
 main (int argc, char * const argv[]) {
   int pid_file, rc;
   pthread_t tid_rst_btn;
+  pthread_t tid_sync_led;
 
   pid_file = open("/var/run/front-paneld.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
@@ -141,11 +181,17 @@ main (int argc, char * const argv[]) {
     openlog("front-paneld", LOG_CONS, LOG_DAEMON);
   }
 
+  if (pthread_create(&tid_sync_led, NULL, led_sync_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for led sync error\n");
+    exit(1);
+  }
+
   if (pthread_create(&tid_rst_btn, NULL, rst_btn_handler, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for reset button error\n");
     exit(1);
   }
 
+  pthread_join(tid_sync_led, NULL);
   pthread_join(tid_rst_btn, NULL);
 
   return 0;

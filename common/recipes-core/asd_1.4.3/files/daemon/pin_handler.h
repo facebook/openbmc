@@ -51,9 +51,9 @@ typedef enum
     BMC_DEBUG_EN_N,
     BMC_XDP_PRST_IN,
     POWER_BTN,
-    RESET_BTN
+    RESET_BTN,
+    NUM_GPIOS
 } Target_Control_GPIOS;
-#define NUM_GPIOS 10
 
 // Maps from ASD Protocol pin definitions to BMC GPIOs
 static const Target_Control_GPIOS ASD_PIN_TO_GPIO[] = {

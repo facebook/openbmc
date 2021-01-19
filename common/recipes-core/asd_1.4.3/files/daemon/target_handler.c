@@ -143,11 +143,6 @@ STATUS target_write(Target_Control_Handle* state, const Pin pin,
     }
     switch (pin)
     {
-        case PIN_RESET_BUTTON:
-            ASD_log(ASD_LogLevel_Info, stream, option,
-                    "Pin Write: %s reset button(dummy)",
-                    assert ? "assert" : "deassert");
-            break;
         case PIN_POWER_BUTTON:
             ASD_log(ASD_LogLevel_Info, stream, option,
                     "Pin Write: %s power button(dummy)",
@@ -157,6 +152,7 @@ STATUS target_write(Target_Control_Handle* state, const Pin pin,
         case PIN_TCK_MUX_SELECT:
         case PIN_SYS_PWR_OK:
         case PIN_EARLY_BOOT_STALL:
+        case PIN_RESET_BUTTON:
             gpio = state->gpios[ASD_PIN_TO_GPIO[pin]];
             ASD_log(ASD_LogLevel_Info, stream, option, "Pin Write: %s %s %d",
                     assert ? "assert" : "deassert", gpio.name, gpio.number);

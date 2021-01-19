@@ -22,6 +22,9 @@
 #include <syslog.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+#include <ctype.h>
+#include <sys/time.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
 #include "pal.h"
@@ -44,6 +47,9 @@
 #define FIO_BIN "/tmp/fruid_fio.bin"
 
 #define BMC_IPMB_SLAVE_ADDR 0x17
+
+#define GUID_SIZE 16
+#define OFFSET_DEV_GUID 0x1800
 
 #define LAST_KEY "last_key"
 
@@ -74,6 +80,8 @@ enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
 };
+
+char g_dev_guid[GUID_SIZE] = {0};
 
 int pal_check_carrier_type(int index)
 {
@@ -641,4 +649,167 @@ error_exit:
   }
 
   return ret;
+}
+
+// GUID for System and Device
+static int pal_get_guid(uint16_t offset, char *guid) {
+  int fd = 0;
+  ssize_t bytes_rd;
+
+  errno = 0;
+
+  // Check if file is present
+  if (access(MB_EEPROM, F_OK) == -1) {
+      syslog(LOG_ERR, "pal_get_guid: unable to access the %s file: %s",
+          MB_EEPROM, strerror(errno));
+      return errno;
+  }
+
+  // Open the file
+  fd = open(MB_EEPROM, O_RDONLY);
+  if (fd == -1) {
+    syslog(LOG_ERR, "pal_get_guid: unable to open the %s file: %s",
+        MB_EEPROM, strerror(errno));
+    return errno;
+  }
+
+  // seek to the offset
+  lseek(fd, offset, SEEK_SET);
+
+  // Read bytes from location
+  bytes_rd = read(fd, guid, GUID_SIZE);
+  if (bytes_rd != GUID_SIZE) {
+    syslog(LOG_ERR, "pal_get_guid: read to %s file failed: %s",
+        MB_EEPROM, strerror(errno));
+    goto err_exit;
+  }
+
+err_exit:
+  close(fd);
+  return errno;
+}
+
+static int pal_set_guid(uint16_t offset, char *guid) {
+  int fd = 0;
+  ssize_t bytes_wr;
+
+  errno = 0;
+
+  // Check for file presence
+  if (access(MB_EEPROM, F_OK) == -1) {
+      syslog(LOG_ERR, "pal_set_guid: unable to access the %s file: %s",
+          MB_EEPROM, strerror(errno));
+      return errno;
+  }
+
+  // Open file
+  fd = open(MB_EEPROM, O_WRONLY);
+  if (fd == -1) {
+    syslog(LOG_ERR, "pal_set_guid: unable to open the %s file: %s",
+        MB_EEPROM, strerror(errno));
+    return errno;
+  }
+
+  // Seek the offset
+  lseek(fd, offset, SEEK_SET);
+
+  // Write GUID data
+  bytes_wr = write(fd, guid, GUID_SIZE);
+  if (bytes_wr != GUID_SIZE) {
+    syslog(LOG_ERR, "pal_set_guid: write to %s file failed: %s",
+        MB_EEPROM, strerror(errno));
+    goto err_exit;
+  }
+
+err_exit:
+  close(fd);
+  return errno;
+}
+
+// GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
+static void pal_populate_guid(char *guid, char *str) {
+  unsigned int secs;
+  unsigned int usecs;
+  struct timeval tv;
+  uint8_t count;
+  uint8_t lsb, msb;
+  int i, r;
+
+  // Populate time
+  gettimeofday(&tv, NULL);
+
+  secs = tv.tv_sec;
+  usecs = tv.tv_usec;
+  guid[0] = usecs & 0xFF;
+  guid[1] = (usecs >> 8) & 0xFF;
+  guid[2] = (usecs >> 16) & 0xFF;
+  guid[3] = (usecs >> 24) & 0xFF;
+  guid[4] = secs & 0xFF;
+  guid[5] = (secs >> 8) & 0xFF;
+  guid[6] = (secs >> 16) & 0xFF;
+  guid[7] = (secs >> 24) & 0x0F;
+
+  // Populate version
+  guid[7] |= 0x10;
+
+  // Populate clock seq with randmom number
+  //getrandom(&guid[8], 2, 0);
+  srand(time(NULL));
+  //memcpy(&guid[8], rand(), 2);
+  r = rand();
+  guid[8] = r & 0xFF;
+  guid[9] = (r>>8) & 0xFF;
+
+  // Use string to populate 6 bytes unique
+  // e.g. LSP62100035 => 'S' 'P' 0x62 0x10 0x00 0x35
+  count = 0;
+  for (i = strlen(str)-1; i >= 0; i--) {
+    if (count == 6) {
+      break;
+    }
+
+    // If alphabet use the character as is
+    if (isalpha(str[i])) {
+      guid[15-count] = str[i];
+      count++;
+      continue;
+    }
+
+    // If it is 0-9, use two numbers as BCD
+    lsb = str[i] - '0';
+    if (i > 0) {
+      i--;
+      if (isalpha(str[i])) {
+        i++;
+        msb = 0;
+      } else {
+        msb = str[i] - '0';
+      }
+    } else {
+      msb = 0;
+    }
+    guid[15-count] = (msb << 4) | lsb;
+    count++;
+  }
+
+  // zero the remaining bytes, if any
+  if (count != 6) {
+    memset(&guid[10], 0, 6-count);
+  }
+
+}
+
+int pal_set_dev_guid(uint8_t fru, char *str) {
+  pal_populate_guid(g_dev_guid, str);
+
+  return pal_set_guid(OFFSET_DEV_GUID, g_dev_guid);
+}
+
+int pal_get_dev_guid(uint8_t fru, char *guid) {
+
+  pal_get_guid(OFFSET_DEV_GUID, g_dev_guid);
+
+  memcpy(guid, g_dev_guid, GUID_SIZE);
+
+  return 0;
 }

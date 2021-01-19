@@ -34,6 +34,7 @@ IMAGE_INSTALL += " \
   ipmid \
   ipmbd \
   ipmitool \
+  log-util-v2 \
   mdio-util \
   mterm \
   openbmc-utils \

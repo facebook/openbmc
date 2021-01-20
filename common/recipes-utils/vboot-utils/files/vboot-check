@@ -23,7 +23,7 @@ import json
 import sys
 import traceback
 
-VBOOT_CHECK_VERSION = "2"
+VBOOT_CHECK_VERSION = "3"
 # Define the exit code
 EC_SUCCESS = 0
 EC_SPLROM_BAD = 1
@@ -321,7 +321,7 @@ def md5_check(fh, image_meta):
 
 def main():
     # check md5sum if image_meta is not None
-    if image_meta is not None:
+    if image_meta is not None and not args.locked_bmc:
         with open(args.filename, "rb") as fh:
             ret = md5_check(fh, image_meta)
             if ret != EC_SUCCESS:
@@ -420,6 +420,13 @@ if __name__ == "__main__":
         default=16 * 1024,
         type=int,
         help="Subordinate key store max size, default 16KB",
+    )
+    parser.add_argument(
+        "--locked-bmc",
+        action="store_true",
+        help="""checking the locked bmc (/dev/flash1), which will skip checking
+                SPL and Recovery-Uboot md5 checksum
+            """,
     )
     parser.add_argument(
         "--version",

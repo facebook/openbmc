@@ -120,6 +120,22 @@ int pal_get_fru_id(char *str, uint8_t *fru)
     *fru = FRU_CARRIER2;
   } else if (!strcmp(str, "fio")) {
     *fru = FRU_FIO;
+  } else if (!strcmp(str, "nic0")) {
+    *fru = FRU_NIC0;
+  } else if (!strcmp(str, "nic1")) {
+    *fru = FRU_NIC1;
+  } else if (!strcmp(str, "nic2")) {
+    *fru = FRU_NIC2;
+  } else if (!strcmp(str, "nic3")) {
+    *fru = FRU_NIC3;
+  } else if (!strcmp(str, "nic4")) {
+    *fru = FRU_NIC4;
+  } else if (!strcmp(str, "nic5")) {
+    *fru = FRU_NIC5;
+  } else if (!strcmp(str, "nic6")) {
+    *fru = FRU_NIC6;
+  } else if (!strcmp(str, "nic7")) {
+    *fru = FRU_NIC7;
   } else {
     syslog(LOG_WARNING, "%s: Wrong fru name %s", __func__, str);
     return -1;

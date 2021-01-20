@@ -341,6 +341,9 @@ var refineBaseNameMatch = func(baseName string, params []string) bool {
 	if baseName == "fw-util" {
 		// ignore fw-util unless doing an update.
 		return StringFind("--update", params) >= 0
+	} else if baseName == "flashrom" {
+		// ignore flashrom if it's just reading.
+		return StringFind("-r", params) == -1
 	} else {
 		// default: finding the name is enough
 		return true

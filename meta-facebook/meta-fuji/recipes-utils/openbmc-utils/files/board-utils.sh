@@ -96,3 +96,24 @@ wedge_is_us_on() {
 
     return 0
 }
+
+wedge_board_ver() {
+    board_ver=$(i2cget -f -y 13 0x35 0x3 | awk '{printf "%d", $1}')
+    case $board_ver in
+        64)
+            echo "BOARD_FUJI_EVT1"
+            ;;
+        65)
+            echo "BOARD_FUJI_EVT2"
+            ;;
+        66)
+            echo "BOARD_FUJI_EVT3"
+            ;;
+        67)
+            echo "BOARD_FUJI_DVT1"
+            ;;
+        *)  # New board version need to be added here
+            echo "BOARD_FUJI_UNDEFINED_${board_ver}"
+            ;;
+    esac
+}

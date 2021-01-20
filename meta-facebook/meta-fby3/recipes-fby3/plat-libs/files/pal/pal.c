@@ -868,6 +868,7 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
   int ret = PAL_ENOTSUP;
   uint8_t config_status = 0;
   uint8_t bmc_location = 0;
+  uint8_t type_2ou = UNKNOWN_BOARD;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -886,7 +887,11 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
   if ( (dev_id == BOARD_1OU) && ((config_status & PRESENT_1OU) == PRESENT_1OU) && (bmc_location != NIC_BMC) ) { // 1U
     return bic_write_fruid(fru, 0, path, FEXP_BIC_INTF);
   } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
-    if ( dev_id == BOARD_2OU ) {
+    if ( fby3_common_get_2ou_board_type(fru, &type_2ou) < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
+    } else if ( dev_id == BOARD_2OU && type_2ou == DP_RISER_BOARD ) {
+      return bic_write_fruid(fru, 1, path, NONE_INTF);
+    } else if ( dev_id == BOARD_2OU ) {
       return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
     } else if ( dev_id >= DEV_ID0_2OU && dev_id <= DEV_ID11_2OU ) {
       return bic_write_fruid(fru, dev_id - DEV_ID0_2OU + 1, path, REXP_BIC_INTF);
@@ -1232,16 +1237,19 @@ static int pal_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
 
   switch(dp_pcie_conf) {
     case DP_RETIMER_X16:
-    case DP_PCIE_X16:
       (*pcie_config) = CONFIG_D_DP_X16;
       break;
     case DP_RETIMER_X8:
-    case DP_PCIE_X8:
       (*pcie_config) = CONFIG_D_DP_X8;
       break;
     case DP_RETIMER_X4:
-    case DP_PCIE_X4:
       (*pcie_config) = CONFIG_D_DP_X4;
+      break;
+    case DP_PCIE_X4:
+    case DP_PCIE_X8:
+    case DP_PCIE_X16:
+      // all set to x16
+      (*pcie_config) = CONFIG_D_DP_X16;
       break;
     default:
       syslog(LOG_ERR, "%s() Unable to get correct DP PCIE configuration\n", __func__);

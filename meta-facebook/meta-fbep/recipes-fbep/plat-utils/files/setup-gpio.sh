@@ -112,6 +112,7 @@ gpio_export SYS_PWR_READY GPIOB3
 #devmem_clear_bit $(scu_addr 8c) 10
 #devmem_clear_bit $(scu_addr 8c) 11
 #devmem_clear_bit $(scu_addr 90) 1
+gpio_export THERMTRIP_N_ASIC07 GPIOD7
 
 # To enable GPIOE
 #devmem_clear_scu70_bit 22
@@ -300,7 +301,7 @@ gpio_export OAM_FAST_BRK_N GPIOI2
 gpio_set OAM_FAST_BRK_N 1
 
 gpio_export OAM_FAST_BRK_ON_N GPIOI3
-gpio_set OAM_FAST_BRK_ON_N 1
+gpio_set OAM_FAST_BRK_ON_N 0
 
 # OAM debug pin (defined by OAM)
 gpio_export BMC_OAM_TEST3 GPIOJ0

@@ -531,7 +531,7 @@ static int _set_power_brake(gpio_value_t value)
   int ret;
 
   if (gpio_get("OAM_FAST_BRK_ON_N") != GPIO_VALUE_LOW) {
-    std::cerr << "GPU power brake function is not enabled, try \"--enable-power-brake 1\"" << std::endl;
+    std::cerr << "GPU power brake function is not enabled, try \"--enable-brake 1\"" << std::endl;
     return -1;
   }
   ret = gpio_set("OAM_FAST_BRK_N", value, false);

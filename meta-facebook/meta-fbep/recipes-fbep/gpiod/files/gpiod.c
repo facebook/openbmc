@@ -64,6 +64,7 @@ enum {
   ERR_ASIC_23_ALERT,
   ERR_ASIC_45_ALERT,
   ERR_ASIC_67_ALERT,
+  ERR_ASIC_THERMTRIP,
   ERR_PAX_0_ALERT,
   ERR_PAX_1_ALERT,
   ERR_PAX_2_ALERT,
@@ -138,6 +139,7 @@ static int sync_dbg_led(uint8_t err_bit, bool assert)
     0x11, // ERR_ASIC_23_ALERT
     0x12, // ERR_ASIC_45_ALERT
     0x13, // ERR_ASIC_67_ALERT
+    0x14, // ERR_ASIC_THERMTRIP
     0x20, // ERR_PAX_0_ALERT
     0x21, // ERR_PAX_1_ALERT
     0x22, // ERR_PAX_2_ALERT
@@ -241,7 +243,7 @@ int check_pwr_brake()
     return -1;
   }
 
-  tbuf[0] = 0x0a; // Power Brake state
+  tbuf[0] = 0x11; // Power Brake state
   ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 1);
   if (ret < 0)
     goto exit;
@@ -321,6 +323,48 @@ int check_hsc_alert(gpiopoll_pin_t *gp, int bus_id, uint8_t addr, uint8_t reg)
       break;
   }
   return 0;
+}
+
+static bool is_gpu_thermal_trip()
+{
+  bool thermtrip[8] = {false, false, false, false, false, false, false, false};
+  bool event;
+  int fd, ret;
+  char shadow[16] = {0};
+  char dev_cpld[16] = {0};
+  uint8_t tbuf[8], rbuf[8];
+
+  for (uint8_t i = 0; i < 8; i++) {
+    if (!is_asic_prsnt(i))
+      continue;
+
+    snprintf(shadow, sizeof(shadow), "OAM%d_THERMTRIP", (int)i);
+    if (gpio_get(shadow) == GPIO_VALUE_LOW)
+      thermtrip[i] = true;
+  }
+
+  sprintf(dev_cpld, "/dev/i2c-%d", MAIN_CPLD_BUS);
+  fd = open(dev_cpld, O_RDWR);
+  if (fd < 0) {
+    return false;
+  }
+
+  tbuf[0] = 0x0a; // Themral trip event
+  ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 1);
+  event = rbuf[0] & 0x80? true: false;
+  close(fd);
+  if (ret < 0)
+    return false;
+
+  // Delay to avoid false alart during AC cycle due to hardware issue
+  msleep(250);
+  if (event) {
+    for (int i = 0; i < 8; i++) {
+      if (thermtrip[i])
+        syslog(LOG_CRIT, "ASIC%d Thermal Trip\n", i);
+    }
+  }
+  return event;
 }
 
 // Generic Event Handler for GPIO changes
@@ -492,8 +536,18 @@ static void gpio_event_pax_3_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_v
 
 static void gpio_event_cpld_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
+  // Delay to avoid false alart during AC cycle due to hardware issue
+  msleep(250);
   gpio_event_handle_low_active(gp, last, curr);
   sync_dbg_led(ERR_CPLD_ALERT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+static void gpio_event_asic_thermtrip(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  if (!g_sys_pwr_off && is_gpu_thermal_trip()) {
+    gpio_event_handle_low_active(gp, last, curr);
+    sync_dbg_led(ERR_ASIC_THERMTRIP, curr == GPIO_VALUE_LOW? true: false);
+  }
 }
 
 // GPIO table to be monitored
@@ -510,6 +564,7 @@ static struct gpiopoll_config g_gpios[] = {
   {"SMB_ALERT_ASIC23", "ASIC23 Alert", GPIO_EDGE_BOTH, gpio_event_asic23_alert, NULL},
   {"SMB_ALERT_ASIC45", "ASIC45 Alert", GPIO_EDGE_BOTH, gpio_event_asic45_alert, NULL},
   {"SMB_ALERT_ASIC67", "ASIC67 Alert", GPIO_EDGE_BOTH, gpio_event_asic67_alert, NULL},
+  {"THERMTRIP_N_ASIC07", "ASIC Thermal Trip", GPIO_EDGE_BOTH, gpio_event_asic_thermtrip, NULL},
   {"CPLD_SMB_ALERT_N", "CPLD Alert", GPIO_EDGE_BOTH, gpio_event_cpld_alert, NULL},
   {"PAX0_ALERT", "PAX0 Alert", GPIO_EDGE_BOTH, gpio_event_pax_0_alert, NULL},
   {"PAX1_ALERT", "PAX1 Alert", GPIO_EDGE_BOTH, gpio_event_pax_1_alert, NULL},
@@ -531,8 +586,6 @@ static struct gpiopoll_config g_gpios[] = {
   {"PRSNT1_N_ASIC6", "ASIC6 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
   {"PRSNT0_N_ASIC7", "ASIC7 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
   {"PRSNT1_N_ASIC7", "ASIC7 present off", GPIO_EDGE_RISING, gpio_event_handle_high_active, asic_def_prsnt},
-  {"OAM_FAST_BRK_N", "Trigger Power Brake", GPIO_EDGE_BOTH, gpio_event_handle_pwr_brake, NULL},
-  {"OAM_FAST_BRK_ON_N", "Enable Power Brake", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
 };
 
 // For monitoring GPIOs on IO expender

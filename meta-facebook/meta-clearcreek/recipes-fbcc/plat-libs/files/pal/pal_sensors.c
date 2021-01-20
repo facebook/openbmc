@@ -976,7 +976,7 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
     return -1;
   }
   ret = sensors_read_fan(label, &value);
-  *rpm = (int)value;
+  *rpm = ret < 0? 0: (int)value;
   return ret;
 }
 
@@ -1100,6 +1100,7 @@ is_fan_present(uint8_t fan_id) {
   }
 
   if (ret < 0) {
+    syslog(LOG_WARNING, "%s: ret < 0 = %d", __func__, ret);
     goto err_exit;
   }
 
@@ -1110,6 +1111,11 @@ is_fan_present(uint8_t fan_id) {
     close(fd);
   }
   return value;
+}
+
+bool pal_is_fan_prsnt(uint8_t fan_id)
+{
+  return !is_fan_present(fan_id/2);
 }
 
 static int

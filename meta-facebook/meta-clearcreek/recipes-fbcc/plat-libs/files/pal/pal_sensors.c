@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <syslog.h>
+#include <time.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensors.h>
@@ -407,8 +408,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"CC_NIC_7_IOUT", NIC7, read_nic_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x2E
   {"CC_NIC_7_POUT", NIC7, read_nic_pwr , 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x2F
 
-  {"CC_SSD_BAY_0_FTEMP", BAY0_FTEMP_ID, read_bay_temp, 0, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x30
-  {"CC_SSD_BAY_0_RTEMP", BAY0_RTEMP_ID, read_bay_temp, 0, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x31
+  {"CC_SSD_BAY_0_FTEMP", BAY0_FTEMP_ID, read_bay_temp, true, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x30
+  {"CC_SSD_BAY_0_RTEMP", BAY0_RTEMP_ID, read_bay_temp, true, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x31
   {"CC_SSD_BAY_0_NVME_CTEMP", 0, NULL, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x32
   {"CC_SSD_BAY_0_0_NVME_CTEMP", BAY_0_0_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x33
   {"CC_SSD_BAY_0_1_NVME_CTEMP", BAY_0_1_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x34
@@ -424,8 +425,8 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x3E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x3F
 
-  {"CC_SSD_BAY_1_FTEMP", BAY1_FTEMP_ID, read_bay_temp, 0, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x40
-  {"CC_SSD_BAY_1_RTEMP", BAY1_RTEMP_ID, read_bay_temp, 0, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x41
+  {"CC_SSD_BAY_1_FTEMP", BAY1_FTEMP_ID, read_bay_temp, true, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x40
+  {"CC_SSD_BAY_1_RTEMP", BAY1_RTEMP_ID, read_bay_temp, true, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x41
   {"CC_SSD_BAY_1_NVME_CTEMP", 0, NULL, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x42
   {"CC_SSD_BAY_1_0_NVME_CTEMP", BAY_1_0_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x43
   {"CC_SSD_BAY_1_1_NVME_CTEMP", BAY_1_1_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x44
@@ -441,15 +442,15 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x4E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x4F
 
-  {"CC_PDB_HSC_TEMP", HSC_ID0, read_hsc_temp, 0, {75, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x50
-  {"CC_PDB_HSC_VIN" , HSC_ID0, read_hsc_vin , 0, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x51
-  {"CC_PDB_HSC_IOUT", HSC_ID0, read_hsc_iout, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x52
-  {"CC_PDB_HSC_PIN" , HSC_ID0, read_hsc_pin , 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x53
+  {"CC_PDB_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {75, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x50
+  {"CC_PDB_HSC_VIN" , HSC_ID0, read_hsc_vin , true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x51
+  {"CC_PDB_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x52
+  {"CC_PDB_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x53
   {"CC_BB_P12V_PUX" , ADC0, read_adc_value, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}    , VOLT}, //0x54
   {"CC_BB_P3V3_STBY", ADC1, read_adc_value, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}  , VOLT}, //0x55
   {"CC_BB_P5V_STBY" , ADC2, read_adc_value, true, {5.25, 0, 0, 4.75, 0, 0, 0, 0}    , VOLT}, //0x56
-  {"CC_BB_P3V3"     , ADC3, read_adc_value, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}  , VOLT}, //0x57
-  {"CC_BB_P3V3_PAX" , ADC4, read_adc_value, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}  , VOLT}, //0x58
+  {"CC_BB_P3V3"     , ADC3, read_adc_value, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}  , VOLT}, //0x57
+  {"CC_BB_P3V3_PAX" , ADC4, read_adc_value, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}  , VOLT}, //0x58
   {"CC_BB_P3V_BAT"  , ADC5, read_bat_value, true, {3.4, 0, 0, 2.85, 0, 0, 0, 0}    , VOLT}, //0x59
   {"CC_BB_P2V5_AUX" , ADC6, read_adc_value, true, {2.625, 0, 0, 2.375, 0, 0, 0, 0}  , VOLT}, //0x5A
   {"CC_BB_P1V2_AUX" , ADC7, read_adc_value, true, {1.26, 0, 0, 1.14, 0, 0, 0, 0}    , VOLT}, //0x5B
@@ -471,12 +472,12 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"CC_P0V8_VDD1_IOUT", MB_VR_P0V8_VDD1_CURR , sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6A
   {"CC_P0V8_VDD1_POUT", MB_VR_P0V8_VDD1_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x6B
   {"CC_P0V8_AVD_PCIE1_TEMP", MB_VR_P1V0_AVD1_TEMP , sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x6C
-  {"CC_P0V8_AVD_PCIE1_VOL" , MB_VR_P1V0_AVD1_VOUT , sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x6D
+  {"CC_P0V8_AVD_PCIE1_VOLT" , MB_VR_P1V0_AVD1_VOUT , sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x6D
   {"CC_P0V8_AVD_PCIE1_IOUT", MB_VR_P1V0_AVD1_CURR , sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6E
   {"CC_P0V8_AVD_PCIE1_POUT", MB_VR_P1V0_AVD1_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x6F
 
   {"CC_P0V8_VDD2_TEMP", MB_VR_P0V8_VDD2_TEMP, sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x70
-  {"CC_P0V8_VDD2_VOL" , MB_VR_P0V8_VDD2_VOUT, sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x71
+  {"CC_P0V8_VDD2_VOLT" , MB_VR_P0V8_VDD2_VOUT, sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x71
   {"CC_P0V8_VDD2_IOUT", MB_VR_P0V8_VDD2_CURR, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x72
   {"CC_P0V8_VDD2_POUT", MB_VR_P0V8_VDD2_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x73
   {"CC_P0V8_AVD_PCIE2_TEMP", MB_VR_P1V0_AVD2_TEMP, sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x74
@@ -496,35 +497,35 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"CC_BB_PAX_1_TEMP", PAX_ID1, read_pax_therm, 0, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x81
   {"CC_BB_PAX_2_TEMP", PAX_ID2, read_pax_therm, 0, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x82
   {"CC_BB_PAX_3_TEMP", PAX_ID3, read_pax_therm, 0, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x83
-  {"CC_FAN_0_VOL" , FAN_ID0, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x84
+  {"CC_FAN_0_VOLT" , FAN_ID0, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x84
   {"CC_FAN_0_CURR", FAN_ID0, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x85
   {"CC_FAN_0_PWR" , FAN_ID0, read_fan_pwr , true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x86
-  {"CC_FAN_1_VOL" , FAN_ID1, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x87
+  {"CC_FAN_1_VOLT" , FAN_ID1, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x87
   {"CC_FAN_1_CURR", FAN_ID1, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x88
   {"CC_FAN_1_PWR" , FAN_ID1, read_fan_pwr , true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x89
-  {"CC_FAN_2_VOL" , FAN_ID2, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x8A
+  {"CC_FAN_2_VOLT" , FAN_ID2, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x8A
   {"CC_FAN_2_CURR", FAN_ID2, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x8B
   {"CC_FAN_2_PWR" , FAN_ID2, read_fan_pwr , true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x8C
-  {"CC_FAN_3_VOL" , FAN_ID3, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x8D
+  {"CC_FAN_3_VOLT" , FAN_ID3, read_fan_volt, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x8D
   {"CC_FAN_3_CURR", FAN_ID3, read_fan_curr, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x8E
   {"CC_FAN_3_PWR" , FAN_ID3, read_fan_pwr , true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x8F
 
-  {"CC_SYSTEM_INLET_TEMP"       , SYS_TEMP       , read_inlet_sensor, 0, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x90
-  {"CC_SYSTEM_INLET_REMOTE_TEMP", SYS_REMOTE_TEMP, read_inlet_sensor, 0, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x91
-  {"CC_BB_INLET_TEMP_L"       , INLET_TEMP_L       , read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x92
-  {"CC_BB_INLET_REMOTE_TEMP_L", INLET_REMOTE_TEMP_L, read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x93
-  {"CC_BB_INLET_TEMP_R"       , INLET_TEMP_R       , read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x94
-  {"CC_BB_INLET_REMOTE_TEMP_R", INLET_REMOTE_TEMP_R, read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x95
-  {"CC_PDB_INLET_TEMP_L"       , PDB_INLET_TEMP_L_ID       , read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x96
-  {"CC_PDB_INLET_REMOTE_TEMP_L", PDB_INLET_REMOTE_TEMP_L_ID, read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x97
-  {"CC_PDB_INLET_TEMP_R"       , PDB_INLET_TEMP_R_ID       , read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x98
-  {"CC_PDB_INLET_REMOTE_TEMP_R", PDB_INLET_REMOTE_TEMP_R_ID, read_inlet_sensor, 0, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x99
-  {"CC_BAY0_INA219_VOLT", BAY0_INA219_VOLT, read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x9A
-  {"CC_BAY0_INA219_CURR", BAY0_INA219_CURR, read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0x9B
-  {"CC_BAY0_INA219_PWR" , BAY0_INA219_PWR , read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x9C
-  {"CC_BAY1_INA219_VOLT", BAY1_INA219_VOLT, read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x9D
-  {"CC_BAY1_INA219_CURR", BAY1_INA219_CURR, read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0x9E
-  {"CC_BAY1_INA219_PWR" , BAY1_INA219_PWR , read_ina219_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x9F
+  {"CC_SYSTEM_INLET_TEMP"       , SYS_TEMP       , read_inlet_sensor, true, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x90
+  {"CC_SYSTEM_INLET_REMOTE_TEMP", SYS_REMOTE_TEMP, read_inlet_sensor, true, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x91
+  {"CC_BB_INLET_TEMP_L"       , INLET_TEMP_L       , read_inlet_sensor, true, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x92
+  {"CC_BB_INLET_REMOTE_TEMP_L", INLET_REMOTE_TEMP_L, read_inlet_sensor, true, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x93
+  {"CC_BB_INLET_TEMP_R"       , INLET_TEMP_R       , read_inlet_sensor, true, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x94
+  {"CC_BB_INLET_REMOTE_TEMP_R", INLET_REMOTE_TEMP_R, read_inlet_sensor, true, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x95
+  {"CC_PDB_INLET_TEMP_L"       , PDB_INLET_TEMP_L_ID       , read_inlet_sensor, true, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x96
+  {"CC_PDB_INLET_REMOTE_TEMP_L", PDB_INLET_REMOTE_TEMP_L_ID, read_inlet_sensor, true, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x97
+  {"CC_PDB_INLET_TEMP_R"       , PDB_INLET_TEMP_R_ID       , read_inlet_sensor, true, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x98
+  {"CC_PDB_INLET_REMOTE_TEMP_R", PDB_INLET_REMOTE_TEMP_R_ID, read_inlet_sensor, true, {65, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x99
+  {"CC_BAY0_INA219_VOLT", BAY0_INA219_VOLT, read_ina219_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x9A
+  {"CC_BAY0_INA219_CURR", BAY0_INA219_CURR, read_ina219_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0x9B
+  {"CC_BAY0_INA219_PWR" , BAY0_INA219_PWR , read_ina219_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x9C
+  {"CC_BAY1_INA219_VOLT", BAY1_INA219_VOLT, read_ina219_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x9D
+  {"CC_BAY1_INA219_CURR", BAY1_INA219_CURR, read_ina219_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0x9E
+  {"CC_BAY1_INA219_PWR" , BAY1_INA219_PWR , read_ina219_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x9F
 
   {"CC_PDB_FAN0_TACH_I", PDB_FAN0_TACH_I, sensors_read_fan_speed, true, {13500, 0, 0, 600, 0, 0, 0, 0}, FAN}, //0xA0
   {"CC_PDB_FAN0_TACH_O", PDB_FAN0_TACH_O, sensors_read_fan_speed, true, {12500, 0, 0, 600, 0, 0, 0, 0}, FAN}, //0xA1
@@ -644,6 +645,26 @@ size_t m2_2_sensor_cnt = sizeof(m2_2_sensor_list)/sizeof(uint8_t);
 size_t e1s_1_sensor_cnt = sizeof(e1s_1_sensor_list)/sizeof(uint8_t);
 size_t e1s_2_sensor_cnt = sizeof(e1s_2_sensor_list)/sizeof(uint8_t);
 
+bool check_pwron_time(int time) {
+  char str[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+  long pwron_time;
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (!kv_get("snr_pwron_flag", str, NULL, 0)) {
+    pwron_time = strtoul(str, NULL, 10);
+   // syslog(LOG_WARNING, "power on time =%ld\n", pwron_time);
+    if ( (ts.tv_sec - pwron_time > time ) && ( pwron_time != 0 ) ) {
+      return true;
+    }
+  } else {
+     sprintf(str, "%ld", ts.tv_sec);
+     kv_set("snr_pwron_flag", str, 0, 0);
+  }
+
+  return false;
+}
+
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
 {
   char key[MAX_KEY_LEN] = {0};
@@ -652,6 +673,7 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
   int ret=0;
   static uint8_t retry[256] = {0};
   uint8_t id=0;
+  bool server_off;
 
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
@@ -662,7 +684,21 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
     case FRU_PDB:
     case FRU_CARRIER1:
     case FRU_CARRIER2:
-      ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
+      server_off = pal_is_server_off();
+      id = sensor_map[sensor_num].id;
+      if (server_off) {
+        if (sensor_map[sensor_num].stby_read == true) {
+	      ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
+        } else {
+          ret = READING_NA;
+        }
+      } else {
+        if (check_pwron_time(1) ) {
+          ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
+        } else {
+          ret = READING_NA;
+        }
+      }
       break;
     default:
       return -1;

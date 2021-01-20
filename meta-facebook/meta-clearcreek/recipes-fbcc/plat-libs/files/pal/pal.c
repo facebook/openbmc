@@ -557,6 +557,12 @@ void pal_dump_key_value(void)
   }
 }
 
+int pal_slotid_to_fruid(int slotid)
+{
+  // FRU ID remapping, we start from FRU_MB = 1
+  return slotid + 1;
+}
+
 int pal_get_platform_id(uint8_t *id)
 {
   static bool cached = false;

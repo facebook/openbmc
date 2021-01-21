@@ -55,6 +55,7 @@
 #define BIOS_VER_STR "F09_"
 #define Y2_BIOS_VER_STR "YMV2"
 #define GPV2_BIOS_VER_STR "F09B"
+#define YV2_MERGE_BIOS_VER_STR "F09M"
 #define ND_BIOS_VER_STR "F09C"
 
 #define BIC_SIGN_SIZE 32
@@ -1967,7 +1968,11 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
           memcmp(
               buf + offs + sizeof(ver_sig),
               GPV2_BIOS_VER_STR,
-              strlen(GPV2_BIOS_VER_STR))) {
+              strlen(GPV2_BIOS_VER_STR))&&
+          memcmp(
+              buf + offs + sizeof(ver_sig),
+              YV2_MERGE_BIOS_VER_STR,
+              strlen(YV2_MERGE_BIOS_VER_STR))) {
         offs = end;
       }
       break;

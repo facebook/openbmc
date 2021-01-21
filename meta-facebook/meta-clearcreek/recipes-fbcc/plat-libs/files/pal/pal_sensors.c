@@ -945,6 +945,17 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
           *cnt = 0;
       }
       break;
+    case FRU_NIC0:
+    case FRU_NIC1:
+    case FRU_NIC2:
+    case FRU_NIC3:
+    case FRU_NIC4:
+    case FRU_NIC5:
+    case FRU_NIC6:
+    case FRU_NIC7:
+        *sensor_list = NULL;
+        *cnt = 0;
+      break;
     default:
       syslog(LOG_WARNING, "%s, get key fail", __FUNCTION__);
       return -1;

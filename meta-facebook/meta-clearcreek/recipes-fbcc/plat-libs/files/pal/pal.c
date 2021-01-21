@@ -216,7 +216,7 @@ int pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
   }
   if (desc == NULL)
     return -1;
-  if (gpio_get_value(desc, &value) == 0 && value == GPIO_VALUE_LOW) {
+  if (gpio_get_value(desc, &value) == 0) {
     *status = 1;
     ret = 0;
   }

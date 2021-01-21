@@ -15,6 +15,8 @@ int main(int argc, char *argv[])
 
   assert(kv_get("test1", value, NULL, KV_FPERSIST) != 0);
   printf("SUCCESS: Non-existent file results in error.\n");
+  assert(kv_del("test1", KV_FPERSIST) != 0);
+  printf("SUCCESS: Delete Non-existent key results in error\n");
 
   assert(kv_set("test1", "val", 0, KV_FPERSIST) == 0);
   printf("SUCCESS: Creating persist key func call\n");
@@ -26,6 +28,10 @@ int main(int argc, char *argv[])
   printf("SUCCESS: Read key is of value what was expected!\n");
   assert(kv_set("test1", "val", 0, KV_FCREATE | KV_FPERSIST) != 0);
   printf("SUCCESS: KV_FCREATE failed on existing persistent key.\n");
+  assert(kv_del("test1", KV_FPERSIST) == 0);
+  printf("SUCCESS: Delete persistent key succeeded\n");
+  assert(access("./test/persist/test1", F_OK) != 0);
+  printf("SUCCESS: Delete persistent key actually removed file\n");
 
   assert(kv_set("test1", "val", 0, 0) == 0);
   printf("SUCCESS: Creating non-persist key func call\n");
@@ -60,6 +66,10 @@ int main(int argc, char *argv[])
   assert(kv_get("test1", value, NULL, 0) == 0);
   assert(strcmp(value, "val") == 0);
   printf("SUCCESS: KV_FCREATE failed on existing key and did not modify existing value\n");
+  assert(kv_del("test1", 0) == 0);
+  printf("SUCCESS: KV delete of temp key succeeded");
+  assert(access("./test/tmp/test1", F_OK) != 0);
+  printf("SUCCESS: KV delete of temp key deletes file");
 
   assert(kv_set("test2", "val2", 0, KV_FCREATE) == 0);
   memset(value, 0, sizeof(value));

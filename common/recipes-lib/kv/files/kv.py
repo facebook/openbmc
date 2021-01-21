@@ -45,3 +45,10 @@ def kv_set(key, value, flags=0):
     ret = lkv_hndl.kv_set(key_c, value_c, 0, ctypes.c_uint(flags))
     if ret != 0:
         raise KeyOperationFailure
+
+
+def kv_del(key, flags=0):
+    key_c = ctypes.create_string_buffer(key.encode())
+    ret = lkv_hndl.kv_del(key_c, ctypes.c_uint(flags))
+    if ret != 0:
+        raise KeyOperationFailure

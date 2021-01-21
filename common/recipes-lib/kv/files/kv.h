@@ -28,6 +28,7 @@ extern "C" {
 
 int kv_get(const char *key, char *value, size_t *len, unsigned int flags);
 int kv_set(const char *key, const char *value, size_t len, unsigned int flags);
+int kv_del(const char *key, unsigned int flags);
 
 #ifdef __cplusplus
 }

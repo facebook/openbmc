@@ -119,6 +119,24 @@ int kv_get(const char *key, char *value, size_t *len, unsigned int flags) {
   return 0;
 }
 
+int kv_del(const char *key, unsigned int flags)
+{
+  if (key == nullptr)
+    return -1;
+  try {
+    auto r = flags & KV_FPERSIST ? region::persist : region::temp;
+    kv::del(key, r);
+
+  } catch(kv::key_does_not_exist& e) {
+    // Eat no-key error if it fills up syslog
+    return -1;
+  } catch(std::exception& e) {
+    KV_WARN("kv_del: %s", e.what());
+    return -1;
+  }
+  return 0;
+}
+
 namespace kv {
 
 void set(const std::string& key, const std::string& value,
@@ -148,6 +166,11 @@ std::string get(const std::string& key, region r)
   fp.open_and_lock<FileHandle::access::read>(key, r);
 
   return fp.read();
+}
+
+void del(const std::string& key, region r)
+{
+  FileHandle::remove(key, r);
 }
 
 } // namespace kv

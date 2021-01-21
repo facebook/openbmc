@@ -8,14 +8,15 @@ KEYDIR=/mnt/data/kv_store
 IS_NEEDED_SERVER_POWER_ON=true
 RETRY=0
 RETRY_TIME=30
-POWER_ON_TIMEOUT=0
-POWER_ON_COMPLETE=1
+POWER_12V_ON_TIMEOUT=0
+POWER_12V_ON_COMPLETE=1
 
 # Check power policy
 check_por_config()
 {
   # Check if the file/key doesn't exist
   if [ ! -f "${KEYDIR}/server_por_cfg" ]; then
+    PWR_POLICY="on"
     IS_NEEDED_SERVER_POWER_ON=true
   else
     PWR_POLICY=$(cat ${KEYDIR}/server_por_cfg)
@@ -33,6 +34,7 @@ check_por_config()
 
       # Check if the file/key doesn't exist
       if [ ! -f "${KEYDIR}/pwr_server_last_state" ]; then
+        LS="on"
         IS_NEEDED_SERVER_POWER_ON=true
       else
         LS=$(cat ${KEYDIR}/pwr_server_last_state)
@@ -43,7 +45,12 @@ check_por_config()
         fi
       fi
     fi
+  fi
+
+  if [ "$PWR_POLICY" = "lps" ]; then
     logger -s -p user.info -t power-on "Power Policy: $PWR_POLICY, Last Power State: $LS"
+  else
+    logger -s -p user.info -t power-on "Power Policy: $PWR_POLICY"
   fi
 }
 
@@ -51,51 +58,42 @@ check_por_config()
 if [ "$(is_server_prsnt)" = "$SERVER_ABSENT" ]; then
   logger -s -p user.warn -t power-on "The Server is absent, turn off Server HSC 12V."
   $POWERUTIL_CMD server 12V-off
-  
+
   exit 1
 elif [ "$(is_server_prsnt)" = "$SERVER_PRESENT" ]; then
   logger -s -p user.info -t power-on "Server 12V-On..."
   $POWERUTIL_CMD server 12V-on
 
+  RETRY=0
+  FINISH="$POWER_12V_ON_TIMEOUT"
   # Wait for server finish 12V-on
   while [ $RETRY -lt $RETRY_TIME ]
   do
-    FINISH="$POWER_ON_TIMEOUT"
-    status="$(server_power_status)"
-    if [ "$status" = "$SERVER_STATUS_DC_OFF" ]; then
-      FINISH="$POWER_ON_COMPLETE"
-      logger -s -p user.info -t power-on "Server 12V-On done..."
+    if [ "$(is_server_12v_on)" = true ]; then
+      FINISH="$POWER_12V_ON_COMPLETE"
+      logger -s -p user.info -t power-on "Server 12V-On done"
       break
-    elif [ "$status" = "$SERVER_STATUS_DC_ON" ]; then
-      logger -s -p user.info -t power-on "Server DC on already..."
-      exit 0
     fi
 
     RETRY=$((RETRY+1))
     sleep 1
   done
 
-  if [ "$FINISH" = "$POWER_ON_TIMEOUT" ]; then
-    logger -s -p user.warn -t power-on "Server 12V-On timeout..."
+  if [ "$FINISH" = "$POWER_12V_ON_TIMEOUT" ]; then
+    logger -s -p user.warn -t power-on "Server 12V-On timeout"
     exit 1
   fi
-  
-  check_por_config
-  if [ "$(server_power_status)" = "$SERVER_STATUS_DC_OFF" ] && [ "$IS_NEEDED_SERVER_POWER_ON" = true ] && [ "$FINISH" = "$POWER_ON_COMPLETE" ]; then
-    logger -s -p user.info -t power-on "Server DC On..."
-    $POWERUTIL_CMD server on
 
-    # Wait for server finish DC-on
-    FINISH="$POWER_ON_TIMEOUT"
+  check_por_config
+  # Check server DC status according to power policy
+  if [ "$IS_NEEDED_SERVER_POWER_ON" = true ]; then
     RETRY=0
 
     while [ $RETRY -lt $RETRY_TIME ]
     do
-      FINISH=$POWER_ON_TIMEOUT
       status="$(server_power_status)"
       if [ "$status" = "$SERVER_STATUS_DC_ON" ]; then
-        FINISH=$POWER_ON_COMPLETE
-        logger -s -p user.info -t power-on "Server DC-On done..."
+        logger -s -p user.info -t power-on "Server DC-On done"
         exit 0
       fi
 
@@ -103,10 +101,9 @@ elif [ "$(is_server_prsnt)" = "$SERVER_PRESENT" ]; then
       sleep 1
     done
 
-    if [ "$FINISH" = "$POWER_ON_TIMEOUT" ]; then
-      logger -s -p user.warn -t power-on "Server DC-On timeout..."
-      exit 1
-    fi
+    logger -s -p user.warn -t power-on "Server DC-On timeout"
+    exit 1
   fi
 fi
 
+exit 0

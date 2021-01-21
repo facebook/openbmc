@@ -27,6 +27,7 @@ GPIO_VALUE_LOW=0
 GPIO_VALUE_HIGH=1
 
 SERVER_PRSNT_PIN="COMP_PRSNT_N"
+SERVER_STANDBY_PG_PIN="COMP_STBY_PG_IN"
 
 NETFN_EXPANDER_REQ="0x30"
 CMD_GET_UIC_LOCATION="0x40"
@@ -118,5 +119,16 @@ is_server_prsnt() {
     echo $SERVER_PRESENT
   else                                       
     echo $SERVER_ABSENT
+  fi
+}
+
+# Check if server is 12V-on or not
+is_server_12v_on() {
+  status=$(gpio_get "$SERVER_STANDBY_PG_PIN")
+  if [ "$status" = "$GPIO_VALUE_HIGH" ]; then
+    # Server is in standby mode (12v-on only)
+    echo true
+  else
+    echo false
   fi
 }

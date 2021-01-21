@@ -418,16 +418,6 @@ main(int argc, char **argv) {
 	// SLOT4_POWER_EN: GPIOI3 (67)
 	gpio_export_by_name(ASPPED_CHIP, "GPIOI3", "SLOT4_POWER_EN");
 
-	// Set SLOT throttle pin
-	// BMC_THROTTLE_SLOT1_N: GPIOI4 (68)
-	set_gpio_init_value_after_export("GPIOI4", "BMC_THROTTLE_SLOT1_N", 1);
-	// BMC_THROTTLE_SLOT2_N: GPIOI5 (69)
-	set_gpio_init_value_after_export("GPIOI5", "BMC_THROTTLE_SLOT2_N", 1);
-	// BMC_THROTTLE_SLOT3_N: GPIOI6 (70)
-	set_gpio_init_value_after_export("GPIOI6", "BMC_THROTTLE_SLOT3_N", 1);
-	// BMC_THROTTLE_SLOT4_N: GPIOI7 (71)
-	set_gpio_init_value_after_export("GPIOI7", "BMC_THROTTLE_SLOT4_N", 1);
-	
 	// Set FAN disable pin
 	// DISABLE_FAN_N: GPIOM4 (100)
 	set_gpio_init_value_after_export("GPIOM4", "DISABLE_FAN_N", 1);
@@ -472,9 +462,33 @@ main(int argc, char **argv) {
 	// BOARD_ID: GPIOY3
 	gpio_export_by_name(ASPPED_CHIP, "GPIOY3", "BOARD_ID");
 
+	// BASEBOARD_ID: GPIOT6
+	gpio_export_by_name(ASPPED_CHIP, "GPIOT6", "BASEBOARD_ID");
+
 	spb_type = fby2_common_get_spb_type();
-	if (spb_type == TYPE_SPB_YV250) {
+	if (spb_type == TYPE_SPB_YV250 || spb_type == TYPE_SPB_YV2ND2) {
 		gpio_export_by_name(ASPPED_CHIP, "GPIOG7", "YV250_USB_OCP_UART_SWITCH_N");
+	}
+
+	// Set SLOT throttle pin
+	if (spb_type == TYPE_SPB_YV2ND2) {
+		// BMC_THROTTLE_SLOT1_N: GPIOL5
+		set_gpio_init_value_after_export("GPIOL5", "BMC_THROTTLE_SLOT1_N", 1);
+		// BMC_THROTTLE_SLOT2_N: GPIOM5
+		set_gpio_init_value_after_export("GPIOM5", "BMC_THROTTLE_SLOT2_N", 1);
+		// BMC_THROTTLE_SLOT3_N: GPIOH6
+		set_gpio_init_value_after_export("GPIOH6", "BMC_THROTTLE_SLOT3_N", 1);
+		// BMC_THROTTLE_SLOT4_N: GPIOH7
+		set_gpio_init_value_after_export("GPIOH7", "BMC_THROTTLE_SLOT4_N", 1);
+	} else {
+		// BMC_THROTTLE_SLOT1_N: GPIOI4 (68)
+		set_gpio_init_value_after_export("GPIOI4", "BMC_THROTTLE_SLOT1_N", 1);
+		// BMC_THROTTLE_SLOT2_N: GPIOI5 (69)
+		set_gpio_init_value_after_export("GPIOI5", "BMC_THROTTLE_SLOT2_N", 1);
+		// BMC_THROTTLE_SLOT3_N: GPIOI6 (70)
+		set_gpio_init_value_after_export("GPIOI6", "BMC_THROTTLE_SLOT3_N", 1);
+		// BMC_THROTTLE_SLOT4_N: GPIOI7 (71)
+		set_gpio_init_value_after_export("GPIOI7", "BMC_THROTTLE_SLOT4_N", 1);
 	}
 
 	fby2_common_get_fan_type(); // initialize fan type

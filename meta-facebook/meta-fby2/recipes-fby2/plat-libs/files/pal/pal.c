@@ -844,7 +844,7 @@ static void apply_inlet_correction(float *value) {
   if ((fby2_get_slot_type(FRU_SLOT1) != SLOT_TYPE_GPV2) || (fby2_get_slot_type(FRU_SLOT3) != SLOT_TYPE_GPV2)) {
     int spb_type = 0;
     spb_type = fby2_common_get_spb_type();
-    if(spb_type == TYPE_SPB_YV2ND) {
+    if(spb_type == TYPE_SPB_YV2ND || spb_type == TYPE_SPB_YV2ND2) {
       ict = g_ict_nd;
       ict_cnt = g_ict_nd_count;
     } else {
@@ -4451,14 +4451,14 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       int spb_type = 0;
       spb_type = fby2_common_get_spb_type();
       if (sensor_num == SP_SENSOR_HSC_OUT_CURR || sensor_num == SP_SENSOR_HSC_PEAK_IOUT) {
-        if (spb_type == TYPE_SPB_YV2ND) {
+        if (spb_type == TYPE_SPB_YV2ND || spb_type == TYPE_SPB_YV2ND2) {
           power_value_adjust(nd_curr_cali_table, (float *)value);
         } else {
           power_value_adjust(curr_cali_table, (float *)value);
         }
       }
       if (sensor_num == SP_SENSOR_HSC_IN_POWER || sensor_num == SP_SENSOR_HSC_PEAK_PIN || sensor_num == SP_SENSOR_HSC_IN_POWERAVG) {
-        if (spb_type == TYPE_SPB_YV2ND) {
+        if (spb_type == TYPE_SPB_YV2ND || spb_type == TYPE_SPB_YV2ND) {
           power_value_adjust(nd_pwr_cali_table, (float *)value);
         } else {
           power_value_adjust(pwr_cali_table, (float *)value);

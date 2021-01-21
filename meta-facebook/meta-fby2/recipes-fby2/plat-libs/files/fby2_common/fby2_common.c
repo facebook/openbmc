@@ -292,6 +292,44 @@ fby2_common_get_spb_rev(void) {
 }
 
 int
+fby2_common_get_gpio_from_cache(char *gpio_shadow, int* gpio_val) {
+  char key[MAX_VALUE_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  sprintf(key, "gpio_%s", gpio_shadow);
+
+  if (kv_get(key, value, NULL, 0)) {
+    if (fby2_common_get_gpio_val(gpio_shadow, gpio_val) != 0) {
+      syslog(LOG_WARNING,"%s: get gpio failed, shadow:%s", __func__, gpio_shadow);
+      return -1;
+    }
+    value[0] = (*gpio_val == GPIO_VALUE_HIGH) ? 1:0;
+    if (kv_set(key, (char*)&value, 1, KV_FCREATE)) {
+      syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %s", __func__, key, value);
+      return -1;
+    }
+  } else {
+    *gpio_val = value[0];
+  }
+
+  if (*gpio_val < 0 || *gpio_val > 1) {
+    syslog(LOG_WARNING,"%s: unexpected gpio_val, val: %d", __func__, *gpio_val);
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+fby2_common_get_baseboard_id(void) {
+  int gpio_val;
+  if (fby2_common_get_gpio_from_cache(GPIO_BASEBOARD_ID, &gpio_val)) {
+    return -1;
+  }
+  return gpio_val;
+}
+
+int
 fby2_common_get_board_id(void) {
   int board_id;
   int retry = 3;
@@ -349,18 +387,20 @@ _set_spb_type(int spb_type) {
   return ret;
 }
 
-/* Baseboard        Board_ID Rev_ID[2] Rev_ID[1] Rev_ID[0]
-   YV2 ND PoC           1       0         0         0
-   YV2 ND EVT           1       0         0         1
-   YV2 PoC              0       0         0         0
-   YV2 EVT              0       0         0         1
-   YV2 DVT              0       0         1         0
-   YV2 PVT              0       0         1         1
-   YV2.50               1       1         X         X
+/* Baseboard        Board_ID Rev_ID[2] Rev_ID[1] Rev_ID[0] Baesboard_ID
+   YV2 ND2 EVT          1       0         0         1           1
+   YV2 ND PoC           1       0         0         0           0
+   YV2 ND EVT           1       0         0         1           0
+   YV2 PoC              0       0         0         0           0
+   YV2 EVT              0       0         0         1           0
+   YV2 DVT              0       0         1         0           0
+   YV2 PVT              0       0         1         1           0
+   YV2.50               1       1         X         X           0
 */
 int
 fby2_common_get_spb_type() {
    int spb_type;
+   gpio_value_t baseboard_id;
    gpio_value_t board_id;
    uint8_t rev;
 
@@ -368,6 +408,14 @@ fby2_common_get_spb_type() {
    if ( _get_spb_type(&spb_type) == 0) {
      return spb_type;
    }
+
+   // Baseboard_ID
+   baseboard_id = fby2_common_get_baseboard_id();
+   if (baseboard_id < 0) {
+     syslog(LOG_WARNING, "fby2_common_get_spb_type: fail to get spb baseboard id");
+     return -1;
+   }
+   syslog(LOG_WARNING, "fby2_common_get_spb_type: spb baseboard id %d",baseboard_id);
 
    // Board_ID
    board_id = fby2_common_get_board_id();
@@ -388,7 +436,11 @@ fby2_common_get_spb_type() {
    if (GPIO_VALUE_HIGH == board_id && BIT(rev, 2)) {
      spb_type = TYPE_SPB_YV250;
    } else if ((GPIO_VALUE_HIGH == board_id) && (0 == BIT(rev, 2))) {
-     spb_type = TYPE_SPB_YV2ND;
+      if (baseboard_id == GPIO_VALUE_LOW) {
+        spb_type = TYPE_SPB_YV2ND;
+      } else {
+        spb_type = TYPE_SPB_YV2ND2;
+      }
    } else {
      spb_type = TYPE_SPB_YV2;
    }

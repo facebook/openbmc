@@ -58,6 +58,7 @@ env:
 
   matrix:
     - BOARD=angelslanding
+    - BOARD=cloudripper
     - BOARD=cmm
     - BOARD=emeraldpools
     - BOARD=clearcreek

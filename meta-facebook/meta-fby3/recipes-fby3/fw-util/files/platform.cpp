@@ -154,18 +154,18 @@ class ClassConfig {
           } else if ( board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD ) {
             static PCIESWComponent pciesw_2ou_fw3("slot3", "2ou_pciesw", FRU_SLOT3, "2ou", FW_2OU_PESW);
             static VrExtComponent  vr_2ou_fw3("slot3", "2ou_vr", FRU_SLOT3, "2ou", FW_2OU_PESW_VR);
-            static M2DevComponent  m2_2ou_dev0_fw3("slot3", "2ou_dev0", FRU_SLOT1, "2ou", FW_2OU_M2_DEV0);
-            static M2DevComponent  m2_2ou_dev1_fw3("slot3", "2ou_dev1", FRU_SLOT1, "2ou", FW_2OU_M2_DEV1);
-            static M2DevComponent  m2_2ou_dev2_fw3("slot3", "2ou_dev2", FRU_SLOT1, "2ou", FW_2OU_M2_DEV2);
-            static M2DevComponent  m2_2ou_dev3_fw3("slot3", "2ou_dev3", FRU_SLOT1, "2ou", FW_2OU_M2_DEV3);
-            static M2DevComponent  m2_2ou_dev4_fw3("slot3", "2ou_dev4", FRU_SLOT1, "2ou", FW_2OU_M2_DEV4);
-            static M2DevComponent  m2_2ou_dev5_fw3("slot3", "2ou_dev5", FRU_SLOT1, "2ou", FW_2OU_M2_DEV5);
-            static M2DevComponent  m2_2ou_dev6_fw3("slot3", "2ou_dev6", FRU_SLOT1, "2ou", FW_2OU_M2_DEV6);
-            static M2DevComponent  m2_2ou_dev7_fw3("slot3", "2ou_dev7", FRU_SLOT1, "2ou", FW_2OU_M2_DEV7);
-            static M2DevComponent  m2_2ou_dev8_fw3("slot3", "2ou_dev8", FRU_SLOT1, "2ou", FW_2OU_M2_DEV8);
-            static M2DevComponent  m2_2ou_dev9_fw3("slot3", "2ou_dev9", FRU_SLOT1, "2ou", FW_2OU_M2_DEV9);
-            static M2DevComponent  m2_2ou_dev10_fw3("slot3", "2ou_dev10", FRU_SLOT1, "2ou", FW_2OU_M2_DEV10);
-            static M2DevComponent  m2_2ou_dev11_fw3("slot3", "2ou_dev11", FRU_SLOT1, "2ou", FW_2OU_M2_DEV11);
+            static M2DevComponent  m2_2ou_dev0_fw3("slot3", "2ou_dev0", FRU_SLOT3, "2ou", FW_2OU_M2_DEV0);
+            static M2DevComponent  m2_2ou_dev1_fw3("slot3", "2ou_dev1", FRU_SLOT3, "2ou", FW_2OU_M2_DEV1);
+            static M2DevComponent  m2_2ou_dev2_fw3("slot3", "2ou_dev2", FRU_SLOT3, "2ou", FW_2OU_M2_DEV2);
+            static M2DevComponent  m2_2ou_dev3_fw3("slot3", "2ou_dev3", FRU_SLOT3, "2ou", FW_2OU_M2_DEV3);
+            static M2DevComponent  m2_2ou_dev4_fw3("slot3", "2ou_dev4", FRU_SLOT3, "2ou", FW_2OU_M2_DEV4);
+            static M2DevComponent  m2_2ou_dev5_fw3("slot3", "2ou_dev5", FRU_SLOT3, "2ou", FW_2OU_M2_DEV5);
+            static M2DevComponent  m2_2ou_dev6_fw3("slot3", "2ou_dev6", FRU_SLOT3, "2ou", FW_2OU_M2_DEV6);
+            static M2DevComponent  m2_2ou_dev7_fw3("slot3", "2ou_dev7", FRU_SLOT3, "2ou", FW_2OU_M2_DEV7);
+            static M2DevComponent  m2_2ou_dev8_fw3("slot3", "2ou_dev8", FRU_SLOT3, "2ou", FW_2OU_M2_DEV8);
+            static M2DevComponent  m2_2ou_dev9_fw3("slot3", "2ou_dev9", FRU_SLOT3, "2ou", FW_2OU_M2_DEV9);
+            static M2DevComponent  m2_2ou_dev10_fw3("slot3", "2ou_dev10", FRU_SLOT3, "2ou", FW_2OU_M2_DEV10);
+            static M2DevComponent  m2_2ou_dev11_fw3("slot3", "2ou_dev11", FRU_SLOT3, "2ou", FW_2OU_M2_DEV11);
           }
         }
       }

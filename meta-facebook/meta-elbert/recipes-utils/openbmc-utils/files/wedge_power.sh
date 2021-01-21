@@ -145,6 +145,9 @@ do_sync() {
    mountpoint="/mnt/data1"
 
    sync
+   # rsyslogd logs to eMMC, so we must stop it prior to remouting.
+   kill -TERM "$(cat /var/run/rsyslogd.pid)"
+   sleep .05
    if [ -e $mountpoint ]; then
       retry_command 5 mount -o remount,ro $partition $mountpoint
       sleep 1
@@ -176,8 +179,9 @@ do_reset() {
         if [ $timer -eq 1 ]; then
             do_config_reset_duration "$duration"
         fi
-        do_sync
+        # Log before do_sync since do_sync kills logging.
         logger "Power reset the whole system ..."
+        do_sync
         echo -n "Power reset the whole system ..."
         sleep 1
         echo 0xde > "$PWR_SYSTEM_SYSFS"

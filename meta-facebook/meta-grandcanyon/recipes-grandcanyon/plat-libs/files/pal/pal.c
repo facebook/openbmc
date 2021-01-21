@@ -245,8 +245,11 @@ pal_set_def_key_value() {
 
   for (i = 0; key_cfg[i].name != NULL; i++) {
     if ((ret = kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) < 0) {
-      syslog(LOG_WARNING, "%s(): kv_set failed. %d", __func__, ret);
-      failed_count ++;
+      // Ignore the error messages when the kv node already existed.
+      if (errno != EEXIST) {
+        syslog(LOG_WARNING, "%s(): kv_set failed. %d", __func__, ret);
+        failed_count ++;
+      }
     }
     if (key_cfg[i].function) {
       key_cfg[i].function(KEY_AFTER_INI, key_cfg[i].name);

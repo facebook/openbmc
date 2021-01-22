@@ -189,10 +189,10 @@ fby2_common_dev_id(char *str, uint8_t *dev) {
 
 static int
 trigger_hpr(uint8_t fru) {
+#ifndef CONFIG_FBY2_ND
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN] = {0};
 
-#ifndef CONFIG_FBY2_ND
   switch (fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:

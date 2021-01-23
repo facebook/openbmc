@@ -15,4 +15,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-CFLAGS += " -DCONFIG_FBY2_ND "
+CFLAGS += "  -DCONFIG_FBY2_KERNEL -DCONFIG_FBY2_ND "

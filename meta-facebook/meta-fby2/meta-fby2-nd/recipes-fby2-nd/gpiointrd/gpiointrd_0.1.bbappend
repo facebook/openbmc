@@ -1,4 +1,4 @@
-# Copyright 2014-present Facebook. All Rights Reserved.
+# Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,4 +15,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-CXXFLAGS += " -DCONFIG_FBY2_ND  -DCONFIG_FBY2_KERNEL "
+CFLAGS_prepend = " -DCONFIG_FBY2_ND  -DCONFIG_FBY2_KERNEL "

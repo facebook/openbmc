@@ -21,6 +21,7 @@
 #ifndef __FBY2_CONFIG_EXT_H
 #define __FBY2_CONFIG_EXT_H
 
+#define AST_SYSRESET_WITH_SOC 0x23FFFF3
 #define CONFIG_GPIOD_PT_DISABLE
 
 #endif

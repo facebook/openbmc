@@ -42,4 +42,5 @@ IMAGE_INSTALL += " \
   power-util \
   usbutils \
   usb-console \
+  gpiointrd \
   "

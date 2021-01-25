@@ -42,12 +42,19 @@ else
    exit 1
 fi
 
+read_flash() {
+    echo "Reading flash content..."
+    flashrom -p linux_spi:dev=/dev/spidev1.0 -r "$1" -c $CHIPTYPE || return 1
+    echo "Verifying flash content..."
+    flashrom -f -p linux_spi:dev=/dev/spidev1.0 -v "$1" -c $CHIPTYPE || return 1
+    return 0
+}
+
 if [ "$1" = "erase" ]; then
     echo "Erasing flash content ..."
     flashrom -f -p linux_spi:dev=/dev/spidev1.0 -E -c $CHIPTYPE || exit 1
 elif [ "$1" = "read" ]; then
-    echo "Reading flash content..."
-    flashrom -p linux_spi:dev=/dev/spidev1.0 -r "$2" -c $CHIPTYPE || exit 1
+    retry_command 5 read_flash "$2" || exit 1
 elif [ "$1" = "verify" ]; then
     echo "Verifying flash content..."
     flashrom -f -p linux_spi:dev=/dev/spidev1.0 -v "$2" -c $CHIPTYPE || exit 1

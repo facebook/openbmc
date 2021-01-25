@@ -386,17 +386,16 @@ gpio_export OCP_V3_NIC_2_PWR_GOOD GPIOT6
 # BOARD_ID_MUX_SEL
 gpio_export BOARD_ID_MUX_SEL GPIOU2
 gpio_set BOARD_ID_MUX_SEL 0
-mkdir -p /tmp/cache_store
-echo $(($(gpio_get FM_BOARD_BMC_REV_ID2)<<2 |
+kv set mb_rev $(($(gpio_get FM_BOARD_BMC_REV_ID2)<<2 |
         $(gpio_get FM_BOARD_BMC_REV_ID1)<<1 |
-        $(gpio_get FM_BOARD_BMC_REV_ID0))) > /tmp/cache_store/mb_rev
+        $(gpio_get FM_BOARD_BMC_REV_ID0)))
 
-echo $(($(gpio_get FM_BOARD_BMC_SKU_ID5)<<5 |
+kv set mb_sku $(($(gpio_get FM_BOARD_BMC_SKU_ID5)<<5 |
         $(gpio_get FM_BOARD_BMC_SKU_ID4)<<4 |
         $(gpio_get FM_BOARD_BMC_SKU_ID3)<<3 |
         $(gpio_get FM_BOARD_BMC_SKU_ID2)<<2 |
         $(gpio_get FM_BOARD_BMC_SKU_ID1)<<1 |
-        $(gpio_get FM_BOARD_BMC_SKU_ID0))) > /tmp/cache_store/mb_sku
+        $(gpio_get FM_BOARD_BMC_SKU_ID0)))
 
 gpio_set BOARD_ID_MUX_SEL 1
 

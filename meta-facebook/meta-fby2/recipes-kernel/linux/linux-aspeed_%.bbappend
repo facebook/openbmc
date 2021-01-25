@@ -2,7 +2,7 @@ LINUX_VERSION_EXTENSION = "-fby2"
 
 COMPATIBLE_MACHINE = "fby2|northdome"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS_append := "${THISDIR}/files:"
 
 SRC_URI += "file://defconfig \
            "

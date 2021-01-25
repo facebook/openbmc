@@ -20,9 +20,17 @@
 import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
+from tests.elbert.test_data.sensors.sensors import (
+    SCM_SENSORS,
+    SMB_SENSORS,
+    PIM_16Q_SENSORS,
+    PIM_8DDM_SENSORS,
+    FAN_SENSORS,
+    PSU_SENSORS,
+)
+from utils.shell_util import run_shell_cmd
 
 
-# ELBERTTODO REST API Support, CHASSIS/PIM/SC/AST2620
 class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     """
     Input data to the test needs to be a list like below.
@@ -69,9 +77,26 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         ]
 
     # "/api/sys/sensors"
-    @unittest.skip("ELBERTTODO: Test not supported yet")
     def test_endpoint_api_sys_sensors(self):
-        pass
+        cmd = "/usr/local/bin/pim_types.sh"
+        pim_types = run_shell_cmd(cmd)
+        self.endpoint_sensors_attrb = []
+        for idx in range(2, 10):
+            if "PIM {}: PIM16Q".format(idx) in pim_types:
+                for sensor in PIM_16Q_SENSORS:
+                    self.endpoint_sensors_attrb.append(sensor.format(idx))
+            elif "PIM {}: PIM8DDM".format(idx) in pim_types:
+                for sensor in PIM_8DDM_SENSORS:
+                    self.endpoint_sensors_attrb.append(sensor.format(idx))
+
+        for idx in range(1, 5):
+            cmd = "head -n 1 /sys/bus/i2c/devices/4-0023/psu{}_present"
+            if "0x1" in run_shell_cmd(cmd.format(idx)):
+                for sensor in PSU_SENSORS:
+                    self.endpoint_sensors_attrb.append(sensor.format(idx))
+        self.endpoint_sensors_attrb.extend(SCM_SENSORS)
+        self.endpoint_sensors_attrb.extend(SMB_SENSORS)
+        self.endpoint_sensors_attrb.extend(FAN_SENSORS)
 
     # "/api/sys/mb/fruid"
     def set_endpoint_fruid_attributes(self):

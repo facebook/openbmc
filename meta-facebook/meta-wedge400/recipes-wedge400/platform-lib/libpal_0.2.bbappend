@@ -30,6 +30,7 @@ DEPENDS += " \
     libobmc-i2c \
     libsensor-correction \
     libwedge-eeprom \
+    libmisc-utils \
     "
 
 # These shouldn't be needed but are because we aren't properly versioning the
@@ -41,4 +42,5 @@ RDEPENDS_${PN} += " \
     libobmc-i2c \
     libsensor-correction \
     libwedge-eeprom \
+    libmisc-utils \
     "

@@ -652,127 +652,6 @@ char * def_val_list[] = {
   LAST_KEY /* Same as last entry of the key_list */
 };
 
-// Helper Functions
-static int
-read_device(const char *device, int *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "r");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    OBMC_INFO("failed to open device %s", device);
-#endif
-    return err;
-  }
-
-  rc = fscanf(fp, "%i", value);
-  fclose(fp);
-  if (rc != 1) {
-#ifdef DEBUG
-    OBMC_INFO("failed to read device %s", device);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-static int
-write_device(const char *device, const char *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "w");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    OBMC_INFO("failed to open device for write %s", device);
-#endif
-    return err;
-  }
-
-  rc = fputs(value, fp);
-  fclose(fp);
-
-  if (rc < 0) {
-#ifdef DEBUG
-    OBMC_INFO("failed to write device %s", device);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-int
-pal_detect_i2c_device(uint8_t bus, uint8_t addr) {
-
-  int fd = -1, rc = -1;
-  char fn[32];
-
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
-  fd = open(fn, O_RDWR);
-  if (fd == -1) {
-    OBMC_WARN("Failed to open i2c device %s", fn);
-    return -1;
-  }
-
-  rc = ioctl(fd, I2C_SLAVE_FORCE, addr);
-  if (rc < 0) {
-    OBMC_WARN("Failed to open slave @ address 0x%x", addr);
-    close(fd);
-    return -1;
-  }
-
-  rc = i2c_smbus_read_byte(fd);
-  close(fd);
-
-  if (rc < 0) {
-    return -1;
-  } else {
-    return 0;
-  }
-}
-
-int
-pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name) {
-
-  int ret = -1;
-  char cmd[64];
-
-  snprintf(cmd, sizeof(cmd),
-            "echo %s %d > /sys/bus/i2c/devices/i2c-%d/new_device",
-              device_name, addr, bus);
-
-#ifdef DEBUG
-  OBMC_WARN("[%s] Cmd: %s", __func__, cmd);
-#endif
-
-  ret = run_command(cmd);
-
-  return ret;
-}
-
-int
-pal_del_i2c_device(uint8_t bus, uint8_t addr) {
-
-  int ret = -1;
-  char cmd[64];
-
-  sprintf(cmd, "echo %d > /sys/bus/i2c/devices/i2c-%d/delete_device",
-           addr, bus);
-
-#ifdef DEBUG
-  OBMC_WARN("[%s] Cmd: %s", __func__, cmd);
-#endif
-
-  ret = run_command(cmd);
-
-  return ret;
-}
-
 void
 pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
   switch(mode) {
@@ -1037,7 +916,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       return -1;
     }
 
-    if (read_device(path, &val)) {
+    if (device_read(path, &val)) {
       return -1;
     }
 
@@ -1049,7 +928,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     }
 
     if ( fru == FRU_PEM1 || fru == FRU_PSU1 ){
-      ext_prsnt = pal_detect_i2c_device(24,0x18); // 0 present -1 absent
+      ext_prsnt = i2c_detect_device(24,0x18); // 0 present -1 absent
       if( fru == FRU_PEM1 && ext_prsnt == 0 ){ // for PEM 0x18 should present
         *status = 1;
       } else if ( fru == FRU_PSU1 && ext_prsnt < 0 ){ // for PSU 0x18 should absent
@@ -1059,7 +938,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       }
     }
     else if ( fru == FRU_PEM2 || fru == FRU_PSU2 ){
-      ext_prsnt = pal_detect_i2c_device(25,0x18); // 0 present -1 absent
+      ext_prsnt = i2c_detect_device(25,0x18); // 0 present -1 absent
       if( fru == FRU_PEM2 && ext_prsnt == 0 ){ // for PEM 0x18 should present
         *status = 1;
       } else if ( fru == FRU_PSU2 && ext_prsnt < 0 ){ // for PSU 0x18 should absent
@@ -1344,7 +1223,7 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_DEBUG_PRSNT_N, "value");
 
-  if (read_device(path, &val)) {
+  if (device_read(path, &val)) {
     return -1;
   }
 
@@ -1439,49 +1318,49 @@ pal_set_post_gpio_out(void) {
   char *val = "out";
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_0, "direction");
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_1, "direction");
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_2, "direction");
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_3, "direction");
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_4, "direction");
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_5, "direction");
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_6, "direction");
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_POSTCODE_7, "direction");
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
@@ -1489,7 +1368,7 @@ pal_set_post_gpio_out(void) {
   post_exit:
   if (ret) {
 #ifdef DEBUG
-    OBMC_WARN("write_device failed for %s\n", path);
+    OBMC_WARN("device_write_buff failed for %s\n", path);
 #endif
     return -1;
   } else {
@@ -1520,7 +1399,7 @@ pal_post_display(uint8_t status) {
     val = "0";
   }
 
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
@@ -1532,7 +1411,7 @@ pal_post_display(uint8_t status) {
     val = "0";
   }
 
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
@@ -1544,7 +1423,7 @@ pal_post_display(uint8_t status) {
     val = "0";
   }
 
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
@@ -1556,7 +1435,7 @@ pal_post_display(uint8_t status) {
     val = "0";
   }
 
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
@@ -1568,7 +1447,7 @@ pal_post_display(uint8_t status) {
     val = "0";
   }
 
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
@@ -1580,7 +1459,7 @@ pal_post_display(uint8_t status) {
     val = "0";
   }
 
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
@@ -1592,7 +1471,7 @@ pal_post_display(uint8_t status) {
     val = "0";
   }
 
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
@@ -1604,7 +1483,7 @@ pal_post_display(uint8_t status) {
     val = "0";
   }
 
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     goto post_exit;
   }
@@ -1612,7 +1491,7 @@ pal_post_display(uint8_t status) {
 post_exit:
   if (ret) {
 #ifdef DEBUG
-    OBMC_WARN("write_device failed for %s\n", path);
+    OBMC_WARN("device_write_buff failed for %s\n", path);
 #endif
     return -1;
   } else {
@@ -1653,17 +1532,17 @@ pal_get_board_rev(int *rev) {
   int val_id_0, val_id_1, val_id_2;
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_0, "value");
-  if (read_device(path, &val_id_0)) {
+  if (device_read(path, &val_id_0)) {
     return -1;
   }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_1, "value");
-  if (read_device(path, &val_id_1)) {
+  if (device_read(path, &val_id_1)) {
     return -1;
   }
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_2, "value");
-  if (read_device(path, &val_id_2)) {
+  if (device_read(path, &val_id_2)) {
     return -1;
   }
 
@@ -1678,7 +1557,7 @@ pal_get_board_type(uint8_t *brd_type){
   int val;
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_BRD_TPYE, "value");
-  if (read_device(path, &val)) {
+  if (device_read(path, &val)) {
     return CC_UNSPECIFIED_ERROR;
   }
 
@@ -1788,7 +1667,7 @@ pal_get_cpld_board_rev(int *rev, const char *device) {
   char full_name[LARGEST_DEVICE_NAME + 1];
 
   snprintf(full_name, LARGEST_DEVICE_NAME, device, "board_ver");
-  if (read_device(full_name, rev)) {
+  if (device_read(full_name, rev)) {
     return -1;
   }
 
@@ -1840,13 +1719,13 @@ pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver) {
       return -1;
   }
 
-  if (!read_device(ver_path, &val)) {
+  if (!device_read(ver_path, &val)) {
     ver[0] = (uint8_t)val;
   } else {
     return -1;
   }
 
-  if (!read_device(sub_ver_path, &val)) {
+  if (!device_read(sub_ver_path, &val)) {
     ver[1] = (uint8_t)val;
   } else {
     printf("[debug][ver:%s]\n", ver_path);
@@ -1900,10 +1779,10 @@ pal_set_com_pwr_btn_n(char *status) {
   int ret;
   sprintf(path, SCM_SYSFS, COM_PWR_BTN_N);
 
-  ret = write_device(path, status);
+  ret = device_write_buff(path, status);
   if (ret) {
 #ifdef DEBUG
-  OBMC_WARN("write_device failed for %s\n", path);
+  OBMC_WARN("device_write_buff failed for %s\n", path);
 #endif
     return -1;
   }
@@ -2129,17 +2008,17 @@ pal_set_th3_power(int option) {
   switch(option) {
     case TH3_POWER_ON:
       sprintf(path, SMB_SYSFS, sysfs);
-      ret = write_device(path, "1");
+      ret = device_write_buff(path, "1");
       break;
     case TH3_POWER_OFF:
       sprintf(path, SMB_SYSFS, sysfs);
-      ret = write_device(path, "0");
+      ret = device_write_buff(path, "0");
       break;
     case TH3_RESET:
       sprintf(path, SMB_SYSFS, sysfs);
-      ret = write_device(path, "0");
+      ret = device_write_buff(path, "0");
       sleep(1);
-      ret = write_device(path, "1");
+      ret = device_write_buff(path, "1");
       break;
     default:
       ret = -1;
@@ -2215,7 +2094,7 @@ read_attr_integer(const char *device, const char *attr, int *value) {
   snprintf(
       full_name, sizeof(full_name), "%s/%s", dir_name, attr);
 
-  if (read_device(full_name, value)) {
+  if (device_read(full_name, value)) {
     return -1;
   }
 
@@ -2236,7 +2115,7 @@ read_attr(const char *device, const char *attr, float *value) {
   snprintf(
       full_name, sizeof(full_name), "%s/%s", dir_name, attr);
 
-  if (read_device(full_name, &tmp)) {
+  if (device_read(full_name, &tmp)) {
     return -1;
   }
 
@@ -2260,7 +2139,7 @@ read_hsc_attr(const char *device,
   snprintf(
       full_dir_name, sizeof(full_dir_name), "%s/%s", dir_name, attr);
 
-  if (read_device(full_dir_name, &tmp)) {
+  if (device_read(full_dir_name, &tmp)) {
     return -1;
   }
 
@@ -2293,7 +2172,7 @@ read_fan_rpm_f(const char *device, uint8_t fan, float *value) {
 
   snprintf(device_name, 11, "fan%d_input", fan);
   snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, device_name);
-  if (read_device(full_name, &tmp)) {
+  if (device_read(full_name, &tmp)) {
     return -1;
   }
 
@@ -2316,7 +2195,7 @@ read_fan_rpm(const char *device, uint8_t fan, int *value) {
 
   snprintf(device_name, 11, "fan%d_input", fan);
   snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, device_name);
-  if (read_device(full_name, &tmp)) {
+  if (device_read(full_name, &tmp)) {
     return -1;
   }
 
@@ -2735,7 +2614,7 @@ cor_th3_volt(uint8_t board_type) {
   for(i = rov_cnt - 1; i >= 0; i--) {
     memset(path, 0, sizeof(path));
     snprintf(path, LARGEST_DEVICE_NAME, tmp, i);
-    if(read_device(path, &tmp_volt)) {
+    if(device_read(path, &tmp_volt)) {
       OBMC_ERROR(-1, "%s, Cannot read %s of th3/gb voltage from smbcpld\n", __func__, path);
       return -1;
     }
@@ -2750,7 +2629,7 @@ cor_th3_volt(uint8_t board_type) {
 
   snprintf(str, sizeof(str), "%d", val_volt);
   snprintf(path, LARGEST_DEVICE_NAME, SMB_ISL_DEVICE"/%s", VOLT_SET(3));
-  if(write_device(path, str)) {
+  if(device_write_buff(path, str)) {
     OBMC_ERROR(-1, "%s, Cannot write th3/gb voltage into ISL68127\n", __func__);
     return -1;
   }
@@ -6475,7 +6354,7 @@ void set_scm_led(int brd_rev)
   int ret;
 
   snprintf(path, LARGEST_DEVICE_NAME, GPIO_COME_PWRGD, "value");
-  if (read_device(path, &power)) {
+  if (device_read(path, &power)) {
     OBMC_WARN("%s: can't get GPIO value '%s'",__func__,path);
     return;
   }
@@ -6523,10 +6402,10 @@ pal_light_scm_led(uint8_t led_color)
     val = "0";
   else
     val = "1";
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
 #ifdef DEBUG
-  OBMC_WARN("write_device failed for %s\n", path);
+  OBMC_WARN("device_write_buff failed for %s\n", path);
 #endif
     return -1;
   }
@@ -7130,7 +7009,7 @@ pal_get_hand_sw_physically(uint8_t *pos) {
   int loc;
 
   snprintf(path, LARGEST_DEVICE_NAME, BMC_UART_SEL);
-  if (read_device(path, &loc)) {
+  if (device_read(path, &loc)) {
     return -1;
   }
   *pos = loc;
@@ -7251,7 +7130,7 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
 
   sprintf(path, SCM_SYSFS, SCM_COM_RST_BTN);
 
-  ret = write_device(path, val);
+  ret = device_write_buff(path, val);
   if (ret) {
     return -1;
   }
@@ -7311,7 +7190,7 @@ pal_switch_uart_mux() {
   int loc;
   /* Refer the UART select status */
   snprintf(path, LARGEST_DEVICE_NAME, BMC_UART_SEL);
-  if (read_device(path, &loc)) {
+  if (device_read(path, &loc)) {
     return -1;
   }
 
@@ -7321,7 +7200,7 @@ pal_switch_uart_mux() {
     val = "3";
   }
 
-  if (write_device(path, val)) {
+  if (device_write_buff(path, val)) {
     return -1;
   }
   return 0;

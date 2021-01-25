@@ -7,18 +7,20 @@
 
 using namespace std;
 
+#define DEFAULT_EID 0x8
+
 static int get_nic_ver(uint8_t bus, uint8_t dst_eid)
 {
   int ret = -1;
   uint8_t tag = 0;
   uint8_t iid = 0;
   uint16_t addr;
-  uint8_t src_eid = 0x8;
+  uint8_t src_eid = DEFAULT_EID;
   Get_Version_ID_Response rsp;
   struct obmc_mctp_binding *mctp_binding;
 
   pal_get_bmc_ipmb_slave_addr(&addr, bus);
-  mctp_binding = obmc_mctp_smbus_init(bus, addr, src_eid);
+  mctp_binding = obmc_mctp_smbus_init(bus, addr, src_eid, NCSI_MAX_PAYLOAD);
   if (mctp_binding == NULL) {
     return -1;
   }
@@ -49,18 +51,28 @@ bail:
 
 int MCTPOverSMBusNicComponent::print_version()
 {
-  uint8_t prsnt;
-  uint8_t fru_id;
-
-  if (pal_get_fru_id((char *)this->component().c_str(), &fru_id) < 0)
-    return -1;
-  if (pal_is_fru_prsnt(fru_id, &prsnt) || !prsnt) {
-    syslog(LOG_WARNING, "%s not present", this->component().c_str());
-    return -1;
-  }
-
   // TODO:
   // 	Usually, bus owner has to assign EID to each MCTP device before communication
   // 	But we use the EID assigned by NIC itself for now
   return get_nic_ver(_bus_id, _eid);
+}
+
+int MCTPOverSMBusNicComponent::update(string image)
+{
+  int ret = -1;
+  uint8_t tag = 0;
+  uint16_t addr;
+  uint8_t src_eid = DEFAULT_EID;
+  struct obmc_mctp_binding *mctp_binding;
+
+  pal_get_bmc_ipmb_slave_addr(&addr, _bus_id);
+  mctp_binding = obmc_mctp_smbus_init(_bus_id, addr, src_eid, -1); // Default size
+  if (mctp_binding == NULL) {
+    return -1;
+  }
+
+  ret = obmc_mctp_fw_update(mctp_binding, _eid, tag, (char *)image.c_str());
+
+  obmc_mctp_smbus_free(mctp_binding);
+  return ret;
 }

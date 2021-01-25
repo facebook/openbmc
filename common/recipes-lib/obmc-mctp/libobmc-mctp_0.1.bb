@@ -11,9 +11,9 @@ SRC_URI = "file://obmc-mctp.c \
            file://Makefile \
           "
 
-DEPENDS += "libpal libncsi libmctp-intel"
-RDEPENDS_${PN} += "libpal libncsi libmctp-intel"
-LDFLAGS += "-lpal -lmctp_intel"
+DEPENDS += "libncsi libpldm libmctp-intel"
+RDEPENDS_${PN} += "libncsi libpldm libmctp-intel"
+LDFLAGS += "-lpldm -lmctp_intel"
 
 S = "${WORKDIR}"
 

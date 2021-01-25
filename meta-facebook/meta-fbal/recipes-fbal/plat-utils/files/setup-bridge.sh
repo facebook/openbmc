@@ -97,7 +97,7 @@ killall dhclient
 echo "DHCPv6..."
 sv start dhc6
 echo "DHCPv4..."
-dhclient -d -pf /var/run/dhclient.br0.pid br0 &
+dhclient -d -pf /var/run/dhclient.eth0.pid br0 &
 
 
 echo "Detect USB Lost..."

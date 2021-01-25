@@ -19,7 +19,11 @@
 #
 import unittest
 from abc import abstractmethod
-from tests.wedge400.helper.libpal import pal_get_board_type_rev
+from tests.wedge400.helper.libpal import (
+    pal_get_board_type_rev,
+    pal_detect_power_supply_present,
+    BoardRevision,
+)
 from common.base_sensor_test import SensorUtilTest
 from tests.wedge400.test_data.sensors.sensors import (
     PEM1_SENSORS,
@@ -130,9 +134,18 @@ class PemSensorTest(SensorUtilTest, unittest.TestCase):
         pass
 
     def base_test_pem_sensor_keys(self):
-        result = self.get_parsed_result()
-        if not result["present"]:
+        self.set_sensors_cmd()
+        if (
+            self._pem_id == 1
+            and pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM1)
+            != "pem1"
+        ) or (
+            self._pem_id == 2
+            and pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM2)
+            != "pem2"
+        ):
             self.skipTest("pem{} is not present".format(self._pem_id))
+        result = self.get_parsed_result()
 
         for key in self.get_pem_sensors():
             with self.subTest(key=key):
@@ -174,9 +187,18 @@ class PsuSensorTest(SensorUtilTest, unittest.TestCase):
         pass
 
     def base_test_psu_sensor_keys(self):
-        result = self.get_parsed_result()
-        if not result["present"]:
+        self.set_sensors_cmd()
+        if (
+            self._psu_id == 1
+            and pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PSU1)
+            != "psu1"
+        ) or (
+            self._psu_id == 2
+            and pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PSU2)
+            != "psu2"
+        ):
             self.skipTest("psu{} is not present".format(self._psu_id))
+        result = self.get_parsed_result()
 
         for key in self.get_psu_sensors():
             with self.subTest(key=key):

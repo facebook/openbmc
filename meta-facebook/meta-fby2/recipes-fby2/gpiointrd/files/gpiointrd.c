@@ -706,7 +706,7 @@ static void gpio_event_handle(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_
           pthread_mutex_unlock(&hsvc_mutex[slot_id]);
        }
   } // End of GPIO_SLOT1/2/3/4_PRSNT_B_N, GPIO_SLOT1/2/3/4_PRSNT_N
-  else if ((strncmp(cfg->shadow, "UART_SEL", sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "YV250_USB_OCP_UART_SWITCH_N", sizeof(cfg->shadow)) == 0)) {
+  else if (strncmp(cfg->shadow, "UART_SEL", sizeof(cfg->shadow)) == 0) {
     if (pal_get_hand_sw(&slot_id)) {
       slot_id = HAND_SW_BMC;
     }
@@ -1080,7 +1080,7 @@ static struct gpiopoll_config g_gpios[] = {
 };
 
 
-// YV2.50
+// YV2.50 & YV2ND2
 static struct gpiopoll_config g_gpios_yv250[] = {
   // shadow, description, edge, handler,oneshot
   {"FAN_LATCH_DETECT",             "GPIOH5",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
@@ -1096,7 +1096,7 @@ static struct gpiopoll_config g_gpios_yv250[] = {
   {"SLOT2_PRSNT_N",                "GPIOAA1", GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
   {"SLOT3_PRSNT_N",                "GPIOAA2", GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
   {"SLOT4_PRSNT_N",                "GPIOAA3", GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
-  {"YV250_USB_OCP_UART_SWITCH_N",  "GPIOG7",  GPIO_EDGE_FALLING, gpio_event_handle, NULL},
+  {"UART_SEL",                     "GPIOG7",  GPIO_EDGE_FALLING, gpio_event_handle, NULL},
   {"SLOT1_POWER_EN",               "GPIOI0",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
   {"SLOT2_POWER_EN",               "GPIOI1",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
   {"SLOT3_POWER_EN",               "GPIOI2",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
@@ -1224,7 +1224,7 @@ main(int argc, void **argv) {
   } else {
     openlog("gpiointrd", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "gpiointrd: daemon started");
-    if (spb_type == TYPE_SPB_YV250) {
+    if (spb_type == TYPE_SPB_YV250 || spb_type == TYPE_SPB_YV2ND2) {
       polldesc = gpio_poll_open(g_gpios_yv250, sizeof(g_gpios_yv250)/sizeof(g_gpios_yv250[0]));      
     } else {
       polldesc = gpio_poll_open(g_gpios, sizeof(g_gpios)/sizeof(g_gpios[0]));

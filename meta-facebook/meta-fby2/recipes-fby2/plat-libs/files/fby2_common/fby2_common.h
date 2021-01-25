@@ -151,7 +151,6 @@ typedef struct {
 #define GPIO_POSTCODE_2                   "POSTCODE_2"
 #define GPIO_POSTCODE_3                   "POSTCODE_3"
 #define GPIO_DUAL_FAN_DETECT              "DUAL_FAN_DETECT"
-#define GPIO_YV250_USB_OCP_UART_SWITCH_N  "YV250_USB_OCP_UART_SWITCH_N" // YV2.50
 #define GPIO_FAN_LATCH_DETECT             "FAN_LATCH_DETECT"
 #define GPIO_SLOT1_POWER_EN               "SLOT1_POWER_EN"
 #define GPIO_SLOT2_POWER_EN               "SLOT2_POWER_EN"

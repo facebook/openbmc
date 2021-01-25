@@ -351,8 +351,6 @@ main(int argc, char **argv) {
 	// RST_SLOT4_SYS_RESET_N: GPIOS3 (147)
 	set_gpio_init_value_after_export("GPIOS3", "RST_SLOT4_SYS_RESET_N", 1);
 
-	// UART_SEL: GPIOO3 (115)
-	gpio_export_by_name(ASPPED_CHIP, "GPIOO3", "UART_SEL");
 
 	// 12V_STBY Enable for Slots
 	// P12V_STBY_SLOT1_EN: GPIOO4 (116)
@@ -467,7 +465,11 @@ main(int argc, char **argv) {
 
 	spb_type = fby2_common_get_spb_type();
 	if (spb_type == TYPE_SPB_YV250 || spb_type == TYPE_SPB_YV2ND2) {
-		gpio_export_by_name(ASPPED_CHIP, "GPIOG7", "YV250_USB_OCP_UART_SWITCH_N");
+		// UART_SEL for YV250 & YV2ND2
+		gpio_export_by_name(ASPPED_CHIP, "GPIOG7", "UART_SEL");
+	} else {
+		// UART_SEL: GPIOO3 (115)
+		gpio_export_by_name(ASPPED_CHIP, "GPIOO3", "UART_SEL");
 	}
 
 	// Set SLOT throttle pin

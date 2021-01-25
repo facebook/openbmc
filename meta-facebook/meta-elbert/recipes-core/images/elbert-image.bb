@@ -27,4 +27,5 @@ IMAGE_INSTALL += " \
   ipmid \
   ipmitool \
   guid-util \
+  psu-util \
   "

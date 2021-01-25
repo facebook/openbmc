@@ -322,11 +322,13 @@ int pal_get_server_power(uint8_t slot_id, uint8_t* status) {
   uint8_t retry = MAX_READ_RETRY;
   char value[MAX_VALUE_LEN];
   char sysfs_value[4] = {0};
+  char path[LARGEST_DEVICE_NAME + 1];
+
+  snprintf(path, LARGEST_DEVICE_NAME, SCMCPLD_PATH_FMT, CPU_CTRL);
 
   /* Check if the SCM is turned on or not */
   while (retry) {
-    ret = pal_read_sysfs(
-        ELBERT_SCM_PWR_ON_SYSFS, sysfs_value, sizeof(sysfs_value) - 1);
+    ret = pal_read_sysfs(path, sysfs_value, sizeof(sysfs_value) - 1);
     if (!ret)
       break;
     msleep(50);
@@ -647,4 +649,162 @@ int pal_set_dev_guid(uint8_t fru, char* str) {
 
   pal_populate_guid(guid, str);
   return pal_set_guid(guid);
+}
+
+// Helper Functions
+static int
+read_device(const char *device, int *value) {
+  FILE *fp;
+  int rc;
+
+  fp = fopen(device, "r");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", device);
+#endif
+    return err;
+  }
+
+  rc = fscanf(fp, "%i", value);
+  fclose(fp);
+  if (rc != 1) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to read device %s", device);
+#endif
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
+
+int
+pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
+  int val;
+  char tmp[LARGEST_DEVICE_NAME];
+  char path[LARGEST_DEVICE_NAME + 1];
+  *status = 0;
+
+  switch (fru) {
+    case FRU_CHASSIS:
+    case FRU_BMC:
+    case FRU_SCM:
+      *status = 1;
+      return 0;
+    case FRU_SMB:
+    case FRU_SMB_EXTRA:
+      snprintf(path, LARGEST_DEVICE_NAME, SCMCPLD_PATH_FMT, SMB_POWERGOOD);
+      break;
+    case FRU_PIM2:
+    case FRU_PIM3:
+    case FRU_PIM4:
+    case FRU_PIM5:
+    case FRU_PIM6:
+    case FRU_PIM7:
+    case FRU_PIM8:
+    case FRU_PIM9:
+      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PIM_PRSNT);
+      snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PIM2 + 2);
+      break;
+    case FRU_PSU1:
+    case FRU_PSU2:
+    case FRU_PSU3:
+    case FRU_PSU4:
+      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PSU_PRSNT);
+      snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PSU1 + 1);
+      break;
+    default:
+      return -1;
+    }
+
+  if (read_device(path, &val)) {
+    return -1;
+  }
+
+  if (val == 0x0) {
+    *status = 0;
+  } else {
+    *status = 1;
+  }
+  return 0;
+}
+
+static int
+pal_is_psu_ready(uint8_t fru, uint8_t *status) {
+  const char *targets[] = { PSU_INPUT_OK, PSU_OUTPUT_OK };
+  char tmp[LARGEST_DEVICE_NAME];
+  char path[LARGEST_DEVICE_NAME + 1];
+  int i, val;
+
+  /* Check that both PSU input and output power are OK. */
+  for (i = 0; i < sizeof(targets) / sizeof(targets[0]); i++) {
+    snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, targets[i]);
+    snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PSU1 + 1);
+
+    if (read_device(path, &val)) {
+      return -1;
+    }
+
+    if (val == 0x0) {
+      *status = 0;
+      return 0;
+    } else {
+      *status = 1;
+    }
+  }
+
+  return 0;
+}
+
+int
+pal_is_fru_ready(uint8_t fru, uint8_t *status) {
+  int val;
+  int not_ready = 0x0;
+  char tmp[LARGEST_DEVICE_NAME];
+  char path[LARGEST_DEVICE_NAME + 1];
+  *status = 0;
+
+  switch (fru) {
+    case FRU_CHASSIS:
+    case FRU_BMC:
+      *status = 1;
+      return 0;
+    case FRU_SCM:
+      snprintf(path, LARGEST_DEVICE_NAME, SCMCPLD_PATH_FMT, CPU_READY);
+      break;
+    case FRU_SMB:
+    case FRU_SMB_EXTRA:
+      snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, SMB_POWERGOOD);
+      break;
+    case FRU_PIM2:
+    case FRU_PIM3:
+    case FRU_PIM4:
+    case FRU_PIM5:
+    case FRU_PIM6:
+    case FRU_PIM7:
+    case FRU_PIM8:
+    case FRU_PIM9:
+      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PIM_FPGA_REV_MAJOR);
+      snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PIM2 + 2);
+      not_ready = 0xff;
+      break;
+    case FRU_PSU1:
+    case FRU_PSU2:
+    case FRU_PSU3:
+    case FRU_PSU4:
+      return pal_is_psu_ready(fru, status);
+    default:
+      return -1;
+    }
+
+  if (read_device(path, &val)) {
+    return -1;
+  }
+
+  if (val == not_ready) {
+    *status = 0;
+  } else {
+    *status = 1;
+  }
+  return 0;
 }

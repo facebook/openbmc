@@ -20,6 +20,8 @@
  */
 
 #include <openbmc/obmc-pal.h>
+#include <openbmc/obmc-i2c.h>
+#include <openbmc/ipmi.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,9 +40,18 @@ extern "C" {
 #define MAX_NUM_FRUS 14
 
 #define LAST_KEY "last_key"
+#define SCMCPLD_PATH_FMT I2C_SYSFS_DEV_DIR(12-0043)"/%s"
+#define CPU_CTRL "cpu_control"
+#define CPU_READY "cpu_ready"
+#define SMB_POWERGOOD "switchcard_powergood"
+#define SMBCPLD_PATH_FMT I2C_SYSFS_DEV_DIR(4-0023)"/%s"
+#define PIM_PRSNT "pim%d_present"
+#define PIM_FPGA_REV_MAJOR "pim%d_fpga_rev_major"
+#define PSU_PRSNT "psu%d_present"
+#define PSU_INPUT_OK "psu%d_input_ok"
+#define PSU_OUTPUT_OK "psu%d_output_ok"
 
 // For checking SCM power status
-#define ELBERT_SCM_PWR_ON_SYSFS "/sys/bus/i2c/devices/12-0043/cpu_control"
 #define ELBERT_SCM_PWR_ON "0x1"
 #define MAX_READ_RETRY 5
 
@@ -68,24 +79,29 @@ extern "C" {
 #define ELBERT_INTF "eth0.4088"
 
 #define GUID_SIZE 16
+#define LARGEST_DEVICE_NAME 128
 
 extern const char pal_fru_list[];
 
 enum {
   FRU_ALL = 0,
-  FRU_CHASSIS,
-  FRU_BMC,
-  FRU_SCM,
-  FRU_SMB,
-  FRU_SMB_EXTRA,
-  FRU_PIM2,
-  FRU_PIM3,
-  FRU_PIM4,
-  FRU_PIM5,
-  FRU_PIM6,
-  FRU_PIM7,
-  FRU_PIM8,
-  FRU_PIM9,
+  FRU_CHASSIS = 1,
+  FRU_BMC = 2,
+  FRU_SCM = 3,
+  FRU_SMB = 4,
+  FRU_SMB_EXTRA = 5,
+  FRU_PIM2 = 6,
+  FRU_PIM3 = 7,
+  FRU_PIM4 = 8,
+  FRU_PIM5 = 9,
+  FRU_PIM6 = 10,
+  FRU_PIM7 = 11,
+  FRU_PIM8 = 12,
+  FRU_PIM9 = 13,
+  FRU_PSU1 = 14,
+  FRU_PSU2 = 15,
+  FRU_PSU3 = 16,
+  FRU_PSU4 = 17,
 };
 
 int pal_get_platform_name(char* name);
@@ -133,6 +149,8 @@ int pal_get_sys_guid(uint8_t fru, char* guid);
 int pal_set_sys_guid(uint8_t fru, char* guid);
 int pal_get_dev_guid(uint8_t fru, char* guid);
 int pal_set_dev_guid(uint8_t fru, char* guid);
+int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
+int pal_is_fru_ready(uint8_t fru, uint8_t *status);
 
 #ifdef __cplusplus
 } // extern "C"

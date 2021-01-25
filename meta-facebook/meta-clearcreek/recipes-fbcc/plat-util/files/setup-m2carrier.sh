@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston
 
-rev=$(cat /tmp/cache_store/mb_rev)
+rev=$(kv get mb_rev)
 
 if [ $rev -eq 0 ]; then
   i2cset -y -f 21 0x77 0x6 0

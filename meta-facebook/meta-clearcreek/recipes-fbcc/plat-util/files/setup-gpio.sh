@@ -102,10 +102,9 @@ gpio_export REV_ID0 GPIOG4
 gpio_export REV_ID1 GPIOG5
 gpio_export REV_ID2 GPIOG6
 
-mkdir -p /tmp/cache_store
-echo $(($(gpio_get REV_ID2)<<2 |
+kv set mb_rev $(($(gpio_get REV_ID2)<<2 |
         $(gpio_get REV_ID1)<<1 |
-        $(gpio_get REV_ID0))) > /tmp/cache_store/mb_rev
+        $(gpio_get REV_ID0)))
 
 # OCP3.0 NIC power good
 gpio_export OCP_V3_0_NIC_POWER_GOOD GPIOH0

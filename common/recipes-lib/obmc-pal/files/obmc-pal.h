@@ -96,6 +96,52 @@ enum {
 };
 
 enum {
+  /* Does the FRU have a FRUID EEPROM? */
+  FRU_CAPABILITY_FRUID_WRITE = (1UL << 0),
+  FRU_CAPABILITY_FRUID_READ = (1UL << 1),
+  FRU_CAPABILITY_FRUID_ALL = FRU_CAPABILITY_FRUID_WRITE |
+                             FRU_CAPABILITY_FRUID_READ,
+
+  /* Sensors on this FRU */
+  FRU_CAPABILITY_SENSOR_READ = (1UL << 2),
+  FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE = (1UL << 3),
+  FRU_CAPABILITY_SENSOR_HISTORY = (1UL << 4),
+  FRU_CAPABILITY_SENSOR_ALL = FRU_CAPABILITY_SENSOR_READ |
+                              FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE |
+                              FRU_CAPABILITY_SENSOR_HISTORY,
+
+  /* Server capability */
+  FRU_CAPABILITY_SERVER = (1UL << 5),
+
+  /* NIC capability */
+  FRU_CAPABILITY_NETWORK_CARD = (1UL << 6),
+
+  /* FRU containing the BMC */
+  FRU_CAPABILITY_MANAGEMENT_CONTROLLER = (1UL << 7),
+
+  /* FRU supports power control */
+  FRU_CAPABILITY_POWER_STATUS = (1UL << 8),
+  FRU_CAPABILITY_POWER_ON = (1UL << 9),
+  FRU_CAPABILITY_POWER_OFF = (1UL << 10),
+  FRU_CAPABILITY_POWER_CYCLE = (1UL << 11),
+  FRU_CAPABILITY_POWER_RESET = (1UL << 12),
+  FRU_CAPABILITY_POWER_ALL = FRU_CAPABILITY_POWER_STATUS |
+                             FRU_CAPABILITY_POWER_ON |
+                             FRU_CAPABILITY_POWER_OFF |
+                             FRU_CAPABILITY_POWER_CYCLE |
+                             FRU_CAPABILITY_POWER_RESET,
+
+  /* FRU/device contains one or more complex device on its board */
+  FRU_CAPABILITY_HAS_DEVICE = (1UL << 13),
+
+  /* Other capabilities can be added here in a
+   * backwards compatible way */
+
+  /* Magic to indicate all capabilities */
+  FRU_CAPABILITY_ALL = 0xffffffffUL
+};
+
+enum {
   SENSORD_MODE_TESTING = 0x01,
   SENSORD_MODE_NORMAL  = 0x0F,
 };
@@ -494,6 +540,8 @@ int pal_set_bios_cap_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t req_len, ui
 int pal_is_sensor_valid(uint8_t fru, uint8_t snr_num);
 int pal_get_fru_type_list(fru_type_t fru_type, const char ***fru_list, uint8_t* num_fru);
 int pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
+int pal_get_fru_capability(uint8_t fru, unsigned int *caps);
+int pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps);
 
 #ifdef __cplusplus
 }

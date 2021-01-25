@@ -779,6 +779,20 @@ pal_get_fru_name(uint8_t fru, char *name)
 }
 
 int __attribute__((weak))
+pal_get_fru_capability(uint8_t fru, unsigned int *caps)
+{
+  *caps = FRU_CAPABILITY_ALL;
+  return 0;
+}
+
+int __attribute__((weak))
+pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
+{
+  *caps = FRU_CAPABILITY_ALL;
+  return 0;
+}
+
+int __attribute__((weak))
 pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
 {
   char fruname[32];

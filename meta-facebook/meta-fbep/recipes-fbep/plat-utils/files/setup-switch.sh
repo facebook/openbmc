@@ -36,16 +36,8 @@ gpio_set PAX1_SKU_ID0 0
 gpio_set PAX2_SKU_ID0 0
 gpio_set PAX3_SKU_ID0 0
 
-if [[ -f "/mnt/data/kv_store/server_type" ]]; then
-  # If KV had existed
-  server_type=$(cat /mnt/data/kv_store/server_type)
-  if [[ "$server_type" == "2" ]]; then
-    gpio_set PAX0_SKU_ID0 1
-    gpio_set PAX1_SKU_ID0 1
-    gpio_set PAX2_SKU_ID0 1
-    gpio_set PAX3_SKU_ID0 1
-  fi
-else
+server_type=$(kv get server_type persistent)
+if [ $? -ne 0 ]; then
   # Get config from MB0's BMC
   for retry in {1..30};
   do
@@ -53,22 +45,27 @@ else
     server_type=${server_type:1:1}
     if [[ "$server_type" == "0" ]]; then
       /usr/local/bin/cfg-util server_type 8
+      server_type=8
       break
     elif [[ "$server_type" == "1" ]]; then
       /usr/local/bin/cfg-util server_type 4
+      server_type=4
       break
     elif [[ "$server_type" == "2" ]]; then
       /usr/local/bin/cfg-util server_type 2
-      gpio_set PAX0_SKU_ID0 1
-      gpio_set PAX1_SKU_ID0 1
-      gpio_set PAX2_SKU_ID0 1
-      gpio_set PAX3_SKU_ID0 1
+      server_type=2
       break
     else
       echo -n "."
       sleep 1
     fi
   done
+fi
+if [[ "$server_type" == "2" ]]; then
+  gpio_set PAX0_SKU_ID0 1
+  gpio_set PAX1_SKU_ID0 1
+  gpio_set PAX2_SKU_ID0 1
+  gpio_set PAX3_SKU_ID0 1
 fi
 echo "done"
 

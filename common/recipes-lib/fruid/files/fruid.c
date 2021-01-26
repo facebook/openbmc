@@ -186,7 +186,7 @@ static char * _fruid_area_field_read(uint8_t *offset)
 
   /* If field data is zero, store 'N/A' for that field. */
   field_len_eff > 0 ? (field = (char *) malloc(field_len_eff + 1)) :
-                      (field = (char *) malloc(strlen(FIELD_EMPTY)));
+                      (field = (char *) malloc(strlen(FIELD_EMPTY) + 1));
   if (!field) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fruid: malloc: memory allocation failed\n");

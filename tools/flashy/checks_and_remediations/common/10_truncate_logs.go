@@ -21,9 +21,11 @@ package common
 
 import (
 	"log"
+	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
 
@@ -44,6 +46,16 @@ var truncateLogFilePatterns []string = []string{
 }
 
 func truncateLogs(stepParams step.StepParams) step.StepExitError {
+	// truncate systemd-journald's archived log files.  systemd may not
+	// be in use and this is best-effort anyway: just log the outcome.
+	cmd := []string{"journalctl", "--vacuum-size=1M"}
+	_, err, _, stderr := utils.RunCommand(cmd, 30*time.Second)
+	if err != nil {
+		log.Printf("Couldn't vacuum systemd journal: %v, stderr: %v", err, stderr)
+	} else {
+		log.Printf("Successfully vacuumed systemd journal")
+	}
+
 	logFilesToDelete, err := fileutils.GlobAll(deleteLogFilePatterns)
 	if err != nil {
 		errMsg := errors.Errorf("Unable to resolve file patterns '%v': %v", deleteLogFilePatterns, err)

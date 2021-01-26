@@ -39,11 +39,11 @@ SRC_URI += "file://init_pwm.sh \
             file://FSC_FBGPV2_BRCM_DVT_config.json \
             file://FSC_FBGPV2_BRCM_10KFAN_DVT_config.json \
             file://FSC_FBGPV2_DVT_zone1.fsc \
-            file://FSC_FBND_DVT_4ND_config.json \
-            file://FSC_FBND_DVT_4ND_zone1.fsc \
             file://FSC_FBYV250_10KFAN_DVT_config.json \
             file://FSC_FBYV250_15KFAN_DVT_config.json \
             file://FSC_FBYV250_DVT_zone1.fsc \
+            file://FSC_NORTHDOME_EVT_4ND_config.json \
+            file://FSC_NORTHDOME_EVT_4ND_zone1.fsc \
             file://fsc_board.py \
             file://fscd_end.sh \
            "
@@ -65,9 +65,9 @@ FSC_CONFIG += "FSC_FBY2_PVT_4TL_config.json \
                FSC_FBGPV2_VSI_10KFAN_DVT_config.json \
                FSC_FBGPV2_BRCM_DVT_config.json \
                FSC_FBGPV2_BRCM_10KFAN_DVT_config.json \
-               FSC_FBND_DVT_4ND_config.json \
                FSC_FBYV250_10KFAN_DVT_config.json\
                FSC_FBYV250_15KFAN_DVT_config.json\
+               FSC_NORTHDOME_EVT_4ND_config.json \
               "
 
 FSC_ZONE_CONFIG +="FSC_FBY2_PVT_4TL_zone1.fsc \
@@ -77,8 +77,8 @@ FSC_ZONE_CONFIG +="FSC_FBY2_PVT_4TL_zone1.fsc \
                    FSC_FBEP_DVT_4EP_zone1.fsc \
                    FSC_FBEP_DVT_2GP_2EP_zone1.fsc \
                    FSC_FBGPV2_DVT_zone1.fsc \
-                   FSC_FBND_DVT_4ND_zone1.fsc \
                    FSC_FBYV250_DVT_zone1.fsc \
+                   FSC_NORTHDOME_EVT_4ND_zone1.fsc \
                   "
 
 do_install_append() {

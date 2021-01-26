@@ -118,7 +118,7 @@ if [ $spb_type == "1" ]; then
    #(3608*10-20475)/ (800*0.3)= 65.0208A
    # 65.0208* 0.92259 = 59.9875A
    i2cset -y -f 10 0x40 0x4a 0x0e18 w
-elif [ $spb_type == "2" ]; then
+elif [[ $spb_type == "2" || $spb_type == "3" ]]; then
    # FBND Platform
    # Clear PEAK_PIN & PEAK_IOUT register
    i2cset -y -f 10 0x40 0xd0 0x0000 w

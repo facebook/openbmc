@@ -79,6 +79,21 @@ int set_gpio_init_value_after_export(const char * name, const char *shadow, gpio
   return ret;
 }
 
+int ioexp_export(const char * chip_name, int offset, const char *shadow)
+{
+	return gpio_export_by_offset(chip_name, offset, shadow);
+}
+
+int ioexp_exportr_with_init_value(const char * chip_name, int offset, const char *shadow, gpio_value_t value)
+{
+  int ret;
+  if (gpio_is_exported(shadow) == false) {
+    gpio_export_by_offset(chip_name, offset, shadow);
+  }
+  ret = gpio_set_init_value_by_shadow(shadow, value);
+  return ret;
+}
+
 int
 main(int argc, char **argv) {
 	int spb_type = 0;
@@ -423,19 +438,13 @@ main(int argc, char **argv) {
 	// Set FAST PROCHOT pin (Default Enable)
 	// FAST_PROCHOT_EN: GPIOR4 (140)
 	set_gpio_init_value_after_export("GPIOR4", "FAST_PROCHOT_EN", 1);
-
-	// PE_BUFF_OE_0_N: GPIOB4 (12)
-	gpio_export_by_name(ASPPED_CHIP, "GPIOB4", "PE_BUFF_OE_0_N");
 	
 	// PE_BUFF_OE_1_N: GPIOB5 (13)
 	gpio_export_by_name(ASPPED_CHIP, "GPIOB5", "PE_BUFF_OE_1_N");
-	
-	// PE_BUFF_OE_2_N: GPIOB6 (14)
-	gpio_export_by_name(ASPPED_CHIP, "GPIOB6", "PE_BUFF_OE_2_N");
-	
+
 	// PE_BUFF_OE_3_N: GPIOB7 (15)
 	gpio_export_by_name(ASPPED_CHIP, "GPIOB7", "PE_BUFF_OE_3_N");
-	
+
 	// CLK_BUFF1_PWR_EN_N: GPIOJ0 (72)
 	gpio_export_by_name(ASPPED_CHIP, "GPIOJ0", "CLK_BUFF1_PWR_EN_N");
 	
@@ -491,6 +500,25 @@ main(int argc, char **argv) {
 		set_gpio_init_value_after_export("GPIOI6", "BMC_THROTTLE_SLOT3_N", 1);
 		// BMC_THROTTLE_SLOT4_N: GPIOI7 (71)
 		set_gpio_init_value_after_export("GPIOI7", "BMC_THROTTLE_SLOT4_N", 1);
+	}
+
+	// Config PE_BUFF_OE pins
+	if (spb_type == TYPE_SPB_YV2ND2) {
+		// PE_BUFF_OE_0_N
+		ioexp_export("8-0049", 1, "PE_BUFF_OE_0_N");
+		// PE_BUFF_OE_2_N
+		ioexp_export("8-0049", 2, "PE_BUFF_OE_2_N");
+	} else {
+		// PE_BUFF_OE_0_N: GPIOB4 (12)
+		gpio_export_by_name(ASPPED_CHIP, "GPIOB4", "PE_BUFF_OE_0_N");
+		// PE_BUFF_OE_2_N: GPIOB6 (14)
+		gpio_export_by_name(ASPPED_CHIP, "GPIOB6", "PE_BUFF_OE_2_N");
+	}
+
+	if (spb_type == TYPE_SPB_YV2ND2) {
+		// Set PCA9537
+		ioexp_exportr_with_init_value("8-0049", 0, "P3V3_EN_ON_R", 1);
+		ioexp_export("8-0049", 3, "SINGLE_FAN_TYPE");
 	}
 
 	fby2_common_get_fan_type(); // initialize fan type

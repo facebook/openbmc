@@ -102,7 +102,7 @@ typedef void (*progress_func_t)(int percent);
 extern "C" {
 #endif
 
-jtag_object_t *jtag_hardware_mode_init(const char *dev_name);
+jtag_object_t *jtag_hardware_mode_init(const char *dev_name, unsigned int freq);
 cpld_device_t *scan_cpld_device();
 int run_test_idle(unsigned char reset, unsigned char endstate, unsigned char tck);
 int check_cpld_status(unsigned int options, int seconds);

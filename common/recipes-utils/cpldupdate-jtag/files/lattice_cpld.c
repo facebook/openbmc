@@ -46,9 +46,9 @@ static cpld_device_t device_list[] = {
 
 static jtag_object_t *global_jtag_object = NULL;
 
-jtag_object_t *jtag_hardware_mode_init(const char *dev_name)
+jtag_object_t *jtag_hardware_mode_init(const char *dev_name, unsigned int freq)
 {
-    jtag_object_t *temp_object = jtag_init(dev_name, JTAG_XFER_HW_MODE, 0);
+    jtag_object_t *temp_object = jtag_init(dev_name, JTAG_XFER_HW_MODE, freq);
     if(NULL == temp_object){
         printf("%s(%d) - failed to init jtag hardware mode\n", __FILE__, __LINE__);
         return NULL;

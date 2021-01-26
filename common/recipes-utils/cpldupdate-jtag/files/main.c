@@ -38,7 +38,7 @@
 
 typedef struct {
     int programming_mode;           /* Transparent mode or offline mode */
-    int freqency;                   /* if this value is 0, use the default freqency */
+    int frequency;                   /* if this value is 0, use the default frequency */
     int program;                    /* enable/disable program  */
     int verification;               /* enable/disable verification flag */
     int read;                       /* enable/disable read flag */
@@ -180,7 +180,7 @@ int cpld_init(cpld_t *pcpld)
         return 0;
     }
 
-    pcpld->pjtag_object = jtag_hardware_mode_init("/dev/jtag0");
+    pcpld->pjtag_object = jtag_hardware_mode_init("/dev/jtag0", pcpld->frequency);
     if(NULL == pcpld->pjtag_object) {
         return -1;
     }
@@ -544,7 +544,7 @@ int main(int argc, char *argv[]){
             cpld.debug = 1;
             break;
         case 'f':
-            cpld.freqency = atoi(optarg);
+            cpld.frequency = atoi(optarg);
             break;
         case 'o':
             prog_option = atoi(optarg);

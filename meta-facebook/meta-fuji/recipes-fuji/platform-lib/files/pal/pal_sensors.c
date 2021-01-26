@@ -1370,11 +1370,6 @@ check_and_read_sensor_value(uint8_t fru, uint8_t snr_num, const char *device,
                             const char *attr, int *value) {
   char dir_name[LARGEST_DEVICE_NAME + 1];
 
-  if (snr_path[fru][snr_num].name != NULL) {
-    if (!device_read(snr_path[fru][snr_num].name, value))
-      return 0;
-  }
-
   if (strstr(device, "hwmon*") != NULL) {
     /* Get current working directory */
     if (get_current_dir(device, dir_name)) {

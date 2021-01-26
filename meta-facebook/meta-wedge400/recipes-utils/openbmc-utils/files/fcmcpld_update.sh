@@ -19,6 +19,7 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
+# shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
 
 prog="$0"
@@ -83,14 +84,18 @@ enable_jtag_chain
 
 case $2 in
     hw)
-        cpldprog -p "${img}"
+        # CPLD update randomly failed with kernel 5.6, the issue can be fixed by
+        # customizing jtag frequency to 12MHz.
+        cpldprog -p "${img}" -f 12000000
         ;;
     sw)
         ispvm -f 1000 dll $DLL_PATH "${img}"
         ;;
     *)
         # default: hw mode
-        cpldprog -p "${img}"
+        # CPLD update randomly failed with kernel 5.6, the issue can be fixed by
+        # customizing jtag frequency to 12MHz.
+        cpldprog -p "${img}" -f 12000000
         ;;
 esac
 

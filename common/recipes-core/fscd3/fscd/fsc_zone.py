@@ -110,6 +110,7 @@ class Zone:
             self.get_fan_mode = True
         else:
             self.get_fan_mode = False
+        self.fail_front_io_count = [0] * len(self.expr_meta["ext_vars"])
 
     def get_set_fan_mode(self, mode, action):
         fan_mode_path = RECORD_DIR + "fan_mode"
@@ -212,6 +213,13 @@ class Zone:
                                 ):
                                     fail_ssd_count = fail_ssd_count + 1
                                     Logger.warn("M.2 Device %s Fail" % v)
+                                elif (re.match(r"front_io_temp", sname) != None):
+                                    self.fail_front_io_count[sensor_index] = self.fail_front_io_count[sensor_index] + 1
+                                    if self.fail_front_io_count[sensor_index] > 1:
+                                        Logger.warn("Front IO Temp %s Fail" % v)
+                                        self.fail_front_io_count[sensor_index] = 0
+                                        outmin = max(outmin, self.boost)
+                                        cause_boost_count += 1
                                 else:
                                     Logger.warn("%s Fail" % v)
                                     outmin = max(outmin, self.boost)
@@ -224,6 +232,8 @@ class Zone:
                                 if outmin == self.boost:
                                     mode = fan_mode["boost_mode"]
                             else:
+                                if (re.match(r"front_io_temp", sname) != None):
+                                    self.fail_front_io_count[sensor_index] = 0
                                 if os.path.isfile(sensor_fail_record_path):
                                     os.remove(sensor_fail_record_path)
                 else:

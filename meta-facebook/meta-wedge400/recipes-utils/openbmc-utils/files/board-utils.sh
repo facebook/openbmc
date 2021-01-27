@@ -146,3 +146,36 @@ wedge_prepare_cpld_update() {
     echo "Set fan speed 40%."
     set_fan_speed.sh 40
 }
+
+wedge_power_supply_type() {
+    # Only PEM has max6615 which I2C slave address is 0x18
+    is_pem1=$(i2cget -f -y 24 0x18 0x0 &> /dev/null; echo $?)
+    is_pem2=$(i2cget -f -y 25 0x18 0x0 &> /dev/null; echo $?)
+
+    power_type=""
+    if [ $# -eq 1 ]; then
+        if [ "$1" = "1" ]; then
+            if [ "$is_pem1" -eq 0 ]; then
+                power_type="PEM"
+            else
+                power_type="PSU"
+            fi
+        elif [ "$1" = "2" ]; then
+            if [ "$is_pem2" -eq 0 ]; then
+                power_type="PEM"
+            else
+                power_type="PSU"
+            fi
+        else
+            echo "wedge_power_supply_type < 1 | 2 >"
+            return
+        fi
+    else
+        if [ "$is_pem1" -eq 0 ] || [ "$is_pem2" -eq 0 ]; then
+            power_type="PEM"
+        else
+            power_type="PSU"
+        fi
+    fi
+    echo $power_type
+}

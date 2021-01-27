@@ -666,7 +666,7 @@ update_remote_bic(uint8_t slot_id, uint8_t intf, int fd, int file_size) {
   }
 
   //wait for it ready
-  sleep(3);
+  sleep(5);
 
   //step3 - send a signal to notice it that starts the update process
   ret = send_start_bic_update(slot_id, 0, file_size, bic_write);

@@ -95,6 +95,7 @@
 #define BRCM_UPDATE_STATUS 128
 #define BRCM_WRITE_CMD 130
 #define BRCM_READ_CMD 131
+#define BRCM_UPDATE_RTRIES 3
 
 #define VSI_UPDATE_STATUS 133
 #define VSI_FW_TYPE 135
@@ -2161,6 +2162,7 @@ bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *pat
   volatile uint16_t count, read_count;
   uint8_t buf[256] = {0};
   int fd;
+  int retries = 0;
   int rp_fw_type =  UNKOWN_FW;
 
   printf("updating fw on slot %d device %d:\n", slot_id,dev_id);
@@ -2236,21 +2238,28 @@ bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *pat
       syslog(LOG_DEBUG,"%s(): set download init offset=%d", __func__,wbuf[0]);
     }
 
-    sleep(2);
-    wbuf[0] = BRCM_UPDATE_STATUS;  // offset 128 reday bit == 1?
-    rlen = 1;
-    ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
-    if (ret != 0) {
-      syslog(LOG_DEBUG,"%s(): reday bit == 1? offset=%d read length=%d failed", __func__,wbuf[0],rlen);
-      goto error_exit;
+    for (retries = 0; retries < BRCM_UPDATE_RTRIES; retries++) {
+      sleep(2);
+      wbuf[0] = BRCM_UPDATE_STATUS;  // offset 128 reday bit == 1?
+      rlen = 1;
+      ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
+      if (ret != 0) {
+        syslog(LOG_DEBUG,"%s(): reday bit == 1? offset=%d read length=%d failed", __func__,wbuf[0],rlen);
+        goto error_exit;
+      }
+
+      if (!(rbuf[0] & 0x40)) {
+        syslog(LOG_DEBUG,"%s(): reday bit == 0 reties = %d", __func__, retries);
+        ret = -1;
+      } else {
+        syslog(LOG_DEBUG,"%s(): reday bit == 1 offset=%d rbuf[0]=%d", __func__,wbuf[0],rbuf[0]);
+        break;
+      }
     }
 
-    if (!(rbuf[0] & 0x40)) {
-      syslog(LOG_DEBUG,"%s(): reday bit == 0", __func__);
-      ret = -1;
+    if (retries == BRCM_UPDATE_RTRIES) {
+      syslog(LOG_DEBUG,"%s(): reday bit == 0 reties failed", __func__);
       goto error_exit;
-    } else {
-      syslog(LOG_DEBUG,"%s(): reday bit == 1 offset=%d rbuf[0]=%d", __func__,wbuf[0],rbuf[0]);
     }
 
     wbuf[0] = BRCM_WRITE_CMD;  // offset 130

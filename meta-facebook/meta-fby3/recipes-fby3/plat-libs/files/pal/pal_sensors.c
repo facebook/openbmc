@@ -1171,8 +1171,8 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
 int pal_get_fan_speed(uint8_t fan, int *rpm)
 {
   char label[32] = {0};
-  float value;
-  int ret;
+  float value = 0;
+  int ret = PAL_ENOTSUP;
   uint8_t bmc_location = 0;
   uint8_t fan_type = UNKNOWN_TYPE;
 
@@ -1197,11 +1197,12 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
       return -1;
     }
     ret = sensors_read_fan(label, &value);
-  } else if (bmc_location == NIC_BMC) {
-    ret = bic_get_fan_speed(fan, &value);
+  } else if ( bmc_location == NIC_BMC ) {
+    if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
+    else ret = bic_get_fan_speed(fan, &value);
   }
 
-  if (ret == 0) {
+  if (ret == PAL_EOK) {
     *rpm = (int)value;
   }
 
@@ -1223,7 +1224,8 @@ int pal_get_fan_name(uint8_t num, char *name)
 static int
 _pal_get_pwm_value(uint8_t pwm, float *value, uint8_t bmc_location) {
   if ( bmc_location == NIC_BMC ) {
-    return bic_get_fan_pwm(pwm, value);
+    if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
+    else return bic_get_fan_pwm(pwm, value);
   }
 
   char label[32] = {0};
@@ -2119,7 +2121,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       }
 
       //if we can't get the config status of the blade, return READING_NA.
-      if ( config_status[fru-1] != CONFIG_UNKNOWN ) {
+      if ( pal_is_fw_update_ongoing(fru) == false && \
+           config_status[fru-1] != CONFIG_UNKNOWN ) {
         if ( pal_sdr_init(fru) == ERR_NOT_READY ) ret = READING_NA;
         else ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[fru-1]);
       } else ret = READING_NA;

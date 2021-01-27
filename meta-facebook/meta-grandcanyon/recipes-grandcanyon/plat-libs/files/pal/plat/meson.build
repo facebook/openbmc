@@ -13,6 +13,8 @@ pal_deps += [
     cc.find_library('m'),
     cc.find_library('bic'),
     cc.find_library('libbic'),
+    cc.find_library('ncsi'),
+    cc.find_library('nl-wrapper'),
     ]
 
 pal_sources += [

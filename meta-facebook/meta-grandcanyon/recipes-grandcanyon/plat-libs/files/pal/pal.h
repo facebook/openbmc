@@ -27,9 +27,13 @@ extern "C" {
 
 #include <openbmc/obmc-pal.h>
 #include <openbmc/kv.h>
+#include <openbmc/ncsi.h>
+#include <openbmc/nl-wrapper.h>
 #include <facebook/fbgc_common.h>
 #include <facebook/fbgc_fruid.h>
 #include <facebook/bic.h>
+#include <sys/socket.h>
+#include <linux/netlink.h>
 #include "pal_sensors.h"
 #include "pal_power.h"
 
@@ -115,6 +119,62 @@ typedef struct _platformInformation {
   char uicId[SKU_UIC_ID_SIZE];
   char uicType[SKU_UIC_TYPE_SIZE];
 } platformInformation;
+
+typedef struct {
+  uint8_t target;
+  uint8_t data[MAX(MAX_IPMB_REQ_LEN, sizeof(NCSI_NL_MSG_T))];
+} bypass_cmd;
+
+typedef struct {
+  uint8_t netdev;
+  uint8_t channel;
+  uint8_t cmd;
+  unsigned char data[NCSI_MAX_PAYLOAD];
+} bypass_ncsi_req;
+
+typedef struct {
+  uint8_t payload_id;
+  uint8_t netfn;
+  uint8_t cmd;
+  uint8_t target;
+  uint8_t bypass_netfn;
+  uint8_t bypass_cmd;
+} bypass_ipmi_header;
+
+typedef struct {
+  uint8_t payload_id;
+  uint8_t netfn;
+  uint8_t cmd;
+  uint8_t target;
+} bypass_me_header;
+
+typedef struct {
+  uint8_t cc;
+} bypass_me_resp_header;
+
+typedef struct {
+  uint8_t payload_id;
+  uint8_t netfn;
+  uint8_t cmd;
+  uint8_t target;
+  uint8_t netdev;
+  uint8_t channel;
+  uint8_t ncsi_cmd;
+} bypass_ncsi_header;
+
+typedef struct {
+  uint8_t netdev;
+  uint8_t action;
+} network_cmd;
+
+typedef struct {
+  uint8_t payload_id;
+  uint8_t netfn;
+  uint8_t cmd;
+  uint8_t target;
+  uint8_t netdev;
+  uint8_t action;
+} bypass_network_header;
 
 enum {
   UIC_SIDEA          = 1,

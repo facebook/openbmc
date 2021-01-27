@@ -51,6 +51,7 @@ extern "C" {
 #endif
 
 #define MIN(a , b)      ((a) < (b) ? (a) : (b))
+#define MAX(a , b)      ((a) > (b) ? (a) : (b))
 
 #define SERVER_SENSOR_LOCK "/var/run/sensor_read_server.lock"
 
@@ -75,6 +76,12 @@ extern "C" {
 
 #define CHASSIS_TYPE_5_VALUE (CHASSIS_TYPE_BIT_3(0) | CHASSIS_TYPE_BIT_2(0) | CHASSIS_TYPE_BIT_1(0) | CHASSIS_TYPE_BIT_0(0)) // 0000b
 #define CHASSIS_TYPE_7_VALUE (CHASSIS_TYPE_BIT_3(0) | CHASSIS_TYPE_BIT_2(1) | CHASSIS_TYPE_BIT_1(0) | CHASSIS_TYPE_BIT_0(1)) // 0101b
+
+
+#define MAX_SYS_CMD_REQ_LEN  100  // include the string terminal
+#define MAX_SYS_CMD_RESP_LEN 100  // include the string terminal
+
+#define IPMI_NETFN_SHIFT(netfn) ((netfn) << 2)
 
 enum {
   FRU_ALL = 0,

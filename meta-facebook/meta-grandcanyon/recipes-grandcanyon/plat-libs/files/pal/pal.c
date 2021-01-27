@@ -49,6 +49,8 @@
 
 #define MAX_NUM_GPIO_BMC_FPGA_UART_SEL  4
 
+#define MAX_NET_DEV_NAME_SIZE   10 // include the string terminal
+
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
 
 // export to sensor-util
@@ -98,6 +100,11 @@ uint8_t fanid2pwmid_mapping[] = {0, 0, 0, 0, 0, 0, 0, 0};
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
+};
+
+enum net_intf_act {
+  NET_INTF_DISABLE,
+  NET_INTF_ENABLE,
 };
 
 struct pal_key_cfg {
@@ -1360,3 +1367,175 @@ pal_specific_plat_fan_check(bool status)
   return;
 }
 
+// IPMI OEM Command 
+// netfn: NETFN_OEM_1S_REQ (0x30)
+// command code: CMD_OEM_BYPASS_CMD (0x34)
+int
+pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  int ret = 0;
+  int completion_code = CC_SUCCESS;
+  uint8_t netfn = 0, cmd = 0;
+  uint8_t tlen = 0, rlen = 0;
+  uint8_t prsnt_status = 0, pwr_status = 0;  
+  uint8_t netdev = 0;
+  uint8_t action = 0;
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  char sendcmd[MAX_SYS_CMD_REQ_LEN] = {0};
+  ipmi_req_t* ipmi_req = (ipmi_req_t*)tbuf;
+  ipmi_res_t* ipmi_resp = (ipmi_res_t*)rbuf;
+  NCSI_NL_MSG_T *msg = NULL;
+  NCSI_NL_RSP_T *rsp = NULL;
+  bypass_ncsi_req ncsi_req = {0};
+  network_cmd net_req = {0};
+
+  if (req_data == NULL) {
+    syslog(LOG_WARNING, "%s(): NULL request data, can not bypass the command", __func__);
+    return CC_INVALID_PARAM;
+  }
+  if (res_data == NULL) {
+    syslog(LOG_WARNING, "%s(): NULL response data, can not bypass the command", __func__);
+    return CC_INVALID_PARAM;
+  }
+  if (res_len == NULL) {
+    syslog(LOG_WARNING, "%s(): NULL response length, can not bypass the command", __func__);
+    return CC_INVALID_PARAM;
+  }
+  *res_len = 0;
+
+  ret = pal_is_fru_prsnt(FRU_SERVER, &prsnt_status);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): Can not bypass the command due to get server present status failed", __func__);
+    return CC_UNSPECIFIED_ERROR;
+  }
+  if (prsnt_status == FRU_ABSENT) {
+    syslog(LOG_WARNING, "%s(): Can not bypass the command due to server absent", __func__);
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
+
+  ret = pal_get_server_12v_power(&pwr_status);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): Can not bypass the command due to get server 12V power status failed", __func__);
+    return CC_UNSPECIFIED_ERROR;
+  }
+  if (pwr_status == SERVER_12V_OFF) {
+    syslog(LOG_WARNING, "%s(): Can not bypass the command due to server 12V power off", __func__);
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  }
+  memset(tbuf, 0, sizeof(tbuf));
+  memset(rbuf, 0, sizeof(rbuf));
+
+  switch (((bypass_cmd*)req_data)->target) {
+    case BYPASS_BIC:
+      if ((req_len < sizeof(bypass_ipmi_header)) || (req_len > sizeof(tbuf))) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+      tlen = req_len - sizeof(bypass_ipmi_header);
+      memcpy(ipmi_req, &((bypass_cmd*)req_data)->data[0], sizeof(tbuf));
+      netfn = ipmi_req->netfn_lun;
+      cmd = ipmi_req->cmd;
+
+      // Bypass command to Bridge IC
+      if (tlen != 0) {
+        ret = bic_ipmb_wrapper(netfn, cmd, (uint8_t*)ipmi_req->data, tlen, res_data, res_len);
+      } else {
+        ret = bic_ipmb_wrapper(netfn, cmd, NULL, 0, res_data, res_len);
+      }
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s(): Failed to bypass IPMI command to BIC", __func__);
+        completion_code = CC_UNSPECIFIED_ERROR;
+      }
+      break;
+
+    case BYPASS_ME:
+      if ((req_len < sizeof(bypass_ipmi_header)) || (req_len > sizeof(tbuf))) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+      tlen = req_len - sizeof(bypass_me_header);
+
+      memcpy(ipmi_req, &((bypass_cmd*)req_data)->data[0], sizeof(tbuf));
+      ipmi_req->netfn_lun = IPMI_NETFN_SHIFT(ipmi_req->netfn_lun);
+
+      // Bypass command to ME
+      ret = bic_me_xmit((uint8_t*)ipmi_req, tlen, (uint8_t*)(&ipmi_resp->cc), &rlen);
+      if (ret == 0) {
+        completion_code = ipmi_resp->cc;
+        memcpy(&res_data[0], ipmi_resp->data, (rlen - sizeof(bypass_me_resp_header)));
+        *res_len = rlen - sizeof(bypass_me_resp_header);
+      } else {
+        syslog(LOG_WARNING, "%s(): Failed to send IPMI command to ME", __func__);
+        completion_code = CC_UNSPECIFIED_ERROR;
+      }
+      break;
+
+    case BYPASS_NCSI:
+      if ((req_len < sizeof(bypass_ncsi_header)) || (req_len > sizeof(NCSI_NL_MSG_T))) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+      tlen = req_len - sizeof(bypass_ncsi_header); 
+      msg = calloc(1, sizeof(NCSI_NL_MSG_T));
+      if (msg == NULL) {
+        syslog(LOG_ERR, "%s(): failed msg buffer allocation", __func__);
+        completion_code = CC_UNSPECIFIED_ERROR;
+        break;
+      }
+      memset(&ncsi_req, 0, sizeof(ncsi_req));
+      memcpy(&ncsi_req, &((bypass_cmd*)req_data)->data[0], sizeof(ncsi_req));
+      memset(msg, 0, sizeof(*msg));
+      snprintf(msg->dev_name, MAX_NET_DEV_NAME_SIZE, "eth%d", ncsi_req.netdev);
+
+      msg->channel_id = ncsi_req.channel;
+      msg->cmd = ncsi_req.cmd;
+      msg->payload_length = tlen;
+      memcpy(&msg->msg_payload[0], &ncsi_req.data[0], NCSI_MAX_PAYLOAD);
+
+      rsp = send_nl_msg_libnl(msg);
+      if (rsp != NULL) {
+        memcpy(&res_data[0], &rsp->msg_payload[0], rsp->hdr.payload_length);
+        *res_len = rsp->hdr.payload_length;
+      } else {
+        completion_code = CC_UNSPECIFIED_ERROR;
+      }
+      break;
+
+    case BYPASS_NETWORK:
+      if (req_len != sizeof(bypass_network_header)) {
+        completion_code = CC_INVALID_LENGTH;
+        break;
+      }
+      memset(&net_req, 0, sizeof(net_req));
+      memcpy(&net_req, &((bypass_cmd*)req_data)->data[0], sizeof(net_req));
+      netdev = net_req.netdev;
+      action = net_req.action;
+      if (action == NET_INTF_ENABLE) {        
+        snprintf(sendcmd, sizeof(sendcmd), "ifup eth%d", netdev);
+      } else if (action == NET_INTF_DISABLE) {
+        snprintf(sendcmd, sizeof(sendcmd), "ifdown eth%d", netdev);
+      } else {
+        completion_code = CC_INVALID_PARAM;
+        break;
+      }
+      ret = run_command(sendcmd);
+      if (ret != 0) {
+        syslog(LOG_WARNING, "%s(): sytem command: %s failed, error: %s", __func__, sendcmd, strerror(errno));
+        completion_code = CC_UNSPECIFIED_ERROR;
+      }
+      break;
+
+    default:
+      completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+      break;
+  }
+
+  if (msg != NULL) {
+    free(msg);
+  }
+  if (rsp != NULL) {
+    free(rsp);
+  }
+
+  return completion_code;
+}

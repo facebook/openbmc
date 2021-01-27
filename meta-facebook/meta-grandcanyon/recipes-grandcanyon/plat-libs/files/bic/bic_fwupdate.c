@@ -72,9 +72,6 @@
 #define BIC_IMG_DATA_LEN 256
 #define BIC_VALIDATE_READ_LEN 2
 
-#define MAX_SYS_CMD_REQ_LEN  100  // include the string terminal
-#define MAX_SYS_CMD_RESP_LEN 100  // include the string terminal
-
 #define GET_BIC_UPDATE_STAT 0xCC
 
 #define DEVMEM_READ_CMD  "/sbin/devmem 0x%08x | cut -c 3-" // skip "0x"

@@ -27,8 +27,16 @@
 # Short-Description: Setup sensor monitoring
 ### END INIT INFO
 
-. /usr/local/fbpackages/utils/ast-functions
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
 
+# If either one pem is present, pemd will start
+if [ "$(wedge_power_supply_type)" != "PEM" ]; then
+    echo "Skip pemd as PEM is not present"
+    exit 0
+fi
+
+# shellcheck disable=SC2039
 echo -n "Setup pem monitoring for wedge400... "
 
 runsv /etc/sv/pemd > /dev/null 2>&1 &

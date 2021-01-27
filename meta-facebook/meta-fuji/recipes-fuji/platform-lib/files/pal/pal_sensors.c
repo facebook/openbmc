@@ -1857,6 +1857,8 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
           num++;
         }
 
+        /* To keep the accuracy, it is expanded 100000 times in driver */
+        read_val = read_val / 100;
         if(read_val > *value){
           *value = read_val;
         }

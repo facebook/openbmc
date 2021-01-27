@@ -146,11 +146,16 @@ def sensor_valid_check(board, sname, check_name, attribute):
     status = c_uint8(0)
     is_valid_check = False
     try:
+        file = "/var/run/power-util_%d.lock" % int(fru_map[board]["slot_num"])
+        if os.path.exists(file):
+            return 0
+
         if attribute["type"] == "power_status":
             lpal_hndl.pal_get_server_power(int(fru_map[board]["slot_num"]), byref(status))
             if (status.value == 6): # 12V-off
                 return 0
-            elif match(r"front_io_temp", sname) is not None:
+
+            if (match(r"front_io_temp", sname) is not None) and (status.value == 0 or status.value == 1):
                 return 1
 
             file = "/tmp/cache_store/" + host_ready_map[board]
@@ -205,10 +210,6 @@ def sensor_valid_check(board, sname, check_name, attribute):
                         return 1
                 else:
                     return 0
-
-        file = "/var/run/power-util_%d.lock" % int(fru_map[board]["slot_num"])
-        if os.path.exists(file):
-            return 0
 
         return 0
     except SystemExit:

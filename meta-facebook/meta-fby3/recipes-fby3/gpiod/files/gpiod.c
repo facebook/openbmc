@@ -41,7 +41,6 @@
 #define DELAY_GPIOD_READ    1000000
 #define MAX_NUM_GPV3_DEVS 12
 
-#define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 
 /* To hold the gpio info and status */
 typedef struct {

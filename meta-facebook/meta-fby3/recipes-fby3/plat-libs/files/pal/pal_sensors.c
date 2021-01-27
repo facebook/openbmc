@@ -2335,7 +2335,7 @@ int
 pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   char path[64] = {0};
   int retry = MAX_RETRY;
-  int ret = 0;
+  int ret = 0, prsnt_retry = 1;
   uint8_t bmc_location = 0;
   uint8_t config_status = 0;
   uint8_t board_type = 0;
@@ -2344,6 +2344,13 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   if ( true == pal_is_sdr_init(fru) ) {
     memcpy(sinfo, g_sinfo[fru-1], sizeof(sensor_info_t) * MAX_SENSOR_NUM);
     goto error_exit;
+  }
+
+  sprintf(path, PWR_UTL_LOCK, fru);
+  if (access(path, F_OK) == 0) {
+    prsnt_retry = MAX_READ_RETRY;
+  } else {
+    prsnt_retry = 1;
   }
 
   ret = pal_sensor_sdr_path(fru, path);
@@ -2359,16 +2366,23 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
     goto error_exit;
   }
 
-  // get the status of m2 board
-  ret = bic_is_m2_exp_prsnt(fru);
+  while ( prsnt_retry-- > 0 ) {
+    // get the status of m2 board
+    ret = bic_is_m2_exp_prsnt(fru);
+    if ( ret < 0 ) {
+      sleep(3);
+      continue;
+    } else config_status = (uint8_t) ret;
+
+    if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
+      //if it's present, get its type
+      fby3_common_get_2ou_board_type(fru, &board_type);
+    }
+    break;
+  }
   if ( ret < 0 ) {
     syslog(LOG_ERR, "%s() Couldn't get the status of 1OU/2OU\n", __func__);
     goto error_exit;
-  } else config_status = (uint8_t) ret;
-
-  if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
-    //if it's present, get its type
-    fby3_common_get_2ou_board_type(fru, &board_type);
   }
 
   while ( retry-- > 0 ) {

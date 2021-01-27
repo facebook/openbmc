@@ -62,6 +62,7 @@ extern "C" {
 #define CPLD_CAP_VER_LEN 4
 
 #define SET_NIC_PWR_MODE_LOCK "/var/run/set_nic_power.lock"
+#define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 
 #define MAX_SNR_NAME 32
 

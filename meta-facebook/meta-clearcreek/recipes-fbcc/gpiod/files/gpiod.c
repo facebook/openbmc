@@ -149,6 +149,8 @@ static struct gpiopoll_config g_gpios[] = {
   {"CARRIER_0_ALERT_R_N", "CARRIER_0", GPIO_EDGE_BOTH, gpio_event_log_handler, NULL},
   {"CARRIER_1_ALERT_R_N", "CARRIER_1", GPIO_EDGE_BOTH, gpio_event_log_handler, NULL},
   {"SYS_PWR_READY", "SYS_PWR_READY", GPIO_EDGE_BOTH, gpio_event_log_handler, NULL},
+  {"SMB_PMBUS_ISO_HSC_R2_ALERT_0_1", "GPIOS0", GPIO_EDGE_RISING, gpio_event_log_handler, NULL},
+  {"SMB_PMBUS_ISO_HSC_R2_ALERT_2_3", "GPIOS1", GPIO_EDGE_RISING, gpio_event_log_handler, NULL},
 };
 
 int main(int argc, char **argv)

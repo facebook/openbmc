@@ -51,6 +51,10 @@ extern "C" {
 #define PFR_MAILBOX_BUS  (4)
 #define PFR_MAILBOX_ADDR (0xB0)
 
+#define CMD_GET_MAIN_CPLD_VER (0x01)
+#define CMD_GET_MOD_CPLD_VER  (0x02)
+#define CMD_GET_GLB_CPLD_VER  (0x03)
+
 enum {
   FRU_ALL  = 0,
   FRU_TRAY0_MB,
@@ -195,6 +199,14 @@ enum {
 #define ASIC_IPMB_BUS_ID        (I2C_BUS_6)
 #define IOX_BMC_SLAVE_ADDR      (0x2E)
 #define IOX_IPMB_BUS_ID         (I2C_BUS_6)
+
+#define MAIN_CPLD_SLV_ADDR      (0xB4)
+#define MOD_CPLD_SLV_ADDR       (0xAA)
+#define GLB_CPLD_SLV_ADDR       (0xAA)
+#define MAIN_CPLD_BUS_NUM       (4)
+#define MOD_CPLD_BUS_NUM        (4)
+#define GLB_CPLD_BUS_NUM        (23)
+#define CPLD_VER_REG            (0x00100028)
 
 enum {
   MB_ID0 = 0,

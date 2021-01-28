@@ -2045,6 +2045,89 @@ pal_get_sensor_util_timeout(uint8_t fru) {
   }
 }
 
+static int get_cpld_version(char* str, uint8_t addr, uint8_t bus,
+                            uint32_t offset, uint8_t* rbuf)
+{
+  int fd = 0, ret = -1;
+  uint8_t tlen, rlen;
+  uint8_t tbuf[16] = {0};
+  uint8_t ver[16] = {0};
+  long rev;
+  char value[MAX_VALUE_LEN] = {0};
+
+  if( kv_get(str, value, 0, 0) ) {
+    fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
+      return ret;
+    }
+
+    tbuf[0] = (offset >> 24 ) & 0xFF;
+    tbuf[1] = (offset >> 16 ) & 0xFF;
+    tbuf[2] = (offset >> 8 )  & 0xFF;
+    tbuf[3] = (offset >> 0 )  & 0xFF;
+
+    tlen = 4;
+    rlen = 4;
+
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, ver, rlen);
+    i2c_cdev_slave_close(fd);
+
+    if (ret == -1) {
+      syslog(LOG_WARNING, "%s bus=%x slavaddr=%x offset=%x\n", __func__, bus, addr >> 1, offset);
+      return ret;
+    } else {
+      sprintf(value, "%02x%02x%02x%02x", ver[3], ver[2], ver[1], ver[0]);
+      kv_set(str, value, 0, 0);
+      rbuf[0] = ver[3];
+      rbuf[1] = ver[2];
+      rbuf[2] = ver[1];
+      rbuf[3] = ver[0];
+    }
+  } else {
+    rev = strtol(value, NULL, 16);
+    rbuf[0] = (rev >> 24) & 0xff;
+    rbuf[1] = (rev >> 16) & 0xff;
+    rbuf[2] = (rev >> 8) & 0xff;
+    rbuf[3] = (rev >> 0) & 0xff;
+  }
+  return 0;
+}
+
+int
+pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len) {
+  int ret = -1;
+  uint8_t rbuf[16] = {0};
+  char str[16] = {0};
+
+  if( fru != FRU_MB )
+    return -1;
+
+  switch (target) {
+    case CMD_GET_MAIN_CPLD_VER:
+      strncpy(str, "pfr_cpld", sizeof(str));
+      ret = get_cpld_version(str, MAIN_CPLD_SLV_ADDR, MAIN_CPLD_BUS_NUM, CPLD_VER_REG, rbuf);
+    break;
+    case CMD_GET_MOD_CPLD_VER:
+      strncpy(str, "mod_cpld", sizeof(str));
+      ret = get_cpld_version(str, MOD_CPLD_SLV_ADDR, MOD_CPLD_BUS_NUM, CPLD_VER_REG, rbuf);
+    break;
+    case CMD_GET_GLB_CPLD_VER:
+      strncpy(str, "glb_cpld", sizeof(str));
+      ret = get_cpld_version(str, GLB_CPLD_SLV_ADDR, GLB_CPLD_BUS_NUM, CPLD_VER_REG, rbuf);
+    break;
+    default:
+      return -1;
+  }
+
+  if( ret == 0 ) {
+    memcpy(res, rbuf, 4);
+    *res_len = 4;
+  }
+
+  return ret;
+}
+
 void __attribute__((constructor))
 update_local_fruid(void) {
   if (!pal_get_config_is_master()) {

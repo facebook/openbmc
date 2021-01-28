@@ -302,7 +302,7 @@ int plat_fruid_init(void) {
         break;
       case FRU_NIC:
         get_ncsi_vid();
-        ret = pal_read_nic_fruid(BIN_NIC, 256);
+        ret = pal_read_nic_fruid(BIN_NIC, 512);
         break;
       default:
         break;

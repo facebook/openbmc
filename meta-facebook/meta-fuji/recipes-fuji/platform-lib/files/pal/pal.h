@@ -303,6 +303,7 @@ extern int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 int pal_get_fan_speed(uint8_t fan, int *rpm);
 int pal_get_board_rev(int *rev);
 bool pal_is_fw_update_ongoing(uint8_t fru);
+int pal_mon_fw_upgrade(int brd_rev, uint8_t *status);
 int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
 void pal_update_ts_sled(void);
 int pal_get_pim_type(uint8_t fru, int retry);

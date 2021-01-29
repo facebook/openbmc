@@ -1084,10 +1084,46 @@ set_sled(int brd_rev, uint8_t color, uint8_t name)
 }
 
 bool pal_is_fw_update_ongoing(uint8_t fru){
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+  int ret;
+  uint8_t status=0;
+
+  if (fru == FRU_SCM) {
+    //used for fw-util.sh will not start if another process run
+    snprintf(key, MAX_KEY_LEN, "fru%d_fwupd", fru);
+    ret = kv_get(key, value, NULL, 0);
+    if (ret < 0) {
+      return false;
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (strtoul(value, NULL, 10) > ts.tv_sec)
+      return true;
+
+    return false;
+  }
+  //used for
+  // - front-paneld   when firmware upgrading the SYSLED will altenate blinking
+  //                  and pause the reading sensor to avoid the firmware upgrade fail
+  // - sensord        when firmware upgrading will pause the reading sensor
+  //                  to avoid the firmware upgrade fail
+  ret = pal_mon_fw_upgrade(0, &status);
+  if (ret){
+    return false;
+  }
+  if (status)
+    return true;
+  return false;
+}
+
+int
+pal_mon_fw_upgrade(int brd_rev, uint8_t *status)
+{
   char cmd[5];
   FILE *fp;
-  bool ret=true;
-  uint8_t status=0;
+  int ret=-1;
   char *buf_ptr;
   int buf_size = 1000;
   int str_size = 200;
@@ -1096,9 +1132,11 @@ bool pal_is_fw_update_ongoing(uint8_t fru){
   snprintf(cmd, sizeof(cmd), "ps w");
   fp = popen(cmd, "r");
   if(NULL == fp)
-     return -1;
+    return -1;
 
   buf_ptr = (char *)malloc(buf_size * sizeof(char) + sizeof(char));
+  if (buf_ptr == NULL)
+    return -1;
   memset(buf_ptr, 0, sizeof(char));
   tmp_size = str_size;
   while(fgets(str, str_size, fp) != NULL) {
@@ -1110,39 +1148,36 @@ bool pal_is_fw_update_ongoing(uint8_t fru){
     if(!buf_ptr) {
       syslog(LOG_ERR,
              "%s realloc() fail, please check memory remaining", __func__);
-      goto free_buf;
+      goto close_fp;
     }
     strncat(buf_ptr, str, str_size);
   }
 
   //check whether sys led need to blink
-  status = strstr(buf_ptr, "spi_util.sh") != NULL ? 1 : 0;
-  if(status) goto close_fp;
+  *status = strstr(buf_ptr, "spi_util.sh") != NULL ? 1 : 0;
+  if(*status) goto close_fp;
 
-  status = (strstr(buf_ptr, "cpld_update.sh") != NULL) ? 1 : 0;
-  if(status) goto close_fp;
+  *status = (strstr(buf_ptr, "cpld_update.sh") != NULL) ? 1 : 0;
+  if(*status) goto close_fp;
 
-  status = (strstr(buf_ptr, "fw-util") != NULL) ?
+  *status = (strstr(buf_ptr, "fw-util") != NULL) ?
           ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
-  if(status) goto close_fp;
+  if(*status) goto close_fp;
 
-  status = (strstr(buf_ptr, "psu-util") != NULL) ?
+  *status = (strstr(buf_ptr, "psu-util") != NULL) ?
           ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
-  if(status) goto close_fp;
+  if(*status) goto close_fp;
 
-  status = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
-  if(status) goto close_fp;
-
+  *status = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
+  if(*status) goto close_fp;
 
 close_fp:
   ret = pclose(fp);
-  if(ret)
-     syslog(LOG_ERR, "%s pclose() fail ", __func__);
-
-
-free_buf:
+  if(-1 == ret)
+    syslog(LOG_ERR, "%s pclose() fail ", __func__);
   free(buf_ptr);
-  return status ? true: false;
+
+  return 0;
 }
 
 int

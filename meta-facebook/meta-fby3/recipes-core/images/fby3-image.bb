@@ -66,4 +66,5 @@ IMAGE_INSTALL += " \
   name-util \
   nvme-util \
   usb2jtag-util \
+  lrzsz \
   "

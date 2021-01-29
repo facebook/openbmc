@@ -60,6 +60,15 @@ if [ $? -ne 0 ]; then
       sleep 1
     fi
   done
+else
+  # TODO:
+  #   Sync EEPROM with cache for those old systems
+  #   We can remove this after all systems got updated
+  val=$(ipmitool i2c bus=6 0xA8 0x1 0x4 0x6)
+  val=${val:2:1}
+  if [[ $val != $server_type ]]; then
+    /usr/local/bin/cfg-util server_type $server_type
+  fi
 fi
 if [[ "$server_type" == "2" ]]; then
   gpio_set PAX0_SKU_ID0 1

@@ -83,6 +83,7 @@ const char pal_server_list[] = "mb";
 char g_dev_guid[GUID_SIZE] = {0};
 
 static int get_board_rev_id(uint8_t*);
+static int key_set_server_type(int, void*);
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -108,12 +109,45 @@ struct pal_key_cfg {
   {KEY_ASIC5_SNR_HEALTH, "1", NULL},
   {KEY_ASIC6_SNR_HEALTH, "1", NULL},
   {KEY_ASIC7_SNR_HEALTH, "1", NULL},
-  {"server_type", "4", NULL},
+  {"server_type", "4", key_set_server_type},
   {"asic_mfr", MFR_NVIDIA, NULL},
   {"ntp_server", "", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
+
+static int key_set_server_type(int event, void *arg)
+{
+  int ret, fd;
+  off_t offset = 1030;
+  char *mode = (char*)arg;
+  uint8_t val;
+
+  if (event == KEY_AFTER_INI) // Do nothing
+    return 0;
+
+  // Update server type in EEPROM
+  fd = open(MB_EEPROM, O_RDWR);
+  if (fd < 0)
+    return -1;
+
+  ret = lseek(fd, offset, SEEK_SET);
+  if (ret < 0)
+    goto exit;
+
+  if (!strcmp(mode, "2") || !strcmp(mode, "4") || !strcmp(mode, "8")) {
+    val = mode[0] - '0';
+    if (write(fd, &val, 1) != 1)
+      ret = -1;
+  } else {
+    syslog(LOG_WARNING, "Server socket mode %s is not supported", mode);
+    ret = -1;
+  }
+
+exit:
+  close(fd);
+  return ret;
+}
 
 int write_device(const char *device, int value)
 {
@@ -1121,11 +1155,11 @@ int pal_set_host_system_mode(uint8_t mode)
   int ret;
 
   if (mode == 0x00) {
-    ret = kv_set("server_type", "8", 0, KV_FPERSIST); // 8S
+    ret = pal_set_key_value("server_type", "8");      // 8S
   } else if (mode == 0x01) {
-    ret = kv_set("server_type", "4", 0, KV_FPERSIST); // 4S
+    ret = pal_set_key_value("server_type", "4");      // 4S
   } else if (mode == 0x02) {
-    ret = kv_set("server_type", "2", 0, KV_FPERSIST); // 2S
+    ret = pal_set_key_value("server_type", "2");      // 2S
   } else {
     return CC_INVALID_PARAM;
   }

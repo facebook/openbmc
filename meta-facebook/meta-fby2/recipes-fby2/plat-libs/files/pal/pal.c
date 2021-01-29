@@ -9310,8 +9310,16 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
   snr_chk->last_val = 0;
 
   snr_desc = get_sensor_desc(fru, snr_num);
+#if __GNUC__ >= 8
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
   strncpy(snr_desc->name, psnr->name, sizeof(snr_desc->name));
   snr_desc->name[sizeof(snr_desc->name)-1] = 0;
+#pragma GCC diagnostic pop
+#else
+  strncpy(snr_desc->name, psnr->name, sizeof(snr_desc->name));
+  snr_desc->name[sizeof(snr_desc->name)-1] = 0;
+#endif
 
   return 0;
 }

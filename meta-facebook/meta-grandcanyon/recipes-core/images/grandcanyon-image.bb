@@ -43,4 +43,5 @@ IMAGE_INSTALL += " \
   usbutils \
   usb-console \
   gpiointrd \
+  crashdump \
   "

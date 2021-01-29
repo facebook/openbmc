@@ -1384,6 +1384,9 @@ pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case BB_BIC_SENSOR_POWER_DETECT:
           sprintf(name, "POWER_DETECT");
           break;
+        case BB_BIC_SENSOR_BUTTON_DETECT:
+          sprintf(name, "BUTTON_DETECT");
+          break;
         default:
           sprintf(name, "Unknown");
           ret = PAL_ENOTSUP;
@@ -1896,13 +1899,60 @@ static int
 pal_parse_pwr_detect_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   enum {
     SLED_CYCLE = 0x00,
+    SLOT = 0x01,
   };
-  uint8_t event = event_data[0];
+  enum {
+    CYCLE_12V = 0x00,
+    ON_12V = 0x01,
+    OFF_12V = 0x02,
+  };
 
-  switch (event) {
+  switch (event_data[0]) {
     case SLED_CYCLE:
       pal_set_nic_perst(fru, NIC_PE_RST_LOW);
-      strcat(error_log, "SLED_CYCLE by other slot BMC");
+      strcat(error_log, "SLED_CYCLE by BB BIC");
+      break;
+    case SLOT:
+      strcat(error_log, "SERVER ");
+      switch (event_data[1]) {
+        case CYCLE_12V:
+          strcat(error_log, "12V CYCLE by BB BIC");
+          break;
+        case ON_12V:
+          strcat(error_log, "12V ON by BB BIC");
+          break;
+        case OFF_12V:
+          strcat(error_log, "12V OFF by BB BIC");
+          break;
+        default:
+          strcat(error_log, "Undefined Baseboard BIC event");
+          break;
+      }
+      break;
+    default:
+      strcat(error_log, "Undefined Baseboard BIC event");
+      break;
+  }
+
+  return PAL_EOK;
+}
+
+static int
+pal_parse_button_detect_event(uint8_t fru, uint8_t *event_data, char *error_log) {
+  enum {
+    ADAPTER_BUTTON_BMC_CO_N_R = 0x01,
+    AC_ON_OFF_BTN_SLOT1_N = 0x02,
+    AC_ON_OFF_BTN_SLOT3_N = 0x03,
+  };
+  switch (event_data[0]) {
+    case ADAPTER_BUTTON_BMC_CO_N_R:
+      strcat(error_log, "ADAPTER_BUTTON_BMC_CO_N_R");
+      break;
+    case AC_ON_OFF_BTN_SLOT1_N:
+      strcat(error_log, "AC_ON_OFF_BTN_SLOT1_N");
+      break;
+    case AC_ON_OFF_BTN_SLOT3_N:
+      strcat(error_log, "AC_ON_OFF_BTN_SLOT3_N");
       break;
     default:
       strcat(error_log, "Undefined Baseboard BIC event");
@@ -1942,6 +1992,9 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
     case BB_BIC_SENSOR_POWER_DETECT:
       pal_parse_pwr_detect_event(fru, event_data, error_log);
+      break;
+    case BB_BIC_SENSOR_BUTTON_DETECT:
+      pal_parse_button_detect_event(fru, event_data, error_log);
       break;
     default:
       unknown_snr = true;

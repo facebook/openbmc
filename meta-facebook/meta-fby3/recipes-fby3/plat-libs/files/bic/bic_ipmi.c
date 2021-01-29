@@ -1779,6 +1779,6 @@ bic_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
     return -1;
   }
 
-  (*pcie_config) = rbuf[3];
+  (*pcie_config) = (rbuf[3] & 0x0f);
   return 0;
 }

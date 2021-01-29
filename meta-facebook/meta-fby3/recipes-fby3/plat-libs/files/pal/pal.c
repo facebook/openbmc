@@ -1226,7 +1226,18 @@ pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
   return CC_SUCCESS;
 }
 
+/*
+DP Riser bifurcation table
+-------------------------------------------------
+              | P3  P2  P1  P0 |  Speed
+-------------------------------------------------
+Retimer 1x16  | 0   1   0   0  |  x16 (0x08)
+Retimer 2x8   | 0   0   0   1  |  x8  (0x09)
+Retimer 4x4   | 0   0   0   0  |  x4  (0x0A)
+Others Cards  | 1   X   X   X  |  x16 (0x08)
+*/
 static int pal_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
+  const uint8_t dp_pcie_card_mask = 0x08;
   uint8_t dp_pcie_conf;
   if (bic_get_dp_pcie_config(slot_id, &dp_pcie_conf)) {
     syslog(LOG_ERR, "%s() Cannot get DP PCIE configuration\n", __func__);
@@ -1235,25 +1246,25 @@ static int pal_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
 
   syslog(LOG_INFO, "%s() DP PCIE config: %u\n", __func__, dp_pcie_conf);
 
-  switch(dp_pcie_conf) {
-    case DP_RETIMER_X16:
-      (*pcie_config) = CONFIG_D_DP_X16;
-      break;
-    case DP_RETIMER_X8:
-      (*pcie_config) = CONFIG_D_DP_X8;
-      break;
-    case DP_RETIMER_X4:
-      (*pcie_config) = CONFIG_D_DP_X4;
-      break;
-    case DP_PCIE_X4:
-    case DP_PCIE_X8:
-    case DP_PCIE_X16:
-      // all set to x16
-      (*pcie_config) = CONFIG_D_DP_X16;
-      break;
-    default:
-      syslog(LOG_ERR, "%s() Unable to get correct DP PCIE configuration\n", __func__);
-      return -1;
+  if (dp_pcie_conf & dp_pcie_card_mask) {
+    // PCIE Card
+    (*pcie_config) = CONFIG_D_DP_X16;
+  } else {
+    // Retimer Card
+    switch(dp_pcie_conf) {
+      case DP_RETIMER_X16:
+        (*pcie_config) = CONFIG_D_DP_X16;
+        break;
+      case DP_RETIMER_X8:
+        (*pcie_config) = CONFIG_D_DP_X8;
+        break;
+      case DP_RETIMER_X4:
+        (*pcie_config) = CONFIG_D_DP_X4;
+        break;
+      default:
+        syslog(LOG_ERR, "%s() Unable to get correct DP PCIE configuration\n", __func__);
+        return -1;
+    }
   }
 
   return 0;

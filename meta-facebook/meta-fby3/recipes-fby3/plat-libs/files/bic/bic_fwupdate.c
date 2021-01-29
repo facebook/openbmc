@@ -1294,7 +1294,12 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       ret = update_bic_vr(slot_id, comp, path, intf, force);
       break;
     case FW_2OU_PESW:
-      ret = update_bic_mchp_pcie_fw(slot_id, comp, path, intf, force);
+      if (board_type == GPV3_BRCM_BOARD) {
+        ret = BIC_STATUS_FAILURE; /*not supported*/
+      } else {
+        ret = (loc != NULL)?update_bic_mchp_pcie_fw(slot_id, comp, path, intf, force): \
+                        update_bic_mchp_pcie_fw_usb(slot_id, comp, path, intf, force);
+      }
       break;
     case FW_2OU_M2_DEV0:
     case FW_2OU_M2_DEV1:

@@ -36,8 +36,8 @@
 #include "bic_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 
-#define TI_VENDOR_ID  0x1CBE
-#define TI_PRODUCT_ID 0x0007
+#define SB_TI_VENDOR_ID  0x1CBE
+#define SB_TI_PRODUCT_ID 0x0007
 
 typedef struct {
   uint8_t dummy;
@@ -161,7 +161,7 @@ _send_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt)
 }
 
 int
-bic_init_usb_dev(uint8_t slot_id, usb_dev* udev)
+bic_init_usb_dev(uint8_t slot_id, usb_dev* udev, const uint16_t product_id, const uint16_t vendor_id)
 {
   int ret;
   int index = 0;
@@ -200,7 +200,7 @@ bic_init_usb_dev(uint8_t slot_id, usb_dev* udev)
         goto error_exit;
       }
 
-      if( (TI_VENDOR_ID == udev->desc.idVendor) && (TI_PRODUCT_ID == udev->desc.idProduct) ) {
+      if( (vendor_id == udev->desc.idVendor) && (product_id == udev->desc.idProduct) ) {
         ret = libusb_get_string_descriptor_ascii(udev->handle, udev->desc.iManufacturer, (unsigned char*) udev->manufacturer, sizeof(udev->manufacturer));
         if ( ret < 0 ) {
           printf("Error get Manufacturer string descriptor -- exit\n");
@@ -563,7 +563,7 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
   udev->epaddr = 0x1;
 
   // init usb device
-  ret = bic_init_usb_dev(slot_id, udev);
+  ret = bic_init_usb_dev(slot_id, udev, SB_TI_PRODUCT_ID, SB_TI_VENDOR_ID);
   if (ret < 0) {
     goto error_exit;
   }

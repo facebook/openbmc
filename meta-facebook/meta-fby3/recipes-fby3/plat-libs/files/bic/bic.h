@@ -37,6 +37,7 @@ extern "C" {
 
 #define PRESENT_1OU 1
 #define PRESENT_2OU 2
+#define RETRY_3_TIME 3
 #define RETRY_TIME 10
 #define IPMB_RETRY_DELAY_TIME 500
 

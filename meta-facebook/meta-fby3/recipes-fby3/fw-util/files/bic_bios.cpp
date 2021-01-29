@@ -62,6 +62,11 @@ int BiosComponent::update_internal(const std::string &image, bool force) {
     return -1;
   }
   sleep(1);
+  cerr << "Switching BIOS SPI MUX for default value..." << endl;
+  bic_switch_mux_for_bios_spi(slot_id, MUX_SWITCH_PCH);
+  sleep(3);
+  cerr << "Doing ME Reset..." << endl;
+  me_reset(slot_id);
   cerr << "Power-cycling the server..." << endl;
   pal_set_server_power(slot_id, SERVER_12V_CYCLE);
   sleep(5);

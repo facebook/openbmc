@@ -1029,7 +1029,7 @@ me_recovery(uint8_t slot_id, uint8_t command) {
   int ret = 0;
   int retry = 0;
 
-  while (retry <= 3) {
+  while (retry <= RETRY_3_TIME) {
     tbuf[0] = 0xB8;
     tbuf[1] = 0xDF;
     tbuf[2] = 0x57;
@@ -1047,7 +1047,7 @@ me_recovery(uint8_t slot_id, uint8_t command) {
     else
       break;
   }
-  if (retry == 4) { //if the third retry still failed, return -1
+  if (retry > RETRY_3_TIME) { //if the third retry still failed, return -1
     syslog(LOG_CRIT, "%s: Restart using Recovery Firmware failed..., retried: %d", __func__,  retry);
     return -1;
   }
@@ -1067,7 +1067,7 @@ me_recovery(uint8_t slot_id, uint8_t command) {
       =02h - recovery mode entered by IPMI command "Force ME Recovery"
   */
   //Using ME self-test result to check if the ME Recovery Command Success or not
-  while (retry <= 3) {
+  while (retry <= RETRY_3_TIME) {
     tbuf[0] = 0x18;
     tbuf[1] = 0x04;
     tlen = 2;
@@ -1090,8 +1090,36 @@ me_recovery(uint8_t slot_id, uint8_t command) {
       return -1;
     }
   }
-  if (retry == 4) { //if the third retry still failed, return -1
+  if (retry > RETRY_3_TIME) { //if the third retry still failed, return -1
     syslog(LOG_CRIT, "%s: Restore Factory Default failed..., retried: %d", __func__,  retry);
+    return -1;
+  }
+  return 0;
+}
+
+int
+me_reset(uint8_t slot_id) {
+  uint8_t tbuf[2] = {0x00};
+  uint8_t rbuf[2] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+  int retry = 0;
+
+  while (retry <= RETRY_3_TIME) {
+    tbuf[0] = 0x18;
+    tbuf[1] = 0x02;
+    tlen = 2;
+    ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+    if (ret) {
+      retry++;
+      sleep(1);
+      continue;
+    }
+    break;
+  }
+  if (retry > RETRY_3_TIME) { //if the third retry still failed, return -1
+    syslog(LOG_CRIT, "%s: ME Reset failed..., retried: %d", __func__,  retry);
     return -1;
   }
   return 0;

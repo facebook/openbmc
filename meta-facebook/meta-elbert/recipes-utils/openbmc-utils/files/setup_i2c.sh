@@ -120,7 +120,6 @@ i2c_device_add 12 0x50 24c512
 
 # SMBus 15
 hwmon_device_add 15 0x4a lm73
-i2c_device_add 15 0x43 pfrcpld
 
 # SMBus 2 PIM MUX, muxed as Bus 16-23
 pim_index=(0 1 2 3 4 5 6 7)
@@ -147,7 +146,7 @@ do
 
         fru="$(peutil "$pim" 2>&1)"
         if echo "$fru" | grep -q '88-8D'; then
-           i2c_device_add "$bus_id" 0x54 isl68224 # ISL68224
+            i2c_device_add "$bus_id" 0x54 isl68224 # ISL68224
         fi
     else
         echo "PIM${pim} not present... skipping."

@@ -45,7 +45,7 @@ extern "C" {
 #define FRU_BB_BIN     "/tmp/fruid_bb.bin"
 #define FRU_NICEXP_BIN "/tmp/fruid_nicexp.bin"
 #define FRU_SLOT_BIN   "/tmp/fruid_slot%d.bin"
-#define FRU_2OU_BIN    "/tmp/fruid_slot%d_dev12.bin"
+#define FRU_DEV_PATH   "/tmp/fruid_slot%d_dev%d.bin"
 
 #define SB_CPLD_ADDR 0x0f
 
@@ -118,6 +118,36 @@ enum {
   DEV_ID13_2OU = 0x12,
   BOARD_1OU,
   BOARD_2OU,
+
+  MAX_NUM_DEVS,
+};
+
+enum {
+  FRU_ID_SERVER     = 0,
+  FRU_ID_BMC        = 1,
+  FRU_ID_NIC        = 2,
+  FRU_ID_BB         = 3,
+  FRU_ID_NICEXP     = 4,
+  FRU_ID_BOARD_1OU  = 5,
+  FRU_ID_BOARD_2OU  = 6,
+  FRU_ID_1OU_DEV0   = 7,
+  FRU_ID_1OU_DEV1   = 8,
+  FRU_ID_1OU_DEV2   = 9,
+  FRU_ID_1OU_DEV3   = 10,
+  FRU_ID_2OU_DEV0   = 11,
+  FRU_ID_2OU_DEV1   = 12,
+  FRU_ID_2OU_DEV2   = 13,
+  FRU_ID_2OU_DEV3   = 14,
+  FRU_ID_2OU_DEV4   = 15,
+  FRU_ID_2OU_DEV5   = 16,
+  FRU_ID_2OU_DEV6   = 17,
+  FRU_ID_2OU_DEV7   = 18,
+  FRU_ID_2OU_DEV8   = 19,
+  FRU_ID_2OU_DEV9   = 20,
+  FRU_ID_2OU_DEV10  = 21,
+  FRU_ID_2OU_DEV11  = 22,
+  FRU_ID_2OU_DEV12  = 23,
+  FRU_ID_2OU_DEV13  = 24,
 };
 
 enum {

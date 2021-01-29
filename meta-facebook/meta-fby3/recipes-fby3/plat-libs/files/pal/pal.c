@@ -75,9 +75,6 @@ size_t server_fru_cnt = NUM_SERVER_FRU;
 size_t nic_fru_cnt  = NUM_NIC_FRU;
 size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
-
-#define MAX_NUM_DEVS 18
-
 #define SYSFW_VER "sysfw_ver_slot"
 #define SYSFW_VER_STR SYSFW_VER "%d"
 #define BOOR_ORDER_STR "slot%d_boot_order"
@@ -2266,7 +2263,7 @@ int
 pal_get_num_devs(uint8_t slot, uint8_t *num) {
 
   if (fby3_common_check_slot_id(slot) == 0) {
-      *num = MAX_NUM_DEVS;
+      *num = MAX_NUM_DEVS - 1;
   }
 
   return 0;

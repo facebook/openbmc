@@ -23,6 +23,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <openbmc/ipmi.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -147,6 +148,21 @@ enum {
   STAT_12V_OFF = 0,
   STAT_12V_ON = 1,
 };
+
+typedef struct {
+  unsigned char netfn_lun;
+  unsigned char cmd;
+} ipmi_req_t_common_header;
+
+typedef struct {
+  uint8_t cc;
+  ipmi_dev_id_t ipmi_dev_id;
+} me_get_dev_id_res;
+
+typedef struct {
+  uint8_t cc;
+  uint8_t data[];
+} me_xmit_res;
 
 int fbgc_common_get_chassis_type(uint8_t *type);
 void msleep(int msec);

@@ -44,4 +44,5 @@ IMAGE_INSTALL += " \
   usb-console \
   gpiointrd \
   crashdump \
+  me-util \
   "

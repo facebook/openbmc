@@ -263,8 +263,8 @@ _set_fw_update_ongoing(uint16_t tmout) {
 
 int
 bic_me_xmit(uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
-  uint8_t tbuf[MAX_IPMB_BUFFER] = {0x00};
-  uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
   uint8_t rlen = 0;
   uint8_t tlen = 0;
   int ret = 0;

@@ -161,7 +161,7 @@ server_power_off(bool gs_flag) {
       return -1;
     }
   } else {
-    ret = device_write_buff(SCM_COM_PWR_ENBLE, "0");
+    ret = device_write_buff(SCM_COM_PWR_FORCEOFF, "0");
     if (ret) {
       syslog(LOG_WARNING, "%s: Power off is failed",__func__);
       return -1;

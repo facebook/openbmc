@@ -1,5 +1,6 @@
 pal_headers += [
     'pal.h',
+    'pal_debugcard.h',
     'pal_power.h',
     'pal-pim.h',
     'pal_sensors.h',
@@ -7,6 +8,7 @@ pal_headers += [
 
 pal_sources += [
     'pal.c',
+    'pal_debugcard.c',
     'pal_power.c',
     'pal-pim.c',
     'pal_sensors.c',

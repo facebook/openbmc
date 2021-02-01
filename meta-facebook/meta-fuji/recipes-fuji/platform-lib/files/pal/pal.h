@@ -26,6 +26,7 @@
 #include "pal_sensors.h"
 #include "pal_power.h"
 #include "pal-pim.h"
+#include "pal_debugcard.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,7 +93,9 @@ extern "C" {
 #define FUJI_FRU_PATH "/tmp/fruid_%s.bin"
 
 #define SCM_SYS_LED_COLOR    I2C_SYSFS_DEV_ENTRY(2-0035, sys_led_color)
+#define BMC_UART_SEL         I2C_SYSFS_DEV_ENTRY(12-003e, uart_selection)
 
+#define DEBUGCARD_PRSNT_STATUS "debugcard_present"
 #define SCM_PRSNT_STATUS "scm_present"
 #define PIM_PRSNT_STATUS "pim%d_present_L"
 #define FAN_PRSNT_STATUS "fan%d_present"

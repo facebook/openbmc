@@ -40,6 +40,12 @@
 #include <openbmc/misc-utils.h>
 #include <openbmc/sdr.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/log.h>
+
+#define FRONTPANELD_NAME                    "front-paneld"
+//Debug card presence check interval.
+#define DBG_CARD_CHECK_INTERVAL             500
+#define BTN_POWER_OFF                       40
 
 #define ADM1278_NAME  "adm1278"
 #define ADM1278_ADDR 0x10
@@ -672,7 +678,7 @@ static uint8_t leds[4] = {
 
 /*
  * @brief  hanlder event and set led event to "leds"
- * @note   leds is global variable sync with simLED_setlet_handler()
+ * @note   leds is global variable sync with simLED_setled_handler()
  * @param  *unused:
  * @retval None
  */
@@ -796,6 +802,153 @@ simLED_setled_handler(void *unused) {
   return NULL;
 }
 
+// Thread for monitoring debug card hotswap
+static void *
+debug_card_handler(void *unused) {
+  int curr = -1;
+  int prev = -1;
+  int ret = -1;
+  uint8_t prsnt = 0;
+
+  syslog(LOG_INFO, "%s: %s started", FRONTPANELD_NAME, __FUNCTION__);
+  while (1) {
+    // Check if debug card present or not
+    ret = pal_is_debug_card_prsnt(&prsnt);
+    if (ret) {
+      goto debug_card_out;
+    }
+    curr = prsnt;
+
+    // Check if Debug Card was either inserted or removed
+    if (curr != prev) {
+      if (!curr) {
+        // Debug Card was removed
+        syslog(LOG_INFO, "Debug Card Extraction\n");
+
+      } else {
+        // Debug Card was inserted
+        syslog(LOG_INFO, "Debug Card Insertion\n");
+      }
+      prev = curr;
+    }
+debug_card_out:
+    msleep(DBG_CARD_CHECK_INTERVAL);
+  }
+
+  return NULL;
+}
+
+/* Thread to handle Uart Selection Button */
+static void *
+uart_sel_btn_handler(void *unused) {
+  uint8_t btn = 0;
+  uint8_t prsnt = 0;
+  int ret = -1;
+
+  syslog(LOG_INFO, "%s: %s started", FRONTPANELD_NAME, __FUNCTION__);
+
+  while (1) {
+    /* Check the position of hand switch
+     * and if reset button is pressed */
+    ret = pal_is_debug_card_prsnt(&prsnt);
+    if (ret || !prsnt) {
+      goto uart_sel_btn_out;
+    }
+    ret = pal_get_dbg_uart_btn(&btn);
+    if (ret || !btn) {
+      goto uart_sel_btn_out;
+    }
+    if (btn) {
+      syslog(LOG_INFO, "Uart button pressed\n");
+      pal_switch_uart_mux();
+      pal_clr_dbg_btn();
+    }
+uart_sel_btn_out:
+    msleep(DBG_CARD_CHECK_INTERVAL);
+  }
+
+  return NULL;
+}
+
+/* Thread to handle Power Button to power on/off userver */
+static void *
+pwr_btn_handler(void *unused) {
+  int ret = -1;
+  uint8_t btn = 0;
+  uint8_t cmd = 0;
+  uint8_t power = 0;
+  uint8_t prsnt = 0;
+
+  syslog(LOG_INFO, "%s: %s started", FRONTPANELD_NAME, __FUNCTION__);
+  while (1) {
+    ret = pal_is_debug_card_prsnt(&prsnt);
+    if (ret || !prsnt) {
+      goto pwr_btn_out;
+    }
+
+    ret = pal_get_dbg_pwr_btn(&btn);
+    if (ret || !btn) {
+        goto pwr_btn_out;
+    }
+
+    if (btn) {
+      syslog(LOG_INFO, "Power button pressed\n");
+
+      // Get the current power state (on or off)
+      ret = pal_get_server_power(FRU_SCM, &power);
+      if (ret) {
+        pal_clr_dbg_btn();
+        goto pwr_btn_out;
+      }
+
+      // Set power command should reverse of current power state
+      cmd = !power;
+      pal_update_ts_sled();
+
+      // Reverse the power state of the given server.
+      ret = pal_set_server_power(FRU_SCM, cmd);
+      pal_clr_dbg_btn();
+    }
+pwr_btn_out:
+    msleep(DBG_CARD_CHECK_INTERVAL);
+  }
+
+  return NULL;
+}
+
+/* Thread to handle Reset Button to reset userver */
+static void *
+rst_btn_handler(void *unused) {
+  uint8_t btn = 0;
+  int ret = -1;
+  uint8_t prsnt = 0;
+
+  syslog(LOG_INFO, "%s: %s started", FRONTPANELD_NAME, __FUNCTION__);
+  while (1) {
+    ret = pal_is_debug_card_prsnt(&prsnt);
+    if (ret || !prsnt) {
+      goto rst_btn_out;
+    }
+    /* Check the position of hand switch
+     * and if reset button is pressed */
+    ret = pal_get_dbg_rst_btn(&btn);
+    if (ret || !btn) {
+      goto rst_btn_out;
+    }
+
+    if (btn) {
+      syslog(LOG_INFO, "Rst button pressed\n");
+      /* Reset userver */
+      pal_set_server_power(FRU_SCM, SERVER_POWER_RESET);
+      pal_clr_dbg_btn();
+    }
+rst_btn_out:
+    msleep(DBG_CARD_CHECK_INTERVAL);
+  }
+
+  return NULL;
+}
+
 void
 exithandler(int signum) {
   int brd_rev;
@@ -810,6 +963,10 @@ main (int argc, char * const argv[]) {
   pthread_t tid_scm_monitor;
   pthread_t tid_sim_monitor;
   pthread_t tid_sim_setled;
+  pthread_t tid_debug_card;
+  pthread_t tid_uart_sel_btn;
+  pthread_t tid_pwr_btn;
+  pthread_t tid_rst_btn;
   int rc;
   int pid_file;
 
@@ -851,11 +1008,43 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
+  if ((rc = pthread_create(&tid_debug_card, NULL,
+                           debug_card_handler, NULL))) {
+    syslog(LOG_WARNING, "failed to create debug_card thread: %s",
+           strerror(rc));
+    exit(1);
+  }
+
+  if ((rc = pthread_create(&tid_uart_sel_btn, NULL,
+                           uart_sel_btn_handler, NULL))) {
+    syslog(LOG_WARNING, "failed to create uart_sel_btn thread: %s",
+           strerror(rc));
+    exit(1);
+  }
+
+  if ((rc = pthread_create(&tid_pwr_btn, NULL,
+                           pwr_btn_handler, NULL))) {
+    syslog(LOG_WARNING, "failed to create pwr_btn thread: %s",
+           strerror(rc));
+    exit(1);
+  }
+
+  if ((rc = pthread_create(&tid_rst_btn, NULL,
+                           rst_btn_handler, NULL))) {
+    syslog(LOG_WARNING, "failed to create rst_btn thread: %s",
+           strerror(rc));
+    exit(1);
+  }
+
 
   pthread_join(tid_pim_monitor, NULL);
   pthread_join(tid_scm_monitor, NULL);
   pthread_join(tid_sim_monitor, NULL);
   pthread_join(tid_sim_setled, NULL);
+  pthread_join(tid_debug_card, NULL);
+  pthread_join(tid_uart_sel_btn, NULL);
+  pthread_join(tid_pwr_btn, NULL);
+  pthread_join(tid_rst_btn, NULL);
 
   return 0;
 }

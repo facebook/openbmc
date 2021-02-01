@@ -4061,6 +4061,9 @@ scm_thresh_done:
       smb_sensor_threshold[SMB_SENSOR_FAN8_FRONT_TACH][LCR_THRESH] = 800;
       smb_sensor_threshold[SMB_SENSOR_FAN8_REAR_TACH][UCR_THRESH] = 12000;
       smb_sensor_threshold[SMB_SENSOR_FAN8_REAR_TACH][LCR_THRESH] = 800;
+      smb_sensor_threshold[SMB_SENSOR_TH4_HIGH][UNR_THRESH] = 115;
+      smb_sensor_threshold[SMB_SENSOR_TH4_HIGH][UCR_THRESH] = 105;
+      smb_sensor_threshold[SMB_SENSOR_TH4_HIGH][UNC_THRESH] = 102;
       break;
     case FRU_PSU1:
     case FRU_PSU2:

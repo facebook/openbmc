@@ -1071,6 +1071,14 @@ static const i2c_dev_attr_st smb_syscpld_attr_table[] = {
     0x31, 3, 1,
   },
   {
+    "debugcard_present",
+    "1: Present\n"
+    "0: Not present",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    NULL,
+    0x32, 0, 1,
+  },
+  {
     "scm_present",
     present_help_str,
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -1236,10 +1244,8 @@ static const i2c_dev_attr_st smb_syscpld_attr_table[] = {
   },
   {
     "uart_selection",
-    "00: using BMC_UART_SEL5 controls UART selection\n" 
-    "01: using FB USB Debug Card's USB_UART_SEL controls UART selection\n"
-    "10: force the FB USB debug UART connect to COMe's UART\n"
-    "11: force COMe's UART connect to BMC UART-5 and FB USB debug UART connect to BMC UART-2",
+    "00: USB debug UART connect to BMC UART-2\n"
+    "01: USB debug UART connect to COMe's UART",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x3a, 0, 2,

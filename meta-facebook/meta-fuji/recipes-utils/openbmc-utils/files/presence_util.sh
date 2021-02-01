@@ -24,6 +24,7 @@ source /usr/local/bin/openbmc-utils.sh
 
 SCM_CMD=$SMBCPLD_SYSFS_DIR'/scm_present'
 PIM_CMD=$SMBCPLD_SYSFS_DIR'/*present_L'
+DEBUGCARD_CMD=$SMBCPLD_SYSFS_DIR'/debugcard_present'
 
 function usage
 {
@@ -31,7 +32,7 @@ function usage
   echo "Usage:"
   echo "     $program "
   echo "     $program <TYPE>"
-  echo "     <TYPE>: scm/pim/fan/psu"
+  echo "     <TYPE>: scm/pim/fan/psu/debug_card"
 }
 
 # Will return <key> : <val>
@@ -94,6 +95,21 @@ function get_psu_presence
     done
 }
 
+# Debug card
+function get_debug_card_presence
+{
+  file=$DEBUGCARD_CMD
+  val=$(head -n1 "$file" | awk '{print substr($0,0,3) }' | sed 's/.x//')
+  if [ "$val" -eq 1 ]; then
+      val=1
+  else
+      val=0
+  fi
+
+  key="debug_card"
+  echo $key ":" $val
+}
+
 # get all info
 if [[ $1 = "" ]]; then
   echo "CARDS"
@@ -106,6 +122,9 @@ if [[ $1 = "" ]]; then
   echo "POWER SUPPLIES"
   get_psu_presence
 
+  echo "DEBUG CARD"
+  get_debug_card_presence
+
 else
   if [[ $1 = "scm" ]]; then
     get_scm_presence
@@ -115,6 +134,8 @@ else
     get_fan_presence
   elif [[ $1 = "psu" ]]; then
     get_psu_presence
+  elif [[ $1 = "debug_card" ]]; then
+    get_debug_card_presence
   else
     usage
   fi

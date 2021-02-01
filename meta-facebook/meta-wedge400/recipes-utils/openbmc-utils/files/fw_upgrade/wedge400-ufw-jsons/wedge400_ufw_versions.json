@@ -25,9 +25,9 @@
     },
     "smb" : {
         "filename"    : "smb_cpld.jed",
-        "version" : "3.6",
+        "version" : "4.4",
         "hash"    : "sha1sum",
-        "hash_value" : "6a9d4e7ea5446d9ea2b9c1f744de7cf05be2bd22"
+        "hash_value" : "d4d2a9f6d162adbd248e1141871f49374bcbb265"
     },
     "pwr" : {
         "filename"    : "pwr_cpld.jed",

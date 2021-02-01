@@ -18,9 +18,11 @@
 # Boston, MA 02110-1301 USA
 #
 
+import functools
 import re
+import typing as t
 
-from rest_fruid import get_fruid
+import rest_fruid
 from rest_helper import read_gpio_by_shadow
 
 
@@ -57,10 +59,24 @@ def read_wedge_back_ports(legacy=False):
     return bhinfo
 
 
-def get_gpios():
-    fruinfo = get_fruid()
-    gpioinfo = {}
+@functools.lru_cache(maxsize=1)
+def _check_wedge() -> t.Tuple[bool, bool]:
+    """
+    Returns if a given BMC unit is a wedge RSW and whether it's a wedge40
+    -> (is_wedge, is_wedge40)
+    """
+
+    # Check if this is a wedge40 from fruinfo
+    fruinfo = rest_fruid.get_fruid()
     if re.match("WEDGE.*", fruinfo["Information"]["Product Name"], re.IGNORECASE):
-        is_wedge40 = fruinfo["Information"]["Product Name"] in WEDGE40
-        gpioinfo["back_ports"] = read_wedge_back_ports(is_wedge40)
-    return gpioinfo
+        return True, fruinfo["Information"]["Product Name"] in WEDGE40
+
+    # Not a wedge
+    return False, False
+
+
+def get_gpios():
+    is_wedge, is_wedge40 = _check_wedge()
+    if is_wedge:
+        return {"back_ports": read_wedge_back_ports(is_wedge40)}
+    return {}

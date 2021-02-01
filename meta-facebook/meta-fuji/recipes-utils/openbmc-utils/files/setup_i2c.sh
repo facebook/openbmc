@@ -35,6 +35,8 @@ i2c_device_add 1 0x59 mp2978
 i2c_device_add 2 0x35 scmcpld  #SCM CPLD
 # # Bus 4
 i2c_device_add 4 0x1010 slave-mqueue #IPMB 1
+# # Bus 4
+i2c_device_add 4 0x27 smb_debugcardcpld  # SMB DEBUGCARD CPLD
 # # Bus 13
 i2c_device_add 13 0x35 iobfpga #IOB FPGA
 

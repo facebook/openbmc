@@ -27,6 +27,7 @@ PV = "0.1"
 SRC_URI = "file://Makefile \
            file://fcbcpld.c \
            file://scmcpld.c \
+           file://smb_debugcardcpld.c \
            file://smb_pwrcpld.c \
            file://smb_syscpld.c \
            file://COPYING \
@@ -41,6 +42,7 @@ RDEPENDS_${PN} += "kernel-module-i2c-dev-sysfs"
 KERNEL_MODULE_AUTOLOAD += "                     \
  fcbcpld                                        \
  scmcpld                                        \
+ smb_debugcardcpld                              \
  smb_pwrcpld                                    \
  smb_syscpld                                    \
 "

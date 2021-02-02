@@ -90,7 +90,7 @@ int NicComponent::print_version() {
       std::string(mfg_id) + ")";
   }
   else {
-    display_nic_str = vendor + "NIC firmware version: " + version;
+    display_nic_str = vendor + " NIC firmware version: " + version;
   }
   std::cout << display_nic_str << std::endl;
 

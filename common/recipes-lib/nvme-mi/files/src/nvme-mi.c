@@ -884,3 +884,28 @@ nvme_serial_num_read_decode(const char *i2c_bus_device, uint8_t *value, int size
   return 0;
 }
 
+/* Check the valid range of NVMe-MI Composite Temperature. */
+int
+nvme_temp_value_check(int32_t value, float *value_check) {
+
+  if (value_check == NULL) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null) - NVNe temp sensor reading", __func__);
+    return -1;
+  }
+
+  if (value <= TEMP_HIGHER_THAN_127) {
+    *value_check = (float)value;
+  } else if (value >= TEPM_LOWER_THAN_n60) {
+    *value_check = -(float)(0x100 - value);
+  } else {
+    if (value == TEMP_NO_UPDATE) {
+      return SNR_READING_SKIP;
+    } else if (value == TEMP_SENSOR_FAIL) {
+      return SNR_READING_NA;
+    } else {
+      return -1;
+    }
+  }
+
+  return 0;
+}

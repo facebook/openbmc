@@ -79,6 +79,9 @@
 #define ASIC_CORE_VOL_UNIT 0.0001   // 100uV
 #define POWER_RAIL_VOL_UNIT 0.0001  // 100uV
 
+/* Return Value of Sensor Reading */
+#define SNR_READING_NA -2
+#define SNR_READING_SKIP 1
 
 typedef struct {
   uint8_t sflgs;                    //Status Flags
@@ -202,4 +205,5 @@ int nvme_pdlu_read_decode(const char *i2c_bus, uint8_t *value, t_key_value_pair 
 int nvme_vendor_read_decode(const char *i2c_bus, uint16_t *value, t_key_value_pair *vendor_decoding);
 int nvme_serial_num_read_decode(const char *i2c_bus, uint8_t *value, int size, t_key_value_pair *sn_decoding);
 
+int nvme_temp_value_check(int32_t value, float *value_check);
 #endif

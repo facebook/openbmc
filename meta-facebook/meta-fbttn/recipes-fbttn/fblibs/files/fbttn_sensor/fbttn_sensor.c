@@ -94,6 +94,8 @@
 #define READING_NA -2
 #define READING_SKIP 1
 
+#define MAX_SNR_READ_RETRY 8  // means 16 secs
+
 static int iom_hsc_r_sense = IOM_ADM1278_R_SENSE;
 static int ml_hsc_r_sense = ML_ADM1278_R_SENSE;
 
@@ -702,6 +704,7 @@ read_M2_temp(int device, float *value) {
   char bus[32];
   int gpio_value;
   char full_name[LARGEST_DEVICE_NAME + 1];
+  static int retry = 0;
 
   if (device == 1) {
     snprintf(full_name, LARGEST_DEVICE_NAME, M2_1_GPIO_PRESENT);
@@ -757,11 +760,25 @@ read_M2_temp(int device, float *value) {
     close(dev);
     return -1;
   }
-  *value = (float) res;
+  // valid temperature range: -60C(0xC4) ~ +127C(0x7F)
+  // C4h-FFh is two's complement, means -60 to -1
+  ret = nvme_temp_value_check(res, value);
+  if (ret == 0) {  // within valid range
+    retry = 0;
+  } else {
+    // In an ungraceful shutdown case, M.2 may not report the real temperature for at most 15 seconds.
+    // MAX_SNR_READ_RETRY = 8 means 16 secs
+    if (retry <= MAX_SNR_READ_RETRY) {
+      ret = READING_SKIP;
+      retry++;
+    } else {
+      ret = READING_NA;
+    }
+  }
 
   close(dev);
 
-  return 0;
+  return ret;
 }
 
 static int

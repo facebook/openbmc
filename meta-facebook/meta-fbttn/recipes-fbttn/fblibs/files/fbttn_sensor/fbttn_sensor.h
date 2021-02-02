@@ -28,6 +28,7 @@
 #include <facebook/bic.h>
 #include <facebook/mctp.h>
 #include <facebook/fbttn_common.h>
+#include <openbmc/nvme-mi.h>
 
 #ifdef __cplusplus
 extern "C" {

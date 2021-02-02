@@ -29,7 +29,7 @@ if [ "$#" -eq 1 ]; then
       VOL_EN=(O4)
       VOL_EN_NAME=(P12V_STBY_SLOT1_EN)
       if [ $kernel_ver == 5 ]; then
-        ADC_VALUE=(in12_input)
+        ADC_VALUE=(in13_input)
       else
         ADC_VALUE=(adc12_value)
       fi
@@ -37,9 +37,9 @@ if [ "$#" -eq 1 ]; then
     slot2)
       SLOT=(2)
       VOL_EN=(O5)
-      VOL_EN_NAME=(P12V_STBY_SLOT1_EN)
+      VOL_EN_NAME=(P12V_STBY_SLOT2_EN)
       if [ $kernel_ver == 5 ]; then
-        ADC_VALUE=(in13_input)
+        ADC_VALUE=(in14_input)
       else
         ADC_VALUE=(adc13_value)
       fi
@@ -47,9 +47,9 @@ if [ "$#" -eq 1 ]; then
     slot3)
       SLOT=(3)
       VOL_EN=(O6)
-      VOL_EN_NAME=(P12V_STBY_SLOT1_EN)
+      VOL_EN_NAME=(P12V_STBY_SLOT3_EN)
       if [ $kernel_ver == 5 ]; then
-        ADC_VALUE=(in14_input)
+        ADC_VALUE=(in15_input)
       else
         ADC_VALUE=(adc14_value)
       fi
@@ -57,9 +57,9 @@ if [ "$#" -eq 1 ]; then
     slot4)
       SLOT=(4)
       VOL_EN=(O7)
-      VOL_EN_NAME=(P12V_STBY_SLOT1_EN)
+      VOL_EN_NAME=(P12V_STBY_SLOT4_EN)
       if [ $kernel_ver == 5 ]; then
-        ADC_VALUE=(in15_input)
+        ADC_VALUE=(in16_input)
       else
         ADC_VALUE=(adc15_value)
       fi
@@ -73,7 +73,7 @@ else
   VOL_EN=(O4 O5 O6 O7)
   VOL_EN_NAME=(P12V_STBY_SLOT1_EN P12V_STBY_SLOT2_EN P12V_STBY_SLOT3_EN P12V_STBY_SLOT4_EN)
   if [ $kernel_ver == 5 ]; then
-      ADC_VALUE=(in12_input in13_input in14_input in15_input)
+      ADC_VALUE=(in13_input in14_input in15_input in16_input)
   else
       ADC_VALUE=(adc12_value adc13_value adc14_value adc15_value)
   fi
@@ -87,7 +87,7 @@ for (( i=0; i<${#SLOT[@]}; i++ )); do
     sku=3
   elif [ $(gpio_get ${VOL_EN_NAME[$i]} ${VOL_EN[$i]}) == "1" ]; then
     if [ $kernel_ver == 5 ]; then
-      slot_vol=`cat /sys/devices/platform/iio-hwmon/hwmon/hwmon*/"${ADC_VALUE[$i]}" | cut -d \  -f 1 | awk '{printf ("%.3f\n",$1)}'`
+      slot_vol=`cat /sys/devices/platform/iio-hwmon/hwmon/hwmon*/"${ADC_VALUE[$i]}" | cut -d \  -f 1 | awk '{printf ("%.3f\n",$1/1000)}'`
     else
       slot_vol=`cat /sys/devices/platform/ast_adc.0/"${ADC_VALUE[$i]}" | cut -d \  -f 1 | awk '{printf ("%.3f\n",$1)}'`
     fi

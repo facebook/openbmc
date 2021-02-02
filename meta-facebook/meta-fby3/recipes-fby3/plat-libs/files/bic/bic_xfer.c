@@ -238,13 +238,13 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   }
 
   if (rlen == 0) {
-    syslog(LOG_ERR, "bic_ipmb_wrapper: Zero bytes received, retry:%d, cmd:%x\n", retry, cmd);
+    syslog(LOG_ERR, "bic_ipmb_wrapper: slot%d netfn: 0x%02X cmd: 0x%02X, Zero bytes received, retry:%d ", slot_id, netfn, cmd, retry );
     return BIC_STATUS_FAILURE;
   }
 
   // Handle IPMB response
   if (res->cc) {
-    syslog(LOG_ERR, "bic_ipmb_wrapper: Completion Code: 0x%X\n", res->cc);
+    syslog(LOG_ERR, "bic_ipmb_wrapper: slot%d netfn: 0x%02X cmd: 0x%02X, Completion Code: 0x%02X ", slot_id, netfn, cmd, res->cc);
     return BIC_STATUS_FAILURE;
   }
 
@@ -261,7 +261,7 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   dataCksum = ZERO_CKSUM_CONST - dataCksum;
 
   if (dataCksum != rbuf[rlen - 1]) {
-    syslog(LOG_ERR, "%s: Receive Data cksum does not match (expectative 0x%x, actual 0x%x)", __func__, dataCksum, rbuf[rlen - 1]);
+    syslog(LOG_ERR, "bic_ipmb_wrapper: slot%d netfn: 0x%02X cmd: 0x%02X, Receive Data cksum does not match (expectative 0x%x, actual 0x%x)", slot_id, netfn, cmd, dataCksum, rbuf[rlen-1]);
     return BIC_STATUS_FAILURE;
   }
 

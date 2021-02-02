@@ -36,7 +36,6 @@
 #include <time.h>
 
 static uint8_t bmc_location = 0xff;
-static uint8_t config_status = 0xff;
 const static char *intf_name[4] = {"Server Board", "Front Expansion Board", "Riser Expansion Board", "Baseboard"};
 const uint8_t intf_size = 4;
 
@@ -423,6 +422,14 @@ util_read_sensor(uint8_t slot_id) {
   ipmi_sensor_reading_t sensor = {0};
   uint8_t intf_list[4] = {NONE_INTF};
   uint8_t intf_index = 0;
+  uint8_t config_status = 0xff;
+
+  ret = bic_is_m2_exp_prsnt(slot_id);
+  if ( ret < 0 ) {
+    printf("%s() Couldn't get the status of 1OU/2OU\n", __func__);
+    return -1;
+  }
+  config_status = (uint8_t) ret;
 
   if ( (config_status & PRESENT_1OU) == PRESENT_1OU && (bmc_location != NIC_BMC) ) {
     intf_list[1] = FEXP_BIC_INTF;
@@ -465,9 +472,17 @@ util_get_sdr(uint8_t slot_id) {
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t intf_list[4] = {NONE_INTF};
   uint8_t intf_index = 0;
+  uint8_t config_status = 0xff;
 
   ipmi_sel_sdr_req_t req;
   ipmi_sel_sdr_res_t *res = (ipmi_sel_sdr_res_t *) rbuf;
+
+  ret = bic_is_m2_exp_prsnt(slot_id);
+  if ( ret < 0 ) {
+    printf("%s() Couldn't get the status of 1OU/2OU\n", __func__);
+    return -1;
+  }
+  config_status = (uint8_t) ret;
 
   if ( (config_status & PRESENT_1OU) == PRESENT_1OU && (bmc_location != NIC_BMC) ) {
     intf_list[1] = FEXP_BIC_INTF;
@@ -826,14 +841,6 @@ main(int argc, char **argv) {
       printf("%s is not present!\n", argv[1]);
       return -1;
     }
-
-    ret = bic_is_m2_exp_prsnt(slot_id);
-    if ( ret < 0 ) {
-      printf("%s() Couldn't get the status of 1OU/2OU\n", __func__);
-      return -1;
-    }
-
-    config_status = (uint8_t) ret;
   }
 
   if ( strncmp(argv[2], "--", 2) == 0 ) {

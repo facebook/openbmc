@@ -3692,3 +3692,12 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
 
   return CC_SUCCESS;
 }
+
+int
+pal_gpv3_mux_select(uint8_t slot_id, uint8_t dev_id) {
+  if ( bic_mux_select(slot_id, get_gpv3_bus_number(dev_id), dev_id, REXP_BIC_INTF) < 0 ) {
+    printf("* Failed to select MUX\n");
+    return BIC_STATUS_FAILURE;
+  }
+  return BIC_STATUS_SUCCESS;
+}

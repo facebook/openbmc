@@ -535,6 +535,47 @@ get_gpv3_bus_number(uint8_t dev_id) {
     case DEV_ID10_2OU:
     case DEV_ID11_2OU:
       return 0x3;
+    case DEV_ID12_2OU:
+    case DEV_ID13_2OU:
+      return 0x9;
+  }
+
+  return 0xff;
+}
+
+uint8_t
+get_gpv3_channel_number(uint8_t dev_id) {
+  switch(dev_id) {
+    case FW_2OU_M2_DEV0:
+    case FW_2OU_M2_DEV2:
+    case FW_2OU_M2_DEV4:
+    case FW_2OU_M2_DEV6:
+    case FW_2OU_M2_DEV8:
+    case FW_2OU_M2_DEV10:
+    case DEV_ID0_2OU:
+    case DEV_ID2_2OU:
+    case DEV_ID4_2OU:
+    case DEV_ID6_2OU:
+    case DEV_ID8_2OU:
+    case DEV_ID10_2OU:
+      return 0x1;
+    case FW_2OU_M2_DEV1:
+    case FW_2OU_M2_DEV3:
+    case FW_2OU_M2_DEV5:
+    case FW_2OU_M2_DEV7:
+    case FW_2OU_M2_DEV9:
+    case FW_2OU_M2_DEV11:
+    case DEV_ID1_2OU:
+    case DEV_ID3_2OU:
+    case DEV_ID5_2OU:
+    case DEV_ID7_2OU:
+    case DEV_ID9_2OU:
+    case DEV_ID11_2OU:
+      return 0x0;
+    case DEV_ID12_2OU: // E1.S A
+      return 0x4;
+    case DEV_ID13_2OU: // E1.S B
+      return 0x8;
   }
 
   return 0xff;

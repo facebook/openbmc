@@ -41,19 +41,30 @@
 #define BRCM_WRITE_CMD 130
 #define BRCM_READ_CMD 131
 
-static int
+#define GPV3_E1S_BUS 9
+
+int
 bic_mux_select(uint8_t slot_id, uint8_t bus, uint8_t dev_id, uint8_t intf) {
   uint8_t tbuf[5] = {0x00};
   uint8_t tlen = 5;
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
-  uint8_t chn = ((dev_id - FW_2OU_M2_DEV0 + 1) % 2 > 0)?0x0:0x1;
+  uint8_t chn = get_gpv3_channel_number(dev_id);
   tbuf[0] = (bus << 1) + 1;
-  tbuf[1] = 0x02;
+  if (bus == GPV3_E1S_BUS) {
+    tbuf[1] = 0xE2;
+  } else {
+    tbuf[1] = 0x02;
+  }
   tbuf[2] = 0x00;
   tbuf[3] = 0x00;
   tbuf[4] = chn;
-  printf("* Mux selecting...bus %d, chn: %d, dev_id: %d\n", bus, chn, (dev_id - FW_2OU_M2_DEV0 + 1));
+  if (dev_id > FW_2OU_M2_DEV0) { // 0-based
+    dev_id -= FW_2OU_M2_DEV0;
+  } else {
+    dev_id -= DEV_ID0_2OU;
+  }
+  printf("* Mux selecting...bus %d, chn: %d, dev_id: %d\n", bus, chn, dev_id);
   return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
 }
 

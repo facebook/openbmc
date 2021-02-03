@@ -49,7 +49,13 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t dev_id, int argc, char **argv) {
 
   sprintf(stype_str, "Glacier Point V3");
 
-  printf("%s %u Drive%d\n", stype_str, slot_id, dev_id - DEV_ID0_2OU + 1); //1-based number
+  printf("%s %u Drive%d\n", stype_str, slot_id, dev_id - DEV_ID0_2OU); // 0-based number
+
+  // mux select
+  ret = pal_gpv3_mux_select(slot_id, dev_id);
+  if (ret) {
+    return ret; // fail to select mux
+  }
   
   tlen = 0;
   tbuf[tlen++] = (get_gpv3_bus_number(dev_id) << 1) + 1;

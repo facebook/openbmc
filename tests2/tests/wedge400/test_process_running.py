@@ -20,6 +20,10 @@
 import unittest
 
 from common.base_process_running_test import BaseProcessRunningTest
+from tests.wedge400.helper.libpal import (
+    pal_detect_power_supply_present,
+    BoardRevision,
+)
 
 
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
@@ -32,7 +36,6 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "ipmbd",
             "ipmid",
             "mTerm_server",
-            "pemd",
             "rest.py",
             "restapi",
             "rsyslogd",
@@ -40,3 +43,10 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "spatula_wrapper.py",
             "usbmon.sh",
         ]
+        # If pem is present, then add pemd process in list
+        if (
+            pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM1) == "pem1"
+            or pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM2)
+            == "pem2"
+        ):
+            self.expected_process.append("pemd")

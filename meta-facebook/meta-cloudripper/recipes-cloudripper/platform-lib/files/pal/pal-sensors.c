@@ -109,6 +109,7 @@ const uint8_t bic_neg_reading_sensor_support_list[] = {
 const uint8_t scm_sensor_list[] = {
   SCM_SENSOR_OUTLET_TEMP,
   SCM_SENSOR_INLET_TEMP,
+  SCM_SENSOR_HSC_IN_VOLT,
   SCM_SENSOR_HSC_OUT_VOLT,
   SCM_SENSOR_HSC_OUT_CURR,
 };
@@ -117,6 +118,7 @@ const uint8_t scm_sensor_list[] = {
 const uint8_t scm_all_sensor_list[] = {
   SCM_SENSOR_OUTLET_TEMP,
   SCM_SENSOR_INLET_TEMP,
+  SCM_SENSOR_HSC_IN_VOLT,
   SCM_SENSOR_HSC_OUT_VOLT,
   SCM_SENSOR_HSC_OUT_CURR,
   BIC_SENSOR_MB_OUTLET_TEMP,
@@ -959,6 +961,9 @@ static int scm_sensor_read(uint8_t sensor_num, float *value) {
         if (*value < 0)
           *value = 0;
         break;
+      case SCM_SENSOR_HSC_IN_VOLT:
+        ret = read_hsc_volt_1(SCM_HSC_DEVICE, 1, value);
+        break;
       case SCM_SENSOR_HSC_OUT_VOLT:
         ret = read_hsc_volt_2(SCM_HSC_DEVICE, 1, value);
         break;
@@ -1733,6 +1738,9 @@ static int get_scm_sensor_name(uint8_t sensor_num, char *name) {
     case SCM_SENSOR_INLET_TEMP:
       sprintf(name, "SCM_INLET_TEMP");
       break;
+    case SCM_SENSOR_HSC_IN_VOLT:
+      sprintf(name, "SCM_HSC_INTPUT_12V_VOLT");
+      break;
     case SCM_SENSOR_HSC_OUT_VOLT:
       sprintf(name, "SCM_HSC_OUTPUT_12V_VOLT");
       break;
@@ -2450,6 +2458,7 @@ static int get_scm_sensor_units(uint8_t sensor_num, char *units) {
     case BIC_SENSOR_SOC_TJMAX:
       sprintf(units, "C");
       break;
+    case SCM_SENSOR_HSC_IN_VOLT:
     case SCM_SENSOR_HSC_OUT_VOLT:
     case BIC_SENSOR_P3V3_MB:
     case BIC_SENSOR_P12V_MB:

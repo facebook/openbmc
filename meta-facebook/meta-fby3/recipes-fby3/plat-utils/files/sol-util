@@ -124,7 +124,7 @@ function enable_usb_hub() {
     if [ $cnt = 0 ]; then
       /usr/bin/bic-util $fru --set_gpio 16 $val > /dev/null 2>&1
       echo -n "Initializing USB devs..."
-      sleep 10 # BMC needs to spend about 8 sec to detect all devs. 10 is enough
+      sleep 20 # BMC needs to spend about 20 sec to detect slot1 and slot3 all devs.
       dev_cnt=$(ls /dev/serial/by-path/ | wc -l)
       if [ $dev_cnt -ge 16 ]; then
         echo "Done"
@@ -394,9 +394,9 @@ if [ -n "$COMP" ]; then
           /usr/bin/microcom $(get_usb_dev_by_slot "$SLOT" "$DEV" "$EXP_BOARD_TYPE")
         fi
 
-        echo
+        RET=$?
         enable_usb_hub $SLOT 0
-        exit 0;
+        exit $RET;
       fi
     fi
   elif [ "$DEV" == "bic" ]; then

@@ -616,6 +616,7 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
   uint8_t tbuf[4] = {0x15, 0xA0, 0x00}; // IANA ID
   uint8_t rbuf[12] = {0x00};
   uint8_t rlen = 0;
+  uint8_t server_type = SERVER_TYPE_NONE;
   int ret;
 
   // Ensure the reserved bits are set to 0.
@@ -631,6 +632,13 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
 
   // Ignore first 3 bytes of IANA ID
   memcpy((uint8_t*) gpio, &rbuf[3], rlen);
+
+  if (bic_get_server_type(slot_id, &server_type) < 0) {
+    return -1;
+  } else if (server_type == SERVER_TYPE_ND) {
+    // invert gpio pin 21 (ND_FM_BIOS_POST_COMPT_N) for northdome platform
+    gpio->gpio = gpio->gpio ^ (1 << ND_FM_BIOS_POST_COMPT_N);
+  }
 
   return ret;
 }

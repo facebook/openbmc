@@ -96,11 +96,10 @@ do_install_class-target() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   acld="${D}/usr/local/fbpackages/${pkgdir}/acl_providers"
   bin="${D}/usr/local/bin"
-  sysconf="${D}{sysconfdir}"
   install -d $dst
   install -d $bin
   install -d $acld
-  install -d $sysconf
+  install -d ${D}${sysconfdir}
   for f in ${S}/*.py; do
     n=$(basename $f)
     install -m 755 "$f" ${dst}/$n
@@ -118,7 +117,7 @@ do_install_class-target() {
       install_sysv
   fi
 
-  install -m 644 ${WORKDIR}/rest.cfg $sysconf/rest.cfg
+  install -m 644 ${WORKDIR}/rest.cfg ${D}${sysconfdir}/rest.cfg
 }
 
 

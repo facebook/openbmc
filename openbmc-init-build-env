@@ -31,8 +31,9 @@ PLAT_DISTRO_OVERRIDES=(
   meta-cloudripper:zeus
   meta-fuji:zeus
   meta-minipack:zeus
+  meta-wedge400:zeus
 # warrior platforms (pending upgrade)
-  meta-wedge400:warrior
+#   -- none --
 # Legacy platforms pending kernel upgrade
   meta-fby2-gpv2:rocko
   meta-fby2:rocko

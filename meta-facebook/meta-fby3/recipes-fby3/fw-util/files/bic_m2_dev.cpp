@@ -62,10 +62,10 @@ int M2DevComponent::print_version()
       throw string("Not Accelerator");
     }
     
-    if ( is_dual_m2 == true ) printf("%s DEV%d/%d Version: v%d.%d\n", board_name.c_str(), idx, idx + 1, major_ver, minor_ver);
-    else printf("%s DEV%d Version: v%d.%d\n", board_name.c_str(), idx, major_ver, minor_ver);
+    if ( is_dual_m2 == true ) printf("%s DEV%d/%d Version: v%d.%d\n", board_name.c_str(), idx - 1, idx, major_ver, minor_ver);
+    else printf("%s DEV%d Version: v%d.%d\n", board_name.c_str(), idx - 1, major_ver, minor_ver);
   } catch(string& err) {
-    printf("%s DEV%d Version: NA (%s)\n", board_name.c_str(), idx, err.c_str());
+    printf("%s DEV%d Version: NA (%s)\n", board_name.c_str(), idx - 1, err.c_str());
   }
   return FW_STATUS_SUCCESS;
 }
@@ -82,7 +82,7 @@ int M2DevComponent::update(string image)
     ret = pal_get_dev_info(slot_id, idx, &nvme_ready ,&status, &type);
     if (!ret) {
       if (status != 0) {
-        syslog(LOG_WARNING, "update: Slot%u Dev%d power=%u nvme_ready=%u type=%u", slot_id, idx, status, nvme_ready, type);
+        syslog(LOG_WARNING, "update: Slot%u Dev%d power=%u nvme_ready=%u type=%u", slot_id, idx - 1, status, nvme_ready, type);
         if ( nvme_ready == 0 ) {
           ret = FW_STATUS_NOT_SUPPORTED;
           throw string("The m2 device's NVMe is not ready");
@@ -91,7 +91,7 @@ int M2DevComponent::update(string image)
           if (ret == FW_STATUS_SUCCESS) {
             pal_set_device_power(slot_id, DEV_ID0_2OU + idx -1, SERVER_POWER_CYCLE);
           } else {
-            syslog(LOG_WARNING, "update: Slot%u Dev%d brcm vk failed", slot_id, idx);
+            syslog(LOG_WARNING, "update: Slot%u Dev%d brcm vk failed", slot_id, idx - 1);
           }
         } else if ( type == DEV_TYPE_SPH_ACC ) {
           ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);

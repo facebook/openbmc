@@ -111,6 +111,49 @@ read_throttle_err_seq(gpiopoll_pin_t *desc, gpio_value_t value, useconds_t log_d
   }
 }
 
+static void
+gpio_carrier_log_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  gpio_desc_t *tmp = gpio_open_by_shadow("CPLD_BMC_GPIO_R_01");
+  gpio_value_t value;
+
+  if (!tmp) {
+    syslog(LOG_ERR, "CPLD_BMC_GPIO_R_01 open fail\n");
+    gpio_close(tmp);
+    return;
+  }
+
+  gpio_get_value(tmp, &value);
+
+  if (value == GPIO_VALUE_HIGH) {
+    log_gpio_change(desc, curr, 0);
+  }
+
+  gpio_close(tmp);
+}
+
+static void
+gpio_sys_pwr_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  gpio_desc_t *tmp = gpio_open_by_shadow("RST_SMB_CARRIER_N");
+
+  log_gpio_change(desc, curr, 0);
+
+  if (!tmp) {
+    syslog(LOG_ERR, "RST_SMB_CARRIER_N open fail\n");
+    gpio_close(tmp);
+    return;
+  }
+
+  if (last == GPIO_VALUE_LOW && curr == GPIO_VALUE_HIGH) {
+    gpio_set_value(tmp, GPIO_VALUE_LOW);
+    usleep(100000);
+    gpio_set_value(tmp, GPIO_VALUE_HIGH);
+  }
+
+  gpio_close(tmp);
+}
+
 static void gpio_event_log_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
   log_gpio_change(desc, curr, 0);
@@ -146,9 +189,9 @@ static struct gpiopoll_config g_gpios[] = {
   {"HSC_UV_R_N", "GPIOP4", GPIO_EDGE_FALLING, gpio_throttle_handler, NULL},
   {"PMBUS_HSC_ALERT_R_N", "GPIOP5", GPIO_EDGE_FALLING, gpio_throttle_handler, NULL},
   {"BMC_PWR_BTN_IN_N", "Power button", GPIO_EDGE_BOTH, gpio_event_handle_power_btn, NULL},
-  {"CARRIER_0_ALERT_R_N", "CARRIER_0", GPIO_EDGE_BOTH, gpio_event_log_handler, NULL},
-  {"CARRIER_1_ALERT_R_N", "CARRIER_1", GPIO_EDGE_BOTH, gpio_event_log_handler, NULL},
-  {"SYS_PWR_READY", "SYS_PWR_READY", GPIO_EDGE_BOTH, gpio_event_log_handler, NULL},
+  {"CARRIER_0_ALERT_R_N", "CARRIER_0", GPIO_EDGE_FALLING, gpio_carrier_log_handler, NULL},
+  {"CARRIER_1_ALERT_R_N", "CARRIER_1", GPIO_EDGE_FALLING, gpio_carrier_log_handler, NULL},
+  {"SYS_PWR_READY", "SYS_PWR_READY", GPIO_EDGE_BOTH, gpio_sys_pwr_ready_handler, NULL},
   {"SMB_PMBUS_ISO_HSC_R2_ALERT_0_1", "GPIOS0", GPIO_EDGE_RISING, gpio_event_log_handler, NULL},
   {"SMB_PMBUS_ISO_HSC_R2_ALERT_2_3", "GPIOS1", GPIO_EDGE_RISING, gpio_event_log_handler, NULL},
 };

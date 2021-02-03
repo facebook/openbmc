@@ -175,6 +175,7 @@ gpio_set PD_GPIOS6 0
 gpio_export PD_GPIOS7 GPIOS7
 gpio_set PD_GPIOS7 0
 
+gpio_export RST_SMB_CARRIER_N GPIOY0
 gpio_export OCP_V3_0_PRSNTB_R_N GPIOY3
 
 gpio_export OCP_V3_1_PRSNTB_R_N GPIOZ2

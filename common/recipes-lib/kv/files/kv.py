@@ -30,18 +30,23 @@ class KeyOperationFailure(Exception):
     pass
 
 
-def kv_get(key, flags=0):
+def kv_get(key, flags=0, binary=False):
     key_c = ctypes.create_string_buffer(key.encode())
-    value = ctypes.create_string_buffer(64)
+    value = ctypes.create_string_buffer(256)
     ret = lkv_hndl.kv_get(key_c, value, 0, ctypes.c_uint(flags))
     if ret != 0:
         raise KeyOperationFailure
+    if binary:
+        return value.value
     return value.value.decode()
 
 
 def kv_set(key, value, flags=0):
     key_c = ctypes.create_string_buffer(key.encode())
-    value_c = ctypes.create_string_buffer(value.encode())
+    if isinstance(value, (bytes, bytearray)):
+        value_c = ctypes.create_string_buffer(value)
+    else:
+        value_c = ctypes.create_string_buffer(value.encode())
     ret = lkv_hndl.kv_set(key_c, value_c, 0, ctypes.c_uint(flags))
     if ret != 0:
         raise KeyOperationFailure

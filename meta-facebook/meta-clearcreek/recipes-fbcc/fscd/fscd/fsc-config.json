@@ -1,5 +1,5 @@
 {
-  "version": "fbcc-pvt-r01",
+  "version": "fbcc-pvt-r02",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
@@ -18,6 +18,9 @@
       "type": "linear",
       "negative_hysteresis":1,
       "data": [
+        [15, 16],
+        [18, 19],
+        [21, 22],
         [24, 25],
         [27, 27],
         [29, 29],
@@ -28,7 +31,7 @@
         [39, 39],
         [40, 41],
         [45, 46],
-        [50, 73]
+        [50, 70]
       ]
     },
     "linear_mezz": {
@@ -38,7 +41,7 @@
       "type": "linear",
       "negative_hysteresis":2,
       "data": [
-        [82, 20]
+        [82, 14]
       ]
     },
     "pid_mezz": {
@@ -47,7 +50,7 @@
       },
       "type": "pid",
       "setpoint": 87,
-      "negative_hysteresis": 1,
+      "negative_hysteresis": 2,
       "positive_hysteresis": 1,
       "kp": -0.2,
       "ki": -0.015,
@@ -60,7 +63,7 @@
       "type": "linear",
       "negative_hysteresis":6,
       "data": [
-        [50, 20]
+        [50, 14]
       ]
     },
     "pid_bay0": {
@@ -82,7 +85,7 @@
       "type": "linear",
       "negative_hysteresis":6,
       "data": [
-        [50, 20]
+        [50, 14]
       ]
     },
     "pid_bay1": {
@@ -104,7 +107,7 @@
       "type": "linear",
       "negative_hysteresis":7,
       "data": [
-        [60, 20]
+        [60, 14]
       ]
     },
     "pid_switch": {

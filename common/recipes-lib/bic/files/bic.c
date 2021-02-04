@@ -942,7 +942,7 @@ static int _update_bic_main(uint8_t slot_id, const char* path) {
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
-    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", path);
+    syslog(LOG_ERR, "failed to open %s: %s\n", path, strerror(errno));
     goto error_exit;
   }
 
@@ -1057,11 +1057,11 @@ static int _update_bic_main(uint8_t slot_id, const char* path) {
   run_shell_cmd("sv start ipmbd_0");
 
 error_exit:
-  syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting\n");
-  if (fd > 0) {
+  syslog(LOG_CRIT, "updating bic firmware is exiting, ret=%d\n", ret);
+  if (fd >= 0) {
     close(fd);
   }
-  if (ifd > 0) {
+  if (ifd >= 0) {
     close(ifd);
   }
   set_fw_update_ongoing(FRU_SCM, 0);
@@ -1076,15 +1076,28 @@ static int check_bios_image(int fd, long size) {
   if (size < BIOS_VER_REGION_SIZE)
     return -1;
 
-  buf = (uint8_t*)malloc(BIOS_VER_REGION_SIZE);
-  if (!buf) {
+  if (lseek(fd, (size - BIOS_VER_REGION_SIZE), SEEK_SET) == (off_t) -1) {
+    OBMC_ERROR(errno, "failed to update file (fd=%d) offset to %ld: %s",
+               fd, size - BIOS_VER_REGION_SIZE, strerror(errno));
     return -1;
   }
-  lseek(fd, (size - BIOS_VER_REGION_SIZE), SEEK_SET);
+
+  buf = (uint8_t*)malloc(BIOS_VER_REGION_SIZE);
+  if (buf == NULL) {
+    return -1;
+  }
+
   i = 0;
   while (i < BIOS_VER_REGION_SIZE) {
     rcnt = read(fd, (buf + i), BIOS_ERASE_PKT_SIZE);
-    if ((rcnt < 0) && (errno != EINTR)) {
+    if (rcnt < 0) {
+      if (errno == EINTR)
+        continue;
+
+      free(buf);
+      return -1;
+    } else if (rcnt == 0) {
+      OBMC_WARN("bios image file reached EOF unexpectedly!");
       free(buf);
       return -1;
     }
@@ -1104,7 +1117,11 @@ static int check_bios_image(int fd, long size) {
 
   if (i >= end)
     return -1;
-  lseek(fd, 0, SEEK_SET);
+  if (lseek(fd, 0, SEEK_SET) == (off_t) -1) {
+    OBMC_ERROR(errno, "failed to restore file (fd=%d) offset to 0: %s",
+               fd, strerror(errno));
+    return -1;
+  }
   return 0;
 }
 
@@ -1275,7 +1292,7 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, const char* image_file) {
   }
 
   // Open the file exclusively for read
-  fd = open(image_file, O_RDONLY, 0666);
+  fd = open(image_file, O_RDONLY);
   if (fd < 0) {
     OBMC_ERROR(errno, "failed to open %s for read", image_file);
     goto error_exit;
@@ -1305,13 +1322,14 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, const char* image_file) {
       OBMC_WARN("unsupported firmware component %u\n", comp);
       goto error_exit;
   }
+
   if ((fw_update_info[comp].check_image != NULL) &&
       (fw_update_info[comp].check_image(fd, st.st_size) < 0)) {
     OBMC_WARN("invalid %s firmware image!", fw_update_info[comp].name);
     goto error_exit;
   }
-  syslog(LOG_CRIT, "bic_update_fw: update %s firmware on slot %d\n",
-         fw_update_info[comp].name, slot_id);
+  syslog(LOG_CRIT, "%s: update %s firmware on slot %d\n",
+         __func__, fw_update_info[comp].name, slot_id);
 
   // Write chunks of binary data in a loop
   offset = 0;
@@ -1330,6 +1348,7 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, const char* image_file) {
     }
 
     // Read from file
+    assert(read_count < sizeof(buf));
     count = read(fd, buf, read_count);
     if (count < 0) {
       OBMC_ERROR(errno, "failed to read %s", image_file);
@@ -1424,9 +1443,9 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, const char* image_file) {
 update_done:
   ret = 0;
 error_exit:
-  syslog(LOG_CRIT, "bic_update_fw: updating %s firmware is exiting\n",
-         fw_update_info[comp].name);
-  if (fd > 0) {
+  syslog(LOG_CRIT, "%s: updating %s firmware is exiting, ret=%d\n",
+         __func__, fw_update_info[comp].name, ret);
+  if (fd >= 0) {
     close(fd);
   }
   if (tbuf) {

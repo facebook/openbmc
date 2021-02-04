@@ -35,6 +35,11 @@
 #define MAIN_CPLD_BUS  (4)
 #define MAIN_CPLD_ADDR (0x84)
 
+#define CPLD_EVENT_REG   (0xFE)
+#define THERMTRIP_CTRL   (0x1 << 2)
+#define RT_PWR_FAIL_CTRL (0x1 << 1)
+#define BT_PWR_FAIL_CTRL (0x1 << 0)
+
 #define LTC4282_REG_FAULT_LOG    0x04
 #define FET_BAD_FAULT            (0x1 << 6)
 #define FET_SHORT_FAULT          (0x1 << 5)
@@ -71,6 +76,11 @@ enum {
   ERR_PAX_3_ALERT,
   ERR_CPLD_ALERT,
   ERR_UNKNOWN
+};
+
+enum {
+  RUNTIME = 0,
+  BOOTUP
 };
 
 bool g_sys_pwr_off;
@@ -161,13 +171,24 @@ static int sync_dbg_led(uint8_t err_bit, bool assert)
   return set_dbg_led(0x00);
 }
 
-int check_power_seq()
+int check_power_seq(int type)
 {
   struct power_seq {
     char *name;
     uint8_t offset;
     uint8_t bit;
-  } cpld_power_seq[] = {
+  };
+  struct power_seq *cpld_power_seq;
+  struct power_seq runtime_seq[] = {
+    {"MODULE_PWRGD_ASIC3_R", 0, 0}, {"MODULE_PWRGD_ASIC4_R", 0, 1},
+    {"MODULE_PWRGD_ASIC5_R", 0, 2}, {"MODULE_PWRGD_ASIC6_R", 0, 3},
+    {"MODULE_PWRGD_ASIC7_R", 0, 4}, {"P12V_HSC_PG_R", 1, 0},
+    {"VICOR_PG_R", 1, 1}, {"P48V_HSC_PG_R", 1, 2},
+    {"PW_PAX_POWER_GOOD", 1, 3}, {"ASIC_ALL_DONE", 1, 4},
+    {"MODULE_PWRGD_ASIC0", 1, 5}, {"MODULE_PWRGD_ASIC1_R", 1, 6},
+    {"MODULE_PWRGD_ASIC2_R", 1, 7}
+  };
+  struct power_seq boot_seq[] = {
     {"RST_CPLD_RSMRST_N", 0, 0}, {"PWRGD_P5V_STBY_R", 0, 1},
     {"PWRGD_CPLD_VREFF", 0, 2}, {"PWRGD_P2V5_AUX_R", 0, 3},
     {"PWRGD_P1V2_AUX_R", 0, 4}, {"PWRGD_P1V15_AUX_R", 0, 5},
@@ -181,7 +202,20 @@ int check_power_seq()
   int fd, i;
   int ret = 0, fail_addr = -1;
   uint8_t tbuf[8], rbuf[8], value;
-  uint8_t power_seq_num = sizeof(cpld_power_seq)/sizeof(struct power_seq);
+  uint8_t event_reg, state_reg, ctrl_offset;
+  uint8_t power_seq_num = 13;
+
+  if (type == RUNTIME) {
+    cpld_power_seq = runtime_seq;
+    event_reg = 0x2b;
+    state_reg = 0x2b;
+    ctrl_offset = RT_PWR_FAIL_CTRL;
+  } else {
+    cpld_power_seq = boot_seq;
+    event_reg = 0x2f;
+    state_reg = 0x2e;
+    ctrl_offset = BT_PWR_FAIL_CTRL;
+  }
 
   sprintf(dev_cpld, "/dev/i2c-%d", MAIN_CPLD_BUS);
   fd = open(dev_cpld, O_RDWR);
@@ -189,12 +223,12 @@ int check_power_seq()
     return -1;
   }
 
-  tbuf[0] = 0x2f; // Error state
+  tbuf[0] = event_reg;
   ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 1);
   if (ret < 0 || (rbuf[0] & 0x80) == 0x0) // Read error or power is turned off normally
     goto exit;
 
-  tbuf[0] = 0x2e;
+  tbuf[0] = state_reg;
   ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 2);
   if (ret < 0)
     goto exit;
@@ -213,7 +247,18 @@ int check_power_seq()
       syslog(LOG_CRIT, "Unknown power rail fails");
       pal_add_cri_sel(event_str);
   }
+  if (type == BOOTUP) {
+    tbuf[0] = 0x31; // CPLD state
+    ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 1);
+    if (ret < 0)
+      goto exit;
+    syslog(LOG_CRIT, "CPLD bootup failed at state %d", rbuf[0]);
+  }
 
+  // Clear event
+  tbuf[0] = CPLD_EVENT_REG;
+  tbuf[1] = ctrl_offset;
+  i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 2, rbuf, 0);
 exit:
   close(fd);
   return ret;
@@ -222,10 +267,10 @@ exit:
 int check_pwr_brake()
 {
   const char* cpld_power_brake[] = {
-    "PWRBRK_ASIC7", "PWRBRK_ASIC6",
-    "PWRBRK_ASIC5", "PWRBRK_ASIC4",
-    "PWRBRK_ASIC3", "PWRBRK_ASIC2",
-    "PWRBRK_ASIC1", "PWRBRK_ASIC0"
+    "PWRBRK_ASIC0", "PWRBRK_ASIC1",
+    "PWRBRK_ASIC2", "PWRBRK_ASIC3",
+    "PWRBRK_ASIC4", "PWRBRK_ASIC5",
+    "PWRBRK_ASIC6", "PWRBRK_ASIC7"
   };
   char dev_cpld[16] = {0};
   char event_str[64] = {0};
@@ -328,7 +373,7 @@ int check_hsc_alert(gpiopoll_pin_t *gp, int bus_id, uint8_t addr, uint8_t reg)
 static bool is_gpu_thermal_trip()
 {
   bool thermtrip[8] = {false, false, false, false, false, false, false, false};
-  bool event;
+  bool event = false;
   int fd, ret;
   char shadow[16] = {0};
   char dev_cpld[16] = {0};
@@ -351,11 +396,10 @@ static bool is_gpu_thermal_trip()
 
   tbuf[0] = 0x0a; // Themral trip event
   ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 1);
-  event = rbuf[0] & 0x80? true: false;
-  close(fd);
   if (ret < 0)
-    return false;
+    goto exit;
 
+  event = rbuf[0] & 0x80? true: false;
   // Delay to avoid false alart during AC cycle due to hardware issue
   msleep(250);
   if (event) {
@@ -364,6 +408,13 @@ static bool is_gpu_thermal_trip()
         syslog(LOG_CRIT, "ASIC%d Thermal Trip\n", i);
     }
   }
+
+  // Clear event
+  tbuf[0] = CPLD_EVENT_REG;
+  tbuf[1] = THERMTRIP_CTRL;
+  i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 2, rbuf, 0);
+exit:
+  close(fd);
   return event;
 }
 
@@ -392,7 +443,7 @@ static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gp
 {
   g_sys_pwr_off = (curr == GPIO_VALUE_HIGH)? false: true;
 
-  if (curr == GPIO_VALUE_LOW && check_power_seq() < 0)
+  if (curr == GPIO_VALUE_LOW && check_power_seq(RUNTIME) < 0)
     syslog(LOG_WARNING, "Failed to get power state from CPLD");
 
   gpio_event_handle_low_active(gp, last, curr);
@@ -538,8 +589,23 @@ static void gpio_event_cpld_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_va
 {
   // Delay to avoid false alart during AC cycle due to hardware issue
   msleep(250);
+  if (curr == GPIO_VALUE_LOW && check_power_seq(BOOTUP) < 0)
+    syslog(LOG_WARNING, "Failed to get power state from CPLD");
+
   gpio_event_handle_low_active(gp, last, curr);
   sync_dbg_led(ERR_CPLD_ALERT, curr == GPIO_VALUE_LOW? true: false);
+}
+
+
+static void cpld_def_alert(gpiopoll_pin_t *gp, gpio_value_t curr)
+{
+  if (curr == GPIO_VALUE_LOW) {
+    if (check_power_seq(BOOTUP) < 0)
+      syslog(LOG_WARNING, "Failed to get power state from CPLD");
+
+    log_gpio_change(gp, curr, 0, false);
+    sync_dbg_led(ERR_CPLD_ALERT, true);
+  }
 }
 
 static void gpio_event_asic_thermtrip(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
@@ -565,7 +631,7 @@ static struct gpiopoll_config g_gpios[] = {
   {"SMB_ALERT_ASIC45", "ASIC45 Alert", GPIO_EDGE_BOTH, gpio_event_asic45_alert, NULL},
   {"SMB_ALERT_ASIC67", "ASIC67 Alert", GPIO_EDGE_BOTH, gpio_event_asic67_alert, NULL},
   {"THERMTRIP_N_ASIC07", "ASIC Thermal Trip", GPIO_EDGE_BOTH, gpio_event_asic_thermtrip, NULL},
-  {"CPLD_SMB_ALERT_N", "CPLD Alert", GPIO_EDGE_BOTH, gpio_event_cpld_alert, NULL},
+  {"CPLD_SMB_ALERT_N", "CPLD Alert", GPIO_EDGE_BOTH, gpio_event_cpld_alert, cpld_def_alert},
   {"PAX0_ALERT", "PAX0 Alert", GPIO_EDGE_BOTH, gpio_event_pax_0_alert, NULL},
   {"PAX1_ALERT", "PAX1 Alert", GPIO_EDGE_BOTH, gpio_event_pax_1_alert, NULL},
   {"PAX2_ALERT", "PAX2 Alert", GPIO_EDGE_BOTH, gpio_event_pax_2_alert, NULL},

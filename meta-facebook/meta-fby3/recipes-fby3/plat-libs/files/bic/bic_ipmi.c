@@ -689,6 +689,7 @@ bic_get_80port_record(uint8_t slot_id, uint8_t *rbuf, uint8_t *rlen, uint8_t int
 int
 bic_get_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf) {
   uint8_t tbuf[32] = {0};
+  uint8_t rbuf[4] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   const uint32_t reg = 0x00200028; //for altera cpld
@@ -701,7 +702,9 @@ bic_get_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8
   tbuf[5] = (reg >> 8) & 0xff;
   tbuf[6] = (reg >> 0) & 0xff;
   tlen = 7;
-  return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, ver, &rlen, intf);
+  int ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  for (int i = 0; i < rlen; i++) ver[i] = rbuf[3-i];
+  return ret;
 }
 
 // Custom Command for getting vr version/device id

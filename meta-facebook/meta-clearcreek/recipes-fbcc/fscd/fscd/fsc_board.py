@@ -23,14 +23,23 @@ from fsc_util import Logger
 
 lpal_hndl = CDLL("libpal.so.0")
 
-
 def board_fan_actions(fan, action="None"):
     """
     Override the method to define fan specific actions like:
     - handling dead fan
     - handling fan led
     """
-    # Logger.warn("%s needs action %s" % (fan.label, str(action)))
+    if action in "dead":
+        # TODO: Why not do return pal_fan_dead_handle(fan)
+        lpal_hndl.pal_fan_dead_handle(fan.fan_num)
+    elif action in "recover":
+        # TODO: Why not do return pal_fan_recovered_handle(fan)
+        lpal_hndl.pal_fan_recovered_handle(fan.fan_num)
+    elif "led" in action:
+        # No Action Needed. LED controlled in action 'dead' and 'recover'.
+        pass
+    else:
+        Logger.warn("%s needs action %s" % (fan.label, str(action)))
     pass
 
 

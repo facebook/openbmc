@@ -44,6 +44,7 @@ static int read_nic_volt(uint8_t nic_id, float *value);
 static int read_nic_curr(uint8_t nic_id, float *value);
 static int read_nic_pwr(uint8_t nic_id, float *value);
 static int sensors_read_vr(uint8_t sensor_num, float *value);
+static bool is_fan_present(uint8_t fan_id);
 static int sensors_read_fan_speed(uint8_t, float*);
 static int read_ina219_sensor(uint8_t sensor_num, float *value);
 static int read_bay0_ssd_volt(uint8_t nic_id, float *value);
@@ -1003,41 +1004,121 @@ int pal_get_fan_name(uint8_t num, char *name)
   return 0;
 }
 
+static int pal_set_fan_led(uint8_t led_ctrl)
+{
+  int fd = 0, ret = -1;
+  char fn[32];
+  uint8_t retry = 3, tlen, rlen, addr, bus;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+
+  bus = I2C_BUS_5;
+  addr = 0xEE;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    goto err_exit;
+  }
+
+  tbuf[0] = 0x02;
+  tbuf[1] = led_ctrl;
+  tlen = 2;
+  rlen = 1;
+
+  while (ret < 0 && retry-- > 0 ) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: ret < 0 = %d", __func__, ret);
+    goto err_exit;
+  }
+
+  err_exit:
+  if (fd > 0) {
+    close(fd);
+  }
+
+  return 0;
+}
+
+static uint8_t fan_status = 0xff;
+int pal_fan_dead_handle(int fan_num) {
+  uint8_t ret = 0, led_ctrl = 0, fan_mask;
+  static uint8_t last_fan_status;
+
+  fan_status = CLEARBIT(fan_status, fan_num);
+
+  if(last_fan_status == fan_status) {
+    return 0;
+  }
+
+  for(int i=0; i < pal_tach_cnt; i=i+2) {
+    fan_mask = GETBIT(fan_status, i) & GETBIT(fan_status, (i+1));
+    led_ctrl = fan_mask ? SETBIT(led_ctrl, i/2) : CLEARBIT(led_ctrl, i/2);
+  }
+  led_ctrl |= ~led_ctrl << 4;
+
+  ret = pal_set_fan_led(led_ctrl);
+
+  last_fan_status = fan_status;
+  return ret;
+}
+
+int pal_fan_recovered_handle(int fan_num) {
+  uint8_t ret = 0, led_ctrl = 0, fan_mask;
+
+  fan_status = SETBIT(fan_status, fan_num);
+
+  for(int i=0; i < pal_tach_cnt; i=i+2) {
+    fan_mask = GETBIT(fan_status, i) & GETBIT(fan_status, (i+1));
+    led_ctrl = fan_mask ? SETBIT(led_ctrl, i/2) : CLEARBIT(led_ctrl, i/2);
+  }
+  led_ctrl |= ~led_ctrl << 4;
+
+  ret = pal_set_fan_led(led_ctrl);
+
+  return ret;
+}
+
 static int sensors_read_fan_speed(uint8_t sensor_num, float *value)
 {
-  int ret, i, retries = 5;
+  int ret, fan_id;
   *value = 0.0;
 
-  for (i = 0; i < retries; i++) {
-    switch (sensor_num) {
-      case PDB_FAN0_TACH_I:
-        ret = sensors_read_fan("fan1", (float *)value);
-        break;
-      case PDB_FAN0_TACH_O:
-        ret = sensors_read_fan("fan2", (float *)value);
-        break;
-      case PDB_FAN1_TACH_I:
-        ret = sensors_read_fan("fan3", (float *)value);
-        break;
-      case PDB_FAN1_TACH_O:
-        ret = sensors_read_fan("fan4", (float *)value);
-        break;
-      case PDB_FAN2_TACH_I:
-        ret = sensors_read_fan("fan5", (float *)value);
-        break;
-      case PDB_FAN2_TACH_O:
-        ret = sensors_read_fan("fan6", (float *)value);
-        break;
-      case PDB_FAN3_TACH_I:
-        ret = sensors_read_fan("fan7", (float *)value);
-        break;
-      case PDB_FAN3_TACH_O:
-        ret = sensors_read_fan("fan8", (float *)value);
-        break;
-      default:
-        return ERR_SENSOR_NA;
-    }
+  fan_id = (sensor_num - PDB_FAN0_TACH_I)/2;
+  if (is_fan_present(fan_id) == true) {
+    return READING_NA;
+  }
 
+  switch (sensor_num) {
+    case PDB_FAN0_TACH_I:
+      ret = sensors_read_fan("fan1", (float *)value);
+      break;
+    case PDB_FAN0_TACH_O:
+      ret = sensors_read_fan("fan2", (float *)value);
+      break;
+    case PDB_FAN1_TACH_I:
+      ret = sensors_read_fan("fan3", (float *)value);
+      break;
+    case PDB_FAN1_TACH_O:
+      ret = sensors_read_fan("fan4", (float *)value);
+      break;
+    case PDB_FAN2_TACH_I:
+      ret = sensors_read_fan("fan5", (float *)value);
+      break;
+    case PDB_FAN2_TACH_O:
+      ret = sensors_read_fan("fan6", (float *)value);
+      break;
+    case PDB_FAN3_TACH_I:
+      ret = sensors_read_fan("fan7", (float *)value);
+      break;
+    case PDB_FAN3_TACH_O:
+      ret = sensors_read_fan("fan8", (float *)value);
+      break;
+    default:
+      return ERR_SENSOR_NA;
   }
 
   return ret;
@@ -2014,4 +2095,3 @@ read_ina260_sensor(uint8_t sensor_num, float *value) {
   }
   return ret;
 }
-

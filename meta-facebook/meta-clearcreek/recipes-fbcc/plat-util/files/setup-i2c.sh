@@ -28,7 +28,9 @@ i2c_device_add 6 0x4d tmp422
 i2c_device_add 6 0x4e tmp422
 
 echo "Setup TCA9539 input/output pin"
+i2cset -y -f 5 0x77 0x06 0x00
 i2cset -y -f 5 0x77 0x07 0x0f
+i2cset -y -f 5 0x77 0x02 0x0f
 
 echo "Setup VR sensor"
 i2c_device_add 5 0x30 mpq8645p

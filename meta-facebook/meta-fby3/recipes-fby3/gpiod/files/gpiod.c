@@ -57,6 +57,7 @@ static gpio_pin_t gpio_slot4[MAX_GPIO_PINS] = {0};
 
 static uint8_t cpld_io_sts[MAX_NUM_SLOTS+1] = {0x10, 0};
 static long int pwr_on_sec[MAX_NUM_SLOTS] = {0};
+static long int retry_sec[MAX_NUM_SLOTS] = {0};
 static bool bios_post_cmplt[MAX_NUM_SLOTS] = {false, false, false, false};
 static bool is_pwrgd_cpu_chagned[MAX_NUM_SLOTS] = {false, false, false, false};
 static uint8_t SLOTS_MASK = 0x0;
@@ -639,7 +640,7 @@ check_pfr_mailbox(uint8_t fru) {
 static void *
 gpio_monitor_poll(void *ptr) {
 
-  int i, ret = 0, retry = 0;
+  int i, ret = 0;
   uint8_t fru = (int)ptr;
   bic_gpio_t revised_pins, n_pin_val, o_pin_val;
   gpio_pin_t *gpios;
@@ -700,13 +701,19 @@ gpio_monitor_poll(void *ptr) {
                        (GET_BIT(n_pin_val, FM_CPU_MSMI_CATERR_LVT3_N ) << 0x3) | \
                        (GET_BIT(n_pin_val, FM_SLPS3_R_N) << 0x4);
     if (GET_BIT(n_pin_val, FM_BIOS_POST_CMPLT_BMC_N) == 0x0) {
-      if (retry == MAX_READ_RETRY*3) {
+      if (retry_sec[fru-1] == (MAX_READ_RETRY*12)) {
+        kv_set(host_key[fru-1], "1", 0, 0);
         bios_post_cmplt[fru-1] = true;
-        retry = 0;
+        retry_sec[fru-1] = 0;
       }
-      retry++;
+      retry_sec[fru-1]++;
     } else {
-      bios_post_cmplt[fru-1] = false;
+      if (bios_post_cmplt[fru-1] == true) {
+        kv_set(host_key[fru-1], "0", 0, 0);
+        bios_post_cmplt[fru-1] = false;
+        retry_sec[fru-1] = 0;
+        rst_timer(fru);
+      }
     }
 
     //check PWRGD_CPU_LVC3_R is changed
@@ -843,8 +850,7 @@ host_pwr_mon() {
 #define POWER_ON_DELAY       2
 #define NON_PFR_POWER_OFF_DELAY  -2
 #define PFR_POWER_OFF_DELAY     -60
-#define HOST_READY 300
-#define MONITOR_PLT_POST_DELAY  5
+#define HOST_READY 500
   char path[64] = {0};
   uint8_t host_off_flag = 0;
   uint8_t is_util_run_flag = 0;
@@ -907,11 +913,11 @@ host_pwr_mon() {
           fru_cahe_init(fru); 
         }
         host_off_flag &= ~(0x1 << i);
-        if ( tick == HOST_READY || (bios_post_cmplt[fru-1] == true && tick < HOST_READY && tick > MONITOR_PLT_POST_DELAY)) {
+        if ( tick == HOST_READY ) {
           kv_set(host_key[fru-1], "1", 0, 0);
         }
       } else {
-        if ( tick == 0 ) {
+        if ( tick < POWER_ON_DELAY ) {
           kv_set(host_key[fru-1], "0", 0, 0);
         }
       }

@@ -1026,6 +1026,8 @@ read_cm_sensor(uint8_t id, float *value) {
 
     if( fan_duty <= 20 ) {
       InletCalibration = -1.5;
+    } else if ( 20 < fan_duty && fan_duty <= 25 ) {
+      InletCalibration = -1;
     } else {
       InletCalibration = 0.5;
     }

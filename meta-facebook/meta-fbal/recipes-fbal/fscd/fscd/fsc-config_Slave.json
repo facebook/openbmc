@@ -1,5 +1,5 @@
 {
-    "version": "fbal-r09",
+    "version": "fbal-r10",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
@@ -7,7 +7,7 @@
     "sensor_filter_all": true,
     "boost": {
       "fan_fail": true,
-      "sensor_fail": false
+      "sensor_fail": true
     },
     "sensor_valid_check": {
       "(.*)cpu": {
@@ -55,7 +55,7 @@
           [25, 20],
           [30, 23],
           [35, 25],
-          [38, 50],
+          [38, 35],
           [40, 80]
         ]
       },

@@ -17,9 +17,10 @@
 #
 from ctypes import CDLL, c_char_p
 from subprocess import PIPE, Popen, check_output
-
 from fsc_util import Logger
-
+import re
+import os
+import kv
 
 lpal_hndl = CDLL("libpal.so.0")
 
@@ -77,7 +78,16 @@ def bmc_read_power():
     else:
       return 0
 
+def is_dev_prsnt(filename):
+    try:
+        val = kv.kv_get(filename, kv.FPERSIST, True)
+        if val[0] == 1:
+            return 1
+        return 0
 
+    except KeyOperationFailure:
+        return 0
+                              
 def sensor_valid_check(board, sname, check_name, attribute):
     cmd = ""
     data = ""
@@ -87,6 +97,13 @@ def sensor_valid_check(board, sname, check_name, attribute):
             # check power status first
             pwr_sts = bmc_read_power()
             if pwr_sts == 1:
+                if re.match(r"(.*)dimm(.*)", sname) is not None:
+                    snr_split=sname.split('_')
+                    cpu_num = int(snr_split[4][3])
+                    pos = int(snr_split[6][1])
+                    dimm_num = str(cpu_num*12 + pos*2)
+                    dimm_name = "sys_config/fru1_dimm" + dimm_num + "_location"
+                    return is_dev_prsnt(dimm_name)
                 return 1
             return 0
         else:

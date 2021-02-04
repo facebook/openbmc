@@ -2504,9 +2504,14 @@ bic_send:
     goto bic_send;
   }
 
+  if (ret != 0) {
+    // just return if invalid cmd or no response
+    goto out;
+  }
+
   //Ignore IANA ID
   memcpy(ver, &rbuf[SIZE_IANA_ID], rlen-SIZE_IANA_ID);
-
+out:
   return ret;
 }
 

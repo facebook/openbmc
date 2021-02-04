@@ -121,7 +121,7 @@ int ipc_send_req(const char *endpoint, uint8_t *req, size_t req_len,
 
   max_resp = *resp_len;
   while ((len = recv(sockfd, resp, max_resp, 0)) < 0) {
-    if ((errno != EINTR && errno != EWOULDBLOCK) ||
+    if ((errno != EINTR && errno != EWOULDBLOCK && errno != EAGAIN) ||
         (retry++ >= MAX_RETRIES)) {
       DEBUG("%s(%s) failed to recv (%s)", __func__, endpoint, strerror(errno));
       goto error;

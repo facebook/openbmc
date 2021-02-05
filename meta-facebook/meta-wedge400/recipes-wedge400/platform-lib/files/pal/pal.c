@@ -781,6 +781,19 @@ pal_get_fru_list(char *list) {
 }
 
 int
+pal_get_fru_capability(uint8_t fru, unsigned int *caps)
+{
+  if (fru == FRU_BMC) {
+    *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+  } else if (fru > FRU_ALL && fru <= FRU_FPGA) {
+    *caps = FRU_CAPABILITY_SENSOR_ALL;
+  } else {
+    return -1;
+  }
+  return 0;
+}
+
+int
 pal_get_fru_id(char *str, uint8_t *fru) {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;

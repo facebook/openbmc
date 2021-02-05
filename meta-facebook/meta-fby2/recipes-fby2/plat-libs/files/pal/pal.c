@@ -3953,6 +3953,58 @@ pal_get_fru_list(char *list) {
 }
 
 int
+pal_get_dev_list(uint8_t fru, char *list)
+{
+#ifdef CONFIG_FBY2_GPV2
+  if (fru >= FRU_SLOT1 && fru <= FRU_SLOT4) {
+    strcpy(list, pal_dev_fru_list);
+    return 0;
+  }
+  return -1;
+#else
+  return PAL_ENOTSUP;
+#endif
+}
+
+int
+pal_get_fru_capabilities(uint8_t fru, unsigned int *caps)
+{
+  int ret = 0;
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_SERVER | FRU_CAPABILITY_POWER_ALL |
+        FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_HAS_DEVICE;
+      break;
+    case FRU_SPB:
+    case FRU_BMC:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
+      break;
+    case FRU_NIC:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_NETWORK_CARD;
+      break;
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
+int
+pal_get_dev_capabilities(uint8_t fru, uint8_t dev, unsigned int *caps)
+{
+  if (fru < FRU_SLOT1 || fru > FRU_SLOT4) {
+    return -1;
+  }
+  *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+    (FRU_CAPABILITY_POWER_ALL & (~FRU_CAPABILITY_POWER_RESET));
+  return 0;
+}
+
+int
 pal_get_fru_id(char *str, uint8_t *fru) {
 
   return fby2_common_fru_id(str, fru);

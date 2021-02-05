@@ -3471,6 +3471,32 @@ pal_get_fru_list(char *list) {
 }
 
 int
+pal_get_fru_capability(uint8_t fru, unsigned int *caps)
+{
+  int ret = 0;
+  switch (fru) {
+    case FRU_MB:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_SERVER | FRU_CAPABILITY_MANAGEMENT_CONTROLLER |
+        FRU_CAPABILITY_POWER_ALL;
+      break;
+    case FRU_NIC:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_NETWORK_CARD;
+      break;
+    case FRU_RISER_SLOT2:
+    case FRU_RISER_SLOT3:
+    case FRU_RISER_SLOT4:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+      break;
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
+int
 pal_get_fru_id(char *str, uint8_t *fru) {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;

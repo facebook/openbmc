@@ -1422,6 +1422,33 @@ pal_get_fru_list(char *list) {
 }
 
 int
+pal_get_fru_capability(uint8_t fru, unsigned int *caps)
+{
+  int ret = 0;
+  switch(fru) {
+    case FRU_SLOT1:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_SERVER | FRU_CAPABILITY_POWER_ALL;
+      break;
+    case FRU_IOM:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
+      break;
+    case FRU_DPB:
+    case FRU_SCC:
+      *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_READ;
+      break;
+    case FRU_NIC:
+      *caps = FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_NETWORK_CARD;
+      break;
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
+int
 pal_get_fru_id(char *str, uint8_t *fru) {
 
   return fbttn_common_fru_id(str, fru);

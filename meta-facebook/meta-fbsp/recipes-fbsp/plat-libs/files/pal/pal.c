@@ -1693,6 +1693,37 @@ pal_get_fru_list(char *list) {
   return 0;
 }
 
+int
+pal_get_fru_capability(uint8_t fru, unsigned int *caps)
+{
+  int ret = 0;
+
+  switch (fru) {
+    case FRU_MB:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_POWER_ALL | FRU_CAPABILITY_SERVER;
+      break;
+    case FRU_NIC0:
+    case FRU_NIC1:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_NETWORK_CARD;
+      break;
+    case FRU_BMC:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
+      break;
+    case FRU_RISER1:
+    case FRU_RISER2:
+    case FRU_FCB:
+      *caps = FRU_CAPABILITY_SENSOR_ALL;
+      break;
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
 void
 pal_post_end_chk(uint8_t *post_end_chk) {
   static uint8_t post_end = 1;

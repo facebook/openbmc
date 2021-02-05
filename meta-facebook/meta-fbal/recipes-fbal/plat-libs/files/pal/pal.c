@@ -2137,3 +2137,42 @@ update_local_fruid(void) {
     FRU_BMC = FRU_TRAY1_BMC;
   }
 }
+
+int pal_get_fru_capability(uint8_t fru, unsigned int *caps)
+{
+  int ret = 0;
+  switch (fru) {
+    case FRU_TRAY0_MB:
+    case FRU_TRAY1_MB:
+      *caps =  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SERVER |
+          FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL;
+      break;
+    case FRU_TRAY0_NIC0:
+    case FRU_TRAY0_NIC1:
+    case FRU_TRAY1_NIC0:
+    case FRU_TRAY1_NIC1:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_NETWORK_CARD;
+      break;
+    case FRU_PDB:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+      break;
+    case FRU_DBG:
+      *caps = FRU_CAPABILITY_SENSOR_ALL;
+      break;
+    case FRU_TRAY0_BMC:
+    case FRU_TRAY1_BMC:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
+      break;
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
+int pal_get_dev_capabilities(uint8_t fru, uint8_t dev, unsigned int *caps)
+{
+  return -1;
+}

@@ -334,6 +334,42 @@ int pal_get_fru_list(char *list)
   return 0;
 }
 
+int pal_get_fru_capabilities(uint8_t fru, unsigned int *caps)
+{
+  int ret = 0;
+
+  switch(fru) {
+    case FRU_MB:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_POWER_STATUS | FRU_CAPABILITY_POWER_ON | FRU_CAPABILITY_POWER_OFF | FRU_CAPABILITY_POWER_CYCLE;
+      break;
+
+    case FRU_BSM:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
+      break;
+    case FRU_PDB:
+    case FRU_CARRIER1:
+    case FRU_CARRIER2:
+    case FRU_FIO:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+      break;
+    case FRU_NIC0:
+    case FRU_NIC1:
+    case FRU_NIC2:
+    case FRU_NIC3:
+    case FRU_NIC4:
+    case FRU_NIC5:
+    case FRU_NIC6:
+    case FRU_NIC7:
+      *caps = FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_NETWORK_CARD;
+      break;
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
 int pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id)
 {
   if (bus_id == 0) {

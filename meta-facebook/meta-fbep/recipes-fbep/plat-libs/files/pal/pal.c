@@ -335,6 +335,40 @@ int pal_get_fru_list(char *list)
   return 0;
 }
 
+int pal_get_fru_capability(uint8_t fru, unsigned int *caps)
+{
+  int ret = 0;
+
+  switch(fru) {
+    case FRU_MB:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_SERVER | FRU_CAPABILITY_POWER_STATUS |
+        FRU_CAPABILITY_POWER_ON | FRU_CAPABILITY_POWER_OFF |
+        FRU_CAPABILITY_POWER_CYCLE;
+      break;
+    case FRU_PDB:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+      break;
+    case FRU_BSM:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
+      break;
+    case FRU_ASIC0:
+    case FRU_ASIC1:
+    case FRU_ASIC2:
+    case FRU_ASIC3:
+    case FRU_ASIC4:
+    case FRU_ASIC5:
+    case FRU_ASIC6:
+    case FRU_ASIC7:
+      *caps = FRU_CAPABILITY_SENSOR_ALL;
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
 int pal_get_fru_id(char *str, uint8_t *fru)
 {
   if (!strcmp(str, "all")) {

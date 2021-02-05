@@ -156,6 +156,37 @@ int pal_get_fru_list(char *list) {
   return 0;
 }
 
+int pal_get_fru_capability(uint8_t fru, unsigned int *caps)
+{
+  int ret = 0;
+  switch(fru) {
+    case FRU_SMB:
+    case FRU_FCM:
+    case FRU_PSU1:
+    case FRU_PSU2:
+    case FRU_FAN1:
+    case FRU_FAN2:
+    case FRU_FAN3:
+    case FRU_FAN4:
+    case FRU_CPLD:
+    case FRU_FPGA:
+      *caps = FRU_CAPABILITY_SENSOR_ALL;
+      break;
+    case FRU_SCM:
+      *caps = FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_POWER_ALL;
+      break;
+    case FRU_BMC:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
+      break;
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
 int pal_get_fru_id(char *str, uint8_t *fru) {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;

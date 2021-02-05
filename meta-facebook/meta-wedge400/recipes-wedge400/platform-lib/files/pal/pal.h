@@ -644,7 +644,6 @@ void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, 
 uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 void *generate_dump(void *arg);
-int pal_mon_fw_upgrade(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug, uint8_t *psu_ug, uint8_t *smb_ug);
 void set_sys_led(int brd_rev);
 void set_fan_led(int brd_rev);
 void set_psu_led(int brd_rev);

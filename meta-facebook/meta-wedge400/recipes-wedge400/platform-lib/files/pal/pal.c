@@ -6051,92 +6051,81 @@ set_sled(int brd_rev, uint8_t color, int led_name)
   return 0;
 }
 
-int
-pal_mon_fw_upgrade
-(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug,
-              uint8_t *psu_ug, uint8_t *smb_ug)
+#define MATCH_UPGRADE_CMD(_cmd_line, _patterns, _flag)   \
+  if ((_flag) == 0) {                                    \
+    int __i;                                             \
+    for (__i = 0; (_patterns)[__i] != NULL; __i++) {     \
+      if (strstr(_cmd_line, (_patterns)[__i]) != NULL) { \
+        (_flag) = 1;                                     \
+        goto next_cmd;                                   \
+      }                                                  \
+    }                                                    \
+  }
+
+/*
+ * XXX listing running processes and looking for a certain pattern is
+ * not an effective way to determine if scm/fan/psu/smb upgrade is in
+ * progress, and it's not reliable, either (for example, when extra
+ * spaces are inserted between commands and arguments).
+ * TODO: we could create a kv pair in scm/fan/psu/smb upgrade commands,
+ * and then all we need is checking if the specific kv pair exists.
+ */
+static int
+pal_mon_fw_upgrade(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug,
+                   uint8_t *psu_ug, uint8_t *smb_ug)
 {
-  char cmd[5];
   FILE *fp;
-  int ret=-1;
-  char *buf_ptr;
-  int buf_size = 1000;
-  int str_size = 200;
-  int tmp_size;
-  char str[200];
+  char cmd[32];
+  char line[256];
+  const char *sys_ug_cmds[] = {
+    "write spi2",
+    "write spi1 BACKUP_BIOS",
+    "scmcpld_update",
+    "fw-util scm --update",
+    NULL,
+  };
+  const char* fan_ug_cmds[] = {
+    "fcmcpld_update",
+    NULL,
+  };
+  const char* psu_ug_cmds[] = {
+    "psu-util psu1 --update",
+    "psu-util psu2 --update",
+    NULL,
+  };
+  const char* smb_ug_cmds[] = {
+    "smbcpld_update",
+    "pwrcpld_update",
+    "flashcp",
+    "write spi1 DOM_FPGA_FLASH",
+    "write spi1 TH3_PCIE_FLASH",
+    "write spi1 GB_PCIE_FLASH",
+    "write spi1 BCM5389_EE",
+    NULL,
+  };
+
   snprintf(cmd, sizeof(cmd), "ps w");
   fp = popen(cmd, "r");
   if(NULL == fp)
      return -1;
 
-  buf_ptr = (char *)malloc(buf_size * sizeof(char) + sizeof(char));
-  memset(buf_ptr, 0, sizeof(char));
-  tmp_size = str_size;
-  while(fgets(str, str_size, fp) != NULL) {
-    tmp_size = tmp_size + str_size;
-    if(tmp_size + str_size >= buf_size) {
-      buf_ptr = realloc(buf_ptr, sizeof(char) * buf_size * 2 + sizeof(char));
-      buf_size *= 2;
+  while (fgets(line, sizeof(line), fp) != NULL) {
+    MATCH_UPGRADE_CMD(line, sys_ug_cmds, *sys_ug);
+    MATCH_UPGRADE_CMD(line, fan_ug_cmds, *fan_ug);
+    MATCH_UPGRADE_CMD(line, psu_ug_cmds, *psu_ug);
+    MATCH_UPGRADE_CMD(line, smb_ug_cmds, *smb_ug);
+
+next_cmd:
+    if ((*sys_ug + *fan_ug + *psu_ug + *smb_ug) >= 4) {
+      break;
     }
-    if(!buf_ptr) {
-      OBMC_ERROR(-1,
-             "%s realloc() fail, please check memory remaining", __func__);
-      goto free_buf;
-    }
-    strncat(buf_ptr, str, str_size);
+  } /* while (fgets...) */
+
+  if (pclose(fp) != 0) {
+     OBMC_ERROR(errno, "%s pclose() fail", __func__);
+     return -1;
   }
 
-  //check whether sys led need to blink
-  *sys_ug = strstr(buf_ptr, "write spi2") != NULL ? 1 : 0;
-  if(*sys_ug) goto fan_state;
-
-  *sys_ug = strstr(buf_ptr, "write spi1 BACKUP_BIOS") != NULL ? 1 : 0;
-  if(*sys_ug) goto fan_state;
-
-  *sys_ug = (strstr(buf_ptr, "scmcpld_update") != NULL) ? 1 : 0;
-  if(*sys_ug) goto fan_state;
-
-  *sys_ug = (strstr(buf_ptr, "fw-util") != NULL) ?
-          ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
-  if(*sys_ug) goto fan_state;
-
-  //check whether fan led need to blink
-fan_state:
-  *fan_ug = (strstr(buf_ptr, "fcmcpld_update") != NULL) ? 1 : 0;
-
-  //check whether fan led need to blink
-  *psu_ug = (strstr(buf_ptr, "psu-util") != NULL) ?
-          ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
-
-  //check whether smb led need to blink
-  *smb_ug = (strstr(buf_ptr, "smbcpld_update") != NULL) ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = (strstr(buf_ptr, "pwrcpld_update") != NULL) ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 DOM_FPGA_FLASH") != NULL ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 TH3_PCIE_FLASH") != NULL ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 GB_PCIE_FLASH") != NULL ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 BCM5389_EE") != NULL ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-close_fp:
-  ret = pclose(fp);
-  if(-1 == ret)
-     OBMC_ERROR(-1, "%s pclose() fail ", __func__);
-
-free_buf:
-  free(buf_ptr);
   return 0;
 }
 
@@ -6157,21 +6146,19 @@ void set_sys_led(int brd_rev)
     OBMC_WARN("%s: SCM isn't presence\n",__func__);
     return;
   }
+
   pal_mon_fw_upgrade(brd_rev, &sys_ug, &fan_ug, &psu_ug, &smb_ug);
   if( sys_ug || fan_ug || psu_ug || smb_ug ){
-    OBMC_WARN("firmware upgrading in progress\n");
     if(alter_sys==0){
       alter_sys = 1;
       set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
-      return;
     }else{
       alter_sys = 0;
       set_sled(brd_rev, SLED_CLR_BLUE, SLED_SYS);
-      return;
     }
+  } else {
+    set_sled(brd_rev, SLED_CLR_BLUE, SLED_SYS);
   }
-  set_sled(brd_rev, SLED_CLR_BLUE, SLED_SYS);
-  return;
 }
 
 void set_fan_led(int brd_rev)
@@ -6358,50 +6345,44 @@ cleanup:
 
 void set_scm_led(int brd_rev)
 {
-  #define SCM_IP_USB "fe80::ff:fe00:2%%usb0"
   char path[LARGEST_DEVICE_NAME];
   char cmd[64];
   char buffer[256];
   FILE *fp;
   int power;
   int ret;
+  const char *scm_ip_usb = "fe80::ff:fe00:2%%usb0";
 
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_COME_PWRGD, "value");
+  snprintf(path, sizeof(path), GPIO_COME_PWRGD, "value");
   if (device_read(path, &power)) {
     OBMC_WARN("%s: can't get GPIO value '%s'",__func__,path);
     return;
   }
 
-  if(power){
-    // -c count = 1 times
-    // -W timeout = 1 secound
-    sprintf(cmd,"ping -c 1 -W 1 "SCM_IP_USB);
-    fp = popen(cmd,"r");
-    if (!fp) {
-      OBMC_WARN("%s: can't run cmd '%s'",__func__,cmd);
-      goto cleanup;
-    }
-
-    while (fgets(buffer,256,fp) != NULL){
-    }
-
-    ret = pclose(fp);
-    if(ret == 0){ // PING OK
-      set_sled(brd_rev,SLED_CLR_GREEN,SLED_SMB);
-      return;
-    }else{
-      OBMC_WARN("%s: can't ping to "SCM_IP_USB,__func__);
-      goto cleanup;
-    }
-  }else{
-    OBMC_WARN("%s: micro server is power off\n",__func__);
+  if (!power) {
     set_sled(brd_rev, SLED_CLR_RED, SLED_SMB);
     return;
   }
-cleanup:
+
+  // -c count = 1 times
+  // -W timeout = 1 secound
+  snprintf(cmd, sizeof(cmd), "ping -c 1 -W 1 %s", scm_ip_usb);
+  fp = popen(cmd,"r");
+  if (!fp) {
+    goto error;
+  }
+
+  while (fgets(buffer, sizeof(buffer), fp) != NULL) {}
+
+  ret = pclose(fp);
+  if(ret == 0) { // PING OK
+    set_sled(brd_rev,SLED_CLR_GREEN,SLED_SMB);
+    return;
+  }
+
+error:
   set_sled(brd_rev,SLED_CLR_YELLOW,SLED_SMB);
   sleep(LED_INTERVAL);
-  return;
 }
 
 int

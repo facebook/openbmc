@@ -750,6 +750,12 @@ pal_get_fru_list(char *list)
 }
 
 int __attribute__((weak))
+pal_get_dev_list(uint8_t fru, char *list)
+{
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
 pal_get_fru_id(char *str, uint8_t *fru)
 {
   unsigned int _fru;

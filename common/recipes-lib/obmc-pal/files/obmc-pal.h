@@ -125,14 +125,24 @@ enum {
   FRU_CAPABILITY_POWER_OFF = (1UL << 10),
   FRU_CAPABILITY_POWER_CYCLE = (1UL << 11),
   FRU_CAPABILITY_POWER_RESET = (1UL << 12),
+  FRU_CAPABILITY_POWER_12V_ON = (1UL << 13),
+  FRU_CAPABILITY_POWER_12V_OFF = (1UL << 14),
+  FRU_CAPABILITY_POWER_12V_CYCLE = (1UL << 15),
+  FRU_CAPABILITY_POWER_FORCE_12V_ON = (1UL << 16),
+  FRU_CAPABILITY_POWER_FORCE_ON = (1UL << 17),
+  /* Server power, most platforms support at least this */
   FRU_CAPABILITY_POWER_ALL = FRU_CAPABILITY_POWER_STATUS |
                              FRU_CAPABILITY_POWER_ON |
                              FRU_CAPABILITY_POWER_OFF |
                              FRU_CAPABILITY_POWER_CYCLE |
                              FRU_CAPABILITY_POWER_RESET,
+  /* Server 12V power, most multi-node supports at least this */
+  FRU_CAPABILITY_POWER_12V_ALL = FRU_CAPABILITY_POWER_12V_ON |
+                                 FRU_CAPABILITY_POWER_12V_OFF |
+                                 FRU_CAPABILITY_POWER_12V_CYCLE,
 
   /* FRU/device contains one or more complex device on its board */
-  FRU_CAPABILITY_HAS_DEVICE = (1UL << 13),
+  FRU_CAPABILITY_HAS_DEVICE = (1UL << 18),
 
   /* Other capabilities can be added here in a
    * backwards compatible way */

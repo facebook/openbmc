@@ -558,6 +558,64 @@ pal_get_fru_list(char *list) {
 }
 
 int
+pal_get_dev_list(uint8_t fru, char *list)
+{
+  strcpy(list, pal_dev_fru_list);
+  return 0;
+}
+
+int
+pal_get_fru_capabilities(uint8_t fru, unsigned int *caps)
+{
+  int ret = 0;
+
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_SERVER | FRU_CAPABILITY_POWER_ALL |
+        FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_HAS_DEVICE;
+      break;
+    case FRU_BMC:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
+      break;
+    case FRU_NIC:
+      *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_NETWORK_CARD;
+      break;
+    case FRU_NICEXP:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_READ;
+      break;
+    case FRU_BB:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_READ;
+      break;
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
+int
+pal_get_dev_capabilities(uint8_t fru, uint8_t dev, unsigned int *caps)
+{
+  if (fru < FRU_SLOT1 || fru > FRU_SLOT4)
+    return -1;
+  if (dev >= DEV_ID0_1OU && dev <= DEV_ID13_2OU) {
+    *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+      (FRU_CAPABILITY_POWER_ALL & (~FRU_CAPABILITY_POWER_RESET));
+  } else if (dev >= BOARD_1OU && dev <= BOARD_2OU) {
+    *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+  } else {
+    *caps = 0;
+  }
+  return 0;
+}
+
+int
 pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   int ret = CC_UNSPECIFIED_ERROR;
   uint8_t *data = res_data;

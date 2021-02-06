@@ -117,7 +117,7 @@ int BmcComponent::update(string image_path)
 
   // If flashcp cmd was successful, keep historical info that BMC fw was upgraded
   if (ret == 0) {
-    syslog(LOG_CRIT, "BMC fw upgrade completed. Version: %s", get_bmc_version(dev).c_str());
+    syslog(LOG_CRIT, "BMC fw upgrade completed. Version: %s", get_bmc_version().c_str());
   }
 
   return ret;
@@ -260,7 +260,7 @@ class SystemConfig {
         static PfrBmcComponent bmc("bmc", "bmc", "stg-bmc");
         static PfrBmcComponent bmc_rc("bmc", "bmc_rc", "stg-bmc", "rc");
       } else {
-        static BmcComponent bmc("bmc", "bmc", system, "flash0");
+        static BmcComponent bmc("bmc", "bmc", system, "flash0", "u-boot");
       }
     }
   }

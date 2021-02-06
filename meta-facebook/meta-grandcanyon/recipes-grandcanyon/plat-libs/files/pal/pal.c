@@ -163,6 +163,13 @@ uint8_t GPIO_BMC_FPGA_UART_SEL_TABLE[MAX_NUM_GPIO_BMC_FPGA_UART_SEL] = {
   GPIO_BMC_FPGA_UART_SEL0_R,
 };
 
+uint8_t GPIO_BOARD_REV_ID_TABLE[MAX_NUM_OF_BOARD_REV_ID_GPIO] = {
+  GPIO_BOARD_REV_ID0,
+  GPIO_BOARD_REV_ID1,
+  GPIO_BOARD_REV_ID2,
+};
+
+
 static int
 pal_key_index(char *key) {
   int i = 0;
@@ -1261,7 +1268,7 @@ err:
   return ret;
 }
 
-static int
+int
 pal_post_display(uint8_t status) {
   int ret = 0, i = 0;
   gpio_value_t value = GPIO_VALUE_INVALID;
@@ -1283,6 +1290,32 @@ pal_post_display(uint8_t status) {
 }
 
 int
+pal_get_current_led_post_code(uint8_t *post_code) {
+  int i = 0;
+  gpio_value_t value = GPIO_VALUE_INVALID;
+
+  if (post_code == NULL) {
+    syslog(LOG_ERR, "%s Invalid parameter: post_code is NULL\n", __func__);
+    return -1;
+  }
+
+  *post_code = 0;
+
+  for (i = (MAX_NUM_GPIO_LED_POSTCODE - 1); i >= 0; i--) {
+    value = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_LED_POSTCODE_TABLE[i]));
+    if (value == GPIO_VALUE_INVALID) {
+      syslog(LOG_WARNING, "%s fail to get post code, failed gpio: LED_POSTCODE_%d\n", __func__, i);
+      return -1;
+    }
+    // convert GPIOs to number
+    (*post_code) <<= 1;
+    (*post_code) |= (uint8_t)value;
+  }
+
+  return 0;
+}
+
+int
 pal_get_debug_card_uart_sel(uint8_t *uart_sel) {
   int i = 0;
   gpio_value_t val = GPIO_VALUE_INVALID;
@@ -1300,6 +1333,7 @@ pal_get_debug_card_uart_sel(uint8_t *uart_sel) {
       syslog(LOG_WARNING, "%s() Can not get GPIO_BMC_FPGA_UART_SEL%d", __func__, i);
       return -1;
     }
+    // convert GPIOs to number
     (*uart_sel) <<= 1;
     (*uart_sel) |= (uint8_t)val;
   }
@@ -1577,4 +1611,30 @@ pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_da
   }
 
   return completion_code;
+}
+
+int
+pal_get_uic_board_id(uint8_t *board_id) {
+  gpio_value_t val = GPIO_VALUE_INVALID;
+  int i = 0;
+
+  if (board_id == NULL) {
+    syslog(LOG_ERR, "%s Invalid parameter: board id\n", __func__);
+    return -1;
+  }
+
+  *board_id = 0;
+
+  for (i = 0; i < MAX_NUM_OF_BOARD_REV_ID_GPIO; i++) {
+    val = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_BOARD_REV_ID_TABLE[i]));
+    if (val == GPIO_VALUE_INVALID) {
+      syslog(LOG_WARNING, "%s() Can not get GPIO_BOARD_REV_ID%d", __func__, i);
+      return -1;
+    }
+    // convert GPIOs to number
+    (*board_id) <<= 1;
+    (*board_id) |= (uint8_t)val;
+  }
+
+  return 0;
 }

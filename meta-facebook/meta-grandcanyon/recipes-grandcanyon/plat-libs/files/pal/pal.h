@@ -69,6 +69,8 @@ extern "C" {
 #define IOCM_EEPROM_DRIVER_NAME      "at24"
 #define IOCM_EEPROM_ADDR             (50) //unit: hex
 
+#define MAX_NUM_OF_BOARD_REV_ID_GPIO     3
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,
@@ -246,7 +248,9 @@ int pal_is_debug_card_present(uint8_t *status);
 int pal_post_handle(uint8_t slot, uint8_t postcode);
 int pal_get_fan_latch(uint8_t *chassis_status);
 void pal_specific_plat_fan_check(bool status);
-
+int pal_get_uic_board_id(uint8_t *board_id);
+int pal_post_display(uint8_t status);
+int pal_get_current_led_post_code(uint8_t *post_code);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -18,6 +18,7 @@ IMAGE_INSTALL += " \
   fscd \
   lldp-util \
   mterm \
+  mtd-utils-ubifs \
   openbmc-utils \
   spatula \
   usb-console \

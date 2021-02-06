@@ -44,6 +44,11 @@ enum NETFN_STORAGE {
   CMD_GET_EXP_VERSION     = 0x12,
 };
 
+enum EXP_FW_VERSION_STATUS {
+  EXP_FW_VERSION_DEACTIVATE  = 0,
+  EXP_FW_VERSION_ACTIVATE    = 1,
+};
+
 typedef struct Version {
   uint8_t status;
   uint8_t major_ver;

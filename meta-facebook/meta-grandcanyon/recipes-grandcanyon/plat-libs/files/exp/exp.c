@@ -124,10 +124,11 @@ expander_get_fw_ver(uint8_t *ver, uint8_t ver_len) {
 
   memcpy(&expander_ver, rbuf, sizeof(expander_ver));
 
-  if (expander_ver.firmware_region1.status != 0) {
-    memcpy(ver, &expander_ver.firmware_region2.major_ver, ver_len);
-  } else {
+  // Use the region of expander firmware version if the status is active.
+  if (expander_ver.firmware_region1.status == EXP_FW_VERSION_ACTIVATE) {
     memcpy(ver, &expander_ver.firmware_region1.major_ver, ver_len);
+  } else {
+    memcpy(ver, &expander_ver.firmware_region2.major_ver, ver_len);
   }
 
   return 0;

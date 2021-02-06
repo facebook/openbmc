@@ -45,4 +45,5 @@ IMAGE_INSTALL += " \
   gpiointrd \
   crashdump \
   me-util \
+  throttle-util \
   "

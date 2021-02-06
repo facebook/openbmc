@@ -44,6 +44,9 @@ extern "C" {
 //UIC FPGA slave address (8-bit)
 #define UIC_FPGA_SLAVE_ADDR 0x1e
 
+//BS FPGA slave address (8-bit)
+#define BS_FPGA_SLAVE_ADDR 0x1e
+
 // Expander slave address (7-bit)
 #define EXPANDER_SLAVE_ADDR    0x71
 

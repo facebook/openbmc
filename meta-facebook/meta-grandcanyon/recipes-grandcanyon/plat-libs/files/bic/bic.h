@@ -37,7 +37,7 @@ extern "C" {
 
 #define MAX_RETRY 3
 
-#define IPMB_RETRY_DELAY_TIME 500
+#define IPMB_RETRY_DELAY_TIME 20 // millisecond
 
 #define MAX_CHECK_USB_DEV_TIME 8
 

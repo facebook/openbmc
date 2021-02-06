@@ -36,7 +36,7 @@
 #include "bic_xfer.h"
 
 
-#define RETRY_TIME 10
+#define RETRY_TIME 3
 
 #define I2C_IO_MSG_CNT 2
 

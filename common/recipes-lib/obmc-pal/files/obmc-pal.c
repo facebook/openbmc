@@ -673,6 +673,7 @@ pal_get_num_devs(uint8_t slot, uint8_t *num)
 int __attribute__((weak))
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
 {
+  *status = 1;
   return PAL_EOK;
 }
 
@@ -685,6 +686,7 @@ pal_get_slot_index(unsigned char payload_id)
 int __attribute__((weak))
 pal_get_server_power(uint8_t slot_id, uint8_t *status)
 {
+  *status = 0;
   return PAL_EOK;
 }
 

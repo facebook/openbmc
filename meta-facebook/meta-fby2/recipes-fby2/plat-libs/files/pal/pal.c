@@ -4411,6 +4411,7 @@ get_sensor_desc(uint8_t fru, uint8_t snr_num) {
 bool
 pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id)
 {
+#ifndef CONFIG_FBY2_ND
   switch(fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
@@ -4423,6 +4424,7 @@ pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id)
     default:
       break;
   }
+#endif
   return false;
 }
 

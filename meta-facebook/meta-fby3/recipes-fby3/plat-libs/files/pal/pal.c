@@ -2460,10 +2460,17 @@ pal_set_fan_ctrl (char *ctrl_opt) {
 
   // notify baseboard bic and another slot BMC (Class 2)
   if (bmc_location == NIC_BMC) {
-    ret = bic_set_fan_auto_mode(ctrl_mode, &status);
-    if (bic_notify_fan_mode(ctrl_mode) < 0) {
+    // get/set fan status
+    if ( bic_set_fan_auto_mode(ctrl_mode, &status) < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to call bic_set_fan_auto_mode. ctrl_mode=%02X", __func__, ctrl_mode);
       return -1;
-    }    
+    }
+
+    // notify the other BMC except for getting fan mode
+    if ( ctrl_mode != GET_FAN_MODE && (bic_notify_fan_mode(ctrl_mode) < 0) ) {
+      syslog(LOG_WARNING, "%s() Failed to call bic_notify_fan_mode. ctrl_mode=%02X", __func__, ctrl_mode);
+      return -1;
+    }
   }
 
   if (ctrl_mode == GET_FAN_MODE) {

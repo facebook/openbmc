@@ -73,6 +73,7 @@ enum {
   NICEXP = 0x06,
   BICSPE = 0x07,
   BICGPV3 = 0x08,
+  BIC1OU_E1S = 0x09,
 };
 
 void msleep(int msec);

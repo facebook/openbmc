@@ -744,6 +744,7 @@ is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file
 
   int ret = BIC_STATUS_FAILURE;
   uint8_t rbuf[2] = {0};
+  uint8_t signed_bytes[2] = {0};
   uint8_t rlen = sizeof(rbuf);
   uint8_t sel_comp = 0xff;
   uint8_t sel_tag = 0xff;
@@ -756,6 +757,7 @@ is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file
   int ret_val = 0 , retry = 0;
   int board_type_index = 0;
   bool board_rev_is_invalid = false;
+  bool check_board_revision = true;
 
   switch (comp) {
     case UPDATE_BIC:
@@ -770,12 +772,19 @@ is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file
 
   switch (intf) {
     case FEXP_BIC_INTF:
-      sel_comp = BIC1OU;
+      check_board_revision = false;
+      bic_get_1ou_type(slot_id, &board_type);
+      if (board_type == EDSFF_1U) {
+        sel_comp = BIC1OU_E1S;
+      } else {
+        sel_comp = BIC1OU;
+      }
       break;
     case BB_BIC_INTF:
       sel_comp = BICBB;
       break;
     case REXP_BIC_INTF:
+      check_board_revision = false;
       if ( fby3_common_get_2ou_board_type(slot_id, &board_type) < 0 ) {
         syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
         goto error_exit;
@@ -793,96 +802,101 @@ is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file
       break;
   }
 
-  switch (intf) {
-    case BB_BIC_INTF:
-      // Read Board Revision from BB CPLD
-      tbuf[0] = CPLD_BB_BUS;
-      tbuf[1] = CPLD_FLAG_REG_ADDR;
-      tbuf[2] = 0x01;
-      tbuf[3] = BB_CPLD_BOARD_REV_ID_REGISTER;
-      tlen = 4;
-      retry = 0;
-      while (retry < RETRY_TIME) {
-        ret_val = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
-        if ( ret_val < 0 ) {
-          retry++;
-          msleep(100);
-        } else {
-          break;
-        }
-      }
-      if (retry == RETRY_TIME) {
-        syslog(LOG_WARNING, "%s() Failed to get board revision via BB CPLD, tlen=%d", __func__, tlen);
-        goto error_exit;
-      }
-
-      board_revision_id = rbuf[0];
-      break;
-    case FEXP_BIC_INTF:
-    case REXP_BIC_INTF:
-    case NONE_INTF:
-      // Read Board Revision from SB CPLD
-      i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-      if ( i2cfd < 0 ) {
-        syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
-        goto error_exit;
-      }
-
-      tbuf[0] = SB_CPLD_BOARD_REV_ID_REGISTER;
-      tlen = 1;
-      rlen = 1;
-      retry = 0;
-      while (retry < RETRY_TIME) {
-        ret_val = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-        if ( ret_val < 0 ) {
-          retry++;
-          msleep(100);
-        } else {
-          break;
-        }
-      }
-      if (retry == RETRY_TIME) {
-        syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-        goto error_exit;
-      }
-      board_revision_id = rbuf[0];
-      break;
-  }
-
   if ( lseek(fd, sel_offset, SEEK_SET) != (off_t)sel_offset ) {
     goto error_exit;
   }
-
 
   rlen = sizeof(rbuf);
   if ( read(fd, rbuf, rlen) != (off_t)rlen ) {
     goto error_exit;
   }
+  memcpy(signed_bytes, rbuf, sizeof(signed_bytes));
 
-  board_type_index = board_revision_id - 1;
-  if (board_type_index < 0) {
-    board_type_index = 0;
-  }
-  // PVT & MP firmware could be used in common
-  if (board_type_index < CPLD_BOARD_PVT_REV) {
-    if (REVISION_ID(rbuf[1]) != board_type_index) {
-      board_rev_is_invalid = true;
-    }
-  } else {
-    if (REVISION_ID(rbuf[1]) < CPLD_BOARD_PVT_REV) {
-      board_rev_is_invalid = true;
-    }
-  }
-
-  if ( board_rev_is_invalid) {
-    printf("To prevent this update on slot%d , please use the f/w of %s on the %s system\n",
-                  slot_id, board_stage[board_type_index], board_stage[board_type_index]);
-    printf("To force the update, please use the --force option.\n");
+  if ( signed_bytes[0] != sel_tag || COMPONENT_ID(signed_bytes[1]) != COMPONENT_ID(sel_comp) ) {
     goto error_exit;
   }
 
-  if ( rbuf[0] != sel_tag || COMPONENT_ID(rbuf[1]) != COMPONENT_ID(sel_comp) ) {
-    goto error_exit;
+  if (check_board_revision) {
+    switch (intf) {
+      /* need to Get the corresponding Board Revision */
+      case BB_BIC_INTF:
+        // Read Board Revision from BB CPLD
+        tbuf[0] = CPLD_BB_BUS;
+        tbuf[1] = CPLD_FLAG_REG_ADDR;
+        tbuf[2] = 0x01;
+        tbuf[3] = BB_CPLD_BOARD_REV_ID_REGISTER;
+        tlen = 4;
+        retry = 0;
+        while (retry < RETRY_TIME) {
+          ret_val = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+          if ( ret_val < 0 ) {
+            retry++;
+            msleep(100);
+          } else {
+            break;
+          }
+        }
+        if (retry == RETRY_TIME) {
+          syslog(LOG_WARNING, "%s() Failed to get board revision via BB CPLD, tlen=%d", __func__, tlen);
+          goto error_exit;
+        }
+
+        board_revision_id = rbuf[0];
+        break;
+      case NONE_INTF:
+        // Read Board Revision from SB CPLD
+        i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+        if ( i2cfd < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
+          goto error_exit;
+        }
+
+        tbuf[0] = SB_CPLD_BOARD_REV_ID_REGISTER;
+        tlen = 1;
+        rlen = 1;
+        retry = 0;
+        while (retry < RETRY_TIME) {
+          ret_val = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+          if ( ret_val < 0 ) {
+            retry++;
+            msleep(100);
+          } else {
+            break;
+          }
+        }
+        if (retry == RETRY_TIME) {
+          syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+          goto error_exit;
+        }
+        board_revision_id = rbuf[0];
+        break;
+      case FEXP_BIC_INTF:
+      case REXP_BIC_INTF:
+        //TBD : get the Board Revision of expansion board ?
+        break;
+    }
+
+    board_type_index = board_revision_id - 1;
+    if (board_type_index < 0) {
+      board_type_index = 0;
+    }
+    // PVT & MP firmware could be used in common
+    if (board_type_index < CPLD_BOARD_PVT_REV) {
+      if (REVISION_ID(signed_bytes[1]) != board_type_index) {
+        board_rev_is_invalid = true;
+      }
+    } else {
+      if (REVISION_ID(signed_bytes[1]) < CPLD_BOARD_PVT_REV) {
+        board_rev_is_invalid = true;
+      }
+    }
+
+    if ( board_rev_is_invalid) {
+      printf("To prevent this update on slot%d , please use the f/w of %s on the %s system\n",
+                    slot_id, board_stage[board_type_index], board_stage[board_type_index]);
+      printf("To force the update, please use the --force option.\n");
+      goto error_exit;
+    }
   }
 
   ret = BIC_STATUS_SUCCESS;

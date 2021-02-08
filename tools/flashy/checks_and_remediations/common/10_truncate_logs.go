@@ -35,14 +35,17 @@ func init() {
 
 // these files will be deleted
 var deleteLogFilePatterns []string = []string{
-	"/var/log/message.*",
+	"/tmp/rest.log.?",
+	"/var/log/messages.*",
 	"/var/log/*.log.*",
 	"/var/log/*.gz",
 }
 
 // these files will be truncated
 var truncateLogFilePatterns []string = []string{
+	"/tmp/rest.log",
 	"/var/log/messages",
+	"/var/log/*.log",
 }
 
 func truncateLogs(stepParams step.StepParams) step.StepExitError {

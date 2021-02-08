@@ -6473,6 +6473,44 @@ parse_mem_error_sel_nd(uint8_t fru, uint8_t snr_num, uint8_t *event_data, char *
 }
 
 int
+parse_vr_sel_nd(uint8_t fru, uint8_t snr_num, uint8_t *event_data, char *error_log)
+{
+  uint8_t *ed = &event_data[3];
+
+  switch (ed[0] & 0x0F) {
+    case 0x00:
+      strcat(error_log, "CPU_VR_");
+      break;
+    case 0x01:
+      strcat(error_log, "SOC_DIMM_ABCD_VR_");
+      break;
+    case 0x02:
+      strcat(error_log, "SOC_DIMM_EFGH_VR_");
+      break;
+    case 0x03:
+      strcat(error_log, "SOC_VR_");
+      break;
+    case 0x04:
+      strcat(error_log, "M.2_");
+      break;
+    default:
+      strcat(error_log, "Unknown");
+      return 0;
+  }
+
+  switch (snr_num) {
+    case BIC_ND_SENSOR_VR_HOT:
+      strcat(error_log, "Hot");
+      break;
+    case BIC_ND_SENSOR_VR_ALERT:
+      strcat(error_log, "Alert");
+      break;
+  }
+
+  return 0;
+}
+
+int
 pal_parse_sel_nd(uint8_t fru, uint8_t *sel, char *error_log)
 {
   uint8_t snr_num = sel[11];
@@ -6537,24 +6575,10 @@ pal_parse_sel_nd(uint8_t fru, uint8_t *sel, char *error_log)
       parsed = true;
       break;
     case BIC_ND_SENSOR_VR_HOT:
-      switch (ed[0] & 0x0F) {
-        case 0x00:
-          strcat(error_log, "CPU_VR_Hot");
-          break;
-        case 0x01:
-          strcat(error_log, "SOC_DIMM_ABCD_VR_Hot");
-          break;
-        case 0x02:
-          strcat(error_log, "SOC_DIMM_EFGH_VR_Hot");
-          break;
-        case 0x03:
-          strcat(error_log, "SOC_VR_Hot");
-          break;
-        default:
-          strcat(error_log, "Unknown");
-          break;
+    case BIC_ND_SENSOR_VR_ALERT:
+      if (parse_vr_sel_nd(fru, snr_num, event_data, error_log) == 0) {
+        parsed = true;
       }
-      parsed = true;
       break;
   }
 

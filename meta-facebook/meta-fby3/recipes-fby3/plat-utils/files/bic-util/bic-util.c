@@ -220,7 +220,6 @@ process_file(uint8_t slot_id, char *path) {
       argv[argc] = str;
     }
     if (argc <= 1) {
-      printf("Invalid line: %s\n", buf);
       continue;
     }
 

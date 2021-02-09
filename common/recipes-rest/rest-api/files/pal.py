@@ -21,6 +21,8 @@
 PAL_STATUS_UNSUPPORTED = 2
 
 import os
+import uuid
+import binascii
 from ctypes import CDLL, c_char_p, c_ubyte, create_string_buffer, pointer
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
@@ -209,3 +211,12 @@ def pal_get_eth_intf_name():
     name = create_string_buffer(8)
     lpal_hndl.pal_get_eth_intf_name(name)
     return name.value.decode()
+
+
+def pal_get_uuid():
+    uuid_str = create_string_buffer(16)
+    lpal_hndl.pal_get_dev_guid(0, uuid_str)
+    uuid_str = binascii.hexlify(uuid_str)
+    uuid_str = str(uuid_str,'ascii')
+    uuid_str = uuid.UUID(uuid_str)
+    return str(uuid_str)

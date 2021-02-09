@@ -887,7 +887,7 @@ static void
 
   while (1) {
     if ( init_cache == 0 ) {
-      if ( g_power_on_sec != 0 ) {
+      if ( g_power_on_sec > 0 ) {
         g_cpu_pwrgd_trig = true;
         init_cache = 1;
       }

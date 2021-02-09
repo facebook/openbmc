@@ -1534,6 +1534,9 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
   uint8_t rlen;
   int ret;
 
+  if (!pal_get_config_is_master())
+    return PAL_EOK;
+
   info.bus = NM_IPMB_BUS_ID;
   info.nm_addr = NM_SLAVE_ADDR;
   ret = pal_get_bmc_ipmb_slave_addr(&info.bmc_addr, info.bus);

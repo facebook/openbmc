@@ -109,25 +109,18 @@ class FscSensorSourceSysfs(FscSensorBase):
         if "hwmon*" in self.read_source:
             readsysfs = self.get_hwmon_source()
 
-        cmd = "cat " + readsysfs
-        Logger.debug("Reading data with cmd=%s" % cmd)
-        data = ""
         try:
-            proc = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-            data = proc.stdout.read().decode()
-            err = proc.stderr.read().decode()
-            if err:
-                self.read_source_fail_counter += 1
-            else:
-                self.read_source_fail_counter = 0
-        except SystemExit:
-            Logger.debug("SystemExit from sensor read")
+            with open(readsysfs) as f:
+                return f.read()
+
+        except Exception as e:
+            Logger.crit(
+                "Exception while trying to read {readsysfs}: {e}".format(
+                    readsysfs=repr(readsysfs), e=repr(e)
+                )
+            )
             self.read_source_fail_counter += 1
             raise
-        except Exception:
-            Logger.crit("Exception with cmd=%s response=%s" % (cmd, data))
-            self.read_source_fail_counter += 1
-        return data
 
     def write(self, value):
         """
@@ -142,21 +135,20 @@ class FscSensorSourceSysfs(FscSensorBase):
         """
         if self.write_source is None:
             return
-        cmd = (
-            "echo "
-            + str(value * self.max_duty_register / 100)
-            + " > "
-            + self.write_source
-        )
-        Logger.debug("Setting value using cmd=%s" % cmd)
-        response = ""
+
+        svalue = str(value * self.max_duty_register / 100)
+
         try:
-            response = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-        except SystemExit:
-            Logger.debug("SystemExit from sensor write")
+            with open(self.write_source, "w") as f:
+                f.write(svalue)
+
+        except Exception as e:
+            Logger.crit(
+                "Exception while trying to write {write_source} with sensor value {svalue} : {e}".format(  # noqa: B950
+                    write_source=repr(self.write_source), svalue=repr(svalue), e=repr(e)
+                )
+            )
             raise
-        except Exception:
-            Logger.crit("Exception with cmd=%s response=%s" % (cmd, response))
 
 
 class FscSensorSourceUtil(FscSensorBase):

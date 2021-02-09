@@ -42,8 +42,8 @@ S = "${WORKDIR}"
 
 inherit distutils3
 inherit systemd
-DEPENDS += "update-rc.d-native libkv"
-RDEPENDS_${PN} += "python3-syslog python3-ply libkv"
+DEPENDS += "update-rc.d-native libkv libwatchdog"
+RDEPENDS_${PN} += "python3-syslog python3-ply libkv libwatchdog"
 
 FSC_BIN_FILES = ""
 

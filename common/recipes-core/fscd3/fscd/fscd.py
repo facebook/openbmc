@@ -17,17 +17,18 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import ctypes
 import datetime
 import json
 import os.path
 import signal
-import subprocess
 import sys
 import time
 import traceback
+from contextlib import contextmanager
 
-import fsc_expr
 import fsc_board
+import fsc_expr
 from fsc_bmcmachine import BMCMachine
 from fsc_board import board_callout, board_fan_actions, board_host_actions
 from fsc_profile import Sensor, profile_constructor
@@ -35,6 +36,11 @@ from fsc_sensor import FscSensorSourceUtil
 from fsc_util import Logger, clamp
 from fsc_zone import Fan, Zone, fan_mode
 
+try:
+    libwatchdog = ctypes.CDLL("libwatchdog.so")
+except OSError:
+    # Sometimes libwatchdog is only available as libwatchdog.so.0
+    libwatchdog = ctypes.CDLL("libwatchdog.so.0")
 
 RECORD_DIR = "/tmp/cache_store/"
 SENSOR_FAIL_RECORD_DIR = "/tmp/sensorfail_record/"
@@ -46,31 +52,54 @@ CONFIG_DIR = "/etc/fsc"
 # CONFIG_DIR = '/tmp'
 DEFAULT_INIT_BOOST = 100
 DEFAULT_INIT_TRANSITIONAL = 70
-WDTCLI_CMD = "/usr/local/bin/wdtcli"
+
+
+class LibWatchdogError(Exception):
+    pass
+
+
+@contextmanager
+def _libwatchdog_open_watchdog():
+    """
+    Context manager that opens the watchdog file and automatically
+    releases it on context closes
+    """
+    if libwatchdog.open_watchdog(0, 0) != 0:
+        raise LibWatchdogError("Failed to open watchdog")
+
+    yield
+
+    if libwatchdog.release_watchdog() != 0:
+        raise LibWatchdogError("Failed to release watchdog")
 
 
 def kick_watchdog():
-    """kick the watchdog device.
-    """
-    f = subprocess.Popen(
-        WDTCLI_CMD + " kick", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    info, err = f.communicate()
-    if len(err) != 0:
-        Logger.error("failed to kick watchdog device")
+    """kick the watchdog device."""
+    try:
+        with _libwatchdog_open_watchdog():
+            ret = libwatchdog.kick_watchdog()
+            if ret != 0:
+                raise LibWatchdogError("kick_watchdog() returned " + str(ret))
+
+        Logger.info("Kicked watchdog successfully")
+
+    except LibWatchdogError as e:
+        Logger.error("Failed to kick watchdog: " + repr(e))
 
 
 def stop_watchdog():
-    """kick the watchdog device.
-    """
-    f = subprocess.Popen(
-        WDTCLI_CMD + " stop", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    info, err = f.communicate()
-    if len(err) != 0:
-        Logger.error("failed to stop watchdog device")
-    else:
+    """stop the watchdog device."""
+
+    try:
+        with _libwatchdog_open_watchdog():
+            ret = libwatchdog.stop_watchdog()
+            if ret != 0:
+                raise LibWatchdogError("stop_watchdog() returned " + str(ret))
+
         Logger.info("watchdog stopped")
+
+    except LibWatchdogError as e:
+        Logger.error("Failed to stop watchdog: " + repr(e))
 
 
 class Fscd(object):
@@ -488,8 +517,6 @@ class Fscd(object):
         """
         last_dead_fans = dead_fans.copy()
         speeds = self.machine.read_fans(self.fans)
-        print("\x1b[2J\x1b[H")
-        sys.stdout.flush()
 
         for fan, rpms in list(speeds.items()):
             Logger.info("%s speed: %d RPM" % (fan.label, rpms))

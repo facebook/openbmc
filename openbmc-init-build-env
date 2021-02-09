@@ -17,6 +17,7 @@ PLAT_DISTRO_OVERRIDES=(
 #   -- none --
 # dunfell platforms (pending upgrade)
 #   -- none --
+  meta-fby2-nd:lf-dunfell
 # zeus platforms (pending upgrade)
   meta-qemux86:zeus
   meta-fbal:zeus
@@ -29,7 +30,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-elbert:zeus
   meta-cloudripper:zeus
   meta-fuji:zeus
-  meta-fby2-nd:zeus
   meta-minipack:zeus
 # warrior platforms (pending upgrade)
   meta-wedge400:warrior

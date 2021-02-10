@@ -461,7 +461,7 @@ int check_print_arg(int argc, char * argv[])
   return 0;
 }
 
-int print_fru(int fru, char * device, unsigned char print_format, json_t * fru_array) {
+int print_fru(int fru, char * device, bool allow_absent, unsigned char print_format, json_t * fru_array) {
   int ret;
   char path[64] = {0};
   char name[64] = {0};
@@ -483,7 +483,13 @@ int print_fru(int fru, char * device, unsigned char print_format, json_t * fru_a
   }
 
   if (status == 0) {
+    // Do not fail call if user is interested in all FRUs and this specific
+    // FRU is absent.
+    if (allow_absent) {
+      return 0;
+    }
     sprintf(error_mesg,"%s is not present!", name);
+    ret = -1;
     goto error;
   }
 
@@ -567,15 +573,15 @@ int do_print_fru(int argc, char * argv[], unsigned char print_format)
   }
 
   if (fru != FRU_ALL) {
-    ret = print_fru(fru, device, print_format,fru_array);
+    ret = print_fru(fru, device, false, print_format,fru_array);
     if (ret < 0) {
-      print_usage();
       return ret;
     }
   } else {
     fru = 1;
+    ret = 0;
     while (fru <= MAX_NUM_FRUS) {
-      ret = print_fru(fru, device, print_format,fru_array);
+      ret |= print_fru(fru, device, true, print_format,fru_array);
       fru++;
     }
   }

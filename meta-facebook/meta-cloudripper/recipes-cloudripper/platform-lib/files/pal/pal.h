@@ -131,9 +131,6 @@ extern "C" {
 #define MAX_NODES     1
 // #define MAX_NUM_FRUS    6
 
-#define FRU_STATUS_GOOD   1
-#define FRU_STATUS_BAD    0
-
 extern const char pal_fru_list[];
 
 enum {
@@ -185,37 +182,16 @@ enum {
   HAND_SW_BMC = 1
 };
 
-void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
-int pal_get_key_value(char *key, char *value);
-int pal_set_key_value(char *key, char *value);
-int pal_get_platform_name(char *name);
-int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
-int pal_is_fru_ready(uint8_t fru, uint8_t *status);
-int pal_get_fru_id(char *str, uint8_t *fru);
-int pal_get_fru_name(uint8_t fru, char *name);
-int pal_get_fru_list(char *list);
 int pal_is_debug_card_prsnt(uint8_t *status);
-int pal_get_dev_guid(uint8_t slot, char *guid);
-int pal_set_dev_guid(uint8_t slot, char *str);
-int pal_get_sys_guid(uint8_t slot, char *guid);
-int pal_set_sys_guid(uint8_t slot, char *str);
-int pal_get_fan_speed(uint8_t fan, int *rpm);
 int pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver);
 int pal_get_board_rev(int *rev);
 int pal_get_board_type(uint8_t *brd_type);
 int pal_get_board_type_rev(uint8_t *brd_type_rev);
 int pal_get_cpld_board_rev(int *rev, const char *device);
-void pal_update_ts_sled();
-int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 void *generate_dump(void *arg);
 int pal_mon_fw_upgrade(uint8_t *status_ug);
-int pal_get_fru_health(uint8_t fru, uint8_t *value);
-int pal_set_def_key_value(void);
-int pal_get_num_slots(uint8_t *num);
-int pal_ipmb_processing(int bus, void *buf, uint16_t size);
 bool pal_is_mcu_working(void);
-int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
-int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

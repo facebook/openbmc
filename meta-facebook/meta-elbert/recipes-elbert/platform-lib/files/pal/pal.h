@@ -104,54 +104,6 @@ enum {
   FRU_PSU4 = 17,
 };
 
-int pal_get_platform_name(char* name);
-int pal_get_num_slots(uint8_t* num);
-int pal_get_key_value(char* key, char* value);
-int pal_set_key_value(char* key, char* value);
-int pal_set_sysfw_ver(uint8_t slot, uint8_t* ver);
-int pal_get_sysfw_ver(uint8_t slot, uint8_t* ver);
-int pal_get_boot_order(
-    uint8_t slot,
-    uint8_t* req_data,
-    uint8_t* boot,
-    uint8_t* res_len);
-int pal_set_boot_order(
-    uint8_t slot,
-    uint8_t* boot,
-    uint8_t* res_data,
-    uint8_t* res_len);
-int pal_set_last_pwr_state(uint8_t fru, char* state);
-int pal_get_last_pwr_state(uint8_t fru, char* state);
-int pal_set_restart_cause(uint8_t slot, uint8_t restart_cause);
-int pal_get_server_power(uint8_t slot_id, uint8_t* status);
-int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
-bool pal_is_fw_update_ongoing_system(void);
-int pal_set_ppin_info(
-    uint8_t slot,
-    uint8_t* req_data,
-    uint8_t req_len,
-    uint8_t* res_data,
-    uint8_t* res_len);
-int pal_get_poss_pcie_config(
-    uint8_t slot,
-    uint8_t* req_data,
-    uint8_t req_len,
-    uint8_t* res_data,
-    uint8_t* res_len);
-int pal_get_board_id(
-    uint8_t slot,
-    uint8_t* req_data,
-    uint8_t req_len,
-    uint8_t* res_data,
-    uint8_t* res_len);
-void pal_get_eth_intf_name(char* intf_name);
-int pal_get_sys_guid(uint8_t fru, char* guid);
-int pal_set_sys_guid(uint8_t fru, char* guid);
-int pal_get_dev_guid(uint8_t fru, char* guid);
-int pal_set_dev_guid(uint8_t fru, char* guid);
-int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
-int pal_is_fru_ready(uint8_t fru, uint8_t *status);
-
 #ifdef __cplusplus
 } // extern "C"
 #endif

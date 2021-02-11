@@ -202,15 +202,10 @@ extern size_t minor_update_size;
 extern err_t minor_auth_error[];
 extern err_t minor_update_error[];
 
-int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_get_uart_select_from_cpld(uint8_t *uart_select);
-int pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen);
-int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_check_pfr_mailbox(uint8_t fru);
 int set_pfr_i2c_filter(uint8_t slot_id, uint8_t value);
 int pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uint8_t bmc_location);
-int pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log);
-int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
 int pal_set_nic_perst(uint8_t fru, uint8_t val);
 int pal_is_slot_pfr_active(uint8_t fru);
 int pal_sb_set_amber_led(uint8_t fru, bool led_on);

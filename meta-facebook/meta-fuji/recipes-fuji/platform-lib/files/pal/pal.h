@@ -279,36 +279,12 @@ enum {
 
 extern sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM];
 
-int pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data);
-void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
-int pal_get_plat_sku_id(void);
-int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
-int pal_get_key_value(char *key, char *value);
-int pal_set_key_value(char *key, char *value);
-int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
-int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
-int pal_get_platform_name(char *name);
-int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
-int pal_is_fru_ready(uint8_t fru, uint8_t *status);
-int pal_get_fru_id(char *str, uint8_t *fru);
-int pal_get_fru_name(uint8_t fru, char *name);
-int pal_get_fru_list(char *list);
 int pal_post_enable(uint8_t slot);
 int pal_post_disable(uint8_t slot);
 int pal_post_get_last(uint8_t slot, uint8_t *status);
-int pal_post_handle(uint8_t slot, uint8_t status);
-int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
-int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
-int pal_set_last_pwr_state(uint8_t fru, char *state);
-int pal_get_last_pwr_state(uint8_t fru, char *state);
 int pal_set_com_pwr_btn_n(char *status);
-extern int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
-int pal_get_fan_speed(uint8_t fan, int *rpm);
 int pal_get_board_rev(int *rev);
-bool pal_is_fw_update_ongoing(uint8_t fru);
 int pal_mon_fw_upgrade(int brd_rev, uint8_t *status);
-int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
-void pal_update_ts_sled(void);
 int pal_get_pim_type(uint8_t fru, int retry);
 int pal_set_pim_type_to_file(uint8_t fru, char *type);
 int pal_get_pim_type_from_file(uint8_t fru);
@@ -320,24 +296,13 @@ int pal_set_pim_phy_type_to_file(uint8_t fru, char *type);
 int pal_get_pim_phy_type_from_file(uint8_t fru);
 int pal_set_pim_thresh(uint8_t fru);
 int pal_clear_thresh_value(uint8_t fru);
-extern void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
-extern uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
-int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 void *generate_dump(void *arg);
 int set_sled(int brd_rev, uint8_t color, uint8_t led_name);
 void init_led(void);
 int pal_light_scm_led(uint8_t led_color);
-int pal_get_fru_health(uint8_t fru, uint8_t *value);
 void pal_set_pim_sts_led(uint8_t fru);
-int pal_set_def_key_value(void);
-int pal_is_slot_server(uint8_t fru);
 int pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver);
-int pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log);
 int pal_get_cpld_board_rev(int *rev, const char *device);
-int pal_get_80port_record(uint8_t slot, uint8_t *res_data, size_t max_len, size_t *res_len);
-int pal_get_num_slots(uint8_t *num);
-int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len,
-                     uint8_t *res_data, uint8_t *res_len);
 #ifdef __cplusplus
 } // extern "C"
 #endif

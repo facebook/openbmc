@@ -74,15 +74,7 @@ enum {
   FAN_1,
 };
 
-int pal_get_platform_name(char *name);
-int pal_get_num_slots(uint8_t *num);
-int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
-int pal_is_fru_ready(uint8_t fru, uint8_t *status);
-int pal_is_slot_server(uint8_t fru);
 int pal_is_server_12v_on(uint8_t slot_id, uint8_t *status);
-int pal_get_server_power(uint8_t slot_id, uint8_t *status);
-int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
-int pal_sled_cycle(void);
 int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_get_hand_sw(uint8_t *pos);
 int pal_switch_usb_mux(uint8_t slot);
@@ -90,72 +82,12 @@ int pal_switch_uart_mux(uint8_t slot);
 int pal_post_enable(uint8_t slot);
 int pal_post_disable(uint8_t slot);
 int pal_post_get_last(uint8_t slot, uint8_t *post);
-int pal_post_handle(uint8_t slot, uint8_t status);
 int pal_get_pwr_btn(uint8_t *status);
 int pal_get_rst_btn(uint8_t *status);
-int pal_set_rst_btn(uint8_t slot, uint8_t status);
-int pal_set_led(uint8_t slot, uint8_t status);
-int pal_set_hb_led(uint8_t status);
 int pal_set_id_led(uint8_t slot, uint8_t status);
-int pal_get_fru_list(char *list);
-int pal_get_fru_id(char *fru_str, uint8_t *fru);
-int pal_get_fru_name(uint8_t fru, char *name);
-int pal_get_fruid_path(uint8_t fru, char *path);
-int pal_get_fruid_eeprom_path(uint8_t fru, char *path);
-int pal_get_fruid_name(uint8_t fru, char *name);
 int pal_get_fru_sdr_path(uint8_t fru, char *path);
-int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
-int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
-int pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
 int pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
-int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
-int pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag);
-int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
-int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh,
-    void *value);
-int pal_get_key_value(char *key, char *value);
-int pal_set_key_value(char *key, char *value);
-int pal_set_def_key_value();
-void pal_dump_key_value(void);
-int pal_get_fru_devtty(uint8_t fru, char *devtty);
-int pal_get_last_pwr_state(uint8_t fru, char *state);
-int pal_set_last_pwr_state(uint8_t fru, char *state);
-int pal_get_dev_guid(uint8_t slot, char *guid);
-int pal_set_dev_guid(uint8_t slot, char *str);
-int pal_get_sys_guid(uint8_t slot, char *guid);
-int pal_set_sys_guid(uint8_t slot, char *str);
-int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
-int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
-int pal_fruid_write(uint8_t slot, char *path);
-int pal_is_bmc_por(void);
-int pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
-    uint8_t o_val, uint8_t n_val);
-int pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name);
-int pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log);
-int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
-void msleep(int msec);
-int pal_set_sensor_health(uint8_t fru, uint8_t value);
-int pal_get_fru_health(uint8_t fru, uint8_t *value);
-int pal_set_fan_speed(uint8_t fan, uint8_t pwm);
-int pal_get_fan_speed(uint8_t fan, int *rpm);
-int pal_get_fan_name(uint8_t num, char *name);
-void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
-void pal_update_ts_sled();
-int pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen);
-void pal_log_clear(char *fru);
-int pal_get_pwm_value(uint8_t fan_num, uint8_t *value);
-int pal_fan_dead_handle(int fan_num);
-int pal_fan_recovered_handle(int fan_num);
-int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
-int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
-int pal_is_crashdump_ongoing(uint8_t slot);
-int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
-void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
-void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
 void pal_post_end_chk(uint8_t *post_end_chk);
-int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
-void pal_add_cri_sel(char *str);
-int pal_force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path);
 
 #ifdef __cplusplus
 } // extern "C"

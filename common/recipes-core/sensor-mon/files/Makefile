@@ -15,14 +15,16 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-all: sensord 
+all: sensord
 
-CFLAGS += -Wall -Werror
+CFLAGS += -Wall -Werror -D _XOPEN_SOURCE -pthread -lm -std=c99
 
-sensord: sensord.c 
-	$(CC) $(CFLAGS) -D _XOPEN_SOURCE -pthread -lm -std=c99 -o $@ $^ $(LDFLAGS)
+sensord: sensord.c
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -shared -o libsensormon.so sensord.c -Wl,--hash-style=gnu
+
 
 .PHONY: clean
 
 clean:
-	rm -rf *.o sensord
+	rm -rf *.o sensord libsensormon.so

@@ -36,6 +36,7 @@ S = "${WORKDIR}"
 SENSORD_MONITORED_FRUS ?= ""
 
 binfiles = "sensord \
+            libsensormon.so \
            "
 
 CFLAGS += " -lsdr -lpal -laggregate-sensor "
@@ -68,10 +69,11 @@ do_install() {
   bin="${D}/usr/local/bin"
   install -d $dst
   install -d $bin
-  for f in ${binfiles}; do
-    install -m 755 $f ${dst}/$f
-    ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
-  done
+  install -d ${D}${libdir}
+  install -m 755 sensord ${dst}/sensord
+  ln -snf ../fbpackages/${pkgdir}/sensord ${bin}/sensord
+  install -m 644 libsensormon.so ${dst}/libsensormon.so
+  ln -snf ../fbpackages/${pkgdir}/libsensormon.so ${D}${libdir}/libsensormon.so
 
   if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
       install_systemd
@@ -82,6 +84,6 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/sensor-mon ${prefix}/local/bin ${sysconfdir} ${systemd_system_unitdir}"
+FILES_${PN} = "${FBPACKAGEDIR}/sensor-mon ${prefix}/local/bin ${sysconfdir} ${systemd_system_unitdir} ${FBPACKAGEDIR}/libsensormon.so"
 
 SYSTEMD_SERVICE_${PN} = "sensord.service"

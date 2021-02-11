@@ -23,6 +23,7 @@ import re
 import subprocess
 import syslog
 
+import rest_libsensormon
 from rest_utils import DEFAULT_TIMEOUT_SEC
 
 
@@ -38,42 +39,25 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 # different from sensors command. So we need a separate REST api handler
 # for this.
 #
-def get_fru_sensor(fru):
-    result = {}
-    cmd = "/usr/local/bin/sensor-util"
-    proc = subprocess.Popen([cmd, fru], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    try:
-        data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
-        data = data.decode()
-    except proc.TimeoutError as ex:
-        data = ex.output
-        data = data.decode()
-        proc.kill()
-        syslog.syslog(syslog.LOG_CRIT, "rest_sensor fru {} timeout".format(fru))
-        result["result"] = False
-        result["reason"] = "{} {} timeout".format(cmd, fru)
+def get_fru_sensor(fru_name: str):
+    c_fru_id = rest_libsensormon.pal_get_fru_id(fru_name)
+    is_fru_prsnt = rest_libsensormon.pal_is_fru_prsnt(c_fru_id)
+    ret = {"Adapter": fru_name, "name": fru_name, "present": is_fru_prsnt}
 
-    result["name"] = fru
-    result["Adapter"] = fru
-    if "not present" in data:
-        result["present"] = False
-        return result
+    if is_fru_prsnt:
 
-    result["present"] = True
-    for edata in data.split("\n"):
-        # Per each line
-        adata = edata.split()
-        # For each key value pair
-        if len(adata) < 4:
-            continue
-        key = adata[0].strip()
-        value = adata[3].strip()
-        try:
-            value = float(value)
-            result[key] = "{:.2f}".format(value)
-        except Exception:
-            result[key] = "NA"
-    return result
+        for snr_num in rest_libsensormon.pal_get_fru_sensor_list(c_fru_id):
+            sensor_name = rest_libsensormon.pal_get_sensor_name(c_fru_id.value, snr_num)
+            try:
+                fvalue = rest_libsensormon.sensor_read(c_fru_id, snr_num)
+
+                # Stringify value to simulate sensor-util output
+                ret[sensor_name] = "{:.2f}".format(fvalue)
+
+            except rest_libsensormon.RestSensorReadError:
+                ret[sensor_name] = "NA"
+
+    return ret
 
 
 def get_scm_sensors():

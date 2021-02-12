@@ -957,29 +957,27 @@ static int rs485_device_init(const char* tty_dev, rs485_dev_t *dev) {
 }
 
 // This flag is triggered by SIGTERM and SIGINT signal handlers
-// indicating that the program should finish up what it's doing and exit gracefully
+// indicating that the program should finish up what it's doing and exit
+// gracefully
 volatile sig_atomic_t should_exit;
 
 static void trigger_graceful_exit(int sig) {
   should_exit = 1;
 }
 
-/*
- * The primary purpose of graceful_exit is to reset PSUs to the default baud rate.
- */
-static void graceful_exit() {
+static int reset_psu_baudrate(void) {
   int pos, ret = 0, err;
   uint16_t output[2];
   uint16_t values[1];
   psu_datastore_t *mdata;
 
-  OBMC_INFO("Exiting %s gracefully...", DAEMON_NAME);
-
   global_lock();
   rackmond_config.paused = 1;
   rackmond_config.min_delay = BAUDRATE_CMD_TIMEOUT;
+  global_unlock();
 
   // set all connected PSUs back to the default baud rate
+  OBMC_INFO("restoring PSUs to the default baud rate");
   for (pos = 0; pos < ARRAY_SIZE(rackmond_config.stored_data); pos++) {
     mdata = rackmond_config.stored_data[pos];
     if (mdata == NULL) {
@@ -996,21 +994,14 @@ static void graceful_exit() {
                               mdata->baudrate);
 
       if (err != 0) {
-        OBMC_WARN("Unable to reset PSU %02x to the original baudrate during graceful exit.", mdata->addr);
+        OBMC_WARN("Unable to reset PSU %02x to the original baudrate",
+                  mdata->addr);
         ret = 1;
       }
     }
   }
 
-  rs485_device_cleanup(&rackmond_config.rs485);
-
-  exit(ret);
-}
-
-static void check_graceful_exit() {
-  if (should_exit) {
-    graceful_exit();
-  }
+  return ret;
 }
 
 static void record_data(reg_range_data_t* rd, uint32_t time,
@@ -1046,7 +1037,9 @@ static int fetch_monitored_data(void) {
   global_unlock();
 
   for (pos = 0; pos < ARRAY_SIZE(rackmond_config.stored_data); pos++) {
-    check_graceful_exit();
+    if (should_exit) {
+      break;
+    }
 
     int r;
     uint8_t addr;
@@ -1144,7 +1137,23 @@ cleanup:
 
 static time_t search_at = 0;
 
-void* monitoring_loop(void* arg) {
+void* monitoring_loop(void* arg)
+{
+  int ret;
+  sigset_t sig_mask;
+
+  /*
+   * Block SIGINT and SIGTERM so these signals can be delivered to the
+   * main thread for processing.
+   */
+  sigemptyset(&sig_mask);
+  sigaddset(&sig_mask, SIGINT);
+  sigaddset(&sig_mask, SIGTERM);
+  ret = pthread_sigmask(SIG_BLOCK, &sig_mask, NULL);
+  if (ret != 0) {
+    OBMC_ERROR(ret, "failed to set signal mask in monitoring thread");
+    return NULL;
+  }
 
   rackmond_config.status_log = fopen(RACKMON_STAT_STORE, "a+");
   if (rackmond_config.status_log == NULL) {
@@ -1152,9 +1161,7 @@ void* monitoring_loop(void* arg) {
     /* XXX shall we exit the thread??? */
   }
 
-  while(1) {
-    check_graceful_exit();
-
+  while (!should_exit) {
     struct timespec ts;
 
     clock_gettime(CLOCK_REALTIME, &ts);
@@ -1179,6 +1186,8 @@ void* monitoring_loop(void* arg) {
     fetch_monitored_data();
     sleep(PSU_REFRESH_DATA_INTERVAL);
   }
+
+  OBMC_INFO("exiting rackmon monitoring thread");
   return NULL;
 }
 
@@ -1570,15 +1579,70 @@ static int handle_connection(int sock) {
   return error;
 }
 
+static int signal_handler_init(void)
+{
+  struct sigaction ign_action, exit_action;
+
+  ign_action.sa_flags = 0;
+  sigemptyset(&ign_action.sa_mask);
+  ign_action.sa_handler = SIG_IGN;
+  if (sigaction(SIGPIPE, &ign_action, NULL) != 0) {
+    OBMC_ERROR(errno, "failed to set SIGPIPE handler");
+    return -1;
+  }
+
+  exit_action.sa_flags = 0;
+  sigemptyset(&exit_action.sa_mask);
+  exit_action.sa_handler = trigger_graceful_exit;
+  if (sigaction(SIGTERM, &exit_action, NULL) != 0) {
+    OBMC_ERROR(errno, "failed to set SIGTERM handler");
+    return -1;
+  }
+  if (sigaction(SIGINT, &exit_action, NULL) != 0) {
+    OBMC_ERROR(errno, "failed to set SIGTERM handler");
+    return -1;
+  }
+
+  return 0;
+}
+
+static int user_socket_init(const char *sock_path)
+{
+  int sock_len;
+  int sock = -1;
+  struct sockaddr_un local;
+
+  sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (sock < 0) {
+    OBMC_ERROR(errno, "failed to create user-request socket");
+    return -1;
+  }
+
+  unlink(sock_path); /* ignore failures */
+  local.sun_family = AF_UNIX;
+  strcpy(local.sun_path, sock_path);
+  sock_len = sizeof(local.sun_family) + strlen(local.sun_path);
+  if (bind(sock, (struct sockaddr *)&local, sock_len) != 0) {
+    OBMC_ERROR(errno, "failed to bind socket to %s", sock_path);
+    close(sock);
+    return -1;
+  }
+
+  if (listen(sock, 20) != 0) {
+    OBMC_ERROR(errno, "failed to set passive socket");
+    close(sock);
+    return -1;
+  }
+
+  return sock;
+}
+
 int main(int argc, char** argv) {
   int error = 0;
-  int sock, sock_len;
+  int sock = -1;
   pthread_t monitoring_tid;
-  struct sockaddr_un local, client;
-
-  signal(SIGPIPE, SIG_IGN);
-  signal(SIGTERM, trigger_graceful_exit);
-  signal(SIGINT, trigger_graceful_exit);
+  sigset_t new_mask, old_mask;
+  struct sockaddr_un client;
 
   if (single_instance_lock(DAEMON_NAME) < 0) {
     fprintf(stderr, "Another %s instance is running. Exiting!\n",
@@ -1593,6 +1657,9 @@ int main(int argc, char** argv) {
     if (daemon(0, 0) < 0)
       OBMC_ERROR(errno, "daemon error");
   }
+
+  if (signal_handler_init() != 0)
+    return -1;
 
   if (getenv("RACKMOND_TIMEOUT") != NULL) {
     rackmond_config.modbus_timeout = atoll(getenv("RACKMOND_TIMEOUT"));
@@ -1616,47 +1683,68 @@ int main(int argc, char** argv) {
 
   OBMC_INFO("rackmon/modbus service starting");
   if (rackmon_plat_init() != 0) {
-    error = -1;
-    goto cleanup;
+    return -1;
   }
 
-  ERR_EXIT(rs485_device_init(DEFAULT_TTY, &rackmond_config.rs485));
+  if (rs485_device_init(DEFAULT_TTY, &rackmond_config.rs485) != 0) {
+    error = -1;
+    goto exit_rs485;
+  }
 
   error = pthread_create(&monitoring_tid, NULL, monitoring_loop, NULL);
   if (error != 0) {
     OBMC_ERROR(error, "failed to create monitor loop thread");
     error = -1;
-    goto cleanup;
+    goto exit_thread;
   }
 
-  sock = socket(AF_UNIX, SOCK_STREAM, 0);
-  ERR_LOG_EXIT(sock, "failed to create socket");
+  sock = user_socket_init(RACKMON_IPC_SOCKET);
+  if (sock < 0) {
+    goto exit_sock;
+  }
+  OBMC_INFO("rackmon is listening to user connections");
 
-  unlink(RACKMON_IPC_SOCKET); /* ignore failures */
-  local.sun_family = AF_UNIX;
-  strcpy(local.sun_path, RACKMON_IPC_SOCKET);
-  sock_len = sizeof(local.sun_family) + strlen(local.sun_path);
-  ERR_LOG_EXIT(bind(sock, (struct sockaddr *)&local, sock_len),
-               "failed to bind socket");
+  /*
+   * SIGINT and SIGTERM are blocked before testing "should_exit", and
+   * they will be unblocked in pselect(): this is to prevent the race
+   * when the signals were delivered right after testing "should_exit"
+   * but before calling pselect().
+   */
+  sigemptyset(&new_mask);
+  sigaddset(&new_mask, SIGINT);
+  sigaddset(&new_mask, SIGTERM);
+  sigprocmask(SIG_BLOCK, &new_mask, &old_mask);
 
-  ERR_LOG_EXIT(listen(sock, 20), "failed to set passive socket");
-
-  OBMC_INFO("rackmon/modbus service listening");
-
-  while(1) {
+  while (!should_exit) {
+    int ret;
+    fd_set rfds;
     socklen_t clisocklen = sizeof(struct sockaddr_un);
-    int clisock = accept(sock, (struct sockaddr*) &client, &clisocklen);
-    ERR_LOG_EXIT(clisock, "failed to accept connect request");
 
-    handle_connection(clisock);
-    close(clisock);
+    FD_ZERO(&rfds);
+    FD_SET(sock, &rfds);
+    ret = pselect(sock + 1, &rfds, NULL, NULL, NULL, &old_mask);
+    if (ret > 0 && FD_ISSET(sock, &rfds)) {
+        int clisock = accept(sock, (struct sockaddr*)&client, &clisocklen);
+        if (clisock < 0) {
+          OBMC_ERROR(errno, "failed to accept new connection");
+          continue;
+        }
+
+        handle_connection(clisock);
+        close(clisock);
+    }
   }
 
-cleanup:
+  close(sock); /* ignore errors */
+  if (reset_psu_baudrate() != 0)
+    error = -1;
+exit_sock:
+  pthread_cancel(monitoring_tid);     /* ignore errors */
+  pthread_join(monitoring_tid, NULL); /* ignore errors */
+exit_thread:
   rs485_device_cleanup(&rackmond_config.rs485);
+exit_rs485:
   rackmon_plat_cleanup();
-  if (error != 0) {
-    error = 1;
-  }
+  OBMC_INFO("rackmon is terminated, exit code: %d", error);
   return error;
 }

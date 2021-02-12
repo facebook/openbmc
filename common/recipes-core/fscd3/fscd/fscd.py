@@ -23,6 +23,7 @@ import json
 import os.path
 import signal
 import sys
+import threading
 import time
 import traceback
 from contextlib import contextmanager
@@ -87,8 +88,20 @@ def kick_watchdog():
         Logger.error("Failed to kick watchdog: " + repr(e))
 
 
+def start_watchdog():
+    # kick watchdog once and get feedback if something is horribly wrong
+    # before starting the thread
+    kick_watchdog()
+
+    _WATCHDOG_THREAD.start()
+
+
 def stop_watchdog():
     """stop the watchdog device."""
+    Logger.info("Stopping watchdog thread")
+    _WATCHDOG_STOP.set()
+    _WATCHDOG_THREAD.join()
+    Logger.info("Watchdog thread stopped")
 
     try:
         with _libwatchdog_open_watchdog():
@@ -100,6 +113,17 @@ def stop_watchdog():
 
     except LibWatchdogError as e:
         Logger.error("Failed to stop watchdog: " + repr(e))
+
+
+## Watchdog thread definition, see {start,stop}_watchdog() above
+def _watchdog_thread_f():
+    while not _WATCHDOG_STOP.is_set():
+        kick_watchdog()
+        time.sleep(5)
+
+
+_WATCHDOG_THREAD = threading.Thread(target=_watchdog_thread_f, daemon=True)
+_WATCHDOG_STOP = threading.Event()
 
 
 class Fscd(object):
@@ -198,7 +222,7 @@ class Fscd(object):
             self.ramp_rate = self.fsc_config["ramp_rate"]
         if self.watchdog:
             Logger.info("watchdog pinging enabled")
-            kick_watchdog()
+            start_watchdog()
         self.interval = self.fsc_config["sample_interval_ms"] / 1000.0
         if "fan_recovery_time" in self.fsc_config:
             self.fan_recovery_time = self.fsc_config["fan_recovery_time"]
@@ -803,9 +827,6 @@ class Fscd(object):
             time.sleep(30)
 
         while True:
-            if self.watchdog:
-                kick_watchdog()
-
             time.sleep(self.interval)
 
             if self.fanpower:

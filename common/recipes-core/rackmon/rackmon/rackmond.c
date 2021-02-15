@@ -74,10 +74,10 @@ const static speed_t BAUDRATE_VALUES[] = {
 #define PSU_SCAN_INTERVAL 120
 
 /*
- * Fetch/refresh data from all PSUs every "PSU_REFRESH_DATA_INTERVAL"
- * seconds.
+ * A small amount of delay (in seconds) during PSU access, mainly for
+ * reducing the average CPU usage.
  */
-#define PSU_REFRESH_DATA_INTERVAL 1
+#define PSU_ACCESS_NICE_DELAY 3
 
 /*
  * REG_INT_DATA_SIZE defines the memory size required to store a specific
@@ -665,21 +665,14 @@ static int check_psu_baudrate(psu_datastore_t *psu, speed_t *baudrate_out) {
  * Scan connected PSUs. Executed in monitoring thread.
  */
 static int check_active_psus(void) {
-  int error = 0;
+  int num_psus;
   int rack, shelf, psu, offset;
 
   if (global_lock() != 0) {
     return -1;
   }
-
-  if (rackmond_config.paused == 1) {
+  if (rackmond_config.paused == 1 || rackmond_config.config == NULL) {
     global_unlock();
-    usleep(1000);
-    return 0;
-  }
-  if (rackmond_config.config == NULL) {
-    global_unlock();
-    usleep(5000);
     return 0;
   }
 
@@ -721,7 +714,7 @@ static int check_active_psus(void) {
       }
     }
   }
-  rackmond_config.num_active_addrs = offset;
+  num_psus = rackmond_config.num_active_addrs = offset;
 
   //its the only stdlib sort
   qsort(rackmond_config.active_addrs, rackmond_config.num_active_addrs,
@@ -730,7 +723,7 @@ static int check_active_psus(void) {
   scanning = 0;
   global_unlock();
 
-  return error;
+  return num_psus;
 }
 
 /*
@@ -1017,122 +1010,117 @@ static void record_data(reg_range_data_t* rd, uint32_t time,
   rd->mem_pos = rd->mem_pos % mem_size;
 }
 
-static int fetch_monitored_data(void) {
-  int pos;
-  int error = 0;
+static int reload_psu_registers(psu_datastore_t *mdata)
+{
+  int r, error;
+  speed_t baudrate;
+  uint8_t addr = mdata->addr;
 
   if (global_lock() != 0) {
     return -1;
   }
-
-  if (rackmond_config.paused == 1) {
-    global_unlock();
-    usleep(1000);
-    goto cleanup;
+  error = check_psu_baudrate(mdata, &baudrate);
+  global_unlock();
+  if (error != 0) {
+    OBMC_WARN("Unable to check baudrate for PSU at addr %02x", addr);
+    return -1;
   }
-  if (rackmond_config.config == NULL) {
+
+  for (r = 0; r < rackmond_config.config->num_intervals; r++) {
+    int err;
+    uint32_t timestamp;
+    reg_range_data_t* rd = &mdata->range_data[r];
+    monitor_interval* iv = rd->i;
+    uint16_t regs[iv->len];
+
+    err = read_holding_reg(&rackmond_config.rs485,
+                           rackmond_config.modbus_timeout, addr,
+                           iv->begin, iv->len, regs, baudrate);
+    sched_yield();
+    if (err != 0) {
+      if (err != READ_ERROR_RESPONSE && err != PSU_TIMEOUT_RESPONSE) {
+        log("Error %d reading %02x registers at %02x from %02x\n",
+            err, iv->len, iv->begin, addr);
+        if(err == MODBUS_BAD_CRC) {
+          mdata->crc_errors++;
+        }
+        if(err == MODBUS_RESPONSE_TIMEOUT) {
+          mdata->timeout_errors++;
+        }
+      }
+
+      continue;
+    }
+
+    TIME_UPDATE(timestamp);
+    if (iv->flags & MONITOR_FLAG_ONLY_CHANGES) {
+      int pitch = REG_INT_DATA_SIZE(iv);
+      int lastpos = rd->mem_pos - pitch;
+      if (lastpos < 0) {
+        lastpos = (pitch * iv->keep) - pitch;
+      }
+      if (!memcmp(rd->mem_begin + lastpos + sizeof(timestamp),
+                  regs, sizeof(uint16_t) * iv->len) &&
+           memcmp(rd->mem_begin, "\x00\x00\x00\x00", 4)) {
+        continue;
+      }
+
+      if (rackmond_config.status_log) {
+        time_t rawt;
+        struct tm* ti;
+        char timestr[80];
+
+        time(&rawt);
+        ti = localtime(&rawt);
+        strftime(timestr, sizeof(timestr), "%b %e %T", ti);
+        fprintf(rackmond_config.status_log,
+                "%s: Change to status register %02x on address %02x. "
+                "New value: %02x\n",
+                timestr, iv->begin, addr, regs[0]);
+        fflush(rackmond_config.status_log);
+      }
+    }
+
+    global_lock();
+    if (iv->begin == REGISTER_PSU_BAUDRATE) {
+      uint16_t baudrate_value = regs[0] >> 8;
+      mdata->supports_baudrate = (baudrate_value != 0);
+      mdata->baudrate = BAUDRATE_VALUES[baudrate_value];
+    }
+    record_data(rd, timestamp, regs);
     global_unlock();
-    goto cleanup;
+  } /* for each monitor_interval */
+
+  return 0;
+}
+
+static int fetch_monitored_data(void) {
+  int pos;
+  psu_datastore_t *mdata;
+
+  if (global_lock() != 0) {
+    return -1;
+  }
+  if (rackmond_config.paused == 1 || rackmond_config.config == NULL) {
+    global_unlock();
+    return -1;
   }
   global_unlock();
 
   for (pos = 0; pos < ARRAY_SIZE(rackmond_config.stored_data); pos++) {
-    if (should_exit) {
+    if (should_exit)
       break;
+
+    mdata = rackmond_config.stored_data[pos];
+    if (mdata != NULL) {
+      reload_psu_registers(mdata);
+
+      if (!should_exit)
+        sleep(PSU_ACCESS_NICE_DELAY);
     }
-
-    int r;
-    uint8_t addr;
-    psu_datastore_t *mdata = rackmond_config.stored_data[pos];
-    speed_t baudrate;
-
-    if (mdata == NULL) {
-      continue;
-    }
-
-    addr = mdata->addr;
-
-    if (global_lock() != 0) {
-      return -1;
-    }
-
-    error = check_psu_baudrate(mdata, &baudrate);
-
-    global_unlock();
-
-    if (error != 0) {
-      OBMC_WARN("Unable to check baudrate for PSU at addr %02x", addr);
-      continue;
-    }
-
-    for (r = 0; r < rackmond_config.config->num_intervals; r++) {
-
-      int err;
-      uint32_t timestamp;
-      reg_range_data_t* rd = &mdata->range_data[r];
-      monitor_interval* iv = rd->i;
-      uint16_t regs[iv->len];
-
-      err = read_holding_reg(&rackmond_config.rs485,
-                             rackmond_config.modbus_timeout, addr,
-                             iv->begin, iv->len, regs, baudrate);
-      sched_yield();
-      if (err != 0) {
-        if (err != READ_ERROR_RESPONSE && err != PSU_TIMEOUT_RESPONSE) {
-          log("Error %d reading %02x registers at %02x from %02x\n",
-              err, iv->len, iv->begin, addr);
-          if(err == MODBUS_BAD_CRC) {
-            mdata->crc_errors++;
-          }
-          if(err == MODBUS_RESPONSE_TIMEOUT) {
-            mdata->timeout_errors++;
-          }
-        }
-        continue;
-      }
-
-      TIME_UPDATE(timestamp);
-      if (iv->flags & MONITOR_FLAG_ONLY_CHANGES) {
-        int pitch = REG_INT_DATA_SIZE(iv);
-        int lastpos = rd->mem_pos - pitch;
-        if (lastpos < 0) {
-          lastpos = (pitch * iv->keep) - pitch;
-        }
-        if (!memcmp(rd->mem_begin + lastpos + sizeof(timestamp),
-              regs, sizeof(uint16_t) * iv->len) &&
-           memcmp(rd->mem_begin, "\x00\x00\x00\x00", 4)) {
-          continue;
-        }
-
-        if (rackmond_config.status_log) {
-          time_t rawt;
-          struct tm* ti;
-          char timestr[80];
-
-          time(&rawt);
-          ti = localtime(&rawt);
-          strftime(timestr, sizeof(timestr), "%b %e %T", ti);
-          fprintf(rackmond_config.status_log,
-                  "%s: Change to status register %02x on address %02x. "
-                  "New value: %02x\n",
-                  timestr, iv->begin, addr, regs[0]);
-          fflush(rackmond_config.status_log);
-        }
-      }
-
-      global_lock();
-      if (iv->begin == REGISTER_PSU_BAUDRATE) {
-        uint16_t baudrate_value = regs[0] >> 8;
-        mdata->supports_baudrate = (baudrate_value != 0);
-        mdata->baudrate = BAUDRATE_VALUES[baudrate_value];
-      }
-      record_data(rd, timestamp, regs);
-      global_unlock();
-    } /* for each monitor_interval */
   } /* for each psu */
 
-cleanup:
-  return error;
+  return 0;
 }
 
 static time_t search_at = 0;
@@ -1162,30 +1150,35 @@ void* monitoring_loop(void* arg)
   }
 
   while (!should_exit) {
-    struct timespec ts;
+    long delay;
+    int num_psus;
+    struct timespec now;
 
-    clock_gettime(CLOCK_REALTIME, &ts);
-    if (search_at < ts.tv_sec) {
-      check_active_psus();
-      alloc_monitoring_datas();
-      clock_gettime(CLOCK_REALTIME, &ts);
-      search_at = ts.tv_sec + PSU_SCAN_INTERVAL;
+    clock_gettime(CLOCK_REALTIME, &now);
+    if (search_at <= now.tv_sec) {
+      num_psus = check_active_psus();
+
+      clock_gettime(CLOCK_REALTIME, &now);
+      search_at = now.tv_sec + PSU_SCAN_INTERVAL;
+
+      if (num_psus > 0) {
+        alloc_monitoring_datas();
+
+        sleep(PSU_ACCESS_NICE_DELAY);
+        fetch_monitored_data();
+      }
     }
 
     /*
-     * Please be aware it takes ~9 seconds for rackmond to go through 6
-     * PSUs and collect all the data, which means the minimum data refresh
-     * interval is 9 seconds (for a specific PSU register, when fetching
-     * data in a dead loop).
-     * Adding a small delay has little impact when 6 PSUs are connected,
-     * means CPU usage and data refresh interval is similar with or without
-     * delay. But such delay saves a lot of CPU resources when no PSU is
-     * connected: CPU usage goes from ~10% (dead loop) to ~0% when delay
-     * is introduced.
+     * TODO: ideally we should allow the main thread to wake up this
+     * monitoring loop (for example, in case "force_rescan" command is
+     * received).
      */
-    fetch_monitored_data();
-    sleep(PSU_REFRESH_DATA_INTERVAL);
-  }
+    delay = search_at - now.tv_sec;
+    if (delay > PSU_ACCESS_NICE_DELAY)
+      delay = PSU_ACCESS_NICE_DELAY;
+    sleep(delay);
+  } /* while (!should_exit) */
 
   OBMC_INFO("exiting rackmon monitoring thread");
   return NULL;

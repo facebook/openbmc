@@ -18,7 +18,7 @@
 import re
 from collections import namedtuple
 
-from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil
+from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil, FscSensorSourceKv
 from fsc_util import Logger
 
 
@@ -112,6 +112,8 @@ class BMCMachine(object):
                 result[fans[key]] = parse_fan_util(fans[key].source.read())
             elif isinstance(fans[key].source, FscSensorSourceSysfs):
                 result[fans[key]] = parse_fan_sysfs(fans[key].source.read())
+            elif isinstance(fans[key].source, FscSensorSourceKv):
+                result[fans[key]] = parse_fan_kv(fans[key].source.read())
             else:
                 Logger.crit("Unknown source type")
         return result
@@ -292,3 +294,19 @@ def parse_fan_util(fan_data):
         if m is not None:
             return int(m.group(1))
     return -1
+
+
+def parse_fan_kv(sensor_data):
+    """
+    Parse the data read from kv and return the RPM
+
+    Arguments:
+        sensor_data: data read from kv
+
+    Returns:
+        RPM
+    """
+    if sensor_data and sensor_data != "NA":
+        return int(float(sensor_data))
+    else:
+        return -1

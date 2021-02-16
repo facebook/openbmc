@@ -20,7 +20,7 @@ import re
 import sys
 
 import fsc_board
-from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil
+from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil, FscSensorSourceKv
 from fsc_util import Logger, clamp
 
 
@@ -70,6 +70,27 @@ class Fan(object):
                 else:
                     self.source = FscSensorSourceUtil(
                         name=fan_name, read_source=pTable["read_source"]["util"]
+                    )
+            if "kv" in pTable["read_source"]:
+                if "write_source" in pTable:
+                    if "max_duty_register" in pTable["write_source"]:
+                        max_duty_register = pTable["write_source"]["max_duty_register"]
+                    else:
+                        max_duty_register = 100
+                    if "util" in pTable["write_source"]:
+                        write_type = "util"
+                    else:
+                        write_type = "kv"
+                    self.source = FscSensorSourceKv(
+                        name=fan_name,
+                        read_source=pTable["read_source"]["kv"],
+                        write_source=pTable["write_source"][write_type],
+                        max_duty_register=max_duty_register,
+                        write_type=write_type,
+                    )
+                else:
+                    self.source = FscSensorSourceKv(
+                        name=fan_name, read_source=pTable["read_source"]["kv"]
                     )
         except Exception:
             Logger.error("Unknown Fan source type")

@@ -79,7 +79,7 @@
     "fans": {
       "0": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 0"
+          "kv" : "pdb_sensor96"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -87,7 +87,7 @@
       },
       "1": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 1"
+          "kv" : "pdb_sensor100"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -95,7 +95,7 @@
       },
       "2": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 2"
+          "kv" : "pdb_sensor97"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -103,7 +103,7 @@
       },
       "3": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 3"
+          "kv" : "pdb_sensor101"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -111,7 +111,7 @@
       },
       "4": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 4"
+          "kv" : "pdb_sensor98"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -119,7 +119,7 @@
       },
       "5": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 5"
+          "kv" : "pdb_sensor102"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -127,7 +127,7 @@
       },
       "6": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 6"
+          "kv" : "pdb_sensor99"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"
@@ -135,7 +135,7 @@
       },
       "7": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 7"
+          "kv" : "pdb_sensor103"
         },
         "write_source" : {
           "util" : "/usr/local/bin/fan-util --set %d"

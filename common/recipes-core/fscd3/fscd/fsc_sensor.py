@@ -18,6 +18,7 @@
 import abc
 import os
 import re
+from kv import kv_get, kv_set
 from subprocess import PIPE, Popen
 
 from fsc_util import Logger
@@ -43,6 +44,10 @@ class FscSensorBase(object):
                 self.max_duty_register = 100
         else:
             self.write_source = None
+        if "write_type" in kwargs:
+            self.write_type = kwargs["write_type"]
+        else:
+            self.write_type = None
 
         self.read_source_fail_counter = 0
         self.write_source_fail_counter = 0
@@ -224,3 +229,85 @@ class FscSensorSourceUtil(FscSensorBase):
             raise
         except Exception:
             Logger.crit("Exception with cmd=%s response=%s" % (cmd, response))
+
+
+class FscSensorSourceKv(FscSensorBase):
+    """
+    Class for FSC sensor source for kv
+    """
+
+    def read(self, **kwargs):
+        """
+        Reads all sensors values from kv source and return data read.
+        There are two kinds of sensors temperature and fans.
+
+        Arguments:
+            kwargs: set of aruments needed to read from kv
+
+        Return:
+            blob of data read from kv
+        """
+
+        Logger.debug("Reading data with kv=%s" % self.read_source)
+        data = ""
+        try:
+            data = kv_get(self.read_source)
+        except SystemExit:
+            Logger.debug("SystemExit from sensor read")
+            raise
+        except Exception:
+            Logger.crit("Exception with read=%s" % self.read_source)
+        return data
+
+    def write(self, value):
+        if self.write_source is None:
+            return
+
+        try:
+            self.write_func[self.write_type](self, value)
+        except SystemExit:
+            Logger.debug("SystemExit from sensor write")
+            raise
+        except Exception:
+            Logger.crit("Exception with write=%s" % self.write_source)
+
+    def write_kv(self, value):
+        """
+        Writes to write_source using kv.
+
+        Arguments:
+            value: value to be set to the sensor
+
+        Return:
+            N/A
+        """
+
+        try:
+            kv_set(self.write_source, str(value * self.max_duty_register / 100))
+        except Exception:
+            raise
+
+    def write_util(self, value):
+        """
+        Writes to write_source using util.
+
+        Arguments:
+            value: value to be set to the sensor
+
+        Return:
+            N/A
+        """
+
+        cmd = self.write_source % (int(value * self.max_duty_register / 100))
+        Logger.debug("Setting value using cmd=%s" % cmd)
+        try:
+            response = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+            if response.find("Error") != -1:
+                raise Exception("Write failed with response=%s" % response)
+        except Exception:
+            raise
+
+    write_func = {
+        'kv' : write_kv,
+        'util' : write_util,
+    }

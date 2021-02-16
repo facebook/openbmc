@@ -14,9 +14,6 @@ C16,GPIOD4_SD2DAT2,Out,BMC_CPLD_RESET3,Spare Reset signal connected to CPLD (USB
 B16,GPIOD5_SD2DAT3,Out,BMC_CPLD_RESET4,Spare Reset signal connected to CPLD
 E15,GPIOD7_SD2WP_N,In,BMC_CPLD_QSFP_INT,Intrerrupt from CPLD to BMC for any QSFP events (USB RESET function moved to CPLD)
 D15,GPIOE0_NCTS3,Out,DEBUG_UART_SEL_0,FB debug connector UART select 0: BMC uART 1: microserver UART
-B15,GPIOE2_NDSR3,out,SWITCH_EEPROM1_WRT,"0: BCM5387 SPI interface connect to SPI EEPROM
-1: BCM5387 SPI interface connect to BMC SPI EEPROM interface
-this bit is used as BCM5387 straping configuration too"
 E14,GPIOE4_NDTR3,in,ISO_MICROSRV_PRSNT_N,"0: Microserver is present in PCIe slot
 1: microserver is not present in PCIe slot"
 D14,GPIOE5_NRTS3,out,LED_PWR_BLUE,"Power LED blue will be ON when LED_PWR_BLUE is high.
@@ -33,10 +30,6 @@ B13,GPIOG4_WDTRST1_OSCCLK,Out,BMC_WDTRST1,Watch dog timer reset1 output from BMC
 Y21,GPIOG5_WDTRST2_USBCKI,Out,BMC_WDTRST2,Watch dog timer reset2 output from BMC to CPLD
 A7,GPIOH3_ROMD11_NRI6,In,QSFP_LED_POSITION,QSFP position select input
 D7,GPIOH4_ROMD12_NDTR6,In,PM_SM_ALERT_N,SM bus alert from power manager (also connected to CPLD)
-B22,GPIOI4_SPICS0_N_VBCS_N,Out,BMC_EEPROM1_SPI_SS,"BMC SPI EEPROM interface connect to BCM5387 switch if SWITCH_EEPRM1_WRT is 1, "
-G19,GPIOI5_SPICK_VBCK,Out,BMC_EEPROM1_SPI_SCK,
-C18,GPIOI6_SPIDO_VBDO,Out,BMC_EEPROM1_SPI_MOSI,
-E20,GPIOI7_SPIDI_VBDI,In,BMC_EEPROM1_SPI_MISO,
 J5,GPIOJ0_SGPMCK,Bi,RCKMON_SPARE0,Spare gpios to rack mon card
 J4,GPIOJ1_SGPMLD,Bi,RCKMON_SPARE1,Spare gpios to rack mon card
 K5,GPIOJ2_SGPMO,Bi,RCKMON_SPARE2,Spare gpios to rack mon card

@@ -42,7 +42,6 @@
 #include <openbmc/misc-utils.h>
 #include <facebook/bic.h>
 #include <facebook/wedge_eeprom.h>
-#include "pal-ipmi.h"
 #include "pal.h"
 
 int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len,

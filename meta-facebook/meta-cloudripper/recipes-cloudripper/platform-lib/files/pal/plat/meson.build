@@ -1,6 +1,5 @@
 pal_headers += [
     'pal.h',
-    'pal-ipmi.h',
     'pal-led.h',
     'pal-power.h',
     'pal-sensors.h',

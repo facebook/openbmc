@@ -36,7 +36,6 @@ extern "C" {
 #include <math.h>
 #include <facebook/bic.h>
 
-#include "pal-ipmi.h"
 #include "pal-led.h"
 #include "pal-power.h"
 #include "pal-sensors.h"

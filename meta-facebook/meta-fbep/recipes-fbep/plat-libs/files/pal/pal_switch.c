@@ -28,6 +28,8 @@
 
 #define PAX_I2C_LOCK "/tmp/pax_lock"
 
+#define MRPC_PART_INFO_GET_ALL_INFO_EX 0x3
+
 static int pax_lock()
 {
   int fd;
@@ -151,101 +153,112 @@ int pal_read_pax_dietemp(uint8_t sensor_num, float *value)
   }
 }
 
-static struct switchtec_fw_part_summary* get_pax_ver_sum(uint8_t paxid)
+struct switchtec_flash_info_gen4_Ex {
+  uint32_t firmware_version;
+  uint32_t flash_size;
+  uint16_t device_id;
+  uint8_t ecc_enable;
+  uint8_t rsvd1;
+  uint8_t running_bl2_flag;
+  uint8_t running_cfg_flag;
+  uint8_t running_img_flag;
+  uint8_t running_key_flag;
+  uint8_t redundancy_key_flag;
+  uint8_t redundancy_bl2_flag;
+  uint8_t redundancy_cfg_flag;
+  uint8_t redundancy_img_flag;
+  uint32_t rsvd2[11];
+  struct switchtec_flash_part_info_gen4 {
+    uint32_t image_crc;
+    uint32_t image_len;
+    uint32_t image_version;
+    uint8_t valid;
+    uint8_t active;
+    uint8_t read_only;
+    uint8_t is_using;
+    uint32_t part_start;
+    uint32_t part_end;
+    uint32_t part_offset;
+    uint32_t part_size_dw;
+  } map0, map1, keyman0, keyman1, bl20, bl21, cfg0, cfg1, img0, img1, nvlog, vendor[8];
+};
+
+static int get_pax_ver(uint8_t paxid, uint8_t type, char *ver)
 {
-  int fd;
+  int fd, ret;
+  uint8_t subcmd;
+  uint16_t* p;
   char device_name[LARGEST_DEVICE_NAME] = {0};
   struct switchtec_dev *dev;
-  struct switchtec_fw_part_summary *sum;
+  struct switchtec_flash_info_gen4_Ex all_info;
+  struct switchtec_flash_part_info_gen4 *info_0, *info_1;
+
+  if (pal_is_server_off())
+    return -1;
 
   snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, SWITCH_BASE_ADDR + paxid);
 
   fd = pax_lock();
   if (fd < 0)
-    return NULL;
+    return -1;
 
   dev = switchtec_open(device_name);
   if (dev == NULL) {
     syslog(LOG_WARNING, "%s: switchtec open %s failed", __func__, device_name);
-    return NULL;
+    return -1;
   }
 
-  sum = switchtec_fw_part_summary(dev);
-  if (sum == NULL)
-    syslog(LOG_WARNING, "%s: switchtec get %s version failed", __func__, device_name);
+  subcmd = MRPC_PART_INFO_GET_ALL_INFO_EX;
+  ret = switchtec_cmd(dev, MRPC_PART_INFO, &subcmd,
+                      sizeof(subcmd), &all_info, sizeof(all_info));
 
   switchtec_close(dev);
   pax_unlock(fd);
 
-  return sum;
+  if (ret == 0) {
+    switch (type) {
+      case SWITCHTEC_FW_TYPE_BL2:
+	info_0 = &(all_info.bl20);
+	info_1 = &(all_info.bl21);
+	break;
+      case SWITCHTEC_FW_TYPE_IMG:
+	info_0 = &(all_info.img0);
+	info_1 = &(all_info.img1);
+	break;
+      default:
+	return -1;
+    };
+    if (info_0->is_using)
+      p = (uint16_t*)&info_0->image_version;
+    else
+      p = (uint16_t*)&info_1->image_version;
+
+    snprintf(ver, MAX_VALUE_LEN, "%X.%02X B%03X",
+	     p[1] >> 8, p[1] & 0xFF, p[0] & 0xFFF);
+  } else {
+    syslog(LOG_WARNING, "%s: switchtec get %s version failed", __func__, device_name);
+  }
+  return ret;
 }
+
 int pal_get_pax_bl2_ver(uint8_t paxid, char *ver)
 {
-  struct switchtec_fw_part_summary *sum;
-  char img_key[MAX_KEY_LEN];
-  char bl2_key[MAX_KEY_LEN];
-
-  snprintf(img_key, sizeof(img_key), "pax%d_img", paxid);
-  snprintf(bl2_key, sizeof(bl2_key), "pax%d_bl2", paxid);
-  if (kv_get(bl2_key, ver, NULL, 0) == 0)
-    return 0;
-
-  if (pal_is_server_off())
-    return -1;
-
-  sum = get_pax_ver_sum(paxid);
-  if (sum == NULL)
-    return -1;
-
-  snprintf(ver, MAX_VALUE_LEN, "%s", sum->img.active->version);
-  kv_set(img_key, ver, 0, 0);
-  snprintf(ver, MAX_VALUE_LEN, "%s", sum->bl2.active->version);
-  kv_set(bl2_key, ver, 0, 0);
-  switchtec_fw_part_summary_free(sum);
-
-  return 0;
+  return get_pax_ver(paxid, SWITCHTEC_FW_TYPE_BL2, ver);
 }
 
 int pal_get_pax_fw_ver(uint8_t paxid, char *ver)
 {
-  struct switchtec_fw_part_summary *sum;
-  char img_key[MAX_KEY_LEN];
-  char bl2_key[MAX_KEY_LEN];
-
-  snprintf(bl2_key, sizeof(bl2_key), "pax%d_bl2", paxid);
-  snprintf(img_key, sizeof(img_key), "pax%d_img", paxid);
-  if (kv_get(img_key, ver, NULL, 0) == 0)
-    return 0;
-
-  if (pal_is_server_off())
-    return -1;
-
-  sum = get_pax_ver_sum(paxid);
-  if (sum == NULL)
-    return -1;
-
-  snprintf(ver, MAX_VALUE_LEN, "%s", sum->bl2.active->version);
-  kv_set(bl2_key, ver, 0, 0);
-  snprintf(ver, MAX_VALUE_LEN, "%s", sum->img.active->version);
-  kv_set(img_key, ver, 0, 0);
-  switchtec_fw_part_summary_free(sum);
-
-  return 0;
+  return get_pax_ver(paxid, SWITCHTEC_FW_TYPE_IMG, ver);
 }
 
 int pal_get_pax_cfg_ver(uint8_t paxid, char *ver)
 {
   int fd, ret = 0;
   char device_name[LARGEST_DEVICE_NAME] = {0};
-  char cfg_key[MAX_KEY_LEN];
   struct switchtec_dev *dev;
   size_t map_size;
   unsigned int x;
   gasptr_t map;
-
-  snprintf(cfg_key, sizeof(cfg_key), "pax%d_cfg", paxid);
-  if (kv_get(cfg_key, ver, NULL, 0) == 0)
-    return 0;
 
   if (pal_is_server_off())
     return -1;
@@ -265,7 +278,7 @@ int pal_get_pax_cfg_ver(uint8_t paxid, char *ver)
 
   map = switchtec_gas_map(dev, 0, &map_size);
   if (map != SWITCHTEC_MAP_FAILED) {
-    x = gas_read32(dev, (void __gas*)map + 0x2104);
+    ret = gas_read32(dev, (void __gas*)map + 0x2104, &x);
     switchtec_gas_unmap(dev, map);
   } else {
     ret = -1;
@@ -274,10 +287,8 @@ int pal_get_pax_cfg_ver(uint8_t paxid, char *ver)
   switchtec_close(dev);
   pax_unlock(fd);
 
-  if (ret == 0) {
-    snprintf(ver, MAX_VALUE_LEN, "%x", x);
-    kv_set(cfg_key, ver, 0, 0);
-  }
+  if (ret == 0)
+    snprintf(ver, MAX_VALUE_LEN, "%X", x);
 
   return ret < 0? -1: 0;
 }

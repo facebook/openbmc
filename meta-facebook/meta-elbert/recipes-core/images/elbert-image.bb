@@ -30,4 +30,7 @@ IMAGE_INSTALL += " \
   ipmitool \
   guid-util \
   psu-util \
+  sensor-util \
+  sensor-mon \
+  threshold-util \
   "

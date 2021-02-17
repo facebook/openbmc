@@ -16,6 +16,7 @@ IMAGE_INSTALL += " \
   libcpldupdate-dll-ioctl \
   flashrom \
   fscd \
+  front-paneld \
   lldp-util \
   mterm \
   mtd-utils-ubifs \

@@ -30,7 +30,7 @@ VERSION = "0.5"
 SC_POWERGOOD = "/sys/bus/i2c/drivers/scmcpld/12-0043/switchcard_powergood"
 
 
-def runCmd(cmd, echo=False, verbose=False, timeout=60):
+def runCmd(cmd, echo=False, verbose=False, timeout=60, ignoreReturncode=False):
     try:
         out = subprocess.Popen(
             cmd.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -49,7 +49,7 @@ def runCmd(cmd, echo=False, verbose=False, timeout=60):
     output = ""
     if echo:
         output += "{}\n".format(cmd)
-    if out.returncode != 0:
+    if not ignoreReturncode and out.returncode != 0:
         print('"{}" returned with error code {}'.format(cmd, out.returncode))
         if not verbose:
             return output
@@ -161,7 +161,13 @@ def logDump():
     print("################################")
     print("########## DEBUG LOGS ##########")
     print("################################\n")
-    print("#### SENSORS LOG ####\n{}\n\n".format(runCmd("sensors", echo=True)))
+    # sensor-util will return a non-zero returncode when any of the FRUs are
+    # not present, so ignore that.
+    print(
+        "#### SENSORS LOG ####\n{}\n\n".format(
+            runCmd("/usr/local/bin/sensor-util all", echo=True, ignoreReturncode=True)
+        )
+    )
     print(
         "#### FSCD LOG ####\n{}\n{}\n".format(
             runCmd("cat /var/log/fscd.log.1", echo=True),

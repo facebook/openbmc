@@ -96,9 +96,6 @@ usage() {
     echo "program <filename>"
     echo "read <index> [<num-words>]"
     echo "write <index> <word>"
-    echo
-    echo "General options:"
-    echo "  -f - overrides any safety checks"
 }
 
 read_index() {
@@ -193,6 +190,7 @@ cleanup() {
 }
 
 handle_signal() {
+    echo "Exiting because of signal" >&2
     cleanup
     exit 1
 }
@@ -224,21 +222,6 @@ eeprom_write_protect() {
 }
 
 eeprom_init() {
-    local force=$1
-
-    # Check to see that the CPU is powered on. This restriction can
-    # be removed once the CPLD supports accessing the EEPROM with
-    # the CPU powered off
-    if ! wedge_is_us_on
-    then
-        echo "The CPU needs to be powered on to access the EEPROM."
-        if [ "$force" -eq 0 ]
-        then
-            exit 1
-        fi
-        echo "Force specified. Attempting to access the EEPROM."
-    fi
-
     set_cpld_eeprom_mode
 
     # Clear write cycle error, if present
@@ -567,13 +550,6 @@ eeprom_program() {
     eeprom_write_protect "disable"
 }
 
-force=0
-if [ $# -gt 0 ] && [ "$1" = "-f" ]
-then
-   force=1
-   shift
-fi
-
 if [ $# -lt 1 ]
 then
     echo "Error: missing command" >&2
@@ -590,7 +566,7 @@ fi
 command="$1"
 shift
 
-eeprom_init $force
+eeprom_init
 
 case "$command" in
     dump)
@@ -609,6 +585,7 @@ case "$command" in
         eeprom_write "$@"
         ;;
     *)
+        echo "Error: invalid command: $command" >&2
         usage
         exit 1
         ;;

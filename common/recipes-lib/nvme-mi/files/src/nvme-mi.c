@@ -309,7 +309,7 @@ nvme_temp_decode(uint8_t value, t_key_value_pair *temp_decoding) {
     return -1;
   }
 
-  sprintf(temp_decoding->key, "Composite Temperature");
+  snprintf(temp_decoding->key, PART_KEY_SIZE, "Composite Temperature");
   if (value <= TEMP_HIGHER_THAN_127)
     sprintf(temp_decoding->value, "%d C", value);
   else if (value >= TEPM_LOWER_THAN_n60)
@@ -336,7 +336,7 @@ nvme_lower_threshold_temp_decode(uint8_t block_len, uint8_t value, t_key_value_p
       return -1;
     }
   }
-  sprintf(temp_decoding->key, "Lower Thermal Threshold");
+  snprintf(temp_decoding->key, PART_KEY_SIZE, "Lower Thermal Threshold");
 
   return 0;
 }
@@ -355,7 +355,7 @@ nvme_upper_threshold_temp_decode(uint8_t block_len, uint8_t value, t_key_value_p
       return -1;
     }
   }
-  sprintf(temp_decoding->key, "Upper Thermal Threshold");
+  snprintf(temp_decoding->key, PART_KEY_SIZE, "Upper Thermal Threshold");
 
   return 0;
 }
@@ -374,7 +374,7 @@ nvme_max_asic_temp_decode(uint8_t block_len, uint8_t value, t_key_value_pair *te
       return -1;
     }
   }
-  sprintf(temp_decoding->key, "Historical Max ASIC Temperature");
+  snprintf(temp_decoding->key, PART_KEY_SIZE, "Historical Max ASIC Temperature");
 
   return 0;
 }
@@ -387,7 +387,7 @@ nvme_pdlu_decode(uint8_t value, t_key_value_pair *pdlu_decoding) {
     return -1;
   }
 
-  sprintf(pdlu_decoding->key, "Percentage Drive Life Used");
+  snprintf(pdlu_decoding->key, PART_KEY_SIZE, "Percentage Drive Life Used");
   sprintf(pdlu_decoding->value, "%d", value);
 
   return 0;
@@ -401,7 +401,7 @@ nvme_vendor_decode(uint16_t value, t_key_value_pair *vendor_decoding) {
     return -1;
   }
 
-  sprintf(vendor_decoding->key, "Vendor");
+  snprintf(vendor_decoding->key, PART_KEY_SIZE, "Vendor");
   switch (value) {
     case VENDOR_ID_HGST:
       sprintf(vendor_decoding->value, "HGST(0x%04X)", value);
@@ -455,7 +455,7 @@ nvme_serial_num_decode(uint8_t *value, t_key_value_pair *sn_decoding) {
     return -1;
   }
 
-  sprintf(sn_decoding->key, "Serial Number");
+  snprintf(sn_decoding->key, PART_KEY_SIZE, "Serial Number");
   memcpy(sn_decoding->value, value, SERIAL_NUM_SIZE);
   sn_decoding->value[SERIAL_NUM_SIZE] = '\0';
 
@@ -470,7 +470,7 @@ nvme_part_num_decode(uint8_t block_len, uint8_t *value, t_key_value_pair *pn_dec
     return -1;
   }
 
-  sprintf(pn_decoding->key, "Module Product Part Number");
+  snprintf(pn_decoding->key, PART_KEY_SIZE, "Module Product Part Number");
   if (check_nvme_fileds_valid(block_len, pn_decoding) == VALID) {
     if (value[0] == 0xFF) { // RosePeak does not have Module Product Part Number
       sprintf(pn_decoding->value, "NA");
@@ -491,7 +491,7 @@ nvme_meff_decode (uint8_t block_len, uint8_t value, t_key_value_pair *meff_decod
     return -1;
   }
 
-  sprintf(meff_decoding->key, "Management End Point Form Factor");
+  snprintf(meff_decoding->key, PART_KEY_SIZE, "Management End Point Form Factor");
   if (check_nvme_fileds_valid(block_len, meff_decoding) == VALID) {
     switch (value) {
       case MEFF_M_2_22110:
@@ -517,7 +517,7 @@ nvme_ffi_0_decode (uint8_t block_len, uint8_t value, t_key_value_pair *ffi_0_dec
     return -1;
   }
 
-  sprintf(ffi_0_decoding->key, "Form Factor Information 0 Register");
+  snprintf(ffi_0_decoding->key, PART_KEY_SIZE, "Form Factor Information 0 Register");
   if (check_nvme_fileds_valid(block_len, ffi_0_decoding) == VALID) {
     switch (value) {
       case FFI_0_STORAGE:
@@ -543,7 +543,7 @@ nvme_power_state_decode (uint8_t block_len, uint8_t value, t_key_value_pair *pow
     return -1;
   }
 
-  sprintf(power_state_decoding->key, "Power State");
+  snprintf(power_state_decoding->key, PART_KEY_SIZE, "Power State");
   if (check_nvme_fileds_valid(block_len, power_state_decoding) == VALID) {
     switch (value) {
       case POWER_STATE_FULL_MODE:
@@ -572,7 +572,7 @@ nvme_i2c_freq_decode (uint8_t block_len, uint8_t value, t_key_value_pair *i2c_fr
     return -1;
   }
 
-  sprintf(i2c_freq_decoding->key, "SMBus/I2C Frquency");
+  snprintf(i2c_freq_decoding->key, PART_KEY_SIZE, "SMBus/I2C Frquency");
   if (check_nvme_fileds_valid(block_len, i2c_freq_decoding) == VALID) {
     switch (value) {
       case I2C_FREQ_100K:
@@ -601,7 +601,7 @@ nvme_tdp_level_decode (uint8_t block_len, uint8_t value, t_key_value_pair *tdp_l
     return -1;
   }
 
-  sprintf(tdp_level_decoding->key, "Module Static TDP level setting");
+  sprintf(tdp_level_decoding->key, PART_KEY_SIZE, "Module Static TDP level setting");
   if (check_nvme_fileds_valid(block_len, tdp_level_decoding) == VALID) {
     switch (value) {
       case TDP_LEVEL1:
@@ -626,7 +626,7 @@ nvme_fw_version_decode (uint8_t block_len, uint8_t major_value, uint8_t minor_va
     return -1;
   }
 
-  sprintf(fw_version_decoding->key, "%s", "FW version");
+  sprintf(fw_version_decoding->key, PART_KEY_SIZE, "%s", "FW version");
   if (check_nvme_fileds_valid(block_len, fw_version_decoding) == VALID) {
     sprintf(fw_version_decoding->value, "v%d.%d", major_value, minor_value);
   }
@@ -642,7 +642,7 @@ nvme_monitor_area_decode (char *key, uint8_t block_len, uint16_t value, float un
     return -1;
   }
 
-  sprintf(monitor_area_decoding->key, "%s", key);
+  sprintf(monitor_area_decoding->key, PART_KEY_SIZE, "%s", key);
   if (check_nvme_fileds_valid(block_len, monitor_area_decoding) == VALID) {
     sprintf(monitor_area_decoding->value, "%.4f V", (value * unit));
   }
@@ -658,7 +658,7 @@ nvme_total_int_mem_err_count_decode(uint8_t block_len, uint8_t value, t_key_valu
     return -1;
   }
 
-  sprintf(total_int_mem_err_count_decoding->key, "Total internal memory error count");
+  sprintf(total_int_mem_err_count_decoding->key, PART_KEY_SIZE, "Total internal memory error count");
   if (check_nvme_fileds_valid(block_len, total_int_mem_err_count_decoding) == VALID) {
     if (value == 0xFF) { // SpringHill does not have Total internal memory error count
       sprintf(total_int_mem_err_count_decoding->value, "NA");
@@ -678,7 +678,7 @@ nvme_total_ext_mem_err_count_decode(uint8_t block_len, uint8_t value, t_key_valu
     return -1;
   }
 
-  sprintf(total_ext_mem_err_count_decoding->key, "Total external memory error count");
+  sprintf(total_ext_mem_err_count_decoding->key, PART_KEY_SIZE, "Total external memory error count");
   if (check_nvme_fileds_valid(block_len, total_ext_mem_err_count_decoding) == VALID) {
     if (value == 0xFF) { // SpringHill does not have Total external memory error count
       sprintf(total_ext_mem_err_count_decoding->value, "NA");
@@ -698,7 +698,7 @@ nvme_smbus_err_decode(uint8_t block_len, uint8_t value, t_key_value_pair *smbus_
     return -1;
   }
 
-  sprintf(smbus_err_decoding->key, "SMBus error");
+  sprintf(smbus_err_decoding->key, PART_KEY_SIZE, "SMBus error");
   if (check_nvme_fileds_valid(block_len, smbus_err_decoding) == VALID) {
     if (value == 0xFF) { // SpringHill does not have SMBus Error
       sprintf(smbus_err_decoding->value, "NA");
@@ -719,7 +719,7 @@ nvme_raw_data_prase (char *key, uint8_t block_len, uint8_t value, t_key_value_pa
     return -1;
   }
 
-  sprintf(raw_data_prasing->key, "%s", key);
+  sprintf(raw_data_prasing->key, PART_KEY_SIZE, "%s", key);
   if (check_nvme_fileds_valid(block_len, raw_data_prasing) == VALID) {
     sprintf(raw_data_prasing->value, "0x%02X", value);
   }
@@ -735,7 +735,7 @@ nvme_sinfo_0_decode (uint8_t value, t_key_value_pair *sinfo_0_decoding) {
     return -1;
   }
 
-  sprintf(sinfo_0_decoding->key, "Storage Information 0");
+  sprintf(sinfo_0_decoding->key, PART_KEY_SIZE, "Storage Information 0");
 
   switch (value & 0x3) {
     case SINFO_0_PLP_NOT_DEFINED:
@@ -807,7 +807,7 @@ nvme_temp_read_decode(const char *i2c_bus_device, uint8_t *value, t_key_value_pa
 
   if (nvme_temp_read(i2c_bus_device, value)) {
     syslog(LOG_DEBUG, "%s(): nvme_temp_read failed", __func__);
-    sprintf(temp_decoding->key, "Composite Temperature");
+    sprintf(temp_decoding->key, PART_KEY_SIZE, "Composite Temperature");
     sprintf(temp_decoding->value, "Fail on reading");
     return -1;
   }
@@ -829,7 +829,7 @@ nvme_pdlu_read_decode(const char *i2c_bus_device, uint8_t *value, t_key_value_pa
 
   if (nvme_pdlu_read(i2c_bus_device, value)) {
     syslog(LOG_DEBUG, "%s(): nvme_pdlu_read failed", __func__);
-    sprintf(pdlu_decoding->key, "Percentage Drive Life Used");
+    sprintf(pdlu_decoding->key, PART_KEY_SIZE, "Percentage Drive Life Used");
     sprintf(pdlu_decoding->value, "Fail on reading");
     return -1;
   }
@@ -851,7 +851,7 @@ nvme_vendor_read_decode(const char *i2c_bus_device, uint16_t *value, t_key_value
 
   if (nvme_vendor_read(i2c_bus_device, value)) {
     syslog(LOG_DEBUG, "%s(): nvme_vendor_read failed", __func__);
-    sprintf(vendor_decoding->key, "Vendor");
+    sprintf(vendor_decoding->key, PART_KEY_SIZE, "Vendor");
     sprintf(vendor_decoding->value, "Fail on reading");
     return -1;
   }
@@ -873,7 +873,7 @@ nvme_serial_num_read_decode(const char *i2c_bus_device, uint8_t *value, int size
 
   if (nvme_serial_num_read(i2c_bus_device, value, SERIAL_NUM_SIZE)) {
     syslog(LOG_DEBUG, "%s(): nvme_serial_num_read failed", __func__);
-    sprintf(sn_decoding->key, "Serial Number");
+    snprintf(sn_decoding->key, PART_KEY_SIZE, "Serial Number");
     sprintf(sn_decoding->value, "Fail on reading");
     return -1;
   }

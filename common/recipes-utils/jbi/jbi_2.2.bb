@@ -25,9 +25,9 @@ SRC_URI = "file://code \
 
 S = "${WORKDIR}/code"
 
-LDFLAGS += "-llog"
-DEPENDS += "hr-nanosleep liblog libgpio liblog"
-RDEPENDS_${PN} += "libgpio liblog"
+LDFLAGS += "-llog -lgpio-ctrl"
+DEPENDS += "hr-nanosleep liblog libgpio-ctrl"
+RDEPENDS_${PN} += "libgpio-ctrl liblog"
 
 do_install() {
   bin="${D}/usr/local/bin"

@@ -171,7 +171,7 @@ class BaseFwUpgradeTest(object):
     def set_ssh_session_bmc_hostname(self):
         self.hostname = os.environ.get("TEST_HOSTNAME", self.USERVER_HOSTNAME)
         self.bmc_hostname = os.environ.get("TEST_BMC_HOSTNAME", self.BMC_HOSTNAME)
-        if "mpk" or "fre" in self.bmc_hostname:
+        if "mpk" in self.bmc_hostname or "fre" in self.bmc_hostname:
             self.bmc_hostname += ".fbinfra.net"
         pass
 

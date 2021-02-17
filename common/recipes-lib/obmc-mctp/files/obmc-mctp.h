@@ -32,7 +32,8 @@ enum {
   MCTP_TYPE_PLDM     = 0x1,
   MCTP_TYPE_NCSI     = 0x2,
   MCTP_TYPE_ETHERNET = 0x3,
-  MCTP_TYPE_NVME     = 0x4
+  MCTP_TYPE_NVME     = 0x4,
+  MCTP_TYPE_SPDM     = 0x5,
 };
 
 /* NC-SI structure */
@@ -135,6 +136,10 @@ int mctp_smbus_send_data(struct mctp* mctp, uint8_t dst, uint8_t flag_tag,
                          void *req, size_t size,
                          struct mctp_smbus_extra_params *smbus_extra_params);
 
+int mctp_smbus_recv_data_timeout_raw(struct mctp *mctp, uint8_t dst,
+                                 struct mctp_binding_smbus *smbus,
+                                 void *data, int TOsec);
+
 int mctp_smbus_recv_data(struct mctp *mctp, uint8_t dst,
                          struct mctp_binding_smbus *smbus,
                          void *data);
@@ -149,6 +154,9 @@ int obmc_mctp_get_version_id(struct obmc_mctp_binding *binding, uint8_t dst_eid,
 int obmc_mctp_set_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
                       uint8_t tag, uint8_t iid,
                       uint8_t tid);
+
+int send_mctp_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
+                  uint8_t *tbuf, int tlen, uint8_t *rbuf, int *rlen);
 
 int obmc_mctp_get_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
                       uint8_t tag, uint8_t iid,

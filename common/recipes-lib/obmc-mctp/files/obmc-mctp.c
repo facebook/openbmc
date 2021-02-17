@@ -140,6 +140,9 @@ int mctp_smbus_send_data(struct mctp* mctp, uint8_t dst, uint8_t flag_tag,
   return 0;
 }
 
+// reads MCTP response off smbus
+// decodes response, returns NC-SI over MCTP or PLDM over MCTP status,
+// returns error for other MCTP msg types
 int mctp_smbus_recv_data_timeout(struct mctp *mctp, uint8_t dst,
                                  struct mctp_binding_smbus *smbus,
                                  void *data, int TOsec)
@@ -181,6 +184,36 @@ int mctp_smbus_recv_data_timeout(struct mctp *mctp, uint8_t dst,
       }
     }
 
+  }
+  syslog(LOG_ERR, "%s: MCTP timeout", __func__);
+  return -1;
+}
+
+// reads MCTP response off smbus
+// return byte count, do not interpret data (e.g. MCTP msg type)
+int mctp_smbus_recv_data_timeout_raw(struct mctp *mctp, uint8_t dst,
+                                 struct mctp_binding_smbus *smbus,
+                                 void *data, int TOsec)
+{
+  int retry = 6*10; // Default 6 secs
+  struct obmc_mctp_hdr *p = (struct obmc_mctp_hdr *)data;
+
+  mctp_set_rx_all(mctp, rx_handler, data);
+
+  if (TOsec > 0)
+    retry = TOsec*10;
+
+  while (retry--) {
+    usleep(100*1000);
+
+    if (mctp_smbus_read(smbus) < 0) {
+      syslog(LOG_ERR, "%s: MCTP RX error", __func__);
+      return -1;
+    }
+
+    if (p->Msg_Size > 0) {
+      return p->Msg_Size;
+    }
   }
   syslog(LOG_ERR, "%s: MCTP timeout", __func__);
   return -1;
@@ -366,6 +399,51 @@ int obmc_mctp_get_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
   ret = 0;
 bail:
   free(smbus_extra_params);
+  return ret;
+}
+
+int send_mctp_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
+                  uint8_t *tbuf, int tlen, uint8_t *rbuf, int *rlen)
+{
+  int ret = -1;
+  uint8_t tag = 0;
+  struct obmc_mctp_binding *mctp_binding;
+  struct mctp_binding_smbus *smbus;
+  struct mctp_smbus_extra_params *smbus_extra_params;
+
+  mctp_binding = obmc_mctp_smbus_init(bus, addr, src_eid, NCSI_MAX_PAYLOAD);
+  if (mctp_binding == NULL) {
+    syslog(LOG_ERR, "%s: Error: mctp binding failed", __func__);
+    return -1;
+  }
+  smbus = (struct mctp_binding_smbus *)mctp_binding->prot;
+
+  smbus_extra_params = (struct mctp_smbus_extra_params *)
+                       malloc(sizeof(struct mctp_smbus_extra_params));
+  if (smbus_extra_params == NULL) {
+    syslog(LOG_ERR, "Error: %s out of memory\n", __func__);
+    goto bail;
+  }
+
+  tag |= MCTP_HDR_FLAG_TO;
+  ret = mctp_smbus_send_data(mctp_binding->mctp, dst_eid, tag, smbus, tbuf, tlen, smbus_extra_params);
+  if (ret < 0) {
+    syslog(LOG_ERR, "error: %s send failed\n", __func__);
+    goto bail;
+  }
+
+  //ret = mctp_smbus_recv_data(mctp_binding->mctp, dst_eid, smbus, rbuf);
+  ret = mctp_smbus_recv_data_timeout_raw(mctp_binding->mctp, dst_eid, smbus, rbuf, -1);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: error getting response\n", __func__);
+    goto bail;
+  } else {
+    *rlen = ret;
+    ret = 0;
+  }
+
+bail:
+  obmc_mctp_smbus_free(mctp_binding);
   return ret;
 }
 

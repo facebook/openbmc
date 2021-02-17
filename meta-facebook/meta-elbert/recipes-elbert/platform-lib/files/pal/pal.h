@@ -1,6 +1,3 @@
-#ifndef FILES_PAL_H
-#define FILES_PAL_H
-
 /*
  * Copyright 2020-present Facebook. All Rights Reserved.
  *
@@ -19,9 +16,14 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#ifndef __PAL_H__
+#define __PAL_H__
+
 #include <openbmc/obmc-pal.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/kv.h>
+#include "pal_sensors.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,14 +32,12 @@ extern "C" {
 #include <facebook/elbert_eeprom.h>
 #include <facebook/wedge_eeprom.h>
 #include <openbmc/ipmi.h>
-#include <openbmc/kv.h>
 #include <stdbool.h>
 
 #define ELBERT_PLATFORM_NAME "elbert"
-#define ELBERT_MAX_NUM_SLOTS 8
-
-#define MAX_NODES 2
-#define MAX_NUM_FRUS 14
+#define ELBERT_MAX_NUM_SLOTS 1
+#define MAX_NODES 1
+#define MAX_PIM 8
 
 #define LAST_KEY "last_key"
 #define SCMCPLD_PATH_FMT I2C_SYSFS_DEV_DIR(12-0043)"/%s"
@@ -69,6 +69,7 @@ extern "C" {
 #define ELBERT_BIOS_UTIL "bios_util"
 #define ELBERT_FPGA_UTIL "fpga_util"
 #define ELBERT_BMC_FLASH "flashcp"
+#define ELBERT_PSU_UTIL "psu-util"
 
 // For elbert_eeprom API
 #define BMC_TARGET "BMC"
@@ -80,32 +81,55 @@ extern "C" {
 
 #define GUID_SIZE 16
 #define LARGEST_DEVICE_NAME 128
+#define READ_UNIT_SENSOR_TIMEOUT 5
+#define ELBERT_SMB_P1_BOARD_PATH "/tmp/.smb_p1_board"
+#define KV_PATH "/mnt/data/kv_store/%s"
 
 extern const char pal_fru_list[];
 
 enum {
   FRU_ALL = 0,
-  FRU_CHASSIS = 1,
-  FRU_BMC = 2,
-  FRU_SCM = 3,
-  FRU_SMB = 4,
-  FRU_SMB_EXTRA = 5,
-  FRU_PIM2 = 6,
-  FRU_PIM3 = 7,
-  FRU_PIM4 = 8,
-  FRU_PIM5 = 9,
-  FRU_PIM6 = 10,
-  FRU_PIM7 = 11,
-  FRU_PIM8 = 12,
-  FRU_PIM9 = 13,
-  FRU_PSU1 = 14,
-  FRU_PSU2 = 15,
-  FRU_PSU3 = 16,
-  FRU_PSU4 = 17,
+  FRU_SCM = 1,
+  FRU_SMB = 2,
+  FRU_PIM2 = 3,
+  FRU_PIM3 = 4,
+  FRU_PIM4 = 5,
+  FRU_PIM5 = 6,
+  FRU_PIM6 = 7,
+  FRU_PIM7 = 8,
+  FRU_PIM8 = 9,
+  FRU_PIM9 = 10,
+  FRU_PSU1 = 11,
+  FRU_PSU2 = 12,
+  FRU_PSU3 = 13,
+  FRU_PSU4 = 14,
+  FRU_FAN = 15,
+  MAX_NUM_FRUS = 15,
+  FRU_CHASSIS = 16,
+  FRU_BMC = 17,
+  FRU_SMB_EXTRA = 18,
 };
+
+enum {
+  PIM_TYPE_UNPLUG = 0,
+  PIM_TYPE_16Q = 1,
+  PIM_TYPE_8DDM = 2,
+  PIM_TYPE_NONE = 4,
+};
+
+enum
+{
+  PSU_ACOK_DOWN = 0,
+  PSU_ACOK_UP = 1
+};
+
+int pal_is_psu_ready(uint8_t fru, uint8_t *status);
+int pal_get_pim_type(uint8_t fru, int retry);
+int pal_set_pim_type_to_file(uint8_t fru, char *type);
+int pal_get_pim_type_from_file(uint8_t fru);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-#endif // FILES_PAL_H
+#endif // __PAL_H__

@@ -34,14 +34,57 @@
 #include <time.h>
 #include <unistd.h>
 
+const char pal_fru_list[] = "all, scm, smb, pim2, pim3, pim4, pim5 \
+pim6, pim7, pim8, pim9, psu1, psu2, psu3, psu4, fan";
+
 char* key_list[] = {
     "pwr_server_last_state",
     "sysfw_ver_server",
+    "scm_sensor_health",
+    "smb_sensor_health",
+    "pim2_sensor_health",
+    "pim3_sensor_health",
+    "pim4_sensor_health",
+    "pim5_sensor_health",
+    "pim6_sensor_health",
+    "pim7_sensor_health",
+    "pim8_sensor_health",
+    "pim9_sensor_health",
+    "psu1_sensor_health",
+    "psu2_sensor_health",
+    "psu3_sensor_health",
+    "psu4_sensor_health",
+    "fan_sensor_health",
     "server_boot_order",
     "server_restart_cause",
-    "mb_cpu_ppin",
+    "server_cpu_ppin",
     /* Add more Keys here */
     LAST_KEY /* This is the last key of the list */
+};
+
+char * def_val_list[] = {
+  "on", /* pwr_server_last_state */
+  "0", /* sysfw_ver_server */
+  "1", /* scm_sensor_health */
+  "1", /* smb_sensor_health */
+  "1", /* pim2_sensor_health */
+  "1", /* pim3_sensor_health */
+  "1", /* pim4_sensor_health */
+  "1", /* pim5_sensor_health */
+  "1", /* pim6_sensor_health */
+  "1", /* pim7_sensor_health */
+  "1", /* pim8_sensor_health */
+  "1", /* pim9_sensor_health */
+  "1", /* psu1_sensor_health */
+  "1", /* psu2_sensor_health */
+  "1", /* psu3_sensor_health */
+  "1", /* psu4_sensor_health */
+  "1", /* fan_sensor_health */
+  "0000000", /* server_boot_order */
+  "3", /* server_restart_cause */
+  "0", /* server_cpu_ppin */
+  /* Add more def values for the corresponding keys*/
+  LAST_KEY /* Same as last entry of the key_list */
 };
 
 // Elbert specific Platform Abstraction Layer (PAL) Functions
@@ -91,6 +134,24 @@ int pal_set_key_value(char* key, char* value) {
     return -1;
 
   return kv_set(key, value, 0, KV_FPERSIST);
+}
+
+int
+pal_set_def_key_value(void) {
+  int i, ret;
+  char path[LARGEST_DEVICE_NAME + 1];
+
+  for (i = 0; strncmp(key_list[i], LAST_KEY, strlen(LAST_KEY)) != 0; i++) {
+    snprintf(path, LARGEST_DEVICE_NAME, KV_PATH, key_list[i]);
+    if ((ret = kv_set(key_list[i], def_val_list[i],
+	                  0, KV_FPERSIST | KV_FCREATE)) < 0) {
+#ifdef DEBUG
+      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
+#endif
+    }
+  }
+
+  return 0;
 }
 
 int pal_set_sysfw_ver(uint8_t slot, uint8_t* ver) {
@@ -256,7 +317,7 @@ int pal_set_ppin_info(
     uint8_t req_len,
     uint8_t* res_data,
     uint8_t* res_len) {
-  char key[] = "mb_cpu_ppin";
+  char key[] = "server_cpu_ppin";
   char str[MAX_VALUE_LEN] = {0};
   int i;
   int completion_code = CC_UNSPECIFIED_ERROR;
@@ -436,7 +497,7 @@ bool pal_is_fw_update_ongoing_system(void) {
   if (fp) {
     while (fgets(buf, PS_BUF_SIZE, fp) != NULL) {
       if (strstr(buf, ELBERT_BIOS_UTIL) || strstr(buf, ELBERT_FPGA_UTIL) ||
-          strstr(buf, ELBERT_BMC_FLASH)) {
+          strstr(buf, ELBERT_BMC_FLASH) || strstr(buf, ELBERT_PSU_UTIL)) {
         ret = true;
         break;
       }
@@ -703,6 +764,9 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_PIM7:
     case FRU_PIM8:
     case FRU_PIM9:
+      /* PIM detection is not always accurate because it is based on a soft detection
+       * (via shadow bit bus) and relies on multiboot finishing, so we might see cards
+       * go up and down during bootup/programming. */
       snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PIM_PRSNT);
       snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PIM2 + 2);
       break;
@@ -713,6 +777,12 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PSU_PRSNT);
       snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PSU1 + 1);
       break;
+    case FRU_FAN:
+      // ELBERTTODO: update this once FAN_CARD_STATUS is fixed
+      *status = 1;
+      return 0;
+      //snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, FAN_CARD_STATUS);
+      break;
     default:
       return -1;
     }
@@ -721,7 +791,8 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     return -1;
   }
 
-  if (val == 0x0) {
+  // Only consider present bit.
+  if ((val & 0x1) == 0x0) {
     *status = 0;
   } else {
     *status = 1;
@@ -729,7 +800,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   return 0;
 }
 
-static int
+int
 pal_is_psu_ready(uint8_t fru, uint8_t *status) {
   const char *targets[] = { PSU_INPUT_OK, PSU_OUTPUT_OK };
   char tmp[LARGEST_DEVICE_NAME];
@@ -742,6 +813,7 @@ pal_is_psu_ready(uint8_t fru, uint8_t *status) {
     snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PSU1 + 1);
 
     if (read_device(path, &val)) {
+      syslog(LOG_ERR, "%s cannot get value from %s", __func__, path);
       return -1;
     }
 
@@ -759,7 +831,8 @@ pal_is_psu_ready(uint8_t fru, uint8_t *status) {
 int
 pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   int val;
-  int not_ready = 0x0;
+  int expected_val = 0x0;
+  uint8_t expected_status = 0;
   char tmp[LARGEST_DEVICE_NAME];
   char path[LARGEST_DEVICE_NAME + 1];
   *status = 0;
@@ -774,7 +847,7 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
       break;
     case FRU_SMB:
     case FRU_SMB_EXTRA:
-      snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, SMB_POWERGOOD);
+      snprintf(path, LARGEST_DEVICE_NAME, SCMCPLD_PATH_FMT, SMB_POWERGOOD);
       break;
     case FRU_PIM2:
     case FRU_PIM3:
@@ -786,13 +859,21 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
     case FRU_PIM9:
       snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PIM_FPGA_REV_MAJOR);
       snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PIM2 + 2);
-      not_ready = 0xff;
+      expected_val = 0xff;
       break;
     case FRU_PSU1:
     case FRU_PSU2:
     case FRU_PSU3:
     case FRU_PSU4:
       return pal_is_psu_ready(fru, status);
+    case FRU_FAN:
+      // ELBERTTODO: fix this once FAN_CARD_STATUS is working
+      *status = 1;
+      return 0;
+      /*snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, FAN_CARD_STATUS);
+      expected_val = 0x1;
+      expected_status = 1;*/
+      break;
     default:
       return -1;
     }
@@ -801,10 +882,178 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
     return -1;
   }
 
-  if (val == not_ready) {
-    *status = 0;
+  if (val == expected_val) {
+    *status = expected_status;
   } else {
-    *status = 1;
+    *status = !expected_status;
   }
   return 0;
+}
+
+int
+pal_get_fru_name(uint8_t fru, char *name) {
+  switch(fru) {
+    case FRU_SMB:
+      strcpy(name, "smb");
+      break;
+    case FRU_SCM:
+      strcpy(name, "scm");
+      break;
+    case FRU_PIM2:
+      strcpy(name, "pim2");
+      break;
+    case FRU_PIM3:
+      strcpy(name, "pim3");
+      break;
+    case FRU_PIM4:
+      strcpy(name, "pim4");
+      break;
+    case FRU_PIM5:
+      strcpy(name, "pim5");
+      break;
+    case FRU_PIM6:
+      strcpy(name, "pim6");
+      break;
+    case FRU_PIM7:
+      strcpy(name, "pim7");
+      break;
+    case FRU_PIM8:
+      strcpy(name, "pim8");
+      break;
+    case FRU_PIM9:
+      strcpy(name, "pim9");
+      break;
+    case FRU_PSU1:
+      strcpy(name, "psu1");
+      break;
+    case FRU_PSU2:
+      strcpy(name, "psu2");
+      break;
+    case FRU_PSU3:
+      strcpy(name, "psu3");
+      break;
+    case FRU_PSU4:
+      strcpy(name, "psu4");
+      break;
+    case FRU_FAN:
+      strcpy(name, "fan");
+      break;
+    default:
+      if (fru > MAX_NUM_FRUS)
+        return -1;
+      sprintf(name, "fru%d", fru);
+      break;
+  }
+  return 0;
+}
+
+int
+pal_get_fru_list(char *list) {
+  strcpy(list, pal_fru_list);
+  return 0;
+}
+
+int
+pal_get_fru_id(char *str, uint8_t *fru) {
+  if (!strcmp(str, "all")) {
+    *fru = FRU_ALL;
+  } else if (!strcmp(str, "smb")) {
+    *fru = FRU_SMB;
+  } else if (!strcmp(str, "bmc")) {
+    *fru = FRU_BMC;
+  } else if (!strcmp(str, "scm")) {
+    *fru = FRU_SCM;
+  } else if (!strcmp(str, "pim2")) {
+    *fru = FRU_PIM2;
+  } else if (!strcmp(str, "pim3")) {
+    *fru = FRU_PIM3;
+  } else if (!strcmp(str, "pim4")) {
+    *fru = FRU_PIM4;
+  } else if (!strcmp(str, "pim5")) {
+    *fru = FRU_PIM5;
+  } else if (!strcmp(str, "pim6")) {
+    *fru = FRU_PIM6;
+  } else if (!strcmp(str, "pim7")) {
+    *fru = FRU_PIM7;
+  } else if (!strcmp(str, "pim8")) {
+    *fru = FRU_PIM8;
+  } else if (!strcmp(str, "pim9")) {
+    *fru = FRU_PIM9;
+  } else if (!strcmp(str, "psu1")) {
+    *fru = FRU_PSU1;
+  } else if (!strcmp(str, "psu2")) {
+    *fru = FRU_PSU2;
+  } else if (!strcmp(str, "psu3")) {
+    *fru = FRU_PSU3;
+  } else if (!strcmp(str, "psu4")) {
+    *fru = FRU_PSU4;
+  } else if (!strcmp(str, "fan")) {
+    *fru = FRU_FAN;
+  } else {
+    syslog(LOG_WARNING, "pal_get_fru_id: Wrong fru#%s", str);
+    return -1;
+  }
+  return 0;
+}
+
+int
+pal_get_pim_type(uint8_t fru, int retry) {
+  int ret = -1;
+  char fru_name[16];
+  struct wedge_eeprom_st eeprom;
+
+  pal_get_fru_name(fru, fru_name);
+
+  while ((ret = elbert_eeprom_parse(fru_name, &eeprom)) != 0 && retry--) {
+    msleep(500);
+  }
+
+  if (ret) {
+    return -1;
+  }
+
+  if (strstr(eeprom.fbw_product_number, "88-16CD")) {
+    ret = PIM_TYPE_16Q;
+  } else if (strstr(eeprom.fbw_product_number, "88-8D")) {
+    ret = PIM_TYPE_8DDM;
+  } else {
+    return -1;
+  }
+
+  return ret;
+}
+
+int
+pal_set_pim_type_to_file(uint8_t fru, char *type) {
+  char fru_name[16];
+  char key[MAX_KEY_LEN];
+
+  pal_get_fru_name(fru, fru_name);
+  sprintf(key, "%s_type", fru_name);
+
+  return kv_set(key, type, 0, 0);
+}
+
+int
+pal_get_pim_type_from_file(uint8_t fru) {
+  char fru_name[16];
+  char key[MAX_KEY_LEN];
+  char type[12] = {0};
+
+  pal_get_fru_name(fru, fru_name);
+  sprintf(key, "%s_type", fru_name);
+
+  if (kv_get(key, type, NULL, 0)) {
+    return -1;
+  }
+
+  if (!strncmp(type, "16q", sizeof("16q"))) {
+    return PIM_TYPE_16Q;
+  } else if (!strncmp(type, "8ddm", sizeof("8ddm"))) {
+    return PIM_TYPE_8DDM;
+  } else if (!strncmp(type, "unplug", sizeof("unplug"))) {
+    return PIM_TYPE_UNPLUG;
+  } else {
+    return PIM_TYPE_NONE;
+  }
 }

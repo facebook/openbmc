@@ -44,16 +44,16 @@
 
 // FRU IDs for ELBERT
 #define FRUID_ALL 0
-#define FRUID_CHASSIS 1
-#define FRUID_BMC 2
-#define FRUID_SCM 3
+#define FRUID_CHASSIS 16
+#define FRUID_BMC 17
+#define FRUID_SCM 1
 // Switch card has two EEPROMs:
 // 1. SMB is on the switch card with TH4
 // 2. SMB_EXTRA is on the base card
-#define FRUID_SMB 4
-#define FRUID_SMB_EXTRA 5
-#define FRUID_PIM_MIN 6
-#define FRUID_PIM_MAX 13
+#define FRUID_SMB 2
+#define FRUID_SMB_EXTRA 18
+#define FRUID_PIM_MIN 3
+#define FRUID_PIM_MAX 10
 
 // Target for elbert_eeprom API
 #define ELBERT_CHASSIS "CHASSIS"
@@ -174,7 +174,7 @@ int plat_fruid_data(
   } else if (fru_id == FRUID_SCM) {
     sprintf(target, ELBERT_SCM);
   } else if (FRUID_PIM_MIN <= fru_id && fru_id <= FRUID_PIM_MAX) {
-    sprintf(target, ELBERT_PIM, fru_id - 4);
+    sprintf(target, ELBERT_PIM, fru_id - 1);
   } else if (fru_id == FRUID_SMB) {
     sprintf(target, ELBERT_SMB);
   } else if (fru_id == FRUID_SMB_EXTRA) {

@@ -26,125 +26,144 @@ import syslog
 from rest_utils import DEFAULT_TIMEOUT_SEC
 
 
-# Handler for sensors resource endpoint
+#
+# "SENSORS" REST API handler for Elbert
+#
+# Elbert sensor REST API handler is unique in that,
+# it uses rest-api-1, but still uses sensor-util, instead of sensor.
+# We are forced to use sensor-util, as Elbert has too many resources
+# for BMC to control. If we use conventional way of fetching sensor data
+# (sensors command), it will take too long. So we use sensor-util, which
+# will use the cached value. But the output format of sensor-util is quite
+# different from sensors command. So we need a separate REST API handler
+# for this.
+#
+def get_fru_sensor(fru):
+    result = {}
+    cmd = "/usr/local/bin/sensor-util"
+    proc = subprocess.Popen([cmd, fru], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
+        data = data.decode()
+    except proc.TimeoutError as ex:
+        data = ex.output
+        data = data.decode()
+        proc.kill()
+        syslog.syslog(syslog.LOG_CRIT, "rest_sensor fru {} timeout".format(fru))
+        result["result"] = False
+        result["reason"] = "{} {} timeout".format(cmd, fru)
+
+    result["name"] = fru
+    result["Adapter"] = fru
+    if "not present" in data:
+        result["present"] = False
+        return result
+
+    result["present"] = True
+    for edata in data.split("\n"):
+        # Per each line
+        adata = edata.split()
+        # For each key value pair
+        if len(adata) < 4:
+            continue
+        key = adata[0].strip()
+        value = adata[3].strip()
+        try:
+            value = float(value)
+            result[key] = "{:.2f}".format(value)
+        except Exception:
+            result[key] = "NA"
+    return result
+
+
+def get_scm_sensors():
+    return {"Information": get_fru_sensor("scm"), "Actions": [], "Resources": []}
+
+
+def get_smb_sensors():
+    return {"Information": get_fru_sensor("smb"), "Actions": [], "Resources": []}
+
+
+def get_psu1_sensors():
+    return {"Information": get_fru_sensor("psu1"), "Actions": [], "Resources": []}
+
+
+def get_psu2_sensors():
+    return {"Information": get_fru_sensor("psu2"), "Actions": [], "Resources": []}
+
+
+def get_psu3_sensors():
+    return {"Information": get_fru_sensor("psu3"), "Actions": [], "Resources": []}
+
+
+def get_psu4_sensors():
+    return {"Information": get_fru_sensor("psu4"), "Actions": [], "Resources": []}
+
+
+def get_pim2_sensors():
+    return {"Information": get_fru_sensor("pim2"), "Actions": [], "Resources": []}
+
+
+def get_pim3_sensors():
+    return {"Information": get_fru_sensor("pim3"), "Actions": [], "Resources": []}
+
+
+def get_pim4_sensors():
+    return {"Information": get_fru_sensor("pim4"), "Actions": [], "Resources": []}
+
+
+def get_pim5_sensors():
+    return {"Information": get_fru_sensor("pim5"), "Actions": [], "Resources": []}
+
+
+def get_pim6_sensors():
+    return {"Information": get_fru_sensor("pim6"), "Actions": [], "Resources": []}
+
+
+def get_pim7_sensors():
+    return {"Information": get_fru_sensor("pim7"), "Actions": [], "Resources": []}
+
+
+def get_pim8_sensors():
+    return {"Information": get_fru_sensor("pim8"), "Actions": [], "Resources": []}
+
+
+def get_pim9_sensors():
+    return {"Information": get_fru_sensor("pim9"), "Actions": [], "Resources": []}
+
+
+def get_fan_sensors():
+    return {"Information": get_fru_sensor("fan"), "Actions": [], "Resources": []}
+
+
+def get_all_sensors():
+    result = []
+    # FRUs of /usr/local/bin/sensor-util commands
+    frus = [
+        "scm",
+        "smb",
+        "psu1",
+        "psu2",
+        "psu3",
+        "psu4",
+        "pim2",
+        "pim3",
+        "pim4",
+        "pim5",
+        "pim6",
+        "pim7",
+        "pim8",
+        "pim9",
+        "fan",
+    ]
+
+    for fru in frus:
+        sresult = get_fru_sensor(fru)
+        result.append(sresult)
+
+    fresult = {"Information": result, "Actions": [], "Resources": frus}
+    return fresult
+
+
 def get_sensors():
-    result = []
-    proc = subprocess.Popen(["sensors"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    try:
-        data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
-        data = data.decode()
-    except proc.TimeoutError as ex:
-        data = ex.output
-        data = data.decode()
-
-    data = re.sub("\(.+?\)", "", data)
-    for edata in data.split("\n\n"):
-        adata = edata.split("\n", 1)
-        sresult = {}
-        if len(adata) < 2:
-            break
-        sresult["name"] = adata[0]
-        for sdata in adata[1].split("\n"):
-            tdata = sdata.split(":")
-            if len(tdata) < 2:
-                continue
-            store_key = tdata[0].strip()
-            store_value = tdata[1].strip()
-            if store_value == "N/A":
-                if "PSU" in store_key or "FAN" in store_key:
-                    # Here, unit doesn't matter,
-                    # as it will be chopped out
-                    store_value = "0"
-            sresult[store_key] = store_value
-        result.append(sresult)
-
-    fresult = {"Information": result, "Actions": [], "Resources": []}
-    return fresult
-
-
-# Handler for sensors-full resource endpoint
-
-name_adapter_re = re.compile("(\S+)\nAdapter:\s*(\S.*?)\s*\n")
-label_re = re.compile("(\S.*):\n")
-value_re = re.compile("\s+(\S.*?):\s*(\S.*?)\s*\n")
-skipline_re = re.compile(".*\n?")
-
-
-def get_sensors_full():
-    proc = subprocess.Popen(
-        ["sensors", "-u"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    try:
-        data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
-    except proc.TimeoutError as ex:
-        data = ex.output
-
-    # The output of sensors -u is a series of sections separated
-    # by blank lines.  Each section looks like this:
-    #   coretemp-isa-0000
-    #   Adapter: ISA adapter
-    #   Core 0:
-    #     temp2_input: 40.000
-    #     temp2_max: 110.000
-    #     temp2_crit: 110.000
-    #     temp2_crit_alarm: 0.000
-    #   Core 1:
-    #     temp3_input: 39.000
-    #     temp3_max: 110.000
-    #     temp3_crit: 110.000
-    #     temp3_crit_alarm: 0.000
-    #   ...
-    #
-    # We skip over malformed data silently.
-
-    result = []
-    pos = 0
-    while pos < len(data):
-        if data[pos] == "\n":
-            pos += 1
-            continue
-
-        sresult = {}
-
-        # match the first two lines of a section
-        m = name_adapter_re.match(data, pos)
-        if not m:
-            # bad input, skip a line and try again
-            pos = skipline_re.match(data, pos).end()
-            continue
-        sresult["name"] = m.group(1)
-        sresult["adapter"] = m.group(2)
-        pos = m.end()
-
-        # match the sensors
-        while True:
-            # each starts with a label line
-            m = label_re.match(data, pos)
-            if not m:
-                break
-            label = m.group(1)
-            pos = m.end()
-
-            # the following lines are name-value pairs
-            values = {}
-            while True:
-                m = value_re.match(data, pos)
-                if not m:
-                    break
-                # For Fan and PSU value, change N/A with 0, so
-                # as to trigger alarms
-                store_value = m.group(2)
-                if store_value == "N/A":
-                    if "PSU" in m.group(1) or "FAN" in m.group(2):
-                        # Here, unit doesn't matter,
-                        # as it will be chopped out
-                        store_value = "0 V"
-                values[m.group(1)] = store_value
-                pos = m.end()
-
-            if len(values) > 0:
-                sresult[label] = values
-
-        result.append(sresult)
-    fresult = {"Information": result, "Actions": [], "Resources": []}
-    return fresult
+    return get_all_sensors()

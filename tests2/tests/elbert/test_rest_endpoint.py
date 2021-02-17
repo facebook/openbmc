@@ -54,6 +54,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "mb",
             "piminfo",
             "pimserial",
+            "sensors",
         ]
 
     # "/api/sys/mb"
@@ -77,7 +78,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         ]
 
     # "/api/sys/sensors"
-    def test_endpoint_api_sys_sensors(self):
+    def set_endpoint_sensors_attributes(self):
         cmd = "/usr/local/bin/pim_types.sh"
         pim_types = run_shell_cmd(cmd)
         self.endpoint_sensors_attrb = []

@@ -57,6 +57,7 @@ int bic_get_sensor_reading(uint8_t sensor_num, ipmi_sensor_reading_t *sensor);
 int bic_get_self_test_result(uint8_t *self_test_result);
 int bic_get_sys_guid(uint8_t slot_id, uint8_t *guid, uint8_t guid_size);
 int bic_set_sys_guid(uint8_t slot_id, uint8_t *guid, uint8_t guid_size);
+int bic_get_80port_record(uint16_t max_len, uint8_t *rbuf, uint8_t *rlen);
 
 #ifdef __cplusplus
 } // extern "C"

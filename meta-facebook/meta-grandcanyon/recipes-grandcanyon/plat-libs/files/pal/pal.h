@@ -223,6 +223,8 @@ void pal_specific_plat_fan_check(bool status);
 int pal_get_uic_board_id(uint8_t *board_id);
 int pal_post_display(uint8_t status);
 int pal_get_current_led_post_code(uint8_t *post_code);
+int pal_get_80port_record(uint8_t slot_id, uint8_t *res_data, size_t max_len, size_t *res_len);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

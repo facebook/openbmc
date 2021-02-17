@@ -36,6 +36,7 @@
 #include "bic_xfer.h"
 
 #define MAX_VER_STR_LEN 80
+#define MAX_POSTCODE_LEN 256
 
 //FRU
 #define FRUID_READ_COUNT_MAX 0x20
@@ -63,6 +64,11 @@ typedef struct _bic_get_fw_ver_resp {
   uint8_t IANA[SIZE_IANA_ID];
   uint8_t ver_response[MAX_BIC_VER_STR_LEN];
 } bic_get_fw_ver_resp;
+
+typedef struct {
+  uint8_t IANA[SIZE_IANA_ID];
+  uint8_t postcode_response[MAX_POSTCODE_LEN];
+} bic_get_post_code_resp;
 
 int
 bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
@@ -761,6 +767,38 @@ bic_set_sys_guid(uint8_t slot_id, uint8_t *guid, uint8_t guid_size) {
     syslog(LOG_ERR, "%s: ret: %d\n", __func__, ret);
     
     ret = BIC_STATUS_FAILURE;
+  }
+
+  return ret;
+}
+
+// OEM - Get Post Code buffer
+// Netfn: 0x38, Cmd: 0x12
+int
+bic_get_80port_record(uint16_t max_len, uint8_t *rbuf, uint8_t *rlen) {
+  int ret = 0;
+  bic_get_post_code_resp postcode_resp;
+
+  if ((rbuf == NULL) || (rlen == NULL)) {
+    syslog(LOG_WARNING, "%s Cannot get the postcode buffer from server because of NULL parameters of response buffer and response length", __func__);
+    return -1;
+  }
+
+  memset(&postcode_resp, 0, sizeof(postcode_resp));
+
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_BUF, (uint8_t *)&IANA_ID, SIZE_IANA_ID, (uint8_t *)&postcode_resp, rlen);
+
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s Cannot get the postcode buffer from server", __func__);
+  } else if (*rlen < SIZE_IANA_ID) {
+    syslog(LOG_WARNING, "%s Cannot get the postcode buffer from server because the response length: %d should greater or equal to length: %d.", __func__, *rlen, SIZE_IANA_ID);
+    return -1;
+  } else if ((*rlen - SIZE_IANA_ID) > max_len) {
+    syslog(LOG_WARNING, "%s Cannot get the postcode buffer from server because the response length: %d is larger than max length: %d.", __func__, (*rlen - SIZE_IANA_ID), max_len);
+    return -1;
+  } else {
+    *rlen -= SIZE_IANA_ID;
+    memcpy(rbuf, &(postcode_resp.postcode_response), MIN(*rlen, sizeof(postcode_resp.postcode_response)));
   }
 
   return ret;

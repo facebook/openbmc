@@ -1638,3 +1638,52 @@ pal_get_uic_board_id(uint8_t *board_id) {
 
   return 0;
 }
+
+int
+pal_get_80port_record(uint8_t slot_id, uint8_t *res_data, size_t max_len, size_t *res_len) {
+  int ret = 0;
+  uint8_t present_status = FRU_PRESENT;
+  uint8_t power_status = SERVER_12V_ON;
+  uint8_t len = 0;
+
+  if ((res_data == NULL) || (res_len == NULL)) {
+    syslog(LOG_WARNING, "%s: Failed to get 80 port record because of the NULL parameters.", __func__);
+    ret = PAL_ENOTREADY;
+    goto error_exit;
+  }
+
+  ret = pal_is_slot_server(slot_id);
+  if (ret == 0) {
+    ret = PAL_ENOTSUP;
+    syslog(LOG_WARNING, "%s: FRU: %d is not server.", __func__, slot_id);
+    goto error_exit;
+  }
+
+  ret = pal_is_fru_prsnt(slot_id, &present_status);
+  if ((ret < 0) || (present_status == FRU_ABSENT)) {
+    ret = PAL_ENOTREADY;
+    syslog(LOG_WARNING, "%s: Failed to get 80 port record because the server is not present.", __func__);
+    goto error_exit;
+  }
+
+  ret = pal_get_server_12v_power(&power_status);
+  if((ret < 0) || (power_status == SERVER_12V_OFF)) {
+    ret = PAL_ENOTREADY;
+    syslog(LOG_WARNING, "%s: Failed to get 80 port record because the server is not 12V On.", __func__);
+    goto error_exit;
+  }
+
+  // Send command to get 80 port record from Bridge IC
+  ret = bic_get_80port_record((uint16_t)max_len, res_data, &len);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: Failed to get 80 port record from Bridge IC.", __func__);
+    ret = PAL_ENOTREADY;
+    goto error_exit;  
+  } else {
+    *res_len = (size_t)len;
+  }
+
+error_exit:
+  return ret;
+}
+

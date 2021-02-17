@@ -46,4 +46,6 @@ IMAGE_INSTALL += " \
   crashdump \
   me-util \
   throttle-util \
+  bios-util \
+  ipmi-util \
   "

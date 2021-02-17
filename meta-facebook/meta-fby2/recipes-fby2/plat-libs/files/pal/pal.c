@@ -111,7 +111,7 @@
 #define HOTSERVICE_PID  "/tmp/hotservice_reinit.pid"
 #define HOTSERVICE_BLOCK "/tmp/slot%d_reinit_block"
 
-#define FRUID_SIZE        256
+#define FRUID_SIZE        512
 #if defined(CONFIG_FBY2_KERNEL)
   #define EEPROM_DC       "/sys/bus/i2c/devices/i2c-%d/%d-0051/eeprom"
 #else

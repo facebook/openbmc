@@ -63,7 +63,7 @@
 #define FRU_ID_NIC 2
 #define FRU_ID_PAIR_DEV 3
 
-#define FRUID_SIZE        256
+#define FRUID_SIZE        512
 
 
 /*

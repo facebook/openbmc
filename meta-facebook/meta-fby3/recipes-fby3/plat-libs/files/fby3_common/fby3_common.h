@@ -77,8 +77,10 @@ extern const char *slot_usage;
 #define SEL_SYS_EVENT_RECORD 0x2
 #define SEL_IPMI_V2_REV      0x4
 #define SEL_SNR_TYPE_FAN     0x4
+#define SEL_SNR_TYPE_FW_STAT 0xF
 
 #define SYS_FAN_EVENT        0x14
+#define SYS_BB_FW_UPDATE     0x15
 
 #define MAX_BYPASS_DATA_LEN  256
 #define IANA_LEN 3
@@ -236,6 +238,11 @@ typedef struct {
 } BYPASS_MSG;
 
 typedef struct {
+  uint8_t iana_id[IANA_LEN];
+  uint8_t bypass_intf;
+} BYPASS_MSG_HEADER;
+
+typedef struct {
   uint8_t netfn;
   uint8_t cmd;
   uint8_t record_id[SEL_RECORD_ID_LEN];
@@ -259,6 +266,11 @@ typedef struct {
   uint8_t slot;
   uint8_t mode;
 } FAN_SERVICE_EVENT;
+
+typedef struct {
+  uint8_t type;
+  uint8_t component;
+} BB_FW_UPDATE_EVENT;
 
 int fby3_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val);
 int fby3_common_is_bic_ready(uint8_t fru, uint8_t *val);

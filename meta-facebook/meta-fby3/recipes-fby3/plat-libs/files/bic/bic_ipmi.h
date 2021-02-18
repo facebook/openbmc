@@ -100,6 +100,8 @@ uint8_t get_gpv3_bus_number(uint8_t dev_id);
 uint8_t get_gpv3_channel_number(uint8_t dev_id);
 int bic_notify_fan_mode(int mode);
 int bic_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config);
+int bic_set_bb_fw_update_ongoing(uint8_t component, uint8_t option);
+int bic_check_bb_fw_update_ongoing();
 #ifdef __cplusplus
 } // extern "C"
 #endif

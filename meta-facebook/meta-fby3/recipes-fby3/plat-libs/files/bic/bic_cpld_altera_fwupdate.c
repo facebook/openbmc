@@ -479,83 +479,6 @@ _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8
   return ret;
 }
 
-static int
-_cpld_update_flag(uint8_t slot_id, uint8_t data, uint8_t read_cnt, uint8_t *rbuf) {
-  int ret = BIC_STATUS_SUCCESS;
-  int retries = MAX_RETRY;
-  uint8_t txbuf[32] = {0};
-  uint8_t rxbuf[32] = {0};
-  uint8_t txlen = 0;
-  uint8_t rxlen = 0;
-
-  txbuf[0] = CPLD_BB_BUS;
-  txbuf[1] = CPLD_FLAG_REG_ADDR;
-  txbuf[2] = read_cnt;
-  txbuf[3] = 0x0D;
-  //only do one action at the time.
-  //use read_cnt to check which actions should be performed.
-  if ( read_cnt > 0 ) {
-    txlen = 4;
-  } else {
-    txbuf[4] = data;
-    txlen = 5;
-  }
-
-  do {
-    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, txbuf, txlen, rxbuf, &rxlen, BB_BIC_INTF);
-    if ( ret < 0 ) {
-      sleep(1);
-    } else break;
-  } while ( retries-- > 0 );
-
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to set/get the flag of CPLD", __func__);
-  } else {
-    if ( read_cnt > 0 ) {
-      *rbuf = rxbuf[0];
-    }
-  }
-
-  return ret;
-}
-
-static int
-_set_cpld_fw_update_ongoing(uint8_t slot_id, bool set_ongoing) {
-  uint8_t data = 0;
-  uint8_t read_cnt = 0;
-  int ret = BIC_STATUS_SUCCESS;
-
-  if ( set_ongoing == true ) {
-    data = 0x1; //1h means the f/w update is ongoing
-  } else {
-    data = 0x0; //0h means the f/w update is completed or nothing
-  }
-
-  ret = _cpld_update_flag(slot_id, data, read_cnt, NULL);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to set the flag of CPLD", __func__);
-  }
-
-  return ret;
-}
-
-static int
-_get_cpld_fw_update_ongoing(uint8_t slot_id, bool *is_ongoing) {
-  uint8_t read_cnt = 0x1; //read 1 back
-  uint8_t rxbuf = 0x0;
-  int ret = BIC_STATUS_SUCCESS;
-
-  ret = _cpld_update_flag(slot_id, 0x0, read_cnt, &rxbuf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to get the flag of CPLD", __func__);
-  } else {
-    //1h means the f/w update is ongoing
-    *is_ongoing = (rxbuf == 0x1)?true:false;
-  }
-
-  return ret;
-}
-
 int 
 update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force) {
 #define MAX10_RPD_SIZE 0x5C000
@@ -570,40 +493,20 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
   int fd = 0;
   int rpd_filesize = 0;
   int read_bytes = 0;
-  bool is_ongoing = true;
 
   //Two BMCs are designed in Config C.
   //They can access the CPLD of the baseboard at the same time.
   //This means the CPLD can be updated in parallel.
-  //The update is unacceptable in Config C. Therefore, the CPLD provides a register.
-  //The register will be set by BMC when one of the two want to update the CPLD.
-  //So, the other will know the CPLD is updating by reading the register.
-  //If the status of CPLD is 1h, it means the CPLD update is ongoing. Otherwise, it should be 0.
+  //The update is unacceptable in Config C. Therefore, the BMC notify another BMC when update start.
+  //Before the update, BMC check twice if the update flag is set.
   //Since the update don't start, return ret if one of them is failure.
   if ( intf == BB_BIC_INTF && force != FORCE_UPDATE_SET) {
-    //generate random numbers from 1 to 9
-    srand(time(NULL));
-    int interval = (rand()%10);
-    if ( interval == 0 ) interval = 1;
-
-    //to avoid the case that two BMCs run the update command at the same time.
-    //use usleep to delay the command
-    usleep(interval * 100 * 1000); //sleep 100~900 ms
-
-    ret = _get_cpld_fw_update_ongoing(slot_id, &is_ongoing);
-    if ( ret < 0 ) {
-      return ret;
+    if (bic_check_bb_fw_update_ongoing() != 0) {
+      return -1;
     }
-
-    if ( is_ongoing == true ) {
-      printf("The component is updating!\n");
-      ret = BIC_STATUS_FAILURE;
-      return ret;
-    }
-
-    ret = _set_cpld_fw_update_ongoing(slot_id, true);
-    if ( ret < 0 ) {
-      return ret;
+    if (bic_set_bb_fw_update_ongoing(FW_BB_CPLD, SEL_ASSERT) != 0) {
+      printf("Failed to set firmware update ongoing\n");
+      return -1;
     }
   }
 
@@ -715,7 +618,12 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
   printf("\nElapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
 
 error_exit:
-  if ( intf == BB_BIC_INTF ) _set_cpld_fw_update_ongoing(slot_id, false);
+  if ( intf == BB_BIC_INTF ) {
+    if (bic_set_bb_fw_update_ongoing(FW_BB_CPLD, SEL_DEASSERT) != 0) {
+      printf("Failed to notify firmware update finish\n");
+      ret = -1;
+    }
+  }
   if ( fd > 0 ) close(fd);
   if ( rpd_file != NULL ) free(rpd_file);
 

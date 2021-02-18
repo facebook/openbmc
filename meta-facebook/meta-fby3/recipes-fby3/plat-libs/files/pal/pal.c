@@ -102,6 +102,8 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define IPMI_GET_VER_MAX_COMP 9
 #define MAX_FW_VER_LEN        32  //include the string terminal 
 
+#define MAX_COMPONENT_LEN 32 //include the string terminal 
+
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
@@ -1831,12 +1833,14 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_PESW_ERR       = 0x12,
     SYS_2OU_VR_FAULT   = 0x13,
     SYS_FAN_SERVICE    = 0x14,
+    SYS_BB_FW_EVENT    = 0x15,
     E1S_1OU_HSC_PWR_ALERT = 0x82,
   };
   uint8_t event = event_data[0];
   char prsnt_str[32] = {0};
   char log_msg[MAX_ERR_LOG_SIZE] = {0};
   char fan_mode_str[FAN_MODE_STR_LEN] = {0};
+  char component_str[MAX_COMPONENT_LEN] = {0};
 
   switch (event) {
     case SYS_THERM_TRIP:
@@ -1913,6 +1917,19 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
         snprintf(log_msg, sizeof(log_msg), "Fan mode changed to %s mode by unknown slot", fan_mode_str);
       }
       
+      strcat(error_log, log_msg);
+      break;
+    case SYS_BB_FW_EVENT:
+      if (event_data[1] == FW_BB_BIC) {
+        strncpy(component_str, "BIC", sizeof(component_str));
+      } else if (event_data[1] == FW_BB_BIC_BOOTLOADER) {
+        strncpy(component_str, "BIC bootloader", sizeof(component_str));
+      } else if (event_data[1] == FW_BB_CPLD) {
+        strncpy(component_str, "CPLD", sizeof(component_str));
+      } else {
+        strncpy(component_str, "unknown component", sizeof(component_str));
+      }
+      snprintf(log_msg, sizeof(log_msg), "Baseboard firmware %s update is ongoing", component_str);
       strcat(error_log, log_msg);
       break;
     case E1S_1OU_HSC_PWR_ALERT:
@@ -2402,7 +2419,25 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
         }
         // start/stop fscd according fan mode change
         fby3_common_fscd_ctrl(event_data[DATA_INDEX_2]);
+      } else if (event_data[3] == SYS_BB_FW_UPDATE) {
+        if (event_data[2] == SEL_ASSERT) {
+          if (event_data[4] == FW_BB_BIC) {
+          kv_set("bb_fw_update", "bic", 0, 0);
+          } else if (event_data[4] == FW_BB_BIC_BOOTLOADER) {
+            kv_set("bb_fw_update", "bootloader", 0, 0);
+          } else if (event_data[4] == FW_BB_CPLD) {
+            kv_set("bb_fw_update", "cpld", 0, 0);
+          } else {
+            kv_set("bb_fw_update", "unknown", 0, 0);
+          }
+        } else if (event_data[2] == SEL_DEASSERT) {
+          // if BB fw update complete, delete the key
+          kv_del("bb_fw_update", 0);
+        }
+        
+        return PAL_EOK;
       }
+      break;
   }
 
   if ( is_cri_sel == true ) {

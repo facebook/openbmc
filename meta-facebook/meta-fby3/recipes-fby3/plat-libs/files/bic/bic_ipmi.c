@@ -67,6 +67,8 @@ typedef struct _sdr_rec_hdr_t {
 
 #define BIC_SENSOR_SYSTEM_STATUS  0x46
 
+#define BB_FW_UPDATE_STAT_FILE "/tmp/cache_store/bb_fw_update"
+
 enum {
   M2_PWR_OFF = 0x00,
   M2_PWR_ON  = 0x01,
@@ -1852,5 +1854,130 @@ bic_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
   }
 
   (*pcie_config) = (rbuf[3] & 0x0f);
+  return 0;
+}
+
+// For class 2 system, BMC need to get MB index from BB BIC
+int
+bic_get_mb_index(uint8_t *index) {
+  GET_MB_INDEX_RESP resp = {0};
+  uint8_t rlen = 0;
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
+
+  if (index == NULL) {
+    syslog(LOG_WARNING, "%s(): invalid index parameter", __func__);
+    return -1;
+  }
+  memset(tbuf, 0, sizeof(tbuf));
+  memset(&resp, 0, sizeof(resp));
+  if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_GET_MB_INDEX, tbuf, 0, (uint8_t*) &resp, &rlen, BB_BIC_INTF) < 0) {
+    syslog(LOG_WARNING, "%s(): fail to get MB index", __func__);
+    return -1;
+  }
+  if (rlen == sizeof(GET_MB_INDEX_RESP)) {
+    *index = resp.index;
+  } else {
+    syslog(LOG_WARNING, "%s(): wrong response length (%d), while getting MB index, expected = %d", 
+          __func__, rlen, sizeof(GET_MB_INDEX_RESP));
+    return -1;
+  }
+
+  return 0;
+}
+
+// For class 2 system, bypass command to another slot BMC
+int
+bic_bypass_to_another_bmc(uint8_t* data, uint8_t len) {
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  char iana_id[IANA_LEN] = {0x9c, 0x9c, 0x0};
+  BYPASS_MSG req = {0};
+
+  if (data == NULL) {
+    syslog(LOG_WARNING, "%s(): NULL bypass data", __func__);
+    return -1;
+  }
+
+  memset(&req, 0, sizeof(req));
+  memset(rbuf, 0, sizeof(rbuf));
+
+  memcpy(req.iana_id, iana_id, MIN(sizeof(req.iana_id), sizeof(iana_id)));
+  req.bypass_intf = BMC_INTF;
+  memcpy(req.bypass_data, data, MIN(sizeof(req.bypass_data), len));
+
+  tlen = sizeof(BYPASS_MSG_HEADER) + len;
+  if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, (uint8_t*) &req, tlen, rbuf, &rlen, BB_BIC_INTF) < 0) {
+    syslog(LOG_WARNING, "%s(): fail to bypass command to another BMC", __func__);
+    return -1;
+  }
+
+  return 0;
+}
+
+// For class 2 system, notify another BMC the BB fw is updating
+int
+bic_set_bb_fw_update_ongoing(uint8_t component, uint8_t option) {
+  IPMI_SEL_MSG sel = {0};
+  BB_FW_UPDATE_EVENT update_event = {0};
+  int ret = 0;
+
+  memset(&sel, 0, sizeof(sel));
+  memset(&update_event, 0, sizeof(update_event));
+
+  sel.netfn = NETFN_STORAGE_REQ;
+  sel.cmd = CMD_STORAGE_ADD_SEL;
+  sel.record_type = SEL_SYS_EVENT_RECORD;
+  sel.slave_addr = BRIDGE_SLAVE_ADDR << 1; // 8 bit
+  sel.rev = SEL_IPMI_V2_REV;
+  sel.snr_type = SEL_SNR_TYPE_FW_STAT;
+  sel.snr_num = BIC_SENSOR_SYSTEM_STATUS;
+  sel.event_dir_type = option;
+  update_event.type = SYS_BB_FW_UPDATE;
+  update_event.component = component;
+  memcpy(sel.event_data, (uint8_t*) &update_event, MIN(sizeof(sel.event_data), sizeof(update_event)));
+  ret = bic_bypass_to_another_bmc((uint8_t*)&sel, sizeof(sel));
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): failed to set update flag to another bmc", __func__);
+  }
+
+  return ret;
+}
+
+// For class 2 system, check BB fw update status to avoid updating at the same time
+int
+bic_check_bb_fw_update_ongoing() {
+  uint8_t mb_index = 0;
+  int ret = 0;
+  char update_stat[MAX_VALUE_LEN] = {0};
+  
+  // if key exist, BB fw is updating by another slot
+  if (access(BB_FW_UPDATE_STAT_FILE, F_OK) == 0) {
+    if (kv_get("bb_fw_update", update_stat, NULL, 0) != 0) {
+      printf("Fail to get BB firmware update status\n");
+      strncpy(update_stat, "unknown", sizeof(update_stat));
+    }    
+    printf("BB firmware: %s update is ongoing\n", update_stat);
+    return -1;
+  }
+
+  //to avoid the case that two BMCs run the update command at the same time.
+  //delay the checking time according to MB index
+  ret = bic_get_mb_index(&mb_index);
+  if (ret < 0) {
+    printf("Fail to get MB index\n");
+    return -1;
+  }
+  sleep(mb_index);
+
+  if (access(BB_FW_UPDATE_STAT_FILE, F_OK) == 0) {
+    if (kv_get("bb_fw_update", update_stat, NULL, 0) != 0) {
+      printf("Fail to get BB firmware update status\n");
+      strncpy(update_stat, "unknown", sizeof(update_stat));
+    }    
+    printf("BB firmware: %s update is ongoing\n", update_stat);
+    return -1;
+  }
+
   return 0;
 }

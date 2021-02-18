@@ -617,13 +617,28 @@ exit:
 
 static int
 update_remote_bic(uint8_t slot_id, uint8_t intf, int fd, int file_size) {
-  int ret;
+  int ret = 0;
   uint8_t is_fail = 0;
   const uint8_t bytes_per_read = 244;
   uint8_t bic_read   = 0xff;
   uint8_t bic_write  = 0xff;
   uint8_t bic_update = 0xff;
   uint8_t bic_i2c    = 0xff;
+  uint8_t bmc_location = 0;
+
+  if (fby3_common_get_bmc_location(&bmc_location) != 0) {
+    printf("Cannot get the location of BMC");
+    return -1;
+  }
+  if ((intf == BB_BIC_INTF) && (bmc_location == NIC_BMC)) {
+    if (bic_check_bb_fw_update_ongoing() != 0) {
+      return -1;
+    }
+    if (bic_set_bb_fw_update_ongoing(FW_BB_BIC, SEL_ASSERT) != 0) {
+      printf("Failed to set firmware update ongoing\n");
+      return -1;
+    }
+  }
 
   switch (intf) {
     case FEXP_BIC_INTF:
@@ -713,6 +728,12 @@ exit:
   ret = setup_remote_bic_i2c_speed(slot_id, I2C_1M, bic_i2c);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "Set the speed of the remote bic to 1M, Fail, ret = %d\n", ret);
+  }
+
+  if ((intf == BB_BIC_INTF) && (bmc_location == NIC_BMC)) {
+    if (bic_set_bb_fw_update_ongoing(FW_BB_BIC, SEL_DEASSERT) != 0) {
+      syslog(LOG_WARNING, "Failed to notify BB firmware complete");
+    }
   }
 
   if ( ret == 0 ) ret = is_fail;
@@ -972,6 +993,22 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, in
   uint32_t dsize = 0;
   int ret = -1, retry = IPMB_BIC_RETRY;
   uint8_t self_test_result[2] = {0};
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return -1;
+  }
+  if ((intf == BB_BIC_INTF) && (bmc_location == NIC_BMC)) {
+    if (bic_check_bb_fw_update_ongoing() != 0) {
+      return -1;
+    }
+    if (bic_set_bb_fw_update_ongoing(FW_BB_BIC_BOOTLOADER, SEL_ASSERT) != 0) {
+      printf("Failed to set firmware update ongoing\n");
+      return -1;
+    }
+  }
 
   dsize = file_size / 20;
 
@@ -1013,6 +1050,13 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, in
       break;
     } else {
       retry--;
+    }
+  }
+
+  if ((intf == BB_BIC_INTF) && (bmc_location == NIC_BMC)) {
+    if (bic_set_bb_fw_update_ongoing(FW_BB_BIC_BOOTLOADER, SEL_DEASSERT) != 0) {
+      printf("Failed to notify firmware update finish\n");
+      ret = -1;
     }
   }
 

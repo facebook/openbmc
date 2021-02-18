@@ -25,6 +25,9 @@ import shutil
 import subprocess
 import time
 import traceback
+import syslog
+import sys
+import kv
 
 # Ensure at least this much free space is always present.
 PERSISTENT_STORE_HEADROOM = 1024 * 100
@@ -32,6 +35,9 @@ DUMP_DIR = "/tmp/obmc-dump-%d" % (int(time.time()))
 
 DUMP_PATHS = ["/var/log", "/tmp/cache_store", "/mnt/data/kv_store"]
 DUMP_COMMANDS = [["fw-util", "all", "--version"], ["ifconfig"]]
+
+FPERSIST = 1
+STAT_KEY = "obmc_dump_stat"
 
 
 def copy(path):
@@ -80,6 +86,7 @@ def cleanup_persistent_stores(stores, def_yes=False):
             ):
                 print("Removing: " + f)
                 os.remove(f)
+                syslog.syslog(syslog.LOG_CRIT, "Previous log " + f + " removed")
 
 
 def obmc_dump_cleanup(def_yes=False):
@@ -108,6 +115,9 @@ def obmc_dump_persist(archive):
 
 
 def obmc_dump():
+    fail = False
+    kv.kv_set(STAT_KEY, "Ongoing", FPERSIST)
+
     os.mkdir(DUMP_DIR)
     errors = ""
     for p in DUMP_PATHS:
@@ -118,6 +128,7 @@ def obmc_dump():
             command_output(c)
         except Exception:
             errors += traceback.format_exc()
+            fail = True
 
     with open(DUMP_DIR + "/obmc_dump_errors.txt", "w") as f:
         f.write(errors + "\n")
@@ -129,6 +140,10 @@ def obmc_dump():
     archive = obmc_dump_persist(archive)
     sz = os.path.getsize(archive)
     print("Generated:", archive, "of size", sz)
+    if fail == False:
+        kv.kv_set(STAT_KEY, "Done", FPERSIST)
+    else:
+        kv.kv_set(STAT_KEY, "Fail", FPERSIST)
     return archive
 
 
@@ -137,6 +152,21 @@ if __name__ == "__main__":
     parser.add_argument(
         "-y", "--yes", dest="yes", action="store_true", help="Answer Yes to all prompts"
     )
+    parser.add_argument(
+        "-s", "--get_status", dest="get_status", action="store_true", help="Get previous dump status"
+    )
     args = parser.parse_args()
+    try:
+        status = kv.kv_get(STAT_KEY, FPERSIST)
+    except:
+        status = "Unknown"
+
+    if args.get_status:
+        print(status) 
+        sys.exit()
+    if status == "Ongoing":
+        print("Another obmc-dump is running!")
+        sys.exit()
+
     obmc_dump_cleanup(args.yes)
     obmc_dump()

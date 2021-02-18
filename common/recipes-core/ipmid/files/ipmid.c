@@ -58,6 +58,8 @@
 //#define CHASSIS_SET_BOOT_OPTION_SUPPORT
 #define CONFIG_FBTP 1
 
+#define OBMC_DUMP_STAT_KEY "obmc_dump_stat"
+
 static unsigned char IsTimerStart[MAX_NODES] = {0};
 
 static unsigned char bmc_global_enable_setting[] = {0x0c,0x0c,0x0c,0x0c};
@@ -146,6 +148,14 @@ static char *drive_info_key[] =
   "quantity",
   "type",
   "wwn"
+};
+
+// obmc-dump status
+enum {
+  DUMP_DONE = 0x0,  
+  DUMP_FAIL = 0x1,
+  DUMP_NEVER = 0x2,
+  DUMP_ONGOING = 0x3,
 };
 
 // TODO: Based on performance testing results, might need fine grained locks
@@ -662,6 +672,9 @@ app_manufacturing_test_on (unsigned char *request, unsigned char req_len,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
+  char stat_buf[10] = {0};
+  size_t len = 0;
+  bool is_first_exc = false;
 
   res->cc = CC_SUCCESS;
 
@@ -672,13 +685,35 @@ app_manufacturing_test_on (unsigned char *request, unsigned char req_len,
     }
   } else if ((!memcmp(req->data, "obmc-dump", strlen("obmc-dump"))) &&
       (req_len - ((void*)req->data - (void*)req)) == strlen("obmc-dump")) {
-    if (system("/usr/local/bin/obmc-dump") != 0) {
+    if (kv_get(OBMC_DUMP_STAT_KEY, stat_buf, &len, KV_FPERSIST) < 0) {
+      is_first_exc = true;
+    }
+    // If obmc-dump is ongiong, skip the request
+    if ((is_first_exc == true) || strncmp(stat_buf, "Ongoing", strlen("Ongoing")) != 0) { 
+      if (system("/usr/local/bin/obmc-dump -y &") != 0) {
+        res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+      }
+    }
+  } else if ((!memcmp(req->data, "obmc-dump -s", strlen("obmc-dump -s"))) &&
+      (req_len - ((void*)req->data - (void*)req)) == strlen("obmc-dump -s")) {
+    if (kv_get(OBMC_DUMP_STAT_KEY, stat_buf, &len, KV_FPERSIST) < 0) {
+      *data++ = DUMP_NEVER;
+      goto exit;
+    }
+    if (strncmp(stat_buf, "Ongoing", strlen("Ongoing")) == 0) {
+      *data++ = DUMP_ONGOING;
+    } else if (strncmp(stat_buf, "Done", strlen("Done")) == 0) {
+      *data++ = DUMP_DONE;
+    } else if (strncmp(stat_buf, "Fail", strlen("Fail")) == 0) {
+      *data++ = DUMP_FAIL;
+    } else {
       res->cc = CC_UNSPECIFIED_ERROR;
     }
   } else {
     res->cc = CC_INVALID_PARAM;
   }
 
+exit:
   *res_len = data - &res->data[0];
 }
 

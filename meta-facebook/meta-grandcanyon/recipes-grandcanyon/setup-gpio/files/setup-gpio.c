@@ -26,8 +26,10 @@
 #include <openbmc/libgpio.h>
 #include <facebook/fbgc_gpio.h>
 
-#define SCU_BASE    	0x1E6E2000
-#define REG_SCU61C   	0x61C
+#define SCU_BASE	0x1E6E2000
+#define REG_SCU61C	0x61C
+#define REG_SCU630	0x630
+#define REG_SCU634	0x634
 
 int setup_gpio_with_value(const char *chip_name, const char *shadow_name, const char *pin_name, int offset, gpio_direction_t direction, gpio_value_t value)
 {
@@ -98,11 +100,27 @@ main(int argc, char **argv) {
 	printf("Set up GPIO-expander GPIO pins...\n");
 	setup_gpios_by_table(GPIO_CHIP_I2C_IO_EXP, gpio_expander_gpio_table);
 
-	// Because GPIO high value of debug card is not enough high, internal pull-down will cause it can't change from low to high.
-	// Disable internal pull-down of debug card GPIO (GPION0-N5: SCU61C[8:13]).
+	/*
+		Disable the below BMC GPIO internal pull-down to increase voltage level to get more margin
+		1. DEBUG_GPIO_BMC_1/2/3/4/5/6 (GPION0-N5: SCU61C[8:13])
+		2. LED_POSTCODE_0/1/2/3/4/5/6/7 (GPIOO7, GPIOP0-P6: SCU61C[23:30])
+		3. FM_BMC_TPM_PRSNT_N (GPIOS2: SCU630[18])
+		4. BMC_LED_PWR_BTN_EN_R (GPIOV6: SCU634[14])
+	*/
+	// DEBUG_GPIO_BMC_1/2/3/4/5/6 and LED_POSTCODE_0/1/2/3/4/5/6/7
 	phymem_get_dword(SCU_BASE, REG_SCU61C, &reg_value);
-	reg_value = reg_value | 0x00003F00;
+	reg_value = reg_value | 0x7F803F00;
 	phymem_set_dword(SCU_BASE, REG_SCU61C, reg_value);
+
+	// FM_BMC_TPM_PRSNT_N
+	phymem_get_dword(SCU_BASE, REG_SCU630, &reg_value);
+	reg_value = reg_value | 0x00040000;
+	phymem_set_dword(SCU_BASE, REG_SCU630, reg_value);
+
+	// BMC_LED_PWR_BTN_EN_R
+	phymem_get_dword(SCU_BASE, REG_SCU634, &reg_value);
+	reg_value = reg_value | 0x00004000;
+	phymem_set_dword(SCU_BASE, REG_SCU634, reg_value);
 
 	printf("done.\n");
 

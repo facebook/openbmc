@@ -27,6 +27,15 @@
 # Short-Description: Set fan speed
 ### END INIT INFO
 
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
+
+if ! wedge_is_bmc_personality; then
+    echo "uServer is not in BMC personality. Skipping all fan control"
+    return
+fi
 
 echo "Setup fan speed..."
 /usr/local/bin/set_fan_speed.sh 30

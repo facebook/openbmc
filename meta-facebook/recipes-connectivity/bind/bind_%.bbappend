@@ -32,7 +32,7 @@ do_install_append() {
     fi
 
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
-        /bin/systemctl --root=${D} mask named.service
+        systemctl --root=${D} mask named.service
     fi
 }
 

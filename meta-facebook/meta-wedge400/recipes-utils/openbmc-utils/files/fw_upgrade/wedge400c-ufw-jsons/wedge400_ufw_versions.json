@@ -7,9 +7,9 @@
     },
     "bios" : {
         "filename"    : "bios.bin",
-        "version" : "XG1_3A09",
+        "version" : "XG1_3A10",
         "hash"    : "sha1sum",
-        "hash_value" : "bc3f32acb930a07be2d2e4c5fa8cf15113ff4ef8"
+        "hash_value" : "551423a4e9c12726750ea6c7c91b74ab1c3b044d"
     },
     "fcm" : {
         "filename"    : "fcm_cpld.jed",

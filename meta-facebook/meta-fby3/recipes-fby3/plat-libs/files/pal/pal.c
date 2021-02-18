@@ -71,6 +71,8 @@ const char *pal_server_fru_list[NUM_SERVER_FRU] = {"slot1", "slot2", "slot3", "s
 const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic"};
 const char *pal_bmc_fru_list[NUM_BMC_FRU] = {"bmc"};
 
+static char sel_error_record[NUM_SERVER_FRU] = {0};
+
 size_t server_fru_cnt = NUM_SERVER_FRU;
 size_t nic_fru_cnt  = NUM_NIC_FRU;
 size_t bmc_fru_cnt  = NUM_BMC_FRU;
@@ -78,6 +80,8 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define SYSFW_VER "sysfw_ver_slot"
 #define SYSFW_VER_STR SYSFW_VER "%d"
 #define BOOR_ORDER_STR "slot%d_boot_order"
+#define SEL_ERROR_STR  "slot%d_sel_error"
+#define SNR_HEALTH_STR "slot%d_sensor_health"
 #define GPIO_OCP_DEBUG_BMC_PRSNT_N "OCP_DEBUG_BMC_PRSNT_N"
 
 #define SLOT1_POSTCODE_OFFSET 0x02
@@ -140,6 +144,14 @@ struct pal_key_cfg {
   {"fru2_restart_cause", "3", NULL},
   {"fru3_restart_cause", "3", NULL},
   {"fru4_restart_cause", "3", NULL},
+  {"slot1_sensor_health", "1", NULL},
+  {"slot2_sensor_health", "1", NULL},
+  {"slot3_sensor_health", "1", NULL},
+  {"slot4_sensor_health", "1", NULL},
+  {"slot1_sel_error", "1", NULL},
+  {"slot2_sel_error", "1", NULL},
+  {"slot3_sel_error", "1", NULL},
+  {"slot4_sel_error", "1", NULL},
   {"ntp_server", "", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
@@ -2101,12 +2113,44 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
       }
       sprintf(temp_log, "PCIe Error ,FRU:%u", fru);
       pal_add_cri_sel(temp_log);
-      return 0;
+
+      return PAL_EOK;
   }
 
   pal_parse_oem_unified_sel_common(fru, sel, error_log);
 
-  return 0;
+  return PAL_EOK;
+}
+
+int
+pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel) {
+  char key[MAX_KEY_LEN] = {0};
+  snprintf(key, MAX_KEY_LEN, SEL_ERROR_STR, fru);
+  sel_error_record[fru-1]++;
+  return pal_set_key_value(key, "0");
+}
+
+void
+pal_log_clear(char *fru) {
+  char key[MAX_KEY_LEN] = {0};
+  uint8_t fru_cnt = 0;
+  int i = 0;
+
+  if ( strncmp(fru, "slot", 4) == 0 ) {
+    fru_cnt = fru[4] - 0x30;
+    i = fru_cnt;
+  } else if ( strcmp(fru, "all") == 0 ) {
+    fru_cnt = 4;
+    i = 1;
+  }
+
+  for ( ; ((i <= fru_cnt) && (i != 0)); i++ ) {
+    snprintf(key, MAX_KEY_LEN, SEL_ERROR_STR, i);
+    pal_set_key_value(key, "1");
+    snprintf(key, MAX_KEY_LEN, SNR_HEALTH_STR, i);
+    pal_set_key_value(key, "1");
+    sel_error_record[i-1] = 0;
+  }
 }
 
 int
@@ -2322,13 +2366,30 @@ pal_store_crashdump(uint8_t fru, bool ierr) {
 
 static int
 pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
-  int ret = 0;
+  int ret = PAL_EOK;
+  bool is_cri_sel = false;
 
   switch (snr_num) {
     case CATERR_B:
+      is_cri_sel = true;
       pal_store_crashdump(fru, (event_data[3] == 0x00));  // 00h:IERR, 0Bh:MCERR
       break;
+    case CPU_DIMM_HOT:
+    case PWR_ERR:
+      is_cri_sel = true;
+      break;
     case BIC_SENSOR_SYSTEM_STATUS:
+      switch(event_data[3]) {
+        case 0x14: //SYS_FAN_SERVICE
+        case 0x11: //SYS_SLOT_PRSNT
+        case 0x0B: //SYS_M2_VPP
+        case 0x07: //SYS_FW_TRIGGER
+          break;
+        default:
+          is_cri_sel = true;
+          break;
+      }
+
       if (event_data[3] == 0x11) { // when another blade insert/remove, start/stop fscd
         ret = system("/etc/init.d/setup-fan.sh reload &");
         if (ret != 0) {
@@ -2342,6 +2403,15 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
         // start/stop fscd according fan mode change
         fby3_common_fscd_ctrl(event_data[DATA_INDEX_2]);
       }
+  }
+
+  if ( is_cri_sel == true ) {
+    char key[MAX_KEY_LEN] = {0};
+    if ( (event_data[2] & 0x80) == 0 ) sel_error_record[fru-1]++;
+    else sel_error_record[fru-1]--;
+
+    snprintf(key, MAX_KEY_LEN, SEL_ERROR_STR, fru);
+    pal_set_key_value(key, (sel_error_record[fru-1] > 0)?"0":"1"); // 0: Assertion,  1: Deassertion
   }
 
   return PAL_EOK;
@@ -3523,9 +3593,9 @@ pal_handle_oem_1s_asd_msg_in(uint8_t slot, uint8_t *data, uint8_t data_len)
   return 0;
 }
 
-// It's called by fpc-util directly
+// It's called by fpc-util and front-paneld
 int
-pal_sb_set_amber_led(uint8_t fru, bool led_on) {
+pal_sb_set_amber_led(uint8_t fru, bool led_on, uint8_t led_mode) {
   int ret = 0;
   int i2cfd = -1;
   uint8_t bus = 0;
@@ -3543,7 +3613,24 @@ pal_sb_set_amber_led(uint8_t fru, bool led_on) {
     goto err_exit;
   }
 
-  uint8_t tbuf[2] = {0xf, (led_on == true)?0x01:0x00};
+  uint8_t tbuf[2] = {0x0, (led_on == true)?0x01:0x00};
+  if ( led_mode == LED_LOCATE_MODE ) {
+    /* LOCATE_MODE */
+    // 0x0f 01h: off
+    //      00h: on
+    tbuf[0] = 0x0f;
+    tbuf[1] = (led_on == true)?0x01:0x00;
+  } else if ( led_mode == LED_CRIT_PWR_OFF_MODE || led_mode == LED_CRIT_PWR_ON_MODE ) {
+    /* CRIT_MODE */
+    // 0x12 02h: 900ms_on/100ms_off
+    //      01h: 900ms_off/100ms_on
+    //      00h: off
+    tbuf[0] = 0x12;
+    tbuf[1] = (led_on == false)?0x00:(led_mode == LED_CRIT_PWR_OFF_MODE)?0x01:0x02;
+  } else {
+    syslog(LOG_WARNING, "%s() fru:%d, led_on:%d, led_mode:%d\n", __func__, fru, led_on, led_mode);
+  }
+
   ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, 2, NULL, 0);
   if ( ret < 0 ) {
     printf("%s() Couldn't write data to addr %02X, err: %s\n",  __func__, SB_CPLD_ADDR, strerror(errno));
@@ -3574,17 +3661,17 @@ pal_set_slot_led(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   if ( 5 == req_len ) {
     if ( GETBIT(*(data+1), 0) ) {
       //turn on
-      rsp_cc = pal_sb_set_amber_led(slot, true);
+      rsp_cc = pal_sb_set_amber_led(slot, true, LED_LOCATE_MODE);
     } else if ( 0 == *data ) {
       //turn off
-      rsp_cc = pal_sb_set_amber_led(slot, false);
+      rsp_cc = pal_sb_set_amber_led(slot, false, LED_LOCATE_MODE);
     } else {
       rsp_cc = CC_INVALID_PARAM;
     }
   } else if ( 4  == req_len ) {
     if (0 == *data) {
       //turn off
-      rsp_cc = pal_sb_set_amber_led(slot, false);
+      rsp_cc = pal_sb_set_amber_led(slot, false, LED_LOCATE_MODE);
     } else {
       rsp_cc = CC_INVALID_PARAM;
     }

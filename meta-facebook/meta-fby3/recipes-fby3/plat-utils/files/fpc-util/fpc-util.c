@@ -134,7 +134,7 @@ main(int argc, char **argv) {
     printf("fpc-util: identification for %s %s is set to %s %ssuccessfully\n", \
                          argv[1], argv[2], argv[4], (ret < 0)?"un":"");
   } else {
-    ret = pal_sb_set_amber_led(fru, is_led_on);
+    ret = pal_sb_set_amber_led(fru, is_led_on, LED_LOCATE_MODE);
     printf("fpc-util: identification for %s is set to %s %ssuccessfully\n", \
                          argv[1], argv[3], (ret < 0)?"un":"");
   }

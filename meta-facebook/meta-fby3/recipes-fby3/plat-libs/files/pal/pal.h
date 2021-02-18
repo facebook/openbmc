@@ -83,6 +83,12 @@ extern const char pal_dev_pwr_option_list[];
 extern const char pal_fan_opt_list[];
 
 enum {
+  LED_LOCATE_MODE = 0x0,
+  LED_CRIT_PWR_OFF_MODE,
+  LED_CRIT_PWR_ON_MODE,
+};
+
+enum {
   FAN_0 = 0,
   FAN_1,
   FAN_2,
@@ -208,7 +214,7 @@ int set_pfr_i2c_filter(uint8_t slot_id, uint8_t value);
 int pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uint8_t bmc_location);
 int pal_set_nic_perst(uint8_t fru, uint8_t val);
 int pal_is_slot_pfr_active(uint8_t fru);
-int pal_sb_set_amber_led(uint8_t fru, bool led_on);
+int pal_sb_set_amber_led(uint8_t fru, bool led_on, uint8_t led_mode);
 int pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts);
 int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type);

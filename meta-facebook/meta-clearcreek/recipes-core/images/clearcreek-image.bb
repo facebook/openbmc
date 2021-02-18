@@ -40,4 +40,5 @@ IMAGE_INSTALL += " \
   fscd \
   guid-util \
   fpc-util \
+  mctp-util \
   "

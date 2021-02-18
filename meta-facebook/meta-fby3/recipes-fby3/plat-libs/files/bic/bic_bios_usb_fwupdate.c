@@ -414,6 +414,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, const char *image_file, usb_dev
     uint8_t *file_buf = buf + USB_PKT_HDR_SIZE;
     size_t file_buf_pos = 0;
     size_t file_buf_num_bytes = 0;
+    bool send_packet_fail = false;
     if (write_offset > 0) {
       fprintf(stderr, "\r%d/%d blocks (%d written, %d skipped)...",
           num_blocks_written + num_blocks_skipped,
@@ -482,11 +483,17 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, const char *image_file, usb_dev
       int rc = send_bic_usb_packet(udev, pkt);
       if (rc < 0) {
         fprintf(stderr, "failed to write %d bytes @ %d: %d\n", count, write_offset, rc);
-        attempts--;
-        continue;
+        send_packet_fail = true;
+        break;  //prevent the endless while loop.
       }
       file_buf_pos += count;
     }
+
+    if (send_packet_fail) {
+      attempts--;
+      continue;
+    }
+
     // Verify written data.
     if (verify) {
       rc = get_block_checksum(slot_id, write_offset, cs_len, cs);

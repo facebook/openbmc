@@ -20,6 +20,6 @@
 Name=eth0.4088
 
 [Network]
-IPv6AcceptRA=yes
+IPv6AcceptRA=no
 DHCP=no
 Address=fe80::1/64

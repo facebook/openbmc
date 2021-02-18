@@ -32,5 +32,8 @@ SRC_URI += " \
 "
 
 do_install_append() {
-        install -m 644 -D ${WORKDIR}/journald-maxlevel.conf ${D}${systemd_unitdir}/journald.conf.d/maxlevel.conf
+    install -m 644 -D ${WORKDIR}/journald-maxlevel.conf ${D}${systemd_unitdir}/journald.conf.d/maxlevel.conf
+
+    # systemd 234 (rocko) does not support RequiredForOnline=no.
+    sed -i 's@ExecStart.*@\0 --ignore=eth0.4088@' ${D}${systemd_unitdir}/system/systemd-networkd-wait-online.service
 }

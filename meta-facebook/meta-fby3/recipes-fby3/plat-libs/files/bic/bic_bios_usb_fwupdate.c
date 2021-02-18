@@ -36,18 +36,6 @@
 #include "bic_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 
-#define SB_TI_VENDOR_ID  0x1CBE
-#define SB_TI_PRODUCT_ID 0x0007
-
-typedef struct {
-  uint8_t dummy;
-  uint32_t offset;
-  uint16_t length;
-  uint8_t data[0];
-} __attribute__((packed)) bic_usb_packet;
-#define USB_PKT_HDR_SIZE (sizeof(bic_usb_packet))
-
-#define NUM_ATTEMPTS 5
 #define USB_PKT_SIZE 0x200
 #define USB_DAT_SIZE (USB_PKT_SIZE - USB_PKT_HDR_SIZE)
 #define USB_PKT_SIZE_BIG 0x1000
@@ -134,8 +122,8 @@ int active_config(struct libusb_device *dev,struct libusb_device_handle *handle)
   return 0;
 }
 
-static int
-_send_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt)
+int
+send_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt)
 {
   const int transferlen = pkt->length + USB_PKT_HDR_SIZE;
   int transferred = 0;
@@ -491,7 +479,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, const char *image_file, usb_dev
       pkt->dummy = CMD_OEM_1S_UPDATE_FW;
       pkt->offset = write_offset + file_buf_pos;
       pkt->length = count;
-      int rc = _send_bic_usb_packet(udev, pkt);
+      int rc = send_bic_usb_packet(udev, pkt);
       if (rc < 0) {
         fprintf(stderr, "failed to write %d bytes @ %d: %d\n", count, write_offset, rc);
         attempts--;

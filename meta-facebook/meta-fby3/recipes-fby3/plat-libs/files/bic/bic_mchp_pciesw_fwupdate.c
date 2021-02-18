@@ -213,24 +213,11 @@ error_exit:
 }
 
 /*******************************************************************************************************/
-#define EXP2_TI_VENDOR_ID 0x1CC0
-#define EXP2_TI_PRODUCT_ID 0x0007
 #include "bic_bios_fwupdate.h"
 
-#define NUM_ATTEMPTS 5
-
-typedef struct {
-  uint8_t dummy;
-  uint32_t offset;
-  uint16_t length;
-  uint32_t image_size;
-  uint8_t data[0];
-} __attribute__((packed)) bic_usb_packet;
-#define USB_PKT_HDR_SIZE (sizeof(bic_usb_packet))
-
 static int
-_send_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt) {
-  const int transferlen = pkt->length + USB_PKT_HDR_SIZE;
+_send_bic_usb_packet(usb_dev* udev, bic_usb_ext_packet *pkt) {
+  const int transferlen = pkt->length + USB_PKT_EXT_HDR_SIZE;
   int transferred = 0;
   int retries = NUM_ATTEMPTS;
   int ret = 0;
@@ -264,13 +251,13 @@ bic_update_pesw_fw_usb(uint8_t slot_id, uint8_t comp, char *image_file, usb_dev*
   }
 
   // allocate memory
-  buf = malloc(USB_PKT_HDR_SIZE + MAX_FW_PCIE_SWITCH_BLOCK_SIZE);
+  buf = malloc(USB_PKT_EXT_HDR_SIZE + MAX_FW_PCIE_SWITCH_BLOCK_SIZE);
   if ( buf == NULL ) {
     printf("%s() failed to allocate memory\n", __func__);
     goto error_exit;
   }
 
-  uint8_t *file_buf = buf + USB_PKT_HDR_SIZE;
+  uint8_t *file_buf = buf + USB_PKT_EXT_HDR_SIZE;
   size_t write_offset = 0;
   size_t last_offset = 0;
   size_t dsize = file_size / 20;
@@ -290,7 +277,7 @@ bic_update_pesw_fw_usb(uint8_t slot_id, uint8_t comp, char *image_file, usb_dev*
     }
 
     // create the packet
-    bic_usb_packet *pkt = (bic_usb_packet *) buf;
+    bic_usb_ext_packet *pkt = (bic_usb_ext_packet *) buf;
     pkt->dummy = PCIE_FW_IDX;    // component
     pkt->offset = write_offset;  // img offset
     pkt->length = read_bytes;    // read bytes

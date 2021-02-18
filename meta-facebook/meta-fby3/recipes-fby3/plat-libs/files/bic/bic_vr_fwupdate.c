@@ -906,6 +906,92 @@ error_exit:
   return ret;
 }
 
+#include "bic_bios_fwupdate.h"
+static int
+vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8_t force) {
+#define DEFAULT_DATA_SIZE 16
+#define USB_2OU_ISL_VR_IDX 0x04
+  int ret = BIC_STATUS_FAILURE;
+  int i = 0;
+  int len = dev->data_cnt;
+  vr_data *list = dev->pdata;
+  usb_dev   bic_udev;
+  usb_dev*  udev = &bic_udev;
+  uint16_t bic_usb_pid = 0x0, bic_usb_vid = 0x0;
+  uint8_t usb_idx = 0;
+  uint8_t *buf = NULL;
+
+  //select PID/VID
+  switch(dev->intf) {
+    case REXP_BIC_INTF:
+      bic_usb_pid = EXP2_TI_PRODUCT_ID;
+      bic_usb_vid = EXP2_TI_VENDOR_ID;
+      break;
+    default:
+      printf("%s() intf(0x%02X) didn't support USB firmware update\n", __func__, dev->intf);
+      return BIC_STATUS_FAILURE;
+  }
+
+  //select INDEX
+  switch(comp) {
+    case FW_2OU_PESW_VR:
+      usb_idx = USB_2OU_ISL_VR_IDX;
+      break;
+    default:
+      printf("%s() comp(0x%02X) didn't support USB firmware update\n", __func__, comp);
+      return BIC_STATUS_FAILURE;
+  }
+
+  udev->ci = 1;
+  udev->epaddr = 0x1;
+
+  // init usb device
+  if ( (ret = bic_init_usb_dev(slot_id, udev, bic_usb_pid, bic_usb_vid)) < 0 ) goto error_exit;
+
+  // allocate mem
+  buf = malloc(USB_PKT_HDR_SIZE + DEFAULT_DATA_SIZE);
+  if ( buf == NULL ) {
+    printf("%s() failed to allocate memory\n", __func__);
+    goto error_exit;
+  }
+
+  uint8_t *file_buf = buf + USB_PKT_HDR_SIZE;
+  for ( i = 0; i < len; i++ ) {
+    bic_usb_packet *pkt = (bic_usb_packet *) buf;
+    pkt->dummy  = usb_idx;    // component
+    pkt->offset = 0x0;        // dummy
+    pkt->length = list[i].data_len + 2; // read bytes
+    file_buf[0] = list[i].data_len; // data length
+    file_buf[1] = list[i].command;  // command code
+    memcpy(&file_buf[2], list[i].data, list[i].data_len); // data
+
+    ret = send_bic_usb_packet(udev, pkt);
+    if (ret < 0) {
+      printf("Failed to write data to the device\n");
+      goto error_exit;
+    }
+    show_progress(slot_id, i, len);
+  }
+
+  int retry = MAX_RETRY;
+  do {
+    if ( vr_ISL_polling_status(slot_id, dev->bus, dev->addr, dev->intf) > 0 ) {
+      break;
+    } else {
+      retry--;
+      sleep(2);
+    }
+  } while ( retry > 0 );
+
+  if ( retry == 0 ) ret = BIC_STATUS_FAILURE;
+  else ret = BIC_STATUS_SUCCESS;
+
+error_exit:
+  if ( buf != NULL ) free(buf);
+  bic_close_usb_dev(udev);
+  return ret;
+}
+
 struct dev_table {
   uint8_t intf;
   uint8_t bus;
@@ -944,7 +1030,7 @@ get_vr_name(uint8_t intf, uint8_t bus, uint8_t addr) {
 }
 
 int 
-update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force) {
+update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force, bool usb_update) {
   int ret = 0;
   int i = 0;
   uint8_t rbuf[6] = {0};
@@ -1018,8 +1104,8 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
   //step 4 - program
   //For now, we only support to be input 1 file.
   printf("Update %s...", get_vr_name(intf, vr_bus, vr_list[0].addr));
-  ret = vr_tool[sel_vendor].program(slot_id, &vr_list[0], force);
-
+  ret = (usb_update == true)?vr_usb_program(slot_id, sel_vendor, comp, &vr_list[0], force): \
+                             vr_tool[sel_vendor].program(slot_id, &vr_list[0], force);
 error_exit:
 
   return ret;

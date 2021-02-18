@@ -1304,8 +1304,11 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       }
       break;
     case FW_VR:
+      ret = update_bic_vr(slot_id, comp, path, intf, force, false/*usb update?*/);
+      break;
     case FW_2OU_PESW_VR:
-      ret = update_bic_vr(slot_id, comp, path, intf, force);
+      ret = (loc != NULL)?update_bic_vr(slot_id, comp, path, intf, force, false/*usb update*/): \
+                          update_bic_vr(slot_id, comp, path, intf, force, true/*usb update*/);
       break;
     case FW_2OU_PESW:
       if (board_type == GPV3_BRCM_BOARD) {

@@ -53,6 +53,8 @@
 
 #define LAST_KEY "last_key"
 
+#define MAX_RETRY 3
+
 const char pal_fru_list[] = "all, mb, bsm, pdb, carrier1, carrier2, fio";
 const char pal_server_list[] = "";
 
@@ -501,6 +503,7 @@ int pal_set_id_led(uint8_t status)
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
   uint8_t addr = 0xEE;
+  int retry_count = 0;
 
   fd = open(fn, O_RDWR);
   if(fd < 0) {
@@ -509,27 +512,39 @@ int pal_set_id_led(uint8_t status)
     goto error_exit;
   }
 
-  tbuf[0] = 0x03;
+  do {
+    tbuf[0] = 0x03;
 
-  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 1);
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 1);
+  
+    if(ret < 0) {
+      syslog(LOG_WARNING,"[%s] Cannot read i2c", __func__);
+      retry_count++;
+      msleep(200);
+      if(retry_count >= MAX_RETRY)
+        goto error_exit;
+    }
+  } while(retry_count <= MAX_RETRY && ret < 0);
 
-  if(ret < 0) {
-    syslog(LOG_WARNING,"[%s] Cannot read i2c", __func__);
-    goto error_exit;
-  }
+  retry_count = 0;
 
-  tbuf[0] = 0x03;
-  if(status)
-    tbuf[1] = rbuf[0] | 0x40;
-  else
-    tbuf[1] = rbuf[0] & 0xBF;
+  do {
+    tbuf[0] = 0x03;
+    if(status)
+      tbuf[1] = rbuf[0] | 0x40;
+    else
+      tbuf[1] = rbuf[0] & 0xBF;
 
-  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 2, rbuf, 0);
-
-  if(ret < 0) {
-    syslog(LOG_WARNING,"[%s] Cannot write i2c", __func__);
-    goto error_exit;
-  }
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 2, rbuf, 0);
+  
+    if(ret < 0) {
+      syslog(LOG_WARNING,"[%s] Cannot write i2c", __func__);
+      retry_count++;
+      msleep(200);
+      if(retry_count >= MAX_RETRY)
+        goto error_exit;
+    }
+  } while(retry_count <= MAX_RETRY && ret < 0);
 
 error_exit:
   if (fd > 0){

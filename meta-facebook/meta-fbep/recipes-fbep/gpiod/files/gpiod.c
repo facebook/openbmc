@@ -180,22 +180,22 @@ int check_power_seq(int type)
   };
   struct power_seq *cpld_power_seq;
   struct power_seq runtime_seq[] = {
-    {"MODULE_PWRGD_ASIC3_R", 0, 0}, {"MODULE_PWRGD_ASIC4_R", 0, 1},
-    {"MODULE_PWRGD_ASIC5_R", 0, 2}, {"MODULE_PWRGD_ASIC6_R", 0, 3},
-    {"MODULE_PWRGD_ASIC7_R", 0, 4}, {"P12V_HSC_PG_R", 1, 0},
-    {"VICOR_PG_R", 1, 1}, {"P48V_HSC_PG_R", 1, 2},
-    {"PW_PAX_POWER_GOOD", 1, 3}, {"ASIC_ALL_DONE", 1, 4},
-    {"MODULE_PWRGD_ASIC0", 1, 5}, {"MODULE_PWRGD_ASIC1_R", 1, 6},
-    {"MODULE_PWRGD_ASIC2_R", 1, 7}
+    {"RT_MODULE_PWRGD_ASIC3_R", 0, 0}, {"RT_MODULE_PWRGD_ASIC4_R", 0, 1},
+    {"RT_MODULE_PWRGD_ASIC5_R", 0, 2}, {"RT_MODULE_PWRGD_ASIC6_R", 0, 3},
+    {"RT_MODULE_PWRGD_ASIC7_R", 0, 4}, {"RT_P12V_HSC_PG_R", 1, 0},
+    {"RT_VICOR_PG_R", 1, 1}, {"RT_P48V_HSC_PG_R", 1, 2},
+    {"RT_PW_PAX_POWER_GOOD", 1, 3}, {"RT_ASIC_ALL_DONE", 1, 4},
+    {"RT_MODULE_PWRGD_ASIC0", 1, 5}, {"RT_MODULE_PWRGD_ASIC1_R", 1, 6},
+    {"RT_MODULE_PWRGD_ASIC2_R", 1, 7}
   };
   struct power_seq boot_seq[] = {
-    {"RST_CPLD_RSMRST_N", 0, 0}, {"PWRGD_P5V_STBY_R", 0, 1},
-    {"PWRGD_CPLD_VREFF", 0, 2}, {"PWRGD_P2V5_AUX_R", 0, 3},
-    {"PWRGD_P1V2_AUX_R", 0, 4}, {"PWRGD_P1V15_AUX_R", 0, 5},
-    {"P12V_HSC_PG_R_SYN2", 0, 6}, {"VICOR_PG_R", 0, 7},
-    {"P48V_HSC_PG_R_SYN2", 1, 0}, {"PWRGD_P3V3_CPLD_R", 1, 1},
-    {"HOST_PWRGD_ASIC", 1, 2}, {"PW_PAX_POWER_GOOD", 1, 3},
-    {"ASIC_ALL_DONE", 1, 4}
+    {"BT_RST_CPLD_RSMRST_N", 0, 0}, {"BT_PWRGD_P5V_STBY_R", 0, 1},
+    {"BT_PWRGD_CPLD_VREFF", 0, 2}, {"BT_PWRGD_P2V5_AUX_R", 0, 3},
+    {"BT_PWRGD_P1V2_AUX_R", 0, 4}, {"BT_PWRGD_P1V15_AUX_R", 0, 5},
+    {"BT_P12V_HSC_PG_R_SYN2", 0, 6}, {"BT_VICOR_PG_R", 0, 7},
+    {"BT_P48V_HSC_PG_R_SYN2", 1, 0}, {"BT_PWRGD_P3V3_CPLD_R", 1, 1},
+    {"BT_HOST_PWRGD_ASIC", 1, 2}, {"BT_PW_PAX_POWER_GOOD", 1, 3},
+    {"BT_ASIC_ALL_DONE", 1, 4}
   };
   char dev_cpld[16] = {0};
   char event_str[64] = {0};

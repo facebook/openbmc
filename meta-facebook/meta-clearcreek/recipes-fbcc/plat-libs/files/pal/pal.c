@@ -894,6 +894,20 @@ int pal_set_dev_guid(uint8_t fru, char *str) {
   return pal_set_guid(OFFSET_DEV_GUID, g_dev_guid);
 }
 
+void pal_update_ts_sled()
+{
+  char key[MAX_KEY_LEN] = {0};
+  char tstr[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  clock_gettime(CLOCK_REALTIME, &ts);
+  sprintf(tstr, "%ld", ts.tv_sec);
+
+  sprintf(key, "timestamp_sled");
+
+  pal_set_key_value(key, tstr);
+}
+
 int pal_get_dev_guid(uint8_t fru, char *guid) {
 
   pal_get_guid(OFFSET_DEV_GUID, g_dev_guid);

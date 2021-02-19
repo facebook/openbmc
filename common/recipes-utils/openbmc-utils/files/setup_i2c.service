@@ -17,8 +17,8 @@
 #
 [Unit]
 Description=Setup i2c switches and channels
-Wants=systemd-modules-load
-After=systemd-modules-load
+Wants=systemd-modules-load.service
+After=systemd-modules-load.service
 
 [Service]
 Type=oneshot

@@ -71,7 +71,7 @@ do_work_sysv() {
 
 do_work_systemd() {
     install -d ${D}${systemd_system_unitdir}
-    install fscd.service ${D}${systemd_system_unitdir}
+    install -m 644 fscd.service ${D}${systemd_system_unitdir}
 }
 
 do_install_append() {

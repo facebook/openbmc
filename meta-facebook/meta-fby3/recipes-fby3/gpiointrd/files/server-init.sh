@@ -62,6 +62,7 @@ if [ $(is_server_prsnt $slot_num) == "0" ]; then
   rm -f /tmp/*fruid_slot${slot_num}*
   rm -f /tmp/*sdr_slot${slot_num}*
   rm -f /tmp/cache_store/slot${slot_num}_vr*
+  rm -f /tmp/cache_store/fru${slot_num}_2ou_board_type
   set_nic_power
 else
   /usr/local/bin/power-util "slot${slot_num}" 12V-on

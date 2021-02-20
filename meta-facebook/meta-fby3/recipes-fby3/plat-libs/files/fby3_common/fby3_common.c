@@ -32,6 +32,7 @@
 #include <string.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/kv.h>
 #include "fby3_common.h"
 
 const char *slot_usage = "slot1|slot2|slot3|slot4";
@@ -392,8 +393,8 @@ fby3_common_dev_name(uint8_t dev, char *str) {
   return 0;
 }
 
-int
-fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
+static int
+_fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
   uint8_t bus_num = 0;
   int fd = -1, ret = 0;
   int tlen = 0, rlen = 0;
@@ -420,6 +421,30 @@ error_exit:
   close(fd);
 
   return ret;
+}
+
+int
+fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
+  char key[MAX_VALUE_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  sprintf(key, "fru%u_2ou_board_type", fru_id);
+
+  if (kv_get(key, value, NULL, 0) == 0) {
+    *board_type = ((uint8_t*)value)[0];
+    return 0;
+  }
+
+  if (_fby3_common_get_2ou_board_type(fru_id, board_type) < 0) {
+    return -1;
+  }
+
+  if (kv_set(key, (char*)board_type, 1, KV_FCREATE)) {
+    syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %u", __func__, key, board_type[0]);
+    return -1;
+  }
+
+  return 0;
 }
 
 int

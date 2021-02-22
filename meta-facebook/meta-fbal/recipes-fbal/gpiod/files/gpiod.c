@@ -32,6 +32,7 @@
 #include <openbmc/nm.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/misc-utils.h>
 
 #define POLL_TIMEOUT -1
 #define POWER_ON_STR        "on"
@@ -62,7 +63,7 @@ static long int g_reset_sec = 0;
 static long int g_power_on_sec = 0;
 static pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t caterr_mutex = PTHREAD_MUTEX_INITIALIZER;
-static gpio_value_t g_server_power_status;
+static gpio_value_t g_server_power_status = GPIO_VALUE_INVALID;
 static bool g_cpu_pwrgd_trig = false;
 
 // For monitoring GPIOs on IO expender
@@ -167,25 +168,25 @@ void cpu1_pvccin_pwr_in_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_va
 }
 
 
-static 
+static
 void sml1_pmbus_alert_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   syslog(LOG_CRIT, "FRU: %d HSC OC Warning %s\n", FRU_MB,
          curr ? "Deassertion": "Assertion");
 }
 
-static 
+static
 void oc_detect_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   syslog(LOG_CRIT, "FRU: %d HSC Surge Current Warning %s\n", FRU_MB,
          curr ? "Deassertion": "Assertion");
 }
 
-static 
+static
 void uv_detect_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   syslog(LOG_CRIT, "FRU: %d HSC Under Voltage Warning %s\n", FRU_MB,
          curr ? "Deassertion": "Assertion");
 }
 
-static 
+static
 void hsc_timer_exp_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   syslog(LOG_CRIT, "FRU: %d HSC OCP Fault Warning %s\n", FRU_MB,
          curr ? "Deassertion": "Assertion");
@@ -312,7 +313,7 @@ static void
 log_gpio_change(gpiopoll_pin_t *desc, gpio_value_t value, useconds_t log_delay) {
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
   assert(cfg);
-  syslog(LOG_CRIT, "FRU: %d %s: %s - %s\n", FRU_MB, value ? "DEASSERT": "ASSERT", 
+  syslog(LOG_CRIT, "FRU: %d %s: %s - %s\n", FRU_MB, value ? "DEASSERT": "ASSERT",
          cfg->description, cfg->shadow);
 }
 
@@ -462,17 +463,16 @@ static int cpld_register_check(const char *shadow)
   uint8_t tlen, rlen;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
- 
-  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
+
+  get_cpld_register_data(shadow, &addr, &offset);
+  if (addr == 0 || offset == 0) {
+    syslog(LOG_WARNING, "There is no cpld register can check with %s\n", shadow);
     return retCode;
   }
 
-  get_cpld_register_data(shadow, &addr, &offset); 
-  if (addr == 0 || offset == 0) {
-    syslog(LOG_WARNING, "There is no cpld register can check with %s\n", shadow);  
-    i2c_cdev_slave_close(fd);
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
     return retCode;
   }
 
@@ -494,12 +494,12 @@ static void thermtrip_add_cri_sel(const char *shadow_name, gpio_value_t curr)
 {
   char cmd[128], log_name[16], log_descript[16] = "ASSERT\0";
 
-  if (strcmp(shadow_name, "FM_CPU0_THERMTRIP_LVT3_PLD_N") == 0) 
+  if (strcmp(shadow_name, "FM_CPU0_THERMTRIP_LVT3_PLD_N") == 0)
     sprintf(log_name, "CPU0");
-  else if (strcmp(shadow_name, "FM_CPU1_THERMTRIP_LVT3_PLD_N") == 0) 
+  else if (strcmp(shadow_name, "FM_CPU1_THERMTRIP_LVT3_PLD_N") == 0)
     sprintf(log_name, "CPU1");
 
-  if (curr == GPIO_VALUE_HIGH) 
+  if (curr == GPIO_VALUE_HIGH)
     sprintf(log_descript, "DEASSERT");
 
   sprintf(cmd, "FRU: %d %s thermtrip %s", FRU_MB, log_name, log_descript);
@@ -510,12 +510,12 @@ static void cpu_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
 {
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
 
-  if (g_server_power_status != GPIO_VALUE_HIGH) 
+  if (g_server_power_status != GPIO_VALUE_HIGH)
     return;
 
   if (cpld_register_check(cfg->shadow) <= 0)
     return;
-  
+
   thermtrip_add_cri_sel(cfg->shadow, curr);
   log_gpio_change(desc, curr, 0);
 }
@@ -525,7 +525,7 @@ static void cpu_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_valu
   int cpld_register_count = 0;
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
 
-  if (g_server_power_status != GPIO_VALUE_HIGH) 
+  if (g_server_power_status != GPIO_VALUE_HIGH)
     return;
 
   cpld_register_count = cpld_register_check(cfg->shadow);
@@ -540,7 +540,7 @@ static void cpu_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_valu
 
 static void mem_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
-  if (g_server_power_status != GPIO_VALUE_HIGH) 
+  if (g_server_power_status != GPIO_VALUE_HIGH)
     return;
   log_gpio_change(desc, curr, 0);
 }
@@ -594,12 +594,79 @@ pwr_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   log_gpio_change(desc, curr, 0);
 }
 
+static int dimm_mux_check(void) {
+  int fd, ret = -1;
+  uint8_t bus = 4, addr = 0xe6;
+  uint8_t reg = 0x00;
+  uint8_t tbuf[8] = {0};
+  uint8_t rbuf[8] = {0};
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
+    return ret;
+  }
+
+  do {
+    if ((ret = retry_cond(!i2c_rdwr_msg_transfer(fd, addr, tbuf, 0, rbuf, 1), 2, 10))) {
+      syslog(LOG_WARNING, "Failed to read control register");
+      break;
+    }
+
+    if (!(rbuf[0] & 0xF)) {
+      break;
+    }
+    reg = rbuf[0];
+    syslog(LOG_WARNING, "FRU: %d Unexpected DIMM_MUX status %02x", FRU_MB, reg);
+
+    tbuf[0] = 0;
+    if ((ret = retry_cond(!i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 0), 2, 10))) {
+      syslog(LOG_WARNING, "FRU: %d Failed to write DIMM_MUX", FRU_MB);
+      break;
+    }
+
+    if ((ret = retry_cond(!i2c_rdwr_msg_transfer(fd, addr, tbuf, 0, rbuf, 1), 2, 10))) {
+      syslog(LOG_WARNING, "FRU: %d Failed to read back DIMM_MUX", FRU_MB);
+      break;
+    }
+
+    if (!(rbuf[0] & 0xF)) {
+      syslog(LOG_CRIT, "FRU: %d Cleared DIMM_MUX successfully", FRU_MB);
+      pal_set_server_power(FRU_MB, SERVER_POWER_RESET);
+    } else {
+      ret = -1;
+    }
+  } while (0);
+
+  if (ret && reg) {
+    syslog(LOG_CRIT, "FRU: %d Failed to clear DIMM_MUX %02x", FRU_MB, reg);
+  }
+
+  i2c_cdev_slave_close(fd);
+  return ret;
+}
+
 //CPU Power Ok Event Handler
 static void
 cpu_pwr_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   g_server_power_status = curr;
   g_cpu_pwrgd_trig = true;
   log_gpio_change(desc, curr, 0);
+
+  // workaround for unexpected DIMM_MUX status
+  if (g_server_power_status == GPIO_VALUE_HIGH) {
+    dimm_mux_check();
+  }
+}
+
+static void
+init_cpu_pwr(gpiopoll_pin_t *desc, gpio_value_t value) {
+  g_server_power_status = value;
+
+  // workaround for unexpected DIMM_MUX status
+  if (g_server_power_status == GPIO_VALUE_HIGH) {
+    dimm_mux_check();
+  }
 }
 
 //IERR and MCERR Event Handler
@@ -638,12 +705,12 @@ err_caterr_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 static void
 err_msmi_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
-  
+
   SERVER_POWER_CHECK(1);
 
   if (cpld_register_check(cfg->shadow) <= 0)
     return;
-   
+
   pthread_mutex_lock(&caterr_mutex);
   g_msmi_irq++;
   pthread_mutex_unlock(&caterr_mutex);
@@ -946,7 +1013,7 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_CPU1_PROCHOT_LVT3_BMC_N", "GPIOB7", GPIO_EDGE_BOTH, cpu_prochot_handler, NULL},
   {"FM_PVCCIN_CPU0_PWR_IN_ALERT_N", "GPIOAA2", GPIO_EDGE_FALLING, cpu0_pvccin_pwr_in_handler, NULL},
   {"FM_PVCCIN_CPU1_PWR_IN_ALERT_N", "GPIOAA3", GPIO_EDGE_FALLING, cpu1_pvccin_pwr_in_handler, NULL},
-  {"PWRGD_CPU0_LVC3", "GPIOZ1", GPIO_EDGE_BOTH, cpu_pwr_handler, NULL},
+  {"PWRGD_CPU0_LVC3", "GPIOZ1", GPIO_EDGE_BOTH, cpu_pwr_handler, init_cpu_pwr},
 };
 
 int main(int argc, char **argv)

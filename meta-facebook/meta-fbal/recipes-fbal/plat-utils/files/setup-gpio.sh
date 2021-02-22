@@ -32,6 +32,7 @@
 # definitions to this file at some point.
 
 . /usr/local/fbpackages/utils/ast-functions
+. /usr/local/bin/i2c-utils.sh
 
 
 # FM_BOARD_BMC_REV_ID0
@@ -487,11 +488,31 @@ gpio_set PECI_MUX_SELECT 0
 gpio_export PWRGD_BMC_PS_PWROK GPIOAB3
 
 
+# workaround for unexpected DIMM_MUX status
+if [ ! -L "${SYSFS_I2C_DEVICES}/4-0076/driver" ] ||
+   [ ! -L "${SYSFS_I2C_DEVICES}/4-0077/driver" ]; then
+  logger -t "setup-gpio" -p user.warn "Reset DIMM_MUX"
+  echo low > /tmp/gpionames/RST_TCA9545_DDR_MUX_N/direction
+  usleep 10000
+  echo in > /tmp/gpionames/RST_TCA9545_DDR_MUX_N/direction
+  usleep 10000
+fi
+
+if [ ! -L "${SYSFS_I2C_DEVICES}/4-0076/driver" ]; then
+  i2c_bind_driver pca953x 4-0076 2 2>/dev/null
+  [ $? -eq 0 ] && echo "rebind 4-0076 to driver pca953x successfully"
+fi
+
 # I/O Expander TCA9539 0xEC
 gpio_export_ioexp 4-0076 FM_SLOT1_PRSNT_N 0
 gpio_export_ioexp 4-0076 FM_SLOT2_PRSNT_N 1
 gpio_export_ioexp 4-0076 RST_RTCRST_N 10
 gpio_export_ioexp 4-0076 RST_USB_HUB_N 11
+
+if [ ! -L "${SYSFS_I2C_DEVICES}/4-0077/driver" ]; then
+  i2c_bind_driver pca953x 4-0077 2 2>/dev/null
+  [ $? -eq 0 ] && echo "rebind 4-0077 to driver pca953x successfully"
+fi
 
 # I/O Expander TCA9539 0xEE
 gpio_export_ioexp 4-0077 IRQ_PVCCIN_CPU0_VRHOT_LVC3_N 0

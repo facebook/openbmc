@@ -118,16 +118,17 @@ do_install_ptest() {
 do_install_append() {
     install -d "${D}${sysconfdir}/init.d"
     install -d "${D}${sysconfdir}/logrotate.d"
-    install -m 755 ${WORKDIR}/initscript ${D}${sysconfdir}/init.d/syslog
     install -m 644 ${WORKDIR}/rsyslog.conf ${D}${sysconfdir}/rsyslog.conf
-    install -m 644 ${WORKDIR}/rsyslog.logrotate ${D}${sysconfdir}/logrotate.d/logrotate.rsyslog
+
+    # This overwrites the "syslog" file from the package.
+    install -m 644 ${WORKDIR}/rsyslog.logrotate ${D}${sysconfdir}/logrotate.d/syslog
+
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false',  d)}; then
-        # XXX This does not look right, and needs to be examined when enabling
-        # systemd.
-        ln -sf ${sysconfdir}/logrotate.rsyslog ${D}${sysconfdir}/logrotate.d/logrotate.rsyslog
         mkdir -p "${D}/${systemd_unitdir}/system"
         install -m 0644 ${WORKDIR}/rsyslog.service ${D}${systemd_unitdir}/system/
         sed -i -e "s#@sbindir@#${sbindir}#g" ${D}${systemd_unitdir}/system/rsyslog.service
+    else
+        install -m 755 ${WORKDIR}/initscript ${D}${sysconfdir}/init.d/syslog
     fi
 }
 

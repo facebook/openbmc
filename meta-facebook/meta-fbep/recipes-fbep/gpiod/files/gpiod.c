@@ -443,6 +443,7 @@ static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gp
 {
   g_sys_pwr_off = (curr == GPIO_VALUE_HIGH)? false: true;
 
+  msleep(250);
   if (curr == GPIO_VALUE_LOW && check_power_seq(RUNTIME) < 0)
     syslog(LOG_WARNING, "Failed to get power state from CPLD");
 

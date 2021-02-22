@@ -34,6 +34,10 @@ SRC_URI += " \
 do_install_append() {
     install -m 644 -D ${WORKDIR}/journald-maxlevel.conf ${D}${systemd_unitdir}/journald.conf.d/maxlevel.conf
 
+    # The journal will store its logs in tmpfs and yocto's default will kill the BMC
+    sed -i -e 's/.*RuntimeMaxUse.*/RuntimeMaxUse=20M/' ${D}${sysconfdir}/systemd/journald.conf
+    sed -i -e 's/.*ForwardToSyslog.*/ForwardToSyslog=yes/' ${D}${sysconfdir}/systemd/journald.conf
+
     # systemd 234 (rocko) does not support RequiredForOnline=no.
     sed -i 's@ExecStart.*@\0 --ignore=eth0.4088@' ${D}${systemd_unitdir}/system/systemd-networkd-wait-online.service
 }

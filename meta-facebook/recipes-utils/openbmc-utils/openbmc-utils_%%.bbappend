@@ -8,6 +8,7 @@ SRC_URI += "file://fetch-backports.service \
             file://setup_board.service \
             file://early.service \
             file://enable_watchdog_ext_signal.service \
+            file://mount_data0.service \
 "
 
 FILES_${PN} += "${systemd_system_unitdir} /usr/local/bin"
@@ -21,6 +22,7 @@ do_install_append() {
     install -m 0644 setup_board.service ${D}${systemd_system_unitdir}
     install -m 0644 power-on.service ${D}${systemd_system_unitdir}
     install -m 0644 ${WORKDIR}/enable_watchdog_ext_signal.service ${D}${systemd_system_unitdir}
+    install -m 0644 mount_data0.service ${D}${systemd_system_unitdir}
 }
 
 
@@ -30,4 +32,5 @@ SYSTEMD_SERVICE_${PN} = "power-on.service \
                       early.service \
                       setup_i2c.service \
                       fetch-backports.service \
+                      mount_data0.service \
 "

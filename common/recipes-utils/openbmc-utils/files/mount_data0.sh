@@ -28,7 +28,10 @@
 # Description:
 ### END INIT INFO
 
-. /etc/default/rcS
+# shellcheck disable=SC1091
+if [ -f /etc/default/rcS ]; then
+    . /etc/default/rcS
+fi
 
 #
 # The default filesystem type is jffs2, but people can override it by

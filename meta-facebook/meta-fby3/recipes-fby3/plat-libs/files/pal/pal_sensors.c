@@ -1373,6 +1373,7 @@ static int
 read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
   static bool is_inited = false;
   static uint8_t config = CONFIG_A;
+  uint8_t type_2ou = UNKNOWN_BOARD;
 
   //try to get the system type. The default config is CONFIG_A.
   if ( is_inited == false ) {
@@ -1406,6 +1407,16 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
       if ( ((int)(*val) == 0) || (temp_val < *val) ) *val = temp_val;
     } else if ( action == GET_TOTAL_VAL ) {
       *val += temp_val;
+    }
+
+    if (config == CONFIG_D && i == FRU_SLOT1) {
+      if (fby3_common_get_2ou_board_type(FRU_SLOT1, &type_2ou) < 0) {
+        syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
+        return READING_NA;
+      } else if (type_2ou == DP_RISER_BOARD) {
+        //DP only has slot1
+        return PAL_EOK;
+      }
     }
   }
 

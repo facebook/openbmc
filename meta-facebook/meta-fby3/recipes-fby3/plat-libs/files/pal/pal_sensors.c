@@ -311,6 +311,9 @@ const uint8_t bic_2ou_gpv3_sensor_list[] = {
   BIC_GPV3_VR_P1V8_CURRENT,
   BIC_GPV3_VR_P1V8_TEMP,
 
+  //PESW PWR = P0V84 + P1V8
+  BIC_GPV3_PESW_PWR,
+
   //E1S
   BIC_GPV3_E1S_1_12V_POWER,
   BIC_GPV3_E1S_1_12V_VOLTAGE,

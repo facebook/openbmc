@@ -9,7 +9,7 @@
     "sensor_fail": false
   },
   "fan_dead_boost": {
-    "threshold": 20,
+    "threshold": 2,
     "action": "host_shutdown"
   },
   "sensor_valid_check": {

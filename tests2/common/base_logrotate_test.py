@@ -21,13 +21,14 @@ import os
 import subprocess
 from unittest import TestCase
 
-ROTATE_LOGS = "/etc/cron.daily/logrotate"
+LOGROTATE_BIN = "/usr/sbin/logrotate"
+LOGROTATE_CONF = "/etc/logrotate.conf"
 
 NEEDED_PATHS = [
-    ROTATE_LOGS,
-    "/usr/sbin/logrotate",
-    "/etc/logrotate.conf",
+    LOGROTATE_BIN,
+    LOGROTATE_CONF,
     "/etc/logrotate.d/syslog",
+    "/etc/logrotate.d/wtmp",
 ]
 
 
@@ -38,7 +39,7 @@ class BaseLogRotateTest(TestCase):
 
     def test_logrotate_config(self):
         output = subprocess.check_output(
-            ROTATE_LOGS,
+            LOGROTATE_BIN + " " + LOGROTATE_CONF,
             stderr=subprocess.STDOUT,
             shell=True,
             timeout=60,

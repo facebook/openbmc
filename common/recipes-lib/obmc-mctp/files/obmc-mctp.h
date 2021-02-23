@@ -36,6 +36,14 @@ enum {
   MCTP_TYPE_SPDM     = 0x5,
 };
 
+/* mctp control msg response header */
+struct mctp_ctrl_msg_hdr {
+  uint8_t mctp_ctrl;
+  uint8_t iid;
+  uint8_t cmd;
+  uint8_t comp_code;
+} __attribute__((packed));
+
 /* NC-SI structure */
 struct ncsi_req_pkt {
   CTRL_MSG_HDR_t hdr;

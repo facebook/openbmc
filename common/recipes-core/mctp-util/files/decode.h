@@ -1,7 +1,7 @@
 /*
- * mctp-util.h
+ * decode.h
  *
- * Copyright 2020-present Facebook. All Rights Reserved.
+ * Copyright 2015-present Facebook. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#ifndef _MCTP_UTIL_H_
-#define _MCTP_UTIL_H_
+#ifndef _DECODE_H_
+#define _DECODE_H_
 
-#endif /* _MCTP_UTIL_H_ */
+void print_raw_resp(uint8_t *rbuf, int rlen);
+int  print_parsed_resp(uint8_t *rbuf, int rlen);
+#endif /* _DECODE_H_ */

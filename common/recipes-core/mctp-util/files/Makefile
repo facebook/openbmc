@@ -1,14 +1,14 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 
-C_SRCS := $(wildcard *.c)
-C_OBJS := ${C_SRCS:.c=.o}
+CPP_SRCS := $(wildcard *.cpp)
+CPP_OBJS := ${CPP_SRCS:.cpp=.o}
 
 all: mctp-util
 
-CFLAGS += -Wall -Werror
+CXXFLAGS += -std=c++17 -Wall -Werror
 
-mctp-util: $(C_OBJS)
-	$(CC) -pthread $(CFLAGS) -std=gnu11 -o $@ $^ $(LDFLAGS)
+mctp-util: $(CPP_OBJS)
+	$(CXX) -pthread $(CXXFLAGS) -std=gnu11 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

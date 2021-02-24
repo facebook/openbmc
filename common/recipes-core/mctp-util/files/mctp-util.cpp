@@ -26,15 +26,13 @@
 #include <syslog.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <pthread.h>
 #include <time.h>
 #include <unistd.h>
 #include <getopt.h>
-#include <sys/socket.h>
-#include <sys/utsname.h>
-#include <linux/netlink.h>
 #include <openbmc/pal.h>
 #include <openbmc/obmc-mctp.h>
+#include <openbmc/ncsi.h>
+#include "decode.h"
 #include "mctp-util.h"
 
 #define DEFAULT_EID 0x8
@@ -42,15 +40,20 @@
 #define BCM_MFG_ID 0x3d110000
 #define MAX_PAYLOAD_SIZE 1024  // including Message Header and body
 
+#define COMMON_OPT_STR    "dh"
+
 #define noDEBUG
 
-
 static void default_mctp_util_usage(void) {
-  printf("Usage: mctp-util <bus#> <dst_eid> <type> <cmd payload> \n\n");
-  printf("Sends MCTP data over SMbus \n\n");
-  printf("       -bus#          I2C Bus number\n");
-  printf("       -dst_eid       destination EID\n");
-  printf("       -type          MCTP message type\n");
+  printf("Usage: mctp-util [options] <bus#> <dst_eid> <type> <cmd payload> \n");
+  printf("Sends MCTP data over SMbus \n");
+  printf("Options\n");
+  printf("       -h             this help\n");
+  printf("       -d             decode response\n");
+  printf("Command fields\n");
+  printf("       <bus#>         I2C Bus number\n");
+  printf("       <dst_eid>      destination EID\n");
+  printf("       <type>         MCTP message type\n");
   printf("           0            - MCTP Control Message\n");
   printf("           1            - PLDM\n");
   printf("           2            - NC-SI\n");
@@ -59,8 +62,6 @@ static void default_mctp_util_usage(void) {
   printf("           5            - SPDM\n");
   printf("           6            - Secured Messages\n");
 }
-
-
 
 int main(int argc, char **argv)
 {
@@ -73,22 +74,53 @@ int main(int argc, char **argv)
   int tlen = 0;
   int rlen = 0;
   int ret = -1;
-  int i, arg_num = 1;
+  int i = 1;
+  int decode_flag = 0;
+  int minargc = 5;
+  int argflag;
+ /*
+   * Handle util common options.
+   * It ignores errors for other options and prefixes the option string
+   * with '-' to prevent getopt changing the order of the arguments in argv.
+   */
+  opterr = 0;
+  while ((argflag = getopt(argc, argv, COMMON_OPT_STR)) != -1)
+  {
+    switch(argflag) {
+    case 'd':
+            decode_flag = 1;
+            minargc += 1;
+            break;
+    case 'h':
+            default_mctp_util_usage();
+            return 0;
+    default :
+            break;
+    }
+  }
 
-  if (argc < 5) { // min params: mctp-util <bus> <eid> <type> <data>
+  if (argc < minargc) { // min params: mctp-util <bus> <eid> <type> <data>
+    printf("argc(%d) < minargc(%d)\n", argc, minargc);
+    ret = -1;
     goto bail;
   }
 
-  if (argc > (MAX_PAYLOAD_SIZE+3)) {  // 3 = mctp-util <bus> <eid>
+  if (argc > (MAX_PAYLOAD_SIZE + 3 + decode_flag)) {  //     mctp-util <bus> <eid>    (extra 3)
+                                                      //  or mctp-util -d <bus> <eid> (extra 4)
     printf("max size (%d) exceeded\n", MAX_PAYLOAD_SIZE);
+    ret = -1;
     goto bail;
   }
-
-  bus = (uint8_t)strtoul(argv[arg_num++], NULL, 0);
-  eid = (uint8_t)strtoul(argv[arg_num++], NULL, 0);
-  mctp_type = (uint8_t)strtoul(argv[arg_num++], NULL, 0);
+  if (optind >= argc ) {
+    printf("parse failed (optind=%d, argc=%d)\n", optind, argc);
+    ret = -1;
+    goto bail;
+  }
+  bus = (uint8_t)strtoul(argv[optind++], NULL, 0);
+  eid = (uint8_t)strtoul(argv[optind++], NULL, 0);
+  mctp_type = (uint8_t)strtoul(argv[optind++], NULL, 0);
   tbuf[tlen++] = mctp_type;
-  for (i = arg_num; i < argc; i++) {
+  for (i = optind; i < argc; i++) {
     tbuf[tlen++] = (uint8_t)strtoul(argv[i], NULL, 0);
   }
 
@@ -99,14 +131,17 @@ int main(int argc, char **argv)
     printf("0x%x ", tbuf[i]);
   printf("\n");
 #endif
+
   pal_get_bmc_ipmb_slave_addr(&addr, bus);
   ret = send_mctp_cmd(bus, addr, DEFAULT_EID, eid, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
     printf("Error sending MCTP cmd, ret = %d\n", ret);
   } else {
-    for (int i = 0; i<rlen; ++i)
-      printf("0x%x ", rbuf[i]);
-    printf("\n");
+    if (decode_flag)
+      printf("raw response:\n");
+    print_raw_resp(rbuf, rlen);
+    if (decode_flag)
+      print_parsed_resp(rbuf, rlen);
   }
   return ret;
 

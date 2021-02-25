@@ -543,7 +543,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
-  {"CC_E1S_1_NVME_7_PWR" , E1S_1_7_NVME_PWR , read_ina260_sensor, 0, {10.6, 0, 0, 2.52, 0, 0, 0, 0}, POWER}, //0xAF
+  {"CC_E1S_1_NVME_7_PWR" , E1S_1_7_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xAF
 
   {"CC_M2_0_NVME_0_VOLT", NVME_ID0, read_bay0_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xB0
   {"CC_M2_0_NVME_0_CURR", NVME_ID0, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB1

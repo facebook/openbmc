@@ -49,7 +49,11 @@ class ClassConfig {
         static CpldExtComponent     cpld_bb_fw1("slot1", "bb_cpld" , FRU_SLOT1, "bb", FW_BB_CPLD);
 
         static PCIESWComponent pciesw_2ou_fw1("slot1", "2ou_pciesw", FRU_SLOT1, "2ou", FW_2OU_PESW);
-        static VrExtComponent  vr_2ou_fw1("slot1", "2ou_vr", FRU_SLOT1, "2ou", FW_2OU_PESW_VR);
+        static VrExtComponent  vr_2ou_vr_p3v3_1_fw1("slot1", "2ou_vr_stby1", FRU_SLOT1, "2ou", FW_2OU_3V3_VR1);
+        static VrExtComponent  vr_2ou_vr_p3v3_2_fw1("slot1", "2ou_vr_stby2", FRU_SLOT1, "2ou", FW_2OU_3V3_VR2);
+        static VrExtComponent  vr_2ou_vr_p3v3_3_fw1("slot1", "2ou_vr_stby3", FRU_SLOT1, "2ou", FW_2OU_3V3_VR3);
+        static VrExtComponent  vr_2ou_vr_p1v8_fw1("slot1", "2ou_vr_p1v8", FRU_SLOT1, "2ou", FW_2OU_1V8_VR);
+        static VrExtComponent  vr_2ou_fw1("slot1", "2ou_vr_pesw", FRU_SLOT1, "2ou", FW_2OU_PESW_VR);
         static M2DevComponent  m2_2ou_dev0("slot1", "2ou_dev0", FRU_SLOT1, "2ou", FW_2OU_M2_DEV0);
         static M2DevComponent  m2_2ou_dev1("slot1", "2ou_dev1", FRU_SLOT1, "2ou", FW_2OU_M2_DEV1);
         static M2DevComponent  m2_2ou_dev2("slot1", "2ou_dev2", FRU_SLOT1, "2ou", FW_2OU_M2_DEV2);
@@ -133,7 +137,11 @@ class ClassConfig {
             syslog(LOG_WARNING, "Failed to get slot1 2ou board type\n");
           } else if ( board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD ) {
             static PCIESWComponent pciesw_2ou_fw1("slot1", "2ou_pciesw", FRU_SLOT1, "2ou", FW_2OU_PESW);
-            static VrExtComponent  vr_2ou_fw1("slot1", "2ou_vr", FRU_SLOT1, "2ou", FW_2OU_PESW_VR);
+            static VrExtComponent  vr_2ou_vr_p3v3_1_fw1("slot1", "2ou_vr_stby1", FRU_SLOT1, "2ou", FW_2OU_3V3_VR1);
+            static VrExtComponent  vr_2ou_vr_p3v3_2_fw1("slot1", "2ou_vr_stby2", FRU_SLOT1, "2ou", FW_2OU_3V3_VR2);
+            static VrExtComponent  vr_2ou_vr_p3v3_3_fw1("slot1", "2ou_vr_stby3", FRU_SLOT1, "2ou", FW_2OU_3V3_VR3);
+            static VrExtComponent  vr_2ou_vr_p1v8_fw1("slot1", "2ou_vr_p1v8", FRU_SLOT1, "2ou", FW_2OU_1V8_VR);
+            static VrExtComponent  vr_2ou_fw1("slot1", "2ou_vr_pesw", FRU_SLOT1, "2ou", FW_2OU_PESW_VR);
             static M2DevComponent  m2_2ou_dev0_fw1("slot1", "2ou_dev0", FRU_SLOT1, "2ou", FW_2OU_M2_DEV0);
             static M2DevComponent  m2_2ou_dev1_fw1("slot1", "2ou_dev1", FRU_SLOT1, "2ou", FW_2OU_M2_DEV1);
             static M2DevComponent  m2_2ou_dev2_fw1("slot1", "2ou_dev2", FRU_SLOT1, "2ou", FW_2OU_M2_DEV2);
@@ -153,7 +161,11 @@ class ClassConfig {
             syslog(LOG_WARNING, "Failed to get slot3 2ou board type\n");
           } else if ( board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD ) {
             static PCIESWComponent pciesw_2ou_fw3("slot3", "2ou_pciesw", FRU_SLOT3, "2ou", FW_2OU_PESW);
-            static VrExtComponent  vr_2ou_fw3("slot3", "2ou_vr", FRU_SLOT3, "2ou", FW_2OU_PESW_VR);
+            static VrExtComponent  vr_2ou_vr_p3v3_1_fw3("slot3", "2ou_vr_stby1", FRU_SLOT1, "2ou", FW_2OU_3V3_VR1);
+            static VrExtComponent  vr_2ou_vr_p3v3_2_fw3("slot3", "2ou_vr_stby2", FRU_SLOT1, "2ou", FW_2OU_3V3_VR2);
+            static VrExtComponent  vr_2ou_vr_p3v3_3_fw3("slot3", "2ou_vr_stby3", FRU_SLOT1, "2ou", FW_2OU_3V3_VR3);
+            static VrExtComponent  vr_2ou_vr_p1v8_fw3("slot3", "2ou_vr_p1v8", FRU_SLOT1, "2ou", FW_2OU_1V8_VR);
+            static VrExtComponent  vr_2ou_fw3("slot3", "2ou_vr_pesw", FRU_SLOT1, "2ou", FW_2OU_PESW_VR);
             static M2DevComponent  m2_2ou_dev0_fw3("slot3", "2ou_dev0", FRU_SLOT3, "2ou", FW_2OU_M2_DEV0);
             static M2DevComponent  m2_2ou_dev1_fw3("slot3", "2ou_dev1", FRU_SLOT3, "2ou", FW_2OU_M2_DEV1);
             static M2DevComponent  m2_2ou_dev2_fw3("slot3", "2ou_dev2", FRU_SLOT3, "2ou", FW_2OU_M2_DEV2);

@@ -46,29 +46,41 @@ int VrExtComponent::print_version()
   string ver("");
   string board_name = name;
   string err_msg("");
- 
+  enum class VR_STATUS {
+    VR_OK,
+    VR_ERR,
+    VR_INIT,
+  };
+  static VR_STATUS vr_status = VR_STATUS::VR_INIT;
+  static string err_str("");
+
   transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
-  try {
-    server.ready();
-    expansion.ready();
-  } catch(string& err) {
-    for ( auto& node:list ) {
-      printf("%s %s Version: NA (%s)\n", board_name.c_str(), node.second.c_str(), err.c_str());
+
+  if ( VR_STATUS::VR_INIT == vr_status ) {
+    try {
+      server.ready();
+      expansion.ready();
+      vr_status = VR_STATUS::VR_OK;
+    } catch(string& err) {
+      vr_status = VR_STATUS::VR_ERR;
+      err_str = err;
     }
+  }
+
+  if ( VR_STATUS::VR_ERR == vr_status ) {
+    printf("%s %s Version: NA (%s)\n", board_name.c_str(), list[fw_comp].c_str(), err_str.c_str());
     return FW_STATUS_SUCCESS;
   }
 
-  for (auto& node:list ) {
-    try {
-      //Print VR FWs
-      if ( get_ver_str(ver, node.first) < 0 ) {
-        throw "Error in getting the version of " + board_name;
-      }
-      cout << board_name << " " << node.second << " Version: " << ver << endl;
-    } catch(string& err) {
-      printf("%s %s Version: NA (%s)\n", board_name.c_str(), node.second.c_str(), err.c_str());
+  try {
+    //Print VR FWs
+    if ( get_ver_str(ver, fw_comp) < 0 ) {
+      throw "Error in getting the version of " + board_name;
     }
-  } 
+    cout << board_name << " " << list[fw_comp] << " Version: " << ver << endl;
+  } catch(string& err) {
+    printf("%s %s Version: NA (%s)\n", board_name.c_str(), list[fw_comp].c_str(), err.c_str());
+  }
 
   return FW_STATUS_SUCCESS;
 }

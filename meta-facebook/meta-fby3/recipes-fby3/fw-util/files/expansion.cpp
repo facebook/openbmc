@@ -53,6 +53,10 @@ void ExpansionBoard::ready()
       break;
     case FW_2OU_PESW:
     case FW_2OU_PESW_VR:
+    case FW_2OU_3V3_VR1:
+    case FW_2OU_3V3_VR2:
+    case FW_2OU_3V3_VR3:
+    case FW_2OU_1V8_VR:
     case FW_2OU_M2_DEV0:
       if ( (config_status & PRESENT_2OU) != PRESENT_2OU ) {
         is_present = false;
@@ -66,7 +70,7 @@ void ExpansionBoard::ready()
       }
 
       // PESW are present when the power is in S0 state
-      if ( is_present == true && fw_comp != FW_2OU_PESW_VR ) {
+      if ( is_present == true && (fw_comp == FW_2OU_PESW || fw_comp == FW_2OU_M2_DEV0) ) {
         uint8_t pwr_sts = 0x0;
         ret = pal_get_server_power(slot_id, &pwr_sts);
         if ( ret < 0 || pwr_sts == 0 )

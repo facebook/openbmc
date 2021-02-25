@@ -135,7 +135,7 @@ send_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt)
   {
     ret = libusb_bulk_transfer(udev->handle, udev->epaddr, (uint8_t*)pkt, transferlen, &transferred, 3000);
     if(((ret != 0) || (transferlen != transferred))) {
-      printf("Error in transferring data! err = %d and transferred = %d(expected data length 64)\n",ret ,transferred);
+      printf("Error in transferring data! err = %d and transferred = %d(expected data length %d)\n",ret ,transferred, transferlen);
       printf("Retry since  %s\n", libusb_error_name(ret));
       retries--;
       if (!retries) {

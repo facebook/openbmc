@@ -148,6 +148,7 @@ enum {
   VR_ISL = 0x0,
   VR_TI  = 0x1,
   VR_IFX = 0x2,
+  VR_VY  = 0x3,
   IFX_DEVID_LEN = 0x2,
   ISL_DEVID_LEN = 0x4,
   TI_DEVID_LEN  = 0x6,
@@ -158,6 +159,10 @@ enum {
   VDDQ_ABC_ADDR = 0xC8,
   VDDQ_DEF_ADDR = 0xCC,
   VR_PESW_ADDR = 0xC8,
+  VR_2OU_P3V3_STBY1 = 0x28,
+  VR_2OU_P3V3_STBY2 = 0x2E,
+  VR_2OU_P3V3_STBY3 = 0x30,
+  VR_2OU_P1V8       = 0x36,
 };
 
 // M2 info

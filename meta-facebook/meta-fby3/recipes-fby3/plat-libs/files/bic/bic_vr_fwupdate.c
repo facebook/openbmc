@@ -906,11 +906,89 @@ error_exit:
   return ret;
 }
 
+static bool
+is_valid_data(char c) {
+  if ( (c >= 'A' && c <= 'F') || \
+       (c >= '0' && c <= '9') ) {
+    return true;
+  } else if ( (c >= 'a' && c <= 'f')) {
+    printf("Please all caps\n");
+  }
+  return false;
+}
+
+static int
+vr_VY_txt_parser(char *image) {
+  int ret = BIC_STATUS_FAILURE;
+  FILE *fp = NULL;
+  char tmp_buf[64] = "\0";
+  int tmp_len = sizeof(tmp_buf);
+  int i = 0, j = 0;
+  uint8_t char_cnt = 0;
+  int data_cnt = 0;
+  bool is_cmd = true;
+
+  if ( (fp = fopen(image, "r") ) == NULL ) {
+    printf("Invalid file: %s\n", image);
+    goto error_exit;
+  }
+
+  while( NULL != fgets(tmp_buf, tmp_len, fp) ) {
+    if (  is_valid_data(tmp_buf[0]) == false ) continue;
+
+    //check line in char
+    for ( i = 0, j = 0, is_cmd = true; tmp_buf[i] != '\n'; i++ ) {
+      //is valid char
+      if ( is_valid_data(tmp_buf[i]) == true ) {
+        //is data end in the next?
+        if ( is_valid_data(tmp_buf[i+1]) == false ) {
+          //cmd
+          if ( is_cmd == true ) {
+            //store cmd
+            vr_list[vr_cnt].pdata[data_cnt].command  = string_to_byte(&tmp_buf[i-1]);
+            is_cmd = false;
+          } else {
+            //store data
+            if ( char_cnt == 0 ) vr_list[vr_cnt].pdata[data_cnt].data[j] = char_to_hex(tmp_buf[i]);
+            else vr_list[vr_cnt].pdata[data_cnt].data[j] = string_to_byte(&tmp_buf[i-1]);
+            j++;
+          }
+          char_cnt = 0;
+        } else char_cnt++;
+      }
+    }
+    vr_list[vr_cnt].pdata[data_cnt].data_len = j;
+    data_cnt++;
+  }
+  vr_list[vr_cnt].data_cnt = data_cnt;
+  vr_list[vr_cnt].addr = 0xff;   //set it manually
+  vr_list[vr_cnt].devid_len = 2;
+  vr_list[vr_cnt].devid[0] = 0x0;
+  vr_list[vr_cnt].devid[1] = 0x0;
+  ret = BIC_STATUS_SUCCESS;
+error_exit:
+  if ( fp != NULL ) fclose(fp);
+
+  return ret;
+}
+
+static int
+vr_VY_program(uint8_t slot_id, vr *dev, uint8_t force) {
+  /*not supported*/
+  return BIC_STATUS_FAILURE;
+}
+
 #include "bic_bios_fwupdate.h"
 static int
 vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8_t force) {
 #define DEFAULT_DATA_SIZE 16
-#define USB_2OU_ISL_VR_IDX 0x04
+#define USB_LAST_DATA_FLAG  0x80
+#define USB_2OU_ISL_VR_IDX  0x04
+#define USB_2OU_VY_VR_STBY1 0x06
+#define USB_2OU_VY_VR_STBY2 0x07
+#define USB_2OU_VY_VR_STBY3 0x08
+#define USB_2OU_VY_VR_P1V8  0x09
+
   int ret = BIC_STATUS_FAILURE;
   int i = 0;
   int len = dev->data_cnt;
@@ -937,6 +1015,18 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
     case FW_2OU_PESW_VR:
       usb_idx = USB_2OU_ISL_VR_IDX;
       break;
+    case FW_2OU_3V3_VR1:
+      usb_idx = USB_2OU_VY_VR_STBY1;
+      break;
+    case FW_2OU_3V3_VR2:
+      usb_idx = USB_2OU_VY_VR_STBY2;
+      break;
+    case FW_2OU_3V3_VR3:
+      usb_idx = USB_2OU_VY_VR_STBY3;
+      break;
+    case FW_2OU_1V8_VR:
+      usb_idx = USB_2OU_VY_VR_P1V8;
+      break;
     default:
       printf("%s() comp(0x%02X) didn't support USB firmware update\n", __func__, comp);
       return BIC_STATUS_FAILURE;
@@ -954,17 +1044,18 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
     printf("%s() failed to allocate memory\n", __func__);
     goto error_exit;
   }
-
   uint8_t *file_buf = buf + USB_PKT_HDR_SIZE;
   for ( i = 0; i < len; i++ ) {
     bic_usb_packet *pkt = (bic_usb_packet *) buf;
-    pkt->dummy  = usb_idx;    // component
-    pkt->offset = 0x0;        // dummy
+    // if it's the last one, append the flag
+    if ( i + 1 == len ) pkt->dummy = USB_LAST_DATA_FLAG|usb_idx;
+    else pkt->dummy  = usb_idx; // component
+
+    pkt->offset = 0x0;         // dummy
     pkt->length = list[i].data_len + 2; // read bytes
     file_buf[0] = list[i].data_len; // data length
     file_buf[1] = list[i].command;  // command code
     memcpy(&file_buf[2], list[i].data, list[i].data_len); // data
-
     ret = send_bic_usb_packet(udev, pkt);
     if (ret < 0) {
       printf("Failed to write data to the device\n");
@@ -972,19 +1063,32 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
     }
     show_progress(slot_id, i, len);
   }
+  printf("\n");
 
-  int retry = MAX_RETRY;
-  do {
-    if ( vr_ISL_polling_status(slot_id, dev->bus, dev->addr, dev->intf) > 0 ) {
+  switch(comp) {
+    case FW_2OU_PESW_VR:
+      {
+        int retry = MAX_RETRY;
+        sleep(1);
+        do {
+          if ( vr_ISL_polling_status(slot_id, dev->bus, dev->addr, dev->intf) > 0 ) {
+            break;
+          } else {
+            retry--;
+            sleep(2);
+          }
+        } while ( retry > 0 );
+        if ( retry == 0 ) ret = BIC_STATUS_FAILURE;
+        else ret = BIC_STATUS_SUCCESS;
+      }
       break;
-    } else {
-      retry--;
-      sleep(2);
-    }
-  } while ( retry > 0 );
-
-  if ( retry == 0 ) ret = BIC_STATUS_FAILURE;
-  else ret = BIC_STATUS_SUCCESS;
+    case FW_2OU_3V3_VR1:
+    case FW_2OU_3V3_VR2:
+    case FW_2OU_3V3_VR3:
+    case FW_2OU_1V8_VR:
+      printf("please wait 15 seconds for programming to complete\n");
+      break;
+  }
 
 error_exit:
   if ( buf != NULL ) free(buf);
@@ -997,12 +1101,17 @@ struct dev_table {
   uint8_t bus;
   uint8_t addr;
   char *dev_name;
+  uint8_t comp;
 } dev_list[] = {
-  {NONE_INTF, VR_SB_BUS, VCCIN_ADDR, "VCCIN/VSA"},
-  {NONE_INTF, VR_SB_BUS, VCCIO_ADDR, "VCCIO"},
-  {NONE_INTF, VR_SB_BUS, VDDQ_ABC_ADDR, "VDDQ_ABC"},
-  {NONE_INTF, VR_SB_BUS, VDDQ_DEF_ADDR, "VDDQ_DEF"},
-  {REXP_BIC_INTF, VR_2OU_BUS, VR_PESW_ADDR, "VR_P0V84/P0V9"}
+  {NONE_INTF,     VR_SB_BUS,  VCCIN_ADDR,        "VCCIN/VSA",     FW_VR},
+  {NONE_INTF,     VR_SB_BUS,  VCCIO_ADDR,        "VCCIO",         FW_VR},
+  {NONE_INTF,     VR_SB_BUS,  VDDQ_ABC_ADDR,     "VDDQ_ABC",      FW_VR},
+  {NONE_INTF,     VR_SB_BUS,  VDDQ_DEF_ADDR,     "VDDQ_DEF",      FW_VR},
+  {REXP_BIC_INTF, VR_2OU_BUS, VR_PESW_ADDR,      "VR_P0V84/P0V9", FW_2OU_PESW_VR},
+  {REXP_BIC_INTF, VR_2OU_BUS, VR_2OU_P3V3_STBY1, "VR_P3V3_STBY1", FW_2OU_3V3_VR1},
+  {REXP_BIC_INTF, VR_2OU_BUS, VR_2OU_P3V3_STBY2, "VR_P3V3_STBY2", FW_2OU_3V3_VR2},
+  {REXP_BIC_INTF, VR_2OU_BUS, VR_2OU_P3V3_STBY3, "VR_P3V3_STBY3", FW_2OU_3V3_VR3},
+  {REXP_BIC_INTF, VR_2OU_BUS, VR_2OU_P1V8,       "VR_P1V8",       FW_2OU_1V8_VR}
 };
 
 int dev_table_size = (sizeof(dev_list)/sizeof(struct dev_table));
@@ -1015,37 +1124,34 @@ static struct tool {
   {VR_ISL, vr_ISL_hex_parser, vr_ISL_program},
   {VR_TI , vr_TI_csv_parser , vr_TI_program},
   {VR_IFX, vr_IFX_xsf_parser, vr_IFX_program},
+  {VR_VY,  vr_VY_txt_parser,  vr_VY_program},
 };
 
 static char*
-get_vr_name(uint8_t intf, uint8_t bus, uint8_t addr) {
+get_vr_name(uint8_t intf, uint8_t bus, uint8_t addr, uint8_t comp) {
   int i;
   for ( i = 0; i< dev_table_size; i++ ) {
-    if ( addr == dev_list[i].addr && bus == dev_list[i].bus && \
-         intf == dev_list[i].intf) {
+          //check addr first, if it's false, check comp further
+    if ( (addr == dev_list[i].addr || comp == dev_list[i].comp) && \
+          bus == dev_list[i].bus && intf == dev_list[i].intf) {
       return dev_list[i].dev_name;
     }
   }
   return NULL;
 }
 
-int 
-update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force, bool usb_update) {
-  int ret = 0;
+static int
+_lookup_vr_devid(uint8_t slot_id, uint8_t comp, uint8_t intf, uint8_t *rbuf, uint8_t *sel_vendor, uint8_t *vr_bus) {
   int i = 0;
-  uint8_t rbuf[6] = {0};
+  int ret = 0;
   uint8_t rlen = 0;
-  uint8_t sel_vendor = 0;
-  uint8_t vr_bus = 0x0;
 
-  // Get devid to tell which VR is used now
-  // For now, we tell them by using intf, if it's not okay
-  // maybe we can add a condition to check comp
   while ( i < dev_table_size ) {
-    if ( dev_list[i].intf == intf ) {
+    if ( dev_list[i].intf == intf && dev_list[i].comp == comp ) {
+      printf("Find: %s, ", dev_list[i].dev_name );
       ret = bic_get_vr_device_id(slot_id, 0/*unused*/, rbuf, &rlen, dev_list[i].bus, dev_list[i].addr, intf);
-      if ( ret == 0 && rlen <= TI_DEVID_LEN/*the longest length of dev id*/) {
-        vr_bus = dev_list[i].bus;
+      if ( ret == BIC_STATUS_SUCCESS && rlen <= TI_DEVID_LEN/*the longest length of dev id*/) {
+        *vr_bus = dev_list[i].bus;
         break;
       }
     }
@@ -1057,16 +1163,34 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
     return BIC_STATUS_FAILURE;
   }
 
-  //step 2 - parse the image file.
   if ( rlen == IFX_DEVID_LEN ) {
-    sel_vendor = VR_IFX;
-  } else if (rlen == TI_DEVID_LEN ){
-    sel_vendor = VR_TI;
+    *sel_vendor = VR_IFX;
+    // the length of IFX and VY is the same, check it further
+    if ( intf == REXP_BIC_INTF && dev_list[i].comp != FW_2OU_PESW_VR ) {
+      *sel_vendor = VR_VY;
+    }
+  } else if (rlen == TI_DEVID_LEN ) {
+    *sel_vendor = VR_TI;
   } else {
-    sel_vendor = VR_ISL;
+    *sel_vendor = VR_ISL;
   }
 
-  printf("VR vendor=%s(%x.%x) \n", (sel_vendor == VR_IFX)?"IFX":(sel_vendor == VR_TI)?"TI":"ISL", rlen, sel_vendor);
+  printf("VR vendor=%s(%x.%x) \n", (*sel_vendor == VR_IFX)?"IFX": \
+                                   (*sel_vendor == VR_TI)?"TI": \
+                                   (*sel_vendor == VR_ISL)?"ISL":"VY", rlen, *sel_vendor);
+  return BIC_STATUS_SUCCESS;
+}
+
+int
+update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force, bool usb_update) {
+  int ret = 0;
+  int i = 0;
+  uint8_t devid[6] = {0};
+  uint8_t sel_vendor = 0;
+  uint8_t vr_bus = 0x0;
+
+  ret = _lookup_vr_devid(slot_id, comp, intf, devid, &sel_vendor, &vr_bus);
+  if ( ret < 0 ) goto error_exit;
 
   ret = vr_tool[sel_vendor].parser(image);
   if ( ret < 0 ) {
@@ -1079,19 +1203,19 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
   for ( i = 0; i < vr_cnt + 1; i++ ) {
     if ( vr_list[i].data_cnt == 0 || vr_list[i].addr == 0 || vr_list[i].devid_len == 0 ) {
       printf("data, addr, or devid_len is not caught!\n");
-      ret = -1;
+      ret = BIC_STATUS_FAILURE;
       goto error_exit;
     }
   }
 
   //step 3 - check DEVID
-  if ( memcmp(vr_list[0].devid, rbuf, vr_list[0].devid_len) != 0 ) {
+  if ( memcmp(vr_list[0].devid, devid, vr_list[0].devid_len) != 0 ) {
     printf("Device ID is not match!\n");
     printf(" Expected ID: ");
     for ( i = 0 ; i < vr_list[0].devid_len; i++ ) printf("%02X ", vr_list[0].devid[i]);
     printf("\n");
     printf(" Actual ID: ");
-    for ( i = 0 ; i < vr_list[0].devid_len; i++ ) printf("%02X ", rbuf[i]);
+    for ( i = 0 ; i < vr_list[0].devid_len; i++ ) printf("%02X ", devid[i]);
     printf("\n");
     ret = -1;
     goto error_exit;
@@ -1103,7 +1227,7 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
 
   //step 4 - program
   //For now, we only support to be input 1 file.
-  printf("Update %s...", get_vr_name(intf, vr_bus, vr_list[0].addr));
+  printf("Update %s...", get_vr_name(intf, vr_bus, vr_list[0].addr, comp));
   ret = (usb_update == true)?vr_usb_program(slot_id, sel_vendor, comp, &vr_list[0], force): \
                              vr_tool[sel_vendor].program(slot_id, &vr_list[0], force);
 error_exit:

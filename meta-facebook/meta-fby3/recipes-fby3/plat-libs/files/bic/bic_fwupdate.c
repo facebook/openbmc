@@ -1155,6 +1155,14 @@ get_component_name(uint8_t comp) {
       return "2OU PCIe Switch";
     case FW_2OU_PESW_VR:
       return "2OU PCIe VR";
+    case FW_2OU_3V3_VR1:
+      return "VR_P3V3_STBY1";
+    case FW_2OU_3V3_VR2:
+      return "VR_P3V3_STBY2";
+    case FW_2OU_3V3_VR3:
+      return "VR_P3V3_STBY3";
+    case FW_2OU_1V8_VR:
+      return "VR_P1V8";
     case FW_2OU_M2_DEV0:
       return "2OU M2 Dev0";
     case FW_2OU_M2_DEV1:
@@ -1233,6 +1241,10 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     case FW_2OU_CPLD:
     case FW_2OU_PESW:
     case FW_2OU_PESW_VR:
+    case FW_2OU_3V3_VR1:
+    case FW_2OU_3V3_VR2:
+    case FW_2OU_3V3_VR3:
+    case FW_2OU_1V8_VR:
     case FW_2OU_M2_DEV0:
     case FW_2OU_M2_DEV1:
     case FW_2OU_M2_DEV2:
@@ -1349,6 +1361,12 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       break;
     case FW_VR:
       ret = update_bic_vr(slot_id, comp, path, intf, force, false/*usb update?*/);
+      break;
+    case FW_2OU_3V3_VR1:
+    case FW_2OU_3V3_VR2:
+    case FW_2OU_3V3_VR3:
+    case FW_2OU_1V8_VR:
+      ret = update_bic_vr(slot_id, comp, path, intf, force, true/*usb update*/);
       break;
     case FW_2OU_PESW_VR:
       ret = (loc != NULL)?update_bic_vr(slot_id, comp, path, intf, force, false/*usb update*/): \

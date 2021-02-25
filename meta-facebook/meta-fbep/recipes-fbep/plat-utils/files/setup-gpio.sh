@@ -301,7 +301,7 @@ gpio_export OAM_FAST_BRK_N GPIOI2
 gpio_set OAM_FAST_BRK_N 1
 
 gpio_export OAM_FAST_BRK_ON_N GPIOI3
-gpio_set OAM_FAST_BRK_ON_N 0
+gpio_set OAM_FAST_BRK_ON_N 1
 
 # OAM debug pin (defined by OAM)
 gpio_export BMC_OAM_TEST3 GPIOJ0

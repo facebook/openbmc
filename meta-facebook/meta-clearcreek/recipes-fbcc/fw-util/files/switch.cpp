@@ -75,9 +75,6 @@ int PAXComponent::update(string image)
       syslog(LOG_CRIT, "Component %s upgrade completed", comp.c_str());
   }
 
-  if (ret == 0)
-    pal_clear_pax_cache(_paxid);
-
   return ret;
 }
 

@@ -7,8 +7,8 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=3d6b07c89629cff2990d2e8e1f4c2382"
 
 SRC_URI = "https://github.com/Microsemi/switchtec-user/archive/v${PV}.tar.gz"
-SRC_URI[md5sum] = "cb2228cafb8d9ee415d05f216574078c"
-SRC_URI[sha256sum] = "88d3d8994de766798c9be61fca64268f5f0cf4c030ab1dca878f5239072c2a9c"
+SRC_URI[md5sum] = "a0748c19552a082342fb665db20e00a0"
+SRC_URI[sha256sum] = "cabce7e83c3470546285d275a2586d95a9c74463fa6b498e89a30423713786d2"
 
 S = "${WORKDIR}/switchtec-user-${PV}"
 

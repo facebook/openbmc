@@ -9433,7 +9433,7 @@ pal_get_status(void) {
 }
 
 NCSI_NL_RSP_T *
-pal_send_nl_msg(NCSI_NL_MSG_T *nl_msg)
+send_nl_msg_nl_user(NCSI_NL_MSG_T *nl_msg)
 {
   int sock_fd, ret;
   struct sockaddr_nl src_addr, dest_addr;
@@ -9510,6 +9510,15 @@ close_and_exit:
   close(sock_fd);
 
   return ret_buf;
+}
+
+NCSI_NL_RSP_T *
+pal_send_nl_msg(NCSI_NL_MSG_T *msg) {
+  if(islibnl()) {
+    return send_nl_msg_libnl(msg);
+  } else {
+    return send_nl_msg_nl_user(msg);
+  }
 }
 
 // OEM Command "CMD_OEM_BYPASS_CMD" 0x34

@@ -118,6 +118,23 @@ static int parse_ncsi(uint8_t *rbuf, int rlen)
 
 static int parse_pldm(uint8_t *rbuf, int rlen)
 {
+  int i, idx = 0;
+
+  if (rlen < MIN_PLDM_RESP_LEN || rbuf == NULL) {
+    printf("Invalid PLDM msg length (%d)\n", rlen);
+    return -1;
+  }
+
+  printf("PLDM message\n");
+  printf("  Rq[7],D[6],IID[4:0]:  %02x\n", rbuf[idx++]);
+  printf("  Hdr[7:6],Type[5:0]:   %02x\n", rbuf[idx++]);
+  printf("  PLDM Command Code:    %02x\n", rbuf[idx++]);
+  printf("  PLDM Completion Code: %02x\n", rbuf[idx++]);
+  printf("  response data:        ");
+  for (i = idx; i < rlen; ++i)
+    printf("%02x ", rbuf[i]);
+  printf("\n");
+
   return 0;
 }
 
@@ -125,7 +142,7 @@ static int parse_mctp_ctrl(uint8_t *rbuf, int rlen)
 {
   int i, idx = 0;
 
-  if (rlen < 3 || rbuf == NULL) {
+  if (rlen < MIN_MCTP_CTRL_RESP_LEN || rbuf == NULL) {
     printf("Invalid control msg length (%d)\n", rlen);
     return -1;
   }
@@ -138,6 +155,7 @@ static int parse_mctp_ctrl(uint8_t *rbuf, int rlen)
   for (i = idx; i < rlen; ++i)
     printf("%02x ", rbuf[i]);
   printf("\n");
+
   return 0;
 }
 

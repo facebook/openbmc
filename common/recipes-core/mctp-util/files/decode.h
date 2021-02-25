@@ -20,6 +20,9 @@
 #ifndef _DECODE_H_
 #define _DECODE_H_
 
+#define MIN_MCTP_CTRL_RESP_LEN 3  //Byte1: IID, Byte2:Cmd, Byte3:Completion Code
+#define MIN_PLDM_RESP_LEN 4  //Byte1: IID, Byte2: Type, Byte3:Cmd, Byte4:Completion Code
+
 void print_raw_resp(uint8_t *rbuf, int rlen);
 int  print_parsed_resp(uint8_t *rbuf, int rlen);
 #endif /* _DECODE_H_ */

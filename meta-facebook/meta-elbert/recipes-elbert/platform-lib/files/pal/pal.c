@@ -138,15 +138,12 @@ int pal_set_key_value(char* key, char* value) {
 
 int
 pal_set_def_key_value(void) {
-  int i, ret;
-  char path[LARGEST_DEVICE_NAME + 1];
+  int i;
 
   for (i = 0; strncmp(key_list[i], LAST_KEY, strlen(LAST_KEY)) != 0; i++) {
-    snprintf(path, LARGEST_DEVICE_NAME, KV_PATH, key_list[i]);
-    if ((ret = kv_set(key_list[i], def_val_list[i],
-	                  0, KV_FPERSIST | KV_FCREATE)) < 0) {
+    if (kv_set(key_list[i], def_val_list[i], 0, KV_FPERSIST | KV_FCREATE)) {
 #ifdef DEBUG
-      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
+      syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed.");
 #endif
     }
   }

@@ -83,7 +83,6 @@ extern "C" {
 #define LARGEST_DEVICE_NAME 128
 #define READ_UNIT_SENSOR_TIMEOUT 5
 #define ELBERT_SMB_P1_BOARD_PATH "/tmp/.smb_p1_board"
-#define KV_PATH "/mnt/data/kv_store/%s"
 
 extern const char pal_fru_list[];
 

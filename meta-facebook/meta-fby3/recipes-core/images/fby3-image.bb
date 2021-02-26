@@ -68,4 +68,5 @@ IMAGE_INSTALL += " \
   usb2jtag-util \
   lrzsz \
   mctp-util \
+  usbutils \
   "

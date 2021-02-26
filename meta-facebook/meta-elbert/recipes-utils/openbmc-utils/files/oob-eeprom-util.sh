@@ -557,6 +557,11 @@ then
     exit 1
 fi
 
+# Only allow one instance of script to run at a time.
+script=$(realpath "$0")
+exec 100< "$script"
+flock -n 100 || { echo "ERROR: $0 already running" && exit 1; }
+
 if [ ! -d "$SCMCPLD_SYSFS_DIR" ]
 then
     echo "Error: SCM CPLD not detected" >&2

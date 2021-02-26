@@ -31,8 +31,10 @@ do_install_append() {
         rm "$nslookup_path"
     fi
 
+    # Mask systemd units
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
         systemctl --root=${D} mask named.service
+        systemctl --root=${D} mask bind.service
     fi
 }
 

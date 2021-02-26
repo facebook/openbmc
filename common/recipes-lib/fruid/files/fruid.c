@@ -153,7 +153,7 @@ static char * get_chassis_type(uint8_t type_hex)
  */
 static char * _fruid_area_field_read(uint8_t *offset)
 {
-  int field_type, field_len, field_len_eff;
+  int field_type, field_len, field_len_eff, alloc_len;
   int idx, idx_eff, val;
   char * field;
 
@@ -185,8 +185,8 @@ static char * _fruid_area_field_read(uint8_t *offset)
   }
 
   /* If field data is zero, store 'N/A' for that field. */
-  field_len_eff > 0 ? (field = (char *) malloc(field_len_eff + 1)) :
-                      (field = (char *) malloc(strlen(FIELD_EMPTY) + 1));
+  alloc_len = ((field_len_eff > 0) ? field_len_eff : strlen(FIELD_EMPTY)) + 1;
+  field = (char *) malloc(alloc_len);
   if (!field) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fruid: malloc: memory allocation failed\n");
@@ -194,7 +194,7 @@ static char * _fruid_area_field_read(uint8_t *offset)
     return NULL;
   }
 
-  memset(field, 0, field_len + 1);
+  memset(field, 0, alloc_len);
 
   if (field_len_eff < 1) {
     strcpy(field, FIELD_EMPTY);

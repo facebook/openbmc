@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from node import node
-from pal import *
+from rest_pal_legacy import *
 
 
 class fansNode(node):

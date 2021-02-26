@@ -1,6 +1,6 @@
 import uuid
 from node import node
-from pal import pal_get_uuid, pal_get_platform_name
+from rest_pal_legacy import pal_get_uuid, pal_get_platform_name
 
 def get_redfish():
     body = {}

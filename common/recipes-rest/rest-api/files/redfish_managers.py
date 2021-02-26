@@ -4,10 +4,9 @@ from uuid import getnode as get_mac
 import fcntl
 import struct
 import socket
-import pal
 from subprocess import *
 from node import node
-from pal import pal_get_uuid
+from rest_pal_legacy import pal_get_uuid, pal_get_eth_intf_name
 
 SIOCGIFADDR    = 0x8915          # get PA address
 
@@ -29,7 +28,7 @@ def get_mac_address(if_name):
         mac_addr = mac[0:17].upper()
     else:
         mac = get_mac()
-        mac_addr = ":".join(("%012X" % mac)[i : i + 2] for i in range(0, 12, 2)) 
+        mac_addr = ":".join(("%012X" % mac)[i : i + 2] for i in range(0, 12, 2))
     return mac_addr
 
 
@@ -178,7 +177,7 @@ def get_ethernet_members():
     ipv4_gateway = ""
     ipv6_ip = ""
     try:
-        eth_intf = pal.pal_get_eth_intf_name()
+        eth_intf = pal_get_eth_intf_name()
         mac_addr = get_mac_address(eth_intf)
         host_name = socket.gethostname()
         fqdn = get_fqdn_str()
@@ -266,4 +265,3 @@ def get_manager_network():
     except Exception as error:
         print(error)
     return node(body)
-

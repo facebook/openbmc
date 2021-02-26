@@ -40,7 +40,7 @@ from node_mezz import get_node_mezz
 from node_scc import get_node_scc
 from node_sensors import get_node_sensors
 from node_server import get_node_server
-from pal import *
+from rest_pal_legacy import *
 from tree import tree
 
 from aiohttp.web import Application

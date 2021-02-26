@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 from node import node
-from pal import *
+from rest_pal_legacy import *
 
 
 class spbNode(node):

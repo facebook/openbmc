@@ -45,7 +45,7 @@ SRC_URI = "file://setup-rest-api.sh \
            file://rest_watchdog.py \
            file://rest_config.py \
            file://rest_libsensormon.py \
-           file://pal.py \
+           file://rest_pal_legacy.py \
            file://node.py \
            file://node_bmc.py \
            file://vboot.py \
@@ -93,12 +93,12 @@ binfiles = "acl_config.py\
             common_middlewares.py \
             common_logging.py \
             rest_config.py \
+            rest_pal_legacy.py \
             rest_libsensormon.py \
             node.py \
             node_bmc.py \
             rest.py \
             vboot.py \
-            pal.py \
            "
 
 binfiles1 = "setup-rest-api.sh \

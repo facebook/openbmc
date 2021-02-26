@@ -23,7 +23,7 @@ import os
 from subprocess import *
 
 from node import node
-from pal import *
+from rest_pal_legacy import *
 
 
 class serverNode(node):

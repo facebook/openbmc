@@ -25,7 +25,7 @@ from subprocess import PIPE, Popen, check_output, CalledProcessError
 from uuid import getnode as get_mac
 
 import kv
-import pal
+import rest_pal_legacy
 from node import node
 from vboot import get_vboot_status
 
@@ -213,10 +213,10 @@ class bmcNode(node):
 
     def getInformation(self, param=None):
         # Get Platform Name
-        name = pal.pal_get_platform_name()
+        name = rest_pal_legacy.pal_get_platform_name()
 
         # Get MAC Address
-        eth_intf = pal.pal_get_eth_intf_name()
+        eth_intf = rest_pal_legacy.pal_get_eth_intf_name()
         mac_path = "/sys/class/net/%s/address" % (eth_intf)
         if os.path.isfile(mac_path):
             mac = open(mac_path).read()

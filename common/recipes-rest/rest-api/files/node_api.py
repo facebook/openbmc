@@ -19,7 +19,7 @@
 #
 
 from node import node
-from pal import *
+from rest_pal_legacy import *
 
 
 def get_node_api():

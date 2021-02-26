@@ -39,7 +39,7 @@ SRC_URI = "file://rest.py \
            file://rest_crawler.py \
            file://node.py \
            file://tree.py \
-           file://pal.py \
+           file://rest_pal_legacy.py \
            file://vboot.py \
            file://rest.cfg \
            file://rest_config.py \

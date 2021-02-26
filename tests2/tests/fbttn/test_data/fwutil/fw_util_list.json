@@ -1,0 +1,55 @@
+{
+    "bmc": {
+        "bmc": {
+            "version header": "BMC Version"
+        },
+        "fscd": {
+            "version header": "Fan Speed Controller Version"
+        },
+        "rom": {
+            "version header": "ROM Version"
+        },
+        "tpm": {
+            "version header": "TPM Version"
+        },
+        "usbdbgbl": {
+            "version header": "MCU Bootloader Version"
+        },
+        "usbdbgfw": {
+            "version header": "MCU Version"
+        }
+    },
+    "nic": {
+        "nic": {
+            "version header": "Mellanox NIC firmware version"
+        }
+    },
+    "scc": {
+        "exp": {
+            "version header": "Expander Version"
+        },
+        "ioc": {
+            "version header": "SCC IOC Version"
+        }
+    },
+    "server": {
+        "bic": {
+            "version header": "Bridge-IC Version"
+        },
+        "bicbl": {
+            "version header": "Bridge-IC Bootloader Version"
+        },
+        "bios": {
+            "version header": "BIOS Version"
+        },
+        "cpld": {
+            "version header": "CPLD Version"
+        },
+        "me": {
+            "version header": "ME Version"
+        },
+        "vr": {
+            "version header": "PVCCIN VR Version"
+        }
+    }
+}

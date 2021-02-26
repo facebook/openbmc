@@ -565,8 +565,11 @@ class Fscd(object):
                 Logger.usbdbg("%s fail" % (dead_fan.label))
                 fan_fail_record_path = FAN_FAIL_RECORD_DIR + "%s" % (dead_fan.label)
                 if not os.path.isfile(fan_fail_record_path):
-                    fan_fail_record = open(fan_fail_record_path, "w")
-                    fan_fail_record.close()
+                    try:
+                        fan_fail_record = open(fan_fail_record_path, "w")
+                        fan_fail_record.close()
+                    except FileNotFoundError:
+                        Logger.warn("Cannot create failure record for %s" % (dead_fan.label))
         for fan in recovered_fans:
             if self.fanpower:
                 Logger.warn("%s has recovered" % (fan.label,))

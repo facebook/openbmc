@@ -27,6 +27,8 @@
 #include <sys/stat.h>
 #include <openbmc/pal.h>
 
+#define MAX_FRU_NAME_LEN  64
+
 #define MAX_REC_NUM 4
 #define MAX_RI_NUM  3
 #define MAX_MFI_NUM 1
@@ -50,11 +52,15 @@
 #define TMP_POST_FILE TMP_SS_PATH"/postcode.txt"
 #define TMP_TARBALL   TMP_SS_PATH"/ss.tgz"
 
-#define FRUID_PATH "/tmp/fruid_slot%u.bin"
 #define OEM_REC_TYPE 0xFA
 
+#ifndef EEPROM_BUS
 #define EEPROM_BUS  3     // i2c_1
+#endif
+
+#ifndef EEPROM_ADDR
 #define EEPROM_ADDR 0xA2  // 8-bit address
+#endif
 
 #define log_system(cmd)                                                     \
 do {                                                                        \
@@ -86,12 +92,20 @@ static info_rec m_info_rec[MAX_REC_NUM] = {
 
 static void
 print_usage_help(void) {
+  uint8_t slot_num = 0;
+
+  pal_get_num_slots(&slot_num);
+
   printf("Usage: snapshot-util [fru] --set <type> <reason_file>\n");
   printf("       snapshot-util [fru] --set <type> \"<inline reason string>\"\n");
   printf("       snapshot-util [fru] --get <type> <info_num> <dump_file>\n");
   printf("       snapshot-util [fru] --get --all <dump_file>\n");
   printf("       snapshot-util [fru] --clear <type> <info_num>\n\n");
-  printf("       [fru]: slot1, slot2, slot3, slot4\n");
+  if (slot_num == 1) {
+    printf("       [fru]: server\n");
+  } else {
+    printf("       [fru]: slot1, slot2, slot3, slot4\n");
+  }
   printf("       <type>:\n");
   printf("         --rma  RMA information\n");
   printf("         --mfg  MFG failure information\n");
@@ -100,11 +114,18 @@ print_usage_help(void) {
 
 static int
 check_info_rec(uint8_t slot_id) {
+  int ret = 0;
   uint8_t buf[256], sum, cnt, idx, i;
   FILE *fp;
   info_rec rec[MAX_REC_NUM];
 
-  snprintf((char *)buf, sizeof(buf), FRUID_PATH, slot_id);
+  ret = pal_get_fruid_path(slot_id, (char *)buf);
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: failed to get the fruid path of FRU: %d.", __func__, slot_id);
+    return -1;
+  }
+
   fp = fopen((char *)buf, "rb");
   if (fp == NULL) {
     syslog(LOG_ERR, "unable to get the %s fp %s", (char *)buf, strerror(errno));
@@ -247,6 +268,9 @@ util_store_snapshot(uint8_t slot_id, uint8_t info_type, char *cmdline_opt) {
   struct stat st = {0};
   FILE *fp;
   char *reason_file = cmdline_opt;
+  char fru_name[MAX_FRU_NAME_LEN] = {0};
+
+  memset(fru_name, 0, sizeof(fru_name));
 
   // check if user specified a file containing "reason string"
   if (stat(cmdline_opt, &st) != 0) {
@@ -282,13 +306,18 @@ util_store_snapshot(uint8_t slot_id, uint8_t info_type, char *cmdline_opt) {
   snprintf(cmd, sizeof(cmd), "cp %s %s/", reason_file, TMP_SS_PATH);
   log_system(cmd);
 
+  if (pal_get_fru_name(slot_id, fru_name) < 0) {
+    syslog(LOG_ERR, "%s: failed to get fru name", __func__);
+    return -1;
+  }
+
   printf("Getting logs...\n");
-  snprintf(cmd, sizeof(cmd), "/usr/local/bin/log-util all --print | egrep '(slot%u|spb|nic|all)' | /usr/bin/tail -n 50 > %s",
-           slot_id, TMP_LOG_FILE);
+  snprintf(cmd, sizeof(cmd), "/usr/local/bin/log-util all --print | /usr/bin/tail -n 50 > %s",
+           TMP_LOG_FILE);
   log_system(cmd);
 
   printf("Getting POST codes...\n");
-  snprintf(cmd, sizeof(cmd), "/usr/bin/bic-util slot%u --get_post_code > %s", slot_id, TMP_POST_FILE);
+  snprintf(cmd, sizeof(cmd), "/usr/local/bin/bios-util %s --postcode get > %s", fru_name, TMP_POST_FILE);
   log_system(cmd);
 
   if (chdir(TMP_SS_PATH)) {
@@ -439,8 +468,10 @@ util_dump_snapshot(uint8_t slot_id, uint8_t info_type, uint8_t idx, char *dump_f
 static int
 util_dump_snapshot_all(uint8_t slot_id, char *dump_file) {
   int idx, ret;
-  #define MAX_FILE_PATH  255
-  char dump_file_name[MAX_FILE_PATH];
+  #define MAX_DUMP_FILE_PATH  255
+  char dump_file_name[MAX_DUMP_FILE_PATH] = {0};
+
+  memset(dump_file_name, 0, sizeof(dump_file_name));
 
   // dump all rma data into dump_file-rmaX
   for (idx = 0; idx < MAX_RI_NUM; ++idx) {
@@ -502,15 +533,9 @@ main(int argc, char **argv) {
     goto err_exit;
   }
 
-  if (!strcmp(argv[1], "slot1")) {
-    slot_id = 1;
-  } else if (!strcmp(argv[1] , "slot2")) {
-    slot_id = 2;
-  } else if (!strcmp(argv[1] , "slot3")) {
-    slot_id = 3;
-  } else if (!strcmp(argv[1] , "slot4")) {
-    slot_id = 4;
-  } else {
+  ret = pal_get_fru_id(argv[1], &slot_id);
+
+  if (ret < 0) {
     printf("Error: invalid FRU/slot number\n");
     goto err_exit;
   }

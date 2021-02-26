@@ -18,13 +18,8 @@
 # Boston, MA 02110-1301 USA
 #
 
-import json
-import re
-import subprocess
-import syslog
 
-import rest_libsensormon
-from rest_utils import DEFAULT_TIMEOUT_SEC
+import pal
 
 
 #
@@ -32,29 +27,25 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 #
 # Wedge400 sensor REST API handler is unique in that,
 # it uses rest-api-1, but still uses sensor-util, instead of sensor.
-# We are forced to use sensor-util, as Wedge400 has too many resources
-# for BMC to control. If we use conventional way of fetching sensor data
-# (sensors command), it will take too long. So we use sensor-util, which
-# will use the cached value. But the output format of sensor-util is quite
-# different from sensors command. So we need a separate REST api handler
-# for this.
-#
+# Using libpal as it's what ultimately serves as sensor-util's source
+# of truth and is way more efficient than shelling out to sensor-util
+# and parsing its output.
 def get_fru_sensor(fru_name: str):
-    c_fru_id = rest_libsensormon.pal_get_fru_id(fru_name)
-    is_fru_prsnt = rest_libsensormon.pal_is_fru_prsnt(c_fru_id)
+    fru_id = pal.pal_get_fru_id(fru_name)
+    is_fru_prsnt = pal.pal_is_fru_prsnt(fru_id)
     ret = {"Adapter": fru_name, "name": fru_name, "present": is_fru_prsnt}
 
     if is_fru_prsnt:
 
-        for snr_num in rest_libsensormon.pal_get_fru_sensor_list(c_fru_id):
-            sensor_name = rest_libsensormon.pal_get_sensor_name(c_fru_id.value, snr_num)
+        for snr_num in pal.pal_get_fru_sensor_list(fru_id):
+            sensor_name = pal.pal_get_sensor_name(fru_id, snr_num)
             try:
-                fvalue = rest_libsensormon.sensor_read(c_fru_id, snr_num)
+                fvalue = pal.sensor_read(fru_id, snr_num)
 
                 # Stringify value to simulate sensor-util output
                 ret[sensor_name] = "{:.2f}".format(fvalue)
 
-            except rest_libsensormon.RestSensorReadError:
+            except pal.LibPalError:
                 ret[sensor_name] = "NA"
 
     return ret

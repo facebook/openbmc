@@ -43,7 +43,6 @@ SRC_URI = "file://rest.py \
            file://vboot.py \
            file://rest.cfg \
            file://rest_config.py \
-           file://rest_libsensormon.py \
            file://rest_fscd_sensor_data.py \
            file://node_bmc.py \
            file://node_api.py \

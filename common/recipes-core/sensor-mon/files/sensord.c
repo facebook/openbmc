@@ -144,7 +144,7 @@ init_fru_snr_thresh(uint8_t fru) {
   return 0;
 }
 
-int
+static int
 sensor_raw_read_helper(uint8_t fru, uint8_t snr_num, float *val)
 {
   int ret = 0;

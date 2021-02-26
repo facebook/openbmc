@@ -21,10 +21,9 @@ CFLAGS += -Wall -Werror -D _XOPEN_SOURCE -pthread -lm -std=c99
 
 sensord: sensord.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-	$(CC) $(CFLAGS) -shared -o libsensormon.so sensord.c -Wl,--hash-style=gnu
 
 
 .PHONY: clean
 
 clean:
-	rm -rf *.o sensord libsensormon.so
+	rm -rf *.o sensord

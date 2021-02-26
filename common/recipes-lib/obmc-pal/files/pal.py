@@ -127,3 +127,39 @@ def pal_is_fru_prsnt(fru_id: int) -> bool:
         raise ValueError("pal_is_fru_prsnt() returned " + str(ret))
 
     return bool(c_status.value)
+
+
+## Sensor reading functions
+def pal_sensor_is_cached(fru_id: int, snr_num: int) -> bool:
+    return bool(libpal.pal_sensor_is_cached(fru_id, snr_num))
+
+
+def sensor_cache_read(fru_id: int, snr_num: int) -> float:
+    c_val = ctypes.c_float()
+
+    ret = libpal.sensor_cache_read(fru_id, snr_num, ctypes.pointer(c_val))
+    if ret != 0:
+        raise LibPalError("sensor_cache_read() returned " + str(ret))
+
+    return c_val.value
+
+
+def sensor_raw_read(fru_id: int, snr_num: int) -> float:
+    c_val = ctypes.c_float()
+
+    ret = libpal.sensor_raw_read(fru_id, snr_num, ctypes.pointer(c_val))
+    if ret != 0:
+        raise LibPalError("sensor_raw_read() returned " + str(ret))
+
+    return c_val.value
+
+
+def sensor_read(fru_id: int, snr_num: int) -> float:
+    """
+    Convenience function that tries reading sensor values from the cache before
+    falling back to a raw read
+    """
+    if libpal.pal_sensor_is_cached(fru_id, snr_num):
+        return sensor_cache_read(fru_id, snr_num)
+
+    return sensor_raw_read(fru_id, snr_num)

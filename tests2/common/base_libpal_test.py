@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import math
 from unittest import TestCase
 
 try:
@@ -146,6 +147,51 @@ class LibPalTest(TestCase):
         for fru_id in fru_ids:
             is_fru_prsnt = pal.pal_is_fru_prsnt(fru_id)
             self.assertTrue(type(is_fru_prsnt), True)
+
+    def test_sensor_raw_read(self):
+        fru_ids = [pal.pal_get_fru_id(fru_name) for fru_name in pal.pal_get_fru_list()]
+
+        for fru_id in fru_ids:
+            if not pal.pal_is_fru_prsnt(fru_id):
+                continue
+
+            for snr_num in pal.pal_get_fru_sensor_list(fru_id):
+                val = pal.sensor_raw_read(fru_id, snr_num)
+
+                self.assertEqual(type(val), float)
+
+                # Ensure value is a real number (i.e. not NaN or INF)
+                self.assertTrue(math.isfinite(val))
+
+    def test_sensor_read(self):
+        fru_ids = [pal.pal_get_fru_id(fru_name) for fru_name in pal.pal_get_fru_list()]
+
+        for fru_id in fru_ids:
+            # Only test the behaviour of present FRUs (see
+            # test_sensor_read_fru_not_present for what should happen if the FRU
+            # is not present)
+            if not pal.pal_is_fru_prsnt(fru_id):
+                continue
+
+            for snr_num in pal.pal_get_fru_sensor_list(fru_id):
+                val = pal.sensor_read(fru_id, snr_num)
+
+                self.assertEqual(type(val), float)
+
+                # Ensure value is a real number (i.e. not NaN or INF)
+                self.assertTrue(math.isfinite(val))
+
+    def test_sensor_read_fru_not_present(self):
+        fru_ids = [pal.pal_get_fru_id(fru_name) for fru_name in pal.pal_get_fru_list()]
+
+        for fru_id in fru_ids:
+            if pal.pal_is_fru_prsnt(fru_id):
+                continue
+
+            for snr_num in pal.pal_get_fru_sensor_list(fru_id):
+                # MUST raise LibPalError if fru is not present
+                with self.assertRaises(pal.LibPalError):
+                    pal.sensor_read(fru_id, snr_num)
 
     def _plat_has_no_fru_info(self):
         plat_name = pal.pal_get_platform_name()

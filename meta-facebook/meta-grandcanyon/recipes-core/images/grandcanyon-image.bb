@@ -48,4 +48,5 @@ IMAGE_INSTALL += " \
   throttle-util \
   bios-util \
   ipmi-util \
+  gpiod \
   "

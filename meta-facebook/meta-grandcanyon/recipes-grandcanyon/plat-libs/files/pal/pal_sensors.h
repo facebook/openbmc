@@ -375,5 +375,5 @@ typedef struct {
 } EXPANDER_SENSOR_DATA;
 
 int pal_get_fan_speed(uint8_t fan, int *rpm);
-
+bool is_e1s_iocm_present(uint8_t id);
 #endif

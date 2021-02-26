@@ -25,7 +25,6 @@ static int read_e1s_temp(uint8_t e1s_id, float *value);
 static int read_adc128(uint8_t id, float *value);
 static int read_ads1015(uint8_t id, float *value);
 static int read_ioc_temp(uint8_t id, float *value);
-static bool is_e1s_iocm_present(uint8_t id);
 static bool is_e1s_iocm_i2c_enabled(uint8_t id);
 static int get_current_dir(const char *device, char *dir_name);
 static int read_device(const char *device, int *value);
@@ -794,7 +793,7 @@ read_nic_temp(uint8_t nic_id, float *value) {
   return ret;
 }
 
-static bool
+bool
 is_e1s_iocm_present(uint8_t id) {
   uint8_t e1s_iocm_present_flag = 0;
 

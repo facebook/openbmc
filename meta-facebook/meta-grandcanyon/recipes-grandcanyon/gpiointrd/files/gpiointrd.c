@@ -326,12 +326,94 @@ void *post_code_restorer(){
   pthread_exit(0);
 }
 
+static void
+fru_missing_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+  const struct gpiopoll_config *cfg = NULL;
+  int ret = 0;
+  uint8_t server_power_status = 0;
+  
+  if (gp == NULL) {
+    syslog(LOG_WARNING, "%s(): fail to handle fru missing because parameter: *gp is NULL\n", __func__);
+    return;
+  }
+  
+  cfg = gpio_poll_get_config(gp);
+  if (cfg == NULL) {
+    syslog(LOG_WARNING, "%s(): fail to handle fru missing because parameter: *cfg is NULL\n", __func__);
+    return;
+  }
+  
+  if (strcmp(cfg->shadow, "NIC_PRSNTB3_N") == 0) {
+    if (curr == GPIO_VALUE_HIGH) {
+      syslog(LOG_CRIT, "ASSERT: nic missing");
+    } else if (curr == GPIO_VALUE_LOW) {
+      syslog(LOG_CRIT, "DEASSERT: nic missing");
+    }
+    
+    ret = pal_get_server_power(FRU_SERVER, &server_power_status);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s(): fail to get server power status", __func__);
+      return;
+    }
+    if (server_power_status == SERVER_12V_OFF) {
+        syslog(LOG_CRIT, "Server is AC OFF");
+      } else if (server_power_status == SERVER_12V_ON) {
+        syslog(LOG_CRIT, "Server is AC ON");
+      } else if (server_power_status == SERVER_POWER_OFF) {
+        syslog(LOG_CRIT, "Server is DC OFF");
+      } else if (server_power_status == SERVER_POWER_ON) {
+        syslog(LOG_CRIT, "Server is DC ON");
+      }
+  }
+  
+}
+
+static void
+fru_missing_init(gpiopoll_pin_t *gp, gpio_value_t value) {
+  const struct gpiopoll_config *cfg = NULL;
+  uint8_t server_power_status = 0;
+  int ret = 0;
+  
+  if (gp == NULL) {
+    syslog(LOG_WARNING, "%s(): fail to handle fru missing because parameter: *gp is NULL\n", __func__);
+    return;
+  }
+  
+  cfg = gpio_poll_get_config(gp);
+  if (cfg == NULL) {
+    syslog(LOG_WARNING, "%s(): fail to handle fru missing because parameter: *cfg is NULL\n", __func__);
+    return;
+  }
+  
+  if (strcmp(cfg->shadow, "NIC_PRSNTB3_N") == 0) {
+    if (value == GPIO_VALUE_HIGH) {
+      syslog(LOG_CRIT, "ASSERT: nic missing");
+      
+      ret = pal_get_server_power(FRU_SERVER, &server_power_status);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s(): fail to get server power status", __func__);
+        return;
+      }
+      if (server_power_status == SERVER_12V_OFF) {
+        syslog(LOG_CRIT, "Server is AC OFF");
+      } else if (server_power_status == SERVER_12V_ON) {
+        syslog(LOG_CRIT, "Server is AC ON");
+      } else if (server_power_status == SERVER_POWER_OFF) {
+        syslog(LOG_CRIT, "Server is DC OFF");
+      } else if (server_power_status == SERVER_POWER_ON) {
+        syslog(LOG_CRIT, "Server is DC ON");
+      }
+    }
+  }
+}
+
 // GPIO table
 static struct gpiopoll_config gpios[] = {
   // shadow, description, edge, handler, oneshot
-  {"DEBUG_RST_BTN_N",      "GPIOI7",   GPIO_EDGE_BOTH,  debug_card_pwr_rst_btn_hndlr, NULL},
-  {"DEBUG_PWR_BTN_N",      "GPION0",   GPIO_EDGE_BOTH,  debug_card_pwr_rst_btn_hndlr, NULL},
+  {"DEBUG_RST_BTN_N",      "GPIOI7",   GPIO_EDGE_BOTH,  debug_card_pwr_rst_btn_hndlr,  NULL},
+  {"DEBUG_PWR_BTN_N",      "GPION0",   GPIO_EDGE_BOTH,  debug_card_pwr_rst_btn_hndlr,  NULL},
   {"DEBUG_BMC_UART_SEL_R", "GPIOM4",   GPIO_EDGE_BOTH,  debug_card_uart_sel_btn_hndlr, NULL},
+  {"NIC_PRSNTB3_N",        "GPIOS0",   GPIO_EDGE_BOTH,  fru_missing_hndlr,             fru_missing_init},
 };
 
 int

@@ -2677,3 +2677,8 @@ int __attribute__((weak))
 pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
   return PAL_ENOTSUP;
 }
+
+bool __attribute__((weak))
+pal_is_aggregate_snr_valid(uint8_t snr_num) {
+  return true;
+}

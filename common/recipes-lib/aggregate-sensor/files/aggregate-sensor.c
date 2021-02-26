@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <openbmc/obmc-pal.h>
 #include <openbmc/pal_sensors.h>
 #include <openbmc/kv.h>
 #include <jansson.h>
@@ -95,6 +96,9 @@ aggregate_sensor_read(size_t index, float *value)
   int f_idx = -1;
   aggregate_sensor_t *snr;
   if (index >= g_sensors_count) {
+    return -1;
+  }
+  if (pal_is_aggregate_snr_valid(index) == false) {
     return -1;
   }
   snr = &g_sensors[index];

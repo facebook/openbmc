@@ -553,6 +553,7 @@ int pal_get_fru_type_list(fru_type_t fru_type, const char ***fru_list, uint8_t* 
 int pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
 int pal_get_fru_capability(uint8_t fru, unsigned int *caps);
 int pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps);
+bool pal_is_aggregate_snr_valid(uint8_t snr_num);
 
 #ifdef __cplusplus
 }

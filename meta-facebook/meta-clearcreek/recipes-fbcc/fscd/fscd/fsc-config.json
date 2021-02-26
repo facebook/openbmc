@@ -4,6 +4,7 @@
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
   "fan_recovery_time": 1,
+  "sensor_filter_all": true,
   "boost": {
     "fan_fail": true,
     "sensor_fail": false
@@ -127,81 +128,80 @@
       "0": {
         "label" : "Fan 0 Inlet",
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 0"
+          "kv" : "pdb_sensor160"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 0"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "1": {
         "label" : "Fan 0 Outlet",
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 1"
+          "kv" : "pdb_sensor161"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 0"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "2": {
         "label" : "Fan 1 Inlet",
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 2"
+          "kv" : "pdb_sensor162"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 1"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "3": {
         "label" : "Fan 1 Outlet",
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 3"
+          "kv" : "pdb_sensor163"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 1"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "4": {
         "label" : "Fan 2 Inlet",
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 4"
+          "kv" : "pdb_sensor164"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 2"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "5": {
         "label" : "Fan 2 Outlet",
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 5"
+          "kv" : "pdb_sensor165"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 2"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "6": {
         "label" : "Fan 3 Inlet",
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 6"
+          "kv" : "pdb_sensor166"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 3"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "7": {
         "label" : "Fan 3 Outlet",
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 7"
+          "kv" : "pdb_sensor167"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 3"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       }
     },
     "zones": {
       "zone_1": {
-        "pwm_output": [0, 2, 4, 6],
+        "pwm_output": [0],
         "expr_file": "zone1.fsc"
       }
     }
   }
-  

@@ -1,75 +1,75 @@
 max([
-  linear_inlet(mb:cc_system_inlet_remote_temp),
+  linear_inlet(all:mb_cc_system_inlet_remote_temp),
   linear_mezz(
    max([
-    mb:cc_nic_0_temp,
-    mb:cc_nic_1_temp,
-    mb:cc_nic_2_temp,
-    mb:cc_nic_3_temp,
-    mb:cc_nic_4_temp,
-    mb:cc_nic_5_temp,
-    mb:cc_nic_6_temp,
-    mb:cc_nic_7_temp])) +
+    all:mb_cc_nic_0_temp,
+    all:mb_cc_nic_1_temp,
+    all:mb_cc_nic_2_temp,
+    all:mb_cc_nic_3_temp,
+    all:mb_cc_nic_4_temp,
+    all:mb_cc_nic_5_temp,
+    all:mb_cc_nic_6_temp,
+    all:mb_cc_nic_7_temp])) +
   pid_mezz(
    max([
-    mb:cc_nic_0_temp,
-    mb:cc_nic_1_temp,
-    mb:cc_nic_2_temp,
-    mb:cc_nic_3_temp,
-    mb:cc_nic_4_temp,
-    mb:cc_nic_5_temp,
-    mb:cc_nic_6_temp,
-    mb:cc_nic_7_temp])),
+    all:mb_cc_nic_0_temp,
+    all:mb_cc_nic_1_temp,
+    all:mb_cc_nic_2_temp,
+    all:mb_cc_nic_3_temp,
+    all:mb_cc_nic_4_temp,
+    all:mb_cc_nic_5_temp,
+    all:mb_cc_nic_6_temp,
+    all:mb_cc_nic_7_temp])),
   linear_bay0(
    max([
-    carrier1:cc_ssd_bay_0_0_nvme_ctemp,
-    carrier1:cc_ssd_bay_0_1_nvme_ctemp,
-    carrier1:cc_ssd_bay_0_2_nvme_ctemp,
-    carrier1:cc_ssd_bay_0_3_nvme_ctemp,
-    carrier1:cc_ssd_bay_0_4_nvme_ctemp,
-    carrier1:cc_ssd_bay_0_5_nvme_ctemp,
-    carrier1:cc_ssd_bay_0_6_nvme_ctemp,
-    carrier1:cc_ssd_bay_0_7_nvme_ctemp])) +
+    all:carrier1_cc_ssd_bay_0_0_nvme_ctemp,
+    all:carrier1_cc_ssd_bay_0_1_nvme_ctemp,
+    all:carrier1_cc_ssd_bay_0_2_nvme_ctemp,
+    all:carrier1_cc_ssd_bay_0_3_nvme_ctemp,
+    all:carrier1_cc_ssd_bay_0_4_nvme_ctemp,
+    all:carrier1_cc_ssd_bay_0_5_nvme_ctemp,
+    all:carrier1_cc_ssd_bay_0_6_nvme_ctemp,
+    all:carrier1_cc_ssd_bay_0_7_nvme_ctemp])) +
   pid_bay0(
    max([
-    carrier1:cc_ssd_bay_0_0_nvme_ctemp,
-    carrier1:cc_ssd_bay_0_1_nvme_ctemp,
-    carrier1:cc_ssd_bay_0_2_nvme_ctemp,
-    carrier1:cc_ssd_bay_0_3_nvme_ctemp,
-    carrier1:cc_ssd_bay_0_4_nvme_ctemp,
-    carrier1:cc_ssd_bay_0_5_nvme_ctemp,
-    carrier1:cc_ssd_bay_0_6_nvme_ctemp,
-    carrier1:cc_ssd_bay_0_7_nvme_ctemp])),
+    all:carrier1_cc_ssd_bay_0_0_nvme_ctemp,
+    all:carrier1_cc_ssd_bay_0_1_nvme_ctemp,
+    all:carrier1_cc_ssd_bay_0_2_nvme_ctemp,
+    all:carrier1_cc_ssd_bay_0_3_nvme_ctemp,
+    all:carrier1_cc_ssd_bay_0_4_nvme_ctemp,
+    all:carrier1_cc_ssd_bay_0_5_nvme_ctemp,
+    all:carrier1_cc_ssd_bay_0_6_nvme_ctemp,
+    all:carrier1_cc_ssd_bay_0_7_nvme_ctemp])),
   linear_bay1(
    max([
-    carrier2:cc_ssd_bay_1_0_nvme_ctemp,
-    carrier2:cc_ssd_bay_1_1_nvme_ctemp,
-    carrier2:cc_ssd_bay_1_2_nvme_ctemp,
-    carrier2:cc_ssd_bay_1_3_nvme_ctemp,
-    carrier2:cc_ssd_bay_1_4_nvme_ctemp,
-    carrier2:cc_ssd_bay_1_5_nvme_ctemp,
-    carrier2:cc_ssd_bay_1_6_nvme_ctemp,
-    carrier2:cc_ssd_bay_1_7_nvme_ctemp])) +
+    all:carrier2_cc_ssd_bay_1_0_nvme_ctemp,
+    all:carrier2_cc_ssd_bay_1_1_nvme_ctemp,
+    all:carrier2_cc_ssd_bay_1_2_nvme_ctemp,
+    all:carrier2_cc_ssd_bay_1_3_nvme_ctemp,
+    all:carrier2_cc_ssd_bay_1_4_nvme_ctemp,
+    all:carrier2_cc_ssd_bay_1_5_nvme_ctemp,
+    all:carrier2_cc_ssd_bay_1_6_nvme_ctemp,
+    all:carrier2_cc_ssd_bay_1_7_nvme_ctemp])) +
   pid_bay1(
    max([
-    carrier2:cc_ssd_bay_1_0_nvme_ctemp,
-    carrier2:cc_ssd_bay_1_1_nvme_ctemp,
-    carrier2:cc_ssd_bay_1_2_nvme_ctemp,
-    carrier2:cc_ssd_bay_1_3_nvme_ctemp,
-    carrier2:cc_ssd_bay_1_4_nvme_ctemp,
-    carrier2:cc_ssd_bay_1_5_nvme_ctemp,
-    carrier2:cc_ssd_bay_1_6_nvme_ctemp,
-    carrier2:cc_ssd_bay_1_7_nvme_ctemp])),
+    all:carrier2_cc_ssd_bay_1_0_nvme_ctemp,
+    all:carrier2_cc_ssd_bay_1_1_nvme_ctemp,
+    all:carrier2_cc_ssd_bay_1_2_nvme_ctemp,
+    all:carrier2_cc_ssd_bay_1_3_nvme_ctemp,
+    all:carrier2_cc_ssd_bay_1_4_nvme_ctemp,
+    all:carrier2_cc_ssd_bay_1_5_nvme_ctemp,
+    all:carrier2_cc_ssd_bay_1_6_nvme_ctemp,
+    all:carrier2_cc_ssd_bay_1_7_nvme_ctemp])),
   linear_switch(
    max([
-    mb:cc_bb_pax_0_temp,
-    mb:cc_bb_pax_1_temp,
-    mb:cc_bb_pax_2_temp,
-    mb:cc_bb_pax_3_temp]))+
+    all:mb_cc_bb_pax_0_temp,
+    all:mb_cc_bb_pax_1_temp,
+    all:mb_cc_bb_pax_2_temp,
+    all:mb_cc_bb_pax_3_temp]))+
   pid_switch(
    max([
-    mb:cc_bb_pax_0_temp,
-    mb:cc_bb_pax_1_temp,
-    mb:cc_bb_pax_2_temp,
-    mb:cc_bb_pax_3_temp]))
+    all:mb_cc_bb_pax_0_temp,
+    all:mb_cc_bb_pax_1_temp,
+    all:mb_cc_bb_pax_2_temp,
+    all:mb_cc_bb_pax_3_temp]))
 ])

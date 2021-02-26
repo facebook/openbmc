@@ -1,38 +1,38 @@
 max([
-  linear_inlet(spb:sp_inlet_temp),
-  linear_cpu_margin(slot1:soc_temp) + pid_cpu_margin(slot1:soc_temp),
-  linear_cpu_margin(slot2:soc_temp) + pid_cpu_margin(slot2:soc_temp),
-  linear_cpu_margin(slot3:soc_temp) + pid_cpu_margin(slot3:soc_temp),
-  linear_cpu_margin(slot4:soc_temp) + pid_cpu_margin(slot4:soc_temp),
+  linear_inlet(all:spb_sp_inlet_temp),
+  linear_cpu_margin(all:slot1_soc_temp) + pid_cpu_margin(all:slot1_soc_temp),
+  linear_cpu_margin(all:slot2_soc_temp) + pid_cpu_margin(all:slot2_soc_temp),
+  linear_cpu_margin(all:slot3_soc_temp) + pid_cpu_margin(all:slot3_soc_temp),
+  linear_cpu_margin(all:slot4_soc_temp) + pid_cpu_margin(all:slot4_soc_temp),
   linear_dimm(
    max([
-    slot1:soc_dimmc0_temp,
-    slot1:soc_dimmd0_temp,
-    slot1:soc_dimmg0_temp,
-    slot1:soc_dimmh0_temp,
-    slot2:soc_dimmc0_temp,
-    slot2:soc_dimmd0_temp,
-    slot2:soc_dimmg0_temp,
-    slot2:soc_dimmh0_temp,
-    slot3:soc_dimmc0_temp,
-    slot3:soc_dimmd0_temp,
-    slot3:soc_dimmg0_temp,
-    slot3:soc_dimmh0_temp,
-    slot4:soc_dimmc0_temp,
-    slot4:soc_dimmd0_temp,
-    slot4:soc_dimmg0_temp,
-    slot4:soc_dimmh0_temp])),
-  linear_mezz(nic:mezz_sensor_temp),
+    all:slot1_soc_dimmc0_temp,
+    all:slot1_soc_dimmd0_temp,
+    all:slot1_soc_dimmg0_temp,
+    all:slot1_soc_dimmh0_temp,
+    all:slot2_soc_dimmc0_temp,
+    all:slot2_soc_dimmd0_temp,
+    all:slot2_soc_dimmg0_temp,
+    all:slot2_soc_dimmh0_temp,
+    all:slot3_soc_dimmc0_temp,
+    all:slot3_soc_dimmd0_temp,
+    all:slot3_soc_dimmg0_temp,
+    all:slot3_soc_dimmh0_temp,
+    all:slot4_soc_dimmc0_temp,
+    all:slot4_soc_dimmd0_temp,
+    all:slot4_soc_dimmg0_temp,
+    all:slot4_soc_dimmh0_temp])),
+  linear_mezz(all:nic_mezz_sensor_temp),
   linear_mb_m2(
    max([
-    slot1:nvme1_ctemp,
-    slot2:nvme1_ctemp,
-    slot3:nvme1_ctemp,
-    slot4:nvme1_ctemp])) +
+    all:slot1_nvme1_ctemp,
+    all:slot2_nvme1_ctemp,
+    all:slot3_nvme1_ctemp,
+    all:slot4_nvme1_ctemp])) +
   pid_mb_m2(
    max([
-    slot1:nvme1_ctemp,
-    slot2:nvme1_ctemp,
-    slot3:nvme1_ctemp,
-    slot4:nvme1_ctemp]))
+    all:slot1_nvme1_ctemp,
+    all:slot2_nvme1_ctemp,
+    all:slot3_nvme1_ctemp,
+    all:slot4_nvme1_ctemp]))
 ])

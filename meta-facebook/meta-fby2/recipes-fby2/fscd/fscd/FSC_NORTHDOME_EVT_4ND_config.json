@@ -4,17 +4,18 @@
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 80,
   "sample_interval_ms": 3000,
+  "sensor_filter_all": true,
   "boost": {
     "fan_fail": true,
     "sensor_fail": true
   },
   "sensor_valid_check": {
-    "soc": {
+    "(.*)soc": {
       "attribute": {
         "type" : "power_status"
       }
     },
-    "nvme": {
+    "(.*)nvme": {
       "attribute": {
         "type" : "power_status"
       }
@@ -135,24 +136,24 @@
   "fans": {
     "0": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 0"
+        "kv" : "spb_sensor70"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 0"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "1": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 1"
+        "kv" : "spb_sensor71"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 1"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     }
   },
   "zones": {
     "zone_1": {
-      "pwm_output": [0, 1],
+      "pwm_output": [0],
       "expr_file": "FSC_NORTHDOME_EVT_4ND_zone1.fsc"
     }
   }

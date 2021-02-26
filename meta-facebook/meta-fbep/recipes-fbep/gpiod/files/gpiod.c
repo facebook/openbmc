@@ -189,13 +189,17 @@ int check_power_seq(int type)
     {"RT_MODULE_PWRGD_ASIC2_R", 1, 7}
   };
   struct power_seq boot_seq[] = {
-    {"BT_RST_CPLD_RSMRST_N", 0, 0}, {"BT_PWRGD_P5V_STBY_R", 0, 1},
-    {"BT_PWRGD_CPLD_VREFF", 0, 2}, {"BT_PWRGD_P2V5_AUX_R", 0, 3},
-    {"BT_PWRGD_P1V2_AUX_R", 0, 4}, {"BT_PWRGD_P1V15_AUX_R", 0, 5},
-    {"BT_P12V_HSC_PG_R_SYN2", 0, 6}, {"BT_VICOR_PG_R", 0, 7},
-    {"BT_P48V_HSC_PG_R_SYN2", 1, 0}, {"BT_PWRGD_P3V3_CPLD_R", 1, 1},
-    {"BT_HOST_PWRGD_ASIC", 1, 2}, {"BT_PW_PAX_POWER_GOOD", 1, 3},
-    {"BT_ASIC_ALL_DONE", 1, 4}
+    {"BT_MODULE_PWRGD_ASIC0", 0, 0}, {"BT_MODULE_PWRGD_ASIC1", 0, 1},
+    {"BT_MODULE_PWRGD_ASIC2", 0, 2}, {"BT_MODULE_PWRGD_ASIC3", 0, 3},
+    {"BT_MODULE_PWRGD_ASIC4", 0, 4}, {"BT_MODULE_PWRGD_ASIC5", 0, 5},
+    {"BT_MODULE_PWRGD_ASIC6", 0, 6}, {"BT_MODULE_PWRGD_ASIC7", 0, 7},
+    {"BT_RST_CPLD_RSMRST_N", 1, 0}, {"BT_PWRGD_P5V_STBY_R", 1, 1},
+    {"BT_PWRGD_CPLD_VREFF", 1, 2}, {"BT_PWRGD_P2V5_AUX_R", 1, 3},
+    {"BT_PWRGD_P1V2_AUX_R", 1, 4}, {"BT_PWRGD_P1V15_AUX_R", 1, 5},
+    {"BT_P12V_HSC_PG_R_SYN2", 1, 6}, {"BT_VICOR_PG_R", 1, 7},
+    {"BT_P48V_HSC_PG_R_SYN2", 2, 0}, {"BT_PWRGD_P3V3_CPLD_R", 2, 1},
+    {"BT_HOST_PWRGD_ASIC", 2, 2}, {"BT_PW_PAX_POWER_GOOD", 2, 3},
+    {"BT_ASIC_ALL_DONE", 2, 4}
   };
   char dev_cpld[16] = {0};
   char event_str[64] = {0};
@@ -203,18 +207,22 @@ int check_power_seq(int type)
   int ret = 0, fail_addr = -1;
   uint8_t tbuf[8], rbuf[8], value;
   uint8_t event_reg, state_reg, ctrl_offset;
-  uint8_t power_seq_num = 13;
+  uint8_t power_seq_num, read_bytes;
 
   if (type == RUNTIME) {
     cpld_power_seq = runtime_seq;
     event_reg = 0x2b;
     state_reg = 0x2b;
     ctrl_offset = RT_PWR_FAIL_CTRL;
+    read_bytes = 2;
+    power_seq_num = 13;
   } else {
     cpld_power_seq = boot_seq;
     event_reg = 0x2f;
-    state_reg = 0x2e;
+    state_reg = 0x2d;
     ctrl_offset = BT_PWR_FAIL_CTRL;
+    read_bytes = 3;
+    power_seq_num = 21;
   }
 
   sprintf(dev_cpld, "/dev/i2c-%d", MAIN_CPLD_BUS);
@@ -229,7 +237,7 @@ int check_power_seq(int type)
     goto exit;
 
   tbuf[0] = state_reg;
-  ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 2);
+  ret = i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, read_bytes);
   if (ret < 0)
     goto exit;
 

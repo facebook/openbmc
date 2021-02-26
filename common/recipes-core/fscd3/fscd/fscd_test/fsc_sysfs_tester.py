@@ -17,7 +17,7 @@ class FscdSysfsTester(BaseFscdUnitTest):
         """
         Test if sensor tuples are getting built.
         """
-        tuples = self.fscd_tester.machine.read_sensors(self.fscd_tester.sensors)
+        tuples = self.fscd_tester.machine.read_sensors(self.fscd_tester.sensors, None)
         count = len(tuples["wedge100"])
         self.assertEqual(count, 3, "Incorrect sensor tupple count")
 
@@ -53,7 +53,7 @@ class FscdSysfsOperationalTester(BaseFscdUnitTest):
         self.fscd_tester.builder()
 
         # Test number of tuples built
-        tuples = self.fscd_tester.machine.read_sensors(self.fscd_tester.sensors)
+        tuples = self.fscd_tester.machine.read_sensors(self.fscd_tester.sensors, None)
         count = len(tuples["wedge100"])
         self.assertEqual(count, 3, "Incorrect sensor tupple count")
 
@@ -81,9 +81,9 @@ class FscdSysfsOperationalTester(BaseFscdUnitTest):
         pwm_cmd = "cat ./test-data/test-sysfs-data/fantray1_pwm"
         pwm_value = Popen(pwm_cmd, shell=True, stdout=PIPE).stdout.read()
         self.assertEqual(
-            int(pwm_value),
-            12,
-            "Incorrect pwm value was set expected=12 computed=%d" % int(pwm_value),
+            float(pwm_value),
+            12.0,
+            "Incorrect pwm value was set expected=12 computed=%f" % float(pwm_value),
         )
 
         # case 2
@@ -99,9 +99,9 @@ class FscdSysfsOperationalTester(BaseFscdUnitTest):
         pwm_cmd = "cat ./test-data/test-sysfs-data/fantray1_pwm"
         pwm_value = Popen(pwm_cmd, shell=True, stdout=PIPE).stdout.read()
         self.assertEqual(
-            int(pwm_value),
-            20,
-            "Incorrect pwm value was set expected=20 computed=%d" % int(pwm_value),
+            float(pwm_value),
+            20.0,
+            "Incorrect pwm value was set expected=20 computed=%f" % float(pwm_value),
         )
 
         # case 3
@@ -117,9 +117,9 @@ class FscdSysfsOperationalTester(BaseFscdUnitTest):
         pwm_cmd = "cat ./test-data/test-sysfs-data/fantray1_pwm"
         pwm_value = Popen(pwm_cmd, shell=True, stdout=PIPE).stdout.read()
         self.assertEqual(
-            int(pwm_value),
-            28,
-            "Incorrect pwm value was set expected=28 computed=%d" % int(pwm_value),
+            float(pwm_value),
+            28.0,
+            "Incorrect pwm value was set expected=28 computed=%f" % float(pwm_value),
         )
 
         # case 4
@@ -135,9 +135,9 @@ class FscdSysfsOperationalTester(BaseFscdUnitTest):
         pwm_cmd = "cat ./test-data/test-sysfs-data/fantray1_pwm"
         pwm_value = Popen(pwm_cmd, shell=True, stdout=PIPE).stdout.read()
         self.assertEqual(
-            int(pwm_value),
-            28,
-            "Incorrect pwm value was set expected=28 computed=%d" % int(pwm_value),
+            float(pwm_value),
+            28.0,
+            "Incorrect pwm value was set expected=28 computed=%d" % float(pwm_value),
         )
 
         # reset to original values

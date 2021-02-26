@@ -24,7 +24,7 @@ class FscdBmcMachineUnitTest(FscdBmcMachineUnitTest):
         'linear_dimm' has a source that reads a file and dumps data like from
         platform.
         """
-        tuples = self.fscd_tester.machine.read_sensors(self.fscd_tester.sensors)
+        tuples = self.fscd_tester.machine.read_sensors(self.fscd_tester.sensors, None)
         count = len(tuples["slot1"])
         self.assertEqual(count, 41, "Incorrect sensor tupple count")
         # logging.info(tuples)
@@ -63,7 +63,7 @@ class FscdBmcMachineUnitTest2(FscdBmcMachineUnitTest):
         'linear_dimm' has a source that reads a file and dumps data like from
         platform.
         """
-        tuples = self.fscd_tester.machine.read_sensors(self.fscd_tester.sensors)
+        tuples = self.fscd_tester.machine.read_sensors(self.fscd_tester.sensors, None)
         count = len(tuples["slot1"])
         self.assertEqual(count, 41, "Incorrect sensor tupple count")
         # logging.info(tuples)

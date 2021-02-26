@@ -823,6 +823,8 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_CPLD;
   } else if (!strcmp(str, "fpga")) {
     *fru = FRU_FPGA;
+  } else if (!strcmp(str, "fcm")) {
+    *fru = FRU_FCM;
   } else {
     OBMC_WARN("pal_get_fru_id: Wrong fru#%s", str);
     return -1;

@@ -56,6 +56,8 @@
 #define NUM_NIC_FRU     1
 #define NUM_BMC_FRU     1
 
+#define FAN_FAIL_RECORD_PATH "/tmp/cache_store/fan_fail_boost"
+
 const char pal_fru_list_print[] = "all, slot1, slot2, slot3, slot4, bmc, nic, bb, nicexp";
 const char pal_fru_list_rw[] = "slot1, slot2, slot3, slot4, bmc, bb, nicexp";
 const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc nic";
@@ -3887,4 +3889,30 @@ pal_gpv3_mux_select(uint8_t slot_id, uint8_t dev_id) {
     return BIC_STATUS_FAILURE;
   }
   return BIC_STATUS_SUCCESS;
+}
+
+bool
+pal_is_aggregate_snr_valid(uint8_t snr_num) {
+  char sys_conf[MAX_VALUE_LEN] = {0};
+
+  switch(snr_num) {
+    // In type 8 system, if one fan fail, show NA in airflow reading.
+    case AGGREGATE_SENSOR_SYSTEM_AIRFLOW:
+      memset(sys_conf, 0, sizeof(sys_conf));
+      if (kv_get("sled_system_conf", sys_conf, NULL, KV_FPERSIST) < 0) {
+        syslog(LOG_WARNING, "%s() Failed to read sled_system_conf", __func__);
+        return true;
+      }
+      if (strcmp(sys_conf, "Type_8") != 0) {
+        return true;
+      }
+      if (access(FAN_FAIL_RECORD_PATH, F_OK) == 0) {
+        return false;
+      }
+      break;
+    default:
+      return true;
+  }
+
+  return true;
 }

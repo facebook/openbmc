@@ -28,7 +28,7 @@ SRC_URI += "file://setup-fan.sh \
             file://FSC_CLASS1_type15_zone1.fsc \
             file://FSC_CLASS1_DVT_EDSFF_1U.json \
             file://FSC_CLASS1_DVT_EDSFF_1U.fsc \
-            file://FSC_CLASS2_DVT_SPE_config.json \
+            file://FSC_CLASS2_PVT_SPE_config.json \
             file://FSC_CLASS2_DVT_SPE_zone1.fsc \
             file://FSC_CLASS1_POC_CONFIG_D_GPV3.json \
             file://FSC_CLASS1_POC_CONFIG_D_GPV3.fsc \
@@ -39,7 +39,7 @@ FSC_CONFIG += "FSC_CLASS1_PVT_type1.json \
                FSC_CLASS1_type15.json \
                FSC_CLASS2_EVT_config.json \
                FSC_CLASS1_DVT_EDSFF_1U.json \
-               FSC_CLASS2_DVT_SPE_config.json \
+               FSC_CLASS2_PVT_SPE_config.json \
                FSC_CLASS1_POC_CONFIG_D_GPV3.json \
               "
 

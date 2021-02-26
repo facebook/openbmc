@@ -1,14 +1,16 @@
 {
-  "version": "fby3-dvt-spe_v2020.11.3",
-  "pwm_boost_value": 60,
-  "pwm_sensor_boost_value": 100,
-  "output_max_boost_pwm": true,
-  "pwm_transition_value": 70,
+  "version": "fby3-pvt-spe_v2021.02.22",
+  "pwm_boost_value": 100,
+  "pwm_transition_value": 60,
   "non_fanfail_limited_boost_value": 100,
   "sample_interval_ms": 3000,
   "boost": {
     "fan_fail": true,
     "sensor_fail": true
+  },
+  "fan_dead_boost": {
+    "threshold": 2,
+    "action": "host_shutdown"
   },
   "sensor_valid_check": {
     "soc_cpu": {
@@ -51,14 +53,14 @@
         [ 25, 20 ],
         [ 26, 21 ],
         [ 27, 22 ],
-        [ 28, 23 ],
-        [ 29, 24 ],
-        [ 30, 24 ],
-        [ 31, 24 ],
-        [ 32, 25 ],
-        [ 33, 26 ],
-        [ 34, 27 ],
-        [ 35, 28 ]
+        [ 28, 24 ],
+        [ 29, 26 ],
+        [ 30, 28 ],
+        [ 31, 29 ],
+        [ 32, 30 ],
+        [ 33, 31 ],
+        [ 34, 32 ],
+        [ 35, 33 ]
       ]
     },
     "linear_cpu_margin": {
@@ -85,8 +87,8 @@
       "setpoint": -8,
       "negative_hysteresis": 3,
       "positive_hysteresis": 0,
-      "kp": -1.35,
-      "ki": -0.01,
+      "kp": -2.2,
+      "ki": -0.015,
       "kd": 0
     },
     "linear_dimm": {

@@ -377,6 +377,11 @@ enum {
   BB_BIC_SENSOR_BUTTON_DETECT = 0xE2
 };
 
+// Aggregate sensors
+enum {
+  AGGREGATE_SENSOR_SYSTEM_AIRFLOW = 0x0,
+};
+
 //ADC INFO
 enum {
   ADC0 = 0,

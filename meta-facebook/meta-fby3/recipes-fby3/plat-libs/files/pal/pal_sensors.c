@@ -1922,6 +1922,9 @@ pal_fan_fail_otp_check(void) {
     is_fan_fail_otp_asserted = true;
     snprintf(sel_str, sizeof(sel_str), "all fans failed");
     pal_all_slot_power_ctrl(SERVER_12V_OFF, sel_str);
+  } else if (is_fan_fail_otp_asserted == false && bmc_location == NIC_BMC) {
+    syslog(LOG_CRIT, "Turned off power of slot1 due to all fans failed");
+    pal_set_server_power(FRU_SLOT1, SERVER_POWER_OFF);
   }
 
   return;

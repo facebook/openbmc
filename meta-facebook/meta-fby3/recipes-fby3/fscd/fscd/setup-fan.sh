@@ -70,11 +70,13 @@ function init_class2_fsc(){
   cpld_bus_num="4"
   exp_board=$(get_2ou_board_type $cpld_bus_num)
   if [ "$exp_board" == "0x02" ]; then # E1.S board
-    ln -s /etc/FSC_CLASS2_DVT_SPE_config.json ${default_fsc_config_path}
+    ln -s /etc/FSC_CLASS2_PVT_SPE_config.json ${default_fsc_config_path}
+    echo -n "Type_8" > /mnt/data/kv_store/sled_system_conf
   else
     ln -s /etc/FSC_CLASS2_EVT_config.json ${default_fsc_config_path}
+    echo -n "Type_17" > /mnt/data/kv_store/sled_system_conf
   fi
-  echo -n "Type_17" > /mnt/data/kv_store/sled_system_conf
+  
 }
 
 

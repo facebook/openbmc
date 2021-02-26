@@ -1077,7 +1077,7 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
 
 int plat_get_extra_sysinfo(uint8_t slot, char *info)
 {
-  char tmp_info[20] = {0};
+  char tmp_info[64] = {0};
   char tstr[16];
   uint8_t i, st_12v = 0;
   int ret;
@@ -1085,7 +1085,7 @@ int plat_get_extra_sysinfo(uint8_t slot, char *info)
   if (!pal_get_fru_name((slot == FRU_ALL)?HAND_SW_BMC:slot, tstr)) {
     sprintf(tmp_info, "FRU:%s", tstr);
     if ((slot != FRU_ALL) && pal_is_hsvc_ongoing(slot)) {
-      for (i = strlen(info); i < 16; i++) {
+      for (i = strlen(tmp_info); i < 16; i++) {
         tmp_info[i] = ' ';
       }
       tmp_info[16] = '\0';
@@ -1095,6 +1095,8 @@ int plat_get_extra_sysinfo(uint8_t slot, char *info)
         sprintf(info, "%s"ESC_ALT"HSVC: READY"ESC_RST, tmp_info);
       else
         sprintf(info, "%s"ESC_ALT"HSVC: START"ESC_RST, tmp_info);
+    } else {
+      sprintf(info, "%s", tmp_info);
     }
   }
 

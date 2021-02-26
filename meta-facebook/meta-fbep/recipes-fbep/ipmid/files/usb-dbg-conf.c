@@ -30,8 +30,8 @@ static sensor_desc_t cri_sensor[]  =
     {"Fan1:"		, MB_FAN1_TACH_I	,"RPM", FRU_MB, 0},
     {"Fan2:"		, MB_FAN2_TACH_I	,"RPM", FRU_MB, 0},
     {"Fan3:"		, MB_FAN3_TACH_I	,"RPM", FRU_MB, 0},
-    {"Inlet_TEMP:"	, MB_SENSOR_GPU_INLET_REMOTE ,"C", FRU_MB, 0},
-    {"Outlet_TEMP:"	, PDB_SENSOR_OUTLET_TEMP_REMOTE ,"C", FRU_PDB, 0},
+    {"Inlet_TEMP:"	, MB_SENSOR_INLET_REMOTE ,"C", FRU_MB, 0},
+    {"Outlet_TEMP:"	, PDB_SENSOR_OUTLET_REMOTE ,"C", FRU_PDB, 0},
 };
 
 bool plat_supported(void)

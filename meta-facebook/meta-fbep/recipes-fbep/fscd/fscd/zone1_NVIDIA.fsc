@@ -1,5 +1,5 @@
 max([
-  linear_inlet(mb:ep_mb_sensor_gpu_inlet_remote),
+  linear_inlet(mb:ep_mb_sensor_inlet_remote),
   linear_switch_remote(mb:ep_mb_sensor_pax0_therm),
   linear_switch_remote(mb:ep_mb_sensor_pax1_therm),
   linear_switch_remote(mb:ep_mb_sensor_pax2_therm),

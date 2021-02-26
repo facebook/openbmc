@@ -91,10 +91,10 @@ const uint8_t mb_sensor_list[] = {
   MB_ADC_P12V_2,
   MB_ADC_P3V3,
   MB_ADC_P3V_BAT,
-  MB_SENSOR_GPU_INLET,
-  MB_SENSOR_GPU_INLET_REMOTE,
-  MB_SENSOR_GPU_OUTLET,
-  MB_SENSOR_GPU_OUTLET_REMOTE,
+  MB_SENSOR_INLET,
+  MB_SENSOR_INLET_REMOTE,
+  MB_SENSOR_OUTLET,
+  MB_SENSOR_OUTLET_REMOTE,
   MB_SENSOR_PAX01_THERM,
   MB_SENSOR_PAX0_THERM_REMOTE,
   MB_SENSOR_PAX1_THERM_REMOTE,
@@ -173,8 +173,8 @@ const uint8_t pdb_sensor_list[] = {
   PDB_ADC_2_VICOR1_TEMP,
   PDB_ADC_2_VICOR2_TEMP,
   PDB_ADC_2_VICOR3_TEMP,
-  PDB_SENSOR_OUTLET_TEMP,
-  PDB_SENSOR_OUTLET_TEMP_REMOTE
+  PDB_SENSOR_OUTLET,
+  PDB_SENSOR_OUTLET_REMOTE
 };
 
 const uint8_t asic0_sensor_list[] = {
@@ -281,13 +281,13 @@ float sensors_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {
   {0,	3.465,	0,	0,	2.0,	0,	0,	0,	0},
   [MB_ADC_P5V_STBY] =
   {0,	5.25,	0,	0,	4.75,	0,	0,	0,	0},
-  [MB_SENSOR_GPU_INLET] =
+  [MB_SENSOR_INLET] =
   {0,	55.0,	0,	0,	10.0,	0,	0,	0,	0},
-  [MB_SENSOR_GPU_INLET_REMOTE] =
+  [MB_SENSOR_INLET_REMOTE] =
   {0,	50.0,	0,	0,	10.0,	0,	0,	0,	0},
-  [MB_SENSOR_GPU_OUTLET] =
+  [MB_SENSOR_OUTLET] =
   {0,	75.0,	0,	0,	10.0,	0,	0,	0,	0},
-  [MB_SENSOR_GPU_OUTLET_REMOTE] =
+  [MB_SENSOR_OUTLET_REMOTE] =
   {0,	70.0,	0,	0,	10.0,	0,	0,	0,	0},
   [MB_SENSOR_PAX01_THERM] =
   {0,	0,	0,	0,	0,	0,	0,	0,	0},
@@ -493,9 +493,9 @@ float sensors_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {
   {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
   [PDB_ADC_2_VICOR3_TEMP] =
   {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
-  [PDB_SENSOR_OUTLET_TEMP] =
+  [PDB_SENSOR_OUTLET] =
   {0,	75.0,	0,	0,	10.0,	0,	0,	0,	0},
-  [PDB_SENSOR_OUTLET_TEMP_REMOTE] =
+  [PDB_SENSOR_OUTLET_REMOTE] =
   {0,	70.0,	0,	0,	10.0,	0,	0,	0,	0}
 };
 
@@ -550,14 +550,14 @@ struct sensor_map {
   {read_battery_value, "EP_MB_ADC_P3V_BAT", SNR_VOLT},
   [MB_ADC_P5V_STBY] =
   {sensors_read_common_adc, "EP_MB_ADC_P5V_STBY", SNR_VOLT},
-  [MB_SENSOR_GPU_INLET] =
-  {sensors_read_common_therm, "EP_MB_SENSOR_GPU_INLET", SNR_TEMP},
-  [MB_SENSOR_GPU_INLET_REMOTE] =
-  {sensors_read_common_therm, "EP_MB_SENSOR_GPU_INLET_REMOTE", SNR_TEMP},
-  [MB_SENSOR_GPU_OUTLET] =
-  {sensors_read_common_therm, "EP_MB_SENSOR_GPU_OUTLET", SNR_TEMP},
-  [MB_SENSOR_GPU_OUTLET_REMOTE] =
-  {sensors_read_common_therm, "EP_MB_SENSOR_GPU_OUTLET_REMOTE", SNR_TEMP},
+  [MB_SENSOR_INLET] =
+  {sensors_read_common_therm, "EP_MB_SENSOR_INLET", SNR_TEMP},
+  [MB_SENSOR_INLET_REMOTE] =
+  {sensors_read_common_therm, "EP_MB_SENSOR_INLET_REMOTE", SNR_TEMP},
+  [MB_SENSOR_OUTLET] =
+  {sensors_read_common_therm, "EP_MB_SENSOR_OUTLET", SNR_TEMP},
+  [MB_SENSOR_OUTLET_REMOTE] =
+  {sensors_read_common_therm, "EP_MB_SENSOR_OUTLET_REMOTE", SNR_TEMP},
   [MB_SENSOR_PAX01_THERM] =
   {sensors_read_pax_therm, "EP_MB_SENSOR_PAX01_THERM", SNR_TEMP},
   [MB_SENSOR_PAX23_THERM] =
@@ -772,9 +772,9 @@ struct sensor_map {
   {sensors_read_vicor, "EP_PDB_ADC_2_VICOR2_TEMP", SNR_TEMP},
   [PDB_ADC_2_VICOR3_TEMP] =
   {sensors_read_vicor, "EP_PDB_ADC_2_VICOR3_TEMP", SNR_TEMP},
-  [PDB_SENSOR_OUTLET_TEMP] =
+  [PDB_SENSOR_OUTLET] =
   {sensors_read_common_therm, "EP_PDB_SENSOR_OUTLET", SNR_TEMP},
-  [PDB_SENSOR_OUTLET_TEMP_REMOTE] =
+  [PDB_SENSOR_OUTLET_REMOTE] =
   {sensors_read_common_therm, "EP_PDB_SENSOR_OUTLET_REMOTE", SNR_TEMP},
 };
 
@@ -1218,23 +1218,23 @@ static int sensors_read_common_therm(uint8_t sensor_num, float *value)
   int ret;
 
   switch (sensor_num) {
-    case MB_SENSOR_GPU_INLET:
-      ret = sensors_read("tmp421-i2c-6-4c", "GPU_INLET", (float *)value);
+    case MB_SENSOR_INLET:
+      ret = sensors_read("tmp421-i2c-6-4c", "INLET", (float *)value);
       break;
-    case MB_SENSOR_GPU_INLET_REMOTE:
-      ret = sensors_read("tmp421-i2c-6-4c", "GPU_INLET_REMOTE", (float *)value);
+    case MB_SENSOR_INLET_REMOTE:
+      ret = sensors_read("tmp421-i2c-6-4c", "INLET_REMOTE", (float *)value);
       break;
-    case MB_SENSOR_GPU_OUTLET:
-      ret = sensors_read("tmp421-i2c-6-4f", "GPU_OUTLET", (float *)value);
+    case MB_SENSOR_OUTLET:
+      ret = sensors_read("tmp421-i2c-6-4f", "OUTLET", (float *)value);
       break;
-    case MB_SENSOR_GPU_OUTLET_REMOTE:
-      ret = sensors_read("tmp421-i2c-6-4f", "GPU_OUTLET_REMOTE", (float *)value);
+    case MB_SENSOR_OUTLET_REMOTE:
+      ret = sensors_read("tmp421-i2c-6-4f", "OUTLET_REMOTE", (float *)value);
       break;
-    case PDB_SENSOR_OUTLET_TEMP:
-      ret = sensors_read("tmp421-i2c-17-4c", "OUTLET_TEMP", (float *)value);
+    case PDB_SENSOR_OUTLET:
+      ret = sensors_read("tmp421-i2c-17-4c", "OUTLET", (float *)value);
       break;
-    case PDB_SENSOR_OUTLET_TEMP_REMOTE:
-      ret = sensors_read("tmp421-i2c-17-4c", "OUTLET_TEMP_REMOTE", (float *)value);
+    case PDB_SENSOR_OUTLET_REMOTE:
+      ret = sensors_read("tmp421-i2c-17-4c", "OUTLET_REMOTE", (float *)value);
       break;
     default:
       return ERR_SENSOR_NA;

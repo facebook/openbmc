@@ -69,8 +69,10 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
   int eeprom;
   int bin;
   uint64_t tmp[FRUID_SIZE];
-  ssize_t bytes_rd, bytes_wr;
+  uint64_t comp_tmp[FRUID_SIZE];
+  ssize_t bytes_rd, bytes_wr, bytes_comp;
   int reload = 0;
+  int ret;
 
   errno = 0;
   fruid_info_t fruid;
@@ -90,6 +92,7 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
   }
 
   do {
+    lseek(eeprom, 0, SEEK_SET);
     bytes_rd = read(eeprom, tmp, FRUID_SIZE);
     if (bytes_rd < 0) {
       syslog(LOG_ERR, "%s: read %s file failed: %s",
@@ -99,6 +102,21 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
       syslog(LOG_ERR, "%s: less than %d bytes", __func__, FRUID_SIZE);
       goto exit;
     }
+
+    // make sure the content is equal in two times read
+    lseek(eeprom, 0, SEEK_SET);
+    bytes_comp = read(eeprom, comp_tmp, FRUID_SIZE);
+
+    if(bytes_comp < 0 || bytes_comp < FRUID_SIZE) {
+      syslog(LOG_ERR, "%s: read eeprom failed", __func__);
+      goto exit;
+    }
+
+    if( memcmp(tmp, comp_tmp, FRUID_SIZE) != 0 ) {
+      syslog(LOG_ERR, "%s: eeprom content is not equal\n", __func__);
+      reload++;
+      continue;
+    }
     
     bytes_wr = write(bin, tmp, bytes_rd);
     if (bytes_wr != bytes_rd) {
@@ -107,7 +125,13 @@ int copy_eeprom_to_bin(const char * eeprom_file, const char * bin_file) {
       goto exit;
     }
     reload++;
-  } while(fruid_parse(bin_file, &fruid) && reload <= MAX_RELOAD_FRU);
+    ret = fruid_parse(bin_file, &fruid);
+    if(ret != 0) {
+      syslog(LOG_WARNING, "%s: FRU data checksum is invalid, retry_count:%d", __func__, reload);
+    } else {
+      free_fruid_info(&fruid);
+    }
+  } while(ret && reload <= MAX_RELOAD_FRU);
 
 exit:
   close(bin);

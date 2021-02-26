@@ -76,7 +76,6 @@ SRC_URI = "file://rest.py \
            file://test_common_logging.py \
            file://test_rest_config.py \
            file://test_rest_fscd_sensor_data.py \
-           file://test_rest_gpios.py \
            file://test_common_auth.py \
            file://test_common_acl_provider_base.py \
            file://restapi.service \

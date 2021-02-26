@@ -1687,3 +1687,9 @@ error_exit:
   return ret;
 }
 
+int
+pal_get_num_slots(uint8_t *num) {
+  *num = NUM_SERVER_FRU;
+
+  return 0;
+}

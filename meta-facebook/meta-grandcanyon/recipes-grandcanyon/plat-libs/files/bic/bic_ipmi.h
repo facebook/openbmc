@@ -58,6 +58,7 @@ int bic_get_self_test_result(uint8_t *self_test_result);
 int bic_get_sys_guid(uint8_t slot_id, uint8_t *guid, uint8_t guid_size);
 int bic_set_sys_guid(uint8_t slot_id, uint8_t *guid, uint8_t guid_size);
 int bic_get_80port_record(uint16_t max_len, uint8_t *rbuf, uint8_t *rlen);
+int bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt);
 
 #ifdef __cplusplus
 } // extern "C"

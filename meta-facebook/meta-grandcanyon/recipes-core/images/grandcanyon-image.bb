@@ -49,4 +49,5 @@ IMAGE_INSTALL += " \
   bios-util \
   ipmi-util \
   gpiod \
+  snapshot-util \
   "

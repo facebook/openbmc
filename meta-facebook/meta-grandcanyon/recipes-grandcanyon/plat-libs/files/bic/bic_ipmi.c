@@ -46,6 +46,10 @@
 //SDR
 #define SDR_READ_COUNT_MAX 0x1A
 #pragma pack(push, 1)
+
+#define MASTER_WRITE_READ_HEADER_LEN          3
+#define MASTER_WRITE_READ_MAX_WRITE_BUF_SIZE  (MAX_IPMB_BUFFER - MASTER_WRITE_READ_HEADER_LEN)
+
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
   uint8_t ver;
@@ -69,6 +73,13 @@ typedef struct {
   uint8_t IANA[SIZE_IANA_ID];
   uint8_t postcode_response[MAX_POSTCODE_LEN];
 } bic_get_post_code_resp;
+
+typedef struct {
+  uint8_t bus_id;
+  uint8_t slave_addr;
+  uint8_t read_count;
+  uint8_t write_buffer[MASTER_WRITE_READ_MAX_WRITE_BUF_SIZE];
+} bic_master_write_read_req;
 
 int
 bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
@@ -804,3 +815,37 @@ bic_get_80port_record(uint16_t max_len, uint8_t *rbuf, uint8_t *rlen) {
   return ret;
 }
 
+int
+bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt) {
+  uint8_t tlen = MASTER_WRITE_READ_HEADER_LEN, rlen = 0;
+  int ret = 0;
+  bic_master_write_read_req tbuf;
+
+  if ((wbuf == NULL) || (rbuf == NULL)) {
+    syslog(LOG_ERR, "%s: failed to send ipmb wrapper because parameters are NULL\n", __func__);
+    return BIC_STATUS_FAILURE;
+  }
+
+  memset(&tbuf, 0, sizeof(tbuf));
+
+  tbuf.bus_id     = bus;
+  tbuf.slave_addr = addr;
+  tbuf.read_count = rcnt;
+
+  if ((wcnt != 0) && (wcnt <= sizeof(tbuf.write_buffer))) {
+    memcpy(&tbuf.write_buffer, wbuf, wcnt);
+    tlen += wcnt;
+  } else {
+    syslog(LOG_ERR, "%s: failed to set write buffer because write buffer length: %d is wrong, max write buffer length: %d\n", __func__, wcnt, sizeof(tbuf.write_buffer));
+    return BIC_STATUS_FAILURE;
+  }
+
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, (uint8_t *)&tbuf, tlen, rbuf, &rlen);
+
+  if ((ret < 0) || (rlen != rcnt)) {
+    syslog(LOG_ERR, "%s: failed to send ipmb wrapper. ret: %d, response length: %d, expected length: %d\n", __func__, ret, rlen, rcnt);
+    return BIC_STATUS_FAILURE;
+  }
+
+  return ret;
+}

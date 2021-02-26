@@ -282,13 +282,18 @@ power_on_post_actions() {
   int ret = 0;
   uint8_t chassis_type = 0;
 
-  if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_HIGH) < 0) {
-    syslog(LOG_ERR, "%s() Failed to enable E1S0/IOCM I2C\n", __func__);
-    return -1;
+  if (is_e1s_iocm_present(T5_E1S0_T7_IOC_AVENGER) == true) {
+    if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_HIGH) < 0) {
+      syslog(LOG_ERR, "%s() Failed to enable E1.S0/IOCM I2C\n", __func__);
+      return -1;
+    }
   }
-  if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_2_P3V3_PG_R), GPIO_VALUE_HIGH) < 0) {
-    syslog(LOG_ERR, "%s() Failed to enable E1S1/IOCM I2C\n", __func__);
-    return -1;
+
+  if (is_e1s_iocm_present(T5_E1S1_T7_IOCM_VOLT) == true) {
+    if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_2_P3V3_PG_R), GPIO_VALUE_HIGH) < 0) {
+      syslog(LOG_ERR, "%s() Failed to enable E1.S1/IOCM I2C\n", __func__);
+      return -1;
+    }
   }
 
   if (fbgc_common_get_chassis_type(&chassis_type) < 0) {

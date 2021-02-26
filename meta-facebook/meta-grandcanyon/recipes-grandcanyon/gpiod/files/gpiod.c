@@ -39,11 +39,51 @@
 
 #define E1S_IOCM_SLOT_NUM 2
 
+static void
+e1s_iocm_remove_event(int e1s_iocm_slot_id, uint8_t *present_status, uint8_t *gpio_power_good_pin) {
+
+  if ((present_status == NULL) || (gpio_power_good_pin == NULL)) {
+    syslog(LOG_ERR, "%s() Failed to disable E1.S %d/IOCM I2C because the parameter is NULL\n", __func__, e1s_iocm_slot_id);
+    return;
+  }
+
+  if (present_status[e1s_iocm_slot_id] == FRU_ABSENT) {
+    if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(gpio_power_good_pin[e1s_iocm_slot_id]), GPIO_VALUE_LOW) < 0) {
+      syslog(LOG_ERR, "%s() Failed to disable E1.S %d/IOCM I2C\n", __func__, e1s_iocm_slot_id);
+      return;
+    }
+  }
+}
+
+static void
+e1s_iocm_insert_event(int e1s_iocm_slot_id, uint8_t *present_status, uint8_t *gpio_power_good_pin) {
+
+  uint8_t server_power_status = SERVER_POWER_ON;
+
+  if ((present_status == NULL) || (gpio_power_good_pin == NULL)) {
+    syslog(LOG_ERR, "%s() Failed to enable E1.S %d/IOCM I2C because the parameter is NULL\n", __func__, e1s_iocm_slot_id);
+    return;
+  }
+
+  if (pal_get_server_power(FRU_SERVER, &server_power_status) < 0) {
+    syslog(LOG_ERR, "%s() Failed to enable E1.S %d/IOCM I2C because failed to get server power status\n", __func__, e1s_iocm_slot_id);
+    return;
+  }
+
+  if ((present_status[e1s_iocm_slot_id] == FRU_PRESENT) && (server_power_status == SERVER_POWER_ON)) {
+    if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(gpio_power_good_pin[e1s_iocm_slot_id]), GPIO_VALUE_HIGH) < 0) {
+      syslog(LOG_ERR, "%s() Failed to enable E1.S %d/IOCM I2C\n", __func__, e1s_iocm_slot_id);
+      return;
+    }
+  }
+}
+
 static void *
 fru_missing_monitor() {
   uint8_t fru_present_flag = 0, chassis_type = 0, uic_location_id = 0;
   uint8_t fru_present_status[FRU_CNT] = {FRU_PRESENT};
   uint8_t e1s_iocm_present_status[E1S_IOCM_SLOT_NUM] = {FRU_PRESENT};
+  uint8_t e1s_iocm_gpio_power_good_pin[E1S_IOCM_SLOT_NUM] = {GPIO_E1S_1_P3V3_PG_R, GPIO_E1S_2_P3V3_PG_R};
   char fru_name[MAX_FRU_NAME_STR] = {0};
   char uic_location = '?';
   int fru_id = 0, e1s_iocm_slot_id = 0;
@@ -88,6 +128,8 @@ fru_missing_monitor() {
               fru_present_status[fru_id] = FRU_PRESENT;
               e1s_iocm_present_status[T5_E1S0_T7_IOC_AVENGER] = FRU_PRESENT;
               e1s_iocm_present_status[T5_E1S1_T7_IOCM_VOLT] = FRU_PRESENT;
+              e1s_iocm_insert_event(T5_E1S0_T7_IOC_AVENGER, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
+              e1s_iocm_insert_event(T5_E1S1_T7_IOCM_VOLT, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
             }
           
           } else {
@@ -102,6 +144,9 @@ fru_missing_monitor() {
               if (is_e1s_iocm_present(T5_E1S1_T7_IOCM_VOLT) == false) {
                 e1s_iocm_present_status[T5_E1S1_T7_IOCM_VOLT] = FRU_ABSENT;
               }
+
+              e1s_iocm_remove_event(T5_E1S0_T7_IOC_AVENGER, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
+              e1s_iocm_remove_event(T5_E1S1_T7_IOCM_VOLT, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
             }
           }
         
@@ -128,6 +173,7 @@ fru_missing_monitor() {
                 syslog(LOG_CRIT, "DEASSERT: chassis type unknown, e1.s %d or iocm missing\n", e1s_iocm_slot_id);
               }
               e1s_iocm_present_status[e1s_iocm_slot_id] = FRU_PRESENT;
+              e1s_iocm_insert_event(e1s_iocm_slot_id, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
             }
           
             if ((is_e1s_iocm_present(e1s_iocm_slot_id) == false) && (e1s_iocm_present_status[e1s_iocm_slot_id] == FRU_PRESENT)) {
@@ -138,6 +184,7 @@ fru_missing_monitor() {
               }
               e1s_iocm_present_status[e1s_iocm_slot_id] = FRU_ABSENT;
               fru_present_status[fru_id] = FRU_ABSENT;
+              e1s_iocm_remove_event(e1s_iocm_slot_id, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
             }
           }
             

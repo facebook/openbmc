@@ -317,23 +317,6 @@ log_gpio_change(gpiopoll_pin_t *desc, gpio_value_t value, useconds_t log_delay) 
          cfg->description, cfg->shadow);
 }
 
-static void
-set_smi_trigger(void) {
-  static bool triggered = false;
-  static gpio_desc_t *gpio = NULL;
-  if (!gpio) {
-    gpio = gpio_open_by_shadow("IRQ_BMC_PCH_SMI_LPC_N"); // GPIOU5
-    if (!gpio)
-      return;
-  }
-  if (!triggered) {
-    gpio_set_value(gpio, GPIO_VALUE_LOW);
-    usleep(1000);
-    gpio_set_value(gpio, GPIO_VALUE_HIGH);
-    triggered = true;
-  }
-}
-
 static inline long int
 reset_timer(long int *val) {
   pthread_mutex_lock(&timer_mutex);
@@ -582,15 +565,7 @@ pwr_reset_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 //Power Button Event Handler
 static void
 pwr_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  struct timespec ts;
-  char value[MAX_VALUE_LEN];
-
-  if (!curr) {
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    ts.tv_sec += 5;
-    sprintf(value, "%ld", ts.tv_sec);
-    kv_set("pwr_btn_press_time", value, 0, 0);
-  }
+  pal_set_restart_cause(FRU_MB, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
   log_gpio_change(desc, curr, 0);
 }
 
@@ -652,6 +627,7 @@ cpu_pwr_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   g_server_power_status = curr;
   g_cpu_pwrgd_trig = true;
   log_gpio_change(desc, curr, 0);
+  reset_timer(&g_power_on_sec);
 
   // workaround for unexpected DIMM_MUX status
   if (g_server_power_status == GPIO_VALUE_HIGH) {
@@ -893,7 +869,6 @@ static void
   long int pot;
   char str[MAX_VALUE_LEN] = {0};
   int tread_time = 0;
-  struct timespec ts;
 
   while (1) {
     sleep(1);
@@ -916,14 +891,6 @@ static void
         if (strncmp(str, POWER_ON_STR, strlen(POWER_ON_STR)) != 0) {
           pal_set_last_pwr_state(fru, POWER_ON_STR);
           syslog(LOG_INFO, "last pwr state updated to on\n");
-
-          memset(str, 0, sizeof(str));
-          if (!kv_get("pwr_btn_press_time", str, NULL, 0)) {
-            clock_gettime(CLOCK_MONOTONIC, &ts);
-            if (strtoul(str, NULL, 10) > ts.tv_sec) {
-              pal_set_restart_cause(FRU_MB, RESTART_CAUSE_PWR_ON_PUSH_BUTTON);
-            }
-          }
         }
       } else {
         // wait until PowerOnTime < -2 to make sure it's not AC lost
@@ -933,7 +900,6 @@ static void
           syslog(LOG_INFO, "last pwr state updated to off\n");
         }
       }
-      set_smi_trigger();
     }
 
     //Show Uart Debug Select Number 2sec

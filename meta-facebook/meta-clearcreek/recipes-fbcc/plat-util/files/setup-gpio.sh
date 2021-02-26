@@ -244,8 +244,11 @@ gpio_export MB0_CBL_PRSNT_P0_R1 GPIOJ5
 gpio_export MB1_CBL_PRSNT_P1_R1 GPIOJ6
 gpio_export MB1_CBL_PRSNT_P0_R1 GPIOJ7
 
-gpio_export RST_FIO_IOEXP_R_N GPIOY1
-gpio_set RST_FIO_IOEXP_R_N 1
+gpio_export RST_PMBUS_N GPIOY1
+gpio_set RST_PMBUS_N 1
+
+gpio_export RST_FIO_IOEXP_N GPIOY2
+gpio_set RST_FIO_IOEXP_N 1
 
 gpio_export CPLD_BMC_GPIO_R_01 GPIOAC3
 

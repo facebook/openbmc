@@ -261,7 +261,11 @@ int pal_get_fru_name(uint8_t fru, char *name)
     strcpy(name, "carrier1");
   } else if (fru == FRU_CARRIER2) {
     strcpy(name, "carrier2");
+  } else if (fru == FRU_FIO) {
+    strcpy(name, "fio");
   } else {
+    if (fru > MAX_NUM_FRUS)
+      return -1;
     syslog(LOG_WARNING, "%s: Wrong fruid %d", __func__, fru);
     return -1;
   }

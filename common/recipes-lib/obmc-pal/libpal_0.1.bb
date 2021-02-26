@@ -12,6 +12,7 @@ SRC_URI = "file://pal.c \
            file://pal.h \
            file://pal_sensors.h \
            file://Makefile \
+           file://pal.py \
           "
 DEPENDS += " libkv libipmi libipmb obmc-pal"
 LDFLAGS += " -lkv -lipmi -lipmb"
@@ -21,6 +22,8 @@ HEADERS = "pal.h pal_sensors.h"
 CFLAGS += "-Wall -Werror -fPIC"
 
 S = "${WORKDIR}"
+
+inherit python3-dir
 
 do_compile() {
   make SOURCES="${SOURCES}" HEADERS="${HEADERS}"
@@ -35,9 +38,12 @@ do_install_append() {
   for f in ${HEADERS}; do
     install -m 0644 ${S}/$f ${D}${includedir}/openbmc/$f
   done
+
+  install -d ${D}${PYTHON_SITEPACKAGES_DIR}
+  install -m 644 ${S}/pal.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
 
 RDEPENDS_${PN} += " libkv "
 
-FILES_${PN} = "${libdir}/libpal.so*"
+FILES_${PN} = "${libdir}/libpal.so* ${PYTHON_SITEPACKAGES_DIR}/pal.py"
 FILES_${PN}-dev = "${includedir}/openbmc"

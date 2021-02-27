@@ -19,6 +19,7 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 . /usr/local/bin/openbmc-utils.sh
+. /usr/local/bin/flashrom-utils.sh
 
 pca9534_ee_sel=0x22
 pca9534_spi_sel=0x26
@@ -94,39 +95,6 @@ set_i2c_dev_value() {
     fi
 }
 
-check_flash_info() {
-    spi_no=$1
-    flashrom -p linux_spi:dev=/dev/spidev"$spi_no".0
-}
-
-get_flash_first_type() {
-    spi_no=$1
-    ori_str=$(check_flash_info "$spi_no" | sed ':a;N;$!ba;s/\n/ /g')
-    type=$(echo "$ori_str" | cut -d '"' -f 2)
-    if [ "$type" ]; then
-        echo "$type"
-        return 0
-    else
-        echo "Get flash type error: [$ori_str]"
-        return 1
-    fi
-}
-
-get_flash_size() {
-    spi_no=$1
-    ori_str=$(check_flash_info "$spi_no" | sed ':a;N;$!ba;s/\n/ /g')
-    flash_sz=$(echo "$ori_str" | cut -d '(' -f 3 | cut -d ' ' -f 1)
-    echo "$flash_sz" | grep -E -q '^[0-9]+$'
-    num_ret=$?
-    if [ "$num_ret" -eq 0 ]; then
-        echo "$flash_sz"
-        return 0
-    else
-        echo "$ori_str"
-        return 1
-    fi
-}
-
 # $1: input file size $2: flash size $3: output file path
 pad_ff() {
     out_file=$3
@@ -144,7 +112,8 @@ resize_file() {
     if [ "$storage_type" ] && [ "$storage_type" = "m95m02" ]; then
         storage_sz=$((m95m02_page_count * m95m02_page_size))
     else
-        flash_sz=$(get_flash_size "$spi_no")
+        spi_dev=$(flash_device_name "$spi_no" 0)
+        flash_sz=$(flash_get_size "$spi_dev")
         ret=$?
         if [ "$ret" -eq 0 ]; then
             storage_sz=$((flash_sz * 1024))
@@ -213,13 +182,15 @@ set_spi2_to_spi_cs() {
 read_flash_to_file() {
     spi_no=$1
     file=$2
+    spi_dev=$(flash_device_name "$spi_no" 0)
+
     modprobe -r spidev
     modprobe spidev
-    type=$(get_flash_first_type "$spi_no")
-    flashrom -p linux_spi:dev=/dev/spidev"$spi_no".0 -r "$file" -c "$type"
+    type=$(flash_get_model "$spi_dev")
+    flashrom -p linux_spi:dev=/dev/"$spi_dev" -r "$file" -c "$type"
     ret=$?
     if [ "$ret" -ne 0 ]; then
-        echo "debug cmd: [flashrom -p linux_spi:dev=/dev/spidev$spi_no.0 -r $file -c $type]"
+        echo "debug cmd: [flashrom -p linux_spi:dev=/dev/$spi_dev -r $file -c $type]"
         exit 1
     fi
 }
@@ -228,27 +199,31 @@ write_flash_to_file() {
     spi_no=$1
     in_file=$2
     out_file="/tmp/${3}_spi${1}_tmp"
+    spi_dev=$(flash_device_name "$spi_no" 0)
+
     modprobe -r spidev
     modprobe spidev
     resize_file "$in_file" "$out_file" "$spi_no"
-    type=$(get_flash_first_type "$spi_no")
-    flashrom -p linux_spi:dev=/dev/spidev"$spi_no".0 -w "$out_file" -c "$type"
+    type=$(flash_get_model "$spi_dev")
+    flashrom -p linux_spi:dev=/dev/"$spi_dev" -w "$out_file" -c "$type"
     ret=$?
     if [ "$ret" -ne 0 ]; then
-        echo "debug cmd: [flashrom -p linux_spi:dev=/dev/spidev$spi_no.0 -w $out_file -c $type]"
+        echo "debug cmd: [flashrom -p linux_spi:dev=/dev/$spi_dev -w $out_file -c $type]"
         exit 1
     fi
 }
 
 erase_flash() {
     spi_no=$1
+    spi_dev=$(flash_device_name "$spi_no" 0)
+
     modprobe -r spidev
     modprobe spidev
-    type=$(get_flash_first_type "$spi_no")
-    flashrom -p linux_spi:dev=/dev/spidev"$spi_no".0 -E -c "$type"
+    type=$(flash_get_model "$spi_dev")
+    flashrom -p linux_spi:dev=/dev/"$spi_dev" -E -c "$type"
     ret=$?
     if [ "$ret" -ne 0 ]; then
-        echo "debug cmd: [flashrom -p linux_spi:dev=/dev/spidev$spi_no.0 -E -c $type]"
+        echo "debug cmd: [flashrom -p linux_spi:dev=/dev/$spi_dev -E -c $type]"
         exit 1
     fi
 }

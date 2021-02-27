@@ -47,6 +47,7 @@ SRC_URI = " \
     file://setup-reboot.service \
     file://eth0_mac_fixup.sh \
     file://create_vlan_intf \
+    file://flashrom-utils.sh \
     ${@bb.utils.contains('PACKAGECONFIG', 'disable-watchdog', \
                          'file://disable_watchdog.sh ' + \
                          'file://disable_watchdog.service', '', d)} \
@@ -68,6 +69,7 @@ OPENBMC_UTILS_FILES = " \
     blkdev_mount.sh \
     emmc_auto_mount.sh \
     emmc_enhance_part.sh \
+    flashrom-utils.sh \
     "
 
 S = "${WORKDIR}"

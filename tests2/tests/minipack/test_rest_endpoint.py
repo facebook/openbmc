@@ -54,8 +54,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "bmc",
             "sensors",
             "mb",
-            "slotid",
-            "mTerm_status",
             "piminfo",
             "usb2i2c_reset",
             "pimserial",
@@ -85,10 +83,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     # "/api/sys/server"
     def set_endpoint_server_attributes(self):
         self.endpoint_server_attrb = ["BIC_ok", "status"]
-
-    # "/api/sys/slotid"
-    def set_endpoint_slotid_attributes(self):
-        self.endpoint_slotid_attrb = ["1"]
 
     # "/api/sys/fruid_scm"
     def set_endpoint_fruid_scm_attributes(self):

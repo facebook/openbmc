@@ -49,8 +49,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "fc_present",
             "modbus_registers",
             "server",
-            "slotid",
-            "mTerm_status",
             "sensors",
             "bmc",
         ]
@@ -100,10 +98,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     # "/api/sys/bmc"
     def set_endpoint_bmc_attributes(self):
         self.endpoint_bmc_attrb = self.BMC_ATTRIBUTES
-
-    # "/api/sys/slotid"
-    def set_endpoint_slotid_attributes(self):
-        self.endpoint_slotid_attrb = ["16"]
 
     # "/api/sys/firmware_info_all
     @unittest.skip("Test not supported on platform")

@@ -101,8 +101,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "fc_present",
             "modbus_registers",
             "server",
-            "slotid",
-            "mTerm_status",
             "sensors",
             "bmc",
             "firmware_info",
@@ -141,10 +139,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "Product Name",
         ]
 
-    # "/api/sys/mTerm_status"
-    def set_endpoint_mterm_attributes(self):
-        self.endpoint_mterm_attrb = ["Running"]
-
     # "/api/sys/bmc"
     def set_endpoint_bmc_attributes(self):
         self.endpoint_bmc_attrb = [
@@ -171,10 +165,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     def set_endpoint_fc_present_attributes(self):
         self.endpoint_fc_present_attrb = ["Not Applicable"]
-
-    # "/api/sys/slotid"
-    def set_endpoint_slotid_attributes(self):
-        self.endpoint_slotid_attrb = ["0"]
 
     # "/api/sys/firmware_info"
     def set_endpoint_firmware_info_attributes(self):

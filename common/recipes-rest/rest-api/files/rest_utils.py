@@ -36,8 +36,6 @@ common_routes = [
     "/api/sys/gpios",
     "/api/sys/fc_present",
     "/api/sys/psu_update",
-    "/api/sys/slotid",
-    "/api/sys/mTerm_status",
     "/api/sys/ntp",
     "/api/sys/fscd_sensor_data",
     "/api/sys/modbus",

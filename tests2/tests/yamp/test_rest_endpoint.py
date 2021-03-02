@@ -104,10 +104,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_server_attributes(self):
         self.endpoint_server_attrb = ["status"]
 
-    # "/api/sys/slotid"
-    def set_endpoint_slotid_attributes(self):
-        self.endpoint_slotid_attrb = ["1"]
-
     # "/api/sys/pim_present"
     def set_endpoint_pim_presence_attributes(self):
         self.endpoint_pim_presence = [

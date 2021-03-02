@@ -38,8 +38,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "mb",
             "fc_present",
             "firmware_info",
-            "slotid",
-            "mTerm_status",
             "sensors",
             "bmc",
         ]

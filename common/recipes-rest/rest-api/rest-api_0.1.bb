@@ -58,9 +58,7 @@ SRC_URI = "file://setup-rest-api.sh \
            file://rest_gpios.py \
            file://rest_server.py \
            file://rest_sensors.py \
-           file://rest_slotid.py \
            file://rest_psu_update.py \
-           file://rest_mTerm.py \
            file://eeprom_utils.py \
            file://rest_fcpresent.py \
            file://rest_ntpstatus.py \
@@ -117,13 +115,11 @@ binfiles1 = "setup-rest-api.sh \
              rest_server.py \
              rest_sensors.py \
              eeprom_utils.py \
-             rest_slotid.py \
              rest_psu_update.py \
              rest_fcpresent.py \
              rest_ntpstatus.py \
              rest_helper.py \
              rest_utils.py \
-             rest_mTerm.py \
              setup_plat_routes.py \
              rest_fscd_sensor_data.py \
              rest_modbus_cmd.py \

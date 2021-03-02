@@ -169,7 +169,6 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
     MB_ENDPOINT = "/api/sys/mb"
     SERVER_ENDPOINT = "/api/sys/server"
     FRUID_ENDPOINT = "/api/sys/mb/fruid"
-    MTERM_ENDPOINT = "/api/sys/mTerm_status"
     BMC_ENDPOINT = "/api/sys/bmc"
 
     # Attrbutes for common endpoints
@@ -271,16 +270,6 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
             CommonRestEndpointTest.FRUID_ENDPOINT, self.endpoint_fruid_attrb
         )
 
-    # "/api/sys/mTerm_status"
-    def set_endpoint_mterm_attributes(self):
-        self.endpoint_mterm_attrb = ["Running"]
-
-    def test_endpoint_api_sys_mterm(self):
-        self.set_endpoint_mterm_attributes()
-        self.verify_endpoint_attributes(
-            CommonRestEndpointTest.MTERM_ENDPOINT, self.endpoint_mterm_attrb
-        )
-
     # "/api/sys/bmc"
     def set_endpoint_bmc_attributes(self):
         self.endpoint_bmc_attrb = self.BMC_ATTRIBUTES
@@ -317,7 +306,6 @@ class FbossRestEndpointTest(CommonRestEndpointTest):
 
     # Common Fboss endpoints
     FC_PRESENT_ENDPOINT = "/api/sys/fc_present"
-    SLOT_ID_ENDPOINT = "/api/sys/slotid"
     FIRMWARE_INFO_ENDPOINT = "/api/sys/firmware_info/all"
 
     # Atributes
@@ -330,16 +318,6 @@ class FbossRestEndpointTest(CommonRestEndpointTest):
         self.set_endpoint_fc_present_attributes()
         self.verify_endpoint_attributes(
             FbossRestEndpointTest.FC_PRESENT_ENDPOINT, self.endpoint_fc_present_attrb
-        )
-
-    # "/api/sys/slotid"
-    def set_endpoint_slotid_attributes(self):
-        self.endpoint_slotid_attrb = ["0"]
-
-    def test_endpoint_api_sys_slotid(self):
-        self.set_endpoint_slotid_attributes()
-        self.verify_endpoint_attributes(
-            FbossRestEndpointTest.SLOT_ID_ENDPOINT, self.endpoint_slotid_attrb
         )
 
     def test_endpoint_api_sys_firmware_info_all(self):

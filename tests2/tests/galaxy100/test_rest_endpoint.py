@@ -49,8 +49,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "psu_update",
             "sensors",
             "bmc",
-            "slotid",
-            "mTerm_status",
             "i2cflush",
             "usb2i2c_reset",
             "firmware_info",
@@ -59,45 +57,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     # /api/sys/fc_present
     def set_endpoint_fc_present_attributes(self):
         self.endpoint_fc_present_attrb = ["Not Applicable"]
-
-    # /api/sys/slotid
-    def set_endpoint_slotid_attributes(self):
-        self.endpoint_slotid_attrb = [
-            "1",
-            "2",
-            "3",
-            "4",
-            "101",
-            "102",
-            "201",
-            "202",
-            "301",
-            "302",
-            "401",
-            "402",
-        ]
-
-    def test_endpoint_api_sys_slotid(self):
-        self.set_endpoint_slotid_attributes()
-        self.verify_endpoint_response(
-            FbossRestEndpointTest.SLOT_ID_ENDPOINT, self.endpoint_slotid_attrb
-        )
-
-    def verify_endpoint_response(self, endpointname, attributes):
-        """
-        Verify if endpoint response is present in attributes
-        """
-        self.assertNotEqual(
-            attributes, None, "{} endpoint attributes not set".format(endpointname)
-        )
-        info = self.get_from_endpoint(endpointname)
-        exists_in_attributes = False
-        for attrib in attributes:
-            regex = '{"slotid": ' + str(attrib) + "}"
-            if re.fullmatch(info, regex) is not None:
-                exists_in_attributes = True
-                break
-        self.assertTrue(exists_in_attributes)
 
     # /api/sys/sensors
     def set_endpoint_sensors_attributes(self):
@@ -111,7 +70,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             self.endpoint_sensors_attrb.append("ast_adc_hwmon-isa-0000")
         else:
             self.endpoint_sensors_attrb.append("ast_adc-isa-0000")
-
 
     # "/api/sys/mb"
     def set_endpoint_mb_attributes(self):
@@ -158,10 +116,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     # "/api/sys/mb/fruid"
     def set_endpoint_fruid_attributes(self):
         self.endpoint_fruid_attrb = self.FRUID_ATTRIBUTES
-
-    # /api/sys/mTerm_status
-    def set_endpoint_mTerm_status_attributes(self):
-        self.endpoint_mTerm_status_attrb = ["Running"]
 
     # "/api/sys/bmc"
     def set_endpoint_bmc_attributes(self):

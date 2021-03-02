@@ -28,12 +28,10 @@ import rest_fruid_pim
 import rest_fscd_sensor_data
 import rest_gpios
 import rest_modbus_cmd
-import rest_mTerm
 import rest_ntpstatus
 import rest_psu_update
 import rest_sensors
 import rest_server
-import rest_slotid
 from aiohttp import web
 from rest_utils import dumps_bytestr, get_endpoints
 
@@ -205,22 +203,6 @@ class commonApp_Handler:
     @common_force_async
     def psu_update_hdl_post(self, request):
         return self.helper_psu_update_hdl_post(request)
-
-    # Handler for get slotid from endpoint
-    def helper_rest_slotid_hdl(self, request):
-        return web.json_response(rest_slotid.get_slotid(), dumps=dumps_bytestr)
-
-    @common_force_async
-    def rest_slotid_hdl(self, request):
-        return self.helper_rest_slotid_hdl(request)
-
-    # Handler for mTerm status
-    def helper_rest_mTerm_status(self, request):
-        return web.json_response(rest_mTerm.get_mTerm_status(), dumps=dumps_bytestr)
-
-    @common_force_async
-    def rest_mTerm_status(self, request):
-        return self.helper_rest_mTerm_status(request)
 
     # Handler for ntp status
     def helper_rest_ntp_status(self, request):

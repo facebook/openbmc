@@ -71,7 +71,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "server",
             "bmc",
             "mb",
-            "slotid",
             "firmware_info",
             "presence",
             "feutil",
@@ -79,7 +78,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "psu_update",
             "gpios",
             "sensors",
-            "mTerm_status",
         ]
         platform_type = pal_get_board_type()
         # Wedge400C need to add vddcore and switch_reset end point
@@ -146,10 +144,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     # "/api/sys/server"
     def set_endpoint_server_attributes(self):
         self.endpoint_server_attrb = ["BIC_ok", "status"]
-
-    # "/api/sys/slotid"
-    def set_endpoint_slotid_attributes(self):
-        self.endpoint_slotid_attrb = ["1"]
 
     # "/api/sys/seutil"
     def set_endpoint_fruid_scm_attributes(self):

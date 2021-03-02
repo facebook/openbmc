@@ -151,6 +151,9 @@ function reload_sled_fsc() {
     else
       if [ $cnt -eq 2 ]; then
         run_fscd=true
+      elif [[ $cnt -eq 1 && "$(get_2ou_board_type $(get_cpld_bus 1))" == "0x06" ]]; then
+        # DP system only has one slot
+        run_fscd=true
       fi
     fi
   fi

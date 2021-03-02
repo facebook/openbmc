@@ -15,12 +15,20 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+# This must start before console login is allowed, so that tools like weutil
+# work correctly as soon as the BMC is up.
+
 [Unit]
 Description=Setup i2c switches and channels
 Wants=systemd-modules-load.service
 After=systemd-modules-load.service
+Before=basic.target
+DefaultDependencies=no
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/local/bin/setup_i2c.sh
+
+[Install]
+WantedBy=basic.target

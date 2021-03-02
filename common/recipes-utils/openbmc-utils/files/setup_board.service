@@ -17,8 +17,10 @@
 #
 [Unit]
 Description=Set up GPIOs and I2C configurations
-After=openbmc_gpio_setup.service
-Wants=openbmc_gpio_setup.service
+After=setup_i2c.service
+Before=basic.target
+Wants=openbmc_gpio_setup.service setup_i2c.service
+DefaultDependencies=no
 
 [Service]
 Type=oneshot
@@ -26,4 +28,4 @@ RemainAfterExit=yes
 ExecStart=/usr/local/bin/setup_board.sh
 
 [Install]
-WantedBy=sysinit.target
+WantedBy=basic.target

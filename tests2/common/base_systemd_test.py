@@ -61,3 +61,18 @@ class BaseSystemdTest(TestCase):
         stdout = output.stdout.decode("utf-8")
 
         self.assertTrue(len(stdout) == 0, command + " returned: " + stdout)
+
+    def test_setup_i2c_order(self):
+        if not running_systemd():
+            self.skipTest("not using systemd")
+            return
+
+        command = "systemctl show basic.target | grep After"
+        output = subprocess.check_output(
+            command,
+            stderr=subprocess.STDOUT,
+            shell=True,
+            timeout=60,
+        )
+        stdout = output.decode("utf-8")
+        self.assertTrue("setup_i2c", command + " returned: " + stdout)

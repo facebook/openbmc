@@ -116,7 +116,11 @@ class BaseRestEndpointTest(object):
                         ) from None
 
                 else:
-                    self.assertIn(handle.getcode(), [200, 202])
+                    self.assertIn(
+                        handle.getcode(),
+                        [200, 202],
+                        msg="{} missing resource {}".format(endpointname, item),
+                    )
 
     def _is_allowed_non_ok(self, http_code, endpoint):
         for re_endpoint, allowed_codes in ALLOWED_NON_OK_RESPONSES.items():
@@ -134,7 +138,11 @@ class BaseRestEndpointTest(object):
         info = self.get_from_endpoint(endpointname)
         for attrib in attributes:
             with self.subTest(attrib=attrib):
-                self.assertIn(attrib, info)
+                self.assertIn(
+                    attrib,
+                    info,
+                    msg="endpoint {} missing attrib {}".format(endpointname, attrib),
+                )
         if "Resources" in info:
             dict_info = json.loads(info)
             self.verify_endpoint_resource(

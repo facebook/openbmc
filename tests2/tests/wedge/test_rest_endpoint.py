@@ -110,3 +110,13 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_firmware_info_all_attributes(self):
         self.endpoint_firmware_info_all_attrb = None
         pass
+
+    # /api/sys/bmc
+    def set_endpoint_mtd_attributes(self):
+        self.endpoint_mtd_attrb = [
+            "u-boot",
+            "env",
+            "fit",
+            "flash0",
+            "data0",
+        ]

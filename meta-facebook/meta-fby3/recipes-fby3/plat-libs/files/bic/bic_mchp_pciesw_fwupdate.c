@@ -32,8 +32,238 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <time.h>
+#include <dirent.h>
+#include <limits.h>
 #include "bic_mchp_pciesw_fwupdate.h"
 #include <openbmc/kv.h>
+enum {
+  PESW_BOOTLOADER_RCVRY = 0x00,
+  PESW_PARTMAP          = 0x01,
+  PESW_BOOTLOADER2      = 0x02,
+  PESW_CFG              = 0x03,
+  PESW_MAIN             = 0x04,
+  PESW_IMG_CNT          = 0x05,
+  PESW_INIT_BL          = 0x06,
+  PESW_TYPE_OFFSET      = 0x1C,
+};
+
+char pesw_image_path[5][PATH_MAX+1] = {{"\0"}, {"\0"}, {"\0"}, {"\0"}, {"\0"}};
+static int _update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_rcvry);
+
+static int
+_check_image(char *image, uint8_t *type) {
+  int ret = BIC_STATUS_FAILURE;
+  int file_size = 0;
+  int fd = open_and_get_size(image, &file_size);
+
+  // check file size
+  if ( file_size < 1024 ) {
+    printf("%s() the file size is abnormal. img: %s, szie:%d\n", __func__, image, file_size);
+    goto error_exit;
+  }
+
+  // read its tyoe
+  lseek(fd, PESW_TYPE_OFFSET, SEEK_SET);
+  uint8_t temp = 0;
+  if ( read(fd, &temp, 1) != 1 ) {
+    printf("%s() Couldn't read its type!\n", __func__);
+    goto error_exit;
+  }
+
+  // set flag
+  switch(temp) {
+    case (PESW_PARTMAP-1):
+      printf("WARN: When the partmap image is applied, all images in PCIe switch will be invalidated!!\n");
+      temp = PESW_PARTMAP;
+    case PESW_BOOTLOADER2:
+      if ( strstr(image, "rcvry") != NULL ) temp = PESW_BOOTLOADER_RCVRY;
+    case PESW_CFG:
+    case PESW_MAIN:
+      *type |= 0x1 << temp;
+      break;
+    default:
+      goto error_exit;
+  }
+
+  // store path
+  strcpy(pesw_image_path[temp], image);
+  ret = BIC_STATUS_SUCCESS;
+error_exit:
+  if ( fd > 0 ) close(fd);
+
+  return ret;
+}
+
+static bool
+_is_dir(char *image) {
+  struct stat st;
+  return stat(image, &st) == 0 && S_ISDIR(st.st_mode);
+}
+
+static int
+_check_dirs(char *image, uint8_t *type) {
+  int ret = BIC_STATUS_FAILURE;
+  bool is_valid_folder = false;
+  // open and check it
+  DIR *dir = opendir(image);
+  if ( dir == NULL ) {
+    printf("Failed to open current directory\n");
+    goto error_exit;
+  }
+
+  // go through the any entry except for '.' or '..'
+  struct dirent *entry;
+  while ( (entry = readdir(dir)) != NULL ) {
+    if ( entry->d_name[0] == '.' ) continue;
+
+    // create the abs path
+    char temp_path[PATH_MAX+1] = "\0";
+    char abs_path[PATH_MAX+1] = "\0";
+    strcat(temp_path, image);
+    strcat(temp_path, "/");
+    strcat(temp_path, entry->d_name);
+
+    // if the pointer points to NULL, something went wrong
+    char *is_file_good = realpath(temp_path, abs_path);
+    if ( is_file_good == NULL ) {
+      printf("Err: No such file - %s\n", abs_path);
+      goto error_exit;
+    }
+
+    if ( _check_image(abs_path, type) == BIC_STATUS_SUCCESS ) {
+      printf("Find: %s\n", entry->d_name);
+      is_valid_folder = true;
+    }
+  }
+
+  ret = (is_valid_folder == true)?BIC_STATUS_SUCCESS:BIC_STATUS_FAILURE;
+error_exit:
+  if ( dir != NULL ) closedir(dir);
+  return ret;
+}
+
+static int
+_is_valid_files(char *image, uint8_t *type) {
+  int ret = BIC_STATUS_FAILURE;
+
+  // set type according to files
+  if ( _is_dir(image) == true ) {
+    if ( _check_dirs(image, type) < 0 ) goto error_exit;
+  } else {
+    if ( _check_image(image, type) < 0 ) goto error_exit;
+  }
+
+  ret = BIC_STATUS_SUCCESS;
+error_exit:
+  return ret;
+}
+
+static int
+_switch_pesw_to_recovery(uint8_t slot_id, uint8_t intf, bool is_low) {
+  int ret = BIC_STATUS_FAILURE;
+  uint8_t tbuf[6] = {0x9c, 0x9c, 0x00, 1, 19, (is_low == true)?0:1};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 6;
+  uint8_t rlen = 0;
+
+  printf("Pulling %s FM_BIC_PESW_RECOVERY_0...\n", (is_low == true)?"donw":"high");
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, intf);
+  if ( ret < 0 ) {
+    printf("Failed to pull %s FM_BIC_PESW_RECOVERY_0\n", (is_low == true)?"donw":"high");
+  }
+  return ret;
+}
+
+static int
+_switch_i2c_mux_to_pesw(uint8_t slot_id, uint8_t intf) {
+  uint8_t tbuf[5] = {0x13, 0xE2, 0x00, 0x00, 0x02};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 5;
+  uint8_t rlen = 0;
+  return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+}
+
+static int
+_check_pesw_status(uint8_t slot_id, uint8_t intf, uint8_t sel_sts, bool run_rcvry, char *expected_sts) {
+  int ret = BIC_STATUS_SUCCESS;
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x0, };
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 4;
+  uint8_t rlen = 0;
+
+  switch(sel_sts) {
+    case PESW_BOOTLOADER_RCVRY:
+      tbuf[3] = (run_rcvry == false)?0x4:0x5;
+      break;
+    case PESW_PARTMAP:
+      tbuf[3] = 0x12;
+      break;
+    case PESW_BOOTLOADER2:
+      tbuf[3] = 0x11;
+      break;
+    case PESW_CFG:
+      tbuf[3] = 0x15;
+      break;
+    case PESW_MAIN:
+      tbuf[3] = 0x17;
+      break;
+    case PESW_INIT_BL:
+      tbuf[3] = 0x00;
+      break;
+  }
+
+  printf("Send: ");
+  for (int i = 0; i < tlen; i++) {
+    printf("%02X ", tbuf[i]);
+  }
+  printf("\n");
+
+  sleep(1);
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, 0x38, tbuf, tlen, rbuf, &rlen, intf);
+  if ( ret < 0 ) {
+    printf("%s() Failed to check status: %02X\n", __func__, sel_sts);
+    goto error_exit;
+  }
+
+  printf("Recv: ");
+  for (int i = 0; i < rlen; i++) {
+    printf("%02X ", rbuf[i]);
+  }
+  printf("\n");
+
+#if 0
+  switch(sel_sts) {
+    case PESW_BOOTLOADER_RCVRY:
+      break;
+    case PESW_PARTMAP:
+      break;
+    case PESW_BOOTLOADER2:
+      break;
+    case PESW_CFG:
+      break;
+    case PESW_MAIN:
+      break;
+  }
+#endif
+error_exit:
+  return ret;
+}
+
+static int
+_toggle_pesw(uint8_t slot_id, uint8_t intf, uint8_t type, bool is_rcvry) {
+  uint8_t tbuf[7] = {0x9c, 0x9c, 0x00, (is_rcvry == true)?0x06:0x03, 0x00, 0x00, 0x00};
+  uint8_t rbuf[16] = {0};
+  uint8_t rlen = 0;
+
+  if ( (type >> PESW_MAIN) & 0x1 ) tbuf[4] = 0x1;
+  if ( (type >> PESW_CFG)  & 0x1 ) tbuf[5] = 0x1;
+  if ( (type >> PESW_BOOTLOADER2) & 0x1 ) tbuf[6] = 0x1;
+
+  printf("Send the toggle command ");
+  for (int i = 0; i < 7; i++) printf("%02X ", tbuf[i]);
+  printf("\n");
+  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, 0x38, tbuf, 7, rbuf, &rlen, intf);
+}
 
 static int
 _get_pcie_sw_update_status(uint8_t slot_id, uint8_t *status) {
@@ -128,14 +358,14 @@ _poll_pcie_sw_update_status(uint8_t slot_id) {
 int update_bic_mchp_pcie_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force) {
 #define LAST_FW_PCIE_SWITCH_TRUNK_SIZE (MAX_FW_PCIE_SWITCH_BLOCK_SIZE%224)
   int fd = 0;
-  int ret = 0;
+  int ret = BIC_STATUS_FAILURE;
   int file_size = 0;
 
   //open fd and get size
   fd = open_and_get_size(image, &file_size);
   if (fd < 0) {
     syslog(LOG_WARNING, "%s() cannot open the file: %s, fd=%d", __func__, image, fd);
-    return -1;
+    goto error_exit;
   }
 
   comp = PCIE_FW_IDX;
@@ -225,7 +455,7 @@ _send_bic_usb_packet(usb_dev* udev, bic_usb_ext_packet *pkt) {
   while(true) {
     ret = libusb_bulk_transfer(udev->handle, udev->epaddr, (uint8_t*)pkt, transferlen, &transferred, 3000);
     if( (ret != 0) || (transferlen != transferred) ) {
-      printf("Error in transferring data! err = %d and transferred = %d(expected data length 64)\n",ret ,transferred);
+      printf("Error in transferring data! err = %d and transferred = %d(expected data length %d)\n",ret ,transferred, transferlen);
       printf("Retry since  %s\n", libusb_error_name(ret));
       retries--;
       if (!retries) {
@@ -238,7 +468,7 @@ _send_bic_usb_packet(usb_dev* udev, bic_usb_ext_packet *pkt) {
 }
 
 int
-bic_update_pesw_fw_usb(uint8_t slot_id, uint8_t comp, char *image_file, usb_dev* udev) {
+bic_update_pesw_fw_usb(uint8_t slot_id, char *image_file, usb_dev* udev, char *comp_name) {
   int ret = BIC_STATUS_FAILURE;
   int fd = 0;
   int file_size = 0;
@@ -294,7 +524,7 @@ bic_update_pesw_fw_usb(uint8_t slot_id, uint8_t comp, char *image_file, usb_dev*
     // update offset
     write_offset += read_bytes;
     if ((last_offset + dsize) <= write_offset ) {
-      printf("updated 2OU PESW: %d %%\n", (write_offset/dsize)*5);
+      printf("updated 2OU PESW %s: %d %%\n", comp_name, (write_offset/dsize)*5);
       fflush(stdout);
       _set_fw_update_ongoing(slot_id, 1800);
       last_offset += dsize;
@@ -309,30 +539,234 @@ error_exit:
   return ret;
 }
 
-int update_bic_mchp_pcie_fw_usb(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force) {
+static int
+_quit_pesw_update(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_rcvry) {
+  int ret = _toggle_pesw(slot_id, intf, type, is_rcvry);
+  if ( is_rcvry == false ) return ret;
+
+  printf("Checking the new image status...\n");
+
+  // check status
+  for (int i = PESW_BOOTLOADER2; i < PESW_IMG_CNT; i++ ) {
+    ret = _check_pesw_status(slot_id, intf, i, false, NULL);
+    if ( ret < 0 ) {
+      printf("%s() Failed to check status: %02X\n", __func__, i);
+      goto error_exit;
+    }
+  }
+
+  // check BL
+  printf("Initializing the bootloader...\n");
+  ret = _check_pesw_status(slot_id, intf, PESW_INIT_BL, false, NULL);
+  if ( ret < 0 ) {
+    printf("%s() Failed to initialize bootloader\n", __func__);
+  }
+
+  // recover it
+  ret = _switch_pesw_to_recovery(slot_id, intf, false);
+  if ( ret < 0 ) {
+    goto error_exit;
+  }
+
+  printf("Doing power cycle to trigger the new images...\n");
+  ret = bic_server_power_cycle(slot_id);
+  if ( ret < 0 ) {
+    printf("Failed to do power cycle\n");
+    goto error_exit;
+  }
+
+  // update bl2
+  printf("Updating the bootloader...\n");
+  ret = _update_mchp(slot_id, (0x1 << PESW_BOOTLOADER2), intf, true, false);
+  if ( ret < 0 ) {
+    printf("Failed to update it\n");
+    goto error_exit;
+  }
+
+  printf("Doing power cycle to trigger the bootloader...\n");
+  ret = bic_server_power_cycle(slot_id);
+  if ( ret < 0 ) {
+    printf("Failed to do power cycle\n");
+    goto error_exit;
+  }
+error_exit:
+  return ret;
+}
+
+static int
+_enter_pesw_rcvry_mode(uint8_t slot_id, uint8_t intf, bool is_rcvry) {
+  int ret = BIC_STATUS_FAILURE;
+  uint8_t tbuf[6] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 6;
+  uint8_t rlen = 0;
+
+  if ( is_rcvry == false ) return BIC_STATUS_SUCCESS;
+
+  printf("Starting running PESW recovery\n");
+
+  ret = _switch_pesw_to_recovery(slot_id, intf, true);
+  if ( ret < 0 ) {
+    goto error_exit;
+  }
+
+  printf("Doing power cycle to trigger TWI recovery mode...\n");
+  ret = bic_server_power_cycle(slot_id);
+  if ( ret < 0 ) {
+    printf("Failed to do power cycle\n");
+    goto error_exit;
+  }
+
+  printf("Waiting for BIC...\n");
+  sleep(6);
+
+  printf("Stopping monitoring SSD...\n");
+  ret = bic_enable_ssd_sensor_monitor(slot_id, false, intf);
+  if ( ret < 0 ) {
+    printf("Failed to stop monitoring SSD\n");
+    goto error_exit;
+  }
+
+  printf("Switching I2C mux to PESW...\n");
+  ret = _switch_i2c_mux_to_pesw(slot_id, intf);
+  if ( ret < 0 ) {
+    printf("Failed to switch i2c mux\n");
+    goto error_exit;
+  }
+
+  printf("Checking PESW status...\n");
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  tbuf[3] = 0x09;
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, 0x60, tbuf, tlen, rbuf, &rlen, intf);
+  if ( ret < 0 ) {
+    printf("Failed to get the device list\n");
+    goto error_exit;
+  }
+
+  // if B0h is not appeared, we can't proceed to do the rest.
+  ret = BIC_STATUS_FAILURE;
+  for (int i = 3; i < rlen; i++ ) {
+    if ( rbuf[i] == 0xb0 ) {
+      ret = BIC_STATUS_SUCCESS;
+      break;
+    }
+  }
+
+  // check bootloader phase
+  ret = (ret < 0)?BIC_STATUS_FAILURE: _check_pesw_status(slot_id, intf, PESW_BOOTLOADER_RCVRY, false, NULL);
+  printf("PESW is %srunning in recovery mode!\n", (ret < 0)?"not ":"");
+
+error_exit:
+  return ret;
+}
+
+static int
+_process_mchp_images(uint8_t slot_id, uint8_t idx, uint8_t intf, usb_dev* udev, bool is_usb, bool is_rcvry) {
+  int ret = BIC_STATUS_FAILURE;
+  char comp_name[5][15] = {{"RCVRY"}, {"PARTMAP"}, {"BOOTLOADER2"}, {"CFG"}, {"MAIN FW"}};
+
+  printf("******Start sending %s******\n", comp_name[idx]);
+  printf("File: %s\n", pesw_image_path[idx]);
+
+  if ( is_usb == false ) {
+    //do nothing
+    printf("Please update it via USB!\n");
+  } else {
+    ret = bic_update_pesw_fw_usb(slot_id, pesw_image_path[idx], udev, comp_name[idx]);
+    if ( ret < 0 ) {
+      printf("Failed to update %s\n", comp_name[idx]);
+      goto error_exit;
+    }
+  }
+
+  // If it's not running for recovery mode, we can return
+  if ( is_rcvry == false ) return ret;
+
+  // check the status after applying the image
+  if ( idx == PESW_BOOTLOADER_RCVRY ) {
+    printf("Activating %s...\n", comp_name[idx]);
+    ret = _check_pesw_status(slot_id, intf, idx, true, NULL); // execute bl2
+    if ( ret < 0 ) {
+      printf("Failed to activate it\n");
+      goto error_exit;
+    }
+  }
+
+  ret = _check_pesw_status(slot_id, intf, idx, false, NULL); // check status
+  if ( ret < 0 ) {
+    printf("Failed to get the phase status\n");
+    goto error_exit;
+  }
+
+error_exit:
+  return ret;
+}
+
+static int
+_update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_rcvry) {
   struct timeval start, end;
-  int ret = BIC_STATUS_SUCCESS;
+  int ret = BIC_STATUS_FAILURE;
   usb_dev   bic_udev;
   usb_dev*  udev = &bic_udev;
 
-  udev->ci = 1;
-  udev->epaddr = 0x1;
+  // USB is the default path for PESW update, we just make sure USB can be initialized,
+  // If users choose to send data via IPMB, skip it
+  if ( is_usb == true ) {
+    udev->ci = 1;
+    udev->epaddr = 0x1;
+    if ( (ret = bic_init_usb_dev(slot_id, udev, EXP2_TI_PRODUCT_ID, EXP2_TI_VENDOR_ID)) < 0 )
+      goto error_exit;
+  }
 
-  // init usb device
-  if ( (ret = bic_init_usb_dev(slot_id, udev, EXP2_TI_PRODUCT_ID, EXP2_TI_VENDOR_ID)) < 0 ) goto error_exit;
-
-  printf("Input: %s, USB timeout: 3000ms\n", image);
   gettimeofday(&start, NULL);
 
-  // sendfile
-  if ( (ret = bic_update_pesw_fw_usb(slot_id, comp, image, udev)) < 0 ) goto error_exit;
+  // should it run into rcvry?
+  if ( _enter_pesw_rcvry_mode(slot_id, intf, is_rcvry) < 0 ) {
+    goto error_exit;
+  }
+
+  // try to send the images
+  for (int i = PESW_BOOTLOADER_RCVRY; i < PESW_IMG_CNT; i++) {
+    if ( ((type >> i) & 0x1) == 0 ) continue;
+
+    ret = _process_mchp_images(slot_id, i, intf, udev, is_usb, is_rcvry);
+    if ( ret < 0 ) {
+      goto error_exit;
+    }
+  }
+
+  // quit
+  if ( _quit_pesw_update(slot_id, type, intf, is_rcvry) < 0 ) {
+    goto error_exit;
+  }
 
   gettimeofday(&end, NULL);
   printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
-  ret = BIC_STATUS_SUCCESS;
-
 error_exit:
-  // close
-  bic_close_usb_dev(udev);
+  if ( is_usb == true ) {
+    bic_close_usb_dev(udev);
+  }
+
+  return ret;
+}
+
+int update_bic_mchp(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force, bool is_usb) {
+  int ret = BIC_STATUS_FAILURE;
+  uint8_t type = 0;
+
+  // check files
+  ret = _is_valid_files(image, &type);
+  if ( ret < 0 ) {
+    printf("Invalid inputs: %s\n", image);
+    goto error_exit;
+  }
+
+  // is it going to run rcvry?
+  bool is_rcvry = (type >> PESW_BOOTLOADER_RCVRY) & 0x1;
+
+  // start updating PESW
+  ret = _update_mchp(slot_id, type, intf, is_usb, is_rcvry);
+error_exit:
   return ret;
 }

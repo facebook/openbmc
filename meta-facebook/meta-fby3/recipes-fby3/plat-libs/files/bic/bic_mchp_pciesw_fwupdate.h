@@ -28,8 +28,7 @@ extern "C" {
 #include "bic_xfer.h"
 #include "bic.h"
 
-int update_bic_mchp_pcie_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force);
-int update_bic_mchp_pcie_fw_usb(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force);
+int update_bic_mchp(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force, bool is_usb);
 
 #ifdef __cplusplus
 } // extern "C"

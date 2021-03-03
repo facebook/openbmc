@@ -232,6 +232,11 @@ int set_me_entry_into_recovery(void) {
   NM_RW_INFO info;
   uint8_t rbuf[32];
 
+  if (pal_skip_access_me()) {
+    syslog(LOG_WARNING, "[%s] skip access NM", __func__);
+    return 0;
+  }
+
   master = pal_get_config_is_master();
 
   if ( pal_get_target_bmc_addr(&tar_bmc_addr) )
@@ -337,42 +342,6 @@ pal_sled_cycle(void) {
   cc = cmd_cmc_sled_cycle();
   if( cc != CC_SUCCESS ) {
     syslog(LOG_CRIT, "Request F0C power-cycle failed CC=%x\n", cc);
-    return -1;
-  }
-  return 0;
-}
-
-//This is for BIOS update finish do HSC AC cycle.
-int
-pal_bios_update_ac(void) {
-  int cc;
-  uint8_t mode;
-
-  if ( pal_block_ac() ) {
-    return -1;
-  }
-
-  if( pal_get_host_system_mode(&mode) ) {
-    return -1;
-  }
-
-  cc = pal_ep_sled_cycle();
-  if ( cc != CC_SUCCESS ) {
-    syslog(LOG_ERR, "Request JG7 power-cycle failed CC=%x\n", cc);
-    return -1;
-  }
-
-  if ( mode == MB_4S_MODE ) {
-    cc = pal_cc_sled_cycle();
-    if ( cc != CC_SUCCESS ) {
-      syslog(LOG_ERR, "Request IOX power-cycle failed CC=%x\n", cc);
-      return -1;
-    }
-  }
-  // Send command to CM power cycle
-  cc = cmd_cmc_sled_cycle();
-  if( cc != CC_SUCCESS ) {
-    syslog(LOG_ERR, "Request F0C power-cycle failed CC=%x\n", cc);
     return -1;
   }
   return 0;

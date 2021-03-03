@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include <fstream>
 #include <unistd.h>
 #include <chrono>
 #include <thread>
@@ -23,13 +24,9 @@ class palBiosComponent : public BiosComponent {
 };
 
 int palBiosComponent::update_finish(void) {
-  int ret = 0;
-
-  ret = pal_bios_update_ac();
-  if( ret != 0)
-    syslog(LOG_CRIT, "BIOS update finished AC FAIL\n");
-
-  return ret;
+  sys.runcmd(std::string("/sbin/fw_setenv por_ls on"));
+  sys.output << "To complete the upgrade, please perform 'power-util sled-cycle'" << std::endl;
+  return 0;
 }
 
 int palBiosComponent::setDeepSleepWell(bool setting) {
@@ -68,6 +65,9 @@ int palBiosComponent::setDeepSleepWell(bool setting) {
     tbuf[1] = 0xEF;
     retCode |= i2c_rdwr_msg_transfer(fd, addr << 1, tbuf, tlen, rbuf, rlen);
     i2c_cdev_slave_close(fd);
+
+    std::ofstream ofile("/tmp/fin_bios_upd");
+    ofile.close();
   } else {
     // Reset PWRGD_DSW_PWROK
     bus = 0x00;
@@ -101,12 +101,6 @@ int palBiosComponent::setDeepSleepWell(bool setting) {
 }
 
 int palBiosComponent::reboot(uint8_t fruid) {
-
-  if (sys.runcmd("/usr/bin/killall gpiod > /dev/null") != 0)
-    syslog(LOG_DEBUG, "killall gpiod failed");
-  if (sys.runcmd("/usr/local/bin/cfg-util pwr_server_last_state on > /dev/null") != 0)
-    syslog(LOG_DEBUG, "Set pwr_server_last_state on failed");
-
   return 0;
 }
 

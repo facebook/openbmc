@@ -1526,6 +1526,15 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
   return comp_code;
 }
 
+bool
+pal_skip_access_me(void) {
+  if (!access("/tmp/fin_bios_upd", F_OK)) {
+    return true;
+  }
+
+  return false;
+}
+
 int
 pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
 {
@@ -1533,6 +1542,9 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
   uint8_t rbuf[8];
   uint8_t rlen;
   int ret;
+
+  if (pal_skip_access_me())
+    return PAL_EOK;
 
   if (!pal_get_config_is_master())
     return PAL_EOK;

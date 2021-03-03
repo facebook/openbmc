@@ -38,9 +38,20 @@ void ExpansionBoard::ready()
   switch (fw_comp) {
     case FW_1OU_BIC:
     case FW_1OU_BIC_BOOTLOADER:
-    case FW_1OU_CPLD:
-      if ( (config_status & PRESENT_1OU) != PRESENT_1OU ) 
+      if ( (config_status & PRESENT_1OU) != PRESENT_1OU )
         is_present = false;
+      break;
+    case FW_1OU_CPLD:
+      if ( (config_status & PRESENT_1OU) != PRESENT_1OU ) {
+        is_present = false;
+      } else {
+        uint8_t type = 0xff;
+        if (bic_get_1ou_type(slot_id, &type)){
+          throw string("Failed to get 1OU board type");
+        } else if (type == EDSFF_1U) {
+          throw string("Not present");
+        }
+      }
       break;
     case FW_2OU_BIC:
     case FW_2OU_BIC_BOOTLOADER:

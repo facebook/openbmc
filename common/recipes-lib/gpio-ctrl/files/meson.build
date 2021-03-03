@@ -48,5 +48,5 @@ cppc = meson.get_compiler('cpp')
 
 gpio_ctrl_test = executable('test-gpio-control', 'gpio_test.cpp', srcs,
   dependencies: [libs, test_libs],
-  cpp_args: ['-D__TEST__'])
+  cpp_args: ['-D__TEST__'], c_args:['-D__TEST__'])
 test('gpio-control-tests', gpio_ctrl_test)

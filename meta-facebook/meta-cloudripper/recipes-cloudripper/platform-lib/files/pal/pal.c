@@ -58,7 +58,7 @@ struct threadinfo {
 
 static struct threadinfo t_dump[MAX_NUM_FRUS] = {0};
 
-const char pal_fru_list[] = "all, scm, smb, fcm, "\
+const char pal_fru_list[] = "all, scm, smb, "\
                             "psu1, psu2, fan1, fan2, fan3, fan4 ";
 
 char *key_list[] = {
@@ -69,7 +69,6 @@ char *key_list[] = {
   "server_sel_error",
   "scm_sensor_health",
   "smb_sensor_health",
-  "fcm_sensor_health",
   "psu1_sensor_health",
   "psu2_sensor_health",
   "fan1_sensor_health",
@@ -89,7 +88,6 @@ char *def_val_list[] = {
   "1", /* server_sel_error */
   "1", /* scm_sensor_health */
   "1", /* smb_sensor_health */
-  "1", /* fcm_sensor_health */
   "1", /* psu1_sensor_health */
   "1", /* psu2_sensor_health */
   "1", /* fan1_sensor_health */
@@ -161,7 +159,6 @@ int pal_get_fru_capability(uint8_t fru, unsigned int *caps)
   int ret = 0;
   switch(fru) {
     case FRU_SMB:
-    case FRU_FCM:
     case FRU_PSU1:
     case FRU_PSU2:
     case FRU_FAN1:
@@ -228,9 +225,6 @@ int pal_get_fru_name(uint8_t fru, char *name) {
     case FRU_SCM:
       strcpy(name, "scm");
       break;
-    case FRU_FCM:
-      strcpy(name, "fcm");
-      break;
     case FRU_PSU1:
       strcpy(name, "psu1");
       break;
@@ -278,9 +272,6 @@ int pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_SCM:
       snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, SCM_PRSNT_STATUS);
       break;
-    case FRU_FCM:
-      *status = 1;
-      return 0;
     case FRU_PSU1:
     case FRU_PSU2:
       snprintf(tmp, LARGEST_DEVICE_NAME, SMB_SYSFS, PSU_PRSNT_STATUS);
@@ -672,9 +663,6 @@ int pal_get_fru_health(uint8_t fru, uint8_t *value) {
     break;
   case FRU_SMB:
     sprintf(key, "smb_sensor_health");
-    break;
-  case FRU_FCM:
-    sprintf(key, "fcm_sensor_health");
     break;
   case FRU_PSU1:
     sprintf(key, "psu1_sensor_health");

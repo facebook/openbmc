@@ -156,7 +156,6 @@ enum {
   FRU_ALL,
   FRU_SCM,
   FRU_SMB,
-  FRU_FCM,
   FRU_PSU1,
   FRU_PSU2,
   FRU_FAN1,

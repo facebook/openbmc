@@ -146,6 +146,9 @@ TEST(BmcComponentTest, MTDFlash) {
     .WillOnce(Return(false))
     .WillOnce(DoAll(SetArgReferee<1>(mtd.name), Return(true)))
     .WillOnce(DoAll(SetArgReferee<1>(mtd.name), Return(true)));
+  EXPECT_CALL(mock, get_mtd_name("", _))
+    .Times(1)
+    .WillOnce(Return(false));
 
   EXPECT_CALL(mock, runcmd(string(exp_flashcp_call)))
     .Times(2)
@@ -176,9 +179,11 @@ TEST(BmcComponentTest, MTDFlash) {
   EXPECT_EQ(err.str(), "Failed to get device for " + dummy_mtd + "\n");
   err.str("");
 
+  // Third call, is_valid() returns true, get_mtd_name() will return true and
+  // a valid image, but runcmd(flashcp) call will fail.
   EXPECT_EQ(FW_STATUS_FAILURE, b.update(dummy_image));
 
-  // Both succeeds. Check if we are calling flashcp correctly.
+  // Both succeeds. Check if we are calling flashcp correctly and succeeds.
   EXPECT_EQ(0, b.update(dummy_image));
 }
 
@@ -196,6 +201,9 @@ TEST(BmcComponentTest, MTDOffsetFlash) {
   EXPECT_CALL(mock, get_mtd_name(dummy_mtd, _))
     .Times(1)
     .WillRepeatedly(DoAll(SetArgReferee<1>(mtd_dev.name), Return(true)));
+  EXPECT_CALL(mock, get_mtd_name("", _))
+    .Times(1)
+    .WillRepeatedly(Return(false));
 
   EXPECT_CALL(mock, runcmd(string(exp_flashcp_call)))
     .Times(1)

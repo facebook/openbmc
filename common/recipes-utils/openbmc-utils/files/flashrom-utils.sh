@@ -40,12 +40,25 @@ flash_device_name() {
 }
 
 #
+# Wrapper function to launch flashrom command.
+#
+# $1 - spi device name in "spidev#.#" format. For example, "spidev1.0".
+# $@ - extra options passed to flashrom command
+#
+flashrom_cmd() {
+    spi_dev="$1"
+    shift
+
+    flashrom -p linux_spi:dev=/dev/"$spi_dev" $@
+}
+
+#
 # Dump flash summary by running flashrom.
 #
 # $1 - spi device name in "spidev#.#" format. For example, "spidev1.0".
 #
 flash_dump_summary() {
-    flashrom -p linux_spi:dev=/dev/"$1"
+    flashrom_cmd "$1"
 }
 
 #
@@ -115,7 +128,7 @@ is_decimal() {
 }
 
 #
-# Read flash size from flashrom output.
+# Read flash size from flashrom output (unit: kb).
 #
 # $1 - spi device name in "spidev#.#" format. For example, "spidev1.0".
 #
@@ -132,4 +145,73 @@ flash_get_size() {
     fi
 
     echo "$size"
+}
+
+#
+# Read the flash ($1) and store content in the given file ($2).
+#
+# $1 - spi device name in "spidev#.#" format. For example, "spidev1.0".
+# $2 - file name/path to store the flash content.
+# $3 - flash model, optional.
+#
+flash_read() {
+    spi_dev="$1"
+    image_file="$2"
+
+    if [ -n "$3" ]; then
+        model="$3"
+    else
+        if ! model=$(flash_get_model "$spi_dev"); then
+            return 1
+        fi
+    fi
+
+    flashrom_cmd "$spi_dev" -r "$image_file" -c "$model"
+}
+
+#
+# Write the file ($2) to the given flash ($1).
+#
+# $1 - spi device name in "spidev#.#" format. For example, "spidev1.0".
+# $2 - file name/path containing the flash image.
+# $3 - flash model, optional.
+#
+flash_write() {
+    spi_dev="$1"
+    image_file="$2"
+
+    if [ ! -e "$image_file" ]; then
+        echo "Error: image file $image_file does not exist!"
+        return 1
+    fi
+
+    if [ -n "$3" ]; then
+        model="$3"
+    else
+        if ! model=$(flash_get_model "$spi_dev"); then
+            return 1
+        fi
+    fi
+
+    flashrom_cmd "$spi_dev" -w "$image_file" -c "$model"
+}
+
+#
+# Erase the given flash ($1).
+#
+# $1 - spi device name in "spidev#.#" format. For example, "spidev1.0".
+# $3 - flash model, optional.
+#
+flash_erase() {
+    spi_dev="$1"
+
+    if [ -n "$2" ]; then
+        model="$2"
+    else
+        if ! model=$(flash_get_model "$spi_dev"); then
+            return 1
+        fi
+    fi
+
+    flashrom_cmd "$spi_dev" -E -c "$model"
 }

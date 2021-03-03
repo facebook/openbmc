@@ -236,9 +236,9 @@ if [ "$has_gpv2" == "1" ] ; then
     echo "Run FSC for BRCM Accelerator"
     logger -p user.info "Run FSC for BRCM Accelerator"
     if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
-      cp /etc/FSC_FBGPV2_BRCM_DVT_config.json ${default_fsc_config_path}
+      cp /etc/FSC_FBGPV2_BRCM_PVT_config.json ${default_fsc_config_path}
     else
-      cp /etc/FSC_FBGPV2_BRCM_10KFAN_DVT_config.json ${default_fsc_config_path}
+      cp /etc/FSC_FBGPV2_BRCM_10KFAN_PVT_config.json ${default_fsc_config_path}
     fi
   else
     echo "Run default FSC for M.2 devices"

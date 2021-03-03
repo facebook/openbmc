@@ -461,36 +461,36 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5F
 
   {"CC_P0V8_VDD0_TEMP", MB_VR_P0V8_VDD0_TEMP , sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x60
-  {"CC_P0V8_VDD0_VOLT" , MB_VR_P0V8_VDD0_VOUT , sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0}, VOLT}, //0x61
+  {"CC_P0V8_VDD0_VOLT" , MB_VR_P0V8_VDD0_VOUT , sensors_read_vr, 0, {0.87, 0, 0, 0.81, 0, 0, 0}, VOLT}, //0x61
   {"CC_P0V8_VDD0_IOUT", MB_VR_P0V8_VDD0_CURR , sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x62
   {"CC_P0V8_VDD0_POUT", MB_VR_P0V8_VDD0_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x63
   {"CC_P0V8_AVD_PCIE0_TEMP", MB_VR_P1V0_AVD0_TEMP , sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x64
-  {"CC_P0V8_AVD_PCIE0_VOLT", MB_VR_P1V0_AVD0_VOUT , sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x65
+  {"CC_P0V8_AVD_PCIE0_VOLT", MB_VR_P1V0_AVD0_VOUT , sensors_read_vr, 0, {0.87, 0, 0, 0.81, 0, 0, 0, 0}, VOLT}, //0x65
   {"CC_P0V8_AVD_PCIE0_IOUT", MB_VR_P1V0_AVD0_CURR , sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x66
   {"CC_P0V8_AVD_PCIE0_POUT", MB_VR_P1V0_AVD0_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x67
   {"CC_P0V8_VDD1_TEMP", MB_VR_P0V8_VDD1_TEMP , sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x68
-  {"CC_P0V8_VDD1_VOLT", MB_VR_P0V8_VDD1_VOUT , sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x69
+  {"CC_P0V8_VDD1_VOLT", MB_VR_P0V8_VDD1_VOUT , sensors_read_vr, 0, {0.87, 0, 0, 0.81, 0, 0, 0, 0}, VOLT}, //0x69
   {"CC_P0V8_VDD1_IOUT", MB_VR_P0V8_VDD1_CURR , sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6A
   {"CC_P0V8_VDD1_POUT", MB_VR_P0V8_VDD1_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x6B
   {"CC_P0V8_AVD_PCIE1_TEMP", MB_VR_P1V0_AVD1_TEMP , sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x6C
-  {"CC_P0V8_AVD_PCIE1_VOLT" , MB_VR_P1V0_AVD1_VOUT , sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x6D
+  {"CC_P0V8_AVD_PCIE1_VOLT" , MB_VR_P1V0_AVD1_VOUT , sensors_read_vr, 0, {0.87, 0, 0, 0.81, 0, 0, 0, 0}, VOLT}, //0x6D
   {"CC_P0V8_AVD_PCIE1_IOUT", MB_VR_P1V0_AVD1_CURR , sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x6E
   {"CC_P0V8_AVD_PCIE1_POUT", MB_VR_P1V0_AVD1_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x6F
 
   {"CC_P0V8_VDD2_TEMP", MB_VR_P0V8_VDD2_TEMP, sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x70
-  {"CC_P0V8_VDD2_VOLT" , MB_VR_P0V8_VDD2_VOUT, sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x71
+  {"CC_P0V8_VDD2_VOLT" , MB_VR_P0V8_VDD2_VOUT, sensors_read_vr, 0, {0.87, 0, 0, 0.81, 0, 0, 0, 0}, VOLT}, //0x71
   {"CC_P0V8_VDD2_IOUT", MB_VR_P0V8_VDD2_CURR, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x72
   {"CC_P0V8_VDD2_POUT", MB_VR_P0V8_VDD2_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x73
   {"CC_P0V8_AVD_PCIE2_TEMP", MB_VR_P1V0_AVD2_TEMP, sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x74
-  {"CC_P0V8_AVD_PCIE2_VOLT", MB_VR_P1V0_AVD2_VOUT, sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x75
+  {"CC_P0V8_AVD_PCIE2_VOLT", MB_VR_P1V0_AVD2_VOUT, sensors_read_vr, 0, {0.87, 0, 0, 0.81, 0, 0, 0, 0}, VOLT}, //0x75
   {"CC_P0V8_AVD_PCIE2_IOUT", MB_VR_P1V0_AVD2_CURR, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x76
   {"CC_P0V8_AVD_PCIE2_POUT", MB_VR_P1V0_AVD2_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x77
   {"CC_P0V8_VDD3_TEMP", MB_VR_P0V8_VDD3_TEMP, sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x78
-  {"CC_P0V8_VDD3_VOLT", MB_VR_P0V8_VDD3_VOUT, sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x79
+  {"CC_P0V8_VDD3_VOLT", MB_VR_P0V8_VDD3_VOUT, sensors_read_vr, 0, {0.87, 0, 0, 0.81, 0, 0, 0, 0}, VOLT}, //0x79
   {"CC_P0V8_VDD3_IOUT", MB_VR_P0V8_VDD3_CURR, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x7A
   {"CC_P0V8_VDD3_POUT", MB_VR_P0V8_VDD3_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x7B
   {"CC_P0V8_AVD_PCIE3_TEMP", MB_VR_P1V0_AVD3_TEMP, sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x7C
-  {"CC_P0V8_AVD_PCIE3_VOLT", MB_VR_P1V0_AVD3_VOUT, sensors_read_vr, 0, {0.86, 0, 0, 0.82, 0, 0, 0, 0}, VOLT}, //0x7D
+  {"CC_P0V8_AVD_PCIE3_VOLT", MB_VR_P1V0_AVD3_VOUT, sensors_read_vr, 0, {0.87, 0, 0, 0.81, 0, 0, 0, 0}, VOLT}, //0x7D
   {"CC_P0V8_AVD_PCIE3_IOUT", MB_VR_P1V0_AVD3_CURR, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x7E
   {"CC_P0V8_AVD_PCIE3_POUT", MB_VR_P1V0_AVD3_POWER, sensors_read_vr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x7F
 

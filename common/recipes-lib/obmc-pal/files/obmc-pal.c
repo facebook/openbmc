@@ -328,12 +328,11 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
 }
 
 static void
-get_common_dimm_location_str(char* dimm_location_str, _dimm_info dimm_info)
+get_common_dimm_location_str(_dimm_info dimm_info, char* dimm_location_str, char* dimm_str)
 {
-  char dimm_str[8] = {0};
-
   // Check Channel and Slot
   if (dimm_info.channel == 0xFF && dimm_info.slot == 0xFF) {
+    sprintf(dimm_str, "unknown");
     sprintf(dimm_location_str, "DIMM Slot Location: Sled %02d/Socket %02d, Channel unknown, Slot unknown, DIMM unknown",
             dimm_info.sled, dimm_info.socket);
   } else {
@@ -424,7 +423,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
 
     case UNIFIED_MEM_ERR:
       // get dimm location data string.
-      get_common_dimm_location_str(dimm_location_str, dimm_info);
+      get_common_dimm_location_str(dimm_info, dimm_location_str, dimm_str);
       plat = (sel[12] & 0x80) >> 7;
       event_type = sel[12] & 0xF;
       switch (event_type) {
@@ -440,6 +439,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
           }
           break;
         default:
+          pal_convert_to_dimm_str(dimm_info.socket, dimm_info.channel, dimm_info.slot, dimm_str);
           estr_idx = (event_type < ARRAY_SIZE(mem_err)) ? event_type : (ARRAY_SIZE(mem_err) - 1);
           sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s",
                   general_info, dimm_location_str, mem_err[estr_idx]);
@@ -502,7 +502,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
 
     case UNIFIED_MEM_EVENT:
       // get dimm location data string.
-      get_common_dimm_location_str(dimm_location_str, dimm_info);
+      get_common_dimm_location_str(dimm_info, dimm_location_str, dimm_str);
 
       // Event-Type Bit[3:0]
       event_type = sel[12] & 0x0F;

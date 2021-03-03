@@ -64,3 +64,8 @@ int NicExtComponent::print_version() {
   _get_ncsi_vid();
   return NicComponent::print_version();
 }
+
+int NicExtComponent::update(std::string img)
+{
+  return upgrade_ncsi_util(img, _ch_id);
+}

@@ -96,3 +96,20 @@ int NicComponent::print_version() {
 
   return FW_STATUS_SUCCESS;
 }
+
+int NicComponent::upgrade_ncsi_util(const std::string& img, int channel)
+{
+  std::string cmd = "ncsi-util";
+  // If channel is provided, pass it to ncsi-util, else let it use a default
+  if (channel >= 0) {
+    cmd += " -c " + std::to_string(channel);
+  }
+  // Double quote the image to support paths with space.
+  cmd += " -p \"" + img + "\"";
+  return System().runcmd(cmd);
+}
+
+int NicComponent::update(std::string image)
+{
+  return upgrade_ncsi_util(image);
+}

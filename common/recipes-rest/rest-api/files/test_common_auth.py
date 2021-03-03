@@ -86,6 +86,17 @@ class TestCommonAuth(AioHTTPTestCase):
             ),
         )
 
+    def test_extract_identity_ipv6_link_local(self):
+        req = make_mocked_request("GET", "/")
+        req.transport.get_extra_info = mock.Mock(
+            wraps={"peername": ("fe::2%usb0", 45654, 0, 0)}.get
+        )
+        res = common_auth._extract_identity(req)
+        self.assertEqual(
+            res,
+            common_auth.Identity(user=None, host=ipaddress.IPv6Address("fe::2")),
+        )
+
     def test_extract_identity_ipv4(self):
         req = make_mocked_request("GET", "/")
         req.transport.get_extra_info = mock.Mock(

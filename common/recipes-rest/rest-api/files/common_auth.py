@@ -46,6 +46,8 @@ NO_IDENTITY = Identity(user=None, host=None)
 # e.g. "host:root/example.com" -> type="host", user="root", host="example.com"
 RE_CERT_COMMON_NAME = re.compile(r"^(?P<type>[^:]+):(?P<user>[^/]*)/(?P<host>[^/]*)$")
 
+RE_IPV6_LINK_LOCAL_SUFFIX = re.compile("%[a-z0-9]+$")
+
 
 def auth_required(request) -> Identity:
     identity = _extract_identity(request)
@@ -97,6 +99,8 @@ def _extract_identity(request: Request) -> Identity:
     # peer ip address
     with suppress(ValueError, IndexError, KeyError, TypeError):
         addr = request.transport.get_extra_info("peername")[0]
+        addr = RE_IPV6_LINK_LOCAL_SUFFIX.sub("", addr)
+
         return Identity(user=None, host=ipaddress.ip_address(addr))
 
     return NO_IDENTITY

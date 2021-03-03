@@ -1,119 +1,122 @@
 swagger: "2.0"
-info: 
-  description: Swagger doc for /api/bmc  
-  title: Swagger doc for /api/bmc  
+info:
+  description: Swagger doc for /api/bmc
+  title: Swagger doc for /api/bmc
   version: 1.0.0
-paths: 
-  /api/bmc: 
-    get: 
+paths:
+  /api/bmc:
+    get:
       produces: [application/json]
-      responses: 
-        200: 
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Information: 
+            properties:
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  load-1: 
+                properties:
+                  load-1:
                     type: string
-                  Memory Usage: 
+                  Memory Usage:
                     type: string
-                  memory: 
+                  memory:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      Shmem: 
+                    properties:
+                      Shmem:
                         type: integer
                         format: int32
-                      Cached: 
+                      Cached:
                         type: integer
                         format: int32
-                      MemAvailable: 
+                      MemAvailable:
                         type: integer
                         format: int32
-                      MemFree: 
+                      MemFree:
                         type: integer
                         format: int32
-                      MemTotal: 
+                      MemTotal:
                         type: integer
                         format: int32
-                      Buffers: 
+                      Buffers:
                         type: integer
                         format: int32
-                  u-boot version: 
+                  u-boot version:
                     type: string
-                  SPI0 Vendor: 
+                  SPI0 Vendor:
                     type: string
-                  TPM FW version: 
+                  TPM FW version:
                     type: string
-                  open-fds: 
+                  open-fds:
                     type: string
-                  At-Scale-Debug Running: 
+                  At-Scale-Debug Running:
                     type: boolean
-                  SPI1 Vendor: 
+                  SPI1 Vendor:
                     type: string
-                  TPM TCG version: 
+                  TPM TCG version:
                     type: string
-                  load-5: 
+                  load-5:
                     type: string
-                  Reset Reason: 
+                  Reset Reason:
                     type: string
-                  Description: 
+                  Description:
                     type: string
-                  kernel version: 
+                  kernel version:
                     type: string
-                  load-15: 
+                  load-15:
                     type: string
-                  OpenBMC Version: 
+                  OpenBMC Version:
                     type: string
-                  Uptime: 
+                  Uptime:
                     type: string
-                  CPU Usage: 
+                  CPU Usage:
                     type: string
-                  uptime: 
+                  uptime:
                     type: string
-                  vboot: 
+                  vboot:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      tpm_status: 
+                    properties:
+                      tpm_status:
                         type: string
-                      status_text: 
+                      status_text:
                         type: string
-                      recovery_boot: 
+                      recovery_boot:
                         type: string
-                      software_enforce: 
+                      software_enforce:
                         type: string
-                      recovery_retried: 
+                      recovery_retried:
                         type: string
-                      cert_time: 
+                      cert_time:
                         type: string
-                      hardware_enforce: 
+                      hardware_enforce:
                         type: string
-                      uboot_fallback_time: 
+                      uboot_fallback_time:
                         type: string
-                      status_crc: 
+                      status_crc:
                         type: string
-                      status: 
+                      status:
                         type: string
-                      cert_fallback_time: 
+                      cert_fallback_time:
                         type: string
-                      uboot_time: 
+                      uboot_time:
                         type: string
-                      force_recovery: 
+                      force_recovery:
                         type: string
-                  MAC Addr: 
+                  MAC Addr:
                     type: string
-              Resources: 
+                  MTD Parts:
+                    type: array
+                    items:
+                      type: string
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-              Actions: 
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-            

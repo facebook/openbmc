@@ -25,6 +25,7 @@ import rest_bmc
 import rest_fcpresent
 import rest_fruid
 import rest_fruid_pim
+import rest_fscd_sensor_data
 import rest_gpios
 import rest_mTerm
 import rest_ntpstatus
@@ -32,7 +33,6 @@ import rest_psu_update
 import rest_sensors
 import rest_server
 import rest_slotid
-import rest_fscd_sensor_data
 from aiohttp import web
 from rest_utils import dumps_bytestr, get_endpoints
 

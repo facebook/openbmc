@@ -17,9 +17,9 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+from aiohttp.web import Application
 from common_endpoint import commonApp_Handler
 from rest_utils import common_routes
-from aiohttp.web import Application
 
 
 def setup_common_routes(app: Application, write_enabled: bool):

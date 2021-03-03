@@ -18,9 +18,11 @@
 # Boston, MA 02110-1301 USA
 #
 
+import functools
+import json
 import os.path
 import re
-import json
+import typing as t
 from subprocess import PIPE, Popen, check_output, CalledProcessError
 from uuid import getnode as get_mac
 
@@ -29,6 +31,8 @@ import rest_pal_legacy
 from node import node
 from vboot import get_vboot_status
 
+
+PROC_MTD_PATH = "/proc/mtd"
 
 # Read all contents of file path specified.
 def read_file_contents(path):
@@ -68,7 +72,7 @@ def getSPIVendorLegacy(spi_id):
 
 def getMTD(name):
     mtd_name = '"' + name + '"'
-    with open("/proc/mtd") as f:
+    with open(PROC_MTD_PATH) as f:
         lines = f.readlines()
         for line in lines:
             if mtd_name in line:
@@ -96,6 +100,20 @@ def getSPIVendor(spi_id):
     if os.path.isfile("/tmp/spi0.%d_vendor.dat" % (spi_id)):
         return getSPIVendorLegacy(spi_id)
     return getSPIVendorNew(spi_id)
+
+
+@functools.lru_cache(maxsize=1)
+def read_proc_mtd() -> t.List[str]:
+    mtd_list = []
+    with open(PROC_MTD_PATH) as f:
+        # e.g. 'mtd5: 02000000 00010000 "flash0"' -> dev="mtd5", size="02000000", erasesize="00010000", name="flash0"   # noqa B950
+        RE_MTD_INFO = re.compile(
+            r"""^(?P<dev>[^:]+): \s+ (?P<size>[0-9a-f]+) \s+ (?P<erasesize>[0-9a-f]+) \s+ "(?P<name>[^"]+)"$""",  # noqa B950
+            re.MULTILINE | re.VERBOSE,
+        )
+        for m in RE_MTD_INFO.finditer(f.read()):
+            mtd_list.append(m.group("name"))  # e.g. "flash0"
+    return mtd_list
 
 
 class bmcNode(node):
@@ -155,14 +173,18 @@ class bmcNode(node):
                         out_str = line.strip("TCG version: ").strip("\n")
         elif os.path.isfile("/usr/bin/tpm2_getcap"):
             cmd_list = []
-            cmd_list.append("/usr/bin/tpm2_getcap -c properties-fixed 2>/dev/null | grep -A2 TPM_PT_FAMILY_INDICATOR")
-            cmd_list.append("/usr/bin/tpm2_getcap properties-fixed 2>/dev/null | grep -A2 TPM2_PT_FAMILY_INDICATOR")
+            cmd_list.append(
+                "/usr/bin/tpm2_getcap -c properties-fixed 2>/dev/null | grep -A2 TPM_PT_FAMILY_INDICATOR"  # noqa B950
+            )
+            cmd_list.append(
+                "/usr/bin/tpm2_getcap properties-fixed 2>/dev/null | grep -A2 TPM2_PT_FAMILY_INDICATOR"  # noqa B950
+            )
             for cmd in cmd_list:
                 try:
                     lines = check_output(cmd, shell=True).decode().split("\n")
-                    out_str = lines[2].rstrip().split("\"")[1]
+                    out_str = lines[2].rstrip().split('"')[1]
                     break
-                except Exception as e:
+                except Exception:
                     pass
         return out_str
 
@@ -176,15 +198,19 @@ class bmcNode(node):
                         out_str = line.strip("Firmware version: ").strip("\n")
         elif os.path.isfile("/usr/bin/tpm2_getcap"):
             cmd_list = []
-            cmd_list.append("/usr/bin/tpm2_getcap -c properties-fixed 2>/dev/null | grep TPM_PT_FIRMWARE_VERSION_1")
-            cmd_list.append("/usr/bin/tpm2_getcap properties-fixed 2>/dev/null | grep -A1 TPM2_PT_FIRMWARE_VERSION_1 | grep raw")
+            cmd_list.append(
+                "/usr/bin/tpm2_getcap -c properties-fixed 2>/dev/null | grep TPM_PT_FIRMWARE_VERSION_1"  # noqa B950
+            )
+            cmd_list.append(
+                "/usr/bin/tpm2_getcap properties-fixed 2>/dev/null | grep -A1 TPM2_PT_FIRMWARE_VERSION_1 | grep raw"  # noqa B950
+            )
             for cmd in cmd_list:
                 try:
                     line = check_output(cmd, shell=True)
                     value = int(line.decode().rstrip().split(":")[1], 16)
                     out_str = "%d.%d" % (value >> 16, value & 0xFFFF)
                     break
-                except Exception as e:
+                except Exception:
                     pass
         return out_str
 
@@ -331,6 +357,7 @@ class bmcNode(node):
             "load-5": load_avg[1],
             "load-15": load_avg[2],
             "open-fds": used_fd_count,
+            "MTD Parts": read_proc_mtd(),
         }
 
         return info

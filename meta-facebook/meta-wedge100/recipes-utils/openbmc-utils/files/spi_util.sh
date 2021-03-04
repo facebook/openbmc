@@ -20,274 +20,207 @@
 
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
+. /usr/local/bin/flashrom-utils.sh
 
-trap cleanup_spi INT TERM QUIT EXIT
+PID_FILE='/var/run/spi_util.pid'
 
-# Global
-RET=0
-INFO_OUTPUT=""
-PIDFILE='/var/run/spi_util.pid'
+#
+# Modules used to talk to backup BIOS
+#
+SPI_ASPEED_MODULE=spi_aspeed
+
+if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
+    LEGACY_KERNEL="true"
+fi
 
 check_duplicate_process() {
-    local pid
-    exec 2>"$PIDFILE"
-    flock -n 2 || (echo "Another process is running" && exit 1)
-    RET="$?"
-    if [ "$RET" -eq 1 ]; then
-        exit 1
-    fi
-    pid="$$"
-    echo "$pid" 1>&2
-}
-
-remove_pid_file() {
-    if [ -f "$PIDFILE" ]; then
-        rm "$PIDFILE"
-    fi
-}
-
-check_flash_info() {
-    local spi_no="$1"
-    if ! INFO_OUTPUT=$(flashrom -p linux_spi:dev=/dev/spidev"${spi_no}".0); then
-        echo "Check flash info error: [$INFO_OUTPUT]"
+    exec 99>"$PID_FILE"
+    if ! flock -n 99; then
+        echo "Another instance is running. Exiting!!"
         exit 1
     fi
 }
 
-get_flash_first_type() {
-    local type
-    if [ -n "$INFO_OUTPUT" ]; then
-        type=$(echo "$INFO_OUTPUT" \
-            | sed ':a;N;$!ba;s/\n/ /g' \
-            | cut -d'"' -f2)
-        if [ -n "$type" ]; then
-            echo "$type"
-            return 0
-        fi
-    fi
-    return 1
+#
+# Helper function to generate pathname of a temporary file.
+# Please always use this function to generate temp files so they can be
+# removed at cleanup.
+#
+# $1 - reference file name.
+#
+spi_tmp_file() {
+    name=$(basename "$1")
+    echo "/tmp/.spitmp_$name"
 }
 
-get_flash_size() {
-    local spi_no="$1"
-    local flash_sz
-    if [ -n "$INFO_OUTPUT" ]; then
-        flash_sz=$(echo "$INFO_OUTPUT" \
-            | sed ':a;N;$!ba;s/\n/ /g' \
-            | cut -d'(' -f3 \
-            | cut -d' ' -f1)
-        if grep -E -q '^[0-9]+$' <<< "$flash_sz"; then
-            echo "$flash_sz"
-            return 0
-        fi
-    fi
-    echo "Get flash size error: [$INFO_OUTPUT]"
-    return 1
-}
-
-# $1: input file size $2: flash size $3: output file path
-pad_ff() {
-    local out_file="$3"
-    local pad_size=$(($2 - $1))
-    if dd if=/dev/zero bs="$pad_size" count=1 | tr "\000" "\377" >> "$out_file"; then
-        return 0
-    else
-        echo "Resize error ret $?"
+#
+# Helper function to append more bytes to the given file.
+#
+# $1 - file to be updated.
+# $2 - pad size
+#
+pad_file() {
+    out_file="$1"
+    pad_size="$2"
+    if ! dd if=/dev/zero bs="$pad_size" count=1 | tr "\000" "\377" >> "$out_file"; then
+        echo "Error: failed to pad $out_file (pad_size=$pad_size)!"
         exit 1
     fi
 }
 
+#
+# Helper function to resize a file ($1) to target size ($3).
+#
+# $1 - input/reference file
+# $2 - output file
+# $3 - expected size of the output file.
+#
 resize_file() {
-    local in_file="$1"
-    local out_file="$2"
-    local spi_no="$3"
-    local in_file_sz
-    local storage_sz
-    local flash_sz
+    in_file="$1"
+    out_file="$2"
+    target_size="$3"
 
     in_file_sz=$(stat -c%s "$in_file")
-    if flash_sz=$(get_flash_size "$spi_no"); then
-        storage_sz=$((flash_sz * 1024))
-    else
-        echo "debug message: $flash_sz"
-        exit 1
-    fi
-
-    if [ "$in_file_sz" -ne "$storage_sz" ]; then
+    if [ "$in_file_sz" -lt "$target_size" ]; then
         cp "$in_file" "$out_file"
-        pad_ff "$in_file_sz" "$storage_sz" "$out_file"
-    else
+        pad_size=$((target_size - in_file_sz))
+        pad_file "$out_file" "$pad_size"
+    elif [ "$in_file_sz" -eq "$target_size" ]; then
         ln -s "$(realpath "$in_file")" "$out_file"
-    fi
-}
-
-config_bios_spi() {
-  devmem_set_bit "$(scu_addr 70)" 12
-  gpio_set_value COM6_BUF_EN 0
-  gpio_set_value COM_SPI_SEL 1
-}
-
-read_flash_to_file() {
-    local spi_no="$1"
-    local tmp_file="$2"
-    local type
-    local cmd
-    check_flash_info "$spi_no"
-    type=$(get_flash_first_type)
-    cmd="flashrom -p linux_spi:dev=/dev/spidev${spi_no}.0 -r ${tmp_file} -c ${type}"
-    if ! $cmd; then
-        echo "debug cmd: [${cmd}]"
+    else
+        echo "Input file too big: $in_file_sz > $target_size"
         exit 1
     fi
 }
 
-write_flash_to_file() {
-    local spi_no="$1"
-    local in_file="$2"
-    local out_file="/tmp/${3}_spi${1}_tmp"
-    local type
-    local cmd
-    check_flash_info "$spi_no"
-    resize_file "$in_file" "$out_file" "$spi_no"
-    type=$(get_flash_first_type)
-    cmd="flashrom -p linux_spi:dev=/dev/spidev${spi_no}.0 -w ${out_file} -c ${type}"
-    if ! $cmd; then
-        echo "debug cmd: [${cmd}]"
+kmod_unload() {
+    if lsmod | grep "$1" > /dev/null 2>&1; then
+        modprobe -r "$1"
+    fi
+}
+
+kmod_reload() {
+    kmod_unload "$1"
+    modprobe "$1"
+}
+
+#
+############################################################
+# Functions to deal with spi1.0: the backup BIOS flash.
+############################################################
+#
+
+spi1_connect() {
+    echo "enable spi1 (bios) connection.."
+
+    # Enable SPI master in SCU register
+    devmem_set_bit "$(scu_addr 70)" 12
+
+    gpio_set_value COM6_BUF_EN 0
+
+    if [ ! -L "${SHADOW_GPIO}/COM_SPI_SEL" ]; then
+        gpio_export_by_name "$ASPEED_GPIO" GPIOO0 COM_SPI_SEL
+    fi
+    gpio_set_value COM_SPI_SEL 1
+
+    if [ -z "$LEGACY_KERNEL" ]; then
+        kmod_reload "$SPI_ASPEED_MODULE"
+    fi
+}
+
+spi1_disconnect() {
+    echo "disable spi1 (bios) connection.."
+    if [ -L "${SHADOW_GPIO}/COM_SPI_SEL" ]; then
+        gpio_set_value COM_SPI_SEL 0
+        gpio_unexport COM_SPI_SEL
+    fi
+
+    kmod_unload "$SPI_ASPEED_MODULE"
+
+    # Disable SPI interface
+    devmem_clear_bit "$(scu_addr 70)" 12
+}
+
+spi1_flash_write() {
+    flash_dev="$1"
+    in_file="$2"
+    flash_model="$3"
+
+    out_file=$(spi_tmp_file "$in_file")
+    rm -rf "$out_file"
+
+    if ! flash_size=$(flash_get_size "$flash_dev"); then
+        exit 1
+    fi
+
+    target_size=$((flash_size * 1024))
+    resize_file "$in_file" "$out_file" "$target_size"
+
+    flash_write "$flash_dev" "$out_file" "$flash_model"
+}
+
+spi1_flash_detect() {
+    if ! flash_dump_summary "$1"; then
         exit 1
     fi
 }
 
-erase_flash() {
-    local spi_no="$1"
-    local type
-    local cmd
-    check_flash_info "$spi_no"
-    type=$(get_flash_first_type)
-    cmd="flashrom -p linux_spi:dev=/dev/spidev${spi_no}.0 -E -c ${type}"
-    if ! $cmd; then
-        echo "debug cmd: [${cmd}]"
+spi1_launch_io() {
+    op="$1"
+    flash_dev="$2"
+    image_file="$3"
+
+    if ! flash_model=$(flash_get_model "$flash_dev"); then
         exit 1
     fi
-}
 
-detect_flash() {
-    local spi_no="$1"
-    check_flash_info "$spi_no"
-    echo "$INFO_OUTPUT"
-}
-
-read_spi1_dev() {
-    local spi_no=1
-    local dev="$1"
-    local file="$2"
-    case "$dev" in
-        "BACKUP_BIOS")
-            echo "Reading flash to $file..."
-            read_flash_to_file "$spi_no" "$file"
-        ;;
-    esac
-}
-
-write_spi1_dev() {
-    local spi_no=1
-    local dev="$1"
-    local file="$2"
-    case "$dev" in
-        "BACKUP_BIOS")
-            echo "Writing $file to flash..."
-            write_flash_to_file "$spi_no" "$file" "$dev"
-        ;;
-    esac
-}
-
-erase_spi1_dev() {
-    local spi_no=1
-    local dev="$1"
-    local file="$2"
-    case "$dev" in
-        "BACKUP_BIOS")
-            echo "Erasing flash..."
-            erase_flash "$spi_no"
-        ;;
-    esac
-}
-
-detect_spi1_dev() {
-    local spi_no=1
-    local dev="$1"
-    local file="$2"
-    case "$dev" in
-        "BACKUP_BIOS")
-            echo "Detecting flash..."
-            detect_flash "$spi_no"
-        ;;
-    esac
-}
-
-config_spi1_pin_and_path() {
-    local dev="$1"
-    case "$dev" in
-        "BACKUP_BIOS")
-            devmem_set_bit "$(scu_addr 70)" 12
-            gpio_set_value COM6_BUF_EN 0
-            gpio_set_value COM_SPI_SEL 1
-        ;;
-        *)
-            echo "Please enter {BACKUP_BIOS}"
-            exit 1
-        ;;
-    esac
-    echo "Config SPI1 Done."
-}
-
-operate_spi1_dev() {
-    local op="$1"
-    local dev="$2"
-    local file="$3"
-    ## Operate devices ##
     case "$op" in
         "read")
-                read_spi1_dev "$dev" "$file"
+            flash_read "$flash_dev" "$image_file" "$flash_model"
         ;;
         "write")
-                write_spi1_dev "$dev" "$file"
+            spi1_flash_write "$flash_dev" "$image_file" "$flash_model"
         ;;
         "erase")
-                erase_spi1_dev "$dev"
+            flash_erase "$flash_dev" "$flash_model"
         ;;
         "detect")
-                detect_spi1_dev "$dev"
+            spi1_flash_detect "$flash_dev"
         ;;
         *)
-            echo "Operation $op is not defined."
+            echo "Operation $op is not supported!"
+            exit 1
         ;;
     esac
 }
 
 cleanup_spi() {
-    if [ "$RET" -eq 1 ]; then
-      exit 1
-    fi
-    devmem_clear_bit "$(scu_addr 70)" 12
-    rm -rf /tmp/*_spi*_tmp
-    remove_pid_file
+    spi1_disconnect
+
+    rm -rf /tmp/.spitmp_*
 }
 
 ui() {
-    local op="$1"
-    local spi="$2"
-    local dev="$3"
-    local file="$4"
+    op="$1"
+    spi_bus="$2"
+    file="$4"
 
-	## Open the path to device ##
-    case "$spi" in
+    case "$spi_bus" in
         "spi1")
-            config_spi1_pin_and_path "$dev"
-            operate_spi1_dev "$op" "$dev" "$file"
+            spi1_connect
+
+            flash_dev=$(flash_device_name 1 0)
+            flash_path="/dev/$flash_dev"
+            if [ ! -e "$flash_path" ]; then
+                echo "Error: unable to find $flash_path!"
+                exit 1
+            fi
+
+            spi1_launch_io "$op" "$flash_dev" "$file"
         ;;
         *)
-            echo "No such SPI bus."
-            return 1
+            echo "Error: no such SPI bus ($spi_bus)!"
+            exit 1
         ;;
     esac
 }
@@ -296,7 +229,7 @@ usage() {
     local prog
     prog=$(basename "$0")
     echo "Usage:"
-    echo "$prog <op> spi1 <spi1 device> <file>"
+    echo "$prog <op> spi1 <spi device> <file>"
     echo "  <op>          : read, write, erase, detect"
     echo "  <spi1 device> : BACKUP_BIOS"
     echo "Examples:"
@@ -305,58 +238,57 @@ usage() {
 }
 
 check_parameter() {
-    local op="$1"
-    local spi="$2"
-    local dev="$3"
-    local file="$4"
+    op="$1"
+    spi="$2"
+    dev="$3"
+    file="$4"
 
     case "$op" in
-        "read" | "write" | "erase" | "detect")
+        "read")
+            if [ $# -ne 4 ]; then
+                echo "Error: <image-file> argument is required!"
+                return 1
+            fi
+            ;;
+        "write")
+            if [ $# -ne 4 ] || [ ! -f "$file" ]; then
+                echo "Error: unable to find image file ${file}!"
+                return 1
+            fi
+            ;;
+        "erase" | "detect")
+            if [ $# -ne 3 ]; then
+                echo "Error: please specific spi device!"
+                return 1
+            fi
             ;;
         *)
             return 1
             ;;
     esac
-    if [ -n "$spi" ] && [ "$spi" = "spi1" ]; then
-        ## Check device
-        case "$dev" in
-            "BACKUP_BIOS")
-                ## Check operation
-                case "$op" in
-                    "write")
-                        if [ $# -ne 4 ] || [ ! -f "$file" ]; then
-                            echo "File ${file} is not exists."
-                            return 1
-                        fi
-                        ;;
-                    "read")
-                        if [ $# -ne 4 ]; then
-                            return 1
-                        fi
-                        ;;
-                    "erase" | "detect")
-                        if [ $# -ne 3 ]; then
-                            return 1
-                        fi
-                        ;;
-                esac
-                ;;
-            *)
+
+    case "$spi" in
+        "spi1")
+            if [ "$dev" != "BACKUP_BIOS" ]; then
+                echo "Error: supported spi1 devices: BACKUP_BIOS!"
                 return 1
-                ;;
-        esac
-    else
-        return 1
-    fi
+            fi
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 
     return 0
 }
 
 check_duplicate_process
-if check_parameter "$@"; then
-    ui "$@"
-else
+
+if ! check_parameter "$@"; then
     usage
     exit 1
 fi
 
+trap cleanup_spi INT TERM QUIT EXIT
+
+ui "$@"

@@ -21,7 +21,6 @@ MeComponent     me_fw1("slot1", "me", FRU_SLOT1);
 //slot1 2ou bic/bicbl/cpld
 BicFwExtComponent     bic_2ou_fw1("slot1", "2ou_bic"  , FRU_SLOT1, "2ou", FW_2OU_BIC);
 BicFwExtBlComponent bicbl_2ou_fw1("slot1", "2ou_bicbl", FRU_SLOT1, "2ou", FW_2OU_BIC_BOOTLOADER);
-CpldExtComponent     cpld_2ou_fw1("slot1", "2ou_cpld" , FRU_SLOT1, "2ou", FW_2OU_CPLD);
 
 //slot1 sb bic/bicbl/cpld/bios/vr
 BicFwExtComponent     bic_fw1("slot1", "bic"  , FRU_SLOT1, "sb", FW_BIC);
@@ -41,6 +40,9 @@ class ClassConfig {
       }
 
       if ( bmc_location == NIC_BMC ) {
+        if (fby3_common_get_2ou_board_type(FRU_SLOT1, &board_type) < 0) {
+          syslog(LOG_WARNING, "Failed to get slot1 2ou board type\n");
+        }
         static BmcCpldComponent        cpld_bmc("bmc", "cpld", MAX10_10M25, 9, 0x40);
 
         //slot1 bb bic/bicbl/cpld
@@ -48,24 +50,27 @@ class ClassConfig {
         static BicFwExtBlComponent bicbl_bb_fw1("slot1", "bb_bicbl", FRU_SLOT1, "bb", FW_BB_BIC_BOOTLOADER);
         static CpldExtComponent     cpld_bb_fw1("slot1", "bb_cpld" , FRU_SLOT1, "bb", FW_BB_CPLD);
 
-        static PCIESWComponent pciesw_2ou_fw1("slot1", "2ou_pciesw", FRU_SLOT1, "2ou", FW_2OU_PESW);
-        static VrExtComponent  vr_2ou_vr_p3v3_1_fw1("slot1", "2ou_vr_stby1", FRU_SLOT1, "2ou", FW_2OU_3V3_VR1);
-        static VrExtComponent  vr_2ou_vr_p3v3_2_fw1("slot1", "2ou_vr_stby2", FRU_SLOT1, "2ou", FW_2OU_3V3_VR2);
-        static VrExtComponent  vr_2ou_vr_p3v3_3_fw1("slot1", "2ou_vr_stby3", FRU_SLOT1, "2ou", FW_2OU_3V3_VR3);
-        static VrExtComponent  vr_2ou_vr_p1v8_fw1("slot1", "2ou_vr_p1v8", FRU_SLOT1, "2ou", FW_2OU_1V8_VR);
-        static VrExtComponent  vr_2ou_fw1("slot1", "2ou_vr_pesw", FRU_SLOT1, "2ou", FW_2OU_PESW_VR);
-        static M2DevComponent  m2_2ou_dev0("slot1", "2ou_dev0", FRU_SLOT1, "2ou", FW_2OU_M2_DEV0);
-        static M2DevComponent  m2_2ou_dev1("slot1", "2ou_dev1", FRU_SLOT1, "2ou", FW_2OU_M2_DEV1);
-        static M2DevComponent  m2_2ou_dev2("slot1", "2ou_dev2", FRU_SLOT1, "2ou", FW_2OU_M2_DEV2);
-        static M2DevComponent  m2_2ou_dev3("slot1", "2ou_dev3", FRU_SLOT1, "2ou", FW_2OU_M2_DEV3);
-        static M2DevComponent  m2_2ou_dev4("slot1", "2ou_dev4", FRU_SLOT1, "2ou", FW_2OU_M2_DEV4);
-        static M2DevComponent  m2_2ou_dev5("slot1", "2ou_dev5", FRU_SLOT1, "2ou", FW_2OU_M2_DEV5);
-        static M2DevComponent  m2_2ou_dev6("slot1", "2ou_dev6", FRU_SLOT1, "2ou", FW_2OU_M2_DEV6);
-        static M2DevComponent  m2_2ou_dev7("slot1", "2ou_dev7", FRU_SLOT1, "2ou", FW_2OU_M2_DEV7);
-        static M2DevComponent  m2_2ou_dev8("slot1", "2ou_dev8", FRU_SLOT1, "2ou", FW_2OU_M2_DEV8);
-        static M2DevComponent  m2_2ou_dev9("slot1", "2ou_dev9", FRU_SLOT1, "2ou", FW_2OU_M2_DEV9);
-        static M2DevComponent  m2_2ou_dev10("slot1", "2ou_dev10", FRU_SLOT1, "2ou", FW_2OU_M2_DEV10);
-        static M2DevComponent  m2_2ou_dev11("slot1", "2ou_dev11", FRU_SLOT1, "2ou", FW_2OU_M2_DEV11);
+        if (board_type != E1S_BOARD) {
+          static PCIESWComponent pciesw_2ou_fw1("slot1", "2ou_pciesw", FRU_SLOT1, "2ou", FW_2OU_PESW);
+          static VrExtComponent  vr_2ou_vr_p3v3_1_fw1("slot1", "2ou_vr_stby1", FRU_SLOT1, "2ou", FW_2OU_3V3_VR1);
+          static VrExtComponent  vr_2ou_vr_p3v3_2_fw1("slot1", "2ou_vr_stby2", FRU_SLOT1, "2ou", FW_2OU_3V3_VR2);
+          static VrExtComponent  vr_2ou_vr_p3v3_3_fw1("slot1", "2ou_vr_stby3", FRU_SLOT1, "2ou", FW_2OU_3V3_VR3);
+          static VrExtComponent  vr_2ou_vr_p1v8_fw1("slot1", "2ou_vr_p1v8", FRU_SLOT1, "2ou", FW_2OU_1V8_VR);
+          static VrExtComponent  vr_2ou_fw1("slot1", "2ou_vr_pesw", FRU_SLOT1, "2ou", FW_2OU_PESW_VR);
+          static M2DevComponent  m2_2ou_dev0("slot1", "2ou_dev0", FRU_SLOT1, "2ou", FW_2OU_M2_DEV0);
+          static M2DevComponent  m2_2ou_dev1("slot1", "2ou_dev1", FRU_SLOT1, "2ou", FW_2OU_M2_DEV1);
+          static M2DevComponent  m2_2ou_dev2("slot1", "2ou_dev2", FRU_SLOT1, "2ou", FW_2OU_M2_DEV2);
+          static M2DevComponent  m2_2ou_dev3("slot1", "2ou_dev3", FRU_SLOT1, "2ou", FW_2OU_M2_DEV3);
+          static M2DevComponent  m2_2ou_dev4("slot1", "2ou_dev4", FRU_SLOT1, "2ou", FW_2OU_M2_DEV4);
+          static M2DevComponent  m2_2ou_dev5("slot1", "2ou_dev5", FRU_SLOT1, "2ou", FW_2OU_M2_DEV5);
+          static M2DevComponent  m2_2ou_dev6("slot1", "2ou_dev6", FRU_SLOT1, "2ou", FW_2OU_M2_DEV6);
+          static M2DevComponent  m2_2ou_dev7("slot1", "2ou_dev7", FRU_SLOT1, "2ou", FW_2OU_M2_DEV7);
+          static M2DevComponent  m2_2ou_dev8("slot1", "2ou_dev8", FRU_SLOT1, "2ou", FW_2OU_M2_DEV8);
+          static M2DevComponent  m2_2ou_dev9("slot1", "2ou_dev9", FRU_SLOT1, "2ou", FW_2OU_M2_DEV9);
+          static M2DevComponent  m2_2ou_dev10("slot1", "2ou_dev10", FRU_SLOT1, "2ou", FW_2OU_M2_DEV10);
+          static M2DevComponent  m2_2ou_dev11("slot1", "2ou_dev11", FRU_SLOT1, "2ou", FW_2OU_M2_DEV11);
+          static CpldExtComponent cpld_2ou_fw1("slot1", "2ou_cpld" , FRU_SLOT1, "2ou", FW_2OU_CPLD);
+        }
       } else {
         // Register USB Debug Card components
         static UsbDbgComponent usbdbg("ocpdbg", "mcu", "FBY3", 9, 0x60, false);
@@ -131,6 +136,8 @@ class ClassConfig {
         static MeComponent me_fw2("slot2", "me", FRU_SLOT2);
         static MeComponent me_fw3("slot3", "me", FRU_SLOT3);
         static MeComponent me_fw4("slot4", "me", FRU_SLOT4);
+
+        static CpldExtComponent cpld_2ou_fw1("slot1", "2ou_cpld" , FRU_SLOT1, "2ou", FW_2OU_CPLD);
 
         if ( (bic_is_m2_exp_prsnt(FRU_SLOT1) & PRESENT_2OU) == PRESENT_2OU ) {
           if ( fby3_common_get_2ou_board_type(FRU_SLOT1, &board_type) < 0) {

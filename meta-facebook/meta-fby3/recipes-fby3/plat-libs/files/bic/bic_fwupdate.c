@@ -1276,7 +1276,6 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       case FW_BIOS:
       case FW_BIOS_CAPSULE:
       case FW_BIOS_RCVY_CAPSULE:
-      case FW_2OU_CPLD:
         if (loc != NULL) {
           stop_fscd_service = true;
         }

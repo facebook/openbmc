@@ -417,7 +417,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
                 general_info, ((sel[9]<<8)|sel[8]), sel[11], sel[10]>>3,
                 sel[10]&0x7, ((sel[13]<<8)|sel[12]),sel[14], sel[15]);
       }
-      sprintf(temp_log, "PCIe Error,FRU:%u", fru);
+      sprintf(temp_log, "B %02X D %02X F %02X PCIe err,FRU:%u", sel[11], sel[10]>>3, sel[10]&0x7, fru);
       pal_add_cri_sel(temp_log);
       break;
 

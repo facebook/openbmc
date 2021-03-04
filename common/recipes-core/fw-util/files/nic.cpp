@@ -99,7 +99,7 @@ int NicComponent::print_version() {
 
 int NicComponent::upgrade_ncsi_util(const std::string& img, int channel)
 {
-  std::string cmd = "ncsi-util";
+  std::string cmd = "/usr/local/bin/ncsi-util";
   // If channel is provided, pass it to ncsi-util, else let it use a default
   if (channel >= 0) {
     cmd += " -c " + std::to_string(channel);

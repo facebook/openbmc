@@ -569,30 +569,57 @@ pwr_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   log_gpio_change(desc, curr, 0);
 }
 
-static int dimm_mux_check(void) {
-  int fd, ret = -1;
+static int
+dimm_mux_recover_needed(int fd, uint8_t addr) {
+  int ret = 0;
+  uint8_t spd;
+  uint8_t tbuf[8] = {0};
+  uint8_t rbuf[8] = {0};
+
+  // check if DIMM_MUX is abnormal
+  do {
+    // DIMM_MUX
+    if ((ret = retry_cond(!i2c_rdwr_msg_transfer(fd, addr, tbuf, 0, rbuf, 1), 2, 10))) {
+      syslog(LOG_WARNING, "FRU: %d Failed to read DIMM_MUX status", FRU_MB);
+      break;
+    }
+    if (rbuf[0] & 0xF) {
+      syslog(LOG_WARNING, "FRU: %d Unexpected DIMM_MUX status %02x", FRU_MB, rbuf[0]);
+      ret = 1;
+      break;
+    }
+
+    // SPD
+    for (spd = 0xa0; spd <= 0xa8; spd += 2) {
+      if (!retry_cond(!i2c_rdwr_msg_transfer(fd, spd, tbuf, 0, rbuf, 1), 1, 10)) {
+        syslog(LOG_WARNING, "FRU: %d Found unexpected SPD %02x", FRU_MB, spd);
+        ret = 1;
+        break;
+      }
+    }
+  } while (0);
+
+  return ret;
+}
+
+static int
+dimm_mux_check(void) {
+  int fd;
+  int ret = 0, rc_need = 0, retry = 1;
   uint8_t bus = 4, addr = 0xe6;
-  uint8_t reg = 0x00;
   uint8_t tbuf[8] = {0};
   uint8_t rbuf[8] = {0};
 
   fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
-    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
-    return ret;
+    syslog(LOG_WARNING, "%s() Failed to open i2c-%d", __func__, bus);
+    return -1;
   }
 
   do {
-    if ((ret = retry_cond(!i2c_rdwr_msg_transfer(fd, addr, tbuf, 0, rbuf, 1), 2, 10))) {
-      syslog(LOG_WARNING, "Failed to read control register");
+    if (!(rc_need = dimm_mux_recover_needed(fd, addr))) {
       break;
     }
-
-    if (!(rbuf[0] & 0xF)) {
-      break;
-    }
-    reg = rbuf[0];
-    syslog(LOG_WARNING, "FRU: %d Unexpected DIMM_MUX status %02x", FRU_MB, reg);
 
     tbuf[0] = 0;
     if ((ret = retry_cond(!i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 0), 2, 10))) {
@@ -600,21 +627,15 @@ static int dimm_mux_check(void) {
       break;
     }
 
-    if ((ret = retry_cond(!i2c_rdwr_msg_transfer(fd, addr, tbuf, 0, rbuf, 1), 2, 10))) {
-      syslog(LOG_WARNING, "FRU: %d Failed to read back DIMM_MUX", FRU_MB);
-      break;
-    }
-
-    if (!(rbuf[0] & 0xF)) {
+    if (!(rc_need = dimm_mux_recover_needed(fd, addr))) {
       syslog(LOG_CRIT, "FRU: %d Cleared DIMM_MUX successfully", FRU_MB);
       pal_set_server_power(FRU_MB, SERVER_POWER_RESET);
-    } else {
-      ret = -1;
+      break;
     }
-  } while (0);
+  } while (--retry >= 0);
 
-  if (ret && reg) {
-    syslog(LOG_CRIT, "FRU: %d Failed to clear DIMM_MUX %02x", FRU_MB, reg);
+  if (ret && (rc_need > 0)) {
+    syslog(LOG_CRIT, "FRU: %d Failed to clear DIMM_MUX", FRU_MB);
   }
 
   i2c_cdev_slave_close(fd);

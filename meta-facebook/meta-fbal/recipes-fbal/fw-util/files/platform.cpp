@@ -24,8 +24,8 @@ class palBiosComponent : public BiosComponent {
 };
 
 int palBiosComponent::update_finish(void) {
-  sys.runcmd(std::string("/sbin/fw_setenv por_ls on"));
-  sys.output << "To complete the upgrade, please perform 'power-util sled-cycle'" << std::endl;
+  sys().runcmd(std::string("/sbin/fw_setenv por_ls on"));
+  sys().output << "To complete the upgrade, please perform 'power-util sled-cycle'" << std::endl;
   return 0;
 }
 

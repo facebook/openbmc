@@ -55,7 +55,7 @@ class Component {
   protected:
     std::string _fru;
     std::string _component;
-    System sys;
+    System _sys;
     bool update_initiated;
   public:
     static std::map<std::string, std::map<std::string, Component *, partialLexCompare>, partialLexCompare> *fru_list;
@@ -87,13 +87,16 @@ class Component {
       get_version(ver);
       j["VERSION"] = ver;
     }
+    virtual System& sys() {
+      return _sys;
+    }
     virtual void set_update_ongoing(int timeout) {
       if (timeout > 0)
         update_initiated = true;
-      sys.set_update_ongoing(sys.get_fru_id(_fru), timeout);
+      sys().set_update_ongoing(sys().get_fru_id(_fru), timeout);
     }
     virtual bool is_update_ongoing() {
-      return sys.is_update_ongoing(sys.get_fru_id(_fru));
+      return sys().is_update_ongoing(sys().get_fru_id(_fru));
     }
 };
 

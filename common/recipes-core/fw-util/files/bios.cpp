@@ -124,7 +124,7 @@ int BiosComponent::update(std::string image, bool force) {
   if (!force) {
     ret = check_image(image.c_str());
     if (ret) {
-      sys.error << "Invalid image. Stopping the update!" << endl;
+      sys().error << "Invalid image. Stopping the update!" << endl;
       return -1;
     }
   }
@@ -141,13 +141,13 @@ int BiosComponent::update(std::string image, bool force) {
       }
     }
     if (retry <= 0) {
-      sys.error << "Failed to Power Off Server. Stopping the update!\n";
+      sys().error << "Failed to Power Off Server. Stopping the update!\n";
       return -1;
     }
 
     retry = max_retry_me_recovery;
     while (retry > 0) {
-      if (sys.runcmd("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null") == 0) {
+      if (sys().runcmd("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null") == 0) {
         break;
       }
       if ((--retry) > 0) {
@@ -155,7 +155,7 @@ int BiosComponent::update(std::string image, bool force) {
       }
     }
     if (retry <= 0) {
-      sys.error << "ERROR: unable to put ME in recovery mode!" << endl;
+      sys().error << "ERROR: unable to put ME in recovery mode!" << endl;
       syslog(LOG_ERR, "Unable to put ME in recovery mode!\n");
       // If we are doing a forced update, ignore this error.
       if (!force) {
@@ -177,7 +177,7 @@ int BiosComponent::update(std::string image, bool force) {
     }
   }
   if (poff_retry <= 0) {
-    sys.error << "ERROR: failed to Power Off Server. Stopping the update!\n";
+    sys().error << "ERROR: failed to Power Off Server. Stopping the update!\n";
     return -1;
   }
 

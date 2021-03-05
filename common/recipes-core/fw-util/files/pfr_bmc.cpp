@@ -15,20 +15,20 @@ int PfrBmcComponent::update(string image) {
   string dev, cmd;
 
   if (is_valid(image, true) == false) {
-    sys.error << image << " is not a valid BMC image for " << sys.name() << endl;
+    sys().error << image << " is not a valid BMC image for " << sys().name() << endl;
     return FW_STATUS_FAILURE;
   }
 
-  if (!sys.get_mtd_name(_mtd_name, dev)) {
-    sys.error << "Failed to get device for " << _mtd_name << endl;
+  if (!sys().get_mtd_name(_mtd_name, dev)) {
+    sys().error << "Failed to get device for " << _mtd_name << endl;
     return FW_STATUS_FAILURE;
   }
 
   syslog(LOG_CRIT, "BMC %s upgrade initiated", (_vers_mtd == "rc") ? "Recovery" : "Active");
 
-  sys.output << "Flashing to device: " << dev << endl;
+  sys().output << "Flashing to device: " << dev << endl;
   cmd = "flashcp " + image + " " + dev;
-  ret = sys.runcmd(cmd);
+  ret = sys().runcmd(cmd);
   if (ret) {
     return ret;
   }
@@ -36,7 +36,7 @@ int PfrBmcComponent::update(string image) {
   sync();
   sleep(2);
   syslog(LOG_CRIT, "BMC capsule copy completed. Version: %s", get_bmc_version(dev).c_str());
-  sys.output << "sending update intent to CPLD..." << endl;
+  sys().output << "sending update intent to CPLD..." << endl;
 
   ret = -1;
   pal_get_fru_id((char *)_fru.c_str(), &fruid);

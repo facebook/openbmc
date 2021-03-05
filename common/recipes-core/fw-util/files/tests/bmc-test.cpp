@@ -49,6 +49,13 @@ class SystemMock : public System {
   }
 };
 
+class BmcComponentBasicMock : public BmcComponent {
+  public:
+    BmcComponentBasicMock(std::string fru, std::string comp, std::string mtd, std::string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
+      : BmcComponent(fru, comp, mtd, vers, w_offset, skip_offset) {}
+    MOCK_METHOD0(sys, System&());
+};
+
 // TEST1: Verify that if the BMC component is created without a version flash
 //        device, then it returns the system version.
 // TEST2: Verify that if the BMC component is created without a flash MTD device,
@@ -58,7 +65,9 @@ TEST(BmcComponentTest, DefaultSystemVersion) {
   SystemMock mock(out, err);
   EXPECT_CALL(mock, version()).Times(1).WillOnce(Return(string("fbtp-v10.0")));
 
-  BmcComponent *b = new BmcComponent("bmc_test", "bmc_test", mock, "");
+  BmcComponentBasicMock *b = new BmcComponentBasicMock("bmc_test", "bmc_test", "");
+  EXPECT_CALL(*b, sys())
+    .WillRepeatedly(ReturnRef(mock));
   EXPECT_NE(nullptr, b);
   EXPECT_EQ(0, b->print_version());
   EXPECT_EQ(out.str(), "BMC_TEST Version: fbtp-v10.0\n");
@@ -98,7 +107,10 @@ TEST(BmcComponentTest, MTDVersion) {
     .WillOnce(Return(false))
     .WillOnce(DoAll(SetArgReferee<1>(mtd.name), Return(true)));
 
-  BmcComponent *b = new BmcComponent("bmc_test", "bmc_test", mock, "", "flash123");
+  BmcComponentBasicMock *b = new BmcComponentBasicMock("bmc_test", "bmc_test", "", "flash123");
+  EXPECT_CALL(*b, sys())
+    .WillRepeatedly(ReturnRef(mock));
+
   EXPECT_EQ(0, b->print_version());
   EXPECT_EQ(out.str(), "BMC_TEST Version: NA\n");
   EXPECT_EQ(err.str(), "");
@@ -112,11 +124,12 @@ TEST(BmcComponentTest, MTDVersion) {
 
 class BmcComponentMock : public BmcComponent {
   public:
-    BmcComponentMock(std::string fru, std::string comp, System &sys, std::string mtd, std::string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
-      : BmcComponent(fru, comp, sys, mtd, vers, w_offset, skip_offset) {}
+    BmcComponentMock(std::string fru, std::string comp, std::string mtd, std::string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
+      : BmcComponent(fru, comp, mtd, vers, w_offset, skip_offset) {}
   MOCK_METHOD2(is_valid, bool(string &image, bool pfr_active));
   MOCK_METHOD1(update, int(string &image));
   MOCK_METHOD0(print_version, int());
+  MOCK_METHOD0(sys, System&());
 
   int real_update(string &image) {
     return BmcComponent::update(image);
@@ -155,7 +168,10 @@ TEST(BmcComponentTest, MTDFlash) {
     .WillOnce(Return(-1))
     .WillOnce(Return(0));
 
-  BmcComponentMock b("bmc_test", "bmc_test", mock, dummy_mtd);
+  BmcComponentMock b("bmc_test", "bmc_test", dummy_mtd);
+
+  EXPECT_CALL(b, sys())
+    .WillRepeatedly(ReturnRef(mock));
 
   EXPECT_CALL(b, update(dummy_image))
     .Times(4)
@@ -211,7 +227,10 @@ TEST(BmcComponentTest, MTDOffsetFlash) {
 
   // We are skipping the first 4 bytes. Copying the next 4 from mtd
   // and replacing our own.
-  BmcComponentMock b("bmc_test", "bmc_test", mock, dummy_mtd, "", 4, 8);
+  BmcComponentMock b("bmc_test", "bmc_test", dummy_mtd, "", 4, 8);
+
+  EXPECT_CALL(b, sys())
+    .WillRepeatedly(ReturnRef(mock));
 
   EXPECT_CALL(b, update(image.name))
     .Times(1)

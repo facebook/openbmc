@@ -192,7 +192,7 @@ int CpldComponent::print_version() {
 
   comp = _component;
   transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
-  sys.output << comp << " Version: " << string(strbuf) << endl;
+  sys().output << comp << " Version: " << string(strbuf) << endl;
 
   return 0;
 }

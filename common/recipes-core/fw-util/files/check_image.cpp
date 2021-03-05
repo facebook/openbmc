@@ -408,7 +408,7 @@ bool BmcComponent::is_valid(string &file, bool pfr_active)
   bool valid = false;
   try {
     Image image(file);
-    string machine = system.name();
+    string machine = sys().name();
     if (!image.supports_machine(machine)) {
       return false;
     }
@@ -417,7 +417,7 @@ bool BmcComponent::is_valid(string &file, bool pfr_active)
       return true;
     }
 
-    ImageDescriptorList desc_list(system.partition_conf().c_str());
+    ImageDescriptorList desc_list(sys().partition_conf().c_str());
     valid = desc_list.is_valid(image);
   } catch(string &ex) {
     cerr << ex << endl;

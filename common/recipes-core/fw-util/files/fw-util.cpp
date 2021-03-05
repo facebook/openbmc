@@ -44,7 +44,7 @@ string exec_name = "Unknown";
 map<string, map<string, Component *, partialLexCompare>, partialLexCompare> * Component::fru_list = NULL;
 
 Component::Component(string fru, string component)
-  : _fru(fru), _component(component), sys(), update_initiated(false)
+  : _fru(fru), _component(component), _sys(), update_initiated(false)
 {
   fru_list_setup();
   (*fru_list)[fru][component] = this;

@@ -62,7 +62,7 @@ class JsonSyslogFormatter(OpenBMCJSONFormatter):
 
 
 ACCESS_LOG_FORMAT = (
-    '%a %l %u %t "%r" %s %b "%{identity}i" "%{Referrer}i" "%{User-Agent}i"'
+    '%a %l %u %t "%r" %s %b %Dus "%{identity}i" "%{Referrer}i" "%{User-Agent}i"'
 )
 
 

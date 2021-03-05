@@ -23,14 +23,19 @@ exit_code=2
 
 . /usr/local/bin/openbmc-utils.sh
 
+EEPROM_FILE="/tmp/.tmp_oob_eeprom.bin"
+
 cleanup () {
-  gpio_set_direction SWITCH_EEPROM1_WRT out
-  gpio_set_value SWITCH_EEPROM1_WRT 0
+  rm -f "$EEPROM_FILE"
   exit $exit_code
 }
 trap cleanup EXIT ERR INT TERM
 
-gpio_set_direction SWITCH_EEPROM1_WRT out
-gpio_set_value SWITCH_EEPROM1_WRT 1
-/usr/local/bin/at93cx6_util.sh chip read | sha256sum | head -c 64
+if ! out=$(/usr/local/bin/spi_util.sh read spi2 OOB_SWITCH_EEPROM "$EEPROM_FILE" > /dev/null 2>&1); then
+    echo "Error: failed to read the switch eeprom!"
+    echo "$out"
+    exit 1
+fi
+
+sha256sum < "$EEPROM_FILE" | head -c 64
 exit_code=$?

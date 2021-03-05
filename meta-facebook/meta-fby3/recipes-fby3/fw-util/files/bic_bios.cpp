@@ -16,7 +16,7 @@ using namespace std;
 #define GPIO_HIGH 1
 #define GPIO_LOW 0
 
-int BiosComponent::update_internal(const std::string &image, bool force) {
+int BiosComponent::update_internal(const std::string &image, int fd, bool force) {
   int ret;
   uint8_t status;
   int retry_count = 0;
@@ -26,6 +26,10 @@ int BiosComponent::update_internal(const std::string &image, bool force) {
     server.ready();
   } catch(string err) {
     cerr << "Server is not ready." << endl;
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+  if (image.empty() && fd < 0) {
+    cerr << "File or fd is required." << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
   while (retry_count < MAX_RETRY) {
@@ -55,7 +59,11 @@ int BiosComponent::update_internal(const std::string &image, bool force) {
   cerr << "Switching BIOS SPI MUX for update..." << endl;
   bic_switch_mux_for_bios_spi(slot_id, MUX_SWITCH_CPLD);
   sleep(1);
-  ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
+  if (!image.empty()) {
+    ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
+  } else {
+    ret = bic_update_fw_fd(slot_id, fw_comp, fd, FORCE_UPDATE_UNSET);
+  }
   cerr << "Disabling USB..." << endl;
   bic_set_gpio(slot_id, RST_USB_HUB_N, GPIO_LOW);
   if (ret != 0) {
@@ -75,11 +83,15 @@ int BiosComponent::update_internal(const std::string &image, bool force) {
 }
 
 int BiosComponent::update(string image) {
-  return update_internal(image, false /* force */);
+  return update_internal(image, -1, false /* force */);
+}
+
+int BiosComponent::update(int fd, bool force) {
+  return update_internal("", fd, force);
 }
 
 int BiosComponent::fupdate(string image) {
-  return update_internal(image, true /* force */);
+  return update_internal(image, -1, true /* force */);
 }
 
 int BiosComponent::get_ver_str(string& s) {

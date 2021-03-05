@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
       return -1;
     }
     image.assign(argv[4]);
-    if (action == "--update") {
+    if (action == "--update" && image != "-") {
       ifstream f(image);
       if (!f.good()) {
         cerr << "Cannot access: " << image << endl;
@@ -279,10 +279,12 @@ int main(int argc, char *argv[])
       return -1;
     }
     image.assign(argv[5]);
-    ifstream f(image);
-    if (!f.good()) {
-      cerr << "Cannot access: " << image << endl;
-      return -1;
+    if (image != "-") {
+      ifstream f(image);
+      if (!f.good()) {
+        cerr << "Cannot access: " << image << endl;
+        return -1;
+      }
     }
     if (component == "all") {
       cerr << "Upgrading all components not supported" << endl;
@@ -370,10 +372,18 @@ int main(int argc, char *argv[])
             string str_act("");
             c->set_update_ongoing(60 * 10);
             if (action == "--update") {
-              ret = c->update(image);
+              if (image != "-") {
+                ret = c->update(image);
+              } else {
+                ret = c->update(0, false /* force */);
+              }
               str_act.assign("Upgrade");
             } else if (action == "--force") {
-              ret = c->fupdate(image);
+              if (image != "-") {
+                ret = c->fupdate(image);
+              } else {
+                ret = c->update(0 /* fd */, true /* force */);
+              }
               str_act.assign("Force upgrade");
             } else {
               ret = c->dump(image);

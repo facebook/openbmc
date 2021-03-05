@@ -1194,8 +1194,8 @@ get_component_name(uint8_t comp) {
   return "NULL";
 }
 
-int
-bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
+static int
+bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint8_t force) {
   int ret = BIC_STATUS_SUCCESS;
   uint8_t intf = 0x0;
   char ipmb_content[] = "ipmb";
@@ -1205,13 +1205,29 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
   uint8_t bmc_location = 0;
   uint8_t status = 0;
   int i = 0;
+  char fdstr[32] = {0};
+  bool fd_opened = false;
 
   if (path == NULL) {
-    syslog(LOG_ERR, "%s(): Update aborted due to NULL pointer: *path", __func__);
-    return -1;
+    if (fd < 0) {
+      syslog(LOG_ERR, "%s(): Update aborted due to NULL pointer: *path", __func__);
+      return -1;
+    }
+    snprintf(fdstr, sizeof(fdstr) - 1, "<%d>", fd);
+    path = fdstr;
+  } else {
+    fd = open(path, O_RDONLY, 0);
+    if (fd < 0) {
+      syslog(LOG_ERR, "%s(): Unable to open %s: %d", __func__, path, errno);
+      return -1;
+    }
+    fd_opened = true;
   }
+
   loc = strstr(path, ipmb_content);
-  printf("slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, path, force);
+
+
+  fprintf(stderr, "slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, path, force);
   syslog(LOG_CRIT, "Updating %s on slot%d. File: %s", get_component_name(comp), slot_id, path);
 
   uint8_t board_type = 0;
@@ -1355,7 +1371,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       if (loc != NULL) {
         ret = update_bic_bios(slot_id, comp, path, FORCE_UPDATE_SET);
       } else {
-        ret = update_bic_usb_bios(slot_id, comp, path);
+        ret = update_bic_usb_bios(slot_id, comp, fd);
       }
       break;
     case FW_VR:
@@ -1430,5 +1446,18 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
 
 err_exit:
   syslog(LOG_CRIT, "Updated %s on slot%d. File: %s. Result: %s", get_component_name(comp), slot_id, path, (ret != 0)?"Fail":"Success");
+  if (fd_opened) {
+    close(fd);
+  }
   return ret;
+}
+
+int
+bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
+  return bic_update_fw_path_or_fd(slot_id, comp, path, -1, force);
+}
+
+int
+bic_update_fw_fd(uint8_t slot_id, uint8_t comp, int fd, uint8_t force) {
+  return bic_update_fw_path_or_fd(slot_id, comp, NULL, fd, force);
 }

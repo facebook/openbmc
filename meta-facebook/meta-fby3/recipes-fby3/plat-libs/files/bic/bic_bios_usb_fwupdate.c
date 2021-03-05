@@ -352,11 +352,11 @@ get_block_checksum(uint8_t slot_id, size_t offset, int cs_len, uint8_t *out) {
 }
 
 int
-bic_update_fw_usb(uint8_t slot_id, uint8_t comp, const char *image_file, usb_dev* udev)
+bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
 {
-  int ret = -1, fd = -1, rc = 0;
+  int ret = -1, rc = 0;
   uint8_t *buf = NULL;
-  size_t file_size = 0, write_offset = 0, file_offset = 0;
+  size_t write_offset = 0;
 
   const char *what = NULL;
   if (comp == FW_BIOS) {
@@ -372,30 +372,17 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, const char *image_file, usb_dev
     fprintf(stderr, "ERROR: not supported component [comp:%u]!\n", comp);
     goto out;
   }
-  const char *dedup_env = getenv("DEDUP");
-  const char *verify_env = getenv("VERIFY");
+  const char *dedup_env = getenv("FW_UTIL_DEDUP");
+  const char *verify_env = getenv("FW_UTIL_VERIFY");
   bool dedup = (dedup_env != NULL ? (*dedup_env == '1' || *dedup_env == '2') : true);
   bool verify = (verify_env != NULL ? (*verify_env == '1') : true);
 
-  fd = open(image_file, O_RDONLY, 0666);
-  if (fd < 0) {
-    fprintf(stderr, "ERROR: invalid file path!\n");
-    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", image_file);
-    goto out;
-  }
-  struct stat st;
-  if (fstat(fd, &st) < 0) {
-    fprintf(stderr, "fstat failed! %d\n", errno);
-    goto out;
-  }
-  file_size = st.st_size;
   buf = malloc(USB_PKT_HDR_SIZE + BIOS_UPDATE_BLK_SIZE);
   if (buf == NULL) {
     fprintf(stderr, "failed to allocate memory\n");
     goto out;
   }
 
-  int num_blocks = file_size / BIOS_UPDATE_BLK_SIZE;
   int num_blocks_written = 0, num_blocks_skipped = 0;
   uint8_t fcs[STRONG_DIGEST_LENGTH], cs[STRONG_DIGEST_LENGTH];
   int cs_len = STRONG_DIGEST_LENGTH;
@@ -407,39 +394,38 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, const char *image_file, usb_dev
     }
     cs_len = SIMPLE_DIGEST_LENGTH * 2;
   }
-  fprintf(stderr, "Updating %s from %s, dedup is %s, verification is %s.\n",
-          what, image_file, (dedup ? "on" : "off"), (verify ? "on" : "off"));
+  fprintf(stderr, "Updating %s, dedup is %s, verification is %s.\n",
+          what, (dedup ? "on" : "off"), (verify ? "on" : "off"));
   int attempts = NUM_ATTEMPTS;
+  size_t file_buf_num_bytes = 0;
   while (attempts > 0) {
     uint8_t *file_buf = buf + USB_PKT_HDR_SIZE;
     size_t file_buf_pos = 0;
-    size_t file_buf_num_bytes = 0;
     bool send_packet_fail = false;
-    if (write_offset > 0) {
-      fprintf(stderr, "\r%d/%d blocks (%d written, %d skipped)...",
-          num_blocks_written + num_blocks_skipped,
-          num_blocks, num_blocks_written, num_blocks_skipped);
-      fflush(stderr);
-    }
-    if (file_offset >= file_size) {
-      break;
-    }
+    fprintf(stderr, "\r%d blocks (%d written, %d skipped)...",
+        num_blocks_written + num_blocks_skipped,
+        num_blocks_written, num_blocks_skipped);
+    fflush(stderr);
     // Read a block of data from file.
-    if (attempts < NUM_ATTEMPTS) {
-      // If retrying, seek back to the correct position.
-      lseek(fd, file_offset, SEEK_SET);
-    }
-    file_buf_num_bytes = 0;
-    do {
+    while (file_buf_num_bytes < BIOS_UPDATE_BLK_SIZE) {
       size_t num_to_read = BIOS_UPDATE_BLK_SIZE - file_buf_num_bytes;
       ssize_t num_read = read(fd, file_buf, num_to_read);
       if (num_read < 0) {
+        if (errno == EINTR) {
+          continue;
+        }
         fprintf(stderr, "read error: %d\n", errno);
         goto out;
       }
+      if (num_read == 0) {
+        break;
+      }
       file_buf_num_bytes += num_read;
-    } while (file_buf_num_bytes < BIOS_UPDATE_BLK_SIZE &&
-             errno == EINTR);
+    }
+    // Finished.
+    if (file_buf_num_bytes == 0) {
+      break;
+    }
     // Pad to 64K with 0xff, if needed.
     for (size_t i = file_buf_num_bytes; i < BIOS_UPDATE_BLK_SIZE; i++) {
       file_buf[i] = '\xff';
@@ -464,7 +450,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, const char *image_file, usb_dev
       rc = get_block_checksum(slot_id, write_offset, cs_len, cs);
       if (rc == 0 && memcmp(cs, fcs, cs_len) == 0) {
         write_offset += BIOS_UPDATE_BLK_SIZE;
-        file_offset += file_buf_num_bytes;
+        file_buf_num_bytes = 0;
         num_blocks_skipped++;
         attempts = NUM_ATTEMPTS;
         continue;
@@ -510,7 +496,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, const char *image_file, usb_dev
       }
     }
     write_offset += BIOS_UPDATE_BLK_SIZE;
-    file_offset += file_buf_num_bytes;
+    file_buf_num_bytes = 0;
     num_blocks_written++;
     attempts = NUM_ATTEMPTS;
   }
@@ -524,9 +510,6 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, const char *image_file, usb_dev
   ret = 0;
 
 out:
-  if (fd >= 0) {
-    close(fd);
-  }
   free(buf);
   return ret;
 }
@@ -546,7 +529,7 @@ bic_close_usb_dev(usb_dev* udev)
 }
 
 int
-update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
+update_bic_usb_bios(uint8_t slot_id, uint8_t comp, int fd)
 {
   struct timeval start, end;
   char key[64];
@@ -563,17 +546,16 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image)
     goto error_exit;
   }
 
-  printf("Input: %s, USB timeout: 3000ms\n", image);
   gettimeofday(&start, NULL);
 
   // sending file
-  ret = bic_update_fw_usb(slot_id, comp, image, udev);
+  ret = bic_update_fw_usb(slot_id, comp, fd, udev);
   if (ret < 0)
     goto error_exit;
 
   gettimeofday(&end, NULL);
   if (comp == FW_BIOS) {
-    printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
+    fprintf(stderr, "Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
   }
 
   ret = 0;

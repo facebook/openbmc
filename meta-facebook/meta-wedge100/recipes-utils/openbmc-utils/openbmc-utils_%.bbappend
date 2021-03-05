@@ -36,7 +36,6 @@ SRC_URI += "file://enable_watchdog_ext_signal.sh \
             file://power-on.service \
             file://setup_board.service \
             file://mount_data0.sh \
-            file://at93cx6_util.sh \
             "
 
 OPENBMC_UTILS_FILES += " \
@@ -49,7 +48,6 @@ OPENBMC_UTILS_FILES += " \
     reset_qsfp_mux.sh \
     spi_util.sh \
     reset_fancpld.sh \
-    at93cx6_util.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

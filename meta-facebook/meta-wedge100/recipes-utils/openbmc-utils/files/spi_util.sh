@@ -18,6 +18,31 @@
 # Boston, MA 02110-1301 USA
 #
 
+#
+# The script is designed to access BACKUP_BIOS and OOB_SWITCH_EEPROM. The
+# 2 devices should never be accessed simultaneously because they share
+# exactly the same SPI pins/lines. Chip select is done by external bus
+# switch (controlled by GPIO), and details as below:
+#
+# - BACKUP_BIOS:
+#   The flash is registered under spi1 and paired with aspeed-spi master
+#   for better performance.
+#   The chip is selected by setting COM_SPI_SEL (aspeed GPIOO0) to 1.
+#
+# - OOB_SWITCH_EEPROM:
+#   The eeprom is registered under spi2 and controlled by spi-gpio. It's
+#   not compatible with aspeed-spi controller due to clock/speed mismatch:
+#   aspeed-spi controller's mimimum frequency is greater than the eeprom's
+#   max frequency.
+#   The chip is selected by setting SWITCH_EEPROM1_WRT (aspeed GPIOE2)
+#   to 1.
+#
+# WARNING:
+#   Please DO NOT invent new scripts to operate above 2 devices, because
+#   concurrent access could potentially corrupt the devices. Check S221767
+#   for details.
+#
+
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 . /usr/local/bin/flashrom-utils.sh
@@ -28,6 +53,12 @@ PID_FILE='/var/run/spi_util.pid'
 # Modules used to talk to backup BIOS
 #
 SPI_ASPEED_MODULE=spi_aspeed
+
+#
+# Modules used to talk to internal switch eeprom.
+#
+SPI_GPIO_MODULE=spi_gpio
+SPI_EEPROM_MODULE=eeprom_93xx46
 
 if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
     LEGACY_KERNEL="true"
@@ -194,8 +225,110 @@ spi1_launch_io() {
     esac
 }
 
+#
+############################################################
+# Functions to deal with spi2.0: the internal switch eeprom.
+############################################################
+#
+
+spi2_setup_bitbang() {
+    if [ ! -L "${SHADOW_GPIO}/BMC_EEPROM1_SPI_SS" ]; then
+        gpio_export_by_name "$ASPEED_GPIO" GPIOI4 BMC_EEPROM1_SPI_SS
+        gpio_export_by_name "$ASPEED_GPIO" GPIOI5 BMC_EEPROM1_SPI_SCK
+        gpio_export_by_name "$ASPEED_GPIO" GPIOI6 BMC_EEPROM1_SPI_MOSI
+        gpio_export_by_name "$ASPEED_GPIO" GPIOI7 BMC_EEPROM1_SPI_MISO
+    fi
+}
+
+spi2_connect() {
+    echo "enable spi2 (eeprom) connection.."
+
+    if [ ! -L "${SHADOW_GPIO}/SWITCH_EEPROM1_WRT" ]; then
+        gpio_export_by_name "$ASPEED_GPIO" GPIOE2 SWITCH_EEPROM1_WRT
+    fi
+
+    gpio_set_value SWITCH_EEPROM1_WRT 1
+    if [ "$(gpio_get_value SWITCH_EEPROM1_WRT)" -ne "1" ]; then
+        echo "Error: unable to set SWITCH_EEPROM1_WRT pin"
+        exit 1
+    fi
+
+    if [ -n "$LEGACY_KERNEL" ]; then
+        spi2_setup_bitbang
+    else
+        kmod_reload "$SPI_EEPROM_MODULE"
+        kmod_reload "$SPI_GPIO_MODULE"
+    fi
+}
+
+spi2_disconnect() {
+    echo "disable spi2 (eeprom) connection.."
+
+    if [ -L "${SHADOW_GPIO}/BMC_EEPROM1_SPI_SS" ]; then
+        gpio_unexport BMC_EEPROM1_SPI_SS
+        gpio_unexport BMC_EEPROM1_SPI_SCK
+        gpio_unexport BMC_EEPROM1_SPI_MOSI
+        gpio_unexport BMC_EEPROM1_SPI_MISO
+    fi
+
+    kmod_unload "$SPI_EEPROM_MODULE"
+    kmod_unload "$SPI_GPIO_MODULE"
+
+    if [ -L "${SHADOW_GPIO}/SWITCH_EEPROM1_WRT" ]; then
+        gpio_set_value SWITCH_EEPROM1_WRT 0
+        gpio_set_direction SWITCH_EEPROM1_WRT "in"
+        gpio_unexport SWITCH_EEPROM1_WRT
+    fi
+}
+
+spi2_legacy_io() {
+    /usr/local/bin/at93cx6_util_py3.py --cs BMC_EEPROM1_SPI_SS \
+                                       --clk BMC_EEPROM1_SPI_SCK \
+                                       --mosi BMC_EEPROM1_SPI_MOSI \
+                                       --miso BMC_EEPROM1_SPI_MISO $@
+}
+
+dd_helper() {
+    input=$1
+    output=$2
+    size=$3
+
+    echo "dump (dd) $input to $output, total $size bytes.."
+    if ! log=$(dd if="$input" of="$output" bs="$size" count=1 2>&1); then
+        echo "Error: dd command failed!"
+        echo "$log"
+        exit 1
+    fi
+}
+
+spi2_launch_io() {
+    op="$1"
+    image_file="$2"
+    eeprom_size=128
+    eeprom_path="/sys/bus/spi/devices/spi2.0/eeprom"
+
+    if [ ! -e "$eeprom_path" ]; then
+        echo "Error: unable to find eeprom device $eeprom_path!"
+        exit 1
+    fi
+
+    case "$op" in
+        "read")
+            dd_helper "$eeprom_path" "$image_file" "$eeprom_size"
+        ;;
+        "write")
+            dd_helper "$image_file" "$eeprom_path" "$eeprom_size"
+        ;;
+        *)
+            echo "Operation $op is not supported!"
+            exit 1
+        ;;
+    esac
+}
+
 cleanup_spi() {
     spi1_disconnect
+    spi2_disconnect
 
     rm -rf /tmp/.spitmp_*
 }
@@ -207,6 +340,7 @@ ui() {
 
     case "$spi_bus" in
         "spi1")
+            spi2_disconnect
             spi1_connect
 
             flash_dev=$(flash_device_name 1 0)
@@ -217,6 +351,16 @@ ui() {
             fi
 
             spi1_launch_io "$op" "$flash_dev" "$file"
+        ;;
+        "spi2")
+            spi1_disconnect
+            spi2_connect
+
+            if [ -n "$LEGACY_KERNEL" ]; then
+                spi2_legacy_io chip "$op" --file "$file"
+            else
+                spi2_launch_io "$op" "$file"
+            fi
         ;;
         *)
             echo "Error: no such SPI bus ($spi_bus)!"
@@ -229,11 +373,13 @@ usage() {
     local prog
     prog=$(basename "$0")
     echo "Usage:"
-    echo "$prog <op> spi1 <spi device> <file>"
+    echo "$prog <op> spi1/spi2 <spi device> <file>"
     echo "  <op>          : read, write, erase, detect"
     echo "  <spi1 device> : BACKUP_BIOS"
+    echo "  <spi2 device> : OOB_SWITCH_EEPROM"
     echo "Examples:"
     echo "  $prog write spi1 BACKUP_BIOS bios.bin"
+    echo "  $prog read spi2 OOB_SWITCH_EEPROM eeprom.bin"
     echo ""
 }
 
@@ -271,6 +417,12 @@ check_parameter() {
         "spi1")
             if [ "$dev" != "BACKUP_BIOS" ]; then
                 echo "Error: supported spi1 devices: BACKUP_BIOS!"
+                return 1
+            fi
+            ;;
+        "spi2")
+            if [ "$dev" != "OOB_SWITCH_EEPROM" ]; then
+                echo "Error: supported spi2 devices: OOB_SWITCH_EEPROM!"
                 return 1
             fi
             ;;

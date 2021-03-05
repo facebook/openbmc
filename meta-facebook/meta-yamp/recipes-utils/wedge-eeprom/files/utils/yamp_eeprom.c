@@ -462,8 +462,8 @@ int yamp_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
           break;
 
       default:
-          /* Invalid value. Bail out */
-          rc = -EINVAL;
+          /* unregonize field type. Bail out and print warning log*/
+          OBMC_WARN("unrecognize fied type of 0x%02x\n", field_type);
           goto out;
     }
   }

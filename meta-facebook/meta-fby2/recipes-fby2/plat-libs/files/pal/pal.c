@@ -6580,6 +6580,20 @@ pal_parse_sel_nd(uint8_t fru, uint8_t *sel, char *error_log)
         parsed = true;
       }
       break;
+    case BIC_ND_SENSOR_IHDT_PRSNT_ALERT:
+      switch (ed[0] & 0x0F) {
+        case 0x00:
+          strcat(error_log, "REMOTE_JTAG_EN");
+          break;
+        case 0x01:
+          strcat(error_log, "HDT_PRSENT");
+          break;
+        default:
+          strcat(error_log, "Unknown");
+          break;
+      }
+      parsed = true;
+      break;
   }
 
   if (parsed == true) {

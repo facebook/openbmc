@@ -2792,6 +2792,9 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
             case BIC_ND_SENSOR_VR_ALERT:
               sprintf(name, "VR_ALERT");
               break;
+            case BIC_ND_SENSOR_IHDT_PRSNT_ALERT:
+              sprintf(name, "IHDT_PRSNT_ALERT");
+              break;
 #endif
 #ifdef CONFIG_FBY2_EP
             case NBU_ERROR:

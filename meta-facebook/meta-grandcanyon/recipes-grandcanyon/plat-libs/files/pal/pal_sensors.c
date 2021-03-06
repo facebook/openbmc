@@ -367,13 +367,13 @@ PAL_SENSOR_MAP nic_sensor_map[] = {
 
 PAL_SENSOR_MAP e1s_sensor_map[] = {
   [E1S0_CUR] =
-  {"E1S_?0_CUR", ADC128_IN0, read_adc128, false, {1.1, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"E1S_X0_CUR", ADC128_IN0, read_adc128, false, {1.1, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [E1S1_CUR] =
-  {"E1S_?1_CUR", ADC128_IN1, read_adc128, false, {1.1, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"E1S_X1_CUR", ADC128_IN1, read_adc128, false, {1.1, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [E1S0_TEMP] =
-  {"E1S_?0_TEMP", T5_E1S0_T7_IOC_AVENGER, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"E1S_X0_TEMP", T5_E1S0_T7_IOC_AVENGER, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [E1S1_TEMP] =
-  {"E1S_?1_TEMP", T5_E1S1_T7_IOCM_VOLT, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"E1S_X1_TEMP", T5_E1S1_T7_IOCM_VOLT, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
 };
 
 PAL_SENSOR_MAP iocm_sensor_map[] = {
@@ -1550,7 +1550,7 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           return ERR_FAILURE;
         }
       } else {
-        syslog(LOG_WARNING, "%s() Failed to set E1.S sensor name because the UIC location is unknown\n", __func__);
+        syslog(LOG_WARNING, "%s() The UIC location is unknown, please check UIC location\n", __func__);
         return ERR_FAILURE;
       }
       break;

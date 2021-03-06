@@ -71,11 +71,13 @@ is_e1s_iocm_i2c_enabled() {
 #             UIC_LOC_TYPE_IN   UIC_RMT_TYPE_IN   SCC_LOC_TYPE_0   SCC_RMT_TYPE_0
 #  Type 5                   0                 0                0                0
 #  Type 7 Headnode          0                 1                0                1
-is_chassis_type7() {
-  if [[ $(gpio_get UIC_LOC_TYPE_IN) == "0" && $(gpio_get UIC_RMT_TYPE_IN) == "1" && $(gpio_get SCC_LOC_TYPE_0) == "0" && $(gpio_get SCC_RMT_TYPE_0) == "1" ]]; then
-    echo 1
+get_chassis_type() {
+  if [[ $(gpio_get UIC_LOC_TYPE_IN) == "0" && $(gpio_get UIC_RMT_TYPE_IN) == "0" && $(gpio_get SCC_LOC_TYPE_0) == "0" && $(gpio_get SCC_RMT_TYPE_0) == "0" ]]; then
+    return "$UIC_TYPE_5"
+  elif [[ $(gpio_get UIC_LOC_TYPE_IN) == "0" && $(gpio_get UIC_RMT_TYPE_IN) == "1" && $(gpio_get SCC_LOC_TYPE_0) == "0" && $(gpio_get SCC_RMT_TYPE_0) == "1" ]]; then
+    return "$UIC_TYPE_7_HEADNODE" 
   else
-    echo 0
+    return -1
   fi
 }
 

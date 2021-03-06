@@ -24,7 +24,7 @@ get_sku()
 {
   get_uic_location
   uic_id=$?
-  get_uic_type
+  get_chassis_type
   uic_type=$?
 
   if [ "$uic_type" = "$UIC_TYPE_5" ]; then
@@ -53,20 +53,6 @@ get_uic_location()
   uic_id=$("$EXPANDERUTIL_CMD" "$NETFN_EXPANDER_REQ" "$CMD_GET_UIC_LOCATION")
   
   return "$uic_id"
-}
-
-#             UIC_LOC_TYPE_IN   UIC_RMT_TYPE_IN   SCC_LOC_TYPE_0   SCC_RMT_TYPE_0
-#  Type 5                   0                 0                0                0
-#  Type 7 Headnode          0                 1                0                1
-get_uic_type()
-{
-  if [ "$(is_chassis_type7)" = "1" ]; then
-    uic_type="$UIC_TYPE_7_HEADNODE"
-  else
-    uic_type="$UIC_TYPE_5"
-  fi
-
-  return "$uic_type"
 }
 
 get_sku

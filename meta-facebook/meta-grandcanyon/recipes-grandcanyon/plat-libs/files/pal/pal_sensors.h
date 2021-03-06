@@ -42,7 +42,7 @@
 #define ADS1015_PGA_DEFAULT          (2048)  // unit: mV
 #define ADS1015_DIV_UNIT             (1000)  // mV -> V
 
-#define E1S_SENSOR_NAME_WILDCARD     '?'
+#define E1S_SENSOR_NAME_WILDCARD     'X'
 #define E1S_SENSOR_NAME_SIDE_A       'A'
 #define E1S_SENSOR_NAME_SIDE_B       'B'
 

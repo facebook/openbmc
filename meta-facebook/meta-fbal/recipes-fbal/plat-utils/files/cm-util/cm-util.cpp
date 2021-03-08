@@ -180,10 +180,14 @@ static void
 print_linklocal(uint8_t mac[6])
 {
   std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << 0xfe80 << "::";
-  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << int(mac[0] ^ 2) << int(mac[1]) << ":";
-  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << int(mac[2]) << 0xff << ":";
-  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << 0xfe << int(mac[3]) << ":";
-  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << int(mac[4]) << int(mac[5]) << std::endl;
+  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << int(mac[0] ^ 2);
+  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << int(mac[1]) << ":";
+  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << int(mac[2]);
+  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << 0xff << ":";
+  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << 0xfe;
+  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << int(mac[3]) << ":";
+  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << int(mac[4]);
+  std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << int(mac[5]) << std::endl;
 }
 
 static void

@@ -30,7 +30,7 @@ display_value() {
     num=0
     input=$1
     while [ $num -lt 8 ]; do  {
-        gpio_set $(gpio_name2value LED_POSTCODE_$num) $((input & 1))
+        gpio_set_value "LED_POSTCODE_$num" $((input & 1))
         input=$((input >> 1))
         num=$((num + 1))
     }

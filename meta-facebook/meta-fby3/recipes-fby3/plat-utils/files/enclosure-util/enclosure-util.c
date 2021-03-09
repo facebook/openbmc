@@ -167,14 +167,17 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd) {
   memset(&ssd, 0x00, sizeof(ssd_data));
 
   //prevent the invalid access
-  if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD ) {
+  if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD && type_2ou != E1S_BOARD) {
     bic_get_1ou_type(slot_id, &type_1ou);
     get_mapping_parameter(device_id, type_1ou, &bus, &intf, &mux);
   }
 
   fby3_common_dev_name(device_id, str);
 
-  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+  if (type_2ou == E1S_BOARD) {
+    printf("slot%u-%s : %s\n", slot_id, str, "NA");
+    return 0;
+  } else if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
     // mux select
     ret = pal_gpv3_mux_select(slot_id, device_id);
     if (ret) {
@@ -344,6 +347,9 @@ main(int argc, char **argv) {
       printf("err: failed to disable SSD monitoring\n");
       goto exit;
     }
+  } else if ( type_2ou == E1S_BOARD ) {
+    device_start = DEV_ID0_2OU;
+    device_end = DEV_ID5_2OU;
   } else if ( present == PRESENT_1OU ) {
     device_start = DEV_ID0_1OU;
     device_end = DEV_ID3_1OU;

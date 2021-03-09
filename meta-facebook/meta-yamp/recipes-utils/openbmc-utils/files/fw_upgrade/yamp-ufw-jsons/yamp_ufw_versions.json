@@ -1,9 +1,9 @@
 {
     "bios" : {
         "filename"    : "coreboot-glacier.rom",
-        "version" : "10",
+        "version" : "",
         "hash"    : "sha1sum",
-        "hash_value" : "42a784a63e26bcec4bc933565c47a1b9491604dd"
+        "hash_value" : "9536bf9fc2da1b59da6feeb220546568f5b56f32"
     },
     "dawson" : {
         "filename"    : "dawson.astp",

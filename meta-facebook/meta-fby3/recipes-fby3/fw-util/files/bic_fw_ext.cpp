@@ -122,6 +122,10 @@ int BicFwExtBlComponent::update(string image) {
   return update_internal(image, false);
 }
 
+int BicFwExtBlComponent::fupdate(string image) {
+  return update_internal(image, true);
+}
+
 int BicFwExtBlComponent::get_ver_str(string& s) {
   uint8_t ver[32] = {0};
   char ver_str[32] = {0};

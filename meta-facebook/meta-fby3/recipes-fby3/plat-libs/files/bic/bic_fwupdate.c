@@ -742,21 +742,6 @@ exit:
 }
 
 static int
-is_valid_intf(uint8_t intf) {
-  int ret = BIC_STATUS_FAILURE;
-  switch(intf) {
-    case FEXP_BIC_INTF:
-    case BB_BIC_INTF:
-    case REXP_BIC_INTF:
-    case NONE_INTF:
-      ret = BIC_STATUS_SUCCESS;
-      break;
-  }
-
-  return ret;
-}
-
-static int
 is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file_size){
 #define BICBL_TAG 0x00
 #define BICBR_TAG 0x01
@@ -932,16 +917,9 @@ error_exit:
 
 static int
 update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
-  int ret = -1;
+  int ret = BIC_STATUS_FAILURE;
   int fd = 0;
   int file_size;
-
-  //check params
-  ret = is_valid_intf(intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() invalid intf(val=0x%x) was caught!\n", __func__, intf);
-    goto exit;
-  }
 
   //get fd and file size
   fd = open_and_get_size(path, &file_size);
@@ -953,9 +931,8 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
   printf("file size = %d bytes, slot = %d, intf = 0x%x\n", file_size, slot_id, intf);
 
   //check the content of the image
-  if( !force && is_valid_bic_image(slot_id, comp, intf, fd, file_size) ) {
+  if ( !force && ( is_valid_bic_image(slot_id, comp, intf, fd, file_size) < 0) ) {
     printf("Invalid BIC file!\n");
-    ret = -1;
     goto exit;
   }
 
@@ -1066,7 +1043,7 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, in
 static int
 update_bic_bootloader_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force) {
   int fd = 0;
-  int ret = 0;
+  int ret = BIC_STATUS_FAILURE;
   int file_size = 0;
 
   fd = open_and_get_size(path, &file_size);
@@ -1078,8 +1055,7 @@ update_bic_bootloader_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path
   printf("file size = %d bytes, slot = %d, comp = 0x%x\n", file_size, slot_id, comp);
 
   //check the content of the image
-  ret = is_valid_bic_image(slot_id, comp, intf, fd, file_size);
-  if (ret < 0) {
+  if ( !force && (is_valid_bic_image(slot_id, comp, intf, fd, file_size) < 0) ) {
     printf("Invalid BIC bootloader file!\n");
     goto exit;
   }
@@ -1287,20 +1263,14 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
   }
+
+  // when fw update is ongoing, fscd fails to get/set the fan speed,
+  // As a result, we need to stop running it during the fw update process
+  // Or it may issue false alarm fan dead events
   if (bmc_location == NIC_BMC) {
-    switch (comp) {
-      case FW_BIOS:
-      case FW_BIOS_CAPSULE:
-      case FW_BIOS_RCVY_CAPSULE:
-        if (loc != NULL) {
-          stop_fscd_service = true;
-        }
-        break;
-      default:
-        stop_fscd_service = true;
-        break;
-    }
+    stop_fscd_service = true;
   }
+
   if (stop_fscd_service == true) {
     printf("Set fan mode to manual and set PWM to %d%%\n", FW_UPDATE_FAN_PWM);
     if (fby3_common_fscd_ctrl(FAN_MANUAL_MODE) < 0) {

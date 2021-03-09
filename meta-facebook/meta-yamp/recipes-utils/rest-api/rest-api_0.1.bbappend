@@ -28,6 +28,7 @@ SRC_URI += " \
     file://rest_peutil.py \
     file://rest_scdinfo.py \
     file://rest_fw_ver.py \
+    file://rest_server.py \
 "
 
 binfiles1 += " \
@@ -40,4 +41,5 @@ binfiles1 += " \
     rest_peutil.py \
     rest_scdinfo.py \
     rest_fw_ver.py \
+    rest_server.py \
 "

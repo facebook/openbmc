@@ -78,12 +78,106 @@ e1s_iocm_insert_event(int e1s_iocm_slot_id, uint8_t *present_status, uint8_t *gp
   }
 }
 
+static void
+fru_remove_event(int fru_id, uint8_t *e1s_iocm_present_status) {
+  int ret = 0;
+  uint8_t e1s_iocm_gpio_power_good_pin[E1S_IOCM_SLOT_NUM] = {GPIO_E1S_1_P3V3_PG_R, GPIO_E1S_2_P3V3_PG_R};
+
+  if (fru_id == FRU_SERVER) {
+    // AC off server
+    ret = pal_set_server_power(FRU_SERVER, SERVER_12V_OFF);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): Failed to AC off server\n", __func__);
+    }
+    
+  } else if (fru_id == FRU_SCC) {
+    // AC off SCC
+    ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_STBY_PWR_EN), GPIO_VALUE_LOW);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): Failed to AC off SCC\n", __func__);
+    }
+    
+  } else if (fru_id == FRU_E1S_IOCM) {
+    if (e1s_iocm_present_status == NULL) {
+      syslog(LOG_ERR, "%s(): Failed to deal with remove event because the parameter: *e1s_iocm_present_status is NULL\n", __func__);
+      return;
+    }
+    e1s_iocm_remove_event(T5_E1S0_T7_IOC_AVENGER, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
+    e1s_iocm_remove_event(T5_E1S1_T7_IOCM_VOLT, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
+  }
+}
+
+static void
+fru_insert_event(int fru_id, uint8_t *e1s_iocm_present_status) {
+  int ret = 0;
+  char power_policy_cfg[MAX_VALUE_LEN] = {0};
+  char last_power_status[MAX_VALUE_LEN] = {0};
+  uint8_t e1s_iocm_gpio_power_good_pin[E1S_IOCM_SLOT_NUM] = {GPIO_E1S_1_P3V3_PG_R, GPIO_E1S_2_P3V3_PG_R};
+  
+  memset(power_policy_cfg, 0, sizeof(power_policy_cfg));
+  memset(last_power_status, 0, sizeof(last_power_status));
+
+  if (fru_id == FRU_SERVER) {
+    // AC on server
+    ret = pal_set_server_power(FRU_SERVER, SERVER_12V_ON);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): Failed to AC on server\n", __func__);
+    }
+    
+    //power policy
+    ret = pal_get_key_value("server_por_cfg", power_policy_cfg);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s(): Failed to get power policy config\n", __func__);
+      return;
+    }
+    
+    if (strcmp(power_policy_cfg, "on") == 0) {
+      sleep(3);
+      ret = pal_set_server_power(FRU_SERVER, SERVER_POWER_ON);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s(): Failed to DC on server\n", __func__);
+        return;
+      }
+      
+    } else if (strcmp(power_policy_cfg, "lps") == 0){
+      ret = pal_get_last_pwr_state(FRU_SERVER, last_power_status);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s(): Failed to get last power status\n", __func__);
+        return;
+      }
+      
+      if (strcmp(power_policy_cfg, "on") == 0) {
+        sleep(3);
+        ret = pal_set_server_power(FRU_SERVER, SERVER_POWER_ON);
+        if (ret < 0) {
+          syslog(LOG_ERR, "%s(): Failed to DC on server\n", __func__);
+          return;
+        }
+      }
+    }
+    
+  } else if (fru_id == FRU_SCC) {
+    // AC on SCC
+    ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_STBY_PWR_EN), GPIO_VALUE_HIGH);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): Failed to AC on SCC\n", __func__);
+    }
+    
+  } else if (fru_id == FRU_E1S_IOCM) {
+    if (e1s_iocm_present_status == NULL) {
+      syslog(LOG_ERR, "%s(): Failed to deal with insert event because the parameter: *e1s_iocm_present_status is NULL\n", __func__);
+      return;
+    }
+    e1s_iocm_insert_event(T5_E1S0_T7_IOC_AVENGER, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
+    e1s_iocm_insert_event(T5_E1S1_T7_IOCM_VOLT, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
+  }
+}
+
 static void *
 fru_missing_monitor() {
   uint8_t fru_present_flag = 0, chassis_type = 0, uic_location_id = 0;
   uint8_t fru_present_status[FRU_CNT] = {FRU_PRESENT};
   uint8_t e1s_iocm_present_status[E1S_IOCM_SLOT_NUM] = {FRU_PRESENT};
-  uint8_t e1s_iocm_gpio_power_good_pin[E1S_IOCM_SLOT_NUM] = {GPIO_E1S_1_P3V3_PG_R, GPIO_E1S_2_P3V3_PG_R};
   char fru_name[MAX_FRU_NAME_STR] = {0};
   char uic_location = '?';
   int fru_id = 0, e1s_iocm_slot_id = 0;
@@ -105,11 +199,13 @@ fru_missing_monitor() {
             if ((fru_present_flag == FRU_PRESENT) && (fru_present_status[fru_id] == FRU_ABSENT)) {
               syslog(LOG_CRIT, "DEASSERT: %s missing\n", fru_name);
               fru_present_status[fru_id] = FRU_PRESENT;
+              fru_insert_event(fru_id, NULL);
           
             // fru remove
             } else if ((fru_present_flag == FRU_ABSENT) && (fru_present_status[fru_id] == FRU_PRESENT)) {
               syslog(LOG_CRIT, "ASSERT: %s missing\n", fru_name);
               fru_present_status[fru_id] = FRU_ABSENT;
+              fru_remove_event(fru_id, NULL);
             }
           } 
         }
@@ -128,14 +224,14 @@ fru_missing_monitor() {
               fru_present_status[fru_id] = FRU_PRESENT;
               e1s_iocm_present_status[T5_E1S0_T7_IOC_AVENGER] = FRU_PRESENT;
               e1s_iocm_present_status[T5_E1S1_T7_IOCM_VOLT] = FRU_PRESENT;
-              e1s_iocm_insert_event(T5_E1S0_T7_IOC_AVENGER, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
-              e1s_iocm_insert_event(T5_E1S1_T7_IOCM_VOLT, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
+              fru_insert_event(fru_id, e1s_iocm_present_status);
             }
           
           } else {
             if (fru_present_status[fru_id] == FRU_PRESENT) {
               syslog(LOG_CRIT, "ASSERT: iocm missing\n");
               fru_present_status[fru_id] = FRU_ABSENT;
+              fru_remove_event(fru_id, e1s_iocm_present_status);
               
               if (is_e1s_iocm_present(T5_E1S0_T7_IOC_AVENGER) == false) {
                 e1s_iocm_present_status[T5_E1S0_T7_IOC_AVENGER] = FRU_ABSENT;
@@ -144,9 +240,6 @@ fru_missing_monitor() {
               if (is_e1s_iocm_present(T5_E1S1_T7_IOCM_VOLT) == false) {
                 e1s_iocm_present_status[T5_E1S1_T7_IOCM_VOLT] = FRU_ABSENT;
               }
-
-              e1s_iocm_remove_event(T5_E1S0_T7_IOC_AVENGER, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
-              e1s_iocm_remove_event(T5_E1S1_T7_IOCM_VOLT, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
             }
           }
         
@@ -173,7 +266,7 @@ fru_missing_monitor() {
                 syslog(LOG_CRIT, "DEASSERT: chassis type unknown, e1.s %d or iocm missing\n", e1s_iocm_slot_id);
               }
               e1s_iocm_present_status[e1s_iocm_slot_id] = FRU_PRESENT;
-              e1s_iocm_insert_event(e1s_iocm_slot_id, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
+              fru_insert_event(fru_id, e1s_iocm_present_status);
             }
           
             if ((is_e1s_iocm_present(e1s_iocm_slot_id) == false) && (e1s_iocm_present_status[e1s_iocm_slot_id] == FRU_PRESENT)) {
@@ -184,7 +277,7 @@ fru_missing_monitor() {
               }
               e1s_iocm_present_status[e1s_iocm_slot_id] = FRU_ABSENT;
               fru_present_status[fru_id] = FRU_ABSENT;
-              e1s_iocm_remove_event(e1s_iocm_slot_id, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
+              fru_remove_event(fru_id, e1s_iocm_present_status);
             }
           }
             

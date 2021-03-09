@@ -326,23 +326,68 @@ int
 pal_get_server_12v_power(uint8_t *status) {
   int ret = 0;
   uint8_t status_12v = 0;
+  int i2cfd = 0, retry = 0;
+  uint8_t server_present_status = 0;
+  i2c_master_rw_command command;
   
   if (status == NULL) {
     syslog(LOG_WARNING, "%s() NULL pointer: *status", __func__);
     return -1;
   }
-
-  ret = fbgc_common_server_stby_pwr_sts(&status_12v);
+  
+  memset(&command, 0, sizeof(command));
+  command.offset = 0x00;
+  
+  ret = pal_is_fru_prsnt(FRU_SERVER, &server_present_status);
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s: fbgc_common_server_stby_pwr_sts failed\n", __func__);
+    syslog(LOG_WARNING, "%s(): fail to get server present status\n", __func__);
     return ret;
   }
+
+  if (server_present_status == FRU_PRESENT) {
+    ret = fbgc_common_server_stby_pwr_sts(&status_12v);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s(): fail to get server 12V status\n", __func__);
+      return ret;
+    }
   
-  if (status_12v == STAT_AC_ON) {
-    *status = SERVER_12V_ON;
-  } else {
-    *status = SERVER_12V_OFF;
-  }
+    if (status_12v == STAT_AC_ON) {
+      *status = SERVER_12V_ON;
+    } else {
+      *status = SERVER_12V_OFF;
+    }
+  
+  // When server not present, get power status from UIC FPGA register
+  } else { 
+    i2cfd = i2c_cdev_slave_open(I2C_UIC_FPGA_BUS, UIC_FPGA_SLAVE_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if (i2cfd < 0) {
+      syslog(LOG_WARNING, "%s() fail to open device: I2C bus: %d", __func__, I2C_UIC_FPGA_BUS);
+      return i2cfd;
+    }
+
+    while (retry < MAX_RETRY) {
+      ret = i2c_rdwr_msg_transfer(i2cfd, UIC_FPGA_SLAVE_ADDR, (uint8_t *)&command.offset, sizeof(command.offset), &status_12v, sizeof(status_12v));
+      if (ret < 0) {
+        retry++;
+        msleep(100);
+      } else {
+        break;
+      }
+    }
+
+    if (retry == MAX_RETRY) {
+      syslog(LOG_WARNING, "%s() fail to read UIC FPGA offset: 0x%02X via i2c", __func__, command.offset);
+      close(i2cfd);
+      return ret;
+    }
+
+    if (status_12v == STAT_AC_ON) {
+      *status = SERVER_12V_ON;
+    } else {
+      *status = SERVER_12V_OFF;
+    }
+    close(i2cfd);
+  }  
 
   return ret;
 }
@@ -371,9 +416,10 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
   if (ret < 0) {
     // if bic not responding, we reset status to SERVER_12V_ON
     *status = SERVER_12V_ON;
+    syslog(LOG_WARNING, "%s(): BIC no response, server DC power status is unknown\n", __func__);
   }
 
-  return ret;
+  return 0;
 }
 
 // Host DC Off, Host DC On, or Host Reset the server

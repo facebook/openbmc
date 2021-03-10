@@ -7,5 +7,5 @@ optional arguments:
   --boot_mode {0,1}     Set BIOS boot mode {0: 'Legacy', 1: 'UEFI'}
   --boot_order order# order# order# order# order#
                         Set BIOS boot order {0: 'USB Device', 1: 'IPv4
-                        Network', 2: 'SATA HDD', 3: 'SATA-CDROM', 4: 'Other
-                        Removable Device', 9: 'IPv6 Network', 255: 'Reserved'}
+                        Network', 9: 'IPv6 Network', 2: 'SATA HDD', 3: 'SATA-
+                        CDROM', 4: 'Other Removable Device', 255: 'Reserved'}

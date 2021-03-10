@@ -2682,3 +2682,13 @@ bool __attribute__((weak))
 pal_is_aggregate_snr_valid(uint8_t snr_num) {
   return true;
 }
+
+int __attribute__((weak))
+pal_set_ioc_fw_recovery(uint8_t *ioc_recovery_setting, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  return CC_NOT_SUPP_IN_CURR_STATE;
+}
+
+int __attribute__((weak))
+pal_get_ioc_fw_recovery(uint8_t ioc_recovery_component, uint8_t *res_data, uint8_t *res_len) {
+  return CC_NOT_SUPP_IN_CURR_STATE;
+}

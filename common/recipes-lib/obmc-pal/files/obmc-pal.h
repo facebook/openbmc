@@ -554,6 +554,8 @@ int pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *
 int pal_get_fru_capability(uint8_t fru, unsigned int *caps);
 int pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps);
 bool pal_is_aggregate_snr_valid(uint8_t snr_num);
+int pal_set_ioc_fw_recovery(uint8_t *ioc_recovery_setting, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_get_ioc_fw_recovery(uint8_t ioc_recovery_component, uint8_t *res_data, uint8_t *res_len);
 
 #ifdef __cplusplus
 }

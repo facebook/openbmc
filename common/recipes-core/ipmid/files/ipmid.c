@@ -3562,6 +3562,40 @@ oem_control_usb_cdc (unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_set_ioc_fw_recovery (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  *res_len = 0;
+
+  if (length_check(2, req_len, response, res_len) != 0) {
+    return;
+  }
+
+  // cmd_len = req_len - 3 (payload_id, cmd and netfn)
+  res->cc = pal_set_ioc_fw_recovery(req->data, (req_len - IPMI_MN_REQ_HDR_SIZE), res->data, res_len);
+}
+
+static void
+oem_get_ioc_fw_recovery (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  uint8_t component = 0;
+  *res_len = 0;
+
+  if (length_check(1, req_len, response, res_len) != 0) {
+    return;
+  }
+
+  component = req->data[0];
+
+  res->cc = pal_get_ioc_fw_recovery(component, res->data, res_len);
+}
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
      unsigned char *response, unsigned char *res_len)
 {
@@ -3734,6 +3768,12 @@ ipmi_handle_oem_storage (unsigned char *request, unsigned char req_len,
   {
     case CMD_OEM_STOR_ADD_STRING_SEL:
       oem_stor_add_string_sel (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_IOC_FW_RECOVERY:
+      oem_set_ioc_fw_recovery (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_IOC_FW_RECOVERY:
+      oem_get_ioc_fw_recovery (request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

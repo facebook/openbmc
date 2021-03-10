@@ -10,11 +10,11 @@
 typedef struct {
   char mfg_name[10];  // manufacture name
   uint32_t mfg_id;    // manufacture id
-  std::string (*get_nic_fw)(uint8_t *);
+  std::string (*get_nic_fw)(const uint8_t *);
 } nic_info_st;
 
 static std::string
-get_mlx_fw_version(uint8_t *buf) {
+get_mlx_fw_version(const uint8_t *buf) {
   int ver_index_based = 20;
   int major = 0;
   int minor = 0;
@@ -30,7 +30,7 @@ get_mlx_fw_version(uint8_t *buf) {
 }
 
 static std::string
-get_bcm_fw_version(uint8_t *buf) {
+get_bcm_fw_version(const uint8_t *buf) {
   int ver_start_index = 8;  // the index is defined in the NC-SI spec
   int i = 0;
   const int ver_end_index = 19;
@@ -72,12 +72,12 @@ int NicComponent::print_version() {
   uint32_t nic_mfg_id = 0;
   bool is_unknown_mfg_id = true;
   int current_nic;
-  std::string buf;
+  std::string _buf;
 
-  if (get_key(_ver_key, buf) != FW_STATUS_SUCCESS) {
+  if (get_key(_ver_key, _buf) != FW_STATUS_SUCCESS) {
     return FW_STATUS_FAILURE;
   }
-
+  const uint8_t *buf = (uint8_t *)_buf.c_str();
   // get the manufcture id
   nic_mfg_id = (buf[35]<<24) | (buf[34]<<16) | (buf[33]<<8) | buf[32];
 
@@ -85,7 +85,7 @@ int NicComponent::print_version() {
     // check the nic on the system is supported or not
     if (support_nic_list[current_nic].mfg_id == nic_mfg_id) {
       vendor = support_nic_list[current_nic].mfg_name;
-      version = support_nic_list[current_nic].get_nic_fw((uint8_t *)buf.data());
+      version = support_nic_list[current_nic].get_nic_fw(buf);
       is_unknown_mfg_id = false;
       break;
     }

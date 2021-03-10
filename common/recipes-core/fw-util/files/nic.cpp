@@ -52,6 +52,19 @@ static const nic_info_st support_nic_list[] = {
 };
 static int nic_list_size = sizeof(support_nic_list) / sizeof(nic_info_st);
 
+int NicComponent::get_key(const std::string& key, std::string& buf)
+{
+  try {
+    buf = kv::get(key, kv::region::temp);
+    if (buf.size() < NCSI_MIN_DATA_PAYLOAD) {
+      return FW_STATUS_FAILURE;
+    }
+  } catch(std::exception& e) {
+    return FW_STATUS_FAILURE;
+  }
+  return FW_STATUS_SUCCESS;
+}
+
 int NicComponent::print_version() {
   std::string display_nic_str{};
   std::string vendor{};
@@ -61,12 +74,7 @@ int NicComponent::print_version() {
   int current_nic;
   std::string buf;
 
-  try {
-    buf = kv::get(_ver_key, kv::region::temp);
-    if (buf.size() < NCSI_MIN_DATA_PAYLOAD) {
-      return FW_STATUS_FAILURE;
-    }
-  } catch(std::exception& e) {
+  if (get_key(_ver_key, buf) != FW_STATUS_SUCCESS) {
     return FW_STATUS_FAILURE;
   }
 
@@ -92,7 +100,7 @@ int NicComponent::print_version() {
   else {
     display_nic_str = vendor + " NIC firmware version: " + version;
   }
-  std::cout << display_nic_str << std::endl;
+  sys().output << display_nic_str << std::endl;
 
   return FW_STATUS_SUCCESS;
 }
@@ -106,7 +114,7 @@ int NicComponent::upgrade_ncsi_util(const std::string& img, int channel)
   }
   // Double quote the image to support paths with space.
   cmd += " -p \"" + img + "\"";
-  return System().runcmd(cmd);
+  return sys().runcmd(cmd);
 }
 
 int NicComponent::update(std::string image)

@@ -11,6 +11,7 @@ class NicComponent : public Component {
   protected:
     std::string _ver_key = NIC_FW_VER_KEY;
     int upgrade_ncsi_util(const std::string& img, int channel=-1);
+    virtual int get_key(const std::string& key, std::string& buf);
   public:
     NicComponent(std::string fru, std::string comp)
       : Component(fru, comp) {}

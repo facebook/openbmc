@@ -464,7 +464,7 @@ int yamp_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
       default:
           /* unregonize field type. Bail out and print warning log*/
           OBMC_WARN("unrecognize fied type of 0x%02x\n", field_type);
-          goto out;
+          break;
     }
   }
 

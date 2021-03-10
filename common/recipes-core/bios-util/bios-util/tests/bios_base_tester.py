@@ -8,7 +8,7 @@ import time
 import traceback
 import unittest
 from contextlib import contextmanager
-from StringIO import StringIO
+from io import StringIO
 
 from bios_board import check_bios_util
 

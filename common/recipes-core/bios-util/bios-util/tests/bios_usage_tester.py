@@ -26,6 +26,7 @@ def test_check_biosutil_usage(self, argv, test_result_file):
 
     usage_expected_result = open(test_result_file, "r").read().strip()
     # print(usage_expected_result)  # Reserved for debugging
+    self.maxDiff = 944
 
     self.assertEqual(output, usage_expected_result)
 

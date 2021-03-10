@@ -1,5 +1,7 @@
 #ifndef _SYSTEM_INTF_H_
 #define _SYSTEM_INTF_H_
+#include <fstream>
+#include <iostream>
 
 enum {
   VBOOT_NO_SUPPORT,

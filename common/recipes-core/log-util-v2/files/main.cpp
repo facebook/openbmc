@@ -88,6 +88,7 @@ int main(int argc, char* argv[]) {
       if (guard.error()) {
         throw std::runtime_error("Could not get lock on log");
       }
+      pal_log_clear((char*)fru.c_str());
       util.clear(action_fru_set);
     }
   } catch (std::exception& e) {

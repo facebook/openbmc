@@ -80,6 +80,21 @@ extern "C" {
   FW_REV_PVT = 3
   FW_REV_MP  = 4
 */
+
+// on-chip Flash IP
+#define ON_CHIP_FLASH_IP_CSR_BASE        (0x00200020)
+#define ON_CHIP_FLASH_IP_CSR_STATUS_REG  (ON_CHIP_FLASH_IP_CSR_BASE + 0x0)
+#define ON_CHIP_FLASH_IP_CSR_CTRL_REG    (ON_CHIP_FLASH_IP_CSR_BASE + 0x4)
+#define ON_CHIP_FLASH_USER_VER           (0x00200028)
+#define ON_CHIP_FLASH_IP_DATA_REG        (0x00000000)
+
+// Dual-boot IP
+#define DUAL_BOOT_IP_BASE                (0x00200000)
+#define CFM1_START_ADDR                  (0x00064000)
+#define CFM1_END_ADDR                    (0x000BFFFF)
+#define CFM2_START_ADDR                  (0x00008000)
+#define CFM2_END_ADDR                    (0x00063FFF)
+
 extern const char *board_stage[];
 
 typedef struct

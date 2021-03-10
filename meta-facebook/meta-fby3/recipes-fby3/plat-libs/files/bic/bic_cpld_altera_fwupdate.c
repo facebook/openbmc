@@ -145,12 +145,6 @@ get_register_via_bypass(uint8_t slot_id, int reg, int *val, uint8_t intf) {
   return ret;
 }
 
-#define ON_CHIP_FLASH_IP_DATA_REG         0x00000000
-#define ON_CHIP_FLASH_IP_CSR_STATUS_REG   0x00200020
-#define ON_CHIP_FLASH_IP_CSR_CTRL_REG     0x00200024
-#define ON_CHIP_FLASH_USER_VER            0x00200028
-#define DUAL_BOOT_IP_BASE                 0x00200000
-
 // status register
 #define BUSY_IDLE      0x00
 #define BUSY_ERASE     0x01

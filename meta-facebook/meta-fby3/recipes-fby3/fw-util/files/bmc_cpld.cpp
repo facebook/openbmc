@@ -11,7 +11,6 @@
 #include <openbmc/obmc-i2c.h>
 #include "server.h"
 #include "bmc_cpld.h"
-#include <facebook/bic.h>
 #include <facebook/fby3_common.h>
 
 using namespace std;

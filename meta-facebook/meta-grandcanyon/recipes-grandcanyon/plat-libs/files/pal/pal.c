@@ -120,6 +120,8 @@ struct pal_key_cfg {
   {"system_identify_led_interval", "default", NULL},
   {"pwr_server_last_state", "on", NULL},
   {"system_info", "0", NULL},
+  {"scc_ioc_fw_recovery", "0", NULL},
+  {"iocm_ioc_fw_recovery", "0", NULL},
   /* Add more Keys here */
   {NULL, NULL, NULL} /* This is the last key of the list */
 };
@@ -1692,4 +1694,83 @@ pal_get_num_slots(uint8_t *num) {
   *num = NUM_SERVER_FRU;
 
   return 0;
+}
+
+int
+pal_set_ioc_fw_recovery(uint8_t *ioc_recovery_setting, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+
+  ioc_fw_recovery_req recovery_req = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+
+  memset(key, 0, sizeof(key));
+  memset(str, 0, sizeof(str));
+
+  if ((ioc_recovery_setting == NULL) || (res_data == NULL) || (res_len == NULL)) {
+    syslog(LOG_ERR, "%s: Failed to set IOC firmware recovery status because the parameters are NULL.", __func__);
+    return CC_INVALID_PARAM;
+  }
+
+  if (req_len != sizeof(recovery_req)) {
+    syslog(LOG_ERR, "%s: Failed to set IOC firmware recovery status because the request length: %d is wrong, expected length: %d.", __func__, req_len, sizeof(recovery_req));
+    return CC_INVALID_PARAM;
+  }
+
+  memset(&recovery_req, 0, sizeof(recovery_req));
+  memcpy(&recovery_req, ioc_recovery_setting, sizeof(recovery_req));
+
+  if (recovery_req.component == IOC_RECOVERY_SCC) {
+    snprintf(key, sizeof(key), "scc_ioc_fw_recovery");
+  } else if (recovery_req.component == IOC_RECOVERY_IOCM) {
+    snprintf(key, sizeof(key), "iocm_ioc_fw_recovery");
+  } else {
+    syslog(LOG_ERR, "%s: Failed to set IOC firmware recovery status because wrong component.", __func__);
+    return CC_INVALID_PARAM;
+  }
+
+  if ((recovery_req.status == DISABLE_IOC_RECOVERY) || (recovery_req.status == ENABLE_IOC_RECOVERY)) {
+    snprintf(str, sizeof(str), "%x", recovery_req.status);
+  } else {
+    syslog(LOG_ERR, "%s: Failed to set IOC firmware recovery status because wrong recovery status.", __func__);
+    return CC_INVALID_PARAM;
+  }
+
+  if (pal_set_key_value(key, str) < 0) {
+    syslog(LOG_ERR, "%s: Failed to set IOC firmware recovery status because failed to set key value of %s.", __func__, key);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  return CC_SUCCESS;
+}
+
+int
+pal_get_ioc_fw_recovery(uint8_t ioc_recovery_component, uint8_t *res_data, uint8_t *res_len) {
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+
+  memset(key, 0, sizeof(key));
+  memset(str, 0, sizeof(str));
+
+  if ((res_data == NULL) || (res_len == NULL)) {
+    syslog(LOG_ERR, "%s: Failed to get IOC firmware recovery status because the parameters are NULL.", __func__);
+    return CC_INVALID_PARAM;
+  }
+
+  if (ioc_recovery_component == IOC_RECOVERY_SCC) {
+    snprintf(key, sizeof(key), "scc_ioc_fw_recovery");
+  } else if (ioc_recovery_component == IOC_RECOVERY_IOCM) {
+    snprintf(key, sizeof(key), "iocm_ioc_fw_recovery");
+  } else {
+    return CC_INVALID_PARAM;
+  }
+
+  if (pal_get_key_value(key, str) != 0) {
+    syslog(LOG_ERR, "%s: Failed to get IOC firmware recovery status because failed to get key value of %s.", __func__, key);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  *res_len = 1;
+  res_data[0] = strtol(str, NULL, 16);
+
+  return CC_SUCCESS;
 }

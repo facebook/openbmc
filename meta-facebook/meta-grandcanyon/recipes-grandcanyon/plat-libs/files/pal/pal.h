@@ -178,6 +178,11 @@ typedef struct {
   uint8_t action;
 } bypass_network_header;
 
+typedef struct {
+  uint8_t component;
+  uint8_t status;
+} ioc_fw_recovery_req;
+
 enum {
   UIC_SIDEA          = 1,
   UIC_SIDEB          = 2,
@@ -202,6 +207,16 @@ enum {
 enum {
   CHASSIS_IN          = 0,
   CHASSIS_OUT         = 1,
+};
+
+enum IOC_RECOVERY_COMPONENT {
+  IOC_RECOVERY_SCC  = 0x0,
+  IOC_RECOVERY_IOCM = 0x1,
+};
+
+enum IOC_RECOVERY_STATUS {
+  DISABLE_IOC_RECOVERY = 0x0,
+  ENABLE_IOC_RECOVERY  = 0x1,
 };
 
 int pal_set_id_led(uint8_t slot, enum LED_HIGH_ACTIVE status);

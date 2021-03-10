@@ -18,9 +18,6 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  BIC_ok: 
-                    type: integer
-                    format: int32
                   status: 
                     type: string
               Resources: 

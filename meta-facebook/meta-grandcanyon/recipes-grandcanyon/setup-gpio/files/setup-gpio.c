@@ -31,6 +31,9 @@
 #define REG_SCU630	0x630
 #define REG_SCU634	0x634
 
+#define LPC_BASE	0x1E789000
+#define REG_HICR9	0x098
+
 int setup_gpio_with_value(const char *chip_name, const char *shadow_name, const char *pin_name, int offset, gpio_direction_t direction, gpio_value_t value)
 {
 	int ret = 0;
@@ -121,6 +124,11 @@ main(int argc, char **argv) {
 	phymem_get_dword(SCU_BASE, REG_SCU634, &reg_value);
 	reg_value = reg_value | 0x00004000;
 	phymem_set_dword(SCU_BASE, REG_SCU634, reg_value);
+
+	// Route UART6 to IO6, set bit 8~11 to b'1010
+	phymem_get_dword(LPC_BASE, REG_HICR9, &reg_value);
+	reg_value = reg_value | 0x00000A00;
+	phymem_set_dword(LPC_BASE, REG_HICR9, reg_value);
 
 	printf("done.\n");
 

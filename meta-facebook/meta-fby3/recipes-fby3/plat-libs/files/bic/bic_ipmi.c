@@ -1007,31 +1007,39 @@ bic_is_m2_exp_prsnt(uint8_t slot_id) {
   int val = 0;
 
   snprintf(key, sizeof(key), KV_SLOT_IS_M2_EXP_PRESENT, slot_id);
+  
+  if (kv_get(key, tmp_str, NULL, 0)) {
+    // get form bic
+    tbuf[0] = 0x05; //bus id
+    tbuf[1] = 0x42; //slave addr
+    tbuf[2] = 0x01; //read 1 byte
+    tbuf[3] = 0x0D; //register offset
 
-  tbuf[0] = 0x05; //bus id
-  tbuf[1] = 0x42; //slave addr
-  tbuf[2] = 0x01; //read 1 byte
-  tbuf[3] = 0x0D; //register offset
+    ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    present = rbuf[0] & 0xC;
 
-  present = rbuf[0] & 0xC;
-
-  if ( ret < 0 ) {
-    val = -1;
-  } else {
-    if ( present == 0) {
-      val = 3; //1OU+2OU present
-    } else if ( present == 8) {
-      val = 1; //1OU present
-    } else if ( present == 4) {
-      val = 2; //2OU present
+    if ( ret < 0 ) {
+      val = -1;
+    } else {
+      if ( present == 0) {
+        val = 3; //1OU+2OU present
+      } else if ( present == 8) {
+        val = 1; //1OU present
+      } else if ( present == 4) {
+        val = 2; //2OU present
+      }
     }
-  }
 
-  snprintf(tmp_str, sizeof(tmp_str), "%d", val);
-  kv_set(key, tmp_str, 0, 0);
-  return val;
+    snprintf(tmp_str, sizeof(tmp_str), "%d", val);
+    kv_set(key, tmp_str, 0, 0);
+    return val;
+
+  } else {
+    // get from cache
+    val = atoi(tmp_str);
+    return val;
+  }
 }
 
 int

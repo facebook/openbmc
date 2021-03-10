@@ -47,6 +47,7 @@ SRC_URI =+ "file://Makefile \
 
 SRC_URI += "file://tests/bmc-test.cpp \
             file://tests/fw-util-test.cpp \
+            file://tests/system_mock.h \
             "
 
 S = "${WORKDIR}"

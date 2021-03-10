@@ -1,4 +1,5 @@
 #include "bmc.h"
+#include "system_mock.h"
 #include <string>
 #include <fcntl.h>
 #include <cstdio>
@@ -8,46 +9,6 @@
 
 using namespace std;
 using namespace testing;
-
-string file_contents(string name)
-{
-  ifstream in(name);
-  string ret;
-  in >> ret;
-  in.close();
-  return ret;
-}
-
-class SystemMock : public System {
-  public:
-  SystemMock() : System() {}
-  SystemMock(std::ostream &out, std::ostream &err): System(out, err) {}
-
-  MOCK_METHOD1(runcmd, int(const string &cmd));
-  MOCK_METHOD0(vboot_hardware_enforce, bool());
-  MOCK_METHOD2(get_mtd_name, bool(const string name, string &dev));
-  MOCK_METHOD0(name, string());
-  MOCK_METHOD0(version, string());
-  MOCK_METHOD0(partition_conf, string&());
-  MOCK_METHOD1(get_fru_id, uint8_t(string &name));
-  MOCK_METHOD2(set_update_ongoing, void(uint8_t fruid, int timeo));
-  MOCK_METHOD1(lock_file, string(string name));
-
-  int copy_file(string cmd) {
-    size_t pos = cmd.find("flashcp -v ");
-    if (pos == string::npos) {
-      return -1;
-    }
-    string params = cmd.substr(pos + strlen("flashcp -v "));
-    pos = params.find(" ");
-    string filesrc = params.substr(0, pos);
-    string filedst = params.substr(pos + 1);
-    ofstream dst(filedst);
-    dst << file_contents(filesrc);
-    dst.close();
-    return 0;
-  }
-};
 
 class BmcComponentBasicMock : public BmcComponent {
   public:
@@ -88,7 +49,7 @@ class TmpFile {
     }
   }
   string read() {
-    return file_contents(name);
+    return SystemMock::file_contents(name);
   }
   ~TmpFile() {
     remove(name.c_str());

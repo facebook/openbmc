@@ -92,7 +92,7 @@ int NicComponent::print_version() {
   }
 
   if (is_unknown_mfg_id) {
-    char mfg_id[5] = {0};
+    char mfg_id[9] = {0};
     sprintf(mfg_id, "%04x", nic_mfg_id);
     display_nic_str = "NIC firmware version: NA (Unknown Manufacture ID: 0x" +
       std::string(mfg_id) + ")";

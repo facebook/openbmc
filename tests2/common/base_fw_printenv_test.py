@@ -36,4 +36,4 @@ class BaseFwPrintEnvTest(TestCase):
         self.run_fw_printenv_test("/sbin/fw_printenv")
 
     def test_fw_printenv_noheader_status(self):
-        self.run_fw_printenv_test("/sbin/fw_printenv -n")
+        self.run_fw_printenv_test("/sbin/fw_printenv -n bootargs")

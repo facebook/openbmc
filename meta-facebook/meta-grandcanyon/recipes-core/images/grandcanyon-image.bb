@@ -50,4 +50,5 @@ IMAGE_INSTALL += " \
   ipmi-util \
   gpiod \
   snapshot-util \
+  enclosure-util \
   "

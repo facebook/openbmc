@@ -346,8 +346,10 @@ fru_missing_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   if (strcmp(cfg->shadow, "NIC_PRSNTB3_N") == 0) {
     if (curr == GPIO_VALUE_HIGH) {
       syslog(LOG_CRIT, "ASSERT: nic missing");
+      pal_set_error_code(ERR_CODE_NIC_MISSING, ERR_CODE_ENABLE);
     } else if (curr == GPIO_VALUE_LOW) {
       syslog(LOG_CRIT, "DEASSERT: nic missing");
+      pal_set_error_code(ERR_CODE_NIC_MISSING, ERR_CODE_DISABLE);
     }
     
     ret = pal_get_server_power(FRU_SERVER, &server_power_status);
@@ -388,6 +390,7 @@ fru_missing_init(gpiopoll_pin_t *gp, gpio_value_t value) {
   if (strcmp(cfg->shadow, "NIC_PRSNTB3_N") == 0) {
     if (value == GPIO_VALUE_HIGH) {
       syslog(LOG_CRIT, "ASSERT: nic missing");
+      pal_set_error_code(ERR_CODE_NIC_MISSING, ERR_CODE_ENABLE);
       
       ret = pal_get_server_power(FRU_SERVER, &server_power_status);
       if (ret < 0) {

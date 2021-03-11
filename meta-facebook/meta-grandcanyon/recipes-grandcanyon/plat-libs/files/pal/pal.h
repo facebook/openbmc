@@ -71,6 +71,42 @@ extern "C" {
 
 #define MAX_NUM_OF_BOARD_REV_ID_GPIO     3
 
+#define MAX_NUM_ERR_CODES                    256
+#define MAX_NUM_EXP_ERR_CODES                100
+#define MAX_NUM_ERR_CODES_ARRAY              32
+#define MAX_NUM_EXP_ERR_CODES_ARRAY          13
+#define BMC_ERR_CODE_START_NUM               0xCE
+#define ERR_CODE_BIN                         "/tmp/error_code.bin"
+
+#define ERR_CODE_ENABLE                  1
+#define ERR_CODE_DISABLE                 0
+
+#define ERR_CODE_CPU_UTILIZA             0xCE
+#define ERR_CODE_MEM_UTILIZA             0xCF
+#define ERR_CODE_ECC_RECOVERABLE         0xE0
+#define ERR_CODE_ECC_UNRECOVERABLE       0xE1
+
+// For FRUs missing error code
+#define ERR_CODE_SERVER_MISSING          0xE2
+#define ERR_CODE_SCC_MISSING             0xE3
+#define ERR_CODE_NIC_MISSING             0xE4
+#define ERR_CODE_E1S_MISSING             0xE5
+#define ERR_CODE_IOCM_MISSING            0xE6
+
+// For I2C bus crash error code
+#define MAX_NUM_I2C_BUS                  16
+#define ERR_CODE_I2C_CRASH_BASE          0xE7
+
+// For BMC health error code
+#define ERR_CODE_SERVER_HEALTH           0xF7
+#define ERR_CODE_UIC_HEALTH              0xF8
+#define ERR_CODE_DPB_HEALTH              0xF9
+#define ERR_CODE_SCC_HEALTH              0xFA
+#define ERR_CODE_NIC_HEALTH              0xFB
+#define ERR_CODE_BMC_REMOTE_HB_HEALTH    0xFC
+#define ERR_CODE_SCC_LOCAL_HB_HEALTH     0xFD
+#define ERR_CODE_SCC_REMOTE_HB_HEALTH    0xFE
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,
@@ -240,6 +276,14 @@ int pal_post_display(uint8_t status);
 int pal_get_current_led_post_code(uint8_t *post_code);
 int pal_get_80port_record(uint8_t slot_id, uint8_t *res_data, size_t max_len, size_t *res_len);
 int pal_get_num_slots(uint8_t *num);
+int pal_write_error_code_file(unsigned char error_code_update, uint8_t error_code_status);
+int pal_read_error_code_file(uint8_t *error_code_array, uint8_t error_code_array_len);
+int pal_get_error_code(uint8_t *data, uint8_t* error_count);
+void pal_set_error_code(unsigned char error_num, uint8_t error_code_status);
+int pal_bmc_err_enable(const char *error_item);
+int pal_bmc_err_disable(const char *error_item);
+void pal_i2c_crash_assert_handle(int i2c_bus_num);
+void pal_i2c_crash_deassert_handle(int i2c_bus_num);
 
 #ifdef __cplusplus
 } // extern "C"

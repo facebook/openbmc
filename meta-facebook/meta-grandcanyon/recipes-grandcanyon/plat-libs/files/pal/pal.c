@@ -19,6 +19,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <unistd.h>
 #include <stdint.h>
@@ -32,6 +33,7 @@
 #include <sys/time.h>
 #include <string.h>
 #include <pthread.h>
+#include <math.h>
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/libgpio.h>
 #include <facebook/fbgc_gpio.h>
@@ -1773,4 +1775,249 @@ pal_get_ioc_fw_recovery(uint8_t ioc_recovery_component, uint8_t *res_data, uint8
   res_data[0] = strtol(str, NULL, 16);
 
   return CC_SUCCESS;
+}
+
+int
+pal_read_error_code_file(uint8_t *error_code_array, uint8_t error_code_array_len) {
+  FILE *err_file = NULL;
+  int i = 0, ret = 0;
+  int err_tmp = 0;
+  
+  if (error_code_array == NULL) {
+    syslog(LOG_WARNING, "%s(): fail to read error code because NULL parameter: *error_code_byte", __func__);
+    return -1;
+  }
+  
+  // if no file, create file
+  if (access(ERR_CODE_BIN, F_OK) == -1) {
+    err_file = fopen(ERR_CODE_BIN, "w");
+    if (err_file == NULL) {
+      syslog(LOG_WARNING, "%s: fail to open %s file because %s ", __func__, ERR_CODE_BIN, strerror(errno));
+      return -1;
+    }
+    
+    ret = pal_flock_retry(fileno(err_file));
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: fail to flock %s file because %s ", __func__, ERR_CODE_BIN, strerror(errno));
+      fclose(err_file);
+      return -1;
+    }
+
+    memset(error_code_array, 0, error_code_array_len);
+    for (i = 0; i < error_code_array_len; i++) {
+      fprintf(err_file, "%X ", error_code_array[i]);
+    }
+    fprintf(err_file, "\n");
+    
+    pal_unflock_retry(fileno(err_file));
+    fclose(err_file);
+    return 0;
+  }
+
+  err_file = fopen(ERR_CODE_BIN, "r");
+  if (err_file == NULL) {
+    syslog(LOG_WARNING, "%s: fail to open %s file because %s ", __func__, ERR_CODE_BIN, strerror(errno));
+    return -1;
+  }
+
+  for (i = 0; (fscanf(err_file, "%X", &err_tmp) != EOF) && (i < error_code_array_len); i++) {
+    error_code_array[i] = (uint8_t) err_tmp;
+  }
+  
+  fclose(err_file);
+  return 0;
+}
+
+int
+pal_write_error_code_file(unsigned char error_code_update, uint8_t error_code_status) {
+  FILE *err_file = NULL;
+  int i = 0, ret = 0;
+  int byte_site = 0 , bit_site = 0;
+  uint8_t error_code_array[MAX_NUM_ERR_CODES_ARRAY] = {0};
+  
+  memset(error_code_array, 0, sizeof(error_code_array));
+  
+  ret = pal_read_error_code_file(error_code_array, sizeof(error_code_array));
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): fail to write error code 0x%X because read %s error", __func__, error_code_update, ERR_CODE_BIN);
+    return ret;
+  }
+
+  err_file = fopen(ERR_CODE_BIN, "r+");
+  
+  ret = pal_flock_retry(fileno(err_file));
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: fail to flock %s file because %s ", __func__, ERR_CODE_BIN, strerror(errno));
+    fclose(err_file);
+    return ret;
+  }
+  
+  byte_site = error_code_update / 8;
+  bit_site = error_code_update % 8;
+
+  if (error_code_status == ERR_CODE_ENABLE) {
+    error_code_array[byte_site] = SETBIT(error_code_array[byte_site], bit_site);
+  } else {
+    error_code_array[byte_site] = CLEARBIT(error_code_array[byte_site], bit_site);
+  }
+
+  for (i = 0; i < sizeof(error_code_array); i++) {
+    fprintf(err_file, "%X ", error_code_array[i]);
+  }
+  fprintf(err_file, "\n");
+  
+  pal_unflock_retry(fileno(err_file));
+  fclose(err_file);
+  return 0;
+}
+
+int
+pal_get_error_code(uint8_t *data, uint8_t* error_count) {
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0x00};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
+  uint8_t rlen = 0 , tlen = 0;
+  uint8_t total_error_array[MAX_NUM_ERR_CODES_ARRAY] = {0};
+  uint8_t exp_error_array[MAX_NUM_EXP_ERR_CODES_ARRAY] = {0};
+  int ret = 0, i = 0, j = 0;
+  int tmp_err_count = 0;
+  
+  if (error_count == NULL) {
+    printf("%s: fail to get error code because NULL parameter: *error_count", __func__);
+    return -1;
+  }
+  
+  if (data == NULL) {
+    printf("%s: fail to get error code because NULL parameter: *data", __func__);
+    return -1;
+  }
+  
+  memset(tbuf, 0x00, sizeof(tbuf));
+  memset(rbuf, 0x00, sizeof(rbuf));
+  memset(exp_error_array, 0, sizeof(exp_error_array));
+  memset(total_error_array, 0, sizeof(total_error_array));
+  
+  // get expander error code
+  ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_ERROR_CODE, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    printf("enclosure-util: failed to get expander error code\n");
+    printf("NetFn: 0x%2X Code: 0x%02X was error\n", NETFN_OEM_REQ, CMD_OEM_EXP_ERROR_CODE);
+    // when Epander fail, fill all data to 0
+    memset(exp_error_array, 0, sizeof(exp_error_array)); 
+  } else {
+    memcpy(exp_error_array, rbuf, MIN(rlen, sizeof(exp_error_array)));
+  }
+  
+  // error code 0 is "no Error", ignore
+  exp_error_array[0] = CLEARBIT(exp_error_array[0], 0);
+  
+  // get bmc error code
+  ret = pal_read_error_code_file(total_error_array, sizeof(total_error_array));
+  if (ret < 0) {
+    printf("enclosure-util: failed to get bmc error code\n");
+    memset(total_error_array, 0, sizeof(total_error_array));
+  }
+
+  // Expander Error Code 0~99; BMC Error Code 0x64(100)~0xFF(255)
+  // copy expander 0~96 (byte 0~12)
+  memcpy(total_error_array, exp_error_array, sizeof(exp_error_array) - 1);
+  // copy expander 97~100 (byte 12 bit 0~3)
+  total_error_array[sizeof(exp_error_array) - 1] 
+    = ((total_error_array[sizeof(exp_error_array) - 1] & 0xF0) 
+     + (exp_error_array[sizeof(exp_error_array) - 1] & 0x0F));
+
+  // count error and change storage format from byte array to number
+  memset(data, 0, MAX_NUM_ERR_CODES);
+  for (i = 0; i < MAX_NUM_ERR_CODES_ARRAY; i++) {
+    for (j = 0; j < 8; j++) {
+      if (GETBIT(total_error_array[i], j) == 1) {
+        data[tmp_err_count] = (i * 8) + j;
+        tmp_err_count++;
+      }
+    }
+  }
+  *error_count = tmp_err_count;
+    
+  return 0;
+}
+
+void pal_set_error_code(unsigned char error_num, uint8_t error_code_status) {
+  int ret = 0;
+
+  // BMC error code number 0x64(100)~0xFF(255)
+  if (error_num < MAX_NUM_EXP_ERR_CODES) {
+    return;
+  }
+  
+  if (error_num < MAX_NUM_ERR_CODES) {
+    ret = pal_write_error_code_file(error_num, error_code_status);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): fail to write error code: 0x%02X", __func__, error_num);
+    }
+  } else {
+    syslog(LOG_WARNING, "%s(): invalid error code number", __func__);
+  }
+}
+
+int
+pal_bmc_err_enable(const char *error_item) {
+  if (error_item == NULL) {
+    printf("%s: fail to enable error code because NULL parameter: *error_item", __func__);
+    return -1;
+  }
+
+  if (strcasestr(error_item, "CPU") != 0ULL) {
+    pal_set_error_code(ERR_CODE_CPU_UTILIZA, ERR_CODE_ENABLE);
+  } else if (strcasestr(error_item, "Memory") != 0ULL) {
+    pal_set_error_code(ERR_CODE_MEM_UTILIZA, ERR_CODE_ENABLE);
+  } else if (strcasestr(error_item, "ECC Unrecoverable") != 0ULL) {
+    pal_set_error_code(ERR_CODE_ECC_RECOVERABLE, ERR_CODE_ENABLE);
+  } else if (strcasestr(error_item, "ECC Recoverable") != 0ULL) {
+    pal_set_error_code(ERR_CODE_ECC_UNRECOVERABLE, ERR_CODE_ENABLE);
+  } else {
+    syslog(LOG_WARNING, "%s: invalid bmc health item: %s", __func__, error_item);
+    return -1;
+  }
+  return 0;
+}
+
+int
+pal_bmc_err_disable(const char *error_item) {
+  if (error_item == NULL) {
+    printf("%s: fail to disable error code because NULL parameter: *error_item", __func__);
+    return -1;
+  }
+
+  if (strcasestr(error_item, "CPU") != 0ULL) {
+    pal_set_error_code(ERR_CODE_CPU_UTILIZA, ERR_CODE_DISABLE);
+  } else if (strcasestr(error_item, "Memory") != 0ULL) {
+    pal_set_error_code(ERR_CODE_MEM_UTILIZA, ERR_CODE_DISABLE);
+  } else if (strcasestr(error_item, "ECC Unrecoverable") != 0ULL) {
+    pal_set_error_code(ERR_CODE_ECC_RECOVERABLE, ERR_CODE_DISABLE);
+  } else if (strcasestr(error_item, "ECC Recoverable") != 0ULL) {
+    pal_set_error_code(ERR_CODE_ECC_UNRECOVERABLE, ERR_CODE_DISABLE);
+  } else {
+    syslog(LOG_WARNING, "%s: invalid bmc health item: %s", __func__, error_item);
+    return -1;
+  }
+  return 0;
+}
+
+void
+pal_i2c_crash_assert_handle(int i2c_bus_num) {
+  // I2C bus number: 0~15
+  if (i2c_bus_num < MAX_NUM_I2C_BUS) {
+    pal_set_error_code(ERR_CODE_I2C_CRASH_BASE + i2c_bus_num, ERR_CODE_ENABLE);
+  } else {
+    syslog(LOG_WARNING, "%s(): invalid I2C bus number: %d", __func__, i2c_bus_num);
+  }
+}
+
+void
+pal_i2c_crash_deassert_handle(int i2c_bus_num) {
+  // I2C bus number: 0~15
+  if (i2c_bus_num < MAX_NUM_I2C_BUS) {
+    pal_set_error_code(ERR_CODE_I2C_CRASH_BASE + i2c_bus_num, ERR_CODE_DISABLE);
+  } else {
+    syslog(LOG_WARNING, "%s(): invalid I2C bus number: %d", __func__, i2c_bus_num);
+  }
 }

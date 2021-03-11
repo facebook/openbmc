@@ -81,6 +81,7 @@ e1s_iocm_insert_event(int e1s_iocm_slot_id, uint8_t *present_status, uint8_t *gp
 static void
 fru_remove_event(int fru_id, uint8_t *e1s_iocm_present_status) {
   int ret = 0;
+  uint8_t chassis_type = 0;
   uint8_t e1s_iocm_gpio_power_good_pin[E1S_IOCM_SLOT_NUM] = {GPIO_E1S_1_P3V3_PG_R, GPIO_E1S_2_P3V3_PG_R};
 
   if (fru_id == FRU_SERVER) {
@@ -90,12 +91,16 @@ fru_remove_event(int fru_id, uint8_t *e1s_iocm_present_status) {
       syslog(LOG_ERR, "%s(): Failed to AC off server\n", __func__);
     }
     
+    pal_set_error_code(ERR_CODE_SERVER_MISSING, ERR_CODE_ENABLE);
+    
   } else if (fru_id == FRU_SCC) {
     // AC off SCC
     ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_STBY_PWR_EN), GPIO_VALUE_LOW);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): Failed to AC off SCC\n", __func__);
     }
+    
+    pal_set_error_code(ERR_CODE_SCC_MISSING, ERR_CODE_ENABLE);
     
   } else if (fru_id == FRU_E1S_IOCM) {
     if (e1s_iocm_present_status == NULL) {
@@ -104,12 +109,27 @@ fru_remove_event(int fru_id, uint8_t *e1s_iocm_present_status) {
     }
     e1s_iocm_remove_event(T5_E1S0_T7_IOC_AVENGER, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
     e1s_iocm_remove_event(T5_E1S1_T7_IOCM_VOLT, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
+    
+    if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+      pal_set_error_code(ERR_CODE_E1S_MISSING, ERR_CODE_ENABLE);
+      pal_set_error_code(ERR_CODE_IOCM_MISSING, ERR_CODE_ENABLE);
+    } else {
+      if (chassis_type == CHASSIS_TYPE7) {
+        pal_set_error_code(ERR_CODE_IOCM_MISSING, ERR_CODE_ENABLE);
+      } else if (chassis_type == CHASSIS_TYPE5) {
+        pal_set_error_code(ERR_CODE_E1S_MISSING, ERR_CODE_ENABLE);
+      } else {
+        pal_set_error_code(ERR_CODE_E1S_MISSING, ERR_CODE_ENABLE);
+        pal_set_error_code(ERR_CODE_IOCM_MISSING, ERR_CODE_ENABLE);
+      }
+    }
   }
 }
 
 static void
 fru_insert_event(int fru_id, uint8_t *e1s_iocm_present_status) {
   int ret = 0;
+  uint8_t chassis_type = 0;
   char power_policy_cfg[MAX_VALUE_LEN] = {0};
   char last_power_status[MAX_VALUE_LEN] = {0};
   uint8_t e1s_iocm_gpio_power_good_pin[E1S_IOCM_SLOT_NUM] = {GPIO_E1S_1_P3V3_PG_R, GPIO_E1S_2_P3V3_PG_R};
@@ -156,12 +176,16 @@ fru_insert_event(int fru_id, uint8_t *e1s_iocm_present_status) {
       }
     }
     
+    pal_set_error_code(ERR_CODE_SERVER_MISSING, ERR_CODE_DISABLE);
+    
   } else if (fru_id == FRU_SCC) {
     // AC on SCC
     ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_STBY_PWR_EN), GPIO_VALUE_HIGH);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): Failed to AC on SCC\n", __func__);
     }
+    
+    pal_set_error_code(ERR_CODE_SCC_MISSING, ERR_CODE_DISABLE);
     
   } else if (fru_id == FRU_E1S_IOCM) {
     if (e1s_iocm_present_status == NULL) {
@@ -170,6 +194,17 @@ fru_insert_event(int fru_id, uint8_t *e1s_iocm_present_status) {
     }
     e1s_iocm_insert_event(T5_E1S0_T7_IOC_AVENGER, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
     e1s_iocm_insert_event(T5_E1S1_T7_IOCM_VOLT, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
+    
+    if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+      pal_set_error_code(ERR_CODE_E1S_MISSING, ERR_CODE_DISABLE);
+      pal_set_error_code(ERR_CODE_IOCM_MISSING, ERR_CODE_DISABLE);
+    } else {
+      if (chassis_type == CHASSIS_TYPE7) {
+        pal_set_error_code(ERR_CODE_IOCM_MISSING, ERR_CODE_DISABLE);
+      } else if (chassis_type == CHASSIS_TYPE5) {
+        pal_set_error_code(ERR_CODE_E1S_MISSING, ERR_CODE_DISABLE);
+      }
+    }
   }
 }
 

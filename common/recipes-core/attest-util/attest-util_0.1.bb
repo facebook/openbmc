@@ -11,12 +11,13 @@ inherit meson
 inherit ptest-meson
 
 SRC_URI = "\
-    file://meson.build \
     file://main.cpp \
-    file://utils.cpp \
+    file://meson.build \
     file://message_types/spdm.cpp \
-    file://utils.hpp \
     file://message_types/spdm.hpp \
+    file://tests/test_util.cpp \
+    file://utils.cpp \
+    file://utils.hpp \
     "
 
 S = "${WORKDIR}"

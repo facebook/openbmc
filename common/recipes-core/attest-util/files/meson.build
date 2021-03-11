@@ -11,12 +11,13 @@ project('attest-util', 'c', 'cpp',
 
 cc = meson.get_compiler('c')
 deps = [
+  dependency('threads'),
 ]
 
 srcs = files(
     'main.cpp',
-    'utils.cpp',
     'message_types/spdm.cpp',
+    'utils.cpp',
 )
 
 attest_util_exe = executable(
@@ -25,3 +26,17 @@ attest_util_exe = executable(
     dependencies: deps,
     install: true,
 )
+
+# Test deps.
+test_deps = [
+  cc.find_library('gmock'),
+  cc.find_library('gtest'),
+  cc.find_library('gtest_main')
+]
+
+cppc = meson.get_compiler('cpp')
+
+attest_util_test = executable('test-attest-util', 'tests/test_util.cpp', srcs,
+  dependencies: [deps, test_deps],
+  cpp_args: ['-D__TEST__'])
+test('attest-util-tests', attest_util_test)

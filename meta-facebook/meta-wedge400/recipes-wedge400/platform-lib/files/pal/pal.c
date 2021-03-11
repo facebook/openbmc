@@ -605,7 +605,7 @@ static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
 static float hsc_rsense[MAX_NUM_FRUS] = {0};
 
-const char pal_fru_list[] = "all, scm, smb, fcm, pem1, pem2, \
+const char pal_fru_list[] = "all, scm, smb, pem1, pem2, \
 psu1, psu2, fan1, fan2, fan3, fan4 ";
 
 char * key_list[] = {
@@ -616,7 +616,6 @@ char * key_list[] = {
   "server_sel_error",
   "scm_sensor_health",
   "smb_sensor_health",
-  "fcm_sensor_health",
   "pem1_sensor_health",
   "pem2_sensor_health",
   "psu1_sensor_health",
@@ -638,7 +637,6 @@ char * def_val_list[] = {
   "1", /* server_sel_error */
   "1", /* scm_sensor_health */
   "1", /* smb_sensor_health */
-  "1", /* fcm_sensor_health */
   "1", /* pem1_sensor_health */
   "1", /* pem2_sensor_health */
   "1", /* psu1_sensor_health */
@@ -823,8 +821,6 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_CPLD;
   } else if (!strcmp(str, "fpga")) {
     *fru = FRU_FPGA;
-  } else if (!strcmp(str, "fcm")) {
-    *fru = FRU_FCM;
   } else {
     OBMC_WARN("pal_get_fru_id: Wrong fru#%s", str);
     return -1;
@@ -841,9 +837,6 @@ pal_get_fru_name(uint8_t fru, char *name) {
       break;
     case FRU_SCM:
       strcpy(name, "scm");
-      break;
-    case FRU_FCM:
-      strcpy(name, "fcm");
       break;
     case FRU_PEM1:
       strcpy(name, "pem1");
@@ -900,9 +893,6 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_SCM:
       snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, SCM_PRSNT_STATUS);
       break;
-    case FRU_FCM:
-      *status = 1;
-      return 0;
     case FRU_PEM1:
       snprintf(tmp, LARGEST_DEVICE_NAME, SMB_SYSFS, PEM_PRSNT_STATUS);
       snprintf(path, LARGEST_DEVICE_NAME, tmp, 1);
@@ -6446,9 +6436,6 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
       break;
     case FRU_SMB:
       sprintf(key, "smb_sensor_health");
-      break;
-    case FRU_FCM:
-      sprintf(key, "fcm_sensor_health");
       break;
 
     case FRU_PEM1:

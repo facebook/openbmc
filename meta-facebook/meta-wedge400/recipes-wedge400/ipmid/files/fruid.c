@@ -42,7 +42,7 @@
 #include "fruid.h"
 
 #define WEDGE400_FRUID_SIZE 0x100
-#define WEDGE400_FRU_NUM 11
+#define WEDGE400_FRU_NUM 10
 
 struct fruid_dev
 {
@@ -64,13 +64,12 @@ static struct fruid_dev fruid_list[] = {
     {FRU_SMB, 6, 0x51, &g_fruid[1 * WEDGE400_FRUID_SIZE], FRU_FB_FORMAT},
     {FRU_PEM1, 24, 0x50, &g_fruid[2 * WEDGE400_FRUID_SIZE], FRU_FB_FORMAT},
     {FRU_PEM2, 25, 0x50, &g_fruid[3 * WEDGE400_FRUID_SIZE], FRU_FB_FORMAT},
-    {FRU_FCM, 33, 0x51, &g_fruid[4 * WEDGE400_FRUID_SIZE], FRU_FB_FORMAT},
-    {FRU_PSU1, 24, 0x50, &g_fruid[5 * WEDGE400_FRUID_SIZE], FRU_PSU_FORMAT},
-    {FRU_PSU2, 25, 0x50, &g_fruid[6 * WEDGE400_FRUID_SIZE], FRU_PSU_FORMAT},
-    {FRU_FAN1, 36, 0x52, &g_fruid[7 * WEDGE400_FRUID_SIZE], FRU_FB_FORMAT},
-    {FRU_FAN2, 37, 0x52, &g_fruid[8 * WEDGE400_FRUID_SIZE], FRU_FB_FORMAT},
-    {FRU_FAN3, 38, 0x52, &g_fruid[9 * WEDGE400_FRUID_SIZE], FRU_FB_FORMAT},
-    {FRU_FAN4, 39, 0x52, &g_fruid[10 * WEDGE400_FRUID_SIZE], FRU_FB_FORMAT}};
+    {FRU_PSU1, 24, 0x50, &g_fruid[4 * WEDGE400_FRUID_SIZE], FRU_PSU_FORMAT},
+    {FRU_PSU2, 25, 0x50, &g_fruid[5 * WEDGE400_FRUID_SIZE], FRU_PSU_FORMAT},
+    {FRU_FAN1, 36, 0x52, &g_fruid[6 * WEDGE400_FRUID_SIZE], FRU_FB_FORMAT},
+    {FRU_FAN2, 37, 0x52, &g_fruid[7 * WEDGE400_FRUID_SIZE], FRU_FB_FORMAT},
+    {FRU_FAN3, 38, 0x52, &g_fruid[8 * WEDGE400_FRUID_SIZE], FRU_FB_FORMAT},
+    {FRU_FAN4, 39, 0x52, &g_fruid[9 * WEDGE400_FRUID_SIZE], FRU_FB_FORMAT}};
 
 void *get_frudev(unsigned char id)
 {

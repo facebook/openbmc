@@ -374,7 +374,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
   }
   const char *dedup_env = getenv("FW_UTIL_DEDUP");
   const char *verify_env = getenv("FW_UTIL_VERIFY");
-  bool dedup = (dedup_env != NULL ? (*dedup_env == '1' || *dedup_env == '2') : true);
+  bool dedup = (dedup_env != NULL ? (*dedup_env == '1') : true);
   bool verify = (verify_env != NULL ? (*verify_env == '1') : true);
 
   buf = malloc(USB_PKT_HDR_SIZE + BIOS_UPDATE_BLK_SIZE);
@@ -387,7 +387,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
   uint8_t fcs[STRONG_DIGEST_LENGTH], cs[STRONG_DIGEST_LENGTH];
   int cs_len = STRONG_DIGEST_LENGTH;
   if (!bic_have_checksum_sha256(slot_id)) {
-    if (dedup && !(dedup_env != NULL && *dedup_env == '2')) {
+    if (dedup && !(dedup_env != NULL && *dedup_env == '1')) {
       fprintf(stderr, "Strong checksum function is not available, disabling "
               "deduplication. Update BIC firmware to at least 31.04\n");
       dedup = false;

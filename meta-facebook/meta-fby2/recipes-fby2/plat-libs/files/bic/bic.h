@@ -516,6 +516,7 @@ int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 
 int bic_dump_fw(uint8_t slot_id, uint8_t comp, char *path);
 int bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force);
+int bic_update_firmware_fd(uint8_t slot_id, uint8_t comp, int fd, uint8_t force);
 int bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *path, uint8_t force);
 int bic_update_fw(uint8_t slot_id, uint8_t comp, char *path);
 int bic_imc_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);

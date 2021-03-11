@@ -422,6 +422,7 @@ util_read_sensor(uint8_t slot_id) {
   uint8_t intf_list[4] = {NONE_INTF};
   uint8_t intf_index = 0;
   uint8_t config_status = 0xff;
+  uint8_t type_2ou = UNKNOWN_BOARD;
 
   ret = bic_is_m2_exp_prsnt(slot_id);
   if ( ret < 0 ) {
@@ -433,7 +434,18 @@ util_read_sensor(uint8_t slot_id) {
   if ( (config_status & PRESENT_1OU) == PRESENT_1OU && (bmc_location != NIC_BMC) ) {
     intf_list[1] = FEXP_BIC_INTF;
   } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
-    intf_list[2] = REXP_BIC_INTF;
+    if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0) {
+      printf("%s() Couldn't get 2OU board type\n", __func__);
+      return -1;
+    }
+
+    switch (type_2ou) {
+    case DP_RISER_BOARD:
+      break;
+    default:
+      intf_list[2] = REXP_BIC_INTF;
+      break;
+    }
   }
 
   if ( bmc_location == NIC_BMC ) {
@@ -472,6 +484,7 @@ util_get_sdr(uint8_t slot_id) {
   uint8_t intf_list[4] = {NONE_INTF};
   uint8_t intf_index = 0;
   uint8_t config_status = 0xff;
+  uint8_t type_2ou = UNKNOWN_BOARD;
 
   ipmi_sel_sdr_req_t req;
   ipmi_sel_sdr_res_t *res = (ipmi_sel_sdr_res_t *) rbuf;
@@ -486,7 +499,18 @@ util_get_sdr(uint8_t slot_id) {
   if ( (config_status & PRESENT_1OU) == PRESENT_1OU && (bmc_location != NIC_BMC) ) {
     intf_list[1] = FEXP_BIC_INTF;
   } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
-    intf_list[2] = REXP_BIC_INTF;
+    if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0) {
+      printf("%s() Couldn't get 2OU board type\n", __func__);
+      return -1;
+    }
+
+    switch (type_2ou) {
+    case DP_RISER_BOARD:
+      break;
+    default:
+      intf_list[2] = REXP_BIC_INTF;
+      break;
+    }
   }
 
   if ( bmc_location == NIC_BMC ) {

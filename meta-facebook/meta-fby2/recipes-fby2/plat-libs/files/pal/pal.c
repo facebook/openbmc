@@ -558,6 +558,60 @@ static const struct power_coeff nd_pwr_cali_table[] = {
   { 0.0,    0.0 }
 };
 
+/* YV2ND2 Baseboard, current calibration table */
+static const struct power_coeff nd2_curr_cali_table[] = {
+  { 4.660,  0.9812312 },
+  { 7.404,  0.9928318 },
+  { 9.210,  0.9931044 },
+  { 11.996, 0.9945632 },
+  { 13.818, 0.9963226 },
+  { 16.564, 0.9988026 },
+  { 18.446, 0.9975787 },
+  { 21.230, 0.9985449 },
+  { 23.058, 0.9979824 },
+  { 25.804, 1.0008259 },
+  { 27.650, 1.0004500 },
+  { 30.410, 0.9997611 },
+  { 32.196, 1.0001500 },
+  { 34.974, 1.0008591 },
+  { 36.876, 1.0009988 },
+  { 39.664, 0.9992988 },
+  { 41.474, 0.9995568 },
+  { 44.244, 1.0011423 },
+  { 46.108, 1.0002071 },
+  { 50.700, 0.9996644 },
+  { 55.386, 0.9965989 },
+  { 58.872, 0.9989997 },
+  { 0.0,    0.0 }
+};
+
+/* YV2ND2 Baseboard, power calibration table */
+static const struct power_coeff nd2_pwr_cali_table[] = {
+  { 56.022,   0.984220 },
+  { 88.854,   0.992468 },
+  { 110.630,  0.995012 },
+  { 143.674,  0.995728 },
+  { 165.244,  0.996927 },
+  { 197.660,  0.998565 },
+  { 219.816,  0.994602 },
+  { 252.474,  1.005851 },
+  { 273.514,  0.999230 },
+  { 305.612,  1.000476 },
+  { 327.078,  1.000438 },
+  { 359.166,  0.999416 },
+  { 379.980,  1.000178 },
+  { 411.688,  1.001763 },
+  { 433.542,  1.000305 },
+  { 465.216,  1.000416 },
+  { 485.928,  1.000917 },
+  { 517.556,  1.001335 },
+  { 538.358,  1.001511 },
+  { 590.358,  1.000876 },
+  { 643.458,  1.001705 },
+  { 692.356,  1.000408 },
+  { 0.0,      0.0 }
+};
+
 static const char *sock_path_asd_bic[MAX_NODES+1] = {
   "",
   SOCK_PATH_ASD_BIC "_1",
@@ -703,6 +757,28 @@ static struct fsc_monitor fsc_monitor_gp_m2_list[] = {
 };
 
 static int fsc_monitor_gp_m2_list_size = sizeof(fsc_monitor_gp_m2_list) / sizeof(struct fsc_monitor);
+
+/* get curr calibration table by spb type */
+static const struct power_coeff *
+get_curr_cali_table(int spb_type) {
+  if (spb_type == TYPE_SPB_YV2ND) {
+    return nd_curr_cali_table;
+  } else if (spb_type == TYPE_SPB_YV2ND2) {
+    return nd2_curr_cali_table;
+  }
+  return curr_cali_table;
+}
+
+/* get power calibration table by spb type*/
+static const struct power_coeff *
+get_power_cali_table(int spb_type) {
+  if (spb_type == TYPE_SPB_YV2ND) {
+    return nd_pwr_cali_table;
+  } else if (spb_type == TYPE_SPB_YV2ND2) {
+    return nd2_pwr_cali_table;
+  }
+  return pwr_cali_table;
+}
 
 /* curr/power calibration */
 static void
@@ -4505,18 +4581,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       int spb_type = 0;
       spb_type = fby2_common_get_spb_type();
       if (sensor_num == SP_SENSOR_HSC_OUT_CURR || sensor_num == SP_SENSOR_HSC_PEAK_IOUT) {
-        if (spb_type == TYPE_SPB_YV2ND || spb_type == TYPE_SPB_YV2ND2) {
-          power_value_adjust(nd_curr_cali_table, (float *)value);
-        } else {
-          power_value_adjust(curr_cali_table, (float *)value);
-        }
+        power_value_adjust(get_curr_cali_table(spb_type), (float *)value);
       }
       if (sensor_num == SP_SENSOR_HSC_IN_POWER || sensor_num == SP_SENSOR_HSC_PEAK_PIN || sensor_num == SP_SENSOR_HSC_IN_POWERAVG) {
-        if (spb_type == TYPE_SPB_YV2ND || spb_type == TYPE_SPB_YV2ND) {
-          power_value_adjust(nd_pwr_cali_table, (float *)value);
-        } else {
-          power_value_adjust(pwr_cali_table, (float *)value);
-        }
+        power_value_adjust(get_power_cali_table(spb_type), (float *)value);
       }
       if (sensor_num == SP_SENSOR_BMC_HSC_PIN) {
         ret = calc_bmc_hsc_value((float *)value);

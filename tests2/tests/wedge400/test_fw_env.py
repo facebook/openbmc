@@ -19,8 +19,8 @@
 #
 import unittest
 
-from common.base_fw_printenv_test import BaseFwPrintEnvTest
+from common.base_fw_env_test import BaseFwEnvTest
 
 
-class TestFwPrintEnv(BaseFwPrintEnvTest, unittest.TestCase):
+class TestFwEnv(BaseFwEnvTest, unittest.TestCase):
     pass

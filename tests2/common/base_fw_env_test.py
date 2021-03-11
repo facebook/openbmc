@@ -20,8 +20,14 @@
 import subprocess
 from unittest import TestCase
 
+from utils.shell_util import run_shell_cmd
 
-class BaseFwPrintEnvTest(TestCase):
+
+class BaseFwEnvTest(TestCase):
+    def setUp(self):
+        self.setenv_cmd = "/sbin/fw_setenv"
+        self.printenv_cmd = "/sbin/fw_printenv"
+
     def run_fw_printenv_test(self, cmd: str = "/sbin/fw_printenv"):
         ret = subprocess.run(
             cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -33,7 +39,27 @@ class BaseFwPrintEnvTest(TestCase):
         )
 
     def test_fw_printenv_status(self):
-        self.run_fw_printenv_test("/sbin/fw_printenv")
+        self.run_fw_printenv_test(self.printenv_cmd)
 
     def test_fw_printenv_noheader_status(self):
-        self.run_fw_printenv_test("/sbin/fw_printenv -n bootargs")
+        self.run_fw_printenv_test("%s -n bootargs" % self.printenv_cmd)
+
+    def test_fw_setenv(self):
+        test_key = "cit_test_tag"
+        test_val = "yes"
+
+        #
+        # Set a new env and read it back: this is to make sure the env
+        # can be set and get properly.
+        #
+        run_shell_cmd("%s %s %s" % (self.setenv_cmd, test_key, test_val))
+        output = run_shell_cmd("%s -n %s" % (self.printenv_cmd, test_key))
+        val = output.strip()
+        self.assertEqual(
+            val,
+            test_val,
+            "Error: %s is set to %s: expect %s" % (test_key, val, test_val),
+        )
+
+        # Clear the test env
+        run_shell_cmd("%s %s" % (self.setenv_cmd, test_key))

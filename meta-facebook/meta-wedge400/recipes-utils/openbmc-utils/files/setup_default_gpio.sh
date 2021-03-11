@@ -34,9 +34,9 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 echo -n "Setting up Default GPIOs value... "
 
 # Set all reset pin to high, keep in normal mode
-gpio_set BMC_EMMC_RST_N_R 1
-gpio_set SYS_CPLD_RST_N 1
-gpio_set BMC_DOM_FPGA1_RST 1
-gpio_set BMC_DOM_FPGA2_RST 1
+gpio_set_value BMC_EMMC_RST_N_R 1
+gpio_set_value SYS_CPLD_RST_N 1
+gpio_set_value BMC_DOM_FPGA1_RST 1
+gpio_set_value BMC_DOM_FPGA2_RST 1
 
 echo "done."

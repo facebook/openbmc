@@ -34,10 +34,10 @@ binfiles = "bicmond \
            "
 
 CFLAGS += " -Werror "
-LDFLAGS += " -lbic -lpal -llog "
+LDFLAGS += " -lbic -lpal -llog -lmisc-utils"
 
-DEPENDS += " libbic libpal liblog update-rc.d-native"
-RDEPENDS_${PN} += " libbic libpal liblog bash"
+DEPENDS += " libbic libpal liblog libmisc-utils update-rc.d-native"
+RDEPENDS_${PN} += " libbic libpal liblog libmisc-utils bash"
 
 pkgdir = "bicmond"
 

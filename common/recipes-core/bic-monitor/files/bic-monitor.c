@@ -33,11 +33,10 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/pal.h>
 #include <facebook/bic.h>
+#include <openbmc/misc-utils.h>
 
 #define BICMOND_NAME          "bicmond"
-#define BICMOND_PID_FILE      "/var/run/bicmond.pid"
-#define DELAY_BICMOND_READ    500000 // Polls each slot gpio values every 4*x usec
-#define SLOT_NUM_MAX        1
+#define DELAY_BICMOND_READ    5 // minimum interval of GPIO read, in seconds.
 
 #define GPIOD_VERBOSE(fmt, args...) \
   do {                              \
@@ -46,142 +45,123 @@
   } while (0)
 
 /* To hold the gpio info and status */
-typedef struct {
+typedef struct bic_gpio_pin {
   uint32_t flag:1;
   uint32_t status:1;
   uint32_t ass_val:1;
+
+  int (*handler)(struct bic_gpio_pin *gpio, void *args);
 } gpio_pin_t;
 
 static bool verbose_logging;
-static gpio_pin_t gpio_slot1[BIC_GPIO_MAX] = {0};
 
 static const uint32_t gpio_ass_val = (1 << FM_CPLD_FIVR_FAULT);
 
-/* Returns the pointer to the struct holding all gpio info for the fru#. */
-static gpio_pin_t *
-get_struct_gpio_pin(uint8_t fru) {
+static int bic_cpu_pwr_handler(gpio_pin_t *gpio, void *args)
+{
+  char pwr_state[MAX_VALUE_LEN] = {0};
 
-  gpio_pin_t *gpios;
+  pal_get_last_pwr_state(FRU_SCM, pwr_state);
 
-  switch (fru) {
-    case IPMB_BUS:
-      gpios = gpio_slot1;
-      break;
-    default:
-      syslog(LOG_WARNING, "get_struct_gpio_pin: Wrong SLOT ID %d\n", fru);
-      return NULL;
-  }
-
-  return gpios;
-}
-
-static void
-populate_gpio_pins(uint8_t fru) {
-
-  int i, ret;
-  gpio_pin_t *gpios;
-
-  gpios = get_struct_gpio_pin(fru);
-  if (gpios == NULL) {
-    return;
-  }
-
-  // Only monitor the PWRGD_COREPWR pin
-  gpios[PWRGOOD_CPU].flag = 1;
-
-  for (i = 0; i < BIC_GPIO_MAX; i++) {
-    if (gpios[i].flag) {
-      gpios[i].ass_val = GETBIT(gpio_ass_val, i);
-      GPIOD_VERBOSE("start monitoring '%s', ass_val=%u\n",
-                    bic_gpio_name(i), gpios[i].ass_val);
+  // Check if the new GPIO val is ASSERT
+  if (gpio->status == gpio->ass_val) {
+    if (strcmp(pwr_state, "off")) {
+      pal_set_last_pwr_state(FRU_SCM, "off");
     }
+
+    OBMC_CRIT("FRU: %d, System powered OFF", IPMB_BUS);
+    pal_light_scm_led(SCM_LED_AMBER);
+  } else {
+    // Inform BIOS that BMC is ready
+    bic_set_gpio(IPMB_BUS, BMC_READY_N, 0);
+
+    if (strcmp(pwr_state, "on")) {
+      pal_set_last_pwr_state(FRU_SCM, "on");
+    }
+
+    OBMC_CRIT("FRU: %d, System powered ON", IPMB_BUS);
+    pal_light_scm_led(SCM_LED_BLUE);
   }
+
+  return 0;
 }
 
-/* Wrapper function to configure and get all gpio info */
-static void
-init_gpio_pins(void) {
-  populate_gpio_pins(IPMB_BUS);
-}
-
+/*
+ * List of GPIOs to be monitored in this daemon.
+ */
+static struct {
+  unsigned int monitored_gpios;
+  gpio_pin_t gpio_table[BIC_GPIO_MAX];
+} bic_gpio_config = {
+  .monitored_gpios = 1,
+  .gpio_table = {
+    [PWRGOOD_CPU] = {
+      .flag = 1,
+      .ass_val = GETBIT(gpio_ass_val, PWRGOOD_CPU),
+      .handler = bic_cpu_pwr_handler,
+    },
+  },
+};
 
 /* Monitor the gpio pins */
 static int
 gpio_monitor_poll(void) {
   int i, ret;
-  uint32_t revised_pins, n_pin_val, o_pin_val[SLOT_NUM_MAX] = {0};
-  gpio_pin_t *gpios;
-  char pwr_state[MAX_VALUE_LEN];
-  bic_gpio_t gpio = {0};
+  uint32_t n_pin_val, o_pin_val;
+  bic_gpio_t curr_gpio;
 
   // Inform BIOS that BMC is ready
   ret = bic_set_gpio(IPMB_BUS, BMC_READY_N, 0);
   if (ret) {
     OBMC_WARN("bic_set_gpio failed for fru %u", IPMB_BUS);
   }
-  ret = bic_get_gpio(IPMB_BUS, &gpio);
+  ret = bic_get_gpio(IPMB_BUS, &curr_gpio);
   if (ret) {
     OBMC_WARN("bic_get_gpio failed for fru %u", IPMB_BUS);
     return -1;
   }
 
-  gpios = get_struct_gpio_pin(IPMB_BUS);
-  if  (gpios == NULL) {
-    return -1;
-  }
-
   pal_light_scm_led(SCM_LED_AMBER);
-  o_pin_val[0] = 0;
+  o_pin_val = 0;
 
-  /* Keep monitoring each fru's gpio pins every 4 * GPIOD_READ_DELAY seconds */
-  while(1) {
-    memset(pwr_state, 0, sizeof(pwr_state));
-    pal_get_last_pwr_state(FRU_SCM, pwr_state);
+  while (1) {
+    int handled = 0;
+    uint32_t revised_pins;
 
     /* Get the GPIO pins */
     ret = bic_get_gpio(IPMB_BUS, (bic_gpio_t *)&n_pin_val);
     if (ret < 0) {
-      n_pin_val = CLEARBIT(o_pin_val[0], PWRGOOD_CPU);
-    }
-
-    if (o_pin_val[0] == n_pin_val) {
-      GPIOD_VERBOSE("pin_val not changed. Sleeping for %u microseconds",
-                    DELAY_BICMOND_READ);
-      usleep(DELAY_BICMOND_READ);
+      OBMC_WARN("failed to get bic gpio (ret=%d): retrying..", ret);
+      sleep(DELAY_BICMOND_READ);
       continue;
     }
 
-    revised_pins = (n_pin_val ^ o_pin_val[0]);
+    if (o_pin_val == n_pin_val) {
+      GPIOD_VERBOSE("pin_val not changed. Sleeping for %u seconds",
+                    DELAY_BICMOND_READ);
+      sleep(DELAY_BICMOND_READ);
+      continue;
+    }
 
-    for (i = 0; i < BIC_GPIO_MAX; i++) {
-      if (GETBIT(revised_pins, i) && (gpios[i].flag == 1)) {
-        gpios[i].status = GETBIT(n_pin_val, i);
+    revised_pins = (n_pin_val ^ o_pin_val);
+    for (i = 0;
+         i < BIC_GPIO_MAX && handled < bic_gpio_config.monitored_gpios;
+         i++) {
+      gpio_pin_t *gpio = &bic_gpio_config.gpio_table[i];
 
-        // Check if the new GPIO val is ASSERT
-        if (gpios[i].status == gpios[i].ass_val) {
-          if (strcmp(pwr_state, "off")) {
-            pal_set_last_pwr_state(FRU_SCM, "off");
-          }
-          OBMC_CRIT("FRU: %d, System powered OFF", IPMB_BUS);
-          pal_light_scm_led(SCM_LED_AMBER);
-        } else {
-          // Inform BIOS that BMC is ready
-          bic_set_gpio(IPMB_BUS, BMC_READY_N, 0);
-          if (strcmp(pwr_state, "on")) {
-            pal_set_last_pwr_state(FRU_SCM, "on");
-          }
-          OBMC_CRIT("FRU: %d, System powered ON", IPMB_BUS);
-          pal_light_scm_led(SCM_LED_BLUE);
-        }
+      if (GETBIT(revised_pins, i) && (gpio->flag == 1)) {
+        gpio->status = GETBIT(n_pin_val, i);
+        gpio->handler(gpio, NULL);
+        handled++;
       }
     }
 
-    o_pin_val[0] = n_pin_val;
-    usleep(DELAY_BICMOND_READ);
+    o_pin_val = n_pin_val;
+    sleep(DELAY_BICMOND_READ);
   } /* while loop */
 
   return 0; /* never reached */
-} /* function definition*/
+}
 
 static void
 dump_usage(const char *prog_name)
@@ -193,7 +173,7 @@ dump_usage(const char *prog_name)
   } options[] = {
     {"-h|--help", "print this help message"},
     {"-v|--verbose", "enable verbose logging"},
-    {"-f|--foreground", "run the process in foreground"},
+    {"-D|--daemon", "run the process in daemon mode"},
     {NULL, NULL},
   };
 
@@ -205,18 +185,18 @@ dump_usage(const char *prog_name)
 
 int
 main(int argc, char **argv) {
-  int ret, pid_file;
-  bool foreground = false;
+  int ret;
+  bool daemon_mode = false;
   struct option long_opts[] = {
     {"help",       no_argument, NULL, 'h'},
     {"verbose",    no_argument, NULL, 'v'},
-    {"foreground", no_argument, NULL, 'f'},
+    {"daemon",     no_argument, NULL, 'D'},
     {NULL,         0,           NULL, 0},
   };
 
   while (1) {
     int opt_index = 0;
-    int ret = getopt_long(argc, argv, "hvf", long_opts, &opt_index);
+    int ret = getopt_long(argc, argv, "hvD", long_opts, &opt_index);
     if (ret == -1)
       break; /* end of arguments */
 
@@ -229,8 +209,8 @@ main(int argc, char **argv) {
       verbose_logging = true;
       break;
 
-    case 'f':
-      foreground = true;
+    case 'D':
+      daemon_mode = true;
       break;
 
     default:
@@ -238,25 +218,18 @@ main(int argc, char **argv) {
     }
   } /* while */
 
-
   /*
    * Make sure only 1 instance of bicmond is running.
    */
-  pid_file = open(BICMOND_PID_FILE, O_CREAT | O_RDWR, 0666);
-  if (pid_file < 0) {
-    fprintf(stderr, "%s: failed to open %s: %s\n",
-            BICMOND_NAME, BICMOND_PID_FILE, strerror(errno));
-    return -1;
-  }
-  if (flock(pid_file, LOCK_EX | LOCK_NB) != 0) {
-    if(EWOULDBLOCK == errno) {
-      fprintf(stderr, "%s: another instance is running. Exiting..\n",
-              BICMOND_NAME);
+  if (single_instance_lock(BICMOND_NAME) < 0) {
+    if (errno == EWOULDBLOCK) {
+      syslog(LOG_ERR, "Another %s instance is running. Exiting..\n",
+             BICMOND_NAME);
     } else {
-      fprintf(stderr, "%s: failed to lock %s: %s\n",
-              BICMOND_NAME, BICMOND_PID_FILE, strerror(errno));
+      syslog(LOG_ERR, "unable to ensure single %s instance: %s\n",
+             BICMOND_NAME, strerror(errno));
     }
-    close(pid_file);
+
     return -1;
   }
 
@@ -277,21 +250,17 @@ main(int argc, char **argv) {
   /*
    * Enter daemon mode if required.
    */
-  if (!foreground) {
-    obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
-    obmc_log_unset_std_stream();
+  obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
+  obmc_log_unset_std_stream();
+  if (daemon_mode) {
     if (daemon(0, 1) != 0) {
       OBMC_ERROR(errno, "failed to enter daemon mode");
       return -1;
     }
   }
 
-  init_gpio_pins();
-
-  OBMC_INFO("%s: daemon started", BICMOND_NAME);
+  OBMC_INFO("%s service started", BICMOND_NAME);
   gpio_monitor_poll(); /* main loop */
 
-  flock(pid_file, LOCK_UN);
-  close(pid_file);
   return 0;
 }

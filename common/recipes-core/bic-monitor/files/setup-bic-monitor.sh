@@ -27,8 +27,6 @@
 # Short-Description: Setup sensor monitoring
 ### END INIT INFO
 # shellcheck disable=SC1091
-source /usr/local/fbpackages/utils/ast-functions
-
 echo -n "Setup bic monitoring... "
 
 runsv /etc/sv/bicmond > /dev/null 2>&1 &

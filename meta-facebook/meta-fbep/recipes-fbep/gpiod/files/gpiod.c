@@ -83,7 +83,6 @@ enum {
   BOOTUP
 };
 
-bool g_sys_pwr_off;
 pthread_mutex_t led_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay, bool low_active)
@@ -287,7 +286,7 @@ int check_pwr_brake()
   uint8_t tbuf[8], rbuf[8], value;
 
   // Check if power is on
-  if (g_sys_pwr_off)
+  if (pal_is_server_off())
     return 0;
 
   sprintf(dev_cpld, "/dev/i2c-%d", MAIN_CPLD_BUS);
@@ -449,8 +448,6 @@ static void gpio_event_handle_pwr_brake(gpiopoll_pin_t *gp, gpio_value_t last, g
 
 static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  g_sys_pwr_off = (curr == GPIO_VALUE_HIGH)? false: true;
-
   msleep(250);
   if (curr == GPIO_VALUE_LOW && check_power_seq(RUNTIME) < 0)
     syslog(LOG_WARNING, "Failed to get power state from CPLD");
@@ -477,7 +474,7 @@ static void gpio_event_hsc_1_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_v
   if (curr == GPIO_VALUE_LOW) {
     if (check_hsc_alert(gp, 16, 0x53, LTC4282_REG_FAULT_LOG) < 0)
       syslog(LOG_WARNING, "Failed to get alert status from P12V HSC_1");
-    if (!g_sys_pwr_off &&
+    if (!pal_is_server_off() &&
 	(check_hsc_alert(gp, 16, 0x13, ADM127x_REG_STATUS_IOUT) < 0 ||
         check_hsc_alert(gp, 16, 0x13, ADM127x_REG_STATUS_INPUT) < 0)) {
       syslog(LOG_WARNING, "Failed to get alert status from P48V HSC_1");
@@ -492,7 +489,7 @@ static void gpio_event_hsc_2_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_v
   if (curr == GPIO_VALUE_LOW) {
     if (check_hsc_alert(gp, 17, 0x40, LTC4282_REG_FAULT_LOG) < 0)
       syslog(LOG_WARNING, "Failed to get alert status from P12V HSC_2");
-    if (!g_sys_pwr_off &&
+    if (!pal_is_server_off() &&
 	(check_hsc_alert(gp, 17, 0x10, ADM127x_REG_STATUS_IOUT) < 0 ||
         check_hsc_alert(gp, 17, 0x10, ADM127x_REG_STATUS_INPUT) < 0)) {
       syslog(LOG_WARNING, "Failed to get alert status from P48V HSC_2");
@@ -520,7 +517,7 @@ static void gpio_event_hsc_2_throt(gpiopoll_pin_t *gp, gpio_value_t last, gpio_v
 
 static void gpio_event_asic01_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  if (g_sys_pwr_off)
+  if (pal_is_server_off())
     return;
   gpio_event_handle_low_active(gp, last, curr);
   sync_dbg_led(ERR_ASIC_01_ALERT, curr == GPIO_VALUE_LOW? true: false);
@@ -528,7 +525,7 @@ static void gpio_event_asic01_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_
 
 static void gpio_event_asic23_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  if (g_sys_pwr_off)
+  if (pal_is_server_off())
     return;
   gpio_event_handle_low_active(gp, last, curr);
   sync_dbg_led(ERR_ASIC_23_ALERT, curr == GPIO_VALUE_LOW? true: false);
@@ -536,7 +533,7 @@ static void gpio_event_asic23_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_
 
 static void gpio_event_asic45_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  if (g_sys_pwr_off)
+  if (pal_is_server_off())
     return;
   gpio_event_handle_low_active(gp, last, curr);
   sync_dbg_led(ERR_ASIC_45_ALERT, curr == GPIO_VALUE_LOW? true: false);
@@ -544,7 +541,7 @@ static void gpio_event_asic45_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_
 
 static void gpio_event_asic67_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  if (g_sys_pwr_off)
+  if (pal_is_server_off())
     return;
   gpio_event_handle_low_active(gp, last, curr);
   sync_dbg_led(ERR_ASIC_67_ALERT, curr == GPIO_VALUE_LOW? true: false);
@@ -552,7 +549,7 @@ static void gpio_event_asic67_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_
 
 static void gpio_event_pax_0_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  if (g_sys_pwr_off)
+  if (pal_is_server_off())
     return;
   if (pal_is_fw_update_ongoing(FRU_MB))
     return;
@@ -563,7 +560,7 @@ static void gpio_event_pax_0_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_v
 
 static void gpio_event_pax_1_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  if (g_sys_pwr_off)
+  if (pal_is_server_off())
     return;
   if (pal_is_fw_update_ongoing(FRU_MB))
     return;
@@ -574,7 +571,7 @@ static void gpio_event_pax_1_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_v
 
 static void gpio_event_pax_2_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  if (g_sys_pwr_off)
+  if (pal_is_server_off())
     return;
   if (pal_is_fw_update_ongoing(FRU_MB))
     return;
@@ -585,7 +582,7 @@ static void gpio_event_pax_2_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_v
 
 static void gpio_event_pax_3_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  if (g_sys_pwr_off)
+  if (pal_is_server_off())
     return;
   if (pal_is_fw_update_ongoing(FRU_MB))
     return;
@@ -619,7 +616,7 @@ static void cpld_def_alert(gpiopoll_pin_t *gp, gpio_value_t curr)
 
 static void gpio_event_asic_thermtrip(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  if (!g_sys_pwr_off && is_gpu_thermal_trip()) {
+  if (!pal_is_server_off() && is_gpu_thermal_trip()) {
     gpio_event_handle_low_active(gp, last, curr);
     sync_dbg_led(ERR_ASIC_THERMTRIP, curr == GPIO_VALUE_LOW? true: false);
   }
@@ -691,7 +688,7 @@ static void* fan_status_monitor()
 
     for (i = 0; i < 8; i++) {
 
-      if (g_sys_pwr_off)
+      if (pal_is_server_off())
 	continue;
 
       gp = &fan_gpios[i];
@@ -740,7 +737,7 @@ static void* asic_status_monitor()
 
     for (i = 0; i < 8; i++) {
 
-      if (g_sys_pwr_off || !is_asic_prsnt(i))
+      if (pal_is_server_off() || !is_asic_prsnt(i))
         continue;
 
       gp = &asic_gpios[i];
@@ -777,7 +774,6 @@ int main(int argc, char **argv)
     openlog("gpiod", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "gpiod: daemon started");
 
-    g_sys_pwr_off = pal_is_server_off();
     if (pthread_create(&tid_fan_monitor, NULL, fan_status_monitor, NULL) < 0) {
       syslog(LOG_CRIT, "pthread_create for fan monitor error");
       exit(1);

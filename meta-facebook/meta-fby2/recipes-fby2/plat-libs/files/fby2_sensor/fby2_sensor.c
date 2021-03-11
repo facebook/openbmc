@@ -1269,11 +1269,16 @@ read_temp(const char *device, float *value) {
 
 static int
 read_fan_value(const int fan, const char *device, float *value) {
-  char device_name[LARGEST_DEVICE_NAME];  
+  char device_name[LARGEST_DEVICE_NAME];
 
 #if defined(CONFIG_FBY2_KERNEL)
+  int ret;
   sprintf(device_name, "fan%d", fan + 1);
-  return sensors_read_fan(device_name, value);
+  ret = sensors_read_fan(device_name, value);
+  if (ret < 0) {
+    ret = EER_READ_NA;
+  }
+  return ret;
 #else
   char full_name[LARGEST_FILEPATH_LEN];
 

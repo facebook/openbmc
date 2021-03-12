@@ -20,6 +20,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -61,6 +62,7 @@
 #define ELBERT_EEPROM_FIELD_FLDVAR  0x09
 #define ELBERT_EEPROM_FIELD_HWREV   0x0B
 #define ELBERT_EEPROM_FIELD_SERIAL  0x0E
+#define ELBERT_EEPROM_FIELD_MFGTIME2  0x17
 #define ELBERT_PIM8DDM "7388-8D"
 
 // Map between PIM and SMBus channel
@@ -226,6 +228,7 @@ int elbert_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
   char fn[64];
   char buf[ELBERT_EEPROM_SIZE];
   char bus_name[32];
+  bool mfgtime2 = false; // set to True if MFGTIME2 field is detected
 
   if (!eeprom) {
     return -EINVAL;
@@ -353,6 +356,12 @@ int elbert_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
     switch(field_type)
     {
       case ELBERT_EEPROM_FIELD_MFGTIME:
+          if (!mfgtime2)
+            memcpy(eeprom->fbw_system_manufacturing_date, field_value, 10);
+          break;
+
+      case ELBERT_EEPROM_FIELD_MFGTIME2:
+          mfgtime2 = true; // Do not allow MFGTIME to override MFGTIME2
           memcpy(eeprom->fbw_system_manufacturing_date, field_value, 10);
           break;
 

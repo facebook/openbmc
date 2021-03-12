@@ -70,6 +70,11 @@ def bmc_build(recipes):
 
 def main(args):
     all_recipes = recipes_with_ptest()
+    if args.list:
+        print("Available recipes:")
+        for _r in all_recipes:
+            print(_r)
+        sys.exit(0)
     if args.build is None:
         args.build = bmc_build(all_recipes)
 
@@ -134,6 +139,12 @@ parser.add_argument(
     help="Print the log file after execution of the test(s)",
     dest="log",
     default=None,
+)
+parser.add_argument(
+    "--list",
+    help="List ptest recipes",
+    action="store_true",
+    default=False
 )
 parser.add_argument("recipes", nargs="*", help="Recipe(s) to test")
 args = parser.parse_args()

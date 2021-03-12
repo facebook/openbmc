@@ -556,6 +556,8 @@ int pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps);
 bool pal_is_aggregate_snr_valid(uint8_t snr_num);
 int pal_set_ioc_fw_recovery(uint8_t *ioc_recovery_setting, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_get_ioc_fw_recovery(uint8_t ioc_recovery_component, uint8_t *res_data, uint8_t *res_len);
+int pal_setup_exp_uart_bridging(void);
+int pal_teardown_exp_uart_bridging(void);
 
 #ifdef __cplusplus
 }

@@ -2692,3 +2692,13 @@ int __attribute__((weak))
 pal_get_ioc_fw_recovery(uint8_t ioc_recovery_component, uint8_t *res_data, uint8_t *res_len) {
   return CC_NOT_SUPP_IN_CURR_STATE;
 }
+
+int __attribute__((weak))
+pal_setup_exp_uart_bridging(void) {
+  return CC_NOT_SUPP_IN_CURR_STATE;
+}
+
+int __attribute__((weak))
+pal_teardown_exp_uart_bridging(void) {
+  return CC_NOT_SUPP_IN_CURR_STATE;
+}

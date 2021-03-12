@@ -3596,6 +3596,34 @@ oem_get_ioc_fw_recovery (unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_setup_exp_uart_bridging (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  *res_len = 0;
+
+  if (length_check(0, req_len, response, res_len) != 0) {
+    return;
+  }
+
+  res->cc = pal_setup_exp_uart_bridging();
+}
+
+static void
+oem_teardown_exp_uart_bridging (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  *res_len = 0;
+
+  if (length_check(0, req_len, response, res_len) != 0) {
+    return;
+  }
+
+  res->cc = pal_teardown_exp_uart_bridging();
+}
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
      unsigned char *response, unsigned char *res_len)
 {
@@ -3774,6 +3802,12 @@ ipmi_handle_oem_storage (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_GET_IOC_FW_RECOVERY:
       oem_get_ioc_fw_recovery (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SETUP_EXP_UART_BRIDGING:
+      oem_setup_exp_uart_bridging (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_TEARDOWN_EXP_UART_BRIDGING:
+      oem_teardown_exp_uart_bridging (request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

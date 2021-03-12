@@ -29,6 +29,7 @@ extern "C" {
 #include <openbmc/kv.h>
 #include <openbmc/ncsi.h>
 #include <openbmc/nl-wrapper.h>
+#include <openbmc/phymem.h>
 #include <facebook/fbgc_common.h>
 #include <facebook/fbgc_fruid.h>
 #include <facebook/bic.h>
@@ -106,6 +107,15 @@ extern "C" {
 #define ERR_CODE_BMC_REMOTE_HB_HEALTH    0xFC
 #define ERR_CODE_SCC_LOCAL_HB_HEALTH     0xFD
 #define ERR_CODE_SCC_REMOTE_HB_HEALTH    0xFE
+// Host Interface Control Register
+#define LPC_CTR_BASE        0x1E789000
+#define HICR9_ADDR          0x098
+#define HICRA_ADDR          0x09C
+
+#define ROUTE_UART2_TO_IO2  (0)
+#define ROUTE_UART6_TO_IO6  ((1 << 9) | (1 << 11))
+#define ROUTE_IO2_TO_IO6    ((1 << 9) | (1 << 10))
+#define ROUTE_IO6_TO_IO2    ((1 << 3) | (1 << 4) | (1 << 5))
 
 typedef enum {
   STATUS_LED_OFF,

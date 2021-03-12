@@ -17,6 +17,7 @@ DEPENDS += " \
     libbic \
     libncsi \
     libnl-wrapper \
+    libphymem \
     "
 # These shouldn't be needed but are because we aren't properly versioning the
 # shared libraries contained in these recipes.
@@ -31,4 +32,5 @@ RDEPENDS_${PN} += " \
     libbic \
     libncsi \
     libnl-wrapper \
+    libphymem \
     "

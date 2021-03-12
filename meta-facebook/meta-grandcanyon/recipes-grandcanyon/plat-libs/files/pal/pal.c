@@ -1444,7 +1444,7 @@ pal_specific_plat_fan_check(bool status)
   return;
 }
 
-// IPMI OEM Command 
+// IPMI OEM Command
 // netfn: NETFN_OEM_1S_REQ (0x30)
 // command code: CMD_OEM_BYPASS_CMD (0x34)
 int
@@ -1453,7 +1453,7 @@ pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_da
   int completion_code = CC_SUCCESS;
   uint8_t netfn = 0, cmd = 0;
   uint8_t tlen = 0, rlen = 0;
-  uint8_t prsnt_status = 0, pwr_status = 0;  
+  uint8_t prsnt_status = 0, pwr_status = 0;
   uint8_t netdev = 0;
   uint8_t action = 0;
   uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
@@ -1552,7 +1552,7 @@ pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_da
         completion_code = CC_INVALID_LENGTH;
         break;
       }
-      tlen = req_len - sizeof(bypass_ncsi_header); 
+      tlen = req_len - sizeof(bypass_ncsi_header);
       msg = calloc(1, sizeof(NCSI_NL_MSG_T));
       if (msg == NULL) {
         syslog(LOG_ERR, "%s(): failed msg buffer allocation", __func__);
@@ -1587,7 +1587,7 @@ pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_da
       memcpy(&net_req, &((bypass_cmd*)req_data)->data[0], sizeof(net_req));
       netdev = net_req.netdev;
       action = net_req.action;
-      if (action == NET_INTF_ENABLE) {        
+      if (action == NET_INTF_ENABLE) {
         snprintf(sendcmd, sizeof(sendcmd), "ifup eth%d", netdev);
       } else if (action == NET_INTF_DISABLE) {
         snprintf(sendcmd, sizeof(sendcmd), "ifdown eth%d", netdev);
@@ -1682,7 +1682,7 @@ pal_get_80port_record(uint8_t slot_id, uint8_t *res_data, size_t max_len, size_t
   if (ret < 0) {
     syslog(LOG_WARNING, "%s: Failed to get 80 port record from Bridge IC.", __func__);
     ret = PAL_ENOTREADY;
-    goto error_exit;  
+    goto error_exit;
   } else {
     *res_len = (size_t)len;
   }
@@ -1782,12 +1782,12 @@ pal_read_error_code_file(uint8_t *error_code_array, uint8_t error_code_array_len
   FILE *err_file = NULL;
   int i = 0, ret = 0;
   int err_tmp = 0;
-  
+
   if (error_code_array == NULL) {
     syslog(LOG_WARNING, "%s(): fail to read error code because NULL parameter: *error_code_byte", __func__);
     return -1;
   }
-  
+
   // if no file, create file
   if (access(ERR_CODE_BIN, F_OK) == -1) {
     err_file = fopen(ERR_CODE_BIN, "w");
@@ -1795,7 +1795,7 @@ pal_read_error_code_file(uint8_t *error_code_array, uint8_t error_code_array_len
       syslog(LOG_WARNING, "%s: fail to open %s file because %s ", __func__, ERR_CODE_BIN, strerror(errno));
       return -1;
     }
-    
+
     ret = pal_flock_retry(fileno(err_file));
     if (ret < 0) {
       syslog(LOG_WARNING, "%s: fail to flock %s file because %s ", __func__, ERR_CODE_BIN, strerror(errno));
@@ -1808,7 +1808,7 @@ pal_read_error_code_file(uint8_t *error_code_array, uint8_t error_code_array_len
       fprintf(err_file, "%X ", error_code_array[i]);
     }
     fprintf(err_file, "\n");
-    
+
     pal_unflock_retry(fileno(err_file));
     fclose(err_file);
     return 0;
@@ -1823,7 +1823,7 @@ pal_read_error_code_file(uint8_t *error_code_array, uint8_t error_code_array_len
   for (i = 0; (fscanf(err_file, "%X", &err_tmp) != EOF) && (i < error_code_array_len); i++) {
     error_code_array[i] = (uint8_t) err_tmp;
   }
-  
+
   fclose(err_file);
   return 0;
 }
@@ -1834,9 +1834,9 @@ pal_write_error_code_file(unsigned char error_code_update, uint8_t error_code_st
   int i = 0, ret = 0;
   int byte_site = 0 , bit_site = 0;
   uint8_t error_code_array[MAX_NUM_ERR_CODES_ARRAY] = {0};
-  
+
   memset(error_code_array, 0, sizeof(error_code_array));
-  
+
   ret = pal_read_error_code_file(error_code_array, sizeof(error_code_array));
   if (ret < 0) {
     syslog(LOG_WARNING, "%s(): fail to write error code 0x%X because read %s error", __func__, error_code_update, ERR_CODE_BIN);
@@ -1844,14 +1844,14 @@ pal_write_error_code_file(unsigned char error_code_update, uint8_t error_code_st
   }
 
   err_file = fopen(ERR_CODE_BIN, "r+");
-  
+
   ret = pal_flock_retry(fileno(err_file));
   if (ret < 0) {
     syslog(LOG_WARNING, "%s: fail to flock %s file because %s ", __func__, ERR_CODE_BIN, strerror(errno));
     fclose(err_file);
     return ret;
   }
-  
+
   byte_site = error_code_update / 8;
   bit_site = error_code_update % 8;
 
@@ -1865,7 +1865,7 @@ pal_write_error_code_file(unsigned char error_code_update, uint8_t error_code_st
     fprintf(err_file, "%X ", error_code_array[i]);
   }
   fprintf(err_file, "\n");
-  
+
   pal_unflock_retry(fileno(err_file));
   fclose(err_file);
   return 0;
@@ -1880,36 +1880,36 @@ pal_get_error_code(uint8_t *data, uint8_t* error_count) {
   uint8_t exp_error_array[MAX_NUM_EXP_ERR_CODES_ARRAY] = {0};
   int ret = 0, i = 0, j = 0;
   int tmp_err_count = 0;
-  
+
   if (error_count == NULL) {
     printf("%s: fail to get error code because NULL parameter: *error_count", __func__);
     return -1;
   }
-  
+
   if (data == NULL) {
     printf("%s: fail to get error code because NULL parameter: *data", __func__);
     return -1;
   }
-  
+
   memset(tbuf, 0x00, sizeof(tbuf));
   memset(rbuf, 0x00, sizeof(rbuf));
   memset(exp_error_array, 0, sizeof(exp_error_array));
   memset(total_error_array, 0, sizeof(total_error_array));
-  
+
   // get expander error code
   ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_ERROR_CODE, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
     printf("enclosure-util: failed to get expander error code\n");
     printf("NetFn: 0x%2X Code: 0x%02X was error\n", NETFN_OEM_REQ, CMD_OEM_EXP_ERROR_CODE);
     // when Epander fail, fill all data to 0
-    memset(exp_error_array, 0, sizeof(exp_error_array)); 
+    memset(exp_error_array, 0, sizeof(exp_error_array));
   } else {
     memcpy(exp_error_array, rbuf, MIN(rlen, sizeof(exp_error_array)));
   }
-  
+
   // error code 0 is "no Error", ignore
   exp_error_array[0] = CLEARBIT(exp_error_array[0], 0);
-  
+
   // get bmc error code
   ret = pal_read_error_code_file(total_error_array, sizeof(total_error_array));
   if (ret < 0) {
@@ -1921,8 +1921,8 @@ pal_get_error_code(uint8_t *data, uint8_t* error_count) {
   // copy expander 0~96 (byte 0~12)
   memcpy(total_error_array, exp_error_array, sizeof(exp_error_array) - 1);
   // copy expander 97~100 (byte 12 bit 0~3)
-  total_error_array[sizeof(exp_error_array) - 1] 
-    = ((total_error_array[sizeof(exp_error_array) - 1] & 0xF0) 
+  total_error_array[sizeof(exp_error_array) - 1]
+    = ((total_error_array[sizeof(exp_error_array) - 1] & 0xF0)
      + (exp_error_array[sizeof(exp_error_array) - 1] & 0x0F));
 
   // count error and change storage format from byte array to number
@@ -1936,7 +1936,7 @@ pal_get_error_code(uint8_t *data, uint8_t* error_count) {
     }
   }
   *error_count = tmp_err_count;
-    
+
   return 0;
 }
 
@@ -1947,7 +1947,7 @@ void pal_set_error_code(unsigned char error_num, uint8_t error_code_status) {
   if (error_num < MAX_NUM_EXP_ERR_CODES) {
     return;
   }
-  
+
   if (error_num < MAX_NUM_ERR_CODES) {
     ret = pal_write_error_code_file(error_num, error_code_status);
     if (ret < 0) {
@@ -2020,4 +2020,48 @@ pal_i2c_crash_deassert_handle(int i2c_bus_num) {
   } else {
     syslog(LOG_WARNING, "%s(): invalid I2C bus number: %d", __func__, i2c_bus_num);
   }
+}
+
+int
+pal_setup_exp_uart_bridging(void) {
+
+  uint32_t reg_value = 0;
+
+  // set HICR9 register to route IO2 to IO6
+  reg_value = ROUTE_IO2_TO_IO6;
+  if (phymem_set_dword(LPC_CTR_BASE, HICR9_ADDR, reg_value) < 0) {
+    syslog(LOG_WARNING, "%s: failed to route IO2 to IO6", __func__);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  // set HICRA register to route IO6 to IO2
+  reg_value = ROUTE_IO6_TO_IO2;
+  if (phymem_set_dword(LPC_CTR_BASE, HICRA_ADDR, reg_value) < 0) {
+    syslog(LOG_WARNING, "%s: failed to route IO6 to IO2", __func__);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  return CC_SUCCESS;
+}
+
+int
+pal_teardown_exp_uart_bridging(void) {
+
+  uint32_t reg_value = 0;
+
+  // set HICR9 register to default (route UART6 to IO6)
+  reg_value = ROUTE_UART6_TO_IO6;
+  if (phymem_set_dword(LPC_CTR_BASE, HICR9_ADDR, reg_value) < 0) {
+    syslog(LOG_WARNING, "%s: failed to route UART6 to IO6", __func__);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  // set HICRA register to default (route UART2 to IO2)
+  reg_value = ROUTE_UART2_TO_IO2;
+  if (phymem_set_dword(LPC_CTR_BASE, HICRA_ADDR, reg_value) < 0) {
+    syslog(LOG_WARNING, "%s: failed to route UART2 to IO2", __func__);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  return CC_SUCCESS;
 }

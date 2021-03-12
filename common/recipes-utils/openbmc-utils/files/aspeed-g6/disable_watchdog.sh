@@ -21,5 +21,20 @@
 # shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
 
+#
+# FMC64 Register. Check AST2600 Datasheet, Chapter 14 "Firmware SPI Memory
+# Controller (BSPI)" for details.
+#
+FMC_WDT2_REG=0x1e620064
+FMC_WDT2_ENABLE_BIT=0
+
 # Disable the fmc dual boot watch dog
-devmem_clear_bit 0x1e620064 0
+devmem_clear_bit "$FMC_WDT2_REG" "$FMC_WDT2_ENABLE_BIT"
+
+if devmem_test_bit 0x1e620064 "$FMC_WDT2_ENABLE_BIT"; then
+    val=$(devmem "$FMC_WDT2_REG")
+    echo "Error: unable to disable the 2nd watchdog: FMC_WDT2=$val"
+    exit 1
+fi
+
+echo "Disabled the 2nd watchdog (FMC_WDT2) successfully."

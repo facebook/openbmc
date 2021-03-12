@@ -432,8 +432,8 @@ int is_psu_prsnt(uint8_t num, uint8_t* status) {
   return pal_is_fru_prsnt(num + FRU_PSU1, status);
 }
 
-int is_psu_ready(uint8_t num, uint8_t* status) {
-  return pal_is_fru_ready(num + FRU_PSU1, status);
+int is_psu_power_ok(uint8_t num, uint8_t* status) {
+  return pal_is_psu_power_ok(num + FRU_PSU1, status);
 }
 
 int get_mfr_model(uint8_t num, uint8_t* block) {

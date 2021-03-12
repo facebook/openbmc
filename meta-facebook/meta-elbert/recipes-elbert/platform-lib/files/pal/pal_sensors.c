@@ -1828,7 +1828,7 @@ psu_acok_check(uint8_t fru) {
   uint8_t val = 1;
   int ret;
 
-  ret = pal_is_psu_ready(fru, &val);
+  ret = pal_is_psu_power_ok(fru, &val);
   if (ret) {
       // Failed to ready PSU status.
       return 0;
@@ -1848,12 +1848,13 @@ psu_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t psuid = fru - FRU_PSU1;
   uint8_t i2cbus = psu_bus[psuid];
 
+  // If power is bad, log but continue reading sensors.
   ret = psu_acok_check(fru);
   if (ret == READING_NA) {
     psu_acok_log(fru, PSU_ACOK_DOWN);
-    goto psu_out;
+  } else {
+    psu_acok_log(fru, PSU_ACOK_UP);
   }
-  psu_acok_log(fru, PSU_ACOK_UP);
 
   sprintf(full_name, "%s/%d-00%02x/hwmon/hwmon*/", I2C_SYSFS_DEVICES, i2cbus,
           PSU_DEVICE_ADDR);
@@ -1906,7 +1907,6 @@ psu_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       break;
   }
 
-psu_out:
   return ret;
 }
 

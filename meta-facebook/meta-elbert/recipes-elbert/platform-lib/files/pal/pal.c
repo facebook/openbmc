@@ -798,7 +798,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
 }
 
 int
-pal_is_psu_ready(uint8_t fru, uint8_t *status) {
+pal_is_psu_power_ok(uint8_t fru, uint8_t *status) {
   const char *targets[] = { PSU_INPUT_OK, PSU_OUTPUT_OK };
   char tmp[LARGEST_DEVICE_NAME];
   char path[LARGEST_DEVICE_NAME + 1];
@@ -862,7 +862,11 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
     case FRU_PSU2:
     case FRU_PSU3:
     case FRU_PSU4:
-      return pal_is_psu_ready(fru, status);
+      /* Use PSU presence to determine readiness. This is because we want to
+         be able to view sensor data even when PSU is not supplying power. */
+      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PSU_PRSNT);
+      snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PSU1 + 1);
+      break;
     case FRU_FAN:
       // ELBERTTODO: fix this once FAN_CARD_STATUS is working
       *status = 1;

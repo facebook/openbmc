@@ -30,7 +30,7 @@ print_usage(const char *name) {
 
 int
 main(int argc, const char *argv[]) {
-  uint8_t psu_num = 0, prsnt = 0, ready = 0, backup_psus = 0;
+  uint8_t psu_num = 0, prsnt = 0, pwr_ok = 0, backup_psus = 0;
   int pid_file = 0, ret = 0;
   int i;
 
@@ -73,8 +73,8 @@ main(int argc, const char *argv[]) {
 
   for (i = 0; i < NUM_PSU_SLOTS; i++) {
     if (i != psu_num) {
-      is_psu_ready(i, &ready);
-      if (ready) {
+      is_psu_power_ok(i, &pwr_ok);
+      if (pwr_ok) {
         backup_psus++;
       }
     }

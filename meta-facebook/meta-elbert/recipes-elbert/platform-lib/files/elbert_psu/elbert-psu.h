@@ -100,7 +100,7 @@ enum { DELTA_2400, UNKNOWN };
 enum { PRIMARY, SECONDARY };
 
 int is_psu_prsnt(uint8_t num, uint8_t* status);
-int is_psu_ready(uint8_t num, uint8_t* status);
+int is_psu_power_ok(uint8_t num, uint8_t* status);
 int get_mfr_model(uint8_t num, uint8_t* block);
 int do_update_psu(uint8_t num, const char* file, const char* vendor);
 

@@ -322,7 +322,7 @@ enum {
 // ADC128 INFO
 enum {
   ADC128_IN0 = 0,
-  ADC128_IN1 = 0,
+  ADC128_IN1,
 };
 
 // GENERIC I2C Sensors

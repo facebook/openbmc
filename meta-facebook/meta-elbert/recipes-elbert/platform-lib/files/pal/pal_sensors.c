@@ -3098,9 +3098,9 @@ sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[TH4_VRD1_IIN][LCR_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD1_IIN][UNC_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD1_IIN][LNC_THRESH] = 0; // unset
-      smb_sensor_threshold[TH4_VRD1_IOUT_LOOP0][UCR_THRESH] = 720;
+      smb_sensor_threshold[TH4_VRD1_IOUT_LOOP0][UCR_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD1_IOUT_LOOP0][LCR_THRESH] = 0; // unset
-      smb_sensor_threshold[TH4_VRD1_IOUT_LOOP0][UNC_THRESH] = 550;
+      smb_sensor_threshold[TH4_VRD1_IOUT_LOOP0][UNC_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD1_IOUT_LOOP0][LNC_THRESH] = 0; // unset
       // 12.0V no margining +/-5% tolerance
       smb_sensor_threshold[TH4_VRD2_VIN][UCR_THRESH] = 12.6;
@@ -3187,17 +3187,17 @@ sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[TH4_VRD2_IIN_LOOP2][LCR_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD2_IIN_LOOP2][UNC_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD2_IIN_LOOP2][LNC_THRESH] = 0; // unset
-      smb_sensor_threshold[TH4_VRD2_IOUT_LOOP0][UCR_THRESH] = 180;
+      smb_sensor_threshold[TH4_VRD2_IOUT_LOOP0][UCR_THRESH] = 0; //unset
       smb_sensor_threshold[TH4_VRD2_IOUT_LOOP0][LCR_THRESH] = 0; // unset
-      smb_sensor_threshold[TH4_VRD2_IOUT_LOOP0][UNC_THRESH] = 147;
+      smb_sensor_threshold[TH4_VRD2_IOUT_LOOP0][UNC_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD2_IOUT_LOOP0][LNC_THRESH] = 0; // unset
-      smb_sensor_threshold[TH4_VRD2_IOUT_LOOP1][UCR_THRESH] = 30;
+      smb_sensor_threshold[TH4_VRD2_IOUT_LOOP1][UCR_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD2_IOUT_LOOP1][LCR_THRESH] = 0; // unset
-      smb_sensor_threshold[TH4_VRD2_IOUT_LOOP1][UNC_THRESH] = 4.2;
+      smb_sensor_threshold[TH4_VRD2_IOUT_LOOP1][UNC_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD2_IOUT_LOOP1][LNC_THRESH] = 0; // unset
-      smb_sensor_threshold[TH4_VRD2_IOUT_LOOP2][UCR_THRESH] = 30;
+      smb_sensor_threshold[TH4_VRD2_IOUT_LOOP2][UCR_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD2_IOUT_LOOP2][LCR_THRESH] = 0; // unset
-      smb_sensor_threshold[TH4_VRD2_IOUT_LOOP2][UNC_THRESH] = 4.2;
+      smb_sensor_threshold[TH4_VRD2_IOUT_LOOP2][UNC_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD2_IOUT_LOOP2][LNC_THRESH] = 0; // unset
       // Topside board sensor
       smb_sensor_threshold[SMB_T][UNC_THRESH] = 90;

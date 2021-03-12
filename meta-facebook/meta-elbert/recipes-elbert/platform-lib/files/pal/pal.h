@@ -84,6 +84,10 @@ extern "C" {
 #define READ_UNIT_SENSOR_TIMEOUT 5
 #define ELBERT_SMB_P1_BOARD_PATH "/tmp/.smb_p1_board"
 
+// PIM i2c bus definitions.
+extern const uint8_t pim_bus[];
+extern const uint8_t pim_bus_p1[];
+
 extern const char pal_fru_list[];
 
 enum {
@@ -126,7 +130,7 @@ int pal_is_psu_ready(uint8_t fru, uint8_t *status);
 int pal_get_pim_type(uint8_t fru, int retry);
 int pal_set_pim_type_to_file(uint8_t fru, char *type);
 int pal_get_pim_type_from_file(uint8_t fru);
-int pal_is_psu_power_ok(uint8_t fru, uint8_t *status);
+uint8_t get_pim_i2cbus(uint8_t fru);
 
 #ifdef __cplusplus
 } // extern "C"

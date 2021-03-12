@@ -34,6 +34,9 @@
 #include <time.h>
 #include <unistd.h>
 
+const uint8_t pim_bus[] = { 16, 17, 18, 19, 20, 21, 22, 23 };
+const uint8_t pim_bus_p1[] = { 16, 17, 18, 23, 20, 21, 22, 19 };
+
 const char pal_fru_list[] = "all, scm, smb, pim2, pim3, pim4, pim5 \
 pim6, pim7, pim8, pim9, psu1, psu2, psu3, psu4, fan";
 
@@ -736,6 +739,55 @@ read_device(const char *device, int *value) {
   }
 }
 
+static bool
+smb_is_p1(void) {
+  if (access(ELBERT_SMB_P1_BOARD_PATH, F_OK) != -1)
+    return true;
+  else
+    return false;
+}
+
+uint8_t
+get_pim_i2cbus(uint8_t fru) {
+  uint8_t i2cbus;
+  uint8_t pimid = fru - FRU_PIM2;
+
+  // P1 SMB detected, use pim_bus_p1 smbus channel mapping.
+  if (smb_is_p1() == true)
+    i2cbus = pim_bus_p1[pimid];
+  else
+    i2cbus = pim_bus[pimid];
+
+  return i2cbus;
+}
+
+static int
+pal_is_pim_prsnt(uint8_t fru, uint8_t *status) {
+  int val;
+  char tmp[LARGEST_DEVICE_NAME];
+  char prsnt_path[LARGEST_DEVICE_NAME + 1];
+  char eeprom_path[LARGEST_DEVICE_NAME + 1];
+  uint8_t i2cbus = get_pim_i2cbus(fru);
+
+#define pim_eeprom(str_buffer,i2c_bus) \
+      sprintf(str_buffer, \
+              I2C_SYSFS_DEVICES"/%d-0050/eeprom", \
+              i2c_bus)
+
+  // Check present bit and  EEPROM.
+  snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PIM_PRSNT);
+  snprintf(prsnt_path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PIM2 + 2);
+  pim_eeprom(eeprom_path, i2cbus);
+  if ((read_device(prsnt_path, &val) == 0 && val == 0x1) ||
+       access(eeprom_path, F_OK) == 0) {
+    *status = 1;
+  } else {
+    *status = 0;
+  }
+
+  return 0;
+}
+
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   int val;
@@ -761,12 +813,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_PIM7:
     case FRU_PIM8:
     case FRU_PIM9:
-      /* PIM detection is not always accurate because it is based on a soft detection
-       * (via shadow bit bus) and relies on multiboot finishing, so we might see cards
-       * go up and down during bootup/programming. */
-      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PIM_PRSNT);
-      snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PIM2 + 2);
-      break;
+      return pal_is_pim_prsnt(fru, status);
     case FRU_PSU1:
     case FRU_PSU2:
     case FRU_PSU3:
@@ -854,10 +901,7 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
     case FRU_PIM7:
     case FRU_PIM8:
     case FRU_PIM9:
-      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PIM_FPGA_REV_MAJOR);
-      snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PIM2 + 2);
-      expected_val = 0xff;
-      break;
+      return pal_is_pim_prsnt(fru, status);
     case FRU_PSU1:
     case FRU_PSU2:
     case FRU_PSU3:

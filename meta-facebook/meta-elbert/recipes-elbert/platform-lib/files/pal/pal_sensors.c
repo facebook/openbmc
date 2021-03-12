@@ -51,8 +51,6 @@
       OBMC_WARN("'%s' command returned %d", _cmd, _ret); \
   } while (0)
 
-static uint8_t pim_bus[] = { 16, 17, 18, 19, 20, 21, 22, 23 };
-static uint8_t pim_bus_p1[] = { 16, 17, 18, 23, 20, 21, 22, 19 };
 static uint8_t psu_bus[] = { 24, 25, 26, 27 };
 
 typedef struct {
@@ -1570,19 +1568,10 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   return ret;
 }
 
-static bool
-smb_is_p1(void) {
-  if (access(ELBERT_SMB_P1_BOARD_PATH, F_OK) != -1)
-    return true;
-  else
-    return false;
-}
-
 static int
 pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   char full_name[LARGEST_DEVICE_NAME + 1];
-  uint8_t pimid = fru - FRU_PIM2;
-  uint8_t i2cbus;
+  uint8_t i2cbus = get_pim_i2cbus(fru);
   int ret = -1;
 
 #define dir_pim_sensor_hwmon(str_buffer,i2c_bus,addr) \
@@ -1590,12 +1579,6 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
               I2C_SYSFS_DEVICES"/%d-00%02x/hwmon/hwmon*/", \
               i2c_bus, \
               addr)
-
-  // P1 SMB detected, use pim_bus_p1 smbus channel mapping.
-  if (smb_is_p1() == true)
-    i2cbus = pim_bus_p1[pimid];
-  else
-    i2cbus = pim_bus[pimid];
 
   switch(sensor_num) {
     case PIM_POS_3V3_U_VOUT:

@@ -180,6 +180,8 @@ enum {
   CORE_1_TEMP,
   CORE_2_TEMP,
   CORE_3_TEMP,
+  PIM_QSFP200,
+  PIM_QSFP400,
 };
 
 // Sensors on PIM

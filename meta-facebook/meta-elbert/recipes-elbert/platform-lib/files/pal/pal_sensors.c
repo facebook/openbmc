@@ -184,6 +184,8 @@ const uint8_t smb_sensor_list[] = {
   CORE_1_TEMP,
   CORE_2_TEMP,
   CORE_3_TEMP,
+  PIM_QSFP200,
+  PIM_QSFP400,
 };
 
 // List of PIM16Q sensors that need to be monitored
@@ -1200,6 +1202,32 @@ read_attr(uint8_t fru, uint8_t snr_num, const char *device,
 }
 
 static int
+read_file(const char *device, float *value) {
+  FILE *fp;
+  int rc;
+
+  fp = fopen(device, "r");
+  if (!fp) {
+    int err = errno;
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to open device %s", device);
+#endif
+    return err;
+  }
+
+  rc = fscanf(fp, "%f", value);
+  fclose(fp);
+  if (rc != 1) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "failed to read device %s", device);
+#endif
+    return ENOENT;
+  } else {
+    return 0;
+  }
+}
+
+static int
 scm_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = -1;
   int i = 0;
@@ -1557,6 +1585,12 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       case CORE_3_TEMP:
         ret = read_attr(fru, sensor_num, SMB_NET_BRCM_DEVICE, TEMP(14), value);
         *value = *value / 100;
+        break;
+      case PIM_QSFP200:
+        ret = read_file( "/tmp/.PIM_QSFP200", value );
+        break;
+      case PIM_QSFP400:
+        ret = read_file( "/tmp/.PIM_QSFP400", value );
         break;
       default:
         ret = READING_NA;
@@ -2314,6 +2348,12 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case CORE_3_TEMP:
       sprintf(name, "CORE_3_TEMP");
       break;
+    case PIM_QSFP200:
+      sprintf(name, "PIM_QSFP200");
+      break;
+    case PIM_QSFP400:
+      sprintf(name, "PIM_QSFP400");
+      break;
     default:
       return -1;
   }
@@ -2703,6 +2743,8 @@ get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case CORE_1_TEMP:
     case CORE_2_TEMP:
     case CORE_3_TEMP:
+    case PIM_QSFP200:
+    case PIM_QSFP400:
       sprintf(units, TEMP_UNIT);
       break;
     default:
@@ -3285,6 +3327,14 @@ sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[CORE_3_TEMP][UCR_THRESH] = 115;
       smb_sensor_threshold[CORE_3_TEMP][LNC_THRESH] = 0; // unset
       smb_sensor_threshold[CORE_3_TEMP][LCR_THRESH] = 0; // unset
+      smb_sensor_threshold[PIM_QSFP200][UNC_THRESH] = 0; // unset
+      smb_sensor_threshold[PIM_QSFP200][UCR_THRESH] = 65;
+      smb_sensor_threshold[PIM_QSFP200][LNC_THRESH] = 0; // unset
+      smb_sensor_threshold[PIM_QSFP200][LCR_THRESH] = 0; // unset
+      smb_sensor_threshold[PIM_QSFP400][UNC_THRESH] = 0; // unset
+      smb_sensor_threshold[PIM_QSFP400][UCR_THRESH] = 70;
+      smb_sensor_threshold[PIM_QSFP400][LNC_THRESH] = 0; // unset
+      smb_sensor_threshold[PIM_QSFP400][LCR_THRESH] = 0; // unset
       break;
     case FRU_PIM2:
     case FRU_PIM3:

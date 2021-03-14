@@ -22,6 +22,10 @@ SCM_PROGRAM=false
 SMB_PROGRAM=false
 CACHED_SCM_PWR_ON_SYSFS="0x1"
 
+
+# Check if another fw upgrade is ongoing
+check_fwupgrade_running
+
 trap disconnect_program_paths INT TERM QUIT EXIT
 
 usage() {
@@ -128,6 +132,7 @@ unbind_spi_nor() {
 }
 
 connect_pim_flash() {
+    # Set SPI path to PIM SPI flash
     gpio_set_value $CPLD_JTAG_SEL_L 1
     echo 0 > "$PROGRAM_SEL"
     echo 1 > "$SPI_PIM_SEL"
@@ -256,6 +261,8 @@ program_spi_image() {
     esac
 
     echo "Selected partition $PARTITION to program."
+    # Clear any cached pim header version files
+    rm /tmp/.pim_spi_header* 2>/dev/null
 
     if [ "$FPGA_TYPE" -ge 0 ] ; then
         # Verify the image type

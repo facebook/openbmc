@@ -3,8 +3,6 @@ plat_i2c_tree = {
     "15-004a": {"name": "lm73", "driver": "lm73"},
     "4-004d": {"name": "max6581", "driver": "max6697"},
     "4-0050": {"name": "24c512", "driver": "at24"},
-    "3-0040": {"name": "pmbus", "driver": "pmbus"},
-    "3-0041": {"name": "pmbus", "driver": "pmbus"},
     "3-004e": {"name": "ucd90160", "driver": "ucd9000"},
     "3-0060": {"name": "raa228228", "driver": "isl68137"},
     "3-0062": {"name": "isl68226", "driver": "isl68137"},
@@ -37,7 +35,6 @@ pim8ddm = [
     ("0050", "24c512", "at24"),
     ("0054", "isl68224", "isl68137"),
 ]
-
 psu_devices = [
     # Address, name, driver
     ("0058", "pmbus", "pmbus")

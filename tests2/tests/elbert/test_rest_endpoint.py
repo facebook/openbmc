@@ -45,7 +45,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     PIM_STATUS_ENDPOINT = "/api/sys/pimstatus"
     SMB_INFO_ENDPOINT = "/api/sys/smbinfo"
 
-
     # "/api/sys"
     def test_endpoint_api_sys(self):
         self.endpoint_sys_attrb = [

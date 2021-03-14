@@ -26,7 +26,7 @@ import string
 import time
 
 
-VERSION = "0.5"
+VERSION = "0.6"
 SC_POWERGOOD = "/sys/bus/i2c/drivers/scmcpld/12-0043/switchcard_powergood"
 
 
@@ -150,7 +150,6 @@ def psu_debuginfo():
     print("################################\n")
     for i in range(1, 4 + 1):
         # PSU SMBus range 24-28 for PSU1-4
-        # ELBERTTODO change from generic
         cmd = "/usr/local/bin/psu_show_tech.py {} 0x58 -c generic".format(23 + i)
         print(
             "##### PSU{} INFO #####\n{}".format(i, runCmd(cmd, echo=True, verbose=True))
@@ -175,13 +174,18 @@ def logDump():
         )
     )
     print("#### DMESG LOG ####\n{}\n\n".format(runCmd("dmesg", echo=True)))
+    print(
+        "#### BOOT CONSOLE LOG ####\n{}\n\n".format(
+            runCmd("cat /var/log/boot", echo=True)
+        )
+    )
     print("################################")
     print("########## HOST (uServer) CPU LOGS ##########")
     print("################################\n")
-    # ELBERTTODO Add backup logs as well
     print(
-        "#### mTerm LOG ####\n{}\n\n".format(
-            runCmd("cat /var/log/mTerm_wedge.log", echo=True, verbose=True)
+        "#### mTerm LOG ####\n{}\n{}\n".format(
+            runCmd("cat /var/log/mTerm_wedge.log.1", echo=True),
+            runCmd("cat /var/log/mTerm_wedge.log", echo=True),
         )
     )
 
@@ -190,7 +194,8 @@ def i2cDetectDump():
     print("################################")
     print("########## I2C DETECT ##########")
     print("################################\n")
-    for bus in range(0, 17):
+    for bus in range(0, 29):
+        # Nothing on bus 14
         if bus == 14:
             continue
         print(

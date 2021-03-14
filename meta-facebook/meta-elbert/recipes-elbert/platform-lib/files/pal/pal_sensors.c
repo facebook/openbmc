@@ -1971,6 +1971,13 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     return ret;
   }
 
+  if (pal_is_fw_update_ongoing_system()) {
+#ifdef DEBUG
+  syslog(LOG_INFO, "pal_sensor_read_raw(): firmware upgrade in progress\n");
+#endif
+    return -1;
+  }
+
   if (!prsnt) {
 #ifdef DEBUG
   syslog(LOG_INFO, "pal_sensor_read_raw(): %s is not present\n", fru_name);

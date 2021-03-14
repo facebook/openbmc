@@ -78,9 +78,7 @@ calibrate_th4_max6581
 # i2c_device_add 0 0x20 tpm_i2c_infineon
 # i2c_device_add 0 0x2e tpm_i2c_infineon
 
-# SMBus 3 - Switchcard ECB/VRD
-i2c_device_add 3 0x40 pmbus
-i2c_device_add 3 0x41 pmbus
+# SMBus 3 - Switchcard VRD
 hwmon_device_add 3 0x4e ucd90160 # UCD90160
 i2c_device_add 3 0x60 raa228228  # RA228228
 i2c_device_add 3 0x62 isl68226   # ISL68226

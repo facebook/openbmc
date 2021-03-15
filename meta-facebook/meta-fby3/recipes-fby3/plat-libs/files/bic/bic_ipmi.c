@@ -230,17 +230,71 @@ _read_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, uin
   return bic_ipmb_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_READ_FRUID_DATA, tbuf, tlen, rbuf, rlen, intf);
 }
 
+static int
+_zero_chksum(uint8_t *data, uint16_t len) {
+  bool is_valid = false;
+  uint8_t checksum = 0;
+
+  for (int i = 0; i < (len - 1); i++ ) {
+    // if all data is 0, its checksum would be 0.
+    // try to avoid the false positive since one of them should be > 0
+    if ( is_valid == false && data[i] > 0 ) is_valid = true;
+
+    // calc zero-checksum
+    checksum += data[i];
+  }
+  checksum = ~(checksum) + 1;
+
+  if ( (is_valid == false) || (checksum != data[len-1]) ) {
+    return BIC_STATUS_FAILURE;
+  }
+
+  return BIC_STATUS_SUCCESS;
+}
+
+static int
+_verify_fruid(uint8_t *data, int fru_size) {
+  enum {
+    HDR_CHASSIS_AREA_IDX = 0x2,
+    HDR_BOARD_AREA_IDX,
+    HDR_PRODUCT_AREA_IDX,
+    HDR_FIELD_END,
+  };
+
+  // check header - 8 bytes including its checksum
+  if ( _zero_chksum(data, 8) < 0 ) {
+    syslog(LOG_WARNING,"%s() check header failed", __func__);
+    return BIC_STATUS_FAILURE;
+  }
+
+  // start checking from chassis(2) to product(5)
+  // for internal and multi-record area, they are not supported.
+  for (int i = HDR_CHASSIS_AREA_IDX; i < HDR_FIELD_END; i++ ) {
+    uint8_t *st_idx = &data[i];
+    if ( *st_idx == 0 ) continue;
+    *st_idx *= 8; // in multiples of 8 bytes
+    if ( _zero_chksum(&data[*st_idx], data[*(st_idx)+1]*8) < 0 ) {
+      syslog(LOG_WARNING,"%s() check %d fru field failed", __func__, i);
+      return BIC_STATUS_FAILURE;
+    }
+  }
+
+  return BIC_STATUS_SUCCESS;
+}
+
 int
 bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size, uint8_t intf) {
-  int ret = 0;
-  uint32_t nread;
-  uint32_t offset;
-  uint8_t count;
+#define RETRY_DELAY 3
+  int ret = BIC_STATUS_FAILURE;
+  uint32_t nread = 0;
+  uint32_t offset = 0;
+  uint8_t count = 0;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t rlen = 0;
-  int fd;
-  ssize_t bytes_wr;
-  ipmi_fruid_info_t info;
+  int fd = 0;
+  ipmi_fruid_info_t info = {0};
+  uint8_t *buf = NULL;
+  int retry = 0;
 
   // Remove the file if exists already
   unlink(path);
@@ -252,54 +306,75 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size,
     goto error_exit;
   }
 
-  // Read the FRUID information
-  ret = bic_get_fruid_info(slot_id, fru_id, &info, intf);
-  if (ret) {
-    syslog(LOG_ERR, "bic_read_fruid: bic_read_fruid_info returns %d\n", ret);
-    goto error_exit;
-  }
+  do {
+    // Read the FRUID information
+    ret = bic_get_fruid_info(slot_id, fru_id, &info, intf);
+    if ( ret < 0 ) {
+      syslog(LOG_ERR, "bic_read_fruid: bic_read_fruid_info returns %d\n", ret);
+      sleep(RETRY_DELAY * (retry + 1));
+    } else break;
+  } while ( retry++ < RETRY_TIME );
+
+  if ( retry == RETRY_3_TIME ) goto error_exit;
+  else ret = BIC_STATUS_FAILURE;
 
   // Indicates the size of the FRUID
   nread = (info.size_msb << 8) | info.size_lsb;
-  if (nread > FRUID_SIZE) {
-    nread = FRUID_SIZE;
-  }
+  if ( nread > FRUID_SIZE ) nread = FRUID_SIZE;
+  else if ( nread == 0 ) goto error_exit;
 
   *fru_size = nread;
-  if (*fru_size == 0)
-     goto error_exit;
 
-  // Read chunks of FRUID binary data in a loop
-  offset = 0;
-  while (nread > 0) {
-    if (nread > FRUID_READ_COUNT_MAX) {
-      count = FRUID_READ_COUNT_MAX;
-    } else {
-      count = nread;
-    }
-
-    ret = _read_fruid(slot_id, fru_id, offset, count, rbuf, &rlen, intf);
-    if (ret) {
-      syslog(LOG_ERR, "bic_read_fruid: ipmb_wrapper fails\n");
-      goto error_exit;
-    }
-
-    // Ignore the first byte as it indicates length of response
-    bytes_wr = write(fd, &rbuf[1], rlen-1);
-    if (bytes_wr != rlen-1) {
-      syslog(LOG_ERR, "bic_read_fruid: write to FRU failed\n");
-      return -1;
-    }
-
-    // Update offset
-    offset += (rlen-1);
-    nread -= (rlen-1);
+  // Allocate buffer
+  buf = (uint8_t *)malloc(*fru_size);
+  if ( buf == NULL ) {
+    printf("Failed to malloc memory for fruid\n");
+    goto error_exit;
   }
+
+  retry = 0;
+  do {
+    // Read chunks of FRUID binary data in a loop
+    offset = 0;
+    nread = *fru_size;
+    lseek(fd, 0, SEEK_SET);
+
+    while ( nread > 0 ) {
+      if (nread > FRUID_READ_COUNT_MAX) count = FRUID_READ_COUNT_MAX;
+      else count = nread;
+
+      ret = _read_fruid(slot_id, fru_id, offset, count, rbuf, &rlen, intf);
+      if ( ret < 0 ) {
+        syslog(LOG_ERR, "bic_read_fruid: ipmb_wrapper fails\n");
+        break;
+      }
+
+      // Ignore the first byte as it indicates length of response
+      if ( write(fd, &rbuf[1], rlen-1) != (rlen-1) ) {
+        syslog(LOG_ERR, "bic_read_fruid: write to FRU failed\n");
+        ret = BIC_STATUS_FAILURE;
+        break;
+      }
+
+      // Update offset
+      memcpy(&buf[offset], &rbuf[1], rlen-1);
+      offset += (rlen-1);
+      nread -= (rlen-1);
+    }
+
+    if ( ret == BIC_STATUS_SUCCESS ) {
+      ret = _verify_fruid(buf, *fru_size);
+    }
+
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() verified fruid failed, slot:%d, retry:%d, intf:%02X\n", __func__, slot_id, retry, intf);
+      sleep(RETRY_DELAY * (retry + 1));
+    } else break;
+  } while ( retry++ < RETRY_TIME );
 
 error_exit:
-  if (fd > 0 ) {
-    close(fd);
-  }
+  if ( buf != NULL ) free(buf);
+  if ( fd > 0 ) close(fd);
 
   return ret;
 }

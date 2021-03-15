@@ -97,6 +97,7 @@ led_handler() {
   uint8_t status = 0;
   bool slot_err[4] = {false, false, false, false};
   bool slot_support[4] = {false, false, false, false};
+  bool slot_ready[4] = {false, false, false, false};
   uint8_t led_mode = LED_CRIT_PWR_OFF_MODE;
   bool set_led = false;
   uint32_t ver_reg = ON_CHIP_FLASH_USER_VER;
@@ -113,37 +114,48 @@ led_handler() {
   fby3_common_get_bmc_location(&bmc_location);
   num_of_slots = (bmc_location == NIC_BMC)?FRU_SLOT1:FRU_SLOT4;
 
-  for ( i = FRU_SLOT1; i <= num_of_slots; i++ ) {
-      //Check SB CPLD Version
-      ret = fby3_common_get_bus_id(i) + 4;
-      if ( ret < 0 ) {
-        syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, i);
-        continue;
-      }
-
-      bus = (uint8_t)ret;
-      i2cfd = i2c_cdev_slave_open(bus, CPLD_UPDATE_ADDR, I2C_SLAVE_FORCE_CLAIM);
-      if ( i2cfd < 0 ) {
-        syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, bus, strerror(errno));
-        continue;
-      }
-
-      ret = i2c_rdwr_msg_transfer(i2cfd, (CPLD_UPDATE_ADDR << 1), tbuf, tlen, rbuf, rlen);
-      if ( i2cfd > 0 ) close(i2cfd);
-      if ( ret < 0 ) {
-        syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d, fru %d", __func__, tlen, i);
-        continue;
-      }
-
-      // CPLD firmware version should later than A05.
-      if (( rbuf[1] == CPLD_STAGE ) || ( rbuf[0] >= CPLD_VER )) {
-        slot_support[i-1] = true;
-      }
-  }
-
   while(1) {
     for ( i = FRU_SLOT1; i <= num_of_slots; i++ ) {
-      if (slot_support[i-1] == false) {
+      ret = pal_get_server_power(i, &status);
+      if ( ret < 0 || status == SERVER_12V_OFF ) {
+        slot_ready[i-1] = false;
+        continue;
+      }
+
+      // Re-init when Server reset
+      if ( slot_ready[i-1] == false ) {
+        slot_ready[i-1] = true;
+        //Check SB CPLD Version
+        ret = fby3_common_get_bus_id(i) + 4;
+        if ( ret < 0 ) {
+          syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, i);
+          continue;
+        }
+
+        bus = (uint8_t)ret;
+        i2cfd = i2c_cdev_slave_open(bus, CPLD_UPDATE_ADDR, I2C_SLAVE_FORCE_CLAIM);
+        if ( i2cfd < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, bus, strerror(errno));
+          continue;
+        }
+
+        ret = i2c_rdwr_msg_transfer(i2cfd, (CPLD_UPDATE_ADDR << 1), tbuf, tlen, rbuf, rlen);
+        if ( i2cfd > 0 ) close(i2cfd);
+        if ( ret < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d, fru %d", __func__, tlen, i);
+          continue;
+        }
+
+        // CPLD firmware version should later than A05.
+        if (( rbuf[1] == CPLD_STAGE ) && ( rbuf[0] >= CPLD_VER )) {
+          slot_support[i-1] = true;
+        } else {
+          slot_support[i-1] = false;
+          syslog(LOG_WARNING, "%s() Cannot handle LED state with fru%d, please check the SB CPLD f/w version is later than %02X%02X", __func__, i, CPLD_STAGE, CPLD_VER);
+        }
+      }
+
+      if ( slot_support[i-1] == false ) {
         continue;
       }
 

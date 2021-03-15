@@ -45,10 +45,16 @@ enum {
   PESW_IMG_CNT          = 0x05,
   PESW_INIT_BL          = 0x06,
   PESW_TYPE_OFFSET      = 0x1C,
+
+  PESW_PHASE1           = 0x01,
+  PESW_PHASE2           = 0x02,
+  PESW_ACT_STS          = 0x01,
+  PESW_VALID_STS        = 0x01,
 };
 
 char pesw_image_path[5][PATH_MAX+1] = {{"\0"}, {"\0"}, {"\0"}, {"\0"}, {"\0"}};
-static int _update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_rcvry);
+static int
+_process_mchp_images(uint8_t slot_id, uint8_t idx, uint8_t intf, usb_dev* udev, bool is_usb, bool is_rcvry);
 
 static int
 _check_image(char *image, uint8_t *type) {
@@ -184,7 +190,7 @@ _switch_i2c_mux_to_pesw(uint8_t slot_id, uint8_t intf) {
 }
 
 static int
-_check_pesw_status(uint8_t slot_id, uint8_t intf, uint8_t sel_sts, bool run_rcvry, char *expected_sts) {
+_check_pesw_status(uint8_t slot_id, uint8_t intf, uint8_t sel_sts, bool run_rcvry, uint8_t *expected_sts, uint8_t cmp_len) {
   int ret = BIC_STATUS_SUCCESS;
   uint8_t tbuf[4] = {0x9c, 0x9c, 0x0, };
   uint8_t rbuf[16] = {0};
@@ -231,20 +237,14 @@ _check_pesw_status(uint8_t slot_id, uint8_t intf, uint8_t sel_sts, bool run_rcvr
   }
   printf("\n");
 
-#if 0
-  switch(sel_sts) {
-    case PESW_BOOTLOADER_RCVRY:
-      break;
-    case PESW_PARTMAP:
-      break;
-    case PESW_BOOTLOADER2:
-      break;
-    case PESW_CFG:
-      break;
-    case PESW_MAIN:
-      break;
-  }
-#endif
+  // if we are not going to check the status, return
+  if ( sel_sts == PESW_BOOTLOADER_RCVRY && (tbuf[3] == 0x5) ) return ret;
+  if ( cmp_len == 0 ) return ret;
+
+  // check the status
+  ret = (expected_sts == NULL)?BIC_STATUS_FAILURE:memcmp(&rbuf[3], expected_sts, cmp_len);
+  if ( ret != BIC_STATUS_SUCCESS ) ret = BIC_STATUS_FAILURE;
+
 error_exit:
   return ret;
 }
@@ -540,15 +540,16 @@ error_exit:
 }
 
 static int
-_quit_pesw_update(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_rcvry) {
+_quit_pesw_update(uint8_t slot_id, uint8_t type, usb_dev* udev, uint8_t intf, bool is_rcvry) {
   int ret = _toggle_pesw(slot_id, intf, type, is_rcvry);
   if ( is_rcvry == false ) return ret;
 
   printf("Checking the new image status...\n");
 
   // check status
+  uint8_t expected_sts[2] = {PESW_ACT_STS, PESW_VALID_STS};
   for (int i = PESW_BOOTLOADER2; i < PESW_IMG_CNT; i++ ) {
-    ret = _check_pesw_status(slot_id, intf, i, false, NULL);
+    ret = _check_pesw_status(slot_id, intf, i, false, expected_sts, 2);
     if ( ret < 0 ) {
       printf("%s() Failed to check status: %02X\n", __func__, i);
       goto error_exit;
@@ -557,7 +558,7 @@ _quit_pesw_update(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_rcvry) {
 
   // check BL
   printf("Initializing the bootloader...\n");
-  ret = _check_pesw_status(slot_id, intf, PESW_INIT_BL, false, NULL);
+  ret = _check_pesw_status(slot_id, intf, PESW_INIT_BL, false, NULL, 0);
   if ( ret < 0 ) {
     printf("%s() Failed to initialize bootloader\n", __func__);
   }
@@ -575,9 +576,12 @@ _quit_pesw_update(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_rcvry) {
     goto error_exit;
   }
 
+  sleep(8);
+
   // update bl2
   printf("Updating the bootloader...\n");
-  ret = _update_mchp(slot_id, (0x1 << PESW_BOOTLOADER2), intf, true, false);
+  // usb cant be claimed twice
+  ret = _process_mchp_images(slot_id, PESW_BOOTLOADER2, intf, udev, true, false);
   if ( ret < 0 ) {
     printf("Failed to update it\n");
     goto error_exit;
@@ -589,6 +593,16 @@ _quit_pesw_update(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_rcvry) {
     printf("Failed to do power cycle\n");
     goto error_exit;
   }
+
+  sleep(2);
+
+  printf("Starting monitoring SSD...\n");
+  ret = bic_enable_ssd_sensor_monitor(slot_id, true, intf);
+  if ( ret < 0 ) {
+    printf("Failed to start monitoring SSD\n");
+    goto error_exit;
+  }
+
 error_exit:
   return ret;
 }
@@ -617,8 +631,9 @@ _enter_pesw_rcvry_mode(uint8_t slot_id, uint8_t intf, bool is_rcvry) {
     goto error_exit;
   }
 
+  // BIC spends 6s on initilizing M2 devices
   printf("Waiting for BIC...\n");
-  sleep(6);
+  sleep(8);
 
   printf("Stopping monitoring SSD...\n");
   ret = bic_enable_ssd_sensor_monitor(slot_id, false, intf);
@@ -627,6 +642,11 @@ _enter_pesw_rcvry_mode(uint8_t slot_id, uint8_t intf, bool is_rcvry) {
     goto error_exit;
   }
 
+  // When BMC requests BIC to stop running SSD monitor,
+  // it wouldn't be stopped immediately
+  printf("Waiting for BIC...\n");
+  sleep(8);
+
   printf("Switching I2C mux to PESW...\n");
   ret = _switch_i2c_mux_to_pesw(slot_id, intf);
   if ( ret < 0 ) {
@@ -634,7 +654,7 @@ _enter_pesw_rcvry_mode(uint8_t slot_id, uint8_t intf, bool is_rcvry) {
     goto error_exit;
   }
 
-  printf("Checking PESW status...\n");
+  printf("Detecting PESW...");
   memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
   tbuf[3] = 0x09;
   tlen = 4;
@@ -648,13 +668,16 @@ _enter_pesw_rcvry_mode(uint8_t slot_id, uint8_t intf, bool is_rcvry) {
   ret = BIC_STATUS_FAILURE;
   for (int i = 3; i < rlen; i++ ) {
     if ( rbuf[i] == 0xb0 ) {
+      printf("Found");
       ret = BIC_STATUS_SUCCESS;
       break;
     }
   }
+  printf("\n");
 
+  uint8_t expected_sts = PESW_PHASE1;
   // check bootloader phase
-  ret = (ret < 0)?BIC_STATUS_FAILURE: _check_pesw_status(slot_id, intf, PESW_BOOTLOADER_RCVRY, false, NULL);
+  ret = (ret < 0)?BIC_STATUS_FAILURE: _check_pesw_status(slot_id, intf, PESW_BOOTLOADER_RCVRY, false, &expected_sts, 1);
   printf("PESW is %srunning in recovery mode!\n", (ret < 0)?"not ":"");
 
 error_exit:
@@ -686,14 +709,25 @@ _process_mchp_images(uint8_t slot_id, uint8_t idx, uint8_t intf, usb_dev* udev, 
   // check the status after applying the image
   if ( idx == PESW_BOOTLOADER_RCVRY ) {
     printf("Activating %s...\n", comp_name[idx]);
-    ret = _check_pesw_status(slot_id, intf, idx, true, NULL); // execute bl2
+    ret = _check_pesw_status(slot_id, intf, idx, true, NULL, 0); // execute bl2
     if ( ret < 0 ) {
       printf("Failed to activate it\n");
       goto error_exit;
     }
   }
 
-  ret = _check_pesw_status(slot_id, intf, idx, false, NULL); // check status
+  uint8_t expected_sts[2] = {PESW_PHASE2};
+  uint8_t cmp_len = 1;
+  if ( idx == PESW_BOOTLOADER_RCVRY ) {
+    printf("Checking the current phase of PESW...\n");
+  } else {
+    expected_sts[0] = PESW_ACT_STS;
+    expected_sts[1] = PESW_VALID_STS;
+    cmp_len = 2;
+    if ( idx != PESW_PARTMAP ) expected_sts[0] = !PESW_ACT_STS;
+  }
+
+  ret = _check_pesw_status(slot_id, intf, idx, false, &expected_sts[0], cmp_len); // check status
   if ( ret < 0 ) {
     printf("Failed to get the phase status\n");
     goto error_exit;
@@ -737,7 +771,7 @@ _update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_r
   }
 
   // quit
-  if ( _quit_pesw_update(slot_id, type, intf, is_rcvry) < 0 ) {
+  if ( _quit_pesw_update(slot_id, type, udev, intf, is_rcvry) < 0 ) {
     goto error_exit;
   }
 

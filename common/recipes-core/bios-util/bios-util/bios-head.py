@@ -6,7 +6,7 @@ from ctypes import *
 from subprocess import PIPE, Popen
 
 from bios_board import *
-from lib_pal import *
+from pal import pal_get_fru_list, pal_get_fru_id, pal_is_slot_server, pal_is_fru_prsnt
 
 
 def bios_main():
@@ -14,13 +14,7 @@ def bios_main():
     command = sys.argv[2]
 
     if fruname == "all":
-        frulist_c = create_string_buffer(128)
-        ret = CDLL(libpal_name).pal_get_fru_list(frulist_c)
-        if ret:
-            print("Getting fru list failed!")
-            return
-        frulist_s = frulist_c.value.decode()
-        frulist = re.split(r",\s", frulist_s)
+        frulist = pal_get_fru_list()
         for fruname in frulist:
             fru = pal_get_fru_id(fruname)
             if fru >= 0:

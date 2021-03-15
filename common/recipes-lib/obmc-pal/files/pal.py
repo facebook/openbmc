@@ -28,7 +28,7 @@ import ctypes
 import re
 from contextlib import suppress
 from functools import lru_cache
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 
 libpal = ctypes.CDLL("libpal.so.0")
@@ -127,6 +127,26 @@ def pal_is_fru_prsnt(fru_id: int) -> bool:
         raise ValueError("pal_is_fru_prsnt() returned " + str(ret))
 
     return bool(c_status.value)
+
+
+def pal_is_slot_server(fru_id: int) -> bool:
+    "Return whether a FRU is a server type or not"
+    return libpal.pal_is_slot_server(fru_id) != 0
+
+
+def pal_get_postcode(fru: int) -> List[int]:
+    "Return the list of postcodes of server since boot"
+    postcodes = (ctypes.c_ubyte * 256)()
+    plen = ctypes.c_uint(0)
+    status = libpal.pal_get_80port_record(
+        fru, ctypes.byref(postcodes), 256, ctypes.byref(plen)
+    )
+    if status != 0:
+        raise ValueError("Error %d returned by PAL API" % (status))
+    ret = []
+    for i in range(0, plen.value):
+        ret.append((postcodes[i]))
+    return ret
 
 
 ## Sensor reading functions

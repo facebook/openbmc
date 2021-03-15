@@ -44,6 +44,21 @@ function init_vishay_gpv3_ic() {
   local VR_STBY1_ADDR="0x28"
   local VR_STBY2_ADDR="0x2E"
   local VR_STBY3_ADDR="0x30"
+
+  # workaround for I2C on GPv3 board
+  # it will be removed before DVT
+  local cnt=1
+  local retries=5
+  while [ $cnt -le $retries ]; do
+    wait=$((2 ** $cnt))
+    sleep $wait
+    echo -n "check power status " >> $LOG
+    pwr_sts=$(/usr/local/bin/power-util $slot status | grep ON | wc -l | tee -a $LOG)
+    [ "$pwr_sts" != "0" ] && break
+    cnt=$(($cnt + 1))
+    echo "retry..." >> $LOG
+  done
+
   for addr in $VR_STBY1_ADDR $VR_STBY2_ADDR $VR_STBY3_ADDR; do
     #Offset Vout 70mV
     echo "$addr" >> $LOG
@@ -132,7 +147,7 @@ function init_class2_sic(){
     echo "2OU:" >> $LOG
     EXP_BOARD_TYPE=$(get_2ou_board_type 4) #only slot1
     if ([ $EXP_BOARD_TYPE == "0x00" ] || [ $EXP_BOARD_TYPE == "0x03" ]); then
-      init_vishay_gpv3_ic $slot $REXP_INTF
+      init_vishay_gpv3_ic $slot $REXP_INTF &
     else
       init_vishay_ic $slot $REXP_INTF
     fi

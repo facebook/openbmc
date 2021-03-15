@@ -91,11 +91,11 @@ def main(args):
     os.makedirs(rootfs)
     untar = ["tar", "-xf", rootfs_zip, "-C", rootfs]
     subprocess.check_call(untar)
-    cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
+    base_cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
     if args.shell:
-        subprocess.check_call(cmd)
+        subprocess.check_call(base_cmd)
     else:
-        cmd += ["ptest-runner"]
+        cmd = base_cmd + ["ptest-runner"]
         exit_error = False;
         if args.recipes is None or len(args.recipes) == 0:
             cmd += all_recipes
@@ -109,10 +109,9 @@ def main(args):
             if (e.stderr is not None):
                 print(e.stderr.decode())
             exit_error = True
-        if args.log is not None:
-            log = rootfs + "/" + args.log
-            with open(log) as f:
-                print(f.read())
+        if args.execute is not None:
+            cmd = base_cmd + ["sh", '-c', args.execute]
+            print(subprocess.check_output(cmd).decode())
         if exit_error:
           sys.exit(1)
 
@@ -134,14 +133,15 @@ parser.add_argument(
     action="store_true",
 )
 parser.add_argument(
-    "--log",
-    "-l",
-    help="Print the log file after execution of the test(s)",
-    dest="log",
+    "--execute",
+    "-x",
+    help="Execute command in shell before exiting",
+    dest="execute",
     default=None,
 )
 parser.add_argument(
     "--list",
+    "-l",
     help="List ptest recipes",
     action="store_true",
     default=False

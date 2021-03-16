@@ -111,9 +111,6 @@ do_install_board() {
     install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
     update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
 
-    install -m 755 setup_avs.sh ${D}${sysconfdir}/init.d/setup_avs.sh
-    update-rc.d -r ${D} setup_avs.sh start 65 S .
-
     install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .
 

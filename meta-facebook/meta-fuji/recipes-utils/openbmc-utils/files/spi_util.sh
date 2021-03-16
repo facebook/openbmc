@@ -118,12 +118,6 @@ write_spi1_dev(){
             echo 0 > /sys/bus/i2c/devices/12-003e/sys_cpld_fpga_rst_n
             sleep 1
             echo 1 > /sys/bus/i2c/devices/12-003e/sys_cpld_fpga_rst_n
-
-            echo 0 > /sys/bus/i2c/devices/12-003e/fpga_init_N
-            echo 0 > /sys/bus/i2c/devices/12-003e/fpga_program_N
-            sleep 2
-            echo 1 > /sys/bus/i2c/devices/12-003e/fpga_init_N
-            echo 1 > /sys/bus/i2c/devices/12-003e/fpga_program_N
         ;;
 
         "DOM_FPGA_PIM1")

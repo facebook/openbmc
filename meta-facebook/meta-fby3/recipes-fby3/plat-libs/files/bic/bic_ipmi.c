@@ -635,7 +635,7 @@ get_gpv3_channel_number(uint8_t dev_id) {
     case DEV_ID6_2OU:
     case DEV_ID8_2OU:
     case DEV_ID10_2OU:
-      return 0x1;
+      return 0x0;
     case FW_2OU_M2_DEV1:
     case FW_2OU_M2_DEV3:
     case FW_2OU_M2_DEV5:
@@ -648,7 +648,7 @@ get_gpv3_channel_number(uint8_t dev_id) {
     case DEV_ID7_2OU:
     case DEV_ID9_2OU:
     case DEV_ID11_2OU:
-      return 0x0;
+      return 0x1;
     case DEV_ID12_2OU: // E1.S A
       return 0x4;
     case DEV_ID13_2OU: // E1.S B

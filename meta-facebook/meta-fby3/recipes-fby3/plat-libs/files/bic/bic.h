@@ -303,6 +303,7 @@ int active_config(struct libusb_device *dev,struct libusb_device_handle *handle)
 int bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio, uint8_t intf);
 int bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt);
 int bic_mux_select(uint8_t slot_id, uint8_t bus, uint8_t dev_id, uint8_t intf);
+int bic_disable_brcm_parity_init(uint8_t slot_id, uint8_t comp);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -75,6 +75,7 @@ int M2DevComponent::update(string image)
   int ret = 0;
   uint8_t nvme_ready = 0, status = 0, type = DEV_TYPE_UNKNOWN;
   uint8_t idx = (fw_comp - FW_2OU_M2_DEV0) + 1;
+  uint8_t bmc_location = 0;
 
   try {
     server.ready();
@@ -84,8 +85,22 @@ int M2DevComponent::update(string image)
       if (status != 0) {
         syslog(LOG_WARNING, "update: Slot%u Dev%d power=%u nvme_ready=%u type=%u", slot_id, idx - 1, status, nvme_ready, type);
         if ( nvme_ready == 0 ) {
-          ret = FW_STATUS_NOT_SUPPORTED;
-          throw string("The m2 device's NVMe is not ready");
+          if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
+            ret = FW_STATUS_NOT_SUPPORTED;
+            throw string("Failed to initialize the fw-util\n");
+          } else if ( bmc_location == NIC_BMC ) { // Config C
+            ret = FW_STATUS_NOT_SUPPORTED;
+            throw string("The m2 device's NVMe is not ready");
+          } else { // VK recovery update
+            printf("BRCM VK Recovery Update\n");
+            bic_disable_brcm_parity_init(slot_id, fw_comp);
+            ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
+            if (ret == FW_STATUS_SUCCESS) {
+              pal_set_device_power(slot_id, DEV_ID0_2OU + idx -1, SERVER_POWER_CYCLE);
+            } else {
+              syslog(LOG_WARNING, "update: Slot%u Dev%d brcm vk failed", slot_id, idx - 1);
+            }
+          }
         } else if ( type == DEV_TYPE_BRCM_ACC ) {
           ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
           if (ret == FW_STATUS_SUCCESS) {

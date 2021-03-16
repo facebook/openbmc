@@ -37,6 +37,7 @@
 
 #define MAX_RETRY 5
 
+#define BRCM_UPDATE_RTRIES 3
 #define BRCM_UPDATE_STATUS 128
 #define BRCM_WRITE_CMD 130
 #define BRCM_READ_CMD 131
@@ -236,18 +237,23 @@ _check_brcm_fw_status(uint8_t slot_id, uint8_t bus) {
   return ret;
 }
 
-/* future for vk recovery update
+// future for vk recovery update
 int
-bic_disable_brcm_parity_init(uint8_t slot_id, uint8_t bus, uint8_t comp, uint8_t intf) {
+bic_disable_brcm_parity_init(uint8_t slot_id, uint8_t comp) {
   uint8_t wbuf[256], rbuf[256];
   int ret = 0;
   int rlen = 0; // write
+  uint8_t bus = get_gpv3_bus_number(comp);
 
-  ret = bic_enable_ssd_sensor_monitor(slot_id, false, intf);
+  if (bic_enable_ssd_sensor_monitor(slot_id, false, REXP_BIC_INTF)) {
+    printf("* Failed to stop bic sensor monitor\n");
+    return BIC_STATUS_FAILURE;
+  }
+
   sleep(2);
 
   // MUX select
-  if ( bic_mux_select(slot_id, bus, comp, intf) < 0 ) {
+  if ( bic_mux_select(slot_id, bus, comp, REXP_BIC_INTF) < 0 ) {
     printf("* Failed to select MUX\n");
     return BIC_STATUS_FAILURE;
   }
@@ -263,16 +269,20 @@ bic_disable_brcm_parity_init(uint8_t slot_id, uint8_t bus, uint8_t comp, uint8_t
   wbuf[8] = 0x40;
   wbuf[9] = 0x00;
   wbuf[10] = 0x00;
-  ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 11, rbuf, rlen);
+  ret = bic_m2_master_write_read(slot_id, bus, 0xd4, wbuf, 11, rbuf, rlen);
   if (ret != 0) {
-    syslog(LOG_DEBUG,"%s(): bic_master_write_read offset=%d  failed", __func__,wbuf[0]);
+    syslog(LOG_DEBUG,"%s(): bic_m2_master_write_read offset=%d  failed", __func__,wbuf[0]);
   }
+  msleep(100);
 
-  ret = bic_enable_ssd_sensor_monitor(slot_id, true, intf);
+  if (bic_enable_ssd_sensor_monitor(slot_id, true, REXP_BIC_INTF)) {
+    printf("* Failed to start bic sensor monitor\n");
+    return BIC_STATUS_FAILURE;
+  }
 
   sleep(2);
   return ret;
-} */
+}
 
 
 static int
@@ -284,6 +294,7 @@ bic_vk_m2_update(uint8_t slot_id, uint8_t bus, uint8_t comp, int fd, int file_si
   uint32_t offset;
   volatile uint16_t count;
   uint8_t buf[256] = {0};
+  int retries = 0;
 
   printf("updating fw on slot %d device %d:\n", slot_id,comp-FW_2OU_M2_DEV0);
 
@@ -328,20 +339,27 @@ bic_vk_m2_update(uint8_t slot_id, uint8_t bus, uint8_t comp, int fd, int file_si
     syslog(LOG_DEBUG,"%s(): set download init offset=%d", __func__,wbuf[0]);
   }
 
-  sleep(2);
-  wbuf[0] = BRCM_UPDATE_STATUS;  // offset 128 reday bit == 1?
-  rlen = 1;
-  ret = bic_m2_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
-  if (ret != 0) {
-    syslog(LOG_DEBUG,"%s(): reday bit == 1? offset=%d read length=%d failed", __func__,wbuf[0],rlen);
-    return BIC_STATUS_FAILURE;
+  for (retries = 0; retries < BRCM_UPDATE_RTRIES; retries++) {
+    sleep(2);
+    wbuf[0] = BRCM_UPDATE_STATUS;  // offset 128 reday bit == 1?
+    rlen = 1;
+    ret = bic_m2_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
+    if (ret != 0) {
+      syslog(LOG_DEBUG,"%s(): reday bit == 1? offset=%d read length=%d failed", __func__,wbuf[0],rlen);
+      return BIC_STATUS_FAILURE;
+    }
+
+    if (!(rbuf[0] & 0x40)) {
+      syslog(LOG_DEBUG,"%s(): reday bit == 0 reties = %d", __func__, retries);
+    } else {
+      syslog(LOG_DEBUG,"%s(): reday bit == 1 offset=%d rbuf[0]=%d", __func__,wbuf[0],rbuf[0]);
+      break;
+    }
   }
 
-  if (!(rbuf[0] & 0x40)) {
-    syslog(LOG_DEBUG,"%s(): reday bit == 0", __func__);
+  if (retries == BRCM_UPDATE_RTRIES) {
+    syslog(LOG_DEBUG,"%s(): reday bit == 0 reties failed", __func__);
     return BIC_STATUS_FAILURE;
-  } else {
-    syslog(LOG_DEBUG,"%s(): reday bit == 1 offset=%d rbuf[0]=%d", __func__,wbuf[0],rbuf[0]);
   }
 
   wbuf[0] = BRCM_WRITE_CMD;  // offset 130

@@ -4,6 +4,7 @@
 #include "server.h"
 #include "expansion.h"
 #include <string>
+#include <facebook/fby3_common.h>
 
 using namespace std;
 

@@ -23,12 +23,30 @@
 #include <syslog.h>
 #include <time.h>
 #include "fruid.h"
+#include <stdbool.h>
 
 #define FIELD_TYPE(x)     ((x & (0x03 << 6)) >> 6)
 #define FIELD_LEN(x)      (x & ~(0x03 << 6))
 #define FIELD_EMPTY       "N/A"
 #define NO_MORE_DATA_BYTE 0xC1
 #define MAX_FIELD_LENGTH  63  // 6-bit for length
+
+#define SMART_FAN_RECORD_ID          0xC0
+#define MULTIRECORD_FORMAT_VER       0x02
+#define MULTIRECORD_FORMAT_VER_MASK  0x0F
+#define MULTIRECORD_LAST_RECORED_BIT (1 << 7)
+
+#define MANUFACTURER_ID_DATA_LENGTH  3
+#define SMART_FAN_VERSION_LENGTH     4
+#define SMART_FAN_FW_VERSION_LENGTH  4
+#define SMART_FAN_MFG_LINE_LENGTH    8
+#define SMART_FAN_CLEI_CODE_LENGTH   10
+#define SMART_FAN_VOL_DATA_LENGTH    2
+#define SMART_FAN_CUR_DATA_LENGTH    2
+#define SMART_FAN_VOL_CUR_MULTIPLIER 10
+#define SMART_FAN_RPM_DATA_LENGTH    3
+#define MFG_DATE_TIME_LENGTH         3
+
 
 /* Unix time difference between 1970 and 1996. */
 #define UNIX_TIMESTAMP_1996   820454400
@@ -311,84 +329,149 @@ void free_fruid_info(fruid_info_t * fruid)
     free(fruid->product.custom5);
     free(fruid->product.custom6);
   }
+
+  if (fruid->multirecord_smart_fan.flag) {
+    free(fruid->multirecord_smart_fan.smart_fan_ver);
+    free(fruid->multirecord_smart_fan.fw_ver);
+    free(fruid->multirecord_smart_fan.mfg_time);
+    free(fruid->multirecord_smart_fan.mfg_time_str);
+    free(fruid->multirecord_smart_fan.mfg_line);
+    free(fruid->multirecord_smart_fan.clei_code);
+  }
 }
 
-/* Initialize the fruid information struct */
-static void init_fruid_info(fruid_info_t * fruid)
+
+static uint32_t get_dword(uint8_t * buf, uint8_t len) {
+  uint32_t dword_value = 0;
+  int i = 0;
+
+  if (buf == NULL) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "fruid: get_dword failed, read buffer is null");
+#endif
+    return 0;
+  }
+
+  if (len > 4) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "fruid: multi_record_area: get_dword failed, invalid length %u", len);
+#endif
+    return 0;
+  }
+
+  for (i = 0; i < len; i++) {
+    dword_value |= (buf[i] << (8 * i));
+  }
+
+  return dword_value;
+}
+
+static char * get_bcd_plus_string(uint8_t * buf, uint8_t len) {
+  char * bcd_plus_str = NULL;
+  int i = 0;
+  int shift = 0;
+
+  if (buf == NULL) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "fruid: multi_record_area: get_bcd_plus_string failed, read buffer is null");
+#endif
+    return NULL;
+  }
+
+  bcd_plus_str = (char *) malloc((len * 2) + 1);
+  if (bcd_plus_str == NULL) {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "fruid: get_bcd_plus_string: malloc: memory allocation failed\n");
+#endif
+    return NULL;
+  }
+  memset(bcd_plus_str, 0, (len * 2) + 1); // null terminated
+
+  for (i = 0; i < len * 2; i++) {
+    if ((i % 2) == 0) {
+      shift = 4;
+    } else {
+      shift = 0;
+    }
+    bcd_plus_str[i] = bcd_plus_array[((buf[i / 2] >> shift) & 0x0F)];
+  }
+
+  return bcd_plus_str;
+}
+
+int parse_fruid_area_multirecord_smart_fan(uint8_t * multirecord,
+      fruid_area_multirecord_smart_fan_t * fruid_multirecord_smart_fan)
 {
-  fruid->chassis.flag = 0;
-  fruid->board.flag = 0;
-  fruid->product.flag = 0;
-  fruid->chassis.type_str = NULL;
-  fruid->chassis.part_type_len = 0;
-  fruid->chassis.part = NULL;
-  fruid->chassis.serial_type_len = 0;
-  fruid->chassis.serial = NULL;
-  fruid->chassis.custom1_type_len = 0;
-  fruid->chassis.custom1 = NULL;
-  fruid->chassis.custom2_type_len = 0;
-  fruid->chassis.custom2 = NULL;
-  fruid->chassis.custom3_type_len = 0;
-  fruid->chassis.custom3 = NULL;
-  fruid->chassis.custom4_type_len = 0;
-  fruid->chassis.custom4 = NULL;
-  fruid->chassis.custom5_type_len = 0;
-  fruid->chassis.custom5 = NULL;
-  fruid->chassis.custom6_type_len = 0;
-  fruid->chassis.custom6 = NULL;
-  fruid->chassis.chksum = 0;
-  fruid->board.mfg_time_str = NULL;
-  fruid->board.mfg_time = NULL;
-  fruid->board.mfg_type_len = 0;
-  fruid->board.mfg = NULL;
-  fruid->board.name_type_len = 0;
-  fruid->board.name = NULL;
-  fruid->board.serial_type_len = 0;
-  fruid->board.serial = NULL;
-  fruid->board.part_type_len = 0;
-  fruid->board.part = NULL;
-  fruid->board.fruid_type_len = 0;
-  fruid->board.fruid = NULL;
-  fruid->board.custom1_type_len = 0;
-  fruid->board.custom1 = NULL;
-  fruid->board.custom2_type_len = 0;
-  fruid->board.custom2 = NULL;
-  fruid->board.custom3_type_len = 0;
-  fruid->board.custom3 = NULL;
-  fruid->board.custom4_type_len = 0;
-  fruid->board.custom4 = NULL;
-  fruid->board.custom5_type_len = 0;
-  fruid->board.custom5 = NULL;
-  fruid->board.custom6_type_len = 0;
-  fruid->board.custom6 = NULL;
-  fruid->board.chksum = 0;
-  fruid->product.mfg_type_len = 0;
-  fruid->product.mfg = NULL;
-  fruid->product.name_type_len = 0;
-  fruid->product.name = NULL;
-  fruid->product.part_type_len = 0;
-  fruid->product.part = NULL;
-  fruid->product.version_type_len = 0;
-  fruid->product.version = NULL;
-  fruid->product.serial_type_len = 0;
-  fruid->product.serial = NULL;
-  fruid->product.asset_tag_type_len = 0;
-  fruid->product.asset_tag = NULL;
-  fruid->product.fruid_type_len = 0;
-  fruid->product.fruid = NULL;
-  fruid->product.custom1_type_len = 0;
-  fruid->product.custom1 = NULL;
-  fruid->product.custom2_type_len = 0;
-  fruid->product.custom2 = NULL;
-  fruid->product.custom3_type_len = 0;
-  fruid->product.custom3 = NULL;
-  fruid->product.custom4_type_len = 0;
-  fruid->product.custom4 = NULL;
-  fruid->product.custom5_type_len = 0;
-  fruid->product.custom5 = NULL;
-  fruid->product.custom6_type_len = 0;
-  fruid->product.custom6 = NULL;
-  fruid->product.chksum = 0;
+  int index = 0;
+  int i = 0;
+
+  /* Reset the struct to zero */
+  memset(fruid_multirecord_smart_fan, 0, sizeof(fruid_area_multirecord_smart_fan_t));
+
+  fruid_multirecord_smart_fan->manufacturer_id = get_dword(multirecord + index, MANUFACTURER_ID_DATA_LENGTH);
+  index += MANUFACTURER_ID_DATA_LENGTH;
+
+  fruid_multirecord_smart_fan->smart_fan_ver = get_bcd_plus_string(multirecord + index, SMART_FAN_VERSION_LENGTH);
+  index += SMART_FAN_VERSION_LENGTH;
+
+  fruid_multirecord_smart_fan->fw_ver = get_bcd_plus_string(multirecord + index, SMART_FAN_FW_VERSION_LENGTH);
+  index += SMART_FAN_FW_VERSION_LENGTH;
+
+  fruid_multirecord_smart_fan->mfg_time = (uint8_t *) malloc(MFG_DATE_TIME_LENGTH);
+
+  if (fruid_multirecord_smart_fan->mfg_time == NULL) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "fruid: multi_record_area: mfg_time: out of memory");
+#endif
+    return ENOMEM;
+  }
+
+  for (i = 0; i < MFG_DATE_TIME_LENGTH; i++) {
+    fruid_multirecord_smart_fan->mfg_time[i] = multirecord[index++];
+  }
+
+  fruid_multirecord_smart_fan->mfg_time_str = calculate_time(fruid_multirecord_smart_fan->mfg_time);
+  if (fruid_multirecord_smart_fan->mfg_time_str == NULL) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "fruid: multi_record_area: mfg_time_str: out of memory");
+#endif
+    return ENOMEM;
+  }
+
+  fruid_multirecord_smart_fan->mfg_line = (char *) calloc(SMART_FAN_MFG_LINE_LENGTH + 1, sizeof(char));
+  if (fruid_multirecord_smart_fan->mfg_line == NULL) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "fruid: multi_record_area: mfg_line: out of memory");
+#endif
+    return ENOMEM;
+  }
+  for (i = 0; i < SMART_FAN_MFG_LINE_LENGTH; i++) {
+    fruid_multirecord_smart_fan->mfg_line[i] = multirecord[index++];
+  }
+
+  fruid_multirecord_smart_fan->clei_code = (char *) calloc(SMART_FAN_CLEI_CODE_LENGTH + 1, sizeof(char));
+  if (fruid_multirecord_smart_fan->clei_code == NULL) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "fruid: multi_record_area: clei_code: out of memory");
+#endif
+    return ENOMEM;
+  }
+  for (i = 0; i < SMART_FAN_CLEI_CODE_LENGTH; i++) {
+    fruid_multirecord_smart_fan->clei_code[i] = multirecord[index++];
+  }
+
+  fruid_multirecord_smart_fan->voltage = (get_dword(multirecord + index, SMART_FAN_VOL_DATA_LENGTH) * SMART_FAN_VOL_CUR_MULTIPLIER);
+  index += SMART_FAN_VOL_DATA_LENGTH;
+
+  fruid_multirecord_smart_fan->current = (get_dword(multirecord + index, SMART_FAN_CUR_DATA_LENGTH) * SMART_FAN_VOL_CUR_MULTIPLIER);
+  index += SMART_FAN_CUR_DATA_LENGTH;
+
+  fruid_multirecord_smart_fan->rpm_front = get_dword(multirecord + index, SMART_FAN_RPM_DATA_LENGTH);
+  index += SMART_FAN_RPM_DATA_LENGTH;
+  
+  fruid_multirecord_smart_fan->rpm_rear = get_dword(multirecord + index, SMART_FAN_RPM_DATA_LENGTH);
+
+  return 0;
 }
 
 /* Parse the Product area data */
@@ -799,15 +882,74 @@ int parse_fruid_header(const uint8_t * eeprom, fruid_header_t * header)
   return ret;
 }
 
+static int check_multirecord_area(uint8_t *multirecord, int remain_len, bool *is_last_area, uint8_t *type_id, uint8_t *area_len) {
+  int ret = 0;
+  int index = 0;
+  uint8_t format_ver = 0;
+  uint8_t record_chksum = 0;
+  uint8_t header_chksum = 0;
+
+  if (multirecord == NULL || is_last_area == NULL || type_id == NULL || area_len == NULL) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "%s Failed to parse multirecord by NULL parameter", __func__);
+#endif
+    return -1;
+  }
+
+  if (remain_len < sizeof(fruid_area_multirecord_header_t)) {
+    return -1;
+  }
+
+  *type_id = multirecord[index++];
+  format_ver = multirecord[index++];
+  *area_len = multirecord[index++];
+  record_chksum = multirecord[index++];
+  header_chksum = multirecord[index++];
+
+  if (*area_len <= sizeof(fruid_area_multirecord_header_t)) {
+    return -1;
+  }
+
+  *is_last_area = format_ver & MULTIRECORD_LAST_RECORED_BIT;
+
+  if ((format_ver & MULTIRECORD_FORMAT_VER_MASK) != MULTIRECORD_FORMAT_VER) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "%s: format version: %u not supported", __func__, format_ver);
+#endif
+    return 1;
+  }
+
+  ret = verify_chksum((multirecord + sizeof(fruid_area_multirecord_header_t)), *area_len - sizeof(fruid_area_multirecord_header_t) + 1, record_chksum);
+  if (ret != 0) {
+    syslog(LOG_ERR, "%s: record chksum not verified.", __func__);
+    return 1;
+  }
+
+  ret = verify_chksum(multirecord, sizeof(fruid_area_multirecord_header_t), header_chksum);
+  if (ret != 0) {
+    syslog(LOG_ERR, "%s: header chksum not verified.", __func__);
+    return 1;
+  }
+
+  return 0;
+}
+
 /* Parse the eeprom dump and populate the fruid info in struct */
-int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid)
+int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid, int eeprom_len)
 {
   int ret;
+  uint8_t *pMultirecord = NULL;
+  uint8_t *pEnd = (fruid_eeprom->header + eeprom_len);
+  uint8_t type_id = 0;
+  uint8_t area_len = 0;
+  int remain_len = 0;
+  bool is_last_area = true;
 
   /* Initial all the required fruid structures */
   fruid_area_chassis_t fruid_chassis;
   fruid_area_board_t fruid_board;
   fruid_area_product_t fruid_product;
+  fruid_area_multirecord_smart_fan_t fruid_multirecord_smart_fan;
 
   /* If Chassis area is present, parse and print it */
   if (fruid_eeprom->chassis) {
@@ -915,6 +1057,44 @@ int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid)
       return ret;
   }
 
+  if (fruid_eeprom->multirecord) {
+    pMultirecord = fruid_eeprom->multirecord;
+    // get area index and area id
+    while(pMultirecord < pEnd) {
+      remain_len = (pEnd - pMultirecord);
+      ret = check_multirecord_area(pMultirecord, remain_len, &is_last_area, &type_id, &area_len);
+      if (ret < 0) {
+        break;
+      }
+      if (ret > 0) { // skip this record, keep parse next record
+        pMultirecord += area_len;
+        continue;
+      }
+      if (type_id == SMART_FAN_RECORD_ID) {
+        ret = parse_fruid_area_multirecord_smart_fan(pMultirecord + sizeof(fruid_area_multirecord_header_t), &fruid_multirecord_smart_fan);
+        if (ret == 0) {
+          fruid->multirecord_smart_fan.flag = 1;
+          fruid->multirecord_smart_fan.manufacturer_id = fruid_multirecord_smart_fan.manufacturer_id;
+          fruid->multirecord_smart_fan.smart_fan_ver = fruid_multirecord_smart_fan.smart_fan_ver;
+          fruid->multirecord_smart_fan.fw_ver = fruid_multirecord_smart_fan.fw_ver;
+          fruid->multirecord_smart_fan.mfg_time = fruid_multirecord_smart_fan.mfg_time;
+          fruid->multirecord_smart_fan.mfg_time_str = fruid_multirecord_smart_fan.mfg_time_str;
+          fruid->multirecord_smart_fan.mfg_line = fruid_multirecord_smart_fan.mfg_line;
+          fruid->multirecord_smart_fan.clei_code = fruid_multirecord_smart_fan.clei_code;
+          fruid->multirecord_smart_fan.voltage = fruid_multirecord_smart_fan.voltage;
+          fruid->multirecord_smart_fan.current = fruid_multirecord_smart_fan.current;
+          fruid->multirecord_smart_fan.rpm_front = fruid_multirecord_smart_fan.rpm_front;
+          fruid->multirecord_smart_fan.rpm_rear = fruid_multirecord_smart_fan.rpm_rear;
+        }
+      }
+      // append other type here
+      if (is_last_area == true) { // last one record of the list
+        break;
+      }
+      pMultirecord += area_len;
+    }
+  }
+
   return 0;
 }
 
@@ -994,6 +1174,7 @@ int fruid_parse_eeprom(const uint8_t * eeprom, int eeprom_len, fruid_info_t * fr
 
   memset(&fruid_header, 0, sizeof(fruid_header_t));
   memset(&fruid_eeprom, 0, sizeof(fruid_eeprom_t));
+  memset(fruid, 0, sizeof(fruid_info_t));
 
   /* Parse the common header data */
   ret = parse_fruid_header(eeprom, &fruid_header);
@@ -1004,9 +1185,8 @@ int fruid_parse_eeprom(const uint8_t * eeprom, int eeprom_len, fruid_info_t * fr
   /* Calculate all the area offsets */
   set_fruid_eeprom_offsets(eeprom, &fruid_header, &fruid_eeprom);
 
-  init_fruid_info(fruid);
   /* Parse the eeprom and populate the fruid information */
-  ret = populate_fruid_info(&fruid_eeprom, fruid);
+  ret = populate_fruid_info(&fruid_eeprom, fruid, eeprom_len);
   if (ret) {
     /* Free the malloced memory for the fruid information */
     free_fruid_info(fruid);

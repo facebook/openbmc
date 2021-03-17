@@ -157,6 +157,23 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
       printf("%-27s: %s", "\nProduct Custom Data 6",fruid->product.custom6);
   }
 
+  if (fruid->multirecord_smart_fan.flag) {
+    printf("%-27s: %d", "\nSmart Fan Manufacturer ID", fruid->multirecord_smart_fan.manufacturer_id);
+    printf("%-27s: %s", "\nSmart Fan Version", fruid->multirecord_smart_fan.smart_fan_ver);
+    printf("%-27s: %s", "\nSmart Fan FW Version", fruid->multirecord_smart_fan.fw_ver);
+    printf("%-27s: %s", "\nSmart Fan Mfg Date", fruid->multirecord_smart_fan.mfg_time_str);
+    if (strlen(fruid->multirecord_smart_fan.mfg_line) != 0) {
+      printf("%-27s: %s", "\nSmart Fan Mfg Line", fruid->multirecord_smart_fan.mfg_line);
+    }
+    if (strlen(fruid->multirecord_smart_fan.clei_code) != 0) {
+      printf("%-27s: %s", "\nSmart Fan CLEI Code", fruid->multirecord_smart_fan.clei_code);
+    }
+    printf("%-27s: %d", "\nSmart Fan Voltage (10mV)", fruid->multirecord_smart_fan.voltage);
+    printf("%-27s: %d", "\nSmart Fan Current (10mA)", fruid->multirecord_smart_fan.current);
+    printf("%-27s: %d", "\nSmart Fan Front RPM", fruid->multirecord_smart_fan.rpm_front);
+    printf("%-27s: %d", "\nSmart Fan Rear RPM", fruid->multirecord_smart_fan.rpm_rear);
+  }
+
   printf("\n");
 }
 
@@ -226,6 +243,24 @@ print_json_fruid_info(fruid_info_t *fruid, const char *name,json_t *fru_array)
       json_object_set_new(fru_object, "Product Custom Data 5", json_string(fruid->product.custom5));
     if (fruid->product.custom6 != NULL)
       json_object_set_new(fru_object, "Product Custom Data 6", json_string(fruid->product.custom6));
+  }
+
+  if (fruid->multirecord_smart_fan.flag) {
+    json_object_set_new(fru_object, "Smart Fan Manufacturer ID", json_integer(fruid->multirecord_smart_fan.manufacturer_id));
+    json_object_set_new(fru_object, "Smart Fan Version", json_string(fruid->multirecord_smart_fan.smart_fan_ver));
+    json_object_set_new(fru_object, "Smart Fan FW Version", json_string(fruid->multirecord_smart_fan.fw_ver));
+    json_object_set_new(fru_object, "Smart Fan Mfg Date", json_string(fruid->multirecord_smart_fan.mfg_time_str));
+    if (strlen(fruid->multirecord_smart_fan.mfg_line) != 0) {
+      json_object_set_new(fru_object, "Smart Fan Mfg Line", json_string(fruid->multirecord_smart_fan.mfg_line));
+    }
+
+    if (strlen(fruid->multirecord_smart_fan.clei_code) != 0) {
+      json_object_set_new(fru_object, "Smart Fan CLEI Code", json_string(fruid->multirecord_smart_fan.clei_code));
+    }
+    json_object_set_new(fru_object, "Smart Fan Voltage (10mV)", json_integer(fruid->multirecord_smart_fan.voltage));
+    json_object_set_new(fru_object, "Smart Fan Current (10mA)", json_integer(fruid->multirecord_smart_fan.current));
+    json_object_set_new(fru_object, "Smart Fan Front RPM", json_integer(fruid->multirecord_smart_fan.rpm_front));
+    json_object_set_new(fru_object, "Smart Fan Rear RPM", json_integer(fruid->multirecord_smart_fan.rpm_rear));
   }
 
   json_array_append_new(fru_array, fru_object);

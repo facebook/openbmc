@@ -146,11 +146,27 @@ typedef struct fruid_area_product_t {
 } fruid_area_product_t;
 
 /* To hold the Multirecord area information. */
-typedef struct fruid_area_multirecord_t {
-  uint8_t format_ver : 4;
+typedef struct fruid_area_multirecord_header_t {
+  uint8_t type_id;
+  uint8_t format_ver;
   uint8_t area_len;
-  /* TODO: Add more fields to support Multirecord area. */
-} fruid_area_multirecord_t;
+  uint8_t record_chksum;
+  uint8_t header_chksum;
+} fruid_area_multirecord_header_t;
+
+typedef struct fruid_area_multirecord_smart_fan_t {
+  uint32_t manufacturer_id;
+  char * smart_fan_ver;
+  char * fw_ver;
+  uint8_t * mfg_time;
+  char * mfg_time_str;
+  char * mfg_line;
+  char * clei_code;
+  uint32_t voltage;
+  uint32_t current;
+  uint32_t rpm_front;
+  uint32_t rpm_rear;
+} fruid_area_multirecord_smart_fan_t;
 
 /* To hold all the fruid information */
 typedef struct fruid_info_t {
@@ -242,6 +258,20 @@ typedef struct fruid_info_t {
     char * custom6;
     uint8_t chksum;
   } product;
+  struct {
+    uint8_t flag;
+    uint32_t manufacturer_id;
+    char * smart_fan_ver;
+    char * fw_ver;
+    uint8_t * mfg_time;
+    char * mfg_time_str;
+    char * mfg_line;
+    char * clei_code;
+    uint32_t voltage;
+    uint32_t current;
+    uint32_t rpm_front;
+    uint32_t rpm_rear;
+  } multirecord_smart_fan;
 } fruid_info_t;
 
 /* To hold the different area offsets. */

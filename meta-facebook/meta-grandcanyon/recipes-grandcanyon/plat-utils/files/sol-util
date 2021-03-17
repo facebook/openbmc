@@ -21,6 +21,7 @@
 BAUDRATE_115200=115200
 TTYS_SCC_EXP_SDB=2
 TTYS_SCC_IOC_SMART=3
+TTYS_IOCM_IOC_SMART=8
 
 usage() {
   echo "Usage: sol-util { server | bic | scc_exp_smart | scc_exp_sdb | scc_ioc_smart | iocm_ioc_smart }  [--history]"
@@ -45,7 +46,9 @@ case "$1" in
   "server");;
   "bic");;
   "scc_exp_smart");;
-  "iocm_ioc_smart");;
+  "iocm_ioc_smart")
+    /bin/stty -F /dev/ttyS$TTYS_IOCM_IOC_SMART $BAUDRATE_115200 >/dev/null 2>&1
+  ;;
   "scc_exp_sdb")
     /bin/stty -F /dev/ttyS$TTYS_SCC_EXP_SDB $BAUDRATE_115200 >/dev/null 2>&1
   ;;

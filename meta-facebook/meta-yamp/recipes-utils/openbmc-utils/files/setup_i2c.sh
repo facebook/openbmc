@@ -161,9 +161,12 @@ elif [ ! -L "${SMB_MUX_PATH}/driver" ]; then
     # Wait till all the 8 channels (0-7) are populated; otherwise devices
     # behind the switch cannot be created.
     MUX_RETRY=0
-    until [ -d "${SMB_MUX_PATH}/channel-7" ] && [ "$MUX_RETRY" -lt 3 ]; do
+    until [ -d "${SMB_MUX_PATH}/channel-7" ]; do
         usleep 10000 # sleep for 10 milliseconds
         MUX_RETRY=$((MUX_RETRY + 1))
+        if [ "$MUX_RETRY" -gt 3 ]; then
+            break
+        fi
     done
 fi
 

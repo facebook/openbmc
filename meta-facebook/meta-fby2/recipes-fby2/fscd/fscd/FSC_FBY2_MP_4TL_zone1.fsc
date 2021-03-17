@@ -58,5 +58,17 @@ max([
     slot3:nvme1_ctemp,
     slot3:nvme2_ctemp,
     slot4:nvme1_ctemp,
-    slot4:nvme2_ctemp]))
+    slot4:nvme2_ctemp])),
+  linear_mb_bootdrive(
+    max([
+    slot1:host_boot_temp,
+    slot2:host_boot_temp,
+    slot3:host_boot_temp,
+    slot4:host_boot_temp])) +
+  pid_mb_bootdrive(
+    max([
+    slot1:host_boot_temp,
+    slot2:host_boot_temp,
+    slot3:host_boot_temp,
+    slot4:host_boot_temp]))
 ])

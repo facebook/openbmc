@@ -100,7 +100,7 @@ case "$sku_type" in
      case "$server_type" in
        "0")
          echo "Run FSC 4 TLs Config"
-         cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
+         cp /etc/FSC_FBY2_MP_4TL_config.json ${default_fsc_config_path}
        ;;
        "4369")
          echo "Run FSC 4 RCs Config"
@@ -119,7 +119,7 @@ case "$sku_type" in
        ;;
        *)
          echo "Unexpected 4 Servers config! Run FSC 4 TLs Config as default config"
-         cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
+         cp /etc/FSC_FBY2_MP_4TL_config.json ${default_fsc_config_path}
        ;;
      esac
    ;;
@@ -195,7 +195,7 @@ case "$sku_type" in
         fi
       else
         echo "Unexpected sku type! Use FSC 4 TLs Config as default config"
-        cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
+        cp /etc/FSC_FBY2_MP_4TL_config.json ${default_fsc_config_path}
       fi
      fi
    ;;

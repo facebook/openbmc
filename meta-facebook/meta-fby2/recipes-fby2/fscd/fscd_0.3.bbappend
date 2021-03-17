@@ -20,8 +20,8 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://init_pwm.sh \
             file://setup-fan.sh \
             file://check_fan_config.sh \
-            file://FSC_FBY2_PVT_4TL_config.json \
-            file://FSC_FBY2_PVT_4TL_zone1.fsc \
+            file://FSC_FBY2_MP_4TL_config.json \
+            file://FSC_FBY2_MP_4TL_zone1.fsc \
             file://FSC_FBY2_PVT_2GP_2TL_config.json \
             file://FSC_FBY2_PVT_2GP_2TL_zone1.fsc \
             file://FSC_FBY2_PVT_2CF_2TL_config.json \
@@ -53,7 +53,7 @@ FSC_BIN_FILES += "init_pwm.sh \
                   fscd_end.sh \
                  "
 
-FSC_CONFIG += "FSC_FBY2_PVT_4TL_config.json \
+FSC_CONFIG += "FSC_FBY2_MP_4TL_config.json \
                FSC_FBY2_PVT_2GP_2TL_config.json \
                FSC_FBY2_PVT_2CF_2TL_config.json \
                FSC_FBRC_DVT_4RC_config.json \
@@ -70,7 +70,7 @@ FSC_CONFIG += "FSC_FBY2_PVT_4TL_config.json \
                FSC_NORTHDOME_EVT_4ND_config.json \
               "
 
-FSC_ZONE_CONFIG +="FSC_FBY2_PVT_4TL_zone1.fsc \
+FSC_ZONE_CONFIG +="FSC_FBY2_MP_4TL_zone1.fsc \
                    FSC_FBY2_PVT_2GP_2TL_zone1.fsc \
                    FSC_FBY2_PVT_2CF_2TL_zone1.fsc \
                    FSC_FBRC_DVT_4RC_zone1.fsc \

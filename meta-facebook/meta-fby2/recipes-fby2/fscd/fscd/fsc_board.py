@@ -24,6 +24,7 @@ from subprocess import PIPE, Popen
 from fsc_util import Logger
 
 import libgpio
+import re
 
 lpal_hndl = CDLL("libpal.so.0")
 
@@ -207,6 +208,11 @@ def all_slots_power_off():
             all_power_off = False
             break
     return all_power_off
+
+def sensor_fail_ignore_check(sname):
+    if (re.match(r"host_boot_temp", sname) != None):
+        return True
+    return False
 
 
 def sensor_valid_check(board, sname, check_name, attribute):

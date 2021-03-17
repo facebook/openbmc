@@ -50,6 +50,7 @@
 #include <linux/netlink.h>
 #include <openbmc/ncsi.h>
 #include <openbmc/nl-wrapper.h>
+#include <openbmc/nvme-mi.h>
 #include <sys/sysinfo.h>
 
 
@@ -4502,6 +4503,20 @@ pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id)
   }
 #endif
   return false;
+}
+
+int
+pal_correct_sensor_reading_from_cache(uint8_t fru, uint8_t sensor_id, float *value)
+{
+  int raw_value = (int) *value;
+  int ret = 0;
+  // valid temperature range: -60C(0xC4) ~ +127C(0x7F)
+  // C4h-FFh is two's complement, means -60 to -1
+  ret = nvme_temp_value_check(raw_value, value);
+  if (ret == SNR_READING_NA || ret == SNR_READING_SKIP)
+    return ERR_SENSOR_NA;
+
+  return ret;
 }
 
 int

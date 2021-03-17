@@ -52,20 +52,23 @@ def recipes_with_ptest():
     return list(recipes)
 
 
-def bmc_build(recipes):
+def bmc_build(recipes, build_path, verbose):
     openbmc = openbmc_path()
     recipe_arg = " ".join(recipes)
+    build_option = "-q"
+    if verbose:
+      build_option = ""
+
     build_steps = [
         f"cd {openbmc}",
-        "source ./openbmc-init-build-env qemux86 build-qemux86 > /dev/null",
+        f"source ./openbmc-init-build-env qemux86 {build_path} > /dev/null",
         "sed -i -n '/IMAGE_INSTALL_append/!p' conf/local.conf",
         f'echo IMAGE_INSTALL_append = \\"{recipe_arg}\\" >> conf/local.conf',
-        "bitbake -q qemux86-image",
+        f"bitbake {build_option} qemux86-image",
     ]
     build_cmd = "; ".join(build_steps)
     cmd = ["env", "-i", f"HOME={os.environ['HOME']}", "bash", "-l", "-c", build_cmd]
     subprocess.check_call(cmd)
-    return openbmc + "/build-qemux86"
 
 
 def main(args):
@@ -75,8 +78,10 @@ def main(args):
         for _r in all_recipes:
             print(_r)
         sys.exit(0)
-    if args.build is None:
-        args.build = bmc_build(all_recipes)
+    if args.build is None or not os.path.isdir(args.build) or args.force_rebuild:
+        if args.build is None:
+          args.build = openbmc_path() + "build-qemux86"
+        bmc_build(all_recipes, args.build, args.verbose)
 
     if not os.path.isdir(args.build):
         print(f"{args.build} does not exist")
@@ -94,7 +99,7 @@ def main(args):
     base_cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
     if args.shell:
         subprocess.check_call(base_cmd)
-    else:
+    elif not args.skip_tests:
         cmd = base_cmd + ["ptest-runner"]
         exit_error = False;
         if args.recipes is None or len(args.recipes) == 0:
@@ -123,6 +128,29 @@ parser.add_argument(
     help="Use an existing build directory instead of building one (For debugging)",
     dest="build",
     default=None,
+)
+parser.add_argument(
+    "--force-rebuild",
+    "-f",
+    help="Force rebuild the qemux86 image",
+    dest="force_rebuild",
+    action="store_true",
+    default=False,
+)
+parser.add_argument(
+    "--verbose",
+    "-v",
+    help="Verbose build output",
+    dest="verbose",
+    action="store_true",
+    default=False,
+)
+parser.add_argument(
+    "--skip-tests",
+    help="Skip running tests",
+    dest="skip_tests",
+    default=False,
+    action="store_true"
 )
 parser.add_argument(
     "--shell",

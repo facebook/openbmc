@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 [Unit]
-Description=Disable the dual boot watch dog
+Description=Disable the dual boot watchdog
 After=openbmc_gpio_setup.service setup_i2c.service
 
 [Service]

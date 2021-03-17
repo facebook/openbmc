@@ -340,7 +340,7 @@ int pal_get_fru_list(char *list)
   return 0;
 }
 
-int pal_get_fru_capabilities(uint8_t fru, unsigned int *caps)
+int pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 {
   int ret = 0;
 

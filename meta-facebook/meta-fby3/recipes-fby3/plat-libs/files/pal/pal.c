@@ -581,7 +581,7 @@ pal_get_dev_list(uint8_t fru, char *list)
 }
 
 int
-pal_get_fru_capabilities(uint8_t fru, unsigned int *caps)
+pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 {
   int ret = 0;
 

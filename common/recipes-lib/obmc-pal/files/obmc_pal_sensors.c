@@ -568,6 +568,12 @@ pal_is_host_snr_available(uint8_t fru, uint8_t sensor_id)
 }
 
 int __attribute__((weak))
+pal_correct_sensor_reading_from_cache(uint8_t fru, uint8_t sensor_id, float *value)
+{
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value)
 {
   *value = 2;

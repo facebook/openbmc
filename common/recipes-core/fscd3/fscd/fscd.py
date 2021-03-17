@@ -156,6 +156,7 @@ class Fscd(object):
         self.fan_limit_upper_pwm = None
         self.fan_limit_lower_pwm = None
         self.sensor_filter_all = False
+        self.sensor_fail_ignore = False
         self.pwm_sensor_boost_value = None
         self.output_max_boost_pwm = False
         if "get_fan_mode" in dir(fsc_board):
@@ -182,6 +183,7 @@ class Fscd(object):
                 "non_fanfail_limited_boost_value"
             ]
         self.sensor_filter_all = self.fsc_config.get("sensor_filter_all", False)
+        self.sensor_fail_ignore = self.fsc_config.get("sensor_fail_ignore", False)
         if "boost" in self.fsc_config and "fan_fail" in self.fsc_config["boost"]:
             self.fan_fail = self.fsc_config["boost"]["fan_fail"]
         if "boost" in self.fsc_config and "progressive" in self.fsc_config["boost"]:
@@ -272,6 +274,7 @@ class Fscd(object):
                     self.sensor_valid_check,
                     self.fail_sensor_type,
                     self.ssd_progressive_algorithm,
+                    self.sensor_fail_ignore,
                 )
                 counter += 1
                 self.zones.append(zone)

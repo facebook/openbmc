@@ -404,6 +404,7 @@ int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *valu
 int pal_alter_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value);
 bool pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_num);
 bool pal_is_host_snr_available(uint8_t fru, uint8_t sensor_id);
+int pal_correct_sensor_reading_from_cache(uint8_t fru, uint8_t sensor_id, float *value);
 int pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
 int pal_fruid_write(uint8_t slot, char *path);
 int pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path);

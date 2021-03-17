@@ -109,6 +109,7 @@ class Zone:
         sensor_valid_check,
         fail_sensor_type,
         ssd_progressive_algorithm,
+        sensor_fail_ignore,
     ):
         self.pwm_output = pwm_output
         self.last_pwm = transitional
@@ -132,6 +133,7 @@ class Zone:
         else:
             self.get_fan_mode = False
         self.fail_front_io_count = [0] * len(self.expr_meta["ext_vars"])
+        self.sensor_fail_ignore = sensor_fail_ignore
 
     def get_set_fan_mode(self, mode, action):
         fan_mode_path = RECORD_DIR + "fan_mode"
@@ -241,6 +243,8 @@ class Zone:
                                         self.fail_front_io_count[sensor_index] = 0
                                         outmin = max(outmin, self.boost)
                                         cause_boost_count += 1
+                                elif (self.sensor_fail_ignore) and (fsc_board.sensor_fail_ignore_check(sname)):
+                                    Logger.info("Ignore %s Fail" % v)
                                 else:
                                     Logger.warn("%s Fail" % v)
                                     outmin = max(outmin, self.boost)

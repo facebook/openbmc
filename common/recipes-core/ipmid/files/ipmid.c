@@ -496,7 +496,8 @@ sensor_set_reading(unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
   uint8_t sensor_num;
   uint8_t flags;
-  uint8_t value;
+  float value;
+  bool available = true;
 
   // We do not support the command in full.
   if (length_check(3, req_len, response, res_len))
@@ -514,7 +515,12 @@ sensor_set_reading(unsigned char *request, unsigned char req_len,
     res->cc = CC_INVALID_PARAM;
     return;
   }
-  if (sensor_cache_write(req->payload_id, sensor_num, true, (float)value)) {
+  // may use NVMe-MI CTemp spec or other spec to decode cache send from IPMI command
+  if (pal_correct_sensor_reading_from_cache(req->payload_id, sensor_num, &value) != 0) {
+    available = false;
+  }
+
+  if (sensor_cache_write(req->payload_id, sensor_num, available, value)) {
     res->cc = CC_UNSPECIFIED_ERROR;
     return;
   }

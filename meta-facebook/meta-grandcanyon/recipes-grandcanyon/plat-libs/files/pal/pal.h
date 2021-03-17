@@ -30,6 +30,7 @@ extern "C" {
 #include <openbmc/ncsi.h>
 #include <openbmc/nl-wrapper.h>
 #include <openbmc/phymem.h>
+#include <openbmc/nvme-mi.h>
 #include <facebook/fbgc_common.h>
 #include <facebook/fbgc_fruid.h>
 #include <facebook/bic.h>
@@ -116,6 +117,11 @@ extern "C" {
 #define ROUTE_UART6_TO_IO6  ((1 << 9) | (1 << 11))
 #define ROUTE_IO2_TO_IO6    ((1 << 9) | (1 << 10))
 #define ROUTE_IO6_TO_IO2    ((1 << 3) | (1 << 4) | (1 << 5))
+#define NVME_SMART_WARNING_MASK          0x1F  // check bit 0~4
+#define NVME_STATUS_MASK                 0x28  // check bit 3, 5
+#define NVME_STATUS_NORMAL               0x28  // bit3 = 1, bit5 = 1
+
+#define MAX_SERIAL_NUM_SIZE               20
 
 typedef enum {
   STATUS_LED_OFF,
@@ -294,6 +300,8 @@ int pal_bmc_err_enable(const char *error_item);
 int pal_bmc_err_disable(const char *error_item);
 void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
+int pal_get_drive_health(const char* i2c_bus_dev);
+int pal_get_drive_status(const char* i2c_bus_dev);
 
 #ifdef __cplusplus
 } // extern "C"

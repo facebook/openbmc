@@ -35,6 +35,7 @@ extern "C" {
 enum NETFN_OEM_30 {
   CMD_OEM_EXP_ERROR_CODE             = 0x11,
   CMD_OEM_EXP_GET_SENSOR_READING     = 0x2D,
+  CMD_OEM_EXP_GET_HDD_STATUS         = 0xC0,
 };
 
 // NetFn: Storage (0x0A)
@@ -70,6 +71,11 @@ typedef struct _ExpanderGetFruidCommand {
   uint8_t offset_high;
   uint8_t query_size;
 } ExpanderGetFruidCommand;
+
+typedef struct {
+  uint8_t hdd_slot_id;
+  uint8_t element_status[4];
+} hdd_status_res;
 
 int expander_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
 int expander_get_fw_ver(uint8_t *ver, uint8_t ver_len);

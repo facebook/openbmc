@@ -2065,3 +2065,107 @@ pal_teardown_exp_uart_bridging(void) {
 
   return CC_SUCCESS;
 }
+
+int
+pal_get_drive_health(const char* i2c_bus_dev) {
+  uint8_t status_flags = 0;
+  uint8_t warning_value = 0;
+  
+  if (i2c_bus_dev == NULL) {
+    syslog(LOG_WARNING, "fail to get drive health because NULL parameter: *i2c_bus_dev\n");
+    return -1;
+  }
+
+  if (nvme_smart_warning_read(i2c_bus_dev, &warning_value) < 0) {
+    syslog(LOG_ERR, "fail to get drive health because read %s error\n", i2c_bus_dev);
+    return -1;
+  } else {
+    if ((warning_value & NVME_SMART_WARNING_MASK) != NVME_SMART_WARNING_MASK) {
+       return -1;
+    }
+  }
+
+  if (nvme_sflgs_read(i2c_bus_dev, &status_flags) < 0) {
+    syslog(LOG_WARNING, "fail to get drive health because read %s error\n", i2c_bus_dev);
+    return -1;
+  } else {
+    if ((status_flags & NVME_STATUS_MASK) != NVME_STATUS_NORMAL) {
+      return -1;
+    }
+  }
+  return 0;
+}
+
+int
+pal_get_drive_status(const char* i2c_bus_dev) {
+  ssd_data ssd;
+  t_key_value_pair vendor_decode_result;
+  t_key_value_pair sn_decode_result;
+  t_key_value_pair temp_decode_result;
+  t_key_value_pair pdlu_decode_result;
+  t_status_flags status_flag_decode_result;
+  t_smart_warning smart_warning_decode_result;
+  
+  if (i2c_bus_dev == NULL) {
+    syslog(LOG_WARNING, "fail to get drive status because NULL parameter: *i2c_bus_dev\n");
+    return -1;
+  }
+  
+  memset(&ssd, 0, sizeof(ssd));
+  memset(&vendor_decode_result, 0, sizeof(vendor_decode_result));
+  memset(&sn_decode_result, 0, sizeof(sn_decode_result));
+  memset(&temp_decode_result, 0, sizeof(temp_decode_result));
+  memset(&pdlu_decode_result, 0, sizeof(pdlu_decode_result));
+  memset(&status_flag_decode_result, 0, sizeof(status_flag_decode_result));
+  memset(&smart_warning_decode_result, 0, sizeof(smart_warning_decode_result));
+
+  if (nvme_vendor_read_decode(i2c_bus_dev, &ssd.vendor, &vendor_decode_result) < 0) {
+    printf("%s: Fail to read Vendor\n", vendor_decode_result.key);
+  } else {
+    printf("%s: %s\n", vendor_decode_result.key, vendor_decode_result.value);
+  }
+
+  if (nvme_serial_num_read_decode(i2c_bus_dev, ssd.serial_num, MAX_SERIAL_NUM_SIZE, &sn_decode_result) < 0) {
+    printf("%s: Fail to read Serial Number\n", sn_decode_result.key);
+  } else {
+    printf("%s: %s\n", sn_decode_result.key, sn_decode_result.value);
+  }
+
+  if (nvme_temp_read_decode(i2c_bus_dev, &ssd.temp, &temp_decode_result) < 0) {
+    printf("%s: Fail to read Composite Temperature\n", temp_decode_result.key);
+  } else {
+    printf("%s: %s\n", temp_decode_result.key, temp_decode_result.value);
+  }
+  
+  if (nvme_pdlu_read_decode(i2c_bus_dev, &ssd.pdlu, &pdlu_decode_result) < 0) {
+    printf("%s: Fail to read Percentage Drive Life Useds\n", temp_decode_result.key);
+  } else {
+    printf("%s: %s\n", temp_decode_result.key, pdlu_decode_result.value);
+  }
+
+  if (nvme_sflgs_read_decode(i2c_bus_dev, &ssd.sflgs, &status_flag_decode_result) < 0) {
+    printf("%s: Fail to read Status Flags\n", status_flag_decode_result.self.key);
+  } else {
+    printf("%s: %s\n", status_flag_decode_result.self.key, status_flag_decode_result.self.value);
+    printf("    %s: %s\n", status_flag_decode_result.read_complete.key, status_flag_decode_result.read_complete.value);
+    printf("    %s: %s\n", status_flag_decode_result.ready.key, status_flag_decode_result.ready.value);
+    printf("    %s: %s\n", status_flag_decode_result.functional.key, status_flag_decode_result.functional.value);
+    printf("    %s: %s\n", status_flag_decode_result.reset_required.key, status_flag_decode_result.reset_required.value);
+    printf("    %s: %s\n", status_flag_decode_result.port0_link.key, status_flag_decode_result.port0_link.value);
+    printf("    %s: %s\n", status_flag_decode_result.port1_link.key, status_flag_decode_result.port1_link.value);
+  }
+
+  if (nvme_smart_warning_read_decode(i2c_bus_dev, &ssd.warning, &smart_warning_decode_result) < 0) {
+    printf("%s: Fail to read SMART Critical Warning\n", smart_warning_decode_result.self.key);
+  } else {
+    printf("%s: %s\n", smart_warning_decode_result.self.key, smart_warning_decode_result.self.value);
+    printf("    %s: %s\n", smart_warning_decode_result.spare_space.key, smart_warning_decode_result.spare_space.value);
+    printf("    %s: %s\n", smart_warning_decode_result.temp_warning.key, smart_warning_decode_result.temp_warning.value);
+    printf("    %s: %s\n", smart_warning_decode_result.reliability.key, smart_warning_decode_result.reliability.value);
+    printf("    %s: %s\n", smart_warning_decode_result.media_status.key, smart_warning_decode_result.media_status.value);
+    printf("    %s: %s\n", smart_warning_decode_result.backup_device.key, smart_warning_decode_result.backup_device.value);
+  }
+
+  printf("\n");
+  return 0;
+}

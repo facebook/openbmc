@@ -176,6 +176,51 @@ static struct {
   .desired_baudrate = DEFAULT_BAUDRATE,
 };
 
+#ifdef RACKMON_PROFILING
+/*
+ * Subtract "start" from "end" and store result in "result".
+ *
+ * Return 0 if "result" is positive (or 0), and -1 if result is negative.
+ */
+static int timespec_sub(struct timespec *start,
+                        struct timespec *end,
+                        struct timespec *result)
+{
+  long diff_sec = end->tv_sec - start->tv_sec;
+  long diff_nsec = end->tv_nsec - start->tv_nsec;
+
+  if (diff_nsec < 0) {
+    diff_nsec += 1000000000; /* nsec per second. */
+    diff_sec--;
+  }
+
+  if (diff_sec < 0)
+    return -1;
+
+  result->tv_sec = diff_sec;
+  result->tv_nsec = diff_nsec;
+  return 0;
+}
+
+#define timespec_to_ms(_t) (((_t)->tv_sec * 1000) + ((_t)->tv_nsec / 1000000))
+
+#define IO_PERF_START()                                                   \
+do {                                                                      \
+    struct timespec _start, _end, _diff;                                  \
+    if (clock_gettime(CLOCK_REALTIME, &_start) != 0)                      \
+        memset(&_start, 0, sizeof(_start))
+
+#define IO_PERF_END(fmt, args...)                                         \
+    if (clock_gettime(CLOCK_REALTIME, &_end) != 0)                        \
+        break;                                                            \
+    if (timespec_sub(&_start, &_end, &_diff) == 0)                        \
+        OBMC_INFO(fmt ": took %ld msec", ##args, timespec_to_ms(&_diff)); \
+} while (0)
+#else /* !RACKMON_PROFILING */
+#define IO_PERF_START()
+#define IO_PERF_END(fmt, args...)
+#endif /* RACKMON_PROFILING */
+
 static int mutex_lock_helper(pthread_mutex_t *lock, const char *name)
 {
   int error = pthread_mutex_lock(lock);
@@ -405,7 +450,7 @@ static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
                           size_t cmd_size, char* resp_buf, size_t resp_size,
                           size_t exp_resp_len, speed_t baudrate) {
   modbus_req req;
-  int error;
+  int error = 0;
   useconds_t delay = rackmond_config.min_delay;
   psu_datastore_t* psu = NULL;
 
@@ -441,7 +486,11 @@ static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
    * workaround solution.
    */
   for (int retry = 0; retry < MAX_RETRY; retry++) {
+    IO_PERF_START();
     error = modbuscmd(&req, baudrate);
+    IO_PERF_END("rackmon cmd_len=%lu, resp_len=%lu",
+                (unsigned long)req.cmd_len, (unsigned long)req.expected_len);
+
     if (delay != 0) {
       usleep(delay);
     }

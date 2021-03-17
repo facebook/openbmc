@@ -126,7 +126,7 @@ enum
   PSU_ACOK_UP = 1
 };
 
-int pal_is_psu_ready(uint8_t fru, uint8_t *status);
+int pal_is_psu_power_ok(uint8_t fru, uint8_t *status);
 int pal_get_pim_type(uint8_t fru, int retry);
 int pal_set_pim_type_to_file(uint8_t fru, char *type);
 int pal_get_pim_type_from_file(uint8_t fru);

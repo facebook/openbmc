@@ -66,7 +66,7 @@
         [ 0, 80 ]
       ]
     },
-    "linear_mezz_sensor_temp": {
+    "linear_nic_sensor_temp": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },

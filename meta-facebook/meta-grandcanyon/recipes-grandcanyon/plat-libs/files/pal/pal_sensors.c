@@ -361,8 +361,8 @@ PAL_SENSOR_MAP scc_sensor_map[] = {
 };
 
 PAL_SENSOR_MAP nic_sensor_map[] = {
-  [MEZZ_SENSOR_TEMP] =
-  {"MEZZ_SENSOR_TEMP", MEZZ, read_nic_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [NIC_SENSOR_TEMP] =
+  {"NIC_SENSOR_TEMP", NIC, read_nic_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
 };
 
 PAL_SENSOR_MAP e1s_sensor_map[] = {
@@ -585,7 +585,7 @@ const uint8_t scc_sensor_list[] = {
 };
 
 const uint8_t nic_sensor_list[] = {
-  MEZZ_SENSOR_TEMP,
+  NIC_SENSOR_TEMP,
 };
 
 const uint8_t e1s_sensor_list[] = {
@@ -606,7 +606,7 @@ const uint8_t iocm_sensor_list[] = {
 };
 
 PAL_I2C_BUS_INFO nic_info_list[] = {
-  {MEZZ, I2C_NIC_BUS, NIC_INFO_SLAVE_ADDR},
+  {NIC, I2C_NIC_BUS, NIC_INFO_SLAVE_ADDR},
 };
 
 PAL_I2C_BUS_INFO e1s_info_list[] = {

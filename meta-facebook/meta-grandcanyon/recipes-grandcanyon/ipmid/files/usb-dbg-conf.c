@@ -356,7 +356,7 @@ static sensor_desc_t cri_sensor[] =
     {"FAN2_R:"      , FAN_2_REAR                 , "RPM" , FRU_DPB, 0},
     {"FAN3_F:"      , FAN_3_FRONT                , "RPM" , FRU_DPB, 0},
     {"FAN3_R:"      , FAN_3_REAR                 , "RPM" , FRU_DPB, 0},
-    {"NIC Temp:"    , MEZZ_SENSOR_TEMP           , "C"   , FRU_NIC, 0},
+    {"NIC Temp:"    , NIC_SENSOR_TEMP            , "C"   , FRU_NIC, 0},
 };
 
 bool plat_supported(void)

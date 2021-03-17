@@ -274,7 +274,7 @@ enum {
 
 // NIC sensors
 enum {
-  MEZZ_SENSOR_TEMP = 0x82,
+  NIC_SENSOR_TEMP = 0x82,
 
   // PLDM numeric sensors
   NIC_SOC_TEMP = PLDM_NUMERIC_SENSOR_START,
@@ -333,7 +333,7 @@ enum {
 
 // NIC INFO
 enum {
-  MEZZ = 0,
+  NIC = 0,
 };
 
 // EXPANDER

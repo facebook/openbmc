@@ -1,10 +1,10 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 all: name-util
 
-CFLAGS += -Wall -Werror
+CXXFLAGS += -Wall -Werror
 
 name-util: name-util.o
-	$(CC) $(CFLAGS) -pthread -std=gnu11 -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CFLAGS) -pthread -std=gnu11 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

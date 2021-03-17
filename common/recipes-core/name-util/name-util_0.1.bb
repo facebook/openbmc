@@ -4,10 +4,10 @@ DESCRIPTION = "Util for showing valid FRU name on the platform"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://name-util.c;beginline=4;endline=16;md5=b395943ba8a0717a83e62ca123a8d238"
+LIC_FILES_CHKSUM = "file://name-util.cpp;beginline=4;endline=16;md5=b395943ba8a0717a83e62ca123a8d238"
 
 SRC_URI = "file://Makefile \
-           file://name-util.c \
+           file://name-util.cpp \
           "
 
 S = "${WORKDIR}"

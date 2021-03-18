@@ -12,7 +12,8 @@ jobs:
                     apt-get install -y \
                         git \
                         python3-pip \
-                        shellcheck
+                        shellcheck \
+                        cppcheck
             - run:
                 name: Install 'black'.
                 command: |

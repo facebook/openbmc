@@ -1,0 +1,28 @@
+///////////////////////////////////////////////////////////////////////////////////////////
+// You can exclude an error type from a file path and even a specific line number.
+// The following is the format for doing so.
+//
+//[Error_Type]:[PATH]:[Line_Number]
+//
+// Wild cards (*) can be used in place of the error type and can be used within the path.
+// The line number can also be omitted.
+///////////////////////////////////////////////////////////////////////////////////////////
+
+// We're importing these from somewhere else, just ignore them.
+*:*/common/recipes-core/asd/*
+*:*/common/recipes-core/asd_1.4.3/*
+*:*/recipes-utils/jam/*
+
+// Macro not expanding correctly? FIXME
+syntaxError:*recipes-utils/TPMUpdate/*
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Entire error types can also be omitted from all checks by not specifying a
+// file following the error type.
+///////////////////////////////////////////////////////////////////////////////////////////
+
+// These are usually annoying and make the code a mess.
+variableScope
+
+// We have some scanf macros that cppcheck won't expand correctly.
+wrongPrintfScanfArgNum

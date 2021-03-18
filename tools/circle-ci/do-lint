@@ -18,15 +18,48 @@ do_lint_sh() {
   shellcheck "$1"
 }
 
+do_lint_cppcheck() {
+  echo "CPPC: $1"
+  options=( "-j2"
+      "--inconclusive"
+      "--error-exitcode=1"
+      "--enable=performance,style,portability,information"
+      "--suppress=unmatchedSuppression"
+      "--library=tools/circle-ci/lint-config/cppcheck.cfg"
+      "--suppressions-list=tools/circle-ci/lint-config/cppcheck-suppressions.txt" )
+      cppcheck "${options[@]}" "$1"
+}
+
+is_c_family_file() {
+  if [[ "$1" =~ .*\.c$ ]]   || \
+     [[ "$1" =~ .*\.cc$ ]]  || \
+     [[ "$1" =~ .*\.cu$ ]]  || \
+     [[ "$1" =~ .*\.cxx$ ]] || \
+     [[ "$1" =~ .*\.cpp$ ]] || \
+     [[ "$1" =~ .*\.h$ ]]   || \
+     [[ "$1" =~ .*\.hh$ ]]  || \
+     [[ "$1" =~ .*\.hpp$ ]] || \
+     [[ "$1" =~ .*\.hxx$ ]] || \
+     [[ "$1" =~ .*\.tcc$ ]]
+  then
+    return 0
+  else
+    return 1
+  fi
+}
+
 ORIGIN_COMMIT="$(git merge-base HEAD origin/helium 2>/dev/null || git merge-base HEAD origin/master)"
 
 MODIFIED_FILES="$(git diff --diff-filter=d --name-only "$ORIGIN_COMMIT" --)"
 
 
 for f in $MODIFIED_FILES; do
-  if [[ "$f" =~ .*\.sh ]]; then
+  if [[ "$f" =~ .*\.sh$ ]]; then
     do_lint_sh "$f"
-  elif [[ "$f" =~ .*\.py ]]; then
+  # any of cpp|c|cc|cu|cxx|h|hh|hpp|hxx|tcc
+  elif is_c_family_file "$f"; then
+    do_lint_cppcheck "$f"
+ elif [[ "$f" =~ .*\.py$ ]]; then
     do_lint_py "$f"
   else
     first=$(head -1 "$f")

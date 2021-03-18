@@ -30,6 +30,7 @@ SRC_URI = "file://ast-functions \
            file://run-sync-rtc.sh \
            file://setup-i2c.sh \
            file://setup-por.sh \
+           file://setup-nicfru.sh \
            file://COPYING \
           "
 
@@ -68,6 +69,8 @@ do_install() {
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 70 S .
   install -m 755 setup-m2carrier.sh ${D}${sysconfdir}/init.d/setup-m2carrier.sh
+  install -m 755 setup-nicfru.sh ${D}${sysconfdir}/init.d/setup-nicfru.sh
+  update-rc.d -r ${D} setup-nicfru.sh start 60 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

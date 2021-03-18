@@ -45,6 +45,22 @@
 #define E1S2_EEPROM "/sys/class/i2c-dev/i2c-22/device/22-0050/eeprom"
 #define FIO_EEPROM "/sys/class/i2c-dev/i2c-8/device/8-0051/eeprom"
 #define FIO_BIN "/tmp/fruid_fio.bin"
+#define NIC0_EEPROM "/sys/class/i2c-dev/i2c-1/device/1-0050/eeprom"
+#define NIC0_BIN "/tmp/fruid_nic0.bin"
+#define NIC1_EEPROM "/sys/class/i2c-dev/i2c-9/device/9-0050/eeprom"
+#define NIC1_BIN "/tmp/fruid_nic1.bin"
+#define NIC2_EEPROM "/sys/class/i2c-dev/i2c-2/device/2-0050/eeprom"
+#define NIC2_BIN "/tmp/fruid_nic2.bin"
+#define NIC3_EEPROM "/sys/class/i2c-dev/i2c-10/device/10-0050/eeprom"
+#define NIC3_BIN "/tmp/fruid_nic3.bin"
+#define NIC4_EEPROM "/sys/class/i2c-dev/i2c-4/device/4-0050/eeprom"
+#define NIC4_BIN "/tmp/fruid_nic4.bin"
+#define NIC5_EEPROM "/sys/class/i2c-dev/i2c-11/device/11-0050/eeprom"
+#define NIC5_BIN "/tmp/fruid_nic5.bin"
+#define NIC6_EEPROM "/sys/class/i2c-dev/i2c-7/device/7-0050/eeprom"
+#define NIC6_BIN "/tmp/fruid_nic6.bin"
+#define NIC7_EEPROM "/sys/class/i2c-dev/i2c-13/device/13-0050/eeprom"
+#define NIC7_BIN "/tmp/fruid_nic7.bin"
 
 #define BMC_IPMB_SLAVE_ADDR 0x17
 
@@ -55,7 +71,7 @@
 
 #define MAX_RETRY 3
 
-const char pal_fru_list[] = "all, mb, bsm, pdb, carrier1, carrier2, fio";
+const char pal_fru_list[] = "all, mb, bsm, pdb, carrier1, carrier2, fio, nic0, nic1, nic2, nic3, nic4, nic5, nic6, nic7";
 const char pal_server_list[] = "";
 
 struct pal_key_cfg {
@@ -168,6 +184,22 @@ int pal_get_fruid_name(uint8_t fru, char *name)
   }
   else if (fru == FRU_FIO)
     sprintf(name, "Front IO");
+  else if (fru == FRU_NIC0)
+    sprintf(name, "NIC 0");
+  else if (fru == FRU_NIC1)
+    sprintf(name, "NIC 1");
+  else if (fru == FRU_NIC2)
+    sprintf(name, "NIC 2");
+  else if (fru == FRU_NIC3)
+    sprintf(name, "NIC 3");
+  else if (fru == FRU_NIC4)
+    sprintf(name, "NIC 4");
+  else if (fru == FRU_NIC5)
+    sprintf(name, "NIC 5");
+  else if (fru == FRU_NIC6)
+    sprintf(name, "NIC 6");
+  else if (fru == FRU_NIC7)
+    sprintf(name, "NIC 7");
   else
     return -1;
 
@@ -295,6 +327,22 @@ int pal_get_fruid_path(uint8_t fru, char *path)
   }
   else if (fru == FRU_FIO)
     sprintf(path, FIO_BIN);
+  else if (fru == FRU_NIC0)
+    sprintf(path, NIC0_BIN);
+  else if (fru == FRU_NIC1)
+    sprintf(path, NIC1_BIN);
+  else if (fru == FRU_NIC2)
+    sprintf(path, NIC2_BIN);
+  else if (fru == FRU_NIC3)
+    sprintf(path, NIC3_BIN);
+  else if (fru == FRU_NIC4)
+    sprintf(path, NIC4_BIN);
+  else if (fru == FRU_NIC5)
+    sprintf(path, NIC5_BIN);
+  else if (fru == FRU_NIC6)
+    sprintf(path, NIC6_BIN);
+  else if (fru == FRU_NIC7)
+    sprintf(path, NIC7_BIN);
   else
     return -1;
 
@@ -328,6 +376,22 @@ int pal_get_fruid_eeprom_path(uint8_t fru, char *path)
   }
   else if (fru == FRU_FIO)
     sprintf(path, FIO_EEPROM);
+  else if (fru == FRU_NIC0)
+    sprintf(path, NIC0_EEPROM);
+  else if (fru == FRU_NIC1)
+    sprintf(path, NIC1_EEPROM);
+  else if (fru == FRU_NIC2)
+    sprintf(path, NIC2_EEPROM);
+  else if (fru == FRU_NIC3)
+    sprintf(path, NIC3_EEPROM);
+  else if (fru == FRU_NIC4)
+    sprintf(path, NIC4_EEPROM);
+  else if (fru == FRU_NIC5)
+    sprintf(path, NIC5_EEPROM);
+  else if (fru == FRU_NIC6)
+    sprintf(path, NIC6_EEPROM);
+  else if (fru == FRU_NIC7)
+    sprintf(path, NIC7_EEPROM);
   else
     return -1;
 

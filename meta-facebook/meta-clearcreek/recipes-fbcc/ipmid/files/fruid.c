@@ -54,6 +54,22 @@
 #define E1S2_EEPROM "/sys/class/i2c-dev/i2c-22/device/22-0050/eeprom"
 #define FIO_EEPROM "/sys/class/i2c-dev/i2c-8/device/8-0051/eeprom"
 #define FIO_BIN "/tmp/fruid_fio.bin"
+#define NIC0_EEPROM "/sys/class/i2c-dev/i2c-1/device/1-0050/eeprom"
+#define NIC0_BIN "/tmp/fruid_nic0.bin"
+#define NIC1_EEPROM "/sys/class/i2c-dev/i2c-9/device/9-0050/eeprom"
+#define NIC1_BIN "/tmp/fruid_nic1.bin"
+#define NIC2_EEPROM "/sys/class/i2c-dev/i2c-2/device/2-0050/eeprom"
+#define NIC2_BIN "/tmp/fruid_nic2.bin"
+#define NIC3_EEPROM "/sys/class/i2c-dev/i2c-10/device/10-0050/eeprom"
+#define NIC3_BIN "/tmp/fruid_nic3.bin"
+#define NIC4_EEPROM "/sys/class/i2c-dev/i2c-4/device/4-0050/eeprom"
+#define NIC4_BIN "/tmp/fruid_nic4.bin"
+#define NIC5_EEPROM "/sys/class/i2c-dev/i2c-11/device/11-0050/eeprom"
+#define NIC5_BIN "/tmp/fruid_nic5.bin"
+#define NIC6_EEPROM "/sys/class/i2c-dev/i2c-7/device/7-0050/eeprom"
+#define NIC6_BIN "/tmp/fruid_nic6.bin"
+#define NIC7_EEPROM "/sys/class/i2c-dev/i2c-13/device/13-0050/eeprom"
+#define NIC7_BIN "/tmp/fruid_nic7.bin"
 
 /*
  * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
@@ -167,6 +183,30 @@ int plat_fruid_init(void)
 
   if (copy_eeprom_to_bin(FIO_EEPROM, FIO_BIN))
     syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, FIO_BIN);
+
+  if (copy_eeprom_to_bin(NIC0_EEPROM, NIC0_BIN))
+    syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, NIC0_BIN);
+
+  if (copy_eeprom_to_bin(NIC1_EEPROM, NIC1_BIN))
+    syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, NIC1_BIN);
+
+  if (copy_eeprom_to_bin(NIC2_EEPROM, NIC2_BIN))
+    syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, NIC2_BIN);
+
+  if (copy_eeprom_to_bin(NIC3_EEPROM, NIC3_BIN))
+    syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, NIC3_BIN);
+
+  if (copy_eeprom_to_bin(NIC4_EEPROM, NIC4_BIN))
+    syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, NIC4_BIN);
+
+  if (copy_eeprom_to_bin(NIC5_EEPROM, NIC5_BIN))
+    syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, NIC5_BIN);
+
+  if (copy_eeprom_to_bin(NIC6_EEPROM, NIC6_BIN))
+    syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, NIC6_BIN);
+
+  if (copy_eeprom_to_bin(NIC7_EEPROM, NIC7_BIN))
+    syslog(LOG_WARNING, "[%s]Copy EEPROM to %s Failed",__func__, NIC7_BIN);
 
   return 0;
 }

@@ -6388,14 +6388,8 @@ parse_psb_error_sel_nd(uint8_t *event_data, char *error_log) {
     case 0x3E:
       strcat(error_log, "P0: Error reading fuse info");
       break;
-    case 0x7B:
-      strcat(error_log, "P0: OEM BIOS Signing Key failed signature verification");
-      break;
     case 0x6F:
       strcat(error_log, "P0: OEM BIOS Signing Key Usage flag violation");
-      break;
-    case 0x7C:
-      strcat(error_log, "P0: Platform Vendor ID and/or Model ID binding violation");
       break;
     case 0x78:
       strcat(error_log, "P0: BIOS RTM Signature entry not found");
@@ -6405,6 +6399,12 @@ parse_psb_error_sel_nd(uint8_t *event_data, char *error_log) {
       break;
     case 0x7A:
       strcat(error_log, "P0: BIOS RTM Signature verification failed");
+      break;
+    case 0x7B:
+      strcat(error_log, "P0: OEM BIOS Signing Key failed signature verification");
+      break;
+    case 0x7C:
+      strcat(error_log, "P0: Platform Vendor ID and/or Model ID binding violation");
       break;
     case 0x7D:
       strcat(error_log, "P0: BIOS Copy bit is unset for reset image");
@@ -6426,6 +6426,9 @@ parse_psb_error_sel_nd(uint8_t *event_data, char *error_log) {
       break;
     case 0x83:
       strcat(error_log, "P1: Error with actual fusing operation");
+      break;
+    case 0x92:
+      strcat(error_log, "P0: Error in BIOS Directory Table – Firmware type not found");
       break;
     default:
       strcat(error_log, "Unknown");

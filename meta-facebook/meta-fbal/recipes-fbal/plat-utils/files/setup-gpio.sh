@@ -289,6 +289,10 @@ gpio_export FM_BMC_SKT_ID_1 GPIOO1
 
 # FM_BMC_SKT_ID_2
 gpio_export FM_BMC_SKT_ID_2 GPIOO2
+mode=$(($(gpio_get FM_BMC_SKT_ID_2)))
+kv set mb_skt $((mode<<2 |
+        $(gpio_get FM_BMC_SKT_ID_1)<<1 |
+        $(gpio_get FM_BMC_SKT_ID_0)))
 
 # FM_SMB_RETIMER_1_ISO_EN
 gpio_export FM_SMB_RETIMER_1_ISO_EN GPIOO3
@@ -331,6 +335,11 @@ gpio_export FM_BLADE_ID_0 GPIOP6
 
 # FM_BLADE_ID_1
 gpio_export FM_BLADE_ID_1 GPIOP7
+if [ "$mode" -eq 1 ]; then  # 2S
+  kv set mb_pos 0
+else
+  kv set mb_pos $(($(gpio_get FM_BLADE_ID_1)<<1 | $(gpio_get FM_BLADE_ID_0)))
+fi
 
 
 # RST_TCA9545_DDR_MUX_N
@@ -527,8 +536,7 @@ gpio_export_ioexp 4-0077 HP_LVC3_OCP_V3_2_PRSNT2_N 8
 gpio_export_ioexp 4-0077 HP_LVC3_OCP_V3_1_PRSNT2_N 9
 
 # Mode Setting (2S: mode=1 4S: mode=0)
-mode=$(gpio_get FM_BMC_SKT_ID_2)
-if [ "$mode" == "1" ]; then
+if [ "$mode" -eq 1 ]; then
     gpio_set LED_4S_2S_MODE_N 0
 else
     gpio_set LED_4S_2S_MODE_N 1

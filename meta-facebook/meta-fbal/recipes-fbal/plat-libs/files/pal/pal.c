@@ -49,8 +49,6 @@
 #define GPIO_FAULT_LED "FP_FAULT_LED_N"
 #define GPIO_NIC0_PRSNT "HP_LVC3_OCP_V3_1_PRSNT2_N"
 #define GPIO_NIC1_PRSNT "HP_LVC3_OCP_V3_2_PRSNT2_N"
-#define GPIO_SKT_ID0 "FM_BMC_SKT_ID_0"
-#define GPIO_SKT_ID2 "FM_BMC_SKT_ID_2"
 
 #define GUID_SIZE 16
 #define OFFSET_SYS_GUID 0x17F0
@@ -565,18 +563,16 @@ pal_get_fruid_path(uint8_t fru, char *path) {
   return 0;
 }
 
-void fru_eeprom_mb_check(char* mb_path) {
-  uint8_t id=0;
+void fru_eeprom_mb_check(char *mb_path) {
+  uint8_t id = REV_DVT;
 
   pal_get_board_rev_id(&id);
-
-  if(id < REV_DVT) {
-   sprintf(mb_path, FRU_EEPROM_MB_T, 54);
+  if (id >= REV_DVT) {
+    sprintf(mb_path, FRU_EEPROM_MB_T, 57);
   } else {
-   sprintf(mb_path, FRU_EEPROM_MB_T, 57);
+    sprintf(mb_path, FRU_EEPROM_MB_T, 54);
   }
 }
-
 
 int
 pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
@@ -732,31 +728,6 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   return 0;
 }
 
-
-
-int
-read_device(const char *device, int *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "r");
-  if (!fp) {
-    int err = errno;
-    syslog(LOG_INFO, "failed to open device %s", device);
-    return err;
-  }
-
-  rc = fscanf(fp, "%d", value);
-
-  fclose(fp);
-  if (rc != 1) {
-    syslog(LOG_INFO, "failed to read device %s", device);
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
 int
 pal_set_def_key_value() {
   int i;
@@ -794,36 +765,6 @@ pal_set_def_key_value() {
 }
 
 int
-pal_get_blade_id(uint8_t *id) {
-  static bool cached = false;
-  static unsigned int cached_id = 0;
-  uint8_t mode;
-
-  if (!cached) {
-    const char *shadows[] = {    //BLADE_ID[1:0] 00 MB0 Lowest
-      "FM_BLADE_ID_0",           //BLADE_ID[1:0] 10 MB1
-      "FM_BLADE_ID_1"
-    };
-    if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_id)) {
-      return -1;
-    }
-    cached = true;
-  }
-
-  /*Workaround: 
-    The blade0 goto high when non plug upi board in standby mode.
-    After power on blade0 change to 0 in 2S Mode MB3.
-  */
-  if( !pal_get_host_system_mode(&mode) && mode == MB_2S_MODE ) {
-    cached_id = 0;
-    cached = true;
-  }
-
-  *id = (uint8_t)cached_id;
-  return 0;
-}
-
-int
 pal_get_bmc_ipmb_slave_addr(uint16_t* slave_addr, uint8_t bus_id) {
   uint8_t val;
   int ret;
@@ -831,7 +772,7 @@ pal_get_bmc_ipmb_slave_addr(uint16_t* slave_addr, uint8_t bus_id) {
 
   if (bus_id == I2C_BUS_2) {
     if (addr == 0) {
-      ret = pal_get_blade_id(&val);
+      ret = pal_get_mb_position(&val);
       if (ret != 0) {
         return -1;
       }
@@ -862,7 +803,7 @@ pal_peer_tray_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen)
   uint8_t val;
   int ret;
 
-  ret = pal_get_blade_id(&val);
+  ret = pal_get_mb_position(&val);
   if (ret) {
     return ret;
   }
@@ -941,13 +882,25 @@ pal_is_mcu_ready(uint8_t bus) {
   return false;
 }
 
+static int
+pal_get_blade_id(uint8_t *id) {
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (kv_get("mb_pos", value, NULL, 0)) {
+    return -1;
+  }
+
+  *id = (uint8_t)atoi(value);
+  return 0;
+}
+
 int
-pal_get_mb_position(uint8_t* pos) {
+pal_get_mb_position(uint8_t *pos) {
   static bool cached = false;
   static uint8_t cached_pos = 0;
 
   if (!cached) {
-    if(pal_get_blade_id (&cached_pos))
+    if (pal_get_blade_id(&cached_pos))
       return -1;
 
     switch (cached_pos) {
@@ -963,70 +916,67 @@ pal_get_mb_position(uint8_t* pos) {
     cached = true;
   }
 
-  *pos = cached_pos;
 #ifdef DEBUG
-  syslog(LOG_DEBUG,"%s BMC Position ID =%d\n", __func__, cached_pos);
+  syslog(LOG_DEBUG, "%s: BMC Position ID = %u", __func__, cached_pos);
 #endif
+  *pos = cached_pos;
+
   return 0;
 }
 
 int
 pal_get_config_is_master(void) {
-  gpio_desc_t *gdesc;
-  gpio_value_t val;
+  char value[MAX_VALUE_LEN] = {0};
   static bool cached = false;
   static int status = 1;
 
   if (!cached) {
-    if ((gdesc = gpio_open_by_shadow(GPIO_SKT_ID0))) {
-      if (!gpio_get_value(gdesc, &val)) {
-        status = (val == GPIO_VALUE_LOW) ? 1 : 0;
-        cached = true;
-      }
-      gpio_close(gdesc);
+    if (kv_get("mb_skt", value, NULL, 0)) {
+      return status;
     }
+
+    status = ((atoi(value) & 0x1) == GPIO_VALUE_LOW);
+    cached = true;
   }
 
 #ifdef DEBUG
-  syslog(LOG_DEBUG, "%s status=%x", __func__, status);
+  syslog(LOG_DEBUG, "%s: status = %d", __func__, status);
 #endif
   return status;
 }
 
 int
-pal_get_platform_id(uint8_t *id) {
-  char key[MAX_KEY_LEN];
-  char value[MAX_VALUE_LEN]={0};
+pal_get_host_system_mode(uint8_t *mode) {
+  char value[MAX_VALUE_LEN] = {0};
+  static bool cached = false;
+  static unsigned int cached_id = 0;
 
-  sprintf(key, "mb_sku");
-  if (kv_get(key, value, NULL, 0)) {
-    return false;
+  if (!cached) {
+    if (kv_get("mb_skt", value, NULL, 0)) {
+      return -1;
+    }
+
+    cached_id = atoi(value) >> 1;
+    cached = true;
   }
 
-  *id = atoi(value);
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s: System Mode = %u", __func__, cached_id);
+#endif
+  *mode = (uint8_t)cached_id;
+
   return 0;
 }
 
 int
-pal_get_host_system_mode(uint8_t* mode) {
-  static bool cached = false;
-  static unsigned int cached_pos = 0;
+pal_get_platform_id(uint8_t *id) {
+  char value[MAX_VALUE_LEN] = {0};
 
-  if (!cached) {
-    const char *shadows[] = {     //SKT_ID[2:1] 00
-      "FM_BMC_SKT_ID_1",          //SKT_ID[2:1] 01
-      "FM_BMC_SKT_ID_2"           //SKT_ID[2:1] 10
-    };
-    if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_pos)) {
-      return -1;
-    }
-    cached = true;
+  if (kv_get("mb_sku", value, NULL, 0)) {
+    return -1;
   }
 
-  *mode = (uint8_t)cached_pos;
-#ifdef DEBUG
-  syslog(LOG_DEBUG, "%s: BMC System Mode = %u", __func__, cached_pos);
-#endif
+  *id = (uint8_t)atoi(value);
   return 0;
 }
 
@@ -1460,16 +1410,13 @@ pal_get_fru_list(char *list) {
 
 int
 pal_get_board_rev_id(uint8_t *id) {
-  char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN] = {0};
 
-  sprintf(key, "mb_rev");
-  if (kv_get(key, value, NULL, 0)) {
-    return false;
+  if (kv_get("mb_rev", value, NULL, 0)) {
+    return -1;
   }
 
-  *id = atoi(value);
-
+  *id = (uint8_t)atoi(value);
   return 0;
 }
 

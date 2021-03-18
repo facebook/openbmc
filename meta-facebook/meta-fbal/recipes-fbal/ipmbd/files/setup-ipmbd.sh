@@ -31,9 +31,9 @@
 . /usr/local/fbpackages/utils/ast-functions
 echo -n "Starting IPMB Rx/Tx Daemon.."
 
-mode=$(($(gpio_get FM_BMC_SKT_ID_2)<<1 | $(gpio_get FM_BMC_SKT_ID_1))) #2S:mode=2 4S:mode=1
+mode=$(($(/usr/bin/kv get mb_skt) >> 1))  #2S:mode=2 4S:mode=1
 if [ $mode -eq 1 ]; then
-  addr=$((0x1010 | $(gpio_get FM_BLADE_ID_0)))
+  addr=$((0x1010 | $(/usr/bin/kv get mb_pos)))
 else
   let addr=0x1010
 fi

@@ -4,11 +4,6 @@
 #include <openbmc/pmbus.h>
 #include <openbmc/obmc_pal_sensors.h>
 
-#define MAX_SENSOR_NUM         (0xFF)
-#define MAX_DEVICE_NAME_SIZE   (128)
-#define MB_TEMP_DEVICE  "/sys/class/i2c-dev/i2c-%d/device/%d-00%x/hwmon/hwmon*/temp1_input"
-#define MB_ADC_VOLTAGE_DEVICE "/sys/devices/platform/iio-hwmon/hwmon/hwmon*/in%d_input"
-
 //PECI CMD INFO
 #define PECI_RETRY_TIMES                        (10)
 #define PECI_CMD_RD_PKG_CONFIG                  (0xA1)
@@ -66,8 +61,8 @@ enum {
 #define PMON_CFG_AVG_PWR(x)         (x << 11)
 
 #define ADM1278_ALTER_CONFIG        (0xD5)
-#define IOUT_OC_WARN_EN1            (1 << 10) 
- 
+#define IOUT_OC_WARN_EN1            (1 << 10)
+
 //INA260 CMD INFO
 #define INA260_CURRENT   (0x01)
 #define INA260_VOLTAGE   (0x02)
@@ -145,7 +140,7 @@ enum {
   MB_SNR_HSC_PEAK_PIN = 0x50,
   MB1_SNR_HSC_PEAK_PIN = 0x51,
   MB2_SNR_HSC_PEAK_PIN = 0x52,
-  MB3_SNR_HSC_PEAK_PIN = 0x53,  
+  MB3_SNR_HSC_PEAK_PIN = 0x53,
 
 //FAN POWER
   PDB_SNR_FAN0_POWER = 0x54,
@@ -390,7 +385,7 @@ enum {
   TEMP_OUTLET_R,
   TEMP_REMOTE_INLET,
   TEMP_REMOTE_OUTLET_R,
-  TEMP_REMOTE_OUTLET_L, 
+  TEMP_REMOTE_OUTLET_L,
 };
 
 //NIC INFO
@@ -463,7 +458,7 @@ enum {
   HSC_ID0,
   HSC_ID1,
   HSC_ID2,
-  HSC_ID3, 
+  HSC_ID3,
 };
 
 typedef struct {

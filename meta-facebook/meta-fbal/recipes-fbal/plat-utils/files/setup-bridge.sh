@@ -47,19 +47,21 @@ usb_dev_detect
 
 echo "Initialize IP Bridge..."
 
-#Get EP MAC Address
+#Get EP/CC MAC Address
+position=$(($(/usr/bin/kv get mb_pos)))
+mode=$(($(/usr/bin/kv get mb_skt) >> 1))  #2S:mode=2 4S:mode=1
+
+if [[ "$position" -eq 0 || "$mode" -eq 2 ]]; then
+  peer_name="EP"
+  peer_addr="0x2c"
+else
+  peer_name="CC"
+  peer_addr="0x2e"
+fi
+
 while [ 1 ]; do
-  position=$(($(gpio_get FM_BLADE_ID_0)))
-  mode=$(($(gpio_get FM_BMC_SKT_ID_2)<<1 | $(gpio_get FM_BMC_SKT_ID_1))) #2S:mode=2 4S:mode=1
-
-
-  if [[ "$position" -eq 0 || "$mode" -eq 2 ]]; then
-    echo "Get JG7 MAC"
-    mac=($(/usr/bin/ipmitool raw 0x30 0x34 0x0a 0x0c 0x02 0x00 0x05 2>/dev/null))
-  else
-    echo "Get F0CE MAC" 
-    mac=($(/usr/bin/ipmitool raw 0x30 0x34 0x0b 0x0c 0x02 0x00 0x05 2>/dev/null)) 
-  fi
+  echo "Get $peer_name MAC"
+  mac=($(/usr/local/bin/ipmb-util 6 $peer_addr 0x30 0x02 0x00 0x05 2>/dev/null))
   #mac=(11 78 03 9B 96 FC 99)
   if [[ ${#mac[@]} -ge 7 && ${mac[0]} == "11" && $((16#${mac[1]} & 1)) -ne 1 ]]; then
     if [ "$(echo ${mac[@]:1})" != "00 00 00 00 00 00" ]; then
@@ -71,10 +73,10 @@ while [ 1 ]; do
   sleep 3
 done
 
-#Set MAC Filter for EP
-mac_ep=(${mac[@]/#/0x})
-echo "Set MAC Address Filter for EP: ${mac_ep[@]:1}"
-/usr/local/bin/ncsi-util 0x0e ${mac_ep[@]:1} 0x02 0x01
+#Set MAC Filter for EP/CC
+mac_peer=(${mac[@]/#/0x})
+echo "Set MAC Address Filter for $peer_name: ${mac_peer[@]:1}"
+/usr/local/bin/ncsi-util 0x0e ${mac_peer[@]:1} 0x02 0x01
 
 #IP Bridge
 $(ip link set down eth0)

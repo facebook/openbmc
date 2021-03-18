@@ -28,8 +28,8 @@ sync_date()
   if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
     echo Syncing up BMC time with server...
 
-    position=$(($(gpio_get FM_BLADE_ID_0)))
-    host=$(($(gpio_get FM_BMC_SKT_ID_0)))  #0: Master 1:Slave
+    position=$(($(/usr/bin/kv get mb_pos)))
+    host=$(($(/usr/bin/kv get mb_skt) & 0x1))  #0: Master 1:Slave
 
     if [ $position -eq 0 ]; then #position 0
       let addr=$((16#22))

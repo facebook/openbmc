@@ -229,14 +229,12 @@ enum {
 
 int pal_set_id_led(uint8_t fru, uint8_t status);
 int pal_set_fault_led(uint8_t fru, uint8_t status);
-int read_device(const char *device, int *value);
 int pal_get_rst_btn(uint8_t *status);
 int pal_postcode_select(int option);
 int pal_uart_select_led_set(void);
 int pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver);
 int pal_get_platform_id(uint8_t *id);
 int pal_get_config_is_master(void);
-int pal_get_blade_id(uint8_t *id);
 int pal_get_mb_position(uint8_t* pos);
 int pal_get_board_rev_id(uint8_t *id);
 void fru_eeprom_mb_check(char* mb_path);

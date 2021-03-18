@@ -19,7 +19,6 @@
 Description=Power on Wedge microserver
 After=setup_board.service openbmc_gpio_setup.service setup_i2c.service
 Wants=openbmc_gpio_setup.service
-ConditionPathExists=/sys/class/i2c-adapter/i2c-12/12-0031
 
 [Service]
 Type=oneshot

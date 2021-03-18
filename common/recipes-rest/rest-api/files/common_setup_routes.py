@@ -40,3 +40,5 @@ def setup_common_routes(app: Application, write_enabled: bool):
     app.router.add_get(common_routes[11], chandler.rest_mTerm_status)
     app.router.add_get(common_routes[12], chandler.rest_ntp_status)
     app.router.add_post(common_routes[13], chandler.rest_fscd_sensor_data_post)
+    app.router.add_get(common_routes[14], chandler.rest_modbus_get)
+    app.router.add_post(common_routes[15], chandler.rest_modbus_cmd_post)

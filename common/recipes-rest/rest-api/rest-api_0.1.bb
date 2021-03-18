@@ -67,6 +67,8 @@ SRC_URI = "file://setup-rest-api.sh \
            file://rest_utils.py \
            file://rest_fscd_sensor_data.py \
            file://board_setup_routes.py \
+           file://rest_modbus_cmd.py \
+           file://test_rest_modbus_cmd.py \
            file://test_auth_enforcer.py \
            file://test_cached_acl_provider.py \
            file://test_common_middlewares.py \
@@ -119,6 +121,7 @@ binfiles1 = "setup-rest-api.sh \
              rest_mTerm.py \
              setup_plat_routes.py \
              rest_fscd_sensor_data.py \
+             rest_modbus_cmd.py \
              common_setup_routes.py"
 
 aclfiles = "__init__.py \

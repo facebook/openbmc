@@ -2138,3 +2138,27 @@ int pal_get_dev_capabilities(uint8_t fru, uint8_t dev, unsigned int *caps)
 {
   return -1;
 }
+
+// Variable addr would be 8-bit form
+int pal_i2c_write_read (uint8_t bus, uint8_t addr,
+                        uint8_t *txbuf, uint8_t txlen,
+                        uint8_t *rxbuf, uint8_t rxlen)
+{
+  int fd = 0, retCode = -1;
+
+  fd = i2c_cdev_slave_open (bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "Failed to open i2c-%d: %s", bus, strerror(errno));
+    return retCode; 
+  }
+
+  retCode = i2c_rdwr_msg_transfer (fd, addr, txbuf, txlen, rxbuf, rxlen);
+  if (retCode == -1) {
+    syslog (LOG_WARNING, "i2c transaction error %s bus=%x slavaddr=%x offset=%x\n", __func__, bus, addr >> 1, txbuf[0]);
+  } else {
+    retCode = (int)rxbuf[0];
+  }
+
+  i2c_cdev_slave_close(fd);
+  return retCode;
+}

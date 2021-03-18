@@ -243,6 +243,9 @@ int pal_get_syscfg_text(char *text);
 int pal_peer_tray_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen);
 int pal_get_target_bmc_addr(uint8_t *tar_bmc_addr);
 bool pal_skip_access_me(void);
+int pal_i2c_write_read (uint8_t bus, uint8_t addr,
+                        uint8_t *txbuf, uint8_t txlen,
+                        uint8_t *rxbuf, uint8_t rxlen);
 
 enum {
   POSTCODE_BY_BMC,

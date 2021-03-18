@@ -448,14 +448,14 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"CC_PDB_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x52
   {"CC_PDB_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x53
   {"CC_BB_P12V_PUX" , ADC0, read_adc_value, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}    , VOLT}, //0x54
-  {"CC_BB_P3V3_STBY", ADC1, read_adc_value, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}  , VOLT}, //0x55
+  {"CC_BB_P3V3_STBY", ADC1, read_adc_value, true, {3.47, 0, 0, 3.13, 0, 0, 0, 0}  , VOLT}, //0x55
   {"CC_BB_P5V_STBY" , ADC2, read_adc_value, true, {5.25, 0, 0, 4.75, 0, 0, 0, 0}    , VOLT}, //0x56
-  {"CC_BB_P3V3"     , ADC3, read_adc_value, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}  , VOLT}, //0x57
-  {"CC_BB_P3V3_PAX" , ADC4, read_adc_value, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}  , VOLT}, //0x58
+  {"CC_BB_P3V3"     , ADC3, read_adc_value, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}  , VOLT}, //0x57
+  {"CC_BB_P3V3_PAX" , ADC4, read_adc_value, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}  , VOLT}, //0x58
   {"CC_BB_P3V_BAT"  , ADC5, read_bat_value, true, {3.4, 0, 0, 2.85, 0, 0, 0, 0}    , VOLT}, //0x59
   {"CC_BB_P2V5_AUX" , ADC6, read_adc_value, true, {2.625, 0, 0, 2.375, 0, 0, 0, 0}  , VOLT}, //0x5A
   {"CC_BB_P1V2_AUX" , ADC7, read_adc_value, true, {1.26, 0, 0, 1.14, 0, 0, 0, 0}    , VOLT}, //0x5B
-  {"CC_BB_P1V15_AUX", ADC8, read_adc_value, true, {1.2075, 0, 0, 1.0925, 0, 0, 0, 0}, VOLT}, //0x5C
+  {"CC_BB_P1V15_AUX", ADC8, read_adc_value, true, {1.21, 0, 0, 1.09, 0, 0, 0, 0}, VOLT}, //0x5C
   {"CC_PDB_HSC_VOUT", HSC_ID0, read_hsc_vout, true, {13.4, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, //0x5D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5F
@@ -545,38 +545,38 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
   {"CC_E1S_1_NVME_7_PWR" , E1S_1_7_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xAF
 
-  {"CC_M2_0_NVME_0_VOLT", NVME_ID0, read_bay0_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xB0
+  {"CC_M2_0_NVME_0_VOLT", NVME_ID0, read_bay0_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xB0
   {"CC_M2_0_NVME_0_CURR", NVME_ID0, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB1
-  {"CC_M2_0_NVME_1_VOLT", NVME_ID1, read_bay0_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xB2
+  {"CC_M2_0_NVME_1_VOLT", NVME_ID1, read_bay0_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xB2
   {"CC_M2_0_NVME_1_CURR", NVME_ID1, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB3
-  {"CC_M2_0_NVME_2_VOLT", NVME_ID2, read_bay0_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xB4
+  {"CC_M2_0_NVME_2_VOLT", NVME_ID2, read_bay0_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xB4
   {"CC_M2_0_NVME_2_CURR", NVME_ID2, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB5
-  {"CC_M2_0_NVME_3_VOLT", NVME_ID3, read_bay0_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xB6
+  {"CC_M2_0_NVME_3_VOLT", NVME_ID3, read_bay0_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xB6
   {"CC_M2_0_NVME_3_CURR", NVME_ID3, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB7
-  {"CC_M2_0_NVME_4_VOLT", NVME_ID4, read_bay0_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xB8
+  {"CC_M2_0_NVME_4_VOLT", NVME_ID4, read_bay0_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xB8
   {"CC_M2_0_NVME_4_CURR", NVME_ID4, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xB9
-  {"CC_M2_0_NVME_5_VOLT", NVME_ID5, read_bay0_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xBA
+  {"CC_M2_0_NVME_5_VOLT", NVME_ID5, read_bay0_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xBA
   {"CC_M2_0_NVME_5_CURR", NVME_ID5, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xBB
-  {"CC_M2_0_NVME_6_VOLT", NVME_ID6, read_bay0_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xBC
+  {"CC_M2_0_NVME_6_VOLT", NVME_ID6, read_bay0_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xBC
   {"CC_M2_0_NVME_6_CURR", NVME_ID6, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xBD
-  {"CC_M2_0_NVME_7_VOLT", NVME_ID7, read_bay0_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xBE
+  {"CC_M2_0_NVME_7_VOLT", NVME_ID7, read_bay0_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xBE
   {"CC_M2_0_NVME_7_CURR", NVME_ID7, read_bay0_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xBF
 
-  {"CC_M2_1_NVME_0_VOLT", NVME_ID0, read_bay1_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xC0
+  {"CC_M2_1_NVME_0_VOLT", NVME_ID0, read_bay1_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xC0
   {"CC_M2_1_NVME_0_CURR", NVME_ID0, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC1
-  {"CC_M2_1_NVME_1_VOLT", NVME_ID1, read_bay1_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xC2
+  {"CC_M2_1_NVME_1_VOLT", NVME_ID1, read_bay1_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xC2
   {"CC_M2_1_NVME_1_CURR", NVME_ID1, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC3
-  {"CC_M2_1_NVME_2_VOLT", NVME_ID2, read_bay1_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xC4
+  {"CC_M2_1_NVME_2_VOLT", NVME_ID2, read_bay1_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xC4
   {"CC_M2_1_NVME_2_CURR", NVME_ID2, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC5
-  {"CC_M2_1_NVME_3_VOLT", NVME_ID3, read_bay1_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xC6
+  {"CC_M2_1_NVME_3_VOLT", NVME_ID3, read_bay1_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xC6
   {"CC_M2_1_NVME_3_CURR", NVME_ID3, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC7
-  {"CC_M2_1_NVME_4_VOLT", NVME_ID4, read_bay1_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xC8
+  {"CC_M2_1_NVME_4_VOLT", NVME_ID4, read_bay1_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xC8
   {"CC_M2_1_NVME_4_CURR", NVME_ID4, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC9
-  {"CC_M2_1_NVME_5_VOLT", NVME_ID5, read_bay1_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xCA
+  {"CC_M2_1_NVME_5_VOLT", NVME_ID5, read_bay1_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xCA
   {"CC_M2_1_NVME_5_CURR", NVME_ID5, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xCB
-  {"CC_M2_1_NVME_6_VOLT", NVME_ID6, read_bay1_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xCC
+  {"CC_M2_1_NVME_6_VOLT", NVME_ID6, read_bay1_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xCC
   {"CC_M2_1_NVME_6_CURR", NVME_ID6, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xCD
-  {"CC_M2_1_NVME_7_VOLT", NVME_ID7, read_bay1_ssd_volt, 0, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xCE
+  {"CC_M2_1_NVME_7_VOLT", NVME_ID7, read_bay1_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xCE
   {"CC_M2_1_NVME_7_CURR", NVME_ID7, read_bay1_ssd_curr, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xCF
 
   {"CC_E1S_0_NVME_0_VOLT", E1S_0_0_NVME_VOLT, read_ina260_sensor, 0, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},  //0xD0

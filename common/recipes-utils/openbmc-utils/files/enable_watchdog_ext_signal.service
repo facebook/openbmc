@@ -16,7 +16,7 @@
 # Boston, MA 02110-1301 USA
 #
 [Unit]
-Description=Disable the dual boot watch dog
+Description=Enable watchdog external signal
 After=openbmc_gpio_setup.service setup_i2c.service
 
 [Service]

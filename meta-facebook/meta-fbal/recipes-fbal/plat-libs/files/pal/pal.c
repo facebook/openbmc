@@ -1493,8 +1493,13 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
   if (pal_skip_access_me())
     return PAL_EOK;
 
-  if (!pal_get_config_is_master())
+  // If device is slave, fake the data of selftest,
+  // which is {0x55, 0x00} refer common/healthd.c line.1198
+  if (!pal_get_config_is_master()){
+    data[0] = 0x55;
+    data[1] = 0x00;
     return PAL_EOK;
+  }
 
   info.bus = NM_IPMB_BUS_ID;
   info.nm_addr = NM_SLAVE_ADDR;

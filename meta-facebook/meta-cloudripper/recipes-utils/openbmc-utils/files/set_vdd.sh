@@ -18,12 +18,20 @@
 # Boston, MA 02110-1301 USA
 #
 
+#shellcheck disable=SC1091
+. /usr/local/bin/i2c-utils.sh
+
 usage()
 {
   echo "usage :"
   echo "   $0 <voltage in mv>"
   echo "   eg. $0 850"
   echo " limit : max 930 mV"
+}
+
+find_hwmon_path() {
+  cd "$1"/hwmon/hwmon* 2> /dev/null || return 1
+  pwd
 }
 
 if [ $# -ne 1 ]; then
@@ -36,12 +44,15 @@ if [ $(($1)) -gt 931 ]; then
   exit 255
 fi
 
-i2cset -f -y 17 0x40 0x00 0x00
-i2cset -f -y 17 0x40 0x20 0x14    # linear mode  ,, N = 0x12
-value=$(( $1 * 1000 / 244 ))
-i2cset -f -y 17 0x40 0x21 $value w
+vddcore_i2c_path=$(i2c_device_sysfs_abspath 17-0040)
+vddcore_hwmon_path=$(find_hwmon_path "$vddcore_i2c_path")
+if [ -z "$vddcore_hwmon_path" ]; then
+  echo "device is not found"
+  exit 1
+fi
+vddcore_sysfs_node="$vddcore_hwmon_path/vout0_value"
 
-if [ $? -eq 0 ]; then
+if echo "$1" > "$vddcore_sysfs_node"; then
   echo "$1"
   exit 0
 else

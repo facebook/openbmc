@@ -35,8 +35,8 @@ static sensor_desc_t cri_sensor[]  =
     {"FAN2_TACH_O:"	  , PDB_FAN2_TACH_O ,"RPM", FRU_PDB, 0},
     {"FAN3_TACH_I:"	  , PDB_FAN3_TACH_I ,"RPM", FRU_PDB, 0},
     {"FAN3_TACH_O:"	  , PDB_FAN3_TACH_O ,"RPM", FRU_PDB, 0},
-    {"Inlet_TEMP:"	  , PDB_INLET_TEMP_L ,"C", FRU_PDB, 0},
-    {"Inlet_R_TEMP:"	, PDB_INLET_REMOTE_TEMP_L ,"C", FRU_PDB, 0},
+    {"Inlet_TEMP:"	  , SYSTEM_INLET_TEMP ,"C", FRU_MB, 2},
+    {"Inlet_R_TEMP:"	, SYSTEM_INLET_REMOTE_TEMP ,"C", FRU_MB, 2},
 };
 
 bool plat_supported(void)

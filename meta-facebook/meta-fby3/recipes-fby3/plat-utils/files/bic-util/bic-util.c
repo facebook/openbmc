@@ -56,6 +56,10 @@ static const char *option_list[] = {
   "--check_usb_port [sb|1ou|2ou]",
 };
 
+static const char *class2_options[] = {
+  "--get_slot_id",
+};
+
 static void
 print_usage_help(void) {
   int i;
@@ -65,6 +69,12 @@ print_usage_help(void) {
   printf("       option:\n");
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
     printf("       %s\n", option_list[i]);
+
+  if (fby3_common_get_bmc_location(&bmc_location) == 0 && bmc_location == NIC_BMC) {
+    for (i = 0; i < sizeof(class2_options)/sizeof(class2_options[0]); i++) {
+      printf("       %s\n", class2_options[i]);
+    }
+  }
 }
 
 // Check BIC status
@@ -828,6 +838,19 @@ util_check_usb_port(uint8_t slot_id, char *comp) {
   return ret;
 }
 
+static int
+util_get_slot_id() {
+  uint8_t index = 0;
+
+  if (bic_get_mb_index(&index) != 0) {
+    return -1;
+  }
+
+  printf("Slot ID = %d\n", index);
+
+  return 0;
+}
+
 int
 main(int argc, char **argv) {
   uint8_t slot_id = 0;
@@ -923,6 +946,17 @@ main(int argc, char **argv) {
         goto err_exit;
       }
       return util_check_usb_port(slot_id, argv[3]);
+    } else if ( strcmp(argv[2], "--get_slot_id") == 0 ) {
+      if (bmc_location != NIC_BMC) {
+        printf("Option not supported for this sku!\n");
+        return -1;
+      }
+
+      if (argc != 3) {
+        goto err_exit;
+      }
+
+      return util_get_slot_id();
     } else {
       printf("Invalid option: %s\n", argv[2]);
       goto err_exit;

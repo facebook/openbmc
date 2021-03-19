@@ -154,7 +154,7 @@ class CommonBicTest(BaseBicTest):
         self.get_bic_info()
         self.assertTrue(self.verify_bic_data(), "bic data is invalid!")
 
-    def test_bic_sdr(self):
+    def test_bic_sdr(self, regex=None):
         """
         Method to verify BIC GPIO data.
         <NAME>: <DEC VALUE>
@@ -170,12 +170,15 @@ class CommonBicTest(BaseBicTest):
         option = " --get_sdr"
         ignore_str = "last record"
         self.regex = r"^(.+:\s[0-9]+,)\s*"
+        if regex:
+            # overwrite default regex if needed
+            self.regex = regex
         self.set_bic_cmd()
         self.bic_cmd += option
         self.get_bic_info()
         self.assertTrue(self.verify_bic_data(ignore=ignore_str), "bic data is invalid!")
 
-    def test_bic_sensor(self):
+    def test_bic_sensor(self, regex=None):
         """
         Method to verify BIC sensor data.
         <SENSOR#>: <NAME: HEX VALUE>,...,<NAME: HEX VALUE>
@@ -190,6 +193,9 @@ class CommonBicTest(BaseBicTest):
         """
         option = " --read_sensor"
         self.regex = r"^(.+:\s(0x|0X)[a-fA-F0-9]+,)\s*"
+        if regex:
+            # overwrite default regex if needed
+            self.regex = regex
         self.set_bic_cmd()
         self.bic_cmd += option
         self.get_bic_info()

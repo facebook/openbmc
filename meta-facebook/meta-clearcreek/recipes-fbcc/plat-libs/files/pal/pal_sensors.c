@@ -1047,52 +1047,16 @@ static int pal_set_fan_led(uint8_t led_ctrl)
   return 0;
 }
 
-static uint8_t fan_status = 0xff;
-int pal_fan_dead_handle(int fan_num) {
-  uint8_t ret = 0, led_ctrl = 0, fan_mask;
-  static uint8_t last_fan_status;
-
-  fan_status = CLEARBIT(fan_status, fan_num);
-
-  if(last_fan_status == fan_status) {
-    return 0;
-  }
-
-  for(int i=0; i < pal_tach_cnt; i=i+2) {
-    fan_mask = GETBIT(fan_status, i) & GETBIT(fan_status, (i+1));
-    led_ctrl = fan_mask ? SETBIT(led_ctrl, i/2) : CLEARBIT(led_ctrl, i/2);
-  }
-  led_ctrl |= ~led_ctrl << 4;
-
-  ret = pal_set_fan_led(led_ctrl);
-
-  last_fan_status = fan_status;
-  return ret;
-}
-
-int pal_fan_recovered_handle(int fan_num) {
-  uint8_t ret = 0, led_ctrl = 0, fan_mask;
-
-  fan_status = SETBIT(fan_status, fan_num);
-
-  for(int i=0; i < pal_tach_cnt; i=i+2) {
-    fan_mask = GETBIT(fan_status, i) & GETBIT(fan_status, (i+1));
-    led_ctrl = fan_mask ? SETBIT(led_ctrl, i/2) : CLEARBIT(led_ctrl, i/2);
-  }
-  led_ctrl |= ~led_ctrl << 4;
-
-  ret = pal_set_fan_led(led_ctrl);
-
-  return ret;
-}
-
 static int sensors_read_fan_speed(uint8_t sensor_num, float *value)
 {
+  static uint8_t fan_status = 0xff, last_fan_status = 0;
+  uint8_t led_ctrl = 0, fan_mask;
   int ret, fan_id;
+  static int retry[8] = {0};
   *value = 0.0;
 
-  fan_id = (sensor_num - PDB_FAN0_TACH_I)/2;
-  if (is_fan_present(fan_id) == true) {
+  fan_id = sensor_num - PDB_FAN0_TACH_I;
+  if (is_fan_present(fan_id/2) == true) {
     return READING_NA;
   }
 
@@ -1125,7 +1089,31 @@ static int sensors_read_fan_speed(uint8_t sensor_num, float *value)
       return ERR_SENSOR_NA;
   }
 
-  return ret;
+  if (ret || *value >= sensor_map[sensor_num].snr_thresh.ucr_thresh ||
+             *value <= sensor_map[sensor_num].snr_thresh.lcr_thresh ) {
+    if (retry[fan_id] >= 2) {
+      fan_status = CLEARBIT(fan_status, fan_id);
+    }
+    else {
+      retry[fan_id] += 1;
+    }
+  }
+  else {
+    fan_status = SETBIT(fan_status, fan_id);
+    retry[fan_id] = 0;
+  }
+
+  if (fan_status != last_fan_status) {
+    for(int i=0; i < pal_tach_cnt; i=i+2) {
+      fan_mask = GETBIT(fan_status, i) & GETBIT(fan_status, (i+1));
+      led_ctrl = fan_mask ? SETBIT(led_ctrl, i/2) : CLEARBIT(led_ctrl, i/2);
+    }
+    led_ctrl |= ~led_ctrl << 4;
+    pal_set_fan_led(led_ctrl);
+    last_fan_status = fan_status;
+  }
+
+  return 0;
 }
 
 int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
@@ -1171,13 +1159,13 @@ read_inlet_sensor(uint8_t id, float *value) {
 
 static bool
 is_fan_present(uint8_t fan_id) {
+  static uint8_t fan_prsnt, last_fan_prsnt;
   int fd = 0, ret = -1;
   char fn[32];
   bool value = false;
   uint8_t retry = 3, tlen, rlen, addr, bus;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
-
   bus = 5;
   addr = 0xEE;
 
@@ -1201,6 +1189,17 @@ is_fan_present(uint8_t fan_id) {
   }
 
   value = rbuf[0] & (0x1 << fan_id);
+  fan_prsnt = rbuf[0] & 0x0F;
+
+  if (fan_prsnt != last_fan_prsnt) {
+    for (int i=0; i<4; i++) {
+      if (GETBIT(fan_prsnt, i) != GETBIT(last_fan_prsnt, i)) {
+        syslog(LOG_CRIT, "%s: fan%d present- FAN_%d_PRSNT_EXP_N\n",
+           GETBIT(fan_prsnt, i)? "OFF": "ON", i , i);
+      }
+    }
+    last_fan_prsnt = fan_prsnt;
+  }
 
   err_exit:
   if (fd > 0) {

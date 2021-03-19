@@ -29,17 +29,7 @@ def board_fan_actions(fan, action="None"):
     - handling dead fan
     - handling fan led
     """
-    if action in "dead":
-        # TODO: Why not do return pal_fan_dead_handle(fan)
-        lpal_hndl.pal_fan_dead_handle(fan.fan_num)
-    elif action in "recover":
-        # TODO: Why not do return pal_fan_recovered_handle(fan)
-        lpal_hndl.pal_fan_recovered_handle(fan.fan_num)
-    elif "led" in action:
-        # No Action Needed. LED controlled in action 'dead' and 'recover'.
-        pass
-    else:
-        Logger.warn("%s needs action %s" % (fan.label, str(action)))
+    # Logger.warn("%s needs action %s" % (fan.label, str(action)))
     pass
 
 

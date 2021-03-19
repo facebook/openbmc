@@ -2,4 +2,4 @@
 
 LINUX_VERSION_EXTENSION = "-grandcanyon"
 
-COMPATIBLE_MACHINE = "grandcanyon"
+COMPATIBLE_MACHINE = "grandcanyon|fbgcvboot2"

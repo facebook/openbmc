@@ -5,5 +5,8 @@
 # Machine Selection
 MACHINE ??= "grandcanyon"
 
+# VBoot2
+# MACHINE ??= "fbgcvboot2"
+
 # OpenBMC distro settings
 DISTRO ?= "openbmc-fb"

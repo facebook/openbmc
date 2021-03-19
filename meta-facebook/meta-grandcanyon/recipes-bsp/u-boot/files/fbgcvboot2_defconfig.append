@@ -1,0 +1,18 @@
+CONFIG_SYS_PROMPT="fbgc# "
+CONFIG_SYS_CONFIG_NAME="fbgcvboot2"
+CONFIG_DEFAULT_DEVICE_TREE="aspeed-bmc-facebook-grandcanyon"
+
+# CONFIG_ASPEED_TPM=y
+
+# Debug and logging facilities
+# CONFIG_LOG=y
+# CONFIG_SPL_LOG=y
+# U-boot default log level
+# CONFIG_LOG_DEFAULT_LEVEL=7
+# Console Log level
+# CONFIG_LOGLEVEL=7
+# Compile time log statement [0, LOG_MAX_LEVEL]
+# CONFIG_LOG_MAX_LEVEL=7
+# CONFIG_SPL_LOG_MAX_LEVEL=7
+
+CONFIG_QEMU_VBOOT=y

@@ -233,15 +233,7 @@ typedef struct {
 #define CRASHDUMP_PID_PATH "/var/run/autodump%d.pid"
 #define CRASHDUMP_TIMESTAMP_FILE "fru%d_crashdump"
 
-#define PSB_PLAT_VENDOR_ID_KEY "slot%d_platform_vendor_id"
-#define PSB_PLAT_MODEL_ID_KEY "slot%d_platform_model_id"
-#define PSB_BIOS_KEY_REVISION_ID_KEY "slot%d_bios_key_revision_id"
-#define PSB_ROOT_KEY_SELECT_KEY "slot%d_root_key_select"
-#define PSB_PLAT_SECURE_BOOT_EN_KEY "slot%d_platform_secure_boot_en"
-#define PSB_DISABLE_BIOS_KEY_ANTIROLLBACK_KEY "slot%d_disable_bios_key_antirollback"
-#define PSB_DISABLE_AMD_KEY_USAGE_KEY "slot%d_disable_amd_key_usage"
-#define PSB_DISABLE_SECURE_DEBUG_UNLOCK_KEY "slot%d_disable_secure_debug_unlock"
-#define PSB_CUSTOMER_KEY_LOCK_KEY "slot%d_customer_key_lock"
+#define PSB_CONFIG_RAW "slot%d_psb_config_raw"
 
 #endif /* CONFIG_FBY2_ND */
 
@@ -11625,41 +11617,8 @@ uint8_t save_psb_config_info_to_kvstore(uint8_t slot, uint8_t* req_data, uint8_t
   char str[MAX_VALUE_LEN] = {0};
   uint8_t completion_code = CC_UNSPECIFIED_ERROR;
 
-  snprintf(key,MAX_KEY_LEN, PSB_PLAT_VENDOR_ID_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%02X", req_data[0]);
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_PLAT_MODEL_ID_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[1] & 0x0F));
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_BIOS_KEY_REVISION_ID_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[1] & 0xF0));
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_ROOT_KEY_SELECT_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[2] & 0x0F));
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_PLAT_SECURE_BOOT_EN_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[3] & 0x01));
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_DISABLE_BIOS_KEY_ANTIROLLBACK_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[3] & 0x02));
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_DISABLE_AMD_KEY_USAGE_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[3] & 0x04));
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_DISABLE_SECURE_DEBUG_UNLOCK_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[3] & 0x08));
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_CUSTOMER_KEY_LOCK_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[3] & 0x10) >> 4);
-  kv_set(key, str, 0, 0);
+  snprintf(key,MAX_KEY_LEN, PSB_CONFIG_RAW, slot);
+  kv_set(key, req_data, req_len, 0);
 
   completion_code = CC_SUCCESS;
   return completion_code;

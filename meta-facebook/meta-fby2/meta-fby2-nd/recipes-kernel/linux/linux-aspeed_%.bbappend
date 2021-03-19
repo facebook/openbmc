@@ -1,6 +1,6 @@
 LINUX_VERSION_EXTENSION = "-fby2"
 
-COMPATIBLE_MACHINE = "fby2|fbnd|northdome"
+COMPATIBLE_MACHINE = "fby2|fbnd|northdome|northdome-vboot"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 

@@ -187,44 +187,32 @@ class VrComponent : public Component {
             printf("PVDDCR_CPU VR Version: NA\n");
           } else {
             printf(
-                "PVDDCR_CPU VR Version: 0x%02x%02x, 0x%02x%02x\n",
-                ver[0],
-                ver[1],
-                ver[2],
-                ver[3]);
+                "PVDDCR_CPU VR Version: 0x%02x%02x, 0x%02x%02x, Remaining Writes: %u\n",
+                ver[0], ver[1], ver[2], ver[3], ver[4]);
           }
 
           if (bic_get_fw_ver(slot_id, FW_PVDDCR_SOC_VR, ver)) {
             printf("PVDDCR_SOC VR Version: NA\n");
           } else {
             printf(
-                "PVDDCR_SOC VR Version: 0x%02x%02x, 0x%02x%02x\n",
-                ver[0],
-                ver[1],
-                ver[2],
-                ver[3]);
+                "PVDDCR_SOC VR Version: 0x%02x%02x, 0x%02x%02x, Remaining Writes: %u\n",
+                ver[0], ver[1], ver[2], ver[3], ver[4]);
           }
 
           if (bic_get_fw_ver(slot_id, FW_PVDDIO_ABCD_VR, ver)) {
             printf("PVDDIO_ABCD VR Version: NA\n");
           } else {
             printf(
-                "PVDDIO_ABCD VR Version: 0x%02x%02x, 0x%02x%02x\n",
-                ver[0],
-                ver[1],
-                ver[2],
-                ver[3]);
+                "PVDDIO_ABCD VR Version: 0x%02x%02x, 0x%02x%02x, Remaining Writes: %u\n",
+                ver[0], ver[1], ver[2], ver[3], ver[4]);
           }
 
           if (bic_get_fw_ver(slot_id, FW_PVDDIO_EFGH_VR, ver)) {
             printf("PVDDIO_EFGH VR Version: NA\n");
           } else {
             printf(
-                "PVDDIO_EFGH VR Version: 0x%02x%02x, 0x%02x%02x\n",
-                ver[0],
-                ver[1],
-                ver[2],
-                ver[3]);
+                "PVDDIO_EFGH VR Version: 0x%02x%02x, 0x%02x%02x, Remaining Writes: %u\n",
+                ver[0], ver[1], ver[2], ver[3], ver[4]);
           }
         } catch (string err) {
           printf("PVDDCR_CPU VR Version: NA (%s)\n", err.c_str());

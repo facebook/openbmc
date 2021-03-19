@@ -341,7 +341,8 @@ int i2c_dev_sysfs_data_init(struct i2c_client *client,
     goto exit_cleanup;
   }
 
-  data->idd_hwmon_dev = hwmon_device_register(&client->dev);
+  data->idd_hwmon_dev = hwmon_device_register_with_groups(&client->dev,
+                              client->name, NULL, NULL);
   if (IS_ERR(data->idd_hwmon_dev)) {
     err = PTR_ERR(data->idd_hwmon_dev);
     data->idd_hwmon_dev = NULL;

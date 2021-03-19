@@ -202,6 +202,7 @@ const uint8_t m2_1_sensor_list[] = {
   BAY_0_5_NVME_CTEMP,
   BAY_0_6_NVME_CTEMP,
   BAY_0_7_NVME_CTEMP,
+  BAY_0_NVME_CTEMP,
   M2_0_SSD_0_VOLT,
   M2_0_SSD_0_CURR,
   M2_0_SSD_1_VOLT,
@@ -234,6 +235,7 @@ const uint8_t m2_2_sensor_list[] = {
   BAY_1_5_NVME_CTEMP,
   BAY_1_6_NVME_CTEMP,
   BAY_1_7_NVME_CTEMP,
+  BAY_1_NVME_CTEMP,
   M2_1_SSD_0_VOLT,
   M2_1_SSD_0_CURR,
   M2_1_SSD_1_VOLT,
@@ -265,6 +267,7 @@ const uint8_t e1s_1_sensor_list[] = {
   BAY_0_5_NVME_CTEMP,
   BAY_0_6_NVME_CTEMP,
   BAY_0_7_NVME_CTEMP,
+  BAY_0_NVME_CTEMP,
   E1S_0_0_NVME_VOLT,
   E1S_0_0_NVME_CURR,
   E1S_0_0_NVME_PWR,
@@ -301,6 +304,7 @@ const uint8_t e1s_2_sensor_list[] = {
   BAY_1_5_NVME_CTEMP,
   BAY_1_6_NVME_CTEMP,
   BAY_1_7_NVME_CTEMP,
+  BAY_1_NVME_CTEMP,
   E1S_1_0_NVME_VOLT,
   E1S_1_0_NVME_CURR,
   E1S_1_0_NVME_PWR,
@@ -411,7 +415,7 @@ PAL_SENSOR_MAP sensor_map[] = {
 
   {"CC_SSD_BAY_0_FTEMP", BAY0_FTEMP_ID, read_bay_temp, true, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x30
   {"CC_SSD_BAY_0_RTEMP", BAY0_RTEMP_ID, read_bay_temp, true, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x31
-  {"CC_SSD_BAY_0_NVME_CTEMP", 0, NULL, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x32
+  {"CC_SSD_BAY_0_NVME_CTEMP", BAY_0_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x32
   {"CC_SSD_BAY_0_0_NVME_CTEMP", BAY_0_0_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x33
   {"CC_SSD_BAY_0_1_NVME_CTEMP", BAY_0_1_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x34
   {"CC_SSD_BAY_0_2_NVME_CTEMP", BAY_0_2_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x35
@@ -428,7 +432,7 @@ PAL_SENSOR_MAP sensor_map[] = {
 
   {"CC_SSD_BAY_1_FTEMP", BAY1_FTEMP_ID, read_bay_temp, true, {50, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x40
   {"CC_SSD_BAY_1_RTEMP", BAY1_RTEMP_ID, read_bay_temp, true, {70, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x41
-  {"CC_SSD_BAY_1_NVME_CTEMP", 0, NULL, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x42
+  {"CC_SSD_BAY_1_NVME_CTEMP", BAY_1_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x42
   {"CC_SSD_BAY_1_0_NVME_CTEMP", BAY_1_0_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x43
   {"CC_SSD_BAY_1_1_NVME_CTEMP", BAY_1_1_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x44
   {"CC_SSD_BAY_1_2_NVME_CTEMP", BAY_1_2_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x45
@@ -989,7 +993,7 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
   }
   ret = sensors_read_fan(label, &value);
   *rpm = ret < 0? 0: (int)value;
-  return ret;
+  return 0;
 }
 
 int pal_get_fan_name(uint8_t num, char *name)
@@ -1533,6 +1537,7 @@ read_bay_temp(uint8_t bay_id, float *value) {
 
 static int
 read_nvme_temp(uint8_t sensor_num, float *value) {
+  static float max_nvme_temp0 = -99, max_nvme_temp1 = -99;
   int ret = 0;
   int bus_id = 0, nvme_id = 0;
   int fd = 0;
@@ -1541,12 +1546,40 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
 
-  if (sensor_num < BAY_1_FTEMP) {
-    nvme_id = sensor_num - BAY_0_0_NVME_CTEMP;
-    bus_id = I2C_BUS_21;
-  } else {
-    nvme_id = sensor_num - BAY_1_0_NVME_CTEMP;
-    bus_id = I2C_BUS_22;
+  switch (sensor_num) {
+    case BAY_0_NVME_CTEMP:
+      if (max_nvme_temp0 == -99) {
+        return READING_NA;
+      } else {
+        *value = max_nvme_temp0;
+        max_nvme_temp0 = -99;
+        return PAL_EOK;
+      }
+      break;
+    case BAY_1_NVME_CTEMP:
+      if (max_nvme_temp1 == -99) {
+        return READING_NA;
+      } else {
+        *value = max_nvme_temp1;
+        max_nvme_temp1 = -99;
+        return PAL_EOK;
+      }
+      break;
+    default:
+      if (sensor_num >= BAY_0_0_NVME_CTEMP &&
+          sensor_num <= BAY_0_7_NVME_CTEMP) {
+        nvme_id = sensor_num - BAY_0_0_NVME_CTEMP;
+        bus_id = I2C_BUS_21;
+      }
+      else if (sensor_num >= BAY_1_0_NVME_CTEMP &&
+               sensor_num <= BAY_1_7_NVME_CTEMP) {
+        nvme_id = sensor_num - BAY_1_0_NVME_CTEMP;
+        bus_id = I2C_BUS_22;
+      }
+      else {
+        syslog(LOG_ERR, "Unknown NVME sensor ID");
+        return READING_NA;
+      }
   }
 
   pal_control_mux_to_target_ch(1 << nvme_id, bus_id, 0xE6);
@@ -1566,7 +1599,21 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
     ret = READING_NA;
     goto error_exit;
   }
+
   *value = (float)(signed char)rbuf[NVMe_TEMP_REG];
+
+  if (sensor_num >= BAY_0_0_NVME_CTEMP &&
+      sensor_num <= BAY_0_7_NVME_CTEMP) {
+    if (*value > max_nvme_temp0) {
+      max_nvme_temp0 = *value;
+    }
+  }
+  else if (sensor_num >= BAY_1_0_NVME_CTEMP &&
+           sensor_num <= BAY_1_7_NVME_CTEMP) {
+    if (*value > max_nvme_temp1) {
+      max_nvme_temp1 = *value;
+    }
+  }
 
 error_exit:
   close(fd);

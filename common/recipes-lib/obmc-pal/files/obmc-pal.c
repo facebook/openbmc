@@ -524,10 +524,10 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
       break;
 
     case UNIFIED_UPI_EVENT:
-      event_type = sel[8] & 0xF;
+      event_type = sel[12] & 0xF;
       estr_idx = (event_type < ARRAY_SIZE(upi_event)) ? event_type : (ARRAY_SIZE(upi_event) - 1);
       sprintf(error_log, "GeneralInfo: UPIEvent(0x%02X), UPI Port Location: Sled %02d/Socket %02d, Port %02d, UPI Failure Event: %s",
-              general_info, dimm_info.sled, dimm_info.socket, sel[10]&0xF, upi_event[estr_idx]);
+              general_info, dimm_info.sled, dimm_info.socket, sel[9]&0xF, upi_event[estr_idx]);
       break;
 
     case UNIFIED_BOOT_GUARD:

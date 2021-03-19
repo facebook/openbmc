@@ -236,8 +236,8 @@ retry_command() {
 FWUPGRADE_PIDFILE="/var/run/firmware_upgrade.pid"
 check_fwupgrade_running()
 {
-    exec 2>$FWUPGRADE_PIDFILE
-    flock -n 2 || (echo "Another FW upgrade is running" && exit 1)
+    exec 200>$FWUPGRADE_PIDFILE
+    flock -n 200 || (echo "Another FW upgrade is running" && exit 1)
     ret=$?
     if [ $ret -eq 1 ]; then
       exit 1

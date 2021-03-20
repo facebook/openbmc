@@ -23,7 +23,7 @@ import json
 import sys
 import traceback
 
-VBOOT_CHECK_VERSION = "3"
+VBOOT_CHECK_VERSION = "4"
 # Define the exit code
 EC_SUCCESS = 0
 EC_SPLROM_BAD = 1
@@ -138,6 +138,11 @@ def decode_flash(fh, data):
 
     # Print SPL information
     rom_fit = get_fdt(rom_fit)
+    try:
+        _idx = rom_fit.rootnode.index('hwlock')
+        print("Lockbit: %s" % rom_fit.rootnode[_idx].words)
+    except:
+        print("Lockbit: not set")
     print("SPL FIT offset: %s" % (rom_fit_offset))
     if not show_keys("SPL KEK", rom_fit, "SPL does not contain KEK keys"):
         return EC_SPLROM_BAD

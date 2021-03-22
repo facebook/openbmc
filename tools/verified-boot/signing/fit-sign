@@ -311,7 +311,13 @@ def main():
             rom_fit_offset = i * 4
             rom_fit_space = min(rom_fit_space, args.rom_size - rom_fit_offset)
             rom_fit = rom[rom_fit_offset : rom_fit_offset + rom_fit_space]
-            break
+            try:
+                rom_fdt = get_fdt(rom_fit)
+                break
+            except:
+                print("false positve fdt magic at 0x%X" % rom_fit_offset)
+                rom_fit = None
+                pass
     if rom_fit is None:
         print("Cannot find FIT region within ROM")
         sys.exit(1)

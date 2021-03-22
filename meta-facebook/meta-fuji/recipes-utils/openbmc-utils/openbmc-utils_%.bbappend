@@ -22,6 +22,7 @@ PACKAGECONFIG += "disable-watchdog"
 SRC_URI += "file://setup-gpio.sh \
             file://board-utils.sh \
             file://boot_info.sh \
+            file://fpga_ver.sh \
             file://setup_board.sh \
             file://setup_i2c.sh \
             file://sol.sh \
@@ -51,6 +52,7 @@ SRC_URI += "file://setup-gpio.sh \
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
     boot_info.sh \
+    fpga_ver.sh \
     sol.sh \
     cpld_update.sh \
     wedge_power.sh \

@@ -749,6 +749,7 @@ _update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_r
   if ( is_usb == true ) {
     udev->ci = 1;
     udev->epaddr = 0x1;
+    bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
     if ( (ret = bic_init_usb_dev(slot_id, udev, EXP2_TI_PRODUCT_ID, EXP2_TI_VENDOR_ID)) < 0 )
       goto error_exit;
   }
@@ -780,6 +781,7 @@ _update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_r
 error_exit:
   if ( is_usb == true ) {
     bic_close_usb_dev(udev);
+    bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_LOW);
   }
 
   return ret;

@@ -1035,6 +1035,8 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
   udev->ci = 1;
   udev->epaddr = 0x1;
 
+  bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
+
   // init usb device
   if ( (ret = bic_init_usb_dev(slot_id, udev, bic_usb_pid, bic_usb_vid)) < 0 ) goto error_exit;
 
@@ -1093,6 +1095,8 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
 error_exit:
   if ( buf != NULL ) free(buf);
   bic_close_usb_dev(udev);
+  bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_LOW);
+
   return ret;
 }
 

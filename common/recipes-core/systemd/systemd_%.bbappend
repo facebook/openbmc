@@ -44,4 +44,7 @@ do_install_append() {
 
     # systemd 234 (rocko) does not support RequiredForOnline=no.
     sed -i 's@ExecStart.*@\0 --ignore=eth0.4088@' ${D}${systemd_unitdir}/system/systemd-networkd-wait-online.service
+
+    # On OpenBMC long lived files are kept in /tmp and /var/tmp
+    sed -E -i -e 's@(.*/tmp 1777 root root).*@\1 -@' ${D}${libdir}/tmpfiles.d/tmp.conf
 }

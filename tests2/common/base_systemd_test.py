@@ -24,33 +24,13 @@ from utils.test_utils import running_systemd
 
 
 class BaseSystemdTest(TestCase):
-    def test_overall_status(self):
-        if not running_systemd():
-            self.skipTest("not using systemd")
-            return
-
-        command = "systemctl is-system-running"
-        output = subprocess.check_output(
-            command,
-            stderr=subprocess.STDOUT,
-            shell=True,
-            timeout=60,
-        )
-        stdout = output.decode("utf-8")
-
-        # It's possible to log into the BMC while it's coming up, so for now
-        # avoid any potential flakiness by allowing "starting", too.
-        self.assertTrue(
-            "running" in stdout or "starting" in stdout,
-            command + " returned: " + stdout,
-        )
-
     def test_failed_units(self):
         if not running_systemd():
             self.skipTest("not using systemd")
             return
 
-        command = "systemctl list-units | grep failed"
+        # XXX tcsd is unreliable to start
+        command = "systemctl list-units | grep failed | grep -v trousers"
         output = subprocess.run(
             command,
             stdout=subprocess.PIPE,
@@ -76,3 +56,20 @@ class BaseSystemdTest(TestCase):
         )
         stdout = output.decode("utf-8")
         self.assertTrue("setup_i2c", command + " returned: " + stdout)
+
+    def test_tmp_no_cleanup(self):
+        if not running_systemd():
+            self.skipTest("not using systemd")
+            return
+
+        fn = "/usr/lib/tmpfiles.d/tmp.conf"
+        with open(fn, "r") as f:
+            for ln in f:
+                fld = ln.strip().split(" ")
+                # https://www.freedesktop.org/software/systemd/man/tmpfiles.d.html
+                # The 6th field specifies minimum age before cleanup.  A single
+                # dash or missing field signifies no cleanup, which is expected.
+                # This is intended to match both /tmp and /var/tmp.
+                if len(fld) < 6 or fld[0] == "#" or "/tmp" not in fld[1]:
+                    continue
+                self.assertEqual(fld[5], "-", "unexpected age config in " + ln)

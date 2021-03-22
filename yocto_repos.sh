@@ -1,6 +1,5 @@
 branches=(
     rocko
-    warrior
     zeus
     lf-master
     lf-dunfell

@@ -1,5 +1,12 @@
 #!/bin/bash
-set -e
+
+# Count errors and don't exit early
+errors=0
+CountErrorsHandler () {
+  (( errors++ ))
+}
+
+trap CountErrorsHandler ERR
 
 # Try to use the black executable, it it does not
 # exist, try the python module.
@@ -52,7 +59,6 @@ ORIGIN_COMMIT="$(git merge-base HEAD origin/helium 2>/dev/null || git merge-base
 
 MODIFIED_FILES="$(git diff --diff-filter=d --name-only "$ORIGIN_COMMIT" --)"
 
-
 for f in $MODIFIED_FILES; do
   if [[ "$f" =~ .*\.sh$ ]]; then
     do_lint_sh "$f"
@@ -60,7 +66,7 @@ for f in $MODIFIED_FILES; do
   elif is_c_family_file "$f"; then
     do_lint_cppcheck "$f"
  elif [[ "$f" =~ .*\.py$ ]]; then
-    do_lint_py "$f"
+   do_lint_py "$f"
   else
     first=$(head -1 "$f")
     if [[ "$first" =~ \#!/.*/sh  || "$first" =~ \#!/.*/bash ]]; then
@@ -72,4 +78,10 @@ for f in $MODIFIED_FILES; do
     fi
   fi
 done
-echo "PASS"
+
+if [ "$errors" -ne 0 ]; then
+  echo "FAIL : $errors files failed linting."
+  exit 1
+else
+  echo "PASS"
+fi

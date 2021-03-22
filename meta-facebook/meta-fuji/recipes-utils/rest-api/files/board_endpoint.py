@@ -21,6 +21,7 @@
 import rest_feutil
 import rest_firmware_info
 import rest_peutil
+import rest_piminfo
 import rest_pimserial
 import rest_presence
 import rest_sensors
@@ -278,3 +279,7 @@ class boardApp_Handler:
         return web.json_response(
             rest_system_led_info.get_system_led_info(), dumps=dumps_bytestr
         )
+
+    # Handler for sys/piminfo resource endpoint
+    async def rest_piminfo_hdl(self, request):
+        return web.json_response(rest_piminfo.get_piminfo())

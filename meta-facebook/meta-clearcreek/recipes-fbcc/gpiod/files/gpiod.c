@@ -136,6 +136,49 @@ static void
 gpio_sys_pwr_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
   gpio_desc_t *tmp = gpio_open_by_shadow("RST_SMB_CARRIER_N");
+  char fn[32] = "/dev/i2c-8";
+  int fd, ret;
+  uint8_t tlen, rlen;
+  uint8_t addr = 0xEE;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t comds_mux[2] = {0x07, 0x3F};
+  uint8_t comds_on[2]  = {0x03, 0x80};
+  uint8_t comds_off[2] = {0x03, 0x00};
+
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_ERR, "can not open i2c device\n");
+    return;
+  }
+
+  tlen = 2;
+  rlen = 0;
+
+  //setup mux
+  tbuf[0] = comds_mux[0];
+  tbuf[1] = comds_mux[1];
+  ret =  i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  if (ret) {
+    syslog(LOG_ERR, "i2c transfer fail\n");
+  }
+
+  //sync Power LED
+  if(curr == GPIO_VALUE_HIGH) {
+    tbuf[0] = comds_on[0];
+    tbuf[1] = comds_on[1];
+    ret =  i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+    if (ret) {
+      syslog(LOG_ERR, "i2c transfer fail\n");
+    }
+  } else {
+    tbuf[0] = comds_off[0];
+    tbuf[1] = comds_off[1];
+    ret =  i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+    if (ret) {
+      syslog(LOG_ERR, "i2c transfer fail\n");
+    }
+  }
 
   log_gpio_change(desc, curr, 0);
 
@@ -149,6 +192,10 @@ gpio_sys_pwr_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t
     gpio_set_value(tmp, GPIO_VALUE_LOW);
     usleep(100000);
     gpio_set_value(tmp, GPIO_VALUE_HIGH);
+  }
+
+  if (fd > 0) {
+    close(fd);
   }
 
   gpio_close(tmp);

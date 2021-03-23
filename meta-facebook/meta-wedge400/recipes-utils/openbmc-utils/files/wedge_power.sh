@@ -195,6 +195,11 @@ do_reset() {
         # We found somethimes /mnt/data data lost after wedge_power.sh reset -s,
         # add sync in case of file system will be broken by random power cycle.
         sync
+        mmc hwreset enable /dev/mmcblk0
+        gpio_set_value BMC_EMMC_RST_N_R 1
+        gpio_set_value BMC_EMMC_RST_N_R 0
+        sleep 0.01
+        gpio_set_value BMC_EMMC_RST_N_R 1
         echo 1 > "$PWR_CYCLE_SYSFS"
         sleep 3
         # Control should not reach here, but if it failed to reset

@@ -44,7 +44,11 @@ NO_IDENTITY = Identity(user=None, host=None)
 
 # Certificate commonName regex
 # e.g. "host:root/example.com" -> type="host", user="root", host="example.com"
-RE_CERT_COMMON_NAME = re.compile(r"^(?P<type>[^:]+):(?P<user>[^/]*)/(?P<host>[^/]*)$")
+# FB certs have host/user/svc magic in their CN, unlike non proprietary certs
+# This regex identifies those certs
+RE_SPECIAL_CERT_COMMON_NAME = re.compile(
+    r"^(?P<type>[^:]+):(?P<user_or_svc>[^/]*)(/(?P<host>[^/]*))?$"
+)
 
 RE_IPV6_LINK_LOCAL_SUFFIX = re.compile("%[a-z0-9]+$")
 
@@ -116,10 +120,12 @@ def _extract_identity_from_peercert(request: Request) -> Identity:
 
     for key, value in peercert["subject"][0]:
         if key == "commonName":
-            m = RE_CERT_COMMON_NAME.match(value)
+            m = RE_SPECIAL_CERT_COMMON_NAME.match(value)
 
-            if m and m.group("type") == "user":
-                return Identity(user=m.group("user"), host=None)
+            if m and m.group("type") in ["user", "svc"]:
+                return Identity(
+                    user=m.group("type") + ":" + m.group("user_or_svc"), host=None
+                )
 
             if m and m.group("type") == "host":
                 return Identity(user=None, host=m.group("host"))

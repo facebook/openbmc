@@ -32,6 +32,12 @@ EXAMPLE_HOST_CERT = {
     "subject": ((("commonName", "host:no_one/a_hostname.example.com"),),),
 }
 
+EXAMPLE_SVC_CERT = {
+    "notAfter": "Jan  2 00:00:00 2000 GMT",
+    "notBefore": "Jan  1 00:00:00 2000 GMT",
+    "subject": ((("commonName", "svc:an_example_service"),),),
+}
+
 import datetime
 import ipaddress
 from unittest import mock
@@ -61,7 +67,9 @@ class TestCommonAuth(AioHTTPTestCase):
         req = self.make_mocked_request_user_cert()
         identity = common_auth._extract_identity(req)
 
-        self.assertEqual(identity, common_auth.Identity(user="a_username", host=None))
+        self.assertEqual(
+            identity, common_auth.Identity(user="user:a_username", host=None)
+        )
 
     def test_extract_identity_from_peercert_host_identity(self):
         req = self.make_mocked_request_host_cert()
@@ -69,6 +77,14 @@ class TestCommonAuth(AioHTTPTestCase):
 
         self.assertEqual(
             identity, common_auth.Identity(user=None, host="a_hostname.example.com")
+        )
+
+    def test_extract_identity_from_peercert_svc_identity(self):
+        req = self.make_mocked_request_svc_cert()
+        identity = common_auth._extract_identity(req)
+
+        self.assertEqual(
+            identity, common_auth.Identity(user="svc:an_example_service", host=None)
         )
 
     def test_extract_identity_ipv6(self):
@@ -144,7 +160,7 @@ class TestCommonAuth(AioHTTPTestCase):
         )
 
         res = common_auth._extract_identity(req)
-        self.assertEqual(res, common_auth.Identity(user="a_username", host=None))
+        self.assertEqual(res, common_auth.Identity(user="user:a_username", host=None))
 
     def test_extract_identity_from_peercert_no_subject_field(self):
         req = make_mocked_request("GET", "/")
@@ -178,7 +194,7 @@ class TestCommonAuth(AioHTTPTestCase):
         req = self.make_mocked_request_user_cert()
         res = common_auth._extract_identity(req)
 
-        self.assertEqual(res, common_auth.Identity(user="a_username", host=None))
+        self.assertEqual(res, common_auth.Identity(user="user:a_username", host=None))
 
     def test_validate_cert_date(self):
         req = self.make_mocked_request_user_cert()
@@ -262,6 +278,13 @@ class TestCommonAuth(AioHTTPTestCase):
         req = make_mocked_request("GET", "/")
         req.transport.get_extra_info = mock.Mock(
             wraps={"peercert": EXAMPLE_HOST_CERT}.get
+        )
+        return req
+
+    def make_mocked_request_svc_cert(self):
+        req = make_mocked_request("GET", "/")
+        req.transport.get_extra_info = mock.Mock(
+            wraps={"peercert": EXAMPLE_SVC_CERT}.get
         )
         return req
 

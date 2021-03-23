@@ -27,10 +27,10 @@ fi
 unset NTP_SERVER
 
 # Copy over configured ssh auth principals and trusted CA.
-if [ -f /mnt/data/etc/ssh/auth_principals_root ]; then
+if [ -s /mnt/data/etc/ssh/auth_principals_root ]; then
   cp /mnt/data/etc/ssh/auth_principals_root /etc/ssh/auth_principals_root
 fi
-if [ -f /mnt/data/etc/ssh/trusted_ca ]; then
+if [ -s /mnt/data/etc/ssh/trusted_ca ]; then
   cp /mnt/data/etc/ssh/trusted_ca /etc/ssh/trusted_ca
 fi
 

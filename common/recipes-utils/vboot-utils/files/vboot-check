@@ -23,7 +23,7 @@ import json
 import sys
 import traceback
 
-VBOOT_CHECK_VERSION = "4"
+VBOOT_CHECK_VERSION = "5"
 # Define the exit code
 EC_SUCCESS = 0
 EC_SPLROM_BAD = 1
@@ -131,13 +131,16 @@ def decode_flash(fh, data):
         if data[i * 4 : (i * 4) + 4] == b"\xd0\x0d\xfe\xed":
             rom_fit = data[i * 4 : (i * 4) + args.rom_fit_size]
             rom_fit_offset = i * 4
-            break
+            try:
+                rom_fit = get_fdt(rom_fit)
+                break
+            except:
+                pass
     if rom_fit is None:
         print("Cannot find SPL FIT region")
         return EC_SPLROM_BAD
 
     # Print SPL information
-    rom_fit = get_fdt(rom_fit)
     try:
         _idx = rom_fit.rootnode.index('hwlock')
         print("Lockbit: %s" % rom_fit.rootnode[_idx].words)
@@ -339,7 +342,12 @@ def main():
         if data_size < 4:
             print("Not sure what this file contains: %s" % (args.filename))
             return EC_EXCEPTION
-        if data[:4] != b"\x0f\x00\x00\xea":
+        # sanity check the file first instrcution is
+        # a jump to <reset> vector instruction: <reset-vector>\x00\x00\xea
+        # the <reset-vector> location can be different
+        # SPL: \x0f for AST2500, \x1f for AST2600
+        # U-Boot: \xBE for AST2500, \xC0 for AST2600
+        if data[1:4] != b"\x00\x00\xea":
             print("Non-flash file inputs are not supported")
             return EC_EXCEPTION
 

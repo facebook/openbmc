@@ -123,6 +123,9 @@ extern "C" {
 
 #define MAX_SERIAL_NUM_SIZE               20
 
+#define SERVER_CRASHDUMP_PID_PATH        "/var/run/autodump.pid"
+#define SERVER_CRASHDUMP_KV_KEY          "server_crashdump"
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,
@@ -302,6 +305,7 @@ void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
 int pal_get_drive_health(const char* i2c_bus_dev);
 int pal_get_drive_status(const char* i2c_bus_dev);
+int pal_is_crashdump_ongoing(uint8_t fru);
 
 #ifdef __cplusplus
 } // extern "C"

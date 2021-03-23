@@ -2169,3 +2169,32 @@ pal_get_drive_status(const char* i2c_bus_dev) {
   printf("\n");
   return 0;
 }
+
+int
+pal_is_crashdump_ongoing(uint8_t fru)
+{
+  char fname[MAX_PATH_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+  int ret = 0;
+
+  //if pid file not exist, return false
+  snprintf(fname, sizeof(fname), SERVER_CRASHDUMP_PID_PATH);
+  if (access(fname, F_OK) != 0) {
+    return 0;
+  }
+
+  snprintf(fname, sizeof(fname), SERVER_CRASHDUMP_KV_KEY);
+  ret = kv_get(fname, value, NULL, 0);
+  if (ret < 0) {
+     return 0;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec) {
+     return 1;
+  }
+
+  //over the threshold time, return false
+  return 0;                     /* false */
+}

@@ -18,46 +18,8 @@
 # Boston, MA 02110-1301 USA
 #
 
-from abc import abstractmethod
-
 from utils.cit_logger import Logger
 from utils.shell_util import run_cmd
-
-
-def getChassisFields(num_custom=0):
-    chassis_fields = {"Chassis Type", "Chassis Part Number", "Chassis Serial Number"}
-    for i in range(1, num_custom + 1):
-        chassis_fields.add("Chassis Custom Data {}".format(i))
-    return chassis_fields
-
-
-def getProductFields(num_custom=0):
-    product_fields = {
-        "Product Manufacturer",
-        "Product Name",
-        "Product Part Number",
-        "Product Version",
-        "Product Serial",
-        "Product Asset Tag",
-        "Product FRU ID",
-    }
-    for i in range(1, num_custom + 1):
-        product_fields.add("Product Custom Data {}".format(i))
-    return product_fields
-
-
-def getBoardFields(num_custom=0):
-    board_fields = {
-        "Board Mfg Date",
-        "Board Mfg",
-        "Board Product",
-        "Board Serial",
-        "Board Part Number",
-        "Board FRU ID",
-    }
-    for i in range(1, num_custom + 1):
-        board_fields.add("Board Custom Data {}".format(i))
-    return board_fields
 
 
 class BaseFruTest(object):
@@ -79,13 +41,50 @@ class BaseFruTest(object):
         Logger.info(fru_info)
         return fru_info
 
+    def getChassisFields(self, num_custom=0):
+        chassis_fields = {
+            "Chassis Type",
+            "Chassis Part Number",
+            "Chassis Serial Number",
+        }
+        for i in range(1, num_custom + 1):
+            chassis_fields.add("Chassis Custom Data {}".format(i))
+        return chassis_fields
+
+    def getProductFields(self, num_custom=0):
+        product_fields = {
+            "Product Manufacturer",
+            "Product Name",
+            "Product Part Number",
+            "Product Version",
+            "Product Serial",
+            "Product Asset Tag",
+            "Product FRU ID",
+        }
+        for i in range(1, num_custom + 1):
+            product_fields.add("Product Custom Data {}".format(i))
+        return product_fields
+
+    def getBoardFields(self, num_custom=0):
+        board_fields = {
+            "Board Mfg Date",
+            "Board Mfg",
+            "Board Product",
+            "Board Serial",
+            "Board Part Number",
+            "Board FRU ID",
+        }
+        for i in range(1, num_custom + 1):
+            board_fields.add("Board Custom Data {}".format(i))
+        return board_fields
+
 
 class CommonFruTest(BaseFruTest):
     def getFields(self, field_type, num_custom):
         field_funcs = {
-            "chassis": getChassisFields,
-            "product": getProductFields,
-            "board": getBoardFields,
+            "chassis": self.getChassisFields,
+            "product": self.getProductFields,
+            "board": self.getBoardFields,
         }
         self.assertIn(
             field_type, field_funcs, "Unknown field type: {}".format(field_type)

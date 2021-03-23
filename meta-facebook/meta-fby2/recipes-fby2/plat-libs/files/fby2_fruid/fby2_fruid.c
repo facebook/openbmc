@@ -213,3 +213,19 @@ fby2_get_fruid_name(uint8_t fru, char *name) {
   }
   return 0;
 }
+
+uint32_t
+fby2_get_nic_fru_supported_size(void) {
+  uint32_t size;
+  switch (fby2_get_nic_mfgid()) {
+    case MFG_BROADCOM:
+      size = 256;
+      break;
+    case MFG_MELLANOX:
+      size = 512;
+      break;
+    default:
+      size = 512;
+  }
+  return size;
+}

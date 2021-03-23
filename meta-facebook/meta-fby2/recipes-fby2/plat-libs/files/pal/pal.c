@@ -4349,7 +4349,8 @@ error_exit:
 
 int
 pal_fruid_write(uint8_t fru, char *path) {
-  int ret, retry = 3;
+  int ret = -1;
+  int retry = 3;
   int fru_size = FRUID_SIZE, new_fru_size = FRUID_SIZE;
   char fruid_path[64] = {0};
   FILE *fp;
@@ -4369,6 +4370,12 @@ pal_fruid_write(uint8_t fru, char *path) {
 
   sprintf(fruid_path, "/tmp/tmp_fruid_slot%d.bin", fru);
   if (fru == FRU_NIC) {
+    uint32_t nic_fru_sz = fby2_get_nic_fru_supported_size();
+    if (new_fru_size > nic_fru_sz) {
+      syslog(LOG_ERR, "%s(): input fru size (%u) over nic supported size %u",
+          __func__, new_fru_size, nic_fru_sz);
+      return ret;
+    }
     while ((--retry) >= 0) {
       ret = _write_nic_fruid(path); // write from file path
       if (ret) {

@@ -16,7 +16,7 @@ pal_deps += [
     cc.find_library('ncsi'),
     cc.find_library('nl-wrapper'),
     dependency('libphymem'),
-    cc.find_library('libnvme-mi'),
+    cc.find_library('nvme-mi'),
     ]
 
 pal_sources += [

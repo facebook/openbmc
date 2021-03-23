@@ -488,7 +488,12 @@ static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
   for (int retry = 0; retry < MAX_RETRY; retry++) {
     IO_PERF_START();
     error = modbuscmd(&req, baudrate);
-    IO_PERF_END("rackmon cmd_len=%lu, resp_len=%lu",
+    IO_PERF_END("cmd=(%#x,%#x,%#x,%#x,%#x,%#x), cmd_len=%lu, resp_len=%lu",
+                cmd_buf[0], cmd_buf[1],
+                cmd_size > 2 ? cmd_buf[2] : 0,
+                cmd_size > 3 ? cmd_buf[3] : 0,
+                cmd_size > 4 ? cmd_buf[4] : 0,
+                cmd_size > 5 ? cmd_buf[5] : 0,
                 (unsigned long)req.cmd_len, (unsigned long)req.expected_len);
 
     if (delay != 0) {

@@ -559,6 +559,7 @@ int pal_set_ioc_fw_recovery(uint8_t *ioc_recovery_setting, uint8_t req_len, uint
 int pal_get_ioc_fw_recovery(uint8_t ioc_recovery_component, uint8_t *res_data, uint8_t *res_len);
 int pal_setup_exp_uart_bridging(void);
 int pal_teardown_exp_uart_bridging(void);
+int pal_get_bcd_plus_string(char *str_buf, int str_buf_len, uint8_t *data, uint8_t data_len);
 
 #ifdef __cplusplus
 }

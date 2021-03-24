@@ -233,7 +233,8 @@ def parse_all_sensors_util(sensor_data):
             continue
         if line.find("failed") != -1:
             continue
-        if line.find(" NA "):
+        # NA case match
+        if line.find(" NA ") != -1:
             m = re.match(r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+.\s+\((.+)\)$", line)
             if m is not None:
                 sid = int(m.group(2), 16)
@@ -242,18 +243,19 @@ def parse_all_sensors_util(sensor_data):
                 status = m.group(4)
                 symname = symbolize_sensorname(name)
                 result[symname] = SensorValue(sid, name, value, None, status, 0, 0)
-                continue
-            m = re.match(
-                r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+([^\s]+)\s+.\s+\((.+)\)$", line
-            )
-            if m is not None:
-                sid = int(m.group(2), 16)
-                name = m.group(1).strip()
-                value = float(m.group(3))
-                unit = m.group(4)
-                status = m.group(5)
-                symname = symbolize_sensorname(name)
-                result[symname] = SensorValue(sid, name, value, unit, status, 0, 0)
+            continue
+        # normal case match
+        m = re.match(
+            r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+([^\s]+)\s+.\s+\((.+)\)$", line
+        )
+        if m is not None:
+            sid = int(m.group(2), 16)
+            name = m.group(1).strip()
+            value = float(m.group(3))
+            unit = m.group(4)
+            status = m.group(5)
+            symname = symbolize_sensorname(name)
+            result[symname] = SensorValue(sid, name, value, unit, status, 0, 0)
     return result
 
 

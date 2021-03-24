@@ -10,6 +10,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/LGPL-2.1;md5=1
 
 SRC_URI = "\
     file://meson.build \
+    file://plat/meson.build \
     file://meson_options.txt \
     file://obmc-pal.c \
     file://obmc-pal.h \

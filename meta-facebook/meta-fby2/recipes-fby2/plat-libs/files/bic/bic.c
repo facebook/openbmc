@@ -2704,6 +2704,7 @@ bic_update_firmware_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd
       fprintf(stderr, "invalid BIOS file!\n");
       goto out;
     }
+    syslog(LOG_CRIT, "Update BIOS: update bios firmware on slot %d\n", slot_id);
     ret = bic_update_bios_firmware(slot_id, fd);
     goto out;
   }

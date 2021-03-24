@@ -63,17 +63,15 @@ int BiosExtComponent::update_internal(const std::string &image, int fd, bool for
     }
     if (force) power_cmd = SERVER_POWER_OFF;
     syslog(LOG_INFO, "%s: Slot%d power cmd %u", __func__, slot_id, power_cmd);
+    pal_set_server_power(slot_id, power_cmd);
 
 power_check:
     //Checking Server Power Status to make sure Server is really Off
     while (retry_count > 0) {
       ret = pal_get_server_power(slot_id, &status);
-      cerr << "Server power status: " << (int) status << endl;
       if ((ret == 0) && (status == SERVER_POWER_OFF)) {
         break;
       }
-      cerr << "Powering off the server (cmd " << ((int) power_cmd) << ")..." << endl;
-      pal_set_server_power(slot_id, power_cmd);
       if ((--retry_count) > 0) {
         sleep(1);
       }
@@ -106,15 +104,14 @@ power_check:
 #else
     uint8_t power_cmd = (force ? SERVER_POWER_OFF : SERVER_GRACEFUL_SHUTDOWN);
 
+    pal_set_server_power(slot_id, power_cmd);
+
     //Checking Server Power Status to make sure Server is really Off
     while (retry_count > 0) {
       ret = pal_get_server_power(slot_id, &status);
-      cerr << "Server power status: " << (int) status << endl;
       if ((ret == 0) && (status == SERVER_POWER_OFF)) {
         break;
       }
-      cerr << "Powering off the server (cmd " << ((int) power_cmd) << ")..." << endl;
-      pal_set_server_power(slot_id, power_cmd);
       if ((--retry_count) > 0) {
         sleep(1);
       }
@@ -131,6 +128,8 @@ power_check:
       me_recovery(slot_id, RECOVERY_MODE);
       sleep(1);
     }
+#elif defined(CONFIG_FBY2_ND)
+    sleep(1);
 #else
     cerr << "Putting ME into recovery mode..." << endl;
     me_recovery(slot_id, RECOVERY_MODE);

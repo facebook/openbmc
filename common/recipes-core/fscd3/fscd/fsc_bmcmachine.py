@@ -86,6 +86,9 @@ class BMCMachine(object):
                 for fru in self.frus:
                     if sensorname in sensors[fru]:
                         senvalue = sensors[fru][sensorname]
+                        # Skip sensor if the reading fail
+                        if senvalue.value is None:
+                            continue
                         value = senvalue.value + offset
                         sensors[fru][sensorname] = senvalue._replace(value=value)
                         value = senvalue.value + offset

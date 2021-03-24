@@ -791,7 +791,6 @@ size_t psu2_sensor_cnt = sizeof(psu2_sensor_list)/sizeof(uint8_t);
 size_t psu3_sensor_cnt = sizeof(psu3_sensor_list)/sizeof(uint8_t);
 size_t psu4_sensor_cnt = sizeof(psu4_sensor_list)/sizeof(uint8_t);
 
-static float hsc_rsense[MAX_NUM_FRUS] = {0};
 static int hsc_power_div = 1;
 
 int
@@ -1482,49 +1481,6 @@ read_fan_rpm_f(const char *device, uint8_t fan, float *value) {
   return 0;
 }
 
-
-
-
-
-
-static void
-hsc_rsense_init(uint8_t hsc_id, const char* device) {
-  static bool rsense_inited[MAX_NUM_FRUS] = {false};
-
-  if (!rsense_inited[hsc_id]) {
-    int brd_rev = -1;
-    /*
-     * Config FCM Rsense value at different hardware version.
-     * Kernel driver use Rsense equal to 1 milliohm. We need to correct Rsense
-     * value, and all values are from hardware team.
-     */
-    pal_get_cpld_board_rev(&brd_rev, device);
-    switch (brd_rev) {
-      case 0x7:
-      case 0x2:
-        /* R0A, R0B or R0C FCM */
-        hsc_rsense[hsc_id] = 0.33;
-        break;
-      case 0x4:
-      case 0x5:
-        /* R0D or R01 FCM */
-        if (hsc_id == HSC_FCM_T)
-          hsc_rsense[hsc_id] = 0.377;
-        else
-          hsc_rsense[hsc_id] = 0.376;
-        break;
-      default:
-        /*
-         * Default, keep Rsense to 1, if we have new FCM version,
-         * we can use default Rsense value as a base to correct real value.
-         */
-        hsc_rsense[hsc_id] = 1;
-        break;
-    }
-    rsense_inited[hsc_id] = true;
-  }
-}
-
 static int
 scm_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
 
@@ -1775,14 +1731,10 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       ret = read_hsc_volt(fru, sensor_num, SMB_FCM_B_HSC_DEVICE, 1, value);
       break;
     case SMB_SENSOR_FCM_T_HSC_CURR:
-      hsc_rsense_init(HSC_FCM_T, TOP_FCMCPLD_PATH_FMT);
-      ret = read_hsc_curr(fru, sensor_num, SMB_FCM_T_HSC_DEVICE,
-                          hsc_rsense[HSC_FCM_T], value);
+      ret = read_hsc_curr(fru, sensor_num, SMB_FCM_T_HSC_DEVICE, 1, value);
       break;
     case SMB_SENSOR_FCM_B_HSC_CURR:
-      hsc_rsense_init(HSC_FCM_B, BOTTOM_FCMCPLD_PATH_FMT);
-      ret = read_hsc_curr(fru, sensor_num, SMB_FCM_B_HSC_DEVICE,
-                          hsc_rsense[HSC_FCM_B], value);
+      ret = read_hsc_curr(fru, sensor_num, SMB_FCM_B_HSC_DEVICE, 1, value);
       break;
     case SMB_SENSOR_FCM_T_HSC_POWER_VOLT:
       ret = read_hsc_power_volt(fru, sensor_num, SMB_FCM_T_HSC_DEVICE, 1, value);
@@ -1974,6 +1926,9 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
         ret = read_hsc_curr(fru, sensor_num, full_name, PIM16O_RSENSE, value);
       } else {
         ret = read_hsc_curr(fru, sensor_num, full_name, PIM_RSENSE, value);
+        *value = ((*value * 1.0422) - 0.0122);
+        if (*value < 0)
+            *value = 0;
       }
       break;
     case PIM1_SENSOR_HSC_POWER:
@@ -1989,6 +1944,9 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
         ret = read_hsc_power(fru, sensor_num, full_name, PIM16O_RSENSE, value);
       } else {
         ret = read_hsc_power(fru, sensor_num, full_name, PIM_RSENSE, value);
+        *value = ((*value * 1.0422) - 0.1464);
+        if (*value < 0)
+            *value = 0;
       }
       break;
     case PIM1_UCD90160_VOLT1:

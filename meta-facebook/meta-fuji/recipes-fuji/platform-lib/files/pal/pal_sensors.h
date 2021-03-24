@@ -160,8 +160,8 @@ extern "C" {
 
 #define READING_NA -2
 
-#define SCM_RSENSE 1.16
-#define PIM_RSENSE 1.06
+#define SCM_RSENSE 1
+#define PIM_RSENSE 1
 #define PIM16O_RSENSE 1.11
 #define MAX_SENSOR_NUM  0xFF
 #define MAX_SENSOR_THRESHOLD  8

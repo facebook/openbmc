@@ -61,6 +61,11 @@ if [ "$(is_server_prsnt)" = "$SERVER_ABSENT" ]; then
 
   exit 1
 elif [ "$(is_server_prsnt)" = "$SERVER_PRESENT" ]; then
+  if [ "$(is_bmc_por)" = "$STR_VALUE_0" ]; then  # BMC is not Power-On-Reset (POR, AC-on)
+    logger -s -p user.info -t power-on "BMC is not POR"
+    exit 0
+  fi
+
   logger -s -p user.info -t power-on "Server 12V-On..."
   $POWERUTIL_CMD server 12V-on
 

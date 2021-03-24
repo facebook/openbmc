@@ -36,6 +36,7 @@
 #include <math.h>
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/phymem.h>
 #include <facebook/fbgc_gpio.h>
 #include "pal.h"
 
@@ -2201,4 +2202,32 @@ pal_is_crashdump_ongoing(uint8_t fru)
 
   //over the threshold time, return false
   return 0;                     /* false */
+}
+
+// Determine if BMC is AC on
+int
+pal_is_bmc_por(void) {
+  char ast_por_flag[MAX_VALUE_LEN] = {0x0};
+  char ast_por_true[] = "1";
+  uint32_t reg_value = 0;
+
+  if (kv_get("ast_por_flag", ast_por_flag, NULL, 0) < 0) {
+    // Check External reset EXTRST# event log (SCU074[1]) to to determine if this boot is AC on or not
+    phymem_get_dword(SCU_BASE, REG_SCU074, &reg_value);
+    if ((reg_value & OFFSET_EXTRST_EVENT_LOG) == 0) {
+      // Power ON Reset
+      kv_set("ast_por_flag", STR_VALUE_1, 0, 0);
+      return 1;
+    } else {
+      // External Reset
+      kv_set("ast_por_flag", STR_VALUE_0, 0, 0);
+      return 0;
+    }
+  }
+
+  if (strncmp(ast_por_flag, ast_por_true, strlen(ast_por_true)) == 0) {
+    return 1;
+  } else {
+    return 0;
+  }
 }

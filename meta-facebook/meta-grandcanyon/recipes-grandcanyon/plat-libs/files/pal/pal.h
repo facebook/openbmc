@@ -108,10 +108,16 @@ extern "C" {
 #define ERR_CODE_BMC_REMOTE_HB_HEALTH    0xFC
 #define ERR_CODE_SCC_LOCAL_HB_HEALTH     0xFD
 #define ERR_CODE_SCC_REMOTE_HB_HEALTH    0xFE
+
 // Host Interface Control Register
 #define LPC_CTR_BASE        0x1E789000
 #define HICR9_ADDR          0x098
 #define HICRA_ADDR          0x09C
+
+// System Control Unit (SCU) Register
+#define SCU_BASE                   0x1E6E2000
+#define REG_SCU074                 0x74
+#define OFFSET_EXTRST_EVENT_LOG    (1 << 1)
 
 #define ROUTE_UART2_TO_IO2  (0)
 #define ROUTE_UART6_TO_IO6  ((1 << 9) | (1 << 11))
@@ -125,6 +131,9 @@ extern "C" {
 
 #define SERVER_CRASHDUMP_PID_PATH        "/var/run/autodump.pid"
 #define SERVER_CRASHDUMP_KV_KEY          "server_crashdump"
+
+#define STR_VALUE_0  "0"
+#define STR_VALUE_1  "1"
 
 typedef enum {
   STATUS_LED_OFF,

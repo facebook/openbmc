@@ -5,6 +5,7 @@ POWERUTIL_CMD=/usr/local/bin/power-util
 IPMBUTIL_CMD=/usr/local/bin/ipmb-util
 EXPANDERUTIL_CMD=/usr/bin/expander-util
 CFGUTIL_CMD=/usr/local/bin/cfg-util
+KV_CMD=/usr/bin/kv
 
 MAX_RETRY=3
 
@@ -46,6 +47,10 @@ UIC_TYPE_MASK=0xf
 PAL_SKU_SIZE=6
 
 KEY_SYSTEM_INFO="system_info"
+
+KEY_AST_POR_FLAG="ast_por_flag"
+STR_VALUE_0="0"
+STR_VALUE_1="1"
 
 gpio_set() {
   local shadow val
@@ -110,6 +115,26 @@ server_power_status() {
     echo "$SERVER_STATUS_DC_ON"
   elif [ "$((status&1))" = "$SERVER_STATUS_DC_OFF" ]; then
     echo "$SERVER_STATUS_DC_OFF"
+  fi
+}
+
+# Check to see if BMC power-on-reset
+is_bmc_por() {
+  kv_por_flag=`$KV_CMD get $KEY_AST_POR_FLAG`
+  if [ ! -n "$kv_por_flag" ]; then
+    # Check External reset EXTRST# event log (SCU074[1]) to to determine if this boot is AC on or not
+    val=$(devmem 0x1e6e2074 2>/dev/null)
+    if [ "$((val & 0x2))" == "0" ]; then
+      # Power ON Reset
+      $KV_CMD set $KEY_AST_POR_FLAG $STR_VALUE_1
+      echo $STR_VALUE_1
+    else
+      # External Reset
+      $KV_CMD set $KEY_AST_POR_FLAG $STR_VALUE_0
+      echo $STR_VALUE_0
+    fi
+  else
+    echo $kv_por_flag
   fi
 }
 

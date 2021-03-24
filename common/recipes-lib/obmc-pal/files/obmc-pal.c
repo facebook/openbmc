@@ -35,9 +35,9 @@
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
-#define _STRINGIFY(bw) #bw
-#define STRINGIFY(bw) _STRINGIFY(bw)
-#define MACHINE STRINGIFY(__MACHINE__)
+//#define _STRINGIFY(bw) #bw
+//#define STRINGIFY(bw) _STRINGIFY(bw)
+#define MACHINE __MACHINE__
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))

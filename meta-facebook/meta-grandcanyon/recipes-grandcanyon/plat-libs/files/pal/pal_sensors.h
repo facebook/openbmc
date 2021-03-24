@@ -358,6 +358,11 @@ enum {
   ADS1015_IN3,
 };
 
+enum {
+  EXP_SENSOR_STATUS_OK       = 0x0,
+  EXP_SENSOR_STATUS_CRITICAL = 0x10,
+};
+
 typedef struct {
   uint8_t id;
   uint8_t bus;

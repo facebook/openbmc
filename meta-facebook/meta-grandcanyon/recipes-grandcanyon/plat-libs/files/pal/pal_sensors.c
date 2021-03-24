@@ -1107,8 +1107,9 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
   p_sensor_data = (EXPANDER_SENSOR_DATA *)(&rbuf[1]);
 
   for(i = 0; i < sensor_cnt; i++) {
-    if (p_sensor_data[i].sensor_status != 0) {
-      //if sensor status byte is not 0, means sensor reading is unavailable
+    if ((p_sensor_data[i].sensor_status != EXP_SENSOR_STATUS_OK) &&
+        (p_sensor_data[i].sensor_status != EXP_SENSOR_STATUS_CRITICAL)) {
+      //if sensor status byte is not 'OK' or 'Critical', means sensor reading is unavailable
       snprintf(str, sizeof(str), "NA");
     }
     else {

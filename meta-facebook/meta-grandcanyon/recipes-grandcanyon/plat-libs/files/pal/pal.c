@@ -408,7 +408,11 @@ pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
 
 int
 pal_fruid_write(uint8_t fru, char *path) {
-  return fbgc_fruid_write(0, path);
+  if (fru == FRU_SERVER) {
+    return fbgc_fruid_write(0, path);
+  } else {
+    return -1;
+  }
 }
 
 int

@@ -752,12 +752,32 @@ read_temp(uint8_t id, float *value) {
   return sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
 }
 
+/* Check the valid range of NIC Temperature. */
+static int
+nic_temp_value_check(uint8_t value, float *value_check) {
+
+  if (value_check == NULL) {
+    syslog(LOG_ERR, "%s(): fail to check NIC temperature due to the NULL parameter.\n", __func__);
+    return -1;
+  }
+
+  if (value <= MAX_NIC_TEMPERATURE) {
+    *value_check = (float)value;
+  } else {
+    return -1;
+  }
+
+  return 0;
+}
+
 static int
 read_nic_temp(uint8_t nic_id, float *value) {
   int fd = 0, ret = -1;
   uint8_t retry = MAX_RETRY, tlen = 0, rlen = 0, addr = 0, bus = 0;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
+  uint8_t res_temp = 0;
+  static int nic_temp_retry = 0;
 
   if (nic_id >= ARRAY_SIZE(nic_info_list)) {
     return ERR_SENSOR_NA;
@@ -786,7 +806,21 @@ read_nic_temp(uint8_t nic_id, float *value) {
 #endif
 
   if (ret >= 0) {
-    *value = (float)(rbuf[0]);
+    res_temp = rbuf[0];
+  }
+
+  ret = nic_temp_value_check(res_temp, value);
+
+  // Temperature within valid range
+  if (ret == 0) {
+    nic_temp_retry = 0;
+  } else {
+    if (nic_temp_retry <= MAX_NIC_TEMP_RETRY) {
+      ret = READING_SKIP;
+      nic_temp_retry++;
+    } else {
+      ret = ERR_SENSOR_NA;
+    }
   }
   close(fd);
 

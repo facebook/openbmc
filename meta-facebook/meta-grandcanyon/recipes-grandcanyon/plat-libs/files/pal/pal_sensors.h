@@ -12,6 +12,7 @@
 
 #define MAX_EXP_IPMB_SENSOR_COUNT    40
 
+#define MAX_NIC_TEMP_RETRY           5      // 10 seconds
 #define MAX_RETRY                    3
 #define MAX_SDR_PATH                 32
 #define SDR_PATH                     "/tmp/sdr_%s.bin"
@@ -45,6 +46,8 @@
 #define E1S_SENSOR_NAME_WILDCARD     'X'
 #define E1S_SENSOR_NAME_SIDE_A       'A'
 #define E1S_SENSOR_NAME_SIDE_B       'B'
+
+#define MAX_NIC_TEMPERATURE          (130)
 
 typedef struct {
   float ucr_thresh;

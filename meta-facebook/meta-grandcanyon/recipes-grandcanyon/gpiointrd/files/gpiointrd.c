@@ -326,6 +326,58 @@ void *post_code_restorer(){
   pthread_exit(0);
 }
 
+static int
+nic_removed_action() {
+  int ret = 0;
+
+  // Disable NIC power
+  ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_BMC_NIC_FULL_PWR_EN_R), GPIO_VALUE_LOW);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s(): Failed to disable NIC power.\n", __func__);
+    return -1;
+  }
+
+  ret = run_command("ifdown eth0");
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s(): Failed to disable network interface eth0.\n", __func__);
+    return -1;
+  }
+
+  ret = run_command("sv stop ncsid");
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s(): Failed to stop NCSI daemon.\n", __func__);
+    return -1;
+  }
+
+  return 0;
+}
+
+static int
+nic_inserted_action() {
+  int ret = 0;
+
+  // Enable NIC power
+  ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_BMC_NIC_FULL_PWR_EN_R), GPIO_VALUE_HIGH);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s(): Failed to enable NIC power.\n", __func__);
+    return -1;
+  }
+
+  ret = run_command("ifup eth0");
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s(): Failed to enable network interface eth0.\n", __func__);
+    return -1;
+  }
+
+  ret = run_command("sv start ncsid");
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s(): Failed to start NCSI daemon.\n", __func__);
+    return -1;
+  }
+
+  return 0;
+}
+
 static void
 fru_missing_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   const struct gpiopoll_config *cfg = NULL;
@@ -347,9 +399,17 @@ fru_missing_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
     if (curr == GPIO_VALUE_HIGH) {
       syslog(LOG_CRIT, "ASSERT: nic missing");
       pal_set_error_code(ERR_CODE_NIC_MISSING, ERR_CODE_ENABLE);
+
+      if (nic_removed_action() < 0) {
+        syslog(LOG_WARNING, "%s(): Fail to handle actions after NIC is removed.", __func__);
+      }
     } else if (curr == GPIO_VALUE_LOW) {
       syslog(LOG_CRIT, "DEASSERT: nic missing");
       pal_set_error_code(ERR_CODE_NIC_MISSING, ERR_CODE_DISABLE);
+
+      if (nic_inserted_action() < 0) {
+        syslog(LOG_WARNING, "%s(): Fail to handle actions after NIC is inserted.", __func__);
+      }
     }
     
     ret = pal_get_server_power(FRU_SERVER, &server_power_status);
@@ -391,7 +451,11 @@ fru_missing_init(gpiopoll_pin_t *gp, gpio_value_t value) {
     if (value == GPIO_VALUE_HIGH) {
       syslog(LOG_CRIT, "ASSERT: nic missing");
       pal_set_error_code(ERR_CODE_NIC_MISSING, ERR_CODE_ENABLE);
-      
+
+      if (nic_removed_action() < 0) {
+        syslog(LOG_WARNING, "%s(): Fail to handle actions after NIC is removed.", __func__);
+      }
+
       ret = pal_get_server_power(FRU_SERVER, &server_power_status);
       if (ret < 0) {
         syslog(LOG_WARNING, "%s(): fail to get server power status", __func__);

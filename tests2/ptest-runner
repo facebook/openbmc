@@ -80,7 +80,7 @@ def main(args):
         sys.exit(0)
     if args.build is None or not os.path.isdir(args.build) or args.force_rebuild:
         if args.build is None:
-          args.build = openbmc_path() + "build-qemux86"
+          args.build = openbmc_path() + "/build-qemux86"
         bmc_build(all_recipes, args.build, args.verbose)
 
     if not os.path.isdir(args.build):

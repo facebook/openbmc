@@ -1,9 +1,9 @@
 {
     "bios" : {
         "filename" : "coreboot-elbert.rom",
-        "version" : "4.10",
+        "version" : "",
         "hash" : "sha1sum",
-        "hash_value" : "3a0f81e9883c91d4911f4027b354d72ed6ac8f55"
+        "hash_value" : "d0f57c7a97bd244c82c76d1564fef5e0d328f9da"
     },
     "scm" : {
         "filename" : "elbert_scm.astp",

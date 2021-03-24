@@ -40,12 +40,9 @@ i2c_device_add 4 0x27 smb_debugcardcpld  # SMB DEBUGCARD CPLD
 # # Bus 13
 i2c_device_add 13 0x35 iobfpga #IOB FPGA
 
-# # i2c-mux 2, channel 1
-i2c_device_add 16 0x10 adm1278 #SCM Hotswap
-
 # # i2c-mux 2, channel 2
 i2c_device_add 17 0x4c lm75   #SCM temp. sensor
-i2c_device_add 17 0x4d lm75   #SCM temp. sensor 
+i2c_device_add 17 0x4d lm75   #SCM temp. sensor
 
 # # i2c-mux 2, channel 3
 i2c_device_add 19 0x52 24c64   #EEPROM
@@ -107,7 +104,6 @@ i2c_device_add 64 0x33	fcbcpld #CPLD
 i2c_device_add 65 0x53	24c64
 i2c_device_add 66 0x49 tmp75
 i2c_device_add 66 0x48 tmp75
-i2c_device_add 67 0x10 adm1278
 i2c_device_add 68 0x52 24c64    #fan 7 eeprom
 i2c_device_add 69 0x52 24c64    #fan 5 eeprom
 i2c_device_add 70 0x52 24c64    #fan 3 eeprom
@@ -118,7 +114,6 @@ i2c_device_add 72 0x33	fcbcpld #FCM CPLD
 i2c_device_add 73 0x53	24c64
 i2c_device_add 74 0x49 tmp75
 i2c_device_add 74 0x48 tmp75
-i2c_device_add 75 0x10 adm1278
 i2c_device_add 76 0x52 24c64    #fan 8 eeprom
 i2c_device_add 77 0x52 24c64    #fan 6 eeprom
 i2c_device_add 78 0x52 24c64    #fan 4 eeprom

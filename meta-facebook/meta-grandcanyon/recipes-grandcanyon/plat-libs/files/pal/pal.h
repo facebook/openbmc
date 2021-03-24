@@ -131,6 +131,7 @@ extern "C" {
 
 #define SERVER_CRASHDUMP_PID_PATH        "/var/run/autodump.pid"
 #define SERVER_CRASHDUMP_KV_KEY          "server_crashdump"
+#define CRASHDUMP_BIN       "/usr/bin/crashdump/autodump.sh"
 
 #define STR_VALUE_0  "0"
 #define STR_VALUE_1  "1"
@@ -315,6 +316,7 @@ void pal_i2c_crash_deassert_handle(int i2c_bus_num);
 int pal_get_drive_health(const char* i2c_bus_dev);
 int pal_get_drive_status(const char* i2c_bus_dev);
 int pal_is_crashdump_ongoing(uint8_t fru);
+int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 
 #ifdef __cplusplus
 } // extern "C"

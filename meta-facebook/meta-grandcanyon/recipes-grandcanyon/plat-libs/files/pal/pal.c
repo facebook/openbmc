@@ -2075,7 +2075,7 @@ int
 pal_get_drive_health(const char* i2c_bus_dev) {
   uint8_t status_flags = 0;
   uint8_t warning_value = 0;
-  
+
   if (i2c_bus_dev == NULL) {
     syslog(LOG_WARNING, "fail to get drive health because NULL parameter: *i2c_bus_dev\n");
     return -1;
@@ -2110,12 +2110,12 @@ pal_get_drive_status(const char* i2c_bus_dev) {
   t_key_value_pair pdlu_decode_result;
   t_status_flags status_flag_decode_result;
   t_smart_warning smart_warning_decode_result;
-  
+
   if (i2c_bus_dev == NULL) {
     syslog(LOG_WARNING, "fail to get drive status because NULL parameter: *i2c_bus_dev\n");
     return -1;
   }
-  
+
   memset(&ssd, 0, sizeof(ssd));
   memset(&vendor_decode_result, 0, sizeof(vendor_decode_result));
   memset(&sn_decode_result, 0, sizeof(sn_decode_result));
@@ -2141,7 +2141,7 @@ pal_get_drive_status(const char* i2c_bus_dev) {
   } else {
     printf("%s: %s\n", temp_decode_result.key, temp_decode_result.value);
   }
-  
+
   if (nvme_pdlu_read_decode(i2c_bus_dev, &ssd.pdlu, &pdlu_decode_result) < 0) {
     printf("%s: Fail to read Percentage Drive Life Useds\n", temp_decode_result.key);
   } else {
@@ -2230,4 +2230,71 @@ pal_is_bmc_por(void) {
   } else {
     return 0;
   }
+}
+
+static int
+pal_store_crashdump() {
+  uint8_t status = 0;
+  char cmd[MAX_PATH_LEN] = {0};
+
+  if (pal_get_server_power(FRU_SERVER, &status) < 0) {
+    syslog(LOG_WARNING, "%s(): Fail to get server power status", __func__);
+    return PAL_ENOTSUP;
+  }
+
+  if (status != SERVER_POWER_ON) {
+    syslog(LOG_WARNING, "%s(): Fail to generate crashdump: server is OFF", __func__);
+    return PAL_ENOTSUP;
+  }
+
+  if (access(CRASHDUMP_BIN, F_OK) == -1) {
+    syslog(LOG_CRIT, "%s() Try to run autodump but %s is not existed", __func__, CRASHDUMP_BIN);
+    return PAL_ENOTSUP;
+  }
+
+  snprintf(cmd, sizeof(cmd), "%s server &", CRASHDUMP_BIN);
+
+  if (run_command(cmd) == 0) {
+    syslog(LOG_INFO, "%s() Crashdump for SERVER is being generated.", __func__);
+  } else {
+    syslog(LOG_INFO, "%s() Failed to generate crashdump.", __func__);
+  }
+
+  return PAL_EOK;
+}
+
+static int
+pal_bic_sel_handler(uint8_t snr_num, uint8_t *event_data) {
+  int ret = PAL_EOK;
+
+  switch (snr_num) {
+    case CATERR_B:
+      ret = pal_store_crashdump();
+      break;
+    default:
+      break;
+  }
+
+  return ret;
+}
+
+int
+pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
+  int ret = PAL_EOK;
+
+  if (event_data == NULL) {
+    syslog(LOG_ERR, "%s(): Invalid parameter: event data is NULL", __func__);
+    return -1;
+  }
+
+  switch(fru) {
+    case FRU_SERVER:
+      ret = pal_bic_sel_handler(snr_num, event_data);
+      break;
+    default:
+      ret = PAL_ENOTSUP;
+      break;
+  }
+
+  return ret;
 }

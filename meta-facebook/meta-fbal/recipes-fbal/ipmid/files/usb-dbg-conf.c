@@ -361,8 +361,7 @@ static gpio_desc_t gdesc[] = {
   { 0x17, 0, 3, "FM_UART_SWITCH" },
 };
 
-static sensor_desc_t cri_sensor[]  =
-{
+static sensor_desc_t cri_sensor[] = {
     {"P0_TEMP:", MB_SNR_CPU0_TEMP, "C", FRU_TRAY0_MB, 0},
     {"P1_TEMP:", MB_SNR_CPU1_TEMP, "C", FRU_TRAY0_MB, 0},
     {"P2_TEMP:", MB_SNR_CPU2_TEMP, "C", FRU_TRAY1_MB, 0},
@@ -410,6 +409,54 @@ static sensor_desc_t cri_sensor[]  =
     {"P3_DIMMF_TEMP:", MB_SNR_CPU3_DIMM_GRPF_TEMP, "C", FRU_TRAY1_MB, 0},
 };
 
+static sensor_desc_t cri_sensor_slv[] = {
+    {"FAN0_INLET_SP:", PDB_SNR_FAN0_INLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN1_INLET_SP:", PDB_SNR_FAN1_INLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN2_INLET_SP:", PDB_SNR_FAN2_INLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN3_INLET_SP:", PDB_SNR_FAN3_INLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN0_OUTLET_SP:", PDB_SNR_FAN0_OUTLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN1_OUTLET_SP:", PDB_SNR_FAN1_OUTLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN2_OUTLET_SP:", PDB_SNR_FAN2_OUTLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN3_OUTLET_SP:", PDB_SNR_FAN3_OUTLET_SPEED, "RPM", FRU_PDB, 0},
+    {"INTLET_TEMP:", MB_SNR_INLET_TEMP, "C", FRU_TRAY1_MB, 0},
+    {"P0_VR_TEMP:",  MB_SNR_VR_CPU0_VCCIN_TEMP, "C", FRU_TRAY1_MB, 0},
+    {"P1_VR_TEMP:",  MB_SNR_VR_CPU1_VCCIN_TEMP, "C", FRU_TRAY1_MB, 0},
+    {"P0_VR_POWER:", MB_SNR_VR_CPU0_VCCIN_POWER, "W", FRU_TRAY1_MB, 0},
+    {"P1_VR_POWER:", MB_SNR_VR_CPU1_VCCIN_POWER, "W", FRU_TRAY1_MB, 1},
+};
+
+static sensor_desc_t cri_sensor_2s[] = {
+    {"P0_TEMP:", MB_SNR_CPU0_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P1_TEMP:", MB_SNR_CPU1_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"HSC_PWR:",  MB_SNR_HSC_PIN, "W", FRU_TRAY0_MB, 1},
+    {"HSC_VOL:",  MB_SNR_HSC_VIN, "V", FRU_TRAY0_MB, 2},
+    {"FAN0_INLET_SP:", PDB_SNR_FAN0_INLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN1_INLET_SP:", PDB_SNR_FAN1_INLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN2_INLET_SP:", PDB_SNR_FAN2_INLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN3_INLET_SP:", PDB_SNR_FAN3_INLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN0_OUTLET_SP:", PDB_SNR_FAN0_OUTLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN1_OUTLET_SP:", PDB_SNR_FAN1_OUTLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN2_OUTLET_SP:", PDB_SNR_FAN2_OUTLET_SPEED, "RPM", FRU_PDB, 0},
+    {"FAN3_OUTLET_SP:", PDB_SNR_FAN3_OUTLET_SPEED, "RPM", FRU_PDB, 0},
+    {"INTLET_TEMP:", MB_SNR_INLET_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P0_VR_TEMP:",  MB_SNR_VR_CPU0_VCCIN_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P1_VR_TEMP:",  MB_SNR_VR_CPU1_VCCIN_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P0_VR_POWER:", MB_SNR_VR_CPU0_VCCIN_POWER, "W", FRU_TRAY0_MB, 0},
+    {"P1_VR_POWER:", MB_SNR_VR_CPU1_VCCIN_POWER, "W", FRU_TRAY0_MB, 1},
+    {"P0_DIMMA_TEMP:", MB_SNR_CPU0_DIMM_GRPA_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P0_DIMMB_TEMP:", MB_SNR_CPU0_DIMM_GRPB_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P0_DIMMC_TEMP:", MB_SNR_CPU0_DIMM_GRPC_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P0_DIMMD_TEMP:", MB_SNR_CPU0_DIMM_GRPD_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P0_DIMME_TEMP:", MB_SNR_CPU0_DIMM_GRPE_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P0_DIMMF_TEMP:", MB_SNR_CPU0_DIMM_GRPF_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P1_DIMMA_TEMP:", MB_SNR_CPU1_DIMM_GRPA_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P1_DIMMB_TEMP:", MB_SNR_CPU1_DIMM_GRPB_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P1_DIMMC_TEMP:", MB_SNR_CPU1_DIMM_GRPC_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P1_DIMMD_TEMP:", MB_SNR_CPU1_DIMM_GRPD_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P1_DIMME_TEMP:", MB_SNR_CPU1_DIMM_GRPE_TEMP, "C", FRU_TRAY0_MB, 0},
+    {"P1_DIMMF_TEMP:", MB_SNR_CPU1_DIMM_GRPF_TEMP, "C", FRU_TRAY0_MB, 0},
+};
+
 bool plat_supported(void)
 {
   return true;
@@ -437,16 +484,38 @@ int plat_get_gdesc(uint8_t fru, gpio_desc_t **desc, size_t *desc_count)
 
 int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
 {
-  int i;
+  uint8_t mode;
+  int master;
+  static sensor_desc_t *cached_desc = NULL;
+  static size_t cached_desc_cnt = 0;
+
   if (!desc || !desc_count) {
     return -1;
   }
-  *desc_count = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
-  for (i = 0; i < *desc_count; i++) {
-    if (cri_sensor[i].fru == FRU_TRAY0_MB)
-      cri_sensor[i].fru = FRU_MB;
+
+  if (!cached_desc_cnt) {
+    if (pal_get_host_system_mode(&mode)) {
+      return -1;
+    }
+    master = pal_get_config_is_master();
+
+    if (mode == MB_4S_MODE) {
+      if (master) {
+        cached_desc = cri_sensor;
+        cached_desc_cnt = sizeof(cri_sensor) / sizeof(cri_sensor[0]);
+      } else {
+        cached_desc = cri_sensor_slv;
+        cached_desc_cnt = sizeof(cri_sensor_slv) / sizeof(cri_sensor_slv[0]);
+      }
+    } else {  // MB_2S_MODE
+      cached_desc = cri_sensor_2s;
+      cached_desc_cnt = sizeof(cri_sensor_2s) / sizeof(cri_sensor_2s[0]);
+    }
   }
-  *desc = cri_sensor;
+
+  *desc = cached_desc;
+  *desc_count = cached_desc_cnt;
+
   return 0;
 }
 

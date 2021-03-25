@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/pal.h>
+#include <openbmc/obmc-pal.h>
 
 #ifdef __cplusplus
 extern "C" {

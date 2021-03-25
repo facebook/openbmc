@@ -29,8 +29,8 @@ bic_sources = [
 bic_deps = [
     cc.find_library('ipmb'),
     cc.find_library('fbgc_common'),
-    cc.find_library('libusb-1.0'),
-    cc.find_library('libkv'),
+    cc.find_library('usb-1.0'),
+    cc.find_library('kv'),
     cc.find_library('obmc-i2c'),
     cc.find_library('gpio-ctrl'),
     cc.find_library('fbgc_gpio'),

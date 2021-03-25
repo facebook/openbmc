@@ -41,4 +41,5 @@ IMAGE_INSTALL += " \
   guid-util \
   fpc-util \
   mctp-util \
+  name-util \
   "

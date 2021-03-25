@@ -10,6 +10,7 @@ RETRY=0
 RETRY_TIME=30
 POWER_12V_ON_TIMEOUT=0
 POWER_12V_ON_COMPLETE=1
+SYNC_DATE=/usr/local/bin/sync_date.sh
 
 # Check power policy
 check_por_config()
@@ -58,11 +59,12 @@ check_por_config()
 if [ "$(is_server_prsnt)" = "$SERVER_ABSENT" ]; then
   logger -s -p user.warn -t power-on "The Server is absent, turn off Server HSC 12V."
   $POWERUTIL_CMD server 12V-off
-
+  $SYNC_DATE
   exit 1
 elif [ "$(is_server_prsnt)" = "$SERVER_PRESENT" ]; then
   if [ "$(is_bmc_por)" = "$STR_VALUE_0" ]; then  # BMC is not Power-On-Reset (POR, AC-on)
     logger -s -p user.info -t power-on "BMC is not POR"
+    $SYNC_DATE
     exit 0
   fi
 
@@ -86,6 +88,7 @@ elif [ "$(is_server_prsnt)" = "$SERVER_PRESENT" ]; then
 
   if [ "$FINISH" = "$POWER_12V_ON_TIMEOUT" ]; then
     logger -s -p user.warn -t power-on "Server 12V-On timeout"
+    $SYNC_DATE
     exit 1
   fi
 
@@ -99,6 +102,7 @@ elif [ "$(is_server_prsnt)" = "$SERVER_PRESENT" ]; then
       status="$(server_power_status)"
       if [ "$status" = "$SERVER_STATUS_DC_ON" ]; then
         logger -s -p user.info -t power-on "Server DC-On done"
+        $SYNC_DATE
         exit 0
       fi
 
@@ -107,8 +111,10 @@ elif [ "$(is_server_prsnt)" = "$SERVER_PRESENT" ]; then
     done
 
     logger -s -p user.warn -t power-on "Server DC-On timeout"
+    $SYNC_DATE
     exit 1
   fi
+  $SYNC_DATE
 fi
 
 exit 0

@@ -116,6 +116,7 @@ struct pal_key_cfg {
   {"system_info", "0", NULL},
   {"scc_ioc_fw_recovery", "0", NULL},
   {"iocm_ioc_fw_recovery", "0", NULL},
+  {"ntp_server", "", NULL},
   /* Add more Keys here */
   {NULL, NULL, NULL} /* This is the last key of the list */
 };

@@ -6,6 +6,8 @@ IPMBUTIL_CMD=/usr/local/bin/ipmb-util
 EXPANDERUTIL_CMD=/usr/bin/expander-util
 CFGUTIL_CMD=/usr/local/bin/cfg-util
 KV_CMD=/usr/bin/kv
+ME_CMD=/usr/bin/me-util
+NTP_CMD=/usr/sbin/ntpq
 
 MAX_RETRY=3
 
@@ -33,6 +35,9 @@ SERVER_STANDBY_PG_PIN="COMP_STBY_PG_IN"
 NETFN_EXPANDER_REQ="0x30"
 CMD_GET_UIC_LOCATION="0x40"
 
+NETFN_STORAGE_REQ="0x28" #after shift left 2 bits
+CMD_GET_SEL_TIME="0x48"
+
 UIC_LOCATION_A="1"
 UIC_LOCATION_B="2"
 UIC_LOCATION_SIZE=2
@@ -51,6 +56,9 @@ KEY_SYSTEM_INFO="system_info"
 KEY_AST_POR_FLAG="ast_por_flag"
 STR_VALUE_0="0"
 STR_VALUE_1="1"
+
+SYNC_TIME_OK=0
+SEL_TIME_RESPONSE_LEN=12
 
 gpio_set() {
   local shadow val

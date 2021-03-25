@@ -115,13 +115,6 @@
 
 const char pal_fru_list[] = "all, mb, nic, riser_slot2, riser_slot3, riser_slot4";
 const char pal_server_list[] = "mb";
-const char *pal_server_fru_list[NUM_SERVER_FRU] = {"mb"};
-const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic"};
-const char *pal_bmc_fru_list[NUM_BMC_FRU] = {"bmc"};
-
-size_t server_fru_cnt = NUM_SERVER_FRU;
-size_t nic_fru_cnt  = NUM_NIC_FRU;
-size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 2;

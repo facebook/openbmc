@@ -64,14 +64,6 @@
 
 const char pal_fru_list[] = "all, mb, nic0, nic1, pdb, bmc, tray0_mb, tray1_mb, tray0_nic0, tray0_nic1, tray1_nic0, tray1_nic1, tray0_bmc, tray1_bmc";
 const char pal_server_list[] = "mb";
-const char *pal_server_fru_list[NUM_SERVER_FRU] = {"mb"};
-const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic0", "nic1"};
-const char *pal_bmc_fru_list[NUM_BMC_FRU] = {"bmc"};
-
-size_t server_fru_cnt = NUM_SERVER_FRU;
-size_t nic_fru_cnt  = NUM_NIC_FRU;
-size_t bmc_fru_cnt  = NUM_BMC_FRU;
-
 
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);

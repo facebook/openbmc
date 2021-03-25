@@ -54,14 +54,6 @@ char pal_pwm_list[] __attribute__((weak)) = "";
 char pal_tach_list[] __attribute__((weak)) = "";
 char pal_fan_opt_list[] __attribute__((weak)) = "";
 
-size_t server_fru_cnt __attribute__((weak)) = 0;
-size_t nic_fru_cnt __attribute__((weak)) = 0;
-size_t bmc_fru_cnt __attribute__((weak)) = 0;
-const char *pal_server_fru_list[] __attribute__((weak)) = {};
-const char *pal_nic_fru_list[] __attribute__((weak)) = {};
-const char *pal_bmc_fru_list[] __attribute__((weak)) = {};
-
-
 // PAL functions
 int __attribute__((weak))
 pal_is_bmc_por(void)
@@ -2647,33 +2639,6 @@ pal_set_bios_cap_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
 int __attribute__((weak))
 pal_is_sensor_valid(uint8_t fru, uint8_t snr_num) {
   return 0;
-}
-
-int __attribute__((weak))
-pal_get_fru_type_list(fru_type_t fru_type, const char ***fru_list, uint8_t* num_fru)
-{
-  int ret = 0;
-
-  switch (fru_type) {
-    case FRU_TYPE_SERVER:
-      *num_fru = server_fru_cnt;
-      *fru_list = pal_server_fru_list;
-      break;
-    case FRU_TYPE_NIC:
-      *num_fru = nic_fru_cnt;
-      *fru_list = pal_nic_fru_list;
-      break;
-    case FRU_TYPE_BMC:
-      *num_fru = bmc_fru_cnt;
-      *fru_list = pal_bmc_fru_list;
-      break;
-    default:
-      *num_fru = 0;
-      *fru_list = NULL;
-      ret = -1;
-      break;
-  }
-  return ret;
 }
 
 int __attribute__((weak))

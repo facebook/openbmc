@@ -115,14 +115,6 @@ const static uint8_t gpio_power[] = { 0, 27, 25, 31, 29 };
 const static uint8_t gpio_12v[] = { 0, 117, 116, 119, 118 };
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, spb, nic";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
-const char *pal_server_fru_list[NUM_SERVER_FRU] = {"slot1", "slot2", "slot3", "slot4"};
-const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic"};
-const char *pal_bmc_fru_list[NUM_BMC_FRU] = {"spb"};
-
-size_t server_fru_cnt = NUM_SERVER_FRU;
-size_t nic_fru_cnt  = NUM_NIC_FRU;
-size_t bmc_fru_cnt  = NUM_BMC_FRU;
-
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 2;

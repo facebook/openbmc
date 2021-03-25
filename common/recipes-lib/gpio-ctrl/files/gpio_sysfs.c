@@ -45,9 +45,9 @@
 #define GPIO_SYSFS_EXPORT		GPIO_SYSFS_ROOT "/export"
 #define GPIO_SYSFS_UNEXPORT		GPIO_SYSFS_ROOT "/unexport"
 #define GPIO_SYSFS_PIN_PATH		GPIO_SYSFS_ROOT "/gpio%d"
-#define GPIO_SYSFS_EDGE_FILE		"edge"
-#define GPIO_SYSFS_VALUE_FILE		"value"
-#define GPIO_SYSFS_DIRECTION_FILE	"direction"
+#define GPIO_SYSFS_EDGE_FILE           GPIO_SYSFS_PIN_PATH "/edge"
+#define GPIO_SYSFS_VALUE_FILE          GPIO_SYSFS_PIN_PATH "/value"
+#define GPIO_SYSFS_DIRECTION_FILE      GPIO_SYSFS_PIN_PATH "/direction"
 
 /*
  * Macros to reference gpio file descriptors.
@@ -71,37 +71,22 @@
  */
 #define GPIO_SYSFS_ASPEED_DEVICE	"1e780000.gpio"
 
-static char* gsysfs_pin_dir(char *buf, size_t size, int pin_num)
-{
-	snprintf(buf, size, "%s/gpio%d", GPIO_SYSFS_ROOT, pin_num);
-	return buf;
-}
-
 static char* gsysfs_value_abspath(char *buf, size_t size, int pin_num)
 {
-	char pin_dir[PATH_MAX];
-
-	gsysfs_pin_dir(pin_dir, sizeof(pin_dir), pin_num);
-	return path_join(buf, size,
-			 pin_dir, GPIO_SYSFS_VALUE_FILE, NULL);
+	snprintf(buf, size, GPIO_SYSFS_VALUE_FILE, pin_num);
+	return buf;
 }
 
 static char* gsysfs_direction_abspath(char *buf, size_t size, int pin_num)
 {
-	char pin_dir[PATH_MAX];
-
-	gsysfs_pin_dir(pin_dir, sizeof(pin_dir), pin_num);
-	return path_join(buf, size,
-			 pin_dir, GPIO_SYSFS_DIRECTION_FILE, NULL);
+	snprintf(buf, size, GPIO_SYSFS_DIRECTION_FILE, pin_num);
+	return buf;
 }
 
 static char* gsysfs_edge_abspath(char *buf, size_t size, int pin_num)
 {
-	char pin_dir[PATH_MAX];
-
-	gsysfs_pin_dir(pin_dir, sizeof(pin_dir), pin_num);
-	return path_join(buf, size,
-			 pin_dir, GPIO_SYSFS_EDGE_FILE, NULL);
+	snprintf(buf, size, GPIO_SYSFS_EDGE_FILE, pin_num);
+	return buf;
 }
 
 static int gsysfs_export_control(const char *ctrl_file, int pin_num)
@@ -137,13 +122,13 @@ static int gsysfs_export_control(const char *ctrl_file, int pin_num)
 
 static int sysfs_gpio_export(int pin_num, const char *shadow_path)
 {
-	char pin_dir[PATH_MAX];
+	char pin_dir[GPIO_SYSFS_PATH_SIZE];
 
 	if (gsysfs_export_control(GPIO_SYSFS_EXPORT, pin_num) != 0) {
 		return -1;
 	}
 
-	gsysfs_pin_dir(pin_dir, sizeof(pin_dir), pin_num);
+	snprintf(pin_dir, sizeof(pin_dir), "%s/gpio%d", GPIO_SYSFS_ROOT, pin_num);
 	GLOG_DEBUG("check if <%s> is created properly\n", pin_dir);
 	if (!path_exists(pin_dir)) {
 		GLOG_ERR("unable to find gpio sysfs direction <%s>\n",
@@ -272,7 +257,7 @@ static int gsysfs_write_str(const char *pathname, int fd,
 static int sysfs_gpio_get_value(gpio_desc_t *gdesc, gpio_value_t *value)
 {
 	int val;
-	char pathname[PATH_MAX];
+	char pathname[GPIO_SYSFS_PATH_SIZE];
 	char buf[GPIO_SYSFS_IO_BUF_SIZE];
 
 	assert(IS_VALID_GPIO_DESC(gdesc));
@@ -294,7 +279,7 @@ static int sysfs_gpio_get_value(gpio_desc_t *gdesc, gpio_value_t *value)
 static int sysfs_gpio_set_value(gpio_desc_t *gdesc, gpio_value_t value)
 {
 	const char *data;
-	char pathname[PATH_MAX];
+	char pathname[GPIO_SYSFS_PATH_SIZE];
 
 	assert(IS_VALID_GPIO_DESC(gdesc));
 	assert(IS_VALID_GPIO_VALUE(value));
@@ -310,7 +295,7 @@ static int sysfs_gpio_set_value(gpio_desc_t *gdesc, gpio_value_t value)
 int sysfs_gpio_get_direction(gpio_desc_t *gdesc, gpio_direction_t *out_dir)
 {
 	gpio_direction_t dir;
-	char pathname[PATH_MAX];
+	char pathname[GPIO_SYSFS_PATH_SIZE];
 	char buf[GPIO_SYSFS_IO_BUF_SIZE];
 
 	assert(IS_VALID_GPIO_DESC(gdesc));
@@ -339,7 +324,7 @@ int sysfs_gpio_get_direction(gpio_desc_t *gdesc, gpio_direction_t *out_dir)
 int sysfs_gpio_set_direction(gpio_desc_t *gdesc, gpio_direction_t dir)
 {
 	const char *data;
-	char pathname[PATH_MAX];
+	char pathname[GPIO_SYSFS_PATH_SIZE];
 
 	assert(IS_VALID_GPIO_DESC(gdesc));
 	assert(IS_VALID_GPIO_DIRECTION(dir));
@@ -356,7 +341,7 @@ int sysfs_gpio_set_direction(gpio_desc_t *gdesc, gpio_direction_t dir)
 static int sysfs_gpio_get_edge(gpio_desc_t *gdesc, gpio_edge_t *out_edge)
 {
 	gpio_edge_t edge;
-	char pathname[PATH_MAX];
+	char pathname[GPIO_SYSFS_PATH_SIZE];
 	char buf[GPIO_SYSFS_IO_BUF_SIZE];
 
 	assert(IS_VALID_GPIO_DESC(gdesc));
@@ -384,7 +369,7 @@ static int sysfs_gpio_get_edge(gpio_desc_t *gdesc, gpio_edge_t *out_edge)
 static int sysfs_gpio_set_edge(gpio_desc_t *gdesc, gpio_edge_t edge)
 {
 	const char *data;
-	char pathname[PATH_MAX];
+	char pathname[GPIO_SYSFS_PATH_SIZE];
 
 	assert(IS_VALID_GPIO_DESC(gdesc));
 	assert(IS_VALID_GPIO_EDGE(edge));
@@ -400,7 +385,7 @@ static int sysfs_gpio_set_edge(gpio_desc_t *gdesc, gpio_edge_t edge)
 static int sysfs_gpio_set_init_value(gpio_desc_t *gdesc, gpio_value_t value)
 {
 	const char *data;
-	char pathname[PATH_MAX];
+	char pathname[GPIO_SYSFS_PATH_SIZE];
 
 	assert(IS_VALID_GPIO_DESC(gdesc));
 	assert(IS_VALID_GPIO_VALUE(value));
@@ -425,8 +410,8 @@ static char* gsysfs_chip_read_device(char *buf,
 {
 	int len;
 	char *base_name;
-	char dev_path[PATH_MAX];
-	char target_path[PATH_MAX];
+	char dev_path[GPIO_SYSFS_PATH_SIZE];
+	char target_path[GPIO_SYSFS_PATH_SIZE];
 
 	path_join(dev_path, sizeof(dev_path), chip_dir, "device", NULL);
 	if (!path_islink(dev_path))
@@ -452,7 +437,7 @@ static char* gsysfs_chip_read_device(char *buf,
 static int gsysfs_chip_read_base(const char *chip_dir)
 {
 	int fd;
-	char pathname[PATH_MAX];
+	char pathname[GPIO_SYSFS_PATH_SIZE];
 	char buf[GPIO_SYSFS_IO_BUF_SIZE];
 
 	path_join(pathname, sizeof(pathname), chip_dir, "base", NULL);
@@ -475,7 +460,7 @@ static int gsysfs_chip_read_base(const char *chip_dir)
 static int gsysfs_chip_read_ngpio(const char *chip_dir)
 {
 	int fd;
-	char pathname[PATH_MAX];
+	char pathname[GPIO_SYSFS_PATH_SIZE];
 	char buf[GPIO_SYSFS_IO_BUF_SIZE];
 
 	path_join(pathname, sizeof(pathname), chip_dir, "ngpio", NULL);
@@ -544,7 +529,7 @@ static int sysfs_gpiochip_enumerate(gpiochip_desc_t *chips, size_t size)
 	int i = 0;
 	DIR* dirp;
 	struct dirent *dent;
-	char chip_dir[PATH_MAX];
+	char chip_dir[GPIO_SYSFS_PATH_SIZE];
 	bool found_aspeed_chip = false;
 
 	assert(chips != NULL);

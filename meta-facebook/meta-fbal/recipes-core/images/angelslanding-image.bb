@@ -51,4 +51,5 @@ IMAGE_INSTALL += " \
   cm-util \
   ncsid-v2 \
   name-util \
+  mctp-util \
   "

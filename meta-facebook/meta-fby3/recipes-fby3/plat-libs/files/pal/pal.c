@@ -1829,6 +1829,8 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_2OU_VR_FAULT   = 0x13,
     SYS_FAN_SERVICE    = 0x14,
     SYS_BB_FW_EVENT    = 0x15,
+    SYS_DP_X8_PWR_FAULT   = 0x16,
+    SYS_DP_X16_PWR_FAULT  = 0x17,
     E1S_1OU_HSC_PWR_ALERT = 0x82,
   };
   uint8_t event = event_data[0];
@@ -1926,6 +1928,12 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       }
       snprintf(log_msg, sizeof(log_msg), "Baseboard firmware %s update is ongoing", component_str);
       strcat(error_log, log_msg);
+      break;
+    case SYS_DP_X8_PWR_FAULT:
+      strcat(error_log, "DP x8 Riser Power Fault");
+      break;
+    case SYS_DP_X16_PWR_FAULT:
+      strcat(error_log, "DP x16 Riser Power Fault");
       break;
     case E1S_1OU_HSC_PWR_ALERT:
       strcat(error_log, "E1S 1OU HSC Power");

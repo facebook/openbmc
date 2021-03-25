@@ -15,7 +15,14 @@ srcs = files(
 
 cc = meson.get_compiler('c')
 deps = [
+  dependency('threads'),
   cc.find_library('pal')
+]
+
+test_deps = [
+  cc.find_library('gmock'),
+  cc.find_library('gtest'),
+  cc.find_library('gtest_main')
 ]
 
 name_util_exe = executable(
@@ -25,3 +32,9 @@ name_util_exe = executable(
     install: true,
     install_dir : 'local/bin'
 )
+
+name_util_test = executable('test-name-util', 'tests/name-test.cpp', srcs,
+  dependencies:[deps, test_deps],
+  cpp_args: ['-D__TEST__'],
+  install_dir: 'lib/name-util/ptest')
+test('name-util-tests', name_util_test)

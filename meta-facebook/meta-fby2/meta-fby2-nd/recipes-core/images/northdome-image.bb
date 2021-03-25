@@ -58,6 +58,7 @@ IMAGE_INSTALL += " \
   apml-util \
   psb-util \
   setup-gpio \
+  name-util \
   "
 
 PROVIDES+="northdome-vboot-image"

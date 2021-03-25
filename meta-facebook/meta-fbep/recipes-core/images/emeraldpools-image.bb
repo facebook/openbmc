@@ -42,4 +42,5 @@ IMAGE_INSTALL += " \
   threshold-util \
   asic-util \
   mac-util \
+  name-util \
   "

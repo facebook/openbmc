@@ -29,7 +29,33 @@
 #include <sched.h>
 #include <pthread.h>
 
+
 int verbose = 0;
+
+/*
+ * Subtract "start" from "end" and store result in "result".
+ *
+ * Return 0 if "result" is positive (or 0), and -1 if result is negative.
+ */
+int timespec_sub(struct timespec *start,
+                 struct timespec *end,
+                 struct timespec *result)
+{
+  long diff_sec = end->tv_sec - start->tv_sec;
+  long diff_nsec = end->tv_nsec - start->tv_nsec;
+
+  if (diff_nsec < 0) {
+    diff_nsec += 1000000000; /* nsec per second. */
+    diff_sec--;
+  }
+
+  if (diff_sec < 0)
+    return -1;
+
+  result->tv_sec = diff_sec;
+  result->tv_nsec = diff_nsec;
+  return 0;
+}
 
 int waitfd(int fd) {
   int loops = 0;
@@ -98,17 +124,22 @@ size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us) {
   size_t pos = 0;
   memset(dst, 0, maxlen);
   while(pos < maxlen) {
+    int rv;
     FD_ZERO(&fdset);
     FD_SET(fd, &fdset);
     timeout.tv_sec = 0;
     timeout.tv_usec = mdelay_us;
-    int rv = select(fd + 1, &fdset, NULL, NULL, &timeout);
+    IO_PERF_START();
+    rv = select(fd + 1, &fdset, NULL, NULL, &timeout);
+    IO_PERF_END("modbus wait (select)");
     if(rv == -1) {
       perror("select()");
     } else if (rv == 0) {
       break;
     }
+    IO_PERF_START();
     read_size = read(fd, read_buf, 16);
+    IO_PERF_END("modbus read 16 bytes");
     if(read_size < 0) {
       if(errno == EAGAIN) continue;
       fprintf(stderr, "read error: %s\n", strerror(errno));
@@ -261,9 +292,11 @@ int modbuscmd(modbus_req *req, speed_t baudrate) {
     struct timespec wait_end;
     struct timespec read_end;
     clock_gettime(CLOCK_MONOTONIC_RAW, &write_begin);
+    IO_PERF_START();
     if (write(req->tty_fd, modbus_cmd, cmd_len) < 0) {
       OBMC_ERROR(errno, "ERROR: could not write modbus cmd");
     }
+    IO_PERF_END("modbus write %d bytes", cmd_len);
     clock_gettime(CLOCK_MONOTONIC_RAW, &wait_begin);
     int waitloops = waitfd(req->tty_fd);
     clock_gettime(CLOCK_MONOTONIC_RAW, &wait_end);

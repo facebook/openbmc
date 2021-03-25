@@ -89,6 +89,27 @@ typedef struct _modbus_req {
   int scan;
 } modbus_req;
 
+#define timespec_to_ms(_t) (((_t)->tv_sec * 1000) + ((_t)->tv_nsec / 1000000))
+#define timespec_to_us(_t) (((_t)->tv_sec * 1000000) + ((_t)->tv_nsec / 1000))
+
+#ifdef RACKMON_PROFILING
+#define IO_PERF_START()                                                   \
+do {                                                                      \
+    struct timespec _start, _end, _diff;                                  \
+    if (clock_gettime(CLOCK_REALTIME, &_start) != 0)                      \
+        memset(&_start, 0, sizeof(_start))
+
+#define IO_PERF_END(fmt, args...)                                         \
+    if (clock_gettime(CLOCK_REALTIME, &_end) != 0)                        \
+        break;                                                            \
+    if (timespec_sub(&_start, &_end, &_diff) == 0)                        \
+        OBMC_INFO(fmt ": took %ld usec", ##args, timespec_to_us(&_diff)); \
+} while (0)
+#else /* !RACKMON_PROFILING */
+#define IO_PERF_START()
+#define IO_PERF_END(fmt, args...)
+#endif /* RACKMON_PROFILING */
+
 int waitfd(int fd);
 void decode_hex_in_place(char* buf, size_t* len);
 void append_modbus_crc16(char* buf, size_t* len);
@@ -101,5 +122,8 @@ size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us);
 int modbuscmd(modbus_req *req, speed_t baudrate);
 uint16_t modbus_crc16(char* buffer, size_t length);
 const char* modbus_strerror(int mb_err);
+
+int timespec_sub(struct timespec *start, struct timespec *end,
+                 struct timespec *result);
 
 #endif /* MODBUS_H_ */

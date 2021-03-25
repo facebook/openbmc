@@ -106,11 +106,6 @@ const uint8_t mb_4s_m_tray0_sensor_list[] = {
   MB_SNR_HSC_PIN,
   MB_SNR_HSC_TEMP,
   MB_SNR_HSC_PEAK_PIN,
-  MB1_SNR_HSC_VIN,
-  MB1_SNR_HSC_IOUT,
-  MB1_SNR_HSC_PIN,
-  MB1_SNR_HSC_TEMP,
-  MB1_SNR_HSC_PEAK_PIN,
   MB_SNR_PCH_TEMP,
   MB_SNR_CPU0_TEMP,
   MB_SNR_CPU1_TEMP,
@@ -190,6 +185,11 @@ const uint8_t mb_4s_m_tray0_sensor_list[] = {
 
 //4S Master BMC Sensor List
 const uint8_t mb_4s_m_tray1_sensor_list[] = {
+  MB1_SNR_HSC_VIN,
+  MB1_SNR_HSC_IOUT,
+  MB1_SNR_HSC_PIN,
+  MB1_SNR_HSC_TEMP,
+  MB1_SNR_HSC_PEAK_PIN,
   MB_SNR_CPU2_TEMP,
   MB_SNR_CPU3_TEMP,
   MB_SNR_CPU2_DIMM_GRPA_TEMP,

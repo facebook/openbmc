@@ -141,8 +141,7 @@ void obmc_mctp_smbus_free(struct obmc_mctp_binding* binding);
 // Debugging
 int mctp_smbus_send_data(struct mctp* mctp, uint8_t dst, uint8_t flag_tag,
                          struct mctp_binding_smbus *smbus,
-                         void *req, size_t size,
-                         struct mctp_smbus_extra_params *smbus_extra_params);
+                         void *req, size_t size);
 
 int mctp_smbus_recv_data_timeout_raw(struct mctp *mctp, uint8_t dst,
                                  struct mctp_binding_smbus *smbus,

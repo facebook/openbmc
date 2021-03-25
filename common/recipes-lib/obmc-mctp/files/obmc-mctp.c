@@ -33,6 +33,8 @@
 #define SYSFS_SLAVE_QUEUE "/sys/bus/i2c/devices/%d-10%02x/slave-mqueue"
 #define NIC_SLAVE_ADDR 0x64
 
+struct mctp_smbus_pkt_private *smbus_extra_params = NULL;
+
 // TODO:
 //      Migrate this library to C++ if BMC need to support MCTP over PCIe
 
@@ -71,8 +73,8 @@ struct obmc_mctp_binding* obmc_mctp_smbus_init(uint8_t bus, uint8_t addr, uint8_
     return NULL;
   }
 
-  if (pkt_size < MCTP_PAYLOAD_SIZE)
-    pkt_size = MCTP_PAYLOAD_SIZE;
+  if (pkt_size < MCTP_PAYLOAD_SIZE + MCTP_HEADER_SIZE)
+    pkt_size = MCTP_PAYLOAD_SIZE + MCTP_HEADER_SIZE;
   mctp_smbus_set_pkt_size(pkt_size);
 
   mctp = mctp_init();
@@ -82,13 +84,23 @@ struct obmc_mctp_binding* obmc_mctp_smbus_init(uint8_t bus, uint8_t addr, uint8_
     goto bail;
   }
 
+  smbus_extra_params = (struct mctp_smbus_pkt_private *)
+                       malloc(sizeof(struct mctp_smbus_pkt_private));
+  if (smbus_extra_params == NULL) {
+    syslog(LOG_ERR, "%s: out of memory", __func__);
+    goto bail;
+  }
+
   snprintf(dev, sizeof(dev), "/dev/i2c-%d", bus);
   fd = open(dev, O_RDWR);
   if (fd < 0) {
     syslog(LOG_ERR, "%s: open %s failed", __func__, dev);
     goto bail;
   }
-  mctp_smbus_set_out_fd(smbus, fd);
+  smbus_extra_params->mux_hold_timeout = 0;
+  smbus_extra_params->mux_flags = 0;
+  smbus_extra_params->fd = fd;
+  smbus_extra_params->slave_addr = NIC_SLAVE_ADDR;
 
   snprintf(slave_queue, sizeof(slave_queue), SYSFS_SLAVE_QUEUE, bus, addr);
   fd = open(slave_queue, O_RDONLY);
@@ -116,21 +128,17 @@ void obmc_mctp_smbus_free(struct obmc_mctp_binding* binding)
   mctp_smbus_free(binding->prot);
   mctp_destroy(binding->mctp);
   free(binding);
+  free(smbus_extra_params);
 }
 
 int mctp_smbus_send_data(struct mctp* mctp, uint8_t dst, uint8_t flag_tag,
                          struct mctp_binding_smbus *smbus,
-                         void *req, size_t size,
-                         struct mctp_smbus_extra_params *smbus_extra_params)
+                         void *req, size_t size)
 {
   bool tag_owner = flag_tag & MCTP_HDR_FLAG_TO? true: false;
   uint8_t tag = MCTP_HDR_GET_TAG(flag_tag);
   // TODO:
   //    Function overloading
-  smbus_extra_params->muxHoldTimeOut = 0;
-  smbus_extra_params->muxFlags = 0;
-  smbus_extra_params->fd = smbus->out_fd;
-  smbus_extra_params->slave_addr = NIC_SLAVE_ADDR;
 
   if (mctp_message_tx(mctp, dst, req, size,
                       tag_owner, tag, smbus_extra_params) < 0) {
@@ -229,12 +237,11 @@ int mctp_smbus_recv_data(struct mctp *mctp, uint8_t dst,
 int obmc_mctp_clear_init_state(struct obmc_mctp_binding *binding, uint8_t dst_eid,
                                uint8_t tag, uint8_t iid)
 {
-  int ret = -1;
+  int ret;
   struct mctp *mctp = binding->mctp;
   struct mctp_binding_smbus *smbus = (struct mctp_binding_smbus *)binding->prot;
   struct mctp_ncsi_req req = {0};
   struct obmc_mctp_ncsi_rsp rsp = {0};
-  struct mctp_smbus_extra_params *smbus_extra_params;
 
   /* NC-SI: Clear init state */
   tag |= MCTP_HDR_FLAG_TO;
@@ -246,28 +253,17 @@ int obmc_mctp_clear_init_state(struct obmc_mctp_binding *binding, uint8_t dst_ei
   req.pkt.hdr.Channel_ID      = 0x00;
   req.pkt.hdr.Payload_Length  = 0x00;
 
-  smbus_extra_params = (struct mctp_smbus_extra_params *)
-                       malloc(sizeof(struct mctp_smbus_extra_params));
-  if (smbus_extra_params == NULL) {
-    syslog(LOG_ERR, "%s: out of memory", __func__);
-    goto bail;
-  }
-
-  ret = mctp_smbus_send_data(mctp, dst_eid, tag, smbus, &req, sizeof(req), smbus_extra_params);
-  if (ret < 0) {
-    goto bail;
-  }
+  ret = mctp_smbus_send_data(mctp, dst_eid, tag, smbus, &req, sizeof(req));
+  if (ret < 0)
+    return -1;
 
   ret = mctp_smbus_recv_data(mctp, dst_eid, smbus, &rsp);
   if (ret != RESP_COMMAND_COMPLETED) {
     syslog(LOG_ERR, "%s: Response code = 0x%02X, Reason code = 0x%02X",
                     __func__, rsp.pkt.data.Response_Code, rsp.pkt.data.Reason_Code);
-    goto bail;
+    return -1;
   }
-  ret = 0;
-bail:
-  free(smbus_extra_params);
-  return ret;
+  return 0;
 }
 
 int obmc_mctp_get_version_id(struct obmc_mctp_binding *binding, uint8_t dst_eid,
@@ -279,7 +275,6 @@ int obmc_mctp_get_version_id(struct obmc_mctp_binding *binding, uint8_t dst_eid,
   struct mctp_binding_smbus *smbus = (struct mctp_binding_smbus *)binding->prot;
   struct mctp_ncsi_req req = {0};
   struct obmc_mctp_ncsi_rsp rsp = {0};
-  struct mctp_smbus_extra_params *smbus_extra_params;
 
   /* NC-SI: Get version */
   tag |= MCTP_HDR_FLAG_TO;
@@ -291,29 +286,18 @@ int obmc_mctp_get_version_id(struct obmc_mctp_binding *binding, uint8_t dst_eid,
   req.pkt.hdr.Channel_ID      = 0x00;
   req.pkt.hdr.Payload_Length  = 0x00;
 
-  smbus_extra_params = (struct mctp_smbus_extra_params *)
-                       malloc(sizeof(struct mctp_smbus_extra_params));
-  if (smbus_extra_params == NULL) {
-    syslog(LOG_ERR, "%s: out of memory", __func__);
-    goto bail;
-  }
-
-  ret = mctp_smbus_send_data(mctp, dst_eid, tag, smbus, &req, sizeof(req), smbus_extra_params);
-  if (ret < 0) {
-    goto bail;
-  }
+  ret = mctp_smbus_send_data(mctp, dst_eid, tag, smbus, &req, sizeof(req));
+  if (ret < 0)
+    return -1;
 
   ret = mctp_smbus_recv_data(mctp, dst_eid, smbus, &rsp);
   if (ret != RESP_COMMAND_COMPLETED) {
     syslog(LOG_ERR, "%s: Response code = 0x%02X, Reason code = 0x%02X",
                     __func__, rsp.pkt.data.Response_Code, rsp.pkt.data.Reason_Code);
-    goto bail;
+    return -1;
   }
   memcpy(payload, rsp.pkt.data.Payload_Data, sizeof(Get_Version_ID_Response));
-  ret = 0;
-bail:
-  free(smbus_extra_params);
-  return ret;
+  return 0;
 }
 
 int obmc_mctp_set_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
@@ -326,7 +310,6 @@ int obmc_mctp_set_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
   struct mctp_pldm_req req = {0};
   struct obmc_mctp_pldm_rsp rsp = {0};
   size_t req_size = 1 + PLDM_COMMON_REQ_LEN + sizeof(tid);
-  struct mctp_smbus_extra_params *smbus_extra_params;
 
   /* PLDM: Set TID */
   tag |= MCTP_HDR_FLAG_TO;
@@ -336,27 +319,16 @@ int obmc_mctp_set_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
   req.pkt.hdr.Command_Code = CMD_SET_TID;
   req.pkt.Payload_Data[0]  = tid;
 
-  smbus_extra_params = (struct mctp_smbus_extra_params *)
-                       malloc(sizeof(struct mctp_smbus_extra_params));
-  if (smbus_extra_params == NULL) {
-    syslog(LOG_ERR, "%s: out of memory", __func__);
-    goto bail;
-  }
-
-  ret = mctp_smbus_send_data(mctp, dst_eid, tag, smbus, &req, req_size, smbus_extra_params);
-  if (ret < 0) {
-    goto bail;
-  }
+  ret = mctp_smbus_send_data(mctp, dst_eid, tag, smbus, &req, req_size);
+  if (ret < 0)
+    return -1;
 
   ret = mctp_smbus_recv_data(mctp, dst_eid, smbus, &rsp);
   if (ret != CC_SUCCESS) {
     syslog(LOG_ERR, "%s: Complete code = 0x%02X", __func__, rsp.pkt.Complete_Code);
-    goto bail;
+    return -1;
   }
-  ret = 0;
-bail:
-  free(smbus_extra_params);
-  return ret;
+  return 0;
 }
 
 int obmc_mctp_get_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
@@ -369,7 +341,6 @@ int obmc_mctp_get_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
   struct mctp_pldm_req req = {0};
   struct obmc_mctp_pldm_rsp rsp = {0};
   size_t req_size = 1 + PLDM_COMMON_REQ_LEN;
-  struct mctp_smbus_extra_params *smbus_extra_params;
 
   /* PLDM: Get TID */
   tag |= MCTP_HDR_FLAG_TO;
@@ -378,28 +349,17 @@ int obmc_mctp_get_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
   req.pkt.hdr.Command_Type = PLDM_HDR_VER | PLDM_TYPE_MSG_CTRL_AND_DISCOVERY;
   req.pkt.hdr.Command_Code = CMD_GET_TID;
 
-  smbus_extra_params = (struct mctp_smbus_extra_params *)
-                       malloc(sizeof(struct mctp_smbus_extra_params));
-  if (smbus_extra_params == NULL) {
-    syslog(LOG_ERR, "%s: out of memory", __func__);
-    goto bail;
-  }
-
-  ret = mctp_smbus_send_data(mctp, dst_eid, tag, smbus, &req, req_size, smbus_extra_params);
-  if (ret < 0) {
-    goto bail;
-  }
+  ret = mctp_smbus_send_data(mctp, dst_eid, tag, smbus, &req, req_size);
+  if (ret < 0)
+    return -1;
 
   ret = mctp_smbus_recv_data(mctp, dst_eid, smbus, &rsp);
   if (ret != CC_SUCCESS) {
     syslog(LOG_ERR, "%s: Complete code = 0x%02X", __func__, rsp.pkt.Complete_Code);
-    goto bail;
+    return -1;
   }
   *tid = rsp.pkt.Payload_Data[0];
-  ret = 0;
-bail:
-  free(smbus_extra_params);
-  return ret;
+  return 0;
 }
 
 int send_mctp_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
@@ -409,7 +369,6 @@ int send_mctp_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
   uint8_t tag = 0;
   struct obmc_mctp_binding *mctp_binding;
   struct mctp_binding_smbus *smbus;
-  struct mctp_smbus_extra_params *smbus_extra_params;
 
   mctp_binding = obmc_mctp_smbus_init(bus, addr, src_eid, NCSI_MAX_PAYLOAD);
   if (mctp_binding == NULL) {
@@ -418,15 +377,8 @@ int send_mctp_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
   }
   smbus = (struct mctp_binding_smbus *)mctp_binding->prot;
 
-  smbus_extra_params = (struct mctp_smbus_extra_params *)
-                       malloc(sizeof(struct mctp_smbus_extra_params));
-  if (smbus_extra_params == NULL) {
-    syslog(LOG_ERR, "Error: %s out of memory\n", __func__);
-    goto bail;
-  }
-
   tag |= MCTP_HDR_FLAG_TO;
-  ret = mctp_smbus_send_data(mctp_binding->mctp, dst_eid, tag, smbus, tbuf, tlen, smbus_extra_params);
+  ret = mctp_smbus_send_data(mctp_binding->mctp, dst_eid, tag, smbus, tbuf, tlen);
   if (ret < 0) {
     syslog(LOG_ERR, "error: %s send failed\n", __func__);
     goto bail;
@@ -475,7 +427,6 @@ int obmc_mctp_fw_update(struct obmc_mctp_binding *binding, uint8_t dst_eid,
   struct mctp_pldm_rsp rsp = {0};
   struct obmc_mctp_pldm_req obmc_req = {0};
   struct obmc_mctp_pldm_rsp obmc_rsp = {0};
-  struct mctp_smbus_extra_params *smbus_extra_params = NULL;
   pldm_fw_pkg_hdr_t *pkgHdr;
   pldm_cmd_req pldmReq = {0};
   pldm_response pldmRes = {0};
@@ -490,19 +441,12 @@ int obmc_mctp_fw_update(struct obmc_mctp_binding *binding, uint8_t dst_eid,
     goto free_exit;
   }
 
-  smbus_extra_params = (struct mctp_smbus_extra_params *)
-                       malloc(sizeof(struct mctp_smbus_extra_params));
-  if (smbus_extra_params == NULL) {
-    syslog(LOG_ERR, "%s: out of memory", __func__);
-    goto free_exit;
-  }
-
   pldmCreateReqUpdateCmd(pkgHdr, &pldmReq, 1024);
   printf("\n01 PldmRequestUpdateOp: payload_size=%d\n", pldmReq.payload_size);
   pldmReq_to_mctpReq(&req, &pldmReq);
 
   ret = mctp_smbus_send_data(mctp, dst_eid, (tag | MCTP_HDR_FLAG_TO),
-                             smbus, &req, pldmReq.payload_size+1, smbus_extra_params);
+                             smbus, &req, pldmReq.payload_size+1);
   if (ret < 0) {
     goto free_exit;
   }
@@ -519,7 +463,7 @@ int obmc_mctp_fw_update(struct obmc_mctp_binding *binding, uint8_t dst_eid,
             pldmReq.payload_size);
     pldmReq_to_mctpReq(&req, &pldmReq);
     ret = mctp_smbus_send_data(mctp, dst_eid, (tag | MCTP_HDR_FLAG_TO),
-                               smbus, &req, pldmReq.payload_size+1, smbus_extra_params);
+                               smbus, &req, pldmReq.payload_size+1);
     if (ret < 0) {
       goto exit;
     }
@@ -537,7 +481,7 @@ int obmc_mctp_fw_update(struct obmc_mctp_binding *binding, uint8_t dst_eid,
             pldmReq.payload_size);
     pldmReq_to_mctpReq(&req, &pldmReq);
     ret = mctp_smbus_send_data(mctp, dst_eid, (tag | MCTP_HDR_FLAG_TO),
-                               smbus, &req, pldmReq.payload_size+1, smbus_extra_params);
+                               smbus, &req, pldmReq.payload_size+1);
     if (ret < 0) {
       goto exit;
     }
@@ -567,7 +511,7 @@ int obmc_mctp_fw_update(struct obmc_mctp_binding *binding, uint8_t dst_eid,
       pldmRes_to_mctpRes(&rsp, &pldmRes);
 
       ret = mctp_smbus_send_data(mctp, dst_eid, tag,
-                                 smbus, &rsp, pldmRes.resp_size+1, smbus_extra_params);
+                                 smbus, &rsp, pldmRes.resp_size+1);
       if (ret < 0) {
         break;
       }
@@ -588,7 +532,7 @@ exit:
     printf("\n05 PldmActivateFirmwareOp\n");
     pldmReq_to_mctpReq(&req, &pldmReq);
     ret = mctp_smbus_send_data(mctp, dst_eid, tag | MCTP_HDR_FLAG_TO,
-                               smbus, &req, pldmReq.payload_size+1, smbus_extra_params);
+                               smbus, &req, pldmReq.payload_size+1);
     if (ret < 0) {
       goto free_exit;
     }
@@ -606,7 +550,7 @@ exit:
     pldmCreateCancelUpdateCmd(&pldmReq);
     pldmReq_to_mctpReq(&req, &pldmReq);
     ret = mctp_smbus_send_data(mctp, dst_eid, tag | MCTP_HDR_FLAG_TO,
-                               smbus, &req, pldmReq.payload_size+1, smbus_extra_params);
+                               smbus, &req, pldmReq.payload_size+1);
     if (ret < 0) {
       goto free_exit;
     }
@@ -619,7 +563,6 @@ exit:
   }
 
 free_exit:
-  free(smbus_extra_params);
   if (pkgHdr)
     free_pldm_pkg_data(&pkgHdr);
   return ret;

@@ -1,4 +1,4 @@
-From 1ddf1f456ef33b25c2446ef3b200909398a9f1b6 Mon Sep 17 00:00:00 2001
+From 5556087f5aca74a1be123c961f4d7e4fb2e02e6a Mon Sep 17 00:00:00 2001
 From: Howard Chiu <howard.chiu@quantatw.com>
 Date: Thu, 7 Jan 2021 15:26:08 +0800
 Subject: [PATCH] Costomize buffer size
@@ -9,40 +9,40 @@ Subject: [PATCH] Costomize buffer size
  2 files changed, 9 insertions(+), 1 deletion(-)
 
 diff --git a/libmctp-smbus.h b/libmctp-smbus.h
-index ba841a8..38efdc6 100644
+index 729e9b8..59c632d 100644
 --- a/libmctp-smbus.h
 +++ b/libmctp-smbus.h
-@@ -51,6 +51,7 @@ int mctp_smbus_read(struct mctp_binding_smbus *smbus);
+@@ -52,6 +52,7 @@ int mctp_smbus_exit_pull_model(const struct mctp_smbus_pkt_private *prvt);
  void mctp_smbus_free(struct mctp_binding_smbus *smbus);
+ int mctp_smbus_close_mux(const int fd, const int address);
  int mctp_smbus_set_in_fd(struct mctp_binding_smbus *smbus, int fd);
- int mctp_smbus_set_out_fd(struct mctp_binding_smbus *smbus, int fd);
 +int mctp_smbus_set_pkt_size(size_t pkt_size);
  #ifdef __cplusplus
  }
  #endif
 diff --git a/smbus.c b/smbus.c
-index 70bea4e..2318bea 100644
+index 6814427..03ef1ff 100644
 --- a/smbus.c
 +++ b/smbus.c
-@@ -39,6 +39,8 @@
+@@ -38,6 +38,8 @@
+ #define SMBUS_LENGTH_FIELD_SIZE 1
  #define SMBUS_ADDR_OFFSET_SLAVE 0x1000
- #define SMBUS_MAX_PKT_PAYLOAD_SIZE 64
  
-+size_t g_pkt_size = SMBUS_MAX_PKT_PAYLOAD_SIZE;
++size_t g_pkt_size = MCTP_PACKET_SIZE(MCTP_BTU);
 +
  #ifdef I2C_M_HOLD
- static struct mctp_smbus_extra_params active_mux_info = { .fd = -1,
- 							  .muxHoldTimeOut = 0,
-@@ -333,7 +335,7 @@ struct mctp_binding_smbus *mctp_smbus_init(void)
+ static struct mctp_smbus_pkt_private active_mux_info = { .fd = -1,
+ 							 .mux_hold_timeout = 0,
+@@ -432,7 +434,7 @@ struct mctp_binding_smbus *mctp_smbus_init(void)
  	smbus->rx_pkt = NULL;
  	smbus->binding.name = "smbus";
  	smbus->binding.version = 1;
--	smbus->binding.pkt_size = SMBUS_MAX_PKT_PAYLOAD_SIZE;
+-	smbus->binding.pkt_size = MCTP_PACKET_SIZE(MCTP_BTU);
 +	smbus->binding.pkt_size = g_pkt_size;
- 	smbus->binding.pkt_priv_size = sizeof(struct mctp_smbus_extra_params);
+ 	smbus->binding.pkt_pad = SMBUS_HEADER_SIZE;
+ 	smbus->binding.pkt_priv_size = sizeof(struct mctp_smbus_pkt_private);
  
- 	smbus->binding.tx = mctp_binding_smbus_tx;
-@@ -351,3 +353,8 @@ void mctp_smbus_free(struct mctp_binding_smbus *smbus)
+@@ -448,3 +450,8 @@ void mctp_smbus_free(struct mctp_binding_smbus *smbus)
  
  	__mctp_free(smbus);
  }

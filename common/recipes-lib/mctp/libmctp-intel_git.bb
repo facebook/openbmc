@@ -13,7 +13,7 @@ SRC_URI = "git://github.com/Intel-BMC/libmctp.git;protocol=git;branch=master \
            file://0003-Revise-source-address.patch \
            file://0004-Customize-buffer-size.patch \
           "
-SRCREV = "64918618ef56110c4294bf7c9470e7e66d52935b"
+SRCREV = "0f53a504347f122ffcf6d0b17b04bfd46846536e"
 SRC_URI[md5sum] = "1c7db87fb8fa946b03d91fff08b0825a"
 SRC_URI[sha256sum] = "f7d36674d1e72d216fe60d804fc55ba5284162e8ec6a79e6ef2e067d3aee7675"
 

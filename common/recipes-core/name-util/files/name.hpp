@@ -8,6 +8,7 @@ class FruNames {
     virtual bool is_present(uint8_t fru);
     virtual int get_capability(uint8_t fru, unsigned int* caps);
     virtual int get_fru_name(uint8_t fru, std::string& name);
+    virtual int get_fru_count();
   public:
     FruNames() {}
     int get_list(const std::string& fru_type, std::ostream& os);

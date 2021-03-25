@@ -55,12 +55,17 @@ int FruNames::get_fru_name(uint8_t fru, std::string& name)
   name.assign(cname);
   return 0;
 }
+int FruNames::get_fru_count()
+{
+  return MAX_NUM_FRUS;
+}
+
 int FruNames::get_list(const std::string& fru_type, std::ostream& os)
 {
   std::vector<std::string> bmc;
   std::vector<std::string> nic;
   std::vector<std::string> server;
-  for (uint8_t fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+  for (uint8_t fru = 1; fru <= get_fru_count(); fru++) {
     unsigned int caps;
     if (!is_present(fru))
       continue;
@@ -99,6 +104,7 @@ int FruNames::get_list(const std::string& fru_type, std::ostream& os)
   return 0;
 }
 
+#ifndef __TEST__
 int main(int argc, char **argv)
 {
   CLI::App app(help);
@@ -113,3 +119,4 @@ int main(int argc, char **argv)
 
   return impl.get_list(fru_type, std::cout);
 }
+#endif

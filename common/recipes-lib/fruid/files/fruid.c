@@ -197,6 +197,8 @@ static char * _fruid_area_field_read(uint8_t *offset)
     break;
 
   case TYPE_BCD_PLUS:
+    field_len_eff = ((field_len * 2) + 1);
+    break;
   case TYPE_ASCII_8BIT:
     field_len_eff = field_len;
     break;
@@ -227,12 +229,11 @@ static char * _fruid_area_field_read(uint8_t *offset)
 
   case TYPE_BCD_PLUS:
 
-    idx = 0;
-    while (idx != field_len) {
-      field[idx] = bcd_plus_array[offset[idx + 1] & 0x0F];
-      idx++;
+    for (idx = 0; idx < field_len; idx++) {
+      field[idx * 2] = bcd_plus_array[(offset[idx + 1] >> 4) & 0x0F];
+      field[idx * 2 + 1] = bcd_plus_array[(offset[idx + 1]) & 0x0F];
     }
-    field[idx] = '\0';
+    field[idx * 2] = '\0';
     break;
 
   case TYPE_ASCII_6BIT:

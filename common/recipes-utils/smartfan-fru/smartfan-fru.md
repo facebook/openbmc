@@ -82,7 +82,7 @@ The standard IPMI product info area populated with fan information
 |--------|------|-------|--------|---------|-------|----------|
 | 0x00 | Binary | 0xC0 | 1 | Smart Fan Record | Record Type ID | OEM SMART FAN |
 | 0x01 | Binary | 0x82 | 1 | End of list | End of List/Version | - |
-| 0x02 | Binary | 0x2E | 1 | 46 bytes | Record Length
+| 0x02 | Binary | 0x2A | 1 | 42 bytes | Record Length
 | 0x03 | Binary | 0xXX | 1 | - | Record Checksum | - |
 | 0x04 | Binary | 0xXX | 1 | - | Header checksum | - |
 
@@ -93,10 +93,10 @@ The standard IPMI product info area populated with fan information
 | 0x00 | Binary | 0x15A000 | 3 | FB IANA-PEN 40981 | Manufacture ID. LS byte first | The manufacture ID |
 | 0x03 | BCD+ | xx.xx.xx | 4 | - | CUSTOM - Smartfan version | The smart fan spec version (major.minor.rev) |
 | 0x07 | BCD+ | xx.xx.xx | 4 | - | CUSTOM - FW version | The fan firmware version (major.minor.rev) |
-| 0x08 | Binary | 0xXXXXXX | 3 | - | CUSTOM - Mfg. Date/Time | manufacturing date and time expressed as number of minutes from 00:00 1/1/1996 (LS byte first). The same as Board info section. |
+| 0x0B | Binary | 0xXXXXXX | 3 | - | CUSTOM - Mfg. Date/Time | manufacturing date and time expressed as number of minutes from 00:00 1/1/1996 (LS byte first). The same as Board info section. |
 | 0x0E | ASCII | 8-chars | 8 | - | CUSTOM - Mfg. Line | The manufacturing plant and line the fan came off. Vendor specific codes. Can be blank |
 | 0x16 | ASCII | 10-chars | 10 | - | CUSTOM - CLEI Code | Fan's CLEI code. Can be blanded to denote no code. |
 | 0x20 | Binary | 0xXXXX | 2 | - | CUSTOM - Voltage | Nominal operating voltage for the fan. (10mV, LSB first) |
 | 0x22 | Binary | 0xXXXX | 2 | - | CUSTOM - Current | Nominal maximum operating current for the fan. (10mA,LSB first) |
-| 0x24 | Binary | 0xXXXXXX | 3 | - | CUSTOM - RPM | Nominal maximum operating RPM of the Fan (Front Rotor) |
-| 0x27 | Binary | 0xXXXXXX | 3 | - | CUSTOM - RPM | Nominal maximum operating RPM of the FAN (Rear Rotor)
+| 0x24 | Binary | 0xXXXXXX | 3 | - | CUSTOM - RPM | Nominal maximum operating RPM of the Fan (Front Rotor, LSB first) |
+| 0x27 | Binary | 0xXXXXXX | 3 | - | CUSTOM - RPM | Nominal maximum operating RPM of the FAN (Rear Rotor, LSB first)

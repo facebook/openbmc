@@ -28,11 +28,13 @@ PACKAGECONFIG[disable-watchdog] = ""
 SRC_URI = " \
     file://COPYING \
     file://mount_data0.sh \
+    file://mount_data0.service \
     file://openbmc-utils.sh \
     file://shell-utils.sh \
     file://i2c-utils.sh \
     file://gpio-utils.sh \
     file://rc.early \
+    file://early.service \
     file://rc.local \
     file://dhclient-exit-hooks \
     file://rm_poweroff_cmd.sh \
@@ -140,6 +142,7 @@ install_systemd() {
     install -m 644 ${WORKDIR}/rm_poweroff_cmd.service ${D}${systemd_system_unitdir}
     # No rm_poweroff_cmd.sh under systemd
     install -m 644 ${WORKDIR}/setup-reboot.service ${D}${systemd_system_unitdir}
+    install -m 644 ${WORKDIR}/mount_data0.service ${D}${systemd_system_unitdir}
     # data1 will be mounted via fstab in a different recipe
 
     # Install disable-watchdog.
@@ -181,9 +184,9 @@ FILES_${PN} += "/usr/local"
 
 SYSTEMD_SERVICE_${PN} = " \
     early.service \
-    fetch-backports.service \
     rm_poweroff_cmd.service \
     setup-reboot.service \
+    mount_data0.service \
     ${@bb.utils.contains('PACKAGECONFIG', 'disable-watchdog', \
                          'disable_watchdog.service', '', d)} \
     "

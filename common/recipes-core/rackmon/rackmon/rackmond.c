@@ -441,15 +441,16 @@ static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
    * workaround solution.
    */
   for (int retry = 0; retry < MAX_RETRY; retry++) {
-    IO_PERF_START();
+    CHECK_LATENCY_START();
     error = modbuscmd(&req, baudrate);
-    IO_PERF_END("cmd=(%#x,%#x,%#x,%#x,%#x,%#x), cmd_len=%lu, resp_len=%lu",
-                cmd_buf[0], cmd_buf[1],
-                cmd_size > 2 ? cmd_buf[2] : 0,
-                cmd_size > 3 ? cmd_buf[3] : 0,
-                cmd_size > 4 ? cmd_buf[4] : 0,
-                cmd_size > 5 ? cmd_buf[5] : 0,
-                (unsigned long)req.cmd_len, (unsigned long)req.expected_len);
+    CHECK_LATENCY_END(
+        "cmd=(%#x,%#x,%#x,%#x,%#x,%#x), cmd_len=%lu, resp_len=%lu",
+        cmd_buf[0], cmd_buf[1],
+        cmd_size > 2 ? cmd_buf[2] : 0,
+        cmd_size > 3 ? cmd_buf[3] : 0,
+        cmd_size > 4 ? cmd_buf[4] : 0,
+        cmd_size > 5 ? cmd_buf[5] : 0,
+        (unsigned long)req.cmd_len, (unsigned long)req.expected_len);
 
     if (delay != 0) {
       usleep(delay);
@@ -1035,6 +1036,7 @@ static int reload_psu_registers(psu_datastore_t *mdata)
     return -1;
   }
 
+  CPU_USAGE_START();
   for (r = 0; r < rackmond_config.config->num_intervals; r++) {
     int err;
     uint32_t timestamp;
@@ -1099,6 +1101,7 @@ static int reload_psu_registers(psu_datastore_t *mdata)
     record_data(rd, timestamp, regs);
     global_unlock();
   } /* for each monitor_interval */
+  CPU_USAGE_END("reloading psu %#x registers", addr);
 
   return 0;
 }
@@ -1659,6 +1662,10 @@ int main(int argc, char** argv) {
     if (daemon(0, 0) < 0)
       OBMC_ERROR(errno, "daemon error");
   }
+
+#ifdef RACKMON_PROFILING
+  OBMC_INFO("ticks_per_sec: %ld", sysconf(_SC_CLK_TCK));
+#endif /* RACKMON_PROFILING */
 
   if (signal_handler_init() != 0)
     return -1;

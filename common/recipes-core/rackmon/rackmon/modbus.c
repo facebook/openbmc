@@ -129,17 +129,17 @@ size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us) {
     FD_SET(fd, &fdset);
     timeout.tv_sec = 0;
     timeout.tv_usec = mdelay_us;
-    IO_PERF_START();
+    CHECK_LATENCY_START();
     rv = select(fd + 1, &fdset, NULL, NULL, &timeout);
-    IO_PERF_END("modbus wait (select)");
+    CHECK_LATENCY_END("modbus read_wait (select)");
     if(rv == -1) {
       perror("select()");
     } else if (rv == 0) {
       break;
     }
-    IO_PERF_START();
+    CHECK_LATENCY_START();
     read_size = read(fd, read_buf, 16);
-    IO_PERF_END("modbus read 16 bytes");
+    CHECK_LATENCY_END("modbus read 16 bytes");
     if(read_size < 0) {
       if(errno == EAGAIN) continue;
       fprintf(stderr, "read error: %s\n", strerror(errno));
@@ -249,6 +249,7 @@ int modbuscmd(modbus_req *req, speed_t baudrate) {
     struct termios tio;
     char modbus_cmd[req->cmd_len + 2];
     size_t cmd_len = req->cmd_len;
+    int waitloops;
 
     if (verbose)
       OBMC_INFO("[*] Setting TTY flags!\n");
@@ -292,13 +293,17 @@ int modbuscmd(modbus_req *req, speed_t baudrate) {
     struct timespec wait_end;
     struct timespec read_end;
     clock_gettime(CLOCK_MONOTONIC_RAW, &write_begin);
-    IO_PERF_START();
+    CHECK_LATENCY_START();
     if (write(req->tty_fd, modbus_cmd, cmd_len) < 0) {
       OBMC_ERROR(errno, "ERROR: could not write modbus cmd");
     }
-    IO_PERF_END("modbus write %d bytes", cmd_len);
+    CHECK_LATENCY_END("modbus write %d bytes", cmd_len);
     clock_gettime(CLOCK_MONOTONIC_RAW, &wait_begin);
-    int waitloops = waitfd(req->tty_fd);
+
+    CHECK_LATENCY_START();
+    waitloops = waitfd(req->tty_fd);
+    CHECK_LATENCY_END("modbus wait LSR");
+
     clock_gettime(CLOCK_MONOTONIC_RAW, &wait_end);
     sp.sched_priority = 0;
     // Enable UART read

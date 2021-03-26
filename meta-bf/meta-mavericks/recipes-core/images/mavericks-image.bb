@@ -33,7 +33,6 @@ IMAGE_INSTALL += " \
   flashrom \
   psumuxmon \
   mterm \
-  spatula \
   trousers \
   tpm-tools \
   fan-ctrl \

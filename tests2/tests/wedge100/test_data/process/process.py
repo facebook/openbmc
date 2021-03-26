@@ -20,7 +20,6 @@
 
 
 EXPECTED_PROCS = [
-    "spatula_wrapper.py",
     "fscd",
     "psumuxmon",
     "rackmond",

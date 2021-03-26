@@ -26,7 +26,6 @@ from utils.test_utils import running_systemd
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [
-            "spatula_wrapper.py",
             "fscd",
             "psumuxmon",
             "rackmond",

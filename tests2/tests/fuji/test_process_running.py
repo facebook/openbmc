@@ -36,6 +36,5 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "restapi",
             "rsyslogd",
             "sensord",
-            "spatula_wrapper.py",
             "usbmon.sh",
         ]

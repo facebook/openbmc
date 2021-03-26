@@ -40,7 +40,6 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "restapi",
             "rsyslogd",
             "sensord",
-            "spatula_wrapper.py",
             "usbmon.sh",
         ]
         # If pem is present, then add pemd process in list

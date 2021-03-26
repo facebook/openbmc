@@ -53,7 +53,6 @@ class CpuUtilizationTest(BaseCpuUtilizationTest):
             "rsyslogd",
             "rest.py",
             "fscd.py",
-            "spatula_wrapper.py",
             "top",
             "awk",
         ]

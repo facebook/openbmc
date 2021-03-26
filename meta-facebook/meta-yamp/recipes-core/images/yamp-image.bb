@@ -21,7 +21,6 @@ IMAGE_INSTALL += " \
   weutil-dhcp-id \
   fscd \
   led-controld \
-  spatula \
   ncsi-util \
   libcpldupdate-dll-ioctl \
   "

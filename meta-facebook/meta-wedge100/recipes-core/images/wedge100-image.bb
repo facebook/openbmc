@@ -29,7 +29,6 @@ IMAGE_INSTALL += " \
   flashrom \
   psumuxmon \
   mterm \
-  spatula \
   fscd  \
   recover-from-secondary \
   udev-rules \

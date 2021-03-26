@@ -44,7 +44,6 @@ IMAGE_INSTALL += " \
   sensor-mon \
   sensor-setup \
   sensor-util \
-  spatula \
   usb-console \
   vboot-utils \
   libncsi \

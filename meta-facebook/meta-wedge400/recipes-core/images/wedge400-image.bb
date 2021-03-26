@@ -46,7 +46,6 @@ IMAGE_INSTALL += " \
   psu-util \
   sensor-util \
   sensor-mon \
-  spatula \
   threshold-util \
   usb-console \
   wedge-eeprom \

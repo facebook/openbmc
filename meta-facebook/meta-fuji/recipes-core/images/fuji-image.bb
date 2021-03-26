@@ -33,7 +33,6 @@ IMAGE_INSTALL += " \
   sensor-util \
   sensor-mon \
   threshold-util \
-  spatula \
   fscd \
   wedge-eeprom \
   weutil-dhcp-id \

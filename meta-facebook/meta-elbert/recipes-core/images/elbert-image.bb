@@ -21,7 +21,6 @@ IMAGE_INSTALL += " \
   mterm \
   mtd-utils-ubifs \
   openbmc-utils \
-  spatula \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \

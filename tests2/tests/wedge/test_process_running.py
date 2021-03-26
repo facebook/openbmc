@@ -27,7 +27,6 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
         self.expected_process = [
             "/var/run/dhclient.eth0.pid",
             "/var/run/dhclient6.eth0.pid",
-            "spatula_wrapper.py",
             "rackmond",
             "mTerm_server",
             "rest.py",

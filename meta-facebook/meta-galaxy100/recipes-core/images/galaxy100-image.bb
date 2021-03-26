@@ -24,7 +24,6 @@ IMAGE_INSTALL += " \
   openbmc-gpio \
   po-eeprom \
   kcsd \
-  spatula \
   stress  \
   usb-console \
   wedge-eeprom \

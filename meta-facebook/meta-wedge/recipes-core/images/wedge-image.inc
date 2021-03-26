@@ -26,6 +26,5 @@ IMAGE_INSTALL += " \
   ipmid \
   po-eeprom \
   bitbang \
-  spatula \
   mterm \
   "

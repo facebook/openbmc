@@ -45,13 +45,11 @@ class CpuUtilizationTest(BaseCpuUtilizationTest):
         """
         self.skip_processes = [
             "u-fb",
-            "spatula",
             "rest.py",
             "fscd.py",
             "rackmond",
             "top",
             "awk",
-            "spatula_wrapper",
             "rotor_client",
             "rsyslogd",
             "dhclient",

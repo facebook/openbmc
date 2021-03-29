@@ -30,6 +30,7 @@ SRC_URI += "file://enable_watchdog_ext_signal.sh \
             file://reset_qsfp_mux.sh \
             file://setup_i2c.sh \
             file://setup_sensors_conf.sh \
+            file://setup_sensors_conf.service \
             file://spi_util.sh \
             file://reset_fancpld.sh \
             file://setup_i2c.service \
@@ -105,6 +106,9 @@ do_work_systemd() {
 
     install -m 755 power-on.sh ${D}/usr/local/bin/power-on.sh
 
+    install -m 755 setup_sensors_conf.sh ${D}/usr/local/bin/setup_sensors_conf.sh
+    install -m 644 ${WORKDIR}/setup_sensors_conf.service ${D}${systemd_system_unitdir}
+
     install -m 0755 ${WORKDIR}/enable_watchdog_ext_signal.sh ${D}/usr/local/bin/enable_watchdog_ext_signal.sh
 }
 
@@ -125,3 +129,5 @@ do_install_board() {
 }
 
 FILES_${PN} += "${sysconfdir}"
+
+SYSTEMD_SERVICE_${PN} += " setup_sensors_conf.service "

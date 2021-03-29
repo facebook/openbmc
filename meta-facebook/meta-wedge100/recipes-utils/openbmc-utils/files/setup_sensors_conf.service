@@ -15,14 +15,20 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-[Unit]
-Description=PSU monitoring
-After=setup_board.service openbmc_gpio_setup.service setup_i2c.service setup_sensors_conf.service
-Wants=setup_board.service
+# This must start before console login is allowed, so that tools like weutil
+# work correctly as soon as the BMC is up.
 
+[Unit]
+Description=Setup lm-sensors config
+Wants=sensor-setup.service
+After=sensor-setup.service
+Before=basic.target
+DefaultDependencies=no
 
 [Service]
-ExecStart=/usr/local/bin/psumuxmon.py
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/setup_sensors_conf.sh
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=basic.target

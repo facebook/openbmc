@@ -22,6 +22,6 @@ import unittest
 from common.base_spi_driver_presence_test import BaseSpiDriverPresenceTest
 
 
-class FujiSpiDriverPresenceTest(BaseSpiDriverPresenceTest, unittest.TestCase):
+class SpiDriverPresenceTest(BaseSpiDriverPresenceTest, unittest.TestCase):
     def set_spi_driver_list(self):
         self.spi_driver_list = ["spidev"]

@@ -28,6 +28,8 @@
 
 #define DEVICE_KEY "sys_config/fru%d_B_drive0_model_name"
 
+#define DUAL_FAN_UCR  13500
+
 enum {
   /* Fan Type */
   DUAL_TYPE    = 0x00,
@@ -2189,9 +2191,49 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   return 0;
 }
 
+static int
+pal_bmc_fan_threshold_init() {
+  uint8_t fan_type = UNKNOWN_TYPE;
+  uint8_t bmc_location = 0;
+
+  if (fby3_common_get_bmc_location(&bmc_location) < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    return -1;
+  } else if (pal_get_fan_type(&bmc_location, &fan_type) != PAL_EOK) {
+    syslog(LOG_ERR, "%s() Cannot get the type of fan, fvaule=%d", __func__, fan_type);
+    return -1;
+  } else {
+    if (fan_type != SINGLE_TYPE) {
+      // set fan tach UCR to 13500 if it's not single type
+      sensor_map[BMC_SENSOR_FAN0_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
+      sensor_map[BMC_SENSOR_FAN1_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
+      sensor_map[BMC_SENSOR_FAN2_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
+      sensor_map[BMC_SENSOR_FAN3_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
+      sensor_map[BMC_SENSOR_FAN4_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
+      sensor_map[BMC_SENSOR_FAN5_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
+      sensor_map[BMC_SENSOR_FAN6_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
+      sensor_map[BMC_SENSOR_FAN7_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
+    }
+#ifdef DEBUG
+    syslog(LOG_INFO, "%s() fan tach threshold initialized, fan_type: %u", __func__, fan_type);
+#endif
+  }
+  return 0;
+}
+
 int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
+  static bool is_fan_threshold_init = false;
   float *val = (float*) value;
+
+  if (fru == FRU_BMC && is_fan_threshold_init == false) {
+    if (pal_bmc_fan_threshold_init() < 0) {
+      return -1;
+    } else {
+      is_fan_threshold_init = true;
+    }
+  }
+
   switch (fru) {
     case FRU_BMC:
     case FRU_NIC:

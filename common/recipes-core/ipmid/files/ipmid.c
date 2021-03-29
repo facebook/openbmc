@@ -3630,6 +3630,32 @@ oem_teardown_exp_uart_bridging (unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_set_pcie_info (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[100] = {0};
+  char payload[100] = {0};
+  size_t data_len = req_len - IPMI_MN_REQ_HDR_SIZE;
+
+  sprintf(key, "sys_config/fru%d_pcie_i%02X_s%02X_info",
+      req->payload_id, req->data[0], req->data[1]);
+
+  memcpy(payload, &req->data[0], data_len);
+  if(kv_set(key, payload, data_len, KV_FPERSIST)) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0;
+    return;
+  }
+
+  res->cc = CC_SUCCESS;
+  *res_len = 0;
+
+  return;
+}
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
      unsigned char *response, unsigned char *res_len)
 {
@@ -3780,6 +3806,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_CTRL_USB_CDC:
       oem_control_usb_cdc(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_PCIE_INFO:
+      oem_set_pcie_info(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

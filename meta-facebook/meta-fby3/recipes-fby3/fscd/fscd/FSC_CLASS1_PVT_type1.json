@@ -4,6 +4,7 @@
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
   "sample_interval_ms": 3000,
+  "sensor_filter_all": true,
   "boost": {
     "fan_fail": true,
     "sensor_fail": true
@@ -13,22 +14,22 @@
     "action": "host_shutdown"
   },
   "sensor_valid_check": {
-    "front_io_temp": {
+    "(.*)front_io_temp": {
       "attribute": {
         "type" : "power_status"
       }
     },
-    "soc_cpu": {
+    "(.*)soc_cpu": {
       "attribute": {
         "type" : "power_status"
       }
     },
-    "soc_therm": {
+    "(.*)soc_therm": {
       "attribute": {
         "type" : "power_status"
       }
     },
-    "soc_dimm": {
+    "(.*)soc_dimm": {
       "attribute": {
         "type" : "power_status"
       }
@@ -158,40 +159,40 @@
   "fans": {
     "0": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 0"
+        "kv" : "bmc_sensor224"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 0"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "1": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 1"
+        "kv" : "bmc_sensor225"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 1"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "2": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 2"
+        "kv" : "bmc_sensor226"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 2"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "3": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 3"
+        "kv" : "bmc_sensor227"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 3"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     }
   },
   "zones": {
     "zone_1": {
-      "pwm_output": [0, 1, 2, 3],
+      "pwm_output": [0],
       "expr_file": "FSC_CLASS1_EVT_type1_zone1.fsc"
     }
   }

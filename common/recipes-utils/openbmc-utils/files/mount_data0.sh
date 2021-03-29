@@ -90,6 +90,10 @@ ubifs_format() {
     mtd_chardev="$1"
     ubi_dev="$2"
 
+    if ! ubidetach -p "$mtd_chardev"; then
+        return 1
+    fi
+
     if ! ubiformat -y "$mtd_chardev"; then
         return 1
     fi

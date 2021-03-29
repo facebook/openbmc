@@ -907,10 +907,6 @@ static int check_multirecord_area(uint8_t *multirecord, int remain_len, bool *is
   record_chksum = multirecord[index++];
   header_chksum = multirecord[index++];
 
-  if (*area_len <= sizeof(fruid_area_multirecord_header_t)) {
-    return -1;
-  }
-
   *is_last_area = format_ver & MULTIRECORD_LAST_RECORED_BIT;
 
   if ((format_ver & MULTIRECORD_FORMAT_VER_MASK) != MULTIRECORD_FORMAT_VER) {
@@ -920,7 +916,7 @@ static int check_multirecord_area(uint8_t *multirecord, int remain_len, bool *is
     return 1;
   }
 
-  ret = verify_chksum((multirecord + sizeof(fruid_area_multirecord_header_t)), *area_len - sizeof(fruid_area_multirecord_header_t) + 1, record_chksum);
+  ret = verify_chksum((multirecord + sizeof(fruid_area_multirecord_header_t)), *area_len + 1, record_chksum);
   if (ret != 0) {
     syslog(LOG_ERR, "%s: record chksum not verified.", __func__);
     return 1;
@@ -1068,7 +1064,7 @@ int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid, int
         break;
       }
       if (ret > 0) { // skip this record, keep parse next record
-        pMultirecord += area_len;
+        pMultirecord += (sizeof(fruid_area_multirecord_header_t) + area_len);
         continue;
       }
       if (type_id == SMART_FAN_RECORD_ID) {
@@ -1092,7 +1088,7 @@ int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid, int
       if (is_last_area == true) { // last one record of the list
         break;
       }
-      pMultirecord += area_len;
+      pMultirecord += (sizeof(fruid_area_multirecord_header_t) + area_len);
     }
   }
 

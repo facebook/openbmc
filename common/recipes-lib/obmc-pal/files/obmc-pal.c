@@ -43,9 +43,6 @@
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
 #endif
 
-/* Array for BCD Plus definition. */
-const char bcd_plus_array[] = "0123456789 -.XXX";
-
 // PAL Variable
 size_t pal_pwm_cnt __attribute__((weak)) = 0;
 size_t pal_tach_cnt __attribute__((weak)) = 0;
@@ -2671,25 +2668,3 @@ pal_teardown_exp_uart_bridging(void) {
   return CC_NOT_SUPP_IN_CURR_STATE;
 }
 
-int __attribute__((weak))
-pal_get_bcd_plus_string(char *str_buf, int str_buf_len, uint8_t *data, uint8_t data_len) {
-  int i = 0;
-
-  if (str_buf == NULL || data == NULL) {
-    syslog(LOG_ERR, "%s Error: Input buffer is NULL", __func__);
-    return -1;
-  }
-
-  if (str_buf_len < ((data_len * 2) + 1)) {
-    syslog(LOG_ERR, "%s Error: insufficient out buffer, out_buf_len: %d, in_buf_len: %u", __func__, str_buf_len, data_len);
-    return -1;
-  }
-
-  for (i = 0; i < data_len; i++) {
-    str_buf[i * 2] = bcd_plus_array[(data[i] >> 4) & 0x0F];
-    str_buf[i * 2 + 1] = bcd_plus_array[data[i] & 0x0F];
-  }
-  str_buf[i * 2] = '\0';
-
-  return 0;
-}

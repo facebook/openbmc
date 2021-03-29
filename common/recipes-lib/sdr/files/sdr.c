@@ -47,6 +47,9 @@
 
 #define MAX_NAME_LEN        16
 
+/* Array for BCD Plus definition. */
+const char bcd_plus_array[] = "0123456789 -.XXX";
+
 /* Array for 6-Bit ASCII definition. */
 const char * ascii_6bit[4] = {
   " !\"#$%&'()*+,-./",
@@ -275,9 +278,11 @@ _sdr_get_sensor_name(sdr_full_t *sdr, char *name) {
 
     case TYPE_BCD_PLUS:
 
-      if (pal_get_bcd_plus_string(name, MAX_NAME_LEN, str, field_len - 1) < 0) {
-         name[0] = '\0';
+      for (idx = 0; idx < field_len - 1; idx++) {
+        name[idx * 2] = bcd_plus_array[(str[idx] >> 4) & 0x0F];
+        name[idx * 2 + 1] = bcd_plus_array[str[idx] & 0x0F];
       }
+      name[idx * 2] = '\0';
       break;
 
   case TYPE_ASCII_6BIT:

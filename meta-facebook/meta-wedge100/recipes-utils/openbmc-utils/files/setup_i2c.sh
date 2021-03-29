@@ -35,7 +35,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 PSU_MUX_DEV="7-0070"
 PSU_MUX_PATH=$(i2c_device_sysfs_abspath "$PSU_MUX_DEV")
 if [ ! -d "$PSU_MUX_PATH" ]; then
-    i2c_mux_add_sync 2 0x75 pca9548 8
+    i2c_mux_add_sync 7 0x70 pca9548 8
 fi
 
 # Bus 2

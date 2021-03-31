@@ -50,6 +50,7 @@ SRC_URI = " \
     file://eth0_mac_fixup.sh \
     file://create_vlan_intf \
     file://flashrom-utils.sh \
+    file://cpu_monitor.py \
     ${@bb.utils.contains('PACKAGECONFIG', 'disable-watchdog', \
                          'file://disable_watchdog.sh ' + \
                          'file://disable_watchdog.service', '', d)} \
@@ -74,12 +75,17 @@ OPENBMC_UTILS_FILES = " \
     flashrom-utils.sh \
     "
 
+OPENBMC_PYTHON_LIBS = " \
+    cpu_monitor.py \
+  "
+
 S = "${WORKDIR}"
 
 inherit systemd
+inherit python3-dir
 
-DEPENDS = "update-rc.d-native"
-RDEPENDS_${PN} += "bash"
+DEPENDS = "update-rc.d-native python3-setuptools"
+RDEPENDS_${PN} += "bash python3-core"
 
 OPENBMC_UTILS_CUSTOM_EMMC_MOUNT ?= "0"
 
@@ -172,6 +178,11 @@ do_install() {
         ln -s ${pkgdir}/${f} ${localbindir}
     done
 
+    install -d ${D}${PYTHON_SITEPACKAGES_DIR}
+    for f in ${OPENBMC_PYTHON_LIBS}; do
+      install -m 644 ${S}/$f ${D}${PYTHON_SITEPACKAGES_DIR}/
+    done
+
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
         install_systemd
     else
@@ -181,6 +192,7 @@ do_install() {
 }
 
 FILES_${PN} += "/usr/local"
+FILES_${PN} += "${PYTHON_SITEPACKAGES_DIR}/cpu_monitor.py"
 
 SYSTEMD_SERVICE_${PN} = " \
     early.service \

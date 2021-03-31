@@ -42,60 +42,12 @@ void usage() {
   exit(1);
 }
 
-
-int main(int argc, char **argv) {
-    int error = 0;
-    char *modbus_cmd = NULL;
-    size_t cmd_len = 0;
-    int expected = 0;
-    uint32_t timeout = 0;
-    verbose = 0;
-    rackmond_command *cmd = NULL;
-    char *response = NULL;
+int send_command(rackmond_command* cmd, uint16_t wire_cmd_len, char *response)
+{
     int clisock;
-    uint16_t response_len_actual;
+    int error = 0;
+    uint16_t response_len_actual = 0;
     struct sockaddr_un rackmond_addr;
-
-    int opt;
-    while((opt = getopt(argc, argv, "w:x:t:g:v")) != -1) {
-      switch (opt) {
-      case 'x':
-        expected = atoi(optarg);
-        break;
-      case 't':
-        timeout = atol(optarg);
-        break;
-      case 'v':
-        verbose = 1;
-        break;
-      default:
-        usage();
-        break;
-      }
-    }
-    if(optind < argc) {
-      modbus_cmd = argv[optind];
-    }
-    if(modbus_cmd == NULL) {
-      usage();
-    }
-
-    //convert hex to bytes
-    cmd_len = strlen(modbus_cmd);
-    if(cmd_len < 4) {
-      fprintf(stderr, "Modbus command too short!\n");
-      exit(1);
-    }
-    
-    cmd = malloc(sizeof(rackmond_command) + cmd_len);
-    cmd->type = COMMAND_TYPE_RAW_MODBUS;
-    cmd->raw_modbus.custom_timeout = timeout;
-    memcpy(cmd->raw_modbus.data, modbus_cmd, cmd_len);
-    decode_hex_in_place(cmd->raw_modbus.data, &cmd_len);
-    cmd->raw_modbus.length = cmd_len;
-    cmd->raw_modbus.expected_response_length = expected;
-    response = malloc(expected ? expected : 1024);
-    uint16_t wire_cmd_len = sizeof(rackmond_command) + cmd_len;
 
     clisock = socket(AF_UNIX, SOCK_STREAM, 0);
     ERR_LOG_EXIT(clisock, "failed to create socket");
@@ -122,12 +74,99 @@ int main(int argc, char **argv) {
     }
     ERR_LOG_EXIT(recv(clisock, response, response_len_actual, 0),
                  "recv from socket failed");
-    if(error == 0) {
+    error = (int)response_len_actual;
+cleanup:
+    close(clisock);
+    return error;
+}
+
+int profile_overhead()
+{
+#ifndef RACKMON_PROFILING
+  printf("Profiling is not enabled!\n");
+  return -1;
+#else
+  CHECK_LATENCY_START();
+  CHECK_LATENCY_END("profile_overhead");
+  return 0;
+#endif
+}
+
+int main(int argc, char **argv) {
+    int error = 0;
+    char *modbus_cmd = NULL;
+    size_t cmd_len = 0;
+    int expected = 0;
+    uint32_t timeout = 0;
+    verbose = 0;
+    rackmond_command *cmd = NULL;
+    char *response = NULL;
+    int response_len_actual;
+    int measure_profile_overhead = 0;
+#ifdef RACKMON_PROFILING
+    obmc_log_init("modbuscmd", LOG_INFO, 0);
+    obmc_log_set_syslog(LOG_CONS, LOG_DAEMON);
+    obmc_log_unset_std_stream();
+#endif
+
+    int opt;
+    while((opt = getopt(argc, argv, "w:x:t:g:vp")) != -1) {
+      switch (opt) {
+        case 'p':
+          measure_profile_overhead = 1;
+          break;
+      case 'x':
+        expected = atoi(optarg);
+        break;
+      case 't':
+        timeout = atol(optarg);
+        break;
+      case 'v':
+        verbose = 1;
+        break;
+      default:
+        usage();
+        break;
+      }
+    }
+    if (measure_profile_overhead)
+      return profile_overhead();
+
+    if(optind < argc) {
+      modbus_cmd = argv[optind];
+    }
+    if(modbus_cmd == NULL) {
+      usage();
+    }
+
+    //convert hex to bytes
+    cmd_len = strlen(modbus_cmd);
+    if(cmd_len < 4) {
+      fprintf(stderr, "Modbus command too short!\n");
+      exit(1);
+    }
+    
+    cmd = malloc(sizeof(rackmond_command) + cmd_len);
+    cmd->type = COMMAND_TYPE_RAW_MODBUS;
+    cmd->raw_modbus.custom_timeout = timeout;
+    memcpy(cmd->raw_modbus.data, modbus_cmd, cmd_len);
+    decode_hex_in_place(cmd->raw_modbus.data, &cmd_len);
+    cmd->raw_modbus.length = cmd_len;
+    cmd->raw_modbus.expected_response_length = expected;
+    response = malloc(expected ? expected : 1024);
+    uint16_t wire_cmd_len = sizeof(rackmond_command) + cmd_len;
+    CHECK_LATENCY_START();
+    response_len_actual = send_command(cmd, wire_cmd_len, response);
+    CHECK_LATENCY_END("modbuscmd::send_command cmd_len=%lu, resp_len=%lu status=%d",
+       (unsigned long)wire_cmd_len, (unsigned long)expected, response_len_actual);
+
+    if(response_len_actual >= 0) {
       printf("Response: ");
       print_hex(stdout, response, response_len_actual);
       printf("\n");
+    } else {
+      error = 1;
     }
-cleanup:
     free(cmd);
     free(response);
     if(error != 0) {

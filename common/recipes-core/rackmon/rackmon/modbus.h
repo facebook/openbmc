@@ -124,7 +124,7 @@ do {                                                                      \
     _clk_diff = (long)(_clk_end - _clk_start);                            \
     _utime_diff = (long)(_tms_end.tms_utime - _tms_start.tms_utime);      \
     _stime_diff = (long)(_tms_end.tms_stime - _tms_start.tms_stime);      \
-    OBMC_INFO(fmt ": user=%ld, sys=%ld, real=%ld, cpu_%%=%ld%%", ##args,  \
+    OBMC_INFO(fmt ": CPU_PROFILE (user,sys,real,cpu_%%)= %ld,%ld,%ld,%ld%%", ##args,  \
               _utime_diff, _stime_diff, _clk_diff,                        \
               ((_utime_diff + _stime_diff) * 100) / _clk_diff);           \
 } while (0)
@@ -147,7 +147,7 @@ do {                                                                      \
     if (clock_gettime(CLOCK_REALTIME, &_end) != 0)                        \
         break;                                                            \
     if (timespec_sub(&_start, &_end, &_diff) == 0)                        \
-        OBMC_INFO(fmt ": took %ld usec", ##args, timespec_to_us(&_diff)); \
+        OBMC_INFO(fmt ": LATENCY_PROFILE (us) %ld", ##args, timespec_to_us(&_diff)); \
 } while (0)
 #else /* !RACKMON_PROFILING */
 #define CPU_USAGE_START()
@@ -163,9 +163,9 @@ void print_hex(FILE* f, char* buf, size_t len);
 const char* baud_to_str(speed_t baudrate);
 
 // Read until maxlen bytes or no bytes in mdelay_us microseconds
-size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us);
+size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us, const char *caller);
 
-int modbuscmd(modbus_req *req, speed_t baudrate);
+int modbuscmd(modbus_req *req, speed_t baudrate, const char *caller);
 uint16_t modbus_crc16(char* buffer, size_t length);
 const char* modbus_strerror(int mb_err);
 

@@ -403,7 +403,7 @@ static void update_psu_comms(psu_datastore_t *psu, bool success) {
 
 static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
                           size_t cmd_size, char* resp_buf, size_t resp_size,
-                          size_t exp_resp_len, speed_t baudrate) {
+                          size_t exp_resp_len, speed_t baudrate, const char *caller) {
   modbus_req req;
   int error = 0;
   useconds_t delay = rackmond_config.min_delay;
@@ -442,9 +442,10 @@ static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
    */
   for (int retry = 0; retry < MAX_RETRY; retry++) {
     CHECK_LATENCY_START();
-    error = modbuscmd(&req, baudrate);
+    error = modbuscmd(&req, baudrate, caller);
     CHECK_LATENCY_END(
-        "cmd=(%#x,%#x,%#x,%#x,%#x,%#x), cmd_len=%lu, resp_len=%lu",
+        "rackmond::%s::modbuscmd cmd=(%#x,%#x,%#x,%#x,%#x,%#x), cmd_len=%lu, resp_len=%lu",
+        caller,
         cmd_buf[0], cmd_buf[1],
         cmd_size > 2 ? cmd_buf[2] : 0,
         cmd_size > 3 ? cmd_buf[3] : 0,
@@ -506,8 +507,11 @@ static int read_holding_reg(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
   command[4] = reg_count >> 8;
   command[5] = reg_count & 0xFF;
 
+  CHECK_LATENCY_START();
   dest_len = modbus_command(dev, timeout, command, MODBUS_FUN3_REQ_HDR_SIZE,
-                            resp_buf, resp_len, 0, baudrate);
+                            resp_buf, resp_len, 0, baudrate, "read_holding_reg");
+  CHECK_LATENCY_END("rackmond::read_holding_reg::modbus_command cmd_len=%lu, resp_len=%lu status=%d",
+      (unsigned long)MODBUS_FUN3_REQ_HDR_SIZE, (unsigned long)resp_len, dest_len);
   ERR_EXIT(dest_len);
 
   if (dest_len >= 5) {
@@ -581,8 +585,11 @@ static int write_holding_reg(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
     command[i * 2 + 5] = reg_values[i] & 0xFF;
   }
 
+  CHECK_LATENCY_START();
   dest_len = modbus_command(dev, timeout, command, cmd_len, resp_buf, resp_len,
-                            0, baudrate);
+                            0, baudrate, "write_holding_reg");
+  CHECK_LATENCY_END("rackmond::write_holding_reg::modbus_command cmd_len=%lu, resp_len=%lu status=%d",
+      (unsigned long)MODBUS_FUN3_REQ_HDR_SIZE, (unsigned long)resp_len, dest_len);
   ERR_EXIT(dest_len);
 
   if (dest_len >= 4) {
@@ -1247,9 +1254,12 @@ static int run_cmd_raw_modbus(rackmond_command* cmd, write_buf_t *wb)
     return -1;
   }
 
+  CHECK_LATENCY_START();
   resp_len = modbus_command(&rackmond_config.rs485, timeout,
                             cmd->raw_modbus.data, cmd->raw_modbus.length,
-                            resp_buf, exp_resp_len, exp_resp_len, baudrate);
+                            resp_buf, exp_resp_len, exp_resp_len, baudrate, "raw_modbus");
+  CHECK_LATENCY_END("rackmond::raw_modbus::modbus_command cmd_len=%lu, resp_len=%lu status=%d",
+      (unsigned long)MODBUS_FUN3_REQ_HDR_SIZE, (unsigned long)exp_resp_len, resp_len);
   if(resp_len < 0) {
     error_code = -resp_len;
     resp_len_wire = 0;
@@ -1507,7 +1517,9 @@ static int do_command(int sock, rackmond_command* cmd) {
   dbg("processing command %s\n", rackmond_cmds[type].name);
 
   assert(rackmond_cmds[type].handler != NULL);
+  CHECK_LATENCY_START();
   error = rackmond_cmds[type].handler(cmd, &wb);
+  CHECK_LATENCY_END("rackmond::do_command::%s status=%d", rackmond_cmds[type].name, error);
   if (error != 0) {
     OBMC_WARN("error while processing command %s", rackmond_cmds[type].name);
   } else {

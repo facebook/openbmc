@@ -116,7 +116,7 @@ const char* baud_to_str(speed_t baudrate) {
   return out;
 }
 
-size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us) {
+size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us, const char *caller) {
   fd_set fdset;
   struct timeval timeout;
   char read_buf[16];
@@ -131,7 +131,7 @@ size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us) {
     timeout.tv_usec = mdelay_us;
     CHECK_LATENCY_START();
     rv = select(fd + 1, &fdset, NULL, NULL, &timeout);
-    CHECK_LATENCY_END("modbus read_wait (select)");
+    CHECK_LATENCY_END("rackmond::%s::modbuscmd::read_wait::select", caller);
     if(rv == -1) {
       perror("select()");
     } else if (rv == 0) {
@@ -139,7 +139,7 @@ size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us) {
     }
     CHECK_LATENCY_START();
     read_size = read(fd, read_buf, 16);
-    CHECK_LATENCY_END("modbus read 16 bytes");
+    CHECK_LATENCY_END("rackmond::%s::modbuscmd::read_wait::read", caller);
     if(read_size < 0) {
       if(errno == EAGAIN) continue;
       fprintf(stderr, "read error: %s\n", strerror(errno));
@@ -244,7 +244,7 @@ static long crcfail = 0;
 static long timeout = 0;
 static long stat_wait = 0;
 
-int modbuscmd(modbus_req *req, speed_t baudrate) {
+int modbuscmd(modbus_req *req, speed_t baudrate, const char *caller) {
     int error = 0;
     struct termios tio;
     char modbus_cmd[req->cmd_len + 2];
@@ -297,12 +297,12 @@ int modbuscmd(modbus_req *req, speed_t baudrate) {
     if (write(req->tty_fd, modbus_cmd, cmd_len) < 0) {
       OBMC_ERROR(errno, "ERROR: could not write modbus cmd");
     }
-    CHECK_LATENCY_END("modbus write %d bytes", cmd_len);
+    CHECK_LATENCY_END("rackmond::%s::modbuscmd::write modbus write %d bytes", caller, cmd_len);
     clock_gettime(CLOCK_MONOTONIC_RAW, &wait_begin);
 
     CHECK_LATENCY_START();
     waitloops = waitfd(req->tty_fd);
-    CHECK_LATENCY_END("modbus wait LSR");
+    CHECK_LATENCY_END("rackmond::%s::modbuscmd::waitfd modbus wait LSR", caller);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &wait_end);
     sp.sched_priority = 0;
@@ -327,7 +327,7 @@ int modbuscmd(modbus_req *req, speed_t baudrate) {
     if(req->expected_len > req->dest_limit) {
       return -1;
     }
-    mb_pos = read_wait(req->tty_fd, req->dest_buf, req->expected_len, req->timeout);
+    mb_pos = read_wait(req->tty_fd, req->dest_buf, req->expected_len, req->timeout, caller);
     clock_gettime(CLOCK_MONOTONIC_RAW, &read_end);
     req->dest_len = mb_pos;
     if(mb_pos >= 4) {

@@ -122,6 +122,7 @@ reglist = [
     {"begin": 0x12E, "length": 1},  # Configurable BBU backup time(90s-1200s)
     {"begin": 0x12F, "length": 1},  # Configurable PLS timing(1s-300s)
     {"begin": 0x130, "length": 1},  # Forced discharge timeout
+    {"begin": 0x131, "length": 2},  # Read SOH timestamp
 ]
 
 pid_file_handle = None

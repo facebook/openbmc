@@ -237,19 +237,16 @@ enum {
 enum {
   // Sensors on PSU1
   PSU_VIN = 1,
-  PSU_VOUT1,
-  PSU_VOUT2,
+  PSU_VOUT,
   PSU_FAN,
   PSU_TEMP1,
   PSU_TEMP2,
   PSU_TEMP3,
   PSU_PIN,
-  PSU_POUT1,
-  PSU_POUT2,
+  PSU_POUT,
   PSU_IIN,
-  PSU_IOUT1,
-  PSU_IOUT2,
-  PSU_SENSOR_COUNT = PSU_IOUT2,
+  PSU_IOUT,
+  PSU_SENSOR_COUNT = PSU_IOUT,
 };
 
 // Sensors on Fan Card

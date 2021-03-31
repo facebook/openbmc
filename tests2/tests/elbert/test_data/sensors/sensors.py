@@ -195,16 +195,13 @@ FAN_SENSORS = [
 
 PSU_SENSORS = [
     "PSU{}_VIN",
-    "PSU{}_VOUT1",
-    "PSU{}_VOUT2",
+    "PSU{}_VOUT",
     "PSU{}_FAN",
     "PSU{}_TEMP1",
     "PSU{}_TEMP2",
     "PSU{}_TEMP3",
     "PSU{}_PIN",
-    "PSU{}_POUT1",
-    "PSU{}_POUT2",
+    "PSU{}_POUT",
     "PSU{}_IIN",
-    "PSU{}_IOUT1",
-    "PSU{}_IOUT2",
+    "PSU{}_IOUT",
 ]

@@ -159,7 +159,7 @@ do
     if [ "$((psu_prsnt))" -eq 1 ]; then
         # PSU 1-4, SMBUS 22-25
         bus_id=$((23 + id))
-        i2c_device_add "$bus_id" 0x58 pmbus
+        i2c_device_add "$bus_id" 0x58 psu_driver
     else
         echo "PSU${id} not present... skipping."
     fi

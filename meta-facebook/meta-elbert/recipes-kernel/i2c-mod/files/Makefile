@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-#
-# Copyright 2020-present Facebook. All Rights Reserved.
+# Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,18 +14,20 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
-import unittest
 
-from common.base_kernel_module_presence_test import BaseKernelModulePresenceTest
+obj-m := psu_driver.o
 
+ccflags-y += -I$(KERNEL_EXTRA_HEADER_PATH)
 
-class KernelModulePresenceTest(BaseKernelModulePresenceTest, unittest.TestCase):
-    def set_kmods(self):
-        self.expected_kmod = [
-            "scmcpld",
-            "smbcpld",
-            "fancpld",
-            "i2c_dev_sysfs",
-            "psu_driver"
-        ]
+SRC := $(shell pwd)
+
+all:
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC)
+
+modules_install:
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC) modules_install
+
+clean:
+	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c
+	rm -f Module.markers Module.symvers modules.order
+	rm -rf .tmp_versions Modules.symvers

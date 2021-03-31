@@ -37,5 +37,5 @@ pim8ddm = [
 ]
 psu_devices = [
     # Address, name, driver
-    ("0058", "pmbus", "pmbus")
+    ("0058", "psu_driver", "psu_driver")
 ]

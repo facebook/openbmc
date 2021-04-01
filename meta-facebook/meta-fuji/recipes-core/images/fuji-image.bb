@@ -18,6 +18,7 @@ IMAGE_INSTALL += " \
   bitbang \
   cpldupdate \
   cpldupdate-i2c \
+  cpldupdate-jtag \
   libcpldupdate-dll-gpio \
   libcpldupdate-dll-ast-jtag \
   fio \

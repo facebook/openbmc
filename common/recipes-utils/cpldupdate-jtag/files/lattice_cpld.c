@@ -33,14 +33,14 @@ static cpld_device_t device_list[] = {
         .dev_id = 0x012BA043,
         .page_bits = 128,
         .num_of_cfg_pages = 2175,
-        .num_of_ufm_pages = 512,
+        .num_of_ufm_pages = 511,
     },
     {
         .name = "LC LCMXO3-4300C",
         .dev_id = 0xE12BD043,
         .page_bits = 128,
-        .num_of_cfg_pages = 9212,
-        .num_of_ufm_pages = 2048,
+        .num_of_cfg_pages = 5758,
+        .num_of_ufm_pages = 767,
     }
 };
 
@@ -168,7 +168,7 @@ int check_cpld_status(unsigned int options, int seconds)
     int read_status_time = 3000;
     int check_time = 1000;
     int counter = seconds*(1000*1000/(read_status_time+check_time));
-    
+
     while(counter--){
         ret = read_status_register(&status, read_status_time);
         if(ret < 0){
@@ -377,9 +377,7 @@ int program_configuration(int bytes_per_page, int num_of_pages, progress_func_t 
     }
 
     if(used_pages > num_of_pages){
-        printf("%s(%d) - JEDEC file isn't used for this CPLD, used pages %d, actual pages %d!\n", 
-            __FUNCTION__, __LINE__, used_pages, num_of_pages);
-        return -1;
+        used_pages = num_of_pages;
     }
     
     page_buffer = (unsigned int *)malloc(bytes_per_page);
@@ -652,9 +650,7 @@ int verify_configuration(int bytes_per_page, int num_of_pages)
     }
 
     if(used_pages > num_of_pages){
-        printf("%s(%d) - JEDEC file isn't used for this CPLD, used pages %d, total pages %d!\n", 
-            __FUNCTION__, __LINE__, used_pages, num_of_pages);
-        return -1;
+        used_pages = num_of_pages;
     }
     
     page_buffer = (unsigned int *)malloc(bytes_per_page);

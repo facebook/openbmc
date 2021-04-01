@@ -79,16 +79,17 @@ jtag_object_t *jtag_init(const char *dev_name, unsigned char mode, unsigned int 
             goto end_of_func;
         }
         pobj->freq = freq;
-    }else{
-        retcode = jtag_interface_get_freq(pobj->fd);
-        if(retcode == 0){
-            printf("%s(%d) - %s: faild to get frequent, fd = %d!\n", \
-                           __FILE__, __LINE__, __FUNCTION__, pobj->fd);
-            goto end_of_func;
-
-        }
-        pobj->freq = retcode;  
     }
+
+    /* always read back the actual frequency set by the driver */
+    retcode = jtag_interface_get_freq(pobj->fd);
+    if(retcode == 0){
+        printf("%s(%d) - %s: faild to get frequent, fd = %d!\n", \
+                       __FILE__, __LINE__, __FUNCTION__, pobj->fd);
+        goto end_of_func;
+
+    }
+    pobj->freq = retcode;
 
     printf("JTAG object fd = %d, mode = %d, freq = %d\n", \
         pobj->fd, pobj->mode, pobj->freq);

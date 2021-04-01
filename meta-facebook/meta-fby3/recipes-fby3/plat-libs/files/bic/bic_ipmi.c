@@ -1095,7 +1095,8 @@ bic_is_m2_exp_prsnt(uint8_t slot_id) {
     present = rbuf[0] & 0xC;
 
     if ( ret < 0 ) {
-      val = -1;
+      syslog(LOG_WARNING, "%s() Failed to get expansion present status. ret=%d", __func__, ret);
+      return ret;
     } else {
       if ( present == 0) {
         val = 3; //1OU+2OU present

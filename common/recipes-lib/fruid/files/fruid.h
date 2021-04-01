@@ -40,6 +40,32 @@ extern "C" {
 #define FRUID_CHASSIS_TYPECODE_MIN        0
 #define FRUID_CHASSIS_TYPECODE_MAX        31
 
+#define MULTIRECORD_FORMAT_VER       0x02
+#define MULTIRECORD_FORMAT_VER_MASK  0x0F
+#define MULTIRECORD_LAST_RECORED_BIT (1 << 7)
+/*----------------------------------------
+ OEM Record ID
+ ----------------------------------------*/
+enum {
+  OEM_RECORD_ID_OCP_NIC_3_0 = 0xC0,
+  OEM_RECORD_ID_SMART_FAN = 0xFB,
+};
+
+/*
+ * SMART FAN OEM Record ID Specification
+ */
+#define SMART_FAN_RECORD_ID          OEM_RECORD_ID_SMART_FAN
+#define MANUFACTURER_ID_DATA_LENGTH  3
+#define SMART_FAN_VERSION_LENGTH     4
+#define SMART_FAN_FW_VERSION_LENGTH  4
+#define SMART_FAN_MFG_LINE_LENGTH    8
+#define SMART_FAN_CLEI_CODE_LENGTH   10
+#define SMART_FAN_VOL_DATA_LENGTH    2
+#define SMART_FAN_CUR_DATA_LENGTH    2
+#define SMART_FAN_VOL_CUR_MULTIPLIER 10
+#define SMART_FAN_RPM_DATA_LENGTH    3
+#define MFG_DATE_TIME_LENGTH         3
+
 /* To hold the common header information. */
 typedef struct fruid_header_t {
   uint8_t format_ver : 4;

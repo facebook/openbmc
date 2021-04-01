@@ -31,23 +31,6 @@
 #define NO_MORE_DATA_BYTE 0xC1
 #define MAX_FIELD_LENGTH  63  // 6-bit for length
 
-#define SMART_FAN_RECORD_ID          0xC0
-#define MULTIRECORD_FORMAT_VER       0x02
-#define MULTIRECORD_FORMAT_VER_MASK  0x0F
-#define MULTIRECORD_LAST_RECORED_BIT (1 << 7)
-
-#define MANUFACTURER_ID_DATA_LENGTH  3
-#define SMART_FAN_VERSION_LENGTH     4
-#define SMART_FAN_FW_VERSION_LENGTH  4
-#define SMART_FAN_MFG_LINE_LENGTH    8
-#define SMART_FAN_CLEI_CODE_LENGTH   10
-#define SMART_FAN_VOL_DATA_LENGTH    2
-#define SMART_FAN_CUR_DATA_LENGTH    2
-#define SMART_FAN_VOL_CUR_MULTIPLIER 10
-#define SMART_FAN_RPM_DATA_LENGTH    3
-#define MFG_DATE_TIME_LENGTH         3
-
-
 /* Unix time difference between 1970 and 1996. */
 #define UNIX_TIMESTAMP_1996   820454400
 
@@ -469,7 +452,7 @@ int parse_fruid_area_multirecord_smart_fan(uint8_t * multirecord,
 
   fruid_multirecord_smart_fan->rpm_front = get_dword(multirecord + index, SMART_FAN_RPM_DATA_LENGTH);
   index += SMART_FAN_RPM_DATA_LENGTH;
-  
+
   fruid_multirecord_smart_fan->rpm_rear = get_dword(multirecord + index, SMART_FAN_RPM_DATA_LENGTH);
 
   return 0;
@@ -1956,4 +1939,3 @@ error_exit:
   free_fruid_info(&fruid);
   return ret;
 }
-

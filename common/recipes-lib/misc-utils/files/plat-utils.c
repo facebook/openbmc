@@ -189,12 +189,21 @@ k_version_t get_kernel_version(void)
  * Returns file descriptor if the pid file can be locked; otherwise -1 is
  * returned.
  */
-int single_instance_lock(const char *prog_name)
+int single_instance_lock(const char *name)
 {
 	int fd, ret;
 	char path[PATH_MAX];
 
-	snprintf(path, sizeof(path), "/var/run/%s.pid", prog_name);
+	if (name == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (name[0] != '/') {
+		snprintf(path, sizeof(path), "/var/run/%s.lock", name);
+	} else {
+		snprintf(path, sizeof(path), "%s", name);
+	}
 
 	fd = open(path, O_CREAT | O_RDWR, 0666);
 	if (fd < 0)
@@ -221,5 +230,12 @@ int single_instance_lock(const char *prog_name)
  */
 int single_instance_unlock(int lock_fd)
 {
-	return close(lock_fd);
+	int ret;
+
+	ret = flock(lock_fd, LOCK_UN);
+	if (ret < 0)
+		return -1;
+
+	close(lock_fd);
+	return 0;
 }

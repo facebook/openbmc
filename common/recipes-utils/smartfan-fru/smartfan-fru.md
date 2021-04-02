@@ -80,7 +80,7 @@ The standard IPMI product info area populated with fan information
 #### FAN OEM multi-record Header (5 Bytes)
 | offset | type | value | length | meaning | field | comments |
 |--------|------|-------|--------|---------|-------|----------|
-| 0x00 | Binary | 0xC0 | 1 | Smart Fan Record | Record Type ID | OEM SMART FAN |
+| 0x00 | Binary | 0xFB | 1 | Smart Fan Record | Record Type ID | [FB OEM RecordID](https://github.com/facebook/openbmc/blob/helium/common/recipes-lib/fruid/files/fruid.h) for SMART FAN |
 | 0x01 | Binary | 0x82 | 1 | End of list | End of List/Version | - |
 | 0x02 | Binary | 0x2A | 1 | 42 bytes | Record Length
 | 0x03 | Binary | 0xXX | 1 | - | Record Checksum | - |

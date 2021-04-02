@@ -19,27 +19,36 @@
 #
 
 import json
+import os.path
 import re
 import subprocess
 
+from rest_utils import DEFAULT_TIMEOUT_SEC
+
 
 MAX_PIM_NUM = 8
+SMB_P1_DETECT_PATH = "/tmp/.smb_p1_board"
 
-
-# Use PIM FPGA to detect pim present
+# Use PIM EEPROM to detect pim present
 def check_pim_presence(pim_no):
-    scdbase = "/sys/bus/i2c/drivers/smbcpld/4-0023"
+    # P1 has different PIM bus mapping
+    if os.path.isfile(SMB_P1_DETECT_PATH):
+        pim_i2c_buses = [16, 17, 18, 23, 20, 21, 22, 19]
+    else:
+        pim_i2c_buses = [16, 17, 18, 19, 20, 21, 22, 23]
+
+    pim_bus = pim_i2c_buses[pim_no - 2]
     try:
-        pim_prsnt = "{:s}/pim{:d}_present".format(scdbase, pim_no)
-        with open(pim_prsnt, "r") as f:
-            val = f.read()
-            val = val.split("\n", 1)
-            if val[0] == "0x0":
-                return 0
-            if val[0] == "0x1":
-                return 1
-    except:
-        return None
+        # Try to access the EEPROM and check the return code
+        proc = subprocess.run(
+            ["/usr/sbin/i2cget", "-f", "-y", str(pim_bus), "0x50"],
+            capture_output=True,
+            timeout=DEFAULT_TIMEOUT_SEC,
+            check=True
+        )
+        return 1
+    except subprocess.CalledProcessError:
+        return 0
 
 
 def get_pim_present():

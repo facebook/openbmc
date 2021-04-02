@@ -1481,6 +1481,71 @@ read_fan_rpm_f(const char *device, uint8_t fan, float *value) {
   return 0;
 }
 
+/*
+ * Below are the steps of reading th4 sensor
+ *  (1)single_instance_lock with retry to get lock
+ *  (2)enable the hardware lock
+ *  (3)th4 sensor reading
+ *  (4)disable the hardware lock
+ *  (5)single_instance_unlock
+ *
+ * Hardware lock is to avoid invalid th4 sensor access
+ * Single instance lock is to avoid multi-tasks access the hardlock at same time
+ */
+static int
+read_th4_temp(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret = -1;
+  float read_val = 0;
+  int num = 0;
+  char path[PATH_MAX];
+  int fd = 0;
+  int retry = 0;
+  int id = 0;
+
+#define TH4_SENSOR_NUM    15
+
+  *value = 0;
+  snprintf(path, sizeof(path), SMBCPLD_PATH_FMT, "th4_read_N");
+  while ((fd = single_instance_lock(path)) < 0 && retry++ < 10)
+    msleep(500);
+
+  if (fd < 0) {
+    syslog(LOG_WARNING, "failed to single_instance_lock %s: %s", path, strerror(errno));
+    return READING_NA;
+  }
+
+  /* Enable the hardware lock */
+  if ((ret = write(fd, "1", 1)) < 0) {
+    single_instance_unlock(fd);
+    return READING_NA;
+  }
+
+  for (id = 1; id <= TH4_SENSOR_NUM; id++) {
+    snprintf(path, sizeof(path), "temp%d_input", id);
+    ret = read_attr(fru, sensor_num, SMB_TH4_DEVICE, path, &read_val);
+    if (ret)
+      continue;
+    num++;
+
+    /* To keep the accuracy, it is expanded 100000 times in driver */
+    read_val = read_val / 100;
+    if (read_val > *value)
+      *value = read_val;
+  }
+
+  /* Disable the hardware lock */
+  ret = write(fd, "0", 1);
+  single_instance_unlock(fd);
+
+  if (ret < 0 || num < TH4_SENSOR_NUM) {
+    ret = READING_NA;
+  } else {
+    ret = 0;
+  }
+
+  return ret;
+}
+
 static int
 scm_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
 
@@ -1555,13 +1620,7 @@ scm_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static int
 smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
-
   int ret = -1;
-  float read_val;
-  int num = 0;
-  char path[PATH_MAX ];
-
-#define TH4_SENSOR_NUM  15
 
   switch(sensor_num) {
     case SMB_TMP422_U20_1_TEMP:
@@ -1791,33 +1850,7 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       ret = read_fan_rpm_f(SMB_FCM_B_TACH_DEVICE, 8, value);
       break;
     case SMB_SENSOR_TH4_HIGH:
-      /* Enable the hardware lock in SMB CPLD to th4 access */
-      snprintf(path, sizeof(path), SMBCPLD_PATH_FMT, "th4_read_N");
-      device_write_buff(path, "1");
-      *value = 0;
-      for ( int id = 1; id <= TH4_SENSOR_NUM; id++ ){
-        sprintf(path,"temp%d_input",id);
-        ret = read_attr(fru, sensor_num, SMB_TH4_DEVICE, path, &read_val);
-        if(ret){
-          continue;
-        }else{
-          num++;
-        }
-
-        /* To keep the accuracy, it is expanded 100000 times in driver */
-        read_val = read_val / 100;
-        if(read_val > *value){
-          *value = read_val;
-        }
-      }
-      /* Disable the hardware lock in SMB CPLD to avoid invalid th4 access */
-      snprintf(path, sizeof(path), SMBCPLD_PATH_FMT, "th4_read_N");
-      device_write_buff(path, "0");
-      if(num == TH4_SENSOR_NUM){
-        ret = 0;
-      }else{
-        ret = READING_NA;
-      }
+      ret = read_th4_temp(fru, sensor_num, value);
       break;
     default:
       ret = READING_NA;

@@ -27,10 +27,11 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
         self.expected_process = [
             "dhclient -6 -d -D LL",
             "dhclient -pf /var/run/dhclient.eth0.pid eth0",
-            #  "front-paneld",
-            #  "fscd", # ELBERTODO FSCD not supported yet
-            #  "ipmid", # ELBERTTODO IPMID not enabled
-            #  "sensord",
+            "front-paneld",
+            "fscd",
+            "kcsd",
+            "ipmid",
+            "sensord",
             "mTerm_server",
             "rest.py",
             "restapi",

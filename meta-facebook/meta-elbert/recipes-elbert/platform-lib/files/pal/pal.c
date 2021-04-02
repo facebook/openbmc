@@ -33,6 +33,7 @@
 #include <syslog.h>
 #include <time.h>
 #include <unistd.h>
+#include <openbmc/obmc-i2c.h>
 
 const uint8_t pim_bus[] = { 16, 17, 18, 19, 20, 21, 22, 23 };
 const uint8_t pim_bus_p1[] = { 16, 17, 18, 23, 20, 21, 22, 19 };
@@ -766,20 +767,13 @@ pal_is_pim_prsnt(uint8_t fru, uint8_t *status) {
   int val;
   char tmp[LARGEST_DEVICE_NAME];
   char prsnt_path[LARGEST_DEVICE_NAME + 1];
-  char eeprom_path[LARGEST_DEVICE_NAME + 1];
   uint8_t i2cbus = get_pim_i2cbus(fru);
 
-#define pim_eeprom(str_buffer,i2c_bus) \
-      sprintf(str_buffer, \
-              I2C_SYSFS_DEVICES"/%d-0050/eeprom", \
-              i2c_bus)
-
-  // Check present bit and  EEPROM.
+  // Check present bit and EEPROM.
   snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PIM_PRSNT);
   snprintf(prsnt_path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PIM2 + 2);
-  pim_eeprom(eeprom_path, i2cbus);
   if ((read_device(prsnt_path, &val) == 0 && val == 0x1) ||
-       access(eeprom_path, F_OK) == 0) {
+       i2c_detect_device(i2cbus, 0x50) == 0) {
     *status = 1;
   } else {
     *status = 0;
@@ -799,12 +793,11 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_CHASSIS:
     case FRU_BMC:
     case FRU_SCM:
-      *status = 1;
-      return 0;
     case FRU_SMB:
     case FRU_SMB_EXTRA:
-      snprintf(path, LARGEST_DEVICE_NAME, SCMCPLD_PATH_FMT, SMB_POWERGOOD);
-      break;
+    case FRU_FAN:
+      *status = 1;
+      return 0;
     case FRU_PIM2:
     case FRU_PIM3:
     case FRU_PIM4:
@@ -820,12 +813,6 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_PSU4:
       snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PSU_PRSNT);
       snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PSU1 + 1);
-      break;
-    case FRU_FAN:
-      // ELBERTTODO: update this once FAN_CARD_STATUS is fixed
-      *status = 1;
-      return 0;
-      //snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, FAN_CARD_STATUS);
       break;
     default:
       return -1;
@@ -884,15 +871,12 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   switch (fru) {
     case FRU_CHASSIS:
     case FRU_BMC:
-      *status = 1;
-      return 0;
     case FRU_SCM:
-      snprintf(path, LARGEST_DEVICE_NAME, SCMCPLD_PATH_FMT, CPU_READY);
-      break;
     case FRU_SMB:
     case FRU_SMB_EXTRA:
-      snprintf(path, LARGEST_DEVICE_NAME, SCMCPLD_PATH_FMT, SMB_POWERGOOD);
-      break;
+    case FRU_FAN:
+      *status = 1;
+      return 0;
     case FRU_PIM2:
     case FRU_PIM3:
     case FRU_PIM4:
@@ -910,14 +894,6 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
          be able to view sensor data even when PSU is not supplying power. */
       snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PSU_PRSNT);
       snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PSU1 + 1);
-      break;
-    case FRU_FAN:
-      // ELBERTTODO: fix this once FAN_CARD_STATUS is working
-      *status = 1;
-      return 0;
-      /*snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, FAN_CARD_STATUS);
-      expected_val = 0x1;
-      expected_status = 1;*/
       break;
     default:
       return -1;

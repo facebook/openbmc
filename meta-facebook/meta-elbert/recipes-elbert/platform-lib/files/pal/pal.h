@@ -42,8 +42,6 @@ extern "C" {
 #define LAST_KEY "last_key"
 #define SCMCPLD_PATH_FMT I2C_SYSFS_DEV_DIR(12-0043)"/%s"
 #define CPU_CTRL "cpu_control"
-#define CPU_READY "cpu_ready"
-#define SMB_POWERGOOD "switchcard_powergood"
 #define SMBCPLD_PATH_FMT I2C_SYSFS_DEV_DIR(4-0023)"/%s"
 #define PIM_PRSNT "pim%d_present"
 #define PIM_FPGA_REV_MAJOR "pim%d_fpga_rev_major"

@@ -87,6 +87,8 @@ cpu_model_t get_cpu_model(void)
 			cpu_model = CPU_MODEL_ARM_V5;
 		else if (str_startswith(cinfo.model_name, "ARMv6"))
 			cpu_model = CPU_MODEL_ARM_V6;
+		else if (str_startswith(cinfo.model_name, "ARMv7"))
+			cpu_model = CPU_MODEL_ARM_V7;
 	}
 
 	return cpu_model;
@@ -100,8 +102,10 @@ static int proc_read_dt_compat(char *buf, size_t size)
 	if (fp == NULL)
 		return -1;
 
-	if (fgets(buf, size, fp) == NULL)
+	if (fgets(buf, size, fp) == NULL) {
+		fclose(fp);
 		return -1;
+	}
 
 	fclose(fp);
 	str_rstrip(buf);
@@ -128,6 +132,8 @@ soc_model_t get_soc_model(void)
 			soc_model = SOC_MODEL_ASPEED_G4;
 		else if (strstr(buf, "ast2500") != NULL)
 			soc_model = SOC_MODEL_ASPEED_G5;
+		else if (strstr(buf, "ast2600") != NULL)
+			soc_model = SOC_MODEL_ASPEED_G6;
 
 		return soc_model;
 	}

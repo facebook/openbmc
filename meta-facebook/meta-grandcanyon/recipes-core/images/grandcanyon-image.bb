@@ -51,4 +51,5 @@ IMAGE_INSTALL += " \
   gpiod \
   snapshot-util \
   enclosure-util \
+  vboot-utils \
   "

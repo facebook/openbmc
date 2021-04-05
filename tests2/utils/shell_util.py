@@ -30,7 +30,7 @@ def run_cmd(cmd=None):
     return info
 
 
-def run_shell_cmd(cmd=None, ignore_err=False):
+def run_shell_cmd(cmd=None, ignore_err=False, expected_return_code=0):
     if not cmd:
         raise Exception("cmd not set")
     try:
@@ -44,8 +44,10 @@ def run_shell_cmd(cmd=None, ignore_err=False):
             err = err.decode("utf-8")
             if len(err) > 0:
                 raise Exception(err + " [FAILED]")
-        if f.returncode != 0:
-            raise Exception("{} exited with non-zero exit code".format(cmd))
+        if f.returncode != expected_return_code:
+            raise Exception(
+                "{} exited with non {} exit code".format(cmd, expected_return_code)
+            )
         info = data.decode("utf-8")
     except Exception as e:
         raise Exception("Failed to run command = {} and exception {}".format(cmd, e))

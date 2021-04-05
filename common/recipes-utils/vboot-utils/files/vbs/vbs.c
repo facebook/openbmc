@@ -18,7 +18,7 @@
 
 #include <stdio.h>
 #include <sys/mman.h>
-#include <sys/stat.h> 
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
@@ -27,9 +27,17 @@
 #include <errno.h>
 #include "vbs.h"
 
+/* definition to expand macro then apply to pragma message */
+#define VALUE_TO_STRING(x) #x
+#define VALUE(x) VALUE_TO_STRING(x)
+#define VAR_NAME_VALUE(var) #var "="  VALUE(var)
 
 /* Location in SRAM used for verified boot content/flags. */
-#define AST_SRAM_VBS_BASE   0x1E720200
+#ifdef AST_SRAM_VBS_BASE
+# pragma message(VAR_NAME_VALUE(AST_SRAM_VBS_BASE))
+#else
+# error "Please define AST_SRAM_VBS_BASE in libvbs_1.0.bb"
+#endif
 
 #define PAGE_SIZE              0x1000
 #define PAGE_OFFSETED_OFF(addr, ps) ((ps-1)&addr)
@@ -104,7 +112,7 @@ struct vbs *vboot_status()
       syslog(LOG_CRIT, "%s: Error opening /dev/mem (%s)\n", __func__, strerror(errno));
       return NULL;
     }
-    vboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, 
+    vboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE,
         PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd,
         PAGE_OFFSETED_BASE(AST_SRAM_VBS_BASE, PAGE_SIZE));
     if (!vboot_base) {
@@ -155,4 +163,3 @@ const char *vboot_time(char *time_str, size_t buf_size, uint32_t t)
   }
   return time_str;
 }
-

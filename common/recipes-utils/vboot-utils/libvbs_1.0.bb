@@ -20,5 +20,21 @@ do_install() {
   install -m 0644 libvbs.so ${D}${libdir}/libvbs.so
 }
 
+def get_vbs_base_addr(soc_family):
+  ret = "-DAST_SRAM_VBS_BASE="
+
+  if soc_family == "aspeed-g4":
+    ret += "0x1E720200"
+  elif soc_family == "aspeed-g5":
+    ret += "0x1E720200"
+  elif soc_family == "aspeed-g6":
+    ret += "0x10015800"
+  else:
+    ret = ""
+
+  return ret
+
+
+CFLAGS += "${@ get_vbs_base_addr('${SOC_FAMILY}') }"
 FILES_${PN} = "${libdir}/libvbs.so"
 FILES_${PN}-dev = "${includedir}/openbmc/vbs.h"

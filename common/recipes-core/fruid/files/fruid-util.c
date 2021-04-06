@@ -35,6 +35,7 @@
 #define FLAG_MODIFY (0x01 << 2)
 
 #define FIELD_LEN(x)      (x & ~(0x03 << 6))
+#define IGNORE_PATH -2
 
 enum format{
   DEFAULT_FORMAT = 0,
@@ -555,6 +556,9 @@ int print_fru(int fru, char * device, bool allow_absent, unsigned char print_for
   }
 
   if (ret < 0) {
+    if (ret == IGNORE_PATH && allow_absent) {
+      return 0;
+    }
     sprintf(error_mesg,"%s is unavailable!", name);
     goto error;
   }

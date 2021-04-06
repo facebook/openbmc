@@ -548,6 +548,9 @@ pal_get_fruid_path(uint8_t fru, char *path) {
     sprintf(fname, "pdb");
   } else if (fru == FRU_BMC) {
     sprintf(fname, "bmc");
+  } else if (fru == FRU_TRAY1_MB) {
+    // In 4s mode, tray1_mb still present on tray0 even though path not exist.
+    return -2;
   } else {
     return -1;
   }

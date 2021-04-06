@@ -1,5 +1,5 @@
 {
-  "version": "northdome-evt-r02",
+  "version": "northdome-evt-r03",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 80,
@@ -11,16 +11,6 @@
   },
   "sensor_valid_check": {
     "(.*)soc": {
-      "attribute": {
-        "type" : "power_status"
-      }
-    },
-    "(.*)nvme": {
-      "attribute": {
-        "type" : "power_status"
-      }
-    },
-    "cpu": {
       "attribute": {
         "type" : "power_status"
       }
@@ -58,11 +48,12 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 1,
       "data": [
-        [ 55, 20 ],
-        [ 57, 21 ],
-        [ 59, 23 ],
-        [ 61, 24 ],
-        [ 63, 25 ]
+        [ 60, 20 ],
+        [ 62, 21 ],
+        [ 64, 23 ],
+        [ 66, 24 ],
+        [ 68, 25 ],
+        [ 70, 27 ]
       ]
     },
     "pid_cpu_margin": {
@@ -70,7 +61,7 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 85,
+      "setpoint": 73,
       "positive_hysteresis": 1,
       "negative_hysteresis": 2,
       "kp": -1.25,
@@ -99,38 +90,16 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
+        [70, 20],
+        [76, 23],
         [80, 25],
-        [86, 33],
+        [84, 29],
+        [86, 31],
         [88, 37],
         [90, 43],
         [92, 50],
         [95, 80]
       ]
-    },
-    "linear_mb_m2": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "linear",
-      "positive_hysteresis": 0,
-      "negative_hysteresis": 2,
-      "data": [
-        [ 56, 25 ],
-        [ 58, 27 ],
-        [ 60, 30 ]
-      ]
-    },
-    "pid_mb_m2": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "pid",
-      "setpoint": 68,
-      "positive_hysteresis": 1,
-      "negative_hysteresis": 2,
-      "kp": -1.5,
-      "ki": -0.02,
-      "kd": 0
     }
   },
   "fans": {

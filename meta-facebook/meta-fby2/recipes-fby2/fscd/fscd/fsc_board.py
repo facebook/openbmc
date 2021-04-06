@@ -122,10 +122,12 @@ loc_map_ep = {
 }
 
 loc_map_nd = {
-    "c": "_dimm0_location",
-    "d": "_dimm1_location",
-    "g": "_dimm2_location",
-    "h": "_dimm3_location",
+    "a": "_dimm0_location",
+    "c": "_dimm2_location",
+    "d": "_dimm3_location",
+    "e": "_dimm4_location",
+    "g": "_dimm6_location",
+    "h": "_dimm7_location",
 }
 
 

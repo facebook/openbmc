@@ -6,33 +6,29 @@ max([
   linear_cpu_margin(all:slot4_soc_temp) + pid_cpu_margin(all:slot4_soc_temp),
   linear_dimm(
    max([
+    all:slot1_soc_dimma0_temp,
     all:slot1_soc_dimmc0_temp,
     all:slot1_soc_dimmd0_temp,
+    all:slot1_soc_dimme0_temp,
     all:slot1_soc_dimmg0_temp,
     all:slot1_soc_dimmh0_temp,
+    all:slot2_soc_dimma0_temp,
     all:slot2_soc_dimmc0_temp,
     all:slot2_soc_dimmd0_temp,
+    all:slot2_soc_dimme0_temp,
     all:slot2_soc_dimmg0_temp,
     all:slot2_soc_dimmh0_temp,
+    all:slot3_soc_dimma0_temp,
     all:slot3_soc_dimmc0_temp,
     all:slot3_soc_dimmd0_temp,
+    all:slot3_soc_dimme0_temp,
     all:slot3_soc_dimmg0_temp,
     all:slot3_soc_dimmh0_temp,
+    all:slot4_soc_dimma0_temp,
     all:slot4_soc_dimmc0_temp,
     all:slot4_soc_dimmd0_temp,
+    all:slot4_soc_dimme0_temp,
     all:slot4_soc_dimmg0_temp,
     all:slot4_soc_dimmh0_temp])),
-  linear_mezz(all:nic_mezz_sensor_temp),
-  linear_mb_m2(
-   max([
-    all:slot1_nvme1_ctemp,
-    all:slot2_nvme1_ctemp,
-    all:slot3_nvme1_ctemp,
-    all:slot4_nvme1_ctemp])) +
-  pid_mb_m2(
-   max([
-    all:slot1_nvme1_ctemp,
-    all:slot2_nvme1_ctemp,
-    all:slot3_nvme1_ctemp,
-    all:slot4_nvme1_ctemp]))
+  linear_mezz(all:nic_mezz_sensor_temp)
 ])

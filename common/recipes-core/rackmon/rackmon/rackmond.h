@@ -1,7 +1,11 @@
 #ifndef _RACKMOND_H_
 #define _RACKMOND_H_
 
+#include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include <time.h>
+#include <termios.h>
 
 #define RACKMON_IPC_SOCKET "/var/run/rackmond.sock"
 #define RACKMON_STAT_STORE "/var/log/psu-status.log"
@@ -54,6 +58,7 @@ enum {
   COMMAND_TYPE_START_MONITORING,
   COMMAND_TYPE_DUMP_STATUS,
   COMMAND_TYPE_FORCE_SCAN,
+  COMMAND_TYPE_DUMP_DATA_INFO,
   COMMAND_TYPE_MAX,
 };
 
@@ -64,5 +69,33 @@ typedef struct rackmond_command {
     set_config_command set_config;
   };
 } rackmond_command;
+
+typedef struct {
+  monitor_interval* i;
+  void* mem_begin;
+  size_t mem_pos;
+} reg_range_data_t;
+
+typedef struct {
+  uint8_t addr;
+  uint32_t crc_errors;
+  uint32_t timeout_errors;
+  speed_t baudrate;
+  bool supports_baudrate;
+  int consecutive_failures;
+  bool timeout_mode;
+  time_t last_comms;
+  reg_range_data_t range_data[1];
+} psu_datastore_t;
+
+// write buf to send response text the back to client
+typedef struct {
+  char* buffer;
+  size_t len;
+  size_t pos;
+  int fd;
+} write_buf_t;
+
+int buf_printf(write_buf_t* buf, const char* format, ...);
 
 #endif /* _RACKMOND_H_ */

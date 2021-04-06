@@ -26,6 +26,7 @@
 
 #include "modbus.h"
 #include "rackmon_platform.h"
+#include "rackmon_parser.h"
 
 #define DAEMON_NAME  "rackmond"
 
@@ -112,31 +113,6 @@ typedef struct {
   uint16_t begin; /* starting register address */
   int num;        /* number of registers */
 } reg_req_t;
-
-typedef struct {
-  monitor_interval* i;
-  void* mem_begin;
-  size_t mem_pos;
-} reg_range_data_t;
-
-typedef struct {
-  uint8_t addr;
-  uint32_t crc_errors;
-  uint32_t timeout_errors;
-  speed_t baudrate;
-  bool supports_baudrate;
-  int consecutive_failures;
-  bool timeout_mode;
-  time_t last_comms;
-  reg_range_data_t range_data[1];
-} psu_datastore_t;
-
-typedef struct {
-  char* buffer;
-  size_t len;
-  size_t pos;
-  int fd;
-} write_buf_t;
 
 /*
  * Global rackmond config structure, protected by its mutex lock.
@@ -255,7 +231,7 @@ static ssize_t buf_write(write_buf_t* buf, void* from, size_t len) {
   }
 }
 
-static int buf_printf(write_buf_t* buf, const char* format, ...) {
+int buf_printf(write_buf_t* buf, const char* format, ...) {
   char tmpbuf[512];
   int error = 0;
   int ret;
@@ -1434,6 +1410,27 @@ static int run_cmd_dump_json(rackmond_command* cmd, write_buf_t *wb)
   return 0;
 }
 
+static int run_cmd_dump_info(rackmond_command* cmd, write_buf_t *wb){
+  int data_pos = 0;
+  if (global_lock() != 0) {
+    return -1;
+  }
+
+  if (rackmond_config.config == NULL) {
+    buf_write(wb, "Unconfigured", 12);
+  } else {
+    while ((data_pos < MAX_ACTIVE_ADDRS) &&
+           (rackmond_config.stored_data[data_pos] != NULL)) {
+        rackmon_print_info(wb,
+          rackmond_config.stored_data[data_pos],
+          rackmond_config.config->num_intervals);
+        data_pos++;
+      }
+  }
+  global_unlock();
+  return 0;
+}
+
 static int run_cmd_pause_monitoring(rackmond_command* cmd, write_buf_t *wb)
 {
   uint8_t was_paused;
@@ -1481,6 +1478,10 @@ static struct {
   [COMMAND_TYPE_DUMP_DATA_JSON] = {
     .name = "dump_data_json",
     .handler = run_cmd_dump_json,
+  },
+  [COMMAND_TYPE_DUMP_DATA_INFO] = {
+    .name = "dump_data_info",
+    .handler = run_cmd_dump_info,
   },
   [COMMAND_TYPE_PAUSE_MONITORING] = {
     .name = "pause_monitoring",

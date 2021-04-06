@@ -37,6 +37,10 @@ static struct {
         .type = COMMAND_TYPE_DUMP_DATA_JSON,
     },
     {
+        .name = "info",
+        .type = COMMAND_TYPE_DUMP_DATA_INFO,
+    },
+    {
         .name = "status",
         .type = COMMAND_TYPE_DUMP_STATUS,
     },
@@ -86,6 +90,8 @@ int main(int argc, char **argv) {
     callname = basename(argv[0]);
     if (strcmp("rackmondata", callname) == 0) {
         cmd_name = "data";
+    } else if (strcmp("rackmoninfo", callname) == 0) {
+        cmd_name = "info";
     } else if (strcmp("rackmonstatus", callname) == 0) {
         cmd_name = "status";
     } else if (strcmp("rackmonscan", callname) == 0) {

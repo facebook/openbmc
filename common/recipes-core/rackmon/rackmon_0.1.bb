@@ -40,6 +40,8 @@ SRC_URI = "file://Makefile \
            file://rackmonctl.c \
            file://rackmon_platform.c \
            file://rackmon_platform.h \
+           file://rackmon_parser.c \
+           file://rackmon_parser.h \
            file://setup-rackmond.sh \
            file://run-rackmond.sh \
            file://rackmon-config.py \
@@ -101,6 +103,7 @@ do_install() {
         ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
     done
     ln -snf ../fbpackages/${pkgdir}/rackmonctl ${bin}/rackmondata
+    ln -snf ../fbpackages/${pkgdir}/rackmonctl ${bin}/rackmoninfo
     ln -snf ../fbpackages/${pkgdir}/rackmonctl ${bin}/rackmonstatus
     ln -snf ../fbpackages/${pkgdir}/rackmonctl ${bin}/rackmonscan
     install -m 755 rackmon-config.py ${D}${sysconfdir}/rackmon-config.py

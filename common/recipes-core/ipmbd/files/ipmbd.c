@@ -296,7 +296,7 @@ ipmb_req_handler(void *args) {
   int bus_num = *((int*)args);
   mqd_t mq;
   int i, fd;
-  uint8_t rlen = 0;
+  int16_t rlen = 0;
   uint16_t tlen = 0;
   char mq_name_req[NAME_MAX];
   uint16_t addr=0;
@@ -437,7 +437,7 @@ static void*
 ipmb_res_handler(void *args) {
   int bus_num = *((int*)args);
   uint8_t buf[IPMB_PKT_MAX_SIZE] = { 0 };
-  uint8_t len = 0;
+  int16_t len = 0;
   mqd_t mq;
   ipmb_res_t *p_res;
   uint8_t index;

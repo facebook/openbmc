@@ -1,5 +1,5 @@
 CONFIG_SYS_PROMPT="fbgc# "
-CONFIG_SYS_CONFIG_NAME="fbgcvboot2"
+CONFIG_SYS_CONFIG_NAME="facebook_grandcanyon"
 CONFIG_DEFAULT_DEVICE_TREE="aspeed-bmc-facebook-grandcanyon"
 
 # CONFIG_ASPEED_TPM=y

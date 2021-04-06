@@ -269,8 +269,7 @@ char const *manufacturer_name[] =
 const char * manu_string(uint8_t id)
 {
   // val is 4 bit value
-  if ((id < 0) ||
-      (id >= ARRAY_SIZE(manufacturer_name)) ||
+  if ((id >= ARRAY_SIZE(manufacturer_name)) ||
       (manufacturer_name[id] == NULL)) {
     return "Unknown";
   } else {

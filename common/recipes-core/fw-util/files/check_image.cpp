@@ -322,7 +322,11 @@ class Image {
     fsize = lseek(fd, 0, SEEK_END);
     if (fsize == 0) {
       throw "Zero size image file " + string(file);
+    } else if (fsize > FLASH_SIZE) {
+      close(fd);
+      throw string(file) + " over size ( > 32MB )";
     }
+
     lseek(fd, 0, SEEK_SET);
     unsigned char *img = (unsigned char *)calloc(FLASH_SIZE, 1);
     for (int bread = 0; bread < (int)fsize;) {
@@ -412,7 +416,7 @@ bool BmcComponent::is_valid(string &file, bool pfr_active)
     if (!image.supports_machine(machine)) {
       return false;
     }
-
+    
     if (pfr_active) {
       return true;
     }

@@ -5034,8 +5034,8 @@ sensor_thresh_array_init(uint8_t fru) {
       scm_sensor_threshold[SCM_SENSOR_HSC_VOLT][LCR_THRESH] = 7.5;
       scm_sensor_threshold[SCM_SENSOR_HSC_CURR][UCR_THRESH] = 24.7;
       for (int sensor_index = scm_sensor_cnt; sensor_index < scm_all_sensor_cnt; sensor_index++) {
-        for (int threshold_type = 1; threshold_type <= MAX_SENSOR_THRESHOLD + 1; threshold_type++) {
-          if (!bic_get_sdr_thresh_val(fru, scm_all_sensor_list[sensor_index], threshold_type, &fvalue)){
+        for (int threshold_type = 1; threshold_type <= MAX_SENSOR_THRESHOLD; threshold_type++) {
+          if (!bic_get_sdr_thresh_val(fru, scm_all_sensor_list[sensor_index], threshold_type, &fvalue)) {
             scm_sensor_threshold[scm_all_sensor_list[sensor_index]][threshold_type] = fvalue;
           }
         }

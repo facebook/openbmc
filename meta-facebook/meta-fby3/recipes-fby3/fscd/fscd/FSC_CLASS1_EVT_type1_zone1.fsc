@@ -61,5 +61,5 @@ max([
       all:slot4_soc_dimmd_temp,
       all:slot4_soc_dimme_temp,
       all:slot4_soc_dimmf_temp])),
-  linear_nic(all:nic_sensor_temp) + pid_nic(all:nic_sensor_temp)
+  linear_nic(all:nic_nic_sensor_temp) + pid_nic(all:nic_nic_sensor_temp)
 ])

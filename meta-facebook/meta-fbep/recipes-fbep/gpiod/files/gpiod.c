@@ -301,7 +301,7 @@ int check_pwr_brake()
     goto exit;
 
   for (i = 0; i < 8; i++) {
-    if (!is_asic_prsnt(7-i))
+    if (!is_asic_prsnt(i))
       continue;
 
     value = rbuf[0] & (0x1 << i);

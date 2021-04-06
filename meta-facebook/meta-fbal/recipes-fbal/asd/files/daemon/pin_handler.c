@@ -20,15 +20,24 @@ enum  MONITOR_EVENTS {
   JTAG_EVENT_NUM,
 };
 
+struct gpio_evt {
+  bool triggered;
+  gpio_value_t value;
+};
+
 static void gpio_handle(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr);
 static void *gpio_poll_thread(void *unused);
-static struct gpiopoll_config g_gpios[3] = {
+static struct gpiopoll_config g_gpios[JTAG_EVENT_NUM] = {
   {"RST_PLTRST_BMC_N", "0", GPIO_EDGE_BOTH, gpio_handle, NULL},
   {"IRQ_BMC_PRDY_N", "1", GPIO_EDGE_FALLING, gpio_handle, NULL},
   {"DBP_PRESENT_N", "2", GPIO_EDGE_BOTH, gpio_handle, NULL}
 };
 static gpiopoll_desc_t *polldesc = NULL;
-static bool g_gpios_triggered[JTAG_EVENT_NUM] = {false, false, false};
+static struct gpio_evt g_gpios_evt[JTAG_EVENT_NUM] = {
+  {false, GPIO_VALUE_INVALID},
+  {false, GPIO_VALUE_INVALID},
+  {false, GPIO_VALUE_INVALID}
+};
 static pthread_mutex_t triggered_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static const ASD_LogStream stream = ASD_LogStream_Pins;
@@ -161,7 +170,8 @@ static void gpio_handle(gpiopoll_pin_t *gpio, gpio_value_t last, gpio_value_t cu
   idx = atoi(cfg->description);
   if (idx < 3) {
     pthread_mutex_lock(&triggered_mutex);
-    g_gpios_triggered[idx] = true;
+    g_gpios_evt[idx].value = curr;
+    g_gpios_evt[idx].triggered = true;
     pthread_mutex_unlock(&triggered_mutex);
   }
 }
@@ -246,9 +256,9 @@ STATUS pin_hndlr_init_asd_gpio(Target_Control_Handle *state) {
         gpios_polling = true;
     } else {
         pthread_mutex_lock(&triggered_mutex);
-        g_gpios_triggered[JTAG_PLTRST_EVENT] = false;
-        g_gpios_triggered[JTAG_PRDY_EVENT] = false;
-        g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = false;
+        g_gpios_evt[JTAG_PLTRST_EVENT].triggered = false;
+        g_gpios_evt[JTAG_PRDY_EVENT].triggered = false;
+        g_gpios_evt[JTAG_XDP_PRESENT_EVENT].triggered = false;
         pthread_mutex_unlock(&triggered_mutex);
     }
 
@@ -259,33 +269,36 @@ static STATUS
 on_platform_reset_event(Target_Control_Handle* state, ASD_EVENT* event)
 {
     STATUS result = ST_OK;
-    int value;
-    static bool is_asserted = false;
+    gpio_value_t value;
 
-    if ( g_gpios_triggered[JTAG_PLTRST_EVENT] == true ) {
+    *event = ASD_EVENT_NONE;
+    if (g_gpios_evt[JTAG_PLTRST_EVENT].triggered == false) {
+        return result;
+    }
+
+    pthread_mutex_lock(&triggered_mutex);
+    value = g_gpios_evt[JTAG_PLTRST_EVENT].value;
+    g_gpios_evt[JTAG_PLTRST_EVENT].triggered = false;
+    pthread_mutex_unlock(&triggered_mutex);
+
+    if (value == GPIO_VALUE_HIGH) {
         ASD_log(ASD_LogLevel_Debug, stream, option, "Platform reset asserted");
         *event = ASD_EVENT_PLRSTASSERT;
-        if (state->event_cfg.reset_break)
-        {
+
+        if (state->event_cfg.reset_break) {
             ASD_log(ASD_LogLevel_Debug, stream, option,
                     "ResetBreak detected PLT_RESET "
                     "assert, asserting PREQ");
             write_pin_value(state->fru, state->gpios[BMC_PREQ_N], 1, &result);
-            if (result != ST_OK)
-            {
+            if (result != ST_OK) {
                 ASD_log(ASD_LogLevel_Error, stream, option,
-                    "Failed to assert PREQ");
+                        "Failed to assert PREQ");
             }
         }
-        is_asserted = true;
     } else {
-        if (is_asserted != true) *event = ASD_EVENT_NONE;
-        else {
-            ASD_log(ASD_LogLevel_Debug, stream, option,
-                    "Platform reset de-asserted");
-            *event = ASD_EVENT_PLRSTDEASSRT;
-            is_asserted = false;
-        }
+        ASD_log(ASD_LogLevel_Debug, stream, option,
+                "Platform reset de-asserted");
+        *event = ASD_EVENT_PLRSTDEASSRT;
     }
 
     return result;
@@ -297,7 +310,7 @@ on_prdy_event(Target_Control_Handle* state, ASD_EVENT* event)
     STATUS result = ST_OK;
     *event = ASD_EVENT_NONE;
 
-    if ( g_gpios_triggered[JTAG_PRDY_EVENT] == false ) {
+    if (g_gpios_evt[JTAG_PRDY_EVENT].triggered == false) {
         return result;
     }
 
@@ -305,7 +318,7 @@ on_prdy_event(Target_Control_Handle* state, ASD_EVENT* event)
     handle_preq_event(state, state->fru);
     ASD_log(ASD_LogLevel_Debug, stream, option,
             "CPU_PRDY Asserted Event Detected.\n");
-    g_gpios_triggered[JTAG_PRDY_EVENT] = false;
+    g_gpios_evt[JTAG_PRDY_EVENT].triggered = false;
     pthread_mutex_unlock(&triggered_mutex);
     *event = ASD_EVENT_PRDY_EVENT;
     return result;
@@ -320,7 +333,7 @@ on_xdp_present_event(Target_Control_Handle* state, ASD_EVENT* event)
 
     *event = ASD_EVENT_NONE;
 
-    if ( g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] == false ) {
+    if (g_gpios_evt[JTAG_XDP_PRESENT_EVENT].triggered == false) {
         return result;
     }
 
@@ -329,7 +342,7 @@ on_xdp_present_event(Target_Control_Handle* state, ASD_EVENT* event)
             "XDP Present state change detected");
 
     pthread_mutex_lock(&triggered_mutex);
-    g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = false;
+    g_gpios_evt[JTAG_XDP_PRESENT_EVENT].triggered = false;
     pthread_mutex_unlock(&triggered_mutex);
 
     return result;

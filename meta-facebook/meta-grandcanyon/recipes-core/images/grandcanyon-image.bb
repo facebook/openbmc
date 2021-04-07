@@ -10,6 +10,7 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-base \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
+  packagegroup-openbmc-rest3 \
   setup-gpio \
   ipmbd \
   ipmid \

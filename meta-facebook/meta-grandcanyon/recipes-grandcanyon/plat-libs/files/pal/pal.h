@@ -136,6 +136,9 @@ extern "C" {
 #define STR_VALUE_0  "0"
 #define STR_VALUE_1  "1"
 
+#define MAX_PLATFORM_NAME_SIZE  16
+#define PLATFORM_NAME           "Grand Canyon"
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,

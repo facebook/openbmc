@@ -2583,3 +2583,14 @@ pal_log_clear(char *fru) {
     }
   }
 }
+
+int
+pal_get_platform_name(char *name) {
+  if (name == NULL) {
+    syslog(LOG_ERR, "%s(): Failed to get platform name due to NULL parameter", __func__);
+    return PAL_ENOTSUP;
+  }
+
+  strncpy(name, PLATFORM_NAME, MAX_PLATFORM_NAME_SIZE);
+  return PAL_EOK;
+}

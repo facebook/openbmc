@@ -415,6 +415,12 @@ if [ -n "$COMP" ]; then
       fi
     fi
   elif [ "$DEV" == "bic" ]; then
+
+    if [ $# -ne 3 ]; then # not support baudrate option
+      show_usage
+      exit -1;
+    fi
+
     if [ -n "$CPLD_ADDR" ]; then
       [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]] && DEV_NUM="0x2" || DEV_NUM="0x4"
     else

@@ -29,6 +29,15 @@ LDFLAGS += "-llog -lmisc-utils"
 DEPENDS += "libgpio liblog libmisc-utils"
 RDEPENDS_${PN} = "libgpio liblog libmisc-utils python3-core bash"
 
+def get_profile_flag(d):
+  prof_enabled = d.getVar("RACKMON_PROFILING", False)
+  if prof_enabled:
+    return "-DRACKMON_PROFILING"
+  return ""
+
+CFLAGS += "${@get_profile_flag(d)}"
+
+
 SRC_URI = "file://Makefile \
            file://modbuscmd.c \
            file://modbussim.c \

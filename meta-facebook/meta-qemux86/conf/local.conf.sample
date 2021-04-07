@@ -14,3 +14,5 @@ DISTRO ?= "openbmc-fb"
 
 # Enable ptest to be built into the image.
 DISTRO_FEATURES_append = " ptest"
+
+SOC_FAMILY = "aspeed-g5"

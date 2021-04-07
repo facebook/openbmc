@@ -106,7 +106,7 @@ function get_debug_card_presence
       val=0
   fi
 
-  key="debug_card"
+  key="dbg0"
   echo $key ":" $val
 }
 

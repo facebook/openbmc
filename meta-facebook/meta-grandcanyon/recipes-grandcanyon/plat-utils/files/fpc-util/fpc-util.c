@@ -59,7 +59,7 @@ main(int argc, char **argv) {
           return ret;
         }
         
-        snprintf(key, sizeof(key), "system_identify");
+        snprintf(key, sizeof(key), "system_identify_server");
         ret = pal_set_key_value(key, argv[2]);
         if (ret < 0) {
           printf("fpc-util: failed to set identification on\n");
@@ -87,11 +87,11 @@ main(int argc, char **argv) {
         return ret;
       }
       printf("fpc-util: identification is %s, default interval is 0.5 second\n", argv[2]);
-      snprintf(key, sizeof(key), "system_identify");
+      snprintf(key, sizeof(key), "system_identify_server");
       return pal_set_key_value(key, argv[2]);
     } else if (strcmp(argv[2], "off") == 0) {
       printf("fpc-util: identification is %s\n", argv[2]);
-      snprintf(key, sizeof(key), "system_identify");
+      snprintf(key, sizeof(key), "system_identify_server");
       return pal_set_key_value(key, argv[2]);
     } else {
       goto err_exit;

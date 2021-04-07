@@ -109,10 +109,10 @@ struct pal_key_cfg {
   int (*function)(int, void*);
 } key_cfg[] = {
   /* name, default value, function */
-  {"system_identify", "off", NULL},
+  {"system_identify_server", "off", NULL},
   {"server_boot_order", "0100090203ff", NULL},
   {"server_por_cfg", "on", NULL},
-  {"sysfw_ver", "0", NULL},
+  {"sysfw_ver_server", "0", NULL},
   {"system_identify_led_interval", "default", NULL},
   {"pwr_server_last_state", "on", NULL},
   {"system_info", "0", NULL},
@@ -945,7 +945,7 @@ pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
     return -1;
   }
 
-  snprintf(key, sizeof(key), "sysfw_ver");
+  snprintf(key, sizeof(key), "sysfw_ver_server");
 
   for (i = 0; i < SIZE_SYSFW_VER; i++) {
     tmp_len = sizeof(tmp_str);
@@ -976,7 +976,7 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
     return -1;
   }
 
-  snprintf(key, sizeof(key), "sysfw_ver");
+  snprintf(key, sizeof(key), "sysfw_ver_server");
   ret = pal_get_key_value(key, str);
   if (ret != 0) {
     syslog(LOG_WARNING, "%s() Failed to run pal_get_key_value. key:%s", __func__, key);

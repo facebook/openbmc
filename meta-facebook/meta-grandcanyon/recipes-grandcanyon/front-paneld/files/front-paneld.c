@@ -48,7 +48,7 @@ led_sync_handler() {
     memset(identify, 0x0, sizeof(identify));
     memset(interval, 0x0, sizeof(interval));
     
-    ret = pal_get_key_value("system_identify", identify);
+    ret = pal_get_key_value("system_identify_server", identify);
     ret2 = pal_get_key_value("system_identify_led_interval", interval);
     
     if ((ret == 0) && (strcmp(identify, "on") == 0)) {

@@ -284,6 +284,11 @@ enum IOC_RECOVERY_STATUS {
   ENABLE_IOC_RECOVERY  = 0x1,
 };
 
+enum {
+  EVENT_ASSERT         = 0,
+  EVENT_DEASSERT,
+};
+
 int pal_set_id_led(uint8_t slot, enum LED_HIGH_ACTIVE status);
 int pal_set_status_led(uint8_t fru, status_led_color color);
 int pal_set_e1s_led(uint8_t fru, e1s_led_id id, enum LED_HIGH_ACTIVE status);

@@ -1,9 +1,10 @@
 {
-  "version": "fby3-dp-v1-2021.03.16",
+  "version": "fby3-dp-v2-2021.04.07",
   "pwm_transition_value": 60,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
   "sample_interval_ms": 3000,
+  "sensor_filter_all": true,
   "boost": {
     "fan_fail": true,
     "sensor_fail": true
@@ -13,17 +14,22 @@
     "action": "host_shutdown"
   },
   "sensor_valid_check": {
-    "front_io_temp": {
+    "(.*)front_io_temp": {
       "attribute": {
         "type" : "power_status"
       }
     },
-    "soc_cpu": {
+    "(.*)soc_therm": {
       "attribute": {
         "type" : "power_status"
       }
     },
-    "soc_dimm": {
+    "(.*)soc_dimm": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)dp_pcie_temp": {
       "attribute": {
         "type" : "power_status"
       }
@@ -72,7 +78,7 @@
       "setpoint": -8,
       "negative_hysteresis": 3,
       "positive_hysteresis": 0,
-      "kp": -2.2,
+      "kp": -1.5,
       "ki": -0.015,
       "kd": 0
     },
@@ -127,6 +133,30 @@
       "positive_hysteresis": 0,
       "kp": -1.25,
       "ki": -0.01,
+      "kd": 0
+    },
+    "linear_marvell_hsm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "data": [
+        [ 70, 10 ],
+        [ 75, 12 ]
+      ]
+    },
+    "pid_marvell_hsm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 79,
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "kp": -1,
+      "ki": -0.035,
       "kd": 0
     }
   },

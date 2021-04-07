@@ -27,6 +27,8 @@
 #define PWM_MASK     0x0f
 
 #define DEVICE_KEY "sys_config/fru%d_B_drive0_model_name"
+#define DP_INNER_PCIE_INFO_KEY "sys_config/fru%u_pcie_i04_s40_info"
+#define DP_OUTER_PCIE_INFO_KEY "sys_config/fru%u_pcie_i04_s44_info"
 
 #define DUAL_FAN_UCR  13500
 
@@ -41,6 +43,28 @@ enum {
   SINGLE_FAN_CNT = 0x04,
   UNKNOWN_FAN_CNT = 0x00,
 };
+
+enum {
+  // Vendor ID
+  PCIE_VENDOR_MARVELL_HSM = 0x8086,
+  PCIE_VENDOR_NCIPHER_HSM = 0x1957,
+
+  // Device ID
+  PCIE_DEVICE_MARVELL_HSM = 0x10d8,
+  PCIE_DEVICE_NCIPHER_HSM = 0x082c,
+};
+
+struct pcie_info {
+  uint8_t   interface;
+  uint8_t   slot_num;
+  uint16_t  vendor_id;
+  uint16_t  device_id;
+  uint32_t  sub_vendor_id;
+  uint32_t  sub_device_id;
+  uint8_t   dev_type;
+  uint8_t   rated_width;
+  uint8_t   rated_speed;
+}__attribute__ ((__packed__));
 
 static int read_adc_val(uint8_t adc_id, float *value);
 static int read_temp(uint8_t snr_id, float *value);
@@ -2556,4 +2580,51 @@ pal_is_sensor_valid(uint8_t fru, uint8_t snr_num) {
     return 0;
   }
   return 0;
+}
+
+bool
+pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id) {
+  bool ret = false;
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      if (sensor_id == BIC_SENSOR_DP_PCIE_TEMP) {
+        char key[MAX_KEY_LEN] = {0};
+        char value[MAX_VALUE_LEN] = {0};
+        struct pcie_info* pcie_info = (struct pcie_info *) value;
+
+        sprintf(key, DP_INNER_PCIE_INFO_KEY, fru);
+        if (kv_get(key, value, NULL, KV_FPERSIST) != 0) {
+          // pcie_info file not exist
+          ret = true;
+        } else if (pcie_info->vendor_id == PCIE_VENDOR_MARVELL_HSM && pcie_info->device_id == PCIE_DEVICE_MARVELL_HSM) {
+          // dp marvell hsm
+          ret =  false;
+        } else {
+          // other pcie cards
+          ret =  true;
+        }
+      }
+      break;
+    default:
+      break;
+  }
+  return ret;
+}
+
+bool
+pal_is_host_snr_available(uint8_t fru, uint8_t snr_num) {
+  uint8_t pwr_status = 0;
+
+  if (pal_get_server_power(fru, &pwr_status) < 0) {
+    return false;
+  }
+
+  if (pwr_status == SERVER_POWER_ON || pwr_status == SERVER_12V_ON) {
+    return true;
+  }
+
+  return false;
 }

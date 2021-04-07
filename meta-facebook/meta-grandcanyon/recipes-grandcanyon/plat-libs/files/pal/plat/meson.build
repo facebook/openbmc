@@ -10,7 +10,6 @@ pal_deps += [
     cc.find_library('gpio-ctrl'),
     cc.find_library('fbgc_gpio'),
     cc.find_library('exp'),
-    cc.find_library('m'),
     cc.find_library('bic'),
     cc.find_library('ncsi'),
     cc.find_library('nl-wrapper'),

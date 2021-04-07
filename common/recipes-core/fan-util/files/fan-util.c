@@ -245,6 +245,7 @@ fan_mode_check(bool printMode) {
 static int
 fscd_driver_check(bool status) {
 #define MAX_BUF_SIZE 256
+  int rc;
   FILE* fp;
   char buf[MAX_BUF_SIZE] = {0};
 
@@ -261,12 +262,14 @@ fscd_driver_check(bool status) {
 
   if (fgets(buf, MAX_BUF_SIZE, fp) == NULL) {
     printf("FSCD Driver returned nothing\n");
-    return -1;
+    rc = -1;
+  } else {
+    printf("FSCD Driver: %s\n", buf);
+    rc = 0;
   }
-  printf("FSCD Driver: %s\n", buf);
 
   fclose(fp);
-  return 0;
+  return rc;
 }
 
 int

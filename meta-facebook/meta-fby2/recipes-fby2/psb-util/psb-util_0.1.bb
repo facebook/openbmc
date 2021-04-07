@@ -17,8 +17,9 @@ binfiles = "psb-util \
 
 pkgdir = "psb-util"
 
-DEPENDS = " libpal libkv"
-RDEPENDS_${PN} += " libpal libkv"
+LDFLAGS = " -lpal -lkv -ljansson"
+DEPENDS = " libpal libkv jansson"
+RDEPENDS_${PN} += " libpal libkv jansson"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

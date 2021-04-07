@@ -29,7 +29,18 @@ SRC_URI += "\
         file://bic_vr.h \
         file://scc_exp.cpp \
         file://scc_exp.h \
+        file://grandcanyon.json \
         "
+
+do_unpack_append () {
+    bb.build.exec_func('do_replace_image_parts_json', d)
+}
+
+do_replace_image_parts_json() {
+        bbnote "replace common image_parts.json with grandcanyon.json"
+        mv -vf ${S}/image_parts.json ${S}/image_parts-generic.json
+        mv -vf ${S}/grandcanyon.json ${S}/image_parts.json
+}
 
 CXXFLAGS += " -DBIC_SUPPORT "
 DEPENDS += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common libexp "

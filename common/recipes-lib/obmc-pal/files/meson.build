@@ -26,6 +26,7 @@ pal_sources = [
 # Add additional library dependencies.
 pal_deps = [
     cc.find_library('rt'),
+    cc.find_library('m'),
     dependency('libipmb'),
     dependency('libipmi'),
     dependency('libkv'),

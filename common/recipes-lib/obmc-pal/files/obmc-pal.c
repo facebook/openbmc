@@ -32,6 +32,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
+#include <math.h>
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
@@ -2668,3 +2669,41 @@ pal_teardown_exp_uart_bridging(void) {
   return CC_NOT_SUPP_IN_CURR_STATE;
 }
 
+int __attribute__((weak))
+pal_convert_sensor_reading(sdr_full_t *sdr, int in_value, float *out_value) {
+  uint8_t m_lsb = 0, m_msb = 0;
+  uint16_t m = 0;
+  uint8_t b_lsb = 0, b_msb = 0;
+  uint16_t b = 0;
+  int8_t b_exp = 0, r_exp = 0;
+
+  if (sdr == NULL || out_value == NULL) {
+    syslog(LOG_ERR, "%s() Failed to convert sensor reading: input parameter is NULL", __func__);
+    return -1;
+  }
+
+  m_lsb = sdr->m_val;
+  m_msb = sdr->m_tolerance >> 6;
+  m = (m_msb << 8) | m_lsb;
+
+  b_lsb = sdr->b_val;
+  b_msb = sdr->b_accuracy >> 6;
+  b = (b_msb << 8) | b_lsb;
+
+  // exponents are 2's complement 4-bit number
+  b_exp = sdr->rb_exp & 0xF;
+  if (b_exp > 7) {
+    b_exp = (~b_exp + 1) & 0xF;
+    b_exp = -b_exp;
+  }
+
+  r_exp = (sdr->rb_exp >> 4) & 0xF;
+  if (r_exp > 7) {
+    r_exp = (~r_exp + 1) & 0xF;
+    r_exp = -r_exp;
+  }
+
+  *out_value = (float)(((m * in_value) + (b * pow(10, b_exp))) * (pow(10, r_exp)));
+
+  return 0;
+}

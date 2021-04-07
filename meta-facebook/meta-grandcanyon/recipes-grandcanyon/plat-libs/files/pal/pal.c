@@ -120,6 +120,13 @@ struct pal_key_cfg {
   {"iocm_ioc_fw_recovery", "0", NULL},
   {"ntp_server", "", NULL},
   {"server_sel_error", "1", NULL},
+  {"server_sensor_health", "1", NULL},
+  {"uic_sensor_health", "1", NULL},
+  {"dpb_sensor_health", "1", NULL},
+  {"scc_sensor_health", "1", NULL},
+  {"nic_sensor_health", "1", NULL},
+  {"e1s_iocm_sensor_health", "1", NULL},
+  {"bmc_health", "1", NULL},
   /* Add more Keys here */
   {NULL, NULL, NULL} /* This is the last key of the list */
 };
@@ -801,7 +808,7 @@ pal_set_status_led(uint8_t fru, status_led_color color) {
 
   switch (color) {
   case STATUS_LED_OFF:
-    val_yellow = GPIO_VALUE_LOW;
+    val_yellow = GPIO_VALUE_HIGH;
     val_blue   = GPIO_VALUE_LOW;
     break;
   case STATUS_LED_BLUE:
@@ -809,7 +816,7 @@ pal_set_status_led(uint8_t fru, status_led_color color) {
     val_blue   = GPIO_VALUE_HIGH;
     break;
   case STATUS_LED_YELLOW:
-    val_yellow = GPIO_VALUE_HIGH;
+    val_yellow = GPIO_VALUE_LOW;
     val_blue   = GPIO_VALUE_LOW;
     break;
   default:
@@ -2359,6 +2366,126 @@ pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel) {
   return PAL_EOK;
 }
 
+int
+pal_get_fru_health(uint8_t fru, uint8_t *value) {
+  char val[MAX_VALUE_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  int ret = 0;
+  
+  if (value == NULL) {
+    syslog(LOG_WARNING, "%s(): failed to get fru health because the parameter: *value is NULL", __func__);
+  }
+  
+  memset(key, 0, sizeof(key));
+  memset(val, 0, sizeof(val));
+
+  switch (fru) {
+    case FRU_SERVER:
+      snprintf(key, sizeof(key), "server_sensor_health");
+      break;
+    case FRU_UIC:
+      snprintf(key, sizeof(key), "uic_sensor_health");
+      break;
+    case FRU_DPB:
+      snprintf(key, sizeof(key), "dpb_sensor_health");
+      break;
+    case FRU_SCC:
+      snprintf(key, sizeof(key), "scc_sensor_health");
+      break;
+    case FRU_NIC:
+      snprintf(key, sizeof(key), "nic_sensor_health");
+      break;
+    case FRU_E1S_IOCM:
+      snprintf(key, sizeof(key), "e1s_iocm_sensor_health");
+      break;
+      
+    case FRU_FAN0:
+    case FRU_FAN1:
+    case FRU_FAN2:
+    case FRU_FAN3:
+    case FRU_BMC:
+      return ERR_SENSOR_NA;
+
+    default:
+      return -1;
+  }
+
+  ret = pal_get_key_value(key, val);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): failed to get the fru health because get the value of key: %s failed", __func__, key);
+    return ret;
+  }
+
+  *value = atoi(val);
+
+  // Check server error SEL
+  memset(key, 0, sizeof(key));
+  memset(val, 0, sizeof(val));
+  
+  if (fru == FRU_SERVER) {
+    snprintf(key, sizeof(key), "server_sel_error");
+    
+  } else {
+    return 0;
+  }
+
+  ret = pal_get_key_value(key, val);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): failed to get the fru health because get the value of key: %s failed", __func__, key);
+    return ret;
+  }
+
+  *value = *value & atoi(val);
+  
+  return 0;
+}
+
+int
+pal_set_sensor_health(uint8_t fru, uint8_t value) {
+  char val[MAX_VALUE_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  int ret = 0;
+  
+  memset(key, 0, sizeof(key));
+  memset(val, 0, sizeof(val));
+
+  switch (fru) {
+    case FRU_SERVER:
+      snprintf(key, sizeof(key), "server_sensor_health");
+      break;
+    case FRU_UIC:
+      snprintf(key, sizeof(key), "uic_sensor_health");
+      break;
+    case FRU_DPB:
+      snprintf(key, sizeof(key), "dpb_sensor_health");
+      break;
+    case FRU_SCC:
+      snprintf(key, sizeof(key), "scc_sensor_health");
+      break;
+    case FRU_NIC:
+      snprintf(key, sizeof(key), "nic_sensor_health");
+      break;
+    case FRU_E1S_IOCM:
+      snprintf(key, sizeof(key), "e1s_iocm_sensor_health");
+      break;
+
+    default:
+      return -1;
+  }
+
+  if (value == FRU_STATUS_BAD) {
+    snprintf(val, sizeof(val), "%d", FRU_STATUS_BAD);
+  } else {
+    snprintf(val, sizeof(val), "%d", FRU_STATUS_GOOD);
+  }
+  
+  ret = pal_set_key_value(key, val);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): failed to set sensor health because set key: %s value: %s failed", __func__, key, val);
+  }
+  return ret;
+}
+
 void
 pal_log_clear(char *fru) {
   char val[MAX_VALUE_LEN] = {0};
@@ -2372,16 +2499,87 @@ pal_log_clear(char *fru) {
   snprintf(val, sizeof(val), "%d", FRU_STATUS_GOOD);
 
   if (strcmp(fru, "server") == 0) {
+    ret = pal_set_key_value("server_sensor_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear server seneor health value", __func__);
+    }
+    
     ret = pal_set_key_value("server_sel_error", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear server sel error value", __func__);
     }
     sel_error_record = 0;
+    
+  } else if (strcmp(fru, "uic") == 0) {
+    ret = pal_set_key_value("uic_sensor_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear uic seneor health value", __func__);
+    }
+    
+  } else if (strcmp(fru, "dpb") == 0) {
+    ret = pal_set_key_value("dpb_sensor_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear dpb seneor health value", __func__);
+    }
+    
+  } else if (strcmp(fru, "scc") == 0) {
+    ret = pal_set_key_value("scc_sensor_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear the scc seneor health value", __func__);
+    }
+    
+  } else if (strcmp(fru, "nic") == 0) {
+    ret = pal_set_key_value("nic_sensor_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear the nic seneor health value", __func__);
+    }
+    
+  } else if ((strcmp(fru, "iocm") == 0) || (strcmp(fru, "e1s_iocm") == 0)) {
+    ret = pal_set_key_value("e1s_iocm_sensor_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear the e1s/ iocm seneor health value", __func__);
+    }
+    
   } else if (strcmp(fru, "all") == 0) {
+    ret = pal_set_key_value("server_sensor_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear server seneor health value", __func__);
+    }
+    
     ret = pal_set_key_value("server_sel_error", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear server sel error value", __func__);
     }
     sel_error_record = 0;
+    
+    ret = pal_set_key_value("uic_sensor_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear uic seneor health value", __func__);
+    }
+    
+    ret = pal_set_key_value("dpb_sensor_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear dpb seneor health value", __func__);
+    }
+    
+    ret = pal_set_key_value("scc_sensor_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear scc seneor health value", __func__);
+    }
+    
+    ret = pal_set_key_value("nic_sensor_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear nic seneor health value", __func__);
+    }
+    
+    ret = pal_set_key_value("e1s_iocm_sensor_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear e1s/iocm seneor health value", __func__);
+    }
+    
+    ret = pal_set_key_value("bmc_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear bmc health value", __func__);
+    }
   }
 }

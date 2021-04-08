@@ -62,12 +62,14 @@ env:
     - BOARD=cmm
     - BOARD=emeraldpools
     - BOARD=clearcreek
+    - BOARD=cloudripper
     - BOARD=elbert
     - BOARD=fbgp2
     - BOARD=fbtp
     - BOARD=fbttn
     - BOARD=fby2
     - BOARD=fby3
+    - BOARD=fuji
     - BOARD=galaxy100
     - BOARD=grandcanyon
     - BOARD=lightning

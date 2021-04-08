@@ -4,11 +4,28 @@ PROGRAM=$0
 PECI_UTIL="/usr/local/bin/peci-util"
 CMD_DIR="/etc/peci"
 
+let CPU_ID=($1 - 48)
+DUMP_FILE=crashdump_p"$CPU_ID"_coreid
+MODE=$(($(/usr/bin/kv get mb_skt) >> 1))   #2S:MODE=2, 4S:MODE=1
+if [ "$MODE" -eq 1 ]; then
+  let MAX_CPU=4;
+else
+  let MAX_CPU=2;
+fi
+
 function print_help_msg {
   echo "$PROGRAM 48 coreid  ==> for CPU 1 CoreID"
   echo "$PROGRAM 49 coreid  ==> for CPU 2 CoreID"
+  if [[ "$MODE" -eq 1 ]]; then
+    echo "$PROGRAM 50 coreid  ==> for CPU 3 CoreID"
+    echo "$PROGRAM 51 coreid  ==> for CPU 4 CoreID"
+  fi
   echo "$PROGRAM 48 msr     ==> for CPU 1 MSR"
   echo "$PROGRAM 49 msr     ==> for CPU 2 MSR"
+  if [[ "$MODE" -eq 1 ]]; then
+    echo "$PROGRAM 50 msr     ==> for CPU 3 MSR"
+    echo "$PROGRAM 51 msr     ==> for CPU 4 MSR"
+  fi
   echo "$PROGRAM pcie       ==> for PCIe"
   echo "$PROGRAM dwr        ==> for DWR check"
 }
@@ -146,7 +163,7 @@ if [ "$#" -ne 2 ]; then
 
   exit 1
 
-elif [ "$1" -ne 48 ] && [ "$1" -ne 49 ]; then
+elif [ "$CPU_ID" -ge "$MAX_CPU" ] || [ "$CPU_ID" -lt 0 ]; then
 
   print_help_msg
 
@@ -154,26 +171,20 @@ elif [ "$1" -ne 48 ] && [ "$1" -ne 49 ]; then
 
 elif [ "$2" = "coreid" ]; then
 
-  if [ "$1" -eq 48 ]; then
-    [ -r $CMD_DIR/crashdump_p0_coreid ] && \
-      cat $CMD_DIR/crashdump_p0_coreid | execute_cmd
-  elif [ "$1" -eq 49 ]; then
-    [ -r $CMD_DIR/crashdump_p1_coreid ] && \
-      cat $CMD_DIR/crashdump_p1_coreid | execute_cmd
+  if [ -r "$CMD_DIR/$DUMP_FILE" ]; then
+    cat $CMD_DIR/$DUMP_FILE | execute_cmd
+  else
+    echo "$CMD_DIR/$DUMP_FILE" not exist
   fi
-
   exit 0
 
 elif [ "$2" = "msr" ]; then
 
-  if [ "$1" -eq 48 ]; then
-    [ -r $CMD_DIR/crashdump_p0_msr ] && \
-      cat $CMD_DIR/crashdump_p0_msr | execute_cmd
-  elif [ "$1" -eq 49 ]; then
-    [ -r $CMD_DIR/crashdump_p1_msr ] && \
-      cat $CMD_DIR/crashdump_p1_msr | execute_cmd
+  if [ -r "$CMD_DIR/$DUMP_FILE" ]; then
+    cat $CMD_DIR/$DUMP_FILE | execute_cmd
+  else
+    echo "$CMD_DIR/$DUMP_FILE" not exist
   fi
-
   exit 0
 
 fi

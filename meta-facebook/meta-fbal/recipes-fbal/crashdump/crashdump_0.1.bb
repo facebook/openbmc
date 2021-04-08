@@ -25,6 +25,10 @@ SRC_URI += "file://crashdump_p0_coreid \
             file://crashdump_p0_msr \
             file://crashdump_p1_coreid \
             file://crashdump_p1_msr \
+            file://crashdump_p2_coreid \
+            file://crashdump_p2_msr \
+            file://crashdump_p3_coreid \
+            file://crashdump_p3_msr \
             file://crashdump_pcie \
             file://crashdump_pcie_bus \
             file://autodump.sh \
@@ -41,6 +45,10 @@ do_install_append() {
   install -m 644 crashdump_p0_msr ${D}${sysconfdir}/peci/crashdump_p0_msr
   install -m 644 crashdump_p1_coreid ${D}${sysconfdir}/peci/crashdump_p1_coreid
   install -m 644 crashdump_p1_msr ${D}${sysconfdir}/peci/crashdump_p1_msr
+  install -m 644 crashdump_p2_coreid ${D}${sysconfdir}/peci/crashdump_p2_coreid
+  install -m 644 crashdump_p2_msr ${D}${sysconfdir}/peci/crashdump_p2_msr
+  install -m 644 crashdump_p3_coreid ${D}${sysconfdir}/peci/crashdump_p3_coreid
+  install -m 644 crashdump_p3_msr ${D}${sysconfdir}/peci/crashdump_p3_msr
   install -m 644 crashdump_pcie ${D}${sysconfdir}/peci/crashdump_pcie
   install -m 644 crashdump_pcie_bus ${D}${sysconfdir}/peci/crashdump_pcie_bus
 

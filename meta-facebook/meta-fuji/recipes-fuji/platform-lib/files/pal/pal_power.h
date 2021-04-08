@@ -33,12 +33,14 @@ extern "C" {
 #define SCM_COM_PWR_BTN      I2C_SYSFS_DEV_ENTRY(2-0035, cb_pwr_btn_n)
 #define SCM_COM_PWR_ENBLE    I2C_SYSFS_DEV_ENTRY(2-0035, com_exp_pwr_enable)
 #define SCM_COM_PWR_FORCEOFF I2C_SYSFS_DEV_ENTRY(2-0035, com_exp_pwr_force_off)
+#define SCM_COM_PWR_CYCLE    I2C_SYSFS_DEV_ENTRY(2-0035, com_exp_pwr_cycle)
 #define SCM_COM_RST_BTN      I2C_SYSFS_DEV_ENTRY(2-0035, sys_reset_n)
 
 bool is_server_on(void);
 int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
 void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
+int pal_chassis_control(uint8_t slot, uint8_t *req_data, uint8_t req_len);
 uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
 #ifdef __cplusplus
 } // extern "C"

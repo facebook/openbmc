@@ -229,8 +229,9 @@ class SystemConfig {
     } else {
       dual_flash = false;
     }
+
+    int vboot = system.vboot_support_status();
     if (dual_flash) {
-      int vboot = system.vboot_support_status();
       if (vboot != VBOOT_NO_SUPPORT)  {
         // If verified boot is enabled, we should
         // have the romx partition
@@ -259,6 +260,10 @@ class SystemConfig {
       if (pal_is_pfr_active() == PFR_ACTIVE) {
         static PfrBmcComponent bmc("bmc", "bmc", "stg-bmc");
         static PfrBmcComponent bmc_rc("bmc", "bmc_rc", "stg-bmc", "rc");
+      } else if (vboot != VBOOT_NO_SUPPORT) {
+        // the vboot status "VBOOT_HW_ENFORCE" cannot be used for judgement here.
+        // Therefore, create an unlocked flash component.
+        static BmcComponent rom("bmc", "rom", "flash0", "u-bootro");
       } else {
         static BmcComponent bmc("bmc", "bmc", "flash0", "u-boot");
       }

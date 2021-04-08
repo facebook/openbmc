@@ -85,8 +85,8 @@ def is_dev_prsnt(filename):
             return 1
         return 0
 
-    except KeyOperationFailure:
-        return 0
+    except:
+        return 1
                               
 def sensor_valid_check(board, sname, check_name, attribute):
     cmd = ""

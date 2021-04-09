@@ -202,6 +202,7 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
         "u-boot version",
         "vboot",
         "MTD Parts",
+        "Secondary Boot Triggered",
     ]
 
     # /api

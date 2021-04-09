@@ -85,6 +85,7 @@ SRC_URI = "file://rest.py \
            file://redfish_account_service.py \
            file://redfish_chassis.py \
            file://redfish_managers.py \
+           file://boot_source.py \
           "
 
 S = "${WORKDIR}"

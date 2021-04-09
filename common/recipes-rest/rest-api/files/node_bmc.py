@@ -28,9 +28,9 @@ from uuid import getnode as get_mac
 
 import kv
 import rest_pal_legacy
+from boot_source import is_boot_from_secondary
 from node import node
 from vboot import get_vboot_status
-
 
 PROC_MTD_PATH = "/proc/mtd"
 
@@ -327,6 +327,9 @@ class bmcNode(node):
         asd_status = bool(
             Popen("ps | grep -i [a]sd", shell=True, stdout=PIPE).stdout.read()
         )
+
+        boot_from_secondary = is_boot_from_secondary()
+
         vboot_info = get_vboot_status()
 
         used_fd_count = read_file_contents("/proc/sys/fs/file-nr")[0].split()[0]
@@ -352,6 +355,7 @@ class bmcNode(node):
             "SPI0 Vendor": spi0_vendor,
             "SPI1 Vendor": spi1_vendor,
             "At-Scale-Debug Running": asd_status,
+            "Secondary Boot Triggered": boot_from_secondary,
             "vboot": vboot_info,
             "load-1": load_avg[0],
             "load-5": load_avg[1],

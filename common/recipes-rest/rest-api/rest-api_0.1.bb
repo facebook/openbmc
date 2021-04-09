@@ -81,6 +81,7 @@ SRC_URI = "file://setup-rest-api.sh \
            file://boardroutes.py \
            file://common_setup_routes.py \
            file://setup_plat_routes.py \
+           file://boot_source.py \
            file://restapi.service \
           "
 
@@ -99,6 +100,7 @@ binfiles = "acl_config.py\
             node_bmc.py \
             rest.py \
             vboot.py \
+            boot_source.py \
            "
 
 binfiles1 = "setup-rest-api.sh \

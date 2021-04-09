@@ -48,7 +48,7 @@ class DBusFruServiceInterface: public DBusInterfaceBase {
     static void methodCallBack(GDBusConnection*       connection,
                                const char*            sender,
                                const char*            objectPath,
-                               const char*            name,
+                               const char*            interfaceName,
                                const char*            methodName,
                                GVariant*              parameters,
                                GDBusMethodInvocation* invocation,

@@ -346,7 +346,7 @@ send_bic_runtime_image_data(int fd, int i2cfd, int file_size, const uint8_t byte
 }
 
 static int
-update_bic(int fd, int file_size) {
+update_bic(int fd, int file_size, bool force) {
   int ret = -1;
   int i2cfd = 0;
   int i = 0;
@@ -464,7 +464,7 @@ update_bic(int fd, int file_size) {
 
   //step4 - enable bic update
   ret = enable_bic_update();
-  if (ret < 0) {
+  if ((force == false) && (ret < 0)) {
     syslog(LOG_WARNING, "%s() Failed to enable the bic update", __func__);
     goto exit;
   }
@@ -624,7 +624,7 @@ update_bic_runtime_fw(uint8_t comp, char *path, uint8_t force) {
     ret = -1;
     goto exit;
   }
-  ret = update_bic(fd, file_size);
+  ret = update_bic(fd, file_size, force);
 
 exit:
   if (fd >= 0) {

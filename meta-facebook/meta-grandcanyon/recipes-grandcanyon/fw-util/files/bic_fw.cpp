@@ -48,7 +48,9 @@ int BicFwComponent::update_internal(string image, bool force) {
   int ret = 0;
 
   try {
-    server.ready();
+    if (force == false) {
+      server.ready();
+    }
     ret = bic_update_fw(FRU_SERVER, fw_comp, (char *)image.c_str(), (force) ? FORCE_UPDATE_SET : FORCE_UPDATE_UNSET);
 
     if (ret != BIC_FW_UPDATE_SUCCESS) {

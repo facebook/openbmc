@@ -30,6 +30,7 @@ SRC_URI = "file://sol-util \
            file://setup-platform.sh \
            file://check_eth0_ipv4.sh \
            file://sync_date.sh \
+           file://check_bmc_ready.sh \
           "
 
 pkgdir = "utils"
@@ -37,7 +38,7 @@ pkgdir = "utils"
 S = "${WORKDIR}"
 
 # the tools for BMC will be installed in the image
-binfiles = " sol-util power-on.sh check_pal_sku.sh sync_date.sh "
+binfiles = " sol-util power-on.sh check_pal_sku.sh sync_date.sh check_bmc_ready.sh "
 
 DEPENDS_append = "update-rc.d-native"
 RDEPENDS_${PN} += "bash python3 gpiocli "
@@ -69,6 +70,10 @@ do_install() {
   # install check_eth0_ipv4.sh
   install -m 755 check_eth0_ipv4.sh ${D}${sysconfdir}/init.d/check_eth0_ipv4.sh
   update-rc.d -r ${D} check_eth0_ipv4.sh start 71 5 .
+  
+  # install check_bmc_ready.sh
+  install -m 755 check_bmc_ready.sh ${D}${sysconfdir}/init.d/check_bmc_ready.sh
+  update-rc.d -r ${D} check_bmc_ready.sh start 100 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

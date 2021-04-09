@@ -464,12 +464,36 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 }
 
 int
+pal_get_tach_cnt() {
+  uint8_t type = 0;
+
+  fbgc_common_get_chassis_type(&type);
+  if (type == CHASSIS_TYPE5) {
+    return DUAL_FAN_CNT;
+  } else if (type == CHASSIS_TYPE7) {
+    return SINGLE_FAN_CNT;
+  } else {
+    return UNKNOWN_FAN_CNT;
+  }
+}
+
+int
 pal_get_fan_name(uint8_t fan_id, char *name) {
-  if (fan_id >= pal_tach_cnt) {
-    syslog(LOG_WARNING, "%s: Invalid fan index: %d", __func__, fan_id);
+  int fan_cnt = pal_get_tach_cnt();
+
+  if (fan_id >= fan_cnt) {
+    syslog(LOG_WARNING, "%s: Invalid fan index: %d, fan count: %d", __func__, fan_id, fan_cnt);
     return -1;
   }
-  snprintf(name, MAX_FAN_NAME_LEN, "Fan %d %s", (fan_id / 2), fan_id % 2 == 0 ? "Front" : "Rear");
+
+  if (fan_cnt == SINGLE_FAN_CNT) {
+    snprintf(name, MAX_FAN_NAME_LEN, "Fan %d %s", fan_id, "Front");
+  } else if (fan_cnt == DUAL_FAN_CNT) {
+    snprintf(name, MAX_FAN_NAME_LEN, "Fan %d %s", (fan_id / 2), fan_id % 2 == 0 ? "Front" : "Rear");
+  } else {
+    syslog(LOG_WARNING, "%s: Unknown fan count", __func__);
+    return -1;
+  }
 
   return 0;
 }
@@ -550,7 +574,7 @@ pal_get_pwm_value(uint8_t fan_id, uint8_t *pwm) {
   int ret = 0;
   int zone = 0;
 
-  if (fan_id >= pal_tach_cnt) {
+  if (fan_id >= pal_get_tach_cnt()) {
     syslog(LOG_WARNING, "%s: Invalid fan index: %d", __func__, fan_id);
     return -1;
   }

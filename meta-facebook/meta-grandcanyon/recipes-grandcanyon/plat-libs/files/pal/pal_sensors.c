@@ -1236,6 +1236,17 @@ static int
 expander_sensor_read_cache(uint8_t fru, uint8_t sensor_num, char *key, void *value) {
   char cache_value[MAX_VALUE_LEN] = {0};
   int ret = 0;
+  uint8_t chassis_type = 0;
+
+  if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get chassis type\n", __func__);
+    return ERR_UNKNOWN_FRU;
+  }
+
+  if (chassis_type == CHASSIS_TYPE7 && fru == FRU_DPB &&
+     (sensor_num == FAN_0_REAR || sensor_num == FAN_1_REAR || sensor_num == FAN_2_REAR || sensor_num == FAN_3_REAR)) {
+    return ERR_SENSOR_NA;
+  }
 
   ret = kv_get(key, cache_value, NULL, 0);
   if (ret != 0) {
@@ -1487,12 +1498,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   case FRU_DPB:
   case FRU_SCC:
     if (0 != (ret = expander_sensor_check(fru, sensor_num))) {
-       syslog(LOG_WARNING, "%s() expander_sensor_check error, ret:%d name\n", __func__, ret);
        break;
     }
-    if (0 != (ret = expander_sensor_read_cache(fru, sensor_num, key, value))) {
-       syslog(LOG_WARNING, "%s() expander_sensor_read_cache error, ret:%d name\n", __func__, ret);
-    }
+    ret = expander_sensor_read_cache(fru, sensor_num, key, value);
     break;
   case FRU_NIC:
     id = nic_sensor_map[sensor_num].id;
@@ -1750,14 +1758,27 @@ int
 pal_get_fan_speed(uint8_t fan, int *rpm) {
   int ret = 0;
   float value = 0;
+  int fan_cnt = pal_get_tach_cnt();
 
   if (rpm == NULL) {
     syslog(LOG_WARNING, "%s() pointer \"rpm\" is NULL\n", __func__);
     return -1;
   }
 
+  if (fan >= fan_cnt) {
+    syslog(LOG_WARNING, "%s: Invalid fan index: %d, fan count: %d", __func__, fan, fan_cnt);
+    return -1;
+  }
+
   // Fan value have to be fetch real value from DPB, so have to use pal_sensor_read_raw to force updating cache value
-  ret = pal_sensor_read_raw(FRU_DPB, FAN_0_FRONT + fan, &value);
+  if (fan_cnt == SINGLE_FAN_CNT) {
+    ret = pal_sensor_read_raw(FRU_DPB, FAN_0_FRONT + (fan * 2), &value);
+  } else if (fan_cnt == DUAL_FAN_CNT) {
+    ret = pal_sensor_read_raw(FRU_DPB, FAN_0_FRONT + fan, &value);
+  } else {
+    syslog(LOG_WARNING, "%s: Unknown fan count", __func__);
+    return -1;
+  }
 
   if (ret == 0) {
     *rpm = (int) value;

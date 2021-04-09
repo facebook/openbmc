@@ -85,45 +85,21 @@
       }
     },
     "1": {
-      "label" : "0 Rear",
+      "label" : "1 Front",
       "read_source" : {
         "util" : "/usr/local/bin/fan-util --get 1"
       }
     },
     "2": {
-      "label" : "1 Front",
+      "label" : "2 Front",
       "read_source" : {
         "util" : "/usr/local/bin/fan-util --get 2"
       }
     },
     "3": {
-      "label" : "1 Rear",
-      "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 3"
-      }
-    },
-    "4": {
-      "label" : "2 Front",
-      "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 4"
-      }
-    },
-    "5": {
-      "label" : "2 Rear",
-      "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 5"
-      }
-    },
-    "6": {
       "label" : "3 Front",
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 6"
-      }
-    },
-    "7": {
-      "label" : "3 Rear",
-      "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 7"
+        "util" : "/usr/local/bin/fan-util --get 3"
       }
     }
   },

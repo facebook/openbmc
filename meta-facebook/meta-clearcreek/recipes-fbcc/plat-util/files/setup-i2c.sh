@@ -60,26 +60,46 @@ i2cset -y -f 21 0x45 5 0xC800 w
 i2cset -y -f 22 0x45 5 0xC800 w
 
 #Check carrier#0 type
+retry=0
+while [ $retry -lt 3 ]
+do
 ipmitool raw 0x6 0x52 0x7 0xe0 0 01 0x80
 carrier0=`ipmitool raw 0x6 0x52 0x7 0x2e 0x1 0x0 0x5`
 if [ $carrier0 = "cc" ]; then
     $KVSET_CMD set "carrier_0" "m.2"
     i2cset -y -f 21 0x77 0x2 0xFF
+    echo "Carrier#0 Type is m.2"
+    break
 elif [ $carrier0 = "44" ]; then
     $KVSET_CMD set "carrier_0" "e1.s"
     i2cset -y -f 21 0x77 0x02 0x00
+    echo "Carrier#0 Type is e1.s"
+    break
+else
+    retry=$(($retry+1))
 fi
+done
 
 #Check carrier#1 type
+retry=0
+while [ $retry -lt 3 ]
+do
 ipmitool raw 0x6 0x52 0x7 0xe0 0 01 0x80
 carrier1=`ipmitool raw 0x6 0x52 0x7 0x2e 0x1 0x0 0x6`
 if [ $carrier1 = "cc" ]; then
     $KVSET_CMD set "carrier_1" "m.2"
     i2cset -y -f 22 0x77 0x2 0xFF
+    echo "Carrier#1 Type is m.2"
+    break
 elif [ $carrier1 = "44" ]; then
     $KVSET_CMD set "carrier_1" "e1.s"
     i2cset -y -f 22 0x77 0x02 0x00
+    echo "Carrier#1 Type is e1.s"
+    break
+else
+    retry=$(($retry+1))
 fi
+done
 
 # Mark driver loaded
 echo > /tmp/driver_probed

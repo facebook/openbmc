@@ -58,6 +58,7 @@ extern "C" {
 #define MAX(a , b)      ((a) > (b) ? (a) : (b))
 
 #define SERVER_SENSOR_LOCK "/var/run/sensor_read_server.lock"
+#define POWER_UTIL_LOCK "/var/run/power-util_%d.lock"
 
 #define MAX_PATH_LEN 128  // include the string terminal
 #define E1S0_IOCM_PRESENT_BIT   (1 << 0)

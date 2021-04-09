@@ -36,6 +36,7 @@
 #include <facebook/fbgc_gpio.h>
 
 #define MONITOR_FRUS_PRESENT_STATUS_INTERVAL    60 // seconds
+#define MONITOR_SERVER_POWER_STATUS_INTERVAL    1  // seconds
 
 #define E1S_IOCM_SLOT_NUM 2
 
@@ -330,6 +331,79 @@ fru_missing_monitor() {
   pthread_exit(NULL);
 }
 
+static void *
+server_power_monitor() {
+  char pwr_util_lock_file[MAX_FILE_PATH] = {0}; 
+  uint8_t server_present = FRU_PRESENT;
+  uint8_t server_pre_pwr_status = -1, server_cur_pwr_status = -1;
+  uint8_t server_12v_status = 0;
+  int ret = 0;
+  FILE *fp = NULL;
+  
+  memset(pwr_util_lock_file, 0, sizeof(pwr_util_lock_file));
+  snprintf(pwr_util_lock_file, sizeof(pwr_util_lock_file), POWER_UTIL_LOCK, FRU_SERVER);
+  
+  // Get server power status via GPIO PERST
+  server_pre_pwr_status = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_PCIE_COMP_UIC_RST_N));
+  
+  while(1) {
+    if (pal_is_fru_prsnt(FRU_SERVER, &server_present) < 0) {
+      syslog(LOG_WARNING, "%s(): fail to get fru: %d present status\n", __func__, FRU_SERVER);
+    } else {
+      // if server is present, monitor server power status
+      if (server_present == FRU_PRESENT) {
+        server_cur_pwr_status = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_PCIE_COMP_UIC_RST_N));
+        
+        //*****Server power from on change to off
+        if ((server_pre_pwr_status == SERVER_POWER_ON) && (server_cur_pwr_status == SERVER_POWER_OFF)) {
+          // Check server 12V power status, avoid changing the lps due to 12V-off
+          ret = pal_get_server_12v_power(&server_12v_status);
+          if ((ret >= 0) && (server_12v_status == SERVER_12V_ON)) {
+            // Both server power-on and reset, BIOS sends a 13~14ms PERST# low pulse to PCIe devices
+            // To filter out the low pulse to prevent the false power status, add recheck in 50ms
+            msleep(50);
+            server_cur_pwr_status = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_PCIE_COMP_UIC_RST_N));
+            if (server_cur_pwr_status == SERVER_POWER_ON) {
+              //The signal is not a real power-off signal, it's a power on PERST# pulse
+              continue;
+            }
+            
+            // Change lps if power-util is NOT running.
+            fp = fopen(pwr_util_lock_file, "r");
+            if (fp == NULL) { // File is absent, means power-util is not running
+              pal_set_last_pwr_state(FRU_SERVER, "off");
+            } else {
+              fclose(fp);
+            }
+            syslog(LOG_CRIT, "FRU: %d, Server is powered off", FRU_SERVER);  
+          }
+        
+        //*****Server power from off change to on
+        } else if ((server_pre_pwr_status == SERVER_POWER_OFF) && (server_cur_pwr_status == SERVER_POWER_ON)) {
+          ret = pal_get_server_12v_power(&server_12v_status);
+          if ((ret >= 0) && (server_12v_status == SERVER_12V_ON)) {
+            fp = fopen(pwr_util_lock_file, "r");
+            if (fp == NULL) {
+              pal_set_last_pwr_state(FRU_SERVER, "on");
+            } else {
+              fclose(fp);
+            }
+            syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SERVER); 
+          } else {
+            server_cur_pwr_status = SERVER_POWER_OFF;
+          }
+        }
+        
+        server_pre_pwr_status = server_cur_pwr_status;
+      } // server present end
+    }
+    
+    sleep(MONITOR_SERVER_POWER_STATUS_INTERVAL);
+  } // while loop end
+  
+  pthread_exit(NULL);
+}
+
 static void
 print_usage() {
   printf("Usage: gpiod [ %s ]\n", pal_server_list);
@@ -338,6 +412,8 @@ print_usage() {
 static void
 run_gpiod(int argc, char **argv) {
   pthread_t tid_fru_missing_monitor;
+  pthread_t tid_server_power_monitor;
+  int ret_fru_missing = 0, ret_server_power = 0;
   
   if (argv == NULL) {
     syslog(LOG_ERR, "fail to execute gpiod because NULL parameter: **argv\n");
@@ -347,9 +423,22 @@ run_gpiod(int argc, char **argv) {
   // Monitor fru missing by polling (server, SCC, E1.S, IOCM)
   if (pthread_create(&tid_fru_missing_monitor, NULL, fru_missing_monitor, NULL) < 0) {
     syslog(LOG_ERR, "fail to creat thread for monitor fru missing\n");
+    ret_fru_missing = -1;
   }
   
-  pthread_join(tid_fru_missing_monitor, NULL);
+  // Monitor server power by polling
+  if (pthread_create(&tid_server_power_monitor, NULL, server_power_monitor, NULL) < 0) {
+    syslog(LOG_ERR, "fail to creat thread for monitor server host\n");
+    ret_server_power = -1;
+  }
+  
+  if (ret_fru_missing == 0) {
+    pthread_join(tid_fru_missing_monitor, NULL);
+  }
+  
+  if (ret_server_power == 0) {
+    pthread_join(tid_server_power_monitor, NULL);
+  }
 }
  
 int

@@ -118,5 +118,6 @@ bool is_device_ready(void);
 int pal_get_platform_id(uint8_t *id);
 int pal_check_carrier_type(int index);
 int pal_set_id_led(uint8_t status);
+int pal_set_amber_led(char *carrier, char* dev_num, char* value);
 
 #endif /* __PAL_H__ */

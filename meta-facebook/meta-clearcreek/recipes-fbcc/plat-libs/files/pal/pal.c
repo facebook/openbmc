@@ -991,6 +991,202 @@ void pal_update_ts_sled()
   pal_set_key_value(key, tstr);
 }
 
+int pal_set_carrier_board_mux(uint8_t bus) {
+  int ret;
+  int fd;
+  char fn[32];
+  uint8_t retry;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t mux_addr = 0xE6;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if(fd < 0) {
+    syslog(LOG_WARNING,"[%s]Cannot open bus %d", __func__, bus);
+    ret = PAL_ENOTSUP;
+    goto error_exit;
+  }
+
+  tbuf[0] = 0x80;
+
+  retry = MAX_READ_RETRY;
+  while(retry > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, mux_addr, tbuf, 1, rbuf, 0);
+    if (PAL_EOK == ret) {
+      break;
+    }
+
+    msleep(50);
+    retry--;
+  }
+
+  if(ret < 0) {
+    syslog(LOG_WARNING,"[%s] Cannot set carrier board mux on bus %d", __func__, bus);
+    goto error_exit;
+  }
+
+error_exit:
+  if (fd > 0) {
+    close(fd);
+  }
+
+  return ret;
+}
+
+int pal_set_ioexp_direction(uint8_t bus, char* dirction) {
+  int ret;
+  int fd;
+  char fn[32];
+  uint8_t retry;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t ioexp_addr = 0xE8;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if(fd < 0) {
+    syslog(LOG_WARNING,"[%s]Cannot open bus %d", __func__, bus);
+    ret = PAL_ENOTSUP;
+    goto error_exit;
+  }
+
+  tbuf[0] = 0x03;
+  if(!strcmp(dirction, "out")) {
+    tbuf[1] = 0x00;
+  } else {
+    tbuf[1] = 0xff;
+  }
+
+  retry = MAX_READ_RETRY;
+  while(retry > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, ioexp_addr, tbuf, 2, rbuf, 0);
+    if (PAL_EOK == ret) {
+      break;
+    }
+
+    msleep(50);
+    retry--;
+  }
+
+  if(ret < 0) {
+    syslog(LOG_WARNING,"[%s] Cannot set ioexp direction on bus %d", __func__, bus);
+    goto error_exit;
+  }
+
+error_exit:
+  if (fd > 0) {
+    close(fd);
+  }
+
+  return ret;
+}
+
+uint8_t pal_setup_amber_reg_value(uint8_t bus, char* dev_num, char* value) {
+  uint8_t dev_index = atoi(dev_num);
+  int ret;
+  int fd;
+  char fn[32];
+  uint8_t retry;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t ioexp_addr = 0xE8;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if(fd < 0) {
+    syslog(LOG_WARNING,"[%s]Cannot open bus %d", __func__, bus);
+    ret = PAL_ENOTSUP;
+    goto error_exit;
+  }
+  tbuf[0] = 0x07;
+  retry = MAX_READ_RETRY;
+  while(retry > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, ioexp_addr, tbuf, 1, rbuf, 1);
+    if (PAL_EOK == ret) {
+      break;
+    }
+
+    msleep(50);
+    retry--;
+  }
+
+  if(ret < 0) {
+    syslog(LOG_WARNING,"[%s] Cannot read amber reg on bus %d", __func__, bus);
+    goto error_exit;
+  }
+
+  if(!strcmp(value, "on")) {
+    rbuf[0] |= (1 << dev_index);
+  } else {
+    rbuf[0] &= ~(1 << dev_index);
+  }
+
+
+error_exit:
+  if (fd > 0) {
+    close(fd);
+  }
+
+  return rbuf[0];
+
+}
+
+int pal_set_amber_led(char *carrier, char* dev_num, char* value) {
+  int ret;
+  int fd;
+  char fn[32];
+  uint8_t retry;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t bus;
+  uint8_t ioexp_addr = 0xE8;
+
+  if(!strcmp(carrier, "carrier1")) {
+    bus = 21;
+  } else {
+    bus = 22;
+  }
+
+  pal_set_carrier_board_mux(bus);
+  pal_set_ioexp_direction(bus, "out");
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if(fd < 0) {
+    syslog(LOG_WARNING,"[%s]Cannot open bus %d", __func__, bus);
+    ret = PAL_ENOTSUP;
+    goto error_exit;
+  }
+
+  tbuf[0] = 0x07;
+  tbuf[1] = pal_setup_amber_reg_value(bus, dev_num, value);
+
+  retry = MAX_READ_RETRY;
+  while(retry > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, ioexp_addr, tbuf, 2, rbuf, 0);
+    if (PAL_EOK == ret) {
+      break;
+    }
+
+    msleep(50);
+    retry--;
+  }
+
+  if(ret < 0) {
+    syslog(LOG_WARNING,"[%s] Cannot set amber led on bus %d", __func__, bus);
+    goto error_exit;
+  }
+
+error_exit:
+  if (fd > 0) {
+    close(fd);
+  }
+
+  return ret;
+
+}
+
 int pal_get_dev_guid(uint8_t fru, char *guid) {
 
   pal_get_guid(OFFSET_DEV_GUID, g_dev_guid);

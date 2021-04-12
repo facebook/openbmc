@@ -467,7 +467,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     case UNIFIED_IIO_ERR:
       sprintf(error_log, "GeneralInfo: IIOErr(0x%02X), IIO Port Location: Sled %02d/Socket %02d, Stack 0x%02X, Error ID: 0x%02X",
               general_info, dimm_info.sled, dimm_info.socket, sel[9], sel[12]);
-      sprintf(temp_log, "IIO_ERR CPU%d. Error ID(%02X)", dimm_info.sled*2 + dimm_info.socket, sel[12]);
+      sprintf(temp_log, "IIO_ERR CPU%d. Error ID(%02X)",dimm_info.socket, sel[12]);
       pal_add_cri_sel(temp_log);
       break;
 

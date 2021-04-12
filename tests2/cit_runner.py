@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import os
+import sys
 import unittest
 
 
@@ -53,7 +54,12 @@ class Tests:
         self.pattern = pattern
 
     def discover_tests(self):
-        suite = unittest.defaultTestLoader.discover(self.start_dir, self.pattern)
+        loader = unittest.defaultTestLoader
+        suite = loader.discover(self.start_dir, self.pattern)
+        if loader.errors:
+            for _error in loader.errors:
+                print(_error)
+            sys.exit(1)
         return suite
 
     def filter_based_on_pattern(self, test_string):

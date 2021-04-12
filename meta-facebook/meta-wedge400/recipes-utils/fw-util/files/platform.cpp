@@ -34,5 +34,3 @@ BicFwBlComponent bicfwbl("scm", "bicbl", slot_id);
 MeComponent me("scm", "me", slot_id);
 CpldComponent cpld("scm", "cpld", slot_id);
 BiosComponent bios("scm", "bios", slot_id);
-
-Tpm2Component tpm("bmc", "tpm");

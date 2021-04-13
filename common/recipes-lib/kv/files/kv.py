@@ -18,6 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 import ctypes
+import errno
 import os
 
 
@@ -49,13 +50,13 @@ class KeyValueTooBig(KeyOperationFailure):
 
 def _handle_error():
     e = ctypes.get_errno()
-    if e == os.errno.ENOENT:
+    if e == errno.ENOENT:
         raise KeyNotFoundFailure()
-    elif e == os.errno.EINVAL:
+    elif e == errno.EINVAL:
         raise InvalidParameter()
-    elif e == os.errno.E2BIG:
+    elif e == errno.E2BIG:
         raise KeyValueTooBig()
-    elif e == os.errno.EEXIST:
+    elif e == errno.EEXIST:
         raise KeyAlreadyExists()
     else:
         raise KeyOperationFailure("KV operation failed with errno = " + str(e))

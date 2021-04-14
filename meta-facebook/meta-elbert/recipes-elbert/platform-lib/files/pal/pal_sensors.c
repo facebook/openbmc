@@ -82,26 +82,6 @@ static bool init_threshold_done[MAX_NUM_FRUS + 1] = {false};
 
 // List of SCM sensors that need to be monitored
 const uint8_t scm_sensor_list[] = {
-  SCM_POS_1V15_BMC,
-  SCM_POS_0V6,
-  SCM_POS_1V2_VDDQ,
-  SCM_POS_2V5_VPP,
-  SCM_POS_1V5_PCH,
-  SCM_POS_1V05_COM,
-  SCM_POS_1V3_KRHV,
-  SCM_POS_1V7_SCFUSE,
-  SCM_POS_3V3,
-  SCM_POS_5V,
-  SCM_POS_1V2_BMC,
-  SCM_POS_12V,
-  SCM_POS_1V0_MSW,
-  SCM_POS_2V5_BMC,
-  SCM_POS_1V7_VCCIN,
-  SCM_POS_1V8_MSW_LDO,
-  SCM_POS_1V2,
-  SCM_POS_2V5,
-  SCM_POS_3V3_DPM,
-  SCM_POS_1V8_BMC,
   SCM_ECB_VIN,
   SCM_ECB_VOUT,
   SCM_ECB_CURR,
@@ -1229,66 +1209,6 @@ scm_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   }
   if (scm_sensor) {
     switch(sensor_num) {
-      case SCM_POS_1V15_BMC:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(1), value);
-        break;
-      case SCM_POS_0V6:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(2), value);
-        break;
-      case SCM_POS_1V2_VDDQ:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(3), value);
-        break;
-      case SCM_POS_2V5_VPP:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(4), value);
-        break;
-      case SCM_POS_1V5_PCH:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(5), value);
-        break;
-      case SCM_POS_1V05_COM:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(6), value);
-        break;
-      case SCM_POS_1V3_KRHV:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(7), value);
-        break;
-      case SCM_POS_1V7_SCFUSE:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(8), value);
-        break;
-      case SCM_POS_3V3:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(9), value);
-        break;
-      case SCM_POS_5V:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(10), value);
-        break;
-      case SCM_POS_1V2_BMC:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(11), value);
-        break;
-      case SCM_POS_12V:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(12), value);
-        break;
-      case SCM_POS_1V0_MSW:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(13), value);
-        break;
-      case SCM_POS_2V5_BMC:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(14), value);
-        break;
-      case SCM_POS_1V7_VCCIN:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(16), value);
-        break;
-      case SCM_POS_1V8_MSW_LDO:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(17), value);
-        break;
-      case SCM_POS_1V2:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(18), value);
-        break;
-      case SCM_POS_2V5:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(19), value);
-        break;
-      case SCM_POS_3V3_DPM:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(20), value);
-        break;
-      case SCM_POS_1V8_BMC:
-        ret = read_attr(fru, sensor_num, SCM_UCD90320_DEVICE, VOLT(21), value);
-        break;
       case SCM_ECB_VIN:
         ret = read_attr(fru, sensor_num, SCM_ECB_DEVICE, VOLT(1), value);
         *value = *value / 32;
@@ -2020,66 +1940,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 static int
 get_scm_sensor_name(uint8_t sensor_num, char *name) {
   switch(sensor_num) {
-    case SCM_POS_1V15_BMC:
-      sprintf(name, "POS_1V15_BMC");
-      break;
-    case SCM_POS_0V6:
-      sprintf(name, "POS_0V6");
-      break;
-    case SCM_POS_1V2_VDDQ:
-      sprintf(name, "POS_1V2_VDDQ");
-      break;
-    case SCM_POS_2V5_VPP:
-      sprintf(name, "POS_2V5_VPP");
-      break;
-    case SCM_POS_1V5_PCH:
-      sprintf(name, "POS_1V5_PCH");
-      break;
-    case SCM_POS_1V05_COM:
-      sprintf(name, "POS_1V05_COM");
-      break;
-    case SCM_POS_1V3_KRHV:
-      sprintf(name, "POS_1V3_KRHV");
-      break;
-    case SCM_POS_1V7_SCFUSE:
-      sprintf(name, "POS_1V7_SCFUSE");
-      break;
-    case SCM_POS_3V3:
-      sprintf(name, "POS_3V3");
-      break;
-    case SCM_POS_5V:
-      sprintf(name, "POS_5V");
-      break;
-    case SCM_POS_1V2_BMC:
-      sprintf(name, "POS_1V2_BMC");
-      break;
-    case SCM_POS_12V:
-      sprintf(name, "POS_12V");
-      break;
-    case SCM_POS_1V0_MSW:
-      sprintf(name, "POS_1V0_MSW");
-      break;
-    case SCM_POS_2V5_BMC:
-      sprintf(name, "POS_2V5_BMC");
-      break;
-    case SCM_POS_1V7_VCCIN:
-      sprintf(name, "POS_1V7_VCCIN");
-      break;
-    case SCM_POS_1V8_MSW_LDO:
-      sprintf(name, "POS_1V8_MSW_LDO");
-      break;
-    case SCM_POS_1V2:
-      sprintf(name, "POS_1V2");
-      break;
-    case SCM_POS_2V5:
-      sprintf(name, "POS_2V5");
-      break;
-    case SCM_POS_3V3_DPM:
-      sprintf(name, "POS_3V3_DPM");
-      break;
-    case SCM_POS_1V8_BMC:
-      sprintf(name, "POS_1V8_BMC");
-      break;
     case SCM_ECB_VIN:
       sprintf(name, "SCM_ECB_VIN");
       break;
@@ -2588,26 +2448,6 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 static int
 get_scm_sensor_units(uint8_t sensor_num, char *units) {
   switch(sensor_num) {
-    case SCM_POS_1V15_BMC:
-    case SCM_POS_0V6:
-    case SCM_POS_1V2_VDDQ:
-    case SCM_POS_2V5_VPP:
-    case SCM_POS_1V5_PCH:
-    case SCM_POS_1V05_COM:
-    case SCM_POS_1V3_KRHV:
-    case SCM_POS_1V7_SCFUSE:
-    case SCM_POS_3V3:
-    case SCM_POS_5V:
-    case SCM_POS_1V2_BMC:
-    case SCM_POS_12V:
-    case SCM_POS_1V0_MSW:
-    case SCM_POS_2V5_BMC:
-    case SCM_POS_1V7_VCCIN:
-    case SCM_POS_1V8_MSW_LDO:
-    case SCM_POS_1V2:
-    case SCM_POS_2V5:
-    case SCM_POS_3V3_DPM:
-    case SCM_POS_1V8_BMC:
     case SCM_ECB_VIN:
     case SCM_ECB_VOUT:
       sprintf(units, VOLT_UNIT);
@@ -2877,90 +2717,6 @@ sensor_thresh_array_init(uint8_t fru) {
 
   switch (fru) {
     case FRU_SCM:
-      scm_sensor_threshold[SCM_POS_1V15_BMC][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V15_BMC][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V15_BMC][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V15_BMC][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_0V6][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_0V6][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_0V6][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_0V6][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V2_VDDQ][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V2_VDDQ][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V2_VDDQ][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V2_VDDQ][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_2V5_VPP][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_2V5_VPP][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_2V5_VPP][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_2V5_VPP][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V5_PCH][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V5_PCH][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V5_PCH][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V5_PCH][LNC_THRESH] = 0; // unset
-      // 1.05V no margining +/-5% tolerance
-      scm_sensor_threshold[SCM_POS_1V05_COM][UCR_THRESH] = 1.1025;
-      scm_sensor_threshold[SCM_POS_1V05_COM][LCR_THRESH] = .9975;
-      scm_sensor_threshold[SCM_POS_1V05_COM][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V05_COM][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V3_KRHV][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V3_KRHV][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V3_KRHV][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V3_KRHV][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V7_SCFUSE][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V7_SCFUSE][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V7_SCFUSE][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V7_SCFUSE][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_3V3][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_3V3][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_3V3][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_3V3][LNC_THRESH] = 0; // unset
-      // 5.0V no margining +/-5% tolerance
-      scm_sensor_threshold[SCM_POS_5V][UCR_THRESH] = 5.25;
-      scm_sensor_threshold[SCM_POS_5V][LCR_THRESH] = 4.75;
-      scm_sensor_threshold[SCM_POS_5V][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_5V][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V2_BMC][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V2_BMC][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V2_BMC][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V2_BMC][LNC_THRESH] = 0; // unset
-      // 12.0V no margining +/-20% tolerance
-      scm_sensor_threshold[SCM_POS_12V][UCR_THRESH] = 14.4;
-      scm_sensor_threshold[SCM_POS_12V][LCR_THRESH] = 9.6;
-      scm_sensor_threshold[SCM_POS_12V][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_12V][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V0_MSW][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V0_MSW][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V0_MSW][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V0_MSW][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_2V5_BMC][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_2V5_BMC][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_2V5_BMC][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_2V5_BMC][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V7_VCCIN][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V7_VCCIN][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V7_VCCIN][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V7_VCCIN][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V8_MSW_LDO][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V8_MSW_LDO][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V8_MSW_LDO][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V8_MSW_LDO][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V2][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V2][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V2][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V2][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_2V5][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_2V5][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_2V5][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_2V5][LNC_THRESH] = 0; // unset
-      // 3.3V no margining +/-5% tolerance
-      scm_sensor_threshold[SCM_POS_3V3_DPM][UCR_THRESH] = 3.465;
-      scm_sensor_threshold[SCM_POS_3V3_DPM][LCR_THRESH] = 3.135;
-      scm_sensor_threshold[SCM_POS_3V3_DPM][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_3V3_DPM][LNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V8_BMC][UCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V8_BMC][LCR_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V8_BMC][UNC_THRESH] = 0; // unset
-      scm_sensor_threshold[SCM_POS_1V8_BMC][LNC_THRESH] = 0; // unset
       // ECB
       scm_sensor_threshold[SCM_ECB_VIN][UCR_THRESH] = 0; // unset
       scm_sensor_threshold[SCM_ECB_VIN][LCR_THRESH] = 0; // unset

@@ -7,15 +7,15 @@
     },
     "bios" : {
         "filename"    : "bios.bin",
-        "version" : "XG1_3A10",
+        "version" : "XG1_3A12",
         "hash"    : "sha1sum",
-        "hash_value" : "551423a4e9c12726750ea6c7c91b74ab1c3b044d"
+        "hash_value" : "a2487e3702d268e93d714ca16968837dfd9dc079"
     },
     "fcm" : {
         "filename"    : "fcm_cpld.jed",
-        "version" : "4.1",
+        "version" : "4.2",
         "hash"    : "sha1sum",
-        "hash_value" : "1e755aed8af389cd50ed7c2f2223b71b8f63796a"
+        "hash_value" : "4091072a96534aef1ec58a5fff48c20a6758502c"
     },
     "scm" : {
         "filename"    : "scm_cpld.jed",
@@ -25,15 +25,15 @@
     },
     "smb" : {
         "filename"    : "smb_cpld.jed",
-        "version" : "2.2",
+        "version" : "2.5",
         "hash"    : "sha1sum",
-        "hash_value" : "84c87ffc31c9b61953d59e6b2190a4c74e45a155"
+        "hash_value" : "0791085f8128743b6a9f7d8357d8d086238ab134"
     },
     "pwr" : {
         "filename"    : "pwr_cpld.jed",
-        "version" : "2.2",
+        "version" : "2.4",
         "hash"    : "sha1sum",
-        "hash_value" : "37a0697473e5ac551d2c8a8c2211df5e96509432"
+        "hash_value" : "24a7318f707572a9be5acbb105f79620f25c7afa"
     },
     "fpga" : {
         "filename"    : "w400_fpga.bit",

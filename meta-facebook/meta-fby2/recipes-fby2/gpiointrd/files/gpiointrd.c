@@ -57,6 +57,7 @@
 #define SYS_CONFIG_FILE "/mnt/data/kv_store/sys_config/fru%d_*"
 #define SYS_CONFIG_M2_DEV_FILE "/mnt/data/kv_store/sys_config/fru%d_m2_%d_info"
 #define SENSORDUMP_BIN "/usr/local/bin/sensordump.sh"
+#define SLOT_REMOVAL_PRECHECK_SCRIPT "/usr/local/bin/slot-removal-precheck.sh"
 
 #define FAN_LATCH_POLL_TIME 600
 
@@ -891,6 +892,9 @@ hsvc_event_handler(void *ptr) {
         printf("Not remove entirely\n");
       }
       else {   //Card has been removed
+        sprintf(cmd, "%s slot%u", SLOT_REMOVAL_PRECHECK_SCRIPT, hsvc_info->slot_id);
+        log_system(cmd);
+
         pal_baseboard_clock_control(hsvc_info->slot_id, GPIO_VALUE_HIGH); // Disable baseboard clock passing buffer to prevent voltage leakage
         ret = pal_is_server_12v_on(hsvc_info->slot_id, &value);    /* Check whether the system is 12V off or on */
         if (ret < 0) {

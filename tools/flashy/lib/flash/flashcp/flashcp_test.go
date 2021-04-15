@@ -25,6 +25,7 @@ import (
 	"unsafe"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
@@ -56,6 +57,7 @@ func TestFlashCp(t *testing.T) {
 	munmapOrig := fileutils.Munmap
 	runFlashProcessOrig := runFlashProcess
 	closeFileOrig := closeFlashDeviceFile
+	PetWatchdogOrig := utils.PetWatchdog
 	defer func() {
 		openFlashDeviceFile = openFileOrig
 		getMtdInfoUser = getMtdInfoUserOrig
@@ -63,6 +65,7 @@ func TestFlashCp(t *testing.T) {
 		fileutils.Munmap = munmapOrig
 		runFlashProcess = runFlashProcessOrig
 		closeFlashDeviceFile = closeFileOrig
+		utils.PetWatchdog = PetWatchdogOrig
 	}()
 
 	cases := []struct {
@@ -162,6 +165,8 @@ func TestFlashCp(t *testing.T) {
 	fileutils.Munmap = func(data []byte) error {
 		return nil
 	}
+	utils.PetWatchdog = func() {
+	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -220,6 +225,7 @@ func TestRunFlashProcess(t *testing.T) {
 	eraseFlashDeviceOrig := eraseFlashDevice
 	flashImageOrig := flashImage
 	verifyFlashOrig := verifyFlash
+	PetWatchdogOrig := utils.PetWatchdog
 	defer func() {
 		openFlashDeviceFile = openFlashDeviceFileOrig
 		closeFlashDeviceFile = closeFlashDeviceFileOrig
@@ -227,6 +233,7 @@ func TestRunFlashProcess(t *testing.T) {
 		eraseFlashDevice = eraseFlashDeviceOrig
 		flashImage = flashImageOrig
 		verifyFlash = verifyFlashOrig
+		utils.PetWatchdog = PetWatchdogOrig
 	}()
 
 	cases := []struct {
@@ -287,6 +294,8 @@ func TestRunFlashProcess(t *testing.T) {
 	mtdinfouser := mtd_info_user{}
 	exampleMockFile := &mockFlashDeviceFile{
 		deviceFilePath: exampleDeviceFilePath,
+	}
+	utils.PetWatchdog = func() {
 	}
 
 	for _, tc := range cases {

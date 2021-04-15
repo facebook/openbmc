@@ -453,7 +453,7 @@ var PetWatchdog = func() {
 			log.Printf("Watchdog petted")
 			return;
 		}
-		time.Sleep(1)
+		time.Sleep(1 * time.Second)
 	}
 	log.Printf("Watchdog not petted; yielded CPU instead")
 }

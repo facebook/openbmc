@@ -89,6 +89,17 @@ def pal_get_server_power(slot_id):
         return status.value
 
 
+def pal_get_fru_name(slot_id):
+    if lpal_hndl is None:
+        return None
+    name = create_string_buffer(16)
+    ret = lpal_hndl.pal_get_fru_name(slot_id, name)
+    if ret:
+        return None
+    else:
+        return name.value.decode()
+
+
 # return value
 #  1 - bic okay
 #  0 - bic error
@@ -96,15 +107,13 @@ def pal_get_server_power(slot_id):
 def pal_get_bic_status(slot_id):
     if lpal_hndl is None:
         return 0
-    plat_name = pal_get_platform_name()
-    if "FBTTN" in plat_name:
-        fru = "server"
-    elif "FBY2" in plat_name or "Yosemite" in plat_name:
-        fru = "slot" + str(slot_id)
-    elif "minipack" in plat_name:
-        fru = "scm"
-    else:
+
+    fru_name = pal_get_fru_name(slot_id)
+
+    if fru_name is None:
         return PAL_STATUS_UNSUPPORTED
+    else:
+        fru = fru_name
 
     cmd = ["/usr/bin/bic-util", fru, "--get_dev_id"]
 
@@ -134,12 +143,10 @@ def pal_server_action(slot_id, command, fru_name=None):
         if lpal_hndl.pal_is_slot_server(slot_id) == 0:
             return -2
 
-    plat_name = pal_get_platform_name()
+    fru_name = pal_get_fru_name(slot_id)
 
-    if "FBTTN" in plat_name and "identify" in command:
+    if "server" in fru_name and "identify" in command:
         fru = ""
-    elif "FBTTN" in plat_name and fru_name is None:
-        fru = "server"
     elif fru_name is None:
         fru = "slot" + str(slot_id)
     else:

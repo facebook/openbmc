@@ -185,7 +185,7 @@ fan_mode_check(bool printMode) {
   uint8_t mode;
   int cnt;
 
-  sprintf(cmd, "ps -w | grep /usr/bin/fscd.py | wc -l");
+  sprintf(cmd, "ps -w | grep [/]usr/bin/fscd.py | wc -l");
   if((fp = popen(cmd, "r")) == NULL) {
     if (printMode)
       printf("Fan Mode: Unknown\n");
@@ -194,7 +194,7 @@ fan_mode_check(bool printMode) {
 
   if(fgets(buf, sizeof(buf), fp) != NULL) {
     res = atoi(buf);
-    if(res <= 2) {
+    if(res < 1) {
       if (printMode)
         printf("Fan Mode: Manual(No fscd running)\n");
       pclose(fp);

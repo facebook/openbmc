@@ -1350,7 +1350,6 @@ sdr_init(uint8_t fru) {
     if (pal_sensor_sdr_init(fru, g_sinfo) < 0) {
       return PAL_ENOTREADY;
     }
-    is_sdr_init[fru] = true;
   }
 
   return 0;
@@ -1433,7 +1432,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value) {
 int
 pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   char path[MAX_SDR_PATH] = {0};
-  int retry = MAX_RETRY;
+  int retry = BIC_MAX_RETRY;
   int ret = 0;
 
   if (fru != FRU_SERVER) {
@@ -1445,14 +1444,28 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
     goto end;
   }
 
-  ret = get_sdr_path(fru, path);
-  if (ret < 0) {
+  // Waiting for bic-cached to create Server SDR file.
+  while (retry-- > 0) {
+    ret = get_sdr_path(fru, path);
+    if (ret < 0) {
+      sleep(1);
+      continue;
+    } else {
+      break;
+    }
+  }
+
+  if ((retry == 0) && (ret < 0)) {
+    ret = SDR_NOT_READY;
+    syslog(LOG_CRIT, "%s() Failed to get SDR path.\n", __func__);
     goto end;
   }
 
+  retry = MAX_RETRY;
   while (retry-- > 0) {
     ret = read_sdr_info(path, sinfo);
     if (ret < 0) {
+      ret = SDR_NOT_READY;
       syslog(LOG_WARNING, "%s() Failed to run _sdr_init, retry..%d\n", __func__, retry);
       msleep(200);
       continue;

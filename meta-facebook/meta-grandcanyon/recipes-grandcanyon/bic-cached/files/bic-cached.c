@@ -36,7 +36,6 @@
 
 #define LAST_RECORD_ID      0xFFFF
 #define BYTES_ENTIRE_RECORD 0xFF
-#define BIC_MAX_RETRY       180         // 1 s * 180 = 3 mins
 #define BIC_SERVER_FRUID    0x0
 
 int

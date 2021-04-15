@@ -17,6 +17,7 @@
 #define MAX_SDR_PATH                 32
 #define SDR_PATH                     "/tmp/sdr_%s.bin"
 #define SDR_TYPE_FULL_SENSOR_RECORD  0x1
+#define SDR_NOT_READY                (-2)
 
 // BIC read error
 #define BIC_SNR_FLAG_READ_NA         (1 << 5)

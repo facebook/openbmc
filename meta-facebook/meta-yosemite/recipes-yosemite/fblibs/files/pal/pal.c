@@ -1544,7 +1544,8 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
         FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
       break;
     case FRU_NIC:
-      *caps = FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_NETWORK_CARD;
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_NETWORK_CARD;
       break;
     default:
       ret = -1;

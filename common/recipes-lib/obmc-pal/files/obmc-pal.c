@@ -794,13 +794,16 @@ pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
 }
 
 int __attribute__((weak))
-pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
+pal_get_dev_fruid_name(uint8_t fru, uint8_t dev, char *name)
 {
-  char fruname[32];
-  int ret = pal_get_fruid_name(fru, fruname);
+  char fruname[64];
+  int ret;
+  if (fru == 0)
+    return -1;
+  ret = pal_get_fruid_name(fru, fruname);
   if (ret < 0)
     return ret;
-  sprintf(name, "%s Device %u", fruname ,dev);
+  sprintf(name, "%s Device %u", fruname, (unsigned int)dev - 1);
   return PAL_EOK;
 }
 

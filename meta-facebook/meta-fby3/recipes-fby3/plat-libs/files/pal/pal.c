@@ -2489,7 +2489,7 @@ pal_get_num_devs(uint8_t slot, uint8_t *num) {
 }
 
 int
-pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
+pal_get_dev_fruid_name(uint8_t fru, uint8_t dev, char *name)
 {
   char temp[64] = {0};
   char dev_name[32] = {0};

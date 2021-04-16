@@ -544,7 +544,7 @@ int print_fru(int fru, char * device, bool allow_absent, unsigned char print_for
     if (dev_id != DEV_NONE && dev_id != DEV_ALL) {
       if (num_devs == 0)
         return -1;
-      pal_get_dev_name(fru,dev_id,name);
+      pal_get_dev_fruid_name(fru,dev_id,name);
       ret = pal_get_dev_fruid_path(fru, dev_id, path);
     }
     if (dev_id == DEV_ALL) {
@@ -567,7 +567,7 @@ int print_fru(int fru, char * device, bool allow_absent, unsigned char print_for
 
   if (num_devs && dev_id == DEV_ALL) {
     for (uint8_t i=1;i<=num_devs;i++) {
-      pal_get_dev_name(fru,i,name);
+      pal_get_dev_fruid_name(fru,i,name);
       ret = pal_get_dev_fruid_path(fru, i, path);
       if (ret < 0) {
         if (print_format == JSON_FORMAT) {
@@ -696,7 +696,7 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
     if ( dev_id == DEV_NONE || dev_id == DEV_ALL ) {
       print_usage();
     }
-    pal_get_dev_name(fru, dev_id,name);
+    pal_get_dev_fruid_name(fru, dev_id,name);
     ret = pal_get_dev_fruid_path(fru, dev_id, path);
   } else {
     ret = pal_get_fruid_path(fru, path);

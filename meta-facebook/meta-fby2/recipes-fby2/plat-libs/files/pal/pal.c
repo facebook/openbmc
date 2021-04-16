@@ -4085,7 +4085,7 @@ pal_get_fru_name(uint8_t fru, char *name) {
 }
 
 int
-pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
+pal_get_dev_fruid_name(uint8_t fru, uint8_t dev, char *name)
 {
   char tmp_name[64] = {0};
   int ret = fby2_get_fruid_name(fru, tmp_name);

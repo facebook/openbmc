@@ -49,7 +49,11 @@ class BaseLogUtilTest(object):
     def setUp(self):
         self.set_platform()
         self.set_output_regex_mapping()
-        with open("tests/{}/test_data/logutil/info.json".format(self.platform)) as f:
+        with open(
+            "/usr/local/bin/tests2/tests/{}/test_data/logutil/info.json".format(
+                self.platform
+            )
+        ) as f:
             self.info = json.load(f)
         Logger.start(name=self._testMethodName)
 

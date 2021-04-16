@@ -15,14 +15,13 @@ deps = [
 ]
 
 srcs = files(
-    'main.cpp',
     'message_types/spdm.cpp',
     'utils.cpp',
 )
 
 attest_util_exe = executable(
     'attest-util', 
-    srcs,
+    srcs, 'main.cpp',
     dependencies: deps,
     install: true,
 )

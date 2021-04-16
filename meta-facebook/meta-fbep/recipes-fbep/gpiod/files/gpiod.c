@@ -36,6 +36,13 @@
 #define MAIN_CPLD_ADDR (0x84)
 
 #define CPLD_EVENT_REG   (0xFE)
+#define CPLD_CLEAR_REG   (0xFF)
+
+/*
+ * Note:
+ * 	CPLD confirmed these events won't be triggered at the same time
+ * 	We don't have to handle race condition
+ */
 #define THERMTRIP_CTRL   (0x1 << 2)
 #define RT_PWR_FAIL_CTRL (0x1 << 1)
 #define BT_PWR_FAIL_CTRL (0x1 << 0)
@@ -262,9 +269,21 @@ int check_power_seq(int type)
     syslog(LOG_CRIT, "CPLD bootup failed at state %d", rbuf[0]);
   }
 
-  // Clear event
+  // 2s delay to prevent from triggering new alert while clearing event due to CPLD bug
+  sleep(2);
+
+  // Enable clear
   tbuf[0] = CPLD_EVENT_REG;
   tbuf[1] = ctrl_offset;
+  i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 2, rbuf, 0);
+
+  // Clear event
+  tbuf[0] = CPLD_CLEAR_REG;
+  i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 1);
+
+  // Disable clear
+  tbuf[0] = CPLD_EVENT_REG;
+  tbuf[1] = 0x0;
   i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 2, rbuf, 0);
 exit:
   close(fd);
@@ -407,7 +426,7 @@ static bool is_gpu_thermal_trip()
     goto exit;
 
   event = rbuf[0] & 0x80? true: false;
-  // Delay to avoid false alart during AC cycle due to hardware issue
+  // 250ms delay to avoid false alart during AC cycle due to hardware issue
   msleep(250);
   if (event) {
     for (int i = 0; i < 8; i++) {
@@ -416,9 +435,18 @@ static bool is_gpu_thermal_trip()
     }
   }
 
-  // Clear event
+  // Enable clear
   tbuf[0] = CPLD_EVENT_REG;
   tbuf[1] = THERMTRIP_CTRL;
+  i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 2, rbuf, 0);
+
+  // Clear event
+  tbuf[0] = CPLD_CLEAR_REG;
+  i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 1, rbuf, 1);
+
+  // Disable clear
+  tbuf[0] = CPLD_EVENT_REG;
+  tbuf[1] = 0x0;
   i2c_rdwr_msg_transfer(fd, MAIN_CPLD_ADDR, tbuf, 2, rbuf, 0);
 exit:
   close(fd);
@@ -448,6 +476,7 @@ static void gpio_event_handle_pwr_brake(gpiopoll_pin_t *gp, gpio_value_t last, g
 
 static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
+  // 250ms delay to avoid false alart during AC cycle due to hardware issue
   msleep(250);
   if (curr == GPIO_VALUE_LOW && check_power_seq(RUNTIME) < 0)
     syslog(LOG_WARNING, "Failed to get power state from CPLD");
@@ -593,7 +622,7 @@ static void gpio_event_pax_3_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_v
 
 static void gpio_event_cpld_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
-  // Delay to avoid false alart during AC cycle due to hardware issue
+  // 250ms delay to avoid false alart during AC cycle due to hardware issue
   msleep(250);
   if (curr == GPIO_VALUE_LOW && check_power_seq(BOOTUP) < 0)
     syslog(LOG_WARNING, "Failed to get power state from CPLD");

@@ -609,7 +609,7 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 }
 
 int
-pal_get_dev_capabilities(uint8_t fru, uint8_t dev, unsigned int *caps)
+pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
 {
   if (fru < FRU_SLOT1 || fru > FRU_SLOT4)
     return -1;

@@ -39,7 +39,7 @@ int System::vboot_support_status(void)
   if (env) {
     return VBOOT_NO_ENFORCE;
   }
-  return VBOOT_NO_ENFORCE;
+  return VBOOT_NO_SUPPORT;
 }
 
 bool System::get_mtd_name(string name, string &dev, size_t& size, size_t& erasesize)

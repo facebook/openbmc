@@ -42,21 +42,111 @@ enum format{
   JSON_FORMAT = 1,
 };
 
-#ifdef CUSTOM_FRU_LIST
-  static const char * pal_fru_list_print_t =  pal_fru_list_print;
-  static const char * pal_fru_list_rw_t =  pal_fru_list_rw;
-#else
-  static const char * pal_fru_list_print_t =  pal_fru_list;
-  static const char * pal_fru_list_rw_t =  pal_fru_list;
-#endif /* CUSTOM_FRU_LIST */
+static char pal_fru_list_print_t[1024] = {0};
+static char pal_fru_list_rw_t[1024] = {0};
+static char pal_dev_list_print_t[1024] = {0};
+static char pal_dev_list_rw_t[1024] = {0};
 
-#ifdef FRU_DEVICE_LIST
-  static const char * pal_dev_list_print_t = pal_dev_fru_list;
-  static const char * pal_dev_list_rw_t =  pal_dev_fru_list;
-#else
-  static const char * pal_dev_list_print_t = "";
-  static const char * pal_dev_list_rw_t = "";
-#endif
+static void prepend_all(char *list, size_t size)
+{
+  size_t len = strlen(list);
+  const char *pre = "all, ";
+  size_t pre_len = strlen(pre);
+  if ((len + pre_len + 1) > size) {
+    return;
+  }
+  if (len == 0) {
+    strcpy(list, "all");
+  } else {
+    memmove(list + pre_len, list, len);
+    memcpy(list, pre, pre_len);
+  }
+}
+
+static void append_list(char *dest, char *src)
+{
+  if (dest[0] == '\0') {
+    strcpy(dest, src);
+  } else {
+    strcat(dest, ", ");
+    strcat(dest, src);
+  }
+}
+
+static bool is_in_list(const char *list, const char *name)
+{
+  int name_len = strlen(name);
+  while (list != NULL) {
+    list = strstr(list, name);
+    if (list) {
+      list += name_len;
+      if (*list == '\0' || *list == ',')
+        return true;
+    }
+  }
+  return false;
+}
+
+static void
+create_dev_lists(const char *fru_name, uint8_t fru)
+{
+  uint8_t num_devs, dev;
+  unsigned int caps;
+  if (pal_get_num_devs(fru, &num_devs)) {
+    printf("%s: Cannot get number of devs\n", fru_name);
+    return;
+  }
+  for (dev = 1; dev <= num_devs; dev++) {
+    char name[128];
+    if (pal_get_dev_name(fru, dev, name)) {
+      printf("%s: Cannot get name for device: %u\n", fru_name, dev);
+      continue;
+    }
+    if (pal_get_dev_capability(fru, dev, &caps)) {
+      printf("%s:%s cannot get device capability\n", fru_name, name);
+      continue;
+    }
+    if ((caps & FRU_CAPABILITY_FRUID_READ) &&
+        !is_in_list(pal_dev_list_print_t, name)) {
+      append_list(pal_dev_list_print_t, name);
+    }
+    if ((caps & FRU_CAPABILITY_FRUID_WRITE) &&
+        !is_in_list(pal_dev_list_rw_t, name)) {
+      append_list(pal_dev_list_rw_t, name);
+    }
+  }
+}
+
+static void
+create_fru_lists(void)
+{
+  uint8_t fru;
+  unsigned int caps;
+  for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+    char name[64] = {0};
+    if (pal_get_fru_name(fru, name)) {
+      printf("Cannot get FRU Name for %d\n", fru);
+      continue;
+    }
+    if (pal_get_fru_capability(fru, &caps)) {
+      printf("%s: Cannot get FRU capability!\n", name);
+      continue;
+    }
+    if ((caps & FRU_CAPABILITY_HAS_DEVICE)) {
+      create_dev_lists(name, fru);
+    }
+    if ((caps & FRU_CAPABILITY_FRUID_READ)) {
+      append_list(pal_fru_list_print_t, name);
+    }
+    if ((caps & FRU_CAPABILITY_FRUID_WRITE)) {
+      append_list(pal_fru_list_rw_t, name);
+    }
+  }
+  prepend_all(pal_fru_list_print_t, 1024);
+  if (pal_dev_list_print_t[0] != '\0') {
+    prepend_all(pal_dev_list_print_t, 1024);
+  }
+}
 
 /* To copy the bin files */
 static int
@@ -392,7 +482,7 @@ int check_dump_arg(int argc, char * argv[]) {
   if (argc != 4 && argc != 5) {
     return -1;
   }
-  if (strstr(pal_fru_list_print_t, argv[1]) == NULL) {
+  if (!is_in_list(pal_fru_list_print_t, argv[1])) {
     printf("Cannot dump FRUID for %s\n", argv[1]);
     return -1;
   }
@@ -400,7 +490,7 @@ int check_dump_arg(int argc, char * argv[]) {
     if (pal_dev_list_rw_t == NULL || strlen(pal_dev_list_rw_t) == 0) {
       return -1;
     }
-    if (strstr(pal_dev_list_rw_t, argv[2]) == NULL) {
+    if (!is_in_list(pal_dev_list_rw_t, argv[2])) {
       printf("Cannot dump FRUID for %s %s\n", argv[1], argv[2]);
       return -1;
     }
@@ -418,7 +508,7 @@ int check_write_arg(int argc, char * argv[])
   if (argc != 4 && argc != 5) {
     return -1;
   }
-  if (strstr(pal_fru_list_print_t, argv[1]) == NULL) {
+  if (!is_in_list(pal_fru_list_print_t, argv[1])) {
     printf("Cannot write FRUID for %s\n", argv[1]);
     return -1;
   }
@@ -426,7 +516,7 @@ int check_write_arg(int argc, char * argv[])
     if (pal_dev_list_rw_t == NULL || strlen(pal_dev_list_rw_t) == 0) {
       return -1;
     }
-    if (strstr(pal_dev_list_rw_t, argv[2]) == NULL) {
+    if (!is_in_list(pal_dev_list_rw_t, argv[2])) {
       printf("Cannot write FRUID for %s %s\n", argv[1], argv[2]);
       return -1;
     }
@@ -444,7 +534,7 @@ int check_modify_arg(int argc, char * argv[])
   if (argc != 6 && argc != 7) {
     return -1;
   }
-  if (strstr(pal_fru_list_print_t, argv[1]) == NULL) {
+  if (!is_in_list(pal_fru_list_print_t, argv[1])) {
     printf("Cannot modify FRUID for %s\n", argv[1]);
     return -1;
   }
@@ -456,7 +546,7 @@ int check_modify_arg(int argc, char * argv[])
     if (pal_dev_list_rw_t == NULL || strlen(pal_dev_list_rw_t) == 0) {
       return -1;
     }
-    if (strstr(pal_dev_list_rw_t, argv[2]) == NULL) {
+    if (!is_in_list(pal_dev_list_rw_t, argv[2])) {
       printf("Cannot modify FRUID for %s %s\n", argv[1], argv[2]);
       return -1;
     }
@@ -476,7 +566,7 @@ int check_print_arg(int argc, char * argv[])
   if (argc != 2 && argc != 3 && argc != 4) {
     return -1;
   }
-  if (strstr(pal_fru_list_print_t, argv[optind]) == NULL) {
+  if (!is_in_list(pal_fru_list_print_t, argv[optind])) {
     printf("Cannot read FRUID for %s\n", argv[optind]);
     return -1;
   }
@@ -484,7 +574,7 @@ int check_print_arg(int argc, char * argv[])
     if (pal_dev_list_print_t == NULL || strlen(pal_dev_list_print_t) == 0) {
       return -1;
     }
-    if (strstr(pal_dev_list_print_t, argv[optind+1]) == NULL) {
+    if (!is_in_list(pal_dev_list_print_t, argv[optind+1])) {
       printf("Cannot print FRUID for %s %s\n", argv[optind], argv[optind+1]);
       return -1;
     }
@@ -617,11 +707,13 @@ int do_print_fru(int argc, char * argv[], unsigned char print_format)
       return ret;
     }
   } else {
-    fru = 1;
     ret = 0;
-    while (fru <= MAX_NUM_FRUS) {
+    for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+      unsigned int caps;
+      if (pal_get_fru_capability(fru, &caps) || !(caps & FRU_CAPABILITY_FRUID_READ)) {
+        continue;
+      }
       ret |= print_fru(fru, device, true, print_format,fru_array);
-      fru++;
     }
   }
 
@@ -890,14 +982,7 @@ int main(int argc, char * argv[]) {
   unsigned char action_flag = 0;
   int ret = 0;
 
-  if (!strncmp(pal_fru_list_rw_t, "all, ", strlen("all, "))) {
-    pal_fru_list_rw_t = pal_fru_list_rw_t + strlen("all, ");
-  }
-  if (pal_dev_list_rw_t != NULL && strlen(pal_dev_list_rw_t) != 0) {
-    if (!strncmp(pal_dev_list_rw_t, "all, ", strlen("all, "))) {
-      pal_dev_list_rw_t = pal_dev_list_rw_t + strlen("all, ");
-    }
-  }
+  create_fru_lists();
 
   struct option opts[] = {
     {"help", 0, NULL, 'h'},

@@ -2134,7 +2134,7 @@ int pal_get_fru_capability(uint8_t fru, unsigned int *caps)
   return ret;
 }
 
-int pal_get_dev_capabilities(uint8_t fru, uint8_t dev, unsigned int *caps)
+int pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
 {
   return -1;
 }

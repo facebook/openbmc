@@ -12381,3 +12381,18 @@ int pal_bypass_dev_card(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
 
   return (ret == 0)? CC_SUCCESS: CC_UNSPECIFIED_ERROR;
 }
+
+#if defined CONFIG_FBY2_ND
+int
+pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str) {
+  char label[] = {'A', 'B', 'D', 'C', 'H', 'G', 'E', 'F'};
+
+  if (channel <= 7) {
+    sprintf(str, "%c%d", label[channel], slot);
+  } else {
+    sprintf(str, "NA");
+  }
+
+  return PAL_EOK;
+}
+#endif

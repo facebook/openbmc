@@ -39,7 +39,7 @@ gpio_set PAX3_SKU_ID0 0
 server_type=$(kv get server_type persistent)
 if [ $? -ne 0 ]; then
   # Get config from MB0's BMC
-  for retry in {1..30};
+  for retry in {1..200};
   do
     server_type=$(/usr/local/bin/ipmb-util 2 0x20 0xE8 0x0)
     server_type=${server_type:1:1}

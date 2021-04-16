@@ -393,6 +393,7 @@ int pal_get_dev_list(uint8_t fru, char *list);
 int pal_get_fru_id(char *fru_str, uint8_t *fru);
 int pal_get_dev_id(char *fru_str, uint8_t *fru);
 int pal_get_fru_name(uint8_t fru, char *name);
+int pal_get_dev_name(uint8_t fru, uint8_t dev, char *name);
 int pal_get_fruid_path(uint8_t fru, char *path);
 int pal_get_dev_fruid_path(uint8_t fru, uint8_t dev_id, char *path);
 int pal_get_fruid_eeprom_path(uint8_t fru, char *path);

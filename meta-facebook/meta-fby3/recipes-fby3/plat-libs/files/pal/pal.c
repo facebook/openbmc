@@ -2515,6 +2515,22 @@ pal_get_dev_fruid_name(uint8_t fru, uint8_t dev, char *name)
 }
 
 int
+pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
+{
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      fby3_common_dev_name(dev, name);
+      break;
+    default:
+      return -1;
+  }
+  return 0;
+}
+
+int
 pal_get_dev_fruid_path(uint8_t fru, uint8_t dev_id, char *path) {
   return fby3_get_fruid_path(fru, dev_id, path);
 }

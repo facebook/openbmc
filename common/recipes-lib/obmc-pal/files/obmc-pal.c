@@ -808,6 +808,15 @@ pal_get_dev_fruid_name(uint8_t fru, uint8_t dev, char *name)
 }
 
 int __attribute__((weak))
+pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
+{
+  if (dev == 0)
+    return -1;
+  sprintf(name, "device%u", (unsigned int)dev - 1);
+  return 0;
+}
+
+int __attribute__((weak))
 pal_get_fruid_path(uint8_t fru, char *path)
 {
   return PAL_ENOTSUP;

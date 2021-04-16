@@ -43,7 +43,9 @@ class BaseFwUtilTest(object):
     def setUp(self):
         self.set_platform()
         with open(
-            "tests/{}/test_data/fwutil/fw_util_list.json".format(self.platform)
+            "/usr/local/bin/tests2/tests/{}/test_data/fwutil/fw_util_list.json".format(
+                self.platform
+            )
         ) as f:
             self.fw_util_info = json.load(f)
 

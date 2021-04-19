@@ -36,5 +36,6 @@ RDEPENDS_${PN} += " \
   python3-threading \
   python3-pkgutil \ 
   python3-unittest \
+  python3-debugger \
   ${@pg_python3_typing(d)} \
 "

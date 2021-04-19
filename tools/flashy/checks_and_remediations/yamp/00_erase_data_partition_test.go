@@ -138,6 +138,16 @@ func TestEraseDataPartition(t *testing.T) {
 					"needs /mnt/data to be completely unmounted!"),
 			},
 		},
+		{
+			name:              "no erasesize in mtdMap",
+			getFlashDeviceErr: nil,
+			eraseSize:         nil,
+			dataPartMounted:   false,
+			dataPartErr:       nil,
+			wantCmds:          []string{"flash_eraseall -j /dev/mock"},
+			cmdErr:            nil,
+			want:              nil,
+		},
 	}
 
 	for _, tc := range cases {

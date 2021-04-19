@@ -48,7 +48,7 @@ func eraseDataPartition(stepParams step.StepParams) step.StepExitError {
 		return nil
 	}
 
-	if mtdMap["erasesize"] != "00010000" {
+	if eraseSize, ok := mtdMap["erasesize"]; ok && eraseSize != "00010000" {
 		log.Printf("Skipping this step: erasesize unchanged")
 		return nil
 	}

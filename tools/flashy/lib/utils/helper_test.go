@@ -21,6 +21,7 @@ package utils
 
 import (
 	"bytes"
+	"math"
 	"reflect"
 	"sort"
 	"testing"
@@ -491,6 +492,13 @@ func TestGetWord(t *testing.T) {
 			wantErr: errors.Errorf("Required offset %v out of range of data size %v",
 				2, 4),
 		},
+		{
+			name:    "overflowed",
+			data:    []byte{0x01, 0x02, 0x03, 0x04},
+			offset:  math.MaxUint32 - 3,
+			want:    0,
+			wantErr: errors.Errorf("Failed to get end of offset: Unsigned integer overflow for (4294967292+4)"),
+		},
 	}
 	for _, tc := range cases {
 		got, err := GetWord(tc.data, tc.offset)
@@ -526,6 +534,14 @@ func TestSetWord(t *testing.T) {
 			want:   nil,
 			wantErr: errors.Errorf("Required offset %v out of range of data size %v",
 				2, 4),
+		},
+		{
+			name:    "overflowed",
+			data:    []byte{0x01, 0x02, 0x03, 0x04},
+			word:    0x12345678,
+			offset:  math.MaxUint32 - 3,
+			want:    nil,
+			wantErr: errors.Errorf("Failed to get end of offset: Unsigned integer overflow for (4294967292+4)"),
 		},
 	}
 	for _, tc := range cases {

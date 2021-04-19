@@ -21,7 +21,7 @@
     },
     "nic": {
         "nic": {
-            "version header": "Mellanox NIC firmware version"
+            "version header": "^.*NIC firmware version.*$"
         }
     },
     "scc": {

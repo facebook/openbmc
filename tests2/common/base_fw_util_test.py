@@ -34,7 +34,7 @@ class BaseFwUtilTest(object):
     def verify_output(self, cmd, str_wanted, msg=None):
         Logger.info("executing cmd = {}".format(cmd))
         out = run_shell_cmd(cmd)
-        self.assertIn(str_wanted, out, msg=msg)
+        self.assertRegex(out, str_wanted, msg=msg)
 
     @abstractmethod
     def set_platform(self):

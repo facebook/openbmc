@@ -38,11 +38,11 @@ func removeHealthdReboot(stepParams step.StepParams) step.StepExitError {
 			"\"reboot\" entry if it exists.")
 		healthdConfig, err := utils.GetHealthdConfig()
 		if err != nil {
-			return step.ExitSafeToReboot{err}
+			return step.ExitSafeToReboot{Err: err}
 		}
 		err = utils.HealthdRemoveMemUtilRebootEntryIfExists(healthdConfig)
 		if err != nil {
-			return step.ExitSafeToReboot{err}
+			return step.ExitSafeToReboot{Err: err}
 		}
 	} else {
 		log.Printf("Healthd does not exist in this system. Skipping step.")

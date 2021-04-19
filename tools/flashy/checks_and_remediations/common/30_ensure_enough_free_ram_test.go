@@ -42,8 +42,8 @@ func TestEnsureEnoughFreeRAM(t *testing.T) {
 		{
 			name: "Enough free ram",
 			memInfo: &utils.MemInfo{
-				120 * 1024 * 1024,
-				50 * 1024 * 1024,
+				MemTotal: 120 * 1024 * 1024,
+				MemFree:  50 * 1024 * 1024,
 			},
 			memInfoErr: nil,
 			want:       nil,
@@ -51,19 +51,19 @@ func TestEnsureEnoughFreeRAM(t *testing.T) {
 		{
 			name: "Not enough free ram",
 			memInfo: &utils.MemInfo{
-				120 * 1024 * 1024,
-				30 * 1024 * 1024,
+				MemTotal: 120 * 1024 * 1024,
+				MemFree:  30 * 1024 * 1024,
 			},
 			memInfoErr: nil,
 			want: step.ExitSafeToReboot{
-				errors.Errorf("Free memory (31457280 B) < minimum memory needed (47185920 B), reboot needed"),
+				Err: errors.Errorf("Free memory (31457280 B) < minimum memory needed (47185920 B), reboot needed"),
 			},
 		},
 		{
 			name:       "Error in GetMemInfo",
 			memInfo:    nil,
 			memInfoErr: errors.Errorf("MemInfo error"),
-			want:       step.ExitSafeToReboot{errors.Errorf("MemInfo error")},
+			want:       step.ExitSafeToReboot{Err: errors.Errorf("MemInfo error")},
 		},
 	}
 

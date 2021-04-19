@@ -43,7 +43,8 @@ var fbmetaImagePartitionFactory = func(args PartitionFactoryArgs) Partition {
 }
 
 // supported FBOBMC_IMAGE_META_VER
-var fbmetaSupportedVersions = []int{1}
+// TODO:- check version when there are more than one versions for fbmeta
+// var fbmetaSupportedVersions = []int{1}
 
 const fbmetaImageMetaPartitionSize = 64 * 1024
 const fbmetaImageMetaPartitionOffset = 0x000F0000

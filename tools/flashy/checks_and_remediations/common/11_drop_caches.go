@@ -41,7 +41,7 @@ func dropCaches(stepParams step.StepParams) step.StepExitError {
 	)
 	if err != nil {
 		errMsg := errors.Errorf("Failed to write to drop_caches file '%v': %v", dropCachesFilePath, err)
-		return step.ExitSafeToReboot{errMsg}
+		return step.ExitSafeToReboot{Err: errMsg}
 	}
 	return nil
 }

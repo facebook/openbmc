@@ -61,11 +61,11 @@ func TestTruncateLogs(t *testing.T) {
 		{
 			name: "Normal operation",
 			resolvedFilePatterns: []GlobAllReturnType{
-				GlobAllReturnType{
+				{
 					[]string{"/tmp/test"},
 					nil,
 				},
-				GlobAllReturnType{
+				{
 					[]string{"/tmp/test"},
 					nil,
 				},
@@ -77,34 +77,34 @@ func TestTruncateLogs(t *testing.T) {
 		{
 			name: "Resolve file patterns error (1)",
 			resolvedFilePatterns: []GlobAllReturnType{
-				GlobAllReturnType{
+				{
 					nil,
 					errors.Errorf("resolveFilePatterns Error"),
 				},
-				GlobAllReturnType{
+				{
 					[]string{"/tmp/test"},
 					nil,
 				},
 			},
 			removeFileErr:   nil,
 			truncateFileErr: nil,
-			want:            step.ExitSafeToReboot{errors.Errorf("Unable to resolve file patterns '%v': resolveFilePatterns Error", deleteLogFilePatterns)},
+			want:            step.ExitSafeToReboot{Err: errors.Errorf("Unable to resolve file patterns '%v': resolveFilePatterns Error", deleteLogFilePatterns)},
 		},
 		{
 			name: "Resolve file patterns error (2)",
 			resolvedFilePatterns: []GlobAllReturnType{
-				GlobAllReturnType{
+				{
 					[]string{"/tmp/test"},
 					nil,
 				},
-				GlobAllReturnType{
+				{
 					nil,
 					errors.Errorf("resolveFilePatterns Error"),
 				},
 			},
 			removeFileErr:   nil,
 			truncateFileErr: nil,
-			want:            step.ExitSafeToReboot{errors.Errorf("Unable to resolve file patterns '%v': resolveFilePatterns Error", deleteLogFilePatterns)},
+			want:            step.ExitSafeToReboot{Err: errors.Errorf("Unable to resolve file patterns '%v': resolveFilePatterns Error", deleteLogFilePatterns)},
 		},
 	}
 

@@ -55,8 +55,8 @@ func FlashCpVboot(stepParams step.StepParams) step.StepExitError {
 	log.Printf("Getting flash target device")
 	flashDevice, err := flashutils.GetFlashDevice(stepParams.DeviceID)
 	if err != nil {
-		log.Printf(err.Error())
-		return step.ExitSafeToReboot{err}
+		log.Print(err.Error())
+		return step.ExitSafeToReboot{Err: err}
 	}
 	log.Printf("Flash device: %v", flashDevice)
 
@@ -76,7 +76,7 @@ func FlashCpVboot(stepParams step.StepParams) step.StepExitError {
 		// return safe to reboot here to retry.
 		// error handler (step.HandleStepError) will check if
 		// either flash device is valid.
-		return step.ExitSafeToReboot{err}
+		return step.ExitSafeToReboot{Err: err}
 	}
 
 	// make sure no other flasher is running
@@ -84,7 +84,7 @@ func FlashCpVboot(stepParams step.StepParams) step.StepExitError {
 	err = utils.CheckOtherFlasherRunning(flashyStepBaseNames)
 	if err != nil {
 		log.Printf("Flashing succeeded but found another flasher running: %v", err)
-		return step.ExitUnsafeToReboot{err}
+		return step.ExitUnsafeToReboot{Err: err}
 	}
 
 	return nil

@@ -289,12 +289,12 @@ func (p *UBootPartition) GetType() PartitionConfigType {
 // check magic
 func (p *UBootPartition) checkMagic() error {
 	// check that p.Data is larger than 4 bytes
-	if len(p.Data) < 4 {
+	if len(p.Data) < ubootMagicSize {
 		return errors.Errorf("'%v' partition too small (%v) to contain U-Boot magic",
 			p.Name, len(p.Data))
 	}
 
-	magic := binary.BigEndian.Uint32(p.Data[:4])
+	magic := binary.BigEndian.Uint32(p.Data[:ubootMagicSize])
 	if utils.Uint32Find(magic, ubootMagics) == -1 {
 		return errors.Errorf("Magic '0x%X' does not match any U-Boot magic", magic)
 	}

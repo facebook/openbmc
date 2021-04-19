@@ -70,8 +70,6 @@ type erase_info_user struct {
 	length uint32
 }
 
-const erase_info_user_size = 64
-
 // linux/include/uapi/mtd/mtd-abi.h
 type mtd_info_user struct {
 	_type     uint8
@@ -346,8 +344,8 @@ var verifyFlash = func(
 	activeFlashData := flashData[roOffset:]
 
 	if !bytes.Equal(activeFlashData, activeImageData) {
-		errMsg := fmt.Sprintf("Verification failed: flash and image data mismatch.")
-		log.Printf(errMsg)
+		errMsg := "Verification failed: flash and image data mismatch."
+		log.Print(errMsg)
 		return errors.Errorf("%v", errMsg)
 	}
 

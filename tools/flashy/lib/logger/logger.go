@@ -101,7 +101,7 @@ var StartSyslog = func() {
 		log.Printf("Unable to decide if systemd is available: %v", err)
 		return
 	}
-	cmd := []string{}
+	var cmd []string
 	if systemdAvail {
 		cmd = []string{"systemctl", "start", "syslog"}
 	} else {

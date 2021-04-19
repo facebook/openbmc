@@ -76,7 +76,7 @@ func TestRestartServices(t *testing.T) {
 			systemdAvailErr:   errors.Errorf("Systemd check error"),
 			runCmdErr:         nil,
 			restartHealthdErr: nil,
-			want:              step.ExitSafeToReboot{errors.Errorf("Error checking systemd availability: Systemd check error")},
+			want:              step.ExitSafeToReboot{Err: errors.Errorf("Error checking systemd availability: Systemd check error")},
 			wantCmds:          []string{},
 		},
 		{
@@ -94,7 +94,7 @@ func TestRestartServices(t *testing.T) {
 			systemdAvailErr:   nil,
 			runCmdErr:         nil,
 			restartHealthdErr: errors.Errorf("Healthd restart error"),
-			want:              step.ExitSafeToReboot{errors.Errorf("Healthd restart error")},
+			want:              step.ExitSafeToReboot{Err: errors.Errorf("Healthd restart error")},
 			wantCmds:          []string{"systemctl restart restapi"},
 		},
 	}

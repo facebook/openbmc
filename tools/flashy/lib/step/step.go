@@ -56,7 +56,7 @@ func RegisterStep(step func(StepParams) StepExitError) {
 // GetFlashyStepBaseNames gets basenames of flashy's steps.
 var GetFlashyStepBaseNames = func() []string {
 	flashyStepBaseNames := []string{}
-	for p, _ := range StepMap {
+	for p := range StepMap {
 		stepBasename := path.Base(p)
 		flashyStepBaseNames = append(flashyStepBaseNames, stepBasename)
 	}

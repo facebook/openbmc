@@ -133,7 +133,7 @@ func (p *FitPartition) validateImageNode(imageNode *dt.Node) error {
 
 	calcChecksumDat := sha256.Sum256(data)
 	calcChecksum := calcChecksumDat[:]
-	if bytes.Compare(checksum, calcChecksum) != 0 {
+	if !bytes.Equal(checksum, calcChecksum) {
 		return errors.Errorf("Calculated sha256 (0x%X) does not match that in FIT (0x%X)",
 			calcChecksum, checksum)
 	}

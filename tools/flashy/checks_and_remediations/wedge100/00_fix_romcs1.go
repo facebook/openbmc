@@ -43,7 +43,7 @@ func fixROMCS1(stepParams step.StepParams) step.StepExitError {
 		60*time.Second)
 	if err != nil {
 		errMsg := errors.Errorf("Failed to run ROMCS1# fix: %v", err)
-		return step.ExitSafeToReboot{errMsg}
+		return step.ExitSafeToReboot{Err: errMsg}
 	}
 	return nil
 }

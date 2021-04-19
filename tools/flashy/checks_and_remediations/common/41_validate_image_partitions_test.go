@@ -64,7 +64,7 @@ func TestValidateImagePartitions(t *testing.T) {
 			isPfrSystem:   false,
 			validateError: errors.Errorf("validation failed"),
 			want: step.ExitSafeToReboot{
-				errors.Errorf("validation failed"),
+				Err: errors.Errorf("validation failed"),
 			},
 		},
 		{

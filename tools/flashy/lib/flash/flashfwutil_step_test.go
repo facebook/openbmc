@@ -73,7 +73,7 @@ func TestFlashFwUtil(t *testing.T) {
 			runFwUtilCmdErr: errors.Errorf("RunCommand error"),
 			otherFlasherErr: nil,
 			want: step.ExitSafeToReboot{
-				errors.Errorf("RunCommand error"),
+				Err: errors.Errorf("RunCommand error"),
 			},
 			logContainsSeq: []string{
 				"Flashing using fw-util method",
@@ -85,7 +85,7 @@ func TestFlashFwUtil(t *testing.T) {
 			runFwUtilCmdErr: nil,
 			otherFlasherErr: errors.Errorf("Found other flasher!"),
 			want: step.ExitUnsafeToReboot{
-				errors.Errorf("Found other flasher!"),
+				Err: errors.Errorf("Found other flasher!"),
 			},
 			logContainsSeq: []string{
 				"Flashing succeeded but found another flasher running",

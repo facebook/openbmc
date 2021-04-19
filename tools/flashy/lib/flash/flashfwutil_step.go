@@ -38,7 +38,7 @@ func FlashFwUtil(stepParams step.StepParams) step.StepExitError {
 
 	err := runFwUtilCmd(stepParams.ImageFilePath)
 	if err != nil {
-		return step.ExitSafeToReboot{err}
+		return step.ExitSafeToReboot{Err: err}
 	}
 
 	// make sure no other flasher is running
@@ -46,7 +46,7 @@ func FlashFwUtil(stepParams step.StepParams) step.StepExitError {
 	err = utils.CheckOtherFlasherRunning(flashyStepBaseNames)
 	if err != nil {
 		log.Printf("Flashing succeeded but found another flasher running: %v", err)
-		return step.ExitUnsafeToReboot{err}
+		return step.ExitUnsafeToReboot{Err: err}
 	}
 
 	return nil

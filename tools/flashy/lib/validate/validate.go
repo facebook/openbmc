@@ -54,7 +54,7 @@ var Validate = func(data []byte) error {
 	}
 
 	errMsg := "*** FAILED: Validation failed ***"
-	log.Printf(errMsg)
+	log.Print(errMsg)
 	return errors.Errorf(errMsg)
 }
 

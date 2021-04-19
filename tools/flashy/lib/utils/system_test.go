@@ -289,6 +289,26 @@ func TestRunCommand(t *testing.T) {
 				"Command 'sleep 42' failed to start: context deadline exceeded",
 			},
 		},
+		{
+			name:           "Empty cmd",
+			cmdArr:         []string{},
+			timeout:        30 * time.Second,
+			wantExitCode:   1,
+			wantErr:        errors.Errorf("Cannot run empty command"),
+			wantStdout:     "",
+			wantStderr:     "",
+			logContainsSeq: []string{},
+		},
+		{
+			name:           "Single item cmd (echo)",
+			cmdArr:         []string{"echo"},
+			timeout:        30 * time.Second,
+			wantExitCode:   0,
+			wantErr:        nil,
+			wantStdout:     "\n",
+			wantStderr:     "",
+			logContainsSeq: []string{},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -788,7 +808,7 @@ func TestCheckNoBaseNameExistsInProcCmdlinePaths(t *testing.T) {
 				"/proc/42/cmdline": ReadFileRetType{[]byte("fw-util\x00bmc\x00--update"), nil},
 			},
 			want: errors.Errorf("'fw-util' found in cmdline 'fw-util bmc --update'"),
- 		},
+		},
 		{
 			name: "base name exists (4)",
 			readFileRet: map[string]interface{}{

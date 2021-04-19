@@ -164,6 +164,11 @@ var RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, strin
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
+	// make sure cmdArr has at least 1 item
+	if len(cmdArr) == 0 {
+		return 1, errors.Errorf("Cannot run empty command"), "", ""
+	}
+
 	fullCmdStr := strings.Join(cmdArr[:], " ")
 	log.Printf("Running command '%v' with %v timeout", fullCmdStr, timeout)
 	cmd := exec.CommandContext(ctx, cmdArr[0], cmdArr[1:]...)

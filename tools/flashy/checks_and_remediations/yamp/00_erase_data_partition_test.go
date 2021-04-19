@@ -57,10 +57,13 @@ func TestEraseDataPartition(t *testing.T) {
 
 	flashDevice := &mockFlashDevice{}
 
+	s10000 := "00010000"
+	s1000 := "00001000"
+
 	cases := []struct {
 		name              string
 		getFlashDeviceErr error
-		eraseSize         string
+		eraseSize         *string // If nil, mtdMap is not populated
 		dataPartMounted   bool
 		dataPartErr       error
 		wantCmds          []string
@@ -70,7 +73,7 @@ func TestEraseDataPartition(t *testing.T) {
 		{
 			name:              "found and erased",
 			getFlashDeviceErr: nil,
-			eraseSize:         "00010000",
+			eraseSize:         &s10000,
 			dataPartMounted:   false,
 			dataPartErr:       nil,
 			wantCmds:          []string{"flash_eraseall -j /dev/mock"},
@@ -80,7 +83,7 @@ func TestEraseDataPartition(t *testing.T) {
 		{
 			name:              "No 'data0' partition found",
 			getFlashDeviceErr: errors.Errorf("not found"),
-			eraseSize:         "00001000",
+			eraseSize:         &s1000,
 			dataPartMounted:   false,
 			dataPartErr:       nil,
 			wantCmds:          []string{},
@@ -90,7 +93,7 @@ func TestEraseDataPartition(t *testing.T) {
 		{
 			name:              "No Diag paths found",
 			getFlashDeviceErr: nil,
-			eraseSize:         "00001000",
+			eraseSize:         &s1000,
 			dataPartMounted:   false,
 			dataPartErr:       nil,
 			wantCmds:          []string{},
@@ -100,7 +103,7 @@ func TestEraseDataPartition(t *testing.T) {
 		{
 			name:              "flash_eraseall failed",
 			getFlashDeviceErr: nil,
-			eraseSize:         "00010000",
+			eraseSize:         &s10000,
 			dataPartMounted:   false,
 			dataPartErr:       nil,
 			wantCmds:          []string{"flash_eraseall -j /dev/mock"},
@@ -112,7 +115,7 @@ func TestEraseDataPartition(t *testing.T) {
 		{
 			name:              "error checking /mnt/data mount status",
 			getFlashDeviceErr: nil,
-			eraseSize:         "00010000",
+			eraseSize:         &s10000,
 			dataPartMounted:   false,
 			dataPartErr:       errors.Errorf("check failed"),
 			wantCmds:          []string{},
@@ -124,7 +127,7 @@ func TestEraseDataPartition(t *testing.T) {
 		{
 			name:              "/mnt/data still mounted (RO, possibly)",
 			getFlashDeviceErr: nil,
-			eraseSize:         "00010000",
+			eraseSize:         &s10000,
 			dataPartMounted:   true,
 			dataPartErr:       nil,
 			wantCmds:          []string{},
@@ -148,7 +151,9 @@ func TestEraseDataPartition(t *testing.T) {
 			}
 			utils.GetMTDMapFromSpecifier = func(deviceID string) (map[string]string, error) {
 				m := make(map[string]string)
-				m["erasesize"] = tc.eraseSize
+				if tc.eraseSize != nil {
+					m["erasesize"] = *tc.eraseSize
+				}
 				return m, nil
 			}
 			utils.RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
